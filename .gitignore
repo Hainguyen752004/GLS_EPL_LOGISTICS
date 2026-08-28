@@ -1,0 +1,59 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Test, coverage and temporary output
+.pytest_cache/
+.pytest*/
+.pytest-*/
+.pytest_*/
+.tmp/
+.tmp*/
+tmp*/
+tmp*/**
+.superpowers/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Runtime databases, backups, logs and uploaded files
+*.db
+*.sqlite
+*.sqlite3
+*.log
+backend/backups/
+backend/uploads/
+frontend/uploads/
+
+# Local AI/CV model weights
+*.pt
+*.onnx
+*.engine
+
+# One-off local repair helpers
+check_braces.py
+fix.py
+braces_out.txt
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+node_modules/

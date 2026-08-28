@@ -1,0 +1,371 @@
+.parking-workspace {
+  min-height: 100vh;
+  padding: 18px;
+  background: #eef4f8;
+  color: #172033;
+}
+
+.parking-header,
+.parking-toolbar,
+.parking-body {
+  border: 1px solid #b7c9da;
+  background: #fff;
+}
+
+.parking-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 8px 8px 0 0;
+}
+
+.parking-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.parking-title-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  background: #eaf4ff;
+  color: #0877c9;
+  font-size: 1.2rem;
+}
+
+.parking-title h2,
+.parking-title p {
+  margin: 0;
+}
+
+.parking-title h2 { font-size: 1.28rem; }
+.parking-title p { margin-top: 3px; color: #64748b; font-size: .86rem; }
+
+.parking-actions,
+.parking-filter-row,
+.parking-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.parking-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 0;
+  border-top: 0;
+}
+
+.parking-kpi {
+  min-width: 0;
+  padding: 13px 16px;
+  border-right: 1px solid #d8e3ed;
+}
+
+.parking-kpi:last-child { border-right: 0; }
+.parking-kpi span { display: block; color: #64748b; font-size: .76rem; font-weight: 800; text-transform: uppercase; }
+.parking-kpi strong { display: block; margin-top: 4px; color: #086ac1; font-size: 1.3rem; }
+
+.parking-filter-row {
+  padding: 12px 14px;
+  border: 1px solid #b7c9da;
+  border-top: 0;
+  background: #f7fafc;
+}
+
+.parking-search {
+  position: relative;
+  flex: 1 1 360px;
+}
+
+.parking-search i {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  color: #718096;
+  transform: translateY(-50%);
+}
+
+.parking-search input,
+.parking-filter-row select,
+.parking-form input,
+.parking-form select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #aebfd0;
+  border-radius: 5px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #172033;
+  font: inherit;
+}
+
+.parking-search input { padding-left: 38px; }
+.parking-filter-row select { width: min(260px, 100%); }
+
+.parking-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  min-height: 620px;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.parking-list-pane {
+  border-right: 1px solid #b7c9da;
+  background: #f8fafc;
+}
+
+.parking-pane-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #cbd7e5;
+  background: #edf3f8;
+  font-weight: 900;
+}
+
+.parking-list {
+  max-height: 780px;
+  overflow: auto;
+}
+
+.parking-list-row {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 13px 14px;
+  border: 0;
+  border-bottom: 1px solid #d8e3ed;
+  border-left: 4px solid transparent;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.parking-list-row:hover { background: #f0f7ff; }
+.parking-list-row.active { border-left-color: #0877c9; background: #eaf4ff; }
+.parking-list-row strong { overflow-wrap: anywhere; font-size: .91rem; }
+.parking-list-row small { color: #64748b; }
+
+.parking-row-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.parking-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #edf3f8;
+  color: #475569;
+  font-size: .72rem;
+  font-weight: 900;
+}
+
+.parking-status.ready,
+.parking-status.loaded { background: #e8f3ff; color: #086ac1; }
+.parking-status.parked,
+.parking-status.gate_in { background: #fff3dd; color: #a75c00; }
+.parking-status.dispatched { background: #eee8ff; color: #6d35c5; }
+.parking-status.delivered { background: #e8f8f1; color: #087a57; }
+.parking-status.cancelled { background: #fff0f1; color: #c92d39; }
+
+.parking-detail-pane { min-width: 0; background: #fff; }
+.parking-empty { display: grid; min-height: 420px; place-items: center; padding: 30px; color: #718096; text-align: center; }
+.parking-empty i { display: block; margin-bottom: 10px; color: #8fb1cf; font-size: 2rem; }
+
+.parking-detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 16px;
+  border-bottom: 1px solid #cbd7e5;
+  background: #fbfcfe;
+}
+
+.parking-detail-header h3,
+.parking-detail-header p { margin: 0; }
+.parking-detail-header h3 { overflow-wrap: anywhere; font-size: 1.02rem; }
+.parking-detail-header p { margin-top: 4px; color: #64748b; font-size: .8rem; }
+
+.parking-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid #cbd7e5;
+}
+
+.parking-summary-item {
+  min-width: 0;
+  padding: 12px 14px;
+  border-right: 1px solid #d8e3ed;
+  border-bottom: 1px solid #d8e3ed;
+}
+
+.parking-summary-item:nth-child(4n) { border-right: 0; }
+.parking-summary-item span { display: block; color: #64748b; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.parking-summary-item strong { display: block; margin-top: 4px; overflow-wrap: anywhere; font-size: .88rem; }
+
+.parking-progress {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+  gap: 0;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border-bottom: 1px solid #cbd7e5;
+  background: #f7fafc;
+}
+
+.parking-progress-step {
+  position: relative;
+  min-width: 90px;
+  padding: 30px 5px 0;
+  color: #718096;
+  font-size: .7rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.parking-progress-step::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border: 3px solid #c7d3df;
+  border-radius: 50%;
+  background: #fff;
+  transform: translateX(-50%);
+}
+
+.parking-progress-step::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  left: -50%;
+  width: 100%;
+  height: 2px;
+  background: #c7d3df;
+}
+
+.parking-progress-step:first-child::after { display: none; }
+.parking-progress-step.done { color: #087a57; }
+.parking-progress-step.done::before { border-color: #0ea978; background: #0ea978; }
+.parking-progress-step.done::after { background: #0ea978; }
+
+.parking-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #b7c9da;
+  background: #fff;
+}
+
+.parking-tab {
+  min-height: 44px;
+  border: 0;
+  border-right: 1px solid #d8e3ed;
+  border-bottom: 3px solid transparent;
+  padding: 10px 15px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 900;
+}
+
+.parking-tab.active { border-bottom-color: #0877c9; background: #eef6ff; color: #086ac1; }
+.parking-tab-pane { padding: 14px; }
+
+.parking-table-wrap { overflow: auto; border: 1px solid #cbd7e5; border-radius: 5px; }
+.parking-table { width: 100%; min-width: 850px; border-collapse: collapse; }
+.parking-table th,
+.parking-table td { padding: 9px 10px; border-right: 1px solid #d8e3ed; border-bottom: 1px solid #d8e3ed; text-align: left; vertical-align: top; }
+.parking-table th { position: sticky; top: 0; background: #edf3f8; color: #475569; font-size: .72rem; text-transform: uppercase; }
+.parking-table td { font-size: .8rem; }
+
+.parking-labels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.parking-label-tile { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px; border: 1px solid #b7c9da; border-left: 4px solid #0877c9; background: #fff; }
+.parking-label-tile img { width: 86px; height: 86px; object-fit: contain; border: 1px solid #d8e3ed; background: #fff; }
+.parking-label-tile b,
+.parking-label-tile span { display: block; }
+.parking-label-tile span { margin-top: 3px; color: #64748b; font-size: .76rem; }
+
+.parking-event { display: grid; grid-template-columns: 145px 140px minmax(0, 1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid #d8e3ed; font-size: .8rem; }
+
+.parking-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100400;
+  display: none;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15,23,42,.68);
+  backdrop-filter: blur(5px);
+}
+
+.parking-modal.open { display: grid; }
+.parking-dialog { width: min(780px, 96vw); max-height: 92vh; overflow: auto; border: 1px solid #8fb1cf; border-radius: 8px; background: #fff; box-shadow: 0 28px 80px rgba(15,23,42,.36); }
+.parking-scan-dialog { width: min(650px, 96vw); }
+.parking-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px 18px; background: #0877c9; color: #fff; }
+.parking-dialog-header h3,
+.parking-dialog-header p { margin: 0; }
+.parking-dialog-header p { margin-top: 3px; opacity: .9; font-size: .8rem; }
+.parking-dialog-close { width: 38px; height: 38px; border: 0; border-radius: 50%; background: rgba(255,255,255,.18); color: #fff; cursor: pointer; font-size: 1rem; }
+.parking-form { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 13px; padding: 18px; }
+.parking-field { min-width: 0; }
+.parking-field.full { grid-column: 1 / -1; }
+.parking-field label { display: block; margin-bottom: 5px; color: #334155; font-size: .78rem; font-weight: 850; }
+.parking-field small { display: block; margin-top: 6px; color: #64748b; font-size: .76rem; line-height: 1.45; }
+.parking-auto-note { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #86c7f3; border-left: 4px solid #0877c9; background: #eef7ff; color: #334155; }
+.parking-auto-note > i { margin-top: 3px; color: #0877c9; }
+.parking-auto-note strong,
+.parking-auto-note span { display: block; }
+.parking-auto-note span { margin-top: 3px; color: #52677d; font-size: .8rem; line-height: 1.45; }
+.parking-do-preview { grid-column: 1 / -1; padding: 11px 12px; border-left: 4px solid #0877c9; background: #eef6ff; color: #334155; font-size: .8rem; }
+.parking-dialog-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 13px 18px; border-top: 1px solid #cbd7e5; background: #f7fafc; }
+
+@media (max-width: 980px) {
+  .parking-body { grid-template-columns: 1fr; }
+  .parking-list-pane { border-right: 0; border-bottom: 1px solid #b7c9da; }
+  .parking-list { max-height: 300px; }
+  .parking-summary-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .parking-summary-item:nth-child(2n) { border-right: 0; }
+  .parking-toolbar { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .parking-kpi:nth-child(2n) { border-right: 0; }
+}
+
+@media (max-width: 620px) {
+  .parking-workspace { padding: 8px; }
+  .parking-header { align-items: flex-start; }
+  .parking-header,
+  .parking-detail-header { flex-direction: column; }
+  .parking-actions,
+  .parking-detail-actions { width: 100%; }
+  .parking-actions .fiori-btn,
+  .parking-detail-actions .fiori-btn { flex: 1 1 auto; justify-content: center; }
+  .parking-form { grid-template-columns: 1fr; }
+  .parking-field.full { grid-column: auto; }
+  .parking-summary-grid { grid-template-columns: 1fr; }
+  .parking-summary-item { border-right: 0; }
+  .parking-event { grid-template-columns: 1fr; gap: 3px; }
+}

@@ -1,0 +1,12 @@
+{
+    "models_dir_relative_to_backend": "../models",
+    "vehicle_model": "yolo26n.pt",
+    "plate_model": "custom11_plate.pt",
+    "vehicle_classes": [
+        7
+    ],
+    "vehicle_conf_threshold": 0.5,
+    "plate_conf_threshold": 0.4,
+    "ocr_lang": "en",
+    "use_angle_cls": true
+}
