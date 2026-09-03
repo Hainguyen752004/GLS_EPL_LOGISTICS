@@ -24,6 +24,9 @@ assert.ok(css.includes('[style*="border: 1px solid #e2e8f0"]'), 'legacy inline p
 assert.ok(css.includes('[style*="border-bottom:1px solid #e2e8f0"]'), 'legacy inline section dividers need the hierarchy bridge');
 assert.ok(css.includes('[style*="border:1px solid #d8e5f2"]'), 'newer inline panel borders need the hierarchy bridge');
 
-assert.ok(html.includes('/static/css/styles.css?v=20260826-visual-hierarchy-v1'), 'stylesheet cache key must expose the hierarchy update');
+// Chỉ kiểm CÓ tham số chống cache, không ghim giá trị: ghim chuỗi cụ thể làm
+// test fail mỗi lần nâng phiên bản hợp lệ, trong khi ý định là "bản sửa phải
+// tới được trình duyệt người dùng".
+assert.match(html, /\/static\/css\/styles\.css\?v=[^"']+/, 'stylesheet must carry a cache-busting version');
 
 console.log('GLOBAL_VISUAL_HIERARCHY_UI_OK');

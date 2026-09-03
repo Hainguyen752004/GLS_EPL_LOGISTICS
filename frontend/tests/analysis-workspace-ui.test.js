@@ -22,10 +22,15 @@ const reportingView = viewMarkup('view-reporting', 'view-lab-summary-placeholder
 assert.match(analysisView, /id="analysis-workspace"/);
 assert.match(analysisView, /id="transport-reporting-center"/);
 assert.doesNotMatch(reportingView, /id="transport-reporting-center"/);
-assert.match(reportingView, /id="reporting-drilldown-panel"/);
+// Khoi SLA/KPI da chuyen sang workspace Phan tich: man Dau thau gio chi con
+// Tender & Carrier. Xem pane data-analysis-pane="sla".
+assert.doesNotMatch(reportingView, /id="reporting-drilldown-panel"/);
+assert.doesNotMatch(reportingView, /id="reporting-kpi-cards"/);
 assert.match(reportingView, /id="tender-cockpit-panel"/);
+assert.match(analysisView, /id="reporting-kpi-cards"/);
+assert.match(analysisView, /id="reporting-drilldown-table"/);
 
-for (const pane of ['overview', 'panorama', 'revenue', 'expenses']) {
+for (const pane of ['overview', 'panorama', 'revenue', 'expenses', 'sla']) {
   assert.match(analysisView, new RegExp(`data-analysis-nav="${pane}"`));
   assert.match(analysisView, new RegExp(`data-analysis-pane="${pane}"`));
 }

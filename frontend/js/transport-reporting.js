@@ -176,6 +176,16 @@
     }
   }
 
+  /**
+   * Chuyển khối "Bức tranh toàn cảnh" từ chỗ chứa tạm vào đúng pane.
+   *
+   * #view-lab-panorama-source là một section ẩn (aria-hidden="true") chỉ dùng
+   * để chứa markup, nên phép chuyển này không hiển thị sai ở đâu và nó
+   * idempotent nhờ kiểm tra contains(). Dù vậy đây vẫn là nợ kỹ thuật: markup
+   * nên nằm thẳng trong #analysis-panorama-pane ở file tĩnh và xóa hẳn hàm
+   * này, vì một khối DOM di chuyển lúc chạy khiến người đọc code rất khó lần
+   * ra nội dung thực sự thuộc màn nào.
+   */
   function mountPanorama() {
     const source = document.querySelector('#view-lab-panorama-source .card-panel');
     const target = document.getElementById('analysis-panorama-pane');
@@ -193,12 +203,13 @@
   }
 
   function selectWorkspacePane(name) {
-    const validNames = ['overview', 'panorama', 'revenue', 'expenses'];
+    const validNames = ['overview', 'panorama', 'revenue', 'expenses', 'sla'];
     const labels = {
       overview: 'Tổng quan P&L',
       panorama: 'Bức tranh toàn cảnh',
       revenue: 'Doanh thu theo chuyến',
-      expenses: 'Phiếu chi phí'
+      expenses: 'Phiếu chi phí',
+      sla: 'Chất lượng dịch vụ'
     };
     if (!validNames.includes(name)) name = 'overview';
     state.activeTab = name;
@@ -214,7 +225,18 @@
     toggleWorkspaceMenu(false);
     document.getElementById('transport-reporting-center')?.classList.toggle('show-panorama', name === 'panorama');
     if (name === 'overview') setTimeout(() => Object.values(state.charts).forEach(chart => chart?.resize()), 0);
-    if (name === 'panorama' && typeof loadDashboard === 'function') setTimeout(loadDashboard, 0);
+    // Tab "Bức tranh toàn cảnh" vẽ từ appState qua renderSummaryChart, không
+    // cần tới /api/dashboard/stats. Trước đây chỗ này gọi loadDashboard(), mà
+    // loadDashboard() lại gọi ngược TransportReporting.load() — hai hàm gọi
+    // vòng qua nhau, mỗi lần đổi tab là bắn lại toàn bộ API của cả hai màn.
+    if (name === 'panorama' && typeof renderSummaryChart === 'function') {
+      setTimeout(renderSummaryChart, 0);
+    }
+    // Pane Chất lượng dịch vụ vẽ từ appState qua SlaAnalytics; dựng lại khi mở
+    // để nó luôn phản ánh dữ liệu vừa tải, không phải ảnh chụp lúc khởi động.
+    if (name === 'sla' && typeof renderReportingDrilldown === 'function') {
+      setTimeout(renderReportingDrilldown, 0);
+    }
   }
 
   function selectTab(name) {
@@ -264,7 +286,7 @@
     const form = document.getElementById('transport-voucher-form');
     if (!modal || !form) return;
     form.reset();
-    form.elements.voucher_date.value = new Date().toISOString().slice(0, 10);
+    form.elements.voucher_date.value = FormatUtils.dateInputValue();
     document.getElementById('transport-voucher-lines').innerHTML = '';
     if (tripId) {
       try {
@@ -327,7 +349,7 @@
     if (!from || from.value) return;
     const now = new Date();
     from.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-    to.value = now.toISOString().slice(0, 10);
+    to.value = FormatUtils.dateInputValue(now);
   }
 
   window.TransportReporting = { load, selectWorkspacePane, toggleWorkspaceMenu, selectTab, exportCsv, openVoucher, closeVoucher, addVoucherLine, saveVoucher, initializeDates };
