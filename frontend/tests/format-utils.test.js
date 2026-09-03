@@ -147,7 +147,7 @@ for (const [name, expected] of [
   ['financeMasterDateInput', 'FormatUtils.dateInputValue'],
   ['dispatchDateInputValue', 'FormatUtils.dateInputValue'],
   ['localDateTimeInput', 'FormatUtils.dateTimeInputValue'],
-  ['tenderDateTimeLocal', 'FormatUtils.dateTimeInputValue'],
+  // tenderDateTimeLocal da bi do cung cum Tender khi go man Dau thau.
   ['financeMasterDateTime', 'FormatUtils.dayBoundary'],
 ]) {
   const fn = app.slice(app.indexOf(`function ${name}(`), app.indexOf(`function ${name}(`) + 400);

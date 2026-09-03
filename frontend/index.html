@@ -2008,10 +2008,6 @@
                 <div class="mega-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
                 <span data-i18n="menu_accounting">Kế toán & Tài chính</span>
               </div>
-              <div class="mega-card" data-view="reporting">
-                <div class="mega-icon"><i class="fa-solid fa-chart-line"></i></div>
-                <span data-i18n="menu_reporting">7. Đấu thầu &amp; Nhà thầu</span>
-              </div>
               <div class="mega-card" onclick="switchView('master-data'); setTimeout(() => { const btns = document.querySelectorAll('.md-tab-btn'); if(btns.length>2) switchMasterDataTab('md-tab-vehicles', btns[2]); }, 100);">
                 <div class="mega-icon"><i class="fa-solid fa-truck-moving"></i></div>
                 <span data-i18n="menu_fleet_catalog">Danh Mục Đội Xe</span>
@@ -2574,7 +2570,7 @@
               </div>
 
               <!-- Vietnamese source cleaned -->
-              <div class="master-form-card" data-view="reporting" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); margin-top: 15px;">
+              <div class="master-form-card" data-view="tracking" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); margin-top: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
                   <div class="master-form-badge" data-i18n="lbl_form_8_incident" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important; padding: 6px 14px; border-radius: 8px; font-weight: 700; color: white;">
                     <i class="fa-solid fa-triangle-exclamation"></i> 8. INCIDENT REPORT
@@ -5050,189 +5046,12 @@
         </section>
 
         <!-- 8. REPORTING & TENDER VIEW -->
-        <section id="view-reporting" class="view-section" style="background-color: #f4f5f7; min-height: 100vh; padding: 20px;">
-          <!-- Khối SLA/KPI Drill-down đã chuyển sang workspace Phân tích
-               (#view-lab-summary, pane data-analysis-pane="sla"). Màn này giờ
-               chỉ còn Tender & Carrier — một bàn làm việc để ra quyết định,
-               không trộn lẫn với các màn đọc số. -->
+                <!-- Màn "Đấu thầu & Nhà thầu" (view-reporting) đã được dỡ theo yêu cầu:
+             nghiệp vụ đấu thầu không còn dùng. Khối SLA/KPI trước đó đã chuyển
+             sang workspace Phân tích. Phần NHÀ THẦU vẫn giữ: Carrier Master trong
+             Master Data, 10 endpoint backend, và cột carrier_id trên chuyến xe. -->
 
-          <div id="tender-cockpit-panel" style="background:#ffffff; border-radius:14px; border:1px solid #dbeafe; padding:18px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-bottom:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:14px;">
-              <div>
-                <h3 style="margin:0; color:#0f172a; font-size:1.15rem; font-weight:900; display:flex; align-items:center; gap:9px;">
-                  <i class="fa-solid fa-handshake-angle" style="color:#0a6ed1;"></i> Tender & Carrier Cockpit
-                </h3>
-                <div style="font-size:.82rem; color:#64748b; margin-top:4px;">Theo dõi FO cần mời giá, tender đang mở, offer chờ chọn carrier và carrier sẵn sàng vận hành.</div>
-              </div>
-              <button class="fiori-btn fiori-btn-secondary" onclick="switchView('master-data'); setTimeout(() => { const btn = Array.from(document.querySelectorAll('.md-tab-btn')).find(b => (b.getAttribute('onclick') || '').includes('md-tab-carriers')); if (btn) switchMasterDataTab('md-tab-carriers', btn); }, 80);" style="white-space:nowrap;"><i class="fa-solid fa-warehouse"></i> Mở Carrier Master</button>
-            </div>
-            <div id="tender-cockpit-kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:16px;"></div>
-            <div id="tender-decision-cockpit" style="border:1px solid #c7d2fe; border-radius:14px; background:#f8faff; padding:14px; margin-bottom:16px;">
-              <h4 style="margin:0 0 12px; color:#0f172a;"><i class="fa-solid fa-chess-knight" style="color:#4f46e5;"></i> Tender Decision Cockpit</h4>
-              <div id="tender-decision-summary" style="margin-bottom:10px;"></div>
-              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;">
-                <div id="tender-decision-offers" style="display:grid; gap:8px;"></div>
-                <div id="tender-carrier-scorecards" style="display:grid; gap:8px;"></div>
-                <div id="tender-risk-board" style="display:grid; gap:8px;"></div>
-              </div>
-              <div id="tender-next-best-actions" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin-bottom:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:11px;">
-              <select id="tender-status-filter" onchange="applyTenderFilters()" style="border:1px solid #cbd5e1; border-radius:10px; padding:9px 11px; color:#334155; font-weight:700; background:#ffffff;">
-                <option value="">Tất cả trạng thái tender</option>
-                <option value="published">Đang mở</option>
-                <option value="open">Open</option>
-                <option value="invited">Đã mời carrier</option>
-                <option value="awarded"> award</option>
-              </select>
-              <input id="tender-search-input" oninput="applyTenderFilters()" placeholder="Tìm Tender/FO..." style="border:1px solid #cbd5e1; border-radius:10px; padding:9px 11px; color:#334155; font-weight:700; background:#ffffff;">
-            </div>
-            <div id="carrier-sourcing-workbench" style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px; margin-bottom:16px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-                <div>
-                  <h4 style="margin:0; color:#0f172a; font-weight: 800;"><i class="fa-solid fa-route" style="color:#0a6ed1;"></i> Carrier Sourcing Workbench</h4>
-                  <div style="font-size:.8rem; color:#64748b; margin-top:4px;">Tách rõ FO tự chạy nội bộ và FO thật sự cần tender thuê ngoài.</div>
-                </div>
-              </div>
-              <div id="carrier-sourcing-kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-bottom:12px;"></div>
-              <div id="carrier-sourcing-worklist" style="display:grid; gap:9px;"></div>
-              <div id="carrier-sourcing-guidance" style="display:grid; gap:8px; margin-top:12px;"></div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-bullhorn" style="color:#f59e0b;"></i> Tender đang mở</h4>
-                <div id="tender-open-list" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-scale-balanced" style="color:#7c3aed;"></i> Offer chờ chọn carrier</h4>
-                <div id="tender-offer-list" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-truck-fast" style="color:#059669;"></i> Carrier sẵn sàng</h4>
-                <div id="tender-carrier-board" style="display:grid; gap:9px;"></div>
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.9fr); gap:14px; margin-top:14px;">
-              <div id="tender-record-detail-panel" style="border:1px solid #dbeafe; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-magnifying-glass-location" style="color:#0a6ed1;"></i> Drill-down Tender / Carrier</h4>
-                <div id="tender-record-detail-summary" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:8px;"></div>
-                <div id="tender-record-detail-ranking" style="display:grid; gap:8px; margin-top:10px;"></div>
-                <div id="tender-record-detail-actions" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;"></div>
-              </div>
-              <div id="carrier-tender-health-panel" style="border:1px solid #bfdbfe; border-radius:12px; padding:13px; background:#f8fbff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-heart-pulse" style="color:#059669;"></i> Health nội bộ / thuê ngoài</h4>
-                <div id="carrier-tender-health-progress" style="margin-bottom:10px;"></div>
-                <div id="carrier-tender-health-items" style="display:grid; gap:8px;"></div>
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns:minmax(260px,1.1fr) minmax(260px,1.1fr) minmax(220px,.8fr); gap:14px; margin-top:14px;">
-              <div style="border:1px solid #dbeafe; border-radius:12px; padding:13px; background:#f8fbff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-diagram-project" style="color:#0a6ed1;"></i> Pipeline tender</h4>
-                <div id="tender-detail-pipeline" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #dcfce7; border-radius:12px; padding:13px; background:#f7fff9;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-ranking-star" style="color:#059669;"></i> Bảng xếp hạng offer</h4>
-                <div id="tender-offer-ranking" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #fee2e2; border-radius:12px; padding:13px; background:#fff7f7;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-bell" style="color:#dc2626;"></i> Cảnh báo tender</h4>
-                <div id="tender-action-alerts" style="display:grid; gap:9px;"></div>
-              </div>
-            </div>
-          </div>
-
-          <div id="tender-action-form-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,.48); align-items:center; justify-content:center; padding:20px;">
-            <div style="width:min(620px,96vw); background:#ffffff; border-radius:16px; border:1px solid #dbeafe; box-shadow:0 24px 70px rgba(15,23,42,.28); overflow:hidden;">
-              <div style="background:#0a6ed1; color:#ffffff; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                <div>
-                  <h3 id="tender-action-form-title" style="margin:0; font-size:1.05rem; font-weight: 800;">Thao tác Tender</h3>
-                    <div id="tender-action-form-subtitle" style="font-size:.8rem; opacity:.9; margin-top:4px;">Nhập dữ liệu trước khi gọi API thật.</div>
-                </div>
-                <button onclick="closeTenderActionForm()" style="border:0; background:rgba(255,255,255,.18); color:#ffffff; border-radius:999px; width:34px; height:34px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-              <div style="padding:16px 18px; display:grid; gap:12px;">
-                <div id="tender-action-confirm-note" style="display:none; border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; border-radius:10px; padding:10px; font-weight: 800;"></div>
-                <label id="tender-action-carrier-wrap" style="display:grid; gap:5px; font-weight: 800; color:#334155;">
-                  Carrier/Vendor
-                  <select id="tender-action-carrier" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;"></select>
-                </label>
-                <label id="tender-action-amount-wrap" style="display:grid; gap:5px; font-weight: 800; color:#334155;">
-                  Gi cho
-                  <input id="tender-action-amount" type="number" min="1" step="1000" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                <label id="tender-action-currency-wrap" style="display:grid; gap:5px; font-weight: 800; color:#334155;">
-                      Tiền tệ
-                  <input id="tender-action-currency" value="VND" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                <label id="tender-action-deadline-wrap" style="display:grid; gap:5px; font-weight: 800; color:#334155;">
-                      Hạn phản hồi
-                  <input id="tender-action-deadline" type="datetime-local" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                <label id="tender-action-note-wrap" style="display:grid; gap:5px; font-weight: 800; color:#334155;">
-                  Ghi ch
-                  <textarea id="tender-action-note" rows="3" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px; resize:vertical;"></textarea>
-                </label>
-              </div>
-              <div style="display:flex; justify-content:flex-end; gap:10px; padding:14px 18px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-                <button class="fiori-btn fiori-btn-secondary" onclick="closeTenderActionForm()">Hủy</button>
-                  <button class="fiori-btn fiori-btn-primary" onclick="submitTenderActionForm()"><i class="fa-solid fa-play"></i> Chạy thao tác</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="finance-action-form-modal" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(15,23,42,.52); align-items:center; justify-content:center; padding:20px;">
-            <div style="width:min(680px,96vw); max-height:92vh; overflow:auto; background:#ffffff; border-radius:16px; border:1px solid #dbeafe; box-shadow:0 24px 70px rgba(15,23,42,.3);">
-              <div style="background:linear-gradient(135deg,#0a6ed1,#075985); color:#ffffff; padding:16px 18px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
-                <div>
-<h3 id="finance-action-form-title" style="margin:0; font-size:1.05rem; font-weight: 800;">Thao tác tài chính</h3>
-                    <div id="finance-action-form-subtitle" style="font-size:.8rem; opacity:.9; margin-top:4px;">Kiểm tra dữ liệu trước khi ghi nhận vào hệ thống.</div>
-                </div>
-                <button type="button" onclick="closeFinanceActionForm()" style="border:0; background:rgba(255,255,255,.18); color:#ffffff; border-radius:999px; width:34px; height:34px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-              <div style="padding:16px 18px; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
-                <div id="finance-action-confirm-note" style="grid-column:1/-1; border:1px solid #bfdbfe; background:#eff6ff; color:#075985; border-radius:10px; padding:10px; font-weight: 800;">Xc nhận thao tc trn hồ sơ đang chọn.</div>
-                  <label id="finance-action-vendor-invoice-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Số hóa đơn nhà cung cấp
-                  <input id="finance-action-vendor-invoice" maxlength="128" placeholder="Ví dụ: NCC-INV-2026-001" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                <label id="finance-action-invoice-date-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Ngày ha don
-                  <input id="finance-action-invoice-date" type="date" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                  <label id="finance-action-due-date-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Ngày đến hạn
-                  <input id="finance-action-due-date" type="date" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                  <label id="finance-action-settlement-period-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Kỳ đối soát
-                  <input id="finance-action-settlement-period" type="month" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                  <label id="finance-action-payment-amount-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Số tiền thanh toán
-                  <input id="finance-action-payment-amount" type="number" min="0.01" step="0.01" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                  <label id="finance-action-payment-method-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Phương thức thanh toán
-                    <select id="finance-action-payment-method" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;"><option value="bank_transfer">Chuyển khoản</option><option value="cash">Tiền mặt</option></select>
-                </label>
-                  <label id="finance-action-reference-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Mã tham chiếu thanh toán
-                  <input id="finance-action-reference" maxlength="128" placeholder="Ví dụ: UNC-2026-001" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-                <label id="finance-action-posting-date-wrap" style="display:none; gap:5px; font-weight: 800; color:#334155;">Ngày hạch toán
-                  <input id="finance-action-posting-date" type="date" style="border:1px solid #cbd5e1; border-radius:10px; padding:10px 11px;">
-                </label>
-              </div>
-              <div style="display:flex; justify-content:flex-end; gap:10px; padding:14px 18px; background:#f8fafc; border-top:1px solid #e2e8f0;">
-                <button type="button" class="fiori-btn fiori-btn-secondary" onclick="closeFinanceActionForm()">Hủy</button>
-                <button type="button" class="fiori-btn fiori-btn-primary" onclick="submitFinanceActionForm()"><i class="fa-solid fa-check"></i> Xc nhận v ghi nhận</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Khối "Lợi Nhuận Hàng Tháng (P&L)" đã được dỡ.
-               Nó luôn ở trạng thái hidden, canvas không có id nên không thể
-               vẽ được, và dữ liệu nuôi nó (monthly_pl trong /api/dashboard/stats)
-               không có ai đọc. Cùng ba chuỗi doanh thu / chi phí / lợi nhuận đó
-               đã có biểu đồ đang CHẠY THẬT ở workspace Phân tích:
-               #transport-revenue-chart, lấy từ /api/tms/reporting/transport-revenue. -->
-        </section>
-
-        <!-- LAB SUMMARY VIEW (PLACEHOLDER) -->
-        <section id="view-lab-summary-placeholder" class="view-section" style="background-color: #f8fafc; min-height: 100vh; padding: 40px; text-align: center;">
+<section id="view-lab-summary-placeholder" class="view-section" style="background-color: #f8fafc; min-height: 100vh; padding: 40px; text-align: center;">
           <div style="background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); max-width: 600px; margin: 40px auto;">
             <i class="fa-solid fa-flask" style="font-size: 3rem; color: #0a6ed1; margin-bottom: 20px;"></i>
               <h2 style="color: #0f172a; margin-bottom: 10px;">Tính năng "Tóm tắt bức tranh toàn cảnh" đang được phát triển</h2>

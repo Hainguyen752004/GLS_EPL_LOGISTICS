@@ -1431,250 +1431,6 @@
     };
   }
 
-  function buildTenderCockpit(state, now = new Date(), filters = {}) {
-    const tenders = list(state, 'tenders');
-    const offers = list(state, 'tender_offers');
-    const carriers = list(state, 'carriers');
-    const freightOrders = list(state, 'freight_orders');
-    const executionMode = buildExecutionModeCockpit(state);
-    const tenderFoSet = new Set(tenders.map(tender => String(tender.freight_order_id || tender.fo_id || '')));
-    const openStatuses = new Set(['published', 'open', 'invited']);
-    const awardedStatuses = new Set(['awarded', 'accepted']);
-    const offerByTender = offers.reduce((acc, offer) => {
-      const tenderId = String(offer.tender_id || '');
-      acc[tenderId] = acc[tenderId] || [];
-      acc[tenderId].push(offer);
-      return acc;
-    }, {});
-    const activeCarriers = carriers.filter(carrier => normalized(carrier.status || (carrier.is_active === false ? 'inactive' : 'active')) === 'active');
-    const plannedWithoutTender = freightOrders.filter(order => {
-      const status = normalized(order.status || order.canonical_status);
-      return ['planned', 'ready_for_tender'].includes(status) && !tenderFoSet.has(String(order.id));
-    });
-    const filterStatus = normalized(filters.status || '');
-    const filterSearch = String(filters.search || '').trim().toLowerCase();
-    const matchesFilters = tender => {
-      if (filterStatus && normalized(tender.status) !== filterStatus) return false;
-      if (filterSearch) {
-        const haystack = `${tender.id || ''} ${tender.freight_order_id || tender.fo_id || ''} ${tender.status || ''}`.toLowerCase();
-        if (!haystack.includes(filterSearch)) return false;
-      }
-      return true;
-    };
-    const openTenders = tenders.filter(tender => openStatuses.has(normalized(tender.status)) && matchesFilters(tender));
-    const awardedTenders = tenders.filter(tender => awardedStatuses.has(normalized(tender.status)));
-    const offersWaitingAward = offers.filter(offer => {
-      const tender = tenders.find(item => String(item.id) === String(offer.tender_id));
-      return tender && openStatuses.has(normalized(tender.status));
-    });
-    const money = (amount, currency = 'VND') => `${numberValue(amount).toLocaleString('vi-VN')} ${currency}`;
-    return {
-      kpis: {
-        planned_without_tender: { label: executionMode.tender_required ? 'FO cần tender thuê ngoài' : 'FO có thể đi Dispatch nội bộ', count: plannedWithoutTender.length },
-        open_tenders: { label: 'Tender đang mở', count: openTenders.length },
-        offers_waiting_award: { label: 'Offer chờ chọn carrier', count: offersWaitingAward.length },
-        awarded_tenders: { label: 'Tender đã award', count: awardedTenders.length },
-        active_carriers: { label: 'Carrier đang hoạt động', count: activeCarriers.length },
-        execution_mode: { label: 'Chế độ đề xuất', count: executionMode.recommended_mode === 'internal_fleet' ? 'Nội bộ' : 'Thuê ngoài' }
-      },
-      execution_mode: executionMode,
-      open_tenders: openTenders.slice(0, 8).map(tender => {
-        const deadline = tender.response_deadline ? new Date(tender.response_deadline) : null;
-        const late = deadline && !Number.isNaN(deadline.getTime()) && deadline < now;
-        return {
-          id: tender.id,
-          title: tender.id || 'Tender chưa có mã',
-          freight_order_id: tender.freight_order_id || tender.fo_id || 'Chưa gắn FO',
-          offer_count: (offerByTender[String(tender.id)] || []).length,
-          deadline_label: tender.response_deadline ? shortDate(tender.response_deadline) : 'Chưa có hạn phản hồi',
-          status_label: late ? 'Quá hạn phản hồi' : statusLabel(tender.status),
-          detail_key: `tender:${tender.id}`
-        };
-      }),
-      offers: offersWaitingAward
-        .slice()
-        .sort((a, b) => numberValue(a.amount) - numberValue(b.amount))
-        .slice(0, 8)
-        .map(offer => ({
-          id: offer.id,
-          tender_id: offer.tender_id,
-          carrier_id: offer.carrier_id,
-          amount_label: money(offer.amount, offer.currency_code || 'VND'),
-          status_label: statusLabel(offer.status || 'submitted'),
-          detail_key: `offer:${offer.id}`
-        })),
-      carriers: activeCarriers.slice(0, 8).map(carrier => ({
-        id: carrier.id,
-        name: carrier.name || carrier.carrier_name || carrier.id,
-        type: carrier.is_internal ? 'Đội xe nội bộ' : 'Đối tác vận tải',
-        tax_code: carrier.tax_code || 'Chưa có MST',
-        detail_key: `carrier:${carrier.id}`
-      })),
-      filters_applied: {
-        status: filterStatus,
-        search: filterSearch,
-        count: [filterStatus, filterSearch].filter(Boolean).length
-      }
-    };
-  }
-
-  function buildTenderRecordDetail(state, detailKey, now = new Date()) {
-    const [kind, id] = String(detailKey || '').split(':');
-    const tenders = list(state, 'tenders');
-    const offers = list(state, 'tender_offers');
-    const carriers = list(state, 'carriers');
-    const freightOrders = list(state, 'freight_orders');
-    const money = (amount, currency = 'VND') => `${numberValue(amount).toLocaleString('vi-VN')} ${currency}`;
-    const activeExternalCarrier = carriers.find(carrier => isActiveRow(carrier) && carrier.is_internal !== true);
-    const defaultOfferAmount = 1000000;
-    const rankOffers = tenderId => offers
-      .filter(offer => String(offer.tender_id || '') === String(tenderId || ''))
-      .slice()
-      .sort((a, b) => numberValue(a.amount) - numberValue(b.amount))
-      .map((offer, index) => {
-        const carrier = carriers.find(item => String(item.id) === String(offer.carrier_id));
-        return {
-          rank: index + 1,
-          offer_id: offer.id || `OFFER-${index + 1}`,
-          carrier_id: offer.carrier_id || '',
-          carrier_name: carrier?.name || carrier?.carrier_name || offer.carrier_id || 'Chưa chọn carrier',
-          amount_label: money(offer.amount, offer.currency_code || 'VND'),
-          transit_time_hours: offer.transit_time_hours || 0,
-          recommendation: index === 0 ? 'Giá tốt nhất' : 'Phương án dự phòng'
-        };
-      });
-
-    if (kind === 'carrier') {
-      const carrier = carriers.find(item => String(item.id) === String(id)) || carriers[0] || null;
-      if (!carrier) {
-        return { id: '', kind, kind_label: 'Carrier', title: 'Chưa có carrier', summary: [], offer_ranking: [], actions: [] };
-      }
-      const carrierOffers = offers.filter(offer => String(offer.carrier_id || '') === String(carrier.id || ''));
-      return {
-        id: carrier.id,
-        kind,
-        kind_label: 'Carrier',
-        title: carrier.name || carrier.carrier_name || carrier.id,
-        status_label: statusLabel(carrier.status || (carrier.is_active === false ? 'inactive' : 'active')),
-        summary: [
-          { label: 'Mã carrier', value: carrier.id },
-          { label: 'Loại', value: carrier.is_internal ? 'Đội xe nội bộ' : 'Đối tác vận tải thuê ngoài' },
-          { label: 'MST', value: carrier.tax_code || carrier.tax_id || 'Chưa có MST' },
-          { label: 'Số offer', value: carrierOffers.length }
-        ],
-        offer_ranking: carrierOffers.map((offer, index) => ({
-          rank: index + 1,
-          offer_id: offer.id || `OFFER-${index + 1}`,
-          carrier_id: carrier.id,
-          carrier_name: carrier.name || carrier.id,
-          amount_label: money(offer.amount, offer.currency_code || 'VND'),
-          recommendation: statusLabel(offer.status || 'submitted')
-        })),
-        actions: [
-          { label: carrier.is_internal ? 'Đi Dispatch nội bộ' : 'Mời carrier gửi offer', target: carrier.is_internal ? 'dispatch' : 'reporting', severity: carrier.is_internal ? 'success' : 'info' },
-          { label: 'Mở Carrier Master', target: 'master-data', severity: 'info' }
-        ]
-      };
-    }
-
-    const tender = tenders.find(item => String(item.id) === String(id)) || tenders[0] || null;
-    if (!tender) {
-      return { id: '', kind: 'tender', kind_label: 'Tender', title: 'Chưa có tender', summary: [], offer_ranking: [], actions: [] };
-    }
-    const order = freightOrders.find(item => String(item.id) === String(tender.freight_order_id || tender.fo_id));
-    const offerRanking = rankOffers(tender.id);
-    const deadline = tender.response_deadline ? new Date(tender.response_deadline) : null;
-    const overdue = deadline && !Number.isNaN(deadline.getTime()) && deadline < now;
-    const bestOffer = offerRanking[0] || null;
-    const tenderActions = [
-      ...(bestOffer ? [{
-        code: 'AWARD_BEST_OFFER',
-        label: 'Chọn carrier tốt nhất',
-        target: 'reporting',
-        severity: 'success',
-        confirm_required: true,
-        command: {
-          method: 'PUT',
-          path: `/api/tms/tenders/${tender.id}/award`,
-          body: { offer_id: bestOffer.offer_id, expected_version: tender.version || 1 }
-        }
-      }] : activeExternalCarrier ? [{
-        code: 'INVITE_CARRIER_OFFER',
-        label: 'Mời carrier gửi offer',
-        target: 'reporting',
-        severity: 'warning',
-        requires_input: true,
-        input_fields: [
-          { name: 'carrier_id', label: 'Carrier', type: 'select', required: true },
-          { name: 'amount', label: 'Giá chào', type: 'number', required: true },
-          { name: 'currency_code', label: 'Tiền tệ', type: 'text', required: true },
-          { name: 'note', label: 'Ghi chú', type: 'textarea' }
-        ],
-        command: {
-          method: 'POST',
-          path: `/api/tms/tenders/${tender.id}/offers`,
-          body: {
-            carrier_id: activeExternalCarrier.id || activeExternalCarrier.carrier_id,
-            amount: defaultOfferAmount,
-            currency_code: 'VND',
-            note: 'Offer demo được tạo từ Tender Cockpit'
-          }
-        }
-      }] : [{
-        code: 'OPEN_CARRIER_MASTER',
-        label: 'Mở Carrier Master',
-        target: 'master-data',
-        severity: 'warning'
-      }]),
-      { code: 'OPEN_CARRIER_MASTER', label: 'Mở Carrier Master', target: 'master-data', severity: 'info' }
-    ];
-    return {
-      id: tender.id,
-      kind: 'tender',
-      kind_label: 'Tender',
-      title: tender.id || 'Tender chưa có mã',
-      status_label: overdue ? 'Quá hạn phản hồi' : statusLabel(tender.status),
-      summary: [
-        { label: 'FO', value: tender.freight_order_id || tender.fo_id || 'Chưa gắn FO' },
-        { label: 'Trạng thái FO', value: statusLabel(order?.status || order?.canonical_status || 'planned') },
-        { label: 'Hạn phản hồi', value: tender.response_deadline ? shortDate(tender.response_deadline) : 'Chưa có hạn phản hồi' },
-        { label: 'Số offer', value: offerRanking.length }
-      ],
-      offer_ranking: offerRanking,
-      legacy_actions: [
-        ...(offerRanking.length ? [{ label: 'Chọn carrier tốt nhất', target: 'reporting', severity: 'success' }] : [{ label: 'Mời carrier gửi offer', target: 'reporting', severity: 'warning' }]),
-        { label: 'Mở Carrier Master', target: 'master-data', severity: 'info' }
-      ],
-      actions: tenderActions
-    };
-  }
-
-  function buildCarrierTenderHealth(state) {
-    const mode = buildExecutionModeCockpit(state);
-    const hasPlannedFo = list(state, 'freight_orders').some(order => ['planned', 'ready_for_tender', 'ready_for_dispatch'].includes(normalized(order.status || order.canonical_status)));
-    const checks = [
-      { key: 'internal_fleet', label: 'Đội xe nội bộ', ok: mode.kpis.ready_vehicles.count > 0 || mode.kpis.ready_drivers.count > 0 || mode.kpis.internal_carriers.count > 0, target: 'dispatch' },
-      { key: 'external_carrier', label: 'Carrier thuê ngoài', ok: mode.kpis.external_carriers.count > 0, target: 'md-tab-carriers' },
-      { key: 'planned_fo', label: 'FO chờ sourcing', ok: hasPlannedFo, target: 'reporting' },
-      { key: 'tender_pipeline', label: 'Pipeline tender', ok: list(state, 'tenders').length > 0 || mode.tender_required === false, target: 'reporting' }
-    ];
-    const done = checks.filter(item => item.ok).length;
-    const items = checks.map(item => ({
-      ...item,
-      status: item.ok ? 'done' : 'missing',
-      message: item.ok
-        ? `${item.label} đã sẵn sàng.`
-        : `Thiếu ${item.label}. Vào ${item.target.includes('md-tab') ? 'Master Data' : item.target} để cấu hình.`
-    }));
-    return {
-      progress: { done, total: checks.length, percent: Math.round((done / checks.length) * 100) },
-      items,
-      guidance: mode.tender_required
-        ? ['FO cần tender thuê ngoài khi chưa có đội xe/tài xế nội bộ sẵn sàng.', 'Nếu công ty tự vận chuyển, cấu hình carrier nội bộ, xe và tài xế trước khi demo.']
-        : ['FO có thể đi Dispatch nội bộ vì hệ thống thấy nguồn lực nội bộ sẵn sàng.', 'Tender chỉ dùng cho nhánh thuê ngoài khi thiếu xe/tài xế hoặc cần carrier chuyên tuyến.']
-    };
-  }
-
   function buildCarrierSourcingWorkbench(state, now = new Date()) {
     const freightOrders = list(state, 'freight_orders');
     const tenders = list(state, 'tenders');
@@ -1701,10 +1457,11 @@
         freight_order_id: order.id,
         mode: 'outsourced_tender',
         title: `FO ${order.id}`,
-        message: 'FO cần tender thuê ngoài vì chưa thấy nguồn lực nội bộ sẵn sàng.',
-        action_label: 'Tạo tender thuê ngoài',
+        message: 'Chưa thấy nguồn lực nội bộ sẵn sàng. Gán nhà thầu ngoài cho FO này.',
+        action_label: 'Mở Carrier Master',
         severity: 'warning',
-        navigation: { view: 'reporting' },
+        // Nghiệp vụ đấu thầu đã được dỡ; phần nhà thầu vẫn còn ở Master Data.
+        navigation: { view: 'master-data', tabId: 'md-tab-carriers' },
         requires_input: true,
         input_fields: [
           { name: 'freight_order_id', label: 'Freight Order', type: 'text', readonly: true, required: true },
@@ -1745,292 +1502,6 @@
       alerts,
       guidance,
       execution_mode: executionMode
-    };
-  }
-
-  function buildTenderDetailCockpit(state, now = new Date()) {
-    const tenders = list(state, 'tenders');
-    const offers = list(state, 'tender_offers');
-    const carriers = list(state, 'carriers');
-    const freightOrders = list(state, 'freight_orders');
-    const executionMode = buildExecutionModeCockpit(state);
-    const openStatuses = new Set(['published', 'open', 'invited']);
-    const awardedStatuses = new Set(['awarded', 'accepted']);
-    const carrierById = carriers.reduce((acc, carrier) => {
-      acc[String(carrier.id || carrier.carrier_id || '')] = carrier;
-      return acc;
-    }, {});
-    const offersByTender = offers.reduce((acc, offer) => {
-      const tenderId = String(offer.tender_id || '');
-      acc[tenderId] = acc[tenderId] || [];
-      acc[tenderId].push(offer);
-      return acc;
-    }, {});
-    const money = (amount, currency = 'VND') => `${numberValue(amount).toLocaleString('vi-VN')} ${currency}`;
-    const activeExternalCarrier = carriers.find(carrier => isActiveRow(carrier) && carrier.is_internal !== true);
-    const defaultOfferAmount = 1000000;
-    const rankOffers = (rows) => rows
-      .slice()
-      .sort((a, b) => numberValue(a.amount) - numberValue(b.amount) || numberValue(a.transit_time_hours) - numberValue(b.transit_time_hours))
-      .map((offer, index, sorted) => ({
-        rank: index + 1,
-        offer_id: offer.id,
-        tender_id: offer.tender_id,
-        carrier_id: offer.carrier_id,
-        carrier_name: (carrierById[String(offer.carrier_id)] || {}).name || offer.carrier_id || 'Chưa rõ carrier',
-        amount: numberValue(offer.amount),
-        amount_label: money(offer.amount, offer.currency_code || 'VND'),
-        transit_time_hours: numberValue(offer.transit_time_hours),
-        recommendation: index === 0
-          ? 'Giá tốt nhất'
-          : numberValue(offer.transit_time_hours) < numberValue(sorted[0].transit_time_hours)
-            ? 'Nhanh hơn nhưng giá cao hơn'
-            : 'Phương án dự phòng',
-        status_label: statusLabel(offer.status || 'submitted')
-      }));
-
-    const offerRanking = tenders.flatMap(tender => rankOffers(offersByTender[String(tender.id)] || []));
-    const alerts = [];
-    const pipeline = tenders.map(tender => {
-      const status = normalized(tender.status);
-      const rows = rankOffers(offersByTender[String(tender.id)] || []);
-      const deadline = parseTime(tender.response_deadline);
-      const overdue = deadline && deadline < now && openStatuses.has(status);
-      const best = rows[0] || null;
-      const awarded = awardedStatuses.has(status);
-      const actions = [];
-      if (!awarded && best) {
-        actions.push({
-          code: 'AWARD_BEST_OFFER',
-          label: 'Chọn carrier tốt nhất',
-          description: `Award offer ${best.offer_id} cho tender ${tender.id}.`,
-          severity: 'success',
-          confirm_required: true,
-          command: {
-            method: 'PUT',
-            path: `/api/tms/tenders/${tender.id}/award`,
-            body: { offer_id: best.offer_id, expected_version: tender.version || 1 }
-          }
-        });
-      } else if (!awarded && activeExternalCarrier) {
-        actions.push({
-          code: 'INVITE_CARRIER_OFFER',
-          label: 'Mời carrier gửi offer',
-          description: `Tạo offer mẫu cho carrier ${activeExternalCarrier.id || activeExternalCarrier.carrier_id}.`,
-          severity: overdue ? 'warning' : 'info',
-          requires_input: true,
-          input_fields: [
-            { name: 'carrier_id', label: 'Carrier', type: 'select', required: true },
-            { name: 'amount', label: 'Giá chào', type: 'number', required: true },
-            { name: 'currency_code', label: 'Tiền tệ', type: 'text', required: true },
-            { name: 'note', label: 'Ghi chú', type: 'textarea' }
-          ],
-          command: {
-            method: 'POST',
-            path: `/api/tms/tenders/${tender.id}/offers`,
-            body: {
-              carrier_id: activeExternalCarrier.id || activeExternalCarrier.carrier_id,
-              amount: defaultOfferAmount,
-              currency_code: 'VND',
-              note: 'Offer demo được tạo từ Tender Cockpit'
-            }
-          }
-        });
-      }
-      actions.push({
-        code: 'OPEN_CARRIER_MASTER',
-        label: 'Mở Carrier Master',
-        description: 'Cấu hình carrier/vendor nếu thiếu nhà vận chuyển.',
-        target: 'master-data',
-        severity: 'info'
-      });
-      const actionLabel = awarded
-        ? 'Đã award carrier'
-        : rows.length
-          ? 'So sánh & award carrier'
-          : 'Mời carrier gửi offer';
-      if (overdue && !rows.length) {
-        alerts.push({
-          code: 'TENDER_OVERDUE_NO_OFFER',
-          tender_id: tender.id,
-          severity: 'critical',
-          message: `Tender ${tender.id} đã quá hạn nhưng chưa có offer.`
-        });
-      } else if (overdue) {
-        alerts.push({
-          code: 'TENDER_OVERDUE_WAITING_AWARD',
-          tender_id: tender.id,
-          severity: 'warning',
-          message: `Tender ${tender.id} đã quá hạn, cần chọn carrier.`
-        });
-      }
-      return {
-        id: tender.id,
-        freight_order_id: tender.freight_order_id || tender.fo_id || '',
-        status,
-        status_label: overdue ? 'Quá hạn phản hồi' : statusLabel(tender.status),
-        offer_count: rows.length,
-        best_offer_id: best && best.offer_id,
-        best_carrier_id: best && best.carrier_id,
-        best_amount_label: best ? best.amount_label : 'Chưa có offer',
-        deadline_label: tender.response_deadline ? shortDate(tender.response_deadline) : 'Chưa có hạn phản hồi',
-        action_label: actionLabel,
-        actions,
-        severity: overdue ? 'critical' : awarded ? 'done' : rows.length ? 'warning' : 'info'
-      };
-    });
-    const tenderSet = new Set(tenders.map(tender => String(tender.freight_order_id || tender.fo_id || '')));
-    const plannedWithoutTender = freightOrders.filter(order => {
-      const status = normalized(order.status || order.canonical_status);
-      const noTender = !tenderSet.has(String(order.id || ''));
-      if (!['planned', 'ready_for_tender'].includes(status) || !noTender) return false;
-      return executionMode.tender_required;
-    });
-    plannedWithoutTender.forEach(order => alerts.push({
-      code: 'FO_WITHOUT_TENDER',
-      tender_id: null,
-      freight_order_id: order.id,
-      severity: 'warning',
-      message: `FO ${order.id} đã lập kế hoạch nhưng chưa có tender.`
-    }));
-
-    return {
-      kpis: {
-        tenders_need_action: { label: 'Tender cần xử lý', count: pipeline.filter(item => ['critical', 'warning', 'info'].includes(item.severity) && item.status !== 'awarded').length + plannedWithoutTender.length },
-        offers_ranked: { label: 'Offer đã xếp hạng', count: offerRanking.length },
-        overdue_tenders: { label: 'Tender quá hạn', count: pipeline.filter(item => item.severity === 'critical').length },
-        awarded: { label: 'Đã award', count: pipeline.filter(item => item.status === 'awarded' || item.status === 'accepted').length }
-      },
-      pipeline,
-      offer_ranking: offerRanking,
-      alerts,
-      execution_mode: executionMode,
-      internal_dispatch_candidates: executionMode.internal_dispatch_candidates
-    };
-  }
-
-  function buildTenderDecisionCockpit(state, now = new Date()) {
-    const detail = buildTenderDetailCockpit(state, now);
-    const executionMode = buildExecutionModeCockpit(state);
-    const tenders = list(state, 'tenders');
-    const offers = list(state, 'tender_offers');
-    const carriers = list(state, 'carriers');
-    const carrierById = carriers.reduce((acc, carrier) => {
-      acc[String(carrier.id || carrier.carrier_id || '')] = carrier;
-      return acc;
-    }, {});
-    const offersByTender = offers.reduce((acc, offer) => {
-      const tenderId = String(offer.tender_id || '');
-      acc[tenderId] = acc[tenderId] || [];
-      acc[tenderId].push(offer);
-      return acc;
-    }, {});
-    const money = (amount, currency = 'VND') => `${numberValue(amount).toLocaleString('vi-VN')} ${currency}`;
-    const recommendedModeLabel = executionMode.recommended_mode === 'internal_fleet' ? 'Nội bộ' : 'Thuê ngoài';
-    const modeMessage = executionMode.tender_required
-      ? 'FO cần tender thuê ngoài khi chưa có đội xe/tài xế nội bộ sẵn sàng.'
-      : 'FO có thể đi Dispatch nội bộ vì công ty đang có đội xe/tài xế hoặc carrier nội bộ.';
-    const offerDecisions = tenders.map(tender => {
-      const ranked = (offersByTender[String(tender.id)] || [])
-        .slice()
-        .sort((a, b) => numberValue(a.amount) - numberValue(b.amount) || numberValue(a.transit_time_hours) - numberValue(b.transit_time_hours));
-      const best = ranked[0] || null;
-      const second = ranked[1] || null;
-      const carrier = best ? carrierById[String(best.carrier_id || '')] : null;
-      const deadline = parseTime(tender.response_deadline);
-      const overdue = deadline && deadline < now;
-      return {
-        tender_id: tender.id,
-        freight_order_id: tender.freight_order_id || tender.fo_id || '',
-        offer_count: ranked.length,
-        best_offer_id: best && best.id || '',
-        best_carrier_id: best && best.carrier_id || '',
-        best_carrier_name: carrier?.name || carrier?.carrier_name || (best && best.carrier_id) || 'Chưa có carrier',
-        best_amount: best ? numberValue(best.amount) : 0,
-        best_amount_label: best ? money(best.amount, best.currency_code || 'VND') : 'Chưa có offer',
-        saving_amount: best && second ? Math.max(0, numberValue(second.amount) - numberValue(best.amount)) : 0,
-        saving_label: best && second ? money(Math.max(0, numberValue(second.amount) - numberValue(best.amount)), best.currency_code || second.currency_code || 'VND') : 'Chưa đủ offer để so sánh',
-        decision_label: best ? 'Award carrier đề xuất' : overdue ? 'Mời carrier gấp' : 'Mời carrier gửi offer',
-        severity: overdue && !best ? 'critical' : best ? 'success' : 'warning',
-        navigation: { view: 'accounting', target: 'tender-cockpit-panel' }
-      };
-    });
-    const carrierScorecards = carriers.map(carrier => {
-      const carrierId = String(carrier.id || carrier.carrier_id || '');
-      const carrierOffers = offers.filter(offer => String(offer.carrier_id || '') === carrierId);
-      const awardedCount = tenders.filter(tender => String(tender.awarded_carrier_id || tender.carrier_id || '') === carrierId).length;
-      const avgAmount = carrierOffers.length
-        ? Math.round(carrierOffers.reduce((sum, offer) => sum + numberValue(offer.amount), 0) / carrierOffers.length)
-        : 0;
-      const avgTransit = carrierOffers.length
-        ? Math.round(carrierOffers.reduce((sum, offer) => sum + numberValue(offer.transit_time_hours), 0) / carrierOffers.length)
-        : 0;
-      const status = isActiveRow(carrier) ? 'active' : 'inactive';
-      return {
-        carrier_id: carrierId,
-        carrier_name: carrier.name || carrier.carrier_name || carrierId,
-        type_label: carrier.is_internal ? 'Đội xe nội bộ' : 'Carrier thuê ngoài',
-        status,
-        offer_count: carrierOffers.length,
-        awarded_count: awardedCount,
-        avg_amount_label: avgAmount ? money(avgAmount, carrierOffers[0]?.currency_code || 'VND') : 'Chưa có offer',
-        avg_transit_hours: avgTransit,
-        score: Math.max(0, 100 - (status === 'inactive' ? 40 : 0) - Math.min(30, avgTransit * 2) + Math.min(20, awardedCount * 5)),
-        navigation: { view: 'master-data', target: 'md-tab-carriers' }
-      };
-    }).sort((a, b) => b.score - a.score || String(a.carrier_id).localeCompare(String(b.carrier_id)));
-    const riskBoard = [];
-    offers.forEach(offer => {
-      if (!carrierById[String(offer.carrier_id || '')]) {
-        riskBoard.push({
-          code: 'CARRIER_MASTER_MISSING',
-          carrier_id: offer.carrier_id || '',
-          title: `Carrier ${offer.carrier_id || ''} chưa có trong Master Data`,
-          message: 'Offer đang tham chiếu carrier chưa cấu hình. Vào Master Data → Carrier/Vendor để bổ sung.',
-          severity: 'critical',
-          navigation: { view: 'master-data', target: 'md-tab-carriers' }
-        });
-      }
-    });
-    detail.pipeline.forEach(item => {
-      if (item.severity === 'critical' || item.status_label === 'Quá hạn phản hồi') {
-        riskBoard.push({
-          code: 'TENDER_OVERDUE',
-          tender_id: item.id,
-          title: `Tender ${item.id} quá hạn`,
-          message: item.offer_count ? 'Tender đã quá hạn, cần award carrier.' : 'Tender đã quá hạn nhưng chưa có offer.',
-          severity: item.offer_count ? 'warning' : 'critical',
-          navigation: { view: 'accounting', target: 'tender-cockpit-panel' }
-        });
-      }
-    });
-    const nextBestActions = [
-      ...offerDecisions.filter(item => item.best_offer_id).slice(0, 3).map(item => ({
-        code: 'AWARD_CARRIER',
-        label: `Award carrier ${item.best_carrier_id} cho ${item.tender_id}`,
-        description: `Offer tốt nhất ${item.best_amount_label}, tiết kiệm ${item.saving_label}.`,
-        navigation: { view: 'accounting', target: 'tender-cockpit-panel' }
-      })),
-      ...offerDecisions.filter(item => !item.best_offer_id).slice(0, 3).map(item => ({
-        code: 'INVITE_CARRIER',
-        label: `Mời carrier gửi offer cho ${item.tender_id}`,
-        description: 'Tender chưa có offer để so sánh, cần gửi mời giá hoặc cấu hình carrier.',
-        navigation: { view: 'accounting', target: 'tender-cockpit-panel' }
-      }))
-    ];
-    return {
-      summary: {
-        recommended_mode: executionMode.recommended_mode,
-        recommended_mode_label: recommendedModeLabel,
-        message: modeMessage,
-        tender_required: executionMode.tender_required,
-        open_decisions: offerDecisions.filter(item => item.severity !== 'success').length,
-        risks: riskBoard.length
-      },
-      offer_decisions: offerDecisions,
-      carrier_scorecards: carrierScorecards,
-      risk_board: riskBoard,
-      next_best_actions: nextBestActions
     };
   }
 
@@ -3001,7 +2472,7 @@
       pod_records: podRecords,
       tracking: tracking || null,
       next_action: podDone
-        ? { label: 'Mở báo cáo/KPI', navigation: { view: 'reporting' } }
+        ? { label: 'Mở báo cáo/KPI', navigation: { view: 'lab-summary' } }
         : { label: 'Cập nhật Arrival/POD', navigation: { view: 'tracking' } }
     };
   }
@@ -3150,7 +2621,7 @@
           title: `Giao trễ thực tế: ${order.id}`,
           description: 'Thời điểm giao thực tế muộn hơn kế hoạch, cần ghi nhận SLA.',
           metric: `${minutesBetween(actualDelivery, plannedDelivery)} phút trễ`,
-          navigation: { view: 'reporting', label: 'Báo cáo SLA/KPI' },
+          navigation: { view: 'lab-summary', label: 'Báo cáo SLA/KPI' },
           action_label: 'Mở Báo cáo'
         });
       }
@@ -3620,7 +3091,7 @@
       })),
       recommendations: [
         {
-          target: 'reporting',
+          target: 'lab-summary',
           title: 'Theo dõi SLA theo ngày/tuần',
           message: 'Dùng bảng drill-down để lọc nhóm khách hàng, tuyến hoặc tài xế có nhiều cảnh báo.'
         },
@@ -3744,7 +3215,9 @@
         status: hasRows('roles') && hasRows('users') && hasRows('audit_logs') ? 'ready' : 'warning',
         score: [hasRows('roles'), hasRows('users'), hasRows('audit_logs')].filter(Boolean).length * 33 + 1,
         message: 'Phân quyền và audit giúp demo thao tác duyệt/khóa có người chịu trách nhiệm.',
-        target: { view: 'reporting', target: 'role-permission-board-panel' },
+        // #role-permission-board-panel nằm trong #view-operations-360, không phải
+        // màn đã dỡ — đường dẫn cũ trỏ sai từ trước.
+        target: { view: 'operations-360', target: 'role-permission-board-panel' },
         action_label: 'Mở Role / Audit'
       }
     ].map(check => ({
@@ -4123,12 +3596,7 @@
     buildExecutionModeCockpit,
     getTripJourneyPresentation,
     getTripStatusGroup,
-    buildTenderCockpit,
-    buildTenderRecordDetail,
-    buildCarrierTenderHealth,
     buildCarrierSourcingWorkbench,
-    buildTenderDetailCockpit,
-    buildTenderDecisionCockpit,
     buildDispatchCapacityBoard,
     buildDispatchCalendar,
     buildDispatchWeekPlanner,

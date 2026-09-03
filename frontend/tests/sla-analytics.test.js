@@ -277,11 +277,12 @@ for (const id of ['reporting-hero', 'reporting-kpi-cards', 'reporting-panels', '
 
 // Khối SLA cũ đã rời khỏi màn Đấu thầu.
 assert.ok(!html.includes('id="reporting-drilldown-panel"'), 'khối SLA cũ phải được dỡ khỏi màn Báo cáo');
-assert.ok(html.includes('id="tender-cockpit-panel"'), 'Tender Cockpit vẫn phải ở màn riêng của nó');
 
-// Hai màn không còn trùng tên.
-assert.ok(html.includes('Phân tích Doanh thu &amp; Chi phí'));
-assert.ok(html.includes('Đấu thầu &amp; Nhà thầu'));
+// Màn "Đấu thầu & Nhà thầu" đã được dỡ hẳn: nghiệp vụ đấu thầu không còn dùng.
+// Phần nhà thầu vẫn giữ ở Carrier Master trong Master Data.
+assert.ok(!html.includes('id="tender-cockpit-panel"'), 'Tender Cockpit phải được dỡ');
+assert.ok(!html.includes('<section id="view-reporting"'), 'section view-reporting phải được dỡ');
+assert.ok(html.includes('Phân tích Doanh thu &amp; Chi phí'), 'màn Phân tích vẫn còn tên mới');
 
 // renderReportingDrilldown giờ chỉ điều phối, không tự dựng HTML kèm style inline.
 // Cắt đúng thân hàm: từ khai báo tới dấu "}" đầu tiên ở cột 0. Cắt theo số ký
