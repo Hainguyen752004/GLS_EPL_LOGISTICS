@@ -26,8 +26,53 @@ from schemas.workflow import (
 )
 from schemas.common import paginated_query
 from services import workflow_service as svc
-from services.delivery_completion_service import complete_delivery
+from services.delivery_completion_service import (
+    ALLOWED_POD_MIME_TYPES,
+    MAX_POD_BYTES,
+    complete_delivery,
+)
 from services.errors import DomainError, conflict, raise_http
+
+
+# Chữ ký nhận dạng qua magic byte, cho đúng bộ MIME được phép của POD.
+_MAGIC_SIGNATURES = (
+    (b"\xff\xd8\xff", "image/jpeg"),
+    (b"\x89PNG\r\n\x1a\n", "image/png"),
+    (b"%PDF-", "application/pdf"),
+)
+
+
+def _reject_oversized(content: bytes, code: str, message: str) -> None:
+    if len(content) > MAX_POD_BYTES:
+        raise DomainError(code, message, 413)
+
+
+def _verified_mime_type(content: bytes, declared: str | None) -> str:
+    """Suy ra kiểu tệp từ nội dung thật, không tin theo khai báo của client.
+
+    Kiểu do client khai được lưu lại rồi dùng làm media_type khi phục vụ tệp,
+    nên tin theo nó cho phép người gửi tự chọn cách trình duyệt diễn giải nội
+    dung mình tải lên. Đường upload ảnh master (main.py::_detect_image_extension)
+    đã xác thực magic byte đúng cách; đường POD chỉ là chưa được làm như vậy.
+    """
+    head = content[:8]
+    for signature, mime_type in _MAGIC_SIGNATURES:
+        if head.startswith(signature):
+            return mime_type
+    declared_clean = (declared or "").split(";")[0].strip().lower()
+    if declared_clean in ALLOWED_POD_MIME_TYPES:
+        # Nội dung không khớp chữ ký nào nhưng client khai kiểu hợp lệ: từ chối
+        # thay vì tin lời khai.
+        raise DomainError(
+            "POD_FILE_TYPE_INVALID",
+            "Nội dung tệp không khớp với định dạng đã khai báo. Chỉ nhận JPEG, PNG hoặc PDF.",
+            422,
+        )
+    raise DomainError(
+        "POD_FILE_TYPE_INVALID",
+        "Chỉ nhận tệp JPEG, PNG hoặc PDF.",
+        422,
+    )
 
 
 router = APIRouter()
@@ -54,10 +99,15 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
                 raise DomainError(
                     "POD_FILE_REQUIRED", f"Thiáº¿u file POD cho cháº·ng {entry.leg_id}.", 422
                 )
-            content = await uploaded.read(10 * 1024 * 1024 + 1)
+            content = await uploaded.read(MAX_POD_BYTES + 1)
+            # Kiểm NGAY tại đây, không đợi tới complete_delivery. Schema cho
+            # phép 100 mục, mỗi mục một POD kèm một chữ ký, mỗi file tới 10 MB
+            # — nếu đọc hết rồi mới kiểm thì ~2 GB đã nằm trong RAM trước khi
+            # có bất kỳ lời từ chối nào.
+            _reject_oversized(content, "POD_FILE_TOO_LARGE", "Tệp POD tối đa 10 MB.")
             files[entry.file_field] = {
                 "file_name": uploaded.filename,
-                "mime_type": uploaded.content_type,
+                "mime_type": _verified_mime_type(content, uploaded.content_type),
                 "content": content,
             }
             signature = form.get(entry.signature_file_field)
@@ -67,10 +117,13 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
                     f"Thiếu chữ ký người nhận cho chặng {entry.leg_id}.",
                     422,
                 )
-            signature_content = await signature.read(10 * 1024 * 1024 + 1)
+            signature_content = await signature.read(MAX_POD_BYTES + 1)
+            _reject_oversized(
+                signature_content, "POD_SIGNATURE_TOO_LARGE", "Ảnh chữ ký tối đa 10 MB."
+            )
             files[entry.signature_file_field] = {
                 "file_name": signature.filename,
-                "mime_type": signature.content_type,
+                "mime_type": _verified_mime_type(signature_content, signature.content_type),
                 "content": signature_content,
             }
         data = complete_delivery(
@@ -104,10 +157,19 @@ async def download_pod_document(document_id: str, request: Request, db: Session 
     if not document:
         raise_http(DomainError("POD_DOCUMENT_NOT_FOUND", "KhÃ´ng tÃ¬m tháº¥y chá»©ng tá»« POD.", 404))
     safe_name = (document.file_name or "pod-document").replace('"', "")
+    # attachment thay vì inline, kèm nosniff: một PDF dựng khéo được phục vụ
+    # inline từ chính origin của ứng dụng sẽ chạy được JavaScript trong ngữ
+    # cảnh đó. Chỉ trả về kiểu nằm trong danh sách cho phép, để một bản ghi cũ
+    # có mime_type lạ không tự chọn được cách trình duyệt diễn giải nó.
+    media_type = document.mime_type if document.mime_type in ALLOWED_POD_MIME_TYPES \
+        else "application/octet-stream"
     return Response(
         content=document.content,
-        media_type=document.mime_type,
-        headers={"Content-Disposition": f'inline; filename="{safe_name}"'},
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}"',
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

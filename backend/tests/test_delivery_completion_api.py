@@ -6,6 +6,14 @@ import json
 import pytest
 from pydantic import ValidationError
 
+# Upload POD giờ được xác thực bằng magic byte (xem workflow_routes.py
+# ::_verified_mime_type), nên fixture phải là nội dung PNG thật chứ không phải
+# chuỗi tùy ý. Tám byte đầu là chữ ký PNG; phần đuôi giữ nguyên để các assert
+# phân biệt được tệp POD với ảnh chữ ký.
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+POD_BYTES = PNG_MAGIC + b"real-pod-bytes"
+SIGNATURE_BYTES = PNG_MAGIC + b"real-signature-bytes"
+
 
 def _valid_payload():
     return {
@@ -248,9 +256,9 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
             "file_field": field, "signature_file_field": signature_field,
             "note": "Giao du hang",
         })
-        multipart_files[field] = (f"{leg['id']}.png", b"real-pod-bytes", "image/png")
+        multipart_files[field] = (f"{leg['id']}.png", POD_BYTES, "image/png")
         multipart_files[signature_field] = (
-            f"signature-{leg['id']}.png", b"real-signature-bytes", "image/png"
+            f"signature-{leg['id']}.png", SIGNATURE_BYTES, "image/png"
         )
     payload = {
         "trip_id": "TRIP-COMPLETE", "currency_code": "VND",
@@ -305,8 +313,8 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         document["file_name"]: client.get(document["download_url"])
         for document in closeout_data["pod_documents"]
     }
-    assert any(response.content == b"real-pod-bytes" for response in downloaded_documents.values())
-    assert any(response.content == b"real-signature-bytes" for response in downloaded_documents.values())
+    assert any(response.content == POD_BYTES for response in downloaded_documents.values())
+    assert any(response.content == SIGNATURE_BYTES for response in downloaded_documents.values())
     assert all(response.status_code == 200 for response in downloaded_documents.values())
     assert all(response.headers["content-type"] == "image/png" for response in downloaded_documents.values())
 
@@ -326,7 +334,7 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         assert closeout.final_selling_price == Decimal("4670000")
         documents = db.query(models.DeliveryPODDocument).all()
         assert {document.content for document in documents} == {
-            b"real-pod-bytes", b"real-signature-bytes"
+            POD_BYTES, SIGNATURE_BYTES
         }
         assert db.query(models.DeliveryOrderCloseout).count() == 1
         assert db.query(models.DeliveryPODRecord).count() == len(delivery_legs)

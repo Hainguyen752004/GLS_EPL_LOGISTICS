@@ -14,8 +14,12 @@ from models import (
     ShipmentCost, VehicleTracking, POD, ARInvoice, GLTransaction, ChartOfAccount,
     Incident, AuditLog, Item, UOM
 )
+from seed_guard import assert_demo_seed_allowed
 
 def seed_full_demo_data():
+    # Chốt trước mọi thao tác ghi: hàm này tạo ARInvoice trạng thái Posted kèm
+    # bút toán GL, nên chạy vào database thật là làm sai sổ cái.
+    assert_demo_seed_allowed()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:

@@ -129,10 +129,10 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
             "note": "POD A-Z",
         })
         multipart_files[pod_field] = (
-            f"pod-{leg['sequence_no']}.png", b"az-real-pod", "image/png",
+            f"pod-{leg['sequence_no']}.png", b"\x89PNG\r\n\x1a\n" + b"az-real-pod", "image/png",
         )
         multipart_files[signature_field] = (
-            f"signature-{leg['sequence_no']}.png", b"az-real-signature", "image/png",
+            f"signature-{leg['sequence_no']}.png", b"\x89PNG\r\n\x1a\n" + b"az-real-signature", "image/png",
         )
     completion_response = client.post(
         "/api/delivery-orders/DO-AZ/complete-delivery",

@@ -45,48 +45,80 @@ class ActionAgent:
 
     @staticmethod
     def execute_draft(draft_data: Dict[str, Any], db: Session) -> Dict[str, Any]:
+        """Diễn giải bản nháp thành hướng dẫn thao tác. KHÔNG ghi vào CSDL.
+
+        Agent này cố tình không tự ghi dữ liệu: nội dung bản nháp do mô hình
+        ngôn ngữ bóc tách nên không thể tin cậy để dùng thẳng làm lệnh ghi.
+        Mọi thay đổi phải đi qua đúng endpoint nghiệp vụ, nơi có kiểm tra ràng
+        buộc, quyền hạn và nhật ký kiểm toán.
+
+        Trước đây hàm này trả về những câu ở thì quá khứ — "Đã cập nhật trạng
+        thái mới cho bản ghi X", "Đã gửi yêu cầu xóa bản ghi X" — kèm một object
+        ``mutation`` khiến giao diện tải lại toàn bộ dữ liệu. Người dùng thấy
+        hệ thống báo thành công và bảng dữ liệu làm mới, nên tin rằng thao tác
+        đã xong, trong khi tham số ``db`` không hề được dùng và không có gì
+        được ghi. Câu chữ ở đây phải nói đúng những gì thực sự xảy ra.
+        """
         action = draft_data.get("action", "none")
         entity = draft_data.get("entity", "")
-        customer = draft_data.get("customer", "")
-        route = draft_data.get("route", "")
-        cargo_type = draft_data.get("cargo_type", "")
         target_id = draft_data.get("target_id", "")
-        
+
         action_summary = ""
-        mutation = None
+        navigation_targets = []
 
         if action == "create":
             if entity == "sales_order":
-                action_summary = "Đã nhận yêu cầu tạo Đơn Hàng Bán. Vui lòng chọn báo giá đã duyệt và khách hàng trong Master Data trước khi lưu chính thức."
-                mutation = {"type": "DRAFT_ONLY", "entity": "sales_orders", "navigation_targets": ["quotations", "master-data/customers"]}
-            
+                action_summary = (
+                    "Cần tạo Đơn Hàng Bán. Hãy mở màn hình Đơn hàng, chọn báo giá "
+                    "đã duyệt và khách hàng, rồi bấm Lưu để ghi vào hệ thống."
+                )
+                navigation_targets = ["quotations", "master-data/customers"]
             elif entity == "delivery_order":
-                action_summary = "Đã nhận yêu cầu tạo Lệnh Giao Hàng. Vui lòng chọn SO đã xác nhận và tuyến đường trong Master Data trước khi lưu chính thức."
-                mutation = {"type": "DRAFT_ONLY", "entity": "delivery_orders", "navigation_targets": ["sales-orders", "master-data/routes"]}
-            
+                action_summary = (
+                    "Cần tạo Lệnh Giao Hàng. Hãy mở màn hình Lệnh giao hàng, chọn "
+                    "đơn hàng đã xác nhận và tuyến đường, rồi bấm Lưu để ghi vào hệ thống."
+                )
+                navigation_targets = ["sales-orders", "master-data/routes"]
             else:
                 action_summary = "Không nhận diện được đối tượng nghiệp vụ để tạo."
 
         elif action == "delete":
             if target_id:
-                action_summary = f"Đã gửi yêu cầu xóa bản ghi {target_id}."
-                mutation = {"type": "DELETE", "id": target_id}
+                action_summary = (
+                    f"Cần xóa bản ghi {target_id}. Hãy mở màn hình tương ứng và thực "
+                    f"hiện thao tác xóa tại đó — thao tác xóa cần kiểm tra ràng buộc "
+                    f"dữ liệu nên không thể thực hiện từ khung trò chuyện."
+                )
+                navigation_targets = ["sales-orders", "delivery-orders"]
             else:
                 action_summary = "Thiếu mã bản ghi (ID) để thực hiện thao tác xóa."
 
         elif action == "update":
             if target_id:
-                action_summary = f"Đã cập nhật trạng thái mới cho bản ghi {target_id}."
-                mutation = {"type": "UPDATE", "id": target_id}
+                action_summary = (
+                    f"Cần cập nhật bản ghi {target_id}. Hãy mở màn hình tương ứng và "
+                    f"chuyển trạng thái tại đó — thao tác này cần kiểm tra quyền và "
+                    f"ghi nhật ký kiểm toán nên không thể thực hiện từ khung trò chuyện."
+                )
+                navigation_targets = ["sales-orders", "delivery-orders"]
             else:
                 action_summary = "Thiếu mã bản ghi để cập nhật."
 
         if not action_summary:
-            action_summary = "Chưa thể xử lý triệt để yêu cầu này do thiếu thông tin nghiệp vụ cụ thể."
+            action_summary = "Chưa thể xử lý yêu cầu này do thiếu thông tin nghiệp vụ cụ thể."
 
         return {
             "agent": "Action Agent (Gemini 2.5 Flash)",
-            "reply": f"📌 **ĐÃ CHUẨN BỊ BẢN NHÁP**\n\n{action_summary}\n\nDữ liệu chưa được ghi vào CSDL cho đến khi người dùng xác nhận trên giao diện đúng luồng.",
-            "mutation": mutation,
+            "reply": (
+                "📋 **HƯỚNG DẪN THAO TÁC — CHƯA GHI VÀO HỆ THỐNG**\n\n"
+                f"{action_summary}\n\n"
+                "⚠️ Trợ lý không tự ghi dữ liệu. Chưa có thay đổi nào được lưu."
+            ),
+            # Không có thay đổi nào xảy ra, nên không trả về ``mutation``: giao
+            # diện dùng trường đó để tải lại dữ liệu, khiến người dùng tưởng
+            # thao tác đã hoàn tất.
+            "mutation": None,
+            "applied": False,
+            "navigation_targets": navigation_targets,
             "is_draft": False
         }

@@ -1,3 +1,4 @@
+import datetime as dt
 import importlib
 from decimal import Decimal
 
@@ -7,6 +8,15 @@ def _seed_invoice_source(client, delivered=True):
     models = importlib.import_module("models")
     with database.SessionLocal() as db:
         db.add(models.Customer(id="CUS-AR-001", name="Khach hang AR"))
+        # Hạch toán AR giờ đòi một kỳ kế toán đang mở, đúng như đường AP đã
+        # làm — nếu không thì posted_at do client gửi lên có thể ghi doanh thu
+        # lùi vào một kỳ đã đóng.
+        db.add(models.AccountingPeriod(
+            id="AR-2026-08",
+            starts_at=dt.datetime(2026, 8, 1),
+            ends_at=dt.datetime(2026, 8, 31, 23, 59),
+            status="open",
+        ))
         db.commit()
         db.add(models.SalesOrder(
             id="SO-AR-001",
@@ -157,3 +167,58 @@ def test_ar_invoice_journal_converts_foreign_currency_to_functional_currency(app
         assert vat.credit == Decimal("250000.000000")
         assert all(line.currency_code == "VND" for line in lines)
         assert all(line.transaction_currency == "USD" for line in lines)
+
+
+def test_ar_invoice_cannot_be_backdated_into_a_closed_period(app_client):
+    """Hạch toán AR phải tôn trọng khóa kỳ kế toán, như đường AP đã làm.
+
+    posted_at do client gửi lên, nên nếu không tra AccountingPeriod thì người
+    gọi có thể ghi doanh thu lùi vào một kỳ đã đóng — đúng thứ mà việc khóa kỳ
+    tồn tại để ngăn.
+    """
+    client, _, _ = app_client
+    _seed_invoice_source(client)
+
+    # Thời điểm nằm ngoài kỳ đang mở (2026-08) mà helper đã seed.
+    response = client.post(
+        "/api/invoices/post",
+        json={
+            "id": "INV-AR-CLOSED",
+            "do_id": "DO-AR-001",
+            "posted_at": "2025-01-15T08:30:00+07:00",
+        },
+        headers={"Idempotency-Key": "invoice-ar-closed"},
+    )
+
+    assert response.status_code == 422, response.text
+    assert response.json()["error"]["code"] == "MISSING_OPEN_ACCOUNTING_PERIOD"
+
+
+def test_ar_invoice_is_refused_when_period_is_explicitly_closed(app_client):
+    """Kỳ tồn tại nhưng status='closed' cũng phải bị từ chối."""
+    client, _, _ = app_client
+    _seed_invoice_source(client)
+
+    database = importlib.import_module("database")
+    models = importlib.import_module("models")
+    with database.SessionLocal() as db:
+        db.add(models.AccountingPeriod(
+            id="AR-2025-01-CLOSED",
+            starts_at=dt.datetime(2025, 1, 1),
+            ends_at=dt.datetime(2025, 1, 31, 23, 59),
+            status="closed",
+        ))
+        db.commit()
+
+    response = client.post(
+        "/api/invoices/post",
+        json={
+            "id": "INV-AR-CLOSED-2",
+            "do_id": "DO-AR-001",
+            "posted_at": "2025-01-15T08:30:00+07:00",
+        },
+        headers={"Idempotency-Key": "invoice-ar-closed-2"},
+    )
+
+    assert response.status_code == 422, response.text
+    assert response.json()["error"]["code"] == "MISSING_OPEN_ACCOUNTING_PERIOD"

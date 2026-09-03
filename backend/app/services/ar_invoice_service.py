@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from models import ARInvoice, DeliveryOrder, DeliveryOrderCloseout, FinanceControlConfig, JournalBatch, JournalLine, SalesOrder
+from models import AccountingPeriod, ARInvoice, DeliveryOrder, DeliveryOrderCloseout, FinanceControlConfig, JournalBatch, JournalLine, SalesOrder
 from services.errors import DomainError, conflict
 
 
@@ -24,6 +24,31 @@ def _utc_naive(value=None) -> dt.datetime:
             422,
         )
     return value.astimezone(dt.timezone.utc).replace(tzinfo=None)
+
+
+def _require_open_accounting_period(db, stamp):
+    """Từ chối hạch toán ngoài một kỳ kế toán đang mở.
+
+    Đường AP và settlement đã kiểm điều này (tms_ap_service._validate_post_readiness,
+    tms_settlement_service), nhưng đường AR thì không — trong khi posted_at lại
+    do client gửi lên. Nghĩa là người gọi có thể ghi doanh thu lùi vào một kỳ
+    đã đóng, đúng thứ mà việc khóa kỳ tồn tại để ngăn.
+    """
+    period = db.scalar(
+        select(AccountingPeriod).where(
+            AccountingPeriod.starts_at <= stamp,
+            AccountingPeriod.ends_at >= stamp,
+            AccountingPeriod.status == "open",
+        )
+    )
+    if period is None:
+        raise DomainError(
+            "MISSING_OPEN_ACCOUNTING_PERIOD",
+            "Thiếu kỳ kế toán đang mở cho thời điểm ghi sổ. Vui lòng vào Master Data.",
+            422,
+            ["master-data/accounting-periods"],
+        )
+    return period
 
 
 def post_ar_invoice(db, data, user="system"):
@@ -93,6 +118,9 @@ def post_ar_invoice(db, data, user="system"):
     vat_amount = _money(amount * vat_pct / Decimal("100"))
     total = _money(amount + vat_amount)
     posted_at = _utc_naive(data.get("posted_at"))
+    # posted_at do client gửi lên, nên phải chốt vào một kỳ kế toán đang mở
+    # trước khi ghi bất cứ thứ gì.
+    _require_open_accounting_period(db, posted_at)
     invoice_id = data.get("id") or f"INV-{posted_at:%Y%m%d}-{uuid4().hex[:12].upper()}"
 
     invoice = ARInvoice(

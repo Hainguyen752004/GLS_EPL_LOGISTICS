@@ -4,6 +4,7 @@ import json
 from decimal import Decimal
 
 from models import (
+    AccountingPeriod,
     ARInvoice,
     AuditLog,
     Carrier,
@@ -202,6 +203,16 @@ def _merge_master_data(db):
     db.flush()
     db.merge(FinanceControlConfig(
         id="GLOBAL", functional_currency="VND", distance_variance_threshold=_money(10)
+    ))
+    # Hạch toán AR (và AP, settlement) đòi một kỳ kế toán đang mở bao trùm thời
+    # điểm ghi sổ. Bản demo phải có cấu hình tài chính hợp lệ, nếu không luồng
+    # lập hóa đơn sẽ dừng ở MISSING_OPEN_ACCOUNTING_PERIOD.
+    _year = dt.datetime.now(dt.timezone.utc).year
+    db.merge(AccountingPeriod(
+        id=f"DEMO-{_year}",
+        starts_at=dt.datetime(_year - 1, 1, 1),
+        ends_at=dt.datetime(_year + 1, 12, 31, 23, 59, 59),
+        status="open",
     ))
     db.merge(Carrier(
         id="DEMO-CARRIER-INTERNAL", name="Đội xe nội bộ EPL", status="active", is_internal=True

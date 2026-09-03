@@ -237,6 +237,19 @@ def dispatch_freight_order(db, order_id, data, actor="system"):
 
 
 def dispatch_trip(db, trip_id, data, actor="system"):
+    # SQLite bỏ qua SELECT ... FOR UPDATE trong im lặng, nên trên SQLite các
+    # lệnh khóa hàng ở dưới (xe, tài xế, phụ xe) không có tác dụng gì: hai lệnh
+    # điều xe song song cho HAI chuyến khác nhau cùng vượt qua bước kiểm chồng
+    # lịch rồi cùng commit, và một chiếc xe nằm trên hai chuyến đang chạy.
+    # Lấy khóa ghi của SQLite trước mọi thao tác đọc để các phiên cạnh tranh
+    # bị tuần tự hóa — đúng cách tms_cost_service._idempotent đang làm.
+    #
+    # Trên PostgreSQL không cần đoạn này: FOR UPDATE ở dưới khóa thật các hàng
+    # xe/tài xế, tức đúng những tài nguyên xuất hiện trong điều kiện kiểm chồng
+    # lịch, nên phiên thứ hai phải chờ và sau đó đọc được bản ghi đã commit.
+    if db.get_bind().dialect.name == "sqlite" and not db.in_transaction():
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+
     trip = (
         db.query(TransportTrip)
         .filter(TransportTrip.id == trip_id)

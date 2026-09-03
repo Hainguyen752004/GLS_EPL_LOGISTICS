@@ -65,6 +65,25 @@ def transport_revenue(
         raise_http(error)
 
 
+# Ký tự mở đầu khiến Excel/LibreOffice coi ô là công thức.
+_CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_safe(value):
+    """Trung hòa CSV formula injection.
+
+    Tên khách hàng, ghi chú và điểm đi/đến được ghi nguyên văn vào file CSV rồi
+    phục vụ dưới dạng attachment. Một ô bắt đầu bằng "=" sẽ được Excel thực thi
+    như công thức, nên `=cmd|'/c calc'!A0` đặt trong tên khách hàng sẽ chạy trên
+    máy của người làm tài chính khi họ mở file export.
+    """
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return "'" + value if value.startswith(_CSV_FORMULA_PREFIXES) else value
+
+
 @router.get("/transport-revenue/export.csv")
 def export_transport_revenue(
     request: Request,
@@ -96,7 +115,7 @@ def export_transport_revenue(
     ])
     for index, row in enumerate(data["rows"], 1):
         totals = row["totals"]
-        writer.writerow([
+        writer.writerow([_csv_safe(cell) for cell in [
             index, row["departure_date"], row["dispatch_order_no"],
             row["recognition_date"], row["invoice_no"], row["origin"],
             row["destination"], row["agency_company"], row["driver_name"],
@@ -104,7 +123,7 @@ def export_transport_revenue(
             row["customer_name"], row["cargo_type"], row["trip_count"],
             row["uom"], row["weight_tons"], totals.get("LAK"), totals.get("THB"),
             totals.get("USD"), totals.get("CNY"), totals.get("VND"), row["note"],
-        ])
+        ]])
     return Response(
         content="\ufeff" + output.getvalue(),
         media_type="text/csv; charset=utf-8",

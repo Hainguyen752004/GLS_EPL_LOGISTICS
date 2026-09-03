@@ -149,8 +149,8 @@ def test_trip_cost_rows_are_user_defined_decimal_and_transactional(app_client, w
         "/api/delivery-orders/DO-POD-LINEAGE/complete-delivery",
         data={"payload": json.dumps(completion_payload)},
         files={
-            "pod_file_1": ("pod.png", b"pod", "image/png"),
-            "signature_file_1": ("signature.png", b"signature", "image/png"),
+            "pod_file_1": ("pod.png", b"\x89PNG\r\n\x1a\n" + b"pod", "image/png"),
+            "signature_file_1": ("signature.png", b"\x89PNG\r\n\x1a\n" + b"signature", "image/png"),
         },
         headers={"Idempotency-Key": "pod-for-cost"},
     )

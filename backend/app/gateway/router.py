@@ -37,8 +37,12 @@ class GatewayRouter:
                 result = QueryAgent.process(prompt, db)
                 target_api = "/api/agent/query"
 
+        # "status" nói về việc gateway có định tuyến được yêu cầu hay không.
+        # Nó KHÔNG có nghĩa là dữ liệu đã được ghi — hãy đọc "applied" cho việc
+        # đó. Trước đây trường này luôn là "success" nên giao diện và người dùng
+        # hiểu nhầm mọi phản hồi đều là thao tác đã hoàn tất.
         return {
-            "status": "success",
+            "status": "routed",
             "gateway_info": {
                 "entrypoint": "/api/v1/ai/chat",
                 "detected_intent": intent,
@@ -49,6 +53,10 @@ class GatewayRouter:
                 "reply": result.get("reply", ""),
                 "data": result.get("data", None),
                 "mutation": result.get("mutation", None),
+                # Trợ lý AI chỉ đọc dữ liệu và dựng bản nháp; nó không bao giờ
+                # ghi vào CSDL, nên mặc định là False.
+                "applied": result.get("applied", False),
+                "navigation_targets": result.get("navigation_targets", []),
                 "is_draft": result.get("is_draft", False),
                 "draft_data": result.get("draft_data", None)
             }

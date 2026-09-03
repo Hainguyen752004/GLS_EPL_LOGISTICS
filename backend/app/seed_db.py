@@ -1,8 +1,12 @@
 import os
 from database import engine, Base, SessionLocal
 from models import Vehicle, Driver, Route, Customer, Quotation, SalesOrder, DeliveryOrder, ARInvoice, GLTransaction, VehicleType
+from seed_guard import assert_demo_seed_allowed
 
 def init_db():
+    # Chốt trước mọi thao tác ghi: hàm này db.merge() các ID cố định nên sẽ
+    # ghi đè dữ liệu thật nếu trỏ vào database production.
+    assert_demo_seed_allowed()
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
