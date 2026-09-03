@@ -7,8 +7,11 @@ import time
 import types
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import Engine
+
+from conftest import API_TEST_HEADERS
 
 
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
@@ -42,6 +45,7 @@ def _reject_import(monkeypatch, rejected_name, error):
 
 
 def test_main_import_does_not_connect_database_or_import_cv2(monkeypatch):
+    """Chỉ riêng việc import main không được chạm cơ sở dữ liệu hay nạp cv2."""
     _clear_app_modules()
     monkeypatch.setattr(
         Engine,
@@ -51,8 +55,55 @@ def test_main_import_does_not_connect_database_or_import_cv2(monkeypatch):
     _reject_import(monkeypatch, "cv2", AssertionError("cv2 imported"))
 
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
 
-    with TestClient(main.app) as client:
+    assert main.app is not None
+
+
+def test_startup_refuses_to_serve_when_migration_fails_by_default(monkeypatch):
+    """MẶC ĐỊNH: lược đồ không hợp lệ thì tiến trình từ chối phục vụ.
+
+    Trước đây lỗi migration bị hạ xuống mức warning và ứng dụng vẫn phục vụ,
+    nên một instance có schema cũ qua được mọi probe của load balancer rồi 500
+    trên từng request nghiệp vụ.
+    """
+    _clear_app_modules()
+    monkeypatch.delenv("EPL_ALLOW_DEGRADED_START", raising=False)
+    monkeypatch.setattr(
+        Engine,
+        "connect",
+        lambda _self: (_ for _ in ()).throw(AssertionError("database connected")),
+    )
+    main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
+
+    with pytest.raises(Exception):
+        with TestClient(main.app, headers=API_TEST_HEADERS):
+            pass
+
+
+def test_liveness_probe_answers_without_touching_database(monkeypatch):
+    """/api/health là liveness: trả lời được dù cơ sở dữ liệu đã chết.
+
+    Dùng cửa thoát EPL_ALLOW_DEGRADED_START để dựng đúng tình huống "tiến trình
+    sống, database chết" mà probe này phải phục vụ được.
+    """
+    _clear_app_modules()
+    monkeypatch.setenv("EPL_ALLOW_DEGRADED_START", "1")
+    monkeypatch.setattr(
+        Engine,
+        "connect",
+        lambda _self: (_ for _ in ()).throw(AssertionError("database connected")),
+    )
+    _reject_import(monkeypatch, "cv2", AssertionError("cv2 imported"))
+
+    main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
+
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.get("/api/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
@@ -61,8 +112,10 @@ def test_main_import_does_not_connect_database_or_import_cv2(monkeypatch):
 def test_frontend_html_is_served_with_utf8_charset_and_no_store_cache(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
 
-    client = TestClient(main.app)
+    client = TestClient(main.app, headers=API_TEST_HEADERS)
     response = client.get("/")
 
     assert response.status_code == 200
@@ -77,13 +130,15 @@ def test_frontend_html_is_served_with_utf8_charset_and_no_store_cache(monkeypatc
 def test_checkpoint_returns_503_vietnamese_error_when_cv2_is_unavailable(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _reject_import(
         monkeypatch,
         "cv2",
         ImportError("C:/private/build/cv2_secret_extension.pyd is missing"),
     )
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan",
             files={"file": ("tiny.jpg", b"not-an-image", "image/jpeg")},
@@ -109,12 +164,17 @@ def test_checkpoint_returns_503_vietnamese_error_when_cv2_is_unavailable(monkeyp
 def test_startup_database_error_is_sanitized(monkeypatch, caplog):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     secret = "postgresql://secret-user:secret-pass@private-host/epl?token=hidden"
     monkeypatch.setattr(
         main, "auto_migrate_db", lambda: (_ for _ in ()).throw(RuntimeError(secret))
     )
 
-    main.on_startup()
+    # Fail-fast là mặc định nên lỗi bật ra ngoài, nhưng thông tin đăng nhập
+    # vẫn không được rò vào log — đó là điều test này bảo vệ.
+    with pytest.raises(RuntimeError):
+        main.on_startup()
 
     output = caplog.text
     assert "DATABASE_STARTUP_UNAVAILABLE" in output
@@ -149,12 +209,14 @@ def _install_fake_ai_modules(monkeypatch, *, decoded_frame=object(), engine_type
 def test_checkpoint_rejects_oversized_upload_before_ai_loading(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _reject_import(monkeypatch, "cv2", AssertionError("AI loaded for oversized upload"))
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan",
-            files={"file": ("large.jpg", b"x" * (main.MAX_CHECKPOINT_UPLOAD_BYTES + 1))},
+            files={"file": ("large.jpg", b"x" * (ai_upload_routes.MAX_CHECKPOINT_UPLOAD_BYTES + 1))},
         )
 
     assert response.status_code == 413
@@ -164,9 +226,11 @@ def test_checkpoint_rejects_oversized_upload_before_ai_loading(monkeypatch):
 def test_checkpoint_returns_400_for_malformed_image(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _install_fake_ai_modules(monkeypatch, decoded_frame=None)
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("bad.jpg", b"bad")}
         )
@@ -178,12 +242,14 @@ def test_checkpoint_returns_400_for_malformed_image(monkeypatch):
 def test_checkpoint_returns_400_for_empty_upload_without_decoding(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _install_fake_ai_modules(monkeypatch)
     sys.modules["cv2"].imdecode = lambda *_args: (_ for _ in ()).throw(
         AssertionError("empty upload reached decoder")
     )
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("empty.jpg", b"")}
         )
@@ -195,13 +261,15 @@ def test_checkpoint_returns_400_for_empty_upload_without_decoding(monkeypatch):
 def test_checkpoint_returns_sanitized_400_when_decoder_raises(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _install_fake_ai_modules(monkeypatch)
     decode_error = sys.modules["cv2"].error
     sys.modules["cv2"].imdecode = lambda *_args: (_ for _ in ()).throw(
         decode_error("C:/private/decode-secret.dll")
     )
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("broken.jpg", b"image")}
         )
@@ -215,9 +283,11 @@ def test_checkpoint_returns_sanitized_400_when_decoder_raises(monkeypatch):
 def test_checkpoint_preserves_valid_small_upload_behavior(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _install_fake_ai_modules(monkeypatch)
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("small.jpg", b"image")}
         )
@@ -229,9 +299,11 @@ def test_checkpoint_preserves_valid_small_upload_behavior(monkeypatch):
 def test_checkpoint_returns_sanitized_503_when_numpy_is_unavailable(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _reject_import(monkeypatch, "numpy", ImportError("C:/private/numpy_secret.pyd"))
 
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("small.jpg", b"image")}
         )
@@ -247,13 +319,15 @@ def test_checkpoint_returns_sanitized_503_when_numpy_is_unavailable(monkeypatch)
 def test_checkpoint_returns_sanitized_503_when_engine_constructor_fails(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
 
     class BrokenEngine:
         def __init__(self):
             raise RuntimeError("C:/private/model?token=secret")
 
     _install_fake_ai_modules(monkeypatch, engine_type=BrokenEngine)
-    with TestClient(main.app) as client:
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("small.jpg", b"image")}
         )
@@ -267,6 +341,8 @@ def test_checkpoint_returns_sanitized_503_when_engine_constructor_fails(monkeypa
 def test_checkpoint_initializes_once_and_serializes_processing(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     state = {"constructed": 0, "active": 0, "max_active": 0}
     state_lock = threading.Lock()
 
@@ -286,7 +362,7 @@ def test_checkpoint_initializes_once_and_serializes_processing(monkeypatch):
 
     _install_fake_ai_modules(monkeypatch, engine_type=CountingEngine)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        results = list(executor.map(main._process_checkpoint, [b"image"] * 4))
+        results = list(executor.map(ai_upload_routes._process_checkpoint, [b"image"] * 4))
 
     assert len(results) == 4
     assert state == {"constructed": 1, "active": 0, "max_active": 1}
@@ -295,6 +371,8 @@ def test_checkpoint_initializes_once_and_serializes_processing(monkeypatch):
 def test_checkpoint_runs_blocking_work_in_threadpool(monkeypatch):
     _clear_app_modules()
     main = importlib.import_module("main")
+    # AI/upload đã chuyển sang routes/ai_upload_routes.py.
+    ai_upload_routes = importlib.import_module("routes.ai_upload_routes")
     _install_fake_ai_modules(monkeypatch)
     calls = []
 
@@ -302,11 +380,13 @@ def test_checkpoint_runs_blocking_work_in_threadpool(monkeypatch):
         calls.append(function)
         return function(*args)
 
-    monkeypatch.setattr(main, "run_in_threadpool", fake_run_in_threadpool)
-    with TestClient(main.app) as client:
+    # Endpoint quét checkpoint giờ ở routes/ai_upload_routes.py, nên
+    # run_in_threadpool phải được patch trên module đó chứ không phải main.
+    monkeypatch.setattr(ai_upload_routes, "run_in_threadpool", fake_run_in_threadpool)
+    with TestClient(main.app, headers=API_TEST_HEADERS) as client:
         response = client.post(
             "/api/ai/checkpoint/scan", files={"file": ("small.jpg", b"image")}
         )
 
     assert response.status_code == 200
-    assert calls == [main._process_checkpoint]
+    assert calls == [ai_upload_routes._process_checkpoint]

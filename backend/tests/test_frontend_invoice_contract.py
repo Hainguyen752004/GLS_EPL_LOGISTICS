@@ -2,7 +2,8 @@ from pathlib import Path
 
 
 APP_JS = Path(__file__).resolve().parents[2] / "frontend" / "js" / "app.js"
-MAIN_PY = Path(__file__).resolve().parents[1] / "app" / "main.py"
+# Endpoint hóa đơn đã chuyển từ main.py sang routes/accounting_routes.py.
+ACCOUNTING_PY = Path(__file__).resolve().parents[1] / "app" / "routes" / "accounting_routes.py"
 
 
 def test_frontend_invoice_requests_only_identify_delivered_do_and_posting_time():
@@ -20,8 +21,8 @@ def test_frontend_invoice_requests_only_identify_delivered_do_and_posting_time()
 
 
 def test_invoice_endpoint_has_no_unreachable_legacy_posting_implementation():
-    source = MAIN_PY.read_text(encoding="utf-8")
-    start = source.index('@app.post("/api/invoices/post")')
+    source = ACCOUNTING_PY.read_text(encoding="utf-8")
+    start = source.index('@router.post("/api/invoices/post")')
     end = source.index("# 9. Dashboard API", start)
     endpoint = source[start:end]
 

@@ -87,7 +87,7 @@ def test_closeout_selects_formula_by_exact_vehicle_type_id(app_client):
 
     import database
     import models
-    from main import _select_closeout_formula
+    from routes.delivery_routes import _select_closeout_formula
 
     with database.SessionLocal() as db:
         db.merge(models.VehicleType(id="VT-TRUCK10", name="Xe tải thùng 10 tấn"))
@@ -113,7 +113,7 @@ def test_closeout_selects_formula_by_vehicle_type_and_currency(app_client):
 
     import database
     import models
-    from main import _select_closeout_formula
+    from routes.delivery_routes import _select_closeout_formula
 
     with database.SessionLocal() as db:
         db.merge(models.VehicleType(id="VT-20FT", name="Container 20FT"))

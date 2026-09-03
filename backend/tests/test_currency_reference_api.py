@@ -16,7 +16,7 @@ def test_reference_refresh_converts_usd_cross_rates_without_overwriting_approved
 ):
     client, _, _ = app_client
     import database
-    import main
+    from routes import currency_routes
     import models
 
     monkeypatch.setenv("OPEN_EXCHANGE_RATES_APP_ID", "test-key")
@@ -30,8 +30,10 @@ def test_reference_refresh_converts_usd_cross_rates_without_overwriting_approved
             "rates": {"USD": 1, "VND": 25_000, "THB": 35, "LAK": 21_000},
         }
 
+    # Phần tỷ giá đã chuyển từ main.py sang routes/currency_routes.py, nên
+    # phải patch đúng module đang giữ hàm gọi nhà cung cấp.
     monkeypatch.setattr(
-        main,
+        currency_routes,
         "_request_open_exchange_rates",
         provider_response,
     )
@@ -63,11 +65,13 @@ def test_reference_refresh_converts_usd_cross_rates_without_overwriting_approved
 
 def test_reference_refresh_rejects_incomplete_provider_payload(app_client, monkeypatch):
     client, _, _ = app_client
-    import main
+    from routes import currency_routes
 
     monkeypatch.setenv("OPEN_EXCHANGE_RATES_APP_ID", "test-key")
+    # Phần tỷ giá đã chuyển từ main.py sang routes/currency_routes.py, nên
+    # phải patch đúng module đang giữ hàm gọi nhà cung cấp.
     monkeypatch.setattr(
-        main,
+        currency_routes,
         "_request_open_exchange_rates",
         lambda _app_id: {"base": "USD", "rates": {"USD": 1, "VND": 25_000}},
     )
