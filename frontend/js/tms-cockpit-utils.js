@@ -3524,7 +3524,12 @@
       const raw = (order && (order.planned_delivery_at || order.delivery_date || order.planned_pickup_at || order.pickup_date || order.eta || order.actual_delivery_at))
         || now;
       const parsed = parseTime(raw) || now;
-      return parsed.toISOString().slice(0, 10);
+      // Bù múi giờ trước khi cắt: toISOString() trả giờ UTC, nên với UTC+7 mọi
+      // sự cố trước 07:00 sáng sẽ bị gom vào NGÀY HÔM TRƯỚC trên biểu đồ diễn
+      // biến. Module này chạy cả trong Node nên không dùng biến toàn cục
+      // FormatUtils; áp dụng đúng phép bù như chỗ dựng lịch tuần ở trên.
+      const local = new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
     };
     const trendMap = {};
     drilldown.worklist.forEach(item => {

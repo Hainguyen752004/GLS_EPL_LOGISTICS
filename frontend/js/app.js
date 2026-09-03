@@ -296,6 +296,13 @@ async function loadTranslations() {
   }
 }
 
+
+
+// escapeHtml và escapeJsAttr đến từ js/format-utils.js (nạp trước file này).
+// Trước đây chúng được định nghĩa lại ở đây, và app.js nạp sau nên bản ở đây
+// ghi đè bản của module — hai bản giống nhau nên không đổi hành vi, nhưng có
+// hai nguồn cho cùng một hàm là chỗ để chúng trôi khỏi nhau.
+
 window.showToast = function (msg) {
   const severity = arguments[1];
   msg = fixUIText(msg);
@@ -326,13 +333,20 @@ window.showToast = function (msg) {
     <div data-toast-copy style="display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; min-width:0; flex:1;">
       <span data-toast-title style="font-size:.72rem; line-height:1.2; letter-spacing:0; color:${tone.color}; font-weight:900; white-space:nowrap;">${tone.title}</span>
       <span aria-hidden="true" style="color:#a8b2c1; font-size:.78rem;">•</span>
-      <span data-toast-body style="min-width:150px; flex:1; font-size:.88rem; line-height:1.3; color:#172033; font-weight:700; overflow-wrap:anywhere;">${cleanMessage}</span>
+      <span data-toast-body style="min-width:150px; flex:1; font-size:.88rem; line-height:1.3; color:#172033; font-weight:700; overflow-wrap:anywhere;"></span>
     </div>
     <button type="button" data-toast-close aria-label="Đóng thông báo" onclick="this.closest('[data-app-toast]').remove()" style="width:28px; height:28px; border:0; border-radius:7px; background:#f1f5f9; color:#64748b; display:grid; place-items:center; cursor:pointer; flex:0 0 auto;">
       <i class="fa-solid fa-xmark"></i>
     </button>
     <div data-toast-progress style="position:absolute; left:0; right:0; bottom:0; height:3px; background:linear-gradient(90deg, ${tone.progress}, rgba(255,255,255,.1)); transform-origin:left center; animation:toastProgress 3s linear forwards;"></div>
   `;
+  // Nội dung thông báo đặt qua textContent, KHÔNG nội suy vào innerHTML.
+  // showToast nhận cả tên bản ghi do người ngoài đặt và error.message từ
+  // server, nên nội suy thẳng vào HTML biến mọi tên thành script — và đây là
+  // sink dùng ở khắp ứng dụng nên là chỗ đáng bịt trước tiên.
+  const toastBody = toast.querySelector('[data-toast-body]');
+  if (toastBody) toastBody.textContent = cleanMessage;
+
   toast.style.position = 'fixed';
   toast.style.top = 'calc(var(--header-height, 72px) + 12px)';
   toast.style.right = '20px';
@@ -562,6 +576,15 @@ window.t = function (key) {
 
 function initNavigation() {
   window.addEventListener("click", (e) => {
+    // Bỏ qua mọi thao tác trên phần tử tương tác. Tám thẻ .master-form-card
+    // trong Bảng điều khiển vừa mang data-view vừa chứa form thật, nên nếu
+    // không lọc thì người dùng bấm vào ô nhập hay nút Gửi trong form "Incident
+    // Report" sẽ bị chuyển thẳng sang màn "Báo cáo & Phân tích" trước khi form
+    // kịp xử lý. Listener này chạy ở capture phase trên window nên nó chặn
+    // trước cả handler của chính phần tử đó.
+    if (e.target.closest("input, select, textarea, button, a, label, [contenteditable='true']")) {
+      return;
+    }
     const viewItem = e.target.closest("[data-view]");
     if (viewItem) {
       const targetView = viewItem.getAttribute("data-view");
@@ -672,7 +695,13 @@ window.switchView = function (targetView, scrollToId) {
     overview: 'dashboard',
     crm: 'crm-sales',
     'sales-orders': 'crm-sales',
-    tender: 'accounting'
+    tender: 'accounting',
+    // Không có màn hình nào tên "transportation". Trip Return Cockpit — nơi
+    // người dùng chọn Trip — nằm trong #view-delivery-shipment. Trước đây hai
+    // lời gọi switchView('transportation') trong luồng điều phối chỉ hiện
+    // thông báo "không tìm thấy màn hình", nên hệ thống bảo người dùng đi mở
+    // Trip rồi lại không đưa họ tới được.
+    transportation: 'delivery-shipment'
   };
   targetView = viewAliases[targetView] || targetView;
   const targetSection = document.getElementById(`view-${targetView}`);
@@ -779,13 +808,17 @@ window.switchView = function (targetView, scrollToId) {
     if (typeof loadAccountingData === 'function') loadAccountingData();
   } else if (targetView === 'lab-summary') {
     if (typeof loadDashboard === 'function') loadDashboard();
+    // Pane Chất lượng dịch vụ nằm trong workspace này, nên dựng sẵn để khi
+    // người dùng chuyển sang góc nhìn đó là đã có nội dung.
+    if (typeof renderReportingDrilldown === 'function') renderReportingDrilldown();
     if (window.TransportReporting) {
       window.TransportReporting.load();
       window.TransportReporting.selectWorkspacePane('overview');
     }
   } else if (targetView === 'reporting') {
-    if (typeof loadDashboard === 'function') loadDashboard();
-    if (typeof renderReportingDrilldown === 'function') renderReportingDrilldown();
+    // Màn này giờ CHỈ có Tender & Carrier. Khối SLA/KPI đã chuyển sang
+    // workspace Phân tích, nơi nó thuộc về về mặt nghiệp vụ.
+    if (typeof renderTenderCockpit === 'function') renderTenderCockpit();
   } else if (targetView === 'master-data') {
     if (typeof loadFioriVehicles === 'function') loadFioriVehicles();
     if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
@@ -1129,6 +1162,31 @@ function closeModal(id) {
   if (el) el.style.display = "none";
 }
 
+/**
+ * Nạp lại các tập dữ liệu tài chính mà /api/data/all cố tình bỏ trống.
+ *
+ * Lỗi không nạp bổ sung được thì bỏ qua trong im lặng ở mức từng tập: thiếu
+ * dữ liệu tài chính không được làm hỏng cả màn hình, và các hàm render đều đã
+ * xử lý được trường hợp mảng rỗng.
+ */
+async function hydrateFinanceState() {
+  const sources = [
+    { key: 'invoices', path: '/api/invoices' },
+    { key: 'gl_transactions', path: '/api/gl-transactions' },
+  ];
+  await Promise.all(sources.map(async ({ key, path }) => {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, { headers: financeAuthHeaders() });
+      if (!res.ok) return;
+      const payload = await res.json();
+      const rows = Array.isArray(payload) ? payload : (payload.data || payload.items);
+      if (Array.isArray(rows)) appState[key] = rows;
+    } catch (err) {
+      console.warn(`Không nạp được ${path}`, err);
+    }
+  }));
+}
+
 async function loadAllData() {
   try {
     const res = await fetch(`${API_BASE}/api/data/all`, { headers: financeAuthHeaders() });
@@ -1142,6 +1200,14 @@ async function loadAllData() {
       if (appState.vehicles) fioriVehicles = appState.vehicles;
       if (appState.drivers) fioriDrivers = appState.drivers;
       if (appState.vehicle_types) vehTypes = appState.vehicle_types;
+
+      // /api/data/all cố tình trả về mảng rỗng cho invoices, ap_invoices,
+      // settlements... (xem main.py::_data_all). Nhưng Finance Cockpit và các
+      // biểu đồ tài chính lại đọc từ appState, nên chúng hiện 0 vĩnh viễn
+      // trong khi bảng ngay bên dưới liệt kê hóa đơn thật. Nạp bổ sung từ
+      // endpoint chuyên trách — nó cũng đã được bảo vệ bằng xác thực như
+      // /api/data/all nên không nới lỏng gì.
+      await hydrateFinanceState();
 
       renderAllTables();
       if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
@@ -1188,9 +1254,11 @@ function renderAllTables() {
     renderFinanceCockpit();
     renderFinanceActionWorkbench();
     renderFinanceMasterDataTabs();
-    renderTenderCockpit();
   } else if (activeViewId === 'view-reporting') {
-    renderSlaKpiDrilldown();
+    // DOM của Tender Cockpit nằm trong #view-reporting nên chỉ vẽ ở đây.
+    renderTenderCockpit();
+  } else if (activeViewId === 'view-lab-summary') {
+    // Pane Chất lượng dịch vụ (SLA) thuộc workspace Phân tích.
     renderReportingDrilldown();
   } else if (activeViewId === 'view-delivery-shipment') {
     renderTripReturnCockpit();
@@ -1491,7 +1559,7 @@ function renderTripReturnCockpitLegacy() {
     const journey = window.TmsCockpit.getTripJourneyPresentation(item.raw || item);
     return `
     <button type="button" class="fiori-btn ${active ? 'fiori-btn-primary' : 'fiori-btn-secondary'}" onclick="selectTripReturnWorkItem('${item.id}')" style="justify-content:flex-start; text-align:left; display:grid; gap:5px; padding:11px 12px; border-radius:10px; width:100%;">
-      <strong style="font-size:.86rem; color:${active ? '#ffffff' : '#0f172a'};">${item.title}</strong>
+      <strong style="font-size:.86rem; color:${active ? '#ffffff' : '#0f172a'};">${escapeHtml(item.title)}</strong>
       <span style="font-size:.76rem; color:${active ? '#dbeafe' : '#64748b'};">${journey.status_label} · ${journey.location_label}</span>
       <span style="display:flex; gap:6px; flex-wrap:wrap;">
         <span style="font-size:.72rem; color:#0a6ed1; font-weight:900; background:#e8f3ff; border-radius:999px; padding:2px 7px;">${item.relationship_label || (lang === 'la' ? '1 ຖ້ຽວ' : (lang === 'en' ? '1 trip' : '1 chuyến'))}</span>
@@ -1972,7 +2040,7 @@ function hydrateTripReturnRoutePreview() {
   }
   if (sourceInput) {
     sourceInput.value = route
-      ? `${route.id || routeId}: ${route.name || routeId}`
+      ? `${route.id || routeId}: ${escapeHtml(route.name || routeId)}`
       : (deliveryOrder ? `${routeId || 'Chưa có route_id'} theo DO ${deliveryOrder.id}` : '');
   }
   if (!preview) return;
@@ -2063,7 +2131,7 @@ function openTripReturnAction(action, preferredDoId = '') {
   const tripId = raw.id || selected?.id || '';
   const doIds = raw.delivery_order_ids || raw.do_ids || (raw.do_id ? [raw.do_id] : []);
   const nextSequence = Array.isArray(raw.legs) ? raw.legs.length + 1 : 1;
-  const generatedTripId = `TRIP-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}-${Date.now().toString().slice(-5)}`;
+  const generatedTripId = `TRIP-${FormatUtils.dateInputValue().replaceAll('-', '')}-${Date.now().toString().slice(-5)}`;
   const generatedLegId = `LEG-${Date.now().toString().slice(-6)}`;
   const selectedDoId = preferredDoId || (Array.isArray(doIds) ? doIds[0] : String(doIds || '').split(',')[0]?.trim());
   const preferredOrder = tripReturnDeliveryOrderById(selectedDoId);
@@ -2389,12 +2457,7 @@ function renderMasterSetupSidebar(state) {
 }
 
 function uiHealthEscape(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return escapeHtml(value);
 }
 
 function renderUiHealthChecklist() {
@@ -2492,7 +2555,7 @@ function renderTransportationWorkQueue(container) {
         ${queue.items.length ? queue.items.map(item => `
           <div onclick="openCockpitNavigation('${item.navigation.view}', '${item.navigation.target || ''}')" style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; border:1px solid ${item.severity === 'critical' ? '#fecaca' : item.severity === 'warning' ? '#fed7aa' : '#bfdbfe'}; background:${item.severity === 'critical' ? '#fff1f2' : item.severity === 'warning' ? '#fff7ed' : '#eff6ff'}; border-radius:12px; padding:10px; cursor:pointer;">
             <div>
-              <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-circle-dot" style="color:${color(item)};"></i> ${item.title}</div>
+              <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-circle-dot" style="color:${color(item)};"></i> ${escapeHtml(item.title)}</div>
               <div style="font-size:.76rem; color:#475569; margin-top:3px;">${item.message}</div>
               <div style="font-size:.7rem; color:#64748b; margin-top:4px; font-weight:900;">Chủ trách nhiệm: ${item.owner}</div>
             </div>
@@ -2947,124 +3010,11 @@ function openSlaKpiIssue(issueId) {
   renderSlaKpiIssueDetail(activeSlaKpiIssueId);
 }
 
-function renderSlaKpiDrilldown() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const cardsEl = document.getElementById('sla-kpi-cards');
-  const worklistEl = document.getElementById('sla-kpi-worklist');
-  const reasonEl = document.getElementById('sla-kpi-reason-chart');
-  const recommendationEl = document.getElementById('sla-kpi-recommendations');
-  if (!cardsEl || !worklistEl) return;
-
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const drilldown = window.TmsCockpit.buildSlaKpiDrilldown(appState || {});
-  const colorBySeverity = {
-    critical: { border: '#fecaca', bg: '#fff1f2', text: '#b91c1c', icon: 'fa-triangle-exclamation' },
-    warning: { border: '#fed7aa', bg: '#fff7ed', text: '#c2410c', icon: 'fa-clock' },
-    info: { border: '#bfdbfe', bg: '#eff6ff', text: '#1d4ed8', icon: 'fa-circle-info' }
-  };
-
-  const kpiLabelMap = {
-    'Trễ lấy hàng': { vi: 'Trễ lấy hàng', en: 'Late Pickup', la: 'ຊັກຊ້າໃນການຮັບສິນຄ້າ' },
-    'Trễ giao hàng': { vi: 'Trễ giao hàng', en: 'Late Delivery', la: 'ຊັກຊ້າໃນການສົ່ງສິນຄ້າ' },
-    'Lệch ETA': { vi: 'Lệch ETA', en: 'ETA Variance', la: 'ຄາດເຄື່ອນ ETA' },
-    'Thiếu POD': { vi: 'Thiếu POD', en: 'Missing POD', la: 'ຂາດ POD' },
-    'Vượt chi phí': { vi: 'Vượt chi phí', en: 'Cost Overrun', la: 'ເກີນຕົ້ນທຶນ' },
-    'Đúng hạn thực tế': { vi: 'Đúng hạn thực tế', en: 'Actual On-time', la: 'ຕົງເວລາຕົວຈິງ' }
-  };
-
-  cardsEl.innerHTML = Object.values(drilldown.kpis).map(kpi => {
-    const kLabel = (kpiLabelMap[kpi.label] && kpiLabelMap[kpi.label][lang]) || kpi.label;
-    return `
-      <div onclick="switchView('${kpi.target === 'accounting' ? 'accounting' : kpi.target === 'dispatch' ? 'dispatch' : 'tracking'}')" style="background:#ffffff; border:1px solid ${kpi.count ? '#fecaca' : '#bbf7d0'}; border-radius:12px; padding:10px; cursor:pointer;">
-        <div style="font-size:.72rem; color:#64748b; font-weight:800;">${kLabel}</div>
-        <div style="font-size:1.35rem; color:${kpi.count ? '#dc2626' : '#059669'}; font-weight:950; margin-top:3px;">${kpi.count}</div>
-      </div>
-    `;
-  }).join('');
-
-  if (reasonEl) {
-    reasonEl.innerHTML = drilldown.reason_breakdown && drilldown.reason_breakdown.length ? drilldown.reason_breakdown.map(item => {
-      const rLabel = (kpiLabelMap[item.label] && kpiLabelMap[item.label][lang]) || item.label;
-      return `
-        <div style="background:#ffffff; border:1px solid ${item.severity === 'critical' ? '#fecaca' : '#fed7aa'}; border-radius:10px; padding:8px 9px;">
-          <div style="display:flex; justify-content:space-between; gap:8px; font-size:.78rem; font-weight:900; color:#0f172a;">
-            <span>${rLabel}</span><span>${item.count} • ${item.percent}%</span>
-          </div>
-          <div style="height:7px; border-radius:999px; background:#e2e8f0; margin-top:6px; overflow:hidden;">
-            <div style="width:${Math.max(5, item.percent)}%; height:100%; background:${item.severity === 'critical' ? '#dc2626' : '#f59e0b'};"></div>
-          </div>
-        </div>
-      `;
-    }).join('') : `
-      <div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:10px; padding:9px 10px; font-weight:800;">${lang === 'la' ? 'ຍັງບໍ່ມີສາເຫດຊັກຊ້າ SLA ໃນຂໍ້ມູນປະຈຸບັນ.' : 'Chưa có nguyên nhân trễ SLA trong dữ liệu hiện tại.'}</div>
-    `;
-  }
-
-  if (recommendationEl) {
-    recommendationEl.innerHTML = (drilldown.recommendations || []).map(text => {
-      let recText = text;
-      if (lang === 'la') {
-        recText = recText
-          .replace(/Mở GPS\/POD/gi, 'ເປີດ GPS/POD')
-          .replace(/gọi tài xế/gi, 'ໂທຫາຄົນຂັບ')
-          .replace(/cập nhật ETA/gi, 'ອັບເດດ ETA')
-          .replace(/thông báo khách hàng/gi, 'ແຈ້ງລູກຄ້າ')
-          .replace(/nếu cần/gi, 'ຖ້າຈຳເປັນ');
-      }
-      return `
-        <div style="background:#ffffff; border:1px solid #dbeafe; color:#475569; border-radius:10px; padding:8px 9px; font-size:.78rem;">
-          <i class="fa-solid fa-lightbulb" style="color:#0a6ed1;"></i> ${recText}
-        </div>
-      `;
-    }).join('');
-  }
-
-  const ownerLabel = (owner) => {
-    if (owner === 'Điều phối') return lang === 'la' ? 'ການປ່ອຍລົດ' : (lang === 'en' ? 'Dispatch' : 'Điều phối');
-    if (owner === 'Vận hành') return lang === 'la' ? 'ການປະຕິບັດງານ' : (lang === 'en' ? 'Operations' : 'Vận hành');
-    if (owner === 'Kế toán') return lang === 'la' ? 'ບັນຊີ' : (lang === 'en' ? 'Accounting' : 'Kế toán');
-    return owner;
-  };
-
-  const actionLabel = (act) => {
-    if (act === 'Mở điều phối') return lang === 'la' ? 'ເປີດໜ້າປ່ອຍລົດ' : (lang === 'en' ? 'Open Dispatch' : 'Mở điều phối');
-    if (act === 'Mở GPS/POD') return lang === 'la' ? 'ເປີດ GPS/POD' : (lang === 'en' ? 'Open GPS/POD' : 'Mở GPS/POD');
-    if (act === 'Mở Finance') return lang === 'la' ? 'ເປີດໜ້າການເງິນ' : (lang === 'en' ? 'Open Finance' : 'Mở Finance');
-    return act;
-  };
-
-  worklistEl.innerHTML = drilldown.worklist.length ? drilldown.worklist.slice(0, 8).map(item => {
-    const color = colorBySeverity[item.severity] || colorBySeverity.info;
-    const title = (kpiLabelMap[item.title] && kpiLabelMap[item.title][lang]) || item.title;
-    const inChargeText = lang === 'la' ? 'ຜູ້ຮັບຜິດຊອບ:' : 'Phụ trách:';
-    return `
-      <div onclick="openSlaKpiIssue('${item.id}')" style="background:${color.bg}; border:1px solid ${color.border}; border-radius:12px; padding:10px 11px; display:grid; gap:5px; cursor:pointer;">
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-          <strong style="color:#0f172a;"><i class="fa-solid ${color.icon}" style="color:${color.text};"></i> ${title}</strong>
-          <span style="font-size:.72rem; font-weight:900; color:${color.text}; white-space:nowrap;">${item.metric}</span>
-        </div>
-        <div style="font-size:.78rem; color:#475569;">${item.description}</div>
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:.75rem;">
-          <span style="color:#64748b;">${inChargeText} <strong>${ownerLabel(item.owner)}</strong></span>
-          <button class="fiori-btn fiori-btn-secondary" onclick="event.stopPropagation(); switchView('${item.navigation.view}')" style="padding:5px 9px; font-size:.72rem;">${actionLabel(item.action_label)}</button>
-        </div>
-      </div>
-    `;
-  }).join('') : `
-    <div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:12px; padding:12px; font-weight:800;">
-      <i class="fa-solid fa-circle-check"></i> ${lang === 'la' ? 'ບໍ່ມີການແຈ້ງເຕືອນ SLA/KPI ຮ້າຍແຮງ. ຂະບວນການດຳເນີນງານພ້ອມສຳລັບ demo.' : 'Chưa có cảnh báo SLA/KPI nghiêm trọng. Luồng vận hành đang sạch để demo.'}
-    </div>
-  `;
-  if (drilldown.worklist.length) {
-    const selectedIssue = activeSlaKpiIssueId && drilldown.worklist.some(item => String(item.id) === String(activeSlaKpiIssueId))
-      ? activeSlaKpiIssueId
-      : drilldown.worklist[0].id;
-    activeSlaKpiIssueId = selectedIssue;
-    renderSlaKpiIssueDetail(selectedIssue);
-  } else {
-    renderSlaKpiIssueDetail('');
-  }
-}
+// Đã dỡ renderSlaKpiDrilldown(): bốn container nó tìm (#sla-kpi-cards,
+// #sla-kpi-worklist, #sla-kpi-reason-chart, #sla-kpi-recommendations) không
+// tồn tại trong index.html nên hàm luôn thoát ngay dòng kiểm tra đầu, và
+// không còn chỗ nào gọi nó. Bộ chỉ số SLA/KPI đang hiển thị là
+// renderReportingDrilldown(), vẽ qua js/sla-analytics.js.
 
 function renderRolePermissionBoard() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
@@ -3170,10 +3120,10 @@ function renderRoleAdminWorkbench() {
   worklistEl.innerHTML = workbench.worklist.length ? workbench.worklist.slice(0, 6).map(item => `
     <div onclick="switchView('${item.navigation.view}')" style="background:${item.severity === 'critical' ? '#fff1f2' : '#fff7ed'}; border:1px solid ${item.severity === 'critical' ? '#fecaca' : '#fed7aa'}; border-radius:10px; padding:9px; cursor:pointer;">
       <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
-        <strong style="color:#0f172a; font-size:.82rem;">${item.title}</strong>
+        <strong style="color:#0f172a; font-size:.82rem;">${escapeHtml(item.title)}</strong>
         <span style="font-size:.68rem; font-weight:950; color:${item.severity === 'critical' ? '#dc2626' : '#c2410c'};">${item.action_label}</span>
       </div>
-      <div style="font-size:.74rem; color:#64748b; line-height:1.35; margin-top:4px;">${item.description}</div>
+      <div style="font-size:.74rem; color:#64748b; line-height:1.35; margin-top:4px;">${escapeHtml(item.description)}</div>
     </div>
   `).join('') : `
     <div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:10px; padding:9px; font-weight:850;">
@@ -3191,20 +3141,16 @@ function renderRoleAdminWorkbench() {
   `).join('');
 }
 
-function renderReportingDrilldown() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const cardsEl = document.getElementById('reporting-kpi-cards');
-  const breakdownEl = document.getElementById('reporting-breakdown-grid');
-  const tableEl = document.getElementById('reporting-drilldown-table');
-  const summaryEl = document.getElementById('reporting-executive-summary');
-  const agingEl = document.getElementById('reporting-aging-buckets');
-  const trendEl = document.getElementById('reporting-trend-chart');
-  const heatmapEl = document.getElementById('reporting-risk-heatmap');
-  const playbookEl = document.getElementById('reporting-sla-playbook');
-  if (!cardsEl || !breakdownEl || !tableEl) return;
-
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const report = window.TmsCockpit.buildReportingDrilldown(appState || {});
+/**
+ * Dịch các nhãn do dữ liệu mang theo sang ngôn ngữ đang chọn.
+ *
+ * Các bản đồ dịch này vốn nằm trong app.js nên giữ nguyên tại đây; phần TRÌNH
+ * BÀY đã chuyển sang js/sla-analytics.js để kiểm chứng được bằng Node. Nhờ
+ * tách vậy, module trình bày chỉ nhận chuỗi đã dịch và không cần biết gì về
+ * i18n của dữ liệu.
+ */
+function localizeReportingDrilldown(report, lang) {
+  const pick = (map, value) => (map[value] && map[value][lang]) || value;
 
   const kpiLabelMap = {
     'Tổng đơn phân tích': { vi: 'Tổng đơn phân tích', en: 'Total Analyzed Orders', la: 'ຈຳນວນໃບສັ່ງທັງໝົດທີ່ວິເຄາະ' },
@@ -3214,199 +3160,42 @@ function renderReportingDrilldown() {
     'Đơn vượt chi phí': { vi: 'Đơn vượt chi phí', en: 'Cost Overrun Orders', la: 'ໃບສັ່ງເກີນຕົ້ນທຶນ' }
   };
 
-  const cardValues = [
-    report.kpis.total_orders,
-    { ...report.kpis.on_time_rate, count: `${report.kpis.on_time_rate.percent}%` },
-    report.kpis.sla_risks,
-    report.kpis.critical_risks,
-    report.kpis.cost_overrun
-  ];
-  cardsEl.innerHTML = cardValues.map(kpi => {
-    const title = (kpiLabelMap[kpi.label] && kpiLabelMap[kpi.label][lang]) || kpi.label;
-    return `
-      <div style="background:#ffffff; border:1px solid ${Number(kpi.count) ? '#dbeafe' : '#bbf7d0'}; border-radius:14px; padding:14px;">
-        <div style="font-size:.76rem; color:#64748b; font-weight:800; text-transform:uppercase;">${title}</div>
-        <div style="font-size:1.5rem; font-weight:950; color:#0a6ed1; margin-top:5px;">${kpi.count}</div>
-      </div>
-    `;
-  }).join('');
-
-  if (summaryEl) {
-    let summary = report.executive_summary || '';
-    if (lang === 'la') {
-      summary = summary
-        .replace(/SLA có (\d+) cảnh báo, (\d+) cảnh báo nghiêm trọng: ưu tiên xử lý các bucket trễ lớn và gửi POD trước khi demo\./gi, 'SLA ມີ $1 ແຈ້ງເຕືອນ, $2 ແຈ້ງເຕືອນຮ້າຍແຮງ: ໃຫ້ບູລິມະສິດແກ້ໄຂບັນດາ bucket ຊັກຊ້າຫຼາຍ ແລະ ສົ່ງ POD ກ່ອນ demo.')
-        .replace(/ưu tiên xử lý các bucket trễ lớn và gửi POD trước khi demo/gi, 'ໃຫ້ບູລິມະສິດແກ້ໄຂບັນດາ bucket ຊັກຊ້າຫຼາຍ ແລະ ສົ່ງ POD ກ່ອນ demo')
-        .replace(/cảnh báo nghiêm trọng/gi, 'ແຈ້ງເຕືອນຮ້າຍແຮງ')
-        .replace(/cảnh báo/gi, 'ແຈ້ງເຕືອນ')
-        .replace(/gửi POD/gi, 'ສົ່ງ POD')
-        .replace(/trước khi demo/gi, 'ກ່ອນ demo');
-    } else if (lang === 'en') {
-      summary = summary
-        .replace(/SLA có (\d+) cảnh báo, (\d+) cảnh báo nghiêm trọng: ưu tiên xử lý các bucket trễ lớn và gửi POD trước khi demo\./gi, 'SLA has $1 alerts, $2 critical: prioritize large late buckets and submit POD before demo.');
-    }
-    summaryEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${summary}`;
-  }
-
-  if (agingEl) {
-    const agingLabelMap = {
-      'Dưới 30 phút': { vi: 'Dưới 30 phút', en: 'Under 30 mins', la: 'ຕ່ຳກວ່າ 30 ນາທີ' },
-      '30–60 phút': { vi: '30–60 phút', en: '30–60 mins', la: '30–60 ນາທີ' },
-      '60–120 phút': { vi: '60–120 phút', en: '60–120 mins', la: '60–120 ນາທີ' },
-      'Trên 120 phút': { vi: 'Trên 120 phút', en: 'Over 120 mins', la: 'ເກີນ 120 ນາທີ' }
-    };
-    const agingTitle = lang === 'la' ? 'ໄລຍະເວລາຊັກຊ້າ SLA (Aging)' : (lang === 'en' ? 'SLA Aging Buckets' : 'Aging bucket SLA');
-    agingEl.innerHTML = `
-      <h4 style="margin:0 0 9px; color:#0f172a; font-size:.92rem;">${agingTitle}</h4>
-      <div style="display:grid; gap:7px;">
-        ${report.aging_buckets.map(bucket => {
-          const bLabel = (agingLabelMap[bucket.label] && agingLabelMap[bucket.label][lang]) || bucket.label;
-          return `
-            <div style="display:flex; justify-content:space-between; gap:8px; align-items:center; background:${bucket.severity === 'critical' ? '#fff1f2' : bucket.severity === 'warning' ? '#fff7ed' : '#f8fafc'}; border:1px solid ${bucket.severity === 'critical' ? '#fecaca' : bucket.severity === 'warning' ? '#fed7aa' : '#e2e8f0'}; border-radius:10px; padding:8px;">
-              <span style="font-size:.78rem; color:#475569; font-weight:850;">${bLabel}</span>
-              <strong style="color:${bucket.severity === 'critical' ? '#dc2626' : '#0a6ed1'};">${bucket.count}</strong>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-  }
-
-  if (trendEl) {
-    const trendTitle = lang === 'la' ? 'ທ່າອ່ຽງແຈ້ງເຕືອນຕາມວັນ' : (lang === 'en' ? 'Alert Trend by Day' : 'Trend cảnh báo theo ngày');
-    const emptyTrend = lang === 'la' ? 'ຍັງບໍ່ມີທ່າອ່ຽງ SLA/KPI.' : (lang === 'en' ? 'No SLA/KPI trend data.' : 'Chưa có trend SLA/KPI.');
-    const critText = lang === 'la' ? 'ຮ້າຍແຮງ' : (lang === 'en' ? 'critical' : 'nghiêm trọng');
-    const warnText = lang === 'la' ? 'ຕ້ອງຕິດຕາມ' : (lang === 'en' ? 'warning' : 'cần theo dõi');
-    trendEl.innerHTML = `
-      <h4 style="margin:0 0 9px; color:#0f172a; font-size:.92rem;">${trendTitle}</h4>
-      <div style="display:grid; gap:7px;">
-        ${report.trend_by_day.length ? report.trend_by_day.map(day => `
-          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px;">
-            <div style="display:flex; justify-content:space-between; gap:8px;"><strong>${day.date}</strong><span style="color:#dc2626; font-weight:950;">${day.issue_count}</span></div>
-            <div style="height:7px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin-top:6px;">
-              <div style="height:7px; width:${Math.min(100, day.issue_count * 18)}%; background:#0a6ed1;"></div>
-            </div>
-            <div style="font-size:.72rem; color:#64748b; margin-top:4px;">${day.critical_count} ${critText} • ${day.warning_count} ${warnText}</div>
-          </div>
-        `).join('') : `<div style="color:#64748b; text-align:center; padding:12px;">${emptyTrend}</div>`}
-      </div>
-    `;
-  }
-
-  if (playbookEl) {
-    const playbookTitle = lang === 'la' ? 'ຄູ່ມືແກ້ໄຂ SLA (Playbook)' : (lang === 'en' ? 'SLA Action Playbook' : 'Playbook xử lý SLA');
-    const emptyPlaybook = lang === 'la' ? 'ບໍ່ມີ playbook ສຸກເສີນທີ່ຕ້ອງປະຕິບັດ.' : (lang === 'en' ? 'No urgent playbook to execute.' : 'Không có playbook khẩn cần chạy.');
-    const playbookLabelMap = {
-      'Xử lý trễ giao hàng': { vi: 'Xử lý trễ giao hàng', en: 'Handle Late Delivery', la: 'ແກ້ໄຂການສົ່ງສິນຄ້າຊັກຊ້າ' },
-      'Bổ sung POD': { vi: 'Bổ sung POD', en: 'Complete POD', la: 'ເພີ່ມເຕີມ POD' },
-      'Kiểm tra vượt chi phí': { vi: 'Kiểm tra vượt chi phí', en: 'Review Cost Overrun', la: 'ກວດສອບຕົ້ນທຶນເກີນ' }
-    };
-    const playbookInstrMap = {
-      'Mở GPS/POD, gọi tài xế, cập nhật ETA và thông báo khách hàng nếu cần.': {
-        vi: 'Mở GPS/POD, gọi tài xế, cập nhật ETA và thông báo khách hàng nếu cần.',
-        en: 'Open GPS/POD, contact driver, update ETA, notify customer if needed.',
-        la: 'ເປີດ GPS/POD, ໂທຫາຄົນຂັບ, ອັບເດດ ETA ແລະ ແຈ້ງລູກຄ້າຖ້າຈຳເປັນ.'
-      },
-      'Yêu cầu upload biên bản ký nhận trước khi chốt AP/Settlement.': {
-        vi: 'Yêu cầu upload biên bản ký nhận trước khi chốt AP/Settlement.',
-        en: 'Require signed POD upload before AP/Settlement closeout.',
-        la: 'ຮຽກຮ້ອງໃຫ້ອັບໂຫຼດໃບຢັ້ງຢືນການຮັບສິນຄ້າກ່ອນປິດ AP/Settlement.'
-      },
-      'Mở Finance Cockpit để kiểm tra Actual Cost, nguyên nhân và quyền duyệt.': {
-        vi: 'Mở Finance Cockpit để kiểm tra Actual Cost, nguyên nhân và quyền duyệt.',
-        en: 'Open Finance Cockpit to verify Actual Cost, root cause, and approval rights.',
-        la: 'ເປີດ Finance Cockpit ເພື່ອກວດສອບ Actual Cost, ສາເຫດ ແລະ ສິດອະນຸມັດ.'
-      }
-    };
-
-    playbookEl.innerHTML = `
-      <h4 style="margin:0 0 9px; color:#0f172a; font-size:.92rem;">${playbookTitle}</h4>
-      <div style="display:grid; gap:7px;">
-        ${report.sla_playbook.length ? report.sla_playbook.map(item => {
-          const itemLabel = (playbookLabelMap[item.label] && playbookLabelMap[item.label][lang]) || item.label;
-          const itemInstr = (playbookInstrMap[item.instruction] && playbookInstrMap[item.instruction][lang]) || item.instruction;
-          return `
-            <button onclick="switchView('${item.navigation.view}')" style="text-align:left; background:#ffffff; border:1px solid #dbeafe; border-radius:10px; padding:8px; cursor:pointer;">
-              <div style="display:flex; justify-content:space-between; gap:8px;"><strong style="color:#0f172a;">${itemLabel}</strong><span style="color:#0a6ed1; font-weight:950;">${item.trigger_count}</span></div>
-              <div style="font-size:.73rem; color:#64748b; margin-top:3px;">${itemInstr}</div>
-            </button>
-          `;
-        }).join('') : `<div style="color:#047857; font-weight:850; background:#ecfdf5; border:1px solid #bbf7d0; border-radius:10px; padding:9px;">${emptyPlaybook}</div>`}
-      </div>
-    `;
-  }
-
-  if (heatmapEl) {
-    const dimMap = {
-      'Khách hàng': { vi: 'Khách hàng', en: 'Customer', la: 'ລູກຄ້າ' },
-      'Tuyến đường': { vi: 'Tuyến đường', en: 'Route', la: 'ເສັ້ນທາງ' },
-      'Tài xế': { vi: 'Tài xế', en: 'Driver', la: 'ຄົນຂັບ' }
-    };
-    const orderUnit = lang === 'la' ? 'ໃບສັ່ງ' : (lang === 'en' ? 'orders' : 'đơn');
-    const onTimeText = lang === 'la' ? 'ຕົງເວລາ' : (lang === 'en' ? 'on-time' : 'đúng hạn');
-    const emptyHeatmap = lang === 'la' ? 'ຍັງບໍ່ມີຂໍ້ມູນ heatmap.' : (lang === 'en' ? 'No heatmap data.' : 'Chưa có dữ liệu heatmap.');
-    const unclassifiedText = lang === 'la' ? 'ຍັງບໍ່ໄດ້ຈັດປະເພດ' : (lang === 'en' ? 'Unassigned' : 'Chưa phân loại');
-
-    heatmapEl.innerHTML = report.risk_heatmap.map(group => {
-      const dimTitle = (dimMap[group.dimension] && dimMap[group.dimension][lang]) || group.dimension;
-      return `
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-          <h4 style="margin:0 0 9px; color:#0f172a; font-size:.92rem;">Heatmap ${dimTitle}</h4>
-          <div style="display:grid; gap:7px;">
-            ${group.items.length ? group.items.map(item => {
-              const label = item.label === 'Chưa phân loại' ? unclassifiedText : item.label;
-              return `
-                <div style="background:${item.risk_level === 'critical' ? '#fff1f2' : item.risk_level === 'warning' ? '#fff7ed' : '#f8fafc'}; border:1px solid ${item.risk_level === 'critical' ? '#fecaca' : item.risk_level === 'warning' ? '#fed7aa' : '#e2e8f0'}; border-radius:10px; padding:8px;">
-                  <div style="display:flex; justify-content:space-between; gap:8px;"><strong>${label}</strong><span style="font-weight:950; color:${item.risk_level === 'ok' ? '#047857' : '#dc2626'};">${item.issue_count}</span></div>
-                  <div style="font-size:.72rem; color:#64748b; margin-top:3px;">${item.total_orders} ${orderUnit} • ${onTimeText} ${item.on_time_rate}%</div>
-                </div>
-              `;
-            }).join('') : `<div style="color:#64748b; text-align:center; padding:12px;">${emptyHeatmap}</div>`}
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  const alertUnit = lang === 'la' ? 'ແຈ້ງເຕືອນ' : (lang === 'en' ? 'alerts' : 'cảnh báo');
-  const orderUnit = lang === 'la' ? 'ໃບສັ່ງ' : (lang === 'en' ? 'orders' : 'đơn');
-  const onTimeText = lang === 'la' ? 'ຕົງເວລາ' : (lang === 'en' ? 'on-time' : 'đúng hạn');
-  const emptyAnalysis = lang === 'la' ? 'ຍັງບໍ່ມີຂໍ້ມູນການວິເຄາະ.' : (lang === 'en' ? 'No analysis data.' : 'Chưa có dữ liệu phân tích.');
-  const unclassifiedText = lang === 'la' ? 'ຍັງບໍ່ໄດ້ຈັດປະເພດ' : (lang === 'en' ? 'Unassigned' : 'Chưa phân loại');
-
-  const riskLabel = (lvl) => {
-    if (lvl === 'Cao') return lang === 'la' ? 'àºªàº¹àº‡' : (lang === 'en' ? 'High' : 'Cao');
-    if (lvl === 'Ổn' || lvl === 'Bình thường') return lang === 'la' ? 'ປົກກະຕິ' : (lang === 'en' ? 'Normal' : 'Ổn');
-    if (lvl === 'Trung bình') return lang === 'la' ? 'ປານກາງ' : (lang === 'en' ? 'Medium' : 'Trung bình');
-    return lvl;
+  const agingLabelMap = {
+    'Dưới 30 phút': { vi: 'Dưới 30 phút', en: 'Under 30 mins', la: 'ຕ່ຳກວ່າ 30 ນາທີ' },
+    '30–60 phút': { vi: '30–60 phút', en: '30–60 mins', la: '30–60 ນາທີ' },
+    '60–120 phút': { vi: '60–120 phút', en: '60–120 mins', la: '60–120 ນາທີ' },
+    'Trên 120 phút': { vi: 'Trên 120 phút', en: 'Over 120 mins', la: 'ເກີນ 120 ນາທີ' }
   };
 
-  const section = (title, rows) => `
-    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-      <h4 style="margin:0 0 9px; color:#0f172a; font-size:.92rem;">${title}</h4>
-      <div style="display:grid; gap:7px;">
-        ${rows.length ? rows.map(row => {
-          const rLabel = row.label === 'Chưa phân loại' ? unclassifiedText : row.label;
-          return `
-            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:8px 9px;">
-              <div style="display:flex; justify-content:space-between; gap:8px;"><strong>${rLabel}</strong><span style="color:${row.issue_count ? '#dc2626' : '#059669'}; font-weight:900;">${row.issue_count} ${alertUnit}</span></div>
-              <div style="font-size:.74rem; color:#64748b; margin-top:3px;">${row.total_orders} ${orderUnit} • ${onTimeText} ${row.on_time_rate}% • ${riskLabel(row.risk_level)}</div>
-            </div>
-          `;
-        }).join('') : `<div style="color:#64748b; text-align:center; padding:12px;">${emptyAnalysis}</div>`}
-      </div>
-    </div>
-  `;
+  const playbookLabelMap = {
+    'Xử lý trễ giao hàng': { vi: 'Xử lý trễ giao hàng', en: 'Handle Late Delivery', la: 'ແກ້ໄຂການສົ່ງສິນຄ້າຊັກຊ້າ' },
+    'Bổ sung POD': { vi: 'Bổ sung POD', en: 'Complete POD', la: 'ເພີ່ມເຕີມ POD' },
+    'Kiểm tra vượt chi phí': { vi: 'Kiểm tra vượt chi phí', en: 'Review Cost Overrun', la: 'ກວດສອບຕົ້ນທຶນເກີນ' }
+  };
 
-  const secCustomer = lang === 'la' ? 'ຕາມລູກຄ້າ' : (lang === 'en' ? 'By Customer' : 'Theo khách hàng');
-  const secRoute = lang === 'la' ? 'ຕາມເສັ້ນທາງ' : (lang === 'en' ? 'By Route' : 'Theo tuyến đường');
-  const secDriver = lang === 'la' ? 'ຕາມຄົນຂັບ' : (lang === 'en' ? 'By Driver' : 'Theo tài xế');
+  const playbookInstrMap = {
+    'Mở GPS/POD, gọi tài xế, cập nhật ETA và thông báo khách hàng nếu cần.': {
+      vi: 'Mở GPS/POD, gọi tài xế, cập nhật ETA và thông báo khách hàng nếu cần.',
+      en: 'Open GPS/POD, contact driver, update ETA, notify customer if needed.',
+      la: 'ເປີດ GPS/POD, ໂທຫາຄົນຂັບ, ອັບເດດ ETA ແລະ ແຈ້ງລູກຄ້າຖ້າຈຳເປັນ.'
+    },
+    'Yêu cầu upload biên bản ký nhận trước khi chốt AP/Settlement.': {
+      vi: 'Yêu cầu upload biên bản ký nhận trước khi chốt AP/Settlement.',
+      en: 'Require signed POD upload before AP/Settlement closeout.',
+      la: 'ຮຽກຮ້ອງໃຫ້ອັບໂຫຼດໃບຢັ້ງຢືນການຮັບສິນຄ້າກ່ອນປິດ AP/Settlement.'
+    },
+    'Mở Finance Cockpit để kiểm tra Actual Cost, nguyên nhân và quyền duyệt.': {
+      vi: 'Mở Finance Cockpit để kiểm tra Actual Cost, nguyên nhân và quyền duyệt.',
+      en: 'Open Finance Cockpit to verify Actual Cost, root cause, and approval rights.',
+      la: 'ເປີດ Finance Cockpit ເພື່ອກວດສອບ Actual Cost, ສາເຫດ ແລະ ສິດອະນຸມັດ.'
+    }
+  };
 
-  breakdownEl.innerHTML = [
-    section(secCustomer, report.by_customer),
-    section(secRoute, report.by_route),
-    section(secDriver, report.by_driver)
-  ].join('');
+  const dimMap = {
+    'Khách hàng': { vi: 'Khách hàng', en: 'Customer', la: 'ລູກຄ້າ' },
+    'Tuyến đường': { vi: 'Tuyến đường', en: 'Route', la: 'ເສັ້ນທາງ' },
+    'Tài xế': { vi: 'Tài xế', en: 'Driver', la: 'ຄົນຂັບ' }
+  };
 
   const issueLabelMap = {
     'Trễ lấy hàng': { vi: 'Trễ lấy hàng', en: 'Late Pickup', la: 'ຊັກຊ້າໃນການຮັບສິນຄ້າ' },
@@ -3417,23 +3206,16 @@ function renderReportingDrilldown() {
     'Giao trễ thực tế': { vi: 'Giao trễ thực tế', en: 'Actual Late Delivery', la: 'ສົ່ງຊັກຊ້າຕົວຈິງ' }
   };
 
-  const sevLabel = (sev) => {
-    if (sev === 'critical') return lang === 'la' ? 'ຮ້າຍແຮງ' : (lang === 'en' ? 'Critical' : 'Nghiêm trọng');
-    return lang === 'la' ? 'ຕ້ອງຕິດຕາມ' : (lang === 'en' ? 'Warning' : 'Cần theo dõi');
+  const ownerMap = {
+    'Điều phối': { vi: 'Điều phối', en: 'Dispatch', la: 'ການປ່ອຍລົດ' },
+    'Vận hành': { vi: 'Vận hành', en: 'Operations', la: 'ການປະຕິບັດງານ' },
+    'Kế toán': { vi: 'Kế toán', en: 'Accounting', la: 'ບັນຊີ' }
   };
 
-  const ownerLabel = (owner) => {
-    if (owner === 'Điều phối') return lang === 'la' ? 'ການປ່ອຍລົດ' : (lang === 'en' ? 'Dispatch' : 'Điều phối');
-    if (owner === 'Vận hành') return lang === 'la' ? 'ການປະຕິບັດງານ' : (lang === 'en' ? 'Operations' : 'Vận hành');
-    if (owner === 'Kế toán') return lang === 'la' ? 'ບັນຊີ' : (lang === 'en' ? 'Accounting' : 'Kế toán');
-    return owner;
-  };
-
-  const actionLabel = (act) => {
-    if (act === 'Mở điều phối') return lang === 'la' ? 'ເປີດໜ້າປ່ອຍລົດ' : (lang === 'en' ? 'Open Dispatch' : 'Mở điều phối');
-    if (act === 'Mở GPS/POD') return lang === 'la' ? 'ເປີດ GPS/POD' : (lang === 'en' ? 'Open GPS/POD' : 'Mở GPS/POD');
-    if (act === 'Mở Finance') return lang === 'la' ? 'ເປີດໜ້າການເງິນ' : (lang === 'en' ? 'Open Finance' : 'Mở Finance');
-    return act;
+  const actionMap = {
+    'Mở điều phối': { vi: 'Mở điều phối', en: 'Open Dispatch', la: 'ເປີດໜ້າປ່ອຍລົດ' },
+    'Mở GPS/POD': { vi: 'Mở GPS/POD', en: 'Open GPS/POD', la: 'ເປີດ GPS/POD' },
+    'Mở Finance': { vi: 'Mở Finance', en: 'Open Finance', la: 'ເປີດໜ້າການເງິນ' }
   };
 
   const formatMetric = (metric) => {
@@ -3444,7 +3226,8 @@ function renderReportingDrilldown() {
         .replace(/phút/gi, 'ນາທີ')
         .replace(/ngày/gi, 'ວັນ')
         .replace(/đơn/gi, 'ໃບສັ່ງ');
-    } else if (lang === 'en') {
+    }
+    if (lang === 'en') {
       return String(metric)
         .replace(/phút\/ngày/gi, 'mins/day')
         .replace(/phút/gi, 'mins')
@@ -3454,23 +3237,75 @@ function renderReportingDrilldown() {
     return metric;
   };
 
-  const emptyTableText = lang === 'la' ? 'ບໍ່ມີການແຈ້ງເຕືອນ SLA/KPI ໃນຂໍ້ມູນປະຈຸບັນ.' : (lang === 'en' ? 'No SLA/KPI alerts in current data.' : 'Không có cảnh báo SLA/KPI trong dữ liệu hiện tại.');
+  const localizeSummary = (summary) => {
+    if (lang !== 'la' || !summary) return summary;
+    return String(summary)
+      .replace(/SLA có (\d+) cảnh báo, (\d+) cảnh báo nghiêm trọng/gi, 'SLA ມີ $1 ແຈ້ງເຕືອນ, $2 ແຈ້ງເຕືອນຮ້າຍແຮງ')
+      .replace(/ưu tiên xử lý các bucket trễ lớn và gửi POD trước khi demo/gi, 'ໃຫ້ບູລິມະສິດແກ້ໄຂບັນດາ bucket ຊັກຊ້າຫຼາຍ ແລະ ສົ່ງ POD ກ່ອນ demo')
+      .replace(/ưu tiên xử lý các bucket trễ lớn và thiếu POD trước khi demo/gi, 'ໃຫ້ບູລິມະສິດແກ້ໄຂບັນດາ bucket ຊັກຊ້າຫຼາຍ ແລະ ຂາດ POD ກ່ອນ demo');
+  };
 
-  tableEl.innerHTML = report.drilldown_rows.length ? report.drilldown_rows.slice(0, 12).map(row => {
-    const iss = (issueLabelMap[row.issue_label] && issueLabelMap[row.issue_label][lang]) || row.issue_label;
-    return `
-      <tr>
-        <td><strong>${row.order_id}</strong></td>
-        <td>${iss}</td>
-        <td><span class="badge ${row.severity === 'critical' ? 'badge-danger' : 'badge-warning'}">${sevLabel(row.severity)}</span></td>
-        <td>${formatMetric(row.metric)}</td>
-        <td>${ownerLabel(row.owner)}</td>
-        <td><button class="fiori-btn fiori-btn-secondary" onclick="switchView('${row.navigation.view}')" style="padding:4px 8px; font-size:.72rem;">${actionLabel(row.action_label)}</button></td>
-      </tr>
-    `;
-  }).join('') : `
-    <tr><td colspan="6" style="text-align:center; color:#047857; padding:18px; font-weight:800;">${emptyTableText}</td></tr>
-  `;
+  const kpis = {};
+  Object.keys(report.kpis || {}).forEach(key => {
+    const kpi = report.kpis[key];
+    kpis[key] = Object.assign({}, kpi, { label: pick(kpiLabelMap, kpi.label) });
+  });
+
+  return {
+    kpis,
+    executive_summary: localizeSummary(report.executive_summary),
+    aging_buckets: (report.aging_buckets || []).map(bucket => (
+      Object.assign({}, bucket, { label: pick(agingLabelMap, bucket.label) })
+    )),
+    trend_by_day: report.trend_by_day || [],
+    risk_heatmap: (report.risk_heatmap || []).map(group => (
+      Object.assign({}, group, { dimension: pick(dimMap, group.dimension) })
+    )),
+    sla_playbook: (report.sla_playbook || []).map(item => Object.assign({}, item, {
+      label: pick(playbookLabelMap, item.label),
+      instruction: pick(playbookInstrMap, item.instruction)
+    })),
+    drilldown_rows: (report.drilldown_rows || []).slice(0, 12).map(row => Object.assign({}, row, {
+      issue_label: pick(issueLabelMap, row.issue_label),
+      owner: pick(ownerMap, row.owner),
+      action_label: pick(actionMap, row.action_label),
+      metric: formatMetric(row.metric)
+    }))
+  };
+}
+
+/**
+ * Dựng pane "Chất lượng dịch vụ" trong workspace Phân tích.
+ *
+ * Phần trình bày nằm ở js/sla-analytics.js. Hàm này chỉ lo lấy dữ liệu, dịch
+ * nhãn, rồi gắn HTML vào các container.
+ */
+function renderReportingDrilldown() {
+  if (!window.TmsCockpit || !window.SlaAnalytics || typeof document === 'undefined') return;
+
+  const heroEl = document.getElementById('reporting-hero');
+  const tilesEl = document.getElementById('reporting-kpi-cards');
+  const panelsEl = document.getElementById('reporting-panels');
+  const heatmapEl = document.getElementById('reporting-risk-heatmap');
+  const tableEl = document.getElementById('reporting-drilldown-table');
+  if (!heroEl || !tilesEl || !panelsEl || !tableEl) return;
+
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
+  const report = localizeReportingDrilldown(
+    window.TmsCockpit.buildReportingDrilldown(appState || {}),
+    lang
+  );
+  const view = window.SlaAnalytics;
+
+  heroEl.innerHTML = view.onTimeHero(report.kpis, report.executive_summary, lang);
+  tilesEl.innerHTML = view.kpiTiles(report.kpis, lang);
+  panelsEl.innerHTML = [
+    view.agingBuckets(report.aging_buckets, lang),
+    view.trendByDay(report.trend_by_day, lang),
+    view.slaPlaybook(report.sla_playbook, lang)
+  ].join('');
+  if (heatmapEl) heatmapEl.innerHTML = view.riskHeatmap(report.risk_heatmap, lang);
+  tableEl.innerHTML = view.drilldownRows(report.drilldown_rows, lang);
 }
 
 function renderFinanceCockpit() {
@@ -3493,13 +3328,13 @@ function renderFinanceCockpit() {
   const renderRows = (rows, emptyText, kind) => rows.length ? rows.map(row => `
     <div style="border:1px solid #e2e8f0; border-radius:12px; padding:11px 12px; background:#f8fafc; display:grid; gap:5px;">
       <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-        <strong style="color:#0f172a;">${row.title}</strong>
+        <strong style="color:#0f172a;">${escapeHtml(row.title)}</strong>
         <span style="font-size:.72rem; font-weight:900; color:#0369a1; background:#e0f2fe; border-radius:999px; padding:4px 8px;">${row.status_label}</span>
       </div>
       <div style="font-size:.78rem; color:#64748b;">${row.subtitle}</div>
       <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
         <div style="font-size:.9rem; color:#15803d; font-weight:900;">${money(row.amount, row.currency)}</div>
-        <button class="fiori-btn fiori-btn-secondary" onclick="openFinanceDeepForm('${kind}', '${row.id || row.title || ''}')" style="padding:5px 9px; font-size:.72rem;"><i class="fa-solid fa-up-right-from-square"></i> Mở hồ sơ</button>
+        <button class="fiori-btn fiori-btn-secondary" onclick="openFinanceDeepForm('${escapeJsAttr(kind)}', '${escapeJsAttr(row.id || row.title || '')}')" style="padding:5px 9px; font-size:.72rem;"><i class="fa-solid fa-up-right-from-square"></i> Mở hồ sơ</button>
       </div>
     </div>
   `).join('') : `
@@ -3650,7 +3485,7 @@ function renderFinanceActionWorkbench() {
       <div style="border-left:4px solid ${style.border}; border-radius:12px; background:#ffffff; padding:12px 13px; box-shadow:0 3px 10px rgba(15,23,42,0.04); display:grid; gap:8px;">
         <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
           <div>
-            <div style="font-weight:950; color:#0f172a;">${item.title}</div>
+            <div style="font-weight:950; color:#0f172a;">${escapeHtml(item.title)}</div>
             <div style="font-size:.8rem; color:#64748b; margin-top:3px;">${item.subtitle}</div>
           </div>
           <span style="font-size:.72rem; font-weight:950; border-radius:999px; padding:4px 8px; background:${style.bg}; color:${style.color}; white-space:nowrap;">${style.label}</span>
@@ -3784,7 +3619,7 @@ function openFinanceActionForm(action) {
   const isCreateAp = command.path.includes('/ap-invoices') && command.path.includes('/costs/');
   const isCreateSettlement = command.path.includes('/settlements') && command.path.includes('/ap-invoices/');
   const isPayment = command.path.includes('/payments');
-  const today = new Date().toISOString().slice(0, 10);
+  const today = FormatUtils.dateInputValue();
 
   document.getElementById('finance-action-form-title').textContent = action.label || 'Thao tác tài chính';
   document.getElementById('finance-action-form-subtitle').textContent = isCreateAp
@@ -4082,15 +3917,17 @@ function financeMasterValue(id) {
 }
 
 function financeMasterDateTime(dateValue, endOfDay = false) {
-  if (!dateValue) return '';
-  return `${dateValue}${endOfDay ? 'T23:59:59' : 'T00:00:00'}`;
+  return FormatUtils.dayBoundary(dateValue, endOfDay);
 }
 
+// SỬA LỖI: bản gốc gọi toISOString() mà KHÔNG bù múi giờ, nên với UTC+7 mọi
+// thời điểm trước 07:00 sáng trả về sai ngày — 2026-01-01T00:00:00 hiện thành
+// 2025-12-31. Hàm này dùng cho ngày bắt đầu/kết thúc KỲ KẾ TOÁN, nên lệch một
+// ngày ở đây là lệch biên kỳ. FormatUtils.dateInputValue có bước bù đó.
 function financeMasterDateInput(value) {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toISOString().slice(0, 10);
+  const formatted = FormatUtils.dateInputValue(value);
+  return formatted || String(value).slice(0, 10);
 }
 
 function findFinanceMasterRecord(kind, id) {
@@ -4110,7 +3947,7 @@ window.openFinanceMasterConfig = function (kind, record = null) {
   }
   const modal = document.getElementById('finance-master-config-modal');
   if (!modal) return;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = FormatUtils.dateInputValue();
   document.getElementById('finance-master-kind').value = kind;
   document.getElementById('finance-master-edit-id').value = record
     ? String(record.code || record.id || record.carrier_id || record.mapping_key || record.key || '')
@@ -4291,7 +4128,7 @@ window.deleteFinanceMasterRecord = async function (kind, id) {
 };
 
 window.seedFinanceMasterExample = async function (kind) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = FormatUtils.dateInputValue();
   const examples = {
     tax_code: {
       path: '/api/master-data/tax-codes',
@@ -4383,7 +4220,7 @@ function renderTenderCockpit() {
 
   carrierEl.innerHTML = cockpit.carriers.length ? cockpit.carriers.map(carrier => `
     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:11px; display:grid; gap:5px;">
-      <strong>${carrier.name}</strong>
+      <strong>${escapeHtml(carrier.name)}</strong>
       <div style="font-size:.78rem; color:#64748b;">${carrier.id} • ${carrier.type}</div>
       <div style="font-size:.76rem; color:#334155; font-weight:800;">MST: ${carrier.tax_code}</div>
       <button class="fiori-btn fiori-btn-secondary" onclick="selectTenderRecord('${carrier.detail_key}')" style="padding:5px 9px; font-size:.72rem;">Xem carrier</button>
@@ -4405,7 +4242,7 @@ function renderTenderCockpit() {
         <div style="border-left:4px solid ${isInternal ? '#10b981' : '#f59e0b'}; background:#ffffff; border-radius:12px; padding:11px; display:grid; gap:7px;">
           <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
             <div>
-              <strong style="color:#0f172a;">${item.title}</strong>
+              <strong style="color:#0f172a;">${escapeHtml(item.title)}</strong>
               <div style="font-size:.8rem; color:#64748b; margin-top:3px;">${item.message}</div>
             </div>
             <span style="font-size:.72rem; font-weight:950; border-radius:999px; padding:4px 8px; color:${isInternal ? '#047857' : '#92400e'}; background:${isInternal ? '#ecfdf5' : '#fffbeb'};">${isInternal ? 'Nội bộ' : 'Thuê ngoài'}</span>
@@ -4539,10 +4376,8 @@ function tenderAuthHeaders() {
 }
 
 function tenderDateTimeLocal(value) {
-  const date = value ? new Date(value) : new Date(Date.now() + 24 * 60 * 60 * 1000);
-  if (Number.isNaN(date.getTime())) return '';
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  // Không có giá trị thì mặc định là 24 giờ sau — hạn nộp thầu tối thiểu.
+  return FormatUtils.dateTimeInputValue(value || Date.now() + 24 * 60 * 60 * 1000);
 }
 
 function setTenderActionFieldVisible(fieldId, visible) {
@@ -4581,7 +4416,7 @@ function openTenderActionForm(action, title = 'Thao tác Tender') {
   if (carrierEl) {
     const carriers = (appState?.carriers || []).filter(carrier => String(carrier.status || 'active').toLowerCase() !== 'inactive');
     carrierEl.innerHTML = carriers.length
-      ? carriers.map(carrier => `<option value="${carrier.id || carrier.carrier_id || ''}">${carrier.name || carrier.carrier_name || carrier.id}</option>`).join('')
+      ? carriers.map(carrier => `<option value="${carrier.id || carrier.carrier_id || ''}">${escapeHtml(carrier.name || carrier.carrier_name || carrier.id)}</option>`).join('')
       : '<option value="">-- Chưa có carrier, vào Master Data để cấu hình --</option>';
     carrierEl.value = body.carrier_id || carrierEl.value;
   }
@@ -4809,9 +4644,7 @@ let dispatchDayWorkbenchState = {
 };
 
 function dispatchDateInputValue(value = dispatchCalendarDate) {
-  const date = new Date(value);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
+  return FormatUtils.dateInputValue(value);
 }
 
 window.setDispatchCalendarDate = function (value) {
@@ -5309,7 +5142,7 @@ function renderDispatchCapacityBoard() {
   unscheduledEl.innerHTML = board.unscheduled_worklist.length ? board.unscheduled_worklist.map(item => `
     <button onclick="selectDispatchCalendarItem('${item.id}')" style="text-align:left; border:1px solid #dbeafe; background:#ffffff; border-radius:11px; padding:9px 10px; cursor:pointer;">
       <div style="display:flex; justify-content:space-between; gap:8px;"><strong>${item.id}</strong><span style="font-size:.72rem; color:#0a6ed1; font-weight:950;">${item.action_label}</span></div>
-      <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${item.reason}</div>
+      <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${escapeHtml(item.reason)}</div>
     </button>
   `).join('') : `<div style="border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; border-radius:11px; padding:10px; font-weight:850;"><i class="fa-solid fa-circle-check"></i> Không có DO thiếu lịch/tài nguyên.</div>`;
 }
@@ -5822,7 +5655,7 @@ function renderDispatchCalendar() {
   conflictsEl.innerHTML = [
     ...calendar.capacity_alerts.map(item => `<button type="button" class="dispatch-alert-row ${item.severity === 'critical' ? 'dispatch-alert-row--critical' : ''}" onclick="switchView('${item.navigation.view}')"><i class="fa-solid fa-gauge-high"></i><span>${item.message}</span></button>`),
     ...calendar.conflicts.map(item => `<button type="button" class="dispatch-alert-row" onclick="switchView('${item.navigation.view}')"><i class="fa-solid fa-triangle-exclamation"></i><span>${item.message}<small>${item.action_label}</small></span></button>`),
-    ...calendar.unscheduled.slice(0, 5).map(item => `<div class="dispatch-alert-row"><i class="fa-solid fa-circle-info"></i><span><strong>${item.id}</strong>: ${item.reason}</span></div>`)
+    ...calendar.unscheduled.slice(0, 5).map(item => `<div class="dispatch-alert-row"><i class="fa-solid fa-circle-info"></i><span><strong>${item.id}</strong>: ${escapeHtml(item.reason)}</span></div>`)
   ].join('') || `<div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:10px; padding:10px; font-weight:800;"><i class="fa-solid fa-circle-check"></i> ${lang === 'la' ? 'ບໍ່ພົບຕາຕະລາງຊ້ອນກັນໃນກະດານປ່ອຍລົດ.' : (lang === 'en' ? 'No scheduling conflicts detected.' : 'Không phát hiện trùng lịch trong bảng điều phối.')}</div>`;
 
   if (detailSummaryEl && detailAlertsEl && window.TmsCockpit.buildDispatchCalendarDetail) {
@@ -6132,9 +5965,9 @@ function renderQuotations() {
   tbody.innerHTML = appState.quotations.map(q => `
     <tr>
       <td><strong>${q.id}</strong></td>
-      <td>${q.customer}</td>
+      <td>${escapeHtml(q.customer)}</td>
       <td>${q.route}</td>
-      <td>${q.cargo_type}</td>
+      <td>${escapeHtml(q.cargo_type)}</td>
       <td>${q.valid_to}</td>
       <td>${(q.total_cost || 0).toLocaleString()} ${t('unit_currency')}</td>
       <td>${q.margin_pct}%</td>
@@ -6182,7 +6015,7 @@ function renderDashboardDeliveryOrders() {
     <tr>
       <td><strong>${d.id}</strong></td>
       <td>${d.so_id || '-'}</td>
-      <td>${d.customer}</td>
+      <td>${escapeHtml(d.customer)}</td>
       <td>${d.route}</td>
       <td>${d.pickup_date}</td>
       <td>${d.delivery_date}</td>
@@ -6206,7 +6039,7 @@ function renderDashboardRoutes() {
   tbody.innerHTML = appState.routes.map(r => `
     <tr>
       <td><strong>${r.id}</strong></td>
-      <td>${r.name}</td>
+      <td>${escapeHtml(r.name)}</td>
       <td>${r.distance_km} km</td>
       <td>${r.est_time}</td>
     </tr>
@@ -6254,7 +6087,7 @@ function renderIncidents() {
       <td>${inc.driver}</td>
       <td><span class="badge badge-danger">${inc.incident_type}</span></td>
       <td>${inc.location}</td>
-      <td>${inc.description}</td>
+      <td>${escapeHtml(inc.description)}</td>
       <td><span class="badge badge-warning">${statusLabel(inc.status)}</span></td>
     </tr>
   `).join("");
@@ -6306,6 +6139,18 @@ function renderVehicles() {
 // Interactive Form Submissions
 async function submitQuotationForm(e) {
   e.preventDefault();
+  const fieldValue = (...ids) => {
+    for (const fieldId of ids) {
+      const element = document.getElementById(fieldId);
+      if (element && element.value !== undefined) return element.value;
+    }
+    return '';
+  };
+  const numberValue = (...ids) => {
+    const value = parseFloat(String(fieldValue(...ids)).replace(/,/g, ''));
+    return Number.isFinite(value) && value >= 0 ? value : 0;
+  };
+  const intValue = (...ids) => Math.max(0, parseInt(fieldValue(...ids), 10) || 0);
   const id = document.getElementById("modal-qt-id").value;
   const fuelCost = parseFloat(document.getElementById("modal-qt-fuel").value || 0);
   const driverCost = parseFloat(document.getElementById("modal-qt-driver").value || 0);
@@ -6320,7 +6165,19 @@ async function submitQuotationForm(e) {
     driver_cost: driverCost,
     toll_fee: tollFee,
     total_cost: fuelCost + driverCost + tollFee + warehouseCost,
-    selling_price: parseWorkflowMoneyValue(document.getElementById("qt-lbl-selling-price").textContent)
+    selling_price: parseWorkflowMoneyValue(document.getElementById("qt-lbl-selling-price").textContent),
+    // Keep the legacy modal compatible with the real workflow contract. These
+    // fields are optional for old markup but must be persisted when present.
+    origin: fieldValue('modal-qt-origin', 'qt-origin'),
+    destination: fieldValue('modal-qt-destination', 'qt-destination'),
+    pickup_window_start: fieldValue('modal-qt-pickup-window-start', 'qt-pickup-window-start'),
+    pickup_window_end: fieldValue('modal-qt-pickup-window-end', 'qt-pickup-window-end'),
+    delivery_window_start: fieldValue('modal-qt-delivery-window-start', 'qt-delivery-window-start'),
+    delivery_window_end: fieldValue('modal-qt-delivery-window-end', 'qt-delivery-window-end'),
+    weight_kg: numberValue('modal-qt-weight', 'qt-weight-kg'),
+    volume_m3: numberValue('modal-qt-volume', 'qt-volume-m3'),
+    pallet_count: intValue('modal-qt-pallets', 'qt-pallet-count'),
+    packaging_spec: fieldValue('modal-qt-packaging', 'qt-packaging-spec')
   };
 
   const url = id ? `${API_BASE}/api/quotations/${id}` : `${API_BASE}/api/quotations`;
@@ -6464,8 +6321,11 @@ async function sendChatMessage() {
 }
 
 async function confirmDraft(draftDataStr) {
+  // T\u00ean h\u00e0m gi\u1eef nguy\u00ean \u0111\u1ec3 kh\u00f4ng ph\u00e1 c\u00e1c ch\u1ed7 g\u1ecdi s\u1eb5n c\u00f3, nh\u01b0ng n\u00f3 KH\u00d4NG ghi d\u1eef
+  // li\u1ec7u: tr\u1ee3 l\u00fd ch\u1ec9 tr\u1ea3 v\u1ec1 h\u01b0\u1edbng d\u1eabn thao t\u00e1c. Xem
+  // backend/app/agents/action_agent.py::execute_draft.
   const draftData = JSON.parse(decodeURIComponent(draftDataStr));
-  appendUserMessage("\u2705 Duy\u1ec7t & L\u01b0u b\u1ea3n nh\u00e1p");
+  appendUserMessage("\ud83d\udccb Xem h\u01b0\u1edbng d\u1eabn thao t\u00e1c");
 
   try {
     const res = await fetch(`${API_BASE}/api/v1/ai/chat`, {
@@ -6511,7 +6371,13 @@ function appendUserMessage(msg) {
 
 function formatMarkdownToHTML(text) {
   if (!text) return "";
-  let html = text;
+  // Escape TRƯỚC khi áp dụng các quy tắc markdown. Kết quả của hàm này được
+  // gán vào innerHTML, và đầu vào là phản hồi của mô hình ngôn ngữ — vốn đọc
+  // lại dữ liệu nghiệp vụ như tên khách hàng hay ghi chú sự cố. Không escape
+  // thì một cái tên chứa thẻ script sẽ chạy trong phiên của điều phối viên.
+  // Thứ tự quan trọng: escape trước, rồi mới sinh ra <strong>/<li>/<br> của
+  // chính chúng ta, nếu không chúng cũng bị escape luôn.
+  let html = escapeHtml(text);
 
   // Convert Bold **text** -> <strong>text</strong>
   html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
@@ -6547,13 +6413,13 @@ function appendAIMessage(reply, agentName, isAction, draftData = null) {
     draftHTML = `
       <div class="draft-card">
         <div class="draft-title">\u{1F4DD} Chi ti\u1ebft d\u1eef li\u1ec7u b\u00f3c t\u00e1ch:</div>
-        <div style="margin-bottom:4px;"><strong>Thao t\u00e1c:</strong> <span class="badge badge-warning">${viAction}</span></div>
-        <div style="margin-bottom:4px;"><strong>\u0110\u1ed1i t\u01b0\u1ee3ng:</strong> ${viEntity}</div>
-        <div style="margin-bottom:4px;"><strong>Kh\u00e1ch h\u00e0ng:</strong> ${draftData.customer || '-'}</div>
-        <div style="margin-bottom:4px;"><strong>Tuy\u1ebfn \u0111\u01b0\u1eddng:</strong> ${draftData.route || '-'}</div>
-        <div style="margin-bottom:4px;"><strong>Lo\u1ea1i h\u00e0ng/S\u1ef1 c\u1ed1:</strong> ${draftData.cargo_type || '-'}</div>
+        <div style="margin-bottom:4px;"><strong>Thao t\u00e1c:</strong> <span class="badge badge-warning">${escapeHtml(viAction)}</span></div>
+        <div style="margin-bottom:4px;"><strong>\u0110\u1ed1i t\u01b0\u1ee3ng:</strong> ${escapeHtml(viEntity)}</div>
+        <div style="margin-bottom:4px;"><strong>Kh\u00e1ch h\u00e0ng:</strong> ${escapeHtml(draftData.customer || '-')}</div>
+        <div style="margin-bottom:4px;"><strong>Tuy\u1ebfn \u0111\u01b0\u1eddng:</strong> ${escapeHtml(draftData.route || '-')}</div>
+        <div style="margin-bottom:4px;"><strong>Lo\u1ea1i h\u00e0ng/S\u1ef1 c\u1ed1:</strong> ${escapeHtml(draftData.cargo_type || '-')}</div>
         <div class="draft-actions">
-          <button class="btn btn-primary btn-sm" onclick="confirmDraft('${encodedData}')">\u2705 Duy\u1ec7t & L\u01b0u</button>
+          <button class="btn btn-primary btn-sm" onclick="confirmDraft('${encodedData}')">\u{1F4CB} Xem h\u01b0\u1edbng d\u1eabn thao t\u00e1c</button>
           <button class="btn btn-danger btn-sm" onclick="cancelDraft()">\u274c H\u1ee7y b\u1ecf</button>
         </div>
       </div>
@@ -7144,7 +7010,7 @@ window.renderVehicleSchedule = function () {
   const vehicleId = document.getElementById('fiori-veh-id')?.value?.trim();
   if (!grid || !vehicleId || !window.TmsCockpit?.buildVehicleSchedule) return;
   const dateInput = document.getElementById('vehicle-schedule-date');
-  const startDate = dateInput?.value || vehicleScheduleStartDate || new Date().toISOString().slice(0, 10);
+  const startDate = dateInput?.value || vehicleScheduleStartDate || FormatUtils.dateInputValue();
   vehicleScheduleStartDate = startDate;
   const schedule = window.TmsCockpit.buildVehicleSchedule(appState || {}, vehicleId, startDate);
   const vehicle = (appState.vehicles || fioriVehicles || []).find(item => String(item.id || item.vehicle_id || item.plate_no || '') === vehicleId) || {};
@@ -7164,7 +7030,7 @@ window.renderVehicleSchedule = function () {
 
 window.shiftVehicleSchedule = function (days) {
   const input = document.getElementById('vehicle-schedule-date');
-  const current = new Date(`${input?.value || vehicleScheduleStartDate || new Date().toISOString().slice(0, 10)}T00:00:00`);
+  const current = new Date(`${input?.value || vehicleScheduleStartDate || FormatUtils.dateInputValue()}T00:00:00`);
   current.setDate(current.getDate() + Number(days || 0));
   const value = new Date(current.getTime() - current.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   if (input) input.value = value;
@@ -7184,9 +7050,7 @@ window.refreshVehicleSchedule = async function () {
 };
 
 function escapeVehicleHtml(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, char => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  })[char]);
+  return escapeHtml(value);
 }
 
 function vehicleMaintenanceStatusLabel(status) {
@@ -7196,8 +7060,10 @@ function vehicleMaintenanceStatusLabel(status) {
   })[status] || status;
 }
 
+// Uỷ quyền sang FormatUtils.formatMoney. Giữ tên cũ để không phải sửa hàng
+// trăm chỗ gọi; bản gốc trùng với closeoutMoney và completionMoney.
 function formatVehicleMoney(value, currency = 'VND') {
-  return `${Number(value || 0).toLocaleString('vi-VN')} ${currency}`;
+  return FormatUtils.formatMoney(value, currency);
 }
 
 async function loadVehicleMaintenanceRequests(vehicleId) {
@@ -7321,13 +7187,13 @@ window.transitionVehicleMaintenance = async function (requestId, action, version
     const actualCostLines = [];
     for (const line of (item?.cost_lines || [])) {
       const entered = prompt(
-        `Đơn giá thực tế - ${line.description} (${item.currency_code || 'VND'}):`,
+        `Đơn giá thực tế - ${escapeHtml(line.description)} (${item.currency_code || 'VND'}):`,
         String(Number(line.estimated_unit_cost || 0))
       );
       if (entered === null) return;
       const actualUnitCost = Number(String(entered).replace(/[,\s]/g, ''));
       if (!Number.isFinite(actualUnitCost) || actualUnitCost < 0) {
-        showToast(`Đơn giá thực tế của "${line.description}" không hợp lệ.`);
+        showToast(`Đơn giá thực tế của "${escapeHtml(line.description)}" không hợp lệ.`);
         return;
       }
       actualCostLines.push({ line_id: line.id, actual_unit_cost: actualUnitCost });
@@ -8044,8 +7910,8 @@ function renderOracleSOList(data) {
       <tr>
         <td><a href="#" onclick="editOracleSO('${so.id}')" style="color:#005a9e; font-weight:bold; text-decoration:none;">${so.id}</a>${demoBadge}</td>
         <td>${so.customer_id || ''}</td>
-        <td>${so.origin || ''}</td>
-        <td>${so.destination || ''}</td>
+        <td>${escapeHtml(so.origin || '')}</td>
+        <td>${escapeHtml(so.destination || '')}</td>
         <td class="so-amount-cell">${(so.total_amount || 0).toLocaleString('vi-VN')} VNĐ</td>
         <td class="so-status-cell"><span class="fiori-status ${isConfirmed ? 'fiori-status-approved' : 'fiori-status-pending'}">${contextualWorkflowStatusLabel('sales_order', st)}</span></td>
         <td class="so-action-cell">
@@ -8423,12 +8289,7 @@ function refreshDOFormControls() {
 }
 
 function doBoardEscape(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return escapeHtml(value);
 }
 
 function deliveryOrderStatusKey(order) {
@@ -9348,11 +9209,11 @@ function renderDispatchSelects() {
     const isBusy = isVehicleBusyForDispatch(v.status) || activeVehicleIds.has(v.id);
     if (isBusy) {
       busyVehCount++;
-      vehSelect.innerHTML += `<option value="${v.id}" disabled style="color:#ef4444;">[BẬN] ${v.id} (${v.brand || 'Xe'} - Đang giao hàng / Bảo dưỡng)</option>`;
+      vehSelect.innerHTML += `<option value="${v.id}" disabled style="color:#ef4444;">[BẬN] ${v.id} (${escapeHtml(v.brand || 'Xe')} - Đang giao hàng / Bảo dưỡng)</option>`;
     } else {
       readyVehCount++;
       const capText = v.volume_capacity_m3 ? ` | Sức chứa ${v.volume_capacity_m3}m³` : '';
-      vehSelect.innerHTML += `<option value="${v.id}">[RẢNH] ${v.id} (${v.brand || 'Xe'} ${v.type || ''}${capText})</option>`;
+      vehSelect.innerHTML += `<option value="${v.id}">[RẢNH] ${v.id} (${escapeHtml(v.brand || 'Xe')} ${v.type || ''}${capText})</option>`;
     }
   });
 
@@ -9365,13 +9226,13 @@ function renderDispatchSelects() {
     const isBusy = isDriverBusyForDispatch(d.status) || activeDriverIds.has(d.id) || activeDriverIds.has(d.name);
     if (isBusy) {
       busyDrvCount++;
-      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${d.name} (Đang theo xe)</option>`;
-      if (coDrvSelect && isCoDriverRole(d)) coDrvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${d.name} (Đang theo xe)</option>`;
+      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`;
+      if (coDrvSelect && isCoDriverRole(d)) coDrvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`;
     } else {
       readyDrvCount++;
-      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${d.name} (${d.role || 'Lái chính'})</option>`;
+      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Lái chính'})</option>`;
       if (coDrvSelect && isCoDriverRole(d)) {
-        coDrvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${d.name} (${d.role || 'Phụ xế'})</option>`;
+        coDrvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Phụ xế'})</option>`;
       }
     }
   });
@@ -9423,7 +9284,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
         driversList.innerHTML += `
           <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #059669; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('driver', '${d.id}')" title="Nhấp vào để Gán Tài Xế Này vào Đơn">
             <div>
-              <div style="font-weight:700; color:#0f172a;">${d.id} - ${d.name}</div>
+              <div style="font-weight:700; color:#0f172a;">${d.id} - ${escapeHtml(d.name)}</div>
               <div style="font-size:0.8rem; color:#64748b; margin-top:2px;"><i class="fa-solid fa-id-card"></i> ${d.license_type || 'Bằng FC'} | Ca: ${d.shift || 'Ca Sáng (06:00 - 14:00)'}</div>
             </div>
             <button class="fiori-btn" style="padding:4px 10px; font-size:0.78rem; background:#f0fdf4; color:#16a34a; border:1px solid #86efac; font-weight:700;">
@@ -9450,7 +9311,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
         vehsList.innerHTML += `
           <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #0a6ed1; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" title="Nhấp vào để Gán Xe Này vào Đơn">
             <div>
-              <div style="font-weight:800; color:#0a6ed1;">${v.id} <span style="font-size:0.8rem; color:#475569; font-weight:600;">(${v.brand || 'Hyundai'} ${v.type || 'Container 20FT'})</span></div>
+              <div style="font-weight:800; color:#0a6ed1;">${v.id} <span style="font-size:0.8rem; color:#475569; font-weight:600;">(${escapeHtml(v.brand || 'Hyundai')} ${v.type || 'Container 20FT'})</span></div>
               <div style="font-size:0.8rem; color:#64748b; margin-top:2px;"><i class="fa-solid fa-cubes"></i> Sức chứa thùng: <strong>${v.volume_capacity_m3 || 30} m³</strong> | Tải trọng: ${v.weight_capacity || 15000} kg</div>
             </div>
             <button class="fiori-btn" style="padding:4px 10px; font-size:0.78rem; background:#e0f2fe; color:#0284c7; border:1px solid #7dd3fc; font-weight:700;">
@@ -9574,7 +9435,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
               </div>
 
               <div style="font-size:0.83rem; color:#475569; display:grid; grid-template-columns:1fr 1fr; gap:6px; background:#fafafa; padding:8px 10px; border-radius:6px;">
-                <div><strong style="color:#0f172a;">Loại xe:</strong> ${v.brand || ''} ${v.type || ''}</div>
+                <div><strong style="color:#0f172a;">Loại xe:</strong> ${escapeHtml(v.brand || '')} ${v.type || ''}</div>
                 <div><strong style="color:#0284c7;">Tài xế phụ trách:</strong> ${drvText}</div>
                 <div style="grid-column: span 2;"><strong style="color:#0f172a;">Tải trọng:</strong> ${v.weight_capacity || 15000} kg | Sức chứa: ${v.volume_capacity_m3 || 30} m³</div>
               </div>
@@ -9703,7 +9564,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
               <span style="background: #f0fdf4; color: #16a34a; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">🟢 ${readyLabel}</span>
             </div>
             <div style="font-size: 0.85rem; color: #334155; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
-              <div><strong>${brandLabel}</strong> ${v.brand || 'Hyundai Heavy Duty'}</div>
+              <div><strong>${brandLabel}</strong> ${escapeHtml(v.brand || 'Hyundai Heavy Duty')}</div>
               <div><strong>${bodyTypeLabel}</strong> <span style="font-weight: 700; color: #0f172a;">${typeDisp}</span></div>
               <div><strong>${capacityLabel}</strong> <span style="color: #0284c7; font-weight: 700;">${volCapacity} m³</span></div>
               <div><strong>${maxPayloadLabel}</strong> <span style="color: #059669; font-weight: 700;">${maxWeight.toLocaleString('vi-VN')} kg</span> (${(maxWeight / 1000).toFixed(0)} ${tonLabel})</div>
@@ -9764,7 +9625,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #059669; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <span style="font-size: 1.05rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-user-gear" style="color: #059669;"></i> ${d.name}</span>
+              <span style="font-size: 1.05rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-user-gear" style="color: #059669;"></i> ${escapeHtml(d.name)}</span>
               <span style="background: #eff6ff; color: #0a6ed1; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">🟢 ${readyLabel}</span>
             </div>
             <div style="font-size: 0.85rem; color: #334155; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
@@ -10187,16 +10048,11 @@ window.openPODFormForSelectedDO = async function () {
 };
 
 function escapeCloseoutText(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  return escapeHtml(value);
 }
 
 function closeoutMoney(value, currency = 'VND') {
-  return `${Number(value || 0).toLocaleString('vi-VN')} ${currency || 'VND'}`;
+  return FormatUtils.formatMoney(value, currency);
 }
 
 function isCloseoutReadyStatus(status) {
@@ -10507,7 +10363,7 @@ function renderRealTrackingOnMap(track) {
     const drvLabel = lang === 'la' ? 'ຄົນຂັບ' : 'Tài xế';
     const routeLabel = lang === 'la' ? 'ເສັ້ນທາງ' : 'Tuyến';
     gpsTruckMarker = L.marker(truckPoint, { title: track.vehicle_id || '' }).addTo(gpsTrackingLayerGroup)
-      .bindPopup(`<b>🚛 ${vehLabel}: ${track.vehicle_id || (lang === 'la' ? 'ຍັງບໍ່ໄດ້ກຳນົດ' : 'Chưa gán xe')}</b><br>${doLabel}: ${track.do_id}<br>${drvLabel}: ${track.driver_name || (lang === 'la' ? 'ຍັງບໍ່ໄດ້ກຳນົດ' : 'Chưa gán')}<br>${routeLabel}: ${track.route_name || (lang === 'la' ? 'ບໍ່ມີເສັ້ນທາງ' : 'Chưa có tuyến')}`)
+      .bindPopup(`<b>🚛 ${vehLabel}: ${track.vehicle_id || (lang === 'la' ? 'ຍັງບໍ່ໄດ້ກຳນົດ' : 'Chưa gán xe')}</b><br>${doLabel}: ${track.do_id}<br>${drvLabel}: ${escapeHtml(track.driver_name || (lang === 'la' ? 'ຍັງບໍ່ໄດ້ກຳນົດ' : 'Chưa gán'))}<br>${routeLabel}: ${track.route_name || (lang === 'la' ? 'ບໍ່ມີເສັ້ນທາງ' : 'Chưa có tuyến')}`)
       .openPopup();
     if (routePoints.length === 0) gpsTrackingMap.setView(truckPoint, 13);
   }
@@ -10671,10 +10527,12 @@ async function loadAccountingData() {
 }
 
 async function loadDashboard() {
-  if (window.TransportReporting) {
-    window.TransportReporting.initializeDates();
-    window.TransportReporting.load();
-  }
+  // Cố tình KHÔNG gọi TransportReporting.load() ở đây. loadDashboard() chạy
+  // khi mở cả Bảng điều khiển lẫn màn "Báo cáo & Phân tích", nên kéo theo
+  // TransportReporting nghĩa là mở màn Báo cáo lại đi vẽ chart của màn
+  // "Tóm tắt & Phân tích" — trong khi màn đó đang display:none nên canvas
+  // rộng 0px và chart hỏng khi người dùng chuyển sang. Màn Tóm tắt tự gọi
+  // TransportReporting.load() trong switchView của chính nó.
   try {
     const res = await fetch(`${API_BASE}/api/dashboard/stats`);
     if (res.ok) {
@@ -10685,29 +10543,26 @@ async function loadDashboard() {
       const tripUnit = (typeof t === 'function' && t('unit_trip')) ? t('unit_trip') : 'Chuyến';
       const incUnit = (typeof t === 'function' && t('unit_incident')) ? t('unit_incident') : 'Sự cố';
 
-      const revStr = `${(data.revenue_ytd || 0).toLocaleString()} ${currUnit}`;
-      ['stat-revenue', 'kpi-revenue'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.innerText = revStr;
-        }
-      });
+      // Chỉ Bảng điều khiển hiển thị các số này. Hàng KPI trong workspace
+      // Phân tích (#kpi-revenue, #kpi-deliveries, #kpi-vehicles) đã được dỡ vì
+      // nó là bản sao của hàng này, lấy từ endpoint khác với bảng P&L ngay bên
+      // dưới nó — nên màn đó hiện hai con số doanh thu cạnh nhau.
+      const elRevenue = document.getElementById('stat-revenue');
+      if (elRevenue) {
+        elRevenue.innerText = `${(data.revenue_ytd || 0).toLocaleString()} ${currUnit}`;
+      }
 
-      const dosCount = data.total_deliveries || 0;
-      ['stat-dos', 'kpi-deliveries'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.innerText = `${dosCount} ${orderUnit}`;
-        }
-      });
+      const elOrders = document.getElementById('stat-dos');
+      if (elOrders) {
+        elOrders.innerText = `${data.total_deliveries || 0} ${orderUnit}`;
+      }
 
-      const vehCount = data.active_vehicles || 0;
-      ['stat-transit', 'kpi-vehicles'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.innerText = `${vehCount} ${tripUnit}`;
-        }
-      });
+      // Số LỆNH GIAO HÀNG đang lăn bánh — không phải số xe. Trước đây trường
+      // active_vehicles của backend bị gán vào cả ô này và ô "Số xe hoạt
+      // động", và chúng trùng khớp chỉ vì đội xe demo tình cờ cũng có 3 chiếc.
+      const inTransitOrders = data.in_transit_orders ?? data.active_vehicles ?? 0;
+      const elTransit = document.getElementById('stat-transit');
+      if (elTransit) elTransit.innerText = `${inTransitOrders} ${tripUnit}`;
 
       const elInc = document.getElementById('stat-incidents');
       if (elInc) {
@@ -10874,7 +10729,7 @@ window.loadIncidents = async function () {
               <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${coDriver}</td>
               <td style="padding: 10px 14px; font-weight: 700; color: #dc2626;">${inc.incident_type}</td>
               <td style="padding: 10px 14px; font-size: 0.85rem; color: #334155;">${inc.location}</td>
-              <td style="padding: 10px 14px; font-size: 0.85rem; color: #475569;">${inc.description || 'Không có mô tả chi tiết'}</td>
+              <td style="padding: 10px 14px; font-size: 0.85rem; color: #475569;">${escapeHtml(inc.description || 'Không có mô tả chi tiết')}</td>
             </tr>
           `;
         });
@@ -11281,6 +11136,8 @@ window.loadRoutePlanningDropdown = async function () {
       routes.forEach(r => {
         const opt = document.createElement('option');
         opt.value = r.id;
+        // KHÔNG escape ở đây: giá trị đi vào innerText, vốn đã coi nội dung là văn
+        // bản thuần. Escape thêm sẽ khiến người dùng nhìn thấy "&amp;" thay vì "&".
         opt.innerText = `${r.id}: ${r.name} (${r.distance_km || 0} km)`;
         select.appendChild(opt);
       });
@@ -12597,7 +12454,7 @@ window.onSORouteSelectChange = function (routeCode) {
 
   if (apiRoute) {
     amount = Math.round((parseFloat(apiRoute.distance_km || 200)) * 6250 + 800000);
-    stops = [{ label: routeLabel, text: `${apiRoute.name || routeCode} (${apiRoute.distance_km || 0} km)` }];
+    stops = [{ label: routeLabel, text: `${escapeHtml(apiRoute.name || routeCode)} (${apiRoute.distance_km || 0} km)` }];
   } else {
     amount = 0;
     stops = [{ label: routeLabel, text: routeCode }];
@@ -12733,6 +12590,8 @@ window.loadSavedRoutePreset = async function (code) {
       );
 
       if (didDraw) {
+        // KHÔNG escape ở đây: giá trị đi vào innerText, vốn đã coi nội dung là văn
+        // bản thuần. Escape thêm sẽ khiến người dùng nhìn thấy "&amp;" thay vì "&".
         if (badgeText) badgeText.innerText = `${apiRoute.id} - ${apiRoute.name}`;
       } else {
         if (typeof window.clearLeafletRouteMap === 'function') window.clearLeafletRouteMap();
@@ -12740,6 +12599,8 @@ window.loadSavedRoutePreset = async function (code) {
         showToast('Không xác định được tọa độ cho tuyến đường này. Vui lòng nhập điểm đi/đến rõ hơn trong Master Data.');
       }
     }
+    // KHÔNG escape ở đây: giá trị đi vào showToast (đặt nội dung qua textContent), vốn đã coi nội dung là văn
+    // bản thuần. Escape thêm sẽ khiến người dùng nhìn thấy "&amp;" thay vì "&".
     showToast(`📂 Đã tải tuyến đường: ${apiRoute.id} - ${apiRoute.name} (${apiRoute.distance_km || 0} km)`);
   } else {
     showToast(`⚠️ Không tìm thấy tuyến đường ${code} trong CSDL!`);
@@ -13091,7 +12952,7 @@ function renderFioriDrivers(data) {
     const statusText = cleanDriverStatus(rawStatus);
     const driverPhoto = d.photo_url || d.image_url || '';
     const driverAvatar = driverPhoto
-      ? `<img src="${driverPhoto}" alt="Ảnh ${d.name || d.id}">`
+      ? `<img src="${driverPhoto}" alt="Ảnh ${escapeHtml(d.name || d.id)}">`
       : `<span class="driver-avatar-fallback"><i class="fa-solid fa-user"></i></span>`;
     const statusBadge = isBusy ?
       `<span class="driver-status-badge driver-status-badge--busy">${statusText}</span>` :
@@ -13117,7 +12978,7 @@ function renderFioriDrivers(data) {
 
     tbody.innerHTML += `
       <tr style="border-bottom: 1px solid #f1f5f9;">
-        <td style="padding: 12px 16px; font-weight: 700; color: #0f172a;"><div class="driver-name-cell">${driverAvatar}<strong title="${d.name || d.id}">${d.name || d.id}</strong></div></td>
+        <td style="padding: 12px 16px; font-weight: 700; color: #0f172a;"><div class="driver-name-cell">${driverAvatar}<strong title="${escapeHtml(d.name || d.id)}">${escapeHtml(d.name || d.id)}</strong></div></td>
         <td style="padding: 12px 16px;">${roleBadge}</td>
         <td style="padding: 12px 16px; font-weight: 700; color: #334155;">${licenseLabel}</td>
         <td style="padding: 12px 16px; color: #64748b;">${d.phone || ''}</td>
@@ -13125,8 +12986,8 @@ function renderFioriDrivers(data) {
         <td style="padding: 12px 16px; color: #334155; font-weight: 600;">${shiftLabel}</td>
         <td style="padding: 12px 16px;">${statusBadge}</td>
         <td style="padding: 12px 8px; text-align: center; white-space: nowrap; width:96px;">
-          <button class="fiori-btn fiori-btn-secondary" title="${editTip}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="editDriverById('${d.id || d.name}')"><i class="fa-solid fa-pen-to-square"></i></button>
-          <button class="fiori-btn" title="${delTip}" style="width:32px; height:32px; padding:0; justify-content:center; background:#ef4444; border-color:#ef4444;" onclick="deleteDriverRow('${d.id || d.name}')"><i class="fa-solid fa-trash"></i></button>
+          <button class="fiori-btn fiori-btn-secondary" title="${editTip}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="editDriverById('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="fiori-btn" title="${delTip}" style="width:32px; height:32px; padding:0; justify-content:center; background:#ef4444; border-color:#ef4444;" onclick="deleteDriverRow('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
     `;
@@ -13450,7 +13311,7 @@ function renderDriverShiftRoster() {
   const list = document.getElementById('driver-shift-roster-list');
   if (!list) return;
   const keyword = String(document.getElementById('driver-shift-search')?.value || '').trim().toLowerCase();
-  const rows = fioriDrivers.filter(driver => `${driver.id} ${driver.name} ${driver.license_type}`.toLowerCase().includes(keyword));
+  const rows = fioriDrivers.filter(driver => `${driver.id} ${escapeHtml(driver.name)} ${driver.license_type}`.toLowerCase().includes(keyword));
   const count = document.getElementById('driver-shift-roster-count');
   if (count) count.textContent = String(rows.length);
   list.innerHTML = rows.map(driver => {
@@ -13508,9 +13369,7 @@ function renderDriverShiftCalendar() {
 }
 
 function localDateTimeInput(value) {
-  const date = new Date(value);
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
+  return FormatUtils.dateTimeInputValue(value);
 }
 
 function renderDriverShiftInspector() {
@@ -13786,7 +13645,7 @@ function renderDriverShiftCalendarTable() {
   const trips = driverShiftTripsForPeriod(dayPeriod);
   const keyword = oldSearch.trim().toLowerCase();
   const filtered = fioriDrivers.filter(driver => {
-    const text = `${driver.id} ${driver.name} ${driver.license_type} ${driver.role}`.toLowerCase();
+    const text = `${driver.id} ${escapeHtml(driver.name)} ${driver.license_type} ${driver.role}`.toLowerCase();
     return (!keyword || text.includes(keyword)) && (!oldRole || String(driver.role || '').includes(oldRole));
   });
   const pages = Math.max(1, Math.ceil(filtered.length / DRIVER_SHIFT_PAGE_SIZE));
@@ -13877,7 +13736,7 @@ window.filterWeeklyScheduleDrivers = function (value) {
   const keyword = String(value || '').trim().toLowerCase();
   const results = document.getElementById('weekly-schedule-driver-results');
   if (!results) return;
-  const matches = fioriDrivers.filter(driver => `${driver.name || ''} ${driver.id || ''} ${driver.role || ''} ${driver.license_type || ''} ${driver.phone || ''}`.toLowerCase().includes(keyword)).slice(0, 12);
+  const matches = fioriDrivers.filter(driver => `${escapeHtml(driver.name || '')} ${driver.id || ''} ${driver.role || ''} ${driver.license_type || ''} ${driver.phone || ''}`.toLowerCase().includes(keyword)).slice(0, 12);
   results.innerHTML = matches.map(driver => {
     const initials = String(driver.name || driver.id || '?').split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase();
     return `<button type="button" class="weekly-driver-result" onclick="selectWeeklyScheduleDriver('${completionEscape(driver.id)}')"><span class="weekly-driver-result-avatar">${completionEscape(initials)}</span><span><b>${completionEscape(driver.name || driver.id)}</b><small>${completionEscape(driver.id)} · ${completionEscape(driver.role || 'Nhân sự')} · ${completionEscape(driver.license_type || 'Chưa có hạng bằng')}</small></span></button>`;
@@ -13891,7 +13750,7 @@ window.selectWeeklyScheduleDriver = function (driverId) {
   const input = document.getElementById('weekly-schedule-driver-search');
   const results = document.getElementById('weekly-schedule-driver-results');
   if (hidden) hidden.value = driverId || '';
-  if (input) input.value = driver ? `${driver.name || driver.id} · ${driver.id}` : '';
+  if (input) input.value = driver ? `${escapeHtml(driver.name || driver.id)} · ${driver.id}` : '';
   if (results) results.hidden = true;
 };
 
@@ -14051,7 +13910,7 @@ window.editDriverById = function (id) {
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
   const titleSpan = document.getElementById('driver-modal-title-text');
   if (titleSpan) {
-    titleSpan.innerText = lang === 'la' ? `ແກ້ໄຂບຸກຄະລາກອນ: ${driver.name || driver.id}` : (lang === 'en' ? `Edit Personnel: ${driver.name || driver.id}` : `Chỉnh sửa nhân sự: ${driver.name || driver.id}`);
+    titleSpan.innerText = lang === 'la' ? `ແກ້ໄຂບຸກຄະລາກອນ: ${escapeHtml(driver.name || driver.id)}` : (lang === 'en' ? `Edit Personnel: ${escapeHtml(driver.name || driver.id)}` : `Chỉnh sửa nhân sự: ${escapeHtml(driver.name || driver.id)}`);
   }
   if (document.getElementById('drv-id')) {
     document.getElementById('drv-id').value = driver.id || driver.name || '';
@@ -14236,11 +14095,11 @@ window.renderCustomerList = function (data) {
     tbody.innerHTML += `
       <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
         <td style="padding: 14px 18px; font-weight: 700; color: #0a6ed1;">${c.id}</td>
-        <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${c.name}</td>
+        <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${escapeHtml(c.name)}</td>
         <td style="padding: 14px 18px;"><span style="background: #eff6ff; color: #0a6ed1; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">${c.type || 'Account'}</span></td>
-        <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${c.contact_person || '-'}</td>
+        <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${escapeHtml(c.contact_person || '-')}</td>
         <td style="padding: 14px 18px; color: #16a34a; font-weight: 700;">${c.phone || '-'}</td>
-        <td style="padding: 14px 18px; color: #475569; font-weight: 500;">${c.address || '-'}</td>
+        <td style="padding: 14px 18px; color: #475569; font-weight: 500;">${escapeHtml(c.address || '-')}</td>
         <td style="padding: 14px 18px; text-align: center; white-space: nowrap;">
           <button class="fiori-btn fiori-btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; margin-right: 6px;" onclick="openCustomerModal('${c.id}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
           <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 4px 10px; font-size: 0.78rem;" onclick="deleteCustomer('${c.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
@@ -14382,7 +14241,7 @@ window.syncAllDynamicDropdowns = async function () {
           typeStr = typeStr.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                            .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
         }
-        modalDrvVeh.innerHTML += `<option value="${v.id}">${v.id} (${v.brand || (lang === 'la' ? 'àº¥àº»àº”' : 'Xe')} - ${typeStr})</option>`;
+        modalDrvVeh.innerHTML += `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || (lang === 'la' ? 'àº¥àº»àº”' : 'Xe'))} - ${typeStr})</option>`;
       });
       if (cur) modalDrvVeh.value = cur;
     }
@@ -14402,7 +14261,7 @@ window.syncAllDynamicDropdowns = async function () {
             typeStr = typeStr.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                              .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
           }
-          sel.innerHTML += `<option value="${v.id}">${v.id} (${v.brand || ''} ${typeStr}) - ${capLabel}: ${(v.weight_capacity || 0).toLocaleString()} kg</option>`;
+          sel.innerHTML += `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || '')} ${typeStr}) - ${capLabel}: ${(v.weight_capacity || 0).toLocaleString()} kg</option>`;
         });
         if (cur) sel.value = cur;
       }
@@ -14417,7 +14276,7 @@ window.syncAllDynamicDropdowns = async function () {
       doDrvSel.innerHTML = `<option value="">${chooseDrvText}</option>`;
       (fioriDrivers || []).forEach(d => {
         const lic = cleanDriverMasterText(d.license_type, lang === 'la' ? 'àºŠàº±à»‰àº™ FC' : 'FC');
-        doDrvSel.innerHTML += `<option value="${d.id}">${d.id} - ${d.name} (${lic})</option>`;
+        doDrvSel.innerHTML += `<option value="${d.id}">${d.id} - ${escapeHtml(d.name)} (${lic})</option>`;
       });
       if (cur) doDrvSel.value = cur;
     }
@@ -14429,7 +14288,7 @@ window.syncAllDynamicDropdowns = async function () {
         const cur = sel.value;
         sel.innerHTML = '<option value="">-- Chọn Tuyến Đường --</option>';
         (eplRoutes || []).forEach(r => {
-          sel.innerHTML += `<option value="${r.id}">${r.id}: ${r.name || r.id} (${r.distance_km || 0} km)</option>`;
+          sel.innerHTML += `<option value="${r.id}">${r.id}: ${escapeHtml(r.name || r.id)} (${r.distance_km || 0} km)</option>`;
         });
         if (cur) sel.value = cur;
       }
@@ -14441,7 +14300,7 @@ window.syncAllDynamicDropdowns = async function () {
       if (sel) {
         const cur = sel.value;
         if (eplCustomers && eplCustomers.length > 0) {
-          sel.innerHTML = eplCustomers.map(c => `<option value="${c.id}">${c.id} - ${c.name}</option>`).join('');
+          sel.innerHTML = eplCustomers.map(c => `<option value="${c.id}">${c.id} - ${escapeHtml(c.name)}</option>`).join('');
         } else {
           sel.innerHTML = '<option value="">-- Chưa có khách hàng trong CSDL --</option>';
         }
@@ -14465,7 +14324,7 @@ window.syncAllDynamicDropdowns = async function () {
     if (vehIncSel) {
       const cur = vehIncSel.value;
       if (fioriVehicles && fioriVehicles.length > 0) {
-        vehIncSel.innerHTML = fioriVehicles.map(v => `<option value="${v.id}">${v.id} (${v.brand || 'Xe'} - ${v.type || ''})</option>`).join('');
+        vehIncSel.innerHTML = fioriVehicles.map(v => `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || 'Xe')} - ${v.type || ''})</option>`).join('');
       } else {
         vehIncSel.innerHTML = '<option value="">-- Chưa có xe trong CSDL --</option>';
       }
@@ -14803,13 +14662,10 @@ function routeContextFromRoute(routeId) {
   };
 }
 
+// Bản gốc dùng `|| ''` nên giá trị số 0 bị biến thành chuỗi rỗng, khác hai
+// hàm escape cùng cảnh. escapeHtml dùng `??` nên 0 vẫn ra "0".
 function escapeRouteCheckpointText(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+  return escapeHtml(value);
 }
 
 function renderMasterRouteCheckpoints(prefix, routeId) {
@@ -15218,7 +15074,7 @@ function completionEscape(value) {
 }
 
 function completionMoney(value, currency = 'VND') {
-  return `${Number(value || 0).toLocaleString('vi-VN')} ${currency}`;
+  return FormatUtils.formatMoney(value, currency);
 }
 
 window.switchDeliveryCompletionTab = function (tab, button) {
@@ -15414,7 +15270,7 @@ window.openDeliveryCompletionEditor = function (doId) {
   }));
   document.getElementById('completion-do-summary').innerHTML = [
     ['SO nguồn', closeout.sales_order_id || row.order.so_id || '-'], ['Xe vận chuyển', row.order.vehicle_id || row.trip.vehicle_id || '-'],
-    ['Tài xế', row.order.driver_id || row.trip.driver_id || '-'], ['Tuyến', `${row.order.origin || '-'} → ${row.order.destination || '-'}`],
+    ['Tài xế', row.order.driver_id || row.trip.driver_id || '-'], ['Tuyến', `${escapeHtml(row.order.origin || '-')} → ${escapeHtml(row.order.destination || '-')}`],
     ['Giá ban đầu', completionMoney(base, currency)]
   ].map(item => `<div><span>${item[0]}</span><strong>${completionEscape(item[1])}</strong></div>`).join('');
   const order = row.order;
