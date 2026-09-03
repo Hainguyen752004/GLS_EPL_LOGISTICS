@@ -110,8 +110,8 @@ def test_runner_rollback_removes_v006_tables_and_marker(tmp_path):
         CREATE TABLE gl_transactions (id INTEGER PRIMARY KEY AUTOINCREMENT, invoice_id TEXT, date TEXT, account_code TEXT, debit REAL, credit REAL);
     """)
     connection.close()
-    assert upgrade(str(path))[-1] == "022_vehicle_type_capacity"
-    assert rollback(str(path), restore_from="verified-backup")[0] == "022_vehicle_type_capacity"
+    assert upgrade(str(path))[-1] == "024_money_numeric"
+    assert rollback(str(path), restore_from="verified-backup")[0] == "024_money_numeric"
     with sqlite3.connect(path) as reverted:
         tables = {row[0] for row in reverted.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         assert not {"transport_event_documents", "transport_events", "freight_order_legacy_links"} & tables

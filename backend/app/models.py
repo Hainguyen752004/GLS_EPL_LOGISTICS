@@ -173,8 +173,8 @@ class VehicleType(Base):
     pallet_capacity = Column(Integer, default=0) # Số pallet tối đa
     fuel_norm = Column(Float, default=0.0) # Định mức nhiên liệu
     avg_speed_kmh = Column(Float, default=45.0) # Tốc độ kế hoạch mặc định của loại xe
-    base_rate = Column(Float, default=0.0) # Phí cước cơ bản
-    maint_cost = Column(Float, default=0.0) # Phí bảo dưỡng
+    base_rate = Column(MONEY_TYPE, default=0.0) # Phí cước cơ bản
+    maint_cost = Column(MONEY_TYPE, default=0.0) # Phí bảo dưỡng
     dims = Column(String) # Kích thước
     fuel_type = Column(String, default="Diesel") # Loại nhiên liệu
     special = Column(String) # Điều kiện đặc biệt
@@ -349,8 +349,8 @@ class DeliveryOrderDetail(Base):
     description = Column(String)
     qty = Column(Integer, default=1)
     uom = Column(String, default="PCS")
-    unit_price = Column(Float, default=0.0)
-    amount = Column(Float, default=0.0)
+    unit_price = Column(MONEY_TYPE, default=0.0)
+    amount = Column(MONEY_TYPE, default=0.0)
     weight_kg = Column(Float, default=0.0)
     
     sales_order = relationship("SalesOrder", back_populates="details")
@@ -443,12 +443,12 @@ class ShipmentCost(Base):
     __tablename__ = "shipment_costs"
     id = Column(Integer, primary_key=True, autoincrement=True)
     do_id = Column(String, ForeignKey("delivery_orders.id"))
-    fuel_cost = Column(Float, default=0.0)
-    driver_cost = Column(Float, default=0.0)
-    toll_fee = Column(Float, default=0.0)
-    warehouse_fee = Column(Float, default=0.0)
-    total_cost = Column(Float, default=0.0)
-    selling_price = Column(Float, default=0.0)
+    fuel_cost = Column(MONEY_TYPE, default=0.0)
+    driver_cost = Column(MONEY_TYPE, default=0.0)
+    toll_fee = Column(MONEY_TYPE, default=0.0)
+    warehouse_fee = Column(MONEY_TYPE, default=0.0)
+    total_cost = Column(MONEY_TYPE, default=0.0)
+    selling_price = Column(MONEY_TYPE, default=0.0)
     margin_pct = Column(Float, default=15.0)
 
 # 10. VehicleTracking (Dữ liệu GPS)
@@ -635,8 +635,8 @@ class GLTransaction(Base):
     invoice_id = Column(String, ForeignKey("ar_invoices.id"))
     date = Column(String)
     account_code = Column(String) # 131, 511, 3331...
-    debit = Column(Float, default=0.0)
-    credit = Column(Float, default=0.0)
+    debit = Column(MONEY_TYPE, default=0.0)
+    credit = Column(MONEY_TYPE, default=0.0)
 
 # 14. Incidents (Báo cáo sự cố)
 class Incident(Base):
@@ -695,14 +695,14 @@ class PriceList(Base):
     id = Column(String, primary_key=True)
     customer_id = Column(String, ForeignKey("customers.id"))
     item_id = Column(String, ForeignKey("items.id"))
-    unit_price = Column(Float, default=0.0)
+    unit_price = Column(MONEY_TYPE, default=0.0)
     valid_to = Column(String)
 
 # 19. Currency
 class Currency(Base):
     __tablename__ = "currencies"
     id = Column(String, primary_key=True) # VND, USD
-    exchange_rate = Column(Float, default=1.0)
+    exchange_rate = Column(MONEY_TYPE, default=1.0)
 
 # 20. User & Role
 class Role(Base):
@@ -745,11 +745,11 @@ class Quotation(Base):
     pallet_count = Column(Integer, default=0)
     cargo_type = Column(String)
     valid_to = Column(String)
-    fuel_cost = Column(Float, default=0.0)
-    driver_cost = Column(Float, default=0.0)
-    toll_fee = Column(Float, default=0.0)
-    total_cost = Column(Float, default=0.0)
-    selling_price = Column(Float, default=0.0)
+    fuel_cost = Column(MONEY_TYPE, default=0.0)
+    driver_cost = Column(MONEY_TYPE, default=0.0)
+    toll_fee = Column(MONEY_TYPE, default=0.0)
+    total_cost = Column(MONEY_TYPE, default=0.0)
+    selling_price = Column(MONEY_TYPE, default=0.0)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
     volume_m3 = Column(Float, default=5.0) # Thể tích m3
     status = Column(String, default="Draft") # Draft, Sent, Approved
@@ -761,8 +761,8 @@ class QuotationDetail(Base):
     item_id = Column(String, ForeignKey("items.id"))
     qty = Column(Integer, default=1)
     uom = Column(String)
-    unit_price = Column(Float, default=0.0)
-    amount = Column(Float, default=0.0)
+    unit_price = Column(MONEY_TYPE, default=0.0)
+    amount = Column(MONEY_TYPE, default=0.0)
 
 
 class IdempotencyRecord(Base):

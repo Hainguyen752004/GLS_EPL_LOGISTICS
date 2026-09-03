@@ -19,7 +19,7 @@ EXPECTED_MIGRATIONS = [
     "013_demo_stabilization", "014_trip_cost_rows", "015_trip_stop_recipient",
     "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew",
     "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance",
-    "022_vehicle_type_capacity",
+    "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric",
 ]
 
 
@@ -35,6 +35,8 @@ def _postgres_v006_validation_rows(sql):
     from migrations import v015_trip_stop_recipient
     from migrations import v016_delivery_completion_closeout
     from migrations import v017_driver_shift_turnaround
+    if "information_schema.tables" in sql and "parking%" in sql:
+        return [("parking_lists",), ("parking_list_items",), ("parking_labels",), ("parking_events",)]
     if "information_schema.columns" in sql and "table_name = 'vehicle_types'" in sql:
         return [("volume_capacity_m3",), ("pallet_capacity",)]
     if "information_schema.tables" in sql and "vehicle_maintenance_requests" in sql:

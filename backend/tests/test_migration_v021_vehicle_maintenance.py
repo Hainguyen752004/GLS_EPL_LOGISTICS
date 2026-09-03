@@ -30,5 +30,5 @@ def test_v021_creates_vehicle_maintenance_ledger_and_constraints(tmp_path):
                 id, request_no, vehicle_id, planned_start, planned_end, description
             ) VALUES ('MR-2','REQ-2','VEH-01','2026-08-21 12:00','2026-08-21 08:00','Sai khoang gio')
         """)
-    assert required_migration_head() == "022_vehicle_type_capacity"
+    assert required_migration_head() == "024_money_numeric"
     connection.close()

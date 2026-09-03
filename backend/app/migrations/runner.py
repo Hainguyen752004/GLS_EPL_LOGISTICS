@@ -5,9 +5,9 @@ import sys
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
-from . import v001_workflow, v002_canonical_status_constraints, v003_tms_core_planning, v004_tms_tendering, v005_tms_dispatch_eligibility, v006_tms_execution_events, v007_tms_freight_settlement, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v013_demo_stabilization, v014_trip_cost_rows, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers, v021_vehicle_maintenance, v022_vehicle_type_capacity, v023_parking_list
+from . import v001_workflow, v002_canonical_status_constraints, v003_tms_core_planning, v004_tms_tendering, v005_tms_dispatch_eligibility, v006_tms_execution_events, v007_tms_freight_settlement, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v013_demo_stabilization, v014_trip_cost_rows, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers, v021_vehicle_maintenance, v022_vehicle_type_capacity, v023_parking_list, v024_money_numeric
 
-MIGRATIONS = (v001_workflow, v002_canonical_status_constraints, v003_tms_core_planning, v004_tms_tendering, v005_tms_dispatch_eligibility, v006_tms_execution_events, v007_tms_freight_settlement, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v013_demo_stabilization, v014_trip_cost_rows, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers, v021_vehicle_maintenance, v022_vehicle_type_capacity, v023_parking_list)
+MIGRATIONS = (v001_workflow, v002_canonical_status_constraints, v003_tms_core_planning, v004_tms_tendering, v005_tms_dispatch_eligibility, v006_tms_execution_events, v007_tms_freight_settlement, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v013_demo_stabilization, v014_trip_cost_rows, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers, v021_vehicle_maintenance, v022_vehicle_type_capacity, v023_parking_list, v024_money_numeric)
 POSTGRES_MIGRATION_LOCK_KEY = 1567831245
 
 
@@ -69,6 +69,101 @@ def _postgres(database_url, direction, engine=None, restore_from=None):
         if owned:
             engine.dispose()
     return completed
+
+
+def applied_versions(database_url, engine=None):
+    """Các phiên bản đã được ghi nhận, hoặc None nếu chưa có schema_migrations."""
+    if _dialect(database_url) == "postgresql":
+        owned = engine is None
+        engine = engine or create_engine(database_url)
+        try:
+            with engine.connect() as connection:
+                exists = connection.execute(text(
+                    "SELECT 1 FROM information_schema.tables "
+                    "WHERE table_schema='public' AND table_name='schema_migrations'"
+                )).first()
+                if not exists:
+                    return None
+                return {row[0] for row in connection.execute(text("SELECT version FROM schema_migrations"))}
+        finally:
+            if owned:
+                engine.dispose()
+    connection = sqlite3.connect(_sqlite_path(database_url))
+    try:
+        exists = connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='schema_migrations'"
+        ).fetchone()
+        if not exists:
+            return None
+        return {row[0] for row in connection.execute("SELECT version FROM schema_migrations")}
+    finally:
+        connection.close()
+
+
+def baseline(database_url, engine=None):
+    """Ghi nhận toàn bộ MIGRATIONS là đã áp dụng, KHÔNG chạy một câu DDL nào.
+
+    Dùng cho database vừa được dựng từ model (Base.metadata.create_all). Các
+    migration lịch sử là lệnh *sửa* bảng: v001 ALTER các bảng nghiệp vụ được
+    giả định đã tồn tại, còn v006 đòi các bảng TMS khớp đúng DDL viết tay của
+    nó. Trên một lược đồ vừa dựng từ model, cả hai đều không chạy được — đó
+    chính là lý do đường khởi tạo SQLite luôn thất bại.
+
+    Đây là cách làm chuẩn cho cài đặt mới: dựng lược đồ từ model, rồi đánh dấu
+    lịch sử migration là đã xong. Các migration về sau (v024+) chạy bình thường.
+
+    Từ chối nếu đã có lịch sử migration: một database đang dùng dở phải đi qua
+    upgrade() để không bỏ sót bước nào.
+    """
+    existing = applied_versions(database_url, engine)
+    if existing:
+        raise RuntimeError(
+            "baseline() chỉ dành cho database mới: đã có "
+            f"{len(existing)} phiên bản được ghi nhận, hãy dùng upgrade()"
+        )
+
+    versions = [migration.VERSION for migration in MIGRATIONS]
+    if _dialect(database_url) == "postgresql":
+        owned = engine is None
+        engine = engine or create_engine(database_url)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": POSTGRES_MIGRATION_LOCK_KEY})
+                connection.execute(text("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)"))
+                # Kiểm lại BÊN TRONG khóa: một tiến trình khác có thể vừa
+                # baseline hoặc migrate xong ngay trước khi ta lấy được khóa.
+                already = {row[0] for row in connection.execute(text("SELECT version FROM schema_migrations"))}
+                if already:
+                    return []
+                for version in versions:
+                    connection.execute(
+                        text("INSERT INTO schema_migrations(version) VALUES (:version)"),
+                        {"version": version},
+                    )
+        finally:
+            if owned:
+                engine.dispose()
+        return versions
+
+    connection = sqlite3.connect(_sqlite_path(database_url), isolation_level=None)
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+        already = {row[0] for row in connection.execute("SELECT version FROM schema_migrations")}
+        if already:
+            connection.rollback()
+            return []
+        connection.executemany(
+            "INSERT INTO schema_migrations(version) VALUES (?)",
+            [(version,) for version in versions],
+        )
+        connection.commit()
+        return versions
+    except BaseException:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def upgrade(database_url, engine=None, failure_hook=None):

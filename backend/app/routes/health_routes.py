@@ -40,14 +40,36 @@ class DatabaseReadinessChecker:
     def __init__(self, database_engine):
         self.engine = database_engine
 
+    def _dialect_name(self):
+        """Tên dialect, mặc định về nhánh nghiêm ngặt nhất khi không đọc được.
+
+        Engine thật của SQLAlchemy luôn có ``.dialect``, nên nhánh mặc định chỉ
+        chạm tới các test double. Mặc định là "postgresql" — đường kiểm tra
+        đầy đủ nhất — để việc thiếu thuộc tính không bao giờ làm *yếu* phần
+        xác thực lược đồ.
+        """
+        dialect = getattr(self.engine, "dialect", None)
+        return getattr(dialect, "name", None) or "postgresql"
+
+    def _table_query(self):
+        """Câu truy vấn liệt kê bảng, theo đúng dialect đang dùng.
+
+        information_schema không tồn tại trên SQLite, nên probe sâu trước đây
+        luôn báo DATABASE_UNAVAILABLE ở chế độ sqlite — tức chốt kiểm tra duy
+        nhất có ý nghĩa thì vô dụng đúng lúc cần nhất.
+        """
+        if self._dialect_name() == "sqlite":
+            return "SELECT name FROM sqlite_master WHERE type = 'table'"
+        return (
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema = 'public'"
+        )
+
     def check(self):
         with self.engine.connect() as connection:
             connection.execute(text("SELECT 1")).scalar_one()
             tables = {
-                row[0] for row in connection.execute(text(
-                    "SELECT table_name FROM information_schema.tables "
-                    "WHERE table_schema = 'public'"
-                ))
+                row[0] for row in connection.execute(text(self._table_query()))
             }
             if "schema_migrations" not in tables or not REQUIRED_TABLES <= tables:
                 raise DatabaseSchemaError("required database schema is incomplete")
@@ -58,6 +80,8 @@ class DatabaseReadinessChecker:
             }
             if required_migration_head() not in versions:
                 raise DatabaseSchemaError("required database schema is incomplete")
+            if self._dialect_name() != "postgresql":
+                return  # các validator dưới đây chỉ đọc được catalog của Postgres
             try:
                 v006_tms_execution_events.validate_postgresql(connection)
                 v007_tms_freight_settlement.validate_postgresql(connection)
@@ -109,6 +133,15 @@ def _failure(error):
 
 @router.get("/api/health")
 async def health():
+    """Liveness: tiến trình còn sống. Cố tình KHÔNG chạm cơ sở dữ liệu.
+
+    Đây không phải readiness — dùng /api/health/database cho việc đó. Trộn hai
+    khái niệm sẽ khiến orchestrator restart một tiến trình vẫn khỏe chỉ vì
+    database tạm thời chập, tức biến sự cố DB thành sự cố mất hẳn dịch vụ.
+
+    Việc một instance có schema lỗi không được nhận traffic đã được chặn ở
+    tầng cao hơn: main.on_startup bật lỗi và tiến trình không khởi động nổi.
+    """
     return {"status": "ok"}
 
 

@@ -28,7 +28,7 @@ REQUIRED = {
 
 
 def test_required_migration_head_is_exposed_by_runner():
-    assert required_migration_head() == "022_vehicle_type_capacity"
+    assert required_migration_head() == "024_money_numeric"
 
 
 class Checker:
@@ -115,7 +115,10 @@ def test_startup_failure_correlation_id_is_reused_by_readiness(monkeypatch, capl
     )
     caplog.set_level(logging.WARNING)
 
-    main.on_startup()
+    # Fail-fast là mặc định nên lỗi bật ra ngoài, nhưng correlation id vẫn phải
+    # được ghi lại trước đó để probe readiness truy vết bằng đúng một mã.
+    with pytest.raises(RuntimeError):
+        main.on_startup()
     startup_id = state.migration_failure_correlation_id
     assert startup_id
     with client_for(Checker(), state) as client:
@@ -326,14 +329,22 @@ def test_arbitrary_programming_error_is_unavailable_not_schema_invalid():
 
 
 def test_auto_migrate_delegates_runner_and_clears_state_only_on_success(monkeypatch):
+    """Database đã có lịch sử migration thì đi qua upgrade().
+
+    URL truyền cho runner phải lấy từ chính engine, KHÔNG phải DATABASE_URL
+    thô: ở chế độ sqlite mà biến đó trống thì engine tự tính đường dẫn, còn
+    upgrade("") lại mở một database tạm rồi vứt đi mà không báo lỗi.
+    """
     import database
     state = RuntimeState()
     state.record_migration_failure()
     calls = []
+    monkeypatch.setattr(database, "_needs_baseline", lambda: False)
     monkeypatch.setattr(database, "upgrade", lambda url, engine=None: calls.append((url, engine)))
     monkeypatch.setattr(database, "runtime_state", state)
     database.auto_migrate_db()
-    assert calls == [(database.DATABASE_URL, database.engine)]
+    expected_url = database.engine.url.render_as_string(hide_password=False)
+    assert calls == [(expected_url, database.engine)]
     assert state.migration_failed is False
 
     state.record_migration_failure()
@@ -341,3 +352,35 @@ def test_auto_migrate_delegates_runner_and_clears_state_only_on_success(monkeypa
     with pytest.raises(RuntimeError):
         database.auto_migrate_db()
     assert state.migration_failed is True
+
+
+def test_new_database_is_baselined_instead_of_running_history(monkeypatch):
+    """Cài đặt mới: dựng lược đồ từ model rồi đánh mốc, KHÔNG chạy migration cũ.
+
+    Các migration lịch sử là lệnh sửa bảng — v001 ALTER những bảng được giả
+    định đã tồn tại, v006 đòi bảng TMS khớp đúng DDL viết tay của nó — nên
+    chúng không thể dựng lược đồ trên một database trắng. Đây từng là lý do
+    đường khởi tạo mới luôn thất bại và lỗi bị nuốt im lặng.
+    """
+    import database
+    state = RuntimeState()
+    state.record_migration_failure()
+    upgrades = []
+    baselines = []
+    created = []
+
+    monkeypatch.setattr(database, "_needs_baseline", lambda: True)
+    monkeypatch.setattr(database, "upgrade", lambda *_a, **_k: upgrades.append(1))
+    monkeypatch.setattr(database, "runtime_state", state)
+    monkeypatch.setattr(database.Base.metadata, "create_all", lambda bind=None: created.append(bind))
+
+    import migrations.runner as runner
+    monkeypatch.setattr(runner, "baseline", lambda url, engine=None: baselines.append(url) or ["001", "002"])
+
+    completed = database.auto_migrate_db()
+
+    assert created == [database.engine], "phải dựng lược đồ từ model"
+    assert len(baselines) == 1, "phải đánh mốc đúng một lần"
+    assert upgrades == [], "KHÔNG được chạy migration lịch sử trên database mới"
+    assert completed == ["001", "002"]
+    assert state.migration_failed is False
