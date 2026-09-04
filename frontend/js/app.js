@@ -7877,9 +7877,23 @@ window.filterSalesOrders = filterSalesOrders;
 let eplDeliveryOrders = [];
 let eplRoutes = [];
 let currentDOMode = 'create';
-let activeDOStage = 'near_late';
+/**
+ * Rổ đang mở. `null` nghĩa là CHƯA CHỌN — lần vẽ đầu tiên sẽ tự chọn rổ cấp
+ * bách nhất mà có dòng.
+ *
+ * Trước đây mở cứng "Gần trễ", mà rổ đó đang có **0 DO**, nên mở màn ra là một
+ * bảng trống trong khi 9 DO thật nằm ở các tab khác. Người dùng phải tự đoán là
+ * phải bấm sang tab nào.
+ */
+let activeDOStage = null;
 let deliveryOrderAnalysis = null;
-const DELIVERY_ORDER_STAGES = ['near_late', 'pending', 'active', 'completed', 'incident'];
+/**
+ * Các rổ, xếp theo MỨC CẤP BÁCH giảm dần.
+ *
+ * Sinh từ js/do-board.js thay vì viết cứng: thêm một rổ thì không phải sửa hai
+ * chỗ, và không thể có rổ nào ở danh sách này mà thiếu ở bộ phân loại.
+ */
+const DELIVERY_ORDER_STAGES = window.DoBoard.BUCKETS.map(bucket => bucket.key);
 
 function refreshDOFormControls() {
   const isView = currentDOMode === 'view';
@@ -7902,17 +7916,22 @@ function deliveryOrderAnalysisRecord(order) {
   return (deliveryOrderAnalysis?.records || []).find(record => String(record.id || '') === id) || null;
 }
 
+/**
+ * Rổ của một DO.
+ *
+ * Máy chủ là bộ phân loại CHÍNH THỨC: nó biết số sự cố chưa xử lý và số POD,
+ * những thứ trình duyệt không có. Chỉ khi gọi phân tích thất bại mới tự xếp, và
+ * lúc đó dùng js/do-board.js — bản soi gương có cùng tên rổ và cùng thứ tự.
+ *
+ * Bản dự phòng trước đây tự viết lại phép xếp, và nó lấy `created_at` làm hạn
+ * giao thay thế — tức **bịa ra một hạn không tồn tại**: ngày tạo phiếu không phải
+ * ngày phải giao. Ba DO thật trong cơ sở dữ liệu không có ngày nào cả, nên chúng
+ * bị xếp vào "gần trễ" theo ngày tạo phiếu.
+ */
 function deliveryOrderStage(order) {
   const analyzed = deliveryOrderAnalysisRecord(order);
   if (analyzed?.stage) return analyzed.stage;
-  const key = deliveryOrderStatusKey(order);
-  if (['incident', 'issue', 'exception', 'problem'].includes(key)) return 'incident';
-  if (['delivered', 'completed', 'settled', 'posted'].includes(key)) return 'completed';
-  if (['dispatched', 'in_transit', 'arrived'].includes(key)) return 'active';
-  const dueAt = deliveryOrderDateValue(order, 'pending');
-  const hasDate = Number.isFinite(dueAt) && dueAt !== Number.MAX_SAFE_INTEGER;
-  if (hasDate && dueAt <= Date.now() + (24 * 60 * 60 * 1000)) return 'near_late';
-  return 'pending';
+  return window.DoBoard.bucketOf(order);
 }
 
 function deliveryOrderOperationalStatus(order) {
@@ -7951,7 +7970,9 @@ function deliveryOrderOperationalStatus(order) {
 function deliveryOrderDateValue(order, stage = activeDOStage) {
   const candidates = stage === 'completed'
     ? [order?.completed_at, order?.delivered_at, order?.pod_time, order?.delivery_date, order?.delivery_window_end, order?.updated_at]
-    : [order?.pickup_window_start, order?.pickup_date, order?.delivery_window_start, order?.delivery_date, order?.delivery_window_end, order?.created_at];
+    // CỐ Ý không có `created_at`: ngày tạo phiếu không phải ngày phải giao.
+    // Lấy nó là bịa ra một hạn không tồn tại, rồi mọi con số "trễ" tính từ đó đều sai.
+    : [order?.pickup_window_start, order?.pickup_date, order?.delivery_window_start, order?.delivery_date, order?.delivery_window_end];
   for (const candidate of candidates) {
     const time = Date.parse(candidate || '');
     if (!Number.isNaN(time)) return time;
@@ -7987,15 +8008,12 @@ function deliveryOrderSearchText(order) {
 
 function updateDeliveryOrderStageTabs(source = eplDeliveryOrders) {
   const buckets = deliveryOrderAnalysis?.buckets || null;
-  const counts = buckets
-    ? {
-      near_late: buckets.near_late?.count || 0,
-      pending: buckets.pending?.count || 0,
-      active: buckets.active?.count || 0,
-      completed: buckets.completed?.count || 0,
-      incident: buckets.incident?.count || 0
-    }
-    : { near_late: 0, pending: 0, active: 0, completed: 0, incident: 0 };
+  // Sinh từ DELIVERY_ORDER_STAGES thay vì viết cứng năm khóa: thêm một rổ thì
+  // không phải sửa hai chỗ, và không thể có rổ có tab mà không có số đếm.
+  const counts = {};
+  DELIVERY_ORDER_STAGES.forEach(stage => {
+    counts[stage] = buckets ? (buckets[stage]?.count || 0) : 0;
+  });
   if (!buckets) {
     (source || []).forEach(order => {
       counts[deliveryOrderStage(order)] = (counts[deliveryOrderStage(order)] || 0) + 1;
@@ -8005,72 +8023,53 @@ function updateDeliveryOrderStageTabs(source = eplDeliveryOrders) {
     const countEl = document.getElementById(`do-count-${stage}`);
     if (countEl) countEl.textContent = String(count);
   });
+  // Chu thich duoi moi the: chi ghi de khi CO MOT CON SO SONG dang noi them.
+  //
+  // Ban truoc viet cung sau cau cho moi ngon ngu ngay tai day, tuc mot tang
+  // nhan thu ba de len lang.json. He qua: sua lang.json xong chu tren man hinh
+  // van y nhu cu, va the "Gan tre" van doc "sap toi han hoac da qua han" du
+  // qua han da tach thanh ro rieng. Hai the moi thi khong co chu nao ca.
+  //
+  // Nay khong co con so song thi KHONG ghi de — chu cua lang.json duoc giu.
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  if (lang === 'vi') {
-    const nearLateHint = document.querySelector('#do-stage-near_late small');
-    if (nearLateHint) {
-      nearLateHint.textContent = counts.near_late > 0
-        ? `${counts.near_late} DO cần điều phối trước khi trễ SLA`
-        : 'DO sắp tới hạn hoặc đã quá hạn';
-    }
-    const pendingHint = document.querySelector('#do-stage-pending small');
-    if (pendingHint) {
-      pendingHint.textContent = 'DO đã lập kế hoạch, chờ điều phối xe';
-    }
-    const activeHint = document.querySelector('#do-stage-active small');
-    if (activeHint) {
-      const arrived = buckets?.active?.arrived || 0;
-      activeHint.textContent = arrived > 0
-        ? `${arrived} DO đã đến điểm, cần cập nhật POD/hoàn tất`
-        : 'Xe đã nhận lệnh, đang chạy hoặc đã đến điểm';
-    }
-    const completedHint = document.querySelector('#do-stage-completed small');
-    if (completedHint) {
-      const withPod = buckets?.completed?.with_pod || 0;
-      completedHint.textContent = withPod > 0
-        ? `${withPod} DO có POD đã ghi nhận`
-        : 'Đã giao, có POD hoặc hoàn tất';
-    }
-    const incidentHint = document.querySelector('#do-stage-incident small');
-    if (incidentHint) {
-      const openIncidents = buckets?.incident?.open_incidents || counts.incident || 0;
-      incidentHint.textContent = openIncidents > 0
-        ? `${openIncidents} sự cố chưa xử lý`
-        : 'Có incident chưa xử lý theo DO';
-    }
-  } else if (lang === 'la') {
-    const nearLateHint = document.querySelector('#do-stage-near_late small');
-    if (nearLateHint) {
-      nearLateHint.textContent = counts.near_late > 0
-        ? `${counts.near_late} DO ຕ້ອງປ່ອຍລົດກ່ອນກາຍ SLA`
-        : 'DO ໃກ້ຮອດກຳນົດ ຫຼື ກາຍກຳນົດແລ້ວ';
-    }
-    const pendingHint = document.querySelector('#do-stage-pending small');
-    if (pendingHint) {
-      pendingHint.textContent = 'DO ວາງແຜນແລ້ວ, ລໍຖ້າປ່ອຍລົດ';
-    }
-    const activeHint = document.querySelector('#do-stage-active small');
-    if (activeHint) {
-      const arrived = buckets?.active?.arrived || 0;
-      activeHint.textContent = arrived > 0
-        ? `${arrived} DO ຮອດຈຸດໝາຍແລ້ວ, ຕ້ອງອັບເດດ POD`
-        : 'ລົດຮັບຄຳສັ່ງແລ້ວ, ກຳລັງແລ່ນ ຫຼື ຮອດຈຸດໝາຍແລ້ວ';
-    }
-    const completedHint = document.querySelector('#do-stage-completed small');
-    if (completedHint) {
-      const withPod = buckets?.completed?.with_pod || 0;
-      completedHint.textContent = withPod > 0
-        ? `${withPod} DO ມີ POD ບັນທຶກແລ້ວ`
-        : 'ສົ່ງສິນຄ້າແລ້ວ, ມີ POD ຫຼື ສຳເລັດ';
-    }
-    const incidentHint = document.querySelector('#do-stage-incident small');
-    if (incidentHint) {
-      const openIncidents = buckets?.incident?.open_incidents || counts.incident || 0;
-      incidentHint.textContent = openIncidents > 0
-        ? `${openIncidents} ບັນຫາທີ່ຍັງບໍ່ໄດ້ແກ້ໄຂ`
-        : 'ມີອຸບັດຕິເຫດທີ່ຍັງບໍ່ໄດ້ແກ້ໄຂ';
-    }
-  }
+  const dongChuThich = {
+    overdue: {
+      vi: so => so > 0 ? `${so} DO đã quá hạn, cần xử lý ngay` : null,
+    },
+    undated: {
+      vi: so => so > 0 ? `${so} DO chưa có ngày lấy/giao` : null,
+    },
+    near_late: {
+      vi: so => so > 0 ? `${so} DO cần điều phối trước khi trễ SLA` : null,
+      la: so => so > 0 ? `${so} DO ຕ້ອງປ່ອຍລົດກ່ອນກາຍ SLA` : null,
+    },
+    active: {
+      vi: () => (buckets?.active?.arrived || 0) > 0
+        ? `${buckets.active.arrived} DO đã đến điểm, cần cập nhật POD/hoàn tất` : null,
+      la: () => (buckets?.active?.arrived || 0) > 0
+        ? `${buckets.active.arrived} DO ຮອດຈຸດຫມາຍແລ້ວ, ຕ້ອງອັບເດດ POD` : null,
+    },
+    completed: {
+      vi: () => (buckets?.completed?.with_pod || 0) > 0
+        ? `${buckets.completed.with_pod} DO có POD đã ghi nhận` : null,
+      la: () => (buckets?.completed?.with_pod || 0) > 0
+        ? `${buckets.completed.with_pod} DO ມີ POD ບັນທຶກແລ້ວ` : null,
+    },
+    incident: {
+      vi: so => (buckets?.incident?.open_incidents || so) > 0
+        ? `${buckets?.incident?.open_incidents || so} sự cố chưa xử lý` : null,
+      la: so => (buckets?.incident?.open_incidents || so) > 0
+        ? `${buckets?.incident?.open_incidents || so} ບັນຫາທີ່ຍັງບໍ່ໄດ້ແກ້ໄຂ` : null,
+    },
+  };
+  Object.entries(dongChuThich).forEach(([stage, theoNgonNgu]) => {
+    const dung = theoNgonNgu[lang];
+    if (!dung) return;
+    const chu = dung(counts[stage] || 0);
+    if (!chu) return;
+    const node = document.querySelector(`#do-stage-${stage} small`);
+    if (node) node.textContent = fixUIText(chu);
+  });
   DELIVERY_ORDER_STAGES.forEach(stage => {
     const tab = document.getElementById(`do-stage-${stage}`);
     if (!tab) return;
@@ -8109,6 +8108,21 @@ function renderDeliveryOrders(data) {
   tbody.innerHTML = '';
 
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
+
+  // Chưa chọn rổ nào thì mở rổ CẤP BÁCH NHẤT MÀ CÓ DÒNG.
+  //
+  // Trước đây mở cứng "Gần trễ", mà rổ đó đang có 0 DO, nên mở màn ra là một
+  // bảng trống trong khi 9 DO thật nằm ở các tab khác.
+  if (!activeDOStage) {
+    const tally = {};
+    (eplDeliveryOrders || []).forEach(order => {
+      const stage = deliveryOrderStage(order);
+      tally[stage] = (tally[stage] || 0) + 1;
+    });
+    activeDOStage = DELIVERY_ORDER_STAGES.find(stage => tally[stage] > 0)
+      || DELIVERY_ORDER_STAGES[DELIVERY_ORDER_STAGES.length - 1];
+  }
+
   updateDeliveryOrderStageTabs(eplDeliveryOrders);
   const list = (data || [])
     .filter(order => deliveryOrderStage(order) === activeDOStage)
@@ -8203,7 +8217,9 @@ function filterDeliveryOrders() {
 }
 
 window.switchDeliveryOrderStage = function (stage) {
-  activeDOStage = DELIVERY_ORDER_STAGES.includes(stage) ? stage : 'near_late';
+  // Rổ lạ thì đặt lại về `null` để lần vẽ sau tự chọn rổ cấp bách nhất mà có
+  // dòng, thay vì rơi cứng về một rổ có thể đang rỗng.
+  activeDOStage = DELIVERY_ORDER_STAGES.includes(stage) ? stage : null;
   filterDeliveryOrders();
 };
 
@@ -14705,7 +14721,7 @@ function renderCostFormulaPopover(result, money) {
       <div class="cf-pop-head">
         <b><i class="fa-solid fa-sliders" aria-hidden="true"></i> Cấu hình công thức</b>
         <button type="button" class="cf-pop-close" onclick="toggleCostFormulaPopover(false)"
-                aria-label="Đóng cấu hình công thức"><i class="fa-solid fa-xmark"></i></button>
+                aria-label="Đóng cấu hình công thức" title="Đóng">✕</button>
       </div>
       <p class="cf-pop-hint">Mỗi dòng là một cấu phần: chọn <b>dấu</b>, nhập <b>đơn giá</b>,
         rồi chọn đơn giá đó <b>nhân theo</b> gì. Thêm hay bớt cấu phần đều được.</p>
@@ -14772,7 +14788,7 @@ function renderCostFormulaPopover(result, money) {
                           ${index === result.rows.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down"></i></button>
                   <button type="button" class="cf-del"
                           title="${row.builtin ? 'Cấu phần dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa cấu phần'}"
-                          onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}><i class="fa-solid fa-xmark"></i></button>
+                          onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}>✕</button>
                 </td>
               </tr>`).join('')}
           </tbody>
@@ -15337,10 +15353,19 @@ window.renderDynamicFormulaVehicleTypes = function () {
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
         ).join('')}</div>` : ''}
         <div class="vt-rate">${configured
-          ? `<b>${formatWorkflowCurrencyAmount(estimate.total, currency)}</b> <small>/chuyến mẫu</small>
+          ? `<b>${formatWorkflowCurrencyAmount(estimate.profit, currency)}</b> <small>lợi nhuận/chuyến mẫu${
+               estimate.marginPct === null ? '' : ` · ${estimate.marginPct.toFixed(1)}%`}</small>
              <span class="vt-flag vt-flag--ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Đã cấu hình</span>
              <div class="vt-breakdown">
-               <span title="Bình quân mỗi km — con số so sánh được giữa các loại xe">
+               <span title="Cước thu của khách cho chuyển mẫu">
+                 <i class="fa-solid fa-arrow-down" aria-hidden="true"></i>
+                 Thu ${formatWorkflowCurrencyAmount(estimate.revenue, currency)}
+               </span>
+               <span title="Giá thành chuyển mẫu — tổng tiền chi ra">
+                 <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
+                 Chi ${formatWorkflowCurrencyAmount(estimate.cost, currency)}
+               </span>
+               <span title="Giá thành mỗi km — so được giữa các loại xe">
                  <i class="fa-solid fa-route" aria-hidden="true"></i>
                  ${formatWorkflowCurrencyAmount(estimate.perKm, currency)}/km
                </span>
@@ -15354,9 +15379,12 @@ window.renderDynamicFormulaVehicleTypes = function () {
       </div>`;
   }).join('');
 
-  const sampleNote = `<p class="vt-sample">Số tiền trên thẻ là <b>ước tính một chuyến mẫu</b>
-    ${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn.
-    Đổi ở khung Công thức bên phải.</p>`;
+  // Noi ro tung con so tren the la gi. Ban truoc chi noi "so tien tren the la
+  // uoc tinh mot chuyen mau", ma the hien MOT tong gop ca chi phi lan doanh
+  // thu — mot con so khong phai gia thanh cung khong phai gia ban.
+  const sampleNote = `<p class="vt-sample">Các số trên thẻ là <b>ước tính một chuyến mẫu</b>
+    ${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn:
+    <b>lợi nhuận</b> = cước thu khách − giá thành. Bấm vào thẻ rồi sửa ở khung Công thức bên phải.</p>`;
   container.innerHTML = searchBox + sampleNote + cards;
 
   // Tang thu hai: moi the co mot dong "N chiec xe" bam duoc.

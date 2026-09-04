@@ -47,13 +47,30 @@ STATUS = {
     },
 }
 
+# Cac ro, xep theo MUC CAP BACH giam dan. Thu tu nay quyet dinh tab nao mo san
+# tren man hinh: ro cap bach nhat ma CO DONG.
+#
+# Ban truoc chi co nam ro, va gop hai truong hop khac han nhau:
+#
+#   - DON QUA HAN bi de trong "Cho van chuyen", chi danh dau bang co
+#     `is_overdue` ma khong ai nhin. Mot DO qua han ba tuan va mot DO con hai
+#     tuan nua moi den han khong the nam cung mot cho.
+#
+#   - DON THIEU HAN GIAO (khong co ngay lay lan ngay giao nao) cung roi vao
+#     "Cho van chuyen", nen khong ai thay la no thieu — du no khong lap ke
+#     hoach duoc va cung khong do tre duoc.
 DO_ANALYSIS_STAGE = {
+    "incident": "Gặp sự cố",
+    "overdue": "Đã quá hạn",
+    "undated": "Thiếu hạn giao",
     "near_late": "Gần trễ",
     "pending": "Chờ vận chuyển",
     "active": "Đang vận chuyển",
     "completed": "Hoàn thành",
-    "incident": "Gặp sự cố",
 }
+
+#: Thu tu cap bach, dung de chon tab mo san.
+DO_STAGE_URGENCY = ("incident", "overdue", "undated", "near_late", "pending", "active", "completed")
 
 
 # --------------------------------------------------------------------------
@@ -285,11 +302,23 @@ def _delivery_order_analysis_record(order, pod_counts, incident_counts, now, nea
         and now <= due_at
         and due_at <= now + datetime.timedelta(hours=near_late_hours)
     )
-    if is_near_late:
-        stage = "near_late"
+    # Chi xet han giao khi don CHUA len duong. Xe da chay thi han giao khong
+    # con quyet dinh ro nua.
+    if stage == "pending":
+        if due_at is None:
+            # Khong co ngay nao ca. Day la mot ro RIENG: khong lap ke hoach
+            # duoc va cung khong do tre duoc, nen de lan vao "cho van chuyen"
+            # thi khong ai thay la no thieu.
+            stage = "undated"
+        elif is_overdue:
+            stage = "overdue"
+        elif is_near_late:
+            stage = "near_late"
     operational_status = DO_ANALYSIS_STAGE[stage]
 
     reason = {
+        "overdue": "DO chưa vận chuyển và đã quá hạn lấy/giao.",
+        "undated": "DO chưa có ngày lấy lẫn ngày giao nào, nên chưa lập kế hoạch được.",
         "near_late": "DO chưa vận chuyển và thời điểm lấy/giao nằm trong 24 giờ tới.",
         "completed": "DO đã giao/hoàn tất hoặc đã hạch toán.",
         "active": "DO đã được điều phối xe và đang trong quá trình vận chuyển.",
@@ -334,13 +363,15 @@ def delivery_order_analysis(db, near_late_hours=24, now=None):
         _delivery_order_analysis_record(order, pod_counts, incident_counts, now, near_late_hours)
         for order in orders
     ]
+    # Sinh tu DO_ANALYSIS_STAGE thay vi viet cung: them mot ro moi thi khong
+    # phai sua hai cho, va khong the co ro nao xuat hien o day ma thieu o kia.
     buckets = {
-        "near_late": {"label": "Gần trễ", "count": 0, "record_ids": []},
-        "pending": {"label": "Chờ vận chuyển", "count": 0, "record_ids": []},
-        "active": {"label": "Đang vận chuyển", "count": 0, "arrived": 0, "record_ids": []},
-        "completed": {"label": "Hoàn thành", "count": 0, "with_pod": 0, "record_ids": []},
-        "incident": {"label": "Gặp sự cố", "count": 0, "open_incidents": 0, "record_ids": []},
+        stage: {"label": label, "count": 0, "record_ids": []}
+        for stage, label in DO_ANALYSIS_STAGE.items()
     }
+    buckets["active"]["arrived"] = 0
+    buckets["completed"]["with_pod"] = 0
+    buckets["incident"]["open_incidents"] = 0
     for record in records:
         bucket = buckets[record["stage"]]
         bucket["count"] += 1
@@ -354,9 +385,15 @@ def delivery_order_analysis(db, near_late_hours=24, now=None):
     return {
         "generated_at": now.isoformat(),
         "near_late_hours": near_late_hours,
+        # Thu tu cap bach, de man hinh biet mo san tab nao: ro cap bach nhat ma
+        # CO DONG. Ban truoc mo cung "Gan tre", ma ro do dang co 0 don, nen mo
+        # man ra la mot bang trong trong khi don thuc nam o cac tab khac.
+        "urgency": list(DO_STAGE_URGENCY),
         "logic": {
+            "overdue": "pending và hạn lấy/giao đã trôi qua.",
+            "undated": "pending và không có ngày lấy lẫn ngày giao nào.",
             "near_late": "pending và hạn lấy/giao nằm từ hiện tại đến hết 24 giờ tới.",
-            "pending": "pending: chờ vận chuyển; đơn quá hạn có cờ is_overdue riêng.",
+            "pending": "pending: đã có hạn, còn thời gian, chờ điều phối xe.",
             "active": "in_transit: đã điều phối và đang vận chuyển.",
             "completed": "delivered/completed/settled/posted: đã giao hoặc hoàn tất.",
             "incident": "Có incident theo do_id với status chưa resolved/closed/completed.",

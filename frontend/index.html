@@ -1091,21 +1091,30 @@
        Dat `fixed` giua man hinh thi khong khung nao cat duoc. */
     .cf-pop-backdrop { position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.32);
       display:flex; align-items:center; justify-content:center; padding:24px; }
-    .cf-pop { width:min(860px, 100%); max-height:calc(100vh - 48px); display:flex; flex-direction:column;
+    .cf-pop { width:min(960px, 100%); max-height:calc(100vh - 48px); display:flex; flex-direction:column;
       background:#fff; border:1px solid #cbd7e5; border-radius:12px;
       box-shadow:0 24px 56px rgba(15,23,42,.28); }
     .cf-pop-head { display:flex; align-items:center; justify-content:space-between; gap:12px;
       padding:13px 18px; border-bottom:1px solid #eef2f7; font-size:.9rem; color:#0f172a; }
     .cf-pop-head i { color:#0a6ed1; margin-right:7px; }
     .cf-pop-close { flex:none; width:32px; height:32px; border:1px solid #cbd7e5; border-radius:7px;
-      background:#fff; color:#64748b; cursor:pointer; }
+      background:#fff; color:#64748b; cursor:pointer; font-size:.95rem; line-height:1; }
     .cf-pop-close:hover { border-color:#b91c1c; color:#b91c1c; background:#fef2f2; }
     .cf-pop-hint { margin:12px 18px 0; font-size:.76rem; color:#64748b; line-height:1.55; }
     /* Cuon TRONG hop thoai, de nut "Them cau phan" luon voi tay toi duoc. */
     .cf-pop .cf-scroll { flex:1 1 auto; min-height:0; overflow:auto; padding:0 8px; }
     .cf-pop-table { margin:8px 0; }
     /* Ten cau phan phai co du cho, khong thi chu xuong dong tung tu mot. */
-    .cf-pop-table th:nth-child(2), .cf-pop-table td:nth-child(2) { min-width:190px; }
+    .cf-pop-table { table-layout:auto; }
+    .cf-pop-table th:nth-child(2), .cf-pop-table td:nth-child(2) { min-width:150px; }
+    /* Bay cot khong vua khung nen sinh thanh cuon ngang. Bo cac o so va o chon
+       lai vua du, de khong phai cuon ngang moi thay cot "Thanh tien". */
+    .cf-pop-table input[type="number"] { width:88px; }
+    .cf-pop-table input[type="text"] { min-width:130px; }
+    .cf-pop-table select { font-size:.72rem; padding:4px; }
+    .cf-pop-table th, .cf-pop-table td { padding-left:8px; padding-right:8px; }
+    .cf-pop-table .cf-op-col { width:48px; }
+    .cf-pop-table .cf-row-actions button { width:24px; height:24px; }
     .cf-pop-foot { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
       padding:12px 18px; border-top:1px solid #eef2f7; background:#f8fafc; border-radius:0 0 12px 12px; }
     .cf-pop-foot small { flex:1 1 240px; font-size:.72rem; color:#64748b; line-height:1.5; }
@@ -4233,9 +4242,21 @@
                 </div>
 
                 <div style="padding:14px 20px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px;">
-                  <button id="do-stage-near_late" class="do-stage-tab active" onclick="switchDeliveryOrderStage('near_late')" style="border:2px solid #0a6ed1; background:#eff6ff; color:#0a6ed1; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
+                  <button id="do-stage-incident" class="do-stage-tab" onclick="switchDeliveryOrderStage('incident')" style="border:2px solid #e2e8f0; background:#ffffff; color:#334155; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
+                    <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-circle-exclamation"></i> <span data-i18n="stage_incident">Gặp sự cố</span></span><strong id="do-count-incident">0</strong></span>
+                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_incident">Có incident chưa xử lý theo DO</small>
+                  </button>
+                  <button id="do-stage-overdue" class="do-stage-tab" onclick="switchDeliveryOrderStage('overdue')" style="border:2px solid #e2e8f0; background:#ffffff; color:#0f172a; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
+                    <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="stage_overdue">Đã quá hạn</span></span><strong id="do-count-overdue">0</strong></span>
+                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_overdue">Quá hạn lấy/giao, cần xử lý ngay</small>
+                  </button>
+                  <button id="do-stage-undated" class="do-stage-tab" onclick="switchDeliveryOrderStage('undated')" style="border:2px solid #e2e8f0; background:#ffffff; color:#0f172a; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
+                    <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-calendar-xmark"></i> <span data-i18n="stage_undated">Thiếu hạn giao</span></span><strong id="do-count-undated">0</strong></span>
+                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_undated">Chưa có ngày lấy/giao nên chưa lập kế hoạch được</small>
+                  </button>
+                  <button id="do-stage-near_late" class="do-stage-tab" onclick="switchDeliveryOrderStage('near_late')" style="border:2px solid #e2e8f0; background:#ffffff; color:#0f172a; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
                     <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="stage_near_late">Gần trễ</span></span><strong id="do-count-near_late">0</strong></span>
-                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_near_late">DO sắp tới hạn hoặc đã quá hạn</small>
+                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_near_late">Tới hạn trong 24 giờ tới</small>
                   </button>
                   <button id="do-stage-pending" class="do-stage-tab" onclick="switchDeliveryOrderStage('pending')" style="border:2px solid #e2e8f0; background:#ffffff; color:#334155; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
                     <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-calendar-check"></i> <span data-i18n="stage_pending">Chờ vận chuyển</span></span><strong id="do-count-pending">0</strong></span>
@@ -4248,10 +4269,6 @@
                   <button id="do-stage-completed" class="do-stage-tab" onclick="switchDeliveryOrderStage('completed')" style="border:2px solid #e2e8f0; background:#ffffff; color:#334155; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
                     <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-circle-check"></i> <span data-i18n="stage_completed">Hoàn thành</span></span><strong id="do-count-completed">0</strong></span>
                     <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_completed">Đã giao, có POD hoặc hoàn tất</small>
-                  </button>
-                  <button id="do-stage-incident" class="do-stage-tab" onclick="switchDeliveryOrderStage('incident')" style="border:2px solid #e2e8f0; background:#ffffff; color:#334155; border-radius:10px; padding:12px 14px; text-align:left; cursor:pointer;">
-                    <span style="display:flex; align-items:center; justify-content:space-between; gap:8px;"><span><i class="fa-solid fa-circle-exclamation"></i> <span data-i18n="stage_incident">Gặp sự cố</span></span><strong id="do-count-incident">0</strong></span>
-                    <small style="display:block; margin-top:4px; color:#64748b; font-weight:650;" data-i18n="desc_incident">Có incident chưa xử lý theo DO</small>
                   </button>
                 </div>
 
@@ -7051,12 +7068,12 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/formula-model.js?v=20260905-cost-vs-revenue"></script>
-  <script src="/static/js/quotation-pricing.js?v=20260905-cost-vs-revenue"></script>
+  <script src="/static/js/formula-model.js?v=20260905-do-buckets"></script>
+  <script src="/static/js/quotation-pricing.js?v=20260905-do-buckets"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260905-cost-vs-revenue"></script>
+  <script src="/static/js/app.js?v=20260905-do-buckets"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

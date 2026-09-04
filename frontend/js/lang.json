@@ -1,4 +1,4 @@
-﻿{
+{
   "menu_dashboard": {
     "en": "Dashboard (Live DB)",
     "vi": "Bảng điều khiển (Cơ sở dữ liệu trực tiếp)",
@@ -3695,9 +3695,26 @@
     "la": "ໃກ້ຊັກຊ້າ"
   },
   "desc_near_late": {
-    "vi": "DO sắp tới hạn hoặc đã quá hạn",
-    "en": "DO nearing deadline or overdue",
-    "la": "DO ໃກ້ຮອດກຳນົດ ຫຼື ກາຍກຳນົດແລ້ວ"
+    "vi": "Tới hạn trong 24 giờ tới",
+    "en": "Due within the next 24 hours",
+    "la": "DO ໃກ້ຮອດກຳນົດ"
+  },
+  "stage_overdue": {
+    "vi": "Đã quá hạn",
+    "en": "Overdue",
+    "la": "ກາຍກຳນົດແລ້ວ"
+  },
+  "desc_overdue": {
+    "vi": "Quá hạn lấy/giao, cần xử lý ngay",
+    "en": "Past pickup/delivery deadline, needs action now"
+  },
+  "stage_undated": {
+    "vi": "Thiếu hạn giao",
+    "en": "No deadline set"
+  },
+  "desc_undated": {
+    "vi": "Chưa có ngày lấy/giao nên chưa lập kế hoạch được",
+    "en": "No pickup/delivery date yet, cannot be planned"
   },
   "stage_pending": {
     "vi": "Chờ vận chuyển",

@@ -18,6 +18,13 @@
  *      bị trộn lẫn vào "Chờ vận chuyển" và không ai thấy nó thiếu, dù nó không
  *      lập kế hoạch được và cũng không đo trễ được.
  *
+ * QUAN HỆ VỚI MÁY CHỦ: chỉ có MỘT bộ phân loại là đúng, và đó là máy chủ
+ * (`delivery_order_analysis`) — nó biết số sự cố chưa xử lý và số POD, những thứ
+ * trình duyệt không có. Module này là bản SOI GƯƠNG, dùng khi gọi phân tích thất
+ * bại — nên tên rổ và thứ tự cấp bách phải trùng khớp với `DO_ANALYSIS_STAGE` và
+ * `DO_STAGE_URGENCY` ở backend. Lệch nhau là mất xỉnh: tab hiện một con số mà
+ * bảng phía dưới lọc theo một rổ khác.
+ *
  * Module thuần: không đọc DOM, không gọi mạng.
  */
 (function (root, factory) {
@@ -39,7 +46,7 @@
     { key: 'incident', label: 'Gặp sự cố', hint: 'Có sự cố chưa xử lý', icon: 'fa-circle-exclamation', tone: 'danger' },
     { key: 'overdue', label: 'Đã quá hạn', hint: 'Quá hạn giao, cần xử lý ngay', icon: 'fa-clock-rotate-left', tone: 'danger' },
     { key: 'undated', label: 'Thiếu hạn giao', hint: 'Chưa có ngày lấy/giao nên không lập kế hoạch được', icon: 'fa-calendar-xmark', tone: 'warning' },
-    { key: 'due_soon', label: 'Sắp tới hạn', hint: 'Tới hạn trong 24 giờ tới', icon: 'fa-hourglass-half', tone: 'warning' },
+    { key: 'near_late', label: 'Sắp tới hạn', hint: 'Tới hạn trong 24 giờ tới', icon: 'fa-hourglass-half', tone: 'warning' },
     { key: 'pending', label: 'Chờ vận chuyển', hint: 'Đã có hạn, chờ điều phối xe', icon: 'fa-calendar-check', tone: 'info' },
     { key: 'active', label: 'Đang vận chuyển', hint: 'Xe đã nhận lệnh và đang chạy', icon: 'fa-truck-fast', tone: 'info' },
     { key: 'completed', label: 'Hoàn thành', hint: 'Đã có POD ghi nhận', icon: 'fa-circle-check', tone: 'ok' },
@@ -89,7 +96,7 @@
     const due = dueAt(order);
     if (due === null) return 'undated';
     if (due < now) return 'overdue';
-    if (due <= now + DAY) return 'due_soon';
+    if (due <= now + DAY) return 'near_late';
     return 'pending';
   }
 

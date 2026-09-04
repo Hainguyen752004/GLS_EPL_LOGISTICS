@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 
 
 WORKFLOW_ROUTES = {
@@ -90,16 +90,24 @@ def test_delivery_order_analysis_groups_real_backend_statuses(app_client, workfl
     by_id = {record["id"]: record for record in payload["records"]}
     assert by_id["DO-ANA-L"]["stage"] == "near_late"
     assert by_id["DO-ANA-L"]["operational_status"] == "Gần trễ"
-    assert by_id["DO-ANA-P"]["stage"] == "pending"
-    assert by_id["DO-ANA-P"]["operational_status"] == "Chờ vận chuyển"
+    # DO-ANA-P duoc dung KHONG co ngay lay lan ngay giao nao, nen no thuoc ro
+    # "thieu han giao" chu khong phai "cho van chuyen". Truoc day hai truong
+    # hop nay lan vao nhau, nen khong ai thay la don dang thieu ngay - du no
+    # khong lap ke hoach duoc va cung khong do tre duoc.
+    assert by_id["DO-ANA-P"]["stage"] == "undated"
+    assert by_id["DO-ANA-P"]["operational_status"] == "Thiếu hạn giao"
+    assert by_id["DO-ANA-P"]["due_at"] is None
+    # Trang thai goc khong doi: ro chi la cach xep de nhin, khong phai trang thai.
     assert by_id["DO-ANA-P"]["canonical_status"] == "pending"
     assert by_id["DO-ANA-A"]["stage"] == "active"
     assert by_id["DO-ANA-A"]["operational_status"] == "Đang vận chuyển"
     assert by_id["DO-ANA-I"]["stage"] == "incident"
     assert by_id["DO-ANA-I"]["operational_status"] == "Gặp sự cố"
-    assert set(payload["buckets"]) == {"near_late", "pending", "active", "completed", "incident"}
+    assert set(payload["buckets"]) == {
+        "incident", "overdue", "undated", "near_late", "pending", "active", "completed"
+    }
     assert payload["buckets"]["near_late"]["count"] >= 1
-    assert payload["buckets"]["pending"]["count"] >= 1
+    assert payload["buckets"]["undated"]["count"] >= 1
     assert payload["buckets"]["active"]["count"] >= 1
     assert payload["buckets"]["incident"]["count"] >= 1
 

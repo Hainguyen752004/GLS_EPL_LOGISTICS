@@ -39,12 +39,12 @@ const DUE_SOON = { id: 'D-SOON', status: 'Chờ vận chuyển', delivery_window
 const PENDING = { id: 'D-PENDING', status: 'Chờ vận chuyển', delivery_window_end: '2026-09-30T00:00:00Z' };
 
 assert.strictEqual(B.bucketOf(OVERDUE, NOW), 'overdue');
-assert.strictEqual(B.bucketOf(DUE_SOON, NOW), 'due_soon');
+assert.strictEqual(B.bucketOf(DUE_SOON, NOW), 'near_late');
 assert.strictEqual(B.bucketOf(PENDING, NOW), 'pending');
 assert.strictEqual(B.daysLate(OVERDUE, NOW), 16, 'phải nói rõ quá hạn bao nhiêu ngày');
 
 // Đúng mốc 24 giờ: trong 24h là sắp tới hạn, quá 24h là còn thời gian.
-assert.strictEqual(B.bucketOf({ status: 'pending', delivery_date: '2026-09-06T09:00:00Z' }, NOW), 'due_soon');
+assert.strictEqual(B.bucketOf({ status: 'pending', delivery_date: '2026-09-06T09:00:00Z' }, NOW), 'near_late');
 assert.strictEqual(B.bucketOf({ status: 'pending', delivery_date: '2026-09-06T11:00:00Z' }, NOW), 'pending');
 
 // --- 3. Trạng thái vận hành thắng hạn giao -------------------------------
@@ -98,8 +98,8 @@ assert.ok(B.BUCKETS.some(bucket => bucket.key === B.defaultBucket([], NOW)));
   const order = B.BUCKETS.map(bucket => bucket.key);
   assert.ok(order.indexOf('incident') < order.indexOf('overdue'));
   assert.ok(order.indexOf('overdue') < order.indexOf('undated'));
-  assert.ok(order.indexOf('undated') < order.indexOf('due_soon'));
-  assert.ok(order.indexOf('due_soon') < order.indexOf('pending'));
+  assert.ok(order.indexOf('undated') < order.indexOf('near_late'));
+  assert.ok(order.indexOf('near_late') < order.indexOf('pending'));
   assert.ok(order.indexOf('pending') < order.indexOf('completed'));
 }
 

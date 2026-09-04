@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 import importlib
 
 
@@ -221,7 +221,20 @@ def test_delivery_order_commands_reject_naive_datetimes(app_client, workflow_bui
     ).status_code == 422
 
 
-def test_analysis_uses_five_views_and_keeps_overdue_out_of_near_late(app_client, workflow_builder):
+def test_analysis_tach_qua_han_va_thieu_han_thanh_ro_rieng(app_client, workflow_builder):
+    """Bay ro, va don qua han khong con nam chung voi don con thoi gian.
+
+    Ban truoc chi co nam ro va gop hai truong hop khac han nhau vao
+    "Cho van chuyen":
+
+      - DON QUA HAN chi duoc danh dau bang co `is_overdue`, ma man hinh khong
+        doc co do. Mot DO qua han ba tuan va mot DO con hai tuan nua moi den
+        han khong the nam cung mot cho.
+
+      - DON THIEU HAN GIAO (khong co ngay lay lan ngay giao nao) cung roi vao
+        do, nen khong ai thay la no thieu — du no khong lap ke hoach duoc va
+        cung khong do tre duoc.
+    """
     client, _, _ = app_client
     workflow_builder.master_data()
     now = datetime.datetime(2026, 8, 20, 5, 0, tzinfo=datetime.timezone.utc)
@@ -251,18 +264,53 @@ def test_analysis_uses_five_views_and_keeps_overdue_out_of_near_late(app_client,
         payload = workflow.delivery_order_analysis(db, now=now)
 
     assert set(payload["buckets"]) == {
-        "near_late", "pending", "active", "completed", "incident"
+        "incident", "overdue", "undated", "near_late", "pending", "active", "completed"
     }
+    # Thu tu cap bach phai duoc tra ve, de man hinh mo san dung tab thay vi mo
+    # cung mot ro co the dang rong.
+    assert payload["urgency"] == [
+        "incident", "overdue", "undated", "near_late", "pending", "active", "completed"
+    ]
     records = {record["id"]: record for record in payload["records"]}
-    assert records["DO-OVERDUE"]["stage"] == "pending"
+    # Qua han la mot RO RIENG, khong con la mot co gan tren "cho van chuyen".
+    assert records["DO-OVERDUE"]["stage"] == "overdue"
     assert records["DO-OVERDUE"]["is_overdue"] is True
     assert records["DO-OVERDUE"]["is_near_late"] is False
+    assert "quá hạn" in records["DO-OVERDUE"]["reason"]
     assert records["DO-NEAR"]["stage"] == "near_late"
     assert records["DO-NEAR"]["is_near_late"] is True
     assert records["DO-PENDING"]["stage"] == "pending"
+    assert records["DO-PENDING"]["is_overdue"] is False
     assert records["DO-NAIVE"]["stage"] == "near_late"
     assert records["DO-NAIVE"]["due_at"].endswith("+00:00")
     assert records["DO-NAIVE"]["due_at_local"].endswith("+07:00")
+
+    # DO khong co ngay nao ca phai vao ro RIENG "thieu han giao".
+    #
+    # Truoc day no lan vao "Cho van chuyen" nen khong ai thay la no thieu, du
+    # no khong lap ke hoach duoc va cung khong do tre duoc. Trong co so du lieu
+    # that dang co ba DO nhu vay.
+    _create_pending_do(client, workflow_builder, "NODATE")
+    with database.SessionLocal() as db:
+        don = db.get(models.DeliveryOrder, "DO-NODATE")
+        for field in (
+            "planned_departure_at", "pickup_window_start", "pickup_date",
+            "delivery_window_start", "delivery_date", "delivery_window_end",
+            "planned_arrival_at",
+        ):
+            setattr(don, field, None)
+        db.commit()
+        payload = workflow.delivery_order_analysis(db, now=now)
+
+    ro = {record["id"]: record for record in payload["records"]}["DO-NODATE"]
+    assert ro["stage"] == "undated"
+    assert ro["due_at"] is None
+    # Khong co han thi khong the qua han: bao "qua han" o day la bia ra mot cai
+    # han khong ton tai.
+    assert ro["is_overdue"] is False
+    assert ro["is_near_late"] is False
+    assert "chưa có ngày" in ro["reason"]
+    assert payload["buckets"]["undated"]["count"] == 1
 
 
 def test_incident_is_derived_without_changing_canonical_status(app_client, workflow_builder):
