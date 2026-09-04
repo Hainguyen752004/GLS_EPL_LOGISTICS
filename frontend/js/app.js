@@ -9289,6 +9289,23 @@ window.selectResourceFromPanoramic = function (targetType, resourceId) {
   window.switchDispatchResourceTab('dispatch');
 };
 
+/**
+ * Dong ho suc chua thung xe o man Dieu phoi.
+ *
+ * Ban cu bia toan bo con so:
+ *
+ *     const totalVol = v ? (v.volume_capacity_m3 || 30.0) : 30.0;
+ *     const usedVol = 6.0; // Default order cargo volume
+ *
+ * `usedVol` cung 6,0 m3 — khong doc the tich cua don dang chon. Nen nguoi
+ * dieu phoi LUON thay "Xe con trong 80% (24,0 / 30 m3)" bat ke don that nang
+ * hay nhe. Day la con so duy nhat tren man noi ve nang luc cho, va no khong
+ * lien quan gi toi du lieu.
+ *
+ * Nay doc the tich THAT cua don dang chon va suc chua THAT cua xe. Thieu so
+ * nao thi noi ro la chua khai, KHONG bia mot con so — mot ti le phan tram
+ * tu tin te hon mot dau gach.
+ */
 window.onDispatchVehicleChange = function () {
   const vehSelect = document.getElementById('dispatch-vehicle');
   const meterBox = document.getElementById('dispatch-capacity-meter-box');
@@ -9299,23 +9316,54 @@ window.onDispatchVehicleChange = function () {
     meterBox.style.display = 'none';
     return;
   }
+  meterBox.style.display = 'block';
+
+  const dat = (id, chu) => {
+    const node = document.getElementById(id);
+    if (node) node.innerText = chu;
+  };
+  const bar = document.getElementById('capacity-meter-bar');
 
   const v = (availableVehicles || []).find(x => x.id === vehId);
-  const totalVol = v ? (v.volume_capacity_m3 || 30.0) : 30.0;
-  const usedVol = 6.0; // Default order cargo volume
-  const freeVol = totalVol - usedVol;
-  const freePct = Math.round((freeVol / totalVol) * 100);
-  const usedPct = 100 - freePct;
+  const doId = document.getElementById('dispatch-selected-do')?.value || '';
+  const don = (eplDeliveryOrders || []).find(x => x.id === doId);
 
-  meterBox.style.display = 'block';
-  if (document.getElementById('capacity-meter-badge')) {
-    document.getElementById('capacity-meter-badge').innerText = `Xe còn trống ${freePct}% (${freeVol.toFixed(1)} / ${totalVol} m³)`;
+  const sucChua = Number(v?.volume_capacity_m3 || 0);
+  const daXep = Number(don?.volume_m3 || 0);
+
+  // Xe chua khai the tich thung: khong co mau so nao de tinh ti le.
+  if (!(sucChua > 0)) {
+    dat('capacity-meter-badge', `Xe ${vehId} chưa khai thể tích thùng — chưa tính được độ lấp`);
+    dat('capacity-used-text', daXep > 0 ? `${daXep} m³` : '—');
+    dat('capacity-total-text', '—');
+    if (bar) bar.style.width = '0%';
+    return;
   }
-  if (document.getElementById('capacity-meter-bar')) {
-    document.getElementById('capacity-meter-bar').style.width = `${usedPct}%`;
+
+  // Don chua khai the tich: bao ro, dung coi la 0 roi ket luan "con trong 100%".
+  if (!(daXep > 0)) {
+    dat('capacity-meter-badge',
+      `Sức chứa ${sucChua} m³ — đơn ${doId || '(chưa chọn)'} chưa khai thể tích hàng`);
+    dat('capacity-used-text', '—');
+    dat('capacity-total-text', `${sucChua} m³`);
+    if (bar) bar.style.width = '0%';
+    return;
   }
-  if (document.getElementById('capacity-used-text')) document.getElementById('capacity-used-text').innerText = `${usedVol} m³`;
-  if (document.getElementById('capacity-total-text')) document.getElementById('capacity-total-text').innerText = `${totalVol} m³`;
+
+  const conTrong = sucChua - daXep;
+  const tiLeDaXep = Math.min(100, Math.round((daXep / sucChua) * 100));
+  const tiLeConTrong = Math.max(0, 100 - tiLeDaXep);
+
+  dat('capacity-meter-badge', conTrong >= 0
+    ? `Xe còn trống ${tiLeConTrong}% (${conTrong.toFixed(1)} / ${sucChua} m³)`
+    : `QUÁ TẢI ${Math.abs(conTrong).toFixed(1)} m³ (đã xếp ${daXep} / ${sucChua} m³)`);
+  dat('capacity-used-text', `${daXep} m³`);
+  dat('capacity-total-text', `${sucChua} m³`);
+  if (bar) {
+    bar.style.width = `${tiLeDaXep}%`;
+    // Qua tai thi phai NHIN RA duoc, khong chi la thanh xanh day.
+    bar.style.background = conTrong < 0 ? '#b91c1c' : '';
+  }
 };
 
 let currentDetailDOId = null;
@@ -10121,57 +10169,103 @@ window.loadDispatchBoard = loadDispatchBoard;
 // ACCOUNTING & DASHBOARD
 // ==========================================
 
+/**
+ * Nap hoa don va so cai.
+ *
+ * Ba loi cua ban cu:
+ *
+ *   1. `if (resInv.ok)` va `if (resGL.ok)` KHONG co nhanh else. Hai bang khoi
+ *      tao bang chu "Dang tai hoa don..." / "Dang tai So Cai...", nen goi API
+ *      that bai la hai bang giu nguyen dong do VINH VIEN — khong toast, khong
+ *      dau hieu. Nguoi dung khong phan biet duoc "chua co hoa don" voi
+ *      "khong ket noi duoc".
+ *
+ *   2. `inv.total.toLocaleString()` va `gl.debit.toLocaleString()` khong co
+ *      guard. Mot ban ghi co total/debit/credit la NULL se nem TypeError giua
+ *      forEach, nen bang dung o nua dong va phan con lai mat — ma loi bi
+ *      `catch` o duoi nuot im.
+ *
+ *   3. `innerHTML +=` trong vong lap: moi vong parse lai toan bo chuoi HTML
+ *      dang phinh. Dung mot lan `join('')` thay vi vay.
+ */
 async function loadAccountingData() {
+  const bao_khong_nap_duoc = (id, so_cot, trang_thai) => {
+    const tbody = document.getElementById(id);
+    if (!tbody) return;
+    const ly_do = trang_thai === 401 || trang_thai === 403
+      ? 'Không có quyền xem số liệu kế toán.'
+      : trang_thai
+        ? `Máy chủ trả lỗi HTTP ${trang_thai}.`
+        : 'Không kết nối được tới máy chủ.';
+    // Dau gach, KHONG phai so 0: mot con so 0 tu tin te hon mot dau gach.
+    tbody.innerHTML = `<tr><td colspan="${so_cot}" style="text-align:center; padding:18px; color:#b45309;">`
+      + `<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> `
+      + `Chưa nạp được — ${escapeHtml(ly_do)}</td></tr>`;
+  };
+
+  let resInv = null;
+  let resGL = null;
   try {
-    const [resInv, resGL] = await Promise.all([
+    [resInv, resGL] = await Promise.all([
       fetch(`${API_BASE}/api/invoices`),
       fetch(`${API_BASE}/api/gl-transactions`)
     ]);
-
-    if (resInv.ok) {
-      const invoices = await resInv.json();
-      const tbody = document.getElementById('fiori-invoice-tbody');
-      if (tbody) {
-        tbody.innerHTML = '';
-        invoices.forEach(inv => {
-          tbody.innerHTML += `
-            <tr>
-              <td><strong>${inv.id}</strong></td>
-              <td>${inv.customer_id}</td>
-              <td>${inv.do_id}</td>
-              <td>${inv.invoice_date || 'N/A'}</td>
-              <td>${inv.total.toLocaleString()}</td>
-              <td><span class="fiori-status status-transit">${statusLabel(inv.status)}</span></td>
-            </tr>
-          `;
-        });
-        if (invoices.length === 0) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">${t('msg_no_invoices_yet')}</td></tr>`;
-      }
-    }
-
-    if (resGL.ok) {
-      const glList = await resGL.json();
-      const tbody = document.getElementById('fiori-gl-tbody');
-      if (tbody) {
-        tbody.innerHTML = '';
-        glList.forEach(gl => {
-          tbody.innerHTML += `
-            <tr>
-              <td>${gl.date || 'N/A'}</td>
-              <td><strong>${gl.account_code}</strong></td>
-              <td style="color:#2bba66;">${gl.debit.toLocaleString()}</td>
-              <td style="color:#e53935;">${gl.credit.toLocaleString()}</td>
-            </tr>
-          `;
-        });
-        if (glList.length === 0) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">${t('msg_no_gl_entries')}</td></tr>`;
-      }
-    }
-    if (typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
-    if (typeof renderFinanceActionWorkbench === 'function') renderFinanceActionWorkbench();
   } catch (e) {
     console.error("Failed to load accounting data", e);
+    bao_khong_nap_duoc('fiori-invoice-tbody', 6, 0);
+    bao_khong_nap_duoc('fiori-gl-tbody', 4, 0);
+    showToast('❌ Không nạp được số liệu kế toán từ máy chủ.');
+    return;
   }
+
+  // Tien luon lay qua `|| 0`: mot ban ghi NULL khong duoc lam vo ca bang.
+  const tien = gia_tri => Number(gia_tri || 0).toLocaleString('vi-VN');
+
+  if (resInv.ok) {
+    const invoices = await resInv.json().catch(() => []);
+    const tbody = document.getElementById('fiori-invoice-tbody');
+    if (tbody) {
+      tbody.innerHTML = (Array.isArray(invoices) ? invoices : []).length
+        ? invoices.map(inv => `
+            <tr>
+              <td><strong>${escapeHtml(inv.id)}</strong></td>
+              <td>${escapeHtml(inv.customer_id || '—')}</td>
+              <td>${escapeHtml(inv.do_id || '—')}</td>
+              <td>${escapeHtml(inv.invoice_date || '—')}</td>
+              <td>${tien(inv.total)}</td>
+              <td><span class="fiori-status status-transit">${escapeHtml(statusLabel(inv.status))}</span></td>
+            </tr>`).join('')
+        : `<tr><td colspan="6" style="text-align:center;">${t('msg_no_invoices_yet')}</td></tr>`;
+    }
+  } else {
+    bao_khong_nap_duoc('fiori-invoice-tbody', 6, resInv.status);
+  }
+
+  if (resGL.ok) {
+    const glList = await resGL.json().catch(() => []);
+    const tbody = document.getElementById('fiori-gl-tbody');
+    if (tbody) {
+      tbody.innerHTML = (Array.isArray(glList) ? glList : []).length
+        ? glList.map(gl => `
+            <tr>
+              <td>${escapeHtml(gl.date || '—')}</td>
+              <td><strong>${escapeHtml(gl.account_code || '—')}</strong></td>
+              <td style="color:#2bba66;">${tien(gl.debit)}</td>
+              <td style="color:#e53935;">${tien(gl.credit)}</td>
+            </tr>`).join('')
+        : `<tr><td colspan="4" style="text-align:center;">${t('msg_no_gl_entries')}</td></tr>`;
+    }
+  } else {
+    bao_khong_nap_duoc('fiori-gl-tbody', 4, resGL.status);
+  }
+
+  if (!resInv.ok || !resGL.ok) {
+    showToast('⚠️ Một phần số liệu kế toán chưa nạp được. Xem chi tiết trong bảng.');
+  }
+
+  if (typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
+  if (typeof renderFinanceActionWorkbench === 'function') renderFinanceActionWorkbench();
+
 }
 
 async function loadDashboard() {
@@ -10431,12 +10525,42 @@ window.loadIncidents = async function () {
   }
 };
 
+/**
+ * Gửi báo cáo sự cố.
+ *
+ * Bản cũ luôn thất bại nhưng luôn báo thành công, do ba lỗi cộng lại:
+ *
+ *   1. Máy chủ BẮT BUỘC trường `reporter`, mà payload không gửi nó (form cũng
+ *      không có ô nào để nhập) → máy chủ luôn trả 422.
+ *   2. Không kiểm `res.ok`.
+ *   3. Phong bì lỗi của máy chủ là `{error, detail}`, không có khóa `message`,
+ *      nên `data.message` là undefined và rơi vào chuỗi mặc định
+ *      "Báo cáo sự cố thành công!".
+ *
+ * Hệ quả: người dùng nhập sự cố, thấy báo thành công, form đóng lại, và không
+ * một dòng nào được ghi. Đây là nghiệp vụ khẩn cấp.
+ */
 window.submitIncidentReport = async function () {
   const do_id = document.getElementById('inc-do-id')?.value || '';
   const vehicle_id = document.getElementById('inc-veh-id')?.value || '';
   const incident_type = document.getElementById('inc-type')?.value || '';
   const location = document.getElementById('inc-location')?.value || '';
   const description = document.getElementById('inc-desc')?.value || '';
+  const reporter = document.getElementById('inc-reporter')?.value?.trim() || '';
+
+  // Chặn ngay tại đây những trường máy chủ bắt buộc, để người dùng biết phải
+  // điền gì thay vì nhận một lỗi 422 không ai đọc.
+  const thieu = [
+    [do_id, 'Lệnh giao hàng'],
+    [vehicle_id, 'Xe'],
+    [incident_type, 'Loại sự cố'],
+    [location, 'Vị trí hiện tại'],
+    [reporter, 'Người báo cáo'],
+  ].filter(([gia_tri]) => !gia_tri).map(([, ten]) => ten);
+  if (thieu.length) {
+    showToast(`⚠️ Chưa gửi được — còn thiếu: ${thieu.join(', ')}.`);
+    return;
+  }
 
   showToast(`⏳ Đang gửi báo cáo sự cố khẩn cấp cho Ban Điều Hành...`);
 
@@ -10444,17 +10568,23 @@ window.submitIncidentReport = async function () {
     const res = await fetch(`${API_BASE}/api/incidents`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ do_id, vehicle_id, incident_type, location, description })
+      body: JSON.stringify({ do_id, vehicle_id, incident_type, location, description, reporter })
     });
-    const data = await res.json();
-    showToast(data.message || 'Báo cáo sự cố thành công!');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      // Giữ form MỞ: đóng nó là xóa mất những gì người dùng vừa nhập, trong khi
+      // chưa có gì được ghi lại cả.
+      const chi_tiet = data?.error?.message || data?.detail || data?.message || `HTTP ${res.status}`;
+      showToast(`❌ Không gửi được báo cáo sự cố: ${typeof chi_tiet === 'string' ? chi_tiet : JSON.stringify(chi_tiet)}`);
+      return;
+    }
+    showToast(data.message || '✅ Đã ghi nhận báo cáo sự cố.');
     closeIncidentModal();
     loadIncidents();
     if (typeof loadDashboard === 'function') loadDashboard();
   } catch (e) {
     console.error(e);
-    showToast('Lỗi kết nối khi gửi báo cáo sự cố!');
-    closeIncidentModal();
+    showToast('❌ Lỗi kết nối khi gửi báo cáo sự cố. Báo cáo CHƯA được ghi.');
   }
 };
 
@@ -10936,7 +11066,10 @@ function resetRoutePlanningForm() {
   if (codeEl) codeEl.value = '';
   if (nameEl) nameEl.value = '';
   if (tbody) tbody.innerHTML = '';
-  if (distEl) distEl.innerText = '0 km';
+  if (distEl) {
+    distEl.dataset.km = '0';
+    distEl.innerText = '0 km';
+  }
 }
 
 window.calculateRealDistance = async function (locationA, locationB) {
@@ -11055,7 +11188,18 @@ window.calculateTotalDistance = function () {
     total += num;
   });
   const totalEl = document.getElementById('route-total-distance');
-  if (totalEl) totalEl.innerText = `${Number(total.toFixed(1)).toLocaleString('vi-VN')} km`;
+  if (totalEl) {
+    // Giu con so THAT trong dataset, khong chi co chu da dinh dang.
+    //
+    // `toLocaleString('vi-VN')` bien 1250 thanh "1.250 km", roi luc Luu ai do
+    // doc lai bang `parseFloat("1.250")` va duoc 1,25. Tuyen 1.250 km vao co
+    // so du lieu thanh 1,25 km — sai 1.000 lan, va moi cong thuc nhan theo km
+    // sau do deu sai theo, trong khi thong bao van bao "da luu thanh cong".
+    //
+    // Doc lai tien/so tu chu da dinh dang luon la sai; day la cho de doc so.
+    totalEl.dataset.km = String(Number(total.toFixed(1)));
+    totalEl.innerText = `${Number(total.toFixed(1)).toLocaleString('vi-VN')} km`;
+  }
 };
 
 window.legacySaveRouteConfig = async function () {
@@ -12289,7 +12433,12 @@ window.createNewRouteForm = async function () {
   if (tbody) tbody.innerHTML = '';
 
   const distEl = document.getElementById('route-total-distance');
-  if (distEl) distEl.innerText = '0 km';
+  if (distEl) {
+    // Ghi CA dataset: luc Luu doc dataset, nen thieu no la Luu con so cua
+    // tuyen mo truoc do.
+    distEl.dataset.km = '0';
+    distEl.innerText = '0 km';
+  }
 
   // Wipe map clean for creating a new route
   if (typeof window.clearLeafletRouteMap === 'function') {
@@ -12317,7 +12466,13 @@ window.loadSavedRoutePreset = async function (code) {
     // Use real API data
     if (document.getElementById('md-route-code')) document.getElementById('md-route-code').value = apiRoute.id;
     if (document.getElementById('md-route-name')) document.getElementById('md-route-name').value = apiRoute.name;
-    if (document.getElementById('route-total-distance')) document.getElementById('route-total-distance').innerText = `${apiRoute.distance_km || 0} km`;
+    const distEl = document.getElementById('route-total-distance');
+    if (distEl) {
+      // Ghi CA dataset: luc Luu doc dataset, nen thieu no la Luu con so cua
+      // tuyen mo truoc do.
+      distEl.dataset.km = String(Number(apiRoute.distance_km || 0));
+      distEl.innerText = `${Number(apiRoute.distance_km || 0).toLocaleString('vi-VN')} km`;
+    }
 
     // Parse segments from segments_json if available
     let segments = [];
@@ -16286,8 +16441,15 @@ window.approveSO = async function () {
 window.saveRouteConfig = async function () {
   const routeId = document.getElementById('md-route-code')?.value;
   const routeName = document.getElementById('md-route-name')?.value;
-  const totalDistText = document.getElementById('route-total-distance')?.innerText || '0';
-  const totalDist = parseFloat(totalDistText.replace('km', '').trim()) || 0;
+  // Doc con so THAT tu dataset. Doc `innerText` la doc lai chu da dinh dang
+  // theo kieu Viet ("1.250 km"), va `parseFloat` cua no ra 1,25 — sai 1.000
+  // lan voi moi tuyen tren 999 km.
+  const totalEl = document.getElementById('route-total-distance');
+  const totalDist = Number(totalEl?.dataset?.km ?? NaN);
+  if (!Number.isFinite(totalDist)) {
+    showToast('⚠️ Chưa tính được tổng số km của tuyến. Hãy thêm ít nhất một chặng.');
+    return;
+  }
 
   if (!routeId || !routeName) {
     showToast('⚠️ Vui lòng nhập Mã Tuyến và Tên Tuyến!');

@@ -5036,6 +5036,15 @@
                         <input type="text" id="inc-desc" class="fiori-input" placeholder="Ví dụ: Nổ lốp sau bên phải, đang chờ cứu hộ..." style="width: 100% !important; margin-top: 6px;">
                       </div>
                     </div>
+                    <!-- Nguoi bao cao: may chu BAT BUOC truong `reporter`.
+                         Truoc day form khong co o nay, nen moi lan gui la may chu
+                         tra 422 — ma man hinh van bao "Bao cao su co thanh cong". -->
+                    <div style="margin-top: 14px;">
+                      <label style="font-size: 0.85rem; font-weight: 700; color: #475569;" for="inc-reporter">Người Báo Cáo:</label>
+                      <input type="text" id="inc-reporter" class="fiori-input" required
+                             placeholder="Ví dụ: Nguyễn Văn A — Điều phối"
+                             style="width: 100%; margin-top: 6px; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600;">
+                    </div>
                   </div>
 
                   <div style="padding: 18px 28px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px; background: #fafafa;">
@@ -7073,7 +7082,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260905-do-buckets"></script>
+  <script src="/static/js/app.js?v=20260904-silent-failures"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>
