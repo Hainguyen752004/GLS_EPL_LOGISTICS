@@ -4879,25 +4879,28 @@
                   <span id="gps-live-label"><i class="fa-solid fa-circle" style="color:#10b981; font-size:.55rem;"></i> GPS Live Tracking: Chưa chọn lệnh DO</span>
                 </div>
 
-                <!-- Overlay Route Deviation Alert Badge (Right) -->
-                <div id="route-dev-alert" style="position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.94); backdrop-filter: blur(4px); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; gap: 8px; z-index: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                  <i class="fa-solid fa-circle-check" style="color: #10b981;"></i>
-                  <span id="route-dev-text">Lộ Trình Chuẩn: chờ dữ liệu GPS từ PostgreSQL</span>
+                <!-- Badge lech tuyen. CHUA CAI DAT: khong mot dong JS nao tinh
+                     `route-dev-text`. Truoc day cho nay co dau tich XANH va chu
+                     "Lo Trinh Chuan", tuc KHANG DINH xe dung lo trinh cho moi chuyen
+                     — ke ca chuyen khong co mot toa do nao. Nay noi dung su that. -->
+                <div id="route-dev-alert" style="position: absolute; top: 14px; right: 14px; background: rgba(255,251,235,0.96); backdrop-filter: blur(4px); padding: 8px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 700; color: #059669; border: 1px solid #a7f3d0; display: flex; align-items: center; gap: 8px; z-index: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+                  <i class="fa-solid fa-circle-question" style="color: #b45309;"></i>
+                  <span id="route-dev-text">Chưa kiểm lệch tuyến (chưa có nguồn GPS)</span>
                 </div>
               </div>
               
               <!-- Realtime Status Footer Bar -->
               <div style="padding: 18px 24px; background: #ffffff; border-top: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr 1fr 1fr 180px; gap: 16px; align-items: center; text-align: center;">
                 <div style="border-right: 1px solid #f1f5f9;">
-                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_curr_speed">Tốc Độ Hiện Tại</div>
+                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_curr_speed">Tốc Độ (từ thiết bị)</div>
                   <div style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-top: 2px;" id="track-speed">-- km/h</div>
                 </div>
                 <div style="border-right: 1px solid #f1f5f9;">
-                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_rem_dist">Khoảng Cách Còn Lại</div>
+                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_rem_dist">Tổng Chiều Dài Tuyến</div>
                   <div style="font-size: 1.25rem; font-weight: 700; color: #0a6ed1; margin-top: 2px;" id="track-dist">-- km</div>
                 </div>
                 <div style="border-right: 1px solid #f1f5f9;">
-                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_eta">Dự Kiến Đến</div>
+                  <div style="font-size: 0.8rem; color: #64748b; font-weight: 600; text-transform: uppercase;" data-i18n="lbl_eta">Giờ Đến Theo Kế Hoạch</div>
                   <div style="font-size: 1.25rem; font-weight: 700; color: #10b981; margin-top: 2px;" id="track-eta">--:--</div>
                 </div>
               </div>
@@ -7082,7 +7085,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-silent-failures"></script>
+  <script src="/static/js/app.js?v=20260904-tracking-pod"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

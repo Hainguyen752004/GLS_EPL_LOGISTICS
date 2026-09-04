@@ -2929,7 +2929,7 @@ window.openTimelineStepContext = function (deliveryOrderId, stepKey) {
   })[stepKey] || 'overview';
   setTimeout(() => {
     if (view === 'tracking') {
-      const input = document.getElementById('tracking-search-do');
+      const input = document.getElementById('tracking-do-search');
       if (input && deliveryOrderId) input.value = deliveryOrderId;
       if (typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
     }
@@ -4466,7 +4466,7 @@ window.openShipment360Action = function (actionCode, deliveryOrderId) {
   if (actionCode === 'OPEN_GPS_POD') {
     switchView('tracking');
     setTimeout(() => {
-      const input = document.getElementById('tracking-search-do');
+      const input = document.getElementById('tracking-do-search');
       if (input && targetId) input.value = targetId;
       if (typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
       if (typeof window.trackDO === 'function' && targetId) window.trackDO();
@@ -5313,8 +5313,26 @@ function renderGpsEventTimeline() {
   const listEl = document.getElementById('gps-event-timeline-list');
   const alertsEl = document.getElementById('gps-event-timeline-alerts');
   if (!kpisEl || !listEl || !alertsEl) return;
-  const selectedDo = document.getElementById('tracking-search-do')?.value?.trim()
-    || (appState.delivery_orders || []).find(order => ['In Transit', 'Arrived', 'Delivered'].includes(order.status))?.id
+  // DO dang xem. Ba nhanh, theo do uu tien.
+  //
+  // Ban cu sai o CA HAI nhanh dau, nen no LUON roi xuong `delivery_orders[0]`
+  // — mot DO tuy y, khong lien quan gi toi DO dang xem tren ban do:
+  //
+  //   · nhanh 1 doc `#tracking-search-do`, mot id KHONG TON TAI (o that la
+  //     `#tracking-do-search`);
+  //   · nhanh 2 so `order.status` voi chuoi tieng Anh 'In Transit', trong khi
+  //     may chu tra ve tieng Viet ("Dang van chuyen").
+  //
+  // Nay so bang `canonical_status` — truong khong doi theo ngon ngu.
+  const dangChay = order => {
+    const key = String(order?.canonical_status || order?.status || '')
+      .normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd')
+      .toLowerCase().trim();
+    return ['dispatched', 'in_transit', 'arrived', 'delivered',
+      'dang van chuyen', 'da den noi', 'da giao'].includes(key.replace(/\s+/g, ' '));
+  };
+  const selectedDo = document.getElementById('tracking-do-search')?.value?.trim()
+    || (appState.delivery_orders || []).find(dangChay)?.id
     || (appState.delivery_orders || [])[0]?.id
     || '';
   const timeline = window.TmsCockpit.buildGpsEventTimeline(appState || {}, selectedDo);
@@ -9736,7 +9754,7 @@ window.openPODFormForSelectedDO = async function () {
     return;
   }
   const podBadge = document.getElementById('pod-do-badge');
-  const searchInput = document.getElementById('tracking-search-do');
+  const searchInput = document.getElementById('tracking-do-search');
   window.previewPODDeliveryDO(doId);
   if (podBadge) podBadge.innerText = doId;
   if (searchInput) searchInput.value = doId;
@@ -9777,6 +9795,52 @@ function populateCloseoutDOSelector(selectedDoId = '') {
   }
 }
 
+/**
+ * Khối "Lợi nhuận" của hồ sơ sau giao.
+ *
+ * Máy chủ trả kèm cờ `margin_is_provisional` (bằng true khi chưa có
+ * `FreightActualCost`), nhưng bản cũ không dùng cờ đó ở đâu. Chưa có chi phí
+ * thực tế thì `actual_cost_total` = 0, nên lợi nhuận = TOÀN BỘ giá bán và
+ * `margin_percent` = 100. Ô "Margin 100%" xanh lá là hệ quả của việc thiếu dữ
+ * liệu, không phải lãi thật — và đó là con số người ta dùng để đánh giá chuyến.
+ */
+function khoiLoiNhuanCloseout(data, currency) {
+  const tamTinh = Boolean(data?.commercials?.margin_is_provisional);
+  const tien = closeoutMoney(data?.commercials?.margin_amount, currency);
+  const tiLe = Number(data?.commercials?.margin_percent || 0).toLocaleString('vi-VN');
+  if (tamTinh) {
+    return `<div style="border:1px solid #fde68a; border-radius:9px; padding:10px; background:#fffbeb;">`
+      + `<div style="color:#b45309; font-size:.75rem; font-weight:900;">Lợi nhuận (tạm tính)</div>`
+      + `<div style="font-weight:950; color:#b45309;">${tien} (${tiLe}%)</div>`
+      + `<div style="font-size:.72rem; color:#92400e; margin-top:3px; font-weight:700;">`
+      + `Chưa có chi phí thực tế, nên con số này đang bằng toàn bộ giá bán.</div></div>`;
+  }
+  return `<div style="border:1px solid #bfdbfe; border-radius:9px; padding:10px; background:#eff6ff;">`
+    + `<div style="color:#0a6ed1; font-size:.75rem; font-weight:900;">Lợi nhuận</div>`
+    + `<div style="font-weight:950; color:#0a6ed1;">${tien} (${tiLe}%)</div></div>`;
+}
+
+/**
+ * Số chứng từ POD của một điểm giao.
+ *
+ * Bản cũ đọc `pod.photo_url || pod.signature_url`. Hai cột đó là **cột chết**:
+ * `complete_delivery` không bao giờ ghi chúng — ảnh và chữ ký nằm ở bảng
+ * `delivery_pod_documents`. Nên POD có đủ biên bản + chữ ký vẫn hiển thị
+ * "Chua dinh kem", trong khi `data.pod_documents` ngay trong cùng response đó
+ * lại có hai dòng.
+ */
+function chungTuPOD(data, pod) {
+  const tep = (data?.pod_documents || []).filter(doc =>
+    String(doc?.pod_record_id || '') === String(pod?.id || ''));
+  if (!tep.length) {
+    // Còn đọc thêm hai cột cũ: dự liệu lịch sử từ bản trước có thể còn ở đó.
+    const cu = pod?.photo_url || pod?.signature_url;
+    return cu ? escapeCloseoutText(cu) : 'Chưa đính kèm';
+  }
+  const loai = tep.map(doc => escapeCloseoutText(doc.document_type || 'tệp')).join(', ');
+  return `${tep.length} tệp (${loai})`;
+}
+
 function renderDeliveryOrderCloseout(data) {
   const target = document.getElementById('tracking-closeout-content');
   if (!target) return;
@@ -9803,7 +9867,7 @@ function renderDeliveryOrderCloseout(data) {
         <div style="border:1px solid #dbeafe; border-radius:9px; padding:10px; background:#f8fafc;"><div style="color:#64748b; font-size:.75rem; font-weight:900;">SO / QT</div><div style="font-weight:950; color:#0f172a;">${escapeCloseoutText(data.sales_order_id || '-')} / ${escapeCloseoutText(data.quotation_id || '-')}</div></div>
         <div style="border:1px solid #bbf7d0; border-radius:9px; padding:10px; background:#f0fdf4;"><div style="color:#047857; font-size:.75rem; font-weight:900;">Gia ban</div><div style="font-weight:950; color:#047857;">${closeoutMoney(data.commercials?.selling_price, currency)}</div></div>
         <div style="border:1px solid #fed7aa; border-radius:9px; padding:10px; background:#fff7ed;"><div style="color:#b45309; font-size:.75rem; font-weight:900;">Actual cost</div><div style="font-weight:950; color:#b45309;">${closeoutMoney(data.commercials?.actual_cost_total, currency)}</div></div>
-        <div style="border:1px solid #bfdbfe; border-radius:9px; padding:10px; background:#eff6ff;"><div style="color:#0a6ed1; font-size:.75rem; font-weight:900;">Margin</div><div style="font-weight:950; color:#0a6ed1;">${closeoutMoney(data.commercials?.margin_amount, currency)} (${Number(data.commercials?.margin_percent || 0).toLocaleString('vi-VN')}%)</div></div>
+        ${khoiLoiNhuanCloseout(data, currency)}
       </div>
       <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;">
         <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;">
@@ -9820,7 +9884,7 @@ function renderDeliveryOrderCloseout(data) {
         </div>
       </div>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;">
-        ${(data.pod_records || []).map(pod => `<div style="border:1px solid #bbf7d0; background:#f0fdf4; border-radius:9px; padding:10px;"><div style="font-weight:950; color:#047857;">POD diem ${pod.stop_no}: ${escapeCloseoutText(pod.location_text || '')}</div><div style="font-size:.82rem; color:#334155; margin-top:4px;">Nguoi nhan: <strong>${escapeCloseoutText(pod.receiver_name || '-')}</strong></div><div style="font-size:.78rem; color:#64748b;">${escapeCloseoutText(pod.delivery_time || '')}</div><div style="font-size:.78rem; color:#0a6ed1; margin-top:6px; font-weight:850;"><i class="fa-solid fa-paperclip"></i> POD/hop dong: ${escapeCloseoutText(pod.photo_url || pod.signature_url || 'Chua dinh kem')}</div></div>`).join('') || '<div style="color:#64748b;">Chua co POD.</div>'}
+        ${(data.pod_records || []).map(pod => `<div style="border:1px solid #bbf7d0; background:#f0fdf4; border-radius:9px; padding:10px;"><div style="font-weight:950; color:#047857;">POD diem ${pod.stop_no}: ${escapeCloseoutText(pod.location_text || '')}</div><div style="font-size:.82rem; color:#334155; margin-top:4px;">Nguoi nhan: <strong>${escapeCloseoutText(pod.receiver_name || '-')}</strong></div><div style="font-size:.78rem; color:#64748b;">${escapeCloseoutText(pod.delivery_time || '')}</div><div style="font-size:.78rem; color:#0a6ed1; margin-top:6px; font-weight:850;"><i class="fa-solid fa-paperclip"></i> Chứng từ: ${chungTuPOD(data, pod)}</div></div>`).join('') || '<div style="color:#64748b;">Chua co POD.</div>'}
       </div>
     </div>
   `;
@@ -10103,7 +10167,7 @@ function formatTrackingMetric(value, unit) {
 
 window.trackDO = async function (targetDoId = null) {
   const selectEl = document.getElementById('tracking-active-do-select');
-  const doId = (targetDoId || selectEl?.value || document.getElementById('tracking-search-do')?.value || '').trim();
+  const doId = (targetDoId || selectEl?.value || document.getElementById('tracking-do-search')?.value || '').trim();
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
 
   if (!doId) {
@@ -10149,9 +10213,44 @@ window.trackDO = async function (targetDoId = null) {
       return;
     }
     const track = await res.json();
-    document.getElementById('track-speed').innerText = formatTrackingMetric(track.speed_kmh, 'km/h');
-    document.getElementById('track-dist').innerText = formatTrackingMetric(track.remaining_distance_km, 'km');
-    document.getElementById('track-eta').innerText = track.eta || '--:--';
+
+    // Ba con so nay TRONG nhu do tu thiet bi, nhung khong phai:
+    //
+    //   · `speed_kmh` duoc dat CUNG bang 0 luc dieu xe (workflow_service va
+    //     tms_dispatch_service deu ghi `speed_kmh = 0`), va khong co giao dien
+    //     nao gui toa do len. Nen "0 km/h" duoi nhan "TOC DO HIEN TAI" la mot
+    //     con so khong do duoc, khong phai xe dang dung.
+    //
+    //   · `remaining_distance_km` la TONG chieu dai tuyen ghi luc dieu xe,
+    //     khong phai khoang cach con lai thuc te.
+    //
+    //   · `eta` la `planned_arrival_at` — GIO DEN THEO KE HOACH, khong phai
+    //     du bao tu GPS. No lai la cot String nen du lieu mau nhet duoc
+    //     '15:30 PM' vao.
+    //
+    // Chua co toa do thi khong khang dinh gi: hien dau gach va noi ro vi sao.
+    const coToaDo = track && track.lat != null && track.lng != null;
+    const dat = (id, chu, chu_thich) => {
+      const node = document.getElementById(id);
+      if (!node) return;
+      node.innerText = chu;
+      if (chu_thich) node.title = chu_thich;
+    };
+
+    if (coToaDo) {
+      dat('track-speed', formatTrackingMetric(track.speed_kmh, 'km/h'));
+    } else {
+      dat('track-speed', '—',
+        'Chưa có tọa độ từ thiết bị, nên chưa đo được tốc độ.');
+    }
+
+    // Doi nhan cho dung nghia: day la tong chieu dai tuyen, khong phai phan
+    // con lai. Nhan tren trang duoc sua theo (xem index.html).
+    dat('track-dist', formatTrackingMetric(track.remaining_distance_km, 'km'),
+      'Tổng chiều dài tuyến ghi lúc điều xe.');
+
+    dat('track-eta', track.eta || '--:--',
+      'Giờ đến theo KẾ HOẠCH, không phải dự báo từ GPS.');
     updateTrackingHeader(track);
     renderRealTrackingOnMap(track);
     if (typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
@@ -16333,6 +16432,21 @@ window.saveOracleQT = async function () {
     return;
   }
 
+  // Kiểm tải trọng Ở ĐÂY — trên chính form báo giá.
+  //
+  // Phép kiểm này trước đây nằm trong `submitPOD`, tức bước MỞ HỒ SƠ POD bị
+  // chặn vì form báo giá ở một tab khác chưa chọn loại xe, kèm một thông báo về
+  // "lưu báo giá" hoàn toàn không liên quan. Đến bước POD thì xe đã chạy xong
+  // rồi, chặn ghi nhận giao hàng vì tải trọng lúc đó là vô nghĩa.
+  //
+  // Tên bài kiểm cũ ("Quotation save must revalidate capacity") nói đúng ý định,
+  // chỉ là mã đặt nó sai chỗ.
+  const capacityState = window.refreshQuotationVehicleRecommendations();
+  if (!capacityState.valid) {
+    showToast('CAPACITY_EXCEEDED: Hãy chọn loại xe được đề xuất và đủ tải trước khi lưu báo giá.');
+    return;
+  }
+
   showToast('⏳ Đang lưu báo giá vào PostgreSQL...');
   const qtPath = currentQT ? `/api/quotations/${encodeURIComponent(qid)}` : '/api/quotations';
   const result = await executeWorkflowCommand(currentQT ? 'quotationEdit' : 'quotationCreate', {
@@ -16505,7 +16619,7 @@ window.submitPOD = async function () {
   const doIdSpan = document.getElementById('pod-do-badge');
   let doId = doIdSpan ? doIdSpan.innerText.trim() : '';
   if (!doId || doId === 'Chưa chọn DO') {
-    const doSearchInput = document.getElementById('tracking-search-do');
+    const doSearchInput = document.getElementById('tracking-do-search');
     if (doSearchInput && doSearchInput.value.trim()) {
       doId = doSearchInput.value.trim();
     } else {
@@ -16521,11 +16635,23 @@ window.submitPOD = async function () {
     showToast(`DO ${doId} chưa sẵn sàng để hoàn tất giao hàng.`, 'warning');
     return;
   }
-  const capacityState = window.refreshQuotationVehicleRecommendations();
-  if (!capacityState.valid) {
-    showToast('CAPACITY_EXCEEDED: Hãy chọn loại xe được đề xuất và đủ tải trước khi lưu báo giá.');
-    return;
-  }
+  // CỐ Ý không gọi `refreshQuotationVehicleRecommendations()` ở đây.
+  //
+  // Bản cũ gọi nó rồi chặn việc mở hồ sơ POD nếu nó trả `valid: false`. Hai
+  // điều sai:
+  //
+  //   1. Hàm đó đọc form BÁO GIÁ (`#qt-cargo-type`) ở một tab khác. Form báo
+  //      giá đang có tải trọng nhưng chưa chọn loại xe là chuyện rất bình
+  //      thường, và khi đó việc mở hồ sơ POD bị huỷ kèm một thông báo về
+  //      "lưu báo giá" — hoàn toàn không liên quan.
+  //
+  //   2. Hàm đó có tác dụng phụ ghi đè DOM: nó viết lại `select.innerHTML` và
+  //      đặt `select.value = ''`. Nên chỉ mở hồ sơ POD là đã XÓA lựa chọn loại xe
+  //      trong form báo giá.
+  //
+  // Phép kiểm tải trọng thực sự thuộc bước điều xe, và máy chủ đã chặn ở
+  // đó (`vehicle_capacity_policy`). Đến bước POD thì xe đã chạy xong rồi — chặn
+  // ghi nhận giao hàng vì lý do tải trọng lúc này là vô nghĩa.
   openDeliveryCompletionEditor(doId);
   showToast(`Đã mở hồ sơ hoàn tất ${doId}. POD, chữ ký, giá cuối và hóa đơn sẽ được lưu trong một giao dịch.`, 'info');
 };

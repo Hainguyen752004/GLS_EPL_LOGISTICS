@@ -67,8 +67,32 @@ check('legacy tracking POD action opens the atomic delivery completion workbench
 });
 
 check('closeout POD cards expose persisted POD document names', () => {
-  assert.match(appSource, /pod\.photo_url/, 'Closeout must render POD file/photo evidence from the database.');
-  assert.match(appSource, /POD\/hop dong/, 'Closeout must label the attached POD/contract evidence.');
+  // Thẻ POD phải đọc BẢNG CHỨNG TỪ THẬT (`data.pod_documents`), không phải hai
+  // cột `photo_url` / `signature_url` trên bản ghi POD.
+  //
+  // Hai cột đó là cột chết: `complete_delivery` không bao giờ ghi chúng — ảnh
+  // và chữ ký nằm ở bảng `delivery_pod_documents`. Nên POD có đủ biên bản và
+  // chữ ký vẫn hiển thị "Chưa đính kèm", trong khi `data.pod_documents` ngay
+  // trong cùng response đó lại có hai dòng.
+  //
+  // Bài kiểm cũ khóa đúng cách làm sai: nó đòi có `pod.photo_url` và nhãn
+  // "POD/hop dong". Ý định thì đúng (phải hiện chứng từ đã lưu), chỉ là nó
+  // chốt vào đúng hai cột không có dữ liệu.
+  assert.match(appSource, /function chungTuPOD/, 'Closeout must resolve POD evidence through a helper.');
+  assert.match(
+    appSource,
+    /pod_documents \|\| \[\]\)\.filter\(doc =>[\s\S]{0,120}pod_record_id/,
+    'Closeout must read the real POD documents table, keyed by pod_record_id.'
+  );
+  assert.match(appSource, /Chứng từ: \$\{chungTuPOD\(data, pod\)\}/, 'Closeout must label the attached POD evidence.');
+  // Vẫn đọc thêm hai cột cũ làm dự phòng, cho dữ liệu lịch sử từ bản trước.
+  assert.match(appSource, /pod\?\.photo_url \|\| pod\?\.signature_url/, 'Legacy rows must still be shown.');
+  // Và không được quay lại việc lấy hai cột đó làm nguồn chính.
+  assert.doesNotMatch(
+    appSource,
+    /escapeCloseoutText\(pod\.photo_url \|\| pod\.signature_url \|\| 'Chua dinh kem'\)/,
+    'Must not treat the dead columns as the primary source again.'
+  );
 });
 
 if (failures.length) {

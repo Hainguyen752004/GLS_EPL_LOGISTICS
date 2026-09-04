@@ -1195,18 +1195,18 @@
     "la": "ຕິດຕາມ"
   },
   "lbl_curr_speed": {
-    "en": "Current Speed",
-    "vi": "Tốc Độ Hiện Tại",
+    "en": "Speed (from device)",
+    "vi": "Tốc độ (từ thiết bị)",
     "la": "ຄວາມໄວປັດຈຸບັນ"
   },
   "lbl_rem_dist": {
-    "en": "Remaining Dist.",
-    "vi": "Khoảng Cách Còn Lại",
+    "en": "Route total distance",
+    "vi": "Tổng chiều dài tuyến",
     "la": "ໄລຍະທາງທີ່ເຫຼືອ"
   },
   "lbl_eta": {
-    "en": "ETA",
-    "vi": "Dự Kiến Đến",
+    "en": "Planned arrival time",
+    "vi": "Giờ đến theo kế hoạch",
     "la": "ເວລາຄາດຄະເນ"
   },
   "title_pod": {
