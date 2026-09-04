@@ -1,4 +1,4 @@
-"""Đội xe: phương tiện, loại xe, phiếu sửa chữa, công thức chi phí, tài xế.
+﻿"""Đội xe: phương tiện, loại xe, phiếu sửa chữa, công thức chi phí, tài xế.
 
 18 endpoint. Nhóm này ghi dữ liệu gốc mà phần điều phối và tính giá đều dựa vào
 — sức chở của xe quyết định gác tải, còn công thức chi phí nuôi giá cước.
@@ -73,6 +73,8 @@ from routes.shared import (
     serialize_cost_formula as _serialize_cost_formula,
 )
 
+
+from services import vehicle_cost_service
 
 router = APIRouter(dependencies=[Depends(require_api_principal)])
 
@@ -253,6 +255,41 @@ async def delete_vehicle(vid: str, request: Request, db: Session = Depends(get_d
     return {"message": "Đã xóa phương tiện"}
 
 # 1.5 Vehicle Types API
+@router.get("/api/vehicles/{vehicle_id}/cost")
+async def get_vehicle_effective_cost(vehicle_id: str, db: Session = Depends(get_db)):
+    """Gia thanh THUC TE cua mot chiec xe: cong thuc loai xe + phan ghi de.
+
+    Tra ve ca `inherited` lan `is_overridden` cho tung cau phan, de giao dien
+    noi ro con so nao la ke thua va con so nao bi doi — thay vi hien mot day so
+    ma khong ai biet no tu dau ra.
+    """
+    try:
+        return {"data": vehicle_cost_service.effective_cost(db, vehicle_id)}
+    except DomainError as error:
+        raise_http(error)
+
+
+@router.put("/api/vehicles/{vehicle_id}/cost-overrides")
+async def put_vehicle_cost_overrides(
+    vehicle_id: str,
+    request: Request,
+    data: Dict[str, Any] = Body(...),
+    db: Session = Depends(get_db),
+):
+    """Ghi lai toan bo phan ghi de cua mot xe.
+
+    Gui mang rong nghia la "xe nay quay ve ke thua hoan toan tu loai xe".
+    """
+    actor = _require_api_principal(request)
+    try:
+        result = vehicle_cost_service.replace_overrides(db, vehicle_id, data.get("overrides"), str(actor))
+        db.commit()
+        return {"message": "Da cap nhat ghi de gia thanh cho xe.", "data": result}
+    except DomainError as error:
+        db.rollback()
+        raise_http(error)
+
+
 @router.get("/api/vehicle-types")
 async def list_vehicle_types(db: Session = Depends(get_db)):
     from models import VehicleType

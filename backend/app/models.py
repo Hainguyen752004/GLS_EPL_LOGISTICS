@@ -263,6 +263,24 @@ class Customer(Base):
     vendor_type = Column(String, nullable=True) # Carrier, Supplier, etc.
 
 # 6. SalesOrders
+class VehicleCostOverride(Base):
+    """Phần chênh lệch giá thành của MỘT chiếc xe so với loại xe của nó.
+
+    Công thức thuộc về loại xe; bảng này chỉ chứa những con số mà chiếc xe cụ
+    thể khác đi. Xe không ghi đè thì không có dòng nào ở đây và kế thừa nguyên
+    vẹn — nhờ vậy đổi giá dầu vẫn sửa một chỗ cho cả đội 500 xe.
+    """
+    __tablename__ = "vehicle_cost_overrides"
+    id = Column(String, primary_key=True)
+    vehicle_id = Column(String, ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False, index=True)
+    component = Column(String, nullable=False)  # fuel | driver | toll | wh | rate
+    value = Column(MONEY_TYPE, nullable=False, default=0)
+    note = Column(String)
+    updated_at = Column(DateTime)
+    updated_by = Column(String)
+    __table_args__ = (UniqueConstraint("vehicle_id", "component", name="uq_vehicle_cost_overrides_vehicle_component"),)
+
+
 class SalesOrderLine(Base):
     """Dòng hàng hóa vận chuyển của một đơn hàng vận chuyển.
 

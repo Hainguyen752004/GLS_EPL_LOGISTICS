@@ -19,7 +19,7 @@ EXPECTED_MIGRATIONS = [
     "013_demo_stabilization", "014_trip_cost_rows", "015_trip_stop_recipient",
     "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew",
     "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance",
-    "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines",
+    "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides",
 ]
 
 

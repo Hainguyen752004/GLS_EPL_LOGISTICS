@@ -26,8 +26,8 @@ def test_v014_adds_delivery_cost_row_columns_and_is_idempotent(tmp_path):
             connection.execute(f'ALTER TABLE freight_charge_items DROP COLUMN "{column}"')
         connection.commit()
 
-    assert required_migration_head() == "026_sales_order_lines"
-    assert upgrade(str(database)) == ["014_trip_cost_rows", "015_trip_stop_recipient", "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew", "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance", "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines"]
+    assert required_migration_head() == "027_vehicle_cost_overrides"
+    assert upgrade(str(database)) == ["014_trip_cost_rows", "015_trip_stop_recipient", "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew", "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance", "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides"]
     assert upgrade(str(database)) == []
 
     with sqlite3.connect(database) as connection:

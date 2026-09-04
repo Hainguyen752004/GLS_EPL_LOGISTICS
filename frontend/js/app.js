@@ -9392,6 +9392,32 @@ window.selectDispatchDO = function (id, revealDetail = false) {
   }
 };
 
+/**
+ * Hoi lai khi dieu xe cho mot don CHUA KHAI hang hoa.
+ *
+ * Khi khoi luong, the tich va so pallet deu bang 0, `require_vehicle_capacity`
+ * o may chu khong chan duoc gi ca — moi xe deu "vua". Chu du an da chot: canh
+ * bao nhung van cho dieu, vi chuyen chay rong la co that trong van tai.
+ */
+function confirmDispatchWithoutCargo(doId) {
+  const order = (eplDeliveryOrders || []).find(item => String(item.id) === String(doId));
+  if (!order) return true;
+  const weight = Number(order.weight_kg || order.total_weight_kg || 0);
+  const volume = Number(order.volume_m3 || order.total_volume_m3 || 0);
+  const pallets = Number(order.pallet_count || order.total_pallet_count || 0);
+  if (weight || volume || pallets) return true;
+
+  return confirm(
+    `Lệnh ${doId} chưa khai khối lượng, thể tích hay số pallet.`
+    + String.fromCharCode(10, 10)
+    + 'Hệ thống sẽ KHÔNG kiểm được xe có chở vừa hay không — một container 30 tấn '
+    + 'vẫn có thể được xếp lên xe tải 2 tấn.'
+    + String.fromCharCode(10, 10)
+    + 'Nếu đây là chuyến chạy rỗng thì bấm OK để tiếp tục. Nếu không, hãy khai '
+    + 'hàng hóa vận chuyển trong Đơn hàng vận chuyển trước.'
+  );
+}
+
 window.submitDispatch = async function () {
   const doId = document.getElementById('dispatch-selected-do')?.value;
   const vehId = document.getElementById('dispatch-vehicle')?.value;
@@ -9415,6 +9441,12 @@ window.submitDispatch = async function () {
     showToast('Tài xế chính và phụ xe phải là hai người khác nhau.');
     return;
   }
+
+  // Đơn chưa khai hàng hóa thì phép kiểm năng lực xe ở máy chủ KHÔNG kiểm được
+  // gì cả: cả ba con số bằng 0 thì xe nào cũng "vừa", kể cả container 30 tấn
+  // trên xe tải 2 tấn. Cố tình KHÔNG chặn — chuyến chạy rỗng là có thật — nhưng
+  // phải nói rõ để người điều phối tự quyết.
+  if (!confirmDispatchWithoutCargo(doId)) return;
 
   showToast(`Đang đăng ký điều phối & cấp lệnh xuất bến cho Lệnh ${doId}...`);
 
