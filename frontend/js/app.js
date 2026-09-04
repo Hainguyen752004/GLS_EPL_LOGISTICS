@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-two-tier-cost-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-formula-view-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -11056,6 +11056,7 @@ window.onMasterCostCurrencyChange = async function () {
     if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
       window.renderDynamicFormulaVehicleTypes();
     }
+    if (typeof window.renderCostFormulaView === 'function') window.renderCostFormulaView();
   }, 0);
   const requestedCurrency = masterCostCurrencyCode();
   const activeFormula = masterFormulaStore[activeCostFormulaKey];
@@ -14404,6 +14405,115 @@ window.deleteVehicleTypeCard = async function (btn) {
  * hoac xoa o tab "3. Loai Phuong Tien", va hai tab nay dung chung mot danh muc.
  */
 /* ==========================================================================
+   Công thức giá thành — viết ra thành chữ
+   --------------------------------------------------------------------------
+   Bản trước là một trình dựng biểu thức bằng thẻ kéo thả, và nó bị ẩn bằng
+   display:none từ commit "Prepare EPL Logistics for deployment" — nên người
+   dùng không còn thấy công thức đâu cả, chỉ còn bảng các ô nhập.
+
+   Vì sao không dựng lại trình kéo thả: nó cho phép dựng ra công thức sai đơn
+   vị (nhân cước theo kg với số km chẳng hạn) mà không có gì kiểm được. Ở đây
+   công thức là CỐ ĐỊNH và đúng theo đơn vị của từng cấu phần; thứ người dùng
+   đổi là các đơn giá — vốn cũng là thứ họ thật sự cần đổi.
+
+   Năm cấu phần có đơn vị khác nhau (đ/km, đ/chuyến, đ/kg) nên không cộng thẳng
+   được. Mọi con số "tổng" ở đây đều là ước tính cho một CHUYẾN MẪU, và màn hình
+   luôn nói rõ chuyến mẫu đó bao nhiêu km / bao nhiêu tấn.
+   ========================================================================== */
+
+/** Chuyến mẫu đang dùng để ước tính, dùng chung cho cả thẻ lẫn panel. */
+let costSampleTrip = { km: 200, tonnes: 15 };
+
+/** Đơn giá đang hiển thị ở panel bên phải, đọc thẳng từ các ô nhập. */
+function currentCostValues() {
+  return {
+    fuel: document.getElementById('md-cost-fuel-rate')?.value,
+    driver: document.getElementById('md-cost-driver-allowance')?.value,
+    toll: document.getElementById('md-cost-toll-fee')?.value,
+    wh: document.getElementById('md-cost-warehouse-fee')?.value,
+    rate: document.getElementById('md-cost-freight-rate')?.value,
+  };
+}
+
+window.setCostSampleTrip = function (field, value) {
+  const parsed = Number(String(value).replace(/[,\s]/g, ''));
+  costSampleTrip = { ...costSampleTrip, [field]: Number.isFinite(parsed) && parsed >= 0 ? parsed : 0 };
+  window.renderCostFormulaView();
+  if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
+    window.renderDynamicFormulaVehicleTypes();
+  }
+};
+
+window.renderCostFormulaView = function () {
+  const host = document.getElementById('cost-formula-view');
+  if (!host || !window.CostEstimate) return;
+  const currency = masterCostCurrencyCode();
+  const result = window.CostEstimate.estimate(currentCostValues(), costSampleTrip);
+  const money = amount => formatWorkflowCurrencyAmount(amount, currency);
+
+  host.innerHTML = `
+    <div class="cf-head">
+      <div>
+        <h4><i class="fa-solid fa-calculator" aria-hidden="true"></i> Công thức tính giá thành chuyến</h4>
+        <p class="cf-equation">${escapeHtml(window.CostEstimate.formulaText())}</p>
+      </div>
+      <div class="cf-sample">
+        <label>Chuyến mẫu
+          <span>
+            <input type="number" min="1" step="1" value="${costSampleTrip.km}"
+                   oninput="setCostSampleTrip('km', this.value)" aria-label="Số km chuyến mẫu"> km
+          </span>
+        </label>
+        <label>Hàng
+          <span>
+            <input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
+                   oninput="setCostSampleTrip('tonnes', this.value)" aria-label="Số tấn hàng"> tấn
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <table class="cf-table">
+      <thead>
+        <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+      </thead>
+      <tbody>
+        ${result.lines.map(line => `
+          <tr class="${line.rate ? '' : 'is-zero'}">
+            <td><i class="fa-solid ${line.icon}" aria-hidden="true"></i> ${escapeHtml(line.label)}</td>
+            <td class="cf-num">${money(line.rate)}<small>${escapeHtml(line.unit)}</small></td>
+            <td class="cf-num cf-mul">${line.basis === 'per_trip'
+              ? '<span title="Tính một lần cho cả chuyến">1 chuyến</span>'
+              : `× ${line.multiplier.toLocaleString('vi-VN')}${line.basis === 'per_km' ? ' km' : ' kg'}`}</td>
+            <td class="cf-num cf-amount">${money(line.amount)}</td>
+          </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">
+            <b>Tổng chi phí chuyến mẫu</b>
+            <small>${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small>
+          </td>
+          <td class="cf-num cf-total">${money(result.total)}</td>
+        </tr>
+        <tr class="cf-perkm">
+          <td colspan="3">Bình quân mỗi km <small>so sánh được giữa các loại xe</small></td>
+          <td class="cf-num">${money(result.perKm)}<small>/km</small></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="cf-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      Tổng phụ thuộc độ dài chuyến và khối lượng hàng, vì năm cấu phần có đơn vị
+      khác nhau. Đổi hai ô "Chuyến mẫu" để xem chi phí ở cỡ chuyến anh hay chạy.</p>`;
+};
+
+/** Gọi lại mỗi khi một ô đơn giá đổi, để tổng cập nhật ngay. */
+window.onCostComponentInput = function () {
+  window.renderCostFormulaView();
+};
+
+/* ==========================================================================
    Giá thành hai tầng — tầng thứ hai: từng chiếc xe
    --------------------------------------------------------------------------
    Công thức thuộc về LOẠI xe. Từng chiếc chỉ ghi đè vài con số khi thực tế
@@ -14470,28 +14580,78 @@ window.loadVehicleOverrideCounts = async function () {
   window.renderVehicleTypeFleetCounts();
 };
 
-/** Mở danh sách xe của một loại. */
-window.openVehicleCostList = function (typeId) {
+/** Trạng thái của danh sách xe: đang lọc gì, đang xem trang nào. */
+let vehicleCostListType = '';
+let vehicleCostListSearch = '';
+let vehicleCostListOnlyCustom = false;
+let vehicleCostListShown = 24;
+
+const VEHICLE_COST_PAGE = 24;
+
+/**
+ * Danh sách xe của một loại.
+ *
+ * Ở 500 xe thì một danh sách phẳng là vô dụng: không ai cuộn hết, và dựng hết
+ * cũng nặng. Nên có tìm kiếm, lọc "chỉ xe đặt riêng", và tải dần từng trang —
+ * cùng cách đã dùng cho lịch xe và bảng xếp ca.
+ */
+window.openVehicleCostList = function (typeId, options) {
+  if (typeId !== undefined) {
+    vehicleCostListType = String(typeId || '');
+    if (!(options && options.keepFilters)) {
+      vehicleCostListSearch = '';
+      vehicleCostListOnlyCustom = false;
+      vehicleCostListShown = VEHICLE_COST_PAGE;
+    }
+  }
   const host = document.getElementById('vehicle-cost-panel');
   if (!host) return;
-  const type = (vehTypes || []).find(t => String(t.id) === String(typeId));
-  const fleet = vehiclesOfType(typeId);
+
+  const type = (vehTypes || []).find(t => String(t.id) === String(vehicleCostListType));
+  const all = vehiclesOfType(vehicleCostListType);
+  const keyword = vehicleCostListSearch.trim().toLowerCase();
+  const filtered = all.filter(v => {
+    if (vehicleCostListOnlyCustom && !(vehicleOverrideCounts[v.id] > 0)) return false;
+    if (!keyword) return true;
+    return `${v.id} ${v.brand || ''} ${v.depot || ''}`.toLowerCase().includes(keyword);
+  });
+  const visible = filtered.slice(0, vehicleCostListShown);
+  const customTotal = all.filter(v => vehicleOverrideCounts[v.id] > 0).length;
+
   host.hidden = false;
   host.innerHTML = `
     <div class="vc-head">
       <div>
         <h4><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Giá thành từng xe</h4>
-        <p>Loại <b>${escapeHtml(type?.name || typeId)}</b> · ${fleet.length} chiếc.
+        <p>Loại <b>${escapeHtml(type?.name || vehicleCostListType)}</b> · ${all.length} chiếc,
+           trong đó <b>${customTotal}</b> chiếc đặt giá riêng.
            Xe không đặt riêng thì <b>kế thừa</b> công thức của loại — sửa công thức là cả loại đổi theo.</p>
       </div>
       <button type="button" class="vc-close" title="Đóng" onclick="closeVehicleCostPanel()"><i class="fa-solid fa-xmark"></i></button>
     </div>
+
+    <div class="vc-tools">
+      <div class="vc-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input id="vc-search" type="search" value="${escapeHtml(vehicleCostListSearch)}"
+               placeholder="Tìm biển số, hãng xe, bãi..." oninput="filterVehicleCostList(this.value)"
+               aria-label="Tìm xe">
+      </div>
+      <label class="vc-toggle">
+        <input type="checkbox" ${vehicleCostListOnlyCustom ? 'checked' : ''}
+               onchange="toggleVehicleCostOnlyCustom(this.checked)">
+        <span>Chỉ xe đặt giá riêng${customTotal ? ` (${customTotal})` : ''}</span>
+      </label>
+    </div>
+
+    ${filtered.length ? `
     <ul class="vc-fleet">
-      ${fleet.map(v => {
+      ${visible.map(v => {
         const count = vehicleOverrideCounts[v.id] || 0;
         return `<li>
           <button type="button" class="vc-vehicle" onclick="openVehicleCostEditor('${escapeJsAttr(v.id)}')">
             <span class="vc-vehicle-id">${escapeHtml(v.id)}</span>
+            <span class="vc-vehicle-sub">${escapeHtml(v.brand || '')}${v.depot ? ` · ${escapeHtml(v.depot)}` : ''}</span>
             <span class="vc-vehicle-state ${count ? 'is-custom' : ''}">
               <i class="fa-solid ${count ? 'fa-pen' : 'fa-link'}" aria-hidden="true"></i>
               ${count ? `${count} mục đặt riêng` : 'Kế thừa loại xe'}
@@ -14500,8 +14660,37 @@ window.openVehicleCostList = function (typeId) {
           </button>
         </li>`;
       }).join('')}
-    </ul>`;
+    </ul>
+    <div class="vc-page">
+      <span>Đang xem <b>${visible.length}</b> trên <b>${filtered.length}</b> xe${
+        filtered.length !== all.length ? ` (lọc từ ${all.length})` : ''}</span>
+      ${filtered.length > visible.length
+        ? `<button type="button" onclick="showMoreVehicleCostRows()">
+             <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+             Xem thêm ${Math.min(filtered.length - visible.length, VEHICLE_COST_PAGE)} xe
+           </button>`
+        : ''}
+    </div>` : `<div class="vc-loading">Không có xe nào khớp bộ lọc.</div>`}`;
   host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+window.filterVehicleCostList = function (value) {
+  vehicleCostListSearch = String(value || '');
+  vehicleCostListShown = VEHICLE_COST_PAGE;
+  window.openVehicleCostList(undefined, { keepFilters: true });
+  const input = document.getElementById('vc-search');
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+};
+
+window.toggleVehicleCostOnlyCustom = function (on) {
+  vehicleCostListOnlyCustom = Boolean(on);
+  vehicleCostListShown = VEHICLE_COST_PAGE;
+  window.openVehicleCostList(undefined, { keepFilters: true });
+};
+
+window.showMoreVehicleCostRows = function () {
+  vehicleCostListShown += VEHICLE_COST_PAGE;
+  window.openVehicleCostList(undefined, { keepFilters: true });
 };
 
 window.closeVehicleCostPanel = function () {
@@ -14546,7 +14735,7 @@ function renderVehicleCostEditor() {
              : '<b style="color:#b45309;">Loại xe này chưa có công thức</b> — hãy cấu hình ở panel bên phải trước.'}</p>
       </div>
       <button type="button" class="vc-close" title="Quay lại danh sách xe"
-              onclick="openVehicleCostList('${escapeJsAttr(data.vehicle_type)}')"><i class="fa-solid fa-arrow-left"></i></button>
+              onclick="openVehicleCostList(undefined, { keepFilters: true })"><i class="fa-solid fa-arrow-left"></i></button>
     </div>
 
     <table class="vc-table">
@@ -14657,6 +14846,7 @@ window.loadVehTypesForFormulas = async function () {
     }
   }
   window.renderDynamicFormulaVehicleTypes();
+  if (typeof window.renderCostFormulaView === 'function') window.renderCostFormulaView();
   if (typeof window.loadVehicleOverrideCounts === 'function') window.loadVehicleOverrideCounts();
   if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
 };
@@ -14747,6 +14937,12 @@ window.renderDynamicFormulaVehicleTypes = function () {
     const configured = formula.configured === true;
     const fuelPerKm = parseWorkflowMoneyValue(formula.fuel);
     const currency = masterCostCurrencyCode();
+    // Tong chi phi mot chuyen mau. Nam cau phan co don vi khac nhau (d/km,
+    // d/chuyen, d/kg) nen khong cong thang duoc — moi con so "tong" deu phai
+    // kem gia dinh ve do dai chuyen va khoi luong hang.
+    const estimate = window.CostEstimate
+      ? window.CostEstimate.estimate(formula, costSampleTrip)
+      : { total: 0, perKm: 0 };
     return `
       <div class="veh-type-card" data-formula-key="${escapeHtml(formulaKey)}"
            data-vehicle-type-id="${escapeHtml(vehicleType.id)}" data-vehicle-type-name="${escapeHtml(vehicleType.name)}"
@@ -14759,14 +14955,27 @@ window.renderDynamicFormulaVehicleTypes = function () {
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
         ).join('')}</div>` : ''}
         <div class="vt-rate">${configured
-          ? `<b>${formatWorkflowCurrencyAmount(fuelPerKm, currency)}</b> <small>/km · xăng dầu</small>
-             <span class="vt-flag vt-flag--ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Đã cấu hình</span>`
+          ? `<b>${formatWorkflowCurrencyAmount(estimate.total, currency)}</b> <small>/chuyến mẫu</small>
+             <span class="vt-flag vt-flag--ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Đã cấu hình</span>
+             <div class="vt-breakdown">
+               <span title="Bình quân mỗi km — con số so sánh được giữa các loại xe">
+                 <i class="fa-solid fa-route" aria-hidden="true"></i>
+                 ${formatWorkflowCurrencyAmount(estimate.perKm, currency)}/km
+               </span>
+               <span title="Chi phí xăng dầu trên 1 km">
+                 <i class="fa-solid fa-gas-pump" aria-hidden="true"></i>
+                 ${formatWorkflowCurrencyAmount(fuelPerKm, currency)}/km
+               </span>
+             </div>`
           : `<span class="vt-flag vt-flag--todo"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Chưa cấu hình công thức</span>`}</div>
         <div class="vt-fleet" id="vt-fleet-${escapeHtml(vehicleType.id)}"></div>
       </div>`;
   }).join('');
 
-  container.innerHTML = searchBox + cards;
+  const sampleNote = `<p class="vt-sample">Số tiền trên thẻ là <b>ước tính một chuyến mẫu</b>
+    ${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn.
+    Đổi ở khung Công thức bên phải.</p>`;
+  container.innerHTML = searchBox + sampleNote + cards;
 
   // Tang thu hai: moi the co mot dong "N chiec xe" bam duoc.
   if (typeof window.renderVehicleTypeFleetCounts === 'function') window.renderVehicleTypeFleetCounts();

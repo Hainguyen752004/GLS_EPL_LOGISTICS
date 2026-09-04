@@ -85,7 +85,11 @@ assert.match(models, /base_rate.*đ\/km/, 'ghi chú cột base_rate phải nêu 
   // Thẻ loại xe không còn hiện base_rate; nó hiện chi phí xăng dầu / 1 km lấy
   // từ công thức ĐÃ LƯU, theo đơn vị tiền tệ đang chọn — vì base_rate chưa bao
   // giờ được dùng để tính gì, và nút Lưu ghi vào bảng khác nên nó không đổi.
-  assert.match(fn, /\/km · xăng dầu/, 'thẻ phải nói rõ con số đó là chi phí xăng dầu trên 1 km');
+  // The hien TONG mot chuyen mau (vi nam cau phan khac don vi nen khong cong
+  // thang duoc), va boc tach them binh quan moi km + xang dau moi km.
+  assert.match(fn, /\/chuyến mẫu/, 'the phai noi ro tong do la cua mot chuyen mau');
+  assert.match(fn, /estimate\.perKm/, 'the phai co binh quan moi km de so sanh giua cac loai xe');
+  assert.match(fn, /fa-gas-pump/, 'the phai boc tach chi phi xang dau');
   assert.match(fn, /masterCostCurrencyCode\(\)/, 'thẻ phải theo đơn vị tiền tệ đang chọn');
 }
 

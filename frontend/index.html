@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-two-tier-cost-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-formula-view-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -1011,6 +1011,66 @@
     .vt-empty button { margin-top:12px; min-height:36px; padding:8px 14px; border:1px solid #0a6ed1; border-radius:6px; background:#fff; color:#075fa9; font:inherit; font-size:.75rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
     .vt-empty button:hover { background:#eaf4ff; }
     .vt-empty button:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    /* ---------- Công thức giá thành viết ra thành chữ ----------
+       Bản trước là trình dựng biểu thức kéo thả, bị ẩn bằng display:none nên
+       người dùng không còn thấy công thức đâu cả. Ở đây công thức cố định và
+       đúng đơn vị; thứ người dùng đổi là các đơn giá. */
+    .cf-view { margin-top:20px; border:1px solid #cbd7e5; border-radius:12px; background:#fff; overflow:hidden; }
+    .cf-head { display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:16px; padding:16px 20px; border-bottom:1px solid #eef2f7; background:#f8fafc; }
+    .cf-head h4 { margin:0; display:flex; align-items:center; gap:9px; font-size:.95rem; font-weight:800; color:#0f172a; }
+    .cf-head h4 i { color:#0a6ed1; }
+    .cf-equation { margin:6px 0 0; font-size:.8rem; color:#475569; font-weight:600; background:#eff6ff; border:1px dashed #93c5fd; border-radius:6px; padding:7px 11px; display:inline-block; }
+    .cf-sample { display:flex; gap:12px; }
+    .cf-sample label { display:flex; flex-direction:column; gap:4px; font-size:.68rem; font-weight:800; color:#526176; text-transform:uppercase; letter-spacing:.04em; }
+    .cf-sample span { display:inline-flex; align-items:center; gap:6px; font-size:.74rem; font-weight:700; color:#475569; }
+    .cf-sample input { width:78px; min-height:34px; padding:5px 8px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.8rem; font-weight:800; text-align:right; font-variant-numeric:tabular-nums; }
+    .cf-sample input:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    .cf-table { width:100%; border-collapse:collapse; }
+    .cf-table th { padding:9px 20px; background:#fff; border-bottom:1px solid #e2e8f0; text-align:left; font-size:.66rem; font-weight:800; color:#526176; text-transform:uppercase; letter-spacing:.04em; }
+    .cf-table th:not(:first-child), .cf-table td:not(:first-child) { text-align:right; }
+    .cf-table td { padding:9px 20px; border-bottom:1px solid #f1f5f9; font-size:.8rem; color:#0f172a; }
+    .cf-table td i { color:#0a6ed1; margin-right:6px; font-size:.72rem; }
+    .cf-num { font-variant-numeric:tabular-nums; }
+    .cf-num small { margin-left:3px; font-size:.66rem; color:#94a3b8; font-weight:600; }
+    .cf-mul { color:#64748b; font-size:.74rem; }
+    .cf-amount { font-weight:800; }
+    /* Cấu phần chưa đặt giá thì mờ đi — chưa đặt là một sự thật, không phải 0. */
+    .cf-table tr.is-zero td { color:#94a3b8; }
+    .cf-table tr.is-zero .cf-amount { font-weight:600; }
+
+    .cf-table tfoot td { border-top:2px solid #0a6ed1; border-bottom:0; padding-top:12px; padding-bottom:12px; background:#f8fafc; }
+    .cf-table tfoot small { display:block; margin-top:2px; font-size:.66rem; color:#64748b; font-weight:600; text-transform:none; letter-spacing:0; }
+    .cf-total { font-size:1.15rem; font-weight:900; color:#0a6ed1; }
+    .cf-perkm td { border-top:1px dashed #cbd7e5; padding-top:8px; padding-bottom:10px; font-size:.76rem; color:#475569; }
+    .cf-note { display:flex; align-items:flex-start; gap:8px; margin:0; padding:11px 20px; background:#f2f8ff; color:#075fa9; font-size:.73rem; border-top:1px solid #dbeafe; }
+
+    /* Ghi chú chuyến mẫu ở đầu danh mục loại xe. */
+    .vt-sample { margin:0 0 10px; padding:8px 11px; border-left:3px solid #0a6ed1; background:#f2f8ff; font-size:.68rem; color:#475569; border-radius:0 5px 5px 0; }
+    .vt-breakdown { display:flex; flex-wrap:wrap; gap:5px 10px; margin-top:6px; }
+    .vt-breakdown span { display:inline-flex; align-items:center; gap:5px; font-size:.67rem; font-weight:700; color:#64748b; font-variant-numeric:tabular-nums; }
+    .vt-breakdown i { color:#94a3b8; font-size:.62rem; }
+
+    /* ---------- Danh sách xe: tìm kiếm, lọc, tải dần ---------- */
+    .vc-tools { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid #eef2f7; }
+    .vc-search { position:relative; flex:1 1 240px; min-width:0; }
+    .vc-search > i { position:absolute; left:11px; top:50%; translate:0 -50%; color:#94a3b8; font-size:.72rem; pointer-events:none; }
+    .vc-search input { width:100%; min-height:36px; padding:7px 10px 7px 32px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.76rem; }
+    .vc-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.74rem; font-weight:700; color:#475569; cursor:pointer; }
+    .vc-vehicle { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto 14px !important; }
+    .vc-vehicle-sub { font-size:.7rem; color:#94a3b8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vc-page { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:9px; padding:10px 16px; border-top:1px solid #eef2f7; background:#f8fafc; font-size:.73rem; color:#64748b; font-variant-numeric:tabular-nums; }
+    .vc-page b { color:#0f172a; font-weight:800; }
+    .vc-page button { min-height:32px; padding:5px 12px; border:1px solid #0a6ed1; border-radius:6px; background:#fff; font:inherit; font-size:.72rem; font-weight:800; color:#075fa9; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+    .vc-page button:hover { background:#eaf4ff; }
+
+    @media (max-width:760px) {
+      .cf-head { flex-direction:column; }
+      .cf-table th, .cf-table td { padding-left:12px; padding-right:12px; }
+      .vc-vehicle { grid-template-columns:minmax(0,1fr) auto !important; }
+      .vc-vehicle-sub { display:none; }
+    }
 
     /* ---------- Giá thành hai tầng ----------
        Tầng 1 (thẻ loại xe) giữ công thức. Tầng 2 (bảng dưới) chỉ ghi đè vài
@@ -5419,10 +5479,6 @@
                   </div>
 
                   <input type="hidden" id="md-formula-preset-select" value="preset-1">
-                  <!-- Tang thu hai cua gia thanh: tung chiec xe trong loai.
-                       Cong thuc thuoc ve LOAI xe; o day chi ghi de vai con so
-                       khi thuc te khac di. Xem phan renderVehicleCostEditor trong ma nguon. -->
-                  <section id="vehicle-cost-panel" class="vc-panel" hidden></section>
                 </div>
 
                 <!-- Right Table -->
@@ -5460,27 +5516,27 @@
                         <tbody id="cost-formula-tbody">
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-gas-pump" style="color: #0a6ed1; margin-right: 8px;"></i> <span data-i18n="cost_item_fuel">Fuel Rate / 1 km (Chi Phí Xăng Dầu / 1 km)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-fuel-rate" class="fiori-input" value="6,250" oninput="autoCalculateMasterDataCost('qt')" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-fuel-rate" class="fiori-input" value="6,250" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-user-gear" style="color: #10b981; margin-right: 8px;"></i> <span data-i18n="cost_item_driver">Driver Allowance (Phụ Cấp Chuyến Tài Xế)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-driver-allowance" class="fiori-input" value="500,000" oninput="autoCalculateMasterDataCost('qt')" style="width: 160px !important; text-align: right; font-weight: 700; color: #10b981;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-driver-allowance" class="fiori-input" value="500,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #10b981;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-road" style="color: #f59e0b; margin-right: 8px;"></i> <span data-i18n="cost_item_toll">Toll Fees (Phí Cầu Đường / Trạm BOT)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-toll-fee" class="fiori-input" value="300,000" oninput="autoCalculateMasterDataCost('qt')" style="width: 160px !important; text-align: right; font-weight: 700; color: #f59e0b;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-toll-fee" class="fiori-input" value="300,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #f59e0b;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-warehouse" style="color: #8b5cf6; margin-right: 8px;"></i> <span data-i18n="cost_item_yard">Warehouse & Yard Fee (Phí Bãi & Lưu Kho)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-warehouse-fee" class="fiori-input" value="200,000" oninput="autoCalculateMasterDataCost('qt')" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-warehouse-fee" class="fiori-input" value="200,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-weight-scale" style="color: #dc2626; margin-right: 8px;"></i> <span data-i18n="cost_item_freight">Freight Rate / 1kg (Cước Phí Vận Chuyển / 1kg Hàng)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-freight-rate" class="fiori-input" value="1,500" oninput="autoCalculateMasterDataCost('qt')" style="width: 160px !important; text-align: right; font-weight: 700; color: #dc2626;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-freight-rate" class="fiori-input" value="1,500" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #dc2626;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                         </tbody>
@@ -5500,74 +5556,23 @@
                     </div>
                   </div>
 
-                  <!-- CLEAN MINIMALIST VISUAL FORMULA BUILDER STUDIO (REMOVED MOCK DATA) -->
-                  <div style="display: none; background: #ffffff; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; color: #0f172a; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(15,23,42,0.04);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 16px;">
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 36px; height: 36px; background: #eff6ff; color: #0a6ed1; border: 1px solid #bae6fd; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-                          <i class="fa-solid fa-calculator"></i>
-                        </div>
-                        <div>
-                          <h4 style="margin:0; color: #0f172a; font-size: 1.05rem; font-weight: 700;">Trình Dựng Công Thức Tính Cước Tương Tác</h4>
-                          <div style="color: #64748b; font-size: 0.8rem; margin-top: 2px;">Nhấp chọn cc biến số v ton tử bn dưới để thiết lập cng thức.</div>
-                        </div>
-                      </div>
-                      <span style="background: #eff6ff; color: #0a6ed1; border: 1px solid #bae6fd; padding: 4px 12px; border-radius: 14px; font-size: 0.75rem; font-weight: 700;">
-                        Dynamic Formula Engine
-                      </span>
-                    </div>
-
-                    <!-- Variable Pills Gallery -->
-                    <div style="margin-bottom: 16px;">
-                      <div style="font-size: 0.83rem; color: #334155; font-weight: 700; margin-bottom: 8px;">Thư viện thẻ biến số:</div>
-                      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('DISTANCE', 'Khoảng cách (km)', 'var')" style="background: #eff6ff; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Khoảng cách (km)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('FUEL_NORM', 'Định mức (lít/100km)', 'var')" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Định mức (lít/100km)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('FUEL_PRICE', 'Giá dầu (VNĐ/lít)', 'var')" style="background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Giá dầu (VNĐ/lít)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('TOLL_FEE', 'Phí BOT (VNĐ)', 'var')" style="background: #faf5ff; color: #9333ea; border: 1px solid #f3e8ff; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Phí BOT (VNĐ)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('DRIVER_ALLOWANCE', 'Phụ cấp tài xế (VNĐ)', 'var')" style="background: #fdf2f8; color: #db2777; border: 1px solid #fce7f3; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Phụ cấp tài xế (VNĐ)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('WAREHOUSE_FEE', 'Phí bãi (VNĐ)', 'var')" style="background: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Phí bãi (VNĐ)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('PROFIT_MARGIN', '% Lợi nhuận (%)', 'var')" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">% Lợi nhuận (%)</button>
-                      </div>
-                    </div>
-
-                    <!-- Operator Toolbar -->
-                    <div style="margin-bottom: 16px;">
-                      <div style="font-size: 0.83rem; color: #334155; font-weight: 700; margin-bottom: 8px;">Toán tử & Thao tác:</div>
-                      <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-                        <button type="button" onclick="appendFormulaToken('+', '+', 'op')" style="background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">+</button>
-                        <button type="button" onclick="appendFormulaToken('-', '-', 'op')" style="background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">-</button>
-                        <button type="button" onclick="appendFormulaToken('*', '*', 'op')" aria-label="Phép nhân" title="Phép nhân" style="background: #0a6ed1; color: #ffffff; border: 1px solid #005a9e; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">*</button>
-                        <button type="button" onclick="appendFormulaToken('/', '/', 'op')" aria-label="Phép chia" title="Phép chia" style="background: #0a6ed1; color: #ffffff; border: 1px solid #005a9e; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">/</button>
-                        <button type="button" onclick="appendFormulaToken('(', '(', 'op')" style="background: #f1f5f9; color: #0a6ed1; border: 1px solid #cbd5e1; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">(</button>
-                        <button type="button" onclick="appendFormulaToken(')', ')', 'op')" style="background: #f1f5f9; color: #0a6ed1; border: 1px solid #cbd5e1; width: 36px; height: 36px; border-radius: 6px; font-weight: 700; font-size: 1.05rem; cursor: pointer;">)</button>
-                        
-                        <span style="height: 20px; width: 1px; background: #e2e8f0; margin: 0 4px;"></span>
-
-                        <button type="button" onclick="popFormulaToken()" style="background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fa-solid fa-delete-left"></i> Xóa bớt</button>
-                        <button type="button" onclick="clearFormulaTokens()" style="background: #dc2626; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer;"><i class="fa-solid fa-trash"></i> Xóa Hết</button>
-                      </div>
-                    </div>
-
-                    <!-- Visual Formula Box -->
-                    <div style="background: #f8fafc; border: 1px dashed #0a6ed1; border-radius: 8px; padding: 14px 18px; min-height: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px;" id="visual-formula-box">
-                      <!-- Tokens rendered via JS -->
-                    </div>
-
-                    <!-- Preview Evaluation & Save Action Bar -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 12px 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                      <div>
-                        <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Xem trước sau khi chọn tuyến đường:</span>
-                        <div id="formula-preview-val" style="font-size: 1.15rem; font-weight: 700; color: #0a6ed1; margin-top: 2px;">2,587,500 VNĐ</div>
-                      </div>
-                      <button type="button" class="fiori-btn" onclick="saveCostFormula()" style="background: #0a6ed1; color: white; border: none; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer;">
-                        <i class="fa-solid fa-floppy-disk"></i> <span>Lưu Công Thức Loại Xe</span>
-                      </button>
-                    </div>
-                  </div>
+                  <!-- Cong thuc gia thanh, viet ra thanh chu.
+                       Ban truoc la mot trinh dung bieu thuc bang the keo tha,
+                       va no bi an bang display:none tu commit "Prepare EPL
+                       Logistics for deployment" — nen nguoi dung khong con thay
+                       cong thuc dau ca, chi con bang cac o nhap.
+                       Nay cong thuc co dinh va dung theo don vi cua tung cau
+                       phan; thu nguoi dung doi la cac DON GIA. -->
+                  <section id="cost-formula-view" class="cf-view"></section>
 
                 </div>
               </div>
+
+              <!-- Tang thu hai cua gia thanh: tung chiec xe trong loai.
+                   Dat NGOAI khoi hai cot va chiem tron be ngang — de trong cot
+                   trai rong 320px thi bang bi bop lai, chu bi ngat dong va cac
+                   o nhap chi con hien duoc mot hai ky tu. -->
+              <section id="vehicle-cost-panel" class="vc-panel" hidden></section>
 
             </div>
           </div>
@@ -6890,7 +6895,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-two-tier-cost-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260904-formula-view-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6904,10 +6909,11 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
+  <script src="/static/js/cost-estimate.js?v=20260904-formula-view-v1"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-two-tier-cost-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-formula-view-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-two-tier-cost-v1"></script>
+  <script src="/static/js/app.js?v=20260904-formula-view-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>
