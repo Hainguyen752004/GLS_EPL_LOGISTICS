@@ -47,6 +47,10 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   assert.match(fn, /Không tìm thấy/, 'không được báo thành công cho một việc không xảy ra');
   assert.match(fn, /catch/, 'lỗi mạng phải được báo, không im lặng');
   assert.match(fn, /showToast\([^)]*'error'\)/, 'thất bại phải hiện như lỗi');
+  // Loi khi TAI LAI khong duoc bao la "chua xoa duoc" — viec xoa da thanh cong,
+  // bao nguoc lai se khien nguoi dung bam xoa lan nua.
+  assert.match(fn, /Đã xóa xong nhưng chưa tải lại được/, 'loi tai lai phai duoc phan biet voi loi xoa');
+  assert.strictEqual((fn.match(/} catch/g) || []).length, 2, 'xoa va tai lai phai la hai viec rieng');
   // Xóa loại xe ảnh hưởng tới các xe đang gán — phải nói trước.
   assert.match(fn, /confirm\(/, 'phải hỏi lại trước khi xóa');
   assert.match(fn, /mất định mức giá thành/, 'lời hỏi phải nói rõ hệ quả');
@@ -69,9 +73,15 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   });
   assert.match(fn, /m³/, 'thể tích phải có đơn vị');
   assert.match(fn, /pallet/, 'số pallet phải có đơn vị');
-  assert.match(fn, /đ\/km/, 'đơn giá phải có đơn vị');
-  // Chưa đặt đơn giá là một sự thật cần thấy, không phải một ô trống.
-  assert.match(fn, /Chưa đặt đơn giá nền/);
+  // KHONG duoc gan don vi cho base_rate. Ba nguon noi ba kieu:
+  //   - ghi chu cot trong models.py: "Phi cuoc co ban"
+  //   - gia tri that (Container 20FT = 6.250) khop voi "Fuel Rate / 1 km"
+  //   - nhung code lai dung no lam gia tri du phong cho "Freight Rate / 1kg"
+  // Gan bat ky don vi nao cung la khang dinh mot dieu ma chinh ma nguon
+  // khong thong nhat.
+  assert.ok(!/đ\/km|đ\/kg/.test(fn), 'khong duoc bia don vi cho base_rate');
+  // Chua dat don gia la mot su that can thay, khong phai mot o trong.
+  assert.match(fn, /Chưa đặt đơn giá gốc/);
   // Icon lấy từ dữ liệu, chỉ dùng 🚚 khi thiếu.
   assert.match(fn, /vehicleType\.icon \|\| '🚚'/);
   // Tên loại xe do người dùng nhập nên phải thoát khi vào innerHTML.
@@ -113,5 +123,22 @@ assert.match(app, /openVehicleTypesTab/, 'phải mở thẳng được tab đó'
 assert.match(html, /\.veh-type-card\s*\{/, 'thẻ phải có CSS riêng, không phải style nội tuyến');
 assert.match(html, /\.veh-type-card\.active\s*\{[^}]*border-left-width/, 'thẻ đang chọn phải khác cả hình dạng, không chỉ khác màu');
 assert.match(html, /\.vt-rate-missing\s*\{/, 'trạng thái thiếu đơn giá phải có kiểu riêng');
+
+// --- 7. base_rate KHONG duoc dien vao o cuoc phi / 1kg --------------------
+//
+// Voi Container 20FT, base_rate = 6.250 — dung bang gia tri "Fuel Rate / 1 km"
+// cua preset-1, trong khi cuoc phi that la 1.500 d/kg. Dien mot so xang dau vao
+// o cuoc phi lam gia cao gap hon 4 lan, va no chay thang vao bao gia ma khong
+// ai nhin ra.
+{
+  const start = app.indexOf('function ensureVehicleTypeFormula');
+  assert.ok(start > 0, 'phai con ham dung cong thuc cho loai xe');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '}', start));
+  assert.ok(
+    !/rate: source\?\.rate \|\| String\(vehicleType\.base_rate/.test(fn),
+    'khong duoc lay base_rate lam gia tri du phong cho o cuoc phi / 1kg'
+  );
+  assert.match(fn, /rate: source\?\.rate \|\| '0'/, 'thieu thi de trong de man hinh noi ro, khong dien so sai');
+}
 
 console.log('cost-formula-catalog: tất cả kiểm tra đã qua');

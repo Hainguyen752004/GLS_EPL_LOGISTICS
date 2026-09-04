@@ -11153,7 +11153,16 @@ function ensureVehicleTypeFormula(vehicleType, currency = masterCostCurrencyCode
     driver: source?.driver || '0',
     toll: source?.toll || '0',
     wh: source?.wh || '0',
-    rate: source?.rate || String(vehicleType.base_rate || vehicleType.baseRate || '0'),
+    // KHONG lay base_rate lam gia tri du phong cho o "Freight Rate / 1kg".
+    //
+    // Voi Container 20FT, base_rate = 6.250 — dung bang gia tri "Fuel Rate /
+    // 1 km" cua preset-1, trong khi cuoc phi that la 1.500 d/kg. Dien mot so
+    // xang dau vao o cuoc phi lam gia cao gap hon 4 lan, va no chay thang vao
+    // bao gia ma khong ai nhin ra.
+    //
+    // De trong thi man hinh noi ro "Chua dat don gia goc" — sai ma THAY DUOC
+    // tot hon sai ma im lang.
+    rate: source?.rate || '0',
     tokens: JSON.parse(JSON.stringify(source?.tokens || []))
   };
   return key;
@@ -14286,14 +14295,24 @@ window.deleteVehicleTypeCard = async function (btn) {
     } else {
       showToast(`Đã xóa loại xe ${name}.`, 'success');
     }
-    // Tải lại từ máy chủ thay vì tự gỡ thẻ: màn hình phải phản ánh cơ sở dữ liệu.
+  } catch (error) {
+    btn.disabled = false;
+    showToast(`Chưa xóa được loại xe: ${error.message}`, 'error');
+    return;
+  }
+
+  // Tải lại NẰM NGOÀI khối try ở trên, và là một việc riêng.
+  //
+  // Để chung thì một lỗi mạng lúc tải lại sẽ báo "Chưa xóa được loại xe"
+  // trong khi việc xóa ĐÃ THÀNH CÔNG — lời nói dối ngược lại với lỗi cũ,
+  // và cũng nguy hiểm như nhau: người dùng sẽ bấm xóa lại.
+  try {
     const listRes = await fetch(`${API_BASE}/api/vehicle-types`);
     if (listRes.ok) vehTypes = await listRes.json();
     window.renderDynamicFormulaVehicleTypes();
     if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
   } catch (error) {
-    btn.disabled = false;
-    showToast(`Chưa xóa được loại xe: ${error.message}`, 'error');
+    showToast('Đã xóa xong nhưng chưa tải lại được danh mục. Tải lại trang để xem đúng.', 'error');
   }
 };
 
@@ -14390,8 +14409,8 @@ window.renderDynamicFormulaVehicleTypes = function () {
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
         ).join('')}</div>` : ''}
         <div class="vt-rate">${rate
-          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ/km đơn giá nền</small>`
-          : '<small class="vt-rate-missing">Chưa đặt đơn giá nền</small>'}</div>
+          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ · đơn giá gốc <i class="fa-solid fa-circle-question" title="Trường base_rate trong Master Data. Đơn vị chưa thống nhất giữa dữ liệu và công thức — xem ghi chú trong mã nguồn." aria-hidden="true"></i></small>`
+          : '<small class="vt-rate-missing">Chưa đặt đơn giá gốc</small>'}</div>
       </div>`;
   }).join('');
 
