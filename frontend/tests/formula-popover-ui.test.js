@@ -119,7 +119,9 @@ assert.ok(!/Tổng chi phí chuyến mẫu/.test(editor), 'không được còn 
 // Hộp thoại có cột "Loại" để khai từng cấu phần là chi phí hay giá bán.
 assert.ok(/setCostTermField\(\$\{index\}, 'kind'/.test(pop), 'phải đổi được loại cấu phần');
 assert.ok(/Object\.entries\(M\.KINDS\)/.test(pop), 'danh sách loại sinh từ mô hình');
-assert.ok(/id="cf-pprofit"/.test(pop) && /id="cf-pmargin"/.test(pop));
+assert.ok(/id="cf-pcost"/.test(pop) && /id="cf-prevenue"/.test(pop)
+  && /id="cf-pprofit"/.test(pop) && /id="cf-pmargin"/.test(pop),
+  'chân hộp thoại phải có cả ba con số');
 
 // Lỗi công thức cũng phải ở trên thẻ. Nếu chỉ nằm trong bong bóng thì đóng lại
 // là lỗi biến mất khỏi mắt, rồi báo giá vẫn chạy bằng công thức sai.
@@ -135,7 +137,7 @@ assert.ok(/issue\.level === 'error'/.test(code));
   const totals = code.slice(code.indexOf('function updateCostFormulaTotals'), code.indexOf('function renderCostFormulaIssues'));
   ['cf-sum-amount-', 'cf-sum-rate-', 'cf-sum-mul-', 'cf-sum-label-', 'cf-sum-sign-', 'cf-sum-unit-',
     'cf-sum-kind-', 'cf-amount-', 'cf-mul-', 'cf-cost', 'cf-revenue', 'cf-total', 'cf-margin',
-    'cf-pprofit', 'cf-pmargin', 'cf-perkm', 'cf-text'].forEach(id => {
+    'cf-pcost', 'cf-prevenue', 'cf-pprofit', 'cf-pmargin', 'cf-perkm', 'cf-text'].forEach(id => {
     assert.ok(totals.includes(id), `sửa xong phải cập nhật ${id}`);
   });
   // Chỉ cập nhật con số, KHÔNG dựng lại bảng: dựng lại là mất con trỏ giữa lúc gõ.
@@ -160,8 +162,9 @@ assert.ok(/syncBuiltinCostInputs\(\)/.test(editor), 'vẽ xong phải ghi ngư�
 
 // --- 8. CSS của bong bóng phải có thật -----------------------------------
 
-['.cf-trigger', '.cf-pop', '.cf-pop-head', '.cf-pop-close', '.cf-pop-foot', '.cf-add',
-  '.cf-del', '.cf-issues', '.cf-row-actions', '.cf-op-col', '.cf-sign'].forEach(selector => {
+['.cf-trigger', '.cf-pop', '.cf-pop-head', '.cf-pop-close', '.cf-pop-body', '.cf-pop-foot',
+  '.cf-add', '.cf-del', '.cf-issues', '.cf-row', '.cf-row-top', '.cf-row-calc',
+  '.cf-amount', '.cf-move', '.cf-kind', '.cf-sum-item'].forEach(selector => {
   // Bat cả `.cf-del { }` lan `.cf-row-actions .cf-del:hover`.
   const rule = new RegExp(selector.replace('.', '\\.') + '[\\s,:{]');
   assert.ok(rule.test(html), `thiếu CSS cho ${selector} — bong bóng sẽ hiện ra không có hình dạng`);
@@ -179,10 +182,21 @@ assert.ok(!/\.cf-pop \{[^}]*position:absolute/.test(html), 'không được neo 
 assert.ok(/class="cf-pop-backdrop"/.test(POPOVER));
 assert.ok(editor.indexOf('renderCostFormulaPopover(') > editor.indexOf('class="cf-note"'),
   'hộp thoại phải nằm sau cùng trong chuỗi vẽ');
-// Cao quá thì cuộn trong hộp thoại, để nút "Thêm cấu phần" luôn với tới được.
-assert.ok(/\.cf-pop \.cf-scroll \{[^}]*overflow:auto/.test(html));
-// Tên cấu phần phải có đủ chỗ, không thì chữ xuống dòng từng từ một.
-assert.ok(/cf-pop-table td:nth-child\(2\) \{[^}]*min-width/.test(html));
+// Cao quá thì cuộn DỌC trong thân hộp thoại.
+assert.ok(/\.cf-pop-body \{[^}]*overflow-y:auto/.test(html));
+// Và TUYỆT ĐỐI không cuộn ngang: chính việc đó làm mất cột "Thành tiền" và cột
+// nút ở bản bảy cột trước đó.
+assert.ok(/\.cf-pop-body \{[^}]*overflow-x:hidden/.test(html));
+// Dạng thẻ, không phải bảng bảy cột.
+assert.ok(!/cf-pop-table/.test(html), 'không được còn CSS của bảng cũ');
+assert.ok(!/cf-op-col/.test(html));
+assert.ok(!/cf-row-actions/.test(html));
+// Thành tiền tự tách sang phải và không bao giờ bị cắt.
+assert.ok(/\.cf-amount \{[^}]*margin-left:auto/.test(html));
+assert.ok(/\.cf-amount \{[^}]*white-space:nowrap/.test(html));
+// Màn hẹp thì các ô xuống dòng, không tràn ra ngoài.
+assert.ok(/\.cf-row-calc \{[^}]*flex-wrap:wrap/.test(html));
+assert.ok(/\.cf-row-top \{[^}]*flex-wrap:wrap/.test(html));
 
 // Bàn phím phải thấy được mình đang ở đâu.
 assert.ok(/\.cf-trigger:focus-visible/.test(html));

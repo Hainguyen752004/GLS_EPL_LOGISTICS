@@ -178,9 +178,13 @@ function forceCriticalVietnameseLabels() {
   document.querySelectorAll('[data-i18n="menu_fleet_catalog"]').forEach(label => {
     label.textContent = 'Danh M\u1ee5c \u0110\u1ed9i Xe';
   });
-  document.querySelectorAll('[data-i18n="lbl_sales_rep"]').forEach(label => {
-    label.textContent = 'Nh\u00e2n Vi\u00ean B\u00e1n H\u00e0ng';
-  });
+  // C\u1ed0 \u00dd kh\u00f4ng ghi \u0111\u00e8 `lbl_sales_rep` \u1edf \u0111\u00e2y.
+  //
+  // \u0110\u00e2y l\u00e0 h\u1ec7 th\u1ed1ng V\u1eacN T\u1ea2I, kh\u00f4ng ph\u1ea3i b\u00e1n h\u00e0ng h\u00f3a, n\u00ean d\u00f9ng t\u1eeb "Nh\u00e2n vi\u00ean
+  // kinh doanh". lang.json v\u00e0 index.html \u0111\u1ec1u \u0111\u00e3 \u0111\u00fang; hai ch\u1ed7 ghi \u0111\u00e8 trong t\u1ec7p
+  // n\u00e0y k\u00e9o ng\u01b0\u1ee3c v\u1ec1 "Nh\u00e2n Vi\u00ean B\u00e1n H\u00e0ng" \u2014 v\u00e0 v\u00ec h\u00e0m n\u00e0y ch\u1ea1y SAU
+  // changeLanguage n\u00ean n\u00f3 LU\u00d4N th\u1eafng. S\u1eeda lang.json xong ch\u1eef tr\u00ean m\u00e0n h\u00ecnh v\u1eabn
+  // y nh\u01b0 c\u0169.
   const fixedTexts = {
     th_order_no: 'Mã Đơn Hàng',
     th_customer: 'Khách Hàng',
@@ -281,8 +285,8 @@ async function loadTranslations() {
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
     appTranslations.menu_fleet_catalog = appTranslations.menu_fleet_catalog || {};
     appTranslations.menu_fleet_catalog.vi = 'Danh Mục Đội Xe';
-    appTranslations.lbl_sales_rep = appTranslations.lbl_sales_rep || {};
-    appTranslations.lbl_sales_rep.vi = 'Nh\u00e2n Vi\u00ean B\u00e1n H\u00e0ng';
+    // C\u1ed0 \u00dd kh\u00f4ng ghi \u0111\u00e8 `lbl_sales_rep` \u1edf \u0111\u00e2y \u2014 xem gi\u1ea3i th\u00edch \u1edf
+    // forceCriticalVietnameseLabels(). lang.json \u0111\u00e3 c\u00f3 "Nh\u00e2n vi\u00ean kinh doanh".
     // Khoi tao theo lang tu select
     const sel = document.getElementById('lang-switcher');
     if (sel) changeLanguage(sel.value);
@@ -14947,8 +14951,11 @@ function updateCostFormulaTotals() {
   setText('cf-revenue', money(result.revenue));
   setText('cf-total', money(result.profit));
   setText('cf-margin', result.marginPct === null ? '' : ` · ${result.marginPct.toFixed(1)}%`);
+  // Ba con so o chan hop thoai.
+  setText('cf-pcost', money(result.cost));
+  setText('cf-prevenue', money(result.revenue));
   setText('cf-pprofit', money(result.profit));
-  setText('cf-pmargin', result.marginPct === null ? '—' : `${result.marginPct.toFixed(1)}%`);
+  setText('cf-pmargin', result.marginPct === null ? '' : `${result.marginPct.toFixed(1)}%`);
   setText('cf-perkm', `${money(result.perKm)}/km`);
   setText('cf-trip-note', `${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn`);
   setText('cf-text', M.toText(costFormulaTerms));
@@ -14972,10 +14979,84 @@ function renderCostFormulaIssues() {
   ).join('')}</ul>`;
 }
 
-/** Bảng cấu hình động bên trong bong bóng. */
+/**
+ * Hộp thoại cấu hình công thức.
+ *
+ * Bản trước là một BẢNG BẢY CỘT (dấu · cấu phần · loại · đơn giá · nhân theo ·
+ * thành tiền · nút). Bảy cột không bao giờ vừa một hộp thoại, nên thực tế trên
+ * màn hình: cột "Thành tiền" bị cắt mất một nửa, cột nút (xóa, đổi thứ tự) nằm
+ * hẳn ngoài vùng thấy được, và phải cuộn ngang mới đọc được con số của chính
+ * dòng mình đang sửa.
+ *
+ * Nay mỗi cấu phần là MỘT THẺ hai dòng. Không còn cột nào để cắt, và câu chữ
+ * đọc thành một câu:
+ *
+ *     ┌──────────────────────────────────────────────────────┐
+ *     │ +  Chi phí xăng dầu /km          [Chi phí ▾]     ✕  │
+ *     │    4.800  ×  [mỗi km ▾]  × 200  =  960.000 VNĐ  ↑↓  │
+ *     └──────────────────────────────────────────────────────┘
+ */
 function renderCostFormulaPopover(result, money) {
   const M = window.FormulaModel;
   const factorOptions = Object.entries(M.FACTORS);
+
+  const the = (row, index) => {
+    const nhan = escapeHtml(row.label || 'cấu phần');
+    return `
+      <div class="cf-row cf-row--${escapeHtml(row.kind)} ${row.rate ? '' : 'is-zero'}">
+        <div class="cf-row-top">
+          <select class="cf-op" aria-label="Dấu của ${nhan}"
+                  onchange="setCostTermField(${index}, 'operator', this.value)">
+            ${Object.entries(M.OPERATORS).map(([key, op]) =>
+              `<option value="${escapeHtml(key)}"${key === row.operator ? ' selected' : ''}>${escapeHtml(op.sign)}</option>`
+            ).join('')}
+          </select>
+
+          ${row.builtin
+            ? `<b class="cf-row-name">${escapeHtml(row.label)}</b>`
+            : `<input class="cf-row-name" type="text" value="${escapeHtml(row.label)}"
+                      placeholder="Tên cấu phần — ví dụ: Phí bốc xếp /tấn"
+                      oninput="setCostTermField(${index}, 'label', this.value)"
+                      aria-label="Tên cấu phần">`}
+
+          <select class="cf-kind cf-kind-${escapeHtml(row.kind)}" aria-label="Loại của ${nhan}"
+                  onchange="setCostTermField(${index}, 'kind', this.value)">
+            ${Object.entries(M.KINDS).map(([key, kind]) =>
+              `<option value="${escapeHtml(key)}"${key === row.kind ? ' selected' : ''}>${escapeHtml(kind.label)}</option>`
+            ).join('')}
+          </select>
+
+          <button type="button" class="cf-del"
+                  title="${row.builtin ? 'Cấu phần dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa cấu phần'}"
+                  aria-label="Xóa ${nhan}"
+                  onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}>✕</button>
+        </div>
+
+        <div class="cf-row-calc">
+          <input class="cf-rate" type="number" min="0" step="any" value="${Number(row.rate) || 0}"
+                 oninput="setCostTermField(${index}, 'rate', this.value)"
+                 aria-label="Đơn giá của ${nhan}">
+          <span class="cf-x">×</span>
+          <select class="cf-factor" aria-label="Hệ số nhân của ${nhan}"
+                  onchange="setCostTermField(${index}, 'factor', this.value)">
+            ${factorOptions.map(([key, factor]) =>
+              `<option value="${escapeHtml(key)}"${key === row.factor ? ' selected' : ''}>${escapeHtml(factor.label)}</option>`
+            ).join('')}
+          </select>
+          <span class="cf-mul" id="cf-mul-${index}">${row.factor === 'per_trip'
+            ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</span>
+          <span class="cf-eq">=</span>
+          <b class="cf-amount" id="cf-amount-${index}">${money(row.amount)}</b>
+          <span class="cf-move">
+            <button type="button" title="Lên" aria-label="Đưa ${nhan} lên trên"
+                    onclick="moveCostTerm(${index}, -1)" ${index === 0 ? 'disabled' : ''}>&#8593;</button>
+            <button type="button" title="Xuống" aria-label="Đưa ${nhan} xuống dưới"
+                    onclick="moveCostTerm(${index}, 1)" ${index === result.rows.length - 1 ? 'disabled' : ''}>&#8595;</button>
+          </span>
+        </div>
+      </div>`;
+  };
+
   return `
     <div class="cf-pop-backdrop" id="cf-pop-backdrop">
     <div class="cf-pop" id="cf-pop" role="dialog" aria-modal="true" aria-label="Cấu hình công thức giá thành">
@@ -14984,97 +15065,32 @@ function renderCostFormulaPopover(result, money) {
         <button type="button" class="cf-pop-close" onclick="toggleCostFormulaPopover(false)"
                 aria-label="Đóng cấu hình công thức" title="Đóng">✕</button>
       </div>
-      <p class="cf-pop-hint">Mỗi dòng là một cấu phần: chọn <b>dấu</b>, nhập <b>đơn giá</b>,
-        rồi chọn đơn giá đó <b>nhân theo</b> gì. Thêm hay bớt cấu phần đều được.</p>
 
-      <div class="cf-scroll">
-        <table class="cf-table cf-pop-table">
-          <thead>
-            <tr>
-              <th class="cf-op-col">Dấu</th>
-              <th>Cấu phần</th>
-              <th>Loại</th>
-              <th>Đơn giá</th>
-              <th>Nhân theo</th>
-              <th>Thành tiền</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${result.rows.map((row, index) => `
-              <tr class="${row.rate ? '' : 'is-zero'}">
-                <td class="cf-op-col">
-                  <select aria-label="Dấu của ${escapeHtml(row.label || 'cấu phần')}"
-                          onchange="setCostTermField(${index}, 'operator', this.value)">
-                    ${Object.entries(M.OPERATORS).map(([key, op]) =>
-                      `<option value="${escapeHtml(key)}"${key === row.operator ? ' selected' : ''}>${escapeHtml(op.sign)}</option>`
-                    ).join('')}
-                  </select>
-                </td>
-                <td>
-                  ${row.builtin
-                    ? `<b>${escapeHtml(row.label)}</b>`
-                    : `<input type="text" value="${escapeHtml(row.label)}" placeholder="Ví dụ: Phí bốc xếp /tấn"
-                              oninput="setCostTermField(${index}, 'label', this.value)" aria-label="Tên cấu phần">`}
-                </td>
-                <td>
-                  <select class="cf-kind cf-kind-${escapeHtml(row.kind)}"
-                          aria-label="Loại của ${escapeHtml(row.label || 'cấu phần')}"
-                          onchange="setCostTermField(${index}, 'kind', this.value)">
-                    ${Object.entries(M.KINDS).map(([key, kind]) =>
-                      `<option value="${escapeHtml(key)}"${key === row.kind ? ' selected' : ''}>${escapeHtml(kind.label)}</option>`
-                    ).join('')}
-                  </select>
-                </td>
-                <td class="cf-num">
-                  <input type="number" min="0" step="any" value="${Number(row.rate) || 0}"
-                         oninput="setCostTermField(${index}, 'rate', this.value)"
-                         aria-label="Đơn giá của ${escapeHtml(row.label || 'cấu phần')}">
-                </td>
-                <td>
-                  <select aria-label="Hệ số nhân của ${escapeHtml(row.label || 'cấu phần')}"
-                          onchange="setCostTermField(${index}, 'factor', this.value)">
-                    ${factorOptions.map(([key, factor]) =>
-                      `<option value="${escapeHtml(key)}"${key === row.factor ? ' selected' : ''}>${escapeHtml(factor.label)}</option>`
-                    ).join('')}
-                  </select>
-                  <small class="cf-mul" id="cf-mul-${index}">${row.factor === 'per_trip'
-                    ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</small>
-                </td>
-                <td class="cf-num cf-amount" id="cf-amount-${index}">${money(row.amount)}</td>
-                <td class="cf-row-actions">
-                  <button type="button" title="Lên" onclick="moveCostTerm(${index}, -1)"
-                          ${index === 0 ? 'disabled' : ''}><i class="fa-solid fa-chevron-up"></i></button>
-                  <button type="button" title="Xuống" onclick="moveCostTerm(${index}, 1)"
-                          ${index === result.rows.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down"></i></button>
-                  <button type="button" class="cf-del"
-                          title="${row.builtin ? 'Cấu phần dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa cấu phần'}"
-                          onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}>✕</button>
-                </td>
-              </tr>`).join('')}
-          </tbody>
-          <tfoot>
-            <tr>
-              <td colspan="5">
-                <button type="button" class="cf-add" onclick="addCostTerm()">
-                  <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm cấu phần
-                </button>
-              </td>
-              <td class="cf-num" id="cf-pprofit">${money(result.profit)}</td>
-              <td></td>
-            </tr>
-            <tr class="cf-perkm-row">
-              <td colspan="5">Lợi nhuận chuyển mẫu
-                <small>cước thu khách trừ giá thành</small></td>
-              <td class="cf-num" id="cf-pmargin">${result.marginPct === null
-                ? '—' : `${result.marginPct.toFixed(1)}%`}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+      <p class="cf-pop-hint">Mỗi thẻ là một cấu phần. Chọn <b>loại</b> để nói đó là tiền
+        <b>chi ra</b> hay tiền <b>thu của khách</b> — hai thứ đó không cộng chung được.</p>
+
+      <div class="cf-pop-body">
+        ${result.rows.map(the).join('')}
+        <button type="button" class="cf-add" onclick="addCostTerm()">
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm cấu phần
+        </button>
       </div>
 
       <div class="cf-pop-foot">
+        <div class="cf-sum">
+          <div class="cf-sum-item cf-sum-item--cost">
+            <span>Giá thành</span><b id="cf-pcost">${money(result.cost)}</b>
+          </div>
+          <div class="cf-sum-item cf-sum-item--revenue">
+            <span>Cước thu khách</span><b id="cf-prevenue">${money(result.revenue)}</b>
+          </div>
+          <div class="cf-sum-item cf-sum-item--profit">
+            <span>Lợi nhuận</span>
+            <b id="cf-pprofit">${money(result.profit)}</b>
+            <small id="cf-pmargin">${result.marginPct === null
+              ? '' : `${result.marginPct.toFixed(1)}%`}</small>
+          </div>
+        </div>
         <div class="cf-sample">
           <label>Chuyến mẫu
             <span><input type="number" min="1" step="1" value="${costSampleTrip.km}"
@@ -15084,8 +15100,8 @@ function renderCostFormulaPopover(result, money) {
             <span><input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
                          oninput="setCostSampleTrip('tonnes', this.value)" aria-label="Số tấn chuyến mẫu"> tấn</span>
           </label>
+          <small>Chỉ để xem trước. Báo giá thật lấy <b>tổng km của tuyến</b> và <b>tải trọng đã nhập</b>.</small>
         </div>
-        <small>Hai ô này chỉ để xem trước. Báo giá thật lấy <b>tổng km của tuyến</b> và <b>tải trọng đã nhập</b>.</small>
       </div>
     </div>
     </div>`;
