@@ -152,6 +152,8 @@ assert.ok(/'qt-cargo-type', 'so-cargo-type'/.test(code), 'phải nạp danh sác
 }
 // Áp giá vào dòng cước là một hành động RIÊNG, người dùng tự bấm.
 assert.ok(/window\.applySOCostToLine = function/.test(code));
+// Va phai co nut goi toi no, khong thi day la mot ham khong ai bam duoc.
+assert.ok(html.includes('onclick="applySOCostToLine()"'), 'phai co nut ap cuoc');
 {
   const fn = code.slice(code.indexOf('window.applySOCostToLine = function'));
   assert.ok(/if \(!quote \|\| !quote\.ready\)/.test(fn), 'chưa tính được thì không áp gì');
