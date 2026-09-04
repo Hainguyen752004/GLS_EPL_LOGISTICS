@@ -1067,25 +1067,32 @@
     .cf-trigger-icon { flex:none; display:inline-flex; align-items:center; gap:6px; font-size:.72rem;
       font-weight:800; color:#075fa9; white-space:nowrap; }
 
-    /* Bong bong: neo vao cau cong thuc, khong day phan con lai cua the xuong. */
-    .cf-pop { position:absolute; z-index:40; top:calc(100% + 10px); left:0; width:min(760px, calc(100vw - 64px));
+    /* Hop thoai cau hinh cong thuc.
+       Ban dau neo `position:absolute` vao cau cong thuc. Sai: khung cha co cat
+       noi dung, nen bong bong bi cat mat mep trai — cot "Dau" va nua tieu de
+       nam ngoai vung thay duoc. Neo tuyet doi chi an toan khi moi to tien cua
+       no deu khong cat, ma dieu do khong kiem duoc tu day.
+       Dat `fixed` giua man hinh thi khong khung nao cat duoc. */
+    .cf-pop-backdrop { position:fixed; inset:0; z-index:1200; background:rgba(15,23,42,.32);
+      display:flex; align-items:center; justify-content:center; padding:24px; }
+    .cf-pop { width:min(860px, 100%); max-height:calc(100vh - 48px); display:flex; flex-direction:column;
       background:#fff; border:1px solid #cbd7e5; border-radius:12px;
-      box-shadow:0 18px 44px rgba(15,23,42,.18); }
-    .cf-pop::before { content:""; position:absolute; top:-7px; left:26px; width:12px; height:12px;
-      background:#fff; border-left:1px solid #cbd7e5; border-top:1px solid #cbd7e5; transform:rotate(45deg); }
+      box-shadow:0 24px 56px rgba(15,23,42,.28); }
     .cf-pop-head { display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:12px 16px; border-bottom:1px solid #eef2f7; font-size:.86rem; color:#0f172a; }
+      padding:13px 18px; border-bottom:1px solid #eef2f7; font-size:.9rem; color:#0f172a; }
     .cf-pop-head i { color:#0a6ed1; margin-right:7px; }
-    .cf-pop-close { width:30px; height:30px; border:1px solid #cbd7e5; border-radius:7px; background:#fff;
-      color:#64748b; cursor:pointer; }
+    .cf-pop-close { flex:none; width:32px; height:32px; border:1px solid #cbd7e5; border-radius:7px;
+      background:#fff; color:#64748b; cursor:pointer; }
     .cf-pop-close:hover { border-color:#b91c1c; color:#b91c1c; background:#fef2f2; }
-    .cf-pop-hint { margin:11px 16px 0; font-size:.75rem; color:#64748b; line-height:1.55; }
-    /* Cao qua thi cuon TRONG bong bong, de nut Them cau phan luon voi tay toi duoc. */
-    .cf-pop .cf-scroll { max-height:min(52vh, 420px); overflow:auto; padding:0 6px; }
-    .cf-pop-table { margin:6px 0; }
-    .cf-pop-foot { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
-      padding:11px 16px; border-top:1px solid #eef2f7; background:#f8fafc; border-radius:0 0 12px 12px; }
-    .cf-pop-foot small { flex:1 1 240px; font-size:.71rem; color:#64748b; line-height:1.5; }
+    .cf-pop-hint { margin:12px 18px 0; font-size:.76rem; color:#64748b; line-height:1.55; }
+    /* Cuon TRONG hop thoai, de nut "Them cau phan" luon voi tay toi duoc. */
+    .cf-pop .cf-scroll { flex:1 1 auto; min-height:0; overflow:auto; padding:0 8px; }
+    .cf-pop-table { margin:8px 0; }
+    /* Ten cau phan phai co du cho, khong thi chu xuong dong tung tu mot. */
+    .cf-pop-table th:nth-child(2), .cf-pop-table td:nth-child(2) { min-width:190px; }
+    .cf-pop-foot { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+      padding:12px 18px; border-top:1px solid #eef2f7; background:#f8fafc; border-radius:0 0 12px 12px; }
+    .cf-pop-foot small { flex:1 1 240px; font-size:.72rem; color:#64748b; line-height:1.5; }
     .cf-sign { display:inline-block; width:14px; color:#94a3b8; font-weight:800; }
 
     .cf-op-col { width:64px; }
@@ -3709,7 +3716,7 @@
                           <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_pickup_end">Lấy hàng đến</label><input id="qt-pickup-window-end" type="datetime-local" class="fiori-input" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
                           <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_delivery_start">Giao hàng từ</label><input id="qt-delivery-window-start" type="datetime-local" class="fiori-input" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
                           <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_delivery_end">Giao hàng đến</label><input id="qt-delivery-window-end" type="datetime-local" class="fiori-input" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
-                          <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_weight_kg">Tải trọng (kg)</label><input id="qt-weight-kg" type="number" min="0" class="fiori-input" placeholder="Ví dụ: 12000" oninput="refreshQuotationVehicleRecommendations()" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
+                          <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_weight_kg">Tải trọng (kg)</label><input id="qt-weight-kg" type="number" min="0" class="fiori-input" placeholder="Ví dụ: 12000" oninput="autoCalculateMasterDataCost(); refreshQuotationVehicleRecommendations()" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
                           <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;">Thể tích (m³)</label><input id="qt-volume-m3" type="number" min="0" step="0.1" class="fiori-input" placeholder="Ví dụ: 24" oninput="refreshQuotationVehicleRecommendations()" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
                           <div style="display:flex; flex-direction:column; gap:5px;"><label style="font-size:0.82rem; font-weight:700; color:#334155;" data-i18n="lbl_pallet_count">Số pallet</label><input id="qt-pallet-count" type="number" min="0" step="1" class="fiori-input" placeholder="Ví dụ: 12" oninput="refreshQuotationVehicleRecommendations()" style="padding:9px 12px; border:1.5px solid #cbd5e1; border-radius:6px;"></div>
                         </div>
@@ -3720,17 +3727,6 @@
                       <div style="display: flex; flex-direction: column; gap: 5px;">
                         <label style="font-size: 0.85rem; color: #0a6ed1; font-weight: 700;" data-i18n="lbl_select_vehicle_md"><i class="fa-solid fa-truck-moving"></i> Chọn Loại Phương Tiện (Master Data Vehicle)</label>
                         <select id="qt-cargo-type" class="fiori-input" onchange="autoCalculateMasterDataCost('qt'); refreshQuotationVehicleRecommendations()" style="padding: 9px 12px; border: 1.5px solid #0a6ed1; border-radius: 6px; font-weight: 700; color: #0a6ed1; background: #eff6ff;"></select>
-                      </div>
-
-                      <!-- Tai trong phai nhap ngay o buoc bao gia: cong thuc co cuoc
-                           tinh theo kg, nen khong co so nay la khong ra duoc gia. Truoc do
-                           man bao gia khong he co o nay va phan cuoc bi bo hang. -->
-                      <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #0a6ed1; font-weight: 700;" for="qt-weight" data-i18n="lbl_qt_weight"><i class="fa-solid fa-weight-hanging"></i> Tải trọng hàng (tấn)</label>
-                        <input type="number" id="qt-weight" class="fiori-input" min="0" step="0.1" placeholder="Ví dụ: 3"
-                               oninput="autoCalculateMasterDataCost('qt')"
-                               style="padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 600;">
-                        <small style="font-size: 0.72rem; color: #64748b;">Dùng để nhân với cước tính theo khối lượng trong công thức.</small>
                       </div>
 
                       <!-- Vietnamese source cleaned -->
@@ -7039,12 +7035,12 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/formula-model.js?v=20260905-formula-popover"></script>
-  <script src="/static/js/quotation-pricing.js?v=20260905-formula-popover"></script>
+  <script src="/static/js/formula-model.js?v=20260905-formula-dialog"></script>
+  <script src="/static/js/quotation-pricing.js?v=20260905-formula-dialog"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260905-formula-popover"></script>
+  <script src="/static/js/app.js?v=20260905-formula-dialog"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

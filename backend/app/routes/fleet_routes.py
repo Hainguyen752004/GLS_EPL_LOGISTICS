@@ -451,7 +451,6 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
             "warehouse": data.get("warehouse") or data.get("wh") or "0",
             "freight_rate": data.get("freight_rate") or data.get("rate") or "0",
         },
-        "tokens": data.get("tokens") if isinstance(data.get("tokens"), list) else [],
         # Cong thuc DONG: danh sach hang tu (dau, don gia, he so nhan). Cho phep
         # them cau phan tuy chinh va phep tru, nen khong the goi gon vao
         # "components" voi nam khoa co dinh.

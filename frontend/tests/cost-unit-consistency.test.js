@@ -44,8 +44,17 @@ function codeOnly(source) {
   );
 });
 
-// Và mọi nhãn định mức đều phải mang đơn vị lít/100km.
-assert.strictEqual((app.match(/lít\/100km/g) || []).length, 5, 'năm nhãn token trong app.js');
+// Trước đây chỗ này đếm đúng năm nhãn `lít/100km` — chúng nằm trong danh sách
+// hạng tử của trình dựng công thức kéo thả. Trình đó đã bị gỡ (mã chết: không
+// còn thẻ nào trong trang gọi tới, và nó tính bằng một bộ hằng số mẫu riêng),
+// nên phép đếm đó chỉ còn khóa lại một con số tình cờ.
+//
+// Điều thật sự cần giữ là: mọi nhãn định mức nhiên liệu đều mang đơn vị
+// lít/100km, không bao giờ lít/km — phần kiểm ở trên đã lo việc đó cho cả ba
+// tệp. Ở đây chỉ chốt thêm rằng trình dựng cũ không quay lại.
+['currentFormulaTokens', 'renderVisualFormula', 'calculateFormulaPreviewResult'].forEach(name => {
+  assert.ok(!app.includes(name), `${name} là mã chết, không được còn trong app.js`);
+});
 assert.match(html, /Lít\/100km/, 'form nhập xe phải ghi đơn vị');
 assert.match(models, /lít\/100km/, 'ghi chú cột trong models.py phải ghi đơn vị');
 
@@ -62,18 +71,27 @@ assert.match(models, /lít\/100km/, 'ghi chú cột trong models.py phải ghi �
   assert.match(lang.lbl_veh_fuel_norm[code], /100km/, `bản dịch lbl_veh_fuel_norm.${code} phải mang đơn vị`);
 });
 
-// --- 3. Bản xem trước phải chia 100 ---------------------------------------
-
+// --- 3. fuel_norm khong duoc nhan thanh tien ma khong chia 100 -----------
+//
+// Truoc day phan nay kiem ham xem truoc cua trinh dung cong thuc keo tha, noi
+// co dong `fuelNormPer100Km / 100`. Trinh do da bi go (ma chet). Nhung dieu no
+// bao ve thi van con that: `fuel_norm` la LIT/100KM — gia tri that trong co so
+// du lieu la 18 va 26, va 26 lit cho 1 km la vo ly. Nhan thang no voi gia dau
+// se ra chi phi GAP 100 LAN.
+//
+// Hien tai fuel_norm chi duoc doc de HIEN THI, khong dung tinh tien o dau ca.
+// Chot lai dieu do: he nao co ai viet `fuel_norm * gia_dau` thi bai kiem nay
+// bao ngay, de nho chia 100 truoc.
 {
-  // Tim dinh nghia, khong phai cho GOI ham — indexOf tho se bat trung cho goi.
-  const start = app.indexOf('window.calculateFormulaPreviewResult = function');
-  assert.ok(start > 0, 'phải còn hàm xem trước công thức');
-  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '};', start));
-
-  // Hardcode 0,25 chính là thứ che mất mâu thuẫn đơn vị.
-  assert.ok(!/const fuelNorm = 0\.25/.test(fn), 'không được hardcode giá trị theo lít/km');
-  assert.match(fn, /fuelNormPer100Km/, 'phải nêu rõ giá trị là lít/100km');
-  assert.match(fn, /fuelNormPer100Km \/ 100/, 'phải chia 100 để kết quả là tiền trên 1 km');
+  const dong = app.split(String.fromCharCode(10));
+  dong.forEach((line, index) => {
+    if (!/fuel_norm|fuelNorm/.test(line)) return;
+    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+    assert.ok(
+      !line.includes('*'),
+      `app.js dong ${index + 1} nhan fuel_norm thanh tien ma chua chia 100: ${line.trim()}`
+    );
+  });
 }
 
 // --- 4. base_rate là đơn giá trên 1 km ------------------------------------

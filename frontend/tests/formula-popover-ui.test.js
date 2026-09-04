@@ -109,8 +109,8 @@ assert.ok(/Tổng chi phí chuyến mẫu/.test(editor));
 
 // Lỗi công thức cũng phải ở trên thẻ. Nếu chỉ nằm trong bong bóng thì đóng lại
 // là lỗi biến mất khỏi mắt, rồi báo giá vẫn chạy bằng công thức sai.
-assert.ok(editor.indexOf('<div id="cf-issues">') > editor.indexOf('renderCostFormulaPopover('),
-  'khối lỗi phải nằm ngoài bong bóng');
+assert.ok(/<div id="cf-issues">/.test(editor), 'khối lỗi phải nằm trên thẻ');
+assert.ok(!/cf-issues/.test(POPOVER), 'khối lỗi không được nằm trong hộp thoại');
 assert.ok(/problems\(costFormulaTerms\)/.test(code), 'phải hỏi mô hình về công thức tự mâu thuẫn');
 assert.ok(/issue\.level === 'error'/.test(code));
 
@@ -151,11 +151,24 @@ assert.ok(/syncBuiltinCostInputs\(\)/.test(editor), 'vẽ xong phải ghi ngư�
   const rule = new RegExp(selector.replace('.', '\\.') + '[\\s,:{]');
   assert.ok(rule.test(html), `thiếu CSS cho ${selector} — bong bóng sẽ hiện ra không có hình dạng`);
 });
-// Bong bóng phải NEO vào nút, không đẩy phần còn lại của thẻ xuống.
-assert.ok(/\.cf-pop \{[^}]*position:absolute/.test(html));
-assert.ok(/\.cf-head-main \{[^}]*position:relative/.test(html), 'phải có gốc neo cho bong bóng');
-// Cao quá thì cuộn trong bong bóng, để nút "Thêm cấu phần" luôn với tay tới được.
+// Hộp thoại phải đặt `fixed` giữa màn hình.
+//
+// Bản đầu neo `position:absolute` vào câu công thức. Sai: khung cha có cắt nội
+// dung, nên hộp thoại bị cắt mất mép trái — cột "Dấu" và nửa tiêu đề nằm ngoài
+// vùng thấy được. Neo tuyệt đối chỉ an toàn khi mọi tổ tiên của nó đều không
+// cắt, mà điều đó không kiểm được từ chỗ vẽ.
+assert.ok(/\.cf-pop-backdrop \{[^}]*position:fixed/.test(html));
+assert.ok(/\.cf-pop \{[^}]*max-height/.test(html), 'hộp thoại phải có trần chiều cao');
+assert.ok(!/\.cf-pop \{[^}]*position:absolute/.test(html), 'không được neo tuyệt đối nữa');
+// Và phải được vẽ NGOÀI khối đầu thẻ, không thì lại bị chính khung đó cắt.
+assert.ok(/class="cf-pop-backdrop"/.test(POPOVER));
+assert.ok(editor.indexOf('renderCostFormulaPopover(') > editor.indexOf('class="cf-note"'),
+  'hộp thoại phải nằm sau cùng trong chuỗi vẽ');
+// Cao quá thì cuộn trong hộp thoại, để nút "Thêm cấu phần" luôn với tới được.
 assert.ok(/\.cf-pop \.cf-scroll \{[^}]*overflow:auto/.test(html));
+// Tên cấu phần phải có đủ chỗ, không thì chữ xuống dòng từng từ một.
+assert.ok(/cf-pop-table td:nth-child\(2\) \{[^}]*min-width/.test(html));
+
 // Bàn phím phải thấy được mình đang ở đâu.
 assert.ok(/\.cf-trigger:focus-visible/.test(html));
 

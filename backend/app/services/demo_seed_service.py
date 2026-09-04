@@ -1,4 +1,4 @@
-import datetime as dt
+﻿import datetime as dt
 import hashlib
 import json
 from decimal import Decimal
@@ -307,12 +307,15 @@ def _merge_master_data(db):
                 "fuel": "6250", "driver": "500000", "toll": "300000",
                 "warehouse": "200000", "freight_rate": "1500",
             },
-            "tokens": [
-                {"code": "fuel", "label": "Chi phí xăng dầu / km", "unit": "km"},
-                {"code": "driver", "label": "Phụ cấp chuyến tài xế", "unit": "trip"},
-                {"code": "toll", "label": "Phí cầu đường / BOT", "unit": "trip"},
-                {"code": "warehouse", "label": "Phí bãi và lưu kho", "unit": "trip"},
-                {"code": "freight_rate", "label": "Cước vận chuyển / kg", "unit": "kg"},
+            # Hang tu cua cong thuc dong: moi hang tu khai ro minh nhan theo
+            # gi, nen kiem duoc don vi. Dang cu chi co "unit" de xem, khong ai
+            # tinh bang no ca.
+            "terms": [
+                {"key": "fuel", "label": "Chi phí xăng dầu /km", "operator": "add", "factor": "per_km", "rate": 6250, "builtin": True},
+                {"key": "driver", "label": "Phụ cấp chuyến tài xế", "operator": "add", "factor": "per_trip", "rate": 500000, "builtin": True},
+                {"key": "toll", "label": "Phí cầu đường / BOT", "operator": "add", "factor": "per_trip", "rate": 300000, "builtin": True},
+                {"key": "wh", "label": "Phí bãi & lưu kho", "operator": "add", "factor": "per_trip", "rate": 200000, "builtin": True},
+                {"key": "rate", "label": "Cước phí vận chuyển /kg", "operator": "add", "factor": "per_kg", "rate": 1500, "builtin": True},
             ],
         }, ensure_ascii=False),
     ))

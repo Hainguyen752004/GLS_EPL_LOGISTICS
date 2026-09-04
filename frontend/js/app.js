@@ -828,7 +828,6 @@ window.switchView = function (targetView, scrollToId) {
     if (typeof renderMasterDataCommandCenter === 'function') renderMasterDataCommandCenter();
     setTimeout(() => {
       if (typeof initLeafletRouteMap === 'function') initLeafletRouteMap();
-      if (typeof renderVisualFormula === 'function') renderVisualFormula();
       if (typeof renderMasterDataCommandCenter === 'function') renderMasterDataCommandCenter();
     }, 200);
   }
@@ -11087,10 +11086,6 @@ function updateMasterCostCurrencyUI() {
   document.querySelectorAll('.md-cost-currency-suffix').forEach(el => {
     el.innerText = currency;
   });
-  const previewEl = document.getElementById('formula-preview-calc-result') || document.getElementById('formula-preview-val');
-  if (previewEl && /\d/.test(previewEl.innerText || '')) {
-    window.calculateFormulaPreviewResult();
-  }
 }
 
 window.onMasterCostCurrencyChange = async function () {
@@ -11152,68 +11147,22 @@ let masterFormulaStore = {
   'preset-1': {
     name: 'Mẫu 1: Standard Container Cost (Container 20FT - Tiêu chuẩn)',
     currency: 'VND',
-    fuel: '6,250', driver: '500,000', toll: '300,000', wh: '200,000', rate: '1,500',
-    tokens: [
-      { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'TOLL_FEE', label: 'Phí BOT (VNĐ)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'DRIVER_ALLOWANCE', label: 'Phụ cấp tài xế (VNĐ)', type: 'var' }
-    ]
+    fuel: '6,250', driver: '500,000', toll: '300,000', wh: '200,000', rate: '1,500'
   },
   'preset-2': {
     name: 'Mẫu 2: Heavy Container 40FT (Container 40FT - Tải Nặng)',
     currency: 'VND',
-    fuel: '9,500', driver: '750,000', toll: '450,000', wh: '300,000', rate: '2,200',
-    tokens: [
-      { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'TOLL_FEE', label: 'Phí BOT (VNĐ)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'DRIVER_ALLOWANCE', label: 'Phụ cấp tài xế (VNĐ)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'WAREHOUSE_FEE', label: 'Phí bãi (VNĐ)', type: 'var' }
-    ]
+    fuel: '9,500', driver: '750,000', toll: '450,000', wh: '300,000', rate: '2,200'
   },
   'preset-3': {
     name: 'Mẫu 3: Express Trucking Cost (Xe Tải 10 Tấn - Chuyển Phát Nhanh)',
     currency: 'VND',
-    fuel: '4,800', driver: '400,000', toll: '150,000', wh: '100,000', rate: '1,200',
-    tokens: [
-      { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'DRIVER_ALLOWANCE', label: 'Phụ cấp tài xế (VNĐ)', type: 'var' }
-    ]
+    fuel: '4,800', driver: '400,000', toll: '150,000', wh: '100,000', rate: '1,200'
   },
   'preset-4': {
     name: 'Mẫu 4: Reefer Cold Chain (Container Lạnh - Hàng Đông Lạnh)',
     currency: 'VND',
-    fuel: '11,000', driver: '900,000', toll: '300,000', wh: '500,000', rate: '3,500',
-    tokens: [
-      { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
-      { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'TOLL_FEE', label: 'Phí BOT (VNĐ)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'DRIVER_ALLOWANCE', label: 'Phụ cấp tài xế (VNĐ)', type: 'var' },
-      { code: '+', label: '+', type: 'op' },
-      { code: 'WAREHOUSE_FEE', label: 'Phí bãi (VNĐ)', type: 'var' }
-    ]
+    fuel: '11,000', driver: '900,000', toll: '300,000', wh: '500,000', rate: '3,500'
   }
 };
 
@@ -11265,7 +11214,7 @@ function ensureVehicleTypeFormula(vehicleType, currency = masterCostCurrencyCode
     // De trong thi man hinh noi ro "Chua dat don gia/km" — sai ma THAY DUOC
     // tot hon sai ma im lang.
     rate: source?.rate || '0',
-    tokens: JSON.parse(JSON.stringify(source?.tokens || []))
+    terms: JSON.parse(JSON.stringify(source?.terms || []))
   };
   return key;
 }
@@ -11279,7 +11228,7 @@ function currentCostFormulaDraft() {
     toll: document.getElementById('md-cost-toll-fee')?.value || '0',
     wh: document.getElementById('md-cost-warehouse-fee')?.value || '0',
     rate: document.getElementById('md-cost-freight-rate')?.value || '0',
-    tokens: JSON.stringify(currentFormulaTokens || [])
+    terms: JSON.stringify(costFormulaTerms || [])
   };
 }
 
@@ -11288,7 +11237,7 @@ function hasUnsavedCostFormulaChanges() {
   const stored = masterFormulaStore[activeCostFormulaKey];
   const draft = currentCostFormulaDraft();
   return ['fuel', 'driver', 'toll', 'wh', 'rate'].some(field => String(stored[field] || '0') !== String(draft[field] || '0'))
-    || JSON.stringify(stored.tokens || []) !== draft.tokens;
+    || JSON.stringify(window.FormulaModel.normalize(stored.terms || [])) !== draft.terms;
 }
 
 function showCostFormulaUnsavedDialog() {
@@ -11368,11 +11317,6 @@ window.loadSelectedFormulaPreset = function (key, options = {}) {
   if (currencySelect) currencySelect.value = p.currency || 'VND';
   updateMasterCostCurrencyUI();
 
-  if (p.tokens) {
-    currentFormulaTokens = JSON.parse(JSON.stringify(p.tokens));
-    window.renderVisualFormula();
-  }
-
   window.autoCalculateMasterDataCost('qt');
   if (options.notify !== false) {
     const displayName = p ? (p.name || currentKey) : currentKey;
@@ -11386,155 +11330,6 @@ window.loadSelectedFormulaPreset = function (key, options = {}) {
   activeCostFormulaKey = currentKey;
 };
 
-let currentFormulaTokens = [
-  { code: 'DISTANCE', label: 'KhoảngCách(km)', type: 'var' },
-  { code: '*', label: 'Ã—', type: 'op' },
-  { code: 'FUEL_NORM', label: 'ĐịnhMức(lít/100km)', type: 'var' },
-  { code: '*', label: 'Ã—', type: 'op' },
-  { code: 'FUEL_PRICE', label: 'GiáDầu(VNĐ/lít)', type: 'var' },
-  { code: '+', label: '+', type: 'op' },
-  { code: 'TOLL_FEE', label: 'PhíBOT(VNĐ)', type: 'var' },
-  { code: '+', label: '+', type: 'op' },
-  { code: 'DRIVER_ALLOWANCE', label: 'PhụCấpTàiXế(VNĐ)', type: 'var' }
-];
-
-window.renderVisualFormula = function () {
-  const container = document.getElementById('formula-visual-builder');
-  if (!container) return;
-
-  container.innerHTML = '';
-  currentFormulaTokens.forEach((t, idx) => {
-    const isOp = t.type === 'op';
-    const bg = isOp ? '#f1f5f9' : '#eff6ff';
-    const color = isOp ? '#475569' : '#0a6ed1';
-    const border = isOp ? '1px solid #cbd5e1' : '1.5px solid #93c5fd';
-
-    container.innerHTML += `
-      <div class="formula-token-chip" style="background: ${bg}; color: ${color}; border: ${border}; font-weight: 700; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; cursor: move; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-        <span>${t.label}</span>
-        <i class="fa-solid fa-circle-xmark" onclick="removeFormulaToken(${idx})" style="cursor: pointer; color: #94a3b8;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'"></i>
-      </div>
-    `;
-  });
-
-  window.calculateFormulaPreviewResult();
-};
-
-window.addFormulaToken = function (code, label, type) {
-  currentFormulaTokens.push({ code, label, type });
-  window.renderVisualFormula();
-};
-
-window.appendFormulaToken = function (code, label, type) {
-  window.addFormulaToken(code, label, type);
-  showToast(`Đã thêm biến/công thức: ${label}`);
-};
-
-window.removeFormulaToken = function (index) {
-  currentFormulaTokens.splice(index, 1);
-  window.renderVisualFormula();
-};
-
-window.popFormulaToken = function () {
-  if (!currentFormulaTokens.length) {
-    showToast('Công thức chưa có thành phần để xóa.');
-    return;
-  }
-  currentFormulaTokens.pop();
-  window.renderVisualFormula();
-  showToast('Đã xóa thành phần cuối trong công thức.');
-};
-
-window.clearFormulaTokens = function () {
-  currentFormulaTokens = [];
-  window.renderVisualFormula();
-};
-
-window.calculateFormulaPreviewResult = function () {
-  const previewEl = document.getElementById('formula-preview-calc-result') || document.getElementById('formula-preview-val');
-  if (!previewEl) return;
-
-  try {
-    const distance = 200;
-    // fuel_norm trong Master Data la LIT/100KM (gia tri that: 18 va 26 — 26 lit
-    // cho 1 km la vo ly). Ban xem truoc cu hardcode 0,25 tuc lit/km, nen no
-    // che mat chinh su mau thuan don vi nay: cong thuc
-    // `DISTANCE x FUEL_NORM x FUEL_PRICE` an vao du lieu that se ra chi phi
-    // xang dau GAP 100 LAN.
-    //
-    // Chia cho 100 ngay tai day de ket qua van la tien tren 1 km, dung theo
-    // quy tac cua du an: moi don gia chi phi quy ve "tren 1 km".
-    const fuelNormPer100Km = 25;
-    const fuelNorm = fuelNormPer100Km / 100;
-    const fuelPrice = 25000;
-    const tollFee = 300000;
-    const driverAllowance = 500000;
-    const warehouseFee = 200000;
-    const freightRate = 1500;
-
-    let evalStr = '';
-    currentFormulaTokens.forEach(t => {
-      if (t.type === 'op') {
-        evalStr += ` ${t.code} `;
-      } else {
-        if (t.code === 'DISTANCE') evalStr += distance;
-        else if (t.code === 'FUEL_NORM') evalStr += fuelNorm;
-        else if (t.code === 'FUEL_PRICE') evalStr += fuelPrice;
-        else if (t.code === 'TOLL_FEE') evalStr += tollFee;
-        else if (t.code === 'DRIVER_ALLOWANCE') evalStr += driverAllowance;
-        else if (t.code === 'WAREHOUSE_FEE') evalStr += warehouseFee;
-        else if (t.code === 'FREIGHT_RATE') evalStr += freightRate;
-        else evalStr += 0;
-      }
-    });
-
-    // Safe evaluation without eval() - substitute known variables
-    const varMap = {
-      'DISTANCE': distance,
-      'FUEL_NORM': fuelNorm,
-      'FUEL_PRICE': fuelPrice,
-      'TOLL_FEE': tollFee,
-      'DRIVER_ALLOWANCE': driverAllowance,
-      'WAREHOUSE_FEE': warehouseFee,
-      'FREIGHT_RATE': freightRate
-    };
-    let safeResult = 0;
-    let accumulator = 0;
-    let lastOp = '+';
-    let lastVal = 0;
-    currentFormulaTokens.forEach(tkn => {
-      if (tkn.type === 'op') {
-        lastOp = tkn.code;
-      } else {
-        const numVal = varMap[tkn.code] ?? 0;
-        if (lastOp === '+') accumulator += numVal;
-        else if (lastOp === '-') accumulator -= numVal;
-        else if (lastOp === '*') {
-          // For multiply: multiply the running product segment
-          if (lastVal !== 0) {
-            // Remove lastVal from accumulator, multiply and re-add
-            accumulator = accumulator - lastVal + lastVal * numVal;
-          }
-        }
-        else if (lastOp === '/') {
-          if (numVal !== 0 && lastVal !== 0) {
-            accumulator = accumulator - lastVal + lastVal / numVal;
-          }
-        }
-        lastVal = numVal;
-      }
-    });
-    safeResult = Math.round(accumulator || 0);
-    const currency = masterCostCurrencyCode();
-    if (!isNaN(safeResult) && isFinite(safeResult)) {
-      previewEl.innerText = `${safeResult.toLocaleString('vi-VN')} ${currency}`;
-    } else {
-      previewEl.innerText = `0 ${currency} (Công thức đang soạn thảo)`;
-    }
-  } catch (e) {
-    previewEl.innerText = `0 ${masterCostCurrencyCode()}`;
-  }
-};
 
 const WORKFLOW_CURRENCY_META = {
   VND: { label: 'VND - Việt Nam Đồng', symbol: 'VNĐ', rateInputId: null, defaultRate: 1 },
@@ -11576,7 +11371,13 @@ function workflowCurrencyConversionLabel(amountVnd, code) {
 function formatWorkflowCurrencyAmount(amountVnd, code) {
   const amount = Number(amountVnd || 0);
   const meta = WORKFLOW_CURRENCY_META[code];
-  if (!meta || code === 'VND') return `${amount.toLocaleString('vi-VN')} VNĐ`;
+  // Đồng Việt Nam không có đơn vị nhỏ hơn, nên làm tròn về đồng. `toLocaleString`
+  // mặc định giữ tới ba chủ số thập phân, nên bình quân mỗi km 4.461.200 / 44 hiện
+  // ra "101.390,909 VNĐ" — vừa không phải số tiền thật, vừa lẫn dấu chấm với dấu phẩy
+  // nên đọc rất dễ nhầm.
+  if (!meta || code === 'VND') {
+    return `${amount.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} VNĐ`;
+  }
   const converted = amount / workflowCurrencyRate(code);
   return `${meta.symbol}${converted.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} ${code}`;
 }
@@ -12035,8 +11836,7 @@ async function loadCostFormulasFromBackend() {
         driver: components.driver || masterFormulaStore[storeKey]?.driver || '0',
         toll: components.toll || masterFormulaStore[storeKey]?.toll || '0',
         wh: components.warehouse || masterFormulaStore[storeKey]?.wh || '0',
-        rate: components.freight_rate || masterFormulaStore[storeKey]?.rate || '0',
-        tokens: Array.isArray(row.tokens) ? row.tokens : (masterFormulaStore[storeKey]?.tokens || [])
+        rate: components.freight_rate || masterFormulaStore[storeKey]?.rate || '0'
       };
     });
     window.loadSelectedFormulaPreset(
@@ -12077,8 +11877,6 @@ window.saveCostFormula = async function () {
     driver: driverInput,
     toll: tollInput,
     warehouse: whInput,
-    freight_rate: rateInput,
-    tokens: currentFormulaTokens
   };
   try {
     const response = await fetch(`${API_BASE}/api/cost-formulas`, {
@@ -12107,7 +11905,9 @@ window.saveCostFormula = async function () {
       rate: rateInput,
       currency,
       configured: true,
-      tokens: JSON.parse(JSON.stringify(currentFormulaTokens))
+      // Ghi ro hang tu: day la nguon su that cua cong thuc, khong phai nam o
+      // don gia. Thieu no thi phep so sanh "co thay doi chua" o duoi so lech.
+      terms: JSON.parse(JSON.stringify(costFormulaTerms || [])),
     };
     masterFormulaStore[currentKey].currency = currency;
     showToast(result?.message || `Đã lưu cấu hình giá thành ${currency} cho loại xe "${vehTypeName}" vào CSDL!`);
@@ -12182,10 +11982,12 @@ function renderCostBreakdown(hostId, quote, currencyId) {
                 quote.tonnes === null ? '' : ` · ${quote.tonnes.toLocaleString('vi-VN')} tấn`}</small></td>
             <td class="qt-cost-num qt-cost-total">${money(quote.total)}</td>
           </tr>
-          <tr class="qt-cost-perkm">
-            <td colspan="3">Bình quân mỗi km</td>
-            <td class="qt-cost-num">${money(quote.perKm)}/km</td>
-          </tr>
+          <!-- KHONG co dong "binh quan moi km" o day.
+               Phan cuoc tinh theo khoi luong khong lien quan gi den quang duong;
+               chia ca tong cho so km ra mot con so khong phai don gia cua thu gi
+               ca, ma dat canh "xang dau 4.800 d/km" thi trong nhu he thong hong.
+               Cho so sanh giua cac loai xe la the ben man Du lieu goc, noi chuyen
+               mau co dinh nen mau so giong nhau. -->
         </tfoot>
       </table>
     </div>
@@ -12217,13 +12019,19 @@ window.autoCalculateMasterDataCost = function () {
   renderWorkflowCurrencyOptions(['qt-currency', 'so-currency']);
   const currency = document.getElementById('qt-currency')?.value || 'VND';
   const routeId = document.getElementById('qt-route')?.value || '';
+  // Chua nhap KHAC 0 kg: chua nhap la chua biet, 0 la chuyen chay rong.
+  const qtWeightRaw = String(document.getElementById('qt-weight-kg')?.value ?? '').trim();
 
   const quote = window.QuotationPricing.price({
     store: masterFormulaStore,
     vehicleTypes: vehTypes,
     cargoType: document.getElementById('qt-cargo-type')?.value || '',
     route: (eplRoutes || []).find(route => route.id === routeId) || null,
-    tonnes: document.getElementById('qt-weight')?.value,
+    // Doc dung o "Tai trong (kg)" da co san o phan boi canh tuyen duong. O do
+    // vua la cho nhap khoi luong hang, vua la can cu de de xuat loai xe phu
+    // hop — nen dung them mot o rieng cho cong thuc la hai cho noi cung mot
+    // thu va chac chan se lech nhau.
+    tonnes: qtWeightRaw === '' ? '' : window.QuotationPricing.toNumber(qtWeightRaw) / 1000,
     stops: (eplRoutes || []).find(route => route.id === routeId)?.stop_count,
     currency,
   });
@@ -14756,6 +14564,8 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('mousedown', event => {
   if (!costFormulaPopoverOpen) return;
+  // Lop nen nam NGOAI #cf-pop, nen bam vao nen la khong o trong hop thoai va
+  // hop thoai dong lai — khong can xet rieng.
   if (event.target.closest('#cf-pop') || event.target.closest('#cf-trigger')) return;
   window.toggleCostFormulaPopover(false);
 });
@@ -14822,7 +14632,8 @@ function renderCostFormulaPopover(result, money) {
   const M = window.FormulaModel;
   const factorOptions = Object.entries(M.FACTORS);
   return `
-    <div class="cf-pop" id="cf-pop" role="dialog" aria-label="Cấu hình công thức giá thành">
+    <div class="cf-pop-backdrop" id="cf-pop-backdrop">
+    <div class="cf-pop" id="cf-pop" role="dialog" aria-modal="true" aria-label="Cấu hình công thức giá thành">
       <div class="cf-pop-head">
         <b><i class="fa-solid fa-sliders" aria-hidden="true"></i> Cấu hình công thức</b>
         <button type="button" class="cf-pop-close" onclick="toggleCostFormulaPopover(false)"
@@ -14914,6 +14725,7 @@ function renderCostFormulaPopover(result, money) {
         </div>
         <small>Hai ô này chỉ để xem trước. Báo giá thật lấy <b>tổng km của tuyến</b> và <b>tải trọng đã nhập</b>.</small>
       </div>
+    </div>
     </div>`;
 }
 
@@ -14936,7 +14748,6 @@ window.renderCostFormulaEditor = function () {
           <span class="cf-trigger-icon"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Sửa công thức</span>
         </button>
       </div>
-      ${costFormulaPopoverOpen ? renderCostFormulaPopover(result, money) : ''}
     </div>
 
     <div id="cf-issues">${renderCostFormulaIssues()}</div>
@@ -14965,7 +14776,7 @@ window.renderCostFormulaEditor = function () {
             <td class="cf-num cf-total" id="cf-total">${money(result.total)}</td>
           </tr>
           <tr class="cf-perkm-row">
-            <td colspan="3">Bình quân mỗi km <small>so sánh được giữa các loại xe</small></td>
+            <td colspan="3">Bình quân mỗi km <small>của chuyển mẫu này — để so giữa các loại xe, không phải đơn giá/km</small></td>
             <td class="cf-num" id="cf-perkm">${money(result.perKm)}/km</td>
           </tr>
         </tfoot>
@@ -14974,7 +14785,9 @@ window.renderCostFormulaEditor = function () {
 
     <p class="cf-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
       Bấm vào câu công thức để thêm, bớt hoặc đổi cách tính. Khi báo giá thật, hệ thống
-      lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.</p>`;
+      lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.</p>
+
+    ${costFormulaPopoverOpen ? renderCostFormulaPopover(result, money) : ''}`;
 
   syncBuiltinCostInputs();
 };

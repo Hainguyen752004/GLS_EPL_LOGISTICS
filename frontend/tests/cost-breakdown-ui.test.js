@@ -66,14 +66,21 @@ assert.ok(html.indexOf('formula-model.js') < html.indexOf('quotation-pricing.js'
 
 // --- 3. Báo giá: đủ đầu vào, đủ cấu phần -------------------------------
 
-// Tải trọng phải nhập được ngay ở bước báo giá — công thức có cước theo kg.
-assert.ok(html.includes('id="qt-weight"'), 'màn báo giá phải có ô tải trọng');
-assert.ok(/id="qt-weight"[^>]*oninput="autoCalculateMasterDataCost/.test(html.replace(/\n/g, ' ')),
-  'đổi tải trọng phải tính lại ngay');
+// Tải trọng lấy từ ô "Tải trọng (kg)" ĐÃ CÓ sẵn ở phần bối cảnh tuyến đường.
+// Ô đó vừa là chỗ nhập khối lượng hàng, vừa là căn cứ để đề xuất loại xe phù
+// hợp. Dựng thêm một ô riêng cho công thức là hai chỗ nói cùng một thứ, và
+// chắc chắn sẽ lệch nhau.
+assert.ok(!/id="qt-weight"/.test(html), 'không được có ô tải trọng thứ hai');
+assert.ok(html.includes('id="qt-weight-kg"'));
+assert.ok(/id="qt-weight-kg"[^>]*oninput="autoCalculateMasterDataCost/.test(html.replace(/\n/g, ' ')),
+  'đổi tải trọng phải tính lại cước ngay');
+// Và ô đó vẫn phải tiếp tục đề xuất loại xe như cũ — không được thay chức năng cũ.
+assert.ok(/id="qt-weight-kg"[^>]*refreshQuotationVehicleRecommendations/.test(html.replace(/\n/g, ' ')));
 
 {
   const fn = code.slice(code.indexOf('window.autoCalculateMasterDataCost = function'));
-  assert.ok(/document\.getElementById\('qt-weight'\)/.test(fn), 'phải đọc ô tải trọng');
+  assert.ok(/document\.getElementById\('qt-weight-kg'\)/.test(fn), 'phải đọc ô tải trọng (kg)');
+  assert.ok(/\/ 1000/.test(fn), 'kg phải quy về tấn');
   assert.ok(/distance_km|eplRoutes/.test(fn), 'phải lấy số km từ tuyến đang chọn');
   assert.ok(/store: masterFormulaStore/.test(fn), 'phải dùng công thức đã cấu hình');
   // KHÔNG đọc năm ô md-cost-* nữa: chúng là công thức của loại xe MỞ GẦN NHẤT
@@ -85,6 +92,25 @@ assert.ok(/id="qt-weight"[^>]*oninput="autoCalculateMasterDataCost/.test(html.re
 // Bảng chi phí vẽ động, không phải ba ô cố định viết cứng trong trang.
 assert.ok(html.includes('id="qt-cost-breakdown"'));
 assert.ok(/renderCostBreakdown\('qt-cost-breakdown'/.test(code));
+
+// --- 3b. Tiền VNĐ làm tròn về đồng, và không có dòng "bình quân/km" trên báo giá --
+//
+// 4.461.200 / 44 từng hiện ra "101.390,909 VNĐ/km": đồng không có đơn vị nhỏ hơn,
+// và con số đó lẫn dấu chấm với dấu phẩy nên đọc rất dễ nhầm.
+{
+  const fn = code.slice(code.indexOf('function formatWorkflowCurrencyAmount'),
+    code.indexOf('window.formatWorkflowCurrencyAmount'));
+  assert.ok(/maximumFractionDigits: 0/.test(fn), 'tiền VNĐ phải làm tròn về đồng');
+}
+{
+  // Phần cước theo khối lượng không liên quan gì đến quãng đường, nên chia cả tổng
+  // cho số km ra một con số không phải đơn giá của thứ gì cả — mà đặt cạnh "xăng dầu
+  // 4.800 đ/km" thì trông như hệ thống hỏng.
+  const fn = code.slice(code.indexOf('function renderCostBreakdown'),
+    code.indexOf('window.autoCalculateMasterDataCost = function'));
+  assert.ok(!/qt-cost-perkm/.test(fn), 'không được có dòng bình quân/km trên báo giá');
+  assert.ok(!/perKm/.test(fn));
+}
 // Ba ô cũ giữ lại nhưng ẩn, vì các chỗ khác đọc chúng.
 ['qt-fuel', 'qt-driver', 'qt-toll', 'qt-selling-price'].forEach(id => {
   assert.ok(html.includes(`type="hidden" id="${id}"`), `${id} phải thành ô ẩn`);

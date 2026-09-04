@@ -1,4 +1,4 @@
-"""Theo dõi hành trình và chốt giá lệnh giao hàng.
+﻿"""Theo dõi hành trình và chốt giá lệnh giao hàng.
 
 Endpoint chốt giá dài hơn 200 dòng: nó tổng hợp công thức chi phí, phụ phí,
 chứng từ POD và giá bán cuối. Tách riêng để main.py không phải ôm nó.
@@ -167,7 +167,7 @@ def _select_closeout_formula(db: Session, delivery_order: DeliveryOrder, currenc
 
 def _serialize_closeout_formula(row: Optional[CostFormula]):
     if row is None:
-        return {"id": "", "name": "", "currency": "VND", "components": {}, "tokens": []}
+        return {"id": "", "name": "", "currency": "VND", "components": {}, "terms": []}
     return _serialize_cost_formula(row)
 
 
