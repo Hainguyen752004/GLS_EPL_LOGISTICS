@@ -106,7 +106,7 @@ assert.match(models, /base_rate.*đ\/km/, 'ghi chú cột base_rate phải nêu 
   // The hien TONG mot chuyen mau (vi nam cau phan khac don vi nen khong cong
   // thang duoc), va boc tach them binh quan moi km + xang dau moi km.
   assert.match(fn, /\/chuyến mẫu/, 'the phai noi ro tong do la cua mot chuyen mau');
-  assert.match(fn, /estimate\.perKm/, 'the phai co binh quan moi km de so sanh giua cac loai xe');
+  assert.match(fn, /estimate\.perKm/, 'the phai co gia thanh moi km de so sanh giua cac loai xe');
   assert.match(fn, /fa-gas-pump/, 'the phai boc tach chi phi xang dau');
   assert.match(fn, /masterCostCurrencyCode\(\)/, 'thẻ phải theo đơn vị tiền tệ đang chọn');
 }
@@ -139,7 +139,7 @@ assert.match(models, /base_rate.*đ\/km/, 'ghi chú cột base_rate phải nêu 
     vehicleTypes: [{ id: 'T', name: 'X' }], cargoType: 'X',
     route: { id: 'R', name: 'R', distance_km: 137 },
   });
-  assert.strictEqual(result.total, 4800 * 137, 'báo giá phải lấy tổng km của tuyến đang chọn');
+  assert.strictEqual(result.cost, 4800 * 137, 'báo giá phải lấy tổng km của tuyến đang chọn');
 }
 
 // Và không được còn chệch đơn vị kiểu chia 100 km ẩn ở đâu đó.

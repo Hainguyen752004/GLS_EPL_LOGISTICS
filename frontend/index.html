@@ -1045,6 +1045,22 @@
     .qt-cost-table tfoot small { display:block; margin-top:2px; font-size:.72rem; font-weight:600; color:#64748b; }
     .qt-cost-total { font-size:1.16rem; color:#0a6ed1; }
     .qt-cost-perkm td { border-top:1px dashed #cbd7e5; font-size:.78rem; font-weight:600; color:#475569; }
+    /* Hai khoi tach roi: tien THU cua khach va tien CHI ra. Truoc day cong ca
+       nam cau phan vao mot dong "Tong cuoc bao gia", nen con so hien ra khong
+       phai gia thanh cung khong phai gia ban. */
+    .qt-cost-group td { padding-top:13px; font-size:.72rem; font-weight:800;
+      text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #e2e8f0; }
+    .qt-cost-group small { text-transform:none; letter-spacing:0; font-weight:600; color:#94a3b8; }
+    .qt-cost-group-revenue td { color:#047857; }
+    .qt-cost-group-cost td { color:#b45309; }
+    .qt-cost-subtotal td { background:#f8fafc; font-weight:800; color:#334155; }
+    /* Nhan loai tren the Du lieu goc: mau mot minh khong du, nen co ca chu. */
+    .cf-kind-tag { display:inline-block; margin-left:7px; padding:1px 7px; border-radius:9px;
+      font-size:.66rem; font-weight:800; }
+    .cf-kind-tag.cf-kind-cost { background:#fffbeb; color:#b45309; border:1px solid #fde68a; }
+    .cf-kind-tag.cf-kind-revenue { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+    select.cf-kind.cf-kind-cost { color:#b45309; border-color:#fde68a; }
+    select.cf-kind.cf-kind-revenue { color:#047857; border-color:#a7f3d0; }
     .qt-cost-notes { list-style:none; margin:9px 0 0; padding:0; display:grid; gap:5px; }
     .qt-cost-notes li { display:flex; align-items:flex-start; gap:8px; font-size:.76rem; color:#475569; }
     .qt-cost-notes i { color:#0a6ed1; margin-top:2px; }
@@ -7035,12 +7051,12 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/formula-model.js?v=20260905-formula-dialog"></script>
-  <script src="/static/js/quotation-pricing.js?v=20260905-formula-dialog"></script>
+  <script src="/static/js/formula-model.js?v=20260905-cost-vs-revenue"></script>
+  <script src="/static/js/quotation-pricing.js?v=20260905-cost-vs-revenue"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260905-formula-dialog"></script>
+  <script src="/static/js/app.js?v=20260905-cost-vs-revenue"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

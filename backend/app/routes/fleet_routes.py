@@ -411,6 +411,18 @@ def _sanitize_formula_terms(rows):
         return []
     factors = {"per_km", "per_kg", "per_tonne", "per_trip", "per_stop"}
     operators = {"add", "sub"}
+    # Loai cua cau phan: tien CHI ra hay tien THU cua khach. Bon cau phan dau
+    # (xang dau, phu cap, BOT, phi bai) la chi phi, cuoc phi theo kg la gia
+    # ban. Cong ca nam vao mot con so thi ket qua khong phai gia thanh cung
+    # khong phai gia ban.
+    kinds = {"cost", "revenue"}
+    # Nam cau phan dung san co loai von co cua chung. Cong thuc luu TRUOC khi
+    # co truong nay thi khong khai loai, nen phai suy ra theo khoa — neu khong
+    # thi `rate` bi xep thanh chi phi va gia thanh cao gap gan bon lan.
+    builtin_kinds = {
+        "fuel": "cost", "driver": "cost", "toll": "cost", "wh": "cost",
+        "rate": "revenue",
+    }
     clean = []
     for index, row in enumerate(rows[:30]):
         if not isinstance(row, dict):
@@ -419,11 +431,18 @@ def _sanitize_formula_terms(rows):
             rate = float(str(row.get("rate") or 0).replace(",", "").strip() or 0)
         except (TypeError, ValueError):
             rate = 0.0
+        key = str(row.get("key") or f"term_{index + 1}")[:64]
+        kind = row.get("kind")
+        if kind not in kinds:
+            # Mac dinh an toan la chi phi: nham mot khoan chi thanh doanh thu
+            # se lam loi nhuan trong ra cao hon thuc te.
+            kind = builtin_kinds.get(key, "cost")
         clean.append({
-            "key": str(row.get("key") or f"term_{index + 1}")[:64],
+            "key": key,
             "label": str(row.get("label") or "")[:120],
             "operator": row.get("operator") if row.get("operator") in operators else "add",
             "factor": row.get("factor") if row.get("factor") in factors else "per_trip",
+            "kind": kind,
             "rate": max(0.0, rate),
             "builtin": bool(row.get("builtin")),
         })

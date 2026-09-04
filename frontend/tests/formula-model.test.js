@@ -31,8 +31,15 @@ const RATES = { fuel: 4800, driver: 400000, toll: 150000, wh: 100000, rate: 1200
   assert.strictEqual(byKey.driver.multiplier, 1, 'mỗi chuyến tính một lần');
   // 15 tấn = 15.000 kg. Nhầm tấn với kg ở đây là sai 1.000 lần.
   assert.strictEqual(byKey.rate.multiplier, 15000, 'mỗi kg nhân với số KG');
-  assert.strictEqual(result.total, 960000 + 400000 + 150000 + 100000 + 18000000);
-  assert.strictEqual(result.perKm, result.total / 200);
+  // Bon cau phan dau la CHI PHI, cuoc theo kg la GIA BAN. Cong chung thi ra
+  // mot con so khong phai gia thanh cung khong phai gia ban.
+  assert.strictEqual(result.cost, 960000 + 400000 + 150000 + 100000);
+  assert.strictEqual(result.revenue, 18000000);
+  assert.strictEqual(result.profit, 18000000 - 1610000);
+  assert.ok(Math.abs(result.marginPct - (16390000 / 18000000) * 100) < 1e-9);
+  // Binh quan moi km la cua GIA THANH: chia cuoc theo kg cho so km thi ra mot
+  // con so khong phai don gia cua thu gi ca.
+  assert.strictEqual(result.perKm, result.cost / 200);
 }
 
 // Hệ số theo tấn và theo điểm giao.
@@ -44,6 +51,9 @@ const RATES = { fuel: 4800, driver: 400000, toll: 150000, wh: 100000, rate: 1200
   const result = M.evaluate(terms, { km: 100, tonnes: 12, stops: 3 });
   assert.strictEqual(result.rows[0].amount, 80000 * 12);
   assert.strictEqual(result.rows[1].amount, 50000 * 3);
+  assert.strictEqual(result.cost, 80000 * 12 + 50000 * 3, 'mac dinh la chi phi');
+  assert.strictEqual(result.revenue, 0);
+  assert.strictEqual(result.marginPct, null, 'chua co gia ban thi khong co ti le nao ca');
 }
 
 // --- 2. Động: thêm cấu phần và phép TRỪ -----------------------------------
@@ -58,7 +68,11 @@ const RATES = { fuel: 4800, driver: 400000, toll: 150000, wh: 100000, rate: 1200
   assert.strictEqual(byKey.loading.amount, 80000 * 15);
   assert.strictEqual(byKey.discount.amount, -500000, 'phép trừ phải ra số âm');
   assert.strictEqual(byKey.discount.sign, '−');
-  assert.strictEqual(result.total, 19610000 + 1200000 - 500000);
+  // Cau phan tu them mac dinh la CHI PHI, nen cong vao gia thanh.
+  assert.strictEqual(byKey.loading.kind, 'cost');
+  assert.strictEqual(byKey.discount.kind, 'cost');
+  assert.strictEqual(result.cost, 1610000 + 1200000 - 500000);
+  assert.strictEqual(result.revenue, 18000000);
 }
 
 // --- 3. Công thức chữ SINH TỪ hạng tử, không viết cứng --------------------
@@ -138,7 +152,67 @@ assert.deepStrictEqual(M.normalize(['không phải đối tượng', 42, null]),
 }
 assert.strictEqual(M.normalize([{ key: 'x', rate: -99 }])[0].rate, 0, 'đơn giá âm phải thành 0');
 assert.strictEqual(M.normalize(Array(50).fill({ key: 'x', rate: 1 })).length, 30, 'phải có trần số hạng tử');
-assert.strictEqual(M.evaluate(null).total, 0, 'không có gì cũng không được vỡ');
+assert.strictEqual(M.evaluate(null).cost, 0, 'không có gì cũng không được vỡ');
+assert.strictEqual(M.evaluate(null).revenue, 0);
+
+// --- 6b. Chi phí và giá bán là hai loại khác nhau ---------------------------
+//
+// Chủ dự án đã chốt: bốn cấu phần đầu (xăng dầu, phụ cấp, BOT, phí bãi) là
+// tiền CHI RA, còn cước phí theo kg là tiền THU CỦA KHÁCH. Bảng `quotations`
+// đã có sẵn ba cột total_cost / selling_price / margin_pct, và dữ liệu thật xác
+// nhận: selling_price 3.600.000 đúng bằng 1.200 đ/kg × 3.000 kg.
+
+{
+  const terms = M.defaultTerms();
+  const byKey = Object.fromEntries(terms.map(term => [term.key, term]));
+  ['fuel', 'driver', 'toll', 'wh'].forEach(key => {
+    assert.strictEqual(byKey[key].kind, 'cost', `${key} phải là chi phí`);
+  });
+  assert.strictEqual(byKey.rate.kind, 'revenue', 'cước theo kg là giá bán');
+}
+
+{
+  // Đúng con số trên màn hình: tuyến 44 km, 3 tấn, loại "Xe tải thùng 10 tấn".
+  const result = M.evaluate(withRates(RATES), { km: 44, tonnes: 3 });
+  assert.strictEqual(result.cost, 4800 * 44 + 400000 + 150000 + 100000);
+  assert.strictEqual(result.cost, 861200);
+  assert.strictEqual(result.revenue, 3600000);
+  assert.strictEqual(result.profit, 2738800);
+  assert.ok(Math.abs(result.marginPct - 76.077) < 0.01);
+  // 4.461.200 là con số cũ — không phải giá thành, cũng không phải giá bán.
+  assert.notStrictEqual(result.cost, 4461200);
+  assert.notStrictEqual(result.revenue, 4461200);
+}
+
+{
+  // Đổi loại một cấu phần thì hai con số chuyển chỗ cho nhau.
+  const terms = withRates(RATES).map(term =>
+    term.key === 'toll' ? { ...term, kind: 'revenue' } : term);
+  const result = M.evaluate(terms, { km: 44, tonnes: 3 });
+  assert.strictEqual(result.cost, 861200 - 150000);
+  assert.strictEqual(result.revenue, 3600000 + 150000);
+}
+
+// Loại lạ phải rơi về CHI PHÍ — nhầm một khoản chi thành doanh thu sẽ làm lợi
+// nhuận trông ra cao hơn thực tế.
+assert.strictEqual(M.normalize([{ key: 'x', kind: 'lợi nhuận', rate: 1 }])[0].kind, 'cost');
+assert.strictEqual(M.normalize([{ key: 'x', rate: 1 }])[0].kind, 'cost');
+
+// Công thức không có cấu phần giá bán thì không báo giá được — phải nói ra.
+{
+  const chiCoChiPhi = withRates(RATES).filter(term => term.key !== 'rate');
+  const issues = M.problems(chiCoChiPhi);
+  assert.ok(issues.some(issue => issue.level === 'error' && /giá bán/.test(issue.message)));
+}
+
+// Bán dưới giá thành là lỗ. Không chặn, nhưng phải nói rõ.
+{
+  const banLo = withRates({ ...RATES, rate: 10 });
+  const issues = M.problems(banLo);
+  assert.ok(issues.some(issue => issue.level === 'error' && /THẤP HƠN giá thành/.test(issue.message)));
+  // Còn lãi thì không được báo bừa.
+  assert.ok(!M.problems(withRates(RATES)).some(issue => /THẤP HƠN/.test(issue.message)));
+}
 
 // --- 7. Đổi thứ tự hạng tử ------------------------------------------------
 
@@ -161,7 +235,7 @@ assert.strictEqual(M.evaluate(null).total, 0, 'không có gì cũng không đư�
   });
   // Nhãn do người dùng đặt: phải đi qua được mà không thành mã.
   const nasty = [{ key: 'x', label: '<img src=x onerror=alert(1)>', operator: 'add', factor: 'per_trip', rate: 1 }];
-  assert.strictEqual(M.evaluate(nasty).total, 1);
+  assert.strictEqual(M.evaluate(nasty).cost, 1);
   assert.ok(M.toText(nasty).includes('<img'), 'mô hình giữ nguyên chuỗi; việc thoát ký tự là của tầng vẽ');
 }
 

@@ -40,9 +40,32 @@
     per_stop: { label: 'mỗi điểm giao', short: '× số điểm', unit: '/điểm', of: trip => trip.stops },
   };
 
+  /**
+   * Loai cua mot cau phan: tien CHI RA hay tien THU CUA KHACH.
+   *
+   * Bon cau phan dau (xang dau, phu cap, BOT, phi bai) la chi phi; cuoc phi
+   * theo kg la gia ban. Cong ca nam vao mot con so thi ket qua khong phai gia
+   * thanh, cung khong phai gia ban - no la chi phi cong doanh thu. Chinh loi
+   * do da lam man bao gia hien ra 4.461.200 d cho mot chuyen ma gia thanh la
+   * 861.200 d va cuoc thu khach la 3.600.000 d.
+   *
+   * Bang `quotations` da mo hinh hoa san dieu nay: total_cost, selling_price,
+   * margin_pct la ba cot rieng.
+   */
+  const KINDS = {
+    cost: { label: 'Chi phí', short: 'Giá thành', tone: 'cost' },
+    revenue: { label: 'Giá bán', short: 'Cước thu khách', tone: 'revenue' },
+  };
+
   const OPERATORS = {
     add: { label: 'Cộng', sign: '+', factor: 1 },
     sub: { label: 'Trừ', sign: '−', factor: -1 },
+  };
+
+  /** Loại vốn có của năm cấu phần dựng sẵn. */
+  const BUILTIN_KINDS = {
+    fuel: 'cost', driver: 'cost', toll: 'cost', wh: 'cost',
+    rate: 'revenue',
   };
 
   /** Chuyến mẫu mặc định. Mọi con số tổng đều là ước tính cho một chuyến. */
@@ -72,12 +95,22 @@
     if (!term || typeof term !== 'object') return null;
     const factor = FACTORS[term.factor] ? term.factor : 'per_trip';
     const operator = OPERATORS[term.operator] ? term.operator : 'add';
+    // Cong thuc luu TRUOC khi co truong `kind` thi khong khai loai. Voi nam
+    // cau phan dung san, tra ve dung loai von co cua chung theo khoa — neu
+    // khong thi `rate` (cuoc thu cua khach) bi xep thanh chi phi, va gia thanh
+    // dot nhien cao gap nam lan.
+    //
+    // Cau phan tu them thi mac dinh la CHI PHI: phan lon cau phan phat sinh
+    // (boc xep, luu ca, phi diem giao) la tien chi ra, va nham mot khoan chi
+    // thanh doanh thu se lam loi nhuan trong ra cao hon thuc te.
+    const kind = KINDS[term.kind] ? term.kind : (BUILTIN_KINDS[term.key] || 'cost');
     const key = String(term.key || '').trim() || `term_${index + 1}`;
     return {
       key,
       label: String(term.label || key).trim().slice(0, 120),
       operator,
       factor,
+      kind,
       rate: Math.max(0, toNumber(term.rate)),
       // Cấu phần dựng sẵn thì không cho xóa, để công thức không bị rỗng ruột.
       builtin: Boolean(term.builtin),
@@ -113,12 +146,26 @@
         amount: signed * term.rate * multiplier,
       };
     });
-    const total = rows.reduce((sum, row) => sum + row.amount, 0);
+    const sum = kind => rows
+      .filter(row => row.kind === kind)
+      .reduce((acc, row) => acc + row.amount, 0);
+    const cost = sum('cost');
+    const revenue = sum('revenue');
+    // `total` van la tong dai so cua moi hang tu, chi de kiem tra va tuong
+    // thich nguoc. KHONG dung no lam gia ban hay gia thanh.
+    const total = cost + revenue;
     return {
       trip: sample,
       rows,
+      cost,
+      revenue,
+      profit: revenue - cost,
+      // Ti le loi nhuan tinh tren gia ban, giong cach doc margin_pct trong
+      // bang quotations. Chua co gia ban thi khong co ti le nao ca - tra ve
+      // null chu khong phai 0, vi 0% nghia la ban dung bang gia thanh.
+      marginPct: revenue > 0 ? ((revenue - cost) / revenue) * 100 : null,
       total,
-      perKm: sample.km ? total / sample.km : 0,
+      perKm: sample.km ? cost / sample.km : 0,
       configured: rows.some(row => row.rate > 0),
     };
   }
@@ -182,17 +229,33 @@
     if (rows.every(term => !term.rate)) {
       issues.push({ level: 'error', message: 'Mọi cấu phần đều bằng 0 nên tổng luôn bằng 0.' });
     }
+    // Khong co cau phan gia ban thi khong bao gia duoc - chi tinh ra gia thanh.
+    if (!rows.some(term => term.kind === 'revenue' && term.rate > 0)) {
+      issues.push({
+        level: 'error',
+        message: 'Công thức chưa có cấu phần nào là giá bán, nên chưa ra được cước thu khách.',
+      });
+    }
+    // Ban duoi gia thanh la lo. Khong chan, nhung phai noi ro.
+    const { cost, revenue } = evaluate(rows);
+    if (revenue > 0 && revenue < cost) {
+      issues.push({
+        level: 'error',
+        message: `Cước thu khách đang THẤP HƠN giá thành (chuyến mẫu: ${Math.round(revenue).toLocaleString('vi-VN')} so với ${Math.round(cost).toLocaleString('vi-VN')}).`,
+      });
+    }
     return issues;
   }
 
   /** Năm cấu phần dựng sẵn, khớp với các ô đã có trên màn hình. */
   function defaultTerms() {
     return [
-      { key: 'fuel', label: 'Chi phí xăng dầu /km', operator: 'add', factor: 'per_km', rate: 0, builtin: true },
-      { key: 'driver', label: 'Phụ cấp chuyến tài xế', operator: 'add', factor: 'per_trip', rate: 0, builtin: true },
-      { key: 'toll', label: 'Phí cầu đường / BOT', operator: 'add', factor: 'per_trip', rate: 0, builtin: true },
-      { key: 'wh', label: 'Phí bãi & lưu kho', operator: 'add', factor: 'per_trip', rate: 0, builtin: true },
-      { key: 'rate', label: 'Cước phí vận chuyển /kg', operator: 'add', factor: 'per_kg', rate: 0, builtin: true },
+      { key: 'fuel', label: 'Chi phí xăng dầu /km', operator: 'add', factor: 'per_km', kind: 'cost', rate: 0, builtin: true },
+      { key: 'driver', label: 'Phụ cấp chuyến tài xế', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 0, builtin: true },
+      { key: 'toll', label: 'Phí cầu đường / BOT', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 0, builtin: true },
+      { key: 'wh', label: 'Phí bãi & lưu kho', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 0, builtin: true },
+      // Cau phan duy nhat la GIA BAN: tien thu cua khach, khong phai tien chi.
+      { key: 'rate', label: 'Cước phí vận chuyển /kg', operator: 'add', factor: 'per_kg', kind: 'revenue', rate: 0, builtin: true },
     ];
   }
 
@@ -207,7 +270,7 @@
   }
 
   return {
-    FACTORS, OPERATORS, DEFAULT_TRIP,
+    FACTORS, OPERATORS, KINDS, BUILTIN_KINDS, DEFAULT_TRIP,
     toNumber, normalizeTrip, normalize, evaluate, toText, problems, defaultTerms, move,
   };
 });

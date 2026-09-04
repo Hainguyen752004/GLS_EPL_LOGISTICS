@@ -47,6 +47,13 @@ class QuotationCreateRequest(StrictRequest):
     toll_fee: Optional[Number] = None
     total_cost: Optional[Number] = None
     selling_price: Optional[Number] = None
+    # `total_cost` la tien CHI ra, `selling_price` la cuoc THU cua khach - hai
+    # con so khac nhau, khong duoc cong chung. Man bao gia truoc day cong ca nam
+    # cau phan vao mot so, nen no khong phai gia thanh cung khong phai gia ban.
+    #
+    # CO Y khong co `margin_pct`: bang quotations khong co cot do, va ti le loi
+    # nhuan suy ra duoc tu hai con so tren. Luu them mot cot thu ba la tao ra
+    # ba con so co the troi khoi nhau.
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
     carrier_name: Optional[str] = None

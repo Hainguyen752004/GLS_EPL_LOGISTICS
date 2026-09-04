@@ -21,11 +21,11 @@ const FORMULA = {
   vehicleTypeId: 'VT-002',
   vehicleTypeName: 'Xe tải 5 tấn',
   terms: [
-    { key: 'fuel', label: 'Chi phí xăng dầu /km', operator: 'add', factor: 'per_km', rate: 4800, builtin: true },
-    { key: 'driver', label: 'Phụ cấp chuyến tài xế', operator: 'add', factor: 'per_trip', rate: 400000, builtin: true },
-    { key: 'toll', label: 'Phí cầu đường / BOT', operator: 'add', factor: 'per_trip', rate: 150000, builtin: true },
-    { key: 'wh', label: 'Phí bãi & lưu kho', operator: 'add', factor: 'per_trip', rate: 100000, builtin: true },
-    { key: 'rate', label: 'Cước phí vận chuyển /kg', operator: 'add', factor: 'per_kg', rate: 1200, builtin: true },
+    { key: 'fuel', label: 'Chi phí xăng dầu /km', operator: 'add', factor: 'per_km', kind: 'cost', rate: 4800, builtin: true },
+    { key: 'driver', label: 'Phụ cấp chuyến tài xế', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 400000, builtin: true },
+    { key: 'toll', label: 'Phí cầu đường / BOT', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 150000, builtin: true },
+    { key: 'wh', label: 'Phí bãi & lưu kho', operator: 'add', factor: 'per_trip', kind: 'cost', rate: 100000, builtin: true },
+    { key: 'rate', label: 'Cước phí vận chuyển /kg', operator: 'add', factor: 'per_kg', kind: 'revenue', rate: 1200, builtin: true },
   ],
 };
 const STORE = { 'vt-002-VND': FORMULA };
@@ -45,10 +45,17 @@ function priceStandard(extra) {
   const result = priceStandard();
   assert.ok(result.ready, 'đủ đầu vào thì phải ra giá: ' + JSON.stringify(result.blockers));
 
-  // 4800 × 128,45 + 400000 + 150000 + 100000 + 1200 × 3000
-  const expected = 4800 * 128.45 + 400000 + 150000 + 100000 + 1200 * 3000;
-  assert.strictEqual(result.total, expected);
-  assert.strictEqual(Math.round(result.total), 4866560, 'phải khớp con số tính tay');
+  // Bon cau phan dau la CHI PHI, cuoc theo kg la GIA BAN. Ba con so tach roi.
+  assert.strictEqual(result.cost, 4800 * 128.45 + 400000 + 150000 + 100000);
+  assert.strictEqual(Math.round(result.cost), 1266560, 'gia thanh');
+  assert.strictEqual(result.revenue, 1200 * 3000);
+  assert.strictEqual(result.revenue, 3600000, 'cuoc thu khach');
+  assert.strictEqual(Math.round(result.profit), 2333440, 'loi nhuan');
+  // 4.866.560 la con so cu (chi phi cong doanh thu) - khong phai gia nao ca.
+  assert.notStrictEqual(Math.round(result.cost), 4866560);
+  assert.notStrictEqual(Math.round(result.revenue), 4866560);
+  assert.strictEqual(result.total, undefined,
+    'khong con truong `total`: giu no lai la de bi dung lai cho gia ban');
 
   // Cấu phần lớn nhất KHÔNG được biến mất. Đây là lỗi nặng nhất của bản cũ.
   const byKey = Object.fromEntries(result.rows.map(row => [row.key, row]));
@@ -81,7 +88,9 @@ function priceStandard(extra) {
   const byKey = Object.fromEntries(result.rows.map(row => [row.key, row]));
   assert.strictEqual(byKey.loading.amount, 80000 * 3);
   assert.strictEqual(byKey.promo.amount, -200000, 'cấu phần trừ phải làm giảm giá');
-  assert.strictEqual(result.total, 4800 * 128.45 + 650000 + 1200 * 3000 + 80000 * 3 - 200000);
+  // Cau phan tu them mac dinh la chi phi, nen chung vao gia thanh.
+  assert.strictEqual(result.cost, 4800 * 128.45 + 650000 + 80000 * 3 - 200000);
+  assert.strictEqual(result.revenue, 1200 * 3000);
 }
 
 // --- 2. Tải trọng nhân vào cước, không phải tải trọng tối đa của loại xe --
@@ -90,7 +99,8 @@ function priceStandard(extra) {
   // Cùng loại xe, cùng tuyến, chỉ khác khối lượng hàng.
   const light = priceStandard({ tonnes: 1 });
   const heavy = priceStandard({ tonnes: 5 });
-  assert.strictEqual(heavy.total - light.total, 1200 * 4000, 'chênh 4 tấn là chênh đúng 4.000 kg cước');
+  assert.strictEqual(heavy.revenue - light.revenue, 1200 * 4000, 'chênh 4 tấn là chênh đúng 4.000 kg cước');
+  assert.strictEqual(heavy.cost, light.cost, 'giá thành không đổi theo khối lượng ở công thức này');
   // Phần không phụ thuộc khối lượng phải giữ nguyên.
   const fuelOf = result => result.rows.find(row => row.key === 'fuel').amount;
   assert.strictEqual(fuelOf(light), fuelOf(heavy));
@@ -124,7 +134,10 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
 {
   const noRoute = priceStandard({ route: null });
   assert.ok(!noRoute.ready);
-  assert.strictEqual(noRoute.total, null, 'chưa có tuyến thì không có tổng, kể cả số 0');
+  assert.strictEqual(noRoute.cost, null, 'chưa có tuyến thì không có số nào, kể cả số 0');
+  assert.strictEqual(noRoute.revenue, null);
+  assert.strictEqual(noRoute.profit, null);
+  assert.strictEqual(noRoute.marginPct, null);
   assert.strictEqual(noRoute.perKm, null);
   assert.ok(noRoute.blockers.some(item => item.field === 'route'));
 }
@@ -133,7 +146,7 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
   // Tuyến có trong danh mục nhưng chưa nhập số km — phải nói rõ tuyến nào.
   const noKm = priceStandard({ route: { id: 'RT-009', name: 'Tuyến mới', distance_km: 0 } });
   assert.ok(!noKm.ready);
-  assert.strictEqual(noKm.total, null);
+  assert.strictEqual(noKm.cost, null);
   assert.ok(noKm.blockers.some(item => /Tuyến mới/.test(item.message)));
 }
 
@@ -151,7 +164,7 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
     cargoType: 'Xe đầu kéo 40 tấn', route: ROUTE, tonnes: 3,
   });
   assert.ok(!other.ready);
-  assert.strictEqual(other.total, null);
+  assert.strictEqual(other.cost, null);
   assert.strictEqual(other.formulaKey, '', 'không được mượn công thức của loại xe khác');
   assert.ok(other.blockers.some(item => /chưa có công thức/.test(item.message)));
   assert.ok(other.blockers.some(item => /Dữ liệu gốc/.test(item.message)), 'phải chỉ đường đi cấu hình');
@@ -162,7 +175,7 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
   // rồi âm thầm bỏ mất 3,6 triệu tiền cước.
   const noWeight = priceStandard({ tonnes: '' });
   assert.ok(!noWeight.ready);
-  assert.strictEqual(noWeight.total, null);
+  assert.strictEqual(noWeight.revenue, null);
   assert.ok(noWeight.blockers.some(item => item.field === 'tonnes'));
 }
 
@@ -173,7 +186,8 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
   };
   const result = P.price({ store, vehicleTypes: TYPES, cargoType: 'Xe tải 5 tấn', route: ROUTE, tonnes: '' });
   assert.ok(result.ready, 'không có cước theo kg thì không cần tải trọng');
-  assert.strictEqual(result.total, 4800 * 128.45 + 650000);
+  assert.strictEqual(result.cost, 4800 * 128.45 + 650000);
+  assert.strictEqual(result.revenue, 0, 'công thức này không có cấu phần giá bán nào');
 }
 
 {
@@ -181,7 +195,7 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
   const store = { 'vt-002-VND': { ...FORMULA, terms: FORMULA.terms.map(term => ({ ...term, rate: 0 })) } };
   const result = P.price({ store, vehicleTypes: TYPES, cargoType: 'Xe tải 5 tấn', route: ROUTE, tonnes: 3 });
   assert.ok(!result.ready);
-  assert.strictEqual(result.total, null, 'không được báo giá 0 đồng');
+  assert.strictEqual(result.revenue, null, 'không được báo giá 0 đồng');
 }
 
 // --- 4. KHÔNG có số cứng dự phòng --------------------------------------
@@ -191,7 +205,8 @@ assert.strictEqual(P.parseTonnes('-4'), null, 'khối lượng âm là vô nghĩ
   // 6250 / 500000 / 300000 / 200000 rồi hiện ra như giá thật.
   const empty = P.price({ store: {}, vehicleTypes: TYPES, cargoType: 'Xe tải 5 tấn', route: ROUTE, tonnes: 3 });
   assert.ok(!empty.ready);
-  assert.strictEqual(empty.total, null);
+  assert.strictEqual(empty.cost, null);
+  assert.strictEqual(empty.revenue, null);
 }
 {
   const source = require('fs').readFileSync(path.join(__dirname, '..', 'js', 'quotation-pricing.js'), 'utf8');
@@ -223,13 +238,32 @@ assert.strictEqual(P.resolveFormula(STORE, TYPES, '  Xe tải 5 tấn  ').key, '
   const legacy = { 'k': { vehicleTypeName: 'Xe tải 5 tấn', fuel: '4,800', driver: '400,000', toll: '150,000', wh: '100,000', rate: '1,200' } };
   const result = P.price({ store: legacy, vehicleTypes: TYPES, cargoType: 'Xe tải 5 tấn', route: ROUTE, tonnes: 3 });
   assert.ok(result.ready, 'cấu hình cũ chưa có hạng tử vẫn phải tính được');
-  assert.strictEqual(Math.round(result.total), 4866560);
+  assert.strictEqual(Math.round(result.cost), 1266560);
+  assert.strictEqual(result.revenue, 3600000);
+}
+
+{
+  // Công thức lưu CÓ hạng tử nhưng lưu trước khi có trường `kind` — đúng hình
+  // dạng đang có trong cơ sở dữ liệu nếu ai đã bấm Lưu ở bản trước.
+  //
+  // Năm cấu phần dựng sẵn phải tự suy ra đúng loại theo khóa. Nếu không thì
+  // `rate` (cước thu của khách) bị xếp thành chi phí, và giá thành đột nhiên
+  // cao gấp gần bốn lần.
+  const store = {
+    'k': {
+      vehicleTypeName: 'Xe tải 5 tấn',
+      terms: FORMULA.terms.map(({ kind, ...rest }) => rest),
+    },
+  };
+  const result = P.price({ store, vehicleTypes: TYPES, cargoType: 'Xe tải 5 tấn', route: ROUTE, tonnes: 3 });
+  assert.strictEqual(Math.round(result.cost), 1266560, 'giá thành không được nuốt cả cước thu khách');
+  assert.strictEqual(result.revenue, 3600000);
 }
 
 // --- 7. Dữ liệu bẩn không được làm vỡ ----------------------------------
 
-assert.strictEqual(P.price().total, null);
-assert.strictEqual(P.price({}).total, null);
+assert.strictEqual(P.price().cost, null);
+assert.strictEqual(P.price({}).revenue, null);
 assert.ok(P.price(null).blockers.length > 0);
 assert.strictEqual(priceStandard({ stops: 0 }).stops, 1, 'ít nhất một điểm giao');
 assert.strictEqual(priceStandard({ stops: 'ba' }).stops, 1);

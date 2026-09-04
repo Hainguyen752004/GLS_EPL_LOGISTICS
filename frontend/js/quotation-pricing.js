@@ -194,7 +194,15 @@
       rows: result.rows,
       // Đầu vào còn thiếu thì KHÔNG trả về con số: bên gọi không thể vô tình
       // hiện một tổng tính thiếu ra như thể đó là giá thật.
-      total: ready ? result.total : null,
+      //
+      // Ba con số tách rọi, không gộp: `cost` là tiền chi ra, `revenue` là cước
+      // thu của khách. Cộng chúng lại thì ra một con số không phải giá thành
+      // cũng không phải giá bán — đúng lỗi đã khiến màn báo giá hiện 4.461.200 đ
+      // cho một chuyến mà giá thành là 861.200 đ và cước thu là 3.600.000 đ.
+      cost: ready ? result.cost : null,
+      revenue: ready ? result.revenue : null,
+      profit: ready ? result.profit : null,
+      marginPct: ready ? result.marginPct : null,
       perKm: ready ? result.perKm : null,
     };
   }

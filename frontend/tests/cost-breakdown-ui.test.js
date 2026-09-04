@@ -103,14 +103,55 @@ assert.ok(/renderCostBreakdown\('qt-cost-breakdown'/.test(code));
   assert.ok(/maximumFractionDigits: 0/.test(fn), 'tiền VNĐ phải làm tròn về đồng');
 }
 {
-  // Phần cước theo khối lượng không liên quan gì đến quãng đường, nên chia cả tổng
-  // cho số km ra một con số không phải đơn giá của thứ gì cả — mà đặt cạnh "xăng dầu
-  // 4.800 đ/km" thì trông như hệ thống hỏng.
+  // Dòng "/km" chỉ có nghĩa khi mẫu số là GIÁ THÀNH. Chia cả tổng (gồm cước theo
+  // khối lượng) cho số km ra một con số không phải đơn giá của thứ gì cả — mà
+  // đặt cạnh "xăng dầu 4.800 đ/km" thì trông như hệ thống hỏng.
+  const M = require(path.join(ROOT, 'js', 'formula-model.js'));
+  const terms = M.defaultTerms();
+  const rates = { fuel: 4800, driver: 400000, toll: 150000, wh: 100000, rate: 1200 };
+  terms.forEach(term => { term.rate = rates[term.key]; });
+  const result = M.evaluate(terms, { km: 44, tonnes: 3 });
+  assert.strictEqual(result.perKm, result.cost / 44, 'mẫu số phải là giá thành');
+  assert.strictEqual(Math.round(result.perKm), 19573);
+  // 101.391 đ/km là con số cũ (tổng chia km) — không được quay lại.
+  assert.notStrictEqual(Math.round(result.perKm), 101391);
+
   const fn = code.slice(code.indexOf('function renderCostBreakdown'),
     code.indexOf('window.autoCalculateMasterDataCost = function'));
-  assert.ok(!/qt-cost-perkm/.test(fn), 'không được có dòng bình quân/km trên báo giá');
-  assert.ok(!/perKm/.test(fn));
+  assert.ok(/Giá thành mỗi km/.test(fn), 'dòng /km phải nói rõ là giá thành');
+  assert.ok(!/Tổng cước báo giá<\/td>/.test(fn));
 }
+
+// --- 3c. Hai khối tách rời: tiền THU và tiền CHI ---------------------
+//
+// Bốn cấu phần xăng dầu / phụ cấp / BOT / phí bãi là tiền CHI RA, còn cước phí
+// theo kg là tiền THU CỦA KHÁCH. Trước đây cộng cả năm vào một dòng "Tổng cước
+// báo giá", nên con số 4.461.200 không phải giá thành (861.200) cũng không phải
+// giá bán (3.600.000).
+{
+  const fn = code.slice(code.indexOf('function renderCostBreakdown'),
+    code.indexOf('window.autoCalculateMasterDataCost = function'));
+  assert.ok(/qt-cost-group-\$\{kind\}/.test(fn), 'phải chia nhóm theo loại cấu phần');
+  assert.ok(/quote\.rows\.filter\(row => row\.kind === kind\)/.test(fn));
+  assert.ok(/quote\.revenue/.test(fn) && /quote\.cost/.test(fn) && /quote\.profit/.test(fn));
+  assert.ok(/marginPct/.test(fn), 'phải hiện tỉ lệ lợi nhuận');
+}
+// Ô giá bán nhận CưỚC THU KHÁCH, không phải tổng đại số của mọi cấu phần.
+assert.ok(/setWorkflowTotalField\('qt-selling-price', quote\.revenue/.test(code));
+// Và khi Lưu thì gửi ba con số tách rời vào đúng ba cột đã có của bảng quotations.
+assert.ok(/total_cost: quote\.cost/.test(code), 'phải lưu giá thành');
+assert.ok(/selling_price: quote \? quote\.revenue/.test(code), 'phải lưu cước thu khách');
+// CỌ Ý không lưu tỉ lệ lợi nhuận: bảng quotations không có cột đó, và tỉ lệ suy ra
+// được từ hai con số trên. Lưu thêm một cột thứ ba là tạo ra ba con số có thể trôi
+// khỏi nhau.
+{
+  const fn = code.slice(code.indexOf('window.saveOracleQT = async function'));
+  assert.ok(!/margin_pct/.test(fn.slice(0, fn.indexOf('};'))), 'không được gửi margin_pct');
+}
+// CSS của hai nhóm phải có thật.
+['.qt-cost-group-revenue', '.qt-cost-group-cost', '.qt-cost-subtotal', '.cf-kind-tag'].forEach(sel => {
+  assert.ok(new RegExp(sel.replace('.', '\\.') + '[\\s,:{]').test(html), `thiếu CSS cho ${sel}`);
+});
 // Ba ô cũ giữ lại nhưng ẩn, vì các chỗ khác đọc chúng.
 ['qt-fuel', 'qt-driver', 'qt-toll', 'qt-selling-price'].forEach(id => {
   assert.ok(html.includes(`type="hidden" id="${id}"`), `${id} phải thành ô ẩn`);

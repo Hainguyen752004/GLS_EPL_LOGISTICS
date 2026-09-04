@@ -98,14 +98,28 @@ assert.ok(!/\(Xăng dầu × số km\) \+ Phụ cấp/.test(html), 'không đư�
 
 // --- 5. Tổng tiền hiện trên THẺ, không nằm sau bong bóng -----------------
 
-assert.ok(/id="cf-total"/.test(editor));
+// Ba con so tach roi, khong phai mot tong: gia thanh (tien CHI ra), cuoc thu
+// khach (tien THU ve), va loi nhuan. Cong ca nam cau phan vao mot so thi ket
+// qua khong phai gia thanh cung khong phai gia ban.
+assert.ok(/id="cf-cost"/.test(editor), 'phải có giá thành');
+assert.ok(/id="cf-revenue"/.test(editor), 'phải có cước thu khách');
+assert.ok(/id="cf-total"/.test(editor), 'phải có lợi nhuận');
+assert.ok(/id="cf-margin"/.test(editor), 'phải có tỉ lệ lợi nhuận');
 assert.ok(/id="cf-perkm"/.test(editor));
-assert.ok(/Tổng chi phí chuyến mẫu/.test(editor));
-// Tổng phải nằm NGOÀI bong bóng: đóng bong bóng lại vẫn phải đọc được tổng.
+assert.ok(/Giá thành chuyến mẫu/.test(editor));
+assert.ok(/Cước thu khách/.test(editor));
+assert.ok(/Giá thành mỗi km/.test(editor), 'dòng /km phải nói rõ mẫu số là giá thành');
+assert.ok(!/Tổng chi phí chuyến mẫu/.test(editor), 'không được còn một "tổng" gộp');
+// Ba con so phai nằm NGOÀI hộp thoại: đóng hộp thoại lại vẫn phải đọc được.
 {
   const summary = editor.slice(editor.indexOf('<div id="cf-issues">'));
-  assert.ok(/id="cf-total"/.test(summary), 'tổng phải ở phần thẻ, sau bong bóng');
+  assert.ok(/id="cf-cost"/.test(summary) && /id="cf-revenue"/.test(summary),
+    'ba con số phải ở phần thẻ');
 }
+// Hộp thoại có cột "Loại" để khai từng cấu phần là chi phí hay giá bán.
+assert.ok(/setCostTermField\(\$\{index\}, 'kind'/.test(pop), 'phải đổi được loại cấu phần');
+assert.ok(/Object\.entries\(M\.KINDS\)/.test(pop), 'danh sách loại sinh từ mô hình');
+assert.ok(/id="cf-pprofit"/.test(pop) && /id="cf-pmargin"/.test(pop));
 
 // Lỗi công thức cũng phải ở trên thẻ. Nếu chỉ nằm trong bong bóng thì đóng lại
 // là lỗi biến mất khỏi mắt, rồi báo giá vẫn chạy bằng công thức sai.
@@ -120,7 +134,8 @@ assert.ok(/issue\.level === 'error'/.test(code));
 {
   const totals = code.slice(code.indexOf('function updateCostFormulaTotals'), code.indexOf('function renderCostFormulaIssues'));
   ['cf-sum-amount-', 'cf-sum-rate-', 'cf-sum-mul-', 'cf-sum-label-', 'cf-sum-sign-', 'cf-sum-unit-',
-    'cf-amount-', 'cf-mul-', 'cf-total', 'cf-ptotal', 'cf-perkm', 'cf-text'].forEach(id => {
+    'cf-sum-kind-', 'cf-amount-', 'cf-mul-', 'cf-cost', 'cf-revenue', 'cf-total', 'cf-margin',
+    'cf-pprofit', 'cf-pmargin', 'cf-perkm', 'cf-text'].forEach(id => {
     assert.ok(totals.includes(id), `sửa xong phải cập nhật ${id}`);
   });
   // Chỉ cập nhật con số, KHÔNG dựng lại bảng: dựng lại là mất con trỏ giữa lúc gõ.

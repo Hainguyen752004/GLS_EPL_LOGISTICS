@@ -5484,6 +5484,25 @@ function renderGPSTrackingWidget() {
   }
 }
 
+/**
+ * Tỉ lệ lợi nhuận của một báo giá, SUY RA từ giá thành và cước thu khách.
+ *
+ * Trước đây ô này in `${q.margin_pct}%`, mà API không hề trả về trường đó, nên
+ * bảng báo giá hiện ra chữ "undefined%" ở mọi dòng.
+ *
+ * Suy ra thay vì lưu thêm một cột: ba con số cùng nói về một việc thì kiểu gì
+ * cũng có ngày hai cái trôi khỏi nhau.
+ */
+function quotationMarginLabel(quotation) {
+  const cost = Number(quotation?.total_cost || 0);
+  const selling = Number(quotation?.selling_price || 0);
+  // Chưa có cước thu khách thì không có tỉ lệ nào cả. Hiện dấu gạch chứ không
+  // phải 0%, vì 0% nghĩa là bán đúng bằng giá thành.
+  if (!(selling > 0)) return '—';
+  return `${(((selling - cost) / selling) * 100).toFixed(1)}%`;
+}
+window.quotationMarginLabel = quotationMarginLabel;
+
 function renderQuotations() {
   const tbody = document.getElementById("table-quotations");
   if (!tbody) return;
@@ -11958,36 +11977,63 @@ function renderCostBreakdown(hostId, quote, currencyId) {
     return;
   }
 
+  const nhom = kind => quote.rows.filter(row => row.kind === kind);
+
+  /**
+   * Mot khoi cau phan (chi phi hoac gia ban).
+   *
+   * Tach hai khoi la diem quan trong nhat cua man nay: bon cau phan xang dau /
+   * phu cap / BOT / phi bai la tien CHI RA, con cuoc phi theo kg la tien THU
+   * CUA KHACH. Truoc day cong ca nam vao mot dong "Tong cuoc bao gia", nen con
+   * so 4.461.200 khong phai gia thanh (861.200) cung khong phai gia ban
+   * (3.600.000) - no la chi phi cong doanh thu.
+   */
+  const khoi = (kind, tieuDe, tong, ghiChu) => {
+    const rows = nhom(kind);
+    if (!rows.length) return '';
+    return `
+      <tr class="qt-cost-group qt-cost-group-${kind}">
+        <td colspan="4">${escapeHtml(tieuDe)}${ghiChu ? ` <small>${escapeHtml(ghiChu)}</small>` : ''}</td>
+      </tr>
+      ${rows.map(row => `
+        <tr class="${row.rate ? '' : 'is-zero'}">
+          <td><span class="qt-cost-sign">${row.operator === 'sub' ? '−' : '+'}</span>
+              ${escapeHtml(row.label)}</td>
+          <td class="qt-cost-num">${money(row.rate)}<small>${escapeHtml(row.unit)}</small></td>
+          <td class="qt-cost-num">${row.factor === 'per_trip'
+            ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</td>
+          <td class="qt-cost-num qt-cost-amount">${money(row.amount)}</td>
+        </tr>`).join('')}
+      <tr class="qt-cost-subtotal">
+        <td colspan="3">${escapeHtml(tong.nhan)}</td>
+        <td class="qt-cost-num">${money(tong.gia_tri)}</td>
+      </tr>`;
+  };
+
   host.innerHTML = `
     <div class="qt-cost-scroll">
       <table class="qt-cost-table">
         <thead>
-          <tr><th>Cấu phần cước</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+          <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
         </thead>
         <tbody>
-          ${quote.rows.map(row => `
-            <tr class="${row.rate ? '' : 'is-zero'}">
-              <td><span class="qt-cost-sign">${row.operator === 'sub' ? '−' : '+'}</span>
-                  ${escapeHtml(row.label)}</td>
-              <td class="qt-cost-num">${money(row.rate)}<small>${escapeHtml(row.unit)}</small></td>
-              <td class="qt-cost-num">${row.factor === 'per_trip'
-                ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</td>
-              <td class="qt-cost-num qt-cost-amount">${money(row.amount)}</td>
-            </tr>`).join('')}
+          ${khoi('revenue', 'Cước thu khách', { nhan: 'Tổng cước báo giá', gia_tri: quote.revenue },
+            'tiền khách trả')}
+          ${khoi('cost', 'Giá thành chuyến', { nhan: 'Tổng giá thành', gia_tri: quote.cost },
+            'tiền mình chi ra')}
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="3">Tổng cước báo giá
+            <td colspan="3">Lợi nhuận chuyến
               <small>${escapeHtml(quote.formulaName || '')} · ${quote.km.toLocaleString('vi-VN')} km${
                 quote.tonnes === null ? '' : ` · ${quote.tonnes.toLocaleString('vi-VN')} tấn`}</small></td>
-            <td class="qt-cost-num qt-cost-total">${money(quote.total)}</td>
+            <td class="qt-cost-num qt-cost-total">${money(quote.profit)}${
+              quote.marginPct === null ? '' : `<small> · ${quote.marginPct.toFixed(1)}%</small>`}</td>
           </tr>
-          <!-- KHONG co dong "binh quan moi km" o day.
-               Phan cuoc tinh theo khoi luong khong lien quan gi den quang duong;
-               chia ca tong cho so km ra mot con so khong phai don gia cua thu gi
-               ca, ma dat canh "xang dau 4.800 d/km" thi trong nhu he thong hong.
-               Cho so sanh giua cac loai xe la the ben man Du lieu goc, noi chuyen
-               mau co dinh nen mau so giong nhau. -->
+          <tr class="qt-cost-perkm">
+            <td colspan="3">Giá thành mỗi km</td>
+            <td class="qt-cost-num">${money(quote.perKm)}/km</td>
+          </tr>
         </tfoot>
       </table>
     </div>
@@ -12013,6 +12059,15 @@ function renderCostBreakdown(hostId, quote, currencyId) {
  * Nay mọi con số đi qua js/quotation-pricing.js: đúng công thức của loại xe
  * đang chọn, số km của tuyến đang chọn, khối lượng hàng đã nhập.
  */
+/**
+ * Ket qua tinh cuoc gan nhat cua man bao gia.
+ *
+ * Luc Luu phai gui ba con so tach roi (gia thanh / cuoc thu khach / ti le loi
+ * nhuan). Doc nguoc lai tu cac o hien thi la doc lai chinh cai minh vua ghi ra
+ * chu, roi phai bo dau phan cach va ky hieu tien te - vong vo va de sai.
+ */
+let lastQuotationQuote = null;
+
 window.autoCalculateMasterDataCost = function () {
   const setStatus = (text, tone) => setCostStatusBadge('qt-cost-status', text, tone);
 
@@ -12055,9 +12110,12 @@ window.autoCalculateMasterDataCost = function () {
   write('qt-driver', byKey.driver || 0);
   write('qt-toll', byKey.toll || 0);
 
+  // Ô "giá bán" nhận CưỚC THU KHÁCH, không phải tổng đại số của mọi cấu phần.
+  // Trước đây nó nhận cả chi phí cộng doanh thu, nên con số chảy tiếp vào đơn
+  // vận chuyển và hóa đơn đều cao hơn giá thật.
   const total = document.getElementById('qt-selling-price');
   if (total) {
-    if (quote.ready) setWorkflowTotalField('qt-selling-price', quote.total, currency);
+    if (quote.ready) setWorkflowTotalField('qt-selling-price', quote.revenue, currency);
     else { total.value = ''; delete total.dataset.vndValue; }
   }
 
@@ -12066,6 +12124,7 @@ window.autoCalculateMasterDataCost = function () {
   } else {
     setStatus('Chưa đủ dữ liệu để áp công thức', 'warn');
   }
+  lastQuotationQuote = quote;
   return quote;
 };
 
@@ -14501,6 +14560,10 @@ window.addCostTerm = function () {
     label: '',
     operator: 'add',
     factor: 'per_trip',
+    // Mac dinh CHI PHI: phan lon cau phan phat sinh (boc xep, luu ca, phi diem
+    // giao) la tien chi ra. Nham mot khoan chi thanh doanh thu se lam loi nhuan
+    // trong ra cao hon thuc te.
+    kind: 'cost',
     rate: 0,
   });
   afterTermChange();
@@ -14600,10 +14663,15 @@ function updateCostFormulaTotals() {
     // Bong bóng
     setText(`cf-mul-${index}`, multiplier);
     setText(`cf-amount-${index}`, money(row.amount));
+    setText(`cf-sum-kind-${index}`, M.KINDS[row.kind].short);
   });
 
-  setText('cf-total', money(result.total));
-  setText('cf-ptotal', money(result.total));
+  setText('cf-cost', money(result.cost));
+  setText('cf-revenue', money(result.revenue));
+  setText('cf-total', money(result.profit));
+  setText('cf-margin', result.marginPct === null ? '' : ` · ${result.marginPct.toFixed(1)}%`);
+  setText('cf-pprofit', money(result.profit));
+  setText('cf-pmargin', result.marginPct === null ? '—' : `${result.marginPct.toFixed(1)}%`);
   setText('cf-perkm', `${money(result.perKm)}/km`);
   setText('cf-trip-note', `${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn`);
   setText('cf-text', M.toText(costFormulaTerms));
@@ -14648,6 +14716,7 @@ function renderCostFormulaPopover(result, money) {
             <tr>
               <th class="cf-op-col">Dấu</th>
               <th>Cấu phần</th>
+              <th>Loại</th>
               <th>Đơn giá</th>
               <th>Nhân theo</th>
               <th>Thành tiền</th>
@@ -14670,6 +14739,15 @@ function renderCostFormulaPopover(result, money) {
                     ? `<b>${escapeHtml(row.label)}</b>`
                     : `<input type="text" value="${escapeHtml(row.label)}" placeholder="Ví dụ: Phí bốc xếp /tấn"
                               oninput="setCostTermField(${index}, 'label', this.value)" aria-label="Tên cấu phần">`}
+                </td>
+                <td>
+                  <select class="cf-kind cf-kind-${escapeHtml(row.kind)}"
+                          aria-label="Loại của ${escapeHtml(row.label || 'cấu phần')}"
+                          onchange="setCostTermField(${index}, 'kind', this.value)">
+                    ${Object.entries(M.KINDS).map(([key, kind]) =>
+                      `<option value="${escapeHtml(key)}"${key === row.kind ? ' selected' : ''}>${escapeHtml(kind.label)}</option>`
+                    ).join('')}
+                  </select>
                 </td>
                 <td class="cf-num">
                   <input type="number" min="0" step="any" value="${Number(row.rate) || 0}"
@@ -14700,12 +14778,19 @@ function renderCostFormulaPopover(result, money) {
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="4">
+              <td colspan="5">
                 <button type="button" class="cf-add" onclick="addCostTerm()">
                   <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm cấu phần
                 </button>
               </td>
-              <td class="cf-num cf-total" id="cf-ptotal">${money(result.total)}</td>
+              <td class="cf-num" id="cf-pprofit">${money(result.profit)}</td>
+              <td></td>
+            </tr>
+            <tr class="cf-perkm-row">
+              <td colspan="5">Lợi nhuận chuyển mẫu
+                <small>cước thu khách trừ giá thành</small></td>
+              <td class="cf-num" id="cf-pmargin">${result.marginPct === null
+                ? '—' : `${result.marginPct.toFixed(1)}%`}</td>
               <td></td>
             </tr>
           </tfoot>
@@ -14761,7 +14846,8 @@ window.renderCostFormulaEditor = function () {
           ${result.rows.map((row, index) => `
             <tr class="${row.rate ? '' : 'is-zero'}">
               <td><span class="cf-sign" id="cf-sum-sign-${index}">${row.operator === 'sub' ? '−' : '+'}</span>
-                  <span id="cf-sum-label-${index}">${escapeHtml(row.label)}</span></td>
+                  <span id="cf-sum-label-${index}">${escapeHtml(row.label)}</span>
+                  <small class="cf-kind-tag cf-kind-${escapeHtml(row.kind)}" id="cf-sum-kind-${index}">${escapeHtml(M.KINDS[row.kind].short)}</small></td>
               <td class="cf-num"><span id="cf-sum-rate-${index}">${money(row.rate)}</span>
                   <small id="cf-sum-unit-${index}">${escapeHtml(row.unit)}</small></td>
               <td class="cf-num" id="cf-sum-mul-${index}">${row.factor === 'per_trip'
@@ -14771,12 +14857,21 @@ window.renderCostFormulaEditor = function () {
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="3">Tổng chi phí chuyến mẫu
+            <td colspan="3">Giá thành chuyến mẫu <small>tổng tiền CHI ra</small></td>
+            <td class="cf-num" id="cf-cost">${money(result.cost)}</td>
+          </tr>
+          <tr>
+            <td colspan="3">Cước thu khách <small>tổng tiền THU về</small></td>
+            <td class="cf-num" id="cf-revenue">${money(result.revenue)}</td>
+          </tr>
+          <tr>
+            <td colspan="3">Lợi nhuận
               <small id="cf-trip-note">${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small></td>
-            <td class="cf-num cf-total" id="cf-total">${money(result.total)}</td>
+            <td class="cf-num cf-total" id="cf-total">${money(result.profit)}<small id="cf-margin">${
+              result.marginPct === null ? '' : ` · ${result.marginPct.toFixed(1)}%`}</small></td>
           </tr>
           <tr class="cf-perkm-row">
-            <td colspan="3">Bình quân mỗi km <small>của chuyển mẫu này — để so giữa các loại xe, không phải đơn giá/km</small></td>
+            <td colspan="3">Giá thành mỗi km <small>so được giữa các loại xe</small></td>
             <td class="cf-num" id="cf-perkm">${money(result.perKm)}/km</td>
           </tr>
         </tfoot>
@@ -16038,6 +16133,11 @@ window.saveOracleQT = async function () {
   const selling = parseVal('qt-selling-price');
   const routeContext = routeContextFromFields('qt');
 
+  // Ba con so TACH ROI, khong gop: `total_cost` la tien chi ra, `selling_price`
+  // la cuoc thu cua khach. Bang `quotations` da co san ba cot nay nhung man
+  // hinh chua bao gio ghi vao, nen bao cao lai lo hay lai lai khong doc duoc.
+  const quote = lastQuotationQuote && lastQuotationQuote.ready ? lastQuotationQuote : null;
+
   if (!customer || !route || !cargo) {
     showToast('⚠️ Vui lòng nhập đủ Khách hàng, Lộ trình và Loại xe!');
     return;
@@ -16049,7 +16149,12 @@ window.saveOracleQT = async function () {
     path: qtPath, method: currentQT ? 'PUT' : 'POST', body: {
       id: qid, customer_id: customer, route_id: route, cargo_type: cargo,
       ...routeContext,
-      fuel_cost: fuel, driver_cost: driver, toll_fee: toll, selling_price: selling
+      fuel_cost: fuel, driver_cost: driver, toll_fee: toll,
+      selling_price: quote ? quote.revenue : selling,
+      // CO Y khong gui ti le loi nhuan: bang quotations khong co cot do, va ti
+      // le suy ra duoc tu hai con so tren. Luu them mot cot thu ba la tao ra
+      // ba con so co the troi khoi nhau.
+      ...(quote ? { total_cost: quote.cost } : {}),
     }
   });
   if (result.ok) showToast(`✅ Máy chủ đã xác nhận lưu báo giá ${qid}.`);

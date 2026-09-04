@@ -311,11 +311,11 @@ def _merge_master_data(db):
             # gi, nen kiem duoc don vi. Dang cu chi co "unit" de xem, khong ai
             # tinh bang no ca.
             "terms": [
-                {"key": "fuel", "label": "Chi phí xăng dầu /km", "operator": "add", "factor": "per_km", "rate": 6250, "builtin": True},
-                {"key": "driver", "label": "Phụ cấp chuyến tài xế", "operator": "add", "factor": "per_trip", "rate": 500000, "builtin": True},
-                {"key": "toll", "label": "Phí cầu đường / BOT", "operator": "add", "factor": "per_trip", "rate": 300000, "builtin": True},
-                {"key": "wh", "label": "Phí bãi & lưu kho", "operator": "add", "factor": "per_trip", "rate": 200000, "builtin": True},
-                {"key": "rate", "label": "Cước phí vận chuyển /kg", "operator": "add", "factor": "per_kg", "rate": 1500, "builtin": True},
+                {"key": "fuel", "label": "Chi phí xăng dầu /km", "operator": "add", "factor": "per_km", "kind": "cost", "rate": 6250, "builtin": True},
+                {"key": "driver", "label": "Phụ cấp chuyến tài xế", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 500000, "builtin": True},
+                {"key": "toll", "label": "Phí cầu đường / BOT", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 300000, "builtin": True},
+                {"key": "wh", "label": "Phí bãi & lưu kho", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 200000, "builtin": True},
+                {"key": "rate", "label": "Cước phí vận chuyển /kg", "operator": "add", "factor": "per_kg", "kind": "revenue", "rate": 1500, "builtin": True},
             ],
         }, ensure_ascii=False),
     ))
