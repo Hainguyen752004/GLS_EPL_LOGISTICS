@@ -82,8 +82,11 @@ assert.match(models, /base_rate.*đ\/km/, 'ghi chú cột base_rate phải nêu 
 {
   const start = app.indexOf('window.renderDynamicFormulaVehicleTypes');
   const fn = app.slice(start, app.indexOf('firstCard', start));
-  assert.match(fn, /<small>đ\/km<\/small>/, 'thẻ loại xe phải ghi đơn vị đ/km');
-  assert.match(fn, /Chưa đặt đơn giá\/km/, 'thiếu đơn giá phải nói rõ là đơn giá/km');
+  // Thẻ loại xe không còn hiện base_rate; nó hiện chi phí xăng dầu / 1 km lấy
+  // từ công thức ĐÃ LƯU, theo đơn vị tiền tệ đang chọn — vì base_rate chưa bao
+  // giờ được dùng để tính gì, và nút Lưu ghi vào bảng khác nên nó không đổi.
+  assert.match(fn, /\/km · xăng dầu/, 'thẻ phải nói rõ con số đó là chi phí xăng dầu trên 1 km');
+  assert.match(fn, /masterCostCurrencyCode\(\)/, 'thẻ phải theo đơn vị tiền tệ đang chọn');
 }
 
 // --- 5. base_rate không được rót vào ô cước phí / 1kg ---------------------

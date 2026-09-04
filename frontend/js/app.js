@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-dispatch-audit-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-two-tier-cost-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -11050,6 +11050,13 @@ function updateMasterCostCurrencyUI() {
 }
 
 window.onMasterCostCurrencyChange = async function () {
+  // The loai xe hien tien theo don vi dang chon, nen doi tien te phai ve lai
+  // ca danh muc ben trai chu khong chi panel ben phai.
+  setTimeout(() => {
+    if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
+      window.renderDynamicFormulaVehicleTypes();
+    }
+  }, 0);
   const requestedCurrency = masterCostCurrencyCode();
   const activeFormula = masterFormulaStore[activeCostFormulaKey];
   if (!activeFormula?.vehicleTypeId) {
@@ -12031,6 +12038,13 @@ window.saveCostFormula = async function () {
       body: JSON.stringify(payload)
     });
     const result = await response.json().catch(() => ({}));
+    if (response.ok) {
+      // Ve lai danh muc ben trai: truoc day the van hien con so cu vi no lay tu
+      // base_rate, mot truong khac han va khong ai cap nhat.
+      if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
+        window.renderDynamicFormulaVehicleTypes();
+      }
+    }
     if (!response.ok) {
       showToast(result?.detail || 'Không lưu được công thức giá thành vào CSDL.');
       return false;
@@ -14389,6 +14403,240 @@ window.deleteVehicleTypeCard = async function (btn) {
  * Tai LAI moi lan mo tab thay vi chi khi trong: loai xe co the vua duoc them
  * hoac xoa o tab "3. Loai Phuong Tien", va hai tab nay dung chung mot danh muc.
  */
+/* ==========================================================================
+   Giá thành hai tầng — tầng thứ hai: từng chiếc xe
+   --------------------------------------------------------------------------
+   Công thức thuộc về LOẠI xe. Từng chiếc chỉ ghi đè vài con số khi thực tế
+   khác đi — xe cũ tốn dầu hơn, xe trả góp gánh thêm khấu hao.
+
+   Vì sao không cho mỗi chiếc một công thức riêng: đội xe khoảng 500 chiếc, nên
+   đó là 500 công thức phải bảo trì. Đổi giá dầu phải sửa 500 chỗ, và rất dễ có
+   xe bị bỏ sót rồi tính sai giá mà không ai biết.
+   ========================================================================== */
+
+/** Xe đang mở bảng ghi đè, và bản nháp đang sửa. */
+let vehicleCostPanelId = '';
+let vehicleCostDraft = null;
+
+/** Đếm số xe thuộc mỗi loại, để thẻ bên trái nói rõ "loại này có bao nhiêu xe". */
+function vehiclesOfType(typeId) {
+  return (fioriVehicles || []).filter(v => String(v.type || '') === String(typeId));
+}
+
+/**
+ * Dòng "N chiếc xe" dưới mỗi thẻ loại xe, bấm được để mở tầng thứ hai.
+ *
+ * Vẽ riêng sau khi thẻ đã dựng, vì nó cần fioriVehicles vốn tải ở luồng khác.
+ */
+window.renderVehicleTypeFleetCounts = function () {
+  (vehTypes || []).forEach(type => {
+    const host = document.getElementById(`vt-fleet-${type.id}`);
+    if (!host) return;
+    const fleet = vehiclesOfType(type.id);
+    if (!fleet.length) {
+      host.innerHTML = '<span class="vt-fleet-empty">Chưa có xe nào thuộc loại này</span>';
+      return;
+    }
+    const overridden = fleet.filter(v => vehicleOverrideCounts[v.id] > 0).length;
+    host.innerHTML = `<button type="button" class="vt-fleet-btn"
+        onclick="event.stopPropagation(); openVehicleCostList('${escapeJsAttr(type.id)}')">
+      <i class="fa-solid fa-truck" aria-hidden="true"></i>
+      <b>${fleet.length}</b> chiếc xe
+      ${overridden ? `<em>${overridden} chiếc có giá riêng</em>` : ''}
+      <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+    </button>`;
+  });
+};
+
+/** Số cấu phần đã ghi đè của từng xe — nạp một lần để thẻ hiện được nhãn. */
+let vehicleOverrideCounts = {};
+
+window.loadVehicleOverrideCounts = async function () {
+  const fleet = (fioriVehicles || []).map(v => v.id).filter(Boolean);
+  if (!fleet.length) return;
+  // Ở đội 500 xe, hỏi từng chiếc là 500 lệnh gọi. Chỉ hỏi những xe thuộc các
+  // loại đang hiện trên màn hình.
+  const shown = new Set((vehTypes || []).map(t => t.id));
+  const target = (fioriVehicles || []).filter(v => shown.has(String(v.type || ''))).slice(0, 200);
+  const results = await Promise.allSettled(target.map(async v => {
+    const res = await fetch(`${API_BASE}/api/vehicles/${encodeURIComponent(v.id)}/cost`);
+    if (!res.ok) return null;
+    const data = (await res.json()).data || {};
+    return [v.id, Number(data.override_count || 0)];
+  }));
+  results.forEach(item => {
+    if (item.status === 'fulfilled' && item.value) vehicleOverrideCounts[item.value[0]] = item.value[1];
+  });
+  window.renderVehicleTypeFleetCounts();
+};
+
+/** Mở danh sách xe của một loại. */
+window.openVehicleCostList = function (typeId) {
+  const host = document.getElementById('vehicle-cost-panel');
+  if (!host) return;
+  const type = (vehTypes || []).find(t => String(t.id) === String(typeId));
+  const fleet = vehiclesOfType(typeId);
+  host.hidden = false;
+  host.innerHTML = `
+    <div class="vc-head">
+      <div>
+        <h4><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Giá thành từng xe</h4>
+        <p>Loại <b>${escapeHtml(type?.name || typeId)}</b> · ${fleet.length} chiếc.
+           Xe không đặt riêng thì <b>kế thừa</b> công thức của loại — sửa công thức là cả loại đổi theo.</p>
+      </div>
+      <button type="button" class="vc-close" title="Đóng" onclick="closeVehicleCostPanel()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <ul class="vc-fleet">
+      ${fleet.map(v => {
+        const count = vehicleOverrideCounts[v.id] || 0;
+        return `<li>
+          <button type="button" class="vc-vehicle" onclick="openVehicleCostEditor('${escapeJsAttr(v.id)}')">
+            <span class="vc-vehicle-id">${escapeHtml(v.id)}</span>
+            <span class="vc-vehicle-state ${count ? 'is-custom' : ''}">
+              <i class="fa-solid ${count ? 'fa-pen' : 'fa-link'}" aria-hidden="true"></i>
+              ${count ? `${count} mục đặt riêng` : 'Kế thừa loại xe'}
+            </span>
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </li>`;
+      }).join('')}
+    </ul>`;
+  host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+window.closeVehicleCostPanel = function () {
+  const host = document.getElementById('vehicle-cost-panel');
+  if (host) { host.hidden = true; host.innerHTML = ''; }
+  vehicleCostPanelId = '';
+  vehicleCostDraft = null;
+};
+
+/** Mở bảng ghi đè của MỘT chiếc xe. */
+window.openVehicleCostEditor = async function (vehicleId) {
+  const host = document.getElementById('vehicle-cost-panel');
+  if (!host) return;
+  host.hidden = false;
+  host.innerHTML = '<div class="vc-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải giá thành của xe...</div>';
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicles/${encodeURIComponent(vehicleId)}/cost`);
+    if (!res.ok) throw new Error(`Máy chủ trả về ${res.status}`);
+    vehicleCostDraft = (await res.json()).data || null;
+    vehicleCostPanelId = vehicleId;
+  } catch (error) {
+    host.innerHTML = `<div class="vc-loading">Chưa tải được giá thành của xe ${escapeHtml(vehicleId)}: ${escapeHtml(error.message)}
+      <button type="button" class="sr-mini" onclick="openVehicleCostEditor('${escapeJsAttr(vehicleId)}')">Thử lại</button></div>`;
+    return;
+  }
+  renderVehicleCostEditor();
+};
+
+function renderVehicleCostEditor() {
+  const host = document.getElementById('vehicle-cost-panel');
+  if (!host || !vehicleCostDraft) return;
+  const currency = masterCostCurrencyCode();
+  const data = vehicleCostDraft;
+
+  host.innerHTML = `
+    <div class="vc-head">
+      <div>
+        <h4><i class="fa-solid fa-truck" aria-hidden="true"></i> ${escapeHtml(data.vehicle_id)}</h4>
+        <p>Loại <b>${escapeHtml(data.vehicle_type || 'chưa gán')}</b>.
+           ${data.has_type_formula
+             ? 'Các ô để trống nghĩa là <b>kế thừa</b> công thức của loại xe.'
+             : '<b style="color:#b45309;">Loại xe này chưa có công thức</b> — hãy cấu hình ở panel bên phải trước.'}</p>
+      </div>
+      <button type="button" class="vc-close" title="Quay lại danh sách xe"
+              onclick="openVehicleCostList('${escapeJsAttr(data.vehicle_type)}')"><i class="fa-solid fa-arrow-left"></i></button>
+    </div>
+
+    <table class="vc-table">
+      <thead>
+        <tr>
+          <th>Cấu phần chi phí</th>
+          <th>Kế thừa từ loại xe</th>
+          <th>Đặt riêng cho xe này</th>
+          <th>Lý do</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.components.map(row => `
+          <tr class="${row.is_overridden ? 'is-custom' : ''}">
+            <td><b>${escapeHtml(row.label)}</b></td>
+            <td class="vc-inherited">${formatWorkflowCurrencyAmount(Number(row.inherited || 0), currency)}</td>
+            <td>
+              <input type="number" min="0" step="any"
+                     id="vc-val-${escapeHtml(row.component)}"
+                     value="${row.is_overridden ? Number(row.value) : ''}"
+                     placeholder="Kế thừa"
+                     oninput="markVehicleCostDirty()">
+            </td>
+            <td>
+              <input type="text" id="vc-note-${escapeHtml(row.component)}"
+                     value="${escapeHtml(row.note || '')}"
+                     placeholder="Ví dụ: xe cũ, tốn dầu hơn"
+                     oninput="markVehicleCostDirty()">
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+
+    <p class="vc-hint"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      Để trống ô "Đặt riêng" là xe quay về kế thừa. Sửa công thức của loại xe sẽ
+      kéo theo mọi xe đang kế thừa, nhưng <b>không</b> đụng tới xe đã đặt riêng.</p>
+
+    <div class="vc-actions">
+      <button type="button" class="sr-mini" onclick="clearAllVehicleCostOverrides()">
+        <i class="fa-solid fa-link" aria-hidden="true"></i> Cho xe này kế thừa hoàn toàn
+      </button>
+      <button type="button" class="fiori-btn" onclick="saveVehicleCostOverrides()">
+        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Lưu giá riêng cho xe
+      </button>
+    </div>`;
+}
+
+window.markVehicleCostDirty = function () { /* giữ chỗ: ô nhập tự giữ giá trị */ };
+
+window.clearAllVehicleCostOverrides = function () {
+  if (!vehicleCostDraft) return;
+  vehicleCostDraft.components.forEach(row => {
+    const value = document.getElementById(`vc-val-${row.component}`);
+    const note = document.getElementById(`vc-note-${row.component}`);
+    if (value) value.value = '';
+    if (note) note.value = '';
+  });
+};
+
+window.saveVehicleCostOverrides = async function () {
+  if (!vehicleCostDraft) return;
+  const overrides = vehicleCostDraft.components.map(row => {
+    const raw = document.getElementById(`vc-val-${row.component}`)?.value ?? '';
+    if (String(raw).trim() === '') return null;   // để trống = kế thừa
+    return {
+      component: row.component,
+      value: Number(raw),
+      note: document.getElementById(`vc-note-${row.component}`)?.value || '',
+    };
+  }).filter(Boolean);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicles/${encodeURIComponent(vehicleCostDraft.vehicle_id)}/cost-overrides`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ overrides }),
+    });
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(payload?.detail?.message || payload?.detail || `Máy chủ trả về ${res.status}`);
+    vehicleOverrideCounts[vehicleCostDraft.vehicle_id] = overrides.length;
+    showToast(overrides.length
+      ? `Đã lưu ${overrides.length} mục giá riêng cho xe ${vehicleCostDraft.vehicle_id}.`
+      : `Xe ${vehicleCostDraft.vehicle_id} quay về kế thừa công thức của loại xe.`, 'success');
+    await window.openVehicleCostEditor(vehicleCostDraft.vehicle_id);
+    window.renderVehicleTypeFleetCounts();
+  } catch (error) {
+    showToast(`Chưa lưu được giá riêng: ${error.message}`, 'error');
+  }
+};
+
 window.loadVehTypesForFormulas = async function () {
   const container = document.getElementById('formula-vehicle-types-list');
   try {
@@ -14409,6 +14657,7 @@ window.loadVehTypesForFormulas = async function () {
     }
   }
   window.renderDynamicFormulaVehicleTypes();
+  if (typeof window.loadVehicleOverrideCounts === 'function') window.loadVehicleOverrideCounts();
   if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
 };
 
@@ -14484,7 +14733,20 @@ window.renderDynamicFormulaVehicleTypes = function () {
       Number(vehicleType.pallet_capacity) && { icon: 'fa-pallet', text: `${Number(vehicleType.pallet_capacity)} pallet`, title: 'Số pallet' },
     ].filter(Boolean);
 
-    const rate = Number(vehicleType.base_rate || 0);
+    // KHONG hien base_rate nua.
+    //
+    // base_rate chi duoc GHI mot lan luc tao loai xe va khong he duoc dung de
+    // tinh bat cu thu gi trong ca he thong. Trong khi do nut "Luu Cau Hinh Gia
+    // Thanh" o panel ben phai ghi vao BANG KHAC (cost_formulas), nen sua gia
+    // ben phai thi con so tren the khong bao gio doi — hai con so nam canh nhau
+    // trong nhu cung mot thu ma khong lien quan gi.
+    //
+    // Nay the hien dung cai dang duoc dung: chi phi xang dau / 1 km trong cong
+    // thuc DA LUU, theo dung don vi tien te dang chon.
+    const formula = masterFormulaStore[formulaKey] || {};
+    const configured = formula.configured === true;
+    const fuelPerKm = parseWorkflowMoneyValue(formula.fuel);
+    const currency = masterCostCurrencyCode();
     return `
       <div class="veh-type-card" data-formula-key="${escapeHtml(formulaKey)}"
            data-vehicle-type-id="${escapeHtml(vehicleType.id)}" data-vehicle-type-name="${escapeHtml(vehicleType.name)}"
@@ -14496,13 +14758,18 @@ window.renderDynamicFormulaVehicleTypes = function () {
         ${facts.length ? `<div class="vt-facts">${facts.map(fact =>
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
         ).join('')}</div>` : ''}
-        <div class="vt-rate">${rate
-          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ/km</small>`
-          : '<small class="vt-rate-missing">Chưa đặt đơn giá/km</small>'}</div>
+        <div class="vt-rate">${configured
+          ? `<b>${formatWorkflowCurrencyAmount(fuelPerKm, currency)}</b> <small>/km · xăng dầu</small>
+             <span class="vt-flag vt-flag--ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Đã cấu hình</span>`
+          : `<span class="vt-flag vt-flag--todo"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Chưa cấu hình công thức</span>`}</div>
+        <div class="vt-fleet" id="vt-fleet-${escapeHtml(vehicleType.id)}"></div>
       </div>`;
   }).join('');
 
   container.innerHTML = searchBox + cards;
+
+  // Tang thu hai: moi the co mot dong "N chiec xe" bam duoc.
+  if (typeof window.renderVehicleTypeFleetCounts === 'function') window.renderVehicleTypeFleetCounts();
 
   const currentFormulaKey = document.getElementById('md-formula-preset-select')?.value;
   const firstFormulaKey = formulaKeys.includes(currentFormulaKey) ? currentFormulaKey : formulaKeys[0];

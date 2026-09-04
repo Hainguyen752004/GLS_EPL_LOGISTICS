@@ -73,13 +73,23 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   });
   assert.match(fn, /m³/, 'thể tích phải có đơn vị');
   assert.match(fn, /pallet/, 'số pallet phải có đơn vị');
-  // base_rate la DON GIA TREN 1 KM — chu du an da chot: moi don gia chi phi
-  // trong du an quy ve "tren 1 km". Truoc khi co cau tra loi do thi ba nguon
-  // noi ba kieu, nen the khong duoc gan don vi nao ca; gio thi phai gan dung.
-  // (Kiem tra day du ve don vi nam o tests/cost-unit-consistency.test.js.)
-  assert.match(fn, /<small>đ\/km<\/small>/, 'the phai ghi don vi đ/km');
-  // Chua dat don gia la mot su that can thay, khong phai mot o trong.
-  assert.match(fn, /Chưa đặt đơn giá\/km/);
+  // The KHONG duoc hien base_rate nua.
+  //
+  // base_rate chi duoc GHI mot lan luc tao loai xe va khong he duoc dung de
+  // tinh gi trong ca he thong. Trong khi do nut "Luu Cau Hinh Gia Thanh" ghi
+  // vao BANG KHAC (cost_formulas), nen sua gia ben phai thi con so tren the
+  // khong bao gio doi — hai con so nam canh nhau trong nhu cung mot thu ma
+  // khong lien quan gi.
+  // Chi xet phan MA CHAY, bo ghi chu — ghi chu co nhac ten truong de giai
+  // thich vi sao khong dung no nua.
+  const code = fn.split(String.fromCharCode(10)).filter(line => !/^\s*(\/\/|\/?\*)/.test(line)).join(String.fromCharCode(10));
+  assert.ok(!/base_rate/.test(code), 'the khong duoc hien base_rate');
+  assert.match(fn, /masterFormulaStore\[formulaKey\]/, 'the phai lay tu cong thuc DA LUU');
+  assert.match(fn, /formula\.configured === true/, 'the phai noi ro da cau hinh hay chua');
+  assert.match(fn, /Chưa cấu hình công thức/, 'chua cau hinh la viec CAN LAM, khong phai o trong');
+  // Tien te phai linh hoat, khong viet cung "d".
+  assert.match(fn, /masterCostCurrencyCode\(\)/, 'the phai theo don vi tien te dang chon');
+  assert.match(fn, /formatWorkflowCurrencyAmount\(fuelPerKm, currency\)/);
   // Icon lấy từ dữ liệu, chỉ dùng 🚚 khi thiếu.
   assert.match(fn, /vehicleType\.icon \|\| '🚚'/);
   // Tên loại xe do người dùng nhập nên phải thoát khi vào innerHTML.
