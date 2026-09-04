@@ -324,6 +324,11 @@ class SalesOrder(Base):
     delivery_window_end = Column(String)
     weight_kg = Column(Float, default=0.0)
     pallet_count = Column(Integer, default=0)
+    # Loai phuong tien. Cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen
+    # thieu cot nay thi don van chuyen khong ap lai duoc cong thuc theo tai
+    # trong thuc te cua don. Ke thua tu bao gia khi chot nhung sua duoc, vi
+    # loai xe thuc te dieu di co the khac loai xe luc chao gia.
+    cargo_type = Column(String)
     status = Column(String, default="Draft") # Draft, Confirmed
     total_amount = Column(MONEY_TYPE, nullable=False, default=0)
     payment_terms = Column(String, default="30 Days")

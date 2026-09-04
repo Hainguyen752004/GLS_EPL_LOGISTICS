@@ -23,8 +23,8 @@ def test_v007_is_head_and_creates_finance_schema(tmp_path):
     path = tmp_path / "v007.db"
     _legacy_base(path)
 
-    assert upgrade(str(path))[-1] == "028_shipping_spec"
-    assert required_migration_head() == "028_shipping_spec"
+    assert upgrade(str(path))[-1] == "029_sales_order_cargo_type"
+    assert required_migration_head() == "029_sales_order_cargo_type"
 
     with sqlite3.connect(path) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}
@@ -37,7 +37,7 @@ def test_v007_is_head_and_creates_finance_schema(tmp_path):
         assert "is_internal" in {row[1] for row in connection.execute('PRAGMA table_info("carriers")')}
         assert "reversed_by_cost_id" in {row[1] for row in connection.execute('PRAGMA table_info("freight_actual_costs")')}
         assert "reversed_by_ap_id" in {row[1] for row in connection.execute('PRAGMA table_info("ap_invoices")')}
-        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1").fetchone() == ("028_shipping_spec",)
+        assert connection.execute("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1").fetchone() == ("029_sales_order_cargo_type",)
 
 
 def test_v007_backfills_scoped_idempotency_and_multisource_journals(tmp_path):

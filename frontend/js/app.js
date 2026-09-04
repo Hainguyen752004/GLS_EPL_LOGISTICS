@@ -7804,6 +7804,9 @@ window.editOracleSO = function (id) {
     document.getElementById('so-amount').value = so.total_amount || 0;
   }
   if (document.getElementById('so-status')) document.getElementById('so-status').value = canonicalSOStatusValue(so.status || 'Confirmed');
+  // Loai phuong tien ke thua tu bao gia; doc lai de bang chi phi tinh dung.
+  if (document.getElementById('so-cargo-type')) document.getElementById('so-cargo-type').value = so.cargo_type || '';
+  if (document.getElementById('so-weight-kg')) document.getElementById('so-weight-kg').value = so.weight_kg || '';
   const soDetailValues = {
     'so-carrier-name': so.carrier_name || so.carrier || 'EPL Logistics Express',
     'so-delivery-method': fixUIText(so.delivery_method || 'Vận tải đường bộ'),
@@ -7817,6 +7820,7 @@ window.editOracleSO = function (id) {
     if (input) input.value = value;
   });
   setRouteContextFields('so', so);
+  if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
   if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
   if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
 
@@ -12114,76 +12118,220 @@ window.saveCostFormula = async function () {
   }
 };
 
-window.autoCalculateMasterDataCost = function (formType = 'qt') {
-  const routeSelect = document.getElementById('qt-route')?.value;
-  const cargoType = document.getElementById('qt-cargo-type')?.value;
+/**
+ * Vẽ bảng chi phí trên báo giá, sinh từ công thức của loại xe đang chọn.
+ *
+ * Bản cũ chỉ có ba ô cố định — nhiên liệu, tài xế, cầu đường — nên:
+ *   · cước phí theo kg không có chỗ hiện và bị bỏ hẳn khỏi tổng;
+ *   · phí bãi bị cộng vào ô "Phí cầu đường" nên ô đó nói sai tên con số;
+ *   · cấu phần người dùng tự thêm không xuất hiện ở đâu cả.
+ */
+/** To mau nhan trang thai cua khoi chi phi. Dung chung cho bao gia va don hang. */
+function setCostStatusBadge(id, text, tone) {
+  const status = document.getElementById(id);
+  if (!status) return;
+  status.textContent = text;
+  const tones = {
+    ok: ['#ecfdf5', '#059669', '#a7f3d0'],
+    warn: ['#fffbeb', '#b45309', '#fde68a'],
+  };
+  const [bg, fg, border] = tones[tone] || tones.warn;
+  status.style.background = bg;
+  status.style.color = fg;
+  status.style.border = `1px solid ${border}`;
+}
 
-  if (!routeSelect || !cargoType) {
-    const curr = document.getElementById('qt-currency')?.value || 'VND';
-    setWorkflowCostField('qt-fuel', 0, curr);
-    setWorkflowCostField('qt-driver', 0, curr);
-    setWorkflowCostField('qt-toll', 0, curr);
-    setWorkflowTotalField('qt-selling-price', 0, curr);
-    const fuelLabel = document.getElementById('lbl-qt-fuel-dynamic');
-    if (fuelLabel) fuelLabel.innerText = 'Chi phí nhiên liệu';
+function renderCostBreakdown(hostId, quote, currencyId) {
+  const host = document.getElementById(hostId);
+  if (!host) return;
+  const currency = document.getElementById(currencyId)?.value || quote.currency || 'VND';
+  const money = amount => formatWorkflowCurrencyAmount(amount, currency);
+
+  // Chưa đủ đầu vào thì nói thiếu gì và KHÔNG đưa ra con số. Một tổng tính
+  // thiếu trông y như một tổng đúng, và đó là cách báo giá sai đi tới khách.
+  if (!quote.ready) {
+    host.innerHTML = `
+      <div class="qt-cost-blocked">
+        <b><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Chưa tính được cước</b>
+        <ul>${quote.blockers.map(item => `<li>${escapeHtml(item.message)}</li>`).join('')}</ul>
+      </div>`;
     return;
   }
 
-  // Lấy quãng đường thực tế từ CSDL API (eplRoutes)
-  const apiRouteObj = (eplRoutes || []).find(r => r.id === routeSelect);
-  const routeKm = apiRouteObj ? parseFloat(apiRouteObj.distance_km || 200) : 200;
-  const r = { km: routeKm };
+  host.innerHTML = `
+    <div class="qt-cost-scroll">
+      <table class="qt-cost-table">
+        <thead>
+          <tr><th>Cấu phần cước</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+        </thead>
+        <tbody>
+          ${quote.rows.map(row => `
+            <tr class="${row.rate ? '' : 'is-zero'}">
+              <td><span class="qt-cost-sign">${row.operator === 'sub' ? '−' : '+'}</span>
+                  ${escapeHtml(row.label)}</td>
+              <td class="qt-cost-num">${money(row.rate)}<small>${escapeHtml(row.unit)}</small></td>
+              <td class="qt-cost-num">${row.factor === 'per_trip'
+                ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</td>
+              <td class="qt-cost-num qt-cost-amount">${money(row.amount)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Tổng cước báo giá
+              <small>${escapeHtml(quote.formulaName || '')} · ${quote.km.toLocaleString('vi-VN')} km${
+                quote.tonnes === null ? '' : ` · ${quote.tonnes.toLocaleString('vi-VN')} tấn`}</small></td>
+            <td class="qt-cost-num qt-cost-total">${money(quote.total)}</td>
+          </tr>
+          <tr class="qt-cost-perkm">
+            <td colspan="3">Bình quân mỗi km</td>
+            <td class="qt-cost-num">${money(quote.perKm)}/km</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    ${quote.notes.length ? `<ul class="qt-cost-notes">${quote.notes.map(note =>
+      `<li><i class="fa-solid fa-circle-info" aria-hidden="true"></i> ${escapeHtml(note)}</li>`).join('')}</ul>` : ''}`;
+}
 
-  // Vehicle multiplier from CSDL VehicleTypes
-  const matchedVt = (vehTypes || []).find(vt => vt.name === cargoType);
-  const multiplier = matchedVt ? ((matchedVt.max_weight || 15000) / 15000) : 1.0;
-  const v = { multiplier: parseFloat(multiplier.toFixed(2)) };
-
-  // ĐỌC TRỰC TIẾP CÁC CON SỐ ĐÃ CẤU HÌNH TRONG BẢNG CÔNG THỨC MASTER DATA (TAB 2)
-  const parseVal = (id, defaultVal) => {
-    const el = document.getElementById(id);
-    if (!el || !el.value) return defaultVal;
-    const num = parseFloat(el.value.toString().replace(/,/g, ''));
-    return isNaN(num) ? defaultVal : num;
-  };
-
-  const fuelRate = parseVal('md-cost-fuel-rate', 6250);
-  const driverBase = parseVal('md-cost-driver-allowance', 500000);
-  const tollFee = parseVal('md-cost-toll-fee', 300000);
-  const warehouseFee = parseVal('md-cost-warehouse-fee', 200000);
-
-  const fuelCost = Math.round(r.km * fuelRate * v.multiplier);
-  const driverCost = Math.round(driverBase * v.multiplier);
-  const tollCost = Math.round(tollFee);
-  const totalCost = fuelCost + driverCost + tollCost + warehouseFee;
+/**
+ * Tính cước báo giá từ công thức đã cấu hình trong Dữ liệu gốc.
+ *
+ * Bốn lỗi của bản cũ, đều làm sai tiền:
+ *
+ *   1. Không đọc ô cước phí vận chuyển, nên cấu phần lớn nhất — cước theo kg —
+ *      biến mất khỏi báo giá.
+ *   2. Nhân một hệ số bịa `(loại xe.max_weight / 15000)` vào xăng dầu và phụ
+ *      cấp. Con số 15000 không có nguồn, và nó lấy tải trọng tối đa của loại xe
+ *      chứ không phải khối lượng hàng thật.
+ *   3. Có số cứng dự phòng 6250 / 500000 / 300000 / 200000, nên chưa nạp được
+ *      cấu hình vẫn hiện ra một con số trông rất chắc chắn.
+ *   4. Đọc năm ô đơn giá đang mở trên màn Dữ liệu gốc, tức công thức của loại
+ *      xe MỞ GẦN NHẤT, chứ không phải loại xe đang chọn trên báo giá.
+ *
+ * Nay mọi con số đi qua js/quotation-pricing.js: đúng công thức của loại xe
+ * đang chọn, số km của tuyến đang chọn, khối lượng hàng đã nhập.
+ */
+window.autoCalculateMasterDataCost = function () {
+  const setStatus = (text, tone) => setCostStatusBadge('qt-cost-status', text, tone);
 
   renderWorkflowCurrencyOptions(['qt-currency', 'so-currency']);
+  const currency = document.getElementById('qt-currency')?.value || 'VND';
+  const routeId = document.getElementById('qt-route')?.value || '';
 
-  // Currency Exchange Calculation
-  const curr = document.getElementById('qt-currency')?.value || 'VND';
-  const currencyLabel = workflowCurrencyConversionLabel(totalCost, curr);
+  const quote = window.QuotationPricing.price({
+    store: masterFormulaStore,
+    vehicleTypes: vehTypes,
+    cargoType: document.getElementById('qt-cargo-type')?.value || '',
+    route: (eplRoutes || []).find(route => route.id === routeId) || null,
+    tonnes: document.getElementById('qt-weight')?.value,
+    stops: (eplRoutes || []).find(route => route.id === routeId)?.stop_count,
+    currency,
+  });
 
-  setWorkflowCostField('qt-fuel', fuelCost, curr);
-  setWorkflowCostField('qt-driver', driverCost, curr);
-  setWorkflowCostField('qt-toll', tollCost + warehouseFee, curr);
-  setWorkflowTotalField('qt-selling-price', totalCost, curr);
+  renderCostBreakdown('qt-cost-breakdown', quote, 'qt-currency');
 
-  const fuelLabel = document.getElementById('lbl-qt-fuel-dynamic');
-  if (fuelLabel) {
-    fuelLabel.innerText = 'Chi phí nhiên liệu';
+  // Bốn ô ẩn vẫn là nơi các chỗ khác đọc số. Chưa tính được thì để TRỐNG, không
+  // ghi 0 — số 0 sẽ chảy tiếp vào đơn vận chuyển như thể đó là giá đã chốt.
+  const byKey = Object.fromEntries((quote.rows || []).map(row => [row.key, row.amount]));
+  const write = (id, amount) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    if (!quote.ready) {
+      input.value = '';
+      delete input.dataset.vndValue;
+      return;
+    }
+    setWorkflowCostField(id, amount, currency);
+  };
+  write('qt-fuel', byKey.fuel || 0);
+  write('qt-driver', byKey.driver || 0);
+  write('qt-toll', byKey.toll || 0);
+
+  const total = document.getElementById('qt-selling-price');
+  if (total) {
+    if (quote.ready) setWorkflowTotalField('qt-selling-price', quote.total, currency);
+    else { total.value = ''; delete total.dataset.vndValue; }
   }
 
-  showToast(`Đã áp dụng tỉ giá & công thức Master Data: ${totalCost.toLocaleString('vi-VN')} VNĐ${currencyLabel}`);
+  if (quote.ready) {
+    setStatus(`Đã áp dụng công thức "${quote.formulaName || quote.formulaKey}"`, 'ok');
+  } else {
+    setStatus('Chưa đủ dữ liệu để áp công thức', 'warn');
+  }
+  return quote;
+};
+
+/**
+ * Chi phí chuyến của đơn vận chuyển, theo đúng công thức đã cấu hình.
+ *
+ * Trước đây màn này tính tiền bằng `số km × 6250 + 800000` ngay trong hàm đổi
+ * tuyến. Hai con số đó không có nguồn nào, không dính gì đến công thức trong Dữ
+ * liệu gốc, và mỗi lần đổi tuyến là đơn giá đã chốt bên báo giá bị xóa mất mà
+ * không một lời nào.
+ *
+ * Nay dùng chung js/quotation-pricing.js với màn báo giá: công thức của loại xe
+ * trên đơn, số km của tuyến đang chọn, và tải trọng THỰC TẾ của đơn — ô tải
+ * trọng ở đây tính bằng kg nên phải quy về tấn.
+ */
+window.autoCalculateSOCost = function () {
+  const host = document.getElementById('so-cost-breakdown');
+  if (!host) return null;
+
+  const routeId = document.getElementById('so-route-select')?.value || '';
+  const route = (eplRoutes || []).find(item => item.id === routeId) || null;
+  const kg = window.QuotationPricing.toNumber(document.getElementById('so-weight-kg')?.value);
+  const rawWeight = String(document.getElementById('so-weight-kg')?.value ?? '').trim();
+
+  const quote = window.QuotationPricing.price({
+    store: masterFormulaStore,
+    vehicleTypes: vehTypes,
+    cargoType: document.getElementById('so-cargo-type')?.value || '',
+    route,
+    // Ô trên màn là kg, mô hình nhận tấn. Chưa nhập thì để rỗng, không quy
+    // thành 0 tấn — 0 tấn là chuyến chạy rỗng, còn rỗng là chưa biết.
+    tonnes: rawWeight === '' ? '' : kg / 1000,
+    stops: route?.stop_count,
+    currency: document.getElementById('so-currency')?.value || 'VND',
+  });
+
+  renderCostBreakdown('so-cost-breakdown', quote, 'so-currency');
+  if (quote.ready) {
+    setCostStatusBadge('so-cost-status', `Theo công thức "${quote.formulaName || quote.formulaKey}"`, 'ok');
+  } else {
+    setCostStatusBadge('so-cost-status', 'Chưa đủ dữ liệu để áp công thức', 'warn');
+  }
+  return quote;
+};
+
+/**
+ * Áp giá đã tính vào dòng cước của đơn.
+ *
+ * Tách riêng khỏi autoCalculateSOCost: xem chi phí là một việc, ghi đè đơn giá
+ * đã chốt là một việc khác. Gộp hai việc là lý do bản cũ cứ đổi tuyến một cái
+ * là mất giá đã chốt bên báo giá.
+ */
+window.applySOCostToLine = function () {
+  const quote = window.autoCalculateSOCost();
+  if (!quote || !quote.ready) {
+    showToast('Chưa tính được cước nên chưa có số để áp.', 'warning');
+    return;
+  }
+  const unitPrice = document.getElementById('so-item-unit-price');
+  if (unitPrice) {
+    unitPrice.value = Math.round(quote.total);
+    if (typeof calcSOLineTotal === 'function') calcSOLineTotal();
+  }
+  showToast(`Đã áp cước theo công thức: ${formatWorkflowCurrencyAmount(quote.total, document.getElementById('so-currency')?.value || 'VND')}`);
 };
 
 window.onSORouteSelectChange = function (routeCode) {
   const container = document.getElementById('so-stops-container');
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
   if (!routeCode) {
-    if (document.getElementById('so-amount')) document.getElementById('so-amount').dataset.vndValue = '0';
-    if (document.getElementById('so-item-unit-price')) document.getElementById('so-item-unit-price').innerText = '0';
-    if (document.getElementById('so-item-total-amount')) document.getElementById('so-item-total-amount').dataset.vndValue = '0';
-    if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
+    // KHONG xoa tien ve 0 o day. Bo chon tuyen la mot thao tac xem lai, khong
+    // phai mot quyet dinh gia; xoa don gia da chot ve 0 la mat thong tin ma
+    // khong mot loi nao. Bang chi phi ben duoi tu noi la chua chon tuyen.
+    if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
     if (container) {
       const emptyRouteMsg = lang === 'la' ? 'ກະລຸນາເລືອກເສັ້ນທາງຈາກລາຍການຂໍ້ມູນຫຼັກຂ້າງເທິງເພື່ອສະແດງເສັ້ນທາງ & ຄິດໄລ່ຕົ້ນທຶນ...' : (lang === 'en' ? 'Please select a Route from Master Data above to display route legs & calculate costs...' : 'Vui lòng chọn Tuyến Đường từ danh sách CSDL ở trên để hiển thị lộ trình chặng & tính chi phí...');
       container.innerHTML = `<div style="color: #94a3b8; font-size: 0.85rem; font-style: italic; padding: 14px; text-align: center;"><i class="fa-solid fa-route" style="margin-right: 6px;"></i>${emptyRouteMsg}</div>`;
@@ -12194,27 +12342,20 @@ window.onSORouteSelectChange = function (routeCode) {
   // Try to get real route data from API first
   const apiRoute = (eplRoutes || []).find(r => r.id === routeCode);
 
-  let amount = 0;
-  let stops = [];
+  const routeLabel = lang === 'la' ? 'ເສົ້ນທາງ:' : (lang === 'en' ? 'Route:' : 'Tuyến:');
 
-  const routeLabel = lang === 'la' ? 'ເສັ້ນທາງ:' : (lang === 'en' ? 'Route:' : 'Tuyến:');
+  const stops = apiRoute
+    ? [{ label: routeLabel, text: `${escapeHtml(apiRoute.name || routeCode)} (${apiRoute.distance_km || 0} km)` }]
+    : [{ label: routeLabel, text: routeCode }];
 
-  if (apiRoute) {
-    amount = Math.round((parseFloat(apiRoute.distance_km || 200)) * 6250 + 800000);
-    stops = [{ label: routeLabel, text: `${escapeHtml(apiRoute.name || routeCode)} (${apiRoute.distance_km || 0} km)` }];
-  } else {
-    amount = 0;
-    stops = [{ label: routeLabel, text: routeCode }];
-  }
-
-  if (document.getElementById('so-item-unit-price')) {
-    document.getElementById('so-item-unit-price').value = amount;
-    if (typeof calcSOLineTotal === 'function') calcSOLineTotal();
-  } else {
-    if (document.getElementById('so-amount')) document.getElementById('so-amount').dataset.vndValue = String(amount);
-    if (document.getElementById('so-item-total-amount')) document.getElementById('so-item-total-amount').dataset.vndValue = String(amount);
-    if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
-  }
+  // CỐ Ý KHÔNG tính lại tiền ở đây.
+  //
+  // Trước đây đổi tuyến là đơn giá bị ghi đè bằng `số km × 6250 + 800000`. Hai con số
+  // đó không có nguồn nào và không dính gì đến công thức đã cấu hình trong Dự liệu gốc, nên
+  // chỉ cần đổi tuyến là đơn giá đã chỏt bên báo giá bị xóa mất mà không một lời nào.
+  //
+  // Cước thuộc về báo giá và được kế thứa xuống đơn vận chuyển; renderSOCostBreakdown()
+  // mới là chỗ tính lại theo tải trọng thực tế của đơn. Ở đây chỉ vẽ lộ trình.
 
   if (container) {
     container.innerHTML = stops.map(s => `
@@ -12225,7 +12366,10 @@ window.onSORouteSelectChange = function (routeCode) {
     `).join('');
   }
 
-  showToast(`Đã nạp lộ trình ${routeCode} và tính tổng tiền: ${formatWorkflowCurrencyAmount(amount, document.getElementById('so-currency')?.value || 'VND')}!`);
+  // Ve lai bang chi phi theo tuyen moi, nhung KHONG ghi de don gia da chot.
+  if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
+
+  showToast(`Đã nạp lộ trình ${routeCode}. Cước giự nguyên theo báo giá đã chỏt.`);
 };
 
 let newRouteCounter = 1; // Will be updated dynamically from API
@@ -15586,7 +15730,7 @@ window.syncAllDynamicDropdowns = async function () {
     }
 
     // 6. Populate Vehicle Types (#qt-cargo-type, #fiori-veh-type) from CSDL Master Data
-    ['qt-cargo-type', 'fiori-veh-type'].forEach(id => {
+    ['qt-cargo-type', 'so-cargo-type', 'fiori-veh-type'].forEach(id => {
       const sel = document.getElementById(id);
       if (sel) {
         const cur = sel.value;
@@ -16137,6 +16281,9 @@ window.saveOracleSO = async function () {
     route_id: route,
     ...routeContext,
     total_amount: amount,
+    // Loai phuong tien: cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen
+    // khong gui la don mat cach ap lai cong thuc theo tai trong thuc te.
+    cargo_type: document.getElementById('so-cargo-type')?.value || '',
     // Quy cach van chuyen: sau truong nay tung khong duoc gui len bao gio, nen
     // dien xong bam Luu la mat sach.
     carrier_name: document.getElementById('so-carrier-name')?.value || '',

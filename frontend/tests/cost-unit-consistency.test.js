@@ -103,11 +103,34 @@ assert.match(models, /base_rate.*đ\/km/, 'ghi chú cột base_rate phải nêu 
 }
 
 // --- 6. Phép tính chi phí thật vẫn là "trên 1 km" -------------------------
+//
+// Trước đây phần này bám vào tên biến `fuelCost = Math.round(r.km * fuelRate)`.
+// Phép tính giờ nằm trong mô hình hạng tử, nên kiểm ĐÚNG Ý: đơn giá khai
+// "mỗi km" phải nhân với số km, và số km phải là tổng km của tuyến đang chọn.
 
 {
-  const match = /const fuelCost = Math\.round\(([^)]*)\)/.exec(app);
-  assert.ok(match, 'phải còn phép tính chi phí nhiên liệu');
-  assert.match(match[1], /r\.km \* fuelRate/, 'chi phí nhiên liệu = số km × đơn giá trên 1 km');
+  const model = require('path').join(__dirname, '..', 'js', 'formula-model.js');
+  const M = require(model);
+  assert.strictEqual(M.FACTORS.per_km.unit, '/km');
+  assert.strictEqual(M.FACTORS.per_km.of({ km: 137, tonnes: 3, stops: 1 }), 137,
+    'don gia moi km phai nhan voi so km, khong phai 100 km');
+
+  const P = require(require('path').join(__dirname, '..', 'js', 'quotation-pricing.js'));
+  const result = P.price({
+    store: { k: { vehicleTypeName: 'X', terms: [{ key: 'fuel', label: 'Xăng dầu /km', operator: 'add', factor: 'per_km', rate: 4800 }] } },
+    vehicleTypes: [{ id: 'T', name: 'X' }], cargoType: 'X',
+    route: { id: 'R', name: 'R', distance_km: 137 },
+  });
+  assert.strictEqual(result.total, 4800 * 137, 'báo giá phải lấy tổng km của tuyến đang chọn');
+}
+
+// Và không được còn chệch đơn vị kiểu chia 100 km ẩn ở đâu đó.
+{
+  const code = app.split(String.fromCharCode(10)).filter(line => {
+    const trimmed = line.trim();
+    return !trimmed.startsWith('//') && !trimmed.startsWith('*') && !trimmed.startsWith('/*');
+  }).join(String.fromCharCode(10));
+  assert.ok(!/km\s*\/\s*100/.test(code), 'không được chia số km cho 100');
 }
 
 console.log('cost-unit-consistency: tất cả kiểm tra đã qua');

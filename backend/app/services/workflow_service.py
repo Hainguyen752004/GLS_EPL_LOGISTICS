@@ -89,7 +89,13 @@ def _line_quantity_split(uom, quantity):
 #
 # Tab nay tung co sau o nhap ma khong co cot nao de chua, khong duoc gui len, va
 # ban than cac o nhap con bi ban dich xoa mat. Ba tang cung hong mot cho.
+# Ke thua sang don hang cung mot le voi quy cach van chuyen: cargo_type la loai
+# phuong tien da chao cho khach, va cuoc mot chuyen tinh bang cong thuc cua LOAI
+# XE — thieu no thi don van chuyen khong ap lai duoc cong thuc theo tai trong
+# thuc te. Truoc day khong co cot nao, nen man don hang tinh tien bang
+# `so km x 6250 + 800000`, hai con so khong co nguon nao.
 SHIPPING_SPEC_FIELDS = (
+    "cargo_type",
     "carrier_name",
     "delivery_method",
     "seal_weight",

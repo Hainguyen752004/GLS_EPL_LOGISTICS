@@ -92,6 +92,7 @@ class SalesOrderCreateRequest(StrictRequest):
     lines: Optional[List[SalesOrderLineRequest]] = None
     carrier_name: Optional[str] = None
     delivery_method: Optional[str] = None
+    cargo_type: Optional[str] = None
     seal_weight: Optional[str] = None
     temperature_requirement: Optional[str] = None
     cargo_insurance: Optional[str] = None
@@ -117,6 +118,7 @@ class SalesOrderUpdateRequest(StrictRequest):
     lines: Optional[List[SalesOrderLineRequest]] = None
     carrier_name: Optional[str] = None
     delivery_method: Optional[str] = None
+    cargo_type: Optional[str] = None
     seal_weight: Optional[str] = None
     temperature_requirement: Optional[str] = None
     cargo_insurance: Optional[str] = None

@@ -1024,6 +1024,37 @@
     /* ---------- Bang cong thuc gop: don gia + hang tu trong MOT bang ----------
        Ban truoc tach hai khoi (bang don gia tren, khung cong thuc duoi) nen phai
        cuon xuong moi nhap duoc, sua xong lai cuon len xem tong. */
+    /* ---------- Bang chi phi tren bao gia ----------
+       Ban cu la ba o co dinh nen cuoc theo kg khong co cho hien va bi bo hang
+       khoi tong; nay ve dong theo cong thuc cua loai xe dang chon. */
+    .qt-cost-scroll { overflow-x:auto; background:#fff; border:1px solid #e2e8f0; border-radius:8px; }
+    .qt-cost-table { width:100%; border-collapse:collapse; font-size:.84rem; }
+    .qt-cost-table th { padding:9px 14px; background:#f8fafc; border-bottom:1px solid #e2e8f0;
+      font-size:.72rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.4px; text-align:left; }
+    .qt-cost-table th:not(:first-child), .qt-cost-num { text-align:right; }
+    .qt-cost-table td { padding:9px 14px; border-bottom:1px solid #f1f5f9; color:#0f172a; }
+    .qt-cost-num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .qt-cost-num small { margin-left:3px; font-size:.72rem; color:#94a3b8; }
+    .qt-cost-amount { font-weight:800; }
+    .qt-cost-sign { display:inline-block; width:14px; color:#94a3b8; font-weight:800; }
+    /* Cau phan de 0 van hien, nhung mo di: an no khien nguoi dung tuong cong
+       thuc thieu cau phan, con hien dam thi tuong la co tinh tien. */
+    .qt-cost-table tr.is-zero td { color:#94a3b8; }
+    .qt-cost-table tfoot td { border-top:2px solid #0a6ed1; border-bottom:0; padding-top:11px;
+      font-weight:800; color:#0f172a; }
+    .qt-cost-table tfoot small { display:block; margin-top:2px; font-size:.72rem; font-weight:600; color:#64748b; }
+    .qt-cost-total { font-size:1.16rem; color:#0a6ed1; }
+    .qt-cost-perkm td { border-top:1px dashed #cbd7e5; font-size:.78rem; font-weight:600; color:#475569; }
+    .qt-cost-notes { list-style:none; margin:9px 0 0; padding:0; display:grid; gap:5px; }
+    .qt-cost-notes li { display:flex; align-items:flex-start; gap:8px; font-size:.76rem; color:#475569; }
+    .qt-cost-notes i { color:#0a6ed1; margin-top:2px; }
+    /* Thieu dau vao thi noi thieu gi, KHONG dua ra con so: mot tong tinh thieu
+       trong y nhu mot tong dung, va do la cach bao gia sai di toi khach. */
+    .qt-cost-blocked { padding:14px 18px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; }
+    .qt-cost-blocked b { display:flex; align-items:center; gap:8px; font-size:.86rem; color:#92400e; }
+    .qt-cost-blocked ul { margin:8px 0 0; padding-left:26px; display:grid; gap:4px; }
+    .qt-cost-blocked li { font-size:.79rem; color:#78350f; line-height:1.55; }
+
     /* Cau cong thuc la mot cai NUT: bam vao mo bong bong cau hinh. Truoc do bang
        nhap va bang tong la hai khoi roi nen phai cuon xuong nhap roi cuon len xem. */
     .cf-head-main { position:relative; flex:1 1 auto; min-width:0; }
@@ -3691,6 +3722,17 @@
                         <select id="qt-cargo-type" class="fiori-input" onchange="autoCalculateMasterDataCost('qt'); refreshQuotationVehicleRecommendations()" style="padding: 9px 12px; border: 1.5px solid #0a6ed1; border-radius: 6px; font-weight: 700; color: #0a6ed1; background: #eff6ff;"></select>
                       </div>
 
+                      <!-- Tai trong phai nhap ngay o buoc bao gia: cong thuc co cuoc
+                           tinh theo kg, nen khong co so nay la khong ra duoc gia. Truoc do
+                           man bao gia khong he co o nay va phan cuoc bi bo hang. -->
+                      <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <label style="font-size: 0.85rem; color: #0a6ed1; font-weight: 700;" for="qt-weight" data-i18n="lbl_qt_weight"><i class="fa-solid fa-weight-hanging"></i> Tải trọng hàng (tấn)</label>
+                        <input type="number" id="qt-weight" class="fiori-input" min="0" step="0.1" placeholder="Ví dụ: 3"
+                               oninput="autoCalculateMasterDataCost('qt')"
+                               style="padding: 9px 12px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 600;">
+                        <small style="font-size: 0.72rem; color: #64748b;">Dùng để nhân với cước tính theo khối lượng trong công thức.</small>
+                      </div>
+
                       <!-- Vietnamese source cleaned -->
                       <div style="display: flex; flex-direction: column; gap: 5px;">
                         <label style="font-size: 0.85rem; color: #0284c7; font-weight: 700;" data-i18n="lbl_currency_exchange"><i class="fa-solid fa-coins"></i> Loại Tiền Tệ & Tỉ Giá Quy Đổi</label>
@@ -3713,30 +3755,22 @@
                       <h4 style="margin: 0; color: #172b4d; font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 8px;" data-i18n="title_cost_calc">
                         <i class="fa-solid fa-calculator" style="color: #0a6ed1;"></i> Tính Toán Chi Phí Tự Động Từ Công Thức Master Data
                       </h4>
-                      <span data-i18n="badge_md_applied" style="background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 4px 12px; border-radius: 14px; font-size: 0.78rem; font-weight: 700;">
-                        Đã áp dụng công thức Master Data
+                      <span id="qt-cost-status" style="padding: 4px 12px; border-radius: 14px; font-size: 0.78rem; font-weight: 700;">
                       </span>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: flex-end; background: #f8fafc; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-top: 12px;">
-                      <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label id="lbl-qt-fuel-dynamic" style="font-size: 0.85rem; color: #334155; font-weight: 600;" data-i18n="lbl_fuel_cost">Chi phí nhiên liệu</label>
-                        <input type="text" readonly data-vnd-value="2000000" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-weight: 700; color: #0a6ed1; background: #f1f5f9; cursor: not-allowed;" id="qt-fuel" value="2,000,000 VNĐ">
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #334155; font-weight: 600;" data-i18n="lbl_driver_cost">Chi phí tài xế</label>
-                        <input type="text" readonly data-vnd-value="800000" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-weight: 700; color: #0a6ed1; background: #f1f5f9; cursor: not-allowed;" id="qt-driver" value="800,000 VNĐ">
-                      </div>
-                      <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #334155; font-weight: 600;" data-i18n="lbl_toll_fee">Phí Cầu Đường</label>
-                        <input type="text" readonly data-vnd-value="350000" style="padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-weight: 700; color: #0a6ed1; background: #f1f5f9; cursor: not-allowed;" id="qt-toll" value="350,000 VNĐ">
-                      </div>
-                    </div>
+                    <!-- Bang chi phi duoc VE DONG tu cong thuc cua loai xe dang chon.
+                         Ban cu chi co ba o co dinh (nhien lieu / tai xe / cau duong) nen:
+                         cuoc phi theo kg khong co cho hien va bi bo hang khoi tong; phi bai
+                         bi gop vao o "Phi cau duong" nen o do noi sai ten con so; va cau phan
+                         nguoi dung tu them trong Du lieu goc khong xuat hien o dau ca. -->
+                    <div id="qt-cost-breakdown" aria-live="polite" style="margin-top: 12px;"></div>
 
-                    <div class="qt-selling-total-row" style="display: grid; grid-template-columns: auto minmax(0, 1fr); justify-content: flex-end; margin-top: 15px; align-items: center; gap: 15px;">
-                      <div style="font-weight: bold; color: #475569; font-size: 1rem;" data-i18n="lbl_selling_price_total">Tổng cước báo giá:</div>
-                      <input type="text" id="qt-selling-price" readonly style="font-size: 1.3rem; font-weight: 800; color: #0a6ed1; background: transparent; border: none; text-align: right; outline: none; width: 100%; min-width: 0; white-space: normal; text-overflow: clip;" value="2,400,000 VNĐ">
-                    </div>
+                    <!-- Bon o nay giu lai (an di) vi cac cho khac trong ung dung doc chung. -->
+                    <input type="hidden" id="qt-fuel">
+                    <input type="hidden" id="qt-driver">
+                    <input type="hidden" id="qt-toll">
+                    <input type="hidden" id="qt-selling-price">
                   </div>
 
                   <!-- Vietnamese source cleaned -->
@@ -3886,10 +3920,33 @@
                             <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_pickup_end">Lấy hàng đến</label><input id="so-pickup-window-end" type="datetime-local" class="fiori-input" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                             <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_delivery_start">Giao hàng từ</label><input id="so-delivery-window-start" type="datetime-local" class="fiori-input" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                             <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_delivery_end">Giao hàng đến</label><input id="so-delivery-window-end" type="datetime-local" class="fiori-input" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
-                            <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_weight_kg">Tải trọng (kg)</label><input id="so-weight-kg" type="number" min="0" class="fiori-input" placeholder="Ví dụ: 12000" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
+                            <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_weight_kg">Tải trọng (kg)</label><input id="so-weight-kg" type="number" min="0" class="fiori-input" placeholder="Ví dụ: 12000" oninput="autoCalculateSOCost()" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                             <div style="display:flex; flex-direction:column; gap:4px;"><label style="font-size:0.8rem; font-weight:700; color:#334155;" data-i18n="lbl_pallet_count">Số pallet</label><input id="so-pallet-count" type="number" min="0" step="1" class="fiori-input" placeholder="Ví dụ: 12" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px;"></div>
                           </div>
                           <div id="so-route-checkpoints" class="route-checkpoint-timeline" aria-live="polite"></div>
+                        </div>
+
+                        <!-- Loai phuong tien tren don van chuyen.
+                             Cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen thieu o nay thi
+                             don khong ap lai duoc cong thuc theo tai trong thuc te. Ke thua tu bao
+                             gia khi chot nhung sua duoc, vi loai xe thuc te dieu di co the khac. -->
+                        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                          <label style="font-size: 0.82rem; color: #475569; font-weight: 600;" for="so-cargo-type" data-i18n="lbl_so_cargo_type"><i class="fa-solid fa-truck-moving"></i> Loại phương tiện (kế thừa từ báo giá)</label>
+                          <select id="so-cargo-type" class="fiori-input" onchange="autoCalculateSOCost()"
+                                  style="padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600;">
+                            <option value="">-- Chọn loại xe để áp công thức --</option>
+                          </select>
+                        </div>
+
+                        <!-- Bang chi phi cua don, ve dong tu cong thuc cua loai xe o tren.
+                             Truoc day man nay tinh tien bang `so km x 6250 + 800000` — hai con so
+                             khong co nguon nao va khong dinh gi den cong thuc da cau hinh. -->
+                        <div style="margin-bottom:10px;">
+                          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                            <b style="font-size:0.86rem; color:#0a6ed1;"><i class="fa-solid fa-calculator"></i> Chi phí chuyến theo công thức giá thành</b>
+                            <span id="so-cost-status" style="padding: 4px 12px; border-radius: 14px; font-size: 0.76rem; font-weight: 700;"></span>
+                          </div>
+                          <div id="so-cost-breakdown" aria-live="polite"></div>
                         </div>
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -6977,6 +7034,7 @@
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
   <script src="/static/js/formula-model.js?v=20260905-formula-popover"></script>
+  <script src="/static/js/quotation-pricing.js?v=20260905-formula-popover"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
