@@ -141,13 +141,19 @@
    */
   function weekMatrix(data, options) {
     const days = (data && data.days) || [];
-    const people = (data && data.people) || [];
+    const all = (data && data.people) || [];
     const selectedDay = (options && options.selectedDay) || '';
 
     if (!days.length) return emptyState('Chưa xác định được tuần cần xếp ca.');
-    if (!people.length) {
+    if (!all.length) {
       return emptyState('Không có nhân sự nào khớp bộ lọc. Xóa từ khóa tìm kiếm để xem toàn bộ đội.');
     }
+
+    // Mỗi người chiếm 21 ô (7 ngày × 3 ca), nên 400 người là 8.400 nút và
+    // khoảng 3,3 MB HTML trong một lần innerHTML.
+    const limit = Number((options && options.limit) || PERSON_PAGE_SIZE);
+    const people = all.slice(0, Math.max(1, limit));
+    const hidden = all.length - people.length;
 
     const header = `
       <div class="dr-row dr-row--head">
@@ -189,7 +195,17 @@
         </div>`;
     }).join('');
 
-    return `<div class="dr-matrix" style="--dr-days:${days.length};" role="group" aria-label="Bảng xếp ca theo tuần">${header}${rows}</div>`;
+    const footer = hidden > 0
+      ? `<div class="dr-page">
+          <span>Đang xem <b>${people.length}</b> trên <b>${all.length}</b> nhân sự</span>
+          <button type="button" onclick="DriverRosterActions.showMorePeople()">
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            Xem thêm ${Math.min(hidden, PERSON_PAGE_SIZE)} người
+          </button>
+        </div>`
+      : `<div class="dr-page"><span>Đang xem đủ <b>${all.length}</b> nhân sự</span></div>`;
+
+    return `<div class="dr-matrix" style="--dr-days:${days.length};" role="group" aria-label="Bảng xếp ca theo tuần">${header}${rows}</div>${footer}`;
   }
 
   /** Các ô ca của một người trong một ngày, khóa theo loại ca. */
@@ -380,13 +396,20 @@
    */
   function vehicleMatrix(data, options) {
     const days = (data && data.days) || [];
-    const vehicles = (data && data.vehicles) || [];
+    const all = (data && data.vehicles) || [];
     const selectedDay = (options && options.selectedDay) || '';
 
     if (!days.length) return emptyState('Chưa xác định được tuần cần xem.');
-    if (!vehicles.length) {
+    if (!all.length) {
       return emptyState('Chưa có xe nào khớp bộ lọc. Xóa từ khóa để xem toàn bộ đội xe.');
     }
+
+    // Chỉ dựng một trang xe mỗi lần. Ở 500 xe, dựng hết là 1,7 MB HTML và
+    // 3.500 nút trong một lần innerHTML, và mỗi lần gõ tìm kiếm lại dựng lại
+    // toàn bộ.
+    const limit = Number((options && options.limit) || VEHICLE_PAGE_SIZE);
+    const vehicles = all.slice(0, Math.max(1, limit));
+    const hidden = all.length - vehicles.length;
 
     const header = `
       <div class="dr-row dr-row--head">
@@ -430,7 +453,17 @@
         </div>`;
     }).join('');
 
-    return `<div class="dr-matrix dr-matrix--vehicles" style="--dr-days:${days.length};" role="group" aria-label="Lịch xe theo tuần">${header}${rows}</div>`;
+    const footer = hidden > 0
+      ? `<div class="dr-page">
+          <span>Đang xem <b>${vehicles.length}</b> trên <b>${all.length}</b> xe</span>
+          <button type="button" onclick="DriverRosterActions.showMoreVehicles()">
+            <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            Xem thêm ${Math.min(hidden, VEHICLE_PAGE_SIZE)} xe
+          </button>
+        </div>`
+      : `<div class="dr-page"><span>Đang xem đủ <b>${all.length}</b> xe</span></div>`;
+
+    return `<div class="dr-matrix dr-matrix--vehicles" style="--dr-days:${days.length};" role="group" aria-label="Lịch xe theo tuần">${header}${rows}</div>${footer}`;
   }
 
   /** Tổng hợp một ngày của cả đội xe. */
@@ -443,6 +476,304 @@
       else load[status] += 1;
     });
     return load;
+  }
+
+  /* ======================================================================
+     Đội tài xế lớn: cùng lý do như đội xe
+     ----------------------------------------------------------------------
+     Với 400 tài xế, ma trận người × ngày × 3 ca sinh ra khoảng 3,3 MB HTML và
+     8.400 nút bấm — nặng hơn cả bảng xe, vì mỗi ngày có ba ô thay vì một.
+
+     Và câu hỏi thật của người xếp ca không phải "cho tôi xem 400 người", mà là
+     "ca đêm thứ Năm đã có ai chưa" và "ai chưa được xếp ca nào tuần này".
+     ====================================================================== */
+
+  const PERSON_PAGE_SIZE = 50;
+
+  /**
+   * Số người trực từng ca, từng ngày.
+   *
+   * Đây là thứ trả lời ngay được câu "ca nào đang trống người" mà không cần
+   * cuộn qua 400 dòng.
+   */
+  function shiftCoverage(people, dayKey) {
+    const counts = {};
+    SHIFTS.forEach(shiftDef => { counts[shiftDef.key] = 0; });
+    people.forEach(person => {
+      const cells = personCells(person, dayKey);
+      SHIFTS.forEach(shiftDef => {
+        const state = cellState(cells[shiftDef.key]);
+        // Nghỉ phép không tính là có người trực.
+        if (state === 'assigned' || state === 'locked') counts[shiftDef.key] += 1;
+      });
+    });
+    return counts;
+  }
+
+  /** Băng phủ ca 7 ngày: mỗi ngày ba con số S / C / Đ. */
+  function crewCoverageStrip(data, options) {
+    const days = (data && data.days) || [];
+    const people = (data && data.people) || [];
+    const selectedDay = (options && options.selectedDay) || '';
+    if (!days.length) return '';
+
+    return `
+      <div class="dr-capacity" role="group" aria-label="Số người trực theo ca">
+        ${days.map(day => {
+          const counts = shiftCoverage(people, day.key);
+          const empty = SHIFTS.filter(shiftDef => !counts[shiftDef.key]);
+          const total = SHIFTS.reduce((sum, shiftDef) => sum + counts[shiftDef.key], 0);
+          const tooltip = SHIFTS.map(shiftDef => `${shiftDef.label}: ${counts[shiftDef.key]} người`).join(', ');
+          return `<button type="button" class="dr-cap${day.key === selectedDay ? ' is-selected' : ''}"
+                  aria-pressed="${day.key === selectedDay}"
+                  title="${esc(`${day.label} — ${tooltip}`)}"
+                  onclick="DriverRosterActions.selectDay('${escAttr(day.key)}')">
+            <b>${esc(day.label)}</b>
+            <span class="dr-shift-counts">
+              ${SHIFTS.map(shiftDef => `<span class="dr-shift-count${counts[shiftDef.key] ? '' : ' is-empty'}"
+                  title="${esc(`${shiftDef.label} (${shiftDef.time}): ${counts[shiftDef.key]} người`)}">
+                <em>${esc(shiftDef.letter)}</em>
+                <b>${counts[shiftDef.key]}</b>
+              </span>`).join('')}
+            </span>
+            <strong>${total}</strong>
+            <small>lượt trực / ${people.length} người</small>
+            ${empty.length ? `<em class="dr-cap-flag"><i class="fa-solid fa-user-slash" aria-hidden="true"></i> Trống ${empty.map(item => item.letter).join(', ')}</em>` : ''}
+          </button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  /**
+   * Những chỗ hổng thật sự cần người xếp ca xử lý.
+   *
+   * Ca không có ai trực là lỗ hổng vận hành — nặng hơn nhiều so với một người
+   * rảnh cả tuần, nên nó lên trước.
+   */
+  function crewGaps(data) {
+    const days = (data && data.days) || [];
+    const people = (data && data.people) || [];
+    const rows = [];
+
+    days.forEach(day => {
+      const counts = shiftCoverage(people, day.key);
+      SHIFTS.forEach(shiftDef => {
+        if (counts[shiftDef.key]) return;
+        rows.push({
+          kind: 'uncovered',
+          key: day.key,
+          shift: shiftDef.key,
+          dayLabel: day.label,
+          label: `${shiftDef.label} ${day.label}`,
+          hint: `${shiftDef.time} — chưa có ai trực`,
+        });
+      });
+    });
+
+    // Người không có ca nào cả tuần: năng lực chưa dùng, đáng nhắc nhưng không
+    // khẩn cấp bằng một ca trống.
+    people.forEach(person => {
+      const busy = days.some(day => {
+        const cells = personCells(person, day.key);
+        return SHIFTS.some(shiftDef => {
+          const state = cellState(cells[shiftDef.key]);
+          return state === 'assigned' || state === 'locked';
+        });
+      });
+      if (busy) return;
+      rows.push({
+        kind: 'idle',
+        key: '',
+        person_id: person.id,
+        label: person.name || person.id,
+        hint: `${person.role || 'Nhân sự'} — chưa có ca nào tuần này`,
+      });
+    });
+
+    return rows;
+  }
+
+  function crewGapList(data, options) {
+    const rows = crewGaps(data);
+    const expanded = Boolean(options && options.expanded);
+    if (!rows.length) {
+      return `<section class="dr-panel dr-panel--clear">
+        <h4><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Tuần này đã kín ca</h4>
+        <p>Mọi ca đều có người trực và không ai bị bỏ trống cả tuần.</p>
+      </section>`;
+    }
+
+    const uncovered = rows.filter(row => row.kind === 'uncovered').length;
+    const shown = expanded ? rows : rows.slice(0, EXCEPTION_PREVIEW);
+    return `<section class="dr-panel dr-panel--alert">
+      <h4>
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        Cần xếp <span class="dr-panel-count">${rows.length}</span>
+        ${uncovered ? `<small>trong đó ${uncovered} ca chưa có ai trực</small>` : ''}
+      </h4>
+      <ul class="dr-exceptions">
+        ${shown.map(row => {
+          const uncoveredRow = row.kind === 'uncovered';
+          const tone = uncoveredRow ? '#b91c1c' : '#94a3b8';
+          const icon = uncoveredRow ? 'fa-user-slash' : 'fa-user-clock';
+          const action = uncoveredRow
+            ? `DriverRosterActions.selectDay('${escAttr(row.key)}')`
+            : `DriverRosterActions.focusPerson('${escAttr(row.person_id)}')`;
+          return `<li>
+            <button type="button" class="dr-exception" style="--dr-tone:${tone};" onclick="${action}">
+              <i class="fa-solid ${icon}" aria-hidden="true"></i>
+              <span class="dr-exception-text">
+                <b>${esc(row.label)}</b>
+                <small>${esc(row.hint)}</small>
+              </span>
+              <i class="fa-solid fa-chevron-right dr-exception-go" aria-hidden="true"></i>
+            </button>
+          </li>`;
+        }).join('')}
+      </ul>
+      ${rows.length > EXCEPTION_PREVIEW ? `<button type="button" class="dr-more" onclick="DriverRosterActions.toggleGaps()">
+        ${expanded ? 'Thu gọn' : `Xem tất cả ${rows.length} dòng`}
+      </button>` : ''}
+    </section>`;
+  }
+
+  /* ======================================================================
+     Đội xe lớn: tình hình trước, việc cần xử lý sau, chi tiết sau cùng
+     ----------------------------------------------------------------------
+     Ma trận xe × ngày rất hợp lý với đội vài chục xe, nhưng ở 500 xe nó sinh
+     ra khoảng 1,7 MB HTML và 3.500 nút bấm trong một lần innerHTML — và mỗi
+     lần gõ vào ô tìm kiếm lại dựng lại toàn bộ.
+
+     Nặng hơn cả tốc độ là cách nghĩ: với 500 xe thì không ai cuộn hết danh
+     sách. Câu hỏi thật của người điều phối là "thứ Năm còn bao nhiêu xe rảnh"
+     và "tuần này có xung đột nào không" — tức bài toán LỌC và BẮT NGOẠI LỆ,
+     không phải duyệt hết. Ma trận cũ chôn đúng 5 xe có vấn đề giữa 495 xe
+     bình thường.
+     ====================================================================== */
+
+  /** Số xe tối đa dựng một lần. Còn lại tải thêm theo yêu cầu. */
+  const VEHICLE_PAGE_SIZE = 50;
+
+  /** Số dòng ngoại lệ hiện sẵn trước khi phải bấm "xem tất cả". */
+  const EXCEPTION_PREVIEW = 6;
+
+  /**
+   * Băng năng lực 7 ngày: mỗi ngày một cột, thanh xếp chồng theo trạng thái.
+   *
+   * Đây là thứ trả lời được ngay câu hỏi hay gặp nhất mà không cần cuộn dòng
+   * nào: ngày nào đội xe căng, ngày nào còn dư.
+   */
+  function vehicleCapacityStrip(data, options) {
+    const days = (data && data.days) || [];
+    const vehicles = (data && data.vehicles) || [];
+    const selectedDay = (options && options.selectedDay) || '';
+    if (!days.length) return '';
+
+    const order = ['busy', 'maintenance', 'conflict', 'available'];
+    return `
+      <div class="dr-capacity" role="group" aria-label="Năng lực đội xe theo ngày">
+        ${days.map(day => {
+          const load = vehicleDayLoad(vehicles, day.key);
+          const total = vehicles.length || 1;
+          const used = load.busy + load.maintenance + load.conflict;
+          const tooltip = `${day.label}: ${load.available} rảnh, ${load.busy} đang có lịch, ${load.maintenance} bảo dưỡng, ${load.conflict} xung đột`;
+          return `<button type="button" class="dr-cap${day.key === selectedDay ? ' is-selected' : ''}"
+                  aria-pressed="${day.key === selectedDay}"
+                  title="${esc(tooltip)}"
+                  onclick="DriverRosterActions.selectVehicleDay('${escAttr(day.key)}')">
+            <b>${esc(day.label)}</b>
+            <span class="dr-cap-bar">
+              ${order.map(key => {
+                const value = load[key];
+                if (!value) return '';
+                const tone = VEHICLE_STATE[key];
+                return `<span class="dr-cap-seg" style="flex:${value}; background:${tone.color};"
+                         title="${esc(`${value} xe — ${tone.label}`)}"></span>`;
+              }).join('')}
+            </span>
+            <strong>${load.available}</strong>
+            <small>xe rảnh / ${vehicles.length}</small>
+            ${load.conflict ? `<em class="dr-cap-flag"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${load.conflict} xung đột</em>` : ''}
+            ${!load.conflict && load.maintenance ? `<em class="dr-cap-flag dr-cap-flag--soft"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> ${load.maintenance} bảo dưỡng</em>` : ''}
+            <span class="dr-cap-used">${used}/${total} đang dùng</span>
+          </button>`;
+        }).join('')}
+      </div>`;
+  }
+
+  /**
+   * Những dòng thật sự cần người xử lý, xếp việc nặng lên trước.
+   *
+   * Trả về dữ liệu thuần để kiểm chứng được phép sắp xếp bằng Node — thứ tự
+   * ở đây quyết định người dùng nhìn thấy gì đầu tiên.
+   */
+  function vehicleExceptions(data) {
+    const days = (data && data.days) || [];
+    const vehicles = (data && data.vehicles) || [];
+    const labelOf = key => (days.find(day => day.key === key) || {}).label || key;
+    const rows = [];
+    vehicles.forEach(vehicle => {
+      (vehicle.days || []).forEach(day => {
+        const status = (day && day.status) || 'available';
+        if (status !== 'conflict' && status !== 'maintenance') return;
+        rows.push({
+          vehicle_id: vehicle.vehicle_id,
+          label: vehicle.label || vehicle.vehicle_id,
+          type: vehicle.type || '',
+          key: day.key,
+          dayLabel: labelOf(day.key),
+          status,
+          hint: vehicleDayHint(day),
+        });
+      });
+    });
+    // Xung đột lịch là lỗi phải sửa ngay; bảo dưỡng chỉ là việc đã biết trước.
+    const weight = { conflict: 0, maintenance: 1 };
+    return rows.sort((a, b) =>
+      (weight[a.status] - weight[b.status])
+      || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
+      || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0)
+    );
+  }
+
+  function vehicleExceptionList(data, options) {
+    const rows = vehicleExceptions(data);
+    const expanded = Boolean(options && options.expanded);
+    if (!rows.length) {
+      return `<section class="dr-panel dr-panel--clear">
+        <h4><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Không có việc cần xử lý</h4>
+        <p>Tuần này không có xung đột lịch hay lịch bảo dưỡng nào trong đội xe đang lọc.</p>
+      </section>`;
+    }
+
+    const shown = expanded ? rows : rows.slice(0, EXCEPTION_PREVIEW);
+    const conflicts = rows.filter(row => row.status === 'conflict').length;
+    return `<section class="dr-panel dr-panel--alert">
+      <h4>
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        Cần xử lý <span class="dr-panel-count">${rows.length}</span>
+        ${conflicts ? `<small>trong đó ${conflicts} xung đột lịch</small>` : ''}
+      </h4>
+      <ul class="dr-exceptions">
+        ${shown.map(row => {
+          const tone = VEHICLE_STATE[row.status];
+          return `<li>
+            <button type="button" class="dr-exception" style="--dr-tone:${tone.color};"
+                    onclick="DriverRosterActions.openVehicle('${escAttr(row.vehicle_id)}', '${escAttr(row.key)}')">
+              <i class="fa-solid ${tone.icon}" aria-hidden="true"></i>
+              <span class="dr-exception-text">
+                <b>${esc(row.label)}</b>
+                <small>${esc(row.dayLabel)} · ${esc(tone.label)}${row.hint !== '—' ? ` · ${esc(row.hint)}` : ''}</small>
+              </span>
+              <i class="fa-solid fa-chevron-right dr-exception-go" aria-hidden="true"></i>
+            </button>
+          </li>`;
+        }).join('')}
+      </ul>
+      ${rows.length > EXCEPTION_PREVIEW ? `<button type="button" class="dr-more" onclick="DriverRosterActions.toggleExceptions()">
+        ${expanded ? 'Thu gọn' : `Xem tất cả ${rows.length} dòng`}
+      </button>` : ''}
+    </section>`;
   }
 
   function vehicleLegend() {
@@ -468,9 +799,18 @@
     weekMatrix,
     dayDetail,
     legend,
+    PERSON_PAGE_SIZE,
+    VEHICLE_PAGE_SIZE,
+    shiftCoverage,
+    crewCoverageStrip,
+    crewGaps,
+    crewGapList,
     vehicleDayHint,
     vehicleDayLoad,
     vehicleMatrix,
     vehicleLegend,
+    vehicleCapacityStrip,
+    vehicleExceptions,
+    vehicleExceptionList,
   };
 });

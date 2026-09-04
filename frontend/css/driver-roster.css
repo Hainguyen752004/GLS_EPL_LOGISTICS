@@ -610,3 +610,273 @@
     grid-template-columns: 148px repeat(var(--dr-days, 7), minmax(112px, 1fr)) 56px;
   }
 }
+
+/* ==========================================================================
+   Đội xe lớn — tình hình trước, việc cần xử lý sau, chi tiết sau cùng
+   --------------------------------------------------------------------------
+   Ma trận xe × ngày rất hợp lý với đội vài chục xe, nhưng ở 500 xe nó chôn
+   đúng 5 xe có vấn đề giữa 495 xe bình thường. Hai khối dưới đây trả lời được
+   ngay hai câu hỏi hay gặp nhất mà không cần cuộn dòng nào.
+   ========================================================================== */
+
+/* ---------- Băng năng lực 7 ngày ---------- */
+
+.dr-capacity {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dr-cap {
+  min-width: 0;
+  padding: 10px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dr-cap:hover { border-color: var(--lao-blue); background: var(--lao-blue-light); }
+.dr-cap:focus-visible { outline: 2px solid var(--lao-blue-dark); outline-offset: 1px; }
+.dr-cap.is-selected { border-color: var(--lao-blue); background: var(--surface-selected); box-shadow: inset 0 -2px var(--lao-blue); }
+
+.dr-cap > b {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Thanh xếp chồng: khe 2px giữa các mảng để hai màu cạnh nhau không dính
+   thành một khối liền, và các con số bên dưới nói lại đúng nội dung thanh —
+   màu không bao giờ đứng một mình. */
+.dr-cap-bar {
+  display: flex;
+  gap: 2px;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-subtle);
+}
+
+.dr-cap-seg { display: block; min-width: 3px; }
+
+.dr-cap > strong {
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-cap > small {
+  font-size: 0.67rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-cap-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-style: normal;
+  font-size: 0.67rem;
+  font-weight: 800;
+  color: #b91c1c;
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-cap-flag--soft { color: #b45309; }
+
+.dr-cap-used {
+  font-size: 0.64rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Khối "Cần xử lý" ---------- */
+
+.dr-panel {
+  border: 1px solid var(--border-color);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 13px 15px;
+}
+
+.dr-panel h4 {
+  margin: 0 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.dr-panel h4 small { font-weight: 700; font-size: 0.7rem; color: var(--text-muted); }
+
+.dr-panel-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Có việc: viền đỏ. Sạch: viền xanh lá và icon dấu tích — khác cả màu lẫn
+   hình dạng, đọc được kể cả khi in đen trắng. */
+.dr-panel--alert { border-left-color: #b91c1c; }
+.dr-panel--alert h4 i { color: #b91c1c; }
+.dr-panel--alert .dr-panel-count { background: #fee2e2; color: #991b1b; }
+
+.dr-panel--clear { border-left-color: #059669; background: var(--bg-card); }
+.dr-panel--clear h4 i { color: #059669; }
+.dr-panel--clear p { margin: 0; font-size: 0.76rem; color: var(--text-muted); }
+
+.dr-exceptions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.dr-exception {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 1px solid var(--divider-color);
+  border-left: 3px solid var(--dr-tone, var(--border-strong));
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dr-exception:hover { background: var(--lao-blue-light); border-color: var(--lao-blue); }
+.dr-exception:focus-visible { outline: 2px solid var(--lao-blue-dark); outline-offset: 1px; }
+.dr-exception > i:first-child { color: var(--dr-tone); font-size: 0.8rem; }
+
+.dr-exception-text { min-width: 0; }
+.dr-exception-text b, .dr-exception-text small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dr-exception-text b { font-size: 0.79rem; color: var(--text-main); }
+.dr-exception-text small { margin-top: 2px; font-size: 0.69rem; color: var(--text-muted); }
+.dr-exception-go { color: var(--text-dim); font-size: 0.68rem; }
+
+.dr-more, .dr-clear {
+  min-height: 34px;
+  margin-top: 9px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dr-clear { margin-top: 0; }
+.dr-more:hover, .dr-clear:hover { border-color: var(--lao-blue); color: var(--lao-blue-dark); background: var(--lao-blue-light); }
+.dr-more:focus-visible, .dr-clear:focus-visible { outline: 2px solid var(--lao-blue-dark); outline-offset: 1px; }
+
+/* ---------- Chân ma trận: đang xem bao nhiêu trên bao nhiêu ---------- */
+
+.dr-page {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--divider-color);
+  background: var(--bg-secondary);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-page b { color: var(--text-main); font-weight: 800; }
+
+.dr-page button {
+  min-height: 34px;
+  padding: 6px 13px;
+  border: 1px solid var(--lao-blue);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  color: var(--lao-blue-dark);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dr-page button:hover { background: var(--lao-blue-light); }
+.dr-page button:focus-visible { outline: 2px solid var(--lao-blue-dark); outline-offset: 1px; }
+
+@media (max-width: 900px) {
+  .dr-capacity { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .dr-capacity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---------- Số người trực từng ca, trong băng phủ ca ---------- */
+
+.dr-shift-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.dr-shift-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 2px;
+  border: 1px solid var(--divider-color);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dr-shift-count em {
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: var(--text-dim);
+}
+
+.dr-shift-count b { font-size: 0.78rem; font-weight: 900; color: var(--text-main); }
+
+/* Ca chưa có ai trực: viền dày và chữ đỏ — khác cả màu lẫn hình dạng, nên đọc
+   được kể cả khi in đen trắng hoặc với người không phân biệt được màu. */
+.dr-shift-count.is-empty {
+  border-color: #b91c1c;
+  border-width: 2px;
+  background: #fef2f2;
+}
+
+.dr-shift-count.is-empty b, .dr-shift-count.is-empty em { color: #b91c1c; }

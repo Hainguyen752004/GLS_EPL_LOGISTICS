@@ -90,6 +90,8 @@ class Vehicle(Base):
     insurance_date = Column(String) # Bảo hiểm
     inspection_date = Column(String) # Ngày đăng kiểm
     inspection_place = Column(String) # Nơi đăng kiểm
+    depot = Column(String) # Bãi / chi nhánh xe đậu (VD: Bãi Sóng Thần, Chi nhánh Hà Nội)
+    depot_code = Column(String, index=True) # Mã bãi, dùng để lọc — ở đội 500 xe đây là bộ lọc chính
     inspection_exp = Column(String) # Hạn đăng kiểm (Hết hạn)
     engine_cap = Column(String) # Dung tích động cơ
     dimensions = Column(String) # Kích thước thùng (DxRxC)

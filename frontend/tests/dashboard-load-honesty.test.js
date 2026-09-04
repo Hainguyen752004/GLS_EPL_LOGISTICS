@@ -57,4 +57,20 @@ TILES.forEach(id => {
   assert.match(fn, /vẫn còn nguyên/, 'phai tran an rang du lieu khong mat');
 }
 
+// --- 4. Cac con so khac cung khong duoc viet cung trong HTML ------------
+
+// Badge "Danh Muc Loai Xe" tung viet cung "4 Mau" trong index.html, nen no noi
+// doi ca khi danh muc trong lan khi so that khac 4 — man hinh tu mau thuan:
+// badge ghi "4 Mau" ngay canh dong chu "Chua co Loai Xe trong CSDL Master Data".
+{
+  const cell = /id="formula-vehicle-types-count"[^>]*>([^<]*)</.exec(html);
+  assert.ok(cell, 'phai co o dem so loai xe');
+  assert.ok(!/\d/.test(cell[1]), `badge viet san "${cell[1].trim()}" — con so phai lay tu du lieu`);
+  assert.match(app, /formula-vehicle-types-count/, 'app.js phai cap nhat con so nay');
+  // Con so phai lay tu du lieu — va khi dang loc thi noi ro "khop/tong", chu
+  // khong am tham hien so da loc nhu the do la tat ca.
+  assert.match(app, /counter\.innerText = keyword/, 'con so phai lay tu du lieu');
+  assert.match(app, /\$\{types\.length\}\/\$\{all\.length\}/, 'dang loc thi phai noi ro khop tren tong');
+}
+
 console.log('dashboard-load-honesty: tất cả kiểm tra đã qua');

@@ -115,7 +115,18 @@ def test_postgres_validator_only_checks_columns_that_exist():
     assert "gl_transactions.debit" in str(excinfo.value)
 
 
-def test_v024_is_the_registered_head():
-    from migrations.runner import required_migration_head
+def test_v024_stays_registered_and_ordered():
+    """v024 khong con la ban moi nhat (v025 them cot bai xe cho doi 500 chiec).
 
-    assert required_migration_head() == v024.VERSION
+    Dieu can khoa lai o day la v024 VAN duoc dang ky va van dung thu tu — chu
+    khong phai "v024 la ban moi nhat". Ghim ten ban moi nhat vao day thi moi
+    lan them mot migration lai hong mot test khong lien quan gi den tien te.
+    """
+    from migrations.runner import MIGRATIONS
+
+    versions = [module.VERSION for module in MIGRATIONS]
+    assert v024.VERSION in versions, "v024 phai con trong danh sach chay"
+    assert versions == sorted(versions), "cac migration phai theo dung thu tu so"
+    assert versions[-1] > v024.VERSION, "phai co ban moi hon v024"
+    # Va no phai chay SAU v023, khong bi day len truoc.
+    assert versions.index(v024.VERSION) == versions.index("023_parking_list") + 1

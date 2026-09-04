@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-module-mode-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-scale-and-cost-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -969,6 +969,49 @@
     .weekly-schedule-note { display:flex; gap:9px; padding:10px 12px; border:1px solid #b8d7f2; border-radius:6px; color:#075fa9; background:#eef7ff; font-size:.7rem; line-height:1.45; }
     .weekly-schedule-dialog footer { position:sticky; bottom:0; display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid #dfe7f0; background:#fff; }
     @media (max-width:700px) { .weekly-schedule-body { grid-template-columns:1fr; } .weekly-schedule-body .wide { grid-column:auto; } .weekly-day-options { grid-template-columns:repeat(4,1fr); } }
+    /* ---------- Danh mục loại xe ở màn Công thức giá thành ----------
+       Bản cũ mỗi thẻ chỉ có tên xe cộng hai dòng chữ "Loại phương tiện CSDL"
+       và "Cước định mức: CSDL" — không phải con số nào cả, chỉ là nhãn nói
+       "lấy từ cơ sở dữ liệu". Nhìn vào không so sánh được hai loại xe, phải
+       bấm vào từng thẻ. Nay thẻ mang tải trọng, thể tích, số pallet và đơn
+       giá nền thật. */
+    .vt-search { position:relative; margin-bottom:10px; }
+    .vt-search > i { position:absolute; left:11px; top:50%; translate:0 -50%; color:#94a3b8; font-size:.72rem; pointer-events:none; }
+    .vt-search input { width:100%; min-height:36px; padding:7px 10px 7px 32px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.76rem; background:#fff; }
+    .vt-search input:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    .veh-type-card { position:relative; background:#ffffff; border:1px solid #e2e8f0; border-left:3px solid #cbd7e5; border-radius:10px; padding:13px 14px; cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease; }
+    .veh-type-card:hover { border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
+    /* Thẻ đang chọn: viền trái dày và nền xanh nhạt — khác cả màu lẫn hình dạng
+       nên đọc được kể cả khi không phân biệt được màu. */
+    .veh-type-card.active { border-color:#0a6ed1; border-left-width:6px; background:#f2f8ff; }
+    .veh-type-card.active .vt-name { color:#075fa9; }
+
+    .vt-name { font-weight:800; color:#0f172a; font-size:.88rem; padding-right:26px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .vt-id { margin-top:3px; font-size:.68rem; color:#94a3b8; font-weight:700; letter-spacing:.03em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    .vt-facts { display:flex; flex-wrap:wrap; gap:5px 7px; margin-top:8px; }
+    .vt-facts span { display:inline-flex; align-items:center; gap:5px; padding:2px 8px; border:1px solid #e2e8f0; border-radius:999px; background:#f8fafc; font-size:.68rem; font-weight:700; color:#475569; font-variant-numeric:tabular-nums; }
+    .vt-facts i { color:#0a6ed1; font-size:.64rem; }
+
+    .vt-rate { margin-top:9px; padding-top:8px; border-top:1px dashed #e2e8f0; font-variant-numeric:tabular-nums; }
+    .vt-rate b { font-size:.92rem; font-weight:900; color:#0f172a; }
+    .vt-rate small { font-size:.68rem; color:#64748b; font-weight:600; }
+    /* Chưa đặt đơn giá là một sự thật cần thấy, không phải một ô trống. */
+    .vt-rate-missing { color:#b45309 !important; font-weight:700; }
+
+    .vt-del { position:absolute; top:9px; right:9px; width:26px; height:26px; display:grid; place-items:center; background:none; border:0; border-radius:5px; color:#94a3b8; font-size:.78rem; cursor:pointer; }
+    .vt-del:hover { background:#fee2e2; color:#b91c1c; }
+    .vt-del:disabled { opacity:.4; cursor:progress; }
+    .vt-del:focus-visible { outline:2px solid #b91c1c; outline-offset:1px; }
+
+    .vt-empty { text-align:center; padding:22px 14px; color:#64748b; font-size:.8rem; }
+    .vt-empty > i { font-size:1.5rem; color:#cbd7e5; }
+    .vt-empty p { margin:9px 0 0; }
+    .vt-empty button { margin-top:12px; min-height:36px; padding:8px 14px; border:1px solid #0a6ed1; border-radius:6px; background:#fff; color:#075fa9; font:inherit; font-size:.75rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+    .vt-empty button:hover { background:#eaf4ff; }
+    .vt-empty button:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
     /* ---------- Hộp thoại tạo ca lặp theo tuần ----------
        Thiết kế lại từ "Thiết lập lịch làm việc mặc định": bản cũ là một lưới
        10 ô nhập ngang hàng nhau, không nói thao tác này sẽ ghi bao nhiêu ca.
@@ -1009,6 +1052,10 @@
     .sr-person-tick { font-size:.72rem; color:#0877d1; visibility:hidden; }
     .sr-person.is-on .sr-person-tick { visibility:visible; }
     .sr-empty { padding:16px; text-align:center; color:#718096; font-size:.74rem; }
+    /* Chan danh sach nhan su: noi ro con bao nhieu nguoi chua hien. Voi hang
+       tram tai xe, cat cung 60 dong ma khong noi gi thi nguoi thu 61 bien mat. */
+    .sr-people-more { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font-size:.72rem; color:#64748b; font-variant-numeric:tabular-nums; }
+    .sr-people-more b { color:#0f172a; font-weight:800; }
     .sr-days { display:flex; gap:5px; }
     .sr-day { width:42px; min-height:38px; border:1px solid #cbd7e5; border-radius:6px; background:#fff; color:#475569; font:inherit; font-size:.73rem; font-weight:800; cursor:pointer; }
     .sr-day.is-on { border-color:#0877d1; color:#075fa9; background:#eaf4ff; box-shadow:inset 0 -2px #0877d1; }
@@ -5305,37 +5352,14 @@
                 <div style="flex: 0 0 320px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 18px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
                   <div style="font-size: 0.9rem; font-weight: 700; color: #0f172a; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
                     <span><i class="fa-solid fa-truck-moving" style="color: #0a6ed1; margin-right: 6px;"></i> <span data-i18n="title_veh_type_catalog">Danh Mục Loại Xe</span></span>
-                    <span data-i18n="badge_4_models" style="font-size: 0.75rem; background: #eff6ff; color: #0a6ed1; padding: 2px 8px; border-radius: 10px; font-weight: 700;">4 Mẫu</span>
+                    <span id="formula-vehicle-types-count" style="font-size: 0.75rem; background: #eff6ff; color: #0a6ed1; padding: 2px 8px; border-radius: 10px; font-weight: 700;">—</span>
                   </div>
 
                   <div style="display: flex; flex-direction: column; gap: 10px;" id="formula-vehicle-types-list">
-                    <div class="veh-type-card active" onclick="selectFormulaVehicleType('preset-1', this)" style="position: relative; background: #ffffff; border: 2px solid #0a6ed1; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 6px rgba(10,110,209,0.12);">
-                      <button onclick="event.stopPropagation(); deleteVehicleTypeCard(this);" title="Xóa Loại Xe Này" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-trash"></i></button>
-                      <div style="font-weight: 700; color: #0a6ed1; font-size: 0.9rem;">Container 20FT</div>
-                      <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Tải trọng tiêu chuẩn: 15 Tấn</div>
-                      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; margin-top: 6px;">Cước: 6,250 VNĐ/km</div>
-                    </div>
-
-                    <div class="veh-type-card" onclick="selectFormulaVehicleType('preset-2', this)" style="position: relative; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
-                      <button onclick="event.stopPropagation(); deleteVehicleTypeCard(this);" title="Xóa Loại Xe Này" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-trash"></i></button>
-                      <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">Container 40FT</div>
-                      <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Tải trọng nặng: 30 Tấn</div>
-                      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; margin-top: 6px;">Cước: 9,500 VNĐ/km</div>
-                    </div>
-
-                    <div class="veh-type-card" onclick="selectFormulaVehicleType('preset-3', this)" style="position: relative; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
-                      <button onclick="event.stopPropagation(); deleteVehicleTypeCard(this);" title="Xóa Loại Xe Này" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-trash"></i></button>
-                      <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">Xe Tải 10 Tấn</div>
-                      <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Chuyển phát nhanh đường dài</div>
-                      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; margin-top: 6px;">Cước: 4,800 VNĐ/km</div>
-                    </div>
-
-                    <div class="veh-type-card" onclick="selectFormulaVehicleType('preset-4', this)" style="position: relative; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
-                      <button onclick="event.stopPropagation(); deleteVehicleTypeCard(this);" title="Xóa Loại Xe Này" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'"><i class="fa-solid fa-trash"></i></button>
-                      <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">Container Lạnh</div>
-                      <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">Hàng đông lạnh bảo quản sâu</div>
-                      <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; margin-top: 6px;">Cước: 11,000 VNĐ/km</div>
-                    </div>
+                    <!-- Bon the "mau" viet cung tung o day chinh la nguon cua badge
+                         "4 Mau": chung khong lien quan gi den Master Data that.
+                         renderDynamicFormulaVehicleTypes() dung lai toan bo tu CSDL. -->
+                    <div class="vt-empty"><p>Đang tải danh mục loại xe...</p></div>
                   </div>
 
                   <input type="hidden" id="md-formula-preset-select" value="preset-1">
@@ -5731,6 +5755,12 @@
                         <div class="fiori-field"><label data-i18n="lbl_veh_insp_date">Ngày Đăng Kiểm</label><input type="date" class="fiori-input" id="fiori-veh-insp-date"></div>
                         <div class="fiori-field"><label data-i18n="lbl_veh_insp_place">Nơi đăng kiểm</label><input type="text" class="fiori-input" id="fiori-veh-insp-place" placeholder="Ví dụ: Trung tâm 50-03S TP.HCM"></div>
                         <div class="fiori-field"><label data-i18n="lbl_veh_insp_exp">Hạn Đăng Kiểm (Hết Hạn)</label><input type="date" class="fiori-input" id="fiori-veh-insp-exp"></div>
+                      </div>
+                      <!-- Bãi / chi nhánh: ở đội 500 xe đây là bộ lọc chính, không phải một cột phụ.
+                           Khác "Nơi đăng kiểm" ở trên: đây là nơi xe đậu và xuất bến hàng ngày. -->
+                      <div class="fiori-form-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px 20px; margin-bottom: 24px;">
+                        <div class="fiori-field"><label>Bãi / Chi Nhánh</label><input type="text" class="fiori-input" id="fiori-veh-depot" placeholder="Ví dụ: Bãi Sóng Thần"></div>
+                        <div class="fiori-field"><label>Mã Bãi <small style="font-weight:600;color:#64748b;">(dùng để lọc)</small></label><input type="text" class="fiori-input" id="fiori-veh-depot-code" placeholder="Ví dụ: ST" style="text-transform:uppercase;"></div>
                       </div>
                       <div class="fiori-section-title" style="font-weight: 700; color: #0a6ed1; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px;">
                         <i class="fa-solid fa-microchip"></i> <span data-i18n="sec_veh_specs">Toàn bộ thông số kỹ thuật chi tiết</span>
@@ -6800,7 +6830,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-module-mode-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260904-scale-and-cost-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6815,9 +6845,9 @@
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-module-mode-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-scale-and-cost-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-module-mode-v1"></script>
+  <script src="/static/js/app.js?v=20260904-scale-and-cost-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

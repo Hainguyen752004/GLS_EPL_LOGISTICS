@@ -6406,6 +6406,8 @@ window.editFioriVehicle = function (id) {
   // New Inspection & Specs fields
   if (document.getElementById('fiori-veh-insp-date')) document.getElementById('fiori-veh-insp-date').value = veh.inspection_date || '';
   if (document.getElementById('fiori-veh-insp-place')) document.getElementById('fiori-veh-insp-place').value = veh.inspection_place || '';
+  if (document.getElementById('fiori-veh-depot')) document.getElementById('fiori-veh-depot').value = veh.depot || '';
+  if (document.getElementById('fiori-veh-depot-code')) document.getElementById('fiori-veh-depot-code').value = veh.depot_code || '';
   if (document.getElementById('fiori-veh-insp-exp')) document.getElementById('fiori-veh-insp-exp').value = veh.inspection_exp || '';
   if (document.getElementById('fiori-veh-engine-cap')) document.getElementById('fiori-veh-engine-cap').value = veh.engine_cap || '';
   if (document.getElementById('fiori-veh-dims')) document.getElementById('fiori-veh-dims').value = veh.dimensions || '';
@@ -6759,6 +6761,8 @@ window.saveFioriVehicle = async function () {
     insurance_date: document.getElementById('fiori-veh-insur').value,
     inspection_date: document.getElementById('fiori-veh-insp-date')?.value || '',
     inspection_place: document.getElementById('fiori-veh-insp-place')?.value || '',
+    depot: document.getElementById('fiori-veh-depot')?.value || '',
+    depot_code: document.getElementById('fiori-veh-depot-code')?.value || '',
     inspection_exp: document.getElementById('fiori-veh-insp-exp')?.value || '',
     engine_cap: document.getElementById('fiori-veh-engine-cap')?.value || '',
     dimensions: document.getElementById('fiori-veh-dims')?.value || '',
@@ -12628,9 +12632,17 @@ let driverShiftSearchTimer = null;
 // Thay cho driverShiftDayDialogOpen: chi tiết ngày giờ hiện NGAY TRONG
 // TRANG, không còn hộp thoại che kín màn hình.
 let driverRosterView = 'week';
+// Chi dung mot trang nhan su moi lan: moi nguoi chiem 21 o (7 ngay x 3 ca).
+let driverShiftVisibleCount = 50;
+let driverShiftGapsOpen = false;
 let selectedDriverVehicleDay = '';
 let driverVehicleTableSearch = '';
 let driverVehicleTableStatus = '';
+let driverVehicleTableType = '';
+let driverVehicleTableDepot = '';
+// Chi dung mot trang xe moi lan. Xem js/driver-roster.js de biet vi sao.
+let driverVehicleVisibleCount = 50;
+let driverVehicleExceptionsOpen = false;
 let driverVehicleSearchTimer = null;
 
 function startOfDriverShiftWeek(value = new Date()) {
@@ -13045,14 +13057,34 @@ window.toggleDriverShiftAvailability = function (kind) {
  * Bộ lọc áp ở đây (không áp trong module trình bày) để module kia thuần và
  * kiểm chứng được bằng Node.
  */
-function buildDriverVehicleRosterData(planner) {
-  const keyword = driverVehicleTableSearch.trim().toLowerCase();
-  const status = driverVehicleTableStatus;
+/**
+ * Bai / chi nhanh cua mot xe.
+ *
+ * O doi 500 xe day la bo loc chinh. Xe chua duoc gan bai thi noi ro la "Chua
+ * gan bai" chu khong gop chung vao mot bai nao — gop vao se lam bo loc noi doi.
+ */
+function depotOf(vehicleId) {
+  const vehicle = (fioriVehicles || []).find(item => String(item.id) === String(vehicleId));
+  return {
+    depot: (vehicle && vehicle.depot) || '',
+    code: (vehicle && vehicle.depot_code) || '',
+  };
+}
+
+function buildDriverVehicleRosterData(planner, options) {
+  const ignore = Boolean(options && options.ignoreFilters);
+  const keyword = ignore ? '' : driverVehicleTableSearch.trim().toLowerCase();
+  const status = ignore ? '' : driverVehicleTableStatus;
+  const vehicleType = ignore ? '' : driverVehicleTableType;
+  const depot = ignore ? '' : driverVehicleTableDepot;
   const vehicles = planner.vehicle_rows
     .map(row => ({
       vehicle_id: String(row.vehicle_id || ''),
       label: row.label || row.vehicle_id || '',
       type: row.type || '',
+      // planner khong mang theo bai, nen tra cuu tu ho so xe day du.
+      depot: depotOf(row.vehicle_id).depot,
+      depot_code: depotOf(row.vehicle_id).code,
       days: planner.days.map((day, index) => {
         const source = row.days[index] || {};
         const drivers = [...new Set([
@@ -13076,6 +13108,11 @@ function buildDriverVehicleRosterData(planner) {
       // tuần, nên "chỉ xem xe đang bảo dưỡng" phải giữ lại xe có bảo dưỡng ở
       // bất kỳ ngày nào, kèm ngữ cảnh các ngày còn lại.
       if (status && !vehicle.days.some(day => day.status === status)) return false;
+      if (vehicleType && vehicle.type !== vehicleType) return false;
+      // '__none__' nghia la "chua gan bai" — mot lua chon that, khong phai
+      // khong loc gi.
+      if (depot === '__none__' && vehicle.depot_code) return false;
+      if (depot && depot !== '__none__' && vehicle.depot_code !== depot) return false;
       return true;
     });
 
@@ -13089,6 +13126,15 @@ function buildDriverVehicleRosterData(planner) {
  * thoại che kín màn hình cho từng ngày — nhìn vào đó không biết XE NÀO rảnh
  * ngày nào. Nay là ma trận xe × ngày, cùng dạng với bảng xếp ca tài xế.
  */
+/**
+ * Lich xe 7 ngay, thiet ke cho doi xe LON.
+ *
+ * Doi thu tu doc man hinh: tinh hinh truoc, viec can xu ly sau, chi tiet sau
+ * cung. Ban truoc do la ma tran hien HET moi xe — rat hop ly voi doi vai chuc
+ * xe, nhung o 500 xe thi sinh ra khoang 1,7 MB HTML va 3.500 nut trong mot lan
+ * innerHTML, va quan trong hon la chon dung 5 xe co van de giua 495 xe binh
+ * thuong. Voi 500 xe khong ai cuon het danh sach.
+ */
 function renderDriverVehicleWeek() {
   const host = document.getElementById('driver-vehicle-week-content');
   if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
@@ -13101,27 +13147,87 @@ function renderDriverVehicleWeek() {
     selectedDriverVehicleDay = planner.days[0]?.key || '';
   }
 
-  const data = buildDriverVehicleRosterData(planner);
+  const DR = window.DriverRoster;
+  // Bang nang luc va danh sach ngoai le tinh tren CA DOI XE, khong theo bo loc:
+  // loc mat 5 xe xung dot di thi ca man hinh bao "khong co viec can xu ly" —
+  // dung kieu noi doi ma man hinh nay sinh ra de tranh.
+  const everything = buildDriverVehicleRosterData(planner, { ignoreFilters: true });
+  const filtered = buildDriverVehicleRosterData(planner);
   const statusLabels = { busy: 'Đang có lịch', maintenance: 'Bảo dưỡng / sửa chữa', conflict: 'Xung đột lịch', available: 'Còn rảnh' };
+  const typeOptions = [...new Set(everything.vehicles.map(v => v.type).filter(Boolean))].sort();
+  // Dem so xe moi bai: nguoi dieu phoi can biet bai nao bao nhieu xe truoc khi
+  // bam vao, khong phai bam roi moi thay.
+  const depotCounts = new Map();
+  everything.vehicles.forEach(v => {
+    if (!v.depot_code) return;
+    const current = depotCounts.get(v.depot_code) || { code: v.depot_code, label: v.depot || v.depot_code, count: 0 };
+    current.count += 1;
+    depotCounts.set(v.depot_code, current);
+  });
+  const depotOptions = [...depotCounts.values()].sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+  const unassigned = everything.vehicles.filter(v => !v.depot_code).length;
+  const narrowed = Boolean(driverVehicleTableSearch.trim() || driverVehicleTableStatus || driverVehicleTableType || driverVehicleTableDepot);
 
   host.innerHTML = `
     <div class="dr-shell">
+      ${DR.vehicleCapacityStrip(everything, { selectedDay: selectedDriverVehicleDay })}
+      ${DR.vehicleExceptionList(everything, { expanded: driverVehicleExceptionsOpen })}
+
       <div class="dr-toolbar">
         <input id="driver-vehicle-day-search" type="search" value="${escapeHtml(driverVehicleTableSearch)}"
                placeholder="Tìm biển số, loại xe, Trip hoặc việc sửa chữa..."
                oninput="filterDriverVehicleDay(this.value)" aria-label="Tìm xe">
+        <select id="driver-vehicle-day-depot" onchange="filterDriverVehicleDepot(this.value)" aria-label="Lọc theo bãi">
+          <option value="">Tất cả bãi</option>
+          ${depotOptions.map(item => `<option value="${escapeHtml(item.code)}">${escapeHtml(item.label)} (${item.count})</option>`).join('')}
+          ${unassigned ? `<option value="__none__">Chưa gán bãi (${unassigned})</option>` : ''}
+        </select>
+        <select id="driver-vehicle-day-type" onchange="filterDriverVehicleType(this.value)" aria-label="Lọc theo loại xe">
+          <option value="">Tất cả loại xe</option>
+          ${typeOptions.map(type => `<option value="${escapeHtml(type)}">${escapeHtml(type)}</option>`).join('')}
+        </select>
         <select id="driver-vehicle-day-status" onchange="filterDriverVehicleStatus(this.value)" aria-label="Lọc theo trạng thái">
           <option value="">Tất cả trạng thái</option>
           ${Object.entries(statusLabels).map(([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`).join('')}
         </select>
+        ${narrowed ? '<button type="button" class="dr-clear" onclick="clearDriverVehicleFilters()"><i class="fa-solid fa-eraser" aria-hidden="true"></i> Xóa bộ lọc</button>' : ''}
       </div>
-      <div class="dr-scroll">${window.DriverRoster.vehicleMatrix(data, { selectedDay: selectedDriverVehicleDay })}</div>
-      ${window.DriverRoster.vehicleLegend()}
+
+      <div class="dr-scroll">${DR.vehicleMatrix(filtered, {
+        selectedDay: selectedDriverVehicleDay,
+        limit: driverVehicleVisibleCount,
+      })}</div>
+      ${DR.vehicleLegend()}
     </div>`;
 
+  const depotSelect = document.getElementById('driver-vehicle-day-depot');
+  if (depotSelect) depotSelect.value = driverVehicleTableDepot;
+  const typeSelect = document.getElementById('driver-vehicle-day-type');
+  if (typeSelect) typeSelect.value = driverVehicleTableType;
   const statusSelect = document.getElementById('driver-vehicle-day-status');
   if (statusSelect) statusSelect.value = driverVehicleTableStatus;
 }
+
+window.filterDriverVehicleDepot = function (value) {
+  driverVehicleTableDepot = String(value || '');
+  driverVehicleVisibleCount = window.DriverRoster.VEHICLE_PAGE_SIZE;
+  renderDriverVehicleWeek();
+};
+
+window.filterDriverVehicleType = function (value) {
+  driverVehicleTableType = String(value || '');
+  driverVehicleVisibleCount = window.DriverRoster.VEHICLE_PAGE_SIZE;
+  renderDriverVehicleWeek();
+};
+
+window.clearDriverVehicleFilters = function () {
+  driverVehicleTableSearch = '';
+  driverVehicleTableStatus = '';
+  driverVehicleTableType = '';
+  driverVehicleTableDepot = '';
+  driverVehicleVisibleCount = window.DriverRoster.VEHICLE_PAGE_SIZE;
+  renderDriverVehicleWeek();
+};
 
 window.selectDriverVehicleDay = function (dateKey) {
   // Chỉ làm nổi bật cột ngày đó. Không mở hộp thoại nữa: mất ngữ cảnh tuần là
@@ -13138,12 +13244,14 @@ window.closeDriverVehicleDayDialog = function () {
 
 window.filterDriverVehicleDay = function (value) {
   driverVehicleTableSearch = String(value || '');
+  driverVehicleVisibleCount = window.DriverRoster.VEHICLE_PAGE_SIZE;
   clearTimeout(driverVehicleSearchTimer);
   driverVehicleSearchTimer = setTimeout(() => renderDriverVehicleWeek(), 160);
 };
 
 window.filterDriverVehicleStatus = function (value) {
   driverVehicleTableStatus = String(value || '');
+  driverVehicleVisibleCount = window.DriverRoster.VEHICLE_PAGE_SIZE;
   renderDriverVehicleWeek();
 };
 
@@ -13201,6 +13309,7 @@ window.changeDriverShiftTablePage = function (delta) {
 window.filterDriverShiftDay = function (value) {
   driverShiftTableSearch = String(value || '');
   driverShiftTablePage = 1;
+  driverShiftVisibleCount = window.DriverRoster.PERSON_PAGE_SIZE;
   clearTimeout(driverShiftSearchTimer);
   driverShiftSearchTimer = setTimeout(() => {
     renderDriverShiftCalendarTable();
@@ -13212,6 +13321,7 @@ window.filterDriverShiftDay = function (value) {
 window.filterDriverShiftRole = function (value) {
   driverShiftTableRole = String(value || '');
   driverShiftTablePage = 1;
+  driverShiftVisibleCount = window.DriverRoster.PERSON_PAGE_SIZE;
   renderDriverShiftCalendarTable();
 };
 
@@ -13284,7 +13394,7 @@ window.openDriverDayScheduleView = function (driverId, dateKey) {
  * Hàm này chỉ lo GOM dữ liệu; phần trình bày nằm ở module kia nên kiểm chứng
  * được bằng Node.
  */
-function buildDriverRosterData() {
+function buildDriverRosterData(options) {
   const planner = window.TmsCockpit.buildDriverShiftPlanner(
     {
       drivers: fioriDrivers,
@@ -13295,8 +13405,9 @@ function buildDriverRosterData() {
     driverShiftWeekStart
   );
 
-  const keyword = driverShiftTableSearch.trim().toLowerCase();
-  const role = driverShiftTableRole;
+  const ignore = Boolean(options && options.ignoreFilters);
+  const keyword = ignore ? '' : driverShiftTableSearch.trim().toLowerCase();
+  const role = ignore ? '' : driverShiftTableRole;
   const people = fioriDrivers
     .filter(driver => {
       const text = `${driver.id} ${driver.name || ''} ${driver.license_type || ''} ${driver.role || ''}`.toLowerCase();
@@ -13348,15 +13459,20 @@ function renderDriverShiftCalendarTable() {
   const host = document.getElementById('driver-shift-calendar');
   if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
 
+  const DR = window.DriverRoster;
   const data = buildDriverRosterData();
+  // Bang phu ca va danh sach cho hong tinh tren CA DOI, khong theo bo loc: loc
+  // con lai 3 nguoi thi man hinh bao "tuan nay da kin ca", trong khi ca dem thu
+  // Nam van khong co ai truc.
+  const everyone = buildDriverRosterData({ ignoreFilters: true });
   if (!selectedDriverShiftDay || !data.days.some(day => day.key === selectedDriverShiftDay)) {
     selectedDriverShiftDay = data.days[0]?.key || '';
   }
 
   const view = driverRosterView === 'day' ? 'day' : 'week';
   const body = view === 'week'
-    ? `<div class="dr-scroll">${window.DriverRoster.weekMatrix(data, { selectedDay: selectedDriverShiftDay })}</div>`
-    : window.DriverRoster.dayDetail(data, selectedDriverShiftDay);
+    ? `<div class="dr-scroll">${DR.weekMatrix(data, { selectedDay: selectedDriverShiftDay, limit: driverShiftVisibleCount })}</div>`
+    : DR.dayDetail(data, selectedDriverShiftDay);
 
   const dayOptions = data.days
     .map(day => `<option value="${escapeHtml(day.key)}"${day.key === selectedDriverShiftDay ? ' selected' : ''}>${escapeHtml(day.label)}</option>`)
@@ -13364,6 +13480,9 @@ function renderDriverShiftCalendarTable() {
 
   host.innerHTML = `
     <div class="dr-shell">
+      ${DR.crewCoverageStrip(everyone, { selectedDay: selectedDriverShiftDay })}
+      ${DR.crewGapList(everyone, { expanded: driverShiftGapsOpen })}
+
       <div class="dr-toolbar">
         <div class="dr-views" role="group" aria-label="Góc nhìn lịch">
           <button type="button" class="${view === 'week' ? 'is-active' : ''}" onclick="setDriverRosterView('week')">
@@ -13384,7 +13503,7 @@ function renderDriverShiftCalendarTable() {
         ${view === 'day' ? `<select onchange="selectDriverShiftDay(this.value)" aria-label="Chọn ngày">${dayOptions}</select>` : ''}
       </div>
       ${body}
-      ${window.DriverRoster.legend()}
+      ${DR.legend()}
     </div>`;
 
   const roleSelect = document.getElementById('driver-shift-day-role');
@@ -13413,8 +13532,32 @@ window.DriverRosterActions = {
   selectVehicleDay(dateKey) {
     selectDriverVehicleDay(dateKey);
   },
+  showMorePeople() {
+    driverShiftVisibleCount += window.DriverRoster.PERSON_PAGE_SIZE;
+    renderDriverShiftCalendarTable();
+  },
+  toggleGaps() {
+    driverShiftGapsOpen = !driverShiftGapsOpen;
+    renderDriverShiftCalendarTable();
+  },
+  focusPerson(driverId) {
+    // Loc thang den dung nguoi do thay vi bat nguoi dung tu tim trong 400 dong.
+    driverShiftTableSearch = String(driverId || '');
+    driverShiftVisibleCount = window.DriverRoster.PERSON_PAGE_SIZE;
+    selectedDriverForShiftId = String(driverId || '');
+    renderDriverShiftCalendarTable();
+    renderDriverShiftInspector();
+  },
   openVehicle(vehicleId) {
     editFioriVehicle(String(vehicleId || ''));
+  },
+  showMoreVehicles() {
+    driverVehicleVisibleCount += window.DriverRoster.VEHICLE_PAGE_SIZE;
+    renderDriverVehicleWeek();
+  },
+  toggleExceptions() {
+    driverVehicleExceptionsOpen = !driverVehicleExceptionsOpen;
+    renderDriverVehicleWeek();
   },
 };
 
@@ -13464,6 +13607,9 @@ function defaultRecurrenceDraft() {
     vehicleId: '',
     workLocation: '',
     search: '',
+    // So dong nhan su dung mot lan. Hang tram nut checkbox trong mot hop thoai
+    // lam trinh duyet cham va cuon khong noi.
+    visibleCount: 60,
   };
 }
 
@@ -13532,7 +13678,16 @@ function renderWeeklyScheduleBody() {
   });
   const chosen = new Set(recurrenceDraft.driverIds);
 
-  const peopleRows = people.slice(0, 60).map(driver => {
+  // KHONG cat cung o 60 nua. Voi hang tram tai xe, nguoi thu 61 tro di khong
+  // the tim ra duoc: danh sach chi hien 60 dong dau, va o tim kiem thi loc
+  // TRUOC khi cat, nen go dung ten van ra — nhung neu khong go dung thi ho
+  // bien mat hoan toan ma man hinh khong noi gi.
+  //
+  // Nay van gioi han so DONG DUNG (de khong nhoi hang tram nut vao DOM) nhung
+  // noi ro con bao nhieu nguoi chua hien, va tai them duoc.
+  const visible = people.slice(0, recurrenceDraft.visibleCount);
+  const hiddenPeople = people.length - visible.length;
+  const peopleRows = visible.map(driver => {
     const id = String(driver.id || '');
     const initials = String(driver.name || id || '?').split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase();
     return `<label class="sr-person${chosen.has(id) ? ' is-on' : ''}">
@@ -13545,6 +13700,15 @@ function renderWeeklyScheduleBody() {
       <i class="fa-solid fa-check sr-person-tick" aria-hidden="true"></i>
     </label>`;
   }).join('') || '<div class="sr-empty">Không tìm thấy nhân sự phù hợp.</div>';
+
+  const peopleFooter = hiddenPeople > 0
+    ? `<div class="sr-people-more">
+        <span>Đang hiện <b>${visible.length}</b> trên <b>${people.length}</b> người</span>
+        <button type="button" class="sr-mini" onclick="showMoreRecurrenceDrivers()">
+          <i class="fa-solid fa-chevron-down" aria-hidden="true"></i> Xem thêm ${Math.min(hiddenPeople, 60)} người
+        </button>
+      </div>`
+    : '';
 
   const vehicleOptions = driverShiftVehicles.map(vehicle => {
     const id = String(vehicle.id || '');
@@ -13562,10 +13726,11 @@ function renderWeeklyScheduleBody() {
                  placeholder="Nhập tên, mã nhân sự, vai trò hoặc hạng bằng..."
                  oninput="filterWeeklyScheduleDrivers(this.value)" aria-label="Tìm nhân sự">
         </div>
-        <button type="button" class="sr-mini" onclick="selectAllRecurrenceDrivers()"><i class="fa-solid fa-users" aria-hidden="true"></i> Chọn ${people.length} người đang hiện</button>
+        <button type="button" class="sr-mini" onclick="selectAllRecurrenceDrivers()"><i class="fa-solid fa-users" aria-hidden="true"></i> Chọn cả ${people.length} người khớp</button>
         ${recurrenceDraft.driverIds.length ? '<button type="button" class="sr-mini" onclick="clearRecurrenceDrivers()"><i class="fa-solid fa-eraser" aria-hidden="true"></i> Bỏ chọn hết</button>' : ''}
       </div>
       <div class="sr-people">${peopleRows}</div>
+      ${peopleFooter}
     </section>
 
     <section class="sr-step">
@@ -13698,8 +13863,14 @@ function updateRecurrenceDraft(changes) {
   renderWeeklyScheduleBody();
 }
 
+window.showMoreRecurrenceDrivers = function () {
+  recurrenceDraft.visibleCount += 60;
+  renderWeeklyScheduleBody();
+};
+
 window.filterWeeklyScheduleDrivers = function (value) {
   recurrenceDraft.search = String(value || '');
+  recurrenceDraft.visibleCount = 60;
   renderWeeklyScheduleBody();
   // Vẽ lại làm mất con trỏ, nên đưa tiêu điểm về đúng ô tìm kiếm.
   const input = document.getElementById('weekly-schedule-driver-search');
@@ -14068,37 +14239,128 @@ window.resetAllOrdersData = async function () {
   showToast('Để tránh xóa nhầm dữ liệu production, chức năng xóa hàng loạt đã được khóa. Nếu cần dọn dữ liệu demo, chạy script cleanup có kiểm soát trong backend/tests.');
 };
 
-window.deleteVehicleTypeCard = function (btn) {
-  const card = btn.closest('.veh-type-card');
-  if (confirm("Sếp có chắc chắn muốn xóa Loại Xe này khỏi danh mục định mức giá thành không?")) {
-    if (card) card.remove();
-    showToast("🗑️ Đã xóa Loại Xe khỏi danh mục định mức giá thành!");
+/** Từ khóa lọc danh mục loại xe ở màn Công thức giá thành. */
+let formulaVehicleTypeSearch = '';
+
+/** "10000" -> "10 tấn"; "800" -> "800 kg". Đọc nhanh hơn một dãy số dài. */
+function formatPayload(kg) {
+  const value = Number(kg || 0);
+  if (!value) return '';
+  return value >= 1000 ? `${Math.round(value / 100) / 10} tấn` : `${Math.round(value)} kg`;
+}
+
+window.filterFormulaVehicleTypes = function (value) {
+  formulaVehicleTypeSearch = String(value || '');
+  window.renderDynamicFormulaVehicleTypes();
+  const input = document.getElementById('formula-vehicle-type-search');
+  if (input) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
   }
 };
 
+/**
+ * Xóa THẬT một loại xe khỏi cơ sở dữ liệu.
+ *
+ * Bản cũ chỉ gỡ thẻ khỏi màn hình rồi báo "Đã xóa Loại Xe khỏi danh mục" —
+ * bản ghi vẫn nằm nguyên trong cơ sở dữ liệu, tải lại trang là nó hiện về.
+ * Endpoint DELETE /api/vehicle-types/{id} đã có sẵn từ trước, chỉ là chưa bao
+ * giờ được gọi.
+ */
+window.deleteVehicleTypeCard = async function (btn) {
+  const card = btn.closest('.veh-type-card');
+  const id = card?.dataset.vehicleTypeId || '';
+  const name = card?.dataset.vehicleTypeName || id;
+  if (!id) return;
+  if (!confirm(`Xóa loại xe "${name}" khỏi Master Data?\n\nCác xe đang gán loại này sẽ mất định mức giá thành cho tới khi được gán loại khác.`)) return;
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicle-types/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Máy chủ trả về ${res.status}`);
+    const payload = await res.json().catch(() => ({}));
+    // Máy chủ trả 200 kèm "Không tìm thấy" khi bản ghi đã biến mất — đừng báo
+    // thành công cho một việc không xảy ra.
+    if (String(payload.message || '').includes('Không tìm thấy')) {
+      showToast(`Không tìm thấy loại xe ${name} trong cơ sở dữ liệu.`, 'error');
+    } else {
+      showToast(`Đã xóa loại xe ${name}.`, 'success');
+    }
+    // Tải lại từ máy chủ thay vì tự gỡ thẻ: màn hình phải phản ánh cơ sở dữ liệu.
+    const listRes = await fetch(`${API_BASE}/api/vehicle-types`);
+    if (listRes.ok) vehTypes = await listRes.json();
+    window.renderDynamicFormulaVehicleTypes();
+    if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
+  } catch (error) {
+    btn.disabled = false;
+    showToast(`Chưa xóa được loại xe: ${error.message}`, 'error');
+  }
+};
+
+/**
+ * Danh mục loại xe ở màn Công thức giá thành.
+ *
+ * Bản cũ mỗi thẻ chỉ có tên xe cộng hai dòng chữ "Loại phương tiện CSDL" và
+ * "Cước định mức: CSDL" — không phải con số nào cả, chỉ là nhãn nói "lấy từ cơ
+ * sở dữ liệu". Nhìn vào không biết xe đó tải bao nhiêu, đơn giá nền bao nhiêu,
+ * nên phải bấm từng thẻ mới so sánh được.
+ */
 window.renderDynamicFormulaVehicleTypes = function () {
   const container = document.getElementById('formula-vehicle-types-list');
   if (!container) return;
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
 
-  const types = (vehTypes || []).filter(vt => vt?.id && vt?.name);
-  container.innerHTML = '';
+  const all = (vehTypes || []).filter(vt => vt?.id && vt?.name);
+  const keyword = formulaVehicleTypeSearch.trim().toLowerCase();
+  const types = keyword
+    ? all.filter(vt => `${vt.id} ${vt.name} ${vt.fuel_type || ''}`.toLowerCase().includes(keyword))
+    : all;
 
-  if (types.length === 0) {
-    const emptyMsg = lang === 'la' ? 'ຍັງບໍ່ມີປະເພດລົດໃນ CSDL Master Data.<br>ກະລຸນາເພີ່ມໃນ Tab 3!' :
-                     lang === 'en' ? 'No vehicle types in Master Data DB.<br>Please add in Tab 3!' :
-                     'Chưa có Loại Xe trong CSDL Master Data.<br>Vui lòng thêm tại Tab 3!';
-    container.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 0.85rem;">${emptyMsg}</div>`;
+  // Con số này TRƯỚC ĐÂY viết cứng "4 Mẫu" trong index.html, nên nó nói dối cả
+  // khi danh mục trống lẫn khi số thật khác 4 — màn hình tự mâu thuẫn: badge
+  // ghi "4 Mẫu" ngay cạnh dòng chữ "Chưa có Loại Xe trong CSDL Master Data".
+  const counter = document.getElementById('formula-vehicle-types-count');
+  if (counter) {
+    const word = lang === 'la' ? 'ແບບ' : lang === 'en' ? 'models' : 'mẫu';
+    counter.innerText = keyword ? `${types.length}/${all.length} ${word}` : `${all.length} ${word}`;
+  }
+
+  const searchBox = all.length > 6
+    ? `<div class="vt-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input id="formula-vehicle-type-search" type="search" value="${escapeHtml(formulaVehicleTypeSearch)}"
+               placeholder="Tìm loại xe..." oninput="filterFormulaVehicleTypes(this.value)" aria-label="Tìm loại xe">
+      </div>`
+    : '';
+
+  if (!all.length) {
+    // Bản cũ ghi "Vui lòng thêm tại Tab 3!" — người dùng không đếm tab, và
+    // cũng không bấm được vào một dòng chữ. Nay gọi đúng tên tab và mở thẳng.
+    const emptyMsg = lang === 'la' ? 'ຍັງບໍ່ມີປະເພດລົດໃນ Master Data.'
+      : lang === 'en' ? 'No vehicle types in Master Data yet.'
+      : 'Chưa có loại xe nào trong Master Data.';
+    const action = lang === 'la' ? 'ໄປທີ່ "3. ປະເພດພາຫະນະ"'
+      : lang === 'en' ? 'Open "3. Vehicle Types"'
+      : 'Mở tab "3. Loại Phương Tiện"';
+    container.innerHTML = `<div class="vt-empty">
+      <i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i>
+      <p>${escapeHtml(emptyMsg)}</p>
+      <button type="button" onclick="openVehicleTypesTab()">
+        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> ${escapeHtml(action)}
+      </button>
+    </div>`;
     return;
   }
 
-  const subLabel = lang === 'la' ? 'ປະເພດລົດຕາມ CSDL' : lang === 'en' ? 'Vehicle type from DB' : 'Loại phương tiện CSDL';
-  const tariffLabel = lang === 'la' ? 'ຄ່າຂົນສົ່ງມາດຕະຖານ: CSDL' : lang === 'en' ? 'Standard rate: DB' : 'Cước định mức: CSDL';
-  const delTitle = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa Loại Xe Này';
+  if (!types.length) {
+    container.innerHTML = `${searchBox}<div class="vt-empty"><p>Không có loại xe nào khớp "${escapeHtml(formulaVehicleTypeSearch)}".</p></div>`;
+    return;
+  }
 
+  const delTitle = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa loại xe này';
   const formulaKeys = [];
-  types.forEach((vehicleType, idx) => {
-    const isFirst = idx === 0;
+
+  const cards = types.map(vehicleType => {
     const formulaKey = ensureVehicleTypeFormula(vehicleType, masterCostCurrencyCode());
     formulaKeys.push(formulaKey);
     let vName = vehicleType.name;
@@ -14106,20 +14368,46 @@ window.renderDynamicFormulaVehicleTypes = function () {
       vName = vName.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                    .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
     }
-    container.innerHTML += `
-      <div class="veh-type-card ${isFirst ? 'active' : ''}" data-formula-key="${completionEscape(formulaKey)}" data-vehicle-type-id="${completionEscape(vehicleType.id)}" data-vehicle-type-name="${completionEscape(vehicleType.name)}" onclick="requestCostFormulaContextChange(this.dataset.vehicleTypeId, masterCostCurrencyCode(), this)" style="position: relative; background: #ffffff; border: ${isFirst ? '2px solid #0a6ed1' : '1px solid #e2e8f0'}; border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s ease;">
-        <button onclick="event.stopPropagation(); deleteVehicleTypeCard(this);" title="${delTitle}" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer;"><i class="fa-solid fa-trash"></i></button>
-        <div style="font-weight: 700; color: ${isFirst ? '#0a6ed1' : '#0f172a'}; font-size: 0.9rem;">🚚 ${vName}</div>
-        <div style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">${subLabel}</div>
-        <div style="font-size: 0.78rem; font-weight: 700; color: #16a34a; margin-top: 6px;">${tariffLabel}</div>
-      </div>
-    `;
-  });
+
+    // Thay hai dòng nhãn rỗng bằng CON SỐ THẬT, để so sánh được giữa các loại
+    // xe mà không phải bấm vào từng thẻ.
+    const facts = [
+      formatPayload(vehicleType.max_weight) && { icon: 'fa-weight-hanging', text: formatPayload(vehicleType.max_weight), title: 'Tải trọng' },
+      Number(vehicleType.volume_capacity_m3) && { icon: 'fa-cube', text: `${Number(vehicleType.volume_capacity_m3)} m³`, title: 'Thể tích thùng' },
+      Number(vehicleType.pallet_capacity) && { icon: 'fa-pallet', text: `${Number(vehicleType.pallet_capacity)} pallet`, title: 'Số pallet' },
+    ].filter(Boolean);
+
+    const rate = Number(vehicleType.base_rate || 0);
+    return `
+      <div class="veh-type-card" data-formula-key="${escapeHtml(formulaKey)}"
+           data-vehicle-type-id="${escapeHtml(vehicleType.id)}" data-vehicle-type-name="${escapeHtml(vehicleType.name)}"
+           onclick="requestCostFormulaContextChange(this.dataset.vehicleTypeId, masterCostCurrencyCode(), this)">
+        <button type="button" class="vt-del" title="${escapeHtml(delTitle)}"
+                onclick="event.stopPropagation(); deleteVehicleTypeCard(this);"><i class="fa-solid fa-trash"></i></button>
+        <div class="vt-name">${escapeHtml(vehicleType.icon || '🚚')} ${escapeHtml(vName)}</div>
+        <div class="vt-id">${escapeHtml(vehicleType.id)}</div>
+        ${facts.length ? `<div class="vt-facts">${facts.map(fact =>
+          `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
+        ).join('')}</div>` : ''}
+        <div class="vt-rate">${rate
+          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ/km đơn giá nền</small>`
+          : '<small class="vt-rate-missing">Chưa đặt đơn giá nền</small>'}</div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = searchBox + cards;
+
   const currentFormulaKey = document.getElementById('md-formula-preset-select')?.value;
   const firstFormulaKey = formulaKeys.includes(currentFormulaKey) ? currentFormulaKey : formulaKeys[0];
   const firstCard = Array.from(container.querySelectorAll('[data-formula-key]'))
     .find(card => card.dataset.formulaKey === firstFormulaKey);
   if (firstFormulaKey && firstCard) window.selectFormulaVehicleType(firstFormulaKey, firstCard, { notify: false });
+};
+
+/** Mở thẳng tab Loại Phương Tiện thay vì bảo người dùng tự đi tìm "Tab 3". */
+window.openVehicleTypesTab = function () {
+  const button = document.querySelector('[onclick*="md-tab-veh-types"]');
+  if (button) switchMasterDataTab('md-tab-veh-types', button);
 };
 
 // --- CUSTOMER MANAGEMENT LOGIC (MASTER DATA TAB 6 & DROPDOWNS) ---

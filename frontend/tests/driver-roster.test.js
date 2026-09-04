@@ -417,8 +417,11 @@ assert.strictEqual(DR.vehicleDayHint(undefined), '—', 'thiếu dữ liệu ng�
 // --- 11. Tích hợp lịch xe trong app.js ------------------------------------
 
 assert.ok(!/driverVehicleDayDialogOpen/.test(app), 'biến hộp thoại lịch xe phải được dỡ');
-assert.ok(!/DRIVER_VEHICLE_PAGE_SIZE/.test(app), 'ma trận hiện đủ xe nên không còn phân trang');
-assert.ok(/DriverRoster\.vehicleMatrix/.test(app), 'lịch xe phải dựng qua module trình bày');
+// Phan trang GIO LA BAT BUOC (o 500 xe), nhung phai la cai trong module chu
+// khong phai bien dem cu trong app.js.
+assert.ok(!/DRIVER_VEHICLE_PAGE_SIZE/.test(app), 'khong dung lai bien phan trang cu cua hop thoai da do');
+assert.ok(/VEHICLE_PAGE_SIZE/.test(app), 'phai dung kich thuoc trang do module quy dinh');
+assert.ok(/vehicleMatrix\(/.test(app), 'lịch xe phải dựng qua module trình bày');
 {
   const start = app.indexOf('function renderDriverVehicleWeek()');
   assert.ok(start > 0, 'phải còn hàm dựng lịch xe');
@@ -426,5 +429,363 @@ assert.ok(/DriverRoster\.vehicleMatrix/.test(app), 'lịch xe phải dựng qua 
   assert.ok(!fn.includes('driver-vehicle-week-day'), 'không được quay lại dải 7 ngày chỉ có số tổng');
   assert.ok(!fn.includes('role="dialog"'), 'lịch xe không được dựng hộp thoại');
 }
+
+// --- 12. Đội xe LỚN: 500 xe -----------------------------------------------
+//
+// Chủ dự án vận hành khoảng 500 xe. Ma trận hiện HẾT mọi xe rất hợp lý với đội
+// vài chục xe, nhưng ở quy mô đó nó sinh ra ~1,7 MB HTML và 3.500 nút trong một
+// lần innerHTML — và mỗi lần gõ vào ô tìm kiếm lại dựng lại toàn bộ.
+
+function bigFleet(count) {
+  const days = [...Array(7)].map((_, i) => ({ key: `2026-09-0${i + 1}`, label: `T${i + 2}` }));
+  const vehicles = [...Array(count)].map((_, i) => ({
+    vehicle_id: `V-${i}`,
+    label: `51C-${1000 + i}`,
+    type: i % 2 ? 'Container 20FT' : 'Xe tải 10 tấn',
+    days: days.map(day => ({
+      key: day.key,
+      // Chỉ 1/50 xe có xung đột: dùng tỷ lệ thật, để kiểm đúng việc "chọn 5 xe
+      // có vấn đề giữa 495 xe bình thường".
+      status: i % 50 === 0 ? 'conflict' : i % 7 === 0 ? 'maintenance' : i % 3 ? 'busy' : 'available',
+      trip_ids: [`TR-${i}`],
+      maintenances: [],
+      shifts: [],
+      driver_ids: [],
+    })),
+  }));
+  return { days, vehicles };
+}
+
+{
+  const data = bigFleet(500);
+  const full = DR.vehicleMatrix(data, {});
+  const cells = (full.match(/dr-vcell /g) || []).length;
+  // Một trang mặc định là 50 xe × 7 ngày = 350 ô, không phải 3.500.
+  assert.strictEqual(cells, DR.VEHICLE_PAGE_SIZE * 7, 'ma trận chỉ được dựng một trang xe');
+  assert.ok(full.length < 400 * 1024, `ma trận một trang phải dưới 400 KB, đang là ${Math.round(full.length / 1024)} KB`);
+  // Phải nói rõ đang xem bao nhiêu trên bao nhiêu, không để người dùng tưởng
+  // 50 xe là tất cả.
+  assert.match(full, /Đang xem <b>50<\/b> trên <b>500<\/b> xe/);
+  assert.match(full, /showMoreVehicles/, 'phải có đường tải thêm');
+
+  // Tải thêm thì ra đúng số.
+  const more = DR.vehicleMatrix(data, { limit: 120 });
+  assert.strictEqual((more.match(/dr-vcell /g) || []).length, 120 * 7);
+  // Hết xe thì không còn nút tải thêm.
+  const all = DR.vehicleMatrix(data, { limit: 500 });
+  assert.ok(!all.includes('showMoreVehicles'), 'xem hết rồi thì không còn nút tải thêm');
+  assert.match(all, /Đang xem đủ <b>500<\/b> xe/);
+}
+
+// Băng năng lực phải tính trên CẢ đội xe, không theo trang đang hiện.
+{
+  const data = bigFleet(500);
+  const strip = DR.vehicleCapacityStrip(data, { selectedDay: '2026-09-03' });
+  assert.strictEqual((strip.match(/class="dr-cap[ "]/g) || []).length, 7, 'một cột mỗi ngày');
+  assert.match(strip, /\/ 500/, 'phải đối chiếu với tổng cả đội xe');
+  assert.match(strip, /dr-cap is-selected/, 'ngày đang chọn phải nổi bật');
+  // Màu không đứng một mình: mỗi cột đều có con số và nhãn chữ.
+  assert.match(strip, /xe rảnh/);
+  assert.match(strip, /đang dùng/);
+  // Ngày có xung đột phải đeo cờ cảnh báo có cả icon lẫn chữ.
+  assert.match(strip, /dr-cap-flag[^>]*><i class="fa-solid fa-triangle-exclamation"[^>]*><\/i> \d+ xung đột/);
+}
+
+// Ngoại lệ: xung đột lên trước bảo dưỡng, rồi đến ngày, rồi đến biển số.
+{
+  const data = {
+    days: [{ key: '2026-09-01', label: 'T3' }, { key: '2026-09-02', label: 'T4' }],
+    vehicles: [
+      { vehicle_id: 'V-B', label: '51C-B', days: [
+        { key: '2026-09-01', status: 'maintenance', maintenances: [{ label: 'Thay lốp' }], trip_ids: [], shifts: [] },
+        { key: '2026-09-02', status: 'available', maintenances: [], trip_ids: [], shifts: [] }] },
+      { vehicle_id: 'V-A', label: '51C-A', days: [
+        { key: '2026-09-02', status: 'conflict', maintenances: [], trip_ids: ['TR-1', 'TR-2'], shifts: [] },
+        { key: '2026-09-01', status: 'busy', maintenances: [], trip_ids: ['TR-9'], shifts: [] }] },
+    ],
+  };
+  const rows = DR.vehicleExceptions(data);
+  assert.strictEqual(rows.length, 2, 'chỉ lấy xung đột và bảo dưỡng, không lấy xe bình thường');
+  assert.strictEqual(rows[0].status, 'conflict', 'xung đột lịch là lỗi phải sửa ngay, lên trước');
+  assert.strictEqual(rows[1].status, 'maintenance');
+  assert.strictEqual(rows[0].dayLabel, 'T4', 'phải đổi mã ngày ra nhãn đọc được');
+  assert.strictEqual(rows[0].hint, 'TR-1, TR-2');
+}
+
+// Danh sách ngoại lệ: giới hạn số dòng hiện sẵn, và nói rõ còn bao nhiêu.
+{
+  const data = bigFleet(500);
+  const rows = DR.vehicleExceptions(data);
+  assert.ok(rows.length > 6, 'dữ liệu mẫu phải có đủ ngoại lệ để kiểm');
+  const collapsed = DR.vehicleExceptionList(data, {});
+  assert.strictEqual((collapsed.match(/class="dr-exception"/g) || []).length, 6, 'thu gọn thì chỉ hiện 6 dòng');
+  assert.match(collapsed, new RegExp(`Xem tất cả ${rows.length} dòng`));
+  const expanded = DR.vehicleExceptionList(data, { expanded: true });
+  assert.strictEqual((expanded.match(/class="dr-exception"/g) || []).length, rows.length);
+  assert.match(expanded, /Thu gọn/);
+}
+
+// Đội xe sạch thì phải nói rõ là sạch, không để một khung trống.
+{
+  const clean = {
+    days: [{ key: '2026-09-01', label: 'T3' }],
+    vehicles: [{ vehicle_id: 'V-1', label: '51C-1', days: [{ key: '2026-09-01', status: 'available', maintenances: [], trip_ids: [], shifts: [] }] }],
+  };
+  assert.deepStrictEqual(DR.vehicleExceptions(clean), []);
+  const html = DR.vehicleExceptionList(clean, {});
+  assert.match(html, /Không có việc cần xử lý/);
+  assert.match(html, /fa-circle-check/, 'trạng thái sạch phải có icon riêng, không chỉ khác màu');
+  assert.ok(!html.includes('dr-panel--alert'));
+}
+
+// Thoát ký tự trong cả hai khối mới.
+{
+  const nasty = {
+    days: [{ key: '2026-09-01', label: '<b>T3</b>' }],
+    vehicles: [{ vehicle_id: "V'-1", label: '<script>x</script>', type: 'A & B',
+      days: [{ key: '2026-09-01', status: 'conflict', maintenances: [], trip_ids: ['<i>TR</i>'], shifts: [], driver_ids: [] }] }],
+  };
+  for (const html of [DR.vehicleCapacityStrip(nasty, {}), DR.vehicleExceptionList(nasty, {})]) {
+    assert.ok(!html.includes('<script>'), 'không được nhả thẻ script');
+    assert.ok(!html.includes('<b>T3</b>'), 'nhãn ngày phải được thoát');
+  }
+  const list = DR.vehicleExceptionList(nasty, {});
+  const onclick = /openVehicle\('([^']*)'/.exec(list);
+  assert.ok(onclick && !onclick[1].includes("'"), 'dấu nháy phải được thoát trong ngữ cảnh JavaScript');
+}
+
+// --- 13. Tích hợp màn lịch xe trong app.js --------------------------------
+
+assert.ok(/vehicleCapacityStrip/.test(app), 'màn lịch xe phải mở ra bằng tình hình');
+assert.ok(/vehicleExceptionList/.test(app), 'phải có danh sách việc cần xử lý');
+assert.ok(/driverVehicleVisibleCount/.test(app), 'phải giới hạn số xe dựng một lần');
+{
+  const start = app.indexOf('function renderDriverVehicleWeek()');
+  const fn = app.slice(start, app.indexOf('\nwindow.filterDriverVehicleType', start));
+  // Băng năng lực và ngoại lệ phải tính trên CẢ đội xe: lọc mất 5 xe xung đột
+  // đi thì cả màn hình báo "không có việc cần xử lý" — đúng kiểu nói dối mà
+  // màn hình này sinh ra để tránh.
+  assert.match(fn, /ignoreFilters: true/, 'tình hình và ngoại lệ phải tính trên cả đội xe');
+  assert.match(fn, /vehicleCapacityStrip\(everything/);
+  assert.match(fn, /vehicleExceptionList\(everything/);
+  assert.match(fn, /vehicleMatrix\(filtered/, 'riêng ma trận chi tiết mới theo bộ lọc');
+}
+// Đổi bộ lọc phải quay về trang đầu, không giữ số xe đã tải thêm của bộ lọc cũ.
+for (const fnName of ['filterDriverVehicleDay', 'filterDriverVehicleStatus', 'filterDriverVehicleType']) {
+  const start = app.indexOf(`window.${fnName} = function`);
+  assert.ok(start > 0, `phải có ${fnName}`);
+  const fn = app.slice(start, app.indexOf('\n};', start));
+  assert.match(fn, /driverVehicleVisibleCount = /, `${fnName} phải đặt lại số xe đang hiện`);
+}
+
+// --- 14. Bai / chi nhanh -------------------------------------------------
+//
+// Chu du an co 500 xe nam o nhieu bai. Truoc day bang `vehicles` khong co truong
+// nao cho viec do (chi co inspection_place, la NOI DANG KIEM chu khong phai noi
+// xe dau), nen khong the loc theo bai duoc. v025_vehicle_depot them cot.
+
+assert.ok(/driverVehicleTableDepot/.test(app), 'phai co bo loc bai');
+assert.ok(/filterDriverVehicleDepot/.test(app), 'phai co ham loc theo bai');
+assert.ok(/depotOf\(/.test(app), 'phai tra cuu bai tu ho so xe');
+{
+  const start = app.indexOf('function renderDriverVehicleWeek()');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + 'window.filterDriverVehicleDepot', start));
+  // Bai phai dung TRUOC loai xe tren thanh cong cu: o doi 500 xe day la bo loc
+  // chinh, khong phai mot cot phu.
+  assert.ok(
+    fn.indexOf('driver-vehicle-day-depot') < fn.indexOf('driver-vehicle-day-type'),
+    'o chon bai phai dat truoc o chon loai xe'
+  );
+  // Moi bai phai kem so xe: nguoi dieu phoi can biet truoc khi bam.
+  assert.match(fn, /\$\{item\.count\}/, 'moi bai phai hien so xe');
+  // "Chua gan bai" phai la mot lua chon that.
+  assert.match(fn, /__none__/, 'phai loc duoc nhung xe chua gan bai');
+}
+{
+  // Xoa bo loc phai xoa CA bai, khong bo sot.
+  const start = app.indexOf('window.clearDriverVehicleFilters = function');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '};', start));
+  ['driverVehicleTableSearch', 'driverVehicleTableStatus', 'driverVehicleTableType', 'driverVehicleTableDepot'].forEach(name => {
+    assert.ok(fn.includes(name), `xoa bo loc phai xoa ${name}`);
+  });
+}
+// Doi bai cung phai quay ve trang dau.
+{
+  const start = app.indexOf('window.filterDriverVehicleDepot = function');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '};', start));
+  assert.match(fn, /driverVehicleVisibleCount = /);
+}
+
+// --- 15. Đội tài xế LỚN: 400 người ----------------------------------------
+//
+// Cùng lý do như đội xe, nhưng nặng hơn: mỗi người chiếm 21 ô (7 ngày × 3 ca),
+// nên 400 người là 8.400 nút và khoảng 3,3 MB HTML trong một lần innerHTML.
+
+function bigCrew(count, coverAllShifts) {
+  const days = [...Array(7)].map((_, i) => ({ key: `2026-09-0${i + 1}`, label: `T${i + 2}` }));
+  const people = [...Array(count)].map((_, i) => ({
+    id: `NV-${i}`,
+    name: `Nhân viên ${i}`,
+    role: i % 4 ? 'Lái xe' : 'Phụ xe',
+    license: 'FC',
+    days: days.map(day => ({
+      key: day.key,
+      // Cứ 5 người thì 1 người không có ca nào — đúng kiểu "năng lực chưa dùng".
+      shifts: i % 5 === 0 ? [] : [{
+        id: `S-${i}-${day.key}`,
+        type: coverAllShifts ? ['morning', 'afternoon', 'night'][i % 3] : 'morning',
+        kind: 'work',
+        vehicle_id: '',
+        start_label: '06:00',
+        end_label: '14:00',
+      }],
+      trips: [],
+    })),
+  }));
+  return { days, people };
+}
+
+{
+  const data = bigCrew(400, true);
+  const matrix = DR.weekMatrix(data, {});
+  // Một trang mặc định là 50 người × 7 ngày × 3 ca = 1.050 ô, không phải 8.400.
+  assert.strictEqual((matrix.match(/dr-cell /g) || []).length, DR.PERSON_PAGE_SIZE * 7 * 3);
+  assert.ok(matrix.length < 600 * 1024, `một trang phải dưới 600 KB, đang là ${Math.round(matrix.length / 1024)} KB`);
+  assert.match(matrix, /Đang xem <b>50<\/b> trên <b>400<\/b> nhân sự/);
+  assert.match(matrix, /showMorePeople/);
+
+  const all = DR.weekMatrix(data, { limit: 400 });
+  assert.ok(!all.includes('showMorePeople'), 'xem hết rồi thì không còn nút tải thêm');
+  assert.match(all, /Đang xem đủ <b>400<\/b> nhân sự/);
+}
+
+// Băng phủ ca: đếm số người trực từng ca, từng ngày.
+{
+  const data = bigCrew(400, true);
+  const counts = DR.shiftCoverage(data.people, '2026-09-01');
+  assert.deepStrictEqual(Object.keys(counts).sort(), ['afternoon', 'morning', 'night']);
+  const total = counts.morning + counts.afternoon + counts.night;
+  // 400 người, cứ 5 người 1 người không có ca -> 320 người có ca.
+  assert.strictEqual(total, 320);
+
+  const strip = DR.crewCoverageStrip(data, { selectedDay: '2026-09-03' });
+  assert.strictEqual((strip.match(/class="dr-cap[ "]/g) || []).length, 7, 'một cột mỗi ngày');
+  assert.strictEqual((strip.match(/class="dr-shift-count[ "]/g) || []).length, 21, 'ba ca mỗi ngày');
+  assert.match(strip, /dr-cap is-selected/);
+  // Màu không đứng một mình: mỗi ca có chữ cái và con số.
+  assert.match(strip, /<em>S<\/em>/);
+  assert.match(strip, /lượt trực/);
+}
+
+// Nghỉ phép KHÔNG được tính là có người trực.
+{
+  const days = [{ key: '2026-09-01', label: 'T3' }];
+  const onLeave = {
+    days,
+    people: [{ id: 'NV-1', name: 'A', days: [{ key: '2026-09-01', shifts: [{ id: 'S1', type: 'morning', kind: 'leave' }], trips: [] }] }],
+  };
+  assert.strictEqual(DR.shiftCoverage(onLeave.people, '2026-09-01').morning, 0, 'người nghỉ phép không phải là người trực');
+}
+
+// Chỗ hổng: ca không có ai trực lên TRƯỚC người rảnh cả tuần.
+{
+  const days = [{ key: '2026-09-01', label: 'T3' }];
+  const data = {
+    days,
+    people: [
+      { id: 'NV-RANH', name: 'Người rảnh', role: 'Lái xe', days: [{ key: '2026-09-01', shifts: [], trips: [] }] },
+      { id: 'NV-SANG', name: 'Người trực sáng', role: 'Lái xe', days: [{ key: '2026-09-01', shifts: [{ id: 'S1', type: 'morning', kind: 'work' }], trips: [] }] },
+    ],
+  };
+  const gaps = DR.crewGaps(data);
+  // Ca chiều và ca đêm trống, cộng một người rảnh cả tuần.
+  assert.strictEqual(gaps.length, 3);
+  assert.strictEqual(gaps[0].kind, 'uncovered', 'ca trống là lỗ hổng vận hành, lên trước');
+  assert.strictEqual(gaps[1].kind, 'uncovered');
+  assert.strictEqual(gaps[2].kind, 'idle');
+  assert.strictEqual(gaps[2].person_id, 'NV-RANH');
+  assert.ok(!gaps.some(row => row.person_id === 'NV-SANG'), 'người đã có ca thì không phải chỗ hổng');
+}
+
+// Tuần đã kín ca thì nói rõ, không để một khung trống.
+{
+  const days = [{ key: '2026-09-01', label: 'T3' }];
+  const full = {
+    days,
+    people: ['morning', 'afternoon', 'night'].map((type, i) => ({
+      id: `NV-${i}`, name: `Người ${i}`,
+      days: [{ key: '2026-09-01', shifts: [{ id: `S${i}`, type, kind: 'work' }], trips: [] }],
+    })),
+  };
+  assert.deepStrictEqual(DR.crewGaps(full), []);
+  const html = DR.crewGapList(full, {});
+  assert.match(html, /đã kín ca/);
+  assert.match(html, /fa-circle-check/, 'trạng thái sạch phải có icon riêng, không chỉ khác màu');
+  assert.ok(!html.includes('dr-panel--alert'));
+}
+
+// Danh sách chỗ hổng: thu gọn, và nói rõ còn bao nhiêu.
+{
+  const data = bigCrew(400, false);
+  const gaps = DR.crewGaps(data);
+  assert.ok(gaps.length > 6);
+  const collapsed = DR.crewGapList(data, {});
+  assert.strictEqual((collapsed.match(/class="dr-exception"/g) || []).length, 6);
+  assert.match(collapsed, new RegExp(`Xem tất cả ${gaps.length} dòng`));
+  assert.match(DR.crewGapList(data, { expanded: true }), /Thu gọn/);
+}
+
+// Thoát ký tự.
+{
+  const nasty = {
+    days: [{ key: '2026-09-01', label: '<b>T3</b>' }],
+    people: [{ id: "NV'-1", name: '<script>x</script>', role: 'A & B', days: [{ key: '2026-09-01', shifts: [], trips: [] }] }],
+  };
+  for (const html of [DR.crewCoverageStrip(nasty, {}), DR.crewGapList(nasty, {})]) {
+    assert.ok(!html.includes('<script>'), 'không được nhả thẻ script');
+    assert.ok(!html.includes('<b>T3</b>'), 'nhãn ngày phải được thoát');
+  }
+  const onclick = /focusPerson\('([^']*)'/.exec(DR.crewGapList(nasty, {}));
+  assert.ok(onclick && !onclick[1].includes("'"), 'dấu nháy phải được thoát trong ngữ cảnh JavaScript');
+}
+
+// --- 16. Tích hợp màn xếp ca trong app.js ---------------------------------
+
+assert.ok(/crewCoverageStrip/.test(app), 'màn xếp ca phải mở ra bằng bảng phủ ca');
+assert.ok(/crewGapList/.test(app), 'phải có danh sách chỗ hổng');
+assert.ok(/driverShiftVisibleCount/.test(app), 'phải giới hạn số nhân sự dựng một lần');
+{
+  const start = app.indexOf('function renderDriverShiftCalendarTable()');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '}', start));
+  // Lọc còn 3 người thì màn hình không được báo "tuần này đã kín ca" trong khi
+  // ca đêm thứ Năm vẫn không có ai trực.
+  assert.match(fn, /ignoreFilters: true/, 'phủ ca và chỗ hổng phải tính trên cả đội');
+  assert.match(fn, /crewCoverageStrip\(everyone/);
+  assert.match(fn, /crewGapList\(everyone/);
+  assert.match(fn, /weekMatrix\(data/, 'riêng ma trận chi tiết mới theo bộ lọc');
+}
+for (const fnName of ['filterDriverShiftDay', 'filterDriverShiftRole']) {
+  const start = app.indexOf(`window.${fnName} = function`);
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '};', start));
+  assert.match(fn, /driverShiftVisibleCount = /, `${fnName} phải đặt lại số nhân sự đang hiện`);
+}
+
+// --- 17. Hộp thoại tạo ca lặp với hàng trăm người -------------------------
+//
+// Bản trước cắt cứng `people.slice(0, 60)` mà không nói gì, nên người thứ 61
+// trở đi biến mất hoàn toàn — và người dùng không có cách nào biết.
+assert.ok(!/people\.slice\(0, 60\)/.test(app), 'không được cắt cứng ở 60 người');
+assert.ok(/visibleCount/.test(app), 'phải có bộ đếm số dòng đang hiện');
+assert.ok(/showMoreRecurrenceDrivers/.test(app), 'phải tải thêm được');
+assert.ok(/hiddenPeople/.test(app), 'phải nói rõ còn bao nhiêu người chưa hiện');
+{
+  const start = app.indexOf('window.filterWeeklyScheduleDrivers = function');
+  const fn = app.slice(start, app.indexOf(String.fromCharCode(10) + '};', start));
+  assert.match(fn, /visibleCount = 60/, 'tìm kiếm mới phải quay về trang đầu');
+}
+// "Chọn tất cả" phải chọn CẢ danh sách khớp, không chỉ số dòng đang hiện —
+// nhãn cũ "Chọn N người đang hiện" nói sai việc nút đó làm.
+assert.ok(!/người đang hiện<\/button>/.test(app), 'nhãn nút chọn tất cả phải nói đúng phạm vi');
+assert.match(app, /Chọn cả \$\{people\.length\} người khớp/);
 
 console.log('driver-roster: tất cả kiểm tra đã qua');

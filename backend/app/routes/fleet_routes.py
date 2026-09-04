@@ -82,9 +82,14 @@ async def list_vehicles(
     paginated: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=200),
+    depot_code: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     query = db.query(Vehicle).order_by(Vehicle.id.desc())
+    # Loc bai ngay o may chu. O doi 500 xe, keo het ve roi loc bang JavaScript
+    # la keo ve 500 ban ghi de dung 40 — bai la bo loc thuong dung nhat.
+    if depot_code:
+        query = query.filter(Vehicle.depot_code == depot_code.strip().upper())
     total = query.count()
     vehicles = (
         query.offset((page - 1) * page_size).limit(page_size).all()
@@ -146,6 +151,8 @@ async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db:
         insurance_date=data.get("insurance_date", ""),
         inspection_date=data.get("inspection_date", ""),
         inspection_place=data.get("inspection_place", ""),
+        depot=data.get("depot", "") or None,
+        depot_code=(data.get("depot_code") or "").strip().upper() or None,
         inspection_exp=data.get("inspection_exp", ""),
         engine_cap=data.get("engine_cap", ""),
         dimensions=data.get("dimensions", ""),
