@@ -44,20 +44,20 @@ def bump(old, new, root="tests"):
                 if old not in line:
                     out.append(line)
                     continue
-                # (4) Ten module — giu nguyen.
+                # (4) Ten module - giu nguyen.
                 if "import" in line:
                     out.append(line)
                     continue
                 before = line
-                # (3) Tuple mot phan tu — doi thang, KHONG noi them.
+                # (3) Tuple mot phan tu - doi thang, KHONG noi them.
                 if single_tuple.search(line):
                     line = single_tuple.sub('("%s",)' % new, line)
                 else:
-                    # (2) Danh sach — noi them.
+                    # (2) Danh sach - noi them.
                     for needle, repl in append_rules:
                         if needle in line:
                             line = line.replace(needle, repl)
-                    # (1) Moc head — doi thang.
+                    # (1) Moc head - doi thang.
                     if line == before:
                         line = line.replace(old, new)
                 if line != before:
@@ -77,12 +77,12 @@ def main():
     old, new = sys.argv[1], sys.argv[2]
     changed = bump(old, new)
     for path, count in changed:
-        print("%3d dòng  %s" % (count, path))
-    print("tổng: %d dòng trong %d tệp" % (sum(c for _p, c in changed), len(changed)))
+        print("%3d dong  %s" % (count, path))
+    print("tong: %d dong trong %d tep" % (sum(c for _p, c in changed), len(changed)))
     print()
-    print("Nhớ chạy lại bộ test migration ngay sau đó — vẫn còn hai chỗ script")
-    print("không đoán được: danh sách kết thúc bằng biến HEAD_VERSION, và test")
-    print("`test_vNNN_is_the_registered_head` của chính bản vừa bị thay thế.")
+    print("Chay lai bo test migration ngay sau do - van con hai cho script")
+    print("khong doan duoc: danh sach ket thuc bang bien HEAD_VERSION, va test")
+    print("test_vNNN_is_the_registered_head cua chinh ban vua bi thay the.")
     return 0
 
 

@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-masterdata-audit-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260905-shipping-spec-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -3710,7 +3710,7 @@
               <div class="oracle-actions">
                 <button class="oracle-btn oracle-btn-secondary" onclick="loadSalesOrders()"><i class="fa-solid fa-rotate-right"></i> <span data-i18n="btn_refresh">Làm Mới</span></button>
                 <span class="so-create-source-note" data-i18n="note_create_so_from_qt">
-                  <i class="fa-solid fa-lock"></i> Tạo SO từ Báo giá đã duyệt
+                  <i class="fa-solid fa-lock"></i> Tạo đơn từ Báo giá cước đã duyệt
                 </span>
               </div>
             </div>
@@ -3849,12 +3849,12 @@
 
                 <!-- TAB 2: CHI TIET DON HANG -->
                   <div id="so-sec-order-details" class="form-sec-content" style="display: none; background: #ffffff; border-radius: 8px; padding: 0;">
-                  <h3 style="margin-top: 0; font-size: 1.1rem; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;" data-i18n="lbl_order_lines">Chi Tiết Đơn Hàng</h3>
+                  <h3 style="margin-top: 0; font-size: 1.1rem; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px;" data-i18n="lbl_order_lines">Quy Cách Vận Chuyển</h3>
                   
                   <!-- TABS (INTERACTIVE TAB SWITCHING) -->
                   <div style="display: flex; gap: 20px; border-bottom: 2px solid #eee; margin-bottom: 15px;">
                     <div class="so-tab-btn active" onclick="switchSOTab('lines')" id="tab-btn-lines" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_lines">Hàng Hóa Vận Chuyển</div>
-                    <div class="so-tab-btn" onclick="switchSOTab('details')" id="tab-btn-details" style="padding: 10px 15px; color: #666; cursor: pointer;" data-i18n="tab_details">Chi Tiết Đơn Hàng</div>
+                    <div class="so-tab-btn" onclick="switchSOTab('details')" id="tab-btn-details" style="padding: 10px 15px; color: #666; cursor: pointer;" data-i18n="tab_details">Quy Cách Vận Chuyển</div>
                     <div class="so-tab-btn" onclick="switchSOTab('attachments')" id="tab-btn-attachments" style="padding: 10px 15px; color: #666; cursor: pointer;" data-i18n="tab_attachments">Tài Liệu Đính Kèm</div>
                   </div>
 
@@ -3898,7 +3898,7 @@
 
                   <!-- Vietnamese source cleaned -->
                   <div id="so-tab-details" class="so-tab-content" style="display: none; padding: 16px; background: #fafafa; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <h4 style="margin:0 0 12px; color:#0a6ed1; display:flex; align-items:center; gap:8px;" data-i18n="title_so_specs"><i class="fa-solid fa-circle-info"></i> Quy Cách Vận Chuyển & Yêu Cầu Kỹ Thuật</h4>
+                    <h4 style="margin:0 0 12px; color:#0a6ed1; display:flex; align-items:center; gap:8px;" data-i18n="title_so_specs"><i class="fa-solid fa-circle-info"></i> Quy Cách & Điều Kiện Vận Chuyển <small style="font-weight:600;color:#64748b;">(kế thừa từ báo giá cước)</small></h4>
                     <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px;">
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_carrier_name">Đơn vị vận chuyển
                         <input id="so-carrier-name" class="fiori-input" type="text" value="EPL Logistics Express" placeholder="Nhập đơn vị vận chuyển" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
@@ -6904,7 +6904,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-masterdata-audit-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260905-shipping-spec-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6918,11 +6918,11 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/cost-estimate.js?v=20260904-masterdata-audit-v1"></script>
+  <script src="/static/js/cost-estimate.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-masterdata-audit-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-masterdata-audit-v1"></script>
+  <script src="/static/js/app.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

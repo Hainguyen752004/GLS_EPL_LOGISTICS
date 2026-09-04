@@ -30,8 +30,8 @@ def test_v013_is_current_and_upgrade_is_idempotent(tmp_path):
     database = tmp_path / "v013.db"
     _create_schema(database)
 
-    assert required_migration_head() == "027_vehicle_cost_overrides"
-    assert upgrade(str(database)) == ["013_demo_stabilization", "014_trip_cost_rows", "015_trip_stop_recipient", "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew", "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance", "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides"]
+    assert required_migration_head() == "028_shipping_spec"
+    assert upgrade(str(database)) == ["013_demo_stabilization", "014_trip_cost_rows", "015_trip_stop_recipient", "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew", "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance", "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides", "028_shipping_spec"]
     assert upgrade(str(database)) == []
 
     with sqlite3.connect(database) as connection:

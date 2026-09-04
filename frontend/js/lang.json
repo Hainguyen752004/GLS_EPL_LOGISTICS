@@ -1715,8 +1715,8 @@
     "la": "ລາຍການສິນຄ້າ"
   },
   "tab_details": {
-    "en": "Details",
-    "vi": "Chi Tiết",
+    "en": "Shipping Terms",
+    "vi": "Quy Cách Vận Chuyển",
     "la": "ລາຍລະອຽດ"
   },
   "th_unit_price": {
@@ -3495,8 +3495,8 @@
     "la": "ຈຳນວນເງິນລວມ"
   },
   "title_so_specs": {
-    "vi": "Quy Cách Vận Chuyển & Yêu Cầu Kỹ Thuật",
-    "en": "Transportation Specs & Technical Requirements",
+    "vi": "Quy Cách & Điều Kiện Vận Chuyển",
+    "en": "Shipping Terms & Technical Requirements",
     "la": "ມາດຕະຖານການຂົນສົ່ງ & ຂໍ້ກຳນົດເຕັກນິກ"
   },
   "lbl_carrier_name": {

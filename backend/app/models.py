@@ -329,6 +329,16 @@ class SalesOrder(Base):
     payment_terms = Column(String, default="30 Days")
     sales_rep = Column(String)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
+    # Quy cach va dieu kien van chuyen. Dat tren CA Quotation lan SalesOrder:
+    # day la dieu kien chao cho khach o buoc bao gia, va phai di theo sang don
+    # hang khi chot — khong bat khai lai. Tab nay tung co sau o nhap ma khong
+    # co cot nao de chua, nen dien xong la mat.
+    carrier_name = Column(String)             # Don vi van chuyen
+    delivery_method = Column(String)          # Phuong thuc giao
+    seal_weight = Column(String)              # Trong tai niem phong
+    temperature_requirement = Column(String)  # Yeu cau nhiet do
+    cargo_insurance = Column(String)          # Bao hiem hang hoa
+    warehouse_owner = Column(String)          # Nguoi phu trach kho
     volume_m3 = Column(Float, default=1.0) # Thể tích m3
     
     details = relationship("DeliveryOrderDetail", back_populates="sales_order")
@@ -789,6 +799,16 @@ class Quotation(Base):
     total_cost = Column(MONEY_TYPE, default=0.0)
     selling_price = Column(MONEY_TYPE, default=0.0)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
+    # Quy cach va dieu kien van chuyen. Dat tren CA Quotation lan SalesOrder:
+    # day la dieu kien chao cho khach o buoc bao gia, va phai di theo sang don
+    # hang khi chot — khong bat khai lai. Tab nay tung co sau o nhap ma khong
+    # co cot nao de chua, nen dien xong la mat.
+    carrier_name = Column(String)             # Don vi van chuyen
+    delivery_method = Column(String)          # Phuong thuc giao
+    seal_weight = Column(String)              # Trong tai niem phong
+    temperature_requirement = Column(String)  # Yeu cau nhiet do
+    cargo_insurance = Column(String)          # Bao hiem hang hoa
+    warehouse_owner = Column(String)          # Nguoi phu trach kho
     volume_m3 = Column(Float, default=5.0) # Thể tích m3
     status = Column(String, default="Draft") # Draft, Sent, Approved
 

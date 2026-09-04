@@ -85,6 +85,45 @@ def _line_quantity_split(uom, quantity):
     return Decimal(0), Decimal(0)
 
 
+# Quy cach va dieu kien van chuyen.
+#
+# Tab nay tung co sau o nhap ma khong co cot nao de chua, khong duoc gui len, va
+# ban than cac o nhap con bi ban dich xoa mat. Ba tang cung hong mot cho.
+SHIPPING_SPEC_FIELDS = (
+    "carrier_name",
+    "delivery_method",
+    "seal_weight",
+    "temperature_requirement",
+    "cargo_insurance",
+    "warehouse_owner",
+)
+
+
+def _apply_shipping_spec(target, data):
+    """Chi ghi nhung truong CO MAT trong payload.
+
+    Giong ly do o POST /api/vehicles: gan mac dinh cho truong khong gui se xoa
+    trang du lieu cu ma khong mot thong bao nao.
+    """
+    for field in SHIPPING_SPEC_FIELDS:
+        if field in data:
+            value = str(data.get(field) or "").strip()
+            setattr(target, field, value[:255] or None)
+
+
+def _inherit_shipping_spec(order, quotation):
+    """Don hang ke thua quy cach tu bao gia da duyet.
+
+    Day la dieu kien da chao cho khach o buoc bao gia — bat khai lai la vua mat
+    cong vua de lech voi cai da chao.
+    """
+    if quotation is None:
+        return
+    for field in SHIPPING_SPEC_FIELDS:
+        if not getattr(order, field, None):
+            setattr(order, field, getattr(quotation, field, None))
+
+
 def _line_decimal(value, field):
     """Doc mot so tien/so luong cua dong hang thanh Decimal.
 
@@ -589,6 +628,11 @@ def create_sales_order(db, data, user="system"):
         created_by=user,
         updated_by=user,
     )
+    # Don hang ke thua quy cach van chuyen tu bao gia da duyet — day la dieu
+    # kien da chao cho khach, bat khai lai la vua mat cong vua de lech voi cai
+    # da chao.
+    _inherit_shipping_spec(so, q)
+    _apply_shipping_spec(so, data)
     db.add(so)
     _audit(db, "CREATE_SALES_ORDER", "sales_orders", so.id, user)
     return so
@@ -614,6 +658,7 @@ def update_sales_order(db, so_id, data, user="system"):
     so.delivery_window_end = data.get("delivery_window_end", so.delivery_window_end) or ""
     so.weight_kg = _money(data, "weight_kg", so.weight_kg or 0)
     # Dong hang duoc ghi SAU cac truong tong, vi no tinh lai tong tu cac dong.
+    _apply_shipping_spec(so, data)
     _replace_sales_order_lines(db, so, data.get("lines"))
     so.pallet_count = _nonnegative_int(data, "pallet_count", so.pallet_count or 0)
     so.total_amount = _money(data, "total_amount", so.total_amount or 0)

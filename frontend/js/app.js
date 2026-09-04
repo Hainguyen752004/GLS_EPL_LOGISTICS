@@ -192,10 +192,10 @@ function forceCriticalVietnameseLabels() {
     lbl_order_no: 'Mã Đơn Hàng',
     lbl_customer_id: 'Mã Khách Hàng',
     lbl_payment_terms: 'Điều Khoản Thanh Toán',
-    lbl_route_stops: 'Chọn Tuyến Đường Vận Chuyển (Sales Order Route)',
+    lbl_route_stops: 'Chọn Tuyến Đường Vận Chuyển',
     lbl_order_lines: 'Chi Tiết Đơn Hàng',
     tab_lines: 'Hàng Hóa Vận Chuyển',
-    tab_details: 'Chi Tiết Đơn Hàng',
+    tab_details: 'Quy Cách Vận Chuyển',
     tab_attachments: 'Tài Liệu Đính Kèm',
     btn_search: 'Tìm Kiếm'
   };
@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-masterdata-audit-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260905-shipping-spec-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -539,6 +539,16 @@ window.changeLanguage = function (lang) {
     if (attr) el.setAttribute(attr, cleanValue);
     else if (el.tagName === 'INPUT' && el.type !== 'button' && el.hasAttribute('placeholder')) el.setAttribute('placeholder', cleanValue);
     else if (el.tagName === 'OPTION') el.textContent = cleanValue;
+    else if (el.querySelector('input, select, textarea')) {
+      // The nay BOC mot o nhap. Gan innerHTML se XOA MAT o nhap do — dung loi
+      // da xay ra o tab "Quy cach van chuyen" cua don hang van chuyen: sau khi
+      // dich xong, sau nhan con lai tro tro, khong con o nao de dien.
+      //
+      // Chi doi node VAN BAN dau tien, giu nguyen moi the con.
+      const textNode = [...el.childNodes].find(node => node.nodeType === 3 && node.textContent.trim());
+      if (textNode) textNode.textContent = cleanValue;
+      else el.insertBefore(document.createTextNode(cleanValue), el.firstChild);
+    }
     else el.innerHTML = cleanValue;
   });
   translateAllDOMTexts(lang);
@@ -615,7 +625,7 @@ window.currentWorkflowStep = 0;
 const workflowStepsData = {
   0: { id: 'step-0', view: 'master-data', title: '0. Master Data & thiết lập nền', role: 'Admin / System Data Manager', db: 'vehicles, drivers, routes, cost_formulas', icon: 'fa-database' },
   1: { id: 'step-1', view: 'crm-sales', title: '1. Báo giá vận tải (Quotation)', role: 'Pricing / Sales Rep', db: 'quotations', icon: 'fa-file-contract' },
-  2: { id: 'step-2', view: 'crm-sales', title: '2. Đơn hàng bán (Sales Order)', role: 'Sales Executive', db: 'sales_orders', icon: 'fa-handshake' },
+  2: { id: 'step-2', view: 'crm-sales', title: '2. Đơn hàng vận chuyển (Sales Order)', role: 'Sales Executive', db: 'sales_orders', icon: 'fa-handshake' },
   3: { id: 'step-3', view: 'ops-planning', title: '3. Lệnh giao hàng (Delivery Order)', role: 'Kho / Điều phối', db: 'delivery_orders', icon: 'fa-clipboard-check' },
   4: { id: 'step-4', view: 'ops-planning', title: '4. Kế hoạch tuyến đường (Route)', role: 'Planner / Route Ops', db: 'routes', icon: 'fa-route' },
   5: { id: 'step-5', view: 'dispatch', title: '5. Lập lịch & điều phối (Dispatch)', role: 'Fleet Dispatcher', db: 'delivery_orders', icon: 'fa-truck-ramp-box' },
@@ -985,14 +995,14 @@ window.installEnterpriseModuleTabs = function () {
       groups: [
         {
           key: 'quotation',
-          label: lang === 'la' ? 'ໃບສະເໜີລາຄາ' : (lang === 'en' ? 'Quotation' : 'Báo giá'),
-          hint: lang === 'la' ? 'ສ້າງ ແລະ ອະນຸມັດໃບສະເໜີລາຄາກ່ອນປິດການຂາຍ.' : (lang === 'en' ? 'Create & approve quotations before closing deals.' : 'Tạo và duyệt báo giá trước khi chốt đơn.'),
+          label: lang === 'la' ? 'ໃບສະເໜີລາຄາ' : (lang === 'en' ? 'Freight Quotation' : 'Báo giá cước'),
+          hint: lang === 'la' ? 'ສ້າງ ແລະ ອະນຸມັດໃບສະເໜີລາຄາກ່ອນປິດການຂາຍ.' : (lang === 'en' ? 'Create & approve quotations before closing deals.' : 'Tạo và duyệt báo giá cước trước khi chốt đơn.'),
           selectors: ['#oracle-qt-list']
         },
         {
           key: 'sales-order',
-          label: lang === 'la' ? 'Sales Order' : (lang === 'en' ? 'Sales Order' : 'Sales Order'),
-          hint: lang === 'la' ? 'ຄຸ້ມຄອງ SO ທີ່ປິດຈາກໃບສະເໜີລາຄາ.' : (lang === 'en' ? 'Manage confirmed SOs from quotations.' : 'Quản lý SO đã chốt từ báo giá.'),
+          label: lang === 'la' ? 'Sales Order' : (lang === 'en' ? 'Transport Order' : 'Đơn hàng vận chuyển'),
+          hint: lang === 'la' ? 'ຄຸ້ມຄອງ SO ທີ່ປິດຈາກໃບສະເໜີລາຄາ.' : (lang === 'en' ? 'Manage confirmed SOs from quotations.' : 'Quản lý đơn đã chốt từ báo giá cước.'),
           selectors: ['#oracle-so-list']
         }
       ]
@@ -15837,6 +15847,14 @@ window.saveOracleSO = async function () {
     route_id: route,
     ...routeContext,
     total_amount: amount,
+    // Quy cach van chuyen: sau truong nay tung khong duoc gui len bao gio, nen
+    // dien xong bam Luu la mat sach.
+    carrier_name: document.getElementById('so-carrier-name')?.value || '',
+    delivery_method: document.getElementById('so-delivery-method')?.value || '',
+    seal_weight: document.getElementById('so-seal-weight')?.value || '',
+    temperature_requirement: document.getElementById('so-temperature-requirement')?.value || '',
+    cargo_insurance: document.getElementById('so-cargo-insurance')?.value || '',
+    warehouse_owner: document.getElementById('so-warehouse-owner')?.value || '',
     // May chu TINH LAI tong tu cac dong nay, nen tong va cac dong khong the
     // noi hai con so khac nhau. Don vi tinh cua tung dong con duoc quy doi ra
     // khoi luong / the tich de chan dieu xe qua tai.

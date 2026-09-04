@@ -49,6 +49,12 @@ class QuotationCreateRequest(StrictRequest):
     selling_price: Optional[Number] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
+    carrier_name: Optional[str] = None
+    delivery_method: Optional[str] = None
+    seal_weight: Optional[str] = None
+    temperature_requirement: Optional[str] = None
+    cargo_insurance: Optional[str] = None
+    warehouse_owner: Optional[str] = None
 
 
 class QuotationUpdateRequest(QuotationCreateRequest):
@@ -84,6 +90,12 @@ class SalesOrderCreateRequest(StrictRequest):
     order_date: Optional[str] = None
     currency_code: Optional[str] = None
     lines: Optional[List[SalesOrderLineRequest]] = None
+    carrier_name: Optional[str] = None
+    delivery_method: Optional[str] = None
+    seal_weight: Optional[str] = None
+    temperature_requirement: Optional[str] = None
+    cargo_insurance: Optional[str] = None
+    warehouse_owner: Optional[str] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
 
@@ -103,6 +115,12 @@ class SalesOrderUpdateRequest(StrictRequest):
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
     lines: Optional[List[SalesOrderLineRequest]] = None
+    carrier_name: Optional[str] = None
+    delivery_method: Optional[str] = None
+    seal_weight: Optional[str] = None
+    temperature_requirement: Optional[str] = None
+    cargo_insurance: Optional[str] = None
+    warehouse_owner: Optional[str] = None
 
 
 class WorkflowStatusRequest(StrictRequest):

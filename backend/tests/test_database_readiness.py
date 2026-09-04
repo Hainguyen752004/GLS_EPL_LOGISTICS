@@ -28,7 +28,7 @@ REQUIRED = {
 
 
 def test_required_migration_head_is_exposed_by_runner():
-    assert required_migration_head() == "027_vehicle_cost_overrides"
+    assert required_migration_head() == "028_shipping_spec"
 
 
 class Checker:
