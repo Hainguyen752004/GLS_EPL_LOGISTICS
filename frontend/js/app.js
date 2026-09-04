@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260903-menu-rename-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-fuel-norm-unit-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -11054,7 +11054,7 @@ let masterFormulaStore = {
     tokens: [
       { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/km)', type: 'var' },
+      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
       { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
       { code: '+', label: '+', type: 'op' },
@@ -11070,7 +11070,7 @@ let masterFormulaStore = {
     tokens: [
       { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/km)', type: 'var' },
+      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
       { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
       { code: '+', label: '+', type: 'op' },
@@ -11088,7 +11088,7 @@ let masterFormulaStore = {
     tokens: [
       { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/km)', type: 'var' },
+      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
       { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
       { code: '+', label: '+', type: 'op' },
@@ -11102,7 +11102,7 @@ let masterFormulaStore = {
     tokens: [
       { code: 'DISTANCE', label: 'Khoảng cách (km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
-      { code: 'FUEL_NORM', label: 'Định mức (lít/km)', type: 'var' },
+      { code: 'FUEL_NORM', label: 'Định mức (lít/100km)', type: 'var' },
       { code: '*', label: 'Ã—', type: 'op' },
       { code: 'FUEL_PRICE', label: 'Giá dầu (VNĐ/lít)', type: 'var' },
       { code: '+', label: '+', type: 'op' },
@@ -11155,12 +11155,12 @@ function ensureVehicleTypeFormula(vehicleType, currency = masterCostCurrencyCode
     wh: source?.wh || '0',
     // KHONG lay base_rate lam gia tri du phong cho o "Freight Rate / 1kg".
     //
-    // Voi Container 20FT, base_rate = 6.250 — dung bang gia tri "Fuel Rate /
-    // 1 km" cua preset-1, trong khi cuoc phi that la 1.500 d/kg. Dien mot so
-    // xang dau vao o cuoc phi lam gia cao gap hon 4 lan, va no chay thang vao
-    // bao gia ma khong ai nhin ra.
+    // Hai truong nay khac han don vi: base_rate la DON GIA TREN 1 KM (d/km),
+    // con o kia la cuoc phi TREN 1 KG HANG (d/kg). Dien cai nay vao cho cai
+    // kia khong chi sai so, ma sai ca thu nguyen — voi Container 20FT la 6.250
+    // vao cho dang le 1.500, va no chay thang vao bao gia.
     //
-    // De trong thi man hinh noi ro "Chua dat don gia goc" — sai ma THAY DUOC
+    // De trong thi man hinh noi ro "Chua dat don gia/km" — sai ma THAY DUOC
     // tot hon sai ma im lang.
     rate: source?.rate || '0',
     tokens: JSON.parse(JSON.stringify(source?.tokens || []))
@@ -11287,7 +11287,7 @@ window.loadSelectedFormulaPreset = function (key, options = {}) {
 let currentFormulaTokens = [
   { code: 'DISTANCE', label: 'KhoảngCách(km)', type: 'var' },
   { code: '*', label: 'Ã—', type: 'op' },
-  { code: 'FUEL_NORM', label: 'ĐịnhMức(lít/km)', type: 'var' },
+  { code: 'FUEL_NORM', label: 'ĐịnhMức(lít/100km)', type: 'var' },
   { code: '*', label: 'Ã—', type: 'op' },
   { code: 'FUEL_PRICE', label: 'GiáDầu(VNĐ/lít)', type: 'var' },
   { code: '+', label: '+', type: 'op' },
@@ -11354,7 +11354,16 @@ window.calculateFormulaPreviewResult = function () {
 
   try {
     const distance = 200;
-    const fuelNorm = 0.25;
+    // fuel_norm trong Master Data la LIT/100KM (gia tri that: 18 va 26 — 26 lit
+    // cho 1 km la vo ly). Ban xem truoc cu hardcode 0,25 tuc lit/km, nen no
+    // che mat chinh su mau thuan don vi nay: cong thuc
+    // `DISTANCE x FUEL_NORM x FUEL_PRICE` an vao du lieu that se ra chi phi
+    // xang dau GAP 100 LAN.
+    //
+    // Chia cho 100 ngay tai day de ket qua van la tien tren 1 km, dung theo
+    // quy tac cua du an: moi don gia chi phi quy ve "tren 1 km".
+    const fuelNormPer100Km = 25;
+    const fuelNorm = fuelNormPer100Km / 100;
     const fuelPrice = 25000;
     const tollFee = 300000;
     const driverAllowance = 500000;
@@ -14409,8 +14418,8 @@ window.renderDynamicFormulaVehicleTypes = function () {
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
         ).join('')}</div>` : ''}
         <div class="vt-rate">${rate
-          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ · đơn giá gốc <i class="fa-solid fa-circle-question" title="Trường base_rate trong Master Data. Đơn vị chưa thống nhất giữa dữ liệu và công thức — xem ghi chú trong mã nguồn." aria-hidden="true"></i></small>`
-          : '<small class="vt-rate-missing">Chưa đặt đơn giá gốc</small>'}</div>
+          ? `<b>${rate.toLocaleString('vi-VN')}</b> <small>đ/km</small>`
+          : '<small class="vt-rate-missing">Chưa đặt đơn giá/km</small>'}</div>
       </div>`;
   }).join('');
 

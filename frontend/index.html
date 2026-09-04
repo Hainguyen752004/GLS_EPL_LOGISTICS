@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-base-rate-honesty-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-cost-per-km-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -5462,7 +5462,7 @@
                       <div style="font-size: 0.83rem; color: #334155; font-weight: 700; margin-bottom: 8px;">Thư viện thẻ biến số:</div>
                       <div style="display: flex; flex-wrap: wrap; gap: 6px;">
                         <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('DISTANCE', 'Khoảng cách (km)', 'var')" style="background: #eff6ff; color: #0284c7; border: 1px solid #bae6fd; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Khoảng cách (km)</button>
-                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('FUEL_NORM', 'Định mức (lít/km)', 'var')" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Định mức (lít/km)</button>
+                        <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('FUEL_NORM', 'Định mức (lít/100km)', 'var')" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Định mức (lít/100km)</button>
                         <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('FUEL_PRICE', 'Giá dầu (VNĐ/lít)', 'var')" style="background: #fffbeb; color: #d97706; border: 1px solid #fef3c7; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Giá dầu (VNĐ/lít)</button>
                         <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('TOLL_FEE', 'Phí BOT (VNĐ)', 'var')" style="background: #faf5ff; color: #9333ea; border: 1px solid #f3e8ff; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Phí BOT (VNĐ)</button>
                         <button type="button" class="formula-pill-btn" onclick="appendFormulaToken('DRIVER_ALLOWANCE', 'Phụ cấp tài xế (VNĐ)', 'var')" style="background: #fdf2f8; color: #db2777; border: 1px solid #fce7f3; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Phụ cấp tài xế (VNĐ)</button>
@@ -5553,7 +5553,7 @@
                       <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_veh_type_code">Mã Loại Xe</th>
                       <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_veh_type_name">Tên Loại Phương Tiện</th>
                       <th style="font-weight: 600; padding: 14px 18px;">Năng Lực Chở Tối Đa</th>
-                      <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_fuel_norm">Định Mức Nhiên Liệu</th>
+                      <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_fuel_norm">Định Mức Nhiên Liệu (Lít/100km)</th>
                       <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_maint_cost">Phí bảo dưỡng / Tháng</th>
                       <th style="font-weight: 600; padding: 14px 18px;" data-i18n="th_fuel_type">Loại Nhiên Liệu</th>
                       <th style="font-weight: 600; text-align: center; padding: 14px 18px;" data-i18n="th_action_nav">Thao Tác</th>
@@ -6830,7 +6830,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-base-rate-honesty-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260904-cost-per-km-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6845,9 +6845,9 @@
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-base-rate-honesty-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-cost-per-km-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-base-rate-honesty-v1"></script>
+  <script src="/static/js/app.js?v=20260904-cost-per-km-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

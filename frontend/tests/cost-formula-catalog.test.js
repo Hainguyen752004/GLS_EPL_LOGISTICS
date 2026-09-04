@@ -73,15 +73,13 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   });
   assert.match(fn, /m³/, 'thể tích phải có đơn vị');
   assert.match(fn, /pallet/, 'số pallet phải có đơn vị');
-  // KHONG duoc gan don vi cho base_rate. Ba nguon noi ba kieu:
-  //   - ghi chu cot trong models.py: "Phi cuoc co ban"
-  //   - gia tri that (Container 20FT = 6.250) khop voi "Fuel Rate / 1 km"
-  //   - nhung code lai dung no lam gia tri du phong cho "Freight Rate / 1kg"
-  // Gan bat ky don vi nao cung la khang dinh mot dieu ma chinh ma nguon
-  // khong thong nhat.
-  assert.ok(!/đ\/km|đ\/kg/.test(fn), 'khong duoc bia don vi cho base_rate');
+  // base_rate la DON GIA TREN 1 KM — chu du an da chot: moi don gia chi phi
+  // trong du an quy ve "tren 1 km". Truoc khi co cau tra loi do thi ba nguon
+  // noi ba kieu, nen the khong duoc gan don vi nao ca; gio thi phai gan dung.
+  // (Kiem tra day du ve don vi nam o tests/cost-unit-consistency.test.js.)
+  assert.match(fn, /<small>đ\/km<\/small>/, 'the phai ghi don vi đ/km');
   // Chua dat don gia la mot su that can thay, khong phai mot o trong.
-  assert.match(fn, /Chưa đặt đơn giá gốc/);
+  assert.match(fn, /Chưa đặt đơn giá\/km/);
   // Icon lấy từ dữ liệu, chỉ dùng 🚚 khi thiếu.
   assert.match(fn, /vehicleType\.icon \|\| '🚚'/);
   // Tên loại xe do người dùng nhập nên phải thoát khi vào innerHTML.

@@ -4480,9 +4480,9 @@
     "la": "ນ້ຳໜັກບັນທຸກສູງສຸດ"
   },
   "th_fuel_norm": {
-    "vi": "Định Mức Nhiên Liệu",
-    "en": "Fuel Norm",
-    "la": "ມາດຕະຖານນ້ຳມັນ"
+    "vi": "Định Mức Nhiên Liệu (Lít/100km)",
+    "en": "Fuel Norm (L/100km)",
+    "la": "ມາດຕະຖານນ້ຳມັນ (ລິດ/100km)"
   },
   "th_maint_cost": {
     "vi": "Phí bảo dưỡng / Tháng",

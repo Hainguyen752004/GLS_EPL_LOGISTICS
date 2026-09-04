@@ -79,7 +79,7 @@ class Vehicle(Base):
     weight_capacity = Column(Float, default=0.0) # Tải trọng (kg)
     volume_capacity_m3 = Column(Float, default=30.0) # Thể tích thùng xe (m3)
     pallet_capacity = Column(Integer, default=0) # Số pallet tối đa
-    fuel_norm = Column(Float, default=0.0) # Định mức nhiên liệu (lít/km)
+    fuel_norm = Column(Float, default=0.0) # Định mức nhiên liệu (lít/100km)
     min_speed_kmh = Column(Float, default=35.0) # Tốc độ tối thiểu dùng tính ETA/điều phối
     avg_speed_kmh = Column(Float, default=45.0) # Tốc độ kế hoạch riêng của xe
     max_speed_kmh = Column(Float, default=80.0) # Tốc độ tối đa dùng cảnh báo/GPS
@@ -173,9 +173,9 @@ class VehicleType(Base):
     max_weight = Column(Float, default=0.0) # Tải trọng tối đa (kg)
     volume_capacity_m3 = Column(Float, default=30.0) # Thể tích tối đa (m3)
     pallet_capacity = Column(Integer, default=0) # Số pallet tối đa
-    fuel_norm = Column(Float, default=0.0) # Định mức nhiên liệu
+    fuel_norm = Column(Float, default=0.0) # Định mức nhiên liệu (lít/100km)
     avg_speed_kmh = Column(Float, default=45.0) # Tốc độ kế hoạch mặc định của loại xe
-    base_rate = Column(MONEY_TYPE, default=0.0) # Phí cước cơ bản
+    base_rate = Column(MONEY_TYPE, default=0.0) # Đơn giá trên 1 km (đ/km) — mọi đơn giá chi phí trong dự án quy về "trên 1 km"
     maint_cost = Column(MONEY_TYPE, default=0.0) # Phí bảo dưỡng
     dims = Column(String) # Kích thước
     fuel_type = Column(String, default="Diesel") # Loại nhiên liệu
