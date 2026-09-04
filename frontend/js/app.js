@@ -11888,11 +11888,18 @@ window.saveCostFormula = async function () {
   const currentKey = activeCostFormulaKey || document.getElementById('md-formula-preset-select')?.value || 'preset-1';
   const currency = masterCostCurrencyCode();
 
-  const fuelInput = document.getElementById('md-cost-fuel-rate')?.value || '6,250';
-  const driverInput = document.getElementById('md-cost-driver-allowance')?.value || '500,000';
-  const tollInput = document.getElementById('md-cost-toll-fee')?.value || '300,000';
-  const whInput = document.getElementById('md-cost-warehouse-fee')?.value || '200,000';
-  const rateInput = document.getElementById('md-cost-freight-rate')?.value || '1,500';
+  // O trong thi luu 0, KHONG bia mot don gia.
+  //
+  // Ban truoc rot san 6.250 / 500.000 / 300.000 / 200.000 / 1.500 vao khi o
+  // trong, nen bam Luu ma chua nhap gi la co so du lieu co mot bo don gia
+  // khong ai dat ra, va man hinh bao "Da cau hinh". Voi 0 thi man hinh noi
+  // dung su that: "Chua dat don gia".
+  const doc = id => document.getElementById(id)?.value?.trim() || '0';
+  const fuelInput = doc('md-cost-fuel-rate');
+  const driverInput = doc('md-cost-driver-allowance');
+  const tollInput = doc('md-cost-toll-fee');
+  const whInput = doc('md-cost-warehouse-fee');
+  const rateInput = doc('md-cost-freight-rate');
 
   const badge = document.getElementById('selected-veh-type-badge');
   const selectedVehicleTypeId = masterFormulaStore[currentKey]?.vehicleTypeId || '';

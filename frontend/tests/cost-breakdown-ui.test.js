@@ -55,6 +55,20 @@ assert.ok(!/max_weight \|\| 15000/.test(pricingPaths), 'không được còn h�
 
 assert.ok(!/const multiplier = /.test(pricingPaths), 'không được còn hệ số nhân bịa');
 
+// Lưu cấu hình cũng không được bịa đơn giá khi ô trống.
+//
+// Bản trước rót sẵn 6.250 / 500.000 / 300.000 / 200.000 / 1.500 vào khi ô trống, nên
+// bấm Lưu mà chưa nhập gì là cơ sở dữ liệu có một bộ đơn giá không ai đặt ra, mà
+// màn hình lại báo "Đã cấu hình". Đúng phải là 0 — khi đó màn hình nói thật.
+{
+  const fn = code.slice(code.indexOf('window.saveCostFormula = async function'));
+  const than = fn.slice(0, fn.indexOf(String.fromCharCode(10) + '};'));
+  ['6,250', '500,000', '300,000', '200,000', '1,500'].forEach(bia => {
+    assert.ok(!than.includes(bia), `không được bịa đơn giá ${bia} khi ô trống`);
+  });
+  assert.ok(/\|\| '0'/.test(than), 'ô trống phải lưu 0');
+}
+
 // --- 2. Mọi con số đi qua một chỗ duy nhất -----------------------------
 
 assert.ok(/QuotationPricing\.price\(/.test(code), 'phải dùng module định giá dùng chung');

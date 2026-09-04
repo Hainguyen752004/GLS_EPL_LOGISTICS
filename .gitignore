@@ -57,3 +57,6 @@ build/
 dist/
 *.egg-info/
 node_modules/
+
+# Ban sao luu du lieu truoc khi xoa (dump co so du lieu, khong dua vao git)
+backend/scripts/sao_luu_*.json
