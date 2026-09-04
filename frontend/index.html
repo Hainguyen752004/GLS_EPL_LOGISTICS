@@ -1021,6 +1021,61 @@
     .fv-cap-warn { display:inline-flex; align-items:center; gap:5px; margin-left:8px; padding:1px 7px; border-radius:999px; background:#fffbeb; border:1px solid #f2c98b; font-size:.66rem; font-weight:800; color:#78350f; cursor:help; }
     .fv-cap-warn i { font-size:.62rem; }
 
+    /* ---------- Bang cong thuc gop: don gia + hang tu trong MOT bang ----------
+       Ban truoc tach hai khoi (bang don gia tren, khung cong thuc duoi) nen phai
+       cuon xuong moi nhap duoc, sua xong lai cuon len xem tong. */
+    /* Cau cong thuc la mot cai NUT: bam vao mo bong bong cau hinh. Truoc do bang
+       nhap va bang tong la hai khoi roi nen phai cuon xuong nhap roi cuon len xem. */
+    .cf-head-main { position:relative; flex:1 1 auto; min-width:0; }
+    .cf-trigger { display:flex; align-items:center; gap:10px; width:100%; margin-top:7px; padding:8px 11px;
+      border:1px solid #cbd7e5; border-radius:8px; background:#f8fafc; font:inherit; text-align:left; cursor:pointer; }
+    .cf-trigger:hover { border-color:#0a6ed1; background:#eaf4ff; }
+    .cf-trigger:focus-visible { outline:2px solid #0a6ed1; outline-offset:2px; }
+    .cf-trigger[aria-expanded="true"] { border-color:#0a6ed1; background:#eaf4ff; }
+    .cf-trigger .cf-equation { flex:1 1 auto; min-width:0; margin:0; border:0; padding:0; background:none; }
+    .cf-trigger-icon { flex:none; display:inline-flex; align-items:center; gap:6px; font-size:.72rem;
+      font-weight:800; color:#075fa9; white-space:nowrap; }
+
+    /* Bong bong: neo vao cau cong thuc, khong day phan con lai cua the xuong. */
+    .cf-pop { position:absolute; z-index:40; top:calc(100% + 10px); left:0; width:min(760px, calc(100vw - 64px));
+      background:#fff; border:1px solid #cbd7e5; border-radius:12px;
+      box-shadow:0 18px 44px rgba(15,23,42,.18); }
+    .cf-pop::before { content:""; position:absolute; top:-7px; left:26px; width:12px; height:12px;
+      background:#fff; border-left:1px solid #cbd7e5; border-top:1px solid #cbd7e5; transform:rotate(45deg); }
+    .cf-pop-head { display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:12px 16px; border-bottom:1px solid #eef2f7; font-size:.86rem; color:#0f172a; }
+    .cf-pop-head i { color:#0a6ed1; margin-right:7px; }
+    .cf-pop-close { width:30px; height:30px; border:1px solid #cbd7e5; border-radius:7px; background:#fff;
+      color:#64748b; cursor:pointer; }
+    .cf-pop-close:hover { border-color:#b91c1c; color:#b91c1c; background:#fef2f2; }
+    .cf-pop-hint { margin:11px 16px 0; font-size:.75rem; color:#64748b; line-height:1.55; }
+    /* Cao qua thi cuon TRONG bong bong, de nut Them cau phan luon voi tay toi duoc. */
+    .cf-pop .cf-scroll { max-height:min(52vh, 420px); overflow:auto; padding:0 6px; }
+    .cf-pop-table { margin:6px 0; }
+    .cf-pop-foot { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+      padding:11px 16px; border-top:1px solid #eef2f7; background:#f8fafc; border-radius:0 0 12px 12px; }
+    .cf-pop-foot small { flex:1 1 240px; font-size:.71rem; color:#64748b; line-height:1.5; }
+    .cf-sign { display:inline-block; width:14px; color:#94a3b8; font-weight:800; }
+
+    .cf-op-col { width:64px; }
+    .cf-table select { min-height:32px; padding:4px 6px; border:1px solid #cbd7e5; border-radius:5px; font:inherit; font-size:.76rem; background:#fff; }
+    .cf-table input[type="number"] { width:118px; min-height:32px; padding:4px 8px; border:1px solid #cbd7e5; border-radius:5px; font:inherit; font-size:.78rem; text-align:right; font-variant-numeric:tabular-nums; }
+    .cf-table input[type="text"] { width:100%; min-width:170px; min-height:32px; padding:4px 8px; border:1px solid #cbd7e5; border-radius:5px; font:inherit; font-size:.78rem; }
+    .cf-table input:focus-visible, .cf-table select:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+    .cf-mul { display:block; margin-top:3px; font-size:.66rem; color:#94a3b8; font-variant-numeric:tabular-nums; }
+    .cf-scroll { overflow-x:auto; }
+    .cf-row-actions { white-space:nowrap; }
+    .cf-row-actions button { width:26px; height:26px; margin-left:2px; border:1px solid #cbd7e5; border-radius:5px; background:#fff; color:#64748b; font-size:.66rem; cursor:pointer; }
+    .cf-row-actions button:hover:not(:disabled) { border-color:#0a6ed1; color:#075fa9; }
+    .cf-row-actions button:disabled { opacity:.35; cursor:not-allowed; }
+    .cf-row-actions .cf-del:hover:not(:disabled) { border-color:#b91c1c; color:#b91c1c; background:#fef2f2; }
+    .cf-add { min-height:34px; padding:6px 13px; border:1px dashed #0a6ed1; border-radius:6px; background:#fff; color:#075fa9; font:inherit; font-size:.76rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
+    .cf-add:hover { background:#eaf4ff; border-style:solid; }
+    .cf-perkm-row td { border-top:1px dashed #cbd7e5; padding-top:8px; font-size:.76rem; color:#475569; }
+    /* Cong thuc tu mau thuan thi phai noi ra ngay, khong doi den luc bao gia. */
+    .cf-issues { list-style:none; margin:0; padding:11px 20px; background:#fef6f6; border-bottom:1px solid #fecaca; display:grid; gap:5px; }
+    .cf-issues li { display:flex; align-items:flex-start; gap:8px; font-size:.75rem; font-weight:700; color:#991b1b; }
+
     /* ---------- Công thức giá thành viết ra thành chữ ----------
        Bản trước là trình dựng biểu thức kéo thả, bị ẩn bằng display:none nên
        người dùng không còn thấy công thức đâu cả. Ở đây công thức cố định và
@@ -5493,8 +5548,11 @@
                 <!-- Right Table -->
                 <div style="flex: 1; background: #ffffff;">
 
-                  <!-- Cost Formula Preset Table -->
-                  <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); margin-bottom: 24px;">
+                  <!-- Bang don gia cu duoc AN, khong xoa: nam o md-cost-* van la noi
+                       cac cho khac trong ung dung doc so (autoCalculateMasterDataCost,
+                       saveCostFormula). Bang cong thuc gop ben duoi vua la o nhap vua la
+                       hang tu, va ghi nguoc vao nam o do — nen khong con phai cuon. -->
+                  <div style="display:none; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); margin-bottom: 24px;">
                     <div style="font-weight: 700; color: #0f172a; font-size: 1rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                       <span><i class="fa-solid fa-list-check" style="color: #0a6ed1; margin-right: 8px;"></i> <span data-i18n="title_cost_components_for_type">Cấu Thành Chi Phí Vận Tải Cho Loại Xe Đã Chọn</span></span>
                       <div style="display: flex; align-items: center; gap: 12px;">
@@ -6918,11 +6976,11 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/cost-estimate.js?v=20260905-shipping-spec-v1"></script>
+  <script src="/static/js/formula-model.js?v=20260905-formula-popover"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260905-shipping-spec-v1"></script>
+  <script src="/static/js/app.js?v=20260905-formula-popover"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

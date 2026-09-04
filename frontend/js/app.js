@@ -11096,7 +11096,7 @@ window.onMasterCostCurrencyChange = async function () {
     if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
       window.renderDynamicFormulaVehicleTypes();
     }
-    if (typeof window.renderCostFormulaView === 'function') window.renderCostFormulaView();
+    if (typeof window.renderCostFormulaEditor === 'function') window.renderCostFormulaEditor();
   }, 0);
   const requestedCurrency = masterCostCurrencyCode();
   const activeFormula = masterFormulaStore[activeCostFormulaKey];
@@ -12026,6 +12026,7 @@ async function loadCostFormulasFromBackend() {
         vehicleTypeName: row.name || masterFormulaStore[storeKey]?.vehicleTypeName || row.id,
         currency: row.currency || 'VND',
         configured: row.configured !== false,
+        terms: Array.isArray(row.terms) ? row.terms : masterFormulaStore[storeKey]?.terms,
         fuel: components.fuel || masterFormulaStore[storeKey]?.fuel || '0',
         driver: components.driver || masterFormulaStore[storeKey]?.driver || '0',
         toll: components.toll || masterFormulaStore[storeKey]?.toll || '0',
@@ -12062,6 +12063,9 @@ window.saveCostFormula = async function () {
   updateMasterCostCurrencyUI();
   const payload = {
     id: currentKey,
+    // Gui kem danh sach hang tu, de cong thuc dong di tron vong: mo lai
+    // loai xe thi thay dung cac cau phan da them, ke ca cau phan tuy chinh.
+    terms: costFormulaTerms,
     vehicle_type_id: selectedVehicleTypeId,
     name: vehTypeName,
     currency,
@@ -14445,112 +14449,390 @@ window.deleteVehicleTypeCard = async function (btn) {
  * hoac xoa o tab "3. Loai Phuong Tien", va hai tab nay dung chung mot danh muc.
  */
 /* ==========================================================================
-   Công thức giá thành — viết ra thành chữ
+   Bảng công thức giá thành — một bảng làm cả hai việc
    --------------------------------------------------------------------------
-   Bản trước là một trình dựng biểu thức bằng thẻ kéo thả, và nó bị ẩn bằng
-   display:none từ commit "Prepare EPL Logistics for deployment" — nên người
-   dùng không còn thấy công thức đâu cả, chỉ còn bảng các ô nhập.
+   Bản trước tách làm hai khối: bảng đơn giá ở trên, khung công thức ở dưới —
+   nên phải cuộn xuống mới nhập được, và sửa xong lại cuộn lên xem tổng.
 
-   Vì sao không dựng lại trình kéo thả: nó cho phép dựng ra công thức sai đơn
-   vị (nhân cước theo kg với số km chẳng hạn) mà không có gì kiểm được. Ở đây
-   công thức là CỐ ĐỊNH và đúng theo đơn vị của từng cấu phần; thứ người dùng
-   đổi là các đơn giá — vốn cũng là thứ họ thật sự cần đổi.
-
-   Năm cấu phần có đơn vị khác nhau (đ/km, đ/chuyến, đ/kg) nên không cộng thẳng
-   được. Mọi con số "tổng" ở đây đều là ước tính cho một CHUYẾN MẪU, và màn hình
-   luôn nói rõ chuyến mẫu đó bao nhiêu km / bao nhiêu tấn.
+   Nay mỗi DÒNG vừa là ô nhập đơn giá vừa là một hạng tử của công thức. Thêm
+   cấu phần là thêm một dòng ngay tại chỗ. Xem js/formula-model.js để biết vì
+   sao chọn mô hình hạng tử thay vì trình dựng biểu thức tự do.
    ========================================================================== */
 
-/** Chuyến mẫu đang dùng để ước tính, dùng chung cho cả thẻ lẫn panel. */
-let costSampleTrip = { km: 200, tonnes: 15 };
+/** Các hạng tử đang sửa. Mỗi loại xe một danh sách riêng. */
+let costFormulaTerms = [];
 
-/** Đơn giá đang hiển thị ở panel bên phải, đọc thẳng từ các ô nhập. */
-function currentCostValues() {
-  return {
-    fuel: document.getElementById('md-cost-fuel-rate')?.value,
-    driver: document.getElementById('md-cost-driver-allowance')?.value,
-    toll: document.getElementById('md-cost-toll-fee')?.value,
-    wh: document.getElementById('md-cost-warehouse-fee')?.value,
-    rate: document.getElementById('md-cost-freight-rate')?.value,
-  };
+/** Chuyến mẫu chỉ để XEM TRƯỚC. Báo giá thật dùng km của tuyến và tải trọng thật. */
+let costSampleTrip = { km: 200, tonnes: 15, stops: 1 };
+
+/** Năm ô ẩn `md-cost-*` vẫn là nơi các phần khác của ứng dụng đọc số. */
+const BUILTIN_INPUT_IDS = {
+  fuel: 'md-cost-fuel-rate',
+  driver: 'md-cost-driver-allowance',
+  toll: 'md-cost-toll-fee',
+  wh: 'md-cost-warehouse-fee',
+  rate: 'md-cost-freight-rate',
+};
+
+/**
+ * Ghi ngược năm đơn giá dựng sẵn vào các ô cũ.
+ *
+ * Các chỗ khác trong ứng dụng (autoCalculateMasterDataCost, saveCostFormula)
+ * đọc trực tiếp năm ô đó. Giữ chúng đồng bộ để không phải sửa cả loạt, trong
+ * khi giao diện người dùng thấy là bảng mới.
+ */
+function syncBuiltinCostInputs() {
+  Object.entries(BUILTIN_INPUT_IDS).forEach(([key, id]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const term = costFormulaTerms.find(item => item.key === key);
+    input.value = term ? Number(term.rate || 0).toLocaleString('vi-VN') : '0';
+  });
 }
 
+/** Nạp hạng tử của loại xe đang chọn. */
+window.loadCostFormulaTerms = function () {
+  const key = activeCostFormulaKey || document.getElementById('md-formula-preset-select')?.value || '';
+  const stored = masterFormulaStore[key] || {};
+  if (Array.isArray(stored.terms) && stored.terms.length) {
+    costFormulaTerms = window.FormulaModel.normalize(stored.terms);
+  } else {
+    // Chưa lưu hạng tử nào thì dựng từ năm đơn giá đã có, để không mất cấu hình cũ.
+    costFormulaTerms = window.FormulaModel.defaultTerms().map(term => ({
+      ...term,
+      rate: window.FormulaModel.toNumber(stored[term.key]),
+    }));
+  }
+  window.renderCostFormulaEditor();
+};
+
+function persistCostFormulaTerms() {
+  const key = activeCostFormulaKey || document.getElementById('md-formula-preset-select')?.value || '';
+  if (!key) return;
+  masterFormulaStore[key] = { ...(masterFormulaStore[key] || {}), terms: costFormulaTerms };
+}
+
+function afterTermChange() {
+  costFormulaTerms = window.FormulaModel.normalize(costFormulaTerms);
+  syncBuiltinCostInputs();
+  persistCostFormulaTerms();
+  window.renderCostFormulaEditor();
+  if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
+    window.renderDynamicFormulaVehicleTypes();
+  }
+  if (typeof window.autoCalculateMasterDataCost === 'function') {
+    window.autoCalculateMasterDataCost('qt');
+  }
+}
+
+window.setCostTermField = function (index, field, value) {
+  const term = costFormulaTerms[index];
+  if (!term) return;
+  if (field === 'rate') term.rate = window.FormulaModel.toNumber(value);
+  else if (field === 'label') term.label = String(value || '');
+  else term[field] = String(value || '');
+  // Sửa đơn giá hay nhãn thì KHÔNG vẽ lại cả bảng: vẽ lại giữa lúc đang gõ sẽ
+  // làm mất con trỏ. Chỉ cập nhật phần tổng.
+  if (field === 'rate' || field === 'label') {
+    syncBuiltinCostInputs();
+    persistCostFormulaTerms();
+    updateCostFormulaTotals();
+    if (typeof window.autoCalculateMasterDataCost === 'function') window.autoCalculateMasterDataCost('qt');
+    return;
+  }
+  afterTermChange();
+};
+
+window.addCostTerm = function () {
+  costFormulaTerms.push({
+    key: `custom_${Date.now().toString(36)}`,
+    label: '',
+    operator: 'add',
+    factor: 'per_trip',
+    rate: 0,
+  });
+  afterTermChange();
+};
+
+window.removeCostTerm = function (index) {
+  const term = costFormulaTerms[index];
+  if (!term) return;
+  if (term.builtin) {
+    showToast('Cấu phần dựng sẵn không xóa được. Đặt đơn giá về 0 nếu không dùng.', 'error');
+    return;
+  }
+  costFormulaTerms.splice(index, 1);
+  afterTermChange();
+};
+
+window.moveCostTerm = function (index, delta) {
+  costFormulaTerms = window.FormulaModel.move(costFormulaTerms, index, delta);
+  afterTermChange();
+};
+
 window.setCostSampleTrip = function (field, value) {
-  const parsed = Number(String(value).replace(/[,\s]/g, ''));
-  costSampleTrip = { ...costSampleTrip, [field]: Number.isFinite(parsed) && parsed >= 0 ? parsed : 0 };
-  window.renderCostFormulaView();
+  costSampleTrip = { ...costSampleTrip, [field]: window.FormulaModel.toNumber(value) };
+  updateCostFormulaTotals();
   if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
     window.renderDynamicFormulaVehicleTypes();
   }
 };
 
-window.renderCostFormulaView = function () {
-  const host = document.getElementById('cost-formula-view');
-  if (!host || !window.CostEstimate) return;
+/**
+ * Bong bóng cấu hình đang mở hay không.
+ *
+ * Thẻ trên màn hình là chỗ ĐỌC: xem từng cấu phần thành bao nhiêu tiền và tổng
+ * một chuyến mẫu là bao nhiêu. Việc SỬA nằm trong bong bóng, mở bằng chính câu
+ * công thức. Trước đó bảng nhập và bảng tổng là hai khối rời nhau nên phải cuộn
+ * xuống nhập rồi cuộn lên xem kết quả.
+ */
+let costFormulaPopoverOpen = false;
+
+window.toggleCostFormulaPopover = function (force) {
+  const next = typeof force === 'boolean' ? force : !costFormulaPopoverOpen;
+  if (next === costFormulaPopoverOpen) return;
+  costFormulaPopoverOpen = next;
+  window.renderCostFormulaEditor();
+  if (costFormulaPopoverOpen) {
+    document.querySelector('#cf-pop input, #cf-pop select')?.focus();
+  } else {
+    document.getElementById('cf-trigger')?.focus();
+  }
+};
+
+/**
+ * Đóng bong bóng khi bấm ra ngoài hoặc bấm Esc.
+ *
+ * Gắn một lần ở tầng document: nếu gắn lại mỗi lần vẽ thì mỗi lần sửa một con
+ * số lại thêm một trình lắng nghe, và sau vài chục lần gõ là hàng chục trình
+ * lắng nghe cùng chạy.
+ */
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && costFormulaPopoverOpen) window.toggleCostFormulaPopover(false);
+});
+document.addEventListener('mousedown', event => {
+  if (!costFormulaPopoverOpen) return;
+  if (event.target.closest('#cf-pop') || event.target.closest('#cf-trigger')) return;
+  window.toggleCostFormulaPopover(false);
+});
+
+/**
+ * Cập nhật riêng các con số, không dựng lại bảng — để không mất con trỏ.
+ *
+ * Cập nhật CẢ thẻ tóm tắt lẫn bong bóng: sửa trong bong bóng thì thẻ phía sau
+ * phải đổi theo ngay, nếu không người dùng thấy hai con số khác nhau cho cùng
+ * một cấu phần và không biết tin cái nào.
+ */
+function updateCostFormulaTotals() {
+  const M = window.FormulaModel;
+  if (!M) return;
+  const result = M.evaluate(costFormulaTerms, costSampleTrip);
   const currency = masterCostCurrencyCode();
-  const result = window.CostEstimate.estimate(currentCostValues(), costSampleTrip);
+  const money = amount => formatWorkflowCurrencyAmount(amount, currency);
+  const setText = (id, value) => {
+    const node = document.getElementById(id);
+    if (node) node.textContent = value;
+  };
+
+  result.rows.forEach((row, index) => {
+    const multiplier = row.factor === 'per_trip' ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`;
+    // Thẻ tóm tắt
+    setText(`cf-sum-label-${index}`, row.label);
+    setText(`cf-sum-sign-${index}`, row.operator === 'sub' ? '−' : '+');
+    setText(`cf-sum-rate-${index}`, money(row.rate));
+    setText(`cf-sum-unit-${index}`, row.unit);
+    setText(`cf-sum-mul-${index}`, multiplier);
+    setText(`cf-sum-amount-${index}`, money(row.amount));
+    // Bong bóng
+    setText(`cf-mul-${index}`, multiplier);
+    setText(`cf-amount-${index}`, money(row.amount));
+  });
+
+  setText('cf-total', money(result.total));
+  setText('cf-ptotal', money(result.total));
+  setText('cf-perkm', `${money(result.perKm)}/km`);
+  setText('cf-trip-note', `${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn`);
+  setText('cf-text', M.toText(costFormulaTerms));
+
+  const issues = document.getElementById('cf-issues');
+  if (issues) issues.innerHTML = renderCostFormulaIssues();
+}
+
+/**
+ * Công thức tự mâu thuẫn thì báo NGAY TRÊN THẺ, không chỉ trong bong bóng.
+ *
+ * Bong bóng đóng lại là lỗi biến mất khỏi mắt người dùng, rồi báo giá vẫn chạy
+ * bằng công thức sai.
+ */
+function renderCostFormulaIssues() {
+  const problems = window.FormulaModel.problems(costFormulaTerms);
+  const errors = problems.filter(issue => issue.level === 'error');
+  if (!errors.length) return '';
+  return `<ul class="cf-issues">${errors.map(issue =>
+    `<li><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${escapeHtml(issue.message)}</li>`
+  ).join('')}</ul>`;
+}
+
+/** Bảng cấu hình động bên trong bong bóng. */
+function renderCostFormulaPopover(result, money) {
+  const M = window.FormulaModel;
+  const factorOptions = Object.entries(M.FACTORS);
+  return `
+    <div class="cf-pop" id="cf-pop" role="dialog" aria-label="Cấu hình công thức giá thành">
+      <div class="cf-pop-head">
+        <b><i class="fa-solid fa-sliders" aria-hidden="true"></i> Cấu hình công thức</b>
+        <button type="button" class="cf-pop-close" onclick="toggleCostFormulaPopover(false)"
+                aria-label="Đóng cấu hình công thức"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="cf-pop-hint">Mỗi dòng là một cấu phần: chọn <b>dấu</b>, nhập <b>đơn giá</b>,
+        rồi chọn đơn giá đó <b>nhân theo</b> gì. Thêm hay bớt cấu phần đều được.</p>
+
+      <div class="cf-scroll">
+        <table class="cf-table cf-pop-table">
+          <thead>
+            <tr>
+              <th class="cf-op-col">Dấu</th>
+              <th>Cấu phần</th>
+              <th>Đơn giá</th>
+              <th>Nhân theo</th>
+              <th>Thành tiền</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${result.rows.map((row, index) => `
+              <tr class="${row.rate ? '' : 'is-zero'}">
+                <td class="cf-op-col">
+                  <select aria-label="Dấu của ${escapeHtml(row.label || 'cấu phần')}"
+                          onchange="setCostTermField(${index}, 'operator', this.value)">
+                    ${Object.entries(M.OPERATORS).map(([key, op]) =>
+                      `<option value="${escapeHtml(key)}"${key === row.operator ? ' selected' : ''}>${escapeHtml(op.sign)}</option>`
+                    ).join('')}
+                  </select>
+                </td>
+                <td>
+                  ${row.builtin
+                    ? `<b>${escapeHtml(row.label)}</b>`
+                    : `<input type="text" value="${escapeHtml(row.label)}" placeholder="Ví dụ: Phí bốc xếp /tấn"
+                              oninput="setCostTermField(${index}, 'label', this.value)" aria-label="Tên cấu phần">`}
+                </td>
+                <td class="cf-num">
+                  <input type="number" min="0" step="any" value="${Number(row.rate) || 0}"
+                         oninput="setCostTermField(${index}, 'rate', this.value)"
+                         aria-label="Đơn giá của ${escapeHtml(row.label || 'cấu phần')}">
+                </td>
+                <td>
+                  <select aria-label="Hệ số nhân của ${escapeHtml(row.label || 'cấu phần')}"
+                          onchange="setCostTermField(${index}, 'factor', this.value)">
+                    ${factorOptions.map(([key, factor]) =>
+                      `<option value="${escapeHtml(key)}"${key === row.factor ? ' selected' : ''}>${escapeHtml(factor.label)}</option>`
+                    ).join('')}
+                  </select>
+                  <small class="cf-mul" id="cf-mul-${index}">${row.factor === 'per_trip'
+                    ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</small>
+                </td>
+                <td class="cf-num cf-amount" id="cf-amount-${index}">${money(row.amount)}</td>
+                <td class="cf-row-actions">
+                  <button type="button" title="Lên" onclick="moveCostTerm(${index}, -1)"
+                          ${index === 0 ? 'disabled' : ''}><i class="fa-solid fa-chevron-up"></i></button>
+                  <button type="button" title="Xuống" onclick="moveCostTerm(${index}, 1)"
+                          ${index === result.rows.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-chevron-down"></i></button>
+                  <button type="button" class="cf-del"
+                          title="${row.builtin ? 'Cấu phần dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa cấu phần'}"
+                          onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}><i class="fa-solid fa-xmark"></i></button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4">
+                <button type="button" class="cf-add" onclick="addCostTerm()">
+                  <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm cấu phần
+                </button>
+              </td>
+              <td class="cf-num cf-total" id="cf-ptotal">${money(result.total)}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="cf-pop-foot">
+        <div class="cf-sample">
+          <label>Chuyến mẫu
+            <span><input type="number" min="1" step="1" value="${costSampleTrip.km}"
+                         oninput="setCostSampleTrip('km', this.value)" aria-label="Số km chuyến mẫu"> km</span>
+          </label>
+          <label>Hàng
+            <span><input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
+                         oninput="setCostSampleTrip('tonnes', this.value)" aria-label="Số tấn chuyến mẫu"> tấn</span>
+          </label>
+        </div>
+        <small>Hai ô này chỉ để xem trước. Báo giá thật lấy <b>tổng km của tuyến</b> và <b>tải trọng đã nhập</b>.</small>
+      </div>
+    </div>`;
+}
+
+window.renderCostFormulaEditor = function () {
+  const host = document.getElementById('cost-formula-view');
+  const M = window.FormulaModel;
+  if (!host || !M) return;
+  const currency = masterCostCurrencyCode();
+  const result = M.evaluate(costFormulaTerms, costSampleTrip);
   const money = amount => formatWorkflowCurrencyAmount(amount, currency);
 
   host.innerHTML = `
     <div class="cf-head">
-      <div>
+      <div class="cf-head-main">
         <h4><i class="fa-solid fa-calculator" aria-hidden="true"></i> Công thức tính giá thành chuyến</h4>
-        <p class="cf-equation">${escapeHtml(window.CostEstimate.formulaText())}</p>
+        <button type="button" class="cf-trigger" id="cf-trigger" aria-haspopup="dialog"
+                aria-expanded="${costFormulaPopoverOpen ? 'true' : 'false'}"
+                onclick="toggleCostFormulaPopover()">
+          <span class="cf-equation" id="cf-text">${escapeHtml(M.toText(costFormulaTerms))}</span>
+          <span class="cf-trigger-icon"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Sửa công thức</span>
+        </button>
       </div>
-      <div class="cf-sample">
-        <label>Chuyến mẫu
-          <span>
-            <input type="number" min="1" step="1" value="${costSampleTrip.km}"
-                   oninput="setCostSampleTrip('km', this.value)" aria-label="Số km chuyến mẫu"> km
-          </span>
-        </label>
-        <label>Hàng
-          <span>
-            <input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
-                   oninput="setCostSampleTrip('tonnes', this.value)" aria-label="Số tấn hàng"> tấn
-          </span>
-        </label>
-      </div>
+      ${costFormulaPopoverOpen ? renderCostFormulaPopover(result, money) : ''}
     </div>
 
-    <table class="cf-table">
-      <thead>
-        <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
-      </thead>
-      <tbody>
-        ${result.lines.map(line => `
-          <tr class="${line.rate ? '' : 'is-zero'}">
-            <td><i class="fa-solid ${line.icon}" aria-hidden="true"></i> ${escapeHtml(line.label)}</td>
-            <td class="cf-num">${money(line.rate)}<small>${escapeHtml(line.unit)}</small></td>
-            <td class="cf-num cf-mul">${line.basis === 'per_trip'
-              ? '<span title="Tính một lần cho cả chuyến">1 chuyến</span>'
-              : `× ${line.multiplier.toLocaleString('vi-VN')}${line.basis === 'per_km' ? ' km' : ' kg'}`}</td>
-            <td class="cf-num cf-amount">${money(line.amount)}</td>
-          </tr>`).join('')}
-      </tbody>
-      <tfoot>
-        <tr>
-          <td colspan="3">
-            <b>Tổng chi phí chuyến mẫu</b>
-            <small>${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small>
-          </td>
-          <td class="cf-num cf-total">${money(result.total)}</td>
-        </tr>
-        <tr class="cf-perkm">
-          <td colspan="3">Bình quân mỗi km <small>so sánh được giữa các loại xe</small></td>
-          <td class="cf-num">${money(result.perKm)}<small>/km</small></td>
-        </tr>
-      </tfoot>
-    </table>
+    <div id="cf-issues">${renderCostFormulaIssues()}</div>
+
+    <div class="cf-scroll">
+      <table class="cf-table">
+        <thead>
+          <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+        </thead>
+        <tbody>
+          ${result.rows.map((row, index) => `
+            <tr class="${row.rate ? '' : 'is-zero'}">
+              <td><span class="cf-sign" id="cf-sum-sign-${index}">${row.operator === 'sub' ? '−' : '+'}</span>
+                  <span id="cf-sum-label-${index}">${escapeHtml(row.label)}</span></td>
+              <td class="cf-num"><span id="cf-sum-rate-${index}">${money(row.rate)}</span>
+                  <small id="cf-sum-unit-${index}">${escapeHtml(row.unit)}</small></td>
+              <td class="cf-num" id="cf-sum-mul-${index}">${row.factor === 'per_trip'
+                ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</td>
+              <td class="cf-num cf-amount" id="cf-sum-amount-${index}">${money(row.amount)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Tổng chi phí chuyến mẫu
+              <small id="cf-trip-note">${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small></td>
+            <td class="cf-num cf-total" id="cf-total">${money(result.total)}</td>
+          </tr>
+          <tr class="cf-perkm-row">
+            <td colspan="3">Bình quân mỗi km <small>so sánh được giữa các loại xe</small></td>
+            <td class="cf-num" id="cf-perkm">${money(result.perKm)}/km</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
 
     <p class="cf-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-      Tổng phụ thuộc độ dài chuyến và khối lượng hàng, vì năm cấu phần có đơn vị
-      khác nhau. Đổi hai ô "Chuyến mẫu" để xem chi phí ở cỡ chuyến anh hay chạy.</p>`;
-};
+      Bấm vào câu công thức để thêm, bớt hoặc đổi cách tính. Khi báo giá thật, hệ thống
+      lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.</p>`;
 
-/** Gọi lại mỗi khi một ô đơn giá đổi, để tổng cập nhật ngay. */
-window.onCostComponentInput = function () {
-  window.renderCostFormulaView();
+  syncBuiltinCostInputs();
 };
 
 /* ==========================================================================
@@ -14886,7 +15168,7 @@ window.loadVehTypesForFormulas = async function () {
     }
   }
   window.renderDynamicFormulaVehicleTypes();
-  if (typeof window.renderCostFormulaView === 'function') window.renderCostFormulaView();
+  if (typeof window.loadCostFormulaTerms === 'function') window.loadCostFormulaTerms();
   if (typeof window.loadVehicleOverrideCounts === 'function') window.loadVehicleOverrideCounts();
   if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
 };
@@ -14980,8 +15262,16 @@ window.renderDynamicFormulaVehicleTypes = function () {
     // Tong chi phi mot chuyen mau. Nam cau phan co don vi khac nhau (d/km,
     // d/chuyen, d/kg) nen khong cong thang duoc — moi con so "tong" deu phai
     // kem gia dinh ve do dai chuyen va khoi luong hang.
-    const estimate = window.CostEstimate
-      ? window.CostEstimate.estimate(formula, costSampleTrip)
+    // Dung CHUNG mot mo hinh voi trinh sua cong thuc. Truoc do co hai module
+    // tinh cung mot thu (CostEstimate va FormulaModel) — dung loai trung lap se
+    // troi khoi nhau, giong phep kiem nang luc xe bi viet hai lan o dieu phoi.
+    const terms = Array.isArray(formula.terms) && formula.terms.length
+      ? formula.terms
+      : window.FormulaModel.defaultTerms().map(term => ({
+        ...term, rate: window.FormulaModel.toNumber(formula[term.key]),
+      }));
+    const estimate = window.FormulaModel
+      ? window.FormulaModel.evaluate(terms, costSampleTrip)
       : { total: 0, perKm: 0 };
     return `
       <div class="veh-type-card" data-formula-key="${escapeHtml(formulaKey)}"

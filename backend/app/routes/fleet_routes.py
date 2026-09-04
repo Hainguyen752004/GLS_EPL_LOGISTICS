@@ -401,6 +401,35 @@ async def list_cost_formulas(db: Session = Depends(get_db)):
     ]
 
 
+def _sanitize_formula_terms(rows):
+    """Lam sach danh sach hang tu cua cong thuc dong truoc khi ghi vao JSON.
+
+    Chi giu dung nhung khoa minh biet, va chan he so / dau la — de mot payload
+    bat ky khong ghi duoc thuoc tinh tuy y vao co so du lieu.
+    """
+    if not isinstance(rows, list):
+        return []
+    factors = {"per_km", "per_kg", "per_tonne", "per_trip", "per_stop"}
+    operators = {"add", "sub"}
+    clean = []
+    for index, row in enumerate(rows[:30]):
+        if not isinstance(row, dict):
+            continue
+        try:
+            rate = float(str(row.get("rate") or 0).replace(",", "").strip() or 0)
+        except (TypeError, ValueError):
+            rate = 0.0
+        clean.append({
+            "key": str(row.get("key") or f"term_{index + 1}")[:64],
+            "label": str(row.get("label") or "")[:120],
+            "operator": row.get("operator") if row.get("operator") in operators else "add",
+            "factor": row.get("factor") if row.get("factor") in factors else "per_trip",
+            "rate": max(0.0, rate),
+            "builtin": bool(row.get("builtin")),
+        })
+    return clean
+
+
 @router.post("/api/cost-formulas")
 async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     _require_api_principal(request)
@@ -423,6 +452,10 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
             "freight_rate": data.get("freight_rate") or data.get("rate") or "0",
         },
         "tokens": data.get("tokens") if isinstance(data.get("tokens"), list) else [],
+        # Cong thuc DONG: danh sach hang tu (dau, don gia, he so nhan). Cho phep
+        # them cau phan tuy chinh va phep tru, nen khong the goi gon vao
+        # "components" voi nam khoa co dinh.
+        "terms": _sanitize_formula_terms(data.get("terms")),
     }
     row = CostFormula(
         id=formula_id,

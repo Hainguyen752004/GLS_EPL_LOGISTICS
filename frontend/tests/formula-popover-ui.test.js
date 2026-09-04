@@ -1,0 +1,178 @@
+/**
+ * Trình cấu hình công thức giá thành — bong bóng mở từ câu công thức.
+ *
+ * Ba vấn đề của bản cũ:
+ *
+ *   1. Ô nhập đơn giá và khung công thức là hai khối rời nhau, nên phải cuộn
+ *      xuống nhập rồi cuộn lên xem tổng.
+ *   2. Công thức viết CỨNG thành chuỗi "(Xăng dầu × số km) + Phụ cấp tài xế +
+ *      ..." nên đổi cách tính là không được, mà sửa số xong câu đó vẫn đọc y
+ *      như cũ.
+ *   3. Không có tổng tiền, nên cấu hình xong không biết một chuyến thành bao
+ *      nhiêu.
+ *
+ * Nay câu công thức là một cái nút: bấm vào mở bong bóng cấu hình động (thêm,
+ * bớt, đổi dấu, đổi hệ số nhân), còn thẻ phía sau là chỗ đọc tổng.
+ */
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8');
+const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+
+/** Bỏ dòng chú thích, để phần phủ định không khớp vào chính lời giải thích. */
+const code = app.split('\n').filter(line => {
+  const trimmed = line.trim();
+  return !trimmed.startsWith('//') && !trimmed.startsWith('*') && !trimmed.startsWith('/*');
+}).join('\n');
+
+const editor = code.slice(code.indexOf('window.renderCostFormulaEditor = function'));
+const POPOVER = code.slice(
+  code.indexOf('function renderCostFormulaPopover'),
+  code.indexOf('window.renderCostFormulaEditor = function'),
+);
+assert.ok(POPOVER.length > 500, 'phải tìm được hàm dựng bong bóng');
+assert.ok(editor.length > 500, 'phải tìm được hàm vẽ trình cấu hình');
+
+// --- 1. Câu công thức là một cái NÚT mở bong bóng -------------------------
+
+assert.ok(/<button[^>]*class="cf-trigger"/.test(editor), 'câu công thức phải là một cái nút bấm được');
+assert.ok(/id="cf-trigger"/.test(editor));
+assert.ok(/onclick="toggleCostFormulaPopover\(\)"/.test(editor), 'bấm vào phải mở bong bóng');
+// Trình đọc màn hình phải biết nút này mở ra một hộp thoại, và đang mở hay đóng.
+assert.ok(/aria-haspopup="dialog"/.test(editor));
+assert.ok(/aria-expanded="\$\{costFormulaPopoverOpen \? 'true' : 'false'\}"/.test(editor));
+assert.ok(/class="cf-trigger-icon"/.test(editor), 'nút phải có icon để nhìn ra là bấm được');
+
+// Bong bóng CHỈ dựng khi mở — không dựng sẵn rồi ẩn bằng CSS, vì như vậy
+// các ô nhập vẫn nằm trong luồng tab dù người dùng không thấy gì.
+assert.ok(/\$\{costFormulaPopoverOpen \? renderCostFormulaPopover\(/.test(editor));
+assert.ok(/role="dialog"/.test(code));
+
+// --- 2. Đóng được bằng Esc và bấm ra ngoài -------------------------------
+
+assert.ok(/event\.key === 'Escape'[\s\S]{0,80}toggleCostFormulaPopover\(false\)/.test(code), 'Esc phải đóng');
+assert.ok(/addEventListener\('mousedown'/.test(code), 'bấm ra ngoài phải đóng');
+assert.ok(/closest\('#cf-pop'\)/.test(code), 'bấm bên trong bong bóng thì không được đóng');
+
+// Trình lắng nghe gắn MỘT LẦN ở tầng document, không gắn lại mỗi lần vẽ: vẽ lại
+// xảy ra mỗi lần gõ một chữ số, gắn trong đó là sau vài chục lần gõ có vài chục
+// trình lắng nghe cùng chạy.
+{
+  const inRender = editor.slice(0, editor.indexOf('syncBuiltinCostInputs();'));
+  assert.ok(!/addEventListener/.test(inRender), 'không được gắn trình lắng nghe trong hàm vẽ');
+  assert.ok(!/document\.addEventListener/.test(POPOVER),
+    'không được gắn trình lắng nghe khi dựng bong bóng');
+}
+
+// --- 3. Cấu hình ĐỘNG: đổi dấu, đổi hệ số, thêm và bớt cấu phần ----------
+
+const pop = POPOVER;
+
+assert.ok(/setCostTermField\(\$\{index\}, 'operator'/.test(pop), 'phải đổi được dấu + / −');
+assert.ok(/setCostTermField\(\$\{index\}, 'factor'/.test(pop), 'phải đổi được hệ số nhân');
+assert.ok(/setCostTermField\(\$\{index\}, 'rate'/.test(pop), 'phải nhập được đơn giá');
+assert.ok(/setCostTermField\(\$\{index\}, 'label'/.test(pop), 'cấu phần tự thêm phải đặt được tên');
+assert.ok(/onclick="addCostTerm\(\)"/.test(pop), 'phải thêm được cấu phần');
+assert.ok(/onclick="removeCostTerm\(\$\{index\}\)"/.test(pop), 'phải xóa được cấu phần');
+assert.ok(/moveCostTerm\(\$\{index\}, -1\)/.test(pop) && /moveCostTerm\(\$\{index\}, 1\)/.test(pop),
+  'phải đổi được thứ tự hạng tử');
+
+// Dấu và hệ số là DANH SÁCH CHỌN sinh từ mô hình, không viết cứng: thêm một hệ
+// số mới trong formula-model.js là màn hình có ngay, không phải sửa hai chỗ.
+assert.ok(/Object\.entries\(M\.OPERATORS\)/.test(pop));
+assert.ok(/factorOptions\.map/.test(pop) && /Object\.entries\(M\.FACTORS\)/.test(pop));
+
+// Năm cấu phần dựng sẵn không cho xóa, để công thức không rỗng ruột — nhưng
+// phải NÓI RÕ vì sao nút mờ, thay vì để người dùng bấm mãi không được.
+assert.ok(/\$\{row\.builtin \? 'disabled' : ''\}/.test(pop));
+assert.ok(/đặt đơn giá 0 nếu không dùng/.test(pop), 'nút mờ phải giải thích cách bỏ cấu phần');
+
+// --- 4. Câu công thức SINH TỪ hạng tử, không viết cứng -------------------
+
+assert.ok(/M\.toText\(costFormulaTerms\)/.test(editor), 'câu công thức phải sinh từ hạng tử đang có');
+assert.ok(!/\(Xăng dầu × số km\) \+ Phụ cấp/.test(code), 'không được còn công thức viết cứng trong app.js');
+assert.ok(!/\(Xăng dầu × số km\) \+ Phụ cấp/.test(html), 'không được còn công thức viết cứng trong index.html');
+
+// --- 5. Tổng tiền hiện trên THẺ, không nằm sau bong bóng -----------------
+
+assert.ok(/id="cf-total"/.test(editor));
+assert.ok(/id="cf-perkm"/.test(editor));
+assert.ok(/Tổng chi phí chuyến mẫu/.test(editor));
+// Tổng phải nằm NGOÀI bong bóng: đóng bong bóng lại vẫn phải đọc được tổng.
+{
+  const summary = editor.slice(editor.indexOf('<div id="cf-issues">'));
+  assert.ok(/id="cf-total"/.test(summary), 'tổng phải ở phần thẻ, sau bong bóng');
+}
+
+// Lỗi công thức cũng phải ở trên thẻ. Nếu chỉ nằm trong bong bóng thì đóng lại
+// là lỗi biến mất khỏi mắt, rồi báo giá vẫn chạy bằng công thức sai.
+assert.ok(editor.indexOf('<div id="cf-issues">') > editor.indexOf('renderCostFormulaPopover('),
+  'khối lỗi phải nằm ngoài bong bóng');
+assert.ok(/problems\(costFormulaTerms\)/.test(code), 'phải hỏi mô hình về công thức tự mâu thuẫn');
+assert.ok(/issue\.level === 'error'/.test(code));
+
+// --- 6. Sửa trong bong bóng thì thẻ phía sau đổi theo NGAY ---------------
+//
+// Hai chỗ hiển thị cùng một cấu phần; lệch nhau là người dùng không biết tin cái nào.
+{
+  const totals = code.slice(code.indexOf('function updateCostFormulaTotals'), code.indexOf('function renderCostFormulaIssues'));
+  ['cf-sum-amount-', 'cf-sum-rate-', 'cf-sum-mul-', 'cf-sum-label-', 'cf-sum-sign-', 'cf-sum-unit-',
+    'cf-amount-', 'cf-mul-', 'cf-total', 'cf-ptotal', 'cf-perkm', 'cf-text'].forEach(id => {
+    assert.ok(totals.includes(id), `sửa xong phải cập nhật ${id}`);
+  });
+  // Chỉ cập nhật con số, KHÔNG dựng lại bảng: dựng lại là mất con trỏ giữa lúc gõ.
+  assert.ok(!/renderCostFormulaEditor\(\)/.test(totals), 'không được vẽ lại cả bảng khi đang gõ');
+  assert.ok(!/innerHTML/.test(totals.replace(/issues\.innerHTML[^\n]*/g, '')), 'chỉ đổi chữ, không đổi cấu trúc');
+}
+
+// --- 7. Hạng tử được LƯU và nạp lại ------------------------------------
+
+assert.ok(/terms: costFormulaTerms/.test(code), 'lưu cấu hình phải gửi kèm hạng tử');
+assert.ok(/FormulaModel\.normalize\(stored\.terms\)/.test(code), 'nạp lại phải đọc hạng tử đã lưu');
+// Chưa từng lưu hạng tử thì dựng từ năm đơn giá cũ, để không mất cấu hình cũ.
+assert.ok(/FormulaModel\.defaultTerms\(\)/.test(code));
+
+// Năm ô `md-cost-*` vẫn phải còn trong trang: nhiều chỗ khác đọc trực tiếp chúng.
+['md-cost-fuel-rate', 'md-cost-driver-allowance', 'md-cost-toll-fee',
+  'md-cost-warehouse-fee', 'md-cost-freight-rate'].forEach(id => {
+  assert.ok(html.includes(`id="${id}"`), `${id} phải còn tồn tại để các chỗ khác đọc`);
+  assert.ok(code.includes(id), `${id} phải được ghi đồng bộ`);
+});
+assert.ok(/syncBuiltinCostInputs\(\)/.test(editor), 'vẽ xong phải ghi ngược vào năm ô cũ');
+
+// --- 8. CSS của bong bóng phải có thật -----------------------------------
+
+['.cf-trigger', '.cf-pop', '.cf-pop-head', '.cf-pop-close', '.cf-pop-foot', '.cf-add',
+  '.cf-del', '.cf-issues', '.cf-row-actions', '.cf-op-col', '.cf-sign'].forEach(selector => {
+  // Bat cả `.cf-del { }` lan `.cf-row-actions .cf-del:hover`.
+  const rule = new RegExp(selector.replace('.', '\\.') + '[\\s,:{]');
+  assert.ok(rule.test(html), `thiếu CSS cho ${selector} — bong bóng sẽ hiện ra không có hình dạng`);
+});
+// Bong bóng phải NEO vào nút, không đẩy phần còn lại của thẻ xuống.
+assert.ok(/\.cf-pop \{[^}]*position:absolute/.test(html));
+assert.ok(/\.cf-head-main \{[^}]*position:relative/.test(html), 'phải có gốc neo cho bong bóng');
+// Cao quá thì cuộn trong bong bóng, để nút "Thêm cấu phần" luôn với tay tới được.
+assert.ok(/\.cf-pop \.cf-scroll \{[^}]*overflow:auto/.test(html));
+// Bàn phím phải thấy được mình đang ở đâu.
+assert.ok(/\.cf-trigger:focus-visible/.test(html));
+
+// --- 9. Bảng đơn giá cũ đã ẩn, không còn hai bảng chồng nhau ------------
+
+assert.ok(/display:none; background: #ffffff/.test(html), 'bảng đơn giá cũ phải được ẩn');
+
+// --- 10. Nhãn người dùng đặt không được thành mã ------------------------
+
+assert.ok(!/eval\(|new Function/.test(pop + editor), 'không được có đường chạy chuỗi thành mã');
+{
+  // Mọi chỗ chèn nhãn vào HTML đều phải qua escapeHtml.
+  const labelUses = (pop + editor).match(/\$\{[^}]*row\.label[^}]*\}/g) || [];
+  assert.ok(labelUses.length >= 4);
+  labelUses.forEach(use => {
+    assert.ok(/escapeHtml\(/.test(use), `nhãn phải được thoát ký tự: ${use}`);
+  });
+}
+
+console.log('formula-popover-ui: tất cả kiểm tra đã qua');

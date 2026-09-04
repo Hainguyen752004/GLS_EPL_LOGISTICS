@@ -1,4 +1,4 @@
-"""Các hàm phụ trợ dùng chéo giữa nhiều nhóm route.
+﻿"""Các hàm phụ trợ dùng chéo giữa nhiều nhóm route.
 
 Khi tách main.py thành nhiều router, năm hàm dưới đây là những hàm bị dùng ở
 nhiều nhóm khác nhau. Để chúng lại trong main.py sẽ tạo import vòng
@@ -85,5 +85,6 @@ def serialize_cost_formula(row: CostFormula):
         "currency": payload.get("currency") or "VND",
         "components": components,
         "tokens": payload.get("tokens") if isinstance(payload.get("tokens"), list) else [],
+        "terms": payload.get("terms") if isinstance(payload.get("terms"), list) else [],
         "formula_expression": row.formula_expression,
     }
