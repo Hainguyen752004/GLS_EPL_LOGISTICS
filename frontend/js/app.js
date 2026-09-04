@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-formula-view-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-masterdata-audit-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -6296,24 +6296,54 @@ function renderFioriVehicles(data) {
       }
     }
 
+    // Xe chua gan loai xe la mot VAN DE, khong phai mot o trong: khong co loai
+    // thi khong co cong thuc gia thanh, va nang luc cho cua xe khong doi chieu
+    // duoc voi chuan nao ca. Da gap tren du lieu that (DEMO-61H-112.34).
+    const hasType = Boolean(String(v.type || '').trim());
     let typeText = v.type || '';
     if (lang === 'la') {
       typeText = typeText.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                          .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
     }
 
+    // Nang luc cho cua XE va cua LOAI XE la hai con so rieng, va dieu phoi dung
+    // con so cua XE. Nen mot chiec gan loai "Xe tai 10 tan" van co the khai
+    // 28 tan ma khong ai thay — da gap dung tinh huong do tren du lieu that.
+    const typeRow = (vehTypes || []).find(t => String(t.id) === String(v.type));
+    const typeCap = Number(typeRow?.max_weight || 0);
+    const vehCap = Number(v.weight_capacity || 0);
+    const capacityWarning = (hasType && typeCap && vehCap && vehCap > typeCap)
+      ? `<span class="fv-cap-warn" title="${escapeHtml(`Loại xe ${typeRow.name || v.type} chuẩn hóa ${typeCap.toLocaleString('vi-VN')} kg. Điều phối dùng con số của XE, nên xe này sẽ được xếp quá chuẩn loại.`)}">
+           <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> vượt chuẩn loại (${typeCap.toLocaleString('vi-VN')} kg)
+         </span>`
+      : '';
+
     const editBtnText = lang === 'la' ? 'ແກ້ໄຂ' : lang === 'en' ? 'Edit' : 'Chỉnh sửa';
     const delBtnText = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa';
 
+    // Anh co the tro tro toi mot tep khong con ton tai (da gap tren du lieu
+    // that: image_url tra ve 404). Khi do the <img> hien ALT TEXT tran vao
+    // giua bang — "Vehicle DEMO-61H-112.34" nam giua o bien so.
+    //
+    // onerror doi sang icon xe, giong dung o cua nhung xe khong co anh, nen
+    // hang nao cung can nhau.
+    const fallbackIcon = `<span style="display:inline-flex; width:52px; height:36px; border-radius:8px; border:1px dashed #cbd5e1; margin-right:10px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle;"><i class="fa-solid fa-truck"></i></span>`;
     const vehicleImage = v.image_url
-      ? `<img src="${v.image_url}" alt="Vehicle ${v.id}" style="width:52px; height:36px; object-fit:cover; border-radius:8px; border:1px solid #dbeafe; margin-right:10px; vertical-align:middle;">`
+      ? `<img src="${escapeHtml(v.image_url)}" alt="" title="${escapeHtml(v.id)}" loading="lazy"
+              style="width:52px; height:36px; object-fit:cover; border-radius:8px; border:1px solid #dbeafe; margin-right:10px; vertical-align:middle;"
+              onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(fallbackIcon)}">`
       : `<span style="display:inline-flex; width:52px; height:36px; border-radius:8px; border:1px dashed #cbd5e1; margin-right:10px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle;"><i class="fa-solid fa-truck"></i></span>`;
 
     tbody.innerHTML += `
       <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${vehicleImage}<span>${v.id}</span></td>
-        <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${typeText}</td>
-        <td style="padding: 14px 18px; font-weight: 600; color: #0a6ed1;">${Number(v.weight_capacity).toLocaleString('vi-VN')} kg</td>
+        <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${hasType
+          ? escapeHtml(typeText)
+          : '<span class="fv-untyped"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Chưa gán loại xe</span>'}</td>
+        <td style="padding: 14px 18px; font-weight: 600; color: #0a6ed1;">
+          ${Number(v.weight_capacity || 0).toLocaleString('vi-VN')} kg
+          ${capacityWarning}
+        </td>
         <td style="padding: 14px 18px;"><span class="${statusClass ? 'fiori-status ' + statusClass : ''}" style="${inlineStyle}">${statusText}</span></td>
         <td style="padding: 14px 18px; text-align: center; white-space: nowrap;">
           <button class="fiori-btn fiori-btn-secondary" style="padding: 6px 12px; font-size: 0.82rem; margin-right: 6px;" onclick="editFioriVehicle('${v.id}')"><i class="fa-solid fa-pen-to-square"></i> ${editBtnText}</button>

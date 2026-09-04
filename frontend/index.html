@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-formula-view-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-masterdata-audit-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -1011,6 +1011,15 @@
     .vt-empty button { margin-top:12px; min-height:36px; padding:8px 14px; border:1px solid #0a6ed1; border-radius:6px; background:#fff; color:#075fa9; font:inherit; font-size:.75rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:7px; }
     .vt-empty button:hover { background:#eaf4ff; }
     .vt-empty button:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    /* ---------- Bang doi xe: canh bao du lieu thieu / lech ----------
+       Xe chua gan loai xe la mot VAN DE (khong co cong thuc gia thanh, khong
+       doi chieu duoc nang luc cho), khong phai mot o trong. Va nang luc cho
+       cua XE co the vuot chuan cua LOAI XE ma khong ai thay, vi dieu phoi dung
+       con so cua XE. */
+    .fv-untyped { display:inline-flex; align-items:center; gap:6px; font-size:.76rem; font-weight:800; color:#b45309; }
+    .fv-cap-warn { display:inline-flex; align-items:center; gap:5px; margin-left:8px; padding:1px 7px; border-radius:999px; background:#fffbeb; border:1px solid #f2c98b; font-size:.66rem; font-weight:800; color:#78350f; cursor:help; }
+    .fv-cap-warn i { font-size:.62rem; }
 
     /* ---------- Công thức giá thành viết ra thành chữ ----------
        Bản trước là trình dựng biểu thức kéo thả, bị ẩn bằng display:none nên
@@ -6895,7 +6904,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-formula-view-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260904-masterdata-audit-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6909,11 +6918,11 @@
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
-  <script src="/static/js/cost-estimate.js?v=20260904-formula-view-v1"></script>
+  <script src="/static/js/cost-estimate.js?v=20260904-masterdata-audit-v1"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-formula-view-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-masterdata-audit-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-formula-view-v1"></script>
+  <script src="/static/js/app.js?v=20260904-masterdata-audit-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

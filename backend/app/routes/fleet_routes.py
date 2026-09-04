@@ -130,37 +130,80 @@ async def list_vehicles(
 
 @router.post("/api/vehicles")
 async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    """Tạo mới hoặc cập nhật một xe.
+
+    Chỉ ghi những trường THẬT SỰ CÓ trong payload.
+
+    Bản trước dựng một đối tượng Vehicle mới với mọi trường lấy từ
+    `data.get(..., mặc_định)` rồi `db.merge()`. Nghĩa là sửa một xe mà không gửi
+    kèm một trường nào đó thì trường đó **bị xóa trắng** — thử trên máy chủ:
+    sửa `brand` và `weight_capacity` của một xe đã có bãi "Bãi Sóng Thần" thì
+    bãi biến thành NULL, không một thông báo nào.
+
+    Ở đội 500 xe, đó là mất dữ liệu thầm lặng: sửa tải trọng một xe là mất luôn
+    thông tin bãi của xe đó.
+    """
     _require_api_principal(request)
     vid = data.get("id")
     if not vid:
         raise HTTPException(status_code=400, detail="Thiếu Biển số xe")
+
     existing = db.get(Vehicle, vid)
-    veh = Vehicle(
-        id=vid,
-        brand=data.get("brand", "Hyundai"),
-        type=data.get("type", "Truck"),
-        weight_capacity=float(data.get("weight_capacity") or 0),
-        volume_capacity_m3=float(data.get("volume_capacity_m3") or data.get("volumeCapacityM3") or 30.0),
-        pallet_capacity=int(data.get("pallet_capacity") or data.get("palletCapacity") or 0),
-        fuel_norm=float(data.get("fuel_norm") or 0),
-        avg_speed_kmh=float(data.get("avg_speed_kmh") or data.get("avgSpeedKmh") or 45.0),
-        min_speed_kmh=float(data.get("min_speed_kmh") or data.get("min_speed") or 0),
-        max_speed_kmh=float(data.get("max_speed_kmh") or data.get("max_speed") or 0),
-        maintenance_date=data.get("maintenance_date", ""),
-        status=existing.status if existing else "Sẵn sàng",
-        engine_no=data.get("engine_no", ""),
-        chassis_no=data.get("chassis_no", ""),
-        insurance_date=data.get("insurance_date", ""),
-        inspection_date=data.get("inspection_date", ""),
-        inspection_place=data.get("inspection_place", ""),
-        depot=data.get("depot", "") or None,
-        depot_code=(data.get("depot_code") or "").strip().upper() or None,
-        inspection_exp=data.get("inspection_exp", ""),
-        engine_cap=data.get("engine_cap", ""),
-        dimensions=data.get("dimensions", ""),
-        image_url=data.get("image_url", "")
-    )
-    db.merge(veh)
+    veh = existing or Vehicle(id=vid, status="Sẵn sàng")
+    if existing is None:
+        db.add(veh)
+
+    def _first_key(*names):
+        """Tên trường nào có mặt trong payload — hỗ trợ cả snake_case lẫn camelCase."""
+        for name in names:
+            if name in data:
+                return name
+        return None
+
+    def _text(field, *names, default=""):
+        name = _first_key(*names)
+        if name is None:
+            # Xe mới thì đặt mặc định; xe đã có thì GIỮ NGUYÊN giá trị cũ.
+            if existing is None:
+                setattr(veh, field, default)
+            return
+        setattr(veh, field, data.get(name) or "")
+
+    def _number(field, *names, default=0.0, cast=float):
+        name = _first_key(*names)
+        if name is None:
+            if existing is None:
+                setattr(veh, field, cast(default))
+            return
+        try:
+            setattr(veh, field, cast(data.get(name) or 0))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail=f"Giá trị {name} không hợp lệ") from None
+
+    _text("brand", "brand", default="Hyundai")
+    _text("type", "type", default="")
+    _number("weight_capacity", "weight_capacity", "weightCapacity", "maxWeight")
+    _number("volume_capacity_m3", "volume_capacity_m3", "volumeCapacityM3", default=30.0)
+    _number("pallet_capacity", "pallet_capacity", "palletCapacity", default=0, cast=int)
+    _number("fuel_norm", "fuel_norm", "fuelNorm")
+    _number("avg_speed_kmh", "avg_speed_kmh", "avgSpeedKmh", default=45.0)
+    _number("min_speed_kmh", "min_speed_kmh", "min_speed")
+    _number("max_speed_kmh", "max_speed_kmh", "max_speed")
+    for field in ("maintenance_date", "engine_no", "chassis_no", "insurance_date",
+                  "inspection_date", "inspection_place", "inspection_exp",
+                  "engine_cap", "dimensions", "image_url"):
+        _text(field, field)
+    _text("depot", "depot")
+
+    # Mã bãi luôn chuẩn hóa về chữ in, vì nó là khóa lọc.
+    if "depot_code" in data:
+        veh.depot_code = (str(data.get("depot_code") or "").strip().upper() or None)
+    elif existing is None:
+        veh.depot_code = None
+    # Chuỗi rỗng lưu thành NULL cho hai cột bãi, để bộ lọc "chưa gán bãi" đúng.
+    if not (veh.depot or "").strip():
+        veh.depot = None
+
     db.commit()
     return {"message": "Cập nhật dữ liệu xe thành công", "data": veh}
 
