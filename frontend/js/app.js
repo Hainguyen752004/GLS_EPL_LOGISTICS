@@ -10057,7 +10057,15 @@ async function loadDashboard() {
   // TransportReporting.load() trong switchView của chính nó.
   try {
     const res = await fetch(`${API_BASE}/api/dashboard/stats`);
-    if (res.ok) {
+    if (!res.ok) {
+      // KHONG duoc de nguyen cac o KPI. Truoc day nhanh nay im lang, nen khi
+      // token het han (401) man hinh van hien "0 VND / 0 Lenh DO / 0 Chuyen"
+      // — nguoi dung doc ra la MAT SACH DU LIEU, trong khi that ra chi la
+      // khong tai duoc. Mot con so 0 tu tin con te hon mot dau gach.
+      markDashboardUnavailable(res.status);
+      return;
+    }
+    {
       const data = await res.json();
 
       const currUnit = (typeof t === 'function' && t('unit_currency')) ? t('unit_currency') : 'VNĐ';
@@ -10094,6 +10102,38 @@ async function loadDashboard() {
     }
   } catch (e) {
     console.error("Failed to load dashboard data", e);
+    markDashboardUnavailable(0);
+  }
+}
+
+/**
+ * Bao that rang Bang dieu khien khong tai duoc so lieu.
+ *
+ * Dat dau gach thay vi so, va noi ro nguyen nhan khi la 401 — do gan nhu luon
+ * la token API chua duoc dat trong trinh duyet nay, khong phai du lieu bi mat.
+ */
+function markDashboardUnavailable(status) {
+  const tiles = [
+    ['stat-revenue', 'unit_currency', 'VNĐ'],
+    ['stat-dos', 'unit_order', 'Lệnh DO'],
+    ['stat-transit', 'unit_trip', 'Chuyến'],
+    ['stat-incidents', 'unit_incident', 'Sự cố'],
+  ];
+  tiles.forEach(([id, key, fallback]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const unit = (typeof t === 'function' && t(key)) ? t(key) : fallback;
+    el.innerText = `— ${unit}`;
+    el.title = 'Chưa tải được số liệu từ máy chủ.';
+  });
+
+  if (typeof showToast !== 'function') return;
+  if (status === 401 || status === 403) {
+    // api-auth.js da bao ve token roi, nen o day chi noi ro y nghia cua cac
+    // o dang trong, khong lap lai huong dan.
+    showToast('Chưa tải được số liệu Bảng điều khiển vì máy chủ từ chối phiên làm việc. Dữ liệu trong cơ sở dữ liệu vẫn còn nguyên.', 'error');
+  } else {
+    showToast('Chưa tải được số liệu Bảng điều khiển. Kiểm tra kết nối tới máy chủ rồi tải lại trang.', 'error');
   }
 }
 
@@ -10299,7 +10339,37 @@ window.clearLeafletRouteMap = function () {
   if (routeMapLayersGroup) {
     routeMapLayersGroup.clearLayers();
   }
+  // Xoa ghim thi phai xoa ca chu giai, khong de lai chu giai cua tuyen cu.
+  if (typeof renderRouteWaypointLegend === 'function') renderRouteWaypointLegend([]);
 };
+
+/**
+ * Thanh chu giai duoi ban do: liet ke cac diem THEO THU TU DI, kem dot mau va
+ * so thu tu khop voi ghim tren ban do.
+ *
+ * Truoc day thanh nay chi hien mot cau tinh ("Chon tuyen duong de hien thi so
+ * do lo trinh") ngay ca khi tuyen da ve xong. Nay no vua la chu giai mau vua
+ * la danh sach chang — nho vay mau khong bao gio dung mot minh.
+ */
+function renderRouteWaypointLegend(markerModel) {
+  const bar = document.getElementById('route-waypoint-bar');
+  if (!bar) return;
+  if (!markerModel || !markerModel.length) {
+    bar.className = '';
+    bar.innerHTML = 'Chọn tuyến đường để hiển thị sơ đồ lộ trình';
+    return;
+  }
+  bar.className = 'rmap-legend';
+  bar.innerHTML = markerModel.map((w, i) => `
+    ${i ? '<i class="fa-solid fa-arrow-right rmap-legend-arrow" aria-hidden="true"></i>' : ''}
+    <span class="rmap-legend-item" title="${escapeHtml(w.roleLabel)}">
+      <span class="rmap-legend-dot" style="--rmap-pin:${escapeHtml(w.color)};">${
+        w.glyph ? escapeHtml(w.glyph) : `<i class="fa-solid ${escapeHtml(w.icon)}" aria-hidden="true"></i>`
+      }</span>
+      <b>${escapeHtml(w.label)}</b>
+      <small>${escapeHtml(w.roleLabel)}</small>
+    </span>`).join('');
+}
 
 window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName) {
   const container = document.getElementById('route-leaflet-map');
@@ -10324,11 +10394,35 @@ window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName
   // If no waypoints provided, just show the empty base map - do NOT load hardcoded data
   if (!waypointsData || waypointsData.length === 0) return;
 
-  waypointsData.forEach((w) => {
-    const marker = L.marker([w.lat, w.lng]);
-    marker.bindPopup(`<b>${w.label}</b>`);
+  // Ghim mau theo vai tro: diem di do, diem trung chuyen xanh duong co so thu
+  // tu, diem den xanh la. Bay ghim giong nhau het nen khong biet dau la diem
+  // bat dau — do la van de cu.
+  const markerModel = window.RouteMapUtils?.buildWaypointMarkerModel
+    ? window.RouteMapUtils.buildWaypointMarkerModel(waypointsData)
+    : waypointsData.map((w, i) => ({ ...w, order: i + 1, color: '#1d4ed8', icon: 'fa-circle-dot', glyph: '', roleLabel: '' }));
+
+  markerModel.forEach((w) => {
+    const inner = w.glyph
+      ? `<b>${escapeHtml(w.glyph)}</b>`
+      : `<i class="fa-solid ${escapeHtml(w.icon)}" aria-hidden="true"></i>`;
+    const marker = L.marker([w.lat, w.lng], {
+      // KHONG escape o day: Leaflet dat option title qua thuoc tinh title cua
+      // the, khong qua innerHTML. Escape them se khien nguoi dung nhin thay
+      // "&amp;" thay vi "&" trong ten dia diem.
+      title: `${w.order}. ${w.roleLabel}: ${w.label}`,
+      icon: L.divIcon({
+        className: 'rmap-pin-wrap',
+        html: `<span class="rmap-pin rmap-pin--${escapeHtml(w.role)}" style="--rmap-pin:${escapeHtml(w.color)};">${inner}</span>`,
+        iconSize: [30, 40],
+        iconAnchor: [15, 38],
+        popupAnchor: [0, -34]
+      })
+    });
+    marker.bindPopup(`<b>${escapeHtml(w.label)}</b><br><span style="color:${escapeHtml(w.color)}; font-weight:700;">${escapeHtml(w.order + '. ' + w.roleLabel)}</span>`);
     routeMapLayersGroup.addLayer(marker);
   });
+
+  renderRouteWaypointLegend(markerModel);
 
   const waypointsParam = waypointsData.map(w => `${w.lng},${w.lat}`).join(';');
 
@@ -12530,11 +12624,11 @@ const DRIVER_SHIFT_PAGE_SIZE = 25;
 let driverShiftTableSearch = '';
 let driverShiftTableRole = '';
 let driverShiftSearchTimer = null;
-let driverShiftDayDialogOpen = false;
+// Góc nhìn của bảng xếp ca: 'week' (ma trận người × ngày) hoặc 'day'.
+// Thay cho driverShiftDayDialogOpen: chi tiết ngày giờ hiện NGAY TRONG
+// TRANG, không còn hộp thoại che kín màn hình.
+let driverRosterView = 'week';
 let selectedDriverVehicleDay = '';
-let driverVehicleDayDialogOpen = false;
-let driverVehicleTablePage = 1;
-const DRIVER_VEHICLE_PAGE_SIZE = 25;
 let driverVehicleTableSearch = '';
 let driverVehicleTableStatus = '';
 let driverVehicleSearchTimer = null;
@@ -12944,73 +13038,114 @@ window.toggleDriverShiftAvailability = function (kind) {
   if (vehicleSelect) vehicleSelect.disabled = !canAssignVehicle || !useVehicle?.checked;
 };
 
+/**
+ * Gom dữ liệu lịch xe theo hợp đồng của js/driver-roster.js:
+ * { days: [{key,label}], vehicles: [{vehicle_id,label,type,days:[...]}] }
+ *
+ * Bộ lọc áp ở đây (không áp trong module trình bày) để module kia thuần và
+ * kiểm chứng được bằng Node.
+ */
+function buildDriverVehicleRosterData(planner) {
+  const keyword = driverVehicleTableSearch.trim().toLowerCase();
+  const status = driverVehicleTableStatus;
+  const vehicles = planner.vehicle_rows
+    .map(row => ({
+      vehicle_id: String(row.vehicle_id || ''),
+      label: row.label || row.vehicle_id || '',
+      type: row.type || '',
+      days: planner.days.map((day, index) => {
+        const source = row.days[index] || {};
+        const drivers = [...new Set([
+          ...(source.timelines || []).flatMap(item => [item.driver_id, item.co_driver_id]),
+          ...(source.driver_ids || []),
+        ].filter(Boolean))];
+        return {
+          key: day.key,
+          status: source.status || 'available',
+          trip_ids: source.trip_ids || [],
+          maintenances: source.maintenances || [],
+          shifts: source.shifts || [],
+          driver_ids: drivers,
+        };
+      }),
+    }))
+    .filter(vehicle => {
+      const text = `${vehicle.vehicle_id} ${vehicle.label} ${vehicle.type} ${vehicle.days.map(day => `${day.trip_ids.join(' ')} ${day.maintenances.map(item => item.label).join(' ')}`).join(' ')}`.toLowerCase();
+      if (keyword && !text.includes(keyword)) return false;
+      // Lọc trạng thái theo CẢ TUẦN, không theo một ngày: bảng này là bảng
+      // tuần, nên "chỉ xem xe đang bảo dưỡng" phải giữ lại xe có bảo dưỡng ở
+      // bất kỳ ngày nào, kèm ngữ cảnh các ngày còn lại.
+      if (status && !vehicle.days.some(day => day.status === status)) return false;
+      return true;
+    });
+
+  return { days: planner.days.map(day => ({ key: day.key, label: day.label })), vehicles };
+}
+
+/**
+ * Lịch xe 7 ngày.
+ *
+ * Thay bản cũ gồm dải 7 nút chỉ hiện số tổng ("3 rảnh · 0 bận") cộng một hộp
+ * thoại che kín màn hình cho từng ngày — nhìn vào đó không biết XE NÀO rảnh
+ * ngày nào. Nay là ma trận xe × ngày, cùng dạng với bảng xếp ca tài xế.
+ */
 function renderDriverVehicleWeek() {
   const host = document.getElementById('driver-vehicle-week-content');
-  if (!host || !window.TmsCockpit?.buildDriverShiftPlanner) return;
+  if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
   const planner = window.TmsCockpit.buildDriverShiftPlanner({ drivers: fioriDrivers, vehicles: driverShiftVehicles, driver_shifts: driverShifts, vehicle_availability: driverVehicleAvailability }, driverShiftWeekStart);
-  if (!selectedDriverVehicleDay || !planner.days.some(day => day.key === selectedDriverVehicleDay)) selectedDriverVehicleDay = planner.days[0]?.key || '';
-  host.innerHTML = planner.vehicle_rows.length ? `<div class="driver-vehicle-week-summary">${planner.days.map((day, index) => {
-    const states = planner.vehicle_rows.map(row => row.days[index]?.status || 'available');
-    const count = state => states.filter(item => item === state).length;
-    return `<button type="button" class="driver-vehicle-week-day ${day.key === selectedDriverVehicleDay ? 'selected' : ''}" onclick="selectDriverVehicleDay('${day.key}')"><b>${completionEscape(day.label)}</b><strong>${count('available')} rảnh · ${count('busy')} bận</strong><span>${count('maintenance')} sửa chữa · ${count('conflict')} xung đột</span></button>`;
-  }).join('')}</div>` : '<div class="driver-shift-empty-inspector">Chưa có xe trong Master Data để lập lịch.</div>';
-  if (driverVehicleDayDialogOpen) renderDriverVehicleDayDialog(planner);
+  if (!planner.vehicle_rows.length) {
+    host.innerHTML = '<div class="driver-shift-empty-inspector">Chưa có xe trong Master Data để lập lịch.</div>';
+    return;
+  }
+  if (!selectedDriverVehicleDay || !planner.days.some(day => day.key === selectedDriverVehicleDay)) {
+    selectedDriverVehicleDay = planner.days[0]?.key || '';
+  }
+
+  const data = buildDriverVehicleRosterData(planner);
+  const statusLabels = { busy: 'Đang có lịch', maintenance: 'Bảo dưỡng / sửa chữa', conflict: 'Xung đột lịch', available: 'Còn rảnh' };
+
+  host.innerHTML = `
+    <div class="dr-shell">
+      <div class="dr-toolbar">
+        <input id="driver-vehicle-day-search" type="search" value="${escapeHtml(driverVehicleTableSearch)}"
+               placeholder="Tìm biển số, loại xe, Trip hoặc việc sửa chữa..."
+               oninput="filterDriverVehicleDay(this.value)" aria-label="Tìm xe">
+        <select id="driver-vehicle-day-status" onchange="filterDriverVehicleStatus(this.value)" aria-label="Lọc theo trạng thái">
+          <option value="">Tất cả trạng thái</option>
+          ${Object.entries(statusLabels).map(([key, label]) => `<option value="${escapeHtml(key)}">${escapeHtml(label)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="dr-scroll">${window.DriverRoster.vehicleMatrix(data, { selectedDay: selectedDriverVehicleDay })}</div>
+      ${window.DriverRoster.vehicleLegend()}
+    </div>`;
+
+  const statusSelect = document.getElementById('driver-vehicle-day-status');
+  if (statusSelect) statusSelect.value = driverVehicleTableStatus;
 }
 
 window.selectDriverVehicleDay = function (dateKey) {
+  // Chỉ làm nổi bật cột ngày đó. Không mở hộp thoại nữa: mất ngữ cảnh tuần là
+  // điều làm bản cũ khó dùng.
   selectedDriverVehicleDay = String(dateKey || '');
-  driverVehicleDayDialogOpen = true;
-  driverVehicleTablePage = 1;
   renderDriverVehicleWeek();
 };
 
 window.closeDriverVehicleDayDialog = function () {
-  driverVehicleDayDialogOpen = false;
+  // Không còn hộp thoại nào để đóng. Giữ hàm để mọi chỗ gọi sẵn có không vỡ,
+  // và dọn nốt phần tử cũ nếu còn sót từ phiên trước khi tải lại trang.
   document.getElementById('driver-vehicle-day-dialog')?.remove();
 };
 
 window.filterDriverVehicleDay = function (value) {
   driverVehicleTableSearch = String(value || '');
-  driverVehicleTablePage = 1;
   clearTimeout(driverVehicleSearchTimer);
   driverVehicleSearchTimer = setTimeout(() => renderDriverVehicleWeek(), 160);
 };
 
 window.filterDriverVehicleStatus = function (value) {
   driverVehicleTableStatus = String(value || '');
-  driverVehicleTablePage = 1;
   renderDriverVehicleWeek();
 };
-
-window.changeDriverVehicleTablePage = function (delta) {
-  driverVehicleTablePage = Math.max(1, driverVehicleTablePage + Number(delta || 0));
-  renderDriverVehicleWeek();
-};
-
-function renderDriverVehicleDayDialog(planner) {
-  document.getElementById('driver-vehicle-day-dialog')?.remove();
-  const dayIndex = planner.days.findIndex(day => day.key === selectedDriverVehicleDay);
-  if (dayIndex < 0) return;
-  const keyword = driverVehicleTableSearch.trim().toLowerCase();
-  const rows = planner.vehicle_rows.map(row => ({ ...row, day: row.days[dayIndex] })).filter(row => {
-    const searchable = `${row.vehicle_id} ${row.label} ${row.type} ${row.day.trip_ids.join(' ')} ${row.day.maintenances.map(item => item.label).join(' ')}`.toLowerCase();
-    return (!keyword || searchable.includes(keyword)) && (!driverVehicleTableStatus || row.day.status === driverVehicleTableStatus);
-  });
-  const pages = Math.max(1, Math.ceil(rows.length / DRIVER_VEHICLE_PAGE_SIZE));
-  driverVehicleTablePage = Math.min(driverVehicleTablePage, pages);
-  const visible = rows.slice((driverVehicleTablePage - 1) * DRIVER_VEHICLE_PAGE_SIZE, driverVehicleTablePage * DRIVER_VEHICLE_PAGE_SIZE);
-  const labels = { available: 'Rảnh', busy: 'Đang giao hàng / Có lịch', maintenance: 'Bảo dưỡng / sửa chữa', conflict: 'Xung đột lịch' };
-  const overlay = document.createElement('div');
-  overlay.id = 'driver-vehicle-day-dialog';
-  overlay.className = 'driver-day-overlay';
-  overlay.onclick = event => { if (event.target === overlay) closeDriverVehicleDayDialog(); };
-  overlay.innerHTML = `<section class="driver-day-dialog"><header class="driver-day-dialog-header"><div><h3><i class="fa-solid fa-truck"></i> Lịch xe ngày ${completionEscape(selectedDriverVehicleDay)}</h3><p>Trip và bảo dưỡng khóa lịch thật; ca tài xế chỉ là kế hoạch nguồn lực.</p></div><button type="button" title="Đóng" onclick="closeDriverVehicleDayDialog()"><i class="fa-solid fa-xmark"></i></button></header><div class="driver-day-dialog-body"><div class="driver-day-tools"><input id="driver-vehicle-day-search" value="${completionEscape(driverVehicleTableSearch)}" oninput="filterDriverVehicleDay(this.value)" placeholder="Tìm biển số, loại xe, Trip hoặc sửa chữa..."><select onchange="filterDriverVehicleStatus(this.value)"><option value="">Tất cả trạng thái</option>${Object.entries(labels).map(([key, label]) => `<option value="${key}" ${driverVehicleTableStatus === key ? 'selected' : ''}>${label}</option>`).join('')}</select></div><div class="driver-day-table-wrap"><table class="driver-day-table"><thead><tr><th>Phương tiện</th><th>Loại xe</th><th>Lịch / Trip</th><th>Tài xế</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${visible.map(row => {
-    const schedule = row.day.maintenances.length ? row.day.maintenances.map(item => item.label).join(', ') : row.day.trip_ids.length ? `Trip ${row.day.trip_ids.join(', ')}` : row.day.shifts.length ? `${row.day.shifts.length} ca dự kiến` : 'Trống cả ngày';
-    const drivers = [...new Set([...row.day.timelines.flatMap(item => [item.driver_id, item.co_driver_id]), ...row.day.driver_ids].filter(Boolean))];
-    return `<tr><td><b>${completionEscape(row.label)}</b><small>${completionEscape(row.vehicle_id)}</small></td><td>${completionEscape(row.type || 'Chưa cấu hình')}</td><td><b>${completionEscape(schedule)}</b></td><td>${completionEscape(drivers.join(', ') || 'Chưa gán')}</td><td><span class="driver-vehicle-status ${row.day.status}">${completionEscape(labels[row.day.status] || row.day.status)}</span></td><td><button type="button" class="fiori-btn fiori-btn-secondary" title="Mở hồ sơ xe" onclick="editFioriVehicle('${completionEscape(row.vehicle_id)}')"><i class="fa-solid fa-eye"></i></button></td></tr>`;
-  }).join('') || '<tr><td colspan="6">Không tìm thấy xe phù hợp.</td></tr>'}</tbody></table></div><footer class="driver-day-footer"><span>Hiển thị ${visible.length}/${rows.length} xe</span><div class="driver-day-pagination"><button type="button" ${driverVehicleTablePage <= 1 ? 'disabled' : ''} onclick="changeDriverVehicleTablePage(-1)"><i class="fa-solid fa-chevron-left"></i></button><b>Trang ${driverVehicleTablePage}/${pages}</b><button type="button" ${driverVehicleTablePage >= pages ? 'disabled' : ''} onclick="changeDriverVehicleTablePage(1)"><i class="fa-solid fa-chevron-right"></i></button></div></footer></div></section>`;
-  document.body.appendChild(overlay);
-}
 
 function renderDriverShiftAlerts() {
   const host = document.getElementById('driver-shift-alert-content');
@@ -13036,9 +13171,10 @@ function driverShiftTripsForPeriod(period) {
 }
 
 window.selectDriverShiftDay = function (dateKey) {
+  // Chọn một ngày chỉ làm nổi bật cột đó trên ma trận và đổi ngày cho góc nhìn
+  // "Một ngày". Không mở hộp thoại nữa: mất ngữ cảnh tuần là điều làm bản cũ
+  // khó dùng.
   selectedDriverShiftDay = String(dateKey || '');
-  driverShiftDayDialogOpen = true;
-  driverShiftTablePage = 1;
   selectedDriverShiftId = '';
   selectedDriverTripScheduleId = '';
   renderDriverShiftCalendarTable();
@@ -13046,7 +13182,8 @@ window.selectDriverShiftDay = function (dateKey) {
 };
 
 window.closeDriverShiftDayDialog = function () {
-  driverShiftDayDialogOpen = false;
+  // Không còn hộp thoại nào để đóng. Giữ hàm để mọi chỗ gọi sẵn có không vỡ,
+  // và dọn nốt phần tử cũ nếu còn sót từ phiên trước khi tải lại trang.
   document.getElementById('driver-shift-day-dialog')?.remove();
 };
 
@@ -13141,70 +13278,150 @@ window.openDriverDayScheduleView = function (driverId, dateKey) {
   document.body.appendChild(overlay);
 };
 
+/**
+ * Dựng dữ liệu cho bảng xếp ca theo hợp đồng của js/driver-roster.js.
+ *
+ * Hàm này chỉ lo GOM dữ liệu; phần trình bày nằm ở module kia nên kiểm chứng
+ * được bằng Node.
+ */
+function buildDriverRosterData() {
+  const planner = window.TmsCockpit.buildDriverShiftPlanner(
+    {
+      drivers: fioriDrivers,
+      vehicles: driverShiftVehicles,
+      driver_shifts: driverShifts,
+      vehicle_availability: driverVehicleAvailability,
+    },
+    driverShiftWeekStart
+  );
+
+  const keyword = driverShiftTableSearch.trim().toLowerCase();
+  const role = driverShiftTableRole;
+  const people = fioriDrivers
+    .filter(driver => {
+      const text = `${driver.id} ${driver.name || ''} ${driver.license_type || ''} ${driver.role || ''}`.toLowerCase();
+      return (!keyword || text.includes(keyword)) && (!role || String(driver.role || '').includes(role));
+    })
+    .map(driver => ({
+      id: String(driver.id || ''),
+      name: driver.name || driver.id || '',
+      role: driver.role || 'Tài xế',
+      license: driver.license_type || '',
+      days: planner.days.map(day => {
+        const period = { start: new Date(`${day.key}T00:00:00`), end: new Date(`${day.key}T00:00:00`) };
+        period.end.setDate(period.end.getDate() + 1);
+        const shifts = driverShifts
+          .filter(item => String(item.driver_id) === String(driver.id) && driverShiftDateKey(item.shift_start) === day.key)
+          .map(item => ({
+            id: String(item.id || ''),
+            type: driverShiftDisplayType(item),
+            kind: item.availability_kind || 'work',
+            vehicle_id: item.vehicle_id || '',
+            start_label: new Date(item.shift_start).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            end_label: new Date(item.shift_end).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+          }));
+        const trips = driverShiftTripsForPeriod(period)
+          .filter(item => String(item.crew_driver_id) === String(driver.id))
+          .map(item => ({
+            trip_id: String(item.trip_id || ''),
+            role: item.crew_role || '',
+            vehicle_id: item.vehicle_id || '',
+            // Xếp chuyến vào ca theo giờ khởi hành, để nó nằm đúng ô thay vì
+            // chiếm cả ba ca của ngày đó.
+            shift_type: driverShiftDisplayType({ shift_start: item.planned_departure_at, shift_type: 'custom' }),
+          }));
+        return { key: day.key, shifts, trips };
+      }),
+    }));
+
+  return { days: planner.days.map(day => ({ key: day.key, label: day.label })), people };
+}
+
+/**
+ * Bảng xếp ca tài xế.
+ *
+ * Thay bản cũ gồm dải 7 ngày chỉ hiện số tổng, cộng một hộp thoại che kín màn
+ * hình cho từng ngày. Xem js/driver-roster.js để biết vì sao ma trận
+ * người × ngày là dạng đúng cho việc xếp ca.
+ */
 function renderDriverShiftCalendarTable() {
   const host = document.getElementById('driver-shift-calendar');
-  if (!host || !window.TmsCockpit?.buildDriverShiftPlanner) return;
-  const planner = window.TmsCockpit.buildDriverShiftPlanner({ drivers: fioriDrivers, vehicles: driverShiftVehicles, driver_shifts: driverShifts, vehicle_availability: driverVehicleAvailability }, driverShiftWeekStart);
-  const types = [
-    { key: 'morning', label: 'Ca sáng', time: '06:00 - 14:00' },
-    { key: 'afternoon', label: 'Ca chiều', time: '14:00 - 22:00' },
-    { key: 'night', label: 'Ca đêm', time: '22:00 - 06:00' }
-  ];
-  if (!selectedDriverShiftDay || !planner.days.some(day => day.key === selectedDriverShiftDay)) selectedDriverShiftDay = planner.days[0]?.key || '';
-  const summary = planner.days.map(day => {
-    const dayPeriod = { start: new Date(`${day.key}T00:00:00`), end: new Date(`${day.key}T00:00:00`) };
-    dayPeriod.end.setDate(dayPeriod.end.getDate() + 1);
-    const shifts = driverShifts.filter(item => driverShiftDateKey(item.shift_start) === day.key);
-    const trips = driverShiftTripsForPeriod(dayPeriod);
-    const absences = shifts.filter(item => (item.availability_kind || 'work') !== 'work').length;
-    return `<button type="button" class="driver-week-day ${day.key === selectedDriverShiftDay ? 'active' : ''}" onclick="selectDriverShiftDay('${day.key}')"><b>${completionEscape(day.label)}</b><span>${shifts.length} ca · ${trips.length} chuyến</span><small>${absences} nghỉ · ${Math.max(0, fioriDrivers.length - trips.length)} có thể xếp</small></button>`;
-  }).join('');
-  const oldSearch = driverShiftTableSearch;
-  const oldRole = driverShiftTableRole;
-  const dayPeriod = { start: new Date(`${selectedDriverShiftDay}T00:00:00`), end: new Date(`${selectedDriverShiftDay}T00:00:00`) };
-  dayPeriod.end.setDate(dayPeriod.end.getDate() + 1);
-  const shifts = driverShifts.filter(item => driverShiftDateKey(item.shift_start) === selectedDriverShiftDay);
-  const trips = driverShiftTripsForPeriod(dayPeriod);
-  const keyword = oldSearch.trim().toLowerCase();
-  const filtered = fioriDrivers.filter(driver => {
-    const text = `${driver.id} ${escapeHtml(driver.name)} ${driver.license_type} ${driver.role}`.toLowerCase();
-    return (!keyword || text.includes(keyword)) && (!oldRole || String(driver.role || '').includes(oldRole));
-  });
-  const pages = Math.max(1, Math.ceil(filtered.length / DRIVER_SHIFT_PAGE_SIZE));
-  driverShiftTablePage = Math.min(driverShiftTablePage, pages);
-  const visible = filtered.slice((driverShiftTablePage - 1) * DRIVER_SHIFT_PAGE_SIZE, driverShiftTablePage * DRIVER_SHIFT_PAGE_SIZE);
-  const rows = visible.map(driver => {
-    const driverShiftsForDay = shifts.filter(item => String(item.driver_id) === String(driver.id));
-    const driverTripsForDay = trips.filter(item => String(item.crew_driver_id) === String(driver.id));
-    const shiftCell = typeKey => {
-      const entries = driverShiftsForDay.filter(item => driverShiftDisplayType(item) === typeKey);
-      return entries.map(item => {
-        const kind = item.availability_kind || 'work';
-        const label = kind === 'work' ? `${new Date(item.shift_start).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})} - ${new Date(item.shift_end).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}` : ({ leave:'Nghỉ phép', sick:'Nghỉ bệnh', off:'Nghỉ ca', unavailable:'Không sẵn sàng' }[kind] || kind);
-        return `<span class="driver-day-slot ${kind !== 'work' ? 'absence' : ''}"><b>${completionEscape(label)}</b><small>${completionEscape(item.vehicle_id || (kind === 'work' ? 'Không gán xe' : 'Khóa lịch'))}</small></span>`;
-      }).join('') || '<span class="driver-day-slot empty">Trống</span>';
-    };
-    const locked = driverTripsForDay.map(item => `<span class="driver-day-slot locked"><b><i class="fa-solid fa-lock"></i> ${completionEscape(item.trip_id)}</b><small>${completionEscape(item.vehicle_id || item.crew_role || 'Trip')}</small></span>`).join('') || '<span class="driver-day-slot empty">Không có</span>';
-    const action = `<button type="button" class="driver-day-icon-action" title="Xem lịch nhân sự" onclick="openDriverDayScheduleView('${completionEscape(driver.id)}','${completionEscape(selectedDriverShiftDay)}')"><i class="fa-solid fa-eye"></i></button>`;
-    return `<tr><td><b>${completionEscape(driver.name || driver.id)}</b><small>${completionEscape(driver.id)} · ${completionEscape(driver.license_type || '')}</small></td><td>${completionEscape(driver.role || 'Tài xế')}</td><td>${shiftCell('morning')}</td><td>${shiftCell('afternoon')}</td><td>${shiftCell('night')}</td><td>${locked}</td><td>${action}</td></tr>`;
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#718096">Không tìm thấy nhân sự phù hợp.</td></tr>';
-  host.innerHTML = `<div class="driver-week-summary">${summary}</div><div class="driver-day-workbench"><div class="driver-day-head"><div><h4>Lịch nhân sự · ${completionEscape(selectedDriverShiftDay)}</h4><p>Sáng, chiều, đêm và chuyến khóa lịch · ${filtered.length} nhân sự</p></div><button type="button" class="fiori-btn fiori-btn-secondary" onclick="openWeeklyDriverSchedule()"><i class="fa-solid fa-calendar-plus"></i> Lịch mặc định</button></div><div class="driver-day-tools"><input id="driver-shift-day-search" type="search" value="${completionEscape(oldSearch)}" placeholder="Tìm tên, mã nhân sự, hạng bằng..." oninput="filterDriverShiftDay(this.value)"><select id="driver-shift-day-role" onchange="filterDriverShiftRole(this.value)"><option value="">Tất cả vai trò</option><option value="Lái xe">Tài xế chính</option><option value="Phụ xe">Phụ xe</option></select></div><div class="driver-day-table-scroll"><table class="driver-day-table driver-day-schedule-table"><thead><tr><th style="width:21%">Nhân sự</th><th style="width:12%">Vai trò</th><th>Ca sáng<small>06:00 - 14:00</small></th><th>Ca chiều<small>14:00 - 22:00</small></th><th>Ca đêm<small>22:00 - 06:00</small></th><th style="width:17%">Chuyến khóa lịch</th><th style="width:72px">Xem</th></tr></thead><tbody>${rows}</tbody></table></div><div class="driver-day-footer"><span>Hiển thị ${visible.length}/${filtered.length} nhân sự</span><div class="driver-day-pagination"><button type="button" ${driverShiftTablePage <= 1 ? 'disabled' : ''} onclick="changeDriverShiftTablePage(-1)"><i class="fa-solid fa-chevron-left"></i></button><b>Trang ${driverShiftTablePage}/${pages}</b><button type="button" ${driverShiftTablePage >= pages ? 'disabled' : ''} onclick="changeDriverShiftTablePage(1)"><i class="fa-solid fa-chevron-right"></i></button></div></div></div>`;
-  const roleSelect = document.getElementById('driver-shift-day-role');
-  if (roleSelect) roleSelect.value = oldRole;
-  const detail = host.querySelector('.driver-day-workbench');
-  if (!driverShiftDayDialogOpen) {
-    detail?.remove();
-    return;
+  if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
+
+  const data = buildDriverRosterData();
+  if (!selectedDriverShiftDay || !data.days.some(day => day.key === selectedDriverShiftDay)) {
+    selectedDriverShiftDay = data.days[0]?.key || '';
   }
-  document.getElementById('driver-shift-day-dialog')?.remove();
-  const overlay = document.createElement('div');
-  overlay.id = 'driver-shift-day-dialog';
-  overlay.className = 'driver-day-overlay';
-  overlay.onclick = event => { if (event.target === overlay) closeDriverShiftDayDialog(); };
-  overlay.innerHTML = `<section class="driver-day-dialog" role="dialog" aria-modal="true" aria-labelledby="driver-day-dialog-title"><header class="driver-day-dialog-header"><div><h3 id="driver-day-dialog-title"><i class="fa-solid fa-calendar-day"></i> Lịch nhân sự ngày ${completionEscape(selectedDriverShiftDay)}</h3><p>Xem đồng thời ca sáng, ca chiều, ca đêm và các chuyến đã khóa lịch.</p></div><button type="button" title="Đóng" onclick="closeDriverShiftDayDialog()"><i class="fa-solid fa-xmark"></i></button></header><div class="driver-day-dialog-body"></div></section>`;
-  overlay.querySelector('.driver-day-dialog-body')?.appendChild(detail);
-  document.body.appendChild(overlay);
+
+  const view = driverRosterView === 'day' ? 'day' : 'week';
+  const body = view === 'week'
+    ? `<div class="dr-scroll">${window.DriverRoster.weekMatrix(data, { selectedDay: selectedDriverShiftDay })}</div>`
+    : window.DriverRoster.dayDetail(data, selectedDriverShiftDay);
+
+  const dayOptions = data.days
+    .map(day => `<option value="${escapeHtml(day.key)}"${day.key === selectedDriverShiftDay ? ' selected' : ''}>${escapeHtml(day.label)}</option>`)
+    .join('');
+
+  host.innerHTML = `
+    <div class="dr-shell">
+      <div class="dr-toolbar">
+        <div class="dr-views" role="group" aria-label="Góc nhìn lịch">
+          <button type="button" class="${view === 'week' ? 'is-active' : ''}" onclick="setDriverRosterView('week')">
+            <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Cả tuần
+          </button>
+          <button type="button" class="${view === 'day' ? 'is-active' : ''}" onclick="setDriverRosterView('day')">
+            <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Một ngày
+          </button>
+        </div>
+        <input id="driver-shift-day-search" type="search" value="${escapeHtml(driverShiftTableSearch)}"
+               placeholder="Tìm tên, mã nhân sự, hạng bằng..." oninput="filterDriverShiftDay(this.value)"
+               aria-label="Tìm nhân sự">
+        <select id="driver-shift-day-role" onchange="filterDriverShiftRole(this.value)" aria-label="Lọc theo vai trò">
+          <option value="">Tất cả vai trò</option>
+          <option value="Lái xe">Tài xế chính</option>
+          <option value="Phụ xe">Phụ xe</option>
+        </select>
+        ${view === 'day' ? `<select onchange="selectDriverShiftDay(this.value)" aria-label="Chọn ngày">${dayOptions}</select>` : ''}
+      </div>
+      ${body}
+      ${window.DriverRoster.legend()}
+    </div>`;
+
+  const roleSelect = document.getElementById('driver-shift-day-role');
+  if (roleSelect) roleSelect.value = driverShiftTableRole;
 }
+
+/** Hành động của các ô trong bảng xếp ca. */
+window.DriverRosterActions = {
+  selectDay(dateKey) {
+    selectedDriverShiftDay = String(dateKey || '');
+    renderDriverShiftCalendarTable();
+  },
+  assign(driverId, dateKey, shiftType) {
+    // Hàng của ma trận ĐÃ LÀ tài xế, nên gọi thẳng hàm cấp thấp thay vì
+    // assignSelectedDriverToShift — bản cũ buộc phải chọn tài xế ở danh sách
+    // bên trái trước rồi mới bấm được vào ô lịch. Ở đây thao tác đó là dư.
+    selectedDriverShiftDay = String(dateKey || '');
+    assignDriverToShiftSlot(String(driverId || ''), dateKey, shiftType);
+  },
+  openShift(shiftId) {
+    openDriverShiftInspector(shiftId);
+  },
+  openTrip(tripId, driverId) {
+    openDriverTripScheduleInspector(tripId, driverId);
+  },
+  selectVehicleDay(dateKey) {
+    selectDriverVehicleDay(dateKey);
+  },
+  openVehicle(vehicleId) {
+    editFioriVehicle(String(vehicleId || ''));
+  },
+};
+
+window.setDriverRosterView = function (view) {
+  driverRosterView = view === 'day' ? 'day' : 'week';
+  renderDriverShiftCalendarTable();
+};
 
 window.renderDriverShiftPlanner = function () {
   if (!driverShiftWeekStart) driverShiftWeekStart = startOfDriverShiftWeek();
@@ -13220,64 +13437,355 @@ window.renderDriverShiftPlanner = function () {
   renderDriverShiftAlerts();
 };
 
-window.openWeeklyDriverSchedule = function () {
-  document.getElementById('weekly-driver-schedule-dialog')?.remove();
+/**
+ * Trạng thái của hộp thoại tạo ca lặp.
+ *
+ * Trước đây mọi thứ đọc thẳng từ DOM lúc bấm Lưu, nên không thể hiện được số ca
+ * sẽ tạo trong khi người dùng còn đang chỉnh. Giữ một bản trạng thái ở đây thì
+ * mỗi lần đổi là tính lại và vẽ lại khung xem trước.
+ */
+let recurrenceDraft = null;
+
+function defaultRecurrenceDraft() {
   const start = driverShiftWeekStart || startOfDriverShiftWeek();
   const end = new Date(start);
-  end.setMonth(end.getMonth() + 3);
-  const vehicleOptions = driverShiftVehicles.map(vehicle => `<option value="${completionEscape(vehicle.id)}">${completionEscape(vehicle.id)} · ${completionEscape(vehicle.type || '')}</option>`).join('');
+  // Mặc định MỘT tháng, không phải ba. Bản cũ mặc định 3 tháng × 6 ngày/tuần =
+  // khoảng 78 ca cho mỗi người ngay từ lúc mở hộp thoại — một con số lớn như
+  // vậy phải là lựa chọn có ý thức, không phải giá trị sẵn.
+  end.setMonth(end.getMonth() + 1);
+  return {
+    driverIds: selectedDriverForShiftId ? [String(selectedDriverForShiftId)] : [],
+    weekdays: [0, 1, 2, 3, 4],
+    shiftType: 'morning',
+    startTime: '06:00',
+    endTime: '14:00',
+    effectiveStart: driverShiftDateKey(start),
+    effectiveEnd: driverShiftDateKey(end),
+    vehicleId: '',
+    workLocation: '',
+    search: '',
+  };
+}
+
+function recurrencePlan() {
+  return window.ShiftRecurrence.planRecurrence({
+    driverIds: recurrenceDraft.driverIds,
+    weekdays: recurrenceDraft.weekdays,
+    effectiveStart: recurrenceDraft.effectiveStart,
+    effectiveEnd: recurrenceDraft.effectiveEnd,
+    startTime: recurrenceDraft.startTime,
+    endTime: recurrenceDraft.endTime,
+    existingShifts: driverShifts,
+  });
+}
+
+/**
+ * Hộp thoại tạo ca lặp theo tuần.
+ *
+ * Đổi tên khỏi "Thiết lập lịch làm việc mặc định": cái tên đó nghe như một thiết
+ * lập có thể sửa lại sau, trong khi thao tác này ghi thẳng từng ca thật vào cơ
+ * sở dữ liệu và không lưu quy tắc lặp nào cả. Nay tiêu đề, khung xem trước và
+ * nhãn trên nút đều nói đúng số ca sẽ được ghi.
+ */
+window.openWeeklyDriverSchedule = function () {
+  document.getElementById('weekly-driver-schedule-dialog')?.remove();
+  if (!window.ShiftRecurrence) return;
+  recurrenceDraft = defaultRecurrenceDraft();
+
   const dialog = document.createElement('div');
   dialog.id = 'weekly-driver-schedule-dialog';
   dialog.className = 'weekly-schedule-overlay';
-  dialog.innerHTML = `<div class="weekly-schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="weekly-schedule-title">
-    <header><div><h3 id="weekly-schedule-title"><i class="fa-solid fa-calendar-days"></i> Thiết lập lịch làm việc mặc định</h3><p>Tạo các ca thật lặp theo tuần. Có thể sửa hoặc xóa từng ca ngay trên lịch.</p></div><button type="button" title="Đóng" onclick="closeWeeklyDriverSchedule()"><i class="fa-solid fa-xmark"></i></button></header>
-    <div class="weekly-schedule-body">
-      <div class="wide weekly-driver-picker"><label for="weekly-schedule-driver-search">Tìm tài xế / phụ xe</label><input id="weekly-schedule-driver" type="hidden" value="${completionEscape(selectedDriverForShiftId)}"><div class="weekly-driver-search-wrap"><i class="fa-solid fa-magnifying-glass"></i><input id="weekly-schedule-driver-search" type="search" autocomplete="off" placeholder="Nhập tên, mã nhân sự, vai trò hoặc hạng bằng..." onfocus="filterWeeklyScheduleDrivers(this.value)" oninput="filterWeeklyScheduleDrivers(this.value)"></div><div id="weekly-schedule-driver-results" class="weekly-driver-results" hidden></div></div>
-      <fieldset class="wide"><legend>Ngày làm việc lặp lại</legend><div class="weekly-day-options">${['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy','Chủ Nhật'].map((label, index) => `<label><input type="checkbox" name="weekly-schedule-day" value="${index}" ${index < 6 ? 'checked' : ''}><span>${label}</span></label>`).join('')}</div></fieldset>
-      <label>Giờ bắt đầu<input id="weekly-schedule-start-time" type="time" value="06:00"></label>
-      <label>Giờ kết thúc<input id="weekly-schedule-end-time" type="time" value="14:00"></label>
-      <label>Kết thúc sau<select id="weekly-schedule-day-offset"><option value="0">Trong ngày</option><option value="1">1 ngày</option><option value="2">2 ngày</option><option value="3">3 ngày</option><option value="7">7 ngày</option></select></label>
-      <label>Loại ca<select id="weekly-schedule-type"><option value="morning">Ca sáng</option><option value="afternoon">Ca chiều</option><option value="night">Ca đêm</option><option value="custom">Tùy chỉnh</option></select></label>
-      <label>Áp dụng từ<input id="weekly-schedule-effective-start" type="date" value="${driverShiftDateKey(start)}"></label>
-      <label>Áp dụng đến<input id="weekly-schedule-effective-end" type="date" value="${driverShiftDateKey(end)}"></label>
-      <label class="wide">Xe mặc định <small>(không bắt buộc)</small><select id="weekly-schedule-vehicle"><option value="">Không gán cố định xe</option>${vehicleOptions}</select></label>
-      <label class="wide">Địa điểm làm việc<input id="weekly-schedule-location" placeholder="Kho, bãi hoặc điểm tập kết"></label>
-      <div class="weekly-schedule-note wide"><i class="fa-solid fa-circle-info"></i><span>Ca qua đêm: chọn “1 ngày”. Chuyến kéo dài từ Thứ Hai sang Thứ Ba chỉ hợp lệ khi lịch làm việc phủ đủ toàn bộ thời gian chuyến.</span></div>
-    </div>
-    <footer><button type="button" class="fiori-btn fiori-btn-secondary" onclick="closeWeeklyDriverSchedule()">Hủy</button><button id="weekly-schedule-save" type="button" class="fiori-btn" onclick="saveWeeklyDriverSchedule()"><i class="fa-solid fa-floppy-disk"></i> Tạo lịch mặc định</button></footer>
+  dialog.onclick = event => { if (event.target === dialog) closeWeeklyDriverSchedule(); };
+  dialog.innerHTML = `<div class="weekly-schedule-dialog sr-dialog" role="dialog" aria-modal="true" aria-labelledby="weekly-schedule-title">
+    <header>
+      <div>
+        <h3 id="weekly-schedule-title"><i class="fa-solid fa-repeat"></i> Tạo ca lặp theo tuần</h3>
+        <p>Sinh sẵn từng ca làm việc thật cho khoảng thời gian đã chọn. Mỗi ca sau đó sửa hoặc xóa được riêng trên lịch.</p>
+      </div>
+      <button type="button" title="Đóng" onclick="closeWeeklyDriverSchedule()"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+    <div class="sr-body" id="weekly-schedule-body"></div>
+    <footer>
+      <button type="button" class="fiori-btn fiori-btn-secondary" onclick="closeWeeklyDriverSchedule()">Hủy</button>
+      <button id="weekly-schedule-save" type="button" class="fiori-btn" onclick="saveWeeklyDriverSchedule()"></button>
+    </footer>
   </div>`;
   document.body.appendChild(dialog);
-  if (selectedDriverForShiftId) {
-    const selected = fioriDrivers.find(driver => String(driver.id) === String(selectedDriverForShiftId));
-    const input = document.getElementById('weekly-schedule-driver-search');
-    if (input && selected) input.value = `${selected.name || selected.id} · ${selected.id}`;
+  renderWeeklyScheduleBody();
+};
+
+/** Vẽ lại toàn bộ phần thân theo trạng thái hiện tại. */
+function renderWeeklyScheduleBody() {
+  const host = document.getElementById('weekly-schedule-body');
+  if (!host || !recurrenceDraft) return;
+  const SR = window.ShiftRecurrence;
+  const plan = recurrencePlan();
+  const custom = recurrenceDraft.shiftType === 'custom';
+
+  const keyword = recurrenceDraft.search.trim().toLowerCase();
+  // KHÔNG escape trước khi so khớp: bản cũ escape rồi mới .includes() nên tìm
+  // một cái tên có dấu "&" thì không bao giờ khớp, vì trong chuỗi tìm nó đã
+  // thành "&amp;".
+  const people = fioriDrivers.filter(driver => {
+    const text = `${driver.name || ''} ${driver.id || ''} ${driver.role || ''} ${driver.license_type || ''} ${driver.phone || ''}`.toLowerCase();
+    return !keyword || text.includes(keyword);
+  });
+  const chosen = new Set(recurrenceDraft.driverIds);
+
+  const peopleRows = people.slice(0, 60).map(driver => {
+    const id = String(driver.id || '');
+    const initials = String(driver.name || id || '?').split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase();
+    return `<label class="sr-person${chosen.has(id) ? ' is-on' : ''}">
+      <input type="checkbox" ${chosen.has(id) ? 'checked' : ''} onchange="toggleRecurrenceDriver('${escapeJsAttr(id)}', this.checked)">
+      <span class="sr-person-avatar">${escapeHtml(initials)}</span>
+      <span class="sr-person-text">
+        <b>${escapeHtml(driver.name || id)}</b>
+        <small>${escapeHtml(id)} · ${escapeHtml(driver.role || 'Nhân sự')} · ${escapeHtml(driver.license_type || 'Chưa có hạng bằng')}</small>
+      </span>
+      <i class="fa-solid fa-check sr-person-tick" aria-hidden="true"></i>
+    </label>`;
+  }).join('') || '<div class="sr-empty">Không tìm thấy nhân sự phù hợp.</div>';
+
+  const vehicleOptions = driverShiftVehicles.map(vehicle => {
+    const id = String(vehicle.id || '');
+    return `<option value="${escapeHtml(id)}"${recurrenceDraft.vehicleId === id ? ' selected' : ''}>${escapeHtml(id)} · ${escapeHtml(vehicle.type || '')}</option>`;
+  }).join('');
+
+  host.innerHTML = `
+    <section class="sr-step">
+      <h4><span class="sr-step-no">1</span> Chọn nhân sự <small>${recurrenceDraft.driverIds.length ? `đã chọn ${recurrenceDraft.driverIds.length}` : 'chưa chọn ai'}</small></h4>
+      <div class="sr-row">
+        <div class="sr-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input id="weekly-schedule-driver-search" type="search" autocomplete="off"
+                 value="${escapeHtml(recurrenceDraft.search)}"
+                 placeholder="Nhập tên, mã nhân sự, vai trò hoặc hạng bằng..."
+                 oninput="filterWeeklyScheduleDrivers(this.value)" aria-label="Tìm nhân sự">
+        </div>
+        <button type="button" class="sr-mini" onclick="selectAllRecurrenceDrivers()"><i class="fa-solid fa-users" aria-hidden="true"></i> Chọn ${people.length} người đang hiện</button>
+        ${recurrenceDraft.driverIds.length ? '<button type="button" class="sr-mini" onclick="clearRecurrenceDrivers()"><i class="fa-solid fa-eraser" aria-hidden="true"></i> Bỏ chọn hết</button>' : ''}
+      </div>
+      <div class="sr-people">${peopleRows}</div>
+    </section>
+
+    <section class="sr-step">
+      <h4><span class="sr-step-no">2</span> Ngày trong tuần <small>${recurrenceDraft.weekdays.length ? `${recurrenceDraft.weekdays.length} ngày mỗi tuần` : 'chưa chọn ngày'}</small></h4>
+      <div class="sr-row">
+        <div class="sr-days" role="group" aria-label="Ngày làm việc lặp lại">
+          ${SR.WEEKDAYS.map(day => `<button type="button" class="sr-day${recurrenceDraft.weekdays.includes(day.index) ? ' is-on' : ''}"
+            aria-pressed="${recurrenceDraft.weekdays.includes(day.index)}"
+            title="${escapeHtml(day.label)}"
+            onclick="toggleRecurrenceWeekday(${day.index})">${escapeHtml(day.short)}</button>`).join('')}
+        </div>
+        <button type="button" class="sr-mini" onclick="setRecurrenceWeekdays('weekdays')">T2–T6</button>
+        <button type="button" class="sr-mini" onclick="setRecurrenceWeekdays('sixdays')">T2–T7</button>
+        <button type="button" class="sr-mini" onclick="setRecurrenceWeekdays('all')">Cả tuần</button>
+      </div>
+    </section>
+
+    <section class="sr-step">
+      <h4><span class="sr-step-no">3</span> Ca làm việc</h4>
+      <div class="sr-shifts" role="group" aria-label="Loại ca">
+        ${SR.SHIFT_PRESETS.map(item => `<button type="button" class="sr-shift${recurrenceDraft.shiftType === item.key ? ' is-on' : ''}"
+          aria-pressed="${recurrenceDraft.shiftType === item.key}"
+          onclick="setRecurrenceShiftType('${escapeJsAttr(item.key)}')">
+          <b>${escapeHtml(item.label)}</b>
+          <small>${item.start ? escapeHtml(`${item.start} – ${item.end}`) : 'Tự đặt giờ'}</small>
+        </button>`).join('')}
+      </div>
+      <div class="sr-grid">
+        <label>Giờ bắt đầu
+          <input type="time" value="${escapeHtml(recurrenceDraft.startTime)}" ${custom ? '' : 'disabled'}
+                 onchange="setRecurrenceTime('startTime', this.value)">
+        </label>
+        <label>Giờ kết thúc
+          <input type="time" value="${escapeHtml(recurrenceDraft.endTime)}" ${custom ? '' : 'disabled'}
+                 onchange="setRecurrenceTime('endTime', this.value)">
+        </label>
+      </div>
+      ${plan.crossesMidnight ? `<p class="sr-hint"><i class="fa-solid fa-moon" aria-hidden="true"></i> Ca này qua đêm: kết thúc ${escapeHtml(recurrenceDraft.endTime)} của ngày hôm sau. Hệ thống tự nhận ra, anh không phải khai thêm.</p>` : ''}
+    </section>
+
+    <section class="sr-step">
+      <h4><span class="sr-step-no">4</span> Khoảng áp dụng</h4>
+      <div class="sr-grid">
+        <label>Từ ngày
+          <input type="date" value="${escapeHtml(recurrenceDraft.effectiveStart)}" onchange="setRecurrenceRange('effectiveStart', this.value)">
+        </label>
+        <label>Đến ngày
+          <input type="date" value="${escapeHtml(recurrenceDraft.effectiveEnd)}" onchange="setRecurrenceRange('effectiveEnd', this.value)">
+        </label>
+      </div>
+      <div class="sr-row">
+        <button type="button" class="sr-mini" onclick="setRecurrenceMonths(1)">1 tháng</button>
+        <button type="button" class="sr-mini" onclick="setRecurrenceMonths(3)">3 tháng</button>
+        <button type="button" class="sr-mini" onclick="setRecurrenceMonths(6)">6 tháng</button>
+      </div>
+    </section>
+
+    <section class="sr-step">
+      <h4><span class="sr-step-no">5</span> Tùy chọn <small>không bắt buộc</small></h4>
+      <div class="sr-grid">
+        <label>Xe gán cố định
+          <select onchange="setRecurrenceField('vehicleId', this.value)">
+            <option value="">Không gán cố định xe</option>${vehicleOptions}
+          </select>
+        </label>
+        <label>Địa điểm làm việc
+          <input type="text" value="${escapeHtml(recurrenceDraft.workLocation)}" placeholder="Kho, bãi hoặc điểm tập kết"
+                 oninput="setRecurrenceField('workLocation', this.value)">
+        </label>
+      </div>
+    </section>
+
+    ${renderRecurrencePreview(plan)}`;
+
+  renderRecurrenceSaveButton(plan);
+}
+
+/**
+ * Khung xem trước — phần quan trọng nhất của bản thiết kế lại.
+ *
+ * Bản cũ không nói gì cả: bấm "Tạo lịch mặc định" rồi mới biết vừa ghi bao
+ * nhiêu ca qua một dòng thông báo. Với thiết lập mặc định cũ (T2–T7, 3 tháng)
+ * đó là khoảng 78 ca cho MỖI người được chọn.
+ */
+function renderRecurrencePreview(plan) {
+  const SR = window.ShiftRecurrence;
+  if (!plan.valid) {
+    return `<section class="sr-preview sr-preview--blocked">
+      <h4><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> Còn thiếu thông tin</h4>
+      <ul>${plan.errors.map(error => `<li>${escapeHtml(error)}</li>`).join('')}</ul>
+    </section>`;
+  }
+
+  const summary = SR.summarize(plan);
+  const heavy = plan.totalShifts > 200;
+  const busiest = plan.perDriver.filter(item => item.existingCount > 0);
+
+  return `<section class="sr-preview${heavy ? ' sr-preview--heavy' : ''}">
+    <h4><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Trước khi lưu</h4>
+    <p class="sr-preview-headline">${escapeHtml(summary.headline)}</p>
+    <p class="sr-preview-detail">${escapeHtml(summary.detail)}</p>
+    <ul class="sr-preview-people">
+      ${plan.perDriver.slice(0, 6).map(item => {
+        const driver = fioriDrivers.find(person => String(person.id) === item.driverId);
+        return `<li><b>${escapeHtml(driver?.name || item.driverId)}</b> <span>${item.shiftCount} ca</span>${
+          item.existingCount ? `<em><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${item.existingCount} ngày đã có ca</em>` : ''
+        }</li>`;
+      }).join('')}
+      ${plan.perDriver.length > 6 ? `<li class="sr-preview-more">và ${plan.perDriver.length - 6} người nữa</li>` : ''}
+    </ul>
+    ${busiest.length ? `<p class="sr-warn"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+      ${escapeHtml(`${busiest.length} người đã có ca trong một số ngày trên. Ca cùng người, cùng ngày, cùng giờ sẽ được ghi đè; khác giờ thì thành hai ca chồng nhau và Dispatch sẽ báo xung đột.`)}</p>` : ''}
+    ${heavy ? `<p class="sr-warn"><i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+      ${escapeHtml(`Đây là ${plan.totalShifts} bản ghi trong một lần bấm. Cân nhắc thu ngắn khoảng áp dụng hoặc chia theo nhóm nhân sự.`)}</p>` : ''}
+  </section>`;
+}
+
+/** Nhãn trên nút lưu mang luôn số ca, để con số không nằm ở chỗ khác. */
+function renderRecurrenceSaveButton(plan) {
+  const button = document.getElementById('weekly-schedule-save');
+  if (!button) return;
+  button.disabled = !plan.valid;
+  button.innerHTML = plan.valid
+    ? `<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Tạo ${plan.totalShifts} ca`
+    : '<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Tạo ca';
+}
+
+function updateRecurrenceDraft(changes) {
+  Object.assign(recurrenceDraft, changes);
+  renderWeeklyScheduleBody();
+}
+
+window.filterWeeklyScheduleDrivers = function (value) {
+  recurrenceDraft.search = String(value || '');
+  renderWeeklyScheduleBody();
+  // Vẽ lại làm mất con trỏ, nên đưa tiêu điểm về đúng ô tìm kiếm.
+  const input = document.getElementById('weekly-schedule-driver-search');
+  if (input) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
   }
 };
 
-window.filterWeeklyScheduleDrivers = function (value) {
-  const keyword = String(value || '').trim().toLowerCase();
-  const results = document.getElementById('weekly-schedule-driver-results');
-  if (!results) return;
-  const matches = fioriDrivers.filter(driver => `${escapeHtml(driver.name || '')} ${driver.id || ''} ${driver.role || ''} ${driver.license_type || ''} ${driver.phone || ''}`.toLowerCase().includes(keyword)).slice(0, 12);
-  results.innerHTML = matches.map(driver => {
-    const initials = String(driver.name || driver.id || '?').split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase();
-    return `<button type="button" class="weekly-driver-result" onclick="selectWeeklyScheduleDriver('${completionEscape(driver.id)}')"><span class="weekly-driver-result-avatar">${completionEscape(initials)}</span><span><b>${completionEscape(driver.name || driver.id)}</b><small>${completionEscape(driver.id)} · ${completionEscape(driver.role || 'Nhân sự')} · ${completionEscape(driver.license_type || 'Chưa có hạng bằng')}</small></span></button>`;
-  }).join('') || '<div class="weekly-driver-empty">Không tìm thấy nhân sự phù hợp.</div>';
-  results.hidden = false;
+window.toggleRecurrenceDriver = function (driverId, on) {
+  const id = String(driverId || '');
+  const next = new Set(recurrenceDraft.driverIds);
+  if (on) next.add(id); else next.delete(id);
+  updateRecurrenceDraft({ driverIds: [...next] });
 };
 
+/**
+ * Chon dung mot nguoi.
+ *
+ * Giu lai vi cac cho khac trong app.js van goi ten nay. Ban cu ghi
+ * `input.value = escapeHtml(...)` nen ten co dau "&" hien ra thanh "&amp;"
+ * truoc mat nguoi dung — o day khong con dan ten vao o chu nua nen loi do bien
+ * mat theo.
+ */
 window.selectWeeklyScheduleDriver = function (driverId) {
-  const driver = fioriDrivers.find(item => String(item.id) === String(driverId));
-  const hidden = document.getElementById('weekly-schedule-driver');
-  const input = document.getElementById('weekly-schedule-driver-search');
-  const results = document.getElementById('weekly-schedule-driver-results');
-  if (hidden) hidden.value = driverId || '';
-  if (input) input.value = driver ? `${escapeHtml(driver.name || driver.id)} · ${driver.id}` : '';
-  if (results) results.hidden = true;
+  updateRecurrenceDraft({ driverIds: [String(driverId || '')].filter(Boolean) });
+};
+
+window.selectAllRecurrenceDrivers = function () {
+  const keyword = recurrenceDraft.search.trim().toLowerCase();
+  const ids = fioriDrivers.filter(driver => {
+    const text = `${driver.name || ''} ${driver.id || ''} ${driver.role || ''} ${driver.license_type || ''} ${driver.phone || ''}`.toLowerCase();
+    return !keyword || text.includes(keyword);
+  }).map(driver => String(driver.id || '')).filter(Boolean);
+  updateRecurrenceDraft({ driverIds: [...new Set([...recurrenceDraft.driverIds, ...ids])] });
+};
+
+window.clearRecurrenceDrivers = function () {
+  updateRecurrenceDraft({ driverIds: [] });
+};
+
+window.toggleRecurrenceWeekday = function (index) {
+  const next = new Set(recurrenceDraft.weekdays);
+  if (next.has(index)) next.delete(index); else next.add(index);
+  updateRecurrenceDraft({ weekdays: [...next].sort((a, b) => a - b) });
+};
+
+window.setRecurrenceWeekdays = function (mode) {
+  const presets = { weekdays: [0, 1, 2, 3, 4], sixdays: [0, 1, 2, 3, 4, 5], all: [0, 1, 2, 3, 4, 5, 6] };
+  updateRecurrenceDraft({ weekdays: presets[mode] || presets.weekdays });
+};
+
+window.setRecurrenceShiftType = function (key) {
+  const item = window.ShiftRecurrence.preset(key);
+  if (!item) return;
+  // Chọn ca sẵn thì giờ đi theo ca, nên không thể có "06:00–14:00 · Ca đêm".
+  updateRecurrenceDraft(item.start
+    ? { shiftType: key, startTime: item.start, endTime: item.end }
+    : { shiftType: key });
+};
+
+window.setRecurrenceTime = function (field, value) {
+  updateRecurrenceDraft({ [field]: String(value || '') });
+};
+
+window.setRecurrenceRange = function (field, value) {
+  updateRecurrenceDraft({ [field]: String(value || '') });
+};
+
+window.setRecurrenceMonths = function (months) {
+  const from = new Date(`${recurrenceDraft.effectiveStart}T00:00:00`);
+  if (!Number.isFinite(from.getTime())) return;
+  const to = new Date(from);
+  to.setMonth(to.getMonth() + Number(months || 1));
+  updateRecurrenceDraft({ effectiveEnd: driverShiftDateKey(to) });
+};
+
+window.setRecurrenceField = function (field, value) {
+  // Ô chữ thì không vẽ lại: vẽ lại giữa lúc đang gõ sẽ làm mất con trỏ.
+  recurrenceDraft[field] = String(value || '');
+  if (field !== 'workLocation') renderWeeklyScheduleBody();
 };
 
 window.closeWeeklyDriverSchedule = function () {
   document.getElementById('weekly-driver-schedule-dialog')?.remove();
+  recurrenceDraft = null;
 };
 
 async function saveWeeklyScheduleCompat(payload) {
@@ -13311,35 +13819,58 @@ async function saveWeeklyScheduleCompat(payload) {
 }
 
 window.saveWeeklyDriverSchedule = async function () {
-  const weekdays = [...document.querySelectorAll('input[name="weekly-schedule-day"]:checked')].map(input => Number(input.value));
-  const driverId = document.getElementById('weekly-schedule-driver')?.value || '';
-  if (!driverId || !weekdays.length) {
-    showToast('Chọn nhân sự và ít nhất một ngày làm việc.');
+  if (!recurrenceDraft) return;
+  const plan = recurrencePlan();
+  if (!plan.valid) {
+    showToast(plan.errors[0], 'error');
     return;
   }
+
   const button = document.getElementById('weekly-schedule-save');
   if (button) button.disabled = true;
-  try {
-    const result = await saveWeeklyScheduleCompat({
+
+  // Backend nhận một người mỗi lần gọi, nên nhiều người thì gọi lần lượt. Báo
+  // cáo trung thực từng người: một người lỗi không được làm mất kết quả của
+  // những người đã ghi xong.
+  const done = [];
+  const failed = [];
+  for (const driverId of plan.driverIds) {
+    try {
+      const result = await saveWeeklyScheduleCompat({
         driver_id: driverId,
-        weekdays,
-        start_time: document.getElementById('weekly-schedule-start-time')?.value,
-        end_time: document.getElementById('weekly-schedule-end-time')?.value,
-        end_day_offset: Number(document.getElementById('weekly-schedule-day-offset')?.value || 0),
+        weekdays: recurrenceDraft.weekdays,
+        start_time: plan.startTime,
+        end_time: plan.endTime,
+        end_day_offset: plan.endDayOffset,
         timezone_offset_minutes: new Date().getTimezoneOffset(),
-        effective_start: document.getElementById('weekly-schedule-effective-start')?.value,
-        effective_end: document.getElementById('weekly-schedule-effective-end')?.value,
-        shift_type: document.getElementById('weekly-schedule-type')?.value || 'custom',
-        vehicle_id: document.getElementById('weekly-schedule-vehicle')?.value || null,
-        work_location: document.getElementById('weekly-schedule-location')?.value || null
-    });
+        effective_start: recurrenceDraft.effectiveStart,
+        effective_end: recurrenceDraft.effectiveEnd,
+        shift_type: recurrenceDraft.shiftType,
+        vehicle_id: recurrenceDraft.vehicleId || null,
+        work_location: recurrenceDraft.workLocation || null,
+      });
+      done.push({ driverId, count: result.created_count || 0 });
+    } catch (error) {
+      failed.push({ driverId, message: error.message });
+    }
+  }
+
+  const created = done.reduce((sum, item) => sum + item.count, 0);
+  const lastDriver = plan.driverIds[plan.driverIds.length - 1];
+  if (done.length) {
     closeWeeklyDriverSchedule();
-    selectedDriverForShiftId = driverId;
+    selectedDriverForShiftId = done[done.length - 1].driverId || lastDriver;
     await loadDriverShiftPlanner();
-    showToast(`Đã tạo ${result.created_count || 0} ca làm việc theo lịch mặc định.`);
-  } catch (error) {
-    showToast(error.message, 'error');
-    if (button) button.disabled = false;
+  } else if (button) {
+    button.disabled = false;
+  }
+
+  if (failed.length && done.length) {
+    showToast(`Đã tạo ${created} ca cho ${done.length} người, nhưng ${failed.length} người lỗi: ${failed[0].message}`, 'error');
+  } else if (failed.length) {
+    showToast(failed[0].message, 'error');
+  } else {
+    showToast(`Đã tạo ${created} ca làm việc cho ${done.length} nhân sự.`);
   }
 };
 

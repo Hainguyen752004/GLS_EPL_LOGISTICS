@@ -16,6 +16,12 @@ _PUBLIC_EXACT = frozenset(
     {
         "/",                     # vỏ frontend (không còn chứa token, xem main.py)
         "/favicon.ico",
+        # Anh so do tong quan tren trang chu. BAT BUOC cong khai vi giao dien
+        # hien no bang <img src="/tongquan.jpg">, va the <img> khong gui duoc
+        # header Authorization. Khong co dong nay thi anh thanh 401 va o do
+        # chi con mot khung vo. Duong nay chi phuc vu dung MOT tep co dinh,
+        # khong nhan tham so nao tu nguoi dung (xem main.py).
+        "/tongquan.jpg",
         "/test-runner",          # trang HTML tĩnh, không thực thi gì
         "/kich-ban-test",
         "/api/health",           # probe nông cho load balancer
@@ -59,6 +65,31 @@ def _docs_enabled() -> bool:
     return os.getenv("EPL_ENABLE_DOCS", "").strip().lower() in {"1", "true", "yes"}
 
 
+def _require_token() -> bool:
+    """Co bat cong kiem token o tang nay khong.
+
+    MAC DINH LA KHONG. He thong nay la mot module nam ben trong mot he thong
+    lon hon, va viec dang nhap do he thong cha lo. Bat cong o day nua nghia la
+    doi dang nhap hai lan cho cung mot nguoi dung, va trong luc chay demo doc
+    lap thi man hinh trong tron mac du du lieu van con nguyen.
+
+    Bat lai bang EPL_REQUIRE_API_TOKEN=1 khi chay o mot noi ma KHONG co he
+    thong cha dung truoc. Luc do moi duong ngoai danh sach cong khai deu doi
+    header Authorization dung voi EPL_TMS_API_TOKEN.
+    """
+    return os.getenv("EPL_REQUIRE_API_TOKEN", "").strip().lower() in {"1", "true", "yes"}
+
+
+def _default_principal() -> str:
+    """Danh tinh dung khi khong bat cong kiem token.
+
+    Cac handler VAN can mot danh tinh de ghi vao created_by / updated_by, nen
+    khong the de trong: bo trong thi require_api_principal se bat 401 va moi
+    thu van chan, chi khac cho bao loi.
+    """
+    return os.getenv("EPL_TMS_API_PRINCIPAL", "").strip() or "epl-module-user"
+
+
 def _unauthorized() -> JSONResponse:
     """Giữ đúng khuôn phong bì lỗi của ứng dụng.
 
@@ -84,7 +115,15 @@ def _unauthorized() -> JSONResponse:
 
 
 async def tms_bearer_auth(request, call_next):
-    """Gán principal từ bearer token, rồi chặn mọi đường dẫn không công khai."""
+    """Gan principal cho moi request, va chi chan khi duoc bat tuong minh.
+
+    He thong nay la MOT MODULE ben trong mot he thong lon hon; viec dang nhap
+    do he thong cha lo. Vi vay mac dinh o day la khong chan: ai mo duoc trang
+    thi xem va thao tac duoc, dung nhu khi no nam trong he thong cha.
+
+    Dat EPL_REQUIRE_API_TOKEN=1 de bat lai cong kiem token khi chay doc lap o
+    noi khong co he thong cha dung truoc.
+    """
     if not getattr(request.state, "principal", None):
         configured = os.getenv("EPL_TMS_API_TOKEN", "").strip()
         authorization = request.headers.get("Authorization", "")
@@ -97,9 +136,13 @@ async def tms_bearer_auth(request, call_next):
         ):
             request.state.principal = os.getenv("EPL_TMS_API_PRINCIPAL", "tms-api").strip() or "tms-api"
 
-    if not getattr(request.state, "principal", None) and not _is_public(
-        request.url.path, request.method.upper()
-    ):
-        return _unauthorized()
+    if not getattr(request.state, "principal", None):
+        if _require_token():
+            if not _is_public(request.url.path, request.method.upper()):
+                return _unauthorized()
+        else:
+            # Khong bat cong: van gan mot danh tinh de nhat ky kiem toan co
+            # nguoi dung ghi vao, thay vi de trong roi bi chan o tang Depends.
+            request.state.principal = _default_principal()
 
     return await call_next(request)

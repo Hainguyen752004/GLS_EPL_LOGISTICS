@@ -33,12 +33,20 @@ def _clear_app_modules():
 
 @pytest.fixture
 def raw_client(tmp_path, monkeypatch):
-    """TestClient KHÔNG có principal được gán sẵn, để đo đúng lớp chặn."""
+    """TestClient KHÔNG có principal được gán sẵn, để đo đúng lớp chặn.
+
+    Cổng kiểm token mặc định TẮT, vì hệ thống này là một module bên trong một
+    hệ thống lớn hơn và việc đăng nhập do hệ thống cha lo. Nhưng khi chạy độc
+    lập thì bật được lại, và những test dưới đây kiểm chính chế độ bật đó:
+    nếu ai đó làm hỏng lớp chặn thì phải biết ngay, chứ không đợi đến lúc
+    triển khai ra ngoài mới phát hiện.
+    """
     database_file = tmp_path / "security.sqlite3"
     monkeypatch.setenv("DATABASE_MODE", "sqlite")
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_file.as_posix()}")
     monkeypatch.setenv("EPL_ENV_FILE", str(tmp_path / "no-env-file"))
     monkeypatch.setenv("EPL_TMS_API_TOKEN", API_TEST_TOKEN)
+    monkeypatch.setenv("EPL_REQUIRE_API_TOKEN", "1")
     _clear_app_modules()
 
     database_module = importlib.import_module("database")
@@ -153,6 +161,87 @@ def test_public_paths_stay_reachable_without_a_token(raw_client):
     """Danh sách công khai phải đủ để frontend và probe vận hành hoạt động."""
     assert raw_client.get("/").status_code == 200
     assert raw_client.get("/api/health").status_code == 200
+
+
+@pytest.fixture
+def open_client(tmp_path, monkeypatch):
+    """TestClient o CHE DO MAC DINH: khong bat cong kiem token."""
+    database_file = tmp_path / "open.sqlite3"
+    monkeypatch.setenv("DATABASE_MODE", "sqlite")
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_file.as_posix()}")
+    monkeypatch.setenv("EPL_ENV_FILE", str(tmp_path / "no-env-file"))
+    monkeypatch.delenv("EPL_REQUIRE_API_TOKEN", raising=False)
+    _clear_app_modules()
+
+    database_module = importlib.import_module("database")
+    main_module = importlib.import_module("main")
+    database_module.Base.metadata.create_all(bind=database_module.engine)
+    try:
+        with TestClient(main_module.app) as client:
+            yield client
+    finally:
+        database_module.engine.dispose()
+        _clear_app_modules()
+
+
+def test_module_mode_serves_data_without_a_token(open_client):
+    """Mac dinh la KHONG chan.
+
+    He thong nay la mot module ben trong mot he thong lon hon; viec dang nhap
+    do he thong cha lo, nen bat cong o day nua nghia la doi dang nhap hai lan.
+    Khi cong bi bat nham, moi man hinh trong tron du du lieu van con nguyen —
+    dung cai da xay ra that va lam nguoi dung tuong mat sach du lieu.
+    """
+    for path in ("/api/dashboard/stats", "/api/customers", "/api/drivers"):
+        response = open_client.get(path)
+        assert response.status_code != 401, f"{path} khong duoc doi token o che do mac dinh"
+
+
+def test_module_mode_still_records_who_changed_data(open_client):
+    """Khong chan KHONG duoc dong nghia voi mat nhat ky kiem toan.
+
+    Cac handler ghi created_by / updated_by tu principal. Neu che do mo de
+    principal trong thi require_api_principal van bat 401 va moi thao tac ghi
+    van hong — chi khac cho bao loi.
+    """
+    from app import auth_middleware
+
+    assert auth_middleware._default_principal(), "che do mo van phai co mot danh tinh"
+
+    response = open_client.post(
+        "/api/customers",
+        json={"id": "CUS-MODULE-01", "name": "Khach demo", "email": "demo@example.com"},
+    )
+    assert response.status_code != 401, "che do mo khong duoc chan o tang Depends"
+
+
+def test_token_gate_can_be_switched_back_on(raw_client):
+    """Bat lai bang EPL_REQUIRE_API_TOKEN=1 thi cong phai chan that.
+
+    raw_client bat co nay, nen chinh no la bang chung lop chan van con nguyen
+    ven va dung duoc khi trien khai ra ngoai he thong cha.
+    """
+    assert raw_client.get("/api/customers").status_code == 401
+
+
+def test_browser_loaded_assets_never_need_a_token():
+    """Trình duyệt nạp các đường này bằng thẻ <img> hoặc <link>, mà những thẻ
+    đó KHÔNG gửi được header Authorization — lớp bọc fetch trong
+    frontend/js/api-auth.js không chạm tới chúng.
+
+    Bỏ sót một đường ở đây không làm hỏng test nào khác: trang vẫn tải, chỉ có
+    ảnh biến thành khung vỡ. Ảnh sơ đồ tổng quan ở trang chủ đã từng vỡ đúng
+    kiểu đó."""
+    from app import auth_middleware
+
+    for path in ("/tongquan.jpg", "/favicon.ico", "/uploads/vehicles/anh.jpg"):
+        assert auth_middleware._is_public(path, "GET"), (
+            f"{path} do thẻ <img> nạp nên phải công khai"
+        )
+
+    # Nhưng công khai KHÔNG được lan sang dữ liệu.
+    for path in ("/api/dashboard/stats", "/api/customers", "/tongquan.jpg/../../etc/passwd"):
+        assert not auth_middleware._is_public(path, "GET"), f"{path} phải cần token"
 
 
 # --------------------------------------------------------------------------

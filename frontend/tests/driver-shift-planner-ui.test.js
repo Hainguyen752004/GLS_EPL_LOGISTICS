@@ -6,6 +6,7 @@ const frontendRoot = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(frontendRoot, 'index.html'), 'utf8');
 const appSource = fs.readFileSync(path.join(frontendRoot, 'js', 'app.js'), 'utf8');
 const cockpit = require(path.join(frontendRoot, 'js', 'tms-cockpit-utils.js'));
+const rosterSource = fs.readFileSync(path.join(frontendRoot, 'js', 'driver-roster.js'), 'utf8');
 
 [
   'driver-shift-workbench',
@@ -24,9 +25,18 @@ assert.match(appSource, /renderDriverShiftPlanner/, 'Planner render function is 
 assert.match(appSource, /selectDriverShiftDay/, 'The weekly summary must open a selected day.');
 assert.match(appSource, /DRIVER_SHIFT_PAGE_SIZE\s*=\s*25/, 'The daily employee table must paginate large teams.');
 assert.match(appSource, /driver-shift-day-search/, 'The daily employee table needs search.');
-assert.match(appSource, /driverShiftDayDialogOpen/, 'Daily employee details must open on demand instead of taking permanent page space.');
-assert.match(appSource, /driverVehicleDayDialogOpen/, 'Daily vehicle details must open on demand instead of rendering the full fleet.');
-assert.match(appSource, /DRIVER_VEHICLE_PAGE_SIZE\s*=\s*25/, 'The daily vehicle table must paginate large fleets.');
+// Bang xep ca doi sang ma tran NGUOI x NGAY va bo hop thoai ngay: mo hop thoai
+// lam mat ngu canh tuan, va dai 7 ngay cu chi hien so tong nen khong biet AI
+// lam KHI NAO. Xem js/driver-roster.js.
+assert.doesNotMatch(appSource, /let driverShiftDayDialogOpen/, 'The day modal state must be gone.');
+assert.match(appSource, /let driverRosterView/, 'The roster needs a week/day view state instead of a modal flag.');
+// Lich xe cung doi sang ma tran XE x NGAY, cung ly do nhu bang xep ca: dai 7
+// ngay cu chi hien so tong ("3 ranh . 0 ban") nen khong biet XE NAO ranh ngay
+// nao, va chi tiet thi nam trong hop thoai che kin man hinh.
+assert.doesNotMatch(appSource, /driverVehicleDayDialogOpen/, 'The vehicle day modal state must be gone.');
+assert.doesNotMatch(appSource, /DRIVER_VEHICLE_PAGE_SIZE/, 'A week matrix shows every vehicle, so pagination state is dead.');
+assert.match(appSource, /vehicleMatrix/, 'The vehicle week must render as a matrix through the presentation module.');
+assert.match(appSource, /selectVehicleDay/, 'Vehicle day headers must select a column instead of opening a modal.');
 assert.match(appSource, /driver-vehicle-day-search/, 'The daily vehicle table needs search.');
 assert.match(appSource, /filterWeeklyScheduleDrivers/, 'The recurring schedule dialog must support searching large employee lists.');
 assert.match(appSource, /selectWeeklyScheduleDriver/, 'The recurring schedule dialog must retain the selected employee id.');
@@ -35,21 +45,33 @@ assert.match(appSource, /openDriverDayScheduleView/, 'Each employee needs one re
 assert.doesNotMatch(appSource, /<option value="">Xếp ca\.\.\.<\/option>/, 'The daily roster must not use a native shift dropdown as its primary action.');
 assert.match(appSource, /saveWeeklyScheduleCompat/, 'Recurring schedules need a compatibility fallback for older running backends.');
 assert.match(appSource, /showToast\(error\.message,\s*'error'\)/, 'Scheduling API failures must be shown as errors, not successful completion.');
-assert.match(appSource, /driver-day-schedule-table/, 'The daily employee table must show all shifts without separate shift tabs.');
-assert.match(appSource, /Ca sáng<small>06:00 - 14:00<\/small>/, 'Morning shift heading must show its working hours.');
-assert.match(appSource, /Ca chiều<small>14:00 - 22:00<\/small>/, 'Afternoon shift heading must show its working hours.');
-assert.match(appSource, /Ca đêm<small>22:00 - 06:00<\/small>/, 'Night shift heading must show its overnight hours.');
+assert.match(appSource, /window\.DriverRoster/, 'The roster must render through the testable presentation module.');
+assert.match(appSource, /DriverRosterActions/, 'Roster cells need an action surface.');
+// Gio ca nam trong module trinh bay, khong con noi suy trong app.js.
+assert.match(rosterSource, /'06:00 – 14:00'/, 'Morning shift must carry its working hours.');
+assert.match(rosterSource, /'14:00 – 22:00'/, 'Afternoon shift must carry its working hours.');
+assert.match(rosterSource, /'22:00 – 06:00'/, 'Night shift must carry its overnight hours.');
 assert.doesNotMatch(appSource, /<div class="driver-day-tabs">/, 'The daily employee dialog must not require switching between shift tabs.');
 const dailyRendererStart = appSource.indexOf('function renderDriverShiftCalendarTable()');
 const dailyRendererEnd = appSource.indexOf('window.renderDriverShiftPlanner', dailyRendererStart);
 const dailyRenderer = appSource.slice(dailyRendererStart, dailyRendererEnd);
-assert.match(dailyRenderer, /shiftCell\('morning'\)/, 'Morning schedule must be visible in the same employee table.');
-assert.match(dailyRenderer, /shiftCell\('afternoon'\)/, 'Afternoon schedule must be visible in the same employee table.');
-assert.match(dailyRenderer, /shiftCell\('night'\)/, 'Night schedule must be visible in the same employee table.');
-assert.match(dailyRenderer, /openDriverDayScheduleView/, 'The primary row action must open the employee schedule view.');
-assert.doesNotMatch(dailyRenderer, /fa-solid fa-pen/, 'The daily employee table must not expose edit as the primary action.');
-assert.doesNotMatch(dailyRenderer, /driver-day-status/, 'Ambiguous shift status must not be a separate column.');
-assert.match(html, /\.driver-day-overlay\s*\{[^}]*position:\s*fixed/, 'The selected day must open in a modal overlay.');
+// Ba ca nam trong module, va ma tran hien ca TUAN chu khong mot ngay.
+assert.deepStrictEqual(
+  require(path.join(frontendRoot, 'js', 'driver-roster.js')).SHIFTS.map(s => s.key),
+  ['morning', 'afternoon', 'night'],
+  'All three shifts must stay in one place.'
+);
+assert.match(dailyRenderer, /weekMatrix/, 'The default view must be the week matrix.');
+assert.match(dailyRenderer, /dayDetail/, 'A single-day view must stay available inline.');
+assert.doesNotMatch(dailyRenderer, /driver-day-overlay/, 'The roster must not build a modal overlay.');
+assert.doesNotMatch(dailyRenderer, /role="dialog"/, 'The roster must not build a dialog.');
+// Ca hai tab da bo hop thoai ngay, nen lop phu va bang trong do la CSS chet.
+// Rieng .driver-day-dialog-header thi con: hop thoai "xem lich mot tai xe"
+// (driver-day-view-*) van dung lai phan dau de.
+assert.doesNotMatch(html, /\.driver-day-overlay\s*\{/, 'The day modal overlay CSS is dead and must not linger.');
+assert.doesNotMatch(html, /\.driver-day-table\s*\{/, 'The paginated day table CSS is dead and must not linger.');
+assert.doesNotMatch(html, /\.driver-vehicle-week-day\s*\{/, 'The old 7-day summary strip CSS is dead and must not linger.');
+assert.match(html, /\.driver-day-dialog-header\s*\{/, 'The read-only driver day view still reuses this header.');
 assert.match(html, /\.driver-shift-layout\s*\{[^}]*min-height:\s*0/, 'The compact weekly calendar must not reserve an empty fixed-height area.');
 assert.match(html, /name=["']viewport["'][^>]+viewport-fit=cover/, 'Viewport must follow the device width and safe area.');
 assert.match(appSource, /window\.TmsCockpit\?\.buildDriverShiftPlanner/, 'Browser rendering must use the utility global exported by the UMD bundle.');

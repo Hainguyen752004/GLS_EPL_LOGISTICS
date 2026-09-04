@@ -15,7 +15,7 @@ const vm = require('vm');
 // 1. Lớp bọc fetch gắn token
 // --------------------------------------------------------------------------
 
-function loadApiAuth({ token }) {
+function loadApiAuth({ token, status = 200 }) {
   const store = new Map();
   if (token) store.set('EPL_TMS_API_TOKEN', token);
 
@@ -38,7 +38,7 @@ function loadApiAuth({ token }) {
     showToast: message => toasts.push(message),
     fetch(resource, options) {
       calls.push({ resource, options });
-      return Promise.resolve({ status: 200 });
+      return Promise.resolve({ status });
     },
   };
   sandbox.window = sandbox;
@@ -118,25 +118,34 @@ function authHeaderOf(call) {
   assert.ok(!authHeaderOf(calls[1]), 'luồng quét QR là đường công khai');
 }
 
-// Thiếu token thì phải báo cho người vận hành, không im lặng.
+// Khong co token la TRANG THAI BINH THUONG, khong phai loi.
+//
+// He thong nay la mot module ben trong mot he thong lon hon, va viec dang nhap
+// do he thong cha lo, nen backend mac dinh khong chan. Bao do moi lan mo trang
+// chi lam nguoi dung tuong hong — dung cai da xay ra that.
 {
-  const { sandbox, toasts } = loadApiAuth({ token: '' });
+  const { sandbox, calls, toasts } = loadApiAuth({ token: '' });
   sandbox.fetch('/api/customers');
-  assert.strictEqual(toasts.length, 1);
-  assert.ok(
-    toasts[0].includes('EPL_TMS_API_TOKEN'),
-    'thông báo phải chỉ rõ cách đặt token'
-  );
+  assert.strictEqual(calls.length, 1, 'thieu token thi van phai goi, khong duoc chan tu phia trinh duyet');
+  assert.ok(!authHeaderOf(calls[0]), 'thieu token thi khong gan header rong');
+  assert.strictEqual(toasts.length, 0, 'khong duoc bao loi chi vi thieu token');
 }
 
-// Chỉ cảnh báo một lần, không spam mỗi request.
-{
-  const { sandbox, toasts } = loadApiAuth({ token: '' });
-  sandbox.fetch('/api/customers');
-  sandbox.fetch('/api/drivers');
-  sandbox.fetch('/api/invoices');
-  assert.strictEqual(toasts.length, 1);
-}
+// Nhung neu may chu THUC SU tu choi (401) thi phai noi ra, khong im lang —
+// va chi noi mot lan, khong spam theo tung request.
+const rejectedSessionChecks = (async () => {
+  for (const token of ['', 'token-cu-da-het-han']) {
+    const { sandbox, toasts } = loadApiAuth({ token, status: 401 });
+    await sandbox.fetch('/api/customers');
+    await sandbox.fetch('/api/drivers');
+    await sandbox.fetch('/api/invoices');
+    assert.strictEqual(toasts.length, 1, `may chu tu choi phai bao dung mot lan (token=${JSON.stringify(token)})`);
+    assert.ok(
+      toasts[0].includes('EPL_REQUIRE_API_TOKEN'),
+      'thong bao phai chi ro co the may chu dang bat cong token'
+    );
+  }
+})();
 
 // localStorage bị chặn (cửa sổ ẩn danh) thì không được bật lỗi.
 {
@@ -218,4 +227,7 @@ function authHeaderOf(call) {
   );
 }
 
-console.log('api-auth-security: tất cả kiểm tra đã qua');
+// Cac kiem tra 401 chay bat dong bo, phai cho xong roi moi bao da qua.
+rejectedSessionChecks.then(() => {
+  console.log('api-auth-security: tất cả kiểm tra đã qua');
+});

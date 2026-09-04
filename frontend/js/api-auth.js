@@ -1,14 +1,18 @@
 /**
  * Gắn bearer token vào mọi lệnh gọi API, tại một chỗ duy nhất.
  *
- * Backend giờ xác thực theo kiểu mặc định-chặn (xem backend/app/auth_middleware.py),
- * nên tất cả các đường /api/ đều cần header Authorization. Ứng dụng có hơn 80
- * lệnh gọi fetch rải rác, nên việc gắn header được đặt trong một lớp bọc fetch
- * thay vì sửa từng chỗ gọi — cùng lý do như phía server: một điểm sửa thì không
- * bỏ sót, còn sửa 80 chỗ thì chắc chắn sót.
+ * Bình thường KHÔNG cần token: hệ thống này là một module bên trong một hệ
+ * thống lớn hơn, và việc đăng nhập do hệ thống cha lo, nên backend mặc định
+ * không chặn (xem backend/app/auth_middleware.py). Lớp bọc này vẫn tồn tại vì
+ * backend bật lại được cổng token bằng EPL_REQUIRE_API_TOKEN=1 khi chạy độc
+ * lập ở nơi không có hệ thống cha đứng trước.
  *
- * Token do người vận hành đặt vào localStorage một lần:
- *   localStorage.setItem('EPL_TMS_API_TOKEN', '<token>')
+ * Ứng dụng có hơn 80 lệnh gọi fetch rải rác, nên việc gắn header được đặt
+ * trong một lớp bọc fetch thay vì sửa từng chỗ gọi — cùng lý do như phía
+ * server: một điểm sửa thì không bỏ sót, còn sửa 80 chỗ thì chắc chắn sót.
+ *
+ * Khi cổng token được bật, người vận hành đặt token một lần cho mỗi trình
+ * duyệt bằng: eplSetApiToken('<token>')
  *
  * Trước đây server tự chèn token vào HTML của trang chủ, nhưng `GET /` là đường
  * công khai nên làm vậy là trao bí mật của server cho mọi khách vãng lai.
@@ -65,11 +69,19 @@
 
   let missingTokenNotified = false;
 
-  function warnMissingToken() {
+  /**
+   * Chỉ báo khi máy chủ THỰC SỰ từ chối (401), không báo chỉ vì thiếu token.
+   *
+   * Hệ thống này là một module bên trong một hệ thống lớn hơn, và việc đăng
+   * nhập do hệ thống cha lo, nên bình thường KHÔNG có token nào cả — và đó là
+   * trạng thái đúng, không phải lỗi. Báo đỏ mỗi lần mở trang chỉ làm người
+   * dùng tưởng hỏng.
+   */
+  function warnRejectedSession() {
     if (missingTokenNotified) return;
     missingTokenNotified = true;
-    const message = 'Chưa cấu hình token API nên hệ thống không tải được dữ liệu. '
-      + 'Mở Console và chạy: localStorage.setItem(\'' + TOKEN_KEY + '\', \'<token>\')';
+    const message = 'Máy chủ từ chối phiên làm việc nên chưa tải được dữ liệu. '
+      + 'Nếu máy chủ đang bật EPL_REQUIRE_API_TOKEN, hãy đặt token bằng: eplSetApiToken(\'<token>\')';
     if (typeof global.showToast === 'function') {
       global.showToast(message, 'error');
     } else if (global.console && global.console.error) {
@@ -91,8 +103,12 @@
 
     const token = readToken();
     if (!token) {
-      warnMissingToken();
-      return nativeFetch(resource, options);
+      // Không có token là bình thường: cứ gửi đi, để máy chủ quyết định. Máy
+      // chủ mặc định không chặn, nên lệnh gọi chạy bình thường.
+      return nativeFetch(resource, options).then(response => {
+        if (response && response.status === 401) warnRejectedSession();
+        return response;
+      });
     }
 
     const next = Object.assign({}, options || {});
@@ -103,10 +119,11 @@
     }
     next.headers = headers;
     return nativeFetch(resource, next).then(response => {
-      if (response && response.status === 401) {
-        missingTokenNotified = false;
-        warnMissingToken();
-      }
+      // KHÔNG đặt lại missingTokenNotified ở đây. Đặt lại nghĩa là mỗi lệnh
+      // gọi 401 lại bật một thông báo mới, mà lúc token hỏng thì cả 80 lệnh
+      // gọi cùng 401 — người dùng lãnh 80 thông báo đỏ liên tiếp. Cờ này chỉ
+      // được mở lại khi có token mới (xem eplSetApiToken).
+      if (response && response.status === 401) warnRejectedSession();
       return response;
     });
   };

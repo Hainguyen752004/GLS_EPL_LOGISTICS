@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-module-mode-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -824,58 +825,10 @@
     .driver-roster-card small { color:#718096; font-size:.64rem; margin-top:3px; }
     .driver-profile-button { width:28px; height:28px; display:grid; place-items:center; justify-self:end; align-self:center; padding:0; line-height:1; border:0; border-radius:5px; color:#0870c5; background:#edf5fc; cursor:pointer; }
     .driver-shift-calendar { min-width:0; overflow:auto; background:#fff; }
-    .driver-week-summary { display:grid; grid-template-columns:repeat(7,minmax(120px,1fr)); min-width:880px; border-bottom:1px solid #dfe7f0; }
-    .driver-week-day { min-height:92px; padding:12px; border:0; border-right:1px solid #dfe7f0; background:#fff; color:#334155; text-align:left; cursor:pointer; }
-    .driver-week-day:hover { background:#f4f9ff; }
-    .driver-week-day.active { background:#e8f3ff; box-shadow:inset 0 -3px #0877d1; }
-    .driver-week-day b, .driver-week-day span, .driver-week-day small { display:block; }
-    .driver-week-day b { color:#172033; font-size:.78rem; }
-    .driver-week-day span { margin-top:7px; color:#0877d1; font-size:.68rem; font-weight:900; }
-    .driver-week-day small { margin-top:3px; color:#64748b; font-size:.62rem; }
-    .driver-day-workbench { min-width:760px; }
-    .driver-day-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border-bottom:1px solid #dfe7f0; background:#fbfcfe; }
-    .driver-day-head h4 { margin:0; color:#172033; font-size:.88rem; }
-    .driver-day-head p { margin:3px 0 0; color:#64748b; font-size:.66rem; }
-    .driver-day-tabs { display:flex; gap:4px; padding:10px 14px 0; border-bottom:1px solid #dfe7f0; background:#fff; }
-    .driver-day-tab { min-height:38px; padding:8px 14px; border:1px solid transparent; border-bottom:0; background:transparent; color:#526176; font-weight:900; cursor:pointer; }
-    .driver-day-tab.active { border-color:#cbd7e5; background:#edf6ff; color:#0877d1; }
-    .driver-day-tab small { display:block; margin-top:2px; font-weight:600; }
-    .driver-day-tools { display:grid; grid-template-columns:minmax(220px,1fr) 210px; gap:10px; padding:12px 14px; background:#f8fafc; border-bottom:1px solid #dfe7f0; }
-    .driver-day-tools input, .driver-day-tools select { width:100%; min-height:40px; padding:8px 10px; border:1px solid #cbd7e5; border-radius:6px; background:#fff; }
-    .driver-day-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-    .driver-day-table-scroll { width:100%; overflow:auto; }
-    .driver-day-schedule-table { min-width:1080px; }
-    .driver-day-schedule-table thead th small { display:block; margin-top:4px; color:#64748b; font-size:12px; font-weight:600; line-height:1.2; }
-    .driver-day-table th, .driver-day-table td { padding:11px 12px; border-bottom:1px solid #e4eaf1; text-align:left; vertical-align:middle; }
-    .driver-day-table th { background:#f8fafc; color:#526176; font-size:.65rem; text-transform:uppercase; }
-    .driver-day-table td { color:#25364a; font-size:.7rem; }
-    .driver-day-table td b, .driver-day-table td small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .driver-day-table td small { margin-top:3px; color:#718096; }
-    .driver-day-icon-action, .driver-day-add-shift { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:36px; border:1px solid #a9c7e2; border-radius:6px; color:#086fc4; background:#fff; font-weight:800; cursor:pointer; }
-    .driver-day-icon-action { width:38px; padding:0; }
-    .driver-day-add-shift { padding:7px 12px; }
-    .driver-day-icon-action:hover, .driver-day-add-shift:hover { border-color:#0877c9; background:#edf7ff; }
-    .driver-day-status { display:inline-flex; align-items:center; gap:5px; padding:4px 7px; border-radius:999px; background:#ecfdf5; color:#047857; font-weight:900; }
-    .driver-day-status.absent { background:#fff7ed; color:#b45309; }
-    .driver-day-status.locked { background:#eff6ff; color:#075fa9; }
-    .driver-day-slot { display:block; min-height:42px; padding:7px 8px; border:1px solid #cbdceb; border-radius:5px; background:#f8fbfe; }
-    .driver-day-slot + .driver-day-slot { margin-top:5px; }
-    .driver-day-slot b, .driver-day-slot small { white-space:normal !important; overflow-wrap:anywhere; }
-    .driver-day-slot b { color:#24364b; }
-    .driver-day-slot.empty { display:grid; place-items:center; color:#8795a8; border-style:dashed; background:#fff; }
-    .driver-day-slot.absence { border-color:#f2c98e; color:#9a4d08; background:#fff8ec; }
-    .driver-day-slot.locked { border-color:#9bc6eb; color:#075fa9; background:#edf7ff; }
-    .driver-day-footer { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; color:#64748b; font-size:.67rem; }
-    .driver-day-pagination { display:flex; align-items:center; gap:7px; }
-    .driver-day-pagination button { width:34px; height:34px; border:1px solid #cbd7e5; border-radius:5px; background:#fff; color:#334155; cursor:pointer; }
-    .driver-day-overlay { position:fixed; inset:0; z-index:100000; display:grid; place-items:center; padding:24px; background:rgba(15,23,42,.65); backdrop-filter:blur(5px); }
-    .driver-day-dialog { width:min(1180px,96vw); max-height:90vh; overflow:hidden; display:grid; grid-template-rows:auto minmax(0,1fr); border:1px solid #b9c8d8; border-radius:8px; background:#fff; box-shadow:0 26px 70px rgba(15,23,42,.32); }
     .driver-day-dialog-header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:17px 20px; color:#fff; background:#0877c9; }
     .driver-day-dialog-header h3 { margin:0; font-size:1rem; }
     .driver-day-dialog-header p { margin:4px 0 0; color:#dff1ff; font-size:.7rem; }
     .driver-day-dialog-header button { width:38px; height:38px; flex:0 0 38px; border:0; border-radius:50%; color:#fff; background:rgba(255,255,255,.18); cursor:pointer; }
-    .driver-day-dialog-body { min-height:0; overflow:auto; }
-    .driver-day-dialog-body .driver-day-workbench { min-width:760px; }
     .driver-day-view-overlay { position:fixed; inset:0; z-index:100200; display:grid; place-items:center; padding:24px; background:rgba(15,23,42,.68); backdrop-filter:blur(6px); }
     .driver-day-view-dialog { width:min(1080px,96vw); max-height:90vh; overflow:hidden; display:grid; grid-template-rows:auto minmax(0,1fr); border:1px solid #aebfd0; border-radius:8px; background:#fff; box-shadow:0 28px 76px rgba(15,23,42,.36); }
     .driver-day-view-body { min-height:0; overflow:auto; padding:18px; }
@@ -902,6 +855,26 @@
     .driver-day-view-trip > i { color:#0877c9; }
     .driver-day-view-trip b, .driver-day-view-trip span, .driver-day-view-trip small { display:block; }
     .driver-day-view-trip span, .driver-day-view-trip small { margin-top:2px; color:#5f7187; }
+    /* ---------- Ghim trên sơ đồ lộ trình đa chặng ----------
+       Trước đây mọi ghim đều là pin xanh mặc định của Leaflet nên không biết
+       đâu là điểm bắt đầu. Nay: điểm đi ĐỎ, điểm trung chuyển XANH DƯƠNG kèm số
+       thứ tự, điểm đến XANH LÁ. Bảng màu đã qua validate_palette.js ở mọi cặp.
+       Màu không đứng một mình: hai đầu mút có icon riêng, điểm giữa có số, và
+       thanh chú giải dưới bản đồ liệt kê đúng thứ tự đi. */
+    .rmap-pin-wrap { background:none; border:0; }
+    .rmap-pin { width:30px; height:30px; display:grid; place-items:center; border-radius:50% 50% 50% 0; transform:rotate(-45deg); background:var(--rmap-pin); border:2px solid #fff; box-shadow:0 2px 6px rgba(15,23,42,.45); color:#fff; }
+    .rmap-pin > i, .rmap-pin > b { transform:rotate(45deg); font-size:.78rem; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; }
+    /* Điểm đến viền dày hơn: khác HÌNH DẠNG, không chỉ khác màu. */
+    .rmap-pin--destination { border-width:3px; }
+    .rmap-legend { display:flex; align-items:center; gap:8px; flex-wrap:wrap; text-align:left !important; color:#0f172a !important; overflow-x:auto; }
+    .rmap-legend-item { display:inline-flex; align-items:center; gap:7px; min-width:0; }
+    .rmap-legend-dot { width:20px; height:20px; flex:0 0 20px; display:grid; place-items:center; border-radius:50%; background:var(--rmap-pin); color:#fff; font-size:.65rem; font-weight:900; font-variant-numeric:tabular-nums; }
+    .rmap-legend-item b { font-size:.8rem; font-weight:700; white-space:nowrap; }
+    .rmap-legend-item small { color:#64748b; font-size:.68rem; white-space:nowrap; }
+    .rmap-legend-arrow { color:#94a3b8; font-size:.7rem; }
+    @media (max-width: 760px) {
+      .rmap-legend-item small { display:none; }
+    }
     .shift-quick-overlay { position:fixed; inset:0; z-index:100100; display:grid; place-items:center; padding:20px; background:rgba(15,23,42,.62); backdrop-filter:blur(5px); }
     .shift-quick-dialog { width:min(620px,96vw); overflow:hidden; border:1px solid #b9c8d8; border-radius:8px; background:#fff; box-shadow:0 24px 64px rgba(15,23,42,.32); }
     .shift-quick-dialog header { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:17px 20px; color:#fff; background:#0877c9; }
@@ -952,19 +925,6 @@
     .driver-shift-pane { padding:14px; }
     .driver-shift-pane[hidden] { display:none !important; }
     .driver-vehicle-timeline-list, .driver-shift-alert-list { display:grid; gap:8px; }
-    .driver-vehicle-week-summary { display:grid; grid-template-columns:repeat(7,minmax(130px,1fr)); border:1px solid #cbd8e6; border-radius:6px; overflow:auto; }
-    .driver-vehicle-week-day { min-width:130px; min-height:92px; padding:12px; border:0; border-right:1px solid #dbe4ed; background:#fff; color:#334155; text-align:left; cursor:pointer; }
-    .driver-vehicle-week-day:last-child { border-right:0; }
-    .driver-vehicle-week-day:hover, .driver-vehicle-week-day.selected { background:#eaf4ff; box-shadow:inset 0 -4px #0877d1; }
-    .driver-vehicle-week-day b, .driver-vehicle-week-day strong, .driver-vehicle-week-day span { display:block; }
-    .driver-vehicle-week-day b { margin-bottom:7px; font-size:.72rem; }
-    .driver-vehicle-week-day strong { color:#0877d1; font-size:.68rem; }
-    .driver-vehicle-week-day span { margin-top:5px; color:#64748b; font-size:.63rem; }
-    .driver-vehicle-status { display:inline-flex; padding:5px 8px; border-radius:999px; font-size:.65rem; font-weight:900; }
-    .driver-vehicle-status.available { background:#dcfce7; color:#047857; }
-    .driver-vehicle-status.busy { background:#dbeafe; color:#075fa9; }
-    .driver-vehicle-status.maintenance { background:#fff7ed; color:#b45309; }
-    .driver-vehicle-status.conflict { background:#fee2e2; color:#b91c1c; }
     .driver-planning-alert { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border:1px solid #fdba74; border-radius:6px; background:#fff7ed; color:#9a4b08; font-size:.7rem; line-height:1.45; }
     .driver-planning-alert.critical { border-color:#fca5a5; background:#fef2f2; color:#b91c1c; }
     .driver-planning-alert.clean { border-color:#86efac; background:#f0fdf4; color:#047857; }
@@ -1009,6 +969,81 @@
     .weekly-schedule-note { display:flex; gap:9px; padding:10px 12px; border:1px solid #b8d7f2; border-radius:6px; color:#075fa9; background:#eef7ff; font-size:.7rem; line-height:1.45; }
     .weekly-schedule-dialog footer { position:sticky; bottom:0; display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid #dfe7f0; background:#fff; }
     @media (max-width:700px) { .weekly-schedule-body { grid-template-columns:1fr; } .weekly-schedule-body .wide { grid-column:auto; } .weekly-day-options { grid-template-columns:repeat(4,1fr); } }
+    /* ---------- Hộp thoại tạo ca lặp theo tuần ----------
+       Thiết kế lại từ "Thiết lập lịch làm việc mặc định": bản cũ là một lưới
+       10 ô nhập ngang hàng nhau, không nói thao tác này sẽ ghi bao nhiêu ca.
+       Nay chia thành 5 bước có số, và khung xem trước ở cuối đếm đúng số bản
+       ghi sẽ tạo. */
+    .sr-dialog { width:min(880px,96vw); }
+    .sr-body { display:flex; flex-direction:column; gap:0; padding:0; }
+    .sr-step { padding:16px 20px; border-bottom:1px solid #eef2f7; }
+    .sr-step h4 { margin:0 0 11px; display:flex; align-items:center; gap:9px; font-size:.84rem; font-weight:800; color:#0f172a; }
+    .sr-step h4 small { font-weight:700; font-size:.7rem; color:#64748b; }
+    .sr-step-no { width:21px; height:21px; flex:0 0 21px; display:grid; place-items:center; border-radius:50%; background:#0877d1; color:#fff; font-size:.68rem; font-weight:900; }
+    .sr-row { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+    .sr-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .sr-grid label { display:block; font-size:.73rem; font-weight:800; color:#334155; }
+    .sr-grid input, .sr-grid select { width:100%; min-height:40px; margin-top:5px; padding:8px 10px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.78rem; color:#0f172a; background:#fff; }
+    .sr-grid input:disabled { background:#f1f5f9; color:#64748b; }
+    .sr-search { position:relative; flex:1 1 260px; min-width:0; }
+    .sr-search > i { position:absolute; left:12px; top:50%; translate:0 -50%; color:#718096; pointer-events:none; font-size:.76rem; }
+    .sr-search input { width:100%; min-height:40px; padding:8px 10px 8px 36px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.78rem; }
+    .sr-mini { min-height:34px; padding:6px 11px; border:1px solid #cbd7e5; border-radius:6px; background:#fff; color:#334155; font:inherit; font-size:.72rem; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+    .sr-mini:hover { border-color:#0877d1; color:#075fa9; background:#f2f8ff; }
+    .sr-mini:focus-visible, .sr-day:focus-visible, .sr-shift:focus-visible { outline:2px solid #0877d1; outline-offset:1px; }
+    /* Danh sách nhân sự CHỌN NHIỀU: công việc thật là xếp ca cho cả đội, nên bản
+       cũ (một ô tìm kiếm chọn đúng một người) buộc phải mở lại hộp thoại N lần. */
+    .sr-people { margin-top:10px; max-height:224px; overflow:auto; border:1px solid #dbe4ed; border-radius:6px; }
+    .sr-person { position:relative; display:grid; grid-template-columns:32px minmax(0,1fr) 18px; gap:10px; align-items:center; padding:8px 11px; border-bottom:1px solid #eef2f7; cursor:pointer; }
+    .sr-person:last-child { border-bottom:0; }
+    .sr-person:hover { background:#f6faff; }
+    .sr-person input { position:absolute; opacity:0; pointer-events:none; }
+    .sr-person:focus-within { outline:2px solid #0877d1; outline-offset:-2px; }
+    .sr-person.is-on { background:#eef7ff; box-shadow:inset 3px 0 #0877d1; }
+    .sr-person-avatar { width:32px; height:32px; display:grid; place-items:center; border-radius:50%; background:#e8f3fd; color:#0870c5; font-size:.68rem; font-weight:900; }
+    .sr-person-text { min-width:0; }
+    .sr-person-text b, .sr-person-text small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sr-person-text b { font-size:.78rem; color:#0f172a; }
+    .sr-person-text small { margin-top:2px; font-size:.68rem; font-weight:600; color:#64748b; }
+    /* Đã chọn thì có DẤU TÍCH, không chỉ đổi màu nền. */
+    .sr-person-tick { font-size:.72rem; color:#0877d1; visibility:hidden; }
+    .sr-person.is-on .sr-person-tick { visibility:visible; }
+    .sr-empty { padding:16px; text-align:center; color:#718096; font-size:.74rem; }
+    .sr-days { display:flex; gap:5px; }
+    .sr-day { width:42px; min-height:38px; border:1px solid #cbd7e5; border-radius:6px; background:#fff; color:#475569; font:inherit; font-size:.73rem; font-weight:800; cursor:pointer; }
+    .sr-day.is-on { border-color:#0877d1; color:#075fa9; background:#eaf4ff; box-shadow:inset 0 -2px #0877d1; }
+    .sr-shifts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+    .sr-shift { min-width:0; padding:9px 10px; border:1px solid #cbd7e5; border-radius:6px; background:#fff; text-align:left; font:inherit; cursor:pointer; }
+    .sr-shift b, .sr-shift small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .sr-shift b { font-size:.76rem; font-weight:800; color:#0f172a; }
+    .sr-shift small { margin-top:2px; font-size:.68rem; color:#64748b; font-variant-numeric:tabular-nums; }
+    .sr-shift.is-on { border-color:#0877d1; background:#eaf4ff; box-shadow:inset 0 -2px #0877d1; }
+    .sr-shift.is-on b, .sr-shift.is-on small { color:#075fa9; }
+    .sr-hint { display:flex; align-items:center; gap:8px; margin:11px 0 0; padding:9px 12px; border:1px solid #b8d7f2; border-radius:6px; background:#f2f8ff; color:#075fa9; font-size:.73rem; font-weight:600; }
+    /* Khung xem trước: điều bản cũ thiếu hoàn toàn. */
+    .sr-preview { padding:16px 20px; background:#f0f9f4; border-top:2px solid #059669; }
+    .sr-preview h4 { margin:0 0 8px; display:flex; align-items:center; gap:8px; font-size:.78rem; font-weight:800; color:#065f46; }
+    .sr-preview-headline { margin:0; font-size:1.02rem; font-weight:900; color:#0f172a; font-variant-numeric:tabular-nums; }
+    .sr-preview-detail { margin:3px 0 0; font-size:.74rem; color:#475569; font-variant-numeric:tabular-nums; }
+    .sr-preview-people { list-style:none; margin:11px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:6px 8px; }
+    .sr-preview-people li { display:inline-flex; align-items:center; gap:7px; padding:4px 9px; border:1px solid #bfe3d0; border-radius:999px; background:#fff; font-size:.71rem; }
+    .sr-preview-people b { font-weight:800; color:#0f172a; }
+    .sr-preview-people span { color:#059669; font-weight:800; font-variant-numeric:tabular-nums; }
+    .sr-preview-people em { display:inline-flex; align-items:center; gap:4px; font-style:normal; font-weight:800; color:#b45309; }
+    .sr-preview-more { color:#64748b; }
+    .sr-warn { display:flex; align-items:flex-start; gap:8px; margin:11px 0 0; padding:9px 12px; border:1px solid #f2c98b; border-radius:6px; background:#fffbeb; color:#78350f; font-size:.72rem; font-weight:600; }
+    /* Nhiều bản ghi thì đổi cả tông khung, không chỉ thêm một dòng chữ. */
+    .sr-preview--heavy { background:#fffbeb; border-top-color:#d97706; }
+    .sr-preview--heavy h4 { color:#78350f; }
+    .sr-preview--blocked { background:#fef6f6; border-top-color:#b91c1c; }
+    .sr-preview--blocked h4 { color:#991b1b; }
+    .sr-preview--blocked ul { margin:0; padding-left:20px; color:#7f1d1d; font-size:.74rem; font-weight:600; }
+    .sr-preview--blocked li + li { margin-top:3px; }
+    .weekly-schedule-dialog footer button:disabled { opacity:.5; cursor:not-allowed; }
+    @media (max-width:700px) {
+      .sr-grid, .sr-shifts { grid-template-columns:1fr; }
+      .sr-days { flex-wrap:wrap; }
+    }
     .dispatch-calendar-toolbar { display:flex; align-items:center; gap:6px; margin-left:auto; flex-wrap:wrap; }
     .dispatch-calendar-toolbar input { min-height:34px; border:1px solid #cbd7e5; background:#fff; color:#334155; padding:6px 8px; }
     .dispatch-calendar-toolbar button { min-height:34px; border:1px solid #cbd7e5; background:#fff; color:#334155; padding:6px 9px; font-weight:800; cursor:pointer; }
@@ -1259,8 +1294,6 @@
       .driver-shift-week-nav { margin-left:0; width:100%; justify-content:space-between; }
       .driver-shift-week-nav #driver-shift-week-label { flex:1; }
       .driver-shift-layout { display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"roster" "calendar" "inspector"; min-height:0; }
-      .driver-day-overlay { padding:8px; place-items:stretch; }
-      .driver-day-dialog { width:100%; max-height:96vh; margin:auto 0; }
       .driver-day-view-overlay { padding:8px; place-items:stretch; }
       .driver-day-view-dialog { width:100%; max-height:96vh; margin:auto 0; }
       .driver-day-view-shifts { grid-template-columns:minmax(0,1fr); }
@@ -2079,7 +2112,7 @@
             <div class="stat-card">
               <div class="stat-info">
                 <h4 data-i18n="stat_revenue">Doanh thu hóa đơn thực tế (AR)</h4>
-                <div class="val" id="stat-revenue">0 VNĐ</div>
+                <div class="val" id="stat-revenue">— VNĐ</div>
               </div>
               <div class="stat-icon" style="color: var(--lao-blue);">
                 <i class="fa-solid fa-money-bill-trend-up"></i>
@@ -2088,7 +2121,7 @@
             <div class="stat-card">
               <div class="stat-info">
                 <h4 data-i18n="stat_total_do">Tổng lệnh giao hàng DO</h4>
-                <div class="val" id="stat-dos">0 Lệnh DO</div>
+                <div class="val" id="stat-dos">— Lệnh DO</div>
               </div>
               <div class="stat-icon" style="color: var(--accent-emerald);">
                 <i class="fa-solid fa-dolly"></i>
@@ -2097,7 +2130,7 @@
             <div class="stat-card">
               <div class="stat-info">
                 <h4 data-i18n="stat_trips">SỐ CHUYẾN ĐANG ĐI</h4>
-                <div class="val" id="stat-transit">0 Chuyến</div>
+                <div class="val" id="stat-transit">— Chuyến</div>
               </div>
               <div class="stat-icon" style="color: var(--lao-blue-dark);">
                 <i class="fa-solid fa-truck-arrow-right"></i>
@@ -2106,7 +2139,7 @@
             <div class="stat-card">
               <div class="stat-info">
                 <h4 data-i18n="stat_incidents">SỰ CỐ PHÁT SINH</h4>
-                <div class="val" id="stat-incidents">0 Sự cố</div>
+                <div class="val" id="stat-incidents">— Sự cố</div>
               </div>
               <div class="stat-icon" style="color: var(--lao-red);">
                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -5788,7 +5821,7 @@
                       <button id="driver-shift-tab-vehicles" type="button" class="driver-shift-tab" onclick="switchDriverShiftTab('vehicles', this)"><i class="fa-solid fa-truck"></i> Lịch xe 7 ngày</button>
                       <button id="driver-shift-tab-alerts" type="button" class="driver-shift-tab" onclick="switchDriverShiftTab('alerts', this)"><i class="fa-solid fa-triangle-exclamation"></i> Cảnh báo</button>
                     </div>
-                    <button type="button" class="fiori-btn fiori-btn-secondary" onclick="openWeeklyDriverSchedule()" title="Thiết lập lịch làm việc lặp theo tuần"><i class="fa-solid fa-calendar-plus"></i> Lịch mặc định</button>
+                    <button type="button" class="fiori-btn fiori-btn-secondary" onclick="openWeeklyDriverSchedule()" title="Sinh sẵn từng ca làm việc lặp theo tuần cho một khoảng thời gian"><i class="fa-solid fa-repeat"></i> Tạo ca lặp</button>
                     <div class="driver-shift-week-nav">
                       <button type="button" title="Tuần trước" onclick="moveDriverShiftWeek(-7)"><i class="fa-solid fa-chevron-left"></i></button>
                       <button id="driver-shift-week-label" type="button" onclick="moveDriverShiftWeek(0)">Tuần hiện tại</button>
@@ -6767,9 +6800,9 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260903-default-deny-auth"></script>
+  <script src="/static/js/api-auth.js?v=20260904-module-mode-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
-    <script src="/static/js/route-map-utils.js?v=20260805-route-map"></script>
+    <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
   <script src="/static/js/workflow-presentation.js?v=20260819-control-tower-vi-fix"></script>
   <script src="/static/js/command-policy.js?v=20260810-foundation"></script>
@@ -6779,8 +6812,12 @@
   <!-- Trình bày phần Chất lượng dịch vụ (SLA). Phải nạp trước app.js vì
        renderReportingDrilldown gọi window.SlaAnalytics. -->
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
+  <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
+       vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
+  <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-module-mode-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260903-security-and-reporting-v1"></script>
+  <script src="/static/js/app.js?v=20260904-module-mode-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

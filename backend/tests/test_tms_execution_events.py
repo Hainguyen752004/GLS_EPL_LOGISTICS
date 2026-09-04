@@ -637,8 +637,16 @@ def test_all_execution_endpoints_require_trusted_principal(db):
 
 
 def test_production_app_bearer_auth_allows_valid_token_only(db, monkeypatch):
+    """Khi cong kiem token duoc BAT, chi dung token moi qua duoc.
+
+    Cong nay mac dinh TAT vi he thong la mot module ben trong he thong lon hon
+    va viec dang nhap do he thong cha lo (xem auth_middleware). Test nay bat co
+    len de kiem chinh che do chan, nen no van la bang chung rang lop chan con
+    nguyen ven khi trien khai doc lap.
+    """
     monkeypatch.setenv("EPL_TMS_API_TOKEN", "top-secret-token")
     monkeypatch.setenv("EPL_TMS_API_PRINCIPAL", "production-tms")
+    monkeypatch.setenv("EPL_REQUIRE_API_TOKEN", "1")
     main = importlib.import_module("main")
     current_database = importlib.import_module("database")
     main.app.dependency_overrides[current_database.get_db] = lambda: db

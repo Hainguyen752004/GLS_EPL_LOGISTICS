@@ -174,7 +174,57 @@
     return true;
   }
 
+  /**
+   * Vai tro cua tung diem tren mot tuyen.
+   *
+   * Bang mau da qua scripts/validate_palette.js (che do light, xet DU MOI CAP):
+   * CVD DeltaE 8.6, thi luc binh thuong DeltaE 29.3 — dat nguong o moi kiem tra.
+   *
+   * Mau KHONG BAO GIO dung mot minh: diem di va diem den co icon rieng, diem
+   * trung chuyen mang so thu tu, va thanh chu giai duoi ban do liet ke theo
+   * dung thu tu di. Nguoi khong phan biet duoc do—xanh van doc duoc tuyen.
+   *
+   * Mau xanh cua diem trung chuyen trung voi mau duong ke tuyen (#0a6ed1) la
+   * co y: chung deu la "dang tren duong", con do va xanh la la hai dau mut.
+   */
+  const WAYPOINT_ROLES = {
+    origin: { color: '#dc2626', icon: 'fa-flag', label: 'Điểm đi' },
+    stop: { color: '#1d4ed8', icon: 'fa-circle-dot', label: 'Điểm trung chuyển' },
+    destination: { color: '#059669', icon: 'fa-flag-checkered', label: 'Điểm đến' }
+  };
+
+  /**
+   * Gan vai tro, mau va ky hieu cho tung diem theo THU TU DI.
+   *
+   * Tach rieng khoi phan ve de kiem chung duoc bang Node: mau va thu tu la
+   * phan de sai nhat, va cung la phan nguoi dung doc.
+   */
+  function buildWaypointMarkerModel(waypoints) {
+    const list = Array.isArray(waypoints) ? waypoints.filter(item => item && typeof item === 'object') : [];
+    const last = list.length - 1;
+    return list.map((waypoint, index) => {
+      // Mot diem duy nhat thi no la diem di: chua co dau den nao ca.
+      const role = index === 0 ? 'origin' : index === last ? 'destination' : 'stop';
+      const tone = WAYPOINT_ROLES[role];
+      return {
+        lat: Number(waypoint.lat),
+        lng: Number(waypoint.lng),
+        label: normalizeText(waypoint.label),
+        index,
+        order: index + 1,
+        role,
+        roleLabel: tone.label,
+        color: tone.color,
+        icon: tone.icon,
+        // Diem dau va diem cuoi deo icon; diem giua deo so thu tu.
+        glyph: role === 'stop' ? String(index + 1) : ''
+      };
+    });
+  }
+
   return {
+    WAYPOINT_ROLES,
+    buildWaypointMarkerModel,
     buildOrderedRouteLocations,
     buildRouteContext,
     buildRouteCheckpointModel,
