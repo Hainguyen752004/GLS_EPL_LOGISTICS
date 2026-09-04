@@ -1,6 +1,15 @@
 ﻿import sqlite3
+import os
 import subprocess
 import sys
+
+#: Thu muc `backend/app`, tinh tu vi tri TEP NAY.
+#:
+#: Truoc day cho nay ghi `cwd="backend/app"` — duong dan tuong doi, nen bai
+#: kiem chi chay duoc khi goi pytest tu thu muc goc du an. Goi tu `backend/`
+#: thi Windows bao WinError 267 "ten thu muc khong hop le", mot thong bao
+#: khong he goi y nguyen nhan that.
+APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app")
 
 from migrations.runner import required_migration_head, upgrade
 
@@ -37,7 +46,7 @@ def test_v011_is_head_and_creates_trip_schema_with_lineage(tmp_path):
 def test_v011_postgresql_dry_run_contains_trip_ddl_offline():
     result = subprocess.run(
         [sys.executable, "-m", "migrations.runner", "upgrade", "--database-url", "postgresql://not-connected/epl", "--dry-run"],
-        cwd="backend/app",
+        cwd=str(APP_DIR),
         text=True,
         encoding="utf-8",
         capture_output=True,
