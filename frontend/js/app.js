@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-freight-terms-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-dispatch-audit-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -6819,6 +6819,11 @@ async function loadVehTypes() {
     console.error("Failed to load vehicle types from CSDL API", err);
   }
   renderVehTypesTable(vehTypes);
+  // Hai tab dung chung danh muc: them/xoa o day thi man Cong thuc gia thanh
+  // phai theo kip, khong de nguoi dung thay hai con so khac nhau.
+  if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
+    window.renderDynamicFormulaVehicleTypes();
+  }
 }
 
 function filterVehTypes() {
@@ -10683,6 +10688,12 @@ window.switchMasterDataTab = function (tabId, btn) {
 
   if (tabId === 'md-tab-routes') {
     loadRoutePlanningDropdown(); // Load from API, show empty form if no routes
+  } else if (tabId === 'md-tab-formulas') {
+    // Truoc day tab nay KHONG co nhanh nao: mo len khong tai gi ca, chi hien
+    // lai vehTypes con sot tu luc tai trang. Neu luc do chua tai xong thi panel
+    // ket o "0 mau" mai mai, va nguoi dung khong the cau hinh gia thanh cho bat
+    // ky loai xe nao — du Master Data van co du.
+    if (typeof loadVehTypesForFormulas === 'function') loadVehTypesForFormulas();
   } else if (tabId === 'md-tab-veh-types') {
     if (typeof loadVehTypes === 'function') loadVehTypes();
     if (typeof loadFioriVehicles === 'function') loadFioriVehicles();
@@ -14340,6 +14351,35 @@ window.deleteVehicleTypeCard = async function (btn) {
  * sở dữ liệu". Nhìn vào không biết xe đó tải bao nhiêu, đơn giá nền bao nhiêu,
  * nên phải bấm từng thẻ mới so sánh được.
  */
+/**
+ * Tai danh muc loai xe cho man Cong thuc gia thanh.
+ *
+ * Tai LAI moi lan mo tab thay vi chi khi trong: loai xe co the vua duoc them
+ * hoac xoa o tab "3. Loai Phuong Tien", va hai tab nay dung chung mot danh muc.
+ */
+window.loadVehTypesForFormulas = async function () {
+  const container = document.getElementById('formula-vehicle-types-list');
+  try {
+    const res = await fetch(`${API_BASE}/api/vehicle-types`);
+    if (res.ok) vehTypes = await res.json();
+    else if (container && !(vehTypes || []).length) {
+      container.innerHTML = `<div class="vt-empty"><p>Chưa tải được danh mục loại xe (máy chủ trả về ${res.status}).</p>
+        <button type="button" onclick="loadVehTypesForFormulas()"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Thử lại</button></div>`;
+      return;
+    }
+  } catch (error) {
+    // Khong tai duoc thi NOI RA, dung de man hinh khang dinh "chua co loai xe
+    // nao" trong khi that ra chi la khong hoi duoc may chu.
+    if (container && !(vehTypes || []).length) {
+      container.innerHTML = `<div class="vt-empty"><p>Không kết nối được máy chủ để tải danh mục loại xe.</p>
+        <button type="button" onclick="loadVehTypesForFormulas()"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Thử lại</button></div>`;
+      return;
+    }
+  }
+  window.renderDynamicFormulaVehicleTypes();
+  if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
+};
+
 window.renderDynamicFormulaVehicleTypes = function () {
   const container = document.getElementById('formula-vehicle-types-list');
   if (!container) return;

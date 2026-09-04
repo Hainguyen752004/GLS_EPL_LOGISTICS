@@ -181,10 +181,6 @@ def dispatch_freight_order(db, order_id, data, actor="system"):
         pallet_count=order.total_pallet_count,
         subject=f"Freight Order {order.id}",
     )
-    if (order.total_weight_kg > (vehicle.weight_capacity or 0)
-            or order.total_volume_m3 > (vehicle.volume_capacity_m3 or 0)
-            or order.total_pallet_count > (vehicle.pallet_capacity or 0)):
-        raise conflict("CAPACITY_EXCEEDED", "Freight Order vượt năng lực tải trọng, thể tích hoặc pallet của xe.", ["master-data/vehicles"])
     trip_date = order.pickup_window_start.date()
     _require_legal_vehicle(vehicle, trip_date)
     require_no_maintenance_overlap(
@@ -294,14 +290,6 @@ def dispatch_trip(db, trip_id, data, actor="system"):
         pallet_count=order.total_pallet_count,
         subject=f"Trip {trip.id}",
     )
-    if (order.total_weight_kg > (vehicle.weight_capacity or 0)
-            or order.total_volume_m3 > (vehicle.volume_capacity_m3 or 0)
-            or order.total_pallet_count > (vehicle.pallet_capacity or 0)):
-        raise conflict(
-            "CAPACITY_EXCEEDED",
-            "Chuyến vượt tải trọng, thể tích hoặc số pallet của xe.",
-            ["master-data/vehicles"],
-        )
 
     assignment_start = _utc(data.get("assignment_start"))
     requested_assignment_end = _utc(data.get("assignment_end"))
