@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-cost-per-km-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260904-freight-terms-v1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -2044,7 +2044,7 @@
             <div class="mega-grid">
               <div class="mega-card" data-view="crm-sales">
                 <div class="mega-icon"><i class="fa-solid fa-handshake"></i></div>
-                <span data-i18n="menu_crm_sales">Quản lý quan hệ khách hàng & Bán hàng</span>
+                <span data-i18n="menu_crm_sales">Quản lý quan hệ khách hàng & Kinh doanh</span>
               </div>
               <div class="mega-card" data-view="ops-planning">
                 <div class="mega-icon"><i class="fa-solid fa-route"></i></div>
@@ -2253,7 +2253,7 @@
                   <span data-i18n="role_pricing_sales" style="color: #64748b; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-user-tag"></i> Pricing / Sales Rep</span>
                 </div>
                 <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-file-contract" style="color: #0a6ed1;"></i> <span data-i18n="flow_step_1_title">1. Báo Giá Vận Tải (Quotation)</span>
+                  <i class="fa-solid fa-file-contract" style="color: #0a6ed1;"></i> <span data-i18n="flow_step_1_title">1. Báo Giá Cước Vận Chuyển (Quotation)</span>
                 </h4>
                 <p data-i18n="flow_step_1_desc" style="color: #475569; font-size: 0.83rem; line-height: 1.45; margin-bottom: 12px;">Tạo báo giá và tự động tính cước xăng dầu/km + BOT từ bảng công thức Master Data.</p>
                 <div style="background: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; color: #334155; margin-bottom: 12px; border: 1px solid #e2e8f0;">
@@ -2271,12 +2271,12 @@
                   <span data-i18n="role_sales_exec" style="color: #64748b; font-size: 0.78rem; font-weight: 600;"><i class="fa-solid fa-handshake"></i> Sales Executive</span>
                 </div>
                 <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-handshake" style="color: #4f46e5;"></i> <span data-i18n="flow_step_2_title">2. Đơn Hàng Bán (Sales Order)</span>
+                  <i class="fa-solid fa-handshake" style="color: #4f46e5;"></i> <span data-i18n="flow_step_2_title">2. Đơn Hàng Vận Chuyển (Sales Order)</span>
                 </h4>
-                <p data-i18n="flow_step_2_desc" style="color: #475569; font-size: 0.83rem; line-height: 1.45; margin-bottom: 12px;">Chốt hợp đồng với khách hàng, mở đơn hàng bán SO-2026 và khóa đơn giá bán.</p>
+                <p data-i18n="flow_step_2_desc" style="color: #475569; font-size: 0.83rem; line-height: 1.45; margin-bottom: 12px;">Chốt hợp đồng với khách hàng, mở đơn hàng vận chuyển SO-2026 và khóa đơn giá cước.</p>
                 <div style="background: #f8fafc; padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; color: #334155; margin-bottom: 12px; border: 1px solid #e2e8f0;">
                   <div><i class="fa-solid fa-arrow-right-arrow-left"></i> <strong>Input:</strong> <span data-i18n="flow_step_2_in">Thông tin Báo Giá `QT-2026` đã duyệt</span></div>
-                  <div style="margin-top: 3px;">&#128228; <strong>Output:</strong> <span data-i18n="flow_step_2_out">Đơn Hàng Bán `SO-2026-xxx` (đã xác nhận)</span></div>
+                  <div style="margin-top: 3px;">&#128228; <strong>Output:</strong> <span data-i18n="flow_step_2_out">Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)</span></div>
                   <div style="margin-top: 3px;"><i class="fa-solid fa-database"></i> <strong>DB Table:</strong> `sales_orders`</div>
                 </div>
                 <button class="fiori-btn" onclick="updateActiveFlowStep(2); switchView('crm-sales', 'oracle-so-list');" style="width: 100%; justify-content: center; background: #4f46e5; color: white; border: none; font-weight: 700;" data-i18n="btn_step_action">Thao Tác Ở Bước Này &rarr;</button>
@@ -2820,7 +2820,7 @@
               
               <!-- Vietnamese source cleaned -->
               <div class="chart-box" style="background: #fff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px;">
-                <h5 style="margin-bottom: 10px; color: var(--lao-blue-dark); text-align: center;"><i class="fa-solid fa-handshake"></i> <span data-i18n="chart_crm_title">CRM và Sales (Báo giá)</span></h5>
+                <h5 style="margin-bottom: 10px; color: var(--lao-blue-dark); text-align: center;"><i class="fa-solid fa-handshake"></i> <span data-i18n="chart_crm_title">CRM và Kinh doanh (Báo giá)</span></h5>
                 <div style="position: relative; height: 250px; width: 100%;">
                   <canvas id="chartCRM"></canvas>
                 </div>
@@ -3405,17 +3405,17 @@
           <div id="crm-sales-enterprise-tabs-anchor" data-enterprise-tabs-anchor="true"></div>
 
           <!-- QUOTATION MODULE -->
-          <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 20px;"><i class="fa-solid fa-file-signature"></i> <span data-i18n="title_quotation">2. Quotation (Báo Giá)</span></h3>
+          <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 20px;"><i class="fa-solid fa-file-signature"></i> <span data-i18n="title_quotation">2. Báo Giá Cước Vận Chuyển (Quotation)</span></h3>
           <div class="oracle-container" id="oracle-qt-list">
             <div class="oracle-header">
-              <div class="oracle-title" data-i18n="title_manage_quotation">Quản Lý Báo Giá</div>
+              <div class="oracle-title" data-i18n="title_manage_quotation">Quản Lý Báo Giá Cước</div>
               <div>
                 <button class="oracle-btn oracle-btn-secondary" onclick="loadQuotations()"><i class="fa-solid fa-rotate-right"></i> <span data-i18n="btn_refresh">Làm Mới</span></button>
-                <button class="oracle-btn" onclick="openOracleQTForm()"><span data-i18n="btn_create_quotation">+ Tạo Báo Giá Mới</span></button>
+                <button class="oracle-btn" onclick="openOracleQTForm()"><span data-i18n="btn_create_quotation">+ Tạo Báo Giá Cước</span></button>
               </div>
             </div>
             <div class="oracle-toolbar">
-              <input type="text" class="oracle-input" id="oracle-search-qt" placeholder="Tìm mã báo giá, khách hàng, tuyến đường, hiệu lực, giá bán, trạng thái..." onkeyup="filterQuotations()" data-i18n="ph_search_qt" data-i18n-attr="placeholder" style="min-width: 420px; max-width: 100%;">
+              <input type="text" class="oracle-input" id="oracle-search-qt" placeholder="Tìm mã báo giá cước, khách hàng, tuyến đường, hiệu lực, giá cước, trạng thái..." onkeyup="filterQuotations()" data-i18n="ph_search_qt" data-i18n-attr="placeholder" style="min-width: 420px; max-width: 100%;">
               <button class="oracle-btn oracle-btn-secondary" onclick="filterQuotations()" data-i18n="btn_search">Tìm Kiếm</button>
             </div>
             <div class="qt-table-responsive">
@@ -3431,11 +3431,11 @@
                 </colgroup>
                 <thead>
                   <tr>
-                    <th data-i18n="th_quotation_no">Mã Báo Giá</th>
+                    <th data-i18n="th_quotation_no">Mã báo giá cước</th>
                     <th data-i18n="th_customer">Khách Hàng</th>
                     <th data-i18n="th_route">Tuyến Đường</th>
                     <th data-i18n="th_valid_to">Hiệu Lực Đến</th>
-                    <th data-i18n="th_selling_price">Giá Bán</th>
+                    <th data-i18n="th_selling_price">Giá cước</th>
                     <th class="qt-status-cell" data-i18n="th_status">Trạng Thái</th>
                     <th class="qt-action-cell" data-i18n="th_action">Hành động</th>
                   </tr>
@@ -3453,7 +3453,7 @@
               <div style="background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); padding: 22px 28px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(10,110,209,0.2);">
                 <div>
                   <h3 style="margin: 0; color: #ffffff; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-file-contract" style="font-size: 1.3rem;"></i> <span data-i18n="title_modal_qt">QUOTATION (BÁO GIÁ)</span>
+                    <i class="fa-solid fa-file-contract" style="font-size: 1.3rem;"></i> <span data-i18n="title_modal_qt">BÁO GIÁ CƯỚC VẬN CHUYỂN (QUOTATION)</span>
                   </h3>
                   <div style="font-size: 0.83rem; color: #e0f2fe; margin-top: 4px; font-weight: 400;" data-i18n="sub_modal_qt">Chào Giá Cước Xe, Xăng Dầu & BOT theo Tuyến Đường - Bước 1 trước khi Chốt Hợp Đồng</div>
                 </div>
@@ -3464,18 +3464,18 @@
                 <div class="fiori-op-section" style="background: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                   <!-- TAB HEADER -->
                   <div class="form-sec-tabs" style="display:flex; gap:22px; align-items:center; border-bottom:1px solid #e5e7eb; margin-bottom:16px;">
-                    <div class="form-sec-tab active" onclick="switchFormSecTab('qt-sec-info', this)" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_qt_info"><i class="fa-solid fa-circle-info"></i> Thông Tin Báo Giá</div>
+                    <div class="form-sec-tab active" onclick="switchFormSecTab('qt-sec-info', this)" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_qt_info"><i class="fa-solid fa-circle-info"></i> Thông Tin Báo Giá Cước</div>
                     <div class="form-sec-tab" onclick="switchFormSecTab('qt-sec-notes', this)" style="padding: 10px 15px; font-weight: bold; color: #666; cursor: pointer;" data-i18n="tab_notes"><i class="fa-solid fa-note-sticky"></i> Ghi Chú</div>
                   </div>
 
                   <!-- Vietnamese source cleaned -->
                   <div id="qt-sec-info" class="form-sec-content">
                     <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 0.83rem; color: #0369a1; font-weight: 600;" data-i18n="tip_qt_banner">
-                      <i class="fa-solid fa-lightbulb"></i> <strong>Báo Giá Vận Tải:</strong> Dùng để chào giá cước xe, xăng dầu & trạm BOT cho Khách hàng. Sau khi Khách hàng đồng ý, bấm nút <strong>"Chuyển thành SO"</strong> để tạo Đơn Hàng chính thức kèm danh mục Hàng Hóa thực tế.
+                      <i class="fa-solid fa-lightbulb"></i> <strong>Báo giá cước vận chuyển:</strong> Dùng để chào giá cước xe, xăng dầu & trạm BOT cho Khách hàng. Sau khi Khách hàng đồng ý, bấm nút <strong>"Chuyển thành SO"</strong> để tạo Đơn Hàng chính thức kèm danh mục Hàng Hóa thực tế.
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
                       <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #666; font-weight: 600;" data-i18n="lbl_qt_no">Mã Báo Giá</label>
+                        <label style="font-size: 0.85rem; color: #666; font-weight: 600;" data-i18n="lbl_qt_no">Mã báo giá cước</label>
                         <input type="text" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none; background: #f8fafc;" id="qt-id" placeholder="Tự động tạo (QT-...)" data-i18n="ph_auto_generated" data-i18n-attr="placeholder" readonly>
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -3523,7 +3523,7 @@
                       </div>
 
                       <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #666; font-weight: 600;" data-i18n="lbl_valid_to">Ngày Hết Hạn Báo Giá</label>
+                        <label style="font-size: 0.85rem; color: #666; font-weight: 600;" data-i18n="lbl_valid_to">Ngày Hết Hạn Báo Giá Cước</label>
                         <input type="date" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none;" id="qt-valid-to">
                       </div>
                       <div id="qt-vehicle-recommendations" style="grid-column:span 3;" aria-live="polite"></div>
@@ -3554,7 +3554,7 @@
                     </div>
 
                     <div class="qt-selling-total-row" style="display: grid; grid-template-columns: auto minmax(0, 1fr); justify-content: flex-end; margin-top: 15px; align-items: center; gap: 15px;">
-                      <div style="font-weight: bold; color: #475569; font-size: 1rem;" data-i18n="lbl_selling_price_total">Tổng Giá Bán Báo Giá:</div>
+                      <div style="font-weight: bold; color: #475569; font-size: 1rem;" data-i18n="lbl_selling_price_total">Tổng cước báo giá:</div>
                       <input type="text" id="qt-selling-price" readonly style="font-size: 1.3rem; font-weight: 800; color: #0a6ed1; background: transparent; border: none; text-align: right; outline: none; width: 100%; min-width: 0; white-space: normal; text-overflow: clip;" value="2,400,000 VNĐ">
                     </div>
                   </div>
@@ -3563,7 +3563,7 @@
                   <div id="qt-sec-notes" class="form-sec-content" style="display: none;">
                     <div style="background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
                       <label style="font-size: 0.9rem; font-weight: bold; color: #334155; margin-bottom: 10px; display: block;" data-i18n="lbl_notes_content">
-                        <i class="fa-solid fa-pen-to-square" style="color: #0a6ed1;"></i> Nội Dung Ghi Chú Báo Giá
+                        <i class="fa-solid fa-pen-to-square" style="color: #0a6ed1;"></i> Nội Dung Ghi Chú Báo Giá Cước
                       </label>
                       <textarea id="qt-notes" rows="4" class="fiori-input" placeholder="Nhập ghi chú cho báo giá (Ví dụ: Báo giá chưa bao gồm thuế VAT 10%, có hiệu lực trong 30 ngày, thanh toán trước 50%)..." data-i18n="ph_qt_notes" data-i18n-attr="placeholder" style="padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; width: 100%; font-family: inherit; background-color: #ffffff; color: #0f172a; font-size: 0.9rem; line-height: 1.5;"></textarea>
                     </div>
@@ -3573,15 +3573,15 @@
 
               <div style="padding: 18px 28px; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; gap: 12px; background: #fafafa;">
                 <button type="button" onclick="closeOracleQTForm()" style="padding: 10px 24px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; font-weight: 600; color: #475569; cursor: pointer;" data-i18n="btn_cancel">Hủy bỏ</button>
-                <button type="button" class="fiori-btn" id="btn-approve-qt" onclick="approveQuotation()" style="padding: 10px 24px; font-size: 0.92rem; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border: none; color: #ffffff; cursor: pointer; display: none; align-items: center; gap: 8px;" data-i18n="btn_approve_qt"><i class="fa-solid fa-check"></i> Duyệt Báo Giá</button>
-                <button type="button" class="fiori-btn" id="btn-save-qt" onclick="saveOracleQT()" style="padding: 10px 24px; font-size: 0.92rem; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); border: none; color: #ffffff; cursor: pointer; box-shadow: 0 4px 14px rgba(10,110,209,0.3); display: inline-flex; align-items: center; gap: 8px;" data-i18n="btn_save_qt"><i class="fa-solid fa-floppy-disk"></i> Lưu Báo Giá</button>
+                <button type="button" class="fiori-btn" id="btn-approve-qt" onclick="approveQuotation()" style="padding: 10px 24px; font-size: 0.92rem; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #059669 0%, #047857 100%); border: none; color: #ffffff; cursor: pointer; display: none; align-items: center; gap: 8px;" data-i18n="btn_approve_qt"><i class="fa-solid fa-check"></i> Duyệt Báo Giá Cước</button>
+                <button type="button" class="fiori-btn" id="btn-save-qt" onclick="saveOracleQT()" style="padding: 10px 24px; font-size: 0.92rem; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); border: none; color: #ffffff; cursor: pointer; box-shadow: 0 4px 14px rgba(10,110,209,0.3); display: inline-flex; align-items: center; gap: 8px;" data-i18n="btn_save_qt"><i class="fa-solid fa-floppy-disk"></i> Lưu Báo Giá Cước</button>
               </div>
             </div>
           </div>
-          <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 30px;"><i class="fa-solid fa-file-invoice"></i> <span data-i18n="title_sales_orders">3. Sales Order (Đơn Hàng)</span></h3>
+          <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 30px;"><i class="fa-solid fa-file-invoice"></i> <span data-i18n="title_sales_orders">3. Đơn Hàng Vận Chuyển (Sales Order)</span></h3>
           <div class="oracle-container" id="oracle-so-list">
             <div class="oracle-header">
-              <div class="oracle-title" data-i18n="title_manage_so">Quản Lý Đơn Hàng Bán</div>
+              <div class="oracle-title" data-i18n="title_manage_so">Quản Lý Đơn Hàng Vận Chuyển</div>
               <div class="oracle-actions">
                 <button class="oracle-btn oracle-btn-secondary" onclick="loadSalesOrders()"><i class="fa-solid fa-rotate-right"></i> <span data-i18n="btn_refresh">Làm Mới</span></button>
                 <span class="so-create-source-note" data-i18n="note_create_so_from_qt">
@@ -3610,7 +3610,7 @@
                     <th data-i18n="th_customer">Khách Hàng</th>
                     <th data-i18n="th_origin">Nơi Đi</th>
                     <th data-i18n="th_destination">Nơi Đến</th>
-                    <th data-i18n="th_total_amount">Tổng Tiền</th>
+                    <th data-i18n="th_total_amount">Tổng cước</th>
                     <th class="so-status-cell" data-i18n="th_status">Trạng Thái</th>
                     <th class="so-action-cell" data-i18n="th_action">Hành động</th>
                   </tr>
@@ -3629,9 +3629,9 @@
               <div style="background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); padding: 22px 28px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(10,110,209,0.2);">
                 <div>
                     <div style="display:flex; align-items:center; gap:8px; font-size:1.05rem; font-weight:700;">
-                    <i class="fa-solid fa-file-invoice" style="font-size: 1.3rem;"></i> <span data-i18n="title_modal_so">SALES ORDER (ĐƠN HÀNG BÁN)</span>
+                    <i class="fa-solid fa-file-invoice" style="font-size: 1.3rem;"></i> <span data-i18n="title_modal_so">ĐƠN HÀNG VẬN CHUYỂN (SALES ORDER)</span>
                   </div>
-                  <div id="oracle-so-form-subtitle" style="font-size: 0.83rem; color: #e0f2fe; margin-top: 4px; font-weight: 400;" data-i18n="sub_modal_so">Đơn hàng bán tiêu chuẩn - Bản nháp</div>
+                  <div id="oracle-so-form-subtitle" style="font-size: 0.83rem; color: #e0f2fe; margin-top: 4px; font-weight: 400;" data-i18n="sub_modal_so">Đơn hàng vận chuyển - Bản nháp</div>
                 </div>
                 <button type="button" onclick="closeOracleSOForm()" style="background: rgba(255,255,255,0.18); border: none; font-size: 1.1rem; color: #ffffff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;"><i class="fa-solid fa-xmark"></i></button>
               </div>
@@ -3642,7 +3642,7 @@
                 <div class="fiori-op-section" style="background: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                   <!-- TAB HEADER -->
                   <div class="form-sec-tabs" style="display:flex; gap:8px; border-bottom:1px solid #e2e8f0; margin-bottom:16px;">
-                    <div class="form-sec-tab active" onclick="switchFormSecTab('so-sec-info', this)" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_so_info"><i class="fa-solid fa-circle-info"></i> Thông Tin Đơn Hàng Bán</div>
+                    <div class="form-sec-tab active" onclick="switchFormSecTab('so-sec-info', this)" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_so_info"><i class="fa-solid fa-circle-info"></i> Thông Tin Đơn Hàng Vận Chuyển</div>
                     <div class="form-sec-tab" onclick="switchFormSecTab('so-sec-order-details', this)" style="padding: 10px 15px; font-weight: bold; color: #666; cursor: pointer;" data-i18n="tab_so_details"><i class="fa-solid fa-list-check"></i> Chi Tiết Đơn Hàng</div>
                     <div class="form-sec-tab" onclick="switchFormSecTab('so-sec-notes', this)" style="padding: 10px 15px; font-weight: bold; color: #666; cursor: pointer;" data-i18n="tab_notes"><i class="fa-solid fa-note-sticky"></i> Ghi Chú</div>
                   </div>
@@ -3650,7 +3650,7 @@
                   <!-- Vietnamese source cleaned -->
                   <div id="so-sec-info" class="form-sec-content">
                     <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 0.83rem; color: #15803d; font-weight: 600;" data-i18n="tip_so_banner">
-                      <strong>Sales Order (Đơn Hàng Bán Chính Thức):</strong> Tổng hợp cước vận chuyển từ Báo giá + chi tiết danh mục hàng hóa vận chuyển thực tế. Đơn hàng lưu xong sẽ đủ điều kiện chuyển sang bước <strong>Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe</strong>.
+                      <strong>Đơn hàng vận chuyển (Sales Order):</strong> Tổng hợp cước vận chuyển từ Báo giá + chi tiết danh mục hàng hóa vận chuyển thực tế. Đơn hàng lưu xong sẽ đủ điều kiện chuyển sang bước <strong>Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe</strong>.
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                       <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -3681,7 +3681,7 @@
                         </select>
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <label style="font-size: 0.85rem; color: #666;" data-i18n="lbl_sales_rep">Nhân Viên Bán Hàng</label>
+                        <label style="font-size: 0.85rem; color: #666;" data-i18n="lbl_sales_rep">Nhân viên kinh doanh</label>
                         <input type="text" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none;" id="so-sales-rep" value="Nguyễn Văn Kinh Doanh">
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 8px; grid-column: span 2; background: #fafafa; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -3728,7 +3728,7 @@
                   
                   <!-- TABS (INTERACTIVE TAB SWITCHING) -->
                   <div style="display: flex; gap: 20px; border-bottom: 2px solid #eee; margin-bottom: 15px;">
-                    <div class="so-tab-btn active" onclick="switchSOTab('lines')" id="tab-btn-lines" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_lines">Danh Mục Hàng</div>
+                    <div class="so-tab-btn active" onclick="switchSOTab('lines')" id="tab-btn-lines" style="padding: 10px 15px; font-weight: bold; color: #0a6ed1; border-bottom: 2px solid #0a6ed1; cursor: pointer;" data-i18n="tab_lines">Hàng Hóa Vận Chuyển</div>
                     <div class="so-tab-btn" onclick="switchSOTab('details')" id="tab-btn-details" style="padding: 10px 15px; color: #666; cursor: pointer;" data-i18n="tab_details">Chi Tiết Đơn Hàng</div>
                     <div class="so-tab-btn" onclick="switchSOTab('attachments')" id="tab-btn-attachments" style="padding: 10px 15px; color: #666; cursor: pointer;" data-i18n="tab_attachments">Tài Liệu Đính Kèm</div>
                   </div>
@@ -3742,8 +3742,8 @@
                           <th style="padding: 10px; border-bottom: 1px solid #ccc;" data-i18n="th_item_desc">Mô Tả Hàng Hóa</th>
                           <th style="padding: 10px; border-bottom: 1px solid #ccc;" data-i18n="th_qty">Số Lượng</th>
                           <th style="padding: 10px; border-bottom: 1px solid #ccc;" data-i18n="th_uom">ĐVT</th>
-                          <th style="padding: 10px; border-bottom: 1px solid #ccc;"><span data-i18n="th_unit_price">Đơn Giá</span> <span id="so-line-currency-label"></span></th>
-                          <th style="padding: 10px; border-bottom: 1px solid #ccc;"><span data-i18n="th_amount">Thành Tiền</span> <span id="so-line-total-currency-label"></span></th>
+                          <th style="padding: 10px; border-bottom: 1px solid #ccc;"><span data-i18n="th_unit_price">Đơn giá cước</span> <span id="so-line-currency-label"></span></th>
+                          <th style="padding: 10px; border-bottom: 1px solid #ccc;"><span data-i18n="th_amount">Thành tiền cước</span> <span id="so-line-total-currency-label"></span></th>
                         </tr>
                       </thead>
                       <tbody id="so-lines-tbody">
@@ -3766,7 +3766,7 @@
                     </table>
                     <button type="button" id="btn-add-so-line" onclick="addSOLineRow()" style="background: transparent; border: 1px solid #0a6ed1; color: #0a6ed1; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 4px 0 12px;" data-i18n="btn_add_row">+ Thêm Dòng</button>
                     <div class="so-total-summary" style="display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,320px); align-items:center; gap:14px; margin:0 0 12px; padding:14px 16px; border:1px solid #dbeafe; border-radius:10px; background:#f8fbff;">
-                      <div style="font-weight:800; color:#334155;" data-i18n="lbl_total_so_amount">Tổng tiền đơn hàng</div>
+                      <div style="font-weight:800; color:#334155;" data-i18n="lbl_total_so_amount">Tổng cước</div>
                       <input type="text" readonly data-vnd-value="3500000" style="padding:10px 12px; border:1px solid #0a6ed1; border-radius:6px; outline:none; font-weight:900; color:#0a6ed1; font-size:1rem; background:#ffffff; cursor:not-allowed; text-align:right;" id="so-amount" value="3.500.000 VNĐ">
                     </div>
                   </div>
@@ -4922,7 +4922,7 @@
 <th data-i18n="lbl_customer">Khách hàng</th>
                     <th data-i18n="th_do_ref">Tham Chiếu DO</th>
                     <th data-i18n="th_date">Ngày</th>
-                    <th data-i18n="th_amount_vnd">Thành Tiền (VNĐ)</th>
+                    <th data-i18n="th_amount_vnd">Thành tiền cước (VNĐ)</th>
                     <th data-i18n="th_status">Trạng Thái</th>
                   </tr>
                 </thead>
@@ -6422,7 +6422,7 @@
   <div id="modal-quotation" class="modal-overlay" style="display: none;">
     <div class="erp-modal-box">
       <div class="erp-blue-header">
-        <h3 id="modal-qt-title" data-i18n="form_1_title">1. BÁO GIÁ</h3>
+        <h3 id="modal-qt-title" data-i18n="form_1_title">1. BÁO GIÁ CƯỚC</h3>
         <button onclick="closeModal('modal-quotation')" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
       
@@ -6504,7 +6504,7 @@
                   <input type="number" id="qt-margin" value="15" style="width:80px; text-align:right; border:1px solid var(--border-color); padding:4px;"> %
                 </div>
                 
-                <div style="font-size:1.1rem; color:var(--lao-red);" data-i18n="lbl_selling_price">Giá Bán = </div>
+                <div style="font-size:1.1rem; color:var(--lao-red);" data-i18n="lbl_selling_price">Giá cước = </div>
                 <div id="qt-lbl-selling-price" style="font-size:1.1rem; color:var(--lao-red);">0</div>
               </div>
             </div>
@@ -6830,7 +6830,7 @@
   <!-- Hàm định dạng dùng chung (escape, tiền, ngày giờ). Phải nạp TRƯỚC
        app.js và sla-analytics.js vì cả hai đều dùng escapeHtml từ đây. -->
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
-  <script src="/static/js/api-auth.js?v=20260904-cost-per-km-v1"></script>
+  <script src="/static/js/api-auth.js?v=20260904-freight-terms-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
     <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
@@ -6845,9 +6845,9 @@
   <!-- Bảng xếp ca tài xế: ma trận người × ngày. Phải nạp trước app.js
        vì renderDriverShiftCalendarTable gọi window.DriverRoster. -->
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260904-cost-per-km-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260904-freight-terms-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-cost-per-km-v1"></script>
+  <script src="/static/js/app.js?v=20260904-freight-terms-v1"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

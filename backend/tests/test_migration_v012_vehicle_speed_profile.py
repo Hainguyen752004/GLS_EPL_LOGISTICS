@@ -35,7 +35,7 @@ def test_v012_adds_vehicle_speed_profile_columns_to_sqlite(tmp_path):
     finally:
         connection.close()
 
-    assert required_migration_head() == "025_vehicle_depot"
+    assert required_migration_head() == "026_sales_order_lines"
 
 
 def test_v012_postgresql_dry_run_contains_vehicle_speed_columns():

@@ -1,5 +1,5 @@
-import datetime
-from typing import Optional, Union
+﻿import datetime
+from typing import Optional, Union, List
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -56,6 +56,18 @@ class QuotationUpdateRequest(QuotationCreateRequest):
     route_id: Optional[str] = None
 
 
+class SalesOrderLineRequest(StrictRequest):
+    """Mot dong hang hoa van chuyen.
+
+    `uom` vua quyet dinh cach tinh cuoc, vua duoc quy doi ra khoi luong / the
+    tich de chan dieu xe qua tai.
+    """
+    description: Optional[str] = None
+    quantity: Optional[Number] = None
+    uom: Optional[str] = None
+    unit_price: Optional[Number] = None
+
+
 class SalesOrderCreateRequest(StrictRequest):
     id: Optional[str] = None
     quotation_id: str
@@ -71,6 +83,7 @@ class SalesOrderCreateRequest(StrictRequest):
     total_amount: Optional[Number] = None
     order_date: Optional[str] = None
     currency_code: Optional[str] = None
+    lines: Optional[List[SalesOrderLineRequest]] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
 
@@ -89,6 +102,7 @@ class SalesOrderUpdateRequest(StrictRequest):
     currency_code: Optional[str] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
+    lines: Optional[List[SalesOrderLineRequest]] = None
 
 
 class WorkflowStatusRequest(StrictRequest):

@@ -1,5 +1,6 @@
 ﻿import datetime
 import math
+from decimal import Decimal, InvalidOperation
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_
@@ -16,6 +17,7 @@ from models import (
     ResourceAssignment,
     Route,
     SalesOrder,
+    SalesOrderLine,
     TransportTrip,
     TransportTripLeg,
     TripDeliveryOrder,
@@ -53,6 +55,126 @@ DO_ANALYSIS_STAGE = {
     "incident": "Gặp sự cố",
 }
 
+
+# --------------------------------------------------------------------------
+# Dòng hàng hóa vận chuyển
+# --------------------------------------------------------------------------
+
+# Quy đổi đơn vị tính cước ra khối lượng / thể tích.
+#
+# Đây là chỗ dữ liệu người dùng gõ vào bảng "Hàng hóa vận chuyển" cuối cùng có
+# tác dụng thật: `vehicle_capacity_policy` chặn điều xe quá tải dựa trên đúng
+# hai con số này. Trước đây bảng dòng hàng không được lưu ở đâu cả, nên hai con
+# số đó phải nhập tay ở chỗ khác — hoặc bị bỏ trống.
+#
+# "Chuyến" và "Km" là cách tính cước theo lần đi, không nói gì về khối lượng,
+# nên cố ý không quy đổi.
+_UOM_TO_KG = {"kg": 1, "tấn": 1000, "tan": 1000, "ton": 1000}
+_UOM_TO_M3 = {"khối": 1, "khoi": 1, "m3": 1, "m³": 1, "cbm": 1}
+
+
+def _line_quantity_split(uom, quantity):
+    """Trả về (kg, m3) mà một dòng đóng góp vào tải trọng đơn hàng."""
+    key = str(uom or "").strip().lower()
+    for token, factor in _UOM_TO_KG.items():
+        if key.startswith(token):
+            return quantity * Decimal(factor), Decimal(0)
+    for token in _UOM_TO_M3:
+        if key.startswith(token):
+            return Decimal(0), quantity
+    return Decimal(0), Decimal(0)
+
+
+def _line_decimal(value, field):
+    """Doc mot so tien/so luong cua dong hang thanh Decimal.
+
+    KHONG dung _money(): helper do tra ve float, ma cac cot nay la NUMERIC.
+    Di qua float se tai lap dung sai so nhi phan ma v024_money_numeric da don.
+    """
+    if value in (None, ""):
+        return Decimal(0)
+    if isinstance(value, bool):
+        raise DomainError("SO_LINE_INVALID", f"{field} khong hop le.", 422)
+    try:
+        result = value if isinstance(value, Decimal) else Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        raise DomainError("SO_LINE_INVALID", f"{field} khong hop le.", 422) from None
+    if not result.is_finite():
+        raise DomainError("SO_LINE_INVALID", f"{field} khong hop le.", 422)
+    if result < 0:
+        raise DomainError("SO_LINE_NEGATIVE", "So luong va don gia cuoc khong duoc am.", 422)
+    if result.adjusted() + 1 > 18:
+        raise DomainError("SO_LINE_TOO_LARGE", f"{field} vuot qua Numeric(24,6).", 422)
+    return result
+
+
+def _replace_sales_order_lines(db, so, rows):
+    """Ghi lại toàn bộ dòng hàng của một đơn, rồi tính lại số tổng.
+
+    Thay trọn bộ thay vì vá từng dòng: giao diện gửi lên cả bảng, và ghép từng
+    dòng sẽ để lại dòng mồ côi khi người dùng xóa bớt.
+    """
+    if rows is None:
+        return
+    if not isinstance(rows, list):
+        raise DomainError("SO_LINES_INVALID", "Danh sách hàng hóa vận chuyển phải là một mảng.", 422)
+    if len(rows) > 200:
+        raise DomainError("SO_LINES_TOO_MANY", "Một đơn hàng vận chuyển không được quá 200 dòng hàng.", 422)
+
+    db.query(SalesOrderLine).filter(SalesOrderLine.so_id == so.id).delete(synchronize_session=False)
+
+    total = Decimal(0)
+    total_kg = Decimal(0)
+    total_m3 = Decimal(0)
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            raise DomainError("SO_LINES_INVALID", "Mỗi dòng hàng phải là một đối tượng.", 422)
+        quantity = _line_decimal(row.get("quantity"), "Số lượng")
+        unit_price = _line_decimal(row.get("unit_price"), "Đơn giá cước")
+        amount = quantity * unit_price
+        uom = str(row.get("uom") or "Tấn").strip() or "Tấn"
+        db.add(SalesOrderLine(
+            id=f"{so.id}-L{index:03d}",
+            so_id=so.id,
+            line_no=index,
+            description=str(row.get("description") or "").strip()[:500],
+            quantity=quantity,
+            uom=uom[:32],
+            unit_price=unit_price,
+            amount=amount,
+        ))
+        total += amount
+        kg, m3 = _line_quantity_split(uom, quantity)
+        total_kg += kg
+        total_m3 += m3
+
+    # Số tổng được TÍNH LẠI từ các dòng, không nhận từ giao diện: nếu nhận thì
+    # tổng và các dòng có thể nói hai con số khác nhau.
+    so.total_amount = total
+    if total_kg:
+        so.weight_kg = float(total_kg)
+    if total_m3:
+        so.volume_m3 = float(total_m3)
+
+
+def serialize_sales_order_lines(db, so_id):
+    rows = (
+        db.query(SalesOrderLine)
+        .filter(SalesOrderLine.so_id == so_id)
+        .order_by(SalesOrderLine.line_no)
+        .all()
+    )
+    return [
+        {
+            "line_no": row.line_no,
+            "description": row.description or "",
+            "quantity": float(row.quantity or 0),
+            "uom": row.uom,
+            "unit_price": float(row.unit_price or 0),
+            "amount": float(row.amount or 0),
+        }
+        for row in rows
+    ]
 
 def _parse_business_datetime(value):
     if not value:
@@ -491,6 +613,8 @@ def update_sales_order(db, so_id, data, user="system"):
     so.delivery_window_start = data.get("delivery_window_start", so.delivery_window_start) or ""
     so.delivery_window_end = data.get("delivery_window_end", so.delivery_window_end) or ""
     so.weight_kg = _money(data, "weight_kg", so.weight_kg or 0)
+    # Dong hang duoc ghi SAU cac truong tong, vi no tinh lai tong tu cac dong.
+    _replace_sales_order_lines(db, so, data.get("lines"))
     so.pallet_count = _nonnegative_int(data, "pallet_count", so.pallet_count or 0)
     so.total_amount = _money(data, "total_amount", so.total_amount or 0)
     if "currency_code" in data:

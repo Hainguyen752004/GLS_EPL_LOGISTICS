@@ -35,8 +35,8 @@ def test_v008_is_head_and_adds_driver_photo_url_without_losing_vehicle_images(tm
     connection.commit()
     connection.close()
 
-    assert upgrade(str(path))[-1] == "025_vehicle_depot"
-    assert required_migration_head() == "025_vehicle_depot"
+    assert upgrade(str(path))[-1] == "026_sales_order_lines"
+    assert required_migration_head() == "026_sales_order_lines"
 
     with sqlite3.connect(path) as migrated:
         driver_columns = {row[1] for row in migrated.execute('PRAGMA table_info("drivers")')}

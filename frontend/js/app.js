@@ -186,7 +186,7 @@ function forceCriticalVietnameseLabels() {
     th_customer: 'Khách Hàng',
     th_origin: 'Nơi Đi',
     th_destination: 'Nơi Đến',
-    th_total_amount: 'Tổng Tiền',
+    th_total_amount: 'Tổng cước',
     th_status: 'Trạng Thái',
     th_action: 'Hành động',
     lbl_order_no: 'Mã Đơn Hàng',
@@ -194,7 +194,7 @@ function forceCriticalVietnameseLabels() {
     lbl_payment_terms: 'Điều Khoản Thanh Toán',
     lbl_route_stops: 'Chọn Tuyến Đường Vận Chuyển (Sales Order Route)',
     lbl_order_lines: 'Chi Tiết Đơn Hàng',
-    tab_lines: 'Danh Mục Hàng',
+    tab_lines: 'Hàng Hóa Vận Chuyển',
     tab_details: 'Chi Tiết Đơn Hàng',
     tab_attachments: 'Tài Liệu Đính Kèm',
     btn_search: 'Tìm Kiếm'
@@ -275,7 +275,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-fuel-norm-unit-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260904-freight-terms-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -974,7 +974,7 @@ window.switchFinanceSubTab = function (key, button) {
 
 window.installEnterpriseModuleTabs = function () {
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const crmTitle = lang === 'la' ? 'CRM / ໃບສະເໜີລາຄາ / ໃບສັ່ງຂາຍ' : (lang === 'en' ? 'CRM / Quotations / Sales Orders' : 'CRM / Báo giá / Đơn hàng');
+  const crmTitle = lang === 'la' ? 'CRM / ໃບສະເໜີລາຄາ / ໃບສັ່ງຂາຍ' : (lang === 'en' ? 'CRM / Quotations / Sales Orders' : 'CRM / Báo giá cước / Đơn hàng vận chuyển');
   const singleGroupHint = lang === 'la' ? 'ເປີດເທື່ອລະກຸ່ມເພື່ອບໍ່ໃຫ້ໜ້າຈໍສັບສົນ.' : (lang === 'en' ? 'Open one group at a time to reduce clutter.' : 'Chỉ mở một nhóm nghiệp vụ mỗi lần để đỡ rối màn hình.');
 
   const configs = [
@@ -7240,7 +7240,7 @@ window.deleteOracleQT = async function (id) {
     showToast('Đơn hàng đã duyệt/xác nhận chỉ được xem, không được xóa.');
     return;
   }
-  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Bán ' + id + '?')) return;
+  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Vận Chuyển ' + id + '?')) return;
   try {
     const res = await fetch(API_BASE + '/api/quotations/' + id, { method: 'DELETE' });
     if (res.ok) {
@@ -7401,7 +7401,7 @@ function renderOracleSOList(data) {
   tbody.innerHTML = '';
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
   if (!data || data.length === 0) {
-    const emptyMsg = lang === 'la' ? 'ຍັງບໍ່ມີໃບສັ່ງຂາຍໃນຖານຂໍ້ມູນ. ກະລຸນາສ້າງໃບສັ່ງຂາຍຈາກໃບສະເໜີລາຄາທີ່ອະນຸມັດແລ້ວ.' : (lang === 'en' ? 'No sales orders in database. Please create from approved quotation.' : 'Chưa có đơn hàng bán nào trong CSDL. Vui lòng tạo đơn hàng từ báo giá đã duyệt.');
+    const emptyMsg = lang === 'la' ? 'ຍັງບໍ່ມີໃບສັ່ງຂາຍໃນຖານຂໍ້ມູນ. ກະລຸນາສ້າງໃບສັ່ງຂາຍຈາກໃບສະເໜີລາຄາທີ່ອະນຸມັດແລ້ວ.' : (lang === 'en' ? 'No sales orders in database. Please create from approved quotation.' : 'Chưa có đơn hàng vận chuyển nào trong CSDL. Vui lòng tạo đơn hàng từ báo giá đã duyệt.');
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;"><i class="fa-solid fa-folder-open"></i> ${emptyMsg}</td></tr>`;
     return;
   }
@@ -7459,7 +7459,7 @@ window.deleteOracleSO = async function (id) {
     showToast('Đơn hàng đã duyệt/xác nhận chỉ được xem, không được xóa.');
     return;
   }
-  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Bán ' + id + '?')) return;
+  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Vận Chuyển ' + id + '?')) return;
   try {
     const res = await fetch(API_BASE + '/api/sales-orders/' + id, { method: 'DELETE' });
     if (res.ok) {
@@ -7489,7 +7489,7 @@ window.createDOFromSO = function (soId) {
   if (!so) return;
   const st = so.status || '';
   if (st !== 'Confirmed' && st !== 'Đã xác nhận' && st !== 'Won' && st !== 'Đã chốt' && st !== 'confirmed') {
-    showToast('⚠️ Không thể tạo Lệnh Giao Hàng! Đơn Hàng Bán phải được xác nhận trước.');
+    showToast('⚠️ Không thể tạo Lệnh Giao Hàng! Đơn Hàng Vận Chuyển phải được xác nhận trước.');
     return;
   }
 
@@ -7603,6 +7603,13 @@ window.openOracleSOForm = function (options = {}) {
         if (typeof window.onSORouteSelectChange === 'function') {
           window.onSORouteSelectChange(routeSelect?.value || '');
         }
+      })
+      .then(() => {
+        // Nap lai cac dong hang da luu. Truoc day bang nay luon trong khi mo
+        // lai mot don da luu, vi khong co noi nao chua no.
+        const openedId = document.getElementById('so-id')?.value || '';
+        if (openedId && currentSOMode !== 'create') return window.loadSOLinesFromServer(openedId);
+        return undefined;
       })
       .catch(err => console.error(err))
       .finally(() => setFormLoadingState('oracle-so-form', false));
@@ -7739,7 +7746,7 @@ window.editOracleSO = function (id) {
   openOracleSOForm();
   currentSourceQuotationId = so.quotation_id || '';
   const titleEl = document.getElementById('oracle-form-title');
-  if (titleEl) titleEl.innerText = (locked ? 'Xem' : 'Chỉnh sửa') + ' Đơn Hàng Bán: ' + so.id;
+  if (titleEl) titleEl.innerText = (locked ? 'Xem' : 'Chỉnh sửa') + ' Đơn Hàng Vận Chuyển: ' + so.id;
 
   if (document.getElementById('so-id')) {
     document.getElementById('so-id').value = so.id;
@@ -10512,7 +10519,7 @@ const MASTER_DATA_GUIDANCE = {
   },
   'md-tab-customers': {
     title: { vi: 'Khách hàng', en: 'Customers', la: 'ລູກຄ້າ' },
-    summary: { vi: 'Danh mục khách hàng/đối tác để tạo báo giá, đơn hàng bán và địa điểm giao nhận.', en: 'Customer directory for quotes, sales orders and delivery locations.', la: 'ລາຍຊື່ລູກຄ້າ/ຄູ່ຮ່ວມງານ ສຳລັບສ້າງໃບສະເໜີລາຄາ, SO ແລະ ສະຖານທີ່ຮັບ-ສົ່ງ.' },
+    summary: { vi: 'Danh mục khách hàng/đối tác để tạo báo giá, đơn hàng vận chuyển và địa điểm giao nhận.', en: 'Customer directory for quotes, sales orders and delivery locations.', la: 'ລາຍຊື່ລູກຄ້າ/ຄູ່ຮ່ວມງານ ສຳລັບສ້າງໃບສະເໜີລາຄາ, SO ແລະ ສະຖານທີ່ຮັບ-ສົ່ງ.' },
     dataLabel: { vi: 'khách hàng', en: 'customers', la: 'ລູກຄ້າ' },
     next: {
       vi: ['Thêm khách hàng', 'Bổ sung người liên hệ và địa chỉ kho', 'Chọn khách hàng ở bước Báo giá'],
@@ -11580,7 +11587,7 @@ function refreshSOEditControls() {
   const subtitle = document.getElementById('oracle-so-form-subtitle');
   if (subtitle) {
     const label = statusLabel(status || 'Bản nháp');
-    subtitle.textContent = `Đơn hàng bán tiêu chuẩn - ${label}`;
+    subtitle.textContent = `Đơn hàng vận chuyển - ${label}`;
   }
 }
 window.refreshSOEditControls = refreshSOEditControls;
@@ -15251,7 +15258,11 @@ window.saveOracleSO = async function () {
   const payload = {
     route_id: route,
     ...routeContext,
-    total_amount: amount
+    total_amount: amount,
+    // May chu TINH LAI tong tu cac dong nay, nen tong va cac dong khong the
+    // noi hai con so khac nhau. Don vi tinh cua tung dong con duoc quy doi ra
+    // khoi luong / the tich de chan dieu xe qua tai.
+    lines: readSOLinesFromForm(),
   };
   if (!currentSO) {
     payload.id = soId;
@@ -15369,6 +15380,65 @@ window.submitPOD = async function () {
   }
   openDeliveryCompletionEditor(doId);
   showToast(`Đã mở hồ sơ hoàn tất ${doId}. POD, chữ ký, giá cuối và hóa đơn sẽ được lưu trong một giao dịch.`, 'info');
+};
+
+/**
+ * Doc bang "Hang hoa van chuyen" tu man hinh thanh mang de gui len may chu.
+ *
+ * Truoc day bang nay khong duoc gui di dau ca: saveOracleSO chi gui
+ * customer_id, route_id va total_amount. Nguoi dung nhap mo ta hang, so luong,
+ * don vi tinh, don gia cuoc — bam Luu — nhan thong bao thanh cong, va khong mot
+ * dong nao duoc ghi lai.
+ */
+function readSOLinesFromForm() {
+  const tbody = document.getElementById('so-lines-tbody');
+  if (!tbody) return [];
+  return [...tbody.querySelectorAll('tr')].map(tr => {
+    const qty = tr.querySelector('input[id^="so-item-qty"]');
+    const price = tr.querySelector('input[id^="so-item-unit-price"]');
+    const uom = tr.querySelector('select[id^="so-item-uom"]');
+    const desc = tr.querySelector('input[type="text"]');
+    return {
+      description: desc?.value || '',
+      quantity: parseFloat(qty?.value) || 0,
+      uom: uom?.value || 'Tấn',
+      unit_price: parseFloat(String(price?.value || '').replace(/,/g, '')) || 0,
+    };
+  }).filter(line => line.quantity > 0 || line.unit_price > 0 || line.description.trim());
+}
+
+/** Nap lai cac dong hang da luu khi mo mot don hang van chuyen. */
+window.loadSOLinesFromServer = async function (soId) {
+  const tbody = document.getElementById('so-lines-tbody');
+  if (!tbody || !soId) return;
+  let lines = [];
+  try {
+    const res = await fetch(`${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/lines`);
+    if (!res.ok) return;
+    lines = (await res.json()).data || [];
+  } catch (error) {
+    // Khong tai duoc thi giu nguyen bang dang co, dung xoa trang cua nguoi dung.
+    return;
+  }
+  if (!lines.length) return;
+
+  const curr = document.getElementById('so-currency')?.value || 'VND';
+  tbody.innerHTML = lines.map((line, index) => {
+    const no = index + 1;
+    const suffix = no === 1 ? '' : `-${no}`;
+    const options = ['Tấn', 'Kg', 'Chuyến', 'Khối (m³)']
+      .map(item => `<option value="${escapeHtml(item)}"${item === line.uom ? ' selected' : ''}>${escapeHtml(item)}</option>`)
+      .join('');
+    return `<tr>
+      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;">ITM-${String(no).padStart(3, '0')}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee;"><input type="text" value="${escapeHtml(line.description || '')}" style="width:100%; border:none; background:#fff; border-bottom:1px solid #0a6ed1; outline:none;"></td>
+      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><input type="number" id="so-item-qty${suffix}" value="${Number(line.quantity) || 0}" oninput="calcSOLineTotal()" style="width:60px; padding:4px;"></td>
+      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><select id="so-item-uom${suffix}" onchange="calcSOLineTotal()" style="padding:4px; border:1px solid #ccc; border-radius:4px;">${options}</select></td>
+      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><input type="number" id="so-item-unit-price${suffix}" value="${Number(line.unit_price) || 0}" oninput="calcSOLineTotal()" style="width:110px; padding:4px;"></td>
+      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem; font-weight:bold; color:#0a6ed1;" id="so-item-total-amount${suffix}" data-vnd-value="${Number(line.amount) || 0}">${formatWorkflowCurrencyAmount(Number(line.amount) || 0, curr)}</td>
+    </tr>`;
+  }).join('');
+  calcSOLineTotal();
 };
 
 window.calcSOLineTotal = function () {

@@ -263,6 +263,24 @@ class Customer(Base):
     vendor_type = Column(String, nullable=True) # Carrier, Supplier, etc.
 
 # 6. SalesOrders
+class SalesOrderLine(Base):
+    """Dòng hàng hóa vận chuyển của một đơn hàng vận chuyển.
+
+    Đơn vị tính (`uom`) vừa quyết định cách tính cước, vừa được quy đổi ra khối
+    lượng / thể tích để `vehicle_capacity_policy` chặn điều xe quá tải.
+    """
+    __tablename__ = "sales_order_lines"
+    id = Column(String, primary_key=True)
+    so_id = Column(String, ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_no = Column(Integer, nullable=False)
+    description = Column(String)
+    quantity = Column(MONEY_TYPE, nullable=False, default=0)
+    uom = Column(String, nullable=False, default="Tấn")
+    unit_price = Column(MONEY_TYPE, nullable=False, default=0)  # Đơn giá cước theo đơn vị tính
+    amount = Column(MONEY_TYPE, nullable=False, default=0)      # Thành tiền cước = số lượng × đơn giá
+    __table_args__ = (UniqueConstraint("so_id", "line_no", name="uq_sales_order_lines_so_line"),)
+
+
 class SalesOrder(Base):
     __tablename__ = "sales_orders"
     id = Column(String, primary_key=True) # SO-2026-001

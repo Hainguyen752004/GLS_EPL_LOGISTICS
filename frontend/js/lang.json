@@ -11,7 +11,7 @@
   },
   "menu_crm_sales": {
     "en": "CRM & Sales",
-    "vi": "Quản lý quan hệ khách hàng & Bán hàng",
+    "vi": "Quản lý quan hệ khách hàng & Kinh doanh",
     "la": "ຄຸ້ມຄອງລູກຄ້າ ແລະ ການຂາຍ"
   },
   "menu_op_planning": {
@@ -51,7 +51,7 @@
   },
   "form_1_title": {
     "en": "1. QUOTATION",
-    "vi": "1. BÁO GIÁ",
+    "vi": "1. BÁO GIÁ CƯỚC",
     "la": "1. ໃບສະເໜີລາຄາ"
   },
   "form_3_title": {
@@ -135,8 +135,8 @@
     "la": "ຕົ້ນທຶນລວມ:"
   },
   "lbl_selling_price": {
-    "en": "Selling Price",
-    "vi": "Giá Bán",
+    "en": "Freight Rate",
+    "vi": "Giá cước",
     "la": "ລາຄາຂາຍ"
   },
   "tab_cargo_info": {
@@ -281,12 +281,12 @@
   },
   "btn_new_quote": {
     "en": "+ Create New Quote",
-    "vi": "+ Tạo báo giá mới",
+    "vi": "+ Tạo báo giá cước",
     "la": "+ ສ້າງໃບສະເໜີລາຄາໃໝ່"
   },
   "th_quote_id": {
     "en": "Quote ID",
-    "vi": "Mã Báo Giá",
+    "vi": "Mã báo giá cước",
     "la": "ລະຫັດສະເໜີລາຄາ"
   },
   "th_customer": {
@@ -331,7 +331,7 @@
   },
   "form_so_title": {
     "en": "Form 2: SALES ORDER (Live DB)",
-    "vi": "Form 2: Đơn hàng bán - Live DB",
+    "vi": "Form 2: Đơn hàng vận chuyển - Live DB",
     "la": "ແບບຟອມທີ 2: ໃບສັ່ງຊື້ (Live DB)"
   },
   "th_so_id": {
@@ -350,7 +350,7 @@
     "la": "ເງື່ອນໄຂການຊຳລະເງິນ"
   },
   "th_sales_rep": {
-    "en": "Sales Rep",
+    "en": "Account Manager",
     "vi": "NVKD",
     "la": "ພະນັກງານຂາຍ"
   },
@@ -361,7 +361,7 @@
   },
   "th_total": {
     "en": "Total Amount",
-    "vi": "Tổng Tiền",
+    "vi": "Tổng cước",
     "la": "ຈຳນວນເງິນລວມ"
   },
   "msg_loading_db": {
@@ -661,7 +661,7 @@
   },
   "chart_crm_title": {
     "en": "CRM & Sales (Quotations)",
-    "vi": "CRM và Sales (Báo giá)",
+    "vi": "CRM và Kinh doanh (Báo giá)",
     "la": "CRM ແລະ ການຂາຍ (ໃບສະເໜີລາຄາ)"
   },
   "chart_do_title": {
@@ -691,7 +691,7 @@
   },
   "wf_desc_1": {
     "en": "1. CRM & Sales: Source of revenue.",
-    "vi": "1. CRM và Sales (Báo giá và hợp đồng): Nơi khởi nguồn doanh thu. Tổng số báo giá phát hành phản ánh nhu cầu của khách hàng và nỗ lực của bộ phận kinh doanh.",
+    "vi": "1. CRM và Kinh doanh (Báo giá và hợp đồng): Nơi khởi nguồn doanh thu. Tổng số báo giá phát hành phản ánh nhu cầu của khách hàng và nỗ lực của bộ phận kinh doanh.",
     "la": "1. CRM & ການຂາຍ: ແຫຼ່ງລາຍຮັບ. ສະທ້ອນຄວາມຕ້ອງການຂອງລູກຄ້າ."
   },
   "wf_desc_2": {
@@ -746,12 +746,12 @@
   },
   "status_no_quotations": {
     "en": "No quotations found. Click '+ Create New Quotation' to add one.",
-    "vi": "Chưa có báo giá nào. Bấm '+ Tạo Báo Giá Mới' để thêm.",
+    "vi": "Chưa có báo giá nào. Bấm '+ Tạo Báo Giá Cước' để thêm.",
     "la": "ບໍ່ພົບໃບສະເໜີລາຄາ. ກົດ '+ ສ້າງໃບສະເໜີລາຄາໃໝ່' ເພື່ອເພີ່ມ."
   },
   "status_no_sales_orders": {
     "en": "No sales orders found.",
-    "vi": "Chưa có đơn hàng bán nào.",
+    "vi": "Chưa có đơn hàng vận chuyển nào.",
     "la": "ບໍ່ພົບຄຳສັ່ງຂາຍ."
   },
   "status_no_delivery_orders": {
@@ -1381,7 +1381,7 @@
   },
   "lbl_total_amount": {
     "en": "Total Amount (VNĐ)",
-    "vi": "Tổng Tiền (VNĐ)",
+    "vi": "Tổng cước (VNĐ)",
     "la": "ລວມເປັນເງິນ (VNĐ)"
   },
   "lbl_order_lines": {
@@ -1581,12 +1581,12 @@
   },
   "title_sales_orders": {
     "en": "3. Sales Order (Order)",
-    "vi": "3. Sales Order (Đơn Hàng)",
+    "vi": "3. Đơn Hàng Vận Chuyển (Sales Order)",
     "la": "3. ໃບສັ່ງຂາຍ"
   },
   "title_manage_so": {
     "en": "Manage Sales Orders",
-    "vi": "Quản Lý Đơn Hàng Bán",
+    "vi": "Quản Lý Đơn Hàng Vận Chuyển",
     "la": "ຄຸ້ມຄອງໃບສັ່ງຂາຍ"
   },
   "btn_create_so": {
@@ -1616,7 +1616,7 @@
   },
   "th_total_amount": {
     "en": "Total Amount",
-    "vi": "Tổng Tiền",
+    "vi": "Tổng cước",
     "la": "ຈຳນວນເງິນລວມ"
   },
   "lbl_pod_signatures": {
@@ -1700,8 +1700,8 @@
     "la": "ເງື່ອນໄຂການຊຳລະ"
   },
   "lbl_sales_rep": {
-    "en": "Sales Rep.",
-    "vi": "Nhân Viên Bán Hàng",
+    "en": "Account Manager.",
+    "vi": "Nhân viên kinh doanh",
     "la": "ພະນັກງານຂາຍ"
   },
   "lbl_route_stops": {
@@ -1711,7 +1711,7 @@
   },
   "tab_lines": {
     "en": "Lines",
-    "vi": "Danh Mục Hàng",
+    "vi": "Hàng Hóa Vận Chuyển",
     "la": "ລາຍການສິນຄ້າ"
   },
   "tab_details": {
@@ -1721,12 +1721,12 @@
   },
   "th_unit_price": {
     "en": "Unit Price",
-    "vi": "Đơn Giá",
+    "vi": "Đơn giá cước",
     "la": "ລາຄາຕໍ່ໜ່ວຍ"
   },
   "th_amount": {
     "en": "Amount",
-    "vi": "Thành Tiền",
+    "vi": "Thành tiền cước",
     "la": "ລວມເງິນ"
   },
   "menu_flow_diagram": {
@@ -1761,12 +1761,12 @@
   },
   "flow_step_1_title": {
     "en": "1. Transportation Quotation",
-    "vi": "1. Báo Giá Vận Tải (Quotation)",
+    "vi": "1. Báo Giá Cước Vận Chuyển (Quotation)",
     "la": "1. ໃບສະເໜີລາຄາການຂົນສົ່ງ (Quotation)"
   },
   "flow_step_2_title": {
     "en": "2. Sales Order",
-    "vi": "2. Đơn Hàng Bán (Sales Order)",
+    "vi": "2. Đơn Hàng Vận Chuyển (Sales Order)",
     "la": "2. ໃບສັ່ງຂາຍ (Sales Order)"
   },
   "flow_step_3_title": {
@@ -1976,12 +1976,12 @@
   },
   "lbl_form_1_qt": {
     "en": "1. QUOTATION",
-    "vi": "1. BÁO GIÁ",
+    "vi": "1. BÁO GIÁ CƯỚC",
     "la": "1. ໃບສະເໜີລາຄາ"
   },
   "lbl_form_2_so": {
     "en": "2. SALES ORDER",
-    "vi": "2. ĐƠN HÀNG BÁN",
+    "vi": "2. ĐƠN HÀNG VẬN CHUYỂN",
     "la": "2. ໃບສັ່ງຂາຍ"
   },
   "lbl_form_3_do": {
@@ -2161,7 +2161,7 @@
   },
   "step_1_title_full": {
     "en": "1. Transportation Quotation",
-    "vi": "1. Báo Giá Vận Tải (Quotation)",
+    "vi": "1. Báo Giá Cước Vận Chuyển (Quotation)",
     "la": "1. ໃບສະເໜີລາຄາການຂົນສົ່ງ (Quotation)"
   },
   "step_1_desc_full": {
@@ -2171,12 +2171,12 @@
   },
   "step_2_title_full": {
     "en": "2. Sales Order",
-    "vi": "2. Đơn Hàng Bán (Sales Order)",
+    "vi": "2. Đơn Hàng Vận Chuyển (Sales Order)",
     "la": "2. ໃບສັ່ງຂາຍ (Sales Order)"
   },
   "step_2_desc_full": {
     "en": "Close deal with customer, issue sales order SO-2026 and lock selling price.",
-    "vi": "Chốt hợp đồng với khách hàng, mở đơn hàng bán SO-2026 và khóa đơn giá bán.",
+    "vi": "Chốt hợp đồng với khách hàng, mở đơn hàng vận chuyển SO-2026 và khóa đơn giá cước.",
     "la": "ປິດການຂາຍກັບລູກຄ້າ, ອອກໃບສັ່ງຂາຍ SO-2026 ແລະ ລັອກລາຄາຂາຍ."
   },
   "step_3_title_full": {
@@ -2331,7 +2331,7 @@
   },
   "lbl_quote_no": {
     "en": "Quotation No.",
-    "vi": "Mã Báo Giá",
+    "vi": "Mã báo giá cước",
     "la": "ເລກທີໃບສະເໜີລາຄາ"
   },
   "ph_quote_no": {
@@ -2660,7 +2660,7 @@
     "la": "ຜູ້ບໍລິຫານລະບົບ"
   },
   "Pricing / Sales Rep": {
-    "en": "Pricing / Sales Rep",
+    "en": "Pricing / Account Manager",
     "vi": "Pricing / Sales Rep",
     "la": "ພະນັກງານຂາຍ & ລາຄາ"
   },
@@ -2741,7 +2741,7 @@
   },
   "Đơn Hàng Bán `SO-2026-xxx` (đã xác nhận)": {
     "en": "Sales Order `SO-2026-xxx` (Confirmed)",
-    "vi": "Đơn Hàng Bán `SO-2026-xxx` (đã xác nhận)",
+    "vi": "Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)",
     "la": "ໃບສັ່ງຂາຍ `SO-2026-xxx` (ຢືນຢັນແລ້ວ)"
   },
   "Mã đơn hàng SO & Ngày giao nhận": {
@@ -3040,7 +3040,7 @@
     "la": "<i class=\"fa-solid fa-user-gear\"></i> ຜູ້ບໍລິຫານລະບົບ"
   },
   "role_pricing_sales": {
-    "en": "<i class=\"fa-solid fa-user-tag\"></i> Pricing / Sales Rep",
+    "en": "<i class=\"fa-solid fa-user-tag\"></i> Pricing / Account Manager",
     "vi": "<i class=\"fa-solid fa-user-tag\"></i> Định Giá / Nhân Viên Kinh Doanh",
     "la": "<i class=\"fa-solid fa-user-tag\"></i> ພະນັກງານຂາຍ & ລາຄາ"
   },
@@ -3106,7 +3106,7 @@
   },
   "flow_step_2_desc": {
     "en": "Close deal with customer, generate SO-2026 sales order and lock selling price.",
-    "vi": "Chốt hợp đồng với khách hàng, mở đơn hàng bán SO-2026 và khóa đơn giá bán.",
+    "vi": "Chốt hợp đồng với khách hàng, mở đơn hàng vận chuyển SO-2026 và khóa đơn giá cước.",
     "la": "ປິດສັນຍາກັບລູກຄ້າ, ສ້າງໃບສັ່ງຂາຍ SO-2026 ແລະ ລັອກລາຄາຂາຍ."
   },
   "flow_step_2_in": {
@@ -3116,7 +3116,7 @@
   },
   "flow_step_2_out": {
     "en": "Sales Order `SO-2026-xxx` (Confirmed)",
-    "vi": "Đơn Hàng Bán `SO-2026-xxx` (đã xác nhận)",
+    "vi": "Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)",
     "la": "ໃບສັ່ງຂາຍ `SO-2026-xxx` (ຢືນຢັນແລ້ວ)"
   },
   "flow_step_3_desc": {
@@ -3255,22 +3255,22 @@
     "la": "ຍັງບໍ່ມີສັນຍາປິດ"
   },
   "title_quotation": {
-    "vi": "2. Quotation (Báo Giá)",
+    "vi": "2. Báo Giá Cước Vận Chuyển (Quotation)",
     "en": "2. Quotation",
     "la": "2. ໃບສະເໜີລາຄາ (Quotation)"
   },
   "title_manage_quotation": {
-    "vi": "Quản Lý Báo Giá",
+    "vi": "Quản Lý Báo Giá Cước",
     "en": "Manage Quotations",
     "la": "ຄຸ້ມຄອງໃບສະເໜີລາຄາ"
   },
   "btn_create_quotation": {
-    "vi": "+ Tạo Báo Giá Mới",
+    "vi": "+ Tạo Báo Giá Cước",
     "en": "+ New Quotation",
     "la": "+ ສ້າງໃບສະເໜີລາຄາໃໝ່"
   },
   "ph_search_qt": {
-    "vi": "Tìm mã báo giá, khách hàng, tuyến đường, hiệu lực, giá bán, trạng thái...",
+    "vi": "Tìm mã báo giá cước, khách hàng, tuyến đường, hiệu lực, giá cước, trạng thái...",
     "en": "Search quotation ID, customer, route, validity, price, status...",
     "la": "ຄົ້ນຫາລະຫັດໃບສະເໜີລາຄາ, ລູກຄ້າ, ເສັ້ນທາງ, ວັນໝົດອາຍຸ, ລາຄາ, ສະຖານະ..."
   },
@@ -3280,7 +3280,7 @@
     "la": "ກຳລັງໂຫຼດລາຍການໃບສະເໜີລາຄາ..."
   },
   "title_modal_qt": {
-    "vi": "QUOTATION (BÁO GIÁ)",
+    "vi": "BÁO GIÁ CƯỚC VẬN CHUYỂN (QUOTATION)",
     "en": "QUOTATION",
     "la": "ໃບສະເໜີລາຄາ (QUOTATION)"
   },
@@ -3290,7 +3290,7 @@
     "la": "ສະເໜີລາຄາຄ່າລົດ, ນ້ຳມັນ & ຄ່າທາງຕາມເສັ້ນທາງ - ຂັ້ນຕອນ 1 ກ່ອນປິດສັນຍາ"
   },
   "tab_qt_info": {
-    "vi": "Thông Tin Báo Giá",
+    "vi": "Thông Tin Báo Giá Cước",
     "en": "Quotation Information",
     "la": "ຂໍ້ມູນໃບສະເໜີລາຄາ"
   },
@@ -3300,7 +3300,7 @@
     "la": "ໝາຍເຫດ"
   },
   "tip_qt_banner": {
-    "vi": "Báo Giá Vận Tải: Dùng để chào giá cước xe, xăng dầu & trạm BOT cho Khách hàng. Sau khi Khách hàng đồng ý, bấm nút \"Chuyển thành SO\" để tạo Đơn Hàng chính thức kèm danh mục Hàng Hóa thực tế.",
+    "vi": "Báo giá cước vận chuyển: Dùng để chào giá cước xe, xăng dầu & trạm BOT cho Khách hàng. Sau khi Khách hàng đồng ý, bấm nút \"Chuyển thành SO\" để tạo Đơn Hàng chính thức kèm hàng hóa vận chuyển thực tế.",
     "en": "Transportation Quotation: Used to quote freight rates, fuel & tolls to Customers. Once approved, click \"Convert to SO\" to create an official Sales Order.",
     "la": "ໃບສະເໜີລາຄາການຂົນສົ່ງ: ໃຊ້ສຳລັບສະເໜີຄ່າຂົນສົ່ງ, ນ້ຳມັນ & ຄ່າທາງໃຫ້ລູກຄ້າ. ເມື່ອລູກຄ້າຕົກລົງ, ກົດປຸ່ມ \"ປ່ຽນເປັນ SO\" ເພື່ອສ້າງໃບສັ່ງຂາຍທາງການ."
   },
@@ -3365,7 +3365,7 @@
     "la": "ສະກຸນເງິນ & ອັດຕາແລກປ່ຽນ"
   },
   "lbl_valid_to": {
-    "vi": "Ngày Hết Hạn Báo Giá",
+    "vi": "Ngày Hết Hạn Báo Giá Cước",
     "en": "Quotation Valid To",
     "la": "ວັນໝົດອາຍຸໃບສະເໜີລາຄາ"
   },
@@ -3395,12 +3395,12 @@
     "la": "ຄ່າຜ່ານທາງ / BOT"
   },
   "lbl_selling_price_total": {
-    "vi": "Tổng Giá Bán Báo Giá:",
+    "vi": "Tổng cước báo giá:",
     "en": "Total Quotation Price:",
     "la": "ລາຄາຂາຍລວມໃບສະເໜີລາຄາ:"
   },
   "lbl_notes_content": {
-    "vi": "Nội Dung Ghi Chú Báo Giá",
+    "vi": "Nội Dung Ghi Chú Báo Giá Cước",
     "en": "Quotation Notes Content",
     "la": "ເນື້ອໃນໝາຍເຫດໃບສະເໜີລາຄາ"
   },
@@ -3410,12 +3410,12 @@
     "la": "ປ້ອນໝາຍເຫດສຳລັບໃບສະເໜີລາຄາ (ຕົວຢ່າງ: ຍັງບໍ່ລວມອາກອນ VAT 10%, ມີຜົນ 30 ວັນ, ຈ່າຍກ່ອນ 50%)..."
   },
   "btn_approve_qt": {
-    "vi": "Duyệt Báo Giá",
+    "vi": "Duyệt Báo Giá Cước",
     "en": "Approve Quotation",
     "la": "ອະນຸມັດໃບສະເໜີລາຄາ"
   },
   "btn_save_qt": {
-    "vi": "Lưu Báo Giá",
+    "vi": "Lưu Báo Giá Cước",
     "en": "Save Quotation",
     "la": "ບັນທຶກໃບສະເໜີລາຄາ"
   },
@@ -3430,17 +3430,17 @@
     "la": "ສ້າງ SO ຈາກໃບສະເໜີລາຄາທີ່ອະນຸມັດແລ້ວ"
   },
   "title_modal_so": {
-    "vi": "SALES ORDER (ĐƠN HÀNG BÁN)",
+    "vi": "ĐƠN HÀNG VẬN CHUYỂN (SALES ORDER)",
     "en": "SALES ORDER",
     "la": "ໃບສັ່ງຂາຍ (SALES ORDER)"
   },
   "sub_modal_so": {
-    "vi": "Đơn hàng bán tiêu chuẩn - Bản nháp",
+    "vi": "Đơn hàng vận chuyển - Bản nháp",
     "en": "Standard Sales Order - Draft",
     "la": "ໃບສັ່ງຂາຍມາດຕະຖານ - ຮ່າງ"
   },
   "tab_so_info": {
-    "vi": "Thông Tin Đơn Hàng Bán",
+    "vi": "Thông Tin Đơn Hàng Vận Chuyển",
     "en": "Sales Order Information",
     "la": "ຂໍ້ມູນໃບສັ່ງຂາຍ"
   },
@@ -3450,7 +3450,7 @@
     "la": "ລາຍລະອຽດໃບສັ່ງຂາຍ"
   },
   "tip_so_banner": {
-    "vi": "Sales Order (Đơn Hàng Bán Chính Thức): Tổng hợp cước vận chuyển từ Báo giá + chi tiết danh mục hàng hóa vận chuyển thực tế. Đơn hàng lưu xong sẽ đủ điều kiện chuyển sang bước Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe.",
+    "vi": "Đơn hàng vận chuyển (Sales Order): Tổng hợp cước vận chuyển từ Báo giá + chi tiết hàng hóa vận chuyển thực tế. Đơn hàng vận chuyển lưu xong sẽ đủ điều kiện chuyển sang bước Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe.",
     "en": "Sales Order: Aggregates transportation freight from Quotation + cargo line items. Once saved, it qualifies for Delivery Order (DO) & Vehicle Dispatch.",
     "la": "ໃບສັ່ງຂາຍ (Sales Order ທາງການ): ລວມຄ່າຂົນສົ່ງຈາກໃບສະເໜີລາຄາ + ລາຍການສິນຄ້າຕົວຈິງ. ໃບສັ່ງຂາຍບັນທຶກແລ້ວຈະພ້ອມປ່ຽນເປັນໃບສັ່ງປ່ອຍສິນຄ້າ DO & ປ່ອຍລົດ."
   },
@@ -3490,7 +3490,7 @@
     "la": "ຢືນຢັນແລ້ວ - ພ້ອມສົ່ງສິນຄ້າ"
   },
   "lbl_total_so_amount": {
-    "vi": "Tổng tiền đơn hàng",
+    "vi": "Tổng cước",
     "en": "Total Order Amount",
     "la": "ຈຳນວນເງິນລວມ"
   },
@@ -3615,12 +3615,12 @@
     "la": "ວັນໝົດອາຍຸ"
   },
   "th_selling_price": {
-    "vi": "Giá Bán",
-    "en": "Selling Price",
+    "vi": "Giá cước",
+    "en": "Freight Rate",
     "la": "ລາຄາຂາຍ"
   },
   "th_price": {
-    "vi": "Giá Bán",
+    "vi": "Giá cước",
     "en": "Price",
     "la": "ລາຄາ"
   },
@@ -3630,7 +3630,7 @@
     "la": "ເສັ້ນທາງ"
   },
   "th_quotation_no": {
-    "vi": "Mã Báo Giá",
+    "vi": "Mã báo giá cước",
     "en": "Quotation ID",
     "la": "ລະຫັດໃບສະເໜີລາຄາ"
   },

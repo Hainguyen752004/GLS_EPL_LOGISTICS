@@ -31,9 +31,18 @@ def _columns(connection):
     return {row[1] for row in connection.execute('PRAGMA table_info("vehicles")')}
 
 
-def test_v025_is_the_registered_head():
-    assert required_migration_head() == v025.VERSION
-    assert MIGRATIONS[-1] is v025
+def test_v025_stays_registered_and_ordered():
+    """v025 khong con la ban moi nhat (v026 them bang dong hang van chuyen).
+
+    Dieu can khoa lai la v025 VAN duoc dang ky va dung thu tu — ghim ten ban
+    moi nhat vao day thi moi lan them migration lai hong mot test khong lien
+    quan gi den bai xe.
+    """
+    versions = [module.VERSION for module in MIGRATIONS]
+    assert v025.VERSION in versions
+    assert versions == sorted(versions), "cac migration phai theo dung thu tu so"
+    assert versions[-1] > v025.VERSION, "phai co ban moi hon v025"
+    assert versions.index(v025.VERSION) == versions.index("024_money_numeric") + 1
 
 
 def test_upgrade_adds_both_columns_and_is_idempotent():
@@ -134,7 +143,11 @@ def test_full_upgrade_chain_reaches_v025(tmp_path):
         connection.execute('ALTER TABLE vehicles DROP COLUMN depot')
         connection.commit()
 
-    assert upgrade(str(database)) == [v025.VERSION]
+    # Khong ghim danh sach dung mot phan tu: moi migration them sau nay se noi
+    # vao day va lam hong mot test khong lien quan gi den bai xe.
+    applied = upgrade(str(database))
+    assert v025.VERSION in applied, 'v025 phai duoc chay'
+    assert applied[-1] == required_migration_head(), 'phai chay den ban moi nhat'
     assert upgrade(str(database)) == [], 'chay lai khong duoc lam gi nua'
 
     with sqlite3.connect(database) as connection:

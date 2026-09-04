@@ -1,4 +1,4 @@
-import datetime
+﻿import datetime
 import hashlib
 import json
 from typing import Any, Dict
@@ -368,6 +368,16 @@ async def list_sales_orders(
 ):
     query = db.query(SalesOrder).order_by(SalesOrder.id.desc())
     return paginated_query(query, page, page_size)
+
+
+@router.get("/api/sales-orders/{so_id}/lines")
+async def list_sales_order_lines(so_id: str, db: Session = Depends(get_db)):
+    """Dong hang hoa van chuyen cua mot don.
+
+    Truoc day man hinh co bang dong hang nhung khong co noi nao chua, nen mo
+    lai mot don da luu thi bang luon trong.
+    """
+    return {"data": svc.serialize_sales_order_lines(db, so_id)}
 
 
 @router.post("/api/sales-orders")
