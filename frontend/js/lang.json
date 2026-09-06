@@ -332,7 +332,7 @@
   "form_so_title": {
     "en": "Form 2: SALES ORDER (Live DB)",
     "vi": "Form 2: Đơn hàng vận chuyển - Live DB",
-    "la": "ແບບຟອມທີ 2: ໃບສັ່ງຊື້ (Live DB)"
+    "la": "ແບບຟອມທີ 2: ໃບສັ່ງຂາຍ (Live DB)"
   },
   "th_so_id": {
     "en": "SO No.",
@@ -342,7 +342,7 @@
   "th_order_date": {
     "en": "Order Date",
     "vi": "Ngày Đặt Hàng",
-    "la": "ວັນທີສັ່ງຊື້"
+    "la": "ວັນທີສັ່ງຂາຍ"
   },
   "th_payment_terms": {
     "en": "Payment Terms",
@@ -1367,7 +1367,7 @@
   "lbl_create_so": {
     "en": "Create Transport Order",
     "vi": "Tạo Đơn Hàng (SO)",
-    "la": "ສ້າງໃບສັ່ງຊື້"
+    "la": "ສ້າງໃບສັ່ງຂາຍ"
   },
   "lbl_order_no": {
     "en": "Order Number",
@@ -1427,7 +1427,7 @@
   "lbl_order_info": {
     "en": "Order Information",
     "vi": "Thông Tin Đơn Hàng",
-    "la": "ຂໍ້ມູນການສັ່ງຊື້"
+    "la": "ຂໍ້ມູນການສັ່ງຂາຍ"
   },
   "btn_save_close": {
     "en": "Save & Close",
@@ -1842,7 +1842,7 @@
   "lbl_order_date": {
     "en": "Order Date",
     "vi": "Ngày Đặt Hàng",
-    "la": "ວັນທີສັ່ງຊື້"
+    "la": "ວັນທີສັ່ງຂາຍ"
   },
   "lbl_do_no_placeholder": {
     "en": "e.g. DO-001",

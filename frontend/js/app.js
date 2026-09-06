@@ -273,7 +273,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260905-shipping-spec-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260906-shipping-spec-v1`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -7546,6 +7546,9 @@ window.openOracleSOForm = function (options = {}) {
     const input = document.getElementById(id);
     if (input) input.value = '';
   });
+  // Don MOI chua co tep nao. Khong ve lai thi danh sach cua don truoc con nam
+  // do, va nguoi dung tuong don moi da co san hop dong dinh kem.
+  if (typeof window.napTaiLieuSO === 'function') window.napTaiLieuSO();
   ['so-customer', 'so-route-select', 'so-status', 'so-currency'].forEach(id => {
     const select = document.getElementById(id);
     if (!select) return;
@@ -7751,6 +7754,8 @@ window.editOracleSO = function (id) {
   });
   setRouteContextFields('so', so);
   if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
+  // Nap danh sach tep dinh kem cua chinh don nay.
+  if (typeof window.napTaiLieuSO === 'function') window.napTaiLieuSO();
   if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
   if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
 
@@ -16384,6 +16389,138 @@ window.approveQuotation = async function () {
   if (result.ok) {
     showToast(`✅ Đã phê duyệt Báo Giá ${qid} thành công!`);
     if (typeof window.updateActiveFlowStep === 'function') window.updateActiveFlowStep(3);
+  }
+};
+
+/* ==========================================================================
+   Tài liệu đính kèm của đơn vận chuyển: hợp đồng, báo giá đã ký.
+
+   Trước đây tab này có một ô chọn tệp, và khi chọn xong nó báo "Đã chọn hợp
+   đồng/báo giá đính kèm: <tên tệp>". Nhưng `so-contract-file` không xuất hiện
+   trong bất kỳ tệp JS nào — không upload, không FormData, không gắn vào đơn.
+   Tệp bị bỏ ngay tại đó, còn người dùng thì tưởng đã đính kèm xong.
+   ========================================================================== */
+
+/** Cỡ tệp viết cho người đọc. */
+function coTep(soByte) {
+  const n = Number(soByte || 0);
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/** Mã đơn đang mở. Chưa lưu đơn thì chưa có chỗ để gắn tệp vào. */
+function maDonDangMo() {
+  return document.getElementById('so-id')?.value?.trim() || '';
+}
+
+/** Vẽ danh sách tệp đã đính kèm. */
+function veDanhSachTaiLieuSO(danhSach) {
+  const host = document.getElementById('so-doc-list');
+  if (!host) return;
+  if (!Array.isArray(danhSach) || !danhSach.length) {
+    host.innerHTML = '<p class="so-doc-empty">Chưa có tệp nào được đính kèm.</p>';
+    return;
+  }
+  host.innerHTML = `<ul class="so-doc-items">${danhSach.map(tep => `
+    <li>
+      <i class="fa-solid ${tep.mime_type === 'application/pdf' ? 'fa-file-pdf'
+        : String(tep.mime_type || '').startsWith('image/') ? 'fa-file-image' : 'fa-file-lines'}"
+         aria-hidden="true"></i>
+      <span class="so-doc-name">
+        <b>${escapeHtml(tep.file_name)}</b>
+        <small>${escapeHtml(tep.document_type_label || '')} · ${coTep(tep.file_size)}${
+          tep.note ? ` · ${escapeHtml(tep.note)}` : ''}</small>
+      </span>
+      <a class="fiori-btn fiori-btn-secondary" href="${escapeHtml(tep.download_url)}"
+         download="${escapeHtml(tep.file_name)}"><i class="fa-solid fa-download"></i> Tải về</a>
+      <button type="button" class="fiori-btn fiori-btn-secondary so-doc-del"
+              onclick="xoaTaiLieuSO('${escapeJsAttr(tep.id)}', '${escapeJsAttr(tep.file_name)}')"
+              title="Xóa tệp đính kèm"><i class="fa-solid fa-trash"></i></button>
+    </li>`).join('')}</ul>`;
+}
+
+/** Nạp danh sách tệp của đơn đang mở. */
+window.napTaiLieuSO = async function () {
+  const host = document.getElementById('so-doc-list');
+  if (!host) return;
+  const soId = maDonDangMo();
+  if (!soId) {
+    host.innerHTML = '<p class="so-doc-empty">Lưu đơn trước, rồi mới đính kèm tệp được.</p>';
+    return;
+  }
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/documents`);
+  } catch (e) {
+    return baoMatKetNoi('Nạp danh sách tệp đính kèm', e);
+  }
+  if (!res.ok) return baoLoiMayChu(res, 'Nạp danh sách tệp đính kèm');
+  veDanhSachTaiLieuSO(await res.json().catch(() => []));
+};
+
+/** Tải một tệp lên cho đơn đang mở. */
+window.taiLenTaiLieuSO = async function () {
+  const oTep = document.getElementById('so-doc-file');
+  const tep = oTep?.files?.[0];
+  if (!tep) return;
+
+  const soId = maDonDangMo();
+  if (!soId) {
+    showToast('⚠️ Hãy lưu đơn vận chuyển trước, rồi mới đính kèm tệp được.');
+    oTep.value = '';
+    return;
+  }
+
+  // Chặn ngay tại đây thay vì gửi 25 MB lên rồi nhận 413.
+  const TOI_DA = 25 * 1024 * 1024;
+  if (tep.size > TOI_DA) {
+    showToast(`⚠️ Tệp ${coTep(tep.size)} vượt giới hạn 25 MB.`);
+    oTep.value = '';
+    return;
+  }
+
+  const bieuMau = new FormData();
+  bieuMau.append('file', tep);
+  bieuMau.append('document_type', document.getElementById('so-doc-type')?.value || 'contract');
+  bieuMau.append('note', document.getElementById('so-doc-note')?.value || '');
+
+  const nut = document.getElementById('so-doc-pick');
+  if (nut) nut.disabled = true;
+  showToast(`⏳ Đang tải lên ${tep.name}...`);
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/documents`,
+      { method: 'POST', body: bieuMau }
+    );
+    if (!res.ok) return baoLoiMayChu(res, `Đính kèm ${tep.name}`);
+    const data = await res.json().catch(() => ({}));
+    showToast(data.message || `✅ Đã đính kèm ${tep.name}.`);
+    const oGhiChu = document.getElementById('so-doc-note');
+    if (oGhiChu) oGhiChu.value = '';
+    await window.napTaiLieuSO();
+  } catch (e) {
+    return baoMatKetNoi(`Đính kèm ${tep.name}`, e);
+  } finally {
+    if (nut) nut.disabled = false;
+    // Xóa lựa chọn để chọn lại CÙNG một tệp vẫn kích hoạt `onchange`.
+    oTep.value = '';
+  }
+};
+
+/** Xóa một tệp đính kèm. */
+window.xoaTaiLieuSO = async function (documentId, tenTep) {
+  if (!confirm(`Xóa tệp đính kèm "${tenTep}" khỏi đơn?`)) return;
+  try {
+    const res = await fetch(
+      `${API_BASE}/api/sales-order-documents/${encodeURIComponent(documentId)}`,
+      { method: 'DELETE' }
+    );
+    if (!res.ok) return baoLoiMayChu(res, `Xóa tệp ${tenTep}`);
+    showToast(`🗑️ Đã xóa tệp ${tenTep}.`);
+    await window.napTaiLieuSO();
+  } catch (e) {
+    return baoMatKetNoi(`Xóa tệp ${tenTep}`, e);
   }
 };
 

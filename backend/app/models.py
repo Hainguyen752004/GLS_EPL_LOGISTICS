@@ -639,6 +639,41 @@ class DeliveryOrderChargeAdjustment(Base):
     created_by = Column(String(255), nullable=False)
 
 
+class SalesOrderDocument(Base):
+    """Tep dinh kem cua don van chuyen: hop dong, bao gia da ky.
+
+    Lam theo dung mau cua `DeliveryPODDocument`, ke ca cac rang buoc o TANG CO
+    SO DU LIEU — mot duong ghi khac quen kiem se bi chan tai day chu khong chi
+    o tang ung dung.
+    """
+    __tablename__ = "sales_order_documents"
+    __table_args__ = (
+        # Tai lai cung mot tep khong tao ra ban ghi thu hai.
+        UniqueConstraint("so_id", "checksum", name="uq_sales_order_document_checksum"),
+        # 25 MB, dung con so giao dien da hua voi nguoi dung.
+        CheckConstraint(
+            "file_size >= 0 AND file_size <= 26214400",
+            name="ck_sales_order_document_size",
+        ),
+    )
+    id = Column(String(128), primary_key=True)
+    so_id = Column(
+        String, ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    document_type = Column(String(64), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    mime_type = Column(String(128), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    checksum = Column(String(128), nullable=False)
+    content = Column(LargeBinary, nullable=False)
+    note = Column(String(500))
+    created_at = Column(
+        DateTime(timezone=True), nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
+    )
+    created_by = Column(String(255), nullable=False)
+
+
 class DeliveryPODDocument(Base):
     __tablename__ = "delivery_pod_documents"
     __table_args__ = (

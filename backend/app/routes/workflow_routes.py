@@ -10,7 +10,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import DeliveryOrder, DeliveryPODDocument, IdempotencyRecord, Quotation, SalesOrder
+from models import (DeliveryOrder, DeliveryPODDocument, IdempotencyRecord, Quotation,
+                    SalesOrder, SalesOrderDocument)
 from schemas.delivery_completion import DeliveryCompletionRequest
 from schemas.pod import DeliveryPODRequest
 from schemas.workflow import (
@@ -25,6 +26,7 @@ from schemas.workflow import (
     WorkflowStatusRequest,
 )
 from schemas.common import paginated_query
+from services import sales_order_document_service as so_doc_svc
 from services import workflow_service as svc
 from services.delivery_completion_service import (
     ALLOWED_POD_MIME_TYPES,
@@ -510,3 +512,101 @@ async def get_pod(do_id: str, db: Session = Depends(get_db)):
             "has_pod": bool(record_payloads),
         },
     }
+
+
+# ==========================================================================
+# Tep dinh kem cua don van chuyen (hop dong, bao gia da ky)
+# --------------------------------------------------------------------------
+# Truoc day tab "Tai lieu dinh kem" co mot o chon tep va bao "Da chon hop
+# dong/bao gia dinh kem: <ten tep>", nhung khong co upload, khong co
+# FormData, va backend cung khong co cho nao de chua. Tep bi bo ngay tai do.
+#
+# Cac endpoint duoi lam theo dung mau POD, ke ca cac tinh chat an toan cua no.
+# ==========================================================================
+
+
+@router.post("/api/sales-orders/{so_id}/documents")
+async def upload_sales_order_document(so_id: str, request: Request, db: Session = Depends(get_db)):
+    actor = _context(request, db)
+    try:
+        form = await request.form()
+        uploaded = form.get("file")
+        if uploaded is None or not callable(getattr(uploaded, "read", None)):
+            raise DomainError("SO_DOCUMENT_REQUIRED", "Thiếu tệp đính kèm.", 422)
+
+        # Doc TOI DA gioi han cong 1 byte, roi kiem ngay. Doc het roi moi kiem
+        # nghia la ca tep da nam trong RAM truoc khi co bat ky loi tu choi nao.
+        content = await uploaded.read(so_doc_svc.MAX_DOCUMENT_BYTES + 1)
+        so_doc_svc.kiem_kich_thuoc(content)
+
+        ban_ghi, moi = so_doc_svc.them_tai_lieu(
+            db, so_id,
+            file_name=getattr(uploaded, "filename", None),
+            mime_type=getattr(uploaded, "content_type", None),
+            content=content,
+            document_type=str(form.get("document_type") or "contract"),
+            note=str(form.get("note") or ""),
+            actor=actor,
+        )
+        db.commit()
+    except DomainError as exc:
+        db.rollback()
+        raise_http(exc)
+    except Exception:
+        db.rollback()
+        raise
+    return {
+        "message": "Đã đính kèm tệp." if moi else "Tệp này đã đính kèm trước đó.",
+        "created": moi,
+        "data": so_doc_svc.serialize(ban_ghi),
+    }
+
+
+@router.get("/api/sales-orders/{so_id}/documents")
+async def list_sales_order_documents(so_id: str, request: Request, db: Session = Depends(get_db)):
+    _context(request, db)
+    return [so_doc_svc.serialize(row) for row in so_doc_svc.danh_sach(db, so_id)]
+
+
+@router.get("/api/sales-order-documents/{document_id}")
+async def download_sales_order_document(
+    document_id: str, request: Request, db: Session = Depends(get_db)
+):
+    _context(request, db)
+    document = db.get(SalesOrderDocument, document_id)
+    if not document:
+        raise_http(DomainError("SO_DOCUMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm.", 404))
+    safe_name = (document.file_name or "tai-lieu").replace('"', "")
+    # `attachment` chu khong phai `inline`, kem `nosniff`: mot PDF dung kheo
+    # duoc phuc vu inline tu chinh origin cua ung dung se chay duoc JavaScript
+    # trong ngu canh do. Va chi tra ve kieu nam trong danh sach cho phep, de
+    # mot ban ghi cu co mime_type la khong tu chon duoc cach trinh duyet dien
+    # giai no.
+    media_type = document.mime_type if document.mime_type in so_doc_svc.ALLOWED_MIME_TYPES \
+        else "application/octet-stream"
+    return Response(
+        content=document.content,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.delete("/api/sales-order-documents/{document_id}")
+async def delete_sales_order_document(
+    document_id: str, request: Request, db: Session = Depends(get_db)
+):
+    _context(request, db)
+    try:
+        ban_ghi = so_doc_svc.xoa_tai_lieu(db, document_id)
+        ten = ban_ghi.file_name
+        db.commit()
+    except DomainError as exc:
+        db.rollback()
+        raise_http(exc)
+    except Exception:
+        db.rollback()
+        raise
+    return {"message": "Đã xóa tệp đính kèm: %s" % ten}

@@ -23,8 +23,11 @@ BANG = ("quotations", "sales_orders", "delivery_orders")
 
 
 def test_v030_la_moc_head_dang_ky():
-    assert MIGRATIONS[-1] is v030
-    assert required_migration_head() == v030.VERSION
+    # v030 khong con la moc CUOI (v031 da them sau no), nen chi kiem no co
+    # mat va nam dung cho trong chuoi.
+    assert v030 in MIGRATIONS
+    assert MIGRATIONS.index(v030) == len(MIGRATIONS) - 2
+    assert required_migration_head() != v030.VERSION
 
 
 def test_cau_lenh_postgres_khong_ket_noi_va_dung_if_not_exists():
@@ -106,7 +109,7 @@ def test_chay_toan_bo_chuoi_migration_len_den_v030(tmp_path):
     """)
     ket_noi.close()
 
-    assert upgrade(str(duong_dan))[-1] == v030.VERSION
+    assert v030.VERSION in upgrade(str(duong_dan))
 
     ket_noi = sqlite3.connect(str(duong_dan))
     try:

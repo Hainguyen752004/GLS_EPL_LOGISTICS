@@ -1083,6 +1083,29 @@
     .cf-trigger-icon { flex:none; display:inline-flex; align-items:center; gap:6px; font-size:.72rem;
       font-weight:800; color:#075fa9; white-space:nowrap; }
 
+    /* ---------- Tai lieu dinh kem cua don van chuyen ---------- */
+    .so-doc-upload { display:grid; gap:11px; padding:13px 15px; background:#f8fbff;
+      border:1px solid #dbeafe; border-radius:9px; }
+    .so-doc-row { display:grid; grid-template-columns:auto minmax(150px,1fr) auto minmax(180px,2fr);
+      gap:9px; align-items:center; }
+    .so-doc-row label { font-size:.78rem; font-weight:800; color:#334155; white-space:nowrap; }
+    .so-doc-row select, .so-doc-row input { min-height:34px; padding:6px 10px;
+      border:1px solid #cbd5e1; border-radius:6px; font:inherit; font-size:.82rem; }
+    .so-doc-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; }
+    .so-doc-actions small { flex:1 1 240px; font-size:.74rem; color:#64748b; line-height:1.5; }
+    .so-doc-empty { margin:0; padding:14px; text-align:center; color:#64748b;
+      font-size:.82rem; font-style:italic; }
+    .so-doc-items { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+    .so-doc-items li { display:flex; align-items:center; gap:11px; padding:9px 12px;
+      border:1px solid #e2e8f0; border-radius:8px; background:#fff; }
+    .so-doc-items > li > i { flex:none; font-size:1.15rem; color:#0a6ed1; }
+    .so-doc-name { flex:1 1 auto; min-width:0; display:grid; gap:1px; }
+    .so-doc-name b { font-size:.84rem; color:#0f172a; overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap; }
+    .so-doc-name small { font-size:.73rem; color:#64748b; }
+    .so-doc-items .fiori-btn { flex:none; padding:5px 11px; font-size:.76rem; }
+    .so-doc-items .so-doc-del:hover { border-color:#b91c1c; color:#b91c1c; background:#fef2f2; }
+
     /* ---------- Hop thoai cau hinh cong thuc gia thanh ----------
        Ban dau neo `position:absolute` vao cau cong thuc: khung cha co cat noi
        dung nen hop thoai bi cat mat mep trai. Ban thu hai la mot BANG BAY COT:
@@ -4122,20 +4145,32 @@
                        khong upload, khong FormData, khong gan vao don. Tep bi bo
                        ngay tai do, con nguoi dung thi tuong da dinh kem xong.
 
-                       Backend cung chua co endpoint nao nhan tep dinh kem cua don
-                       (chi co POD va anh danh muc). Nen thay vi noi doi, o day noi
-                       dung su that va tat nut. -->
-                  <div id="so-tab-attachments" class="so-tab-content" style="display: none; padding: 22px; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 8px; text-align: center; color: #92400e;">
-                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #b45309; margin-bottom: 10px;"></i><br>
-                    <strong data-i18n="lbl_contract_signed">Hợp đồng / Báo giá đã ký</strong><br>
-                    <span data-i18n="tip_attachment_not_ready" style="font-size: 0.85rem; display:inline-block; margin-top:6px; line-height:1.6;">
-                      Chức năng đính kèm tệp <b>chưa dùng được</b> — hệ thống chưa có chỗ lưu tệp cho đơn vận chuyển.<br>
-                      Tạm thời gửi hợp đồng qua kênh khác và ghi số hiệu vào ô <b>Ghi chú</b> của đơn.
-                    </span><br><br>
-                    <button type="button" class="fiori-btn" disabled
-                            title="Chưa có nơi lưu tệp đính kèm cho đơn vận chuyển"
-                            style="background: #e2e8f0; color: #64748b; cursor: not-allowed;"
-                            data-i18n="btn_attachment_not_ready"><i class="fa-solid fa-file-signature"></i> Chưa dùng được</button>
+                  <!-- Tai lieu dinh kem cua don van chuyen: hop dong, bao gia da ky.
+                       Truoc day o day co mot o chon tep bao "Da chon hop dong dinh kem",
+                       nhung khong upload gi ca va backend cung khong co cho chua. -->
+                  <div id="so-tab-attachments" class="so-tab-content" style="display: none; padding: 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;">
+                    <div class="so-doc-upload">
+                      <div class="so-doc-row">
+                        <label for="so-doc-type">Loại chứng từ</label>
+                        <select id="so-doc-type" class="fiori-input">
+                          <option value="contract">Hợp đồng</option>
+                          <option value="signed_quotation">Báo giá đã ký</option>
+                          <option value="other">Tài liệu khác</option>
+                        </select>
+                        <label for="so-doc-note">Ghi chú</label>
+                        <input type="text" id="so-doc-note" class="fiori-input" maxlength="500"
+                               placeholder="Ví dụ: bản ký ngày 04/09">
+                      </div>
+                      <input type="file" id="so-doc-file" accept=".pdf,.docx,.png,.jpg,.jpeg"
+                             style="display:none;" onchange="taiLenTaiLieuSO()">
+                      <div class="so-doc-actions">
+                        <button type="button" class="fiori-btn" id="so-doc-pick"
+                                onclick="document.getElementById('so-doc-file').click()">
+                          <i class="fa-solid fa-cloud-arrow-up"></i> Chọn tệp và đính kèm</button>
+                        <small>PDF, DOCX, PNG, JPG — tối đa 25 MB. Lưu đơn trước khi đính kèm.</small>
+                      </div>
+                    </div>
+                    <div id="so-doc-list" aria-live="polite" style="margin-top:14px;"></div>
                   </div>
                   </div>
                   <!-- Vietnamese source cleaned -->
@@ -7154,7 +7189,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-don-ui-chet"></script>
+  <script src="/static/js/app.js?v=20260906-dinh-kem"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

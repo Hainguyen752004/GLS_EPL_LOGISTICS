@@ -25,7 +25,7 @@ def test_v029_da_duoc_dang_ky_trong_chuoi():
     # va nam dung cho trong chuoi. Chot `MIGRATIONS[-1]` la buoc moi migration
     # moi phai sua lai bai kiem cua ban truoc.
     assert v029 in MIGRATIONS
-    assert MIGRATIONS.index(v029) == len(MIGRATIONS) - 2
+    assert MIGRATIONS.index(v029) == len(MIGRATIONS) - 3
     assert required_migration_head() != v029.VERSION
 
 
