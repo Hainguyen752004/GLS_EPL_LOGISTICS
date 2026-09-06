@@ -138,4 +138,63 @@ assert.ok(html.includes('id="inc-reporter"'),
   assert.ok(/#b91c1c/.test(fn), 'quá tải phải đổi màu thanh');
 }
 
+// --- 5. Đơn vận chuyển không được tự ghi khống điều kiện hợp đồng ------
+//
+// Năm trường quy cách vận chuyển ĐƯỢC GỬI THẬT lên máy chủ. Bản cũ rót sẵn
+// giá trị vào cả HAI tầng (`value=` cứng trong HTML và `soDefaults` trong JS), nên
+// người dùng mở đơn mới rồi bấm Lưu là cơ sở dữ liệu nhận "Có bảo hiểm 100%
+// giá trị" và "25.0 Tonnes trọng tải niêm phong" mà không ai từng khai. Đó là
+// lời khai bảo hiểm và hợp đồng bịa ra.
+
+['Có bảo hiểm 100% giá trị', '25.0 Tonnes', 'EPL Logistics Express',
+  'Hàng tiêu chuẩn (Thường)'].forEach(bia => {
+  assert.ok(!html.includes(`value="${bia}"`),
+    `không được rót sẵn "${bia}" vào ô nhập — trường này được gửi thật lên máy chủ`);
+});
+// Tên NVKD cũng vậy: nó trông như dự liệu thật mà không ai đưa ra tên đó.
+assert.ok(!/id="so-sales-rep" value=/.test(html));
+// Và khi chữ bị lỗi mã hóa thì xóa trắng, không thay bằng một cái tên cụ thể.
+{
+  const i = code.indexOf("const salesRepInput = document.getElementById('so-sales-rep')");
+  assert.ok(i > 0);
+  const doan = code.slice(i, i + 260);
+  assert.ok(!/Nguyễn Văn Kinh Doanh/.test(doan), 'không được bịa tên người');
+  assert.ok(/salesRepInput\.value = ''/.test(doan));
+}
+// Số lượng mặc định 15: dòng hàng "15 Tấn @ 0đ, mô tả rỗng" được gửi lên cho
+// MỌI đơn mới, vì readSOLinesFromForm chỉ lọc `quantity > 0`.
+assert.ok(!/id="so-item-qty" value="15"/.test(html), 'không được mặc định 15 tấn');
+{
+  // Và `resetSOForm` phải xóa trắng cả năm ô quy cách lẫn số lượng.
+  // Ham mo don moi ten la \, khong phai \ —
+  // bao cao ra soat goi sai ten.
+  const i = code.indexOf('window.openOracleSOForm = function');
+  assert.ok(i > 0, 'phải tìm được openOracleSOForm');
+  const fn = code.slice(i, code.indexOf(String.fromCharCode(10) + '}', i));
+  assert.ok(!/soDefaults/.test(fn), 'không được còn bộ giá trị rót sẵn');
+  ['so-cargo-insurance', 'so-seal-weight', 'so-carrier-name', 'so-item-qty'].forEach(id => {
+    assert.ok(fn.includes(id), `${id} phải được xóa trắng khi mở đơn mới`);
+  });
+}
+
+// --- 6. Bốn ô nhập có cột thật phải được gửi và đọc lại --------------
+
+{
+  const fn = hamThan('window.saveOracleQT = async function');
+  assert.ok(/notes: document\.getElementById\('qt-notes'\)/.test(fn),
+    'ô Ghi chú của báo giá phải được gửi lên');
+}
+{
+  const fn = hamThan('window.saveOracleSO = async function');
+  ['so-notes', 'so-payment-terms', 'so-sales-rep'].forEach(id => {
+    assert.ok(fn.includes(id), `${id} phải được gửi lên`);
+  });
+}
+{
+  // Mở đơn cũ phải đọc lại, không thì mở ra là thấy trống.
+  assert.ok(/'so-notes'\)\.value = so\.notes/.test(code));
+  assert.ok(/'so-payment-terms'\)\.value = so\.payment_terms/.test(code));
+  assert.ok(/'so-sales-rep'\)\.value = so\.sales_rep/.test(code));
+}
+
 console.log('silent-failure-and-fake-numbers: tất cả kiểm tra đã qua');

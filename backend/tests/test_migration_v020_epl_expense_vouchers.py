@@ -52,7 +52,7 @@ def test_v020_is_current_head_and_rolls_back(tmp_path):
     connection = sqlite3.connect(tmp_path / "rollback.db")
     _base(connection)
     v020_epl_expense_vouchers.upgrade_sqlite(connection)
-    assert required_migration_head() == "029_sales_order_cargo_type"
+    assert required_migration_head() == "030_workflow_notes"
     v020_epl_expense_vouchers.rollback_sqlite(connection)
     assert connection.execute(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='epl_expense_vouchers'"

@@ -332,6 +332,10 @@ class SalesOrder(Base):
     status = Column(String, default="Draft") # Draft, Confirmed
     total_amount = Column(MONEY_TYPE, nullable=False, default=0)
     payment_terms = Column(String, default="30 Days")
+    # O Ghi chu tren man hinh. Ba man deu co textarea nay kem placeholder rat
+    # cu the, nhung truoc day khong bang nao co cot de chua va khong payload
+    # nao gui len — nen go xong bam Luu la mat khong mot loi nao.
+    notes = Column(Text)
     sales_rep = Column(String)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
     # Quy cach va dieu kien van chuyen. Dat tren CA Quotation lan SalesOrder:
@@ -375,6 +379,7 @@ class DeliveryOrder(Base):
     delivery_window_end = Column(DateTime(timezone=True))
     weight_kg = Column(Float, default=0.0)
     pallet_count = Column(Integer, default=0)
+    notes = Column(Text)  # O Ghi chu tren man lenh giao hang
     vehicle_id = Column(String, ForeignKey("vehicles.id"), nullable=True)
     driver_id = Column(String, ForeignKey("drivers.id"), nullable=True)
     co_driver = Column(String, nullable=True) # Phụ xế (nếu có)
@@ -726,6 +731,7 @@ class Item(Base):
     id = Column(String, primary_key=True)
     name = Column(String, nullable=False)
     cargo_type = Column(String) # Container 20FT, Box, Pallet
+    notes = Column(Text)  # O Ghi chu tren man bao gia
     default_uom = Column(String)
     weight_kg = Column(Float, default=0.0)
 
@@ -815,6 +821,7 @@ class Quotation(Base):
     cargo_insurance = Column(String)          # Bao hiem hang hoa
     warehouse_owner = Column(String)          # Nguoi phu trach kho
     volume_m3 = Column(Float, default=5.0) # Thể tích m3
+    notes = Column(Text)  # O Ghi chu tren man bao gia
     status = Column(String, default="Draft") # Draft, Sent, Approved
 
 class QuotationDetail(Base):

@@ -54,6 +54,9 @@ class QuotationCreateRequest(StrictRequest):
     # CO Y khong co `margin_pct`: bang quotations khong co cot do, va ti le loi
     # nhuan suy ra duoc tu hai con so tren. Luu them mot cot thu ba la tao ra
     # ba con so co the troi khoi nhau.
+    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
+    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
+    notes: Optional[str] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
     carrier_name: Optional[str] = None
@@ -99,11 +102,19 @@ class SalesOrderCreateRequest(StrictRequest):
     lines: Optional[List[SalesOrderLineRequest]] = None
     carrier_name: Optional[str] = None
     delivery_method: Optional[str] = None
+    # Hai cot nay CO THAT trong bang sales_orders nhung schema chua bao gio
+    # nhan chung, nen o "Dieu khoan thanh toan" va "Nhan vien kinh doanh"
+    # tren man hinh khong bao gio duoc luu.
+    payment_terms: Optional[str] = None
+    sales_rep: Optional[str] = None
     cargo_type: Optional[str] = None
     seal_weight: Optional[str] = None
     temperature_requirement: Optional[str] = None
     cargo_insurance: Optional[str] = None
     warehouse_owner: Optional[str] = None
+    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
+    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
+    notes: Optional[str] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
 
@@ -125,6 +136,14 @@ class SalesOrderUpdateRequest(StrictRequest):
     lines: Optional[List[SalesOrderLineRequest]] = None
     carrier_name: Optional[str] = None
     delivery_method: Optional[str] = None
+    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
+    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
+    notes: Optional[str] = None
+    # Hai cot nay CO THAT trong bang sales_orders nhung schema chua bao gio
+    # nhan chung, nen o "Dieu khoan thanh toan" va "Nhan vien kinh doanh"
+    # tren man hinh khong bao gio duoc luu.
+    payment_terms: Optional[str] = None
+    sales_rep: Optional[str] = None
     cargo_type: Optional[str] = None
     seal_weight: Optional[str] = None
     temperature_requirement: Optional[str] = None
@@ -175,6 +194,9 @@ class DeliveryOrderUpdateRequest(StrictRequest):
     delivery_date: Optional[str] = None
     weight_kg: Optional[Number] = None
     pallet_count: Optional[int] = None
+    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
+    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
+    notes: Optional[str] = None
     packaging_spec: Optional[str] = None
     volume_m3: Optional[Number] = None
 

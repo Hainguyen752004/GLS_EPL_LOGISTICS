@@ -3972,7 +3972,7 @@
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 5px;">
                         <label style="font-size: 0.85rem; color: #666;" data-i18n="lbl_sales_rep">Nhân viên kinh doanh</label>
-                        <input type="text" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none;" id="so-sales-rep" value="Nguyễn Văn Kinh Doanh">
+                        <input type="text" style="padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none;" id="so-sales-rep" placeholder="Tên nhân viên kinh doanh phụ trách">
                       </div>
                       <div style="display: flex; flex-direction: column; gap: 8px; grid-column: span 2; background: #fafafa; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 6px;">
@@ -4069,7 +4069,7 @@
                         <tr>
                           <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">ITM-001</td>
                           <td style="padding: 10px; border-bottom: 1px solid #eee;"><input type="text" style="width: 100%; border: none; background: #ffffff; border-bottom: 1px solid #0a6ed1; outline: none; font-weight: 600; color: #0f172a;" id="so-item-desc" value="Hàng hóa vận chuyển (Tải trọng 15 Tấn - Linh kiện điện tử)"></td>
-                          <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;"><input type="number" id="so-item-qty" value="15" oninput="calcSOLineTotal()" style="width:60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;"></td>
+                          <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;"><input type="number" id="so-item-qty" min="0" step="any" placeholder="0" oninput="calcSOLineTotal()" style="width:60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;"></td>
                           <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
                             <select id="so-item-uom" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
                               <option value="Tấn" data-i18n="uom_ton">Tấn</option>
@@ -4095,19 +4095,19 @@
                     <h4 style="margin:0 0 12px; color:#0a6ed1; display:flex; align-items:center; gap:8px;" data-i18n="title_so_specs"><i class="fa-solid fa-circle-info"></i> Quy Cách & Điều Kiện Vận Chuyển <small style="font-weight:600;color:#64748b;">(kế thừa từ báo giá cước)</small></h4>
                     <div style="display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:14px;">
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_carrier_name">Đơn vị vận chuyển
-                        <input id="so-carrier-name" class="fiori-input" type="text" value="EPL Logistics Express" placeholder="Nhập đơn vị vận chuyển" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
+                        <input id="so-carrier-name" class="fiori-input" type="text" placeholder="Nhập đơn vị vận chuyển" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
                       </label>
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_delivery_method">Phương thức giao
-                        <input id="so-delivery-method" class="fiori-input" type="text" value="Vận tải đường bộ" placeholder="Ví dụ: vận tải đường bộ, container, xe tải lạnh..." style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
+                        <input id="so-delivery-method" class="fiori-input" type="text" placeholder="Ví dụ: vận tải đường bộ, container, xe tải lạnh..." style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
                       </label>
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_seal_weight">Trọng tải niêm phong
-                        <input id="so-seal-weight" class="fiori-input" type="text" value="25.0 Tonnes" placeholder="Ví dụ: 25.0 Tonnes / Seal ABC123" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
+                        <input id="so-seal-weight" class="fiori-input" type="text" placeholder="Ví dụ: 25.0 Tonnes / Seal ABC123" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
                       </label>
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_temp_req">Yêu cầu nhiệt độ
-                        <input id="so-temperature-requirement" class="fiori-input" type="text" value="Hàng tiêu chuẩn (Thường)" placeholder="Ví dụ: thường / 2-8C / đông lạnh" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
+                        <input id="so-temperature-requirement" class="fiori-input" type="text" placeholder="Ví dụ: thường / 2-8C / đông lạnh" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
                       </label>
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_cargo_insurance">Bảo hiểm hàng hóa
-                        <input id="so-cargo-insurance" class="fiori-input" type="text" value="Có bảo hiểm 100% giá trị" placeholder="Nhập điều kiện bảo hiểm" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
+                        <input id="so-cargo-insurance" class="fiori-input" type="text" placeholder="Nhập điều kiện bảo hiểm" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
                       </label>
                       <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight:800; color:#334155;" data-i18n="lbl_warehouse_owner">Người phụ trách kho
                         <input id="so-warehouse-owner" class="fiori-input" type="text" value="" placeholder="Nhập tên/số điện thoại phụ trách kho" style="padding:9px 11px; border:1px solid #cbd5e1; border-radius:7px;">
@@ -7140,7 +7140,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-formula-cards"></script>
+  <script src="/static/js/app.js?v=20260904-notes-fields"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

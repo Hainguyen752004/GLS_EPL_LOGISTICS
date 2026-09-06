@@ -30,8 +30,8 @@ def test_v011_is_head_and_creates_trip_schema_with_lineage(tmp_path):
     path = tmp_path / "v011.db"
     _legacy_base(path)
 
-    assert upgrade(str(path))[-1] == "029_sales_order_cargo_type"
-    assert required_migration_head() == "029_sales_order_cargo_type"
+    assert upgrade(str(path))[-1] == "030_workflow_notes"
+    assert required_migration_head() == "030_workflow_notes"
 
     with sqlite3.connect(path) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}

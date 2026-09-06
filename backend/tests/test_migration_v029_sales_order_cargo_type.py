@@ -1,4 +1,4 @@
-"""Cot loai phuong tien tren don van chuyen.
+﻿"""Cot loai phuong tien tren don van chuyen.
 
 Cuoc mot chuyen tinh bang cong thuc cua LOAI XE: moi loai xe co don gia xang
 dau, phu cap, cuoc theo kg rieng. Bao gia co `cargo_type`, con `sales_orders`
@@ -20,9 +20,13 @@ from migrations import v029_sales_order_cargo_type as v029  # noqa: E402
 from migrations.runner import MIGRATIONS, required_migration_head, upgrade  # noqa: E402
 
 
-def test_v029_la_moc_head_dang_ky():
-    assert MIGRATIONS[-1] is v029
-    assert required_migration_head() == v029.VERSION
+def test_v029_da_duoc_dang_ky_trong_chuoi():
+    # v029 khong con la moc CUOI (v030 da them sau no), nen chi kiem no co mat
+    # va nam dung cho trong chuoi. Chot `MIGRATIONS[-1]` la buoc moi migration
+    # moi phai sua lai bai kiem cua ban truoc.
+    assert v029 in MIGRATIONS
+    assert MIGRATIONS.index(v029) == len(MIGRATIONS) - 2
+    assert required_migration_head() != v029.VERSION
 
 
 def test_cau_lenh_postgres_khong_ket_noi_va_dung_if_not_exists():
@@ -83,7 +87,7 @@ def test_kiem_tra_bat_duoc_cot_bi_thieu(tmp_path):
         ket_noi.close()
 
 
-def test_chay_toan_bo_chuoi_migration_len_den_v029(tmp_path):
+def test_chay_toan_bo_chuoi_migration_qua_v029(tmp_path):
     """v029 phai chay duoc trong ca chuoi, khong chi rieng le.
 
     Dung cac bang goc giong test_migration_v006: v001 xay lai lai bang co san
@@ -100,7 +104,9 @@ def test_chay_toan_bo_chuoi_migration_len_den_v029(tmp_path):
     """)
     ket_noi.close()
 
-    assert upgrade(str(duong_dan))[-1] == v029.VERSION
+    da_chay = upgrade(str(duong_dan))
+    assert v029.VERSION in da_chay
+    assert da_chay[-1] == required_migration_head()
 
     ket_noi = sqlite3.connect(str(duong_dan))
     try:

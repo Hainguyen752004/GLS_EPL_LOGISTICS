@@ -212,9 +212,14 @@ function forceCriticalVietnameseLabels() {
   if (soSearch) {
     soSearch.placeholder = 'Tìm mã đơn hàng, khách hàng, nơi đi, nơi đến, tổng tiền, trạng thái...';
   }
+  // Ch\u1eef b\u1ecb l\u1ed7i m\u00e3 h\u00f3a th\u00ec X\u00d3A TR\u1eaeNG, kh\u00f4ng thay b\u1eb1ng m\u1ed9t c\u00e1i t\u00ean c\u1ee5 th\u1ec3.
+  //
+  // B\u1ea3n tr\u01b0\u1edbc g\u00e1n 'Nguy\u1ec5n V\u0103n Kinh Doanh' v\u00e0o \u0111\u00e2y. L\u1ed7i m\u00e3 h\u00f3a ngh\u0129a l\u00e0 gi\u00e1 tr\u1ecb
+  // kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c \u2014 \u0111\u1eb7t t\u00ean m\u1ed9t ng\u01b0\u1eddi c\u1ee5 th\u1ec3 v\u00e0o \u0111\u00f3 l\u00e0 b\u1ecba ra d\u1eef li\u1ec7u, v\u00e0 n\u1ebfu
+  // ng\u01b0\u1eddi d\u00f9ng \u0111\u00e3 g\u00f5 t\u00ean th\u1eadt th\u00ec t\u00ean \u0111\u00f3 b\u1ecb ghi \u0111\u00e8 m\u1ea5t.
   const salesRepInput = document.getElementById('so-sales-rep');
   if (salesRepInput && String(salesRepInput.value || '').includes('\ufffd')) {
-    salesRepInput.value = 'Nguy\u1ec5n V\u0103n Kinh Doanh';
+    salesRepInput.value = '';
   }
 }
 
@@ -7645,20 +7650,32 @@ window.openOracleSOForm = function (options = {}) {
   if (typeof window.switchSOTab === 'function') {
     window.switchSOTab('lines');
   }
-  ['so-id', 'so-amount', 'so-item-desc', 'so-item-unit-price', 'so-warehouse-owner'].forEach(id => {
+  // Xoa TRANG moi o nhap, ke ca nam o quy cach van chuyen.
+  //
+  // Ban truoc rot san nam gia tri vao day:
+  //
+  //     'so-carrier-name': 'EPL Logistics Express',
+  //     'so-seal-weight': '25.0 Tonnes',
+  //     'so-cargo-insurance': 'Co bao hiem 100% gia tri',  ...
+  //
+  // Nam truong nay DUOC GUI THAT trong `saveOracleSO`. Nen nguoi dung mo don
+  // moi, bam Luu, va co so du lieu nhan "Co bao hiem 100% gia tri" cung
+  // "25.0 Tonnes trong tai niem phong" ma khong ai tung khai. Do la loi khai
+  // bao hiem va hop dong bia ra.
+  //
+  // `so-item-qty` cung vay: mac dinh 15 khien dong hang "15 Tan @ 0d, mo ta
+  // rong" duoc gui len cho MOI don moi, vi readSOLinesFromForm chi loc
+  // `quantity > 0`.
+  //
+  // Cac o nay deu co placeholder san, nen de trong van co goi y.
+  [
+    'so-id', 'so-amount', 'so-item-desc', 'so-item-unit-price', 'so-warehouse-owner',
+    'so-carrier-name', 'so-delivery-method', 'so-seal-weight',
+    'so-temperature-requirement', 'so-cargo-insurance',
+    'so-item-qty', 'so-notes', 'so-sales-rep',
+  ].forEach(id => {
     const input = document.getElementById(id);
     if (input) input.value = '';
-  });
-  const soDefaults = {
-    'so-carrier-name': 'EPL Logistics Express',
-    'so-delivery-method': 'Vận tải đường bộ',
-    'so-seal-weight': '25.0 Tonnes',
-    'so-temperature-requirement': 'Hàng tiêu chuẩn (Thường)',
-    'so-cargo-insurance': 'Có bảo hiểm 100% giá trị'
-  };
-  Object.entries(soDefaults).forEach(([id, value]) => {
-    const input = document.getElementById(id);
-    if (input) input.value = value;
   });
   ['so-customer', 'so-route-select', 'so-status', 'so-currency'].forEach(id => {
     const select = document.getElementById(id);
@@ -7846,6 +7863,10 @@ window.editOracleSO = function (id) {
   if (document.getElementById('so-status')) document.getElementById('so-status').value = canonicalSOStatusValue(so.status || 'Confirmed');
   // Loai phuong tien ke thua tu bao gia; doc lai de bang chi phi tinh dung.
   if (document.getElementById('so-cargo-type')) document.getElementById('so-cargo-type').value = so.cargo_type || '';
+  // Ba o co cot that trong bang: doc lai, khong thi mo don ra la thay trong.
+  if (document.getElementById('so-notes')) document.getElementById('so-notes').value = so.notes || '';
+  if (document.getElementById('so-payment-terms')) document.getElementById('so-payment-terms').value = so.payment_terms || '';
+  if (document.getElementById('so-sales-rep')) document.getElementById('so-sales-rep').value = so.sales_rep || '';
   if (document.getElementById('so-weight-kg')) document.getElementById('so-weight-kg').value = so.weight_kg || '';
   const soDetailValues = {
     'so-carrier-name': so.carrier_name || so.carrier || 'EPL Logistics Express',
@@ -16471,6 +16492,10 @@ window.saveOracleQT = async function () {
       ...routeContext,
       fuel_cost: fuel, driver_cost: driver, toll_fee: toll,
       selling_price: quote ? quote.revenue : selling,
+      // O Ghi chu (textarea 4 dong, placeholder rat cu the ve dieu kien bao
+      // gia). Truoc day khong co cot nao de chua va khong ai gui len, nen go
+      // xong bam Luu la mat khong mot loi nao.
+      notes: document.getElementById('qt-notes')?.value || '',
       // CO Y khong gui ti le loi nhuan: bang quotations khong co cot do, va ti
       // le suy ra duoc tu hai con so tren. Luu them mot cot thu ba la tao ra
       // ba con so co the troi khoi nhau.
@@ -16522,6 +16547,11 @@ window.saveOracleSO = async function () {
     // Loai phuong tien: cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen
     // khong gui la don mat cach ap lai cong thuc theo tai trong thuc te.
     cargo_type: document.getElementById('so-cargo-type')?.value || '',
+    // Ba o nay deu co cot that trong bang `sales_orders` nhung chua bao gio
+    // duoc gui len: o Ghi chu, Dieu khoan thanh toan, va Nhan vien kinh doanh.
+    notes: document.getElementById('so-notes')?.value || '',
+    payment_terms: document.getElementById('so-payment-terms')?.value || '',
+    sales_rep: document.getElementById('so-sales-rep')?.value || '',
     // Quy cach van chuyen: sau truong nay tung khong duoc gui len bao gio, nen
     // dien xong bam Luu la mat sach.
     carrier_name: document.getElementById('so-carrier-name')?.value || '',

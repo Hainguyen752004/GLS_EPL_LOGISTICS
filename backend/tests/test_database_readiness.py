@@ -28,7 +28,7 @@ REQUIRED = {
 
 
 def test_required_migration_head_is_exposed_by_runner():
-    assert required_migration_head() == "029_sales_order_cargo_type"
+    assert required_migration_head() == "030_workflow_notes"
 
 
 class Checker:

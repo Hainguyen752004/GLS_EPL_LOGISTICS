@@ -559,6 +559,9 @@ def create_quotation(db, data, user="system"):
         total_cost=_money(data, "total_cost"),
         selling_price=_money(data, "selling_price"),
         packaging_spec=data.get("packaging_spec") or "",
+        # O Ghi chu tren man hinh. Truoc day khong co cot nao de chua va khong
+        # payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
+        notes=data.get("notes") or None,
         volume_m3=_money(data, "volume_m3"),
         status=STATUS["quotation"]["draft"],
         canonical_status="draft",
@@ -625,6 +628,8 @@ def update_quotation(db, qid, data, user="system"):
     q.selling_price = _money(data, "selling_price", q.selling_price or 0)
     if "packaging_spec" in data:
         q.packaging_spec = data.get("packaging_spec") or ""
+    if "notes" in data:
+        q.notes = data.get("notes") or None
     q.volume_m3 = _money(data, "volume_m3", q.volume_m3 or 0)
     require_quotation_vehicle_capacity(db, {
         "cargo_type": q.cargo_type,
@@ -663,6 +668,12 @@ def create_sales_order(db, data, user="system"):
         pallet_count=route_context["pallet_count"],
         total_amount=_money(data, "total_amount", q.selling_price or 0),
         packaging_spec=q.packaging_spec,
+        # Ghi chu cua DON la thu khac voi ghi chu cua BAO GIA (dieu kien chao
+        # khach), nen KHONG ke thua — de trong cho nguoi dieu phoi tu ghi.
+        notes=data.get("notes") or None,
+        # Hai cot nay co that trong bang nhung schema chua bao gio nhan chung.
+        payment_terms=data.get("payment_terms") or None,
+        sales_rep=data.get("sales_rep") or None,
         volume_m3=q.volume_m3,
         status=STATUS["sales_order"]["draft"],
         canonical_status="draft",
@@ -709,6 +720,9 @@ def update_sales_order(db, so_id, data, user="system"):
         so.currency_code = data.get("currency_code") or "VND"
     if "packaging_spec" in data:
         so.packaging_spec = data.get("packaging_spec") or ""
+    for truong in ("notes", "payment_terms", "sales_rep"):
+        if truong in data:
+            setattr(so, truong, data.get(truong) or None)
     so.volume_m3 = _money(data, "volume_m3", so.volume_m3 or 0)
     so.updated_by = user
     so.updated_at = _now()
