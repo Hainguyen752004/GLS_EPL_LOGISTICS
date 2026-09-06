@@ -80,8 +80,8 @@
     "la": "ເລກທີໃບສັ່ງປ່ອຍສິນຄ້າ"
   },
   "lbl_so_no": {
-    "en": "SO No.",
-    "vi": "Mã Đơn Hàng",
+    "en": "Transport Order No.",
+    "vi": "Mã đơn vận chuyển",
     "la": "ເລກທີໃບສັ່ງຂາຍ"
   },
   "lbl_customer": {
@@ -1365,7 +1365,7 @@
     "la": "ສົ່ງຫຼັກຖານການຈັດສົ່ງສຳເລັດແລ້ວ!"
   },
   "lbl_create_so": {
-    "en": "Create Sales Order",
+    "en": "Create Transport Order",
     "vi": "Tạo Đơn Hàng (SO)",
     "la": "ສ້າງໃບສັ່ງຊື້"
   },
@@ -1385,8 +1385,8 @@
     "la": "ລວມເປັນເງິນ (VNĐ)"
   },
   "lbl_order_lines": {
-    "en": "Order Lines",
-    "vi": "Chi Tiết Đơn Hàng",
+    "en": "Cargo Lines",
+    "vi": "Hàng hóa vận chuyển",
     "la": "ລາຍລະອຽດ"
   },
   "th_line_no": {
@@ -1415,7 +1415,7 @@
     "la": "ລະຫັດ DO"
   },
   "lbl_so_ref": {
-    "en": "Sales Order Ref",
+    "en": "Transport Order Ref",
     "vi": "Tham Chiếu Đơn Hàng",
     "la": "ອ້າງອີງ SO"
   },
@@ -1580,12 +1580,12 @@
     "la": "3. ອອກສາງ"
   },
   "title_sales_orders": {
-    "en": "3. Sales Order (Order)",
-    "vi": "3. Đơn Hàng Vận Chuyển (Sales Order)",
+    "en": "3. Transport Order (Order)",
+    "vi": "3. Đơn Hàng Vận Chuyển",
     "la": "3. ໃບສັ່ງຂາຍ"
   },
   "title_manage_so": {
-    "en": "Manage Sales Orders",
+    "en": "Manage Transport Orders",
     "vi": "Quản Lý Đơn Hàng Vận Chuyển",
     "la": "ຄຸ້ມຄອງໃບສັ່ງຂາຍ"
   },
@@ -1705,8 +1705,8 @@
     "la": "ພະນັກງານຂາຍ"
   },
   "lbl_route_stops": {
-    "en": "Route Stops & Segments",
-    "vi": "Chọn Tuyến Đường & Lộ Trình Chặng",
+    "en": "Select Transport Route",
+    "vi": "Chọn tuyến đường vận chuyển",
     "la": "ເລືອກເສັ້ນທາງ ແລະ ຂັ້ນຕອນການເດີນທາງ"
   },
   "tab_lines": {
@@ -1765,8 +1765,8 @@
     "la": "1. ໃບສະເໜີລາຄາການຂົນສົ່ງ (Quotation)"
   },
   "flow_step_2_title": {
-    "en": "2. Sales Order",
-    "vi": "2. Đơn Hàng Vận Chuyển (Sales Order)",
+    "en": "2. Transport Order",
+    "vi": "2. Đơn Hàng Vận Chuyển",
     "la": "2. ໃບສັ່ງຂາຍ (Sales Order)"
   },
   "flow_step_3_title": {
@@ -2170,8 +2170,8 @@
     "la": "ສ້າງໃບສະເໜີລາຄາ ແລະ ຄິດໄລ່ຄ່ານ້ຳມັນ/ກມ + ຄ່າຜ່ານທາງອັດຕະໂນມັດ."
   },
   "step_2_title_full": {
-    "en": "2. Sales Order",
-    "vi": "2. Đơn Hàng Vận Chuyển (Sales Order)",
+    "en": "2. Transport Order",
+    "vi": "2. Đơn Hàng Vận Chuyển",
     "la": "2. ໃບສັ່ງຂາຍ (Sales Order)"
   },
   "step_2_desc_full": {
@@ -2615,8 +2615,8 @@
     "la": "ຂາດ 4 ກຸ່ມຂໍ້ມູນຫຼັກ. ເຂົ້າໄປທີ່ຂໍ້ມູນຫຼັກເພື່ອຕັ້ງຄ່າກ່ອນເລີ່ມ."
   },
   "Cần có đủ Báo giá, Sales Order và Delivery Order để nhìn được luồng đơn hàng.": {
-    "en": "Requires Quotation, Sales Order and Delivery Order to visualize the order flow.",
-    "vi": "Cần có đủ Báo giá, Sales Order và Delivery Order để nhìn được luồng đơn hàng.",
+    "en": "Requires Quotation, Transport Order and Delivery Order to visualize the order flow.",
+    "vi": "Cần có đủ Báo giá, đơn vận chuyển và Delivery Order để nhìn được luồng đơn hàng.",
     "la": "ຕ້ອງມີໃບສະເໜີລາຄາ, ໃບສັ່ງຂາຍ ແລະ ໃບສັ່ງປ່ອຍສິນຄ້າເພື່ອເບິ່ງຂັ້ນຕອນ."
   },
   "Tuyến đã có tổng km để tính kế hoạch, ETA và lượt xe quay đầu.": {
@@ -2740,7 +2740,7 @@
     "la": "ຂໍ້ມູນໃບສະເໜີລາຄາ `QT-2026` ທີ່ອະນຸມັດແລ້ວ"
   },
   "Đơn Hàng Bán `SO-2026-xxx` (đã xác nhận)": {
-    "en": "Sales Order `SO-2026-xxx` (Confirmed)",
+    "en": "Transport Order `SO-2026-xxx` (Confirmed)",
     "vi": "Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)",
     "la": "ໃບສັ່ງຂາຍ `SO-2026-xxx` (ຢືນຢັນແລ້ວ)"
   },
@@ -3115,7 +3115,7 @@
     "la": "ຂໍ້ມູນໃບສະເໜີລາຄາ `QT-2026` ທີ່ອະນຸມັດແລ້ວ"
   },
   "flow_step_2_out": {
-    "en": "Sales Order `SO-2026-xxx` (Confirmed)",
+    "en": "Transport Order `SO-2026-xxx` (Confirmed)",
     "vi": "Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)",
     "la": "ໃບສັ່ງຂາຍ `SO-2026-xxx` (ຢືນຢັນແລ້ວ)"
   },
@@ -3205,7 +3205,7 @@
     "la": "1. ໃບສະເໜີລາຄາ"
   },
   "step_nav_2": {
-    "en": "2. Sales Order",
+    "en": "2. Transport Order",
     "vi": "2. Đơn Hàng SO",
     "la": "2. ໃບສັ່ງຂາຍ SO"
   },
@@ -3301,7 +3301,7 @@
   },
   "tip_qt_banner": {
     "vi": "Báo giá cước vận chuyển: Dùng để chào giá cước xe, xăng dầu & trạm BOT cho Khách hàng. Sau khi Khách hàng đồng ý, bấm nút \"Chuyển thành SO\" để tạo Đơn Hàng chính thức kèm hàng hóa vận chuyển thực tế.",
-    "en": "Transportation Quotation: Used to quote freight rates, fuel & tolls to Customers. Once approved, click \"Convert to SO\" to create an official Sales Order.",
+    "en": "Transportation Quotation: Used to quote freight rates, fuel & tolls to Customers. Once approved, click \"Convert to SO\" to create an official Transport Order.",
     "la": "ໃບສະເໜີລາຄາການຂົນສົ່ງ: ໃຊ້ສຳລັບສະເໜີຄ່າຂົນສົ່ງ, ນ້ຳມັນ & ຄ່າທາງໃຫ້ລູກຄ້າ. ເມື່ອລູກຄ້າຕົກລົງ, ກົດປຸ່ມ \"ປ່ຽນເປັນ SO\" ເພື່ອສ້າງໃບສັ່ງຂາຍທາງການ."
   },
   "lbl_select_route_md": {
@@ -3436,12 +3436,12 @@
   },
   "sub_modal_so": {
     "vi": "Đơn hàng vận chuyển - Bản nháp",
-    "en": "Standard Sales Order - Draft",
+    "en": "Standard Transport Order - Draft",
     "la": "ໃບສັ່ງຂາຍມາດຕະຖານ - ຮ່າງ"
   },
   "tab_so_info": {
     "vi": "Thông Tin Đơn Hàng Vận Chuyển",
-    "en": "Sales Order Information",
+    "en": "Transport Order Information",
     "la": "ຂໍ້ມູນໃບສັ່ງຂາຍ"
   },
   "tab_so_details": {
@@ -3450,8 +3450,8 @@
     "la": "ລາຍລະອຽດໃບສັ່ງຂາຍ"
   },
   "tip_so_banner": {
-    "vi": "Đơn hàng vận chuyển (Sales Order): Tổng hợp cước vận chuyển từ Báo giá + chi tiết hàng hóa vận chuyển thực tế. Đơn hàng vận chuyển lưu xong sẽ đủ điều kiện chuyển sang bước Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe.",
-    "en": "Sales Order: Aggregates transportation freight from Quotation + cargo line items. Once saved, it qualifies for Delivery Order (DO) & Vehicle Dispatch.",
+    "vi": "Đơn hàng vận chuyển: Tổng hợp cước vận chuyển từ Báo giá + chi tiết hàng hóa vận chuyển thực tế. Đơn hàng vận chuyển lưu xong sẽ đủ điều kiện chuyển sang bước Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe.",
+    "en": "Transport Order: Aggregates transportation freight from Quotation + cargo line items. Once saved, it qualifies for Delivery Order (DO) & Vehicle Dispatch.",
     "la": "ໃບສັ່ງຂາຍ (Sales Order ທາງການ): ລວມຄ່າຂົນສົ່ງຈາກໃບສະເໜີລາຄາ + ລາຍການສິນຄ້າຕົວຈິງ. ໃບສັ່ງຂາຍບັນທຶກແລ້ວຈະພ້ອມປ່ຽນເປັນໃບສັ່ງປ່ອຍສິນຄ້າ DO & ປ່ອຍລົດ."
   },
   "lbl_currency_payment": {
@@ -3546,7 +3546,7 @@
   },
   "lbl_so_notes_content": {
     "vi": "Nội Dung Ghi Chú Đơn Hàng",
-    "en": "Sales Order Notes Content",
+    "en": "Transport Order Notes Content",
     "la": "ເນື້ອໃນໝາຍເຫດໃບສັ່ງຂາຍ"
   },
   "ph_so_notes": {
@@ -3561,7 +3561,7 @@
   },
   "btn_save_so": {
     "vi": "Lưu Đơn Hàng",
-    "en": "Save Sales Order",
+    "en": "Save Transport Order",
     "la": "ບັນທຶກໃບສັ່ງຂາຍ"
   },
   "uom_ton": {

@@ -185,29 +185,18 @@ function forceCriticalVietnameseLabels() {
   // n\u00e0y k\u00e9o ng\u01b0\u1ee3c v\u1ec1 "Nh\u00e2n Vi\u00ean B\u00e1n H\u00e0ng" \u2014 v\u00e0 v\u00ec h\u00e0m n\u00e0y ch\u1ea1y SAU
   // changeLanguage n\u00ean n\u00f3 LU\u00d4N th\u1eafng. S\u1eeda lang.json xong ch\u1eef tr\u00ean m\u00e0n h\u00ecnh v\u1eabn
   // y nh\u01b0 c\u0169.
-  const fixedTexts = {
-    th_order_no: 'Mã Đơn Hàng',
-    th_customer: 'Khách Hàng',
-    th_origin: 'Nơi Đi',
-    th_destination: 'Nơi Đến',
-    th_total_amount: 'Tổng cước',
-    th_status: 'Trạng Thái',
-    th_action: 'Hành động',
-    lbl_order_no: 'Mã Đơn Hàng',
-    lbl_customer_id: 'Mã Khách Hàng',
-    lbl_payment_terms: 'Điều Khoản Thanh Toán',
-    lbl_route_stops: 'Chọn Tuyến Đường Vận Chuyển',
-    lbl_order_lines: 'Chi Tiết Đơn Hàng',
-    tab_lines: 'Hàng Hóa Vận Chuyển',
-    tab_details: 'Quy Cách Vận Chuyển',
-    tab_attachments: 'Tài Liệu Đính Kèm',
-    btn_search: 'Tìm Kiếm'
-  };
-  Object.entries(fixedTexts).forEach(([key, text]) => {
-    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(label => {
-      label.textContent = text;
-    });
-  });
+  // CỐ Ý không còn bộ nhãn viết cứng ở đây.
+  //
+  // Trước đây chỗ này chép lại 16 nhãn của lang.json rồi ghi đè lên chúng —
+  // một TẦNG NHÃN THỨ BA. Vì hàm này chạy SAU changeLanguage nên nó luôn
+  // thắng, tức mọi lần sửa lang.json đều bị nó âm thầm hoàn tác. Đối chiếu
+  // lúc gỡ: 14/16 nhãn đã trùng khớp y hệt lang.json (thừa hoàn toàn), và
+  // đúng 2 nhãn còn lại — `lbl_route_stops` và `lbl_order_lines` — là chỗ nó
+  // kéo ngược về chữ cũ sau khi lang.json đã được sửa cho đúng ngành vận tải.
+  //
+  // Nhãn nào cần sửa thì sửa trong lang.json và trong index.html. Hai tầng là
+  // đủ; tầng thứ ba chỉ tạo ra một chỗ để quên.
+
   const soSearch = document.getElementById('oracle-search-so');
   if (soSearch) {
     soSearch.placeholder = 'Tìm mã đơn hàng, khách hàng, nơi đi, nơi đến, tổng tiền, trạng thái...';
@@ -675,7 +664,7 @@ window.currentWorkflowStep = 0;
 const workflowStepsData = {
   0: { id: 'step-0', view: 'master-data', title: '0. Master Data & thiết lập nền', role: 'Admin / System Data Manager', db: 'vehicles, drivers, routes, cost_formulas', icon: 'fa-database' },
   1: { id: 'step-1', view: 'crm-sales', title: '1. Báo giá vận tải (Quotation)', role: 'Pricing / Sales Rep', db: 'quotations', icon: 'fa-file-contract' },
-  2: { id: 'step-2', view: 'crm-sales', title: '2. Đơn hàng vận chuyển (Sales Order)', role: 'Sales Executive', db: 'sales_orders', icon: 'fa-handshake' },
+  2: { id: 'step-2', view: 'crm-sales', title: '2. Đơn hàng vận chuyển', role: 'Nhân viên kinh doanh', db: 'sales_orders', icon: 'fa-handshake' },
   3: { id: 'step-3', view: 'ops-planning', title: '3. Lệnh giao hàng (Delivery Order)', role: 'Kho / Điều phối', db: 'delivery_orders', icon: 'fa-clipboard-check' },
   4: { id: 'step-4', view: 'ops-planning', title: '4. Kế hoạch tuyến đường (Route)', role: 'Planner / Route Ops', db: 'routes', icon: 'fa-route' },
   5: { id: 'step-5', view: 'dispatch', title: '5. Lập lịch & điều phối (Dispatch)', role: 'Fleet Dispatcher', db: 'delivery_orders', icon: 'fa-truck-ramp-box' },
@@ -1033,7 +1022,7 @@ window.switchFinanceSubTab = function (key, button) {
 
 window.installEnterpriseModuleTabs = function () {
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const crmTitle = lang === 'la' ? 'CRM / ໃບສະເໜີລາຄາ / ໃບສັ່ງຂາຍ' : (lang === 'en' ? 'CRM / Quotations / Sales Orders' : 'CRM / Báo giá cước / Đơn hàng vận chuyển');
+  const crmTitle = lang === 'la' ? 'CRM / ໃບສະເໜີລາຄາ / ໃບສັ່ງຂາຍ' : (lang === 'en' ? 'CRM / Quotations / Transport Orders' : 'CRM / Báo giá cước / Đơn hàng vận chuyển');
   const singleGroupHint = lang === 'la' ? 'ເປີດເທື່ອລະກຸ່ມເພື່ອບໍ່ໃຫ້ໜ້າຈໍສັບສົນ.' : (lang === 'en' ? 'Open one group at a time to reduce clutter.' : 'Chỉ mở một nhóm nghiệp vụ mỗi lần để đỡ rối màn hình.');
 
   const configs = [
@@ -8242,8 +8231,8 @@ function renderDeliveryOrders(data) {
         la: 'ບໍ່ມີ DO ໃກ້ຊັກຊ້າ. DO ທີ່ໃກ້ຮອດກຳນົດ ຫຼື ກາຍກຳນົດຈະສະແດງຢູ່ນີ້.'
       },
       pending: {
-        vi: 'Chưa có DO chờ vận chuyển. Tạo DO từ Sales Order đã xác nhận để lập kế hoạch.',
-        en: 'No pending DOs. Create DOs from confirmed Sales Orders to start planning.',
+        vi: 'Chưa có DO chờ vận chuyển. Tạo DO từ đơn vận chuyển đã xác nhận để lập kế hoạch.',
+        en: 'No pending DOs. Create DOs from confirmed Transport Orders to start planning.',
         la: 'ຍັງບໍ່ມີ DO ລໍຖ້າການຂົນສົ່ງ. ສ້າງ DO ຈາກໃບສັ່ງຂາຍທີ່ຢືນຢັນແລ້ວເພື່ອວາງແຜນ.'
       },
       active: {
