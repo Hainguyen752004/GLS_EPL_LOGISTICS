@@ -307,6 +307,47 @@ async function loadTranslations() {
 // ghi đè bản của module — hai bản giống nhau nên không đổi hành vi, nhưng có
 // hai nguồn cho cùng một hàm là chỗ để chúng trôi khỏi nhau.
 
+/**
+ * Bao ra khi may chu tu choi mot thao tac.
+ *
+ * Nhieu cho trong tep nay viet `if (res.ok) { ... }` ma KHONG co nhanh else,
+ * con `catch` thi chi `console.error`. He qua: bam "Xoa" mot khach hang khi
+ * may chu tu choi (409 vi con don tham chieu) thi KHONG CO GI XAY RA va khong
+ * mot thong bao nao — hang van nam do, nguoi dung bam lai.
+ *
+ * Phong bi loi cua may chu la `{error: {code, message}, detail}`, KHONG co
+ * khoa `message` o cap cao nhat — nen `data.message` luon undefined. Ham nay
+ * doc dung ba lop do.
+ *
+ * Tra ve `false` de goi duoc dang `if (!res.ok) return baoLoiMayChu(...)`.
+ */
+async function baoLoiMayChu(res, viec) {
+  let chi_tiet = '';
+  try {
+    const data = await res.json();
+    chi_tiet = data?.error?.message || data?.detail || data?.message || '';
+    if (chi_tiet && typeof chi_tiet !== 'string') chi_tiet = JSON.stringify(chi_tiet);
+  } catch (e) {
+    // Than phan hoi khong phai JSON. Ma trang thai van du de noi that bai.
+  }
+  if (!chi_tiet) {
+    chi_tiet = res.status === 401 || res.status === 403
+      ? 'Không có quyền thực hiện thao tác này.'
+      : `Máy chủ trả lỗi HTTP ${res.status}.`;
+  }
+  showToast(`❌ ${viec} không thành công: ${chi_tiet}`);
+  return false;
+}
+window.baoLoiMayChu = baoLoiMayChu;
+
+/** Bao ra khi khong ket noi duoc toi may chu. */
+function baoMatKetNoi(viec, loi) {
+  console.error(viec, loi);
+  showToast(`❌ Không kết nối được tới máy chủ. ${viec} CHƯA được thực hiện.`);
+  return false;
+}
+window.baoMatKetNoi = baoMatKetNoi;
+
 window.showToast = function (msg) {
   const severity = arguments[1];
   msg = fixUIText(msg);
@@ -5760,17 +5801,26 @@ async function submitQuotationForm(e) {
   const url = id ? `${API_BASE}/api/quotations/${id}` : `${API_BASE}/api/quotations`;
   const method = id ? "PUT" : "POST";
 
-  const res = await fetch(url, {
-    method: method,
-    headers: { "Content-Type": "application/json", ...financeAuthHeaders() },
-    body: JSON.stringify(payload)
-  });
-
-  if (res.ok) {
-    closeModal("modal-quotation");
-    await loadAllData();
-    showToast(id ? t('msg_quote_updated') : t('msg_quote_created'));
+  const viec = id ? `Cập nhật báo giá ${id}` : 'Tạo báo giá';
+  let res;
+  try {
+    res = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json", ...financeAuthHeaders() },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    // Khong co try/catch thi mat mang la nem loi khong ai bat, va nguoi dung
+    // chi thay form dung im.
+    return baoMatKetNoi(viec, e);
   }
+
+  // That bai thi giu modal MO. Truoc day khong co nhanh else, nen may chu tu
+  // choi la khong co gi xay ra va khong mot thong bao nao.
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  closeModal("modal-quotation");
+  await loadAllData();
+  showToast(id ? t('msg_quote_updated') : t('msg_quote_created'));
 }
 
 async function submitDOForm(e) {
@@ -5792,17 +5842,22 @@ async function submitDOForm(e) {
   const url = id ? `${API_BASE}/api/delivery-orders/${id}` : `${API_BASE}/api/delivery-orders`;
   const method = id ? "PUT" : "POST";
 
-  const res = await fetch(url, {
-    method: method,
-    headers: { "Content-Type": "application/json", ...financeAuthHeaders() },
-    body: JSON.stringify(payload)
-  });
-
-  if (res.ok) {
-    closeModal("modal-do");
-    await loadAllData();
-    showToast(id ? t('msg_do_updated') : t('msg_do_created'));
+  const viec = id ? `Cập nhật lệnh giao hàng ${id}` : 'Tạo lệnh giao hàng';
+  let res;
+  try {
+    res = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json", ...financeAuthHeaders() },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    return baoMatKetNoi(viec, e);
   }
+
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  closeModal("modal-do");
+  await loadAllData();
+  showToast(id ? t('msg_do_updated') : t('msg_do_created'));
 }
 
 async function submitIncidentForm(e) {
@@ -5815,17 +5870,21 @@ async function submitIncidentForm(e) {
     description: document.getElementById("modal-inc-desc").value
   };
 
-  const res = await fetch(`${API_BASE}/api/incidents`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-
-  if (res.ok) {
-    closeModal("modal-incident");
-    await loadAllData();
-    showToast(t('msg_incident_reported'));
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/incidents`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    return baoMatKetNoi('Ghi nhận sự cố', e);
   }
+
+  if (!res.ok) return baoLoiMayChu(res, 'Ghi nhận sự cố');
+  closeModal("modal-incident");
+  await loadAllData();
+  showToast(t('msg_incident_reported'));
 }
 
 function createDOFromQuotation(qId) {
@@ -6877,12 +6936,11 @@ window.deleteFioriVehicle = async function (id) {
   if (!confirm(`Sếp có chắc chắn muốn xóa phương tiện ${id} khỏi CSDL không?`)) return;
   try {
     const res = await fetch(`${API_BASE}/api/vehicles/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast("🗑️ Đã xóa phương tiện khỏi hệ thống!");
-      loadFioriVehicles();
-    }
+    if (!res.ok) return baoLoiMayChu(res, `Xóa phương tiện ${id}`);
+    showToast("🗑️ Đã xóa phương tiện khỏi hệ thống!");
+    loadFioriVehicles();
   } catch (e) {
-    console.error(e);
+    return baoMatKetNoi(`Xóa phương tiện ${id}`, e);
   }
 }
 
@@ -6899,9 +6957,11 @@ async function loadVehTypes() {
     const res = await fetch(`${API_BASE}/api/vehicle-types`);
     if (res.ok) {
       vehTypes = await res.json();
+    } else {
+      await baoLoiMayChu(res, 'Nạp danh mục loại xe');
     }
   } catch (err) {
-    console.error("Failed to load vehicle types from CSDL API", err);
+    baoMatKetNoi('Nạp danh mục loại xe', err);
   }
   renderVehTypesTable(vehTypes);
   // Hai tab dung chung danh muc: them/xoa o day thi man Cong thuc gia thanh
@@ -7072,12 +7132,11 @@ window.deleteVehType = async function (id) {
   if (!confirm(`Bạn có chắc muốn xóa loại phương tiện ${id} khỏi CSDL?`)) return;
   try {
     const res = await fetch(`${API_BASE}/api/vehicle-types/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast(`Đã xóa loại phương tiện ${id}!`);
-      loadVehTypes();
-    }
+    if (!res.ok) return baoLoiMayChu(res, `Xóa loại phương tiện ${id}`);
+    showToast(`Đã xóa loại phương tiện ${id}!`);
+    loadVehTypes();
   } catch (err) {
-    console.error(err);
+    return baoMatKetNoi(`Xóa loại phương tiện ${id}`, err);
   }
 }
 
@@ -12980,12 +13039,11 @@ function setDriverOperationalStatus(value) {
 async function loadFioriDrivers() {
   try {
     const res = await fetch(`${API_BASE}/api/drivers`);
-    if (res.ok) {
-      fioriDrivers = await res.json();
-      renderFioriDrivers(fioriDrivers);
-    }
+    if (!res.ok) return baoLoiMayChu(res, 'Nạp danh sách nhân sự');
+    fioriDrivers = await res.json();
+    renderFioriDrivers(fioriDrivers);
   } catch (e) {
-    console.error("Failed to load drivers", e);
+    return baoMatKetNoi('Nạp danh sách nhân sự', e);
   }
 }
 
@@ -14623,13 +14681,12 @@ window.deleteDriverRow = async function (btnOrId) {
   if (!confirm(`Sếp có chắc chắn muốn xóa nhân sự ${id} khỏi CSDL không?`)) return;
   try {
     const res = await fetch(`${API_BASE}/api/drivers/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast("Đã xóa nhân sự khỏi CSDL!");
-      loadFioriDrivers();
-      syncAllDynamicDropdowns();
-    }
+    if (!res.ok) return baoLoiMayChu(res, `Xóa nhân sự ${id}`);
+    showToast("Đã xóa nhân sự khỏi CSDL!");
+    loadFioriDrivers();
+    syncAllDynamicDropdowns();
   } catch (e) {
-    console.error(e);
+    return baoMatKetNoi(`Xóa nhân sự ${id}`, e);
   }
 };
 
@@ -14664,14 +14721,15 @@ window.saveDriverModal = async function () {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (res.ok) {
-      showToast(`Đã lưu nhân sự vào CSDL: ${name}`);
-      closeDriverModal();
-      loadFioriDrivers();
-      syncAllDynamicDropdowns();
-    }
+    // That bai thi GIU form mo: dong no la xoa mat nhung gi vua nhap trong
+    // khi chua ghi duoc gi.
+    if (!res.ok) return baoLoiMayChu(res, `Lưu nhân sự ${name}`);
+    showToast(`Đã lưu nhân sự vào CSDL: ${name}`);
+    closeDriverModal();
+    loadFioriDrivers();
+    syncAllDynamicDropdowns();
   } catch (e) {
-    console.error(e);
+    return baoMatKetNoi(`Lưu nhân sự ${name}`, e);
   }
 };
 
@@ -15705,13 +15763,12 @@ window.openVehicleTypesTab = function () {
 window.loadCustomerList = async function () {
   try {
     const res = await fetch(`${API_BASE}/api/customers`);
-    if (res.ok) {
-      eplCustomers = await res.json();
-      renderCustomerList(eplCustomers);
-      if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
-    }
+    if (!res.ok) return baoLoiMayChu(res, 'Nạp danh sách khách hàng');
+    eplCustomers = await res.json();
+    renderCustomerList(eplCustomers);
+    if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
   } catch (e) {
-    console.error("Failed to load customers", e);
+    return baoMatKetNoi('Nạp danh sách khách hàng', e);
   }
 };
 
@@ -15830,12 +15887,14 @@ window.deleteCustomer = async function (id) {
   if (!confirm(`Bạn có chắc chắn muốn xóa Khách hàng "${id}" khỏi CSDL?`)) return;
   try {
     const res = await fetch(`${API_BASE}/api/customers/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      showToast(`🗑️ Đã xóa Khách hàng ${id} khỏi CSDL!`);
-      loadCustomerList();
-    }
+    // May chu tu choi (vi du 409 khi khach con don tham chieu) thi PHAI noi ra.
+    // Truoc day khong co nhanh else, nen bam Xoa la khong co gi xay ra va
+    // khong mot thong bao nao.
+    if (!res.ok) return baoLoiMayChu(res, `Xóa khách hàng ${id}`);
+    showToast(`🗑️ Đã xóa Khách hàng ${id} khỏi CSDL!`);
+    loadCustomerList();
   } catch (e) {
-    console.error("Delete Customer Error", e);
+    return baoMatKetNoi(`Xóa khách hàng ${id}`, e);
   }
 };
 
