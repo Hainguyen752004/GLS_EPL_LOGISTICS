@@ -285,7 +285,11 @@ async function loadTranslations() {
     const sel = document.getElementById('lang-switcher');
     if (sel) changeLanguage(sel.value);
   } catch (e) {
-    console.error('Failed to load lang.json', e);
+    // Không có lang.json thì `appTranslations` rỗng, và `changeLanguage` có
+    // `if (!value) return;` cho từng khóa — nên gạt sang tiếng Lào hay tiếng
+    // Anh sẽ KHÔNG đổi được một chữ nào, mà cũng không báo gì. Người dùng
+    // bấm đi bấm lại cái ô chọn ngôn ngữ và tưởng nó hỏng.
+    baoNapThatBai('bản dịch giao diện', e);
   }
 }
 
@@ -336,6 +340,47 @@ function baoMatKetNoi(viec, loi) {
   return false;
 }
 window.baoMatKetNoi = baoMatKetNoi;
+
+/* ==========================================================================
+   Nạp danh sách thất bại thì phải NÓI RA.
+
+   Mười tám chỗ trong tệp này từng bắt lỗi rồi chỉ `console.error(...)`. Hậu
+   quả không phải là "mất một tính năng" mà là NÓI SAI: `loadSalesOrders` hỏng
+   thì `crmSalesOrders` GIỮ NGUYÊN giá trị cũ và không vẽ lại gì cả, nên màn
+   hình vẫn hiện danh sách của lần nạp trước như thể đó là dữ liệu hiện tại.
+   Còn khi chưa nạp được lần nào thì mảng rỗng, và hàm vẽ hiện đúng dòng
+   "Chưa có dữ liệu" — người dùng đọc thành "công ty chưa có đơn nào", trong
+   khi sự thật là máy chủ đang không trả lời.
+
+   Vì sao gom lại thay vì mỗi chỗ một toast: `showToast` XÓA toast cũ trước
+   khi hiện toast mới (xem ngay bên dưới). Mở màn hình là hàng chục hàm nạp
+   chạy song song, nên mất mạng sẽ bắn ra hàng chục lời báo giống nhau, chín
+   cái đầu nhấp nháy rồi biến mất và chỉ cái cuối cùng ở lại — mà cái cuối
+   cùng thường là thứ ít quan trọng nhất.
+   ========================================================================== */
+
+const dsNapThatBai = new Set();
+let henBaoNapThatBai = null;
+
+function baoNapThatBai(viec, loi) {
+  console.error('Nạp thất bại: ' + viec, loi);
+  dsNapThatBai.add(viec);
+  clearTimeout(henBaoNapThatBai);
+  henBaoNapThatBai = setTimeout(() => {
+    const ds = [...dsNapThatBai];
+    dsNapThatBai.clear();
+    const ten = ds.length > 3
+      ? `${ds.slice(0, 3).join(', ')} và ${ds.length - 3} mục khác`
+      : ds.join(', ');
+    showToast(
+      `⚠️ Không nạp được ${ten}. Số liệu đang hiện có thể là bản cũ hoặc thiếu`
+      + ` — đừng dựa vào nó để quyết định. Kiểm tra kết nối rồi tải lại trang.`,
+      'warning'
+    );
+  }, 400);
+  return false;
+}
+window.baoNapThatBai = baoNapThatBai;
 
 window.showToast = function (msg) {
   const severity = arguments[1];
@@ -546,6 +591,10 @@ function translateAllDOMTexts(lang) {
       }
     });
   } catch (err) {
+    // CỐ Ý chỉ ghi console. Đây không phải lỗi nạp dữ liệu mà là lỗi trong
+    // chính vòng dịch: chữ đã dịch được thì vẫn nằm trên màn, phần còn lại
+    // giữ nguyên ngôn ngữ cũ. Bắn toast ở đây là bắn mỗi lần đổi ngôn ngữ,
+    // trong khi người dùng nhìn màn hình đã thấy ngay chỗ nào chưa dịch.
     console.error('Translation error:', err);
   } finally {
     _isTranslating = false;
@@ -1197,12 +1246,19 @@ async function hydrateFinanceState() {
   await Promise.all(sources.map(async ({ key, path }) => {
     try {
       const res = await fetch(`${API_BASE}${path}`, { headers: financeAuthHeaders() });
-      if (!res.ok) return;
+      // `if (!res.ok) return;` trần là chỗ nguy hiểm nhất trong hàm này: một
+      // 403 vì thiếu quyền tài chính làm Finance Cockpit hiện 0 VĨNH VIỄN,
+      // trong khi bảng ngay bên dưới liệt kê hóa đơn thật. Con số 0 đó trông
+      // y hệt một con số 0 đúng.
+      if (!res.ok) {
+        return baoNapThatBai(`số liệu tài chính (${key})`,
+          new Error(`Máy chủ trả về ${res.status}`));
+      }
       const payload = await res.json();
       const rows = Array.isArray(payload) ? payload : (payload.data || payload.items);
       if (Array.isArray(rows)) appState[key] = rows;
     } catch (err) {
-      console.warn(`Không nạp được ${path}`, err);
+      baoNapThatBai(`số liệu tài chính (${key})`, err);
     }
   }));
 }
@@ -1234,7 +1290,10 @@ async function loadAllData() {
       if (typeof loadDispatchBoard === 'function') loadDispatchBoard();
     }
   } catch (err) {
-    console.warn("Backend API not reachable. Check port 8006.", err);
+    // Đây là hàm nạp gốc của cả màn tổng quan. Hỏng ở đây là mọi bảng, mọi
+    // ô đếm trên Dashboard đều rỗng — và rỗng thì trông hệt như "công ty
+    // chưa có đơn nào".
+    baoNapThatBai('dữ liệu tổng quan', err);
   }
 }
 
@@ -1267,7 +1326,6 @@ function renderAllTables() {
     renderDispatchCalendar();
     if (typeof renderDispatchDOs === 'function') renderDispatchDOs();
   } else if (activeViewId === 'view-tracking') {
-    renderGPSTrackingWidget();
     renderGpsEventTimeline();
   } else if (activeViewId === 'view-operations-360') {
     renderTmsCockpit();
@@ -1458,40 +1516,6 @@ function switchShipmentDossierTab(tabName, button) {
 
 window.selectShipmentDossierFromSearch = selectShipmentDossierFromSearch;
 window.switchShipmentDossierTab = switchShipmentDossierTab;
-
-function renderExecutionModeCockpit() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const primaryEl = document.getElementById('execution-mode-primary');
-  const guidanceEl = document.getElementById('execution-mode-guidance');
-  if (!primaryEl || !guidanceEl) return;
-  const mode = window.TmsCockpit.buildExecutionModeCockpit(appState || {});
-  const cards = [mode.primary, mode.secondary].filter(Boolean);
-  primaryEl.innerHTML = cards.map(card => `
-    <div onclick="switchView('${card.navigation.view}')" style="background:#ffffff; border:1px solid ${mode.recommended_mode === 'internal_fleet' && card.title.includes('Đội xe') ? '#bfdbfe' : '#e2e8f0'}; border-radius:12px; padding:12px; cursor:pointer; display:grid; gap:5px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-        <strong style="color:#0f172a;">${card.title}</strong>
-        <span style="font-size:.72rem; font-weight:900; color:${mode.tender_required ? '#b45309' : '#047857'}; background:${mode.tender_required ? '#fffbeb' : '#ecfdf5'}; border-radius:999px; padding:4px 8px;">${mode.tender_required ? 'Cần tender' : 'Tender tùy chọn'}</span>
-      </div>
-      <div style="font-size:.8rem; color:#475569;">${card.subtitle}</div>
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:3px;">
-        <span style="font-size:.74rem; color:#64748b;">${card.count} FO phù hợp</span>
-        <span style="font-size:.76rem; color:#0a6ed1; font-weight:900;">${card.action_label} <i class="fa-solid fa-arrow-right"></i></span>
-      </div>
-    </div>
-  `).join('');
-  guidanceEl.innerHTML = mode.guidance.map(item => `
-    <div style="font-size:.78rem; color:#475569; background:#ffffff; border:1px dashed #cbd5e1; border-radius:10px; padding:8px 10px;">
-      <i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> ${item}
-    </div>
-  `).join('');
-}
-
-let activeTripReturnId = '';
-let tripReturnActionSequence = 0;
-let tripReturnSearchQuery = '';
-let tripReturnStatusFilter = '';
-let activeTripReturnDetailTab = 'journey';
-
 function switchDeliveryWorkbenchView(tabName = 'shipments') {
   const planningTabs = ['board', 'do', 'planning', 'pending'];
   const dispatchTabs = ['dispatch', 'schedule', 'calendar', 'alerts'];
@@ -1521,133 +1545,6 @@ function switchDeliveryRunningView(tabName = 'list') {
   if (typeof renderTripReturnCockpit === 'function') renderTripReturnCockpit();
   if (typeof renderShipments === 'function') renderShipments();
 }
-
-function renderTripReturnCockpitLegacy() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const kpiEl = document.getElementById('trip-return-kpis');
-  const queueEl = document.getElementById('trip-return-queue');
-  const detailEl = document.getElementById('trip-return-detail');
-  const guidanceEl = document.getElementById('trip-return-guidance-list') || document.getElementById('trip-return-guidance');
-  if (!kpiEl || !queueEl || !detailEl || !guidanceEl) return;
-
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const cockpit = window.TmsCockpit.buildTripReturnCockpit(appState || {});
-  if (!activeTripReturnId && cockpit.items.length) activeTripReturnId = cockpit.items[0].id;
-  let selected = cockpit.items.find(item => item.id === activeTripReturnId) || cockpit.items[0];
-  const visibleItems = cockpit.items.filter(item => {
-    const journey = window.TmsCockpit.getTripJourneyPresentation(item.raw || item);
-    const haystack = [item.id, item.subtitle, item.relationship_label, item.return_label, journey.status_label, journey.location_label, ...(item.delivery_order_ids || [])].join(' ').toLowerCase();
-    const queryMatches = !tripReturnSearchQuery || haystack.includes(tripReturnSearchQuery);
-    const statusMatches = !tripReturnStatusFilter
-      || (tripReturnStatusFilter === 'completed' && journey.status_label === 'Đã hoàn tất')
-      || (tripReturnStatusFilter === 'waiting_return' && journey.status_label === 'Chờ quay về')
-      || (tripReturnStatusFilter === 'active' && !['Đã hoàn tất', 'Chờ quay về'].includes(journey.status_label));
-    return queryMatches && statusMatches;
-  });
-  if (visibleItems.length && !visibleItems.some(item => item.id === (selected && selected.id))) {
-    selected = visibleItems[0];
-    activeTripReturnId = selected.id;
-  }
-
-  const kpiMap = {
-    trip_count: { vi: 'Tổng Trip', en: 'Total Trips', la: 'ຈຳນວນ Trip ທັງໝົດ' },
-    active_trips: { vi: 'Đang chạy', en: 'In Transit', la: 'ກຳລັງແລ່ນ' },
-    return_planned: { vi: 'Có lượt về/backhaul', en: 'Backhaul Planned', la: 'ມີຖ້ຽວກັບ / Backhaul' },
-    missing_return: { vi: 'Thiếu kế hoạch về', en: 'Missing Return Plan', la: 'ຍັງຂາດແຜນຖ້ຽວກັບ' }
-  };
-
-  const kpiIcons = ['fa-route', 'fa-truck-fast', 'fa-rotate-left', 'fa-calendar-xmark'];
-  kpiEl.innerHTML = cockpit.kpis.map((kpi, index) => {
-    const localizedLabel = (kpiMap[kpi.key] && kpiMap[kpi.key][lang]) || kpi.label;
-    return `
-    <div style="border:1px solid #dbeafe; border-radius:10px; padding:9px 11px; background:#f8fbff; display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:62px;">
-      <div>
-        <div style="font-size:.74rem; color:#64748b; font-weight:900;">${localizedLabel}</div>
-        <div style="font-size:1.22rem; font-weight:900; color:#0a6ed1; line-height:1.1;">${kpi.count}</div>
-      </div>
-      <span style="width:32px; height:32px; border-radius:8px; display:grid; place-items:center; background:#e8f3ff; color:#0a6ed1;">
-        <i class="fa-solid ${kpiIcons[index] || 'fa-circle-info'}"></i>
-      </span>
-    </div>
-  `;
-  }).join('');
-
-  queueEl.innerHTML = visibleItems.length ? visibleItems.map(item => {
-    const active = item.id === (selected && selected.id);
-    const journey = window.TmsCockpit.getTripJourneyPresentation(item.raw || item);
-    return `
-    <button type="button" class="fiori-btn ${active ? 'fiori-btn-primary' : 'fiori-btn-secondary'}" onclick="selectTripReturnWorkItem('${item.id}')" style="justify-content:flex-start; text-align:left; display:grid; gap:5px; padding:11px 12px; border-radius:10px; width:100%;">
-      <strong style="font-size:.86rem; color:${active ? '#ffffff' : '#0f172a'};">${escapeHtml(item.title)}</strong>
-      <span style="font-size:.76rem; color:${active ? '#dbeafe' : '#64748b'};">${journey.status_label} · ${journey.location_label}</span>
-      <span style="display:flex; gap:6px; flex-wrap:wrap;">
-        <span style="font-size:.72rem; color:#0a6ed1; font-weight:900; background:#e8f3ff; border-radius:999px; padding:2px 7px;">${item.relationship_label || (lang === 'la' ? '1 ຖ້ຽວ' : (lang === 'en' ? '1 trip' : '1 chuyến'))}</span>
-        <span style="font-size:.72rem; color:#ea580c; font-weight:900; background:#fff7ed; border-radius:999px; padding:2px 7px;">${item.planned_return_at ? 'Có lịch quay về' : 'Chưa có lịch quay về'}</span>
-      </span>
-    </button>`;
-  }).join('') : `
-    <div class="delivery-empty-state" style="border:1px dashed #cbd5e1; border-radius:10px; padding:18px; color:#64748b; background:#f8fafc; font-weight:800; display:grid; gap:8px;">
-      <div><i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;"></i> ${cockpit.items.length ? 'Không tìm thấy Trip phù hợp bộ lọc.' : 'Chưa có chuyến vận chuyển.'}</div>
-      <div style="font-size:.82rem; font-weight:700;">Thử xóa bộ lọc hoặc làm mới dữ liệu để xem lại danh sách.</div>
-    </div>
-  `;
-
-  const searchEl = document.getElementById('trip-return-search');
-  const statusEl = document.getElementById('trip-return-status-filter');
-  if (searchEl && searchEl.value !== tripReturnSearchQuery) searchEl.value = tripReturnSearchQuery;
-  if (statusEl && statusEl.value !== tripReturnStatusFilter) statusEl.value = tripReturnStatusFilter;
-
-  if (!selected) {
-    detailEl.innerHTML = `<div class="delivery-empty-state" style="height:100%; display:grid; place-items:center; color:#64748b; font-weight:800; text-align:center;">${lang === 'la' ? 'ເລືອກ Trip ເພື່ອເບິ່ງໄລຍະທາງ, ETA ແລະ POD ຕາມແຕ່ລະ DO.' : (lang === 'en' ? 'Select a trip to view legs, ETA and POD per DO.' : 'Chọn một Trip để xem chặng, ETA và POD theo từng DO.')}</div>`;
-  } else {
-    const journey = window.TmsCockpit.getTripJourneyPresentation(selected.raw || selected);
-    const tripTypeLabel = { one_way: 'Một chiều', round_trip: 'Khứ hồi', backhaul: 'Có hàng chiều về', multi_stop: 'Nhiều điểm giao' }[selected.trip_type] || 'Chuyến vận chuyển';
-    const formatJourneyTime = value => {
-      if (!value) return 'Chưa có giờ';
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    };
-    detailEl.innerHTML = `
-      <div class="trip-journey-heading">
-        <div>
-          <div class="trip-journey-id">${selected.id}</div>
-          <div class="trip-journey-subtitle">${selected.subtitle}</div>
-        </div>
-        <span class="trip-journey-type">${tripTypeLabel}</span>
-      </div>
-      <div class="trip-journey-status-grid">
-        <div class="trip-journey-status-card is-primary"><span>Trạng thái hiện tại</span><strong>${journey.status_label}</strong></div>
-        <div class="trip-journey-status-card"><span>Vị trí xe</span><strong>${journey.location_label}</strong></div>
-        <div class="trip-journey-status-card"><span>Giờ dự kiến đến điểm giao</span><strong>${formatJourneyTime(selected.planned_arrival_at)}</strong></div>
-        <div class="trip-journey-status-card is-return"><span>Giờ dự kiến rảnh tại điểm gốc</span><strong>${formatJourneyTime(selected.planned_return_at)}</strong></div>
-      </div>
-      <div class="trip-journey-next"><i class="fa-solid fa-arrow-right"></i><span><b>Việc tiếp theo:</b> ${journey.next_action}</span></div>
-      <div class="trip-journey-timeline">${journey.legs.map(leg => `
-        <div class="trip-journey-step ${leg.status === 'completed' ? 'is-done' : ['in_transit', 'arrived'].includes(leg.status) ? 'is-active' : ''}">
-          <div class="trip-journey-step-marker"><i class="fa-solid ${leg.status === 'completed' ? 'fa-check' : ['in_transit', 'arrived'].includes(leg.status) ? 'fa-truck-fast' : 'fa-clock'}"></i></div>
-          <div class="trip-journey-step-content"><div class="trip-journey-step-top"><strong>${leg.sequence_no || ''}. ${leg.label}</strong><span>${leg.status_label}</span></div><div class="trip-journey-route">${leg.route_label}</div><small>${Number(leg.distance_km || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km · ${Number(leg.avg_speed_kmh || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} km/h · ${formatJourneyTime(leg.actual_arrival_at || leg.planned_arrival_at)}</small></div>
-        </div>
-      `).join('') || `<div class="delivery-empty-state">Trip chưa có chặng vận chuyển.</div>`}</div>
-    `;
-  }
-
-  const laGuidance = [
-    'DO ແມ່ນຄຳສັ່ງຂົນສົ່ງ; Trip ແມ່ນຖ້ຽວລົດຕົວຈິງ.',
-    '1 DO ສາມາດແບ່ງອອກຫຼາຍລົດ/ຖ້ຽວ; 1 ລົດ/ຖ້ຽວ ສາມາດລວມຫຼາຍ DO ຖ້າເສັ້ນທາງ ແລະ ເວລາດຽວກັນ.',
-    'POD ຄວນບັນທຶກຕາມແຕ່ລະ DO/ຈຸດຈັດສົ່ງ ເພື່ອຄວາມຊັດເຈນໃນຄວາມຮັບຜິດຊອບ.',
-    'Backhaul ຕ້ອງຕິດກັບ DO ຖ້ຽວກັບ; empty return ໃຊ້ສຳລັບລົດຕູ້ເປົ່າ.',
-    'ETA ຖ້ຽວກັບຄິດໄລ່ຈາກໄລຍະທາງ, ຄວາມໄວ ແລະ ເວລາຈອດ.'
-  ];
-  const activeGuidance = (lang === 'la' ? laGuidance : cockpit.guidance);
-
-  guidanceEl.innerHTML = activeGuidance.map(item => `
-    <div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:8px; padding:9px 10px; color:#475569; font-size:.8rem;">
-      <i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> ${item}
-    </div>
-  `).join('');
-  guidanceEl.style.display = 'grid';
-}
-
 function tripReturnFormatTime(value) {
   if (!value) return 'Chưa có giờ';
   const date = new Date(value);
@@ -2371,7 +2268,6 @@ function renderTmsCockpit() {
       </div>
     `).join('');
   }
-  renderMasterSetupSidebar(state);
 
   if (towerEl) {
     const tower = window.TmsCockpit.buildControlTower(state);
@@ -2384,7 +2280,6 @@ function renderTmsCockpit() {
   }
   renderTransportationWorkQueue(workQueueEl);
 
-  renderExecutionModeCockpit();
 
   if (timelineEl) {
     const deliveryOrders = state.delivery_orders || [];
@@ -2434,83 +2329,9 @@ function renderTmsCockpit() {
     `).join('');
   }
 }
-
-function renderMasterSetupSidebar(state) {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const actionsEl = document.getElementById('tms-master-next-actions');
-  const linksEl = document.getElementById('tms-master-quick-links');
-  if (!actionsEl && !linksEl) return;
-
-  const wizard = window.TmsCockpit.buildMasterSetupWizardSteps(state || {});
-  const missing = wizard.steps.filter(step => step.status === 'missing');
-  const firstMissing = missing[0];
-
-  if (actionsEl) {
-    const source = missing.length ? missing.slice(0, 3) : wizard.steps.slice(0, 3);
-    actionsEl.innerHTML = `
-      <div style="font-weight:950; color:#0f172a; margin-top:2px;"><i class="fa-solid fa-bolt" style="color:#f59e0b;"></i> Việc cần làm tiếp theo</div>
-      ${source.map(step => `
-        <button onclick="openMasterSetupStep('${step.tabId || ''}')" style="text-align:left; border:1px solid ${step.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${step.status === 'done' ? '#f0fdf4' : '#fff7ed'}; border-radius:12px; padding:10px; cursor:pointer;">
-          <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
-            <strong style="color:#0f172a;">${step.label}</strong>
-            <span style="font-size:.7rem; font-weight:950; color:${step.status === 'done' ? '#047857' : '#c2410c'};">${step.status === 'done' ? 'Đủ' : 'Thiếu'}</span>
-          </div>
-          <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${step.status === 'done' ? 'Có thể dùng cho luồng A-Z.' : step.message}</div>
-        </button>
-      `).join('')}
-    `;
-  }
-
-  if (linksEl) {
-    linksEl.innerHTML = `
-      <div style="font-weight:950; color:#0f172a; margin-top:2px;"><i class="fa-solid fa-compass" style="color:#0a6ed1;"></i> Điều hướng nhanh</div>
-      <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px;">
-        <button onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('md-tab-setup', null), 80);" style="border:1px solid #bfdbfe; background:#eff6ff; color:#0a6ed1; border-radius:10px; padding:9px; font-weight:900; cursor:pointer;">Setup A-Z</button>
-        <button onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('${(firstMissing && firstMissing.tabId) || 'md-tab-routes'}', null), 80);" style="border:1px solid #bfdbfe; background:#ffffff; color:#0f172a; border-radius:10px; padding:9px; font-weight:900; cursor:pointer;">Mục còn thiếu</button>
-        <button onclick="switchView('dispatch')" style="border:1px solid #bfdbfe; background:#ffffff; color:#0f172a; border-radius:10px; padding:9px; font-weight:900; cursor:pointer;">Dispatch</button>
-        <button onclick="switchView('tracking')" style="border:1px solid #bfdbfe; background:#ffffff; color:#0f172a; border-radius:10px; padding:9px; font-weight:900; cursor:pointer;">GPS/POD</button>
-      </div>
-    `;
-  }
-}
-
 function uiHealthEscape(value) {
   return escapeHtml(value);
 }
-
-function renderUiHealthChecklist() {
-  if (!window.TmsCockpit?.buildUiHealthChecklist || typeof document === 'undefined') return;
-  const progressEl = document.getElementById('tms-ui-health-progress');
-  const listEl = document.getElementById('tms-ui-health-list');
-  if (!progressEl || !listEl) return;
-
-  const health = window.TmsCockpit.buildUiHealthChecklist(appState || {}, new Date());
-  const progressColor = health.progress.percent >= 85 ? '#059669' : health.progress.percent >= 65 ? '#d97706' : '#dc2626';
-  progressEl.innerHTML = `
-    <div style="text-align:right; font-weight:950; color:${progressColor};">${health.progress.percent}% sẵn sàng</div>
-    <div style="height:8px; background:#dbeafe; border-radius:999px; overflow:hidden; margin-top:6px;">
-      <div style="width:${health.progress.percent}%; height:100%; background:${progressColor};"></div>
-    </div>
-    <div style="font-size:.7rem; color:#64748b; text-align:right; margin-top:4px;">${health.progress.done}/${health.progress.total} nhóm ổn</div>
-  `;
-
-  listEl.innerHTML = health.items.map(item => {
-    const ready = item.status === 'ready';
-    const color = ready ? '#059669' : '#d97706';
-    const bg = ready ? '#ecfdf5' : '#fff7ed';
-    const border = ready ? '#bbf7d0' : '#fed7aa';
-    return `
-      <button onclick="openUiHealthActionByKey('${uiHealthEscape(item.key)}')" title="${uiHealthEscape(item.message)}" style="text-align:left; border:1px solid ${border}; background:${bg}; border-radius:12px; padding:10px; cursor:pointer;">
-        <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
-          <strong style="color:#0f172a; font-size:.82rem;">${uiHealthEscape(item.label)}</strong>
-          <span style="font-size:.68rem; font-weight:950; color:${color};">${ready ? 'Ổn' : 'Cần xử lý'}</span>
-        </div>
-        <div style="font-size:.72rem; color:#64748b; margin-top:5px; line-height:1.35;">${uiHealthEscape(item.message)}</div>
-      </button>
-    `;
-  }).join('');
-}
-
 function openUiHealthTarget(target) {
   const view = target && target.view || 'overview';
   const tabId = target && target.tabId || '';
@@ -2987,52 +2808,6 @@ window.closeShipment360StepModal = closeShipment360StepModal;
 window.renderShipment360StepModal = renderShipment360StepModal;
 window.openModalFromTimelineStep = openModalFromTimelineStep;
 window.executeShipment360StepAction = executeShipment360StepAction;
-
-let activeSlaKpiIssueId = '';
-
-function renderSlaKpiIssueDetail(issueId) {
-  const detailEl = document.getElementById('sla-kpi-issue-detail');
-  if (!detailEl || !window.TmsCockpit || !window.TmsCockpit.buildSlaKpiIssueDetail) return;
-  const detail = window.TmsCockpit.buildSlaKpiIssueDetail(appState || {}, issueId || activeSlaKpiIssueId);
-  if (!detail.issue) {
-    detailEl.innerHTML = '';
-    return;
-  }
-  const issue = detail.issue;
-  const actions = (detail.next_actions || []).map(action => `
-    <button class="fiori-btn fiori-btn-secondary" onclick="switchView('${action.navigation.view}')" style="justify-content:flex-start; text-align:left;">
-      <i class="fa-solid fa-arrow-up-right-from-square"></i>
-      <span><strong>${action.label}</strong><br><small style="color:#64748b;">${action.description}</small></span>
-    </button>
-  `).join('');
-  detailEl.innerHTML = `
-    <div style="background:#ffffff; border:1px solid #fecaca; border-radius:12px; padding:11px; display:grid; gap:8px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-        <strong style="color:#0f172a;"><i class="fa-solid fa-magnifying-glass-chart" style="color:#dc2626;"></i> Hồ sơ cảnh báo: ${issue.title}</strong>
-        <span style="color:#dc2626; font-weight:950; font-size:.78rem;">${issue.metric || issue.category_code}</span>
-      </div>
-      <div style="font-size:.8rem; color:#475569;">${detail.message}</div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(125px,1fr)); gap:8px; font-size:.75rem;">
-        <div style="background:#f8fafc; border-radius:9px; padding:8px;"><strong>DO</strong><br>${issue.order_id || '—'}</div>
-        <div style="background:#f8fafc; border-radius:9px; padding:8px;"><strong>Xe</strong><br>${issue.vehicle_id || '—'}</div>
-        <div style="background:#f8fafc; border-radius:9px; padding:8px;"><strong>Tài xế</strong><br>${issue.driver_id || '—'}</div>
-        <div style="background:#f8fafc; border-radius:9px; padding:8px;"><strong>Tuyến</strong><br>${issue.route_label || '—'}</div>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px;">${actions}</div>
-    </div>
-  `;
-}
-
-function openSlaKpiIssue(issueId) {
-  activeSlaKpiIssueId = issueId || '';
-  renderSlaKpiIssueDetail(activeSlaKpiIssueId);
-}
-
-// Đã dỡ renderSlaKpiDrilldown(): bốn container nó tìm (#sla-kpi-cards,
-// #sla-kpi-worklist, #sla-kpi-reason-chart, #sla-kpi-recommendations) không
-// tồn tại trong index.html nên hàm luôn thoát ngay dòng kiểm tra đầu, và
-// không còn chỗ nào gọi nó. Bộ chỉ số SLA/KPI đang hiển thị là
-// renderReportingDrilldown(), vẽ qua js/sla-analytics.js.
 
 function renderRolePermissionBoard() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
@@ -4679,45 +4454,6 @@ function renderDispatchResourceChangePanel() {
       ? 'Đổi tài xế theo cảnh báo Dispatch Calendar/Gantt.'
       : 'Điều chỉnh xe/tài xế theo Dispatch Calendar/Gantt.';
 }
-
-function renderDispatchCapacityBoard() {
-  if (!window.TmsCockpit || !window.TmsCockpit.buildDispatchCapacityBoard || typeof document === 'undefined') return;
-  const kpisEl = document.getElementById('dispatch-capacity-kpis');
-  const vehiclesEl = document.getElementById('dispatch-capacity-vehicles');
-  const alertsEl = document.getElementById('dispatch-capacity-alerts');
-  const unscheduledEl = document.getElementById('dispatch-capacity-unscheduled');
-  if (!kpisEl || !vehiclesEl || !alertsEl || !unscheduledEl) return;
-  const board = window.TmsCockpit.buildDispatchCapacityBoard(appState || {}, new Date());
-  kpisEl.innerHTML = Object.values(board.kpis).map(kpi => `
-    <div class="dispatch-week-kpi">
-      <span>${kpi.label}</span>
-      <strong>${kpi.count}</strong>
-    </div>
-  `).join('');
-  vehiclesEl.innerHTML = board.vehicle_cards.length ? board.vehicle_cards.map(card => {
-    const color = card.risk_level === 'overlap' ? '#dc2626' : card.risk_level === 'high' ? '#d97706' : '#0a6ed1';
-    return `
-      <button onclick="dispatchCalendarFilters.vehicle_id='${card.resource_id}'; renderDispatchCalendar();" style="text-align:left; border:1px solid ${color}; background:#ffffff; border-radius:11px; padding:9px 10px; cursor:pointer;">
-        <div style="display:flex; justify-content:space-between; gap:8px;"><strong style="color:#0f172a;">${card.label}</strong><span style="font-size:.72rem; font-weight:950; color:${color};">${card.risk_label}</span></div>
-        <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${card.trip_count} chuyến • ${card.utilization_percent}% khung giờ</div>
-        <div style="height:7px; background:#e2e8f0; border-radius:999px; overflow:hidden; margin-top:7px;"><div style="height:100%; width:${card.utilization_percent}%; background:${color};"></div></div>
-      </button>
-    `;
-  }).join('') : `<div style="border:1px dashed #cbd5e1; border-radius:11px; background:#ffffff; padding:12px; color:#64748b; text-align:center;">Chưa có xe nào đang có lịch.</div>`;
-  alertsEl.innerHTML = board.priority_alerts.length ? board.priority_alerts.map(alert => `
-    <button type="button" class="dispatch-alert-row ${alert.severity === 'critical' ? 'dispatch-alert-row--critical' : ''}" onclick="switchView('${alert.navigation.view}')">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      <span>${alert.message}</span>
-    </button>
-  `).join('') : `<div style="border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; border-radius:11px; padding:10px; font-weight:850;"><i class="fa-solid fa-circle-check"></i> Chưa có cảnh báo quá tải/trùng lịch.</div>`;
-  unscheduledEl.innerHTML = board.unscheduled_worklist.length ? board.unscheduled_worklist.map(item => `
-    <button onclick="selectDispatchCalendarItem('${item.id}')" style="text-align:left; border:1px solid #dbeafe; background:#ffffff; border-radius:11px; padding:9px 10px; cursor:pointer;">
-      <div style="display:flex; justify-content:space-between; gap:8px;"><strong>${item.id}</strong><span style="font-size:.72rem; color:#0a6ed1; font-weight:950;">${item.action_label}</span></div>
-      <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${escapeHtml(item.reason)}</div>
-    </button>
-  `).join('') : `<div style="border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; border-radius:11px; padding:10px; font-weight:850;"><i class="fa-solid fa-circle-check"></i> Không có DO thiếu lịch/tài nguyên.</div>`;
-}
-
 function openDispatchResourceChange(orderId, actionCode) {
   pendingDispatchResourceChange = { orderId: orderId || selectedDispatchCalendarOrderId || '', actionCode: actionCode || '' };
   selectedDispatchCalendarOrderId = pendingDispatchResourceChange.orderId;
@@ -5089,19 +4825,6 @@ window.selectDispatchFleetDay = function (isoDate) {
   renderDispatchCalendar();
   window.openDispatchDayWorkbench(selectedDispatchFleetIsoDate);
 };
-
-window.updateDispatchDayFleetFilter = function (field, value) {
-  if (!['query', 'status'].includes(field)) return;
-  dispatchDayFleetFilters[field] = value || '';
-  dispatchDayFleetFilters.page = 1;
-  renderDispatchCalendar();
-  if (field === 'query') {
-    const input = document.getElementById('dispatch-day-fleet-search');
-    input?.focus();
-    if (input) input.setSelectionRange(input.value.length, input.value.length);
-  }
-};
-
 window.changeDispatchDayFleetPage = function (increment) {
   dispatchDayFleetFilters.page = Math.max(1, Number(dispatchDayFleetFilters.page || 1) + Number(increment || 0));
   renderDispatchCalendar();
@@ -5276,6 +4999,25 @@ function renderDispatchCalendar() {
   switchDispatchWorkState(activeDispatchWorkState);
   if (dispatchDayWorkbenchState.open && detailEl) detailEl.hidden = false;
 }
+
+/* Bảy trình vẽ dưới đây đã được gỡ. Mỗi hàm vẽ vào một khối mà index.html
+   KHÔNG có, nên `getElementById` trả về null và toàn bộ thân hàm rơi vào
+   những nhánh `if (el)` không bao giờ đúng — không một người dùng nào chạm
+   tới được:
+
+     renderExecutionModeCockpit    execution-mode-primary, -guidance
+     renderMasterSetupSidebar      tms-master-setup-checklist, -next-actions, -quick-links
+     renderUiHealthChecklist       tms-ui-health-list, -progress   (0 nơi gọi)
+     renderSlaKpiIssueDetail       sla-kpi-issue-detail            (cùng openSlaKpiIssue)
+     renderDispatchCapacityBoard   dispatch-capacity-*             (0 nơi gọi)
+     updateDispatchDayFleetFilter  dispatch-day-fleet-search       (0 nơi gọi)
+     renderGPSTrackingWidget       gps-do, gps-vehicle, gps-driver, gps-dist
+
+   Cách kiểm: xóa thử từng hàm rồi chạy cả bộ test — bảy hàm này không làm
+   vỡ bài kiểm nào. Riêng `renderDispatchWeekPlanner` thì CÓ, nên nó được
+   giữ lại và khối chứa của nó được dựng trong index.html thay vì gỡ đi.
+   Với renderDispatchCapacityBoard, dispatch-workbench-ui.test.js còn CẤM
+   gọi nó (`assert.doesNotMatch`) — nó đã bị cố ý tháo từ trước. */
 
 function renderDispatchWeekPlanner() {
   if (!window.TmsCockpit?.buildDispatchWeekPlanner || typeof document === 'undefined') return;
@@ -5511,46 +5253,6 @@ function renderStats() {
     return;
   }
 }
-
-function renderGPSTrackingWidget() {
-  const gpsFields = {
-    do: document.getElementById("gps-do"),
-    vehicle: document.getElementById("gps-vehicle"),
-    driver: document.getElementById("gps-driver"),
-    dist: document.getElementById("gps-dist")
-  };
-  if (!gpsFields.do || !gpsFields.vehicle || !gpsFields.driver || !gpsFields.dist) return;
-
-  const activeDo = (appState.delivery_orders && appState.delivery_orders.length > 0) ? (appState.delivery_orders.find(d => d.status === 'In Transit') || appState.delivery_orders[0]) : null;
-  if (activeDo) {
-    gpsFields.do.value = activeDo.id;
-    gpsFields.vehicle.value = activeDo.vehicle || activeDo.vehicle_id || t('status_unassigned');
-    gpsFields.driver.value = activeDo.driver || activeDo.driver_id || t('status_unassigned');
-    // Try to find the distance from eplRoutes if available
-    let dist = '... Km';
-    const routeId = activeDo.route || activeDo.route_id;
-    if (typeof eplRoutes !== 'undefined' && eplRoutes.length > 0 && routeId) {
-      const apiRoute = eplRoutes.find(r => r.id === routeId || r.name === routeId);
-      if (apiRoute) dist = `${apiRoute.distance_km} Km`;
-    }
-    gpsFields.dist.value = dist;
-  } else {
-    gpsFields.do.value = t('status_no_running_do');
-    gpsFields.vehicle.value = "-";
-    gpsFields.driver.value = "-";
-    gpsFields.dist.value = "0 Km";
-  }
-}
-
-/**
- * Tỉ lệ lợi nhuận của một báo giá, SUY RA từ giá thành và cước thu khách.
- *
- * Trước đây ô này in `${q.margin_pct}%`, mà API không hề trả về trường đó, nên
- * bảng báo giá hiện ra chữ "undefined%" ở mọi dòng.
- *
- * Suy ra thay vì lưu thêm một cột: ba con số cùng nói về một việc thì kiểu gì
- * cũng có ngày hai cái trôi khỏi nhau.
- */
 function quotationMarginLabel(quotation) {
   const cost = Number(quotation?.total_cost || 0);
   const selling = Number(quotation?.selling_price || 0);
@@ -6186,7 +5888,7 @@ async function loadFioriVehicles() {
     const data = await fetchAllPaginated(`${API_BASE}/api/vehicles?paginated=true`, 200);
     fioriVehicles = data || [];
   } catch (error) {
-    console.error("Failed to load vehicles", error);
+    baoNapThatBai('danh sách phương tiện', error);
   }
   renderFioriVehicles(fioriVehicles);
   if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
@@ -6729,16 +6431,17 @@ window.saveFioriVehicle = async function () {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const result = await res.json();
-    if (res.ok) {
-      showToast('Đã lưu phương tiện vào CSDL.');
-      closeFioriVehicleForm();
-      loadFioriVehicles();
-    } else {
-      showToast(result.detail || '⚠️ Lỗi khi lưu phương tiện!');
-    }
+    // Máy chủ từ chối thì GIỮ FORM MỞ và nói rõ lý do. `result.detail` có thể
+    // là một object (phong bì lỗi `{error:{code,message}}`), và nhét object
+    // vào toast cho ra chữ "[object Object]" — baoLoiMayChu đọc đúng ba lớp.
+    if (!res.ok) return baoLoiMayChu(res, 'Lưu phương tiện');
+    showToast('Đã lưu phương tiện vào CSDL.');
+    closeFioriVehicleForm();
+    loadFioriVehicles();
   } catch (e) {
-    console.error(e);
+    // Mất mạng giữa chừng: trước đây chỗ này im hoàn toàn, người dùng bấm
+    // "Lưu" rồi ngồi nhìn form không nhúc nhích, không biết đã lưu hay chưa.
+    return baoMatKetNoi('Lưu phương tiện', e);
   }
 }
 
@@ -6969,7 +6672,7 @@ async function loadSalesOrders() {
       renderOracleSOList(crmSalesOrders);
     }
   } catch (error) {
-    console.error("Failed to load Sales Orders", error);
+    baoNapThatBai('danh sách đơn hàng vận chuyển', error);
   }
 }
 
@@ -7276,35 +6979,13 @@ window.calcQTTotal = function () {
   setWorkflowTotalField('qt-selling-price', f + d + t, curr);
 };
 
-window.legacySaveOracleQT = async function () {
-  const payload = {
-    customer_id: document.getElementById('qt-customer').value,
-    route_id: document.getElementById('qt-route').value,
-    cargo_type: document.getElementById('qt-cargo-type').value,
-    valid_to: document.getElementById('qt-valid-to').value,
-    fuel_cost: workflowCostFieldVndValue('qt-fuel'),
-    driver_cost: workflowCostFieldVndValue('qt-driver'),
-    toll_fee: workflowCostFieldVndValue('qt-toll'),
-    selling_price: parseInt(document.getElementById('qt-selling-price').value.split(' ')[0].replace(/\D/g, '')) || 0,
-    status: 'Bản nháp'
-  };
+/* `legacySaveOracleQT` da duoc go.
+   Ham nay tao bao gia bang mot duong RIENG, khong ai goi den — khong mot
+   thuoc tinh onclick nao trong index.html, khong mot cho nao trong JS.
+   No cung khong co nhanh `else`: may chu tu choi thi KHONG CO GI xay ra,
+   khong mot thong bao nao, va `catch` thi chi console.error. Duong tao bao
+   gia dang chay la `saveOracleQT`. */
 
-  try {
-    const res = await fetch(`${API_BASE}/api/quotations`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      showToast('Tạo Báo Giá mới thành công và đã lưu vào CSDL thực tế!');
-      window.closeOracleQTForm();
-      loadQuotations();
-      window.updateActiveFlowStep(2, true);
-    }
-  } catch (e) {
-    console.error(e);
-  }
-};
 window.editOracleQT = function (id) {
   openOracleQTForm();
   document.getElementById('qt-id').value = id;
@@ -8015,7 +7696,7 @@ async function loadDeliveryOrders() {
     eplRoutes = await fetchAllPaginated(`${API_BASE}/api/routes?paginated=true`);
     renderRoutes(eplRoutes);
   } catch (error) {
-    console.error("Failed to load Operations data", error);
+    baoNapThatBai('dữ liệu vận hành (lệnh giao hàng, tuyến đường)', error);
   }
 }
 
@@ -8498,17 +8179,28 @@ function calcDispatchProgress(doRow, routeObj) {
 async function refreshDispatchTrackingMap(dos) {
   dispatchTrackingByDO = {};
   const candidates = (dos || []).filter(d => isDOInTransitForDispatch(d.status, d.canonical_status));
+  // Đếm số chuyến hỏng thay vì báo từng chuyến một: hàm này chạy song song
+  // cho MỌI đơn đang trên đường, nên mất mạng là hàng chục lời báo giống hệt
+  // nhau — mà `showToast` chỉ giữ được cái cuối cùng.
+  const hong = [];
   await Promise.all(candidates.map(async (d) => {
     try {
       const res = await fetch(`${API_BASE}/api/tracking/${encodeURIComponent(d.id)}`);
-      if (res.ok) {
-        const track = await res.json();
-        dispatchTrackingByDO[d.id] = track || {};
-      }
+      if (!res.ok) { hong.push(d.id); return; }
+      const track = await res.json();
+      dispatchTrackingByDO[d.id] = track || {};
     } catch (err) {
       console.warn('Không tải được tracking cho DO', d.id, err);
+      hong.push(d.id);
     }
   }));
+  // Thiếu vị trí thì xe biến mất khỏi bản đồ điều độ. Không nói ra thì người
+  // điều độ đếm xe trên màn và tưởng số xe đang chạy ít hơn thực tế.
+  if (hong.length) {
+    baoNapThatBai(`vị trí của ${hong.length}/${candidates.length} chuyến đang chạy`,
+      new Error(hong.slice(0, 5).join(', ')));
+  }
+  return hong;
 }
 
 async function loadDispatchBoard() {
@@ -10454,26 +10146,44 @@ window.openIncidentModal = async function () {
   const panel = document.getElementById('incident-form-panel');
   if (panel) panel.style.display = 'flex';
 
+  // Hai ô chọn này quyết định sự cố được gắn vào ĐƠN NÀO và XE NÀO. Nạp
+  // hỏng mà im lặng thì ô chọn giữ nguyên các lựa chọn cũ trong index.html,
+  // và người dùng khai một sự cố thật vào một mã đơn không còn tồn tại.
   try {
     const resDo = await fetch(`${API_BASE}/api/delivery-orders`);
     const doSelect = document.getElementById('inc-do-id');
-    if (resDo.ok && doSelect) {
+    if (!resDo.ok) {
+      baoNapThatBai('danh sách lệnh giao hàng cho ô chọn sự cố',
+        new Error(`Máy chủ trả về ${resDo.status}`));
+    } else if (doSelect) {
       const dos = paginatedItems(await resDo.json());
       if (dos && dos.length > 0) {
-        doSelect.innerHTML = dos.map(d => `<option value="${d.id}">${d.id} (${d.route_id || 'Tuyến chính'})</option>`).join('');
+        // Mã đơn và tên tuyến do người dùng đặt, và chúng đi thẳng vào
+        // thuộc tính `value` — phải thoát ký tự.
+        doSelect.innerHTML = dos.map(d =>
+          `<option value="${escapeHtml(d.id)}">${escapeHtml(d.id)}`
+          + ` (${escapeHtml(d.route_id || 'Tuyến chính')})</option>`).join('');
       }
     }
 
     const resVeh = await fetch(`${API_BASE}/api/vehicles`);
     const vehSelect = document.getElementById('inc-veh-id');
-    if (resVeh.ok && vehSelect) {
+    if (!resVeh.ok) {
+      baoNapThatBai('danh sách phương tiện cho ô chọn sự cố',
+        new Error(`Máy chủ trả về ${resVeh.status}`));
+    } else if (vehSelect) {
+      // `/api/vehicles` KHÔNG kèm `paginated=true` thì trả về mảng thuần,
+      // không phải phong bì `{items:[...]}` — đừng gọi paginatedItems ở đây,
+      // nó trả về mảng rỗng cho mọi thứ không phải phong bì.
       const vehs = await resVeh.json();
       if (vehs && vehs.length > 0) {
-        vehSelect.innerHTML = vehs.map(v => `<option value="${v.id}">${v.id} (${v.type || 'Xe tải'})</option>`).join('');
+        vehSelect.innerHTML = vehs.map(v =>
+          `<option value="${escapeHtml(v.id)}">${escapeHtml(v.id)}`
+          + ` (${escapeHtml(v.type || 'Xe tải')})</option>`).join('');
       }
     }
   } catch (e) {
-    console.warn("Incident dropdown load fallback", e);
+    baoNapThatBai('danh sách cho ô chọn sự cố', e);
   }
 };
 
@@ -10519,7 +10229,7 @@ window.loadIncidents = async function () {
       }
     }
   } catch (e) {
-    console.error("Failed to load incidents", e);
+    baoNapThatBai('danh sách sự cố', e);
   }
 };
 
@@ -10587,6 +10297,54 @@ window.submitIncidentReport = async function () {
 };
 
 let leafletRouteMap = null;
+
+/* ==========================================================================
+   Nút "Vệ Tinh" trên bản đồ lộ trình.
+
+   Trước đây nút này chỉ chạy `showToast('Đang bật chế độ Vệ Tinh!')` rồi
+   thôi — bản đồ không đổi một pixel nào. Người dùng bấm, thấy chữ "đang bật",
+   rồi ngồi đợi một thứ không bao giờ tới.
+
+   Ảnh vệ tinh lấy từ Esri World Imagery: cùng chuẩn tile {z}/{y}/{x} như
+   OpenStreetMap nên đổi lớp nền là đủ, không cần thư viện gì thêm.
+   ========================================================================== */
+
+let lopNenDuong = null;      // lớp nền bản đồ đường
+let lopNenVeTinh = null;     // lớp nền ảnh vệ tinh
+let dangDungVeTinh = false;
+
+const NEN_VE_TINH = 'https://server.arcgisonline.com/ArcGIS/rest/services'
+  + '/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+
+window.doiNenBanDoLoTrinh = function () {
+  if (!leafletRouteMap || typeof L === 'undefined') {
+    // Chưa mở màn bản đồ thì chưa có gì để đổi. Nói thật thay vì báo "đã bật".
+    showToast('⚠️ Bản đồ chưa sẵn sàng. Hãy chọn một tuyến đường trước.');
+    return;
+  }
+  if (!lopNenVeTinh) {
+    lopNenVeTinh = L.tileLayer(NEN_VE_TINH, {
+      maxZoom: 19,
+      attribution: 'Ảnh vệ tinh &copy; Esri'
+    });
+  }
+  if (dangDungVeTinh) {
+    leafletRouteMap.removeLayer(lopNenVeTinh);
+    if (lopNenDuong) lopNenDuong.addTo(leafletRouteMap);
+    dangDungVeTinh = false;
+    showToast('🗺️ Đã chuyển về bản đồ đường.');
+  } else {
+    if (lopNenDuong) leafletRouteMap.removeLayer(lopNenDuong);
+    lopNenVeTinh.addTo(leafletRouteMap);
+    dangDungVeTinh = true;
+    showToast('🛰️ Đã bật ảnh vệ tinh.');
+  }
+  const nut = document.getElementById('nut-nen-ve-tinh');
+  if (nut) {
+    const nhan = nut.querySelector('span');
+    if (nhan) nhan.textContent = dangDungVeTinh ? 'Bản đồ đường' : 'Vệ Tinh';
+  }
+};
 let routeMapLayersGroup = null;
 
 window.clearLeafletRouteMap = function () {
@@ -10632,7 +10390,7 @@ window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName
   if (!leafletRouteMap && typeof L !== 'undefined') {
     leafletRouteMap = L.map('route-leaflet-map', { zoomControl: true }).setView([10.88, 106.72], 10);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    lopNenDuong = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap'
     }).addTo(leafletRouteMap);
@@ -11024,7 +10782,7 @@ window.loadRoutePlanningDropdown = async function () {
       }
     }
   } catch (e) {
-    console.error('Failed to load routes for planning dropdown', e);
+    baoNapThatBai('danh sách tuyến đường cho ô chọn', e);
   }
 
   // Init map with empty state (no hardcoded default)
@@ -12021,7 +11779,7 @@ async function loadCostFormulasFromBackend() {
       { notify: false }
     );
   } catch (error) {
-    console.warn('Không tải được cost formulas từ backend', error);
+    baoNapThatBai('công thức giá thành', error);
   }
 }
 window.loadCostFormulasFromBackend = loadCostFormulasFromBackend;
@@ -12714,7 +12472,7 @@ window.loadCurrencyRateHistory = async function () {
     renderCurrencyRateHistory(await response.json(), true);
     window.recalculateCurrencyPreview();
   } catch (error) {
-    console.warn('Unable to load currency rate history', error);
+    baoNapThatBai('lịch sử tỷ giá', error);
   }
 };
 
@@ -12724,7 +12482,7 @@ window.loadCurrencyReferenceStatus = async function () {
     if (!response.ok) return;
     renderCurrencyReferenceStatus(await response.json());
   } catch (error) {
-    console.warn('Unable to load cached currency reference status', error);
+    baoNapThatBai('trạng thái tỷ giá tham chiếu', error);
   }
 };
 
@@ -14378,12 +14136,6 @@ window.openAddDriverModal = function () {
   if (document.getElementById('drv-shift')) document.getElementById('drv-shift').value = 'Ca sáng (06:00 - 14:00)';
   setDriverOperationalStatus('Rảnh (Sẵn sàng)');
   clearDriverPhoto();
-  if (document.getElementById('modal-drv-name')) document.getElementById('modal-drv-name').value = '';
-  if (document.getElementById('modal-drv-role')) document.getElementById('modal-drv-role').value = 'Lái xe chính';
-  if (document.getElementById('modal-drv-license')) document.getElementById('modal-drv-license').value = 'Hạng FC';
-  if (document.getElementById('modal-drv-phone')) document.getElementById('modal-drv-phone').value = '';
-  if (document.getElementById('modal-drv-shift')) document.getElementById('modal-drv-shift').value = 'Ca sáng (06:00 - 14:00)';
-  if (document.getElementById('modal-drv-status')) document.getElementById('modal-drv-status').value = 'Rảnh - Sẵn sàng';
   if (document.getElementById('driver-modal-dialog')) document.getElementById('driver-modal-dialog').style.display = 'flex';
 };
 
@@ -14476,13 +14228,6 @@ window.editDriverRow = function (btn) {
   if (titleSpan) {
     titleSpan.innerText = lang === 'la' ? 'ແກ້ໄຂບຸກຄະລາກອນ ຄົນຂັບ / ຜູ້ຊ່ວຍຄົນຂັບ' : (lang === 'en' ? 'Edit Driver / Co-driver' : 'Chỉnh sửa nhân sự tài xế / phụ xe');
   }
-  if (document.getElementById('modal-drv-name')) document.getElementById('modal-drv-name').value = tds[0].innerText.trim();
-  if (document.getElementById('modal-drv-role')) document.getElementById('modal-drv-role').value = tds[1].innerText.trim();
-  if (document.getElementById('modal-drv-license')) document.getElementById('modal-drv-license').value = tds[2].innerText.trim();
-  if (document.getElementById('modal-drv-phone')) document.getElementById('modal-drv-phone').value = tds[3].innerText.trim();
-  if (document.getElementById('modal-drv-vehicle')) document.getElementById('modal-drv-vehicle').value = tds[4].innerText.trim();
-  if (document.getElementById('modal-drv-shift')) document.getElementById('modal-drv-shift').value = tds[5].innerText.trim();
-  if (document.getElementById('modal-drv-status')) document.getElementById('modal-drv-status').value = tds[6].innerText.trim().includes('Bận') ? 'Bận' : 'Rảnh';
   if (document.getElementById('driver-modal-dialog')) document.getElementById('driver-modal-dialog').style.display = 'flex';
 };
 
@@ -14506,7 +14251,7 @@ window.deleteDriverRow = async function (btnOrId) {
 };
 
 window.saveDriverModal = async function () {
-  const id = document.getElementById('drv-id')?.value.trim() || document.getElementById('modal-drv-name')?.value.trim();
+  const id = document.getElementById('drv-id')?.value.trim() || '';
   const name = document.getElementById('drv-name')?.value.trim() || id;
   if (!name) {
     showToast("Vui lòng nhập mã và họ tên nhân sự!");
@@ -15623,6 +15368,34 @@ window.filterCustomerList = function () {
   renderCustomerList(filtered);
 };
 
+/**
+ * Mã khách hàng kế tiếp.
+ *
+ * Trước đây chỗ này là `CUS-00${eplCustomers.length + 1}`, tức đếm SỐ LƯỢNG
+ * khách rồi cộng một. Hai chỗ hỏng:
+ *
+ *   · Xóa một khách ở giữa là mã kế tiếp TRÙNG với mã đang có. Có CUS-001,
+ *     CUS-002, CUS-003; xóa CUS-002 thì còn hai khách, và mã đề xuất là
+ *     CUS-003 — trùng đúng khách còn lại.
+ *   · Quá 9 khách thì thành `CUS-0010`, dài hơn một chữ số so với CUS-001,
+ *     nên sắp xếp theo chuỗi cho ra thứ tự sai.
+ *
+ * Nay lấy số LỚN NHẤT đang dùng rồi cộng một, và đệm số 0 theo đúng bề rộng
+ * của các mã đang có.
+ */
+function maKhachHangKeTiep() {
+  const ds = Array.isArray(eplCustomers) ? eplCustomers : [];
+  let lonNhat = 0;
+  let beRong = 3;
+  ds.forEach(kh => {
+    const m = String(kh?.id || '').match(/^CUS-(\d+)$/);
+    if (!m) return;
+    lonNhat = Math.max(lonNhat, parseInt(m[1], 10));
+    beRong = Math.max(beRong, m[1].length);
+  });
+  return `CUS-${String(lonNhat + 1).padStart(beRong, '0')}`;
+}
+
 window.openCustomerModal = function (id = null) {
   const modal = document.getElementById('customer-form-modal');
   if (modal) modal.style.display = 'flex';
@@ -15643,7 +15416,7 @@ window.openCustomerModal = function (id = null) {
   } else {
     document.getElementById('cus-modal-title').innerHTML = '<i class="fa-solid fa-user-plus" style="font-size: 1.3rem;"></i> <span>Thêm Mới Khách Hàng</span>';
     document.getElementById('cus-edit-mode').value = 'create';
-    document.getElementById('cus-id').value = `CUS-00${(eplCustomers?.length || 0) + 1}`;
+    document.getElementById('cus-id').value = maKhachHangKeTiep();
     document.getElementById('cus-id').disabled = false;
     document.getElementById('cus-name').value = '';
     document.getElementById('cus-type').value = 'Account';
@@ -15735,7 +15508,7 @@ window.syncAllDynamicDropdowns = async function () {
     await refreshDispatchTrackingMap(eplDeliveryOrders);
 
     // 1. Populate Driver Modal Vehicle Dropdown (#drv-vehicle)
-    const modalDrvVeh = document.getElementById('drv-vehicle') || document.getElementById('modal-drv-vehicle');
+    const modalDrvVeh = document.getElementById('drv-vehicle');
     if (modalDrvVeh) {
       const cur = modalDrvVeh.value;
       const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
@@ -15880,7 +15653,7 @@ window.syncAllDynamicDropdowns = async function () {
     }
 
   } catch (err) {
-    console.error("Failed to sync dynamic dropdowns", err);
+    baoNapThatBai('dữ liệu cho các ô chọn', err);
   }
 };
 

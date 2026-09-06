@@ -4009,6 +4009,15 @@
                           </select>
                         </div>
 
+                        <!--
+                          `onSORouteSelectChange` vẽ tuyến đã chọn vào đây. Khối này
+                          chưa bao giờ được dựng, nên `getElementById` trả về null và
+                          cả ba nhánh `if (container)` của hàm đó đều bị bỏ qua: chọn
+                          tuyến xong thì chi phí CÓ tính lại thật, nhưng người dùng
+                          không thấy mình vừa chọn tuyến nào và dài bao nhiêu km.
+                        -->
+                        <div id="so-stops-container" style="margin-top:10px;"></div>
+
                         <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:10px; padding:12px; margin-bottom:10px;">
                           <div style="font-size:0.86rem; font-weight:800; color:#0a6ed1; margin-bottom:10px;" data-i18n="lbl_so_route_context"><i class="fa-solid fa-truck-fast"></i> Ngữ cảnh vận chuyển kế thừa xuống DO</div>
                           <div class="so-route-context-grid" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;">
@@ -5694,8 +5703,8 @@
                     </div>
                   </div>
                   <div style="display: flex; gap: 8px;">
-                  <button class="fiori-btn fiori-btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" onclick="showToast('Đang bật chế độ Vệ Tinh (Satellite Map)!')"><i class="fa-solid fa-layer-group"></i> <span data-i18n="btn_map_satellite">Vệ Tinh</span></button>
-                  <button class="fiori-btn fiori-btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" onclick="showToast('Đang định vị xe!')"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="btn_map_vehicle_pos">Vị Trí Xe</span></button>
+                  <button class="fiori-btn fiori-btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" id="nut-nen-ve-tinh" onclick="doiNenBanDoLoTrinh()"><i class="fa-solid fa-layer-group"></i> <span data-i18n="btn_map_satellite">Vệ Tinh</span></button>
+                  <button class="fiori-btn fiori-btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" onclick="switchView('tracking')"><i class="fa-solid fa-location-crosshairs"></i> <span data-i18n="btn_map_vehicle_pos">Vị Trí Xe</span></button>
                   </div>
                 </div>
 
@@ -5791,27 +5800,27 @@
                         <tbody id="cost-formula-tbody">
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-gas-pump" style="color: #0a6ed1; margin-right: 8px;"></i> <span data-i18n="cost_item_fuel">Fuel Rate / 1 km (Chi Phí Xăng Dầu / 1 km)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-fuel-rate" class="fiori-input" value="6,250" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-fuel-rate" class="fiori-input" value="6,250" oninput="autoCalculateMasterDataCost('qt');" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-user-gear" style="color: #10b981; margin-right: 8px;"></i> <span data-i18n="cost_item_driver">Driver Allowance (Phụ Cấp Chuyến Tài Xế)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-driver-allowance" class="fiori-input" value="500,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #10b981;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-driver-allowance" class="fiori-input" value="500,000" oninput="autoCalculateMasterDataCost('qt');" style="width: 160px !important; text-align: right; font-weight: 700; color: #10b981;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-road" style="color: #f59e0b; margin-right: 8px;"></i> <span data-i18n="cost_item_toll">Toll Fees (Phí Cầu Đường / Trạm BOT)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-toll-fee" class="fiori-input" value="300,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #f59e0b;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-toll-fee" class="fiori-input" value="300,000" oninput="autoCalculateMasterDataCost('qt');" style="width: 160px !important; text-align: right; font-weight: 700; color: #f59e0b;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-warehouse" style="color: #8b5cf6; margin-right: 8px;"></i> <span data-i18n="cost_item_yard">Warehouse & Yard Fee (Phí Bãi & Lưu Kho)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-warehouse-fee" class="fiori-input" value="200,000" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-warehouse-fee" class="fiori-input" value="200,000" oninput="autoCalculateMasterDataCost('qt');" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                           <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-weight-scale" style="color: #dc2626; margin-right: 8px;"></i> <span data-i18n="cost_item_freight">Freight Rate / 1kg (Cước Phí Vận Chuyển / 1kg Hàng)</span></td>
-                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-freight-rate" class="fiori-input" value="1,500" oninput="autoCalculateMasterDataCost('qt'); onCostComponentInput();" style="width: 160px !important; text-align: right; font-weight: 700; color: #dc2626;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
+                            <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" id="md-cost-freight-rate" class="fiori-input" value="1,500" oninput="autoCalculateMasterDataCost('qt');" style="width: 160px !important; text-align: right; font-weight: 700; color: #dc2626;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">VND</span></div></td>
                             <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
                           </tr>
                         </tbody>
@@ -6854,6 +6863,96 @@
     </div>
   </div>
 
+
+  <!--
+    Hộp thoại xác nhận thao tác tài chính.
+
+    Toàn bộ phần JavaScript của hộp thoại này — `openFinanceActionForm`,
+    `submitFinanceActionForm`, cả phần kiểm tra dữ liệu — đã có sẵn và viết
+    đầy đủ. Chỉ riêng phần HTML là chưa bao giờ được dựng, nên
+    `document.getElementById('finance-action-form-modal')` luôn trả về null,
+    và mã rơi vào nhánh dự phòng `if (!modal) return executeFinanceCommand(...)`
+    — tức GỬI THẲNG lệnh lên máy chủ, bỏ qua mọi trường mà người dùng lẽ ra
+    phải nhập.
+
+    Hậu quả cụ thể: `create_ap_from_cost` ở backend đòi `vendor_invoice_no`,
+    `invoice_date` và `due_date`. Không có form thì ba trường đó trống, máy chủ
+    trả 422, và người dùng nhận một lỗi cho cái form họ chưa từng được thấy.
+
+    `setFinanceActionFieldVisible` bật/tắt từng khối `*-wrap` bằng
+    `style.display = 'grid'`, nên các khối đó mặc định để `display:none` ở đây
+    và do JavaScript quyết định khối nào hiện theo loại thao tác.
+  -->
+  <div id="finance-action-form-modal" class="modal-overlay" style="display: none;">
+    <div class="erp-modal-box" style="max-width: 560px;">
+      <div class="erp-blue-header">
+        <h3 id="finance-action-form-title">Thao tác tài chính</h3>
+        <button type="button" onclick="closeFinanceActionForm()"
+                style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div class="erp-toolbar">
+        <div class="erp-toolbar-title" id="finance-action-form-subtitle">Xác nhận thao tác</div>
+        <div class="erp-toolbar-actions">
+          <button type="button" class="btn btn-primary btn-sm" onclick="submitFinanceActionForm()">
+            <i class="fa-solid fa-check"></i> <span data-i18n="btn_confirm">Xác nhận</span>
+          </button>
+          <button type="button" class="btn btn-sm" style="background:#e2e8f0;"
+                  onclick="closeFinanceActionForm()" data-i18n="btn_cancel">Hủy bỏ</button>
+        </div>
+      </div>
+
+      <div class="erp-form-body">
+        <p id="finance-action-confirm-note"
+           style="margin:0 0 16px; padding:10px 12px; background:#f1f5f9; border-left:3px solid #0a6ed1;
+                  border-radius:4px; font-size:.82rem; color:#334155; font-weight:600;"></p>
+
+        <div class="erp-grid" style="grid-template-columns: repeat(2, 1fr);">
+          <!-- Tạo AP Invoice từ chi phí thực tế -->
+          <div class="erp-field col-span-2" id="finance-action-vendor-invoice-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_vendor_invoice">Số hóa đơn nhà cung cấp</label>
+            <input type="text" id="finance-action-vendor-invoice" placeholder="VD: 0001234">
+          </div>
+          <div class="erp-field" id="finance-action-invoice-date-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_invoice_date">Ngày hóa đơn</label>
+            <input type="date" id="finance-action-invoice-date">
+          </div>
+          <div class="erp-field" id="finance-action-due-date-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_due_date">Hạn thanh toán</label>
+            <input type="date" id="finance-action-due-date">
+          </div>
+
+          <!-- Tạo Settlement từ AP Invoice -->
+          <div class="erp-field col-span-2" id="finance-action-settlement-period-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_settlement_period">Kỳ đối soát</label>
+            <input type="month" id="finance-action-settlement-period">
+          </div>
+
+          <!-- Ghi nhận thanh toán -->
+          <div class="erp-field" id="finance-action-payment-amount-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_payment_amount">Số tiền thanh toán</label>
+            <input type="number" id="finance-action-payment-amount" min="0" step="1000" placeholder="0">
+          </div>
+          <div class="erp-field" id="finance-action-payment-method-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_payment_method">Hình thức</label>
+            <select id="finance-action-payment-method">
+              <option value="bank_transfer" data-i18n="opt_fin_bank_transfer">Chuyển khoản</option>
+              <option value="cash" data-i18n="opt_fin_cash">Tiền mặt</option>
+            </select>
+          </div>
+          <div class="erp-field" id="finance-action-reference-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_reference">Số chứng từ</label>
+            <input type="text" id="finance-action-reference" placeholder="VD: UNC-2026-001">
+          </div>
+          <div class="erp-field" id="finance-action-posting-date-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_posting_date">Ngày hạch toán</label>
+            <input type="date" id="finance-action-posting-date">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Vietnamese source cleaned -->
   <div id="modal-do" class="modal-overlay" style="display: none;">
     <div class="erp-modal-box">
@@ -7189,7 +7288,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260906-dinh-kem"></script>
+  <script src="/static/js/app.js?v=20260906d-don-ui-chet"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>

@@ -37,6 +37,15 @@ async def create_customer(data: Dict[str, Any] = Body(...), db: Session = Depend
     cid = data.get("id")
     if not cid:
         raise HTTPException(status_code=400, detail="Thiếu Mã khách hàng")
+    # Ma da ton tai thi noi ro. Truoc day cho nay di thang xuong db.add ->
+    # db.commit(), va khoa chinh trung lam SQLAlchemy nem IntegrityError -> 500
+    # Internal Server Error. Nguoi dung thay "loi may chu" cho mot viec ho tu
+    # sua duoc trong ba giay: doi ma khac.
+    if db.get(Customer, cid):
+        raise HTTPException(
+            status_code=409,
+            detail="Mã khách hàng %s đã tồn tại. Hãy dùng mã khác." % cid,
+        )
     cus = Customer(
         id=cid,
         name=data.get("name", "Khách hàng Mới"),
