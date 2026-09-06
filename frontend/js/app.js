@@ -1245,32 +1245,33 @@ window.loadData = async function () {
 
 function renderAllTables() {
   const activeViewId = document.querySelector('.view-section.active')?.id || 'view-dashboard';
+  // Đã bỏ tám lời gọi ở đây: renderQuotations, renderSalesOrders,
+  // renderDashboardDeliveryOrders, renderDashboardRoutes, renderDispatches,
+  // renderIncidents, renderInvoices, renderVehicles.
+  //
+  // Tám hàm đó tìm `table-quotations`, `table-vehicles`, ... — KHÔNG MỘT id nào
+  // trong số đó tồn tại trong index.html, nên cả tám đều thoát ngay ở dòng
+  // `if (!tbody) return;`. Mỗi màn đều đã có hàm vẽ THẬT riêng
+  // (renderOracleQTList, renderFioriVehicles, renderDeliveryOrders, ...) — các
+  // hàm đó vẫn ở đây.
   renderStats();
-  renderDashboardDeliveryOrders();
-  renderDashboardRoutes();
   renderSummaryChart();
 
   if (activeViewId === 'view-crm-sales') {
-    renderQuotations();
     if (typeof renderOracleQTList === 'function') renderOracleQTList(crmQuotations);
-    renderSalesOrders();
     if (typeof renderOracleSOList === 'function') renderOracleSOList(crmSalesOrders);
     if (crmSalesOrders) renderKanbanBoard(crmSalesOrders);
   } else if (activeViewId === 'view-master-data') {
-    renderVehicles();
     renderMasterDataSetupWizard();
   } else if (activeViewId === 'view-dispatch') {
-    renderDispatches();
     renderDispatchCalendar();
     if (typeof renderDispatchDOs === 'function') renderDispatchDOs();
   } else if (activeViewId === 'view-tracking') {
-    renderIncidents();
     renderGPSTrackingWidget();
     renderGpsEventTimeline();
   } else if (activeViewId === 'view-operations-360') {
     renderTmsCockpit();
   } else if (activeViewId === 'view-accounting') {
-    renderInvoices();
     renderFinanceCockpit();
     renderFinanceActionWorkbench();
     renderFinanceMasterDataTabs();
@@ -3894,11 +3895,11 @@ function renderFinanceMasterConfigActions(tab, actionId) {
     </button>
   `).join('');
   if (tab.guidance && tab.guidance.length) {
-    container.innerHTML += `
+    container.insertAdjacentHTML('beforeend', `
       <button class="fiori-btn fiori-btn-secondary" onclick="showToast('${tab.guidance[0].replace(/'/g, "\\'")}')" style="padding:8px 12px; font-size:.82rem; white-space:nowrap;">
         <i class="fa-solid fa-circle-info"></i> Hướng dẫn
       </button>
-    `;
+    `);
   }
 }
 
@@ -5560,189 +5561,6 @@ function quotationMarginLabel(quotation) {
 }
 window.quotationMarginLabel = quotationMarginLabel;
 
-function renderQuotations() {
-  const tbody = document.getElementById("table-quotations");
-  if (!tbody) return;
-
-  if (!appState.quotations || appState.quotations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">${t('status_no_quotations')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.quotations.map(q => `
-    <tr>
-      <td><strong>${q.id}</strong></td>
-      <td>${escapeHtml(q.customer)}</td>
-      <td>${q.route}</td>
-      <td>${escapeHtml(q.cargo_type)}</td>
-      <td>${q.valid_to}</td>
-      <td>${(q.total_cost || 0).toLocaleString()} ${t('unit_currency')}</td>
-      <td>${q.margin_pct}%</td>
-      <td><strong style="color: var(--lao-blue);">${(q.selling_price || 0).toLocaleString()} ${t('unit_currency')}</strong></td>
-      <td><span class="badge ${q.status === 'Approved' ? 'badge-success' : 'badge-warning'}">${statusLabel(q.status)}</span></td>
-      <td style="display: flex; gap: 4px;"></td>
-    </tr>
-  `).join("");
-}
-
-function renderSalesOrders() {
-  const tbody = document.getElementById("table-sales-orders");
-  if (!tbody) return;
-
-  if (!appState.sales_orders || appState.sales_orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${t('status_no_sales_orders')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.sales_orders.map(s => `
-    <tr>
-      <td><strong>${s.id}</strong></td>
-      <td>${s.quotation_id || '-'}</td>
-      <td>${s.customer}</td>
-      <td>${s.order_date}</td>
-      <td>${s.payment_terms}</td>
-      <td>${s.sales_rep}</td>
-      <td>${s.description}</td>
-      <td><strong>${(s.total_amount || 0).toLocaleString()} ${t('unit_currency')}</strong></td>
-      <td><span class="badge badge-success">${statusLabel(s.status)}</span></td>
-    </tr>
-  `).join("");
-}
-
-function renderDashboardDeliveryOrders() {
-  const tbody = document.getElementById("table-delivery-orders");
-  if (!tbody) return;
-
-  if (!appState.delivery_orders || appState.delivery_orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:var(--text-muted);">${t('status_no_delivery_orders')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.delivery_orders.map(d => `
-    <tr>
-      <td><strong>${d.id}</strong></td>
-      <td>${d.so_id || '-'}</td>
-      <td>${escapeHtml(d.customer)}</td>
-      <td>${d.route}</td>
-      <td>${d.pickup_date}</td>
-      <td>${d.delivery_date}</td>
-      <td>${d.vehicle} (${d.driver})</td>
-      <td>${(d.weight_kg || 0).toLocaleString()} kg</td>
-      <td><span class="badge ${d.status === 'In Transit' ? 'badge-info' : 'badge-warning'}">${statusLabel(d.status)}</span></td>
-      <td style="display: flex; gap: 4px;"></td>
-    </tr>
-  `).join("");
-}
-
-function renderDashboardRoutes() {
-  const tbody = document.getElementById("table-routes");
-  if (!tbody) return;
-
-  if (!appState.routes || appState.routes.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">${t('status_no_routes')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.routes.map(r => `
-    <tr>
-      <td><strong>${r.id}</strong></td>
-      <td>${escapeHtml(r.name)}</td>
-      <td>${r.distance_km} km</td>
-      <td>${r.est_time}</td>
-    </tr>
-  `).join("");
-}
-
-function renderDispatches() {
-  const tbody = document.getElementById("table-dispatches");
-  if (!tbody) return;
-
-  if (!appState.dispatches || appState.dispatches.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${t('status_no_dispatches')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.dispatches.map(dp => `
-    <tr>
-      <td>${dp.dispatch_date}</td>
-      <td>${dp.department}</td>
-      <td>${dp.planner}</td>
-      <td><strong>${dp.do_id}</strong></td>
-      <td>${dp.route}</td>
-      <td><span class="badge badge-info">${dp.vehicle}</span></td>
-      <td><strong>${dp.driver}</strong></td>
-      <td>${dp.schedule}</td>
-      <td><span class="badge badge-success">${statusLabel(dp.status)}</span></td>
-    </tr>
-  `).join("");
-}
-
-function renderIncidents() {
-  const tbody = document.getElementById("table-incidents");
-  if (!tbody) return;
-
-  if (!appState.incidents || appState.incidents.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted);">${t('status_no_incidents')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.incidents.map(inc => `
-    <tr>
-      <td><strong style="color: var(--lao-red);">${inc.id}</strong></td>
-      <td>${inc.do_id}</td>
-      <td>${inc.date_time}</td>
-      <td>${inc.driver}</td>
-      <td><span class="badge badge-danger">${inc.incident_type}</span></td>
-      <td>${inc.location}</td>
-      <td>${escapeHtml(inc.description)}</td>
-      <td><span class="badge badge-warning">${statusLabel(inc.status)}</span></td>
-    </tr>
-  `).join("");
-}
-
-function renderInvoices() {
-  const tbody = document.getElementById("table-invoices");
-  if (!tbody) return;
-
-  if (!appState.invoices || appState.invoices.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:var(--text-muted);">${t('status_no_invoices')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.invoices.map(inv => `
-    <tr>
-      <td><strong>${inv.id}</strong></td>
-      <td>${inv.customer}</td>
-      <td>${inv.do_id}</td>
-      <td>${inv.invoice_date}</td>
-      <td>${inv.due_date}</td>
-      <td>${(inv.subtotal || 0).toLocaleString()} ${t('unit_currency')}</td>
-      <td>${(inv.vat_amount || 0).toLocaleString()} ${t('unit_currency')}</td>
-      <td><strong style="color: var(--accent-emerald);">${(inv.total || 0).toLocaleString()} ${t('unit_currency')}</strong></td>
-      <td><span class="badge badge-success">${statusLabel(inv.status)}</span></td>
-    </tr>
-  `).join("");
-}
-
-function renderVehicles() {
-  const tbody = document.getElementById("table-vehicles");
-  if (!tbody) return;
-
-  if (!appState.vehicles || appState.vehicles.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">${t('status_no_vehicles')}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = appState.vehicles.map(v => `
-    <tr>
-      <td><strong>${v.code}</strong></td>
-      <td>${v.type}</td>
-      <td>${v.driver}</td>
-      <td><span class="badge ${v.status === 'Available' ? 'badge-success' : 'badge-warning'}">${statusLabel(v.status)}</span></td>
-    </tr>
-  `).join("");
-}
-
 // Interactive Form Submissions
 async function submitQuotationForm(e) {
   e.preventDefault();
@@ -6253,7 +6071,7 @@ window.processAICheckin = async function (event) {
   ocrResult.value = "";
   btn.disabled = true;
 
-  logBox.innerHTML += `> Uploading and analyzing...<br>`;
+  logBox.insertAdjacentHTML('beforeend', `> Uploading and analyzing...<br>`);
 
   // Show image preview
   const objectUrl = URL.createObjectURL(file);
@@ -6277,7 +6095,7 @@ window.processAICheckin = async function (event) {
     scanLine.style.display = "none";
 
     if (!res.ok) {
-      logBox.innerHTML += `> Error analyzing image.<br>`;
+      logBox.insertAdjacentHTML('beforeend', `> Error analyzing image.<br>`);
       return;
     }
 
@@ -6288,7 +6106,7 @@ window.processAICheckin = async function (event) {
     const origH = uploadedImg.naturalHeight;
 
     if (data.vehicle_detected) {
-      logBox.innerHTML += `> ${t('ai_log_botsort')}<br>`;
+      logBox.insertAdjacentHTML('beforeend', `> ${t('ai_log_botsort')}<br>`);
       const [x1, y1, x2, y2] = data.vehicle_bbox;
       truckBox.style.left = (x1 / origW * 100) + "%";
       truckBox.style.top = (y1 / origH * 100) + "%";
@@ -6298,7 +6116,7 @@ window.processAICheckin = async function (event) {
     }
 
     if (data.plate_detected) {
-      logBox.innerHTML += `> ${t('ai_log_plate')}<br>`;
+      logBox.insertAdjacentHTML('beforeend', `> ${t('ai_log_plate')}<br>`);
       const [px1, py1, px2, py2] = data.plate_bbox;
       plateBox.style.left = (px1 / origW * 100) + "%";
       plateBox.style.top = (py1 / origH * 100) + "%";
@@ -6312,19 +6130,19 @@ window.processAICheckin = async function (event) {
         cropImg.style.display = "block";
       }
 
-      logBox.innerHTML += `> ${t('ai_log_ppocr')}<br>`;
+      logBox.insertAdjacentHTML('beforeend', `> ${t('ai_log_ppocr')}<br>`);
       if (data.plate_text) {
         ocrResult.value = data.plate_text;
-        logBox.innerHTML += `> ${t('ai_log_match')}<br>`;
-        logBox.innerHTML += `<span style='color:green;font-weight:bold;'>> ${t('ai_log_valid')}</span><br>`;
+        logBox.insertAdjacentHTML('beforeend', `> ${t('ai_log_match')}<br>`);
+        logBox.insertAdjacentHTML('beforeend', `<span style='color:green;font-weight:bold;'>> ${t('ai_log_valid')}</span><br>`);
         btn.disabled = false;
       }
     } else {
-      logBox.innerHTML += `> No plate detected.<br>`;
+      logBox.insertAdjacentHTML('beforeend', `> No plate detected.<br>`);
     }
     logBox.scrollTop = logBox.scrollHeight;
   } catch (e) {
-    logBox.innerHTML += `> API Error: ${e.message}<br>`;
+    logBox.insertAdjacentHTML('beforeend', `> API Error: ${e.message}<br>`);
     scanLine.style.display = "none";
   }
 };
@@ -6343,10 +6161,13 @@ window.confirmAICheckin = async function () {
     path: `/api/delivery-orders/${doId}/status`, method: 'PUT', body: { status: 'In Transit' }
   });
   if (result.ok) {
-    logBox.innerHTML += `<span style='color:blue;font-weight:bold;'>> ${t('ai_log_barrier_opened')}</span><br>`;
+    logBox.insertAdjacentHTML('beforeend', `<span style='color:blue;font-weight:bold;'>> ${t('ai_log_barrier_opened')}</span><br>`);
     logBox.scrollTop = logBox.scrollHeight;
-    renderDashboardDeliveryOrders();
-    showToast(`âœ… ${t('msg_barrier_opened').replace('{id}', doId)}`);
+    // Gọi hàm vẽ THẬT. Trước đây gọi renderDashboardDeliveryOrders() — một hàm
+    // chỉ tìm một tbody không tồn tại rồi thoát, nên thông báo "Đã mở barrier" hiện
+    // ra mà không có gì trên màn đổi cả.
+    if (typeof renderDeliveryOrders === 'function') renderDeliveryOrders(eplDeliveryOrders);
+    showToast(`✅ ${t('msg_barrier_opened').replace('{id}', doId)}`);
   }
 };
 
@@ -6437,7 +6258,7 @@ function renderFioriVehicles(data) {
               onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(fallbackIcon)}">`
       : `<span style="display:inline-flex; width:52px; height:36px; border-radius:8px; border:1px dashed #cbd5e1; margin-right:10px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle;"><i class="fa-solid fa-truck"></i></span>`;
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${vehicleImage}<span>${v.id}</span></td>
         <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${hasType
@@ -6453,7 +6274,7 @@ function renderFioriVehicles(data) {
           <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 6px 12px; font-size: 0.82rem;" onclick="deleteFioriVehicle('${v.id}')"><i class="fa-solid fa-trash"></i> ${delBtnText}</button>
         </td>
       </tr>
-    `;
+    `);
   });
 }
 
@@ -7001,7 +6822,7 @@ function renderVehTypesTable(data) {
                    .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
     }
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
         <td style="padding: 14px 18px; font-weight: 700; color: #0a6ed1;">${vt.id}</td>
         <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${vName}</td>
@@ -7017,7 +6838,7 @@ function renderVehTypesTable(data) {
           <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 4px 10px; font-size: 0.78rem;" onclick="deleteVehType('${vt.id}')" title="${delTitle}"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
-    `;
+    `);
   });
 
   syncAllDynamicDropdowns();
@@ -7196,13 +7017,13 @@ function renderKanbanBoard(data) {
     `;
 
     if (st === 'lead' || st === 'mới' || st === 'draft') {
-      colLead.innerHTML += cardHTML;
+      colLead.insertAdjacentHTML('beforeend', cardHTML);
       cLead++;
     } else if (st === 'negotiation' || st === 'đàm phán') {
-      colNego.innerHTML += cardHTML;
+      colNego.insertAdjacentHTML('beforeend', cardHTML);
       cNego++;
     } else if (st === 'quoted' || st === 'đã báo giá') {
-      colQuoted.innerHTML += cardHTML;
+      colQuoted.insertAdjacentHTML('beforeend', cardHTML);
       cQuoted++;
     } else {
       cWon++;
@@ -7285,7 +7106,7 @@ function renderOracleQTList(data) {
       ? `<button class="oracle-btn" style="padding: 4px 10px; font-size: 0.8rem; background: #ef4444; color: white; border: none; white-space: nowrap;" onclick="deleteOracleQT('${qt.id}')"><i class="fa-solid fa-trash"></i> ${deleteBtnText}</button>`
       : '';
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td><a href="#" onclick="editOracleQT('${qt.id}')" style="color:#005a9e; font-weight:bold; text-decoration:none;">${qt.id}</a>${demoBadge}</td>
         <td>${qt.customer_id || '—'}</td>
@@ -7301,7 +7122,7 @@ function renderOracleQTList(data) {
           </div>
         </td>
       </tr>
-    `;
+    `);
   });
 }
 
@@ -7570,7 +7391,7 @@ function renderOracleSOList(data) {
       ? `<button class="oracle-btn" style="padding: 4px 10px; font-size: 0.8rem; background: #ef4444; color: white; border: none; white-space: nowrap;" onclick="deleteOracleSO('${so.id}')"><i class="fa-solid fa-trash"></i> ${deleteBtnText}</button>`
       : '';
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr>
         <td><a href="#" onclick="editOracleSO('${so.id}')" style="color:#005a9e; font-weight:bold; text-decoration:none;">${so.id}</a>${demoBadge}</td>
         <td>${so.customer_id || ''}</td>
@@ -7587,7 +7408,7 @@ function renderOracleSOList(data) {
           </div>
         </td>
       </tr>
-    `;
+    `);
   });
 }
 
@@ -8264,7 +8085,7 @@ function renderDeliveryOrders(data) {
     const deliveryLabel = deliveryOrderDateLabel(do_item.delivery_window_start || do_item.delivery_date || do_item.delivery_window_end);
     const doId = doBoardEscape(do_item.id);
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom:1px solid #f1f5f9;">
         <td style="padding:13px 14px; white-space:normal; overflow-wrap:anywhere;"><span style="color:#0a6ed1; font-weight:900;">${doId}</span>${demoBadge}</td>
         <td style="padding:13px 14px; color:#475569; white-space:normal; overflow-wrap:anywhere;">${doBoardEscape(do_item.so_id || '')}</td>
@@ -8275,7 +8096,7 @@ function renderDeliveryOrders(data) {
           <button class="fiori-btn fiori-btn-secondary" title="${lang === 'la' ? 'ເບິ່ງລາຍລະອຽດ DO' : (lang === 'en' ? 'View DO Details' : 'Xem chi tiết DO')}" style="width:36px; height:34px; padding:0; font-size:.82rem; border-radius:7px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;" onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>
         </td>
       </tr>
-    `;
+    `);
   });
 }
 
@@ -8456,7 +8277,7 @@ function renderRoutes(data) {
     const routeId = doBoardEscape(r.id || '');
     const segments = routeSegments(r);
 
-    strip.innerHTML += `
+    strip.insertAdjacentHTML('beforeend', `
       <div style="flex:0 0 300px; border:1px solid #dbeafe; background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
         <div style="display:flex; align-items:flex-start; gap:8px; color:#0f172a; font-weight:900; line-height:1.25;">
           <i class="fa-solid fa-location-dot" style="color:#ef4444; margin-top:2px;"></i>
@@ -8469,7 +8290,7 @@ function renderRoutes(data) {
         </div>
         <button class="fiori-btn fiori-btn-secondary" onclick="openRouteDetailModal('${routeId}')" style="justify-content:center; height:34px; padding:0 12px; font-size:.8rem; font-weight:900;"><i class="fa-solid fa-list-ol"></i> Xem chặng</button>
       </div>
-    `;
+    `);
   });
 }
 
@@ -8851,7 +8672,7 @@ function renderDispatchDOs(filterQuery = '') {
       borderLeftColor = '#64748b';
     }
 
-    container.innerHTML += `
+    container.insertAdjacentHTML('beforeend', `
       <div class="dispatch-do-card dispatch-do-card--accent" draggable="true" ondragstart="onDispatchDODragStart(event, '${d.id}')" data-dispatch-do="${d.id}" style="--dispatch-do-accent:${borderLeftColor};">
         <div class="dispatch-do-row">
           <button type="button" class="dispatch-do-select" data-dispatch-queue="${d.id}" onclick="selectDispatchDO('${d.id}')" aria-label="Chọn DO ${d.id} để điều phối" title="${completionEscape(hoverSummary)}">
@@ -8872,7 +8693,7 @@ function renderDispatchDOs(filterQuery = '') {
           </button>
         </div>
       </div>
-    `;
+    `);
   });
 }
 
@@ -8916,11 +8737,11 @@ function renderDispatchSelects() {
     const isBusy = isVehicleBusyForDispatch(v.status) || activeVehicleIds.has(v.id);
     if (isBusy) {
       busyVehCount++;
-      vehSelect.innerHTML += `<option value="${v.id}" disabled style="color:#ef4444;">[BẬN] ${v.id} (${escapeHtml(v.brand || 'Xe')} - Đang giao hàng / Bảo dưỡng)</option>`;
+      vehSelect.insertAdjacentHTML('beforeend', `<option value="${v.id}" disabled style="color:#ef4444;">[BẬN] ${v.id} (${escapeHtml(v.brand || 'Xe')} - Đang giao hàng / Bảo dưỡng)</option>`);
     } else {
       readyVehCount++;
       const capText = v.volume_capacity_m3 ? ` | Sức chứa ${v.volume_capacity_m3}m³` : '';
-      vehSelect.innerHTML += `<option value="${v.id}">[RẢNH] ${v.id} (${escapeHtml(v.brand || 'Xe')} ${v.type || ''}${capText})</option>`;
+      vehSelect.insertAdjacentHTML('beforeend', `<option value="${v.id}">[RẢNH] ${v.id} (${escapeHtml(v.brand || 'Xe')} ${v.type || ''}${capText})</option>`);
     }
   });
 
@@ -8933,13 +8754,13 @@ function renderDispatchSelects() {
     const isBusy = isDriverBusyForDispatch(d.status) || activeDriverIds.has(d.id) || activeDriverIds.has(d.name);
     if (isBusy) {
       busyDrvCount++;
-      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`;
-      if (coDrvSelect && isCoDriverRole(d)) coDrvSelect.innerHTML += `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`;
+      if (isMainDriverRole(d)) drvSelect.insertAdjacentHTML('beforeend', `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`);
+      if (coDrvSelect && isCoDriverRole(d)) coDrvSelect.insertAdjacentHTML('beforeend', `<option value="${d.id}" disabled style="color:#ef4444;">[BẬN] ${d.id} - ${escapeHtml(d.name)} (Đang theo xe)</option>`);
     } else {
       readyDrvCount++;
-      if (isMainDriverRole(d)) drvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Lái chính'})</option>`;
+      if (isMainDriverRole(d)) drvSelect.insertAdjacentHTML('beforeend', `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Lái chính'})</option>`);
       if (coDrvSelect && isCoDriverRole(d)) {
-        coDrvSelect.innerHTML += `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Phụ xế'})</option>`;
+        coDrvSelect.insertAdjacentHTML('beforeend', `<option value="${d.id}">[RẢNH] ${d.id} - ${escapeHtml(d.name)} (${d.role || 'Phụ xế'})</option>`);
       }
     }
   });
@@ -8988,7 +8809,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
       driversList.innerHTML = `<div style="padding:16px; text-align:center; color:#64748b;">Không có tài xế nào rảnh hiện tại</div>`;
     } else {
       freeDrivers.forEach(d => {
-        driversList.innerHTML += `
+        driversList.insertAdjacentHTML('beforeend', `
           <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #059669; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('driver', '${d.id}')" title="Nhấp vào để Gán Tài Xế Này vào Đơn">
             <div>
               <div style="font-weight:700; color:#0f172a;">${d.id} - ${escapeHtml(d.name)}</div>
@@ -8998,7 +8819,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
               <i class="fa-solid fa-check"></i> Gán Tài Xế Này
             </button>
           </div>
-        `;
+        `);
       });
     }
   }
@@ -9015,7 +8836,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
       vehsList.innerHTML = `<div style="padding:16px; text-align:center; color:#64748b;">Không có xe nào rảnh hiện tại</div>`;
     } else {
       freeVehs.forEach(v => {
-        vehsList.innerHTML += `
+        vehsList.insertAdjacentHTML('beforeend', `
           <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #0a6ed1; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" title="Nhấp vào để Gán Xe Này vào Đơn">
             <div>
               <div style="font-weight:800; color:#0a6ed1;">${v.id} <span style="font-size:0.8rem; color:#475569; font-weight:600;">(${escapeHtml(v.brand || 'Hyundai')} ${v.type || 'Container 20FT'})</span></div>
@@ -9025,7 +8846,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
               <i class="fa-solid fa-check"></i> Gán Xe Này
             </button>
           </div>
-        `;
+        `);
       });
     }
   }
@@ -9071,7 +8892,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
         const totalVol = matchedVeh?.volume_capacity_m3 || 30.0;
         const freeVolPct = Math.round(((totalVol - volUsed) / totalVol) * 100);
 
-        busyList.innerHTML += `
+        busyList.insertAdjacentHTML('beforeend', `
           <div style="padding:16px; background:#ffffff; border:1px solid #fed7aa; border-left:4px solid #f97316; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.03); margin-bottom: 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
               <div>
@@ -9105,7 +8926,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
               <span style="color:#0369a1; font-weight:700;">Thùng xe còn trống: ${freeVolPct}% (${(totalVol - volUsed).toFixed(1)} m³)</span>
             </div>
           </div>
-        `;
+        `);
       });
 
       // Also render any Busy Vehicles from CSDL not linked to inTransitDOs
@@ -9129,7 +8950,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
             badgeText = `Không có DO đang vận chuyển (${v.status})`;
           }
 
-          busyList.innerHTML += `
+          busyList.insertAdjacentHTML('beforeend', `
             <div style="padding:16px; background:#ffffff; border:1px solid ${bgColor}; border-left:4px solid ${statusColor}; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.03); margin-bottom: 12px;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                 <div>
@@ -9147,7 +8968,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
                 <div style="grid-column: span 2;"><strong style="color:#0f172a;">Tải trọng:</strong> ${v.weight_capacity || 15000} kg | Sức chứa: ${v.volume_capacity_m3 || 30} m³</div>
               </div>
             </div>
-          `;
+          `);
         }
       });
     }
@@ -9263,7 +9084,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
       const maxPayloadLabel = lang === 'la' ? 'ນ້ຳໜັກບັນທຸກສູງສຸດ:' : (lang === 'en' ? 'Max Payload:' : 'Tải trọng tối đa:');
       const assignVehBtn = lang === 'la' ? '+ ມອບໝາຍລົດນີ້ໃຫ້ໃບສັ່ງ' : (lang === 'en' ? '+ Assign This Vehicle' : '+ Gán Xe Này Vào Lệnh');
 
-      container.innerHTML += `
+      container.insertAdjacentHTML('beforeend', `
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #0a6ed1; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
@@ -9281,7 +9102,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
             <i class="fa-solid fa-plus-circle"></i> ${assignVehBtn}
           </button>
         </div>
-      `;
+      `);
     });
   } else {
     // Drivers or Co-Drivers
@@ -9328,7 +9149,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
       const phoneLabel = lang === 'la' ? 'ເບີໂທລະສັບ:' : (lang === 'en' ? 'Phone:' : 'Số điện thoại:');
       const assignStaffBtn = lang === 'la' ? 'ມອບໝາຍພະນັກງານຄົນນີ້' : (lang === 'en' ? 'Assign This Staff' : 'Gán Nhân Sự Này');
 
-      container.innerHTML += `
+      container.insertAdjacentHTML('beforeend', `
         <div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #059669; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
@@ -9346,7 +9167,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
             <i class="fa-solid fa-user-check"></i> ${assignStaffBtn}
           </button>
         </div>
-      `;
+      `);
     });
   }
 }
@@ -10674,7 +10495,7 @@ window.loadIncidents = async function () {
           let mainDriver = drivers.find(d => d.assigned_vehicle === inc.vehicle_id && d.role === 'Lái xe chính')?.name || '-';
           let coDriver = drivers.find(d => d.assigned_vehicle === inc.vehicle_id && d.role === 'Phụ xe')?.name || '-';
 
-          tbody.innerHTML += `
+          tbody.insertAdjacentHTML('beforeend', `
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 14px; font-size: 0.83rem; color: #64748b;">${inc.reported_at || 'Vừa mới đây'}</td>
               <td style="padding: 10px 14px; font-weight: 700; color: #0a6ed1;">${inc.do_id}</td>
@@ -10685,7 +10506,7 @@ window.loadIncidents = async function () {
               <td style="padding: 10px 14px; font-size: 0.85rem; color: #334155;">${inc.location}</td>
               <td style="padding: 10px 14px; font-size: 0.85rem; color: #475569;">${escapeHtml(inc.description || 'Không có mô tả chi tiết')}</td>
             </tr>
-          `;
+          `);
         });
         if (list.length === 0) {
           tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 15px; color: #64748b;">Chưa có sự cố nào được khai báo trong hệ thống.</td></tr>`;
@@ -13083,7 +12904,7 @@ function renderFioriDrivers(data) {
     const editTip = lang === 'la' ? 'ແກ້ໄຂ' : lang === 'en' ? 'Edit' : 'Sửa';
     const delTip = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa';
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding: 12px 16px; font-weight: 700; color: #0f172a;"><div class="driver-name-cell">${driverAvatar}<strong title="${escapeHtml(d.name || d.id)}">${escapeHtml(d.name || d.id)}</strong></div></td>
         <td style="padding: 12px 16px;">${roleBadge}</td>
@@ -13097,7 +12918,7 @@ function renderFioriDrivers(data) {
           <button class="fiori-btn" title="${delTip}" style="width:32px; height:32px; padding:0; justify-content:center; background:#ef4444; border-color:#ef4444;" onclick="deleteDriverRow('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
-    `;
+    `);
   });
 }
 
@@ -15770,7 +15591,7 @@ window.renderCustomerList = function (data) {
     return;
   }
   data.forEach(c => {
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
         <td style="padding: 14px 18px; font-weight: 700; color: #0a6ed1;">${c.id}</td>
         <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${escapeHtml(c.name)}</td>
@@ -15783,7 +15604,7 @@ window.renderCustomerList = function (data) {
           <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 4px 10px; font-size: 0.78rem;" onclick="deleteCustomer('${c.id}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
-    `;
+    `);
   });
 };
 
@@ -15921,7 +15742,7 @@ window.syncAllDynamicDropdowns = async function () {
           typeStr = typeStr.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                            .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
         }
-        modalDrvVeh.innerHTML += `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || (lang === 'la' ? 'àº¥àº»àº”' : 'Xe'))} - ${typeStr})</option>`;
+        modalDrvVeh.insertAdjacentHTML('beforeend', `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || (lang === 'la' ? 'àº¥àº»àº”' : 'Xe'))} - ${typeStr})</option>`);
       });
       if (cur) modalDrvVeh.value = cur;
     }
@@ -15941,7 +15762,7 @@ window.syncAllDynamicDropdowns = async function () {
             typeStr = typeStr.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
                              .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
           }
-          sel.innerHTML += `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || '')} ${typeStr}) - ${capLabel}: ${(v.weight_capacity || 0).toLocaleString()} kg</option>`;
+          sel.insertAdjacentHTML('beforeend', `<option value="${v.id}">${v.id} (${escapeHtml(v.brand || '')} ${typeStr}) - ${capLabel}: ${(v.weight_capacity || 0).toLocaleString()} kg</option>`);
         });
         if (cur) sel.value = cur;
       }
@@ -15956,7 +15777,7 @@ window.syncAllDynamicDropdowns = async function () {
       doDrvSel.innerHTML = `<option value="">${chooseDrvText}</option>`;
       (fioriDrivers || []).forEach(d => {
         const lic = cleanDriverMasterText(d.license_type, lang === 'la' ? 'àºŠàº±à»‰àº™ FC' : 'FC');
-        doDrvSel.innerHTML += `<option value="${d.id}">${d.id} - ${escapeHtml(d.name)} (${lic})</option>`;
+        doDrvSel.insertAdjacentHTML('beforeend', `<option value="${d.id}">${d.id} - ${escapeHtml(d.name)} (${lic})</option>`);
       });
       if (cur) doDrvSel.value = cur;
     }
@@ -15968,7 +15789,7 @@ window.syncAllDynamicDropdowns = async function () {
         const cur = sel.value;
         sel.innerHTML = '<option value="">-- Chọn Tuyến Đường --</option>';
         (eplRoutes || []).forEach(r => {
-          sel.innerHTML += `<option value="${r.id}">${r.id}: ${escapeHtml(r.name || r.id)} (${r.distance_km || 0} km)</option>`;
+          sel.insertAdjacentHTML('beforeend', `<option value="${r.id}">${r.id}: ${escapeHtml(r.name || r.id)} (${r.distance_km || 0} km)</option>`);
         });
         if (cur) sel.value = cur;
       }
@@ -16108,7 +15929,7 @@ window.renderShipments = function (filterQuery = '') {
       ? `<button class="fiori-btn fiori-btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="selectShipmentForExecution('${s.id}')">Chọn Xử Lý</button>`
       : `<span style="color:#94a3b8; font-size:0.8rem;">—</span>`;
 
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9;">
         <td style="padding:10px 14px; font-weight:600; color:#0f172a;">${s.id}</td>
         <td style="padding:10px 14px;">${s.packaging_spec || 'Carton'}</td>
@@ -16116,7 +15937,7 @@ window.renderShipments = function (filterQuery = '') {
         <td style="padding:10px 14px;"><span style="background:#f0f9ff; color:${statusColor}; padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:700; border:1px solid ${statusColor}40; white-space:nowrap;">${statusText}</span></td>
         <td style="padding:10px 14px;">${execBtn}</td>
       </tr>
-    `;
+    `);
   });
 };
 

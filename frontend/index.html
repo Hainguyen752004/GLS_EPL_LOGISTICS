@@ -2689,31 +2689,30 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                   <div class="master-form-badge" data-i18n="lbl_form_1_qt"><i class="fa-solid fa-file-contract"></i> 1. QUOTATION</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_save" onclick="saveMasterForm('quotation')" style="padding: 3px 10px; font-size: 0.8rem;">Lưu</button>
-                    <button class="fiori-btn" data-i18n="btn_send" onclick="sendMasterForm('quotation')" style="padding: 3px 10px; font-size: 0.8rem; background: #2bba66;">Send</button>
-                    <button class="fiori-btn fiori-btn-secondary" data-i18n="btn_cancel" style="padding: 3px 10px; font-size: 0.8rem;">Hủy</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('crm-sales')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở CRM & Kinh doanh</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
                   <div>
                     <label data-i18n="lbl_quote_no" style="color: #666; font-size: 0.75rem;">Quotation No.</label>
-                    <input type="text" id="m-qt-no" data-i18n="ph_quote_no" data-i18n-attr="placeholder" placeholder="Ví dụ: QT-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-qt-no" data-i18n="ph_quote_no" data-i18n-attr="placeholder" placeholder="Ví dụ: QT-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_customer" style="color: #666; font-size: 0.75rem;">Customer</label>
-                    <select id="m-qt-customer" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;"></select>
+                    <select id="m-qt-customer" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled></select>
                   </div>
                   <div>
                     <label data-i18n="lbl_route" style="color: #666; font-size: 0.75rem;">Route</label>
-                    <input type="text" id="m-qt-route" value="Bình Dương -> Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-qt-route" value="Bình Dương - disabled> Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
                   </div>
                   <div>
                     <label data-i18n="lbl_cargo_type" style="color: #666; font-size: 0.75rem;">Cargo Type</label>
-                    <input type="text" id="m-qt-cargo" value="Container 20FT" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-qt-cargo" value="Container 20FT" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div style="grid-column: span 2;">
                     <label data-i18n="lbl_valid_to" style="color: #666; font-size: 0.75rem;">Valid To</label>
-                    <input type="date" id="m-qt-valid" value="2026-07-31" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" id="m-qt-valid" value="2026-07-31" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <div style="margin-top: 10px; background: #fafafa; padding: 10px; border-radius: 4px; border: 1px solid #eee;">
@@ -2738,34 +2737,33 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                   <div class="master-form-badge" data-i18n="lbl_form_2_so"><i class="fa-solid fa-file-invoice"></i> 2. SALES ORDER</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_save" onclick="saveMasterForm('so')" style="padding: 3px 10px; font-size: 0.8rem;">Lưu</button>
-                    <button class="fiori-btn" data-i18n="btn_submit" onclick="submitMasterForm('so')" style="padding: 3px 10px; font-size: 0.8rem; background: #2bba66;">Submit</button>
-                    <button class="fiori-btn fiori-btn-secondary" data-i18n="btn_cancel" style="padding: 3px 10px; font-size: 0.8rem;">Hủy</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('crm-sales')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở CRM & Kinh doanh</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
                   <div>
                     <label data-i18n="lbl_so_no" style="color: #666; font-size: 0.75rem;">SO No.</label>
-                    <input type="text" id="m-so-no" data-i18n="ph_so_no" data-i18n-attr="placeholder" placeholder="Ví dụ: SO-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-so-no" data-i18n="ph_so_no" data-i18n-attr="placeholder" placeholder="Ví dụ: SO-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_customer" style="color: #666; font-size: 0.75rem;">Customer</label>
-                    <select id="m-so-customer" class="fiori-input" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;"></select>
+                    <select id="m-so-customer" class="fiori-input" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled></select>
                   </div>
                   <div>
                     <label data-i18n="lbl_order_date" style="color: #666; font-size: 0.75rem;">Order Date</label>
-                    <input type="date" id="m-so-date" value="2026-07-23" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" id="m-so-date" value="2026-07-23" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_payment_terms" style="color: #666; font-size: 0.75rem;">Payment Terms</label>
-                    <select id="m-so-terms" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <select id="m-so-terms" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                       <option value="30 Days">30 Days</option>
                       <option value="60 Days">60 Days</option>
                     </select>
                   </div>
                   <div style="grid-column: span 2;">
                     <label data-i18n="lbl_sales_rep" style="color: #666; font-size: 0.75rem;">Sales Rep.</label>
-                    <input type="text" id="m-so-rep" value="Nguyễn Thị A" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-so-rep" value="Nguyễn Thị A" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <div style="margin-top: 10px;">
@@ -2787,34 +2785,34 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                   <div class="master-form-badge" data-i18n="lbl_form_3_do"><i class="fa-solid fa-truck-ramp-box"></i> 3. DELIVERY ORDER</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_save" onclick="saveMasterForm('do')" style="padding: 3px 10px; font-size: 0.8rem;">Lưu</button>
-                    <button class="fiori-btn" data-i18n="btn_approve" onclick="approveMasterForm('do')" style="padding: 3px 10px; font-size: 0.8rem; background: #2bba66;">Approve</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('ops-planning')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Lệnh giao hàng</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
                   <div>
                     <label data-i18n="lbl_do_no" style="color: #666; font-size: 0.75rem;">DO No.</label>
-                    <input type="text" id="m-do-no" data-i18n="ph_do_no" data-i18n-attr="placeholder" placeholder="Ví dụ: DO-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-do-no" data-i18n="ph_do_no" data-i18n-attr="placeholder" placeholder="Ví dụ: DO-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_so_no" style="color: #666; font-size: 0.75rem;">SO No.</label>
-                    <input type="text" id="m-do-so" data-i18n="ph_so_ref" data-i18n-attr="placeholder" placeholder="Tham chiếu SO" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-do-so" data-i18n="ph_so_ref" data-i18n-attr="placeholder" placeholder="Tham chiếu SO" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_customer" style="color: #666; font-size: 0.75rem;">Customer</label>
-                    <select id="m-do-customer" class="fiori-input" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;"></select>
+                    <select id="m-do-customer" class="fiori-input" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled></select>
                   </div>
                   <div>
                     <label data-i18n="lbl_route" style="color: #666; font-size: 0.75rem;">Route</label>
-                    <input type="text" id="m-do-route" value="Bình Dương -> Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-do-route" value="Bình Dương - disabled> Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
                   </div>
                   <div>
                     <label data-i18n="lbl_pickup_date" style="color: #666; font-size: 0.75rem;">Pickup Date</label>
-                    <input type="datetime-local" id="m-do-pickup" value="2026-07-23T08:00" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="datetime-local" id="m-do-pickup" value="2026-07-23T08:00" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_delivery_date" style="color: #666; font-size: 0.75rem;">Delivery Date</label>
-                    <input type="datetime-local" id="m-do-delivery" value="" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="datetime-local" id="m-do-delivery" value="" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <div style="margin-top: 10px;">
@@ -2835,25 +2833,26 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                   <div class="master-form-badge" data-i18n="lbl_form_4_route"><i class="fa-solid fa-map-location-dot"></i> 4. ROUTE PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_save_route" onclick="saveMasterForm('route')" style="padding: 3px 10px; font-size: 0.8rem; background: #10b981; border-color: #10b981;"><i class="fa-solid fa-floppy-disk"></i> Lưu tuyến đường</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('ops-planning')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Lệnh giao hàng</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
                   <div>
                     <label data-i18n="lbl_route_code" style="color: #666; font-size: 0.75rem;">Route Code</label>
-                    <input type="text" id="m-rt-code" value="RT-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-rt-code" value="RT-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_route_name" style="color: #666; font-size: 0.75rem;">Route Name</label>
-                    <input type="text" id="m-rt-name" value="Bình Dương - Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-rt-name" value="Bình Dương - Cát Lái" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="th_distance_km" style="color: #666; font-size: 0.75rem;">Distance (Km)</label>
-                    <input type="number" id="m-rt-dist" value="200" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="number" id="m-rt-dist" value="200" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="th_est_time" style="color: #666; font-size: 0.75rem;">Est. Time</label>
-                    <input type="text" id="m-rt-time" value="4h 30m" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="m-rt-time" value="4h 30m" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <div style="margin-top: 10px;">
@@ -2874,22 +2873,22 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
                   <div class="master-form-badge" data-i18n="lbl_form_5_dispatch"><i class="fa-solid fa-truck-moving"></i> 5. DISPATCH PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_save" onclick="saveMasterForm('dispatch')" style="padding: 3px 10px; font-size: 0.8rem;">Lưu</button>
-                    <button class="fiori-btn" data-i18n="btn_publish" onclick="publishMasterForm('dispatch')" style="padding: 3px 10px; font-size: 0.8rem; background: #2bba66;">Publish</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('dispatch')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Điều phối xe</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 8px;">
                   <div>
                     <label data-i18n="lbl_dispatch_date" style="color: #666; font-size: 0.75rem;">Dispatch Date</label>
-                    <input type="date" value="2026-07-23" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" value="2026-07-23" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_department" style="color: #666; font-size: 0.75rem;">Department</label>
-                    <input type="text" value="Transport" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" value="Transport" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_planner" style="color: #666; font-size: 0.75rem;">Planner</label>
-                    <input type="text" value="Trần Văn B" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" value="Trần Văn B" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
@@ -2926,15 +2925,15 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 8px;">
                   <div>
                     <label data-i18n="lbl_invoice_no" style="color: #666; font-size: 0.75rem;">Invoice No.</label>
-                    <input type="text" id="inv-no" data-i18n="ph_inv_no" data-i18n-attr="placeholder" placeholder="INV-..." style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="inv-no" data-i18n="ph_inv_no" data-i18n-attr="placeholder" placeholder="INV-..." style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_customer" style="color: #666; font-size: 0.75rem;">Customer</label>
-                    <input type="text" id="inv-customer" data-i18n="ph_inv_customer" data-i18n-attr="placeholder" value="" placeholder="-- Tự điền từ DO --" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="text" id="inv-customer" data-i18n="ph_inv_customer" data-i18n-attr="placeholder" value="" placeholder="-- Tự điền từ DO --" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                   <div>
                     <label data-i18n="lbl_invoice_date" style="color: #666; font-size: 0.75rem;">Invoice Date</label>
-                    <input type="date" id="inv-date" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="date" id="inv-date" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
                   </div>
                 </div>
                 <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
@@ -2960,15 +2959,15 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; font-size: 0.85rem;">
                   <div class="fiori-field">
                     <label data-i18n="lbl_incident_no" style="color: #475569; font-size: 0.8rem; font-weight: 600;">Incident No.</label>
-                    <input type="text" id="inc-no-input" data-i18n="ph_inc_no" data-i18n-attr="placeholder" placeholder="Auto-generated" class="fiori-input" style="background: #f8fafc !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;">
+                    <input type="text" id="inc-no-input" data-i18n="ph_inc_no" data-i18n-attr="placeholder" placeholder="Auto-generated" class="fiori-input" style="background: #f8fafc !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;" disabled>
                   </div>
                   <div class="fiori-field">
                     <label data-i18n="lbl_do_no" style="color: #475569; font-size: 0.8rem; font-weight: 600;">DO No.</label>
-                    <input type="text" id="inc-do-input" data-i18n="ph_inc_do" data-i18n-attr="placeholder" placeholder="Ví dụ: DEMO-DO-2026-001" class="fiori-input" style="background: #f8fafc !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;">
+                    <input type="text" id="inc-do-input" data-i18n="ph_inc_do" data-i18n-attr="placeholder" placeholder="Ví dụ: DEMO-DO-2026-001" class="fiori-input" style="background: #f8fafc !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;" disabled>
                   </div>
                   <div class="fiori-field">
                     <label data-i18n="lbl_incident_type" style="color: #475569; font-size: 0.8rem; font-weight: 600;">Incident Type</label>
-                    <select id="inc-type-select" class="fiori-input" style="background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;">
+                    <select id="inc-type-select" class="fiori-input" style="background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 8px 12px !important; color: #0f172a !important;" disabled>
                       <option data-i18n="opt_tire_puncture" value="Tire Puncture">Tire Puncture (Thủng lốp)</option>
                       <option data-i18n="opt_engine_failure" value="Engine Failure">Engine Failure (Hỏng máy)</option>
                       <option data-i18n="opt_traffic_delay" value="Traffic Delay">Traffic Delay (Kẹt xe)</option>
@@ -2977,7 +2976,7 @@
                   </div>
                   <div class="fiori-field" style="grid-column: span 3;">
                     <label data-i18n="lbl_description" style="color: #475569; font-size: 0.8rem; font-weight: 600;">Description</label>
-                    <textarea id="inc-desc-input" data-i18n="ph_incident_desc" data-i18n-attr="placeholder" rows="2" class="fiori-input" placeholder="Nhập mô tả chi tiết sự cố..." style="background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 10px 12px !important; color: #0f172a !important; font-family: inherit;"></textarea>
+                    <textarea id="inc-desc-input" data-i18n="ph_incident_desc" data-i18n-attr="placeholder" rows="2" class="fiori-input" placeholder="Nhập mô tả chi tiết sự cố..." style="background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; padding: 10px 12px !important; color: #0f172a !important; font-family: inherit;" disabled></textarea>
                   </div>
                 </div>
               </div>
@@ -4116,12 +4115,27 @@
                   </div>
 
                   <!-- Vietnamese source cleaned -->
-                  <div id="so-tab-attachments" class="so-tab-content" style="display: none; padding: 20px; background: #fafafa; border: 2px dashed #ccc; border-radius: 6px; text-align: center; color: #666;">
-                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: #0a6ed1; margin-bottom: 10px;"></i><br>
+                  <!-- Tai lieu dinh kem: CHUA CO NOI LUU.
+                       Ban truoc co mot o chon tep, va khi chon xong no bao
+                       "Da chon hop dong/bao gia dinh kem: <ten tep>" — nhung
+                       `so-contract-file` khong xuat hien trong bat ky tep JS nao:
+                       khong upload, khong FormData, khong gan vao don. Tep bi bo
+                       ngay tai do, con nguoi dung thi tuong da dinh kem xong.
+
+                       Backend cung chua co endpoint nao nhan tep dinh kem cua don
+                       (chi co POD va anh danh muc). Nen thay vi noi doi, o day noi
+                       dung su that va tat nut. -->
+                  <div id="so-tab-attachments" class="so-tab-content" style="display: none; padding: 22px; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 8px; text-align: center; color: #92400e;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; color: #b45309; margin-bottom: 10px;"></i><br>
                     <strong data-i18n="lbl_contract_signed">Hợp đồng / Báo giá đã ký</strong><br>
-                    <span data-i18n="tip_drag_drop_file" style="font-size: 0.85rem; color: #888;">Kéo thả tệp vào đây hoặc nhấn để chọn file (PDF, DOCX, PNG, JPG - Tối đa 25MB)</span><br><br>
-                    <input type="file" id="so-contract-file" accept=".pdf,.docx,.png,.jpg,.jpeg" style="display:none;" onchange="showToast('Đã chọn hợp đồng/báo giá đính kèm: ' + this.files[0]?.name)">
-                    <button type="button" class="fiori-btn" style="background: #0a6ed1;" onclick="document.getElementById('so-contract-file').click()" data-i18n="btn_choose_contract_file"><i class="fa-solid fa-file-signature"></i> Chọn file Hợp đồng / Báo giá đã ký</button>
+                    <span data-i18n="tip_attachment_not_ready" style="font-size: 0.85rem; display:inline-block; margin-top:6px; line-height:1.6;">
+                      Chức năng đính kèm tệp <b>chưa dùng được</b> — hệ thống chưa có chỗ lưu tệp cho đơn vận chuyển.<br>
+                      Tạm thời gửi hợp đồng qua kênh khác và ghi số hiệu vào ô <b>Ghi chú</b> của đơn.
+                    </span><br><br>
+                    <button type="button" class="fiori-btn" disabled
+                            title="Chưa có nơi lưu tệp đính kèm cho đơn vận chuyển"
+                            style="background: #e2e8f0; color: #64748b; cursor: not-allowed;"
+                            data-i18n="btn_attachment_not_ready"><i class="fa-solid fa-file-signature"></i> Chưa dùng được</button>
                   </div>
                   </div>
                   <!-- Vietnamese source cleaned -->
@@ -7140,7 +7154,7 @@
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260904-thuat-ngu"></script>
+  <script src="/static/js/app.js?v=20260904-don-ui-chet"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>
