@@ -95,14 +95,22 @@ def export_transport_revenue(
     db: Session = Depends(get_db),
 ):
     _context(request, db, {"finance_read"})
-    data = _report(
-        db,
-        tms_reporting_service._date(date_from) if date_from else None,
-        tms_reporting_service._date(date_to) if date_to else None,
-        customer_id,
-        vehicle_id,
-        currency_code,
-    )
+    # Ban JSON ngay ben tren co `try/except DomainError -> raise_http`, ban CSV
+    # nay thi khong. Cung mot nguyen nhan — chua cau hinh tien te chuc nang,
+    # ngay loc khong hop le — ma mot ben tra 422 kem loi doc duoc, con ben nay
+    # nem DomainError khong ai bat: nguoi dung bam "Xuat CSV" va nhan 500
+    # Internal Server Error, khong biet minh phai sua gi.
+    try:
+        data = _report(
+            db,
+            tms_reporting_service._date(date_from) if date_from else None,
+            tms_reporting_service._date(date_to) if date_to else None,
+            customer_id,
+            vehicle_id,
+            currency_code,
+        )
+    except DomainError as error:
+        raise_http(error)
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([

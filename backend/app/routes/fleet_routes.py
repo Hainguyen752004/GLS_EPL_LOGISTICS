@@ -48,7 +48,7 @@ from models import (
     FreightActualCost, FreightChargeItem, APInvoice, FreightSettlement,
     CurrencyDefinition, CurrencyRateHistory, Role, User, CostFormula, DeliveryOrderCloseout,
     DeliveryOrderChargeAdjustment, DeliveryPODDocument, VehicleMaintenanceRequest,
-    FreightOrderLegacyLink,
+    FreightOrderLegacyLink, DriverShiftAssignment, DriverQualification,
 )
 from gateway.router import GatewayRouter
 from agents.query_agent import QueryAgent
@@ -520,16 +520,55 @@ async def create_driver(request: Request, data: Dict[str, Any] = Body(...), db: 
 
 @router.delete("/api/drivers/{did}")
 async def delete_driver(did: str, request: Request, db: Session = Depends(get_db)):
+    """Xoa mot tai xe khoi Master Data.
+
+    Truoc day ham nay co ba cho sai, va ca ba deu im lang:
+
+      1. KHONG tim thay thi van tra ve "Đã xóa nhân sự". Nguoi dung doc thay
+         "da xoa" trong khi khong co gi bi xoa ca — go nham mot ma tai xe la
+         nhan duoc mot loi khang dinh sai.
+      2. Khong tim ra theo ma thi TIM THEO TEN. `DELETE /api/drivers/Nguyễn
+         Văn A` xoa theo ho ten, va `.first()` chon tuy y mot nguoi khi hai
+         tai xe trung ten. Mot thao tac xoa khong duoc phep doan.
+      3. Khong kiem dang-su-dung, khac han `delete_vehicle` ngay ben tren von
+         kiem rat can than tham chieu DO/Trip/Tracking. Xoa mot tai xe dang
+         chay chuyen la de lai tham chieu mo coi trong DO, Trip, ca lam viec
+         va POD — hoac vo o tang khoa ngoai.
+    """
     _require_api_principal(request)
     drv = db.query(Driver).filter(Driver.id == did).first()
     if not drv:
-        # Try matching by name
-        drv = db.query(Driver).filter(Driver.name == did).first()
-    if drv:
-        db.delete(drv)
-        db.commit()
-        return {"message": f"Đã xóa nhân sự {did}"}
-    return {"message": "Đã xóa nhân sự"}
+        raise HTTPException(status_code=404, detail={
+            "code": "DRIVER_NOT_FOUND",
+            "message": f"Không tìm thấy nhân sự {did}.",
+        })
+
+    in_use = any([
+        db.query(DeliveryOrder.id).filter(DeliveryOrder.driver_id == did).first(),
+        db.query(DeliveryPODRecord.id).filter(DeliveryPODRecord.driver_id == did).first(),
+        db.query(TransportTrip.id).filter(
+            (TransportTrip.driver_id == did) | (TransportTrip.co_driver_id == did)
+        ).first(),
+        db.query(ResourceAssignment.id).filter(
+            (ResourceAssignment.driver_id == did) | (ResourceAssignment.co_driver_id == did)
+        ).first(),
+        db.query(DriverShiftAssignment.id).filter(
+            DriverShiftAssignment.driver_id == did
+        ).first(),
+        db.query(DriverQualification.driver_id).filter(
+            DriverQualification.driver_id == did
+        ).first(),
+    ])
+    if in_use:
+        raise HTTPException(status_code=409, detail={
+            "code": "LOCKED_RECORD",
+            "message": "Nhân sự đang gắn với DO/Trip/ca làm việc, không được xóa khỏi Master Data.",
+            "navigation_targets": ["dispatch", "tracking", "master-data/drivers"],
+        })
+
+    db.delete(drv)
+    db.commit()
+    return {"message": f"Đã xóa nhân sự {did}"}
 
 # Toàn bộ phần tỷ giá (state, lịch làm mới, và 5 endpoint) đã chuyển sang
 # routes/currency_routes.py. Tỷ giá nuôi mọi phép quy đổi tiền tệ nên nó

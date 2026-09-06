@@ -11266,11 +11266,26 @@ window.loadSelectedFormulaPreset = function (key, options = {}) {
 };
 
 
+/* ==========================================================================
+   Tỷ giá quy đổi trên màn báo giá và đơn vận chuyển.
+
+   Trước đây mỗi đồng tiền mang kèm một `defaultRate` viết cứng — USD 25.450,
+   THB 710, LAK 1,18 — và `workflowCurrencyRate` rơi về con số đó bất cứ khi
+   nào ô tỷ giá trống hoặc không đọc được. Ba con số ấy không có nguồn nào và
+   không bao giờ được cập nhật, nhưng kết quả quy đổi thì hiện ra y hệt một
+   con số thật: "$141.41 USD" trông không khác gì khi tỷ giá đúng.
+
+   Đây là tiền báo cho khách. Không có tỷ giá thì phải NÓI LÀ CHƯA CÓ, chứ
+   không được lấy một con số cũ ra dùng thay. Tỷ giá vận hành đến từ
+   `/api/currencies/history` qua `renderCurrencyRateHistory(payload, true)`.
+   ========================================================================== */
+
 const WORKFLOW_CURRENCY_META = {
-  VND: { label: 'VND - Việt Nam Đồng', symbol: 'VNĐ', rateInputId: null, defaultRate: 1 },
-  USD: { label: 'USD - Đô la Mỹ ($)', symbol: '$', rateInputId: 'rate-usd', defaultRate: 25450 },
-  THB: { label: 'THB - Baht Thái (฿)', symbol: '฿', rateInputId: 'rate-thb', defaultRate: 710 },
-  LAK: { label: 'LAK - Kip Lào (₭)', symbol: '₭', rateInputId: 'rate-lak', defaultRate: 1.18 }
+  // VND là đồng bản vị nên tỷ lệ 1 là định nghĩa, không phải giá trị dự phòng.
+  VND: { label: 'VND - Việt Nam Đồng', symbol: 'VNĐ', rateInputId: null, rate: 1 },
+  USD: { label: 'USD - Đô la Mỹ ($)', symbol: '$', rateInputId: 'rate-usd' },
+  THB: { label: 'THB - Baht Thái (฿)', symbol: '฿', rateInputId: 'rate-thb' },
+  LAK: { label: 'LAK - Kip Lào (₭)', symbol: '₭', rateInputId: 'rate-lak' }
 };
 
 function workflowCurrencyCodes() {
@@ -11283,13 +11298,20 @@ function workflowCurrencyCodes() {
   return Array.from(new Set(['VND', ...demoFallback]));
 }
 
+/**
+ * Tỷ giá đang dùng của một đồng tiền, hoặc `null` nếu chưa có.
+ *
+ * Trả `null` chứ không rơi về một con số viết cứng: người gọi phải xử lý
+ * trường hợp chưa có tỷ giá, thay vì nhận một con số trông như thật.
+ */
 function workflowCurrencyRate(code) {
   const meta = WORKFLOW_CURRENCY_META[code] || WORKFLOW_CURRENCY_META.VND;
-  if (!meta.rateInputId) return meta.defaultRate;
+  if (!meta.rateInputId) return meta.rate ?? null;
   const raw = document.getElementById(meta.rateInputId)?.value;
   const parsed = window.CurrencyRateUtils.parseCurrencyRateNumber(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : meta.defaultRate;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
+window.workflowCurrencyRate = workflowCurrencyRate;
 
 function workflowCurrencyLabel(code) {
   return (WORKFLOW_CURRENCY_META[code] || { label: code }).label;
@@ -11299,6 +11321,9 @@ function workflowCurrencyConversionLabel(amountVnd, code) {
   const meta = WORKFLOW_CURRENCY_META[code];
   if (!meta || code === 'VND') return '';
   const rate = workflowCurrencyRate(code);
+  // Chưa có tỷ giá thì nói thẳng. Con số quy đổi bịa ra trông không khác gì
+  // con số đúng, và đây là tiền báo cho khách.
+  if (rate == null) return ` (chưa có tỷ giá ${code})`;
   const converted = Number(amountVnd || 0) / rate;
   return ` (~ ${meta.symbol}${converted.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} ${code})`;
 }
@@ -11313,7 +11338,14 @@ function formatWorkflowCurrencyAmount(amountVnd, code) {
   if (!meta || code === 'VND') {
     return `${amount.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} VNĐ`;
   }
-  const converted = amount / workflowCurrencyRate(code);
+  const rate = workflowCurrencyRate(code);
+  if (rate == null) {
+    // Hiện số tiền gốc bằng VNĐ kèm lời nói rõ, thay vì một con số ngoại tệ
+    // quy đổi từ tỷ giá không có nguồn.
+    return `${amount.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} VNĐ`
+      + ` (chưa có tỷ giá ${code})`;
+  }
+  const converted = amount / rate;
   return `${meta.symbol}${converted.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} ${code}`;
 }
 window.formatWorkflowCurrencyAmount = formatWorkflowCurrencyAmount;
@@ -12430,8 +12462,12 @@ function renderCurrencyRateHistory(payload, syncInputs = false) {
     if (previous) {
       previous.textContent = item.previous_rate == null ? 'Chưa có' : `${format(item.previous_rate)} VNĐ`;
     }
-    if (syncInputs && input && item.current_rate != null) {
-      input.value = format(item.current_rate);
+    if (syncInputs && input) {
+      // `current_rate == null` nghĩa là CHƯA AI LƯU tỷ giá cho đồng này. Bản
+      // trước chỉ ghi khi có giá trị, nên ô nhập giữ nguyên con số viết cứng
+      // trong index.html (25.450 / 710 / 1,18) — nhìn y hệt một tỷ giá đã
+      // lưu, trong khi ô "Đang áp dụng" ngay bên cạnh ghi "Chưa lưu".
+      input.value = item.current_rate == null ? '' : format(item.current_rate);
     }
     if (change) {
       change.classList.remove('up', 'down');
