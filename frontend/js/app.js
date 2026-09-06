@@ -273,7 +273,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260906-shipping-spec-v1`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260906-so-docs-lao-v2`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';

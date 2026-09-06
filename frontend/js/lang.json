@@ -3706,15 +3706,18 @@
   },
   "desc_overdue": {
     "vi": "Quá hạn lấy/giao, cần xử lý ngay",
-    "en": "Past pickup/delivery deadline, needs action now"
+    "en": "Past pickup/delivery deadline, needs action now",
+    "la": "ກາຍກຳນົດຮັບ/ສົ່ງສິນຄ້າ, ຕ້ອງດຳເນີນການ ທັນທີ"
   },
   "stage_undated": {
     "vi": "Thiếu hạn giao",
-    "en": "No deadline set"
+    "en": "No deadline set",
+    "la": "ຂາດກຳນົດສົ່ງ"
   },
   "desc_undated": {
     "vi": "Chưa có ngày lấy/giao nên chưa lập kế hoạch được",
-    "en": "No pickup/delivery date yet, cannot be planned"
+    "en": "No pickup/delivery date yet, cannot be planned",
+    "la": "ຍັງບໍ່ມີວັນທີຮັບ/ສົ່ງສິນຄ້າ, ວາງແຜນບໍ່ໄດ້"
   },
   "stage_pending": {
     "vi": "Chờ vận chuyển",
