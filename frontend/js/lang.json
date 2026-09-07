@@ -1,39 +1,4 @@
 {
-  "menu_dashboard": {
-    "en": "Dashboard (Live DB)",
-    "vi": "Bảng điều khiển (Cơ sở dữ liệu trực tiếp)",
-    "la": "ແຜງໜ້າປັດ (ຖານຂໍ້ມູນສົດ)"
-  },
-  "menu_lab_summary": {
-    "en": "Revenue & Cost Analysis",
-    "vi": "Phân tích Doanh thu & Chi phí",
-    "la": "ວິເຄາະລາຍຮັບ ແລະ ຄ່າໃຊ້ຈ່າຍ"
-  },
-  "menu_crm_sales": {
-    "en": "CRM & Sales",
-    "vi": "Quản lý quan hệ khách hàng & Kinh doanh",
-    "la": "ຄຸ້ມຄອງລູກຄ້າ ແລະ ການຂາຍ"
-  },
-  "menu_op_planning": {
-    "en": "Operations Planning",
-    "vi": "Lập kế hoạch vận hành",
-    "la": "ການວາງແຜນການດຳເນີນງານ"
-  },
-  "menu_dispatch": {
-    "en": "Dispatch & Execution",
-    "vi": "Điều phối & Thực thi",
-    "la": "ການຈັດສົ່ງແລະປະຕິບັດງານ"
-  },
-  "menu_tracking": {
-    "en": "Tracking & Control",
-    "vi": "Theo dõi và kiểm soát",
-    "la": "ການຕິດຕາມແລະຄວບຄຸມ"
-  },
-  "menu_accounting": {
-    "en": "Accounting & Finance",
-    "vi": "Kế toán & Tài chính",
-    "la": "ບັນຊີແລະການເງິນ"
-  },
   "top_app_name": {
     "en": "TRANSPORTATION MANAGEMENT SYSTEM (TMS) - EPL LOGISTICS",
     "vi": "HỆ THỐNG QUẢN LÝ VẬN TẢI (TMS) - EPL LOGISTICS",
@@ -198,21 +163,6 @@
     "en": "Date/Time",
     "vi": "Ngày/Giờ",
     "la": "ວັນທີ/ເວລາ"
-  },
-  "menu_delivery": {
-    "en": "3. Delivery & Shipment",
-    "vi": "3. Giao hàng và vận chuyển",
-    "la": "3. ການຈັດສົ່ງແລະການຂົນສົ່ງ"
-  },
-  "menu_ai_checkpoint": {
-    "en": "5. AI Checkpoint",
-    "vi": "Trạm kiểm soát AI",
-    "la": "5. ດ່ານກວດກາ AI"
-  },
-  "menu_master_data": {
-    "en": "Master Data",
-    "vi": "Dữ liệu gốc",
-    "la": "ຂໍ້ມູນຫຼັກ"
   },
   "stat_revenue": {
     "en": "REAL AR REVENUE",
@@ -853,36 +803,6 @@
     "en": "+ Add File",
     "vi": "+ Thêm tệp",
     "la": "+ ເພີ່ມໄຟລ໌"
-  },
-  "nav_overview": {
-    "en": "Overview",
-    "vi": "Tổng quan",
-    "la": "ພາບລວມ"
-  },
-  "nav_business": {
-    "en": "Operations",
-    "vi": "Nghiệp vụ",
-    "la": "ການດຳເນີນງານ"
-  },
-  "nav_finance_other": {
-    "en": "Finance & More",
-    "vi": "Tài chính & Khác",
-    "la": "ການເງິນ ແລະ ອື່ນໆ"
-  },
-  "mega_overview_title": {
-    "en": "SYSTEM OVERVIEW",
-    "vi": "TỔNG QUAN HỆ THỐNG",
-    "la": "ພາບລວມລະບົບ"
-  },
-  "mega_business_title": {
-    "en": "BUSINESS MODULES (EPL FLOW)",
-    "vi": "PHÂN HỆ NGHIỆP VỤ (EPL FLOW)",
-    "la": "ໂມດູນການດຳເນີນງານ (EPL FLOW)"
-  },
-  "mega_finance_title": {
-    "en": "ACCOUNTING & SYSTEM",
-    "vi": "KẾ TOÁN & HỆ THỐNG",
-    "la": "ບັນຊີ ແລະ ລະບົບ"
   },
   "unit_currency": {
     "en": "VND",
@@ -1729,16 +1649,6 @@
     "vi": "Thành tiền cước",
     "la": "ລວມເງິນ"
   },
-  "menu_flow_diagram": {
-    "en": "Live Workflow A-Z Diagram",
-    "vi": "Sơ Đồ Luồng A-Z (Live Workflow)",
-    "la": "ຜົນງານຂັ້ນຕອນການເຮັດວຽກ A-Z"
-  },
-  "menu_fleet_catalog": {
-    "en": "Fleet Catalog",
-    "vi": "Danh Mục Đội Xe",
-    "la": "ລາຍການກອງລົດ"
-  },
   "lbl_realtime_flow_tracker": {
     "en": "REAL-TIME WORKFLOW TRACKER",
     "vi": "SƠ ĐỒ LUỒNG THỜI GIAN THỰC",
@@ -2073,16 +1983,6 @@
     "en": "Invoice Date",
     "vi": "Ngày Hóa Đơn",
     "la": "ວັນທີໃບເກັບເງິນ"
-  },
-  "nav_shipment_360": {
-    "en": "Governance / Shipment 360°",
-    "vi": "Quản trị / Shipment 360°",
-    "la": "ການຄຸ້ມຄອງ / Shipment 360°"
-  },
-  "nav_master_data_btn": {
-    "en": "Master Data",
-    "vi": "Dữ liệu gốc (Master Data)",
-    "la": "ຂໍ້ມູນຫຼັກ (Master Data)"
   },
   "flow_rail_title": {
     "en": "Real-time Workflow Tracker",
@@ -3193,46 +3093,6 @@
     "en": "Invoice `INV-2026-xxx` & GL Postings",
     "vi": "Hóa đơn `INV-2026-xxx` & Bút toán GL",
     "la": "ໃບເກັບເງິນ `INV-2026-xxx` & ລົງບັນຊີ GL"
-  },
-  "step_nav_0": {
-    "en": "0. Master Data",
-    "vi": "0. Master Data",
-    "la": "0. ຂໍ້ມູນຫຼັກ"
-  },
-  "step_nav_1": {
-    "en": "1. Quotation",
-    "vi": "1. Báo Giá",
-    "la": "1. ໃບສະເໜີລາຄາ"
-  },
-  "step_nav_2": {
-    "en": "2. Transport Order",
-    "vi": "2. Đơn Hàng SO",
-    "la": "2. ໃບສັ່ງຂາຍ SO"
-  },
-  "step_nav_3": {
-    "en": "3. Delivery Order",
-    "vi": "3. Lệnh DO",
-    "la": "3. ໃບສັ່ງປ່ອຍສິນຄ້າ DO"
-  },
-  "step_nav_4": {
-    "en": "4. Route",
-    "vi": "4. Tuyến Đường",
-    "la": "4. ເສັ້ນທາງ"
-  },
-  "step_nav_5": {
-    "en": "5. Dispatch",
-    "vi": "5. Điều Phối",
-    "la": "5. ປ່ອຍລົດ"
-  },
-  "step_nav_6": {
-    "en": "6. GPS & POD",
-    "vi": "6. GPS & POD",
-    "la": "6. GPS & POD"
-  },
-  "step_nav_7": {
-    "en": "7. Invoice",
-    "vi": "7. Hóa Đơn",
-    "la": "7. ໃບເກັບເງິນ"
   },
   "kb_col_quoted": {
     "vi": "3. Báo Giá",
@@ -5133,5 +4993,145 @@
     "vi": "Bỏ chọn",
     "en": "Clear selection",
     "la": "ຍົກເລີກການເລືອກ"
+  },
+  "khung_nav_today": {
+    "en": "Today",
+    "vi": "⌂ Hôm nay",
+    "la": "⌂ ມື້ນີ້"
+  },
+  "khung_nav_ops": {
+    "en": "Operations",
+    "vi": "Vận hành",
+    "la": "ການດຳເນີນງານ"
+  },
+  "khung_nav_biz": {
+    "en": "Business",
+    "vi": "Kinh doanh",
+    "la": "ການຂາຍ"
+  },
+  "khung_nav_master": {
+    "en": "Master data",
+    "vi": "Dữ liệu gốc",
+    "la": "ຂໍ້ມູນຫຼັກ"
+  },
+  "khung_nav_more": {
+    "en": "Reports and more",
+    "vi": "Báo cáo và khác",
+    "la": "ບົດລາຍງານ ແລະ ອື່ນໆ"
+  },
+  "khung_hd_daily": {
+    "en": "DAILY",
+    "vi": "HÀNG NGÀY",
+    "la": "ປະຈຳວັນ"
+  },
+  "khung_hd_docs": {
+    "en": "TRIPS AND DOCUMENTS",
+    "vi": "CHUYẾN VÀ CHỨNG TỪ",
+    "la": "ຖ້ຽວ ແລະ ເອກະສານ"
+  },
+  "khung_hd_md_flow": {
+    "en": "USED BY QUOTING AND DISPATCH",
+    "vi": "DÙNG CHO BÁO GIÁ VÀ ĐIỀU PHỐI",
+    "la": "ໃຊ້ສຳລັບໃບສະເໜີລາຄາ ແລະ ການຈັດສົ່ງ"
+  },
+  "khung_hd_md_res": {
+    "en": "RESOURCES AND PARTNERS",
+    "vi": "NGUỒN LỰC VÀ ĐỐI TÁC",
+    "la": "ຊັບພະຍາກອນ ແລະ ຄູ່ຮ່ວມງານ"
+  },
+  "khung_mi_do": {
+    "en": "Delivery orders (DO)",
+    "vi": "Lệnh giao hàng (DO)",
+    "la": "ໃບສັ່ງສົ່ງສິນຄ້າ (DO)"
+  },
+  "khung_mi_dispatch": {
+    "en": "Dispatch and execution",
+    "vi": "Điều phối và thực thi",
+    "la": "ການຈັດສົ່ງແລະປະຕິບັດງານ"
+  },
+  "khung_mi_track": {
+    "en": "Tracking and control",
+    "vi": "Theo dõi và kiểm soát",
+    "la": "ການຕິດຕາມແລະຄວບຄຸມ"
+  },
+  "khung_mi_pod": {
+    "en": "Complete delivery",
+    "vi": "Hoàn tất giao hàng",
+    "la": "ສຳເລັດການຈັດສົ່ງ"
+  },
+  "khung_mi_shipment": {
+    "en": "Delivery and transport",
+    "vi": "Giao hàng và vận chuyển",
+    "la": "ການຈັດສົ່ງແລະການຂົນສົ່ງ"
+  },
+  "khung_mi_parking": {
+    "en": "Packing list / QR labels",
+    "vi": "Packing List / tem QR",
+    "la": "Packing List / ປ້າຍ QR"
+  },
+  "khung_mi_ai": {
+    "en": "AI checkpoint",
+    "vi": "Trạm kiểm soát AI",
+    "la": "ດ່ານກວດກາ AI"
+  },
+  "khung_mi_crm": {
+    "en": "CRM and business",
+    "vi": "CRM và Kinh doanh",
+    "la": "CRM ແລະ ການຂາຍ"
+  },
+  "khung_mi_acc": {
+    "en": "Accounting and finance",
+    "vi": "Kế toán và tài chính",
+    "la": "ບັນຊີແລະການເງິນ"
+  },
+  "khung_mi_routes": {
+    "en": "Routes",
+    "vi": "Tuyến đường",
+    "la": "ເສັ້ນທາງ"
+  },
+  "khung_mi_formulas": {
+    "en": "Cost formulas",
+    "vi": "Công thức giá thành",
+    "la": "ສູດຄິດໄລ່ຕົ້ນທຶນ"
+  },
+  "khung_mi_veh_types": {
+    "en": "Vehicle types",
+    "vi": "Loại xe",
+    "la": "ປະເພດລົດ"
+  },
+  "khung_mi_vehicles": {
+    "en": "Vehicles and equipment",
+    "vi": "Xe và thiết bị",
+    "la": "ລົດ ແລະ ອຸປະກອນ"
+  },
+  "khung_mi_customers": {
+    "en": "Customers",
+    "vi": "Khách hàng",
+    "la": "ລູກຄ້າ"
+  },
+  "khung_mi_carriers": {
+    "en": "Carriers",
+    "vi": "Nhà vận chuyển",
+    "la": "ຜູ້ຮັບເໝົາຂົນສົ່ງ"
+  },
+  "khung_mi_md_all": {
+    "en": "Open all master data",
+    "vi": "Mở toàn bộ Dữ liệu gốc",
+    "la": "ເປີດຂໍ້ມູນຫຼັກທັງໝົດ"
+  },
+  "khung_mi_analysis": {
+    "en": "Revenue and cost analysis",
+    "vi": "Phân tích doanh thu và chi phí",
+    "la": "ວິເຄາະລາຍຮັບ ແລະ ຄ່າໃຊ້ຈ່າຍ"
+  },
+  "khung_mi_ops360": {
+    "en": "Admin / Shipment 360°",
+    "vi": "Quản trị / Shipment 360°",
+    "la": "ການຄຸ້ມຄອງ / Shipment 360°"
+  },
+  "khung_mi_az": {
+    "en": "A–Z flow diagram",
+    "vi": "Sơ đồ luồng A–Z",
+    "la": "ແຜນວາດຂັ້ນຕອນ A–Z"
   }
 }

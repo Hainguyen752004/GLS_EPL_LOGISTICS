@@ -282,7 +282,15 @@ assert.ok(!html.includes('id="reporting-drilldown-panel"'), 'khối SLA cũ ph�
 // Phần nhà thầu vẫn giữ ở Carrier Master trong Master Data.
 assert.ok(!html.includes('id="tender-cockpit-panel"'), 'Tender Cockpit phải được dỡ');
 assert.ok(!html.includes('<section id="view-reporting"'), 'section view-reporting phải được dỡ');
-assert.ok(html.includes('Phân tích Doanh thu &amp; Chi phí'), 'màn Phân tích vẫn còn tên mới');
+// Màn Phân tích phải còn đường đi tới từ khung điều hướng. Trước đây phép
+// kiểm neo vào đúng chuỗi "Phân tích Doanh thu &amp; Chi phí" của "mega menu"
+// cũ; khung ba tầng đặt nhãn qua khóa dịch `khung_mi_analysis`, nên neo vào
+// chuỗi cứng là neo vào một thứ không còn tồn tại. Kiểm cái THẬT SỰ quan
+// trọng: có một mục nào trong khung trỏ tới màn này hay không.
+assert.ok(/data-i18n="khung_mi_analysis"/.test(html),
+  'khung điều hướng phải có mục dẫn tới màn Phân tích');
+assert.ok(/data-view="lab-summary"/.test(html),
+  'mục dẫn tới màn Phân tích phải trỏ đúng #view-lab-summary');
 
 // renderReportingDrilldown giờ chỉ điều phối, không tự dựng HTML kèm style inline.
 // Cắt đúng thân hàm: từ khai báo tới dấu "}" đầu tiên ở cột 0. Cắt theo số ký

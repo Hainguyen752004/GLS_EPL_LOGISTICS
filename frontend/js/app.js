@@ -169,15 +169,13 @@ function fixUIText(value) {
 function forceCriticalVietnameseLabels() {
   if (typeof document === 'undefined') return;
   if (typeof currentLang !== 'undefined' && currentLang !== 'vi') return;
-  document.querySelectorAll('[data-i18n="mega_finance_title"]').forEach(label => {
-    label.textContent = 'K\u1ebe TO\u00c1N & H\u1ec6 TH\u1ed0NG';
-  });
-  document.querySelectorAll('[data-i18n="menu_accounting"]').forEach(label => {
-    label.textContent = '6. K\u1ebf to\u00e1n & T\u00e0i ch\u00ednh';
-  });
-  document.querySelectorAll('[data-i18n="menu_fleet_catalog"]').forEach(label => {
-    label.textContent = 'Danh M\u1ee5c \u0110\u1ed9i Xe';
-  });
+  // CỐ Ý không còn lệnh ghi đè nào ở đây.
+  //
+  // Trước đây có ba lệnh nhắm vào `mega_finance_title`, `menu_accounting` và
+  // `menu_fleet_catalog` — ba nhãn của "mega menu" cũ. Khung mới không còn
+  // thẻ nào mang các khóa đó, nên ba lệnh ấy chỉ còn là chỗ để quên: đọc thì
+  // tưởng nhãn được ghi đè, mà thật ra chúng không khớp gì cả.
+  //
   // C\u1ed0 \u00dd kh\u00f4ng ghi \u0111\u00e8 `lbl_sales_rep` \u1edf \u0111\u00e2y.
   //
   // \u0110\u00e2y l\u00e0 h\u1ec7 th\u1ed1ng V\u1eacN T\u1ea2I, kh\u00f4ng ph\u1ea3i b\u00e1n h\u00e0ng h\u00f3a, n\u00ean d\u00f9ng t\u1eeb "Nh\u00e2n vi\u00ean
@@ -273,7 +271,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260907a-nhom-do-v3`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908a-khung-ba-tang`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';

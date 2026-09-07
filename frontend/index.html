@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260905-shipping-spec-v1">
+  <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908c-so-do-tong-quan">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Ghim phiên bản tường minh: "npm/chart.js" không ghim nên mỗi lần jsDelivr
@@ -2559,144 +2564,140 @@
 <body>
   <div class="samsung-app">
     
-    <!-- SAMSUNG STYLE TOP HEADER -->
-    <header class="samsung-header">
-      <div class="samsung-logo" data-view="dashboard">
-        <i class="fa-solid fa-truck-fast"></i>
-        <span>EPL LOGISTICS</span>
-      </div>
-      
-      <nav class="samsung-nav">
-        <!-- Vietnamese source cleaned -->
-        <div class="nav-item-ss">
-          <span data-i18n="nav_overview">Tổng quan</span>
-          <div class="mega-menu">
-            <div class="mega-title" data-i18n="mega_overview_title">TỔNG QUAN HỆ THỐNG</div>
-            <div class="mega-grid" style="grid-template-columns: repeat(2, 1fr); width: 460px;">
-              <div class="mega-card active" data-view="dashboard">
-                <div class="mega-icon"><i class="fa-solid fa-chart-pie"></i></div>
-                <span data-i18n="menu_dashboard">Bảng điều khiển (Cơ sở dữ liệu trực tiếp)</span>
-              </div>
-              <div class="mega-card" data-view="lab-summary">
-                <div class="mega-icon"><i class="fa-solid fa-flask"></i></div>
-                <span data-i18n="menu_lab_summary">Phân tích Doanh thu &amp; Chi phí</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <!-- ==================================================================
+         TẦNG 1 — thương hiệu và việc toàn cục.
 
-        <!-- Vietnamese source cleaned -->
-        <div class="nav-item-ss">
-          <span data-i18n="nav_business">Nghiệp vụ</span>
-          <div class="mega-menu">
-            <div class="mega-title" data-i18n="mega_business_title">PHÂN HỆ NGHIỆP VỤ (EPL FLOW)</div>
-            <div class="mega-grid">
-              <div class="mega-card" data-view="crm-sales">
-                <div class="mega-icon"><i class="fa-solid fa-handshake"></i></div>
-                <span data-i18n="menu_crm_sales">Quản lý quan hệ khách hàng & Kinh doanh</span>
-              </div>
-              <div class="mega-card" data-view="ops-planning">
-                <div class="mega-icon"><i class="fa-solid fa-route"></i></div>
-                <span data-i18n="menu_op_planning">Lập kế hoạch vận hành</span>
-              </div>
-              <div class="mega-card" data-view="delivery-shipment">
-                <div class="mega-icon"><i class="fa-solid fa-boxes-packing"></i></div>
-                <span data-i18n="menu_delivery">3. Giao hàng và vận chuyển</span>
-              </div>
-              <div class="mega-card" data-view="parking-list">
-                <div class="mega-icon"><i class="fa-solid fa-qrcode"></i></div>
-                <span>Parking List / Tem QR</span>
-              </div>
-              <div class="mega-card" data-view="dispatch">
-                <div class="mega-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
-                <span data-i18n="menu_dispatch">Điều phối & Thực thi</span>
-              </div>
-              <div class="mega-card" data-view="ai-checkpoint">
-                <div class="mega-icon"><i class="fa-solid fa-camera-retro" style="color: var(--lao-red);"></i></div>
-                <span data-i18n="menu_ai_checkpoint">Trạm kiểm soát AI</span>
-              </div>
-              <div class="mega-card" data-view="delivery-completion">
-                <div class="mega-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-                <span>Hoàn tất giao hàng</span>
-              </div>
-              <div class="mega-card" data-view="tracking">
-                <div class="mega-icon"><i class="fa-solid fa-location-crosshairs"></i></div>
-                <span data-i18n="menu_tracking">Theo dõi và kiểm soát</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vietnamese source cleaned -->
-        <div class="nav-item-ss">
-          <span data-i18n="nav_finance_other">Tài chính & Khác</span>
-          <div class="mega-menu">
-            <div class="mega-title" data-i18n="mega_finance_title">KẾ TOÁN & HỆ THỐNG</div>
-            <div class="mega-grid">
-              <div class="mega-card" data-view="accounting">
-                <div class="mega-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-                <span data-i18n="menu_accounting">Kế toán & Tài chính</span>
-              </div>
-              <div class="mega-card" onclick="switchView('master-data'); setTimeout(() => { const btns = document.querySelectorAll('.md-tab-btn'); if(btns.length>2) switchMasterDataTab('md-tab-vehicles', btns[2]); }, 100);">
-                <div class="mega-icon"><i class="fa-solid fa-truck-moving"></i></div>
-                <span data-i18n="menu_fleet_catalog">Danh Mục Đội Xe</span>
-              </div>
-              <div id="operations-360-menu-card" class="mega-card" data-view="operations-360" style="display:none;">
-                <div class="mega-icon"><i class="fa-solid fa-circle-nodes"></i></div>
-                <span>Quản trị / Shipment 360°</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Vietnamese source cleaned -->
-        <div class="nav-item-ss" onclick="switchView('master-data')" style="cursor: pointer;">
-          <span style="color: #ffffff; font-weight: 500; display: flex; align-items: center; gap: 6px;" data-i18n="menu_master_data">
-            <i class="fa-solid fa-database" style="color: #38bdf8;"></i> Dữ liệu gốc (Master Data)
-          </span>
-        </div>
-
-
-      </nav>
-
-      <div class="samsung-actions">
-        <div style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
-          <i class="fa-solid fa-globe" style="font-size: 0.9rem;"></i>
-          <select id="lang-switcher" onchange="changeLanguage(this.value)" style="border: none; outline: none; background: transparent; color: white; cursor: pointer; font-weight: bold; font-family: inherit; font-size: 0.9rem;">
-            <option value="vi" style="color: black;">VN</option>
-            <option value="en" style="color: black;">EN</option>
-            <option value="la" style="color: black;">LA</option>
-          </select>
-        </div>
-        <div class="samsung-icon-btn"><i class="fa-regular fa-user"></i></div>
-      </div>
-    </header>
-
-    <!-- LEFT HOVER REAL-TIME WORKFLOW TRACKER RAIL -->
-    <aside id="sticky-top-flow-tracker" class="workflow-left-rail" aria-label="Sơ đồ luồng thời gian thực">
-      <div class="workflow-rail-handle" title="Sơ đồ luồng thời gian thực">
-        <i class="fa-solid fa-diagram-project"></i>
-        <span data-i18n="lbl_realtime_flow_tracker">Sơ đồ luồng</span>
-      </div>
-      <div id="top-tracker-step-title" class="workflow-rail-current">
-        <i class="fa-solid fa-file-contract"></i>
-        <span><strong>Bước 1/7:</strong> 1. Báo giá vận tải</span>
-      </div>
-      <nav class="workflow-rail-steps" aria-label="Các bước nghiệp vụ">
-        <button type="button" class="flow-bar-step-item" data-step="0" onclick="updateActiveFlowStep(0); switchView('master-data');" title="Bước 0: Khởi tạo Master Data"><i class="fa-solid fa-database"></i><span data-i18n="step_nav_0">0. Master Data</span></button>
-        <button type="button" class="flow-bar-step-item active" data-step="1" onclick="updateActiveFlowStep(1); switchView('crm-sales', 'oracle-qt-list');" title="Bước 1: Báo giá"><i class="fa-solid fa-file-contract"></i><span data-i18n="step_nav_1">1. QT</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="2" onclick="updateActiveFlowStep(2); switchView('crm-sales', 'oracle-so-list');" title="Bước 2: Đơn hàng SO"><i class="fa-solid fa-handshake"></i><span data-i18n="step_nav_2">2. SO</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="3" onclick="switchView('ops-planning', 'fiori-do-list'); updateActiveFlowStep(3);" title="Bước 3: Lệnh DO"><i class="fa-solid fa-clipboard-check"></i><span data-i18n="step_nav_3">3. DO</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="4" onclick="updateActiveFlowStep(4); switchView('ops-planning');" title="Bước 4: Tuyến đường"><i class="fa-solid fa-route"></i><span data-i18n="step_nav_4">4. Route</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="5" onclick="updateActiveFlowStep(5); switchView('dispatch');" title="Bước 5: Điều phối"><i class="fa-solid fa-truck-ramp-box"></i><span data-i18n="step_nav_5">5. Dispatch</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="6" onclick="updateActiveFlowStep(6); switchView('tracking');" title="Bước 6: GPS & POD"><i class="fa-solid fa-location-crosshairs"></i><span data-i18n="step_nav_6">6. GPS</span></button>
-        <button type="button" class="flow-bar-step-item" data-step="7" onclick="updateActiveFlowStep(7); switchView('accounting');" title="Bước 7: Hóa đơn"><i class="fa-solid fa-file-invoice-dollar"></i><span data-i18n="step_nav_7">7. Invoice</span></button>
-      </nav>
-      <button type="button" class="workflow-rail-map-btn" onclick="switchView('dashboard'); setTimeout(() => { const el = document.getElementById('sec-flow-diagram'); if(el) el.scrollIntoView({behavior:'smooth'}); }, 100);">
-        <i class="fa-solid fa-network-wired"></i>
-        <span data-i18n="btn_view_az_flow">Xem sơ đồ A-Z</span>
+         Phạm vi làm việc (đội, bãi) đặt ở đây chứ không đặt trong từng màn:
+         hệ thống chạy ở quy mô ~500 xe và nhiều bãi, nên gần như mọi màn đều
+         phải lọc theo phạm vi. Để mỗi màn một ô lọc riêng thì người dùng phải
+         đặt lại cùng một phạm vi ở từng màn.
+         ================================================================== -->
+    <div class="epl-bar1">
+      <button type="button" class="epl-brand" data-view="dashboard" title="Về Bảng điều khiển">
+        <span class="epl-lg"><i class="fa-solid fa-truck-fast"></i></span>EPL Logistics
       </button>
-    </aside>
+
+      <div class="epl-scope">
+        <select id="pham-vi-doi" aria-label="Phạm vi đội xe">
+          <option value="">Đội: Tất cả</option>
+        </select>
+        <select id="pham-vi-bai" aria-label="Phạm vi bãi">
+          <option value="">Bãi: Tất cả</option>
+        </select>
+      </div>
+
+      <!--
+        Ô tìm nhanh này đi TỚI MÀN, không tìm dữ liệu — và nói đúng như vậy
+        trong chữ mờ. Một ô hứa "tìm mọi thứ" mà chỉ nhảy màn thì tệ hơn là
+        không có ô nào: người dùng gõ mã DO vào, không thấy DO, và kết luận
+        là hệ thống hỏng.
+      -->
+      <div class="epl-gsearch">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="tim-man-hinh" autocomplete="off" role="combobox"
+               aria-expanded="false" aria-controls="ket-qua-tim-man"
+               placeholder="Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…">
+        <kbd>/</kbd>
+      </div>
+
+      <button type="button" class="epl-ic" id="nut-so-do-az" title="Sơ đồ luồng A–Z">
+        <i class="fa-solid fa-diagram-project"></i>
+      </button>
+
+      <label class="epl-lang" title="Ngôn ngữ">
+        <i class="fa-solid fa-globe"></i>
+        <select id="lang-switcher" onchange="changeLanguage(this.value)" aria-label="Ngôn ngữ">
+          <option value="vi">VN</option>
+          <option value="en">EN</option>
+          <option value="la">LA</option>
+        </select>
+      </label>
+
+      <div class="epl-me">
+        <span class="epl-av">ĐP</span>
+        <div><b>Điều phối</b><span>EPL Logistics</span></div>
+      </div>
+    </div>
+
+    <!-- ==================================================================
+         TẦNG 2 — điều hướng theo CÔNG VIỆC.
+
+         Bốn nhóm dưới đây gộp lại từ tám nhóm của sơ đồ tổng quan
+         `Logistic_img_new/Logistic erp.png`, gộp theo người dùng chứ không
+         theo phân hệ: một người điều phối chỉ phải nhớ "Vận hành", thay vì
+         nhớ hàng nằm ở "Giao hàng & chứng từ" hay "Điều phối & thực thi".
+         ================================================================== -->
+    <nav class="epl-bar2" id="epl-bar2" aria-label="Điều hướng chính">
+      <button type="button" class="epl-nb" data-view="dashboard" data-i18n="khung_nav_today">⌂ Hôm nay</button>
+      <button type="button" class="epl-nb" data-menu="ops" aria-haspopup="true" aria-expanded="false">
+        <span data-i18n="khung_nav_ops">Vận hành</span> <span class="epl-car">▾</span>
+      </button>
+      <button type="button" class="epl-nb" data-menu="biz" aria-haspopup="true" aria-expanded="false">
+        <span data-i18n="khung_nav_biz">Kinh doanh</span> <span class="epl-car">▾</span>
+      </button>
+      <button type="button" class="epl-nb" data-menu="master" aria-haspopup="true" aria-expanded="false">
+        <span data-i18n="khung_nav_master">Dữ liệu gốc</span> <span class="epl-car">▾</span>
+      </button>
+      <button type="button" class="epl-nb" data-menu="more" aria-haspopup="true" aria-expanded="false">
+        <span data-i18n="khung_nav_more">Báo cáo và khác</span> <span class="epl-car">▾</span>
+      </button>
+      <div class="epl-spacer"></div>
+
+    <div class="epl-menu" id="epl-m-ops" role="menu">
+      <div class="epl-hd" data-i18n="khung_hd_daily">HÀNG NGÀY</div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="ops-planning"><i>▤</i><div><b data-i18n="khung_mi_do">Lệnh giao hàng (DO)</b><span>Chọn DO cần chạy rồi lập Trip</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="dispatch"><i>⇄</i><div><b data-i18n="khung_mi_dispatch">Điều phối và thực thi</b><span>Gán xe và tổ lái, cho xuất bến</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="tracking"><i>◎</i><div><b data-i18n="khung_mi_track">Theo dõi và kiểm soát</b><span>GPS, tiến độ chặng, sự cố</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="delivery-completion"><i>✓</i><div><b data-i18n="khung_mi_pod">Hoàn tất giao hàng</b><span>POD ký nhận, quyết toán, đóng DO</span></div></div>
+      <div class="epl-sep"></div>
+      <div class="epl-hd" data-i18n="khung_hd_docs">CHUYẾN VÀ CHỨNG TỪ</div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="delivery-shipment"><i>⤳</i><div><b data-i18n="khung_mi_shipment">Giao hàng và vận chuyển</b><span>Trip, chặng về, gộp DO cùng tuyến</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="parking-list"><i>▩</i><div><b data-i18n="khung_mi_parking">Packing List / tem QR</b><span>In tem, gói hàng theo chuyến</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="ai-checkpoint"><i>✦</i><div><b data-i18n="khung_mi_ai">Trạm kiểm soát AI</b><span>Đọc ảnh tại chốt, cảnh báo tự động</span></div></div>
+    </div>
+
+    <div class="epl-menu" id="epl-m-biz" role="menu">
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="crm-sales"><i>☺</i><div><b data-i18n="khung_mi_crm">CRM và Kinh doanh</b><span>Khách hàng, báo giá cước, đơn hàng vận chuyển</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="accounting"><i>$</i><div><b data-i18n="khung_mi_acc">Kế toán và tài chính</b><span>Hóa đơn, công nợ, hạch toán</span></div></div>
+    </div>
+
+    <div class="epl-menu" id="epl-m-master" role="menu">
+      <div class="epl-hd" data-i18n="khung_hd_md_flow">DÙNG CHO BÁO GIÁ VÀ ĐIỀU PHỐI</div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-routes"><i>⤳</i><div><b data-i18n="khung_mi_routes">Tuyến đường</b><span>Chặng A → B → C, km kế hoạch</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-formulas"><i>∑</i><div><b data-i18n="khung_mi_formulas">Công thức giá thành</b><span>Chi phí trên 1 km và giá cước</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-veh-types"><i>▤</i><div><b data-i18n="khung_mi_veh_types">Loại xe</b><span>Tải trọng, định mức dầu, giá thành nền</span></div></div>
+      <div class="epl-sep"></div>
+      <div class="epl-hd" data-i18n="khung_hd_md_res">NGUỒN LỰC VÀ ĐỐI TÁC</div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-vehicles"><i>▭</i><div><b data-i18n="khung_mi_vehicles">Xe và thiết bị</b><span>Đăng kiểm, bảo dưỡng, bãi đậu</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-customers"><i>☺</i><div><b data-i18n="khung_mi_customers">Khách hàng</b><span>Thông tin và điều khoản</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-carriers"><i>⛟</i><div><b data-i18n="khung_mi_carriers">Nhà vận chuyển</b><span>Đối tác chạy thuê ngoài</span></div></div>
+      <div class="epl-sep"></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="master-data"><i>▦</i><div><b data-i18n="khung_mi_md_all">Mở toàn bộ Dữ liệu gốc</b><span>Cả 11 thẻ, kèm bước thiết lập ban đầu</span></div></div>
+    </div>
+
+    <div class="epl-menu" id="epl-m-more" role="menu">
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="lab-summary"><i>▥</i><div><b data-i18n="khung_mi_analysis">Phân tích doanh thu và chi phí</b><span>Lợi nhuận theo tuyến, xe, khách</span></div></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="operations-360"><i>◍</i><div><b data-i18n="khung_mi_ops360">Quản trị / Shipment 360°</b><span>Một chuyến, xem hết mọi tầng</span></div></div>
+      <div class="epl-sep"></div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-view="dashboard" data-scroll="sec-so-do-tong-quan"><i>◈</i><div><b data-i18n="khung_mi_az">Sơ đồ luồng A–Z</b><span>Tám nhóm chức năng, từ báo giá tới hạch toán</span></div></div>
+    </div>
+    </nav>
+
+    <!-- ==================================================================
+         TẦNG 3 — đầu trang của màn đang mở.
+
+         Nội dung do `capNhatDauTrang()` trong app.js ghi vào, lấy từ một bảng
+         khai theo mã màn. Để đây một khung rỗng chứ không để chữ mặc định,
+         vì chữ mặc định sẽ hiện loé một nhịp trước khi bị ghi đè.
+         ================================================================== -->
+    <div class="epl-sub" id="epl-sub">
+      <div>
+        <div class="epl-crumb" id="epl-crumb"></div>
+        <h1 id="epl-h1"></h1>
+        <p id="epl-desc" hidden></p>
+      </div>
+      <div class="epl-subacts" id="epl-subacts"></div>
+    </div>
 
     <!-- MAIN CONTENT -->
     <main class="samsung-main-wrapper">
@@ -2743,18 +2744,39 @@
             </div>
           </div>
 
-          <!-- Big Overview Process Diagram Banner -->
-          <div class="card-panel" style="margin-bottom: 24px; background: #ffffff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 16px rgba(15,23,42,0.06); border: 1px solid #e2e8f0;">
-            <div class="panel-header" style="margin-bottom: 14px; border-bottom: 2px solid #0a6ed1; padding-bottom: 8px;">
-              <div class="panel-title" style="display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-sitemap" style="color: #0a6ed1; font-size: 1.2rem;"></i>
-                <h3 data-i18n="dashboard_flow_title" style="margin:0; color: #0a6ed1; font-weight: 700; font-size: 1.15rem;">SƠ ĐỒ BỨC TRANH TỔNG QUAN LOGISTICS EPL</h3>
-              </div>
-            </div>
-            <div style="text-align: center; padding: 10px;">
-              <img src="/tongquan.jpg" alt="Sơ đồ tổng quan Logistics EPL" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
-            </div>
-          </div>
+          <!--
+            SƠ ĐỒ TỔNG QUAN — MỘT tấm duy nhất.
+
+            Trước đây chỗ này hiện `/tongquan.jpg`, một sơ đồ tổng quan cũ.
+            Nay dùng `Logistic_img_new/Logistic erp.png` (đã chép vào
+            `frontend/img/so-do-tong-quan-epl.png` để dùng đường `/static`
+            thường thay vì một đường riêng): nó vẽ đủ tám nhóm chức năng, kèm
+            master data, tích hợp, và biểu mẫu thật của từng nhóm.
+
+            Chỉ để MỘT tấm. Hai sơ đồ tổng quan cạnh nhau thì người đọc phải tự
+            đoán tấm nào mới đúng, và tấm cũ sẽ lệch dần khỏi hệ thống thật mà
+            không ai sửa.
+
+            Lưới tám bước ở khối ngay dưới thì GIỮ: nó đọc dữ liệu thật và sáng
+            theo bước đang chạy. Tấm hình trả lời "hệ thống làm những gì", lưới
+            trả lời "hôm nay đang ở đâu" — hai câu hỏi khác nhau.
+
+            `width`/`height` khai đúng kích thước thật (1536×1024) để trang
+            không nhảy khi hình tải xong. Hình 1,6 MB nên `loading="lazy"`.
+          -->
+          <figure class="epl-so-do-tong-quan" id="sec-so-do-tong-quan">
+            <figcaption class="epl-so-do-dau">
+              <i class="fa-solid fa-sitemap"></i>
+              <b data-i18n="dashboard_flow_title">SƠ ĐỒ BỨC TRANH TỔNG QUAN LOGISTICS EPL</b>
+            </figcaption>
+            <img src="/static/img/so-do-tong-quan-epl.png"
+                 width="1536" height="1024" loading="lazy" decoding="async"
+                 alt="Sơ đồ luồng đầu-cuối của EPL Logistics: tám nhóm chức năng, từ CRM và báo giá cước, lập kế hoạch và giá thành, lệnh giao hàng và chứng từ, điều phối và thực thi, chặng về, hoàn tất và quyết toán, kế toán, tới báo cáo và phân tích.">
+            <figcaption>
+              Tám nhóm chức năng, từ báo giá cước tới hạch toán. Về đây bất cứ lúc
+              nào bằng <b>Báo cáo và khác → Sơ đồ luồng A–Z</b> trên dải điều hướng.
+            </figcaption>
+          </figure>
 
           <!-- Big Overview Process Diagram Banner -->
           <div class="card-panel" id="sec-flow-diagram" style="margin-bottom: 24px; background: #ffffff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 16px rgba(15,23,42,0.06); border: 1px solid #e2e8f0;">
@@ -4784,7 +4806,22 @@
               </div>
             </div>
 
-            <div id="ops-planning-folder-do" class="ops-planning-folder-panel" style="display:none;">
+            <!--
+              MỞ SẴN, không để `display:none`.
+
+              Đây là khối DUY NHẤT còn lại trong dải thẻ phía trên: thẻ "trip"
+              không mở khối nào cả mà chuyển sang màn Giao hàng & vận chuyển. Để
+              nó đóng sẵn thì vào màn này chỉ thấy đúng một cái thẻ và bên dưới
+              trắng trơn — phải bấm vào thẻ mới hiện bảng DO, mà không có gì nói
+              là phải bấm.
+
+              Đúng chuyện đã xảy ra: lần thiết kế lại màn này (735bffe) đổi
+              `display:block` thành `display:none` mà không có ai gọi
+              `switchOpsPlanningFolder('do')` lúc vào màn, nên bảng DO bị ẩn kể
+              từ đó. Bài kiểm `khung-ba-tang` nay dò tổ tiên của mọi bảng chính
+              để không lặp lại.
+            -->
+            <div id="ops-planning-folder-do" class="ops-planning-folder-panel" style="display:block;">
             <!--
               Màn lập kế hoạch giao hàng — bản 3.
 
@@ -7888,7 +7925,10 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908a-mot-duong-tao-trip"></script>
+  <script src="/static/js/app.js?v=20260908b-khung-ba-tang"></script>
+  <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
+       đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
+  <script src="/static/js/khung-moi.js?v=20260908b-so-do-tong-quan"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

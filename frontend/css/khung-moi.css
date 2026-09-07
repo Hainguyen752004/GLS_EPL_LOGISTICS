@@ -1,0 +1,473 @@
+/* ==========================================================================
+   KHUNG TỔNG THỂ — điều hướng trên, ba tầng.
+
+   Vì sao có tệp riêng: khung cũ (`.samsung-header` + dải dọc bên trái) nằm lẫn
+   trong `styles.css` 70 KB cùng với hàng trăm quy tắc của từng màn. Đặt khung
+   mới ra tệp riêng và nạp SAU thì không phải gỡ mìn trong đó, và sau này muốn
+   xem khung gồm những gì thì đọc đúng một tệp.
+
+   Mọi lớp và biến ở đây đều mang tiền tố `epl-` / `--epl-` — cố ý. Dự án đã có
+   `.card`, `.tag`, `.primary`, `.ghost`, `.field`, `.form` dùng cho các màn;
+   lấy đúng tên đó cho khung là để hai bên đá nhau, và cái đá nhau ấy chỉ lộ ra
+   ở một màn nào đó chứ không lộ ngay.
+   ========================================================================== */
+
+:root {
+  /* Nền và nét */
+  --epl-bg: #f6f8fb;
+  --epl-line: #e4e9f0;
+  --epl-line-2: #cbd5e1;
+  /* Chữ: ba mức đậm nhạt, dùng đúng mức chứ không pha màu mới */
+  --epl-ink: #1e293b;
+  --epl-ink-2: #475569;
+  --epl-ink-3: #7b8796;
+  /* Màu nhấn */
+  --epl-blue: #1a73e8;
+  --epl-blue-2: #e9f1fd;
+  --epl-blue-3: #0b4faa;
+  /* Màu trạng thái — dành riêng cho trạng thái, không dùng làm màu nhấn */
+  --epl-red: #d32f2f;
+  --epl-red-2: #fdecec;
+  --epl-amber: #b45309;
+  --epl-amber-2: #fff4e0;
+  --epl-green: #15803d;
+  --epl-green-2: #e7f6ec;
+  --epl-purple: #7c3aed;
+  --epl-purple-2: #efe9fd;
+  /* Dải thương hiệu tầng 1 */
+  --epl-nav: #0f1c2e;
+  --epl-nav-2: #1a2b45;
+  --epl-nav-line: #2e4260;
+  --epl-nav-ink: #b3c0d1;
+  /* Chiều cao ba tầng — dùng lại ở nhiều nơi nên đặt tên */
+  --epl-h-bar1: 52px;
+  --epl-h-bar2: 48px;
+}
+
+/* ===== TẦNG 1: thương hiệu và việc toàn cục ===== */
+.epl-bar1 {
+  background: var(--epl-nav);
+  color: #fff;
+  height: var(--epl-h-bar1);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  font: 13.5px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.epl-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  color: inherit;
+  padding: 0;
+}
+.epl-brand .epl-lg {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--epl-blue);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+
+.epl-scope {
+  display: flex;
+  gap: 6px;
+  margin-left: 6px;
+}
+.epl-scope select {
+  height: 32px;
+  border: 1px solid var(--epl-nav-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--epl-nav-2);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: #fff;
+  font-family: inherit;
+}
+
+.epl-gsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--epl-nav-line);
+  border-radius: 9px;
+  color: #8898ae;
+  flex: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  font-size: 12.5px;
+  background: var(--epl-nav-2);
+  position: relative;
+}
+.epl-gsearch:focus-within {
+  border-color: var(--epl-blue);
+  background: #20334f;
+}
+.epl-gsearch input {
+  border: 0;
+  outline: 0;
+  flex: 1;
+  font-size: 13px;
+  color: #fff;
+  background: none;
+  font-family: inherit;
+  min-width: 0;
+}
+.epl-gsearch input::placeholder { color: #8898ae; }
+.epl-gsearch kbd {
+  font: 11px Inter, system-ui, sans-serif;
+  border: 1px solid var(--epl-nav-line);
+  border-radius: 4px;
+  padding: 0 5px;
+  color: #8898ae;
+}
+
+/* Bảng kết quả tìm nhanh — treo dưới ô tìm, không đẩy dải */
+.epl-gres {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--epl-line);
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(15, 28, 46, .2);
+  padding: 6px;
+  z-index: 1100;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.epl-gres .epl-gr {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  color: var(--epl-ink);
+}
+.epl-gres .epl-gr:hover,
+.epl-gres .epl-gr.epl-on { background: var(--epl-blue-2); }
+.epl-gres .epl-gr i {
+  font-style: normal;
+  text-align: center;
+  color: var(--epl-ink-3);
+}
+.epl-gres .epl-gr b { display: block; font-size: 13px; font-weight: 600; }
+.epl-gres .epl-gr span { display: block; font-size: 11.5px; color: var(--epl-ink-3); }
+.epl-gres .epl-gempty {
+  padding: 12px 10px;
+  font-size: 12.5px;
+  color: var(--epl-ink-3);
+}
+
+.epl-ic {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--epl-nav-line);
+  border-radius: 9px;
+  background: var(--epl-nav-2);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  position: relative;
+  color: #dfe6ef;
+  flex: none;
+}
+.epl-ic:hover { background: #24395a; }
+.epl-ic .epl-dot {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--epl-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0 5px;
+  line-height: 16px;
+}
+
+.epl-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--epl-nav-line);
+  border-radius: 9px;
+  background: var(--epl-nav-2);
+  color: #dfe6ef;
+  font-size: 13px;
+  flex: none;
+}
+.epl-lang select {
+  border: 0;
+  outline: 0;
+  background: none;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.epl-lang select option { color: #000; }
+
+.epl-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  padding-left: 6px;
+  white-space: nowrap;
+}
+.epl-me .epl-av {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--epl-blue-2);
+  color: var(--epl-blue-3);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 11px;
+}
+.epl-me b { display: block; font-weight: 600; }
+.epl-me span { display: block; color: var(--epl-nav-ink); font-size: 11px; }
+
+/* ===== TẦNG 2: điều hướng theo công việc ===== */
+.epl-bar2 {
+  background: #fff;
+  border-bottom: 1px solid var(--epl-line);
+  height: var(--epl-h-bar2);
+  display: flex;
+  align-items: stretch;
+  padding: 0 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  gap: 2px;
+  font: 13.5px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.epl-nb {
+  border: 0;
+  background: none;
+  padding: 0 14px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--epl-ink-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.epl-nb:hover { color: var(--epl-blue); background: #f8fafc; }
+.epl-nb.epl-on { color: var(--epl-blue-3); border-bottom-color: var(--epl-blue); }
+.epl-nb .epl-n {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: #eef2f7;
+  color: var(--epl-ink-2);
+}
+.epl-nb .epl-n.epl-r { background: var(--epl-red); color: #fff; }
+.epl-nb .epl-car { font-size: 9px; opacity: .6; }
+.epl-bar2 .epl-spacer { flex: 1; }
+
+/* Bảng chọn thả xuống */
+.epl-menu {
+  position: absolute;
+  top: var(--epl-h-bar2);
+  background: #fff;
+  border: 1px solid var(--epl-line);
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(15, 28, 46, .16);
+  padding: 6px;
+  z-index: 1030;
+  min-width: 320px;
+  display: none;
+}
+.epl-menu.epl-show { display: block; }
+.epl-menu .epl-mi {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  color: var(--epl-ink);
+}
+.epl-menu .epl-mi:hover { background: #f6f8fb; }
+.epl-menu .epl-mi.epl-on { background: var(--epl-blue-2); }
+.epl-menu .epl-mi i {
+  font-style: normal;
+  text-align: center;
+  font-size: 14px;
+  color: var(--epl-ink-3);
+}
+.epl-menu .epl-mi.epl-on i { color: var(--epl-blue-3); }
+.epl-menu .epl-mi b { display: block; font-size: 13px; font-weight: 600; }
+.epl-menu .epl-mi span { display: block; font-size: 11.5px; color: var(--epl-ink-3); }
+.epl-menu .epl-sep { height: 1px; background: var(--epl-line); margin: 5px 8px; }
+.epl-menu .epl-hd {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--epl-ink-3);
+  padding: 8px 10px 3px;
+  letter-spacing: .4px;
+}
+.epl-menu .epl-tag {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  padding: 2px 7px;
+  background: #eef2f7;
+  color: var(--epl-ink-2);
+  white-space: nowrap;
+}
+.epl-menu .epl-tag.epl-t-red { background: var(--epl-red-2); color: var(--epl-red); }
+.epl-menu .epl-tag.epl-t-amber { background: var(--epl-amber-2); color: var(--epl-amber); }
+.epl-menu .epl-tag.epl-t-green { background: var(--epl-green-2); color: var(--epl-green); }
+
+/* ===== TẦNG 3: đầu trang của màn đang mở ===== */
+.epl-sub {
+  background: #fff;
+  border-bottom: 1px solid var(--epl-line);
+  padding: 12px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font: 13.5px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--epl-ink);
+}
+.epl-sub .epl-crumb {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--epl-ink-3);
+  margin-bottom: 2px;
+}
+.epl-sub h1 { margin: 0; font-size: 19px; font-weight: 700; text-wrap: balance; }
+.epl-sub p { margin: 3px 0 0; color: var(--epl-ink-3); font-size: 12.5px; max-width: 78ch; }
+.epl-subacts { display: flex; gap: 8px; align-items: center; }
+.epl-btn-primary {
+  height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--epl-blue);
+  color: #fff;
+  font-weight: 700;
+  padding: 0 15px;
+  font-size: 13px;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.epl-btn-primary:hover { background: var(--epl-blue-3); }
+.epl-btn-ghost {
+  height: 36px;
+  border: 1px solid var(--epl-line-2);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--epl-ink-2);
+  font-weight: 600;
+  padding: 0 13px;
+  font-size: 13px;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.epl-btn-ghost:hover { border-color: var(--epl-blue); color: var(--epl-blue); }
+
+/* ===== Khung ngoài ===== */
+.epl-shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--epl-bg); }
+
+/* Dải dọc bên trái đã bỏ, nên phần đệm 104px chừa cho nó cũng phải bỏ —
+   không thì mọi màn thụt vào một khoảng trắng không còn gì trong đó. */
+.samsung-main-wrapper { padding: 0 16px 16px 16px; }
+
+/* ===== Sơ đồ tổng quan trên Bảng điều khiển ===== */
+
+.epl-so-do-tong-quan {
+  margin: 0 0 20px;
+  border: 1px solid var(--epl-line);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* Sơ đồ rộng 1536px và chữ trong đó nhỏ. Màn rộng thì để nó co theo khung.
+   Màn hẹp thì thu cả tấm cho vừa là không đọc được chữ nào, nên GIỮ nó ở
+   1180px và cho CUỘN NGANG trong đúng khung của nó — cuộn trong khung chứ
+   không để nó đẩy cả trang trượt ngang. */
+.epl-so-do-tong-quan img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 1000px) {
+  .epl-so-do-tong-quan { overflow-x: auto; }
+  .epl-so-do-tong-quan img { width: 1180px; }
+}
+
+.epl-so-do-tong-quan figcaption {
+  padding: 10px 14px;
+  border-top: 1px solid var(--epl-line);
+  font-size: 12.5px;
+  color: var(--epl-ink-2);
+  background: #fafbfd;
+}
+
+/* Dòng tiêu đề nằm TRÊN hình nên không có nét trên; nét của nó là nét dưới. */
+.epl-so-do-tong-quan .epl-so-do-dau {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-top: 0;
+  border-bottom: 1px solid var(--epl-line);
+  background: #fff;
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--epl-blue-3);
+}
+.epl-so-do-tong-quan .epl-so-do-dau i { font-size: 15px; }
+.epl-so-do-tong-quan .epl-so-do-dau b { font-weight: 700; letter-spacing: .2px; }
+
+/* Ô đầu trang phải hiện được ngay cả khi bàn phím tab tới */
+.epl-nb:focus-visible,
+.epl-ic:focus-visible,
+.epl-btn-primary:focus-visible,
+.epl-btn-ghost:focus-visible,
+.epl-menu .epl-mi:focus-visible {
+  outline: 2px solid var(--epl-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .epl-scope, .epl-me div { display: none; }
+  .epl-gsearch { max-width: none; }
+}
+@media (max-width: 860px) {
+  .epl-bar1 { padding: 0 12px; gap: 8px; }
+  .epl-bar2 { overflow-x: auto; }
+  .epl-sub { padding: 10px 14px; }
+}
