@@ -3739,16 +3739,6 @@
     "en": "Save Trip/Leg",
     "la": "ບັນທຶກ Trip/ໄລຍະທາງ"
   },
-  "title_delivery_shipment": {
-    "vi": "Giao hàng & vận chuyển",
-    "en": "Delivery & Transportation",
-    "la": "ການຈັດສົ່ງ & ການຂົນສົ່ງ"
-  },
-  "sub_delivery_shipment": {
-    "vi": "Theo dõi chuyến đang chạy. POD / Chứng từ nằm trong chi tiết từng DO.",
-    "en": "Track active trips. POD / Documents reside inside each DO details.",
-    "la": "ຕິດຕາມຖ້ຽວລົດທີ່ກຳລັງແລ່ນ. POD / ເອກະສານຢູ່ໃນລາຍລະອຽດຂອງແຕ່ລະ DO."
-  },
   "btn_create_trip": {
     "vi": "+ Tạo Trip",
     "en": "+ New Trip",
@@ -3798,16 +3788,6 @@
     "vi": "Chọn một Trip để xem chặng, ETA và POD theo từng DO.",
     "en": "Select a trip to view legs, ETA and POD per DO.",
     "la": "ເລືອກ Trip ເພື່ອເບິ່ງໄລຍະທາງ, ETA ແລະ POD ຕາມແຕ່ລະ DO."
-  },
-  "title_dispatch_header": {
-    "vi": "Điều phối chuyến",
-    "en": "Trip Dispatch",
-    "la": "ການຈັດສົ່ງແລະປະຕິບັດງານ"
-  },
-  "sub_dispatch_header": {
-    "vi": "Gán xe, tài xế và xử lý xung đột trước khi xuất bến.",
-    "en": "Assign vehicles, drivers and resolve conflicts before departure.",
-    "la": "ມອບໝາຍລົດ, ຄົນຂັບ ແລະ ກວດສອບກ່ອນອອກເດີນທາງ."
   },
   "title_dispatch_toolbar": {
     "vi": "Không gian điều phối trong ngày",

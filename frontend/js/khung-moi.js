@@ -55,18 +55,24 @@
   /**
    * Nút chính của từng màn: [chữ, kiểu, tên hàm, đối số nếu có].
    *
-   * CHỈ khai ở màn đã tra được hàm CÓ THẬT và gọi được với đúng số đối số đó;
-   * trước khi vẽ nút còn kiểm `typeof` một lần nữa. Màn không có tên trong bảng
-   * thì không có nút, và như thế là đúng: một nút "+ Tạo gì đó" bấm vào không ra
-   * gì làm người dùng mất tin cả những nút chạy thật.
+   * HAI chốt khi thêm vào bảng này:
+   *
+   *   1. Hàm phải CÓ THẬT và gọi được với đúng số đối số đó — trước khi vẽ nút
+   *      còn kiểm `typeof` một lần nữa. Một nút "+ Tạo gì đó" bấm vào không ra
+   *      gì làm người dùng mất tin cả những nút chạy thật.
+   *   2. Việc đó phải CHƯA có nút nào trong màn. Bảng này thoạt đầu khai sáu
+   *      nút, tra lại thì bốn cái trùng với nút đã có sẵn ngay trong màn:
+   *      `openTripReturnAction` đã có nút ở cả Giao hàng và Điều phối,
+   *      `openIncidentModal` và `openPODFormForSelectedDO` đã có ở Theo dõi,
+   *      `openOracleQTForm` đã có ở CRM. Hai nút cho cùng một việc thì người
+   *      dùng phải đoán chúng có khác nhau không, và khi một bên đổi thì bên
+   *      kia lặng lẽ lệch.
+   *
+   * Nên bảng chỉ còn hai nút, là hai việc chưa có chỗ nào bấm được.
    */
   const NUT_DAU_TRANG = {
     'ops-planning': [['+ Tạo lệnh giao hàng', 'primary', 'openFioriDOForm']],
-    'delivery-shipment': [['+ Tạo Trip vận chuyển', 'primary', 'openTripReturnAction', 'create-trip']],
-    'tracking': [['⚠ Báo sự cố', 'primary', 'openIncidentModal']],
-    'delivery-completion': [['Ghi POD cho DO đang chọn', 'primary', 'openPODFormForSelectedDO']],
-    'crm-sales': [['+ Báo giá cước', 'ghost', 'openOracleQTForm'],
-                  ['+ Đơn hàng vận chuyển', 'primary', 'openOracleSOForm']],
+    'crm-sales': [['+ Đơn hàng vận chuyển', 'primary', 'openOracleSOForm']],
   };
 
   /* ----------------------------- Tầng 3: đầu trang ----------------------- */

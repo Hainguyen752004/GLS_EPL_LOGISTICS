@@ -404,6 +404,21 @@
    không thì mọi màn thụt vào một khoảng trắng không còn gì trong đó. */
 .samsung-main-wrapper { padding: 0 16px 16px 16px; }
 
+/* ===== Dải nút còn lại sau khi tầng 3 nhận tiêu đề =====
+
+   Bốn màn trước đây tự dựng một đầu trang riêng: icon + tiêu đề + phụ đề ở nửa
+   bên trái, dải nút ở nửa bên phải. Tầng 3 nay nói đúng phần bên trái đó, nên
+   phần ấy đã bỏ và khối chỉ còn dải nút. Không thu chiều cao lại thì nó thành
+   một thẻ trắng cao có hai cái nút lọt giữa. */
+
+.dispatch-workbench-header,
+.completion-page-header,
+.parking-header {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  min-height: 0;
+}
+
 /* ===== Sơ đồ tổng quan trên Bảng điều khiển ===== */
 
 .epl-so-do-tong-quan {

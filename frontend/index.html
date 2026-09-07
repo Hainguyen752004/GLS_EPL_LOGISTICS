@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260905-shipping-spec-v1">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908c-so-do-tong-quan">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908d-dai-nut-gon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -5173,10 +5173,6 @@
         <section id="view-parking-list" class="view-section" style="display:none;">
           <div class="parking-workspace">
             <header class="parking-header">
-              <div class="parking-title">
-                <div class="parking-title-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
-                <div><h2>Parking List &amp; Tem QR</h2><p>Sinh từ DO/SO, kiểm soát kiện hàng từ bãi chờ đến khi giao.</p></div>
-              </div>
               <div class="parking-actions">
                 <button type="button" class="fiori-btn fiori-btn-primary" onclick="openParkingCreateModal()"><i class="fa-solid fa-plus"></i> Tạo từ DO</button>
                 <button type="button" class="fiori-btn fiori-btn-secondary" onclick="reloadParkingLists()" title="Tải lại dữ liệu"><i class="fa-solid fa-rotate"></i> Làm mới</button>
@@ -5247,16 +5243,7 @@
         <!-- 4. DELIVERY & SHIPMENT -->
         <section id="view-delivery-shipment" class="view-section" style="background-color:#f8fafc; min-height:100vh; padding:16px;">
           <div id="delivery-workbench-shell" style="display:grid; gap:14px;">
-            <div id="delivery-cockpit-hero" style="background:#ffffff; border:1px solid #dbeafe; border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.05); padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-              <div style="display:flex; align-items:center; gap:14px; min-width:260px;">
-                <div style="width:46px; height:46px; border-radius:14px; background:#e8f3ff; color:#0a6ed1; display:grid; place-items:center; font-size:1.35rem;">
-                  <i class="fa-solid fa-truck-fast"></i>
-                </div>
-                <div>
-                  <h2 style="margin:0; color:#0f172a; font-size:1.35rem; font-weight:900;" data-i18n="title_delivery_shipment">Giao hàng & vận chuyển</h2>
-                  <div style="margin-top:4px; color:#64748b; font-size:.9rem; font-weight:700;" data-i18n="sub_delivery_shipment">Theo dõi chuyến đang chạy. POD / Chứng từ nằm trong chi tiết từng DO.</div>
-                </div>
-              </div>
+            <div id="delivery-cockpit-hero" style="background:#ffffff; border:1px solid #dbeafe; border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.05); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
               <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <button class="fiori-btn fiori-btn-primary" type="button" onclick="openTripReturnAction('create-trip')" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">Tạo Trip</span></button>
                 <button class="fiori-btn fiori-btn-secondary" onclick="switchView('dispatch')" style="white-space:nowrap;"><i class="fa-solid fa-truck-ramp-box"></i> <span data-i18n="btn_to_dispatch">Qua điều phối</span></button>
@@ -5337,15 +5324,6 @@
         <!-- 5. DISPATCH & EXECUTION VIEW -->
         <section id="view-dispatch" class="view-section dispatch-cockpit-surface" style="background-color: #f8fafc; min-height: 100vh;">
           <div id="dispatch-workbench-header" class="dispatch-workbench-header">
-            <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-              <div style="width:42px; height:42px; border-radius:8px; background:#eaf4ff; color:#0a6ed1; display:grid; place-items:center; flex:0 0 auto;">
-                <i class="fa-solid fa-truck-ramp-box"></i>
-              </div>
-              <div style="min-width:0;">
-                <h2 style="margin:0; color:#0f172a; font-size:1.25rem; font-weight:900;" data-i18n="title_dispatch_header">Điều phối chuyến</h2>
-                <div style="margin-top:3px; color:#64748b; font-size:.84rem; font-weight:700;" data-i18n="sub_dispatch_header">Gán xe, tài xế và xử lý xung đột trước khi xuất bến.</div>
-              </div>
-            </div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
               <button class="fiori-btn fiori-btn-primary" type="button" onclick="openTripReturnAction('create-trip')" style="white-space:nowrap;">
                 <i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">+ Tạo Trip</span>
@@ -5486,7 +5464,7 @@
 
         <section id="view-delivery-completion" class="view-section delivery-completion-view">
           <header class="completion-page-header">
-            <div><h2><i class="fa-solid fa-clipboard-check"></i> Hoàn tất giao hàng</h2><p>Nộp POD, ghi nhận khoản khách hàng trả thêm và chốt giá cuối của DO.</p></div>
+            
             <button type="button" class="fiori-btn fiori-btn-secondary" onclick="loadDeliveryCompletionWorkbench()"><i class="fa-solid fa-rotate"></i> Tải lại</button>
           </header>
           <div class="completion-tabs" role="tablist">
@@ -7928,7 +7906,7 @@
   <script src="/static/js/app.js?v=20260908b-khung-ba-tang"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260908b-so-do-tong-quan"></script>
+  <script src="/static/js/khung-moi.js?v=20260908c-bo-dau-trang-trung"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

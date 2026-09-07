@@ -137,7 +137,19 @@ for (const dauVet of ['samsung-header', 'samsung-nav', 'nav-item-ss', 'mega-menu
         `nút "${chu}" ở màn ${man} gọi ${ten}() — không có hàm đó trong app.js`);
     });
   });
-  assert.ok(soNut >= 6, `chỉ có ${soNut} nút đầu trang`);
+  assert.ok(soNut >= 1, `không có nút đầu trang nào`);
+
+  // Nút đầu trang KHÔNG được trùng việc với nút đã có sẵn trong màn. Hai nút
+  // cho cùng một việc thì người dùng phải đoán chúng có khác nhau không, và khi
+  // một bên đổi thì bên kia lặng lẽ lệch. Bảng này thoạt đầu khai sáu nút, tra
+  // lại thì bốn cái trùng — nên phép kiểm phải tra, không tin bảng.
+  Object.entries(bang).forEach(([man, ds]) => {
+    ds.forEach(([chu, , ten]) => {
+      const daCo = (html.match(new RegExp(`onclick="${ten}\\(`, 'g')) || []).length;
+      assert.strictEqual(daCo, 0,
+        `nút "${chu}" ở đầu trang gọi ${ten}(), mà trong màn đã có ${daCo} nút gọi đúng hàm đó`);
+    });
+  });
 
   // Và mỗi màn trong bảng nút phải có tên trong bảng đầu trang, không thì nút
   // hiện ra dưới một tiêu đề trống.
@@ -295,17 +307,16 @@ async function kiemKhiTrangSan() {
   {
     w.switchView('crm-sales');
     const ds = [...d.getElementById('epl-subacts').children];
-    assert.strictEqual(ds.length, 2, `màn CRM phải có 2 nút, thấy ${ds.length}`);
-    assert.ok(ds[0].className.includes('epl-btn-ghost'));
-    assert.ok(ds[1].className.includes('epl-btn-primary'));
+    assert.strictEqual(ds.length, 1, `màn CRM phải có 1 nút, thấy ${ds.length}`);
+    assert.ok(ds[0].className.includes('epl-btn-primary'));
 
     let daGoi = 0;
-    const cu = w.openOracleQTForm;
-    w.openOracleQTForm = () => { daGoi += 1; };
+    const cu = w.openOracleSOForm;
+    w.openOracleSOForm = () => { daGoi += 1; };
     w.switchView('dashboard');
     w.switchView('crm-sales');
     bam([...d.getElementById('epl-subacts').children][0]);
-    w.openOracleQTForm = cu;
+    w.openOracleSOForm = cu;
     assert.strictEqual(daGoi, 1, 'nút đầu trang bấm vào không gọi hàm');
 
     // Màn không khai nút thì phải TRỐNG, không giữ lại nút của màn trước.
