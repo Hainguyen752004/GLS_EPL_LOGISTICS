@@ -689,6 +689,9 @@ function initNavigation() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Dời hộp thoại toàn màn ra ngoài khung màn TRƯỚC khi người dùng bấm được
+  // gì — nếu để muộn hơn thì lần bấm đầu tiên vẫn không hiện.
+  duaHopThoaiRaNgoaiKhungMan();
   initNavigation();
   initAIDrawer();
   if (typeof installEnterpriseModuleTabs === 'function') installEnterpriseModuleTabs();
@@ -782,6 +785,49 @@ window.updateActiveFlowStep = function (stepNum, showToastMsg = false) {
   }
 };
 
+/* ==========================================================================
+   Hộp thoại toàn màn phải nằm NGOÀI mọi khung màn.
+
+   `switchView` đặt `display:none` cho mọi khung màn không hoạt động. Một
+   phần tử `position: fixed` nằm trong tổ tiên `display:none` thì KHÔNG được
+   vẽ ra — dù chính nó đã `display:flex`. Nên bất kỳ nút nào ở màn A mở hộp
+   thoại nằm trong màn B đều "bấm không ăn gì": hàm chạy đúng, hộp thoại mở
+   đúng, mà người dùng không thấy gì cả.
+
+   Đó chính là nút "Xem DO" ở màn Hoàn tất giao — nó gọi `editFioriDO`, mà
+   `#fiori-do-form` lại nằm trong `#view-ops-planning`.
+
+   Quét cả trang thì CHÍN hộp thoại đều bị giam như vậy. Dời chúng ra
+   `<body>` bằng JS lúc nạp trang, thay vì cắt dán trong 570 KB HTML: cách
+   này giữ nguyên mọi id, mọi `onclick` viết thẳng trong thẻ, và mọi luật
+   CSS. Đã kiểm trước hai điều kiện an toàn — không luật CSS nào neo chúng
+   qua tổ tiên là khung màn, và không selector nào trong JS phạm vi theo
+   `#view-*`.
+   ========================================================================== */
+
+const HOP_THOAI_TOAN_MAN = [
+  'oracle-qt-form',        // Báo giá cước — trong #view-crm-sales
+  'oracle-so-form',        // Đơn vận chuyển — trong #view-crm-sales
+  'route-detail-modal',    // Sơ đồ lộ trình — trong #view-ops-planning
+  'fiori-do-form',         // Lệnh giao hàng — trong #view-ops-planning
+  'incident-form-panel',   // Báo sự cố — trong #view-tracking
+  'veh-type-form-panel',   // Loại xe — trong #view-master-data
+  'fiori-object-page',     // Phương tiện — trong #view-master-data
+  'driver-modal-dialog',   // Tài xế — trong #view-master-data
+  'customer-form-modal',   // Khách hàng — trong #view-master-data
+];
+
+function duaHopThoaiRaNgoaiKhungMan() {
+  const daDoi = [];
+  HOP_THOAI_TOAN_MAN.forEach(ma => {
+    const el = document.getElementById(ma);
+    if (!el) return;
+    if (!el.closest('.view-section')) return;   // đã ở ngoài rồi
+    document.body.appendChild(el);
+    daDoi.push(ma);
+  });
+  return daDoi;
+}
 window.switchView = function (targetView, scrollToId) {
   if (!targetView) return;
   const viewAliases = {

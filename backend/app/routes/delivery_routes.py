@@ -233,12 +233,46 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
     formula_row = _select_closeout_formula(
         db, delivery_order, sales_order.currency_code if sales_order else None
     )
-    if sales_order and delivery_order.vehicle_id and formula_row is None:
+    # Chỉ đòi công thức khi còn phải TÍNH giá thành. DO đã giao xong thì hồ
+    # sơ đã chốt, màn "Đã hoàn tất" chỉ xem lại — đòi công thức ở đó là chặn
+    # một việc không cần đến nó, và hậu quả là không xem được hồ sơ của một
+    # chuyến đã giao.
+    con_phai_tinh = str(delivery_order.canonical_status or "").lower() not in (
+        "delivered", "completed", "cancelled")
+    if sales_order and delivery_order.vehicle_id and formula_row is None and con_phai_tinh:
+        # Nói ĐÚNG cái đang thiếu. Xe chưa được gán loại xe thì có tạo bao
+        # nhiêu công thức cũng không khớp được — mà lời báo cũ lại chỉ người
+        # dùng đi tạo công thức, tức chỉ họ sửa đúng thứ không hỏng.
+        vehicle = db.get(Vehicle, delivery_order.vehicle_id)
+        if vehicle is None:
+            raise HTTPException(status_code=409, detail={
+                "code": "VEHICLE_NOT_FOUND",
+                "message": f"Không tìm thấy phương tiện {delivery_order.vehicle_id} trong Dữ liệu gốc.",
+                "vehicle_id": delivery_order.vehicle_id,
+                "navigation_targets": ["master-data/vehicles"],
+            })
+        if not str(vehicle.type or "").strip():
+            raise HTTPException(status_code=409, detail={
+                "code": "VEHICLE_TYPE_REQUIRED",
+                "message": (
+                    f"Phương tiện {vehicle.id} chưa được gán loại xe, nên không tra được"
+                    " công thức giá thành. Hãy mở Dữ liệu gốc → Phương tiện và chọn loại xe"
+                    " cho xe này trước."
+                ),
+                "vehicle_id": vehicle.id,
+                "navigation_targets": ["master-data/vehicles"],
+            })
         raise HTTPException(status_code=409, detail={
             "code": "COST_FORMULA_REQUIRED",
-            "message": f"Chưa cấu hình giá thành {sales_order.currency_code} cho loại xe của {delivery_order.vehicle_id}.",
-            "vehicle_id": delivery_order.vehicle_id,
+            "message": (
+                f"Chưa cấu hình giá thành {sales_order.currency_code} cho loại xe"
+                f" \"{vehicle.type}\" (xe {vehicle.id}). Hãy mở Dữ liệu gốc → Công thức"
+                " giá thành và thêm công thức cho loại xe này."
+            ),
+            "vehicle_id": vehicle.id,
+            "vehicle_type": vehicle.type,
             "currency": sales_order.currency_code,
+            "navigation_targets": ["master-data/vehicle-types", "master-data/vehicles"],
         })
     formula = _serialize_closeout_formula(formula_row)
     configured_cost_lines = _configured_delivery_cost_lines(formula, delivery_order, route)
