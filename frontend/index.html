@@ -2312,6 +2312,68 @@
         grid-template-columns: minmax(0, 1fr) !important;
       }
     }
+            /* ---- Gợi ý cấu hình: dải một dòng + khối gấp ---- */
+            .md-guide-bar {
+              display: flex; align-items: center; gap: 10px;
+              flex-wrap: wrap;
+              background: #ffffff; border: 1px solid #dbeafe;
+              border-radius: 12px; padding: 9px 14px; margin-bottom: 14px;
+              box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
+            }
+            .md-guide-icon { color: #0a6ed1; font-size: .9rem; }
+            .md-guide-bar > b {
+              font-size: .92rem; font-weight: 700; color: #0f172a;
+              white-space: nowrap;
+            }
+            .md-guide-bar-right {
+              margin-left: auto; display: flex; align-items: center; gap: 8px;
+              flex-wrap: wrap;
+            }
+            .md-guide-bar-right .fiori-btn { height: 34px; padding: 0 13px; }
+
+            /* Viên số liệu: xanh khi đã có dữ liệu, cam khi còn thiếu. */
+            .md-guide-pill {
+              display: inline-flex; align-items: center; gap: 6px;
+              border-radius: 999px; padding: 3px 11px;
+              font-size: .78rem; font-weight: 600; white-space: nowrap;
+            }
+            .md-guide-pill b { font-weight: 700; }
+            .md-guide-pill-ok { background: #f0fdf4; color: #047857; }
+            .md-guide-pill-thieu { background: #fff7ed; color: #c2410c; }
+
+            .md-guide-toggle {
+              position: relative; flex: none;
+              width: 34px; height: 34px; border-radius: 50%;
+              border: 1px solid #cbd5e1; background: #ffffff;
+              color: #475569; cursor: pointer;
+              display: grid; place-items: center; font-size: .86rem;
+            }
+            .md-guide-toggle:hover { border-color: #94a3b8; color: #0f172a; }
+            .md-guide-toggle[aria-expanded="true"] {
+              background: #0a6ed1; border-color: #0a6ed1; color: #ffffff;
+            }
+            /* Dấu đỏ: còn danh mục chưa có dữ liệu nào. Không có việc thì
+               không có dấu — một dấu đỏ thường trực thì chẳng còn nghĩa gì. */
+            .md-guide-dot {
+              position: absolute; top: -1px; right: -1px;
+              width: 9px; height: 9px; border-radius: 50%;
+              background: #ef4444; border: 1.5px solid #ffffff;
+            }
+
+            .md-guide-panel {
+              background: #f8fafc; border: 1px solid #e2e8f0;
+              border-radius: 12px; padding: 13px 15px; margin: -6px 0 14px;
+            }
+            .md-guide-panel > p {
+              margin: 0 0 10px; color: #475569;
+              font-size: .83rem; line-height: 1.55;
+            }
+            .md-guide-panel #master-data-next-actions {
+              display: flex; gap: 8px; flex-wrap: wrap;
+            }
+            @media (max-width: 900px) {
+              .md-guide-bar-right { margin-left: 0; width: 100%; }
+            }
   </style>
   <style>
     .vehicle-dialog-shell {
@@ -5903,8 +5965,49 @@
           </div>
           </div>
 
-          <div id="master-data-command-center" style="display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:18px; align-items:start;">
+          <div id="master-data-command-center">
             <main id="master-data-core-panel" style="min-width:0;">
+          <!--
+            Gợi ý cấu hình — bản gọn.
+
+            Bản trước là một cột `<aside>` rộng 300px, sticky, cao gần hết màn:
+            nhãn "GỢI Ý CẤU HÌNH", tiêu đề, một đoạn mô tả, một hộp "DỮ LIỆU
+            HIỆN CÓ" cao ba dòng, hai nút xếp dọc, rồi ba dòng gợi ý bước tiếp.
+            Nó chiếm một phần tư chiều rộng màn hình vĩnh viễn để nói ba con số.
+
+            Bản này chia theo mức độ CẦN:
+
+              · Thứ cần luôn — đang xem danh mục nào, có bao nhiêu dòng, và hai
+                nút hay bấm nhất — nằm trên MỘT dải một dòng, không phải bấm gì.
+              · Thứ chỉ cần lúc đầu — đoạn mô tả và ba dòng gợi ý bước tiếp —
+                gấp vào nút dấu hỏi. Bấm mở, bấm đóng, và nhớ lựa chọn đó cho
+                lần sau nên không phải bấm lại.
+
+            Bốn id `master-data-selected-title`, `-summary`, `-health-list`,
+            `-next-actions` giữ nguyên tên, nên `updateMasterDataGuidance` vẫn
+            là chỗ duy nhất dựng nội dung.
+          -->
+          <div class="md-guide-bar">
+            <i class="fa-solid fa-compass md-guide-icon"></i>
+            <b id="master-data-selected-title">Tuyến đường vận chuyển</b>
+            <span id="master-data-health-list"></span>
+            <div class="md-guide-bar-right">
+              <button type="button" class="fiori-btn" id="master-data-guide-add"></button>
+              <button type="button" class="fiori-btn fiori-btn-secondary" id="master-data-guide-reload"></button>
+              <button type="button" class="md-guide-toggle" id="master-data-guide-toggle"
+                      onclick="moGoiYCauHinh()" aria-expanded="false"
+                      aria-controls="master-data-guidance-panel"
+                      title="Xem gợi ý cấu hình">
+                <i class="fa-solid fa-circle-question"></i>
+                <span class="md-guide-dot" id="master-data-guide-dot" hidden></span>
+              </button>
+            </div>
+          </div>
+          <div id="master-data-guidance-panel" class="md-guide-panel" hidden>
+            <p id="master-data-selected-summary"></p>
+            <div id="master-data-next-actions"></div>
+          </div>
+
 
           <!-- TAB 0: SETUP A-Z WIZARD -->
           <div id="md-tab-setup" class="md-tab-content" style="display: none;">
@@ -6923,15 +7026,6 @@
 
             </main>
 
-            <aside id="master-data-guidance-panel" style="position:sticky; top:92px; background:#ffffff; border:1px solid #dbeafe; border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(15,23,42,.06);">
-              <div style="font-size:.78rem; font-weight:900; color:#0a6ed1; text-transform:uppercase; letter-spacing:.04em;">
-                <i class="fa-solid fa-compass"></i> <span data-i18n="lbl_sidebar_guidance">GỢI Ý CẤU HÌNH</span>
-              </div>
-              <h3 id="master-data-selected-title" style="margin:8px 0 6px; color:#0f172a; font-size:1.05rem;">Tuyến đường vận chuyển</h3>
-              <p id="master-data-selected-summary" style="margin:0; color:#64748b; font-size:.84rem; line-height:1.5;">Chọn danh mục bên trái để xem form chính, dữ liệu còn thiếu và bước nghiệp vụ bị ảnh hưởng.</p>
-              <div id="master-data-health-list" style="display:grid; gap:8px; margin-top:14px;"></div>
-              <div id="master-data-next-actions" style="display:grid; gap:8px; margin-top:14px;"></div>
-            </aside>
           </div>
 
           <div id="finance-master-config-modal" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(15,23,42,.55); align-items:center; justify-content:center; padding:20px;">
@@ -7628,7 +7722,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260907j-hop-thoai-ra-body"></script>
+  <script src="/static/js/app.js?v=20260907k-goi-y-gon"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

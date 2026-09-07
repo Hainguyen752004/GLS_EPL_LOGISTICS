@@ -692,6 +692,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Dời hộp thoại toàn màn ra ngoài khung màn TRƯỚC khi người dùng bấm được
   // gì — nếu để muộn hơn thì lần bấm đầu tiên vẫn không hiện.
   duaHopThoaiRaNgoaiKhungMan();
+  apDungTrangThaiGoiY();
   initNavigation();
   initAIDrawer();
   if (typeof installEnterpriseModuleTabs === 'function') installEnterpriseModuleTabs();
@@ -11385,30 +11386,86 @@ window.updateMasterDataGuidance = function (tabId = 'md-tab-routes') {
   const btnReload = lang === 'la' ? '<i class="fa-solid fa-rotate"></i> ໂຫຼດຂໍ້ມູນ CSDL ຄືນໃໝ່' : lang === 'en' ? '<i class="fa-solid fa-rotate"></i> Reload DB Data' : '<i class="fa-solid fa-rotate"></i> Tải lại dữ liệu CSDL';
 
   if (healthEl) {
-    healthEl.innerHTML = `
-      <div style="border:1px solid ${rows ? '#bbf7d0' : '#fed7aa'}; background:${rows ? '#f0fdf4' : '#fff7ed'}; border-radius:12px; padding:10px;">
-        <div style="font-size:.72rem; color:#64748b; font-weight:900; text-transform:uppercase;">${dataHeader}</div>
-        <div style="font-size:1.35rem; font-weight:950; color:${rows ? '#047857' : '#c2410c'}; margin-top:2px;">${rows} ${gDataLabel}</div>
-        <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${rows ? readyMsg : missMsg}</div>
-      </div>
-    `;
+    // Mot VIEN gon tren dai, khong con hop ba dong cao 90px. Con so va mau
+    // la phan mang tin; `dataHeader` ("DU LIEU HIEN CO") chi la nhan mo ta
+    // chinh no, nen bo di — cai viên nam ngay canh tieu de danh muc roi.
+    healthEl.className = "md-guide-pill " + (rows ? "md-guide-pill-ok" : "md-guide-pill-thieu");
+    healthEl.title = rows ? readyMsg : missMsg;
+    healthEl.innerHTML = `<i class="fa-solid fa-${rows ? "circle-check" : "circle-exclamation"}"></i><b>${rows}</b> ${gDataLabel}`;
+  }
+  // Dau do tren nut gap: chi bat khi danh muc nay CHUA co dong nao. Mot dau
+  // do thuong truc thi chang con nghia gi.
+  const oDau = document.getElementById("master-data-guide-dot");
+  if (oDau) oDau.hidden = rows > 0;
+  // Hai nut hay bam nhat len DAI — thay vi nam trong khoi gap, vi de trong
+  // do thi muon bam phai mo khoi ra truoc, tuc them mot lan bam cho mot viec
+  // lam thuong xuyen.
+  const oThem = document.getElementById("master-data-guide-add");
+  if (oThem) {
+    oThem.innerHTML = btnAdd;
+    oThem.onclick = () => openMasterDataPrimaryAction(tabId);
+  }
+  const oNapLai = document.getElementById("master-data-guide-reload");
+  if (oNapLai) {
+    oNapLai.innerHTML = btnReload;
+    oNapLai.onclick = () => {
+      loadAllData();
+      setTimeout(() => updateMasterDataGuidance(tabId), 250);
+    };
   }
   if (actionsEl) {
-    actionsEl.innerHTML = `
-      <button class="fiori-btn" onclick="openMasterDataPrimaryAction('${tabId}')" style="justify-content:center; width:100%;">
-        ${btnAdd}
-      </button>
-      <button class="fiori-btn fiori-btn-secondary" onclick="loadAllData(); setTimeout(() => updateMasterDataGuidance('${tabId}'), 250);" style="justify-content:center; width:100%;">
-        ${btnReload}
-      </button>
-      ${nextList.map(text => `
-        <div style="border:1px solid #dbeafe; background:#eff6ff; color:#1e3a8a; border-radius:10px; padding:8px 10px; font-size:.78rem; font-weight:800;">
-          <i class="fa-solid fa-circle-check"></i> ${text}
-        </div>
-      `).join('')}
-    `;
+    actionsEl.innerHTML = nextList.map(text => `
+      <div style="border:1px solid #dbeafe; background:#eff6ff; color:#1e3a8a;
+                  border-radius:10px; padding:6px 10px; font-size:.77rem; font-weight:600;">
+        <i class="fa-solid fa-circle-check"></i> ${text}
+      </div>`).join("");
   }
 };
+
+/* ==========================================================================
+   Mở / đóng khối gợi ý cấu hình.
+
+   Phần dài — đoạn mô tả và ba dòng gợi ý bước tiếp — chỉ cần lúc đầu, nên
+   nó gấp lại. Nhưng nhớ lựa chọn của người dùng: ai đã đóng thì lần sau vào
+   không phải đóng lại, ai cần thì mở một lần là xong.
+   ========================================================================== */
+
+const KHOA_GOI_Y_CAU_HINH = "epl.goi-y-cau-hinh.mo";
+
+function docTrangThaiGoiY() {
+  // `localStorage` có thể ném lỗi (cửa sổ riêng tư, chặn dữ liệu trang), và
+  // một gợi ý không mở được thì không đáng làm sập cả màn.
+  try {
+    return window.localStorage.getItem(KHOA_GOI_Y_CAU_HINH) === "1";
+  } catch (e) {
+    return false;
+  }
+}
+
+function veGoiYCauHinh(mo) {
+  const khoi = document.getElementById("master-data-guidance-panel");
+  const nut = document.getElementById("master-data-guide-toggle");
+  if (khoi) khoi.hidden = !mo;
+  if (nut) {
+    nut.setAttribute("aria-expanded", mo ? "true" : "false");
+    nut.title = mo ? "Ẩn gợi ý cấu hình" : "Xem gợi ý cấu hình";
+  }
+}
+
+window.moGoiYCauHinh = function () {
+  const mo = !docTrangThaiGoiY();
+  try {
+    window.localStorage.setItem(KHOA_GOI_Y_CAU_HINH, mo ? "1" : "0");
+  } catch (e) {
+    /* không lưu được thì vẫn mở/đóng được trong phiên này */
+  }
+  veGoiYCauHinh(mo);
+};
+
+window.apDungTrangThaiGoiY = function () {
+  veGoiYCauHinh(docTrangThaiGoiY());
+};
+
 
 window.renderMasterDataCommandCenter = function () {
   const activeButton = document.querySelector('.md-tab-btn.active');
