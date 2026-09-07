@@ -171,17 +171,60 @@ def _serialize_closeout_formula(row: Optional[CostFormula]):
     return _serialize_cost_formula(row)
 
 
-def _configured_delivery_cost_lines(formula, delivery_order, route):
-    components = formula.get("components") if isinstance(formula, dict) else {}
-    if not isinstance(components, dict):
-        return []
+def _doc_so_tien(raw):
+    """Đọc một con số tiền viết dưới dạng chuỗi, chấp nhận cả hai kiểu dấu.
 
-    def amount(code):
-        raw = str(components.get(code) or "0").replace(",", "").strip()
-        try:
-            return Decimal(raw)
-        except (ValueError, ArithmeticError):
-            return Decimal("0")
+    Dự án có cả `"6,250"` (dấu phẩy phân cách nghìn) và `"4.800"` (dấu chấm,
+    kiểu Việt Nam). Bản trước chỉ bỏ dấu phẩy, nên `"4.800"` bị đọc thành 4,8
+    — sai đúng 1000 lần, và con số ra vẫn trông như một con số thật.
+
+    Quy tắc: dấu xuất hiện SAU CÙNG mà theo sau nó KHÔNG phải đúng ba chữ số
+    thì đó là dấu thập phân; còn lại đều là dấu phân cách nghìn.
+    """
+    text = str(raw if raw is not None else "0").strip()
+    if not text:
+        return Decimal("0")
+    text = text.replace(" ", "")
+    cuoi_cham = text.rfind(".")
+    cuoi_phay = text.rfind(",")
+    vi = max(cuoi_cham, cuoi_phay)
+    if vi >= 0 and len(text) - vi - 1 != 3:
+        # Dấu cuối là dấu thập phân: bỏ mọi dấu khác, giữ dấu này thành ".".
+        nguyen = text[:vi].replace(".", "").replace(",", "")
+        le = text[vi + 1:]
+        text = nguyen + "." + le if le else nguyen
+    else:
+        text = text.replace(".", "").replace(",", "")
+    try:
+        return Decimal(text or "0")
+    except (ValueError, ArithmeticError):
+        return Decimal("0")
+
+
+# Cấu phần trong `terms` dùng khóa ngắn, còn `components` dùng khóa dài.
+KHOA_TERM_SANG_COMPONENT = {"wh": "warehouse", "rate": "freight_rate"}
+
+
+def _configured_delivery_cost_lines(formula, delivery_order, route):
+    """Các dòng CHI PHÍ theo công thức giá thành của loại xe.
+
+    Đọc tiền từ `terms[].rate` — đó là số học thực sự, kèm `factor` (đơn vị
+    nhân) và `kind` (chi phí hay doanh thu). `components` chỉ là chuỗi ĐÃ
+    ĐỊNH DẠNG để hiển thị: hai công thức trong cơ sở dữ liệu định dạng khác
+    nhau (`"4.800"` và `"6,250"`), và nó còn lệch với số thật — công thức
+    `DEMO-VT-20FT` ghi `components.fuel = "6,250"` trong khi `rate` là 4800.
+    Nên `components` chỉ dùng làm phương án dự phòng cho công thức cũ chưa
+    có `terms`.
+
+    Cấu phần `kind == "revenue"` KHÔNG vào đây. `rate` (cước phí vận chuyển
+    /kg) là tiền THU CỦA KHÁCH, không phải khoản chi; cộng chung thì con số
+    ra không phải giá thành, cũng không phải giá bán.
+    """
+    if not isinstance(formula, dict):
+        return []
+    currency = str(formula.get("currency") or "VND")
+    distance = Decimal(str(getattr(route, "distance_km", 0) or 0))
+    weight = Decimal(str(getattr(delivery_order, "weight_kg", 0) or 0))
 
     def display(value):
         return f"{float(value):,.0f}".replace(",", ".")
@@ -192,29 +235,64 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
             return display(value)
         return f"{number:,.2f}".rstrip("0").rstrip(".").replace(",", ".")
 
-    distance = Decimal(str(getattr(route, "distance_km", 0) or 0))
-    weight = Decimal(str(getattr(delivery_order, "weight_kg", 0) or 0))
-    currency = str(formula.get("currency") or "VND")
-    definitions = [
-        ("fuel", "Chi phí xăng dầu", amount("fuel") * distance,
-         f"{display_quantity(distance)} km × {display(amount('fuel'))} {currency}"),
-        ("driver", "Phụ cấp chuyến tài xế", amount("driver"), "Theo chuyến"),
-        ("toll", "Phí cầu đường / BOT", amount("toll"), "Theo chuyến"),
-        ("warehouse", "Phí bãi và lưu kho", amount("warehouse"), "Theo chuyến"),
-        ("freight_rate", "Cước vận chuyển theo tải trọng", amount("freight_rate") * weight,
-         f"{display(weight)} kg × {display(amount('freight_rate'))} {currency}"),
-    ]
-    return [
-        {
-            "code": code,
-            "name": name,
-            "original_amount": float(original.quantize(Decimal("0.000001"))),
-            "calculation": calculation,
-        }
-        for code, name, original, calculation in definitions
-        if amount(code) > 0
-    ]
+    NHAN = {
+        "per_km": (distance, lambda: f"{display_quantity(distance)} km"),
+        "per_kg": (weight, lambda: f"{display_quantity(weight)} kg"),
+        "per_trip": (Decimal("1"), lambda: "Theo chuyến"),
+    }
 
+    dong = []
+    terms = formula.get("terms") if isinstance(formula.get("terms"), list) else []
+    components = formula.get("components") if isinstance(
+        formula.get("components"), dict) else {}
+
+    for term in terms:
+        if not isinstance(term, dict):
+            continue
+        if str(term.get("kind") or "cost").lower() == "revenue":
+            continue          # tiền thu của khách, không phải khoản chi
+        khoa = str(term.get("key") or "").strip()
+        if not khoa:
+            continue
+        don_gia = _doc_so_tien(term.get("rate"))
+        if don_gia <= 0:
+            continue
+        factor = str(term.get("factor") or "per_trip")
+        so_luong, mo_ta = NHAN.get(factor, NHAN["per_trip"])
+        thanh_tien = don_gia * so_luong
+        dong.append({
+            "code": KHOA_TERM_SANG_COMPONENT.get(khoa, khoa),
+            "name": str(term.get("label") or khoa),
+            "original_amount": float(thanh_tien.quantize(Decimal("0.000001"))),
+            "calculation": (f"{mo_ta()} × {display(don_gia)} {currency}"
+                            if factor != "per_trip"
+                            else f"Theo chuyến × {display(don_gia)} {currency}"),
+        })
+    if dong:
+        return dong
+
+    # Dự phòng: công thức cũ chỉ có `components`, không có `terms`.
+    CU = [
+        ("fuel", "Chi phí xăng dầu", "per_km"),
+        ("driver", "Phụ cấp chuyến tài xế", "per_trip"),
+        ("toll", "Phí cầu đường / BOT", "per_trip"),
+        ("warehouse", "Phí bãi và lưu kho", "per_trip"),
+    ]
+    for khoa, ten, factor in CU:
+        don_gia = _doc_so_tien(components.get(khoa))
+        if don_gia <= 0:
+            continue
+        so_luong, mo_ta = NHAN[factor]
+        dong.append({
+            "code": khoa,
+            "name": ten,
+            "original_amount": float((don_gia * so_luong).quantize(
+                Decimal("0.000001"))),
+            "calculation": (f"{mo_ta()} × {display(don_gia)} {currency}"
+                            if factor != "per_trip"
+                            else f"Theo chuyến × {display(don_gia)} {currency}"),
+        })
+    return dong
 
 @router.get("/api/delivery-orders/{do_id}/closeout")
 async def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depends(get_db)):

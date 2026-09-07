@@ -127,3 +127,141 @@ def test_do_khong_ton_tai_van_la_404(app_client):
     r = _closeout(client, 'DO-KHONG-CO-THAT')
     assert r.status_code == 404, r.text
     assert r.json()['detail']['code'] == 'DELIVERY_ORDER_NOT_FOUND'
+
+
+# --------------------------------------------------------------------------
+# Doc tien tu `terms[].rate`, khong tu `components`
+# --------------------------------------------------------------------------
+#
+# Loi lo ra ngay khi gan loai xe cho `DEMO-61H-112.34`:
+#
+#     Chi phi xang dau   44.7 km x 5 VND = 214 d
+#     Phu cap tai xe     400 d
+#
+# Xang dau 5 dong/km. Sai 1000 lan. Vi `components` chi la CHUOI DA DINH DANG
+# de hien thi, va hai cong thuc trong CSDL dinh dang khac nhau —
+# `DEMO-VT-TRUCK10` ghi `"4.800"` (dau CHAM phan cach nghin, kieu Viet Nam),
+# `DEMO-VT-20FT` ghi `"6,250"` (dau PHAY) — con backend chi bo dau phay.
+#
+# Te hon: `components` con LECH voi so that. `DEMO-VT-20FT` ghi
+# `components.fuel = "6,250"` trong khi `terms[].rate` cho fuel la 4800.
+
+
+def _doc_so_tien():
+    mod = importlib.import_module('routes.delivery_routes')
+    return mod._doc_so_tien
+
+
+@pytest.mark.parametrize('viet,mong', [
+    ('4.800', '4800'),          # dau cham phan cach nghin, kieu Viet Nam
+    ('6,250', '6250'),          # dau phay phan cach nghin
+    ('400.000', '400000'),
+    ('500,000', '500000'),
+    ('1.234.567', '1234567'),
+    ('1,234,567', '1234567'),
+    ('1500', '1500'),
+    ('4,8', '4.8'),             # dau cuoi khong theo sau 3 chu so -> thap phan
+    ('4.8', '4.8'),
+    ('0', '0'),
+    ('', '0'),
+    ('rac', '0'),
+    (None, '0'),
+])
+def test_doc_so_tien_chap_nhan_ca_hai_kieu_dau(app_client, viet, mong):
+    from decimal import Decimal
+    assert _doc_so_tien()(viet) == Decimal(mong), viet
+
+
+def _dong_chi_phi(terms=None, components=None, km=100, kg=1000):
+    """Chay THAT ham dung cac dong chi phi, voi mot cong thuc dung san."""
+    mod = importlib.import_module('routes.delivery_routes')
+
+    class Tuyen:
+        distance_km = km
+
+    class Don:
+        weight_kg = kg
+
+    formula = {'currency': 'VND'}
+    if terms is not None:
+        formula['terms'] = terms
+    if components is not None:
+        formula['components'] = components
+    return mod._configured_delivery_cost_lines(formula, Don(), Tuyen())
+
+
+def test_don_gia_lay_tu_terms_khong_tu_components(app_client):
+    """`components` lech voi so that thi phai theo `terms`."""
+    dong = _dong_chi_phi(
+        terms=[{'key': 'fuel', 'label': 'Xăng dầu', 'factor': 'per_km',
+                'kind': 'cost', 'rate': 4800.0}],
+        components={'fuel': '6,250'},   # chuoi hien thi, lech han
+        km=44.7)
+    assert len(dong) == 1, dong
+    # 44,7 km x 4.800 = 214.560, chu khong phai 44,7 x 6.250 = 279.375
+    assert round(dong[0]['original_amount']) == 214560, dong[0]
+    assert '4.800' in dong[0]['calculation'], dong[0]['calculation']
+
+
+def test_cau_phan_doanh_thu_khong_vao_danh_sach_chi_phi(app_client):
+    """Cuoc phi /kg la tien THU CUA KHACH, khong phai khoan chi.
+
+    Cong chung thi con so ra khong phai gia thanh, cung khong phai gia ban.
+    """
+    dong = _dong_chi_phi(terms=[
+        {'key': 'fuel', 'label': 'Xăng dầu', 'factor': 'per_km',
+         'kind': 'cost', 'rate': 4800.0},
+        {'key': 'rate', 'label': 'Cước phí vận chuyển /kg', 'factor': 'per_kg',
+         'kind': 'revenue', 'rate': 1200.0},
+    ], km=10, kg=3000)
+    ten = [x['name'] for x in dong]
+    assert 'Cước phí vận chuyển /kg' not in ten, ten
+    assert len(dong) == 1, dong
+
+
+def test_nhan_dung_don_vi_theo_factor(app_client):
+    """`per_km` nhan so km, `per_trip` khong nhan gi, `per_kg` nhan so kg."""
+    dong = _dong_chi_phi(terms=[
+        {'key': 'fuel', 'label': 'Xăng dầu', 'factor': 'per_km',
+         'kind': 'cost', 'rate': 1000.0},
+        {'key': 'driver', 'label': 'Phụ cấp', 'factor': 'per_trip',
+         'kind': 'cost', 'rate': 400000.0},
+        {'key': 'boc', 'label': 'Bốc xếp', 'factor': 'per_kg',
+         'kind': 'cost', 'rate': 50.0},
+    ], km=20, kg=1000)
+    theo_ma = {x['code']: x['original_amount'] for x in dong}
+    assert theo_ma['fuel'] == 20 * 1000
+    assert theo_ma['driver'] == 400000        # khong nhan km
+    assert theo_ma['boc'] == 1000 * 50
+
+
+def test_cong_thuc_cu_chi_co_components_van_doc_duoc(app_client):
+    """Cong thuc cu khong co `terms` — phai co phuong an du phong."""
+    dong = _dong_chi_phi(
+        components={'fuel': '4.800', 'driver': '400.000',
+                    'toll': '150.000', 'warehouse': '100.000'},
+        km=10)
+    theo_ma = {x['code']: x['original_amount'] for x in dong}
+    assert theo_ma['fuel'] == 10 * 4800, theo_ma
+    assert theo_ma['driver'] == 400000, theo_ma
+    assert theo_ma['warehouse'] == 100000, theo_ma
+
+
+def test_khoa_ngan_trong_terms_doi_ve_khoa_dai(app_client):
+    """`terms` dung `wh`, `components` dung `warehouse` — phai doi cho khop."""
+    dong = _dong_chi_phi(terms=[
+        {'key': 'wh', 'label': 'Phí bãi', 'factor': 'per_trip',
+         'kind': 'cost', 'rate': 100000.0},
+    ])
+    assert dong[0]['code'] == 'warehouse', dong[0]
+
+
+def test_cau_phan_bang_khong_thi_khong_hien_dong_rong(app_client):
+    """Don gia 0 thi khong dung mot dong '0 VND' cho nguoi dung phai doc."""
+    dong = _dong_chi_phi(terms=[
+        {'key': 'fuel', 'label': 'Xăng dầu', 'factor': 'per_km',
+         'kind': 'cost', 'rate': 4800.0},
+        {'key': 'toll', 'label': 'Cầu đường', 'factor': 'per_trip',
+         'kind': 'cost', 'rate': 0},
+    ])
+    assert [x['code'] for x in dong] == ['fuel'], dong
