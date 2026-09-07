@@ -38,10 +38,27 @@ if DATABASE_MODE == "postgres":
             DATABASE_URL,
             # connect_timeout=2 gây lỗi giả qua WAN và trong lúc Postgres
             # failover; 10 giây là mức chịu đựng được mà vẫn phát hiện nhanh.
-            connect_args={"connect_timeout": int(os.getenv("EPL_DB_CONNECT_TIMEOUT", "10"))},
+            connect_args={
+                "connect_timeout": int(os.getenv("EPL_DB_CONNECT_TIMEOUT", "10")),
+                # Kết nối bị bỏ rơi GIỮA MỘT GIAO DỊCH thì Postgres không tự
+                # thu hồi: nó chờ tín hiệu TCP keepalive, mà mặc định của hệ
+                # điều hành là hàng giờ. Đã đo thấy 30 kết nối nằm
+                # `idle in transaction` suốt 14 phút, thuộc một tiến trình con
+                # đã mất cha. Chúng chiếm 30 trong 97 chỗ của Postgres, và
+                # giao dịch mở còn giữ snapshot nên VACUUM không dọn được
+                # dòng cũ. Đặt timeout thì Postgres tự kết thúc chúng.
+                "options": "-c idle_in_transaction_session_timeout=%s"
+                           % os.getenv("EPL_DB_IDLE_TX_TIMEOUT_MS", "60000"),
+            },
             pool_pre_ping=True,
-            pool_size=int(os.getenv("EPL_DB_POOL_SIZE", "10")),
-            max_overflow=int(os.getenv("EPL_DB_MAX_OVERFLOW", "20")),
+            # Postgres thật của dự án có max_connections=100, trừ 3 chỗ dành
+            # cho superuser thì còn 97. Bản trước xin tới 30 mỗi tiến trình
+            # (10 + 20), nên ba tiến trình là 90/97 — cộng pgAdmin nữa là hết
+            # chỗ, và lúc hết chỗ thì MỌI màn hình báo "Nạp thất bại" vì máy
+            # chủ trả 500 kèm FATAL: remaining connection slots are reserved.
+            # 5 + 10 vẫn đủ: đo được 60 yêu cầu song song vẫn trả 200 hết.
+            pool_size=int(os.getenv("EPL_DB_POOL_SIZE", "5")),
+            max_overflow=int(os.getenv("EPL_DB_MAX_OVERFLOW", "10")),
             pool_timeout=int(os.getenv("EPL_DB_POOL_TIMEOUT", "30")),
             pool_recycle=int(os.getenv("EPL_DB_POOL_RECYCLE", "1800")),
         )
