@@ -271,7 +271,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908e-sap-lich`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908f-gia-thanh`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -16086,6 +16086,21 @@ window.renderCostFormulaEditor = function () {
   const result = M.evaluate(costFormulaTerms, costSampleTrip);
   const money = amount => formatWorkflowCurrencyAmount(amount, currency);
 
+  // HAI CỘT: cấu phần bên trái, chuyến mẫu và kết quả bên phải.
+  //
+  // Bản cũ đặt ô nhập km/tấn BÊN TRONG hộp thoại sửa công thức, còn màn chính
+  // chỉ ghi "ước tính một chuyến mẫu 200 km · 15 tấn" như một câu chú thích.
+  // Nghĩa là muốn thử "cũng tuyến này nhưng 30 tấn thì lãi bao nhiêu" thì phải
+  // mở hộp thoại sửa công thức — một việc nghe như sắp đổi cấu hình, trong khi
+  // người dùng chỉ muốn xem thử.
+  //
+  // Ba con số kết quả cũng chuyển từ chân bảng sang khung phải, vì chúng là câu
+  // TRẢ LỜI cho cặp km/tấn ở ngay trên, chứ không phải tổng của bảng cấu phần —
+  // cước thu khách không phải một dòng chi phí được cộng lại.
+  //
+  // Mọi `id` giữ nguyên: `syncBuiltinCostInputs` và các hàm cập nhật tại chỗ
+  // ghi thẳng vào `cf-cost`, `cf-revenue`, `cf-total`, `cf-margin`, `cf-perkm`,
+  // `cf-trip-note`. Đổi id ở đây là chúng lặng lẽ không cập nhật gì nữa.
   host.innerHTML = `
     <div class="cf-head">
       <div class="cf-head-main">
@@ -16101,6 +16116,8 @@ window.renderCostFormulaEditor = function () {
 
     <div id="cf-issues">${renderCostFormulaIssues()}</div>
 
+    <div class="cf-shell">
+    <div class="cf-main">
     <div class="cf-scroll">
       <table class="cf-table">
         <thead>
@@ -16119,32 +16136,59 @@ window.renderCostFormulaEditor = function () {
               <td class="cf-num cf-amount" id="cf-sum-amount-${index}">${money(row.amount)}</td>
             </tr>`).join('')}
         </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="3">Giá thành chuyến mẫu <small>tổng tiền CHI ra</small></td>
-            <td class="cf-num" id="cf-cost">${money(result.cost)}</td>
-          </tr>
-          <tr>
-            <td colspan="3">Cước thu khách <small>tổng tiền THU về</small></td>
-            <td class="cf-num" id="cf-revenue">${money(result.revenue)}</td>
-          </tr>
-          <tr>
-            <td colspan="3">Lợi nhuận
-              <small id="cf-trip-note">${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small></td>
-            <td class="cf-num cf-total" id="cf-total">${money(result.profit)}<small id="cf-margin">${
-              result.marginPct === null ? '' : ` · ${result.marginPct.toFixed(1)}%`}</small></td>
-          </tr>
-          <tr class="cf-perkm-row">
-            <td colspan="3">Giá thành mỗi km <small>so được giữa các loại xe</small></td>
-            <td class="cf-num" id="cf-perkm">${money(result.perKm)}/km</td>
-          </tr>
-        </tfoot>
       </table>
     </div>
 
     <p class="cf-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
       Bấm vào câu công thức để thêm, bớt hoặc đổi cách tính. Khi báo giá thật, hệ thống
       lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.</p>
+    </div>
+
+    <aside class="cf-side" aria-label="Chuyến mẫu để xem trước">
+      <div class="cf-side-head">
+        <h5>Chuyến mẫu để xem trước</h5>
+        <small>Đổi hai số này không ảnh hưởng báo giá thật.</small>
+      </div>
+
+      <div class="cf-side-input">
+        <label>Quãng đường
+          <span><input type="number" min="1" step="1" value="${costSampleTrip.km}"
+                       oninput="setCostSampleTrip('km', this.value)"
+                       aria-label="Số km của chuyến mẫu"> km</span>
+        </label>
+        <label>Hàng
+          <span><input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
+                       oninput="setCostSampleTrip('tonnes', this.value)"
+                       aria-label="Số tấn của chuyến mẫu"> tấn</span>
+        </label>
+      </div>
+
+      <!-- Ba con số này là BA LOẠI khác nhau, cố ý không cộng vào một số:
+           giá thành là tiền CHI ra, cước là tiền THU về, lợi nhuận là hiệu của
+           hai cái đó. Cộng chung thì ra một số không phải giá thành cũng không
+           phải giá bán. -->
+      <dl class="cf-side-res">
+        <div class="cf-res cf-res--cost">
+          <dt>Giá thành <small>tiền CHI ra</small></dt>
+          <dd id="cf-cost">${money(result.cost)}</dd>
+        </div>
+        <div class="cf-res cf-res--rev">
+          <dt>Cước thu khách <small>tiền THU về</small></dt>
+          <dd id="cf-revenue">${money(result.revenue)}</dd>
+        </div>
+        <div class="cf-res cf-res--profit">
+          <dt>Lợi nhuận
+            <small id="cf-trip-note">${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn</small></dt>
+          <dd id="cf-total">${money(result.profit)}<small id="cf-margin">${
+            result.marginPct === null ? '' : ` · ${result.marginPct.toFixed(1)}%`}</small></dd>
+        </div>
+        <div class="cf-res cf-res--perkm">
+          <dt>Giá thành mỗi km <small>so được giữa các loại xe</small></dt>
+          <dd id="cf-perkm">${money(result.perKm)}/km</dd>
+        </div>
+      </dl>
+    </aside>
+    </div>
 
     ${costFormulaPopoverOpen ? renderCostFormulaPopover(result, money) : ''}`;
 
@@ -16646,7 +16690,8 @@ window.renderDynamicFormulaVehicleTypes = function () {
   // thu — mot con so khong phai gia thanh cung khong phai gia ban.
   const sampleNote = `<p class="vt-sample">Các số trên thẻ là <b>ước tính một chuyến mẫu</b>
     ${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn:
-    <b>lợi nhuận</b> = cước thu khách − giá thành. Bấm vào thẻ rồi sửa ở khung Công thức bên phải.</p>`;
+    <b>lợi nhuận</b> = cước thu khách − giá thành.
+    Đổi hai số đó ở khung <b>Chuyến mẫu</b> bên phải thì cả các thẻ này tính lại theo.</p>`;
   container.innerHTML = searchBox + sampleNote + cards;
 
   // Tang thu hai: moi the co mot dong "N chiec xe" bam duoc.

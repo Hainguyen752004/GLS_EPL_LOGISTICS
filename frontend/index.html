@@ -1277,6 +1277,45 @@
     .cf-perkm td { border-top:1px dashed #cbd7e5; padding-top:8px; padding-bottom:10px; font-size:.76rem; color:#475569; }
     .cf-note { display:flex; align-items:flex-start; gap:8px; margin:0; padding:11px 20px; background:#f2f8ff; color:#075fa9; font-size:.73rem; border-top:1px solid #dbeafe; }
 
+    /* HAI CỘT: cấu phần bên trái, chuyến mẫu và kết quả bên phải.
+
+       Ba con số kết quả trước đây nằm ở CHÂN BẢNG cấu phần, nên đọc như tổng
+       của bảng — mà "cước thu khách" không phải một dòng chi phí được cộng lại,
+       nó là tiền THU về. Chuyển sang khung phải, ngay dưới cặp km/tấn, thì
+       chúng đọc đúng nghĩa: câu trả lời cho cặp số vừa nhập. */
+    .cf-shell { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:0; align-items:start; }
+    .cf-main { min-width:0; }
+    .cf-side { min-width:0; border-left:1px solid #e2e8f0; padding:14px 16px; background:#fbfcfe; }
+    @media (max-width:1180px) {
+      .cf-shell { grid-template-columns:minmax(0,1fr); }
+      .cf-side { border-left:0; border-top:1px solid #e2e8f0; }
+    }
+
+    .cf-side-head h5 { margin:0; font-size:.84rem; font-weight:800; color:#0f172a; }
+    .cf-side-head small { display:block; margin-top:3px; font-size:.68rem; color:#64748b; line-height:1.45; }
+    .cf-side-input { display:grid; gap:8px; margin:12px 0 14px; }
+    .cf-side-input label { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:.74rem; font-weight:700; color:#475569; }
+    .cf-side-input span { display:inline-flex; align-items:center; gap:5px; font-size:.72rem; color:#64748b; font-weight:700; }
+    .cf-side-input input { width:82px; min-height:34px; padding:5px 8px; border:1px solid #cbd7e5; border-radius:6px; font:inherit; font-size:.82rem; font-weight:800; text-align:right; font-variant-numeric:tabular-nums; color:#0f172a; }
+    .cf-side-input input:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    .cf-side-res { margin:0; display:grid; gap:8px; }
+    .cf-res { padding:9px 11px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; }
+    .cf-res dt { margin:0; font-size:.72rem; font-weight:700; color:#475569; }
+    .cf-res dt small { display:block; margin-top:1px; font-size:.64rem; font-weight:600; color:#94a3b8; }
+    .cf-res dd { margin:4px 0 0; font-size:1rem; font-weight:900; font-variant-numeric:tabular-nums; color:#0f172a; }
+    .cf-res dd small { margin-left:5px; font-size:.7rem; font-weight:700; color:#64748b; }
+    /* Ba màu nói ba LOẠI tiền khác nhau, không phải ba mức độ quan trọng:
+       chi ra, thu về, và hiệu của hai cái đó. */
+    .cf-res--cost { border-left:3px solid #b45309; }
+    .cf-res--cost dd { color:#92620a; }
+    .cf-res--rev { border-left:3px solid #15803d; }
+    .cf-res--rev dd { color:#15803d; }
+    .cf-res--profit { border-left:3px solid #0a6ed1; background:#f2f8ff; }
+    .cf-res--profit dd { color:#0a6ed1; font-size:1.16rem; }
+    .cf-res--perkm { border-left:3px solid #cbd7e5; }
+    .cf-res--perkm dd { font-size:.86rem; color:#475569; }
+
     /* Ghi chú chuyến mẫu ở đầu danh mục loại xe. */
     .vt-sample { margin:0 0 10px; padding:8px 11px; border-left:3px solid #0a6ed1; background:#f2f8ff; font-size:.68rem; color:#475569; border-radius:0 5px 5px 0; }
     .vt-breakdown { display:flex; flex-wrap:wrap; gap:5px 10px; margin-top:6px; }
@@ -6336,13 +6375,11 @@
           <div id="md-tab-formulas" class="md-tab-content" style="display: none;">
             <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(15,23,42,0.03);">
               
-              <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 24px;">
-                <div>
-                  <h3 style="margin: 0; color: #0f172a; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-calculator" style="color: #0a6ed1;"></i> <span data-i18n="title_cost_formula_mgmt">Quản Lý Công Thức Giá Thành Theo Loại Xe</span>
-                  </h3>
-                  <div style="font-size: 0.83rem; color: #64748b; margin-top: 3px;" data-i18n="desc_cost_formula_mgmt">Chọn một tab để xem đúng nhóm thông tin, tránh kéo màn hình quá dài.</div>
-                </div>
+              <!--
+                Tiêu đề của màn do TẦNG 3 nói ("Dữ liệu gốc / Công thức giá
+                thành"), nên bỏ đầu trang riêng ở đây. Để cả hai thì cùng một
+                câu hiện hai lần cách nhau chưa tới 100px.
+              -->
               </div>
 
               <!-- 2-COLUMN SIDE-BY-SIDE LAYOUT -->
@@ -7908,7 +7945,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908f-sap-lich"></script>
+  <script src="/static/js/app.js?v=20260908h-gia-thanh"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

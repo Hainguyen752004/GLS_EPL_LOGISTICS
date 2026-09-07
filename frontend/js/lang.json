@@ -4224,16 +4224,6 @@
     "en": "Vehicle Pos",
     "la": "ຕຳແໜ່ງລົດ"
   },
-  "title_cost_formula_mgmt": {
-    "vi": "Quản Lý Công Thức Giá Thành Theo Loại Xe",
-    "en": "Vehicle Cost Formula Management",
-    "la": "ຄຸ້ມຄອງສູດຄິດໄລ່ຕົ້ນທຶນຕາມປະເພດລົດ"
-  },
-  "desc_cost_formula_mgmt": {
-    "vi": "Chọn một tab để xem đúng nhóm thông tin, tránh kéo màn hình quá dài.",
-    "en": "Select a tab to view information without long scrolling.",
-    "la": "ເລືອກແທັບເພື່ອເບິ່ງກຸ່ມຂໍ້ມູນທີ່ຖືກຕ້ອງ, ຫຼີກລ້ຽງການເລື່ອນໜ້າຈໍຍາວເກີນໄປ."
-  },
   "title_veh_type_catalog": {
     "vi": "Danh Mục Loại Xe",
     "en": "Vehicle Type Catalog",

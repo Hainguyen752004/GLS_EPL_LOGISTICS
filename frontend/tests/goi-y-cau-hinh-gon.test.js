@@ -27,8 +27,17 @@ const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
 {
   assert.ok(!/<aside id="master-data-guidance-panel"/.test(html),
     'còn cột <aside> kiểu cũ');
-  assert.ok(!/grid-template-columns:minmax\(0,1fr\) 300px/.test(html),
-    'khung Dữ liệu gốc còn chia cột 300px cho khối gợi ý');
+  // Neo vào KHUNG CHỨA khối gợi ý, không neo vào chuỗi CSS thô
+  // `minmax(0,1fr) 300px`: chuỗi đó là một cách chia cột rất thường, và màn
+  // Công thức giá thành dùng đúng nó cho khung "chuyến mẫu" bên phải — bắt vào
+  // chuỗi thì bài kiểm này đỏ vì một màn khác chẳng liên quan.
+  {
+    const i = html.indexOf('<div id="master-data-command-center"');
+    assert.ok(i > 0, 'không thấy khung Dữ liệu gốc');
+    const the = html.slice(i, html.indexOf('>', i) + 1);
+    assert.ok(!/grid-template-columns/.test(the),
+      `khung Dữ liệu gốc còn chia cột cho khối gợi ý: ${the}`);
+  }
   assert.ok(html.includes('<div id="master-data-command-center">'),
     'khung phải về một cột, không đặt grid nữa');
 }

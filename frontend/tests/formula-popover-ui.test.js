@@ -106,8 +106,27 @@ assert.ok(/id="cf-revenue"/.test(editor), 'phải có cước thu khách');
 assert.ok(/id="cf-total"/.test(editor), 'phải có lợi nhuận');
 assert.ok(/id="cf-margin"/.test(editor), 'phải có tỉ lệ lợi nhuận');
 assert.ok(/id="cf-perkm"/.test(editor));
-assert.ok(/Giá thành chuyến mẫu/.test(editor));
+// Ba con số nay nằm trong khung "Chuyến mẫu để xem trước" ở cột phải, nên ngữ
+// cảnh "chuyến mẫu" do ĐẦU KHUNG nói một lần, thay vì nhắc lại trong từng nhãn.
+// Điều phải giữ là: người đọc biết đây là chuyến mẫu, không phải một báo giá
+// thật — nên kiểm cả hai phần chứ không chỉ kiểm một chuỗi nhãn.
+assert.ok(/Chuyến mẫu để xem trước/.test(editor),
+  'khung kết quả phải nói rõ đây là chuyến mẫu');
+assert.ok(/không ảnh hưởng báo giá/i.test(editor),
+  'phải nói rõ đổi chuyến mẫu không ảnh hưởng báo giá thật');
+assert.ok(/>Giá thành\b/.test(editor), 'phải có nhãn giá thành');
 assert.ok(/Cước thu khách/.test(editor));
+// Và cặp km/tấn phải sửa được NGAY trên thẻ, không phải chỉ trong hộp thoại
+// sửa công thức: muốn thử "cùng tuyến này nhưng 30 tấn" thì không nên bắt người
+// dùng mở một hộp thoại nghe như sắp đổi cấu hình.
+{
+  const summary = editor.slice(editor.indexOf('<div id="cf-issues">'),
+    editor.indexOf('renderCostFormulaPopover(result, money)'));
+  assert.ok(/setCostSampleTrip\('km'/.test(summary),
+    'ô km của chuyến mẫu phải nằm trên thẻ, ngoài hộp thoại');
+  assert.ok(/setCostSampleTrip\('tonnes'/.test(summary),
+    'ô tấn của chuyến mẫu phải nằm trên thẻ, ngoài hộp thoại');
+}
 assert.ok(/Giá thành mỗi km/.test(editor), 'dòng /km phải nói rõ mẫu số là giá thành');
 assert.ok(!/Tổng chi phí chuyến mẫu/.test(editor), 'không được còn một "tổng" gộp');
 // Ba con so phai nằm NGOÀI hộp thoại: đóng hộp thoại lại vẫn phải đọc được.

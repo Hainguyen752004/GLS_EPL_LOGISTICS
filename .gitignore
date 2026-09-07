@@ -60,3 +60,6 @@ node_modules/
 
 # Ban sao luu du lieu truoc khi xoa (dump co so du lieu, khong dua vao git)
 backend/scripts/sao_luu_*.json
+
+# Trang soi tạm khi chụp ảnh từng màn — không phải một phần của ứng dụng.
+frontend/_soi*.html
