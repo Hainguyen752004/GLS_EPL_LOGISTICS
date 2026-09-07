@@ -55,6 +55,7 @@ from models import (
 from schemas.delivery_completion import DeliveryCompletionRequest
 from services.delivery_completion_service import complete_delivery
 from services import demo_operational_seed
+from services import demo_master_seed
 
 
 DEMO_SCENARIOS = {
@@ -611,6 +612,17 @@ def seed_demo(db, reset=False, verify=False):
     if reset or not complete_set:
         _delete_seeded_workflow(db)
         _merge_master_data(db)
+        # Danh muc mo rong: them loai xe, xe, tuyen, khach hang va tai xe.
+        #
+        # Ban demo truoc chi co MOT loai xe, MOT tuyen, HAI xe va MOT khach. Voi
+        # bay nhieu thi phan lon man hinh khong the hien duoc dieu chung sinh ra
+        # de lam: bang so sanh gia thanh giua cac loai xe chi co mot dong, o chon
+        # tuyen chi co mot lua chon, va bo loc bai chi co mot muc. Nguoi xem khong
+        # phan biet duoc "man nay chi hien it nhu vay" voi "man nay hong".
+        #
+        # Nap TRUOC khi dung chuoi nghiep vu: chuoi do tro vao tuyen, loai xe va
+        # khach hang.
+        demo_master_seed.nap_danh_muc(db)
 
         waiting_pickup = _utc(2026, 8, 24, 1)
         waiting_delivery = _utc(2026, 8, 24, 6)

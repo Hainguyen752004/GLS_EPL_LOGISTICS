@@ -16154,9 +16154,26 @@ window.renderCostFormulaEditor = function () {
 let vehicleCostPanelId = '';
 let vehicleCostDraft = null;
 
-/** Đếm số xe thuộc mỗi loại, để thẻ bên trái nói rõ "loại này có bao nhiêu xe". */
+/**
+ * Đếm số xe thuộc mỗi loại, để thẻ bên trái nói rõ "loại này có bao nhiêu xe".
+ *
+ * Nhận CẢ mã loại lẫn TÊN loại, vì `vehicles.type` trong dữ liệu thật có cả hai
+ * kiểu: bản ghi cũ lưu tên ("Container 20FT"), bản ghi mới lưu mã
+ * ("DEMO-VT-20FT"). Tầng nghiệp vụ đã tra theo cả hai
+ * (`VehicleType.id == vehicle.type | VehicleType.name == vehicle.type`); chỗ này
+ * so mỗi mã nên đếm sót.
+ *
+ * Hậu quả đo được: thẻ "Container 20FT" ghi "Chưa có xe nào thuộc loại này"
+ * trong khi có đúng hai chiếc — và vì thế bảng ghi đè giá theo từng xe của loại
+ * đó không mở được chiếc nào.
+ */
 function vehiclesOfType(typeId) {
-  return (fioriVehicles || []).filter(v => String(v.type || '') === String(typeId));
+  const loai = (vehTypes || []).find(t => String(t.id || '') === String(typeId));
+  const ten = loai ? String(loai.name || '') : '';
+  return (fioriVehicles || []).filter(v => {
+    const cua_xe = String(v.type || '');
+    return cua_xe === String(typeId) || (ten && cua_xe === ten);
+  });
 }
 
 /**
