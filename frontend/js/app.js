@@ -10264,7 +10264,10 @@ window.openCloseoutActualCostEditor = async function (doId = '', tripId = '') {
     button.style.opacity = button.disabled ? '.58' : '1';
     button.style.cursor = button.disabled ? 'not-allowed' : 'pointer';
   }
-  refreshDOSettlementLineControls();
+  // Trạng thái mở/khóa do `setDOSettlementSaveState` quyết định (nó biết có
+  // Trip hoàn thành hay không), nên ở đây chỉ truyền lại đúng thứ đã biết.
+  refreshDOSettlementLineControls(Boolean(button?.dataset.tripId),
+    button?.dataset.tripId ? "" : lyDoChuaQuyetToanDuoc(doId));
   const panel = document.getElementById('do-settlement-panel');
   if (panel) setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'center' }), 160);
   showToast(`Da mo form chot cuoc/actual cost cho DO ${doId}.`);
@@ -12284,15 +12287,69 @@ function findSalesOrderForDO(source) {
 }
 window.findSalesOrderForDO = findSalesOrderForDO;
 
-function refreshDOSettlementLineControls() {
+/* ==========================================================================
+   Đang vận chuyển thì CẤM sửa quyết toán chi phí.
+
+   Giá hợp đồng đã chốt từ SO. Trong lúc xe còn trên đường thì chưa biết
+   phát sinh là bao nhiêu, nên không được sửa tiền — mở ra là mở cửa cho
+   người ta đổi số giữa chuyến, mà chứng từ ký nhận thì chưa có.
+
+   Backend ĐÃ chặn: `_save_trip_cost_rows` trả 409 `TRIP_NOT_COMPLETED` —
+   "Chỉ được quyết toán chi phí sau khi chuyến đã hoàn thành POD". Nhưng
+   giao diện vẫn hiện nút "Thêm khoản phí" và "Lưu chi phí", nên bấm vào chỉ
+   nhận một lời từ chối. Đó là một nút NÓI DỐI: nó mời người ta bấm một việc
+   hệ thống không cho làm.
+
+   Mốc mở là Trip đã hoàn thành POD, chứ không phải xe vừa đến nơi — tiền
+   chỉ nên chốt khi đã có chứng từ ký nhận. `resolveCompletedTripForDO` là
+   chỗ tra mốc đó, và `setDOSettlementSaveState` là chỗ nhận kết quả, nên hai
+   nút cùng theo MỘT quyết định thay vì mỗi nút tự đoán.
+   ========================================================================== */
+
+function refreshDOSettlementLineControls(quyetToanDuoc = true, lyDo = "") {
   const addBtn = document.getElementById('btn-add-do-settlement-line');
-  if (addBtn) addBtn.style.display = 'inline-flex';
+  if (addBtn) {
+    addBtn.style.display = quyetToanDuoc ? 'inline-flex' : 'none';
+  }
   document.querySelectorAll('#do-settlement-lines-tbody input').forEach(input => {
-    input.disabled = false;
+    input.disabled = !quyetToanDuoc;
   });
   document.querySelectorAll('#do-settlement-lines-tbody button').forEach(button => {
-    button.style.display = 'inline-flex';
+    button.style.display = quyetToanDuoc ? 'inline-flex' : 'none';
   });
+
+  // Nói RÕ vì sao không sửa được, ngay trong khối. Ẩn nút mà không nói gì
+  // thì người dùng tưởng màn hình hỏng.
+  const oLyDo = document.getElementById('do-settlement-locked-note');
+  if (oLyDo) {
+    oLyDo.hidden = Boolean(quyetToanDuoc) || !lyDo;
+    oLyDo.innerHTML = lyDo ? `<i class="fa-solid fa-lock"></i> ${escapeHtml(lyDo)}` : '';
+  }
+}
+
+/**
+ * Lý do KHÔNG quyết toán được, nói theo đúng trạng thái đang có.
+ *
+ * Một câu "chưa quyết toán được" chung chung thì người dùng không biết phải
+ * chờ gì. Mỗi trạng thái có một việc cần làm khác nhau.
+ */
+function lyDoChuaQuyetToanDuoc(doId) {
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(doId));
+  const tt = String(don?.canonical_status || '').toLowerCase();
+  if (tt === "cancelled") {
+    return "Lệnh giao hàng đã hủy nên không quyết toán chi phí.";
+  }
+  if (tt === "pending") {
+    return "Lệnh chưa xuất bến nên chưa có chi phí phát sinh nào để quyết toán."
+      + " Hãy điều phối xe và cho chuyến khởi hành trước.";
+  }
+  if (tt === "in_transit" || tt === "arrived") {
+    return "Xe đang trên đường — trong lúc vận chuyển KHÔNG được sửa giá đã"
+      + " chốt. Sau khi giao xong và có POD ký nhận thì mới thêm được khoản"
+      + " phát sinh và chốt giá cuối.";
+  }
+  return "Chuyến của lệnh này chưa hoàn thành POD nên chưa quyết toán được."
+    + " Hãy hoàn tất giao hàng ở màn Hoàn tất giao trước.";
 }
 
 function doSettlementLineTemplate(line = {}, index = 0) {
@@ -12484,6 +12541,13 @@ function setDOSettlementSaveState(trip, loading = false) {
   if (!button) return;
   button.dataset.tripId = trip?.id || '';
   button.disabled = loading || !trip;
+  // Đây là chỗ DUY NHẤT biết có Trip hoàn thành hay không, nên cũng là chỗ
+  // quyết định cho hai nút kia — thay vì mỗi nút tự đoán trạng thái.
+  if (!loading) {
+    const doId = document.getElementById('do-id')?.value || '';
+    refreshDOSettlementLineControls(Boolean(trip),
+      trip ? '' : lyDoChuaQuyetToanDuoc(doId));
+  }
   button.style.opacity = button.disabled ? '.58' : '1';
   button.style.cursor = button.disabled ? 'not-allowed' : 'pointer';
   button.title = loading

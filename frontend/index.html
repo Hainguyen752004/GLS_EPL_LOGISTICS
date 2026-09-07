@@ -4928,6 +4928,7 @@
                             <tbody id="do-settlement-lines-tbody"></tbody>
                           </table>
                         </div>
+                        <div id="do-settlement-locked-note" hidden style="margin-top:10px; padding:9px 12px; border-radius:10px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:.8rem; font-weight:600; line-height:1.5;"></div>
                         <div style="margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
                           <button type="button" id="btn-add-do-settlement-line" onclick="addDOSettlementLine()" style="background:#ffffff; border:1px solid #0a6ed1; color:#0a6ed1; border-radius:7px; padding:7px 12px; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:7px;"><i class="fa-solid fa-plus"></i> Thêm khoản phí</button>
                           <button type="button" id="btn-save-do-settlement" onclick="saveDOSettlementCost()" style="background:#0a6ed1; border:1px solid #0a6ed1; color:#ffffff; border-radius:7px; padding:8px 14px; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:7px;"><i class="fa-solid fa-floppy-disk"></i> Lưu chi phí</button>
@@ -4939,7 +4940,7 @@
                           <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight: 800; color:#334155;">Tổng chi phí phát sinh
                             <input id="do-extra-cost-total-display" class="fiori-input" type="text" readonly data-vnd-value="0" value="0 VNĐ" style="padding:9px 11px; border:1px solid #fed7aa; border-radius:7px; background:#fff7ed; font-weight:900; color:#b45309;">
                           </label>
-                          <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight: 800; color:#334155;">Tổng tiền phải trả
+                          <label style="display:flex; flex-direction:column; gap:5px; font-size:.84rem; font-weight: 800; color:#334155;">Giá cuối cùng
                             <input id="do-payable-total" class="fiori-input" type="text" readonly data-vnd-value="0" value="0 VNĐ" style="padding:9px 11px; border:1px solid #10b981; border-radius:7px; background:#ecfdf5; font-weight: 800; color:#047857;">
                           </label>
                         </div>
@@ -7722,7 +7723,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260907l-xang-dau-mot-nguon"></script>
+  <script src="/static/js/app.js?v=20260907m-khoa-quyet-toan"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.
