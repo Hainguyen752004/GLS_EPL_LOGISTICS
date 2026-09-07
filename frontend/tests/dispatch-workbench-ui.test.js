@@ -39,8 +39,9 @@ function interactiveOpening(source, activationPattern) {
   'dispatch-queue',
   'dispatch-timeline',
   'dispatch-detail',
-  'dispatch-tools-button',
-  'dispatch-tools-panel'
+  // Cot thu ba. Truoc day khoi canh bao nam trong ngan keo 'Cong cu' va phai
+  // bam moi mo; ngan keo do da bo vi no chi co dung mot muc.
+  'dispatch-exceptions'
 ].forEach((id) => check(`unique #${id}`, () => {
   assert.strictEqual(idCount(html, id), 1, `Expected exactly one #${id}`);
 }));
@@ -617,33 +618,10 @@ function createDomHarness() {
 
 function installHarnessInteractions(harness) {
   const { document } = harness;
-  const toolsButton = document.getElementById('dispatch-tools-button');
-  const toolsPanel = document.getElementById('dispatch-tools-panel');
-  const menuItems = document.querySelectorAll('[role="menuitem"]');
   const drawer = document.getElementById('dispatch-detail');
   const drawerItems = document.querySelectorAll('[data-drawer-focusable]');
   let drawerReturnFocus = null;
 
-  toolsButton.addEventListener('keydown', (event) => {
-    if (event.key !== 'ArrowDown') return;
-    event.preventDefault();
-    toolsPanel.hidden = false;
-    toolsButton.setAttribute('aria-expanded', 'true');
-    menuItems[0].focus();
-  });
-  menuItems.forEach((item, index) => item.addEventListener('keydown', (event) => {
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      const offset = event.key === 'ArrowDown' ? 1 : -1;
-      menuItems[(index + offset + menuItems.length) % menuItems.length].focus();
-    }
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      toolsPanel.hidden = true;
-      toolsButton.setAttribute('aria-expanded', 'false');
-      toolsButton.focus();
-    }
-  }));
   drawer.openFrom = (trigger) => {
     drawerReturnFocus = trigger;
     drawer.hidden = false;
@@ -668,34 +646,12 @@ function installHarnessInteractions(harness) {
   });
 }
 
-check('test-local tools keyboard and focus contract', () => {
-  const harness = createDomHarness();
-  const toolsButton = harness.node('dispatch-tools-button', {
-    'aria-controls': 'dispatch-tools-panel',
-    'aria-expanded': 'false'
-  });
-  const toolsPanel = harness.node('dispatch-tools-panel', { hidden: true });
-  const alerts = harness.node('dispatch-tool-alerts', { role: 'menuitem' });
-  const week = harness.node('dispatch-tool-week', { role: 'menuitem' });
-  harness.node('dispatch-detail', { hidden: true });
-  installHarnessInteractions(harness);
-
-  toolsButton.focus();
-  toolsButton.dispatchKey('ArrowDown');
-  assert.strictEqual(toolsPanel.hidden, false);
-  assert.strictEqual(toolsButton.getAttribute('aria-expanded'), 'true');
-  assert.strictEqual(harness.document.activeElement, alerts);
-  alerts.dispatchKey('ArrowDown');
-  assert.strictEqual(harness.document.activeElement, week);
-  alerts.dispatchKey('Escape');
-  assert.strictEqual(toolsPanel.hidden, true);
-  assert.strictEqual(harness.document.activeElement, toolsButton);
-});
+// BO bai kiem ban phim cua bang chon "Cong cu": bang chon do khong con.
+// Bai kiem con lai ben duoi — bay cua khung chi tiet — thi giu, vi khung chi
+// tiet van la mot hop thoai that.
 
 check('test-local drawer focus trap and return contract', () => {
   const harness = createDomHarness();
-  harness.node('dispatch-tools-button');
-  harness.node('dispatch-tools-panel', { hidden: true });
   const trigger = harness.node('dispatch-row-trigger');
   const drawer = harness.node('dispatch-detail', {
     hidden: true,
@@ -720,14 +676,13 @@ check('test-local drawer focus trap and return contract', () => {
   assert.strictEqual(harness.document.activeElement, trigger);
 });
 
-check('production tools and drawer expose the harness contract', () => {
+check('production drawer exposes the harness contract', () => {
   const combinedSource = `${html}\n${appSource}`;
   [
-    [/id=["']dispatch-tools-button["'][^>]*aria-controls=["']dispatch-tools-panel["']/i, 'Tools button needs aria-controls.'],
-    [/id=["']dispatch-tools-button["'][^>]*aria-expanded=["']false["']/i, 'Tools button needs its initial aria-expanded state.'],
-    [/ArrowDown/, 'Tools keyboard behavior must handle ArrowDown.'],
-    [/ArrowUp/, 'Tools keyboard behavior must handle ArrowUp.'],
-    [/Escape/, 'Tools and drawer behavior must handle Escape.'],
+    // ArrowDown / ArrowUp da bo cung voi bang chon "Cong cu": bang chon do chi co
+    // mot muc, va khoi canh bao nay la cot thu ba thuong truc cua ban dieu phoi.
+    // Mot bang chon mot muc thi khong co gi de di chuyen bang mui len xuong.
+    [/Escape/, 'Drawer behavior must handle Escape.'],
     [/\bTab\b/, 'Drawer behavior must trap Tab navigation.'],
     [/\.focus\s*\(/, 'Tools and drawer behavior must transfer and return focus.'],
     [/role=["']dialog["']/i, 'The detail drawer needs dialog semantics.'],

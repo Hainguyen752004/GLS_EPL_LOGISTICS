@@ -578,22 +578,32 @@
     .dispatch-step-modal-body { min-height:0; overflow:auto; padding:16px; }
     .dispatch-step-modal-body > .dispatch-workbench-pane { min-height:100%; box-shadow:none; }
     .dispatch-step-modal-body > .dispatch-detail-pane { display:block; position:relative; inset:auto; width:auto; }
-    .dispatch-tools-wrap { position:relative; }
-    .dispatch-tools-panel {
-      position:absolute; z-index:30; top:calc(100% + 8px); right:0; width:290px; padding:7px;
-      background:#fff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 16px 34px rgba(15,23,42,.16);
-    }
-    .dispatch-tools-panel button {
-      width:100%; display:grid; grid-template-columns:28px 1fr; gap:8px; align-items:center;
-      border:0; border-radius:6px; background:#fff; padding:10px; text-align:left; color:#334155;
-    }
-    .dispatch-tools-panel button:hover, .dispatch-tools-panel button:focus { background:#eff6ff; color:#075da8; }
-    .dispatch-tools-panel button i { text-align:center; color:#0a6ed1; }
-    .dispatch-tools-panel button span { display:grid; gap:2px; }
-    .dispatch-tools-panel button small { color:#64748b; font-size:.72rem; }
+    /* BA COT: DO cho xep | lich xe | ngoai le.
+
+       Cau chu tren dau man hua "chon DO, doi chieu lich xe roi gan nguon luc
+       ngay tren mot man hinh". Truoc day khong dung: cot DO de `hidden` va
+       chi hien khi bam buoc 1, luc do lai bi doi vao mot hop thoai che kin
+       man; con ngoai le thi nam trong ngan keo "Cong cu". Nen man chi hien
+       mot thu la lich xe.
+
+       Hai cot ben khai chieu rong co dinh: cot giua la lich xe theo gio, no
+       phai duoc phan con lai va phai co cho de cuon ngang. */
     .dispatch-workbench-grid {
-      display:grid; grid-template-columns:minmax(0,1fr); gap:12px; align-items:stretch;
-      min-height:610px;
+      display:grid; grid-template-columns:300px minmax(0,1fr) 320px; gap:12px;
+      align-items:start; min-height:610px;
+    }
+    .dispatch-workbench-grid > .dispatch-workbench-pane { align-self:stretch; }
+
+    /* Danh sach ngoai le: cuon TRONG cot cua no. Khong dat gioi han thi mot
+       ngay xau 40 ngoai le keo cot phai dai gap ba lan lich xe. */
+    .dispatch-exceptions-list { margin-top:11px; max-height:520px; overflow-y:auto; }
+
+    /* Man hep: ba cot canh nhau la khong doc duoc cot nao. Ve mot cot, va
+       ngoai le xuong DUOI lich xe — de len tren la lap lai dung loi che mat
+       lich xe ma bo cuc nay sinh ra de sua. */
+    @media (max-width:1400px) {
+      .dispatch-workbench-grid { grid-template-columns:280px minmax(0,1fr); }
+      #dispatch-exceptions { grid-column:1 / -1; }
     }
     .dispatch-workbench-pane {
       min-width:0; background:#fff; border:1px solid #d8e5f2; border-radius:8px; padding:14px;
@@ -1884,10 +1894,6 @@
       background: #dcfce7;
       color: #16a34a;
     }
-    .dispatch-tool-drawer { background:#fff; border:1px solid #d8e5f2; border-radius:8px; padding:14px; }
-    .dispatch-tool-drawer-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e6edf5; padding-bottom:10px; margin-bottom:12px; }
-    .dispatch-tool-drawer-header h3 { margin:0; font-size:1rem; }
-    .dispatch-tool-drawer-header button { width:34px; height:34px; border:0; border-radius:6px; background:#eff6ff; color:#075da8; }
     .dispatch-tool-columns { display:grid; grid-template-columns:1.2fr .9fr .9fr; gap:10px; }
     #dispatch-capacity-kpis, #dispatch-week-planner-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px; margin-bottom:10px; }
     #dispatch-capacity-vehicles, #dispatch-capacity-alerts, #dispatch-capacity-unscheduled, #dispatch-calendar-conflicts, #dispatch-week-planner-grid, #dispatch-week-planner-guidance { display:grid; gap:8px; }
@@ -5386,13 +5392,6 @@
                 <strong data-i18n="title_dispatch_toolbar">Không gian điều phối trong ngày</strong>
                 <span data-i18n="sub_dispatch_toolbar">Chọn DO, đối chiếu lịch xe rồi gán nguồn lực ngay trên một màn hình.</span>
               </div>
-              <div class="dispatch-tools-wrap">
-                <button id="dispatch-tools-button" class="fiori-btn fiori-btn-secondary" type="button" aria-controls="dispatch-tools-panel" aria-expanded="false" aria-haspopup="menu" onclick="toggleDispatchTools()">
-                  <i class="fa-solid fa-sliders"></i> <span data-i18n="btn_dispatch_tools">Công cụ</span>
-                </button>
-                <div id="dispatch-tools-panel" class="dispatch-tools-panel" role="menu" hidden>
-                  <button id="dispatch-tool-alerts" type="button" role="menuitem" onclick="openDispatchTool('alerts')"><i class="fa-solid fa-triangle-exclamation"></i><span><strong data-i18n="stage_incident">Cảnh báo</strong><small>Trùng lịch và thiếu tài nguyên</small></span></button>
-                </div>
               </div>
             </div>
 
@@ -5412,7 +5411,7 @@
             </div>
 
             <div id="dispatch-calendar-panel" class="dispatch-workbench-grid">
-              <section id="dispatch-queue" class="dispatch-workbench-pane" aria-labelledby="dispatch-queue-title" hidden>
+              <section id="dispatch-queue" class="dispatch-workbench-pane" aria-labelledby="dispatch-queue-title">
                 <div class="dispatch-pane-heading">
                   <div><h3 id="dispatch-queue-title"><i class="fa-solid fa-inbox"></i> <span data-i18n="title_dispatch_queue">DO chờ điều phối</span></h3><p data-i18n="sub_dispatch_queue">Đơn cần gán xe và tài xế</p></div>
                   <span id="dispatch-state-pending-count" class="dispatch-state-count">0</span>
@@ -5445,6 +5444,25 @@
                 <div id="dispatch-calendar-legend" class="dispatch-calendar-legend"></div>
                 <div id="dispatch-calendar-kpis" hidden></div>
                 <div id="dispatch-calendar-lanes" class="dispatch-calendar-lanes"></div>
+              </section>
+
+              <!--
+                COT 3 — ngoai le can duyet.
+
+                Truoc day khoi nay nam trong ngan keo "Cong cu", phai bam moi
+                mo. Nhung ngoai le la thu nguoi dieu phoi phai THAY de biet
+                hom nay con viec gi; de sau mot cai nut thi ho khong biet la
+                co viec.
+              -->
+              <section id="dispatch-exceptions" class="dispatch-workbench-pane" aria-labelledby="dispatch-exceptions-title">
+                <div class="dispatch-pane-heading">
+                  <div>
+                    <h3 id="dispatch-exceptions-title"><i class="fa-solid fa-triangle-exclamation"></i>
+                      <span data-i18n="title_dispatch_exceptions">Ngoại lệ cần duyệt</span></h3>
+                    <p data-i18n="sub_dispatch_exceptions">Việc phải xử trước khi cho xe xuất bến.</p>
+                  </div>
+                </div>
+                <div id="dispatch-calendar-conflicts" class="dispatch-exceptions-list"></div>
               </section>
 
               <aside id="dispatch-detail" class="dispatch-workbench-pane dispatch-detail-pane" hidden role="dialog" aria-modal="true" aria-labelledby="dispatch-detail-title">
@@ -5500,11 +5518,16 @@
               </section>
             </div>
 
-            <div id="dispatch-tool-drawer" class="dispatch-tool-drawer" hidden>
-              <div class="dispatch-tool-drawer-header"><h3 id="dispatch-tool-title">Công cụ điều phối</h3><button type="button" aria-label="Đóng công cụ" onclick="closeDispatchTool()"><i class="fa-solid fa-xmark"></i></button></div>
-              <section id="dispatch-tool-pane-alerts" hidden><div id="dispatch-calendar-conflicts"></div></section>
-              <div class="dispatch-resource-data" hidden><span id="dispatch-veh-ready-count">0 xe</span><span id="dispatch-veh-busy-count">0 xe</span><span id="dispatch-driver-ready-count">0 người</span><div id="dispatch-drivers-ready-list"></div><div id="dispatch-vehs-ready-list"></div><div id="dispatch-busy-list"></div></div>
-            </div>
+            <!--
+              Cho chua so lieu, co y an. Cac ham khac ghi vao day
+              (`dispatch-veh-ready-count`, `dispatch-driver-ready-count`, ...)
+              roi cac khoi khac doc ra. Bo di la chung lang le khong ghi duoc gi.
+
+              Truoc day khoi nay nam trong ngan keo "Cong cu". Ngan keo do da bo:
+              no chi co mot muc la "Canh bao", ma khoi canh bao nay da thanh cot
+              thu ba thuong truc, nen bam nut chi mo ra mot ngan trong.
+            -->
+            <div class="dispatch-resource-data" hidden><span id="dispatch-veh-ready-count">0 xe</span><span id="dispatch-veh-busy-count">0 xe</span><span id="dispatch-driver-ready-count">0 người</span><div id="dispatch-drivers-ready-list"></div>
           </div>
         </section>
 
@@ -7945,7 +7968,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908h-gia-thanh"></script>
+  <script src="/static/js/app.js?v=20260908i-dieu-phoi"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

@@ -271,7 +271,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908f-gia-thanh`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908g-dieu-phoi`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -4160,37 +4160,6 @@ window.setDispatchCalendarView = function (view) {
   renderDispatchCalendar();
 };
 
-function toggleDispatchTools(forceOpen) {
-  const button = document.getElementById('dispatch-tools-button');
-  const panel = document.getElementById('dispatch-tools-panel');
-  if (!button || !panel) return;
-  const open = typeof forceOpen === 'boolean' ? forceOpen : panel.hidden;
-  panel.hidden = !open;
-  button.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) panel.querySelector('[role="menuitem"]')?.focus();
-}
-
-function openDispatchTool(toolName) {
-  const allowed = ['alerts'];
-  const active = allowed.includes(toolName) ? toolName : 'alerts';
-  const drawer = document.getElementById('dispatch-tool-drawer');
-  allowed.forEach(name => {
-    const pane = document.getElementById(`dispatch-tool-pane-${name}`);
-    if (pane) pane.hidden = name !== active;
-  });
-  const titles = { alerts: 'Cảnh báo điều phối' };
-  const title = document.getElementById('dispatch-tool-title');
-  if (title) title.textContent = titles[active];
-  if (drawer) drawer.hidden = false;
-  toggleDispatchTools(false);
-  drawer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function closeDispatchTool() {
-  const drawer = document.getElementById('dispatch-tool-drawer');
-  if (drawer) drawer.hidden = true;
-}
-
 function switchDispatchWeekView(viewName) {
   activeDispatchWeekView = viewName === 'available' ? 'available' : 'schedule';
 }
@@ -4212,30 +4181,15 @@ function closeDispatchDetail() {
   dispatchDetailReturnFocus?.focus?.();
 }
 
+/**
+ * Bàn phím cho khung chi tiết điều phối.
+ *
+ * Trước đây hàm này còn lo cả bảng chọn "Công cụ" — mũi lên/xuống giữa các mục,
+ * Escape để đóng. Bảng chọn đó đã bỏ: nó chỉ có một mục là "Cảnh báo", mà khối
+ * cảnh báo nay là cột thứ ba thường trực, nên bấm nút chỉ mở ra một ngăn trống.
+ */
 function setupDispatchWorkbenchAccessibility() {
-  const button = document.getElementById('dispatch-tools-button');
-  const panel = document.getElementById('dispatch-tools-panel');
   const detail = document.getElementById('dispatch-detail');
-  if (button && panel) {
-    button.addEventListener('keydown', event => {
-      if (event.key !== 'ArrowDown') return;
-      event.preventDefault();
-      toggleDispatchTools(true);
-    });
-    const items = Array.from(panel.querySelectorAll('[role="menuitem"]'));
-    items.forEach((item, index) => item.addEventListener('keydown', event => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        toggleDispatchTools(false);
-        button.focus();
-        return;
-      }
-      if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-      event.preventDefault();
-      const offset = event.key === 'ArrowDown' ? 1 : -1;
-      items[(index + offset + items.length) % items.length]?.focus();
-    }));
-  }
   detail?.addEventListener('keydown', event => {
     if (event.key === 'Escape') return closeDispatchDetail();
     if (event.key !== 'Tab' || !window.matchMedia?.('(max-width: 1100px)').matches) return;
@@ -4716,12 +4670,9 @@ function updateDispatchWorkflowSteps() {
 }
 
 const dispatchStepModalConfig = {
-  do: {
-    targetId: 'dispatch-queue',
-    title: 'Chọn DO',
-    description: 'Chọn đơn cần lên lịch vận chuyển.',
-    icon: 'fa-inbox'
-  },
+  // Bước 1 CỐ Ý không có ở đây: cột "DO chờ điều phối" hiện sẵn bên trái, nên
+  // đưa nó vào hộp thoại là lấy một thứ đang thấy được rồi che kín màn hình
+  // bằng chính nó. `openDispatchStepModal` chặn bước đó ở đầu hàm.
   trip: {
     targetId: '',
     title: 'Kiểm tra Trip',
@@ -4743,6 +4694,18 @@ const dispatchStepModalConfig = {
 };
 
 window.openDispatchStepModal = function (step) {
+  // BƯỚC 1 không còn mở hộp thoại. Cột "DO chờ điều phối" nay hiện sẵn ở bên
+  // trái, nên đưa nó vào hộp thoại là lấy một thứ đang thấy được rồi che kín
+  // màn hình bằng chính nó. Bấm bước 1 thì chỉ đưa con trỏ vào ô tìm của cột
+  // đó — việc mà người dùng định làm.
+  if (step === 'do') {
+    const cot = document.getElementById('dispatch-queue');
+    const oTim = document.getElementById('dispatch-do-search-input');
+    if (cot) cot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (oTim) oTim.focus();
+    return;
+  }
+
   const hasDO = Boolean(selectedDispatchCalendarOrderId || document.getElementById('dispatch-selected-do')?.value);
   const tripGate = resolveDispatchTripGate(selectedDispatchCalendarOrderId || document.getElementById('dispatch-selected-do')?.value);
   const hasPlannedTrip = tripGate.state === 'ready';

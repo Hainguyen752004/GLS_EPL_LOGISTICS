@@ -5098,5 +5098,15 @@
     "en": "RESOURCE PREPARATION",
     "vi": "CHUẨN BỊ NGUỒN LỰC",
     "la": "ກະຕຽມຊັບພະຍາກອນ"
+  },
+  "title_dispatch_exceptions": {
+    "en": "Exceptions to clear",
+    "vi": "Ngoại lệ cần duyệt",
+    "la": "ຂໍ້ຍົກເວັ້ນທີ່ຕ້ອງແກ້"
+  },
+  "sub_dispatch_exceptions": {
+    "en": "What must be cleared before a vehicle may depart.",
+    "vi": "Việc phải xử trước khi cho xe xuất bến.",
+    "la": "ວຽກທີ່ຕ້ອງແກ້ກ່ອນປ່ອຍລົດອອກ."
   }
 }
