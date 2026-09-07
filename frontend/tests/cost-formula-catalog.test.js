@@ -149,4 +149,34 @@ assert.match(html, /\.vt-rate-missing\s*\{/, 'trạng thái thiếu đơn giá p
   assert.match(fn, /rate: source\?\.rate \|\| '0'/, 'thieu thi de trong de man hinh noi ro, khong dien so sai');
 }
 
+
+// --- Thẻ loại xe và trình sửa phải đọc CÙNG MỘT nguồn -----------------
+//
+// Chủ dự án chụp được đúng lúc hai con số nằm cạnh nhau trên cùng một màn:
+// thẻ "Container 20FT" ghi `6.250 VNĐ/km`, mà hộp thoại của CHÍNH thẻ đó
+// đang mở với ô nhập `4800`. Và dòng "Chi 1.610.000" ngay dưới lại đúng bằng
+// 200 km × 4.800 cộng ba khoản theo chuyến — tức mọi chỗ khác đã dùng 4.800,
+// chỉ dòng chữ trên thẻ là sai.
+//
+// Vì `fuelPerKm` đọc `formula.fuel`, tức từ `components` — chuỗi ĐÃ ĐỊNH DẠNG
+// để hiển thị, và nó lệch với số thật. `terms[].rate` mới là số học: trình sửa
+// công thức ghi vào đó, `FormulaModel.evaluate` đọc đó, backend tính giá thành
+// từ đó.
+
+{
+  const i = app.indexOf('const termFuel = terms.find(');
+  assert.ok(i > 0, 'thẻ loại xe phải lấy xăng dầu/km từ `terms`');
+  const than = app.slice(i, i + 400);
+  assert.ok(/term\.key === "fuel"/.test(than), 'phải tìm đúng cấu phần xăng dầu');
+  assert.ok(/FormulaModel\.toNumber\(termFuel\.rate\)/.test(than),
+    'phải đọc `rate` qua cùng bộ chuyển số với trình sửa công thức');
+
+  // Và không được quay lại đọc `components` làm nguồn CHÍNH. Nó chỉ còn là
+  // phương án dự phòng cho công thức cũ chưa có `terms`.
+  const j = app.indexOf('const fuelPerKm =');
+  assert.ok(j > i, '`fuelPerKm` phải được tính SAU khi có `terms`');
+  assert.ok(!/const fuelPerKm = parseWorkflowMoneyValue\(formula\.fuel\);/.test(app),
+    'còn đọc xăng dầu/km trực tiếp từ `components`');
+}
+
 console.log('cost-formula-catalog: tất cả kiểm tra đã qua');

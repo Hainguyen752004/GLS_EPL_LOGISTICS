@@ -16090,7 +16090,6 @@ window.renderDynamicFormulaVehicleTypes = function () {
     // thuc DA LUU, theo dung don vi tien te dang chon.
     const formula = masterFormulaStore[formulaKey] || {};
     const configured = formula.configured === true;
-    const fuelPerKm = parseWorkflowMoneyValue(formula.fuel);
     const currency = masterCostCurrencyCode();
     // Tong chi phi mot chuyen mau. Nam cau phan co don vi khac nhau (d/km,
     // d/chuyen, d/kg) nen khong cong thang duoc — moi con so "tong" deu phai
@@ -16106,6 +16105,21 @@ window.renderDynamicFormulaVehicleTypes = function () {
     const estimate = window.FormulaModel
       ? window.FormulaModel.evaluate(terms, costSampleTrip)
       : { total: 0, perKm: 0 };
+    // Xăng dầu/km lấy từ `terms`, KHÔNG lấy từ `components`.
+    //
+    // `components` chỉ là chuỗi đã định dạng để hiển thị, và nó lệch với số
+    // thật: công thức `Container 20FT` có `components.fuel = "6,250"` trong
+    // khi `terms[].rate` là 4800. Hậu quả thấy ngay trên một ảnh chụp: thẻ
+    // ghi "6.250 VNĐ/km", mà hộp thoại của chính thẻ đó hiện ô nhập 4800, và
+    // dòng "Chi 1.610.000" ngay dưới lại đúng bằng 200 km × 4.800 + ba khoản
+    // theo chuyến — tức mọi chỗ khác đều đã dùng 4.800.
+    //
+    // `terms` là thứ trình sửa công thức ghi vào, `FormulaModel.evaluate` đọc,
+    // và backend dùng để tính giá thành. Nên thẻ phải đọc cùng nguồn đó.
+    const termFuel = terms.find(term => term && term.key === "fuel");
+    const fuelPerKm = termFuel
+      ? window.FormulaModel.toNumber(termFuel.rate)
+      : parseWorkflowMoneyValue(formula.fuel);
     return `
       <div class="veh-type-card" data-formula-key="${escapeHtml(formulaKey)}"
            data-vehicle-type-id="${escapeHtml(vehicleType.id)}" data-vehicle-type-name="${escapeHtml(vehicleType.name)}"
