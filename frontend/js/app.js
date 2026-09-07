@@ -1047,13 +1047,13 @@ window.showEnterpriseModuleTab = function (tabsId, key) {
     button.style.color = active ? '#0a6ed1' : '#334155';
     button.style.boxShadow = active ? '0 4px 12px rgba(10,110,209,.12)' : 'none';
   });
-  if (tabsId === 'tracking-folder-tabs' && key === 'gps-pod') {
-    setTimeout(() => {
-      if (typeof gpsTrackingMap !== 'undefined' && gpsTrackingMap && typeof gpsTrackingMap.invalidateSize === 'function') {
-        gpsTrackingMap.invalidateSize();
-      }
-    }, 80);
-  }
+  // CỐ Ý không còn nhánh riêng cho màn Theo dõi ở đây.
+  //
+  // Trước đây khi mở thẻ "GPS / POD" thì gọi `gpsTrackingMap.invalidateSize()`:
+  // Leaflet dựng bản đồ trong lúc thẻ còn ẩn thì tính sai kích thước, phải nhắc
+  // lại khi hiện ra. Nay màn Theo dõi không còn chia thẻ — cả ba khối hiện cùng
+  // lúc — nên chỗ nhắc đúng là lúc VÀO MÀN, và `switchView('tracking')` đã làm
+  // việc đó rồi. Giữ thêm ở đây là hai chỗ làm cùng một việc.
   releaseEnterpriseTabHostHeight(tabsId);
 };
 
@@ -1147,31 +1147,16 @@ window.installEnterpriseModuleTabs = function () {
         }
       ]
     },
-    {
-      sectionId: 'view-tracking',
-      tabsId: 'tracking-folder-tabs',
-      title: lang === 'la' ? 'GPS / POD / ເຫດການ / ອຸບັດຕິເຫດ' : (lang === 'en' ? 'GPS / POD / Incidents / Events' : 'GPS / POD / Sự cố / Sự kiện'),
-      groups: [
-        {
-          key: 'gps-pod',
-          label: 'GPS / POD',
-          hint: lang === 'la' ? 'ແຜນທີ່ GPS ແລະ ຢືນຢັນຫຼັກຖານການຈັດສົ່ງ.' : (lang === 'en' ? 'GPS map and Proof of Delivery verification.' : 'Bản đồ GPS và xác nhận bằng chứng giao hàng.'),
-          selectors: ['#tracking-gps-pod-workspace']
-        },
-        {
-          key: 'incidents',
-          label: lang === 'la' ? 'ອຸບັດຕິເຫດ' : (lang === 'en' ? 'Incidents' : 'Sự cố'),
-          hint: lang === 'la' ? 'ຕິດຕາມ ແລະ ລາຍງານອຸບັດຕິເຫດຂົນສົ່ງ.' : (lang === 'en' ? 'Track and report transportation incidents.' : 'Theo dõi và báo cáo sự cố vận chuyển.'),
-          selectors: ['#tracking-incident-workspace']
-        },
-        {
-          key: 'events',
-          label: lang === 'la' ? 'ລຳດັບເຫດການ' : (lang === 'en' ? 'Events Timeline' : 'Chuỗi sự kiện'),
-          hint: lang === 'la' ? 'Timeline check-in, pickup, arrival ແລະ POD.' : (lang === 'en' ? 'Timeline check-in, pickup, arrival and POD.' : 'Timeline check-in, pickup, arrival và POD.'),
-          selectors: ['#tracking-events-workspace']
-        }
-      ]
-    },
+    // MAN THEO DOI CO Y KHONG CO O DAY.
+    //
+    // Truoc day no chia ba the lon: GPS/POD, Su co, Chuoi su kien. Ba thu do la
+    // ba MAT cua cung mot chuyen: nguoi truc thap kiem soat thay mot chuyen do,
+    // roi hoi "no dang o dau", "da ky POD chua", "co su co gi". Moi cau hoi la
+    // mot lan doi the va mat ngu canh — va chon DO o the GPS roi sang the Su co
+    // la phai chon lai.
+    //
+    // Nay ba khoi hien cung luc, xep thanh mot bang hai cot bang CSS tren
+    // `#view-tracking`. Xem `.tk-board-view` trong index.html.
     {
       sectionId: 'view-accounting',
       tabsId: 'accounting-folder-tabs',

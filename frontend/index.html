@@ -1285,6 +1285,43 @@
     .cf-table tfoot small { display:block; margin-top:2px; font-size:.66rem; color:#64748b; font-weight:600; text-transform:none; letter-spacing:0; }
     .cf-total { font-size:1.15rem; font-weight:900; color:#0a6ed1; }
     .cf-perkm td { border-top:1px dashed #cbd7e5; padding-top:8px; padding-bottom:10px; font-size:.76rem; color:#475569; }
+    /* THEO DÕI VÀ KIỂM SOÁT — một bảng, không ba tab.
+
+       Ba khối là ba MẶT của cùng một chuyến, nên chúng phải cùng thấy được:
+       khối GPS/POD (bên trong đã tự chia danh sách | bản đồ) chiếm cột trái,
+       còn Chuỗi sự kiện và Sự cố xếp thành cột phải — đọc ra thành ba cột.
+
+       Không dời markup: sau khi vá thẻ đóng bị thiếu, cả ba khối đã là con
+       TRỰC TIẾP của `#view-tracking`, nên bố cục làm được bằng CSS. */
+    /* VI SAO CO !important VA VI SAO RANG THEO .active:
+
+       `switchView` ghi `sec.style.display` TRUC TIEP tren the — "block" cho man
+       dang mo, "none" cho man dong. Style noi tuyen thang moi quy tac lop, nen
+       khong co !important thi luoi nay khong bao gio ap.
+
+       Nhung !important mot minh thi lai buoc man Theo doi luon hien, ke ca khi
+       da dong. Nen phai rang theo `.active`: `switchView` bo lop do khi dong man,
+       va luc ay quy tac nay khong con khop. */
+    .view-section.tk-board-view.active {
+      display:grid !important; grid-template-columns:minmax(0,1fr) 400px; gap:16px;
+      align-items:start;
+    }
+    /* Khối GPS/POD chiếm cả cột trái và cao bằng hai khối bên phải cộng lại. */
+    .tk-board-view > #tracking-gps-pod-workspace { grid-row:span 2; min-width:0; }
+    .tk-board-view > #tracking-events-workspace,
+    .tk-board-view > #tracking-incident-workspace { min-width:0; }
+    /* Bảng "sự cố đã khai" ở cuối màn thì trải hết chiều ngang: nó là một bảng
+       nhiều cột, nhồi vào cột 400px là không đọc được cột nào. */
+    .tk-board-view > .fiori-table-wrapper,
+    .tk-board-view > table { grid-column:1 / -1; }
+
+    /* Màn hẹp: hai cột cạnh nhau là không đọc được cột nào. Về một cột, và hồ
+       sơ xuống DƯỚI bản đồ — để lên trên là đẩy bản đồ khỏi màn hình. */
+    @media (max-width:1280px) {
+      .view-section.tk-board-view.active { grid-template-columns:minmax(0,1fr); }
+      .tk-board-view > #tracking-gps-pod-workspace { grid-row:auto; }
+    }
+
     .cf-note { display:flex; align-items:flex-start; gap:8px; margin:0; padding:11px 20px; background:#f2f8ff; color:#075fa9; font-size:.73rem; border-top:1px solid #dbeafe; }
 
     /* HAI CỘT: cấu phần bên trái, chuyến mẫu và kết quả bên phải.
@@ -5577,7 +5614,7 @@
         </section>
 
         <!-- 6. TRACKING & CONTROL VIEW -->
-        <section id="view-tracking" class="view-section" style="background-color: #f8fafc; min-height: 100vh; padding: 24px;">
+        <section id="view-tracking" class="view-section tk-board-view" style="background-color: #f8fafc; min-height: 100vh; padding: 24px;">
           <div id="tracking-gps-pod-workspace" style="display:grid; gap:18px;">
             <!-- Active Vehicle & DO Selector Bar -->
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
@@ -5690,7 +5727,15 @@
               Chua chon DO de xem ho so sau giao.
             </div>
           </div>
-          </div> <!-- End Tracking GPS/POD Workspace -->
+          </div>
+          <!--
+            The dong nay TRUOC DAY THIEU. Thieu no thi hai khong gian ben duoi —
+            Chuoi su kien va Su co — thanh CON cua khoi GPS/POD trong markup, chu
+            khong phai khoi ngang hang. Chay len van trong on vi bo may the doi
+            chung ra ngoai luc chay; nhung ai doc markup thi hieu sai cau truc, va
+            bat ky doan CSS nao nham vao "con truc tiep" cua khung ngoai deu ap sai.
+          -->
+          </div> <!-- Het khoi GPS/POD -->
 
           <div id="tracking-events-workspace" style="display:grid; gap:18px;">
           <div id="gps-event-timeline-panel" style="background:#ffffff; border-radius:12px; border:1px solid #dbeafe; padding:20px; box-shadow:0 4px 16px rgba(15,23,42,0.06);">
@@ -7968,7 +8013,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908i-dieu-phoi"></script>
+  <script src="/static/js/app.js?v=20260908k-theo-doi"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
