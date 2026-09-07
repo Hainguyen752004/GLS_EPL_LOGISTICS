@@ -42,7 +42,15 @@ STATUS = {
     "delivery_order": {
         "pending": "Chờ vận chuyển",
         "in_transit": "Đang vận chuyển",
-        "delivered": "Đã giao hàng",
+        # Xe đã tới điểm giao nhưng CHƯA có POD ký nhận. Nói rõ "chờ POD"
+        # ngay trong nhãn, vì đây là mốc mà người điều hành hay tưởng là
+        # đã xong và đi chốt tiền — mà tiền chỉ chốt sau khi có chứng từ.
+        "arrived": "Đã đến nơi — chờ POD",
+        # "Đã giao" mơ hồ: xe tới điểm giao mà chưa ký POD thì theo cách
+        # hiểu thông thường cũng là "đã giao", nhưng lúc đó chưa có gì xác
+        # nhận. Mốc này là ĐÃ ký POD, ĐÃ chốt giá, ĐÃ hạch toán — nên gọi
+        # đúng tên là hoàn tất. Mốc "tới bãi chưa ký" là `arrived`.
+        "delivered": "Đã hoàn tất",
         "cancelled": "Đã hủy",
     },
 }
@@ -858,11 +866,20 @@ def update_delivery_status(db, do_id, status, user="system"):
         raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy lệnh giao hàng {do_id}", 404)
     allowed = {
         "pending": {"in_transit", "cancelled"},
-        "in_transit": {"delivered"},
+        # `arrived` là mốc "xe đã tới điểm giao, chưa có POD". Trước đây nó
+        # có trong danh sách trạng thái hợp lệ (migration v002) mà KHÔNG có
+        # đường nào đặt được, nên màn hình không bao giờ phân biệt được xe
+        # còn trên đường hay đã tới bãi chờ bốc dỡ.
+        #
+        # Cho đi thẳng `in_transit -> delivered` luôn: không phải chuyến nào
+        # cũng gửi được mốc đến nơi (GPS mất tín hiệu, tài xế không báo), và
+        # chặn đường cũ lại thì mọi chuyến như vậy bị kẹt.
+        "in_transit": {"arrived", "delivered"},
+        "arrived": {"delivered"},
     }
     if status not in allowed.get(do.canonical_status, set()):
         raise conflict("INVALID_TRANSITION", f"Không thể chuyển từ {do.status} sang {status}.")
-    if status == "in_transit" and not (do.vehicle_id and do.driver_id):
+    if status in ("in_transit", "arrived") and not (do.vehicle_id and do.driver_id):
         # Không có xe thì "đang vận chuyển" là một câu nói dối, và nó kéo
         # theo ba hệ quả: DO biến mất khỏi bản đồ điều độ, vì không có bản
         # ghi vehicle_tracking nên /api/tracking/{id} trả 404; DO kẹt mãi ở

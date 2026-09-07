@@ -84,7 +84,16 @@ check('closeout POD cards expose persisted POD document names', () => {
     /pod_documents \|\| \[\]\)\.filter\(doc =>[\s\S]{0,120}pod_record_id/,
     'Closeout must read the real POD documents table, keyed by pod_record_id.'
   );
-  assert.match(appSource, /Chứng từ: \$\{chungTuPOD\(data, pod\)\}/, 'Closeout must label the attached POD evidence.');
+  // Ý định của khẳng định này là: tên chứng từ đã lưu phải HIỆN RA. Bản trước
+  // in ra một dòng chữ "Chứng từ: 2 tệp (...)"; bản này liệt kê từng tệp kèm
+  // `download_url` nên mở được luôn — làm đúng ý định đó và làm hơn thế. Nên
+  // khẳng định neo vào Ý ĐỊNH, không neo vào cách viết cũ.
+  assert.match(appSource, /escapeCloseoutText\(t\.file_name \|\| t\.id\)/,
+    'Closeout must show each persisted POD document name.');
+  assert.match(appSource, /href="\$\{escapeCloseoutText\(t\.download_url/,
+    'Each POD document must be openable through its stored download_url.');
+  assert.match(appSource, /Chứng từ \(\$\{tep\.length\}\)/,
+    'Closeout must still label the POD evidence block with a count.');
   // Vẫn đọc thêm hai cột cũ làm dự phòng, cho dữ liệu lịch sử từ bản trước.
   assert.match(appSource, /pod\?\.photo_url \|\| pod\?\.signature_url/, 'Legacy rows must still be shown.');
   // Và không được quay lại việc lấy hai cột đó làm nguồn chính.

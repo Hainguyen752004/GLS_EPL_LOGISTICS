@@ -135,4 +135,55 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8')
     .test(app), 'nút xóa phải nằm trên dòng tuyến đường và chặn nổi bọt');
 }
 
+
+// --- 7. Nút "Xe đã đến nơi" -------------------------------------------
+//
+// Hệ thống có hai lớp trạng thái: chuyến hàng đi qua sáu mốc
+// (`check_in` … `delivered`), còn DO chỉ có ba. Sự kiện `arrival` từ GPS chỉ
+// đổi lớp chuyến hàng, nên trước đây DO vẫn là "Đang vận chuyển" và người
+// điều hành không phân biệt được xe còn trên đường hay đã tới bãi chờ bốc dỡ.
+//
+// Chủ dự án chốt cần CẢ HAI đường báo: GPS tự gửi, và người điều hành bấm tay
+// được khi thiết bị mất tín hiệu. Đây là đường bấm tay.
+
+{
+  const i = app.indexOf('list.slice(0, GIOI_HAN_DONG_DO).forEach(do_item => {');
+  assert.ok(i > 0, 'không thấy vòng vẽ dòng DO');
+  const dong = app.slice(i, app.indexOf(NL + '  });', i));
+
+  // Chỉ hiện khi xe đang trên đường. Ở `arrived` thì đã báo rồi, ở `pending`
+  // thì chưa chạy, ở `delivered` thì xong — hiện nút ở những trạng thái đó là
+  // mời bấm một việc không có nghĩa.
+  assert.ok(/const denNoiDuoc = String\(do_item\?\.canonical_status \|\| ''\)\.toLowerCase\(\) === 'in_transit';/
+    .test(dong), 'nút đến nơi chỉ hiện khi đang vận chuyển');
+  const m = dong.match(/\$\{denNoiDuoc \? `([\s\S]*?)` : ('.*?')\}/);
+  assert.ok(m, 'nút phải hiện theo điều kiện, dạng denNoiDuoc ? ... : ...');
+  assert.ok(m[1].includes("ghiXeDaDenNoi('${doId}')"), 'nút phải gọi hàm ghi mốc');
+  assert.strictEqual(m[2], "''", 'không đủ điều kiện thì không có nút');
+}
+
+{
+  const i = app.indexOf('window.ghiXeDaDenNoi = async function (id) {');
+  assert.ok(i > 0, 'không thấy ghiXeDaDenNoi');
+  const than = app.slice(i, app.indexOf(NL + '};', i));
+
+  assert.ok(/status: 'arrived'/.test(than), "phải gửi đúng trạng thái 'arrived'");
+  assert.ok(/\/api\/delivery-orders\/\$\{encodeURIComponent\(id\)\}\/status/.test(than),
+    'phải gọi đúng đường đổi trạng thái, và thoát ký tự trong mã đơn');
+  assert.ok(/method: 'PUT'/.test(than));
+
+  // Nói rõ vì sao trước khi gửi, thay vì để backend trả 409 chung chung.
+  assert.ok(/tt !== 'in_transit'/.test(than), 'phải kiểm trạng thái tại chỗ');
+  assert.ok(/đã ghi mốc đến nơi rồi/.test(than), 'ghi lần hai phải nói rõ');
+
+  // Và phải nói THẲNG là tiền chưa chốt được — đây đúng là mốc mà người ta
+  // hay tưởng đã xong rồi đi chốt tiền.
+  assert.ok(/CHƯA chốt được/.test(than) && /POD/.test(than),
+    'phải nói rõ ghi mốc này không mở quyết toán');
+  assert.ok(/confirm\(/.test(than), 'phải hỏi lại trước khi ghi mốc');
+
+  // Thất bại phải nói LỜI CỦA MÁY CHỦ.
+  assert.ok(/baoLoiMayChu\(res, viec\)/.test(than) && /baoMatKetNoi\(viec, e\)/.test(than));
+}
+
 console.log('huy-lenh-giao-hang-ui: tất cả kiểm tra đã qua');

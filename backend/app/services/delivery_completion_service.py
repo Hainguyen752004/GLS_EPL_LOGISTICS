@@ -1,4 +1,4 @@
-import datetime as dt
+﻿import datetime as dt
 import hashlib
 import json
 from decimal import Decimal, ROUND_HALF_UP
@@ -244,7 +244,7 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
         adjustments.append(row)
 
     delivery.canonical_status = "delivered"
-    delivery.status = "Đã giao"
+    delivery.status = "Đã hoàn tất"
     delivery.delivery_date = completed_at
     delivery.updated_at = completed_at
     delivery.updated_by = actor

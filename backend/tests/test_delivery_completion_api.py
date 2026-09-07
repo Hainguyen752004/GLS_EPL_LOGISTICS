@@ -321,7 +321,12 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
     with database.SessionLocal() as db:
         completed_delivery = db.get(models.DeliveryOrder, "DO-COMPLETE")
         assert completed_delivery.canonical_status == "delivered"
-        assert completed_delivery.status == "Đã giao"
+        # "Đã giao" mo ho nen da doi thanh "Đã hoàn tất". Chu du an chi ra:
+        # xe toi diem giao ma chua ky POD thi theo cach hieu thuong cung la
+        # "da giao", nhung luc do chua co gi xac nhan. Moc nay la DA ky POD,
+        # DA chot gia, DA hach toan — con moc "toi bai chua ky" la `arrived`
+        # ("Đã đến nơi — chờ POD").
+        assert completed_delivery.status == "Đã hoàn tất"
         assert db.get(models.TransportTrip, "TRIP-COMPLETE").status == "completed"
         assert db.get(models.FreightOrder, "FO-TRIP-COMPLETE").status == "delivered"
         assignment = db.query(models.ResourceAssignment).filter_by(trip_id="TRIP-COMPLETE").one()

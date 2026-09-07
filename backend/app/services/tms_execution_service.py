@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 
 from models import (
     AuditLog,
+    DeliveryOrder,
     FreightOrder,
     FreightOrderLegacyLink,
     ResourceAssignment,
@@ -114,6 +115,38 @@ def _validate_documents(event_type, documents):
     if not pod or not str(pod.get("storage_url") or "").strip() or not str(pod.get("checksum") or "").strip():
         raise _error("POD_DOCUMENT_REQUIRED", "Sự kiện giao hàng phải có chứng từ POD hợp lệ.")
 
+
+def _dong_bo_moc_do(db, order, event_type, actor):
+    """Đưa mốc hành trình của chuyến hàng sang trạng thái của DO.
+
+    Hệ thống có hai lớp trạng thái chạy song song: chuyến hàng đi qua sáu
+    mốc (`check_in` … `delivered`), còn DO chỉ có ba. Sự kiện `arrival` chỉ
+    đổi lớp chuyến hàng, nên DO vẫn là `in_transit` và màn hình không phân
+    biệt được xe còn trên đường hay đã tới bãi chờ bốc dỡ.
+
+    Đây là đường "GPS tự báo": thiết bị gửi `arrival`, DO tự sang
+    `arrived`. Người điều hành vẫn bấm tay được qua
+    `PUT /api/delivery-orders/{id}/status` khi GPS mất tín hiệu.
+
+    Chỉ đồng bộ mốc `arrival`. `delivered` KHÔNG đồng bộ ở đây: hoàn tất
+    giao còn đòi POD, ảnh ký nhận và chốt giá trong cùng một giao dịch —
+    đó là việc của `complete_delivery`, không phải của một sự kiện GPS.
+    """
+    if event_type != "arrival":
+        return
+    # DO nối với chuyến hàng qua bảng riêng `freight_order_legacy_links`,
+    # không phải một cột trên `freight_orders`.
+    ma_do = db.scalar(select(FreightOrderLegacyLink.delivery_order_id).where(
+        FreightOrderLegacyLink.freight_order_id == order.id))
+    if not ma_do:
+        return
+    delivery = db.get(DeliveryOrder, ma_do)
+    if delivery is None or delivery.canonical_status != "in_transit":
+        return
+    delivery.canonical_status = "arrived"
+    delivery.status = "Đã đến nơi — chờ POD"
+    delivery.updated_by = actor
+    delivery.version = (delivery.version or 1) + 1
 
 def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, actor: str) -> TransportEvent:
     if not str(idempotency_key or "").strip():
@@ -235,6 +268,7 @@ def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, ac
         ))
     if event_type in MAIN_SEQUENCE:
         order.status = STATUS_AFTER[event_type]
+        _dong_bo_moc_do(db, order, event_type, actor)
         order.version += 1
         order.updated_at = dt.datetime.utcnow()
         order.updated_by = actor

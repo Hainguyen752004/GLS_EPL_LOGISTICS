@@ -31,7 +31,7 @@
       dispatched: 'Đã điều phối',
       in_transit: 'Đang vận chuyển',
       arrived: 'Đã đến nơi',
-      delivered: 'Đã giao hàng',
+      delivered: 'Đã hoàn tất',
       completed: 'Hoàn tất',
       reversed: 'Đã đảo bút toán',
       cancelled: 'Đã hủy',

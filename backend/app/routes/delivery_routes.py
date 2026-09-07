@@ -506,6 +506,33 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         },
         "vehicle_id": delivery_order.vehicle_id or "",
         "driver_id": delivery_order.driver_id or "",
+        # Hồ sơ là CHỨNG TỪ nên phải tự đủ. Màn "Hoàn tất giao hàng" lấy 18
+        # ô thông tin DO từ bộ đệm của trình duyệt; hồ sơ thì không được
+        # phụ thuộc vào đó — bộ đệm có thể trống (mở hồ sơ ngay sau khi tải
+        # trang) hoặc đã cũ. Đọc lại từ cơ sở dữ liệu tại đây.
+        "delivery_order": {
+            "id": delivery_order.id,
+            "canonical_status": delivery_order.canonical_status or "",
+            "status": delivery_order.status or "",
+            "so_id": delivery_order.so_id or "",
+            "customer_id": delivery_order.customer_id or "",
+            "route_id": delivery_order.route_id or "",
+            "origin": delivery_order.origin or "",
+            "destination": delivery_order.destination or "",
+            "pickup_window_start": _iso_or_none(delivery_order.pickup_window_start),
+            "pickup_window_end": _iso_or_none(delivery_order.pickup_window_end),
+            "delivery_window_start": _iso_or_none(delivery_order.delivery_window_start),
+            "delivery_window_end": _iso_or_none(delivery_order.delivery_window_end),
+            "pickup_date": str(delivery_order.pickup_date or ""),
+            "delivery_date": str(delivery_order.delivery_date or ""),
+            "vehicle_id": delivery_order.vehicle_id or "",
+            "driver_id": delivery_order.driver_id or "",
+            "co_driver": delivery_order.co_driver or "",
+            "weight_kg": _decimal_to_float(delivery_order.weight_kg),
+            "pallet_count": delivery_order.pallet_count,
+            "volume_m3": _decimal_to_float(delivery_order.volume_m3),
+            "packaging_spec": delivery_order.packaging_spec or "",
+        },
         "currency": currency,
         "cost_formula": formula,
         "configured_cost_lines": configured_cost_lines,

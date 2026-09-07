@@ -357,7 +357,11 @@ class DeliveryOrder(Base):
     __tablename__ = "delivery_orders"
     __table_args__ = (
         CheckConstraint(
-            "canonical_status IN ('pending','in_transit','delivered','cancelled')",
+            # `arrived` = xe da toi diem giao, CHUA co POD ky nhan. Migration
+            # v002 da cho phep no o Postgres tu lau, nhung rang buoc trong mo
+            # hinh (dung cho SQLite cua bo kiem) thi chua — nen bo kiem chan
+            # dung cai ma co so du lieu that cho phep.
+            "canonical_status IN ('pending','in_transit','arrived','delivered','cancelled')",
             name="ck_delivery_orders_canonical_status",
         ),
     )

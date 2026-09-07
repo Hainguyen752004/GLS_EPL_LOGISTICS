@@ -449,8 +449,18 @@ async def update_delivery_order_status(do_id: str, request: Request, payload: De
         "In Transit": "in_transit",
         "Đang vận chuyển": "in_transit",
         "in_transit": "in_transit",
+        # Mốc "xe đã tới điểm giao, chưa có POD". Nhận cả nhãn tiếng Việt vì
+        # thiết bị GPS và script demo gửi cả hai dạng.
+        "Arrived": "arrived",
+        "arrived": "arrived",
+        "Đã đến nơi": "arrived",
+        "Đã đến nơi — chờ POD": "arrived",
         "Delivered": "delivered",
+        # Giữ cả hai chuỗi cũ: thiết bị và script demo cũ còn gửi chúng.
         "Đã giao hàng": "delivered",
+        "Đã giao": "delivered",
+        "Đã hoàn tất": "delivered",
+        "Completed": "delivered",
         "delivered": "delivered",
         "Cancelled": "cancelled",
         "Canceled": "cancelled",

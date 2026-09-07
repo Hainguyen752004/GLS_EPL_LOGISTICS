@@ -18,8 +18,11 @@
     packed: '\u0110\u00e3 \u0111\u00f3ng g\u00f3i',
     ready_for_dispatch: 'S\u1eb5n s\u00e0ng \u0111i\u1ec1u ph\u1ed1i',
     in_transit: '\u0110ang v\u1eadn chuy\u1ec3n',
-    arrived: '\u0110\u00e3 \u0111\u1ebfn n\u01a1i',
-    delivered: '\u0110\u00e3 giao h\u00e0ng',
+    // Ba m\u1ed1c t\u00e1ch r\u00f5. "\u0110\u00e3 giao" m\u01a1 h\u1ed3: xe t\u1edbi b\u00e3i m\u00e0 ch\u01b0a k\u00fd POD th\u00ec theo
+    // c\u00e1ch hi\u1ec3u th\u01b0\u1eddng c\u0169ng l\u00e0 "\u0111\u00e3 giao", nh\u01b0ng l\u00fac \u0111\u00f3 ch\u01b0a c\u00f3 g\u00ec x\u00e1c nh\u1eadn.
+    // C\u00f2n `delivered` l\u00e0 \u0111\u00e3 k\u00fd POD, \u0111\u00e3 ch\u1ed1t gi\u00e1, \u0111\u00e3 h\u1ea1ch to\u00e1n.
+    arrived: '\u0110\u00e3 \u0111\u1ebfn n\u01a1i \u2014 ch\u1edd POD',
+    delivered: '\u0110\u00e3 ho\u00e0n t\u1ea5t',
     completed: 'Ho\u00e0n t\u1ea5t',
     posted: '\u0110\u00e3 h\u1ea1ch to\u00e1n',
     cancelled: '\u0110\u00e3 h\u1ee7y',
@@ -46,8 +49,9 @@
     packed: ['packed', VI.packed, 'da dong goi'],
     ready_for_dispatch: ['ready for dispatch', VI.ready_for_dispatch, 'san sang dieu phoi'],
     in_transit: ['in transit', VI.in_transit, 'dang van chuyen', 'dang giao hang'],
-    arrived: ['arrived', VI.arrived, 'da den noi'],
-    delivered: ['delivered', VI.delivered, 'da giao hang'],
+    // Giữ cả bí danh cũ: dữ liệu và thiết bị cũ còn gửi những chuỗi đó.
+    arrived: ['arrived', VI.arrived, 'da den noi', 'da den noi cho pod'],
+    delivered: ['delivered', VI.delivered, 'da giao hang', 'da hoan tat'],
     completed: ['completed', VI.completed, 'hoan tat'],
     posted: ['posted', VI.posted, 'da hach toan'],
     cancelled: ['cancelled', 'canceled', VI.cancelled, 'da huy'],

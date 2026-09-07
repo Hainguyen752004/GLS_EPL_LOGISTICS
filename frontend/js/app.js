@@ -7626,6 +7626,24 @@ function deliveryOrderStage(order) {
 
 function deliveryOrderOperationalStatus(order) {
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
+
+  // "Đã đến nơi" phải nói ra được, và nói TRƯỚC nhãn từ máy chủ.
+  //
+  // Máy chủ xếp `arrived` vào rổ `active` — đúng, vì xe vẫn đang trong
+  // chuyến — nhưng nhãn của rổ đó là "Đang vận chuyển". Nên trước đây xe đã
+  // tới bãi chờ bốc dỡ mà màn hình vẫn ghi đang chạy, và người điều hành
+  // không phân biệt được hai việc rất khác nhau đó.
+  //
+  // Nhãn kèm luôn "chờ POD", vì đây đúng là mốc mà người ta hay tưởng đã
+  // xong rồi đi chốt tiền — mà tiền chỉ chốt sau khi có chứng từ ký nhận.
+  if (String(order?.canonical_status || '').toLowerCase() === 'arrived') {
+    return {
+      label: lang === 'la' ? 'ຮອດຈຸດຫມາຍແລ້ວ — ລໍຖ້າ POD'
+        : (lang === 'en' ? 'Arrived — awaiting POD' : 'Đã đến nơi — chờ POD'),
+      className: 'fiori-status-warning',
+    };
+  }
+
   const analyzed = deliveryOrderAnalysisRecord(order);
   if (analyzed?.operational_status) {
     const className = analyzed.stage === 'incident'
@@ -7740,6 +7758,51 @@ function huyDuocDon(do_item) {
   return tt === 'pending';
 }
 
+/* ==========================================================================
+   Ghi mốc "xe đã đến nơi".
+
+   Hệ thống có hai lớp trạng thái: chuyến hàng đi qua sáu mốc
+   (`check_in` … `delivered`), còn DO chỉ có ba. Sự kiện `arrival` từ GPS
+   chỉ đổi lớp chuyến hàng, nên trước đây DO vẫn là "Đang vận chuyển" và
+   người điều hành không phân biệt được xe còn trên đường hay đã tới bãi
+   chờ bốc dỡ.
+
+   Đây là đường BẤM TAY, dùng khi thiết bị GPS mất tín hiệu — GPS tự báo
+   vẫn là đường chính. Ghi mốc này KHÔNG mở quyết toán chi phí: tiền chỉ
+   chốt sau khi có POD ký nhận.
+   ========================================================================== */
+
+window.ghiXeDaDenNoi = async function (id) {
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(id));
+  const tt = String(don?.canonical_status || '').toLowerCase();
+  if (don && tt !== 'in_transit') {
+    // Nói rõ vì sao, thay vì gửi lên rồi nhận một câu 409 chung chung.
+    showToast(tt === 'arrived'
+      ? `⚠️ Lệnh ${id} đã ghi mốc đến nơi rồi.`
+      : '⚠️ Chỉ ghi mốc đến nơi cho lệnh đang vận chuyển.');
+    return;
+  }
+  const XUONG_DONG = String.fromCharCode(10);
+  if (!confirm(`Ghi nhận xe của lệnh ${id} đã đến điểm giao?`
+    + XUONG_DONG + XUONG_DONG
+    + 'Đây chỉ là mốc hành trình. Tiền vẫn CHƯA chốt được —'
+    + ' phải nộp POD ký nhận trước.')) return;
+
+  const viec = `Ghi mốc đến nơi cho lệnh ${id}`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'arrived' }),
+    });
+  } catch (e) {
+    return baoMatKetNoi(viec, e);
+  }
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  showToast(`✅ Đã ghi mốc: lệnh ${id} đã đến nơi. Nộp POD để chốt tiền.`);
+  if (typeof loadDeliveryOrders === 'function') loadDeliveryOrders();
+};
 window.huyLenhGiaoHang = async function (id) {
   const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(id));
   if (don && !huyDuocDon(don)) {
@@ -8294,6 +8357,10 @@ function renderDeliveryOrders(data) {
     // dù hiện hai điều kiện trùng nhau. Tra riêng để mai này backend nới một
     // bên thì bên kia không lặng lẽ nới theo.
     const huyDuoc = huyDuocDon(do_item);
+    // Chỉ hiện nút "đã đến nơi" khi xe đang trên đường. Ở `arrived` thì đã
+    // báo rồi, ở `pending` thì chưa chạy, ở `delivered` thì xong — hiện nút
+    // ở những trạng thái đó là mời bấm một việc không có nghĩa.
+    const denNoiDuoc = String(do_item?.canonical_status || '').toLowerCase() === 'in_transit';
     const daChon = doDaChon.has(String(do_item.id));
     const tuyen = tuyenTheoMa(do_item.route_id);
     const ro = deliveryOrderStage(do_item);
@@ -8349,6 +8416,8 @@ function renderDeliveryOrders(data) {
           <div class="do-row-act">
             <button type="button" title="Xem chi tiết DO"
                     onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>
+            ${denNoiDuoc ? `<button type="button" class="den-noi" title="Xe đã đến nơi — ghi mốc, chưa chốt tiền"
+                    onclick="ghiXeDaDenNoi('${doId}')"><i class="fa-solid fa-map-pin"></i></button>` : ''}
             ${huyDuoc ? `<button type="button" class="huy" title="Hủy lệnh giao hàng"
                     onclick="huyLenhGiaoHang('${doId}')"><i class="fa-solid fa-ban"></i></button>` : ''}
           </div>
@@ -10189,55 +10258,239 @@ function chungTuPOD(data, pod) {
   return `${tep.length} tệp (${loai})`;
 }
 
+/**
+ * Một hàng nhãn — giá trị, dùng chung cho mọi khối trong hồ sơ.
+ *
+ * Giá trị rỗng vẫn hiện dấu gạch chứ không ẩn ô đi: hồ sơ là chứng từ, chỗ
+ * trống phải nhìn thấy được để biết là thiếu, không phải biến mất.
+ */
+function oHoSo(nhan, giaTri) {
+  const chu = (giaTri === null || giaTri === undefined || giaTri === "")
+    ? "—" : String(giaTri);
+  return `<div class="cl-o"><span>${escapeCloseoutText(nhan)}</span>`
+    + `<strong>${escapeCloseoutText(chu)}</strong></div>`;
+}
+
+/** Mốc thời gian dạng ISO về dạng người đọc được. */
+function gioHoSo(giaTri) {
+  if (!giaTri) return "";
+  const d = new Date(giaTri);
+  if (Number.isNaN(d.getTime())) return String(giaTri);
+  const hai = n => String(n).padStart(2, "0");
+  return `${hai(d.getDate())}/${hai(d.getMonth() + 1)}/${d.getFullYear()}`
+    + ` ${hai(d.getHours())}:${hai(d.getMinutes())}`;
+}
+
+/**
+ * Khối "Thông tin DO đầy đủ" — đúng 18 ô như màn Hoàn tất giao hàng.
+ *
+ * Đọc từ `data.delivery_order` trong phong bì closeout, KHÔNG từ bộ đệm
+ * `eplDeliveryOrders`: hồ sơ là chứng từ nên phải tự đủ. Bộ đệm có thể trống
+ * (mở hồ sơ ngay sau khi tải trang) hoặc đã cũ.
+ */
+function khoiThongTinDOHoSo(data) {
+  const d = data.delivery_order || {};
+  const o = [
+    ["Mã DO", d.id || data.do_id],
+    ["Trạng thái", statusLabel(d.canonical_status || data.status) || d.status],
+    ["SO tham chiếu", data.sales_order_id || d.so_id],
+    ["Báo giá cước", data.quotation_id],
+    ["Khách hàng", d.customer_id || data.customer_id],
+    ["Mã tuyến", d.route_id || data.route?.id],
+    ["Tên tuyến", data.route?.name],
+    ["Trip", data.trip?.id],
+    ["Điểm đi", d.origin],
+    ["Điểm đến", d.destination],
+    ["Nhận hàng từ", gioHoSo(d.pickup_window_start) || d.pickup_date],
+    ["Nhận hàng đến", gioHoSo(d.pickup_window_end)],
+    ["Giao hàng từ", gioHoSo(d.delivery_window_start) || d.delivery_date],
+    ["Giao hàng đến", gioHoSo(d.delivery_window_end)],
+    ["Xe vận chuyển", d.vehicle_id || data.vehicle_id],
+    ["Tài xế", d.driver_id || data.driver_id],
+    ["Phụ xe", d.co_driver],
+    ["Tải trọng", d.weight_kg ? `${Number(d.weight_kg).toLocaleString("vi-VN")} kg` : ""],
+    ["Số pallet", d.pallet_count],
+    ["Thể tích", d.volume_m3 ? `${Number(d.volume_m3).toLocaleString("vi-VN")} m³` : ""],
+    ["Quy cách đóng gói", d.packaging_spec],
+  ];
+  return `<section class="cl-khoi">
+      <div class="cl-khoi-dau">
+        <div><span class="cl-kicker">Lệnh giao hàng</span>
+             <h4>Thông tin DO đầy đủ</h4></div>
+        <span class="cl-chi-doc"><i class="fa-solid fa-lock"></i> Chỉ đọc</span>
+      </div>
+      <div class="cl-luoi">${o.map(x => oHoSo(x[0], x[1])).join("")}</div>
+    </section>`;
+}
+
+/**
+ * Khối "Bằng chứng giao hàng" — đầy đủ như màn Hoàn tất giao hàng.
+ *
+ * Bản trước chỉ hiện địa điểm, người nhận và thời gian, rồi ghi "2 chứng từ"
+ * mà không cho mở cái nào. Nay mỗi điểm giao hiện đủ bảy trường, và từng
+ * chứng từ là một liên kết tải được — `download_url` đã có sẵn trong phong
+ * bì, chỉ là chưa ai dùng.
+ */
+/**
+ * `delivery_result` là mã máy (`delivered_full`...). Hồ sơ là để người đọc,
+ * nên phải dịch — và bộ nhãn lấy đúng từ ô chọn ở màn Hoàn tất giao hàng, để
+ * hai màn không nói hai kiểu về cùng một kết quả.
+ */
+function ketQuaGiaoHoSo(ma) {
+  if (!ma) return '';
+  return {
+    delivered_full: 'Giao đủ hàng',
+    delivered_partial: 'Giao thiếu hàng',
+    delivery_failed: 'Giao không thành công',
+    returned: 'Trả hàng về',
+  }[String(ma)] || String(ma);
+}
+function khoiPODHoSo(data) {
+  const ds = data.pod_records || [];
+  const chungTu = data.pod_documents || [];
+  if (!ds.length) {
+    return `<section class="cl-khoi"><div class="cl-khoi-dau">
+        <div><span class="cl-kicker">Bằng chứng giao hàng</span>
+             <h4>POD đã nộp</h4></div></div>
+      <div class="cl-trong">Chưa có POD nào cho lệnh này.</div></section>`;
+  }
+  const diem = ds.map((pod, i) => {
+    const tep = chungTu.filter(t => String(t.pod_record_id) === String(pod.id));
+    const o = [
+      ["Địa điểm giao", pod.location_text],
+      ["Thời gian giao thực tế", gioHoSo(pod.delivery_time)],
+      ["Kết quả giao", ketQuaGiaoHoSo(pod.delivery_result)],
+      ["Người nhận", pod.receiver_name],
+      ["Số điện thoại", pod.receiver_phone],
+      ["Tình trạng hàng hóa", pod.cargo_condition],
+      ["Ghi chú", pod.note],
+    ];
+    return `<div class="cl-pod">
+        <div class="cl-pod-dau">
+          <span class="cl-pod-so">${i + 1}</span>
+          <strong>Điểm giao ${pod.stop_no || i + 1}</strong>
+          <span class="cl-pod-nguoi">${escapeCloseoutText(pod.receiver_name || "Chưa có người nhận")}</span>
+        </div>
+        <div class="cl-luoi">${o.map(x => oHoSo(x[0], x[1])).join("")}</div>
+        <div class="cl-tep">
+          <span class="cl-tep-nhan"><i class="fa-solid fa-paperclip"></i>
+            Chứng từ (${tep.length})</span>
+          ${tep.length
+            ? tep.map(t => `<a class="cl-tep-mot" href="${escapeCloseoutText(t.download_url || "#")}"
+                  target="_blank" rel="noopener"
+                  title="${escapeCloseoutText(t.mime_type || "")}">`
+                + `<i class="fa-solid fa-file-arrow-down"></i>`
+                + `${escapeCloseoutText(t.file_name || t.id)}</a>`).join("")
+            // Không có dòng nào trong `pod_documents` thì vẫn phải đọc hai cột
+            // cũ `photo_url` / `signature_url` — dữ liệu lịch sử từ bản trước
+            // còn nằm ở đó. `chungTuPOD` đã làm đúng phép dự phòng này.
+            : `<span class="cl-tep-thieu">${chungTuPOD(data, pod)}</span>`}
+        </div>
+      </div>`;
+  }).join("");
+  return `<section class="cl-khoi">
+      <div class="cl-khoi-dau">
+        <div><span class="cl-kicker">Bằng chứng giao hàng</span>
+             <h4>POD đã nộp</h4></div>
+        <span class="cl-dem">${ds.length} điểm giao · ${chungTu.length} chứng từ</span>
+      </div>
+      ${diem}
+    </section>`;
+}
+
 function renderDeliveryOrderCloseout(data) {
   const target = document.getElementById('tracking-closeout-content');
   if (!target) return;
   if (!data || !data.do_id) {
-    target.innerHTML = 'Chua co du lieu closeout cho DO dang chon.';
+    target.innerHTML = 'Chưa có dữ liệu hồ sơ cho DO đang chọn.';
     return;
   }
   const currency = data.currency || 'VND';
-  const formulaComponents = Object.entries(data.cost_formula?.components || {});
   const tripId = data.trip?.id || '';
+  const tm = data.commercials || {};
+
+  // Năm con số tiền: giá ban đầu, khách trả thêm, giá cuối, chi phí, lợi
+  // nhuận. Giữ nguyên vì đây là phần đọc nhanh nhất của hồ sơ.
+  const soTien = [
+    ["Giá SO ban đầu", tm.base_selling_price, "#0f172a", "#f8fafc", "#e2e8f0"],
+    ["Khách hàng trả thêm", tm.customer_surcharge_total, "#b45309", "#fff7ed", "#fed7aa"],
+    ["Giá cuối DO", tm.selling_price ?? tm.final_selling_price, "#047857", "#f0fdf4", "#bbf7d0"],
+    ["Chi phí nội bộ", tm.actual_cost_total, "#b42318", "#fef2f2", "#fecaca"],
+  ].map(x => `<div class="cl-tien" style="background:${x[3]}; border-color:${x[4]};">`
+      + `<span>${escapeCloseoutText(x[0])}</span>`
+      + `<strong style="color:${x[2]};">${closeoutMoney(x[1], currency)}</strong></div>`).join("")
+    // Lợi nhuận KHÔNG hiện bằng một con số trần. Máy chủ gửi cờ
+    // `margin_is_provisional`; bỏ qua nó là hiện "Lợi nhuận 100%" xanh lá khi
+    // chưa có chi phí thực tế — lúc đó lợi nhuận đang bằng đúng toàn bộ giá
+    // bán. `khoiLoiNhuanCloseout` đã xử lý đúng chuyện đó nên dùng lại, thay
+    // vì viết một ô mới rồi vấp lại đúng cái bẫy cũ.
+    + khoiLoiNhuanCloseout(data, currency);
+
+  // Bốn mốc đã ghi vào hệ thống — để biết hồ sơ này đã đi hết luồng chưa.
+  const moc = [
+    ["Lệnh giao hàng", `${data.do_id} · ${statusLabel(data.status) || data.status || "—"}`],
+    ["Trip vận chuyển", tripId ? `${tripId} · ${statusLabel(data.trip?.status) || data.trip?.status || ""}` : "—"],
+    ["Hóa đơn phải thu", data.invoice?.id
+      ? `${data.invoice.id} · ${statusLabel(data.invoice.canonical_status) || data.invoice.canonical_status || ""}`
+      : "Chưa lập hóa đơn"],
+    ["Xe & tài xế", [data.resource_release?.vehicle_status, data.resource_release?.driver_status]
+      .filter(Boolean).join(" · ") || "—"],
+  ].map(x => oHoSo(x[0], x[1])).join("");
+
+  const dongChiPhi = (data.configured_cost_lines || []).map(l => `<div class="cl-dong">
+      <span><strong>${escapeCloseoutText(l.name)}</strong>
+        <small>${escapeCloseoutText(l.calculation || "")}</small></span>
+      <b>${closeoutMoney(l.original_amount, currency)}</b></div>`).join("")
+    || '<div class="cl-trong">Chưa có công thức giá thành cho loại xe này.</div>';
+
+  const dongThucTe = (data.actual_cost_lines || []).map(l => `<div class="cl-dong">
+      <span><strong>${escapeCloseoutText(l.charge_type)}</strong>
+        <small>${escapeCloseoutText(l.description || "")}</small></span>
+      <b>${closeoutMoney(l.total_amount, currency)}</b></div>`).join("")
+    || '<div class="cl-trong">Chưa ghi chi phí thực tế.</div>';
+
+  const dongPhuThu = (data.customer_charge_adjustments || []).map(l => `<div class="cl-dong">
+      <span><strong>${escapeCloseoutText(l.name)}</strong>
+        <small>${escapeCloseoutText(l.note || "")}</small></span>
+      <b>${closeoutMoney(l.increase_amount ?? l.actual_amount, currency)}</b></div>`).join("")
+    || '<div class="cl-trong">Khách hàng không trả thêm khoản nào.</div>';
+
   target.innerHTML = `
-    <div style="width:100%; display:grid; gap:12px;">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; border:1px solid #dbeafe; border-radius:10px; padding:10px 12px; background:#f8fbff;">
-        <div style="display:grid; gap:3px;">
-          <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-folder-open" style="color:#0a6ed1;"></i> Ho so sau giao: ${escapeCloseoutText(data.do_id)}</div>
-          <div style="font-size:.8rem; color:#64748b;">Trip ${escapeCloseoutText(tripId || '-')} · POD, bang gia va actual cost lay tu database.</div>
+    <div class="cl-goc">
+      <div class="cl-bang-tin">
+        <div>
+          <div class="cl-tieu-de"><i class="fa-solid fa-circle-check"></i>
+            Đã cập nhật vào hệ thống</div>
+          <div class="cl-phu">Toàn bộ thông tin dưới đây đọc lại từ cơ sở dữ liệu sau khi hoàn tất.</div>
         </div>
-        <button type="button" class="fiori-btn" data-closeout-cost-action onclick="openCloseoutActualCostEditor('${escapeCloseoutText(data.do_id)}', '${escapeCloseoutText(tripId)}')" style="white-space:nowrap; background:#0a6ed1; color:#ffffff; border:1px solid #0a6ed1; border-radius:9px; padding:9px 13px; font-weight:900; display:inline-flex; align-items:center; gap:7px; cursor:pointer;">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Cap nhat gia thuc te / Chot cuoc
+        <button type="button" class="fiori-btn" data-closeout-cost-action
+          onclick="openCloseoutActualCostEditor('${escapeCloseoutText(data.do_id)}', '${escapeCloseoutText(tripId)}')">
+          <i class="fa-solid fa-file-invoice-dollar"></i> Cập nhật giá thực tế / Chốt cước
         </button>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px;">
-        <div style="border:1px solid #dbeafe; border-radius:9px; padding:10px; background:#f8fafc;"><div style="color:#64748b; font-size:.75rem; font-weight:900;">DO</div><div style="font-weight:950; color:#0f172a;">${escapeCloseoutText(data.do_id)}</div></div>
-        <div style="border:1px solid #dbeafe; border-radius:9px; padding:10px; background:#f8fafc;"><div style="color:#64748b; font-size:.75rem; font-weight:900;">SO / QT</div><div style="font-weight:950; color:#0f172a;">${escapeCloseoutText(data.sales_order_id || '-')} / ${escapeCloseoutText(data.quotation_id || '-')}</div></div>
-        <div style="border:1px solid #bbf7d0; border-radius:9px; padding:10px; background:#f0fdf4;"><div style="color:#047857; font-size:.75rem; font-weight:900;">Gia ban</div><div style="font-weight:950; color:#047857;">${closeoutMoney(data.commercials?.selling_price, currency)}</div></div>
-        <div style="border:1px solid #fed7aa; border-radius:9px; padding:10px; background:#fff7ed;"><div style="color:#b45309; font-size:.75rem; font-weight:900;">Actual cost</div><div style="font-weight:950; color:#b45309;">${closeoutMoney(data.commercials?.actual_cost_total, currency)}</div></div>
-        ${khoiLoiNhuanCloseout(data, currency)}
+      <div class="cl-luoi cl-moc">${moc}</div>
+      <div class="cl-tien-hang">${soTien}</div>
+      ${khoiThongTinDOHoSo(data)}
+      ${khoiPODHoSo(data)}
+      <div class="cl-hai-cot">
+        <section class="cl-khoi">
+          <div class="cl-khoi-dau"><div><span class="cl-kicker">Giá thành theo loại xe</span>
+            <h4>${escapeCloseoutText(data.cost_formula?.name || "Chưa cấu hình")}</h4></div></div>
+          ${dongChiPhi}
+        </section>
+        <section class="cl-khoi">
+          <div class="cl-khoi-dau"><div><span class="cl-kicker">Chi phí thực tế</span>
+            <h4>Đã ghi nhận</h4></div></div>
+          ${dongThucTe}
+        </section>
+        <section class="cl-khoi">
+          <div class="cl-khoi-dau"><div><span class="cl-kicker">Khách hàng trả thêm</span>
+            <h4>${closeoutMoney(tm.customer_surcharge_total, currency)}</h4></div></div>
+          ${dongPhuThu}
+        </section>
       </div>
-      <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px;">
-        <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;">
-          <div style="padding:10px 12px; background:#f8fafc; font-weight:950; color:#0f172a;"><i class="fa-solid fa-calculator" style="color:#0a6ed1;"></i> Bang gia cau hinh: ${escapeCloseoutText(data.cost_formula?.name || data.cost_formula?.id || 'Chua co')}</div>
-          <div style="display:grid;">
-            ${formulaComponents.length ? formulaComponents.map(([key, value]) => `<div style="display:flex; justify-content:space-between; gap:10px; padding:9px 12px; border-top:1px solid #f1f5f9;"><span style="font-weight:850; color:#334155;">${escapeCloseoutText(key)}</span><strong>${escapeCloseoutText(value)} ${escapeCloseoutText(currency)}</strong></div>`).join('') : '<div style="padding:12px; color:#64748b;">Chua co cau hinh gia.</div>'}
-          </div>
-        </div>
-        <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;">
-          <div style="padding:10px 12px; background:#f8fafc; font-weight:950; color:#0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color:#f59e0b;"></i> Actual cost lines</div>
-          <div style="display:grid;">
-            ${(data.actual_cost_lines || []).length ? data.actual_cost_lines.map(line => `<div style="display:flex; justify-content:space-between; gap:10px; padding:9px 12px; border-top:1px solid #f1f5f9;"><span><strong>${escapeCloseoutText(line.charge_type)}</strong><br><small style="color:#64748b;">${escapeCloseoutText(line.description)}</small></span><strong>${closeoutMoney(line.total_amount, currency)}</strong></div>`).join('') : '<div style="padding:12px; color:#64748b;">Chua co actual cost.</div>'}
-          </div>
-        </div>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;">
-        ${(data.pod_records || []).map(pod => `<div style="border:1px solid #bbf7d0; background:#f0fdf4; border-radius:9px; padding:10px;"><div style="font-weight:950; color:#047857;">POD diem ${pod.stop_no}: ${escapeCloseoutText(pod.location_text || '')}</div><div style="font-size:.82rem; color:#334155; margin-top:4px;">Nguoi nhan: <strong>${escapeCloseoutText(pod.receiver_name || '-')}</strong></div><div style="font-size:.78rem; color:#64748b;">${escapeCloseoutText(pod.delivery_time || '')}</div><div style="font-size:.78rem; color:#0a6ed1; margin-top:6px; font-weight:850;"><i class="fa-solid fa-paperclip"></i> Chứng từ: ${chungTuPOD(data, pod)}</div></div>`).join('') || '<div style="color:#64748b;">Chua co POD.</div>'}
-      </div>
-    </div>
-  `;
+    </div>`;
 }
-
 window.openCloseoutActualCostEditor = async function (doId = '', tripId = '') {
   if (!doId) {
     showToast('Chua chon DO de cap nhat gia thuc te.');
@@ -17606,7 +17859,14 @@ window.renderDeliveryCompletionList = function () {
   body.innerHTML = rows.map(row => {
     const order = row.order, closeout = row.closeout || {}, commercials = closeout.commercials || {};
     const basePrice = commercials.base_selling_price ?? commercials.selling_price ?? 0;
-    const status = desiredStatus === 'in_transit' ? 'Đang vận chuyển' : 'Đã giao';
+    // Ba mốc, ba nhãn tách rõ. "Đã giao" mơ hồ: xe tới bãi mà chưa ký
+    // POD thì cũng là "đã giao" theo cách hiểu thường, nhưng lúc đó chưa
+    // có gì xác nhận.
+    const status = {
+      in_transit: 'Đang vận chuyển',
+      arrived: 'Đã đến nơi — chờ POD',
+      delivered: 'Đã hoàn tất',
+    }[desiredStatus] || 'Đã hoàn tất';
     const action = desiredStatus === 'in_transit'
       ? `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletionDO('${completionEscape(order.id)}')"><i class="fa-solid fa-eye"></i> Xem DO</button><button class="fiori-btn fiori-btn-primary" onclick="openDeliveryCompletionEditor('${completionEscape(order.id)}')"><i class="fa-solid fa-clipboard-check"></i> Hoàn tất giao</button>`
       : `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletedDelivery('${completionEscape(order.id)}')"><i class="fa-solid fa-folder-open"></i> Xem hồ sơ</button>`;
