@@ -788,11 +788,47 @@
       </ul>`;
   }
 
+  /**
+   * Dải lọc nhanh phía trên ma trận.
+   *
+   * Vì sao cần: ở quy mô thật một bãi có hàng trăm tài xế, nên ma trận luôn dài
+   * hơn màn hình và người xếp ca phải cuộn để tìm ra ai đang thiếu lịch. Ba
+   * nhóm dưới đây là ba câu hỏi họ thật sự hỏi, nên đặt thành nút bấm được thay
+   * vì để họ tự dò.
+   *
+   * Mỗi nhóm phải có một ĐỊNH NGHĨA đo được, viết ngay trong nhãn phụ, chứ
+   * không để người dùng đoán "vượt giờ" là vượt bao nhiêu:
+   *   · chưa xếp  — cả tuần không có ca làm việc nào
+   *   · vượt giờ  — tổng giờ ca làm việc trong tuần trên 48 giờ
+   *   · có nghỉ   — có ít nhất một ngày nghỉ / ốm / off trong tuần
+   */
+  function filterChips(nhom, dangChon, hamGoi) {
+    const ds = [
+      ['all', 'Tất cả', '', ''],
+      ['need', 'Chưa xếp', 'cả tuần không có ca nào', 'r'],
+      ['over', 'Vượt giờ', 'trên 48 giờ/tuần', 'a'],
+      ['leave', 'Có nghỉ', 'nghỉ / ốm / off trong tuần', ''],
+    ];
+    return `<div class="dr-chips" role="group" aria-label="Lọc nhanh nhân sự">
+      ${ds.map(([ma, ten, mota, lop]) => {
+        const n = Number(nhom[ma] || 0);
+        // Nhóm rỗng vẫn hiện, chỉ mờ và không bấm được: ẩn hẳn thì dải nút nhảy
+        // chỗ mỗi lần đổi tuần, và người dùng mất mốc để so.
+        const tat = ma !== 'all' && n === 0;
+        return `<button type="button"
+          class="dr-chip${lop ? ' dr-chip--' + lop : ''}${dangChon === ma ? ' is-active' : ''}${tat ? ' is-empty' : ''}"
+          ${tat ? 'disabled' : ''} title="${esc(mota || 'Toàn bộ nhân sự')}"
+          onclick="${esc(hamGoi)}('${esc(ma)}')">${esc(ten)} <b>${n}</b></button>`;
+      }).join('')}
+    </div>`;
+  }
+
   return {
     SHIFTS,
     STATE,
     VEHICLE_STATE,
     ABSENCE_LABELS,
+    filterChips,
     cellState,
     personCells,
     dayLoad,

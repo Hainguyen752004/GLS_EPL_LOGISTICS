@@ -4450,9 +4450,9 @@
     "la": "3. ປະເພດພາຫະນະ"
   },
   "tab_md_drivers": {
-    "vi": "4. Quản Lý Tài Xế & Sắp Ca",
-    "en": "4. Drivers & Shifts",
-    "la": "4. ຄຸ້ມຄອງຄົນຂັບ & ຈັດກະ"
+    "en": "4. Vehicle & driver scheduling",
+    "vi": "4. Sắp lịch xe và tài xế",
+    "la": "4. ຈັດຕາຕະລາງລົດ ແລະ ຄົນຂັບ"
   },
   "tab_md_currencies": {
     "vi": "5. Tỷ Giá Tiền Tệ",
@@ -4739,16 +4739,6 @@
     "en": "Save Vehicle Details",
     "la": "ບັນທຶກຂໍ້ມູນພາຫະນະ"
   },
-  "title_driver_shift_mgmt": {
-    "vi": "Quản lý tài xế, phụ xe & ca làm việc",
-    "en": "Driver, Co-Driver & Shift Management",
-    "la": "ຄຸ້ມຄອງຄົນຂັບ, ຜູ້ຊ່ວຍຄົນຂັບ & ກະເຮັດວຽກ"
-  },
-  "desc_driver_shift_mgmt": {
-    "vi": "Phân công ca trực, gán xe mặc định và quản lý trạng thái làm việc của đội ngũ tài xế.",
-    "en": "Assign shifts, default vehicles and track driver work status.",
-    "la": "ຈັດກະເຮັດວຽກ, ມອບໝາຍລົດປະຈຳ ແລະ ຄຸ້ມຄອງເວລາເຮັດວຽກຂອງທີມຄົນຂັບ."
-  },
   "btn_add_driver": {
     "vi": "Thêm tài xế / phụ xe",
     "en": "Add Driver / Co-Driver",
@@ -5015,9 +5005,9 @@
     "la": "ໃຊ້ສຳລັບໃບສະເໜີລາຄາ ແລະ ການຈັດສົ່ງ"
   },
   "khung_hd_md_res": {
-    "en": "RESOURCES AND PARTNERS",
-    "vi": "NGUỒN LỰC VÀ ĐỐI TÁC",
-    "la": "ຊັບພະຍາກອນ ແລະ ຄູ່ຮ່ວມງານ"
+    "en": "PARTNERS AND CUSTOMERS",
+    "vi": "ĐỐI TÁC VÀ KHÁCH HÀNG",
+    "la": "ຄູ່ຮ່ວມງານ ແລະ ລູກຄ້າ"
   },
   "khung_mi_do": {
     "en": "Delivery orders (DO)",
@@ -5080,9 +5070,9 @@
     "la": "ປະເພດລົດ"
   },
   "khung_mi_vehicles": {
-    "en": "Vehicles and equipment",
-    "vi": "Xe và thiết bị",
-    "la": "ລົດ ແລະ ອຸປະກອນ"
+    "en": "Vehicle and driver scheduling",
+    "vi": "Sắp lịch xe và tài xế",
+    "la": "ຈັດຕາຕະລາງລົດ ແລະ ຄົນຂັບ"
   },
   "khung_mi_customers": {
     "en": "Customers",
@@ -5113,5 +5103,10 @@
     "en": "A–Z flow diagram",
     "vi": "Sơ đồ luồng A–Z",
     "la": "ແຜນວາດຂັ້ນຕອນ A–Z"
+  },
+  "khung_hd_ops_res": {
+    "en": "RESOURCE PREPARATION",
+    "vi": "CHUẨN BỊ NGUỒN LỰC",
+    "la": "ກະຕຽມຊັບພະຍາກອນ"
   }
 }

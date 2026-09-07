@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="/static/css/styles.css?v=20260903-security-and-reporting-v1">
   <link rel="stylesheet" href="/static/css/parking-list.css?v=20260828-parking-list-v1">
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
-  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260905-shipping-spec-v1">
+  <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908d-dai-nut-gon">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908e-sap-lich">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -2650,6 +2650,14 @@
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="tracking"><i>◎</i><div><b data-i18n="khung_mi_track">Theo dõi và kiểm soát</b><span>GPS, tiến độ chặng, sự cố</span></div></div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="delivery-completion"><i>✓</i><div><b data-i18n="khung_mi_pod">Hoàn tất giao hàng</b><span>POD ký nhận, quyết toán, đóng DO</span></div></div>
       <div class="epl-sep"></div>
+      <!--
+        Xếp ca nằm ở Vận hành, không nằm ở Dữ liệu gốc: dữ liệu gốc là thứ
+        khai một lần rồi để đó, còn xếp ca là việc làm hằng tuần. Để chung
+        thì người điều phối phải vào "Dữ liệu gốc" để làm một việc vận hành.
+      -->
+      <div class="epl-hd" data-i18n="khung_hd_ops_res">CHUẨN BỊ NGUỒN LỰC</div>
+      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-vehicles"><i>▦</i><div><b data-i18n="khung_mi_vehicles">Sắp lịch xe và tài xế</b><span>Ca trực, lịch xe theo tuần, bảo dưỡng</span></div></div>
+      <div class="epl-sep"></div>
       <div class="epl-hd" data-i18n="khung_hd_docs">CHUYẾN VÀ CHỨNG TỪ</div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="delivery-shipment"><i>⤳</i><div><b data-i18n="khung_mi_shipment">Giao hàng và vận chuyển</b><span>Trip, chặng về, gộp DO cùng tuyến</span></div></div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="parking-list"><i>▩</i><div><b data-i18n="khung_mi_parking">Packing List / tem QR</b><span>In tem, gói hàng theo chuyến</span></div></div>
@@ -2667,8 +2675,7 @@
       <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-formulas"><i>∑</i><div><b data-i18n="khung_mi_formulas">Công thức giá thành</b><span>Chi phí trên 1 km và giá cước</span></div></div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-veh-types"><i>▤</i><div><b data-i18n="khung_mi_veh_types">Loại xe</b><span>Tải trọng, định mức dầu, giá thành nền</span></div></div>
       <div class="epl-sep"></div>
-      <div class="epl-hd" data-i18n="khung_hd_md_res">NGUỒN LỰC VÀ ĐỐI TÁC</div>
-      <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-vehicles"><i>▭</i><div><b data-i18n="khung_mi_vehicles">Xe và thiết bị</b><span>Đăng kiểm, bảo dưỡng, bãi đậu</span></div></div>
+      <div class="epl-hd" data-i18n="khung_hd_md_res">ĐỐI TÁC VÀ KHÁCH HÀNG</div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-customers"><i>☺</i><div><b data-i18n="khung_mi_customers">Khách hàng</b><span>Thông tin và điều khoản</span></div></div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-carriers"><i>⛟</i><div><b data-i18n="khung_mi_carriers">Nhà vận chuyển</b><span>Đối tác chạy thuê ngoài</span></div></div>
       <div class="epl-sep"></div>
@@ -6123,7 +6130,7 @@
               <i class="fa-solid fa-truck"></i> <span data-i18n="tab_md_veh_types">3. Loại Phương Tiện</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-vehicles', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-id-card"></i> <span data-i18n="tab_md_drivers">4. Quản Lý Tài Xế & Sắp Ca</span>
+              <i class="fa-solid fa-calendar-days"></i> <span data-i18n="tab_md_drivers">4. Sắp lịch xe và tài xế</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-currencies', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
               <i class="fa-solid fa-coins"></i> <span data-i18n="tab_md_currencies">5. Tỷ Giá Tiền Tệ</span>
@@ -6780,14 +6787,12 @@
             <div class="fiori-container" style="width: 100% !important; max-width: 100% !important;">
               <!-- DRIVER & CO-DRIVER MANAGEMENT SECTION -->
               <div class="driver-management-card" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(15,23,42,0.03);">
-                <div class="driver-management-header" style="border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 20px;">
-                  <div>
-                    <h3 style="margin: 0; color: #0f172a; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                      <i class="fa-solid fa-id-card" style="color: #0a6ed1;"></i> <span data-i18n="title_driver_shift_mgmt">Quản lý tài xế, phụ xe & ca làm việc</span>
-                    </h3>
-                    <div style="font-size: 0.82rem; color: #64748b; margin-top: 2px;" data-i18n="desc_driver_shift_mgmt">Phân công ca trực, gán xe mặc định và quản lý trạng thái làm việc của đội ngũ tài xế.</div>
-                  </div>
-                  <button class="fiori-btn" onclick="openAddDriverModal()"><i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_add_driver">Thêm tài xế / phụ xe</span></button>
+                <!--
+                  Tiêu đề của màn do TẦNG 3 nói ("Vận hành / Sắp lịch xe và tài
+                  xế"), nên chỗ này chỉ còn dải nút. Để cả hai thì cùng một câu
+                  hiện hai lần cách nhau 80px.
+                -->
+                <div class="driver-management-header driver-management-header--chi-nut"><button class="fiori-btn" onclick="openAddDriverModal()"><i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_add_driver">Thêm tài xế / phụ xe</span></button>
                 </div>
                 <div id="driver-shift-workbench" class="driver-shift-workbench">
                   <div class="driver-shift-toolbar">
@@ -7882,7 +7887,7 @@
   <script src="/static/js/formula-model.js?v=20260905-do-buckets"></script>
   <script src="/static/js/quotation-pricing.js?v=20260905-do-buckets"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
-  <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
+  <script src="/static/js/driver-roster.js?v=20260908b-loc-nhanh"></script>
   <!--
     do-board.js PHẢI nạp trước app.js.
 
@@ -7903,10 +7908,10 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908b-khung-ba-tang"></script>
+  <script src="/static/js/app.js?v=20260908f-sap-lich"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260908c-bo-dau-trang-trung"></script>
+  <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

@@ -75,10 +75,36 @@
     'crm-sales': [['+ Đơn hàng vận chuyển', 'primary', 'openOracleSOForm']],
   };
 
+  /**
+   * Đầu trang cho từng THẺ của màn Dữ liệu gốc.
+   *
+   * Vì sao cần riêng: màn `master-data` gộp 11 thẻ rất khác nhau, và hai trong
+   * số đó không phải dữ liệu gốc theo nghĩa "khai một lần rồi để đó". Rõ nhất là
+   * thẻ xếp ca: nó nằm trong nhóm Vận hành của dải điều hướng, nên đi vào từ đó
+   * mà đường dẫn lại ghi "Dữ liệu gốc" thì người dùng tưởng mình bấm sai chỗ.
+   *
+   * Thẻ không khai ở đây thì dùng đầu trang chung của màn Dữ liệu gốc.
+   */
+  const DAU_TRANG_THEO_THE = {
+    'md-tab-vehicles': ['ops', 'Vận hành', 'Sắp lịch xe và tài xế',
+      'Ca trực của tài xế, lịch xe theo tuần và kỳ bảo dưỡng — nguồn nhân lực mà màn Điều phối lấy để gán vào Trip.'],
+    'md-tab-routes': ['master', 'Dữ liệu gốc', 'Tuyến đường',
+      'Chặng A → B → C và km kế hoạch. Báo giá cước, lệnh giao hàng và ETA đều đọc từ đây.'],
+    'md-tab-formulas': ['master', 'Dữ liệu gốc', 'Công thức giá thành',
+      'Chi phí trên 1 km theo loại xe, và giá cước thu của khách. Hai loại này không cộng chung.'],
+    'md-tab-veh-types': ['master', 'Dữ liệu gốc', 'Loại xe và phương tiện',
+      'Tải trọng, định mức dầu và giá thành nền của từng loại xe.'],
+    'md-tab-customers': ['master', 'Dữ liệu gốc', 'Khách hàng',
+      'Thông tin và điều khoản của khách — nguồn mà báo giá cước và đơn hàng đọc.'],
+    'md-tab-carriers': ['master', 'Dữ liệu gốc', 'Nhà vận chuyển',
+      'Đối tác chạy thuê ngoài, dùng khi đội xe nội bộ không đủ.'],
+  };
+
   /* ----------------------------- Tầng 3: đầu trang ----------------------- */
 
-  function capNhatDauTrang(man) {
-    const d = DAU_TRANG_THEO_MAN[man];
+  function capNhatDauTrang(man, the) {
+    // Thẻ khai riêng thì thắng đầu trang của màn — xem `DAU_TRANG_THEO_THE`.
+    const d = (the && DAU_TRANG_THEO_THE[the]) || DAU_TRANG_THEO_MAN[man];
     const oCrumb = document.getElementById('epl-crumb');
     const oH1 = document.getElementById('epl-h1');
     const oDesc = document.getElementById('epl-desc');
@@ -184,6 +210,9 @@
           // nút thẻ một lần nữa — hai chỗ làm cùng một việc là hai chỗ để lệch.
           if (typeof window.openMasterSetupStep === 'function') window.openMasterSetupStep(the);
           else window.switchView('master-data');
+          // Đặt đầu trang SAU lời gọi trên: `switchView` bên trong nó ghi đầu
+          // trang chung của màn Dữ liệu gốc, nên đặt trước là bị ghi đè ngay.
+          capNhatDauTrang('master-data', the);
         } else {
           window.switchView(el.dataset.view, el.dataset.scroll || undefined);
         }
@@ -272,8 +301,36 @@
 
   function diToiMuc(muc) {
     const man = muc[2], the = muc[3];
-    if (the && typeof window.openMasterSetupStep === 'function') window.openMasterSetupStep(the);
-    else window.switchView(man);
+    if (the && typeof window.openMasterSetupStep === 'function') {
+      window.openMasterSetupStep(the);
+      capNhatDauTrang(man, the);
+    } else {
+      window.switchView(man);
+    }
+  }
+
+  /**
+   * Bấm thẳng vào dải thẻ BÊN TRONG màn Dữ liệu gốc cũng phải đổi đầu trang.
+   *
+   * Không bọc thì đường dẫn chỉ đúng khi người dùng đi từ dải điều hướng: bấm
+   * "Sắp lịch xe và tài xế" ở dải thẻ trong màn thì tiêu đề vẫn nằm ở thẻ trước
+   * đó. Bọc ngoài chứ không sửa trong `app.js` vì hàm gốc còn được gọi từ nhiều
+   * chỗ khác, và ở đây chỉ cần thêm việc, không cần đổi việc cũ.
+   */
+  function bocSwitchMasterDataTab() {
+    const goc = window.switchMasterDataTab;
+    if (typeof goc !== 'function' || goc.daBocKhung) return;
+    const boc = function (the) {
+      const kq = goc.apply(this, arguments);
+      try {
+        capNhatDauTrang('master-data', the);
+      } catch (loi) {
+        console.error('Không cập nhật được đầu trang theo thẻ:', loi);
+      }
+      return kq;
+    };
+    boc.daBocKhung = true;
+    window.switchMasterDataTab = boc;
   }
 
   function ganTimManHinh() {
@@ -412,6 +469,7 @@
 
   function dungKhung() {
     bocSwitchView();
+    bocSwitchMasterDataTab();
     ganBangChon();
     ganDiChuyen();
     ganTimManHinh();

@@ -7,11 +7,129 @@
    chỉ khai báo ở MỘT chỗ duy nhất (js/driver-roster.js).
    ========================================================================== */
 
+/* HAI CỘT: lưới xếp ca bên trái, việc cần xử lý bên phải.
+
+   Bản cũ xếp dọc — dải độ phủ, danh sách "cần xếp", rồi mới tới ma trận. Đo
+   trên màn 1600×1200 thì ma trận bắt đầu ở khoảng 1000px: người xếp ca mở màn
+   ra là KHÔNG thấy cái bảng mình phải làm việc trên đó.
+
+   Dải độ phủ 7 ngày vẫn chiếm hết chiều ngang phía trên vì nó là đầu bảng của
+   chính ma trận; nhồi vào cột hẹp là mất nghĩa. */
 .dr-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  grid-template-areas:
+    "cover cover"
+    "main  side";
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+.dr-cover-slot { grid-area: cover; min-width: 0; }
+.dr-main {
+  grid-area: main;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+/* Cột phải dính theo khi cuộn ma trận — người xếp ca đọc danh sách thiếu trong
+   lúc kéo xuống hàng thứ 80, chứ không phải chỉ ở đầu bảng. */
+.dr-side {
+  grid-area: side;
   min-width: 0;
+  position: sticky;
+  top: 8px;
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+/* Màn hẹp thì hai cột chồng lên nhau là không đọc được: về một cột, và danh
+   sách thiếu xuống dưới lưới chứ không lên trên — lên trên là lặp lại đúng lỗi
+   che mất lưới mà bố cục này sinh ra để sửa. */
+@media (max-width: 1280px) {
+  .dr-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "cover" "main" "side";
+  }
+  .dr-side { position: static; max-height: none; }
+}
+
+/* Dải lọc nhanh */
+.dr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+.dr-chip {
+  min-height: 32px;
+  border: 1px solid #cbd7e5;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 700;
+  padding: 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dr-chip b { margin-left: 5px; font-weight: 800; }
+.dr-chip:hover:not(:disabled) { border-color: #0a6ed1; color: #0a6ed1; }
+.dr-chip.is-active { background: #0a6ed1; border-color: #0a6ed1; color: #fff; }
+/* Nhóm rỗng vẫn hiện, chỉ mờ: ẩn hẳn thì dải nút nhảy chỗ mỗi lần đổi tuần. */
+.dr-chip.is-empty { opacity: .45; cursor: default; }
+.dr-chip--r:not(.is-active):not(.is-empty) { border-color: #f0b7b7; color: #b3261e; }
+.dr-chip--a:not(.is-active):not(.is-empty) { border-color: #f0d9a8; color: #92620a; }
+.dr-chip:focus-visible { outline: 2px solid #0a6ed1; outline-offset: 2px; }
+/* Nhắc bảo dưỡng chưa duyệt — màu hổ phách, KHÔNG dùng đỏ: nó chưa chặn gì,
+   dùng đỏ là nói quá và làm loãng màu đỏ của những việc chặn thật. */
+.dr-mt-pending {
+  margin-top: 12px;
+  border: 1px solid #f0d9a8;
+  border-left: 3px solid #d97706;
+  border-radius: 8px;
+  background: #fffbf2;
+  padding: 12px 13px;
+}
+.dr-mt-pending h4 {
+  margin: 0 0 6px;
+  font-size: .88rem;
+  font-weight: 800;
+  color: #92620a;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dr-mt-pending h4 b {
+  margin-left: auto;
+  background: #fdf0d5;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: .78rem;
+}
+.dr-mt-pending p { margin: 0 0 8px; font-size: .78rem; color: #6b5324; line-height: 1.45; }
+.dr-mt-pending ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.dr-mt-pending li {
+  background: #fff;
+  border: 1px solid #f2e3c4;
+  border-radius: 7px;
+  padding: 7px 9px;
+  font-size: .8rem;
+}
+.dr-mt-pending li b { display: block; color: #0f172a; font-weight: 800; }
+.dr-mt-pending li span { color: #64748b; }
+.dr-mt-pending .dr-mt-more { margin: 8px 0 0; font-size: .76rem; }
+
+.dr-chip-empty {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed #cbd7e5;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: .84rem;
 }
 
 /* ---------- Thanh công cụ ---------- */
@@ -880,3 +998,15 @@
 }
 
 .dr-shift-count.is-empty b, .dr-shift-count.is-empty em { color: #b91c1c; }
+
+/* Đầu trang của màn giờ chỉ còn dải nút — tiêu đề do tầng 3 nói. Không thu
+   khoảng đệm lại thì nó thành một dải trắng cao có một cái nút lọt bên phải. */
+.driver-management-header--chi-nut {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 0;
+  margin-bottom: 14px;
+  border-bottom: 0;
+}

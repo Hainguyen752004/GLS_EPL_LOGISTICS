@@ -116,6 +116,34 @@ def list_requests(db, vehicle_id):
     )
 
 
+def list_requests_in_period(db, start, end):
+    """Moi yeu cau bao duong CO GIAO voi khoang [start, end).
+
+    Loc theo giao khoang chu khong theo "nam gon trong khoang": mot ky bao
+    duong bat dau tu tuan truoc va keo qua tuan nay van chan xe trong tuan
+    nay, nen phai tra ve.
+
+    Chi tinh cac ky co `planned_start` va `planned_end`: mot yeu cau chua co
+    lich thi khong chan o nao tren luoi, va de no vao chi lam nguoi doc tuong
+    xe dang nam bai.
+    """
+    start_at = _utc(start, "ngay bat dau")
+    end_at = _utc(end, "ngay ket thuc")
+    if start_at >= end_at:
+        raise DomainError("INVALID_PERIOD", "Khoang thoi gian xem bao duong khong hop le.", 422)
+    return (
+        db.query(VehicleMaintenanceRequest)
+        .filter(
+            VehicleMaintenanceRequest.planned_start.isnot(None),
+            VehicleMaintenanceRequest.planned_end.isnot(None),
+            VehicleMaintenanceRequest.planned_start < end_at,
+            VehicleMaintenanceRequest.planned_end > start_at,
+        )
+        .order_by(VehicleMaintenanceRequest.vehicle_id, VehicleMaintenanceRequest.planned_start)
+        .all()
+    )
+
+
 def create_request(db, vehicle_id, data, actor="system"):
     vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).with_for_update().first()
     if not vehicle:

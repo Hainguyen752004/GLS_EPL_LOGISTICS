@@ -61,6 +61,7 @@ from services.errors import DomainError, raise_http
 from services.vehicle_maintenance_service import (
     create_request as create_vehicle_maintenance_request,
     list_requests as list_vehicle_maintenance_requests,
+    list_requests_in_period as list_vehicle_maintenance_in_period,
     serialize_request as serialize_vehicle_maintenance_request,
     transition_request as transition_vehicle_maintenance_request,
 )
@@ -206,6 +207,24 @@ async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db:
 
     db.commit()
     return {"message": "Cập nhật dữ liệu xe thành công", "data": veh}
+
+
+@router.get("/api/vehicle-maintenance-requests")
+async def get_vehicle_maintenance_requests_in_period(
+    start: str = Query(..., description="Dau khoang, dang ISO co mui gio"),
+    end: str = Query(..., description="Cuoi khoang, dang ISO co mui gio"),
+    db: Session = Depends(get_db),
+):
+    """Bao duong cua MOI xe co giao voi mot khoang thoi gian.
+
+    Duong theo tung xe ben duoi khong dung duoc cho man xep lich: he thong
+    chay o quy mo ~500 xe, tuc 500 lan goi cho mot tuan lich.
+    """
+    try:
+        items = list_vehicle_maintenance_in_period(db, start, end)
+        return {"data": [serialize_vehicle_maintenance_request(item) for item in items]}
+    except DomainError as error:
+        raise_http(error)
 
 
 @router.get("/api/vehicles/{vehicle_id}/maintenance-requests")

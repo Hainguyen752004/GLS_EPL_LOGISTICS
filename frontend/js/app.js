@@ -271,7 +271,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908b-bo-dau-trang-trung`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908e-sap-lich`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -13866,6 +13866,9 @@ let driverShiftWeekStart = null;
 let driverShifts = [];
 let driverVehicleAvailability = [];
 let driverShiftVehicles = [];
+// Kỳ bảo dưỡng có giao với tuần đang xem. Ô nào của lưới lịch xe trùng một kỳ
+// thì phải kẻ sọc, để người xếp lịch không điều một xe đang nằm bãi đi chạy.
+let driverVehicleMaintenance = [];
 let selectedDriverForShiftId = '';
 let selectedDriverShiftId = '';
 let selectedDriverTripScheduleId = '';
@@ -13883,6 +13886,10 @@ let driverRosterView = 'week';
 // Chi dung mot trang nhan su moi lan: moi nguoi chiem 21 o (7 ngay x 3 ca).
 let driverShiftVisibleCount = 50;
 let driverShiftGapsOpen = false;
+// Nhóm lọc nhanh đang chọn: 'all' | 'need' | 'over' | 'leave'. Khai bằng `let`
+// ở cấp cao nhất — gán thẳng `driverShiftChip = ...` mà không khai thì lần ĐỌC
+// đầu tiên là ReferenceError, và lỗi đó làm cả hàm vẽ dừng giữa.
+let driverShiftChip = 'all';
 let selectedDriverVehicleDay = '';
 let driverVehicleTableSearch = '';
 let driverVehicleTableStatus = '';
@@ -13938,20 +13945,35 @@ async function driverShiftApiJson(path, options = {}) {
 window.loadDriverShiftPlanner = async function () {
   const range = driverShiftWeekRange();
   const query = `start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
+  // Lời gọi thứ năm KHÔNG trùng lời gọi thứ tư, dù cả hai nói về bảo dưỡng.
+  //
+  // `vehicle-availability` chỉ trả về kỳ bảo dưỡng đã `approved` hoặc
+  // `in_progress` — đúng, vì chỉ hai trạng thái đó mới CHẶN điều phối. Nhưng
+  // như vậy một kỳ mới ở trạng thái `requested` là vô hình với người xếp lịch:
+  // họ xếp chuyến vào đúng ngày mà thợ đã xin xe, rồi kỳ đó được duyệt và
+  // chuyến vỡ.
+  //
+  // Nên lấy thêm bằng đường theo KHOẢNG THỜI GIAN để nhắc các kỳ chưa duyệt ở
+  // khung việc cần xử lý. Một lời gọi cho cả tuần, không phải một lời gọi mỗi
+  // xe — đường theo từng xe không dùng được ở quy mô ~500 xe.
   const results = await Promise.allSettled([
       driverShiftApiJson('/api/drivers'),
       fetchAllPaginated(`${API_BASE}/api/vehicles?paginated=true`, 200),
       driverShiftApiJson(`/api/tms/scheduling/driver-shifts?${query}`),
-      driverShiftApiJson(`/api/tms/scheduling/vehicle-availability?${query}`)
+      driverShiftApiJson(`/api/tms/scheduling/vehicle-availability?${query}`),
+      driverShiftApiJson(`/api/vehicle-maintenance-requests?${query}`)
   ]);
-  const currentValues = [fioriDrivers, driverShiftVehicles, driverShifts, driverVehicleAvailability];
+  const currentValues = [fioriDrivers, driverShiftVehicles, driverShifts,
+    driverVehicleAvailability, driverVehicleMaintenance];
   const values = results.map((result, index) => result.status === 'fulfilled' && Array.isArray(result.value) ? result.value : currentValues[index]);
-  [fioriDrivers, driverShiftVehicles, driverShifts, driverVehicleAvailability] = values;
+  [fioriDrivers, driverShiftVehicles, driverShifts, driverVehicleAvailability,
+    driverVehicleMaintenance] = values;
   if (typeof appState === 'object' && appState) {
     appState.drivers = fioriDrivers;
     appState.vehicles = driverShiftVehicles;
     appState.driver_shifts = driverShifts;
     appState.vehicle_availability = driverVehicleAvailability;
+    appState.vehicle_maintenance = driverVehicleMaintenance;
   }
   renderDriverShiftPlanner();
   const failures = results.filter(result => result.status === 'rejected');
@@ -14383,6 +14405,44 @@ function buildDriverVehicleRosterData(planner, options) {
  * innerHTML, va quan trong hon la chon dung 5 xe co van de giua 495 xe binh
  * thuong. Voi 500 xe khong ai cuon het danh sach.
  */
+/**
+ * Nhắc các kỳ bảo dưỡng CHƯA DUYỆT có giao với tuần đang xem.
+ *
+ * Lưới lịch xe chỉ kẻ sọc những kỳ đã `approved` / `in_progress`, vì chỉ hai
+ * trạng thái đó mới chặn điều phối. Nhưng như vậy một kỳ mới ở trạng thái
+ * `requested` là vô hình: người xếp lịch xếp chuyến vào đúng ngày mà thợ đã xin
+ * xe, rồi kỳ đó được duyệt và chuyến vỡ.
+ *
+ * Nên nhắc ở đây — và nói rõ nó CHƯA chặn gì, để không ai tưởng xe đã nằm bãi.
+ */
+function khoiBaoDuongChuaDuyet() {
+  const ds = (driverVehicleMaintenance || [])
+    .filter(ky => String(ky.status || '').toLowerCase() === 'requested');
+  if (!ds.length) return '';
+
+  const dong = ds.slice(0, 6).map(ky => {
+    const tu = ky.planned_start ? new Date(ky.planned_start) : null;
+    const den = ky.planned_end ? new Date(ky.planned_end) : null;
+    const khi = tu
+      ? `${tu.toLocaleDateString('vi-VN')} ${tu.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`
+        + (den ? ` → ${den.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : '')
+      : 'chưa có lịch';
+    return `<li>
+      <b>${escapeHtml(ky.vehicle_id || '')}</b>
+      <span>${escapeHtml(khi)} · ${escapeHtml(ky.description || ky.request_no || 'Bảo dưỡng')}</span>
+    </li>`;
+  }).join('');
+
+  return `<section class="dr-mt-pending">
+    <h4><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i>
+      Bảo dưỡng chưa duyệt <b>${ds.length}</b></h4>
+    <p>Các kỳ này <strong>chưa chặn</strong> điều phối, nên lưới bên cạnh vẫn để xe là rảnh.
+      Duyệt xong thì xe mới thành nằm bãi — nên xếp chuyến vào đúng ngày này là rủi ro.</p>
+    <ul>${dong}</ul>
+    ${ds.length > 6 ? `<p class="dr-mt-more">và ${ds.length - 6} kỳ nữa</p>` : ''}
+  </section>`;
+}
+
 function renderDriverVehicleWeek() {
   const host = document.getElementById('driver-vehicle-week-content');
   if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
@@ -14416,11 +14476,16 @@ function renderDriverVehicleWeek() {
   const unassigned = everything.vehicles.filter(v => !v.depot_code).length;
   const narrowed = Boolean(driverVehicleTableSearch.trim() || driverVehicleTableStatus || driverVehicleTableType || driverVehicleTableDepot);
 
+  // Hai cột, y như tab Nhân sự: lưới bên trái, việc cần xử lý bên phải. Hai tab
+  // của cùng một màn mà một tab xếp dọc, một tab xếp hai cột thì người dùng phải
+  // học lại chỗ nhìn mỗi lần đổi tab.
   host.innerHTML = `
     <div class="dr-shell">
-      ${DR.vehicleCapacityStrip(everything, { selectedDay: selectedDriverVehicleDay })}
-      ${DR.vehicleExceptionList(everything, { expanded: driverVehicleExceptionsOpen })}
+      <div class="dr-cover-slot">
+        ${DR.vehicleCapacityStrip(everything, { selectedDay: selectedDriverVehicleDay })}
+      </div>
 
+      <div class="dr-main">
       <div class="dr-toolbar">
         <input id="driver-vehicle-day-search" type="search" value="${escapeHtml(driverVehicleTableSearch)}"
                placeholder="Tìm biển số, loại xe, Trip hoặc việc sửa chữa..."
@@ -14446,6 +14511,12 @@ function renderDriverVehicleWeek() {
         limit: driverVehicleVisibleCount,
       })}</div>
       ${DR.vehicleLegend()}
+      </div>
+
+      <aside class="dr-side" aria-label="Việc cần xử lý trước điều phối">
+        ${DR.vehicleExceptionList(everything, { expanded: driverVehicleExceptionsOpen })}
+        ${khoiBaoDuongChuaDuyet()}
+      </aside>
     </div>`;
 
   const depotSelect = document.getElementById('driver-vehicle-day-depot');
@@ -14703,6 +14774,65 @@ function buildDriverRosterData(options) {
  * hình cho từng ngày. Xem js/driver-roster.js để biết vì sao ma trận
  * người × ngày là dạng đúng cho việc xếp ca.
  */
+/**
+ * Ba nhóm lọc nhanh, mỗi nhóm một định nghĩa ĐO ĐƯỢC.
+ *
+ * Tính giờ từ `driverShifts` gốc chứ không từ nhãn giờ đã định dạng trong
+ * `data.people`: nhãn là chuỗi "06:00" để hiện ra, cộng chuỗi thì ra rác. Và
+ * chỉ tính ca `work` — một ngày nghỉ phép không phải giờ làm việc.
+ */
+function gioLamTrongTuan(maTaiXe) {
+  return driverShifts
+    .filter(ca => String(ca.driver_id) === String(maTaiXe)
+      && (ca.availability_kind || 'work') === 'work')
+    .reduce((tong, ca) => {
+      const bd = new Date(ca.shift_start);
+      const kt = new Date(ca.shift_end);
+      if (Number.isNaN(bd.getTime()) || Number.isNaN(kt.getTime())) return tong;
+      return tong + Math.max(0, (kt - bd) / 3600000);
+    }, 0);
+}
+
+const GIO_TOI_DA_TUAN = 48;
+
+function nhomCuaNhanSu(nguoi) {
+  const caLamViec = driverShifts.filter(ca => String(ca.driver_id) === String(nguoi.id)
+    && (ca.availability_kind || 'work') === 'work');
+  const coNghi = driverShifts.some(ca => String(ca.driver_id) === String(nguoi.id)
+    && (ca.availability_kind || 'work') !== 'work');
+  return {
+    need: caLamViec.length === 0,
+    over: gioLamTrongTuan(nguoi.id) > GIO_TOI_DA_TUAN,
+    leave: coNghi,
+  };
+}
+
+function demNhomLocNhanh(duLieuCaDoi) {
+  const dem = { all: duLieuCaDoi.people.length, need: 0, over: 0, leave: 0 };
+  duLieuCaDoi.people.forEach(nguoi => {
+    const n = nhomCuaNhanSu(nguoi);
+    if (n.need) dem.need += 1;
+    if (n.over) dem.over += 1;
+    if (n.leave) dem.leave += 1;
+  });
+  return dem;
+}
+
+function locNhanSuTheoNhom(dsNguoi) {
+  if (driverShiftChip === 'all') return dsNguoi;
+  return dsNguoi.filter(nguoi => nhomCuaNhanSu(nguoi)[driverShiftChip]);
+}
+
+/**
+ * Đổi nhóm lọc nhanh. Đặt lại số dòng đang hiện về trang đầu — giữ nguyên thì
+ * đổi từ nhóm 200 người sang nhóm 3 người mà vẫn còn nút "xem thêm".
+ */
+window.setDriverShiftChip = function (nhom) {
+  driverShiftChip = ['all', 'need', 'over', 'leave'].includes(nhom) ? nhom : 'all';
+  driverShiftVisibleCount = window.DriverRoster.PERSON_PAGE_SIZE;
+  renderDriverShiftCalendarTable();
+};
+
 function renderDriverShiftCalendarTable() {
   const host = document.getElementById('driver-shift-calendar');
   if (!host || !window.TmsCockpit?.buildDriverShiftPlanner || !window.DriverRoster) return;
@@ -14717,41 +14847,66 @@ function renderDriverShiftCalendarTable() {
     selectedDriverShiftDay = data.days[0]?.key || '';
   }
 
+  // Lọc nhanh chạy TRÊN kết quả của bộ lọc chữ và vai trò, chứ không thay nó:
+  // người dùng gõ tên tổ rồi mới hỏi "trong tổ này ai chưa xếp".
+  const nhom = demNhomLocNhanh(everyone);
+  const nguoiLoc = locNhanSuTheoNhom(data.people);
+  const dataLoc = Object.assign({}, data, { people: nguoiLoc });
+
   const view = driverRosterView === 'day' ? 'day' : 'week';
   const body = view === 'week'
-    ? `<div class="dr-scroll">${DR.weekMatrix(data, { selectedDay: selectedDriverShiftDay, limit: driverShiftVisibleCount })}</div>`
-    : DR.dayDetail(data, selectedDriverShiftDay);
+    ? `<div class="dr-scroll">${DR.weekMatrix(dataLoc, { selectedDay: selectedDriverShiftDay, limit: driverShiftVisibleCount })}</div>`
+    : DR.dayDetail(dataLoc, selectedDriverShiftDay);
 
   const dayOptions = data.days
     .map(day => `<option value="${escapeHtml(day.key)}"${day.key === selectedDriverShiftDay ? ' selected' : ''}>${escapeHtml(day.label)}</option>`)
     .join('');
 
+  // HAI CỘT: lưới bên trái, việc cần xử lý bên phải.
+  //
+  // Bản cũ xếp dọc — dải độ phủ, rồi danh sách "cần xếp", rồi mới tới ma trận.
+  // Đo trên màn 1600×1200 thì ma trận bắt đầu ở khoảng 1000px, tức người xếp ca
+  // mở màn ra là KHÔNG thấy cái bảng mình phải làm việc trên đó, phải cuộn qua
+  // một danh sách mà họ chỉ đọc một lần. Danh sách việc cần xử lý là thứ để
+  // TRA trong lúc xếp, nên chỗ đúng của nó là cột bên cạnh.
+  //
+  // Dải độ phủ theo 7 ngày thì giữ nguyên chiều ngang phía trên: nó là đầu bảng
+  // của chính ma trận, nhồi vào cột hẹp 336px là mất luôn nghĩa.
   host.innerHTML = `
     <div class="dr-shell">
-      ${DR.crewCoverageStrip(everyone, { selectedDay: selectedDriverShiftDay })}
-      ${DR.crewGapList(everyone, { expanded: driverShiftGapsOpen })}
-
-      <div class="dr-toolbar">
-        <div class="dr-views" role="group" aria-label="Góc nhìn lịch">
-          <button type="button" class="${view === 'week' ? 'is-active' : ''}" onclick="setDriverRosterView('week')">
-            <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Cả tuần
-          </button>
-          <button type="button" class="${view === 'day' ? 'is-active' : ''}" onclick="setDriverRosterView('day')">
-            <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Một ngày
-          </button>
-        </div>
-        <input id="driver-shift-day-search" type="search" value="${escapeHtml(driverShiftTableSearch)}"
-               placeholder="Tìm tên, mã nhân sự, hạng bằng..." oninput="filterDriverShiftDay(this.value)"
-               aria-label="Tìm nhân sự">
-        <select id="driver-shift-day-role" onchange="filterDriverShiftRole(this.value)" aria-label="Lọc theo vai trò">
-          <option value="">Tất cả vai trò</option>
-          <option value="Lái xe">Tài xế chính</option>
-          <option value="Phụ xe">Phụ xe</option>
-        </select>
-        ${view === 'day' ? `<select onchange="selectDriverShiftDay(this.value)" aria-label="Chọn ngày">${dayOptions}</select>` : ''}
+      <div class="dr-cover-slot">
+        ${DR.crewCoverageStrip(everyone, { selectedDay: selectedDriverShiftDay })}
       </div>
-      ${body}
-      ${DR.legend()}
+
+      <div class="dr-main">
+        <div class="dr-toolbar">
+          <div class="dr-views" role="group" aria-label="Góc nhìn lịch">
+            <button type="button" class="${view === 'week' ? 'is-active' : ''}" onclick="setDriverRosterView('week')">
+              <i class="fa-solid fa-table-cells" aria-hidden="true"></i> Cả tuần
+            </button>
+            <button type="button" class="${view === 'day' ? 'is-active' : ''}" onclick="setDriverRosterView('day')">
+              <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Một ngày
+            </button>
+          </div>
+          <input id="driver-shift-day-search" type="search" value="${escapeHtml(driverShiftTableSearch)}"
+                 placeholder="Tìm tên, mã nhân sự, hạng bằng..." oninput="filterDriverShiftDay(this.value)"
+                 aria-label="Tìm nhân sự">
+          <select id="driver-shift-day-role" onchange="filterDriverShiftRole(this.value)" aria-label="Lọc theo vai trò">
+            <option value="">Tất cả vai trò</option>
+            <option value="Lái xe">Tài xế chính</option>
+            <option value="Phụ xe">Phụ xe</option>
+          </select>
+          ${view === 'day' ? `<select onchange="selectDriverShiftDay(this.value)" aria-label="Chọn ngày">${dayOptions}</select>` : ''}
+        </div>
+        ${DR.filterChips(nhom, driverShiftChip, 'setDriverShiftChip')}
+        ${nguoiLoc.length ? '' : `<p class="dr-chip-empty">Không có nhân sự nào trong nhóm này. Bấm <b>Tất cả</b> để xem lại toàn đội.</p>`}
+        ${body}
+        ${DR.legend()}
+      </div>
+
+      <aside class="dr-side" aria-label="Việc cần xử lý trước điều phối">
+        ${DR.crewGapList(everyone, { expanded: driverShiftGapsOpen })}
+      </aside>
     </div>`;
 
   const roleSelect = document.getElementById('driver-shift-day-role');
