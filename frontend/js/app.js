@@ -273,7 +273,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260906-so-docs-lao-v2`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260907a-nhom-do-v3`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -7641,82 +7641,6 @@ function deliveryOrderSearchText(order) {
   ].join(' '));
 }
 
-function updateDeliveryOrderStageTabs(source = eplDeliveryOrders) {
-  const buckets = deliveryOrderAnalysis?.buckets || null;
-  // Sinh từ DELIVERY_ORDER_STAGES thay vì viết cứng năm khóa: thêm một rổ thì
-  // không phải sửa hai chỗ, và không thể có rổ có tab mà không có số đếm.
-  const counts = {};
-  DELIVERY_ORDER_STAGES.forEach(stage => {
-    counts[stage] = buckets ? (buckets[stage]?.count || 0) : 0;
-  });
-  if (!buckets) {
-    (source || []).forEach(order => {
-      counts[deliveryOrderStage(order)] = (counts[deliveryOrderStage(order)] || 0) + 1;
-    });
-  }
-  Object.entries(counts).forEach(([stage, count]) => {
-    const countEl = document.getElementById(`do-count-${stage}`);
-    if (countEl) countEl.textContent = String(count);
-  });
-  // Chu thich duoi moi the: chi ghi de khi CO MOT CON SO SONG dang noi them.
-  //
-  // Ban truoc viet cung sau cau cho moi ngon ngu ngay tai day, tuc mot tang
-  // nhan thu ba de len lang.json. He qua: sua lang.json xong chu tren man hinh
-  // van y nhu cu, va the "Gan tre" van doc "sap toi han hoac da qua han" du
-  // qua han da tach thanh ro rieng. Hai the moi thi khong co chu nao ca.
-  //
-  // Nay khong co con so song thi KHONG ghi de — chu cua lang.json duoc giu.
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const dongChuThich = {
-    overdue: {
-      vi: so => so > 0 ? `${so} DO đã quá hạn, cần xử lý ngay` : null,
-    },
-    undated: {
-      vi: so => so > 0 ? `${so} DO chưa có ngày lấy/giao` : null,
-    },
-    near_late: {
-      vi: so => so > 0 ? `${so} DO cần điều phối trước khi trễ SLA` : null,
-      la: so => so > 0 ? `${so} DO ຕ້ອງປ່ອຍລົດກ່ອນກາຍ SLA` : null,
-    },
-    active: {
-      vi: () => (buckets?.active?.arrived || 0) > 0
-        ? `${buckets.active.arrived} DO đã đến điểm, cần cập nhật POD/hoàn tất` : null,
-      la: () => (buckets?.active?.arrived || 0) > 0
-        ? `${buckets.active.arrived} DO ຮອດຈຸດຫມາຍແລ້ວ, ຕ້ອງອັບເດດ POD` : null,
-    },
-    completed: {
-      vi: () => (buckets?.completed?.with_pod || 0) > 0
-        ? `${buckets.completed.with_pod} DO có POD đã ghi nhận` : null,
-      la: () => (buckets?.completed?.with_pod || 0) > 0
-        ? `${buckets.completed.with_pod} DO ມີ POD ບັນທຶກແລ້ວ` : null,
-    },
-    incident: {
-      vi: so => (buckets?.incident?.open_incidents || so) > 0
-        ? `${buckets?.incident?.open_incidents || so} sự cố chưa xử lý` : null,
-      la: so => (buckets?.incident?.open_incidents || so) > 0
-        ? `${buckets?.incident?.open_incidents || so} ບັນຫາທີ່ຍັງບໍ່ໄດ້ແກ້ໄຂ` : null,
-    },
-  };
-  Object.entries(dongChuThich).forEach(([stage, theoNgonNgu]) => {
-    const dung = theoNgonNgu[lang];
-    if (!dung) return;
-    const chu = dung(counts[stage] || 0);
-    if (!chu) return;
-    const node = document.querySelector(`#do-stage-${stage} small`);
-    if (node) node.textContent = fixUIText(chu);
-  });
-  DELIVERY_ORDER_STAGES.forEach(stage => {
-    const tab = document.getElementById(`do-stage-${stage}`);
-    if (!tab) return;
-    const isActive = stage === activeDOStage;
-    tab.classList.toggle('active', isActive);
-    tab.style.borderColor = isActive ? '#0a6ed1' : '#e2e8f0';
-    tab.style.background = isActive ? '#eff6ff' : '#ffffff';
-    tab.style.color = isActive ? '#0a6ed1' : '#334155';
-    tab.style.boxShadow = isActive ? '0 4px 12px rgba(10,110,209,0.12)' : 'none';
-  });
-}
-
 async function loadDeliveryOrders() {
   try {
     eplDeliveryOrders = await fetchAllPaginated(`${API_BASE}/api/delivery-orders`);
@@ -7759,15 +7683,6 @@ async function loadDeliveryOrders() {
 function huyDuocDon(do_item) {
   const tt = String(do_item?.canonical_status || '').toLowerCase();
   return tt === 'pending';
-}
-
-function nutHuyDon(do_item, doId) {
-  if (!huyDuocDon(do_item)) return '';
-  return `<button class="fiori-btn fiori-btn-secondary" title="Hủy lệnh giao hàng"
-      style="width:36px; height:34px; padding:0; margin-left:6px; font-size:.82rem;
-             border-radius:7px; color:#b42318; display:inline-flex; align-items:center;
-             justify-content:center;"
-      onclick="huyLenhGiaoHang('${doId}')"><i class="fa-solid fa-ban"></i></button>`;
 }
 
 window.huyLenhGiaoHang = async function (id) {
@@ -7830,58 +7745,63 @@ const doDaChon = new Set();
  * Số dòng tối đa vẽ ra một lần.
  *
  * Quy mô thật là hàng nghìn đơn. Dựng hết vào một lần `innerHTML` là đúng lỗi
- * đã phải sửa ở màn lịch xe (500 xe → 1 MB HTML, 3.500 nút). Bảy con chip
- * chính là bộ lọc, nên người dùng thu hẹp bằng chip hoặc ô tìm kiếm; con số
- * còn lại được NÓI RA ở cuối bảng chứ không im lặng cắt bớt.
+ * đã phải sửa ở màn lịch xe (500 xe → 1 MB HTML, 3.500 nút). Ba nhóm và ô
+ * chọn tình trạng chính là bộ lọc; con số bị cắt được NÓI RA ở cuối bảng.
  */
 const GIOI_HAN_DONG_DO = 100;
 
-/**
- * Vẽ bảy con chip lọc và dòng chân bảng.
- *
- * Rổ rỗng vẫn hiện, chỉ mờ đi và viền nét đứt — ẩn đi thì người dùng không
- * biết rổ đó tồn tại, cũng không biết nó đang bằng 0.
- */
-function veChipVaChanTrang(soDongHien) {
-  const tong = (eplDeliveryOrders || []).length;
-  DELIVERY_ORDER_STAGES.forEach(stage => {
-    const chip = document.getElementById(`do-stage-${stage}`);
-    if (!chip) return;
-    const so = Number(document.getElementById(`do-count-${stage}`)?.textContent || 0);
-    chip.classList.toggle('active', stage === activeDOStage);
-    chip.classList.toggle('empty', so === 0 && stage !== activeDOStage);
-  });
+/* Ba nhóm của bản 3, gộp từ bảy rổ của `window.DoBoard.BUCKETS`.
+   `need` = mọi thứ CHƯA chạy và cần người xử lý. `run` = đang trên đường.
+   `completed` cố ý KHÔNG có nhóm riêng — nó tới qua ô chọn tình trạng hoặc
+   nhóm "Tất cả", vì việc đã xong thì không phải việc cần làm. */
+const NHOM_DO = {
+  need: ['incident', 'overdue', 'undated', 'near_late', 'pending'],
+  run: ['active'],
+  all: null,
+};
 
-  // Một dòng gợi ý cho rổ ĐANG mở, thay vì bảy dòng cùng lúc như bản trước.
-  const oHint = document.getElementById('do-stage-hint');
-  if (oHint) {
-    const bucket = (window.DoBoard?.BUCKETS || [])
-      .find(b => b.key === activeDOStage);
-    oHint.textContent = bucket?.hint || '';
-  }
+let activeDOGroup = 'need';
 
-  const oDem = document.getElementById('do-plan-count');
-  if (oDem) {
-    const hien = Math.min(soDongHien, GIOI_HAN_DONG_DO);
-    oDem.textContent = soDongHien
-      ? `Đang xem ${hien}${soDongHien > hien ? ` trên ${soDongHien}` : ''} DO`
-        + ` · tổng ${tong} DO`
-      : `Rổ này không có DO nào · tổng ${tong} DO`;
-  }
-  const oNote = document.getElementById('do-plan-note');
-  if (oNote) {
-    const soChon = doDaChon.size;
-    oNote.textContent = soChon
-      ? `${soChon} DO đã tick — xem bảng Trip bên phải`
-      : 'Tick ô vuông để gộp DO vào một Trip';
-  }
-
-  const oTabDO = document.getElementById('do-subtab-count-delivery');
-  if (oTabDO) oTabDO.textContent = String(tong);
-  const oTabRT = document.getElementById('do-subtab-count-routes');
-  if (oTabRT) oTabRT.textContent = String((eplRoutes || []).length);
+/** Tình trạng chi tiết đang lọc, hoặc '' nếu không lọc. */
+function rroDangLoc() {
+  return String(document.getElementById('do-status-filter')?.value || '');
 }
-window.veChipVaChanTrang = veChipVaChanTrang;
+
+window.chonNhomDO = function (nhom) {
+  activeDOGroup = NHOM_DO[nhom] !== undefined ? nhom : 'need';
+  // Chọn nhóm thì bỏ lọc tình trạng chi tiết — hai bộ lọc cùng lúc dễ cho ra
+  // bảng rỗng mà người dùng không hiểu vì sao.
+  const oTT = document.getElementById('do-status-filter');
+  if (oTT) oTT.value = '';
+  activeDOStage = null;
+  filterDeliveryOrders();
+};
+
+window.chonTrangThaiDO = function (stage) {
+  activeDOStage = DELIVERY_ORDER_STAGES.includes(stage) ? stage : null;
+  // Lọc theo một tình trạng cụ thể thì phải nhìn trên TẤT CẢ, không thì rổ
+  // "Hoàn thành" chọn trong nhóm "Cần xử lý" sẽ luôn ra 0 dòng.
+  if (activeDOStage) activeDOGroup = 'all';
+  filterDeliveryOrders();
+};
+
+/** Bấm vào ô trạng thái trên một dòng thì lọc ngay theo tình trạng đó. */
+window.locTheoOTrangThai = function (stage) {
+  const oTT = document.getElementById('do-status-filter');
+  if (oTT) oTT.value = String(stage || '');
+  chonTrangThaiDO(stage);
+};
+
+window.boChonTatCaDO = function () {
+  doDaChon.clear();
+  document.querySelectorAll('#fiori-do-tbody input[data-do-id]').forEach(o => {
+    o.checked = false;
+    o.closest('tr')?.classList.remove('picked');
+  });
+  const oAll = document.getElementById('do-pick-all');
+  if (oAll) oAll.checked = false;
+  veThanhHanhDong();
+};
 
 /** Chỉ DO đang chờ vận chuyển mới lập Trip được — theo đúng luật backend. */
 function doLapTripDuoc(do_item) {
@@ -7896,36 +7816,35 @@ function doLapTripDuoc(do_item) {
  *                      delivery_starts, delivery_ends))) != len(orders):
  *         raise DomainError("DELIVERY_TIME_WINDOW_REQUIRED", ...)
  *
- * Tức MỌI DO trong chuyến phải có CẢ BỐN mốc, không phải chỉ giờ giao. Kiểm
- * ở đây để nói trước, thay vì để người dùng tick, bấm, rồi nhận 422 — đúng
- * cái đã xảy ra khi tôi chạy thử luồng này lần đầu.
+ * Tức MỌI DO trong chuyến phải có CẢ BỐN mốc, không phải chỉ giờ giao. Kiểm ở
+ * đây để nói trước, thay vì để người dùng tick, bấm, rồi nhận 422 — đúng cái
+ * đã xảy ra khi tôi chạy thử luồng này lần đầu.
  */
 function doDuKhungGio(do_item) {
   return Boolean(do_item?.pickup_window_start && do_item?.pickup_window_end
     && do_item?.delivery_window_start && do_item?.delivery_window_end);
 }
 
-/** Tra tuyến trong Master Data theo mã. */
+/* Quãng đường và danh sách chặng dùng `routeSegments` và
+   `routeSegmentDistanceKm` đã có sẵn trong tệp này (xem gần cuối tệp). Tôi đã
+   viết hai hàm trùng lặp cho đúng việc đó rồi mới phát hiện chúng có sẵn — và
+   bản có sẵn cũng đã xử lý đúng cả bốn tên khóa mà `segments_json` dùng trong
+   dữ liệu thật (`distance_km`, `dist_km`, `distance`, `km`). Hai nguồn cho
+   cùng một phép đọc là chỗ để chúng trôi khỏi nhau. */
+
+/** Tra tuyến trong Dữ liệu gốc theo mã. */
 function tuyenTheoMa(routeId) {
   if (!routeId) return null;
   return (eplRoutes || []).find(r => String(r.id) === String(routeId)) || null;
 }
 
-/* Quãng đường và danh sách chặng của một tuyến dùng `routeSegments` và
-   `routeSegmentDistanceKm` đã có sẵn trong tệp này (xem gần cuối tệp).
-
-   Tôi đã viết hai hàm trùng lặp cho đúng việc đó rồi mới phát hiện chúng có
-   sẵn — và bản có sẵn cũng đã xử lý đúng cả bốn tên khóa mà `segments_json`
-   dùng trong dữ liệu thật (`distance_km`, `dist_km`, `distance`, `km`). Hai
-   nguồn cho cùng một phép đọc là chỗ để chúng trôi khỏi nhau, nên bỏ bản
-   của tôi. */
 /**
  * Tuyến có lệch giữa `distance_km` và tổng các chặng hay không.
  *
  * Backend từ chối lập Trip khi hai con số này lệch quá 0,05 km
- * (`ROUTE_DISTANCE_MISMATCH`). Trong cơ sở dữ liệu thật hiện có 2 trên 4
- * tuyến bị lệch — kể cả tuyến demo chính. Nói ra ở đây để người dùng biết
- * TRƯỚC khi tick DO và bấm, thay vì bấm rồi mới nhận 422.
+ * (`ROUTE_DISTANCE_MISMATCH`). Trong cơ sở dữ liệu thật đã từng có 2 trên 4
+ * tuyến bị lệch — kể cả tuyến demo chính. Nói ra để người dùng biết TRƯỚC khi
+ * tick DO và bấm, thay vì bấm rồi mới nhận 422.
  */
 function lechQuangDuongTuyen(tuyen) {
   if (!tuyen) return null;
@@ -7937,13 +7856,30 @@ function lechQuangDuongTuyen(tuyen) {
   return { khaiBao, tongChang };
 }
 
-window.tickDO = function (id, tick) {
+/** Mô tả hàng hóa từ các trường THẬT của lệnh giao hàng. */
+function moTaHangHoa(do_item) {
+  const phan = [];
+  const kg = Number(do_item?.weight_kg || 0);
+  const pallet = Number(do_item?.pallet_count || 0);
+  const m3 = Number(do_item?.volume_m3 || 0);
+  if (kg > 0) phan.push(`${kg.toLocaleString('vi-VN')} kg`);
+  if (pallet > 0) phan.push(`${pallet} pallet`);
+  // Hiện CẢ ba khi có cả ba: khối, số pallet và thể tích là ba con số khác
+  // nhau, và xe chở được hay không phụ thuộc cả ba. Bỏ m³ chỉ vì đã có kg
+  // là bỏ đúng con số quyết định với hàng nhẹ mà chiếm chỗ.
+  if (m3 > 0) phan.push(`${m3.toLocaleString('vi-VN')} m³`);
+  return { chinh: phan.join(' · ') || '—', phu: do_item?.packaging_spec || '' };
+}
+
+// Tham so thu ba la CHINH o vua bam. Ban truoc khong nhan no ma di do lai
+// bang mot phep querySelector co thoat ky tu — mot vong ve quanh cai da
+// nam trong tay, va keo them mot API cua trinh duyet chi de dung mot lan.
+window.tickDO = function (id, tick, o) {
   if (tick) doDaChon.add(String(id));
   else doDaChon.delete(String(id));
-  veBangTripDangLap();
-  // Tô dòng đang chọn mà không vẽ lại cả bảng.
-  const o = document.querySelector(`#fiori-do-tbody input[data-do-id="${CSS.escape(String(id))}"]`);
-  if (o) o.closest('tr')?.classList.toggle('picked', Boolean(tick));
+  const dong = o && typeof o.closest === 'function' ? o.closest('tr') : null;
+  if (dong) dong.classList.toggle('picked', Boolean(tick));
+  veThanhHanhDong();
 };
 
 window.tickTatCaDO = function (tick) {
@@ -7955,142 +7891,95 @@ window.tickTatCaDO = function (tick) {
     else doDaChon.delete(ma);
     o.closest('tr')?.classList.toggle('picked', Boolean(tick));
   });
-  veBangTripDangLap();
+  veThanhHanhDong();
 };
 
-window.boChonDO = function (id) {
-  doDaChon.delete(String(id));
-  const o = document.querySelector(`#fiori-do-tbody input[data-do-id="${CSS.escape(String(id))}"]`);
-  if (o) {
-    o.checked = false;
-    o.closest('tr')?.classList.remove('picked');
-  }
-  veBangTripDangLap();
-};
-
-/** Vẽ bảng "Trip đang lập" theo các DO đang tick. */
-function veBangTripDangLap() {
-  const rong = document.getElementById('do-side-empty');
-  const day = document.getElementById('do-side-full');
-  if (!rong || !day) return;
-
+/**
+ * Vẽ thanh hành động nổi theo các DO đang tick.
+ *
+ * Trả về `{ dsChon, chanLai, lyDo }` để `taoTripTuDO` dùng lại đúng một phép
+ * quyết định — hai nơi tự kiểm riêng là chỗ để chúng lệch nhau.
+ */
+function veThanhHanhDong() {
+  const fab = document.getElementById('do-fab');
   const dsChon = (eplDeliveryOrders || []).filter(d => doDaChon.has(String(d.id)));
-  const dem = document.getElementById('do-side-count');
-  if (dem) dem.textContent = dsChon.length ? `${dsChon.length} DO đã chọn` : 'Chưa chọn DO';
 
-  rong.style.display = dsChon.length ? 'none' : '';
-  day.style.display = dsChon.length ? '' : 'none';
-  if (!dsChon.length) return;
+  if (fab) fab.hidden = dsChon.length === 0;
+  const oN = document.getElementById('do-fab-n');
+  if (oN) oN.textContent = String(dsChon.length);
 
-  // --- danh sách DO trong chuyến ---
-  const oList = document.getElementById('do-side-list');
-  if (oList) {
-    oList.innerHTML = dsChon.map(d => `
-      <div class="do-side-item">
-        <span class="ma">${escapeHtml(d.id)}</span>
-        <span class="noi">${escapeHtml(d.destination || d.route_id || '')}</span>
-        <button type="button" title="Bỏ khỏi chuyến"
-                onclick="boChonDO('${escapeJsAttr(d.id)}')">&times;</button>
-      </div>`).join('');
-  }
-
-  // --- luật CÙNG MỘT TUYẾN ---
   const maTuyen = [...new Set(dsChon.map(d => d.route_id || ''))];
   const thieuTuyen = maTuyen.includes('');
   const nhieuTuyen = maTuyen.length > 1;
   const thieuGio = dsChon.filter(d => !doDuKhungGio(d));
-  const tuyenChon = nhieuTuyen || thieuTuyen ? null : tuyenTheoMa(maTuyen[0]);
-  const lech = lechQuangDuongTuyen(tuyenChon);
-  const oChan = document.getElementById('do-side-block');
-  if (oChan) {
-    if (thieuGio.length) {
-      oChan.style.display = '';
-      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
-        + `${thieuGio.length} DO chưa đủ khung giờ lấy và giao hàng`
-        + ` (${thieuGio.slice(0, 3).map(d => escapeHtml(d.id)).join(', ')}`
-        + `${thieuGio.length > 3 ? '…' : ''}).`
-        + ' Máy chủ cần cả bốn mốc — bắt đầu/kết thúc của cả lấy và giao —'
-        + ' để tính ETA từng chặng. Mở DO rồi điền giờ trước.</span>';
-    } else if (lech) {
-      oChan.style.display = '';
-      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
-        + `Tuyến ${escapeHtml(tuyenChon.id)} khai quãng đường`
-        + ` ${lech.khaiBao.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km`
-        + ` nhưng tổng các chặng là`
-        + ` ${lech.tongChang.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km.`
-        + ' Máy chủ từ chối lập Trip khi hai con số này lệch, vì quãng'
-        + ' đường nuôi cả ETA lẫn giá cước. Sửa tuyến trong Dữ liệu gốc'
-        + ' rồi quay lại.</span>';
-    } else if (thieuTuyen) {
-      oChan.style.display = '';
-      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
-        + 'Có DO chưa gán tuyến Master Data. Máy chủ từ chối lập Trip khi thiếu'
-        + ' tuyến, vì không có quãng đường thì không tính được ETA.</span>';
-    } else if (nhieuTuyen) {
-      oChan.style.display = '';
-      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
-        + `Các DO này thuộc ${maTuyen.length} tuyến khác nhau`
-        + ` (${maTuyen.map(escapeHtml).join(', ')}).`
-        + ' Một Trip chỉ chở được các DO cùng MỘT tuyến — hãy tách thành'
-        + ' nhiều Trip.</span>';
-    } else {
-      oChan.style.display = 'none';
-      oChan.innerHTML = '';
-    }
+  const chuaPending = dsChon.filter(d => !doLapTripDuoc(d));
+  const tuyen = nhieuTuyen || thieuTuyen ? null : tuyenTheoMa(maTuyen[0]);
+  const lech = lechQuangDuongTuyen(tuyen);
+
+  // Dòng thông tin: tuyến và tổng khối lượng.
+  const oRoute = document.getElementById('do-fab-route');
+  if (oRoute) {
+    const tongKg = dsChon.reduce((s, d) => s + Number(d.weight_kg || 0), 0);
+    const km = tuyen ? routeTotalDistanceKm(tuyen) : 0;
+    oRoute.innerHTML = tuyen
+      ? `Tuyến <b>${escapeHtml(tuyen.name || tuyen.id)}</b>`
+        + ` · <b>${formatRouteKm(km)} km</b>`
+        + (tongKg > 0 ? ` · <b>${tongKg.toLocaleString('vi-VN')} kg</b>` : '')
+      : (nhieuTuyen
+        ? `<b>${maTuyen.length} tuyến khác nhau</b>`
+        : '<b>DO chưa gán tuyến</b>');
   }
 
-  // --- tuyến tham chiếu ---
-  const oTuyen = document.getElementById('do-side-route');
-  const tuyen = tuyenChon;
-  if (oTuyen) {
-    if (!tuyen) {
-      oTuyen.innerHTML = '<div class="ten">Chưa xác định được tuyến</div>'
-        + '<div class="ma">Chọn các DO cùng một tuyến để xem chặng và quãng đường.</div>';
-    } else {
-      const chang = routeSegments(tuyen);
-      const km = Number(tuyen.distance_km || 0);
-      const tocDo = Number(document.getElementById('trip-avg-speed')?.value || 0);
-      // Thời gian chỉ hiện khi CÓ cả quãng đường và tốc độ. Không có thì
-      // không đoán — một con số "~55 phút" bịa ra trông y hệt số thật.
-      const phut = km > 0 && tocDo > 0 ? Math.round((km / tocDo) * 60) : null;
-      let luyKe = 0;
-      oTuyen.innerHTML = `
-        <div class="ten">${escapeHtml(tuyen.name || tuyen.id)}</div>
-        <div class="ma">${escapeHtml(tuyen.id)}</div>
-        <div class="so">
-          <b>${km.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km</b>
-          ${phut != null ? `<b>~${phut} phút</b>` : '<b>chưa có tốc độ kế hoạch</b>'}
-          <b>${chang.length} chặng</b>
-        </div>
-        ${chang.length ? `<ul class="do-side-legs">${chang.map((c, k) => {
-          const d = routeSegmentDistanceKm(c);
-          luyKe += d;
-          return `<li><i>${k + 1}</i><b>${escapeHtml(c.from || '')} → ${escapeHtml(c.to || '')}</b>`
-            + `<span>${d.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km`
-            + `${chang.length > 1 ? ` · lũy kế ${luyKe.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}` : ''}</span></li>`;
-        }).join('')}</ul>` : ''}`;
-    }
+  // Lý do chặn — lấy đúng theo luật backend, không đoán.
+  let lyDo = '';
+  if (chuaPending.length) {
+    lyDo = `${chuaPending.length} DO không ở trạng thái chờ vận chuyển.`
+      + ' Chỉ DO đang chờ mới lập Trip được.';
+  } else if (thieuTuyen) {
+    lyDo = 'Có DO chưa gán tuyến trong Dữ liệu gốc. Không có quãng đường thì'
+      + ' máy chủ không tính được ETA và từ chối lập Trip.';
+  } else if (nhieuTuyen) {
+    lyDo = `Các DO này thuộc ${maTuyen.length} tuyến khác nhau`
+      + ` (${maTuyen.map(x => x || '(chưa gán)').join(', ')}).`
+      + ' Một Trip chỉ chở được các DO CÙNG MỘT tuyến — hãy tách ra và tạo'
+      + ' từng Trip một.';
+  } else if (thieuGio.length) {
+    lyDo = `${thieuGio.length} DO chưa đủ khung giờ lấy và giao`
+      + ` (${thieuGio.slice(0, 3).map(d => d.id).join(', ')}${thieuGio.length > 3 ? '…' : ''}).`
+      + ' Máy chủ cần cả bốn mốc để tính ETA từng chặng.';
+  } else if (lech) {
+    lyDo = `Tuyến ${tuyen.id} khai ${formatRouteKm(lech.khaiBao)} km`
+      + ` nhưng tổng các chặng là ${formatRouteKm(lech.tongChang)} km.`
+      + ' Máy chủ từ chối lập Trip khi hai con số này lệch.';
   }
 
-  // --- nút tạo Trip ---
-  const nut = document.getElementById('do-side-cta');
-  const chu = document.getElementById('do-side-cta-text');
-  const chanLai = nhieuTuyen || thieuTuyen || thieuGio.length > 0 || Boolean(lech)
-    || dsChon.some(d => !doLapTripDuoc(d));
+  const oWarn = document.getElementById('do-fab-warn');
+  if (oWarn) {
+    oWarn.hidden = !lyDo;
+    oWarn.textContent = lyDo ? '⚠ ' + lyDo : '';
+  }
+
+  const chanLai = Boolean(lyDo);
+  const nut = document.getElementById('do-fab-go');
   if (nut) nut.disabled = chanLai;
+  const chu = document.getElementById('do-fab-go-text');
   if (chu) {
-    chu.textContent = chanLai
-      ? 'Chưa tạo được Trip'
-      : `Tạo Trip với ${dsChon.length} DO`;
+    chu.textContent = chanLai ? 'Chưa tạo được Trip'
+      : `Tạo Trip từ ${dsChon.length} DO`;
   }
+  return { dsChon, chanLai, lyDo };
 }
-window.veBangTripDangLap = veBangTripDangLap;
+window.veThanhHanhDong = veThanhHanhDong;
 
 /** Gửi lệnh tạo Trip từ các DO đang chọn. */
 window.taoTripTuDO = async function () {
-  const dsChon = (eplDeliveryOrders || []).filter(d => doDaChon.has(String(d.id)));
+  const { dsChon, chanLai, lyDo } = veThanhHanhDong();
   if (!dsChon.length) {
     showToast('⚠️ Hãy tick ít nhất một lệnh giao hàng.');
+    return;
+  }
+  if (chanLai) {
+    showToast('⚠️ ' + lyDo);
     return;
   }
   const gioDi = document.getElementById('trip-departure-at')?.value || '';
@@ -8116,7 +8005,7 @@ window.taoTripTuDO = async function () {
     avg_speed_kmh: tocDo,
   };
 
-  const nut = document.getElementById('do-side-cta');
+  const nut = document.getElementById('do-fab-go');
   if (nut) nut.disabled = true;
   const viec = `Tạo Trip từ ${dsChon.length} lệnh giao hàng`;
   let res;
@@ -8132,9 +8021,8 @@ window.taoTripTuDO = async function () {
   }
   if (!res.ok) {
     if (nut) nut.disabled = false;
-    // 409 DELIVERY_ORDERS_INCOMPATIBLE / DELIVERY_ORDER_NOT_PENDING là câu
-    // trả lời có ích — `baoLoiMayChu` đọc đúng ba lớp phong bì lỗi nên lời
-    // của backend đến được người dùng.
+    // `baoLoiMayChu` đọc đúng ba lớp phong bì lỗi nên lời của backend đến
+    // được người dùng, thay vì một câu "Lỗi khi tạo Trip" chung chung.
     return baoLoiMayChu(res, viec);
   }
   showToast(`🚚 Đã tạo ${maTrip} với ${dsChon.length} DO. Bước tiếp: điều xe ở màn Điều phối.`);
@@ -8166,10 +8054,110 @@ function datMacDinhKeHoachTrip() {
       oTocDo.value = String(Math.round(ds.reduce((a, b) => a + b, 0) / ds.length));
     }
     oTocDo.dataset.daDat = '1';
-    oTocDo.addEventListener('input', veBangTripDangLap);
+    oTocDo.addEventListener('input', veThanhHanhDong);
   }
 }
 window.datMacDinhKeHoachTrip = datMacDinhKeHoachTrip;
+
+/**
+ * Vẽ ba con chip nhóm, nhãn ô chọn tình trạng, và dòng chân bảng.
+ *
+ * Nhãn ô chọn mang luôn số đếm của từng rổ, lấy từ `window.DoBoard.counts` —
+ * nên con số trong ô chọn luôn khớp bảng, không phải một danh sách tĩnh.
+ */
+/**
+ * Câu ghi chú theo rổ, lấy từ mấy con số MÁY CHỦ tính thêm.
+ *
+ * Ba con số dưới đây không nằm trong danh sách DO trả về — chỉ
+ * `/api/delivery-orders/analysis` mới tính: bao nhiêu DO đã đến điểm mà
+ * chưa ghi POD, bao nhiêu sự cố còn mở, bao nhiêu DO đã quá hạn. Bản 2
+ * hiện chúng ở dòng chữ nhỏ dưới bảy thẻ đếm; bản 3 bỏ bảy thẻ đó, nên
+ * nếu không dời sang đây thì giao diện mất luôn phần này — mà nó là phần
+ * nói ra VIỆC CẦN LÀM, chứ không chỉ đếm dòng.
+ */
+function ghiChuRoDO() {
+  const ro = (typeof deliveryOrderAnalysis !== 'undefined'
+    && deliveryOrderAnalysis) ? deliveryOrderAnalysis.buckets : null;
+  if (!ro) return '';
+  const cau = [];
+  if ((ro.incident && ro.incident.open_incidents) > 0) {
+    cau.push(ro.incident.open_incidents + ' sự cố chưa xử lý');
+  }
+  if ((ro.active && ro.active.arrived) > 0) {
+    cau.push(ro.active.arrived + ' DO đã đến điểm, cần cập nhật POD');
+  }
+  if ((ro.overdue && ro.overdue.count) > 0) {
+    cau.push(ro.overdue.count + ' DO đã quá hạn');
+  }
+  return cau.join(' · ');
+}
+function veChipVaChanTrang(soDongHien) {
+  const tong = (eplDeliveryOrders || []).length;
+  const dem = {};
+  DELIVERY_ORDER_STAGES.forEach(ro => { dem[ro] = 0; });
+  (eplDeliveryOrders || []).forEach(d => {
+    const ro = deliveryOrderStage(d);
+    dem[ro] = (dem[ro] || 0) + 1;
+  });
+
+  const demNhom = {
+    need: NHOM_DO.need.reduce((s, ro) => s + (dem[ro] || 0), 0),
+    run: NHOM_DO.run.reduce((s, ro) => s + (dem[ro] || 0), 0),
+    all: tong,
+  };
+  Object.entries(demNhom).forEach(([nhom, so]) => {
+    const chip = document.getElementById(`do-group-${nhom}`);
+    if (chip) chip.classList.toggle('active', nhom === activeDOGroup);
+    const oSo = document.getElementById(`do-group-count-${nhom}`);
+    if (oSo) oSo.textContent = String(so);
+  });
+
+  // Nhóm "Cần xử lý" chỉ có dấu đỏ khi thật sự còn việc.
+  const dot = document.querySelector('#do-group-need .do-chip-dot');
+  if (dot) dot.style.visibility = demNhom.need > 0 ? 'visible' : 'hidden';
+
+  const oTT = document.getElementById('do-status-filter');
+  if (oTT) {
+    [...oTT.options].forEach(op => {
+      if (!op.value) return;
+      // Nhãn gốc = chữ ĐANG hiện, đã bóc phần đếm cũ. Lấy như vậy thì đổi
+      // ngôn ngữ là ô chọn đổi theo, mà vẽ lại nhiều lần cũng không dồn
+      // thành "Gần trễ (2) (2)".
+      const nhan = op.textContent.replace(/\s*\(\d+\)$/, '');
+      op.textContent = `${nhan} (${dem[op.value] || 0})`;
+    });
+  }
+
+  const oDem = document.getElementById('do-plan-count');
+  if (oDem) {
+    const hien = Math.min(soDongHien, GIOI_HAN_DONG_DO);
+    const nhanRo = activeDOStage
+      ? (window.DoBoard?.BUCKETS || []).find(b => b.key === activeDOStage)?.label
+      : ({ need: 'cần xử lý', run: 'đang chạy', all: '' })[activeDOGroup];
+    oDem.textContent = soDongHien
+      ? `Đang xem ${hien}${soDongHien > hien ? ` trên ${soDongHien}` : ''} DO`
+        + `${nhanRo ? ' ' + String(nhanRo).toLowerCase() : ''} · tổng ${tong} DO`
+      : `Không có DO nào khớp bộ lọc này · tổng ${tong} DO`;
+  }
+  const oNote = document.getElementById('do-plan-note');
+  if (oNote) {
+    const soChon = doDaChon.size;
+    // Đang tick thì nói việc đang làm; chưa tick thì ưu tiên VIỆC CẦN LÀM
+    // từ máy chủ, hết việc mới xuống câu chỉ dẫn.
+    const viec = ghiChuRoDO();
+    oNote.textContent = soChon
+      ? `${soChon} DO đã tick — xem thanh hành động ở dưới`
+      : (viec
+        ? viec
+        : 'Tick ô vuông để gộp DO vào một Trip · bấm ô trạng thái để lọc nhanh');
+  }
+
+  const oTabDO = document.getElementById('do-subtab-count-delivery');
+  if (oTabDO) oTabDO.textContent = String(tong);
+  const oTabRT = document.getElementById('do-subtab-count-routes');
+  if (oTabRT) oTabRT.textContent = String((eplRoutes || []).length);
+}
+window.veChipVaChanTrang = veChipVaChanTrang;
 
 function renderDeliveryOrders(data) {
   const tbody = document.getElementById('fiori-do-tbody');
@@ -8182,23 +8170,27 @@ function renderDeliveryOrders(data) {
   //
   // Trước đây mở cứng "Gần trễ", mà rổ đó đang có 0 DO, nên mở màn ra là một
   // bảng trống trong khi 9 DO thật nằm ở các tab khác.
-  if (!activeDOStage) {
-    const tally = {};
-    (eplDeliveryOrders || []).forEach(order => {
-      const stage = deliveryOrderStage(order);
-      tally[stage] = (tally[stage] || 0) + 1;
-    });
-    activeDOStage = DELIVERY_ORDER_STAGES.find(stage => tally[stage] > 0)
-      || DELIVERY_ORDER_STAGES[DELIVERY_ORDER_STAGES.length - 1];
-  }
+  // Bản 3 KHÔNG tự chọn rổ nữa. Bản 2 mở màn ra là nhảy vào rổ cấp bách
+  // nhất mà có dòng, nên mỗi lần nạp lại người dùng thấy một rổ khác — khó
+  // đoán. Nay mặc định là nhóm "Cần xử lý", và nó gộp cả năm rổ chưa chạy
+  // nên không bao giờ rỗng oan.
 
-  updateDeliveryOrderStageTabs(eplDeliveryOrders);
+  // Lọc theo NHÓM (ba con chip) hoặc theo TÌNH TRẠNG chi tiết (ô chọn).
+  // Bản 2 chỉ có một tầng: đúng một trong bảy rổ. Bản 3 có hai tầng, và ô
+  // chọn thắng khi có giá trị.
+  const roCuaNhom = NHOM_DO[activeDOGroup] || null;
   const list = (data || [])
-    .filter(order => deliveryOrderStage(order) === activeDOStage)
+    .filter(order => {
+      const ro = deliveryOrderStage(order);
+      if (activeDOStage) return ro === activeDOStage;
+      return !roCuaNhom || roCuaNhom.includes(ro);
+    })
     .sort((a, b) => {
       const aDate = deliveryOrderDateValue(a, activeDOStage);
       const bDate = deliveryOrderDateValue(b, activeDOStage);
-      return activeDOStage === 'completed' ? bDate - aDate : aDate - bDate;
+      // Rổ đã xong thì mới nhất lên đầu; còn lại thì gần hạn lên đầu.
+      const roMoi = activeDOStage || (activeDOGroup === 'run' ? 'active' : 'pending');
+      return roMoi === 'completed' ? bDate - aDate : aDate - bDate;
     });
 
   if (list.length === 0) {
@@ -8243,12 +8235,26 @@ function renderDeliveryOrders(data) {
     const deliveryLabel = deliveryOrderDateLabel(do_item.delivery_window_start || do_item.delivery_date || do_item.delivery_window_end);
     const doId = doBoardEscape(do_item.id);
     const lapDuoc = doLapTripDuoc(do_item);
+    // Hủy được hay không là một câu hỏi KHÁC với lập Trip được hay không,
+    // dù hiện hai điều kiện trùng nhau. Tra riêng để mai này backend nới một
+    // bên thì bên kia không lặng lẽ nới theo.
+    const huyDuoc = huyDuocDon(do_item);
     const daChon = doDaChon.has(String(do_item.id));
     const tuyen = tuyenTheoMa(do_item.route_id);
+    const ro = deliveryOrderStage(do_item);
+    const hang = moTaHangHoa(do_item);
     const soTre = typeof window.DoBoard?.daysLate === "function"
       ? window.DoBoard.daysLate(do_item) : 0;
 
-    // Thieu han giao thi sua NGAY TAI DONG, khong bat nguoi dung roi man.
+    // Màu ô trạng thái theo rổ, để đọc được tình trạng mà không phải dò chữ.
+    const mauRo = {
+      incident: "do-pill-red", overdue: "do-pill-red",
+      undated: "do-pill-amber", near_late: "do-pill-amber",
+      pending: "do-pill-grey", active: "do-pill-blue",
+      completed: "do-pill-green",
+    }[ro] || "do-pill-grey";
+
+    // Thiếu hạn giao thì sửa NGAY TẠI DÒNG, không bắt người dùng rời màn.
     const oGiao = deliveryLabel && deliveryLabel !== "—"
       ? `<div class="do-cell-main">${doBoardEscape(do_item.destination || "")}</div>`
         + `<div class="do-cell-sub">${doBoardEscape(deliveryLabel)}</div>`
@@ -8262,7 +8268,7 @@ function renderDeliveryOrders(data) {
           <input type="checkbox" data-do-id="${doId}" ${daChon ? 'checked' : ''}
                  ${lapDuoc ? '' : 'disabled'}
                  title="${lapDuoc ? 'Chọn để lập Trip' : 'Chỉ DO đang chờ vận chuyển mới lập Trip được'}"
-                 onchange="tickDO('${doId}', this.checked)">
+                 onchange="tickDO('${doId}', this.checked, this)">
         </td>
         <td><div class="do-cell-id">${doId}</div>
             <div class="do-cell-sub">${doBoardEscape(do_item.so_id || '—')}</div></td>
@@ -8272,15 +8278,25 @@ function renderDeliveryOrders(data) {
             <div class="do-cell-sub">${doBoardEscape(pickupLabel)}</div></td>
         <td>${oGiao}
             ${soTre > 0 ? `<div class="do-cell-late">Trễ ${soTre} ngày</div>` : ''}</td>
+        <td><div class="do-cell-main">${doBoardEscape(hang.chinh)}</div>
+            ${hang.phu ? `<div class="do-cell-sub">${doBoardEscape(hang.phu)}</div>` : ''}</td>
         <td>${tuyen
               ? `<div class="do-cell-main">${doBoardEscape(tuyen.name || tuyen.id)}</div>`
-                + `<div class="do-cell-sub">${Number(tuyen.distance_km || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km</div>`
+                + `<div class="do-cell-sub">${formatRouteKm(routeTotalDistanceKm(tuyen))} km`
+                + ` · ${routeSegments(tuyen).length} chặng</div>`
               : '<div class="do-cell-sub">Chưa gán tuyến</div>'}</td>
-        <td><span class="fiori-status ${operationalStatus.className}">${doBoardEscape(operationalStatus.label)}</span></td>
-        <td style="white-space:nowrap;">
-          <button class="fiori-btn fiori-btn-secondary" title="Xem chi tiết DO"
-                  style="width:32px; height:30px; padding:0; border-radius:7px;"
-                  onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>${nutHuyDon(do_item, doId)}
+        <td>
+          <button type="button" class="do-status-pill ${mauRo}"
+                  title="Bấm để lọc theo tình trạng này"
+                  onclick="locTheoOTrangThai('${ro}')">${doBoardEscape(operationalStatus.label)}</button>
+        </td>
+        <td>
+          <div class="do-row-act">
+            <button type="button" title="Xem chi tiết DO"
+                    onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>
+            ${huyDuoc ? `<button type="button" class="huy" title="Hủy lệnh giao hàng"
+                    onclick="huyLenhGiaoHang('${doId}')"><i class="fa-solid fa-ban"></i></button>` : ''}
+          </div>
         </td>
       </tr>`);
   });
@@ -8289,14 +8305,14 @@ function renderDeliveryOrders(data) {
   // ca la dung lai loi da phai sua o man lich xe.
   if (list.length > GIOI_HAN_DONG_DO) {
     tbody.insertAdjacentHTML('beforeend', `
-      <tr><td colspan="8" style="padding:14px 20px; background:#fffbeb; color:#92400e; font-size:.78rem; font-weight:600;">
+      <tr><td colspan="9" style="padding:14px 20px; background:#fffbeb; color:#92400e; font-size:.78rem; font-weight:600;">
         Đang hiện ${GIOI_HAN_DONG_DO} trên ${list.length} DO của rổ này.
         Dùng ô tìm kiếm hoặc chọn rổ khác để thu hẹp lại.
       </td></tr>`);
   }
 
   veChipVaChanTrang(list.length);
-  veBangTripDangLap();
+  veThanhHanhDong();
   datMacDinhKeHoachTrip();
 }
 
@@ -8859,9 +8875,15 @@ async function refreshDispatchTrackingMap(dos) {
   // cho MỌI đơn đang trên đường, nên mất mạng là hàng chục lời báo giống hệt
   // nhau — mà `showToast` chỉ giữ được cái cuối cùng.
   const hong = [];
+  // 404 kem mã `TRACKING_NOT_FOUND` KHÔNG phải lỗi: máy chủ đang nói
+  // chuyến này chưa điều phối xe, hoặc thiết bị GPS chưa gửi điểm nào.
+  // Gộp nó vào "nạp thất bại" là đẩy người điều độ đi kiểm tra mạng và
+  // máy chủ, trong khi việc cần làm là điều phối xe.
+  const chuaCoGps = [];
   await Promise.all(candidates.map(async (d) => {
     try {
       const res = await fetch(`${API_BASE}/api/tracking/${encodeURIComponent(d.id)}`);
+      if (res.status === 404) { chuaCoGps.push(d.id); return; }
       if (!res.ok) { hong.push(d.id); return; }
       const track = await res.json();
       dispatchTrackingByDO[d.id] = track || {};
@@ -8875,6 +8897,10 @@ async function refreshDispatchTrackingMap(dos) {
   if (hong.length) {
     baoNapThatBai(`vị trí của ${hong.length}/${candidates.length} chuyến đang chạy`,
       new Error(hong.slice(0, 5).join(', ')));
+  }
+  // Chưa có GPS thì nói đúng việc cần làm, và nói MỘT lần cho cả nhóm.
+  if (chuaCoGps.length) {
+    showToast(`⚠️ ${chuaCoGps.length}/${candidates.length} chuyến đang chạy chưa có dữ liệu GPS${chuaCoGps.length <= 3 ? ` (${chuaCoGps.join(", ")})` : ""}. Hãy điều phối xe hoặc kiểm tra thiết bị GPS — xe sẽ không hiện trên bản đồ điều độ.`);
   }
   return hong;
 }

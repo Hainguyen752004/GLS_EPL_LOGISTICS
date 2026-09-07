@@ -40,20 +40,33 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8')
   assert.strictEqual(huyDuocDon({ canonical_status: 'PENDING' }), true);
 }
 
+// --- 2. Nút phải nằm ngay trên dòng của bảng --------------------------
+//
+// Bản 2 dựng nút qua một hàm `nutHuyDon(do_item, doId)`. Bản 3 vẽ nút ngay
+// trong dòng cùng nút xem chi tiết, nên hàm đó đã bỏ — nhưng LUẬT thì không
+// đổi: không hủy được thì KHÔNG có nút, chứ không phải nút xám. Nút xám vẫn
+// mời người ta bấm rồi nhận một câu từ chối.
+
 {
-  // Hàm dựng nút phải trả về chuỗi RỖNG khi không hủy được, chứ không phải
-  // một nút bị vô hiệu hóa — nút xám vẫn mời người ta bấm.
-  const i = app.indexOf('function nutHuyDon(do_item, doId)');
-  assert.ok(i > 0);
-  const than = app.slice(i, app.indexOf(NL + '}', i) + 2);
-  assert.ok(/if \(!huyDuocDon\(do_item\)\) return '';/.test(than), than.slice(0, 200));
-  assert.ok(/huyLenhGiaoHang\('\$\{doId\}'\)/.test(than), 'nút phải gọi hàm hủy');
+  const i = app.indexOf('list.slice(0, GIOI_HAN_DONG_DO).forEach(do_item => {');
+  assert.ok(i > 0, 'không thấy vòng vẽ dòng DO');
+  const dong = app.slice(i, app.indexOf(NL + '  });', i));
+
+  assert.ok(/const huyDuoc = huyDuocDon\(do_item\);/.test(dong),
+    'mỗi dòng phải tự tra điều kiện hủy');
+  // Điều kiện HIỆN nút là `huyDuoc`, không phải `lapDuoc`. Hai câu hỏi này
+  // hiện trùng nhau, nhưng "hủy được không" và "lập Trip được không" là hai
+  // luật khác nhau ở backend — buộc nút hủy vào luật lập Trip là để mai sau
+  // nới một bên thì bên kia lặng lẽ nới theo.
+  // Một phép dò duy nhất, đòi cả ba thứ cùng lúc: điều kiện là `huyDuoc`,
+  // thân nhánh gọi `huyLenhGiaoHang`, và nhánh còn lại là chuỗi RỖNG.
+  const m = dong.match(/\$\{huyDuoc \? `([\s\S]*?)` : ('.*?')\}/);
+  assert.ok(m, 'nút hủy phải hiện theo điều kiện hủy, dạng huyDuoc ? ... : ...');
+  assert.ok(m[1].includes("huyLenhGiaoHang('${doId}')"), 'nút phải gọi hàm hủy');
+  assert.strictEqual(m[2], "''",
+    'không hủy được thì không có nút, chứ không phải nút bị vô hiệu hóa');
+  assert.ok(!/nutHuyDon/.test(app), 'hàm dựng nút bản 2 đã bỏ, đừng còn dấu vết');
 }
-
-// --- 2. Nút phải được gắn vào dòng của bảng ---------------------------
-
-assert.ok(/\$\{nutHuyDon\(do_item, doId\)\}/.test(app),
-  'nút hủy phải được gắn vào dòng danh sách lệnh giao hàng');
 
 // --- 3. Hàm hủy phải gửi đúng thứ, và báo lỗi thật -------------------
 

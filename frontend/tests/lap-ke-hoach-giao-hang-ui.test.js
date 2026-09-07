@@ -1,19 +1,18 @@
 /**
- * Màn lập kế hoạch giao hàng — thiết kế lại.
+ * Màn lập kế hoạch giao hàng — bản 3.
  *
- * Bản trước: bảy thẻ đếm cao 90px xếp ngang chiếm gần một phần ba màn hình mà
- * chỉ để hiện bảy con số, rồi bảng DO, rồi hai phần ba màn hình TRỐNG bên
- * dưới. Muốn lập một Trip thì phải rời màn này sang màn Điều phối và chọn lại
- * đúng những DO vừa xem.
- *
- * Bản này: bảy con chip cao 34px (cùng thông tin, một phần tư chiều cao, và
- * bấm vào là lọc), bảng DO có ô tick, và khoảng trống bên phải thành bảng
- * "Trip đang lập" — tick DO là thấy ngay tuyến rồi tạo Trip tại chỗ.
+ * Đường đi của màn này: bản 1 là bảy thẻ đếm cao 90px xếp ngang chiếm gần một
+ * phần ba màn hình, rồi bảng DO, rồi hai phần ba màn hình TRỐNG bên dưới. Bản
+ * 2 nén bảy thẻ thành bảy con chip và lấp chỗ trống bên phải bằng một bảng
+ * "Trip đang lập" rộng 372px. Bản 3 bỏ luôn bảng bên phải: bảng DO chiếm hết
+ * chiều rộng, và phần tóm tắt lựa chọn xuống một THANH HÀNH ĐỘNG NỔI chỉ hiện
+ * khi đã tick DO — chưa chọn gì thì không có khối rỗng nào chiếm chỗ. Bảy con
+ * chip cũng gọn còn BA nhóm, bảy tình trạng chi tiết vào một ô chọn.
  *
  * Phần đáng giá nhất của bài kiểm này là mục 3: nó chạy THẬT hàm quyết định
  * chặn/không chặn, đối chiếu với năm điều kiện của
  * `create_trip_from_delivery_orders`. Bốn trong năm điều kiện đó chỉ lộ ra khi
- * tôi chạy thử luồng trên cơ sở dữ liệu thật, không phải khi đọc mã.
+ * chạy thử luồng trên cơ sở dữ liệu thật, không phải khi đọc mã.
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -24,6 +23,7 @@ const NL = String.fromCharCode(10);
 const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
   .split(String.fromCharCode(13)).join('');
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const lang = JSON.parse(fs.readFileSync(path.join(ROOT, 'js', 'lang.json'), 'utf8'));
 
 function than(neo, ket) {
   const i = app.indexOf(neo);
@@ -31,61 +31,163 @@ function than(neo, ket) {
   return app.slice(i, app.indexOf(NL + (ket || '}'), i) + 2);
 }
 
-// --- 1. Bảy thẻ đếm cao thành bảy con chip ---------------------------
+// --- 1. Bảy con chip gọn thành BA nhóm + một ô chọn ------------------
 
 {
-  // Bảy id `do-stage-*` và `do-count-*` phải còn — phần JS đang chạy dùng
-  // chúng, và giữ hợp đồng thì không phải sửa lan ra.
+  ['need', 'run', 'all'].forEach(nhom => {
+    assert.ok(html.includes(`id="do-group-${nhom}"`), `thiếu chip nhóm ${nhom}`);
+    assert.ok(html.includes(`id="do-group-count-${nhom}"`), `thiếu ô đếm ${nhom}`);
+  });
+  const soChip = (html.match(/class="do-chip( active)?"/g) || []).length;
+  assert.strictEqual(soChip, 3, `phải có đúng 3 chip nhóm, thấy ${soChip}`);
+  assert.ok(!/class="do-stage-tab"/.test(html), 'còn thẻ đếm bản 1');
+  assert.ok(!/class="do-chips"/.test(html), 'còn dải bảy chip bản 2');
+
+  // Bảy tình trạng chi tiết KHÔNG mất, chỉ dời vào ô chọn — và ô chọn phải
+  // phủ đúng bảy rổ của DoBoard, không thừa không thiếu.
+  const i = html.indexOf('id="do-status-filter"');
+  assert.ok(i > 0, 'thiếu ô chọn tình trạng');
+  const oChon = html.slice(i, html.indexOf('</select>', i));
   ['incident', 'overdue', 'undated', 'near_late', 'pending', 'active', 'completed']
     .forEach(ro => {
-      assert.ok(html.includes(`id="do-stage-${ro}"`), `thiếu chip ${ro}`);
-      assert.ok(html.includes(`id="do-count-${ro}"`), `thiếu ô đếm ${ro}`);
+      assert.ok(oChon.includes(`value="${ro}"`), `ô chọn thiếu rổ ${ro}`);
+      // Và phải dịch được — đây từng là chỗ DUY NHẤT trong màn chỉ có
+      // tiếng Việt, vì bảy option không có `data-i18n`.
+      assert.ok(oChon.includes(`data-i18n="stage_${ro}"`), `rổ ${ro} chưa có i18n`);
+      ['vi', 'en', 'la'].forEach(ng => {
+        assert.ok(lang[`stage_${ro}`] && lang[`stage_${ro}`][ng],
+          `stage_${ro} thiếu bản dịch ${ng}`);
+      });
     });
-  // Và chúng phải là chip, không phải thẻ cao như cũ.
-  const soChip = (html.match(/class="do-chip"/g) || []).length;
-  assert.strictEqual(soChip, 7, `phải có đúng 7 chip, thấy ${soChip}`);
-  assert.ok(!/class="do-stage-tab"/.test(html), 'còn thẻ đếm kiểu cũ');
 
-  // Một dòng gợi ý cho rổ ĐANG mở, thay vì bảy dòng cùng lúc.
-  assert.ok(html.includes('id="do-stage-hint"'));
-  const t = than('function veChipVaChanTrang(soDongHien)');
-  assert.ok(/do-stage-hint/.test(t) && /bucket\?\.hint/.test(t),
-    'dòng gợi ý phải lấy từ DoBoard.BUCKETS của rổ đang mở');
-  // Rổ rỗng vẫn hiện, chỉ mờ đi — ẩn thì người dùng không biết rổ đó tồn tại.
-  assert.ok(/classList\.toggle\('empty'/.test(t), 'rổ rỗng phải mờ đi chứ không ẩn');
+  // Nhãn ba nhóm và nút bỏ chọn cũng phải có đủ ba ngôn ngữ.
+  ['grp_need', 'grp_run', 'grp_all', 'btn_clear_pick'].forEach(k => {
+    assert.ok(lang[k], `lang.json thiếu ${k}`);
+    ['vi', 'en', 'la'].forEach(ng => {
+      assert.ok(lang[k][ng], `${k} thiếu bản dịch ${ng}`);
+    });
+  });
+
+  // Ba nhóm phải gộp ĐÚNG bảy rổ, không bỏ rơi rổ nào ra ngoài mọi nhóm.
+  const t = than('const NHOM_DO = {', '};');
+  const nhom = new Function(t + NL + 'return NHOM_DO;')();
+  assert.deepStrictEqual(
+    [...nhom.need, ...nhom.run].sort(),
+    ['incident', 'overdue', 'undated', 'near_late', 'pending', 'active'].sort(),
+    'ba nhóm phải phủ hết rổ chưa hoàn thành');
+  assert.strictEqual(nhom.all, null, 'nhóm "Tất cả" không lọc gì');
+
+  // Số đếm trong chip và trong ô chọn cùng lấy từ `deliveryOrderStage`, tức
+  // cùng phép chia rổ với bảng — không thể lệch nhau.
+  const v = than('function veChipVaChanTrang(soDongHien)');
+  assert.ok(/deliveryOrderStage\(d\)/.test(v), 'đếm phải theo cùng phép chia rổ');
+  assert.ok(/do-group-count-/.test(v) && /do-status-filter/.test(v),
+    'phải cập nhật cả chip nhóm và ô chọn');
+  // Đổi ngôn ngữ xong, nhãn option không được dồn thành "Gần trễ (2) (2)".
+  assert.ok(/textContent\.replace\(\/\\s\*\\\(\\d\+\\\)\$\//.test(v),
+    'phải bóc phần đếm cũ khỏi nhãn trước khi ghi lại');
 }
 
-// --- 2. Hai cột, và bảng Trip đang lập ------------------------------
+// --- 2. Bảng hết chiều rộng, thanh hành động NỔI --------------------
 
 {
-  assert.ok(html.includes('class="do-plan-layout"'), 'phải có bố cục hai cột');
-  assert.ok(/\.do-plan-layout\s*\{[^}]*grid-template-columns/.test(html),
-    'cột phải dựng bằng grid');
-  // Màn hẹp thì xếp dọc, không để bảng 372px chen bảng DO.
-  assert.ok(/@media \(max-width: 1200px\)[\s\S]{0,200}do-plan-layout/.test(html),
-    'phải có nhánh màn hẹp');
+  assert.ok(!/class="do-plan-layout"/.test(html), 'còn bố cục hai cột bản 2');
+  assert.ok(!html.includes('id="do-trip-builder"'), 'còn bảng Trip đang lập bản 2');
 
-  ['do-trip-builder', 'do-side-empty', 'do-side-full', 'do-side-list',
-    'do-side-block', 'do-side-route', 'do-side-cta',
-    'trip-departure-at', 'trip-avg-speed', 'trip-type',
-    'do-pick-all', 'do-plan-count'].forEach(id => {
+  ['do-fab', 'do-fab-n', 'do-fab-route', 'do-fab-warn', 'do-fab-go',
+    'do-fab-go-text', 'trip-departure-at', 'trip-avg-speed', 'trip-type',
+    'do-pick-all', 'do-plan-count', 'do-plan-note'].forEach(id => {
     assert.ok(html.includes(`id="${id}"`), `thiếu ${id}`);
   });
 
-  // KHÔNG được có ô chọn xe/tài xế ở đây: endpoint tạo Trip không nhận
-  // vehicle_id/driver_id, điều xe là bước riêng. Hiện ô đó là hàm ý nó được
-  // lưu, mà không.
-  const i = html.indexOf('id="do-trip-builder"');
-  const khoi = html.slice(i, html.indexOf('<!-- 3.3 Route Reference Strip -->', i));
-  assert.ok(!/id="trip-vehicle|id="trip-driver/.test(khoi),
+  // Chưa tick DO nào thì thanh phải ĐANG ẨN ngay trong HTML tĩnh, không chờ
+  // JS chạy mới ẩn — không thì mỗi lần tải trang nó nháy một cái.
+  const i = html.indexOf('<div class="do-fab" id="do-fab"');
+  assert.ok(i > 0, 'thanh hành động phải nằm ngoài panel, dạng nổi');
+  assert.ok(/<div class="do-fab" id="do-fab" hidden>/.test(html),
+    'thanh hành động phải ẩn sẵn');
+  // Thanh nổi là khối cuối cùng trước `</body>`, nên cắt tới đó là đủ và
+  // không phụ thuộc vào cách thụt lề hay kiểu kết dòng của vùng này —
+  // index.html TRỘN cả LF và CRLF, neo theo kết dòng là hỏng.
+  const fab = html.slice(i, html.indexOf('</body>', i));
+  assert.ok(fab.length > 400 && fab.length < 4000, `khối thanh nổi: ${fab.length}`);
+
+  // KHÔNG được có ô chọn xe/tài xế: endpoint tạo Trip không nhận
+  // vehicle_id/driver_id, điều xe là bước riêng. Hiện ô đó là hàm ý nó
+  // được lưu, mà không.
+  assert.ok(!/id="trip-vehicle|id="trip-driver/.test(fab),
     'tạo Trip không nhận xe/tài xế — đừng hỏi ở đây');
-  assert.ok(/switchView\('dispatch'\)/.test(khoi),
-    'phải nói rõ xe được gán ở bước Điều phối');
+  // Hai trường BẮT BUỘC của endpoint phải nằm ngay trên thanh, không ẩn đi.
+  assert.ok(fab.includes('id="trip-departure-at"') && fab.includes('id="trip-avg-speed"'),
+    'giờ xuất bến và tốc độ là bắt buộc, phải ở ngay thanh');
+
+  // Bảng có đủ chín cột, kể cả cột Hàng mới.
+  const j = html.indexOf('<table class="do-plan-table">');
+  const thead = html.slice(j, html.indexOf('</thead>', j));
+  // `<th[ >]` chứ không phải `<th` — không thì `<thead>` cũng bị đếm.
+  assert.strictEqual((thead.match(/<th[ >]/g) || []).length, 9,
+    'bảng phải có 9 cột (gồm ô tick và cột Hàng)');
+  assert.ok(thead.includes('data-i18n="th_cargo"'), 'thiếu cột Hàng');
+  assert.ok(html.includes('colspan="9"'), 'dòng trống phải trải đủ 9 cột');
+}
+
+{
+  // Cột "Hàng" phải hiện SỐ THẬT. Bản mẫu v3 ghi "1 × 40'", nhưng bảng
+  // `delivery_orders` KHÔNG có số container — chỉ `weight_kg`,
+  // `pallet_count`, `volume_m3`, `packaging_spec`.
+  const t = than('function moTaHangHoa(do_item)');
+  ['weight_kg', 'pallet_count', 'volume_m3', 'packaging_spec'].forEach(c => {
+    assert.ok(t.includes(c), `phải đọc ${c}`);
+  });
+  assert.ok(!/container|40'|20'/i.test(t), 'không có số container trong CSDL — đừng bịa');
+  const f = new Function(t + NL + 'return moTaHangHoa;')();
+  // Ba con số cùng hiện khi có cả ba — kg, pallet và m³ quyết định xe chở
+  // được hay không theo ba cách khác nhau.
+  assert.strictEqual(
+    f({ weight_kg: 3000, pallet_count: 4, volume_m3: 12 }).chinh,
+    '3.000 kg · 4 pallet · 12 m³');
+  assert.strictEqual(f({ weight_kg: 3000 }).chinh, '3.000 kg');
+  assert.strictEqual(f({ packaging_spec: 'Thùng carton' }).phu, 'Thùng carton');
+  // DO chưa khai gì thì phải NÓI RA là chưa khai, không hiện "0 kg".
+  const trong = f({});
+  assert.strictEqual(trong.chinh, '—', `DO trống không được hiện 0: ${trong.chinh}`);
+  assert.strictEqual(f(null).chinh, '—', 'DO rỗng cũng không được vỡ');
+}
+
+{
+  // Ô tick phải trao THẲNG chính nó cho `tickDO`. Bản trước chỉ nhận mã DO
+  // rồi đi dò lại đúng ô vừa phát ra sự kiện — một vòng vẽ quanh cái đã nằm
+  // trong tay, và nó kéo `CSS.escape` vào chỉ để dùng đúng một lần trong cả
+  // tệp. Bỏ đi thì hàm chạy được cả ngoài trình duyệt.
+  assert.ok(/onchange="tickDO\('\$\{doId\}', this\.checked, this\)"/.test(app),
+    'ô tick phải truyền chính nó vào tickDO');
+  const t = than('window.tickDO = function (id, tick, o)', '};');
+  assert.ok(/o\.closest === 'function'/.test(t), 'phải kiểm trước khi gọi closest');
+  assert.ok(!/querySelector/.test(t), 'không cần dò lại ô vừa bấm');
+  // Lọc chú thích trước khi dò — chú thích ở trên có nhắc tên API cũ.
+  const than_ma = app.split(NL).filter(d => !d.trim().startsWith('//')).join(NL);
+  assert.ok(!/CSS\.escape/.test(than_ma), 'mã chạy không được cần CSS.escape');
+
+  // Chạy thật với một ô giả: tick vào thì dòng phải mang lớp `picked`, bỏ
+  // tick thì mất — đây là dấu hiệu duy nhất cho biết dòng nào đang được chọn.
+  const doan = than('const doDaChon = new Set();', '') + NL + t;
+  const f = new Function('document', 'veThanhHanhDong', 'window',
+    doan + NL + 'return { tickDO: window.tickDO, doDaChon };');
+  const lop = new Set();
+  const dong = { classList: { toggle: (n, b) => (b ? lop.add(n) : lop.delete(n)) } };
+  const api = f({}, () => {}, {});
+  api.tickDO('DO-9', true, { closest: () => dong });
+  assert.ok(api.doDaChon.has('DO-9') && lop.has('picked'), 'tick vào phải nhớ và tô');
+  api.tickDO('DO-9', false, { closest: () => dong });
+  assert.ok(!api.doDaChon.has('DO-9') && !lop.has('picked'), 'bỏ tick phải quên và bỏ tô');
+  // Không có ô (gọi từ mã khác) thì vẫn phải nhớ, không được vỡ.
+  api.tickDO('DO-9', true, null);
+  assert.ok(api.doDaChon.has('DO-9'), 'thiếu ô thì vẫn phải nhớ lựa chọn');
 }
 
 // --- 3. Chặn đúng NĂM điều kiện của backend -------------------------
 //
-// Chạy thật `veBangTripDangLap` trong một DOM tối giản. Đây là phần bắt được
+// Chạy thật `veThanhHanhDong` trong một DOM tối giản. Đây là phần bắt được
 // lỗi thật: bốn trong năm điều kiện dưới đây chỉ lộ ra khi chạy thử luồng
 // trên cơ sở dữ liệu thật.
 
@@ -95,14 +197,16 @@ function than(neo, ket) {
     assert.ok(i > 0, neo);
     return i;
   };
-  // Cắt từ chỗ khai `doDaChon` — nó nằm TRƯỚC các hàm, và thiếu nó thì
-  // đoạn mã cắt ra không chạy được.
+  // Cắt từ chỗ khai `doDaChon` — nó nằm TRƯỚC các hàm, thiếu nó thì đoạn mã
+  // cắt ra không chạy được — đến hết `veThanhHanhDong`.
   const dau = cat('const doDaChon = new Set();');
-  const cuoi = cat('window.veBangTripDangLap = veBangTripDangLap;');
-  // `routeSegments` va `routeSegmentDistanceKm` nam GAN CUOI app.js, ngoai
-  // doan cat — nen phai keo them chung vao, khong thi doan ma khong chay.
+  const cuoi = cat('window.veThanhHanhDong = veThanhHanhDong;');
+  // Bốn hàm đọc tuyến nằm GẦN CUỐI app.js, ngoài đoạn cắt — phải kéo thêm
+  // vào, không thì đoạn mã không chạy.
   const phuTro = ['function routeSegments(route) {',
-    'function routeSegmentDistanceKm(segment) {'].map(neo => {
+    'function routeSegmentDistanceKm(segment) {',
+    'function routeTotalDistanceKm(route) {',
+    'function formatRouteKm(km) {'].map(neo => {
     const i = app.indexOf(neo);
     assert.ok(i > 0, `khong thay ${neo}`);
     return app.slice(i, app.indexOf(NL + '}', i) + 2);
@@ -113,12 +217,14 @@ function than(neo, ket) {
   function moiTruong(dsDon, dsTuyen) {
     const o = {};
     const nut = { disabled: false, style: {} };
-    const tao = () => ({ style: {}, innerHTML: '', textContent: '', classList: { toggle() {} } });
-    ['do-side-empty', 'do-side-full', 'do-side-count', 'do-side-list',
-      'do-side-block', 'do-side-route', 'do-side-cta-text',
+    const tao = () => ({
+      style: {}, innerHTML: '', textContent: '', hidden: false,
+      classList: { toggle() {} },
+    });
+    ['do-fab', 'do-fab-n', 'do-fab-route', 'do-fab-warn', 'do-fab-go-text',
       'trip-avg-speed'].forEach(id => { o[id] = tao(); });
     o['trip-avg-speed'].value = '45';
-    o['do-side-cta'] = nut;
+    o['do-fab-go'] = nut;
     const document = {
       getElementById: id => o[id] || null,
       querySelector: () => null,
@@ -127,13 +233,13 @@ function than(neo, ket) {
     const f = new Function(
       'document', 'eplDeliveryOrders', 'eplRoutes', 'escapeHtml', 'escapeJsAttr',
       'window', 'CSS',
-      doan + NL + 'return { veBangTripDangLap, doLapTripDuoc, doDuKhungGio,'
+      doan + NL + 'return { veThanhHanhDong, doLapTripDuoc, doDuKhungGio,'
       + ' routeSegmentDistanceKm, lechQuangDuongTuyen, doDaChon };'
     );
     const api = f(document, dsDon, dsTuyen, String, String, {}, { escape: String });
     dsDon.forEach(d => api.doDaChon.add(String(d.id)));
-    api.veBangTripDangLap();
-    return { nut, o, api };
+    const kq = api.veThanhHanhDong();
+    return { nut, o, api, kq };
   }
 
   const GIO = {
@@ -147,39 +253,54 @@ function than(neo, ket) {
     segments_json: JSON.stringify([{ from: 'A', to: 'B', distance_km: 44.7 }]),
   };
   // Tuyến LỆCH: khai 44,0 nhưng chặng cộng lại 44,7. Đúng hiện trạng của
-  // `DEMO-RT-VSIP2A-CATLAI` trong cơ sở dữ liệu thật.
+  // `DEMO-RT-VSIP2A-CATLAI` trong cơ sở dữ liệu thật trước khi sửa.
   const TUYEN_LECH = {
     id: 'RT-LECH', name: 'C → D', distance_km: 44.0,
     segments_json: JSON.stringify([{ from: 'C', to: 'D', dist_km: 44.7 }]),
   };
   const donOK = { id: 'DO-1', canonical_status: 'pending', route_id: 'RT-OK', ...GIO };
 
-  // (a) Đủ điều kiện -> KHÔNG chặn.
+  // (a) Đủ điều kiện -> KHÔNG chặn, và thanh phải HIỆN.
   {
-    const { nut } = moiTruong([donOK], [TUYEN_OK]);
+    const { nut, o, kq } = moiTruong([donOK], [TUYEN_OK]);
     assert.strictEqual(nut.disabled, false, 'DO đủ điều kiện thì phải tạo được');
+    assert.strictEqual(kq.chanLai, false);
+    assert.strictEqual(o['do-fab'].hidden, false, 'có DO đã tick thì thanh phải hiện');
+    assert.strictEqual(o['do-fab-n'].textContent, '1');
+    assert.strictEqual(o['do-fab-warn'].hidden, true, 'không chặn thì không cảnh báo');
+  }
+  // (a') Không tick gì -> thanh phải ẨN. Đây là điểm bản 3 khác bản 2: bản 2
+  //      luôn chiếm 372px kể cả khi rỗng.
+  {
+    const { o } = moiTruong([], [TUYEN_OK]);
+    assert.strictEqual(o['do-fab'].hidden, true, 'chưa tick gì thì phải ẩn hẳn');
   }
   // (b) Không phải `pending` -> chặn (DELIVERY_ORDER_NOT_PENDING).
   {
-    const { nut } = moiTruong(
+    const { nut, kq } = moiTruong(
       [{ ...donOK, canonical_status: 'in_transit' }], [TUYEN_OK]);
     assert.strictEqual(nut.disabled, true, 'chỉ DO chờ vận chuyển mới lập Trip');
+    assert.ok(/chờ vận chuyển/.test(kq.lyDo), kq.lyDo);
   }
   // (c) Thiếu khung giờ -> chặn (DELIVERY_TIME_WINDOW_REQUIRED).
   //     Backend đòi CẢ BỐN mốc, không chỉ giờ giao.
   {
-    const { nut } = moiTruong(
+    const { nut, kq } = moiTruong(
       [{ ...donOK, delivery_window_end: null }], [TUYEN_OK]);
     assert.strictEqual(nut.disabled, true, 'thiếu một trong bốn mốc là chặn');
+    assert.ok(/khung giờ/.test(kq.lyDo), kq.lyDo);
   }
   // (d) Hai tuyến khác nhau -> chặn (DELIVERY_ORDERS_INCOMPATIBLE).
-  //     Bản thiết kế mẫu ghi "nên tách 2 Trip, hoặc giữ 1 Trip đi vòng (thêm
-  //     ~18 km)" — sai: backend KHÔNG TẠO ĐƯỢC, chứ không phải đi vòng.
+  //     Bản mẫu v3 ghi "nên tách 2 Trip, hoặc giữ 1 Trip đi vòng (+~18 km)"
+  //     và có nút "Tạo 2 Trip →" — cả hai đều sai: một lần gọi endpoint chỉ
+  //     tạo MỘT Trip của MỘT tuyến, chứ không phải đi vòng thêm km.
   {
-    const { nut } = moiTruong(
+    const { nut, kq } = moiTruong(
       [donOK, { ...donOK, id: 'DO-2', route_id: 'RT-LECH' }],
       [TUYEN_OK, TUYEN_LECH]);
     assert.strictEqual(nut.disabled, true, 'khác tuyến là không tạo được');
+    assert.ok(/CÙNG MỘT tuyến/.test(kq.lyDo), kq.lyDo);
+    assert.ok(!/đi vòng|Tạo 2 Trip/.test(kq.lyDo), 'đừng hứa việc endpoint không làm');
   }
   // (e) Chưa gán tuyến -> chặn.
   {
@@ -233,6 +354,10 @@ function than(neo, ket) {
   assert.ok(/tocDo <= 0/.test(t));
   // Thất bại phải nói LỜI CỦA MÁY CHỦ.
   assert.ok(/baoLoiMayChu\(res, viec\)/.test(t) && /baoMatKetNoi\(viec, e\)/.test(t));
+  // MỘT quyết định chặn, dùng cho cả thanh và cho lúc bấm — hai phép kiểm
+  // song song là chỗ để nút bảo "được" mà lệnh gửi lên bị từ chối.
+  assert.ok(/veThanhHanhDong\(\)/.test(t),
+    'lúc bấm phải hỏi lại chính hàm đã quyết định chặn/không chặn');
 }
 
 // --- 5. Chặn số dòng vẽ ra ----------------------------------------
@@ -247,8 +372,33 @@ function than(neo, ket) {
   assert.ok(/list\.slice\(0, GIOI_HAN_DONG_DO\)\.forEach/.test(app),
     'phải cắt danh sách TRƯỚC khi vẽ');
   // Và phải NÓI RA phần bị cắt, không âm thầm bỏ bớt.
-  assert.ok(/Đang hiện \$\{GIOI_HAN_DONG_DO\} trên \$\{list\.length\} DO/.test(app),
+  const v = than('function veChipVaChanTrang(soDongHien)');
+  assert.ok(/soDongHien > hien/.test(v) && /trên \$\{soDongHien\}/.test(v),
     'phải nói rõ đang hiện bao nhiêu trên tổng bao nhiêu');
+}
+
+{
+  // Ba con số máy chủ tính thêm (`open_incidents`, `arrived`, `overdue`) chỉ
+  // có ở `/api/delivery-orders/analysis`. Bản 2 hiện chúng dưới bảy thẻ đếm;
+  // bỏ bảy thẻ mà không dời sang chỗ khác là giao diện mất luôn phần nói ra
+  // VIỆC CẦN LÀM, chỉ còn phần đếm dòng.
+  const t = than('function ghiChuRoDO()');
+  ['open_incidents', 'arrived', 'overdue'].forEach(c => {
+    assert.ok(t.includes(c), `phải dùng ${c} của máy chủ`);
+  });
+  const f = new Function('deliveryOrderAnalysis', t + NL + 'return ghiChuRoDO;');
+  assert.strictEqual(f(null)(), '', 'chưa có phân tích thì không nói bừa');
+  assert.strictEqual(f({ buckets: {} })(), '', 'không có việc thì không nói gì');
+  const cau = f({ buckets: {
+    incident: { open_incidents: 2 },
+    active: { arrived: 3 },
+    overdue: { count: 1 },
+  } })();
+  assert.ok(/2 sự cố/.test(cau) && /3 DO đã đến điểm/.test(cau)
+    && /1 DO đã quá hạn/.test(cau), cau);
+  // Và hàm cũ nói với bảy thẻ đã biến mất thì không được còn lại.
+  assert.ok(!/updateDeliveryOrderStageTabs|do-count-|do-stage-/.test(app),
+    'còn mã nói với bảy thẻ đếm đã bị thay');
 }
 
 // --- 6. Tab Tuyến tham chiếu: dải thẻ cuộn ngang thành BẢNG ---------

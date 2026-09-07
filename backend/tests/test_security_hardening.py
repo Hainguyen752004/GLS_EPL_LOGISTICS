@@ -204,7 +204,12 @@ def test_module_mode_still_records_who_changed_data(open_client):
     principal trong thi require_api_principal van bat 401 va moi thao tac ghi
     van hong — chi khac cho bao loi.
     """
-    from app import auth_middleware
+    # `import auth_middleware` chu khong `from app import ...`:
+    # conftest dat `backend/app` vao sys.path, con `backend` thi khong.
+    # Viet `from app import` la hai bai nay chi xanh khi pytest duoc chay tu
+    # trong `backend/`, chay tu goc du an la ModuleNotFoundError — ca 55 bai
+    # con lai trong tep nay deu dung dang import tran.
+    import auth_middleware
 
     assert auth_middleware._default_principal(), "che do mo van phai co mot danh tinh"
 
@@ -232,7 +237,12 @@ def test_browser_loaded_assets_never_need_a_token():
     Bỏ sót một đường ở đây không làm hỏng test nào khác: trang vẫn tải, chỉ có
     ảnh biến thành khung vỡ. Ảnh sơ đồ tổng quan ở trang chủ đã từng vỡ đúng
     kiểu đó."""
-    from app import auth_middleware
+    # `import auth_middleware` chu khong `from app import ...`:
+    # conftest dat `backend/app` vao sys.path, con `backend` thi khong.
+    # Viet `from app import` la hai bai nay chi xanh khi pytest duoc chay tu
+    # trong `backend/`, chay tu goc du an la ModuleNotFoundError — ca 55 bai
+    # con lai trong tep nay deu dung dang import tran.
+    import auth_middleware
 
     for path in ("/tongquan.jpg", "/favicon.ico", "/uploads/vehicles/anh.jpg"):
         assert auth_middleware._is_public(path, "GET"), (

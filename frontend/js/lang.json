@@ -5113,5 +5113,25 @@
     "en": "Illustrative sample",
     "vi": "Mẫu minh họa",
     "la": "ຕົວຢ່າງປະກອບ"
+  },
+  "grp_need": {
+    "vi": "Cần xử lý",
+    "en": "Action Needed",
+    "la": "ຕ້ອງດຳເນີນການ"
+  },
+  "grp_run": {
+    "vi": "Đang chạy",
+    "en": "In Transit",
+    "la": "ກຳລັງຂົນສົ່ງ"
+  },
+  "grp_all": {
+    "vi": "Tất cả",
+    "en": "All",
+    "la": "ທັງໝົດ"
+  },
+  "btn_clear_pick": {
+    "vi": "Bỏ chọn",
+    "en": "Clear selection",
+    "la": "ຍົກເລີກການເລືອກ"
   }
 }

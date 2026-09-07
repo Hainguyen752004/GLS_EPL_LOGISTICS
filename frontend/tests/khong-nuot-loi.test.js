@@ -157,6 +157,35 @@ async function thuGomLoiBao() {
 assert.ok(!app.includes('legacySaveOracleQT = async function'));
 assert.ok(/window\.saveOracleQT\s*=/.test(app), 'đường tạo báo giá thật phải còn');
 
+// --- 6. "Chưa có dữ liệu GPS" KHÔNG phải "nạp thất bại" ----------------
+//
+// Nuốt lỗi và báo lỗi giả là hai mặt của cùng một vấn đề: cả hai đều làm
+// người dùng tin vào một điều không đúng. `/api/tracking/{id}` trả 404 kèm
+// mã `TRACKING_NOT_FOUND` và một câu nói rõ việc cần làm — chuyến chưa điều
+// phối xe, hoặc thiết bị GPS chưa gửi điểm nào. Đó là TRẠNG THÁI BÌNH
+// THƯỜNG của chuyến. Gộp nó vào "Nạp thất bại: vị trí của 1/3 chuyến đang
+// chạy" là đẩy người điều độ đi kiểm tra mạng và máy chủ, trong khi việc
+// cần làm là điều phối xe.
+{
+  const i = app.indexOf('async function refreshDispatchTrackingMap(dos)');
+  assert.ok(i > 0, 'không thấy hàm nạp vị trí');
+  const than = app.slice(i, app.indexOf(NL + '}', i));
+
+  assert.ok(/if \(res\.status === 404\) \{ chuaCoGps\.push\(d\.id\); return; \}/
+    .test(than), '404 phải vào rổ "chưa có GPS", không vào rổ "hỏng"');
+  // Rổ 404 phải được xếp TRƯỚC phép kiểm `!res.ok`, không thì nó lọt xuống
+  // nhánh hỏng và nhánh mới thành mã chết.
+  assert.ok(than.indexOf('res.status === 404') < than.indexOf('if (!res.ok)'),
+    'phải xét 404 trước khi xét !res.ok');
+  // Và phải nói đúng việc cần làm, một lần cho cả nhóm.
+  const bao = than.slice(than.indexOf('if (chuaCoGps.length)'));
+  assert.ok(/điều phối xe/.test(bao), 'phải nói việc cần làm');
+  assert.ok(!/baoNapThatBai/.test(bao), 'đừng gọi đó là nạp thất bại');
+  // Lỗi THẬT (5xx, mất mạng) thì vẫn phải báo là thất bại.
+  assert.ok(/baoNapThatBai\(`vị trí của \$\{hong\.length\}/.test(than),
+    'lỗi thật vẫn phải báo thất bại');
+}
+
 thuGomLoiBao().then(() => {
   console.log('khong-nuot-loi: tất cả kiểm tra đã qua');
 }).catch(err => {

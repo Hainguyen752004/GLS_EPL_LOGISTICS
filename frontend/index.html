@@ -3653,19 +3653,6 @@
             #view-ops-planning th {
               font-weight: 700 !important;
             }
-            .do-stage-tab {
-              font-weight: 800 !important;
-              line-height: 1.38;
-              -webkit-font-smoothing: antialiased;
-              text-rendering: geometricPrecision;
-            }
-            .do-stage-tab small {
-              line-height: 1.42;
-              font-weight: 600 !important;
-            }
-            .do-stage-tab strong {
-              font-weight: 800;
-            }
             .do-workspace-subtabs {
               display: inline-flex;
               gap: 6px;
@@ -3717,19 +3704,6 @@
               background: #0a6ed1; color: #ffffff;
             }
 
-            /* Hai cột: bảng DO và bảng Trip đang lập. */
-            .do-plan-layout {
-              display: grid;
-              grid-template-columns: minmax(0, 1fr) 372px;
-              gap: 16px;
-              align-items: start;
-            }
-            /* Dưới 1200px thì xếp dọc — bảng 372px cạnh bảng DO sẽ chật. */
-            @media (max-width: 1200px) {
-              .do-plan-layout { grid-template-columns: minmax(0, 1fr); }
-              .do-plan-side { position: static !important; }
-            }
-
             .do-plan-head {
               display: flex; align-items: flex-start;
               justify-content: space-between; gap: 20px;
@@ -3751,10 +3725,6 @@
             .do-plan-search i { color: #94a3b8; }
             .do-plan-search input { flex: 1; }
 
-            .do-chips {
-              display: flex; align-items: center; gap: 7px;
-              padding: 14px 20px 0; flex-wrap: wrap;
-            }
             .do-chip {
               display: inline-flex; align-items: center; gap: 7px;
               height: 34px; padding: 0 12px;
@@ -3763,26 +3733,10 @@
               font-size: .8rem; font-weight: 600; cursor: pointer;
               white-space: nowrap;
             }
-            .do-chip i { font-size: .78rem; }
-            .do-chip strong { font-weight: 700; color: #0f172a; }
             .do-chip:hover { border-color: #94a3b8; }
             .do-chip.active {
               background: #0a6ed1; border-color: #0a6ed1; color: #ffffff;
             }
-            .do-chip.active strong { color: #ffffff; }
-            /* Rổ rỗng vẫn HIỆN, chỉ mờ đi. Ẩn nó thì người dùng không biết rổ
-               đó tồn tại, và cũng không biết là nó đang bằng 0. */
-            .do-chip.empty {
-              border-style: dashed; color: #94a3b8; font-weight: 500;
-            }
-            .do-chip.empty strong { color: #94a3b8; font-weight: 500; }
-            .do-chip-sep {
-              width: 1px; height: 20px; background: #cbd5e1; margin: 0 3px;
-            }
-            .do-chip-hint {
-              padding: 9px 20px 0; font-size: .78rem; color: #64748b; font-weight: 500;
-            }
-
             .do-plan-table-scroll { overflow-x: auto; margin-top: 12px; }
             .do-plan-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
             .do-plan-table th {
@@ -3817,62 +3771,6 @@
               font-size: .74rem; color: #64748b; font-weight: 500;
             }
 
-            /* ---- Bảng Trip đang lập ---- */
-            .do-plan-side { position: sticky; top: 16px; }
-            .do-side-head {
-              display: flex; align-items: center; justify-content: space-between;
-              gap: 10px; padding: 15px 18px 12px; border-bottom: 1px solid #e2e8f0;
-            }
-            .do-side-head h3 {
-              margin: 0; font-size: .95rem; font-weight: 700; color: #0f172a;
-              display: flex; align-items: center; gap: 8px;
-            }
-            .do-side-head h3 i { color: #0a6ed1; }
-            .do-side-head small { font-size: .74rem; color: #64748b; font-weight: 500; }
-            .do-side-body { padding: 15px 18px 18px; }
-            .do-side-empty {
-              border: 1.5px dashed #cbd5e1; border-radius: 12px;
-              padding: 26px 14px; text-align: center;
-              font-size: .8rem; color: #64748b; font-weight: 500; line-height: 1.65;
-            }
-            .do-side-label {
-              margin: 0 0 8px; font-size: .72rem; font-weight: 600; color: #64748b;
-            }
-            .do-side-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-            .do-side-item {
-              display: flex; align-items: center; gap: 9px;
-              padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 9px;
-              font-size: .78rem;
-            }
-            .do-side-item .ma { font-weight: 700; color: #0f172a; }
-            .do-side-item .noi { flex: 1; color: #64748b; font-weight: 500; }
-            .do-side-item button {
-              border: 0; background: none; cursor: pointer;
-              color: #94a3b8; font-size: 1rem; line-height: 1; padding: 2px 4px;
-            }
-            .do-side-item button:hover { color: #b42318; }
-            /* Chặn cứng: các DO không cùng một tuyến thì backend từ chối hẳn. */
-            .do-side-block {
-              display: flex; gap: 8px; margin-bottom: 14px;
-              padding: 10px 12px; border-radius: 9px;
-              background: #fef3f2; border: 1px solid #fecaca;
-              color: #b42318; font-size: .76rem; font-weight: 500; line-height: 1.55;
-            }
-            .do-side-route {
-              border: 1.5px solid #0a6ed1; background: #eff6ff;
-              border-radius: 12px; padding: 11px 13px; margin-bottom: 14px;
-            }
-            .do-side-route .ten {
-              font-size: .82rem; font-weight: 700; color: #0f172a;
-            }
-            .do-side-route .ma {
-              font-size: .7rem; font-weight: 600; color: #0b4faa; margin-top: 2px;
-            }
-            .do-side-route .so { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
-            .do-side-route .so b {
-              font-size: .72rem; font-weight: 600; color: #475569;
-              background: #ffffff; border-radius: 999px; padding: 3px 10px;
-            }
             .do-side-legs { margin: 9px 0 0; padding: 0; list-style: none; font-size: .74rem; }
             .do-side-legs li {
               display: flex; gap: 9px; padding: 6px 0;
@@ -3887,20 +3785,6 @@
             }
             .do-side-legs li b { font-weight: 600; flex: 1; }
             .do-side-legs li span { color: #64748b; white-space: nowrap; }
-            .do-side-fields { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-            .do-side-field { display: flex; flex-direction: column; gap: 4px; }
-            .do-side-field > span { font-size: .72rem; font-weight: 600; color: #64748b; }
-            .do-side-cta {
-              width: 100%; height: 44px; border: 0; border-radius: 11px;
-              background: #0a6ed1; color: #ffffff;
-              font-size: .86rem; font-weight: 700; cursor: pointer;
-              display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            }
-            .do-side-cta:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
-            .do-side-next {
-              margin: 10px 0 0; font-size: .74rem; color: #64748b;
-              font-weight: 500; line-height: 1.6;
-            }
             /* Nhãn "Kiểm thử" trên tuyến do script E2E/stress sinh ra. */
             .do-route-tag {
               display: inline-block; margin-left: 5px;
@@ -3916,10 +3800,117 @@
               width: 15px; height: 15px; accent-color: #0a6ed1; cursor: pointer;
             }
 
-            .do-side-link {
-              border: 0; background: none; padding: 0; cursor: pointer;
-              color: #0a6ed1; font-size: .74rem; font-weight: 600;
-              text-decoration: underline; text-underline-offset: 2px;
+            /* ---- Bản 3: ba nhóm + ô chọn tình trạng, bảng hết chiều rộng ---- */
+            .do-bar {
+              display: flex; align-items: center; gap: 8px;
+              padding: 14px 20px; flex-wrap: wrap;
+              border-bottom: 1px solid #e2e8f0;
+            }
+            .do-bar-right {
+              margin-left: auto; display: flex; align-items: center; gap: 8px;
+              flex-wrap: wrap;
+            }
+            .do-bar-right select { height: 36px; min-width: 190px; }
+            .do-chip-dot {
+              width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+            }
+            .do-chip.active .do-chip-dot { background: #ffffff; }
+            /* Số đếm trong chip: viên tròn riêng để đọc tách khỏi nhãn. */
+            .do-chip strong {
+              background: #eef2f7; color: #0f172a;
+              border-radius: 999px; padding: 0 8px;
+              font-size: .72rem; line-height: 20px; font-weight: 700;
+            }
+            .do-chip.active strong { background: rgba(255,255,255,.22); color: #ffffff; }
+
+            /* Ô trạng thái trên từng dòng: bấm vào là lọc theo tình trạng đó. */
+            .do-status-pill {
+              border: 0; cursor: pointer;
+              display: inline-flex; align-items: center; gap: 5px;
+              font-size: .74rem; font-weight: 600;
+              border-radius: 6px; padding: 3px 9px; white-space: nowrap;
+            }
+            .do-status-pill:hover { filter: brightness(.96); }
+            .do-pill-red { background: #fdecec; color: #b42318; }
+            .do-pill-amber { background: #fff4e0; color: #b45309; }
+            .do-pill-blue { background: #e9f1fd; color: #0b4faa; }
+            .do-pill-green { background: #e7f6ec; color: #15803d; }
+            .do-pill-grey { background: #eef2f7; color: #475569; }
+
+            .do-row-act { display: flex; gap: 6px; }
+            .do-row-act button {
+              width: 32px; height: 30px; border-radius: 7px;
+              border: 1px solid #cbd5e1; background: #ffffff;
+              color: #475569; cursor: pointer;
+              display: grid; place-items: center; font-size: .78rem;
+            }
+            .do-row-act button:hover { border-color: #94a3b8; }
+            .do-row-act .huy { color: #b42318; }
+
+            /* ---- Thanh hành động nổi ---- */
+            .do-fab {
+              position: fixed; left: 50%; bottom: 22px;
+              transform: translateX(-50%);
+              z-index: 1400;
+              background: #0f1c2e; color: #ffffff;
+              border-radius: 14px; padding: 11px 13px 11px 19px;
+              display: flex; align-items: center; gap: 16px;
+              box-shadow: 0 12px 32px rgba(15, 28, 46, .28);
+              max-width: calc(100vw - 40px);
+              flex-wrap: wrap;
+            }
+            .do-fab-count {
+              display: flex; align-items: center; gap: 9px;
+              font-size: .86rem; font-weight: 700; white-space: nowrap;
+            }
+            .do-fab-count em {
+              font-style: normal; width: 27px; height: 27px; border-radius: 50%;
+              background: #0a6ed1; display: grid; place-items: center;
+              font-size: .78rem;
+            }
+            .do-fab-info {
+              display: flex; flex-direction: column; gap: 2px;
+              font-size: .76rem; color: #c7d2e2;
+              border-left: 1px solid #34475f; padding-left: 16px;
+              min-width: 220px; max-width: 420px;
+            }
+            .do-fab-info b { color: #ffffff; font-weight: 600; }
+            .do-fab-warn { color: #ffd27a; line-height: 1.45; }
+            .do-fab-fields {
+              display: flex; gap: 8px; align-items: flex-end;
+              border-left: 1px solid #34475f; padding-left: 16px;
+            }
+            .do-fab-fields label {
+              display: flex; flex-direction: column; gap: 3px;
+              font-size: .68rem; font-weight: 600; color: #c7d2e2;
+            }
+            .do-fab-fields input, .do-fab-fields select {
+              height: 34px; border-radius: 8px;
+              border: 1px solid #34475f; background: #17263c; color: #ffffff;
+              padding: 0 9px; font-size: .78rem; font-family: inherit;
+            }
+            .do-fab-fields input[type="number"] { width: 78px; }
+            .do-fab-ghost {
+              border: 1px solid #34475f; background: none; color: #c7d2e2;
+              border-radius: 10px; height: 40px; padding: 0 14px;
+              font-weight: 600; font-size: .78rem; cursor: pointer;
+            }
+            .do-fab-ghost:hover { color: #ffffff; border-color: #4c6280; }
+            .do-fab-go {
+              border: 0; background: #0a6ed1; color: #ffffff;
+              border-radius: 10px; height: 40px; padding: 0 18px;
+              font-weight: 700; font-size: .82rem; cursor: pointer;
+              display: inline-flex; align-items: center; gap: 8px;
+              white-space: nowrap;
+            }
+            .do-fab-go:hover { background: #0b5fb5; }
+            .do-fab-go:disabled {
+              background: #34475f; color: #8ea3bd; cursor: not-allowed;
+            }
+            /* Màn hẹp: thanh nổi xếp dọc, không tràn ra ngoài khung. */
+            @media (max-width: 1100px) {
+              .do-fab { left: 12px; right: 12px; transform: none; max-width: none; }
+              .do-fab-info, .do-fab-fields { border-left: 0; padding-left: 0; }
             }
           </style>
 
@@ -4559,162 +4550,109 @@
 
             <div id="ops-planning-folder-do" class="ops-planning-folder-panel" style="display:none;">
             <!--
-              Màn lập kế hoạch giao hàng — thiết kế lại.
+              Màn lập kế hoạch giao hàng — bản 3.
 
-              Bản trước: bảy thẻ đếm cao 90px xếp ngang chiếm gần một phần ba
-              màn hình mà chỉ để hiện bảy con số, rồi bảng DO, rồi hai phần ba
-              màn hình TRỐNG bên dưới. Muốn lập một Trip thì phải rời màn này
-              sang màn Điều phối, chọn lại đúng những DO vừa xem.
+              Bản 2 có bảng "Trip đang lập" cố định bên phải rộng 372px. Bản 3
+              bỏ nó: bảng DO chiếm hết chiều rộng, và phần tóm tắt lựa chọn
+              chuyển xuống một THANH HÀNH ĐỘNG NỔI chỉ hiện khi đã tick DO.
+              Đổi lại thì bảng đọc thoáng hơn nhiều, và khi chưa chọn gì thì
+              không có khối rỗng nào chiếm chỗ.
 
-              Bản này: bảy thẻ đếm thành bảy con chip cao 34px (cùng thông tin,
-              một phần tư chiều cao, và bấm vào là lọc), rồi bảng DO có ô tick,
-              và khoảng trống bên phải thành bảng "Trip đang lập" — tick DO
-              bên trái là thấy ngay tuyến, quãng đường, số DO, và tạo Trip
-              được ngay tại đây.
+              Bảy con chip cũng gọn lại còn BA nhóm — "Cần xử lý", "Đang
+              chạy", "Tất cả" — còn bảy tình trạng chi tiết vào một ô chọn bên
+              phải. Bấm thẳng vào ô trạng thái trên từng dòng cũng lọc được
+              ngay theo tình trạng đó.
 
-              Bốn chỗ bản thiết kế mẫu nói khác backend, đã sửa theo backend:
+              Ba chỗ bản mẫu v3 nói khác backend, ở đây làm theo BACKEND:
 
-                1. Mẫu cảnh báo "2 DO khác điểm lấy hàng — nên tách 2 Trip,
-                   hoặc giữ 1 Trip đi vòng (thêm ~18 km)". Luật thật của
-                   `create_trip_from_delivery_orders` là `len(route_ids) != 1`
-                   -> 409 DELIVERY_ORDERS_INCOMPATIBLE. Không phải "đi vòng
-                   thêm km" mà là KHÔNG TẠO ĐƯỢC. Nên nút bị chặn hẳn kèm lý
-                   do thật.
-                2. Mẫu có "Xe và tài xế gợi ý" trong bảng tạo Trip. Nhưng
-                   `TripFromDeliveryOrdersRequest` KHÔNG nhận vehicle_id /
-                   driver_id — điều xe là bước riêng
-                   (`PUT /api/tms/trips/{id}/dispatch`). Hiện xe ở đây là hàm ý
-                   nó được lưu, mà không. Bỏ, và nói rõ bước sau là điều xe.
-                3. Mẫu thiếu hai trường BẮT BUỘC: `planned_departure_at` và
-                   `avg_speed_kmh` (> 0). Không có chúng thì bấm Tạo Trip chỉ
-                   nhận 422. Nay có ô nhập, và tốc độ mặc định lấy từ loại xe.
-                4. Mẫu có hai nút "Tạo Trip" và "Lưu nháp, điều xe sau". Không
-                   có khái niệm nháp nào ở backend — mà tạo Trip xong chưa điều
-                   xe CHÍNH LÀ "điều xe sau". Hai nút là một việc, nên còn một.
+                1. Mẫu ghi "DO khác điểm lấy hàng — nên tách thành 2 Trip,
+                   hoặc 1 Trip đi vòng (+~18 km)". Luật thật:
+                   `len(route_ids) != 1` -> 409 DELIVERY_ORDERS_INCOMPATIBLE.
+                   Không phải "đi vòng thêm km" mà là KHÔNG TẠO ĐƯỢC.
+                2. Mẫu có nút "Tạo 2 Trip →" khi chọn DO của hai tuyến. Một
+                   lần gọi `create_trip_from_delivery_orders` chỉ tạo MỘT Trip
+                   của MỘT tuyến, nên nút đó hứa một việc endpoint không làm.
+                   Chặn hẳn và nói rõ phải tách ra.
+                3. Cột "Hàng" của mẫu ghi "1 × 40'". Bảng `delivery_orders`
+                   KHÔNG có số container — chỉ có `weight_kg`, `pallet_count`,
+                   `volume_m3`, `packaging_spec`. Hiện số thật, không bịa.
             -->
             <div class="do-workspace-subtabs" aria-label="Chọn màn Form 3">
-              <button type="button" id="do-subtab-delivery" class="do-workspace-subtab active" onclick="switchDeliveryOrderSubtab('delivery')"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="tab_do_delivery">Lệnh giao hàng</span> <span class="do-subtab-count" id="do-subtab-count-delivery">0</span></button>
-              <button type="button" id="do-subtab-routes" class="do-workspace-subtab" onclick="switchDeliveryOrderSubtab('routes')"><i class="fa-solid fa-route"></i> <span data-i18n="tab_do_routes">Tuyến tham chiếu</span> <span class="do-subtab-count" id="do-subtab-count-routes">0</span></button>
+              <button type="button" id="do-subtab-delivery" class="do-workspace-subtab active" onclick="switchDeliveryOrderSubtab('delivery')"><i class="fa-solid fa-clipboard-check"></i> <span data-i18n="subtab_do_delivery">Lệnh giao hàng</span> <span class="do-subtab-count" id="do-subtab-count-delivery">0</span></button>
+              <button type="button" id="do-subtab-routes" class="do-workspace-subtab" onclick="switchDeliveryOrderSubtab('routes')"><i class="fa-solid fa-route"></i> <span data-i18n="subtab_do_routes">Tuyến tham chiếu</span> <span class="do-subtab-count" id="do-subtab-count-routes">0</span></button>
             </div>
 
-            <div class="do-plan-layout" data-do-subtab-panel="delivery">
-              <!-- ==================== CỘT TRÁI: bảng DO ==================== -->
-              <section class="fiori-table-wrapper do-plan-main" id="fiori-do-list">
-                <div class="do-plan-head">
-                  <div>
-                    <h3 class="do-plan-title">
-                      <i class="fa-solid fa-clipboard-check"></i>
-                      <span data-i18n="title_form_3_do">Form 3: Lệnh giao hàng (DO)</span>
-                    </h3>
-                    <div class="do-plan-sub" data-i18n="desc_form_3_do">DO là yêu cầu giao hàng. Trip là chuyến xe thực tế sau khi DO được kiểm tra và lập kế hoạch.</div>
-                  </div>
+            <section class="fiori-table-wrapper" id="fiori-do-list" data-do-subtab-panel="delivery">
+              <div class="do-plan-head">
+                <div>
+                  <h3 class="do-plan-title">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                    <span data-i18n="title_form_3_do">Lệnh giao hàng (DO)</span>
+                  </h3>
+                  <div class="do-plan-sub" data-i18n="desc_form_3_do">DO là yêu cầu giao hàng. Trip là chuyến xe thực tế sau khi DO được kiểm tra và lập kế hoạch.</div>
+                </div>
+              </div>
+
+              <div class="do-bar">
+                <button type="button" id="do-group-need" class="do-chip active" onclick="chonNhomDO('need')">
+                  <span class="do-chip-dot"></span>
+                  <span data-i18n="grp_need">Cần xử lý</span> <strong id="do-group-count-need">0</strong>
+                </button>
+                <button type="button" id="do-group-run" class="do-chip" onclick="chonNhomDO('run')">
+                  <span data-i18n="grp_run">Đang chạy</span> <strong id="do-group-count-run">0</strong>
+                </button>
+                <button type="button" id="do-group-all" class="do-chip" onclick="chonNhomDO('all')">
+                  <span data-i18n="grp_all">Tất cả</span> <strong id="do-group-count-all">0</strong>
+                </button>
+
+                <div class="do-bar-right">
+                  <!--
+                    Bảy tình trạng chi tiết. Nhãn kèm số đếm được cập nhật từ
+                    `window.DoBoard.counts` mỗi lần vẽ, nên con số trong ô chọn
+                    luôn khớp bảng.
+                  -->
+                  <select id="do-status-filter" class="fiori-input" onchange="chonTrangThaiDO(this.value)" aria-label="Lọc theo tình trạng">
+                    <option value="" data-i18n="opt_status_all">Tình trạng: tất cả</option>
+                    <option value="incident" data-i18n="stage_incident">Gặp sự cố</option>
+                    <option value="overdue" data-i18n="stage_overdue">Đã quá hạn</option>
+                    <option value="undated" data-i18n="stage_undated">Thiếu hạn giao</option>
+                    <option value="near_late" data-i18n="stage_near_late">Gần trễ</option>
+                    <option value="pending" data-i18n="stage_pending">Chờ vận chuyển</option>
+                    <option value="active" data-i18n="stage_active">Đang vận chuyển</option>
+                    <option value="completed" data-i18n="stage_completed">Hoàn thành</option>
+                  </select>
                   <div class="do-plan-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" id="do-search-input" class="fiori-input" placeholder="Tìm mã DO, SO, khách hàng, điểm giao..." data-i18n-attr="placeholder" data-i18n="ph_do_search" oninput="filterDeliveryOrders()">
+                    <input type="text" id="do-search-input" class="fiori-input" placeholder="Tìm mã DO, SO, khách hàng, điểm giao..." data-i18n-attr="placeholder" data-i18n="ph_search_do" oninput="filterDeliveryOrders()">
                   </div>
                 </div>
+              </div>
 
-                <!--
-                  Bảy con chip thay bảy thẻ đếm. Giữ nguyên id `do-stage-*` và
-                  `do-count-*` để phần JS đang chạy không phải sửa hợp đồng.
-                  Rổ đang rỗng vẫn hiện (viền nét đứt, chữ mờ) chứ không ẩn —
-                  ẩn đi thì người dùng không biết rổ đó tồn tại.
-                -->
-                <div class="do-chips" role="tablist" aria-label="Lọc theo tình trạng lệnh giao hàng">
-                  <button id="do-stage-incident" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('incident')"><i class="fa-solid fa-circle-exclamation"></i> <span data-i18n="stage_incident">Gặp sự cố</span> <strong id="do-count-incident">0</strong></button>
-                  <button id="do-stage-overdue" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('overdue')"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n="stage_overdue">Đã quá hạn</span> <strong id="do-count-overdue">0</strong></button>
-                  <button id="do-stage-undated" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('undated')"><i class="fa-solid fa-calendar-xmark"></i> <span data-i18n="stage_undated">Thiếu hạn giao</span> <strong id="do-count-undated">0</strong></button>
-                  <button id="do-stage-near_late" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('near_late')"><i class="fa-solid fa-triangle-exclamation"></i> <span data-i18n="stage_near_late">Gần trễ</span> <strong id="do-count-near_late">0</strong></button>
-                  <span class="do-chip-sep"></span>
-                  <button id="do-stage-pending" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('pending')"><i class="fa-solid fa-calendar-check"></i> <span data-i18n="stage_pending">Chờ vận chuyển</span> <strong id="do-count-pending">0</strong></button>
-                  <button id="do-stage-active" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('active')"><i class="fa-solid fa-truck-fast"></i> <span data-i18n="stage_active">Đang vận chuyển</span> <strong id="do-count-active">0</strong></button>
-                  <button id="do-stage-completed" class="do-chip" role="tab" onclick="switchDeliveryOrderStage('completed')"><i class="fa-solid fa-circle-check"></i> <span data-i18n="stage_completed">Hoàn thành</span> <strong id="do-count-completed">0</strong></button>
-                </div>
-                <!-- Một dòng gợi ý cho rổ ĐANG mở, thay vì bảy dòng cùng lúc. -->
-                <div class="do-chip-hint" id="do-stage-hint"></div>
-
-                <div class="do-plan-table-scroll">
-                  <table class="do-plan-table">
-                    <thead>
-                      <tr>
-                        <th class="do-plan-tick"><input type="checkbox" id="do-pick-all" onchange="tickTatCaDO(this.checked)" aria-label="Chọn tất cả DO đang hiện"></th>
-                        <th data-i18n="th_do_id">Mã DO / SO</th>
-                        <th data-i18n="th_customer">Khách hàng</th>
-                        <th data-i18n="th_pickup">Lấy hàng</th>
-                        <th data-i18n="th_delivery">Giao hàng</th>
-                        <th data-i18n="th_route">Tuyến</th>
-                        <th data-i18n="th_status">Trạng thái</th>
-                        <th data-i18n="th_view">Xem</th>
-                      </tr>
-                    </thead>
-                    <tbody id="fiori-do-tbody">
-                      <tr><td colspan="8" style="text-align:center; padding:24px; color:#64748b;">Đang truy vấn dữ liệu...</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div class="do-plan-foot">
-                  <span id="do-plan-count"></span>
-                  <span id="do-plan-note"></span>
-                </div>
-              </section>
-
-              <!-- ============ CỘT PHẢI: Trip đang lập ============ -->
-              <aside class="fiori-table-wrapper do-plan-side" id="do-trip-builder">
-                <div class="do-side-head">
-                  <h3><i class="fa-solid fa-truck-ramp-box"></i> <span data-i18n="title_trip_builder">Trip đang lập</span></h3>
-                  <small id="do-side-count">Chưa chọn DO</small>
-                </div>
-                <div class="do-side-body">
-                  <div class="do-side-empty" id="do-side-empty">
-                    Tick một hoặc nhiều DO ở bảng bên trái.<br>
-                    Tuyến của DO sẽ hiện ở đây để anh xem lại trước khi tạo Trip.
-                  </div>
-
-                  <div id="do-side-full" style="display:none;">
-                    <p class="do-side-label" data-i18n="lbl_do_in_trip">DO trong chuyến</p>
-                    <div class="do-side-list" id="do-side-list"></div>
-
-                    <!-- Chặn cứng khi các DO không cùng một tuyến. -->
-                    <div class="do-side-block" id="do-side-block" style="display:none;"></div>
-
-                    <p class="do-side-label" data-i18n="lbl_ref_route">Tuyến tham chiếu của các DO này</p>
-                    <div class="do-side-route" id="do-side-route"></div>
-
-                    <p class="do-side-label" data-i18n="lbl_trip_plan">Kế hoạch chuyến</p>
-                    <div class="do-side-fields">
-                      <label class="do-side-field">
-                        <span data-i18n="lbl_departure_at">Giờ xuất bến</span>
-                        <input type="datetime-local" id="trip-departure-at" class="fiori-input">
-                      </label>
-                      <label class="do-side-field">
-                        <span data-i18n="lbl_avg_speed">Tốc độ kế hoạch (km/h)</span>
-                        <input type="number" id="trip-avg-speed" class="fiori-input" min="1" max="120" step="1" value="45">
-                      </label>
-                      <label class="do-side-field">
-                        <span data-i18n="lbl_trip_type">Loại chuyến</span>
-                        <select id="trip-type" class="fiori-input">
-                          <option value="one_way" data-i18n="opt_trip_one_way">Một chiều</option>
-                          <option value="multi_stop" data-i18n="opt_trip_multi_stop">Nhiều điểm giao</option>
-                        </select>
-                      </label>
-                    </div>
-
-                    <button type="button" class="do-side-cta" id="do-side-cta" onclick="taoTripTuDO()">
-                      <i class="fa-solid fa-plus"></i> <span id="do-side-cta-text">Tạo Trip</span>
-                    </button>
-                    <!--
-                      Nói rõ bước sau là gì. `create_trip_from_delivery_orders`
-                      KHÔNG nhận xe/tài xế — điều xe là endpoint riêng, nên
-                      hiện ô chọn xe ở đây là hàm ý nó được lưu, mà không.
-                    -->
-                    <p class="do-side-next">
-                      Tạo Trip xong, xe và tài xế được gán ở bước
-                      <button type="button" class="do-side-link" onclick="switchView('dispatch')">Điều phối</button>.
-                    </p>
-                  </div>
-                </div>
-              </aside>
-            </div>
+              <div class="do-plan-table-scroll">
+                <table class="do-plan-table">
+                  <thead>
+                    <tr>
+                      <th class="do-plan-tick"><input type="checkbox" id="do-pick-all" onchange="tickTatCaDO(this.checked)" aria-label="Chọn tất cả DO đang hiện"></th>
+                      <th data-i18n="th_do_id">Mã DO</th>
+                      <th data-i18n="th_customer">Khách hàng</th>
+                      <th data-i18n="th_pickup">Lấy hàng</th>
+                      <th data-i18n="th_delivery">Giao hàng</th>
+                      <th data-i18n="th_cargo">Hàng</th>
+                      <th data-i18n="th_route">Tuyến đường</th>
+                      <th data-i18n="th_status">Trạng thái</th>
+                      <th data-i18n="th_view">Xem</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fiori-do-tbody">
+                    <tr><td colspan="9" style="text-align:center; padding:24px; color:#64748b;">Đang truy vấn dữ liệu...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="do-plan-foot">
+                <span id="do-plan-count"></span>
+                <span id="do-plan-note"></span>
+              </div>
+            </section>
 
               <!-- 3.3 Tuyến tham chiếu — thiết kế lại
                 Bản trước là dải thẻ 300px cuộn ngang: mỗi tuyến một thẻ, muốn
@@ -7669,7 +7607,60 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260907g-bien-va-ham"></script>
+  <script src="/static/js/app.js?v=20260907h-do-planning-v3"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
+  <!--
+    Thanh hành động nổi của màn lập kế hoạch giao hàng.
+
+    Thay cho bảng "Trip đang lập" cố định bên phải ở bản 2. Chỉ hiện khi đã
+    tick DO, nên lúc chưa chọn gì thì không có khối rỗng nào chiếm chỗ, và
+    bảng DO được cả chiều rộng.
+
+    Nó vẫn phải mang đủ năm chốt của `create_trip_from_delivery_orders`, vì
+    đây là chỗ duy nhất người dùng bấm Tạo Trip:
+      · chỉ DO `pending`                    -> DELIVERY_ORDER_NOT_PENDING
+      · mọi DO cùng MỘT tuyến               -> DELIVERY_ORDERS_INCOMPATIBLE
+      · DO phải có tuyến                    -> ROUTE_NOT_FOUND
+      · đủ CẢ BỐN mốc lấy/giao              -> DELIVERY_TIME_WINDOW_REQUIRED
+      · tuyến khớp tổng chặng               -> ROUTE_DISTANCE_MISMATCH
+
+    Hai trường `planned_departure_at` và `avg_speed_kmh` là BẮT BUỘC, nên
+    chúng nằm ngay trên thanh này chứ không ẩn đi — thiếu là 422.
+  -->
+  <div class="do-fab" id="do-fab" hidden>
+    <div class="do-fab-count">
+      <em id="do-fab-n">0</em>
+      <span data-i18n="lbl_selected_do">DO đã chọn</span>
+    </div>
+
+    <div class="do-fab-info">
+      <span id="do-fab-route"></span>
+      <span id="do-fab-warn" class="do-fab-warn" hidden></span>
+    </div>
+
+    <div class="do-fab-fields">
+      <label>
+        <span data-i18n="lbl_departure_time">Giờ xuất bến</span>
+        <input type="datetime-local" id="trip-departure-at">
+      </label>
+      <label>
+        <span data-i18n="lbl_avg_speed">Tốc độ (km/h)</span>
+        <input type="number" id="trip-avg-speed" min="1" max="120" step="1" value="45">
+      </label>
+      <label>
+        <span data-i18n="lbl_trip_type">Loại chuyến</span>
+        <select id="trip-type">
+          <option value="one_way" data-i18n="opt_one_way">Một chiều</option>
+          <option value="multi_stop" data-i18n="opt_multi_stop">Nhiều điểm giao</option>
+        </select>
+      </label>
+    </div>
+
+    <button type="button" class="do-fab-ghost" onclick="boChonTatCaDO()" data-i18n="btn_clear_pick">Bỏ chọn</button>
+    <button type="button" class="do-fab-go" id="do-fab-go" onclick="taoTripTuDO()">
+      <span id="do-fab-go-text">Tạo Trip</span> <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </div>
+
 </body>
 </html>
