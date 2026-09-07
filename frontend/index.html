@@ -2582,29 +2582,75 @@
             .cl-dong > b {
               font-size: .84rem; color: #0f172a; font-weight: 700; white-space: nowrap;
             }
-            /* ---- Ô chọn nhiều DO trong hộp thoại tạo Trip ---- */
-            /* `fiori-input` có padding của một input MỘT dòng; áp lên
-               `<select multiple>` thì mỗi lựa chọn bị đẩy cao và danh sách
-               trông thưa thớt, rời rạc. Ô chọn nhiều cần luật riêng. */
-            .tr-do-multi {
-              width: 100%; margin-top: 5px; padding: 4px;
-              border: 1px solid #cbd5e1; border-radius: 8px;
-              background: #ffffff; color: #0f172a;
-              font-family: inherit; font-size: .82rem; line-height: 1.4;
+            /* ---- BỘ CHỌN DO trong hộp thoại tạo Trip (bản v2) ----
+
+               Bản cũ là một `<select multiple size="6">`: sáu dòng cố định nên
+               thừa một khoảng trống lớn khi ít DO và không đủ chỗ khi nhiều,
+               không tìm được mã nào, và bấm nhầm một dòng là mất hết những
+               dòng đã chọn. Bản này: thẻ đã chọn ở trên, ô tìm, rồi danh sách
+               có ô tích. */
+            .do-picker {
+              margin-top: 5px; border: 1px solid #cbd5e1; border-radius: 9px;
+              background: #ffffff; overflow: hidden;
             }
-            .tr-do-multi:focus {
-              outline: 2px solid #bfdbfe; outline-offset: 0; border-color: #0a6ed1;
+            .do-picker:focus-within { border-color: #0a6ed1; }
+
+            /* Các DO đã chọn hiện thành thẻ Ở TRÊN ô tìm: lọc rồi chọn tiếp thì
+               những DO chọn trước vẫn phải thấy được, không thì người dùng
+               không biết mình đang mang bao nhiêu DO sang Trip. */
+            .do-picker-chips {
+              display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+              padding: 8px 9px; background: #f8fafc;
+              border-bottom: 1px solid #e2e8f0; min-height: 38px;
             }
-            .tr-do-multi option {
-              padding: 5px 8px; border-radius: 6px;
+            .do-chip {
+              display: inline-flex; align-items: center; gap: 5px;
+              background: #e8f3ff; color: #075da8; border: 1px solid #bfdbfe;
+              border-radius: 999px; padding: 3px 5px 3px 9px;
+              font-size: .74rem; font-weight: 800; white-space: nowrap;
             }
-            .tr-do-multi option:checked {
-              background: #0a6ed1 linear-gradient(0deg, #0a6ed1 0%, #0a6ed1 100%);
-              color: #ffffff; font-weight: 600;
+            .do-chip button {
+              border: 0; background: rgba(10,110,209,.14); color: #075da8;
+              border-radius: 50%; width: 17px; height: 17px; line-height: 1;
+              font-size: .8rem; cursor: pointer; padding: 0;
             }
-            .tr-do-huong-dan {
-              display: block; margin-top: 5px;
-              font-size: .72rem; color: #64748b; line-height: 1.5;
+            .do-chip button:hover { background: #d32f2f; color: #ffffff; }
+            .do-chip-clear {
+              margin-left: auto; border: 0; background: none; color: #64748b;
+              font: inherit; font-size: .72rem; font-weight: 700;
+              text-decoration: underline; cursor: pointer;
+            }
+            .do-chip-clear:hover { color: #d32f2f; }
+            .do-chip-empty { font-size: .74rem; color: #94a3b8; font-weight: 600; }
+
+            .do-picker-search {
+              display: flex; align-items: center; gap: 8px;
+              padding: 7px 10px; border-bottom: 1px solid #e2e8f0;
+            }
+            .do-picker-search i { color: #94a3b8; font-size: .78rem; }
+            .do-picker-search input {
+              flex: 1; min-width: 0; border: 0; outline: 0; background: none;
+              font: inherit; font-size: .82rem; color: #0f172a;
+            }
+
+            /* Danh sách CO GIÃN theo số DO, nhưng có mức cao nhất rồi cuộn:
+               ba DO thì cao ba dòng, ba trăm DO thì cuộn trong 240px chứ không
+               kéo hộp thoại dài ra ngoài màn hình. */
+            .do-picker-list { max-height: 240px; overflow-y: auto; padding: 4px; }
+            .do-opt {
+              display: flex; align-items: flex-start; gap: 9px;
+              padding: 7px 9px; border-radius: 7px; cursor: pointer;
+            }
+            .do-opt:hover { background: #f6f8fb; }
+            .do-opt.is-on { background: #e8f3ff; }
+            .do-opt input { margin-top: 2px; width: 15px; height: 15px; flex: none; }
+            .do-opt b { display: block; font-size: .8rem; font-weight: 800; color: #0f172a; }
+            .do-opt small { display: block; font-size: .71rem; color: #64748b; margin-top: 1px; }
+            .do-picker-none { margin: 0; padding: 16px 10px; font-size: .76rem; color: #64748b; text-align: center; }
+
+            .do-picker-foot {
+              padding: 7px 10px; border-top: 1px solid #e2e8f0; background: #fbfcfe;
+              font-size: .71rem; color: #64748b; line-height: 1.5;
             }
   </style>
   <style>
@@ -4796,8 +4842,33 @@
                     </div>
                     <div>
                       <label style="font-size:.78rem; font-weight:900; color:#475569;" data-i18n="lbl_select_do_fo">Chọn DO/FO để lấy tuyến</label>
-                      <select id="trip-return-do-select" class="tr-do-multi" multiple size="6" onchange="capNhatDSDOChonTrongHopThoai()" title="Giữ Ctrl (hoặc Shift) để chọn nhiều DO — các DO phải CÙNG một tuyến"></select>
-                      <small class="tr-do-huong-dan">Giữ <b>Ctrl</b> để chọn nhiều DO. Một Trip chỉ chở được các DO <b>cùng một tuyến</b>.</small>
+                      <!--
+                        BỘ CHỌN DO v2 — tìm được, và thấy được mình đã chọn gì.
+
+                        Bản cũ là một <select multiple size="6"> . Ba chỗ dở đo được:
+                          · Sáu dòng cố định: có 3 DO thì thừa một khoảng trống lớn,
+                            mà có 300 DO thì phải cuộn trong một ô cao 6 dòng.
+                          · Không tìm được. Ở quy mô thật vài trăm DO mỗi ngày thì
+                            không ai cuộn hết để tìm một mã.
+                          · Chọn nhiều phải giữ Ctrl, và bấm nhầm một dòng là mất
+                            hết những dòng đã chọn trước đó mà không có gì báo.
+
+                        Bản này: ô tìm + danh sách có ô tích + các thẻ đã chọn ở
+                        trên. Ô ẩn `trip-return-do-ids` giữ nguyên, vì
+                        `submitTripReturnActionForm` đọc chính nó.
+                      -->
+                      <div class="do-picker" id="do-picker">
+                        <div class="do-picker-chips" id="do-picker-chips" aria-live="polite"></div>
+                        <div class="do-picker-search">
+                          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                          <input type="text" id="do-picker-search" autocomplete="off"
+                                 placeholder="Tìm mã DO, tuyến hoặc khách hàng..."
+                                 aria-label="Tìm DO để thêm vào Trip">
+                        </div>
+                        <div class="do-picker-list" id="do-picker-list" role="group"
+                             aria-label="Danh sách DO chọn được"></div>
+                        <div class="do-picker-foot" id="do-picker-foot"></div>
+                      </div>
                       <input type="hidden" id="trip-return-do-ids">
                     </div>
                     <div>
@@ -8013,10 +8084,13 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908k-theo-doi"></script>
+  <script src="/static/js/app.js?v=20260908l-bo-chon-do"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
+  <!-- Bộ chọn DO của hộp thoại tạo Trip. Nạp SAU app.js: nó định nghĩa lại
+       populateTripReturnDoSelect và capNhatDSDOChonTrongHopThoai. -->
+  <script src="/static/js/do-picker.js?v=20260908a-bo-chon-do-v2"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

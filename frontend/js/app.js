@@ -1857,8 +1857,19 @@ function tripReturnRouteById(routeId) {
   }) || null;
 }
 
+/**
+ * Mã DO đầu tiên đang chọn.
+ *
+ * Chỉ đọc ô ẩn `trip-return-do-ids`. Trước đây còn thử đọc
+ * `trip-return-do-select` trước — ô chọn nhiều cũ — nhưng ô đó đã thay bằng bộ
+ * chọn có tìm kiếm, và một ô không tồn tại thì `tripReturnBodyValue` trả về
+ * chuỗi rỗng nên nhánh đó chỉ còn là một phép thử luôn thất bại.
+ *
+ * Ô ẩn vẫn là NGUỒN SỰ THẬT duy nhất: `submitTripReturnActionForm` cũng đọc
+ * chính nó.
+ */
 function tripReturnSelectedDoId() {
-  return tripReturnBodyValue('trip-return-do-select') || tripReturnBodyValue('trip-return-do-ids').split(',')[0]?.trim() || '';
+  return tripReturnBodyValue('trip-return-do-ids').split(',')[0]?.trim() || '';
 }
 
 function tripReturnSourceFromSelectedDo() {
@@ -1956,33 +1967,12 @@ function buildTripReturnLegsFromRoute(source) {
   })).filter(leg => leg.origin && leg.destination);
 }
 
-/** `selectedDoIds` nhận một mã hoặc một mảng mã — ô chọn cho chọn nhiều. */
-function populateTripReturnDoSelect(selectedDoIds = '') {
-  const select = tripReturnField('trip-return-do-select');
-  if (!select) return;
-  const orders = tripReturnAllDeliveryOrders();
-  // KHONG co option rong trong o chon nhieu. O chon mot thi option rong la
-  // dong "chua chon" vo hinh; o chon nhieu thi no thanh MOT DONG trong danh
-  // sach, va chon vao la gui len mot ma DO rong.
-  select.innerHTML = orders.map(order => {
-    const id = doBoardEscape(order.id || '');
-    const route = doBoardEscape(order.route_id || order.route || '');
-    const customer = doBoardEscape(order.customer_id || '');
-    // Hien luon MA TUYEN ngay tren dong: mot Trip chi cho duoc cac DO CUNG
-    // mot tuyen, nen day la thu nguoi dung phai doi chieu truoc khi chon.
-    const phu = [route, customer].filter(Boolean).join(' · ');
-    return `<option value="${id}" title="${id}${phu ? ` | ${phu}` : ''}">`
-      + `${id}${phu ? ` — ${phu}` : ''}</option>`;
-  }).join('');
-  const ds = Array.isArray(selectedDoIds)
-    ? selectedDoIds.map(String)
-    : (selectedDoIds ? [String(selectedDoIds)] : []);
-  // Ô chọn nhiều thì `select.value = x` chỉ đánh dấu được MỘT dòng, nên phải
-  // đặt `selected` trên từng lựa chọn.
-  [...select.options].forEach(o => { o.selected = ds.includes(o.value); });
-  const oAn = document.getElementById('trip-return-do-ids');
-  if (oAn) oAn.value = ds.join(',');
-}
+// `populateTripReturnDoSelect` CHUYỂN sang js/do-picker.js.
+//
+// Ban cu la mot o <select multiple size="6">: sau dong co dinh (thua cho khi it
+// DO, khong du cho khi nhieu), khong tim duoc, va bam nham mot dong la mat het
+// nhung dong da chon. Ban v2 co o tim va o tich, nen phai dung HTML nhieu lop —
+// de rieng mot tep thi doc duoc dung cai se chay.
 
 function populateTripReturnReturnSelectors() {
   const source = tripReturnSourceFromSelectedDo();
@@ -2197,13 +2187,12 @@ function syncTripReturnPurpose() {
   if (note && purpose === 'returned_goods' && !note.value.trim()) {
     note.value = 'Nhận hàng hoàn từ DO nguồn';
   }
-  const doSelect = tripReturnField('trip-return-do-select');
   const returnDoSelect = tripReturnField('trip-return-return-do-select');
   const returnDoWrap = tripReturnField('trip-return-return-do-wrap');
-  if (doSelect) {
-    doSelect.required = true;
-    doSelect.setAttribute('aria-required', 'true');
-  }
+  // Bộ chọn DO không phải một `<select>` nữa nên không đặt `required` lên nó
+  // được. Chỗ chặn thật vẫn còn và đúng hơn: `submitTripReturnActionForm` từ
+  // chối khi ô ẩn `trip-return-do-ids` rỗng, và nói rõ là chưa chọn DO nào —
+  // thay vì một dòng nhắc mặc định của trình duyệt.
   if (returnDoSelect) {
     returnDoSelect.required = purpose === 'backhaul' || purpose === 'returned_goods';
     returnDoSelect.setAttribute('aria-required', returnDoSelect.required ? 'true' : 'false');
@@ -8121,21 +8110,8 @@ window.moHopThoaiTaoTrip = function () {
   }, 260);
 };
 
-/**
- * Ô chọn DO của hộp thoại cho chọn NHIỀU, nên phải gom lại vào ô ẩn
- * `trip-return-do-ids` — chỗ mà `submitTripReturnActionForm` đọc bằng
- * `split(",")`. Tầng gửi vốn đã nhận nhiều DO; chỉ có ô chọn là đơn.
- */
-window.capNhatDSDOChonTrongHopThoai = function () {
-  const sel = document.getElementById('trip-return-do-select');
-  if (!sel) return;
-  const ds = [...sel.selectedOptions].map(o => o.value).filter(Boolean);
-  const oAn = document.getElementById('trip-return-do-ids');
-  if (oAn) oAn.value = ds.join(',');
-  if (typeof hydrateTripReturnRoutePreview === 'function') {
-    hydrateTripReturnRoutePreview();
-  }
-};
+// `capNhatDSDOChonTrongHopThoai` cũng chuyển sang js/do-picker.js.
+
 
 /**
  * Vẽ ba con chip nhóm, nhãn ô chọn tình trạng, và dòng chân bảng.

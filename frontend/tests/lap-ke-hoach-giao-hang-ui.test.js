@@ -402,18 +402,46 @@ function than(neo, ket) {
 {
   // Hộp thoại phải nhận NHIỀU DO — cái mạnh nhất của thanh chọn là gộp nhiều
   // DO cùng tuyến vào một Trip; tick 3 DO mà chuyển sang chỉ mang 1 là mất 2.
-  assert.ok(/id="trip-return-do-select"[^>]*\bmultiple\b/.test(html),
-    'ô chọn DO của hộp thoại phải cho chọn nhiều');
-  const t = than('function populateTripReturnDoSelect(selectedDoIds', '}');
-  assert.ok(/o\.selected = ds\.includes\(o\.value\)/.test(t),
-    'ô chọn nhiều thì phải đặt `selected` từng dòng, `select.value` chỉ được một');
-  assert.ok(/trip-return-do-ids/.test(t), 'phải gom vào ô ẩn mà lúc gửi sẽ đọc');
+  //
+  // Ô `<select multiple size="6">` cũ đã thay bằng bộ chọn có tìm kiếm
+  // (`js/do-picker.js`): sáu dòng cố định thì thừa chỗ khi ít DO và không đủ chỗ
+  // khi nhiều, không tìm được mã nào ở quy mô vài trăm DO mỗi ngày, và bấm nhầm
+  // một dòng là mất hết những dòng đã tick trước đó.
+  //
+  // Nên phép kiểm chuyển sang khóa cái KHÔNG ĐƯỢC ĐỔI: ô ẩn vẫn là nguồn sự
+  // thật, và mỗi lần tick phải ghi vào nó.
+  const picker = fs.readFileSync(path.join(ROOT, 'js', 'do-picker.js'), 'utf8')
+    .split(String.fromCharCode(13)).join('');
 
-  const t2 = than('window.capNhatDSDOChonTrongHopThoai = function ()', '};');
-  assert.ok(/selectedOptions/.test(t2) && /join\(','\)/.test(t2),
-    'đổi lựa chọn thì phải cập nhật lại ô ẩn');
-  assert.ok(/hydrateTripReturnRoutePreview/.test(t2),
-    'và vẽ lại phần xem trước tuyến');
+  assert.ok(/id="do-picker-list"/.test(html), 'thiếu danh sách DO chọn được');
+  assert.ok(/id="do-picker-search"/.test(html), 'thiếu ô tìm DO');
+  assert.ok(/id="do-picker-chips"/.test(html), 'thiếu chỗ hiện các DO đã chọn');
+  assert.ok(/id="trip-return-do-ids"/.test(html), 'ô ẩn giữ danh sách DO phải còn');
+  assert.ok(!/id="trip-return-do-select"/.test(html),
+    'ô chọn nhiều cũ phải bỏ hẳn — để lại là hai chỗ giữ cùng một danh sách');
+
+  // Ô ẩn là nguồn sự thật duy nhất, và tick phải ghi vào nó.
+  assert.ok(/function dsDangChon\(\)/.test(picker), 'thiếu hàm đọc danh sách đã chọn');
+  assert.ok(/trip-return-do-ids/.test(picker), 'bộ chọn phải đọc/ghi ô ẩn');
+  const tDoi = picker.slice(picker.indexOf('function doiChon(ma) {'));
+  const thanDoi = tDoi.slice(0, tDoi.indexOf(NL + '  }') + 4);
+  assert.ok(/ghiVaoOAn\(ds\)/.test(thanDoi), 'tick một DO phải ghi vào ô ẩn');
+  // Ghi TRƯỚC rồi vẽ: hàm vẽ đọc chính ô ẩn, làm ngược lại thì thẻ vừa tick
+  // không hiện ra cho tới lần vẽ sau.
+  assert.ok(thanDoi.indexOf('ghiVaoOAn') < thanDoi.indexOf('ve()'),
+    'phải ghi vào ô ẩn TRƯỚC khi vẽ lại');
+  assert.ok(/capNhatXemTruoc\(\)/.test(thanDoi), 'và vẽ lại phần xem trước tuyến');
+
+  // Tick nhiều DO thì phải giữ được nhiều — không thay thế cái trước.
+  assert.ok(/ds\.push\(String\(ma\)\)/.test(thanDoi),
+    'tick thêm một DO phải THÊM vào danh sách, không thay thế');
+
+  // Hàm gom cũng chuyển sang `js/do-picker.js` — thanh chọn DO ở màn Lập kế
+  // hoạch gọi nó, nên tên hàm phải giữ và phải còn đúng một định nghĩa.
+  assert.ok(/window\.capNhatDSDOChonTrongHopThoai = function/.test(picker),
+    'hàm gom phải nằm trong bộ chọn mới');
+  assert.ok(!/window\.capNhatDSDOChonTrongHopThoai = function/.test(app),
+    'app.js không được giữ một định nghĩa thứ hai của hàm gom');
 }
 
 // --- 5. Chặn số dòng vẽ ra ----------------------------------------
