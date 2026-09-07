@@ -88,6 +88,9 @@ DEMO_SCENARIOS = {
         "quotation_id": "DEMO-QT-2026-004",
         "sales_order_id": "DEMO-SO-2026-004",
         "delivery_order_id": "DEMO-DO-2026-004",
+        "freight_order_id": "DEMO-FO-2026-004",
+        "trip_id": "DEMO-TRIP-2026-004",
+        "leg_id": "DEMO-LEG-2026-004",
     },
     # Mot don CHO VAN CHUYEN tren TUYEN KHAC, KHACH KHAC va LOAI XE KHAC.
     # Ba tinh huong dau deu di chung mot tuyen, nen bo loc tuyen, bo loc loai
@@ -349,6 +352,12 @@ def _merge_master_data(db):
         id="DEMO-COST-FORMULA-20FT", name="Container 20FT - Tiêu chuẩn",
         formula_expression=json.dumps({
             "currency": "VND",
+            # Khoa noi voi loai xe. Truoc day cong thuc nay khong khai no, va no
+            # chi duoc tra ra nho MOT TRUONG HOP DAC BIET viet cung cho chuoi
+            # "20ft" trong phep tra du phong. Khai ro thi phep tra di duong
+            # chinh, va cac loai xe khac khong phai co mot truong hop dac biet
+            # rieng.
+            "vehicle_type_id": "DEMO-VT-20FT",
             "components": {
                 "fuel": "6250", "driver": "500000", "toll": "300000",
                 "warehouse": "200000", "freight_rate": "1500",
@@ -453,11 +462,21 @@ def _seed_delivery_order(db, key, pickup, delivery, status="pending",
     db.flush()
 
 
-def _seed_trip(db, key, pickup, delivery, vehicle_id):
+def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
+               di=None, den=None, driver_id=None):
+    """Freight Order + chuyen + chang + phan cong nguon luc cho mot tinh huong.
+
+    Cac tham so diem CO MAC DINH dung bang gia tri truoc day khoa cung, nen hai
+    loi goi cu khong doi mot chu nao.
+    """
+    ma_di = ma_di or ORIGIN_ID
+    ma_den = ma_den or DESTINATION_ID
+    di = di or ORIGIN
+    den = den or DESTINATION
     ids = _scenario_ids(key)
     db.add(FreightOrder(
-        id=ids["freight_order_id"], pickup_location_id=ORIGIN_ID,
-        delivery_location_id=DESTINATION_ID, pickup_window_start=pickup.replace(tzinfo=None),
+        id=ids["freight_order_id"], pickup_location_id=ma_di,
+        delivery_location_id=ma_den, pickup_window_start=pickup.replace(tzinfo=None),
         pickup_window_end=(pickup + dt.timedelta(hours=1)).replace(tzinfo=None),
         delivery_window_start=delivery.replace(tzinfo=None),
         delivery_window_end=(delivery + dt.timedelta(hours=1)).replace(tzinfo=None),
@@ -482,8 +501,8 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id):
     db.flush()
     db.add(TransportTripLeg(
         id=ids["leg_id"], trip_id=ids["trip_id"], do_id=ids["delivery_order_id"],
-        sequence_no=1, leg_type="delivery", origin=ORIGIN, destination=DESTINATION,
-        stop_name=DESTINATION, receiver_name="Nguyễn Văn An", receiver_phone="0908123456",
+        sequence_no=1, leg_type="delivery", origin=di, destination=den,
+        stop_name=den, receiver_name="Nguyễn Văn An", receiver_phone="0908123456",
         delivery_note="Giao đủ 18 pallet, kiểm tra niêm phong và ký POD.",
         distance_km=_money(44.7), avg_speed_kmh=_money(45), dwell_minutes=45,
         planned_departure_at=pickup, planned_arrival_at=delivery,
@@ -720,6 +739,15 @@ def seed_demo(db, reset=False, verify=False):
             "DEMO-51C-412.09", "DEMO-DRV-004",
             tuyen="DEMO-RT-SONGTHAN-CATLAI", di="Bãi Sóng Thần",
             den=DESTINATION, kg=12000, pallet=20, m3=28, km_ve=31.2,
+        )
+        # Don DA DEN NOI thi PHAI co chuyen: "den noi" nghia la da co xe chay
+        # toi. Thieu chuyen thi ho so quyet toan tra ve rong — do duoc: cot gia
+        # o man Hoan tat giao hang ghi "0 VND" trong khi don hang la 4.350.000 d,
+        # vi ho so do lan theo duong DO -> Freight Order -> chuyen.
+        _seed_trip(
+            db, "arrived", den_noi_pickup, den_noi_delivery, "DEMO-51C-412.09",
+            ma_di="DEMO-LOC-SONGTHAN", ma_den=DESTINATION_ID,
+            di="Bãi Sóng Thần", den=DESTINATION,
         )
 
         # TINH HUONG 5 — cho van chuyen, TUYEN KHAC va KHACH KHAC.

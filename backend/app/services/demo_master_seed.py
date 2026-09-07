@@ -77,6 +77,16 @@ def _cong_thuc(ma_loai, ten_loai, dau_km, tai_xe, cau_duong, bai, cuoc):
     """
     return {
         "currency": "VND",
+        # KHOA NOI voi loai xe. Cong thuc gan voi loai xe qua khoa nay BEN TRONG
+        # JSON, khong phai bang mot cot rieng — xem `vehicle_cost_service`.
+        #
+        # Thieu no thi phep tra roi xuong nhanh du phong: so chuoi ten loai xe
+        # voi `id + name` cua cong thuc. Va nhanh do TRUOT o day, vi loai xe la
+        # "DEMO-VT-TRACTOR40" con cong thuc ten "DEMO-CF-TRACTOR40 / Dau keo 40'"
+        # — khong chuoi nao chua chuoi nao. Hau qua do duoc: ho so quyet toan cua
+        # don dung xe loai do tra ve loi COST_FORMULA_REQUIRED, va man Hoan tat
+        # giao hang hien cot gia la "0 VND".
+        "vehicle_type_id": ma_loai,
         "components": {
             "fuel": str(dau_km),
             "driver": str(tai_xe),

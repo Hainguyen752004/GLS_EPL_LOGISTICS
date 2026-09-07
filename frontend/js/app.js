@@ -17995,7 +17995,13 @@ window.loadDeliveryCompletionWorkbench = async function () {
     const tripPayload = await tripResponse.json();
     const orders = doPayload.items || doPayload.data || [];
     const trips = tripPayload.items || tripPayload.data || [];
-    const candidates = orders.filter(order => ['in_transit', 'delivered'].includes(String(order.canonical_status || '').toLowerCase()));
+    // `arrived` PHAI co trong danh sach nay. Do la trang thai "xe da den noi,
+    // chua ky POD" — dung luc phai nop POD, tuc dung viec cua chinh man nay.
+    // Thieu no thi mot don da den noi khong hien ra o man nop POD, va nguoi
+    // dung khong co cho nao de nop.
+    const TRANG_THAI_LIEN_QUAN = ['in_transit', 'arrived', 'delivered'];
+    const candidates = orders.filter(order =>
+      TRANG_THAI_LIEN_QUAN.includes(String(order.canonical_status || '').toLowerCase()));
     deliveryCompletionState.rows = await Promise.all(candidates.map(async order => {
       const trip = trips.find(item => (item.delivery_order_ids || []).includes(order.id)) || null;
       let closeout = null;
@@ -18016,16 +18022,33 @@ window.renderDeliveryCompletionList = function () {
   const body = document.getElementById('completion-do-list');
   if (!body) return;
   const query = String(document.getElementById('completion-search')?.value || '').trim().toLowerCase();
-  const desiredStatus = deliveryCompletionState.tab === 'pending' ? 'in_transit' : 'delivered';
+  // Tab "Cho hoan tat" gom HAI trang thai, khong phai mot: don dang chay va
+  // don da den noi. Ca hai deu chua ky POD nen deu thuoc viec cua tab nay.
+  const TRANG_THAI_CHO = ['in_transit', 'arrived'];
+  const trangThaiCanLay = deliveryCompletionState.tab === 'pending'
+    ? TRANG_THAI_CHO : ['delivered'];
   const rows = deliveryCompletionState.rows.filter(row => {
-    if (String(row.order.canonical_status || '').toLowerCase() !== desiredStatus) return false;
+    if (!trangThaiCanLay.includes(String(row.order.canonical_status || '').toLowerCase())) {
+      return false;
+    }
     const haystack = [row.order.id, row.order.vehicle_id, row.order.driver_id, row.order.customer_id, row.order.destination].join(' ').toLowerCase();
     return !query || haystack.includes(query);
   });
+  // Don DA DEN NOI xep len truoc: no la don san sang nop POD ngay bay gio,
+  // con don dang chay thi con phai doi xe toi. Xep lan lon thi nguoi dung
+  // phai tu do trong danh sach xem don nao lam duoc.
+  const UU_TIEN = { arrived: 0, in_transit: 1, delivered: 2 };
+  rows.sort((a, b) => {
+    const ta = UU_TIEN[String(a.order.canonical_status || '').toLowerCase()] ?? 9;
+    const tb = UU_TIEN[String(b.order.canonical_status || '').toLowerCase()] ?? 9;
+    if (ta !== tb) return ta - tb;
+    return String(a.order.id || '').localeCompare(String(b.order.id || ''));
+  });
+
   const count = document.getElementById('completion-result-count');
   if (count) count.textContent = `${rows.length} DO`;
   if (!rows.length) {
-    body.innerHTML = `<tr><td colspan="6" class="completion-empty">${deliveryCompletionState.tab === 'pending' ? 'Không có DO đang vận chuyển chờ hoàn tất.' : 'Chưa có DO đã hoàn tất.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="completion-empty">${deliveryCompletionState.tab === 'pending' ? 'Không có DO nào đang vận chuyển hoặc đã đến nơi.' : 'Chưa có DO đã hoàn tất.'}</td></tr>`;
     return;
   }
   body.innerHTML = rows.map(row => {
@@ -18034,12 +18057,18 @@ window.renderDeliveryCompletionList = function () {
     // Ba mốc, ba nhãn tách rõ. "Đã giao" mơ hồ: xe tới bãi mà chưa ký
     // POD thì cũng là "đã giao" theo cách hiểu thường, nhưng lúc đó chưa
     // có gì xác nhận.
+    // Nhãn và nút phải theo trạng thái của CHÍNH DÒNG NÀY, không theo trạng
+    // thái của cả tab. Trước đây cả hai đọc `desiredStatus` — tức tab đang mở —
+    // nên mọi dòng trong một tab đều mang cùng một nhãn. Nhãn `arrived` đã có
+    // sẵn trong bảng dưới đây mà KHÔNG BAO GIỜ tới được, vì tab chỉ nhận đúng
+    // `in_transit` hoặc `delivered`.
+    const trangThaiDong = String(order.canonical_status || '').toLowerCase();
     const status = {
       in_transit: 'Đang vận chuyển',
       arrived: 'Đã đến nơi — chờ POD',
       delivered: 'Đã hoàn tất',
-    }[desiredStatus] || 'Đã hoàn tất';
-    const action = desiredStatus === 'in_transit'
+    }[trangThaiDong] || 'Đã hoàn tất';
+    const action = trangThaiDong !== 'delivered'
       ? `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletionDO('${completionEscape(order.id)}')"><i class="fa-solid fa-eye"></i> Xem DO</button><button class="fiori-btn fiori-btn-primary" onclick="openDeliveryCompletionEditor('${completionEscape(order.id)}')"><i class="fa-solid fa-clipboard-check"></i> Hoàn tất giao</button>`
       : `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletedDelivery('${completionEscape(order.id)}')"><i class="fa-solid fa-folder-open"></i> Xem hồ sơ</button>`;
     return `<tr><td><strong>${completionEscape(order.id)}</strong><br><small>${completionEscape(order.destination || '')}</small></td><td><strong>${completionEscape(order.vehicle_id || row.trip?.vehicle_id || '-')}</strong><br><small>${completionEscape(order.driver_id || row.trip?.driver_id || '-')}</small></td><td>${completionEscape(order.customer_id || '-')}<br><small>${completionEscape(order.destination || '-')}</small></td><td><strong>${completionMoney(basePrice, closeout.currency || 'VND')}</strong></td><td><span class="completion-status">${status}</span></td><td><div class="completion-actions">${action}</div></td></tr>`;
