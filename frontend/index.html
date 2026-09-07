@@ -292,6 +292,31 @@
     .trip-status-tab strong { margin-left: 6px; color: #0f172a; }
     .trip-status-tab.is-active { border-bottom-color: #0a6ed1; color: #0a6ed1; }
     .trip-status-tab.is-alert { color: #b45309; }
+
+    /* DẢI VÒNG ĐỜI, không phải tab phẳng.
+
+       Ba nhóm giữa là các chặng NỐI TIẾP của một chuyến: đang giao hàng → chờ
+       quay về → hoàn tất. Mũi chuyển tiếp nói đúng thứ tự đó. Vẽ phẳng như tab
+       thì người dùng phải tự đoán nhóm nào đứng trước nhóm nào.
+
+       "Thiếu kế hoạch về" thì tách bằng một vạch dọc: nó là việc phải xử, không
+       phải một chặng mà chuyến đi qua. */
+    .trip-life-arrow {
+      flex: 0 0 auto;
+      align-self: center;
+      color: #cbd5e1;
+      font-size: 1rem;
+      font-weight: 700;
+      user-select: none;
+    }
+    .trip-life-sep {
+      flex: 0 0 auto;
+      align-self: center;
+      width: 1px;
+      height: 22px;
+      margin: 0 8px;
+      background: #e2e8f0;
+    }
     .trip-control-toolbar {
       padding: 12px 18px;
       border-bottom: 1px solid var(--delivery-divider);
@@ -8084,7 +8109,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908l-bo-chon-do"></script>
+  <script src="/static/js/app.js?v=20260908m-vong-doi-trip"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

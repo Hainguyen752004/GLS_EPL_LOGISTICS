@@ -32,6 +32,10 @@ from models import (
     JournalBatch,
     JournalLine,
     Location,
+    ParkingEvent,
+    ParkingLabel,
+    ParkingList,
+    ParkingListItem,
     Quotation,
     ResourceAssignment,
     Role,
@@ -50,6 +54,7 @@ from models import (
 )
 from schemas.delivery_completion import DeliveryCompletionRequest
 from services.delivery_completion_service import complete_delivery
+from services import demo_operational_seed
 
 
 DEMO_SCENARIOS = {
@@ -174,6 +179,29 @@ def _delete_seeded_workflow(db):
         db.query(IdempotencyRecord).filter(
             IdempotencyRecord.path.in_([f"/api/delivery-orders/{do_id}/complete-delivery" for do_id in do_ids])
         ).delete(synchronize_session=False)
+        # Packing List phai di TRUOC delivery_orders: `parking_lists.do_id` tro
+        # vao chinh bang do. Bo nap tung bao `FOREIGN KEY constraint failed` o
+        # lan nap lai thu hai vi thieu doan nay.
+        #
+        # Xoa TUONG MINH tung bang con thay vi dua vao `ondelete="CASCADE"`:
+        # SQLite chi thuc thi cascade khi da bat `PRAGMA foreign_keys`, con bo
+        # nap thi phai chay giong nhau tren ca SQLite lan PostgreSQL.
+        pl_ids = [row[0] for row in db.query(ParkingList.id).filter(
+            ParkingList.do_id.in_(do_ids)
+        ).all()]
+        if pl_ids:
+            db.query(ParkingEvent).filter(
+                ParkingEvent.parking_list_id.in_(pl_ids)
+            ).delete(synchronize_session=False)
+            db.query(ParkingLabel).filter(
+                ParkingLabel.parking_list_id.in_(pl_ids)
+            ).delete(synchronize_session=False)
+            db.query(ParkingListItem).filter(
+                ParkingListItem.parking_list_id.in_(pl_ids)
+            ).delete(synchronize_session=False)
+            db.query(ParkingList).filter(
+                ParkingList.id.in_(pl_ids)
+            ).delete(synchronize_session=False)
         db.query(DeliveryPODRecord).filter(DeliveryPODRecord.do_id.in_(do_ids)).delete(synchronize_session=False)
         db.query(DeliveryOrderCloseout).filter(DeliveryOrderCloseout.do_id.in_(do_ids)).delete(synchronize_session=False)
         db.query(VehicleTracking).filter(VehicleTracking.do_id.in_(do_ids)).delete(synchronize_session=False)
@@ -609,6 +637,16 @@ def seed_demo(db, reset=False, verify=False):
         _seed_trip(db, "completed", completed_pickup, completed_delivery, "DEMO-61H-112.34")
         _complete_demo_delivery(db)
         _seed_actual_cost(db)
+        # Lop VAN HANH: ca truc, bao duong, Packing List — neo theo TUAN HIEN TAI.
+        #
+        # Chuoi nghiep vu tren neo vao ngay co dinh (thang 8/2026) de bai kiem
+        # doi chieu duoc so tien va moc thoi gian. Nhung man xep ca, luoi lich xe
+        # va man dieu phoi lai mo TUAN CHUA NGAY HOM NAY, nen du lieu thang 8
+        # khong bao gio hien ra o do: do duoc, man xep ca bao "Chua xep 3" va
+        # luoi bao duong trong tron. Hai lop tach roi han — lop co dinh de kiem,
+        # lop theo tuan de man hinh co gi ma xem.
+        demo_operational_seed.nap_lop_van_hanh(
+            db, [row["delivery_order_id"] for row in DEMO_SCENARIOS.values()])
         db.commit()
     elif db.get(DeliveryOrder, completed_id) is None:
         raise AssertionError("Demo workflow is incomplete")

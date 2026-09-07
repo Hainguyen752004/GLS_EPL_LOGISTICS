@@ -1693,14 +1693,34 @@ function renderTripReturnCockpit() {
     result[group] = (result[group] || 0) + 1;
     return result;
   }, {});
+  // DẢI VÒNG ĐỜI, không phải tab phẳng.
+  //
+  // Năm nhóm này không ngang hàng nhau — chúng là các chặng NỐI TIẾP của một
+  // chuyến: đang giao hàng → chờ quay về → hoàn tất. "Thiếu kế hoạch về" là một
+  // nhánh lệch ra khỏi dòng đó, không phải một chặng. Vẽ phẳng như tab thì mất
+  // hết thứ tự đó, và người dùng phải tự đoán nhóm nào đứng trước nhóm nào.
+  //
+  // Bản mẫu `trip-lifecycle.html` vẽ chúng thành một dòng có mũi chuyển tiếp:
+  // Kế hoạch › Đang chạy › Chờ chặng về › Đã về bãi › Đã đối soát.
   const statusOptions = [
     { key: '', label: 'Tất cả', count: cockpit.items.length },
-    { key: 'active', label: 'Đang giao hàng', count: counts.active || 0 },
-    { key: 'waiting_return', label: 'Chờ quay về', count: counts.waiting_return || 0 },
-    { key: 'missing_return', label: 'Thiếu kế hoạch về', count: counts.missing_return || 0, alert: true },
-    { key: 'completed', label: 'Hoàn tất', count: counts.completed || 0 }
+    { key: 'active', label: 'Đang giao hàng', count: counts.active || 0, buoc: true },
+    { key: 'waiting_return', label: 'Chờ quay về', count: counts.waiting_return || 0, buoc: true },
+    { key: 'completed', label: 'Hoàn tất', count: counts.completed || 0, buoc: true },
+    // Đặt SAU cùng và tách khỏi dòng: đây là việc phải xử, không phải một chặng
+    // mà chuyến đi qua.
+    { key: 'missing_return', label: 'Thiếu kế hoạch về', count: counts.missing_return || 0, alert: true }
   ];
-  statusTabs.innerHTML = statusOptions.map(option => `<button type="button" class="trip-status-tab ${tripReturnStatusFilter === option.key ? 'is-active' : ''} ${option.alert ? 'is-alert' : ''}" onclick="setTripReturnStatusTab('${option.key}')">${option.label}<strong>${option.count}</strong></button>`).join('');
+  statusTabs.innerHTML = statusOptions.map((option, i) => {
+    const truoc = statusOptions[i - 1];
+    // Mũi chuyển tiếp chỉ đặt GIỮA hai chặng liền nhau của dòng, không đặt trước
+    // "Tất cả" và không đặt trước nhánh lệch.
+    const mui = (truoc && truoc.buoc && option.buoc)
+      ? '<span class="trip-life-arrow" aria-hidden="true">›</span>' : '';
+    const ngan = (option.alert && truoc)
+      ? '<span class="trip-life-sep" aria-hidden="true"></span>' : '';
+    return `${mui}${ngan}<button type="button" class="trip-status-tab ${tripReturnStatusFilter === option.key ? 'is-active' : ''} ${option.alert ? 'is-alert' : ''}" onclick="setTripReturnStatusTab('${option.key}')">${option.label}<strong>${option.count}</strong></button>`;
+  }).join('');
 
   const visibleItems = cockpit.items.filter(item => {
     const raw = item.raw || item;

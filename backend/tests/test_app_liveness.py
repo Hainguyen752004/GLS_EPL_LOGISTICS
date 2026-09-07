@@ -123,7 +123,11 @@ def test_frontend_html_is_served_with_utf8_charset_and_no_store_cache(monkeypatc
     assert "charset=utf-8" in response.headers["content-type"].lower()
     assert response.headers["cache-control"] == "no-store"
     assert "T\u00f3m t\u1eaft &amp; Ph\u00e2n t\u00edch" in response.text
-    assert "Danh M\u1ee5c \u0110\u1ed9i Xe" in response.text
+    # Mot nhan tieng Viet co dau, de bat loi ma hoa. Truoc day neo vao
+    # "Danh Muc Doi Xe" \u2014 mot nhan cua "mega menu" cu; khung dieu huong ba tang
+    # da bo mega menu, nen neo vao mot nhan CON TON TAI va cung co du loai dau:
+    # dau moc, dau nga, dau sac.
+    assert "S\u1eafp l\u1ecbch xe v\u00e0 t\u00e0i x\u1ebf" in response.text
     assert "\ufffd" not in response.text
 
 
