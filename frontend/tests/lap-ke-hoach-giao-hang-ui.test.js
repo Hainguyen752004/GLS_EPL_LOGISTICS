@@ -95,9 +95,17 @@ function than(neo, ket) {
   assert.ok(!html.includes('id="do-trip-builder"'), 'còn bảng Trip đang lập bản 2');
 
   ['do-fab', 'do-fab-n', 'do-fab-route', 'do-fab-warn', 'do-fab-go',
-    'do-fab-go-text', 'trip-departure-at', 'trip-avg-speed', 'trip-type',
+    'do-fab-go-text', 'trip-avg-speed',
     'do-pick-all', 'do-plan-count', 'do-plan-note'].forEach(id => {
     assert.ok(html.includes(`id="${id}"`), `thiếu ${id}`);
+  });
+  // `trip-departure-at` và `trip-type` đã BỎ khỏi thanh. Màn này không tự gửi
+  // lên endpoint nữa — nó chỉ chọn DO rồi mở hộp thoại "Tạo Trip vận chuyển từ
+  // DO/FO", nơi có đủ 11 trường mà endpoint nhận (kể cả thời gian bốc dỡ mỗi
+  // chặng và kế hoạch chặng về). Giữ hai ô đó ở đây là giữ lại đường thứ hai.
+  ['trip-departure-at', 'trip-type'].forEach(id => {
+    assert.ok(!html.includes(`id="${id}"`),
+      `#${id} phải bỏ — việc tạo Trip đã dồn về một đường duy nhất`);
   });
 
   // Chưa tick DO nào thì thanh phải ĐANG ẨN ngay trong HTML tĩnh, không chờ
@@ -117,9 +125,13 @@ function than(neo, ket) {
   // được lưu, mà không.
   assert.ok(!/id="trip-vehicle|id="trip-driver/.test(fab),
     'tạo Trip không nhận xe/tài xế — đừng hỏi ở đây');
-  // Hai trường BẮT BUỘC của endpoint phải nằm ngay trên thanh, không ẩn đi.
-  assert.ok(fab.includes('id="trip-departure-at"') && fab.includes('id="trip-avg-speed"'),
-    'giờ xuất bến và tốc độ là bắt buộc, phải ở ngay thanh');
+  // Thanh KHÔNG còn ô nhập nào: nó chỉ chọn DO, kiểm điều kiện, rồi chuyển
+  // sang hộp thoại. Mọi tham số của Trip nhập ở hộp thoại, nơi có đủ trường.
+  assert.ok(!/<input|<select/.test(fab),
+    'thanh không được có ô nhập nào — tham số Trip nhập ở hộp thoại');
+  // Và nút phải mở hộp thoại, không tự gửi lên endpoint.
+  assert.ok(/onclick="moHopThoaiTaoTrip\(\)"/.test(fab),
+    'nút phải mở hộp thoại cấu hình, không tự tạo Trip');
 
   // Bảng có đủ chín cột, kể cả cột Hàng mới.
   const j = html.indexOf('<table class="do-plan-table">');
@@ -338,26 +350,70 @@ function than(neo, ket) {
   }
 }
 
-// --- 4. Gửi đúng phong bì backend đòi ------------------------------
+// --- 4. MỘT đường tạo Trip duy nhất ---------------------------------
+//
+// Màn này và hộp thoại "Tạo Trip vận chuyển từ DO/FO" gọi CÙNG endpoint
+// `POST /api/tms/trips/from-delivery-orders`, nhưng màn này chỉ gửi 5 trong 11
+// trường mà endpoint nhận. Hai đường song song sinh ra đúng hai chỗ lệch có
+// hậu quả thật:
+//
+//   · `dwell_minutes` không gửi nên backend lấy 0 phút — ETA từng chặng BỎ
+//     LUÔN thời gian bốc dỡ, còn hộp thoại gửi 30 phút. Cùng một tuyến, hai
+//     đường ra hai ETA khác nhau.
+//   · `return_purpose` không gửi nên luôn là "none" — mọi Trip tạo từ đây đều
+//     tự sinh việc cho tab "Thiếu kế hoạch về".
+//
+// Nay bỏ đường thứ hai. Hai chỗ lệch tự hết, và không cần đi bịt từng cái.
 
 {
-  const t = than('window.taoTripTuDO = async function', '};');
-  assert.ok(/\/api\/tms\/trips\/from-delivery-orders/.test(t));
-  assert.ok(/do_ids: dsChon\.map/.test(t), 'phải gửi danh sách DO');
-  // Bốn trường BẮT BUỘC của TripFromDeliveryOrdersRequest.
-  ['id:', 'do_ids:', 'planned_departure_at:', 'avg_speed_kmh:']
-    .forEach(k => assert.ok(t.includes(k), `thiếu ${k}`));
-  // `id` cũng là khóa idempotency — gửi lại cùng mã không tạo bản thứ hai.
-  assert.ok(/'Idempotency-Key': maTrip/.test(t));
-  // Chặn tại chỗ trước khi gửi, thay vì để backend trả 422.
-  assert.ok(/Chưa nhập giờ xuất bến/.test(t));
-  assert.ok(/tocDo <= 0/.test(t));
-  // Thất bại phải nói LỜI CỦA MÁY CHỦ.
-  assert.ok(/baoLoiMayChu\(res, viec\)/.test(t) && /baoMatKetNoi\(viec, e\)/.test(t));
+  // Hàm tự gửi lên endpoint đã bỏ hẳn — còn nó là còn đường thứ hai.
+  assert.ok(!/taoTripTuDO/.test(app), 'còn dấu vết hàm tự gửi lên endpoint');
+  assert.ok(!/datMacDinhKeHoachTrip/.test(app),
+    'còn dấu vết hàm đặt mặc định cho các ô đã bỏ');
+  // Và màn này không được gọi endpoint tạo Trip ở bất kỳ đâu nữa.
+  const i = app.indexOf('function veThanhHanhDong()');
+  const j = app.indexOf('function veChipVaChanTrang');
+  assert.ok(i > 0 && j > i, 'không xác định được vùng mã của màn lập kế hoạch');
+  // Lọc chú thích TRƯỚC khi dò. Chú thích giải thích vì sao bỏ đường thứ hai
+  // có TRÍCH NGUYÊN tên endpoint, và một phép dò thô sẽ bắt vào chính câu giải
+  // thích rồi báo là lỗi vẫn còn — đúng cái bẫy đã gặp mấy lần trong dự án này.
+  const vungMa = app.slice(i, j)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split(NL).filter(d => !d.trim().startsWith('//')).join(NL);
+  assert.ok(!/trips\/from-delivery-orders/.test(vungMa),
+    'màn lập kế hoạch không được tự gọi endpoint tạo Trip');
+
+  const t = than('window.moHopThoaiTaoTrip = function ()', '};');
   // MỘT quyết định chặn, dùng cho cả thanh và cho lúc bấm — hai phép kiểm
   // song song là chỗ để nút bảo "được" mà lệnh gửi lên bị từ chối.
   assert.ok(/veThanhHanhDong\(\)/.test(t),
     'lúc bấm phải hỏi lại chính hàm đã quyết định chặn/không chặn');
+  assert.ok(/chanLai/.test(t) && /lyDo/.test(t), 'phải nói lại lý do chặn');
+  assert.ok(/dsChon\.map\(d => String\(d\.id\)\)/.test(t),
+    'phải mang TẤT CẢ mã DO đã tick sang hộp thoại, không chỉ mã đầu');
+  // Phải sang màn Giao hàng & vận chuyển trước: hộp thoại đọc dữ liệu Trip
+  // của màn đó, mở khi chưa nạp thì ô chọn DO rỗng.
+  assert.ok(/switchView\('delivery-shipment'\)/.test(t));
+  assert.ok(/openTripReturnAction\('create-trip', dsMa\)/.test(t));
+  // Chưa nạp được form thì nói ra, đừng để bấm vào im lặng.
+  assert.ok(/typeof openTripReturnAction !== 'function'/.test(t));
+}
+
+{
+  // Hộp thoại phải nhận NHIỀU DO — cái mạnh nhất của thanh chọn là gộp nhiều
+  // DO cùng tuyến vào một Trip; tick 3 DO mà chuyển sang chỉ mang 1 là mất 2.
+  assert.ok(/id="trip-return-do-select"[^>]*\bmultiple\b/.test(html),
+    'ô chọn DO của hộp thoại phải cho chọn nhiều');
+  const t = than('function populateTripReturnDoSelect(selectedDoIds', '}');
+  assert.ok(/o\.selected = ds\.includes\(o\.value\)/.test(t),
+    'ô chọn nhiều thì phải đặt `selected` từng dòng, `select.value` chỉ được một');
+  assert.ok(/trip-return-do-ids/.test(t), 'phải gom vào ô ẩn mà lúc gửi sẽ đọc');
+
+  const t2 = than('window.capNhatDSDOChonTrongHopThoai = function ()', '};');
+  assert.ok(/selectedOptions/.test(t2) && /join\(','\)/.test(t2),
+    'đổi lựa chọn thì phải cập nhật lại ô ẩn');
+  assert.ok(/hydrateTripReturnRoutePreview/.test(t2),
+    'và vẽ lại phần xem trước tuyến');
 }
 
 // --- 5. Chặn số dòng vẽ ra ----------------------------------------

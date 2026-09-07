@@ -1973,17 +1973,32 @@ function buildTripReturnLegsFromRoute(source) {
   })).filter(leg => leg.origin && leg.destination);
 }
 
-function populateTripReturnDoSelect(selectedDoId = '') {
+/** `selectedDoIds` nhận một mã hoặc một mảng mã — ô chọn cho chọn nhiều. */
+function populateTripReturnDoSelect(selectedDoIds = '') {
   const select = tripReturnField('trip-return-do-select');
   if (!select) return;
   const orders = tripReturnAllDeliveryOrders();
-  select.innerHTML = '<option value="">Chọn DO để tự lấy tuyến...</option>' + orders.map(order => {
+  // KHONG co option rong trong o chon nhieu. O chon mot thi option rong la
+  // dong "chua chon" vo hinh; o chon nhieu thi no thanh MOT DONG trong danh
+  // sach, va chon vao la gui len mot ma DO rong.
+  select.innerHTML = orders.map(order => {
     const id = doBoardEscape(order.id || '');
     const route = doBoardEscape(order.route_id || order.route || '');
     const customer = doBoardEscape(order.customer_id || '');
-    return `<option value="${id}" title="${id}${route ? ` | ${route}` : ''}${customer ? ` | ${customer}` : ''}">${id}</option>`;
+    // Hien luon MA TUYEN ngay tren dong: mot Trip chi cho duoc cac DO CUNG
+    // mot tuyen, nen day la thu nguoi dung phai doi chieu truoc khi chon.
+    const phu = [route, customer].filter(Boolean).join(' · ');
+    return `<option value="${id}" title="${id}${phu ? ` | ${phu}` : ''}">`
+      + `${id}${phu ? ` — ${phu}` : ''}</option>`;
   }).join('');
-  if (selectedDoId) select.value = selectedDoId;
+  const ds = Array.isArray(selectedDoIds)
+    ? selectedDoIds.map(String)
+    : (selectedDoIds ? [String(selectedDoIds)] : []);
+  // Ô chọn nhiều thì `select.value = x` chỉ đánh dấu được MỘT dòng, nên phải
+  // đặt `selected` trên từng lựa chọn.
+  [...select.options].forEach(o => { o.selected = ds.includes(o.value); });
+  const oAn = document.getElementById('trip-return-do-ids');
+  if (oAn) oAn.value = ds.join(',');
 }
 
 function populateTripReturnReturnSelectors() {
@@ -2026,7 +2041,19 @@ function hydrateTripReturnRoutePreview() {
     ? 'Chon tuyen chieu ve tu Route Master de he thong tinh ETA va ngay xe san sang.'
     : '';
 
-  tripReturnSetValue('trip-return-do-ids', doId);
+  // KHÔNG ghi đè `trip-return-do-ids` bằng MỘT mã DO.
+  //
+  // Ô chọn DO cho chọn nhiều — cái mạnh nhất của luồng này là gộp các DO cùng
+  // một tuyến vào một Trip. Hàm này chỉ vẽ phần xem trước tuyến, và nó lấy DO
+  // ĐẦU TIÊN làm nguồn tuyến (đúng, vì mọi DO phải cùng tuyến). Nhưng nếu nó
+  // ghi mã đó vào ô ẩn thì danh sách bị cắt còn một, và lúc gửi lên sẽ MẤT các
+  // DO còn lại — chọn 3 DO chỉ tạo Trip cho 1.
+  //
+  // Ô ẩn do `capNhatDSDOChonTrongHopThoai` và `populateTripReturnDoSelect` giữ;
+  // ở đây chỉ điền khi nó đang trống (mở form từ chỗ khác, chưa qua ô chọn).
+  if (doId && !tripReturnBodyValue('trip-return-do-ids')) {
+    tripReturnSetValue('trip-return-do-ids', doId);
+  }
   if (deliveryOrder && !tripReturnBodyValue('trip-return-fo-id')) {
     tripReturnSetValue('trip-return-fo-id', deliveryOrder.fo_id || deliveryOrder.freight_order_id || '');
   }
@@ -2112,7 +2139,15 @@ function hydrateTripReturnRoutePreview() {
   `;
 }
 
+/**
+ * `preferredDoId` nhận một mã DO, hoặc một MẢNG mã khi mở từ thanh chọn DO
+ * ở màn Lập kế hoạch — ở đó người dùng tick nhiều DO cùng một tuyến để gộp
+ * vào một Trip.
+ */
 function openTripReturnAction(action, preferredDoId = '') {
+  const dsUuTien = Array.isArray(preferredDoId)
+    ? preferredDoId.map(String).filter(Boolean)
+    : (preferredDoId ? [String(preferredDoId)] : []);
   const modal = tripReturnField('trip-return-action-modal');
   if (!modal) {
     showToast('Thiếu form Trip/Return trên giao diện. Vui lòng tải lại trang.');
@@ -2130,14 +2165,17 @@ function openTripReturnAction(action, preferredDoId = '') {
   const nextSequence = Array.isArray(raw.legs) ? raw.legs.length + 1 : 1;
   const generatedTripId = `TRIP-${FormatUtils.dateInputValue().replaceAll('-', '')}-${Date.now().toString().slice(-5)}`;
   const generatedLegId = `LEG-${Date.now().toString().slice(-6)}`;
-  const selectedDoId = preferredDoId || (Array.isArray(doIds) ? doIds[0] : String(doIds || '').split(',')[0]?.trim());
+  const selectedDoId = dsUuTien[0]
+    || (Array.isArray(doIds) ? doIds[0] : String(doIds || '').split(',')[0]?.trim());
+  // Mở từ thanh chọn DO thì lấy TẤT CẢ mã đã tick, không chỉ mã đầu.
+  const dsDat = dsUuTien.length ? dsUuTien : (selectedDoId ? [selectedDoId] : []);
   const preferredOrder = tripReturnDeliveryOrderById(selectedDoId);
 
   tripReturnSetValue('trip-return-action-mode', mode);
   tripReturnSetValue('trip-return-trip-id', mode === 'add-leg' ? tripId : generatedTripId);
   tripReturnSetValue('trip-return-fo-id', preferredOrder?.freight_order_id || preferredOrder?.fo_id || raw.freight_order_id || raw.fo_id || '');
-  populateTripReturnDoSelect(selectedDoId || '');
-  tripReturnSetValue('trip-return-do-ids', selectedDoId || '');
+  populateTripReturnDoSelect(dsDat);
+  tripReturnSetValue('trip-return-do-ids', dsDat.join(','));
   tripReturnSetValue('trip-return-trip-type', raw.trip_type || (mode === 'add-leg' ? 'round_trip' : 'one_way'));
   tripReturnSetValue('trip-return-purpose', mode === 'add-leg' ? 'empty_return' : 'none');
   tripReturnSetValue('trip-return-leg-type', mode === 'add-leg' ? 'empty_return' : 'delivery');
@@ -8015,7 +8053,7 @@ window.tickTatCaDO = function (tick) {
 /**
  * Vẽ thanh hành động nổi theo các DO đang tick.
  *
- * Trả về `{ dsChon, chanLai, lyDo }` để `taoTripTuDO` dùng lại đúng một phép
+ * Trả về `{ dsChon, chanLai, lyDo }` để `moHopThoaiTaoTrip` dùng lại đúng một phép
  * quyết định — hai nơi tự kiểm riêng là chỗ để chúng lệch nhau.
  */
 function veThanhHanhDong() {
@@ -8082,100 +8120,76 @@ function veThanhHanhDong() {
   if (nut) nut.disabled = chanLai;
   const chu = document.getElementById('do-fab-go-text');
   if (chu) {
-    chu.textContent = chanLai ? 'Chưa tạo được Trip'
-      : `Tạo Trip từ ${dsChon.length} DO`;
+    // Nút không tự tạo Trip nữa mà mở form cấu hình, nên chữ phải nói đúng
+    // việc nó làm — người dùng bấm "Tạo Trip" mà ra một form thì thấy lạ.
+    chu.textContent = chanLai ? 'Chưa lập Trip được'
+      : `Cấu hình & tạo Trip từ ${dsChon.length} DO`;
   }
   return { dsChon, chanLai, lyDo };
 }
 window.veThanhHanhDong = veThanhHanhDong;
 
-/** Gửi lệnh tạo Trip từ các DO đang chọn. */
-window.taoTripTuDO = async function () {
+/* ==========================================================================
+   MỘT đường tạo Trip duy nhất.
+
+   Trước đây màn này tự gửi lên `POST /api/tms/trips/from-delivery-orders`,
+   nhưng chỉ gửi 5 trong 11 trường mà endpoint nhận. Hộp thoại "Tạo Trip vận
+   chuyển từ DO/FO" ở màn Giao hàng & vận chuyển gọi CÙNG endpoint đó với đủ
+   11 trường. Hai đường song song sinh ra đúng hai chỗ lệch có hậu quả thật:
+
+     · `dwell_minutes` không gửi nên backend lấy 0 phút — ETA từng chặng BỎ
+       LUÔN thời gian bốc dỡ, còn hộp thoại gửi 30 phút. Cùng một tuyến, hai
+       đường ra hai ETA khác nhau.
+     · `return_purpose` không gửi nên luôn là "none" — mọi Trip tạo từ đây
+       đều tự sinh việc cho tab "Thiếu kế hoạch về".
+
+   Nay thanh này chỉ làm việc nó giỏi: chọn DO và kiểm TRƯỚC năm chốt của
+   backend, nói rõ lý do chặn ngay khi tick. Việc tạo Trip giao cho hộp thoại
+   — nơi có đủ trường. Bỏ đường thứ hai thì hai chỗ lệch tự hết.
+   ========================================================================== */
+
+window.moHopThoaiTaoTrip = function () {
+  // Hỏi lại chính hàm đã quyết định chặn/không chặn, thay vì kiểm song song
+  // một lần nữa ở đây — hai phép kiểm là chỗ để nút bảo "được" mà lệnh gửi
+  // lên bị từ chối.
   const { dsChon, chanLai, lyDo } = veThanhHanhDong();
   if (!dsChon.length) {
-    showToast('⚠️ Hãy tick ít nhất một lệnh giao hàng.');
+    showToast('⚠️ Chưa chọn DO nào để lập Trip.');
     return;
   }
   if (chanLai) {
-    showToast('⚠️ ' + lyDo);
+    showToast('⚠️ ' + (lyDo || 'Chưa lập Trip được từ các DO đang chọn.'));
     return;
   }
-  const gioDi = document.getElementById('trip-departure-at')?.value || '';
-  if (!gioDi) {
-    showToast('⚠️ Chưa nhập giờ xuất bến. Máy chủ cần mốc này để tính ETA từng chặng.');
-    return;
-  }
-  const tocDo = Number(document.getElementById('trip-avg-speed')?.value || 0);
-  if (!Number.isFinite(tocDo) || tocDo <= 0) {
-    showToast('⚠️ Tốc độ kế hoạch phải lớn hơn 0.');
+  if (typeof openTripReturnAction !== 'function') {
+    showToast('⚠️ Chưa nạp được form tạo Trip. Hãy tải lại trang.');
     return;
   }
 
-  // Mã Trip do giao diện đặt: backend nhận `id` và dùng nó làm khóa
-  // idempotency — gửi lại cùng mã với cùng danh sách DO thì không tạo bản thứ
-  // hai (xem TRIP_IDEMPOTENCY_CONFLICT).
-  const maTrip = `TRIP-${gioDi.slice(0, 10).split('-').join('')}-${Date.now().toString().slice(-5)}`;
-  const than = {
-    id: maTrip,
-    do_ids: dsChon.map(d => String(d.id)),
-    trip_type: document.getElementById('trip-type')?.value || 'one_way',
-    planned_departure_at: new Date(gioDi).toISOString(),
-    avg_speed_kmh: tocDo,
-  };
-
-  const nut = document.getElementById('do-fab-go');
-  if (nut) nut.disabled = true;
-  const viec = `Tạo Trip từ ${dsChon.length} lệnh giao hàng`;
-  let res;
-  try {
-    res = await fetch(`${API_BASE}/api/tms/trips/from-delivery-orders`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': maTrip },
-      body: JSON.stringify(than),
-    });
-  } catch (e) {
-    if (nut) nut.disabled = false;
-    return baoMatKetNoi(viec, e);
-  }
-  if (!res.ok) {
-    if (nut) nut.disabled = false;
-    // `baoLoiMayChu` đọc đúng ba lớp phong bì lỗi nên lời của backend đến
-    // được người dùng, thay vì một câu "Lỗi khi tạo Trip" chung chung.
-    return baoLoiMayChu(res, viec);
-  }
-  showToast(`🚚 Đã tạo ${maTrip} với ${dsChon.length} DO. Bước tiếp: điều xe ở màn Điều phối.`);
-  doDaChon.clear();
-  if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
+  // Sang màn Giao hàng & vận chuyển rồi mở form, vì hộp thoại đọc dữ liệu
+  // Trip của màn đó. Mở khi màn chưa nạp thì ô chọn DO rỗng.
+  const dsMa = dsChon.map(d => String(d.id));
+  switchView('delivery-shipment');
+  setTimeout(() => {
+    openTripReturnAction('create-trip', dsMa);
+  }, 260);
 };
 
-/** Mặc định giờ xuất bến và tốc độ, để người dùng không phải gõ từ đầu. */
-function datMacDinhKeHoachTrip() {
-  const oGio = document.getElementById('trip-departure-at');
-  if (oGio && !oGio.value) {
-    // Sáng mai 07:00 — giờ xuất bến thường gặp, và luôn ở tương lai nên
-    // không bị backend từ chối vì mốc quá khứ.
-    const mai = new Date();
-    mai.setDate(mai.getDate() + 1);
-    mai.setHours(7, 0, 0, 0);
-    const p = n => String(n).padStart(2, '0');
-    oGio.value = `${mai.getFullYear()}-${p(mai.getMonth() + 1)}-${p(mai.getDate())}`
-      + `T${p(mai.getHours())}:${p(mai.getMinutes())}`;
+/**
+ * Ô chọn DO của hộp thoại cho chọn NHIỀU, nên phải gom lại vào ô ẩn
+ * `trip-return-do-ids` — chỗ mà `submitTripReturnActionForm` đọc bằng
+ * `split(",")`. Tầng gửi vốn đã nhận nhiều DO; chỉ có ô chọn là đơn.
+ */
+window.capNhatDSDOChonTrongHopThoai = function () {
+  const sel = document.getElementById('trip-return-do-select');
+  if (!sel) return;
+  const ds = [...sel.selectedOptions].map(o => o.value).filter(Boolean);
+  const oAn = document.getElementById('trip-return-do-ids');
+  if (oAn) oAn.value = ds.join(',');
+  if (typeof hydrateTripReturnRoutePreview === 'function') {
+    hydrateTripReturnRoutePreview();
   }
-  const oTocDo = document.getElementById('trip-avg-speed');
-  if (oTocDo && !oTocDo.dataset.daDat) {
-    // Lấy tốc độ kế hoạch trung bình của các LOẠI xe đang có, thay vì một con
-    // số viết cứng. Không có dữ liệu thì giữ nguyên giá trị trong HTML.
-    const ds = (vehTypes || [])
-      .map(vt => Number(vt.avg_speed_kmh || 0))
-      .filter(x => x > 0);
-    if (ds.length) {
-      oTocDo.value = String(Math.round(ds.reduce((a, b) => a + b, 0) / ds.length));
-    }
-    oTocDo.dataset.daDat = '1';
-    oTocDo.addEventListener('input', veThanhHanhDong);
-  }
-}
-window.datMacDinhKeHoachTrip = datMacDinhKeHoachTrip;
+};
 
 /**
  * Vẽ ba con chip nhóm, nhãn ô chọn tình trạng, và dòng chân bảng.
@@ -8437,7 +8451,6 @@ function renderDeliveryOrders(data) {
 
   veChipVaChanTrang(list.length);
   veThanhHanhDong();
-  datMacDinhKeHoachTrip();
 }
 
 window.deleteFioriDO = async function (id) {

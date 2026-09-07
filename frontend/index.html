@@ -2495,6 +2495,30 @@
             .cl-dong > b {
               font-size: .84rem; color: #0f172a; font-weight: 700; white-space: nowrap;
             }
+            /* ---- Ô chọn nhiều DO trong hộp thoại tạo Trip ---- */
+            /* `fiori-input` có padding của một input MỘT dòng; áp lên
+               `<select multiple>` thì mỗi lựa chọn bị đẩy cao và danh sách
+               trông thưa thớt, rời rạc. Ô chọn nhiều cần luật riêng. */
+            .tr-do-multi {
+              width: 100%; margin-top: 5px; padding: 4px;
+              border: 1px solid #cbd5e1; border-radius: 8px;
+              background: #ffffff; color: #0f172a;
+              font-family: inherit; font-size: .82rem; line-height: 1.4;
+            }
+            .tr-do-multi:focus {
+              outline: 2px solid #bfdbfe; outline-offset: 0; border-color: #0a6ed1;
+            }
+            .tr-do-multi option {
+              padding: 5px 8px; border-radius: 6px;
+            }
+            .tr-do-multi option:checked {
+              background: #0a6ed1 linear-gradient(0deg, #0a6ed1 0%, #0a6ed1 100%);
+              color: #ffffff; font-weight: 600;
+            }
+            .tr-do-huong-dan {
+              display: block; margin-top: 5px;
+              font-size: .72rem; color: #64748b; line-height: 1.5;
+            }
   </style>
   <style>
     .vehicle-dialog-shell {
@@ -4015,6 +4039,12 @@
               flex-wrap: wrap;
             }
             .do-bar-right select { height: 36px; min-width: 190px; }
+            .do-bar-speed {
+              display: flex; align-items: center; gap: 7px;
+              font-size: .76rem; font-weight: 600; color: #475569;
+              white-space: nowrap;
+            }
+            .do-bar-speed input { width: 74px; height: 36px; }
             .do-chip-dot {
               width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
             }
@@ -4655,7 +4685,8 @@
                     </div>
                     <div>
                       <label style="font-size:.78rem; font-weight:900; color:#475569;" data-i18n="lbl_select_do_fo">Chọn DO/FO để lấy tuyến</label>
-                      <select id="trip-return-do-select" class="fiori-input" onchange="hydrateTripReturnRoutePreview()" style="width:100%; margin-top:5px;"></select>
+                      <select id="trip-return-do-select" class="tr-do-multi" multiple size="6" onchange="capNhatDSDOChonTrongHopThoai()" title="Giữ Ctrl (hoặc Shift) để chọn nhiều DO — các DO phải CÙNG một tuyến"></select>
+                      <small class="tr-do-huong-dan">Giữ <b>Ctrl</b> để chọn nhiều DO. Một Trip chỉ chở được các DO <b>cùng một tuyến</b>.</small>
                       <input type="hidden" id="trip-return-do-ids">
                     </div>
                     <div>
@@ -4887,6 +4918,18 @@
                     </h3>
                     <div class="do-plan-sub" data-i18n="desc_route_reference">Chặng đã cấu hình trong Dữ liệu gốc. Bấm vào một tuyến để xem từng chặng.</div>
                   </div>
+                  <!--
+                    Toc do ke hoach la tham so cua CA MAN, khong phai cua rieng viec
+                    tao Trip: bang "Tuyen tham chieu" doc chinh o nay de tinh thoi
+                    gian chay du kien. Nen khi bo nut tao Trip khoi thanh noi thi o
+                    nay doi len day, chu khong bo theo — bo la mat luon cot thoi gian.
+                  -->
+                  <label class="do-bar-speed">
+                    <span data-i18n="lbl_avg_speed">Toc do (km/h)</span>
+                    <input type="number" id="trip-avg-speed" class="fiori-input"
+                           min="1" max="120" step="1" value="45"
+                           title="Dung de tinh thoi gian chay du kien o bang Tuyen tham chieu">
+                  </label>
                   <div class="do-plan-search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" id="route-reference-search" class="fiori-input" placeholder="Tìm tuyến, điểm đi/đến, mã tuyến..." data-i18n-attr="placeholder" data-i18n="ph_route_search" oninput="filterRouteReference()">
@@ -7845,7 +7888,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260907n-ho-so-day-du"></script>
+  <script src="/static/js/app.js?v=20260908a-mot-duong-tao-trip"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.
@@ -7876,27 +7919,19 @@
       <span id="do-fab-warn" class="do-fab-warn" hidden></span>
     </div>
 
-    <div class="do-fab-fields">
-      <label>
-        <span data-i18n="lbl_departure_time">Giờ xuất bến</span>
-        <input type="datetime-local" id="trip-departure-at">
-      </label>
-      <label>
-        <span data-i18n="lbl_avg_speed">Tốc độ (km/h)</span>
-        <input type="number" id="trip-avg-speed" min="1" max="120" step="1" value="45">
-      </label>
-      <label>
-        <span data-i18n="lbl_trip_type">Loại chuyến</span>
-        <select id="trip-type">
-          <option value="one_way" data-i18n="opt_one_way">Một chiều</option>
-          <option value="multi_stop" data-i18n="opt_multi_stop">Nhiều điểm giao</option>
-        </select>
-      </label>
-    </div>
-
     <button type="button" class="do-fab-ghost" onclick="boChonTatCaDO()" data-i18n="btn_clear_pick">Bỏ chọn</button>
-    <button type="button" class="do-fab-go" id="do-fab-go" onclick="taoTripTuDO()">
-      <span id="do-fab-go-text">Tạo Trip</span> <i class="fa-solid fa-arrow-right"></i>
+    <!--
+      MỘT đường tạo Trip duy nhất. Thanh này chỉ chọn DO và kiểm trước
+      năm chốt của backend; việc tạo Trip giao cho hộp thoại "Tạo Trip vận
+      chuyển từ DO/FO", nơi có đủ 11 trường mà endpoint nhận — kể cả thời
+      gian bốc dỡ mỗi chặng và kế hoạch chặng về.
+
+      Trước đây thanh này tự gửi lên endpoint nhưng chỉ 5 trong 11 trường,
+      nên cùng một tuyến mà hai đường ra hai ETA khác nhau, và mọi Trip tạo
+      từ đây đều thiếu kế hoạch chặng về.
+    -->
+    <button type="button" class="do-fab-go" id="do-fab-go" onclick="moHopThoaiTaoTrip()">
+      <span id="do-fab-go-text">Cấu hình &amp; tạo Trip</span> <i class="fa-solid fa-arrow-right"></i>
     </button>
   </div>
 

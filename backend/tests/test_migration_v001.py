@@ -439,7 +439,19 @@ def test_rollback_guard_detects_valuable_added_column_values(tmp_path, sql):
 
 
 def test_upgrade_migrates_copy_of_actual_legacy_database(tmp_path):
+    """Nang cap tren ban SQLite CU that, khong phai schema do bai kiem tu dung.
+
+    Tep nay nam trong .gitignore va git khong theo doi, nen may nao khong co
+    no thi bo qua co ly do — do o day chi nghia la "may nay thieu du lieu cu",
+    khong phai phep nang cap sai.
+
+    Che do chay SQLite co CHU Y tro sang `epl_sqlite_lam_viec.db` chu khong
+    phai tep nay: chay che do do mot lan la tep bi nang len schema moi, va bai
+    kiem mat luon du lieu cu de kiem.
+    """
     source = Path(__file__).resolve().parents[1] / "app" / "epl_logistics.db"
+    if not source.exists():
+        pytest.skip("khong co ban SQLite cu %s (tep nay khong nam trong git)" % source)
     copy = tmp_path / "actual-copy.sqlite3"
     shutil.copy2(source, copy)
     assert upgrade(str(copy)) == EXPECTED_MIGRATIONS
