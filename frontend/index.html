@@ -16,6 +16,27 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
+    /* ------------------------------------------------------------------
+       Thuộc tính `hidden` phải luôn thắng.
+
+       `[hidden] { display: none }` là luật của TRÌNH DUYỆT, nên bất kỳ
+       luật `display:` nào của trang cũng đè lên nó — luật của tác giả ưu
+       tiên hơn luật của trình duyệt. Hệ quả: một khối vừa có
+       `.lớp { display: flex }` vừa được bật/tắt bằng `el.hidden` thì
+       KHÔNG BAO GIỜ ẩn đi được, nó hiện mãi.
+
+       Dự án đã vấp lỗi này bảy lần, và lần nào cũng chỉ vá cho luật của
+       mình: `.dispatch-step-modal[hidden]`, `.driver-shift-pane[hidden]`,
+       `.dispatch-week-pane[hidden]`... Một phép đo tìm ra 9 chỗ vẫn còn
+       hỏng, trong đó có thanh hành động của màn lập kế hoạch — nó hiện
+       trên cả màn Tổng quan, ghi "0 DO Đã Chọn".
+
+       Nên đây là luật CHUNG, để chỗ thứ mười không phải vá nữa. Đã đối
+       chiếu cả bảy luật `[hidden]` sẵn có: cả bảy đều `display: none`,
+       không chỗ nào cố ý HIỆN một phần tử đang `hidden`.
+       ------------------------------------------------------------------ */
+    [hidden] { display: none !important; }
+
     .dispatch-cockpit-surface {
       background: #eef4f8 !important;
       padding: 0 16px 16px 104px !important;
@@ -7607,7 +7628,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260907h-do-planning-v3"></script>
+  <script src="/static/js/app.js?v=20260907i-hidden-thang"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
   <!--
     Thanh hành động nổi của màn lập kế hoạch giao hàng.

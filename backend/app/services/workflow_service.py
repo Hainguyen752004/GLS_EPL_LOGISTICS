@@ -862,6 +862,24 @@ def update_delivery_status(db, do_id, status, user="system"):
     }
     if status not in allowed.get(do.canonical_status, set()):
         raise conflict("INVALID_TRANSITION", f"Không thể chuyển từ {do.status} sang {status}.")
+    if status == "in_transit" and not (do.vehicle_id and do.driver_id):
+        # Không có xe thì "đang vận chuyển" là một câu nói dối, và nó kéo
+        # theo ba hệ quả: DO biến mất khỏi bản đồ điều độ, vì không có bản
+        # ghi vehicle_tracking nên /api/tracking/{id} trả 404; DO kẹt mãi ở
+        # in_transit, vì hoàn tất giao đòi một Trip có chặng giao mà DO đi
+        # đường tắt này thì không có Trip nào; và xe lẫn tài xế không bị
+        # đánh dấu đang chạy nên vẫn điều được cho DO khác — cùng một chiếc
+        # xe nhận hai lệnh. Mọi đường điều phối đúng đều gán xe, tạo sẵn bản
+        # ghi GPS và gắn DO vào một Trip,
+        # nên chốt này không đóng đường nào đang dùng — nó đóng đường tắt
+        # đã sinh ra dữ liệu tự mâu thuẫn.
+        raise conflict(
+            "NOT_DISPATCHED",
+            "Lệnh giao hàng chưa được điều phối xe và tài xế nên không thể chuyển sang đang vận chuyển."
+            " Hãy điều phối ở màn Điều phối để hệ thống gán xe, đánh dấu tài xế đang chạy"
+            " và mở theo dõi GPS cho chuyến.",
+            ["dispatch"],
+        )
     if status == "cancelled":
         active_trip = db.query(TransportTrip.id).join(
             TripDeliveryOrder,

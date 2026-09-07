@@ -873,6 +873,14 @@ window.switchView = function (targetView, scrollToId) {
     setTimeout(() => translateAllDOMTexts(currentLang), 80);
   }
 
+  // Thanh hành động của màn lập kế hoạch là `position: fixed`, không nằm
+  // trong khung màn nào. Tick DO rồi rời màn đó thì nó vẫn nổi trên màn
+  // mới, mang theo nút "Tạo Trip" của màn cũ. Nên bỏ chọn khi rời màn.
+  if (targetView !== 'ops-planning' && typeof boChonTatCaDO === 'function'
+    && typeof doDaChon !== 'undefined' && doDaChon.size) {
+    boChonTatCaDO();
+  }
+
   if (targetView === 'crm-sales') {
     if (typeof loadQuotations === 'function') loadQuotations();
     if (typeof loadSalesOrders === 'function') loadSalesOrders();
