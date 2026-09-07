@@ -80,13 +80,35 @@ def test_di_het_vong_nghiep_vu_qua_duong_api(app_client):
     theo_trang_thai = {}
     for item in don:
         theo_trang_thai.setdefault(item.get("canonical_status"), []).append(item["id"])
-    # Ba trang thai nay la ba mat khac nhau cua luong, va moi mat mo mot man
-    # khac: cho van chuyen (dieu phoi), dang van chuyen (theo doi), da hoan tat
-    # (quyet toan). Thieu mot mat thi mot man khong co gi de xem.
-    for trang_thai in ("pending", "in_transit", "delivered"):
+    # Bon trang thai nay la bon mat khac nhau cua luong, va moi mat mo mot man
+    # khac: cho van chuyen (dieu phoi), dang van chuyen (theo doi), DA DEN NOI
+    # (cho POD), da hoan tat (quyet toan). Thieu mot mat thi mot man khong co gi
+    # de xem.
+    #
+    # `arrived` la mat quan trong nhat trong so nay ma lai de bi bo sot: no la
+    # trang thai quyet dinh cua quy tac quyet toan — dang van chuyen thi CAM sua
+    # tien, den noi va ky POD roi moi chot duoc gia cuoi.
+    for trang_thai in ("pending", "in_transit", "arrived", "delivered"):
         assert theo_trang_thai.get(trang_thai), (
             f"khong co lenh giao hang nao o trang thai {trang_thai}: "
             f"{sorted(theo_trang_thai)}")
+
+    # Va cac don phai trai tren NHIEU TUYEN va NHIEU KHACH. Don nao cung mot
+    # tuyen thi bo loc tuyen chi co mot lua chon that — nhin nhu bo loc hong,
+    # trong khi no dang noi that.
+    tuyen = {item.get("route_id") for item in don if item.get("route_id")}
+    khach = {item.get("customer_id") for item in don if item.get("customer_id")}
+    assert len(tuyen) >= 3, f"cac don chi di {len(tuyen)} tuyen: {tuyen}"
+    assert len(khach) >= 2, f"cac don chi cua {len(khach)} khach: {khach}"
+
+    # Nhan tieng Viet phai noi DUNG trang thai. Truoc day ham dung DO chi co hai
+    # nhanh nhan, nen mot don `arrived` hien la "Cho van chuyen" — nguoc han su
+    # that, va nguoi dieu phoi se tuong xe chua di.
+    nhan = {item["id"]: item.get("status") for item in don}
+    for item in don:
+        if item.get("canonical_status") == "arrived":
+            assert nhan[item["id"]] == "Đã đến nơi", (
+                f"{item['id']} da den noi ma nhan ghi {nhan[item['id']]!r}")
 
     # --- 3. Packing List phai o `loaded`.
     #

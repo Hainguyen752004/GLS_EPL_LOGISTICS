@@ -80,6 +80,23 @@ DEMO_SCENARIOS = {
         "trip_id": "DEMO-TRIP-2026-003",
         "leg_id": "DEMO-LEG-2026-003",
     },
+    # Xe DA DEN NOI nhung CHUA co POD. Day la trang thai quyet dinh cua quy
+    # tac quyet toan: dang van chuyen thi CAM sua tien, den noi va ky POD roi
+    # moi chot duoc gia cuoi. Khong co tinh huong nay thi man Hoan tat giao
+    # hang khong the hien duoc cho chan do.
+    "arrived": {
+        "quotation_id": "DEMO-QT-2026-004",
+        "sales_order_id": "DEMO-SO-2026-004",
+        "delivery_order_id": "DEMO-DO-2026-004",
+    },
+    # Mot don CHO VAN CHUYEN tren TUYEN KHAC, KHACH KHAC va LOAI XE KHAC.
+    # Ba tinh huong dau deu di chung mot tuyen, nen bo loc tuyen, bo loc loai
+    # xe va bo loc khach o cac man deu chi co mot lua chon that.
+    "second_route": {
+        "quotation_id": "DEMO-QT-2026-005",
+        "sales_order_id": "DEMO-SO-2026-005",
+        "delivery_order_id": "DEMO-DO-2026-005",
+    },
 }
 
 DEMO_FINANCE_ROLE_ID = "DEMO-TMS-FINANCE"
@@ -351,61 +368,86 @@ def _merge_master_data(db):
     db.flush()
 
 
-def _seed_sales_chain(db, key, pickup, delivery, price):
+def _seed_sales_chain(db, key, pickup, delivery, price, tuyen=None,
+                      khach=None, di=None, den=None, kg=8500, pallet=18, m3=24):
+    """Bao gia cuoc -> don hang van chuyen -> dong hang cua don.
+
+    Tuyen, khach va hai diem CO MAC DINH dung bang gia tri truoc day khoa cung,
+    nen ba loi goi cu khong doi mot chu nao — va cac bai kiem dang doi chieu so
+    tien cua chung van dung y nguyen.
+    """
+    tuyen = tuyen or ROUTE_ID
+    khach = khach or CUSTOMER_ID
+    di = di or ORIGIN
+    den = den or DESTINATION
     ids = _scenario_ids(key)
     db.add(Quotation(
         id=ids["quotation_id"], canonical_status="approved",
-        customer_id=CUSTOMER_ID, route_id=ROUTE_ID, origin=ORIGIN, destination=DESTINATION,
+        customer_id=khach, route_id=tuyen, origin=di, destination=den,
         pickup_window_start=pickup.isoformat(),
         pickup_window_end=(pickup + dt.timedelta(hours=1)).isoformat(),
         delivery_window_start=delivery.isoformat(),
         delivery_window_end=(delivery + dt.timedelta(hours=1)).isoformat(),
-        weight_kg=8500, pallet_count=18, cargo_type="Hàng tiêu dùng đóng pallet",
+        weight_kg=kg, pallet_count=pallet, cargo_type="Hàng tiêu dùng đóng pallet",
         valid_to="2026-09-30", fuel_cost=1162200, driver_cost=650000,
         toll_fee=320000, total_cost=2132200, selling_price=price,
-        packaging_spec="Pallet quấn màng PE", volume_m3=24, status="Đã duyệt",
+        packaging_spec="Pallet quấn màng PE", volume_m3=m3, status="Đã duyệt",
         created_by="demo-seed", updated_by="demo-seed",
     ))
     db.flush()
     db.add(SalesOrder(
         id=ids["sales_order_id"], quotation_id=ids["quotation_id"],
-        canonical_status="confirmed", customer_id=CUSTOMER_ID, route_id=ROUTE_ID,
-        origin=ORIGIN, destination=DESTINATION,
+        canonical_status="confirmed", customer_id=khach, route_id=tuyen,
+        origin=di, destination=den,
         pickup_window_start=pickup.isoformat(),
         pickup_window_end=(pickup + dt.timedelta(hours=1)).isoformat(),
         delivery_window_start=delivery.isoformat(),
         delivery_window_end=(delivery + dt.timedelta(hours=1)).isoformat(),
-        weight_kg=8500, pallet_count=18, status="Đã xác nhận", total_amount=_money(price),
+        weight_kg=kg, pallet_count=pallet, status="Đã xác nhận", total_amount=_money(price),
         currency_code="VND", exchange_rate_snapshot=_money(1), tax_rate_snapshot=_money(0),
         order_date="2026-08-22", delivery_date=delivery.date().isoformat(),
         payment_terms="30 ngày", sales_rep="Demo Sales",
-        packaging_spec="Pallet quấn màng PE", volume_m3=24,
+        packaging_spec="Pallet quấn màng PE", volume_m3=m3,
         created_by="demo-seed", updated_by="demo-seed",
     ))
     db.flush()
     db.add(DeliveryOrderDetail(
         so_id=ids["sales_order_id"], sku="DEMO-FMCG-PALLET",
-        description="18 pallet hàng tiêu dùng, nguyên niêm phong", qty=18,
-        uom="PALLET", unit_price=price / 18, amount=price, weight_kg=8500,
+        description="%d pallet hàng tiêu dùng, nguyên niêm phong" % pallet, qty=pallet,
+        uom="PALLET", unit_price=price / pallet, amount=price, weight_kg=kg,
     ))
 
 
-def _seed_delivery_order(db, key, pickup, delivery, status="pending", vehicle_id=None, driver_id=None):
+def _seed_delivery_order(db, key, pickup, delivery, status="pending",
+                         vehicle_id=None, driver_id=None, tuyen=None, khach=None,
+                         di=None, den=None, kg=8500, pallet=18, m3=24, km_ve=44.7):
+    tuyen = tuyen or ROUTE_ID
+    khach = khach or CUSTOMER_ID
+    di = di or ORIGIN
+    den = den or DESTINATION
     ids = _scenario_ids(key)
     db.add(DeliveryOrder(
         id=ids["delivery_order_id"], canonical_status=status,
-        so_id=ids["sales_order_id"], customer_id=CUSTOMER_ID, route_id=ROUTE_ID,
-        origin=ORIGIN, destination=DESTINATION,
+        so_id=ids["sales_order_id"], customer_id=khach, route_id=tuyen,
+        origin=di, destination=den,
         pickup_window_start=pickup, pickup_window_end=pickup + dt.timedelta(hours=1),
         delivery_window_start=delivery, delivery_window_end=delivery + dt.timedelta(hours=1),
-        weight_kg=8500, pallet_count=18, vehicle_id=vehicle_id, driver_id=driver_id,
-        status="Đang vận chuyển" if status == "in_transit" else "Chờ vận chuyển",
+        weight_kg=kg, pallet_count=pallet, vehicle_id=vehicle_id, driver_id=driver_id,
+        # Nhan tieng Viet phai noi dung TUNG trang thai. Truoc day chi co hai
+        # nhanh, nen mot DO `arrived` se hien la "Cho van chuyen" — nguoc han
+        # su that, va nguoi dieu phoi se tuong xe chua di.
+        status={
+            "in_transit": "Đang vận chuyển",
+            "arrived": "Đã đến nơi",
+            "delivered": "Đã hoàn tất",
+            "cancelled": "Đã hủy",
+        }.get(status, "Chờ vận chuyển"),
         pickup_date=pickup, delivery_date=delivery,
         planned_departure_at=pickup, planned_arrival_at=delivery,
         planned_return_at=delivery + dt.timedelta(hours=2), avg_speed_kmh=45,
         max_speed_kmh=80, return_speed_kmh=45, load_minutes=30,
-        unload_minutes=45, return_distance_km=44.7,
-        packaging_spec="Pallet quấn màng PE", volume_m3=24,
+        unload_minutes=45, return_distance_km=km_ve,
+        packaging_spec="Pallet quấn màng PE", volume_m3=m3,
         created_by="demo-seed", updated_by="demo-seed",
     ))
     db.flush()
@@ -597,6 +639,16 @@ def _verify(db):
     assert waiting and waiting.canonical_status == "pending"
     assert tracking and tracking.canonical_status == "in_transit"
     assert completed and completed.canonical_status == "delivered"
+    # Hai tinh huong moi: kiem CA trang thai lan tuyen. Chi kiem trang thai thi
+    # mot loi truyen sai tuyen se lot, va bo loc tuyen lai chi co mot lua chon.
+    den_noi = db.get(DeliveryOrder, _scenario_ids("arrived")["delivery_order_id"])
+    assert den_noi and den_noi.canonical_status == "arrived"
+    assert den_noi.route_id == "DEMO-RT-SONGTHAN-CATLAI"
+    tuyen_hai = db.get(DeliveryOrder, _scenario_ids("second_route")["delivery_order_id"])
+    assert tuyen_hai and tuyen_hai.canonical_status == "pending"
+    assert tuyen_hai.route_id == "DEMO-RT-LONGAN-CAIMEP"
+    assert tuyen_hai.customer_id == "DEMO-CUS-NIDEC"
+
     closeout = db.query(DeliveryOrderCloseout).filter_by(do_id=completed.id).one()
     assert closeout.final_selling_price == _money(4670000)
     assert db.query(EPLExpenseVoucher).filter_by(trip_id="DEMO-TRIP-2026-003").one()
@@ -649,6 +701,45 @@ def seed_demo(db, reset=False, verify=False):
         _seed_trip(db, "completed", completed_pickup, completed_delivery, "DEMO-61H-112.34")
         _complete_demo_delivery(db)
         _seed_actual_cost(db)
+
+        # TINH HUONG 4 — xe DA DEN NOI, chua co POD.
+        #
+        # Day la trang thai quyet dinh cua quy tac quyet toan: dang van chuyen
+        # thi CAM sua tien, den noi va ky POD roi moi chot duoc gia cuoi. Ba
+        # tinh huong dau khong co trang thai nay, nen man Hoan tat giao hang
+        # khong the hien duoc cho chan do.
+        den_noi_pickup = _utc(2026, 8, 23, 1)
+        den_noi_delivery = _utc(2026, 8, 23, 6)
+        _seed_sales_chain(
+            db, "arrived", den_noi_pickup, den_noi_delivery, 4350000,
+            tuyen="DEMO-RT-SONGTHAN-CATLAI", di="Bãi Sóng Thần",
+            den=DESTINATION, kg=12000, pallet=20, m3=28,
+        )
+        _seed_delivery_order(
+            db, "arrived", den_noi_pickup, den_noi_delivery, "arrived",
+            "DEMO-51C-412.09", "DEMO-DRV-004",
+            tuyen="DEMO-RT-SONGTHAN-CATLAI", di="Bãi Sóng Thần",
+            den=DESTINATION, kg=12000, pallet=20, m3=28, km_ve=31.2,
+        )
+
+        # TINH HUONG 5 — cho van chuyen, TUYEN KHAC va KHACH KHAC.
+        #
+        # Ba tinh huong dau deu di chung mot tuyen va mot khach, nen bo loc
+        # tuyen va bo loc khach o cac man deu chi co mot lua chon that — nhin
+        # nhu bo loc hong, trong khi no dang noi that.
+        tuyen_hai_pickup = _utc(2026, 8, 25, 0)
+        tuyen_hai_delivery = _utc(2026, 8, 25, 5)
+        _seed_sales_chain(
+            db, "second_route", tuyen_hai_pickup, tuyen_hai_delivery, 7900000,
+            tuyen="DEMO-RT-LONGAN-CAIMEP", khach="DEMO-CUS-NIDEC",
+            di="Kho Long An", den="Cảng Cái Mép", kg=14200, pallet=24, m3=42,
+        )
+        _seed_delivery_order(
+            db, "second_route", tuyen_hai_pickup, tuyen_hai_delivery,
+            tuyen="DEMO-RT-LONGAN-CAIMEP", khach="DEMO-CUS-NIDEC",
+            di="Kho Long An", den="Cảng Cái Mép", kg=14200, pallet=24, m3=42,
+            km_ve=112.0,
+        )
         # Lop VAN HANH: ca truc, bao duong, Packing List — neo theo TUAN HIEN TAI.
         #
         # Chuoi nghiep vu tren neo vao ngay co dinh (thang 8/2026) de bai kiem

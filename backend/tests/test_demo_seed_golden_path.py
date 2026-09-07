@@ -108,6 +108,12 @@ def test_demo_seed_reset_removes_only_seeded_workflow_records(app_client):
         seed_service.seed_demo(db, reset=True, verify=True)
 
         assert db.get(models.Customer, "USER-CUSTOMER") is not None
+        # Ý của phép kiểm này là "nạp lại KHÔNG nhân đôi", nên số phải buộc vào
+        # bảng khai tình huống chứ không phải một con số cứng. Trước đây nó ghi
+        # thẳng 3, nên thêm một tình huống mới là bài đỏ ngay — mà đỏ vì lý do
+        # chẳng liên quan gì tới điều nó muốn giữ.
+        mong = len(seed_service.DEMO_SCENARIOS)
+        assert mong >= 3, "bảng khai tình huống bị hụt"
         assert db.query(models.DeliveryOrder).filter(
             models.DeliveryOrder.id.like("DEMO-DO-2026-%")
-        ).count() == 3
+        ).count() == mong
