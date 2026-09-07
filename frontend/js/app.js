@@ -7761,6 +7761,374 @@ window.huyLenhGiaoHang = async function (id) {
   if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
 };
 
+/* ==========================================================================
+   Lập kế hoạch giao hàng: chọn DO → xem tuyến → tạo Trip, không rời màn.
+
+   Trước đây muốn lập một Trip thì phải rời màn này sang màn Điều phối rồi
+   chọn lại đúng những DO vừa xem — mà màn này thì hai phần ba dưới để trống.
+
+   Bốn chỗ bản thiết kế mẫu nói khác backend, ở đây làm theo BACKEND:
+
+     1. `create_trip_from_delivery_orders` có `if len(route_ids) != 1 or None
+        in route_ids: raise conflict("DELIVERY_ORDERS_INCOMPATIBLE")`. Tức các
+        DO khác tuyến thì KHÔNG TẠO ĐƯỢC, chứ không phải "đi vòng thêm km" như
+        mẫu ghi. Nên nút bị chặn hẳn kèm lý do thật.
+     2. Chỉ DO `pending` được lập Trip (`DELIVERY_ORDER_NOT_PENDING`), nên ô
+        tick của DO đang chạy / đã xong bị vô hiệu hóa.
+     3. `planned_departure_at` và `avg_speed_kmh` (> 0) là BẮT BUỘC. Thiếu là
+        422, nên phải có ô nhập chứ không đoán hộ.
+     4. Endpoint này KHÔNG nhận vehicle_id/driver_id — điều xe là bước riêng.
+        Nên ở đây không có ô chọn xe; nói rõ bước sau ở đâu.
+   ========================================================================== */
+
+/** Các DO đang được tick. Dùng Set để tick/bỏ tick không phải quét mảng. */
+const doDaChon = new Set();
+
+/**
+ * Số dòng tối đa vẽ ra một lần.
+ *
+ * Quy mô thật là hàng nghìn đơn. Dựng hết vào một lần `innerHTML` là đúng lỗi
+ * đã phải sửa ở màn lịch xe (500 xe → 1 MB HTML, 3.500 nút). Bảy con chip
+ * chính là bộ lọc, nên người dùng thu hẹp bằng chip hoặc ô tìm kiếm; con số
+ * còn lại được NÓI RA ở cuối bảng chứ không im lặng cắt bớt.
+ */
+const GIOI_HAN_DONG_DO = 100;
+
+/**
+ * Vẽ bảy con chip lọc và dòng chân bảng.
+ *
+ * Rổ rỗng vẫn hiện, chỉ mờ đi và viền nét đứt — ẩn đi thì người dùng không
+ * biết rổ đó tồn tại, cũng không biết nó đang bằng 0.
+ */
+function veChipVaChanTrang(soDongHien) {
+  const tong = (eplDeliveryOrders || []).length;
+  DELIVERY_ORDER_STAGES.forEach(stage => {
+    const chip = document.getElementById(`do-stage-${stage}`);
+    if (!chip) return;
+    const so = Number(document.getElementById(`do-count-${stage}`)?.textContent || 0);
+    chip.classList.toggle('active', stage === activeDOStage);
+    chip.classList.toggle('empty', so === 0 && stage !== activeDOStage);
+  });
+
+  // Một dòng gợi ý cho rổ ĐANG mở, thay vì bảy dòng cùng lúc như bản trước.
+  const oHint = document.getElementById('do-stage-hint');
+  if (oHint) {
+    const bucket = (window.DoBoard?.BUCKETS || [])
+      .find(b => b.key === activeDOStage);
+    oHint.textContent = bucket?.hint || '';
+  }
+
+  const oDem = document.getElementById('do-plan-count');
+  if (oDem) {
+    const hien = Math.min(soDongHien, GIOI_HAN_DONG_DO);
+    oDem.textContent = soDongHien
+      ? `Đang xem ${hien}${soDongHien > hien ? ` trên ${soDongHien}` : ''} DO`
+        + ` · tổng ${tong} DO`
+      : `Rổ này không có DO nào · tổng ${tong} DO`;
+  }
+  const oNote = document.getElementById('do-plan-note');
+  if (oNote) {
+    const soChon = doDaChon.size;
+    oNote.textContent = soChon
+      ? `${soChon} DO đã tick — xem bảng Trip bên phải`
+      : 'Tick ô vuông để gộp DO vào một Trip';
+  }
+
+  const oTabDO = document.getElementById('do-subtab-count-delivery');
+  if (oTabDO) oTabDO.textContent = String(tong);
+  const oTabRT = document.getElementById('do-subtab-count-routes');
+  if (oTabRT) oTabRT.textContent = String((eplRoutes || []).length);
+}
+window.veChipVaChanTrang = veChipVaChanTrang;
+
+/** Chỉ DO đang chờ vận chuyển mới lập Trip được — theo đúng luật backend. */
+function doLapTripDuoc(do_item) {
+  return String(do_item?.canonical_status || '').toLowerCase() === 'pending';
+}
+
+/**
+ * DO có đủ bốn mốc thời gian mà backend đòi hay chưa.
+ *
+ * `create_trip_from_delivery_orders` có:
+ *     if min(map(len, (pickup_starts, pickup_ends,
+ *                      delivery_starts, delivery_ends))) != len(orders):
+ *         raise DomainError("DELIVERY_TIME_WINDOW_REQUIRED", ...)
+ *
+ * Tức MỌI DO trong chuyến phải có CẢ BỐN mốc, không phải chỉ giờ giao. Kiểm
+ * ở đây để nói trước, thay vì để người dùng tick, bấm, rồi nhận 422 — đúng
+ * cái đã xảy ra khi tôi chạy thử luồng này lần đầu.
+ */
+function doDuKhungGio(do_item) {
+  return Boolean(do_item?.pickup_window_start && do_item?.pickup_window_end
+    && do_item?.delivery_window_start && do_item?.delivery_window_end);
+}
+
+/** Tra tuyến trong Master Data theo mã. */
+function tuyenTheoMa(routeId) {
+  if (!routeId) return null;
+  return (eplRoutes || []).find(r => String(r.id) === String(routeId)) || null;
+}
+
+/* Quãng đường và danh sách chặng của một tuyến dùng `routeSegments` và
+   `routeSegmentDistanceKm` đã có sẵn trong tệp này (xem gần cuối tệp).
+
+   Tôi đã viết hai hàm trùng lặp cho đúng việc đó rồi mới phát hiện chúng có
+   sẵn — và bản có sẵn cũng đã xử lý đúng cả bốn tên khóa mà `segments_json`
+   dùng trong dữ liệu thật (`distance_km`, `dist_km`, `distance`, `km`). Hai
+   nguồn cho cùng một phép đọc là chỗ để chúng trôi khỏi nhau, nên bỏ bản
+   của tôi. */
+/**
+ * Tuyến có lệch giữa `distance_km` và tổng các chặng hay không.
+ *
+ * Backend từ chối lập Trip khi hai con số này lệch quá 0,05 km
+ * (`ROUTE_DISTANCE_MISMATCH`). Trong cơ sở dữ liệu thật hiện có 2 trên 4
+ * tuyến bị lệch — kể cả tuyến demo chính. Nói ra ở đây để người dùng biết
+ * TRƯỚC khi tick DO và bấm, thay vì bấm rồi mới nhận 422.
+ */
+function lechQuangDuongTuyen(tuyen) {
+  if (!tuyen) return null;
+  const chang = routeSegments(tuyen);
+  if (!chang.length) return null;
+  const tongChang = chang.reduce((s, c) => s + routeSegmentDistanceKm(c), 0);
+  const khaiBao = Number(tuyen.distance_km || 0);
+  if (Math.abs(tongChang - khaiBao) < 0.05) return null;
+  return { khaiBao, tongChang };
+}
+
+window.tickDO = function (id, tick) {
+  if (tick) doDaChon.add(String(id));
+  else doDaChon.delete(String(id));
+  veBangTripDangLap();
+  // Tô dòng đang chọn mà không vẽ lại cả bảng.
+  const o = document.querySelector(`#fiori-do-tbody input[data-do-id="${CSS.escape(String(id))}"]`);
+  if (o) o.closest('tr')?.classList.toggle('picked', Boolean(tick));
+};
+
+window.tickTatCaDO = function (tick) {
+  document.querySelectorAll('#fiori-do-tbody input[data-do-id]').forEach(o => {
+    if (o.disabled) return;
+    o.checked = Boolean(tick);
+    const ma = String(o.dataset.doId);
+    if (tick) doDaChon.add(ma);
+    else doDaChon.delete(ma);
+    o.closest('tr')?.classList.toggle('picked', Boolean(tick));
+  });
+  veBangTripDangLap();
+};
+
+window.boChonDO = function (id) {
+  doDaChon.delete(String(id));
+  const o = document.querySelector(`#fiori-do-tbody input[data-do-id="${CSS.escape(String(id))}"]`);
+  if (o) {
+    o.checked = false;
+    o.closest('tr')?.classList.remove('picked');
+  }
+  veBangTripDangLap();
+};
+
+/** Vẽ bảng "Trip đang lập" theo các DO đang tick. */
+function veBangTripDangLap() {
+  const rong = document.getElementById('do-side-empty');
+  const day = document.getElementById('do-side-full');
+  if (!rong || !day) return;
+
+  const dsChon = (eplDeliveryOrders || []).filter(d => doDaChon.has(String(d.id)));
+  const dem = document.getElementById('do-side-count');
+  if (dem) dem.textContent = dsChon.length ? `${dsChon.length} DO đã chọn` : 'Chưa chọn DO';
+
+  rong.style.display = dsChon.length ? 'none' : '';
+  day.style.display = dsChon.length ? '' : 'none';
+  if (!dsChon.length) return;
+
+  // --- danh sách DO trong chuyến ---
+  const oList = document.getElementById('do-side-list');
+  if (oList) {
+    oList.innerHTML = dsChon.map(d => `
+      <div class="do-side-item">
+        <span class="ma">${escapeHtml(d.id)}</span>
+        <span class="noi">${escapeHtml(d.destination || d.route_id || '')}</span>
+        <button type="button" title="Bỏ khỏi chuyến"
+                onclick="boChonDO('${escapeJsAttr(d.id)}')">&times;</button>
+      </div>`).join('');
+  }
+
+  // --- luật CÙNG MỘT TUYẾN ---
+  const maTuyen = [...new Set(dsChon.map(d => d.route_id || ''))];
+  const thieuTuyen = maTuyen.includes('');
+  const nhieuTuyen = maTuyen.length > 1;
+  const thieuGio = dsChon.filter(d => !doDuKhungGio(d));
+  const tuyenChon = nhieuTuyen || thieuTuyen ? null : tuyenTheoMa(maTuyen[0]);
+  const lech = lechQuangDuongTuyen(tuyenChon);
+  const oChan = document.getElementById('do-side-block');
+  if (oChan) {
+    if (thieuGio.length) {
+      oChan.style.display = '';
+      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
+        + `${thieuGio.length} DO chưa đủ khung giờ lấy và giao hàng`
+        + ` (${thieuGio.slice(0, 3).map(d => escapeHtml(d.id)).join(', ')}`
+        + `${thieuGio.length > 3 ? '…' : ''}).`
+        + ' Máy chủ cần cả bốn mốc — bắt đầu/kết thúc của cả lấy và giao —'
+        + ' để tính ETA từng chặng. Mở DO rồi điền giờ trước.</span>';
+    } else if (lech) {
+      oChan.style.display = '';
+      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
+        + `Tuyến ${escapeHtml(tuyenChon.id)} khai quãng đường`
+        + ` ${lech.khaiBao.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km`
+        + ` nhưng tổng các chặng là`
+        + ` ${lech.tongChang.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km.`
+        + ' Máy chủ từ chối lập Trip khi hai con số này lệch, vì quãng'
+        + ' đường nuôi cả ETA lẫn giá cước. Sửa tuyến trong Dữ liệu gốc'
+        + ' rồi quay lại.</span>';
+    } else if (thieuTuyen) {
+      oChan.style.display = '';
+      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
+        + 'Có DO chưa gán tuyến Master Data. Máy chủ từ chối lập Trip khi thiếu'
+        + ' tuyến, vì không có quãng đường thì không tính được ETA.</span>';
+    } else if (nhieuTuyen) {
+      oChan.style.display = '';
+      oChan.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><span>'
+        + `Các DO này thuộc ${maTuyen.length} tuyến khác nhau`
+        + ` (${maTuyen.map(escapeHtml).join(', ')}).`
+        + ' Một Trip chỉ chở được các DO cùng MỘT tuyến — hãy tách thành'
+        + ' nhiều Trip.</span>';
+    } else {
+      oChan.style.display = 'none';
+      oChan.innerHTML = '';
+    }
+  }
+
+  // --- tuyến tham chiếu ---
+  const oTuyen = document.getElementById('do-side-route');
+  const tuyen = tuyenChon;
+  if (oTuyen) {
+    if (!tuyen) {
+      oTuyen.innerHTML = '<div class="ten">Chưa xác định được tuyến</div>'
+        + '<div class="ma">Chọn các DO cùng một tuyến để xem chặng và quãng đường.</div>';
+    } else {
+      const chang = routeSegments(tuyen);
+      const km = Number(tuyen.distance_km || 0);
+      const tocDo = Number(document.getElementById('trip-avg-speed')?.value || 0);
+      // Thời gian chỉ hiện khi CÓ cả quãng đường và tốc độ. Không có thì
+      // không đoán — một con số "~55 phút" bịa ra trông y hệt số thật.
+      const phut = km > 0 && tocDo > 0 ? Math.round((km / tocDo) * 60) : null;
+      let luyKe = 0;
+      oTuyen.innerHTML = `
+        <div class="ten">${escapeHtml(tuyen.name || tuyen.id)}</div>
+        <div class="ma">${escapeHtml(tuyen.id)}</div>
+        <div class="so">
+          <b>${km.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km</b>
+          ${phut != null ? `<b>~${phut} phút</b>` : '<b>chưa có tốc độ kế hoạch</b>'}
+          <b>${chang.length} chặng</b>
+        </div>
+        ${chang.length ? `<ul class="do-side-legs">${chang.map((c, k) => {
+          const d = routeSegmentDistanceKm(c);
+          luyKe += d;
+          return `<li><i>${k + 1}</i><b>${escapeHtml(c.from || '')} → ${escapeHtml(c.to || '')}</b>`
+            + `<span>${d.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km`
+            + `${chang.length > 1 ? ` · lũy kế ${luyKe.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}` : ''}</span></li>`;
+        }).join('')}</ul>` : ''}`;
+    }
+  }
+
+  // --- nút tạo Trip ---
+  const nut = document.getElementById('do-side-cta');
+  const chu = document.getElementById('do-side-cta-text');
+  const chanLai = nhieuTuyen || thieuTuyen || thieuGio.length > 0 || Boolean(lech)
+    || dsChon.some(d => !doLapTripDuoc(d));
+  if (nut) nut.disabled = chanLai;
+  if (chu) {
+    chu.textContent = chanLai
+      ? 'Chưa tạo được Trip'
+      : `Tạo Trip với ${dsChon.length} DO`;
+  }
+}
+window.veBangTripDangLap = veBangTripDangLap;
+
+/** Gửi lệnh tạo Trip từ các DO đang chọn. */
+window.taoTripTuDO = async function () {
+  const dsChon = (eplDeliveryOrders || []).filter(d => doDaChon.has(String(d.id)));
+  if (!dsChon.length) {
+    showToast('⚠️ Hãy tick ít nhất một lệnh giao hàng.');
+    return;
+  }
+  const gioDi = document.getElementById('trip-departure-at')?.value || '';
+  if (!gioDi) {
+    showToast('⚠️ Chưa nhập giờ xuất bến. Máy chủ cần mốc này để tính ETA từng chặng.');
+    return;
+  }
+  const tocDo = Number(document.getElementById('trip-avg-speed')?.value || 0);
+  if (!Number.isFinite(tocDo) || tocDo <= 0) {
+    showToast('⚠️ Tốc độ kế hoạch phải lớn hơn 0.');
+    return;
+  }
+
+  // Mã Trip do giao diện đặt: backend nhận `id` và dùng nó làm khóa
+  // idempotency — gửi lại cùng mã với cùng danh sách DO thì không tạo bản thứ
+  // hai (xem TRIP_IDEMPOTENCY_CONFLICT).
+  const maTrip = `TRIP-${gioDi.slice(0, 10).split('-').join('')}-${Date.now().toString().slice(-5)}`;
+  const than = {
+    id: maTrip,
+    do_ids: dsChon.map(d => String(d.id)),
+    trip_type: document.getElementById('trip-type')?.value || 'one_way',
+    planned_departure_at: new Date(gioDi).toISOString(),
+    avg_speed_kmh: tocDo,
+  };
+
+  const nut = document.getElementById('do-side-cta');
+  if (nut) nut.disabled = true;
+  const viec = `Tạo Trip từ ${dsChon.length} lệnh giao hàng`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/tms/trips/from-delivery-orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Idempotency-Key': maTrip },
+      body: JSON.stringify(than),
+    });
+  } catch (e) {
+    if (nut) nut.disabled = false;
+    return baoMatKetNoi(viec, e);
+  }
+  if (!res.ok) {
+    if (nut) nut.disabled = false;
+    // 409 DELIVERY_ORDERS_INCOMPATIBLE / DELIVERY_ORDER_NOT_PENDING là câu
+    // trả lời có ích — `baoLoiMayChu` đọc đúng ba lớp phong bì lỗi nên lời
+    // của backend đến được người dùng.
+    return baoLoiMayChu(res, viec);
+  }
+  showToast(`🚚 Đã tạo ${maTrip} với ${dsChon.length} DO. Bước tiếp: điều xe ở màn Điều phối.`);
+  doDaChon.clear();
+  if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
+};
+
+/** Mặc định giờ xuất bến và tốc độ, để người dùng không phải gõ từ đầu. */
+function datMacDinhKeHoachTrip() {
+  const oGio = document.getElementById('trip-departure-at');
+  if (oGio && !oGio.value) {
+    // Sáng mai 07:00 — giờ xuất bến thường gặp, và luôn ở tương lai nên
+    // không bị backend từ chối vì mốc quá khứ.
+    const mai = new Date();
+    mai.setDate(mai.getDate() + 1);
+    mai.setHours(7, 0, 0, 0);
+    const p = n => String(n).padStart(2, '0');
+    oGio.value = `${mai.getFullYear()}-${p(mai.getMonth() + 1)}-${p(mai.getDate())}`
+      + `T${p(mai.getHours())}:${p(mai.getMinutes())}`;
+  }
+  const oTocDo = document.getElementById('trip-avg-speed');
+  if (oTocDo && !oTocDo.dataset.daDat) {
+    // Lấy tốc độ kế hoạch trung bình của các LOẠI xe đang có, thay vì một con
+    // số viết cứng. Không có dữ liệu thì giữ nguyên giá trị trong HTML.
+    const ds = (vehTypes || [])
+      .map(vt => Number(vt.avg_speed_kmh || 0))
+      .filter(x => x > 0);
+    if (ds.length) {
+      oTocDo.value = String(Math.round(ds.reduce((a, b) => a + b, 0) / ds.length));
+    }
+    oTocDo.dataset.daDat = '1';
+    oTocDo.addEventListener('input', veBangTripDangLap);
+  }
+}
+window.datMacDinhKeHoachTrip = datMacDinhKeHoachTrip;
+
 function renderDeliveryOrders(data) {
   const tbody = document.getElementById('fiori-do-tbody');
   if (!tbody) return;
@@ -7824,27 +8192,70 @@ function renderDeliveryOrders(data) {
     return;
   }
 
-  list.forEach(do_item => {
+  // Cắt xuống GIOI_HAN_DONG_DO trước khi vẽ. Con số bị cắt được nói ra ngay
+  // dưới bảng, chứ không âm thầm bỏ bớt.
+  list.slice(0, GIOI_HAN_DONG_DO).forEach(do_item => {
     const presented = window.WorkflowPresentation?.presentRecord(do_item) || do_item;
-    const demoBadge = presented.is_demo ? ` <span class="fiori-status fiori-status-pending">${lang === 'la' ? 'ຂໍ້ມູນຕົວຢ່າງ' : (lang === 'en' ? 'Demo Data' : 'Dữ liệu demo')}</span>` : '';
     const operationalStatus = deliveryOrderOperationalStatus(do_item);
     const pickupLabel = deliveryOrderDateLabel(do_item.pickup_window_start || do_item.pickup_date);
     const deliveryLabel = deliveryOrderDateLabel(do_item.delivery_window_start || do_item.delivery_date || do_item.delivery_window_end);
     const doId = doBoardEscape(do_item.id);
+    const lapDuoc = doLapTripDuoc(do_item);
+    const daChon = doDaChon.has(String(do_item.id));
+    const tuyen = tuyenTheoMa(do_item.route_id);
+    const soTre = typeof window.DoBoard?.daysLate === "function"
+      ? window.DoBoard.daysLate(do_item) : 0;
+
+    // Thieu han giao thi sua NGAY TAI DONG, khong bat nguoi dung roi man.
+    const oGiao = deliveryLabel && deliveryLabel !== "—"
+      ? `<div class="do-cell-main">${doBoardEscape(do_item.destination || "")}</div>`
+        + `<div class="do-cell-sub">${doBoardEscape(deliveryLabel)}</div>`
+      : `<div class="do-cell-main">${doBoardEscape(do_item.destination || "")}</div>`
+        + `<button type="button" class="do-cell-fix" onclick="editFioriDO('${doId}')">`
+        + 'Chưa có hạn giao — thêm ngay</button>';
 
     tbody.insertAdjacentHTML('beforeend', `
-      <tr style="border-bottom:1px solid #f1f5f9;">
-        <td style="padding:13px 14px; white-space:normal; overflow-wrap:anywhere;"><span style="color:#0a6ed1; font-weight:900;">${doId}</span>${demoBadge}</td>
-        <td style="padding:13px 14px; color:#475569; white-space:normal; overflow-wrap:anywhere;">${doBoardEscape(do_item.so_id || '')}</td>
-        <td style="padding:13px 14px; color:#475569; white-space:nowrap;">${doBoardEscape(pickupLabel)}</td>
-        <td style="padding:13px 14px; color:#475569; white-space:nowrap;">${doBoardEscape(deliveryLabel)}</td>
-        <td style="padding:13px 14px; white-space:nowrap;"><span class="fiori-status ${operationalStatus.className}">${doBoardEscape(operationalStatus.label)}</span></td>
-        <td style="padding:13px 14px; text-align:center; white-space:nowrap;">
-          <button class="fiori-btn fiori-btn-secondary" title="${lang === 'la' ? 'ເບິ່ງລາຍລະອຽດ DO' : (lang === 'en' ? 'View DO Details' : 'Xem chi tiết DO')}" style="width:36px; height:34px; padding:0; font-size:.82rem; border-radius:7px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;" onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>${nutHuyDon(do_item, doId)}
+      <tr class="${daChon ? 'picked' : ''}">
+        <td class="do-plan-tick">
+          <input type="checkbox" data-do-id="${doId}" ${daChon ? 'checked' : ''}
+                 ${lapDuoc ? '' : 'disabled'}
+                 title="${lapDuoc ? 'Chọn để lập Trip' : 'Chỉ DO đang chờ vận chuyển mới lập Trip được'}"
+                 onchange="tickDO('${doId}', this.checked)">
         </td>
-      </tr>
-    `);
+        <td><div class="do-cell-id">${doId}</div>
+            <div class="do-cell-sub">${doBoardEscape(do_item.so_id || '—')}</div></td>
+        <td><div class="do-cell-main">${doBoardEscape(do_item.customer_id || '—')}</div>
+            ${presented.is_demo ? '<div class="do-cell-sub">Dữ liệu mẫu</div>' : ''}</td>
+        <td><div class="do-cell-main">${doBoardEscape(do_item.origin || '')}</div>
+            <div class="do-cell-sub">${doBoardEscape(pickupLabel)}</div></td>
+        <td>${oGiao}
+            ${soTre > 0 ? `<div class="do-cell-late">Trễ ${soTre} ngày</div>` : ''}</td>
+        <td>${tuyen
+              ? `<div class="do-cell-main">${doBoardEscape(tuyen.name || tuyen.id)}</div>`
+                + `<div class="do-cell-sub">${Number(tuyen.distance_km || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km</div>`
+              : '<div class="do-cell-sub">Chưa gán tuyến</div>'}</td>
+        <td><span class="fiori-status ${operationalStatus.className}">${doBoardEscape(operationalStatus.label)}</span></td>
+        <td style="white-space:nowrap;">
+          <button class="fiori-btn fiori-btn-secondary" title="Xem chi tiết DO"
+                  style="width:32px; height:30px; padding:0; border-radius:7px;"
+                  onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>${nutHuyDon(do_item, doId)}
+        </td>
+      </tr>`);
   });
+
+  // Chan so dong ve ra. O hang nghin don thi dung mot lan innerHTML cho tat
+  // ca la dung lai loi da phai sua o man lich xe.
+  if (list.length > GIOI_HAN_DONG_DO) {
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr><td colspan="8" style="padding:14px 20px; background:#fffbeb; color:#92400e; font-size:.78rem; font-weight:600;">
+        Đang hiện ${GIOI_HAN_DONG_DO} trên ${list.length} DO của rổ này.
+        Dùng ô tìm kiếm hoặc chọn rổ khác để thu hẹp lại.
+      </td></tr>`);
+  }
+
+  veChipVaChanTrang(list.length);
+  veBangTripDangLap();
+  datMacDinhKeHoachTrip();
 }
 
 window.deleteFioriDO = async function (id) {
@@ -7977,14 +8388,33 @@ window.openRouteDetailModal = function (routeId) {
 
   const segments = routeSegments(route);
   const totalKm = routeTotalDistanceKm(route);
-  const hours = route.est_hours || route.hrs || (totalKm > 0 ? (totalKm / 50).toFixed(1) : '0');
+
+  // Thời gian chạy: chỉ hiện khi có nguồn thật, và NÓI RÕ tính ở tốc độ nào.
+  //
+  // Bản trước là `(totalKm / 50).toFixed(1)` rồi dán nhãn "giờ dự kiến". Con
+  // số 50 km/h không có nguồn nào — không phải tốc độ của loại xe, không phải
+  // tốc độ kế hoạch của chuyến — nhưng kết quả hiện ra trông y hệt một con số
+  // thật. Nay lấy tốc độ kế hoạch người dùng đang đặt; không có thì không
+  // đoán.
+  const tocDoKeHoach = Number(document.getElementById('trip-avg-speed')?.value || 0);
+  const nhanGio = route.est_hours || route.hrs
+    ? `${doBoardEscape(route.est_hours || route.hrs)} giờ`
+    : (totalKm > 0 && tocDoKeHoach > 0
+      ? `${(totalKm / tocDoKeHoach).toFixed(1)} giờ ở ${tocDoKeHoach} km/h`
+      : 'chưa có tốc độ kế hoạch');
+
+  // Lệch giữa `distance_km` và tổng các chặng thì phải nói ra: backend từ
+  // chối lập Trip trên tuyến lệch (ROUTE_DISTANCE_MISMATCH).
+  const lech = lechQuangDuongTuyen(route);
 
   title.innerHTML = `<i class="fa-solid fa-route"></i> ${doBoardEscape(route.name || route.id || 'Chi tiết tuyến')}`;
   subtitle.textContent = `${route.id || ''} - dữ liệu chặng từ Master Data`;
   summary.innerHTML = `
     <span class="fiori-status fiori-status-pending">${doBoardEscape(formatRouteKm(totalKm))} km</span>
-    <span class="fiori-status fiori-status-approved">${doBoardEscape(hours)} giờ dự kiến</span>
+    <span class="fiori-status fiori-status-approved">${nhanGio}</span>
     <span class="fiori-status fiori-status-pending">${segments.length} chặng</span>
+    ${lech ? `<span class="fiori-status fiori-status-rejected" title="Máy chủ từ chối lập Trip khi hai con số này lệch">`
+      + `Chặng cộng lại ${doBoardEscape(formatRouteKm(lech.tongChang))} km — lệch</span>` : ''}
   `;
 
   if (segments.length === 0) {
@@ -8044,43 +8474,146 @@ window.xoaTuyenDuong = async function (id) {
   if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
 };
 
-function renderRoutes(data) {
-  const strip = document.getElementById('fiori-route-strip');
-  if (!strip) return;
-  strip.innerHTML = '';
+/**
+ * Đếm chứng từ đang tham chiếu một tuyến.
+ *
+ * Nối thẳng với chốt 409 `LOCKED_RECORD` của `delete_route`: backend từ chối
+ * xóa tuyến đang được báo giá / đơn vận chuyển / lệnh giao hàng dùng tới.
+ * Đếm ở đây để người dùng biết TRƯỚC khi bấm xóa, thay vì bấm rồi nhận lỗi.
+ *
+ * Đếm từ dữ liệu ĐÃ NẠP, không gọi thêm máy chủ — nên con số có thể cũ hơn
+ * một chút, và đó là lý do câu chốt cuối cùng vẫn thuộc về backend. Ở đây chỉ
+ * cần đủ đúng để không mời người ta bấm một cái nút sẽ bị từ chối.
+ */
+function demChungTuDungTuyen(routeId) {
+  const ma = String(routeId || '');
+  if (!ma) return { tong: 0, chi_tiet: [] };
+  const nhom = [
+    ['báo giá', (crmQuotations || []).filter(q => String(q.route_id || '') === ma).length],
+    ['đơn', (crmSalesOrders || []).filter(o => String(o.route_id || '') === ma).length],
+    ['lệnh giao hàng', (eplDeliveryOrders || []).filter(d => String(d.route_id || '') === ma).length],
+  ].filter(([, n]) => n > 0);
+  return {
+    tong: nhom.reduce((s, [, n]) => s + n, 0),
+    chi_tiet: nhom.map(([ten, n]) => `${n} ${ten}`),
+  };
+}
 
-  const routes = data || [];
+/** Tuyến kiểm thử do các script E2E / stress sinh ra. */
+function laTuyenKiemThu(routeId) {
+  return /^(E2E|STRESS|TEST)/i.test(String(routeId || ''));
+}
+
+window.moChangTuyen = function (routeId) {
+  const dong = document.getElementById(`route-legs-${routeId}`);
+  if (dong) dong.hidden = !dong.hidden;
+};
+
+window.filterRouteReference = function () {
+  renderRoutes(eplRoutes);
+};
+
+function renderRoutes(data) {
+  const body = document.getElementById('fiori-route-strip');
+  if (!body) return;
+
+  const tim = normalizeSearchText(
+    document.getElementById('route-reference-search')?.value || '');
+  const anKiemThu = Boolean(document.getElementById('route-hide-test')?.checked);
+
+  const tatCa = data || [];
+  const routes = tatCa.filter(r => {
+    if (anKiemThu && laTuyenKiemThu(r.id)) return false;
+    if (!tim) return true;
+    const chuoi = normalizeSearchText([
+      r.id, r.name,
+      ...routeSegments(r).flatMap(s => [routeSegmentFrom(s), routeSegmentTo(s)]),
+    ].join(' '));
+    return chuoi.includes(tim);
+  });
+
+  const oDem = document.getElementById('route-reference-count');
+  if (oDem) {
+    const dungRoi = tatCa.filter(r => demChungTuDungTuyen(r.id).tong > 0).length;
+    oDem.textContent = `${routes.length}${routes.length !== tatCa.length ? `/${tatCa.length}` : ''}`
+      + ` tuyến · ${dungRoi} đang được dùng`;
+  }
+
   if (routes.length === 0) {
-    strip.innerHTML = '<div style="color:#64748b; font-weight:700; padding:12px 0;"><i class="fa-solid fa-folder-open"></i> Chưa có tuyến đường nào. Vui lòng tạo tuyến mới ở Master Data.</div>';
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:26px; color:#64748b;">`
+      + `<i class="fa-solid fa-folder-open"></i> `
+      + (tim || anKiemThu
+        ? 'Không có tuyến nào khớp bộ lọc hiện tại.'
+        : 'Chưa có tuyến đường nào trong Dữ liệu gốc.')
+      + '</td></tr>';
     return;
   }
 
+  body.innerHTML = '';
   routes.forEach(r => {
-    const km = routeTotalDistanceKm(r);
-    // Real driving duration calculation (Average 50km/h on highway)
-    const hours = r.est_hours || r.hrs || (km / 50).toFixed(1);
-    const name = doBoardEscape(r.name || r.id || 'Tuyến chưa đặt tên');
     const routeId = doBoardEscape(r.id || '');
-    const segments = routeSegments(r);
+    const chang = routeSegments(r);
+    const lech = lechQuangDuongTuyen(r);
+    const dung = demChungTuDungTuyen(r.id);
+    const tocDo = Number(document.getElementById('trip-avg-speed')?.value || 0);
+    const km = routeTotalDistanceKm(r);
+    // Thời gian chỉ hiện khi CÓ cả quãng đường và tốc độ kế hoạch. Bản trước
+    // viết cứng `km / 50` rồi gọi đó là "giờ chạy thực tế" — 50 km/h không có
+    // nguồn nào, và con số ra trông y hệt một con số thật.
+    const phut = km > 0 && tocDo > 0 ? Math.round((km / tocDo) * 60) : null;
 
-    strip.insertAdjacentHTML('beforeend', `
-      <div style="flex:0 0 300px; border:1px solid #dbeafe; background:linear-gradient(135deg,#ffffff 0%,#f8fbff 100%); border-radius:10px; padding:12px 14px; display:flex; flex-direction:column; gap:10px;">
-        <div style="display:flex; align-items:flex-start; gap:8px; color:#0f172a; font-weight:900; line-height:1.25;">
-          <i class="fa-solid fa-location-dot" style="color:#ef4444; margin-top:2px;"></i>
-          <span style="overflow-wrap:anywhere;">${name}</span>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-          <span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:900; white-space:nowrap;">${doBoardEscape(formatRouteKm(km))} km</span>
-          <span style="background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:900; white-space:nowrap;">${doBoardEscape(hours)} giờ</span>
-          <span style="background:#ecfdf3; color:#047857; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:900; white-space:nowrap;">${segments.length} chặng</span>
-        </div>
-        <button class="fiori-btn fiori-btn-secondary" onclick="openRouteDetailModal('${routeId}')" style="justify-content:center; height:34px; padding:0 12px; font-size:.8rem; font-weight:900;"><i class="fa-solid fa-list-ol"></i> Xem chặng</button>
-        <button class="fiori-btn fiori-btn-secondary" onclick="xoaTuyenDuong('${routeId}')" title="Xóa tuyến đường" style="justify-content:center; height:34px; padding:0 12px; font-size:.8rem; color:#b42318;"><i class="fa-solid fa-trash"></i></button>
-      </div>
-    `);
+    let luyKe = 0;
+    body.insertAdjacentHTML('beforeend', `
+      <tr onclick="moChangTuyen('${routeId}')" style="cursor:pointer;">
+        <td>
+          <div class="do-cell-main">${doBoardEscape(r.name || r.id || 'Tuyến chưa đặt tên')}</div>
+          <div class="do-cell-sub">${routeId}${laTuyenKiemThu(r.id)
+            ? ' <span class="do-route-tag">Kiểm thử</span>' : ''}</div>
+        </td>
+        <td>
+          <div class="do-cell-main">${formatRouteKm(km)} km</div>
+          ${lech
+            ? `<div class="do-cell-late" title="Máy chủ từ chối lập Trip khi hai con số này lệch">`
+              + `Chặng cộng lại ${formatRouteKm(lech.tongChang)} km — lệch</div>`
+            : (phut != null
+              ? `<div class="do-cell-sub">~${phut} phút ở ${tocDo} km/h</div>`
+              : '<div class="do-cell-sub">chưa có tốc độ kế hoạch</div>')}
+        </td>
+        <td><div class="do-cell-main">${chang.length}</div></td>
+        <td>
+          ${dung.tong
+            ? `<div class="do-cell-main">${doBoardEscape(dung.chi_tiet.join(' · '))}</div>`
+              + '<div class="do-cell-sub">Không xóa được khi còn tham chiếu</div>'
+            : '<div class="do-cell-sub">Chưa dùng</div>'}
+        </td>
+        <td style="white-space:nowrap;">
+          <button class="fiori-btn fiori-btn-secondary" title="Xem sơ đồ lộ trình"
+                  style="width:32px; height:30px; padding:0; border-radius:7px;"
+                  onclick="event.stopPropagation(); openRouteDetailModal('${routeId}')">
+            <i class="fa-solid fa-map-location-dot"></i></button>
+          <button class="fiori-btn fiori-btn-secondary" title="Xóa tuyến đường"
+                  style="width:32px; height:30px; padding:0; margin-left:5px; border-radius:7px; color:#b42318;"
+                  onclick="event.stopPropagation(); xoaTuyenDuong('${routeId}')">
+            <i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>
+      <tr id="route-legs-${routeId}" hidden>
+        <td colspan="5" style="background:#f8fafc; padding:12px 20px;">
+          ${chang.length
+            ? `<ul class="do-side-legs" style="margin:0;">${chang.map((c, k) => {
+                const d = routeSegmentDistanceKm(c);
+                luyKe += d;
+                return `<li><i>${k + 1}</i>`
+                  + `<b>${doBoardEscape(routeSegmentFrom(c))} → ${doBoardEscape(routeSegmentTo(c))}</b>`
+                  + `<span>${formatRouteKm(d)} km`
+                  + `${chang.length > 1 ? ` · lũy kế ${formatRouteKm(luyKe)}` : ''}</span></li>`;
+              }).join('')}</ul>`
+            : '<div class="do-cell-sub">Tuyến này chưa có chặng nào trong Dữ liệu gốc.'
+              + ' Máy chủ từ chối lập Trip khi tuyến không có chặng hợp lệ.</div>'}
+        </td>
+      </tr>`);
   });
 }
-
 window.openFioriDOForm = function () {
   const el = document.getElementById('fiori-do-form');
   if (el) {

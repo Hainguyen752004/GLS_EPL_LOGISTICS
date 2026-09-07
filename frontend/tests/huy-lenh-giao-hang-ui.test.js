@@ -114,9 +114,12 @@ assert.ok(/\$\{nutHuyDon\(do_item, doId\)\}/.test(app),
   // đến được người dùng, không bị thay bằng "Lỗi khi xóa".
   assert.ok(/baoLoiMayChu\(res, viec\)/.test(than));
   assert.ok(/baoMatKetNoi\(viec, e\)/.test(than));
-  // Và nút phải được gắn vào thẻ tuyến đường.
-  assert.ok(/onclick="xoaTuyenDuong\('\$\{routeId\}'\)"/.test(app),
-    'nút xóa phải nằm trên thẻ tuyến đường');
+  // Và nút phải được gắn vào dòng tuyến đường trong bảng.
+  //
+  // `event.stopPropagation()` là bắt buộc: cả dòng có onclick mở danh sách
+  // chặng, nên thiếu nó thì bấm Xóa vừa hỏi xóa vừa mở/đóng chặng.
+  assert.ok(/onclick="event\.stopPropagation\(\); xoaTuyenDuong\('\$\{routeId\}'\)"/
+    .test(app), 'nút xóa phải nằm trên dòng tuyến đường và chặn nổi bọt');
 }
 
 console.log('huy-lenh-giao-hang-ui: tất cả kiểm tra đã qua');
