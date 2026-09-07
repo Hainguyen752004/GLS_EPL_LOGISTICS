@@ -1,0 +1,29 @@
+{
+  "name": "epl-logistics-frontend",
+  "private": true,
+  "description": "Giao diện EPL Logistics TMS. Bộ kiểm chạy bằng node trơn, không cần build.",
+  "scripts": {
+    "test": "node tests/chay-tat-ca.js"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.0"
+  },
+  "comments": {
+    "vi-sao-co-jsdom": [
+      "Toàn bộ 66 bài kiểm trước đây đọc app.js như VĂN BẢN, chưa bài nào NẠP nó",
+      "như trình duyệt. Vì vậy chúng không bắt được một lỗi làm sập một nửa ứng",
+      "dụng: index.html thiếu thẻ script cho do-board.js, nên",
+      "`window.DoBoard.BUCKETS` ở cấp cao nhất của app.js ném TypeError ngay lúc",
+      "nạp — và ~9.500 dòng sau đó không bao giờ được thực thi.",
+      "",
+      "`tests/moi-module-phai-duoc-nap.test.js` dùng jsdom để nạp thật cả trang.",
+      "Nó CỐ Ý chạy được cả khi chưa cài jsdom: hai phép đối chiếu tĩnh vẫn chạy,",
+      "và chính chúng bắt được đúng lỗi trên. Nên `npm install` là tùy chọn, không",
+      "phải điều kiện để chạy bộ kiểm."
+    ],
+    "cach-chay": [
+      "Không cần cài gì:   for f in tests/*.test.js; do node \"$f\"; done",
+      "Đầy đủ (có jsdom):  npm install && node tests/moi-module-phai-duoc-nap.test.js"
+    ]
+  }
+}

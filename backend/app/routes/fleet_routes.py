@@ -278,24 +278,30 @@ async def cancel_vehicle_maintenance_request(request_id: str, request: Request, 
 async def delete_vehicle(vid: str, request: Request, db: Session = Depends(get_db)):
     _require_api_principal(request)
     veh = db.query(Vehicle).filter(Vehicle.id == vid).first()
-    if veh:
-        in_use = any([
-            db.query(DeliveryOrder.id).filter(DeliveryOrder.vehicle_id == vid).first(),
-            db.query(VehicleTracking.do_id).filter(VehicleTracking.vehicle_id == vid).first(),
-            db.query(DeliveryPODRecord.id).filter(DeliveryPODRecord.vehicle_id == vid).first(),
-            db.query(TransportTrip.id).filter(TransportTrip.vehicle_id == vid).first(),
-            db.query(ResourceAssignment.id).filter(ResourceAssignment.vehicle_id == vid).first(),
-        ])
-        if in_use:
-            raise HTTPException(status_code=409, detail={
-                "code": "LOCKED_RECORD",
-                "message": "Xe đang được dùng bởi DO/Trip/Tracking, không được xóa khỏi Master Data.",
-                "navigation_targets": ["dispatch", "tracking", "master-data/vehicles"],
-            })
-        db.delete(veh)
-        db.commit()
-        return {"message": f"Đã xóa phương tiện {vid}"}
-    return {"message": "Đã xóa phương tiện"}
+    # Truoc day khong tim thay thi ham roi xuong `return {"message": "Đã xóa
+    # phương tiện"}` o cuoi — nguoi dung go nham mot bien so, bam Xoa, va nhan
+    # mot loi khang dinh SAI trong khi khong co gi bi xoa.
+    if not veh:
+        raise HTTPException(status_code=404, detail={
+            "code": "VEHICLE_NOT_FOUND",
+            "message": f"Không tìm thấy phương tiện {vid}.",
+        })
+    in_use = any([
+        db.query(DeliveryOrder.id).filter(DeliveryOrder.vehicle_id == vid).first(),
+        db.query(VehicleTracking.do_id).filter(VehicleTracking.vehicle_id == vid).first(),
+        db.query(DeliveryPODRecord.id).filter(DeliveryPODRecord.vehicle_id == vid).first(),
+        db.query(TransportTrip.id).filter(TransportTrip.vehicle_id == vid).first(),
+        db.query(ResourceAssignment.id).filter(ResourceAssignment.vehicle_id == vid).first(),
+    ])
+    if in_use:
+        raise HTTPException(status_code=409, detail={
+            "code": "LOCKED_RECORD",
+            "message": "Xe đang được dùng bởi DO/Trip/Tracking, không được xóa khỏi Master Data.",
+            "navigation_targets": ["dispatch", "tracking", "master-data/vehicles"],
+        })
+    db.delete(veh)
+    db.commit()
+    return {"message": f"Đã xóa phương tiện {vid}"}
 
 # 1.5 Vehicle Types API
 @router.get("/api/vehicles/{vehicle_id}/cost")
@@ -381,14 +387,46 @@ async def save_vehicle_type(request: Request, data: Dict[str, Any] = Body(...), 
 
 @router.delete("/api/vehicle-types/{vid}")
 async def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(get_db)):
+    """Xoa mot loai xe khoi Master Data.
+
+    Truoc day co hai cho sai:
+
+      1. Khong tim thay thi tra ve `{"message": "Không tìm thấy loại phương
+         tiện"}` voi MA TRANG THAI 200. Giao dien kiem `res.ok`, thay 200, va
+         bao "da xoa" — than phan hoi noi mot dieu, ma trang thai noi dieu
+         nguoc lai, va giao dien tin ma trang thai.
+
+      2. Khong kiem dang-su-dung. `Vehicle.type` la mot chuoi tu do doi chieu
+         voi `VehicleType.name` (xem delivery_routes.py: tra tai trong theo
+         `func.lower(VehicleType.name) == vehicle.type`), nen xoa mot loai xe
+         ma doi xe con dung tên đó là làm phép tra tải trọng và giá thành mất
+         nguon — am tham, khong mot loi bao nao.
+    """
     _require_api_principal(request)
     from models import VehicleType
     vt = db.query(VehicleType).filter(VehicleType.id == vid).first()
-    if vt:
-        db.delete(vt)
-        db.commit()
-        return {"message": f"Đã xóa {vid}"}
-    return {"message": "Không tìm thấy loại phương tiện"}
+    if not vt:
+        raise HTTPException(status_code=404, detail={
+            "code": "VEHICLE_TYPE_NOT_FOUND",
+            "message": f"Không tìm thấy loại phương tiện {vid}.",
+        })
+
+    dang_dung = db.query(Vehicle.id).filter(
+        func.lower(Vehicle.type) == str(vt.name or "").lower()
+    ).first()
+    if dang_dung:
+        raise HTTPException(status_code=409, detail={
+            "code": "LOCKED_RECORD",
+            "message": (
+                "Còn phương tiện đang thuộc loại \"%s\", không được xóa loại xe này."
+                " Hãy đổi loại cho các xe đó trước." % vt.name
+            ),
+            "navigation_targets": ["master-data/vehicles"],
+        })
+
+    db.delete(vt)
+    db.commit()
+    return {"message": f"Đã xóa loại phương tiện {vid}"}
 
 # 1.6 Cost Formula API
 

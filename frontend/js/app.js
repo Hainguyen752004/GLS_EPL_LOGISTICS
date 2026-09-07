@@ -3412,6 +3412,8 @@ function openFinanceActionForm(action) {
   const isCreateAp = command.path.includes('/ap-invoices') && command.path.includes('/costs/');
   const isCreateSettlement = command.path.includes('/settlements') && command.path.includes('/ap-invoices/');
   const isPayment = command.path.includes('/payments');
+  // Đảo bút toán: backend BẮT BUỘC có `reason` (422 REVERSAL_REASON_REQUIRED).
+  const isReversal = command.path.endsWith('/reverse');
   const today = FormatUtils.dateInputValue();
 
   document.getElementById('finance-action-form-title').textContent = action.label || 'Thao tác tài chính';
@@ -3421,7 +3423,9 @@ function openFinanceActionForm(action) {
       ? 'Chọn kỳ đối soát trước khi tạo Settlement.'
       : isPayment
         ? 'Nhập chứng từ và số tiền thanh toán. Hệ thống sẽ kiểm tra số dư còn lại.'
-        : 'Xác nhận chuyển trạng thái hồ sơ. Thao tác sẽ được ghi Audit Log.';
+        : isReversal
+          ? 'Đảo bút toán hủy hiệu lực chứng từ đã hạch toán. Bắt buộc ghi lý do — lý do đi vào Audit Log và không sửa được sau.'
+          : 'Xác nhận chuyển trạng thái hồ sơ. Thao tác sẽ được ghi Audit Log.';
   document.getElementById('finance-action-confirm-note').textContent = `Hồ sơ: ${selectedFinanceDetailKey || 'đang chọn'} • ${action.label || 'Xác nhận thao tác'}`;
 
   setFinanceActionFieldVisible('finance-action-vendor-invoice-wrap', isCreateAp);
@@ -3432,6 +3436,7 @@ function openFinanceActionForm(action) {
   setFinanceActionFieldVisible('finance-action-payment-method-wrap', isPayment);
   setFinanceActionFieldVisible('finance-action-reference-wrap', isPayment);
   setFinanceActionFieldVisible('finance-action-posting-date-wrap', isPayment);
+  setFinanceActionFieldVisible('finance-action-reason-wrap', isReversal);
 
   document.getElementById('finance-action-vendor-invoice').value = body.vendor_invoice_no || '';
   document.getElementById('finance-action-invoice-date').value = body.invoice_date || today;
@@ -3441,6 +3446,7 @@ function openFinanceActionForm(action) {
   document.getElementById('finance-action-payment-method').value = body.payment_method === 'cash' ? 'cash' : 'bank_transfer';
   document.getElementById('finance-action-reference').value = body.reference_no || '';
   document.getElementById('finance-action-posting-date').value = body.posting_date || today;
+  document.getElementById('finance-action-reason').value = body.reason || '';
   modal.style.display = 'flex';
   return { ok: true };
 }
@@ -3462,6 +3468,16 @@ async function submitFinanceActionForm() {
   const isCreateAp = command.path.includes('/ap-invoices') && command.path.includes('/costs/');
   const isCreateSettlement = command.path.includes('/settlements') && command.path.includes('/ap-invoices/');
   const isPayment = command.path.includes('/payments');
+  const isReversal = command.path.endsWith('/reverse');
+
+  if (isReversal) {
+    body.reason = document.getElementById('finance-action-reason').value.trim();
+    // Chặn tại đây thay vì gửi lên rồi nhận 422: người dùng đang mở đúng cái form có ô đó.
+    if (body.reason.length < 10) {
+      showToast('⚠️ Lý do đảo bút toán phải ghi rõ, ít nhất 10 ký tự. Lý do này đi vào Audit Log.');
+      return { ok: false };
+    }
+  }
 
   if (isCreateAp) {
     body.vendor_invoice_no = document.getElementById('finance-action-vendor-invoice').value.trim();
@@ -3562,11 +3578,21 @@ function renderFinanceRecordDetail() {
       </div>
     `;
   }).join('');
-  actionsEl.innerHTML = detail.actions.map((action, index) => `
-    <button class="fiori-btn ${action.severity === 'success' ? 'fiori-btn-primary' : 'fiori-btn-secondary'}" onclick="runFinanceDetailAction(${index})" style="padding:7px 11px; font-size:.78rem;">
-      <i class="fa-solid ${action.command ? 'fa-play' : 'fa-arrow-up-right-from-square'}"></i> ${action.label}
-    </button>
-  `).join('');
+  // Thao tác `critical` là đảo bút toán — nó hủy hiệu lực một chứng từ đã
+  // hạch toán. Cho nó màu đỏ và biểu tượng riêng, đừng để nó trông giống
+  // "bước tiếp theo" nằm ngay bên cạnh.
+  actionsEl.innerHTML = detail.actions.map((action, index) => {
+    const nangCap = action.severity === 'critical';
+    const lop = nangCap ? 'fiori-btn-secondary'
+      : (action.severity === 'success' ? 'fiori-btn-primary' : 'fiori-btn-secondary');
+    const mau = nangCap ? ' color:#b42318; border-color:#fecaca;' : '';
+    const icon = nangCap ? 'fa-rotate-left'
+      : (action.command ? 'fa-play' : 'fa-arrow-up-right-from-square');
+    return `
+    <button class="fiori-btn ${lop}" onclick="runFinanceDetailAction(${index})" style="padding:7px 11px; font-size:.78rem;${mau}">
+      <i class="fa-solid ${icon}"></i> ${escapeHtml(action.label)}
+    </button>`;
+  }).join('');
 }
 
 function renderFinanceConfigHealth() {
@@ -4049,7 +4075,6 @@ function closeDispatchTool() {
 
 function switchDispatchWeekView(viewName) {
   activeDispatchWeekView = viewName === 'available' ? 'available' : 'schedule';
-  renderDispatchWeekPlanner();
 }
 
 function openDispatchDetail(trigger) {
@@ -4723,6 +4748,27 @@ function dispatchWeekCellHTML(row, day) {
   </button>`;
 }
 
+/* `renderDispatchWeekPlanner` da duoc go: no la BAN CU cua man lich tuan,
+   da bi `renderDispatchWeekTimetable` ngay ben tren thay the.
+
+   Ban cu ve mot ma tran XE x NGAY, mot dong cho MOI xe. Do bang chinh khuon
+   dong cua no: 500 xe -> 1,06 MB HTML va 3.500 nut bam trong MOT lan
+   `innerHTML`, dung lai toan bo moi lan doi tuan. Ba khoi chua cua no
+   (`dispatch-week-planner-kpis`, `-grid`, `-guidance`) chua bao gio duoc
+   dung trong index.html, nen thuc te no chua tung chay.
+
+   Ban dang chay lam khac han, va dung huong da chot cho quy mo ~500 xe:
+   mot bang nang luc theo ngay (7 the, moi the la con so ranh/ban/sua
+   chua/xung dot), roi `buildDispatchDayFleet` cho danh sach xe cua ngay
+   duoc chon — ham do chan `page_size` o 100 dong ke ca khi goi voi
+   `Number.MAX_SAFE_INTEGER`, nen so dong ve ra KHONG phu thuoc vao co doi
+   xe. Do that voi 500 xe: buildDispatchWeekPlanner mat 47 ms va
+   buildDispatchDayFleet tra ve dung 100 dong.
+
+   Hai lop `dispatch-week-pane-schedule` va `dispatch-week-pane-available`
+   chi ton tai trong ban cu do va KHONG co mot quy tac CSS nao — them mot
+   dau hieu nua rang phan giao dien do chua bao gio duoc hoan thien. */
+
 function renderDispatchWeekTimetable(week) {
   const weekDays = week.days || [];
   if (!weekDays.some(day => day.iso_date === selectedDispatchFleetIsoDate)) {
@@ -4994,7 +5040,6 @@ function renderDispatchCalendar() {
       </div>
     `).join('') : `<div class="dispatch-status-note"><i class="fa-solid fa-circle-check"></i><span>${lang === 'la' ? 'ຖ້ຽວລົດທີ່ເລືອກບໍ່ມີການແຈ້ງເຕືອນໃດໆ.' : (lang === 'en' ? 'Selected trip has no specific alerts.' : 'Chuyến đang chọn chưa có cảnh báo riêng.')}</span></div>`;
   }
-  renderDispatchWeekPlanner();
   updateDispatchWorkflowSteps();
   switchDispatchWorkState(activeDispatchWorkState);
   if (dispatchDayWorkbenchState.open && detailEl) detailEl.hidden = false;
@@ -5014,81 +5059,15 @@ function renderDispatchCalendar() {
      renderGPSTrackingWidget       gps-do, gps-vehicle, gps-driver, gps-dist
 
    Cách kiểm: xóa thử từng hàm rồi chạy cả bộ test — bảy hàm này không làm
-   vỡ bài kiểm nào. Riêng `renderDispatchWeekPlanner` thì CÓ, nên nó được
-   giữ lại và khối chứa của nó được dựng trong index.html thay vì gỡ đi.
-   Với renderDispatchCapacityBoard, dispatch-workbench-ui.test.js còn CẤM
-   gọi nó (`assert.doesNotMatch`) — nó đã bị cố ý tháo từ trước. */
+   vỡ bài kiểm nào. Với renderDispatchCapacityBoard, dispatch-workbench-ui
+   .test.js còn CẤM gọi nó (`assert.doesNotMatch`) — nó đã bị cố ý tháo từ
+   trước.
 
-function renderDispatchWeekPlanner() {
-  if (!window.TmsCockpit?.buildDispatchWeekPlanner || typeof document === 'undefined') return;
-  const kpisEl = document.getElementById('dispatch-week-planner-kpis');
-  const gridEl = document.getElementById('dispatch-week-planner-grid');
-  const guidanceEl = document.getElementById('dispatch-week-planner-guidance');
-  if (!kpisEl || !gridEl || !guidanceEl) return;
-  const week = window.TmsCockpit.buildDispatchWeekPlanner(appState || {}, dispatchCalendarDate);
-  kpisEl.innerHTML = Object.values(week.kpis).map(kpi => `
-    <div class="dispatch-week-kpi">
-      <span>${kpi.label}</span>
-      <strong>${kpi.count}</strong>
-    </div>
-  `).join('');
-  const dayHeader = `<div class="dispatch-week-row">
-    <div></div>
-    ${week.days.map(day => `<div class="dispatch-week-head">${day.label}</div>`).join('')}
-  </div>`;
-  const buildScheduleRows = (rows) => rows.length ? rows.map(row => `
-      <div class="dispatch-week-row">
-        <div class="dispatch-week-vehicle">
-          <strong>${row.label}</strong>
-        </div>
-        ${row.days.map(day => {
-    const cellClass = day.status === 'conflict' ? 'dispatch-week-cell--conflict' : day.status === 'busy' ? 'dispatch-week-cell--busy' : '';
-    const firstTripId = day.trip_ids[0] || '';
-    const clickAttr = firstTripId ? ` onclick="selectDispatchCalendarItem('${firstTripId}')"` : '';
-    return `<button type="button" class="dispatch-week-cell ${cellClass}"${clickAttr}>
-            <div>${day.trip_count ? `${day.trip_count} chuyến` : 'Rảnh'}</div>
-            <small>${day.next_available_label}</small>
-          </button>`;
-  }).join('')}
-      </div>
-    `).join('') : '<div class="dispatch-week-empty">Chưa có xe nào có lịch trong tuần.</div>';
-  const busyRows = week.vehicle_rows.filter(row => row.busy_days > 0);
-  const availableByDay = week.available_by_day || [];
-  const freeDayBoard = availableByDay.length ? `
-    <div class="dispatch-free-day-board">
-      ${availableByDay.map(day => `
-        <section class="dispatch-free-day">
-          <h4>${day.label}</h4>
-          <div class="dispatch-free-vehicles">
-            ${(day.vehicles || []).length ? day.vehicles.map(vehicle => `
-              <span class="dispatch-free-vehicle">${vehicle.label}</span>
-            `).join('') : '<span style="color:#64748b; font-size:.74rem; font-weight:850;">Không có xe rảnh</span>'}
-          </div>
-        </section>
-      `).join('')}
-    </div>
-  ` : '<div class="dispatch-week-empty">Chưa có dữ liệu xe rảnh theo ngày.</div>';
-  const scheduleActive = activeDispatchWeekView !== 'available';
-  gridEl.innerHTML = `
-    <div class="dispatch-week-tabs" role="tablist" aria-label="Kế hoạch xe 7 ngày">
-      <button type="button" class="dispatch-week-tab ${scheduleActive ? 'active' : ''}" role="tab" aria-selected="${scheduleActive ? 'true' : 'false'}" onclick="switchDispatchWeekView('schedule')">TKB xe có lịch</button>
-      <button type="button" class="dispatch-week-tab ${!scheduleActive ? 'active' : ''}" role="tab" aria-selected="${!scheduleActive ? 'true' : 'false'}" onclick="switchDispatchWeekView('available')">Xe rảnh theo ngày</button>
-    </div>
-    <section class="dispatch-week-pane dispatch-week-pane-schedule"${scheduleActive ? '' : ' hidden'}>
-      <div class="dispatch-week-board">${dayHeader}${buildScheduleRows(busyRows)}</div>
-    </section>
-    <section class="dispatch-week-pane dispatch-week-pane-available"${scheduleActive ? ' hidden' : ''}>
-      ${freeDayBoard}
-    </section>
-  `;
-  guidanceEl.innerHTML = (week.guidance || []).map(text => `
-    <div class="dispatch-guidance-row">
-      <i class="fa-solid fa-circle-info"></i>
-      <span>${text}</span>
-    </div>
-  `).join('');
-}
-
+   `renderDispatchWeekPlanner` lúc đầu có làm vỡ một bài kiểm, nên đợt đó nó
+   được giữ lại. Tra kỹ hơn thì bài kiểm ấy chỉ dò xem vài chuỗi tên lớp CSS
+   có xuất hiện ở đâu đó trong `index.html` cộng `app.js` hay không — nó
+   không hề kiểm rằng trình vẽ đó chạy. Mà bản đang chạy là
+   `renderDispatchWeekTimetable`; xem chú thích ngay trên hàm đó. */
 function renderGpsEventTimeline() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
   const kpisEl = document.getElementById('gps-event-timeline-kpis');
@@ -5159,6 +5138,22 @@ let chartVehInst = null;
 let chartFinInst = null;
 
 function renderSummaryChart() {
+  // Chart.js đến từ CDN (cdn.jsdelivr.net). Hệ thống này chạy trên mạng nội
+  // bộ, nơi CDN bị chặn là chuyện thường — và khi đó `new Chart(...)` ném
+  // ReferenceError giữa hàm này. Hàm này nằm trong chuỗi khởi động của
+  // `loadAllData`, nên một cái CDN không tới được sẽ làm ĐỨT cả bảng điều
+  // khiển, không chỉ mất mấy cái biểu đồ.
+  //
+  // Nói ra một lần rồi vẽ tiếp phần còn lại. Thiếu biểu đồ thì màn hình vẫn
+  // dùng được; đứt giữa thì không.
+  if (typeof Chart === 'undefined') {
+    if (!renderSummaryChart._daBao) {
+      renderSummaryChart._daBao = true;
+      baoNapThatBai('thư viện biểu đồ (Chart.js) từ CDN',
+        new Error('Chart is not defined — kiểm tra kết nối ra cdn.jsdelivr.net'));
+    }
+    return;
+  }
   // 1. Du lieu tong quan
   const qtCount = appState.quotations ? appState.quotations.length : 0;
   const doCount = appState.delivery_orders ? appState.delivery_orders.length : 0;
@@ -7700,6 +7695,72 @@ async function loadDeliveryOrders() {
   }
 }
 
+/* ==========================================================================
+   Hủy lệnh giao hàng.
+
+   Backend đã hỗ trợ đầy đủ từ lâu: `update_delivery_status` cho phép chuyển
+   `pending -> cancelled`, và có chốt an toàn — còn chuyến vận tải đang hoạt
+   động thì trả 409 kèm mã `ACTIVE_TRIP_EXISTS`. Nhưng giao diện KHÔNG có một
+   đường nào để gọi nó: chữ `cancelled` chỉ xuất hiện trong các bộ lọc, tức
+   màn hình NHẬN RA đơn đã hủy nhưng không HỦY được đơn nào.
+
+   Hệ quả thực tế: khách hủy đơn thì người điều hành không ghi nhận được. Họ
+   chỉ còn hai lựa chọn, và cả hai đều sai — để đơn nằm ở "Chờ vận chuyển"
+   mãi (làm sai mọi con số đếm và mọi cảnh báo quá hạn), hoặc XÓA đơn đi
+   (mất luôn lịch sử một việc đã thật sự xảy ra).
+
+   Nút chỉ hiện ở đúng trạng thái backend cho phép hủy. Hiện nó ở trạng thái
+   khác thì bấm vào chỉ nhận 409 — tức lại là một nút nói dối.
+   ========================================================================== */
+
+/** Trạng thái này có hủy được không — theo đúng bảng chuyển của backend. */
+function huyDuocDon(do_item) {
+  const tt = String(do_item?.canonical_status || '').toLowerCase();
+  return tt === 'pending';
+}
+
+function nutHuyDon(do_item, doId) {
+  if (!huyDuocDon(do_item)) return '';
+  return `<button class="fiori-btn fiori-btn-secondary" title="Hủy lệnh giao hàng"
+      style="width:36px; height:34px; padding:0; margin-left:6px; font-size:.82rem;
+             border-radius:7px; color:#b42318; display:inline-flex; align-items:center;
+             justify-content:center;"
+      onclick="huyLenhGiaoHang('${doId}')"><i class="fa-solid fa-ban"></i></button>`;
+}
+
+window.huyLenhGiaoHang = async function (id) {
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(id));
+  if (don && !huyDuocDon(don)) {
+    // Nói rõ vì sao, thay vì gửi lên rồi nhận một câu 409 chung chung.
+    showToast('⚠️ Chỉ hủy được lệnh đang ở trạng thái chờ vận chuyển.'
+      + ' Lệnh đã xuất bến thì xử lý ở màn Theo dõi hành trình.');
+    return;
+  }
+  const XUONG_DONG = String.fromCharCode(10);
+  if (!confirm(`Hủy lệnh giao hàng ${id}?`
+    + XUONG_DONG + XUONG_DONG
+    + 'Lệnh sẽ chuyển sang trạng thái Đã hủy và không còn được điều xe.'
+    + ' Thao tác này được ghi vào Audit Log.')) return;
+
+  const viec = `Hủy lệnh giao hàng ${id}`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'cancelled' })
+    });
+  } catch (e) {
+    return baoMatKetNoi(viec, e);
+  }
+  // 409 ACTIVE_TRIP_EXISTS là câu trả lời CÓ ÍCH: còn chuyến đang chạy.
+  // `baoLoiMayChu` đọc đúng ba lớp của phong bì lỗi nên lời của backend đến
+  // được người dùng, thay vì một câu "Lỗi khi hủy" chung chung.
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  showToast(`🚫 Đã hủy lệnh giao hàng ${id}.`);
+  if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
+};
+
 function renderDeliveryOrders(data) {
   const tbody = document.getElementById('fiori-do-tbody');
   if (!tbody) return;
@@ -7779,7 +7840,7 @@ function renderDeliveryOrders(data) {
         <td style="padding:13px 14px; color:#475569; white-space:nowrap;">${doBoardEscape(deliveryLabel)}</td>
         <td style="padding:13px 14px; white-space:nowrap;"><span class="fiori-status ${operationalStatus.className}">${doBoardEscape(operationalStatus.label)}</span></td>
         <td style="padding:13px 14px; text-align:center; white-space:nowrap;">
-          <button class="fiori-btn fiori-btn-secondary" title="${lang === 'la' ? 'ເບິ່ງລາຍລະອຽດ DO' : (lang === 'en' ? 'View DO Details' : 'Xem chi tiết DO')}" style="width:36px; height:34px; padding:0; font-size:.82rem; border-radius:7px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;" onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>
+          <button class="fiori-btn fiori-btn-secondary" title="${lang === 'la' ? 'ເບິ່ງລາຍລະອຽດ DO' : (lang === 'en' ? 'View DO Details' : 'Xem chi tiết DO')}" style="width:36px; height:34px; padding:0; font-size:.82rem; border-radius:7px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;" onclick="editFioriDO('${doId}')"><i class="fa-solid fa-eye"></i></button>${nutHuyDon(do_item, doId)}
         </td>
       </tr>
     `);
@@ -7793,19 +7854,23 @@ window.deleteFioriDO = async function (id) {
     showToast('Lệnh giao hàng đã duyệt/đang chạy chỉ được xem, không được xóa.');
     return;
   }
+  // XÓA khác HỦY. Xóa là bỏ hẳn bản ghi, dùng cho đơn nhập sai; hủy là ghi
+  // nhận một việc đã xảy ra thật và giữ lại lịch sử — xem `huyLenhGiaoHang`.
   if (!confirm('Bạn có chắc chắn muốn xóa Lệnh Giao Hàng ' + id + '?')) return;
+  const viec = 'Xóa lệnh giao hàng ' + id;
+  let res;
   try {
-    const res = await fetch(API_BASE + '/api/delivery-orders/' + id, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('Đã xóa DO ' + id + ' thành công!');
-      loadDeliveryOrders();
-    } else {
-      showToast('Lỗi khi xóa DO ' + id);
-    }
+    res = await fetch(API_BASE + '/api/delivery-orders/' + encodeURIComponent(id),
+                      { method: 'DELETE' });
   } catch (e) {
-    console.error(e);
-    showToast('Lỗi kết nối mạng khi xóa Lệnh DO. Vui lòng thử lại.');
+    return baoMatKetNoi(viec, e);
   }
+  // Trước đây nhánh này chỉ nói "Lỗi khi xóa DO" — không nói VÌ SAO. Mà lý do
+  // thường là thứ người dùng cần biết và tự xử lý được: đơn còn chuyến vận tải
+  // tham chiếu tới nó.
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  showToast('Đã xóa DO ' + id + ' thành công!');
+  await loadDeliveryOrders();
 };
 
 function filterDeliveryOrders() {
@@ -7944,6 +8009,41 @@ window.openRouteDetailModal = function (routeId) {
   modal.style.display = 'flex';
 };
 
+/* ==========================================================================
+   Xóa tuyến đường.
+
+   `DELETE /api/routes/{id}` có ở backend nhưng giao diện chưa bao giờ gọi —
+   chuỗi `api/routes/` không xuất hiện một lần nào trong các tệp JS. Nghĩa là
+   nhập sai một tuyến thì nó nằm đó mãi trong danh mục, và người lập báo giá
+   vẫn chọn được nó.
+
+   Backend có chốt an toàn: tuyến đang được báo giá / đơn vận chuyển / lệnh
+   giao hàng tham chiếu thì trả 409 `LOCKED_RECORD` kèm câu nói rõ vướng ở
+   đâu. `baoLoiMayChu` đọc đúng ba lớp của phong bì lỗi nên câu đó đến được
+   người dùng, thay vì một câu "Lỗi khi xóa" chung chung.
+   ========================================================================== */
+
+window.xoaTuyenDuong = async function (id) {
+  const tuyen = (eplRoutes || []).find(r => String(r.id) === String(id));
+  const ten = tuyen?.name ? `${id} — ${tuyen.name}` : id;
+  if (!confirm(`Xóa tuyến đường ${ten}?`
+    + String.fromCharCode(10) + String.fromCharCode(10)
+    + 'Nếu tuyến đang được báo giá hoặc đơn nào tham chiếu thì hệ thống sẽ'
+    + ' từ chối và nói rõ vướng ở đâu.')) return;
+
+  const viec = `Xóa tuyến đường ${id}`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/routes/${encodeURIComponent(id)}`,
+                      { method: 'DELETE' });
+  } catch (e) {
+    return baoMatKetNoi(viec, e);
+  }
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  showToast(`🗑️ Đã xóa tuyến đường ${id}.`);
+  if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
+};
+
 function renderRoutes(data) {
   const strip = document.getElementById('fiori-route-strip');
   if (!strip) return;
@@ -7975,6 +8075,7 @@ function renderRoutes(data) {
           <span style="background:#ecfdf3; color:#047857; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:900; white-space:nowrap;">${segments.length} chặng</span>
         </div>
         <button class="fiori-btn fiori-btn-secondary" onclick="openRouteDetailModal('${routeId}')" style="justify-content:center; height:34px; padding:0 12px; font-size:.8rem; font-weight:900;"><i class="fa-solid fa-list-ol"></i> Xem chặng</button>
+        <button class="fiori-btn fiori-btn-secondary" onclick="xoaTuyenDuong('${routeId}')" title="Xóa tuyến đường" style="justify-content:center; height:34px; padding:0 12px; font-size:.8rem; color:#b42318;"><i class="fa-solid fa-trash"></i></button>
       </div>
     `);
   });
@@ -15627,8 +15728,15 @@ window.syncAllDynamicDropdowns = async function () {
     const doIncSel = document.getElementById('inc-do-id');
     if (doIncSel) {
       const cur = doIncSel.value;
-      if (dos && dos.length > 0) {
-        doIncSel.innerHTML = dos.map(d => `<option value="${d.id}">${d.id} (${d.customer_id || ''} - ${d.route_id || ''})</option>`).join('');
+      // `dos` KHÔNG tồn tại: biến chứa danh sách lệnh giao hàng ở hàm này tên
+      // là `deliveryOrders` (xem `Promise.all` ở đầu hàm). Dòng cũ ném
+      // ReferenceError, và vì nó nằm giữa hàm nên MỌI ô chọn phía sau —
+      // loại xe, tiền tệ, loại hàng, danh sách xe cho công thức giá thành —
+      // đều không được nạp. Trước đây `catch` chỉ ghi console nên không ai
+      // thấy; giờ nó báo ra và lộ đúng chỗ này.
+      const dsDon = Array.isArray(deliveryOrders) ? deliveryOrders : (eplDeliveryOrders || []);
+      if (dsDon.length > 0) {
+        doIncSel.innerHTML = dsDon.map(d => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.id)} (${escapeHtml(d.customer_id || '')} - ${escapeHtml(d.route_id || '')})</option>`).join('');
       } else {
         doIncSel.innerHTML = '<option value="">-- Chưa có lệnh giao hàng trong CSDL --</option>';
       }

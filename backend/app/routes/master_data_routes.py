@@ -20,7 +20,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, Route
+from models import Customer, DeliveryOrder, Quotation, Route, SalesOrder
 from routes.finance_master_routes import require_authenticated_principal
 from schemas.workflow import RouteCreateRequest
 
@@ -75,9 +75,38 @@ async def update_customer(customer_id: str, data: Dict[str, Any] = Body(...), db
 
 @router.delete("/api/customers/{customer_id}")
 async def delete_customer(customer_id: str, db: Session = Depends(get_db)):
+    """Xoa mot khach hang khoi Master Data.
+
+    Chu thich o dau tep nay da ghi tu truoc rang cho nay "khong co kiem tra
+    dang-su-dung nao — khac voi delete_vehicle von kiem rat can than", nhung
+    no van chua duoc sua. Nay sua.
+
+    Ba bang tro vao `customers.id`: bao gia, don van chuyen, lenh giao hang.
+    Xoa mot khach dang co chung tu thi hoac vo o tang khoa ngoai (500), hoac
+    de lai `customer_id` mo coi — luc do man bao cao doanh thu theo khach
+    khong con biet dong tien do thuoc ve ai.
+    """
     cus = db.query(Customer).filter(Customer.id == customer_id).first()
     if not cus:
         raise HTTPException(status_code=404, detail="Không tìm thấy Khách hàng")
+
+    dang_dung = {
+        "báo giá": db.query(Quotation.id).filter(Quotation.customer_id == customer_id).first(),
+        "đơn vận chuyển": db.query(SalesOrder.id).filter(SalesOrder.customer_id == customer_id).first(),
+        "lệnh giao hàng": db.query(DeliveryOrder.id).filter(DeliveryOrder.customer_id == customer_id).first(),
+    }
+    vuong = [ten for ten, co in dang_dung.items() if co]
+    if vuong:
+        raise HTTPException(status_code=409, detail={
+            "code": "LOCKED_RECORD",
+            "message": (
+                "Khách hàng %s đang có %s, không được xóa."
+                " Xóa đi thì báo cáo doanh thu theo khách mất nguồn."
+                % (customer_id, ", ".join(vuong))
+            ),
+            "navigation_targets": ["crm-sales", "operations", "master-data/customers"],
+        })
+
     db.delete(cus)
     db.commit()
     return {"message": f"Đã xóa khách hàng {customer_id}"}
@@ -124,9 +153,37 @@ async def create_route(payload: RouteCreateRequest, db: Session = Depends(get_db
 
 @router.delete("/api/routes/{route_id}")
 async def delete_route(route_id: str, db: Session = Depends(get_db)):
+    """Xoa mot tuyen duong khoi Master Data.
+
+    Truoc day ham nay KHONG kiem dang-su-dung, khac han `delete_vehicle` va
+    `delete_driver`. Ba bang tro vao `routes.id`: bao gia, don van chuyen va
+    lenh giao hang. Xoa mot tuyen dang duoc tham chieu thi hoac vo o tang
+    khoa ngoai (500 Internal Server Error, nguoi dung khong sua duoc gi),
+    hoac de lai `route_id` mo coi — va `distance_km` cua tuyen chinh la thu
+    nuoi phep tinh gia cuoc lan ETA, nen mat no la moi con so tien tren
+    nhung don do mat nguon ma khong mot loi bao nao.
+    """
     route = db.query(Route).filter(Route.id == route_id).first()
     if not route:
         raise HTTPException(status_code=404, detail=f"Không tìm thấy tuyến đường {route_id}")
+
+    dang_dung = {
+        "báo giá": db.query(Quotation.id).filter(Quotation.route_id == route_id).first(),
+        "đơn vận chuyển": db.query(SalesOrder.id).filter(SalesOrder.route_id == route_id).first(),
+        "lệnh giao hàng": db.query(DeliveryOrder.id).filter(DeliveryOrder.route_id == route_id).first(),
+    }
+    vuong = [ten for ten, co in dang_dung.items() if co]
+    if vuong:
+        raise HTTPException(status_code=409, detail={
+            "code": "LOCKED_RECORD",
+            "message": (
+                "Tuyến %s đang được %s tham chiếu, không được xóa."
+                " Quãng đường của tuyến nuôi phép tính giá cước và ETA của"
+                " những chứng từ đó." % (route_id, ", ".join(vuong))
+            ),
+            "navigation_targets": ["crm-sales", "operations", "master-data/routes"],
+        })
+
     db.delete(route)
     db.commit()
     return {"message": f"Đã xóa tuyến đường {route_id} thành công"}

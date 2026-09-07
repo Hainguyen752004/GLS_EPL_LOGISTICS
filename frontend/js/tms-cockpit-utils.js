@@ -1189,6 +1189,69 @@
                       : null;
       if (!actions[0].command) delete actions[0].command;
     }
+
+    /* ------------------------------------------------------------------
+       ĐẢO BÚT TOÁN.
+
+       Backend có đủ ba đường đảo — `/costs/{id}/reverse`,
+       `/ap-invoices/{id}/reverse`, `/settlement-payments/{id}/reverse` —
+       nhưng giao diện chưa bao giờ gọi đường nào. Nó chỉ ĐỌC trạng thái
+       `reversed` để hiển thị. Nghĩa là hạch toán sai một hóa đơn thì trên
+       màn hình không có cách nào sửa: người dùng phải nhờ ai đó gọi API
+       bằng tay, hoặc sửa thẳng cơ sở dữ liệu.
+
+       Điều kiện đảo lấy đúng theo backend, để nút không hiện rồi báo 409:
+         · chi phí thực tế: chỉ `approved`, và phải đảo AP trước nếu còn AP
+         · AP: chỉ `posted`
+         · thanh toán: đảo TỪNG LẦN THANH TOÁN, không đảo cả hồ sơ đối soát
+
+       `reason` là bắt buộc ở cả ba (backend trả 422
+       REVERSAL_REASON_REQUIRED nếu để trống), nên hộp thoại xác nhận phải
+       hỏi lý do.
+       ------------------------------------------------------------------ */
+
+    if (kind === 'actual_cost' && status === 'approved') {
+      actions.push({
+        label: 'Đảo chi phí thực tế',
+        target: 'finance-cockpit-costs',
+        severity: 'critical',
+        needs_reason: true,
+        command: financeCommand(`/api/tms/finance/costs/${row.id}/reverse`)
+      });
+    }
+    if (kind === 'ap_invoice' && status === 'posted' && !row.reversal_of_ap_id) {
+      actions.push({
+        label: 'Đảo hóa đơn phải trả',
+        target: 'finance-cockpit-ap',
+        severity: 'critical',
+        needs_reason: true,
+        command: financeCommand(`/api/tms/finance/ap-invoices/${row.id}/reverse`)
+      });
+    }
+    if (kind === 'settlement') {
+      // Đảo theo TỪNG lần thanh toán. Lấy lần gần nhất chưa bị đảo và bản
+      // thân không phải bút toán đảo — đảo một bút toán đảo là vô nghĩa.
+      const lanTra = list(state, 'settlement_payments')
+        .filter(item => String(item.settlement_id || '') === String(row.id))
+        .filter(item => !item.reversal_of_payment_id
+          && normalized(item.status) !== 'reversed');
+      const cuoi = lanTra[lanTra.length - 1];
+      if (cuoi && cuoi.id) {
+        actions.push({
+          label: `Đảo thanh toán ${cuoi.id}`,
+          target: 'finance-cockpit-settlements',
+          severity: 'critical',
+          needs_reason: true,
+          command: {
+            method: 'POST',
+            // KHÔNG kèm `expected_version` của hồ sơ đối soát: đường này
+            // đảo một LẦN THANH TOÁN, và backend không kiểm version ở đó.
+            path: `/api/tms/finance/settlement-payments/${cuoi.id}/reverse`,
+            body: {}
+          }
+        });
+      }
+    }
     if (!actions.length) actions.push({ label: 'Theo dõi lịch sử và audit', target: 'accounting', severity: 'info' });
     return {
       id: row.id || row.code || '',

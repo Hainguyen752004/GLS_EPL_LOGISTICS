@@ -116,15 +116,20 @@ check('dispatch visual refresh classes are wired', () => {
     ['DO content button', /dispatch-do-select/],
     ['eye action', /dispatch-eye-action/],
     ['alert rows', /dispatch-alert-row/],
-    ['week KPI cards', /dispatch-week-kpi/],
-    ['week tabs', /dispatch-week-tabs/],
-    ['week schedule pane', /dispatch-week-pane-schedule/],
-    ['week available pane', /dispatch-week-pane-available/],
-    ['week planner shell', /dispatch-week-board/],
-    ['week vehicle cards', /dispatch-week-vehicle/],
-    ['week day cells', /dispatch-week-cell/],
-    ['week free day cards', /dispatch-free-day/],
-    ['week guidance rows', /dispatch-guidance-row/]
+    // Chin dong truoc day o cho nay dò tên lớp của `renderDispatchWeekPlanner`
+    // — mot trinh ve MA TRAN xe x ngay, mot dong cho MOI xe. Phep do bang
+    // chinh khuon dong cua no: 500 xe -> 1,06 MB HTML va 3.500 nut bam trong
+    // MOT lan `innerHTML`. Ba khoi chua cua no chua bao gio duoc dung trong
+    // index.html, nen no chua tung chay; va phep do o day chi kiem xem chuoi
+    // ten lop CO XUAT HIEN o dau do trong `html + appSource` hay khong, chu
+    // khong kiem rang trinh ve do chay.
+    //
+    // Ban dang chay la `renderDispatchWeekTimetable`, va no lam khac han:
+    // mot bang nang luc theo ngay roi moi lay danh sach xe cua ngay duoc
+    // chon. Neo vao dung nhung lop cua ban do.
+    ['week day summary band', /dispatch-week-day-summaries/],
+    ['week day summary card', /dispatch-week-day-summary/],
+    ['week day order count', /dispatch-day-order-count/]
   ].forEach(([label, pattern]) => {
     assert.match(`${html}\n${appSource}`, pattern, `${label} must use the refreshed dispatch styling classes.`);
   });

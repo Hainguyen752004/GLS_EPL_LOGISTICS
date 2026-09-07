@@ -95,7 +95,10 @@ function than(neo) {
   const khoi = html.slice(i, html.indexOf('id="modal-do"', i));
   const wraps = [...than('function openFinanceActionForm(action)')
     .matchAll(/setFinanceActionFieldVisible\('([^']+)'/g)].map(m => m[1]);
-  assert.strictEqual(wraps.length, 8, `phải có 8 khối bật/tắt, thấy ${wraps.length}`);
+  // Chín khối: ba cho tạo AP, một cho kỳ đối soát, bốn cho thanh toán,
+  // và một cho LÝ DO ĐẢO BÚT TOÁN — `reason` là bắt buộc ở cả ba đường
+  // đảo của backend, thiếu thì 422 REVERSAL_REASON_REQUIRED.
+  assert.strictEqual(wraps.length, 9, `phải có 9 khối bật/tắt, thấy ${wraps.length}`);
   wraps.forEach(id => {
     const the = khoi.match(new RegExp('<div[^>]*id="' + id + '"[^>]*>'));
     assert.ok(the, `không thấy khối ${id}`);

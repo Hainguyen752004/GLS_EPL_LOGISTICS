@@ -6944,6 +6944,15 @@
             <label data-i18n="lbl_fin_reference">Số chứng từ</label>
             <input type="text" id="finance-action-reference" placeholder="VD: UNC-2026-001">
           </div>
+          <!-- Đảo bút toán: `reason` là BẮT BUỘC ở cả ba đường đảo của
+               backend (thiếu thì 422 REVERSAL_REASON_REQUIRED), và nó đi vào
+               Audit Log nên không sửa lại được sau. -->
+          <div class="erp-field col-span-2" id="finance-action-reason-wrap" style="display:none;">
+            <label data-i18n="lbl_fin_reversal_reason">Lý do đảo bút toán</label>
+            <textarea id="finance-action-reason" rows="3"
+                      placeholder="Ví dụ: Hạch toán sai mã nhà cung cấp, đã đối chiếu với hóa đơn giấy ngày 05/09"></textarea>
+          </div>
+
           <div class="erp-field" id="finance-action-posting-date-wrap" style="display:none;">
             <label data-i18n="lbl_fin_posting_date">Ngày hạch toán</label>
             <input type="date" id="finance-action-posting-date">
@@ -7287,8 +7296,27 @@
   <script src="/static/js/quotation-pricing.js?v=20260905-do-buckets"></script>
   <script src="/static/js/shift-recurrence.js?v=20260903-shift-recurrence"></script>
   <script src="/static/js/driver-roster.js?v=20260905-shipping-spec-v1"></script>
+  <!--
+    do-board.js PHẢI nạp trước app.js.
+
+    `app.js` có `const DELIVERY_ORDER_STAGES = window.DoBoard.BUCKETS.map(...)`
+    ở cấp cao nhất. Thẻ script này từng bị thiếu, nên `window.DoBoard` là
+    `undefined` và dòng đó ném TypeError NGAY LÚC NẠP app.js — điều đó làm
+    TOÀN BỘ phần còn lại của tệp không bao giờ được thực thi.
+
+    Hậu quả không phải "mất màn Lệnh giao hàng" mà là mất mọi thứ định nghĩa
+    sau dòng đó: renderDeliveryOrders, renderRoutes, initLeafletRouteMap,
+    renderFioriDrivers, loadIncidents... Trên màn hình thì các bước 3 đến 7
+    của luồng đều rỗng, và bản đồ tuyến đường mất hết điểm vẽ — hai triệu
+    chứng trông không liên quan gì nhau, mà cùng một nguyên nhân.
+
+    Lỗi này im lặng suốt vì nó chỉ hiện trong Console. Xem
+    tests/moi-module-phai-duoc-nap.test.js — bài kiểm đó đối chiếu mọi
+    `window.X` mà app.js đọc ở cấp cao nhất với danh sách script ở đây.
+  -->
+  <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260906e-ty-gia"></script>
+  <script src="/static/js/app.js?v=20260907d-do-board"></script>
   <script src="/static/js/parking-list.js?v=20260828-parking-list-v4"></script>
 </body>
 </html>
