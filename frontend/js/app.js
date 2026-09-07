@@ -1516,6 +1516,33 @@ function switchShipmentDossierTab(tabName, button) {
 
 window.selectShipmentDossierFromSearch = selectShipmentDossierFromSearch;
 window.switchShipmentDossierTab = switchShipmentDossierTab;
+/* Trạng thái của màn Theo dõi chuyến (Trip Return Cockpit).
+   ------------------------------------------------------------------------
+   Năm dòng này TỪNG BỊ XÓA MẤT — và đó là lỗi của tôi. Khi gỡ chín trình vẽ
+   chết ở commit 78cd1a9, tôi cắt theo khoảng dòng "từ định nghĩa hàm này đến
+   định nghĩa hàm kế tiếp". Năm dòng `let` nằm ĐÚNG GIỮA
+   `renderTripReturnCockpitLegacy` và `switchDeliveryWorkbenchView`, nên
+   chúng bị cắt theo.
+
+   Hậu quả trông không giống một lỗi lập trình: `renderTripReturnCockpit` đọc
+   `tripReturnStatusFilter` ở dòng lọc, gặp ReferenceError, dừng giữa hàm — nên
+   màn "Giao hàng & vận chuyển" báo "Chưa có chuyến đang chạy" trong khi cơ sở
+   dữ liệu có 2 chuyến `in_transit`. Nhìn vào thì tưởng lỗi dữ liệu hoặc lỗi
+   backend, mà API trả về đủ 3 chuyến.
+
+   Vì sao im lặng: ở chế độ không strict, `X = 1` tạo một biến toàn cục ngầm
+   nên GHI thì không báo gì; chỉ ĐỌC trước lần ghi đầu tiên mới nổ. Lỗi chỉ
+   hiện trong Console.
+
+   Bài học đã đưa vào `tests/bien-phai-duoc-khai-bao.test.js`: quét mọi phép
+   gán trần mà không có khai báo. */
+
+let activeTripReturnId = '';
+let tripReturnActionSequence = 0;
+let tripReturnSearchQuery = '';
+let tripReturnStatusFilter = '';
+let activeTripReturnDetailTab = 'journey';
+
 function switchDeliveryWorkbenchView(tabName = 'shipments') {
   const planningTabs = ['board', 'do', 'planning', 'pending'];
   const dispatchTabs = ['dispatch', 'schedule', 'calendar', 'alerts'];
@@ -4422,6 +4449,7 @@ function renderDispatchSuggestedActions(detail) {
       ${lang === 'la' ? 'ເລືອກຖ້ຽວລົດເທິງ Gantt ເພື່ອເບິ່ງການດຳເນີນງານທີ່ແນະນຳ.' : 'Chọn một chuyến trên Gantt để xem thao tác gợi ý.'}
     </div>
   `;
+  */
 }
 
 function setDispatchResourceSelect(selectEl, options, selectedValue) {
@@ -4535,7 +4563,6 @@ async function applyDispatchResourceChange() {
   renderDispatchCalendar();
   if (typeof renderDispatchDOs === 'function') renderDispatchDOs();
   if (typeof renderDispatchSelects === 'function') renderDispatchSelects();
-  */
 }
 
 function resolveDispatchTripGate(doId) {
@@ -6657,6 +6684,21 @@ window.filterVehTypes = filterVehTypes;
 
 let crmSalesOrders = [];
 let currentSOMode = 'create';
+
+/* Mã báo giá nguồn khi đơn vận chuyển được tạo từ một báo giá.
+   ------------------------------------------------------------------------
+   Biến này CHƯA BAO GIỜ được khai báo — lỗi có từ trước, không phải do đợt
+   dọn dẹp nào. Nó được gán ở ba chỗ (`editOracleQT`, `openOracleSOForm`,
+   `editOracleSO`) nhưng `saveOracleSO` ĐỌC nó ở dòng đầu:
+
+       if (currentSOMode === 'create' && !currentSourceQuotationId) {
+
+   Ở chế độ không strict, ba phép gán kia tạo biến toàn cục ngầm nên không ai
+   báo gì. Nhưng mở form đơn vận chuyển rồi bấm Lưu NGAY — chưa đi qua chỗ nào
+   gán — thì đọc phải vùng chưa tồn tại và nhận ReferenceError. Nút "Lưu Đơn
+   Hàng" bấm vào KHÔNG LÀM GÌ, và cũng không báo gì. */
+
+let currentSourceQuotationId = '';
 
 async function loadSalesOrders() {
   try {
