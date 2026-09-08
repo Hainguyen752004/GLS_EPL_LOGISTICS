@@ -18,6 +18,20 @@
    nút cuối cùng của phiếu nằm dưới thanh và không bấm được.
    ========================================================================== */
 
+/* ==========================================================================
+   Màn Báo giá nằm trong một "thẻ hồ sơ" của màn Kinh doanh (`installEnterprise-
+   ModuleTabs` trong app.js). Panel của thẻ đó có khung, nền xanh nhạt và
+   padding — dùng cho các bảng "oracle" thì hợp, nhưng bọc quanh một TRANG có
+   đầu trang và thanh đáy riêng thì thành hai lớp khung lồng nhau.
+
+   Bỏ khung CHỈ ở panel đang chứa màn này, không đổi các panel khác.
+   ========================================================================== */
+[data-enterprise-tabs]:has(> #qtv2-root) {
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
 #qtv2-root.qtv2 {
   --qt-bg: #f6f8fb;
   --qt-line: #e4e9f0;

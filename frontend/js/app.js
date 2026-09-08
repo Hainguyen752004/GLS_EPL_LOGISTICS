@@ -1136,18 +1136,31 @@ window.installEnterpriseModuleTabs = function () {
       sectionId: 'view-crm-sales',
       tabsId: 'crm-sales-folder-tabs',
       title: crmTitle,
+      // HAI THẺ, không còn ba.
+      //
+      // Thẻ "Báo giá cước" trỏ vào `#qtv2-root` — màn báo giá mới, dựng theo
+      // `nhap_UI__duan/quotation-page (1).html`. TRỎ SAI CHỖ NÀY LÀ MỘT LỖI
+      // THẬT chứ không phải chuyện gọn gàng: `moveElementWithHeading` DI
+      // CHUYỂN phần tử vào panel, nên nếu còn trỏ vào `#oracle-qt-list` thì
+      // màn báo giá cũ bị kéo ra khỏi khối `#qtv2-khoi-cu` đang ẩn và hiện
+      // lại — người dùng thấy hai màn báo giá cạnh nhau.
+      //
+      // Thẻ "Đơn hàng vận chuyển" đã bỏ: bước Đơn hàng (SO) không còn trong
+      // luồng, báo giá được chấp nhận thì tách thẳng thành lệnh giao hàng.
+      // Cùng lý do trên — để lại thẻ đó thì `#oracle-so-list` cũng bị kéo ra
+      // khỏi khối đang ẩn.
       groups: [
         {
           key: 'quotation',
           label: lang === 'la' ? 'ໃບສະເໜີລາຄາ' : (lang === 'en' ? 'Freight Quotation' : 'Báo giá cước'),
-          hint: lang === 'la' ? 'ສ້າງ ແລະ ອະນຸມັດໃບສະເໜີລາຄາກ່ອນປິດການຂາຍ.' : (lang === 'en' ? 'Create & approve quotations before closing deals.' : 'Tạo và duyệt báo giá cước trước khi chốt đơn.'),
-          selectors: ['#oracle-qt-list']
+          hint: lang === 'la' ? 'ສ້າງ ແລະ ອະນຸມັດໃບສະເໜີລາຄາ, ແລ້ວແຍກເປັນໃບສັ່ງສົ່ງ.' : (lang === 'en' ? 'Quote, get acceptance, then split straight into delivery orders.' : 'Báo giá, khách chấp nhận rồi tách thẳng thành lệnh giao hàng.'),
+          selectors: ['#qtv2-root']
         },
         {
-          key: 'sales-order',
-          label: lang === 'la' ? 'Sales Order' : (lang === 'en' ? 'Transport Order' : 'Đơn hàng vận chuyển'),
-          hint: lang === 'la' ? 'ຄຸ້ມຄອງ SO ທີ່ປິດຈາກໃບສະເໜີລາຄາ.' : (lang === 'en' ? 'Manage confirmed SOs from quotations.' : 'Quản lý đơn đã chốt từ báo giá cước.'),
-          selectors: ['#oracle-so-list']
+          key: 'crm',
+          label: lang === 'la' ? 'ລູກຄ້າ ແລະ ໂອກາດ' : (lang === 'en' ? 'Customers & pipeline' : 'Khách hàng và cơ hội'),
+          hint: lang === 'la' ? 'ຕິດຕາມໂອກາດການຂາຍກ່ອນມີໃບສະເໜີລາຄາ.' : (lang === 'en' ? 'Track opportunities before a quotation exists.' : 'Theo dõi cơ hội bán trước khi có báo giá.'),
+          selectors: ['#crm-kanban-board']
         }
       ]
     },
