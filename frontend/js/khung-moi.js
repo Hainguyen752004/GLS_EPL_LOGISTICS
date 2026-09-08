@@ -40,8 +40,9 @@
       'Gói hàng theo chuyến và in tem QR để soi ở chốt.'],
     'ai-checkpoint': ['ops', 'Vận hành', 'Trạm kiểm soát AI',
       'Đọc ảnh biển số và niêm phong tại chốt, đối chiếu với Trip đang chạy.'],
-    'crm-sales': ['biz', 'Kinh doanh', 'CRM và Kinh doanh',
-      'Khách hàng, báo giá cước vận chuyển và đơn hàng vận chuyển.'],
+    'crm-sales': ['biz', 'Kinh doanh', 'CRM và Báo giá cước',
+      'Khách hàng và báo giá cước. Khách chấp nhận báo giá là tách thẳng thành '
+      + 'lệnh giao hàng — không còn bước Đơn hàng ở giữa.'],
     'accounting': ['biz', 'Kinh doanh', 'Kế toán và tài chính',
       'Hóa đơn, công nợ và hạch toán từ các chuyến đã hoàn tất.'],
     'master-data': ['master', 'Dữ liệu gốc', 'Dữ liệu gốc',
@@ -72,7 +73,13 @@
    */
   const NUT_DAU_TRANG = {
     'ops-planning': [['+ Tạo lệnh giao hàng', 'primary', 'openFioriDOForm']],
-    'crm-sales': [['+ Đơn hàng vận chuyển', 'primary', 'openOracleSOForm']],
+    // Màn CRM KHÔNG khai nút ở đây nữa.
+    //
+    // Trước là "+ Đơn hàng vận chuyển" (`openOracleSOForm`). Bước Đơn hàng đã
+    // bị bỏ khỏi luồng — báo giá được chấp nhận thì tách thẳng thành lệnh giao
+    // hàng — nên một nút mở form của bước đó là mời người dùng đi vào một
+    // đường không còn dẫn tới đâu. Nút "+ Báo giá" của luồng mới đã có sẵn
+    // ngay trong màn, ở đầu trang danh sách báo giá.
   };
 
   /**

@@ -5486,6 +5486,24 @@
             </div>
           </div>
           </div><!-- /qtv2-khoi-cu -->
+          <!-- =============================================================
+               BƯỚC ĐƠN HÀNG (SO) — ĐÃ BỎ KHỎI LUỒNG, khối này đang ẨN.
+
+               Luồng mới đi thẳng Báo giá → khách chấp nhận → Lệnh giao hàng.
+               Chủ dự án chốt: *"lần này sẽ không có dụ SO nào ở đây nữa"*, và
+               `SPEC-quotation-page.md` ghi tiêu chí "không còn trang / menu Đơn
+               hàng (SO)".
+
+               ẨN chứ chưa xoá, vì `app.js` còn hơn hai mươi đường gọi vào các ô
+               của khối này (`oracle-so-tbody`, `oracle-so-form`, `so-line-*`) và
+               nhiều bài kiểm còn tìm chúng. Xoá hẳn là một việc riêng: phải dời
+               hoặc bỏ từng đường gọi đó trước, nếu không thì một hàm nào đó lại
+               đứt giữa lúc nạp và cả phần sau của `app.js` không chạy.
+
+               Dữ liệu và các điểm cuối `/api/sales-orders` vẫn nguyên: những đơn
+               hàng đã tạo từ trước còn phải xem lại được.
+               ============================================================= -->
+          <div id="so-khoi-cu" hidden>
           <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 30px;"><i class="fa-solid fa-file-invoice"></i> <span data-i18n="title_sales_orders">3. Đơn Hàng Vận Chuyển</span></h3>
           <div class="oracle-container" id="oracle-so-list">
             <div class="oracle-header">
@@ -5797,6 +5815,7 @@
               </div>
             </div>
           </div>
+          </div><!-- /so-khoi-cu -->
         </section>
 
         <!-- 3. OPERATIONS PLANNING VIEW -->

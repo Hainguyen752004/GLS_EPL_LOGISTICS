@@ -304,20 +304,35 @@ async function kiemKhiTrangSan() {
   }
 
   // 4c. Nút đầu trang: đúng số lượng và bấm được.
+  //
+  // Trước đây phép kiểm này soi màn CRM, vì màn đó khai nút "+ Đơn hàng vận
+  // chuyển". Bước Đơn hàng (SO) đã bị bỏ khỏi luồng — báo giá được chấp nhận
+  // thì tách thẳng thành lệnh giao hàng — nên màn CRM KHÔNG còn khai nút nào,
+  // và nút "+ Báo giá" của luồng mới nằm ngay trong màn chứ không ở đầu trang.
+  //
+  // Điều phép kiểm này thật sự canh vẫn nguyên, chỉ đổi sang màn còn khai nút:
+  // nút có đúng số lượng, đúng kiểu, và bấm vào thì gọi được hàm thật.
   {
-    w.switchView('crm-sales');
+    w.switchView('ops-planning');
     const ds = [...d.getElementById('epl-subacts').children];
-    assert.strictEqual(ds.length, 1, `màn CRM phải có 1 nút, thấy ${ds.length}`);
+    assert.strictEqual(ds.length, 1,
+      `màn Lệnh giao hàng phải có 1 nút, thấy ${ds.length}`);
     assert.ok(ds[0].className.includes('epl-btn-primary'));
 
     let daGoi = 0;
-    const cu = w.openOracleSOForm;
-    w.openOracleSOForm = () => { daGoi += 1; };
+    const cu = w.openFioriDOForm;
+    w.openFioriDOForm = () => { daGoi += 1; };
     w.switchView('dashboard');
-    w.switchView('crm-sales');
+    w.switchView('ops-planning');
     bam([...d.getElementById('epl-subacts').children][0]);
-    w.openOracleSOForm = cu;
+    w.openFioriDOForm = cu;
     assert.strictEqual(daGoi, 1, 'nút đầu trang bấm vào không gọi hàm');
+
+    // Màn CRM giờ phải TRỐNG. Một nút mở form của bước đã bỏ là mời người dùng
+    // đi vào một đường không còn dẫn tới đâu.
+    w.switchView('crm-sales');
+    assert.strictEqual(d.getElementById('epl-subacts').children.length, 0,
+      'màn CRM vẫn còn nút đầu trang — bước Đơn hàng (SO) đã bỏ khỏi luồng');
 
     // Màn không khai nút thì phải TRỐNG, không giữ lại nút của màn trước.
     w.switchView('accounting');
