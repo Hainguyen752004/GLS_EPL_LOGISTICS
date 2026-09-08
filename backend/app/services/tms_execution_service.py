@@ -59,6 +59,31 @@ def _event_time(value):
     return parsed
 
 
+def _naive_utc(value):
+    """Doi mot moc thoi gian ve UTC KHONG mui gio, de so sanh duoc voi nhau.
+
+    LOI DA XAY RA THAT. `_event_time` tra ve mot moc NAIVE (no cat `tzinfo` di),
+    nhung cac cot lay tu co so du lieu — `resource_assignments.assignment_start`,
+    `transport_events.event_time` — tra ve moc CO mui gio tren PostgreSQL. So
+    hai loai voi nhau thi Python nem:
+
+        TypeError: can't compare offset-naive and offset-aware datetimes
+
+    Va vi phep so nam trong duong ghi su kien, hau qua la MOI lan ghi mot su
+    kien van tai deu tra ve HTTP 500. Do duoc bang cach bam that: nut "ghi nhan
+    xe da den noi" tra ve "Internal Server Error", khong mot loi nghiep vu nao.
+
+    Quy uoc cua tep nay la NAIVE UTC (`_event_time` da chon vay), nen ham nay
+    keo moi thu ve dung quy uoc do thay vi doi nguoc lai — doi nguoc thi phai
+    sua ca cot va ca cac ban ghi da co.
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(dt.timezone.utc).replace(tzinfo=None)
+
+
 def _validate_payload_shape(data):
     if not isinstance(data, dict) or set(data) - EVENT_FIELDS:
         raise _error("EVENT_PAYLOAD_INVALID", "Dữ liệu sự kiện không hợp lệ.")
@@ -213,7 +238,10 @@ def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, ac
     ))
     if assignment is None:
         raise _error("ACTIVE_ASSIGNMENT_REQUIRED", "Lệnh vận chuyển chưa có phân công đang hoạt động.")
-    if event_time < assignment.assignment_start or event_time > assignment.assignment_end:
+    # `_naive_utc` o ca hai ben: mot ben naive, mot ben co mui gio thi Python nem
+    # TypeError va ca duong ghi su kien tra ve 500.
+    if (event_time < _naive_utc(assignment.assignment_start)
+            or event_time > _naive_utc(assignment.assignment_end)):
         raise _error("ASSIGNMENT_TIME_INVALID", "Thời điểm sự kiện nằm ngoài thời gian phân công.")
     if data.get("vehicle_id") not in (None, assignment.vehicle_id) or data.get("driver_id") not in (None, assignment.driver_id):
         raise _error("ASSIGNMENT_MISMATCH", "Phương tiện hoặc tài xế không khớp phân công đang hoạt động.")
@@ -222,7 +250,7 @@ def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, ac
         TransportEvent.freight_order_id == freight_order_id,
         TransportEvent.event_type.in_(MAIN_SEQUENCE),
     ).order_by(TransportEvent.event_time, TransportEvent.recorded_at, TransportEvent.id)).all()
-    if main_events and event_time < main_events[-1].event_time:
+    if main_events and event_time < _naive_utc(main_events[-1].event_time):
         raise _error("EVENT_TIME_REGRESSION", "Thời điểm sự kiện không được lùi trước sự kiện chính gần nhất.")
     if event_type in MAIN_SEQUENCE:
         if any(item.event_type == event_type for item in main_events):

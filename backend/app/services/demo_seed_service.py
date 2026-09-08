@@ -133,6 +133,25 @@ def _utc(year, month, day, hour=0, minute=0):
     return dt.datetime(year, month, day, hour, minute, tzinfo=dt.timezone.utc)
 
 
+def _moc_tuong_doi(gio_lech, phut_lech=0):
+    """Mot moc cach GIO HIEN TAI mot khoang, lam tron ve phut.
+
+    VI SAO CAN, ngoai `_moc`. `_moc` neo vao mot GIO TRONG NGAY (vi du 08:00),
+    nen mot chuyen "dang chay" co the roi vao qua khu hoac tuong lai tuy luc nap
+    du lieu. Hai hau qua do duoc tren man hinh:
+
+      · Chuyen dang chay ma khung gio da qua thi bi dem la QUA HAN, trong khi
+        cau chuyen muon ke la "xe dang tren duong".
+      · Khung gio qua rong so voi quang duong lam TOC DO tinh ra vo ly: 44,7 km
+        trong bay tieng ra 6,4 km/h, va con so do hien ngay tren thap kiem soat.
+
+    Neo tuong doi thi chuyen dang chay LUON dang o giua duong vao luc mo man, va
+    toc do suy ra tu khung gio luon nam trong khoang that.
+    """
+    moc = dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=gio_lech, minutes=phut_lech)
+    return moc.replace(second=0, microsecond=0)
+
+
 def _moc(lech_ngay, gio_utc, phut=0):
     """Mot moc thoi gian tinh THEO HOM NAY, khong ghim ngay co dinh.
 
@@ -782,15 +801,19 @@ def seed_demo(db, reset=False, verify=False):
         # khach hang.
         demo_master_seed.nap_danh_muc(db)
 
-        # CHO DIEU PHOI: lay hang trong hai gio nua (10:00 gio Viet Nam).
-        waiting_pickup = _moc(0, 3)
-        waiting_delivery = _moc(0, 8)
+        # CHO DIEU PHOI: lay hang hai gio nua, giao sau do ba gio. Gio lay phai
+        # o TUONG LAI — mot don vua cho dieu phoi vua da tre gio lay thi doc ra
+        # nhu he thong bo quen no.
+        waiting_pickup = _moc_tuong_doi(2)
+        waiting_delivery = _moc_tuong_doi(5)
         _seed_sales_chain(db, "waiting", waiting_pickup, waiting_delivery, 3600000)
         _seed_delivery_order(db, "waiting", waiting_pickup, waiting_delivery)
 
-        # DANG CHAY: da lay hang hai gio truoc, du kien giao chieu nay.
-        tracking_pickup = _moc(0, 1)
-        tracking_delivery = _moc(0, 8)
+        # DANG CHAY: lay hang mot gio truoc, du kien giao mot gio nua — nen xe
+        # luon dang o KHOANG GIUA tuyen vao luc mo man, va toc do suy ra tu khung
+        # gio nay nam trong khoang that cua duong noi thanh.
+        tracking_pickup = _moc_tuong_doi(-1)
+        tracking_delivery = _moc_tuong_doi(1)
         _seed_sales_chain(db, "tracking", tracking_pickup, tracking_delivery, 3950000)
         _seed_delivery_order(
             db, "tracking", tracking_pickup, tracking_delivery, "in_transit",
@@ -818,9 +841,12 @@ def seed_demo(db, reset=False, verify=False):
         # thi CAM sua tien, den noi va ky POD roi moi chot duoc gia cuoi. Ba
         # tinh huong dau khong co trang thai nay, nen man Hoan tat giao hang
         # khong the hien duoc cho chan do.
-        # DA DEN NOI, chua ky POD: den tu sang nay.
-        den_noi_pickup = _moc(0, 0)
-        den_noi_delivery = _moc(0, 4)
+        # DA DEN NOI, chua ky POD: lay hang ba gio truoc, han giao con nua gio
+        # nua. CO Y chua qua han: ngoai le cua tinh huong nay la CHUA KY POD, va
+        # cong them mot canh bao qua han thi hai ngoai le che nhau — nguoi truc
+        # khong biet cai nao moi la viec phai xu.
+        den_noi_pickup = _moc_tuong_doi(-3)
+        den_noi_delivery = _moc_tuong_doi(0, 30)
         _seed_sales_chain(
             db, "arrived", den_noi_pickup, den_noi_delivery, 4350000,
             tuyen="DEMO-RT-SONGTHAN-CATLAI", di="Bãi Sóng Thần",
@@ -850,9 +876,11 @@ def seed_demo(db, reset=False, verify=False):
         # Ba tinh huong dau deu di chung mot tuyen va mot khach, nen bo loc
         # tuyen va bo loc khach o cac man deu chi co mot lua chon that — nhin
         # nhu bo loc hong, trong khi no dang noi that.
-        # CHO DIEU PHOI, tuyen khac: lay hang chieu nay.
-        tuyen_hai_pickup = _moc(0, 5)
-        tuyen_hai_delivery = _moc(0, 10)
+        # CHO DIEU PHOI, tuyen khac: lay hang bon gio nua. Khung gio dai hon ba
+        # tinh huong tren vi tuyen nay 112 km, khong phai 44,7 km — dat cung mot
+        # khung cho ca hai thi toc do suy ra cua mot trong hai se vo ly.
+        tuyen_hai_pickup = _moc_tuong_doi(4)
+        tuyen_hai_delivery = _moc_tuong_doi(8)
         _seed_sales_chain(
             db, "second_route", tuyen_hai_pickup, tuyen_hai_delivery, 7900000,
             tuyen="DEMO-RT-LONGAN-CAIMEP", khach="DEMO-CUS-NIDEC",

@@ -84,13 +84,30 @@ async def list_incidents(db: Session = Depends(get_db)):
 @router.post("/api/incidents")
 async def create_incident(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     required = ["do_id", "vehicle_id", "incident_type", "location", "reporter"]
-    missing = [key for key in required if not data.get(key)]
+    missing = [key for key in required if not isinstance(data.get(key), str) or not data[key].strip()]
     if missing:
         raise HTTPException(status_code=422, detail={
             "code": "MISSING_INCIDENT_DATA",
             "message": "Thiếu dữ liệu báo cáo sự cố. Vui lòng nhập đủ DO, xe, loại sự cố, vị trí và người báo cáo.",
             "missing_fields": missing,
             "navigation_targets": ["incidents", "delivery-orders", "master-data/vehicles"],
+        })
+    data = {**data, **{key: data[key].strip() for key in required}}
+    order = db.get(DeliveryOrder, data['do_id'])
+    vehicle = db.get(Vehicle, data['vehicle_id'])
+    if order is None or vehicle is None:
+        raise HTTPException(status_code=404, detail={
+            'code': 'INCIDENT_RESOURCE_NOT_FOUND',
+            'message': 'Không tìm thấy DO hoặc xe của báo cáo sự cố.',
+        })
+    assigned = {order.vehicle_id} if order.vehicle_id else set()
+    assigned.update(row.vehicle_id for row in db.query(TransportTrip).join(
+        TripDeliveryOrder, TripDeliveryOrder.trip_id == TransportTrip.id
+    ).filter(TripDeliveryOrder.do_id == order.id) if row.vehicle_id)
+    if assigned and vehicle.id not in assigned:
+        raise HTTPException(status_code=409, detail={
+            'code': 'INCIDENT_VEHICLE_MISMATCH',
+            'message': 'Xe không thuộc DO hoặc Trip của DO này. Vui lòng kiểm tra lại điều phối.',
         })
     inc = Incident(
         do_id=data.get("do_id"),

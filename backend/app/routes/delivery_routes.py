@@ -77,6 +77,13 @@ from routes.shared import (
 router = APIRouter(dependencies=[Depends(require_api_principal)])
 
 
+@router.get("/api/tracking/control-tower", summary="Bảng theo dõi chuyến, GPS, POD và sự cố")
+def get_tracking_control_tower(db: Session = Depends(get_db)):
+    """Đọc dữ liệu thật; thiếu GPS không loại chuyến khỏi bảng và không suy diễn ETA."""
+    from services.tracking_control_service import control_tower
+    return control_tower(db)
+
+
 @router.get("/api/tracking/{do_id}")
 async def get_tracking(do_id: str, db: Session = Depends(get_db)):
     track = db.query(VehicleTracking).filter(VehicleTracking.do_id == do_id).first()

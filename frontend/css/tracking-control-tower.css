@@ -1,0 +1,134 @@
+#view-tracking.ct-view { display:block!important; padding:16px!important; min-height:0!important; background:#f6f8fb!important; }
+#view-tracking.ct-view:not(.active) { display:none!important; }
+#view-tracking.ct-view > :not(#tracking-control-tower) { display:none!important; }
+.samsung-main-wrapper:has(#view-tracking.ct-view.active) > .content-body { padding-top:0!important; padding-bottom:0!important; }
+#tracking-control-tower { --ct-line:#e4e9f0; color:#1e293b; font:13px/1.45 Inter,system-ui,sans-serif; min-width:0; max-width:1800px; margin:0 auto; letter-spacing:0; }
+#tracking-control-tower * { box-sizing:border-box; letter-spacing:0; }
+#tracking-control-tower h2 { margin:0; font-size:18px; }
+#tracking-control-tower h3 { margin:0; font-size:14px; }
+#tracking-control-tower h4 { margin:18px 0 8px; font-size:12px; color:#58677a; }
+#tracking-control-tower p { margin:4px 0; }
+#tracking-control-tower button, #tracking-control-tower input, #tracking-control-tower select, #tracking-control-tower textarea { font:inherit; min-width:0; }
+#tracking-control-tower button { cursor:pointer; border:1px solid #cbd5e1; border-radius:6px; padding:8px 11px; color:#334155; background:#fff; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+#tracking-control-tower button:hover { background:#edf4ff; }
+#tracking-control-tower button:disabled { opacity:.5; cursor:not-allowed; }
+#tracking-control-tower :focus-visible { outline:2px solid #1a73e8; outline-offset:2px; }
+#tracking-control-tower button[aria-pressed=true] { border-color:#1a73e8; background:#e9f1fd; color:#0b4faa; }
+#tracking-control-tower .ct-danger { background:#c52a2a; color:#fff; border-color:#c52a2a; }
+/* Nut viec CHINH cua khung ho so — "Ghi nhan da den noi".
+   To dam han cac nut con lai vi day la viec ke tiep that su cua chuyen dang
+   chay: khong ghi moc nay thi khong mo duoc form ky POD, va ca chuoi doi soat
+   dung lai o day. Mot nut quyet dinh ma nhin giong ba nut phu ben canh thi
+   nguoi truc phai doc het bon nut moi biet bam cai nao. */
+#tracking-control-tower .ct-primary { background:#1a73e8; color:#fff; border-color:#1a73e8; font-weight:700; }
+#tracking-control-tower .ct-primary:hover:not(:disabled) { background:#0b4faa; border-color:#0b4faa; }
+/* Nut bi khoa phai NHIN RA la khoa: cho bam roi bao loi thi nguoi dung phai
+   thu moi biet, con de mo ma khong noi vi sao thi ho tuong man hinh hong. */
+#tracking-control-tower .ct-actions button:disabled { opacity:.5; cursor:not-allowed; }
+.ct-header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:8px 0 12px; border-bottom:1px solid var(--ct-line); }
+.ct-header > div:first-child { display:none; }
+.ct-header p { color:#738195; font-size:12px; }
+.ct-search { display:flex; gap:8px; align-items:center; flex:1; min-width:220px; background:#fff; border:1px solid #a5c5ef; border-radius:6px; padding:0 10px; }
+.ct-search input { border:0; background:transparent; width:100%; height:38px; }
+.ct-auto { display:flex; align-items:center; gap:5px; font-size:12px; }
+#ct-status { min-height:34px; padding:8px 0; color:#7c591e; font-size:12px; overflow-wrap:anywhere; }
+.ct-kpis { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+#tracking-control-tower .ct-kpi { align-items:flex-start; flex-direction:column; padding:10px 14px; border-color:var(--ct-line); }
+.ct-kpi span { font-size:12px; color:#65748a; text-align:left; }
+.ct-kpi b { font-size:22px; }
+.ct-kpi[data-filter=overdue] b,.ct-kpi[data-filter=incidents] b { color:#c52a2a; }
+.ct-kpi[data-filter=gps_unavailable] b { color:#a56517; }
+.ct-kpi[data-filter=awaiting_pod] b { color:#7651b1; }
+.ct-board { display:grid; grid-template-columns:300px minmax(280px,1fr) 360px; gap:12px; align-items:start; }
+.ct-list-panel,.ct-map-panel,.ct-detail-panel { min-width:0; background:#fff; border:1px solid var(--ct-line); }
+.ct-section-head { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:12px; border-bottom:1px solid var(--ct-line); flex-wrap:wrap; }
+.ct-section-head select { max-width:110px; border:1px solid #cbd5e1; background:#fff; border-radius:4px; padding:5px; }
+#ct-count { color:#1a73e8; font-size:12px; }
+#ct-list { max-height:680px; overflow:auto; }
+#tracking-control-tower .ct-trip { width:100%; border:0; border-bottom:1px solid var(--ct-line); border-left:4px solid #1a73e8; border-radius:0; padding:12px; align-items:flex-start; gap:3px; flex-direction:column; text-align:left; overflow-wrap:anywhere; }
+.ct-trip span { font-size:12px; color:#66758b; }
+.ct-trip small { color:#426ca3; font-weight:600; }
+#tracking-control-tower .ct-trip.red { border-left-color:#c52a2a; }
+#tracking-control-tower .ct-trip.amber { border-left-color:#ca901f; }
+#tracking-control-tower .ct-trip.gray { border-left-color:#8b98a8; }
+#tracking-control-tower .ct-trip.purple { border-left-color:#7651b1; }
+.ct-trip progress { height:5px; width:100%; margin-top:5px; accent-color:#1a73e8; }
+/* DAI NUT chon, thay cho o <select>.
+   Mot o <select> giau mat cac lua chon: nguoi dung phai bung ra moi biet co gi,
+   con ba nut thi thay ngay dang xep theo cai nao — dung nhu ban mau. */
+.ct-segment { display:flex; gap:0; border:1px solid var(--ct-line); border-radius:8px; overflow:hidden; }
+#tracking-control-tower .ct-segment button {
+  font-size:11px; padding:5px 9px; border:0; border-radius:0; background:#fff;
+  border-right:1px solid var(--ct-line);
+}
+#tracking-control-tower .ct-segment button:last-child { border-right:0; }
+#tracking-control-tower .ct-segment button.on { background:#e9f1fd; color:#0b4faa; font-weight:700; }
+
+/* CHU THICH MAU. Nam o chan cot chuyen va duoi thanh cong cu ban do.
+   Khong co no thi nam mau dong va nam mau diem chi la trang tri: nguoi doc thay
+   mot dong mau cam ma khong biet cam nghia la gi, va ho se doan. */
+.ct-legend-row { padding:9px 12px; border-top:1px solid var(--ct-line); }
+.ct-legend-row small { font-size:11px; color:#738195; line-height:1.7; }
+.ct-dot {
+  display:inline-block; width:9px; height:9px; border-radius:999px;
+  margin:0 4px 0 2px; vertical-align:-1px;
+}
+.ct-dot-red { background:#d32f2f; }
+.ct-dot-amber { background:#ef9f27; }
+.ct-dot-purple { background:#7c3aed; }
+.ct-dot-gray { background:#788493; }
+.ct-dot-blue { background:#1a73e8; }
+
+/* THANH CONG CU BAN DO: pham vi xe + nhan mau, tren mot hang. */
+.ct-maptools {
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:8px 12px; border-bottom:1px solid var(--ct-line); background:#fafbfd;
+}
+.ct-maplegend { display:flex; align-items:center; gap:3px; margin-left:auto; font-size:11px; color:#738195; flex-wrap:wrap; }
+.ct-maplegend i { margin-left:9px; }
+.ct-maplegend i:first-child { margin-left:0; }
+
+/* Nam o so lieu thi hai cot khong vua — chia ba, va o cuoi trai het hang. */
+.ct-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); }
+@media (max-width:1200px) { .ct-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+#ct-map { height:420px; background:#edf1f4; z-index:0; }
+#ct-map-note { padding:8px 12px; font-size:11px; color:#806122; border-bottom:1px solid var(--ct-line); }
+#ct-map-warning:not(:empty) { padding:7px 12px; font-size:12px; background:#fff6e5; color:#806122; }
+.ct-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:12px; }
+.ct-metrics span,.ct-summary span { display:block; font-size:11px; color:#738195; }
+.ct-metrics b,.ct-summary b { display:block; font-size:13px; overflow-wrap:anywhere; }
+#ct-detail { padding:14px; max-height:580px; overflow:auto; }
+.ct-pod { display:grid; gap:5px; padding:8px 0; border-bottom:1px solid var(--ct-line); }
+.ct-pod span { font-size:12px; color:#66758b; }
+.ct-pod button { overflow-wrap:anywhere; text-align:left; }
+.ct-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; border-bottom:1px solid var(--ct-line); padding-bottom:12px; }
+.ct-crew { display:flex; gap:10px; align-items:center; justify-content:space-between; }
+.ct-crew span { display:block; color:#738195; font-size:11px; }
+.ct-crew a { padding:10px; color:#1a73e8; }
+.ct-alert { padding:8px 10px; border-left:3px solid #9bbde9; background:#f0f6ff; margin:6px 0; font-size:12px; overflow-wrap:anywhere; }
+.ct-alert.amber { border-color:#ddaa47; background:#fff6e5; color:#88601a; }
+.ct-alert.red { border-color:#d97878; background:#fdf0f0; color:#9b3030; }
+.ct-timeline { padding:0 0 0 15px; list-style:none; margin:0; }
+.ct-timeline li { position:relative; padding:0 0 15px 14px; border-left:1px solid #dce4ef; overflow-wrap:anywhere; }
+.ct-timeline li:before { position:absolute; content:''; width:9px; height:9px; left:-5px; top:5px; border-radius:50%; border:2px solid #9baabc; background:#fff; }
+.ct-timeline li.done:before { background:#168567; border-color:#168567; }
+.ct-timeline span,.ct-timeline small { display:block; color:#738195; font-size:11px; }
+.ct-timeline strong { font-size:13px; }
+.ct-actions { display:flex; flex-wrap:wrap; gap:7px; padding-top:12px; border-top:1px solid var(--ct-line); }
+#tracking-control-tower .ct-empty { padding:30px 15px; text-align:center; color:#7b8796; }
+#ct-route-strip { display:flex; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--ct-line); color:#4f5f74; font-size:12px; overflow:auto; }
+#ct-route-strip span { display:flex; align-items:center; gap:7px; white-space:nowrap; }
+#ct-route-strip b { width:22px; height:22px; border-radius:999px; display:grid; place-items:center; background:#e9f1fd; color:#0b4faa; font-size:11px; }
+#ct-route-strip i { color:#9aa8ba; font-size:11px; }
+.ct-route-marker { width:34px; height:34px; border-radius:999px; display:grid; place-items:center; background:var(--ct-marker); color:#fff; border:3px solid #fff; box-shadow:0 5px 16px rgb(15 23 42 / 28%); font-weight:800; font-size:13px; }
+#ct-incident { border:1px solid #d8e1ed; border-radius:10px; padding:0; width:min(920px, calc(100vw - 32px)); max-height:90vh; color:#1e293b; margin:auto; }
+#ct-incident::backdrop { background:rgb(15 23 42 / 55%); }
+.ct-form-body { padding:16px; display:grid; gap:12px; }
+.ct-form-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+.ct-form-body label { display:grid; gap:5px; font-weight:600; }
+.ct-form-body input,.ct-form-body select,.ct-form-body textarea { padding:9px; border:1px solid #cbd5e1; border-radius:4px; width:100%; }
+#ct-incident footer { border-top:1px solid #e4e9f0; padding:12px 16px; display:flex; justify-content:flex-end; gap:8px; }
+#ct-incident-error { color:#b32626; }
+@media(min-width:1650px) { .ct-board { grid-template-columns:320px minmax(0,1fr) 400px; } #ct-map { height:460px; } }
+@media(max-width:1200px) { .ct-board { grid-template-columns:260px minmax(0,1fr); } .ct-detail-panel { grid-column:1/-1; } #ct-detail { max-height:none; } .ct-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:700px) { #view-tracking.ct-view { padding:10px!important; } .ct-board { grid-template-columns:minmax(0,1fr); } .ct-detail-panel { grid-column:auto; } #ct-list { max-height:260px; } #ct-map { height:340px; } .ct-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; } .ct-search { min-width:100%; } .ct-header { gap:8px; } .ct-form-grid { grid-template-columns:minmax(0,1fr); } }
