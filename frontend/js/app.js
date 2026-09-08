@@ -15323,6 +15323,74 @@ window.createNewRouteForm = async function () {
   showToast(`✨ Đã mở Form tạo Tuyến Đường Mới (${nextCode})! Vui lòng nhập Tên tuyến đường và thêm các chặng.`);
 };
 
+/**
+ * HIỆN CẢ HAI CON SỐ km cạnh nhau: số người khai và số đường bộ đo được.
+ *
+ * Vì sao không tự ghi đè số khai bằng số đo. `routes.distance_km` là con số
+ * người dùng khai, và nó đang nuôi phép tính giá cước lẫn ETA — thay nó bằng
+ * một con số máy lấy về là đổi tiền trên những đơn đã chốt, mà không ai bấm
+ * đồng ý. Nên máy chỉ NÓI RA chênh lệch; quyết định là của người dùng.
+ *
+ * Ngưỡng 5%: dưới mức đó thì lệch là chuyện thường (điểm khai là một khu, không
+ * phải một cổng), và tô đỏ mọi tuyến thì cái màu đỏ mất nghĩa.
+ */
+function veSoKmDuongBo(kmKhai, kmDuongBo) {
+  const o = document.getElementById('route-road-distance-box');
+  if (!o) return;
+  const khai = Number(kmKhai || 0);
+  const bo = Number(kmDuongBo || 0);
+  if (!bo) {
+    // Chưa đo được thì NÓI RA là chưa đo, không hiện một con số 0 — số 0 đọc
+    // ra như "tuyến này dài 0 km".
+    o.innerHTML = '<small style="color:#94a3b8; font-weight:600;">chưa đo được đường bộ thật</small>';
+    o.hidden = false;
+    return;
+  }
+  const lech = bo - khai;
+  const phanTram = khai > 0 ? Math.abs(lech) / khai * 100 : 0;
+  const dang = phanTram >= 5;
+  const mau = dang ? '#b45309' : '#15803d';
+  const nen = dang ? '#fff4e0' : '#e7f6ec';
+  const dau = lech > 0 ? '+' : '';
+  o.innerHTML = `
+    <span>Đường bộ đo được: <strong style="color:${mau}; font-size:1rem;">${bo.toLocaleString('vi-VN')} km</strong></span>
+    <span style="background:${nen}; color:${mau}; border-radius:6px; padding:2px 8px; font-weight:800; font-size:0.76rem; white-space:nowrap;"
+      title="${dang ? 'Lệch trên 5% so với số khai — nên soát lại' : 'Lệch dưới 5%, trong khoảng bình thường'}"
+      >${dau}${lech.toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km · ${phanTram.toLocaleString('vi-VN', { maximumFractionDigits: 1 })}%</span>
+    ${dang ? `<button type="button" id="route-dung-km-do" class="fiori-btn fiori-btn-secondary"
+        style="padding:3px 9px; font-size:0.74rem;"
+        title="Điền ${bo} km vào ô tổng quãng đường. Chưa lưu — bấm 'Hoàn tất & Lưu tuyến đường' mới ghi vào hệ thống."
+        data-km="${bo}">Dùng số đo</button>` : ''}`;
+  o.hidden = false;
+  const nut = document.getElementById('route-dung-km-do');
+  if (nut) {
+    nut.onclick = () => {
+      // KHÔNG tự lưu. Chỉ điền vào ô, và nói rõ điều đó ảnh hưởng tới đâu —
+      // người dùng phải bấm Lưu mới ghi vào hệ thống.
+      const xuongDong = String.fromCharCode(10);
+      if (!window.confirm(`Điền ${bo.toLocaleString('vi-VN')} km vào ô tổng quãng đường?`
+        + xuongDong + xuongDong
+        + 'Số này nuôi phép tính giá cước và ETA của những đơn TẠO SAU khi lưu.'
+        + xuongDong
+        + 'Chưa lưu ngay — bấm "Hoàn tất & Lưu tuyến đường" mới ghi vào hệ thống.'
+        + xuongDong + xuongDong
+        // Nói ra chỗ này chứ không để người dùng tự phát hiện: km của TỪNG
+        // CHẶNG vẫn là số cũ, nên hàm tính tổng sẽ ghi đè lại nếu họ sửa một
+        // chặng. Không nói thì họ tưởng đã lưu số đo rồi mà nó lặng lẽ mất.
+        + 'Lưu ý: km của từng chặng vẫn giữ số cũ. Nếu sửa một chặng thì tổng sẽ '
+        + 'tính lại theo các chặng và mất số đo này.')) return;
+      const distEl = document.getElementById('route-total-distance');
+      if (distEl) {
+        distEl.dataset.km = String(bo);
+        distEl.innerText = `${bo.toLocaleString('vi-VN')} km`;
+      }
+      showToast(`Đã điền ${bo.toLocaleString('vi-VN')} km. Bấm "Hoàn tất & Lưu tuyến đường" để ghi vào hệ thống.`);
+      veSoKmDuongBo(bo, bo);
+    };
+  }
+}
+window.veSoKmDuongBo = veSoKmDuongBo;
+
 window.loadSavedRoutePreset = async function (code) {
   if (!code) return;
 
@@ -15348,6 +15416,7 @@ window.loadSavedRoutePreset = async function (code) {
       distEl.dataset.km = String(Number(apiRoute.distance_km || 0));
       distEl.innerText = `${Number(apiRoute.distance_km || 0).toLocaleString('vi-VN')} km`;
     }
+    veSoKmDuongBo(apiRoute.distance_km, apiRoute.km_duong_bo);
 
     // Parse segments from segments_json if available
     let segments = [];
@@ -15428,6 +15497,9 @@ window.loadSavedRoutePreset = async function (code) {
             // Ghi lại vào bản trong bộ nhớ để lần mở sau không phải gọi lại.
             apiRoute.duong_bo = duLieu.duong_bo;
             apiRoute.km_duong_bo = duLieu.km_duong_bo;
+            // `/geo` co the vua DO XONG mot tuyen chua tung mo, nen ve lai o
+            // so sanh — khong ve lai thi no con hien "chua do duoc".
+            veSoKmDuongBo(apiRoute.distance_km, duLieu.km_duong_bo);
           }
         }
       } catch (e) {
