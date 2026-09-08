@@ -250,11 +250,27 @@ KHACH = [
 ]
 
 # (ma, ten, hang bang, dien thoai, vai tro)
+#
+# Vi sao can nhieu tai xe den vay: doi xe co CHIN chiec, va man Dieu phoi cham
+# diem xe theo tieu chi "co tai xe dang trong ca". Khi chi co ba nguoi co ca thi
+# tam trong chin chiec deu bi tru diem va cot xe ung vien noi "chua co tai xe" —
+# dung theo du lieu, nhung khong dung theo nghiep vu: mot doi chin xe khong the
+# chi co ba tai xe.
+#
+# Bang FC cho dau keo, bang C cho xe tai. Nguoi vai tro "Phu xe" khong lai chinh
+# duoc, nen so nguoi lai chinh phai du cho so xe, khong tinh ho vao.
 TAI_XE = [
     ("DEMO-DRV-004", "Phạm Hữu Long", "FC", "0901234004", "Lái xe chính"),
     ("DEMO-DRV-005", "Ngô Hữu Phúc", "FC", "0901234005", "Lái xe chính"),
     ("DEMO-DRV-006", "Huỳnh Văn Kiên", "C", "0901234006", "Lái xe chính"),
     ("DEMO-DRV-007", "Bùi Văn Nam", "B2", "0901234007", "Phụ xe"),
+    ("DEMO-DRV-008", "Trần Văn Hòa", "FC", "0901234008", "Lái xe chính"),
+    ("DEMO-DRV-009", "Đỗ Thanh Long", "FC", "0901234009", "Lái xe chính"),
+    ("DEMO-DRV-010", "Lê Minh Tuấn", "FC", "0901234010", "Lái xe chính"),
+    ("DEMO-DRV-011", "Hồ Quang Vinh", "C", "0901234011", "Lái xe chính"),
+    ("DEMO-DRV-012", "Phạm Quốc Bảo", "C", "0901234012", "Lái xe chính"),
+    ("DEMO-DRV-013", "Trần Quốc Huy", "B2", "0901234013", "Phụ xe"),
+    ("DEMO-DRV-014", "Nguyễn Hoài Nam", "B2", "0901234014", "Phụ xe"),
 ]
 
 

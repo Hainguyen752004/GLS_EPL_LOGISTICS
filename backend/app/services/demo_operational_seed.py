@@ -126,6 +126,58 @@ def nap_ca_truc(db, tuan=None):
             ))
             da_tao += 1
 
+    # ---------------------------------------------------------------------
+    # TO LAI CHO TUNG XE.
+    #
+    # Ba nhom tren la ba TINH HUONG can cho dai loc o man xep ca (chua xep,
+    # vuot gio, co nghi). Nhung chung chi phu hai chiec xe, nen man Dieu phoi
+    # cham diem cho chin chiec thi bay chiec bi tru diem vi "khong co tai xe
+    # trong ca" — dung theo du lieu, sai theo nghiep vu.
+    #
+    # Lop nay gan cho MOI chiec con lai mot to lai co ca. Vai diem co y:
+    #
+    #   · Nam ngay lam, hai ngay nghi -> 40 gio/tuan. De bay ngay thi ai cung
+    #     vuot 48 gio, va dai loc "vuot gio" mat y nghia vi no khong con chi ra
+    #     ngoai le nao ca — chi con DEMO-DRV-003 la truong hop vuot that.
+    #   · Ca xoay theo BAI, khong xoay theo thu tu bang: moi bai phai co it nhat
+    #     mot chiec truc ca sang, khong thi don lay hang buoi sang o bai do
+    #     khong co xe nao gan duoc tai xe.
+    #   · Hai chiec co them phu xe, dung hai vai ma may chu nhan (`driver_id` va
+    #     `co_driver_id`) — khong dat vai thu ba, vi khong co cho de luu.
+    # ---------------------------------------------------------------------
+    to_lai = [
+        # (ma xe, tai xe chinh, phu xe, ca)
+        ("DEMO-51C-129.03", "DEMO-DRV-004", "DEMO-DRV-007", "morning"),
+        ("DEMO-51C-301.88", "DEMO-DRV-005", None, "morning"),
+        ("DEMO-51C-412.09", "DEMO-DRV-008", "DEMO-DRV-013", "morning"),
+        ("DEMO-61H-208.44", "DEMO-DRV-006", None, "morning"),
+        ("DEMO-51C-556.12", "DEMO-DRV-009", None, "afternoon"),
+        ("DEMO-61H-330.17", "DEMO-DRV-011", "DEMO-DRV-014", "afternoon"),
+        ("DEMO-50H-771.25", "DEMO-DRV-010", None, "night"),
+    ]
+    for j, (xe, chinh, phu, loai) in enumerate(to_lai, start=4):
+        lech_bd, lech_kt = CA[loai]
+        for thu in range(5):  # thu Hai den thu Sau, nghi hai ngay cuoi tuan
+            ngay = t0 + dt.timedelta(days=thu)
+            for k, nguoi in enumerate((chinh, phu)):
+                if nguoi is None:
+                    continue
+                db.merge(DriverShiftAssignment(
+                    id="DEMO-CA-%s-%02d%d%d" % (ngay.strftime("%Y%m%d"), j, thu, k),
+                    driver_id=nguoi,
+                    vehicle_id=xe,
+                    shift_type=loai,
+                    availability_kind="work",
+                    shift_start=ngay + lech_bd,
+                    shift_end=ngay + lech_kt,
+                    work_location=None,
+                    notes="To lai theo xe, du lieu demo",
+                    status="confirmed",
+                    created_by=ACTOR,
+                    updated_by=ACTOR,
+                ))
+                da_tao += 1
+
     # MOT ngay nghi phep, de nhom "co nghi" cua dai loc co noi dung that. Ngay
     # nghi khong tinh gio lam, nen no cung la truong hop kiem cho phep tinh gio.
     ngay_nghi = t0 + dt.timedelta(days=3)

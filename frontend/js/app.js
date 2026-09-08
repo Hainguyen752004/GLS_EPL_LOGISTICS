@@ -9009,8 +9009,14 @@ async function loadDispatchBoard() {
     appState.transport_trips = Array.isArray(trips) ? trips : [];
 
     await refreshDispatchTrackingMap(allDOs);
+    // Ca truc va lich xe: hai duong nay von chi duoc goi o man Sap lich xe, nen
+    // vao man Dieu phoi la cot xe ung vien khong biet xe nao dang chay va tai
+    // xe nao dang trong ca. Nap o day de cham diem du tieu chi.
+    await napCaTrucChoDieuPhoi();
     renderDispatchSelects();
+    renderDispatchScopeOptions();
     renderDispatchCalendar();
+    renderDispatchCandidates();
     normalizeDispatchStaticText();
   } catch (e) {
     console.error("Failed to load dispatch data", e);
@@ -9129,9 +9135,7 @@ function renderDispatchKpis(dsTrongNgay, dsHienRa) {
   // JavaScript, nên `driverShiftVehicles || fioriVehicles` trả về đúng mảng
   // rỗng khi màn Điều phối chưa nạp danh sách xe của màn xếp lịch. Đo được:
   // thẻ "Xe / tài xế rảnh" hiện 0 trong khi cơ sở dữ liệu có 9 xe.
-  const dsXe = (driverShiftVehicles && driverShiftVehicles.length)
-    ? driverShiftVehicles
-    : (fioriVehicles || []);
+  const dsXe = dispatchDanhSachXe();
   // "Rảnh" ở đây nghĩa là KHÔNG nằm bãi sửa và KHÔNG đang chạy chuyến nào. Đếm
   // cả xe đang chạy thì con số nói "còn 9 xe" trong khi thực tế điều được ít
   // hơn, và người điều phối tin vào một con số không dùng được.
@@ -9144,7 +9148,7 @@ function renderDispatchKpis(dsTrongNgay, dsHienRa) {
     if (/đang vận chuyển|dang van chuyen|in transit/i.test(tt)) return false;
     return !xeDangChay.has(String(v.id));
   }).length;
-  const taiXeRanh = (fioriDrivers || [])
+  const taiXeRanh = dispatchDanhSachTaiXe()
     .filter(t => /sẵn sàng|san sang|active|ready/i.test(String(t.status || ''))).length;
 
   const the = [
@@ -9171,6 +9175,424 @@ function renderDispatchKpis(dsTrongNgay, dsHienRa) {
     </button>`;
   }).join('');
 }
+
+
+/* ==========================================================================
+   XE ỨNG VIÊN — cột giữa của bản mẫu `dispatch-v2-crew.html`.
+
+   Mục đích: khi điều phối viên chọn một DO, màn hình phải TỰ nói "trong 500 xe
+   thì mấy chiếc này điều được, và vì sao chiếc đầu tiên là tốt nhất". Bảng danh
+   mục xe không trả lời được câu đó — nó liệt kê xe theo thứ tự nhập, còn ở đây
+   thứ tự chính là câu trả lời.
+
+   Điểm phù hợp tính từ dữ liệu THẬT, mỗi tiêu chí là một cột trong cơ sở dữ
+   liệu, không có tiêu chí nào bịa:
+
+     · tải trọng xe so với khối lượng đơn      (vehicles.weight_capacity / DO.weight_kg)
+     · bãi đỗ so với điểm lấy hàng             (vehicles.depot / DO.origin)
+     · xe rảnh trong khung giờ lấy hàng        (vehicle-availability: chuyến + bảo dưỡng)
+     · có tài xế đang trong ca ở khung giờ đó  (driver-shifts)
+     · xe đang ở trạng thái vận hành được      (vehicles.operational_status)
+
+   Bản mẫu còn chấm "lịch sử chạy tuyến" và "khoảng cách km tới điểm lấy". Hệ
+   thống chưa lưu hai thứ đó (không có bảng lịch sử tuyến theo xe, không có toạ
+   độ bãi), nên lược bỏ — chấm điểm bằng một con số bịa thì cả cột mất ý nghĩa,
+   và người điều phối tin vào nó mới là cái hại.
+   ========================================================================== */
+
+let dispatchScope = { depot: '', type: '' };
+let dispatchCandSort = 'score';
+// "Nới điều kiện" — bỏ lọc cứng để xem cả xe không hoàn toàn vừa. Bản mẫu có
+// đường dẫn này và nó thật sự cần: ở quy mô ~500 xe vẫn có ngày không chiếc nào
+// đủ điều kiện, mà màn hình trống thì không nói được là vì sao.
+let dispatchCandNoiDieuKien = false;
+
+/** Ca trực và lịch xe cho màn Điều phối.
+ *
+ *  Hai đường này vốn chỉ được gọi ở màn Sắp lịch xe và tài xế, nên vào màn Điều
+ *  phối là `driverShifts` và `driverVehicleAvailability` đều rỗng — cột xe ứng
+ *  viên không biết xe nào đang chạy và tài xế nào đang trong ca. Nạp thêm ở đây,
+ *  và chịu lỗi im lặng: thiếu ca trực thì cột vẫn vẽ được, chỉ là chấm điểm
+ *  thiếu một tiêu chí, còn chặn cả màn hình vì một lời gọi phụ thì tệ hơn.
+ */
+async function napCaTrucChoDieuPhoi() {
+  const ngay = selectedDispatchFleetIsoDate || dispatchDateInputValue(dispatchCalendarDate);
+  if (!ngay) return;
+  const moc = new Date(ngay + 'T00:00:00');
+  // Lay TU HOM TRUOC, khong phai tu hom nay: ca sang 06:00 gio Viet Nam duoc
+  // luu la 23:00Z cua NGAY HOM TRUOC, nen hoi tu dung ngay hom nay la mat ca
+  // sang — dung ca ca dang phu khung gio lay hang. Da do that: moi xe deu bao
+  // "chua co tai xe trong ca" trong khi bang ca truc co du 20 dong.
+  const tu = new Date(moc.getTime() - 86400000);
+  const den = new Date(moc.getTime() + 2 * 86400000);
+  const q = 'start=' + tu.toISOString().slice(0, 10) + '&end=' + den.toISOString().slice(0, 10);
+  // Dung `driverShiftApiJson`, khong dung `fetch` tran: hai duong nay tra ve
+  // `{message, data}` chu khong phai mot mang, va ham do biet boc lop `data`.
+  // Goi tran thi `Array.isArray` sai va ca truc bi bo im lang.
+  const ket = await Promise.allSettled([
+    driverShiftApiJson('/api/tms/scheduling/driver-shifts?' + q),
+    driverShiftApiJson('/api/tms/scheduling/vehicle-availability?' + q),
+  ]);
+  if (ket[0].status === 'fulfilled' && Array.isArray(ket[0].value)) driverShifts = ket[0].value;
+  if (ket[1].status === 'fulfilled' && Array.isArray(ket[1].value)) driverVehicleAvailability = ket[1].value;
+}
+
+/** Danh sách xe dùng cho màn Điều phối, ưu tiên nguồn nào CÓ dòng.
+ *
+ *  Phải xét ĐỘ DÀI chứ không dùng `||`: một mảng rỗng là truthy trong
+ *  JavaScript, nên `availableVehicles || fioriVehicles` trả về đúng mảng rỗng
+ *  khi màn này chưa nạp xong. Lỗi đó đã xảy ra thật ở thẻ "Xe / tài xế rảnh".
+ */
+function dispatchDanhSachXe() {
+  if (Array.isArray(availableVehicles) && availableVehicles.length) return availableVehicles;
+  if (Array.isArray(driverShiftVehicles) && driverShiftVehicles.length) return driverShiftVehicles;
+  return Array.isArray(fioriVehicles) ? fioriVehicles : [];
+}
+
+function dispatchDanhSachTaiXe() {
+  if (Array.isArray(availableDrivers) && availableDrivers.length) return availableDrivers;
+  return Array.isArray(fioriDrivers) ? fioriDrivers : [];
+}
+
+/** Hai chữ đầu của tên, để vẽ vòng tròn tổ lái. */
+function chuCaiTen(ten) {
+  const tu = String(ten || '').trim().split(/\s+/).filter(Boolean);
+  if (!tu.length) return '?';
+  if (tu.length === 1) return tu[0].slice(0, 2).toUpperCase();
+  return (tu[tu.length - 2][0] + tu[tu.length - 1][0]).toUpperCase();
+}
+
+/** Khung giờ lấy hàng của một DO, dạng hai mốc thời gian. */
+function khungGioLayHang(don) {
+  const batDau = don && (don.pickup_window_start || don.planned_departure_at || don.pickup_date);
+  const ketThuc = don && (don.pickup_window_end || don.planned_arrival_at);
+  if (!batDau) return null;
+  const tu = new Date(batDau);
+  if (isNaN(tu)) return null;
+  let den = ketThuc ? new Date(ketThuc) : null;
+  // Không có giờ kết thúc thì lấy hai giờ — đủ để phát hiện trùng chuyến mà
+  // không rộng tới mức loại hết mọi xe.
+  if (!den || isNaN(den)) den = new Date(tu.getTime() + 2 * 3600000);
+  return { tu: tu, den: den };
+}
+
+function haiKhungChongNhau(a, b) {
+  return a.tu < b.den && b.tu < a.den;
+}
+
+/** Việc đã xếp cho một xe, chồng lên khung giờ đang xét. */
+function viecDaXepCuaXe(maXe, khung) {
+  const cham = [];
+  (driverVehicleAvailability || []).forEach(x => {
+    if (String(x.vehicle_id || '') !== String(maXe)) return;
+    const tu = x.planned_departure_at ? new Date(x.planned_departure_at) : null;
+    if (!tu || isNaN(tu)) return;
+    const den = x.planned_arrival_at ? new Date(x.planned_arrival_at) : null;
+    const khungXe = { tu: tu, den: (den && !isNaN(den)) ? den : new Date(tu.getTime() + 3600000) };
+    if (!khung || haiKhungChongNhau(khung, khungXe)) cham.push(Object.assign({}, x, { khung: khungXe }));
+  });
+  return cham;
+}
+
+/** Tài xế đang trong ca ở khung giờ đang xét, ưu tiên người đã gán cho xe đó. */
+function taiXeTrongCa(maXe, khung) {
+  const ca = (driverShifts || []).filter(c => {
+    if (String(c.availability_kind || 'work') !== 'work') return false;
+    if (String(c.status || '').toLowerCase() === 'cancelled') return false;
+    const tu = c.shift_start ? new Date(c.shift_start) : null;
+    const den = c.shift_end ? new Date(c.shift_end) : null;
+    if (!tu || !den || isNaN(tu) || isNaN(den)) return false;
+    return !khung || haiKhungChongNhau(khung, { tu: tu, den: den });
+  });
+  return { cuaXe: ca.filter(c => String(c.vehicle_id || '') === String(maXe)), tatCa: ca };
+}
+
+/**
+ * Chấm điểm một xe cho một DO.
+ *
+ * Trả về cả điểm VÀ lý do trừ điểm, vì một con số trơ thì người điều phối không
+ * kiểm lại được — mà họ là người chịu trách nhiệm cho chuyến, không phải hệ
+ * thống. Lý do hiện ngay trên dòng.
+ */
+function chamDiemXe(xe, don, khung) {
+  let diem = 100;
+  const lyDo = [];
+  let chan = '';
+
+  const ttChu = String(xe.operational_status || '') + ' ' + String(xe.status || '');
+  if (/maintenance|bảo dưỡng|bao duong|sửa|repair/i.test(ttChu)) chan = 'bảo dưỡng';
+
+  const viec = viecDaXepCuaXe(xe.id, khung);
+  const dangChay = viec.filter(v => String(v.kind || '') === 'trip');
+  const baoDuong = viec.filter(v => String(v.kind || '') === 'maintenance');
+  if (baoDuong.length) chan = 'bảo dưỡng';
+  else if (dangChay.length && !chan) chan = 'trùng chuyến';
+
+  // Tải trọng là tiêu chí CỨNG: xe không chở nổi thì không phải "kém phù hợp",
+  // nó là sai — máy chủ cũng chặn bằng `require_vehicle_capacity`.
+  const suc = Number(xe.weight_capacity || 0);
+  const canNang = Number((don && don.weight_kg) || 0);
+  let quaTai = false;
+  if (suc && canNang) {
+    if (canNang > suc) {
+      quaTai = true;
+      lyDo.push('không chở nổi ' + (canNang / 1000).toLocaleString('vi-VN') + ' T');
+    } else {
+      const tiLe = canNang / suc;
+      // Xe quá to cho đơn quá nhỏ vẫn chạy được, nhưng tốn dầu — trừ điểm, chứ
+      // không loại.
+      if (tiLe < 0.35) { diem -= 18; lyDo.push('xe quá lớn cho đơn'); }
+      else if (tiLe > 0.95) { diem -= 6; lyDo.push('gần kín tải'); }
+    }
+  } else if (!canNang) {
+    lyDo.push('đơn chưa khai khối lượng');
+  }
+
+  // Bãi đỗ so với điểm lấy hàng: khớp bằng chữ, vì hệ thống chưa lưu toạ độ bãi.
+  const bai = normalizeSearchText(xe.depot || '');
+  const diemLay = normalizeSearchText((don && don.origin) || '');
+  let cungBai = false;
+  if (bai && diemLay) {
+    cungBai = bai.split(/\s+/).filter(t => t.length > 3).some(t => diemLay.indexOf(t) >= 0);
+    if (!cungBai) { diem -= 22; lyDo.push('khác bãi điểm lấy'); }
+  }
+
+  const ca = taiXeTrongCa(xe.id, khung);
+  if (!ca.cuaXe.length) {
+    if (!ca.tatCa.length) { diem -= 30; lyDo.push('không có tài xế trong ca'); }
+    else { diem -= 12; lyDo.push('tài xế chưa gán cho xe này'); }
+  }
+
+  if (chan || quaTai) diem = 0;
+  return {
+    diem: Math.max(0, Math.min(100, diem)),
+    chan: chan || (quaTai ? 'quá tải' : ''),
+    lyDo: lyDo,
+    cungBai: cungBai,
+    dangChay: dangChay,
+    ca: ca,
+  };
+}
+
+/** Tên loại xe cho người đọc, thay vì mã `DEMO-VT-...`. */
+function tenLoaiXe(ma) {
+  if (!ma) return '';
+  const nguon = (typeof vehTypes !== 'undefined' && Array.isArray(vehTypes) && vehTypes.length)
+    ? vehTypes
+    : ((appState && appState.vehicle_types) || []);
+  const loai = nguon.find(t => String(t.id) === String(ma));
+  return (loai && loai.name) || String(ma);
+}
+
+window.setDispatchScope = function () {
+  dispatchScope = {
+    depot: (document.getElementById('dispatch-scope-depot') || {}).value || '',
+    type: (document.getElementById('dispatch-scope-type') || {}).value || '',
+  };
+  renderDispatchCandidates();
+};
+
+window.setDispatchCandSort = function (kieu) {
+  dispatchCandSort = String(kieu || 'score');
+  document.querySelectorAll('.dispatch-cand-sort button').forEach(b =>
+    b.classList.toggle('is-on', b.dataset.sort === dispatchCandSort));
+  renderDispatchCandidates();
+};
+
+window.noiDieuKienUngVien = function () {
+  dispatchCandNoiDieuKien = !dispatchCandNoiDieuKien;
+  renderDispatchCandidates();
+};
+
+/** Điền hai ô phạm vi (bãi, loại xe) từ dữ liệu xe thật. */
+function renderDispatchScopeOptions() {
+  const ds = dispatchDanhSachXe();
+  const dat = (id, giaTri, nhanMacDinh) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const dangChon = el.value;
+    const dem = new Map();
+    giaTri.forEach(v => { if (v) dem.set(v, (dem.get(v) || 0) + 1); });
+    el.innerHTML = '<option value="">' + nhanMacDinh + ' (' + ds.length + ')</option>'
+      + [...dem.entries()].sort((a, b) => b[1] - a[1]).map(cap =>
+        '<option value="' + escapeHtml(cap[0]) + '">' + escapeHtml(cap[0]) + ' (' + cap[1] + ')</option>').join('');
+    if (dangChon && dem.has(dangChon)) el.value = dangChon;
+  };
+  dat('dispatch-scope-depot', ds.map(v => v.depot), 'Tất cả bãi');
+  dat('dispatch-scope-type', ds.map(v => tenLoaiXe(v.type) || v.type), 'Tất cả loại xe');
+}
+
+function tenCaTruc(kieu) {
+  const bang = { morning: 'sáng', afternoon: 'chiều', night: 'đêm' };
+  return bang[String(kieu || '')] || String(kieu || '');
+}
+
+function renderDispatchCandidates() {
+  const khungEl = document.getElementById('dispatch-cand');
+  const hop = document.getElementById('dispatch-cand-list');
+  if (!khungEl || !hop) return;
+
+  const maDO = selectedDispatchCalendarOrderId
+    || (document.getElementById('dispatch-selected-do') || {}).value || '';
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(maDO));
+  // Chưa chọn DO thì ẩn cả cột: "ứng viên" là ứng viên CHO một đơn, không có
+  // đơn thì không có tiêu chí nào để xếp hạng, và một danh sách xe không xếp
+  // hạng thì đúng bằng bảng Danh mục xe ở màn khác.
+  if (!don) { khungEl.hidden = true; return; }
+  khungEl.hidden = false;
+
+  const gio = khungGioLayHang(don);
+  let ds = dispatchDanhSachXe().slice();
+  const tong = ds.length;
+  if (dispatchScope.depot) ds = ds.filter(v => String(v.depot || '') === dispatchScope.depot);
+  if (dispatchScope.type) ds = ds.filter(v => (tenLoaiXe(v.type) || v.type) === dispatchScope.type);
+
+  let cham = ds.map(xe => Object.assign({ xe: xe }, chamDiemXe(xe, don, gio)));
+  if (!dispatchCandNoiDieuKien) {
+    const dieuDuoc = cham.filter(c => !c.chan);
+    // Chỉ siết khi thật sự còn xe — siết đến trống rỗng thì màn hình không nói
+    // được điều gì, mà điều phối viên vẫn phải điều cho xong đơn.
+    if (dieuDuoc.length) cham = dieuDuoc;
+  }
+
+  const xepTheo = {
+    score: (a, b) => b.diem - a.diem || String(a.xe.id).localeCompare(String(b.xe.id)),
+    depot: (a, b) => (Number(b.cungBai) - Number(a.cungBai)) || b.diem - a.diem,
+    free: (a, b) => (a.dangChay.length - b.dangChay.length) || b.diem - a.diem,
+  };
+  cham.sort(xepTheo[dispatchCandSort] || xepTheo.score);
+
+  const demEl = document.getElementById('dispatch-cand-count');
+  if (demEl) demEl.textContent = String(cham.length);
+
+  const whyEl = document.getElementById('dispatch-cand-why');
+  if (whyEl) {
+    const dk = [];
+    if (Number(don.weight_kg || 0)) {
+      dk.push('chở nổi <b>' + Number(don.weight_kg).toLocaleString('vi-VN') + ' kg</b>');
+    }
+    if (don.origin) dk.push('gần <b>' + escapeHtml(don.origin) + '</b>');
+    if (gio) {
+      const hm = t => t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      dk.push('rảnh <b>' + hm(gio.tu) + '–' + hm(gio.den) + '</b>');
+    }
+    dk.push('có tài xế trong ca');
+    whyEl.innerHTML = 'Lọc từ <b>' + tong + ' xe</b> còn <b>' + cham.length + '</b> cho <b>'
+      + escapeHtml(don.id) + '</b>: ' + dk.join(' · ') + '. '
+      + '<button type="button" onclick="noiDieuKienUngVien()">'
+      + (dispatchCandNoiDieuKien ? 'Siết lại điều kiện' : 'Nới điều kiện')
+      + '</button> · Bấm một dòng để gán xe và tài xế vào ô điều phối.';
+  }
+
+  if (!cham.length) {
+    hop.innerHTML = '<div class="dispatch-cand-empty">'
+      + '<i class="fa-solid fa-triangle-exclamation"></i> Không có xe nào trong phạm vi đang chọn. '
+      + 'Bỏ giới hạn bãi hoặc loại xe ở đầu màn, hoặc bấm "Nới điều kiện" để xem cả xe chưa hoàn toàn vừa.'
+      + '</div>';
+    return;
+  }
+
+  const maXeDangChon = (document.getElementById('dispatch-vehicle') || {}).value || '';
+  const dsTaiXe = dispatchDanhSachTaiXe();
+
+  hop.innerHTML = cham.slice(0, 60).map(c => {
+    const bac = c.chan ? 'bad' : (c.diem >= 80 ? 'good' : (c.diem >= 55 ? 'fair' : 'bad'));
+    // CHI lay ca cua DUNG chiec xe nay. Truoc day co mot buoc du phong
+    // `|| c.ca.tatCa[0]` — nguoi dau tien dang trong ca o BAT KY xe nao — nen
+    // ca bay dong deu hien cung mot ten "Nguyen Van Minh", nhu the anh ay lai
+    // duoc bay chiec cung luc. Do la mot con so noi doi, va bam vao thi gan sai
+    // nguoi vao chuyen.
+    const caChinh = c.ca.cuaXe[0] || null;
+    const nguoiChinh = caChinh ? dsTaiXe.find(t => String(t.id) === String(caChinh.driver_id)) : null;
+    const tenChinh = (nguoiChinh && nguoiChinh.name) || (caChinh && caChinh.driver_id) || '';
+    const caPhu = c.ca.cuaXe[1] || null;
+    const nguoiPhu = caPhu ? dsTaiXe.find(t => String(t.id) === String(caPhu.driver_id)) : null;
+    const tenPhu = (nguoiPhu && nguoiPhu.name) || (caPhu && caPhu.driver_id) || '';
+    // Khong co ai gan cho xe nay thi noi RO con bao nhieu nguoi dang trong ca —
+    // dieu phoi vien van gan tay duoc, va con so do la thong tin ho can.
+    const conNguoiRanh = c.ca.cuaXe.length ? 0 : c.ca.tatCa.length;
+
+    let the;
+    if (c.chan === 'bảo dưỡng') {
+      the = '<span class="dispatch-cand-tag dispatch-cand-tag--maint">Bảo dưỡng</span>';
+    } else if (c.chan === 'trùng chuyến' || c.dangChay.length) {
+      the = '<span class="dispatch-cand-tag dispatch-cand-tag--busy">Đang chạy chuyến</span>';
+    } else if (c.chan) {
+      the = '<span class="dispatch-cand-tag dispatch-cand-tag--maint">' + escapeHtml(c.chan) + '</span>';
+    } else {
+      the = '<span class="dispatch-cand-tag dispatch-cand-tag--ok">Rảnh</span>';
+    }
+
+    const suc = Number(c.xe.weight_capacity || 0);
+    const meta = [
+      escapeHtml(tenLoaiXe(c.xe.type)),
+      c.xe.depot ? escapeHtml(c.xe.depot) : '',
+      suc ? '<b>' + (suc / 1000).toLocaleString('vi-VN') + ' T</b>' : '',
+      caChinh ? 'ca ' + escapeHtml(tenCaTruc(caChinh.shift_type)) : '',
+    ].filter(Boolean).join(' · ');
+
+    const nhanBam = c.chan
+      ? ''
+      : ' onclick="chonXeUngVien(' + JSON.stringify(String(c.xe.id)).replace(/"/g, '&quot;')
+        + ',' + JSON.stringify(String((caChinh && caChinh.driver_id) || '')).replace(/"/g, '&quot;') + ')"';
+    const goi = c.chan
+      ? 'Không điều được: ' + escapeHtml(c.chan)
+      : (c.lyDo.length ? 'Trừ điểm vì: ' + escapeHtml(c.lyDo.join(', ')) : 'Phù hợp mọi tiêu chí');
+
+    return '<button type="button"'
+      + ' class="dispatch-cand-row dispatch-cand-row--' + bac
+      + (String(maXeDangChon) === String(c.xe.id) ? ' is-on' : '') + '"'
+      + (c.chan ? ' disabled' : nhanBam)
+      + ' title="' + goi + '">'
+      + '<span class="dispatch-cand-score dispatch-cand-score--' + bac + '">'
+      + (c.chan ? '—' : c.diem)
+      + '<small>' + (c.chan ? escapeHtml(c.chan) : 'điểm') + '</small></span>'
+      + '<span class="dispatch-cand-main">'
+      + '<span class="dispatch-cand-plate">' + escapeHtml(c.xe.id) + ' '
+      + (tenChinh
+        ? '· ' + escapeHtml(tenChinh)
+        : '<em style="font-weight:600;color:#94a3b8">'
+          + (conNguoiRanh
+            ? 'chưa gán tài xế · ' + conNguoiRanh + ' người đang trong ca'
+            : 'chưa có tài xế trong ca')
+          + '</em>')
+      + '<span class="dispatch-cand-crew">'
+      + '<i' + (tenChinh ? '' : ' class="is-empty"')
+      + ' title="' + (tenChinh ? escapeHtml(tenChinh) + ' · tài xế chính' : 'Chưa có tài xế chính') + '">'
+      + (tenChinh ? chuCaiTen(tenChinh) : '+') + '</i>'
+      + '<i' + (tenPhu ? '' : ' class="is-empty"')
+      + ' title="' + (tenPhu ? escapeHtml(tenPhu) + ' · phụ xe' : 'Chưa có phụ xe (không bắt buộc)') + '">'
+      + (tenPhu ? chuCaiTen(tenPhu) : '+') + '</i>'
+      + '</span></span>'
+      + '<span class="dispatch-cand-meta">' + meta
+      + (c.lyDo.length ? ' · <span style="color:#b45309">' + escapeHtml(c.lyDo.join(', ')) + '</span>' : '')
+      + '</span></span>'
+      + the
+      + '</button>';
+  }).join('');
+}
+
+/**
+ * Bấm một dòng xe ứng viên: gán XE và TÀI XẾ vào ô điều phối.
+ *
+ * Gán cả tài xế, không chỉ xe: dòng này vốn đã biết ai đang trong ca với chiếc
+ * xe đó, nên để người dùng tự đi chọn lại tài xế ở ô khác là bắt họ làm hai lần
+ * một việc — và dễ chọn ra người đang ở ca khác.
+ */
+window.chonXeUngVien = function (maXe, maTaiXe) {
+  if (!maXe) return;
+  window.selectDispatchVehicleLane(maXe);
+  if (maTaiXe) {
+    const o = document.getElementById('dispatch-driver');
+    const hien = document.getElementById('dispatch-driver-display');
+    const nguoi = dispatchDanhSachTaiXe().find(t => String(t.id) === String(maTaiXe));
+    if (o) o.value = maTaiXe;
+    if (hien) hien.value = (nguoi && nguoi.name) ? nguoi.name + ' (' + maTaiXe + ')' : String(maTaiXe);
+    if (typeof window.onDispatchDriverChange === 'function') window.onDispatchDriverChange();
+  }
+  if (typeof updateDispatchWorkflowSteps === 'function') updateDispatchWorkflowSteps();
+  renderDispatchCandidates();
+};
 
 function renderDispatchDOs(filterQuery = '') {
   const container = document.getElementById('dispatch-do-list');
@@ -10050,7 +10472,12 @@ window.selectDispatchVehicleLane = function (vehicleId) {
   const vehicleDisplay = document.getElementById('dispatch-vehicle-display');
   const vehicle = (availableVehicles || []).find(item => String(item.id) === String(vehicleId));
   if (vehicleInput) vehicleInput.value = vehicleId;
-  if (vehicleDisplay) vehicleDisplay.value = `${vehicleId}${vehicle?.type ? ` · ${vehicle.type}` : ''}`;
+  // Hien TEN loai xe, khong hien ma: "DEMO-VT-TRACTOR20" khong noi cho nguoi
+  // dieu phoi biet day la dau keo 20 feet hay xe tai.
+  const tenLoai = vehicle?.type
+    ? (typeof tenLoaiXe === 'function' ? tenLoaiXe(vehicle.type) : vehicle.type)
+    : '';
+  if (vehicleDisplay) vehicleDisplay.value = `${vehicleId}${tenLoai ? ` · ${tenLoai}` : ''}`;
   window.onDispatchVehicleChange();
   updateDispatchWorkflowSteps();
   if (dispatchStepModalState.step === 'schedule') window.closeDispatchStepModal();
@@ -10065,6 +10492,7 @@ window.selectDispatchDO = function (id, revealDetail = false) {
   if (!id) {
     updateDispatchWorkflowSteps();
     if (typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
+    if (typeof renderDispatchCandidates === 'function') renderDispatchCandidates();
     return;
   }
   tmsActiveShipment360Id = id;
@@ -10072,6 +10500,7 @@ window.selectDispatchDO = function (id, revealDetail = false) {
   window.switchDispatchResourceTab('dispatch');
   window.onDispatchVehicleChange();
   if (typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
+  if (typeof renderDispatchCandidates === 'function') renderDispatchCandidates();
   updateDispatchWorkflowSteps();
   const tripGate = resolveDispatchTripGate(id);
   if (tripGate.state === 'ready') {

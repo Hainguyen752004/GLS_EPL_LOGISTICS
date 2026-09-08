@@ -665,6 +665,101 @@
       display:flex; flex-direction:column; gap:2px;
       border-left:3px solid #cbd5e1;
     }
+
+    /* PHẠM VI XE — dải chọn bãi/loại xe ở đầu màn, theo bản mẫu. */
+    .dispatch-scope { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+    .dispatch-scope label { display:grid; gap:3px; }
+    .dispatch-scope label > span { font-size:.66rem; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
+    .dispatch-scope select {
+      border:1px solid #d8e5f2; border-radius:8px; background:#fff; padding:6px 9px;
+      font:inherit; font-size:.78rem; font-weight:700; color:#0f172a; min-width:160px;
+    }
+    .dispatch-scope select:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+
+    /* XE ỨNG VIÊN — cột giữa của bản mẫu `dispatch-v2-crew.html`.
+
+       Mỗi dòng phải đọc được trong một nhịp mắt: điểm phù hợp bên trái, biển số
+       và tổ lái ở giữa, trạng thái bên phải. Nên dùng luới ba cột cố định chứ
+       không phải flex tự co — flex thì điểm và trạng thái nhảy chỗ theo độ dài
+       tên tài xế, và cả cột mất thẳng hàng. */
+    .dispatch-cand { margin:0 0 12px; }
+    .dispatch-cand-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+    .dispatch-cand-head h4 { margin:0; font-size:.86rem; font-weight:900; color:#0f172a; display:flex; align-items:center; gap:6px; }
+    .dispatch-cand-head h4 i { color:#0a6ed1; }
+    .dispatch-cand-n { background:#0a6ed1; color:#fff; border-radius:999px; padding:1px 8px; font-size:.72rem; font-weight:900; font-variant-numeric:tabular-nums; }
+    .dispatch-cand-sort { display:inline-flex; border:1px solid #d8e5f2; border-radius:8px; overflow:hidden; background:#fff; }
+    .dispatch-cand-sort button {
+      border:none; background:#fff; font:inherit; font-size:.72rem; font-weight:800;
+      color:#475569; padding:5px 10px; cursor:pointer; border-right:1px solid #e6edf5;
+    }
+    .dispatch-cand-sort button:last-child { border-right:none; }
+    .dispatch-cand-sort button.is-on { background:#eff6ff; color:#0a6ed1; }
+    .dispatch-cand-why {
+      margin:0 0 7px; font-size:.72rem; line-height:1.5; color:#475569; font-weight:600;
+      background:#f8fafc; border:1px solid #e6edf5; border-radius:8px; padding:7px 9px;
+    }
+    .dispatch-cand-why b { color:#0f172a; font-weight:900; }
+    .dispatch-cand-why button {
+      border:none; background:none; font:inherit; font-size:inherit; font-weight:800;
+      color:#0a6ed1; cursor:pointer; padding:0; text-decoration:underline;
+    }
+    .dispatch-cand-legend {
+      display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+      font-size:.68rem; font-weight:700; color:#64748b; margin-bottom:7px;
+    }
+    .dispatch-cand-legend-note { margin-left:auto; color:#94a3b8; font-weight:600; }
+    .dispatch-dot { display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:4px; vertical-align:-1px; }
+    .dispatch-dot--ok { background:#15803d; }
+    .dispatch-dot--busy { background:#7c3aed; }
+    .dispatch-dot--maint { background:#cbd5e1; }
+    .dispatch-cand-list { display:grid; gap:6px; max-height:420px; overflow-y:auto; }
+    .dispatch-cand-row {
+      display:grid; grid-template-columns:46px minmax(0,1fr) auto; gap:10px; align-items:center;
+      width:100%; text-align:left; font:inherit; cursor:pointer;
+      border:1px solid #e2e8f0; border-left:3px solid #cbd5e1; border-radius:9px;
+      background:#fff; padding:8px 10px;
+    }
+    .dispatch-cand-row:hover { border-color:#0a6ed1; background:#f8fbff; }
+    .dispatch-cand-row:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+    .dispatch-cand-row.is-on { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
+    /* Xe không điều được thì làm mờ và KHÔNG cho bấm — cho bấm rồi báo lỗi thì
+       người dùng phải thử mới biết. */
+    .dispatch-cand-row:disabled { opacity:.55; cursor:not-allowed; background:#f8fafc; }
+    .dispatch-cand-row--good { border-left-color:#15803d; }
+    .dispatch-cand-row--fair { border-left-color:#d97706; }
+    .dispatch-cand-row--bad { border-left-color:#cbd5e1; }
+    .dispatch-cand-score {
+      display:grid; justify-items:center; gap:0; border-radius:7px; padding:4px 2px;
+      font-weight:950; font-size:.94rem; font-variant-numeric:tabular-nums;
+    }
+    .dispatch-cand-score small { font-size:.55rem; font-weight:800; letter-spacing:.02em; }
+    .dispatch-cand-score--good { background:#dcfce7; color:#15803d; }
+    .dispatch-cand-score--fair { background:#fef3c7; color:#b45309; }
+    .dispatch-cand-score--bad { background:#f1f5f9; color:#64748b; }
+    .dispatch-cand-main { min-width:0; display:grid; gap:2px; }
+    .dispatch-cand-plate { display:flex; align-items:center; gap:7px; flex-wrap:wrap; font-size:.8rem; font-weight:900; color:#0f172a; }
+    .dispatch-cand-meta { font-size:.7rem; color:#64748b; font-weight:650; }
+    .dispatch-cand-meta b { color:#0f172a; font-weight:850; }
+    /* TỔ LÁI — hai vòng tròn, đúng bằng số vai backend nhận (`driver_id` và
+       `co_driver_id`). Bản mẫu vẽ ba vai; vai thứ ba không có chỗ để lưu nên
+       không vẽ, thay vì vẽ ra rồi bấm vào không lưu được. */
+    .dispatch-cand-crew { display:inline-flex; gap:3px; }
+    .dispatch-cand-crew i {
+      display:grid; place-items:center; width:19px; height:19px; border-radius:999px;
+      background:#0a6ed1; color:#fff; font-size:.58rem; font-weight:900; font-style:normal;
+    }
+    .dispatch-cand-crew i.is-empty { background:#fff; color:#94a3b8; border:1.5px dashed #cbd5e1; }
+    .dispatch-cand-tag {
+      font-size:.66rem; font-weight:850; border-radius:999px; padding:3px 8px;
+      white-space:nowrap; border:1px solid transparent;
+    }
+    .dispatch-cand-tag--ok { background:#dcfce7; color:#15803d; border-color:#bbf7d0; }
+    .dispatch-cand-tag--busy { background:#f3e8ff; color:#6b21a8; border-color:#e9d5ff; }
+    .dispatch-cand-tag--maint { background:#f1f5f9; color:#475569; border-color:#e2e8f0; }
+    .dispatch-cand-empty {
+      border:1px dashed #cbd5e1; border-radius:9px; padding:14px; text-align:center;
+      color:#64748b; font-size:.76rem; font-weight:700;
+    }
     .dispatch-kpi:hover { border-color:#0a6ed1; }
     .dispatch-kpi.is-active { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
     .dispatch-kpi span { font-size:.7rem; font-weight:800; color:#64748b; }
@@ -5590,6 +5685,27 @@
                 <strong data-i18n="title_dispatch_toolbar">Không gian điều phối trong ngày</strong>
                 <span data-i18n="sub_dispatch_toolbar">Chọn DO, đối chiếu lịch xe rồi gán nguồn lực ngay trên một màn hình.</span>
               </div>
+              <!--
+                PHẠM VI XE — như dải chọn ở đầu bản mẫu `dispatch-v2-crew.html`.
+
+                Bản mẫu có ba ô: đội xe, bãi, loại xe. Hệ thống này không có khái
+                niệm "đội xe" (không bảng nào, không cột nào), nên ô đó lược bỏ
+                thay vì dựng một ô không lọc được gì. Hai ô còn lại chạy trên dữ
+                liệu thật: `depot` và `type` của bảng xe, và cùng lọc danh sách
+                xe ứng viên ở cột giữa.
+              -->
+              <div class="dispatch-scope" role="group" aria-label="Giới hạn phạm vi xe điều phối">
+                <label><span>Bãi</span>
+                  <select id="dispatch-scope-depot" onchange="setDispatchScope()" aria-label="Giới hạn theo bãi đỗ">
+                    <option value="">Tất cả bãi</option>
+                  </select>
+                </label>
+                <label><span>Loại xe</span>
+                  <select id="dispatch-scope-type" onchange="setDispatchScope()" aria-label="Giới hạn theo loại xe">
+                    <option value="">Tất cả loại xe</option>
+                  </select>
+                </label>
+              </div>
               </div>
             </div>
 
@@ -5646,6 +5762,40 @@
                     <button id="dispatch-view-week" type="button" onclick="setDispatchCalendarView('week')">Tuần</button>
                   </div>
                 </div>
+                <!--
+                  XE ỨNG VIÊN — cột 2 của bản mẫu `dispatch-v2-crew.html`.
+
+                  Chỉ hiện khi đã chọn một DO, vì "ứng viên" là ứng viên CHO một
+                  đơn cụ thể: không có đơn thì không có tiêu chí nào để chấm
+                  điểm, và một danh sách xe không xếp hạng thì đúng bằng bảng
+                  Danh mục xe ở màn khác.
+
+                  Điểm phù hợp tính từ dữ liệu THẬT: tải trọng xe so với khối
+                  lượng đơn, bãi đỗ so với điểm lấy hàng, xe có trùng chuyến hay
+                  đang bảo dưỡng trong khung giờ lấy hàng, và có tài xế nào đang
+                  trong ca ở khung giờ đó. Bản mẫu còn chấm cả "lịch sử tuyến" —
+                  hệ thống chưa lưu dữ liệu đó nên lược bỏ, chấm điểm bằng một
+                  tiêu chí bịa thì con số mất hết ý nghĩa.
+                -->
+                <div id="dispatch-cand" class="dispatch-cand" hidden>
+                  <div class="dispatch-cand-head">
+                    <h4><i class="fa-solid fa-truck-fast"></i> Xe ứng viên <span id="dispatch-cand-count" class="dispatch-cand-n">0</span></h4>
+                    <div class="dispatch-cand-sort" role="group" aria-label="Cách sắp xe ứng viên">
+                      <button type="button" class="is-on" data-sort="score" onclick="setDispatchCandSort('score')">Phù hợp nhất</button>
+                      <button type="button" data-sort="depot" onclick="setDispatchCandSort('depot')">Cùng bãi</button>
+                      <button type="button" data-sort="free" onclick="setDispatchCandSort('free')">Rảnh sớm nhất</button>
+                    </div>
+                  </div>
+                  <p id="dispatch-cand-why" class="dispatch-cand-why"></p>
+                  <div class="dispatch-cand-legend">
+                    <span><i class="dispatch-dot dispatch-dot--ok"></i>Rảnh</span>
+                    <span><i class="dispatch-dot dispatch-dot--busy"></i>Đang chạy chuyến</span>
+                    <span><i class="dispatch-dot dispatch-dot--maint"></i>Bảo dưỡng</span>
+                    <span class="dispatch-cand-legend-note">Số bên trái là điểm phù hợp · vòng tròn là tổ lái theo ca · <b>+</b> là còn thiếu người</span>
+                  </div>
+                  <div id="dispatch-cand-list" class="dispatch-cand-list" aria-live="polite"></div>
+                </div>
+
                 <div class="dispatch-timeline-filters">
                   <label><span data-i18n="lbl_filter_vehicle">Xe</span><select id="dispatch-calendar-filter-vehicle" onchange="applyDispatchCalendarFilters()"><option value="" data-i18n="opt_all_vehicles">Tất cả xe</option></select></label>
                   <label><span data-i18n="lbl_filter_driver">Tài xế</span><select id="dispatch-calendar-filter-driver" onchange="applyDispatchCalendarFilters()"><option value="" data-i18n="opt_all_drivers">Tất cả tài xế</option></select></label>
@@ -8186,7 +8336,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908q-xe-ranh"></script>
+  <script src="/static/js/app.js?v=20260908t-to-lai-dung-xe"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
