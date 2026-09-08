@@ -83,6 +83,11 @@
     unloading: '<i class="fa-solid fa-dolly"></i>',
     delivered: '<i class="fa-solid fa-circle-check"></i>',
   };
+  //: Hàm này trả về MARKUP, nên chèn thẳng — ĐỪNG bọc `esc()` quanh nó. Bọc thì
+  //: nút hiện đúng chuỗi `<i class="fa-solid fa-dolly"></i> Ghi mốc: Dỡ hàng`
+  //: thành chữ trên mặt nút (lỗi đã xảy ra thật). Không cần thoát vì `ma` chỉ
+  //: dùng làm KHÓA tra bảng, không lọt vào chuỗi trả về; khóa lạ thì rơi vào
+  //: dấu chấm tròn cố định.
   const bieuTuongMoc = ma => BIEU_TUONG_MOC[ma] || '<i class="fa-solid fa-circle"></i>';
 
   //: Moc nao thi xe dang o dau tren tuyen. Dung de gui kem toa do khi ghi moc —
@@ -367,7 +372,7 @@
       ${r.incidents.map(i => `<div class="ct-alert red"><strong>${esc(i.incident_type)}</strong> · ${esc(i.status)}<br>${esc(i.description || i.location || '')}</div>`).join('')}
       <h4>Chặng của chuyến</h4><ol class="ct-timeline">${r.legs.map(l => `<li class="${l.status === 'completed' ? 'done' : ''}"><strong>${esc(l.origin)} → ${esc(l.destination)}</strong><span>${esc(labels[l.status] || l.status)} · ${esc(labels[l.type] || l.type)}</span><small>${l.actual_arrival_at ? 'Thực tế' : 'Kế hoạch'}: ${esc(date(l.actual_arrival_at || l.planned_arrival_at))}</small></li>`).join('') || '<li>Chưa có chặng Trip.</li>'}</ol>
       ${trucTienDo(r)}
-      <h4>Bằng chứng giao hàng · ${r.pod_count || 0}</h4>${(r.pods || []).map(p => `<div class="ct-pod"><strong>${esc(p.receiver_name || 'Chưa có người nhận')}</strong><span>${esc(p.location || '')} · ${esc(date(p.time))}</span>${p.documents.map(d => `<button data-document="${esc(d.id)}" data-name="${esc(d.file_name)}" title="Tải chứng từ POD"><i class="fa-solid fa-download"></i> ${esc(d.file_name)}</button>`).join('')}</div>`).join('') || '<p>Chưa có bản ghi POD của chuyến này.</p>'}<div class="ct-actions">${r.next_milestone ? `<button class="ct-primary" data-action="milestone" title="Ghi mốc thật vào lịch sử chuyến và cập nhật vị trí xe">${esc(bieuTuongMoc(r.next_milestone.ma))} Ghi mốc: ${esc(r.next_milestone.ten)}</button>` : ''}<button data-action="completion" ${r.status === 'arrived' ? '' : 'disabled'} title="${r.status === 'arrived' ? 'Mở form ký nhận POD và chốt giá' : 'Phải ghi nhận xe đã đến nơi trước khi ký POD'}"><i class="fa-solid fa-file-signature"></i> Mở hoàn tất giao hàng</button><button data-action="incident" ${!r.vehicle_id ? 'disabled' : ''}><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button><button data-action="dispatch"><i class="fa-solid fa-arrow-left"></i> Mở Điều phối</button></div>`;
+      <h4>Bằng chứng giao hàng · ${r.pod_count || 0}</h4>${(r.pods || []).map(p => `<div class="ct-pod"><strong>${esc(p.receiver_name || 'Chưa có người nhận')}</strong><span>${esc(p.location || '')} · ${esc(date(p.time))}</span>${p.documents.map(d => `<button data-document="${esc(d.id)}" data-name="${esc(d.file_name)}" title="Tải chứng từ POD"><i class="fa-solid fa-download"></i> ${esc(d.file_name)}</button>`).join('')}</div>`).join('') || '<p>Chưa có bản ghi POD của chuyến này.</p>'}<div class="ct-actions">${r.next_milestone ? `<button class="ct-primary" data-action="milestone" title="Ghi mốc thật vào lịch sử chuyến và cập nhật vị trí xe">${bieuTuongMoc(r.next_milestone.ma)} Ghi mốc: ${esc(r.next_milestone.ten)}</button>` : ''}<button data-action="completion" ${r.status === 'arrived' ? '' : 'disabled'} title="${r.status === 'arrived' ? 'Mở form ký nhận POD và chốt giá' : 'Phải ghi nhận xe đã đến nơi trước khi ký POD'}"><i class="fa-solid fa-file-signature"></i> Mở hoàn tất giao hàng</button><button data-action="incident" ${!r.vehicle_id ? 'disabled' : ''}><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button><button data-action="dispatch"><i class="fa-solid fa-arrow-left"></i> Mở Điều phối</button></div>`;
     el('ct-metrics').innerHTML = pair(r.gps.status === 'fresh' ? 'Tốc độ ghi nhận' : 'Tốc độ lần cuối', metric(r.gps.speed_kmh, 'km/h')) + pair('Tổng tuyến kế hoạch', metric(r.route_distance_km, 'km')) + pair('Đến theo kế hoạch', date(r.planned_arrival_at)) + pair('ETA từ GPS', 'Chưa có nguồn dự báo');
   }
   function renderMap() {

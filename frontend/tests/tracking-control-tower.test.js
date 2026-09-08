@@ -134,3 +134,37 @@ test('out-of-order refresh does not overwrite a newer response', async () => {
   assert.doesNotMatch(w.document.querySelector('#ct-list').textContent, /OLD/);
   dom.window.close();
 });
+
+// Nhan nut ghi moc: BIEU TUONG la markup, TEN MOC la du lieu.
+//
+// Loi da xay ra that va nguoi dung nhin thay ngay tren mat nut: ca nhan duoc boc
+// `esc()`, nen nut hien nguyen chuoi `<i class="fa-solid fa-dolly"></i> Ghi moc:
+// Do hang` thanh CHU. Bai kiem nay soi ca hai phia cua duong ranh do — mot phia
+// long thi bieu tuong thanh chu, phia kia long thi ten moc tu may chu chen duoc
+// the vao trang.
+test('nut ghi moc: bieu tuong la the that, con ten moc thi duoc thoat', async () => {
+  const dom = new JSDOM('<section id="view-tracking"></section>', { runScripts: 'outside-only' });
+  const w = dom.window;
+  const row = {
+    key: 'T:D', do_id: 'D', vehicle_id: 'V', gps: { status: 'missing' }, legs: [], events: [],
+    incidents: [], freight_order_id: 'FO-1', freight_order_version: 1,
+    next_milestone: { ma: 'unloading', ten: 'Dỡ hàng <img src=x onerror=alert(1)>' },
+    milestones: [{ ma: 'unloading', ten: 'Dỡ hàng' }],
+  };
+  w.fetch = async () => ({ ok: true, json: async () => ({ items: [row], kpis: { total: 1 } }) });
+  w.eval(source());
+  await w.TrackingControlTower.load();
+  w.TrackingControlTower.select('T:D');
+  const nut = [...w.document.querySelectorAll('#ct-detail [data-action="milestone"]')];
+  assert.equal(nut.length, 1, 'phai co dung mot nut ghi moc');
+  // Bieu tuong phai la MOT THE that, khong phai chu. Ten lop cua bieu tuong
+  // khong bao gio duoc xuat hien trong phan CHU cua nut — no o day thi nghia la
+  // markup da bi thoat va nguoi dung doc thay `<i class="fa-solid ...">`.
+  assert.equal(nut[0].querySelectorAll('i.fa-dolly').length, 1);
+  assert.doesNotMatch(nut[0].textContent, /fa-|class=/, 'bieu tuong bi thoat thanh chu tren mat nut');
+  // Ten moc den tu may chu thi PHAI duoc thoat: hien nguyen van thanh CHU, va
+  // khong tao ra the nao trong trang.
+  assert.equal(nut[0].querySelectorAll('img').length, 0, 'ten moc phai duoc thoat');
+  assert.match(nut[0].textContent, /Ghi mốc: Dỡ hàng <img src=x/);
+  dom.window.close();
+});
