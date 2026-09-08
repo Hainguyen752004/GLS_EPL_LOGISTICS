@@ -565,6 +565,17 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
         unit_price=gia_khoa,
         price_basis=q.price_basis or "per_trip",
         driver_note=dong.get("driver_note") or q.notes_ops,
+        # SO NIEM PHONG, lay tu dong tach.
+        #
+        # NO LA MOT CHOT XUAT BEN, khong phai mot o cho dep. Bao gia khai "co
+        # niem phong" thi cua `kiem_dieu_kien_xuat_ben` doi so seal truoc khi
+        # cho xe di — va truoc day duong tach DO khong ghi truong nay, nen MOI
+        # chuyen hang nguyen cont dung o buoc dieu phoi voi thong bao "phai ghi
+        # so niem phong", ma khong co man nao de ghi.
+        #
+        # De rong duoc: hang roi va hang le khong co niem phong, va cua xuat ben
+        # cua chung la phieu can hoac Packing List.
+        seal_no=(str(dong.get("seal_no") or "").strip() or None),
         status="Chờ xử lý",
         canonical_status="pending",
         created_by=dong.get("actor") or "system",

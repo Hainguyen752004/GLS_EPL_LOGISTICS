@@ -193,11 +193,15 @@ BANG_GIAO_DICH = [
     "quotation_attachments", "quotation_items", "quotation_versions", "quotations",
     "epl_expense_vouchers", "vehicle_maintenance_requests",
     "idempotency_records",
+    # CA TRUC cung xoa han roi gieo lai. Bo demo cu co ca 8 tieng, ma dieu phoi
+    # doi lich bao phu TOAN BO thoi gian chuyen — mot chuyen di va ve dai hon
+    # tam tieng, nen nhung ca do lam moi lenh dieu phoi bi tu choi. Do la du
+    # lieu khong di duoc luong, khong phai du lieu cu.
+    "driver_shift_assignments",
 ]
 
 #: Bảng dữ liệu gốc — chỉ xoá những dòng THỬ NGHIỆM `AZ-*`, giữ phần `DEMO-*`.
 BANG_GOC_CAN_LOC = [
-    ("driver_shift_assignments", "driver_id"),
     ("driver_qualifications", "driver_id"),
     ("cost_formulas", "id"),
     ("vehicles", "id"),
@@ -291,6 +295,39 @@ def chuan_lai_du_lieu_goc():
                   "maintenance_date = ?", (han_xa, han_xa, han_gan))
         print("   Ba hạn pháp lý: đặt lại cho mọi xe (%d xe đang quá hạn bảo dưỡng)" % n)
 
+        # CỘT `vehicles.type` PHẢI GIỮ MÃ LOẠI XE, không giữ tên.
+        #
+        # Hai xe đang ghi "Container 20FT" — tên hiển thị — thay vì
+        # `DEMO-VT-20FT`. Mọi phép tra loại xe đi theo mã, nên hai xe đó không
+        # khớp loại nào: điều phối không so được năng lực, và giá thành không
+        # tìm được công thức.
+        for r in list(c.execute("SELECT id, name FROM vehicle_types")):
+            c.execute("UPDATE vehicles SET type = ? WHERE type = ?", (r[0], r[1]))
+        print("   Cột loại xe của đội xe: đưa tên hiển thị về mã loại xe")
+
+        # NGƯỜI DUYỆT CHI PHÍ — một người thứ hai, và cố ý KHÔNG có quyền tạo.
+        #
+        # Quy tắc bốn mắt của bảng chi phí thực: người vận hành trình, trưởng
+        # phòng tài chính duyệt, và máy chủ chặn người tạo tự duyệt bảng của
+        # mình. Bộ dữ liệu chỉ có MỘT người dùng (`demo-dispatcher`) nên không
+        # ai duyệt được, và báo cáo doanh thu hiện lãi gộp 100% — con số đầu
+        # tiên người xem demo nhìn vào, và nó sai.
+        #
+        # Vai của người này KHÔNG có `finance_creator`: một người duyệt mà cũng
+        # tạo được thì quy tắc bốn mắt chỉ còn là một dòng chữ.
+        #
+        # Đây là dữ liệu PHÂN QUYỀN, tức việc của hệ thống cha cấp tài khoản —
+        # không có đường API nào trong module này để tạo, nên ghi thẳng bảng.
+        c.execute(
+            "INSERT OR REPLACE INTO roles (id, permissions) VALUES (?, ?)",
+            ("DEMO-TMS-FINANCE-APPROVER",
+             '["finance_read", "finance_approver", "finance_poster"]'))
+        c.execute(
+            "INSERT OR REPLACE INTO users (id, username, role_id) VALUES (?, ?, ?)",
+            ("truong-phong-tai-chinh", "truong-phong-tai-chinh",
+             "DEMO-TMS-FINANCE-APPROVER"))
+        print("   Người duyệt chi phí: truong-phong-tai-chinh (không có quyền tạo)")
+
         n = c.execute("SELECT COUNT(*) FROM drivers WHERE status <> '🟢 Rảnh (Sẵn sàng)'").fetchone()[0]
         c.execute("UPDATE drivers SET status = '🟢 Rảnh (Sẵn sàng)', assigned_vehicle = 'Chưa gán'")
         print("   Trạng thái tài xế: giải phóng %d người còn mắc ở chuyến đã xoá" % n)
@@ -354,7 +391,7 @@ def chuan_lai_tuyen():
             if t not in thieu:
                 thieu.append(t)
     if not thieu:
-        kiem("mọi tuyến đều vẽ được bản đồ", True, "%d tuyến" % len(ds))
+        kiem("mọi điểm của tuyến đều có toạ độ", True, "%d tuyến" % len(ds))
         return
     # Khai TAY cho những điểm dịch vụ ngoài không biết. Đây là đường chốt cuối,
     # và nó chỉ dùng được vì mỗi đầu chặng đều đã có một dòng trong bảng địa
@@ -373,6 +410,35 @@ def chuan_lai_tuyen():
     kiem("khai tay toạ độ cho điểm còn thiếu", True,
          "%d/%d điểm đã khai · còn thiếu: %s"
          % (da, len(thieu), [t for t in thieu if t not in TOA_DO_BO_SUNG]))
+
+
+def nap_hinh_duong_bo():
+    """Lấy và LƯU hình đường bộ thật cho từng tuyến, trước buổi demo.
+
+    Đường `GET /api/routes` cố ý KHÔNG gọi ra ngoài — một tuyến bốn điểm là sáu
+    lượt tra toạ độ, và làm vậy mỗi lần mở màn Dữ liệu gốc thì màn đó chờ mấy
+    chục giây. Đường `/geo` thì được phép, và nó GHI LẠI hình vào tuyến.
+
+    Nạp trước ở đây có hai cái được: buổi demo mở bản đồ là thấy ngay, và nó
+    vẫn thấy KỂ CẢ KHI MẤT MẠNG — đúng tình huống đã từng làm bản đồ trắng.
+    """
+    print("   -- Nạp sẵn hình đường bộ thật cho từng tuyến")
+    ma, g = goi("/api/routes")
+    ds = du_lieu(g)
+    xong = 0
+    for r in (ds if isinstance(ds, list) else []):
+        ma, g = goi("/api/routes/%s/geo" % urllib.parse.quote(str(r.get("id"))))
+        d = du_lieu(g)
+        if d.get("duong_bo"):
+            xong += 1
+            print("      %-30s %4d điểm hình · %s km đường bộ · nguồn %s"
+                  % (r.get("id"), len(d.get("duong_bo") or []),
+                     d.get("km_duong_bo"), d.get("nguon_duong_bo")))
+        else:
+            print("      %-30s CHƯA VẼ ĐƯỢC — thiếu toạ độ: %s"
+                  % (r.get("id"), d.get("diem_thieu_toa_do")))
+    kiem("tuyến đã có hình đường bộ lưu sẵn", xong > 0,
+         "%d/%d tuyến" % (xong, len(ds if isinstance(ds, list) else [])))
 
 
 #: Toạ độ khai tay cho những điểm nội bộ mà dịch vụ tra toạ độ không biết.
@@ -508,6 +574,32 @@ def don_gia_tu_gia_thanh(c, gia_thanh):
     return round(cuoc_chuyen, -3), cuoc_chuyen
 
 
+def chon_xe(cac_xe, c):
+    """Xe hợp với case: đúng loại xe, và đủ tải cùng đủ thể tích.
+
+    Ưu tiên xe CÙNG LOẠI với loại xe đã khai trên báo giá — giá thành của case
+    tính theo công thức của loại đó, nên điều một xe loại khác đi làm con số
+    quyết toán không còn khớp báo giá. Không có xe cùng loại thì lấy xe đủ năng
+    lực, và nói ra ở sổ kê.
+    """
+    def du_suc(x):
+        try:
+            tai = float(x.get("weight_capacity") or 0)
+            the_tich = float(x.get("volume_capacity_m3") or 0)
+        except (TypeError, ValueError):
+            return False
+        return tai >= c["kg"] and (the_tich <= 0 or the_tich >= c["m3"])
+
+    cung_loai = [x for x in cac_xe
+                 if str(x.get("type") or "") == c["loai_xe"] and du_suc(x)]
+    if cung_loai:
+        return cung_loai[0]
+    du = [x for x in cac_xe if du_suc(x)]
+    if du:
+        return sorted(du, key=lambda x: float(x.get("weight_capacity") or 0))[0]
+    return None
+
+
 def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     """Gieo một case và đưa nó tới đúng chặng đã khai. Trả về bản ghi sổ kê."""
     print()
@@ -601,7 +693,13 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     kiem("%s khách chấp nhận" % c["ma"], ma == 200, chu(g)[:110])
 
     n_do = int(so.get("so_do_du_kien") or 1)
+    # SỐ NIÊM PHONG cho hàng nguyên khối — nó là một chốt xuất bến, không phải
+    # một ô cho đẹp: bước điều phối chặn xe chở hàng nguyên cont mà không có số
+    # seal, vì đó là bằng chứng duy nhất cho biết hàng không bị mở trên đường.
+    co_seal = "nguyên khối" in c["quy_cach"]
     dong = [{"pickup_at": M(-240 + i * 45), "due_at": M(300 + i * 45),
+             "seal_no": ("SL-%s-%s-%02d" % (DAU[:4].upper(), c["ma"], i + 1)
+                         if co_seal else ""),
              "driver_note": c["hang"][0][3] or "Mang phiếu giao hàng"}
             for i in range(n_do)]
     ma, g = goi("/api/quotations/%s/split" % qid, {"dos": dong}, "POST")
@@ -617,14 +715,37 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
         return so
 
     # --- Lập Trip và điều phối ---------------------------------------------
-    xe = cac_xe[dem_xe[0] % len(cac_xe)]
+    # CHON XE PHU HOP, khong chon vong tron.
+    #
+    # Buoc dieu phoi kiem nang luc xe so voi tong tai trong va the tich cua ca
+    # chuyen ("vuot nang luc xe: tai trong 24.000/10.000 kg"), va no kiem dung.
+    # Chon vong tron nghia la mot chuyen 24 tan roi vao mot xe 10 tan, va case
+    # do dung ngay o buoc dieu phoi.
+    xe = chon_xe(cac_xe, c)
+    if xe is None:
+        kiem("%s có xe phù hợp" % c["ma"], False,
+             "cần loại %s, tải >= %s kg, thể tích >= %s m³"
+             % (c["loai_xe"], c["kg"], c["m3"]))
+        so["trang_thai"] = "split"
+        return so
     tx = tx_chinh[dem_xe[0] % len(tx_chinh)]
     px = tx_phu[dem_xe[0] % len(tx_phu)] if tx_phu else None
     dem_xe[0] += 1
 
     ma_trip = "TRIP-%s-%s" % (DAU.upper(), c["ma"])
     ma, g = goi("/api/tms/trips/from-delivery-orders", {
-        "id": ma_trip, "do_ids": ds_do[:2], "trip_type": "one_way",
+        # MỘT DO MỘT CHUYẾN — đúng luật của bản thiết kế: "1 DO = 1 cont (hoặc
+        # 1 xe) = 1 chuyến".
+        #
+        # Gộp hai DO vào một chuyến còn làm vỡ bước nộp POD trên tuyến MỘT
+        # CHẶNG: tuyến một chặng sinh đúng một chặng giao, chặng đó thuộc một
+        # DO, và DO còn lại không có chặng nào để gắn POD nên không hoàn tất
+        # được. Đã dò thấy khi gieo: "Phải nộp POD cho đúng tất cả chặng giao
+        # của DO".
+        #
+        # DO còn lại của báo giá ở lại hàng đợi `pending` — và đó cũng là thứ
+        # màn Điều phối cần có để xem.
+        "id": ma_trip, "do_ids": ds_do[:1], "trip_type": "one_way",
         "planned_departure_at": M(-240), "avg_speed_kmh": 42,
         "dwell_minutes": 30, "return_purpose": "none",
     }, "POST", dau="gieo-trip-%s-%s" % (DAU, c["ma"]))
@@ -690,7 +811,7 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     tr = du_lieu(g)
     cac_chang = tr.get("legs") or tr.get("trip_legs") or []
     xong = 0
-    for md in ds_do[:2]:
+    for md in ds_do[:1]:
         chang_cua_do = [l for l in cac_chang
                         if str(l.get("leg_type")) == "delivery"
                         and str(l.get("do_id") or "") == md]
@@ -732,8 +853,9 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
             so["gia_cuoi"] = (du_lieu(g).get("commercials") or {}).get("final_selling_price")
         else:
             print("      hoàn tất %s lỗi: %s %s" % (md, ma, chu(g)[:150]))
-    kiem("%s hoàn tất POD cho %d DO" % (c["ma"], len(ds_do[:2])), xong == len(ds_do[:2]),
-         "%d/%d · giá cuối %s" % (xong, len(ds_do[:2]), tien(so.get("gia_cuoi"))))
+    kiem("%s hoàn tất POD cho DO đầu" % c["ma"], xong == 1,
+         "%d/1 · giá cuối %s · DO còn lại ở hàng đợi Điều phối"
+         % (xong, tien(so.get("gia_cuoi"))))
 
     # --- Chi phí thực -------------------------------------------------------
     ma, g = goi("/api/tms/trips/%s" % ma_trip)
@@ -745,21 +867,70 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
               % tr.get("status"))
         so["trang_thai"] = "delivered"
         return so
+    # CHI PHÍ THỰC dựng từ ĐÚNG CÁC CẤU PHẦN của giá thành kế hoạch.
+    #
+    # Không bịa mấy dòng cho có: cả ý nghĩa của bảng này là ĐỐI SOÁT kế hoạch
+    # với thực tế, nên `original_amount` phải là con số công thức đã tính, và
+    # `actual_amount` là con số chạy thật. Bịa ba dòng nhỏ làm báo cáo hiện lãi
+    # gộp 91% — con số đầu tiên người xem demo nhìn vào, và nó vô lý với một
+    # báo giá biên 31%.
+    #
+    # Biến thiên đặt ở khoản DẦU (vượt 5%): đó là khoản biến động thật của một
+    # chuyến — đi lệch vì cấm tải, tắc đường, chạy không tải. Phụ cấp và phí bãi
+    # là số khoán nên đúng bằng kế hoạch.
+    dong_chi = [d for d in (xt.get("cac_dong") or []) if d.get("loai") == "chi"]
+    dong_cp = []
+    for d in dong_chi:
+        ke_hoach = round(float(d.get("thanh_tien") or 0))
+        la_dau = str(d.get("khoa") or "") in ("fuel", "dau", "xang_dau")
+        dong_cp.append({
+            "name": d.get("nhan") or "Chi phí",
+            "original_amount": ke_hoach,
+            "actual_amount": round(ke_hoach * 1.05) if la_dau else ke_hoach,
+            "note": "Vượt 5% vì đi lệch tuyến cấm tải" if la_dau else "Đúng khoán",
+        })
+    if not any("cầu đường" in x["name"].lower() or "bot" in x["name"].lower()
+               for x in dong_cp):
+        dong_cp.append({"name": "Phí cầu đường / BOT", "original_amount": 0,
+                        "actual_amount": 180000, "note": "Hai trạm BOT"})
     ma, g = goi("/api/tms/finance/trips/%s/actual-cost" % ma_trip, {
-        "currency_code": "VND",
-        "lines": [
-            {"name": "Chi phí xăng dầu", "original_amount": round(gia_thanh * 0.42),
-             "actual_amount": round(gia_thanh * 0.45), "note": "Đi lệch vì cấm tải"},
-            {"name": "Phụ cấp chuyến tài xế", "original_amount": 450000,
-             "actual_amount": 450000, "note": ""},
-            {"name": "Phí cầu đường", "original_amount": 0,
-             "actual_amount": 180000, "note": "Hai trạm BOT"},
-        ],
+        "currency_code": "VND", "lines": dong_cp,
     }, "PUT", dau="gieo-cost-%s-%s" % (DAU, c["ma"]))
     d = du_lieu(g)
     kiem("%s ghi chi phí thực" % c["ma"], ma == 200,
          "%s · tổng %s" % (chu(g)[:70], tien(d.get("total_amount"))))
     so["chi_phi_thuc"] = d.get("total_amount")
+
+    # TRÌNH VÀ DUYỆT chi phí thực.
+    #
+    # Báo cáo doanh thu chỉ cộng GIÁ THÀNH ĐÃ DUYỆT, nên một bảng chi phí còn ở
+    # bản nháp làm báo cáo hiện lãi gộp 100% — một con số không ai tin được, và
+    # nó là con số đầu tiên người xem demo nhìn vào.
+    ma_cp = d.get("id")
+    if ma_cp:
+        # `expected_version` là BẮT BUỘC ở cả hai bước — chốt chống ghi đè khi
+        # hai người sửa cùng một bảng chi phí. Phiên bản đọc lại sau mỗi bước
+        # vì mỗi bước làm nó tăng.
+        pb_cp = int(d.get("version") or 1)
+        m1, g1 = goi("/api/tms/finance/costs/%s/submit" % ma_cp,
+                     {"expected_version": pb_cp}, "POST",
+                     dau="gieo-cp-trinh-%s-%s" % (DAU, c["ma"]))
+        pb_cp = int((du_lieu(g1) or {}).get("version") or pb_cp + 1)
+        m2, g2 = goi("/api/tms/finance/costs/%s/approve" % ma_cp,
+                     {"expected_version": pb_cp}, "POST",
+                     dau="gieo-cp-duyet-%s-%s" % (DAU, c["ma"]))
+        # DUYỆT LÀ VIỆC CỦA NGƯỜI KHÁC, và đó là chốt đúng.
+        #
+        # Máy chủ trả 403 "Người tạo không được đồng thời duyệt chi phí" — quy
+        # tắc bốn mắt. Bộ gieo chạy dưới MỘT danh tính nên nó chỉ TRÌNH được;
+        # bước duyệt phải do một người thứ hai bấm, hoặc chạy
+        # `scripts/duyet_chi_phi_bang_nguoi_khac.py`.
+        #
+        # Nên "trình xong" mới là thành công ở đây. Coi 403 ở bước duyệt là lỗi
+        # thì bộ gieo báo đỏ cho một quy tắc đang chạy đúng.
+        kiem("%s trình chi phí thực (duyệt là việc của người thứ hai)" % c["ma"],
+             m1 == 200, "trình %s · duyệt %s: %s" % (m1, m2, chu(g2)[:90]))
+        so["chi_phi_cho_duyet"] = (m1 == 200 and m2 != 200)
     so["trang_thai"] = "completed"
     return so
 
@@ -776,11 +947,19 @@ def gieo_muoi_case(tx_chinh, tx_phu):
         kiem("có xe và tổ lái để điều phối", False, "")
         return
     dem = [0]
+    # Xe cua nhung case DANG GIAO bi giu tới het buoi demo, nen bo chung ra khoi
+    # danh sach sau khi dung. Ba case "xong" thi tra xe lai, nhung don gian hon
+    # la khong dung lai xe nao trong mot lan gieo.
+    da_dung = set()
     # THỨ TỰ CÓ Ý: gieo ba case "xong" TRƯỚC. Điều phối làm xe và tài xế thành
     # "đang chạy", và chỉ bước hoàn tất mới giải phóng họ — nên nếu gieo hai
     # case "đang giao" trước thì hai xe bị giữ và ba case sau không còn xe.
     for c in CASE:
-        SO_KE.append(gieo_mot_case(c, tx_chinh, tx_phu, san_sang, dem))
+        con_lai = [x for x in san_sang if x["id"] not in da_dung]
+        so = gieo_mot_case(c, tx_chinh, tx_phu, con_lai or san_sang, dem)
+        if so.get("xe"):
+            da_dung.add(so["xe"])
+        SO_KE.append(so)
 
 
 # ================================================== 4. ĐỐI CHIẾU VÀ GHI LẠI
@@ -933,6 +1112,36 @@ def ghi_so_ke():
         "3. **C09 cố ý biên mỏng** (~9%) để thấy cửa duyệt nội bộ. Nó VẪN TRÊN giá",
         "   thành — báo giá lỗ bị chặn hẳn, không vào được trạng thái chờ duyệt.",
         "",
+        "## Chạy lại bộ dữ liệu — HAI BƯỚC, hai người",
+        "",
+        "```",
+        "python scripts/don_va_gieo_10_case_demo.py       # người vận hành",
+        "python scripts/duyet_chi_phi_bang_nguoi_khac.py  # trưởng phòng tài chính",
+        "```",
+        "",
+        "Bước hai là một tệp riêng vì **quy tắc bốn mắt**: bảng chi phí thực đi qua",
+        "hai tay — người vận hành trình, trưởng phòng duyệt — và máy chủ chặn người",
+        "tạo tự duyệt bảng của mình. Bộ gieo chạy dưới một danh tính nên nó chỉ",
+        "trình được; nếu bỏ bước hai thì báo cáo doanh thu chỉ cộng phần chi phí",
+        "*vượt kế hoạch* đã duyệt, không cộng giá thành kế hoạch, và lãi gộp hiện",
+        "cao giả tạo.",
+        "",
+        "Đây cũng là một thứ đáng cho người xem thấy: hệ thống không cho một người",
+        "vừa nhập vừa xác nhận con số của chính mình.",
+        "",
+        "## Ba con số của báo cáo doanh thu",
+        "",
+        "Báo cáo hiện **ba** cột chi phí, không gộp thành một:",
+        "",
+        "| Cột | Nghĩa |",
+        "|---|---|",
+        "| Giá thành kế hoạch | công thức loại xe × số km đường bộ, đúng con số màn Báo giá hiện |",
+        "| Chênh lệch đã duyệt | phần chi phí thực vượt kế hoạch, đã qua trưởng phòng |",
+        "| Giá thành | tổng hai cột trên — mẫu số của lãi gộp |",
+        "",
+        "Gộp thành một cột thì người đọc không biết chuyến vượt kế hoạch bao nhiêu,",
+        "mà đó chính là câu hỏi của người quản lý đội xe.",
+        "",
     ]
     duong_md = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -962,6 +1171,10 @@ def main():
         return 1
     tx_chinh, tx_phu = chuan_lai_du_lieu_goc()
     chuan_lai_tuyen()
+    # GỌI Ở ĐÂY, không gọi trong `chuan_lai_tuyen`: hàm đó trả về sớm khi không
+    # thiếu toạ độ nào, nên một lời gọi đặt ở cuối nó sẽ không bao giờ chạy —
+    # đúng lỗi vừa mắc, và nó im lặng chứ không báo gì.
+    nap_hinh_duong_bo()
     gieo_muoi_case(tx_chinh, tx_phu)
     doi_chieu()
     ghi_so_ke()

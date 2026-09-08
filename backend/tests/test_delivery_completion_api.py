@@ -207,6 +207,12 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
     assert client.post("/api/quotations", json={
         "id": "QT-COMPLETE", "customer_id": "CUS-T1", "route_id": "RT-T1",
         "selling_price": 4_200_000,
+        # HAI TRUONG NAY LA BAT BUOC de duyet duoc, theo chot cua chu du an:
+        # "lỗ và hết hạn thì không cho duyệt". Thieu `valid_to` la mot bao gia
+        # dung mai mai; thieu `total_cost` thi khong tinh duoc lo hay lai, va
+        # "khong tinh duoc" thi khong ai duoc phep noi la da duyet.
+        "total_cost": 3_000_000,
+        "valid_to": (dt.date.today() + dt.timedelta(days=30)).isoformat(),
         "pickup_window_start": "2026-08-22T07:00:00+07:00",
         "pickup_window_end": "2026-08-22T09:00:00+07:00",
         "delivery_window_start": "2026-08-22T11:00:00+07:00",

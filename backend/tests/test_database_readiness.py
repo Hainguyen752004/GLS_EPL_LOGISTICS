@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 
 import pytest
 from fastapi import FastAPI
@@ -38,14 +38,26 @@ def test_required_migration_head_is_exposed_by_runner():
 
 
 class Checker:
-    def __init__(self, error=None):
+    """Ban nhai cua `DatabaseChecker`.
+
+    `dialect_dang_dung` la mot phan cua giao dien: duong /health/database bao
+    ra ENGINE THAT dang chay chu khong ghi cung chuoi "postgresql". Chay tren
+    SQLite ma duong suc khoe bao postgresql la mot cau tra loi sai cho dung cau
+    hoi ma nguoi van hanh mo duong nay de hoi.
+    """
+
+    def __init__(self, error=None, dialect="postgresql"):
         self.error = error
         self.calls = 0
+        self.dialect = dialect
 
     def check(self):
         self.calls += 1
         if self.error:
             raise self.error
+
+    def dialect_dang_dung(self):
+        return self.dialect
 
 
 def client_for(checker, state=None):
@@ -63,6 +75,23 @@ def test_database_health_is_exact_success_after_checker_passes():
     assert checker.calls == 1
     assert response.status_code == 200
     assert response.json() == {"status": "ok", "database": "postgresql"}
+
+
+def test_database_health_bao_dung_engine_khi_chay_sqlite():
+    """Chay tren SQLite thi phai bao "sqlite", khong bao "postgresql".
+
+    Truoc day chuoi nay la hang so trong ma nguon, nen mot nguoi mo duong nay
+    de kiem "minh dang chay tren cai nao" luon nhan cung mot cau tra loi. Hai
+    co so du lieu nay khong giong nhau — SQLite duoc dung lai tu `models.py`
+    nen luon co rang buoc moi nhat, con PostgreSQL nang cap tung buoc nen luoc
+    do co the troi khoi mo hinh — nen bao sai engine la tao ra mot cam giac an
+    toan gia.
+    """
+    checker = Checker(dialect="sqlite")
+    with client_for(checker) as client:
+        response = client.get("/api/health/database")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok", "database": "sqlite"}
 
 
 @pytest.mark.parametrize(

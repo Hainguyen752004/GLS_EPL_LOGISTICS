@@ -583,6 +583,13 @@
 .qtv2 .split .r {
   display: grid;
   grid-template-columns: 34px minmax(0, 1.3fr) 90px 140px 110px 170px minmax(0, 1fr) 34px;
+}
+
+/* Bảng tách DO có thêm cột "Số niêm phong" khi báo giá khai hàng nguyên khối.
+   Khai riêng một bộ cột chứ không chèn `auto` vào bộ trên: một cột `auto` giữa
+   bảng làm mọi cột khác co lại khi tên hàng dài. */
+.qtv2 .split.co-seal .r {
+  grid-template-columns: 34px minmax(0, 1.15fr) 84px 132px 96px 160px 116px minmax(0, 0.9fr) 34px;
   gap: 8px;
   padding: 8px 12px;
   border-top: 1px solid var(--qt-line);

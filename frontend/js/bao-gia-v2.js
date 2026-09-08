@@ -1161,10 +1161,18 @@
 
     const n = soLuongHang();
     if (S.dongTach.length !== n) S.dongTach = dungDongTach(n);
-    const hong = d => !rt || !d.pick;
-    than.innerHTML = `<div class="split-wrap"><div class="split">
+    // CÓ NIÊM PHONG THÌ PHẢI CÓ CHỖ GHI SỐ SEAL.
+    //
+    // Đây là một CHỐT XUẤT BẾN: hàng nguyên cont không đếm kiện, nên bằng
+    // chứng duy nhất cho biết hàng không bị mở trên đường là số niêm phong —
+    // và bước điều phối chặn xe không có nó. Không có cột này thì mọi chuyến
+    // container dừng ở màn Điều phối với một thông báo không có chỗ nào sửa.
+    const canSeal = /^có/i.test(String(q.sealing || '').trim());
+    const hong = d => !rt || !d.pick || (canSeal && !String(d.seal || '').trim());
+    than.innerHTML = `<div class="split-wrap"><div class="split${canSeal ? ' co-seal' : ''}">
         <div class="r"><span>#</span><span>Hàng hoá</span><span>Đơn vị</span><span>Ngày lấy</span>
-          <span>Giờ lấy</span><span>Hạn giao</span><span>Ghi chú cho tài xế</span><span></span></div>
+          <span>Giờ lấy</span><span>Hạn giao</span>${canSeal ? '<span>Số niêm phong</span>' : ''}
+          <span>Ghi chú cho tài xế</span><span></span></div>
         ${S.dongTach.map((x, i) => `<div class="r ${hong(x) ? 'bad' : ''}">
           <i>${i + 1}</i>
           <span>${esc(x.name || '—')}<br><small style="color:#7b8796">${
@@ -1174,13 +1182,20 @@
           <input type="date" value="${esc(x.date)}" data-i="${i}" data-f="date">
           <input value="${esc(x.pick)}" data-i="${i}" data-f="pick" placeholder="07:00">
           <input type="datetime-local" value="${esc(x.due)}" data-i="${i}" data-f="due">
+          ${canSeal ? `<input value="${esc(x.seal || '')}" data-i="${i}" data-f="seal"
+            placeholder="SL-0001">` : ''}
           <input value="${esc(x.note || '')}" data-i="${i}" data-f="note"
             placeholder="cổng B, mang phiếu xuất kho…">
           <button type="button" class="x" data-i="${i}" title="Bớt dòng">×</button></div>`).join('')}
         <button type="button" class="add" id="qtv2-them-do">+ Thêm DO</button>
       </div></div>
-      <div class="warn ${!rt ? 'red' : 'green'}">${!rt
+      <div class="warn ${(!rt || S.dongTach.some(hong)) ? 'red' : 'green'}">${!rt
         ? '✗ <div>Chưa chọn tuyến — không tách DO được.</div>'
+        : S.dongTach.some(hong)
+          ? `✗ <div>${S.dongTach.filter(hong).length} dòng chưa đủ: `
+            + `${canSeal ? 'hàng nguyên khối phải ghi số niêm phong, và ' : ''}`
+            + 'phải có giờ lấy hàng. Thiếu số niêm phong thì bước Điều phối '
+            + 'không cho xe xuất bến.</div>`'
         : `✓ <div>Sẽ tạo <b>${S.dongTach.length} DO</b> · tuyến ${esc(rt.name || rt.id)} ·
             xuất hiện ở "Lệnh giao hàng → Cần xử lý" để Điều phối xếp xe. Giá cước
             <b>${tien(q.selling_price)} ₫/chuyến</b> được khoá theo báo giá.</div>`}</div>`;
@@ -1206,7 +1221,7 @@
         date: m.date || ngayHomNayCong(2),
         pick: m.pick || '07:00',
         due: m.due || chuanDatetimeLocal(S.q.delivery_window_end) || '',
-        note: '',
+        seal: '', note: '',
       });
       veTachDo();
       veThanhDay();
@@ -1240,13 +1255,14 @@
         }
         ra.push({
           name: it.name || '—', unit: it.uom || "40'",
-          date: ngay, pick: gio, due: hanGiao, note: it.note || '',
+          date: ngay, pick: gio, due: hanGiao, seal: '', note: it.note || '',
         });
         k++;
       }
     });
     return ra.length ? ra : [{
-      name: '—', unit: "40'", date: ngayHomNayCong(2), pick: '07:00', due: hanGiao, note: '',
+      name: '—', unit: "40'", date: ngayHomNayCong(2), pick: '07:00', due: hanGiao,
+      seal: '', note: '',
     }];
   }
 
@@ -2022,6 +2038,15 @@
     if (!q.route_id) { thongBao('Chưa chọn tuyến — không tách DO được.', true); return; }
     const thieu = S.dongTach.filter(d => !d.pick).length;
     if (thieu) { thongBao(`${thieu} dòng chưa có giờ lấy hàng.`, true); return; }
+    if (/^có/i.test(String(q.sealing || '').trim())) {
+      const thieuSeal = S.dongTach.filter(d => !String(d.seal || '').trim()).length;
+      if (thieuSeal) {
+        thongBao(`${thieuSeal} dòng chưa có số niêm phong. Báo giá này khai hàng có `
+          + 'niêm phong, và bước Điều phối sẽ không cho xe xuất bến khi thiếu số seal.',
+        true);
+        return;
+      }
+    }
     if (!window.confirm(`Tạo ${S.dongTach.length} lệnh giao hàng từ báo giá này?\n\n`
       + `Giá cước ${tien(q.selling_price)} ₫/chuyến sẽ được khoá theo báo giá và không sửa `
       + 'ở dưới vận hành.')) return;
@@ -2029,6 +2054,7 @@
       unit: d.unit,
       pickup_at: mocGuiLen(`${d.date}T${(d.pick || '07:00').slice(0, 5)}`),
       due_at: mocGuiLen(d.due),
+      seal_no: d.seal || '',
       driver_note: d.note || '',
     }));
     const goi = await lenh('split', { dos }, 'Đang tạo lệnh giao hàng…', true);

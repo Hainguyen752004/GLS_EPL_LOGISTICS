@@ -18,6 +18,7 @@ from models import (
     FinanceControlConfig,
     FreightActualCost,
     FreightOrder,
+    Quotation,
     SalesOrder,
     TransportTrip,
     TransportTripLeg,
@@ -198,9 +199,35 @@ def get_transport_revenue(
         )
 
         revenue = Decimal(invoice.total or 0) * Decimal(invoice.exchange_rate_snapshot or 1)
-        approved_cost = Decimal("0")
+
+        # GIÁ THÀNH CỦA MỘT CHUYẾN = GIÁ THÀNH KẾ HOẠCH + CHÊNH LỆCH ĐÃ DUYỆT.
+        #
+        # Trước đây cột này chỉ lấy `freight_actual_costs.total_amount`, và con
+        # số đó KHÔNG phải tổng chi phí: bảng chi phí thực ghi từng dòng theo
+        # `original` và `actual`, rồi cộng đúng phần VƯỢT
+        # (`net_amount = increase`). Nó là một chứng từ CHÊNH LỆCH.
+        #
+        # Hệ quả đo được: một chuyến cước 2,2 triệu, giá thành kế hoạch 1,5
+        # triệu, dầu vượt 5% -> bảng chênh lệch ghi 17.227 đ, và báo cáo kết
+        # luận lãi gộp 99%. Với một báo giá biên 31% thì con số đó vô lý, và nó
+        # là con số đầu tiên người xem báo cáo nhìn vào.
+        #
+        # Giá thành kế hoạch lấy từ BÁO GIÁ mà lệnh giao hàng kế thừa — đúng
+        # con số công thức loại xe đã tính cho một chuyến, và cũng là con số
+        # màn Báo giá đang hiện. Một chuyến = một DO, nên không phải chia.
+        ke_hoach = Decimal("0")
+        bao_gia = None
+        if getattr(delivery, "quotation_id", None):
+            bao_gia = db.get(Quotation, delivery.quotation_id)
+        if bao_gia is None and sales_order is not None and sales_order.quotation_id:
+            bao_gia = db.get(Quotation, sales_order.quotation_id)
+        if bao_gia is not None:
+            ke_hoach = Decimal(bao_gia.total_cost or 0)
+
+        chenh_lech = Decimal("0")
         if cost is not None and cost.status == "approved":
-            approved_cost = _cost_total(cost) * Decimal(cost.exchange_rate_snapshot or 1)
+            chenh_lech = _cost_total(cost) * Decimal(cost.exchange_rate_snapshot or 1)
+        approved_cost = ke_hoach + chenh_lech
         totals, missing = _converted_totals(db, revenue, functional_currency, recognition_date)
         if vehicle is None:
             missing.append("tractor_plate")
@@ -238,6 +265,10 @@ def get_transport_revenue(
             "unit_prices": dict(totals),
             "totals": totals,
             "revenue_functional": _number(revenue),
+            # BA CON SỐ, không gộp thành một: người đọc báo cáo cần biết chi phí
+            # vượt kế hoạch bao nhiêu, và một cột tổng duy nhất che mất điều đó.
+            "planned_cost_functional": _number(ke_hoach),
+            "cost_variance_functional": _number(chenh_lech),
             "approved_cost_functional": _number(approved_cost),
             "gross_profit": _number(profit),
             "margin_percent": round(_number(margin), 2),

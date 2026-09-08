@@ -94,6 +94,14 @@ def phai_quet_kien(don):
     ho sua duoc quy cach. Cai sai thu hai re hon nhieu.
     """
     quy_cach = str(getattr(don, "packaging_spec", "") or "")
+    # CHỮ NÓI RÕ LÀ ĐẾM ĐƯỢC THÌ THẮNG, xét trước cả hai nhóm kia.
+    #
+    # "Kiện rời" là hàng lẻ — có kiện và phải đếm — nhưng nó cũng chứa chữ
+    # "rời". Xét nhóm hàng rời trước thì một lô hàng lẻ bị xếp thành hàng rời và
+    # đi qua cửa mà không ai đếm kiện, tức đúng cái lỗ hổng mà tệp này tồn tại
+    # để bịt. Nên thứ tự là: có chữ chỉ kiện thì đếm, không thì mới xét tiếp.
+    if MAU_DEM_KIEN.search(quy_cach):
+        return True
     if la_nguyen_khoi(quy_cach) or la_hang_roi(quy_cach):
         return False
     return True

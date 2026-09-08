@@ -63,3 +63,9 @@ backend/scripts/sao_luu_*.json
 
 # Trang soi tạm khi chụp ảnh từng màn — không phải một phần của ứng dụng.
 frontend/_soi*.html
+
+# Bản sao lưu cơ sở dữ liệu do scripts/don_va_gieo_10_case_demo.py tạo ra
+# trước khi dọn dữ liệu. Chúng là ảnh chụp một thời điểm trên máy của từng
+# người, không phải thứ để chia sẻ — và mỗi bản nặng hơn một megabyte.
+*.db.truoc-khi-don-*.bak
+*.db.bak
