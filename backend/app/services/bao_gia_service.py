@@ -33,11 +33,15 @@ di het duong xuong DO, quyet toan va hoa don ma khong ai phat hien.
 import datetime as dt
 import json
 
+from sqlalchemy import func
+
 from models import (
     CostFormula,
     DeliveryOrder,
     Quotation,
+    QuotationAttachment,
     QuotationItem,
+    QuotationVersion,
     Route,
     VehicleType,
 )
@@ -431,6 +435,20 @@ def so_do_du_kien(db, qid):
     return max(0, tong)
 
 
+def _moc_thoi_gian(gia_tri):
+    """Doc mot moc thoi gian, dung CHUNG ham voi duong tao DO cu.
+
+    LOI DA XAY RA THAT: lan dau tach DO tra ve 500 voi "SQLite DateTime type
+    only accepts Python datetime and date objects" — vi o day truyen mot CHUOI
+    ISO vao cot kieu thoi gian. Nhung sua bang mot phep doc RIENG thi te hon:
+    hai duong tao DO se hieu cung mot chuoi theo hai cach, va mot DO co the ra
+    doi voi gio lay hang lech bay tieng so voi DO ben canh. Nen goi dung ham ma
+    `create_delivery_order` dang dung.
+    """
+    from services.workflow_service import _parse_business_datetime
+    return _parse_business_datetime(gia_tri)
+
+
 def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
     """Mot lenh giao hang tach tu bao gia."""
     ma = "%s-DO%02d" % ((q.quote_no or q.id).replace("QT-", "").replace("DEMO-", ""), chi_so + 1)
@@ -448,12 +466,12 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
         route_id=q.route_id,
         origin=q.origin,
         destination=q.destination,
-        pickup_window_start=dong.get("pickup_at"),
-        pickup_window_end=dong.get("pickup_at"),
-        delivery_window_start=dong.get("due_at"),
-        delivery_window_end=dong.get("due_at"),
-        pickup_date=dong.get("pickup_at"),
-        delivery_date=dong.get("due_at"),
+        pickup_window_start=_moc_thoi_gian(dong.get("pickup_at")),
+        pickup_window_end=_moc_thoi_gian(dong.get("pickup_at")),
+        delivery_window_start=_moc_thoi_gian(dong.get("due_at")),
+        delivery_window_end=_moc_thoi_gian(dong.get("due_at")),
+        pickup_date=_moc_thoi_gian(dong.get("pickup_at")),
+        delivery_date=_moc_thoi_gian(dong.get("due_at")),
         weight_kg=_so(q.weight_kg) / max(1, tong_do),
         pallet_count=int(_so(q.pallet_count) / max(1, tong_do)),
         volume_m3=_so(q.volume_m3) / max(1, tong_do),
@@ -535,3 +553,481 @@ def tach_thanh_do(db, qid, cac_dong, actor="system"):
     db.flush()
     return {"quotation_id": q.id, "quote_no": q.quote_no, "do_ids": ra,
             "gia_moi_chuyen": gia_khoa, "so_do": len(ra)}
+
+
+# ===========================================================================
+# DONG HANG HOA
+# ===========================================================================
+
+def thay_dong_hang_hoa(db, qid, cac_dong, actor="system"):
+    """Ghi lai TOAN BO cac dong hang hoa cua mot bao gia.
+
+    Thay ca bang thay vi sua tung dong: giao dien la mot bang nguoi dung them va
+    xoa dong tu do, nen gui ca bang len la cach duy nhat khong sinh ra trang
+    thai nua voi — sua dong 2, xoa dong 3, them dong 4 trong mot lan bam Luu.
+
+    TOI THIEU MOT DONG: so DO tach ra bang tong so luong o bang nay, nen bang
+    rong nghia la khong tach duoc DO nao, va mot bao gia khong tach duoc DO thi
+    khong dung de lam gi.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status in ("split",) + DA_DONG:
+        raise conflict("LOCKED_RECORD",
+                       "Báo giá %s đã %s — không sửa được bảng hàng hoá."
+                       % (q.quote_no or q.id,
+                          "tách DO" if q.canonical_status == "split" else "đóng"))
+    dong = [d for d in (cac_dong or []) if isinstance(d, dict)]
+    if not dong:
+        raise DomainError("ITEMS_REQUIRED",
+                          "Bảng hàng hoá phải có ít nhất một dòng — số DO tách ra bằng "
+                          "tổng số lượng ở bảng này.", 422)
+
+    db.query(QuotationItem).filter(QuotationItem.quotation_id == q.id).delete(
+        synchronize_session=False)
+    ra = []
+    for i, d in enumerate(dong, start=1):
+        so_luong = _so(d.get("quantity"), 1)
+        if so_luong < 0:
+            raise DomainError("ITEM_QTY_INVALID",
+                              "Số lượng dòng %d không được âm." % i, 422)
+        row = QuotationItem(
+            id="%s-IT%02d" % (q.id, i),
+            quotation_id=q.id,
+            line_no=i,
+            name=(d.get("name") or "").strip() or None,
+            quantity=so_luong,
+            uom=(d.get("uom") or "Chuyến").strip() or "Chuyến",
+            note=(d.get("note") or "").strip() or None,
+        )
+        db.add(row)
+        ra.append(row)
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return [{"line_no": x.line_no, "name": x.name, "quantity": _so(x.quantity),
+             "uom": x.uom, "note": x.note} for x in ra]
+
+
+# ===========================================================================
+# CHUYEN TRANG THAI
+# ===========================================================================
+
+def _ghi_phien_ban(db, q, ghi_chu, actor):
+    """Chot mot phien ban gia.
+
+    Khong co bang nay thi khong ai doi soat duoc voi ban PDF khach dang giu:
+    khach noi "anh bao toi 3,9 trieu" ma he thong chi con con so hien tai.
+    """
+    so = int(_so(q.version, 1))
+    da_co = (db.query(QuotationVersion)
+             .filter(QuotationVersion.quotation_id == q.id,
+                     QuotationVersion.version == so).first())
+    if da_co:
+        return da_co
+    row = QuotationVersion(
+        id="%s-V%02d" % (q.id, so), quotation_id=q.id, version=so,
+        selling_price=q.selling_price, unit_price=q.unit_price,
+        price_basis=q.price_basis, total_cost=q.total_cost,
+        currency_code=q.currency_code, fx_rate=q.fx_rate,
+        note=ghi_chu, created_by=actor,
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def _ma_bao_gia_moi(db):
+    """Ma bao gia hien cho khach: `QT-<nam>-<so tang dan>`."""
+    nam = dt.datetime.now().year
+    dau = "QT-%d-" % nam
+    lon_nhat = 0
+    for (ma,) in db.query(Quotation.quote_no).filter(
+            Quotation.quote_no.like(dau + "%")).all():
+        try:
+            lon_nhat = max(lon_nhat, int(str(ma).rsplit("-", 1)[1]))
+        except (ValueError, IndexError):
+            continue
+    return "%s%04d" % (dau, lon_nhat + 1)
+
+
+def _ty_gia(db, ma_tien):
+    from models import Currency
+    row = db.get(Currency, str(ma_tien).upper())
+    ty = _so(getattr(row, "exchange_rate", 0))
+    if ty <= 0:
+        raise DomainError("FX_RATE_MISSING",
+                          "Chưa có tỷ giá cho %s — khai ở Dữ liệu gốc → Tỷ giá. Không có "
+                          "tỷ giá thì số tiền trên PDF và số lưu trong hệ thống sẽ lệch "
+                          "nhau." % ma_tien, 422)
+    return ty
+
+
+def gui_khach(db, qid, actor="system"):
+    """Gui bao gia cho khach: cap MA hien cho khach, chot phien ban gia.
+
+    BIEN DUOI NGUONG THI KHONG SANG `sent` ma sang `pending_approval`. Do la
+    chot cua spec, va no KHAC chot "khong duyet bao gia lo": lo la duoi gia
+    thanh — chan han; con duoi nguong bien la con lai nhung mong, do la mot
+    quyet dinh kinh doanh nen di qua nguoi duyet chu khong bi chan.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status not in ("draft", "pending_approval", "sent", "approved"):
+        raise conflict("INVALID_TRANSITION",
+                       "Báo giá %s đang ở trạng thái %s — không gửi được."
+                       % (q.quote_no or q.id, q.canonical_status))
+
+    # Cac chot cua duong DUYET ap luon o day: gui cho khach mot bao gia het han
+    # hoac dang lo thi te hon la khong gui.
+    from services.workflow_service import kiem_bao_gia_truoc_khi_duyet
+    kiem_bao_gia_truoc_khi_duyet(q)
+
+    bien = bien_loi_nhuan(q.selling_price, q.total_cost)
+    nguong = _so(q.target_margin, NGUONG_BIEN_PHAI_DUYET)
+    if bien is not None and bien < nguong:
+        q.canonical_status = "pending_approval"
+        q.status = "Chờ duyệt nội bộ"
+    else:
+        q.canonical_status = "sent"
+        q.status = "Đã gửi · chờ khách"
+        q.sent_at = dt.datetime.utcnow()
+
+    # MA HIEN CHO KHACH cap o day, khong phai luc tao: spec doi "nhap chua co
+    # ma", ma khoa chinh thi khong the rong.
+    if not q.quote_no and q.canonical_status == "sent":
+        q.quote_no = _ma_bao_gia_moi(db)
+    # TY GIA LUC GUI.
+    if q.currency_code and q.currency_code != "VND" and not _so(q.fx_rate):
+        q.fx_rate = _ty_gia(db, q.currency_code)
+    _ghi_phien_ban(db, q, "Gửi khách", actor)
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+def khach_chap_nhan(db, qid, actor="system"):
+    """Ghi nhan khach chap nhan. Buoc nay MO KHOA muc tach DO."""
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status not in ("sent", "approved"):
+        raise conflict("INVALID_TRANSITION",
+                       "Chỉ báo giá ĐÃ GỬI mới ghi nhận được khách chấp nhận. Báo giá %s "
+                       "đang ở trạng thái %s." % (q.quote_no or q.id, q.canonical_status))
+    han = _ngay(q.valid_to)
+    hom_nay = dt.datetime.now().date()
+    if han and han < hom_nay:
+        raise conflict("QUOTATION_EXPIRED",
+                       "Báo giá hết hạn ngày %s — không ghi nhận chấp nhận được. Gia hạn "
+                       "hoặc soát lại giá rồi gửi lại." % han.isoformat())
+    q.canonical_status = "accepted"
+    q.status = "Đã chấp nhận"
+    q.accepted_at = dt.datetime.utcnow()
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+def khach_tu_choi(db, qid, ly_do="", actor="system"):
+    """Dong bao gia. KHONG dong duoc bao gia da tach DO.
+
+    Da tach nghia la co xe da duoc xep va co the dang chay. Dong bao gia luc do
+    de lai nhung DO mo coi — con so tien cua chung tro vao mot chung tu da dong.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status == "split":
+        raise conflict("QUOTATION_ALREADY_SPLIT",
+                       "Báo giá đã tách thành lệnh giao hàng — không đóng được. Nếu khách "
+                       "rút thì huỷ từng lệnh giao hàng ở màn Giao hàng.")
+    q.canonical_status = "rejected"
+    q.status = "Từ chối"
+    q.closed_at = dt.datetime.utcnow()
+    q.close_reason = (ly_do or "").strip() or None
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+def gia_han(db, qid, han_moi, actor="system"):
+    """Gia han hieu luc, va MO LAI mot bao gia da het han.
+
+    Het han khong phai loi cua nguoi dung — gia dau va phi duong doi theo thang.
+    Viec dung la soat lai gia roi gia han, chu khong phai tao mot bao gia moi va
+    mat lich su cua cai cu.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    ngay = _ngay(han_moi)
+    if ngay is None:
+        raise DomainError("INVALID_DATE",
+                          "Ngày hiệu lực mới không đọc được: %r" % han_moi, 422)
+    if ngay < dt.datetime.now().date():
+        raise DomainError("VALIDITY_IN_PAST",
+                          "Ngày hiệu lực mới (%s) đã qua — gia hạn như vậy thì báo giá vẫn "
+                          "hết hạn." % ngay.isoformat(), 422)
+    q.valid_to = ngay.isoformat()
+    if q.canonical_status == "expired":
+        q.canonical_status = "sent"
+        q.status = "Đã gửi · chờ khách"
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+# ===========================================================================
+# DOC: MOT BAO GIA, DANH SACH, VA DAI SO LIEU
+# ===========================================================================
+
+def _con_lai_ngay(valid_to, hom_nay=None):
+    """So ngay con lai cua hieu luc. `None` khi chua khai han.
+
+    Tra ve `None` chu khong tra ve 0: 0 nghia la "het han hom nay" con chua khai
+    nghia la "chua gui" — hai tinh huong khac nhau va cot Hieu luc phai hien
+    khac nhau.
+    """
+    ngay = _ngay(valid_to)
+    if ngay is None:
+        return None
+    return (ngay - (hom_nay or dt.datetime.now().date())).days
+
+
+def _da_het_han(q, hom_nay=None):
+    con = _con_lai_ngay(q.valid_to, hom_nay)
+    return con is not None and con < 0
+
+
+def mot_bao_gia(db, qid, kem_chi_tiet=True):
+    """Mot bao gia kem moi thu man chi tiet can, trong MOT loi goi."""
+    q = db.query(Quotation).filter(Quotation.id == qid).first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    return _bung_bao_gia(db, q, kem_chi_tiet)
+
+
+def _bung_bao_gia(db, q, kem_chi_tiet=False, hom_nay=None):
+    bien = bien_loi_nhuan(q.selling_price, q.total_cost)
+    con_lai = _con_lai_ngay(q.valid_to, hom_nay)
+    # HET HAN TINH TAI LUC DOC, khong luu thanh trang thai.
+    #
+    # Spec ghi ro tab "Sap het han" la bo loc dong chu khong phai trang thai
+    # trong co so du lieu. Luu thanh trang thai thi phai co mot tien trinh chay
+    # nen doi no moi dem, va khong co tien trinh do thi mot bao gia het han hom
+    # qua van hien la "cho khach" cho tới khi ai do bam vao.
+    trang_thai = q.canonical_status
+    if trang_thai in ("sent", "approved", "pending_approval") and _da_het_han(q, hom_nay):
+        trang_thai = "expired"
+    ra = {
+        "id": q.id,
+        "quote_no": q.quote_no,
+        "canonical_status": trang_thai,
+        "trang_thai_luu": q.canonical_status,
+        "status": q.status,
+        "version": int(_so(q.version, 1)),
+        "customer_id": q.customer_id,
+        "route_id": q.route_id,
+        "vehicle_type_id": q.vehicle_type_id,
+        "origin": q.origin,
+        "destination": q.destination,
+        "pickup_window_start": q.pickup_window_start,
+        "pickup_window_end": q.pickup_window_end,
+        "delivery_window_start": q.delivery_window_start,
+        "delivery_window_end": q.delivery_window_end,
+        "weight_kg": _so(q.weight_kg),
+        "volume_m3": _so(q.volume_m3),
+        "pallet_count": int(_so(q.pallet_count)),
+        "cargo_type": q.cargo_type,
+        "cargo_value": _so(q.cargo_value),
+        "packaging_spec": q.packaging_spec,
+        "temperature_requirement": q.temperature_requirement,
+        "stacking": q.stacking,
+        "sealing": q.sealing,
+        "recipient_contact": q.recipient_contact,
+        "valid_to": q.valid_to,
+        "con_lai_ngay": con_lai,
+        "price_basis": q.price_basis or "per_trip",
+        "unit_price": _so(q.unit_price),
+        "min_qty_per_trip": _so(q.min_qty_per_trip),
+        "selling_price": _so(q.selling_price),
+        "total_cost": _so(q.total_cost),
+        "bien": bien,
+        "loi_nhuan": _so(q.selling_price) - _so(q.total_cost),
+        "currency_code": q.currency_code or "VND",
+        "fx_rate": _so(q.fx_rate, 1),
+        "payment_terms": q.payment_terms,
+        "waiting_surcharge": _so(q.waiting_surcharge),
+        "sales_rep": q.sales_rep,
+        "trips_per_month": int(_so(q.trips_per_month)),
+        "target_margin": _so(q.target_margin) or None,
+        "notes_customer": q.notes_customer,
+        "notes_ops": q.notes_ops,
+        "notes_internal": q.notes_internal,
+        "sent_at": q.sent_at.isoformat() if q.sent_at else None,
+        "accepted_at": q.accepted_at.isoformat() if q.accepted_at else None,
+        "created_at": q.created_at.isoformat() if q.created_at else None,
+        "created_by": q.created_by,
+    }
+    if not kem_chi_tiet:
+        return ra
+    ra["items"] = [{"line_no": x.line_no, "name": x.name, "quantity": _so(x.quantity),
+                    "uom": x.uom, "note": x.note} for x in dong_hang_hoa(db, q.id)]
+    ra["so_do_du_kien"] = so_do_du_kien(db, q.id)
+    ra["attachments"] = [{
+        "id": a.id, "doc_type": a.doc_type, "file_name": a.file_name,
+        "storage_url": a.storage_url, "size_bytes": a.size_bytes, "note": a.note,
+        "uploaded_at": a.uploaded_at.isoformat() if a.uploaded_at else None,
+        "uploaded_by": a.uploaded_by,
+    } for a in db.query(QuotationAttachment).filter(
+        QuotationAttachment.quotation_id == q.id).order_by(
+        QuotationAttachment.uploaded_at.desc()).all()]
+    ra["versions"] = [{
+        "version": v.version, "selling_price": _so(v.selling_price),
+        "unit_price": _so(v.unit_price), "price_basis": v.price_basis,
+        "total_cost": _so(v.total_cost), "note": v.note,
+        "created_at": v.created_at.isoformat() if v.created_at else None,
+    } for v in db.query(QuotationVersion).filter(
+        QuotationVersion.quotation_id == q.id).order_by(
+        QuotationVersion.version.desc()).all()]
+    cac_do = db.query(DeliveryOrder).filter(
+        DeliveryOrder.quotation_id == q.id).order_by(DeliveryOrder.id).all()
+    ra["delivery_orders"] = [{
+        "id": d.id, "canonical_status": d.canonical_status, "status": d.status,
+        "unit_price": _so(d.unit_price), "pickup_date": str(d.pickup_date or ""),
+        "delivery_date": str(d.delivery_date or ""), "driver_note": d.driver_note,
+    } for d in cac_do]
+    ra["so_do"] = len(cac_do)
+    ra["so_do_xong"] = sum(1 for d in cac_do if d.canonical_status in ("delivered", "completed"))
+    return ra
+
+
+def danh_sach(db, loc=None):
+    """Danh sach bao gia cho man danh sach, kem bien va so ngay con lai."""
+    loc = loc or {}
+    truy_van = db.query(Quotation)
+    if loc.get("customer_id"):
+        truy_van = truy_van.filter(Quotation.customer_id == loc["customer_id"])
+    if loc.get("route_id"):
+        truy_van = truy_van.filter(Quotation.route_id == loc["route_id"])
+    if loc.get("owner"):
+        truy_van = truy_van.filter(Quotation.created_by == loc["owner"])
+    hom_nay = dt.datetime.now().date()
+    cac_q = truy_van.order_by(Quotation.created_at.desc()).limit(500).all()
+    # DEM MOT LAN cho ca danh sach, khong dem trong vong lap: cot "Lenh giao
+    # hang" cua man danh sach can ca so DO du kien va so DO da tach, va dem
+    # tung dong nghia la hai truy van moi bao gia — o quy mo hang nghin bao gia
+    # thi man danh sach khong mo duoc.
+    ma_qs = [q.id for q in cac_q]
+    du_kien, da_tach, da_xong = {}, {}, {}
+    if ma_qs:
+        for ma, tong in db.query(
+            QuotationItem.quotation_id, func.sum(QuotationItem.quantity)
+        ).filter(QuotationItem.quotation_id.in_(ma_qs)).group_by(
+                QuotationItem.quotation_id).all():
+            du_kien[ma] = int(_so(tong))
+        for ma, dem in db.query(
+            DeliveryOrder.quotation_id, func.count(DeliveryOrder.id)
+        ).filter(DeliveryOrder.quotation_id.in_(ma_qs)).group_by(
+                DeliveryOrder.quotation_id).all():
+            da_tach[ma] = int(dem or 0)
+        for ma, dem in db.query(
+            DeliveryOrder.quotation_id, func.count(DeliveryOrder.id)
+        ).filter(DeliveryOrder.quotation_id.in_(ma_qs),
+                 DeliveryOrder.canonical_status.in_(("delivered", "completed"))
+                 ).group_by(DeliveryOrder.quotation_id).all():
+            da_xong[ma] = int(dem or 0)
+    ds = []
+    for q in cac_q:
+        x = _bung_bao_gia(db, q, False, hom_nay)
+        x["so_do_du_kien"] = du_kien.get(q.id, 0)
+        x["so_do"] = da_tach.get(q.id, 0)
+        x["so_do_xong"] = da_xong.get(q.id, 0)
+        ds.append(x)
+
+    tim = str(loc.get("q") or "").strip().lower()
+    if tim:
+        ds = [x for x in ds if tim in " ".join(str(x.get(k) or "").lower() for k in (
+            "id", "quote_no", "customer_id", "route_id", "vehicle_type_id",
+            "origin", "destination"))]
+    trang_thai = str(loc.get("status") or "all")
+    if trang_thai == "sap_het_han":
+        ds = [x for x in ds if x["con_lai_ngay"] is not None
+              and 0 <= x["con_lai_ngay"] <= 7 and x["canonical_status"] not in DA_DONG]
+    elif trang_thai == "dang_mo":
+        ds = [x for x in ds if x["canonical_status"] not in DA_DONG]
+    elif trang_thai != "all":
+        ds = [x for x in ds if x["canonical_status"] == trang_thai]
+    return ds
+
+
+def dai_so_lieu(db):
+    """Sau con so cua dai KPI — CHINH LA sau bo loc cua man danh sach.
+
+    Con so nao cung phai bam duoc de xem dung nhung dong da dem ra no. Mot con
+    so KPI khong bam duoc la mot con so nguoi dung phai tin ma khong kiem lai
+    duoc — va luc do khong ai phat hien khi no dem sai.
+    """
+    hom_nay = dt.datetime.now().date()
+    ds = [_bung_bao_gia(db, q, False, hom_nay)
+          for q in db.query(Quotation).limit(2000).all()]
+    dang_mo = [x for x in ds if x["canonical_status"] not in DA_DONG]
+    cho_khach = [x for x in dang_mo if x["canonical_status"] in ("sent", "pending_approval")]
+    sap_het = [x for x in dang_mo if x["con_lai_ngay"] is not None
+               and 0 <= x["con_lai_ngay"] <= 7]
+    da_nhan_chua_tach = [x for x in ds if x["canonical_status"] == "accepted"]
+    duoi_nguong = [x for x in dang_mo if x["bien"] is not None
+                   and x["bien"] < NGUONG_BIEN_PHAI_DUYET]
+    # Ty le chot 30 ngay: mau so la nhung bao gia DA CO KET QUA trong 30 ngay,
+    # khong phai moi bao gia da gui — mot bao gia gui hom qua chua co ket qua,
+    # dem no vao mau so thi ty le chot luon bi keo xuong mot cach vo co.
+    moc = dt.datetime.now() - dt.timedelta(days=30)
+    xong = [q for q in db.query(Quotation).filter(Quotation.updated_at >= moc).all()
+            if q.canonical_status in ("accepted", "split", "rejected")]
+    chot = [q for q in xong if q.canonical_status in ("accepted", "split")]
+    return {
+        "dang_mo": len(dang_mo),
+        "cho_khach_phan_hoi": len(cho_khach),
+        "het_han_trong_7_ngay": len(sap_het),
+        "da_chap_nhan_chua_tach": len(da_nhan_chua_tach),
+        "tien_da_chap_nhan": sum(x["selling_price"] for x in da_nhan_chua_tach),
+        "bien_duoi_nguong": len(duoi_nguong),
+        "ty_le_chot_30_ngay": (len(chot) / len(xong)) if xong else None,
+        "so_chot_30_ngay": len(chot),
+        "so_co_ket_qua_30_ngay": len(xong),
+        "nguong_bien": NGUONG_BIEN_PHAI_DUYET,
+    }
+
+
+def gia_da_bao_cho_khach(db, ma_khach, ma_tuyen=None, so_ban=3):
+    """Vai bao gia gan nhat da bao cho MOT khach — cot phai cua man chi tiet.
+
+    Nguoi ban can biet lan truoc bao bao nhieu truoc khi go mot con so moi. Do
+    la thu chan viec bao 3,9 trieu hom nay cho mot khach thang truoc da bao 4,1
+    trieu cung tuyen.
+    """
+    tv = db.query(Quotation).filter(Quotation.customer_id == ma_khach,
+                                    Quotation.selling_price.is_not(None))
+    if ma_tuyen:
+        tv = tv.filter(Quotation.route_id == ma_tuyen)
+    ra = []
+    for q in tv.order_by(Quotation.created_at.desc()).limit(int(so_ban) + 5).all():
+        if _so(q.selling_price) <= 0:
+            continue
+        ra.append({
+            "id": q.id, "quote_no": q.quote_no, "route_id": q.route_id,
+            "selling_price": _so(q.selling_price),
+            "price_basis": q.price_basis or "per_trip",
+            "canonical_status": q.canonical_status,
+            "created_at": q.created_at.isoformat() if q.created_at else None,
+        })
+        if len(ra) >= int(so_ban):
+            break
+    return ra

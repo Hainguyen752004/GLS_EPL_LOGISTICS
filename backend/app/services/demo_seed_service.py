@@ -37,6 +37,7 @@ from models import (
     ParkingList,
     ParkingListItem,
     Quotation,
+    QuotationItem,
     ResourceAssignment,
     Role,
     Route,
@@ -450,10 +451,34 @@ def _seed_sales_chain(db, key, pickup, delivery, price, tuyen=None,
         delivery_window_start=delivery.isoformat(),
         delivery_window_end=(delivery + dt.timedelta(hours=1)).isoformat(),
         weight_kg=kg, pallet_count=pallet, cargo_type="Hàng tiêu dùng đóng pallet",
-        valid_to="2026-09-30", fuel_cost=1162200, driver_cost=650000,
+        # Han hieu luc dat theo NGAY HOM NAY cong ba muoi, khong dat mot ngay
+        # co dinh: duong duyet bao gia chan bao gia HET HAN, nen mot ngay co
+        # dinh se lam ca bo du lieu mau khong duyet duoc sau ngay do — va khong
+        # ai hieu vi sao hom nay khac hom qua.
+        valid_to=(_moc_tuong_doi(0).date() + dt.timedelta(days=30)).isoformat(),
+        fuel_cost=1162200, driver_cost=650000,
         toll_fee=320000, total_cost=2132200, selling_price=price,
+        # DON VI TINH CUOC. Bo du lieu mau la hang container nen bao theo
+        # CHUYEN — mot cont mot gia. `unit_price` bang `selling_price` vi don vi
+        # la chuyen; hai con so nay chi khac nhau khi bao theo tan/m3/kg.
+        price_basis="per_trip", unit_price=price,
+        currency_code="VND", fx_rate=1.0,
+        payment_terms="30 ngày sau hoá đơn", sales_rep="Trần Anh",
+        trips_per_month=24, waiting_surcharge=200000,
+        notes_customer="Giá chưa gồm VAT. Phụ phí lưu bãi tính theo thực tế.",
+        notes_ops="Cổng B chỉ nhận đến 16:30 — gọi trước 30 phút.",
         packaging_spec="Pallet quấn màng PE", volume_m3=m3, status="Đã duyệt",
         created_by="demo-seed", updated_by="demo-seed",
+    ))
+    db.flush()
+    # MOT DONG HANG HOA cho moi bao gia. So DO tach ra bang tong so luong o bang
+    # nay, nen bao gia khong co dong nao thi khong tach duoc DO nao — va man
+    # hinh se hien "0 DO du kien" ma khong noi vi sao.
+    db.merge(QuotationItem(
+        id="%s-IT01" % ids["quotation_id"], quotation_id=ids["quotation_id"],
+        line_no=1, name="Hàng tiêu dùng đóng pallet",
+        quantity=max(1, int(pallet / 12) or 1), uom="Pallet",
+        note="quấn màng PE, không xếp chồng",
     ))
     db.flush()
     db.add(SalesOrder(

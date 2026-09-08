@@ -69,6 +69,7 @@ from routes.shared import (
     serialize_cost_formula as _serialize_cost_formula,
 )
 from routes.workflow_routes import router as workflow_router
+from routes.bao_gia_routes import router as bao_gia_router
 from routes.tms_planning_routes import router as tms_planning_router
 from routes.tms_finance_routes import router as tms_finance_router
 from routes.tms_reporting_routes import router as tms_reporting_router
@@ -347,6 +348,7 @@ app.include_router(data_export_router)
 # ai_upload_router KHÔNG gắn dependency ở tầng router vì GET /uploads/ phải
 # công khai cho thẻ <img src>. Xem routes/ai_upload_routes.py.
 app.include_router(ai_upload_router)
+app.include_router(bao_gia_router)
 app.include_router(workflow_router)
 app.include_router(tms_planning_router)
 app.include_router(tms_finance_router)
