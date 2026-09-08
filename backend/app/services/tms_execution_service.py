@@ -16,6 +16,7 @@ from models import (
     ResourceAssignment,
     TransportEvent,
     TransportEventDocument,
+    TransportTrip,
     VehicleTracking,
 )
 from services.errors import DomainError, conflict
@@ -82,6 +83,26 @@ def _naive_utc(value):
     if value.tzinfo is None:
         return value
     return value.astimezone(dt.timezone.utc).replace(tzinfo=None)
+
+
+def _chuyen_cua_lenh(db, freight_order_id):
+    """Chuyen dang thuc hien lenh van chuyen nay, hoac `None`.
+
+    VI SAO CAN. Cot `transport_events.trip_id` co san va cac man hinh doc su kien
+    THEO CHUYEN — thap kiem soat gom su kien bang `TransportEvent.trip_id.in_(...)`.
+    Truoc day duong ghi su kien khong dien cot nay, nen moi moc ghi qua API deu co
+    `trip_id` rong: don doi trang thai dung, nhung truc tien do cua man theo doi
+    khong thay moc vua ghi va cu bao no "chua ghi". Do la mot moc bi mo côi — no
+    thuoc mot chuyen that ma khong noi ra la chuyen nao.
+
+    Chon chuyen nao: mot lenh co the co nhieu chuyen (chay lai, doi xe), nen bo
+    chuyen `cancelled` va lay chuyen MOI NHAT trong so con lai. Khong tim thay thi
+    tra `None` — su kien van ghi duoc, vi rang buoc cua cot la co the rong.
+    """
+    return db.scalar(select(TransportTrip).where(
+        TransportTrip.freight_order_id == freight_order_id,
+        TransportTrip.status != "cancelled",
+    ).order_by(TransportTrip.created_at.desc(), TransportTrip.id.desc()))
 
 
 def _validate_payload_shape(data):
@@ -265,8 +286,10 @@ def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, ac
         if not str(data.get("reason") or "").strip():
             raise _error("EVENT_REASON_REQUIRED", "Sự kiện ngoại lệ phải có lý do.")
 
+    chuyen = _chuyen_cua_lenh(db, freight_order_id)
     event = TransportEvent(
         id=str(uuid.uuid4()), freight_order_id=freight_order_id, event_type=event_type,
+        trip_id=chuyen.id if chuyen is not None else None,
         event_time=event_time, lat=data.get("lat"), lng=data.get("lng"),
         speed_kmh=data.get("speed_kmh"), distance_km=data.get("distance_km"), eta=data.get("eta"),
         location_text=data.get("location_text"), source=data.get("source"),

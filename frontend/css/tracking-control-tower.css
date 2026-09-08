@@ -132,3 +132,81 @@
 @media(min-width:1650px) { .ct-board { grid-template-columns:320px minmax(0,1fr) 400px; } #ct-map { height:460px; } }
 @media(max-width:1200px) { .ct-board { grid-template-columns:260px minmax(0,1fr); } .ct-detail-panel { grid-column:1/-1; } #ct-detail { max-height:none; } .ct-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:700px) { #view-tracking.ct-view { padding:10px!important; } .ct-board { grid-template-columns:minmax(0,1fr); } .ct-detail-panel { grid-column:auto; } #ct-list { max-height:260px; } #ct-map { height:340px; } .ct-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; } .ct-search { min-width:100%; } .ct-header { gap:8px; } .ct-form-grid { grid-template-columns:minmax(0,1fr); } }
+
+
+/* ======================================================================
+   DAI SO LIEU GPS o dau ho so chuyen — Toc do · Da di · Con · ETA.
+   Bon con so tra loi dung bon cau hoi dau tien nguoi truc hoi ve mot chuyen
+   dang chay. Truoc day ho so khong co no, nguoi dung phai doc doan chu
+   "Can chu y" de suy ra.
+   ====================================================================== */
+.ct-gpsbar { border:1px solid var(--ct-line); border-radius:10px; margin:10px 0 4px; overflow:hidden; }
+.ct-gpsbar-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:7px 10px; background:#fafbfd; border-bottom:1px solid var(--ct-line);
+  font-size:11px; font-weight:700; color:#738195; text-transform:uppercase; letter-spacing:.04em;
+}
+#tracking-control-tower .ct-link {
+  border:0; background:none; color:#1a73e8; font-size:11px; font-weight:700;
+  padding:0; text-transform:none; letter-spacing:0;
+}
+.ct-gpsgrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.ct-gpsgrid > div { padding:8px 10px; border-right:1px solid var(--ct-line); min-width:0; }
+.ct-gpsgrid > div:last-child { border-right:0; }
+.ct-gpsgrid span { display:block; font-size:10.5px; color:#738195; }
+.ct-gpsgrid b { font-size:14px; font-weight:700; font-variant-numeric:tabular-nums; }
+
+/* ======================================================================
+   TRUC TIEN DO VA BANG CHUNG.
+   Ban truoc tach thanh HAI khoi roi nhau — "Tien do chang" va "Su kien thuc
+   te" — nen nguoi doc phai tu ghep xem chuyen dang o buoc nao va buoc ke tiep
+   la gi. Gop thanh mot truc, va ba trang thai moc phai NHIN RA duoc khac nhau:
+   da qua (dac), dang cho ghi (vong tron rong co quang), chua tới (mo).
+   ====================================================================== */
+.ct-track { list-style:none; margin:6px 0 0; padding:0 0 0 22px; position:relative; }
+.ct-track::before {
+  content:""; position:absolute; left:5px; top:6px; bottom:10px;
+  width:2px; background:var(--ct-line);
+}
+.ct-track li { position:relative; padding:5px 0 9px; }
+.ct-track li::before {
+  content:""; position:absolute; left:-22px; top:9px; width:11px; height:11px;
+  border-radius:50%; background:#fff; border:2px solid #cbd5e1; box-sizing:border-box;
+}
+.ct-track li.done::before { background:#1a73e8; border-color:#1a73e8; }
+/* Moc DANG CHO GHI la thu nguoi truc can thay nhat — no la viec cua ho. */
+.ct-track li.now::before { border-color:#1a73e8; box-shadow:0 0 0 3px #e9f1fd; }
+.ct-track li.todo { opacity:.55; }
+.ct-track-head { display:flex; align-items:baseline; gap:7px; flex-wrap:wrap; }
+.ct-track-head strong { font-size:12.5px; }
+.ct-track-head em { font-size:11px; color:#738195; font-style:normal; font-variant-numeric:tabular-nums; }
+.ct-track li > span { display:block; font-size:11.5px; color:#738195; margin-top:1px; }
+/* NHAN NGUON. Mot moc do thiet bi gui va mot moc nguoi go tay la hai muc do
+   tin cay khac nhau — khong ghi ra thi nguoi doc coi chung nhu nhau. */
+.ct-src {
+  font-size:10px; font-weight:700; border-radius:4px; padding:1px 5px;
+  background:#eef2f7; color:#4f5f74; white-space:nowrap;
+}
+.ct-src-note { font-size:10.5px; font-weight:500; color:#9aa6b6; }
+.ct-track-photo { display:flex; align-items:center; gap:4px; font-size:10.5px; color:#9aa6b6; margin-top:4px; }
+.ct-track-photo i { width:26px; height:26px; border-radius:5px; background:#dbe4f0; display:inline-block; }
+
+/* ======================================================================
+   HUY HIEU XE tren ban do.
+   Ban truoc dung mot vong tron 8px ve TRUOC cac co diem tram 34px, nen mot
+   chuyen da den noi bi co diem den phu kin — che do "Tuyen dang chon" chi thay
+   duong va hai co, khong thay xe o dau.
+   ====================================================================== */
+.ct-veh-marker {
+  width:30px; height:30px; border-radius:50%; background:var(--ct-marker,#1a73e8);
+  color:#fff; display:grid; place-items:center; font-size:13px;
+  border:2.5px solid #fff; box-shadow:0 2px 7px rgba(15,28,46,.35); box-sizing:border-box;
+}
+.ct-veh-marker.on { width:36px; height:36px; font-size:15px; margin:-3px; }
+/* Bien so hien san khi dang xem mot tuyen — doi chieu duoc xe nao o dau ma
+   khong phai re chuot tung diem, dung nhu ban mau. */
+.leaflet-tooltip.ct-veh-label {
+  background:#0f1c2e; color:#fff; border:0; box-shadow:0 2px 7px rgba(15,28,46,.3);
+  font-size:11px; font-weight:700; padding:3px 7px;
+}
+.leaflet-tooltip.ct-veh-label::before { border-right-color:#0f1c2e; }

@@ -65,69 +65,116 @@
       if (b.dataset.action === 'incident') openIncident();
       if (b.dataset.action === 'close-incident') el('ct-incident').close();
       if (b.dataset.action === 'dispatch') window.switchView?.('dispatch');
-      if (b.dataset.action === 'arrive') await ghiNhanDaDenNoi(b);
+      if (b.dataset.action === 'milestone') await ghiMocTiepTheo(b);
       if (b.dataset.action === 'completion') moHoanTatGiaoHang();
       if (b.dataset.document) await downloadDocument(b);
     });
     el('ct-incident-form').addEventListener('submit', saveIncident);
     render();
   }
+  //: Bieu tuong cho tung moc — de nguoi dung nhan ra viec ke tiep bang hinh,
+  //: khong phai doc chu. Moc nao khong co bieu tuong rieng thi dung dau cham
+  //: tron: mot bieu tuong sai nghia con te hon khong co bieu tuong.
+  const BIEU_TUONG_MOC = {
+    check_in: '<i class="fa-solid fa-right-to-bracket"></i>',
+    pickup: '<i class="fa-solid fa-boxes-packing"></i>',
+    departure: '<i class="fa-solid fa-truck-fast"></i>',
+    arrival: '<i class="fa-solid fa-map-pin"></i>',
+    unloading: '<i class="fa-solid fa-dolly"></i>',
+    delivered: '<i class="fa-solid fa-circle-check"></i>',
+  };
+  const bieuTuongMoc = ma => BIEU_TUONG_MOC[ma] || '<i class="fa-solid fa-circle"></i>';
+
+  //: Moc nao thi xe dang o dau tren tuyen. Dung de gui kem toa do khi ghi moc —
+  //: do chinh la cach "cap nhat vi tri bang nut" khi chua co GPS that.
+  const TIEN_DO_MOC = {
+    check_in: 0, pickup: 0, departure: 0.05, arrival: 1, unloading: 1, delivered: 1,
+  };
+
   /**
-   * Ghi nhan XE DA DEN NOI.
+   * Toa do tren tuyen ung voi mot ti le, can theo DO DAI tung chang.
    *
-   * Khong dat truc tiep trang thai don. Duong dung la ghi mot SU KIEN `arrival`
-   * cua lenh van chuyen: may chu tu do dong bo don sang "Da den noi — cho POD",
-   * va su kien do vao lich su chuyen. Dat thang trang thai thi duoc mot nua —
-   * don doi mau nhung muc "Su kien thuc te" van trong, va khong ai biet ai ghi
-   * luc nao.
+   * Cung phep noi suy nhu ben may chu (`services/gps_simulation.py`). Lam o day
+   * de nut ghi moc gui kem mot toa do HOP LY: ghi moc "xuat ben" ma gui toa do
+   * diem giao thi xe nhay tới dich ngay khi vua roi ben.
+   */
+  function toaDoTrenTuyen(r, tiLe) {
+    const chang = (r.route_segments || []).filter(s =>
+      s && s.from_lat != null && s.from_lng != null && s.to_lat != null && s.to_lng != null);
+    if (!chang.length) return null;
+    const diem = [[Number(chang[0].from_lat), Number(chang[0].from_lng), 0]];
+    chang.forEach(s => diem.push([Number(s.to_lat), Number(s.to_lng), Number(s.dist_km) || 1]));
+    const tong = diem.slice(1).reduce((t, d) => t + d[2], 0) || 1;
+    let can = Math.max(0, Math.min(1, tiLe)) * tong, daQua = 0;
+    for (let i = 1; i < diem.length; i += 1) {
+      const km = diem[i][2] || 0;
+      if (daQua + km >= can || i === diem.length - 1) {
+        const p = km <= 0 ? 0 : Math.max(0, Math.min(1, (can - daQua) / km));
+        return {
+          lat: Number((diem[i - 1][0] + (diem[i][0] - diem[i - 1][0]) * p).toFixed(6)),
+          lng: Number((diem[i - 1][1] + (diem[i][1] - diem[i - 1][1]) * p).toFixed(6)),
+        };
+      }
+      daQua += km;
+    }
+    return null;
+  }
+
+  /**
+   * GHI MOC KE TIEP cua chuyen, va cap nhat vi tri xe theo moc do.
+   *
+   * Chu du an chot: tam thoi khong co GPS that thi dung NUT de cap nhat vi tri.
+   * Ham nay lam dung viec do — nhung khong dat truc tiep trang thai don. Duong
+   * dung la ghi mot SU KIEN cua lenh van chuyen: may chu tu do dong bo trang
+   * thai don, va su kien vao lich su chuyen. Dat thang trang thai thi duoc mot
+   * nua — don doi mau nhung truc tien do van trong, va khong ai biet ai ghi luc
+   * nao.
    *
    * `source: 'manual'` vi day la NGUOI bam, khong phai thiet bi gui. Ghi
    * 'device' cho mot lan bam tay la lam ban chinh cai dau vet minh vua tao.
    */
-  async function ghiNhanDaDenNoi(nut) {
-    const r = state.items.find(x => x.key === state.selected);
-    if (!r) return;
+  async function ghiMocTiepTheo(nut) {
+    const r = selected();
+    if (!r || !r.next_milestone) return;
     if (!r.freight_order_id) {
-      thongBao('Chuyến này chưa có lệnh vận chuyển nên chưa ghi được mốc đã đến nơi.');
+      thongBao('Chuyến này chưa có lệnh vận chuyển nên chưa ghi được mốc nào.');
       return;
     }
+    const moc = r.next_milestone;
     const xuongDong = String.fromCharCode(10, 10);
-    if (!window.confirm(`Ghi nhận xe đã đến ${r.destination || 'điểm giao'} cho ${r.do_id}?`
+    if (!window.confirm(`Ghi mốc "${moc.ten}" cho ${r.do_id}?`
       + xuongDong
-      + 'Sau bước này đơn chuyển sang "Đã đến nơi — chờ POD" và mở được form ký nhận.')) return;
+      + 'Mốc này vào lịch sử chuyến và cập nhật vị trí xe trên bản đồ. Không hoàn lại được.')) return;
     if (nut) nut.disabled = true;
     try {
       const than = {
-        event_type: 'arrival',
+        event_type: moc.ma,
         source: 'manual',
         expected_version: r.freight_order_version,
         event_time: new Date().toISOString(),
-        location_text: r.destination || null,
-        speed_kmh: 0,
-        note: 'Điều phối viên ghi nhận xe đã tới điểm giao',
+        location_text: moc.ma === 'check_in' || moc.ma === 'pickup'
+          ? (r.origin || null) : (r.destination || null),
+        speed_kmh: moc.ma === 'departure' ? 40 : 0,
+        note: `Điều phối viên ghi mốc "${moc.ten}" trên màn Theo dõi`,
       };
-      // Gui kem toa do dang co, neu co: mot moc "da den" khong toa do thi ban do
-      // khong ve duoc diem den, va nguoi doc sau khong biet xe dung o dau.
-      if (r.gps && r.gps.lat != null && r.gps.lng != null) {
-        than.lat = r.gps.lat; than.lng = r.gps.lng;
-      }
+      // Toa do theo dung moc: day la cach cap nhat vi tri khi chua co GPS that.
+      const diem = toaDoTrenTuyen(r, TIEN_DO_MOC[moc.ma] != null ? TIEN_DO_MOC[moc.ma] : 0);
+      if (diem) { than.lat = diem.lat; than.lng = diem.lng; }
+      else if (r.gps && r.gps.lat != null) { than.lat = r.gps.lat; than.lng = r.gps.lng; }
       const tra = await fetch(`${base()}/api/tms/freight-orders/${encodeURIComponent(r.freight_order_id)}/events`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': `arrive-${r.freight_order_id}-${Date.now()}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Idempotency-Key': `moc-${r.freight_order_id}-${moc.ma}-${Date.now()}` },
         body: JSON.stringify(than),
       });
       const goi = await tra.json().catch(() => ({}));
       if (!tra.ok) {
-        // Noi RA loi cua may chu, khong noi "co loi xay ra": ba loi hay gap o
-        // day la sai thu tu su kien, sai phien ban, va ngoai khung phan cong —
-        // ba viec phai xu khac nhau.
-        thongBao((goi.error && goi.error.message) || `Không ghi được mốc đã đến nơi (HTTP ${tra.status}).`);
+        // Noi RA loi cua may chu. Ba loi hay gap o day la sai thu tu moc, sai
+        // phien ban, va ngoai khung phan cong — ba viec phai xu khac nhau, nen
+        // mot cau "co loi xay ra" thi nguoi dung khong biet lam gi tiep.
+        thongBao((goi.error && goi.error.message) || `Không ghi được mốc "${moc.ten}" (HTTP ${tra.status}).`);
         return;
       }
-      thongBao(`Đã ghi nhận ${r.do_id} tới ${r.destination || 'điểm giao'}. Giờ mở được form ký nhận POD.`);
+      thongBao(`Đã ghi mốc "${moc.ten}" cho ${r.do_id} và cập nhật vị trí xe.`);
       await load();
     } catch (loi) {
       thongBao('Không gọi được máy chủ: ' + (loi && loi.message));
@@ -224,6 +271,90 @@
       + pair('POD đã ký', `${podDaKy} · còn ${canPod} chờ ký`);
   }
 
+  //: Nhan nguon su kien. May chu chi co hai nguon that (`device`, `manual`), nen
+  //: chi ve hai nhan do. Ban mau con co nhan `app` — khong co nguon nao nhu vay
+  //: trong he thong, va ve mot nhan cho mot nguon khong ton tai la noi rang du
+  //: lieu den tu mot cho ma nguoi doc khong tra lai duoc.
+  const nguonSuKien = { device: 'GPS', manual: 'thủ công' };
+
+  /**
+   * DAI SO LIEU GPS o dau ho so — Toc do · Da di · Con · ETA.
+   *
+   * Ban mau co dai nay va no dang hoc: bon con so tra loi dung bon cau hoi dau
+   * tien nguoi truc hoi ve mot chuyen dang chay. Truoc day ho so khong co no,
+   * nguoi dung phai doc trong doan chu "Can chu y" de suy ra.
+   */
+  function daiGps(r) {
+    const km = Number(r.route_distance_km || 0);
+    const pt = r.gps.progress_percent;
+    const daDi = (km && pt != null) ? `${(km * pt / 100).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km` : '—';
+    const con = r.gps.remaining_km != null
+      ? `${Number(r.gps.remaining_km).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km` : '—';
+    const eta = r.predicted_eta && Number.isFinite(Date.parse(r.predicted_eta))
+      ? new Date(r.predicted_eta).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' })
+      : '—';
+    const toc = r.gps.speed_kmh != null ? `${Number(r.gps.speed_kmh).toLocaleString('vi-VN')} km/h` : '—';
+    return `<div class="ct-gpsbar">
+      <div class="ct-gpsbar-head"><span>GPS</span><button data-action="refresh" class="ct-link" title="Đọc lại dữ liệu máy chủ"><i class="fa-solid fa-rotate"></i> cập nhật</button></div>
+      <div class="ct-gpsgrid">
+        <div><span>Tốc độ</span><b>${esc(toc)}</b></div>
+        <div><span>Đã đi</span><b>${esc(daDi)}</b></div>
+        <div><span>Còn</span><b>${esc(con)}</b></div>
+        <div><span>ETA</span><b>${esc(eta)}</b></div>
+      </div></div>`;
+  }
+
+  /**
+   * TRUC TIEN DO VA BANG CHUNG — gop moc DA GHI voi moc CON PHAI GHI.
+   *
+   * Ban mau ve mot truc duy nhat trong do cac buoc da qua, buoc dang lam va buoc
+   * chua tới nam cung mot cho, moi buoc co nhan nguon (`GPS` / `thu cong`) va so
+   * anh kem theo. Ban truoc cua man nay tach thanh HAI khoi roi nhau — "Tien do
+   * chang" va "Su kien thuc te" — nen nguoi doc phai tu ghep xem chuyen dang o
+   * buoc nao va buoc ke tiep la gi.
+   *
+   * Ba trang thai cua moc, va vi sao phai phan biet:
+   *   · `done` — da ghi, co gio va nguon that.
+   *   · `now`  — moc KE TIEP can ghi. Day la thu nguoi truc can thay nhat, vi no
+   *              la viec cua ho.
+   *   · `todo` — chua tới, lam mo va khong ghi gio that (chi ghi gio du kien).
+   *
+   * Buoc POD dat o CUOI truc: no khong nam trong chuoi moc cua may chu, nhung
+   * trong nghiep vu thi day la buoc cuoi that — chua ky POD thi chuyen khong
+   * doi soat duoc.
+   */
+  function trucTienDo(r) {
+    const daGhi = new Map((r.events || []).map(e => [e.type, e]));
+    const moc = (r.milestones || []).map(m => {
+      const e = daGhi.get(m.ma);
+      const laKeTiep = r.next_milestone && r.next_milestone.ma === m.ma;
+      return {
+        ten: e && e.location ? e.location : m.ten,
+        loai: e ? 'done' : (laKeTiep ? 'now' : 'todo'),
+        gio: e ? date(e.time) : '',
+        nguon: e ? (nguonSuKien[e.source] || e.source || '') : '',
+        anh: e ? (e.document_count || 0) : 0,
+        ghiChu: e && e.note && e.note !== e.location ? e.note : '',
+      };
+    });
+    // Buoc POD, ghep tu so ban ghi POD that.
+    moc.push({
+      ten: 'POD · ký nhận giao hàng',
+      loai: (r.pod_count || 0) > 0 ? 'done' : (r.status === 'arrived' ? 'now' : 'todo'),
+      gio: (r.pods || [])[0] ? date(r.pods[0].time) : '',
+      nguon: (r.pod_count || 0) > 0 ? 'thủ công' : '',
+      anh: (r.pods || []).reduce((t, p) => t + ((p.documents || []).length), 0),
+      ghiChu: (r.pod_count || 0) > 0 ? '' : 'Chưa ký nhận',
+    });
+
+    return `<h4>Tiến độ và bằng chứng <small class="ct-src-note">${Object.values(nguonSuKien).join(' · ')}</small></h4>
+      <ol class="ct-track">${moc.map(m => `<li class="${m.loai}">
+        <div class="ct-track-head"><strong>${esc(m.ten)}</strong>${m.gio ? `<em>${esc(m.gio)}</em>` : ''}${m.nguon ? `<span class="ct-src">${esc(m.nguon)}</span>` : ''}</div>
+        ${m.ghiChu ? `<span>${esc(m.ghiChu)}</span>` : ''}
+        ${m.anh ? `<span class="ct-track-photo">${'<i></i>'.repeat(Math.min(m.anh, 4))} ${m.anh} ảnh / chứng từ</span>` : ''}
+      </li>`).join('')}</ol>`;
+  }
+
   function renderDetail() {
     const r = selected();
     document.querySelectorAll('#tracking-control-tower [data-action="incident"]').forEach(b => { b.disabled = !r || !r.vehicle_id; });
@@ -231,11 +362,12 @@
     const phone = String(r.driver_phone || '').replace(/[^+0-9]/g, '');
     el('ct-detail').innerHTML = `<div class="ct-summary">${pair('Trip', r.trip_id)}${pair('DO · khách hàng', `${r.do_id} · ${r.customer_name || ''}`)}${pair('Tuyến', r.route_name)}${pair('Hạn giao', date(r.delivery_due))}</div>
       <h4>Tổ lái</h4><div class="ct-crew"><div><strong>${esc(r.driver_name || 'Chưa gán tài xế')}</strong><span>${esc(r.vehicle_id || 'Chưa gán xe')} · Phụ xe: ${esc(r.co_driver_name || 'Chưa gán')}</span></div>${phone ? `<a href="tel:${phone}" title="Gọi tài xế"><i class="fa-solid fa-phone"></i></a>` : ''}</div>
+      ${daiGps(r)}
       <h4>Cần chú ý</h4><div class="ct-alert ${r.gps.status === 'fresh' ? 'blue' : 'amber'}">${esc(gpsLabel(r))}<br><small>Vị trí cuối: ${esc(date(r.gps.last_update))}</small></div>${r.overdue ? '<div class="ct-alert amber">Đã quá hạn giao trên DO, chưa ghi nhận giao hoàn tất.</div>' : ''}
       ${r.incidents.map(i => `<div class="ct-alert red"><strong>${esc(i.incident_type)}</strong> · ${esc(i.status)}<br>${esc(i.description || i.location || '')}</div>`).join('')}
-      <h4>Tiến độ chặng</h4><ol class="ct-timeline">${r.legs.map(l => `<li class="${l.status === 'completed' ? 'done' : ''}"><strong>${esc(l.origin)} → ${esc(l.destination)}</strong><span>${esc(labels[l.status] || l.status)} · ${esc(labels[l.type] || l.type)}</span><small>${l.actual_arrival_at ? 'Thực tế' : 'Kế hoạch'}: ${esc(date(l.actual_arrival_at || l.planned_arrival_at))}</small></li>`).join('') || '<li>Chưa có chặng Trip.</li>'}</ol>
-      <h4>Sự kiện thực tế · ${r.events.length}</h4><ol class="ct-timeline">${r.events.map(e => `<li class="done"><strong>${esc(e.type)}</strong><span>${esc(e.location || e.note || '')}</span><small>${esc(date(e.time))} · ${esc(e.source)}</small></li>`).join('') || '<li>Chưa có sự kiện của Trip.</li>'}</ol>
-      <h4>Bằng chứng giao hàng · ${r.pod_count || 0}</h4>${(r.pods || []).map(p => `<div class="ct-pod"><strong>${esc(p.receiver_name || 'Chưa có người nhận')}</strong><span>${esc(p.location || '')} · ${esc(date(p.time))}</span>${p.documents.map(d => `<button data-document="${esc(d.id)}" data-name="${esc(d.file_name)}" title="Tải chứng từ POD"><i class="fa-solid fa-download"></i> ${esc(d.file_name)}</button>`).join('')}</div>`).join('') || '<p>Chưa có bản ghi POD của chuyến này.</p>'}<div class="ct-actions">${r.status === 'in_transit' ? `<button class="ct-primary" data-action="arrive"><i class="fa-solid fa-map-pin"></i> Ghi nhận đã đến nơi</button>` : ''}<button data-action="completion" ${r.status === 'arrived' ? '' : 'disabled'} title="${r.status === 'arrived' ? 'Mở form ký nhận POD và chốt giá' : 'Phải ghi nhận xe đã đến nơi trước khi ký POD'}"><i class="fa-solid fa-file-signature"></i> Mở hoàn tất giao hàng</button><button data-action="incident" ${!r.vehicle_id ? 'disabled' : ''}><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button><button data-action="dispatch"><i class="fa-solid fa-arrow-left"></i> Mở Điều phối</button></div>`;
+      <h4>Chặng của chuyến</h4><ol class="ct-timeline">${r.legs.map(l => `<li class="${l.status === 'completed' ? 'done' : ''}"><strong>${esc(l.origin)} → ${esc(l.destination)}</strong><span>${esc(labels[l.status] || l.status)} · ${esc(labels[l.type] || l.type)}</span><small>${l.actual_arrival_at ? 'Thực tế' : 'Kế hoạch'}: ${esc(date(l.actual_arrival_at || l.planned_arrival_at))}</small></li>`).join('') || '<li>Chưa có chặng Trip.</li>'}</ol>
+      ${trucTienDo(r)}
+      <h4>Bằng chứng giao hàng · ${r.pod_count || 0}</h4>${(r.pods || []).map(p => `<div class="ct-pod"><strong>${esc(p.receiver_name || 'Chưa có người nhận')}</strong><span>${esc(p.location || '')} · ${esc(date(p.time))}</span>${p.documents.map(d => `<button data-document="${esc(d.id)}" data-name="${esc(d.file_name)}" title="Tải chứng từ POD"><i class="fa-solid fa-download"></i> ${esc(d.file_name)}</button>`).join('')}</div>`).join('') || '<p>Chưa có bản ghi POD của chuyến này.</p>'}<div class="ct-actions">${r.next_milestone ? `<button class="ct-primary" data-action="milestone" title="Ghi mốc thật vào lịch sử chuyến và cập nhật vị trí xe">${esc(bieuTuongMoc(r.next_milestone.ma))} Ghi mốc: ${esc(r.next_milestone.ten)}</button>` : ''}<button data-action="completion" ${r.status === 'arrived' ? '' : 'disabled'} title="${r.status === 'arrived' ? 'Mở form ký nhận POD và chốt giá' : 'Phải ghi nhận xe đã đến nơi trước khi ký POD'}"><i class="fa-solid fa-file-signature"></i> Mở hoàn tất giao hàng</button><button data-action="incident" ${!r.vehicle_id ? 'disabled' : ''}><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button><button data-action="dispatch"><i class="fa-solid fa-arrow-left"></i> Mở Điều phối</button></div>`;
     el('ct-metrics').innerHTML = pair(r.gps.status === 'fresh' ? 'Tốc độ ghi nhận' : 'Tốc độ lần cuối', metric(r.gps.speed_kmh, 'km/h')) + pair('Tổng tuyến kế hoạch', metric(r.route_distance_km, 'km')) + pair('Đến theo kế hoạch', date(r.planned_arrival_at)) + pair('ETA từ GPS', 'Chưa có nguồn dự báo');
   }
   function renderMap() {
@@ -290,7 +422,28 @@
       if (!position(item.gps)) return;
       const point = [Number(item.gps.lat), Number(item.gps.lng)]; bounds.push(point);
       const mau = { red: '#d32f2f', amber: '#ef9f27', purple: '#7c3aed', gray: '#788493', blue: '#1a73e8' }[severity(item)] || '#1a73e8';
-      L.circleMarker(point, { radius: item.key === state.selected ? 11 : 8, color: '#fff', weight: 2, fillOpacity: 1, fillColor: mau }).bindTooltip(`${esc(item.vehicle_id || item.do_id)} · ${esc(gpsLabel(item))}`).on('click', () => select(item.key)).addTo(layer);
+      // HUY HIEU XE, khong phai mot vong tron nho — va ve TREN CUNG.
+      //
+      // Ban truoc dung `L.circleMarker` ban kinh 8px, ve TRUOC cac co diem dau
+      // va diem den (divIcon 34px). Voi mot chuyen DA DEN NOI thi xe nam dung
+      // duoi co diem den va bi phu kin: do duoc tren man hinh — che do "Tuyen
+      // dang chon" chi thay duong va hai co, khong thay xe o dau ca.
+      //
+      // `zIndexOffset` cao dua huy hieu len tren moi diem tram, va bien so hien
+      // san khi dang xem mot tuyen — dung nhu ban mau, de doi chieu duoc xe nao
+      // dang o dau ma khong phai re chuot tung diem.
+      const noi = item.key === state.selected;
+      const bien = esc(item.vehicle_id || item.do_id);
+      L.marker(point, {
+        zIndexOffset: noi ? 1200 : 1000,
+        icon: L.divIcon({
+          className: '',
+          html: `<span class="ct-veh-marker${noi ? ' on' : ''}" style="--ct-marker:${mau}"><i class="fa-solid fa-truck"></i></span>`,
+          iconSize: [30, 30], iconAnchor: [15, 15],
+        }),
+      }).bindTooltip(`${bien} · ${esc(gpsLabel(item))}`,
+        state.mode === 'route' ? { permanent: true, direction: 'right', offset: [14, 0], className: 'ct-veh-label' } : {})
+        .on('click', () => select(item.key)).addTo(layer);
     });
     if (state.mode === 'route' && r) {
       const waypoints = routeWaypoints(r);

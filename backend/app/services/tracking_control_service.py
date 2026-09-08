@@ -6,7 +6,7 @@ import unicodedata
 from collections import defaultdict
 from datetime import datetime, timezone
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from services import gps_simulation
 from models import (Customer, DeliveryOrder, DeliveryPODRecord, DeliveryPODDocument, Driver, FreightOrder, Incident,
                     Route, TransportEvent, TransportTrip, TransportTripLeg,
@@ -62,6 +62,54 @@ def reference_coordinates(label):
         if known in key or key in known:
             return point
     return None
+
+
+#: Chuoi moc chinh cua mot chuyen, dung bang `MAIN_SEQUENCE` cua
+#: `tms_execution_service` — khai LAI o day thi hai ban sao se troi khoi nhau,
+#: nen doc thang tu do.
+from services.tms_execution_service import MAIN_SEQUENCE as _CHUOI
+
+CHUOI_MOC = [
+    {'ma': 'check_in', 'ten': 'Check-in điểm lấy hàng'},
+    {'ma': 'pickup', 'ten': 'Lấy hàng'},
+    {'ma': 'departure', 'ten': 'Xuất bến'},
+    {'ma': 'arrival', 'ten': 'Đến điểm giao'},
+    {'ma': 'unloading', 'ten': 'Dỡ hàng'},
+    {'ma': 'delivered', 'ten': 'Giao xong'},
+]
+assert [m['ma'] for m in CHUOI_MOC] == list(_CHUOI), (
+    'CHUOI_MOC phai khop MAIN_SEQUENCE cua tms_execution_service')
+
+
+def moc_ke_tiep(danh_sach_su_kien):
+    """Moc chinh KE TIEP can ghi, hoac `None` khi da di het chuoi.
+
+    Doc tu cac su kien DA GHI, khong tu trang thai don: chuoi moc la thu duoc
+    `record_event` thi hanh, nen dem theo chuoi do moi khop voi cai may chu se
+    nhan.
+    """
+    da_ghi = {e['type'] for e in danh_sach_su_kien}
+    for moc in CHUOI_MOC:
+        if moc['ma'] not in da_ghi:
+            return moc
+    return None
+
+
+def eta_du_bao(trip):
+    """Gio du kien den, neo vao gio xuat ben THUC TE.
+
+    `actual_departure_at` + (thoi luong ke hoach). Mot chuyen roi ben muon mot
+    gio thi ETA muon mot gio — con lay thang `planned_arrival_at` thi con so do
+    bang dung han giao va do lech luon bang 0, tuc no khong noi gi ca.
+    """
+    ke_hoach_di = getattr(trip, 'planned_departure_at', None)
+    ke_hoach_den = getattr(trip, 'planned_arrival_at', None)
+    if not ke_hoach_den:
+        return None
+    thuc_di = getattr(trip, 'actual_departure_at', None)
+    if not (thuc_di and ke_hoach_di):
+        return ke_hoach_den
+    return utc(ke_hoach_den) + (utc(thuc_di) - utc(ke_hoach_di))
 
 
 def route_segments(route):
@@ -142,12 +190,28 @@ def control_tower(db, now=None):
         legs[row.trip_id].append(row)
     events = defaultdict(list)
     event_positions = {}
-    for row in db.query(TransportEvent).filter(TransportEvent.trip_id.in_(trips)).order_by(TransportEvent.event_time):
+    su_kien = db.query(TransportEvent).filter(TransportEvent.trip_id.in_(trips)).order_by(TransportEvent.event_time).all()
+    # So ANH / chung tu cua tung su kien, nap MOT luot.
+    #
+    # Ban mau ve o anh nho duoi moc "lay hang" ("2 anh"). Khong co con so nay thi
+    # khong biet moc nao co bang chung — ma do dung la thu phan biet mot moc co
+    # anh chup thung hang voi mot moc chi co dong chu.
+    so_tai_lieu = defaultdict(int)
+    if su_kien:
+        from models import TransportEventDocument
+        for ma, dem in db.query(
+            TransportEventDocument.event_id, func.count(TransportEventDocument.id)
+        ).filter(TransportEventDocument.event_id.in_([r.id for r in su_kien])
+                 ).group_by(TransportEventDocument.event_id):
+            so_tai_lieu[ma] = dem
+    for row in su_kien:
         if coordinates(row.lat, row.lng):
             event_positions[row.trip_id] = row
         events[row.trip_id].append({
             'id': row.id, 'type': row.event_type, 'time': iso(row.event_time),
             'location': row.location_text, 'source': row.source, 'note': row.note,
+            'lat': row.lat, 'lng': row.lng, 'speed_kmh': row.speed_kmh,
+            'document_count': so_tai_lieu.get(row.id, 0),
         })
     items = []
     for order in orders:
@@ -235,7 +299,22 @@ def control_tower(db, now=None):
                 'route_distance_km': route.distance_km if route else None,
                 'delivery_due': iso(due), 'planned_arrival_at': iso(trip.planned_arrival_at if trip else order.planned_arrival_at),
                 'planned_return_at': iso(trip.planned_return_at if trip else order.planned_return_at),
-                'predicted_eta': None, 'deviation_km': None, 'overdue': overdue,
+                # MOC KE TIEP can ghi, tinh tu chuoi moc chinh cua lenh van chuyen.
+                #
+                # Giao dien can biet moc nao la moc tiep theo de ve dung mot nut
+                # "ghi moc" — doan o tang giao dien thi no phai lap lai chuoi
+                # `MAIN_SEQUENCE`, va hai ban sao se troi khoi nhau.
+                'next_milestone': moc_ke_tiep(events[trip.id] if trip else []),
+                'milestones': CHUOI_MOC,
+                # ETA suy tu GIO XUAT BEN THUC TE cong thoi luong ke hoach.
+                #
+                # Truoc day o nay luon la `None`, va giao dien ghi "Chua co nguon
+                # du bao". Lay thang gio ke hoach lam du bao thi con so vo nghia:
+                # no bang dung han giao nen do lech luon bang 0. Neo vao gio xuat
+                # ben THUC TE thi mot chuyen roi ben muon mot gio se hien ETA
+                # muon mot gio — do la thong tin that.
+                'predicted_eta': iso(eta_du_bao(trip)) if trip else None,
+                'deviation_km': None, 'overdue': overdue,
                 'awaiting_pod': order.canonical_status == 'arrived',
                 'gps': {'status': gps_status, 'lat': lat,
                         'lng': lng, 'speed_kmh': speed,
@@ -244,8 +323,17 @@ def control_tower(db, now=None):
                         # `simulated` de giao dien danh dau RIENG. Thieu co nay
                         # thi mot diem tinh ra hien y het mot diem thiet bi gui.
                         'simulated': bool(simulated),
-                        'progress_percent': simulated['phan_tram'] if simulated else None,
-                        'remaining_km': simulated['con_lai_km'] if simulated else None},
+                        # Don DA DEN NOI thi tien do la 100% va con lai 0 km, ke ca
+                        # khi khong chay mo phong (vi da co vi tri that con moi).
+                        # Bo trong thi o "Da di / Con" tren ho so chuyen rong tron
+                        # cho dung nhung chuyen DA di het duong — doc ra nhu he
+                        # thong khong biet gi ve chuyen vua ve toi.
+                        'progress_percent': (
+                            100.0 if order.canonical_status in ('arrived', 'delivered')
+                            else (simulated['phan_tram'] if simulated else None)),
+                        'remaining_km': (
+                            0.0 if order.canonical_status in ('arrived', 'delivered')
+                            else (simulated['con_lai_km'] if simulated else None))},
                 'incidents': order_incidents, 'open_incident_count': len(open_incidents),
                 'pod_count': len(selected_pods),
                 'pods': [{'id': p.id, 'receiver_name': p.receiver_name, 'location': p.location_text,

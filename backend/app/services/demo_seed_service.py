@@ -510,6 +510,7 @@ def _seed_delivery_order(db, key, pickup, delivery, status="pending",
 
 
 def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
+               trang_thai_lenh="departed",
                di=None, den=None, driver_id=None):
     """Freight Order + chuyen + chang + phan cong nguon luc cho mot tinh huong.
 
@@ -538,7 +539,15 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
         delivery_window_end=(delivery + dt.timedelta(hours=1)).replace(tzinfo=None),
         total_weight_kg=8500, total_volume_m3=24, total_pallet_count=18,
         max_weight_kg=28000, max_volume_m3=33.2, max_pallet_count=22,
-        status="departed", created_by="demo-seed", updated_by="demo-seed",
+        # Trang thai lenh phai KHOP voi chuoi moc da ghi.
+        #
+        # `record_event` doi CA HAI: so moc da ghi, VA trang thai lenh hien tai
+        # (`order.status != expected_status` thi tu choi). Ghim "departed" cho moi
+        # tinh huong thi tinh huong "da den noi" — khong co su kien nao — roi vao
+        # the ket: dem theo su kien thi moc ke tiep la `check_in`, nhung trang
+        # thai lenh la `departed` nen may chu tu choi. Chuyen do khong ghi duoc
+        # moc nao ca, va nut tren man Theo doi bam vao chi ra loi.
+        status=trang_thai_lenh, created_by="demo-seed", updated_by="demo-seed",
     ))
     db.flush()
     db.add(TransportTrip(
@@ -575,6 +584,44 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
     db.add(FreightOrderLegacyLink(
         freight_order_id=ids["freight_order_id"], delivery_order_id=ids["delivery_order_id"]
     ))
+    db.flush()
+
+
+def _seed_moc_den_noi(db, pickup, delivery):
+    """Bon moc chinh cua tinh huong "da den noi": check_in, lay hang, xuat ben, den.
+
+    VI SAO CAN. `record_event` doi CA HAI dieu kien: so moc da ghi, va trang thai
+    lenh van chuyen. Tinh huong nay truoc day khong co su kien nao ma trang thai
+    lenh lai la `departed`, nen no roi vao the ket — dem theo su kien thi moc ke
+    tiep la `check_in`, con trang thai lenh thi doi mot moc khac, va may chu tu
+    choi moi thu. Nut "ghi moc tiep theo" tren man Theo doi bam vao chi ra loi.
+
+    Ghi thang vao bang, khong qua `record_event`: du lieu mau dung LAI mot trang
+    thai da dat duoc, con `record_event` la duong cho nguoi dung di tung buoc.
+
+    Toa do lay doc theo tuyen Song Than -> Cat Lai, de bon moc nay ve ra mot vet
+    di hop ly tren ban do chu khong dồn vao mot diem.
+    """
+    ids = _scenario_ids("arrived")
+    tong = (delivery - pickup).total_seconds()
+    moc = [
+        ("check_in", 0.00, 10.8894, 106.7294, 0, "Xe vào bãi Sóng Thần"),
+        ("pickup", 0.12, 10.8894, 106.7294, 0, "Đã nhận đủ 20 pallet, niêm phong SL-4471"),
+        ("departure", 0.20, 10.8700, 106.7400, 38, "Xe xuất bến, đi Cát Lái"),
+        ("arrival", 0.95, 10.7567, 106.7828, 0, "Xe tới cổng B Cảng Cát Lái, chờ ký nhận"),
+    ]
+    for i, (loai, ti_le, lat, lng, toc_do, ghi_chu) in enumerate(moc, 1):
+        luc = pickup + dt.timedelta(seconds=tong * ti_le)
+        khoa = "demo-event-%s-%d" % (ids["freight_order_id"], i)
+        db.add(TransportEvent(
+            id="DEMO-EVENT-2026-004-%d" % i, freight_order_id=ids["freight_order_id"],
+            trip_id=ids["trip_id"], leg_id=ids["leg_id"], event_type=loai,
+            event_time=luc.replace(tzinfo=None), lat=lat, lng=lng, speed_kmh=toc_do,
+            distance_km=31.2, eta=delivery.isoformat(), location_text=ghi_chu,
+            source="device", device_id="GPS-DEMO-41209", note=ghi_chu,
+            idempotency_key=khoa, payload_hash=hashlib.sha256(khoa.encode()).hexdigest(),
+            recorded_by="demo-seed",
+        ))
     db.flush()
 
 
@@ -868,8 +915,11 @@ def seed_demo(db, reset=False, verify=False):
             di="Bãi Sóng Thần", den=DESTINATION,
             # Cung tai xe voi lenh giao hang, khong de nhanh mac dinh chon ho.
             driver_id="DEMO-DRV-004",
+            # Trang thai lenh phai la `arrived`, khop voi bon moc ghi ben duoi.
+            trang_thai_lenh="arrived",
         )
         _seed_tracking_den_noi(db)
+        _seed_moc_den_noi(db, den_noi_pickup, den_noi_delivery)
 
         # TINH HUONG 5 — cho van chuyen, TUYEN KHAC va KHACH KHAC.
         #
