@@ -6,6 +6,7 @@ import pytest
 from services.errors import DomainError
 from routes.workflow_routes import _execute
 from models import IdempotencyRecord
+from conftest import bao_gia_hop_le
 
 
 def _audit_rows(path, record_id):
@@ -16,7 +17,7 @@ def _audit_rows(path, record_id):
 def test_spoofed_actor_header_is_ignored_and_client_ip_is_audited(app_client, workflow_builder):
     client, database_file, _ = app_client
     workflow_builder.customer(); workflow_builder.route()
-    response = client.post("/api/quotations", json={"id": "QT-ACTOR", "customer_id": "CUS-T1", "route_id": "RT-T1"}, headers={"X-User-Id": "spoofed"})
+    response = client.post("/api/quotations", json=bao_gia_hop_le(id="QT-ACTOR"), headers={"X-User-Id": "spoofed"})
     assert response.status_code == 200
     assert response.json()["data"]["created_by"] == "test-user"
     user, ip, action = _audit_rows(database_file, "QT-ACTOR")[-1]

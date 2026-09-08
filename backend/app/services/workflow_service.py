@@ -564,7 +564,9 @@ def create_quotation(db, data, user="system"):
         fuel_cost=_money(data, "fuel_cost"),
         driver_cost=_money(data, "driver_cost"),
         toll_fee=_money(data, "toll_fee"),
-        total_cost=_money(data, "total_cost"),
+        total_cost=_chot_gia_thanh(
+            _money(data, "fuel_cost"), _money(data, "driver_cost"),
+            _money(data, "toll_fee"), _money(data, "total_cost")),
         selling_price=_money(data, "selling_price"),
         packaging_spec=data.get("packaging_spec") or "",
         # O Ghi chu tren man hinh. Truoc day khong co cot nao de chua va khong
@@ -581,12 +583,152 @@ def create_quotation(db, data, user="system"):
     return q
 
 
+def _chot_gia_thanh(dau, tai_xe, phi_duong, tong):
+    """Tong gia thanh phai MACH LAC voi cac cau phan cua chinh no.
+
+    Bang `quotations` co ba cot cau phan (dau, tai xe, phi duong) va mot cot
+    TONG. Truoc day tong duoc luu y nguyen con so may khach gui, khong doi
+    chieu gi — nen mot bao gia co the noi "tong 2 trieu" trong khi ba cau phan
+    cua no cong lai la 3 trieu. Loi nhuan tinh tu tong do, va con so sai di het
+    duong sang lenh giao hang roi hoa don.
+
+    VI SAO CHI CHAN "TONG NHO HON TONG CAC PHAN", khong doi hoi bang nhau. Duong
+    luu cu cong ca PHI KHO vao tong, ma bang khong co cot phi kho — nen tong
+    LON HON ba cau phan la binh thuong va co that. Doi hoi bang nhau la chan
+    dung mot duong dang chay. Con tong NHO HON cac phan cua no thi khong the
+    dung theo bat cu cach doc nao.
+
+    Khong khai tong thi SUY ra tu ba cau phan, thay vi de rong: mot bao gia co
+    chi phi ma tong bang khong se lot qua chot "khong lo" o buoc duyet.
+    """
+    phan = dau + tai_xe + phi_duong
+    if tong <= 0:
+        return phan
+    # Bien mot dong: tien luu bang so thap phan, va cong ba so le co the lech
+    # o chu so cuoi.
+    if tong + 1.0 < phan:
+        raise DomainError(
+            "COST_BREAKDOWN_INCONSISTENT",
+            f"Tổng giá thành {tong:,.0f} nhỏ hơn tổng ba cấu phần "
+            f"(dầu {dau:,.0f} + tài xế {tai_xe:,.0f} + phí đường {phi_duong:,.0f} "
+            f"= {phan:,.0f}). Một trong hai con số sai — lợi nhuận tính từ tổng "
+            "nên số này phải đúng.",
+            422,
+        )
+    return tong
+
+
+def _ngay_kinh_doanh(gia_tri):
+    """Doc mot NGAY tu chuoi. Tra ve `None` khi khong doc duoc.
+
+    `quotations.valid_to` la cot chuoi, nen no co the chua bat cu thu gi nguoi
+    nhap go vao. Tra ve `None` chu khong nem loi: ben goi quyet dinh "khong doc
+    duoc" nghia la gi — o duong DUYET thi do la mot ly do de chan, con o duong
+    doc bao cao thi khong.
+    """
+    if not gia_tri:
+        return None
+    if isinstance(gia_tri, datetime.datetime):
+        return gia_tri.date()
+    if isinstance(gia_tri, datetime.date):
+        return gia_tri
+    text = str(gia_tri).strip()
+    if not text:
+        return None
+    try:
+        return datetime.date.fromisoformat(text[:10])
+    except ValueError:
+        return None
+
+
+def _hom_nay_kinh_doanh():
+    """Hom nay theo gio LAM VIEC, khong theo UTC.
+
+    Luc 07:00 gio Viet Nam thi UTC con la ngay hom truoc. Dung UTC thi mot bao
+    gia het han hom qua van duyet duoc suot buoi sang — va do la dung cai phep
+    kiem nay ton tai de chan.
+    """
+    return datetime.datetime.now(BUSINESS_TIMEZONE).date()
+
+
+def kiem_bao_gia_truoc_khi_duyet(q):
+    """Ba chot phai qua truoc khi mot bao gia duoc duyet.
+
+    Chu du an chot: *"lỗ và hết hạn thì không cho duyệt"*. Va do la chot dung —
+    mot bao gia da duyet la thu ma cac buoc sau TIN: gia cua no chay vao lenh
+    giao hang, roi vao tien quyet toan va hoa don. Cho duyet roi canh bao thi
+    canh bao nam lai o mot dong log, con con so lo thi di het duong.
+
+    BA CHOT:
+
+      1. CON HAN. `valid_to` phai co va phai chua qua. Bao gia khong co han la
+         mot bao gia dung mai mai — gia dau, gia tai xe va phi duong doi theo
+         thang, nen mot con so cua nam ngoai duyet hom nay la duyet mot muc gia
+         khong con ton tai.
+      2. CO DU HAI CON SO. Ca gia thanh lan cuoc thu phai lon hon khong. Thieu
+         mot trong hai thi loi nhuan khong tinh duoc, va "khong tinh duoc" thi
+         khong ai duoc phep noi la da duyet.
+      3. KHONG LO. Cuoc thu phai tu gia thanh tro len. Bang gia thanh thi cho
+         qua — do la mot quyet dinh kinh doanh (giu khach, chay lap chuyen) chu
+         khong phai lo; con duoi gia thanh thi chan.
+
+    Nem `DomainError` voi thong bao NOI RO CON SO, khong noi chung. "Bao gia bi
+    lo" thi nguoi dung phai mo lai form doi chieu; "cuoc thu 3.000.000 thap hon
+    gia thanh 3.500.000, lo 500.000" thi ho sua duoc ngay.
+    """
+    han = _ngay_kinh_doanh(q.valid_to)
+    if han is None:
+        raise DomainError(
+            "QUOTATION_VALIDITY_REQUIRED",
+            "Báo giá phải có ngày hết hạn (Hiệu lực đến) trước khi duyệt. "
+            "Báo giá không hạn là báo giá dùng mãi mãi, mà giá dầu và phí đường "
+            "thì đổi theo tháng."
+            + (f" Giá trị đang có: {q.valid_to!r} — không đọc được thành ngày." if q.valid_to else ""),
+            422,
+        )
+    hom_nay = _hom_nay_kinh_doanh()
+    if han < hom_nay:
+        raise DomainError(
+            "QUOTATION_EXPIRED",
+            f"Báo giá đã hết hạn ngày {han.isoformat()} (hôm nay {hom_nay.isoformat()}), "
+            "không được duyệt. Hãy cập nhật giá và ngày hiệu lực rồi duyệt lại.",
+            422,
+        )
+
+    gia_thanh = _money({"total_cost": q.total_cost}, "total_cost")
+    cuoc_thu = _money({"selling_price": q.selling_price}, "selling_price")
+    if cuoc_thu <= 0 or gia_thanh <= 0:
+        thieu = []
+        if gia_thanh <= 0:
+            thieu.append("giá thành (chi phí)")
+        if cuoc_thu <= 0:
+            thieu.append("cước phí thu của khách")
+        raise DomainError(
+            "QUOTATION_MARGIN_UNKNOWN",
+            "Chưa khai " + " và ".join(thieu) + " nên không tính được lợi nhuận. "
+            "Báo giá phải có cả hai con số trước khi duyệt.",
+            422,
+        )
+    if cuoc_thu < gia_thanh:
+        lo = gia_thanh - cuoc_thu
+        raise DomainError(
+            "QUOTATION_BELOW_COST",
+            f"Báo giá đang lỗ: cước thu {cuoc_thu:,.0f} thấp hơn giá thành "
+            f"{gia_thanh:,.0f}, lỗ {lo:,.0f}. Không duyệt được báo giá lỗ — "
+            "hãy nâng cước hoặc soát lại giá thành.",
+            422,
+        )
+
+
 def approve_quotation(db, qid, user="system"):
     q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
     if not q:
         raise DomainError("QUOTATION_NOT_FOUND", f"Không tìm thấy báo giá {qid}", 404)
     if q.canonical_status not in ("draft", "sent", "unknown"):
         raise conflict("INVALID_TRANSITION", "Chỉ báo giá bản nháp/chờ gửi mới được duyệt.")
+    # Chan TRUOC khi kiem tai trong: het han va lo la hai ly do nguoi dung sua
+    # duoc ngay tren form, con tai trong thi phai doi loai xe.
+    kiem_bao_gia_truoc_khi_duyet(q)
     require_quotation_vehicle_capacity(db, {
         "cargo_type": q.cargo_type,
         "weight_kg": q.weight_kg,
@@ -632,7 +774,12 @@ def update_quotation(db, qid, data, user="system"):
     q.fuel_cost = _money(data, "fuel_cost", q.fuel_cost or 0)
     q.driver_cost = _money(data, "driver_cost", q.driver_cost or 0)
     q.toll_fee = _money(data, "toll_fee", q.toll_fee or 0)
-    q.total_cost = _money(data, "total_cost", q.total_cost or 0)
+    # Cung chot nhu luc tao: tong khong duoc nho hon tong cac cau phan. Sua chi
+    # mot cau phan roi de nguyen tong cu la cach de nhat de hai con so troi
+    # khoi nhau, va o day thi lech do di thang vao loi nhuan.
+    q.total_cost = _chot_gia_thanh(
+        q.fuel_cost, q.driver_cost, q.toll_fee,
+        _money(data, "total_cost", q.total_cost or 0))
     q.selling_price = _money(data, "selling_price", q.selling_price or 0)
     if "packaging_spec" in data:
         q.packaging_spec = data.get("packaging_spec") or ""

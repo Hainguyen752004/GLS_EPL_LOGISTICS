@@ -1,3 +1,4 @@
+from conftest import bao_gia_hop_le
 def _data(response):
     assert response.status_code == 200, response.text
     return response.json()["data"]
@@ -7,29 +8,28 @@ def test_draft_quotation_sales_order_and_delivery_order_can_be_updated(app_clien
     client, _, _ = app_client
     workflow_builder.master_data()
 
-    quote = _data(client.post("/api/quotations", json={
+    quote = _data(client.post("/api/quotations", json=bao_gia_hop_le(**{
         "id": "QT-UPD",
-        "customer_id": "CUS-T1",
-        "route_id": "RT-T1",
         "origin": "Kho A",
         "destination": "Cang A",
-        "selling_price": 1000,
-    }))
-    assert quote["selling_price"] == 1000
+        "selling_price": 3_100_000,
+    })))
+    assert quote["selling_price"] == 3_100_000
 
     quote = _data(client.put("/api/quotations/QT-UPD", json={
         "customer_id": "CUS-T1",
         "route_id": "RT-T1",
         "origin": "Kho B",
         "destination": "Cang B",
-        "selling_price": 2500,
-        "fuel_cost": 700,
-        "driver_cost": 800,
-        "toll_fee": 1000,
+        "selling_price": 3_500_000,
+        "fuel_cost": 700_000,
+        "driver_cost": 800_000,
+        "toll_fee": 1_000_000,
+        "total_cost": 2_500_000,
     }))
     assert quote["origin"] == "Kho B"
     assert quote["destination"] == "Cang B"
-    assert quote["selling_price"] == 2500
+    assert quote["selling_price"] == 3_500_000
     assert quote["canonical_status"] == "draft"
 
     assert client.put("/api/quotations/QT-UPD/approve").status_code == 200

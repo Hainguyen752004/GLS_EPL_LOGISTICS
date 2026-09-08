@@ -1,3 +1,4 @@
+from conftest import bao_gia_hop_le
 import importlib
 import json
 import datetime as dt
@@ -49,17 +50,15 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
         "warehouse": "50000",
         "freight_rate": "1200",
     }).status_code == 200
-    assert client.post("/api/quotations", json={
+    assert client.post("/api/quotations", json=bao_gia_hop_le(**{
         "id": "QT-AZ",
-        "customer_id": "CUS-T1",
-        "route_id": "RT-T1",
         "selling_price": 2500000,
         "total_cost": 500000,
         "pickup_window_start": "2026-08-21T07:00:00+07:00",
         "pickup_window_end": "2026-08-21T09:00:00+07:00",
         "delivery_window_start": "2026-08-21T11:00:00+07:00",
         "delivery_window_end": "2026-08-21T14:00:00+07:00",
-    }).status_code == 200
+    })).status_code == 200
     assert client.put("/api/quotations/QT-AZ/approve").status_code == 200
     assert client.post("/api/sales-orders", json={"id": "SO-AZ", "quotation_id": "QT-AZ"}).status_code == 200
     assert client.put("/api/sales-orders/SO-AZ/confirm").status_code == 200

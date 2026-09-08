@@ -1,4 +1,5 @@
 import sqlite3
+from conftest import bao_gia_hop_le
 
 
 def _audits(database_file):
@@ -10,15 +11,15 @@ def test_successful_workflow_operations_record_actor_and_action(app_client, work
     client, database_file, _ = app_client
     workflow_builder.master_data()
     headers = {"X-Test-Principal": "audit-user"}
-    assert client.post("/api/quotations", json={"id": "QT-A", "customer_id": "CUS-T1", "route_id": "RT-T1"}, headers=headers).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-A"), headers=headers).status_code == 200
     assert client.put("/api/quotations/QT-A/approve", headers=headers).status_code == 200
     assert client.post("/api/sales-orders", json={"id": "SO-A", "quotation_id": "QT-A"}, headers=headers).status_code == 200
     assert client.put("/api/sales-orders/SO-A/confirm", headers=headers).status_code == 200
     assert client.post("/api/delivery-orders", json={"id": "DO-A", "so_id": "SO-A"}, headers=headers).status_code == 200
     assert client.put("/api/delivery-orders/DO-A/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}, headers=headers).status_code == 200
-    assert client.post("/api/quotations", json={"id": "QT-X", "customer_id": "CUS-T1", "route_id": "RT-T1"}, headers=headers).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-X"), headers=headers).status_code == 200
     assert client.delete("/api/quotations/QT-X", headers=headers).status_code == 200
-    assert client.post("/api/quotations", json={"id": "QT-SX", "customer_id": "CUS-T1", "route_id": "RT-T1"}, headers=headers).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-SX"), headers=headers).status_code == 200
     assert client.put("/api/quotations/QT-SX/approve", headers=headers).status_code == 200
     assert client.post("/api/sales-orders", json={"id": "SO-X", "quotation_id": "QT-SX"}, headers=headers).status_code == 200
     assert client.delete("/api/sales-orders/SO-X", headers=headers).status_code == 200

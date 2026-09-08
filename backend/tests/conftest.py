@@ -50,7 +50,39 @@ def _database_fingerprint(path):
 # mặc định-chặn (xem app/auth_middleware.py), nên test nào không đi qua fixture
 # app_client phải tự gửi bearer token này.
 API_TEST_TOKEN = "pytest-api-token"
+
 API_TEST_HEADERS = {"Authorization": f"Bearer {API_TEST_TOKEN}"}
+
+
+def bao_gia_hop_le(**ghi_de):
+    """Payload mot bao gia HOP LE — dung cho moi bai kiem tao bao gia.
+
+    Chu du an da chot: bao gia LO hoac HET HAN thi khong duoc duyet. Truoc do
+    cac bai kiem tao bao gia RONG (khong han hieu luc, khong gia thanh, khong
+    cuoc thu) roi duyet — va duyet duoc, vi duong duyet khong kiem gi. Sau khi
+    bit lo hong do thi mot bao gia rong khong con duyet duoc, va muoi bon bai
+    kiem do vi DU LIEU THU khong hop le chu khong vi ma nguon sai.
+
+    Ham nay de mot cho: lan sau doi luat duyet thi sua mot cho, khong sua muoi
+    bon tep. Bai kiem nao co y thu bao gia SAI thi tu ghi de tung truong —
+    `bao_gia_hop_le(valid_to="2020-01-01")` cho bao gia het han chang han.
+
+    Han hieu luc dat theo NGAY HOM NAY cong ba muoi: dat mot ngay co dinh thi
+    bo kiem se do vao dung ngay do va khong ai hieu vi sao.
+    """
+    import datetime as _dt
+    from zoneinfo import ZoneInfo as _Zone
+    hom_nay = _dt.datetime.now(_Zone("Asia/Ho_Chi_Minh")).date()
+    payload = {
+        "id": "QT-T1",
+        "customer_id": "CUS-T1",
+        "route_id": "RT-T1",
+        "valid_to": (hom_nay + _dt.timedelta(days=30)).isoformat(),
+        "total_cost": 2_000_000,
+        "selling_price": 3_000_000,
+    }
+    payload.update(ghi_de)
+    return payload
 
 
 def seed_open_accounting_period(db, period_id="TEST-OPEN-PERIOD"):
@@ -211,11 +243,37 @@ def workflow_builder(app_client):
             assert response.status_code == 200, response.text
             return id
 
-        def quotation(self, id="QT-T1", approve=False):
-            response = client.post("/api/quotations", json={"id": id, "customer_id": "CUS-T1", "route_id": "RT-T1"}, headers={"X-User-Id": "tester"})
-            assert response.status_code == 200
+        def quotation(self, id="QT-T1", approve=False, valid_to=None,
+                      total_cost=2_000_000, selling_price=3_000_000):
+            """Bao gia THU, va no phai la mot bao gia HOP LE.
+
+            Truoc day bo dung nay tao mot bao gia RONG — khong han hieu luc,
+            khong gia thanh, khong cuoc thu — roi duyet. Duyet duoc, vi luc do
+            duong duyet khong kiem gi ca.
+
+            Chu du an da chot: bao gia LO hoac HET HAN thi khong cho duyet. Nen
+            mot bo dung tao bao gia rong roi duyet la bo dung khoa lai dung cai
+            lo hong vua duoc bit — va no se do o moi bai kiem dung no, khong phai
+            vi bai kiem sai ma vi du lieu thu khong con hop le.
+
+            Han hieu luc mac dinh dat o TUONG LAI theo gio lam viec: dat mot ngay
+            co dinh thi bo kiem se do vao dung ngay do, va khong ai hieu vi sao.
+            """
+            import datetime as _dt
+            from zoneinfo import ZoneInfo as _Zone
+            if valid_to is None:
+                hom_nay = _dt.datetime.now(_Zone("Asia/Ho_Chi_Minh")).date()
+                valid_to = (hom_nay + _dt.timedelta(days=30)).isoformat()
+            response = client.post("/api/quotations", json={
+                "id": id, "customer_id": "CUS-T1", "route_id": "RT-T1",
+                "valid_to": valid_to,
+                "total_cost": total_cost,
+                "selling_price": selling_price,
+            }, headers={"X-User-Id": "tester"})
+            assert response.status_code == 200, response.text
             if approve:
-                assert client.put(f"/api/quotations/{id}/approve", headers={"X-User-Id": "tester"}).status_code == 200
+                tra = client.put(f"/api/quotations/{id}/approve", headers={"X-User-Id": "tester"})
+                assert tra.status_code == 200, tra.text
             return id
 
         def sales_order(self, id="SO-T1", quotation_id="QT-T1", confirm=False):

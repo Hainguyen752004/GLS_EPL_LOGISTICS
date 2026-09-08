@@ -1,4 +1,5 @@
 ﻿import datetime
+from conftest import bao_gia_hop_le
 
 
 WORKFLOW_ROUTES = {
@@ -121,9 +122,9 @@ def _assert_envelope(response, identity_key, identity):
 def test_every_workflow_mutation_and_pod_get_contract(app_client, workflow_builder):
     client, _, _ = app_client
     workflow_builder.master_data()
-    _assert_envelope(client.post("/api/quotations", json={"id": "QT-DEL", "customer_id": "CUS-T1", "route_id": "RT-T1"}), "id", "QT-DEL")
+    _assert_envelope(client.post("/api/quotations", json=bao_gia_hop_le(id="QT-DEL")), "id", "QT-DEL")
     _assert_envelope(client.delete("/api/quotations/QT-DEL"), "id", "QT-DEL")
-    _assert_envelope(client.post("/api/quotations", json={"id": "QT-APP", "customer_id": "CUS-T1", "route_id": "RT-T1"}), "id", "QT-APP")
+    _assert_envelope(client.post("/api/quotations", json=bao_gia_hop_le(id="QT-APP")), "id", "QT-APP")
     _assert_envelope(client.put("/api/quotations/QT-APP/approve"), "id", "QT-APP")
     workflow_builder.quotation("QT-C", approve=False)
     _assert_envelope(client.put("/api/quotations/QT-C/status", json={"status": "Approved"}), "id", "QT-C")

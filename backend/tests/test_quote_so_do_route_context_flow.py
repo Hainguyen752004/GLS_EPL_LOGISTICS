@@ -1,11 +1,12 @@
+from conftest import bao_gia_hop_le
+
+
 def test_quote_to_so_to_do_preserves_route_context_not_route_id_as_origin(app_client, workflow_builder):
     client, _, _ = app_client
     workflow_builder.master_data()
 
-    quote = client.post("/api/quotations", json={
+    quote = client.post("/api/quotations", json=bao_gia_hop_le(**{
         "id": "QT-CTX",
-        "customer_id": "CUS-T1",
-        "route_id": "RT-T1",
         "origin": "Kho Bình Dương",
         "destination": "Cảng Cát Lái",
         "pickup_window_start": "2026-08-12T08:00:00",
@@ -15,8 +16,8 @@ def test_quote_to_so_to_do_preserves_route_context_not_route_id_as_origin(app_cl
         "weight_kg": 1200,
         "pallet_count": 4,
         "cargo_type": "Hàng tiêu dùng",
-    })
-    assert quote.status_code == 200
+    }))
+    assert quote.status_code == 200, quote.text
     assert client.put("/api/quotations/QT-CTX/approve").status_code == 200
 
     all_data = client.get("/api/data/all").json()
@@ -53,12 +54,8 @@ def test_quote_to_so_to_do_preserves_route_context_not_route_id_as_origin(app_cl
 def test_sales_order_requires_approved_quotation_with_route_context(app_client, workflow_builder):
     client, _, _ = app_client
     workflow_builder.master_data()
-    response = client.post("/api/quotations", json={
-        "id": "QT-NO-ORIGIN",
-        "customer_id": "CUS-T1",
-        "route_id": "RT-T1",
-    })
-    assert response.status_code == 200
+    response = client.post("/api/quotations", json=bao_gia_hop_le(id="QT-NO-ORIGIN"))
+    assert response.status_code == 200, response.text
     assert client.put("/api/quotations/QT-NO-ORIGIN/approve").status_code == 200
 
     so = client.post("/api/sales-orders", json={"id": "SO-NO-ORIGIN", "quotation_id": "QT-NO-ORIGIN"})

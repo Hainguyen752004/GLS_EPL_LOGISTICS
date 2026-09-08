@@ -1,3 +1,6 @@
+from conftest import bao_gia_hop_le
+
+
 def _create_master_data(client):
     assert client.post("/api/customers", json={"id": "CUS-T1", "name": "Khách Test"}).status_code in (200, 201)
     assert client.post("/api/routes", json={"id": "RT-T1", "name": "Tuyến Test", "distance_km": 10, "segments_json": "[]"}).status_code in (200, 201)
@@ -6,7 +9,7 @@ def _create_master_data(client):
 
 
 def _create_pending_do(client, suffix):
-    assert client.post("/api/quotations", json={"id": f"QT-{suffix}", "customer_id": "CUS-T1", "route_id": "RT-T1", "selling_price": 3500000}).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id=f"QT-{suffix}", selling_price=3_500_000)).status_code == 200
     assert client.put(f"/api/quotations/QT-{suffix}/approve").status_code == 200
     assert client.post("/api/sales-orders", json={"id": f"SO-{suffix}", "quotation_id": f"QT-{suffix}"}).status_code == 200
     assert client.put(f"/api/sales-orders/SO-{suffix}/status", json={"status": "Confirmed"}).status_code == 200
@@ -21,7 +24,7 @@ def test_approved_quotation_cannot_be_deleted(app_client):
     client, _, _ = app_client
     _create_master_data(client)
 
-    create = client.post("/api/quotations", json={"id": "QT-T1", "customer_id": "CUS-T1", "route_id": "RT-T1"})
+    create = client.post("/api/quotations", json=bao_gia_hop_le(id="QT-T1"))
     assert create.status_code == 200
     approve = client.put("/api/quotations/QT-T1/approve")
     assert approve.status_code == 200
@@ -38,7 +41,7 @@ def test_approved_quotation_cannot_be_deleted(app_client):
 def test_confirmed_sales_order_cannot_be_deleted(app_client):
     client, _, _ = app_client
     _create_master_data(client)
-    assert client.post("/api/quotations", json={"id": "QT-T2", "customer_id": "CUS-T1", "route_id": "RT-T1"}).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-T2")).status_code == 200
     assert client.put("/api/quotations/QT-T2/approve").status_code == 200
     assert client.post("/api/sales-orders", json={"id": "SO-T2", "quotation_id": "QT-T2"}).status_code == 200
     assert client.put("/api/sales-orders/SO-T2/status", json={"status": "Confirmed"}).status_code == 200
@@ -116,7 +119,7 @@ def test_vehicle_crud_is_persistent_and_in_use_vehicle_cannot_be_deleted(app_cli
 def test_invalid_transition_does_not_change_status_or_version(app_client):
     client, _, _ = app_client
     _create_master_data(client)
-    assert client.post("/api/quotations", json={"id": "QT-BAD", "customer_id": "CUS-T1", "route_id": "RT-T1"}).status_code == 200
+    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-BAD")).status_code == 200
     before = _entity(client, "/api/quotations", "QT-BAD")
     response = client.put("/api/quotations/QT-BAD/status", json={"status": "Draft"})
     after = _entity(client, "/api/quotations", "QT-BAD")
@@ -141,7 +144,7 @@ def test_masterdata_to_pending_delivery_order_flow(app_client):
     client, _, _ = app_client
     _create_master_data(client)
 
-    qt = client.post("/api/quotations", json={"id": "QT-E2E", "customer_id": "CUS-T1", "route_id": "RT-T1", "selling_price": 2500000})
+    qt = client.post("/api/quotations", json=bao_gia_hop_le(id="QT-E2E", selling_price=2_500_000))
     assert qt.status_code == 200
     assert qt.json()["data"]["canonical_status"] == "draft"
 

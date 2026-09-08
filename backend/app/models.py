@@ -183,6 +183,9 @@ class VehicleType(Base):
     avg_speed_kmh = Column(Float, default=45.0) # Tốc độ kế hoạch mặc định của loại xe
     base_rate = Column(MONEY_TYPE, default=0.0) # Đơn giá trên 1 km (đ/km) — mọi đơn giá chi phí trong dự án quy về "trên 1 km"
     maint_cost = Column(MONEY_TYPE, default=0.0) # Phí bảo dưỡng
+    # Khấu hao và bảo dưỡng TRÊN 1 KM — cấu phần giá thành duy nhất trong spec
+    # mà hệ thống chưa có. Thiếu nó thì biên lợi nhuận cao giả tạo.
+    dep_cost_per_km = Column(MONEY_TYPE)
     dims = Column(String) # Kích thước
     fuel_type = Column(String, default="Diesel") # Loại nhiên liệu
     special = Column(String) # Điều kiện đặc biệt
@@ -263,6 +266,9 @@ class Route(Base):
     # thứ đang nuôi phép tính giá cước lẫn ETA. Giữ cả hai chứ không ghi đè:
     # thay số người khai bằng số máy lấy về là đổi tiền trên những đơn đã chốt.
     road_distance_km = Column(Float)
+    # BOT thuộc ĐƯỜNG, không thuộc xe. Trước đây phí cầu đường chỉ có trong công
+    # thức theo loại xe, nên tuyến 19,9 km và tuyến 129 km cùng một mức BOT.
+    bot_fee = Column(MONEY_TYPE)
 
 # 4. Locations (Branch, Port, Warehouse)
 class Location(Base):
@@ -403,6 +409,20 @@ class DeliveryOrder(Base):
     updated_by = Column(String, nullable=False, default="system")
     version = Column(Integer, nullable=False, default=1)
     so_id = Column(String, ForeignKey("sales_orders.id"), unique=True)
+    # LUỒNG MỚI: DO sinh trực tiếp từ báo giá, không qua đơn hàng.
+    #
+    # Thiếu cột này thì đường chốt giá ở `delivery_completion_service` — vốn lần
+    # theo DO → SO → báo giá — trả về BASE_PRICE_MISSING trong luồng mới, tức
+    # hoàn tất giao hàng vỡ hoàn toàn: không giá, không hoá đơn, không lợi nhuận.
+    quotation_id = Column(String, ForeignKey("quotations.id"), index=True)
+    # Giá cước KHOÁ cho chuyến này, tính ra ₫/chuyến lúc tách DO. Một DO một con
+    # số — không phụ thuộc cân thực tế sau này.
+    unit_price = Column(MONEY_TYPE)
+    price_basis = Column(String)  # cách báo giá, giữ lại để in và đối soát
+    # Số lượng dùng để xuất hoá đơn. Với cước theo tấn/m³ thì đây là số CÂN
+    # THỰC TẾ lấy từ POD, không phải số khai.
+    billed_qty = Column(Float)
+    driver_note = Column(Text)  # ghi chú vận hành kế thừa từ báo giá
     customer_id = Column(String, ForeignKey("customers.id"))
     route_id = Column(String, ForeignKey("routes.id"))
     origin = Column(String)
@@ -595,6 +615,11 @@ class DeliveryPODRecord(Base):
     photo_url = Column(String)
     signature_url = Column(String)
     delivery_result = Column(String(32))
+    # SỐ CÂN THỰC TẾ lúc ký POD. Cước theo tấn/m³ không xuất được hoá đơn đúng
+    # nếu không có chỗ ghi số cân: khai 24 cân 22 thì mình xuất thừa, khai 24
+    # cân 26 thì mình xuất thiếu. Trước đây cả hệ thống không có cột nào chứa nó.
+    actual_qty = Column(Float)
+    actual_qty_uom = Column(String)
     cargo_condition = Column(Text)
     note = Column(Text)
     status = Column(String, nullable=False, default="completed")
@@ -901,6 +926,112 @@ class Quotation(Base):
     volume_m3 = Column(Float, default=5.0) # Thể tích m3
     notes = Column(Text)  # O Ghi chu tren man bao gia
     status = Column(String, default="Draft") # Draft, Sent, Approved
+
+    # ===================== LUỒNG MỚI: QT → DO, bỏ bước SO =====================
+    # Đơn vị tính cước. Chốt với chủ dự án sau khi bàn bài toán mỏ đá: báo giá
+    # theo đơn vị của KHÁCH, nhưng DO luôn khoá một con số ₫/chuyến. Nếu cơ sở
+    # dữ liệu lưu ₫/kg thì mọi con số phía sau phụ thuộc CÂN THỰC TẾ, mà cân
+    # thực tế luôn khác cân khai — nghĩa là giá khách đã đồng ý sẽ tự đổi sau
+    # khi xe chạy.
+    price_basis = Column(String)  # per_trip | per_tonne | per_m3 | per_kg | per_km
+    unit_price = Column(MONEY_TYPE)  # đơn giá theo `price_basis`
+    # Mức tối thiểu tính tiền mỗi chuyến. Thứ chặn mỏ xúc thiếu tải làm một
+    # chuyến lãi thành lỗ: giá thành không đổi một đồng khi xe chở ít hơn.
+    min_qty_per_trip = Column(Float)
+
+    # Mã hiện cho khách, cấp lúc GỬI. Khác khoá chính: spec đòi "nháp chưa có
+    # mã", mà khoá chính thì không thể rỗng nên nháp sẽ không lưu được.
+    quote_no = Column(String, index=True)
+    vehicle_type_id = Column(String, ForeignKey("vehicle_types.id"))
+    currency_code = Column(String, default="VND")
+    # Tỷ giá LÚC GỬI, lưu kèm báo giá: tỷ giá đổi sau đó thì PDF khách đã nhận
+    # và bản đối soát của mình phải vẫn khớp nhau.
+    fx_rate = Column(Float, default=1.0)
+    payment_terms = Column(String)
+    sales_rep = Column(String)
+    trips_per_month = Column(Integer)
+    waiting_surcharge = Column(MONEY_TYPE)  # phụ phí chờ quá giờ
+    cargo_value = Column(MONEY_TYPE)  # chỉ dùng khi công thức có phí bảo hiểm
+    stacking = Column(String)
+    sealing = Column(String)
+    recipient_contact = Column(String)
+    # BA ô ghi chú TÁCH RỜI. Trước đây dùng một cột `notes`, nên ghi chú nội bộ
+    # ("khách đang so giá, tối đa giảm 3%") in ra cho chính khách đọc.
+    notes_customer = Column(Text)  # in trên PDF
+    notes_ops = Column(Text)       # hiện trên DO và lệnh tài xế
+    notes_internal = Column(Text)  # không in
+    bot_fee = Column(MONEY_TYPE)   # BOT chốt theo tuyến lúc báo giá
+    # Ảnh chụp bảng cấu phần giá thành lúc gửi. Công thức ở Dữ liệu gốc đổi theo
+    # tháng, nên không lưu lại thì không ai dựng lại được con số đã chào khách.
+    cost_breakdown_json = Column(Text)
+    target_margin = Column(Float)  # biên mục tiêu riêng cho khách này
+    sent_at = Column(DateTime)
+    accepted_at = Column(DateTime)
+    closed_at = Column(DateTime)
+    close_reason = Column(Text)
+
+
+class QuotationItem(Base):
+    """Một dòng hàng hoá của báo giá.
+
+    KHÔNG có đơn giá và thành tiền, có chủ ý: mình là đơn vị vận chuyển, chỉ
+    tính cước chứ không tính tiền hàng. Thêm hai cột đó vào là mở đường cho
+    người dùng gõ giá trị lô hàng rồi tưởng hệ thống đang tính tiền hàng.
+    """
+    __tablename__ = "quotation_items"
+    __table_args__ = (
+        CheckConstraint("quantity >= 0", name="ck_quotation_items_qty"),
+    )
+    id = Column(String, primary_key=True)
+    quotation_id = Column(String, ForeignKey("quotations.id", ondelete="CASCADE"),
+                          nullable=False, index=True)
+    line_no = Column(Integer, nullable=False, default=1)
+    name = Column(String)
+    quantity = Column(MONEY_TYPE, nullable=False, default=0)
+    uom = Column(String, nullable=False, default="Chuyến")  # 40' · 20' · Tấn · Pallet · Kiện
+    note = Column(String)
+    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+
+class QuotationAttachment(Base):
+    """Chứng từ đính kèm báo giá — đi theo DO xuống vận hành và kế toán."""
+    __tablename__ = "quotation_attachments"
+    id = Column(String, primary_key=True)
+    quotation_id = Column(String, ForeignKey("quotations.id", ondelete="CASCADE"),
+                          nullable=False, index=True)
+    doc_type = Column(String, nullable=False, default="Khác")
+    file_name = Column(String, nullable=False)
+    storage_url = Column(Text, nullable=False)
+    mime_type = Column(String)
+    size_bytes = Column(Integer)
+    note = Column(String)
+    uploaded_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    uploaded_by = Column(String, nullable=False, default="system")
+
+
+class QuotationVersion(Base):
+    """Phiên bản giá của một báo giá.
+
+    Mỗi lần sửa giá SAU KHI đã gửi thì tăng phiên bản. Không có bảng này thì
+    không ai đối soát được với bản PDF khách đang giữ.
+    """
+    __tablename__ = "quotation_versions"
+    __table_args__ = (
+        UniqueConstraint("quotation_id", "version", name="uq_quotation_versions"),
+    )
+    id = Column(String, primary_key=True)
+    quotation_id = Column(String, ForeignKey("quotations.id", ondelete="CASCADE"),
+                          nullable=False, index=True)
+    version = Column(Integer, nullable=False)
+    selling_price = Column(MONEY_TYPE)
+    unit_price = Column(MONEY_TYPE)
+    price_basis = Column(String)
+    total_cost = Column(MONEY_TYPE)
+    currency_code = Column(String)
+    fx_rate = Column(Float)
+    note = Column(Text)
+    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
+    created_by = Column(String, nullable=False, default="system")
 
 class QuotationDetail(Base):
     __tablename__ = "quotation_details"
