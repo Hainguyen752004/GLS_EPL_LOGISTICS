@@ -103,9 +103,9 @@ def _serialize(closeout, adjustments, pod_records, documents, invoice):
 
 def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     if not idempotency_key:
-        raise DomainError("IDEMPOTENCY_KEY_REQUIRED", "Thiáº¿u Idempotency-Key.", 422)
+        raise DomainError("IDEMPOTENCY_KEY_REQUIRED", "Thiếu Idempotency-Key.", 422)
     if len(idempotency_key) > 96:
-        raise DomainError("IDEMPOTENCY_KEY_INVALID", "Idempotency-Key quÃ¡ dÃ i.", 422)
+        raise DomainError("IDEMPOTENCY_KEY_INVALID", "Idempotency-Key quá dài.", 422)
     payload_hash = request_hash(payload, files)
     existing_key = db.scalar(select(IdempotencyRecord).where(
         IdempotencyRecord.actor == actor,
@@ -115,21 +115,21 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     ).with_for_update())
     if existing_key:
         if existing_key.request_hash != payload_hash:
-            raise conflict("IDEMPOTENCY_CONFLICT", "Idempotency-Key Ä‘Ã£ dÃ¹ng vá»›i ná»™i dung khÃ¡c.")
+            raise conflict("IDEMPOTENCY_CONFLICT", "Idempotency-Key đã dùng với nội dung khác.")
         return json.loads(existing_key.response_json)
 
     delivery = db.scalar(select(DeliveryOrder).where(DeliveryOrder.id == do_id).with_for_update())
     if not delivery:
-        raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"KhÃ´ng tÃ¬m tháº¥y DO {do_id}.", 404)
+        raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy DO {do_id}.", 404)
     if delivery.canonical_status != "in_transit":
-        raise conflict("DELIVERY_ORDER_NOT_IN_TRANSIT", "Chá»‰ DO Ä‘ang váº­n chuyá»ƒn má»›i Ä‘Æ°á»£c hoÃ n táº¥t giao.")
+        raise conflict("DELIVERY_ORDER_NOT_IN_TRANSIT", "Chỉ DO đang vận chuyển mới được hoàn tất giao.")
 
     trip = db.scalar(select(TransportTrip).where(TransportTrip.id == payload.trip_id).with_for_update())
     membership = db.get(TripDeliveryOrder, (payload.trip_id, do_id))
     if not trip or not membership:
-        raise DomainError("POD_LINEAGE_INVALID", "Trip khÃ´ng thuá»™c DO Ä‘Ã£ chá»n.", 422)
+        raise DomainError("POD_LINEAGE_INVALID", "Trip không thuộc DO đã chọn.", 422)
     if trip.status not in ("dispatched", "in_transit"):
-        raise conflict("TRIP_NOT_IN_TRANSIT", "Trip chÆ°a á»Ÿ tráº¡ng thÃ¡i giao hÃ ng.")
+        raise conflict("TRIP_NOT_IN_TRANSIT", "Trip chưa ở trạng thái giao hàng.")
 
     sales_order = db.get(SalesOrder, delivery.so_id)
     quotation = db.get(Quotation, sales_order.quotation_id) if sales_order and sales_order.quotation_id else None
@@ -141,10 +141,10 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
         source = "quotation"
         source_id = quotation.id
     if base_price <= 0 or not source_id:
-        raise DomainError("BASE_PRICE_MISSING", "DO chÆ°a cÃ³ giÃ¡ SO/BÃ¡o giÃ¡ há»£p lá»‡.", 422)
+        raise DomainError("BASE_PRICE_MISSING", "DO chưa có giá SO/Báo giá hợp lệ.", 422)
     source_currency = (getattr(sales_order, "currency_code", None) or "VND").upper()
     if payload.currency_code != source_currency:
-        raise DomainError("CURRENCY_MISMATCH", "ÄÆ¡n vá»‹ tiá»n pháº£i khá»›p vá»›i SO.", 422)
+        raise DomainError("CURRENCY_MISMATCH", "Đơn vị tiền phải khớp với SO.", 422)
 
     delivery_legs = db.scalars(select(TransportTripLeg).where(
         TransportTripLeg.trip_id == trip.id,
@@ -153,24 +153,24 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     ).with_for_update()).all()
     leg_map = {leg.id: leg for leg in delivery_legs}
     if set(leg_map) != {entry.leg_id for entry in payload.pod_entries}:
-        raise DomainError("POD_LINEAGE_INVALID", "Pháº£i ná»™p POD cho Ä‘Ãºng táº¥t cáº£ cháº·ng giao cá»§a DO.", 422)
+        raise DomainError("POD_LINEAGE_INVALID", "Phải nộp POD cho đúng tất cả chặng giao của DO.", 422)
 
     pod_rows = []
     document_rows = []
     for entry in payload.pod_entries:
         leg = leg_map[entry.leg_id]
         if trip.vehicle_id and entry.vehicle_id != trip.vehicle_id:
-            raise DomainError("POD_LINEAGE_INVALID", "Xe trÃªn POD khÃ´ng khá»›p xe Ä‘Ã£ Ä‘iá»u.", 422)
+            raise DomainError("POD_LINEAGE_INVALID", "Xe trên POD không khớp xe đã điều.", 422)
         uploaded = files.get(entry.file_field)
         signature = files.get(entry.signature_file_field)
         if not uploaded or not uploaded.get("content"):
-            raise DomainError("POD_FILE_REQUIRED", f"Thiáº¿u file POD cho cháº·ng {entry.leg_id}.", 422)
+            raise DomainError("POD_FILE_REQUIRED", f"Thiếu file POD cho chặng {entry.leg_id}.", 422)
         content = uploaded["content"]
         if len(content) > MAX_POD_BYTES:
-            raise DomainError("POD_FILE_TOO_LARGE", "File POD tá»‘i Ä‘a 10 MB.", 422)
+            raise DomainError("POD_FILE_TOO_LARGE", "File POD tối đa 10 MB.", 422)
         mime_type = uploaded.get("mime_type") or "application/octet-stream"
         if mime_type not in ALLOWED_POD_MIME_TYPES:
-            raise DomainError("POD_FILE_TYPE_INVALID", "POD chá»‰ há»— trá»£ JPG, PNG hoáº·c PDF.", 422)
+            raise DomainError("POD_FILE_TYPE_INVALID", "POD chỉ hỗ trợ JPG, PNG hoặc PDF.", 422)
         if not signature or not signature.get("content"):
             raise DomainError(
                 "POD_SIGNATURE_REQUIRED",
@@ -265,7 +265,7 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     if open_delivery_leg:
         raise conflict(
             "TRIP_HAS_OPEN_DELIVERIES",
-            "DO cÃ²n cháº·ng giao hÃ ng trÃªn Trip khÃ¡c, chÆ°a thá»ƒ chá»‘t giÃ¡.",
+            "DO còn chặng giao hàng trên Trip khác, chưa thể chốt giá.",
         )
     open_legs = db.scalar(select(TransportTripLeg.id).where(
         TransportTripLeg.trip_id == trip.id,

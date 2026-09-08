@@ -62,7 +62,7 @@ def post_ar_invoice(db, data, user="system"):
         if amount_override is not None and _money(existing.amount) != _money(amount_override):
             raise conflict(
                 "AR_ALREADY_POSTED_DIFFERENT_AMOUNT",
-                "HÃ³a Ä‘Æ¡n cÃ´ng ná»£ Ä‘Ã£ ghi sá»• vá»›i sá»‘ tiá»n khÃ¡c.",
+                "Hóa đơn công nợ đã ghi sổ với số tiền khác.",
                 ["ar-invoices", "delivery-closeout"],
             )
         return existing

@@ -88,7 +88,7 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
         form = await request.form()
         raw_payload = form.get("payload")
         if not isinstance(raw_payload, str):
-            raise DomainError("PAYLOAD_REQUIRED", "Thiáº¿u payload JSON hoÃ n táº¥t giao hÃ ng.", 422)
+            raise DomainError("PAYLOAD_REQUIRED", "Thiếu payload JSON hoàn tất giao hàng.", 422)
         try:
             payload = DeliveryCompletionRequest.model_validate_json(raw_payload)
         except ValidationError as exc:
@@ -99,7 +99,7 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
             uploaded = form.get(entry.file_field)
             if uploaded is None or not callable(getattr(uploaded, "read", None)):
                 raise DomainError(
-                    "POD_FILE_REQUIRED", f"Thiáº¿u file POD cho cháº·ng {entry.leg_id}.", 422
+                    "POD_FILE_REQUIRED", f"Thiếu file POD cho chặng {entry.leg_id}.", 422
                 )
             content = await uploaded.read(MAX_POD_BYTES + 1)
             # Kiểm NGAY tại đây, không đợi tới complete_delivery. Schema cho
@@ -132,7 +132,7 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
             db, do_id, payload, files, key, actor, request.url.path,
         )
         db.commit()
-        return {"message": "HoÃ n táº¥t giao hÃ ng vÃ  chá»‘t giÃ¡ thÃ nh cÃ´ng", "data": data}
+        return {"message": "Hoàn tất giao hàng và chốt giá thành công", "data": data}
     except DomainError as exc:
         db.rollback()
         raise_http(exc)
@@ -143,7 +143,7 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
                 db, do_id, payload, files, key, actor, request.url.path,
             )
             db.commit()
-            return {"message": "HoÃ n táº¥t giao hÃ ng vÃ  chá»‘t giÃ¡ thÃ nh cÃ´ng", "data": data}
+            return {"message": "Hoàn tất giao hàng và chốt giá thành công", "data": data}
         except DomainError as exc:
             db.rollback()
             raise_http(exc)
@@ -157,7 +157,7 @@ async def download_pod_document(document_id: str, request: Request, db: Session 
     _context(request, db)
     document = db.get(DeliveryPODDocument, document_id)
     if not document:
-        raise_http(DomainError("POD_DOCUMENT_NOT_FOUND", "KhÃ´ng tÃ¬m tháº¥y chá»©ng tá»« POD.", 404))
+        raise_http(DomainError("POD_DOCUMENT_NOT_FOUND", "Không tìm thấy chứng từ POD.", 404))
     safe_name = (document.file_name or "pod-document").replace('"', "")
     # attachment thay vì inline, kèm nosniff: một PDF dựng khéo được phục vụ
     # inline từ chính origin của ứng dụng sẽ chạy được JavaScript trong ngữ

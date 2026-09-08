@@ -27,10 +27,27 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from database import SessionLocal
+from database import Base, SessionLocal, engine
 from services import demo_seed_service as seed_service
 from services import workflow_service as svc
 from services.workflow_service import DomainError
+
+
+def _bao_dam_co_bang():
+    """Bao dam co so du lieu cua bo kiem da co bang truoc khi dung `SessionLocal`.
+
+    VI SAO CAN. Bai kiem nay dung THANG `SessionLocal()` — phien lam viec cua
+    ung dung — chu khong dung mot co so du lieu rieng trong `tmp_path`. Conftest
+    tro co so du lieu do sang mot tep SQLite tam nhung KHONG tao bang, va mot
+    bai kiem khac (`app_client`) xoa moi module trong `app/` khoi `sys.modules`
+    roi nap lai chung voi mot duong dan khac. Ket qua: chay rieng tep nay thi
+    xanh, chay cung ca bo thi vo voi "no such table: delivery_pod_records".
+
+    Mot bai kiem do theo THU TU CHAY con te hon khong co bai kiem: no do khi
+    khong co loi nao, nen lan sau ai cung bo qua mau do — va luc do mot loi
+    that di qua ma khong ai thay.
+    """
+    Base.metadata.create_all(bind=engine)
 
 
 @pytest.fixture(scope="module")
@@ -41,6 +58,7 @@ def may():
 
 @pytest.fixture(scope="module")
 def da_nap():
+    _bao_dam_co_bang()
     db = SessionLocal()
     try:
         seed_service.seed_demo(db, reset=True, verify=True)
@@ -100,6 +118,7 @@ def test_duong_theo_mot_don_van_bao_404(may, da_nap):
 
 
 def test_co_tran_so_don_moi_lan_goi():
+    _bao_dam_co_bang()
     db = SessionLocal()
     try:
         qua_nhieu = ["DO-%05d" % i for i in range(svc.POD_HANG_LOAT_TOI_DA + 1)]
@@ -121,6 +140,7 @@ def test_ma_trung_va_ma_rong_khong_lam_vo_tran():
     cho mot don) va de co chuoi rong (`"a,,b"`). Neu dem ca chung vao tran thi
     mot lo hop le bi tu choi vi nhung ma khong ton tai.
     """
+    _bao_dam_co_bang()
     db = SessionLocal()
     try:
         assert svc.list_pod_records_for_dos(db, []) == {}
