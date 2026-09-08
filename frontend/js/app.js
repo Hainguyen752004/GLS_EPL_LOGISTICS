@@ -2223,6 +2223,18 @@ function renderTripReturnCockpit() {
   if (tripThieuChangVe(raw) && nhom !== 'completed') {
     nut.push(['p', 'Lập lượt về cho chuyến này', "openTripReturnAction('add-leg')"]);
   }
+  // XÁC NHẬN XE ĐÃ VỀ — bước cuối của một chuyến khứ hồi, và trước đây giao
+  // diện không có chỗ nào bấm. Thiếu nó thì chuyến nằm mãi ở "đang giao", bước
+  // quyết toán chi phí từ chối, và tiền của chuyến không vào báo cáo.
+  if (tripChoXacNhanVe(raw)) {
+    // `decodeURIComponent` ở ngoài, đúng lối đã dùng cho
+    // `selectTripReturnWorkItem`: mã chuyến đi qua một thuộc tính HTML nên phải
+    // mã hoá, và giải mã NGAY tại chỗ gọi để hàm nhận đúng mã gốc — mã hoá hai
+    // lần thì máy chủ tra một mã không tồn tại.
+    nut.push(['p', 'Xác nhận xe đã về bãi',
+      "xacNhanXeDaVe(decodeURIComponent('"
+      + encodeURIComponent(String(raw.id || '')) + "'))"]);
+  }
   nut.push(['', 'Sửa ở Điều phối', "switchView('dispatch')"]);
   nut.push(['', 'Xem 360° lô hàng', "switchView('operations-360')"]);
   detailPane.insertAdjacentHTML('beforeend', '<div class="acts">'
@@ -2323,11 +2335,92 @@ function tripGioToiNoi(raw) {
  *  tài xế vẫn tính giờ, mà không có doanh thu. Nên "chưa có chặng về" phải là
  *  một con số đập vào mắt, không phải thứ phải đi tìm.
  */
+/** Ba loại chặng về mà backend thật sự dùng.
+ *
+ * KHÔNG có loại nào tên `'return'`. Trước đây `tripThieuChangVe` so với đúng
+ * chuỗi đó, nên phép so KHÔNG BAO GIỜ đúng: một chuyến đã có chặng về vẫn bị
+ * coi là thiếu, và nút "Lập lượt về cho chuyến này" cứ hiện mãi. Xem
+ * `RETURN_PURPOSES` và `leg_type` trong `services/tms_trip_service.py`.
+ */
+const LOAI_CHANG_VE = ['empty_return', 'backhaul', 'returned_goods'];
+
+const changVeCua = raw => (raw.legs || [])
+  .filter(l => LOAI_CHANG_VE.includes(String(l.leg_type || '')));
+
 function tripThieuChangVe(raw) {
   if (String(raw.trip_type || '') === 'round_trip') return false;
-  const coChangVe = (raw.legs || []).some(l => String(l.leg_type || '') === 'return');
-  return !coChangVe;
+  return changVeCua(raw).length === 0;
 }
+
+/**
+ * Chuyến đã có chặng về nhưng CHƯA đóng — tức đang chờ xác nhận xe đã về bãi.
+ *
+ * VÌ SAO CẦN Ô NÀY. Chuyến khứ hồi chỉ chuyển sang `completed` khi xe đã về,
+ * không phải khi hàng đã giao — và đúng: chặng về rỗng cũng tốn dầu và cũng
+ * giữ xe. Nhưng trước đây giao diện KHÔNG CÓ chỗ nào xác nhận việc đó
+ * (`openTripReturnAction` chỉ có `create-trip` và `add-leg`), nên chuyến khứ
+ * hồi nằm mãi ở `in_transit`, và bước quyết toán chi phí từ chối với câu "Chỉ
+ * được quyết toán chi phí sau khi chuyến đã hoàn thành POD". Kết quả là tiền
+ * của chuyến đó không bao giờ vào báo cáo.
+ */
+function tripChoXacNhanVe(raw) {
+  const ve = changVeCua(raw);
+  if (!ve.length) return false;
+  if (['completed', 'settled', 'cancelled'].includes(String(raw.status || ''))) return false;
+  return ve.some(l => String(l.status || '') !== 'completed');
+}
+
+/**
+ * Xác nhận xe đã về bãi — đóng các chặng về và hoàn thành chuyến.
+ *
+ * Đọc lại phiên bản chuyến NGAY TRƯỚC KHI gửi, chứ không dùng con số đang hiện
+ * trên màn: giữa lúc mở hồ sơ và lúc bấm nút, một người khác có thể đã sửa
+ * chuyến — và chốt `expected_version` tồn tại đúng để chặn việc ghi đè đó.
+ */
+window.xacNhanXeDaVe = async function (tripId) {
+  const ma = String(tripId || '').trim();
+  if (!ma) {
+    showToast('Chưa chọn chuyến nào để xác nhận.');
+    return;
+  }
+  if (!window.confirm('Xác nhận xe của chuyến ' + ma + ' đã về bãi?\n\n'
+    + 'Chuyến sẽ chuyển sang HOÀN THÀNH và giải phóng xe cùng tổ lái. '
+    + 'Sau bước này mới quyết toán được chi phí thực của chuyến.')) return;
+  try {
+    const tra = await fetch(`${API_BASE}/api/tms/trips/${encodeURIComponent(ma)}`,
+      { headers: financeAuthHeaders() });
+    const goi = await tra.json().catch(() => ({}));
+    if (!tra.ok) {
+      showToast(goi?.detail?.message || goi?.message || 'Không đọc được chuyến để xác nhận.');
+      return;
+    }
+    const chuyen = goi?.data || goi || {};
+    const ketQua = await fetch(
+      `${API_BASE}/api/tms/trips/${encodeURIComponent(ma)}/complete-return`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': 've-bai-' + ma + '-' + Date.now(),
+          ...financeAuthHeaders(),
+        },
+        body: JSON.stringify({
+          expected_version: Number(chuyen.version) || 1,
+          actual_return_at: new Date().toISOString(),
+        }),
+      });
+    const d = await ketQua.json().catch(() => ({}));
+    if (!ketQua.ok) {
+      showToast(d?.detail?.message || d?.message || 'Không xác nhận được xe đã về.');
+      return;
+    }
+    showToast('Đã xác nhận xe về bãi. Chuyến chuyển sang hoàn thành — quyết toán '
+      + 'chi phí thực ở màn Kế toán.');
+    if (typeof loadAllData === 'function') await loadAllData();
+    renderTripReturnCockpit();
+  } catch (error) {
+    showToast('Không kết nối được backend để xác nhận xe đã về.');
+  }
+};
 
 /** Số DO của chuyến đã có POD, trên tổng số DO. */
 function tripSoPOD(raw) {

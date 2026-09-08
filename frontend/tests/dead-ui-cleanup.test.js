@@ -89,11 +89,45 @@ const code = stripComments(app);
     `còn ${oMo.length} ô nhập sửa được trong khối CC FORM — gõ vào đó không ai đọc`);
 
   // Không nút nào được ghi cơ sở dữ liệu từ khối này.
+  //
+  // `submitIncident` LỌT QUA lần dọn trước và chỉ lộ ra ở lần rà soát nút toàn
+  // dự án: thẻ "BÁO CÁO SỰ CỐ" có một nút Submit ghi một sự cố THẬT vào cơ sở
+  // dữ liệu, mà đọc giá trị từ form sự cố của màn Theo dõi (`inc-do-id`,
+  // `inc-veh-id`, …) — không phải từ thẻ này, vì mọi ô của thẻ đều `disabled`.
+  // Bấm vào là ghi một sự cố rỗng. Danh sách này là danh sách CHẶN, nên nó chỉ
+  // đúng khi có đủ tên; thêm tên vào đây mỗi lần tìm ra một nút cùng loại.
+  // Soi LỆNH GỌI THẬT, không soi chú thích: chú thích nêu tên hàm là tài liệu
+  // giải thích vì sao nút đó đã bị bỏ, và bắt nó là buộc người sửa phải xoá
+  // đúng phần giải thích khiến lần sau có người thêm nút lại.
+  const thanKhongChuThich = than.replace(/<!--[\s\S]*?-->/g, '');
   ['saveMasterForm', 'sendMasterForm', 'submitMasterForm',
-    'approveMasterForm', 'publishMasterForm'].forEach(ten => {
-    assert.ok(!than.includes(ten),
+    'approveMasterForm', 'publishMasterForm', 'submitIncident',
+    'submitIncidentReport', 'postInvoice'].forEach(ten => {
+    assert.ok(!thanKhongChuThich.includes(ten),
       `${ten} ghi dữ liệu của MỘT FORM KHÁC ở tab khác — không được gọi từ thẻ minh họa`);
   });
+
+  // Và MỌI thẻ phải có đúng một nút đi tới màn thật — không thẻ nào thiếu.
+  //
+  // Trước lần rà soát này chỉ 5 trong 8 thẻ có nút, nên người xem không suy ra
+  // được thẻ nào mở được: ba thẻ cuối trông như chỉ để đọc.
+  //
+  // Đếm CẢ HAI đường điều hướng. Thẻ "Kế hoạch tuyến đường" mở một THẺ của màn
+  // Dữ liệu gốc (`openMasterSetupStep('md-tab-routes')`) chứ không mở một màn —
+  // vì tuyến đường là dữ liệu gốc, không phải một bước vận hành. Đếm riêng
+  // `switchView` là bắt sai một nút đang trỏ đúng chỗ.
+  {
+    const soThe = (than.match(/class="master-form-card"/g) || []).length;
+    const soNut = (than.match(
+      /onclick="(?:switchView\('[\w-]+'\)|openMasterSetupStep\('[\w-]+'\))"/g) || []).length;
+    assert.strictEqual(soNut, soThe,
+      `${soThe} thẻ nhưng ${soNut} nút mở màn — mọi thẻ phải có một nút`);
+  }
+
+  // Bước Đơn hàng (SO) đã bỏ khỏi luồng, nên không còn thẻ nào cho nó.
+  assert.ok(!than.includes('SALES ORDER'),
+    'thẻ SALES ORDER còn trong khối — bước Đơn hàng đã bỏ khỏi luồng, để lại là '
+    + 'nói với người xem rằng luồng có một bước mà nó không có');
 
   // Thay vào đó là nút đi tới màn thật.
   assert.ok(/onclick="switchView\('[\w-]+'\)"[^>]*>\s*<i[^>]*><\/i> Mở /.test(than),

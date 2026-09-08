@@ -4064,7 +4064,7 @@
               <h3 style="margin:0; color: #0a6ed1; font-size: 1.2rem; text-transform: uppercase; font-weight: 700;">
                 <i class="fa-solid fa-layer-group"></i> CC FORM NGHIỆP VỤ CHỦ YẾU
               </h3>
-              <span style="font-size: 0.85rem; color: #666;">Chuẩn hóa 100% theo mẫu giao diện tham chiếu</span>
+              <span style="font-size: 0.85rem; color: #666;">Số liệu trên thẻ là mẫu minh họa bố cục chứng từ · bấm vào thẻ hoặc nút để mở màn tương ứng</span>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -4118,57 +4118,9 @@
               </div>
 
               <!-- Vietnamese source cleaned -->
-              <div class="master-form-card" data-view="crm-sales" style="cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_2_so"><i class="fa-solid fa-file-invoice"></i> 2. SALES ORDER</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
-                  <div>
-                  <button type="button" class="fiori-btn" onclick="switchView('crm-sales')"
-                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở CRM & Kinh doanh</button>
-                  </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
-                  <div>
-                    <label data-i18n="lbl_so_no" style="color: #666; font-size: 0.75rem;">SO No.</label>
-                    <input type="text" id="m-so-no" data-i18n="ph_so_no" data-i18n-attr="placeholder" placeholder="Ví dụ: SO-001" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
-                  </div>
-                  <div>
-                    <label data-i18n="lbl_customer" style="color: #666; font-size: 0.75rem;">Customer</label>
-                    <select id="m-so-customer" class="fiori-input" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled></select>
-                  </div>
-                  <div>
-                    <label data-i18n="lbl_order_date" style="color: #666; font-size: 0.75rem;">Order Date</label>
-                    <input type="date" id="m-so-date" value="2026-07-23" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
-                  </div>
-                  <div>
-                    <label data-i18n="lbl_payment_terms" style="color: #666; font-size: 0.75rem;">Payment Terms</label>
-                    <select id="m-so-terms" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
-                      <option value="30 Days">30 Days</option>
-                      <option value="60 Days">60 Days</option>
-                    </select>
-                  </div>
-                  <div style="grid-column: span 2;">
-                    <label data-i18n="lbl_sales_rep" style="color: #666; font-size: 0.75rem;">Sales Rep.</label>
-                    <input type="text" id="m-so-rep" value="Nguyễn Thị A" style="width:100%; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;" disabled>
-                  </div>
-                </div>
-                <div style="margin-top: 10px;">
-                  <div style="display: flex; gap: 15px; border-bottom: 1px solid #ccc; font-size: 0.75rem; font-weight: bold; color: #0a6ed1; padding-bottom: 4px;">
-                    <span data-i18n="tab_lines">Lines</span> <span data-i18n="tab_details" style="color:#666;">Details</span> <span data-i18n="tab_attachments" style="color:#666;">Attachments</span>
-                  </div>
-                  <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse; margin-top: 5px;">
-                    <thead><tr style="background: #eef2f7; text-align: left;"><th data-i18n="th_item" style="padding:4px;">Item</th><th data-i18n="th_desc" style="padding:4px;">Description</th><th data-i18n="th_qty" style="padding:4px;">Qty</th><th data-i18n="th_uom" style="padding:4px;">UOM</th><th data-i18n="th_unit_price" style="padding:4px;">Unit Price</th><th data-i18n="th_amount" style="padding:4px; text-align:right;">Amount</th></tr></thead>
-                    <tbody>
-                      <tr><td style="padding:4px;">1</td><td data-i18n="desc_transport_service" style="padding:4px;">Transport Service</td><td style="padding:4px;">1</td><td data-i18n="unit_trip" style="padding:4px;">Trip</td><td style="padding:4px;">2,587,500</td><td style="padding:4px; text-align:right;">2,587,500</td></tr>
-                      <tr style="border-top: 2px solid #0a6ed1; font-weight: bold;"><td data-i18n="th_total_amount" colspan="5" style="padding:4px; text-align:right;">Total Amount</td><td style="padding:4px; text-align:right; color: #0a6ed1;">2,587,500</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <!-- Vietnamese source cleaned -->
               <div class="master-form-card" data-view="ops-planning" style="cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_3_do"><i class="fa-solid fa-truck-ramp-box"></i> 3. DELIVERY ORDER</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div class="master-form-badge" data-i18n="lbl_form_2_do"><i class="fa-solid fa-truck-ramp-box"></i> 2. DELIVERY ORDER</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
                   <button type="button" class="fiori-btn" onclick="switchView('ops-planning')"
                           style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Lệnh giao hàng</button>
@@ -4214,12 +4166,12 @@
               </div>
 
               <!-- Vietnamese source cleaned -->
-              <div class="master-form-card" data-view="ops-planning" style="cursor: pointer;">
+              <div class="master-form-card" data-view="master-data" data-md-tab="md-tab-routes" style="cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_4_route"><i class="fa-solid fa-map-location-dot"></i> 4. ROUTE PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div class="master-form-badge" data-i18n="lbl_form_3_route"><i class="fa-solid fa-map-location-dot"></i> 3. ROUTE PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                  <button type="button" class="fiori-btn" onclick="switchView('ops-planning')"
-                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Lệnh giao hàng</button>
+                  <button type="button" class="fiori-btn" onclick="openMasterSetupStep('md-tab-routes')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Tuyến đường</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem;">
@@ -4256,7 +4208,7 @@
               <!-- Vietnamese source cleaned -->
               <div class="master-form-card" data-view="dispatch" style="cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_5_dispatch"><i class="fa-solid fa-truck-moving"></i> 5. DISPATCH PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div class="master-form-badge" data-i18n="lbl_form_4_dispatch"><i class="fa-solid fa-truck-moving"></i> 4. DISPATCH PLANNING</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
                   <button type="button" class="fiori-btn" onclick="switchView('dispatch')"
                           style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Điều phối xe</button>
@@ -4287,7 +4239,11 @@
               <!-- Vietnamese source cleaned -->
               <div class="master-form-card" data-view="tracking" style="cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_6_gps"><i class="fa-solid fa-location-crosshairs"></i> 6. GPS TRACKING & POD</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div class="master-form-badge" data-i18n="lbl_form_5_gps"><i class="fa-solid fa-location-crosshairs"></i> 5. GPS TRACKING & POD</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div>
+                  <button type="button" class="fiori-btn" onclick="switchView('tracking')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Theo dõi & Ký nhận</button>
+                  </div>
                   <div>
                     <span data-i18n="status_in_transit" style="background: #2bba66; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">đang vận chuyển</span>
                     <button class="fiori-btn" data-i18n="btn_refresh" onclick="loadDashboard()" style="padding: 3px 10px; font-size: 0.8rem; margin-left: 5px;">Refresh</button>
@@ -4301,11 +4257,22 @@
               <!-- Vietnamese source cleaned -->
               <div class="master-form-card" data-view="accounting" style="cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_7_invoice"><i class="fa-solid fa-file-invoice-dollar"></i> 7. AR INVOICE</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
+                  <div class="master-form-badge" data-i18n="lbl_form_6_invoice"><i class="fa-solid fa-file-invoice-dollar"></i> 6. AR INVOICE</div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_post" onclick="postInvoice()" style="padding: 3px 10px; font-size: 0.8rem; background: #2bba66;">Post</button>
-                    <button class="fiori-btn" data-i18n="btn_print" onclick="window.print()" style="padding: 3px 10px; font-size: 0.8rem;">Print</button>
+                  <button type="button" class="fiori-btn" onclick="switchView('accounting')"
+                          style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Kế toán & Tài chính</button>
                   </div>
+                  <!-- HAI NÚT "Post" VÀ "Print" ĐÃ BỎ.
+                       "Post" gọi postInvoice(), và hàm đó ghi MỘT HOÁ ĐƠN THẬT
+                       cùng bút toán sổ cái qua POST /api/invoices/post. Lệnh
+                       giao hàng được chọn bằng "lệnh đã giao đầu tiên tìm
+                       thấy" — không phải thứ người dùng chọn, vì thẻ minh họa
+                       này không có gì để chọn. Một lần bấm ở Bảng điều khiển
+                       là một hoá đơn vào sổ cho một đơn ngẫu nhiên.
+                       Đường đúng để lập hoá đơn là màn Kế toán, và nút "Mở Kế
+                       toán và Tài chính" ở trên dẫn tới đó.
+                       "Print" gọi window.print(), in cả trang Bảng điều khiển
+                       chứ không in hoá đơn. -->
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 0.8rem; margin-bottom: 8px;">
                   <div>
@@ -4334,11 +4301,21 @@
               <!-- Vietnamese source cleaned -->
               <div class="master-form-card" data-view="tracking" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); margin-top: 15px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
-                  <div class="master-form-badge" data-i18n="lbl_form_8_incident" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important; padding: 6px 14px; border-radius: 8px; font-weight: 700; color: white;">
-                    <i class="fa-solid fa-triangle-exclamation"></i> 8. INCIDENT REPORT
+                  <div class="master-form-badge" data-i18n="lbl_form_7_incident" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important; padding: 6px 14px; border-radius: 8px; font-weight: 700; color: white;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> 7. INCIDENT REPORT
                   </div><span class="svc-sample-flag" title="Số liệu trên thẻ này là mẫu minh họa bố cục chứng từ, không lấy từ cơ sở dữ liệu."><i class="fa-solid fa-flask"></i> <span data-i18n="lbl_illustrative_sample">Mẫu minh họa</span></span>
                   <div>
-                    <button class="fiori-btn" data-i18n="btn_submit" onclick="submitIncident()" style="padding: 6px 20px; font-size: 0.85rem; background: #dc2626; border-radius: 20px; font-weight: 700; color: white; border: none; cursor: pointer; box-shadow: 0 2px 6px rgba(220,38,38,0.3);">Submit</button>
+                    <!-- NÚT NÀY TRƯỚC ĐÂY LÀ "Submit" GỌI submitIncident().
+                         Nó ghi MỘT SỰ CỐ THẬT vào cơ sở dữ liệu, nhưng đọc giá
+                         trị từ form sự cố của màn Theo dõi (inc-do-id,
+                         inc-veh-id, inc-desc… ở khoảng dòng 7090) — không phải
+                         từ thẻ này, vì mọi ô của thẻ minh họa đều bị disabled.
+                         Bấm vào là ghi một sự cố rỗng, hoặc ghi vào một đơn mà
+                         người dùng không hề chọn.
+                         Đây đúng loại nút mà lần dọn trước nhắm tới ("8 nút Lưu
+                         ghi dữ liệu của MỘT FORM KHÁC ở tab khác") nhưng lọt
+                         lại, vì danh sách chặn của bài kiểm chưa có tên nó. -->
+                    <button type="button" class="fiori-btn" onclick="switchView('tracking')" style="padding: 3px 10px; font-size: 0.8rem;"><i class="fa-solid fa-arrow-right-to-bracket"></i> Mở Theo dõi &amp; Sự cố</button>
                   </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; font-size: 0.85rem;">

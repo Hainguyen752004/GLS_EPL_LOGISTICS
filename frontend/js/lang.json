@@ -1889,41 +1889,6 @@
     "vi": "1. BÁO GIÁ CƯỚC",
     "la": "1. ໃບສະເໜີລາຄາ"
   },
-  "lbl_form_2_so": {
-    "en": "2. SALES ORDER",
-    "vi": "2. ĐƠN HÀNG VẬN CHUYỂN",
-    "la": "2. ໃບສັ່ງຂາຍ"
-  },
-  "lbl_form_3_do": {
-    "en": "3. DELIVERY ORDER",
-    "vi": "3. LỆNH GIAO HÀNG",
-    "la": "3. ໃບສັ່ງປ່ອຍສິນຄ້າ"
-  },
-  "lbl_form_4_route": {
-    "en": "4. ROUTE PLANNING",
-    "vi": "4. KẾ HOẠCH TUYẾN ĐƯỜNG",
-    "la": "4. ວາງແຜນເສັ້ນທາງ"
-  },
-  "lbl_form_5_dispatch": {
-    "en": "5. DISPATCH PLANNING",
-    "vi": "5. ĐIỀU PHỐI",
-    "la": "5. ຈັດຕາຕະລາງຈັດສົ່ງ"
-  },
-  "lbl_form_6_gps": {
-    "en": "6. GPS TRACKING & POD",
-    "vi": "6. THEO DÕI & KÝ NHẬN",
-    "la": "6. ຕິດຕາມ GPS & POD"
-  },
-  "lbl_form_7_invoice": {
-    "en": "7. AR INVOICE",
-    "vi": "7. HÓA ĐƠN KHÁCH HÀNG",
-    "la": "7. ໃບເກັບເງິນລູກຄ້າ"
-  },
-  "lbl_form_8_incident": {
-    "en": "8. INCIDENT REPORT",
-    "vi": "8. BÁO CÁO SỰ CỐ",
-    "la": "8. ບົດລາຍງານເຫດການ"
-  },
   "lbl_incident_no": {
     "en": "Incident No.",
     "vi": "Mã Sự Cố",
@@ -5108,5 +5073,35 @@
     "en": "What must be cleared before a vehicle may depart.",
     "vi": "Việc phải xử trước khi cho xe xuất bến.",
     "la": "ວຽກທີ່ຕ້ອງແກ້ກ່ອນປ່ອຍລົດອອກ."
+  },
+  "lbl_form_2_do": {
+    "en": "2. DELIVERY ORDER",
+    "vi": "2. LỆNH GIAO HÀNG",
+    "la": "2. ໃບສັ່ງປ່ອຍສິນຄ້າ"
+  },
+  "lbl_form_3_route": {
+    "en": "3. ROUTE PLANNING",
+    "vi": "3. KẾ HOẠCH TUYẾN ĐƯỜNG",
+    "la": "3. ວາງແຜນເສັ້ນທາງ"
+  },
+  "lbl_form_4_dispatch": {
+    "en": "4. DISPATCH PLANNING",
+    "vi": "4. ĐIỀU PHỐI",
+    "la": "4. ຈັດຕາຕະລາງຈັດສົ່ງ"
+  },
+  "lbl_form_5_gps": {
+    "en": "5. GPS TRACKING & POD",
+    "vi": "5. THEO DÕI & KÝ NHẬN",
+    "la": "5. ຕິດຕາມ GPS & POD"
+  },
+  "lbl_form_6_invoice": {
+    "en": "6. AR INVOICE",
+    "vi": "6. HÓA ĐƠN KHÁCH HÀNG",
+    "la": "6. ໃບເກັບເງິນລູກຄ້າ"
+  },
+  "lbl_form_7_incident": {
+    "en": "7. INCIDENT REPORT",
+    "vi": "7. BÁO CÁO SỰ CỐ",
+    "la": "7. ບົດລາຍງານເຫດການ"
   }
 }
