@@ -35,6 +35,8 @@
 
   const state = {
     tab: 'staff',        // staff | veh | depot
+    mode: 'week',        // week | day | tl  (tl = dong thoi gian)
+    ngayChon: null,      // ngay dang xem o che do Ngay va Dong thoi gian
     start: null,         // ISO ngày thứ Hai của kỳ đang xem
     soNgay: 7,
     depot: null,
@@ -127,6 +129,14 @@
               <button type="button" class="on" data-tab="staff">Nhân sự <span class="n" id="ssv5-n-staff">0</span></button>
               <button type="button" data-tab="veh">Xe <span class="n" id="ssv5-n-veh">0</span></button>
             </div>
+            <!-- Ba chế độ xem trả lời BA CÂU KHÁC NHAU, không thay nhau được:
+                 Tuần = "tuần này ai trực ca nào", Ngày = "hôm nay đội hình thế
+                 nào", Dòng thời gian = "lúc này ai đang trên đường". -->
+            <div class="seg" id="ssv5-mode">
+              <button type="button" class="on" data-m="week">Tuần</button>
+              <button type="button" data-m="day">Ngày</button>
+              <button type="button" data-m="tl">Dòng thời gian</button>
+            </div>
           </div>
           <div class="searchwrap">
             <div class="search">
@@ -158,9 +168,17 @@
               <h3 id="ssv5-staff-title">Nhân sự</h3>
               <div class="chips" id="ssv5-chips"></div>
             </div>
-            <div class="gridwrap">
+            <div class="gridwrap" id="ssv5-luoi">
               <div class="cover" id="ssv5-cover"></div>
               <div class="scroller" id="ssv5-rows"></div>
+            </div>
+            <div class="gridwrap hide" id="ssv5-tl">
+              <div class="tl-head">
+                <div id="ssv5-tl-day">—</div>
+                <div class="hours" id="ssv5-hours"></div>
+                <div></div>
+              </div>
+              <div class="scroller" id="ssv5-tl-rows"></div>
             </div>
             <div class="legend">
               <span><i style="background:#f59e0b"></i>Sáng 06–14</span>
@@ -212,6 +230,7 @@
             </div>
             <div class="legend">
               <span><i style="background:#1a73e8"></i>Đủ người</span>
+              <span><i style="background:#eef2f7;border:1px solid #cbd5e1"></i>Không có xe nào phải chạy</span>
               <span><i style="background:#c7ddf8"></i>Thiếu ≤ 20%</span>
               <span><i style="background:#fbd0d0"></i>Thiếu 20–50%</span>
               <span><i style="background:#d32f2f"></i>Thiếu &gt; 50%</span>
@@ -237,6 +256,19 @@
       state.khung = state.tab === 'veh' ? 'vneed' : 'need';
       ve();
     });
+    el('ssv5-mode').addEventListener('click', e => {
+      const b = e.target.closest('button[data-m]');
+      if (!b) return;
+      state.mode = b.dataset.m;
+      // Chế độ Ngày và Dòng thời gian cần MỘT ngày. Chưa chọn thì lấy hôm nay
+      // nếu hôm nay nằm trong kỳ, không thì lấy ngày đầu kỳ — nhảy sang một
+      // ngày ngoài kỳ đang xem thì người dùng mất phương hướng.
+      if (state.mode !== 'week' && !ngayTrongKy(state.ngayChon)) {
+        const homNay = (state.bang.pham_vi.cac_ngay.find(n => n.hom_nay) || {}).ngay;
+        state.ngayChon = homNay || state.bang.pham_vi.cac_ngay[0].ngay;
+      }
+      ve();
+    });
     el('ssv5-prev').addEventListener('click', () => doiKy(-state.soNgay));
     el('ssv5-next').addEventListener('click', () => doiKy(state.soNgay));
     el('ssv5-today').addEventListener('click', () => { state.start = isoNgay(thuHai(new Date())); nap(); });
@@ -252,7 +284,13 @@
       const mau = e.target.closest('[data-mau]');
       if (mau) { moDoiTo(mau.dataset.mau); return; }
       const o = e.target.closest('.sh');
-      if (o) chonO(o);
+      if (!o) return;
+      // Ô đỏ "cần người" là một CON SỐ CÒN THIẾU của cả ca, không phải một ô
+      // của riêng người ở hàng đó. Bấm vào nên mở danh sách ai có thể nhận, chứ
+      // không phải mở form xếp cho đúng người đang ở hàng đó — người đó có thể
+      // là người tệ nhất để xếp.
+      if (o.dataset.tt === 'need') { moLapCa(o.dataset.ngay, o.dataset.ca); return; }
+      chonO(o);
     });
     el('ssv5-vrows').addEventListener('click', e => {
       const o = e.target.closest('.vs');
@@ -314,7 +352,26 @@
     });
   }
 
+  const ngayTrongKy = iso => !!iso && !!state.bang
+    && state.bang.pham_vi.cac_ngay.some(n => n.ngay === iso);
+
   function doiKy(so) {
+    // Ở chế độ Ngày và Dòng thời gian thì mũi ‹ › đi TỪNG NGÀY, không nhảy cả
+    // tuần: người dùng đang xem một ngày, và nhảy bảy ngày một nhịp thì họ mất
+    // luôn cái ngày đang xem.
+    if (state.mode !== 'week' && ngayTrongKy(state.ngayChon)) {
+      const ds = state.bang.pham_vi.cac_ngay.map(n => n.ngay);
+      const i = ds.indexOf(state.ngayChon) + (so > 0 ? 1 : -1);
+      if (i >= 0 && i < ds.length) { state.ngayChon = ds[i]; ve(); return; }
+      // Ra khỏi kỳ thì kéo cả kỳ theo, rồi neo vào đầu hoặc cuối kỳ mới.
+      const d0 = tuIso(state.start);
+      d0.setDate(d0.getDate() + (so > 0 ? state.soNgay : -state.soNgay));
+      state.start = isoNgay(d0);
+      state.ngayChon = null;
+      state.neoCuoiKy = so < 0;
+      nap();
+      return;
+    }
     const d = tuIso(state.start);
     d.setDate(d.getDate() + so);
     state.start = isoNgay(d);
@@ -338,6 +395,12 @@
       // song song, và lần về sau cùng chưa chắc là lần mới nhất.
       if (lan !== state.lanNap) return;
       state.bang = bang;
+      if (state.mode !== 'week' && !ngayTrongKy(state.ngayChon)) {
+        const ds = bang.pham_vi.cac_ngay;
+        state.ngayChon = state.neoCuoiKy ? ds[ds.length - 1].ngay
+          : ((ds.find(n => n.hom_nay) || ds[0]).ngay);
+      }
+      state.neoCuoiKy = false;
       ve();
     } catch (loi) {
       if (lan !== state.lanNap) return;
@@ -358,7 +421,15 @@
     const cols = `260px repeat(${b.pham_vi.cac_ngay.length},minmax(96px,1fr)) 64px`;
     el(KHUNG).querySelector('.ssv5-module').style.setProperty('--ss-cols', cols);
 
-    el('ssv5-dlabel').textContent = `${ddmm(b.pham_vi.tu)} – ${ddmm(b.pham_vi.den)}`;
+    const ngayDangXem = state.mode === 'week' ? null : state.ngayChon;
+    el('ssv5-dlabel').textContent = ngayDangXem
+      ? `${(b.pham_vi.cac_ngay.find(n => n.ngay === ngayDangXem) || {}).thu || ''} ${ddmm(ngayDangXem)}`
+      : `${ddmm(b.pham_vi.tu)} – ${ddmm(b.pham_vi.den)}`;
+    [...el('ssv5-mode').querySelectorAll('button')].forEach(x =>
+      x.classList.toggle('on', x.dataset.m === state.mode));
+    // Dải chế độ xem chỉ có nghĩa với lưới nhân sự. Lưới xe và màn Toàn bãi
+    // luôn là cả kỳ, nên để dải đó bấm được ở đó là hứa một thứ không xảy ra.
+    el('ssv5-mode').classList.toggle('hide', state.tab !== 'staff');
     el('ssv5-n-staff').textContent = b.nhan_su.length;
     el('ssv5-n-veh').textContent = b.xe.length;
     [...el('ssv5-tabs').querySelectorAll('button')].forEach(x =>
@@ -369,7 +440,7 @@
     el('ssv5-v-veh').classList.toggle('hide', state.tab !== 'veh');
     el('ssv5-v-depot').classList.toggle('hide', state.tab !== 'depot');
 
-    if (state.tab === 'staff') veNhanSu();
+    if (state.tab === 'staff') { if (state.mode === 'tl') veDongThoiGian(); else veNhanSu(); }
     else if (state.tab === 'veh') veXe();
     else veToanBai();
     veCotPhai();
@@ -453,7 +524,18 @@
     el('ssv5-staff-title').innerHTML = `${state.team ? 'Tổ ' + esc(state.team) : 'Nhân sự'}
       <small>${ds.length} người${state.depot ? ' · ' + esc(tenBai(state.depot)) : ''}</small>`;
 
-    el('ssv5-cover').innerHTML = veDoPhu(b, 'nhan_su');
+    el('ssv5-luoi').classList.remove('hide');
+    el('ssv5-tl').classList.add('hide');
+    // Ở chế độ Ngày thì lưới còn MỘT cột ngày. Lưới bảy ngày trả lời "tuần này
+    // ai trực ca nào"; một ngày trả lời "hôm nay đội hình thế nào", và để cả
+    // bảy cột thì cột hôm nay lẫn trong sáu cột không liên quan.
+    const cacNgay = state.mode === 'day' && ngayTrongKy(state.ngayChon)
+      ? b.pham_vi.cac_ngay.filter(n => n.ngay === state.ngayChon)
+      : b.pham_vi.cac_ngay;
+    el(KHUNG).querySelector('.ssv5-module').style.setProperty('--ss-cols',
+      `260px repeat(${cacNgay.length},minmax(96px,1fr)) 64px`);
+    const trongTam = new Set(cacNgay.map(n => n.ngay));
+    el('ssv5-cover').innerHTML = veDoPhu(b, 'nhan_su', trongTam);
     el('ssv5-rows').innerHTML = ds.length ? ds.map(p => {
       const mau = p.mau_xoay
         ? `<span class="pat" data-mau="${esc(p.driver_id)}" role="button" tabindex="0" title="Đổi tổ và mẫu xoay">${esc(p.mau_xoay)}</span>`
@@ -463,7 +545,7 @@
         <div><div class="who"><span class="av">${esc(p.chu_cai)}</span>
           <div class="g"><b>${esc(p.ten)}</b>
             <span>${esc(p.driver_id)} · ${esc(p.vai_tro || '')} · ${to} · ${mau}</span></div></div></div>
-        ${p.cac_ngay.map(d => `<div><div class="cell">${d.cac_o.map(o => oNhanSu(p, d.ngay, o)).join('')}</div></div>`).join('')}
+        ${p.cac_ngay.filter(d => trongTam.has(d.ngay)).map(d => `<div><div class="cell">${d.cac_o.map(o => oNhanSu(p, d.ngay, o)).join('')}</div></div>`).join('')}
         <div class="tot ${p.vuot_gio ? 'warn' : ''}">${p.gio_tuan}<small>${p.vuot_gio ? 'h ⚠' : 'h'}</small></div>
       </div>`;
     }).join('') : `<div class="empty" style="margin:14px">Không có tài xế nào khớp bộ lọc đang chọn.</div>`;
@@ -472,17 +554,114 @@
     el('ssv5-foot').textContent = `${ds.length}/${b.nhan_su.length} người · ${thieu ? 'còn thiếu ' + thieu + ' suất trực' : 'đủ người cho số xe phải chạy'}`;
   }
 
+  /**
+   * CHE DO DONG THOI GIAN — 24 gio cua MOT ngay, mot lan moi nguoi.
+   *
+   * Luoi tuan tra loi "tuan nay ai truc ca nao". Cai nay tra loi mot cau KHAC
+   * va khong the suy ra tu luoi tuan: "luc nay ai dang tren duong". Vach do
+   * gio hien tai la thu lam che do nay co ich — bo no thi day chi la mot cach
+   * ve lai cung mot bang.
+   */
+  function veDongThoiGian() {
+    const b = state.bang;
+    veChips();
+    el('ssv5-luoi').classList.add('hide');
+    el('ssv5-tl').classList.remove('hide');
+    const iso = ngayTrongKy(state.ngayChon) ? state.ngayChon : b.pham_vi.cac_ngay[0].ngay;
+    const muc = b.pham_vi.cac_ngay.find(n => n.ngay === iso) || {};
+    el('ssv5-tl-day').textContent = `${muc.thu || ''} ${ddmm(iso)} · 24 giờ`;
+
+    // Vach gio hien tai chi ve khi dang xem DUNG ngay hom nay. Ve no o mot ngay
+    // khac la noi doi: "bay gio" khong nam trong ngay do.
+    const gioBayGio = gioDiaPhuong();
+    const laHomNay = !!muc.hom_nay;
+    el('ssv5-hours').innerHTML =
+      Array.from({ length: 24 }, (_, h) => `<span>${String(h).padStart(2, '0')}</span>`).join('')
+      + (laHomNay ? `<span class="nowlbl" style="left:${(gioBayGio / 24) * 100}%">${nhanGio(gioBayGio)}</span>` : '');
+
+    const ds = locNhanSu();
+    el('ssv5-staff-title').innerHTML = `${state.team ? 'Tổ ' + esc(state.team) : 'Nhân sự'}
+      <small>${ds.length} người · dòng thời gian ${ddmm(iso)}</small>`;
+    el('ssv5-tl-rows').innerHTML = ds.length ? ds.map(p => {
+      const ngay = p.cac_ngay.find(d => d.ngay === iso) || { cac_o: [] };
+      // NGÀY NGHỈ vẽ MỘT thanh suốt ngày, không phải ba thanh "Nghỉ theo mẫu"
+      // ở ba khung ca. Một người nghỉ thì họ nghỉ cả ngày; vẽ ba thanh nghỉ
+      // cạnh nhau thì trục đọc ra như họ có ba việc, và ba thanh đó chiếm chỗ
+      // của thứ duy nhất trục này cần cho thấy — ai đang trên đường.
+      const nghi = ngay.cac_o.length
+        && ngay.cac_o.every(o => o.trang_thai === 'off' || o.trang_thai === 'leave' || o.trang_thai === 'free');
+      let thanh;
+      if (nghi) {
+        const phep = ngay.cac_o.some(o => o.trang_thai === 'leave');
+        const theoMau = ngay.cac_o.some(o => o.trang_thai === 'off');
+        thanh = `<div class="bar ${phep ? 'leave' : 'off'}" style="left:0;width:100%">${
+          phep ? 'Nghỉ phép' : theoMau ? 'Nghỉ theo mẫu' : 'Không có ca nào'}</div>`;
+      } else {
+        // Ngày CÓ ca thì bỏ hẳn các ô nghỉ: "nghỉ ca chiều" của một người trực
+        // ca sáng không phải là thông tin.
+        thanh = ngay.cac_o
+          .filter(o => o.trang_thai !== 'off' && o.trang_thai !== 'leave')
+          .map(o => thanhCa(o, p)).filter(Boolean).join('');
+      }
+      return `<div class="tl">
+        <div><div class="who"><span class="av">${esc(p.chu_cai)}</span>
+          <div class="g"><b>${esc(p.ten)}</b><span>${esc(p.driver_id)} · ${esc(p.vai_tro || '')}</span></div></div></div>
+        <div class="lane">${laHomNay ? `<div class="now" style="left:${(gioBayGio / 24) * 100}%"></div>` : ''}${thanh}</div>
+        <div class="tot ${p.vuot_gio ? 'warn' : ''}">${p.gio_tuan}<small>h</small></div>
+      </div>`;
+    }).join('') : `<div class="empty" style="margin:14px">Không có tài xế nào khớp bộ lọc đang chọn.</div>`;
+
+    const thieu = b.do_phu.filter(m => m.ngay === iso)
+      .reduce((t, m) => t + m.cac_ca.reduce((x, c) => x + c.thieu, 0), 0);
+    el('ssv5-foot').textContent = `${ds.length} người · ngày ${ddmm(iso)}`
+      + (thieu ? ` · còn thiếu ${thieu} suất trực` : ' · đủ người cho số xe phải chạy');
+  }
+
+  /** Gio dia phuong hien tai duoi dang so thap phan, ví du 8.4 = 08:24. */
+  function gioDiaPhuong() {
+    const t = new Date();
+    // Doi ve gio Viet Nam bat ke may nguoi dung dat mui gio nao: ca truc la gio
+    // dia phuong cua bai, khong phai gio cua may xem.
+    const utc = t.getTime() + t.getTimezoneOffset() * 60000;
+    const vn = new Date(utc + LECH_PHUT * 60000);
+    return vn.getHours() + vn.getMinutes() / 60;
+  }
+  const nhanGio = g => `${String(Math.floor(g)).padStart(2, '0')}:${String(Math.round((g % 1) * 60)).padStart(2, '0')}`;
+
+  /** Mot thanh ca tren truc 24 gio, hoac chuoi rong khi o do khong co gi. */
+  function thanhCa(o, p) {
+    if (o.trang_thai === 'free') return '';
+    const c = CA.find(x => x.ma === o.ca);
+    // Ca dem vat qua nua dem. Cat o 24:00 va KHONG ve phan sang hom sau: phan
+    // do thuoc ngay khac, ve no o day thi mot ca 8 tieng nhin nhu 2 tieng.
+    const tu = c.tu;
+    const den = c.den <= c.tu ? 24 : c.den;
+    const rong = ((den - tu) / 24) * 100;
+    const trai = (tu / 24) * 100;
+    if (o.trang_thai === 'off' || o.trang_thai === 'leave') {
+      return `<div class="bar ${o.trang_thai}" style="left:${trai}%;width:${rong}%">${o.trang_thai === 'leave' ? 'Nghỉ phép' : 'Nghỉ theo mẫu'}</div>`;
+    }
+    if (o.trang_thai === 'need') {
+      return `<div class="bar need" style="left:${trai}%;width:${rong}%">${kyCa(o.ca)} thiếu người</div>`;
+    }
+    const khoa = o.trang_thai === 'lock';
+    const lop = khoa ? 'lock' : o.ca;
+    const phu = khoa && o.trip_id ? ` · ${esc(o.trip_id)}` : (o.vehicle_id ? ` · ${esc(o.vehicle_id)}` : '');
+    return `<div class="bar ${lop}" style="left:${trai}%;width:${rong}%" title="${esc(tenCa(o.ca))} ${gioCa(o.ca)}${phu}"
+      >${khoa ? '🔒 ' : ''}Ca ${esc(tenCa(o.ca).toLowerCase())} <small>${gioCa(o.ca)}${phu}</small></div>`;
+  }
+
   const tenBai = ma => {
     const b = (state.bang.cac_bai || []).find(x => x.depot_code === ma);
     return b ? b.ten : (ma || 'Chưa phân bãi');
   };
 
-  function veDoPhu(b, loai) {
+  function veDoPhu(b, loai, trongTam) {
     const dau = loai === 'nhan_su'
       ? 'Độ phủ · người trực / số xe phải chạy'
       : 'Xe sẵn sàng / số xe phải chạy';
     let h = `<div>${dau}</div>`;
-    b.do_phu.forEach(m => {
+    b.do_phu.filter(m => !trongTam || trongTam.has(m.ngay)).forEach(m => {
       const thanh = c => {
         const co = loai === 'nhan_su' ? c.truc : c.xe_san_sang;
         // Không có xe nào phải chạy thì độ phủ ĐỦ, không phải 0%. Vẽ 0% ở đây
@@ -534,12 +713,44 @@
       <div class="vrow" data-veh="${esc(v.vehicle_id)}">
         <div><div class="who"><span class="av v">${esc(String(v.vehicle_id).slice(-6))}</span>
           <div class="g"><b>${esc(v.vehicle_id)}</b>
-            <span>${esc(v.loai || 'chưa khai loại xe')} · đăng kiểm ${esc(v.han_dang_kiem || 'chưa khai')}</span></div></div></div>
+            <span>${esc(v.loai || 'chưa khai loại xe')} · đăng kiểm ${esc(v.han_dang_kiem || 'chưa khai')}</span>
+            ${thanhKm(v)}</div></div></div>
         ${v.cac_ngay.map(d => `<div><div class="vc">${d.cac_o.map(o => oXe(v, d.ngay, o)).join('')}</div></div>`).join('')}
         <div class="tot ${v.ngay_ranh >= 3 ? 'warn' : ''}">${v.ngay_ranh}<small>ngày rảnh</small></div>
       </div>`).join('') : `<div class="empty" style="margin:14px">Không có xe nào khớp bộ lọc đang chọn.</div>`;
 
     el('ssv5-vfoot').textContent = `${ds.length}/${b.xe.length} xe · ${dem.conf ? dem.conf + ' xe có Trip mà chưa có tổ lái' : 'mọi Trip đều đã có tổ lái'}`;
+  }
+
+  /**
+   * Thanh KM DEN KY BAO DUONG duoi bien so.
+   *
+   * Doi xe that lap lich bao duong theo km chay, khong theo ngay lich: mot chiec
+   * chay 400 km mot ngay thi mot ngay lich khong noi duoc gi.
+   *
+   * CHUA KHAI SO KM thi KHONG ve thanh — noi ra bang chu. Mot thanh 0% doc ra
+   * nhu "xe den han bao duong gap", va nguoi dieu do se goi xe ve garage trong
+   * khi khong ai biet no da chay bao nhieu.
+   */
+  function thanhKm(v) {
+    if (v.con_km_bao_duong == null) {
+      return `<span class="kmnone" title="Khai số km đồng hồ và mốc bảo dưỡng kế tiếp ở hồ sơ xe">chưa khai số km</span>`;
+    }
+    const con = Number(v.con_km_bao_duong);
+    // Vẽ theo một TẦM NGẮM 5.000 km, không theo độ dài chu kỳ — hệ thống chỉ
+    // lưu mốc đồng hồ kế tiếp, không lưu chu kỳ, nên không có cách nào biết
+    // chiếc này bảo dưỡng mỗi 10.000 hay 20.000 km. Trong tầm ngắm thì thanh
+    // đầy dần khi xe càng gần kỳ; ngoài tầm ngắm thì thanh rỗng, nghĩa là
+    // "chưa phải lo". Con số thật nằm ở chú giải, thanh chỉ để nhìn nhanh.
+    const TAM_NGAM = 5000;
+    const daDung = con <= 0 ? 100
+      : Math.min(100, Math.max(0, Math.round((1 - con / TAM_NGAM) * 100)));
+    const lop = con <= 500 ? 'r' : con <= 2000 ? 'a' : '';
+    const chu = con <= 0
+      ? `đã quá kỳ bảo dưỡng ${Math.abs(con).toLocaleString('vi-VN')} km`
+      : `còn ${con.toLocaleString('vi-VN')} km đến kỳ bảo dưỡng`;
+    return `<div class="kmbar" title="${esc(chu)} · đồng hồ ${Number(v.so_km).toLocaleString('vi-VN')} km · thanh vẽ trong tầm ${TAM_NGAM.toLocaleString('vi-VN')} km"
+      ><i class="${lop}" style="width:${daDung}%"></i></div>`;
   }
 
   function oXe(v, ngayIso, o) {
@@ -569,27 +780,40 @@
       + b.pham_vi.cac_ngay.map(n => `<div><div class="dn ${n.hom_nay ? 'today' : ''}">${esc(n.thu)} <span>${ddmm(n.ngay)}</span></div></div>`).join('')
       + `<div style="display:flex;align-items:center;justify-content:center;font-size:11px;color:#7b8796;font-weight:700">Thiếu</div>`;
 
-    // Dải nhiệt của một bãi vẽ từ ĐỘ PHỦ CHUNG của kỳ đang xem: bảng trả về độ
-    // phủ cho phạm vi đang lọc, nên ở màn Toàn bãi (không lọc) mọi bãi dùng
-    // chung một dải. Nói ra điều đó ở chân bảng chứ không vẽ ra những con số
-    // riêng cho từng bãi mà máy chủ chưa tính.
+    // Mỗi bãi MỘT dải riêng, tính từ `do_phu_theo_bai`. Trước đây cả ba bãi
+    // dùng chung độ phủ của toàn phạm vi, nên ba hàng giống nhau y hệt và dải
+    // nhiệt không nói được điều duy nhất nó tồn tại để nói: bãi nào đang thiếu.
+    // Ba hàng giống nhau còn tệ hơn không có dải nào, vì người xem tin là ba
+    // bãi đều đủ.
+    // "Không có xe nào phải chạy" KHÁC "đủ người". Tô cả hai cùng màu xanh thì
+    // một bãi ngồi không cả tuần đọc ra như một bãi chạy hết công suất — và cả
+    // dải nhiệt thành một khối xanh không nói gì. Xám nhạt = không có việc.
+    const KHONG_VIEC = '#eef2f7';
     const mau = t => t >= 1 ? '#1a73e8' : t >= 0.8 ? '#c7ddf8' : t >= 0.5 ? '#fbd0d0' : '#d32f2f';
-    el('ssv5-drows').innerHTML = b.cac_bai.map(bb => {
-      const o = b.pham_vi.cac_ngay.map((n, i) => {
-        const m = b.do_phu[i];
-        const can = m.cac_ca.reduce((s, c) => s + c.can, 0);
-        const truc = m.cac_ca.reduce((s, c) => s + c.truc, 0);
-        const ti = can === 0 ? 1 : Math.min(1, truc / can);
-        return `<div><div class="heat">${Array.from({ length: 8 },
-          () => `<i style="--h:${mau(ti)}"></i>`).join('')}</div></div>`;
+    const theoBai = b.do_phu_theo_bai || [];
+    el('ssv5-drows').innerHTML = theoBai.map(bb => {
+      const o = bb.cac_ngay.map(n => {
+        // Một ô = 24 giờ, chia thành ba khối tám giờ theo ba ca. Chia đều 24
+        // vạch như bản mẫu thì ba ca không phân biệt được, mà ranh giới ca
+        // chính là chỗ độ phủ thay đổi.
+        const vach = n.cac_ca.map(c => {
+          const khongViec = c.can === 0;
+          const t = khongViec ? KHONG_VIEC : mau(Math.min(1, c.truc / c.can));
+          const goi = khongViec
+            ? `${kyCa(c.ca)} ${n.thu}: không có xe nào phải chạy · ${c.truc} người trực`
+            : `${kyCa(c.ca)} ${n.thu}: ${c.truc} người trực / ${c.can} xe phải chạy`;
+          return Array.from({ length: 8 },
+            () => `<i style="--h:${t}" title="${esc(goi)}"></i>`).join('');
+        }).join('');
+        return `<div><div class="heat">${vach}</div></div>`;
       }).join('');
-      const thieu = b.do_phu.reduce((s, m) => s + m.cac_ca.reduce((x, c) => x + c.thieu, 0), 0);
       return `<button type="button" class="dep" data-depot="${esc(bb.depot_code || '')}">
-        <div><b>${esc(bb.ten)}</b><div style="font-size:11px;color:#7b8796">${bb.so_tai_xe} người · ${bb.so_xe} xe</div></div>
+        <div><b>${esc(bb.ten)}</b><div style="font-size:11px;color:#7b8796">${bb.so_tai_xe} người · ${bb.so_xe} xe${
+          bb.so_xe && !bb.so_tai_xe ? ' · <span style="color:#d32f2f;font-weight:700">chưa có tài xế</span>' : ''}</div></div>
         ${o}
-        <div class="side ${thieu >= 8 ? 'r' : thieu ? 'a' : 'g'}">${thieu}<small>${thieu ? 'suất' : 'đủ'}</small></div>
+        <div class="side ${bb.thieu >= 8 ? 'r' : bb.thieu ? 'a' : 'g'}">${bb.thieu}<small>${bb.thieu ? 'suất' : 'đủ'}</small></div>
       </button>`;
-    }).join('');
+    }).join('') || '<div class="empty" style="margin:14px">Chưa có bãi nào khai mã bãi.</div>';
   }
 
   /* ------------------------------------------------------------- cột phải -- */
@@ -607,6 +831,7 @@
     if (state.khung === 'vcell') { than.innerHTML = khungOXe(); return; }
     if (state.khung === 'gen') { than.innerHTML = khungSinhLich(); return; }
     if (state.khung === 'team') { than.innerHTML = khungDoiTo(); return; }
+    if (state.khung === 'fill') { than.innerHTML = khungLapCa(); return; }
     than.innerHTML = khungViecCanLam();
   }
 
@@ -620,9 +845,13 @@
     }
     return ds.map((x, i) => {
       const coDich = x.ngay && x.ca;
+      // Ca thiếu người thì việc cần làm là XẾP NGƯỜI, nên nút chính là "Xếp".
+      // "Tới đó" chỉ nhảy tới ô trống, còn phải tự đoán xếp ai.
+      const lap = x.loai === 'thieu_nguoi';
       return `<div class="need">
         <div class="g"><b>${esc(x.tieu_de)}</b><span>${esc(x.mo_ta)}</span></div>
-        ${coDich ? `<button type="button" class="a ${x.muc === 'cao' ? '' : 'n'}" data-viec="${i}">Tới đó</button>` : ''}
+        ${lap ? `<button type="button" class="a" data-lap-ca="1" data-ngay="${esc(x.ngay)}" data-ca="${esc(x.ca)}">Xếp</button>`
+          : coDich ? `<button type="button" class="a ${x.muc === 'cao' ? '' : 'n'}" data-viec="${i}">Tới đó</button>` : ''}
       </div>`;
     }).join('');
   }
@@ -720,6 +949,105 @@
       <button type="button" class="cta2" data-ve-viec="1">← Quay lại Việc cần làm</button>`;
   }
 
+  /**
+   * KHUNG LAP CA THIEU NGUOI — mot phuong an that, khong phai bon phuong an gia.
+   *
+   * Ban mau ve bon cach xu ly: doi ca, muon nguoi to khac, tang ca cho duyet,
+   * dang ca mo tren app. Ba cach sau khong co co so nao trong he thong — khong
+   * co bang dang ky nhan ca, khong co luong duyet tang ca. Ve bon nut ma ba nut
+   * khong lam gi thi nguoi dung bam thu ba lan roi thoi tin ca man hinh.
+   *
+   * Con lai MOT cach that: ai dang ranh ca do. May chu tinh tu lich that, xep
+   * de truoc kho sau, va bam mot nguoi la GHI THAT qua dung duong luu ca — nen
+   * moi rang buoc cua may chu van chan.
+   */
+  function khungLapCa() {
+    const f = state.lapCa;
+    if (!f) return `<div class="empty">Chọn một ca đang thiếu người.</div>`;
+    el('ssv5-ptitle').innerHTML = `Lấp ca thiếu người`;
+    el('ssv5-pstep').textContent = `${tenCa(f.ca)} ${ddmm(f.ngay)}`;
+    if (f.dangNap) return `<div class="empty">Đang tính danh sách người có thể nhận ca này…</div>`;
+    if (f.loi) return `<div class="check bad">${esc(f.loi)}</div>
+      <button type="button" class="cta2" data-ve-viec="1">← Quay lại Việc cần làm</button>`;
+
+    const uv = f.ung_vien || [];
+    const nhomTen = { ranh: 'Rảnh hôm đó', doi_ca: 'Đang trực ca khác — phải đổi ca', qua_gio: 'Nhận vào là vượt trần giờ' };
+    const nhomKieu = { ranh: '', doi_ca: 'w', qua_gio: 'kho' };
+    let than = `<div class="sum">
+      <div><span>Ca cần người</span><b>${esc(tenCa(f.ca))} ${gioCa(f.ca)}</b></div>
+      <div><span>Ngày</span><b>${ddmm(f.ngay)}</b></div></div>`;
+    if (!uv.length) {
+      return than + `<div class="check bad">Không còn ai có thể nhận ca này trong phạm vi đang xem.
+        Ai cũng đã trực đúng ca đó, đang có chuyến, hoặc đang nghỉ phép. Mở rộng phạm vi sang cả bãi,
+        hoặc xem lại số xe phải chạy ca này ở màn Điều phối.</div>
+        <button type="button" class="cta2" data-ve-viec="1">← Quay lại Việc cần làm</button>`;
+    }
+    ['ranh', 'doi_ca', 'qua_gio'].forEach(muc => {
+      const ds = uv.filter(x => x.muc === muc);
+      if (!ds.length) return;
+      than += `<div class="lbl">${nhomTen[muc]} · ${ds.length} người</div>`
+        + ds.map(x => `<button type="button" class="opt" data-uv="${esc(x.driver_id)}">
+            <span class="av">${esc(x.chu_cai)}</span>
+            <div class="g"><b>${esc(x.ten)}</b><span>${esc(x.ly_do)}</span></div>
+            <span class="why ${nhomKieu[muc]}">${x.gio_tuan}h → ${x.gio_sau_khi_nhan}h</span></button>`).join('');
+    });
+    than += `<div class="check info">Bấm một người là ghi ca thật vào hệ thống. Máy chủ vẫn kiểm
+      trùng ca, nghỉ giữa hai ca và trần 48h/tuần — vướng thì nó nói ra vướng gì.</div>
+      <button type="button" class="cta2" data-ve-viec="1">← Quay lại Việc cần làm</button>`;
+    return than;
+  }
+
+  async function moLapCa(ngay, ma_ca) {
+    state.lapCa = { ngay, ca: ma_ca, dangNap: true };
+    moKhung('fill', 'Lấp ca thiếu người', `${tenCa(ma_ca)} ${ddmm(ngay)}`);
+    try {
+      const ds = new URLSearchParams({ date: ngay, shift: ma_ca });
+      if (state.depot) ds.set('depot', state.depot);
+      if (state.team) ds.set('team', state.team);
+      const kq = await api(`/api/tms/scheduling/fill-candidates?${ds}`);
+      state.lapCa = { ngay, ca: ma_ca, ung_vien: kq.ung_vien, so_gio_ca: kq.so_gio_ca };
+    } catch (loi) {
+      state.lapCa = { ngay, ca: ma_ca, loi: loi.message };
+    }
+    veCotPhai();
+  }
+
+  /** Ghi ca cho mot ung vien duoc chon. Di dung duong luu ca da co. */
+  async function nhanCa(nut, driverId) {
+    const f = state.lapCa;
+    if (!f) return;
+    const nguoi = (f.ung_vien || []).find(x => x.driver_id === driverId);
+    if (!nguoi) return;
+    if (!window.confirm(`Xếp ${nguoi.ten} vào ca ${tenCa(f.ca).toLowerCase()} ngày ${ddmm(f.ngay)}?`
+      + `
+
+${nguoi.ly_do}`)) return;
+    nut.disabled = true;
+    try {
+      await api('/api/tms/scheduling/driver-shifts', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: `TAY-${driverId}-${f.ngay.replace(/-/g, '')}-${f.ca}`,
+          driver_id: driverId,
+          vehicle_id: nguoi.xe_mac_dinh || null,
+          shift_type: f.ca,
+          availability_kind: 'work',
+          shift_start: mocCa(f.ngay, f.ca, false),
+          shift_end: mocCa(f.ngay, f.ca, true),
+          status: 'planned',
+          notes: `Lấp ca thiếu người từ màn Sắp lịch (${nguoi.muc})`,
+        }),
+      });
+      thongBao(`Đã xếp ${nguoi.ten} vào ca ${tenCa(f.ca).toLowerCase()} ${ddmm(f.ngay)}.`);
+      await nap();
+      await moLapCa(f.ngay, f.ca);
+    } catch (loi) {
+      thongBao(loi.message, true);
+    } finally {
+      nut.disabled = false;
+    }
+  }
+
   function khungDoiTo() {
     const p = state.bang.nhan_su.find(x => x.driver_id === state.doiTo);
     if (!p) return `<div class="empty">Không thấy tài xế này trong kỳ đang xem.</div>`;
@@ -783,6 +1111,8 @@
 
     if (nut.dataset.veViec) { state.khung = state.tab === 'veh' ? 'vneed' : 'need'; veCotPhai(); return; }
     if (nut.dataset.viec != null) { toiViec(Number(nut.dataset.viec)); return; }
+    if (nut.dataset.uv) { await nhanCa(nut, nut.dataset.uv); return; }
+    if (nut.dataset.lapCa) { await moLapCa(nut.dataset.ngay, nut.dataset.ca); return; }
     if (nut.dataset.ca) {
       el('ssv5-ca-chon').querySelectorAll('.sopt').forEach(x => x.classList.remove('on'));
       nut.classList.add('on');
@@ -1065,5 +1395,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', batDau);
   else batDau();
 
-  window.SapLichV5 = { mo, nap, state };
+  // `moLapCa` xuất ra ngoài để màn khác gọi được vào đúng một ca đang thiếu —
+  // và để bộ kiểm mở được khung đó khi bộ dữ liệu của tuần đang đủ người.
+  window.SapLichV5 = { mo, nap, state, moLapCa };
 })();

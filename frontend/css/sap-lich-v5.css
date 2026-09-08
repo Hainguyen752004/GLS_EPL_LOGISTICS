@@ -426,3 +426,78 @@
 @media (max-width: 760px) {
   .ssv5-host { padding: 12px 12px 24px; }
 }
+
+/* ---------- DÒNG THỜI GIAN (chế độ xem thứ ba) ----------
+   Lưới tuần trả lời "tuần này ai trực ca nào". Dòng thời gian trả lời một câu
+   KHÁC: "lúc này ai đang trên đường". Hai câu đó không thay nhau được, nên bản
+   mẫu để cả hai và ở đây cũng vậy. */
+.ssv5 .tl-head {
+  display: grid; grid-template-columns: 260px minmax(0, 1fr) 64px;
+  background: #fafbfd; border-bottom: 1px solid var(--ss-line);
+}
+.ssv5 .tl-head > div:first-child {
+  padding: 8px 10px; font-size: 11.5px; font-weight: 700;
+  color: var(--ss-ink-3); display: flex; align-items: flex-end;
+}
+.ssv5 .hours {
+  display: grid; grid-template-columns: repeat(24, 1fr); font-size: 10px;
+  color: var(--ss-ink-3); font-weight: 600; border-left: 1px solid var(--ss-line);
+  position: relative;
+}
+.ssv5 .hours span {
+  padding: 8px 0 6px; border-left: 1px dashed var(--ss-line); text-align: center;
+  overflow: hidden;
+}
+.ssv5 .tl {
+  display: grid; grid-template-columns: 260px minmax(0, 1fr) 64px;
+  border-top: 1px solid var(--ss-line); min-height: 54px;
+}
+.ssv5 .tl > div:first-child { padding: 7px 10px; }
+.ssv5 .lane {
+  position: relative; border-left: 1px solid var(--ss-line);
+  background-image: linear-gradient(to right, var(--ss-line) 1px, transparent 1px);
+  background-size: calc(100% / 24) 100%;
+}
+.ssv5 .bar {
+  position: absolute; top: 9px; height: 34px; border-radius: 7px; color: #fff;
+  font-size: 11px; font-weight: 700; padding: 0 8px; display: flex;
+  align-items: center; gap: 8px; overflow: hidden; white-space: nowrap;
+}
+.ssv5 .bar small { font-weight: 500; opacity: .9; }
+.ssv5 .bar.morning { background: var(--ss-s); }
+.ssv5 .bar.afternoon { background: var(--ss-c); }
+.ssv5 .bar.night { background: var(--ss-d); }
+.ssv5 .bar.lock { background: #0f1c2e; }
+.ssv5 .bar.need {
+  background: var(--ss-red-2); color: var(--ss-red);
+  border: 1.5px dashed var(--ss-red); justify-content: center;
+}
+.ssv5 .bar.off {
+  background: #fff8e1; color: #8a5a00; border: 1.5px solid #f5d98a; justify-content: center;
+}
+.ssv5 .bar.leave {
+  background: #f1f5f9; color: var(--ss-ink-3);
+  border: 1.5px solid var(--ss-line-2); justify-content: center;
+}
+/* Vạch GIỜ HIỆN TẠI. Đây là thứ làm chế độ này có ích: không có nó thì các
+   thanh ca chỉ là một cách vẽ lại bảng, không nói được "bây giờ". */
+.ssv5 .now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ss-red); z-index: 1; }
+.ssv5 .nowlbl {
+  position: absolute; top: 2px; transform: translateX(-50%); background: var(--ss-red);
+  color: #fff; font-size: 10px; font-weight: 700; border-radius: 4px;
+  padding: 1px 6px; z-index: 3; white-space: nowrap;
+}
+
+/* ---------- THANH KM ĐẾN KỲ BẢO DƯỠNG ----------
+   Đội xe thật lập lịch bảo dưỡng theo km chạy, không theo ngày lịch. Ô chưa
+   khai số km thì KHÔNG vẽ thanh — một thanh 0% đọc ra như xe đến hạn gấp. */
+.ssv5 .kmbar {
+  height: 4px; border-radius: 2px; background: #e4e9f0; margin-top: 3px; overflow: hidden;
+}
+.ssv5 .kmbar i { display: block; height: 100%; background: var(--ss-green); }
+.ssv5 .kmbar i.a { background: #ef9f27; }
+.ssv5 .kmbar i.r { background: var(--ss-red); }
+.ssv5 .kmnone { font-size: 10px; color: var(--ss-amber); font-weight: 600; }
+
+/* Danh sách ứng viên lấp ca: ba mức độ khó phải phân biệt được bằng mắt. */
+.ssv5 .opt .why.kho { background: var(--ss-red-2); color: var(--ss-red); }

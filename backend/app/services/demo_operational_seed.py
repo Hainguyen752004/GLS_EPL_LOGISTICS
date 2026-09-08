@@ -362,6 +362,7 @@ def nap_lop_van_hanh(db, do_ids=()):
         # Phan to TRUOC khi nap ca: con so do phu cua tung to doc theo cot
         # `team_code`, nen phan to sau thi lan nap dau tien khong co to nao.
         "phan_to": phan_to_tai_xe(db),
+        "so_km_xe": nap_so_km_xe(db),
         "so_ca": nap_ca_truc(db, t0),
         "so_ky_bao_duong": nap_bao_duong(db, t0),
         "packing_list": [],
@@ -377,6 +378,35 @@ def nap_lop_van_hanh(db, do_ids=()):
 # man xep ca khong the hien duoc dieu quan trong nhat cua mau xoay — hai to
 # lech pha nhau nen luon co nguoi truc dem.
 MAU_TO = {"A": "SSCCĐĐ--", "B": "CCĐĐSS--"}
+
+
+def nap_so_km_xe(db):
+    """So km dong ho va moc bao duong ke tiep cho bo du lieu mau.
+
+    Hai cot nay vua duoc them (moc 035) nen moi xe dang de rong, va thanh "con
+    bao nhieu km den ky bao duong" duoi bien so khong ve duoc gi. De rong thi
+    dung — man hinh noi "chua khai so km" — nhung mot ban demo ma ca chin xe
+    deu noi vay thi nguoi xem tuong tinh nang hong.
+
+    Ba muc CO Y khac nhau, de dai loc "bao duong / den han" co du ba tinh huong:
+    mot xe sap den han (do), mot xe gan den han (cam), con lai con xa (luc). Nap
+    phang mot muc thi ca ba mau chi hien mot mau va nguoi xem khong biet thanh
+    do nghia la gi.
+    """
+    xe = db.query(Vehicle).order_by(Vehicle.id).all()
+    for i, v in enumerate(xe):
+        # Chu ky 15.000 km, va so km dong ho tang dan theo thu tu xe de moi
+        # chiec o mot cho khac nhau trong chu ky.
+        chu_ky = 15000.0
+        da_chay = 42000.0 + i * 3700.0
+        con_lai = {0: 420.0, 1: 1800.0}.get(i, 4200.0 + (i % 4) * 1500.0)
+        v.odometer_km = da_chay
+        v.next_service_odometer_km = da_chay + con_lai
+        # Xe dau tien de MOC BAO DUONG sat, de dai loc "den han" co viec that.
+        if i == 0:
+            v.next_service_odometer_km = da_chay + 120.0
+    db.flush()
+    return {"so_xe": len(xe)}
 
 
 def phan_to_tai_xe(db):

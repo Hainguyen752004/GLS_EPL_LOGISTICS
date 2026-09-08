@@ -188,6 +188,28 @@ def scheduling_board(
         raise_http(error)
 
 
+@router.get("/scheduling/fill-candidates")
+def scheduling_fill_candidates(
+    date: str = Query(...),
+    shift: str = Query(...),
+    depot: Optional[str] = Query(None),
+    team: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Nhung nguoi CO THE nhan mot ca dang thieu, xep de truoc kho sau.
+
+    Nguoi nghi phep khong xuat hien. Nguoi dang co ca do hoac dang co chuyen
+    trong dung khung gio do cung khong.
+    """
+    try:
+        return {
+            "message": "Đã tính danh sách người có thể nhận ca này.",
+            "data": sap_lich_service.ung_vien_lap_ca(db, date, shift, depot, team),
+        }
+    except DomainError as error:
+        raise_http(error)
+
+
 @router.post("/scheduling/generate-from-pattern")
 def generate_shifts_from_pattern(request: Request, data: dict = Body(...), db: Session = Depends(get_db)):
     """Sinh ca cho ca mot to tu mau xoay cua tung nguoi.

@@ -163,6 +163,11 @@ def _gio_lam(row):
     return round((den - tu).total_seconds() / 3600.0, 2)
 
 
+def ten_ca(ma_ca):
+    """Ten doc duoc cua mot ca. Ma la thi tra ve chinh no chu khong nem loi."""
+    return next((c["ten"] for c in CA if c["ma"] == ma_ca), str(ma_ca or "?"))
+
+
 def _trang_thai_trip(trip):
     if trip.status in TRIP_DA_XONG:
         return "done"
@@ -201,6 +206,7 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
     if depot:
         q_xe = q_xe.filter(Vehicle.depot_code == depot)
     xe = q_xe.order_by(Vehicle.id).all()
+    depot_cua_xe = dict(db.query(Vehicle.id, Vehicle.depot_code).all())
     # `vehicles.type` giu MA loai xe (`DEMO-VT-REEFER5`), khong phai ten. Hien
     # ma tho tren luoi thi nguoi dieu do khong doc duoc xe do la loai gi — cung
     # loi da phai sua mot lan o man Dieu phoi.
@@ -241,6 +247,7 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
 
     o_chuyen = {}    # (vehicle_id, ngay, ca) -> chuyen
     o_chuyen_nguoi = {}  # (driver_id, ngay, ca) -> chuyen
+    can_theo_bai = {}    # (depot_code, ngay, ca) -> so xe phai chay
     can_theo_ca = {} # (ngay, ca) -> so xe phai chay
     for trip in chuyen:
         di = _bo_mui(trip.planned_departure_at)
@@ -257,6 +264,9 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
                 # o ca xuat ben, khong phai moi ca no di qua.
                 if a <= di < b and trip.status not in TRIP_DA_XONG:
                     can_theo_ca[(ngay, ma)] = can_theo_ca.get((ngay, ma), 0) + 1
+                    ma_bai_chuyen = depot_cua_xe.get(trip.vehicle_id)
+                    khoa_bai = (ma_bai_chuyen, ngay, ma)
+                    can_theo_bai[khoa_bai] = can_theo_bai.get(khoa_bai, 0) + 1
                 if trip.vehicle_id:
                     o_chuyen.setdefault((trip.vehicle_id, ngay, ma), trip)
                 # Nguoi lai va lai phu cua chuyen bi KHOA o o nay. Suy tu chuyen
@@ -417,6 +427,15 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
             "ma_loai": v.type, "depot_code": v.depot_code,
             "depot": v.depot, "trang_thai_xe": v.status,
             "ngay_bao_duong": v.maintenance_date, "han_dang_kiem": v.inspection_exp or v.inspection_date,
+            "so_km": v.odometer_km, "moc_bao_duong_km": v.next_service_odometer_km,
+            # `None` khi CHUA KHAI so km — khac han voi 0. Giao dien phai noi
+            # "chua khai so km" chu khong ve mot thanh 0%, vi thanh do doc ra
+            # nhu xe den han bao duong gap.
+            "con_km_bao_duong": (
+                round(v.next_service_odometer_km - v.odometer_km, 1)
+                if v.odometer_km is not None and v.next_service_odometer_km is not None
+                else None
+            ),
             "ngay_ranh": ngay_ranh,
             "cac_ngay": cac_ngay_ra,
         })
@@ -458,6 +477,7 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
         "nhan_su": nhan_su,
         "xe": danh_sach_xe,
         "do_phu": do_phu,
+        "do_phu_theo_bai": _do_phu_theo_bai(bai, cac_ngay, nhan_su, danh_sach_xe, can_theo_bai),
         "viec_can_lam": _viec_can_lam(nhan_su, danh_sach_xe, do_phu),
     }
 
@@ -587,10 +607,9 @@ def _viec_can_lam(nhan_su, xe, do_phu):
     for muc in do_phu:
         for c in muc["cac_ca"]:
             if c["thieu"] > 0:
-                ten_ca = next(x["ten"] for x in CA if x["ma"] == c["ca"])
                 viec_nhan_su.append({
                     "loai": "thieu_nguoi", "muc": "cao",
-                    "tieu_de": "Ca %s %s · thiếu %d người" % (ten_ca.lower(), muc["thu"], c["thieu"]),
+                    "tieu_de": "Ca %s %s · thiếu %d người" % (ten_ca(c["ca"]).lower(), muc["thu"], c["thieu"]),
                     "mo_ta": "%d xe phải chạy, %d người trực" % (c["can"], c["truc"]),
                     "ngay": muc["ngay"], "ca": c["ca"], "so_luong": c["thieu"],
                 })
@@ -616,10 +635,9 @@ def _viec_can_lam(nhan_su, xe, do_phu):
         for d in v["cac_ngay"]:
             for o in d["cac_o"]:
                 if o["trang_thai"] == "conf":
-                    ten_ca = next(x["ten"] for x in CA if x["ma"] == o["ca"])
                     viec_xe.append({
                         "loai": "trip_thieu_to_lai", "muc": "cao",
-                        "tieu_de": "%s · %s ca %s không có tổ lái" % (v["vehicle_id"], o["trip_id"], ten_ca.lower()),
+                        "tieu_de": "%s · %s ca %s không có tổ lái" % (v["vehicle_id"], o["trip_id"], ten_ca(o["ca"]).lower()),
                         "mo_ta": "Điều phối đã hứa chuyến này mà chưa ai lái",
                         "vehicle_id": v["vehicle_id"], "ngay": d["ngay"], "ca": o["ca"],
                         "trip_id": o["trip_id"],
@@ -797,4 +815,166 @@ def sinh_lich_theo_mau(db, data, actor="system"):
                     "so_tai_xe": len(tai_xe), "chi_thu": chi_thu},
         "dem": dem,
         "loi": loi,
+    }
+
+
+def _do_phu_theo_bai(bai, cac_ngay, nhan_su, xe, can_theo_bai):
+    """Do phu tach RIENG cho tung bai.
+
+    Man "Toan bai" ve mot dai nhiet moi bai mot hang. Truoc day ca ba bai dung
+    CHUNG mot dai — do phu cua toan pham vi — nen ba hang giong nhau y het va
+    dai nhiet khong noi duoc dieu duy nhat no ton tai de noi: bai nao dang
+    thieu. Ba hang giong nhau con te hon khong co dai nao, vi nguoi xem tin la
+    ba bai deu du.
+
+    "Can" dem theo bai CUA CHIEC XE phai chay, khong theo bai cua nguoi: mot
+    chuyen can mot xe cu the, va xe do dau o mot bai cu the.
+    """
+    truc = {}
+    for p in nhan_su:
+        for d in p["cac_ngay"]:
+            for o in d["cac_o"]:
+                if o["trang_thai"] in ("on", "lock"):
+                    khoa = (p["depot_code"], d["ngay"], o["ca"])
+                    truc[khoa] = truc.get(khoa, 0) + 1
+    san_sang = {}
+    for v in xe:
+        for d in v["cac_ngay"]:
+            for o in d["cac_o"]:
+                if o["trang_thai"] in ("ready", "trip", "run", "done"):
+                    khoa = (v["depot_code"], d["ngay"], o["ca"])
+                    san_sang[khoa] = san_sang.get(khoa, 0) + 1
+
+    ra = []
+    for b in bai:
+        ma_bai = b["depot_code"]
+        cac_ngay_ra = []
+        for ngay in cac_ngay:
+            iso = ngay.isoformat()
+            cac_ca = []
+            for ma in MA_CA:
+                can = can_theo_bai.get((ma_bai, ngay, ma), 0)
+                co_nguoi = truc.get((ma_bai, iso, ma), 0)
+                cac_ca.append({
+                    "ca": ma, "truc": co_nguoi, "can": can,
+                    "thieu": max(0, can - co_nguoi),
+                    "xe_san_sang": san_sang.get((ma_bai, iso, ma), 0),
+                })
+            cac_ngay_ra.append({"ngay": iso, "thu": TEN_THU[ngay.weekday()], "cac_ca": cac_ca})
+        ra.append({
+            "depot_code": ma_bai, "ten": b["ten"],
+            "so_tai_xe": b["so_tai_xe"], "so_xe": b["so_xe"],
+            "cac_ngay": cac_ngay_ra,
+            "thieu": sum(c["thieu"] for d in cac_ngay_ra for c in d["cac_ca"]),
+        })
+    return ra
+
+
+def ung_vien_lap_ca(db, ngay, ma_ca, depot=None, team=None):
+    """Nhung nguoi CO THE nhan mot ca dang thieu, xep de truoc kho sau.
+
+    VI SAO CHI MOT PHUONG AN, KHONG PHAI BON. Ban mau ve bon cach xu ly mot ca
+    thieu nguoi: doi ca, muon nguoi to khac, tang ca cho duyet, va dang ca mo
+    tren app. Ba cach sau khong co co so nao trong he thong nay — khong co bang
+    dang ky nhan ca, khong co luong duyet tang ca, va "muon to khac" chi la doi
+    ca voi mot bo loc rong hon. Ve bon nut ma ba nut khong lam gi thi nguoi dung
+    bam thu ba lan roi thoi tin ca man hinh.
+
+    Con MOT phuong an la that va tinh duoc: ai dang ranh ca do, va nhan ho vao
+    thi co vuot rang buoc nao khong. Bam mot nguoi la GHI THAT qua duong luu ca
+    da co, nen moi phep kiem cua may chu van chan.
+
+    BA MUC DO KHO, va thu tu nay la phan co ich nhat cua ham:
+      · `ranh`     — hom do khong co ca nao. Nhan them mot ca, khong anh huong ai.
+      · `doi_ca`   — hom do dang co ca KHAC. Nhan ca nay thi phai bo ca kia, tuc
+                     ca kia lai thieu nguoi. Nguoi xep lich phai biet truoc.
+      · `qua_gio`  — nhan vao thi vuot tran gio tuan. Khong chan, nhung phai noi.
+
+    Nguoi NGHI PHEP khong xuat hien trong danh sach. De ho vao roi ghi mot dong
+    "dang nghi phep" thi som muon cung co nguoi bam.
+    """
+    ngay_dp = _ngay(ngay, "ngày")
+    if ma_ca not in MA_CA:
+        raise DomainError("SHIFT_CODE_INVALID", "Mã ca không hợp lệ: %s" % ma_ca, 422)
+    tu, den = khung_ca(ngay_dp, ma_ca)
+
+    q = db.query(Driver)
+    if depot:
+        q = q.filter(Driver.depot_code == depot)
+    if team:
+        q = q.filter(Driver.team_code == team)
+    tai_xe = q.order_by(Driver.name).all()
+    if not tai_xe:
+        return {"ngay": ngay_dp.isoformat(), "ca": ma_ca, "ung_vien": []}
+
+    ma_tx = {d.id for d in tai_xe}
+    # Gio tuan tinh tren TUAN CHUA NGAY DO, khong phai bay ngay ke tu ngay do:
+    # tran 48h la tran cua mot tuan lam viec, va nguoi xep lich doc theo tuan.
+    dau_tuan = ngay_dp - dt.timedelta(days=ngay_dp.weekday())
+    tuan_tu = _utc(dau_tuan, 0)
+    tuan_den = _utc(dau_tuan + dt.timedelta(days=7), 6)
+
+    gio_tuan = {}
+    ca_trong_ngay = {}
+    nghi_phep = set()
+    for row in db.query(DriverShiftAssignment).filter(
+        DriverShiftAssignment.status != "cancelled",
+        DriverShiftAssignment.driver_id.in_(ma_tx),
+        DriverShiftAssignment.shift_start < tuan_den,
+        DriverShiftAssignment.shift_end > tuan_tu,
+    ).all():
+        if row.availability_kind == "work":
+            gio_tuan[row.driver_id] = gio_tuan.get(row.driver_id, 0.0) + _gio_lam(row)
+        if _ngay_cua(row) == ngay_dp:
+            if row.availability_kind in NGHI_PHEP:
+                nghi_phep.add(row.driver_id)
+            else:
+                ma_cua_row = _ma_ca_cua(row)
+                if ma_cua_row:
+                    ca_trong_ngay.setdefault(row.driver_id, []).append(ma_cua_row)
+
+    # Nguoi dang co chuyen trong dung khung gio nay thi KHONG ranh — du chua co
+    # ban ghi ca nao. Dieu phoi gan tai xe vao chuyen truoc khi co ban ghi ca.
+    dang_co_chuyen = set()
+    for trip in db.query(TransportTrip).filter(
+        TransportTrip.status.notin_(TRIP_BO),
+        TransportTrip.planned_departure_at < den,
+        TransportTrip.planned_arrival_at > tu,
+    ).all():
+        for ma_nguoi in (trip.driver_id, trip.co_driver_id):
+            if ma_nguoi in ma_tx:
+                dang_co_chuyen.add(ma_nguoi)
+
+    do_dai = round((den - tu).total_seconds() / 3600.0, 2)
+    ra = []
+    for d in tai_xe:
+        if d.id in nghi_phep:
+            continue
+        cac_ca = ca_trong_ngay.get(d.id, [])
+        if ma_ca in cac_ca or d.id in dang_co_chuyen:
+            continue  # da truc dung ca nay roi
+        gio = round(gio_tuan.get(d.id, 0.0), 1)
+        sau_khi_nhan = round(gio + do_dai, 1)
+        if sau_khi_nhan > TRAN_GIO_TUAN:
+            muc, ly_do = "qua_gio", "Nhận vào là %sh/tuần, vượt trần %dh" % (sau_khi_nhan, TRAN_GIO_TUAN)
+        elif cac_ca:
+            muc, ly_do = "doi_ca", "Hôm đó đang trực ca %s — nhận ca này thì ca kia lại thiếu" % (
+                ", ".join(ten_ca(x).lower() for x in cac_ca))
+        else:
+            muc, ly_do = "ranh", "Hôm đó chưa có ca nào · %sh/tuần" % gio
+        ra.append({
+            "driver_id": d.id, "ten": d.name, "chu_cai": _chu_cai_dau(d.name),
+            "vai_tro": d.role, "hang_bang": d.license_type,
+            "team_code": d.team_code, "depot_code": d.depot_code,
+            "xe_mac_dinh": d.assigned_vehicle if d.assigned_vehicle and d.assigned_vehicle != "Chưa gán" else None,
+            "gio_tuan": gio, "gio_sau_khi_nhan": sau_khi_nhan,
+            "muc": muc, "ly_do": ly_do,
+        })
+    thu_tu = {"ranh": 0, "doi_ca": 1, "qua_gio": 2}
+    ra.sort(key=lambda x: (thu_tu[x["muc"]], x["gio_tuan"]))
+    return {
+        "ngay": ngay_dp.isoformat(), "ca": ma_ca,
+        "ten_ca": ten_ca(ma_ca),
+        "so_gio_ca": do_dai,
+        "ung_vien": ra,
     }

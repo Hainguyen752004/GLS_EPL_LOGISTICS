@@ -93,6 +93,12 @@ class Vehicle(Base):
     depot = Column(String) # Bãi / chi nhánh xe đậu (VD: Bãi Sóng Thần, Chi nhánh Hà Nội)
     depot_code = Column(String, index=True) # Mã bãi, dùng để lọc — ở đội 500 xe đây là bộ lọc chính
     inspection_exp = Column(String) # Hạn đăng kiểm (Hết hạn)
+    # Đội xe thật lập lịch bảo dưỡng theo KM CHẠY, không theo ngày lịch: một
+    # chiếc chạy 400 km/ngày thì một ngày lịch không nói được gì. Để rỗng
+    # được, và màn hình phải nói "chưa khai số km" chứ không vẽ thanh 0% —
+    # thanh đỏ đó đọc ra như xe đến hạn gấp.
+    odometer_km = Column(Float) # Số km đồng hồ hiện tại
+    next_service_odometer_km = Column(Float) # Mốc đồng hồ của kỳ bảo dưỡng kế tiếp
     engine_cap = Column(String) # Dung tích động cơ
     dimensions = Column(String) # Kích thước thùng (DxRxC)
     image_url = Column(Text) # Ảnh phương tiện dạng URL

@@ -97,3 +97,68 @@ test('mã ca tiền định theo người, ngày và ca', () => {
   assert.match(js, /TAY-\$\{c\.drv\}-\$\{c\.ngay\.replace/,
     'mã ca phải tiền định theo (người, ngày, ca)');
 });
+
+/* ---------------------------------------------------------------------------
+   Bốn phần bổ sung sau bản đầu: dòng thời gian, thanh km, dải nhiệt theo bãi,
+   và khung lấp ca thiếu người.
+   ------------------------------------------------------------------------ */
+
+test('ba chế độ xem, và dải chế độ chỉ hiện ở lưới nhân sự', () => {
+  ['data-m="week"', 'data-m="day"', 'data-m="tl"'].forEach(m =>
+    assert.ok(js.includes(m), `thiếu chế độ xem ${m}`));
+  // Lưới xe và màn Toàn bãi luôn là cả kỳ. Để dải chế độ bấm được ở đó là hứa
+  // một thứ không xảy ra.
+  assert.match(js, /el\('ssv5-mode'\)\.classList\.toggle\('hide', state\.tab !== 'staff'\)/,
+    'dải chế độ xem phải ẩn khi không ở lưới nhân sự');
+});
+
+test('vạch giờ hiện tại chỉ vẽ khi đang xem đúng ngày hôm nay', () => {
+  // Vẽ vạch "bây giờ" ở một ngày khác là nói dối: bây giờ không nằm trong ngày
+  // đó. Đây là điều duy nhất làm chế độ dòng thời gian có ích hơn lưới tuần.
+  assert.match(js, /const laHomNay = !!muc\.hom_nay/, 'thiếu điều kiện ngày hôm nay');
+  assert.match(js, /laHomNay \? `<div class="now"/, 'vạch giờ phải phụ thuộc laHomNay');
+  // Giờ phải quy về giờ Việt Nam, không lấy giờ của máy xem.
+  assert.match(js, /LECH_PHUT \* 60000/, 'giờ hiện tại phải quy về múi giờ Việt Nam');
+});
+
+test('ngày nghỉ vẽ một thanh suốt ngày, không phải ba thanh nghỉ', () => {
+  // Ba thanh "Nghỉ theo mẫu" cạnh nhau đọc ra như người đó có ba việc, và
+  // chúng chiếm chỗ của thứ trục này cần cho thấy: ai đang trên đường.
+  assert.match(js, /const nghi = ngay\.cac_o\.length/, 'thiếu phép kiểm ngày nghỉ');
+  assert.match(js, /\.filter\(o => o\.trang_thai !== 'off' && o\.trang_thai !== 'leave'\)/,
+    'ngày có ca thì phải bỏ hẳn các ô nghỉ');
+});
+
+test('chưa khai số km thì KHÔNG vẽ thanh, nói ra bằng chữ', () => {
+  // Một thanh 0% đọc ra như "xe đến hạn bảo dưỡng gấp", và người điều độ sẽ gọi
+  // xe về garage trong khi không ai biết nó đã chạy bao nhiêu.
+  assert.match(js, /if \(v\.con_km_bao_duong == null\)[\s\S]{0,200}kmnone/,
+    'ô chưa khai số km phải hiện chữ, không vẽ thanh');
+  assert.doesNotMatch(js, /con_km_bao_duong \|\| 0/,
+    'không được coi "chưa khai" là 0 km');
+});
+
+test('dải nhiệt phân biệt "không có xe nào phải chạy" với "đủ người"', () => {
+  // Tô cả hai cùng màu xanh thì một bãi ngồi không cả tuần đọc ra như một bãi
+  // chạy hết công suất, và cả dải nhiệt thành một khối xanh không nói gì.
+  assert.match(js, /const KHONG_VIEC = '#eef2f7'/, 'thiếu màu riêng cho ca không có việc');
+  assert.match(js, /khongViec \? KHONG_VIEC : mau\(/, 'ca không có việc phải dùng màu riêng');
+  assert.match(js, /do_phu_theo_bai/, 'dải nhiệt phải đọc độ phủ TỪNG BÃI');
+});
+
+test('ô đỏ "cần người" mở danh sách ứng viên, không mở form cho người ở hàng đó', () => {
+  // Ô đỏ là một con số còn thiếu của cả ca, không phải ô của riêng người ở hàng
+  // đó — và người đó có thể là người tệ nhất để xếp.
+  assert.match(js, /if \(o\.dataset\.tt === 'need'\) \{ moLapCa\(/,
+    'bấm ô cần người phải mở khung lấp ca');
+  assert.ok(js.includes('/api/tms/scheduling/fill-candidates'), 'thiếu lời gọi tính ứng viên');
+  // Bấm một ứng viên là GHI THẬT qua đúng đường lưu ca, không qua đường riêng.
+  assert.match(js, /async function nhanCa[\s\S]{0,900}\/api\/tms\/scheduling\/driver-shifts/,
+    'nhận ca phải đi qua đường lưu ca đã có');
+});
+
+test('ba mức độ khó của ứng viên đều được vẽ riêng', () => {
+  ['ranh', 'doi_ca', 'qua_gio'].forEach(m =>
+    assert.ok(js.includes(`'${m}'`), `thiếu mức độ ứng viên ${m}`));
+  assert.match(js, /nhomTen = \{ ranh:[\s\S]{0,200}qua_gio:/, 'thiếu nhãn cho ba mức');
+});
