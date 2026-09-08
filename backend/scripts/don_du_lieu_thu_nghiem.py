@@ -7,14 +7,24 @@ bao gia co dong "E2E-QT-20260805090149-HKJ7", danh sach khach hang co
 "CUS-PROBE-1788405635". Trong mot ban demo cho nguoi khac xem thi may dong do
 noi rang he thong day rac.
 
-CAI GI KHONG XOA — va vi sao:
+CAI GI XOA, va vi sao:
 
-  · `LIVE-*`: nhung dong nay do NGUOI dung bam ra tren ung dung, khong phai may
-    sinh. Xoa du lieu cua nguoi khac vi no khong khop mot quy uoc dat ten la
-    viec khong duoc lam, va giu lai cung khong ton gi: chung mang ngay thang 8
-    nen khong hien tren man dieu phoi cua hom nay.
-  · `QT-2026-001` va cac ma khong co tien to: khong ro tu dau ra, nen de nguyen.
-  · Moi dong `DEMO-*`: day chinh la bo du lieu demo, do `seed_demo` quan ly.
+  · `E2E-*`, `*-PROBE-*`, `*-STRESS-*`: rac may sinh tu cac lan chay kiem.
+  · `LIVE-*`: nhung dong do NGUOI dung bam ra khi thu ung dung. Ban dau tap
+    lenh nay CO Y giu chung lai, vi xoa du lieu cua nguoi khac la viec khong
+    duoc tu y lam. Chu du an da yeu cau ro "xoa du lieu cu roi nap bo mau moi",
+    nen gio chung nam trong danh sach — va do duoc la chung lam ban man hinh
+    that: `LIVE-TRIP-20260822-001` hien trong bang chuyen, `LIVE-DO-20260822-001`
+    hien trong danh sach theo doi, ca hai mang ngay thang 8.
+  · `QT-2026-001`: bao gia sot lai tu bo nap CU `seed_full_demo.py`. No khong
+    co tuyen, tong chi phi bang 0, va khong bo nap nao dang dung con sinh ra no.
+
+CAI GI KHONG XOA:
+
+  · Moi dong `DEMO-*`: day chinh la bo du lieu mau, do `seed_demo` quan ly. Nap
+    lai bo mau se tu dung lai chung.
+  · Danh muc nen: loai xe, dia diem, cong thuc gia thanh. Chung khong mang tien
+    to nao trong danh sach tren nen khong bi cham tay.
 
 Chay:  python scripts/don_du_lieu_thu_nghiem.py [--that]
 
@@ -31,9 +41,21 @@ from sqlalchemy import text  # noqa: E402
 
 from database import SessionLocal  # noqa: E402
 
-#: Cac ma duoc coi la rac thu nghiem. Khop theo tien to, khong khop lung chung:
-#: `LIKE '%TEST%'` se bat ca ten khach hang thuc co chu "test" trong do.
-MAU_RAC = ("E2E-%", "%-PROBE-%", "CUS-PROBE-%", "%-STRESS-%")
+#: Cac ma duoc coi la du lieu cu can don. Khop theo TIEN TO hoac theo mot manh
+#: RIENG BIET, khong khop lung chung: `LIKE '%TEST%'` se bat ca ten khach hang
+#: thuc co chu "test" trong do.
+#:
+#: `DEMO-%` CO Y khong nam day: do la bo du lieu mau, `seed_demo` dung lai no.
+MAU_RAC = (
+    "E2E-%",
+    "%-PROBE-%",
+    "CUS-PROBE-%",
+    "%-STRESS-%",
+    "LIVE-%",
+    # Bao gia sot lai tu bo nap cu `seed_full_demo.py`. Ghi day du, khong dung
+    # `QT-%`: mot ngay nao do ma bao gia that co the mang dung tien to do.
+    "QT-2026-001",
+)
 
 #: Thu tu xoa, TU CON LEN CHA. Doi thu tu la vo khoa ngoai.
 #:

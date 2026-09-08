@@ -1,4 +1,4 @@
-﻿import datetime as dt
+import datetime as dt
 import hashlib
 import json
 from decimal import Decimal
@@ -131,6 +131,29 @@ DESTINATION = "Cảng Cát Lái, TP. Thủ Đức"
 
 def _utc(year, month, day, hour=0, minute=0):
     return dt.datetime(year, month, day, hour, minute, tzinfo=dt.timezone.utc)
+
+
+def _moc(lech_ngay, gio_utc, phut=0):
+    """Mot moc thoi gian tinh THEO HOM NAY, khong ghim ngay co dinh.
+
+    VI SAO DOI. Nam tinh huong mau truoc day ghim cung 21-25/08/2026, voi ly do
+    ghi trong chu thich la "de bai kiem doi chieu duoc so tien va moc thoi
+    gian". Nhung KHONG bai kiem nao doc cac moc do (da soi lai ca thu muc
+    `tests/`), con cai gia phai tra thi rat that va do duoc tren man hinh:
+
+      · Man Dieu phoi loc DO theo NGAY DANG CHON, nen don thang 8 khong bao gio
+        hien -> cot "DO cho xep" trong tron.
+      · Man Theo doi so `last_update` cua GPS voi gio hien tai, nen moc thang 8
+        cu 17 ngay -> dai so lieu bao "Mat GPS" cho MOI xe. Dung theo du lieu,
+        nhung tren mot thap kiem soat thi do la bao dong gia.
+      · Bang chuyen hien "13:00 23/08/2026" cho mot chuyen dang chay.
+
+    Gio: `lech_ngay` la so ngay lech so voi hom nay (am la qua khu), `gio_utc`
+    la gio UTC — cong 7 de ra gio Viet Nam, dung quy uoc san co cua bo nap.
+    """
+    hom_nay = dt.datetime.now(dt.timezone.utc).date() + dt.timedelta(days=lech_ngay)
+    return dt.datetime(hom_nay.year, hom_nay.month, hom_nay.day,
+                       gio_utc, phut, tzinfo=dt.timezone.utc)
 
 
 def _money(value):
@@ -320,12 +343,14 @@ def _merge_master_data(db):
         ("DEMO-DRV-003", "DEMO-61H-112.34"),
     ), start=1):
         db.merge(DriverShiftAssignment(
-            id=f"DEMO-SHIFT-20260824-{index:03d}",
+            id=f"DEMO-SHIFT-{_moc(0, 0).strftime('%Y%m%d')}-{index:03d}",
             driver_id=driver_id,
             vehicle_id=vehicle_id,
             shift_type="morning",
-            shift_start=_utc(2026, 8, 24, 0),
-            shift_end=_utc(2026, 8, 24, 8),
+            # Ca truc cua chuoi nghiep vu cung phai la HOM NAY: man xep ca mo
+            # tuan chua ngay hom nay, nen ca thang 8 khong bao gio hien ra.
+            shift_start=_moc(0, 0),
+            shift_end=_moc(0, 8),
             work_location=ORIGIN,
             notes="Ca demo được lưu trong database",
             status="confirmed",
@@ -414,7 +439,10 @@ def _seed_sales_chain(db, key, pickup, delivery, price, tuyen=None,
         delivery_window_end=(delivery + dt.timedelta(hours=1)).isoformat(),
         weight_kg=kg, pallet_count=pallet, status="Đã xác nhận", total_amount=_money(price),
         currency_code="VND", exchange_rate_snapshot=_money(1), tax_rate_snapshot=_money(0),
-        order_date="2026-08-22", delivery_date=delivery.date().isoformat(),
+        # Ngay dat hang tinh LUI mot ngay tu moc giao, khong ghim: khach dat
+        # truoc khi xe chay, va ghim thi don hien "dat 22/08, giao hom nay".
+        order_date=(delivery - dt.timedelta(days=1)).date().isoformat(),
+        delivery_date=delivery.date().isoformat(),
         payment_terms="30 ngày", sales_rep="Demo Sales",
         packaging_spec="Pallet quấn màng PE", volume_m3=m3,
         created_by="demo-seed", updated_by="demo-seed",
@@ -531,12 +559,49 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
     db.flush()
 
 
+def _seed_tracking_den_noi(db):
+    """Vet GPS cho tinh huong "da den noi, chua ky POD".
+
+    VI SAO CAN. Thap kiem soat dem so xe KHONG co vet GPS va bao do la "mat tin
+    hieu". Tinh huong "da den noi" truoc day khong duoc nap vet nao, nen tren
+    man Theo doi no luon nam trong o "mat GPS" — mot bao dong gia, va no che
+    mat ngoai le THAT cua tinh huong nay, la chua ai ky POD.
+
+    Xe da den noi thi thiet bi van gui toa do, chi la toc do bang 0 va quang
+    duong con lai bang 0 — do la hinh dang that cua mot chiec xe dang do o cong
+    cang cho ky nhan.
+    """
+    ids = _scenario_ids("arrived")
+    moc_gps = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=6)
+    db.add(VehicleTracking(
+        do_id=ids["delivery_order_id"], vehicle_id="DEMO-51C-412.09",
+        lat=10.7626, lng=106.7906, speed_kmh=0,
+        remaining_distance_km=0, eta=moc_gps.isoformat(),
+        last_update=moc_gps.replace(tzinfo=None),
+    ))
+    db.flush()
+
+
 def _seed_tracking(db, pickup, delivery):
     ids = _scenario_ids("tracking")
+    # MOC GPS phai TUOI, khong lay theo gio lay hang.
+    #
+    # Truoc day `last_update` bang dung gio lay hang. Man Theo doi so moc nay
+    # voi gio hien tai va coi cu hon 15 phut la "mat tin hieu" — nen chi can
+    # xe chay hon 15 phut la dai so lieu bao mat GPS, va voi du lieu ghim thang
+    # 8 thi no bao mat GPS cho MOI xe suot 17 ngay. Do la bao dong gia, va tren
+    # mot thap kiem soat thi bao dong gia con te hon khong bao: nguoi truc se
+    # goi hang chuc tai xe cho mot su co khong ton tai.
+    #
+    # Bon phut truoc la dung hinh dang cua mot thiet bi GPS dang gui binh
+    # thuong: du moi de khong bi bao mat, du cu de thay ro day la so lieu do
+    # duoc chu khong phai gio hien tai.
+    moc_gps = dt.datetime.now(dt.timezone.utc) - dt.timedelta(minutes=4)
     db.add(VehicleTracking(
         do_id=ids["delivery_order_id"], vehicle_id="DEMO-51C-268.89",
         lat=10.8769, lng=106.7734, speed_kmh=48,
-        remaining_distance_km=18.6, eta=delivery.isoformat(), last_update=pickup.replace(tzinfo=None),
+        remaining_distance_km=18.6, eta=delivery.isoformat(),
+        last_update=moc_gps.replace(tzinfo=None),
     ))
     event_rows = [
         ("check_in", pickup - dt.timedelta(minutes=30), 11.0497, 106.7428, 0, 44.7, "Xe đã vào kho VSIP II-A"),
@@ -557,7 +622,14 @@ def _seed_tracking(db, pickup, delivery):
     db.flush()
 
 
-def _complete_demo_delivery(db):
+def _complete_demo_delivery(db, giao_luc=None):
+    """Ky POD va xuat hoa don cho tinh huong "da xong".
+
+    `giao_luc` phai la MOC THAT cua tinh huong do. Truoc day gio ky POD
+    ghim cung "2026-08-21T14:30" trong khi cac moc khac da doi theo hom
+    nay — nen ho so hien mot chuyen giao hom nay ma chu ky nhan de thang
+    8, va do la thu nguoi xem demo nhin ra ngay.
+    """
     ids = _scenario_ids("completed")
     payload = DeliveryCompletionRequest.model_validate({
         "trip_id": ids["trip_id"],
@@ -569,7 +641,7 @@ def _complete_demo_delivery(db):
             "location_text": DESTINATION,
             "receiver_name": "Nguyễn Văn An",
             "receiver_phone": "0908123456",
-            "delivery_time": "2026-08-21T14:30:00+07:00",
+            "delivery_time": (giao_luc or _moc(-2, 7, 30)).isoformat(),
             "delivery_result": "delivered_full",
             "cargo_condition": "Đủ 18 pallet, nguyên niêm phong, không móp vỡ.",
             "file_field": "pod_file_1",
@@ -610,13 +682,13 @@ def _complete_demo_delivery(db):
     db.flush()
 
 
-def _seed_actual_cost(db):
+def _seed_actual_cost(db, ngay=None):
     ids = _scenario_ids("completed")
     cost = FreightActualCost(
         id="DEMO-COST-2026-003", freight_order_id=ids["freight_order_id"],
         trip_id=ids["trip_id"], carrier_id="DEMO-CARRIER-INTERNAL",
         currency_code="VND", functional_currency="VND", exchange_rate_snapshot=_money(1),
-        exchange_rate_date=dt.date(2026, 8, 21), exchange_rate_source="demo-seed",
+        exchange_rate_date=(ngay or _moc(-2, 1).date()), exchange_rate_source="demo-seed",
         planned_distance_km=_money(44.7), actual_distance_km=_money(47.2),
         distance_status="gps_verified", distance_variance_percent=_money(5.59),
         distance_variance_warning=False, subtotal_amount=_money(2380000),
@@ -647,7 +719,7 @@ def _seed_actual_cost(db):
         cost_id=cost.id,
         do_id=ids["delivery_order_id"],
         voucher_no="T4-0428-08-EPL-DEMO",
-        voucher_date=dt.date(2026, 8, 21),
+        voucher_date=(ngay or _moc(-2, 1).date()),
         vehicle_manager="Anh Phê",
         payment_method="cash",
         contract_no="DEMO-SO-2026-003",
@@ -710,13 +782,15 @@ def seed_demo(db, reset=False, verify=False):
         # khach hang.
         demo_master_seed.nap_danh_muc(db)
 
-        waiting_pickup = _utc(2026, 8, 24, 1)
-        waiting_delivery = _utc(2026, 8, 24, 6)
+        # CHO DIEU PHOI: lay hang trong hai gio nua (10:00 gio Viet Nam).
+        waiting_pickup = _moc(0, 3)
+        waiting_delivery = _moc(0, 8)
         _seed_sales_chain(db, "waiting", waiting_pickup, waiting_delivery, 3600000)
         _seed_delivery_order(db, "waiting", waiting_pickup, waiting_delivery)
 
-        tracking_pickup = _utc(2026, 8, 22, 1)
-        tracking_delivery = _utc(2026, 8, 22, 6)
+        # DANG CHAY: da lay hang hai gio truoc, du kien giao chieu nay.
+        tracking_pickup = _moc(0, 1)
+        tracking_delivery = _moc(0, 8)
         _seed_sales_chain(db, "tracking", tracking_pickup, tracking_delivery, 3950000)
         _seed_delivery_order(
             db, "tracking", tracking_pickup, tracking_delivery, "in_transit",
@@ -725,16 +799,18 @@ def seed_demo(db, reset=False, verify=False):
         _seed_trip(db, "tracking", tracking_pickup, tracking_delivery, "DEMO-51C-268.89")
         _seed_tracking(db, tracking_pickup, tracking_delivery)
 
-        completed_pickup = _utc(2026, 8, 21, 1)
-        completed_delivery = _utc(2026, 8, 21, 7, 30)
+        # DA XONG: hai ngay truoc, da ky POD va da xuat hoa don — day la
+        # chuyen duy nhat di het duoc den buoc doi soat.
+        completed_pickup = _moc(-2, 1)
+        completed_delivery = _moc(-2, 7, 30)
         _seed_sales_chain(db, "completed", completed_pickup, completed_delivery, 4200000)
         _seed_delivery_order(
             db, "completed", completed_pickup, completed_delivery, "in_transit",
             "DEMO-61H-112.34", "DEMO-DRV-002",
         )
         _seed_trip(db, "completed", completed_pickup, completed_delivery, "DEMO-61H-112.34")
-        _complete_demo_delivery(db)
-        _seed_actual_cost(db)
+        _complete_demo_delivery(db, completed_delivery)
+        _seed_actual_cost(db, completed_pickup.date())
 
         # TINH HUONG 4 — xe DA DEN NOI, chua co POD.
         #
@@ -742,8 +818,9 @@ def seed_demo(db, reset=False, verify=False):
         # thi CAM sua tien, den noi va ky POD roi moi chot duoc gia cuoi. Ba
         # tinh huong dau khong co trang thai nay, nen man Hoan tat giao hang
         # khong the hien duoc cho chan do.
-        den_noi_pickup = _utc(2026, 8, 23, 1)
-        den_noi_delivery = _utc(2026, 8, 23, 6)
+        # DA DEN NOI, chua ky POD: den tu sang nay.
+        den_noi_pickup = _moc(0, 0)
+        den_noi_delivery = _moc(0, 4)
         _seed_sales_chain(
             db, "arrived", den_noi_pickup, den_noi_delivery, 4350000,
             tuyen="DEMO-RT-SONGTHAN-CATLAI", di="Bãi Sóng Thần",
@@ -766,14 +843,16 @@ def seed_demo(db, reset=False, verify=False):
             # Cung tai xe voi lenh giao hang, khong de nhanh mac dinh chon ho.
             driver_id="DEMO-DRV-004",
         )
+        _seed_tracking_den_noi(db)
 
         # TINH HUONG 5 — cho van chuyen, TUYEN KHAC va KHACH KHAC.
         #
         # Ba tinh huong dau deu di chung mot tuyen va mot khach, nen bo loc
         # tuyen va bo loc khach o cac man deu chi co mot lua chon that — nhin
         # nhu bo loc hong, trong khi no dang noi that.
-        tuyen_hai_pickup = _utc(2026, 8, 25, 0)
-        tuyen_hai_delivery = _utc(2026, 8, 25, 5)
+        # CHO DIEU PHOI, tuyen khac: lay hang chieu nay.
+        tuyen_hai_pickup = _moc(0, 5)
+        tuyen_hai_delivery = _moc(0, 10)
         _seed_sales_chain(
             db, "second_route", tuyen_hai_pickup, tuyen_hai_delivery, 7900000,
             tuyen="DEMO-RT-LONGAN-CAIMEP", khach="DEMO-CUS-NIDEC",

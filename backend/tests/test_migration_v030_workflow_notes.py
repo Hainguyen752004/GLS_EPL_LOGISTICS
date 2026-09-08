@@ -26,7 +26,16 @@ def test_v030_la_moc_head_dang_ky():
     # v030 khong con la moc CUOI (v031 da them sau no), nen chi kiem no co
     # mat va nam dung cho trong chuoi.
     assert v030 in MIGRATIONS
-    assert MIGRATIONS.index(v030) == len(MIGRATIONS) - 2
+    # Kiem VI TRI theo CHUOI SO, khong theo khoang cach tu cuoi.
+    #
+    # Ban truoc dung `len(MIGRATIONS) - 3`, nen moi lan them mot moc moi la bai
+    # nay do — va do vi mot ly do khong lien quan gi toi dieu no muon giu. Da xay
+    # ra that khi them moc 032. Dieu CAN giu la: moc nay co mat trong chuoi, dung
+    # ngay sau moc truoc no, va khong con la moc cuoi.
+    ds = [m.VERSION for m in MIGRATIONS]
+    i = ds.index(v030.VERSION)
+    assert int(ds[i - 1].split("_")[0]) == int(v030.VERSION.split("_")[0]) - 1
+    assert i < len(ds) - 1, "v030 phai con moc khac dung sau"
     assert required_migration_head() != v030.VERSION
 
 

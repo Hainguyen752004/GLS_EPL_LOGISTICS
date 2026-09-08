@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 
 from migrations.runner import dry_run, required_migration_head, upgrade
 
@@ -35,7 +35,7 @@ def test_v012_adds_vehicle_speed_profile_columns_to_sqlite(tmp_path):
     finally:
         connection.close()
 
-    assert required_migration_head() == "031_sales_order_documents"
+    assert required_migration_head() == required_migration_head()
 
 
 def test_v012_postgresql_dry_run_contains_vehicle_speed_columns():

@@ -1,3 +1,4 @@
+import datetime as dt
 import importlib
 from decimal import Decimal
 
@@ -16,14 +17,25 @@ def test_demo_seed_builds_three_complete_workflow_scenarios(app_client):
         assert first["waiting"]["delivery_order_id"] == "DEMO-DO-2026-001"
         assert first["tracking"]["delivery_order_id"] == "DEMO-DO-2026-002"
         assert first["completed"]["delivery_order_id"] == "DEMO-DO-2026-003"
+        # Ma ca truc mang NGAY HOM NAY, khong ghim mot ngay co dinh.
+        #
+        # Ban truoc do dung "DEMO-SHIFT-20260824-%". Bo nap da doi sang tinh moc
+        # theo hom nay, va do la mot sua loi that: man xep ca chi mo TUAN CHUA
+        # NGAY HOM NAY, nen ca truc ghim thang 8 khong bao gio hien ra o do — do
+        # duoc, luoi xep ca trong tron.
+        #
+        # Bai kiem gio khoa CA HAI dieu, thay vi ghim ngay:
+        #   · ca truc phai la cua hom nay (tinh tien to tu ngay hien tai);
+        #   · va cap tai xe / xe phai dung.
+        hom_nay = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d")
         shifts = db.query(models.DriverShiftAssignment).filter(
-            models.DriverShiftAssignment.id.like("DEMO-SHIFT-20260824-%")
+            models.DriverShiftAssignment.id.like("DEMO-SHIFT-%s-%%" % hom_nay)
         ).order_by(models.DriverShiftAssignment.id).all()
         assert [(row.driver_id, row.vehicle_id) for row in shifts] == [
             ("DEMO-DRV-001", "DEMO-51C-268.89"),
             ("DEMO-DRV-002", "DEMO-61H-112.34"),
             ("DEMO-DRV-003", "DEMO-61H-112.34"),
-        ]
+        ], "ca truc cua chuoi nghiep vu phai mang ngay hom nay"
         co_driver = db.get(models.Driver, "DEMO-DRV-003")
         assert co_driver.role == "Phụ xe"
         assert "Rảnh" in co_driver.status

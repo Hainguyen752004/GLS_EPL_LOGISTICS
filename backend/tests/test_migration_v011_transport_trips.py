@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import os
 import subprocess
 import sys
@@ -30,8 +30,11 @@ def test_v011_is_head_and_creates_trip_schema_with_lineage(tmp_path):
     path = tmp_path / "v011.db"
     _legacy_base(path)
 
-    assert upgrade(str(path))[-1] == "031_sales_order_documents"
-    assert required_migration_head() == "031_sales_order_documents"
+    # Khong ghim TEN moc cuoi: y cua phep kiem la "chay het chuoi thi toi dung
+    # moc ma `required_migration_head()` khai", chu khong phai "moc cuoi la 031".
+    # Ghim ten thi them mot moc moi la bai do ngay, vi mot ly do khong lien quan
+    # gi toi dieu no muon giu.
+    assert upgrade(str(path))[-1] == required_migration_head()
 
     with sqlite3.connect(path) as connection:
         tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type='table'")}

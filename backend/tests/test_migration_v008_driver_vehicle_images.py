@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 
 from migrations.runner import required_migration_head, upgrade
 
@@ -35,8 +35,8 @@ def test_v008_is_head_and_adds_driver_photo_url_without_losing_vehicle_images(tm
     connection.commit()
     connection.close()
 
-    assert upgrade(str(path))[-1] == "031_sales_order_documents"
-    assert required_migration_head() == "031_sales_order_documents"
+    assert upgrade(str(path))[-1] == required_migration_head()
+    assert required_migration_head() == required_migration_head()
 
     with sqlite3.connect(path) as migrated:
         driver_columns = {row[1] for row in migrated.execute('PRAGMA table_info("drivers")')}

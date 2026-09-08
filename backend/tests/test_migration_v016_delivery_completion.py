@@ -6,7 +6,8 @@ from migrations.runner import MIGRATIONS, dry_run, required_migration_head, upgr
 
 
 VERSION = "016_delivery_completion_closeout"
-HEAD_VERSION = "031_sales_order_documents"
+# Doc moc cuoi TU chuoi moc, khong ghim ten.
+HEAD_VERSION = required_migration_head()
 
 
 def _prepare_pre_v016(path):
@@ -42,7 +43,14 @@ def test_v016_creates_closeout_schema_constraints_and_cascades(tmp_path):
     _prepare_pre_v016(path)
 
     assert required_migration_head() == HEAD_VERSION
-    assert upgrade(str(path)) == [VERSION, "017_driver_shift_turnaround", "018_dispatch_crew", "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance", "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides", "028_shipping_spec", "029_sales_order_cargo_type", "030_workflow_notes", HEAD_VERSION]
+    # Khong liet ke tung moc: them mot moc moi la phai sua lai ca danh sach.
+    # Dieu CAN giu la chuoi bat dau tu v016, ket thuc o head dong, va LIEN TUC
+    # — khong nhay moc nao o giua.
+    da_ap = upgrade(str(path))
+    assert da_ap[0] == VERSION
+    assert da_ap[-1] == HEAD_VERSION
+    so = [int(x.split("_")[0]) for x in da_ap]
+    assert so == list(range(so[0], so[0] + len(so))), da_ap
     assert upgrade(str(path)) == []
 
     with sqlite3.connect(path) as connection:

@@ -39,9 +39,17 @@ def _docx():
 # --- 1. Migration -------------------------------------------------------
 
 
-def test_v031_la_moc_head_dang_ky():
-    assert MIGRATIONS[-1] is v031
-    assert required_migration_head() == v031.VERSION
+def test_v031_da_duoc_dang_ky_trong_chuoi():
+    # v031 khong con la moc CUOI (moc 032 da them sau no), nen doi ten va doi noi
+    # dung phep kiem: no co mat trong chuoi, dung ngay sau moc truoc, va con moc
+    # khac dung sau. Ghim `MIGRATIONS[-1]` la buoc moi moc moi phai sua lai bai
+    # kiem cua ban truoc.
+    assert v031 in MIGRATIONS
+    ds = [m.VERSION for m in MIGRATIONS]
+    i = ds.index(v031.VERSION)
+    assert int(ds[i - 1].split("_")[0]) == int(v031.VERSION.split("_")[0]) - 1
+    assert i < len(ds) - 1, "v031 phai con moc khac dung sau"
+    assert required_migration_head() != v031.VERSION
 
 
 def test_cau_lenh_postgres_khong_ket_noi():
@@ -69,7 +77,11 @@ def test_chay_toan_bo_chuoi_migration_len_den_v031(tmp_path):
     """)
     ket_noi.close()
 
-    assert upgrade(str(duong_dan))[-1] == v031.VERSION
+    # Chay het chuoi thi phai toi dung moc ma `required_migration_head()` khai,
+    # khong phai dung v031: v031 khong con la moc cuoi.
+    da_ap = upgrade(str(duong_dan))
+    assert da_ap[-1] == required_migration_head()
+    assert v031.VERSION in da_ap, "chuoi phai di qua v031"
 
     ket_noi = sqlite3.connect(str(duong_dan))
     try:
