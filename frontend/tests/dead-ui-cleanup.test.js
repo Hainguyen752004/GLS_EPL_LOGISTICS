@@ -53,6 +53,26 @@ const code = stripComments(app);
   'table-invoices', 'table-vehicles'].forEach(id => {
   assert.ok(!html.includes(`id="${id}"`), `${id} đã xuất hiện — hãy xem lại bài kiểm này`);
 });
+
+// --- 1b. `postInvoice` — mã chết NGUY HIỂM, đã gỡ hẳn -------------------
+//
+// Hàm này ghi một hoá đơn thật cùng bút toán sổ cái qua `POST /api/invoices/post`
+// và tự chọn lệnh giao hàng bằng "lệnh đã giao ĐẦU TIÊN tìm thấy". Chỗ gọi duy
+// nhất là nút "Post" trên thẻ minh hoạ ở Bảng điều khiển; nút đó đã bỏ, nên
+// từ đó không ai gọi được nó nữa — nhưng nó vẫn nằm đó, chờ một nút mới.
+//
+// Bỏ nó KHÔNG mất tính năng: hoá đơn được phát hành ngay trong bước hoàn tất
+// giao hàng (`delivery_completion_service` gọi `post_ar_invoice` cùng giao dịch
+// với POD và giá cuối). Đó là lý do bộ dữ liệu demo có hoá đơn mà không ai bấm
+// "Post" lần nào.
+{
+  assert.ok(!/window\.postInvoice\s*=/.test(code),
+    'window.postInvoice đã sống lại — hàm này ghi hoá đơn thật cho một lệnh '
+    + 'giao hàng nó TỰ CHỌN, và không màn nào cần nó vì bước hoàn tất giao '
+    + 'hàng đã phát hành hoá đơn trong cùng giao dịch');
+  assert.ok(!/(?<![\w.])postInvoice\s*\(/.test(code), 'còn chỗ gọi postInvoice()');
+  assert.ok(!/onclick="[^"]*postInvoice/.test(html), 'còn nút gọi postInvoice trong index.html');
+}
 {
   // `confirmAICheckin` phải gọi hàm vẽ THẬT, không thì thông báo "Đã mở
   // barrier" hiện ra mà màn hình không đổi gì.

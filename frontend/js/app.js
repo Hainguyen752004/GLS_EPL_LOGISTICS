@@ -927,7 +927,20 @@ window.switchView = function (targetView, scrollToId) {
   }
 
   if (targetView === 'crm-sales') {
-    if (typeof loadQuotations === 'function') loadQuotations();
+    // KHÔNG gọi `loadQuotations()` ở đây nữa.
+    //
+    // Mở màn Kinh doanh trước đây nổ BA lượt gọi danh sách: `loadQuotations`
+    // (`GET /api/quotations`), `loadSalesOrders` (`GET /api/sales-orders`), và
+    // `napDanhSach` của màn báo giá mới (`GET /api/quotations/board`). Hai lượt
+    // đầu nạp vào bảng "oracle" cũ — bảng đó nằm trong khối `#qtv2-khoi-cu`
+    // ĐANG ẨN, nên không ai nhìn thấy kết quả.
+    //
+    // Và `crmQuotations` không mất dữ liệu: `loadAllData` đã gán nó từ
+    // `appState.quotations` (xem chỗ gán quanh dòng 1326). Người tiêu thụ duy
+    // nhất của biến đó là bảng ẩn và ô tìm ẩn.
+    //
+    // `loadSalesOrders` thì PHẢI giữ: ngoài bảng đơn hàng ẩn, nó còn nạp bốn
+    // cột Kanban cơ hội (`kb-col-lead`, `kb-col-nego`, …) — phần đang hiện.
     if (typeof loadSalesOrders === 'function') loadSalesOrders();
   } else if (targetView === 'ops-planning') {
     if (typeof loadDeliveryOrders === 'function') loadDeliveryOrders();
@@ -13140,42 +13153,23 @@ window.publishMasterForm = function (formType) {
   }
 };
 
-window.postInvoice = async function () {
-  const deliveredDO = (eplDeliveryOrders || []).find(d =>
-    d.canonical_status === 'delivered' || d.status === 'Delivered'
-  );
-  const doId = deliveredDO?.id || document.getElementById('inc-do-input')?.value || '';
-
-  if (document.getElementById('inv-date')) {
-    document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
-  }
-
-  if (!doId) {
-    showToast('Chưa có lệnh giao hàng đã hoàn thành để lập hóa đơn.');
-    return;
-  }
-
-  showToast(`Đang ghi nhận hóa đơn & định khoản Sổ Cái (GL Posting) cho ${doId || 'DO'}...`);
-  try {
-    const res = await fetch(`${API_BASE}/api/invoices/post`, {
-      method: 'POST',
-      headers: { ...financeAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        do_id: doId,
-        posted_at: new Date().toISOString()
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data?.detail?.message || data?.error?.message || 'Không thể lập hóa đơn.');
-    }
-    showToast(data.message || 'Đã ghi nhận Hóa đơn & Sổ Cái thành công!');
-    loadAccountingData();
-  } catch (e) {
-    console.error(e);
-    showToast(e.message || 'Lỗi kết nối khi ghi nhận Hóa đơn!');
-  }
-};
+/* `window.postInvoice` ĐÃ BỎ — mã chết, và là mã chết nguy hiểm.
+ *
+ * Nó ghi một hoá đơn thật cùng bút toán sổ cái qua `POST /api/invoices/post`,
+ * chọn lệnh giao hàng bằng "lệnh đã giao ĐẦU TIÊN tìm thấy" chứ không phải thứ
+ * người dùng chọn. Chỗ gọi duy nhất của nó là nút "Post" trên một thẻ MINH HOẠ
+ * ở Bảng điều khiển — thẻ mà mọi ô nhập đều `disabled`. Nút đó đã bỏ, nên hàm
+ * này không còn ai gọi.
+ *
+ * VÀ KHÔNG MẤT TÍNH NĂNG NÀO. Hoá đơn được phát hành NGAY TRONG bước hoàn tất
+ * giao hàng: `delivery_completion_service` gọi `post_ar_invoice` trong cùng một
+ * giao dịch với POD và giá cuối. Đó là lý do bộ dữ liệu demo có hoá đơn mà
+ * không ai bấm "Post" lần nào.
+ *
+ * `POST /api/invoices/post` vẫn còn ở máy chủ, làm cửa lập hoá đơn thủ công cho
+ * những đơn cũ chưa đi qua đường hoàn tất. Nó không có màn nào gọi — xem
+ * `docs/ra-soat-nut-va-luong.md`.
+ */
 
 window.submitIncident = function () {
   if (typeof window.submitIncidentReport === 'function') {
