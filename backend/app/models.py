@@ -965,6 +965,11 @@ class Quotation(Base):
     # tháng, nên không lưu lại thì không ai dựng lại được con số đã chào khách.
     cost_breakdown_json = Column(Text)
     target_margin = Column(Float)  # biên mục tiêu riêng cho khách này
+    # Giá đối thủ mà khách nói ra, tính bằng VNĐ. Cột riêng chứ không nhét vào
+    # ghi chú nội bộ: một con số nằm trong đoạn văn tự do là con số không lọc
+    # được, không dùng được làm mốc gợi ý giá, và không đối soát lại được sau
+    # một quý là mình mất khách vì giá hay vì thứ khác.
+    competitor_price = Column(Numeric(18, 2))
     sent_at = Column(DateTime)
     accepted_at = Column(DateTime)
     closed_at = Column(DateTime)

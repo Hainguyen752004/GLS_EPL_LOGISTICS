@@ -149,6 +149,7 @@ async def gia_da_bao(
     cid: str,
     route_id: Optional[str] = Query(None),
     limit: int = Query(3, ge=1, le=20),
+    exclude: Optional[str] = Query(None),
     db: Session = Depends(get_db),
 ):
     """Vai bao gia gan nhat da bao cho khach nay.
@@ -159,7 +160,7 @@ async def gia_da_bao(
     """
     try:
         return {"message": "Đã tải giá đã báo cho khách này.",
-                "data": bao_gia.gia_da_bao_cho_khach(db, cid, route_id, limit)}
+                "data": bao_gia.gia_da_bao_cho_khach(db, cid, route_id, limit, exclude)}
     except DomainError as loi:
         raise_http(loi)
 

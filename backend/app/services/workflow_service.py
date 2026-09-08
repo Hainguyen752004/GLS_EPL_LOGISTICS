@@ -605,7 +605,7 @@ def _ap_truong_bao_gia_moi(db, q, data, route=None):
         q.price_basis = "per_trip"
 
     for ten in ("unit_price", "min_qty_per_trip", "waiting_surcharge", "cargo_value",
-                "target_margin"):
+                "target_margin", "competitor_price"):
         if ten in data:
             setattr(q, ten, _money(data, ten, getattr(q, ten, 0) or 0))
     if "fx_rate" in data:

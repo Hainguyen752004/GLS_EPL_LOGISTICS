@@ -655,6 +655,7 @@
       selling_price: 0, total_cost: 0, bien: null,
       currency_code: 'VND', fx_rate: 1, payment_terms: DIEU_KHOAN[0],
       waiting_surcharge: 0, sales_rep: nguoiDangDung(), trips_per_month: 0,
+      competitor_price: 0,
       notes_customer: '', notes_ops: '', notes_internal: '',
       items: [{ line_no: 1, name: '', quantity: 1, uom: "40'", note: '' }],
       attachments: [], versions: [], delivery_orders: [],
@@ -997,8 +998,16 @@
           data-v="${esc(v.id)}" data-hong="${hong ? '1' : ''}">
           <b>${esc(v.ten || v.id)}</b>
           <span>Tải ${so(Number(v.suc_tai_kg || 0) / 1000)} tấn${
-        v.the_tich_m3 ? ' · ' + so(v.the_tich_m3) + ' m³' : ''}</span>
-          <span>${v.co_cong_thuc ? 'Đã có công thức giá thành'
+        v.the_tich_m3 ? ' · ' + so(v.the_tich_m3) + ' m³' : ''}${
+        v.so_pallet ? ' · ' + v.so_pallet + ' pallet' : ''}</span>
+          <span>${v.co_cong_thuc
+        // Hai con số này cho biết vì sao hai loại xe cùng chở được 24 tấn lại
+        // ra hai giá thành khác nhau. Không có chúng thì người bán chọn xe chỉ
+        // theo sức tải.
+        ? [Number(v.dau_moi_km) > 0 ? 'Dầu ' + tien(v.dau_moi_km) + ' ₫/km' : '',
+          Number(v.khau_hao_moi_km) > 0 ? 'khấu hao ' + tien(v.khau_hao_moi_km) + ' ₫/km' : '',
+          Number(v.phu_cap_chuyen) > 0 ? 'phụ cấp ' + tien(v.phu_cap_chuyen) + ' ₫' : '']
+          .filter(Boolean).join(' · ') || 'Đã có công thức giá thành'
         : '⚠ chưa cấu hình công thức giá thành'}</span>
           <span class="fit ${mau}">${esc(nhan)}</span></div>`;
     }).join('');
@@ -1062,6 +1071,16 @@
               <input id="qtv2-target" inputmode="decimal"
                 value="${q.target_margin ? so(q.target_margin * 100) : ''}"
                 placeholder="20" ${suaDuoc() ? '' : 'disabled'}></div>
+          </div>
+          <div class="g3" style="margin-top:10px">
+            <div class="f"><label>Giá đối thủ · khách nói ra
+                <span class="hint">₫/chuyến · để trống nếu khách không nói</span></label>
+              <input id="qtv2-competitor" inputmode="numeric"
+                value="${q.competitor_price ? tien(q.competitor_price) : ''}"
+                placeholder="3.850.000" ${suaDuoc() ? '' : 'disabled'}>
+              <span class="hint2">Ghi ở đây chứ không ghi vào ô ghi chú: một con số nằm
+                trong đoạn văn tự do thì sau này không lọc lại được để trả lời câu "mình
+                mất khách vì giá hay vì thứ khác".</span></div>
           </div>
           <div id="qtv2-mgwarn"></div>
         </div>
@@ -1459,6 +1478,10 @@
     });
     noi('qtv2-wait', 'change', () => { q.waiting_surcharge = docSo(el('qtv2-wait').value); });
     noi('qtv2-terms', 'change', () => { q.payment_terms = el('qtv2-terms').value; });
+    noi('qtv2-competitor', 'change', () => {
+      q.competitor_price = docSo(el('qtv2-competitor').value);
+      napGiaDaBao();
+    });
     noi('qtv2-target', 'change', () => {
       const p = docSo(el('qtv2-target').value);
       q.target_margin = p > 0 ? p / 100 : 0;
@@ -1721,6 +1744,8 @@
     try {
       const tv = new URLSearchParams({ limit: '3' });
       if (q.route_id) tv.set('route_id', q.route_id);
+      // Bỏ chính báo giá đang mở: nó không phải "lần trước".
+      if (q.id) tv.set('exclude', q.id);
       const ds = await doc(`/api/customers/${encodeURIComponent(q.customer_id)}`
         + '/price-history?' + tv.toString());
       o.innerHTML = '<h4>Giá đã báo cho khách này</h4>' + ((ds && ds.length)
@@ -1730,7 +1755,20 @@
             <span>· ${esc(x.quote_no || x.id)} · ${esc((TRANG_THAI[x.canonical_status]
           || [x.canonical_status])[0])}</span></div>`).join('')
         : '<div class="hint2">Chưa từng báo giá cho khách này trên tuyến này — không có mốc để '
-          + 'so, nên soát kỹ giá thành trước khi gửi.</div>');
+          + 'so, nên soát kỹ giá thành trước khi gửi.</div>')
+        // Chi hien khi CO SO THAT. Mot dong "gia doi thu —" lam nguoi doc tuong
+        // da tra ma khong ra, khac han voi viec khach chua noi gi.
+        + (Number(q.competitor_price) > 0
+          ? `<div class="ver"><span>Đối thủ · khách nói</span>
+              <b>≈ ${tien(q.competitor_price)} ₫</b>
+              <span>· ${Number(q.selling_price) > 0
+            ? (q.selling_price > q.competitor_price
+              ? 'mình cao hơn ' + tien(q.selling_price - q.competitor_price) + ' ₫'
+              : q.selling_price < q.competitor_price
+                ? 'mình thấp hơn ' + tien(q.competitor_price - q.selling_price) + ' ₫'
+                : 'bằng nhau')
+            : 'chưa có cước của mình để so'}</span></div>`
+          : '');
     } catch (loi) {
       o.innerHTML = '<h4>Giá đã báo cho khách này</h4>'
         + `<div class="hint2" style="color:#d32f2f">Không tải được: ${esc(loi.message)}</div>`;
@@ -1857,6 +1895,7 @@
       // sang khách dù nút đã ghi đúng "Gửi duyệt nội bộ". Máy chủ giờ cũng coi
       // 0 là không khai, nhưng phía này đừng nói sai ngay từ đầu.
       target_margin: Number(q.target_margin) > 0 ? q.target_margin : null,
+      competitor_price: Number(q.competitor_price) > 0 ? q.competitor_price : null,
       notes_customer: q.notes_customer || '',
       notes_ops: q.notes_ops || '',
       notes_internal: q.notes_internal || '',
@@ -2018,6 +2057,7 @@
       currency_code: goc.currency_code, payment_terms: goc.payment_terms,
       waiting_surcharge: goc.waiting_surcharge, trips_per_month: goc.trips_per_month,
       target_margin: goc.target_margin,
+      competitor_price: goc.competitor_price,
       notes_customer: goc.notes_customer, notes_ops: goc.notes_ops,
       // Ghi chú NỘI BỘ không nhân bản: nó thường nói về một lần thương lượng cụ
       // thể ("tối đa giảm 3%"), và mang sang một báo giá khác thì sai ngữ cảnh.

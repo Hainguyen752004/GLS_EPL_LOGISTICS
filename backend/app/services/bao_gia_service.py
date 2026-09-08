@@ -282,6 +282,22 @@ def do_vua_tai(loai_xe, khoi_luong_kg):
     return "phu_hop"
 
 
+def _don_gia_hang_tu(cong_thuc, cac_khoa):
+    """Don gia cua hang tu dau tien co khoa nam trong `cac_khoa`, hoac 0.
+
+    Doi chieu theo NHIEU KHOA vi cong thuc do nguoi dung soan: khoan xang dau co
+    the mang khoa `fuel`, `dau` hay `xang_dau` tuy ai khai. Doi dung mot khoa
+    thi the loai xe hien 0 d/km cho mot cong thuc co that, va mot con so 0 nhu
+    vay doc ra la "loai xe nay khong ton dau".
+    """
+    for ht in (cong_thuc or {}).get("terms", []):
+        if not isinstance(ht, dict):
+            continue
+        if str(ht.get("key") or "") in cac_khoa and str(ht.get("kind") or "cost") != "revenue":
+            return _so(ht.get("rate"))
+    return 0.0
+
+
 def xem_truoc_gia(db, data):
     """Bang cau phan gia thanh, do vua tai cua tung loai xe, va goi y gia.
 
@@ -308,12 +324,29 @@ def xem_truoc_gia(db, data):
     if kg <= 0:
         thieu.append("Chưa nhập tổng tải trọng — không kiểm tra được xe có đủ tải.")
 
+    # CONG THUC CUA MOI LOAI XE, DOC MOT LAN.
+    #
+    # `cong_thuc_loai_xe` quet ca bang cong thuc moi lan goi. Goi no trong vong
+    # lap qua tung loai xe la N lan quet cho mot man hinh mo ra, va con so do
+    # tang theo ca so loai xe LAN so cong thuc.
+    bang_cong_thuc = {}
+    for v in db.query(VehicleType).order_by(VehicleType.name).all():
+        bang_cong_thuc[v.id] = (v, cong_thuc_loai_xe(db, v.id))
+
     cac_loai_xe = [{
         "id": v.id, "ten": v.name, "suc_tai_kg": _so(v.max_weight),
         "the_tich_m3": _so(v.volume_capacity_m3), "so_pallet": int(_so(v.pallet_capacity)),
         "do_vua_tai": do_vua_tai(v, kg),
-        "co_cong_thuc": cong_thuc_loai_xe(db, v.id) is not None,
-    } for v in db.query(VehicleType).order_by(VehicleType.name).all()]
+        "co_cong_thuc": ct is not None,
+        # HAI CON SO CUA THE LOAI XE, theo ban thiet ke muc 3.4: don gia dau
+        # tren km va phu cap chuyen. Chung la thu cho biet vi sao hai loai xe
+        # cung cho duoc 24 tan lai ra hai gia thanh khac nhau — khong co chung
+        # thi nguoi ban chon xe chi theo suc tai.
+        "dau_moi_km": _don_gia_hang_tu(ct, ("fuel", "dau", "xang_dau")),
+        "phu_cap_chuyen": _don_gia_hang_tu(ct, ("drv", "driver", "phu_cap", "tai_xe")),
+        "khau_hao_moi_km": (_don_gia_hang_tu(ct, ("dep", "depreciation", "khau_hao"))
+                            or _so(getattr(v, "dep_cost_per_km", None))),
+    } for v, ct in bang_cong_thuc.values()]
 
     if loai_xe and cong_thuc_loai_xe(db, loai_xe.id) is None:
         thieu.append("Loại xe %s chưa cấu hình công thức giá thành — khai ở Dữ liệu gốc → "
@@ -1009,6 +1042,10 @@ def _bung_bao_gia(db, q, kem_chi_tiet=False, hom_nay=None):
         "sales_rep": q.sales_rep,
         "trips_per_month": int(_so(q.trips_per_month)),
         "target_margin": _so(q.target_margin) or None,
+        # `None` khi khong co, KHONG phai 0: giao dien chi hien dong "gia doi
+        # thu" khi co so that, chu khong hien mot o "—" lam nguoi doc tuong da
+        # tra ma khong ra.
+        "competitor_price": _so(q.competitor_price) or None,
         "notes_customer": q.notes_customer,
         "notes_ops": q.notes_ops,
         "notes_internal": q.notes_internal,
@@ -1147,17 +1184,36 @@ def dai_so_lieu(db):
     }
 
 
-def gia_da_bao_cho_khach(db, ma_khach, ma_tuyen=None, so_ban=3):
+#: Trang thai co nghia la KHACH DA THAT SU NHAN DUOC con so nay.
+#:
+#: `draft` va `pending_approval` khong nam trong day: hai trang thai do la gia
+#: dang go do trong nha, khach chua he thay.
+DA_TOI_TAY_KHACH = ("sent", "approved", "accepted", "split", "rejected", "expired")
+
+
+def gia_da_bao_cho_khach(db, ma_khach, ma_tuyen=None, so_ban=3, tru_ma=None):
     """Vai bao gia gan nhat da bao cho MOT khach — cot phai cua man chi tiet.
 
     Nguoi ban can biet lan truoc bao bao nhieu truoc khi go mot con so moi. Do
     la thu chan viec bao 3,9 trieu hom nay cho mot khach thang truoc da bao 4,1
     trieu cung tuyen.
+
+    CHI LAY NHUNG BAO GIA KHACH DA THAT SU NHAN DUOC. Truoc day cau nay lay ca
+    ban nhap, nen khoi mang dung nhan "Gia da bao cho khach" lai hien mot con so
+    chua ai ngoai cong ty nhin thay — va con so do duoc nguoi ban dung lam moc
+    de bao gia lan nay. Mot ban nhap go thu 100.000 d se keo ca muc gia xuong.
+
+    `tru_ma` la de bo chinh bao gia dang mo ra khoi danh sach: no khong phai
+    "lan truoc".
     """
-    tv = db.query(Quotation).filter(Quotation.customer_id == ma_khach,
-                                    Quotation.selling_price.is_not(None))
+    tv = db.query(Quotation).filter(
+        Quotation.customer_id == ma_khach,
+        Quotation.selling_price.is_not(None),
+        Quotation.canonical_status.in_(DA_TOI_TAY_KHACH))
     if ma_tuyen:
         tv = tv.filter(Quotation.route_id == ma_tuyen)
+    if tru_ma:
+        tv = tv.filter(Quotation.id != tru_ma)
     ra = []
     for q in tv.order_by(Quotation.created_at.desc()).limit(int(so_ban) + 5).all():
         if _so(q.selling_price) <= 0:

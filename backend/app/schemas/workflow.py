@@ -97,6 +97,7 @@ class QuotationCreateRequest(StrictRequest):
     notes_ops: Optional[str] = None
     notes_internal: Optional[str] = None
     target_margin: Optional[Number] = None
+    competitor_price: Optional[Number] = None
 
 
 class QuotationUpdateRequest(QuotationCreateRequest):
