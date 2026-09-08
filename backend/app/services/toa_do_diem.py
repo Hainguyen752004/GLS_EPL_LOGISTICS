@@ -31,8 +31,10 @@ Bang moi o duoi KHONG phai co che — no chi la diem khoi dau. Nho tang 3 thi mo
 tuyen MOI voi mot kho MOI van ve duoc; nho tang 1 thi lan sau khong can mang.
 """
 
+import hashlib
 import json
 import math
+import re
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -287,6 +289,70 @@ def _ghi_vao_bang(db, nhan, diem):
                     db.flush()
                 return True
     return False
+
+
+def bao_dam_dia_diem(db, nhan, loai="Điểm tuyến"):
+    """Bảo đảm một điểm của tuyến CÓ MỘT DÒNG trong bảng địa điểm.
+
+    VÌ SAO CẦN, và vì sao nó khác `_ghi_vao_bang`.
+
+    `_ghi_vao_bang` cố ý không tạo dòng mới, và lý do nó nêu là đúng cho một
+    chuỗi người dùng gõ tự do vào ô "Điểm đến" của một đơn hàng. Nhưng ĐIỂM CỦA
+    TUYẾN thì khác hẳn: nó là dữ liệu gốc, người dùng khai một lần khi dựng
+    tuyến, và mọi báo giá cùng mọi chuyến sau đó đọc lại chính nó.
+
+    Không có dòng đó thì hai điều quan trọng nhất đều không làm được:
+
+      · KHÔNG KHAI TAY ĐƯỢC. `PUT /api/locations/{id}/coordinates` — đường chốt
+        cuối khi dịch vụ tra toạ độ không biết một mỏ đá nội bộ — đòi một dòng
+        có sẵn. Không có dòng thì người dùng không còn cách nào ngoài sửa mã
+        nguồn, và đó đúng là điều phải tránh.
+      · KHÔNG HIỆN RA VIỆC CẦN LÀM. Danh sách "thiếu toạ độ" của màn Dữ liệu
+        gốc quét bảng địa điểm, nên một điểm không có dòng thì lặng lẽ không
+        bao giờ được nhắc.
+
+    Chuyện này đã xảy ra thật: tạo tuyến "Mỏ đá An Bình → Cảng Cát Lái", dịch
+    vụ ngoài đoán sai chỗ mỏ đá, phép kiểm km loại cả hai điểm của chặng — và
+    sau đó không có dòng nào để khai tay, nên tuyến vĩnh viễn không vẽ được.
+
+    Toạ độ để RỖNG. Hàm này chỉ bảo đảm có dòng; việc điền toạ độ là của ba tầng
+    trong `toa_do_day_du`, hoặc của người dùng.
+    """
+    ten = str(nhan or "").strip()
+    khoa = chuan_hoa(ten)
+    if not khoa:
+        return None
+    # Khớp theo tên đã chuẩn hoá, cùng cách `_ghi_vao_bang` khớp, để không tạo
+    # ra hai dòng cho cùng một chỗ chỉ vì khác dấu hoặc khác hoa thường.
+    for row in db.query(Location).all():
+        for x in (row.name, row.id):
+            k = chuan_hoa(x)
+            if k and (k == khoa or k in khoa or khoa in k):
+                return row
+    # Mã sinh từ tên để người đọc bảng địa điểm nhận ra được, cộng một đuôi băm
+    # để hai tên khác nhau không đụng mã sau khi bỏ dấu.
+    goc = re.sub(r"[^a-z0-9]+", "-", khoa).strip("-")[:40] or "diem"
+    ma = "LOC-%s-%s" % (goc.upper(), hashlib.sha1(khoa.encode("utf-8")).hexdigest()[:6].upper())
+    row = Location(id=ma, name=ten, type=loai)
+    db.add(row)
+    db.flush()
+    return row
+
+
+def bao_dam_dia_diem_cua_chang(db, cac_chang):
+    """Bảo đảm mọi đầu chặng của một tuyến đều có dòng trong bảng địa điểm.
+
+    Trả về danh sách tên đã bảo đảm, để đường lưu tuyến nói ra được.
+    """
+    ra = []
+    for chang in cac_chang if isinstance(cac_chang, list) else []:
+        if not isinstance(chang, dict):
+            continue
+        for ten in (chang.get("from") or chang.get("origin"),
+                    chang.get("to") or chang.get("destination")):
+            if ten and bao_dam_dia_diem(db, ten) is not None and ten not in ra:
+                ra.append(ten)
+    return ra
 
 
 def toa_do_day_du(db, nhan, cho_phep_ngoai=True, ghi_log=None):

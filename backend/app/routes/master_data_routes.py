@@ -226,6 +226,20 @@ async def create_route(payload: RouteCreateRequest, db: Session = Depends(get_db
         except (ValueError, TypeError):
             chang = []
         if isinstance(chang, list) and chang and isinstance(chang[0], dict):
+            # BẢO ĐẢM MỌI ĐẦU CHẶNG CÓ MỘT DÒNG TRONG BẢNG ĐỊA ĐIỂM, TRƯỚC KHI
+            # đi tra toạ độ.
+            #
+            # Đây là điều làm cho một tuyến MỚI với một mỏ đá MỚI vẫn sửa được.
+            # Không có dòng đó thì đường khai tay
+            # (`PUT /api/locations/{id}/coordinates`) không có gì để khai, và
+            # danh sách "thiếu toạ độ" của màn Dữ liệu gốc không bao giờ nhắc
+            # tới điểm đó — người dùng chỉ thấy một ô bản đồ trắng và không có
+            # cách nào chữa ngoài sửa mã nguồn.
+            #
+            # Chuyện đã xảy ra thật khi thử: tạo tuyến "Mỏ đá An Bình → Cảng
+            # Cát Lái", dịch vụ ngoài đoán sai chỗ mỏ đá, phép kiểm km loại cả
+            # hai điểm của chặng, và sau đó không còn dòng nào để khai tay.
+            toa_do_diem.bao_dam_dia_diem_cua_chang(db, chang)
             chang_geo, thieu_toa_do = toa_do_diem.gan_toa_do_cho_chang_db(db, chang, True)
             chang_vao = json.dumps(chang_geo, ensure_ascii=False)
 

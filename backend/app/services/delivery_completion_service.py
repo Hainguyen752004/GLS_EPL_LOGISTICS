@@ -131,20 +131,66 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     if trip.status not in ("dispatched", "in_transit"):
         raise conflict("TRIP_NOT_IN_TRANSIT", "Trip chưa ở trạng thái giao hàng.")
 
-    sales_order = db.get(SalesOrder, delivery.so_id)
-    quotation = db.get(Quotation, sales_order.quotation_id) if sales_order and sales_order.quotation_id else None
-    base_price = _money(sales_order.total_amount if sales_order else 0)
-    source = "sales_order"
-    source_id = sales_order.id if sales_order else None
-    if base_price <= 0 and quotation:
+    # GIÁ GỐC CỦA MỘT DO — ba nguồn, xét theo thứ tự thẩm quyền.
+    #
+    # LUỒNG MỚI KHÔNG CÓ ĐƠN HÀNG (SO). Báo giá được khách chấp nhận thì tách
+    # thẳng thành DO, và giá được KHOÁ ngay trên từng DO (`unit_price`) — đó
+    # chính là lý do bước SO bị bỏ.
+    #
+    # Trước đây đoạn này chỉ đi một đường: DO → `so_id` → SO → báo giá. Một DO
+    # sinh từ báo giá không có `so_id`, nên nó dừng ở "DO chưa có giá SO/Báo giá
+    # hợp lệ" — nghĩa là MỌI chuyến của luồng mới không hoàn tất giao được, và
+    # lỗi hiện ra ở bước cuối cùng, sau khi tài xế đã giao hàng xong.
+    #
+    # Thứ tự dưới đây theo mức cụ thể, cao nhất trước:
+    #
+    #   1. `delivery_orders.unit_price` — giá đã khoá cho ĐÚNG chuyến này. Nó cụ
+    #      thể hơn cả báo giá, vì một báo giá tách ra nhiều DO và giá khoá là
+    #      con số vận hành không sửa được ở dưới.
+    #   2. Báo giá mà DO trỏ tới (`quotation_id`).
+    #   3. Đường cũ: SO, rồi báo giá của SO. Giữ nguyên cho những DO tạo trước
+    #      khi bỏ bước SO — chúng vẫn phải quyết toán được.
+    sales_order = db.get(SalesOrder, delivery.so_id) if delivery.so_id else None
+    quotation = None
+    if getattr(delivery, "quotation_id", None):
+        quotation = db.get(Quotation, delivery.quotation_id)
+    if quotation is None and sales_order is not None and sales_order.quotation_id:
+        quotation = db.get(Quotation, sales_order.quotation_id)
+
+    base_price = _money(getattr(delivery, "unit_price", 0))
+    source = "delivery_order"
+    source_id = delivery.id if base_price > 0 else None
+    if base_price <= 0 and quotation is not None:
         base_price = _money(quotation.selling_price)
         source = "quotation"
         source_id = quotation.id
+    if base_price <= 0 and sales_order is not None:
+        base_price = _money(sales_order.total_amount)
+        source = "sales_order"
+        source_id = sales_order.id
     if base_price <= 0 or not source_id:
-        raise DomainError("BASE_PRICE_MISSING", "DO chưa có giá SO/Báo giá hợp lệ.", 422)
-    source_currency = (getattr(sales_order, "currency_code", None) or "VND").upper()
+        raise DomainError(
+            "BASE_PRICE_MISSING",
+            "Lệnh giao hàng %s chưa có giá: không có giá khoá trên lệnh, không nối "
+            "được báo giá, và cũng không có đơn hàng. Không có giá thì không "
+            "quyết toán và không phát hành hoá đơn được." % delivery.id,
+            422)
+
+    # ĐỒNG TIỀN lấy theo nguồn giá đang dùng, không lấy cứng từ SO: một DO của
+    # luồng mới không có SO, nên đọc từ SO sẽ luôn ra "VND" — và một báo giá
+    # bằng USD sẽ lặng lẽ được quyết toán như tiền đồng.
+    source_currency = "VND"
+    for nguoi_giu in (quotation if source in ("delivery_order", "quotation") else None,
+                      sales_order):
+        ma_tien = getattr(nguoi_giu, "currency_code", None) if nguoi_giu is not None else None
+        if ma_tien:
+            source_currency = str(ma_tien).upper()
+            break
     if payload.currency_code != source_currency:
-        raise DomainError("CURRENCY_MISMATCH", "Đơn vị tiền phải khớp với SO.", 422)
+        raise DomainError(
+            "CURRENCY_MISMATCH",
+            "Đơn vị tiền phải khớp với nguồn giá (%s là %s)."
+            % (source_id, source_currency), 422)
 
     delivery_legs = db.scalars(select(TransportTripLeg).where(
         TransportTripLeg.trip_id == trip.id,
@@ -198,6 +244,23 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
         )
         db.add(pod)
         db.flush()
+        # ẢNH POD VÀ ẢNH CHỮ KÝ KHÔNG ĐƯỢC LÀ CÙNG MỘT TỆP.
+        #
+        # Bảng `delivery_pod_documents` có ràng buộc duy nhất trên
+        # `(pod_record_id, checksum)`, nên hai tệp giống nhau từng byte làm cơ
+        # sở dữ liệu nổ ra `IntegrityError` — và người dùng nhận về "Internal
+        # Server Error 500" cho một việc họ tự sửa được trong ba giây: chọn lại
+        # đúng ảnh chữ ký.
+        #
+        # Kiểm ở đây chứ không dựa vào ràng buộc: một lỗi 500 không nói được
+        # điều gì, và nó xảy ra SAU KHI tài xế đã giao hàng xong — thời điểm tệ
+        # nhất để người dùng gặp một thông báo không hiểu được.
+        if hashlib.sha256(content).hexdigest() == hashlib.sha256(signature_content).hexdigest():
+            raise DomainError(
+                "POD_SIGNATURE_SAME_AS_FILE",
+                "Ảnh POD và ảnh chữ ký của chặng %s đang là cùng một tệp. Hãy chọn "
+                "ảnh chữ ký người nhận riêng." % entry.leg_id,
+                422)
         documents = [
             DeliveryPODDocument(
                 id=f"PODDOC-{uuid4().hex}", pod_record_id=pod.id,

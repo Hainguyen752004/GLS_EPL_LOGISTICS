@@ -487,6 +487,45 @@ def _moc_thoi_gian(gia_tri):
     return _parse_business_datetime(gia_tri)
 
 
+#: Do rong mac dinh cua mot khung gio khi bao gia khong khai — 4 gio.
+#:
+#: Phai LON HON KHONG. Xem `_khung_gio`: mot khung rong bang khong lam buoc lap
+#: Trip tu choi moi DO tach ra tu bao gia.
+RONG_KHUNG_GIO_GIO = 4
+
+
+def _khung_gio(dau_bao_gia, cuoi_bao_gia, moc_cua_dong):
+    """Khung gio cua mot DO: `(dau, cuoi)`, va DAU LUON NHO HON CUOI.
+
+    LOI DA XAY RA THAT, VA NO CHAN CA LUONG. Truoc day ca hai dau khung deu duoc
+    dat bang dung mot moc (`pickup_at` cua dong tach), tuc mot khung RONG BANG
+    KHONG. Buoc lap Trip doi `pickup_start < pickup_end` — chinh de chan viec
+    gop nhung DO khong the cung mot chuyen — nen voi khung rong bang khong thi
+    KHONG MOT DO NAO tach tu bao gia lap duoc Trip, ke ca khi chi lap cho mot
+    DO. Loi hien ra o buoc sau ("Khung giờ của các DO không giao nhau") nen doc
+    thong bao cung khong ra duoc nguyen nhan.
+
+    Cach dung cua hai con so, va chung KHAC NHAU:
+
+      · KHUNG GIO la thoa thuan voi khach — "lay hang trong buoi sang" — va no
+        thuoc BAO GIA. Moi DO tach ra ke thua nguyen khung do, nen ba chuyen
+        cung mot bao gia van gop duoc vao mot Trip.
+      · MOC CU THE (`pickup_date` / `delivery_date`) la gio Dieu phoi nham tinh,
+        va no thuoc TUNG DONG tach. Do la cho giu con so nguoi dung go o bang
+        tach DO.
+
+    Bao gia khong khai khung thi suy ra tu moc cua dong cong `RONG_KHUNG_GIO_GIO`
+    — mot khung that, khong phai mot diem.
+    """
+    dau = _moc_thoi_gian(dau_bao_gia) or _moc_thoi_gian(moc_cua_dong)
+    cuoi = _moc_thoi_gian(cuoi_bao_gia)
+    if dau is None:
+        return None, None
+    if cuoi is None or cuoi <= dau:
+        cuoi = dau + dt.timedelta(hours=RONG_KHUNG_GIO_GIO)
+    return dau, cuoi
+
+
 def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
     """Mot lenh giao hang tach tu bao gia."""
     ma = "%s-DO%02d" % ((q.quote_no or q.id).replace("QT-", "").replace("DEMO-", ""), chi_so + 1)
@@ -504,10 +543,17 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
         route_id=q.route_id,
         origin=q.origin,
         destination=q.destination,
-        pickup_window_start=_moc_thoi_gian(dong.get("pickup_at")),
-        pickup_window_end=_moc_thoi_gian(dong.get("pickup_at")),
-        delivery_window_start=_moc_thoi_gian(dong.get("due_at")),
-        delivery_window_end=_moc_thoi_gian(dong.get("due_at")),
+        # KHUNG GIO ke thua tu BAO GIA (thoa thuan voi khach), con MOC CU THE
+        # lay tu dong tach (gio Dieu phoi nham tinh). Xem `_khung_gio`: dat ca
+        # hai dau khung bang mot moc lam buoc lap Trip tu choi moi DO.
+        pickup_window_start=_khung_gio(q.pickup_window_start, q.pickup_window_end,
+                                       dong.get("pickup_at"))[0],
+        pickup_window_end=_khung_gio(q.pickup_window_start, q.pickup_window_end,
+                                     dong.get("pickup_at"))[1],
+        delivery_window_start=_khung_gio(q.delivery_window_start, q.delivery_window_end,
+                                         dong.get("due_at"))[0],
+        delivery_window_end=_khung_gio(q.delivery_window_start, q.delivery_window_end,
+                                       dong.get("due_at"))[1],
         pickup_date=_moc_thoi_gian(dong.get("pickup_at")),
         delivery_date=_moc_thoi_gian(dong.get("due_at")),
         weight_kg=_so(q.weight_kg) / max(1, tong_do),

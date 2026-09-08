@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 import builtins
 from uuid import uuid4
 
@@ -64,6 +64,17 @@ class DatabaseReadinessChecker:
             "SELECT table_name FROM information_schema.tables "
             "WHERE table_schema = 'public'"
         )
+
+    def dialect_dang_dung(self):
+        """Ten engine THAT dang chay, de duong /health/database noi dung su that.
+
+        Ham `_dialect_name` mac dinh ve "postgresql" khi khong doc duoc, va do
+        la mac dinh dung cho viec CHON CAU TRUY VAN — mac dinh nghiem ngat hon
+        thi khong bao gio lam yeu phep kiem luoc do. Nhung dung chinh no de BAO
+        CAO thi sai: no bien mot mac dinh phong ho thanh mot cau khang dinh.
+        """
+        dialect = getattr(self.engine, "dialect", None)
+        return getattr(dialect, "name", None) or "khong ro"
 
     def check(self):
         with self.engine.connect() as connection:
@@ -156,7 +167,15 @@ def database_health(
             raise DatabaseSchemaError("startup migration failed")
         checker.check()
         state.record_database_success()
-        return {"status": "ok", "database": "postgresql"}
+        # NOI DUNG ENGINE DANG CHAY, khong ghi cung "postgresql".
+        #
+        # Truoc day chuoi nay la hang so, nen chay tren SQLite ma duong suc khoe
+        # van bao "postgresql". Do la dung loai cam giac an toan gia ma chu du
+        # an da chi ra: hai co so du lieu nay KHONG giong nhau — SQLite duoc
+        # dung lai tu `models.py` nen luon co rang buoc moi nhat, con PostgreSQL
+        # nang cap tung buoc nen luoc do co the troi khoi mo hinh. Mot nguoi mo
+        # duong nay de kiem "minh dang chay tren cai nao" phai doc duoc su that.
+        return {"status": "ok", "database": checker.dialect_dang_dung()}
     except Exception as error:
         code, message = _failure(error)
         logger.warning("Database readiness failed code=%s correlation_id=%s", code, correlation_id)

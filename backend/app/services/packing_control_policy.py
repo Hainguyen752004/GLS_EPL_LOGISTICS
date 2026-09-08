@@ -19,6 +19,12 @@ NEN QUY TAC GAN VAO LOAI HANG, va do DU LIEU quyet chu khong do nguoi bam:
     Day dung la cho kien bi that lac, nen day dung la cho can dem.
   · Container nguyen khoi          -> KHONG can Packing List, nhung PHAI co so
     niem phong. Kiem soat cua no la niem phong, khong phai dem kien.
+  · Hang roi (da, cat, xa)         -> KHONG dem kien va KHONG niem phong, nhung
+    PHAI co khoi luong khai. Kiem soat cua no la PHIEU CAN: can tai mo, can tai
+    cang, hai con so phai khop. Nhom nay them sau, vi hai nhom tren khong phu
+    duoc mot chuyen cho da mo — va truoc do nguoi dung khong sua duoc: khong co
+    cach viet nao dien ta hang roi ma he thong hieu, nen cach duy nhat de xuat
+    ben la khai sai thanh "nguyen khoi".
 
 Quy cach doc tu `delivery_orders.packaging_spec` — truong da co san, khong phai
 them cot moi cho viec phan loai.
@@ -47,10 +53,34 @@ MAU_DEM_KIEN = re.compile(
     re.IGNORECASE,
 )
 
+#: HANG ROI — nhom thu ba, va no phai co.
+#:
+#: Hai nhom tren khong phu duoc mot chuyen cho da mo: da roi khong dem kien
+#: duoc (khong co kien nao), va cung khong co niem phong (khong co cont de
+#: niem). Truoc khi co nhom nay, mot quy cach nhu "Hang roi, do ben" khong khop
+#: mau nao nen roi vao nhanh mac dinh "phai quet kien" — va nguoi dung KHONG
+#: SUA DUOC, vi khong co cach viet nao dien ta hang roi ma he thong hieu. Cach
+#: duy nhat de xuat ben la go "nguyen khoi", tuc khai sai de lot cua.
+#:
+#: KIEM SOAT CUA HANG ROI LA PHIEU CAN, khong phai dem kien va khong phai niem
+#: phong: can tai mo, can tai cang, va hai con so do phai khop trong sai so cho
+#: phep. Nen cua o day chi doi mot dieu — don PHAI CO KHOI LUONG KHAI — de con
+#: mot con so ma doi chieu voi khoi luong thuc ghi tren POD.
+MAU_HANG_ROI = re.compile(
+    r"hàng\s*rời|hang\s*roi|\brời\b|\broi\b|\bbulk\b|hàng\s*xá|hang\s*xa"
+    r"|đổ\s*ben|do\s*ben|xe\s*ben|tự\s*đổ|tu\s*do|rời\s*đổ",
+    re.IGNORECASE,
+)
+
 
 def la_nguyen_khoi(quy_cach):
     """Quy cach nay co phai mot don vi niem phong khong."""
     return bool(MAU_NGUYEN_KHOI.search(str(quy_cach or "")))
+
+
+def la_hang_roi(quy_cach):
+    """Quy cach nay co phai hang roi (can theo khoi luong) khong."""
+    return bool(MAU_HANG_ROI.search(str(quy_cach or "")))
 
 
 def phai_quet_kien(don):
@@ -64,7 +94,7 @@ def phai_quet_kien(don):
     ho sua duoc quy cach. Cai sai thu hai re hon nhieu.
     """
     quy_cach = str(getattr(don, "packaging_spec", "") or "")
-    if la_nguyen_khoi(quy_cach):
+    if la_nguyen_khoi(quy_cach) or la_hang_roi(quy_cach):
         return False
     return True
 
@@ -97,6 +127,26 @@ def kiem_dieu_kien_xuat_ben(don, phieu_dat_yeu_cau):
                 "Packing List và quét đủ kiện trước khi cho xe đi." % (
                     don.id, str(getattr(don, "packaging_spec", "") or "chưa khai quy cách")),
                 ["parking-list"],
+            )
+        return
+
+    quy_cach = str(getattr(don, "packaging_spec", "") or "")
+
+    # HANG ROI: kiem soat la PHIEU CAN, khong phai dem kien va khong phai niem
+    # phong. Cua o day chi doi mot con so khoi luong khai, de con cai gi ma doi
+    # chieu voi khoi luong thuc ghi tren POD luc giao.
+    if la_hang_roi(quy_cach):
+        try:
+            khoi_luong = float(getattr(don, "weight_kg", 0) or 0)
+        except (TypeError, ValueError):
+            khoi_luong = 0.0
+        if khoi_luong <= 0:
+            raise conflict(
+                "BULK_WEIGHT_REQUIRED",
+                "Chưa thể xuất bến. Lệnh %s là hàng rời nên không đếm kiện và không "
+                "niêm phong, nhưng phải khai khối lượng để còn đối chiếu với phiếu "
+                "cân lúc giao." % don.id,
+                ["delivery-orders"],
             )
         return
 

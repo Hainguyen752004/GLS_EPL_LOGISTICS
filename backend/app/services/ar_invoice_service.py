@@ -84,37 +84,81 @@ def post_ar_invoice(db, data, user="system"):
             ["delivery-orders", "pod"],
         )
 
+    # CHỨNG TỪ NGUỒN CỦA MỘT HOÁ ĐƠN: đơn hàng (đường cũ) HOẶC báo giá (luồng mới).
+    #
+    # Luồng mới bỏ bước Đơn hàng: báo giá được khách chấp nhận thì tách thẳng
+    # thành DO. Đoạn này trước đây chỉ biết đường `DO → so_id → SO`, và đòi SO
+    # ở trạng thái `confirmed`. Một DO của luồng mới không có `so_id` nào, nên
+    # nó dừng ở "Đơn hàng nguồn phải được xác nhận" — tức MỌI chuyến của luồng
+    # mới không phát hành được hoá đơn, và lỗi chỉ hiện ra sau khi tài xế đã
+    # giao hàng và POD đã ký xong.
+    #
+    # Với báo giá, trạng thái tương đương `confirmed` của đơn hàng là
+    # `accepted` (khách đã chấp nhận) hoặc `split` (đã tách thành DO). Không
+    # nhận `sent` hay `draft`: một con số khách chưa đồng ý thì chưa xuất được
+    # hoá đơn.
     sales_order = db.get(SalesOrder, delivery.so_id) if delivery.so_id else None
-    if not sales_order or sales_order.canonical_status != "confirmed":
+    quotation = None
+    if getattr(delivery, "quotation_id", None):
+        from models import Quotation
+        quotation = db.get(Quotation, delivery.quotation_id)
+
+    TRANG_THAI_BAO_GIA_XUAT_HOA_DON = ("accepted", "split")
+    if sales_order is not None and sales_order.canonical_status == "confirmed":
+        nguon, ten_nguon, man_nguon = sales_order, "đơn hàng", "sales-orders"
+    elif quotation is not None and quotation.canonical_status in TRANG_THAI_BAO_GIA_XUAT_HOA_DON:
+        nguon, ten_nguon, man_nguon = quotation, "báo giá", "crm-sales"
+    elif quotation is not None:
+        raise conflict(
+            "QUOTATION_NOT_ACCEPTED",
+            "Báo giá nguồn %s đang ở trạng thái %s — phải được khách chấp nhận "
+            "trước khi lập hóa đơn." % (quotation.quote_no or quotation.id,
+                                        quotation.canonical_status),
+            ["crm-sales"],
+        )
+    else:
         raise conflict(
             "SALES_ORDER_NOT_CONFIRMED",
-            "Đơn hàng nguồn phải được xác nhận trước khi lập hóa đơn.",
-            ["sales-orders"],
+            "Lệnh giao hàng %s không nối được chứng từ nguồn nào đã chốt: không có "
+            "đơn hàng đã xác nhận, cũng không có báo giá đã được khách chấp nhận."
+            % delivery.id,
+            ["sales-orders", "crm-sales"],
         )
-    if not delivery.customer_id or delivery.customer_id != sales_order.customer_id:
+
+    if not delivery.customer_id or delivery.customer_id != nguon.customer_id:
         raise DomainError(
             "INVOICE_LINEAGE_INVALID",
-            "Khách hàng trên DO không khớp với đơn hàng nguồn.",
+            "Khách hàng trên DO không khớp với %s nguồn." % ten_nguon,
             422,
-            ["sales-orders", "delivery-orders"],
+            [man_nguon, "delivery-orders"],
         )
 
     closeout = db.scalar(select(DeliveryOrderCloseout).where(
         DeliveryOrderCloseout.do_id == do_id,
     ))
-    amount = _money(
-        amount_override
-        if amount_override is not None
-        else closeout.final_selling_price if closeout is not None else sales_order.total_amount
-    )
+    # Số tiền, xét theo mức cụ thể: số quyết toán > giá khoá của lệnh > số trên
+    # chứng từ nguồn. Giá khoá nằm giữa vì nó là con số cho ĐÚNG chuyến này,
+    # còn `selling_price` của báo giá là giá một chuyến chung của báo giá đó.
+    if amount_override is not None:
+        amount = _money(amount_override)
+    elif closeout is not None:
+        amount = _money(closeout.final_selling_price)
+    else:
+        amount = _money(getattr(delivery, "unit_price", 0))
+        if amount <= 0:
+            amount = _money(getattr(nguon, "total_amount", None)
+                            if sales_order is nguon else nguon.selling_price)
     if amount <= 0:
         raise DomainError(
             "INVOICE_AMOUNT_INVALID",
-            "Giá trị hợp đồng trên đơn hàng phải lớn hơn 0.",
+            "Giá trị trên %s nguồn phải lớn hơn 0." % ten_nguon,
             422,
-            ["sales-orders"],
+            [man_nguon],
         )
-    vat_pct = _money(sales_order.tax_rate_snapshot or 0)
+    # Báo giá không có cột thuế: các báo giá của luồng mới ghi rõ "giá chưa gồm
+    # VAT" ở ghi chú gửi khách, và mức thuế do kế toán chốt lúc phát hành. Nên
+    # ở đây là 0 chứ không phải một mức đoán.
+    vat_pct = _money(getattr(nguon, "tax_rate_snapshot", None) or 0)
     vat_amount = _money(amount * vat_pct / Decimal("100"))
     total = _money(amount + vat_amount)
     posted_at = _utc_naive(data.get("posted_at"))
@@ -131,8 +175,12 @@ def post_ar_invoice(db, data, user="system"):
         created_by=user,
         updated_by=user,
         is_active=True,
-        currency_code=sales_order.currency_code or "VND",
-        exchange_rate_snapshot=sales_order.exchange_rate_snapshot or 1,
+        currency_code=getattr(nguon, "currency_code", None) or "VND",
+        # Ty gia: don hang giu o `exchange_rate_snapshot`, bao gia giu o
+        # `fx_rate` (ty gia CHOT LUC GUI khach). Doc dung cho, neu khong thi
+        # mot bao gia USD duoc ghi so voi ty gia 1.
+        exchange_rate_snapshot=(getattr(nguon, "exchange_rate_snapshot", None)
+                                or getattr(nguon, "fx_rate", None) or 1),
         tax_rate_snapshot=vat_pct,
         do_id=delivery.id,
         customer_id=delivery.customer_id,
