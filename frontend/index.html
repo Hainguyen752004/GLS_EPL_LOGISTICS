@@ -322,9 +322,14 @@
       border-bottom: 1px solid var(--delivery-divider);
       background: #eef3f8;
     }
+    /* BANG chuyen la cot CHINH, khong phai cot phu.
+       Truoc day cot trai la mot danh sach the hep (.72fr) va ho so chiem phan
+       lon (1.7fr). Nhung nguoi doi soat lam viec tren BANG — ho quet nhieu
+       chuyen roi moi mo mot ho so — nen bang phai rong, con ho so la khung ben
+       canh. Doi ti le cho dung viec that. */
     .trip-control-grid {
       display: grid;
-      grid-template-columns: minmax(280px, .72fr) minmax(0, 1.7fr);
+      grid-template-columns: minmax(0, 1.85fr) minmax(320px, .95fr);
       min-height: 590px;
       background: #ffffff;
     }
@@ -341,7 +346,70 @@
       font-size: .8rem;
       font-weight: 900;
     }
-    .trip-return-queue { max-height: 590px; overflow-y: auto; padding: 8px; }
+
+    /* DAI SO LIEU cua man Giao hang & van chuyen. */
+    .trip-kpis {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:9px;
+      margin:0 0 11px;
+    }
+    .trip-kpi {
+      text-align:left; border:1px solid #d8e5f2; border-radius:9px; background:#fff;
+      padding:10px 12px; font:inherit; cursor:pointer; min-width:0;
+      display:flex; flex-direction:column; gap:2px; border-left:3px solid #cbd5e1;
+    }
+    .trip-kpi:hover { border-color:#0a6ed1; }
+    .trip-kpi:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+    .trip-kpi.is-active { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
+    .trip-kpi:disabled { opacity:.5; cursor:not-allowed; }
+    .trip-kpi span { font-size:.7rem; font-weight:800; color:#64748b; }
+    .trip-kpi b { font-size:1.3rem; font-weight:900; color:#0f172a; font-variant-numeric:tabular-nums; }
+    .trip-kpi small { font-size:.66rem; color:#94a3b8; font-weight:700; }
+    /* Nam mau noi nam LOAI viec, khong phai nam muc quan trong. */
+    .trip-kpi--blue { border-left-color:#0a6ed1; } .trip-kpi--blue b { color:#0a6ed1; }
+    .trip-kpi--amber { border-left-color:#d97706; } .trip-kpi--amber b { color:#b45309; }
+    .trip-kpi--red { border-left-color:#dc2626; } .trip-kpi--red b { color:#dc2626; }
+    .trip-kpi--purple { border-left-color:#7c3aed; } .trip-kpi--purple b { color:#6b21a8; }
+    .trip-kpi--green { border-left-color:#15803d; } .trip-kpi--green b { color:#15803d; }
+
+    /* BANG CHUYEN — sau cot, sau cau hoi nguoi doi soat phai tra loi.
+       Moi o co mot dong chinh va mot dong `<small>` phu ben duoi: nhet ca hai
+       vao cung mot dong chu thi bang dai ra ngang va phai truot, con tach thanh
+       hai cot thi so cot len muoi hai va khong con quet mat duoc. */
+    .trip-table { width:100%; border-collapse:collapse; font-size:.79rem; }
+    .trip-table thead th {
+      position:sticky; top:0; z-index:1; background:#f1f5f9; text-align:left;
+      padding:8px 10px; font-size:.68rem; font-weight:900; color:#475569;
+      text-transform:uppercase; letter-spacing:.03em;
+      border-bottom:1px solid #d8e5f2; white-space:nowrap;
+    }
+    .trip-table tbody td {
+      padding:8px 10px; border-bottom:1px solid #eef2f7; vertical-align:top;
+      color:#0f172a; font-weight:650;
+    }
+    .trip-table tbody td small {
+      display:block; margin-top:2px; font-size:.68rem; color:#64748b; font-weight:600;
+    }
+    .trip-row { cursor:pointer; background:#fff; }
+    .trip-row:hover { background:#f8fbff; }
+    .trip-row:focus-visible { outline:2px solid #0a6ed1; outline-offset:-2px; }
+    .trip-row.is-active { background:#eff6ff; box-shadow:inset 3px 0 0 #0a6ed1; }
+    .trip-cell-route { display:block; font-weight:850; }
+    .trip-table td.is-late { color:#dc2626; font-weight:900; }
+    .trip-table td.is-late small { color:#dc2626; }
+    /* TIEN DO — mot thanh, khong mot con so phan tram. Nguoi doc can biet
+       "gan xong chua", va mot thanh tra loi cau do nhanh hon hai chu so. */
+    .trip-prog { height:6px; border-radius:999px; background:#e2e8f0; overflow:hidden; }
+    .trip-prog i { display:block; height:100%; background:#0a6ed1; }
+    /* POD — mot cham mot DO. Mot chuyen cho ba don ma thieu POD cua mot don thi
+       ca chuyen khong doi soat duoc, nen phai thay duoc TUNG don, khong chi mot
+       chu "thieu". */
+    .trip-cell-pod { white-space:nowrap; }
+    .trip-pod-dot {
+      display:inline-block; width:9px; height:9px; border-radius:999px;
+      background:#fff; border:1.5px solid #cbd5e1; margin-right:3px;
+    }
+    .trip-pod-dot.is-ok { background:#15803d; border-color:#15803d; }
+    .trip-return-queue { max-height: 590px; overflow: auto; padding: 0; }
     .trip-queue-row {
       display: grid;
       width: 100%;
@@ -5606,6 +5674,21 @@
                   </div>
                 </div>
               </div>
+              <!--
+                DẢI SỐ LIỆU, như bản mẫu `trip-lifecycle.html`.
+
+                Năm con số này bấm được: mỗi thẻ lọc bảng chuyến theo đúng nhóm
+                đó. Nội dung do `renderTripKpis()` ghi vào từ dữ liệu thật — để
+                chữ mặc định ở đây thì nó hiện loé một nhịp rồi bị ghi đè, và
+                nếu hàm vẽ chết thì màn hình lại nói những con số bịa.
+
+                Bản mẫu có sáu thẻ. Thẻ "Vượt chi phí kế hoạch" lược bỏ: đường
+                lấy chi phí thực là một lời gọi cho MỘT chuyến, nên vẽ thẻ đó
+                cho cả bảng là gọi hàng nghìn lần mỗi lần mở màn.
+              -->
+              <div id="trip-kpis" class="trip-kpis" role="group"
+                   aria-label="Số liệu chuyến vận chuyển, bấm để lọc"></div>
+
               <div id="trip-return-status-tabs" class="trip-status-tabs" aria-label="Lọc chuyến theo trạng thái"></div>
               <div class="trip-control-toolbar">
                 <div class="trip-return-filters">
@@ -8336,7 +8419,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908t-to-lai-dung-xe"></script>
+  <script src="/static/js/app.js?v=20260908w-pod-dung-luc"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

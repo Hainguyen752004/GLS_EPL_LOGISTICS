@@ -1049,6 +1049,55 @@ def list_pod_records(db, do_id):
     ).all()
 
 
+#: Tran so lenh giao hang cho MOT lan hoi POD hang loat.
+#:
+#: Co tran, va tran nay khong phai con so bat ky: cau `IN (...)` cang dai thi
+#: PostgreSQL cang cham lap ke hoach, va mot ben goi vo tinh gui ca nghin ma se
+#: bien mot duong doc thanh mot duong lam nghen may chu. Ben goi phai chia lo.
+POD_HANG_LOAT_TOI_DA = 200
+
+
+def list_pod_records_for_dos(db, do_ids):
+    """POD cua NHIEU lenh giao hang trong MOT cau truy van.
+
+    Vi sao can: bang chuyen o man Giao hang & van chuyen phai hien "da ky POD
+    may/ tong bao nhieu don" cho TUNG dong. Duong theo tung don
+    (`GET /api/pod/{do_id}`) thi ve mot bang N dong phai goi N lan — o quy mo
+    hang nghin chuyen la man hinh khong mo duoc. Ma con so do khong phai trang
+    tri: thieu POD tren mot don la ca chuyen khong doi soat duoc va hoa don treo.
+
+    Tra ve `{ma lenh: [ban ghi POD]}`. Lenh khong co POD thi KHONG co khoa trong
+    ket qua — de ben goi phan biet duoc "chua ky" voi "khong hoi den".
+    """
+    ma_sach = []
+    da_thay = set()
+    for ma in (do_ids or []):
+        ma = str(ma or "").strip()
+        if not ma or ma in da_thay:
+            continue
+        da_thay.add(ma)
+        ma_sach.append(ma)
+    if not ma_sach:
+        return {}
+    if len(ma_sach) > POD_HANG_LOAT_TOI_DA:
+        raise DomainError(
+            "TOO_MANY_DELIVERY_ORDERS",
+            "Mot lan chi hoi POD cho toi da %d lenh giao hang." % POD_HANG_LOAT_TOI_DA,
+            422,
+        )
+    dong = db.query(DeliveryPODRecord).filter(
+        DeliveryPODRecord.do_id.in_(ma_sach)
+    ).order_by(
+        DeliveryPODRecord.do_id.asc(),
+        DeliveryPODRecord.stop_no.asc(),
+        DeliveryPODRecord.id.asc(),
+    ).all()
+    ket = {}
+    for ban_ghi in dong:
+        ket.setdefault(str(ban_ghi.do_id), []).append(ban_ghi)
+    return ket
+
+
 def save_pod(db, do_id, data, user="system"):
     idempotency_key = str(data.get("idempotency_key") or "").strip()
     if not idempotency_key:

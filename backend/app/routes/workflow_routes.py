@@ -498,6 +498,37 @@ async def save_pod(do_id: str, request: Request, payload: DeliveryPODRequest, db
     ))
 
 
+@router.get("/api/pod-records")
+async def list_pod_records_bulk(do_ids: str = "", db: Session = Depends(get_db)):
+    """POD cua NHIEU lenh giao hang trong MOT loi goi.
+
+    Duong nay sinh ra vi bang chuyen o man Giao hang & van chuyen phai hien "da
+    ky POD may tren tong bao nhieu don" cho TUNG dong. Truoc do chi co duong
+    theo tung don, nen ve mot bang N dong phai goi N lan — o quy mo hang nghin
+    chuyen thi man hinh khong mo duoc.
+
+    Con so do khong phai trang tri: thieu POD tren mot don la ca chuyen khong
+    doi soat duoc va hoa don treo, nen no phai doc duoc ngay tren bang chu khong
+    phai mo tung ho so ra dem.
+
+    KHONG bao 404 khi khong co POD nao. Day la duong DOC HANG LOAT: "khong don
+    nao trong lo nay co POD" la mot cau tra loi hop le, va bao loi thi ben goi
+    phai bat ngoai le cho mot tinh huong binh thuong. Khac voi duong theo mot
+    don, o do 404 dung nghia "don nay chua ky".
+    """
+    ma_sach = [x for x in (do_ids or "").split(",") if x.strip()]
+    theo_don = svc.list_pod_records_for_dos(db, ma_sach)
+    ket = []
+    for ma, dong in theo_don.items():
+        for ban_ghi in dong:
+            goi = svc._pod_record_payload(ban_ghi)
+            # Bao dam co `do_id` trong tung dong: ben goi nhom theo don, va mot
+            # dong khong biet no thuoc don nao thi khong nhom duoc.
+            goi.setdefault("do_id", ma)
+            ket.append(goi)
+    return {"records": ket, "do_count": len(theo_don)}
+
+
 @router.get("/api/pod/{do_id}")
 async def get_pod(do_id: str, db: Session = Depends(get_db)):
     records = svc.list_pod_records(db, do_id)
