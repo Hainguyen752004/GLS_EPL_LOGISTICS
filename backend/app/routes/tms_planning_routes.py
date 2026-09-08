@@ -14,6 +14,7 @@ from services import tms_tender_service as tender_service
 from services import tms_execution_service as execution_service
 from services import tms_trip_service as trip_service
 from services import tms_scheduling_service as scheduling_service
+from services import sap_lich_service
 from services.errors import DomainError, conflict, raise_http
 from schemas.trip import TripCreateRequest, TripFromDeliveryOrdersRequest
 from schemas.dispatch import TripDispatchRequest
@@ -161,6 +162,53 @@ def delete_driver_shift(request: Request, shift_id: str, db: Session = Depends(g
         request, db,
         lambda actor: scheduling_service.delete_driver_shift(db, shift_id, actor),
         "Đã hủy ca làm việc.",
+    )
+
+
+@router.get("/scheduling/board")
+def scheduling_board(
+    start: str = Query(...),
+    days: int = Query(7, ge=1, le=31),
+    depot: Optional[str] = Query(None),
+    team: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Toan bo du lieu cua man "Sap lich xe va tai xe" trong MOT loi goi.
+
+    Mot loi goi chu khong nam, vi ba khoi tren man — luoi nguoi, luoi xe, cot
+    viec can lam — phai la ba mat cua MOT su that. Goi rieng thi ba khoi doc o
+    ba thoi diem khac nhau va man hinh tu mau thuan.
+    """
+    try:
+        return {
+            "message": "Đã tải bảng sắp lịch xe và tài xế.",
+            "data": sap_lich_service.bang_sap_lich(db, start, days, depot, team),
+        }
+    except DomainError as error:
+        raise_http(error)
+
+
+@router.post("/scheduling/generate-from-pattern")
+def generate_shifts_from_pattern(request: Request, data: dict = Body(...), db: Session = Depends(get_db)):
+    """Sinh ca cho ca mot to tu mau xoay cua tung nguoi.
+
+    Khong ghi de o nao da co lich — ke ca ca da khoa vi co Trip va ca nghi
+    phep. Ghi de o day la xoa mot quyet dinh nguoi khac da ra.
+    """
+    return _scheduling_command(
+        request, db,
+        lambda actor: sap_lich_service.sinh_lich_theo_mau(db, data, actor),
+        "Đã sinh lịch theo mẫu xoay.",
+    )
+
+
+@router.put("/scheduling/drivers/{driver_id}/assignment")
+def assign_driver_team(request: Request, driver_id: str, data: dict = Body(...), db: Session = Depends(get_db)):
+    """Gan bai, to va mau xoay cho mot tai xe."""
+    return _scheduling_command(
+        request, db,
+        lambda actor: sap_lich_service.gan_phan_to(db, driver_id, data, actor),
+        "Đã cập nhật bãi, tổ và mẫu xoay của tài xế.",
     )
 
 

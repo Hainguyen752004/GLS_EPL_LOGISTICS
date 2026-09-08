@@ -194,6 +194,15 @@ class Driver(Base):
     shift = Column(String, default="Ca Sáng (06:00 - 14:00)")
     status = Column(String, default="🟢 Rảnh (Sẵn sàng)")
     photo_url = Column(Text) # Ảnh chân dung tài xế/phụ xe dạng URL
+    # Ba cột dưới đây là đơn vị XẾP CA. Khớp với `vehicles.depot_code` để một
+    # bãi xem được cả người và xe của mình trong cùng một màn — ở đội ~500 xe,
+    # một danh sách phẳng hàng trăm tài xế không dùng để xếp ca được.
+    depot_code = Column(String, index=True) # Mã bãi tài xế thuộc về
+    team_code = Column(String, index=True) # Mã tổ (ca đội trực) — đơn vị xếp ca thật
+    # Mẫu xoay ca, viết như `SSCCDD--` (S sáng, C chiều, D đêm, `-` nghỉ).
+    # Chức năng sinh lịch theo mẫu đọc cột này; trước đây mẫu chỉ nằm trong đầu
+    # người xếp lịch.
+    rotation_pattern = Column(String)
 
 
 class DriverShiftAssignment(Base):

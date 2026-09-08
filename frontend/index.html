@@ -8161,17 +8161,29 @@
           </div>
 
           <!-- TAB 4: DRIVER & SHIFT MANAGEMENT -->
-          <div id="md-tab-vehicles" class="md-tab-content" style="display: none;">
+          <!-- ================================================================
+               SẮP LỊCH XE VÀ TÀI XẾ — dựng theo bản mẫu
+               `D:\Demo_Lao\nhap_UI__duan\shift-schedule-v5-staff-vehicle.html`.
+
+               Bố cục, bảng màu, cỡ chữ và khoảng trắng lấy nguyên từ bản mẫu.
+               Cái khác là dữ liệu: `js/sap-lich-v5.js` vẽ toàn bộ màn từ
+               `GET /api/tms/scheduling/board`, và mọi nút ghi gọi backend thật.
+               ============================================================= -->
+          <div id="md-tab-vehicles" class="md-tab-content ssv5" style="display: none;">
+            <div id="ssv5-root"></div>
+
+            <!-- KHỐI CŨ — ẨN nhưng GIỮ TRONG TRANG, có chủ ý.
+                 `app.js` có gần một nghìn dòng lịch tài xế ghi vào các `id`
+                 dưới đây, và `switchMasterDataTab` gọi `loadDriverShiftPlanner()`
+                 mỗi lần mở thẻ này. Bỏ hẳn markup thì những dòng đó ném lỗi
+                 giữa lúc mở màn; mà `app.js` đang có người khác sửa cùng lúc
+                 nên đây không phải lúc gỡ chúng. Chúng vẽ vào một khung không
+                 ai thấy, và màn hình người dùng thấy là khối `#ssv5-root` ở
+                 trên. -->
+            <div id="ssv5-khoi-cu" hidden aria-hidden="true">
             <div class="fiori-container" style="width: 100% !important; max-width: 100% !important;">
               <!-- DRIVER & CO-DRIVER MANAGEMENT SECTION -->
               <div class="driver-management-card" style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(15,23,42,0.03);">
-                <!--
-                  Tiêu đề của màn do TẦNG 3 nói ("Vận hành / Sắp lịch xe và tài
-                  xế"), nên chỗ này chỉ còn dải nút. Để cả hai thì cùng một câu
-                  hiện hai lần cách nhau 80px.
-                -->
-                <div class="driver-management-header driver-management-header--chi-nut"><button class="fiori-btn" onclick="openAddDriverModal()"><i class="fa-solid fa-user-plus"></i> <span data-i18n="btn_add_driver">Thêm tài xế / phụ xe</span></button>
-                </div>
                 <div id="driver-shift-workbench" class="driver-shift-workbench">
                   <div class="driver-shift-toolbar">
                     <div class="driver-shift-tabs" role="tablist" aria-label="Quản lý lịch tài xế và xe">
@@ -8211,7 +8223,14 @@
                   </section>
                 </div>
 
-                <!-- DRIVER MODAL DIALOG -->
+              </div><!-- /.driver-management-card -->
+            </div><!-- /.fiori-container -->
+            </div><!-- /#ssv5-khoi-cu -->
+
+            <!-- HỘP THOẠI HỒ SƠ TÀI XẾ nằm NGOÀI khối ẩn, có chủ ý: nó là chỗ
+                 duy nhất thêm và sửa được hồ sơ người, và nút "+ Tài xế / phụ
+                 xe" ở đầu màn mới gọi vào đây. Để nó trong khối ẩn thì bấm nút
+                 xong không thấy gì hiện ra. -->
                 <div id="driver-modal-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.65); z-index: 99999; justify-content: center; align-items: center; backdrop-filter: blur(8px);">
                   <div style="background: #ffffff; border-radius: 20px; width: 920px; max-width: 95vw; overflow: hidden; box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35), 0 0 1px rgba(15, 23, 42, 0.2); border: 1px solid rgba(255,255,255,0.8);">
                     <div style="background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); padding: 22px 28px; color: #ffffff; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(10,110,209,0.2);">
@@ -8288,11 +8307,8 @@
                       <button type="button" class="fiori-btn" onclick="saveDriverModal()" style="padding: 10px 24px; font-size: 0.92rem; font-weight: 700; border-radius: 10px; background: linear-gradient(135deg, #0a6ed1 0%, #0284c7 100%); border: none; color: #ffffff; cursor: pointer; box-shadow: 0 4px 14px rgba(10,110,209,0.3); display: inline-flex; align-items: center; gap: 8px;"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n="btn_save_driver">Lưu thông tin nhân sự</span></button>
                     </div>
                   </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
+                </div><!-- /#driver-modal-dialog -->
+          </div><!-- /#md-tab-vehicles -->
 
 
           <!-- Vietnamese source cleaned -->
@@ -9288,6 +9304,10 @@
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
   <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908f-nut-ghi-moc">
   <script src="/static/js/tracking-control-tower.js?v=20260908f-nut-ghi-moc"></script>
+  <!-- Màn Sắp lịch xe và tài xế. Nạp TRƯỚC `app.js` cũng chạy được: tệp này tự
+       chờ và bọc `switchMasterDataTab` khi hàm đó xuất hiện. -->
+  <link rel="stylesheet" href="/static/css/sap-lich-v5.css?v=20260908a-sap-lich">
+  <script src="/static/js/sap-lich-v5.js?v=20260908a-sap-lich"></script>
   <script src="/static/js/app.js?v=20260908za-trip-lifecycle"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->

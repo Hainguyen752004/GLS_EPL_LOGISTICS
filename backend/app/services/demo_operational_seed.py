@@ -28,6 +28,7 @@ import datetime as dt
 
 from models import (
     DeliveryOrder,
+    Driver,
     DriverShiftAssignment,
     ParkingList,
     Vehicle,
@@ -358,6 +359,9 @@ def nap_lop_van_hanh(db, do_ids=()):
     ket_qua = {
         "don_doi_ve_hom_nay": so_don_doi,
         "tuan_bat_dau": t0.date().isoformat(),
+        # Phan to TRUOC khi nap ca: con so do phu cua tung to doc theo cot
+        # `team_code`, nen phan to sau thi lan nap dau tien khong co to nao.
+        "phan_to": phan_to_tai_xe(db),
         "so_ca": nap_ca_truc(db, t0),
         "so_ky_bao_duong": nap_bao_duong(db, t0),
         "packing_list": [],
@@ -367,3 +371,50 @@ def nap_lop_van_hanh(db, do_ids=()):
         if ma:
             ket_qua["packing_list"].append(ma)
     return ket_qua
+
+
+# Mau xoay cua tung to. Hai mau khac nhau la CO Y: dat mot mau cho ca bai thi
+# man xep ca khong the hien duoc dieu quan trong nhat cua mau xoay — hai to
+# lech pha nhau nen luon co nguoi truc dem.
+MAU_TO = {"A": "SSCCĐĐ--", "B": "CCĐĐSS--"}
+
+
+def phan_to_tai_xe(db):
+    """Gan bai, to va mau xoay cho tai xe cua bo du lieu mau.
+
+    VI SAO CAN. Man "Sap lich xe va tai xe" xep theo ba tang BAI -> TO -> NGUOI.
+    Ba cot do vua duoc them (moc 034) nen moi tai xe dang de rong, va man hinh
+    mo ra chi co MOT nhom "Chua phan to" — tuc dai dieu huong, bo loc theo bai
+    va con so do phu theo to deu khong co gi de noi. Do khong phai loi cua man,
+    nhung nguoi xem demo khong phan biet duoc.
+
+    BAI SUY TU XE, khong dat bua: tai xe thuoc bai cua chiec xe ho dang duoc
+    gan. Nguoi chua gan xe thi ve bai co NHIEU XE NHAT — do la bai co viec, va
+    dat ho vao mot bai khong co xe nao nghia la ho khong bao gio xuat hien trong
+    do phu cua bai do.
+
+    TO thi chia xen ke trong tung bai. Day la phan DAT cho bo du lieu mau: he
+    thong that khong co nguon nao noi ai thuoc to nao, va cho de nguoi dung tu
+    gan la nut "Bai, to va mau xoay" o cot trai cua luoi.
+    """
+    xe_theo_ma = {v.id: v for v in db.query(Vehicle).all()}
+    dem_bai = {}
+    for v in xe_theo_ma.values():
+        if v.depot_code:
+            dem_bai[v.depot_code] = dem_bai.get(v.depot_code, 0) + 1
+    bai_chinh = max(dem_bai, key=dem_bai.get) if dem_bai else None
+
+    tai_xe = db.query(Driver).order_by(Driver.id).all()
+    theo_bai = {}
+    for d in tai_xe:
+        xe = xe_theo_ma.get(d.assigned_vehicle) if d.assigned_vehicle else None
+        ma_bai = (xe.depot_code if xe and xe.depot_code else None) or bai_chinh
+        d.depot_code = ma_bai
+        thu_tu = theo_bai.get(ma_bai, 0)
+        theo_bai[ma_bai] = thu_tu + 1
+        ma_to = "A" if thu_tu % 2 == 0 else "B"
+        d.team_code = ma_to
+        d.rotation_pattern = MAU_TO[ma_to]
+    db.flush()
+    return {"so_tai_xe": len(tai_xe), "bai_chinh": bai_chinh,
+            "so_bai": len({d.depot_code for d in tai_xe if d.depot_code})}

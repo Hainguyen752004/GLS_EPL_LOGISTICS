@@ -1,0 +1,428 @@
+/* ============================================================================
+   MÀN "SẮP LỊCH XE VÀ TÀI XẾ" — dựng theo bản mẫu
+   `D:\Demo_Lao\nhap_UI__duan\shift-schedule-v5-staff-vehicle.html`.
+
+   Bố cục, bảng màu, cỡ chữ và khoảng trắng lấy nguyên từ bản mẫu. Cái khác là
+   dữ liệu: mọi con số, mọi hàng, mọi ô ở đây đọc từ backend thật qua
+   `GET /api/tms/scheduling/board`.
+
+   ĐẶT TOÀN BỘ TRONG PHẠM VI `.ssv5`. Bản mẫu dùng những tên lớp rất chung —
+   `.card`, `.tag`, `.panel`, `.chip`, `.grid`, `.cell`, `.search`, `.legend` —
+   mà ứng dụng cũng đã có. Không bọc phạm vi thì bản mẫu ghi đè lên mọi màn
+   khác, và ta chữa một màn để làm hỏng mười màn.
+   ========================================================================== */
+
+.ssv5 {
+  --ss-bg: #f6f8fb; --ss-line: #e4e9f0; --ss-line-2: #cbd5e1;
+  --ss-ink: #1e293b; --ss-ink-2: #475569; --ss-ink-3: #7b8796;
+  --ss-blue: #1a73e8; --ss-blue-2: #e9f1fd; --ss-blue-3: #0b4faa;
+  --ss-red: #d32f2f; --ss-red-2: #fdecec;
+  --ss-amber: #b45309; --ss-amber-2: #fff4e0;
+  --ss-green: #15803d; --ss-green-2: #e7f6ec;
+  --ss-s: #f59e0b; --ss-c: #1a73e8; --ss-d: #7c3aed;
+  background: var(--ss-bg); color: var(--ss-ink);
+  font: 13px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+.ssv5 *, .ssv5 *::before, .ssv5 *::after { box-sizing: border-box; }
+.ssv5 button, .ssv5 select, .ssv5 input { font: inherit; }
+.ssv5 button { cursor: pointer; }
+.ssv5 .hide { display: none !important; }
+
+/* Viền xanh bên trái là dấu nhận biết của bản mẫu. */
+.ssv5-host { border-left: 4px solid #3b82f6; padding: 16px 20px 32px; }
+.ssv5-module { max-width: 1680px; margin: 0 auto; }
+.ssv5 .card { background: #fff; border: 1px solid var(--ss-line); border-radius: 14px; }
+.ssv5 .tag {
+  font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 7px;
+  background: #eef2f7; color: var(--ss-ink-2); white-space: nowrap;
+}
+.ssv5 .t-red { background: var(--ss-red-2); color: var(--ss-red); }
+.ssv5 .t-amber { background: var(--ss-amber-2); color: var(--ss-amber); }
+.ssv5 .t-blue { background: var(--ss-blue-2); color: var(--ss-blue-3); }
+.ssv5 .t-green { background: var(--ss-green-2); color: var(--ss-green); }
+
+/* ---------- ĐẦU KHỐI: đường dẫn bãi › tổ, hai tab, ô tìm, chế độ xem -------
+   Hàng này DÍNH ở đỉnh khung cuộn. Vùng nội dung của ứng dụng là một khung
+   cuộn riêng, nên để hàng này cuộn theo thì nút "Sinh lịch theo mẫu" và ô tìm
+   trôi mất ngay khi người dùng kéo xuống xem lưới — mà lưới thì luôn dài hơn
+   một màn hình. */
+.ssv5 .hdr {
+  position: sticky; top: 0; z-index: 8;
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  margin-bottom: 12px; flex-wrap: wrap; background: #fff;
+}
+.ssv5 .hdr h2 { margin: 0; font-size: 16px; font-weight: 700; white-space: nowrap; }
+.ssv5 .crumb {
+  display: flex; align-items: center; gap: 6px; font-size: 12.5px;
+  font-weight: 600; color: var(--ss-ink-3); white-space: nowrap; flex-wrap: wrap;
+}
+.ssv5 .crumb button {
+  border: 0; background: none; padding: 0; color: var(--ss-blue);
+  font: inherit; font-weight: 600;
+}
+.ssv5 .crumb b { color: var(--ss-ink); }
+
+.ssv5 .searchwrap { position: relative; flex: 1 1 260px; min-width: 240px; max-width: 460px; }
+.ssv5 .search {
+  display: flex; align-items: center; gap: 10px; height: 38px;
+  padding: 0 6px 0 12px; border: 2px solid var(--ss-blue); border-radius: 11px; background: #fff;
+}
+.ssv5 .search .q { color: var(--ss-blue); font-size: 16px; }
+.ssv5 .search input {
+  flex: 1; min-width: 0; border: 0; outline: 0; font-size: 13px;
+  font-weight: 500; color: var(--ss-ink); background: transparent;
+}
+.ssv5 .search .go {
+  height: 28px; border: 0; border-radius: 8px; background: var(--ss-blue);
+  color: #fff; font-weight: 700; padding: 0 12px; font-size: 12.5px; flex: none;
+}
+.ssv5 .search kbd {
+  font: 11px/1 Inter, system-ui, sans-serif; border: 1px solid var(--ss-line-2);
+  border-radius: 4px; padding: 2px 5px; color: var(--ss-ink-3); flex: none;
+}
+.ssv5 .dd {
+  position: absolute; left: 0; right: 0; top: 44px; background: #fff;
+  border: 1px solid var(--ss-line); border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(15, 28, 46, .16); z-index: 20; padding: 6px 0;
+  display: none; max-height: 380px; overflow: auto;
+}
+.ssv5 .dd.show { display: block; }
+.ssv5 .dd .sec { padding: 8px 14px 3px; font-size: 11px; font-weight: 700; color: var(--ss-ink-3); }
+.ssv5 .dd .it {
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px;
+  align-items: center; padding: 7px 14px; cursor: pointer; border: 0;
+  background: none; width: 100%; text-align: left; font: inherit;
+}
+.ssv5 .dd .it:hover, .ssv5 .dd .it:focus-visible { background: #f6f8fb; outline: 0; }
+.ssv5 .dd .av {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--ss-blue-2);
+  color: var(--ss-blue-3); display: grid; place-items: center; font-weight: 700; font-size: 10px;
+}
+.ssv5 .dd .av.g { border-radius: 7px; background: #eef2f7; color: var(--ss-ink-2); }
+.ssv5 .dd .it b { display: block; font-weight: 700; font-size: 12.5px; }
+.ssv5 .dd .it span { display: block; color: var(--ss-ink-3); font-size: 11.5px; }
+.ssv5 .dd mark { background: #fff3b0; color: inherit; border-radius: 2px; padding: 0 1px; }
+.ssv5 .dd .empty { padding: 14px; color: var(--ss-ink-3); font-size: 12.5px; text-align: center; }
+
+.ssv5 .seg { display: inline-flex; border: 1px solid var(--ss-line-2); border-radius: 8px; overflow: hidden; }
+.ssv5 .seg button {
+  border: 0; background: #fff; padding: 7px 12px; font-weight: 600;
+  font-size: 12.5px; color: var(--ss-ink-2); display: flex; align-items: center; gap: 6px;
+}
+.ssv5 .seg button.on { background: var(--ss-blue); color: #fff; }
+.ssv5 .seg .n { font-size: 11px; border-radius: 999px; padding: 0 7px; background: rgba(0, 0, 0, .08); }
+.ssv5 .seg button.on .n { background: rgba(255, 255, 255, .25); }
+.ssv5 .date { display: flex; align-items: center; gap: 6px; }
+.ssv5 .date button {
+  height: 34px; border: 1px solid var(--ss-line-2); border-radius: 8px;
+  background: #fff; color: var(--ss-ink-2); font-weight: 600; padding: 0 10px;
+}
+.ssv5 .date .d {
+  height: 34px; border: 1px solid var(--ss-line-2); border-radius: 8px; padding: 0 12px;
+  display: flex; align-items: center; font-weight: 700; background: #fff; white-space: nowrap;
+}
+.ssv5 .ghost {
+  height: 34px; border: 1px solid var(--ss-line-2); border-radius: 8px; background: #fff;
+  color: var(--ss-ink-2); font-weight: 600; padding: 0 12px; font-size: 12.5px; white-space: nowrap;
+}
+.ssv5 .ghost:hover { border-color: var(--ss-blue); color: var(--ss-blue); }
+.ssv5 .primary {
+  height: 36px; border: 0; border-radius: 9px; background: var(--ss-blue); color: #fff;
+  font-weight: 700; padding: 0 14px; font-size: 13px; white-space: nowrap;
+}
+
+/* ---------- HAI CỘT ---------- */
+.ssv5 .board {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+  gap: 12px; align-items: start;
+}
+.ssv5 .col-h {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--ss-line); flex-wrap: wrap;
+}
+.ssv5 .col-h h3 { margin: 0; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.ssv5 .col-h small { color: var(--ss-ink-3); font-size: 12px; font-weight: 500; }
+.ssv5 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.ssv5 .chip {
+  height: 28px; border: 1px solid var(--ss-line-2); border-radius: 999px; background: #fff;
+  font-weight: 600; font-size: 12px; color: var(--ss-ink-2); padding: 0 10px;
+}
+.ssv5 .chip.on { background: var(--ss-ink); border-color: var(--ss-ink); color: #fff; }
+.ssv5 .chip.r { border-color: var(--ss-red); color: var(--ss-red); }
+.ssv5 .chip.r.on { background: var(--ss-red); border-color: var(--ss-red); color: #fff; }
+
+/* ---------- DẢI ĐỘ PHỦ ----------
+   Ba thanh nhỏ trên mỗi ngày là ba ca. Chúng trả lời một câu duy nhất mà người
+   xếp lịch hỏi trước mọi câu khác: ngày nào ca nào còn thiếu người. */
+.ssv5 .cover {
+  display: grid; grid-template-columns: var(--ss-cols);
+  border-bottom: 1px solid var(--ss-line); background: #fafbfd;
+}
+.ssv5 .cover > div { padding: 9px 10px; border-left: 1px solid var(--ss-line); min-width: 0; }
+.ssv5 .cover > div:first-child {
+  border-left: 0; display: flex; align-items: center; color: var(--ss-ink-3);
+  font-size: 11.5px; font-weight: 700;
+}
+.ssv5 .dn { font-weight: 700; font-size: 12.5px; }
+.ssv5 .dn.today { color: var(--ss-blue); }
+.ssv5 .dn span { font-weight: 600; color: var(--ss-ink-3); font-size: 11px; }
+.ssv5 .cov { display: flex; gap: 3px; margin: 6px 0 4px; }
+.ssv5 .cov i {
+  flex: 1; height: 6px; border-radius: 3px; background: #e4e9f0;
+  position: relative; overflow: hidden;
+}
+.ssv5 .cov i::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: var(--p); background: var(--ss-green);
+}
+.ssv5 .cov i.a::after { background: #ef9f27; }
+.ssv5 .cov i.r::after { background: var(--ss-red); }
+.ssv5 .cover small { font-size: 11px; color: var(--ss-ink-3); font-weight: 600; }
+.ssv5 .cover small b { color: var(--ss-red); }
+
+/* ---------- LƯỚI NHÂN SỰ ---------- */
+.ssv5 .scroller { max-height: 560px; overflow-y: auto; }
+.ssv5 .grid {
+  display: grid; grid-template-columns: var(--ss-cols);
+  border-top: 1px solid var(--ss-line); min-height: 60px; transition: background .3s;
+}
+.ssv5 .grid.hl { background: #fff3b0; }
+.ssv5 .grid > div { border-left: 1px solid var(--ss-line); min-width: 0; padding: 6px; }
+.ssv5 .grid > div:first-child { border-left: 0; padding: 7px 10px; }
+.ssv5 .who { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.ssv5 .who .av {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--ss-blue-2);
+  color: var(--ss-blue-3); display: grid; place-items: center; font-weight: 700;
+  font-size: 10.5px; flex: none;
+}
+.ssv5 .who .av.v { border-radius: 8px; background: #eef2f7; color: var(--ss-ink-2); font-size: 9.5px; }
+.ssv5 .who .g { min-width: 0; flex: 1; }
+.ssv5 .who .g b {
+  display: block; font-weight: 700; font-size: 12.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ssv5 .who .g span {
+  display: block; color: var(--ss-ink-3); font-size: 11px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ssv5 .pat {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .4px; color: var(--ss-ink-3);
+  background: #eef2f7; border-radius: 3px; padding: 0 4px;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.ssv5 .pat.none { color: var(--ss-amber); background: var(--ss-amber-2); }
+.ssv5 .cell { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; height: 100%; }
+.ssv5 .sh {
+  border-radius: 6px; font-size: 10.5px; font-weight: 700; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-height: 44px; cursor: pointer; border: 1.5px dashed var(--ss-line-2);
+  color: var(--ss-ink-3); background: #fff; position: relative; padding: 2px;
+}
+.ssv5 .sh small { font-weight: 500; font-size: 9.5px; opacity: .85; }
+.ssv5 .sh:hover { border-color: var(--ss-blue); color: var(--ss-blue); }
+.ssv5 .sh.on { border: 1.5px solid transparent; color: #fff; }
+.ssv5 .sh.on.morning { background: var(--ss-s); }
+.ssv5 .sh.on.afternoon { background: var(--ss-c); }
+.ssv5 .sh.on.night { background: var(--ss-d); }
+.ssv5 .sh.lock { background: #0f1c2e; border-color: #0f1c2e; color: #fff; }
+.ssv5 .sh.off { background: #fff8e1; border: 1.5px solid #f5d98a; color: #8a5a00; }
+.ssv5 .sh.leave { background: #f1f5f9; border: 1.5px solid var(--ss-line-2); color: var(--ss-ink-3); }
+.ssv5 .sh.need { border-color: var(--ss-red); color: var(--ss-red); background: var(--ss-red-2); border-style: dashed; }
+/* Viền cam = ca sửa tay khác mẫu xoay. Dấu này cho người xem biết chỗ nào lịch
+   đã rời khỏi chu kỳ, tức chỗ nào phải đọc lại bằng tay. */
+.ssv5 .sh.ex::after {
+  content: ""; position: absolute; inset: -3px; border: 2px solid var(--ss-amber);
+  border-radius: 8px; pointer-events: none;
+}
+.ssv5 .sh.sel { outline: 2px solid var(--ss-blue); outline-offset: 2px; }
+.ssv5 .sh .veh { position: absolute; bottom: 2px; right: 3px; font-size: 8px; opacity: .9; }
+.ssv5 .tot {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px;
+}
+.ssv5 .tot small { font-size: 10px; color: var(--ss-ink-3); font-weight: 600; }
+.ssv5 .tot.warn { color: var(--ss-amber); }
+.ssv5 .legend {
+  display: flex; gap: 14px; padding: 10px 14px; font-size: 11.5px;
+  color: var(--ss-ink-2); font-weight: 500; flex-wrap: wrap; border-top: 1px solid var(--ss-line);
+}
+.ssv5 .legend i {
+  display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+  margin-right: 5px; vertical-align: -2px;
+}
+.ssv5 .tfoot {
+  display: flex; justify-content: space-between; gap: 10px; padding: 10px 14px;
+  color: var(--ss-ink-3); font-size: 12px; border-top: 1px solid var(--ss-line); flex-wrap: wrap;
+}
+
+/* ---------- LƯỚI XE ---------- */
+.ssv5 .vrow {
+  display: grid; grid-template-columns: var(--ss-cols);
+  border-top: 1px solid var(--ss-line); min-height: 66px;
+}
+.ssv5 .vrow > div { border-left: 1px solid var(--ss-line); min-width: 0; padding: 6px; }
+.ssv5 .vrow > div:first-child { border-left: 0; padding: 7px 10px; }
+.ssv5 .vrow.hl { background: #fff3b0; }
+.ssv5 .vc { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; height: 100%; }
+.ssv5 .vs {
+  border-radius: 6px; min-height: 50px; border: 1.5px dashed var(--ss-line-2);
+  background: #fff; position: relative; cursor: pointer; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 10px; font-weight: 700; color: var(--ss-ink-3); padding: 2px;
+}
+.ssv5 .vs small {
+  font-weight: 600; font-size: 9px; opacity: .9; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+}
+.ssv5 .vs:hover { border-color: var(--ss-blue); color: var(--ss-blue); }
+.ssv5 .vs.trip { background: var(--ss-blue); border-color: var(--ss-blue); color: #fff; }
+.ssv5 .vs.run { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.ssv5 .vs.done { background: var(--ss-green); border-color: var(--ss-green); color: #fff; }
+.ssv5 .vs.mt {
+  background: repeating-linear-gradient(135deg, #f1f5f9 0 5px, #e2e8f0 5px 10px);
+  border: 1.5px solid var(--ss-line-2); color: var(--ss-ink-2);
+}
+.ssv5 .vs.lock { background: #eef2f7; border: 1.5px solid var(--ss-line-2); color: var(--ss-ink-3); }
+.ssv5 .vs.conf { background: var(--ss-red-2); border: 1.5px solid var(--ss-red); color: var(--ss-red); }
+.ssv5 .vs.ready { border-style: dashed; color: var(--ss-green); border-color: #bfe3cf; background: #f6fcf8; }
+.ssv5 .vs .cr { display: flex; gap: 1px; margin-top: 1px; }
+.ssv5 .vs .cr i {
+  width: 13px; height: 13px; border-radius: 50%; background: rgba(255, 255, 255, .92);
+  color: var(--ss-ink); font-size: 7.5px; font-weight: 700; display: grid;
+  place-items: center; font-style: normal;
+}
+.ssv5 .vs.ready .cr i, .ssv5 .vs.conf .cr i, .ssv5 .vs.free .cr i,
+.ssv5 .vs.mt .cr i, .ssv5 .vs.lock .cr i { background: #fff; border: 1px solid currentColor; color: inherit; }
+.ssv5 .vs.sel { outline: 2px solid var(--ss-blue); outline-offset: 2px; }
+.ssv5 .vs .t { font-size: 9px; font-weight: 600; opacity: .9; }
+
+/* ---------- TOÀN BÃI ---------- */
+.ssv5 .teams {
+  display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 14px;
+  border-bottom: 1px solid var(--ss-line); background: #fafbfd;
+}
+.ssv5 .teamb {
+  height: 34px; border: 1px solid var(--ss-line-2); border-radius: 9px; background: #fff;
+  padding: 0 12px; font-weight: 600; font-size: 12.5px; color: var(--ss-ink-2);
+  display: flex; align-items: center; gap: 8px;
+}
+.ssv5 .teamb:hover { border-color: var(--ss-blue); }
+.ssv5 .teamb b { color: var(--ss-ink); }
+.ssv5 .teamb .r { color: var(--ss-red); font-weight: 700; }
+.ssv5 .dep {
+  display: grid; grid-template-columns: var(--ss-cols);
+  border-top: 1px solid var(--ss-line); cursor: pointer; text-align: left;
+  background: none; border-left: 0; border-right: 0; border-bottom: 0; padding: 0;
+  font: inherit; color: inherit; width: 100%;
+}
+.ssv5 .dep:hover { background: #fafbfd; }
+.ssv5 .dep > div { border-left: 1px solid var(--ss-line); padding: 8px 10px; min-width: 0; }
+.ssv5 .dep > div:first-child { border-left: 0; }
+.ssv5 .heat { display: flex; height: 22px; border-radius: 5px; overflow: hidden; }
+.ssv5 .heat i { flex: 1; background: var(--h); border-right: 1px solid #fff; }
+.ssv5 .dep .side {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 700;
+}
+.ssv5 .dep .side small { font-size: 10px; color: var(--ss-ink-3); font-weight: 600; }
+.ssv5 .dep .side.r { color: var(--ss-red); }
+.ssv5 .dep .side.a { color: var(--ss-amber); }
+.ssv5 .dep .side.g { color: var(--ss-green); }
+
+/* ---------- CỘT PHẢI ---------- */
+.ssv5 .panel {
+  position: sticky; top: 60px; max-height: calc(100vh - 220px);
+  min-height: 360px; overflow-y: auto; overscroll-behavior: contain;
+}
+.ssv5 .pb { padding: 12px 14px 14px; }
+.ssv5 .empty {
+  color: var(--ss-ink-3); font-size: 12.5px; text-align: center; padding: 24px 12px;
+  border: 1.5px dashed var(--ss-line-2); border-radius: 12px; line-height: 1.6;
+}
+.ssv5 .lbl { font-size: 11.5px; font-weight: 700; color: var(--ss-ink-3); margin: 12px 0 6px; }
+.ssv5 .sum { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ssv5 .sum > div { background: #f8fafc; border-radius: 8px; padding: 7px 9px; min-width: 0; }
+.ssv5 .sum > div span { display: block; font-size: 11px; color: var(--ss-ink-3); font-weight: 600; }
+.ssv5 .sum > div b { font-size: 12.5px; font-weight: 600; overflow-wrap: anywhere; }
+.ssv5 .need {
+  display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--ss-line);
+  font-size: 12.5px; align-items: center;
+}
+.ssv5 .need:first-child { border-top: 0; }
+.ssv5 .need .g { flex: 1; min-width: 0; }
+.ssv5 .need .g b { display: block; font-weight: 700; }
+.ssv5 .need .g span { color: var(--ss-ink-3); font-size: 11.5px; }
+.ssv5 .need .a {
+  border: 1px solid var(--ss-red); border-radius: 7px; background: #fff; font-weight: 600;
+  font-size: 11.5px; padding: 4px 9px; color: var(--ss-red); white-space: nowrap; flex: none;
+}
+.ssv5 .need .a.n { border-color: var(--ss-line-2); color: var(--ss-blue); }
+.ssv5 .shifts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ssv5 .sopt {
+  border: 1.5px solid var(--ss-line-2); border-radius: 9px; padding: 8px; cursor: pointer;
+  text-align: center; background: #fff; font: inherit; color: inherit;
+}
+.ssv5 .sopt b { display: block; font-size: 12.5px; }
+.ssv5 .sopt span { font-size: 11px; color: var(--ss-ink-3); }
+.ssv5 .sopt.on { border-color: var(--ss-blue); background: var(--ss-blue-2); }
+.ssv5 .opt {
+  display: flex; gap: 10px; align-items: center; padding: 8px 10px;
+  border: 1px solid var(--ss-line); border-radius: 9px; cursor: pointer; margin-bottom: 5px;
+  background: #fff; width: 100%; text-align: left; font: inherit; color: inherit;
+}
+.ssv5 .opt.on { border: 1.5px solid var(--ss-blue); background: var(--ss-blue-2); }
+.ssv5 .opt .av {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--ss-blue-2);
+  color: var(--ss-blue-3); display: grid; place-items: center; font-size: 10.5px;
+  font-weight: 700; flex: none;
+}
+.ssv5 .opt .av.v { border-radius: 7px; background: #eef2f7; color: var(--ss-ink-2); }
+.ssv5 .opt .g { min-width: 0; flex: 1; }
+.ssv5 .opt b { display: block; font-size: 12.5px; }
+.ssv5 .opt span { display: block; font-size: 11px; color: var(--ss-ink-3); }
+.ssv5 .opt .why {
+  margin-left: auto; font-size: 10.5px; font-weight: 700; border-radius: 5px;
+  padding: 2px 6px; background: var(--ss-green-2); color: var(--ss-green); flex: none;
+}
+.ssv5 .opt .why.w { background: var(--ss-amber-2); color: var(--ss-amber); }
+.ssv5 .check {
+  display: flex; gap: 8px; align-items: flex-start; font-size: 12px; font-weight: 600;
+  padding: 8px 10px; border-radius: 8px; margin-top: 10px; line-height: 1.4;
+}
+.ssv5 .check.ok { background: var(--ss-green-2); color: var(--ss-green); }
+.ssv5 .check.bad { background: var(--ss-red-2); color: var(--ss-red); }
+.ssv5 .check.info { background: var(--ss-blue-2); color: var(--ss-blue-3); }
+.ssv5 .cta {
+  width: 100%; height: 42px; border-radius: 10px; border: 0; background: var(--ss-blue);
+  color: #fff; font-weight: 700; font-size: 13.5px; margin-top: 10px;
+}
+.ssv5 .cta:disabled { background: #cbd5e1; cursor: not-allowed; }
+.ssv5 .cta2 {
+  width: 100%; height: 34px; border-radius: 8px; border: 1px solid var(--ss-line-2);
+  background: #fff; color: var(--ss-ink-2); font-weight: 600; font-size: 12px; margin-top: 6px;
+}
+.ssv5 .cta3 {
+  width: 100%; height: 34px; border-radius: 8px; border: 1px solid var(--ss-red-2);
+  background: #fff; color: var(--ss-red); font-weight: 600; font-size: 12px; margin-top: 6px;
+}
+.ssv5 .rep { border: 1px solid var(--ss-line); border-radius: 10px; padding: 10px; margin-top: 8px; }
+.ssv5 .rep label { display: flex; gap: 8px; align-items: center; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+
+.ssv5-toast {
+  position: fixed; right: 28px; bottom: 28px; background: #0f1c2e; color: #fff;
+  border-radius: 12px; padding: 12px 16px; font-weight: 600; font-size: 13px;
+  display: flex; gap: 10px; align-items: center;
+  box-shadow: 0 12px 32px rgba(15, 28, 46, .28); max-width: 560px; z-index: 10050;
+}
+.ssv5-toast i { font-style: normal; flex: none; }
+
+/* Bảy ngày × ba ca là 21 ô một hàng. Dưới một bề ngang nhất định thì lưới phải
+   TRƯỢT TRONG khung của nó, không đẩy cả trang trượt ngang. */
+.ssv5 .gridwrap { overflow-x: auto; }
+.ssv5 .gridwrap > * { min-width: 900px; }
+@media (max-width: 1180px) {
+  .ssv5 .board { grid-template-columns: minmax(0, 1fr); }
+  .ssv5 .panel { position: static; max-height: none; }
+}
+@media (max-width: 760px) {
+  .ssv5-host { padding: 12px 12px 24px; }
+}
