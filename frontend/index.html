@@ -371,8 +371,13 @@
     .tlv2 button, .tlv2 select, .tlv2 input { font:inherit; }
     .tlv2 button { cursor:pointer; }
     /* Viền xanh bên trái là dấu nhận biết của bản mẫu. */
-    .tlv2-host { border-left:4px solid #3b82f6; min-height:100vh; padding:20px 28px 40px; }
-    .tlv2-module { max-width:1800px; margin:0 auto; }
+    .tlv2-host { border-left:4px solid #3b82f6; min-height:100vh; padding:16px 24px 36px; }
+    /* 1800px là quá rộng cho màn này. Bảng chỉ có bảy cột và thường vài chuyến,
+       nên cột trái nở ra tới 1.36 m chữ trong khi hồ sơ chuyến bên phải — nơi có
+       chặng, tổ lái, POD, chi phí và các nút hành động — chỉ được 420px và phải
+       cắt chữ. Thu bề ngang tổng lại thì cột trái vừa đủ đọc, phần dôi ra dồn
+       sang hồ sơ. */
+    .tlv2-module { max-width:1560px; margin:0 auto; }
     .tlv2 .card { background:#fff; border:1px solid var(--tl-line); border-radius:14px; }
     .tlv2 .tag {
       font-size:11px; font-weight:600; border-radius:5px; padding:2px 7px;
@@ -385,9 +390,13 @@
     .tlv2 .t-purple { background:var(--tl-purple2); color:var(--tl-purple); }
 
     /* đầu trang */
-    .tlv2 .hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; flex-wrap:wrap; }
-    .tlv2 .hdr h1 { margin:0; font-size:19px; font-weight:700; }
-    .tlv2 .hdr p { margin:3px 0 0; color:var(--tl-ink3); font-size:12.5px; }
+    /* Hàng nút DÍNH ở đỉnh khung cuộn — xem ghi chú ở markup. Nền đục là bắt
+       buộc: để trong suốt thì bảng chạy lên nằm đè dưới các nút. */
+    .tlv2 .hdr {
+      position:sticky; top:0; z-index:6;
+      display:flex; align-items:center; justify-content:flex-end; gap:12px;
+      margin:0 0 10px; padding:2px 0 8px; background:var(--tl-bg); flex-wrap:wrap;
+    }
     .tlv2 .hdr-acts { display:flex; gap:8px; flex-wrap:wrap; }
     .tlv2 .ghost {
       height:36px; border:1px solid var(--tl-line2); border-radius:10px; background:#fff;
@@ -416,7 +425,14 @@
     .tlv2 .kpi:disabled { opacity:.6; cursor:default; }
 
     /* bàn hai cột: bảng chuyến bên trái, hồ sơ bên phải */
-    .tlv2 .board { display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:12px; align-items:start; }
+    /* HAI CỘT theo TỈ LỆ, không phải một cột co giãn cạnh một cột cứng 420px.
+       Cột cứng nghĩa là màn càng rộng thì bảng càng nở còn hồ sơ vẫn hẹp y như
+       trên máy nhỏ — đúng cái người dùng thấy: "bên trái quá dài, bên phải có
+       một xíu". Nay hồ sơ chiếm ~35% và không bao giờ dưới 430px. */
+    .tlv2 .board {
+      display:grid; grid-template-columns:minmax(0,1.85fr) minmax(430px,1fr);
+      gap:14px; align-items:start;
+    }
 
     /* DẢI VÒNG ĐỜI — năm giai đoạn NỐI TIẾP nhau, không phải năm tab ngang hàng.
        Mũi chuyển tiếp giữa chúng nói lên thứ tự đó; vẽ phẳng như tab thì người
@@ -446,12 +462,17 @@
     .tlv2 .search {
       display:flex; align-items:center; gap:8px; height:34px; padding:0 10px;
       border:1px solid var(--tl-line2); border-radius:9px; color:var(--tl-ink3);
-      font-size:12.5px; flex:1; max-width:420px; background:#fff;
+      font-size:12.5px; flex:1 1 200px; min-width:0; max-width:340px; background:#fff;
     }
-    .tlv2 .search input { border:0; outline:0; flex:1; font-size:12.5px; color:var(--tl-ink); background:transparent; }
+    .tlv2 .search input { border:0; outline:0; flex:1; min-width:0; font-size:12.5px; color:var(--tl-ink); background:transparent; }
+    /* `width` PHẢI khai ở đây. Ứng dụng có một nếp chung cho `select` là rộng
+       hết khung, nên ô lọc này trước đây chiếm cả hàng và đẩy nút "Xóa lọc" cùng
+       số đếm xuống hai dòng nữa — ba dòng công cụ cho ba thứ lẽ ra nằm một
+       dòng, và đó là phần lớn cảm giác "chữ nghĩa tùm lum" ở đầu bảng. */
     .tlv2 .tools select {
       height:34px; border:1px solid var(--tl-line2); border-radius:9px; padding:0 10px;
       background:#fff; font-weight:600; font-size:12.5px; color:var(--tl-ink2);
+      width:auto; min-width:168px; max-width:212px; flex:none;
     }
     .tlv2 .tools .cnt { margin-left:auto; font-size:12px; color:var(--tl-ink3); font-weight:600; }
 
@@ -475,6 +496,12 @@
     /* Ô nào cũng phải tự cắt bằng ba chấm: một tên tuyến dài kéo cả bảng rộng
        ra và mọi cột mất thẳng hàng. */
     .tlv2 .trips td .rt, .tlv2 .trips td .sub { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* Ba chấm chỉ cắt khi có một bề ngang để cắt theo. Không đặt trần thì ô
+       tuyến kéo bảng rộng ra tới khi khung phải trượt ngang, và cột trái lại
+       dài đúng như cũ. Đặt trần ở ô — không đặt ở `td`, vì `td` trong bảng
+       tự dàn (`table-layout:auto`) bỏ qua `max-width`. */
+    .tlv2 .trips td .rt { display:block; max-width:270px; }
+    .tlv2 .trips td .sub { max-width:270px; }
     /* TỔ LÁI xếp chồng nhau như ảnh đại diện nhóm — hai người thì thấy ngay là
        hai, không phải đọc số. */
     .tlv2 .trips .crew { display:flex; align-items:center; gap:6px; }
@@ -484,7 +511,7 @@
       font-weight:700; border:1.5px solid #fff; margin-left:-6px; flex:none;
     }
     .tlv2 .trips .crew .av:first-child { margin-left:0; }
-    .tlv2 .prog { width:120px; height:6px; border-radius:3px; background:#eef2f7; position:relative; overflow:hidden; }
+    .tlv2 .prog { width:92px; height:6px; border-radius:3px; background:#eef2f7; position:relative; overflow:hidden; }
     .tlv2 .prog i { position:absolute; left:0; top:0; bottom:0; background:var(--tl-blue); border-radius:3px; }
     .tlv2 .prog i.g { background:var(--tl-green); }
     .tlv2 .prog i.a { background:#ef9f27; }
@@ -505,7 +532,21 @@
     }
 
     /* HỒ SƠ CHUYẾN, cột phải */
-    .tlv2 .panel { position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; }
+    /* `100vh` là SAI ở đây. Hồ sơ nằm trong `.content-body` — một khung cuộn
+       riêng cao hơn màn hình chừng 165px (ba tầng đầu trang chiếm phần đó), nên
+       lấy trọn chiều cao màn hình thì đáy hồ sơ — chỗ đặt các nút hành động —
+       nằm ngoài vùng thấy được và không cuộn tới được. Trừ đi phần đầu trang. */
+    .tlv2 .panel {
+      position:sticky; top:52px; max-height:calc(100vh - 200px);
+      min-height:420px; overflow-y:auto; overscroll-behavior:contain;
+    }
+    /* DẢI TAB CỦA HỒ SƠ xuống dòng, không trượt ngang. Năm tab không vừa một
+       hàng trong cột hẹp, mà `overflow-x:auto` thì tab cuối ("Sự cố") bị cắt còn
+       "Sự" và không có thanh trượt nào cho thấy là còn nữa — người dùng không
+       biết mình đang thiếu một tab. */
+    /* `.pb` đã lo khoảng lề của hồ sơ, nên dải tab không đệm thêm hai bên. */
+    .tlv2 .panel .life { flex-wrap:wrap; overflow:visible; padding:0; gap:0 4px; }
+    .tlv2 .panel .lt { padding:9px 8px 7px; font-size:12.5px; gap:6px; }
     .tlv2 .ph { padding:14px 16px 12px; border-bottom:1px solid var(--tl-line); }
     .tlv2 .ph .top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .tlv2 .ph h3 { margin:0; font-size:16px; font-weight:700; }
@@ -6364,21 +6405,21 @@
         <section id="view-delivery-shipment" class="view-section tlv2">
           <div class="tlv2-host"><div class="tlv2-module">
 
+            <!-- ĐẦU TRANG CỦA MÀN do TẦNG 3 nói (đường dẫn "Vận hành", tên màn
+                 "Giao hàng và vận chuyển", và một câu mô tả). Trước đây khối này
+                 nói LẠI cả tên màn và một câu mô tả thứ hai gần trùng nghĩa, nên
+                 người đọc thấy hai đầu trang xếp lên nhau.
+
+                 Hàng nút DÍNH ở đỉnh khung cuộn. Vùng nội dung (`.content-body`)
+                 là một khung cuộn RIÊNG, nên trước đây chỉ cần lăn chuột một
+                 nhịp là hàng nút — kể cả nút "Tạo Trip" — trôi ra khỏi khung và
+                 bị cắt ngang ở mép trên. Việc chính của màn không được biến mất
+                 khi người dùng cuộn xuống xem bảng. -->
             <div class="hdr">
-              <div>
-                <h1 data-i18n="title_trip_module">Chuyến xe (Trip)</h1>
-                <p data-i18n="sub_trip_module">Hồ sơ từng chuyến: chặng thật, tổ lái, POD, chi phí thực so kế hoạch, và kế hoạch chặng về.</p>
-              </div>
               <div class="hdr-acts">
                 <!-- Nút này mở HỘP THOẠI TẠO TRIP mà chủ dự án yêu cầu giữ. -->
                 <button class="primary" type="button" onclick="openTripReturnAction('create-trip')">
                   <i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">Tạo Trip</span>
-                </button>
-                <button class="ghost" type="button" onclick="switchView('tracking')">
-                  <i class="fa-solid fa-satellite-dish"></i> Theo dõi realtime
-                </button>
-                <button class="ghost" type="button" onclick="switchView('dispatch')">
-                  <i class="fa-solid fa-truck-ramp-box"></i> <span data-i18n="btn_to_dispatch">Qua điều phối</span>
                 </button>
                 <!-- Biểu tượng hướng dẫn của ứng dụng — GIỮ NGUYÊN. -->
                 <button id="trip-return-guidance-toggle" class="ghost" type="button"
@@ -6447,7 +6488,9 @@
                        cả bốn thành một dải dọc, nhưng ở đây một chuyến có thể
                        có hàng chục sự kiện GPS — dồn hết vào một cột thì hồ sơ
                        dài tới mức không tìm được gì. -->
-                  <nav id="trip-return-detail-tabs" class="life" style="padding:0" aria-label="Hồ sơ chuyến"></nav>
+                  <!-- Không đặt `padding` bằng style nội tuyến: nó thắng cả bộ
+                       quy tắc cho dải tab trong hồ sơ, nên tab bị dính sát mép. -->
+                  <nav id="trip-return-detail-tabs" class="life" aria-label="Hồ sơ chuyến"></nav>
                   <div id="trip-return-detail-pane"></div>
                 </div>
               </aside>

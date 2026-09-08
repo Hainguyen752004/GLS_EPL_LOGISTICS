@@ -17,10 +17,22 @@ assert.match(
   /openTripReturnAction\(['"]create-trip['"]\)/,
   'Màn Giao hàng phải có nút Tạo Trip.'
 );
+// ĐƯỜNG SANG ĐIỀU PHỐI chỉ có MỘT, và nó nằm trong hồ sơ chuyến do `app.js`
+// vẽ ("Sửa ở Điều phối"), không nằm ở đầu trang.
+//
+// Vì sao đổi: đầu trang trước đây có thêm một nút "Qua điều phối" nữa. Hai nút
+// cùng nghĩa mà khác việc — nút ở đầu trang chỉ đổi màn, nút trong hồ sơ mang
+// theo chuyến đang chọn — nên người dùng bấm nút đầu trang rồi phải tự tìm lại
+// chuyến vừa xem. Bỏ nút ở đầu trang, giữ nút trong hồ sơ.
 assert.strictEqual(
   (deliverySection.match(/switchView\(['"]dispatch['"]\)/g) || []).length,
+  0,
+  'Đầu trang màn Giao hàng không được có nút Qua điều phối nữa — đường sang Điều phối nằm trong hồ sơ chuyến.'
+);
+assert.strictEqual(
+  (app.match(/'Sửa ở Điều phối'/g) || []).length,
   1,
-  'Màn Giao hàng chỉ được có một nút Qua điều phối.'
+  'Hồ sơ chuyến phải có đúng một nút Sửa ở Điều phối.'
 );
 // Màn Điều phối phải có điểm tạo Trip. Nhưng sau khi dựng lại theo bản mẫu
 // `dispatch-v2-crew.html`, nút đó không còn gọi `openTripReturnAction` thẳng
