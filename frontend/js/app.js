@@ -9747,12 +9747,16 @@ function renderDispatchDOs(filterQuery = '') {
         + '<div><div class="id">' + escapeHtml(String(d.id)) + '</div>'
         + '<div class="m">' + escapeHtml(tenKH)
         + (d.so_id ? ' · ' + escapeHtml(String(d.so_id)) : '') + '</div></div>'
-        + '<div><div>Lấy ' + (dpv2Gio(d.pickup_window_start || d.pickup_date) || '—') + '</div>'
-        + '<div class="m">' + escapeHtml(String(d.origin || '—')) + '</div></div>'
-        + '<div><div>Giao ' + (dpv2Gio(d.delivery_window_start || d.delivery_date) || '—') + '</div>'
-        + '<div class="m">' + escapeHtml(String(d.destination || '—')) + '</div></div>'
-        + '<span class="due ' + conLai.mau + '">' + conLai.chu + '</span>'
-        + theTrip
+        // Giờ lấy và giờ giao gộp vào MỘT ô hai dòng. Cột DO nay hẹp lại để
+        // nhường chỗ cho cột giữa, và sáu ô ngang trong khoảng đó thì mỗi ô
+        // còn chưa tới 70px — chữ bị cắt hết. Cùng lượng thông tin, xếp theo
+        // chiều dọc thay vì chiều ngang.
+        + '<div><div>Lấy ' + (dpv2Gio(d.pickup_window_start || d.pickup_date) || '—')
+        + ' · ' + escapeHtml(String(d.origin || '—')) + '</div>'
+        + '<div class="m">Giao ' + (dpv2Gio(d.delivery_window_start || d.delivery_date) || '—')
+        + ' · ' + escapeHtml(String(d.destination || '—')) + '</div></div>'
+        + '<div><span class="due ' + conLai.mau + '">' + conLai.chu + '</span>'
+        + theTrip + '</div>'
         + '</div>';
     }).join('');
 
@@ -9762,8 +9766,12 @@ function renderDispatchDOs(filterQuery = '') {
       + '<span class="car">&#9654;</span>'
       + '<div class="nm">' + escapeHtml(g.ten)
       + (g.phu ? ' <span>' + escapeHtml(g.phu) + '</span>' : '') + '</div>'
-      + '<span class="cnt">' + g.ds.length + ' DO · ' + tongKg.toLocaleString('vi-VN') + ' kg</span>'
-      + theNhom + nutNhom
+      // Số DO, thẻ cảnh báo và nút xếp gộp vào MỘT ô bên phải, tự xuống dòng
+      // khi chật — thay vì ba ô riêng tranh nhau chỗ ngang và đẩy nhau ra
+      // ngoài khung khi tên tuyến dài.
+      + '<span class="rt"><span class="cnt">' + g.ds.length + ' DO · '
+      + tongKg.toLocaleString('vi-VN') + ' kg</span>'
+      + theNhom + nutNhom + '</span>'
       + '</button>'
       + '<div class="rows">' + dong + '</div></div>';
   }).join('');
@@ -10016,8 +10024,14 @@ function renderDispatchCandidates() {
       + '<div class="veh">'
       + '<div class="sc ' + bac + '">' + (c.chan ? '—' : c.diem)
       + '<small>' + (c.chan ? escapeHtml(c.chan) : 'điểm') + '</small></div>'
-      + '<div class="g"><b>' + escapeHtml(String(c.xe.id))
-      + (tenChinh ? ' · ' + escapeHtml(tenChinh) : '')
+      // Biển số và VÒNG TRÒN TỔ LÁI là hai thứ NGANG HÀNG trong một hàng flex,
+      // không phải tổ lái nằm bên trong biển số. Bản mẫu lồng `.vcrew` vào
+      // trong thẻ `<b>` đang mang `white-space:nowrap; overflow:hidden` — và đo
+      // trên màn thật thì hai vòng tròn tụt xuống dòng dưới, làm mỗi dòng xe
+      // cao hơn 58px và các dòng chồng lên nhau.
+      + '<div class="g"><div class="ln">'
+      + '<b>' + escapeHtml(String(c.xe.id))
+      + (tenChinh ? ' · ' + escapeHtml(tenChinh) : '') + '</b>'
       + '<span class="vcrew">'
       + '<i' + (tenChinh ? '' : ' class="q"') + ' title="'
       + (tenChinh ? escapeHtml(tenChinh) + ' · tài xế chính' : 'Chưa có tài xế chính') + '">'
@@ -10025,7 +10039,7 @@ function renderDispatchCandidates() {
       + '<i' + (tenPhu ? '' : ' class="q"') + ' title="'
       + (tenPhu ? escapeHtml(tenPhu) + ' · phụ xe' : 'Chưa có phụ xe (không bắt buộc)') + '">'
       + (tenPhu ? chuCaiTen(tenPhu) : '+') + '</i>'
-      + '</span></b>'
+      + '</span></div>'
       + '<span>' + dongPhu
       + (conNguoiRanh ? ' · ' + conNguoiRanh + ' tài xế đang trong ca' : '')
       + '</span></div>'

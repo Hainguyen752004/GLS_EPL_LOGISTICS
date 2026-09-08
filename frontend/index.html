@@ -835,8 +835,13 @@
     .dpv2 .kpi:disabled { opacity:.6; cursor:default; }
 
     /* bàn làm việc ba cột */
+    /* CỘT GIỮA là cột rộng nhất, không phải cột DO.
+       Bản mẫu cho cột DO 1.15fr và cột lịch xe 1fr, nhưng đo trên màn thật thì
+       tỉ lệ đó bóp cột giữa đến mức biển số bị cắt thành "DEMO-51C-1…" và các
+       dòng xe chồng lên nhau. Cột DO chỉ cần đủ đọc bốn mẩu thông tin; còn cột
+       giữa phải chứa 270px tên xe CỘNG mười bốn ô giờ, nên nó cần gấp đôi. */
     .dpv2 .board {
-      display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) 360px;
+      display:grid; grid-template-columns:minmax(300px,0.62fr) minmax(0,1.55fr) 340px;
       gap:12px; align-items:start;
     }
     .dpv2 .col-h {
@@ -859,9 +864,18 @@
     /* nhóm DO theo tuyến */
     .dpv2 .grp { border-bottom:1px solid var(--dpv2-line); }
     .dpv2 .grp-h {
-      display:grid; grid-template-columns:28px minmax(0,1fr) auto auto auto; gap:10px;
-      align-items:center; padding:10px 14px; cursor:pointer; background:#fafbfd;
+      display:grid; grid-template-columns:18px minmax(0,1fr) auto; gap:8px;
+      align-items:center; padding:10px 12px; cursor:pointer; background:#fafbfd;
       width:100%; border:0; text-align:left;
+    }
+    /* Ten tuyen phai tu cat: mot ten dai day so DO va nut "Xep ca nhom" ra
+       ngoai khung, va nguoi dung khong con thay hai thu do. */
+    .dpv2 .grp-h .nm { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    /* So DO, the canh bao va nut xep gom vao MOT o ben phai, xep hai dong khi
+       chat — thay vi ba o rieng tranh nhau cho ngang. */
+    .dpv2 .grp-h .rt {
+      display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+      justify-content:flex-end; min-width:0;
     }
     .dpv2 .grp-h:hover { background:#f4f7fb; }
     .dpv2 .grp-h .car { font-size:11px; color:var(--dpv2-ink3); transition:transform .15s; }
@@ -875,11 +889,24 @@
     }
     .dpv2 .grp .rows { display:none; }
     .dpv2 .grp.open .rows { display:block; }
+    /* BỐN cột, không phải sáu như bản mẫu.
+       Cột DO nay hẹp lại để nhường chỗ cho cột giữa, và sáu cột trong khoảng đó
+       thì mỗi cột còn chưa tới 70px — chữ bị cắt hết. Nên gộp: giờ lấy và giờ
+       giao vào MỘT ô hai dòng, hạn giao và trạng thái Trip vào một ô hai dòng.
+       Cùng lượng thông tin, xếp theo chiều dọc thay vì chiều ngang. */
     .dpv2 .row {
-      display:grid; grid-template-columns:28px minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 90px 100px;
-      gap:10px; align-items:center; padding:8px 14px; border-top:1px solid var(--dpv2-line);
+      display:grid; grid-template-columns:22px minmax(0,1.25fr) minmax(0,1.1fr) 92px;
+      gap:9px; align-items:center; padding:8px 12px; border-top:1px solid var(--dpv2-line);
       cursor:pointer; font-size:12.5px; width:100%; text-align:left; background:#fff; border-left:0; border-right:0; border-bottom:0;
     }
+    .dpv2 .row > div { min-width:0; }
+    /* Mọi mẩu chữ trong dòng phải tự cắt bằng dấu ba chấm. Không đặt thì một
+       tên khách dài đẩy cả dòng rộng ra và bốn cột mất thẳng hàng. */
+    .dpv2 .row .id, .dpv2 .row .m, .dpv2 .row div > div {
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .dpv2 .row .due { display:block; }
+    .dpv2 .row .tag { display:inline-block; margin-top:3px; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
     .dpv2 .row:hover { background:#f8fafc; }
     .dpv2 .row.on { background:var(--dpv2-blue2); }
     .dpv2 .row input { width:15px; height:15px; accent-color:var(--dpv2-blue); margin:0; }
@@ -921,7 +948,7 @@
 
     /* Gantt xe ứng viên — cột xe 270px, hai dòng chữ, một nhãn giờ */
     .dpv2 .gantt { padding:4px 14px 12px; overflow:hidden; }
-    .dpv2 .g-head { display:grid; grid-template-columns:270px 1fr; position:relative; }
+    .dpv2 .g-head { display:grid; grid-template-columns:234px 1fr; position:relative; }
     .dpv2 .hours {
       display:grid; grid-template-columns:repeat(14,1fr); font-size:11px;
       color:var(--dpv2-ink3); font-weight:600; position:relative;
@@ -932,9 +959,12 @@
       color:#fff; font-size:10.5px; font-weight:700; border-radius:4px; padding:1px 6px; z-index:2;
     }
     .dpv2 .g-row {
-      display:grid; grid-template-columns:270px 1fr; border-top:1px solid var(--dpv2-line);
-      height:58px; cursor:pointer; width:100%; text-align:left; background:#fff;
-      border-left:0; border-right:0; border-bottom:0; padding:0;
+      display:grid; grid-template-columns:234px 1fr; border-top:1px solid var(--dpv2-line);
+      /* `min-height`, KHONG phai `height`. Chieu cao cung la ly do cac dong
+         chong len nhau khi noi dung tran ra — dong sau bi dong truoc phu len,
+         dung nhu anh chu du an gui. Gio dong tu gian ra. */
+      min-height:58px; cursor:pointer; width:100%; text-align:left; background:#fff;
+      border-left:0; border-right:0; border-bottom:0; padding:0; overflow:hidden;
     }
     .dpv2 .g-row:hover .veh { background:#fafbfd; }
     .dpv2 .g-row.pick .lane, .dpv2 .g-row.pick .veh { background:var(--dpv2-blue2); }
@@ -949,6 +979,18 @@
     .dpv2 .veh .sc.a { color:var(--dpv2-amber); }
     .dpv2 .veh .sc.r { color:var(--dpv2-ink3); }
     .dpv2 .veh .g { flex:1; min-width:0; }
+    /* VÒNG TRÒN TỔ LÁI phải nằm CẠNH biển số, không nằm trong nó.
+       Bản mẫu lồng `.vcrew` vào bên trong thẻ `<b>` đang mang
+       `white-space:nowrap; overflow:hidden` — và đo trên màn thật thì hai vòng
+       tròn tụt xuống dòng dưới, làm mỗi dòng xe cao hơn 58px và các dòng chồng
+       lên nhau, đúng như ảnh chủ dự án gửi.
+       Cách đúng: một hàng flex, biển số co lại và cắt bằng ba chấm
+       (`flex:1; min-width:0`), tổ lái không co (`flex:none`). */
+    .dpv2 .veh .g .ln { display:flex; align-items:center; gap:6px; min-width:0; }
+    .dpv2 .veh .g .ln b {
+      display:block; flex:1; min-width:0; font-weight:700; font-size:12.5px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
     .dpv2 .veh .g b { display:block; font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .dpv2 .veh .g span { display:block; color:var(--dpv2-ink3); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .dpv2 .veh .st { font-size:10.5px; font-weight:700; border-radius:5px; padding:2px 6px; flex:none; white-space:nowrap; }
@@ -976,7 +1018,7 @@
     }
     /* Vòng tròn tổ lái trên dòng xe. HAI vai, không phải ba như bản mẫu: máy
        chủ chỉ có `driver_id` và `co_driver_id`, nên vai thứ ba không có chỗ lưu. */
-    .dpv2 .vcrew { display:inline-flex; gap:3px; margin-left:6px; vertical-align:-4px; }
+    .dpv2 .vcrew { display:inline-flex; gap:3px; vertical-align:-4px; flex:none; }
     .dpv2 .vcrew i {
       width:18px; height:18px; border-radius:50%; background:var(--dpv2-blue2);
       color:var(--dpv2-blue3); font-size:9px; font-weight:700; display:grid;

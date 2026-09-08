@@ -91,8 +91,31 @@ const man = html.slice(iMan, html.indexOf('<section id="view-', iMan + 10));
   const i = css.indexOf('.dpv2 .board {');
   assert.ok(i > 0, 'thiếu quy tắc lưới ba cột `.dpv2 .board`');
   const luat = css.slice(i, css.indexOf('}', i));
-  assert.ok(/grid-template-columns:\s*minmax\(0,[^)]*\)\s+minmax\(0,[^)]*\)\s+\d+px/.test(luat),
+  const cot = luat.match(
+    /grid-template-columns:\s*minmax\(([^,]+),\s*([\d.]+)fr\)\s+minmax\(([^,]+),\s*([\d.]+)fr\)\s+(\d+)px/);
+  assert.ok(cot,
     `lưới phải chia ba cột (hai cột đầu linh hoạt, cột phải cố định): ${luat.trim()}`);
+
+  // CỘT GIỮA PHẢI RỘNG HƠN CỘT DO.
+  //
+  // Đây là chỗ đã sai một lần và chủ dự án phải gửi ảnh màn hình để chỉ ra. Bản
+  // mẫu cho cột DO 1.15fr và cột lịch xe 1fr, nhưng trên màn thật tỉ lệ đó bóp
+  // cột giữa đến mức biển số bị cắt thành "DEMO-51C-1…" và các dòng xe chồng
+  // lên nhau. Lý do là cột giữa phải chứa 234px tên xe CỘNG mười bốn ô giờ,
+  // còn cột DO chỉ cần đủ đọc bốn mẩu thông tin.
+  //
+  // Nguyên văn yêu cầu: "cái DO chờ điều phối em làm nó ngắn lại không đc dài
+  // ra nữa cho cái ở giữa đc mở ra thêm cho đầy đủ thông tin".
+  const doiDO = Number(cot[2]);
+  const doiGiua = Number(cot[4]);
+  assert.ok(doiGiua > doiDO * 1.5,
+    `cột giữa (lịch xe ứng viên) phải rộng hơn cột DO đáng kể — cột giữa còn `
+    + `phải chứa tên xe cộng mười bốn ô giờ. Đang là DO ${doiDO}fr / giữa ${doiGiua}fr.`);
+
+  // Và cột DO phải có SÀN, không được co vô hạn: co dưới khoảng 300px thì bốn ô
+  // trong dòng DO chồng lên nhau.
+  assert.match(cot[1], /\d+px/,
+    `cột DO phải có sàn tính bằng px để không co xuống mức không đọc được: ${cot[1]}`);
 
   // Màn hẹp: ba cột cạnh nhau là không đọc được cột nào. Và cột phải phải xuống
   // DƯỚI, không lên trên — lên trên là lặp lại đúng lỗi che mất lịch xe mà bố
