@@ -1365,6 +1365,7 @@ function renderAllTables() {
     if (typeof renderDispatchDOs === 'function') renderDispatchDOs();
   } else if (activeViewId === 'view-tracking') {
     renderGpsEventTimeline();
+    napVetGpsChoManTheoDoi();
   } else if (activeViewId === 'view-operations-360') {
     renderTmsCockpit();
   } else if (activeViewId === 'view-accounting') {
@@ -10939,15 +10940,215 @@ function populateTrackingDOSelector(selectedDoId = '') {
   window.renderTrackingDOList(selectedDoId);
 }
 
+
+/* ==========================================================================
+   MÀN THEO DÕI & KIỂM SOÁT — dải số liệu, theo bản mẫu
+   `tracking-control-tower.html`.
+
+   Đây là tháp kiểm soát: người ngồi đây không đi tìm việc, việc phải tự nổi lên
+   trước mắt họ. Trước đây màn này chỉ có một danh sách "DO đang vận chuyển" xếp
+   theo mã — nhìn vào không biết chuyến nào cần xử trước. Dải này trả lời đúng
+   câu đó, và bấm được: mỗi thẻ lọc danh sách bên dưới.
+
+   Bản mẫu có BẢY thẻ. Thẻ "Lệch tuyến" LƯỢC BỎ: hệ thống không có logic hành
+   lang tuyến nào cả — đo được, `#route-dev-alert` trong trang là markup chết,
+   không hàm nào ghi vào nó. Vẽ một con số lệch tuyến khi không có phép đo nào
+   là nói dối người đang trực, và họ sẽ tin.
+
+   Sáu thẻ còn lại đọc từ dữ liệu thật:
+
+     · Đang chạy      — số DO đang vận chuyển
+     · Nguy cơ trễ    — ETA của GPS muộn hơn hạn giao của đơn
+     · Đúng tiến độ   — có GPS, và ETA còn trước hạn
+     · Mất GPS > 15'  — mốc `last_update` cũ hơn 15 phút
+     · Sự cố mở       — `/api/incidents` còn sự cố chưa đóng
+     · Thiếu POD      — xe đã đến nơi mà chưa có bản ghi POD
+   ========================================================================== */
+
+let trackingKpiFilter = '';
+//: Chan goi lai vong tron khi nap vet GPS: ham nap ve xong lai goi ham ve.
+let dangNapVetGps = false;
+
+/** Nap vet GPS cho man Theo doi.
+ *
+ *  `dispatchTrackingByDO` von chi duoc `loadDispatchBoard` dien, nen vao man
+ *  Theo doi truc tiep la no RONG. Ca sau the so lieu doc bien do, nen dai bao
+ *  "mat GPS" cho MOI chuyen — ke ca chuyen dang gui toa do binh thuong. Do la
+ *  con so te nhat co the hien tren mot thap kiem soat: no bao dong gia.
+ *
+ *  Chiu loi im lang va dat co ve lai: thieu vet GPS thi ban do va dai van ve
+ *  duoc, chi la thieu so lieu, con chan ca man hinh thi te hon.
+ */
+async function napVetGpsChoManTheoDoi() {
+  if (dangNapVetGps) return;
+  const all = (eplDeliveryOrders && eplDeliveryOrders.length ? eplDeliveryOrders : (dispatchDOs || []));
+  if (!all.length) return;
+  if (dispatchTrackingByDO && Object.keys(dispatchTrackingByDO).length) return;
+  dangNapVetGps = true;
+  try {
+    await refreshDispatchTrackingMap(all);
+  } catch (loi) {
+    // PHAI noi ra, khong chi ghi log. Man nay la thap kiem soat: neu vet GPS
+    // khong nap duoc thi dai so lieu bao "mat GPS" cho MOI chuyen, va nguoi
+    // truc se di goi hang chuc tai xe cho mot su co khong ton tai. Im lang o
+    // day dat dung nhung dieu bao dong gia len man hinh.
+    console.warn('Khong nap duoc vet GPS cho man Theo doi:', loi && loi.message);
+    if (typeof showToast === 'function') {
+      showToast('Khong tai duoc vi tri GPS. Cac so lieu "mat GPS" tren man hinh '
+        + 'co the la bao dong gia — bam "Cap nhat GPS" de thu lai.', 'error');
+    }
+  } finally {
+    dangNapVetGps = false;
+    renderTrackingKpis();
+    const oChon = document.getElementById('tracking-active-do-select');
+    if (typeof window.renderTrackingDOList === 'function') {
+      window.renderTrackingDOList((oChon && oChon.value) || '');
+    }
+  }
+}
+//: Sự cố mở, nạp một lần cho cả dải. Để rỗng chứ không để `undefined`, không
+//: thì điều kiện nạp lại gọi mãi.
+let trackingSuCoMo = null;
+
+/** Mốc thời gian coi là "mất tín hiệu GPS". */
+const TRACKING_MAT_GPS_PHUT = 15;
+
+/** Hạn giao của một lệnh: mốc muộn nhất phải giao xong. */
+function trackingHanGiao(don) {
+  const moc = don.delivery_window_end || don.planned_arrival_at || don.delivery_date;
+  if (!moc) return null;
+  const d = new Date(moc);
+  return isNaN(d) ? null : d;
+}
+
+/** Nhóm của một lệnh cho dải số liệu. Một lệnh có thể thuộc nhiều nhóm. */
+function trackingNhomCuaDO(don) {
+  const nhom = new Set();
+  const vet = (typeof dispatchTrackingByDO === 'object' && dispatchTrackingByDO)
+    ? dispatchTrackingByDO[don.id] : null;
+
+  // MẤT GPS. Không có vết nào cũng tính là mất: xe đang trên đường mà hệ thống
+  // không biết nó ở đâu thì hậu quả y như thiết bị tắt, và người trực phải gọi
+  // tài xế trong cả hai trường hợp.
+  const mocCuoi = vet && vet.last_update ? new Date(vet.last_update) : null;
+  const coGps = Boolean(mocCuoi && !isNaN(mocCuoi));
+  if (!coGps) nhom.add('mat-gps');
+  else if ((Date.now() - mocCuoi.getTime()) / 60000 > TRACKING_MAT_GPS_PHUT) nhom.add('mat-gps');
+
+  // NGUY CƠ TRỄ: ETA do GPS tính ra muộn hơn hạn giao của đơn. Đây là con số
+  // duy nhất trên màn này báo trước được, chứ không báo sau khi đã trễ.
+  const han = trackingHanGiao(don);
+  const eta = vet && vet.eta ? new Date(vet.eta) : null;
+  const coEta = Boolean(eta && !isNaN(eta));
+  if (coEta && han && eta > han) nhom.add('nguy-co-tre');
+
+  // ĐÚNG TIẾN ĐỘ chỉ tính khi CÓ đo được: không có GPS thì không thể nói là
+  // đúng tiến độ, chỉ là không biết. Gộp "không biết" vào "ổn" là thứ làm người
+  // trực yên tâm sai chỗ.
+  if (coGps && !nhom.has('mat-gps') && !nhom.has('nguy-co-tre')) nhom.add('dung-tien-do');
+
+  // THIẾU POD: xe đã đến nơi mà chưa ai ký nhận. Đây là chỗ hoá đơn bị treo.
+  const tt = String(don.canonical_status || don.status || '');
+  const daDen = /arrived|da den|đã đến/i.test(tt);
+  if (daDen) {
+    const pods = (appState && Array.isArray(appState.pod_records)) ? appState.pod_records : [];
+    const daKy = pods.some(p => String(p.do_id || p.delivery_order_id || '') === String(don.id));
+    if (!daKy) nhom.add('thieu-pod');
+  }
+
+  return nhom;
+}
+
+/** Nạp sự cố còn mở, một lần cho cả dải. */
+async function napSuCoMoChoTheoDoi() {
+  try {
+    const tra = await fetch(API_BASE + '/api/incidents', { headers: financeAuthHeaders() });
+    if (!tra.ok) { trackingSuCoMo = []; return; }
+    const goi = await tra.json();
+    const ds = Array.isArray(goi) ? goi : (goi && (goi.data || goi.items)) || [];
+    trackingSuCoMo = (Array.isArray(ds) ? ds : []).filter(x =>
+      !/closed|resolved|da dong|đã đóng|đã xử/i.test(String(x.status || '')));
+  } catch (loi) {
+    console.warn('Khong nap duoc su co cho man Theo doi:', loi && loi.message);
+    trackingSuCoMo = [];
+  }
+}
+
+window.setTrackingKpiFilter = function (nhom) {
+  trackingKpiFilter = trackingKpiFilter === nhom ? '' : String(nhom || '');
+  renderTrackingKpis();
+  // Khong co bien "DO dang chon" o man nay; o `select` chinh la noi giu no.
+  const oChon = document.getElementById('tracking-active-do-select');
+  window.renderTrackingDOList((oChon && oChon.value) || '');
+};
+
+function renderTrackingKpis() {
+  const host = document.getElementById('tracking-kpis');
+  if (!host) return;
+
+  const all = (eplDeliveryOrders && eplDeliveryOrders.length ? eplDeliveryOrders : (dispatchDOs || []));
+  const dangChay = all.filter(d => isGpsLiveTrackingStatus(d.canonical_status || d.status));
+
+  if (trackingSuCoMo === null) {
+    trackingSuCoMo = [];
+    napSuCoMoChoTheoDoi().then(() => renderTrackingKpis());
+  }
+
+  const dem = { 'dung-tien-do': 0, 'nguy-co-tre': 0, 'mat-gps': 0, 'thieu-pod': 0 };
+  dangChay.forEach(d => trackingNhomCuaDO(d).forEach(n => { if (n in dem) dem[n] += 1; }));
+
+  const soXe = new Set(dangChay.map(d => String(d.vehicle_id || '')).filter(Boolean)).size;
+  const soSuCo = (trackingSuCoMo || []).length;
+
+  const the = [
+    ['', 'Đang chạy', dangChay.length, soXe + ' xe trên đường', 'blue'],
+    ['dung-tien-do', 'Đúng tiến độ', dem['dung-tien-do'], 'có GPS, ETA còn trước hạn', 'green'],
+    ['nguy-co-tre', 'Nguy cơ trễ', dem['nguy-co-tre'], 'ETA muộn hơn hạn giao', 'amber'],
+    ['mat-gps', 'Mất GPS > ' + TRACKING_MAT_GPS_PHUT + "'", dem['mat-gps'], 'không biết xe đang ở đâu', 'red'],
+    // Sự cố không lọc được danh sách DO (một sự cố chưa chắc gắn với DO đang
+    // chạy), nên thẻ này CHỈ ĐỂ ĐỌC — `null` làm nó không bấm được, thay vì cho
+    // bấm rồi không có gì xảy ra.
+    [null, 'Sự cố mở', soSuCo, soSuCo ? 'chưa đóng' : 'không có sự cố nào', 'red'],
+    ['thieu-pod', 'Thiếu POD', dem['thieu-pod'], 'đã đến nơi, chưa ký nhận', 'purple'],
+  ];
+
+  host.innerHTML = the.map(cap => {
+    const ma = cap[0], nhan = cap[1], so = cap[2], phu = cap[3], mau = cap[4];
+    const chiDoc = ma === null;
+    const tat = !chiDoc && ma !== '' && !so;
+    return '<button type="button"'
+      + ' class="tracking-kpi tracking-kpi--' + mau
+      + (trackingKpiFilter === ma && !chiDoc ? ' is-active' : '') + '"'
+      + (chiDoc || tat
+        ? ' disabled title="' + (chiDoc ? 'Chỉ để xem' : 'Không có chuyến nào trong nhóm này') + '"'
+        : ' onclick="setTrackingKpiFilter(\'' + ma + '\')" title="Bấm để lọc danh sách theo nhóm này"')
+      + (chiDoc ? ' aria-disabled="true"' : '')
+      + '>'
+      + '<span>' + escapeHtml(nhan) + '</span>'
+      + '<b>' + Number(so).toLocaleString('vi-VN') + '</b>'
+      + '<small>' + escapeHtml(phu) + '</small>'
+      + '</button>';
+  }).join('');
+}
+
 window.renderTrackingDOList = function (selectedDoId = '') {
   const target = document.getElementById('tracking-do-list');
   if (!target) return;
   const query = String(document.getElementById('tracking-do-search')?.value || '').trim().toLowerCase();
   const all = (eplDeliveryOrders && eplDeliveryOrders.length ? eplDeliveryOrders : (dispatchDOs || []));
-  const rows = all.filter(item => isGpsLiveTrackingStatus(item.canonical_status || item.status)).filter(item => !query || [item.id,item.vehicle_id,item.driver_id,item.customer_id].join(' ').toLowerCase().includes(query));
+  let rows = all.filter(item => isGpsLiveTrackingStatus(item.canonical_status || item.status)).filter(item => !query || [item.id,item.vehicle_id,item.driver_id,item.customer_id].join(' ').toLowerCase().includes(query));
+  // Loc theo the so lieu dang bam. Dat SAU o tim, truoc khi dem: con so canh
+  // dau danh sach phai dung bang so dong dang hien, khong thi no noi mot dieu
+  // ma man hinh khong the hien.
+  if (trackingKpiFilter) rows = rows.filter(item => trackingNhomCuaDO(item).has(trackingKpiFilter));
   const count = document.getElementById('tracking-live-count');
   if (count) count.textContent = rows.length;
-  target.innerHTML = rows.map(item => `<button type="button" class="tracking-do-item ${String(item.id) === String(selectedDoId) ? 'active' : ''}" data-tracking-do="${completionEscape(item.id)}" onclick="onTrackingSelectChange('${completionEscape(item.id)}'); renderTrackingDOList('${completionEscape(item.id)}')"><strong>${completionEscape(item.id)}</strong><span><i class="fa-solid fa-truck"></i> ${completionEscape(item.vehicle_id || 'Chưa gán xe')} · ${completionEscape(item.driver_id || 'Chưa gán tài xế')}</span><b>Đang vận chuyển</b></button>`).join('') || '<div class="completion-empty">Không có DO đang vận chuyển.</div>';
+  renderTrackingKpis();
+  target.innerHTML = rows.map(item => `<button type="button" class="tracking-do-item ${String(item.id) === String(selectedDoId) ? 'active' : ''}" data-tracking-do="${completionEscape(item.id)}" onclick="onTrackingSelectChange('${completionEscape(item.id)}'); renderTrackingDOList('${completionEscape(item.id)}')"><strong>${completionEscape(item.id)}</strong><span><i class="fa-solid fa-truck"></i> ${completionEscape(item.vehicle_id || 'Chưa gán xe')} · ${completionEscape(item.driver_id || 'Chưa gán tài xế')}</span><b>Đang vận chuyển</b></button>`).join('') || ('<div class="completion-empty">'
+    + (trackingKpiFilter
+      ? 'Không có chuyến nào trong nhóm đang lọc. Bấm lại thẻ số liệu để bỏ lọc.'
+      : 'Không có DO đang vận chuyển.')
+    + '</div>');
 };
 
 function isPODSelectableStatus(status) {

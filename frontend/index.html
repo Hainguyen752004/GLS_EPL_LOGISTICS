@@ -357,6 +357,30 @@
       padding:10px 12px; font:inherit; cursor:pointer; min-width:0;
       display:flex; flex-direction:column; gap:2px; border-left:3px solid #cbd5e1;
     }
+
+    /* DAI SO LIEU cua man Theo doi. Dung CHUNG hinh dang voi dai o man Dieu
+       phoi va man Giao hang: ba man cung mot kieu the thi nguoi dung hoc mot
+       lan, con moi man mot kieu thi phai hoc lai ba lan. */
+    .tracking-kpis {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:9px;
+    }
+    .tracking-kpi {
+      text-align:left; border:1px solid #d8e5f2; border-radius:9px; background:#fff;
+      padding:10px 12px; font:inherit; cursor:pointer; min-width:0;
+      display:flex; flex-direction:column; gap:2px; border-left:3px solid #cbd5e1;
+    }
+    .tracking-kpi:hover { border-color:#0a6ed1; }
+    .tracking-kpi:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
+    .tracking-kpi.is-active { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
+    .tracking-kpi:disabled { opacity:.55; cursor:not-allowed; }
+    .tracking-kpi span { font-size:.7rem; font-weight:800; color:#64748b; }
+    .tracking-kpi b { font-size:1.3rem; font-weight:900; color:#0f172a; font-variant-numeric:tabular-nums; }
+    .tracking-kpi small { font-size:.66rem; color:#94a3b8; font-weight:700; }
+    .tracking-kpi--blue { border-left-color:#0a6ed1; } .tracking-kpi--blue b { color:#0a6ed1; }
+    .tracking-kpi--green { border-left-color:#15803d; } .tracking-kpi--green b { color:#15803d; }
+    .tracking-kpi--amber { border-left-color:#d97706; } .tracking-kpi--amber b { color:#b45309; }
+    .tracking-kpi--red { border-left-color:#dc2626; } .tracking-kpi--red b { color:#dc2626; }
+    .tracking-kpi--purple { border-left-color:#7c3aed; } .tracking-kpi--purple b { color:#6b21a8; }
     .trip-kpi:hover { border-color:#0a6ed1; }
     .trip-kpi:focus-visible { outline:2px solid #0a6ed1; outline-offset:1px; }
     .trip-kpi.is-active { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
@@ -6022,6 +6046,23 @@
         <!-- 6. TRACKING & CONTROL VIEW -->
         <section id="view-tracking" class="view-section tk-board-view" style="background-color: #f8fafc; min-height: 100vh; padding: 24px;">
           <div id="tracking-gps-pod-workspace" style="display:grid; gap:18px;">
+            <!--
+              DAI SO LIEU, nhu ban mau `tracking-control-tower.html`.
+
+              Day la thap kiem soat: nguoi ngoi day khong di tim viec, viec phai
+              tu noi len truoc mat ho. Truoc day man nay chi co mot danh sach
+              "DO dang van chuyen" xep theo ma, nhin vao khong biet chuyen nao
+              can xu truoc.
+
+              Sau the, bam duoc, do `renderTrackingKpis()` ghi vao tu du lieu
+              that. Ban mau co BAY the — the "Lech tuyen" luoc bo vi he thong
+              khong co logic hanh lang tuyen nao ca (`#route-dev-alert` ben duoi
+              la markup chet, khong ham nao ghi vao no). Ve mot con so lech
+              tuyen khi khong co phep do nao la noi doi nguoi dang truc.
+            -->
+            <div id="tracking-kpis" class="tracking-kpis" role="group"
+                 aria-label="So lieu theo doi, bam de loc danh sach"></div>
+
             <!-- Active Vehicle & DO Selector Bar -->
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 20px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 320px;">
@@ -8419,7 +8460,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908w-pod-dung-luc"></script>
+  <script src="/static/js/app.js?v=20260908y-theo-doi-gps"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
