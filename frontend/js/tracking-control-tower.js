@@ -380,7 +380,12 @@
       el('ct-map').innerHTML = '';
       map = L.map('ct-map').setView([10.8, 106.7], 9);
       baseLayers = {
-        roads: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }),
+        // Nguon anh nen di qua `LopNenBanDo`: mot nguon duy nhat la mot diem
+        // vo don, va do duoc tren mang cua du an thi `tile.openstreetmap.org`
+        // khong toi duoc — ban do xam tron du toa do va duong ke tuyen dung.
+        roads: (window.LopNenBanDo
+          ? L.tileLayer(window.LopNenBanDo.NGUON[0].url, window.LopNenBanDo.NGUON[0].tuyChon)
+          : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' })),
         satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community' }),
       };
       Object.entries(baseLayers).forEach(([name, tiles]) => tiles.on('tileerror', () => {

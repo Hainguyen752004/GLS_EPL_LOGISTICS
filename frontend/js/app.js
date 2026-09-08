@@ -12572,9 +12572,11 @@ window.initGPSTrackingMap = async function (vehicleId = '', doId = '') {
   if (!gpsTrackingMap && typeof L !== 'undefined') {
     gpsTrackingMap = L.map('gps-tracking-map', { zoomControl: true }).setView([10.8456, 106.7725], 11);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
+    // Xem ghi chú ở `initLeafletRouteMap`: một nguồn ảnh nền duy nhất là một
+    // điểm vỡ đơn, và trên mạng của dự án thì đúng nguồn đó không tới được.
+    if (window.LopNenBanDo) window.LopNenBanDo.tao(gpsTrackingMap);
+    else L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
     }).addTo(gpsTrackingMap);
 
     gpsTrackingLayerGroup = L.layerGroup().addTo(gpsTrackingMap);
@@ -13325,10 +13327,15 @@ window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName
   if (!leafletRouteMap && typeof L !== 'undefined') {
     leafletRouteMap = L.map('route-leaflet-map', { zoomControl: true }).setView([10.88, 106.72], 10);
 
-    lopNenDuong = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap'
-    }).addTo(leafletRouteMap);
+    // MỘT nguồn ảnh nền là một điểm vỡ đơn: đo được trên mạng của dự án thì
+    // `tile.openstreetmap.org` không tới được, và ô bản đồ xám trơn dù toạ độ
+    // và đường kẻ tuyến đều đúng. `LopNenBanDo` thử lần lượt nhiều nguồn và
+    // nhớ nguồn nào chạy được.
+    lopNenDuong = (window.LopNenBanDo
+      ? window.LopNenBanDo.tao(leafletRouteMap).lop
+      : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19, attribution: '&copy; OpenStreetMap'
+        }).addTo(leafletRouteMap));
 
     routeMapLayersGroup = L.layerGroup().addTo(leafletRouteMap);
   } else if (leafletRouteMap) {
@@ -15359,8 +15366,38 @@ window.loadSavedRoutePreset = async function (code) {
       const badgeText = document.getElementById('route-map-badge-text');
       if (badgeText) badgeText.innerText = 'Đang xác định tọa độ và vẽ tuyến...';
 
+      // TOẠ ĐỘ DO MÁY CHỦ TRẢ, không do trình duyệt đi hỏi.
+      //
+      // Trước đây màn này chỉ có một đường: hỏi `nominatim.openstreetmap.org`
+      // cho từng điểm, từ trình duyệt người dùng. Đo được trên mạng của dự án:
+      // host đó KHÔNG TỚI ĐƯỢC, nên đường này luôn thất bại và ô bản đồ trắng
+      // trơn — trong khi màn "Theo dõi và kiểm soát" vẫn vẽ được đúng tuyến đó.
+      // Hai màn nói hai điều trái ngược về cùng một tuyến.
+      //
+      // `/geo` tra ba tầng ở phía máy chủ (bảng địa điểm → bảng mồi → dịch vụ
+      // ngoài) và GHI LẠI kết quả, nên tuyến mới với địa điểm mới cũng vẽ được,
+      // và lần sau không cần mạng nữa. Nó có thể mất vài giây cho một địa điểm
+      // chưa ai biết — chấp nhận được, vì người dùng đang đợi một bản đồ.
+      let changCoToaDo = Array.isArray(apiRoute.segments_geo) && apiRoute.segments_geo.length
+        ? apiRoute.segments_geo
+        : segments;
+      let diemThieu = apiRoute.diem_thieu_toa_do || [];
+      try {
+        const traGeo = await fetch(`${API_BASE}/api/routes/${encodeURIComponent(apiRoute.id)}/geo`);
+        if (traGeo.ok) {
+          const goi = await traGeo.json();
+          const duLieu = (goi && goi.data) || {};
+          if (Array.isArray(duLieu.segments_geo) && duLieu.segments_geo.length) {
+            changCoToaDo = duLieu.segments_geo;
+            diemThieu = duLieu.diem_thieu_toa_do || [];
+          }
+        }
+      } catch (e) {
+        // Máy chủ không trả được thì vẫn vẽ bằng toạ độ đã có trong danh sách.
+      }
+
       const didDraw = await window.RouteMapUtils.drawSavedRoute(
-        { ...apiRoute, segments_json: segments },
+        { ...apiRoute, segments_json: changCoToaDo },
         geocodeRouteLocation,
         window.initLeafletRouteMap
       );
@@ -15369,10 +15406,24 @@ window.loadSavedRoutePreset = async function (code) {
         // KHÔNG escape ở đây: giá trị đi vào innerText, vốn đã coi nội dung là văn
         // bản thuần. Escape thêm sẽ khiến người dùng nhìn thấy "&amp;" thay vì "&".
         if (badgeText) badgeText.innerText = `${apiRoute.id} - ${apiRoute.name}`;
+        if (diemThieu.length) {
+          showToast(`Đã vẽ tuyến, nhưng chưa biết toạ độ của: ${diemThieu.join(', ')}. `
+            + 'Khai toạ độ cho địa điểm đó ở thẻ Địa điểm để sơ đồ đủ điểm.');
+        }
       } else {
         if (typeof window.clearLeafletRouteMap === 'function') window.clearLeafletRouteMap();
-        if (badgeText) badgeText.innerText = 'Không xác định được tọa độ tuyến đường';
-        showToast('Không xác định được tọa độ cho tuyến đường này. Vui lòng nhập điểm đi/đến rõ hơn trong Master Data.');
+        // NÓI RA điểm nào chưa biết toạ độ. "Không xác định được toạ độ tuyến
+        // đường" là một câu không hành động được: tuyến có ba chặng thì người
+        // dùng không biết phải sửa điểm nào.
+        if (badgeText) {
+          badgeText.innerText = diemThieu.length
+            ? `Chưa biết toạ độ: ${diemThieu.join(', ')}`
+            : 'Không xác định được tọa độ tuyến đường';
+        }
+        showToast(diemThieu.length
+          ? `Chưa biết toạ độ của: ${diemThieu.join(', ')}. Khai toạ độ cho địa điểm đó ở thẻ Địa điểm, `
+            + 'hoặc sửa tên điểm đi/điểm đến cho rõ hơn (ví dụ thêm tên tỉnh).'
+          : 'Không xác định được tọa độ cho tuyến đường này. Vui lòng nhập điểm đi/đến rõ hơn trong Master Data.');
       }
     }
     // KHÔNG escape ở đây: giá trị đi vào showToast (đặt nội dung qua textContent), vốn đã coi nội dung là văn

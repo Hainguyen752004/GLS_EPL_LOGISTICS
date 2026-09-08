@@ -2,12 +2,12 @@
 
 import json
 import math
-import unicodedata
 from collections import defaultdict
 from datetime import datetime, timezone
 
 from sqlalchemy import func, or_
 from services import gps_simulation
+from services import toa_do_diem
 from models import (Customer, DeliveryOrder, DeliveryPODRecord, DeliveryPODDocument, Driver, FreightOrder, Incident,
                     Route, TransportEvent, TransportTrip, TransportTripLeg,
                     TripDeliveryOrder, VehicleTracking)
@@ -29,39 +29,17 @@ def coordinates(lat, lng):
             and -90 <= lat <= 90 and -180 <= lng <= 180)
 
 
-REFERENCE_POINTS = {
-    'kho vsip ii-a binh duong': (11.0497, 106.7428),
-    'kho vsip ii a binh duong': (11.0497, 106.7428),
-    'kcn vsip ii-a': (11.0497, 106.7428),
-    'vsip ii-a': (11.0497, 106.7428),
-    'vsip ii a': (11.0497, 106.7428),
-    'vanh dai 3': (10.8769, 106.7734),
-    'cang cat lai tp thu duc': (10.7567, 106.7828),
-    'cang cat lai': (10.7567, 106.7828),
-    'cong giao nhan cang cat lai': (10.7567, 106.7828),
-    'bai song than': (10.8894, 106.7294),
-    'kcn song than': (10.8894, 106.7294),
-    'song than': (10.8894, 106.7294),
-    'cang cai mep': (10.5303, 107.0302),
-    'kcn amata': (10.9458, 106.8671),
-}
+# Bang toa do da chuyen sang `services/toa_do_diem.py` de man "Tuyen duong"
+# dung CHUNG mot nguon. Truoc day bang nay chi song trong tep nay, nen man
+# Tuyen duong phai di hoi Nominatim qua Internet va o ban do trang tron khi may
+# khong co mang — trong khi he thong da biet toa do cua dung nhung diem do.
+REFERENCE_POINTS = toa_do_diem.DIEM_THAM_CHIEU
 
 
-def normalize_location(value):
-    text = unicodedata.normalize('NFKD', str(value or ''))
-    text = ''.join(ch for ch in text if not unicodedata.combining(ch)).lower()
-    text = text.replace('đ', 'd')
-    return ' '.join(''.join(ch if ch.isalnum() else ' ' for ch in text).split())
+normalize_location = toa_do_diem.chuan_hoa
 
 
-def reference_coordinates(label):
-    key = normalize_location(label)
-    if key in REFERENCE_POINTS:
-        return REFERENCE_POINTS[key]
-    for known, point in REFERENCE_POINTS.items():
-        if known in key or key in known:
-            return point
-    return None
+reference_coordinates = toa_do_diem.toa_do
 
 
 #: Chuoi moc chinh cua mot chuyen, dung bang `MAIN_SEQUENCE` cua

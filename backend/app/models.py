@@ -263,6 +263,12 @@ class Location(Base):
     type = Column(String, default="Warehouse") # Branch, Port, Warehouse
     address = Column(String)
     capacity = Column(Float, default=0.0)
+    # Toạ độ là DỮ LIỆU GỐC của địa điểm, cùng loại với địa chỉ — không phải một
+    # bảng cứng trong mã, và không phải một lời gọi ra Internet mỗi lần vẽ bản
+    # đồ. Để rỗng được: màn hình phải nói "chưa biết toạ độ điểm này" chứ không
+    # được đặt (0, 0), cặp đó đặt địa điểm ra ngoài khơi bờ biển châu Phi.
+    latitude = Column(Float)
+    longitude = Column(Float)
 
 Warehouse = Location
 
