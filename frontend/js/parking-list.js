@@ -11,8 +11,11 @@
     loading: false
   };
 
+  // `draft` ĐÃ BỎ khỏi máy trạng thái ở máy chủ: `generate_from_do` tạo phiếu
+  // thẳng ở `ready`, nên không đường nào dẫn tới `draft` cả. Giữ nhãn cho một
+  // trạng thái không bao giờ xảy ra là để lại một chỗ cho người sau tưởng nó
+  // còn — và họ sẽ viết nhánh xử lý cho một tình huống không tồn tại.
   const statusMeta = {
-    draft: ['Nháp', 'draft'],
     ready: ['Sẵn sàng in tem', 'ready'],
     parked: ['Đã vào bãi chờ', 'parked'],
     gate_in: ['Đã qua cổng', 'gate_in'],
@@ -23,6 +26,15 @@
     generated: ['Đã tạo Parking List', 'generated'],
     labels_printed: ['Đã in tem kiện', 'labels_printed'],
     packing_list_printed: ['Đã in Packing List', 'packing_list_printed'],
+    // BA loại sự kiện quét, không phải một.
+    //
+    // Máy chủ trước đây chỉ ghi `package_loaded`, vì hai bước đầu chuyển cả
+    // phiếu ngay khi quét MỘT kiện nên không có sự kiện theo từng kiện. Giờ cả
+    // ba bước đều đánh dấu từng kiện, nên có `package_parked` và
+    // `package_gate_in`. Thiếu nhãn ở đây thì lịch sử phiếu hiện ra mấy dòng
+    // trống — người đọc thấy có sự kiện mà không biết là sự kiện gì.
+    package_parked: ['Đã quét một kiện vào bãi', 'package_parked'],
+    package_gate_in: ['Đã quét một kiện qua cổng', 'package_gate_in'],
     package_loaded: ['Đã bốc một kiện', 'package_loaded']
   };
   const progress = ['ready', 'parked', 'gate_in', 'loaded', 'dispatched', 'delivered'];

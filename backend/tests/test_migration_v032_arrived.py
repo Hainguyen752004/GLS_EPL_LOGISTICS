@@ -34,10 +34,25 @@ from migrations.runner import upgrade, required_migration_head
 from migrations import v032_delivery_order_arrived_status as v032
 
 
-def test_moc_moi_nhat_la_moc_nay():
-    # Mốc này phải là mốc cuối: thêm mốc mới mà quên cập nhật danh sách thì
-    # `required_migration_head` chỉ vào một mốc không bao giờ được áp.
-    assert required_migration_head() == v032.VERSION
+def test_moc_nay_da_duoc_dang_ky_trong_chuoi():
+    # v032 KHONG con la moc cuoi (moc 033 da them sau no). Doi phep kiem sang
+    # dieu that su can giu: moc nay CO trong chuoi, va chuoi con di qua no.
+    #
+    # Ban truoc ghim `required_migration_head() == v032.VERSION`, va no do ngay
+    # khi moc 033 duoc them — do vi mot ly do khong lien quan gi toi dieu bai
+    # kiem nay bao ve, la rang buoc `arrived` phai khop giua moc va `models.py`.
+    # So bang CHUOI `VERSION`, khong bang dinh danh module (`v032 in MIGRATIONS`).
+    #
+    # Cung mot moc nap qua hai duong nhap khac nhau — `from migrations import
+    # v032_...` o day, con `from . import v032_...` trong `runner.py` — co the
+    # tao ra HAI doi tuong module khac nhau, va phep so dinh danh that bai. Bai
+    # nay da do dung vi ly do do khi chay cung cac bai moc khac, trong khi chay
+    # rieng thi xanh: mot bai kiem chi do theo THU TU chay la bai kiem khong tin
+    # duoc.
+    from migrations.runner import MIGRATIONS
+    ds = [m.VERSION for m in MIGRATIONS]
+    assert v032.VERSION in ds, "moc 032 phai duoc dang ky trong chuoi"
+    assert required_migration_head() == ds[-1]
 
 
 def test_danh_sach_trang_thai_khop_voi_models():

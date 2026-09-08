@@ -292,12 +292,15 @@ def nap_packing_list(db, do_id):
     ma_phieu = ds.id
     tem = [row.qr_token for row in ds.labels]
 
-    # Quet lan luot tung buoc. Hai buoc dau chi can MOT kien la ca phieu chuyen
-    # trang thai; buoc bocc hang thi phai quet DU tat ca kien moi thanh `loaded`.
-    parking_list_service.scan_label(db, tem[0], "yard_arrival", ACTOR)
-    parking_list_service.scan_label(db, tem[0], "gate_entry", ACTOR)
-    for token in tem:
-        parking_list_service.scan_label(db, token, "load_package", ACTOR)
+    # Quet DU MOI KIEN o CA BA buoc.
+    #
+    # Truoc day hai buoc dau chi quet mot kien, vi luc do mot lan quet la ca
+    # phieu chuyen trang thai. Quy tac da doi: ca ba buoc gio deu doi du moi
+    # kien moi chuyen phieu — hai buoc dau truoc kia noi sai, ghi "da qua cong"
+    # khi moi mot trong ba kien qua cong.
+    for buoc in ("yard_arrival", "gate_entry", "load_package"):
+        for token in tem:
+            parking_list_service.scan_label(db, token, buoc, ACTOR)
     db.flush()
     return ma_phieu
 

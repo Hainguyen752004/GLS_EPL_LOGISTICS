@@ -8,19 +8,26 @@ from pathlib import Path
 
 import pytest
 
-from migrations.runner import dry_run, rollback, upgrade
+from migrations.runner import MIGRATIONS, dry_run, rollback, upgrade
 from migrations import v001_workflow
 
-EXPECTED_MIGRATIONS = [
-    "001_workflow", "002_canonical_status_constraints", "003_tms_core_planning",
-    "004_tms_tendering", "005_tms_dispatch_eligibility", "006_tms_execution_events",
-    "007_tms_freight_settlement", "008_driver_vehicle_images", "009_delivery_pod_eta",
-    "010_route_context_flow", "011_transport_trips", "012_vehicle_speed_profile",
-    "013_demo_stabilization", "014_trip_cost_rows", "015_trip_stop_recipient",
-    "016_delivery_completion_closeout", "017_driver_shift_turnaround", "018_dispatch_crew",
-    "019_driver_availability", "020_epl_expense_vouchers", "021_vehicle_maintenance",
-    "022_vehicle_type_capacity", "023_parking_list", "024_money_numeric", "025_vehicle_depot", "026_sales_order_lines", "027_vehicle_cost_overrides", "028_shipping_spec", "029_sales_order_cargo_type", "030_workflow_notes", "031_sales_order_documents", "032_delivery_order_arrived_status",
-]
+# Danh sach moc SINH TU chuoi moc that, khong liet ke bang tay.
+#
+# Ban truoc go cung ba muoi mot ten moc. Moi lan them mot moc moi la ca chum
+# bai kiem trong tep nay do — da xay ra hai lan trong mot ngay, voi moc 032 roi
+# moc 033 — va do vi mot ly do khong lien quan gi toi dieu chung muon giu.
+#
+# Dieu chung muon giu la: chay het chuoi thi ap DU va DUNG THU TU moi moc dang
+# co, va lui lai thi thao theo dung thu tu nguoc. Sinh tu `MIGRATIONS` giu dung
+# dieu do, va con giu manh hon: neu ai do dang ky mot moc sai thu tu thi phep
+# kiem lien tuc ben duoi bat duoc ngay.
+EXPECTED_MIGRATIONS = [m.VERSION for m in MIGRATIONS]
+
+# Va chuoi phai LIEN TUC: so thu tu tang dung mot moi buoc, bat dau tu 001.
+# Thieu phep kiem nay thi `EXPECTED_MIGRATIONS` chi la mot ban sao cua chinh
+# `MIGRATIONS`, va no khong con khang dinh dieu gi ca.
+_so = [int(x.split("_")[0]) for x in EXPECTED_MIGRATIONS]
+assert _so == list(range(1, len(_so) + 1)), EXPECTED_MIGRATIONS
 
 
 def _postgres_v006_validation_rows(sql):

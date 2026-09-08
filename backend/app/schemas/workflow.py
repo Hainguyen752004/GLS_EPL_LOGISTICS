@@ -176,6 +176,15 @@ class DeliveryOrderCreateRequest(StrictRequest):
     delivery_date: Optional[str] = None
     weight_kg: Optional[Number] = None
     pallet_count: Optional[int] = None
+    # Quy cách đóng gói và số niêm phong khai được NGAY LÚC TẠO.
+    #
+    # Vì sao cần: cửa chặn xuất bến chia hai đường theo quy cách — hàng đếm được
+    # theo kiện thì phải quét đủ kiện, hàng nguyên khối thì phải có số niêm
+    # phong. Trước đây hai trường này chỉ sửa được SAU khi tạo, nên một đơn
+    # nguyên khối tạo xong là không xuất bến được cho tới khi có người vào sửa
+    # lại — một bước phụ không có lý do nào cả.
+    packaging_spec: Optional[str] = None
+    seal_no: Optional[str] = None
 
     _validate_operational_datetimes = field_validator(
         *DO_OPERATIONAL_DATETIME_FIELDS, mode="before"
@@ -198,6 +207,9 @@ class DeliveryOrderUpdateRequest(StrictRequest):
     # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
     notes: Optional[str] = None
     packaging_spec: Optional[str] = None
+    # So niem phong thuc te chi biet duoc LUC KEP CHI o kho, tuc sau khi don da
+    # tao — nen phai sua duoc ve sau, khong chi khai luc tao.
+    seal_no: Optional[str] = None
     volume_m3: Optional[Number] = None
 
     _validate_operational_datetimes = field_validator(

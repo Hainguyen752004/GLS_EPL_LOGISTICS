@@ -223,6 +223,9 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         "pickup_window_end": "2026-08-22T09:00:00+07:00",
         "delivery_window_start": "2026-08-22T11:00:00+07:00",
         "delivery_window_end": "2026-08-22T14:00:00+07:00",
+    
+        "packaging_spec": "Container nguyên khối",
+        "seal_no": "SL-TEST-0001",
     }).status_code == 200
     created = client.post("/api/tms/trips/from-delivery-orders", json={
         "id": "TRIP-COMPLETE", "do_ids": ["DO-COMPLETE"], "trip_type": "one_way",

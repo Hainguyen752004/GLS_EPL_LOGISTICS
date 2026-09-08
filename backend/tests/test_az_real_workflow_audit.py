@@ -71,6 +71,9 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
         "pickup_window_end": "2026-08-21T09:00:00+07:00",
         "delivery_window_start": "2026-08-21T11:00:00+07:00",
         "delivery_window_end": "2026-08-21T14:00:00+07:00",
+    
+        "packaging_spec": "Container nguyên khối",
+        "seal_no": "SL-TEST-0001",
     }).status_code == 200
 
     trip_response = client.post("/api/tms/trips/from-delivery-orders", json={

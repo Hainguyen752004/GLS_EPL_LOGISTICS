@@ -799,7 +799,11 @@ def create_delivery_order(db, data, user="system"):
         pallet_count=_nonnegative_int(data, "pallet_count", so.pallet_count or 0),
         pickup_date=_parse_business_datetime(data.get("pickup_date") or so.pickup_window_start),
         delivery_date=_parse_business_datetime(data.get("delivery_date") or so.delivery_window_end or so.delivery_date),
-        packaging_spec=so.packaging_spec,
+        # Quy cach lay tu payload TRUOC, roi moi ke thua tu Don ban. Truoc day
+        # chi ke thua, nen mot don nguyen khoi khong khai duoc ngay luc tao va
+        # bi cua chan xuat ben chan lai cho tới khi co nguoi vao sua.
+        packaging_spec=data.get("packaging_spec") or so.packaging_spec,
+        seal_no=(data.get("seal_no") or "").strip() or None,
         volume_m3=so.volume_m3,
         status=STATUS["delivery_order"]["pending"],
         canonical_status="pending",
@@ -841,6 +845,10 @@ def update_delivery_order(db, do_id, data, user="system"):
         do.delivery_date = _parse_business_datetime(data.get("delivery_date"))
     if "packaging_spec" in data:
         do.packaging_spec = data.get("packaging_spec") or ""
+    # So niem phong: chuoi rong hoac toan khoang trang la CHUA dien, ghi `None`
+    # chu khong ghi "" — de phep kiem "co niem phong chua" khong phai doan.
+    if "seal_no" in data:
+        do.seal_no = (data.get("seal_no") or "").strip() or None
     do.volume_m3 = _money(data, "volume_m3", do.volume_m3 or 0)
     do.updated_by = user
     do.updated_at = _now()

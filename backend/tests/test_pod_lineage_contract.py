@@ -28,6 +28,9 @@ def _dispatch_trip(client, workflow_builder):
         "pickup_window_end": "2026-08-21T09:00:00+07:00",
         "delivery_window_start": "2026-08-21T10:00:00+07:00",
         "delivery_window_end": "2026-08-21T14:00:00+07:00",
+    
+        "packaging_spec": "Container nguyên khối",
+        "seal_no": "SL-TEST-0001",
     }).status_code == 200
     assert client.post("/api/tms/trips/from-delivery-orders", json={
         "id": "TRIP-POD-001",

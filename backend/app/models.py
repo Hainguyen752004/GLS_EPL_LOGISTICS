@@ -401,6 +401,15 @@ class DeliveryOrder(Base):
     return_distance_km = Column(Float)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
     volume_m3 = Column(Float, default=5.0) # Thể tích chiếm chỗ (m3)
+    # Số niêm phong. Hàng NGUYÊN KHỐI không đếm kiện — một container niêm phong
+    # là một đơn vị, xe không mở ra để đếm — nên bằng chứng duy nhất cho biết
+    # hàng không bị mở trên đường là số niêm phong này. `seal_weight` bên Đơn
+    # bán là TRỌNG TẢI niêm phong, một con số, không dùng để đối chiếu được.
+    #
+    # Để RỖNG được: không phải đơn nào cũng là hàng nguyên khối. Chỗ bắt buộc
+    # nằm ở tầng nghiệp vụ (`packing_control_policy`), nơi biết đơn thuộc loại
+    # nào — bắt buộc ở đây thì mọi đơn lẻ cũng phải điền một ô vô nghĩa.
+    seal_no = Column(String)
 
 # 8. DeliveryOrderDetails (Chi tiết hàng hóa)
 class DeliveryOrderDetail(Base):

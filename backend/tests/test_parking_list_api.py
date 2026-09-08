@@ -146,15 +146,41 @@ def test_parking_list_status_is_driven_by_qr_scans(app_client, workflow_builder)
     assert invalid.status_code == 409
     assert invalid.json()["error"]["code"] == "INVALID_PARKING_SCAN_ORDER"
 
-    parked = client.post(
+    # MOT lan quet KHONG du de ca phieu chuyen trang thai — day la cho da sua.
+    #
+    # Truoc day hai buoc dau (`yard_arrival`, `gate_entry`) chuyen ca phieu ngay
+    # khi quet MOT kien, con buoc bocc hang thi doi du moi kien. Hai nghia khac
+    # nhau tren cung mot dai trang thai, va ket qua la man hinh ghi "da qua
+    # cong" khi moi mot trong hai kien qua cong. Nguoi doc tin con so do.
+    #
+    # Gio ca ba buoc dung chung mot khuon: danh dau tung nhan, va chi chuyen ca
+    # phieu khi MOI nhan da qua buoc do.
+    mot_kien = client.post(
         f"/api/parking-qr/{labels[0]['qr_token']}/scan",
         json={"action": "yard_arrival"},
     )
+    assert mot_kien.status_code == 200, mot_kien.text
+    assert mot_kien.json()["data"]["status"] == "ready", (
+        "quet mot kien chua duoc chuyen ca phieu sang 'parked'")
+    assert [row["status"] for row in mot_kien.json()["data"]["labels"]] == ["parked", "ready"]
+
+    parked = client.post(
+        f"/api/parking-qr/{labels[1]['qr_token']}/scan",
+        json={"action": "yard_arrival"},
+    )
     assert parked.status_code == 200, parked.text
-    assert parked.json()["data"]["status"] == "parked"
+    assert parked.json()["data"]["status"] == "parked", "du kien roi thi phai chuyen"
+
+    # Cung the o buoc qua cong: mot kien chua du.
+    mot_qua_cong = client.post(
+        f"/api/parking-qr/{labels[0]['qr_token']}/scan",
+        json={"action": "gate_entry"},
+    )
+    assert mot_qua_cong.status_code == 200, mot_qua_cong.text
+    assert mot_qua_cong.json()["data"]["status"] == "parked"
 
     gate = client.post(
-        f"/api/parking-qr/{labels[0]['qr_token']}/scan",
+        f"/api/parking-qr/{labels[1]['qr_token']}/scan",
         json={"action": "gate_entry"},
     )
     assert gate.status_code == 200, gate.text

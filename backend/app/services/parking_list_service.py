@@ -15,11 +15,15 @@ from models import (
     Route,
     TripDeliveryOrder,
 )
+from services import packing_control_policy
 from services.errors import DomainError, conflict
 
 
 TRANSITIONS = {
-    "draft": {"ready", "cancelled"},
+    # `draft` DA BO. `generate_from_do` tao phieu thang o `ready`, nen khong
+    # duong nao dan tai `draft` ca — mot trang thai khong bao gio xay ra la bay
+    # cho nguoi doc ma sau: ho viet nhanh xu ly cho no, viet bai kiem cho no, va
+    # ca hai deu la cong viec cho mot tinh huong khong ton tai.
     "ready": {"parked", "cancelled"},
     "parked": {"gate_in", "cancelled"},
     "gate_in": {"loaded", "cancelled"},
@@ -439,59 +443,104 @@ def scan_label(db, token, action, actor, note=None):
         raise DomainError("PARKING_LIST_NOT_FOUND", "Không tìm thấy Packing List.", 404)
     _load(db, item.id)
 
-    if action == "yard_arrival":
-        if item.status == "parked":
-            return _load(db, item.id)
-        if item.status != "ready":
-            raise conflict("INVALID_PARKING_SCAN_ORDER", "Chỉ được quét vào bãi khi Packing List đang sẵn sàng in tem.")
-        _set_status(item, "parked", actor, note or f"Quét kiện {label.package_no} vào bãi chờ")
-    elif action == "gate_entry":
-        if item.status == "gate_in":
-            return _load(db, item.id)
-        if item.status != "parked":
-            raise conflict("INVALID_PARKING_SCAN_ORDER", "Phải quét vào bãi chờ trước khi qua cổng.")
-        _set_status(item, "gate_in", actor, note or f"Quét kiện {label.package_no} qua cổng")
-    elif action == "load_package":
-        if item.status == "loaded":
-            return _load(db, item.id)
-        if item.status != "gate_in":
-            raise conflict("INVALID_PARKING_SCAN_ORDER", "Phải qua cổng trước khi quét kiện bốc hàng.")
-        if label.status != "loaded":
-            label.status = "loaded"
-            item.updated_at = _now()
-            item.updated_by = actor
-            _append_event(
-                item,
-                "package_loaded",
-                actor,
-                note or f"Đã bốc kiện {label.package_no}/{label.package_total}",
-            )
-        labels = db.query(ParkingLabel).filter(ParkingLabel.parking_list_id == item.id).all()
-        if labels and all(row.status == "loaded" for row in labels):
-            _set_status(item, "loaded", actor, "Đã quét đủ tất cả kiện", update_all_labels=False)
-    else:
+    # BA BUOC QUET DUNG CHUNG MOT KHUON, va do la mot sua loi.
+    #
+    # Truoc day hai buoc dau (`yard_arrival`, `gate_entry`) chuyen CA PHIEU sang
+    # trang thai moi ngay khi quet MOT kien, con buoc bocc hang thi doi du moi
+    # kien. Hai nghia khac nhau tren cung mot dai trang thai: man hinh ghi "da
+    # qua cong" khi moi mot trong muoi kien qua cong, va nguoi doc tin con so
+    # do. Do khong chan xe roi ben — cua `require_loaded_for_dispatch` van doi
+    # `loaded`, tuc doi du kien — nhung no lam hai trang thai giua duong noi sai.
+    #
+    # Gio ca ba buoc: danh dau TUNG NHAN, va chi chuyen ca phieu khi MOI nhan da
+    # qua buoc do.
+    BUOC = {
+        "yard_arrival": ("ready", "parked", "vào bãi chờ",
+                         "Chỉ được quét vào bãi khi Packing List đang sẵn sàng in tem."),
+        "gate_entry": ("parked", "gate_in", "qua cổng",
+                       "Phải quét vào bãi chờ trước khi qua cổng."),
+        "load_package": ("gate_in", "loaded", "bốc lên xe",
+                         "Phải qua cổng trước khi quét kiện bốc hàng."),
+    }
+    if action not in BUOC:
         raise DomainError("PARKING_SCAN_ACTION_INVALID", "Hành động quét QR không hợp lệ.", 422)
+
+    truoc, moc, viec, loi_thu_tu = BUOC[action]
+    if item.status == moc:
+        return _load(db, item.id)
+    if item.status != truoc:
+        raise conflict("INVALID_PARKING_SCAN_ORDER", loi_thu_tu)
+
+    if label.status != moc:
+        label.status = moc
+        item.updated_at = _now()
+        item.updated_by = actor
+        _append_event(
+            item,
+            "package_%s" % moc,
+            actor,
+            note or "Đã quét kiện %s/%s %s" % (label.package_no, label.package_total, viec),
+        )
+    labels = db.query(ParkingLabel).filter(ParkingLabel.parking_list_id == item.id).all()
+    if labels and all(row.status == moc for row in labels):
+        _set_status(item, moc, actor,
+                    "Đã quét đủ %s kiện %s" % (len(labels), viec),
+                    update_all_labels=False)
 
     db.flush()
     return _load(db, item.id)
 
 
+#: Trang thai Packing List duoc coi la DA QUET DU KIEN.
+DA_DU_KIEN = {"loaded", "dispatched", "delivered"}
+
+
 def require_loaded_for_dispatch(db, do_ids):
+    """Chan xuat ben khi hang chua duoc kiem soat du.
+
+    BAN TRUOC CHI SOI PHIEU DA TON TAI, va do la mot lo hong that: don khong co
+    Packing List thi di qua tu do. Nghia la quy tac "phai quet du kien" bi tat
+    bang cach KHONG lap phieu — mot cua ma ai cung tat duoc thi khong phai cua.
+
+    Gio quy tac gan vao LOAI HANG, do du lieu quyet chu khong do nguoi bam:
+    hang dem duoc theo kien thi PHAI co phieu da quet du; hang nguyen khoi thi
+    khong dem kien nhung PHAI co so niem phong. Xem `packing_control_policy` de
+    biet vi sao khong ap mot quy tac cho ca hai loai.
+    """
     if not do_ids:
         return
+
     rows = (
         db.query(ParkingList)
         .filter(ParkingList.do_id.in_(do_ids), ParkingList.status != "cancelled")
         .with_for_update()
         .all()
     )
-    blocked = [row for row in rows if row.status not in {"loaded", "dispatched", "delivered"}]
+
+    # Phieu CO nhung chua quet du kien: chan truoc, va bao dung phieu nao dang
+    # thieu — do la loi cu the nhat, nguoi dung biet phai di quet tiep o dau.
+    blocked = [row for row in rows if row.status not in DA_DU_KIEN]
     if blocked:
         summary = ", ".join(f"{row.id} ({row.status})" for row in blocked[:5])
         raise conflict(
             "PACKING_LIST_NOT_LOADED",
             f"Chưa thể xuất bến. Cần quét đủ kiện cho Packing List: {summary}.",
+            ["parking-list"],
         )
+
+    # Roi den quy tac theo loai hang: don nao PHAI co phieu ma khong co phieu
+    # nao, va don nguyen khoi nao thieu so niem phong.
+    du_kien_theo_don = {
+        str(row.do_id) for row in rows if row.status in DA_DU_KIEN
+    }
+    don_hang = (
+        db.query(DeliveryOrder)
+        .filter(DeliveryOrder.id.in_(do_ids))
+        .all()
+    )
+    for don in don_hang:
+        packing_control_policy.kiem_dieu_kien_xuat_ben(
+            don, str(don.id) in du_kien_theo_don)
 
 
 def sync_do_status(db, do_id, target, actor, note=None):

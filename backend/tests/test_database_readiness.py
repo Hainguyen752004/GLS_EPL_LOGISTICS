@@ -28,7 +28,13 @@ REQUIRED = {
 
 
 def test_required_migration_head_is_exposed_by_runner():
-    assert required_migration_head() == "032_delivery_order_arrived_status"
+    # Khong ghim TEN moc cuoi: y cua phep kiem la "runner co PHOI RA duoc moc
+    # can thiet", chu khong phai "moc do la 032". Ghim ten thi moi lan them mot
+    # moc moi la bai nay do — da xay ra hai lan trong mot ngay.
+    from migrations.runner import MIGRATIONS
+    assert required_migration_head() == MIGRATIONS[-1].VERSION
+    # Va no phai la mot chuoi khong rong, co dang "NNN_ten".
+    assert required_migration_head().split("_")[0].isdigit()
 
 
 class Checker:

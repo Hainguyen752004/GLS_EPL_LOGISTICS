@@ -44,7 +44,15 @@ def test_v031_da_duoc_dang_ky_trong_chuoi():
     # dung phep kiem: no co mat trong chuoi, dung ngay sau moc truoc, va con moc
     # khac dung sau. Ghim `MIGRATIONS[-1]` la buoc moi moc moi phai sua lai bai
     # kiem cua ban truoc.
-    assert v031 in MIGRATIONS
+    # So bang CHUOI `VERSION`, khong bang dinh danh module.
+    #
+    # Cung mot moc nap qua hai duong nhap khac nhau — `from migrations import
+    # vNNN_...` o day, con `from . import vNNN_...` trong `runner.py` — co the
+    # tao ra HAI doi tuong module khac nhau, va phep `in MIGRATIONS` that bai.
+    # Bai `test_migration_v032_arrived` da do dung vi ly do do khi chay cung cac
+    # bai moc khac, trong khi chay rieng thi xanh: mot bai kiem chi do theo THU
+    # TU chay la bai kiem khong tin duoc.
+    assert v031.VERSION in [m.VERSION for m in MIGRATIONS]
     ds = [m.VERSION for m in MIGRATIONS]
     i = ds.index(v031.VERSION)
     assert int(ds[i - 1].split("_")[0]) == int(v031.VERSION.split("_")[0]) - 1

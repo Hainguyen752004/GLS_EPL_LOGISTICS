@@ -3,11 +3,12 @@
 import pytest
 
 from migrations import v005_tms_dispatch_eligibility
-from migrations.runner import required_migration_head
+from migrations.runner import MIGRATIONS, required_migration_head
 
 
 def test_v005_creates_dispatch_eligibility_schema(tmp_path):
-    assert required_migration_head() == "032_delivery_order_arrived_status"
+    # Khong ghim TEN moc cuoi — xem chu thich cung loai o test_migration_v001.
+    assert required_migration_head() == MIGRATIONS[-1].VERSION
     connection = sqlite3.connect(tmp_path / "v005.db")
     connection.executescript("""
         CREATE TABLE vehicles (id TEXT PRIMARY KEY);
