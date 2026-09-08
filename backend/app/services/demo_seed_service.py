@@ -473,6 +473,15 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
     ma_den = ma_den or DESTINATION_ID
     di = di or ORIGIN
     den = den or DESTINATION
+    # Tai xe cua chuyen phai KHOP voi tai xe da gan cho lenh giao hang. Truoc
+    # day cho nay chon bang mot dieu kien viet cung theo bien so, nen them mot
+    # xe moi la roi vao nhanh mac dinh: don ghi DEMO-DRV-004 ma chuyen ghi
+    # DEMO-DRV-002 — do duoc tren PostgreSQL that, va nguoi dieu phoi mo hai
+    # man se thay hai ten khac nhau cho cung mot chuyen giao.
+    #
+    # Mac dinh giu dung dieu kien cu, nen hai loi goi cu khong doi mot chu nao.
+    tai_xe = driver_id or (
+        "DEMO-DRV-001" if vehicle_id == "DEMO-51C-268.89" else "DEMO-DRV-002")
     ids = _scenario_ids(key)
     db.add(FreightOrder(
         id=ids["freight_order_id"], pickup_location_id=ma_di,
@@ -488,7 +497,7 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
     db.add(TransportTrip(
         id=ids["trip_id"], freight_order_id=ids["freight_order_id"],
         trip_type="one_way", status="in_transit", vehicle_id=vehicle_id,
-        driver_id="DEMO-DRV-001" if vehicle_id == "DEMO-51C-268.89" else "DEMO-DRV-002",
+        driver_id=tai_xe,
         planned_departure_at=pickup, planned_arrival_at=delivery,
         planned_return_at=delivery + dt.timedelta(hours=2), actual_departure_at=pickup,
         created_by="demo-seed", updated_by="demo-seed",
@@ -511,7 +520,7 @@ def _seed_trip(db, key, pickup, delivery, vehicle_id, ma_di=None, ma_den=None,
     db.add(ResourceAssignment(
         freight_order_id=ids["freight_order_id"], trip_id=ids["trip_id"],
         vehicle_id=vehicle_id,
-        driver_id="DEMO-DRV-001" if vehicle_id == "DEMO-51C-268.89" else "DEMO-DRV-002",
+        driver_id=tai_xe,
         co_driver_id="DEMO-DRV-003" if vehicle_id == "DEMO-61H-112.34" else None,
         assignment_start=pickup, assignment_end=delivery + dt.timedelta(hours=2),
         status="active", created_by="demo-seed",
@@ -663,6 +672,12 @@ def _verify(db):
     den_noi = db.get(DeliveryOrder, _scenario_ids("arrived")["delivery_order_id"])
     assert den_noi and den_noi.canonical_status == "arrived"
     assert den_noi.route_id == "DEMO-RT-SONGTHAN-CATLAI"
+    # Chuyen va don phai ghi CUNG mot tai xe. Lech nhau thi hai man hien hai
+    # ten khac nhau cho cung mot chuyen giao.
+    chuyen_den_noi = db.get(TransportTrip, _scenario_ids("arrived")["trip_id"])
+    assert chuyen_den_noi and chuyen_den_noi.driver_id == den_noi.driver_id, (
+        "chuyen ghi tai xe %s ma don ghi %s"
+        % (chuyen_den_noi.driver_id if chuyen_den_noi else None, den_noi.driver_id))
     tuyen_hai = db.get(DeliveryOrder, _scenario_ids("second_route")["delivery_order_id"])
     assert tuyen_hai and tuyen_hai.canonical_status == "pending"
     assert tuyen_hai.route_id == "DEMO-RT-LONGAN-CAIMEP"
@@ -748,6 +763,8 @@ def seed_demo(db, reset=False, verify=False):
             db, "arrived", den_noi_pickup, den_noi_delivery, "DEMO-51C-412.09",
             ma_di="DEMO-LOC-SONGTHAN", ma_den=DESTINATION_ID,
             di="Bãi Sóng Thần", den=DESTINATION,
+            # Cung tai xe voi lenh giao hang, khong de nhanh mac dinh chon ho.
+            driver_id="DEMO-DRV-004",
         )
 
         # TINH HUONG 5 — cho van chuyen, TUYEN KHAC va KHACH KHAC.

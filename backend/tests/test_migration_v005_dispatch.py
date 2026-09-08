@@ -7,7 +7,7 @@ from migrations.runner import required_migration_head
 
 
 def test_v005_creates_dispatch_eligibility_schema(tmp_path):
-    assert required_migration_head() == "031_sales_order_documents"
+    assert required_migration_head() == "032_delivery_order_arrived_status"
     connection = sqlite3.connect(tmp_path / "v005.db")
     connection.executescript("""
         CREATE TABLE vehicles (id TEXT PRIMARY KEY);

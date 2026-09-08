@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908e-sap-lich">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908f-theo-doi-het-tran">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -622,6 +622,64 @@
     /* Danh sach ngoai le: cuon TRONG cot cua no. Khong dat gioi han thi mot
        ngay xau 40 ngoai le keo cot phai dai gap ba lan lich xe. */
     .dispatch-exceptions-list { margin-top:11px; max-height:520px; overflow-y:auto; }
+
+    /* DẢI NHÓM TUYẾN trong cột DO chờ điều phối.
+
+       Một Trip chỉ chở được các DO CÙNG một tuyến — đó là chốt của backend. Nên
+       cột này gom theo tuyến, và dải nhóm là ranh giới của một đơn vị ghép được.
+       Dải dính lại khi cuộn: nhóm dài hơn màn thì mất đầu nhóm là mất luôn thứ
+       quan trọng nhất, tức đang xem DO của tuyến nào. */
+    .dispatch-grp {
+      position:sticky; top:0; z-index:2;
+      display:flex; align-items:center; gap:9px;
+      margin:12px 0 6px; padding:7px 10px;
+      background:#eef4fb; border:1px solid #d3e2f2; border-radius:7px;
+    }
+    .dispatch-grp:first-child { margin-top:0; }
+    .dispatch-grp-name { min-width:0; flex:1; }
+    .dispatch-grp-name b { display:block; font-size:.8rem; font-weight:800; color:#0f172a;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dispatch-grp-name span { display:block; font-size:.68rem; color:#64748b; font-weight:700;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dispatch-grp-count { flex:none; font-size:.68rem; font-weight:800; color:#075da8;
+      background:#fff; border:1px solid #cfe0f3; border-radius:999px; padding:2px 8px; white-space:nowrap; }
+    .dispatch-grp-btn {
+      flex:none; border:1px solid #0a6ed1; background:#0a6ed1; color:#fff;
+      border-radius:7px; padding:5px 9px; font:inherit; font-size:.68rem; font-weight:800;
+      cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:5px;
+    }
+    .dispatch-grp-btn:hover { background:#075da8; }
+    .dispatch-grp-btn:focus-visible { outline:2px solid #0a6ed1; outline-offset:2px; }
+
+    /* DẢI SỐ LIỆU kiêm BỘ LỌC, như bản mẫu.
+
+       Sáu con số này không phải để trang trí: bấm vào một thẻ là lọc cột DO theo
+       đúng nhóm đó. Một dải số mà bấm không ra gì thì chỉ chiếm chỗ. */
+    .dispatch-kpis {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:9px;
+      margin-bottom:12px;
+    }
+    .dispatch-kpi {
+      text-align:left; border:1px solid #d8e5f2; border-radius:9px; background:#fff;
+      padding:10px 12px; font:inherit; cursor:pointer; min-width:0;
+      display:flex; flex-direction:column; gap:2px;
+      border-left:3px solid #cbd5e1;
+    }
+    .dispatch-kpi:hover { border-color:#0a6ed1; }
+    .dispatch-kpi.is-active { background:#eff6ff; border-color:#0a6ed1; box-shadow:0 2px 8px rgba(10,110,209,.12); }
+    .dispatch-kpi span { font-size:.7rem; font-weight:800; color:#64748b; }
+    .dispatch-kpi b { font-size:1.3rem; font-weight:900; color:#0f172a; font-variant-numeric:tabular-nums; }
+    .dispatch-kpi small { font-size:.66rem; color:#94a3b8; font-weight:700; }
+    /* Bốn màu nói bốn LOẠI việc, không phải bốn mức quan trọng. */
+    .dispatch-kpi--blue { border-left-color:#0a6ed1; }
+    .dispatch-kpi--blue b { color:#0a6ed1; }
+    .dispatch-kpi--green { border-left-color:#15803d; }
+    .dispatch-kpi--green b { color:#15803d; }
+    .dispatch-kpi--amber { border-left-color:#b45309; }
+    .dispatch-kpi--amber b { color:#92620a; }
+    .dispatch-kpi--red { border-left-color:#d32f2f; }
+    .dispatch-kpi--red b { color:#b3261e; }
+    .dispatch-kpi:disabled { opacity:.5; cursor:default; }
 
     /* Man hep: ba cot canh nhau la khong doc duoc cot nao. Ve mot cot, va
        ngoai le xuong DUOI lich xe — de len tren la lap lai dung loi che mat
@@ -1333,10 +1391,17 @@
     }
     /* Khối GPS/POD chiếm cả cột trái và cao bằng hai khối bên phải cộng lại. */
     .tk-board-view > #tracking-gps-pod-workspace { grid-row:span 2; min-width:0; }
-    .tk-board-view > #tracking-events-workspace,
-    .tk-board-view > #tracking-incident-workspace { min-width:0; }
-    /* Bảng "sự cố đã khai" ở cuối màn thì trải hết chiều ngang: nó là một bảng
-       nhiều cột, nhồi vào cột 400px là không đọc được cột nào. */
+    /* Cột phải chỉ giữ CHUỖI SỰ KIỆN — một dòng thời gian hẹp, vừa 400px.
+
+       Khối SỰ CỐ thì TRẢI HẾT chiều ngang ở hàng dưới. Nó chứa bảng "sự cố đã
+       khai" 8 cột và biểu mẫu báo sự cố; nhồi vào cột 400px thì bảng cần 449px
+       và tràn ra 75px, kéo cả màn tràn 50px — tức TRANG BỊ TRƯỢT NGANG. Đo
+       được trong Chrome ở khổ 1600px, và đó đúng là thứ làm màn nhìn như hỏng.
+
+       Cột phải là chỗ để ĐỌC nhanh; biểu mẫu và bảng nhiều cột là chỗ để LÀM,
+       nên chúng cần cả chiều ngang. */
+    .tk-board-view > #tracking-events-workspace { min-width:0; }
+    .tk-board-view > #tracking-incident-workspace { min-width:0; grid-column:1 / -1; }
     .tk-board-view > .fiori-table-wrapper,
     .tk-board-view > table { grid-column:1 / -1; }
 
@@ -5543,6 +5608,18 @@
               </button>
             </div>
 
+            <!--
+              DẢI SỐ LIỆU kiêm BỘ LỌC, như bản mẫu `dispatch-v2-crew.html`.
+
+              Sáu con số này không phải để trang trí: bấm vào một thẻ là lọc cột
+              "DO chờ điều phối" theo đúng nhóm đó. Nội dung do
+              `renderDispatchKpis()` ghi vào từ dữ liệu thật — để chữ mặc định ở
+              đây thì nó hiện loé một nhịp rồi bị ghi đè, và nếu hàm vẽ chết thì
+              màn hình lại nói những con số bịa.
+            -->
+            <div id="dispatch-kpis" class="dispatch-kpis" role="group"
+                 aria-label="Số liệu điều phối trong ngày, bấm để lọc"></div>
+
             <div id="dispatch-calendar-panel" class="dispatch-workbench-grid">
               <section id="dispatch-queue" class="dispatch-workbench-pane" aria-labelledby="dispatch-queue-title">
                 <div class="dispatch-pane-heading">
@@ -8109,7 +8186,7 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908o-hoan-tat-arrived"></script>
+  <script src="/static/js/app.js?v=20260908q-xe-ranh"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

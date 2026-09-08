@@ -27,6 +27,7 @@ thi du lieu demo doi theo, chu khong thanh mot trang thai khong the dat duoc.
 import datetime as dt
 
 from models import (
+    DeliveryOrder,
     DriverShiftAssignment,
     ParkingList,
     Vehicle,
@@ -249,11 +250,58 @@ def nap_packing_list(db, do_id):
     return ma_phieu
 
 
+def don_cho_ve_hom_nay(db):
+    """Doi ngay lay hang cua cac don DANG CHO sang HOM NAY.
+
+    VI SAO CAN: man Dieu phoi loc DO theo NGAY DANG XEM, va no mo mac dinh o
+    ngay hom nay — phep loc so `pickup_window_start`. Du lieu mau neo vao thang
+    8/2026, nen mo man Dieu phoi ra la "DO trong ngay = 0" va cot DO trong tron.
+    Do duoc trong Chrome: dai so lieu ra sau con 0, khong the DO nao.
+
+    Nguoi xem khong phan biet duoc "hom nay khong co don nao" voi "man nay hong"
+    — va truoc mot buoi demo thi ho se doc thanh cai thu hai.
+
+    CHI doi don o trang thai `pending`, va CHI doi ngay:
+
+      · Don da co chuyen thi khong doi — doi ngay lay hang cua no la lam lech
+        voi gio khoi hanh cua chuyen, sinh ra du lieu tu mau thuan.
+      · Khong tao them hang moi, nen `_delete_seeded_workflow` van don sach va
+        nap lai bao nhieu lan cung the.
+    """
+    hom_nay = _now().date()
+    doi = 0
+    for don in db.query(DeliveryOrder).filter(
+        DeliveryOrder.id.like("DEMO-DO-%"),
+        DeliveryOrder.canonical_status == "pending",
+    ).all():
+        # Giu nguyen GIO, chi doi NGAY: gio lay hang 08:00 la mot su that nghiep
+        # vu, khong phai mot con so ngau nhien.
+        goc = don.pickup_window_start
+        if goc is None:
+            continue
+        moi = goc.replace(year=hom_nay.year, month=hom_nay.month, day=hom_nay.day)
+        lech = moi - goc
+        don.pickup_window_start = moi
+        for ten in ("pickup_window_end", "pickup_date", "planned_departure_at",
+                    "delivery_window_start", "delivery_window_end", "delivery_date",
+                    "planned_arrival_at", "planned_return_at"):
+            cu = getattr(don, ten, None)
+            if cu is not None:
+                setattr(don, ten, cu + lech)
+        doi += 1
+    db.flush()
+    return doi
+
+
 def nap_lop_van_hanh(db, do_ids=()):
     """Nap ca lop van hanh. Tra ve so dong da tao de goi ben ngoai bao lai."""
     xoa_lop_van_hanh(db)
     t0 = dau_tuan()
+    # Doi ngay lay hang cua don dang cho sang hom nay TRUOC khi tao Packing
+    # List: phieu lay ngay tu don, nen doi sau la phieu mang ngay cu.
+    so_don_doi = don_cho_ve_hom_nay(db)
     ket_qua = {
+        "don_doi_ve_hom_nay": so_don_doi,
         "tuan_bat_dau": t0.date().isoformat(),
         "so_ca": nap_ca_truc(db, t0),
         "so_ky_bao_duong": nap_bao_duong(db, t0),

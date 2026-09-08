@@ -9074,6 +9074,104 @@ function renderDispatchDOSelector(sourceDOs = null) {
   }
 }
 
+/* ==========================================================================
+   DẢI SỐ LIỆU kiêm BỘ LỌC cho màn Điều phối, theo bản mẫu `dispatch-v2-crew`.
+
+   Sáu con số, và bấm vào một thẻ là LỌC cột DO theo đúng nhóm đó. Một dải số mà
+   bấm không ra gì thì chỉ chiếm chỗ — nên mỗi nhóm ở đây có một phép lọc thật,
+   và nhóm nào không có dòng nào thì thẻ mờ đi và không bấm được.
+   ========================================================================== */
+
+/** Nhóm lọc đang chọn ở dải số liệu: '' | 'cho' | 'xong' | 'thieu-trip' | 'thieu-hang' */
+let dispatchKpiFilter = '';
+
+/**
+ * Phân loại một DO vào các nhóm của dải số liệu.
+ *
+ * Một DO có thể thuộc NHIỀU nhóm — thiếu Trip và thiếu hàng hóa là hai chuyện
+ * độc lập — nên trả về một tập, không phải một nhãn.
+ */
+function dispatchNhomCuaDO(d) {
+  const nhom = new Set();
+  const tt = String(d.canonical_status || '').toLowerCase();
+  if (tt === 'pending') nhom.add('cho');
+  if (tt === 'in_transit' || tt === 'arrived' || tt === 'delivered') nhom.add('xong');
+
+  const cong = resolveDispatchTripGate(d.id);
+  if (cong.state !== 'ready') nhom.add('thieu-trip');
+
+  // Đơn chưa khai hàng hóa thì phép kiểm năng lực xe ở máy chủ không kiểm được
+  // gì: cả ba con số bằng 0 thì xe nào cũng "vừa". Đó là một ngoại lệ thật.
+  const kg = Number(d.weight_kg || 0);
+  const m3 = Number(d.volume_m3 || 0);
+  const pallet = Number(d.pallet_count || 0);
+  if (!kg && !m3 && !pallet) nhom.add('thieu-hang');
+
+  return nhom;
+}
+
+window.setDispatchKpiFilter = function (nhom) {
+  dispatchKpiFilter = dispatchKpiFilter === nhom ? '' : String(nhom || '');
+  renderDispatchDOs();
+};
+
+/** Vẽ dải số liệu. Mọi con số lấy từ dữ liệu thật, không có số cứng nào. */
+function renderDispatchKpis(dsTrongNgay, dsHienRa) {
+  const host = document.getElementById('dispatch-kpis');
+  if (!host) return;
+
+  const dem = { cho: 0, xong: 0, 'thieu-trip': 0, 'thieu-hang': 0 };
+  dsTrongNgay.forEach(d => {
+    dispatchNhomCuaDO(d).forEach(n => { if (n in dem) dem[n] += 1; });
+  });
+
+  // Chọn nguồn xe bằng ĐỘ DÀI, không bằng `||`: một mảng rỗng là truthy trong
+  // JavaScript, nên `driverShiftVehicles || fioriVehicles` trả về đúng mảng
+  // rỗng khi màn Điều phối chưa nạp danh sách xe của màn xếp lịch. Đo được:
+  // thẻ "Xe / tài xế rảnh" hiện 0 trong khi cơ sở dữ liệu có 9 xe.
+  const dsXe = (driverShiftVehicles && driverShiftVehicles.length)
+    ? driverShiftVehicles
+    : (fioriVehicles || []);
+  // "Rảnh" ở đây nghĩa là KHÔNG nằm bãi sửa và KHÔNG đang chạy chuyến nào. Đếm
+  // cả xe đang chạy thì con số nói "còn 9 xe" trong khi thực tế điều được ít
+  // hơn, và người điều phối tin vào một con số không dùng được.
+  const xeDangChay = new Set((driverVehicleAvailability || [])
+    .filter(x => String(x.kind || '') === 'trip' && x.vehicle_id)
+    .map(x => String(x.vehicle_id)));
+  const xeRanh = dsXe.filter(v => {
+    const tt = String(v.status || '');
+    if (/bảo dưỡng|bao duong|inactive|disabled|sửa chữa/i.test(tt)) return false;
+    if (/đang vận chuyển|dang van chuyen|in transit/i.test(tt)) return false;
+    return !xeDangChay.has(String(v.id));
+  }).length;
+  const taiXeRanh = (fioriDrivers || [])
+    .filter(t => /sẵn sàng|san sang|active|ready/i.test(String(t.status || ''))).length;
+
+  const the = [
+    ['', 'DO trong ngày', dsTrongNgay.length, `${dsHienRa} đang hiện`, 'blue'],
+    ['cho', 'Chờ điều phối', dem.cho, 'chưa xuất bến', 'amber'],
+    ['xong', 'Đã xuất bến', dem.xong, 'đang chạy hoặc đã xong', 'green'],
+    ['thieu-trip', 'Thiếu Trip', dem['thieu-trip'], 'phải lập Trip trước', 'red'],
+    ['thieu-hang', 'Chưa khai hàng', dem['thieu-hang'], 'không kiểm được tải trọng', 'red'],
+    [null, 'Xe / tài xế rảnh', xeRanh, `${taiXeRanh} tài xế sẵn sàng`, ''],
+  ];
+
+  host.innerHTML = the.map(([ma, nhan, so, phu, mau]) => {
+    // `null` nghĩa là thẻ chỉ để ĐỌC, không lọc được — nên không cho bấm, thay
+    // vì cho bấm rồi không có gì xảy ra.
+    const chiDoc = ma === null;
+    const tat = !chiDoc && ma !== '' && !so;
+    return `<button type="button"
+      class="dispatch-kpi${mau ? ' dispatch-kpi--' + mau : ''}${dispatchKpiFilter === ma && !chiDoc ? ' is-active' : ''}"
+      ${chiDoc || tat ? 'disabled' : `onclick="setDispatchKpiFilter('${ma}')"`}
+      ${chiDoc ? 'aria-disabled="true"' : ''}
+      title="${chiDoc ? 'Chỉ để xem' : (tat ? 'Không có DO nào trong nhóm này' : 'Bấm để lọc cột DO theo nhóm này')}">
+      <span>${escapeHtml(nhan)}</span><b>${Number(so).toLocaleString('vi-VN')}</b>
+      <small>${escapeHtml(phu)}</small>
+    </button>`;
+  }).join('');
+}
+
 function renderDispatchDOs(filterQuery = '') {
   const container = document.getElementById('dispatch-do-list');
   if (!container) return;
@@ -9105,6 +9203,17 @@ function renderDispatchDOs(filterQuery = '') {
     );
   }
 
+  // Dải số liệu đếm trên TOÀN BỘ đơn trong ngày, KHÔNG theo bộ lọc đang chọn.
+  // Đếm theo bộ lọc thì bấm "Thiếu Trip" xong mọi thẻ khác về 0, và người dùng
+  // mất luôn mốc để so — đó là dải số liệu tự xóa nghĩa của chính nó.
+  const dsTrongNgay = allDOs.slice();
+
+  // Lọc theo thẻ đang chọn ở dải số liệu, SAU bộ lọc chữ và bộ lọc ngày.
+  if (dispatchKpiFilter) {
+    allDOs = allDOs.filter(d => dispatchNhomCuaDO(d).has(dispatchKpiFilter));
+  }
+  renderDispatchKpis(dsTrongNgay, allDOs.length);
+
   const pendingCountEl = document.getElementById('dispatch-state-pending-count');
   if (pendingCountEl) pendingCountEl.textContent = String(allDOs.length);
 
@@ -9120,7 +9229,50 @@ function renderDispatchDOs(filterQuery = '') {
     container.innerHTML = `<div class="dispatch-undated-warning"><i class="fa-solid fa-triangle-exclamation"></i><span>${dateResult.undated.length} DO thiếu ngày lấy hàng nên chưa xuất hiện trong lịch. Hãy bổ sung thời gian trên DO trước khi điều phối.</span></div>`;
   }
 
+  // GOM THEO TUYẾN, như bản mẫu `dispatch-v2-crew.html`.
+  //
+  // Vì sao gom: một Trip chỉ chở được các DO CÙNG một tuyến — đó là chốt của
+  // backend, không phải một quy ước trình bày. Danh sách phẳng buộc người điều
+  // phối tự đọc mã tuyến của từng dòng rồi tự nhóm trong đầu; ở quy mô vài trăm
+  // DO mỗi ngày thì việc đó vừa chậm vừa dễ ghép sai tuyến rồi bị backend từ
+  // chối sau khi đã điền xong cả form.
+  //
+  // Nhóm nào nhiều DO nhất xếp lên trước: đó là nhóm ghép được nhiều nhất vào
+  // một chuyến, tức việc đáng làm trước.
+  const nhomTheoTuyen = new Map();
   allDOs.forEach(d => {
+    const khoa = String(d.route_id || d.route_name || '').trim() || '(chưa có tuyến)';
+    if (!nhomTheoTuyen.has(khoa)) nhomTheoTuyen.set(khoa, []);
+    nhomTheoTuyen.get(khoa).push(d);
+  });
+  const dsNhom = [...nhomTheoTuyen.entries()].sort((a, b) => b[1].length - a[1].length);
+
+  dsNhom.forEach(([maTuyen, dsDOnhom]) => {
+    const tuyen = (eplRoutes || []).find(r => String(r.id || '') === maTuyen);
+    const tenTuyen = tuyen ? (tuyen.name || maTuyen) : maTuyen;
+    const km = tuyen && tuyen.distance_km
+      ? `${Number(tuyen.distance_km).toLocaleString('vi-VN')} km` : '';
+    const tongKg = dsDOnhom.reduce((t, x) => t + Number(x.weight_kg || 0), 0);
+    // Chỉ mời "xếp cả nhóm" khi nhóm có TỪ HAI DO: một DO thì nút đó chỉ là
+    // một đường vòng tới cùng việc mà bấm vào chính dòng đó đã làm được.
+    const nutNhom = dsDOnhom.length > 1
+      ? `<button type="button" class="dispatch-grp-btn"
+             onclick="xepCaNhomDO('${completionEscape(maTuyen)}')"
+             title="Tick cả ${dsDOnhom.length} DO của tuyến này rồi mở form tạo Trip">
+           <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Xếp cả nhóm
+         </button>`
+      : '';
+    container.insertAdjacentHTML('beforeend', `
+      <div class="dispatch-grp">
+        <div class="dispatch-grp-name">
+          <b>${completionEscape(tenTuyen)}</b>
+          <span>${completionEscape(maTuyen)}${km ? ' · ' + km : ''}</span>
+        </div>
+        <span class="dispatch-grp-count">${dsDOnhom.length} DO · ${tongKg.toLocaleString('vi-VN')} kg</span>
+        ${nutNhom}
+      </div>`);
+
+    dsDOnhom.forEach(d => {
     const tripGate = resolveDispatchTripGate(d.id);
     const tripStatusText = tripGate.state === 'ready'
       ? `Trip ${tripGate.trip.id} · Đã lập kế hoạch`
@@ -9172,8 +9324,37 @@ function renderDispatchDOs(filterQuery = '') {
         </div>
       </div>
     `);
+    });
   });
 }
+
+/**
+ * "Xếp cả nhóm": tick tất cả DO của một tuyến rồi mở form tạo Trip.
+ *
+ * Một Trip chỉ chở được các DO CÙNG một tuyến, nên cả nhóm là đúng một đơn vị
+ * ghép được. Không tự gửi lệnh tạo Trip: form còn sáu trường nữa mà backend
+ * nhận — thời gian bốc dỡ, kế hoạch chặng về, giờ khởi hành — và đoán hộ những
+ * trường đó là cách sinh ra chuyến sai giờ mà không ai bấm.
+ */
+window.xepCaNhomDO = function (maTuyen) {
+  const nguon = (eplDeliveryOrders && eplDeliveryOrders.length) ? eplDeliveryOrders : (dispatchDOs || []);
+  const ds = nguon
+    .filter(isDispatchPendingDO)
+    .filter(d => (String(d.route_id || d.route_name || '').trim() || '(chưa có tuyến)') === String(maTuyen))
+    .map(d => String(d.id));
+  if (!ds.length) {
+    showToast('Nhóm này không còn DO nào chờ điều phối.');
+    return;
+  }
+  if (typeof openTripReturnAction !== 'function') {
+    showToast('Chưa nạp được form tạo Trip. Hãy tải lại trang.');
+    return;
+  }
+  // Sang màn Giao hàng & vận chuyển trước: form đọc dữ liệu Trip của màn đó,
+  // mở khi chưa nạp thì bộ chọn DO rỗng.
+  switchView('delivery-shipment');
+  setTimeout(() => openTripReturnAction('create-trip', ds), 260);
+};
 
 function dispatchCrewRole(driver) {
   return String(driver?.role || '')
