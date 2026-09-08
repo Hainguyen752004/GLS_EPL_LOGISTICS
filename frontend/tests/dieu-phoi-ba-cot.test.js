@@ -1,21 +1,26 @@
 /**
- * Bàn điều phối ba cột: DO chờ xếp | lịch xe | ngoại lệ.
+ * Bàn điều phối ba cột: DO chờ xếp | đội xe hoặc xe ứng viên | ngoại lệ hoặc
+ * khung gán.
  *
- * Màn Điều phối ghi ngay trên đầu: "Chọn DO, đối chiếu lịch xe rồi gán nguồn
- * lực NGAY TRÊN MỘT MÀN HÌNH". Đo lại thì câu đó không đúng:
+ * LỖI GỐC mà bài kiểm này sinh ra để chặn. Màn Điều phối ghi ngay trên đầu:
+ * "Chọn DO, đối chiếu lịch xe rồi gán nguồn lực NGAY TRÊN MỘT MÀN HÌNH". Đo lại
+ * thì câu đó không đúng:
  *
- *   · `#dispatch-queue` để `hidden`, chỉ hiện khi bấm bước 1 — và lúc đó nó bị
- *     DỜI vào một hộp thoại che kín màn.
- *   · `#dispatch-calendar-conflicts` nằm trong một ngăn kéo phải bấm "Công cụ"
- *     mới mở.
+ *   · cột DO để `hidden`, chỉ hiện khi bấm bước 1 — và lúc đó nó bị DỜI vào một
+ *     hộp thoại che kín màn;
+ *   · danh sách ngoại lệ nằm trong một ngăn kéo phải bấm "Công cụ" mới mở.
  *
- * Nên thực tế màn chỉ hiện một thứ: lịch xe. Người điều phối phải mở hộp thoại
- * để chọn DO, đóng lại để xem lịch, rồi mở tiếp — đúng cái việc mà câu chữ trên
- * đầu nói là không phải làm.
+ * Nên thực tế màn chỉ hiện một thứ. Người điều phối phải mở hộp thoại để chọn
+ * DO, đóng lại để xem lịch, rồi mở tiếp — đúng cái việc mà câu chữ trên đầu nói
+ * là không phải làm.
  *
- * Bản mẫu `dispatch-v2-crew.html` xếp ba cột cạnh nhau. Bài kiểm này giữ điều
- * đó, và giữ luôn hai hệ quả: ngăn kéo "Công cụ" đã bỏ hẳn (nó chỉ có một mục),
- * và bước 1 không còn mở hộp thoại.
+ * Màn nay dựng lại theo bản mẫu `dispatch-v2-crew.html`, ba cột cạnh nhau. Bài
+ * kiểm giữ điều đó, và giữ luôn hai hệ quả: ngăn kéo "Công cụ" đã bỏ hẳn, và
+ * bước 1 không còn mở hộp thoại.
+ *
+ * Bài kiểm cũ khoá theo `id` của bản cũ (`#dispatch-queue`, `#dispatch-timeline`,
+ * `.dispatch-workbench-grid`). Những `id` đó không còn, nhưng ĐIỀU CẦN BẢO VỆ
+ * thì không đổi — nên bài kiểm đổi mốc chứ không bỏ.
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -28,59 +33,80 @@ const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
   .split(String.fromCharCode(13)).join('');
 const css = html.replace(/\/\*[\s\S]*?\*\//g, ' ');
 
-// --- 1. Ba cột đều hiện sẵn -------------------------------------------
+// Chỉ soi trong phần thân của màn Điều phối, không soi cả tệp: tên lớp của bản
+// mẫu (`.card`, `.row`, `.panel`) rất chung, và các màn khác cũng có.
+const iMan = html.indexOf('<section id="view-dispatch"');
+assert.ok(iMan > 0, 'không thấy màn Điều phối');
+const man = html.slice(iMan, html.indexOf('<section id="view-', iMan + 10));
+
+// --- 1. Ba cột đều hiện sẵn, không cột nào bị ẩn ----------------------
 
 {
-  // Cột DO không còn `hidden`. Đây là chốt quan trọng nhất: thẻ có `hidden` thì
-  // dù bố cục ba cột đúng, cột đó vẫn không có gì trong đó.
-  const the = html.slice(html.indexOf('<section id="dispatch-queue"'));
-  const dong = the.slice(0, the.indexOf('>') + 1);
-  assert.ok(!/\bhidden\b/.test(dong),
-    `cột "DO chờ điều phối" còn hidden: ${dong}`);
+  const iBan = man.indexOf('<div class="board">');
+  assert.ok(iBan > 0, 'không thấy bàn ba cột `.board` của bản mẫu');
+  const ban = man.slice(iBan, man.indexOf('id="dispatch-step-modal"') > 0
+    ? man.indexOf('id="dispatch-step-modal"') : man.length);
 
-  ['dispatch-queue', 'dispatch-timeline', 'dispatch-exceptions'].forEach(ma => {
+  // Cột 1: DO chờ xếp. Đây là chốt quan trọng nhất — thẻ có `hidden` thì dù bố
+  // cục ba cột đúng, cột đó vẫn không có gì trong đó.
+  const iDs = ban.indexOf('id="dispatch-do-list"');
+  assert.ok(iDs > 0, 'cột 1 phải có chỗ đổ danh sách DO');
+  const theDs = ban.slice(ban.lastIndexOf('<', iDs), ban.indexOf('>', iDs) + 1);
+  assert.ok(!/\bhidden\b/.test(theDs), `cột DO còn hidden: ${theDs}`);
+
+  // Cột 2: đội xe theo bãi, đổi sang xe ứng viên khi đã chọn DO. Khối đội xe
+  // phải hiện sẵn; khối ứng viên thì ẩn cho tới khi có đơn, vì "ứng viên" là
+  // ứng viên CHO một đơn cụ thể.
+  const iFleet = ban.indexOf('id="dispatch-fleetview"');
+  assert.ok(iFleet > 0, 'cột 2 phải có khối đội xe theo bãi');
+  const theFleet = ban.slice(ban.lastIndexOf('<', iFleet), ban.indexOf('>', iFleet) + 1);
+  assert.ok(!/\bhidden\b/.test(theFleet), 'khối đội xe phải hiện sẵn khi chưa chọn DO');
+  const iCand = ban.indexOf('id="dispatch-cand"');
+  assert.ok(iCand > 0, 'cột 2 phải có khối xe ứng viên');
+  const theCand = ban.slice(ban.lastIndexOf('<', iCand), ban.indexOf('>', iCand) + 1);
+  assert.ok(/\bhidden\b/.test(theCand),
+    'khối xe ứng viên phải ẩn khi chưa chọn DO — không có đơn thì không có tiêu chí xếp hạng');
+
+  // Cột 3: ngoại lệ, đổi sang khung gán khi đã chọn DO.
+  const iExc = ban.indexOf('id="dispatch-exceptions-view"');
+  assert.ok(iExc > 0, 'cột 3 phải có danh sách ngoại lệ');
+  const theExc = ban.slice(ban.lastIndexOf('<', iExc), ban.indexOf('>', iExc) + 1);
+  assert.ok(!/\bhidden\b/.test(theExc), 'danh sách ngoại lệ phải hiện sẵn');
+  assert.ok(ban.includes('id="dispatch-calendar-conflicts"'),
+    'khối ngoại lệ phải nằm TRONG cột ba, không nằm trong ngăn kéo');
+
+  // Mỗi mốc phải có đúng MỘT chỗ: hai chỗ thì hàm vẽ ghi vào cái nào là chuyện
+  // may rủi theo thứ tự trong tài liệu.
+  ['dispatch-do-list', 'dispatch-fleetview', 'dispatch-cand',
+    'dispatch-exceptions-view', 'dispatch-calendar-conflicts',
+    'dispatch-kpis', 'dispatch-detail'].forEach(ma => {
     assert.strictEqual((html.match(new RegExp(`id="${ma}"`, 'g')) || []).length, 1,
       `#${ma} phải có đúng một chỗ`);
-  });
-
-  // Cả ba phải là con TRỰC TIẾP của lưới, không thì grid không xếp chúng.
-  const iLuoi = html.indexOf('id="dispatch-calendar-panel"');
-  assert.ok(iLuoi > 0, 'không thấy lưới bàn điều phối');
-  const luoi = html.slice(iLuoi, html.indexOf('id="dispatch-step-modal"'));
-  ['dispatch-queue', 'dispatch-timeline', 'dispatch-exceptions'].forEach(ma => {
-    assert.ok(luoi.includes(`id="${ma}"`), `#${ma} phải nằm trong lưới`);
   });
 }
 
 // --- 2. Lưới chia ba cột, và màn hẹp thì gộp -------------------------
 
 {
-  const i = css.indexOf('.dispatch-workbench-grid {');
-  assert.ok(i > 0, 'thiếu quy tắc lưới');
+  const i = css.indexOf('.dpv2 .board {');
+  assert.ok(i > 0, 'thiếu quy tắc lưới ba cột `.dpv2 .board`');
   const luat = css.slice(i, css.indexOf('}', i));
-  assert.ok(/grid-template-columns:\s*\d+px\s+minmax\(0,\s*1fr\)\s+\d+px/.test(luat),
-    `lưới phải chia ba cột (hai cột bên cố định, cột giữa linh hoạt): ${luat.trim()}`);
+  assert.ok(/grid-template-columns:\s*minmax\(0,[^)]*\)\s+minmax\(0,[^)]*\)\s+\d+px/.test(luat),
+    `lưới phải chia ba cột (hai cột đầu linh hoạt, cột phải cố định): ${luat.trim()}`);
 
-  // Màn hẹp: ba cột cạnh nhau là không đọc được cột nào. Và cột ngoại lệ phải
-  // xuống DƯỚI lịch xe, không lên trên — lên trên là lặp lại đúng lỗi che mất
-  // lịch xe mà bố cục này sinh ra để sửa.
+  // Màn hẹp: ba cột cạnh nhau là không đọc được cột nào. Và cột phải phải xuống
+  // DƯỚI, không lên trên — lên trên là lặp lại đúng lỗi che mất lịch xe mà bố
+  // cục này sinh ra để sửa.
   const j = css.indexOf('@media (max-width:1400px)');
   assert.ok(j > 0, 'thiếu quy tắc cho màn hẹp');
-  const hep = css.slice(j, j + 400);
-  assert.ok(/#dispatch-exceptions\s*\{\s*grid-column:1 \/ -1/.test(hep),
-    'màn hẹp: cột ngoại lệ phải trải hết chiều ngang ở hàng dưới');
-
-  // Danh sách ngoại lệ phải cuộn TRONG cột của nó: một ngày xấu 40 ngoại lệ kéo
-  // cột phải dài gấp ba lần lịch xe.
-  assert.ok(/\.dispatch-exceptions-list\s*\{[^}]*overflow-y:\s*auto/.test(css),
-    'danh sách ngoại lệ phải cuộn trong cột của nó');
+  const hep = css.slice(j, j + 500);
+  assert.ok(/\.dpv2 \.panel\s*\{[^}]*grid-column:1 \/ -1/.test(hep),
+    'màn hẹp: cột phải phải trải hết chiều ngang ở hàng dưới');
 }
 
 // --- 3. Ngăn kéo "Công cụ" đã bỏ hẳn ---------------------------------
 
 {
-  // Ngăn kéo chỉ có MỘT mục là "Cảnh báo". Khối cảnh báo nay là cột thứ ba
-  // thường trực, nên ngăn kéo còn lại một cái vỏ rỗng.
   ['dispatch-tools-button', 'dispatch-tools-panel', 'dispatch-tool-drawer',
     'dispatch-tool-pane-alerts', 'dispatch-tool-alerts', 'dispatch-tool-title',
     'openDispatchTool', 'closeDispatchTool', 'toggleDispatchTools'].forEach(dauVet => {
@@ -129,4 +155,17 @@ const css = html.replace(/\/\*[\s\S]*?\*\//g, ' ');
   });
 }
 
-console.log('dieu-phoi-ba-cot: ba cột hiện sẵn, ngăn kéo Công cụ đã bỏ, bước 1 không mở hộp thoại');
+// --- 5. CSS của bản mẫu phải nằm TRONG phạm vi `.dpv2` ---------------
+
+{
+  // Bản mẫu dùng những tên lớp rất chung — `.card`, `.row`, `.tag`, `.panel`,
+  // `.search` — mà ứng dụng cũng đã có. Không bọc phạm vi thì bản mẫu ghi đè
+  // lên mọi màn khác, và ta chữa một màn để làm hỏng mười màn.
+  ['card', 'row', 'tag', 'panel', 'search', 'kpi', 'grp', 'team', 'crew',
+    'lane', 'veh', 'seg'].forEach(lop => {
+    const re = new RegExp('(^|[},])\\s*\\.' + lop + '[\\s,{]', 'm');
+    const viPham = re.exec(css);
+    assert.ok(!viPham,
+      `quy tắc \`.${lop}\` để trần, phải bọc trong \`.dpv2\`: ${viPham && viPham[0]}`);
+  });
+}

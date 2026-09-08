@@ -747,6 +747,347 @@
 
        Sáu con số này không phải để trang trí: bấm vào một thẻ là lọc cột DO theo
        đúng nhóm đó. Một dải số mà bấm không ra gì thì chỉ chiếm chỗ. */
+    /* ======================================================================
+       MÀN ĐIỀU PHỐI — bộ CSS lấy nguyên từ bản mẫu
+       `D:\Demo_Lao\nhap_UI__duan\dispatch-v2-crew.html`.
+
+       Đặt TOÀN BỘ trong phạm vi `.dpv2` vì bản mẫu dùng những tên lớp rất
+       chung — `.card`, `.row`, `.tag`, `.search`, `.panel` — mà ứng dụng cũng
+       đã có những tên đó. Không bọc phạm vi thì bản mẫu ghi đè lên mọi màn
+       khác, và ta chữa một màn để làm hỏng mười màn.
+       ====================================================================== */
+    .dpv2 {
+      --dpv2-bg:#f6f8fb; --dpv2-line:#e4e9f0; --dpv2-line2:#cbd5e1;
+      --dpv2-ink:#1e293b; --dpv2-ink2:#475569; --dpv2-ink3:#7b8796;
+      --dpv2-blue:#1a73e8; --dpv2-blue2:#e9f1fd; --dpv2-blue3:#0b4faa;
+      --dpv2-red:#d32f2f; --dpv2-red2:#fdecec;
+      --dpv2-amber:#b45309; --dpv2-amber2:#fff4e0;
+      --dpv2-green:#15803d; --dpv2-green2:#e7f6ec; --dpv2-purple:#7c3aed;
+      background:var(--dpv2-bg); color:var(--dpv2-ink);
+      font:13px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    .dpv2 *, .dpv2 *::before, .dpv2 *::after { box-sizing:border-box; }
+    .dpv2 button, .dpv2 select, .dpv2 input { font:inherit; }
+    .dpv2 button { cursor:pointer; }
+    /* Viền xanh bên trái là dấu nhận biết của bản mẫu. */
+    .dpv2-host { border-left:4px solid #3b82f6; min-height:100vh; padding:20px 28px 40px; }
+    .dpv2-module { max-width:1800px; margin:0 auto; }
+    .dpv2 .card { background:#fff; border:1px solid var(--dpv2-line); border-radius:14px; }
+    .dpv2 .tag {
+      font-size:11px; font-weight:600; border-radius:5px; padding:2px 7px;
+      background:#eef2f7; color:var(--dpv2-ink2); white-space:nowrap;
+    }
+    .dpv2 .t-red { background:var(--dpv2-red2); color:var(--dpv2-red); }
+    .dpv2 .t-amber { background:var(--dpv2-amber2); color:var(--dpv2-amber); }
+    .dpv2 .t-blue { background:var(--dpv2-blue2); color:var(--dpv2-blue3); }
+    .dpv2 .t-green { background:var(--dpv2-green2); color:var(--dpv2-green); }
+
+    /* đầu trang */
+    .dpv2 .hdr { display:flex; align-items:center; gap:18px; padding:12px 18px; margin-bottom:12px; flex-wrap:wrap; }
+    .dpv2 .hdr h2 { margin:0; font-size:17px; font-weight:700; }
+    .dpv2 .scope { display:flex; gap:6px; align-items:center; }
+    .dpv2 .scope select {
+      height:34px; border:1px solid var(--dpv2-line2); border-radius:8px; padding:0 10px;
+      background:#fff; font-weight:600; font-size:12.5px; color:var(--dpv2-ink);
+    }
+    .dpv2 .scope .lb { font-size:12px; color:var(--dpv2-ink3); font-weight:600; margin-left:6px; }
+    .dpv2 .gsearch {
+      display:flex; align-items:center; gap:8px; height:36px; padding:0 12px;
+      border:1px solid var(--dpv2-line2); border-radius:9px; color:var(--dpv2-ink3);
+      min-width:300px; font-size:12.5px; background:#fff;
+    }
+    .dpv2 .gsearch input { border:0; outline:0; flex:1; font-size:12.5px; color:var(--dpv2-ink); background:transparent; }
+    .dpv2 .date { display:flex; align-items:center; gap:6px; margin-left:auto; }
+    .dpv2 .date button {
+      height:34px; border:1px solid var(--dpv2-line2); border-radius:8px; background:#fff;
+      color:var(--dpv2-ink2); font-weight:600; padding:0 10px;
+    }
+    .dpv2 .date .d {
+      height:34px; border:1px solid var(--dpv2-line2); border-radius:8px; padding:0 10px;
+      font-weight:700; background:#fff; color:var(--dpv2-ink);
+    }
+    .dpv2 .auto {
+      height:38px; border:0; border-radius:10px; background:var(--dpv2-blue); color:#fff;
+      font-weight:700; padding:0 18px; font-size:13.5px;
+    }
+    .dpv2 .auto:disabled { background:#c9d3e2; cursor:not-allowed; }
+    /* Nút hướng dẫn của ứng dụng — giữ nguyên biểu tượng, chỉ khoác lớp áo của
+       bản mẫu cho vừa hàng. */
+    .dpv2 .hdr .guide {
+      width:38px; height:38px; border-radius:10px; border:1px solid var(--dpv2-line2);
+      background:#fff; color:var(--dpv2-ink2); display:grid; place-items:center; font-size:15px;
+    }
+
+    /* dải số liệu */
+    .dpv2 .kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:12px; }
+    .dpv2 .kpi {
+      padding:10px 14px; display:flex; flex-direction:column; gap:2px; cursor:pointer;
+      text-align:left; background:#fff; border:1px solid var(--dpv2-line); border-radius:14px;
+    }
+    .dpv2 .kpi span { font-size:11.5px; color:var(--dpv2-ink3); font-weight:600; }
+    .dpv2 .kpi b { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .dpv2 .kpi small { font-size:11.5px; color:var(--dpv2-ink2); font-weight:500; }
+    .dpv2 .kpi.red b { color:var(--dpv2-red); }
+    .dpv2 .kpi.amber b { color:var(--dpv2-amber); }
+    .dpv2 .kpi.green b { color:var(--dpv2-green); }
+    .dpv2 .kpi.blue b { color:var(--dpv2-blue); }
+    .dpv2 .kpi.on { outline:2px solid var(--dpv2-blue); outline-offset:-2px; }
+    .dpv2 .kpi:disabled { opacity:.6; cursor:default; }
+
+    /* bàn làm việc ba cột */
+    .dpv2 .board {
+      display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) 360px;
+      gap:12px; align-items:start;
+    }
+    .dpv2 .col-h {
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:12px 14px 10px; border-bottom:1px solid var(--dpv2-line);
+    }
+    .dpv2 .col-h h3 { margin:0; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px; }
+    .dpv2 .col-h h3 .n { font-size:11px; background:var(--dpv2-blue); color:#fff; border-radius:999px; padding:1px 7px; }
+    .dpv2 .col-h small { color:var(--dpv2-ink3); font-size:12px; font-weight:500; }
+    .dpv2 .seg { display:inline-flex; border:1px solid var(--dpv2-line2); border-radius:8px; overflow:hidden; }
+    .dpv2 .seg button { border:0; background:#fff; padding:5px 10px; font-weight:600; font-size:12px; color:var(--dpv2-ink2); }
+    .dpv2 .seg button.on { background:var(--dpv2-blue2); color:var(--dpv2-blue); }
+    .dpv2 .search {
+      display:flex; align-items:center; gap:8px; height:32px; padding:0 10px;
+      border:1px solid var(--dpv2-line2); border-radius:8px; color:var(--dpv2-ink3);
+      font-size:12px; background:#fff; flex:1; max-width:280px;
+    }
+    .dpv2 .search input { border:0; outline:0; flex:1; font-size:12px; color:var(--dpv2-ink); background:transparent; }
+
+    /* nhóm DO theo tuyến */
+    .dpv2 .grp { border-bottom:1px solid var(--dpv2-line); }
+    .dpv2 .grp-h {
+      display:grid; grid-template-columns:28px minmax(0,1fr) auto auto auto; gap:10px;
+      align-items:center; padding:10px 14px; cursor:pointer; background:#fafbfd;
+      width:100%; border:0; text-align:left;
+    }
+    .dpv2 .grp-h:hover { background:#f4f7fb; }
+    .dpv2 .grp-h .car { font-size:11px; color:var(--dpv2-ink3); transition:transform .15s; }
+    .dpv2 .grp.open .grp-h .car { transform:rotate(90deg); }
+    .dpv2 .grp-h .nm { font-weight:700; font-size:13px; }
+    .dpv2 .grp-h .nm span { color:var(--dpv2-ink3); font-weight:500; font-size:12px; margin-left:8px; }
+    .dpv2 .grp-h .cnt { font-size:12px; color:var(--dpv2-ink2); font-weight:600; }
+    .dpv2 .grp-h .btn {
+      height:28px; border:1px solid var(--dpv2-line2); border-radius:7px; background:#fff;
+      font-weight:600; font-size:12px; color:var(--dpv2-blue); padding:0 10px;
+    }
+    .dpv2 .grp .rows { display:none; }
+    .dpv2 .grp.open .rows { display:block; }
+    .dpv2 .row {
+      display:grid; grid-template-columns:28px minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 90px 100px;
+      gap:10px; align-items:center; padding:8px 14px; border-top:1px solid var(--dpv2-line);
+      cursor:pointer; font-size:12.5px; width:100%; text-align:left; background:#fff; border-left:0; border-right:0; border-bottom:0;
+    }
+    .dpv2 .row:hover { background:#f8fafc; }
+    .dpv2 .row.on { background:var(--dpv2-blue2); }
+    .dpv2 .row input { width:15px; height:15px; accent-color:var(--dpv2-blue); margin:0; }
+    .dpv2 .row .id { font-weight:700; }
+    .dpv2 .row .m { color:var(--dpv2-ink3); font-size:11.5px; }
+    .dpv2 .row .due { font-weight:700; font-size:12px; }
+    .dpv2 .row .due.r { color:var(--dpv2-red); }
+    .dpv2 .row .due.a { color:var(--dpv2-amber); }
+    .dpv2 .more { padding:8px 14px; font-size:12px; color:var(--dpv2-blue); font-weight:600; cursor:pointer; background:none; border:0; text-align:left; width:100%; }
+    .dpv2 .tfoot { display:flex; justify-content:space-between; padding:10px 14px; color:var(--dpv2-ink3); font-size:12px; }
+
+    /* tổng quan đội xe theo bãi */
+    .dpv2 .fleet { padding:6px 0; }
+    .dpv2 .team {
+      display:grid; grid-template-columns:minmax(0,1.2fr) 70px minmax(0,1.6fr) 90px; gap:12px;
+      align-items:center; padding:10px 14px; border-bottom:1px solid var(--dpv2-line);
+      cursor:pointer; width:100%; text-align:left; background:#fff; border-left:0; border-right:0; border-top:0;
+    }
+    .dpv2 .team:hover { background:#f8fafc; }
+    .dpv2 .team.sub { padding-left:34px; background:#fbfcfe; }
+    .dpv2 .team .nm { font-weight:700; font-size:13px; }
+    .dpv2 .team .nm span { display:block; color:var(--dpv2-ink3); font-size:11.5px; font-weight:500; }
+    .dpv2 .team .tot { font-weight:700; text-align:right; }
+    .dpv2 .team .tot span { display:block; font-size:11px; color:var(--dpv2-ink3); font-weight:600; }
+    .dpv2 .stack { display:flex; height:10px; border-radius:5px; overflow:hidden; background:#eef2f7; }
+    .dpv2 .stack i { display:block; height:100%; }
+    .dpv2 .lg { display:flex; gap:12px; font-size:11.5px; color:var(--dpv2-ink2); font-weight:500; margin-top:5px; flex-wrap:wrap; }
+    .dpv2 .lg i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:4px; }
+    .dpv2 .team .free { font-weight:700; color:var(--dpv2-green); text-align:right; font-size:13px; }
+    .dpv2 .team .free span { display:block; font-size:11px; color:var(--dpv2-ink3); font-weight:600; }
+
+    /* xe ứng viên */
+    .dpv2 .cand-h {
+      padding:10px 14px; font-size:12px; color:var(--dpv2-ink2); font-weight:500;
+      background:var(--dpv2-blue2); border-bottom:1px solid var(--dpv2-line);
+    }
+    .dpv2 .cand-h b { color:var(--dpv2-blue3); }
+    .dpv2 .cand-h button { border:0; background:none; color:var(--dpv2-blue); font-weight:600; padding:0; text-decoration:underline; }
+
+    /* Gantt xe ứng viên — cột xe 270px, hai dòng chữ, một nhãn giờ */
+    .dpv2 .gantt { padding:4px 14px 12px; overflow:hidden; }
+    .dpv2 .g-head { display:grid; grid-template-columns:270px 1fr; position:relative; }
+    .dpv2 .hours {
+      display:grid; grid-template-columns:repeat(14,1fr); font-size:11px;
+      color:var(--dpv2-ink3); font-weight:600; position:relative;
+    }
+    .dpv2 .hours span { padding:8px 0 6px; border-left:1px dashed var(--dpv2-line); }
+    .dpv2 .nowlbl {
+      position:absolute; top:0; transform:translateX(-50%); background:var(--dpv2-red);
+      color:#fff; font-size:10.5px; font-weight:700; border-radius:4px; padding:1px 6px; z-index:2;
+    }
+    .dpv2 .g-row {
+      display:grid; grid-template-columns:270px 1fr; border-top:1px solid var(--dpv2-line);
+      height:58px; cursor:pointer; width:100%; text-align:left; background:#fff;
+      border-left:0; border-right:0; border-bottom:0; padding:0;
+    }
+    .dpv2 .g-row:hover .veh { background:#fafbfd; }
+    .dpv2 .g-row.pick .lane, .dpv2 .g-row.pick .veh { background:var(--dpv2-blue2); }
+    .dpv2 .g-row.dim { opacity:.5; cursor:default; }
+    .dpv2 .veh {
+      padding:0 10px; border-right:1px solid var(--dpv2-line); display:flex; gap:10px;
+      align-items:center; min-width:0;
+    }
+    .dpv2 .veh .sc { width:34px; flex:none; text-align:center; font-weight:700; font-size:14px; line-height:1; }
+    .dpv2 .veh .sc small { display:block; font-size:9.5px; font-weight:600; color:var(--dpv2-ink3); margin-top:2px; }
+    .dpv2 .veh .sc.g { color:var(--dpv2-green); }
+    .dpv2 .veh .sc.a { color:var(--dpv2-amber); }
+    .dpv2 .veh .sc.r { color:var(--dpv2-ink3); }
+    .dpv2 .veh .g { flex:1; min-width:0; }
+    .dpv2 .veh .g b { display:block; font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dpv2 .veh .g span { display:block; color:var(--dpv2-ink3); font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dpv2 .veh .st { font-size:10.5px; font-weight:700; border-radius:5px; padding:2px 6px; flex:none; white-space:nowrap; }
+    .dpv2 .lane {
+      position:relative;
+      background-image:linear-gradient(to right,var(--dpv2-line) 1px,transparent 1px);
+      background-size:calc(100%/14) 100%;
+    }
+    .dpv2 .now { position:absolute; top:0; bottom:0; width:2px; background:var(--dpv2-red); z-index:1; }
+    .dpv2 .bar {
+      position:absolute; top:11px; height:36px; border-radius:7px; padding:0 9px;
+      font-size:11.5px; font-weight:600; color:#fff; overflow:hidden; white-space:nowrap;
+      display:flex; flex-direction:column; justify-content:center; line-height:1.25; text-overflow:ellipsis;
+    }
+    .dpv2 .bar small { font-weight:500; opacity:.9; font-size:10.5px; overflow:hidden; text-overflow:ellipsis; }
+    .dpv2 .b-blue { background:#1a73e8; }
+    .dpv2 .b-purple { background:#7c3aed; }
+    .dpv2 .b-green { background:#15803d; }
+    .dpv2 .b-ghost { background:var(--dpv2-blue2); color:var(--dpv2-blue3); border:1.5px dashed var(--dpv2-blue); }
+    .dpv2 .maint {
+      position:absolute; inset:8px 0;
+      background:repeating-linear-gradient(135deg,#f1f5f9 0 8px,#e2e8f0 8px 16px);
+      border-radius:7px; display:flex; align-items:center; justify-content:center;
+      font-size:11.5px; color:var(--dpv2-ink3); font-weight:600;
+    }
+    /* Vòng tròn tổ lái trên dòng xe. HAI vai, không phải ba như bản mẫu: máy
+       chủ chỉ có `driver_id` và `co_driver_id`, nên vai thứ ba không có chỗ lưu. */
+    .dpv2 .vcrew { display:inline-flex; gap:3px; margin-left:6px; vertical-align:-4px; }
+    .dpv2 .vcrew i {
+      width:18px; height:18px; border-radius:50%; background:var(--dpv2-blue2);
+      color:var(--dpv2-blue3); font-size:9px; font-weight:700; display:grid;
+      place-items:center; font-style:normal; border:1.5px solid #fff;
+    }
+    .dpv2 .vcrew i.q { background:#fff; border:1.5px dashed var(--dpv2-line2); color:var(--dpv2-ink3); }
+    .dpv2 .shift { font-size:10.5px; font-weight:700; border-radius:4px; padding:1px 5px; background:#eef2f7; color:var(--dpv2-ink2); }
+    .dpv2 .shift.s { background:#fff4e0; color:#b45309; }
+    .dpv2 .shift.c { background:#e9f1fd; color:#0b4faa; }
+    .dpv2 .shift.d { background:#efe9fd; color:#6d28d9; }
+
+    /* cột phải */
+    .dpv2 .panel { position:sticky; top:20px; }
+    .dpv2 .pb { padding:12px 14px 14px; }
+    .dpv2 .empty {
+      color:var(--dpv2-ink3); font-size:12.5px; text-align:center; padding:26px 12px;
+      border:1.5px dashed var(--dpv2-line2); border-radius:12px; line-height:1.6;
+    }
+    .dpv2 .sum { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
+    .dpv2 .sum > div { background:#f8fafc; border-radius:8px; padding:7px 9px; min-width:0; }
+    .dpv2 .sum > div span { display:block; font-size:11px; color:var(--dpv2-ink3); font-weight:600; }
+    .dpv2 .sum > div b { font-size:12.5px; font-weight:600; overflow-wrap:anywhere; }
+    .dpv2 .lbl { font-size:11.5px; font-weight:700; color:var(--dpv2-ink3); margin:10px 0 6px; }
+    .dpv2 .field { display:flex; flex-direction:column; gap:4px; }
+    .dpv2 .field label { font-size:11.5px; font-weight:600; color:var(--dpv2-ink2); }
+    .dpv2 .field input, .dpv2 .field select {
+      height:34px; border:1px solid var(--dpv2-line2); border-radius:8px; padding:0 10px;
+      font-size:12.5px; background:#fff; color:var(--dpv2-ink); width:100%;
+    }
+    .dpv2 .two { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .dpv2 .adv { border:1px solid var(--dpv2-line); border-radius:10px; margin-top:10px; }
+    .dpv2 .adv summary {
+      padding:8px 10px; cursor:pointer; font-weight:600; font-size:12px;
+      color:var(--dpv2-ink2); list-style:none; display:flex; justify-content:space-between;
+    }
+    .dpv2 .adv summary::-webkit-details-marker { display:none; }
+    .dpv2 .adv summary::after { content:"\25be"; }
+    .dpv2 .adv[open] summary::after { content:"\25b4"; }
+    .dpv2 .adv .in { padding:0 10px 10px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .dpv2 .check {
+      display:flex; gap:8px; align-items:flex-start; font-size:12px; font-weight:600;
+      padding:8px 10px; border-radius:8px; margin-top:10px; line-height:1.4;
+    }
+    .dpv2 .check.ok { background:var(--dpv2-green2); color:var(--dpv2-green); }
+    .dpv2 .check.bad { background:var(--dpv2-red2); color:var(--dpv2-red); }
+    .dpv2 .cta {
+      width:100%; height:42px; border-radius:10px; border:0; background:var(--dpv2-blue);
+      color:#fff; font-weight:700; font-size:13.5px; margin-top:10px;
+    }
+    .dpv2 .cta:disabled { background:#c9d3e2; cursor:not-allowed; }
+    .dpv2 .cta2 {
+      width:100%; height:34px; border-radius:8px; border:1px solid var(--dpv2-line2);
+      background:#fff; color:var(--dpv2-ink2); font-weight:600; font-size:12px; margin-top:6px;
+    }
+    /* tổ lái ở cột phải */
+    .dpv2 .crew { border:1px solid var(--dpv2-line); border-radius:11px; overflow:hidden; }
+    .dpv2 .crew .r {
+      display:grid; grid-template-columns:86px minmax(0,1fr) auto; gap:10px;
+      align-items:center; padding:8px 10px; border-top:1px solid var(--dpv2-line);
+    }
+    .dpv2 .crew .r:first-child { border-top:0; }
+    .dpv2 .crew .role { font-size:11.5px; font-weight:700; color:var(--dpv2-ink3); }
+    .dpv2 .crew .role small { display:block; font-weight:500; font-size:10.5px; }
+    .dpv2 .crew .who { display:flex; align-items:center; gap:8px; min-width:0; }
+    .dpv2 .crew .av {
+      width:28px; height:28px; border-radius:50%; background:var(--dpv2-blue2);
+      color:var(--dpv2-blue3); display:grid; place-items:center; font-size:10.5px;
+      font-weight:700; flex:none;
+    }
+    .dpv2 .crew .who b { display:block; font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dpv2 .crew .who span { display:block; font-size:11px; color:var(--dpv2-ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .dpv2 .crew .who.empty {
+      color:var(--dpv2-ink3); font-size:12px; font-style:italic;
+      border:0; padding:0; text-align:left; border-radius:0;
+    }
+    .dpv2 .crew .act {
+      border:1px solid var(--dpv2-line2); background:#fff; border-radius:7px; height:28px;
+      padding:0 9px; font-size:11.5px; font-weight:600; color:var(--dpv2-blue);
+    }
+    .dpv2 .crew .act.req { border-color:var(--dpv2-red); color:var(--dpv2-red); }
+
+    /* ngoại lệ cần duyệt */
+    .dpv2 .exc {
+      display:flex; gap:10px; padding:9px 0; border-top:1px solid var(--dpv2-line);
+      font-size:12.5px; align-items:flex-start; cursor:pointer; width:100%;
+      text-align:left; background:none; border-left:0; border-right:0; border-bottom:0;
+    }
+    .dpv2 .exc:first-child { border-top:0; }
+    .dpv2 .exc i {
+      font-style:normal; width:20px; height:20px; border-radius:50%; display:grid;
+      place-items:center; font-size:11px; font-weight:700; flex:none;
+      background:var(--dpv2-red2); color:var(--dpv2-red);
+    }
+    .dpv2 .exc .g { flex:1; min-width:0; }
+    .dpv2 .exc .g b { display:block; font-weight:700; }
+    .dpv2 .exc .g span { color:var(--dpv2-ink2); font-size:12px; }
+
+    /* Ba cột chỉ giữ được trên màn rộng. Dưới 1400px thì cột phải xuống dòng —
+       ép ba cột trên màn hẹp là đẩy cả trang trượt ngang. */
+    @media (max-width:1400px) {
+      .dpv2 .board { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+      .dpv2 .panel { grid-column:1 / -1; position:static; }
+      .dpv2 .kpis { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (max-width:1000px) {
+      .dpv2 .board { grid-template-columns:minmax(0,1fr); }
+      .dpv2 .kpis { grid-template-columns:repeat(2,1fr); }
+      .dpv2-host { padding:14px 16px 30px; }
+      .dpv2 .date { margin-left:0; }
+    }
+
     .dispatch-kpis {
       display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:9px;
       margin-bottom:12px;
@@ -5773,194 +6114,267 @@
 
         </section>
 
-        <!-- 5. DISPATCH & EXECUTION VIEW -->
-        <section id="view-dispatch" class="view-section dispatch-cockpit-surface" style="background-color: #f8fafc; min-height: 100vh;">
-          <div id="dispatch-workbench-header" class="dispatch-workbench-header">
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <button class="fiori-btn fiori-btn-primary" type="button" onclick="openTripReturnAction('create-trip')" style="white-space:nowrap;">
-                <i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">+ Tạo Trip</span>
-              </button>
-              <button class="fiori-btn fiori-btn-secondary" type="button" onclick="loadDispatchBoard()" title="Cập nhật dữ liệu điều phối" aria-label="Cập nhật dữ liệu điều phối" style="white-space:nowrap;">
-                <i class="fa-solid fa-rotate"></i> <span data-i18n="btn_reload">Làm mới</span>
-              </button>
-            </div>
-          </div>
+        <!-- 5. ĐIỀU PHỐI VÀ THỰC THI — dựng theo bản mẫu
+             `D:\Demo_Lao\nhap_UI__duan\dispatch-v2-crew.html`.
 
-          <div id="dispatch-workbench" class="dispatch-workbench">
-            <div class="dispatch-workbench-toolbar">
-              <div>
-                <strong data-i18n="title_dispatch_toolbar">Không gian điều phối trong ngày</strong>
-                <span data-i18n="sub_dispatch_toolbar">Chọn DO, đối chiếu lịch xe rồi gán nguồn lực ngay trên một màn hình.</span>
+             Bố cục, bảng màu, cỡ chữ và khoảng trắng lấy nguyên từ bản mẫu.
+             Cái duy nhất khác là dữ liệu: mọi con số và mọi dòng ở đây đọc từ
+             backend thật, không có dòng nào cứng trong trang.
+
+             Mọi `id` của bản cũ được GIỮ NGUYÊN. Có hơn hai mươi hàm đang ghi
+             vào các `id` đó — form gán xe, hộp thoại tạo Trip, bảng lịch xe,
+             khung đổi nguồn lực. Đổi tên chúng để cho "sạch" là làm đứt cả
+             luồng đang chạy, mà luồng bấm được mới là cái phải giữ.
+
+             Ba chỗ của bản mẫu KHÔNG dựng, và lý do:
+               · Ô chọn "Đội xe" — hệ thống không có khái niệm đội xe, không
+                 bảng nào không cột nào. Dựng một ô không lọc được gì thì tệ
+                 hơn là không dựng.
+               · Vai "Phụ xe" thứ ba trong tổ lái — máy chủ chỉ nhận hai vai
+                 (`driver_id`, `co_driver_id`). Vẽ ra vai thứ ba rồi bấm vào
+                 không lưu được là mời người dùng làm một việc vô nghĩa.
+               · Khung "Xếp tự động" chạy nền với thanh tiến trình — không có
+                 đường API nào xếp hàng loạt. Nút vẫn giữ, nhưng nó mở hộp
+                 thoại tạo Trip với mọi DO đang chờ đã tích sẵn: một việc
+                 THẬT bằng backend đang có, thay vì một thanh tiến trình giả.
+        -->
+        <section id="view-dispatch" class="view-section dpv2">
+          <div class="dpv2-host"><div class="dpv2-module">
+
+            <div class="card hdr">
+              <h2 data-i18n="title_dispatch_module">Điều phối và thực thi</h2>
+              <div class="scope">
+                <span class="lb">Phạm vi</span>
+                <select id="dispatch-scope-depot" onchange="setDispatchScope()" aria-label="Giới hạn theo bãi đỗ">
+                  <option value="">Bãi: Tất cả</option>
+                </select>
+                <select id="dispatch-scope-type" onchange="setDispatchScope()" aria-label="Giới hạn theo loại xe">
+                  <option value="">Loại xe: Tất cả</option>
+                </select>
               </div>
-              <!--
-                PHẠM VI XE — như dải chọn ở đầu bản mẫu `dispatch-v2-crew.html`.
-
-                Bản mẫu có ba ô: đội xe, bãi, loại xe. Hệ thống này không có khái
-                niệm "đội xe" (không bảng nào, không cột nào), nên ô đó lược bỏ
-                thay vì dựng một ô không lọc được gì. Hai ô còn lại chạy trên dữ
-                liệu thật: `depot` và `type` của bảng xe, và cùng lọc danh sách
-                xe ứng viên ở cột giữa.
-              -->
-              <div class="dispatch-scope" role="group" aria-label="Giới hạn phạm vi xe điều phối">
-                <label><span>Bãi</span>
-                  <select id="dispatch-scope-depot" onchange="setDispatchScope()" aria-label="Giới hạn theo bãi đỗ">
-                    <option value="">Tất cả bãi</option>
-                  </select>
-                </label>
-                <label><span>Loại xe</span>
-                  <select id="dispatch-scope-type" onchange="setDispatchScope()" aria-label="Giới hạn theo loại xe">
-                    <option value="">Tất cả loại xe</option>
-                  </select>
-                </label>
+              <div class="gsearch">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="dispatch-do-search-input" type="search" oninput="filterDispatchDOs()"
+                       placeholder="Tìm biển số, tài xế, mã DO, khách hàng, tuyến"
+                       data-i18n-attr="placeholder" data-i18n="ph_search_dispatch_do"
+                       aria-label="Tìm DO chờ điều phối">
               </div>
+              <div class="date">
+                <button type="button" title="Ngày trước" onclick="moveDispatchCalendarDate(-1)">&lsaquo;</button>
+                <input id="dispatch-calendar-date" class="d" type="date"
+                       onchange="setDispatchCalendarDate(this.value)" aria-label="Ngày điều phối">
+                <button type="button" title="Ngày sau" onclick="moveDispatchCalendarDate(1)">&rsaquo;</button>
+                <button type="button" onclick="veHomNayDieuPhoi()">Hôm nay</button>
               </div>
+              <button class="auto" type="button" id="dispatch-auto-btn" onclick="xepMoiDOConLai()">
+                &#9889; <span id="dispatch-auto-label">Xếp DO còn lại</span>
+              </button>
+              <!-- Biểu tượng hướng dẫn của ứng dụng — GIỮ NGUYÊN. Bản mẫu có
+                   cách chú thích riêng của nó, nhưng phần hướng dẫn trong ứng
+                   dụng thì để như đang có. -->
+              <button class="guide" type="button" title="Xem ghi chú nghiệp vụ"
+                      aria-label="Xem ghi chú nghiệp vụ điều phối"
+                      onclick="openTripReturnGuidanceModal()"><i class="fa-solid fa-eye"></i></button>
+              <button class="guide" type="button" title="Cập nhật dữ liệu điều phối"
+                      aria-label="Cập nhật dữ liệu điều phối"
+                      onclick="loadDispatchBoard()"><i class="fa-solid fa-rotate"></i></button>
             </div>
 
-            <div class="dispatch-workflow-steps" aria-label="Quy trình điều phối">
-              <button id="dispatch-step-do" class="dispatch-workflow-step is-active" type="button" onclick="openDispatchStepModal('do')" title="Chọn DO">
-                <span class="dispatch-workflow-step-icon"><i class="fa-solid fa-inbox"></i></span><span><strong>1. Chọn DO</strong><small>Đơn cần lên lịch</small></span>
-              </button>
-              <button id="dispatch-step-trip" class="dispatch-workflow-step" type="button" onclick="openDispatchStepModal('trip')" title="Kiểm tra Trip" aria-disabled="true">
-                <span class="dispatch-workflow-step-icon"><i class="fa-solid fa-route"></i></span><span><strong>2. Kiểm tra Trip</strong><small>Tạo hoặc chọn Trip</small></span>
-              </button>
-              <button id="dispatch-step-schedule" class="dispatch-workflow-step" type="button" onclick="openDispatchStepModal('schedule')" title="Xếp lịch xe" aria-disabled="true">
-                <span class="dispatch-workflow-step-icon"><i class="fa-solid fa-calendar-days"></i></span><span><strong>3. Xếp lịch xe</strong><small>Ngày và xe còn trống</small></span>
-              </button>
-              <button id="dispatch-step-resources" class="dispatch-workflow-step" type="button" onclick="openDispatchStepModal('resources')" title="Nhân sự và xuất bến" aria-disabled="true">
-                <span class="dispatch-workflow-step-icon"><i class="fa-solid fa-id-card"></i></span><span><strong>4. Nhân sự &amp; xuất bến</strong><small>Tài xế, phụ xe và chốt</small></span>
-              </button>
-            </div>
-
-            <!--
-              DẢI SỐ LIỆU kiêm BỘ LỌC, như bản mẫu `dispatch-v2-crew.html`.
-
-              Sáu con số này không phải để trang trí: bấm vào một thẻ là lọc cột
-              "DO chờ điều phối" theo đúng nhóm đó. Nội dung do
-              `renderDispatchKpis()` ghi vào từ dữ liệu thật — để chữ mặc định ở
-              đây thì nó hiện loé một nhịp rồi bị ghi đè, và nếu hàm vẽ chết thì
-              màn hình lại nói những con số bịa.
-            -->
-            <div id="dispatch-kpis" class="dispatch-kpis" role="group"
+            <!-- Sáu thẻ, do `renderDispatchKpis()` ghi vào từ dữ liệu thật. Để
+                 chữ mặc định ở đây thì nó hiện loé một nhịp rồi bị ghi đè, và
+                 nếu hàm vẽ chết thì màn hình lại nói những con số bịa. -->
+            <div class="kpis" id="dispatch-kpis" role="group"
                  aria-label="Số liệu điều phối trong ngày, bấm để lọc"></div>
 
-            <div id="dispatch-calendar-panel" class="dispatch-workbench-grid">
-              <section id="dispatch-queue" class="dispatch-workbench-pane" aria-labelledby="dispatch-queue-title">
-                <div class="dispatch-pane-heading">
-                  <div><h3 id="dispatch-queue-title"><i class="fa-solid fa-inbox"></i> <span data-i18n="title_dispatch_queue">DO chờ điều phối</span></h3><p data-i18n="sub_dispatch_queue">Đơn cần gán xe và tài xế</p></div>
-                  <span id="dispatch-state-pending-count" class="dispatch-state-count">0</span>
+            <div class="board">
+
+              <!-- CỘT 1 — DO chờ xếp, gom theo tuyến -->
+              <section class="card">
+                <div class="col-h">
+                  <h3><span data-i18n="title_dispatch_queue">DO chờ xếp</span>
+                    <span class="n" id="dispatch-state-pending-count">0</span></h3>
+                  <div class="seg" id="dispatch-do-group-seg" role="group" aria-label="Cách gom DO">
+                    <button type="button" class="on" data-grp="route" onclick="setDispatchDoGroup('route')">Theo tuyến</button>
+                    <button type="button" data-grp="customer" onclick="setDispatchDoGroup('customer')">Theo khách</button>
+                    <button type="button" data-grp="due" onclick="setDispatchDoGroup('due')">Theo hạn</button>
+                  </div>
                 </div>
-                <div class="dispatch-search-field">
-                  <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="search" id="dispatch-do-search-input" oninput="filterDispatchDOs()" placeholder="Tìm mã DO, khách hàng, tuyến..." data-i18n-attr="placeholder" data-i18n="ph_search_dispatch_do" aria-label="Tìm DO chờ điều phối">
+                <div class="col-h" style="padding-top:10px">
+                  <div class="search"><i class="fa-solid fa-magnifying-glass"></i>
+                    <span id="dispatch-do-search-hint">Tìm ở ô trên đầu màn</span></div>
+                  <small>Tick nhóm để gán một lượt</small>
                 </div>
-                <div id="dispatch-do-list" class="dispatch-queue-list" aria-live="polite">
-                  <div class="dispatch-empty-state"><i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải DO...</div>
+                <div id="dispatch-do-list" aria-live="polite">
+                  <div class="empty" style="margin:12px 14px;">Đang tải DO…</div>
+                </div>
+                <div class="tfoot">
+                  <span id="dispatch-do-foot">—</span>
+                  <span>Đã tick: <b id="dispatch-ticked-count">0</b></span>
                 </div>
               </section>
 
-              <section id="dispatch-timeline" class="dispatch-workbench-pane" aria-labelledby="dispatch-timeline-title">
-                <div class="dispatch-pane-heading">
-                  <div><h3 id="dispatch-timeline-title"><i class="fa-solid fa-chart-gantt"></i> <span data-i18n="title_dispatch_timeline">Lịch xe điều phối</span></h3><p data-i18n="sub_dispatch_timeline">Chuyến theo xe, ngày và khung giờ</p></div>
-                  <div class="dispatch-calendar-toolbar" aria-label="Chọn thời gian xem lịch xe">
-                    <button type="button" title="Ngày trước" onclick="moveDispatchCalendarDate(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                    <input id="dispatch-calendar-date" type="date" onchange="setDispatchCalendarDate(this.value)" aria-label="Ngày điều phối">
-                    <button type="button" title="Ngày sau" onclick="moveDispatchCalendarDate(1)"><i class="fa-solid fa-chevron-right"></i></button>
-                    <button id="dispatch-view-day" type="button" class="active" onclick="setDispatchCalendarView('day')">Ngày</button>
-                    <button id="dispatch-view-week" type="button" onclick="setDispatchCalendarView('week')">Tuần</button>
+              <!-- CỘT 2 — đội xe theo bãi, đổi thành xe ứng viên khi đã chọn DO -->
+              <section class="card">
+                <div id="dispatch-fleetview">
+                  <div class="col-h">
+                    <h3><i class="fa-solid fa-warehouse"></i> Đội xe theo bãi
+                      <span class="n" id="dispatch-fleet-total">0</span></h3>
+                    <small>Chọn một DO để lọc ra xe ứng viên</small>
                   </div>
+                  <div class="fleet" id="dispatch-fleet-list"></div>
                 </div>
-                <!--
-                  XE ỨNG VIÊN — cột 2 của bản mẫu `dispatch-v2-crew.html`.
 
-                  Chỉ hiện khi đã chọn một DO, vì "ứng viên" là ứng viên CHO một
-                  đơn cụ thể: không có đơn thì không có tiêu chí nào để chấm
-                  điểm, và một danh sách xe không xếp hạng thì đúng bằng bảng
-                  Danh mục xe ở màn khác.
-
-                  Điểm phù hợp tính từ dữ liệu THẬT: tải trọng xe so với khối
-                  lượng đơn, bãi đỗ so với điểm lấy hàng, xe có trùng chuyến hay
-                  đang bảo dưỡng trong khung giờ lấy hàng, và có tài xế nào đang
-                  trong ca ở khung giờ đó. Bản mẫu còn chấm cả "lịch sử tuyến" —
-                  hệ thống chưa lưu dữ liệu đó nên lược bỏ, chấm điểm bằng một
-                  tiêu chí bịa thì con số mất hết ý nghĩa.
-                -->
-                <div id="dispatch-cand" class="dispatch-cand" hidden>
-                  <div class="dispatch-cand-head">
-                    <h4><i class="fa-solid fa-truck-fast"></i> Xe ứng viên <span id="dispatch-cand-count" class="dispatch-cand-n">0</span></h4>
-                    <div class="dispatch-cand-sort" role="group" aria-label="Cách sắp xe ứng viên">
-                      <button type="button" class="is-on" data-sort="score" onclick="setDispatchCandSort('score')">Phù hợp nhất</button>
+                <div id="dispatch-cand" hidden>
+                  <div class="col-h">
+                    <h3><i class="fa-solid fa-truck-fast"></i> Lịch xe ứng viên
+                      <span class="n" id="dispatch-cand-count">0</span></h3>
+                    <div class="seg" role="group" aria-label="Cách sắp xe ứng viên">
+                      <button type="button" class="on" data-sort="score" onclick="setDispatchCandSort('score')">Phù hợp nhất</button>
                       <button type="button" data-sort="depot" onclick="setDispatchCandSort('depot')">Cùng bãi</button>
                       <button type="button" data-sort="free" onclick="setDispatchCandSort('free')">Rảnh sớm nhất</button>
                     </div>
                   </div>
-                  <p id="dispatch-cand-why" class="dispatch-cand-why"></p>
-                  <div class="dispatch-cand-legend">
-                    <span><i class="dispatch-dot dispatch-dot--ok"></i>Rảnh</span>
-                    <span><i class="dispatch-dot dispatch-dot--busy"></i>Đang chạy chuyến</span>
-                    <span><i class="dispatch-dot dispatch-dot--maint"></i>Bảo dưỡng</span>
-                    <span class="dispatch-cand-legend-note">Số bên trái là điểm phù hợp · vòng tròn là tổ lái theo ca · <b>+</b> là còn thiếu người</span>
+                  <div class="cand-h" id="dispatch-cand-why"></div>
+                  <div class="lg" style="padding:8px 14px 0">
+                    <span><i style="background:#1a73e8"></i>Đã điều phối</span>
+                    <span><i style="background:#7c3aed"></i>Đang vận chuyển</span>
+                    <span><i style="background:#15803d"></i>Hoàn thành</span>
+                    <span><i style="background:#e2e8f0"></i>Bảo dưỡng</span>
+                    <span style="margin-left:auto;color:#7b8796">Số bên trái là điểm · vòng tròn là tổ lái theo ca · <b>+</b> là còn thiếu người</span>
                   </div>
-                  <div id="dispatch-cand-list" class="dispatch-cand-list" aria-live="polite"></div>
+                  <div class="gantt">
+                    <div class="g-head">
+                      <div></div>
+                      <div class="hours" id="dispatch-cand-hours"></div>
+                    </div>
+                    <div id="dispatch-cand-list" aria-live="polite"></div>
+                  </div>
+                  <div class="tfoot">
+                    <span>Điểm = đúng tải trọng · cùng bãi điểm lấy · rảnh đúng giờ · có tài xế trong ca</span>
+                    <span>Rê chuột lên thanh để xem đủ nội dung</span>
+                  </div>
                 </div>
 
-                <div class="dispatch-timeline-filters">
-                  <label><span data-i18n="lbl_filter_vehicle">Xe</span><select id="dispatch-calendar-filter-vehicle" onchange="applyDispatchCalendarFilters()"><option value="" data-i18n="opt_all_vehicles">Tất cả xe</option></select></label>
-                  <label><span data-i18n="lbl_filter_driver">Tài xế</span><select id="dispatch-calendar-filter-driver" onchange="applyDispatchCalendarFilters()"><option value="" data-i18n="opt_all_drivers">Tất cả tài xế</option></select></label>
-                  <label><span data-i18n="lbl_filter_status">Trạng thái</span><select id="dispatch-calendar-filter-status" onchange="applyDispatchCalendarFilters()"><option value="" data-i18n="opt_all_statuses">Tất cả trạng thái</option></select></label>
+                <!--
+                  Bảng lịch xe cũ. GIỮ LẠI và ẩn, không xoá: `renderDispatchCalendar()`
+                  ghi vào năm chỗ dưới đây mỗi lần vẽ, và bảng ngoại lệ ở cột ba
+                  đọc `#dispatch-calendar-conflicts`. Xoá đi là hàm đó ném lỗi và
+                  kéo theo cả màn.
+                -->
+                <div class="dpv2-legacy" hidden>
+                  <div id="dispatch-calendar-legend"></div>
+                  <div id="dispatch-calendar-kpis"></div>
+                  <div id="dispatch-calendar-lanes"></div>
+                  <label>Xe<select id="dispatch-calendar-filter-vehicle" onchange="applyDispatchCalendarFilters()"><option value="">Tất cả xe</option></select></label>
+                  <label>Tài xế<select id="dispatch-calendar-filter-driver" onchange="applyDispatchCalendarFilters()"><option value="">Tất cả tài xế</option></select></label>
+                  <label>Trạng thái<select id="dispatch-calendar-filter-status" onchange="applyDispatchCalendarFilters()"><option value="">Tất cả trạng thái</option></select></label>
+                  <button id="dispatch-view-day" type="button" class="active" onclick="setDispatchCalendarView('day')">Ngày</button>
+                  <button id="dispatch-view-week" type="button" onclick="setDispatchCalendarView('week')">Tuần</button>
                 </div>
-                <div id="dispatch-calendar-legend" class="dispatch-calendar-legend"></div>
-                <div id="dispatch-calendar-kpis" hidden></div>
-                <div id="dispatch-calendar-lanes" class="dispatch-calendar-lanes"></div>
               </section>
 
-              <!--
-                COT 3 — ngoai le can duyet.
+              <!-- CỘT 3 — ngoại lệ cần duyệt, đổi thành khung gán khi đã chọn DO -->
+              <aside class="card panel">
+                <div class="col-h">
+                  <h3 id="dispatch-panel-title"><i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Ngoại lệ cần duyệt</span>
+                    <span class="n" id="dispatch-exc-count" style="background:#d32f2f">0</span></h3>
+                  <small id="dispatch-panel-step">việc của điều phối viên</small>
+                </div>
+                <div class="pb">
+                  <div id="dispatch-exceptions-view">
+                    <div id="dispatch-calendar-conflicts"></div>
+                  </div>
 
-                Truoc day khoi nay nam trong ngan keo "Cong cu", phai bam moi
-                mo. Nhung ngoai le la thu nguoi dieu phoi phai THAY de biet
-                hom nay con viec gi; de sau mot cai nut thi ho khong biet la
-                co viec.
-              -->
-              <section id="dispatch-exceptions" class="dispatch-workbench-pane" aria-labelledby="dispatch-exceptions-title">
-                <div class="dispatch-pane-heading">
-                  <div>
-                    <h3 id="dispatch-exceptions-title"><i class="fa-solid fa-triangle-exclamation"></i>
-                      <span data-i18n="title_dispatch_exceptions">Ngoại lệ cần duyệt</span></h3>
-                    <p data-i18n="sub_dispatch_exceptions">Việc phải xử trước khi cho xe xuất bến.</p>
+                  <div id="dispatch-detail" hidden role="region" aria-labelledby="dispatch-panel-title">
+                    <div class="sum" id="dispatch-calendar-detail-summary"></div>
+                    <div id="dispatch-calendar-detail-actions" hidden></div>
+
+                    <div id="subtab-content-dispatch">
+                      <select id="dispatch-selected-do" hidden onchange="selectDispatchDO(this.value)" aria-label="DO được chọn">
+                        <option value="">Chọn DO để gán xe/tài xế...</option>
+                      </select>
+
+                      <div class="lbl">Xe</div>
+                      <div class="field">
+                        <input type="text" id="dispatch-vehicle-display" readonly
+                               placeholder="Chọn một xe ở lịch bên trái"
+                               onclick="openPanoramicSelector('vehicle')"
+                               aria-label="Xe vận chuyển">
+                        <input type="hidden" id="dispatch-vehicle">
+                      </div>
+
+                      <!--
+                        TỔ LÁI — hai vai, đúng bằng số vai máy chủ nhận
+                        (`driver_id` và `co_driver_id`). Bản mẫu vẽ ba vai; vai
+                        thứ ba không có chỗ để lưu nên không vẽ, thay vì vẽ ra
+                        rồi bấm vào không lưu được.
+                      -->
+                      <div class="lbl" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Tổ lái</span>
+                        <span id="dispatch-crew-rule" style="font-weight:500;color:#7b8796">theo ca của xe</span>
+                      </div>
+                      <div class="crew">
+                        <div class="r">
+                          <div class="role">Tài xế chính<small>bắt buộc</small></div>
+                          <button type="button" class="who empty" id="dispatch-driver-display-btn"
+                                  onclick="openPanoramicSelector('driver')">Chọn xe trước</button>
+                          <button type="button" class="act" onclick="openPanoramicSelector('driver')">Đổi</button>
+                        </div>
+                        <div class="r">
+                          <div class="role">Phụ xe<small>không bắt buộc</small></div>
+                          <button type="button" class="who empty" id="dispatch-co-driver-display-btn"
+                                  onclick="openPanoramicSelector('co-driver')">—</button>
+                          <button type="button" class="act" onclick="openPanoramicSelector('co-driver')">Thêm</button>
+                        </div>
+                      </div>
+                      <!-- Hai ô này là nơi các hàm cũ đọc và ghi tên người. Ẩn
+                           đi nhưng phải CÒN: bỏ chúng là form gán đứt. -->
+                      <input type="text" id="dispatch-driver-display" hidden>
+                      <input type="hidden" id="dispatch-driver">
+                      <input type="text" id="dispatch-co-driver-display" hidden>
+                      <input type="hidden" id="dispatch-co-driver">
+
+                      <div class="lbl">Hàng hoá</div>
+                      <div class="field">
+                        <label for="dispatch-packaging-spec">Quy cách đóng gói</label>
+                        <select id="dispatch-packaging-spec">
+                          <option value="Thùng carton (tiêu chuẩn)">Thùng carton (tiêu chuẩn)</option>
+                          <option value="Pallet gỗ">Pallet gỗ</option>
+                          <option value="Container nguyên khối">Container nguyên khối</option>
+                        </select>
+                      </div>
+                      <div id="dispatch-capacity-meter-box" hidden>
+                        <span id="capacity-meter-badge"></span><span id="capacity-used-text"></span>
+                        <span id="capacity-total-text"></span><div id="capacity-meter-bar"></div>
+                      </div>
+
+                      <div id="dispatch-check" class="check ok" hidden></div>
+                      <button class="cta" type="button" id="dispatch-submit-btn" onclick="submitDispatch()">
+                        Chốt điều phối &amp; xuất bến
+                      </button>
+                      <button class="cta2" type="button" onclick="boChonDODieuPhoi()">
+                        &larr; Quay lại danh sách ngoại lệ
+                      </button>
+                    </div>
+
+                    <div id="dispatch-resource-change-panel" hidden>
+                      <div id="dispatch-resource-change-message"></div>
+                      <input type="hidden" id="dispatch-resource-change-mode" value="CHANGE_RESOURCE">
+                      <div class="field"><label>Xe thay thế</label><select id="dispatch-resource-vehicle-select"></select></div>
+                      <div class="field"><label>Tài xế thay thế</label><select id="dispatch-resource-driver-select"></select></div>
+                      <div class="field"><label>Version kỳ vọng</label><input id="dispatch-resource-expected-version" type="number" min="1" value="1"></div>
+                      <div class="field"><label>Lý do</label><input id="dispatch-resource-reason"></div>
+                      <button class="cta" type="button" onclick="applyDispatchResourceChange()">Lưu điều phối</button>
+                      <button class="cta2" type="button" onclick="closeDispatchResourceChange()">Hủy</button>
+                    </div>
+                    <div id="dispatch-calendar-detail-alerts" hidden></div>
+                    <button id="dispatch-detail-close" type="button" hidden onclick="closeDispatchDetail()">Đóng</button>
                   </div>
                 </div>
-                <div id="dispatch-calendar-conflicts" class="dispatch-exceptions-list"></div>
-              </section>
-
-              <aside id="dispatch-detail" class="dispatch-workbench-pane dispatch-detail-pane" hidden role="dialog" aria-modal="true" aria-labelledby="dispatch-detail-title">
-                <div class="dispatch-pane-heading">
-                  <div><h3 id="dispatch-detail-title"><i class="fa-solid fa-magnifying-glass-location"></i> <span data-i18n="title_dispatch_detail">Chi tiết điều phối</span></h3><p data-i18n="sub_dispatch_detail">DO hoặc Trip đang chọn</p></div>
-                  <button id="dispatch-detail-close" class="dispatch-detail-close" type="button" data-drawer-focusable="true" aria-label="Đóng chi tiết" onclick="closeDispatchDetail()"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div id="dispatch-calendar-detail-summary" class="dispatch-detail-summary">
-                  <div class="dispatch-empty-state" data-i18n="msg_select_dispatch_do_hint">Chọn một DO hoặc Trip để xem chi tiết.</div>
-                </div>
-                <div id="dispatch-calendar-detail-actions" class="dispatch-detail-actions dispatch-quick-actions" data-drawer-focusable="true" hidden></div>
-                <div id="subtab-content-dispatch" class="dispatch-assignment-form dispatch-assignment-card">
-                  <select id="dispatch-selected-do" class="fiori-input" onchange="selectDispatchDO(this.value)" aria-label="DO được chọn"><option value="" data-i18n="opt_select_do_default">Chọn DO để gán xe/tài xế...</option></select>
-                  <div class="dispatch-assignment-grid">
-                    <label><span data-i18n="lbl_dispatch_veh">Xe vận chuyển</span><input type="text" class="fiori-input" id="dispatch-vehicle-display" readonly placeholder="Chọn xe" data-i18n-attr="placeholder" data-i18n="ph_choose_veh" onclick="openPanoramicSelector('vehicle')"><input type="hidden" id="dispatch-vehicle"></label>
-                    <label><span data-i18n="lbl_dispatch_main_driver">Tài xế chính</span><input type="text" class="fiori-input" id="dispatch-driver-display" readonly placeholder="Chọn tài xế" data-i18n-attr="placeholder" data-i18n="ph_choose_driver" onclick="openPanoramicSelector('driver')"><input type="hidden" id="dispatch-driver"></label>
-                    <label><span data-i18n="lbl_dispatch_co_driver">Phụ xe</span><input type="text" class="fiori-input" id="dispatch-co-driver-display" readonly placeholder="Không bắt buộc" data-i18n-attr="placeholder" data-i18n="ph_optional" onclick="openPanoramicSelector('co-driver')"><input type="hidden" id="dispatch-co-driver"></label>
-                    <label><span data-i18n="lbl_packaging_spec">Quy cách đóng gói</span><select class="fiori-input" id="dispatch-packaging-spec"><option value="Thùng carton (tiêu chuẩn)" data-i18n="opt_carton">Thùng carton (tiêu chuẩn)</option><option value="Pallet gỗ" data-i18n="opt_pallet_wood">Pallet gỗ</option><option value="Container nguyên khối" data-i18n="opt_container_full">Container nguyên khối</option></select></label>
-                  </div>
-                  <div id="dispatch-capacity-meter-box" hidden><span id="capacity-meter-badge"></span><span id="capacity-used-text"></span><span id="capacity-total-text"></span><div id="capacity-meter-bar"></div></div>
-                  <button class="fiori-btn fiori-btn-primary dispatch-submit-full" type="button" data-drawer-focusable="true" onclick="submitDispatch()"><i class="fa-solid fa-paper-plane"></i> <span data-i18n="btn_submit_dispatch">Chốt điều phối & xuất bến</span></button>
-                </div>
-                <div id="dispatch-resource-change-panel" hidden>
-                  <div id="dispatch-resource-change-message"></div><input type="hidden" id="dispatch-resource-change-mode" value="CHANGE_RESOURCE">
-                  <label>Xe thay thế<select id="dispatch-resource-vehicle-select"></select></label><label>Tài xế thay thế<select id="dispatch-resource-driver-select"></select></label>
-                  <label>Version kỳ vọng<input id="dispatch-resource-expected-version" type="number" min="1" value="1"></label><label>Lý do<textarea id="dispatch-resource-reason" rows="2"></textarea></label>
-                  <div class="dispatch-inline-actions"><button class="fiori-btn fiori-btn-secondary" type="button" onclick="closeDispatchResourceChange()">Hủy</button><button class="fiori-btn fiori-btn-primary" type="button" onclick="applyDispatchResourceChange()">Lưu điều phối</button></div>
-                </div>
-                <div id="dispatch-calendar-detail-alerts" class="dispatch-detail-alerts" hidden></div>
               </aside>
             </div>
+          </div></div>
 
             <div id="dispatch-step-modal" class="dispatch-step-modal" hidden onclick="closeDispatchStepModal(event)">
               <section class="dispatch-step-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dispatch-step-modal-title" aria-describedby="dispatch-step-modal-description" onclick="event.stopPropagation()">
@@ -8460,7 +8874,9 @@
   -->
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
-  <script src="/static/js/app.js?v=20260908y-theo-doi-gps"></script>
+  <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908a">
+  <script src="/static/js/tracking-control-tower.js?v=20260908a"></script>
+  <script src="/static/js/app.js?v=20260908z-control-tower"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>

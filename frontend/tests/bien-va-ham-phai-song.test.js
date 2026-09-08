@@ -56,6 +56,14 @@ const raw = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
 
   const daKhai = new Set();
   for (const re of [
+    // Bắt CẢ danh sách nhiều tên trên một dòng: `let khoa, ten, phu;`.
+    //
+    // Bản trước chỉ bắt tên ĐẦU TIÊN sau `let`, nên một cách viết hoàn toàn
+    // bình thường làm bài kiểm báo oan: `phu` bị liệt là "gán mà không khai
+    // báo" trong khi nó được khai ở cùng dòng với `khoa`. Báo oan còn tệ hơn
+    // không báo, vì người đọc mất lòng tin vào cả bài kiểm rồi bỏ qua luôn
+    // những dòng báo đúng.
+    /\b(?:let|const|var)\s+([A-Za-z_$][\w$]*(?:\s*,\s*[A-Za-z_$][\w$]*)*)\s*[;=]/g,
     /\b(?:let|const|var)\s+([A-Za-z_$][\w$]*)/g,
     /\bfunction\s+([A-Za-z_$][\w$]*)/g,
     /\bclass\s+([A-Za-z_$][\w$]*)/g,

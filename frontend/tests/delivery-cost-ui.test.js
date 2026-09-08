@@ -22,10 +22,22 @@ assert.strictEqual(
   1,
   'Màn Giao hàng chỉ được có một nút Qua điều phối.'
 );
+// Màn Điều phối phải có điểm tạo Trip. Nhưng sau khi dựng lại theo bản mẫu
+// `dispatch-v2-crew.html`, nút đó không còn gọi `openTripReturnAction` thẳng
+// trong thuộc tính `onclick` nữa — nó gọi `xepMoiDOConLai()`, và hàm đó mới
+// gọi tiếp, vì phải kiểm trước là các DO đang chọn có cùng một tuyến hay không
+// (một Trip chỉ chở được các DO cùng tuyến — chốt của backend).
+//
+// Nên bài kiểm soi qua HAI chặng: màn có nút, và nút đó dẫn tới đúng chỗ.
 assert.match(
   dispatchSection,
-  /openTripReturnAction\(['"]create-trip['"]\)/,
+  /onclick="xepMoiDOConLai\(\)"/,
   'Màn Điều phối phải có điểm tạo Trip.'
+);
+assert.match(
+  app,
+  /window\.xepMoiDOConLai = function[\s\S]{0,2000}?openTripReturnAction\(['"]create-trip['"]/,
+  'Nút tạo Trip ở màn Điều phối phải dẫn tới form tạo Trip thật.'
 );
 assert.doesNotMatch(
   app,

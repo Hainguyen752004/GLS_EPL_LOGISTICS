@@ -943,11 +943,15 @@ window.switchView = function (targetView, scrollToId) {
   } else if (targetView === 'delivery-completion') {
     if (typeof loadDeliveryCompletionWorkbench === 'function') loadDeliveryCompletionWorkbench();
   } else if (targetView === 'tracking') {
-    if (typeof loadIncidents === 'function') loadIncidents();
-    setTimeout(() => {
-      if (typeof initGPSTrackingMap === 'function') initGPSTrackingMap();
-      if (typeof gpsTrackingMap !== 'undefined' && gpsTrackingMap) gpsTrackingMap.invalidateSize();
-    }, 200);
+    if (window.TrackingControlTower) {
+      window.TrackingControlTower.load();
+    } else {
+      if (typeof loadIncidents === 'function') loadIncidents();
+      setTimeout(() => {
+        if (typeof initGPSTrackingMap === 'function') initGPSTrackingMap();
+        if (typeof gpsTrackingMap !== 'undefined' && gpsTrackingMap) gpsTrackingMap.invalidateSize();
+      }, 200);
+    }
   } else if (targetView === 'operations-360') {
     if (typeof renderTmsCockpit === 'function') renderTmsCockpit();
   } else if (targetView === 'accounting') {
@@ -5343,13 +5347,26 @@ function renderDispatchCalendar() {
     ...calendar.unscheduled.slice(0, 5).map(item => `<div class="dispatch-alert-row"><i class="fa-solid fa-circle-info"></i><span><strong>${item.id}</strong>: ${escapeHtml(item.reason)}</span></div>`)
   ].join('') || `<div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:10px; padding:10px; font-weight:800;"><i class="fa-solid fa-circle-check"></i> ${lang === 'la' ? 'ບໍ່ພົບຕາຕະລາງຊ້ອນກັນໃນກະດານປ່ອຍລົດ.' : (lang === 'en' ? 'No scheduling conflicts detected.' : 'Không phát hiện trùng lịch trong bảng điều phối.')}</div>`;
 
+  // Dem ngoai le SAU khi khoi do da duoc ghi: the o dai so lieu doc tu chinh
+  // DOM cua khoi ngoai le, nen ve nguoc thu tu thi no luon bao 0.
+  const excEl = document.getElementById('dispatch-exc-count');
+  if (excEl) {
+    excEl.textContent = String(conflictsEl.querySelectorAll('.dispatch-alert-row').length);
+  }
+
   if (detailSummaryEl && detailAlertsEl && window.TmsCockpit.buildDispatchCalendarDetail) {
     const targetOrderId = selectedDispatchCalendarOrderId || '';
     const detail = window.TmsCockpit.buildDispatchCalendarDetail(appState || {}, targetOrderId, dispatchCalendarDate);
     const order = detail.order;
     renderDispatchSuggestedActions(detail);
     if (pendingDispatchResourceChange.orderId) renderDispatchResourceChangePanel();
-    detailSummaryEl.innerHTML = order ? `
+    // Khung tom tat cua man Dieu phoi do `dpv2VeTomTatDon()` lam chu, vi no
+    // phai ra dung bon o `.sum` cua ban mau. Ghi de o day thi mot the
+    // `.dispatch-detail-card` cua ban cu nhet vao trong luoi hai cot va bo cuc
+    // vo — hai kieu trinh bay chong len nhau trong cung mot cho.
+    if (typeof dpv2VeTomTatDon === 'function') {
+      dpv2VeTomTatDon(order);
+    } else detailSummaryEl.innerHTML = order ? `
       <div class="dispatch-detail-card">
         <div class="dispatch-detail-hero">
           <div>
@@ -9286,6 +9303,11 @@ async function loadDispatchBoard() {
     renderDispatchSelects();
     renderDispatchScopeOptions();
     renderDispatchCalendar();
+    // Ve LAI cot DO o day, khong chi ve cot xe ung vien: dai so lieu sinh ra tu
+    // trong `renderDispatchDOs`, va the "Tai xe trong ca" doc `driverShifts`.
+    // Ve dai truoc khi ca truc ve thi the do bao 0 trong khi bang ca truc co du
+    // dong — da do that.
+    renderDispatchDOs();
     renderDispatchCandidates();
     normalizeDispatchStaticText();
   } catch (e) {
@@ -9392,6 +9414,58 @@ window.setDispatchKpiFilter = function (nhom) {
 };
 
 /** Vẽ dải số liệu. Mọi con số lấy từ dữ liệu thật, không có số cứng nào. */
+/* ==========================================================================
+   MÀN ĐIỀU PHỐI — các hàm vẽ, dựng theo bản mẫu
+   `D:\Demo_Lao\nhap_UI__duan\dispatch-v2-crew.html`.
+
+   Mọi thứ ở đây sinh ra markup của bản mẫu (`.kpi`, `.grp`, `.row`, `.g-row`,
+   `.team`, `.crew`) và đọc dữ liệu từ backend thật. Không có dòng nào cứng.
+   ========================================================================== */
+
+//: Trục giờ của Gantt xe ứng viên: 06:00 đến 20:00, mười bốn ô một giờ — đúng
+//: bằng bản mẫu. Chọn khung này vì ca sáng bắt đầu 06:00 và ca chiều kết thúc
+//: 22:00; vẽ cả 24 giờ thì mỗi ô hẹp tới mức không đọc được nhãn nào.
+const DPV2_GIO_DAU = 6;
+const DPV2_SO_O = 14;
+
+/** Đổi một mốc thời gian thành phần trăm trên trục giờ. */
+function dpv2ViTri(moc) {
+  if (!moc) return null;
+  const d = (moc instanceof Date) ? moc : new Date(moc);
+  if (isNaN(d)) return null;
+  const gio = d.getHours() + d.getMinutes() / 60;
+  return ((gio - DPV2_GIO_DAU) / DPV2_SO_O) * 100;
+}
+
+function dpv2Gio(moc) {
+  if (!moc) return '';
+  const d = (moc instanceof Date) ? moc : new Date(moc);
+  if (isNaN(d)) return '';
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Vẽ nhãn giờ và vạch "bây giờ" trên trục. */
+function renderDispatchCandHours() {
+  const host = document.getElementById('dispatch-cand-hours');
+  if (!host) return;
+  const bayGio = dpv2ViTri(new Date());
+  const nhan = [];
+  // Vạch đỏ "bây giờ" chỉ vẽ khi giờ hiện tại NẰM TRONG trục. Ngoài giờ làm
+  // việc thì `left` âm hoặc quá 100% và vạch dán vào mép, nói sai chỗ.
+  if (bayGio !== null && bayGio >= 0 && bayGio <= 100) {
+    nhan.push('<span class="nowlbl" style="left:' + bayGio.toFixed(2) + '%">'
+      + dpv2Gio(new Date()) + '</span>');
+  }
+  for (let i = 0; i < DPV2_SO_O; i += 1) {
+    nhan.push('<span>' + String(DPV2_GIO_DAU + i).padStart(2, '0') + '</span>');
+  }
+  host.innerHTML = nhan.join('');
+}
+
+/* --------------------------------------------------------------------------
+   DẢI SỐ LIỆU — sáu thẻ, đúng bằng bản mẫu.
+   -------------------------------------------------------------------------- */
+
 function renderDispatchKpis(dsTrongNgay, dsHienRa) {
   const host = document.getElementById('dispatch-kpis');
   if (!host) return;
@@ -9403,48 +9477,767 @@ function renderDispatchKpis(dsTrongNgay, dsHienRa) {
 
   // Chọn nguồn xe bằng ĐỘ DÀI, không bằng `||`: một mảng rỗng là truthy trong
   // JavaScript, nên `driverShiftVehicles || fioriVehicles` trả về đúng mảng
-  // rỗng khi màn Điều phối chưa nạp danh sách xe của màn xếp lịch. Đo được:
-  // thẻ "Xe / tài xế rảnh" hiện 0 trong khi cơ sở dữ liệu có 9 xe.
+  // rỗng khi màn này chưa nạp danh sách xe. Đã đo được: thẻ "Xe rảnh" hiện 0
+  // trong khi cơ sở dữ liệu có 9 xe.
   const dsXe = dispatchDanhSachXe();
-  // "Rảnh" ở đây nghĩa là KHÔNG nằm bãi sửa và KHÔNG đang chạy chuyến nào. Đếm
-  // cả xe đang chạy thì con số nói "còn 9 xe" trong khi thực tế điều được ít
-  // hơn, và người điều phối tin vào một con số không dùng được.
   const xeDangChay = new Set((driverVehicleAvailability || [])
     .filter(x => String(x.kind || '') === 'trip' && x.vehicle_id)
     .map(x => String(x.vehicle_id)));
-  const xeRanh = dsXe.filter(v => {
-    const tt = String(v.status || '');
-    if (/bảo dưỡng|bao duong|inactive|disabled|sửa chữa/i.test(tt)) return false;
-    if (/đang vận chuyển|dang van chuyen|in transit/i.test(tt)) return false;
-    return !xeDangChay.has(String(v.id));
-  }).length;
-  const taiXeRanh = dispatchDanhSachTaiXe()
-    .filter(t => /sẵn sàng|san sang|active|ready/i.test(String(t.status || ''))).length;
+  const xeBaoDuong = dsXe.filter(v =>
+    /bảo dưỡng|bao duong|inactive|disabled|sửa chữa|maintenance/i
+      .test(String(v.operational_status || '') + ' ' + String(v.status || ''))).length;
+  const xeChay = dsXe.filter(v => xeDangChay.has(String(v.id))
+    || /đang vận chuyển|dang van chuyen|in transit/i.test(String(v.status || ''))).length;
+  const xeRanh = Math.max(0, dsXe.length - xeBaoDuong - xeChay);
+
+  // "Tài xế trong ca", KHÔNG phải "tài xế còn giờ lái" như bản mẫu: hệ thống
+  // không lưu số giờ đã lái trong ngày của từng người, nên không tính được con
+  // số đó. Đổi nhãn cho đúng thứ đo được, thay vì giữ nhãn của mẫu rồi điền
+  // vào một con số nói chuyện khác.
+  const taiXeTrongCa = new Set((driverShifts || [])
+    .filter(c => String(c.availability_kind || 'work') === 'work' && c.driver_id)
+    .map(c => String(c.driver_id))).size;
+  const tongTaiXe = dispatchDanhSachTaiXe().length;
+
+  const soNgoaiLe = document.querySelectorAll('#dispatch-calendar-conflicts .dispatch-alert-row').length;
+  const excEl = document.getElementById('dispatch-exc-count');
+  if (excEl) excEl.textContent = String(soNgoaiLe);
 
   const the = [
-    ['', 'DO trong ngày', dsTrongNgay.length, `${dsHienRa} đang hiện`, 'blue'],
-    ['cho', 'Chờ điều phối', dem.cho, 'chưa xuất bến', 'amber'],
+    ['', 'DO trong ngày', dsTrongNgay.length, dsHienRa + ' đang hiện', 'blue'],
     ['xong', 'Đã xuất bến', dem.xong, 'đang chạy hoặc đã xong', 'green'],
+    ['cho', 'Chờ xếp', dem.cho, 'chưa xuất bến', 'amber'],
     ['thieu-trip', 'Thiếu Trip', dem['thieu-trip'], 'phải lập Trip trước', 'red'],
-    ['thieu-hang', 'Chưa khai hàng', dem['thieu-hang'], 'không kiểm được tải trọng', 'red'],
-    [null, 'Xe / tài xế rảnh', xeRanh, `${taiXeRanh} tài xế sẵn sàng`, ''],
+    // Hai thẻ cuối CHỈ ĐỂ ĐỌC: chúng nói về xe và người, không lọc được cột DO.
+    // `null` làm chúng không bấm được, thay vì cho bấm rồi không có gì xảy ra.
+    [null, 'Xe rảnh / tổng', xeRanh + '<span style="font-size:13px;color:#7b8796"> / ' + dsXe.length + '</span>',
+      xeChay + ' chạy · ' + xeBaoDuong + ' bảo dưỡng', ''],
+    [null, 'Tài xế trong ca', taiXeTrongCa, 'trên ' + tongTaiXe + ' người', ''],
   ];
 
-  host.innerHTML = the.map(([ma, nhan, so, phu, mau]) => {
-    // `null` nghĩa là thẻ chỉ để ĐỌC, không lọc được — nên không cho bấm, thay
-    // vì cho bấm rồi không có gì xảy ra.
+  host.innerHTML = the.map(cap => {
+    const ma = cap[0], nhan = cap[1], so = cap[2], phu = cap[3], mau = cap[4];
     const chiDoc = ma === null;
     const tat = !chiDoc && ma !== '' && !so;
-    return `<button type="button"
-      class="dispatch-kpi${mau ? ' dispatch-kpi--' + mau : ''}${dispatchKpiFilter === ma && !chiDoc ? ' is-active' : ''}"
-      ${chiDoc || tat ? 'disabled' : `onclick="setDispatchKpiFilter('${ma}')"`}
-      ${chiDoc ? 'aria-disabled="true"' : ''}
-      title="${chiDoc ? 'Chỉ để xem' : (tat ? 'Không có DO nào trong nhóm này' : 'Bấm để lọc cột DO theo nhóm này')}">
-      <span>${escapeHtml(nhan)}</span><b>${Number(so).toLocaleString('vi-VN')}</b>
-      <small>${escapeHtml(phu)}</small>
-    </button>`;
+    const soChu = (typeof so === 'number') ? Number(so).toLocaleString('vi-VN') : String(so);
+    return '<button type="button" class="card kpi' + (mau ? ' ' + mau : '')
+      + (dispatchKpiFilter === ma && !chiDoc ? ' on' : '') + '"'
+      + (chiDoc || tat
+        ? ' disabled title="' + (chiDoc ? 'Chỉ để xem' : 'Không có DO nào trong nhóm này') + '"'
+        : ' onclick="setDispatchKpiFilter(\'' + ma + '\')" title="Bấm để lọc cột DO theo nhóm này"')
+      + '>'
+      + '<span>' + nhan + '</span><b>' + soChu + '</b><small>' + phu + '</small>'
+      + '</button>';
   }).join('');
 }
+
+/* --------------------------------------------------------------------------
+   CỘT 1 — DO chờ xếp, gom nhóm và mở gập được.
+   -------------------------------------------------------------------------- */
+
+//: Cách gom cột DO: theo tuyến, theo khách, hay theo hạn giao.
+let dispatchDoGroup = 'route';
+//: Nhóm nào đang mở. Mặc định mở nhóm ĐẦU TIÊN — mở hết thì cột dài mấy trăm
+//: dòng và mất tác dụng gom; đóng hết thì người dùng phải bấm mới thấy gì.
+let dispatchNhomMo = new Set();
+//: DO đã tick, để "Xếp cả nhóm" và nút xếp hàng loạt biết chọn gì.
+let dispatchDaTick = new Set();
+
+window.setDispatchDoGroup = function (kieu) {
+  dispatchDoGroup = ['route', 'customer', 'due'].includes(kieu) ? kieu : 'route';
+  document.querySelectorAll('#dispatch-do-group-seg button').forEach(b =>
+    b.classList.toggle('on', b.dataset.grp === dispatchDoGroup));
+  dispatchNhomMo = new Set();
+  renderDispatchDOs();
+};
+
+window.moNhomDO = function (khoa) {
+  if (dispatchNhomMo.has(khoa)) dispatchNhomMo.delete(khoa);
+  else dispatchNhomMo.add(khoa);
+  renderDispatchDOs();
+};
+
+window.tickDO = function (ma, event) {
+  if (event) event.stopPropagation();
+  if (dispatchDaTick.has(ma)) dispatchDaTick.delete(ma);
+  else dispatchDaTick.add(ma);
+  const el = document.getElementById('dispatch-ticked-count');
+  if (el) el.textContent = String(dispatchDaTick.size);
+  capNhatNutXepTuDong();
+};
+
+/**
+ * Bấm Enter hoặc Space trên một dòng DO thì mở dòng đó.
+ *
+ * Bản mẫu vẽ dòng này bằng một `<div>` chỉ có `onclick`, và thừa nguyên cách đó
+ * là một bước lùi về trợ năng: người dùng bàn phím không tới được dòng nào.
+ * Đặt cả dòng thành `<button>` cũng không được — trong dòng có sẵn một ô tick,
+ * mà lồng một ô bấm được vào trong một nút là HTML không hợp lệ và trình đọc
+ * màn hình đọc sai.
+ *
+ * Cách đúng cho một HÀNG có sẵn điều khiển riêng: `role="button"` +
+ * `tabindex="0"` + bắt phím ở đây, còn ô tick giữ nguyên là ô tick.
+ */
+window.dpv2BamPhimDong = function (event, maDO) {
+  if (!event) return;
+  if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+  // Bấm Space khi con trỏ đang ở ô tick thì để ô tick tự xử — chặn ở đây là
+  // tick bằng bàn phím không dùng được nữa.
+  const dich = event.target;
+  if (dich && String(dich.tagName || '').toLowerCase() === 'input') return;
+  event.preventDefault();
+  window.selectDispatchDO(maDO);
+};
+
+/** Hạn giao còn lại, dạng "Còn 4h36" — cột `due` của bản mẫu. */
+function dpv2ConLai(don) {
+  const han = don.delivery_window_end || don.delivery_window_start
+    || don.planned_arrival_at || don.delivery_date;
+  if (!han) return { chu: '—', mau: '' };
+  const d = new Date(han);
+  if (isNaN(d)) return { chu: '—', mau: '' };
+  const phut = Math.round((d.getTime() - Date.now()) / 60000);
+  if (phut < 0) {
+    const h = Math.floor(-phut / 60), m = (-phut) % 60;
+    return { chu: 'Trễ ' + (h ? h + 'h' : '') + String(m).padStart(2, '0'), mau: 'r' };
+  }
+  const h = Math.floor(phut / 60), m = phut % 60;
+  // Dưới sáu giờ là gấp (đỏ), dưới mười hai giờ là cần để ý (cam). Hai ngưỡng
+  // này khớp với thực tế: một chuyến nội vùng mất khoảng một tới ba giờ, nên
+  // còn dưới sáu giờ là đã sát.
+  const mau = phut < 360 ? 'r' : (phut < 720 ? 'a' : '');
+  return { chu: 'Còn ' + h + 'h' + String(m).padStart(2, '0'), mau: mau };
+}
+
+function renderDispatchDOs(filterQuery = '') {
+  const container = document.getElementById('dispatch-do-list');
+  if (!container) return;
+
+  const query = filterQuery
+    || normalizeSearchText(document.getElementById('dispatch-do-search-input')?.value || '').trim();
+
+  const allDOsRaw = eplDeliveryOrders && eplDeliveryOrders.length > 0 ? eplDeliveryOrders : (dispatchDOs || []);
+  renderDispatchDOSelector(allDOsRaw);
+  let allDOs = allDOsRaw.filter(isDispatchPendingDO);
+  const planningDate = selectedDispatchFleetIsoDate || dispatchDateInputValue(dispatchCalendarDate);
+  const dateResult = window.TmsCockpit?.filterDispatchOrdersByDate
+    ? window.TmsCockpit.filterDispatchOrdersByDate(allDOs, planningDate)
+    : { orders: allDOs, undated: [] };
+  allDOs = dateResult.orders;
+
+  if (query) {
+    allDOs = allDOs.filter(d =>
+      normalizeSearchText([d.id, d.customer_id, d.route_id, d.origin, d.destination,
+        d.packaging_spec, statusLabel(d.status || '')].join(' ')).includes(query));
+  }
+
+  // Dải số liệu đếm trên TOÀN BỘ đơn trong ngày, KHÔNG theo bộ lọc đang chọn.
+  // Đếm theo bộ lọc thì bấm "Thiếu Trip" xong mọi thẻ khác về 0, và người dùng
+  // mất luôn mốc để so — đó là dải số liệu tự xóa nghĩa của chính nó.
+  const dsTrongNgay = allDOs.slice();
+  if (dispatchKpiFilter) {
+    allDOs = allDOs.filter(d => dispatchNhomCuaDO(d).has(dispatchKpiFilter));
+  }
+  renderDispatchKpis(dsTrongNgay, allDOs.length);
+  renderDispatchFleet();
+  renderDispatchCandHours();
+
+  const pendingCountEl = document.getElementById('dispatch-state-pending-count');
+  if (pendingCountEl) pendingCountEl.textContent = String(allDOs.length);
+  capNhatNutXepTuDong(allDOs.length);
+
+  const canhBaoThieuNgay = dateResult.undated.length
+    ? '<div class="empty" style="margin:12px 14px;border-color:#f59e0b;color:#b45309">'
+      + '<i class="fa-solid fa-triangle-exclamation"></i> ' + dateResult.undated.length
+      + ' DO thiếu ngày lấy hàng nên chưa xuất hiện trong lịch. '
+      + 'Hãy bổ sung thời gian trên DO trước khi điều phối.</div>'
+    : '';
+
+  if (!allDOs.length) {
+    container.innerHTML = canhBaoThieuNgay
+      + '<div class="empty" style="margin:12px 14px;">'
+      + (query ? 'Không tìm thấy lệnh giao hàng phù hợp'
+        : (dispatchKpiFilter ? 'Không có DO nào trong nhóm đang lọc. Bấm lại thẻ số liệu để bỏ lọc.'
+          : 'Chưa có lệnh giao hàng sẵn sàng điều phối'))
+      + ' ngày ' + planningDate + '</div>';
+    const foot = document.getElementById('dispatch-do-foot');
+    if (foot) foot.textContent = '0 DO';
+    return;
+  }
+
+  // GOM NHÓM. Vì sao gom theo tuyến là mặc định: một Trip chỉ chở được các DO
+  // CÙNG một tuyến — đó là chốt của backend, không phải một quy ước trình bày.
+  // Danh sách phẳng buộc người điều phối tự đọc mã tuyến từng dòng rồi tự nhóm
+  // trong đầu; ở quy mô vài trăm DO mỗi ngày thì việc đó vừa chậm vừa dễ ghép
+  // sai tuyến rồi bị backend từ chối sau khi đã điền xong cả form.
+  const nhom = new Map();
+  allDOs.forEach(d => {
+    let khoa, ten, phu;
+    if (dispatchDoGroup === 'customer') {
+      khoa = String(d.customer_id || '').trim() || '(chưa có khách)';
+      const kh = (eplCustomers || []).find(c => String(c.id || '') === khoa);
+      ten = (kh && kh.name) || khoa;
+      phu = '';
+    } else if (dispatchDoGroup === 'due') {
+      const c = dpv2ConLai(d);
+      khoa = c.mau === 'r' ? 'gap' : (c.mau === 'a' ? 'som' : 'con-thoi-gian');
+      ten = khoa === 'gap' ? 'Gấp — còn dưới 6 giờ'
+        : (khoa === 'som' ? 'Cần để ý — còn dưới 12 giờ' : 'Còn thời gian');
+      phu = '';
+    } else {
+      khoa = String(d.route_id || d.route_name || '').trim() || '(chưa có tuyến)';
+      const t = (eplRoutes || []).find(r => String(r.id || '') === khoa);
+      ten = (t && t.name) || khoa;
+      phu = (t && t.distance_km)
+        ? Number(t.distance_km).toLocaleString('vi-VN') + ' km'
+        : '';
+    }
+    if (!nhom.has(khoa)) nhom.set(khoa, { ten: ten, phu: phu, ds: [] });
+    nhom.get(khoa).ds.push(d);
+  });
+
+  // Nhóm nhiều DO nhất xếp lên trước: đó là nhóm ghép được nhiều nhất vào một
+  // chuyến, tức việc đáng làm trước.
+  const dsNhom = [...nhom.entries()].sort((a, b) => b[1].ds.length - a[1].ds.length);
+  // Mặc định mở nhóm đầu. Mở hết thì cột dài mấy trăm dòng và mất tác dụng gom;
+  // đóng hết thì người dùng phải bấm mới thấy gì.
+  if (!dispatchNhomMo.size && dsNhom.length) dispatchNhomMo.add(dsNhom[0][0]);
+
+  const html = dsNhom.map(cap => {
+    const khoa = cap[0], g = cap[1];
+    const mo = dispatchNhomMo.has(khoa);
+    const tongKg = g.ds.reduce((t, x) => t + Number(x.weight_kg || 0), 0);
+    const soGap = g.ds.filter(x => dpv2ConLai(x).mau === 'r').length;
+    const soThieuTrip = g.ds.filter(x => resolveDispatchTripGate(x.id).state === 'missing').length;
+
+    let theNhom = '';
+    if (soGap) theNhom = '<span class="tag t-red">' + soGap + ' gấp</span>';
+    else if (soThieuTrip) theNhom = '<span class="tag t-amber">' + soThieuTrip + ' thiếu Trip</span>';
+    else theNhom = '<span></span>';
+
+    // Chỉ mời "Xếp cả nhóm" khi nhóm có TỪ HAI DO: một DO thì nút đó chỉ là một
+    // đường vòng tới cùng việc mà bấm vào chính dòng đó đã làm được.
+    const nutNhom = g.ds.length > 1
+      ? '<button type="button" class="btn" onclick="xepCaNhomDO(' + JSON.stringify(khoa).replace(/"/g, '&quot;') + ');event.stopPropagation()"'
+        + ' title="Tick cả ' + g.ds.length + ' DO của nhóm này rồi mở form tạo Trip">Xếp cả nhóm</button>'
+      : '<span></span>';
+
+    const dong = g.ds.map(d => {
+      const cong = resolveDispatchTripGate(d.id);
+      const theTrip = cong.state === 'ready'
+        ? '<span class="tag t-green">Trip ' + escapeHtml(String(cong.trip.id)) + '</span>'
+        : (cong.state === 'draft'
+          ? '<span class="tag t-amber">Trip nháp</span>'
+          : '<span class="tag t-red">Chưa có Trip</span>');
+      const kh = (eplCustomers || []).find(c => String(c.id || '') === String(d.customer_id || ''));
+      const tenKH = (kh && kh.name) || d.customer_id || '—';
+      const conLai = dpv2ConLai(d);
+      const maAn = JSON.stringify(String(d.id)).replace(/"/g, '&quot;');
+      return '<div class="row' + (String(selectedDispatchCalendarOrderId) === String(d.id) ? ' on' : '') + '"'
+        + ' data-dispatch-do="' + escapeHtml(String(d.id)) + '"'
+        + ' data-dispatch-queue="' + escapeHtml(String(d.id)) + '"'
+        + ' draggable="true" ondragstart="onDispatchDODragStart(event, ' + maAn + ')"'
+        + ' onclick="selectDispatchDO(' + maAn + ')"'
+        + ' role="button" tabindex="0"'
+        + ' onkeydown="dpv2BamPhimDong(event, ' + maAn + ')"'
+        + ' aria-label="Chọn DO ' + escapeHtml(String(d.id)) + ' để gán xe và tổ lái"'
+        + ' title="Bấm để gán xe và tổ lái cho ' + escapeHtml(String(d.id)) + '">'
+        + '<input type="checkbox"' + (dispatchDaTick.has(String(d.id)) ? ' checked' : '')
+        + ' onclick="tickDO(' + maAn + ', event)" aria-label="Tick DO ' + escapeHtml(String(d.id)) + '">'
+        + '<div><div class="id">' + escapeHtml(String(d.id)) + '</div>'
+        + '<div class="m">' + escapeHtml(tenKH)
+        + (d.so_id ? ' · ' + escapeHtml(String(d.so_id)) : '') + '</div></div>'
+        + '<div><div>Lấy ' + (dpv2Gio(d.pickup_window_start || d.pickup_date) || '—') + '</div>'
+        + '<div class="m">' + escapeHtml(String(d.origin || '—')) + '</div></div>'
+        + '<div><div>Giao ' + (dpv2Gio(d.delivery_window_start || d.delivery_date) || '—') + '</div>'
+        + '<div class="m">' + escapeHtml(String(d.destination || '—')) + '</div></div>'
+        + '<span class="due ' + conLai.mau + '">' + conLai.chu + '</span>'
+        + theTrip
+        + '</div>';
+    }).join('');
+
+    return '<div class="grp' + (mo ? ' open' : '') + '">'
+      + '<button type="button" class="grp-h" onclick="moNhomDO(' + JSON.stringify(khoa).replace(/"/g, '&quot;') + ')"'
+      + ' aria-expanded="' + (mo ? 'true' : 'false') + '">'
+      + '<span class="car">&#9654;</span>'
+      + '<div class="nm">' + escapeHtml(g.ten)
+      + (g.phu ? ' <span>' + escapeHtml(g.phu) + '</span>' : '') + '</div>'
+      + '<span class="cnt">' + g.ds.length + ' DO · ' + tongKg.toLocaleString('vi-VN') + ' kg</span>'
+      + theNhom + nutNhom
+      + '</button>'
+      + '<div class="rows">' + dong + '</div></div>';
+  }).join('');
+
+  container.innerHTML = canhBaoThieuNgay + html;
+  const foot = document.getElementById('dispatch-do-foot');
+  if (foot) {
+    foot.textContent = allDOs.length + ' DO · ' + dsNhom.length + ' nhóm · sắp theo số DO';
+  }
+  const tickEl = document.getElementById('dispatch-ticked-count');
+  if (tickEl) tickEl.textContent = String(dispatchDaTick.size);
+}
+
+/* --------------------------------------------------------------------------
+   CỘT 2a — đội xe theo bãi, khi chưa chọn DO.
+   -------------------------------------------------------------------------- */
+
+function renderDispatchFleet() {
+  const host = document.getElementById('dispatch-fleet-list');
+  if (!host) return;
+  const dsXe = dispatchDanhSachXe();
+  const tongEl = document.getElementById('dispatch-fleet-total');
+  if (tongEl) tongEl.textContent = String(dsXe.length);
+
+  const xeDangChay = new Set((driverVehicleAvailability || [])
+    .filter(x => String(x.kind || '') === 'trip' && x.vehicle_id)
+    .map(x => String(x.vehicle_id)));
+
+  const theoBai = new Map();
+  dsXe.forEach(v => {
+    const bai = String(v.depot || '').trim() || '(chưa gán bãi)';
+    if (!theoBai.has(bai)) theoBai.set(bai, []);
+    theoBai.get(bai).push(v);
+  });
+
+  const phanLoai = ds => {
+    let ranh = 0, chay = 0, baoDuong = 0;
+    ds.forEach(v => {
+      const tt = String(v.operational_status || '') + ' ' + String(v.status || '');
+      if (/bảo dưỡng|bao duong|inactive|disabled|sửa chữa|maintenance/i.test(tt)) baoDuong += 1;
+      else if (xeDangChay.has(String(v.id)) || /đang vận chuyển|dang van chuyen|in transit/i.test(tt)) chay += 1;
+      else ranh += 1;
+    });
+    return { ranh: ranh, chay: chay, baoDuong: baoDuong, tong: ds.length };
+  };
+
+  const thanh = p => {
+    const pc = n => p.tong ? (n / p.tong * 100).toFixed(1) + '%' : '0%';
+    return '<div class="stack">'
+      + '<i style="width:' + pc(p.ranh) + ';background:#15803d"></i>'
+      + '<i style="width:' + pc(p.chay) + ';background:#7c3aed"></i>'
+      + '<i style="width:' + pc(p.baoDuong) + ';background:#cbd5e1"></i></div>';
+  };
+
+  // Bãi nhiều xe nhất lên trước, và trong mỗi bãi thì tách theo LOẠI XE — người
+  // điều phối không hỏi "bãi này có bao nhiêu xe", họ hỏi "bãi này còn đầu kéo
+  // 40 nào rảnh không".
+  const dsBai = [...theoBai.entries()].sort((a, b) => b[1].length - a[1].length);
+  host.innerHTML = dsBai.map(cap => {
+    const bai = cap[0], ds = cap[1];
+    const p = phanLoai(ds);
+    const dong = ['<button type="button" class="team" onclick="chonBaiDieuPhoi(' + JSON.stringify(bai).replace(/"/g, '&quot;') + ')"'
+      + ' title="Bấm để giới hạn phạm vi về bãi này">'
+      + '<div class="nm">' + escapeHtml(bai) + '<span>' + p.tong + ' xe</span></div>'
+      + '<div class="tot">' + p.tong + '<span>xe</span></div>'
+      + '<div>' + thanh(p)
+      + '<div class="lg"><span><i style="background:#15803d"></i>' + p.ranh + ' rảnh</span>'
+      + '<span><i style="background:#7c3aed"></i>' + p.chay + ' chạy</span>'
+      + '<span><i style="background:#cbd5e1"></i>' + p.baoDuong + ' bảo dưỡng</span></div></div>'
+      + '<div class="free">' + p.ranh + '<span>rảnh</span></div>'
+      + '</button>'];
+
+    const theoLoai = new Map();
+    ds.forEach(v => {
+      const loai = tenLoaiXe(v.type) || '(chưa gán loại)';
+      if (!theoLoai.has(loai)) theoLoai.set(loai, []);
+      theoLoai.get(loai).push(v);
+    });
+    [...theoLoai.entries()].sort((a, b) => b[1].length - a[1].length).forEach(c => {
+      const q = phanLoai(c[1]);
+      dong.push('<button type="button" class="team sub" onclick="chonLoaiXeDieuPhoi(' + JSON.stringify(c[0]).replace(/"/g, '&quot;') + ')"'
+        + ' title="Bấm để giới hạn phạm vi về loại xe này">'
+        + '<div class="nm">' + escapeHtml(c[0]) + '<span>' + q.tong + ' xe</span></div>'
+        + '<div class="tot">' + q.tong + '<span>xe</span></div>'
+        + '<div>' + thanh(q) + '</div>'
+        + '<div class="free">' + q.ranh + '<span>rảnh</span></div>'
+        + '</button>');
+    });
+    return dong.join('');
+  }).join('') || '<div class="empty" style="margin:12px 14px">Chưa có xe nào trong danh mục.</div>';
+}
+
+window.chonBaiDieuPhoi = function (bai) {
+  const el = document.getElementById('dispatch-scope-depot');
+  if (el) { el.value = bai; window.setDispatchScope(); }
+};
+window.chonLoaiXeDieuPhoi = function (loai) {
+  const el = document.getElementById('dispatch-scope-type');
+  if (el) { el.value = loai; window.setDispatchScope(); }
+};
+
+/* --------------------------------------------------------------------------
+   CỘT 2b — Gantt xe ứng viên, khi đã chọn DO.
+   -------------------------------------------------------------------------- */
+
+function renderDispatchCandidates() {
+  const khungEl = document.getElementById('dispatch-cand');
+  const fleetEl = document.getElementById('dispatch-fleetview');
+  const hop = document.getElementById('dispatch-cand-list');
+  if (!khungEl || !hop) return;
+
+  const maDO = selectedDispatchCalendarOrderId
+    || (document.getElementById('dispatch-selected-do') || {}).value || '';
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(maDO));
+
+  // Chưa chọn DO thì hiện tổng quan đội xe, đúng như bản mẫu: "ứng viên" là ứng
+  // viên CHO một đơn, không có đơn thì không có tiêu chí nào để xếp hạng.
+  khungEl.hidden = !don;
+  if (fleetEl) fleetEl.hidden = Boolean(don);
+  if (!don) return;
+
+  renderDispatchCandHours();
+  const gio = khungGioLayHang(don);
+  let ds = dispatchDanhSachXe().slice();
+  const tong = ds.length;
+  if (dispatchScope.depot) ds = ds.filter(v => String(v.depot || '') === dispatchScope.depot);
+  if (dispatchScope.type) ds = ds.filter(v => (tenLoaiXe(v.type) || v.type) === dispatchScope.type);
+
+  let cham = ds.map(xe => Object.assign({ xe: xe }, chamDiemXe(xe, don, gio)));
+  if (!dispatchCandNoiDieuKien) {
+    const dieuDuoc = cham.filter(c => !c.chan);
+    // Chỉ siết khi thật sự còn xe — siết đến trống rỗng thì màn hình không nói
+    // được điều gì, mà điều phối viên vẫn phải điều cho xong đơn.
+    if (dieuDuoc.length) cham = dieuDuoc;
+  }
+
+  const xepTheo = {
+    score: (a, b) => b.diem - a.diem || String(a.xe.id).localeCompare(String(b.xe.id)),
+    depot: (a, b) => (Number(b.cungBai) - Number(a.cungBai)) || b.diem - a.diem,
+    free: (a, b) => (a.dangChay.length - b.dangChay.length) || b.diem - a.diem,
+  };
+  cham.sort(xepTheo[dispatchCandSort] || xepTheo.score);
+
+  const demEl = document.getElementById('dispatch-cand-count');
+  if (demEl) demEl.textContent = String(cham.length);
+
+  const whyEl = document.getElementById('dispatch-cand-why');
+  if (whyEl) {
+    const dk = [];
+    if (Number(don.weight_kg || 0)) {
+      dk.push('chở nổi <b>' + Number(don.weight_kg).toLocaleString('vi-VN') + ' kg</b>');
+    }
+    if (don.origin) dk.push('gần <b>' + escapeHtml(String(don.origin)) + '</b>');
+    if (gio) dk.push('rảnh <b>' + dpv2Gio(gio.tu) + '–' + dpv2Gio(gio.den) + '</b>');
+    dk.push('<b>có tài xế trong ca</b>');
+    whyEl.innerHTML = 'Lọc từ <b>' + tong + ' xe</b> còn <b>' + cham.length + '</b> cho <b>'
+      + escapeHtml(String(don.id)) + '</b>: ' + dk.join(' · ') + '. '
+      + '<button type="button" onclick="noiDieuKienUngVien()">'
+      + (dispatchCandNoiDieuKien ? 'Siết lại điều kiện' : 'Nới điều kiện')
+      + '</button> · Bấm vào dòng xe để gán xe và tổ lái.';
+  }
+
+  if (!cham.length) {
+    hop.innerHTML = '<div class="empty" style="margin:10px 0">'
+      + 'Không có xe nào trong phạm vi đang chọn. Bỏ giới hạn bãi hoặc loại xe ở đầu màn, '
+      + 'hoặc bấm "Nới điều kiện" để xem cả xe chưa hoàn toàn vừa.</div>';
+    return;
+  }
+
+  const maXeDangChon = (document.getElementById('dispatch-vehicle') || {}).value || '';
+  const dsTaiXe = dispatchDanhSachTaiXe();
+  const bayGio = dpv2ViTri(new Date());
+  const vachBayGio = (bayGio !== null && bayGio >= 0 && bayGio <= 100)
+    ? '<div class="now" style="left:' + bayGio.toFixed(2) + '%"></div>' : '';
+
+  hop.innerHTML = cham.slice(0, 60).map(c => {
+    const bac = c.chan ? 'r' : (c.diem >= 80 ? 'g' : (c.diem >= 55 ? 'a' : 'r'));
+    // CHỈ lấy ca của ĐÚNG chiếc xe này. Trước đây có một bước dự phòng lấy
+    // người đầu tiên đang trong ca ở BẤT KỲ xe nào, nên mọi dòng đều hiện cùng
+    // một tên, như thể anh ấy lái được cả bảy chiếc cùng lúc. Đó là một con số
+    // nói dối, và bấm vào thì gán sai người vào chuyến.
+    const caChinh = c.ca.cuaXe[0] || null;
+    const nguoiChinh = caChinh ? dsTaiXe.find(t => String(t.id) === String(caChinh.driver_id)) : null;
+    const tenChinh = (nguoiChinh && nguoiChinh.name) || (caChinh && caChinh.driver_id) || '';
+    const caPhu = c.ca.cuaXe[1] || null;
+    const nguoiPhu = caPhu ? dsTaiXe.find(t => String(t.id) === String(caPhu.driver_id)) : null;
+    const tenPhu = (nguoiPhu && nguoiPhu.name) || (caPhu && caPhu.driver_id) || '';
+    const conNguoiRanh = c.ca.cuaXe.length ? 0 : c.ca.tatCa.length;
+
+    let the;
+    if (c.chan === 'bảo dưỡng') the = '<span class="st tag">Bảo dưỡng</span>';
+    else if (c.chan === 'trùng chuyến' || c.dangChay.length) the = '<span class="st tag t-blue">Đang chạy</span>';
+    else if (c.chan) the = '<span class="st tag t-red">' + escapeHtml(c.chan) + '</span>';
+    else the = '<span class="st tag t-green">Rảnh</span>';
+
+    const kieuCa = { morning: ['s', 'Ca sáng 06–14'], afternoon: ['c', 'Ca chiều 14–22'], night: ['d', 'Ca đêm 22–06'] };
+    const kc = caChinh ? kieuCa[String(caChinh.shift_type || '')] : null;
+    const nhanCa = kc ? '<span class="shift ' + kc[0] + '">' + kc[1] + '</span> ' : '';
+
+    const suc = Number(c.xe.weight_capacity || 0);
+    const dongPhu = nhanCa + [
+      escapeHtml(tenLoaiXe(c.xe.type)),
+      c.xe.depot ? escapeHtml(String(c.xe.depot)) : '',
+      suc ? (suc / 1000).toLocaleString('vi-VN') + ' T' : '',
+      c.lyDo.length ? c.lyDo.join(', ') : '',
+    ].filter(Boolean).join(' · ');
+
+    // Thanh việc đã xếp trên làn giờ. Vẽ từ `vehicle-availability` thật: chuyến
+    // màu tím, bảo dưỡng là vùng gạch chéo — đúng bảng màu của bản mẫu.
+    const thanhViec = viecDaXepCuaXe(c.xe.id, null).map(v => {
+      const l = dpv2ViTri(v.khung.tu), r = dpv2ViTri(v.khung.den);
+      if (l === null || r === null) return '';
+      const trai = Math.max(0, Math.min(100, l));
+      const rong = Math.max(3, Math.min(100 - trai, r - l));
+      const goi = escapeHtml(String(v.origin || '') + (v.destination ? ' → ' + v.destination : ''))
+        + ' · ' + dpv2Gio(v.khung.tu) + '–' + dpv2Gio(v.khung.den);
+      if (String(v.kind || '') === 'maintenance') {
+        return '<div class="maint" style="left:' + trai.toFixed(2) + '%;right:auto;width:' + rong.toFixed(2) + '%"'
+          + ' title="' + escapeHtml(String(v.maintenance_label || 'Bảo dưỡng')) + '">Bảo dưỡng</div>';
+      }
+      return '<div class="bar b-purple" style="left:' + trai.toFixed(2) + '%;width:' + rong.toFixed(2) + '%"'
+        + ' title="' + goi + '">' + dpv2Gio(v.khung.tu)
+        + '<small>' + dpv2Gio(v.khung.den) + '</small></div>';
+    }).join('');
+
+    // Khung giờ của chuyến ĐANG XẾP, vẽ nét đứt — để người điều phối thấy ngay
+    // nó có chồng lên việc nào của xe hay không, thay vì phải tự so hai giờ.
+    const bongChuyen = (gio && !c.chan) ? (() => {
+      const l = dpv2ViTri(gio.tu), r = dpv2ViTri(gio.den);
+      if (l === null || r === null) return '';
+      const trai = Math.max(0, Math.min(100, l));
+      const rong = Math.max(4, Math.min(100 - trai, r - l));
+      return '<div class="bar b-ghost" style="left:' + trai.toFixed(2) + '%;width:' + rong.toFixed(2) + '%"'
+        + ' title="Chuyến đang xếp · ' + dpv2Gio(gio.tu) + '–' + dpv2Gio(gio.den) + '">'
+        + 'Đang xếp<small>' + dpv2Gio(gio.tu) + '</small></div>';
+    })() : '';
+
+    const nhanBam = c.chan ? '' : ' onclick="chonXeUngVien('
+      + JSON.stringify(String(c.xe.id)).replace(/"/g, '&quot;') + ','
+      + JSON.stringify(String((caChinh && caChinh.driver_id) || '')).replace(/"/g, '&quot;') + ','
+      + JSON.stringify(String((caPhu && caPhu.driver_id) || '')).replace(/"/g, '&quot;') + ')"';
+
+    return '<div class="g-row' + (c.chan ? ' dim' : '')
+      + (String(maXeDangChon) === String(c.xe.id) ? ' pick' : '') + '"'
+      + nhanBam
+      + (c.chan ? '' : ' tabindex="0" role="button"'
+        + ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.click();}"')
+      + ' title="' + (c.chan ? 'Không điều được: ' + escapeHtml(c.chan)
+        : (c.lyDo.length ? 'Trừ điểm vì: ' + escapeHtml(c.lyDo.join(', ')) : 'Phù hợp mọi tiêu chí')) + '">'
+      + '<div class="veh">'
+      + '<div class="sc ' + bac + '">' + (c.chan ? '—' : c.diem)
+      + '<small>' + (c.chan ? escapeHtml(c.chan) : 'điểm') + '</small></div>'
+      + '<div class="g"><b>' + escapeHtml(String(c.xe.id))
+      + (tenChinh ? ' · ' + escapeHtml(tenChinh) : '')
+      + '<span class="vcrew">'
+      + '<i' + (tenChinh ? '' : ' class="q"') + ' title="'
+      + (tenChinh ? escapeHtml(tenChinh) + ' · tài xế chính' : 'Chưa có tài xế chính') + '">'
+      + (tenChinh ? chuCaiTen(tenChinh) : '+') + '</i>'
+      + '<i' + (tenPhu ? '' : ' class="q"') + ' title="'
+      + (tenPhu ? escapeHtml(tenPhu) + ' · phụ xe' : 'Chưa có phụ xe (không bắt buộc)') + '">'
+      + (tenPhu ? chuCaiTen(tenPhu) : '+') + '</i>'
+      + '</span></b>'
+      + '<span>' + dongPhu
+      + (conNguoiRanh ? ' · ' + conNguoiRanh + ' tài xế đang trong ca' : '')
+      + '</span></div>'
+      + the
+      + '</div>'
+      + '<div class="lane">' + vachBayGio + thanhViec + bongChuyen + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* --------------------------------------------------------------------------
+   CỘT 3 — đổi giữa danh sách ngoại lệ và khung gán.
+   -------------------------------------------------------------------------- */
+
+/**
+ * Bốn ô tóm tắt đơn ở đầu khung gán — đúng khối `.sum` của bản mẫu.
+ *
+ * Vì sao khối này phải có: dòng DO ở cột một chỉ hiện sáu cột (mã, khách, giờ
+ * lấy, giờ giao, hạn, Trip). Khối lượng, số pallet và quy cách hàng KHÔNG nằm
+ * ở đó — bản mẫu cũng vậy, nó để những thứ đó sang cột phải. Nhưng người điều
+ * phối phải thấy được khối lượng trước khi chốt xe, không thì họ gán một
+ * container 30 tấn cho xe tải 15 tấn rồi bị máy chủ từ chối.
+ */
+function dpv2VeTomTatDon(don) {
+  const host = document.getElementById('dispatch-calendar-detail-summary');
+  if (!host) return;
+  const maDO = selectedDispatchCalendarOrderId
+    || (document.getElementById('dispatch-selected-do') || {}).value || '';
+  const d = don || (eplDeliveryOrders || []).find(x => String(x.id) === String(maDO));
+  if (!d) { host.innerHTML = ''; return; }
+
+  const kh = (eplCustomers || []).find(c => String(c.id || '') === String(d.customer_id || ''));
+  const tuyen = (eplRoutes || []).find(r => String(r.id || '') === String(d.route_id || ''));
+  const nang = Number(d.weight_kg || 0);
+  const pallet = Number(d.pallet_count || 0);
+  const hang = [
+    nang ? nang.toLocaleString('vi-VN') + ' kg' : '',
+    pallet ? pallet + ' pallet' : '',
+    d.packaging_spec ? String(d.packaging_spec) : '',
+  ].filter(Boolean).join(' · ');
+
+  const o = (nhan, giaTri, ma) => '<div><span>' + escapeHtml(nhan) + '</span><b'
+    + (ma ? ' class="dispatch-do-' + ma + '"' : '') + '>'
+    + escapeHtml(String(giaTri || '—')) + '</b></div>';
+
+  host.innerHTML = o('DO đã chọn', d.id, 'code')
+    + o('Khách hàng', (kh && kh.name) || d.customer_id, 'customer')
+    + o('Tuyến (Dữ liệu gốc)',
+      (tuyen && tuyen.name) || d.route_id
+        || [d.origin, d.destination].filter(Boolean).join(' → '), 'route')
+    // Chưa khai hàng thì nói THẲNG, đừng để một dấu gạch: khi khối lượng bằng
+    // không thì máy chủ không kiểm được tải trọng, và mọi xe đều "vừa".
+    + o('Hàng', hang || 'chưa khai khối lượng', 'cargo')
+    + o('Lấy hàng', deliveryOrderDateLabel(d.pickup_window_start || d.pickup_date), 'pickup')
+    + o('Giao hàng', deliveryOrderDateLabel(d.delivery_window_start || d.delivery_date), 'delivery')
+    + o('Tải trọng', nang ? nang.toLocaleString('vi-VN') + ' kg' : 'chưa khai', 'weight')
+    + o('Số pallet', pallet ? pallet + ' pallet' : 'chưa khai', 'pallet');
+}
+
+/** Đổi cột phải sang khung gán, hoặc về danh sách ngoại lệ. */
+function dpv2MoKhungGan(coDon) {
+  const exc = document.getElementById('dispatch-exceptions-view');
+  const chiTiet = document.getElementById('dispatch-detail');
+  const tieuDe = document.getElementById('dispatch-panel-title');
+  const buoc = document.getElementById('dispatch-panel-step');
+  const demExc = document.getElementById('dispatch-exc-count');
+  if (exc) exc.hidden = Boolean(coDon);
+  if (chiTiet) chiTiet.hidden = !coDon;
+  if (demExc) demExc.hidden = Boolean(coDon);
+  if (tieuDe) {
+    const nhan = tieuDe.querySelector('span:not(.n)');
+    if (nhan) nhan.textContent = coDon ? 'Gán xe và tổ lái' : 'Ngoại lệ cần duyệt';
+    const bieuTuong = tieuDe.querySelector('i');
+    if (bieuTuong) {
+      bieuTuong.className = coDon ? 'fa-solid fa-id-card' : 'fa-solid fa-triangle-exclamation';
+    }
+  }
+  if (buoc) {
+    buoc.textContent = coDon
+      ? String(selectedDispatchCalendarOrderId || '')
+      : 'việc của điều phối viên';
+  }
+  // Cap nhat hai dong to lai VA trang thai nut chot ngay khi mo khung. Khong
+  // goi o day thi nut "Chot dieu phoi" bam duoc tu dau, va bam vao thi may chu
+  // tu choi vi chua co xe — mot loi ma man hinh von da biet truoc.
+  if (coDon) { dpv2VeTomTatDon(); dpv2VeToLai(); }
+}
+
+window.boChonDODieuPhoi = function () {
+  selectedDispatchCalendarOrderId = '';
+  dispatchDetailUnlocked = false;
+  const o = document.getElementById('dispatch-selected-do');
+  if (o) o.value = '';
+  dpv2MoKhungGan(false);
+  renderDispatchCandidates();
+  renderDispatchDOs();
+};
+
+/**
+ * Đồng bộ hai nút tổ lái với hai ô ẩn.
+ *
+ * Bản mẫu vẽ tổ lái thành hai dòng có avatar và tên. Nhưng các hàm cũ đọc và
+ * ghi tên người vào `#dispatch-driver-display` — nên phần hiển thị và phần lưu
+ * là hai chỗ khác nhau, và phải chép qua sau mỗi lần đổi. Không chép thì nút
+ * vẫn ghi "Chọn xe trước" trong khi tài xế đã được gán.
+ */
+function dpv2VeToLai() {
+  const cap = [
+    ['dispatch-driver', 'dispatch-driver-display', 'dispatch-driver-display-btn', 'Chọn xe trước'],
+    ['dispatch-co-driver', 'dispatch-co-driver-display', 'dispatch-co-driver-display-btn', '—'],
+  ];
+  cap.forEach(c => {
+    const ma = (document.getElementById(c[0]) || {}).value || '';
+    const ten = (document.getElementById(c[1]) || {}).value || '';
+    const nut = document.getElementById(c[2]);
+    if (!nut) return;
+    if (!ma) {
+      nut.className = 'who empty';
+      nut.textContent = c[3];
+      return;
+    }
+    const nguoi = dispatchDanhSachTaiXe().find(t => String(t.id) === String(ma));
+    const hienThi = (nguoi && nguoi.name) || ten || ma;
+    nut.className = 'who';
+    nut.innerHTML = '<span class="av">' + escapeHtml(chuCaiTen(hienThi)) + '</span>'
+      + '<span style="min-width:0"><b>' + escapeHtml(hienThi) + '</b>'
+      + '<span>' + escapeHtml(String((nguoi && nguoi.license_type) || ma)) + '</span></span>';
+  });
+
+  // Dòng "Chốt điều phối" chỉ bấm được khi đã có ĐỦ xe và tài xế chính. Cho bấm
+  // khi còn thiếu thì máy chủ từ chối, và người dùng phải đọc một lỗi để biết
+  // điều mà màn hình đã biết từ đầu.
+  const coXe = Boolean((document.getElementById('dispatch-vehicle') || {}).value);
+  const coTaiXe = Boolean((document.getElementById('dispatch-driver') || {}).value);
+  const nut = document.getElementById('dispatch-submit-btn');
+  if (nut) {
+    nut.disabled = !(coXe && coTaiXe);
+    nut.textContent = coXe
+      ? (coTaiXe ? 'Chốt điều phối & xuất bến' : 'Chọn tài xế chính để chốt')
+      : 'Chọn xe để chốt';
+  }
+  const kiem = document.getElementById('dispatch-check');
+  if (kiem) {
+    kiem.hidden = !(coXe || coTaiXe);
+    kiem.className = 'check ' + (coXe && coTaiXe ? 'ok' : 'bad');
+    kiem.textContent = coXe && coTaiXe
+      ? '\u2713 Đủ xe và tài xế chính, chốt được.'
+      : (coXe ? 'Còn thiếu tài xế chính.' : 'Còn thiếu xe.');
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Nút ngày và nút xếp hàng loạt ở đầu trang.
+   -------------------------------------------------------------------------- */
+
+window.veHomNayDieuPhoi = function () {
+  const homNay = new Date();
+  const iso = homNay.getFullYear() + '-'
+    + String(homNay.getMonth() + 1).padStart(2, '0') + '-'
+    + String(homNay.getDate()).padStart(2, '0');
+  if (typeof setDispatchCalendarDate === 'function') setDispatchCalendarDate(iso);
+};
+
+function capNhatNutXepTuDong(soConLai) {
+  const nut = document.getElementById('dispatch-auto-btn');
+  const nhan = document.getElementById('dispatch-auto-label');
+  if (!nut || !nhan) return;
+  const soTick = dispatchDaTick.size;
+  if (soTick) {
+    nhan.textContent = 'Xếp ' + soTick + ' DO đã tick';
+    nut.disabled = false;
+    return;
+  }
+  const con = (typeof soConLai === 'number')
+    ? soConLai
+    : document.querySelectorAll('#dispatch-do-list .row').length;
+  nhan.textContent = con ? 'Xếp ' + con + ' DO còn lại' : 'Không còn DO nào chờ';
+  nut.disabled = !con;
+}
+
+/**
+ * Nút "Xếp DO còn lại" ở đầu trang.
+ *
+ * Bản mẫu gọi nút này "Xếp tự động" và vẽ một thanh tiến trình chạy nền. Hệ
+ * thống KHÔNG có đường API nào xếp hàng loạt, nên ở đây nó làm một việc THẬT
+ * bằng backend đang có: mở hộp thoại tạo Trip với các DO đã tick — hoặc, nếu
+ * chưa tick gì, với mọi DO đang hiện. Một thanh tiến trình giả thì đẹp hơn
+ * nhưng nó không xếp được chuyến nào.
+ */
+window.xepMoiDOConLai = function () {
+  const dsHien = [...document.querySelectorAll('#dispatch-do-list .row')]
+    .map(r => r.getAttribute('data-dispatch-do')).filter(Boolean);
+  const chon = dispatchDaTick.size ? [...dispatchDaTick] : dsHien;
+  if (!chon.length) {
+    if (typeof showToast === 'function') showToast('Không còn DO nào chờ điều phối.', 'info');
+    return;
+  }
+  const ds = (eplDeliveryOrders || []).filter(d => chon.includes(String(d.id)));
+  // Một Trip chỉ chở được các DO CÙNG một tuyến — đó là chốt của backend. Nói
+  // trước ở đây, thay vì để người dùng điền xong cả form rồi bị từ chối.
+  const soTuyen = new Set(ds.map(d => String(d.route_id || d.route_name || ''))).size;
+  if (soTuyen > 1) {
+    if (typeof showToast === 'function') {
+      showToast(chon.length + ' DO đang chọn thuộc ' + soTuyen + ' tuyến khác nhau. '
+        + 'Một Trip chỉ chở được các DO cùng tuyến — hãy bấm "Xếp cả nhóm" trên từng nhóm tuyến.', 'error');
+    }
+    return;
+  }
+  if (typeof switchView === 'function') switchView('delivery-shipment');
+  if (typeof openTripReturnAction === 'function') openTripReturnAction('create-trip', ds);
+};
+
 
 
 /* ==========================================================================
@@ -9697,150 +10490,6 @@ function tenCaTruc(kieu) {
   return bang[String(kieu || '')] || String(kieu || '');
 }
 
-function renderDispatchCandidates() {
-  const khungEl = document.getElementById('dispatch-cand');
-  const hop = document.getElementById('dispatch-cand-list');
-  if (!khungEl || !hop) return;
-
-  const maDO = selectedDispatchCalendarOrderId
-    || (document.getElementById('dispatch-selected-do') || {}).value || '';
-  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(maDO));
-  // Chưa chọn DO thì ẩn cả cột: "ứng viên" là ứng viên CHO một đơn, không có
-  // đơn thì không có tiêu chí nào để xếp hạng, và một danh sách xe không xếp
-  // hạng thì đúng bằng bảng Danh mục xe ở màn khác.
-  if (!don) { khungEl.hidden = true; return; }
-  khungEl.hidden = false;
-
-  const gio = khungGioLayHang(don);
-  let ds = dispatchDanhSachXe().slice();
-  const tong = ds.length;
-  if (dispatchScope.depot) ds = ds.filter(v => String(v.depot || '') === dispatchScope.depot);
-  if (dispatchScope.type) ds = ds.filter(v => (tenLoaiXe(v.type) || v.type) === dispatchScope.type);
-
-  let cham = ds.map(xe => Object.assign({ xe: xe }, chamDiemXe(xe, don, gio)));
-  if (!dispatchCandNoiDieuKien) {
-    const dieuDuoc = cham.filter(c => !c.chan);
-    // Chỉ siết khi thật sự còn xe — siết đến trống rỗng thì màn hình không nói
-    // được điều gì, mà điều phối viên vẫn phải điều cho xong đơn.
-    if (dieuDuoc.length) cham = dieuDuoc;
-  }
-
-  const xepTheo = {
-    score: (a, b) => b.diem - a.diem || String(a.xe.id).localeCompare(String(b.xe.id)),
-    depot: (a, b) => (Number(b.cungBai) - Number(a.cungBai)) || b.diem - a.diem,
-    free: (a, b) => (a.dangChay.length - b.dangChay.length) || b.diem - a.diem,
-  };
-  cham.sort(xepTheo[dispatchCandSort] || xepTheo.score);
-
-  const demEl = document.getElementById('dispatch-cand-count');
-  if (demEl) demEl.textContent = String(cham.length);
-
-  const whyEl = document.getElementById('dispatch-cand-why');
-  if (whyEl) {
-    const dk = [];
-    if (Number(don.weight_kg || 0)) {
-      dk.push('chở nổi <b>' + Number(don.weight_kg).toLocaleString('vi-VN') + ' kg</b>');
-    }
-    if (don.origin) dk.push('gần <b>' + escapeHtml(don.origin) + '</b>');
-    if (gio) {
-      const hm = t => t.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      dk.push('rảnh <b>' + hm(gio.tu) + '–' + hm(gio.den) + '</b>');
-    }
-    dk.push('có tài xế trong ca');
-    whyEl.innerHTML = 'Lọc từ <b>' + tong + ' xe</b> còn <b>' + cham.length + '</b> cho <b>'
-      + escapeHtml(don.id) + '</b>: ' + dk.join(' · ') + '. '
-      + '<button type="button" onclick="noiDieuKienUngVien()">'
-      + (dispatchCandNoiDieuKien ? 'Siết lại điều kiện' : 'Nới điều kiện')
-      + '</button> · Bấm một dòng để gán xe và tài xế vào ô điều phối.';
-  }
-
-  if (!cham.length) {
-    hop.innerHTML = '<div class="dispatch-cand-empty">'
-      + '<i class="fa-solid fa-triangle-exclamation"></i> Không có xe nào trong phạm vi đang chọn. '
-      + 'Bỏ giới hạn bãi hoặc loại xe ở đầu màn, hoặc bấm "Nới điều kiện" để xem cả xe chưa hoàn toàn vừa.'
-      + '</div>';
-    return;
-  }
-
-  const maXeDangChon = (document.getElementById('dispatch-vehicle') || {}).value || '';
-  const dsTaiXe = dispatchDanhSachTaiXe();
-
-  hop.innerHTML = cham.slice(0, 60).map(c => {
-    const bac = c.chan ? 'bad' : (c.diem >= 80 ? 'good' : (c.diem >= 55 ? 'fair' : 'bad'));
-    // CHI lay ca cua DUNG chiec xe nay. Truoc day co mot buoc du phong
-    // `|| c.ca.tatCa[0]` — nguoi dau tien dang trong ca o BAT KY xe nao — nen
-    // ca bay dong deu hien cung mot ten "Nguyen Van Minh", nhu the anh ay lai
-    // duoc bay chiec cung luc. Do la mot con so noi doi, va bam vao thi gan sai
-    // nguoi vao chuyen.
-    const caChinh = c.ca.cuaXe[0] || null;
-    const nguoiChinh = caChinh ? dsTaiXe.find(t => String(t.id) === String(caChinh.driver_id)) : null;
-    const tenChinh = (nguoiChinh && nguoiChinh.name) || (caChinh && caChinh.driver_id) || '';
-    const caPhu = c.ca.cuaXe[1] || null;
-    const nguoiPhu = caPhu ? dsTaiXe.find(t => String(t.id) === String(caPhu.driver_id)) : null;
-    const tenPhu = (nguoiPhu && nguoiPhu.name) || (caPhu && caPhu.driver_id) || '';
-    // Khong co ai gan cho xe nay thi noi RO con bao nhieu nguoi dang trong ca —
-    // dieu phoi vien van gan tay duoc, va con so do la thong tin ho can.
-    const conNguoiRanh = c.ca.cuaXe.length ? 0 : c.ca.tatCa.length;
-
-    let the;
-    if (c.chan === 'bảo dưỡng') {
-      the = '<span class="dispatch-cand-tag dispatch-cand-tag--maint">Bảo dưỡng</span>';
-    } else if (c.chan === 'trùng chuyến' || c.dangChay.length) {
-      the = '<span class="dispatch-cand-tag dispatch-cand-tag--busy">Đang chạy chuyến</span>';
-    } else if (c.chan) {
-      the = '<span class="dispatch-cand-tag dispatch-cand-tag--maint">' + escapeHtml(c.chan) + '</span>';
-    } else {
-      the = '<span class="dispatch-cand-tag dispatch-cand-tag--ok">Rảnh</span>';
-    }
-
-    const suc = Number(c.xe.weight_capacity || 0);
-    const meta = [
-      escapeHtml(tenLoaiXe(c.xe.type)),
-      c.xe.depot ? escapeHtml(c.xe.depot) : '',
-      suc ? '<b>' + (suc / 1000).toLocaleString('vi-VN') + ' T</b>' : '',
-      caChinh ? 'ca ' + escapeHtml(tenCaTruc(caChinh.shift_type)) : '',
-    ].filter(Boolean).join(' · ');
-
-    const nhanBam = c.chan
-      ? ''
-      : ' onclick="chonXeUngVien(' + JSON.stringify(String(c.xe.id)).replace(/"/g, '&quot;')
-        + ',' + JSON.stringify(String((caChinh && caChinh.driver_id) || '')).replace(/"/g, '&quot;') + ')"';
-    const goi = c.chan
-      ? 'Không điều được: ' + escapeHtml(c.chan)
-      : (c.lyDo.length ? 'Trừ điểm vì: ' + escapeHtml(c.lyDo.join(', ')) : 'Phù hợp mọi tiêu chí');
-
-    return '<button type="button"'
-      + ' class="dispatch-cand-row dispatch-cand-row--' + bac
-      + (String(maXeDangChon) === String(c.xe.id) ? ' is-on' : '') + '"'
-      + (c.chan ? ' disabled' : nhanBam)
-      + ' title="' + goi + '">'
-      + '<span class="dispatch-cand-score dispatch-cand-score--' + bac + '">'
-      + (c.chan ? '—' : c.diem)
-      + '<small>' + (c.chan ? escapeHtml(c.chan) : 'điểm') + '</small></span>'
-      + '<span class="dispatch-cand-main">'
-      + '<span class="dispatch-cand-plate">' + escapeHtml(c.xe.id) + ' '
-      + (tenChinh
-        ? '· ' + escapeHtml(tenChinh)
-        : '<em style="font-weight:600;color:#94a3b8">'
-          + (conNguoiRanh
-            ? 'chưa gán tài xế · ' + conNguoiRanh + ' người đang trong ca'
-            : 'chưa có tài xế trong ca')
-          + '</em>')
-      + '<span class="dispatch-cand-crew">'
-      + '<i' + (tenChinh ? '' : ' class="is-empty"')
-      + ' title="' + (tenChinh ? escapeHtml(tenChinh) + ' · tài xế chính' : 'Chưa có tài xế chính') + '">'
-      + (tenChinh ? chuCaiTen(tenChinh) : '+') + '</i>'
-      + '<i' + (tenPhu ? '' : ' class="is-empty"')
-      + ' title="' + (tenPhu ? escapeHtml(tenPhu) + ' · phụ xe' : 'Chưa có phụ xe (không bắt buộc)') + '">'
-      + (tenPhu ? chuCaiTen(tenPhu) : '+') + '</i>'
-      + '</span></span>'
-      + '<span class="dispatch-cand-meta">' + meta
-      + (c.lyDo.length ? ' · <span style="color:#b45309">' + escapeHtml(c.lyDo.join(', ')) + '</span>' : '')
-      + '</span></span>'
-      + the
-      + '</button>';
-  }).join('');
-}
 
 /**
  * Bấm một dòng xe ứng viên: gán XE và TÀI XẾ vào ô điều phối.
@@ -9849,176 +10498,27 @@ function renderDispatchCandidates() {
  * xe đó, nên để người dùng tự đi chọn lại tài xế ở ô khác là bắt họ làm hai lần
  * một việc — và dễ chọn ra người đang ở ca khác.
  */
-window.chonXeUngVien = function (maXe, maTaiXe) {
+window.chonXeUngVien = function (maXe, maTaiXe, maPhuXe) {
   if (!maXe) return;
   window.selectDispatchVehicleLane(maXe);
-  if (maTaiXe) {
-    const o = document.getElementById('dispatch-driver');
-    const hien = document.getElementById('dispatch-driver-display');
-    const nguoi = dispatchDanhSachTaiXe().find(t => String(t.id) === String(maTaiXe));
-    if (o) o.value = maTaiXe;
-    if (hien) hien.value = (nguoi && nguoi.name) ? nguoi.name + ' (' + maTaiXe + ')' : String(maTaiXe);
-    if (typeof window.onDispatchDriverChange === 'function') window.onDispatchDriverChange();
-  }
+  const datNguoi = (oId, hienId, ma) => {
+    if (!ma) return;
+    const o = document.getElementById(oId);
+    const hien = document.getElementById(hienId);
+    const nguoi = dispatchDanhSachTaiXe().find(t => String(t.id) === String(ma));
+    if (o) o.value = ma;
+    if (hien) hien.value = (nguoi && nguoi.name) ? nguoi.name + ' (' + ma + ')' : String(ma);
+  };
+  datNguoi('dispatch-driver', 'dispatch-driver-display', maTaiXe);
+  // Gan luon PHU XE neu ca truc co nguoi thu hai cho dung chiec xe do. Bo qua
+  // thi dieu phoi vien phai di chon lai mot nguoi ma man hinh von da biet.
+  datNguoi('dispatch-co-driver', 'dispatch-co-driver-display', maPhuXe);
+  if (maTaiXe && typeof window.onDispatchDriverChange === 'function') window.onDispatchDriverChange();
   if (typeof updateDispatchWorkflowSteps === 'function') updateDispatchWorkflowSteps();
+  dpv2VeToLai();
   renderDispatchCandidates();
 };
 
-function renderDispatchDOs(filterQuery = '') {
-  const container = document.getElementById('dispatch-do-list');
-  if (!container) return;
-  container.innerHTML = '';
-
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const query = filterQuery || normalizeSearchText(document.getElementById('dispatch-do-search-input')?.value || '').trim();
-
-  const allDOsRaw = eplDeliveryOrders && eplDeliveryOrders.length > 0 ? eplDeliveryOrders : (dispatchDOs || []);
-  renderDispatchDOSelector(allDOsRaw);
-  let allDOs = allDOsRaw.filter(isDispatchPendingDO);
-  const planningDate = selectedDispatchFleetIsoDate || dispatchDateInputValue(dispatchCalendarDate);
-  const dateResult = window.TmsCockpit?.filterDispatchOrdersByDate
-    ? window.TmsCockpit.filterDispatchOrdersByDate(allDOs, planningDate)
-    : { orders: allDOs, undated: [] };
-  allDOs = dateResult.orders;
-
-  if (query) {
-    allDOs = allDOs.filter(d =>
-      normalizeSearchText([
-        d.id,
-        d.customer_id,
-        d.route_id,
-        d.origin,
-        d.destination,
-        d.packaging_spec,
-        statusLabel(d.status || '')
-      ].join(' ')).includes(query)
-    );
-  }
-
-  // Dải số liệu đếm trên TOÀN BỘ đơn trong ngày, KHÔNG theo bộ lọc đang chọn.
-  // Đếm theo bộ lọc thì bấm "Thiếu Trip" xong mọi thẻ khác về 0, và người dùng
-  // mất luôn mốc để so — đó là dải số liệu tự xóa nghĩa của chính nó.
-  const dsTrongNgay = allDOs.slice();
-
-  // Lọc theo thẻ đang chọn ở dải số liệu, SAU bộ lọc chữ và bộ lọc ngày.
-  if (dispatchKpiFilter) {
-    allDOs = allDOs.filter(d => dispatchNhomCuaDO(d).has(dispatchKpiFilter));
-  }
-  renderDispatchKpis(dsTrongNgay, allDOs.length);
-
-  const pendingCountEl = document.getElementById('dispatch-state-pending-count');
-  if (pendingCountEl) pendingCountEl.textContent = String(allDOs.length);
-
-  if (!allDOs || allDOs.length === 0) {
-    const emptyMsg = query
-      ? (lang === 'la' ? 'ບໍ່ພົບໃບສັ່ງສົ່ງສິນຄ້າທີ່ກົງກັນ' : (lang === 'en' ? 'No matching delivery orders found' : 'Không tìm thấy lệnh giao hàng phù hợp'))
-      : (lang === 'la' ? 'ຍັງບໍ່ມີໃບສັ່ງພ້ອມປ່ອຍລົດ' : (lang === 'en' ? 'No delivery orders ready for dispatch' : 'Chưa có lệnh giao hàng sẵn sàng điều phối'));
-    container.innerHTML = `<div style="padding:24px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:center; color:#64748b; font-size:0.9rem;"><i class="fa-solid fa-folder-open" style="margin-right:6px; color:#94a3b8;"></i>${emptyMsg} ngày ${planningDate}</div>${dateResult.undated.length ? `<div class="dispatch-undated-warning"><i class="fa-solid fa-triangle-exclamation"></i> ${dateResult.undated.length} DO thiếu ngày lấy hàng, cần bổ sung trước khi điều phối.</div>` : ''}`;
-    return;
-  }
-
-  if (dateResult.undated.length) {
-    container.innerHTML = `<div class="dispatch-undated-warning"><i class="fa-solid fa-triangle-exclamation"></i><span>${dateResult.undated.length} DO thiếu ngày lấy hàng nên chưa xuất hiện trong lịch. Hãy bổ sung thời gian trên DO trước khi điều phối.</span></div>`;
-  }
-
-  // GOM THEO TUYẾN, như bản mẫu `dispatch-v2-crew.html`.
-  //
-  // Vì sao gom: một Trip chỉ chở được các DO CÙNG một tuyến — đó là chốt của
-  // backend, không phải một quy ước trình bày. Danh sách phẳng buộc người điều
-  // phối tự đọc mã tuyến của từng dòng rồi tự nhóm trong đầu; ở quy mô vài trăm
-  // DO mỗi ngày thì việc đó vừa chậm vừa dễ ghép sai tuyến rồi bị backend từ
-  // chối sau khi đã điền xong cả form.
-  //
-  // Nhóm nào nhiều DO nhất xếp lên trước: đó là nhóm ghép được nhiều nhất vào
-  // một chuyến, tức việc đáng làm trước.
-  const nhomTheoTuyen = new Map();
-  allDOs.forEach(d => {
-    const khoa = String(d.route_id || d.route_name || '').trim() || '(chưa có tuyến)';
-    if (!nhomTheoTuyen.has(khoa)) nhomTheoTuyen.set(khoa, []);
-    nhomTheoTuyen.get(khoa).push(d);
-  });
-  const dsNhom = [...nhomTheoTuyen.entries()].sort((a, b) => b[1].length - a[1].length);
-
-  dsNhom.forEach(([maTuyen, dsDOnhom]) => {
-    const tuyen = (eplRoutes || []).find(r => String(r.id || '') === maTuyen);
-    const tenTuyen = tuyen ? (tuyen.name || maTuyen) : maTuyen;
-    const km = tuyen && tuyen.distance_km
-      ? `${Number(tuyen.distance_km).toLocaleString('vi-VN')} km` : '';
-    const tongKg = dsDOnhom.reduce((t, x) => t + Number(x.weight_kg || 0), 0);
-    // Chỉ mời "xếp cả nhóm" khi nhóm có TỪ HAI DO: một DO thì nút đó chỉ là
-    // một đường vòng tới cùng việc mà bấm vào chính dòng đó đã làm được.
-    const nutNhom = dsDOnhom.length > 1
-      ? `<button type="button" class="dispatch-grp-btn"
-             onclick="xepCaNhomDO('${completionEscape(maTuyen)}')"
-             title="Tick cả ${dsDOnhom.length} DO của tuyến này rồi mở form tạo Trip">
-           <i class="fa-solid fa-layer-group" aria-hidden="true"></i> Xếp cả nhóm
-         </button>`
-      : '';
-    container.insertAdjacentHTML('beforeend', `
-      <div class="dispatch-grp">
-        <div class="dispatch-grp-name">
-          <b>${completionEscape(tenTuyen)}</b>
-          <span>${completionEscape(maTuyen)}${km ? ' · ' + km : ''}</span>
-        </div>
-        <span class="dispatch-grp-count">${dsDOnhom.length} DO · ${tongKg.toLocaleString('vi-VN')} kg</span>
-        ${nutNhom}
-      </div>`);
-
-    dsDOnhom.forEach(d => {
-    const tripGate = resolveDispatchTripGate(d.id);
-    const tripStatusText = tripGate.state === 'ready'
-      ? `Trip ${tripGate.trip.id} · Đã lập kế hoạch`
-      : (tripGate.state === 'draft' ? `Trip ${tripGate.trip.id} · Bản nháp` : (tripGate.state === 'missing' ? 'Chưa có Trip' : 'Trip không khả dụng'));
-    const customerText = d.customer_name || d.customer_id || '-';
-    const routeText = d.route_name || d.route_id || [d.origin, d.destination].filter(Boolean).join(' → ') || '-';
-    const cargoText = d.cargo_desc || d.cargo_type || d.commodity_name || d.packaging_spec || '-';
-    const pickupText = deliveryOrderDateLabel(d.pickup_window_start || d.pickup_date) || '-';
-    const deliveryText = deliveryOrderDateLabel(d.delivery_window_start || d.delivery_date || d.delivery_window_end) || '-';
-    const hoverSummary = `Khách: ${customerText} | Tuyến: ${routeText} | Hàng: ${cargoText} | Tải: ${Number(d.weight_kg || 0).toLocaleString('vi-VN')} kg | ${Number(d.pallet_count || 0)} pallet | Lấy: ${pickupText} | Giao: ${deliveryText} | ${tripStatusText}`;
-    const isPending = (d.status === 'Pending' || d.status === 'Pending Approval' || d.status === 'Ready for Dispatch' || d.status === 'Sẵn sàng');
-    const isInTransit = (d.status === 'In Transit' || d.status === 'Đang vận chuyển');
-    const isArrived = (d.status === 'Arrived' || d.status === 'Đã Đến' || d.status === 'Đã đến' || d.status === 'Đã đến điểm giao');
-    const isCompleted = (d.status === 'Delivered' || d.status === 'Completed' || d.status === 'Hoàn tất');
-
-    let statusBadge = `<span style="background:#eff6ff; color:#0a6ed1; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700;">${lang === 'la' ? 'ລໍຖ້າປ່ອຍລົດ' : (lang === 'en' ? 'Pending Dispatch' : 'Chờ điều phối')}</span>`;
-    let borderLeftColor = '#0a6ed1';
-
-    if (isInTransit) {
-      statusBadge = `<span style="background:#f0fdf4; color:#16a34a; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700;"><i class="fa-solid fa-truck-fast"></i> ${lang === 'la' ? 'ກຳລັງຂົນສົ່ງ' : (lang === 'en' ? 'In Transit' : 'Đang vận chuyển')}</span>`;
-      borderLeftColor = '#16a34a';
-    } else if (isArrived) {
-      statusBadge = `<span style="background:#fef3c7; color:#d97706; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700;"><i class="fa-solid fa-location-dot"></i> ${lang === 'la' ? 'ຮອດແລ້ວ - ລໍຖ້າ POD' : (lang === 'en' ? 'Arrived - Awaiting POD' : 'Đã đến - chờ POD')}</span>`;
-      borderLeftColor = '#f59e0b';
-    } else if (isCompleted) {
-      statusBadge = `<span style="background:#f1f5f9; color:#475569; padding:3px 10px; border-radius:12px; font-size:0.75rem; font-weight:700;"><i class="fa-solid fa-circle-check"></i> ${lang === 'la' ? 'ສຳເລັດ POD' : (lang === 'en' ? 'Completed POD' : 'Hoàn thành POD')}</span>`;
-      borderLeftColor = '#64748b';
-    }
-
-    container.insertAdjacentHTML('beforeend', `
-      <div class="dispatch-do-card dispatch-do-card--accent" draggable="true" ondragstart="onDispatchDODragStart(event, '${d.id}')" data-dispatch-do="${d.id}" style="--dispatch-do-accent:${borderLeftColor};">
-        <div class="dispatch-do-row">
-          <button type="button" class="dispatch-do-select" data-dispatch-queue="${d.id}" onclick="selectDispatchDO('${d.id}')" aria-label="Chọn DO ${d.id} để điều phối" title="${completionEscape(hoverSummary)}">
-            <div class="dispatch-do-code">${d.id}</div>
-            <div class="dispatch-do-customer"><i class="fa-solid fa-building-user"></i> ${completionEscape(customerText)}</div>
-            <div class="dispatch-do-route"><i class="fa-solid fa-route"></i> ${completionEscape(routeText)}</div>
-            <div class="dispatch-do-cargo"><i class="fa-solid fa-box"></i> ${completionEscape(cargoText)}</div>
-            <div class="dispatch-do-load"><span class="dispatch-do-weight">${Number(d.weight_kg || 0).toLocaleString('vi-VN')} kg</span><span class="dispatch-do-pallet">${Number(d.pallet_count || 0)} pallet</span></div>
-            <div class="dispatch-do-window"><span class="dispatch-do-pickup">Lấy ${completionEscape(pickupText)}</span><span class="dispatch-do-delivery">Giao ${completionEscape(deliveryText)}</span></div>
-            <div class="dispatch-do-trip dispatch-do-trip--${tripGate.state}"><i class="fa-solid fa-route"></i> ${completionEscape(tripStatusText)}</div>
-            <div class="dispatch-do-meta">
-              ${statusBadge}
-              <span class="dispatch-do-date"><i class="fa-solid fa-calendar-day"></i> ${d.pickup_date || '-'}</span>
-            </div>
-          </button>
-          <button type="button" class="dispatch-eye-action" onclick="openOrderDetailModal('${d.id}', event)" title="Xem chi tiết DO" aria-label="Xem chi tiết DO ${d.id}">
-            <i class="fa-solid fa-eye"></i>
-          </button>
-        </div>
-      </div>
-    `);
-    });
-  });
-}
 
 /**
  * "Xếp cả nhóm": tick tất cả DO của một tuyến rồi mở form tạo Trip.
@@ -10749,6 +11249,7 @@ window.selectDispatchVehicleLane = function (vehicleId) {
     : '';
   if (vehicleDisplay) vehicleDisplay.value = `${vehicleId}${tenLoai ? ` · ${tenLoai}` : ''}`;
   window.onDispatchVehicleChange();
+  if (typeof dpv2VeToLai === 'function') dpv2VeToLai();
   updateDispatchWorkflowSteps();
   if (dispatchStepModalState.step === 'schedule') window.closeDispatchStepModal();
   else if (selectedDispatchCalendarOrderId) openDispatchDetail(document.activeElement);
@@ -10761,10 +11262,15 @@ window.selectDispatchDO = function (id, revealDetail = false) {
   if (revealDetail) dispatchDetailUnlocked = Boolean(id);
   if (!id) {
     updateDispatchWorkflowSteps();
+    if (typeof dpv2MoKhungGan === 'function') dpv2MoKhungGan(false);
     if (typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
     if (typeof renderDispatchCandidates === 'function') renderDispatchCandidates();
     return;
   }
+  // Cot phai doi sang khung gan, dung nhu ban mau: danh sach ngoai le la thu
+  // xem khi CHUA co viec cu the, con khi da chon mot don thi cho do phai la
+  // noi gan xe va to lai.
+  if (typeof dpv2MoKhungGan === 'function') dpv2MoKhungGan(true);
   tmsActiveShipment360Id = id;
   tmsActiveTimelineDoId = id;
   window.switchDispatchResourceTab('dispatch');
@@ -11680,6 +12186,7 @@ window.refreshActiveTracking = function () {
 };
 
 window.initGPSTrackingMap = async function (vehicleId = '', doId = '') {
+  if (window.TrackingControlTower) return window.TrackingControlTower.load(doId);
   const container = document.getElementById('gps-tracking-map');
   if (!container) return;
 
@@ -11805,6 +12312,7 @@ function formatTrackingMetric(value, unit) {
 }
 
 window.trackDO = async function (targetDoId = null) {
+  if (window.TrackingControlTower) return window.TrackingControlTower.load(targetDoId);
   const selectEl = document.getElementById('tracking-active-do-select');
   const doId = (targetDoId || selectEl?.value || document.getElementById('tracking-do-search')?.value || '').trim();
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
@@ -19436,4 +19944,3 @@ window.viewCompletedDelivery = async function (doId) {
     target.scrollIntoView({behavior:'smooth',block:'start'});
   } catch (error) { target.innerHTML = `<div class="completion-empty">${completionEscape(error.message)}</div>`; showToast(error.message,'error'); }
 };
-

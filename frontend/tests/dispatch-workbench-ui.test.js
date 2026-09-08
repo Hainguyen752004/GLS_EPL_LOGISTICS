@@ -34,14 +34,24 @@ function interactiveOpening(source, activationPattern) {
   ));
 }
 
+// Man Dieu phoi da dung lai theo ban mau `dispatch-v2-crew.html`, nen bon moc
+// cu (`#dispatch-workbench`, `#dispatch-queue`, `#dispatch-timeline`,
+// `#dispatch-exceptions`) khong con. Dieu CAN BAO VE thi khong doi: ba cot phai
+// co dung mot cho de ve du lieu vao, khong hai cho — hai cho thi ham ve ghi vao
+// cai nao la chuyen may rui theo thu tu trong tai lieu.
 [
-  'dispatch-workbench',
-  'dispatch-queue',
-  'dispatch-timeline',
-  'dispatch-detail',
-  // Cot thu ba. Truoc day khoi canh bao nam trong ngan keo 'Cong cu' va phai
-  // bam moi mo; ngan keo do da bo vi no chi co dung mot muc.
-  'dispatch-exceptions'
+  'dispatch-kpis',
+  // Cot 1: DO cho xep.
+  'dispatch-do-list',
+  // Cot 2: doi xe theo bai, doi sang xe ung vien khi da chon DO.
+  'dispatch-fleetview',
+  'dispatch-cand',
+  'dispatch-cand-list',
+  // Cot 3: ngoai le, doi sang khung gan. Truoc day khoi canh bao nam trong ngan
+  // keo 'Cong cu' va phai bam moi mo; ngan keo do da bo vi no chi co mot muc.
+  'dispatch-exceptions-view',
+  'dispatch-calendar-conflicts',
+  'dispatch-detail'
 ].forEach((id) => check(`unique #${id}`, () => {
   assert.strictEqual(idCount(html, id), 1, `Expected exactly one #${id}`);
 }));
@@ -103,12 +113,35 @@ check('dispatch queue uses canonical pending status from backend', () => {
   assert.match(appSource, /DISPATCH_DONE_CANONICAL_STATUSES/, 'Dispatch done canonical status guard is required.');
 });
 
-check('queue rows use semantic buttons', () => {
-  const opening = interactiveOpening(
-    appSource,
-    'onclick=["\x27]selectDispatchDO\\(|data-dispatch-(?:queue|do)'
+check('queue rows are reachable by keyboard', () => {
+  // Ban truoc doi dong DO phai la mot `<button type="button">`. Sau khi dung
+  // lai theo ban mau thi khong the: trong dong co san mot O TICK, ma long mot o
+  // bam duoc vao trong mot nut la HTML khong hop le va trinh doc man hinh doc
+  // sai. Ban mau dung mot `<div onclick>` tron — va thua nguyen cach do la mot
+  // buoc lui ve tro nang, nguoi dung ban phim khong toi duoc dong nao.
+  //
+  // Cach dung cho mot HANG co san dieu khien rieng, va la thu bai kiem nay doi:
+  // `role="button"` + `tabindex="0"` + bat phim Enter/Space.
+  const render = sourceBlock(
+    /function\s+renderDispatchDOs\s*\([^)]*\)\s*\{[\s\S]*?\n\}/,
+    'Missing renderDispatchDOs().'
   );
-  assert.ok(opening, 'Dispatch queue rows must render as <button type="button"> controls.');
+  assert.match(render, /role="button"/, 'Dispatch queue rows need button semantics.');
+  assert.match(render, /tabindex="0"/, 'Dispatch queue rows must be focusable.');
+  assert.match(render, /onkeydown="dpv2BamPhimDong\(/,
+    'Dispatch queue rows must answer Enter and Space.');
+  assert.match(render, /aria-label="Chọn DO /,
+    'Dispatch queue rows need an accessible name.');
+
+  // Va ham bat phim phai NHUONG khi con tro dang o o tick: chan het thi tick
+  // bang ban phim khong dung duoc nua.
+  const phim = sourceBlock(
+    /window\.dpv2BamPhimDong\s*=\s*function\s*\([^)]*\)\s*\{[\s\S]*?\n\};/,
+    'Missing dpv2BamPhimDong().'
+  );
+  assert.match(phim, /Enter/, 'Row key handler must answer Enter.');
+  assert.match(phim, /tagName/,
+    'Row key handler must yield to the checkbox inside the row.');
 });
 
 check('dispatch visual refresh classes are wired', () => {
@@ -136,32 +169,43 @@ check('dispatch visual refresh classes are wired', () => {
   });
 });
 
-check('dispatch presents a four-step Trip-gated assignment workflow', () => {
-  [
-    'dispatch-step-do',
-    'dispatch-step-trip',
-    'dispatch-step-schedule',
-    'dispatch-step-resources'
-  ].forEach((id) => assert.strictEqual(idCount(html, id), 1, `Expected exactly one #${id}`));
-  assert.match(html, /Chọn DO/);
-  assert.match(html, /Xếp lịch xe/);
-  assert.match(html, /Nhân sự &amp; xuất bến/);
-});
+check('dispatch enforces the Trip gate before assigning resources', () => {
+  // Ban truoc doi mot DAI BON BUOC ("1. Chon DO / 2. Kiem tra Trip / 3. Xep lich
+  // xe / 4. Nhan su & xuat ben"). Ban mau `dispatch-v2-crew.html` khong co dai
+  // do, va chu du an da chot la man phai giong ban mau — nen dai da bo.
+  //
+  // Nhung DIEU dai do bao ve thi phai con, va no la dieu quan trong hon cai
+  // dai: KHONG duoc gan xe cho mot DO chua co Trip. Bai kiem chuyen sang do
+  // chinh cai khoa do, o hai cho no thuc su duoc thi hanh.
 
-check('dispatch workflow steps are compact modal launchers', () => {
-  [
-    ['dispatch-step-do', 'do'],
-    ['dispatch-step-trip', 'trip'],
-    ['dispatch-step-schedule', 'schedule'],
-    ['dispatch-step-resources', 'resources']
-  ].forEach(([id, step]) => {
-    assert.match(
-      html,
-      new RegExp(`<button\\b(?=[^>]*\\bid=["']${id}["'])(?=[^>]*\\btype=["']button["'])(?=[^>]*openDispatchStepModal\\(["']${step}["']\\))[^>]*>`, 'i'),
-      `#${id} must be a semantic button that opens the ${step} form.`
-    );
-  });
-  assert.match(html, /dispatch-workflow-step-icon/, 'Compact workflow buttons need a stable icon slot.');
+  // 1. Chon mot DO chua co Trip thi phai mo cua Trip, khong cho di tiep.
+  const chon = sourceBlock(
+    /window\.selectDispatchDO\s*=\s*function\s*\([^)]*\)\s*\{[\s\S]*?\n\};/,
+    'Missing selectDispatchDO().'
+  );
+  assert.match(chon, /resolveDispatchTripGate\s*\(/,
+    'Selecting a DO must resolve its Trip gate.');
+  assert.match(chon, /openDispatchTripGate\s*\(/,
+    'A DO without a planned Trip must be sent through the Trip gate.');
+
+  // 2. Cua Trip phai dan tiep sang buoc xep lich xe khi Trip da san sang —
+  //    khong thi nguoi dung mac o giua, khong biet lam gi tiep.
+  const cua = sourceBlock(
+    /function\s+openDispatchTripGate\s*\([^)]*\)\s*\{[\s\S]*?\n\}/,
+    'Missing openDispatchTripGate().'
+  );
+  assert.match(cua, /openDispatchStepModal\(['"]schedule['"]\)/,
+    'A ready Trip must lead on to vehicle scheduling.');
+
+  // 3. Va tung dong DO phai NOI RA trang thai Trip cua no, ngay tren bang —
+  //    khong thi nguoi dieu phoi phai bam thu moi biet dong nao di duoc.
+  const ve = sourceBlock(
+    /function\s+renderDispatchDOs\s*\([^)]*\)\s*\{[\s\S]*?\n\}/,
+    'Missing renderDispatchDOs().'
+  );
+  assert.match(ve, /Chưa có Trip/, 'Each DO row must show when it has no Trip.');
+  assert.match(ve, /resolveDispatchTripGate\s*\(/,
+    'Each DO row must read its Trip state from the gate, not guess.');
 });
 
 check('dispatch uses one reusable step modal for live forms', () => {
@@ -219,14 +263,41 @@ check('dispatch never falls back to direct DO dispatch without a planned Trip', 
   assert.match(submit, /resolveDispatchTripGate/, 'Dispatch submission must enforce the Trip gate.');
 });
 
-check('dispatch DO cards expose operational context and Trip status', () => {
-  const render = sourceBlock(
+check('dispatch exposes operational context and Trip status for the picked DO', () => {
+  // Ban truoc do tam ten lop tren THE DO o cot mot. Sau khi dung lai theo ban
+  // mau thi dong DO chi con sau cot (ma, khach, gio lay, gio giao, han, Trip) —
+  // khoi luong, so pallet va quy cach hang khong nam o do. Ban mau cung vay: no
+  // de nhung thu do sang cot phai.
+  //
+  // Nhung nguoi dieu phoi PHAI thay khoi luong truoc khi chot xe, khong thi ho
+  // gan mot container 30 tan cho xe tai 15 tan roi bi may chu tu choi. Nen bai
+  // kiem doi tam: tam sang khoi tom tat o dau khung gan, va giu nguyen doi hoi
+  // ve day du tam thong tin.
+  const tomTat = sourceBlock(
+    /function\s+dpv2VeTomTatDon\s*\([^)]*\)\s*\{[\s\S]*?\n\}/,
+    'Missing dpv2VeTomTatDon().'
+  );
+  // Ten lop duoc GHEP luc chay (`'dispatch-do-' + ma`), nen do nguyen chuoi
+  // `dispatch-do-code` trong ma nguon thi khong bao gio thay. Do hai phan:
+  // khuon ghep ten lop, va tung ten truong duoc truyen vao.
+  assert.match(tomTat, /dispatch-do-['"]?\s*\+/,
+    'Assignment summary must tag each cell with a dispatch-do-* class.');
+  ['code', 'customer', 'route', 'cargo', 'weight', 'pallet', 'pickup', 'delivery']
+    .forEach((field) => {
+      assert.match(tomTat, new RegExp(`'${field}'\\)`),
+        `Assignment summary must expose ${field}.`);
+    });
+  // Chua khai hang thi phai noi THANG, dung de mot dau gach: khoi luong bang
+  // khong nghia la may chu khong kiem duoc tai trong, va moi xe deu "vua".
+  assert.match(tomTat, /chưa khai/,
+    'The summary must say when cargo has not been declared, not show a dash.');
+
+  // Va dong DO o cot mot van phai noi trang thai Trip cua chinh no.
+  const ve = sourceBlock(
     /function\s+renderDispatchDOs\s*\([^)]*\)\s*\{[\s\S]*?\n\}/,
     'Missing renderDispatchDOs().'
   );
-  ['customer', 'route', 'cargo', 'weight', 'pallet', 'pickup', 'delivery', 'trip'].forEach((field) => {
-    assert.match(render, new RegExp(`dispatch-do-${field}`), `DO card must expose ${field}.`);
-  });
+  assert.match(ve, /Chưa có Trip|Trip nháp/, 'DO rows must expose Trip status.');
 });
 
 check('weekly timetable is the default dispatch planning surface', () => {
@@ -687,7 +758,11 @@ check('production drawer exposes the harness contract', () => {
     [/\.focus\s*\(/, 'Tools and drawer behavior must transfer and return focus.'],
     [/role=["']dialog["']/i, 'The detail drawer needs dialog semantics.'],
     [/aria-modal=["']true["']/i, 'The detail drawer needs aria-modal="true".'],
-    [/aria-labelledby=["']dispatch-detail-title["']/i, 'The detail drawer needs an accessible title.']
+    // Moc doi tu `#dispatch-detail-title` (ban cu) sang `#dispatch-panel-title`
+    // (ban theo mau): cot ba giu MOT dau muc, va dau muc do doi chu giua "Ngoai
+    // le can duyet" va "Gan xe va to lai" theo viec dang lam. Doi hoi thi khong
+    // doi — khung phai co mot ten doc duoc cho trinh doc man hinh.
+    [/aria-labelledby=["']dispatch-panel-title["']/i, 'The detail drawer needs an accessible title.']
   ].forEach(([pattern, message]) => assert.ok(pattern.test(combinedSource), message));
 });
 
