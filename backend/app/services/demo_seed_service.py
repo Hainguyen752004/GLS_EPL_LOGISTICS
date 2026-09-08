@@ -321,6 +321,9 @@ def _merge_master_data(db):
         volume_capacity_m3=33.2, pallet_capacity=22, fuel_norm=26, base_rate=6250,
         avg_speed_kmh=45,
         maint_cost=750000, dims="6.06m x 2.44m x 2.59m", fuel_type="Diesel",
+        # Khau hao + bao duong /km, suy tu gia xe va chi phi bao duong thang —
+        # cung ham voi cac loai xe o `demo_master_seed`.
+        dep_cost_per_km=demo_master_seed.khau_hao_moi_km(1_450_000_000, 750000),
         notes="Container tiêu chuẩn cho hàng pallet",
     ))
     vehicles = [
@@ -391,6 +394,11 @@ def _merge_master_data(db):
     db.merge(Route(
         id=ROUTE_ID, name="VSIP II-A → Cảng Cát Lái", distance_km=44.7,
         segments_json=json.dumps(segments, ensure_ascii=False),
+        # BOT theo TUYEN. Dung CHUNG ham voi `demo_master_seed` chu khong dat
+        # mot con so o day: hai cho tinh doc lap thi hai tuyen dai bang nhau se
+        # ra hai muc BOT khac nhau, va khong ai giai thich duoc vi sao.
+        bot_fee=demo_master_seed.bot_theo_tuyen(
+            [(x["from"], x["to"], x["dist_km"]) for x in segments]),
     ))
     db.merge(CostFormula(
         id="DEMO-COST-FORMULA-20FT", name="Container 20FT - Tiêu chuẩn",

@@ -41,6 +41,27 @@ from models import (
 GIA_DAU_VND_LIT = 23000
 
 
+#: Vong doi cua mot dau keo, tinh bang km. Dung de suy khau hao tren 1 km tu
+#: gia mua xe: mot dau keo chay khoang 800.000 km truoc khi thanh ly.
+VONG_DOI_KM = 800000
+
+
+def khau_hao_moi_km(gia_xe_vnd, bao_duong_thang, km_moi_thang=8000):
+    """Khau hao + bao duong tren 1 km.
+
+    Day la cau phan gia thanh duy nhat trong spec ma he thong chua co, va thieu
+    no thi bien loi nhuan cao gia tao — spec cua chu du an tu ghi ra dieu do.
+
+    Suy tu HAI nguon that thay vi dat mot con so: khau hao la gia xe chia vong
+    doi km, con bao duong la chi phi thang chia so km chay mot thang. Cong lai
+    ra tien tren 1 km. Dat mot con so co dinh thi mot dau keo 2 ty va mot xe
+    tai 600 trieu cung mot muc khau hao.
+    """
+    khau_hao = float(gia_xe_vnd) / VONG_DOI_KM
+    bao_duong = float(bao_duong_thang) / max(1, km_moi_thang)
+    return round(khau_hao + bao_duong)
+
+
 def chi_phi_dau_moi_km(fuel_norm_lit_100km):
     """Tien xang dau cho 1 km, suy ra tu dinh muc lit/100km.
 
@@ -53,19 +74,21 @@ def chi_phi_dau_moi_km(fuel_norm_lit_100km):
 
 # (ma, ten, tai trong kg, m3, pallet, dinh muc lit/100km, van toc TB,
 #  phu cap tai xe/chuyen, phi cau duong/chuyen, phi bai/chuyen, cuoc d/kg,
-#  chi phi bao duong/thang)
+#  chi phi bao duong/thang, GIA XE)
+#
+# `gia xe` chi dung de suy khau hao tren 1 km — xem `khau_hao_moi_km`.
 LOAI_XE = [
     ("DEMO-VT-TRACTOR40", "Đầu kéo 40'", 30000, 67.0, 24, 35, 45,
-     700000, 420000, 250000, 1200, 1200000),
+     700000, 420000, 250000, 1200, 1200000, 2_100_000_000),
     ("DEMO-VT-TRACTOR20", "Đầu kéo 20'", 24000, 33.0, 18, 30, 48,
-     600000, 320000, 220000, 1350, 950000),
+     600000, 320000, 220000, 1350, 950000, 1_650_000_000),
     ("DEMO-VT-TRUCK15", "Xe tải thùng 15 tấn", 15000, 60.0, 18, 22, 50,
-     500000, 260000, 180000, 1500, 600000),
+     500000, 260000, 180000, 1500, 600000, 980_000_000),
     ("DEMO-VT-TRUCK10", "Xe tải thùng 10 tấn", 10000, 45.0, 12, 18, 55,
-     420000, 200000, 150000, 1750, 450000),
+     420000, 200000, 150000, 1750, 450000, 720_000_000),
     # Xe lanh an dau hon vi may lanh chay lien tuc, va cuoc cung cao hon.
     ("DEMO-VT-REEFER5", "Xe lạnh 5 tấn", 5000, 22.0, 8, 20, 50,
-     450000, 180000, 320000, 3200, 900000),
+     450000, 180000, 320000, 3200, 900000, 1_100_000_000),
 ]
 
 
@@ -113,15 +136,16 @@ def _cong_thuc(ma_loai, ten_loai, dau_km, tai_xe, cau_duong, bai, cuoc):
 
 def nap_loai_xe(db):
     for (ma, ten, tai, m3, pallet, dinh_muc, toc_do,
-         tai_xe, cau_duong, bai, cuoc, bao_duong) in LOAI_XE:
+         tai_xe, cau_duong, bai, cuoc, bao_duong, gia_xe) in LOAI_XE:
         dau_km = chi_phi_dau_moi_km(dinh_muc)
+        khau_hao_km = khau_hao_moi_km(gia_xe, bao_duong)
         db.merge(VehicleType(
             id=ma, name=ten, icon="fa-truck",
             max_weight=tai, volume_capacity_m3=m3, pallet_capacity=pallet,
             fuel_norm=dinh_muc, avg_speed_kmh=toc_do,
             # `base_rate` la don gia TREN 1 KM, dung bang chi phi xang dau /km.
             base_rate=dau_km,
-            maint_cost=bao_duong, fuel_type="Diesel",
+            maint_cost=bao_duong, dep_cost_per_km=khau_hao_km, fuel_type="Diesel",
             notes="Dữ liệu mẫu — chi phí xăng dầu suy ra từ %d lít/100km × %s đ/lít"
                   % (dinh_muc, "{:,}".format(GIA_DAU_VND_LIT).replace(",", ".")),
         ))
@@ -151,6 +175,28 @@ DIA_DIEM = [
 ]
 
 # (ma tuyen, ten, cac chang [(tu, den, km)])
+#: Muc thu binh quan mot tram BOT cho xe container o cac tuyen phia Nam.
+#: Dat mot con so o day chu khong khai tung tram: bo du lieu mau khong co bang
+#: tram BOT, va bia ra ten tram cu the la bia ra du lieu khong ai kiem duoc.
+#: Con so tren SO TRAM thi suy duoc tu do dai chang, va no dung thu nguyen.
+BOT_MOI_TRAM_VND = 120000
+#: Khoang cach binh quan giua hai tram BOT tren duong bo phia Nam.
+KM_MOI_TRAM = 35
+
+
+def bot_theo_tuyen(cac_chang):
+    """Phi BOT uoc cua ca tuyen, suy tu do dai — khong dat mot con so cung.
+
+    Mot tuyen 31 km di qua khoang mot tram, con tuyen 112 km di qua ba tram. Do
+    la ly do BOT phai theo TUYEN: dat cung mot muc cho ca hai la noi sai ve ca
+    hai. Chan san mot tram cho moi tuyen: tuyen ngan nhat van qua tram vao
+    cang.
+    """
+    tong_km = sum(float(km) for _, _, km in cac_chang)
+    so_tram = max(1, round(tong_km / KM_MOI_TRAM))
+    return so_tram * BOT_MOI_TRAM_VND
+
+
 TUYEN = [
     ("DEMO-RT-SONGTHAN-CATLAI", "Sóng Thần → Cảng Cát Lái", [
         ("Bãi Sóng Thần", "Cảng Cát Lái, TP. Thủ Đức", 31.2),
@@ -181,6 +227,10 @@ def nap_dia_diem_va_tuyen(db):
         tong = round(sum(c[2] for c in chang), 1)
         db.merge(Route(
             id=ma, name=ten, distance_km=tong,
+            # BOT THEO TUYEN. Truoc day phi cau duong chi nam trong cong thuc
+            # theo LOAI XE, nen tuyen 19,9 km va tuyen 129 km cung mot muc BOT —
+            # ma BOT thuoc DUONG chu khong thuoc xe.
+            bot_fee=bot_theo_tuyen(chang),
             segments_json=json.dumps(
                 [{"from": a, "to": b, "dist_km": km} for a, b, km in chang],
                 ensure_ascii=False),
