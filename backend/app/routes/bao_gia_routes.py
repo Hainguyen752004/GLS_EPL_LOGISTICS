@@ -16,9 +16,13 @@ khai TRUOC `/api/quotations/{qid}` — neu khong thi FastAPI khop "summary" vao
 `{qid}` va tra ve "khong tim thay bao gia summary".
 """
 
+import os
+from pathlib import Path
 from typing import Any, Dict, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -190,12 +194,21 @@ async def gui_khach(request: Request, qid: str, db: Session = Depends(get_db)):
     duoi nguong bien la mot quyet dinh kinh doanh nen di qua nguoi duyet.
     """
     actor = _actor(request)
+    ket_qua = {}
 
     def viec():
         q = bao_gia.gui_khach(db, qid, actor)
+        ket_qua["trang_thai"] = q.canonical_status
         return bao_gia.mot_bao_gia(db, q.id)
 
-    return _lenh(db, viec, "Đã gửi báo giá cho khách.")
+    # THÔNG BÁO PHẢI NÓI ĐÚNG THỨ VỪA XẢY RA. Biên dưới ngưỡng thì báo giá sang
+    # "chờ duyệt nội bộ" chứ không đến tay khách; nói "đã gửi cho khách" ở nước
+    # đó là để người bán ngồi đợi một câu trả lời sẽ không bao giờ đến.
+    goi = _lenh(db, viec, "Đã gửi báo giá cho khách.")
+    if ket_qua.get("trang_thai") == "pending_approval":
+        goi["message"] = ("Biên dưới ngưỡng nên báo giá chuyển sang CHỜ DUYỆT NỘI BỘ — "
+                          "chưa gửi cho khách. Cần trưởng phòng kinh doanh duyệt.")
+    return goi
 
 
 @router.post("/api/quotations/{qid}/accept")
@@ -259,3 +272,173 @@ async def tach_do(
     return _lenh(db,
                  lambda: bao_gia.tach_thanh_do(db, qid, (data or {}).get("dos"), actor),
                  "Đã tạo lệnh giao hàng từ báo giá. Chúng nằm ở Giao hàng → Cần xử lý.")
+
+
+# ===========================================================================
+# DUYỆT NỘI BỘ
+# ===========================================================================
+
+@router.post("/api/quotations/{qid}/internal-approve")
+async def duyet_noi_bo(request: Request, qid: str, db: Session = Depends(get_db)):
+    """Trưởng phòng đồng ý bán dưới ngưỡng biên, báo giá đi tiếp sang khách.
+
+    Báo giá LỖ không đi qua được đường này — `kiem_bao_gia_truoc_khi_duyet`
+    chặn trước. Duyệt nội bộ mở cho khoảng biên mỏng, không mở cho khoản lỗ.
+    """
+    actor = _actor(request)
+
+    def viec():
+        q = bao_gia.duyet_noi_bo(db, qid, actor)
+        return bao_gia.mot_bao_gia(db, q.id)
+
+    return _lenh(db, viec, "Đã duyệt nội bộ. Báo giá đã gửi cho khách.")
+
+
+@router.post("/api/quotations/{qid}/return-to-draft")
+async def tra_ve_nhap(
+    request: Request, qid: str,
+    data: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db),
+):
+    actor = _actor(request)
+
+    def viec():
+        q = bao_gia.tra_ve_nhap(db, qid, (data or {}).get("reason", ""), actor)
+        return bao_gia.mot_bao_gia(db, q.id)
+
+    return _lenh(db, viec, "Đã trả báo giá về bản nháp để sửa giá.")
+
+
+# ===========================================================================
+# CHỨNG TỪ ĐÍNH KÈM
+#
+# KHÔNG dùng `/uploads/{đường}` dùng chung với ảnh xe và ảnh tài xế. Đường đó
+# CỐ Ý để công khai — thẻ <img src> không gửi được phiên đăng nhập — còn ở đây
+# là hợp đồng và tờ khai hải quan của khách. Nên chứng từ báo giá đi qua một
+# đường tải xuống RIÊNG, nằm dưới dependency xác thực của router này.
+# ===========================================================================
+
+def _thu_muc_chung_tu() -> Path:
+    """Thư mục chứa chứng từ báo giá, dùng cùng gốc với ảnh dữ liệu gốc."""
+    cau_hinh = os.environ.get("EPL_UPLOAD_DIR")
+    goc = (Path(cau_hinh).expanduser().resolve() if cau_hinh
+           else (Path(__file__).resolve().parent.parent.parent / "uploads").resolve())
+    return (goc / "quotations").resolve()
+
+
+def _duoi_hop_le(ten_tep: str) -> str:
+    """Đuôi tệp, đối chiếu với DANH SÁCH CHO PHÉP.
+
+    Danh sách cho phép chứ không danh sách chặn: một danh sách chặn luôn thiếu
+    một đuôi nào đó, và ở đây một đuôi bị thiếu nghĩa là một tệp chạy được nằm
+    trong thư mục máy chủ.
+    """
+    duoi = Path(str(ten_tep or "")).suffix.lower()
+    if duoi not in bao_gia.DUOI_CHUNG_TU:
+        raise_http(DomainError(
+            "ATTACHMENT_TYPE_INVALID",
+            "Chỉ đính kèm được PDF, DOCX, DOC, PNG, JPG. Tệp gửi lên có đuôi %s."
+            % (duoi or "không rõ"), 422))
+    return duoi
+
+
+@router.post("/api/quotations/{qid}/attachments", status_code=201)
+async def them_chung_tu(
+    request: Request, qid: str,
+    doc_type: str = Form("Khác"), note: str = Form(""),
+    file: UploadFile = File(...), db: Session = Depends(get_db),
+):
+    """Đính kèm một chứng từ — được gọi NGAY KHI CÒN NHÁP, không bắt lưu trước.
+
+    Tên tệp trên đĩa là một mã sinh ra, KHÔNG phải tên người dùng đặt. Tên
+    người dùng đặt có thể là `../../.env`; nó được lưu nguyên trong cột
+    `file_name` để hiện lại cho đúng, chứ không dùng làm đường dẫn.
+    """
+    actor = _actor(request)
+    duoi = _duoi_hop_le(file.filename)
+
+    # ĐỌC THEO KHÚC và dừng ngay khi qua trần: đọc cả tệp vào bộ nhớ rồi mới đo
+    # nghĩa là một tệp 2 GB làm hết bộ nhớ máy chủ trước khi ai kiểm được gì.
+    noi_dung = bytearray()
+    while True:
+        khuc = await file.read(1024 * 1024)
+        if not khuc:
+            break
+        noi_dung.extend(khuc)
+        if len(noi_dung) > bao_gia.TRAN_KICH_THUOC_BYTE:
+            raise_http(DomainError(
+                "ATTACHMENT_TOO_LARGE",
+                "Chứng từ tối đa 25 MB. Tệp %s lớn hơn mức đó." % file.filename, 413))
+    if not noi_dung:
+        raise_http(DomainError("ATTACHMENT_EMPTY",
+                               "Tệp %s rỗng — không đính kèm được." % file.filename, 422))
+
+    thu_muc = _thu_muc_chung_tu()
+    thu_muc.mkdir(parents=True, exist_ok=True)
+    ten_tren_dia = "%s%s" % (uuid4().hex, duoi)
+    duong = thu_muc / ten_tren_dia
+    tam = thu_muc / (".%s.tmp" % ten_tren_dia)
+    try:
+        with open(tam, "wb") as tay:
+            tay.write(bytes(noi_dung))
+        os.replace(tam, duong)
+    finally:
+        if tam.exists():
+            tam.unlink()
+
+    def viec():
+        dong = bao_gia.them_chung_tu(
+            db, qid, doc_type, file.filename, ten_tren_dia,
+            bao_gia.DUOI_CHUNG_TU[duoi], len(noi_dung), note, actor)
+        return {"id": dong.id, "doc_type": dong.doc_type, "file_name": dong.file_name,
+                "size_bytes": dong.size_bytes, "note": dong.note,
+                "uploaded_by": dong.uploaded_by,
+                "uploaded_at": dong.uploaded_at.isoformat() if dong.uploaded_at else None}
+
+    return _lenh(db, viec, "Đã đính kèm chứng từ. Nó đi theo DO xuống vận hành và kế toán.")
+
+
+@router.get("/api/quotations/{qid}/attachments/{aid}/file")
+async def tai_chung_tu(qid: str, aid: str, db: Session = Depends(get_db)):
+    try:
+        dong = bao_gia.mot_chung_tu(db, qid, aid)
+    except DomainError as loi:
+        raise_http(loi)
+    # Ghép đường từ THƯ MỤC CHUẨN cộng tên trên đĩa, rồi kiểm lại kết quả vẫn
+    # nằm trong thư mục đó. Một cột cơ sở dữ liệu bị sửa tay thành `../..` thì
+    # bước kiểm này là thứ duy nhất chặn việc trả về một tệp ngoài thư mục.
+    thu_muc = _thu_muc_chung_tu()
+    duong = (thu_muc / Path(str(dong.storage_url)).name).resolve()
+    try:
+        duong.relative_to(thu_muc)
+    except ValueError:
+        raise_http(DomainError("ATTACHMENT_NOT_FOUND", "Không tìm thấy tệp chứng từ.", 404))
+    if not duong.is_file():
+        raise_http(DomainError(
+            "ATTACHMENT_FILE_MISSING",
+            "Bản ghi chứng từ %s còn nhưng tệp trên đĩa không còn." % dong.file_name, 404))
+    return FileResponse(duong, media_type=dong.mime_type or "application/octet-stream",
+                        filename=dong.file_name)
+
+
+@router.delete("/api/quotations/{qid}/attachments/{aid}")
+async def xoa_chung_tu(request: Request, qid: str, aid: str, db: Session = Depends(get_db)):
+    actor = _actor(request)
+
+    def viec():
+        ten = bao_gia.xoa_chung_tu(db, qid, aid, actor)
+        return {"id": aid, "ten_tren_dia": ten}
+
+    ket_qua = _lenh(db, viec, "Đã xoá chứng từ.")
+    # XOÁ TỆP SAU KHI commit thành công. Xoá trước thì một lỗi ở bước commit sẽ
+    # để lại một dòng trỏ tay không.
+    ten = (ket_qua.get("data") or {}).get("ten_tren_dia")
+    if ten:
+        duong = (_thu_muc_chung_tu() / Path(str(ten)).name)
+        try:
+            if duong.is_file():
+                duong.unlink()
+        except OSError:
+            # Bản ghi đã xoá là điều người dùng thấy; một tệp còn lại trên đĩa
+            # không được làm yêu cầu này thất bại.
+            pass
+    return ket_qua

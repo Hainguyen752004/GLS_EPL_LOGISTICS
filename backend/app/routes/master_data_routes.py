@@ -168,6 +168,11 @@ def _tuyen_kem_toa_do(row, db=None, cho_phep_ngoai=False):
         "id": row.id,
         "name": row.name,
         "distance_km": row.distance_km,
+        # PHI BOT CUA TUYEN. Man Bao gia phai noi duoc "31,2 km · 1 chang · BOT
+        # uoc 120.000 d" NGAY khi nguoi dung chon tuyen — truoc khi chon loai
+        # xe, nen chua goi duoc bang cau phan gia thanh. BOT thuoc DUONG chu
+        # khong thuoc xe, nen no o day moi dung cho.
+        "bot_fee": row.bot_fee,
         "segments_json": row.segments_json,
         "segments_geo": chang_geo,
         # HINH DUONG BO THAT. `nguon=None` nghia la khong co — giao dien PHAI

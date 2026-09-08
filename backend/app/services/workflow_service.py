@@ -23,7 +23,9 @@ from models import (
     TripDeliveryOrder,
     Vehicle,
     VehicleTracking,
+    VehicleType,
 )
+from services.don_vi_cuoc import gia_moi_chuyen
 from services.errors import DomainError, conflict, missing_master
 from services.crew_policy import mark_crew_busy, mark_crew_ready, require_crew
 from services.vehicle_capacity_policy import require_vehicle_capacity
@@ -543,6 +545,112 @@ def _route_context_from_quote(q, route, data=None):
     }
 
 
+DON_VI_CUOC_HOP_LE = ("per_trip", "per_tonne", "per_m3", "per_kg", "per_km")
+
+#: Chuoi ky tu chi don vi -> cach lay so luong CUA MOT CHUYEN de nhan voi don gia.
+_SO_LUONG_MOI_CHUYEN = {
+    "per_trip": lambda q, km: 1,
+    "per_tonne": lambda q, km: float(q.weight_kg or 0) / 1000.0,
+    "per_kg": lambda q, km: float(q.weight_kg or 0),
+    "per_m3": lambda q, km: float(q.volume_m3 or 0),
+    "per_km": lambda q, km: km,
+}
+
+
+def _km_cua_tuyen(route):
+    if route is None:
+        return 0.0
+    for ten in ("road_distance_km", "distance_km"):
+        try:
+            gia_tri = float(getattr(route, ten, None) or 0)
+        except (TypeError, ValueError):
+            gia_tri = 0.0
+        if gia_tri > 0:
+            return gia_tri
+    return 0.0
+
+
+def _ap_truong_bao_gia_moi(db, q, data, route=None):
+    """Ap cac truong cua ban thiet ke bao gia moi, va SUY RA `selling_price`.
+
+    VI SAO MAY CHU SUY RA CUOC chu khong nhan con so giao dien gui len.
+
+    Khach mo da bao gia theo TAN, khach dong pallet bao gia theo CHUYEN. Cot
+    `unit_price` + `price_basis` la thu khach doc va ky; con `selling_price` la
+    tien mot chuyen — thu ma lenh giao hang, quyet toan va hoa don doc. Neu
+    giao dien tu tinh con so thu hai roi gui len thi hai cot co the noi hai
+    dieu khac nhau ve cung mot bao gia, va lech do di thang vao loi nhuan ma
+    khong co buoc nao doi chieu lai.
+
+    Nen o day: nhan don gia va don vi, tu nhan voi so luong mot chuyen. Giao
+    dien chi hien ket qua.
+
+    `min_qty_per_trip` la chot chan mo xuc thieu tai: gia thanh khong giam mot
+    dong nao khi xe cho it hon, nen so luong tinh tien khong duoc thap hon muc
+    toi thieu da thoa thuan.
+    """
+    if data.get("vehicle_type_id"):
+        q.vehicle_type_id = _require(
+            db, VehicleType, data.get("vehicle_type_id"), "vehicle_type", "loai xe").id
+
+    if "price_basis" in data and data.get("price_basis"):
+        don_vi = str(data.get("price_basis"))
+        if don_vi not in DON_VI_CUOC_HOP_LE:
+            raise DomainError(
+                "PRICE_BASIS_INVALID",
+                "Don vi tinh cuoc khong hop le: %s. Nhan: %s."
+                % (don_vi, ", ".join(DON_VI_CUOC_HOP_LE)), 422)
+        q.price_basis = don_vi
+    if not q.price_basis:
+        q.price_basis = "per_trip"
+
+    for ten in ("unit_price", "min_qty_per_trip", "waiting_surcharge", "cargo_value",
+                "target_margin"):
+        if ten in data:
+            setattr(q, ten, _money(data, ten, getattr(q, ten, 0) or 0))
+    if "fx_rate" in data:
+        q.fx_rate = _money(data, "fx_rate", q.fx_rate or 1) or 1
+    if "trips_per_month" in data:
+        q.trips_per_month = _nonnegative_int(data, "trips_per_month", q.trips_per_month or 0)
+    for ten in ("currency_code", "payment_terms", "sales_rep", "stacking", "sealing",
+                "recipient_contact", "notes_customer", "notes_ops", "notes_internal"):
+        if ten in data:
+            setattr(q, ten, data.get(ten) or None)
+    if not q.currency_code:
+        q.currency_code = "VND"
+
+    # SUY RA cuoc mot chuyen. Chi lam khi co don gia — bo du lieu dang chay co
+    # nhung bao gia cu chi co `selling_price` va khong co `unit_price`, va suy
+    # ra tu con so khong co se ghi 0 len mot cuoc dang dung.
+    # CON SO NAO NGUOI GOI VUA KHAI THI CON SO DO THANG.
+    #
+    # Hai duong luu cung ton tai, va chung khai gia bang hai cot khac nhau:
+    # man Bao gia moi gui `unit_price` + `price_basis`, con duong cu (va cac
+    # bai kiem cua no) chi gui `selling_price`.
+    #
+    # Ban dau day chi kiem "co don gia thi suy ra cuoc", va no lam vo duong cu:
+    # sua cuoc tu 3.100.000 len 3.500.000 thi con so moi bi ghi de bang cuoc
+    # tinh lai tu DON GIA CU con luu trong bang — nguoi dung bam Luu, khong co
+    # loi nao, va cuoc van la con so cu.
+    gui_don_gia = "unit_price" in data
+    gui_cuoc = "selling_price" in data
+    if gui_don_gia or (not gui_cuoc and float(getattr(q, "unit_price", 0) or 0) > 0):
+        # Don gia la con so khach ky, nen no la goc. Nhanh nay cung chay khi
+        # nguoi dung chi sua TAI TRONG: bao gia theo tan thi doi tai trong phai
+        # doi cuoc, khong thi cuoc dung lai o so luong cu.
+        if float(getattr(q, "unit_price", 0) or 0) > 0:
+            if route is None:
+                route = db.query(Route).filter(Route.id == q.route_id).first()
+            km = _km_cua_tuyen(route)
+            lay = _SO_LUONG_MOI_CHUYEN.get(q.price_basis or "per_trip")
+            q.selling_price = gia_moi_chuyen(
+                q.price_basis, q.unit_price, lay(q, km), q.min_qty_per_trip, km)
+    elif gui_cuoc and (q.price_basis or "per_trip") == "per_trip":
+        # Duong cu chi gui `selling_price`. Ghi lai thanh don gia mot chuyen de
+        # phieu bao gia va lenh giao hang cung doc mot cot.
+        q.unit_price = q.selling_price
+
+
 def create_quotation(db, data, user="system"):
     customer = _require(db, Customer, data.get("customer_id"), "customer", "khách hàng")
     route = _require(db, Route, data.get("route_id"), "route", "tuyến đường")
@@ -578,6 +686,7 @@ def create_quotation(db, data, user="system"):
         created_by=user,
         updated_by=user,
     )
+    _ap_truong_bao_gia_moi(db, q, data, route)
     db.add(q)
     _audit(db, "CREATE_QUOTATION", "quotations", q.id, user)
     return q
@@ -713,11 +822,21 @@ def kiem_bao_gia_truoc_khi_duyet(q):
         lo = gia_thanh - cuoc_thu
         raise DomainError(
             "QUOTATION_BELOW_COST",
-            f"Báo giá đang lỗ: cước thu {cuoc_thu:,.0f} thấp hơn giá thành "
-            f"{gia_thanh:,.0f}, lỗ {lo:,.0f}. Không duyệt được báo giá lỗ — "
+            f"Báo giá đang lỗ: cước thu {_tien_viet(cuoc_thu)} thấp hơn giá thành "
+            f"{_tien_viet(gia_thanh)}, lỗ {_tien_viet(lo)}. Không duyệt được báo giá lỗ — "
             "hãy nâng cước hoặc soát lại giá thành.",
             422,
         )
+
+
+def _tien_viet(x):
+    """Số tiền đọc được theo kiểu Việt Nam: 1.240.000 chứ không phải 1,240,000.
+
+    Thông báo này hiện NGUYÊN VĂN trên màn hình cho người dùng Việt Nam và Lào,
+    nên một con số ngăn bằng dấu phẩy đọc ra thành một số thập phân — người
+    dùng thấy "lỗ 160,000" và hiểu là lỗ một trăm sáu mươi nghìn phẩy không.
+    """
+    return "{:,.0f}".format(float(x or 0)).replace(",", ".")
 
 
 def approve_quotation(db, qid, user="system"):
@@ -786,6 +905,7 @@ def update_quotation(db, qid, data, user="system"):
     if "notes" in data:
         q.notes = data.get("notes") or None
     q.volume_m3 = _money(data, "volume_m3", q.volume_m3 or 0)
+    _ap_truong_bao_gia_moi(db, q, data, route)
     require_quotation_vehicle_capacity(db, {
         "cargo_type": q.cargo_type,
         "weight_kg": q.weight_kg,

@@ -32,6 +32,7 @@ di het duong xuong DO, quyet toan va hoa don ma khong ai phat hien.
 
 import datetime as dt
 import json
+from uuid import uuid4
 
 from sqlalchemy import func
 
@@ -45,6 +46,7 @@ from models import (
     Route,
     VehicleType,
 )
+from services.don_vi_cuoc import DON_VI_CUOC, gia_moi_chuyen
 from services.errors import DomainError, conflict
 
 
@@ -61,21 +63,6 @@ HE_SO = {
     "per_tonne": ("mỗi tấn hàng", lambda t: t["tan"]),
     "per_trip": ("mỗi chuyến", lambda t: 1),
     "per_stop": ("mỗi điểm giao", lambda t: t["diem_giao"]),
-}
-
-#: Don vi bao gia cho khach. `doi` tra ve so luong nhan voi don gia de ra
-#: `d/chuyen` cua MOT chuyen.
-#:
-#: `per_trip` la 1 vi don gia da la tien mot chuyen. `per_km` nhan so km cua
-#: tuyen. Ba don vi con lai nhan so luong hang CUA MOT CHUYEN — va do la cho
-#: `min_qty_per_trip` chen vao: mo xuc thieu tai thi tinh theo muc toi thieu,
-#: khong tinh theo so thuc, vi gia thanh khong giam mot dong nao khi xe cho it.
-DON_VI_CUOC = {
-    "per_trip": {"ten": "mỗi chuyến", "nhan": "chuyến", "doi": lambda t, sl: 1},
-    "per_tonne": {"ten": "mỗi tấn", "nhan": "tấn", "doi": lambda t, sl: sl},
-    "per_m3": {"ten": "mỗi m³", "nhan": "m³", "doi": lambda t, sl: sl},
-    "per_kg": {"ten": "mỗi kg", "nhan": "kg", "doi": lambda t, sl: sl},
-    "per_km": {"ten": "mỗi km", "nhan": "km", "doi": lambda t, sl: t["km"]},
 }
 
 #: Nguong bien loi nhuan mac dinh. LA CAU HINH, khong phai luat: spec ghi ro
@@ -244,6 +231,31 @@ def bang_cau_phan(db, route, loai_xe, khoi_luong_kg, gia_tri_hang=0):
     return cac_dong, round(gia_thanh, 2), cach_lay_bot
 
 
+def _bien_rieng(gia_tri):
+    """Bien muc tieu rieng cua mot khach, hoac 0 khi khong khai.
+
+    VI SAO CAN HAM NAY chu khong dung `_so(x, mac_dinh)`.
+
+    `_so` chi tra ve mac dinh khi gia tri la `None` hoac chuoi rong. Nhung giao
+    dien gui `target_margin: 0` cho moi bao gia khong khai bien rieng — va so 0
+    di qua duoc `_so`, nen NGUONG BIEN THANH 0%. Luc do moi bao gia deu "tren
+    nguong", chot "bien duoi nguong thi phai duyet noi bo" tat han, va mot bao
+    gia bien 2% di thang sang khach ma khong ai duyet.
+
+    Loi do da xay ra that va chi lo ra khi bam thu tren man hinh: nut ghi dung
+    "Gui duyet noi bo", bam vao thi trang thai lai sang "da gui".
+
+    Nen o day: 0 va so am deu la KHONG KHAI, va nguoi goi tu quyet dinh mac
+    dinh. Bien lon hon hoac bang 1 cung loai — mot bien 100% nghia la gia thanh
+    bang khong, khong the co.
+    """
+    try:
+        x = float(gia_tri or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return x if 0 < x < 1 else 0.0
+
+
 def _dep_so(x):
     """So doc duoc theo kieu Viet Nam: 31,2 chu khong phai 31.2."""
     if float(x) == int(x):
@@ -347,7 +359,7 @@ def goi_y_gia(db, data, gia_thanh):
     """
     ra = {}
     if gia_thanh and gia_thanh > 0:
-        muc_tieu = _so(data.get("target_margin"), BIEN_MUC_TIEU)
+        muc_tieu = _bien_rieng(data.get("target_margin")) or BIEN_MUC_TIEU
         if 0 < muc_tieu < 1:
             ra["bien_muc_tieu"] = {
                 "gia": round(gia_thanh / (1 - muc_tieu), -3),
@@ -356,48 +368,41 @@ def goi_y_gia(db, data, gia_thanh):
     ma_khach = str(data.get("customer_id") or "").strip()
     ma_tuyen = str(data.get("route_id") or "").strip()
     if ma_khach and ma_tuyen:
+        # CHI LAY BAO GIA KHACH DA THAT SU NHAN DUOC.
+        #
+        # Truoc day cau nay lay ban gan nhat bat ke trang thai, nen mot ban nhap
+        # go do vai phut truoc cung thanh "lan truoc". Do la mot con so nguy
+        # hiem: nguoi ban bam nut "Lan truoc" va tin rang minh dang bao lai muc
+        # gia khach da chap nhan, trong khi that ra dang lap lai mot con so cua
+        # chinh minh chua ai xem.
         truoc = (db.query(Quotation)
                  .filter(Quotation.customer_id == ma_khach,
                          Quotation.route_id == ma_tuyen,
-                         Quotation.selling_price.is_not(None))
+                         Quotation.selling_price.is_not(None),
+                         Quotation.canonical_status.in_(
+                             ("sent", "approved", "accepted", "split", "rejected", "expired")))
                  .order_by(Quotation.created_at.desc()).first())
         if truoc and _so(truoc.selling_price) > 0:
+            ket_qua = {"accepted": "khách đã chấp nhận", "split": "khách đã chấp nhận",
+                       "rejected": "khách từ chối", "expired": "đã hết hạn"}.get(
+                           truoc.canonical_status, "đã gửi, chờ khách")
             ra["lan_truoc"] = {
                 "gia": _so(truoc.selling_price),
-                "mo_ta": "báo giá %s ngày %s" % (
+                "mo_ta": "báo giá %s ngày %s · %s" % (
                     truoc.quote_no or truoc.id,
-                    truoc.created_at.date().isoformat() if truoc.created_at else "—"),
+                    truoc.created_at.date().isoformat() if truoc.created_at else "—",
+                    ket_qua),
             }
     return ra
 
 
 # ===========================================================================
-# DOI DON VI CUOC VE MOT CHUYEN
+# BIEN LOI NHUAN
+#
+# Phep doi don vi cuoc (`gia_moi_chuyen`, `DON_VI_CUOC`) nam o
+# `services/don_vi_cuoc.py` va duoc nap o dau tep. No o tep rieng vi
+# `workflow_service` cung can dung, ma tep nay lai nap `workflow_service`.
 # ===========================================================================
-
-def gia_moi_chuyen(price_basis, unit_price, so_luong_moi_chuyen, min_qty_per_trip=None,
-                   km=0):
-    """Doi don gia theo don vi cua khach thanh `d/chuyen`.
-
-    `min_qty_per_trip` la thu chan mo da xuc thieu tai lam mot chuyen lai thanh
-    lo: gia thanh khong giam mot dong nao khi xe cho it hon, nen so luong tinh
-    tien khong duoc thap hon muc toi thieu da thoa thuan.
-    """
-    don_vi = str(price_basis or "per_trip")
-    if don_vi not in DON_VI_CUOC:
-        raise DomainError("PRICE_BASIS_INVALID",
-                          "Đơn vị tính cước không hợp lệ: %s. Nhận: %s."
-                          % (don_vi, ", ".join(DON_VI_CUOC)), 422)
-    gia = _so(unit_price)
-    if gia <= 0:
-        raise DomainError("UNIT_PRICE_REQUIRED", "Chưa khai đơn giá cước.", 422)
-    sl = _so(so_luong_moi_chuyen)
-    toi_thieu = _so(min_qty_per_trip)
-    if don_vi in ("per_tonne", "per_m3", "per_kg") and toi_thieu > 0:
-        sl = max(sl, toi_thieu)
-    he_so = DON_VI_CUOC[don_vi]["doi"]({"km": _so(km)}, sl)
-    return round(gia * _so(he_so), 2)
-
 
 def bien_loi_nhuan(cuoc, gia_thanh):
     """Bien = (cuoc - gia thanh) / cuoc. `None` khi cuoc bang khong.
@@ -686,7 +691,7 @@ def gui_khach(db, qid, actor="system"):
     kiem_bao_gia_truoc_khi_duyet(q)
 
     bien = bien_loi_nhuan(q.selling_price, q.total_cost)
-    nguong = _so(q.target_margin, NGUONG_BIEN_PHAI_DUYET)
+    nguong = _bien_rieng(q.target_margin) or NGUONG_BIEN_PHAI_DUYET
     if bien is not None and bien < nguong:
         q.canonical_status = "pending_approval"
         q.status = "Chờ duyệt nội bộ"
@@ -804,6 +809,142 @@ def _con_lai_ngay(valid_to, hom_nay=None):
 def _da_het_han(q, hom_nay=None):
     con = _con_lai_ngay(q.valid_to, hom_nay)
     return con is not None and con < 0
+
+
+def duyet_noi_bo(db, qid, actor="system"):
+    """Truong phong duyet mot bao gia bien duoi nguong, roi no di tiep sang khach.
+
+    VI SAO CO BUOC NAY RIENG, khong dung `approve_quotation` cua duong cu.
+
+    Hai viec ten giong nhau ma khac han: `approve_quotation` la nguoi cua minh
+    dong y voi GIA THANH va cho bao gia chay tiep; con o day la nguoi co quyen
+    dong y BAN DUOI NGUONG BIEN cong ty — mot quyet dinh kinh doanh, va no phai
+    de lai dau vet ai dong y.
+
+    Bao gia LO thi khong co duong nay: `kiem_bao_gia_truoc_khi_duyet` chan
+    truoc, va do la chot chu du an da chot — "lo va het han thi khong cho
+    duyet". Duyet noi bo chi mo cho khoang bien mong, khong mo cho khoan lo.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status != "pending_approval":
+        raise conflict("INVALID_TRANSITION",
+                       "Báo giá %s không ở trạng thái chờ duyệt nội bộ (đang %s)."
+                       % (q.quote_no or q.id, q.canonical_status))
+
+    from services.workflow_service import kiem_bao_gia_truoc_khi_duyet
+    kiem_bao_gia_truoc_khi_duyet(q)
+
+    q.canonical_status = "sent"
+    q.status = "Đã gửi · chờ khách"
+    q.sent_at = dt.datetime.utcnow()
+    if not q.quote_no:
+        q.quote_no = _ma_bao_gia_moi(db)
+    bien = bien_loi_nhuan(q.selling_price, q.total_cost)
+    _ghi_phien_ban(db, q, "Duyệt nội bộ dưới ngưỡng biên (%s)"
+                   % ("%.1f%%" % (bien * 100) if bien is not None else "chưa rõ"), actor)
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+def tra_ve_nhap(db, qid, ly_do="", actor="system"):
+    """Nguoi duyet tra bao gia ve ban nhap de nguoi ban sua gia."""
+    q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    if q.canonical_status != "pending_approval":
+        raise conflict("INVALID_TRANSITION",
+                       "Chỉ báo giá đang chờ duyệt nội bộ mới trả về bản nháp được.")
+    q.canonical_status = "draft"
+    q.status = "Nháp"
+    _ghi_phien_ban(db, q, "Trả về nháp: %s" % (str(ly_do).strip() or "không ghi lý do"), actor)
+    q.updated_by = actor
+    q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    return q
+
+
+LOAI_CHUNG_TU = ("Hợp đồng", "PO của khách", "Phiếu xuất kho", "Packing list",
+                 "Tờ khai hải quan", "Khác")
+
+#: Duoi tep cho phep dinh kem, va kieu MIME de tra ve khi tai xuong.
+#:
+#: DANH SACH CHO PHEP chu khong danh sach chan: mot danh sach chan luon thieu
+#: mot duoi nao do, va o day duoi bi thieu nghia la mot tep chay duoc nam trong
+#: thu muc may chu.
+DUOI_CHUNG_TU = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
+TRAN_KICH_THUOC_BYTE = 25 * 1024 * 1024
+
+
+def them_chung_tu(db, qid, loai, ten_tep, duong_luu, mime, so_byte, ghi_chu, actor="system"):
+    """Ghi mot dong chung tu da luu duoc vao bang.
+
+    Ham nay KHONG ghi tep — viec do o tang diem cuoi, vi doc mot tep tai len la
+    viec bat dong bo. O day chi ghi dong, de con duong ghi co so du lieu nam
+    trong cung mot giao dich voi moi thay doi khac cua bao gia.
+    """
+    q = db.query(Quotation).filter(Quotation.id == qid).first()
+    if not q:
+        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá %s." % qid, 404)
+    loai_ct = str(loai or "Khác").strip() or "Khác"
+    if loai_ct not in LOAI_CHUNG_TU:
+        raise DomainError("DOC_TYPE_INVALID",
+                          "Loại chứng từ không hợp lệ: %s. Nhận: %s."
+                          % (loai_ct, ", ".join(LOAI_CHUNG_TU)), 422)
+    dong = QuotationAttachment(
+        id="QTA-%s" % uuid4().hex[:12].upper(),
+        quotation_id=q.id,
+        doc_type=loai_ct,
+        file_name=ten_tep,
+        storage_url=duong_luu,
+        mime_type=mime,
+        size_bytes=int(so_byte or 0),
+        note=(str(ghi_chu).strip() or None) if ghi_chu else None,
+        uploaded_at=dt.datetime.utcnow(),
+        uploaded_by=actor,
+    )
+    db.add(dong)
+    db.flush()
+    return dong
+
+
+def mot_chung_tu(db, qid, ma_chung_tu):
+    dong = (db.query(QuotationAttachment)
+            .filter(QuotationAttachment.id == ma_chung_tu,
+                    QuotationAttachment.quotation_id == qid).first())
+    if not dong:
+        raise DomainError("ATTACHMENT_NOT_FOUND",
+                          "Không tìm thấy chứng từ %s của báo giá %s." % (ma_chung_tu, qid), 404)
+    return dong
+
+
+def xoa_chung_tu(db, qid, ma_chung_tu, actor="system"):
+    """Xoa mot chung tu. Tra ve duong luu de tang diem cuoi xoa tep tren dia.
+
+    KHONG cho xoa khi bao gia da tach thanh lenh giao hang: chung tu di theo DO
+    xuong van hanh va ke toan, nen xoa mot hop dong o day nghia la mot chuyen
+    dang chay mat can cu.
+    """
+    dong = mot_chung_tu(db, qid, ma_chung_tu)
+    q = db.query(Quotation).filter(Quotation.id == qid).first()
+    if q is not None and q.canonical_status == "split":
+        raise conflict("LOCKED_RECORD",
+                       "Báo giá %s đã tách thành lệnh giao hàng — chứng từ đã đi theo DO "
+                       "xuống vận hành nên không xoá được." % (q.quote_no or q.id))
+    duong = dong.storage_url
+    db.delete(dong)
+    db.flush()
+    return duong
 
 
 def mot_bao_gia(db, qid, kem_chi_tiet=True):

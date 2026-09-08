@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
   <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908f-theo-doi-het-tran">
+  <link rel="stylesheet" href="/static/css/bao-gia-v2.css?v=20260908a-bao-gia-v2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -5308,6 +5309,17 @@
           <div id="crm-sales-enterprise-tabs-anchor" data-enterprise-tabs-anchor="true"></div>
 
           <!-- QUOTATION MODULE -->
+          <!-- =============================================================
+               BÁO GIÁ CƯỚC — bộ áo mới, dựng theo nhap_UI__duan/quotation-page (1).html
+
+               Màn được vẽ hoàn toàn bằng `js/bao-gia-v2.js`. Khối cũ nằm ngay dưới
+               và ĐANG ẨN: `app.js` còn vài đường gọi vào các ô của nó
+               (`oracle-qt-tbody`, `oracle-qt-form`), và mấy bài kiểm giao diện còn
+               tìm chúng. Xoá hẳn khối đó là một việc riêng, làm sau khi đã dời hết
+               các đường gọi đó sang màn mới.
+               ============================================================= -->
+          <div id="qtv2-root"></div>
+          <div id="qtv2-khoi-cu" hidden>
           <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 20px;"><i class="fa-solid fa-file-signature"></i> <span data-i18n="title_quotation">2. Báo Giá Cước Vận Chuyển (Quotation)</span></h3>
           <div class="oracle-container" id="oracle-qt-list">
             <div class="oracle-header">
@@ -5473,6 +5485,7 @@
               </div>
             </div>
           </div>
+          </div><!-- /qtv2-khoi-cu -->
           <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 30px;"><i class="fa-solid fa-file-invoice"></i> <span data-i18n="title_sales_orders">3. Đơn Hàng Vận Chuyển</span></h3>
           <div class="oracle-container" id="oracle-so-list">
             <div class="oracle-header">
@@ -9328,6 +9341,10 @@
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
+  <!-- Màn Báo giá cước. Nạp SAU app.js và khung-moi.js: cả ba bọc lại
+       `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
+       thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->
+  <script src="/static/js/bao-gia-v2.js?v=20260908a-bao-gia-v2"></script>
   <!-- Bộ chọn DO của hộp thoại tạo Trip. Nạp SAU app.js: nó định nghĩa lại
        populateTripReturnDoSelect và capNhatDSDOChonTrongHopThoai. -->
   <script src="/static/js/do-picker.js?v=20260908a-bo-chon-do-v2"></script>

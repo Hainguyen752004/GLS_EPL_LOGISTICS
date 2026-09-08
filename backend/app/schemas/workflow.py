@@ -66,6 +66,38 @@ class QuotationCreateRequest(StrictRequest):
     cargo_insurance: Optional[str] = None
     warehouse_owner: Optional[str] = None
 
+    # ------------------------------------------------------------------
+    # Truong cua ban thiet ke bao gia moi (SPEC-quotation-page.md).
+    #
+    # `model_config` cua `StrictRequest` la `extra="forbid"`, nen mot truong
+    # khong khai o day thi may chu tra 422 chu khong lang le bo qua. Do la cach
+    # dung: mot o nguoi dung go xong bam Luu roi mat khong mot loi nao la thu
+    # kho phat hien nhat. Nhung no cung co nghia la MOI o cua man hinh phai co
+    # ten trong danh sach nay.
+    #
+    # `unit_price` + `price_basis` la doi gia THAT ma khach doc; `selling_price`
+    # duoc may chu SUY RA tu hai cai do (xem `workflow_service`), nen giao dien
+    # khong tu tinh va hai cot khong troi khoi nhau.
+    # ------------------------------------------------------------------
+    vehicle_type_id: Optional[str] = None
+    price_basis: Optional[str] = None
+    unit_price: Optional[Number] = None
+    min_qty_per_trip: Optional[Number] = None
+    currency_code: Optional[str] = None
+    fx_rate: Optional[Number] = None
+    payment_terms: Optional[str] = None
+    waiting_surcharge: Optional[Number] = None
+    sales_rep: Optional[str] = None
+    trips_per_month: Optional[int] = None
+    cargo_value: Optional[Number] = None
+    stacking: Optional[str] = None
+    sealing: Optional[str] = None
+    recipient_contact: Optional[str] = None
+    notes_customer: Optional[str] = None
+    notes_ops: Optional[str] = None
+    notes_internal: Optional[str] = None
+    target_margin: Optional[Number] = None
+
 
 class QuotationUpdateRequest(QuotationCreateRequest):
     customer_id: Optional[str] = None
