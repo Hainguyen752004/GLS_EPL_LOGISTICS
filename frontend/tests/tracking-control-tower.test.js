@@ -108,7 +108,7 @@ test('selecting a trip opens selected route mode and draws route waypoints', asy
     [10.8769, 106.7734],
     [10.7567, 106.7828],
   ]));
-  assert.match(w.document.querySelector('#ct-map-note').textContent, /theo chuẩn đường xe chạy/i);
+  assert.match(w.document.querySelector('#ct-map-note').textContent, /đúng đường xe chạy/i);
   dom.window.close();
 });
 
@@ -166,5 +166,66 @@ test('nut ghi moc: bieu tuong la the that, con ten moc thi duoc thoat', async ()
   // khong tao ra the nao trong trang.
   assert.equal(nut[0].querySelectorAll('img').length, 0, 'ten moc phai duoc thoat');
   assert.match(nut[0].textContent, /Ghi mốc: Dỡ hàng <img src=x/);
+  dom.window.close();
+});
+
+/**
+ * Hình tuyến phải là ĐƯỜNG BỘ THẬT, và nó phải đến từ MÁY CHỦ.
+ *
+ * Chủ dự án chỉ ra đúng chỗ này: *"tui muốn cái tuyến đường đi là sự thật nên vẽ
+ * cái đường thẳng mang đi demo kỳ lắm"*. Và đó là một lỗi thật chứ không phải
+ * chuyện thẩm mỹ — một đường thẳng từ Long An sang Cái Mép đi xuyên qua sông,
+ * nói sai cả đường xe chạy lẫn độ dài tuyến.
+ *
+ * Máy chủ đọc hình đã lưu trong bảng `routes`, nên màn này vẽ được cả khi máy
+ * không có mạng, và vẽ ĐÚNG CÙNG một hình với màn Tuyến đường. Trước đây màn
+ * này tự gọi ra Internet, và khi gọi không được thì vẽ đường nối trạm.
+ */
+test('hình tuyến lấy từ máy chủ, không tự gọi ra Internet', async () => {
+  const dom = new JSDOM('<section id="view-tracking"></section>', { runScripts: 'outside-only' });
+  const w = dom.window;
+  const veDuoc = [];
+  let goiRaNgoai = 0;
+  const duongBo = [[11.0497, 106.7428], [11.02, 106.75], [10.95, 106.76],
+    [10.88, 106.7734], [10.80, 106.78], [10.7567, 106.7828]];
+  const row = {
+    key: 'T:A', do_id: 'A', trip_id: 'T', vehicle_id: 'V', driver_name: 'D',
+    gps: { status: 'simulated', lat: 10.95, lng: 106.76 },
+    legs: [], events: [], incidents: [],
+    route_segments: [
+      { from: 'Kho', to: 'Vành đai', from_lat: 11.0497, from_lng: 106.7428, to_lat: 10.8769, to_lng: 106.7734, dist_km: 20 },
+      { from: 'Vành đai', to: 'Cảng', from_lat: 10.8769, from_lng: 106.7734, to_lat: 10.7567, to_lng: 106.7828, dist_km: 15 },
+    ],
+    duong_bo: duongBo,
+    km_duong_bo: 42.8,
+  };
+  w.fetch = async (u) => {
+    if (/router\.project-osrm\.org|openstreetmap/.test(String(u))) {
+      goiRaNgoai += 1;
+      throw new Error('không được gọi ra Internet ở đây');
+    }
+    return { ok: true, json: async () => ({ items: [row], kpis: { total: 1 } }) };
+  };
+  const noi = () => ({ addTo() { return this; }, bindTooltip() { return this; }, on() { return this; } });
+  w.requestAnimationFrame = cb => cb();
+  w.L = {
+    map: () => ({ setView() { return this; }, invalidateSize() {}, fitBounds() {}, hasLayer() { return false; }, removeLayer() {} }),
+    tileLayer: () => ({ on() { return this; }, addTo() { return this; } }),
+    layerGroup: () => ({ addTo() { return this; }, clearLayers() {} }),
+    circleMarker: () => noi(),
+    marker: () => noi(),
+    divIcon: () => ({}),
+    polyline: (diem, tuyChon) => { veDuoc.push({ diem: diem || [], tuyChon: tuyChon || {} }); return noi(); },
+  };
+  w.eval(source());
+  await w.TrackingControlTower.load();
+  w.TrackingControlTower.select('T:A');
+  await new Promise(r => setTimeout(r, 60));
+
+  assert.equal(goiRaNgoai, 0, 'màn này không được tự gọi ra Internet để lấy hình tuyến');
+  const hinh = veDuoc.at(-1);
+  assert.ok(hinh, 'phải vẽ một hình tuyến');
+  assert.equal(hinh.diem.length, duongBo.length, 'phải vẽ đúng hình máy chủ trả về');
+  assert.ok(!hinh.tuyChon.dashArray, 'hình đường bộ thật vẽ nét LIỀN, không nét đứt');
   dom.window.close();
 });

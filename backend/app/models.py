@@ -254,6 +254,15 @@ class Route(Base):
     name = Column(String, nullable=False) # Route Name (Bình Dương - Cát Lái)
     distance_km = Column(Float, default=0.0) # Total Distance
     segments_json = Column(Text) # Chặng đường (A->B->C)
+    # HÌNH ĐƯỜNG BỘ THẬT của tuyến, lưu lại để không phải lấy lại mỗi lần vẽ.
+    # Một tuyến bốn điểm trả về hơn hai nghìn điểm hình; lấy lại mỗi lần mở màn
+    # là một giây chờ và một lời gọi ra ngoài cho một thứ không bao giờ đổi.
+    # Kèm dấu vân của danh sách điểm, để biết khi nào phải lấy lại.
+    road_geometry_json = Column(Text)
+    # Độ dài đường BỘ thật. KHÁC `distance_km` — con số người dùng khai, và là
+    # thứ đang nuôi phép tính giá cước lẫn ETA. Giữ cả hai chứ không ghi đè:
+    # thay số người khai bằng số máy lấy về là đổi tiền trên những đơn đã chốt.
+    road_distance_km = Column(Float)
 
 # 4. Locations (Branch, Port, Warehouse)
 class Location(Base):

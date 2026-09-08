@@ -13320,7 +13320,7 @@ function renderRouteWaypointLegend(markerModel) {
     </span>`).join('');
 }
 
-window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName) {
+window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName, duongBoTuMayChu) {
   const container = document.getElementById('route-leaflet-map');
   if (!container) return;
 
@@ -13380,27 +13380,55 @@ window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName
 
   const waypointsParam = waypointsData.map(w => `${w.lng},${w.lat}`).join(';');
 
-  // Fetch real road polyline geometry from OSRM
+  /* HÌNH TUYẾN: ưu tiên đường BỘ THẬT, và nếu chỉ có đường nối điểm thì NÓI RA.
+   *
+   * Chủ dự án đã chỉ ra đúng chỗ này: *"tui muốn cái tuyến đường đi là sự thật
+   * nên vẽ cái đường thẳng mang đi demo kỳ lắm"*. Và đó là một lỗi thật chứ
+   * không phải chuyện thẩm mỹ — một đường thẳng từ Long An sang Cái Mép đi
+   * xuyên qua sông và qua khu dân cư, nói sai cả hai điều quan trọng nhất của
+   * một tuyến: xe đi đường nào, và tuyến dài bao nhiêu.
+   *
+   * Ba đường, theo thứ tự:
+   *   1. Hình do MÁY CHỦ trả về — đã lưu trong cơ sở dữ liệu, nên chạy được cả
+   *      khi máy không có mạng, và không phải lấy lại mỗi lần mở màn.
+   *   2. Lấy trực tiếp từ máy dẫn đường, cho những tuyến máy chủ chưa lưu.
+   *   3. Đường NỐI ĐIỂM — vẽ nét đứt và ghi rõ "chưa có đường bộ thật". Một
+   *      đường thẳng vẽ liền nét đọc ra như tuyến đi thật, và đó là điều không
+   *      được để xảy ra nữa.
+   */
+  const veHinh = (diem, laDuongBo) => {
+    const polyline = L.polyline(diem, laDuongBo
+      ? { color: '#0a6ed1', weight: 6, opacity: 0.85 }
+      : { color: '#0a6ed1', weight: 4, opacity: 0.75, dashArray: '10 8' });
+    routeMapLayersGroup.addLayer(polyline);
+    leafletRouteMap.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    if (!laDuongBo) {
+      polyline.bindTooltip('Đường nối điểm — chưa có hình đường bộ thật',
+        { sticky: true, className: 'route-map-canhbao' });
+    }
+    const oNote = document.getElementById('route-map-note');
+    if (oNote) {
+      oNote.textContent = laDuongBo ? '' :
+        'Nét đứt: đây là đường nối các điểm, chưa phải hình đường bộ thật của tuyến.';
+      oNote.hidden = !!laDuongBo;
+    }
+  };
+
+  if (Array.isArray(duongBoTuMayChu) && duongBoTuMayChu.length >= 2) {
+    veHinh(duongBoTuMayChu, true);
+    return;
+  }
   try {
     const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${waypointsParam}?overview=full&geometries=geojson`;
     const res = await fetch(osrmUrl);
     const data = await res.json();
     if (data && data.routes && data.routes.length > 0) {
-      const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-      const polyline = L.polyline(coords, { color: '#0a6ed1', weight: 6, opacity: 0.85 });
-      routeMapLayersGroup.addLayer(polyline);
-      leafletRouteMap.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+      veHinh(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]), true);
     } else {
-      const latlngs = waypointsData.map(w => [w.lat, w.lng]);
-      const polyline = L.polyline(latlngs, { color: '#0a6ed1', weight: 5, opacity: 0.9 });
-      routeMapLayersGroup.addLayer(polyline);
-      leafletRouteMap.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+      veHinh(waypointsData.map(w => [w.lat, w.lng]), false);
     }
   } catch (e) {
-    const latlngs = waypointsData.map(w => [w.lat, w.lng]);
-    const polyline = L.polyline(latlngs, { color: '#0a6ed1', weight: 5, opacity: 0.9 });
-    routeMapLayersGroup.addLayer(polyline);
-    leafletRouteMap.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    veHinh(waypointsData.map(w => [w.lat, w.lng]), false);
   }
 };
 
@@ -15382,6 +15410,10 @@ window.loadSavedRoutePreset = async function (code) {
         ? apiRoute.segments_geo
         : segments;
       let diemThieu = apiRoute.diem_thieu_toa_do || [];
+      // HÌNH ĐƯỜNG BỘ THẬT, cũng do máy chủ trả. Lấy từ `/geo` chứ không chỉ từ
+      // danh sách: danh sách chỉ trả bản ĐÃ LƯU, còn `/geo` lấy mới cho tuyến
+      // chưa từng mở — nên tuyến mới cũng có hình đường bộ ngay lần đầu xem.
+      let duongBo = apiRoute.duong_bo || null;
       try {
         const traGeo = await fetch(`${API_BASE}/api/routes/${encodeURIComponent(apiRoute.id)}/geo`);
         if (traGeo.ok) {
@@ -15391,13 +15423,19 @@ window.loadSavedRoutePreset = async function (code) {
             changCoToaDo = duLieu.segments_geo;
             diemThieu = duLieu.diem_thieu_toa_do || [];
           }
+          if (Array.isArray(duLieu.duong_bo) && duLieu.duong_bo.length >= 2) {
+            duongBo = duLieu.duong_bo;
+            // Ghi lại vào bản trong bộ nhớ để lần mở sau không phải gọi lại.
+            apiRoute.duong_bo = duLieu.duong_bo;
+            apiRoute.km_duong_bo = duLieu.km_duong_bo;
+          }
         }
       } catch (e) {
         // Máy chủ không trả được thì vẫn vẽ bằng toạ độ đã có trong danh sách.
       }
 
       const didDraw = await window.RouteMapUtils.drawSavedRoute(
-        { ...apiRoute, segments_json: changCoToaDo },
+        { ...apiRoute, segments_json: changCoToaDo, duong_bo: duongBo },
         geocodeRouteLocation,
         window.initLeafletRouteMap
       );

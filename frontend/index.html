@@ -7706,6 +7706,11 @@
                   <div id="route-waypoint-bar" style="position: absolute; bottom: 12px; left: 12px; right: 12px; background: rgba(255,255,255,0.95); backdrop-filter: blur(6px); padding: 12px 18px; border-radius: 10px; border: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 0.85rem; z-index: 500;">
                     Chọn tuyến đường để hiển thị sơ đồ lộ trình
                   </div>
+
+                  <!-- NÓI RA khi hình tuyến chỉ là đường nối điểm.
+                       Một đường thẳng vẽ liền nét đọc ra như tuyến đi thật; đem
+                       demo thì nó nói sai cả đường xe chạy lẫn độ dài tuyến. -->
+                  <div id="route-map-note" hidden style="position: absolute; top: 52px; left: 12px; right: 12px; background: rgba(255,244,224,0.96); color: #b45309; padding: 7px 12px; border-radius: 8px; border: 1px solid #f5d98a; font-size: 0.76rem; font-weight: 700; z-index: 500;"></div>
                 </div>
               </div>
 
@@ -9266,7 +9271,7 @@
   <script src="/static/js/format-utils.js?v=20260903-format-utils-v1"></script>
   <script src="/static/js/api-auth.js?v=20260905-shipping-spec-v1"></script>
     <script src="/static/js/currency-rate-utils.js?v=20260824-rate-history-v1"></script>
-    <script src="/static/js/route-map-utils.js?v=20260903-waypoint-colors"></script>
+    <script src="/static/js/route-map-utils.js?v=20260908-duong-bo-that"></script>
   <script src="/static/js/route-segment-policy.js?v=20260810-foundation"></script>
   <script src="/static/js/workflow-presentation.js?v=20260819-control-tower-vi-fix"></script>
   <script src="/static/js/command-policy.js?v=20260810-foundation"></script>
@@ -9303,9 +9308,9 @@
   <script src="/static/js/do-board.js?v=20260907a-do-board"></script>
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
   <!-- Lớp nền bản đồ có dự phòng. Nạp TRƯỚC mọi tệp vẽ bản đồ. -->
-  <script src="/static/js/lop-nen-ban-do.js?v=20260908a-nen-ban-do"></script>
-  <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908g-nen-ban-do">
-  <script src="/static/js/tracking-control-tower.js?v=20260908g-nen-ban-do"></script>
+  <script src="/static/js/lop-nen-ban-do.js?v=20260908b-bo-carto"></script>
+  <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908h-duong-bo">
+  <script src="/static/js/tracking-control-tower.js?v=20260908h-duong-bo"></script>
   <!-- Màn Sắp lịch xe và tài xế. Nạp TRƯỚC `app.js` cũng chạy được: tệp này tự
        chờ và bọc `switchMasterDataTab` khi hàm đó xuất hiện. -->
   <link rel="stylesheet" href="/static/css/sap-lich-v5.css?v=20260908d-bon-viec">

@@ -25,6 +25,7 @@ trong.
 """
 
 import datetime as dt
+import math
 
 
 def _phan_tram_da_di(trip, now):
@@ -77,6 +78,39 @@ def _duong_gap_khuc(segments):
     return diem
 
 
+def duong_gap_khuc_tu_duong_bo(cac_diem):
+    """Doi hinh duong BO that thanh chuoi diem kem do dai tung doan.
+
+    VI SAO CAN. `_duong_gap_khuc` chi biet cac DIEM TRAM cua tuyen, nen xe mo
+    phong chay tren duong THANG noi cac tram — va mot duong thang tu Long An
+    sang Cai Mep di xuyen qua song. Tren man Theo doi thi cai xe do dang dung
+    giua song, va do la thu chu du an bao la mang di demo khong duoc.
+
+    Voi hinh duong bo that (hang tram diem doc theo duong nhua) thi xe chay dung
+    tren duong. Do dai tung doan tinh bang duong chim bay giua hai diem lien
+    tiep — o khoang cach vai chuc met thi do chinh la do dai doan duong.
+    """
+    diem = [(float(d[0]), float(d[1])) for d in (cac_diem or [])
+            if d and len(d) >= 2 and d[0] is not None and d[1] is not None]
+    if len(diem) < 2:
+        return []
+    ra = [(diem[0][0], diem[0][1], 0.0)]
+    for truoc_d, sau_d in zip(diem, diem[1:]):
+        ra.append((sau_d[0], sau_d[1], _chim_bay_km(truoc_d, sau_d)))
+    return ra
+
+
+def _chim_bay_km(a, b):
+    lat1, lng1 = a
+    lat2, lng2 = b
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lng2 - lng1)
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(h)))
+
+
 def _noi_suy(diem, ti_le):
     """Diem nam o `ti_le` cua duong gap khuc, can theo DO DAI tung chang.
 
@@ -101,7 +135,8 @@ def _noi_suy(diem, ti_le):
     return (diem[-1][0], diem[-1][1])
 
 
-def vi_tri_mo_phong(trip, segments, now, tong_km=None, trang_thai_don=None):
+def vi_tri_mo_phong(trip, segments, now, tong_km=None, trang_thai_don=None,
+                    duong_bo=None):
     """Vi tri mo phong cua mot chuyen, hoac `None` neu khong tinh duoc.
 
     Tra ve dict: `lat`, `lng`, `speed_kmh`, `con_lai_km`, `phan_tram`,
@@ -110,7 +145,12 @@ def vi_tri_mo_phong(trip, segments, now, tong_km=None, trang_thai_don=None):
     Khong tinh duoc thi tra ve `None` — khong doan bua mot diem giua ban do.
     Thieu toa do hay thieu moc thoi gian thi noi "khong biet" con dung hon.
     """
-    diem = _duong_gap_khuc(segments)
+    # HINH DUONG BO THAT truoc, cac diem tram sau.
+    #
+    # Chi co diem tram thi xe chay tren duong THANG noi chung — va mot duong
+    # thang tu Long An sang Cai Mep di xuyen qua song, nen tren ban do cai xe
+    # dang dung giua song. Co hinh duong bo thi xe chay dung tren duong nhua.
+    diem = duong_gap_khuc_tu_duong_bo(duong_bo) or _duong_gap_khuc(segments)
     if len(diem) < 2:
         return None
 

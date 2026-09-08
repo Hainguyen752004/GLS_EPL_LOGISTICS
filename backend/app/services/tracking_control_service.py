@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, or_
 from services import gps_simulation
 from services import toa_do_diem
+from services import duong_bo as dich_vu_duong_bo
 from models import (Customer, DeliveryOrder, DeliveryPODRecord, DeliveryPODDocument, Driver, FreightOrder, Incident,
                     Route, TransportEvent, TransportTrip, TransportTripLeg,
                     TripDeliveryOrder, VehicleTracking)
@@ -231,12 +232,22 @@ def control_tower(db, now=None):
             # no duoc danh dau `simulated` chu khong phai `fresh` — mot diem mo
             # phong ma man hinh bao la GPS thiet bi thi nguoi truc se tin vao mot
             # vi tri khong ai do duoc.
+            # HINH DUONG BO THAT cua tuyen, da luu san o bang `routes`. Doc chu
+            # khong lay moi: mot loi goi ra ngoai giua vong lap dung nay se lam
+            # ca man Theo doi cho hang chuc giay.
+            hinh_bo = dich_vu_duong_bo.hinh_da_luu(route)
+            diem_duong_bo = hinh_bo.get('diem') if hinh_bo else None
+
             simulated = None
             if gps_status != 'fresh' and trip and trip.status in ('dispatched', 'in_transit'):
                 simulated = gps_simulation.vi_tri_mo_phong(
                     trip, enrich_route_segments(route_segments(route)), now,
-                    tong_km=route.distance_km if route else None,
+                    tong_km=(hinh_bo.get('km') if hinh_bo else None) or (route.distance_km if route else None),
                     trang_thai_don=order.canonical_status,
+                    # Xe chay tren DUONG BO that, khong tren duong thang noi cac
+                    # tram — mot duong thang tu Long An sang Cai Mep di xuyen
+                    # qua song, va cai xe mo phong dung giua song.
+                    duong_bo=diem_duong_bo,
                 )
             if simulated:
                 lat, lng = simulated['lat'], simulated['lng']
@@ -275,6 +286,10 @@ def control_tower(db, now=None):
                 'origin': order.origin, 'destination': order.destination,
                 'route_segments': enrich_route_segments(segments),
                 'route_distance_km': route.distance_km if route else None,
+                # Hinh duong bo that de giao dien VE dung tuyen, thay vi tu di
+                # lay tu trinh duyet roi ve duong thang khi khong lay duoc.
+                'duong_bo': diem_duong_bo,
+                'km_duong_bo': hinh_bo.get('km') if hinh_bo else None,
                 'delivery_due': iso(due), 'planned_arrival_at': iso(trip.planned_arrival_at if trip else order.planned_arrival_at),
                 'planned_return_at': iso(trip.planned_return_at if trip else order.planned_return_at),
                 # MOC KE TIEP can ghi, tinh tu chuoi moc chinh cua lenh van chuyen.

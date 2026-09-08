@@ -467,7 +467,7 @@
         });
         el('ct-route-strip').innerHTML = waypoints.map((w, index) => `<span><b>${index + 1}</b>${esc(w.label)}</span>`).join('<i class="fa-solid fa-arrow-right"></i>');
         bounds.push(...points);
-        drawRoadRoute(r.key, points);
+        drawRoadRoute(r.key, points, r.duong_bo);
       }
       else el('ct-map-note').textContent = 'Tuyến chưa đủ tọa độ tham chiếu để vẽ. Không suy diễn đường đi từ tên địa điểm.';
     } else {
@@ -485,11 +485,18 @@
     });
     return points;
   }
-  async function drawRoadRoute(key, fallbackPoints) {
+  async function drawRoadRoute(key, fallbackPoints, duongBoTuMayChu) {
     const token = ++state.routeRequest;
     const cacheKey = fallbackPoints.map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`).join('|');
     try {
-      let roadPoints = state.routeCache[cacheKey];
+      // HINH DUONG BO do MAY CHU tra ve duoc dung truoc. May chu doc no tu bang
+      // `routes` — da luu san — nen khong can mang, khong cho, va giong y hinh
+      // ma man Tuyen duong dang ve. Truoc day man nay tu goi ra Internet, va
+      // khi khong goi duoc thi ve mot duong THANG noi cac tram: mot duong thang
+      // tu Long An sang Cai Mep di xuyen qua song.
+      let roadPoints = (Array.isArray(duongBoTuMayChu) && duongBoTuMayChu.length >= 2)
+        ? duongBoTuMayChu.map(([lat, lng]) => [Number(lat), Number(lng)])
+        : state.routeCache[cacheKey];
       if (!roadPoints) {
         const coords = fallbackPoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
         const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
@@ -505,7 +512,7 @@
       }
       if (token !== state.routeRequest || key !== state.selected || state.mode !== 'route') return;
       L.polyline(roadPoints, { color: '#1a73e8', weight: 5, opacity: 0.88 }).addTo(layer);
-      el('ct-map-note').textContent = 'Đường xanh: tuyến kế hoạch theo chuẩn đường xe chạy từ OSRM. Đây chưa phải vệt GPS live.';
+      el('ct-map-note').textContent = 'Đường xanh: tuyến kế hoạch theo đúng đường xe chạy. Đây chưa phải vệt GPS live.';
       requestAnimationFrame(() => { map.invalidateSize(); map.fitBounds(roadPoints, { padding: [30, 30], maxZoom: 13, animate: false }); });
     } catch (error) {
       if (token !== state.routeRequest || key !== state.selected || state.mode !== 'route') return;

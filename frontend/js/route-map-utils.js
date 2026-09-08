@@ -170,7 +170,14 @@
     const waypoints = await resolveRouteWaypoints(route, geocodeFn);
     if (waypoints.length < 2) return false;
 
-    await drawFn(waypoints, route && route.id, route && route.name);
+    // Truyen HINH DUONG BO THAT xuong ham ve, neu may chu da tra ve.
+    //
+    // Khong co no thi ham ve phai tu di lay, tu trinh duyet — va khi khong lay
+    // duoc thi no ve mot DUONG THANG noi cac diem. Chu du an da chi ra dung cho
+    // do: mot duong thang tu Long An sang Cai Mep di xuyen qua song, va mang
+    // di demo thi noi sai ca hai dieu quan trong nhat cua mot tuyen.
+    await drawFn(waypoints, route && route.id, route && route.name,
+      (route && route.duong_bo) || null);
     return true;
   }
 

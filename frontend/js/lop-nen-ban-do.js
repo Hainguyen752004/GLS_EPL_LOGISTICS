@@ -28,15 +28,18 @@
    * Mỗi nguồn giữ nguyên dòng ghi công của nó — đó là điều kiện dùng của cả ba
    * dịch vụ, không phải một dòng chữ trang trí.
    */
+  /* MỘT NGUỒN CHỈ ĐƯỢC VÀO DANH SÁCH NÀY NẾU NÓ TRẢ ẢNH SẠCH KHÔNG CẦN KHOÁ.
+   *
+   * SAI LẦM ĐÃ MẮC: tôi từng đặt `basemaps.cartocdn.com` làm nguồn đầu vì thử
+   * bằng `curl` thấy HTTP 200. Nhưng 200 chỉ nghĩa là họ CÓ trả ảnh — và ảnh đó
+   * bị đóng chữ "API KEY REQUIRED" chéo khắp bản đồ. Người dùng thấy nguyên một
+   * màn hình đầy chữ đó giữa lúc demo.
+   *
+   * Nên phép thử đúng cho một nguồn ảnh nền không phải mã trả về, mà là MỞ MỘT
+   * Ô ẢNH RA XEM. Ba nguồn dưới đây đều đã xem bằng mắt: ảnh sạch, không dấu,
+   * không đòi khoá.
+   */
   const NGUON = [
-    {
-      ma: 'carto',
-      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      tuyChon: {
-        subdomains: 'abcd', maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      },
-    },
     {
       ma: 'osm-de',
       url: 'https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png',

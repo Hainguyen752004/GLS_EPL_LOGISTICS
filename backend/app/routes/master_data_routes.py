@@ -24,6 +24,7 @@ from database import get_db
 from models import Customer, DeliveryOrder, Quotation, Route, SalesOrder
 from routes.finance_master_routes import require_authenticated_principal
 from schemas.workflow import RouteCreateRequest
+from services import duong_bo
 from services import toa_do_diem
 
 
@@ -150,12 +151,31 @@ def _tuyen_kem_toa_do(row, db=None, cho_phep_ngoai=False):
         chang_geo, thieu = toa_do_diem.gan_toa_do_cho_chang_db(db, chang, cho_phep_ngoai)
     else:
         chang_geo, thieu = toa_do_diem.gan_toa_do_cho_chang(chang), []
+    # Danh sach diem theo THU TU DI. Bo cac chang chua co toa do chu khong dung
+    # lai: mot tuyen ba chang ma thieu toa do chang giua thi hai chang con lai
+    # van ve duoc, va ve duoc mot phan van hon khong ve gi.
+    moc = []
+    for c in chang_geo:
+        for lat, lng in ((c.get("from_lat"), c.get("from_lng")),
+                         (c.get("to_lat"), c.get("to_lng"))):
+            if lat is None or lng is None:
+                continue
+            if not moc or moc[-1] != (lat, lng):
+                moc.append((lat, lng))
+    hinh = ({"diem": None, "km": None, "nguon": None} if db is None
+            else duong_bo.duong_bo_cua_tuyen(db, row, moc, cho_phep_ngoai))
     return {
         "id": row.id,
         "name": row.name,
         "distance_km": row.distance_km,
         "segments_json": row.segments_json,
         "segments_geo": chang_geo,
+        # HINH DUONG BO THAT. `nguon=None` nghia la khong co — giao dien PHAI
+        # noi ra dieu do chu khong duoc ve mot duong thang roi de nguoi xem
+        # tuong day la tuyen di.
+        "duong_bo": hinh["diem"],
+        "km_duong_bo": hinh["km"],
+        "nguon_duong_bo": hinh["nguon"],
         # NOI RA diem nao chua biet toa do. Bao "khong ve duoc ban do" ma khong
         # noi diem nao thi nguoi dung khong biet phai sua gi.
         "diem_thieu_toa_do": thieu,
