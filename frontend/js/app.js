@@ -1628,33 +1628,398 @@ function tripReturnRowsForSelected(selected, keys) {
   const rows = keys.flatMap(key => Array.isArray(appState?.[key]) ? appState[key] : []);
   const doIds = new Set((selected?.raw?.delivery_order_ids || selected?.delivery_order_ids || []).map(String));
   const tripId = String(selected?.id || '');
-  return rows.filter(row => String(row.trip_id || row.transport_trip_id || '') === tripId
+  const khop = rows.filter(row => String(row.trip_id || row.transport_trip_id || '') === tripId
     || doIds.has(String(row.do_id || row.delivery_order_id || '')));
+  // BỎ TRÙNG theo id. Hàm này gom từ NHIỀU khoá của `appState` (ví dụ `pods` và
+  // `pod_records`), và cùng một bản ghi có thể nằm ở cả hai — nên tab POD hiện
+  // một chữ ký nhận hai lần. Đo được: chuyến DEMO-TRIP-2026-003 có đúng một POD
+  // mà danh sách hiện hai dòng giống hệt, đọc ra như thể có hai người ký.
+  // Khoá bỏ trùng là một TỔ HỢP, không phải `id`. Đo được: hai bản ghi POD của
+  // cùng một lần ký đến từ hai khoá khác nhau của `appState` (`pods` và
+  // `pod_records`), và bản ở khoá này KHÔNG có `id` — nên so theo `id` thì
+  // không bắt được, và tab POD hiện một chữ ký nhận hai lần, đọc ra như thể có
+  // hai người ký.
+  //
+  // Tổ hợp lấy những thứ định danh một lần ký THẬT: đơn nào, điểm dừng thứ
+  // mấy, ký lúc nào, ai ký. Hai bản ghi khớp cả bốn thì đúng là một.
+  //
+  // `id` CỐ Ý không nằm trong khoá — nó chính là mẩu khác nhau giữa hai bản của
+  // cùng một lần ký, nên đưa vào là khoá lại tách chúng ra làm hai.
+  const daThay = new Set();
+  return khop.filter(row => {
+    const khoa = [
+      row.do_id || row.delivery_order_id || '',
+      row.stop_no !== undefined && row.stop_no !== null ? row.stop_no : '',
+      row.delivery_time || row.event_time || row.created_at || '',
+      row.receiver_name || '',
+    ].map(String).join('|');
+    // Không có mẩu nào để định danh thì giữ lại: mất một dòng thật tệ hơn hiện
+    // thừa một dòng.
+    if (khoa === '|||') return true;
+    if (daThay.has(khoa)) return false;
+    daThay.add(khoa);
+    return true;
+  });
+}
+
+
+/* --------------------------------------------------------------------------
+   DẢI SỐ LIỆU — năm thẻ, bấm được để lọc bảng.
+   -------------------------------------------------------------------------- */
+
+function renderTripKpis(items, groupFor) {
+  const host = document.getElementById('trip-kpis');
+  if (!host) return;
+
+  const dem = { 'thieu-ve': 0, 'tre-han': 0, 'thieu-pod': 0, 'doi-soat-duoc': 0 };
+  let kmRong = 0;
+  items.forEach(item => {
+    const raw = item.raw || item;
+    const nhom = tripNhomKpi(raw, groupFor(item));
+    nhom.forEach(n => { if (n in dem) dem[n] += 1; });
+    if (nhom.has('thieu-ve')) kmRong += Number(raw.total_distance_km || 0);
+  });
+
+  const the = [
+    ['', 'Chuyến đang mở', items.length, 'toàn bộ chuyến chưa đối soát', 'blue'],
+    ['thieu-ve', 'Chưa có chặng về', dem['thieu-ve'],
+      kmRong ? '≈ ' + Math.round(kmRong).toLocaleString('vi-VN') + ' km chạy rỗng nếu không ghép'
+        : 'không có km rỗng', 'amber'],
+    ['tre-han', 'Trễ hạn giao', dem['tre-han'], 'tới nơi sau hạn', 'red'],
+    ['thieu-pod', 'Xong nhưng thiếu POD', dem['thieu-pod'], 'không xuất được hoá đơn', 'purple'],
+    ['doi-soat-duoc', 'Sẵn sàng đối soát', dem['doi-soat-duoc'], 'đủ POD trên mọi DO', 'green'],
+  ];
+
+  host.innerHTML = the.map(cap => {
+    const ma = cap[0], nhan = cap[1], so = cap[2], phu = cap[3], mau = cap[4];
+    // Thẻ không có chuyến nào thì làm mờ — cho bấm rồi bảng trống thì người
+    // dùng phải thử mới biết là không có gì.
+    const tat = ma !== '' && !so;
+    return '<button type="button" class="card kpi ' + mau
+      + (tripKpiFilter === ma ? ' on' : '') + '"'
+      + (tat ? ' disabled title="Không có chuyến nào trong nhóm này"'
+        : ' onclick="setTripKpiFilter(\'' + ma + '\')" title="Bấm để lọc bảng chuyến theo nhóm này"')
+      + '><span>' + escapeHtml(nhan) + '</span><b>' + Number(so).toLocaleString('vi-VN')
+      + '</b><small>' + escapeHtml(phu) + '</small></button>';
+  }).join('');
+}
+
+/* --------------------------------------------------------------------------
+   BẢNG CHUYẾN — bảy cột, đúng bảy câu hỏi người đối soát phải trả lời.
+   -------------------------------------------------------------------------- */
+
+function tripChuCaiTen(ten) {
+  const tu = String(ten || '').trim().split(/\s+/).filter(Boolean);
+  if (!tu.length) return '?';
+  if (tu.length === 1) return tu[0].slice(0, 2).toUpperCase();
+  return (tu[tu.length - 2][0] + tu[tu.length - 1][0]).toUpperCase();
+}
+
+function tripTenNguoi(ma) {
+  if (!ma) return '';
+  const ds = (availableDrivers && availableDrivers.length) ? availableDrivers : (fioriDrivers || []);
+  const nguoi = ds.find(t => String(t.id) === String(ma));
+  return (nguoi && nguoi.name) || String(ma);
+}
+
+function renderTripBang(items, groupFor) {
+  const host = document.getElementById('trip-return-queue');
+  if (!host) return;
+
+  if (!items.length) {
+    host.innerHTML = '<div class="empty" style="margin:14px 16px">'
+      + (tripKpiFilter
+        ? 'Không có chuyến nào trong nhóm đang lọc. Bấm lại thẻ số liệu để bỏ lọc.'
+        : 'Không tìm thấy chuyến phù hợp bộ lọc.')
+      + '</div>';
+    return;
+  }
+
+  const dong = items.map(item => {
+    const raw = item.raw || item;
+    const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
+    const ma = encodeURIComponent(String(item.id || ''));
+    const td = tripTienDo(raw);
+    const pod = tripSoPOD(raw);
+    const han = tripHanGiao(raw);
+    const toi = tripGioToiNoi(raw);
+    const thucTe = Boolean(raw.actual_arrival_at);
+    const treHan = thucTe && han && toi && toi > han;
+    const gio = d => d ? d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
+
+    const dsDO = raw.delivery_order_ids || [];
+    const chang = raw.legs || [];
+    const tuyen = chang.length
+      ? escapeHtml(String(chang[0].origin || '')) + ' → '
+        + escapeHtml(String(chang[chang.length - 1].destination || ''))
+      : '<em style="color:#7b8796">chưa có chặng</em>';
+
+    // POD vẽ thành từng CHẤM, một chấm một DO — như bản mẫu. Chấm ĐỎ chỉ khi
+    // chuyến đã xong mà đơn vẫn chưa ký: chuyến đang chạy thì chưa ký là bình
+    // thường, tô đỏ là báo động giả.
+    const xongRoi = td.phanTram === 100;
+    const chamPOD = pod.tong
+      ? Array.from({ length: pod.tong }, (_, i) =>
+        '<i class="' + (i < pod.co ? 'd' : (xongRoi ? 'm' : '')) + '"></i>').join('')
+      : '';
+
+    const toLai = [raw.driver_id, raw.co_driver_id].filter(Boolean);
+    const vongTron = toLai.length
+      ? toLai.map(x => '<span class="av" title="' + escapeHtml(tripTenNguoi(x)) + '">'
+        + escapeHtml(tripChuCaiTen(tripTenNguoi(x))) + '</span>').join('')
+      : '<span class="av" title="Chưa gán tổ lái" style="background:#fff;border:1.5px dashed #cbd5e1;color:#7b8796">+</span>';
+
+    const nhom = groupFor(item);
+    const co = tripThieuChangVe(raw) && nhom !== 'completed';
+    const canhBao = (nhom === 'missing_return' || co)
+      ? '<span class="tag t-amber">thiếu chặng về</span>'
+      : (treHan ? '<span class="tag t-red">trễ hạn</span>'
+        : (xongRoi && pod.co < pod.tong ? '<span class="tag t-red">thiếu POD</span>' : ''));
+
+    const mauTd = treHan ? 'r' : (xongRoi ? 'g' : '');
+
+    return '<tr' + (String(item.id) === String(activeTripReturnId) ? ' class="on"' : '')
+      + ' tabindex="0" role="button"'
+      + ' onclick="selectTripReturnWorkItem(decodeURIComponent(\'' + ma + '\'))"'
+      + ' onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.click();}"'
+      + ' title="Bấm để mở hồ sơ chuyến ' + escapeHtml(String(item.id)) + '">'
+      + '<td><span class="id">' + escapeHtml(String(item.id)) + '</span>'
+      + '<span class="sub">' + dsDO.length + ' DO · ' + escapeHtml(journey.status_label || '') + '</span></td>'
+      + '<td><span class="rt">' + tuyen + '</span>'
+      + '<span class="sub">' + (dsDO.length ? escapeHtml(dsDO.join(' · ')) : 'chưa liên kết DO') + '</span></td>'
+      + '<td><div class="crew">' + vongTron
+      + '<span style="margin-left:8px;font-weight:600">' + escapeHtml(String(raw.vehicle_id || 'chưa gán xe')) + '</span></div>'
+      + '<span class="sub">' + (toLai.length ? escapeHtml(toLai.map(tripTenNguoi).join(' + ')) : 'chưa gán tổ lái') + '</span></td>'
+      + '<td><div class="prog"><i class="' + mauTd + '" style="width:' + td.phanTram + '%"></i></div>'
+      + '<div class="pl">chặng ' + td.xong + '/' + td.tong
+      + (co ? ' · <b style="color:#b45309">thiếu chặng về</b>' : '') + '</div></td>'
+      + '<td class="eta ' + (treHan ? 'r' : '') + '">'
+      + '<b>' + (thucTe ? '' : 'dự kiến ') + gio(toi) + '</b>'
+      + '<span class="sub">hạn ' + gio(han) + '</span></td>'
+      + '<td><span class="pod">' + chamPOD + '</span>'
+      + '<span class="sub">' + (pod.tong ? pod.co + '/' + pod.tong : '—') + '</span></td>'
+      + '<td>' + canhBao + '</td>'
+      + '</tr>';
+  }).join('');
+
+  host.innerHTML = '<table class="trips">'
+    + '<thead><tr>'
+    + '<th>Chuyến</th><th>Tuyến · DO</th><th>Xe · tổ lái</th>'
+    + '<th>Tiến độ</th><th>Tới nơi / hạn</th><th>POD</th><th></th>'
+    + '</tr></thead><tbody>' + dong + '</tbody></table>';
+}
+
+/* --------------------------------------------------------------------------
+   HỒ SƠ CHUYẾN — đầu mục và bốn tab.
+   -------------------------------------------------------------------------- */
+
+//: Nhãn và màu của năm giai đoạn vòng đời.
+const TLV2_GIAI_DOAN = {
+  active: ['t-purple', 'Đang giao hàng'],
+  waiting_return: ['t-amber', 'Chờ quay về'],
+  missing_return: ['t-red', 'Thiếu kế hoạch về'],
+  completed: ['t-green', 'Đã hoàn tất'],
+};
+
+function renderTripPh(selected, journey, nhom) {
+  const host = document.getElementById('trip-return-detail-summary');
+  if (!host) return;
+  if (!selected) {
+    host.innerHTML = '<div class="top"><h3>Hồ sơ chuyến</h3></div>'
+      + '<div class="m">Chọn một chuyến bên trái</div>';
+    return;
+  }
+  const raw = selected.raw || selected;
+  const gd = TLV2_GIAI_DOAN[nhom] || ['', journey.status_label || ''];
+  const pod = tripSoPOD(raw);
+  const td = tripTienDo(raw);
+  const toLai = [raw.driver_id, raw.co_driver_id].filter(Boolean);
+  const chang = raw.legs || [];
+  const tuyen = chang.length
+    ? String(chang[0].origin || '') + ' → ' + String(chang[chang.length - 1].destination || '')
+    : 'chưa có chặng';
+
+  // Thẻ POD đỏ CHỈ khi chuyến đã xong mà còn đơn chưa ký. Chuyến đang chạy thì
+  // chưa ký là bình thường.
+  const podDo = td.phanTram === 100 && pod.tong && pod.co < pod.tong;
+
+  host.innerHTML = '<div class="top"><h3>' + escapeHtml(String(selected.id)) + '</h3>'
+    + '<span class="tag ' + gd[0] + '">' + escapeHtml(gd[1]) + '</span></div>'
+    + '<div class="m">' + escapeHtml(tuyen)
+    + ((raw.delivery_order_ids || []).length ? ' · ' + escapeHtml(raw.delivery_order_ids.join(' · ')) : '')
+    + '</div>'
+    + '<div class="chips">'
+    + '<span class="tag">' + escapeHtml(String(raw.vehicle_id || 'chưa gán xe')) + '</span>'
+    + '<span class="tag">chặng ' + td.xong + '/' + td.tong + '</span>'
+    + (pod.tong ? '<span class="tag ' + (podDo ? 't-red' : 't-green') + '">POD '
+      + pod.co + '/' + pod.tong + '</span>' : '')
+    + '<span class="tag">' + (toLai.length ? toLai.length + ' người' : 'chưa có tổ lái') + '</span>'
+    + (Number(raw.total_distance_km || 0)
+      ? '<span class="tag">' + Number(raw.total_distance_km).toLocaleString('vi-VN') + ' km</span>' : '')
+    + '</div>';
+}
+
+/** Bốn tab hồ sơ, vẽ bằng markup dải của bản mẫu. */
+function renderTripDetailTabs() {
+  const host = document.getElementById('trip-return-detail-tabs');
+  if (!host) return;
+  const tabs = [
+    ['journey', 'Chặng đường'],
+    ['resources', 'Xe & nhân sự'],
+    ['pod', 'POD'],
+    ['cost', 'Chi phí'],
+    ['events', 'Sự kiện'],
+  ];
+  host.innerHTML = tabs.map(t =>
+    '<button type="button" class="lt' + (activeTripReturnDetailTab === t[0] ? ' on' : '') + '"'
+    + ' onclick="setTripReturnDetailTab(\'' + t[0] + '\')">' + t[1] + '</button>').join('');
+}
+
+/** Khối "việc cần làm tiếp" — lý do màn này tồn tại. */
+function renderTripNext(selected, journey, nhom) {
+  const raw = selected.raw || selected;
+  const pod = tripSoPOD(raw);
+  const td = tripTienDo(raw);
+  let mau = 'blue';
+  let chu = journey.next_action || 'Theo dõi chuyến.';
+  let nhanNut = '';
+  let viec = '';
+
+  if (td.phanTram === 100 && pod.tong && pod.co < pod.tong) {
+    mau = 'red';
+    chu = pod.thieu.join(', ') + ' chưa có POD → chuyến không đối soát được, hoá đơn treo.';
+    nhanNut = 'Ghi POD';
+    viec = "switchView('tracking')";
+  } else if (nhom === 'missing_return' || (tripThieuChangVe(raw) && nhom !== 'completed')) {
+    mau = 'amber';
+    const km = Number(raw.total_distance_km || 0);
+    chu = 'Chưa có chặng về'
+      + (km ? ' cho quãng ' + km.toLocaleString('vi-VN') + ' km — xe chạy rỗng về bãi.' : '.');
+    nhanNut = 'Lập lượt về';
+    viec = "openTripReturnAction('add-leg')";
+  } else if (nhom === 'completed' && pod.tong && pod.co === pod.tong) {
+    mau = 'green';
+    chu = 'Đủ POD trên mọi DO. Chuyến sẵn sàng đối soát.';
+    nhanNut = 'Qua hạch toán';
+    viec = "switchView('accounting')";
+  } else if (nhom === 'active') {
+    mau = 'blue';
+    nhanNut = 'Mở Theo dõi';
+    viec = "switchView('tracking')";
+  }
+
+  return '<div class="lbl">Việc cần làm tiếp</div>'
+    + '<div class="next ' + mau + '">'
+    + '<span>' + escapeHtml(chu) + '</span>'
+    + (nhanNut ? '<button type="button" class="a" onclick="' + viec + '">'
+      + escapeHtml(nhanNut) + '</button>' : '')
+    + '</div>';
 }
 
 function renderTripReturnDetailPane(selected, journey) {
   const pane = document.getElementById('trip-return-detail-pane');
   if (!pane || !selected) return;
   const raw = selected.raw || selected;
-  const safe = completionEscape;
+  const safe = escapeHtml;
 
   if (activeTripReturnDetailTab === 'resources') {
-    pane.innerHTML = `<div class="trip-info-list">
-      <div class="trip-info-row"><span>Xe vận chuyển</span><strong>${safe(raw.vehicle_id || 'Chưa gán xe')}</strong></div>
-      <div class="trip-info-row"><span>Tài xế chính</span><strong>${safe(raw.driver_id || 'Chưa gán tài xế')}</strong></div>
-      <div class="trip-info-row"><span>Phụ xe</span><strong>${safe(raw.assistant_driver_id || raw.helper_id || 'Không có')}</strong></div>
-      <div class="trip-info-row"><span>Lệnh giao hàng</span><strong>${safe((raw.delivery_order_ids || []).join(', ') || 'Chưa liên kết DO')}</strong></div>
-      <div class="trip-info-row"><span>Giờ xuất bến</span><strong>${safe(tripReturnFormatTime(raw.planned_departure_at))}</strong></div>
-      <div class="trip-info-row"><span>Giờ xe dự kiến rảnh</span><strong>${safe(tripReturnFormatTime(raw.planned_return_at))}</strong></div>
-    </div>`;
+    const dong = (ma, vai) => {
+      if (!ma) return '';
+      const ten = tripTenNguoi(ma);
+      return '<div class="crewrow"><span class="av">' + safe(tripChuCaiTen(ten)) + '</span>'
+        + '<div><b>' + safe(ten) + '</b><span>' + safe(vai) + ' · ' + safe(String(ma)) + '</span></div></div>';
+    };
+    const xe = (dispatchDanhSachXe ? dispatchDanhSachXe() : [])
+      .find(v => String(v.id) === String(raw.vehicle_id));
+    pane.innerHTML = '<div class="lbl">Tổ lái</div>'
+      + (dong(raw.driver_id, 'Tài xế chính') || '<div class="empty">Chưa gán tài xế chính.</div>')
+      + dong(raw.co_driver_id, 'Phụ xe')
+      + '<div class="lbl">Xe</div>'
+      + (raw.vehicle_id
+        ? '<div class="crewrow"><span class="av v">🚚</span><div><b>' + safe(String(raw.vehicle_id)) + '</b>'
+          + '<span>' + safe([
+            xe && typeof tenLoaiXe === 'function' ? tenLoaiXe(xe.type) : '',
+            xe && xe.depot ? String(xe.depot) : '',
+            xe && xe.inspection_exp ? 'đăng kiểm ' + String(xe.inspection_exp) : '',
+          ].filter(Boolean).join(' · ') || 'chưa có thông tin xe') + '</span></div></div>'
+        : '<div class="empty">Chưa gán xe.</div>')
+      + '<div class="lbl">Thời gian</div>'
+      + '<div class="sum">'
+      + '<div><span>Giờ xuất bến</span><b>' + safe(tripReturnFormatTime(raw.planned_departure_at)) + '</b></div>'
+      + '<div><span>Xe dự kiến rảnh</span><b>' + safe(tripReturnFormatTime(raw.planned_return_at)) + '</b></div>'
+      + '</div>';
     return;
   }
 
   if (activeTripReturnDetailTab === 'pod') {
+    const pod = tripSoPOD(raw);
     const pods = tripReturnRowsForSelected(selected, ['pods', 'pod_records']);
-    pane.innerHTML = pods.length ? `<div class="trip-info-list">${pods.map(pod => `
-      <div class="trip-info-row"><span>${safe(pod.location_text || `Điểm giao ${pod.stop_no || ''}`)}</span><strong>${safe(pod.receiver_name || 'Chưa có người nhận')} · ${safe(tripReturnFormatTime(pod.delivery_time))}</strong></div>
-    `).join('')}</div>` : '<div class="delivery-empty-state">Chưa có POD trong dữ liệu hiện tại. POD được bổ sung theo từng điểm giao tại bước Hoàn tất giao hàng.</div>';
+    pane.innerHTML = '<div class="lbl">Đã ký ' + pod.co + ' trên ' + pod.tong + ' DO</div>'
+      + (pods.length
+        ? pods.map(p => '<div class="crewrow"><span class="av">✓</span>'
+          + '<div><b>' + safe(String(p.do_id || p.location_text || '')) + '</b>'
+          + '<span>' + safe(String(p.receiver_name || 'chưa có người nhận')) + ' · '
+          + safe(tripReturnFormatTime(p.delivery_time)) + '</span></div></div>').join('')
+        : '<div class="empty">Chưa có POD nào cho chuyến này.</div>')
+      // Nói RÕ đơn nào còn thiếu, không chỉ nói "thiếu 1": người đi đòi POD cần
+      // biết đòi cho đơn nào.
+      + (pod.thieu.length
+        ? '<div class="lbl">Còn thiếu POD</div>'
+          + pod.thieu.map(x => '<div class="crewrow"><span class="av" style="background:#fdecec;color:#d32f2f">!</span>'
+            + '<div><b>' + safe(x) + '</b><span>chưa ai ký nhận</span></div></div>').join('')
+        : '');
+    return;
+  }
+
+  if (activeTripReturnDetailTab === 'cost') {
+    const goi = tripChiPhiThuc[String(raw.id)];
+    if (goi === undefined) {
+      napChiPhiChuyen(String(raw.id));
+      pane.innerHTML = '<div class="empty">Đang nạp chi phí…</div>';
+      return;
+    }
+    if (!goi || goi.error) {
+      pane.innerHTML = '<div class="empty">Chưa có chi phí thực cho chuyến này. '
+        + 'Chi phí được nhập ở bước hoàn tất giao hàng.</div>';
+      return;
+    }
+    const dong = Array.isArray(goi.lines) ? goi.lines : [];
+    const tienChu = v => Number(v || 0).toLocaleString('vi-VN');
+    const lech = (thuc, kh) => {
+      if (!kh) return { chu: '—', lop: '' };
+      const p = Math.round((thuc - kh) / kh * 100);
+      return { chu: (p > 0 ? '+' : '') + p + '%', lop: p > 0 ? 'up' : (p < 0 ? 'dn' : '') };
+    };
+    const tongThuc = Number(goi.total_amount || 0);
+    // May chu khong tra ve tong ke hoach, nen cong tu cac dong: `original_amount`
+    // la con so DUOC DUYET truoc chuyen, `actual_amount` la con so da chi.
+    const tongKH = dong.reduce((t, l) => t + Number(l.original_amount || 0), 0);
+    const t = lech(tongThuc, tongKH);
+    pane.innerHTML = '<div class="lbl">Chi phí thực so kế hoạch</div><div class="cost">'
+      + '<div class="crow"><span>Cấu phần</span><span class="n">Kế hoạch</span>'
+      + '<span class="n">Thực</span><span class="dv">±</span></div>'
+      + (dong.length
+        ? dong.map(l => {
+          const thuc = Number(l.actual_amount || 0);
+          const kh = Number(l.original_amount || 0);
+          const d = lech(thuc, kh);
+          // Dong nao co `increase_amount` la mot khoan PHAT SINH — phai noi ra,
+          // vi do la cho tien roi ra khoi ke hoach.
+          const psinh = Number(l.increase_amount || 0);
+          return '<div class="crow"' + (psinh ? ' style="color:#d32f2f"' : '') + '>'
+            + '<span>' + safe(String(l.name || '—'))
+            + (psinh ? ' <small>phát sinh ' + tienChu(psinh) + '</small>' : '') + '</span>'
+            + '<span class="n">' + (kh ? tienChu(kh) : '—') + '</span>'
+            + '<span class="n">' + tienChu(thuc) + '</span>'
+            + '<span class="dv ' + d.lop + '">' + d.chu + '</span></div>';
+        }).join('')
+        : '<div class="crow"><span style="color:#7b8796">chưa có cấu phần nào</span>'
+          + '<span class="n">—</span><span class="n">—</span><span class="dv">—</span></div>')
+      + '<div class="crow tot"><span>Tổng</span>'
+      + '<span class="n">' + (tongKH ? tienChu(tongKH) : '—') + '</span>'
+      + '<span class="n">' + tienChu(tongThuc) + '</span>'
+      + '<span class="dv ' + t.lop + '">' + t.chu + '</span></div>'
+      + '</div>';
     return;
   }
 
@@ -1662,24 +2027,204 @@ function renderTripReturnDetailPane(selected, journey) {
     const events = [
       ...(Array.isArray(raw.events) ? raw.events : []),
       ...tripReturnRowsForSelected(selected, ['gps_events', 'tracking_events', 'execution_events'])
-    ].sort((a, b) => String(b.event_time || b.created_at || '').localeCompare(String(a.event_time || a.created_at || '')));
-    pane.innerHTML = events.length ? `<div>${events.map(event => `
-      <div class="trip-info-row"><span>${safe(statusLabel(event.event_type || event.type || event.status || 'Sự kiện'))}</span><strong>${safe(tripReturnFormatTime(event.event_time || event.created_at))}</strong></div>
-    `).join('')}</div>` : '<div class="delivery-empty-state">Chưa có sự kiện vận hành cho chuyến này.</div>';
+    ].sort((a, b) => String(b.event_time || b.created_at || '')
+      .localeCompare(String(a.event_time || a.created_at || '')));
+    pane.innerHTML = events.length
+      ? '<div class="tl">' + events.map(e => '<div class="lg done"><div class="h">'
+        + '<b>' + safe(statusLabel(e.event_type || e.type || e.status || 'Sự kiện')) + '</b>'
+        + '<span>' + safe(tripReturnFormatTime(e.event_time || e.created_at)) + '</span></div></div>').join('')
+        + '</div>'
+      : '<div class="empty">Chưa có sự kiện vận hành cho chuyến này.</div>';
     return;
   }
 
-  pane.innerHTML = `<div class="trip-journey-timeline">${journey.legs.map(leg => `
-    <div class="trip-journey-step ${leg.status === 'completed' ? 'is-done' : ['in_transit', 'arrived'].includes(leg.status) ? 'is-active' : ''}">
-      <div class="trip-journey-step-marker"><i class="fa-solid ${leg.status === 'completed' ? 'fa-check' : ['in_transit', 'arrived'].includes(leg.status) ? 'fa-truck-fast' : 'fa-clock'}"></i></div>
-      <div class="trip-journey-step-content">
-        <div class="trip-journey-step-top"><strong>${safe(`${leg.sequence_no || ''}. ${leg.label}`)}</strong><span>${safe(leg.status_label)}</span></div>
-        <div class="trip-journey-route">${safe(leg.route_label)}</div>
-        <small>${Number(leg.distance_km || 0).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} km · ${Number(leg.avg_speed_kmh || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} km/h · ${safe(tripReturnFormatTime(leg.actual_arrival_at || leg.planned_arrival_at))}</small>
-      </div>
-    </div>
-  `).join('') || '<div class="delivery-empty-state">Trip chưa có chặng vận chuyển.</div>'}</div>`;
+  // CHẶNG THẬT của chuyến — trục dọc có mốc, đúng khối `.tl` của bản mẫu.
+  const loai = { pickup: ['k-pick', 'LẤY'], delivery: ['k-drop', 'GIAO'], return: ['k-ret', 'VỀ'] };
+  pane.innerHTML = '<div class="lbl">Chặng thật của chuyến</div>'
+    + (journey.legs.length
+      ? '<div class="tl">' + journey.legs.map(l => {
+        const tt = String(l.status || '');
+        const lop = tt === 'completed' ? 'done'
+          : (['in_transit', 'arrived'].includes(tt) ? 'now' : '');
+        const k = loai[String(l.leg_type || '')] || ['k-via', 'QUA'];
+        return '<div class="lg ' + lop + '"><div class="h">'
+          + '<b><span class="kind ' + k[0] + '">' + k[1] + '</span>'
+          + safe(String(l.label || l.destination || '')) + '</b>'
+          + '<span>' + safe(tripReturnFormatTime(l.actual_arrival_at || l.planned_arrival_at)) + '</span>'
+          + '</div>'
+          + '<div class="d">' + safe(String(l.route_label || ''))
+          + (Number(l.distance_km || 0)
+            ? ' · ' + Number(l.distance_km).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + ' km' : '')
+          + (Number(l.avg_speed_kmh || 0)
+            ? ' · ' + Number(l.avg_speed_kmh).toLocaleString('vi-VN', { maximumFractionDigits: 0 }) + ' km/h' : '')
+          + ' · <small>' + safe(String(l.status_label || '')) + '</small></div></div>';
+      }).join('')
+      // Chuyến MỘT CHIỀU chưa lập lượt về thì vẽ thêm một mốc NÉT ĐỨT ở cuối:
+      // chặng về là việc còn thiếu, và nó phải hiện ra ở đúng chỗ nó thuộc về
+      // trong dòng thời gian, không phải nằm trong một cảnh báo rời.
+      + (tripThieuChangVe(raw)
+        ? '<div class="lg back"><div class="h">'
+          + '<b><span class="kind k-ret">VỀ</span>Chặng về · chưa có kế hoạch</b><span>—</span></div>'
+          + '<div class="d">Xe sẽ chạy rỗng về bãi nếu không ghép DO hàng nhập.</div></div>'
+        : '')
+      + '</div>'
+      : '<div class="empty">Trip chưa có chặng vận chuyển.</div>');
 }
+
+function renderTripReturnCockpit() {
+  if (!window.TmsCockpit || typeof document === 'undefined') return;
+  const statusTabs = document.getElementById('trip-return-status-tabs');
+  const queue = document.getElementById('trip-return-queue');
+  const summary = document.getElementById('trip-return-detail-summary');
+  const detailTabs = document.getElementById('trip-return-detail-tabs');
+  const detailPane = document.getElementById('trip-return-detail-pane');
+  const guidance = document.getElementById('trip-return-guidance-list');
+  if (!statusTabs || !queue || !summary || !detailTabs || !detailPane) return;
+
+  const cockpit = window.TmsCockpit.buildTripReturnCockpit(appState || {});
+  const groupFor = item => window.TmsCockpit.getTripStatusGroup(item.raw || item);
+
+  // Nạp POD khi ĐÃ có danh sách chuyến, không nạp ở `switchView`.
+  //
+  // Đã đo thật: gọi ở `switchView` thì `appState.transport_trips` còn rỗng, hàm
+  // thoát sớm và KHÔNG BAO GIỜ thử lại — nên cột POD báo "0/1" cho cả những
+  // chuyến thực sự đã ký POD. Đợi đến đây thì chắc chắn có mã đơn để hỏi.
+  //
+  // `dangNapPOD` chặn gọi lại vòng tròn: hàm này vẽ xong lại gọi chính nó.
+  if (!dangNapPOD && !Array.isArray(appState?.pod_records) && cockpit.items.length) {
+    dangNapPOD = true;
+    napPODChoBangChuyen().finally(() => { dangNapPOD = false; renderTripReturnCockpit(); });
+  }
+
+  const counts = cockpit.items.reduce((result, item) => {
+    const group = groupFor(item);
+    result[group] = (result[group] || 0) + 1;
+    return result;
+  }, {});
+
+  // DẢI VÒNG ĐỜI, không phải tab phẳng.
+  //
+  // Năm nhóm này không ngang hàng nhau — chúng là các chặng NỐI TIẾP của một
+  // chuyến: đang giao hàng → chờ quay về → hoàn tất. "Thiếu kế hoạch về" là một
+  // nhánh lệch ra khỏi dòng đó, không phải một chặng. Vẽ phẳng như tab thì mất
+  // hết thứ tự đó, và người dùng phải tự đoán nhóm nào đứng trước nhóm nào.
+  //
+  // Bản mẫu `trip-lifecycle.html` vẽ chúng thành một dòng có mũi chuyển tiếp.
+  const statusOptions = [
+    { key: '', label: 'Tất cả', count: cockpit.items.length },
+    { key: 'active', label: 'Đang giao hàng', count: counts.active || 0, buoc: true },
+    { key: 'waiting_return', label: 'Chờ quay về', count: counts.waiting_return || 0, buoc: true },
+    { key: 'completed', label: 'Đã hoàn tất', count: counts.completed || 0, buoc: true },
+    // Đặt SAU cùng: đây là việc phải xử, không phải một chặng mà chuyến đi qua.
+    { key: 'missing_return', label: 'Thiếu kế hoạch về', count: counts.missing_return || 0, alert: true }
+  ];
+  statusTabs.innerHTML = statusOptions.map((option, i) => {
+    const truoc = statusOptions[i - 1];
+    // Mũi chuyển tiếp chỉ đặt GIỮA hai chặng liền nhau của dòng, không đặt
+    // trước "Tất cả" và không đặt trước nhánh lệch.
+    const mui = (truoc && truoc.buoc && option.buoc)
+      ? '<span class="arrow" aria-hidden="true">›</span>' : '';
+    return mui + '<button type="button" class="lt'
+      + (tripReturnStatusFilter === option.key ? ' on' : '')
+      + (option.alert ? ' warn' : '') + '"'
+      + ' onclick="setTripReturnStatusTab(\'' + option.key + '\')">'
+      + escapeHtml(option.label) + ' <span class="n">' + option.count + '</span></button>';
+  }).join('');
+
+  const visibleItems = cockpit.items.filter(item => {
+    const raw = item.raw || item;
+    const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
+    const legText = (raw.legs || []).flatMap(leg => [leg.origin, leg.destination]).join(' ');
+    const haystack = [item.id, item.subtitle, raw.vehicle_id, raw.driver_id, journey.status_label,
+      journey.location_label, legText, ...(raw.delivery_order_ids || [])].join(' ').toLowerCase();
+    return (!tripReturnSearchQuery || haystack.includes(tripReturnSearchQuery))
+      && (!tripReturnStatusFilter || groupFor(item) === tripReturnStatusFilter);
+  });
+
+  // Dải số liệu đếm trên TOÀN BỘ chuyến đang mở, không đếm danh sách đã lọc —
+  // một con số biến đổi theo chính cái lọc của nó thì không nói lên được gì.
+  renderTripKpis(cockpit.items, groupFor);
+  const loc = tripKpiFilter
+    ? visibleItems.filter(item => tripNhomKpi(item.raw || item, groupFor(item)).has(tripKpiFilter))
+    : visibleItems;
+
+  let selected = loc.find(item => item.id === activeTripReturnId) || loc[0] || null;
+  activeTripReturnId = selected?.id || '';
+  renderTripBang(loc, groupFor);
+
+  const demEl = document.getElementById('trip-count');
+  if (demEl) demEl.textContent = loc.length + ' chuyến';
+  const footEl = document.getElementById('trip-foot');
+  if (footEl) {
+    const ten = (statusOptions.find(o => o.key === tripReturnStatusFilter) || statusOptions[0]).label;
+    footEl.textContent = 'Giai đoạn: ' + ten + ' · ' + loc.length + ' chuyến'
+      + (tripKpiFilter ? ' · đang lọc theo thẻ số liệu' : '');
+  }
+
+  const searchEl = document.getElementById('trip-return-search');
+  const statusEl = document.getElementById('trip-return-status-filter');
+  if (searchEl && searchEl.value !== tripReturnSearchQuery) searchEl.value = tripReturnSearchQuery;
+  if (statusEl && statusEl.value !== tripReturnStatusFilter) statusEl.value = tripReturnStatusFilter;
+
+  if (!selected) {
+    renderTripPh(null);
+    detailTabs.innerHTML = '';
+    detailPane.innerHTML = '<div class="empty">Hồ sơ gom đủ: chặng thật (lấy · giao · về), '
+      + 'tổ lái, POD, chi phí thực so kế hoạch, và kế hoạch chặng về.</div>';
+    return;
+  }
+
+  const raw = selected.raw || selected;
+  const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
+  const nhom = groupFor(selected);
+
+  renderTripPh(selected, journey, nhom);
+  renderTripDetailTabs();
+
+  // Khối "việc cần làm tiếp" đứng TRÊN các tab, vì nó là thứ người dùng cần đọc
+  // trước — còn các tab là chỗ để đi sâu khi cần.
+  const truoc = document.getElementById('trip-next-slot');
+  const khoiNext = renderTripNext(selected, journey, nhom);
+  if (truoc) truoc.innerHTML = khoiNext;
+  else detailTabs.insertAdjacentHTML('beforebegin',
+    '<div id="trip-next-slot">' + khoiNext + '</div>');
+
+  renderTripReturnDetailPane(selected, journey);
+
+  // Các nút việc ở CUỐI hồ sơ, đúng khối `.acts` của bản mẫu. Chỉ hiện nút nào
+  // làm được ở giai đoạn này — hiện hết rồi để mờ thì người dùng vẫn phải đọc
+  // qua những nút không dùng được.
+  const nut = [];
+  if (nhom === 'active') {
+    nut.push(['', 'Mở Theo dõi realtime', "switchView('tracking')"]);
+    nut.push(['', 'Báo sự cố', "switchView('tracking')"]);
+  }
+  const pod = tripSoPOD(raw);
+  const td = tripTienDo(raw);
+  if (nhom === 'completed' && pod.tong && pod.co < pod.tong) {
+    nut.push(['red', 'Ghi POD thủ công', "switchView('tracking')"]);
+  }
+  if (nhom === 'completed' && pod.tong && pod.co === pod.tong) {
+    nut.push(['p', 'Chuyển đối soát', "switchView('accounting')"]);
+  }
+  if (tripThieuChangVe(raw) && nhom !== 'completed') {
+    nut.push(['p', 'Lập lượt về cho chuyến này', "openTripReturnAction('add-leg')"]);
+  }
+  nut.push(['', 'Sửa ở Điều phối', "switchView('dispatch')"]);
+  nut.push(['', 'Xem 360° lô hàng', "switchView('operations-360')"]);
+  detailPane.insertAdjacentHTML('beforeend', '<div class="acts">'
+    + nut.map(n => '<button type="button"' + (n[0] ? ' class="' + n[0] + '"' : '')
+      + ' onclick="' + n[2] + '">' + escapeHtml(n[1]) + '</button>').join('')
+    + '</div>');
+
+  if (guidance) {
+    guidance.innerHTML = cockpit.guidance.map(item =>
+      '<div style="padding:9px 10px; border-bottom:1px solid #e2e8f0; color:#475569; font-size:.8rem;">'
+      + '<i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> '
+      + completionEscape(item) + '</div>').join('');
+  }
+}
+
 
 
 /* ==========================================================================
@@ -1774,10 +2319,53 @@ function tripThieuChangVe(raw) {
 /** Số DO của chuyến đã có POD, trên tổng số DO. */
 function tripSoPOD(raw) {
   const dsDO = (raw.delivery_order_ids || []).map(String);
-  if (!dsDO.length) return { co: 0, tong: 0 };
+  if (!dsDO.length) return { co: 0, tong: 0, thieu: [] };
   const pods = (appState && Array.isArray(appState.pod_records)) ? appState.pod_records : [];
   const coPOD = new Set(pods.map(p => String(p.do_id || p.delivery_order_id || '')));
-  return { co: dsDO.filter(x => coPOD.has(x)).length, tong: dsDO.length };
+  return {
+    co: dsDO.filter(x => coPOD.has(x)).length,
+    tong: dsDO.length,
+    // Trả về CẢ danh sách đơn còn thiếu, không chỉ con số. Người đi đòi POD cần
+    // biết đòi cho đơn nào — "thiếu 1" thì họ vẫn phải mở hồ sơ ra đếm.
+    thieu: dsDO.filter(x => !coPOD.has(x)),
+  };
+}
+
+//: Chi phí thực của MỘT chuyến, nạp theo yêu cầu.
+//:
+//: Vì sao không nạp cho cả bảng: đường `/api/tms/finance/trips/{id}/actual-cost`
+//: là MỘT lời gọi cho MỘT chuyến. Ở quy mô hàng nghìn chuyến thì nạp cho cả
+//: bảng là hàng nghìn lời gọi mỗi lần mở màn — màn hình không mở được. Nên chi
+//: phí chỉ nạp cho chuyến đang chọn, và đó cũng là lúc người dùng cần nó.
+let tripChiPhiThuc = {};
+let tripDangNapChiPhi = '';
+
+async function napChiPhiChuyen(maTrip) {
+  if (!maTrip || tripChiPhiThuc[maTrip] !== undefined) return;
+  if (tripDangNapChiPhi === maTrip) return;
+  tripDangNapChiPhi = maTrip;
+  try {
+    const tra = await fetch(
+      `${API_BASE}/api/tms/finance/trips/${encodeURIComponent(maTrip)}/actual-cost`,
+      { headers: financeAuthHeaders() });
+    // Chưa có chi phí thực KHÔNG phải lỗi: chuyến đang chạy thì chưa ai nhập.
+    // Ghi `null` để phân biệt "chưa có" với "chưa hỏi" — không thì hàm này gọi
+    // lại mãi mỗi lần vẽ.
+    //
+    // Và phải BÓC lớp `data`: đường này trả về `{message, data}` chứ không phải
+    // thân chi phí trần. Đọc thẳng `goi.lines` thì luôn rỗng và bảng chi phí
+    // báo "chưa có cấu phần nào" trong khi máy chủ trả về đủ bốn dòng.
+    if (tra.ok) {
+      const goi = await tra.json();
+      tripChiPhiThuc[maTrip] = (goi && goi.data !== undefined) ? goi.data : goi;
+    } else tripChiPhiThuc[maTrip] = null;
+  } catch (loi) {
+    console.warn('Khong nap duoc chi phi cho chuyen', maTrip, loi && loi.message);
+    tripChiPhiThuc[maTrip] = null;
+  } finally {
+    tripDangNapChiPhi = '';
+    renderTripReturnCockpit();
+  }
 }
 
 /** Tiến độ chuyến theo số chặng đã xong. */
@@ -1823,44 +2411,6 @@ window.setTripKpiFilter = function (nhom) {
  * Năm thẻ, và bấm được: mỗi thẻ lọc bảng chuyến theo đúng nhóm đó. Một dải số
  * mà bấm không ra gì thì chỉ chiếm chỗ.
  */
-function renderTripKpis(items, groupFor) {
-  const host = document.getElementById('trip-kpis');
-  if (!host) return;
-
-  const dem = { 'thieu-ve': 0, 'tre-han': 0, 'thieu-pod': 0, 'doi-soat-duoc': 0 };
-  let kmRong = 0;
-  items.forEach(item => {
-    const raw = item.raw || item;
-    const nhom = tripNhomKpi(raw, groupFor(item));
-    nhom.forEach(n => { if (n in dem) dem[n] += 1; });
-    if (nhom.has('thieu-ve')) kmRong += Number(raw.total_distance_km || 0);
-  });
-
-  const the = [
-    ['', 'Chuyến hôm nay', items.length, 'toàn bộ chuyến đang mở', 'blue'],
-    ['thieu-ve', 'Chưa có chặng về', dem['thieu-ve'],
-      kmRong ? `≈ ${Math.round(kmRong).toLocaleString('vi-VN')} km chạy rỗng nếu không ghép` : 'không có km rỗng', 'amber'],
-    ['tre-han', 'Trễ hạn giao', dem['tre-han'], 'tới nơi sau hạn', 'red'],
-    ['thieu-pod', 'Xong nhưng thiếu POD', dem['thieu-pod'], 'không xuất được hoá đơn', 'purple'],
-    ['doi-soat-duoc', 'Sẵn sàng đối soát', dem['doi-soat-duoc'], 'đủ POD trên mọi DO', 'green'],
-  ];
-
-  host.innerHTML = the.map(cap => {
-    const ma = cap[0], nhan = cap[1], so = cap[2], phu = cap[3], mau = cap[4];
-    // Thẻ không có chuyến nào thì làm mờ — cho bấm rồi bảng trống thì người
-    // dùng phải thử mới biết là không có gì.
-    const tat = ma !== '' && !so;
-    return '<button type="button"'
-      + ' class="trip-kpi trip-kpi--' + mau + (tripKpiFilter === ma ? ' is-active' : '') + '"'
-      + (tat ? ' disabled title="Không có chuyến nào trong nhóm này"'
-        : ' onclick="setTripKpiFilter(\'' + ma + '\')" title="Bấm để lọc bảng chuyến theo nhóm này"')
-      + '>'
-      + '<span>' + escapeHtml(nhan) + '</span>'
-      + '<b>' + Number(so).toLocaleString('vi-VN') + '</b>'
-      + '<small>' + escapeHtml(phu) + '</small>'
-      + '</button>';
-  }).join('');
-}
 
 /**
  * Bảng chuyến, thay cho danh sách thẻ.
@@ -1870,196 +2420,7 @@ function renderTripKpis(items, groupFor) {
  * không, đã ký POD chưa. Cột "chi phí thực" của bản mẫu không có ở đây — xem
  * ghi chú ở đầu khối này.
  */
-function renderTripBang(items, groupFor) {
-  const host = document.getElementById('trip-return-queue');
-  if (!host) return;
 
-  if (!items.length) {
-    host.innerHTML = '<div class="delivery-empty-state" style="padding:22px 16px; color:#64748b; font-weight:800;">'
-      + 'Không tìm thấy chuyến phù hợp bộ lọc.</div>';
-    return;
-  }
-
-  const dong = items.map(item => {
-    const raw = item.raw || item;
-    const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
-    const ma = encodeURIComponent(String(item.id || ''));
-    const td = tripTienDo(raw);
-    const pod = tripSoPOD(raw);
-    const han = tripHanGiao(raw);
-    const toi = tripGioToiNoi(raw);
-    // `thucTe` phan biet "xe da toi luc nay" voi "du kien toi luc nay". Thieu
-    // no thi khi chua toi noi, ca hai con so deu lay tu `planned_arrival_at` va
-    // hien y het nhau — nguoi doc khong biet minh dang xem gio nao, va thanh ra
-    // tin rang chuyen da toi noi dung han.
-    const thucTe = Boolean(raw.actual_arrival_at);
-    const treHan = thucTe && han && toi && toi > han;
-    const gio = d => d ? d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
-
-    const dsDO = raw.delivery_order_ids || [];
-    const chang = (raw.legs || []);
-    const diem = chang.length
-      ? escapeHtml(String(chang[0].origin || '')) + ' → ' + escapeHtml(String(chang[chang.length - 1].destination || ''))
-      : '<em style="color:#94a3b8">chưa có chặng</em>';
-
-    // POD vẽ thành từng CHẤM, một chấm một DO — như bản mẫu. Một chuyến chở ba
-    // đơn mà thiếu POD của một đơn thì cả chuyến không đối soát được, và con số
-    // "2/3" nói điều đó rõ hơn một chữ "thiếu".
-    const chamPOD = pod.tong
-      ? Array.from({ length: pod.tong }, (_, i) =>
-        '<i class="trip-pod-dot' + (i < pod.co ? ' is-ok' : '') + '"></i>').join('')
-      : '<span style="color:#94a3b8">—</span>';
-
-    const toLai = [raw.driver_id, raw.co_driver_id].filter(Boolean);
-
-    return '<tr class="trip-row' + (item.id === activeTripReturnId ? ' is-active' : '') + '"'
-      + ' tabindex="0" role="button"'
-      + ' onclick="selectTripReturnWorkItem(decodeURIComponent(\'' + ma + '\'))"'
-      + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}"'
-      + ' title="Bấm để mở hồ sơ chuyến ' + escapeHtml(String(item.id)) + '">'
-      + '<td><strong>' + escapeHtml(String(item.id)) + '</strong>'
-      + '<small>' + escapeHtml(journey.status_label || '') + '</small></td>'
-      + '<td><span class="trip-cell-route">' + diem + '</span>'
-      + '<small>' + (dsDO.length ? escapeHtml(dsDO.join(' · ')) : 'chưa liên kết DO') + '</small></td>'
-      + '<td>' + escapeHtml(String(raw.vehicle_id || 'chưa gán xe'))
-      + '<small>' + (toLai.length ? escapeHtml(toLai.join(' · ')) : 'chưa gán tổ lái') + '</small></td>'
-      + '<td><div class="trip-prog"><i style="width:' + td.phanTram + '%"></i></div>'
-      + '<small>' + td.xong + '/' + td.tong + ' chặng</small></td>'
-      + '<td class="' + (treHan ? 'is-late' : '') + '">'
-      + (thucTe ? '' : '<span style="color:#94a3b8;font-weight:600">dự kiến </span>') + gio(toi)
-      + '<small>hạn ' + gio(han) + (treHan ? ' · TRỄ' : '') + '</small></td>'
-      + '<td class="trip-cell-pod">' + chamPOD
-      + '<small>' + (pod.tong ? pod.co + '/' + pod.tong : '—') + '</small></td>'
-      + '</tr>';
-  }).join('');
-
-  host.innerHTML = '<table class="trip-table">'
-    + '<thead><tr>'
-    + '<th>Chuyến</th><th>Tuyến · DO</th><th>Xe · tổ lái</th>'
-    + '<th>Tiến độ</th><th>Tới nơi / hạn</th><th>POD</th>'
-    + '</tr></thead><tbody>' + dong + '</tbody></table>';
-}
-
-function renderTripReturnCockpit() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const statusTabs = document.getElementById('trip-return-status-tabs');
-  const queue = document.getElementById('trip-return-queue');
-  const summary = document.getElementById('trip-return-detail-summary');
-  const detailTabs = document.getElementById('trip-return-detail-tabs');
-  const detailPane = document.getElementById('trip-return-detail-pane');
-  const guidance = document.getElementById('trip-return-guidance-list');
-  if (!statusTabs || !queue || !summary || !detailTabs || !detailPane) return;
-
-  const cockpit = window.TmsCockpit.buildTripReturnCockpit(appState || {});
-  const groupFor = item => window.TmsCockpit.getTripStatusGroup(item.raw || item);
-
-  // Nap POD khi DA co danh sach chuyen, khong nap o `switchView`.
-  //
-  // Da do that: goi o `switchView` thi `appState.transport_trips` con rong, ham
-  // thoat som va KHONG BAO GIO thu lai — nen cot POD bao "0/1" cho ca nhung
-  // chuyen thuc su da ky POD. Doi den day thi chac chan co ma don de hoi.
-  //
-  // `dangNapPOD` chan goi lai vong tron: ham nay ve xong lai goi chinh no.
-  if (!dangNapPOD && !Array.isArray(appState?.pod_records) && cockpit.items.length) {
-    dangNapPOD = true;
-    napPODChoBangChuyen().finally(() => { dangNapPOD = false; renderTripReturnCockpit(); });
-  }
-  const counts = cockpit.items.reduce((result, item) => {
-    const group = groupFor(item);
-    result[group] = (result[group] || 0) + 1;
-    return result;
-  }, {});
-  // DẢI VÒNG ĐỜI, không phải tab phẳng.
-  //
-  // Năm nhóm này không ngang hàng nhau — chúng là các chặng NỐI TIẾP của một
-  // chuyến: đang giao hàng → chờ quay về → hoàn tất. "Thiếu kế hoạch về" là một
-  // nhánh lệch ra khỏi dòng đó, không phải một chặng. Vẽ phẳng như tab thì mất
-  // hết thứ tự đó, và người dùng phải tự đoán nhóm nào đứng trước nhóm nào.
-  //
-  // Bản mẫu `trip-lifecycle.html` vẽ chúng thành một dòng có mũi chuyển tiếp:
-  // Kế hoạch › Đang chạy › Chờ chặng về › Đã về bãi › Đã đối soát.
-  const statusOptions = [
-    { key: '', label: 'Tất cả', count: cockpit.items.length },
-    { key: 'active', label: 'Đang giao hàng', count: counts.active || 0, buoc: true },
-    { key: 'waiting_return', label: 'Chờ quay về', count: counts.waiting_return || 0, buoc: true },
-    { key: 'completed', label: 'Hoàn tất', count: counts.completed || 0, buoc: true },
-    // Đặt SAU cùng và tách khỏi dòng: đây là việc phải xử, không phải một chặng
-    // mà chuyến đi qua.
-    { key: 'missing_return', label: 'Thiếu kế hoạch về', count: counts.missing_return || 0, alert: true }
-  ];
-  statusTabs.innerHTML = statusOptions.map((option, i) => {
-    const truoc = statusOptions[i - 1];
-    // Mũi chuyển tiếp chỉ đặt GIỮA hai chặng liền nhau của dòng, không đặt trước
-    // "Tất cả" và không đặt trước nhánh lệch.
-    const mui = (truoc && truoc.buoc && option.buoc)
-      ? '<span class="trip-life-arrow" aria-hidden="true">›</span>' : '';
-    const ngan = (option.alert && truoc)
-      ? '<span class="trip-life-sep" aria-hidden="true"></span>' : '';
-    return `${mui}${ngan}<button type="button" class="trip-status-tab ${tripReturnStatusFilter === option.key ? 'is-active' : ''} ${option.alert ? 'is-alert' : ''}" onclick="setTripReturnStatusTab('${option.key}')">${option.label}<strong>${option.count}</strong></button>`;
-  }).join('');
-
-  const visibleItems = cockpit.items.filter(item => {
-    const raw = item.raw || item;
-    const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
-    const legText = (raw.legs || []).flatMap(leg => [leg.origin, leg.destination]).join(' ');
-    const haystack = [item.id, item.subtitle, raw.vehicle_id, raw.driver_id, journey.status_label, journey.location_label, legText, ...(raw.delivery_order_ids || [])].join(' ').toLowerCase();
-    return (!tripReturnSearchQuery || haystack.includes(tripReturnSearchQuery))
-      && (!tripReturnStatusFilter || groupFor(item) === tripReturnStatusFilter);
-  });
-
-  // Dai so lieu doc TOAN BO chuyen dang mo, khong doc danh sach da loc — mot
-  // con so bien doi theo chinh cai loc cua no thi khong noi len duoc gi.
-  renderTripKpis(cockpit.items, groupFor);
-  const loc = tripKpiFilter
-    ? visibleItems.filter(item => tripNhomKpi(item.raw || item, groupFor(item)).has(tripKpiFilter))
-    : visibleItems;
-
-  let selected = loc.find(item => item.id === activeTripReturnId) || loc[0] || null;
-  activeTripReturnId = selected?.id || '';
-  renderTripBang(loc, groupFor);
-
-  const searchEl = document.getElementById('trip-return-search');
-  const statusEl = document.getElementById('trip-return-status-filter');
-  if (searchEl && searchEl.value !== tripReturnSearchQuery) searchEl.value = tripReturnSearchQuery;
-  if (statusEl && statusEl.value !== tripReturnStatusFilter) statusEl.value = tripReturnStatusFilter;
-
-  if (!selected) {
-    summary.innerHTML = '<div class="delivery-empty-state" style="min-height:180px; display:grid; place-items:center; color:#64748b; font-weight:800; text-align:center;">Chọn một chuyến để xem hành trình và việc cần làm.</div>';
-    detailTabs.innerHTML = '';
-    detailPane.innerHTML = '';
-    return;
-  }
-
-  const raw = selected.raw || selected;
-  const journey = window.TmsCockpit.getTripJourneyPresentation(raw);
-  const group = groupFor(selected);
-  const action = group === 'completed'
-    ? { label: 'Điều phối chuyến mới', onclick: "switchView('dispatch')" }
-    : ['waiting_return', 'missing_return'].includes(group)
-      ? { label: 'Lập lượt về', onclick: "openTripReturnAction('add-leg')" }
-      : { label: 'Mở GPS / POD', onclick: "switchView('tracking')" };
-  summary.innerHTML = `<div class="trip-detail-overview">
-    <div class="trip-detail-identity"><h3>${completionEscape(selected.id)}</h3><p>${completionEscape((raw.delivery_order_ids || []).join(', ') || 'Chưa liên kết DO')} · ${completionEscape(raw.trip_type || 'Chuyến vận chuyển')}</p></div>
-    <div class="trip-detail-fact"><span>Trạng thái hiện tại</span><strong>${completionEscape(journey.status_label)}</strong></div>
-    <div class="trip-detail-fact"><span>Vị trí xe</span><strong>${completionEscape(journey.location_label)}</strong></div>
-    <div class="trip-detail-fact"><span>Xe dự kiến rảnh</span><strong>${completionEscape(tripReturnFormatTime(raw.planned_return_at))}</strong></div>
-  </div>
-  <div class="trip-progress">${journey.legs.map((leg, index) => `<div class="trip-progress-step ${leg.status === 'completed' ? 'is-done' : ['in_transit', 'arrived'].includes(leg.status) ? 'is-active' : ''}"><span class="trip-progress-marker"><i class="fa-solid ${leg.status === 'completed' ? 'fa-check' : ['in_transit', 'arrived'].includes(leg.status) ? 'fa-truck-fast' : 'fa-clock'}"></i></span><strong>${completionEscape(leg.label)}</strong><small>${completionEscape(leg.destination || '')}</small></div>`).join('') || '<div class="delivery-empty-state">Chưa có chặng.</div>'}</div>
-  <div class="trip-next-action"><span><strong>Việc cần làm tiếp:</strong> ${completionEscape(journey.next_action)}</span><button type="button" class="fiori-btn fiori-btn-primary" onclick="${action.onclick}">${action.label}</button></div>`;
-
-  const tabs = [
-    { key: 'journey', icon: 'fa-route', label: 'Chặng đường' },
-    { key: 'resources', icon: 'fa-truck', label: 'Xe & nhân sự' },
-    { key: 'pod', icon: 'fa-file-signature', label: 'POD' },
-    { key: 'events', icon: 'fa-clock-rotate-left', label: 'Sự kiện' }
-  ];
-  detailTabs.innerHTML = tabs.map(tab => `<button type="button" class="trip-detail-tab ${activeTripReturnDetailTab === tab.key ? 'is-active' : ''}" onclick="setTripReturnDetailTab('${tab.key}')"><i class="fa-solid ${tab.icon}"></i> ${tab.label}</button>`).join('');
-  renderTripReturnDetailPane(selected, journey);
-
-  if (guidance) {
-    guidance.innerHTML = cockpit.guidance.map(item => `<div style="padding:9px 10px; border-bottom:1px solid #e2e8f0; color:#475569; font-size:.8rem;"><i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> ${completionEscape(item)}</div>`).join('');
-  }
-}
 
 function setTripReturnStatusTab(status) {
   tripReturnStatusFilter = String(status || '');
@@ -2067,7 +2428,11 @@ function setTripReturnStatusTab(status) {
 }
 
 function setTripReturnDetailTab(tab) {
-  activeTripReturnDetailTab = ['journey', 'resources', 'pod', 'events'].includes(tab) ? tab : 'journey';
+  // `cost` là tab MỚI. Thiếu nó trong danh sách này thì bấm vào tab Chi phí lại
+  // rơi về tab Chặng đường — nút bấm được mà không đi đâu, thứ khó hiểu hơn cả
+  // một nút bị mờ.
+  activeTripReturnDetailTab =
+    ['journey', 'resources', 'pod', 'cost', 'events'].includes(tab) ? tab : 'journey';
   renderTripReturnCockpit();
 }
 

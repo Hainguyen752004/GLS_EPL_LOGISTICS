@@ -347,6 +347,281 @@
       font-weight: 900;
     }
 
+    /* ======================================================================
+       MÀN GIAO HÀNG & VẬN CHUYỂN — bộ CSS lấy nguyên từ bản mẫu
+       `D:\Demo_Lao\nhap_UI__duan\trip-lifecycle.html`.
+
+       Đặt TOÀN BỘ trong phạm vi `.tlv2` vì bản mẫu dùng những tên lớp rất
+       chung — `.card`, `.tag`, `.panel`, `.crew`, `.cost`, `.search` — mà ứng
+       dụng cũng đã có. Không bọc phạm vi thì bản mẫu ghi đè lên mọi màn khác,
+       và ta chữa một màn để làm hỏng mười màn. Có phép kiểm khoá điều này.
+       ====================================================================== */
+    .tlv2 {
+      --tl-bg:#f6f8fb; --tl-line:#e4e9f0; --tl-line2:#cbd5e1;
+      --tl-ink:#1e293b; --tl-ink2:#475569; --tl-ink3:#7b8796;
+      --tl-blue:#1a73e8; --tl-blue2:#e9f1fd; --tl-blue3:#0b4faa;
+      --tl-red:#d32f2f; --tl-red2:#fdecec;
+      --tl-amber:#b45309; --tl-amber2:#fff4e0;
+      --tl-green:#15803d; --tl-green2:#e7f6ec;
+      --tl-purple:#7c3aed; --tl-purple2:#efe9fd;
+      background:var(--tl-bg); color:var(--tl-ink);
+      font:13.5px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    }
+    .tlv2 *, .tlv2 *::before, .tlv2 *::after { box-sizing:border-box; }
+    .tlv2 button, .tlv2 select, .tlv2 input { font:inherit; }
+    .tlv2 button { cursor:pointer; }
+    /* Viền xanh bên trái là dấu nhận biết của bản mẫu. */
+    .tlv2-host { border-left:4px solid #3b82f6; min-height:100vh; padding:20px 28px 40px; }
+    .tlv2-module { max-width:1800px; margin:0 auto; }
+    .tlv2 .card { background:#fff; border:1px solid var(--tl-line); border-radius:14px; }
+    .tlv2 .tag {
+      font-size:11px; font-weight:600; border-radius:5px; padding:2px 7px;
+      background:#eef2f7; color:var(--tl-ink2); white-space:nowrap;
+    }
+    .tlv2 .t-red { background:var(--tl-red2); color:var(--tl-red); }
+    .tlv2 .t-amber { background:var(--tl-amber2); color:var(--tl-amber); }
+    .tlv2 .t-blue { background:var(--tl-blue2); color:var(--tl-blue3); }
+    .tlv2 .t-green { background:var(--tl-green2); color:var(--tl-green); }
+    .tlv2 .t-purple { background:var(--tl-purple2); color:var(--tl-purple); }
+
+    /* đầu trang */
+    .tlv2 .hdr { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:12px; flex-wrap:wrap; }
+    .tlv2 .hdr h1 { margin:0; font-size:19px; font-weight:700; }
+    .tlv2 .hdr p { margin:3px 0 0; color:var(--tl-ink3); font-size:12.5px; }
+    .tlv2 .hdr-acts { display:flex; gap:8px; flex-wrap:wrap; }
+    .tlv2 .ghost {
+      height:36px; border:1px solid var(--tl-line2); border-radius:10px; background:#fff;
+      color:var(--tl-ink2); font-weight:600; padding:0 13px; font-size:13px; white-space:nowrap;
+    }
+    .tlv2 .primary {
+      height:36px; border:0; border-radius:10px; background:var(--tl-blue); color:#fff;
+      font-weight:700; padding:0 15px; font-size:13px; white-space:nowrap;
+    }
+
+    /* dải số liệu */
+    .tlv2 .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:12px; }
+    .tlv2 .kpi {
+      padding:10px 14px; display:flex; flex-direction:column; gap:2px; cursor:pointer;
+      text-align:left; background:#fff; border:1px solid var(--tl-line); border-radius:14px;
+    }
+    .tlv2 .kpi span { font-size:11.5px; color:var(--tl-ink3); font-weight:600; }
+    .tlv2 .kpi b { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .tlv2 .kpi small { font-size:11.5px; color:var(--tl-ink2); font-weight:500; }
+    .tlv2 .kpi.red b { color:var(--tl-red); }
+    .tlv2 .kpi.amber b { color:var(--tl-amber); }
+    .tlv2 .kpi.green b { color:var(--tl-green); }
+    .tlv2 .kpi.blue b { color:var(--tl-blue); }
+    .tlv2 .kpi.purple b { color:var(--tl-purple); }
+    .tlv2 .kpi.on { outline:2px solid var(--tl-blue); outline-offset:-2px; }
+    .tlv2 .kpi:disabled { opacity:.6; cursor:default; }
+
+    /* bàn hai cột: bảng chuyến bên trái, hồ sơ bên phải */
+    .tlv2 .board { display:grid; grid-template-columns:minmax(0,1fr) 420px; gap:12px; align-items:start; }
+
+    /* DẢI VÒNG ĐỜI — năm giai đoạn NỐI TIẾP nhau, không phải năm tab ngang hàng.
+       Mũi chuyển tiếp giữa chúng nói lên thứ tự đó; vẽ phẳng như tab thì người
+       dùng phải tự đoán giai đoạn nào đứng trước giai đoạn nào. */
+    .tlv2 .life {
+      display:flex; align-items:stretch; padding:0 16px;
+      border-bottom:1px solid var(--tl-line); gap:2px; overflow-x:auto;
+    }
+    .tlv2 .lt {
+      border:0; background:none; padding:12px 14px 10px; font-weight:600; font-size:13px;
+      color:var(--tl-ink2); border-bottom:2.5px solid transparent;
+      display:flex; align-items:center; gap:8px; white-space:nowrap;
+    }
+    .tlv2 .lt .n {
+      font-size:11px; font-weight:700; border-radius:999px; padding:1px 7px;
+      background:#eef2f7; color:var(--tl-ink2);
+    }
+    .tlv2 .lt.on { color:var(--tl-blue); border-bottom-color:var(--tl-blue); }
+    .tlv2 .lt.on .n { background:var(--tl-blue); color:#fff; }
+    .tlv2 .lt.warn .n { background:var(--tl-amber2); color:var(--tl-amber); }
+    .tlv2 .life .arrow { color:var(--tl-line2); font-size:12px; padding:0 2px; align-self:center; }
+
+    .tlv2 .tools {
+      display:flex; gap:8px; align-items:center; padding:10px 16px;
+      border-bottom:1px solid var(--tl-line); flex-wrap:wrap;
+    }
+    .tlv2 .search {
+      display:flex; align-items:center; gap:8px; height:34px; padding:0 10px;
+      border:1px solid var(--tl-line2); border-radius:9px; color:var(--tl-ink3);
+      font-size:12.5px; flex:1; max-width:420px; background:#fff;
+    }
+    .tlv2 .search input { border:0; outline:0; flex:1; font-size:12.5px; color:var(--tl-ink); background:transparent; }
+    .tlv2 .tools select {
+      height:34px; border:1px solid var(--tl-line2); border-radius:9px; padding:0 10px;
+      background:#fff; font-weight:600; font-size:12.5px; color:var(--tl-ink2);
+    }
+    .tlv2 .tools .cnt { margin-left:auto; font-size:12px; color:var(--tl-ink3); font-weight:600; }
+
+    /* bảng chuyến */
+    .tlv2 .trips { width:100%; border-collapse:collapse; }
+    .tlv2 .trips th {
+      font-size:11px; font-weight:700; color:var(--tl-ink3); text-align:left;
+      padding:9px 12px; border-bottom:1px solid var(--tl-line); white-space:nowrap; background:#fafbfd;
+    }
+    .tlv2 .trips td {
+      padding:10px 12px; border-bottom:1px solid var(--tl-line);
+      vertical-align:middle; font-size:13px;
+    }
+    .tlv2 .trips tbody tr { cursor:pointer; }
+    .tlv2 .trips tbody tr:hover { background:#fafbfd; }
+    .tlv2 .trips tbody tr.on { background:var(--tl-blue2); }
+    .tlv2 .trips th:first-child, .tlv2 .trips td:first-child { padding-left:16px; }
+    .tlv2 .trips .id { font-weight:700; white-space:nowrap; }
+    .tlv2 .trips .sub { display:block; font-size:11.5px; color:var(--tl-ink3); font-weight:500; }
+    .tlv2 .trips .rt { font-weight:600; }
+    /* Ô nào cũng phải tự cắt bằng ba chấm: một tên tuyến dài kéo cả bảng rộng
+       ra và mọi cột mất thẳng hàng. */
+    .tlv2 .trips td .rt, .tlv2 .trips td .sub { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* TỔ LÁI xếp chồng nhau như ảnh đại diện nhóm — hai người thì thấy ngay là
+       hai, không phải đọc số. */
+    .tlv2 .trips .crew { display:flex; align-items:center; gap:6px; }
+    .tlv2 .trips .crew .av {
+      width:24px; height:24px; border-radius:50%; background:var(--tl-blue2);
+      color:var(--tl-blue3); display:grid; place-items:center; font-size:9.5px;
+      font-weight:700; border:1.5px solid #fff; margin-left:-6px; flex:none;
+    }
+    .tlv2 .trips .crew .av:first-child { margin-left:0; }
+    .tlv2 .prog { width:120px; height:6px; border-radius:3px; background:#eef2f7; position:relative; overflow:hidden; }
+    .tlv2 .prog i { position:absolute; left:0; top:0; bottom:0; background:var(--tl-blue); border-radius:3px; }
+    .tlv2 .prog i.g { background:var(--tl-green); }
+    .tlv2 .prog i.a { background:#ef9f27; }
+    .tlv2 .prog i.r { background:var(--tl-red); }
+    .tlv2 .pl { font-size:11.5px; color:var(--tl-ink3); white-space:nowrap; margin-top:3px; }
+    .tlv2 .eta b { font-weight:700; }
+    .tlv2 .eta.r b { color:var(--tl-red); }
+    .tlv2 .eta.a b { color:var(--tl-amber); }
+    /* POD — MỘT CHẤM MỘT DO. Một chuyến chở ba đơn mà thiếu POD của một đơn thì
+       cả chuyến không đối soát được, nên phải thấy được từng đơn. */
+    .tlv2 .pod { display:inline-flex; gap:3px; }
+    .tlv2 .pod i { width:8px; height:8px; border-radius:50%; background:#e4e9f0; }
+    .tlv2 .pod i.d { background:var(--tl-green); }
+    .tlv2 .pod i.m { background:var(--tl-red); }
+    .tlv2 .tfoot {
+      display:flex; justify-content:space-between; padding:10px 16px;
+      color:var(--tl-ink3); font-size:12px; border-top:1px solid var(--tl-line); flex-wrap:wrap; gap:8px;
+    }
+
+    /* HỒ SƠ CHUYẾN, cột phải */
+    .tlv2 .panel { position:sticky; top:20px; max-height:calc(100vh - 40px); overflow-y:auto; }
+    .tlv2 .ph { padding:14px 16px 12px; border-bottom:1px solid var(--tl-line); }
+    .tlv2 .ph .top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .tlv2 .ph h3 { margin:0; font-size:16px; font-weight:700; }
+    .tlv2 .ph .m { font-size:12.5px; color:var(--tl-ink3); margin-top:3px; overflow-wrap:anywhere; }
+    .tlv2 .ph .chips { display:flex; gap:5px; margin-top:8px; flex-wrap:wrap; }
+    .tlv2 .pb { padding:12px 16px 16px; }
+    .tlv2 .empty {
+      color:var(--tl-ink3); font-size:12.5px; text-align:center; padding:30px 12px;
+      border:1.5px dashed var(--tl-line2); border-radius:12px; line-height:1.6;
+    }
+    .tlv2 .lbl {
+      font-size:11.5px; font-weight:700; color:var(--tl-ink3); margin:14px 0 6px;
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+    }
+    .tlv2 .lbl button { border:0; background:none; color:var(--tl-blue); cursor:pointer; font-weight:600; font-size:11.5px; padding:0; }
+    .tlv2 .sum { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+    .tlv2 .sum > div { background:#f8fafc; border-radius:8px; padding:7px 9px; min-width:0; }
+    .tlv2 .sum > div span { display:block; font-size:11px; color:var(--tl-ink3); font-weight:600; }
+    .tlv2 .sum > div b { font-size:12.5px; font-weight:600; overflow-wrap:anywhere; }
+    /* VIỆC CẦN LÀM TIẾP — khối này là lý do màn tồn tại: nó nói ra việc, thay
+       vì để người dùng tự suy từ trạng thái. */
+    .tlv2 .next {
+      display:flex; gap:10px; align-items:center; padding:10px 12px; border-radius:10px;
+      background:var(--tl-blue2); color:var(--tl-blue3); font-size:12.5px;
+      font-weight:600; margin-top:10px;
+    }
+    .tlv2 .next.amber { background:var(--tl-amber2); color:var(--tl-amber); }
+    .tlv2 .next.red { background:var(--tl-red2); color:var(--tl-red); }
+    .tlv2 .next.green { background:var(--tl-green2); color:var(--tl-green); }
+    .tlv2 .next > span { flex:1; min-width:0; }
+    .tlv2 .next .a {
+      height:30px; border:1px solid currentColor; border-radius:8px; background:#fff;
+      font-weight:700; font-size:12px; padding:0 10px; color:inherit; white-space:nowrap; flex:none;
+    }
+
+    /* CHẶNG THẬT của chuyến — trục dọc có mốc, không phải một danh sách phẳng.
+       Chặng là thứ NỐI TIẾP: lấy hàng rồi mới giao, giao rồi mới về bãi. */
+    .tlv2 .tl { position:relative; padding-left:26px; }
+    .tlv2 .tl::before {
+      content:""; position:absolute; left:9px; top:8px; bottom:8px;
+      width:2px; background:var(--tl-line);
+    }
+    .tlv2 .lg { position:relative; padding:6px 0 10px; }
+    .tlv2 .lg::before {
+      content:""; position:absolute; left:-22px; top:10px; width:12px; height:12px;
+      border-radius:50%; background:#fff; border:2.5px solid var(--tl-line2);
+    }
+    .tlv2 .lg.done::before { background:var(--tl-blue); border-color:var(--tl-blue); }
+    .tlv2 .lg.now::before { background:#fff; border-color:var(--tl-blue); box-shadow:0 0 0 3px var(--tl-blue2); }
+    .tlv2 .lg.warn::before { background:var(--tl-red); border-color:var(--tl-red); }
+    .tlv2 .lg.back::before { border-style:dashed; }
+    .tlv2 .lg .h { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+    .tlv2 .lg .h b { font-size:13px; font-weight:700; min-width:0; }
+    .tlv2 .lg .h > span { font-size:11.5px; color:var(--tl-ink3); white-space:nowrap; flex:none; }
+    .tlv2 .lg .d { font-size:12px; color:var(--tl-ink2); margin-top:1px; overflow-wrap:anywhere; }
+    .tlv2 .lg .d small { color:var(--tl-ink3); }
+    .tlv2 .lg .kind { font-size:10.5px; font-weight:700; border-radius:4px; padding:1px 5px; margin-right:5px; }
+    .tlv2 .k-pick { background:var(--tl-amber2); color:var(--tl-amber); }
+    .tlv2 .k-drop { background:var(--tl-green2); color:var(--tl-green); }
+    .tlv2 .k-ret { background:#eef2f7; color:var(--tl-ink2); }
+    .tlv2 .k-via { background:var(--tl-blue2); color:var(--tl-blue3); }
+
+    /* tổ lái và xe ở hồ sơ */
+    .tlv2 .crewrow {
+      display:flex; gap:8px; align-items:center; padding:8px 10px;
+      border:1px solid var(--tl-line); border-radius:9px; margin-bottom:5px;
+    }
+    .tlv2 .crewrow .av {
+      width:30px; height:30px; border-radius:50%; background:var(--tl-blue2);
+      color:var(--tl-blue3); display:grid; place-items:center; font-weight:700;
+      font-size:10.5px; flex:none;
+    }
+    .tlv2 .crewrow .av.v { border-radius:7px; background:#eef2f7; color:var(--tl-ink2); }
+    .tlv2 .crewrow > div { min-width:0; flex:1; }
+    .tlv2 .crewrow b { display:block; font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tlv2 .crewrow span { display:block; font-size:11px; color:var(--tl-ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .tlv2 .crewrow .r { margin-left:auto; font-size:11px; font-weight:700; color:var(--tl-ink3); flex:none; }
+
+    /* CHI PHÍ THỰC so KẾ HOẠCH. Đây là bảng quyết định chuyến có lỗ hay không,
+       nên cột lệch phải đọc được ngay: đỏ là vượt, lục là dưới kế hoạch. */
+    .tlv2 .cost .crow {
+      display:grid; grid-template-columns:minmax(0,1fr) 90px 90px 60px; gap:8px;
+      padding:6px 0; border-top:1px solid var(--tl-line); font-size:12.5px; align-items:center;
+    }
+    .tlv2 .cost .crow:first-child { border-top:0; font-size:11px; font-weight:700; color:var(--tl-ink3); }
+    .tlv2 .cost .n { text-align:right; font-variant-numeric:tabular-nums; }
+    .tlv2 .cost .dv { text-align:right; font-size:11.5px; font-weight:700; }
+    .tlv2 .cost .dv.up { color:var(--tl-red); }
+    .tlv2 .cost .dv.dn { color:var(--tl-green); }
+    .tlv2 .cost .tot { font-weight:700; border-top:2px solid var(--tl-line); }
+
+    .tlv2 .acts { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:12px; }
+    .tlv2 .acts button {
+      height:36px; border:1px solid var(--tl-line2); border-radius:8px; background:#fff;
+      font-weight:600; font-size:12px; color:var(--tl-ink2);
+    }
+    .tlv2 .acts button.p {
+      background:var(--tl-blue); border-color:var(--tl-blue); color:#fff;
+      font-weight:700; grid-column:1 / -1; height:40px;
+    }
+    .tlv2 .acts button.red { border-color:var(--tl-red); color:var(--tl-red); }
+
+    /* Hai cột chỉ giữ được trên màn rộng. Dưới 1300px thì hồ sơ xuống dòng —
+       ép hai cột trên màn hẹp là đẩy cả trang trượt ngang. Và bảng bảy cột thì
+       cho trượt TRONG khung của nó, không đẩy cả trang. */
+    .tlv2 .trips-wrap { overflow-x:auto; }
+    @media (max-width:1300px) {
+      .tlv2 .board { grid-template-columns:minmax(0,1fr); }
+      .tlv2 .panel { position:static; max-height:none; }
+      .tlv2 .kpis { grid-template-columns:repeat(3,1fr); }
+    }
+    @media (max-width:900px) {
+      .tlv2 .kpis { grid-template-columns:repeat(2,1fr); }
+      .tlv2-host { padding:14px 16px 30px; }
+    }
+
     /* DAI SO LIEU cua man Giao hang & van chuyen. */
     .trip-kpis {
       display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:9px;
@@ -6060,46 +6335,83 @@
           </div>
         </section>
 
-        <!-- 4. DELIVERY & SHIPMENT -->
-        <section id="view-delivery-shipment" class="view-section" style="background-color:#f8fafc; min-height:100vh; padding:16px;">
-          <div id="delivery-workbench-shell" style="display:grid; gap:14px;">
-            <div id="delivery-cockpit-hero" style="background:#ffffff; border:1px solid #dbeafe; border-radius:14px; box-shadow:0 10px 28px rgba(15,23,42,.05); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <button class="fiori-btn fiori-btn-primary" type="button" onclick="openTripReturnAction('create-trip')" style="white-space:nowrap;"><i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">Tạo Trip</span></button>
-                <button class="fiori-btn fiori-btn-secondary" onclick="switchView('dispatch')" style="white-space:nowrap;"><i class="fa-solid fa-truck-ramp-box"></i> <span data-i18n="btn_to_dispatch">Qua điều phối</span></button>
-                <button id="trip-return-guidance-toggle" class="fiori-btn fiori-btn-secondary" type="button" onclick="openTripReturnGuidanceModal()" title="Xem ghi chú nghiệp vụ" style="white-space:nowrap;"><i class="fa-solid fa-eye"></i> <span data-i18n="btn_biz_notes">Ghi chú</span></button>
-                <button class="fiori-btn fiori-btn-secondary" onclick="renderTripReturnCockpit(); renderShipments();" style="white-space:nowrap;"><i class="fa-solid fa-rotate"></i> <span data-i18n="btn_reload">Làm mới</span></button>
+        <!-- 4. GIAO HÀNG & VẬN CHUYỂN — dựng theo bản mẫu
+             `D:\Demo_Lao\nhap_UI__duan\trip-lifecycle.html`.
+
+             Bố cục, bảng màu, cỡ chữ và khoảng trắng lấy nguyên từ bản mẫu.
+             Cái duy nhất khác là dữ liệu: mọi con số và mọi dòng ở đây đọc từ
+             backend thật, không có dòng nào cứng trong trang.
+
+             HỘP THOẠI TẠO TRIP GIỮ NGUYÊN — chủ dự án đã chốt. Nó nằm ở
+             `#trip-return-action-modal`, ngoài khối này, và nút "+ Tạo Trip" ở
+             đầu trang vẫn mở đúng nó.
+
+             Mọi `id` của bản cũ được GIỮ NGUYÊN: hơn mười hàm đang ghi vào
+             `#trip-return-queue`, `#trip-return-detail-summary`,
+             `#trip-return-detail-pane`, `#trip-return-status-tabs`... Đổi tên
+             cho "sạch" là làm đứt cả luồng đang chạy.
+
+             Ba chỗ của bản mẫu KHÔNG dựng, và lý do:
+               · Thẻ "Vượt chi phí kế hoạch" ở dải số liệu — đường lấy chi phí
+                 thực là MỘT lời gọi cho MỘT chuyến, nên vẽ thẻ đó cho cả bảng
+                 là gọi hàng nghìn lần mỗi lần mở màn. Chi phí vẫn xem được,
+                 nhưng ở hồ sơ bên phải cho đúng một chuyến đang chọn.
+               · Cột "Chi phí thực / KH" trên bảng — cùng lý do trên.
+               · Khối "Ghép chặng về" với danh sách DO hàng nhập gợi ý — chưa có
+                 đường API nào tìm DO ghép được theo vị trí và giờ rảnh của xe.
+                 Thay bằng nút mở đúng form lập lượt về đang có.
+        -->
+        <section id="view-delivery-shipment" class="view-section tlv2">
+          <div class="tlv2-host"><div class="tlv2-module">
+
+            <div class="hdr">
+              <div>
+                <h1 data-i18n="title_trip_module">Chuyến xe (Trip)</h1>
+                <p data-i18n="sub_trip_module">Hồ sơ từng chuyến: chặng thật, tổ lái, POD, chi phí thực so kế hoạch, và kế hoạch chặng về.</p>
+              </div>
+              <div class="hdr-acts">
+                <!-- Nút này mở HỘP THOẠI TẠO TRIP mà chủ dự án yêu cầu giữ. -->
+                <button class="primary" type="button" onclick="openTripReturnAction('create-trip')">
+                  <i class="fa-solid fa-plus"></i> <span data-i18n="btn_create_trip">Tạo Trip</span>
+                </button>
+                <button class="ghost" type="button" onclick="switchView('tracking')">
+                  <i class="fa-solid fa-satellite-dish"></i> Theo dõi realtime
+                </button>
+                <button class="ghost" type="button" onclick="switchView('dispatch')">
+                  <i class="fa-solid fa-truck-ramp-box"></i> <span data-i18n="btn_to_dispatch">Qua điều phối</span>
+                </button>
+                <!-- Biểu tượng hướng dẫn của ứng dụng — GIỮ NGUYÊN. -->
+                <button id="trip-return-guidance-toggle" class="ghost" type="button"
+                        title="Xem ghi chú nghiệp vụ" onclick="openTripReturnGuidanceModal()">
+                  <i class="fa-solid fa-eye"></i> <span data-i18n="btn_biz_notes">Ghi chú</span>
+                </button>
+                <button class="ghost" type="button" title="Làm mới"
+                        onclick="renderTripReturnCockpit(); renderShipments();">
+                  <i class="fa-solid fa-rotate"></i> <span data-i18n="btn_reload">Làm mới</span>
+                </button>
               </div>
             </div>
 
-            <div id="trip-return-cockpit-panel" class="delivery-control-panel">
-              <div class="delivery-control-heading">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-                  <div>
-                    <h3 style="margin:0; color:#0f172a; font-size:1.08rem; font-weight:900;"><i class="fa-solid fa-route" style="color:#ea580c;"></i> <span data-i18n="title_active_trips_panel">Chuyến đang vận chuyển</span></h3>
-                    <div style="font-size:.84rem; color:#64748b; margin-top:4px;" data-i18n="sub_active_trips_panel">Sau khi điều phối xong, theo dõi Trip, ETA, chặng và POD tại đây.</div>
-                  </div>
-                </div>
-              </div>
-              <!--
-                DẢI SỐ LIỆU, như bản mẫu `trip-lifecycle.html`.
+            <!-- Năm thẻ, do `renderTripKpis()` ghi vào từ dữ liệu thật. Để chữ
+                 mặc định ở đây thì nó hiện loé một nhịp rồi bị ghi đè, và nếu
+                 hàm vẽ chết thì màn hình lại nói những con số bịa. -->
+            <div class="kpis" id="trip-kpis" role="group"
+                 aria-label="Số liệu chuyến vận chuyển, bấm để lọc"></div>
 
-                Năm con số này bấm được: mỗi thẻ lọc bảng chuyến theo đúng nhóm
-                đó. Nội dung do `renderTripKpis()` ghi vào từ dữ liệu thật — để
-                chữ mặc định ở đây thì nó hiện loé một nhịp rồi bị ghi đè, và
-                nếu hàm vẽ chết thì màn hình lại nói những con số bịa.
+            <div class="board">
+              <section class="card" id="trip-return-cockpit-panel">
+                <!-- DẢI VÒNG ĐỜI: Kế hoạch › Đang chạy › Chờ chặng về › Đã về
+                     bãi › Thiếu kế hoạch về. Năm giai đoạn nối tiếp, không phải
+                     năm tab ngang hàng. -->
+                <div id="trip-return-status-tabs" class="life" aria-label="Lọc chuyến theo giai đoạn vòng đời"></div>
 
-                Bản mẫu có sáu thẻ. Thẻ "Vượt chi phí kế hoạch" lược bỏ: đường
-                lấy chi phí thực là một lời gọi cho MỘT chuyến, nên vẽ thẻ đó
-                cho cả bảng là gọi hàng nghìn lần mỗi lần mở màn.
-              -->
-              <div id="trip-kpis" class="trip-kpis" role="group"
-                   aria-label="Số liệu chuyến vận chuyển, bấm để lọc"></div>
-
-              <div id="trip-return-status-tabs" class="trip-status-tabs" aria-label="Lọc chuyến theo trạng thái"></div>
-              <div class="trip-control-toolbar">
-                <div class="trip-return-filters">
-                  <label class="trip-return-search"><i class="fa-solid fa-magnifying-glass"></i><input id="trip-return-search" type="search" placeholder="Tìm Trip, DO, xe, tài xế hoặc điểm giao" oninput="filterTripReturnQueue()"></label>
+                <div class="tools">
+                  <label class="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="trip-return-search" type="search" oninput="filterTripReturnQueue()"
+                           placeholder="Tìm Trip, DO, xe, tài xế hoặc điểm giao"
+                           aria-label="Tìm chuyến vận chuyển">
+                  </label>
                   <select id="trip-return-status-filter" onchange="filterTripReturnQueue()" aria-label="Lọc nhanh trạng thái Trip">
                     <option value="">Tất cả chuyến</option>
                     <option value="active">Đang giao hàng</option>
@@ -6107,26 +6419,41 @@
                     <option value="missing_return">Thiếu kế hoạch về</option>
                     <option value="completed">Đã hoàn tất</option>
                   </select>
-                  <button type="button" class="fiori-btn fiori-btn-secondary" onclick="clearTripReturnFilters()" title="Xóa bộ lọc"><i class="fa-solid fa-filter-circle-xmark"></i> Xóa lọc</button>
+                  <button class="ghost" type="button" onclick="clearTripReturnFilters()" title="Xóa bộ lọc">
+                    <i class="fa-solid fa-filter-circle-xmark"></i> Xóa lọc
+                  </button>
+                  <span class="cnt" id="trip-count">—</span>
                 </div>
-              </div>
-              <div class="trip-control-grid">
-                <aside class="trip-queue-panel">
-                  <div class="trip-queue-heading"><i class="fa-solid fa-list-check"></i> Chuyến vận hành</div>
-                  <div id="trip-return-queue" class="trip-return-queue">
-                    <div class="delivery-empty-state" style="padding:18px; color:#64748b; font-weight:800;" data-i18n="msg_no_active_trips">Chưa có Trip đang vận chuyển.</div>
-                  </div>
-                </aside>
-                <section id="trip-return-detail" class="trip-detail-shell">
-                  <div id="trip-return-detail-summary" class="trip-detail-summary">
-                    <div class="delivery-empty-state" style="min-height:180px; display:grid; place-items:center; color:#64748b; font-weight:800; text-align:center;" data-i18n="msg_select_trip_hint">Chọn một Trip để xem hành trình và việc cần làm.</div>
-                  </div>
-                  <nav id="trip-return-detail-tabs" class="trip-detail-tabs" aria-label="Hồ sơ chuyến"></nav>
-                  <div id="trip-return-detail-pane" class="trip-detail-pane"></div>
-                </section>
-              </div>
+
+                <!-- Bảng bảy cột trượt TRONG khung của nó, không đẩy cả trang
+                     trượt ngang. -->
+                <div class="trips-wrap" id="trip-return-queue" aria-live="polite"></div>
+
+                <div class="tfoot">
+                  <span id="trip-foot">—</span>
+                  <span>Bấm một dòng để mở hồ sơ chuyến · POD: mỗi chấm là một DO</span>
+                </div>
+              </section>
+
+              <aside class="card panel">
+                <div class="ph" id="trip-return-detail-summary">
+                  <div class="top"><h3>Hồ sơ chuyến</h3></div>
+                  <div class="m">Chọn một chuyến bên trái</div>
+                </div>
+                <div class="pb" id="trip-return-detail">
+                  <!-- Bốn tab hồ sơ của bản cũ GIỮ LẠI: chúng là bốn mặt thật
+                       của một chuyến (chặng, xe và người, POD, sự kiện), và
+                       `renderTripReturnDetailPane` đang vẽ vào đó. Bản mẫu xếp
+                       cả bốn thành một dải dọc, nhưng ở đây một chuyến có thể
+                       có hàng chục sự kiện GPS — dồn hết vào một cột thì hồ sơ
+                       dài tới mức không tìm được gì. -->
+                  <nav id="trip-return-detail-tabs" class="life" style="padding:0" aria-label="Hồ sơ chuyến"></nav>
+                  <div id="trip-return-detail-pane"></div>
+                </div>
+              </aside>
             </div>
-          </div>
+          </div></div>
+
           <div style="display:none;">
             <input id="shipment-search-input" type="hidden">
             <input id="exec-shipment-id" type="hidden">
@@ -8918,7 +9245,7 @@
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
   <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908a">
   <script src="/static/js/tracking-control-tower.js?v=20260908a"></script>
-  <script src="/static/js/app.js?v=20260908z-control-tower"></script>
+  <script src="/static/js/app.js?v=20260908za-trip-lifecycle"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
   <script src="/static/js/khung-moi.js?v=20260908e-sap-lich"></script>
