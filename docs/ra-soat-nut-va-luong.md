@@ -26,18 +26,26 @@ sai ba lần trong lần rà này, nên tôi bỏ hẳn cách đó.
 | Lỗi JS khi mở lần lượt 13 màn | **0** |
 | Điểm cuối máy chủ | **200** trên 17 module |
 | **Điểm cuối không màn nào gọi** | **20** |
-| **Nút dư (khối cũ đã bị thay mà còn nằm lại)** | **25** trong 4 khối |
+| **Nút dư thật sự** | **1** — bốn khối cũ có 25 nút, nhưng 24 nút thuộc ba tính năng CÒN CHẠY (xem §4) |
+| **Hồi quy tìm ra khi dọn** | **1** — màn Báo giá mới thiếu cửa chặn tải trọng (§4.1) |
 | Nút nói dối đã bỏ trong lần rà này | 3 (+ 8 nút "Lưu" đã bỏ ở lần trước) |
 | Bước luồng bị thiếu đã thêm | 1 — "Xác nhận xe đã về bãi" |
 
-**Ba việc nên làm, theo thứ tự tôi đề nghị:**
+**Việc nên làm, theo thứ tự tôi đề nghị:**
 
-1. **Làm màn khai giấy phép tài xế.** Đây là lỗ nặng nhất tìm được — xem §5.2.
-   Giấy phép **chặn điều phối**, mà không có màn nào khai được nó. Điều phối bị
-   chặn hiện chỉ sửa được bằng tệp lệnh hoặc sửa thẳng cơ sở dữ liệu.
-2. **Bỏ 4 khối cũ (25 nút).** Xem §4. Không mất tính năng nào.
-3. **Chốt phận cho module đấu thầu.** 8 điểm cuối đã viết xong ở máy chủ, chưa
-   bao giờ có màn. Xem §5.1 — tôi nêu cả phương án **bỏ**, không mặc định giữ.
+1. **Chuyển cửa chặn tải trọng sang màn Báo giá mới, và thêm một cửa ở máy chủ.**
+   Xem §4.1 — đây là hồi quy đang tồn tại: báo giá được một lô 20 tấn trên xe
+   5 tấn, lỗi chỉ lộ ra tận bước điều phối. Việc lớn nhất còn lại.
+2. **Bỏ `qtv2-khoi-cu` (7 nút)** ngay sau khi chuyển xong cửa chặn ở việc 1.
+3. **Chốt phận cho module đấu thầu.** 8 điểm cuối đã viết xong ở máy chủ, 5 bảng
+   đang 0 dòng, chưa bao giờ có màn. Chủ dự án đã chốt: **để lại sau demo**.
+
+**Đã làm xong trong lần rà này:**
+
+- **Màn khai bằng lái tài xế** — cửa chặn điều phối trước đây khoá cổng mà không
+  phát chìa. Xem §3.
+- **Cửa cho biểu mẫu hồ sơ tài xế** — trước đây không nút nào mở được nó. §4.2.
+- **Bỏ khung POD chết** ở màn Theo dõi. §4.
 
 ---
 
@@ -69,6 +77,9 @@ giờ rảnh lại để điều phối tiếp. Đã thêm nút **"Xác nhận x
 
 | Nút / chỗ | Vấn đề | Đã làm |
 |---|---|---|
+| **Cửa chặn bằng lái tài xế** | Điều phối chặn khi bằng lái thiếu / hết hạn / lệch hạng, và cửa chặn còn trả về gợi ý `["master-data/drivers"]` — nhưng **không có màn nào khai được bằng lái**, nên điều phối bị chặn chỉ sửa được bằng tệp lệnh | Thêm thẻ **"5. Tài Xế & Bằng Lái"**; kết luận trên màn sao lại đúng năm điều kiện của cửa chặn; có ô "Xét theo ngày"; đổi hạng thì ghi cả hai bảng. Mốc `eaa8abb` |
+| **Biểu mẫu hồ sơ tài xế** | Có đủ ô nhưng **không nút nào trong toàn bộ trang mở nó** | Nút "Hồ sơ" trên từng dòng và "Thêm tài xế" ở đầu màn. §4.2 |
+| Khung POD cũ ở màn Theo dõi | Đường tắt sang màn Hoàn tất, bị che từ lâu nên đã chết | Bỏ hẳn 27 dòng, 1 nút |
 | "Post" trên thẻ minh hoạ ở Bảng điều khiển | Ghi **một hoá đơn thật** cùng bút toán sổ cái, cho lệnh giao hàng nó **tự chọn** bằng "lệnh đã giao đầu tiên tìm thấy" | Bỏ nút, rồi bỏ luôn hàm `postInvoice` (mốc `ddcf882`) và chốt bằng bài kiểm |
 | "Print" trên thẻ đó | Không nối gì | Bỏ, kèm chú thích vì sao |
 | "Submit" trên thẻ "BÁO CÁO SỰ CỐ" | Ghi một sự cố **thật**, nhưng đọc giá trị từ form sự cố ở **màn khác** — mọi ô của thẻ này đều `disabled`, nên bấm là ghi một sự cố rỗng | Thay bằng nút đi tới màn thật |
@@ -81,70 +92,69 @@ xe về) và `ddcf882` (bỏ `postInvoice`, thêm hai bài kiểm).
 
 ---
 
-## 4. Nút dư — 25 nút trong 4 khối cũ
+## 4. Nút dư — con số đếm đúng, kết luận ban đầu SAI
 
-Đây là **phát hiện chính** của phần rà soát nút. Bốn khối này là giao diện **đã
-bị thay**, nhưng phần markup cũ vẫn nằm trong `index.html`, chỉ bị `hidden` che
-đi. Người dùng không thấy chúng, nên chúng không gây lỗi — nhưng chúng làm tệp
-phình ra, và nguy hiểm hơn: **lần sau có người bỏ `hidden` đi là cả một màn cũ
-hiện lại**, ghi vào cùng cơ sở dữ liệu bằng luồng đã bỏ.
+**Bản đầu của mục này nói 25 nút dư trong bốn khối cũ, và đề nghị bỏ cả bốn.**
+Khi bắt tay bỏ thì tám bài kiểm đỏ, và đọc ra lý do: **hai trong bốn khối không
+phải rác.** Chúng chứa tính năng còn chạy được, chỉ bị `hidden` che vì bước hoặc
+màn của chúng đã rời khỏi luồng. Ghi lại nguyên chỗ sai này, vì bài học của nó
+quan trọng hơn con số: **"bị `hidden` che" không đồng nghĩa với "chết".**
 
-Cần phân biệt rõ với **khối bị che có chủ đích** — hộp thoại, bảng chi tiết mở
-theo yêu cầu, tab chưa mở (`trip-return-action-modal`, `dispatch-detail`,
-`completion-editor`, `md-tab-*`…). Những khối đó **bình thường**, không phải nút
-dư, và tôi không tính vào 25.
+Cách kiểm đúng, và từ giờ phải làm trước mỗi lần bỏ một khối:
 
-### 4.1 `qtv2-khoi-cu` — 7 nút · màn Báo giá cũ
+1. Khối có chứa **ô chọn tệp, FormData, hay điểm cuối riêng** nào không?
+2. **Bài kiểm nào** đang chốt các `id` bên trong? (Kể cả bài dựng tên `id` bằng
+   chuỗi ghép — `grep` một tên cụ thể sẽ không thấy chúng.)
+3. Năng lực mà khối đó cung cấp, **màn đang chạy có bản tương đương chưa?**
 
-Đã bị thay hẳn bởi `#qtv2-root` (`bao-gia-v2.js`) ở mốc `629b80e`.
+| Khối | Nút | Kết luận | Vì sao |
+|---|---|---|---|
+| `so-khoi-cu` | 9 | **GIỮ** | Chứa tính năng đính kèm chứng từ đang chạy thật: gửi FormData, chặn tệp trên 25 MB, bảng `sales_order_documents`, 4 điểm cuối, kèm bộ kiểm riêng. |
+| `qtv2-khoi-cu` | 7 | **GIỮ tạm** | Chứa **cửa chặn tải trọng** của bước báo giá, mà màn mới không có — xem §4.1. Đây là bản mẫu duy nhất để chuyển. |
+| `ssv5-khoi-cu` | 8 | **GIỮ** | Chứa `driver-modal-dialog`, biểu mẫu duy nhất sửa được hồ sơ tài xế. Nay đã có cửa mở nó — xem §4.2. |
+| `legacy-tracking-pod-panel` | 1 | **ĐÃ BỎ** | Đường tắt từ màn Theo dõi sang màn Hoàn tất, bị che từ lâu nên đã chết. Màn Hoàn tất tự liệt kê và tự mở bảng soạn nên không mất đường nào. |
 
-| Nút | Hàm |
-|---|---|
-| Làm Mới | `loadQuotations` |
-| + Tạo Báo Giá Cước | `openOracleQTForm` |
-| Tìm Kiếm | `filterQuotations` |
-| (nút đóng) · Hủy bỏ | `closeOracleQTForm` |
-| Duyệt Báo Giá Cước | `approveQuotation` |
-| Lưu Báo Giá Cước | `saveOracleQT` |
+Vậy thực tế: **bỏ được 1 nút**, không phải 25. Còn 7 nút của `qtv2-khoi-cu` bỏ
+được **sau khi** chuyển cửa chặn tải trọng sang màn mới.
 
-Bảy hàm này vẫn còn được nhắc ở chỗ khác trong `app.js`, nên **bỏ được markup
-trước, hàm dọn sau** — phải lần từng chỗ nhắc để biết chỗ nào là đường sống,
-chỗ nào chỉ là mã chết nhắc mã chết.
+### 4.1 Hồi quy: màn Báo giá mới thiếu cửa chặn tải trọng
 
-### 4.2 `so-khoi-cu` — 9 nút · bước Đơn hàng (SO) đã bỏ
+Đây là phát hiện đáng giá nhất của lần dọn này, và nó không phải chuyện dọn dẹp.
 
-Bước SO không còn trong luồng (`7c445d1`). Cả 9 nút thuộc một bước không tồn tại:
-`loadSalesOrders`, `closeOracleSOForm`, `applySOCostToLine`, `addSOLineRow`,
-`approveSO`, `saveOracleSO`, nút chọn tệp hợp đồng, và một nút "Tìm Kiếm" **không
-có `onclick`** (nút này chết từ trước, nay nằm trong khối đã bỏ nên vô hại).
+Màn Báo giá **cũ** có `refreshQuotationVehicleRecommendations`: đọc khối lượng /
+thể tích / số pallet, đánh giá loại xe nào chở được, **làm mờ** loại xe không đủ
+tải, giải thích khi loại xe chưa khai sức chở (`CAPACITY_NOT_CONFIGURED`), nói rõ
+khi **không loại xe đơn lẻ nào đủ tải** (gợi ý tách chuyến hoặc thuê ngoài), và
+**chặn lưu** báo giá khi loại xe đang chọn không phù hợp. Có bài kiểm riêng:
+`tests/quotation-capacity-recommendation-ui.test.js`.
 
-Đây là khối đáng bỏ nhất: **JS không nhắc tới id của nó một lần nào**.
+Màn Báo giá **mới** không có cửa chặn đó — nó chỉ đọc `max_weight` và
+`volume_capacity_m3` vào mô hình loại xe rồi thôi. Và **máy chủ cũng không chặn**
+ở bước báo giá: `workflow_service` và `bao_gia_service` đều không kiểm sức chở.
 
-### 4.3 `ssv5-khoi-cu` — 8 nút · màn Sắp lịch cũ
+**Hệ quả:** hiện nay báo giá được một lô 20 tấn trên xe 5 tấn, và lỗi chỉ lộ ra
+tận bước điều phối — nơi `_require_dispatch_eligibility` mới kiểm sức chở so với
+lệnh vận chuyển. Người bán đã gửi giá cho khách rồi mới biết chuyến không chở
+được.
 
-Đã bị thay bởi `.ssv5` (`sap-lich-v5.js`). **7 trong 8 hàm CHỈ khối này gọi** —
-`switchDriverShiftTab`, `openWeeklyDriverSchedule`, `moveDriverShiftWeek`. Nghĩa
-là bỏ khối này thì **bỏ được luôn cả hàm**, gọn nhất trong bốn khối. Hàm còn lại
-`loadDriverShiftPlanner` còn nơi khác gọi, giữ.
+Đề nghị: chuyển cửa chặn sang màn mới, và **thêm một cửa chặn ở máy chủ** — vì
+một cửa chặn chỉ nằm ở trình duyệt thì gọi API trực tiếp là đi qua được.
 
-### 4.4 `legacy-tracking-pod-panel` — 1 nút
+### 4.2 Đã nối cửa cho biểu mẫu hồ sơ tài xế
 
-Nút "Mở hồ sơ" gọi `openPODFormForSelectedDO`, và **chỉ khối này gọi**. Khối bị
-che bằng `display:none` viết thẳng trong `style`, không phải `hidden`.
+`driver-modal-dialog` có đủ ô — tên, số điện thoại, vai trò, hạng bằng, ca làm —
+và lúc nạp trang `duaHopThoaiRaNgoaiKhungMan()` chuyển nó ra ngoài khung màn nên
+nó không bị khối ẩn giam. Nhưng dò cả trang thì **không có một nút nào mở nó**,
+nên hồ sơ tài xế không sửa được từ giao diện.
 
-### 4.5 Đề nghị
+Nay màn "Tài xế & Bằng lái" có nút **"Hồ sơ"** trên từng dòng và **"Thêm tài xế"**
+ở đầu màn. Hai chỗ phải cẩn thận, và bài kiểm chốt cả hai:
 
-Bỏ theo thứ tự này, mỗi khối một mốc chốt riêng để dễ lùi:
-
-1. `so-khoi-cu` — JS không nhắc id, bước đã bỏ khỏi luồng. Rủi ro thấp nhất.
-2. `ssv5-khoi-cu` — bỏ kèm 7 hàm chỉ nó gọi.
-3. `legacy-tracking-pod-panel` — bỏ kèm 1 hàm.
-4. `qtv2-khoi-cu` — bỏ markup, để lại hàm cho một lần dọn riêng.
-
-Sau mỗi bước chạy `node tests/chay-tat-ca.js`; bài kiểm
-`moi-man-phai-hien-noi-dung` sẽ bắt ngay nếu một màn mất nội dung.
-
----
+- `editDriverById` đọc từ mảng `fioriDrivers` của `app.js`, không đọc từ dữ liệu
+  của màn này. Mảng rỗng thì hàm **im lặng thoát ngay** — đúng dạng nút nói dối
+  mà cả lần rà soát này đi dọn. Nên phải gọi `loadFioriDrivers()` trước, và nếu
+  vẫn không mở được thì **nói ra**.
+- `saveDriverModal` không biết gì về màn này, nên phải bọc nó để màn tự nạp lại.
 
 ## 5. Điểm cuối máy chủ không màn nào gọi — 20 đường
 
@@ -180,7 +190,7 @@ thầu hiện ra được, nhưng chào giá và chấm thầu thì không.)
 
 Tôi **không tự quyết** việc này vì nó là câu hỏi nghiệp vụ, không phải kỹ thuật.
 
-### 5.2 Cửa bị chặn mà không có khoá — 1 đường · **ưu tiên cao nhất**
+### 5.2 Cửa bị chặn mà không có khoá — 1 đường · **ĐÃ SỬA**
 
 ```
 GET,POST /api/tms/driver-qualifications
@@ -193,7 +203,7 @@ người vận hành **không có cách nào tự sửa** — phải gọi ngư�
 lệnh, hoặc sửa thẳng vào cơ sở dữ liệu.
 
 Đây là dạng lỗi tệ nhất trong một hệ thống vận hành: một cái cổng khoá mà không
-phát chìa. Đề nghị làm một khu nhỏ trong màn Dữ liệu gốc, cạnh danh mục tài xế:
+phát chìa. **Đã sửa ở mốc `eaa8abb`** — xem §3 và §4.2. Đề nghị làm một khu nhỏ trong màn Dữ liệu gốc, cạnh danh mục tài xế:
 bảng liệt kê giấy phép, nút thêm, nút sửa hạn.
 
 ### 5.3 Đường đã bị thay thế — 4 đường
@@ -294,7 +304,7 @@ Nhiều nút nhất trong một màn. 18 nút nối uỷ nhiệm qua `#tracking-
 `/api/tracking/control-tower`, `/api/tms/freight-orders`, `/api/incidents`,
 `/api/pod-documents`.
 
-`legacy-tracking-pod-panel` (1 nút) nằm ở màn này — xem §4.4.
+`legacy-tracking-pod-panel` (1 nút) từng nằm ở màn này và **đã bỏ** — xem §4.
 
 ### 6.7 Hoàn tất giao hàng (`delivery-completion`) — 3 nút + 4 nút trong bảng soạn
 
@@ -337,10 +347,13 @@ Quy tắc bốn mắt đang có hiệu lực: **người lập phiếu chi phí 
 
 `GET /api/tms/finance/dashboard` chưa được gọi (§5.4).
 
-### 6.11 Dữ liệu gốc (`master-data`) — 20 nút + 11 tab
+### 6.11 Dữ liệu gốc (`master-data`) — 20 nút + 12 tab
 
-11 tab: Setup A-Z, Tuyến đường, Công thức giá thành, Loại phương tiện, Sắp lịch,
-Tỷ giá, Khách hàng, Thuế, Kỳ kế toán, Carrier/Vendor, Mapping tài khoản.
+12 tab: Setup A-Z, Tuyến đường, Công thức giá thành, Loại phương tiện, Sắp lịch,
+**Tài xế & Bằng lái** (mới), Tỷ giá, Khách hàng, Thuế, Kỳ kế toán, Carrier/Vendor,
+Mapping tài khoản. Thẻ mới đặt cạnh thẻ Sắp lịch vì đó là nơi người dùng đang làm
+việc với tài xế; các thẻ sau nó đã được đánh số lại từ 5 lên 6..11 trong cả ba thứ
+tiếng.
 
 Tab Tuyến đường có sơ đồ lộ trình vẽ trên bản đồ. Toạ độ điểm là **dữ liệu gốc
 sửa được** (`locations.latitude/longitude`), tự tra từ máy chủ khi có địa điểm
@@ -348,7 +361,8 @@ mới và ghi lại, có đường khai bằng tay làm chốt cuối, và giá 
 **không bị máy ghi đè**. Toạ độ máy đoán ra được đối chiếu với số km người dùng
 khai để loại kết quả vô lý.
 
-`ssv5-khoi-cu` (8 nút, §4.3) nằm ở tab Sắp lịch của màn này.
+`ssv5-khoi-cu` (8 nút) nằm ở tab Sắp lịch của màn này, và **được giữ** vì nó chứa
+biểu mẫu hồ sơ tài xế — xem §4.2.
 
 ### 6.12 Báo cáo vận tải (`lab-summary`) — 15 nút
 
@@ -423,9 +437,10 @@ Bộ kiểm máy chủ lần chạy đầy đủ gần nhất: **896 bài qua**.
 
 | Việc | Vì sao còn nợ |
 |---|---|
-| Màn khai giấy phép tài xế | §5.2 — cần làm, ưu tiên cao nhất |
+| ~~Màn khai giấy phép tài xế~~ | **ĐÃ XONG** — mốc `eaa8abb`, xem §3 |
 | Chốt phận module đấu thầu | §5.1 — cần anh quyết, tôi không tự quyết |
-| Bỏ 4 khối cũ, 25 nút | §4.5 — có thứ tự đề nghị |
+| Chuyển cửa chặn tải trọng sang màn Báo giá mới + thêm cửa ở máy chủ | §4.1 — hồi quy đang tồn tại, việc lớn nhất còn lại |
+| Bỏ `qtv2-khoi-cu` (7 nút) | chỉ bỏ được sau khi chuyển xong cửa chặn ở dòng trên |
 | Nút in phiếu đóng hàng và nhãn QR | §5.4 — máy chủ đã xong, thiếu nút |
 | Mẫu in PDF báo giá | §8 bản thiết kế để mở |
 | Bảng giá khách hàng | dấu giá `hop_dong` chưa có nguồn dữ liệu |
