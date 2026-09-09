@@ -110,7 +110,7 @@ def test_moi_khoan_muc_deu_co_ma_phan_loai_dung_MOT_bo(app_client, workflow_buil
     if not dong:
         pytest.skip("loại xe của dữ liệu thử chưa có công thức giá thành")
 
-    from services.phieu_thu_chi_service import KHOAN_MUC
+    from services.khoan_muc_chi_phi import KHOAN_MUC
     for x in dong:
         assert "charge_type" in x, (
             "dòng %r thiếu `charge_type` — bên ngoài không phân loại được khoản "

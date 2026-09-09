@@ -120,11 +120,11 @@ def _save_trip_cost_rows(db, trip_id, data, actor):
         # dong chi phi cua mot chuyen deu ra "Khoan khac", nen he cong no khach
         # hang khong tach duoc xang dau voi cau duong.
         #
-        # `khoan_muc_tu` de o `phieu_thu_chi_service` — MOT cho duy nhat giu
+        # `khoan_muc_tu` de o `khoan_muc_chi_phi` — MOT cho duy nhat giu
         # phep anh xa, dung chung voi phieu thu/chi. Hai ban anh xa se troi khoi
         # nhau, va luc do bang chi phi va phieu noi hai chuyen khac nhau ve cung
         # mot khoan tien.
-        from services.phieu_thu_chi_service import khoan_muc_tu
+        from services.khoan_muc_chi_phi import khoan_muc_tu
         cost.items.append(FreightChargeItem(
             id=line_data.get("id") or str(uuid.uuid4()),
             charge_type=khoan_muc_tu(

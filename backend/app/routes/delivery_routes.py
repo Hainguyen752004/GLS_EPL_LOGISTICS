@@ -215,10 +215,10 @@ KHOA_TERM_SANG_COMPONENT = {"wh": "warehouse", "rate": "freight_rate"}
 def _khoan_muc_tu(khoa, ten):
     """Mã KHOẢN MỤC chuẩn cho một cấu phần công thức.
 
-    Nạp trong hàm chứ không ở đầu tệp: `phieu_thu_chi_service` nạp `models`, và
+    Nạp trong hàm chứ không ở đầu tệp, để không tạo vòng nạp giữa `routes` và
     nạp nó ở tầng module sẽ tạo một vòng nạp với `routes`.
     """
-    from services.phieu_thu_chi_service import khoan_muc_tu
+    from services.khoan_muc_chi_phi import khoan_muc_tu
     return khoan_muc_tu(khoa, ten)
 
 
