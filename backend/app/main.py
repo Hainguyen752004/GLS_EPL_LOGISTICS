@@ -73,6 +73,7 @@ from routes.bao_gia_routes import router as bao_gia_router
 from routes.tms_planning_routes import router as tms_planning_router
 from routes.tms_finance_routes import router as tms_finance_router
 from routes.tms_reporting_routes import router as tms_reporting_router
+from routes.phieu_thu_chi_routes import router as phieu_thu_chi_router
 from routes.parking_list_routes import router as parking_list_router
 from runtime_state import runtime_state
 from auth_middleware import tms_bearer_auth
@@ -353,6 +354,8 @@ app.include_router(workflow_router)
 app.include_router(tms_planning_router)
 app.include_router(tms_finance_router)
 app.include_router(tms_reporting_router)
+# Phieu THU / phieu CHI gan vao lenh giao hang — cung la duong he cong no doc.
+app.include_router(phieu_thu_chi_router)
 app.include_router(parking_list_router)
 
 # Startup performs schema maintenance only.

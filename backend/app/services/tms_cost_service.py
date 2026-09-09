@@ -112,9 +112,24 @@ def _save_trip_cost_rows(db, trip_id, data, actor):
                 "Giá thực tế không được nhỏ hơn giá ban đầu.",
                 422,
             )
+        # MA KHOAN MUC, khong con viet cung "other".
+        #
+        # Ban truoc dat `charge_type="other"` cho MOI dong. Ten that van con o
+        # `description` ("Chi phi xang dau /km"), nhung ma phan loai — thu duy
+        # nhat MAY doc duoc — bi bo di. Do duoc tren du lieu demo that: ca bon
+        # dong chi phi cua mot chuyen deu ra "Khoan khac", nen he cong no khach
+        # hang khong tach duoc xang dau voi cau duong.
+        #
+        # `khoan_muc_tu` de o `phieu_thu_chi_service` — MOT cho duy nhat giu
+        # phep anh xa, dung chung voi phieu thu/chi. Hai ban anh xa se troi khoi
+        # nhau, va luc do bang chi phi va phieu noi hai chuyen khac nhau ve cung
+        # mot khoan tien.
+        from services.phieu_thu_chi_service import khoan_muc_tu
         cost.items.append(FreightChargeItem(
             id=line_data.get("id") or str(uuid.uuid4()),
-            charge_type="other",
+            charge_type=khoan_muc_tu(
+                line_data.get("charge_type") or line_data.get("key"),
+                line_data["name"]),
             description=line_data["name"],
             original_amount=original,
             actual_amount=actual,

@@ -284,6 +284,13 @@ def de(s):
 #: khi có PRAGMA), mà để nếu dừng giữa đường thì không còn dòng con trỏ vào một
 #: cha đã mất — một bản ghi mồ côi khó tìm hơn một bảng rỗng.
 BANG_GIAO_DICH = [
+    # Phiếu thu / phiếu chi phải nằm trong danh sách này, không thì mọi lần gieo
+    # lại sau đều vỡ: `do_vouchers` trỏ vào `transport_trips` và
+    # `delivery_orders`, nên PostgreSQL chặn lệnh xoá chuyến bằng
+    # `do_vouchers_trip_id_fkey`. Đã vỡ thật ngay lần gieo đầu sau khi thêm hai
+    # bảng. Thứ tự trong danh sách không quan trọng — `thu_tu_xoa()` sắp lại
+    # theo khoá ngoại thật — nhưng CÓ MẶT thì quan trọng.
+    "do_voucher_lines", "do_vouchers",
     "journal_lines", "journal_batches", "ar_invoices",
     "delivery_order_charge_adjustments", "delivery_order_closeouts",
     "delivery_pod_documents", "delivery_pod_records",
