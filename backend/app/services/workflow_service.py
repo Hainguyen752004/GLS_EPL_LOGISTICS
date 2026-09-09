@@ -1090,6 +1090,87 @@ def create_delivery_order(db, data, user="system"):
     return do
 
 
+def _chan_doi_tuyen_lech_bao_gia(db, do, tuyen_moi):
+    """Lệnh giao hàng sinh từ báo giá thì KHÔNG được đổi tuyến.
+
+    LỖ NÀY ĐÃ ĐO ĐƯỢC trên PostgreSQL thật, bằng đúng đường mà giao diện đi:
+
+        DO-2026-0007-DO02 (từ QT-2026-007)
+        tuyến: VSIP2A-CATLAI (44,7 km)  ->  CATLAI-AMATA (38,4 km)
+        cước thu khách: 1.326.200  ->  1.326.200      (KHÔNG ĐỔI)
+
+    Đổi được, và không một lời cảnh báo nào. Chủ dự án tự nêu ra rủi ro đó:
+    *"nếu nó lệch thì phiếu chi và cước phí báo khách đều sai hết"* — và anh
+    đúng. Chi phí thực tế tính trên km THẬT của tuyến mới, còn cước thu khách
+    vẫn là con số tính cho tuyến CŨ. Ở ví dụ trên lệch 14%; đổi sang tuyến
+    129 km thì lệch gấp ba.
+
+    VÌ SAO CHẶN chứ không tự tính lại giá. Tính lại là **âm thầm đổi con số đã
+    gửi cho khách** — người bán đã báo 1.326.200 cho tuyến này, hệ thống tự sửa
+    thành số khác là một thay đổi thương mại mà không ai quyết. Bắt quay lại
+    sửa báo giá rồi tách lại thì chậm hơn một bước, nhưng con số nào cũng có
+    người chịu trách nhiệm.
+
+    Chỉ chặn khi tuyến THỰC SỰ đổi. Gửi lại đúng tuyến đang có là chuyện bình
+    thường — giao diện gửi cả biểu mẫu mỗi lần lưu, nên chặn cả trường hợp đó
+    là chặn mọi lần sửa khối lượng hay khung giờ.
+
+    DO tạo tay (không có `quotation_id`) thì đổi tuyến tự do: nó không mang một
+    lời hứa giá nào với khách.
+    """
+    if not do.quotation_id:
+        return
+    if not tuyen_moi or str(tuyen_moi.id) == str(do.route_id or ""):
+        return
+
+    cu = db.query(Route).filter(Route.id == do.route_id).first()
+    km_cu = _so_km(cu)
+    km_moi = _so_km(tuyen_moi)
+    gia = _money({"unit_price": do.unit_price}, "unit_price")
+
+    doan = []
+    if km_cu and km_moi:
+        lech = abs(km_moi - km_cu) / km_cu * 100
+        doan.append("Tuyến đang có %s dài %s km, tuyến mới %s dài %s km — lệch %.0f%%."
+                    % (_route_label(cu) or do.route_id, _dep_km(km_cu),
+                       _route_label(tuyen_moi) or tuyen_moi.id, _dep_km(km_moi), lech))
+    else:
+        doan.append("Tuyến đang có là %s, tuyến mới là %s."
+                    % (_route_label(cu) or do.route_id, _route_label(tuyen_moi) or tuyen_moi.id))
+    if gia > 0:
+        doan.append("Cước thu khách %s đ đã khoá theo tuyến cũ và sẽ KHÔNG tự đổi, "
+                    "nên phiếu chi tính trên km mới còn cước thu khách vẫn là giá "
+                    "của tuyến cũ." % _tien_viet(gia))
+    doan.append("Muốn đổi tuyến thì sửa lại báo giá %s rồi tách DO lại."
+                % (do.quotation_id or ""))
+
+    raise conflict("DO_ROUTE_LOCKED_BY_QUOTATION", " ".join(doan),
+                   ["crm-sales", "ops-planning"])
+
+
+def _so_km(route):
+    if not route:
+        return 0.0
+    for ten in ("km_duong_bo", "distance_km"):
+        gia_tri = _so(getattr(route, ten, None))
+        if gia_tri > 0:
+            return gia_tri
+    return 0.0
+
+
+def _so(x):
+    try:
+        return float(x or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _dep_km(x):
+    """31,2 km chứ không phải 31.2 km — thông báo này hiện nguyên văn cho người
+    dùng Việt Nam và Lào."""
+    return ("%.1f" % float(x or 0)).replace(".", ",")
+
+
 def update_delivery_order(db, do_id, data, user="system"):
     do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).with_for_update().first()
     if not do:
@@ -1098,6 +1179,7 @@ def update_delivery_order(db, do_id, data, user="system"):
         raise conflict("LOCKED_RECORD", "Lệnh giao hàng đang vận chuyển hoặc đã kết thúc chỉ được xem, không được sửa.", ["delivery-orders"])
     if data.get("route_id"):
         route = _require(db, Route, data.get("route_id"), "route", "tuyến đường")
+        _chan_doi_tuyen_lech_bao_gia(db, do, route)
         do.route_id = route.id
     else:
         route = db.query(Route).filter(Route.id == do.route_id).first()
