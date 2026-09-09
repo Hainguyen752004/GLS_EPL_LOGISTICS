@@ -11,6 +11,7 @@
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
   <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260908f-theo-doi-het-tran">
   <link rel="stylesheet" href="/static/css/bao-gia-v2.css?v=20260908a-bao-gia-v2">
+  <link rel="stylesheet" href="/static/css/bang-lai-tai-xe.css?v=20260909a-bang-lai">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -7521,23 +7522,34 @@
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-vehicles', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
               <i class="fa-solid fa-calendar-days"></i> <span data-i18n="tab_md_drivers">4. Sắp lịch xe và tài xế</span>
             </button>
+            <!-- THẺ MỚI, và nó chữa một cái cổng khoá mà không phát chìa.
+                 `tms_dispatch_service` CHẶN điều phối khi bằng lái tài xế thiếu,
+                 hết hạn, hay lệch hạng với hồ sơ — và cửa chặn đó còn trả về gợi
+                 ý `["master-data/drivers"]`, tức máy chủ bảo người dùng sang màn
+                 Tài xế mà sửa. Nhưng trước thẻ này KHÔNG có màn nào khai được
+                 bằng lái, nên điều phối bị chặn chỉ sửa được bằng tệp lệnh hoặc
+                 sửa thẳng cơ sở dữ liệu. Đặt cạnh thẻ 4 vì đó là nơi người dùng
+                 đang làm việc với tài xế. -->
+            <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-drivers', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
+              <i class="fa-solid fa-id-card"></i> <span data-i18n="tab_md_licenses">5. Tài Xế &amp; Bằng Lái</span>
+            </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-currencies', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-coins"></i> <span data-i18n="tab_md_currencies">5. Tỷ Giá Tiền Tệ</span>
+              <i class="fa-solid fa-coins"></i> <span data-i18n="tab_md_currencies">6. Tỷ Giá Tiền Tệ</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-customers', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-               <i class="fa-solid fa-building-user"></i> <span data-i18n="tab_md_customers">6. Danh Mục Khách Hàng</span>
+               <i class="fa-solid fa-building-user"></i> <span data-i18n="tab_md_customers">7. Danh Mục Khách Hàng</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-tax-codes', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-percent"></i> <span data-i18n="tab_md_taxes">7. Thuế</span>
+              <i class="fa-solid fa-percent"></i> <span data-i18n="tab_md_taxes">8. Thuế</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-accounting-periods', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-calendar-days"></i> <span data-i18n="tab_md_periods">8. Kỳ Kế Toán</span>
+              <i class="fa-solid fa-calendar-days"></i> <span data-i18n="tab_md_periods">9. Kỳ Kế Toán</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-carriers', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-warehouse"></i> <span data-i18n="tab_md_carriers">9. Carrier / Vendor</span>
+              <i class="fa-solid fa-warehouse"></i> <span data-i18n="tab_md_carriers">10. Carrier / Vendor</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-account-mappings', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-diagram-project"></i> <span data-i18n="tab_md_mappings">10. Mapping Tài Khoản</span>
+              <i class="fa-solid fa-diagram-project"></i> <span data-i18n="tab_md_mappings">11. Mapping Tài Khoản</span>
             </button>
           </div>
           </div>
@@ -8335,6 +8347,13 @@
 
 
           <!-- Vietnamese source cleaned -->
+          <!-- TÀI XẾ & BẰNG LÁI. Khung rỗng, `js/bang-lai-tai-xe.js` vẽ vào
+               đây khi thẻ được mở. Tệp đó tự bọc `switchMasterDataTab` nên
+               `app.js` không phải sửa một dòng nào — `app.js` đang có người
+               khác sửa cùng lúc, và mỗi dòng chèn vào đó là một chỗ va chạm
+               khi chốt. -->
+          <div id="md-tab-drivers" class="md-tab-content" style="display: none;"></div>
+
           <div id="md-tab-currencies" class="md-tab-content" style="display: none;">
             <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(15,23,42,0.03);">
               
@@ -9341,6 +9360,7 @@
        `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
        thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->
   <script src="/static/js/bao-gia-v2.js?v=20260908a-bao-gia-v2"></script>
+  <script src="/static/js/bang-lai-tai-xe.js?v=20260909a-bang-lai"></script>
   <!-- Bộ chọn DO của hộp thoại tạo Trip. Nạp SAU app.js: nó định nghĩa lại
        populateTripReturnDoSelect và capNhatDSDOChonTrongHopThoai. -->
   <script src="/static/js/do-picker.js?v=20260908a-bo-chon-do-v2"></script>

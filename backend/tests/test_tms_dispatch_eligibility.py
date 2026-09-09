@@ -161,3 +161,83 @@ def test_dispatch_eligibility_api_routes_are_public_and_persist_qualification(ap
     assert response.json()["data"]["driver_id"] == "DRV-API-ELIGIBLE"
     qualifications = client.get("/api/tms/driver-qualifications").json()
     assert qualifications[0]["verified_by"] == "admin-demo"
+
+
+# ---------------------------------------------------------------------------
+# CỬA CHẶN BẰNG LÁI — năm trạng thái làm điều phối bị chặn.
+#
+# VÌ SAO CẦN NHỮNG BÀI NÀY. Cửa chặn bằng lái là cửa chặn DUY NHẤT trong
+# `_require_dispatch_eligibility` mà trước đây không có bài kiểm nào, dù nó là
+# cửa chặn dễ vướng nhất trong vận hành thật (bằng hết hạn theo thời gian, chứ
+# không phải do ai làm sai).
+#
+# VÀ CHÚNG CÒN MỘT VIỆC THỨ HAI: giữ cho màn "Tài xế & Bằng lái" nói cùng một
+# câu với máy chủ. Màn đó (`frontend/js/bang-lai-tai-xe.js`, hàm `ketLuan`) sao
+# lại đúng năm điều kiện dưới đây để kết luận ai bị chặn, và có một bài kiểm
+# phía giao diện (`frontend/tests/bang-lai-tai-xe.test.js`) chạy CÙNG một bảng
+# trường hợp. Sửa điều kiện ở service mà không sửa cả hai chỗ thì một trong hai
+# bộ kiểm sẽ đỏ — đó là điều mong muốn, vì nếu hai bên trôi khỏi nhau thì màn
+# hình báo "đủ điều kiện" rồi điều phối vẫn chặn, và người dùng mất niềm tin
+# vào cả hai.
+# ---------------------------------------------------------------------------
+
+def _chan_vi_bang_lai(db, dispatch_service):
+    book_required_appointments(db, dispatch_service)
+    with pytest.raises(Exception) as error:
+        dispatch_service.dispatch_freight_order(db, "FO-DSP-001", {
+            "vehicle_id": "51C-001", "driver_id": "DRV-001", "expected_version": 1,
+        }, "dispatcher")
+    return getattr(error.value, "code", None)
+
+
+def test_dispatch_blocked_when_qualification_row_is_missing(db, dispatch_service):
+    db.query(DriverQualification).filter(DriverQualification.driver_id == "DRV-001").delete()
+    db.flush()
+    assert _chan_vi_bang_lai(db, dispatch_service) == "DRIVER_LICENSE_INVALID"
+
+
+def test_dispatch_blocked_when_qualification_is_not_active(db, dispatch_service):
+    db.query(DriverQualification).filter(
+        DriverQualification.driver_id == "DRV-001").first().status = "suspended"
+    db.flush()
+    assert _chan_vi_bang_lai(db, dispatch_service) == "DRIVER_LICENSE_INVALID"
+
+
+def test_dispatch_blocked_when_qualification_not_yet_effective(db, dispatch_service):
+    # Chuyến chạy 11/08/2026, bằng chỉ có hiệu lực từ 01/09/2026.
+    q = db.query(DriverQualification).filter(DriverQualification.driver_id == "DRV-001").first()
+    q.valid_from = dt.datetime(2026, 9, 1)
+    q.valid_to = dt.datetime(2028, 1, 1)
+    db.flush()
+    assert _chan_vi_bang_lai(db, dispatch_service) == "DRIVER_LICENSE_INVALID"
+
+
+def test_dispatch_blocked_when_qualification_has_expired(db, dispatch_service):
+    q = db.query(DriverQualification).filter(DriverQualification.driver_id == "DRV-001").first()
+    q.valid_to = dt.datetime(2026, 8, 10)      # hết hạn một ngày trước chuyến
+    db.flush()
+    assert _chan_vi_bang_lai(db, dispatch_service) == "DRIVER_LICENSE_INVALID"
+
+
+def test_dispatch_blocked_when_license_class_differs_from_driver_record(db, dispatch_service):
+    # Hai bảng ghi hai hạng khác nhau. Đây là trạng thái NGƯỜI DÙNG KHÔNG TỰ
+    # SUY RA ĐƯỢC: cả hai giá trị đều hợp lệ, chỉ có việc chúng không bằng nhau
+    # là sai — nên màn "Tài xế & Bằng lái" phải nêu rõ cả hai giá trị, và khi
+    # người dùng đổi hạng thì ghi cả hai bảng.
+    db.query(DriverQualification).filter(
+        DriverQualification.driver_id == "DRV-001").first().license_type = "C"
+    db.flush()
+    assert db.get(Driver, "DRV-001").license_type == "FC"
+    assert _chan_vi_bang_lai(db, dispatch_service) == "DRIVER_LICENSE_INVALID"
+
+
+def test_dispatch_passes_when_qualification_matches_on_the_trip_date(db, dispatch_service):
+    """Mặt còn lại: đúng cả năm điều kiện thì đi được.
+
+    Không có bài này thì năm bài trên vẫn xanh kể cả khi cửa chặn chặn TẤT CẢ.
+    """
+    book_required_appointments(db, dispatch_service)
+    order = dispatch_service.dispatch_freight_order(db, "FO-DSP-001", {
+        "vehicle_id": "51C-001", "driver_id": "DRV-001", "expected_version": 1,
+    }, "dispatcher")
+    assert order.status == "dispatched"

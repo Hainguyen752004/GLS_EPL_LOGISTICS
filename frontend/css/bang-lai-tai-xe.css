@@ -1,0 +1,441 @@
+/* ==========================================================================
+   TÀI XẾ & BẰNG LÁI — bộ áo cho thẻ `#md-tab-drivers`.
+
+   MỌI luật ở đây nằm dưới `.btl`. Màn Dữ liệu gốc dùng chung lớp `.fiori-*` và
+   `.md-*` với mười thẻ khác; một luật không có tên riêng ở đây sẽ lặng lẽ đổi
+   cả thẻ Tuyến đường và thẻ Khách hàng.
+
+   Bảng màu lấy đúng bộ của màn Báo giá để hai màn không lệch tông, nhưng khai
+   lại thành biến riêng thay vì đọc biến của `.qtv2` — biến kia khai trên
+   `#qtv2-root`, không phải trên `:root`, nên ngoài màn đó nó không tồn tại.
+   ========================================================================== */
+
+#md-tab-drivers .btl {
+  --btl-bg: #f6f8fb;
+  --btl-line: #e4e9f0;
+  --btl-ink: #1e293b;
+  --btl-ink-2: #475569;
+  --btl-ink-3: #7b8796;
+  --btl-blue: #1a73e8;
+  --btl-blue-2: #e9f1fd;
+  --btl-red: #d32f2f;
+  --btl-red-2: #fdecec;
+  --btl-amber: #b45309;
+  --btl-amber-2: #fef3c7;
+  --btl-green: #15803d;
+  --btl-green-2: #e7f6ec;
+  font-size: 13.5px;
+  color: var(--btl-ink);
+}
+
+/* ------------------------------------------------------------------ đầu ---- */
+
+#md-tab-drivers .btl-dau {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--btl-line);
+}
+
+#md-tab-drivers .btl-dau h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--btl-ink);
+}
+
+#md-tab-drivers .btl-dau p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--btl-ink-2);
+  line-height: 1.55;
+}
+
+#md-tab-drivers .btl-dau-nut {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+#md-tab-drivers .btl-ngay {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--btl-ink-3);
+}
+
+#md-tab-drivers .btl-ngay input {
+  width: auto;
+  min-width: 140px;
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--btl-ink);
+  border: 1px solid var(--btl-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+/* ------------------------------------------------------------------ nút ---- */
+
+#md-tab-drivers .btl-nut {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--btl-line);
+  background: #fff;
+  color: var(--btl-ink-2);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+
+#md-tab-drivers .btl-nut:hover:not(:disabled) {
+  border-color: #b7c2d0;
+  background: #f2f5f9;
+}
+
+#md-tab-drivers .btl-nut-chinh {
+  border-color: var(--btl-blue);
+  background: var(--btl-blue);
+  color: #fff;
+}
+
+#md-tab-drivers .btl-nut-chinh:hover:not(:disabled) {
+  background: #145cba;
+  border-color: #145cba;
+}
+
+#md-tab-drivers .btl-nut-nho {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+
+#md-tab-drivers .btl-nut:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------------------- cảnh báo ---- */
+
+#md-tab-drivers .btl-canh-bao {
+  margin: 14px 0 0;
+  padding: 11px 14px;
+  border: 1px solid #f5c6c6;
+  border-left: 4px solid var(--btl-red);
+  border-radius: 8px;
+  background: var(--btl-red-2);
+  color: #8e2020;
+  line-height: 1.5;
+}
+
+/* ------------------------------------------------------------ dải thẻ số --- */
+
+#md-tab-drivers .btl-kpi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+
+#md-tab-drivers .btl-the {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  text-align: left;
+  font-family: inherit;
+  border: 1px solid var(--btl-line);
+  border-left: 4px solid var(--btl-line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s;
+}
+
+#md-tab-drivers .btl-the:hover:not(:disabled) {
+  box-shadow: 0 3px 10px rgba(15, 23, 42, .07);
+}
+
+#md-tab-drivers .btl-the:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+#md-tab-drivers .btl-the.on {
+  box-shadow: 0 0 0 2px var(--btl-blue-2) inset;
+}
+
+#md-tab-drivers .btl-the span {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--btl-ink-3);
+}
+
+#md-tab-drivers .btl-the b {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--btl-ink);
+}
+
+#md-tab-drivers .btl-the small {
+  font-size: 11.5px;
+  color: var(--btl-ink-3);
+}
+
+#md-tab-drivers .btl-the.lam { border-left-color: var(--btl-blue); }
+#md-tab-drivers .btl-the.do { border-left-color: var(--btl-red); }
+#md-tab-drivers .btl-the.vang { border-left-color: #d97706; }
+#md-tab-drivers .btl-the.do b { color: var(--btl-red); }
+#md-tab-drivers .btl-the.vang b { color: var(--btl-amber); }
+
+/* ----------------------------------------------------------- thanh lọc ----- */
+
+#md-tab-drivers .btl-thanh-loc {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#md-tab-drivers .btl-thanh-loc input {
+  width: auto;
+  flex: 0 1 320px;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid var(--btl-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+#md-tab-drivers .btl-dem {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--btl-ink-3);
+}
+
+/* ---------------------------------------------------------------- bảng ----- */
+
+/* Bảng phải tự cuộn ngang trong khung của nó — để thân trang cuộn ngang thì cả
+   màn Dữ liệu gốc bị lệch, không riêng bảng này. */
+#md-tab-drivers .btl-bang-khung {
+  overflow-x: auto;
+  border: 1px solid var(--btl-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+#md-tab-drivers .btl-bang {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+#md-tab-drivers .btl-bang thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--btl-ink-3);
+  background: var(--btl-bg);
+  border-bottom: 1px solid var(--btl-line);
+  white-space: nowrap;
+}
+
+#md-tab-drivers .btl-bang tbody td {
+  padding: 11px 14px;
+  vertical-align: top;
+  border-bottom: 1px solid #eef2f6;
+}
+
+#md-tab-drivers .btl-bang tbody tr:last-child td { border-bottom: 0; }
+#md-tab-drivers .btl-bang tbody tr:hover td { background: #fafcfe; }
+
+#md-tab-drivers .btl-ten { font-weight: 600; color: var(--btl-ink); }
+#md-tab-drivers .btl-ma { font-size: 11.5px; color: var(--btl-ink-3); }
+#md-tab-drivers .btl-lech { color: var(--btl-red); font-weight: 700; }
+#md-tab-drivers .btl-cot-nut { text-align: right; white-space: nowrap; }
+
+#md-tab-drivers .btl-vi {
+  margin-top: 3px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--btl-ink-3);
+  max-width: 44ch;
+}
+
+#md-tab-drivers .btl-trong {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--btl-ink-3);
+}
+
+/* Kết luận đi kèm chữ, không chỉ có màu — người không phân biệt được màu vẫn
+   phải đọc ra được là "chặn" hay "đủ". */
+#md-tab-drivers .btl-dau-cham {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+#md-tab-drivers .btl-dau-cham.do { background: var(--btl-red-2); color: var(--btl-red); }
+#md-tab-drivers .btl-dau-cham.vang { background: var(--btl-amber-2); color: var(--btl-amber); }
+#md-tab-drivers .btl-dau-cham.xanh { background: var(--btl-green-2); color: var(--btl-green); }
+
+/* --------------------------------------------------------------- phiếu ----- */
+
+#md-tab-drivers .btl-phieu {
+  position: fixed;
+  inset: 0;
+  z-index: 10030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#md-tab-drivers .btl-phieu[hidden] { display: none !important; }
+
+#md-tab-drivers .btl-phieu-nen {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, .55);
+  backdrop-filter: blur(4px);
+}
+
+#md-tab-drivers .btl-phieu-hop {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, .3);
+}
+
+#md-tab-drivers .btl-phieu-dau {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--btl-line);
+  font-size: 15px;
+}
+
+#md-tab-drivers .btl-phieu-x {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--btl-ink-3);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+#md-tab-drivers .btl-phieu-x:hover { background: #f2f5f9; color: var(--btl-ink); }
+
+#md-tab-drivers .btl-phieu-than {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+#md-tab-drivers .btl-o {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--btl-ink-3);
+}
+
+#md-tab-drivers .btl-o input,
+#md-tab-drivers .btl-o select {
+  width: 100%;
+  padding: 8px 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--btl-ink);
+  border: 1px solid var(--btl-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+#md-tab-drivers .btl-o-doi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+#md-tab-drivers .btl-nhac {
+  font-size: 11.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  line-height: 1.45;
+  color: var(--btl-ink-3);
+}
+
+#md-tab-drivers .btl-nhac-vang {
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: var(--btl-amber-2);
+  color: var(--btl-amber);
+  font-weight: 600;
+}
+
+#md-tab-drivers .btl-loi {
+  padding: 9px 12px;
+  border: 1px solid #f5c6c6;
+  border-radius: 8px;
+  background: var(--btl-red-2);
+  color: #8e2020;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+#md-tab-drivers .btl-phieu-day {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--btl-line);
+  background: var(--btl-bg);
+  border-radius: 0 0 12px 12px;
+}
+
+@media (max-width: 640px) {
+  #md-tab-drivers .btl-o-doi { grid-template-columns: 1fr; }
+  #md-tab-drivers .btl-dau-nut { width: 100%; }
+}

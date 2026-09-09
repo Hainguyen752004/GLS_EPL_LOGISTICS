@@ -4409,35 +4409,40 @@
     "vi": "4. Sắp lịch xe và tài xế",
     "la": "4. ຈັດຕາຕະລາງລົດ ແລະ ຄົນຂັບ"
   },
+  "tab_md_licenses": {
+    "vi": "5. Tài Xế & Bằng Lái",
+    "en": "5. Drivers & Licenses",
+    "la": "5. ຄົນຂັບ & ໃບຂັບຂີ່"
+  },
   "tab_md_currencies": {
-    "vi": "5. Tỷ Giá Tiền Tệ",
-    "en": "5. Currency Rates",
-    "la": "5. ສະກຸນເງິນ & ອັດຕາແລກປ່ຽນ"
+    "vi": "6. Tỷ Giá Tiền Tệ",
+    "en": "6. Currency Rates",
+    "la": "6. ສະກຸນເງິນ & ອັດຕາແລກປ່ຽນ"
   },
   "tab_md_customers": {
-    "vi": "6. Danh Mục Khách Hàng",
-    "en": "6. Customer Directory",
-    "la": "6. ລາຍຊື່ລູກຄ້າ"
+    "vi": "7. Danh Mục Khách Hàng",
+    "en": "7. Customer Directory",
+    "la": "7. ລາຍຊື່ລູກຄ້າ"
   },
   "tab_md_taxes": {
-    "vi": "7. Thuế",
-    "en": "7. Tax Codes",
-    "la": "7. ອາກອນ"
+    "vi": "8. Thuế",
+    "en": "8. Tax Codes",
+    "la": "8. ອາກອນ"
   },
   "tab_md_periods": {
-    "vi": "8. Kỳ Kế Toán",
-    "en": "8. Accounting Periods",
-    "la": "8. ງວດບັນຊີ"
+    "vi": "9. Kỳ Kế Toán",
+    "en": "9. Accounting Periods",
+    "la": "9. ງວດບັນຊີ"
   },
   "tab_md_carriers": {
-    "vi": "9. Carrier / Vendor",
-    "en": "9. Carriers / Vendors",
-    "la": "9. ຜູ້ໃຫ້ບໍລິການຂົນສົ່ງ"
+    "vi": "10. Carrier / Vendor",
+    "en": "10. Carriers / Vendors",
+    "la": "10. ຜູ້ໃຫ້ບໍລິການຂົນສົ່ງ"
   },
   "tab_md_mappings": {
-    "vi": "10. Mapping Tài Khoản",
-    "en": "10. Account Mappings",
-    "la": "10. ຜັງບັນຊີ Mapping"
+    "vi": "11. Mapping Tài Khoản",
+    "en": "11. Account Mappings",
+    "la": "11. ຜັງບັນຊີ Mapping"
   },
   "badge_4_models": {
     "vi": "4 Mẫu",

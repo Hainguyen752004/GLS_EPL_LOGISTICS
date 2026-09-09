@@ -513,8 +513,32 @@ def award_tender(request: Request, tender_id: str, data: dict = Body(...), db: S
 
 
 @router.get("/driver-qualifications")
-def list_driver_qualifications(db: Session = Depends(get_db)):
-    return db.query(DriverQualification).order_by(DriverQualification.driver_id).limit(100).all()
+def list_driver_qualifications(
+    paginated: bool = Query(False),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(100, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """Danh sách bằng lái đã khai.
+
+    PHẢI phân trang được, không phải để cho gọn màn hình mà để màn hình KHÔNG
+    NÓI DỐI. Bản trước cắt cứng ở 100 dòng, và màn "Tài xế & bằng lái" đối chiếu
+    danh sách này với danh sách tài xế để kết luận ai thiếu bằng. Ở quy mô thật
+    (hàng trăm tài xế), tài xế thứ 101 trở đi sẽ không có dòng bằng lái nào
+    trong gói trả về, nên màn hình kết luận "thiếu bằng lái — chặn điều phối"
+    cho những người ĐANG CÓ bằng hợp lệ. Một con số sai mà không có cảnh báo
+    còn tệ hơn một ô trống, vì người vận hành tin vào nó.
+
+    Giữ nguyên nếp của `GET /api/vehicles`: không truyền gì thì trả về mảng như
+    cũ (100 dòng đầu) để những chỗ gọi cũ không vỡ; truyền `paginated=true` thì
+    trả về `{items, page, page_size, total}` để phía giao diện kéo hết.
+    """
+    query = db.query(DriverQualification).order_by(DriverQualification.driver_id)
+    if not paginated:
+        return query.limit(100).all()
+    total = query.count()
+    items = query.offset((page - 1) * page_size).limit(page_size).all()
+    return {"items": items, "page": page, "page_size": page_size, "total": total}
 
 
 @router.post("/driver-qualifications")
