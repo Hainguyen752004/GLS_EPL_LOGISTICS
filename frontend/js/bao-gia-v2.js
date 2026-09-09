@@ -978,6 +978,37 @@
       </div>`;
   }
 
+  /**
+   * Vì sao loại xe này không chở được — nói ĐÚNG CHIỀU vượt, không nói chung.
+   *
+   * Máy chủ chấm `do_vua_tai` theo cả ba chiều (tải trọng, thể tích, số
+   * pallet), nhưng gói trả về chỉ có kết luận chứ không có lý do. Nói "không đủ
+   * tải" cho một lô hàng nhẹ mà khối lớn là nói sai: người bán đổi sang xe nặng
+   * hơn rồi vẫn vướng, vì cái vượt thực sự là thể tích.
+   *
+   * Dùng ĐÚNG bộ đánh giá mà máy chủ dùng (`WorkflowUIUtils.evaluateVehicleCapacity`
+   * — cùng ba chiều, cùng hai mã lý do với `vehicle_recommendation_service`), nên
+   * hai bên không thể nói hai câu khác nhau.
+   */
+  function lyDoKhongDu(maLoaiXe) {
+    const CHIEU = { weight: 'tải trọng', volume: 'thể tích', pallet: 'số pallet' };
+    const v = (S.loaiXe || []).find(x => x.id === maLoaiXe);
+    const danhGia = window.WorkflowUIUtils && window.WorkflowUIUtils.evaluateVehicleCapacity;
+    if (!v || !danhGia) return 'năng lực cho lô hàng này';
+    const ket = danhGia({
+      max_weight: v.max_weight,
+      volume_capacity_m3: v.volume_capacity_m3,
+      pallet_capacity: v.pallet_capacity,
+    }, {
+      weight_kg: Number(S.q.weight_kg || 0),
+      volume_m3: Number(S.q.volume_m3 || 0),
+      pallet_count: Number(S.q.pallet_count || 0),
+    });
+    if (!ket.reasons.length) return 'năng lực cho lô hàng này';
+    return ket.reasons.map(r => `${CHIEU[r.dimension] || r.dimension} `
+      + `(${so(r.required)}/${so(r.capacity)} ${r.unit})`).join(' và ');
+  }
+
   function veLoaiXe() {
     const o = el('qtv2-vsug');
     if (!o || !S.q) return;
@@ -1015,7 +1046,7 @@
     o.querySelectorAll('.vc').forEach(n => n.addEventListener('click', () => {
       if (!suaDuoc()) return;
       if (n.dataset.hong) {
-        thongBao(`Loại xe này không đủ tải cho ${so(kg / 1000)} tấn — chọn loại xe lớn hơn `
+        thongBao(`Loại xe này không đủ ${lyDoKhongDu(n.dataset.v)} — chọn loại xe lớn hơn `
           + 'hoặc chia thành nhiều chuyến.', true);
         return;
       }

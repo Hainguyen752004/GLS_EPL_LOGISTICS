@@ -849,6 +849,10 @@ def approve_quotation(db, qid, user="system"):
     # duoc ngay tren form, con tai trong thi phai doi loai xe.
     kiem_bao_gia_truoc_khi_duyet(q)
     require_quotation_vehicle_capacity(db, {
+        # `vehicle_type_id` PHAI co trong goi nay. Man Bao gia moi dat loai xe o
+        # cot do, con `cargo_type` chi giu loai HANG — thieu no thi cua chan
+        # khong tra ra loai xe nao va lang le bo qua.
+        "vehicle_type_id": q.vehicle_type_id,
         "cargo_type": q.cargo_type,
         "weight_kg": q.weight_kg,
         "volume_m3": q.volume_m3,
@@ -907,6 +911,10 @@ def update_quotation(db, qid, data, user="system"):
     q.volume_m3 = _money(data, "volume_m3", q.volume_m3 or 0)
     _ap_truong_bao_gia_moi(db, q, data, route)
     require_quotation_vehicle_capacity(db, {
+        # `vehicle_type_id` PHAI co trong goi nay. Man Bao gia moi dat loai xe o
+        # cot do, con `cargo_type` chi giu loai HANG — thieu no thi cua chan
+        # khong tra ra loai xe nao va lang le bo qua.
+        "vehicle_type_id": q.vehicle_type_id,
         "cargo_type": q.cargo_type,
         "weight_kg": q.weight_kg,
         "volume_m3": q.volume_m3,

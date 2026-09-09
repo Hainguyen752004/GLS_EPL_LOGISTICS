@@ -263,21 +263,50 @@ def _dep_so(x):
     return "{:,.1f}".format(float(x)).replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-def do_vua_tai(loai_xe, khoi_luong_kg):
-    """Do phu hop cua mot loai xe voi tai trong hang.
+def do_vua_tai(loai_xe, khoi_luong_kg, the_tich_m3=0, so_pallet=0):
+    """Do phu hop cua mot loai xe voi lo hang: CA BA CHIEU.
 
-    Ba muc dung nhu spec: phu hop (<= 90% suc tai) · vua sat tai (90-100%) ·
-    khong du tai (> 100%, khong chon duoc). Chua nhap tai trong thi tra ve
-    `chua_biet` — moi the chon duoc va khong hien badge, thay vi bao "phu hop"
-    cho mot dieu chua ai kiem.
+    Ba muc dung nhu spec: phu hop (<= 90% suc cho) · vua sat tai (90-100%) ·
+    khong du tai (> 100%, khong chon duoc). Chua nhap gi thi tra ve `chua_biet`
+    — moi the chon duoc va khong hien badge, thay vi bao "phu hop" cho mot dieu
+    chua ai kiem.
+
+    PHAI XET CA THE TICH VA PALLET, khong chi khoi luong. Ban truoc chi doc
+    `max_weight`, va do la mot cho noi doi da do duoc: mot lo 40 m3 tren xe
+    lanh 22 m3 duoc cham la "phu hop", va 30 pallet tren xe 8 pallet cung vay.
+    Nguoi ban chon dung cai the mau xanh do, luu lai, roi nhan 409 tu cua chan o
+    duong ghi — man hinh noi mot cau, may chu noi cau khac.
+
+    VA DUNG CHUNG MOT BO DANH GIA voi cua chan do:
+    `vehicle_recommendation_service.evaluate_vehicle_type_capacity`. Do la ly do
+    chinh cua ham nay — neu moi ben tu tinh thi hai ben se troi khoi nhau, va
+    lan sau nguoi sua chi sua mot ben.
     """
-    suc_tai = _so(getattr(loai_xe, "max_weight", 0))
-    kg = _so(khoi_luong_kg)
-    if kg <= 0 or suc_tai <= 0:
+    from services.vehicle_recommendation_service import evaluate_vehicle_type_capacity
+
+    nhu_cau = {
+        "weight_kg": _so(khoi_luong_kg),
+        "volume_m3": _so(the_tich_m3),
+        "pallet_count": _so(so_pallet),
+    }
+    if not any(v > 0 for v in nhu_cau.values()):
         return "chua_biet"
-    if kg > suc_tai:
+    # Khong khai suc cho nao thi khong ket luan duoc gi. `evaluate_...` goi day
+    # la `CAPACITY_NOT_CONFIGURED` va tinh la khong vua; o day tra `chua_biet`
+    # de the van chon duoc, vi loi la o Du lieu goc chu khong o lo hang — va
+    # `xem_truoc_gia` da co dong "chua cau hinh cong thuc" noi ro chuyen do.
+    if not any(_so(getattr(loai_xe, k, 0)) > 0
+               for k in ("max_weight", "volume_capacity_m3", "pallet_capacity")):
+        return "chua_biet"
+
+    ket = evaluate_vehicle_type_capacity(loai_xe, nhu_cau)
+    if not ket["fits"]:
+        # Chi thieu cau hinh (chua khai suc cho chieu dang co nhu cau) thi khong
+        # goi la "khong du tai" — nguoi ban khong sua duoc bang cach doi xe.
+        if all(x["code"] == "CAPACITY_NOT_CONFIGURED" for x in ket["reasons"]):
+            return "chua_biet"
         return "khong_du_tai"
-    if kg > suc_tai * 0.9:
+    if _so(ket["utilization_pct"]) > 90:
         return "sat_tai"
     return "phu_hop"
 
@@ -308,6 +337,11 @@ def xem_truoc_gia(db, data):
     ma_tuyen = str(data.get("route_id") or "").strip()
     ma_loai_xe = str(data.get("vehicle_type_id") or "").strip()
     kg = _so(data.get("weight_kg"))
+    # The tich va so pallet cung phai doc o day: `do_vua_tai` xet ca ba chieu,
+    # va mot lo hang co the vua tai trong nhung vuot the tich (hang nhe, khoi
+    # lon) hoac vuot so pallet.
+    the_tich = _so(data.get("volume_m3"))
+    pallet = _so(data.get("pallet_count"))
 
     route = db.get(Route, ma_tuyen) if ma_tuyen else None
     loai_xe = db.get(VehicleType, ma_loai_xe) if ma_loai_xe else None
@@ -336,7 +370,7 @@ def xem_truoc_gia(db, data):
     cac_loai_xe = [{
         "id": v.id, "ten": v.name, "suc_tai_kg": _so(v.max_weight),
         "the_tich_m3": _so(v.volume_capacity_m3), "so_pallet": int(_so(v.pallet_capacity)),
-        "do_vua_tai": do_vua_tai(v, kg),
+        "do_vua_tai": do_vua_tai(v, kg, the_tich, pallet),
         "co_cong_thuc": ct is not None,
         # HAI CON SO CUA THE LOAI XE, theo ban thiet ke muc 3.4: don gia dau
         # tren km va phu cap chuyen. Chung la thu cho biet vi sao hai loai xe
@@ -351,9 +385,20 @@ def xem_truoc_gia(db, data):
     if loai_xe and cong_thuc_loai_xe(db, loai_xe.id) is None:
         thieu.append("Loại xe %s chưa cấu hình công thức giá thành — khai ở Dữ liệu gốc → "
                      "Công thức giá thành." % loai_xe.name)
-    if loai_xe and do_vua_tai(loai_xe, kg) == "khong_du_tai":
-        thieu.append("Loại xe %s không đủ tải cho %s kg (sức tải %s kg)."
-                     % (loai_xe.name, _dep_so(kg), _dep_so(_so(loai_xe.max_weight))))
+    if loai_xe and do_vua_tai(loai_xe, kg, the_tich, pallet) == "khong_du_tai":
+        # Neu ro CHIEU NAO vuot va vuot bao nhieu. Bao "khong du tai" chung thi
+        # nguoi ban doi sang mot xe nang hon roi van vuong, vi cai vuot thuc su
+        # la the tich.
+        from services.vehicle_recommendation_service import evaluate_vehicle_type_capacity
+        _ket = evaluate_vehicle_type_capacity(loai_xe, {
+            "weight_kg": kg, "volume_m3": the_tich, "pallet_count": pallet})
+        _chieu = {"weight": "tải trọng", "volume": "thể tích", "pallet": "số pallet"}
+        _chi_tiet = "; ".join(
+            "%s %s/%s %s" % (_chieu.get(x["dimension"], x["dimension"]),
+                             _dep_so(x["required"]), _dep_so(x["capacity"]), x["unit"])
+            for x in _ket["reasons"])
+        thieu.append("Loại xe %s không đủ năng lực cho lô hàng — vượt %s."
+                     % (loai_xe.name, _chi_tiet))
 
     if thieu:
         return {
@@ -780,6 +825,23 @@ def gui_khach(db, qid, actor="system"):
     from services.workflow_service import kiem_bao_gia_truoc_khi_duyet
     kiem_bao_gia_truoc_khi_duyet(q)
 
+    # CUA CHAN TAI TRONG cung ap o day, khong chi o luc tao va luc sua.
+    #
+    # Vi sao can lap lai: `create_quotation` va `update_quotation` da goi cua
+    # chan nay, nhung mot ban nhap co the duoc tao TRUOC khi cua chan biet doc
+    # `vehicle_type_id`, va suc cho cua loai xe la DU LIEU GOC — nguoi dung sua
+    # `max_weight` cua mot loai xe o man Du lieu goc thi moi ban nhap dang cho
+    # gui deu doi trang thai ma khong ai cham vao chung. Nen phai kiem lai o
+    # dung cai diem khong quay lai duoc: gui cho khach, va duyet noi bo.
+    from services.vehicle_recommendation_service import require_quotation_vehicle_capacity
+    require_quotation_vehicle_capacity(db, {
+        "vehicle_type_id": q.vehicle_type_id,
+        "cargo_type": q.cargo_type,
+        "weight_kg": q.weight_kg,
+        "volume_m3": q.volume_m3,
+        "pallet_count": q.pallet_count,
+    })
+
     bien = bien_loi_nhuan(q.selling_price, q.total_cost)
     nguong = _bien_rieng(q.target_margin) or NGUONG_BIEN_PHAI_DUYET
     if bien is not None and bien < nguong:
@@ -925,6 +987,23 @@ def duyet_noi_bo(db, qid, actor="system"):
 
     from services.workflow_service import kiem_bao_gia_truoc_khi_duyet
     kiem_bao_gia_truoc_khi_duyet(q)
+
+    # CUA CHAN TAI TRONG cung ap o day, khong chi o luc tao va luc sua.
+    #
+    # Vi sao can lap lai: `create_quotation` va `update_quotation` da goi cua
+    # chan nay, nhung mot ban nhap co the duoc tao TRUOC khi cua chan biet doc
+    # `vehicle_type_id`, va suc cho cua loai xe la DU LIEU GOC — nguoi dung sua
+    # `max_weight` cua mot loai xe o man Du lieu goc thi moi ban nhap dang cho
+    # gui deu doi trang thai ma khong ai cham vao chung. Nen phai kiem lai o
+    # dung cai diem khong quay lai duoc: gui cho khach, va duyet noi bo.
+    from services.vehicle_recommendation_service import require_quotation_vehicle_capacity
+    require_quotation_vehicle_capacity(db, {
+        "vehicle_type_id": q.vehicle_type_id,
+        "cargo_type": q.cargo_type,
+        "weight_kg": q.weight_kg,
+        "volume_m3": q.volume_m3,
+        "pallet_count": q.pallet_count,
+    })
 
     q.canonical_status = "sent"
     q.status = "Đã gửi · chờ khách"

@@ -56,7 +56,28 @@ def find_vehicle_type(db, value):
 
 
 def require_quotation_vehicle_capacity(db, data):
-    vehicle_type = find_vehicle_type(db, data.get("cargo_type"))
+    """Chan bao gia mot lo hang len mot loai xe khong cho duoc.
+
+    PHAI DOC CA HAI TRUONG, va day la mot lo that da bit lai.
+
+    Ban truoc chi doc `cargo_type`. Cach do dung voi man Bao gia CU: man do
+    dung mot o duy nhat vua chon loai hang vua chon loai xe, nen ten loai xe
+    nam trong `cargo_type` va `find_vehicle_type` tra ra dung.
+
+    Man Bao gia MOI tach hai thu ra: `cargo_type` la loai HANG ("Hang kho",
+    "Kien roi"), con loai xe nam trong `vehicle_type_id`. Nen
+    `find_vehicle_type(cargo_type)` khong tra ra gi, va ham nay LANG LE
+    `return None` — khong chan gi ca. Do la mot cua chan CO MA KHONG BAT:
+    da do bang cach goi thang `POST /api/quotations` voi
+    `vehicle_type_id=DEMO-VT-REEFER5` (xe lanh 5 tan) va 20.000 kg — may chu
+    NHAN. Cung lo hang do gui qua `cargo_type` thi bi chan 409 dung nhu mong doi.
+
+    Doc `vehicle_type_id` TRUOC vi no la truong tuong minh; `cargo_type` chi la
+    duong doc lui cho man cu va cho du lieu cu. `find_vehicle_type` khop theo ca
+    `id` lan `name` nen ca hai duong deu tra ra dung ban ghi.
+    """
+    vehicle_type = (find_vehicle_type(db, data.get("vehicle_type_id"))
+                    or find_vehicle_type(db, data.get("cargo_type")))
     if not vehicle_type:
         return None
     result = evaluate_vehicle_type_capacity(vehicle_type, data)
