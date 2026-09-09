@@ -212,6 +212,16 @@ def _doc_so_tien(raw):
 KHOA_TERM_SANG_COMPONENT = {"wh": "warehouse", "rate": "freight_rate"}
 
 
+def _khoan_muc_tu(khoa, ten):
+    """Mã KHOẢN MỤC chuẩn cho một cấu phần công thức.
+
+    Nạp trong hàm chứ không ở đầu tệp: `phieu_thu_chi_service` nạp `models`, và
+    nạp nó ở tầng module sẽ tạo một vòng nạp với `routes`.
+    """
+    from services.phieu_thu_chi_service import khoan_muc_tu
+    return khoan_muc_tu(khoa, ten)
+
+
 def _configured_delivery_cost_lines(formula, delivery_order, route):
     """Các dòng CHI PHÍ theo công thức giá thành của loại xe.
 
@@ -232,6 +242,20 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
     currency = str(formula.get("currency") or "VND")
     distance = Decimal(str(getattr(route, "distance_km", 0) or 0))
     weight = Decimal(str(getattr(delivery_order, "weight_kg", 0) or 0))
+    if formula.get("expressions"):
+        from services.cost_expression import evaluate_expressions
+        try:
+            segments = json.loads(getattr(route, 'segments_json', None) or '[]')
+            if any(__import__('re').search(r'\bvalue\b', e) for e in formula['expressions'].values()):
+                raise ValueError('Thiếu giá trị hàng để tính công thức.')
+            if not segments and any(__import__('re').search(r'\blegs\b', e) for e in formula['expressions'].values()):
+                raise ValueError('Tuyến chưa có dữ liệu số chặng.')
+            result = evaluate_expressions(formula["expressions"], formula.get("terms") or [],
+                                          {"km": float(distance), "tonnes": float(weight)/1000, "legs": len(segments) or 1})
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=f"Công thức giá thành không hợp lệ: {exc}") from exc
+        return [{"code": "formula_cost", "name": "Giá thành theo công thức",
+                 "original_amount": result["cost"], "calculation": formula["expressions"]["COST"]}]
 
     def display(value):
         return f"{float(value):,.0f}".replace(",", ".")
@@ -269,6 +293,18 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
         thanh_tien = don_gia * so_luong
         dong.append({
             "code": KHOA_TERM_SANG_COMPONENT.get(khoa, khoa),
+            # MÃ KHOẢN MỤC dùng chung với `actual_cost_lines[].charge_type`.
+            #
+            # `code` ở trên là mã CẤU PHẦN của công thức giá thành, và nó KHÁC
+            # bộ mã của bảng chi phí thực tế: cùng "Phí bãi & lưu kho" mà một
+            # bên ghi `warehouse`, bên kia ghi `yard`. Ai đọc gói này để hạch
+            # toán sẽ ánh xạ theo một danh sách rồi lệch danh sách kia — và
+            # lệch im lặng, vì cả hai mã đều "trông đúng".
+            #
+            # `khoan_muc_tu` là MỘT nguồn duy nhất cho phép ánh xạ đó, dùng
+            # chung với bảng chi phí thực tế. Giữ cả `code` để không làm vỡ
+            # chỗ nào đang đọc nó.
+            "charge_type": _khoan_muc_tu(khoa, str(term.get("label") or khoa)),
             "name": str(term.get("label") or khoa),
             "original_amount": float(thanh_tien.quantize(Decimal("0.000001"))),
             "calculation": (f"{mo_ta()} × {display(don_gia)} {currency}"
@@ -313,7 +349,24 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         })
 
     sales_order = db.get(SalesOrder, delivery_order.so_id) if delivery_order.so_id else None
-    quotation = db.get(Quotation, sales_order.quotation_id) if sales_order and sales_order.quotation_id else None
+    # BÁO GIÁ: đọc từ CHÍNH lệnh giao hàng trước, rồi mới lùi về đường qua Đơn hàng.
+    #
+    # Bản trước chỉ tra qua Đơn hàng (`so_id` → SO → báo giá). Bước Đơn hàng đã
+    # BỎ khỏi luồng ở mốc `7c445d1` — báo giá tách THẲNG ra lệnh giao hàng — nên
+    # `so_id` rỗng trên mọi lệnh mới, `sales_order` là None, và báo giá không bao
+    # giờ tìm ra được.
+    #
+    # Đã đo trên dữ liệu thật: `commercials.quoted_cost = 0` cho một lệnh đã
+    # giao mà báo giá của nó ghi giá thành 2.409.255 đ. Giá thành bằng 0 thì lãi
+    # gộp hiện ra 98,56% — con số đầu tiên người xem nhìn vào, và nó sai.
+    #
+    # `delivery_order.quotation_id` được gán ngay lúc tách, nên đó là đường
+    # đúng; đường qua Đơn hàng giữ lại cho dữ liệu cũ.
+    quotation = None
+    if getattr(delivery_order, "quotation_id", None):
+        quotation = db.get(Quotation, delivery_order.quotation_id)
+    if quotation is None and sales_order and sales_order.quotation_id:
+        quotation = db.get(Quotation, sales_order.quotation_id)
     route = db.get(Route, delivery_order.route_id) if delivery_order.route_id else None
     formula_row = _select_closeout_formula(
         db, delivery_order, sales_order.currency_code if sales_order else None
@@ -416,6 +469,21 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
                 "quantity": _decimal_to_float(item.quantity),
                 "unit_price": _decimal_to_float(item.unit_price),
                 "total_amount": _decimal_to_float(item.total_amount),
+                # BA CON SỐ TIỀN THẬT, thiếu chúng thì gói này vô dụng với ai
+                # đọc để hạch toán.
+                #
+                # `total_amount`, `unit_price` và `net_amount` của bảng chi phí
+                # thực tế đều mang PHẦN VƯỢT (`increase_amount`), không mang
+                # chi phí — đó là chủ ý của bảng đó: nó nói về CHÊNH LỆCH so
+                # với kế hoạch. Nhưng gói closeout trước đây chỉ trả ba con số
+                # ấy, nên bên đọc thấy 0 đồng cho một chuyến có chi phí thật
+                # 2.271.600 đ, và không có gì trong gói cho biết vì sao.
+                #
+                # Đã đo: một lệnh giao hàng đã giao trả về `total_amount = 0`
+                # cho cả bốn khoản mục, trong khi `original_amount` mới là tiền.
+                "original_amount": _decimal_to_float(item.original_amount),
+                "actual_amount": _decimal_to_float(item.actual_amount),
+                "increase_amount": _decimal_to_float(item.increase_amount),
             }
             for item in sorted(actual_cost.items, key=lambda row: row.id)
         ]
@@ -491,7 +559,44 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         selling_price = _decimal_to_float(quotation.selling_price)
     actual_total = _decimal_to_float(actual_cost.total_amount if actual_cost else None)
     quoted_cost = _decimal_to_float(quotation.total_cost if quotation else None)
-    cost_basis = actual_total or quoted_cost
+
+    # GIÁ THÀNH lấy từ `actual_amount` CỦA TỪNG DÒNG, không lấy tổng của bảng.
+    #
+    # LỖI ĐÃ ĐO ĐƯỢC: lãi gộp hiện 98,56%. Bản trước viết
+    # `cost_basis = actual_total or quoted_cost`, tức lấy `actual_cost.total_amount`
+    # làm giá thành. Nhưng cột đó KHÔNG CÓ MỘT NGHĨA DUY NHẤT — nó là tổng của
+    # `item.total_amount`, và `item.total_amount` mang hai nghĩa khác nhau tuỳ
+    # đường nào tạo ra dòng đó:
+    #
+    #   · đường CHỐT GIÁ (`tms_cost_service`, dòng ~145) ghi `total_amount = increase`
+    #     — tức PHẦN VƯỢT so với kế hoạch;
+    #   · đường THÊM KHOẢN PHÍ (`add_charge_item`) ghi `total_amount` là tiền
+    #     ĐẦY ĐỦ của dòng (số lượng × đơn giá, có thuế).
+    #
+    # Nên cùng một cột, một bộ dữ liệu cho ra 51.963 (phần vượt) và một bộ khác
+    # cho ra 2.380.000 (chi phí thật). Lấy nó làm giá thành thì đúng ở một bộ và
+    # sai ở bộ kia — và ở bộ demo thật nó cho ra lãi gộp 98,56%.
+    #
+    # `item.actual_amount` thì CHỈ CÓ MỘT NGHĨA: chi phí thực tế của dòng. Đường
+    # chốt giá đặt nó đúng; đường thêm khoản phí không đặt (để 0), nên khi cả
+    # bảng đều 0 thì lùi về tổng của bảng — đúng cho cả hai hình dạng dữ liệu.
+    #
+    # Đây là CÙNG MỘT LỖI đã sửa ở `tms_reporting_service` — báo cáo doanh thu
+    # cũng từng hiện lãi gộp 99% vì lấy chênh lệch làm tổng. Sửa một chỗ mà
+    # không soi chỗ còn lại thì lỗi vẫn sống ở màn khác, và đó là chuyện đã xảy ra.
+    tong_thuc_te = 0.0
+    if actual_cost:
+        tong_thuc_te = sum(_decimal_to_float(it.actual_amount) for it in actual_cost.items)
+    if tong_thuc_te > 0:
+        cost_basis = tong_thuc_te
+    elif actual_total > 0:
+        cost_basis = actual_total
+    else:
+        # Chưa có bảng chi phí thực tế: dùng KẾ HOẠCH. Báo giá trước, rồi tới
+        # tổng các dòng chi phí theo công thức — chính con số màn hình đang
+        # hiện, nên hai bên không lệch nhau.
+        cost_basis = quoted_cost or sum(
+            float(x.get("original_amount") or 0) for x in (configured_cost_lines or []))
     currency = (
         (closeout.currency_code if closeout else None)
         or

@@ -31,27 +31,39 @@ def test_delivered_demo_do_exposes_closeout_price_table_from_database(app_client
     #
     # Ten dong lay tu `terms[].label` chu khong viet cung trong ma nguon, nen
     # doi nhan trong Cong thuc gia thanh la man nay doi theo.
+    # `charge_type` la MA KHOAN MUC CHUAN, dung chung voi
+    # `actual_cost_lines[].charge_type` va voi `freight_charge_items`.
+    #
+    # `code` la ma CAU PHAN cua cong thuc gia thanh, va hai bo do KHAC NHAU:
+    # cung "Phi bai & luu kho" ma `code` ghi `warehouse` con khoan muc chuan
+    # ghi `yard`. Ai doc goi nay de hach toan se anh xa theo mot danh sach roi
+    # lech danh sach kia — va lech im lang, vi ca hai ma deu "trong dung". Giu
+    # ca hai truong: `code` cho cho nao dang doc no, `charge_type` cho ben ngoai.
     assert data["configured_cost_lines"] == [
         {
             "code": "fuel",
+            "charge_type": "fuel",
             "name": "Chi phí xăng dầu /km",
             "original_amount": 279375.0,
             "calculation": "44.7 km × 6.250 VND",
         },
         {
             "code": "driver",
+            "charge_type": "driver",
             "name": "Phụ cấp chuyến tài xế",
             "original_amount": 500000.0,
             "calculation": "Theo chuyến × 500.000 VND",
         },
         {
             "code": "toll",
+            "charge_type": "toll",
             "name": "Phí cầu đường / BOT",
             "original_amount": 300000.0,
             "calculation": "Theo chuyến × 300.000 VND",
         },
         {
             "code": "warehouse",
+            "charge_type": "yard",
             "name": "Phí bãi & lưu kho",
             "original_amount": 200000.0,
             "calculation": "Theo chuyến × 200.000 VND",
