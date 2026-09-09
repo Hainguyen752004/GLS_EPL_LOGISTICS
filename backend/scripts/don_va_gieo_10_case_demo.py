@@ -34,8 +34,6 @@ Máy chủ phải đang chạy ở `http://127.0.0.1:8011` (đổi bằng biến
 import io
 import json
 import os
-import shutil
-import sqlite3
 import sys
 import urllib.error
 import urllib.parse
@@ -55,6 +53,113 @@ DUONG_DB = os.path.join(THU_MUC_APP, "epl_sqlite_lam_viec.db")
 DEM = {"xanh": 0, "do": 0}
 LOI = []
 SO_KE = []
+
+
+# ================================================ chạy được trên CẢ HAI cơ sở dữ liệu
+
+#: Đường tới cơ sở dữ liệu mà MÁY CHỦ đang dùng, đọc từ cùng một `.env`.
+#:
+#: VÌ SAO KHÔNG ĐÓNG CỨNG VÀO SQLITE NỮA. Bản trước mở thẳng
+#: `epl_sqlite_lam_viec.db` bằng `sqlite3`, nên nó chỉ dọn và chuẩn hoá được
+#: SQLite — mà PostgreSQL mới là cơ sở dữ liệu chuẩn của dự án. Hệ quả: khi
+#: PostgreSQL tới được, bộ dữ liệu demo trên đó vẫn là bộ CŨ (5 báo giá ở
+#: `approved` theo luồng đã bỏ) và không có cách nào gieo lại ngoài việc viết
+#: một bản thứ hai của tệp lệnh này — tức hai bản sẽ trôi khỏi nhau.
+#:
+#: Nay tệp lệnh đọc `DATABASE_URL` giống hệt máy chủ, nên nó luôn dọn ĐÚNG cơ
+#: sở dữ liệu mà máy chủ đang ghi vào. Chọn cơ sở dữ liệu nào là việc của
+#: `EPL_ENV_FILE`, không phải việc của tệp lệnh.
+def _duong_csdl():
+    from dotenv import load_dotenv
+    tep_env = os.environ.get("EPL_ENV_FILE") or os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
+    load_dotenv(tep_env)
+    url = os.environ.get("DATABASE_URL")
+    if not url:
+        raise SystemExit("Không đọc được DATABASE_URL từ %s" % tep_env)
+    return url
+
+
+class KetNoi:
+    """Một kết nối dùng được y như `sqlite3`, nhưng chạy trên cả PostgreSQL.
+
+    Lớp bọc này giữ nguyên API của `sqlite3` (`execute(sql, tuple)` trả về thứ
+    có `.fetchone()`, cộng `commit()` và `close()`) để hai mươi chỗ gọi trong
+    tệp này không phải sửa. Đổi cả hai mươi chỗ sang SQLAlchemy là hai mươi cơ
+    hội gõ sai một câu SQL xoá dữ liệu.
+
+    Nó dịch dấu `?` sang tham số có tên, vì `psycopg2` không hiểu `?`.
+    """
+
+    def __init__(self, url):
+        from sqlalchemy import create_engine
+        self.url = url
+        self.postgres = url.startswith("postgres")
+        self._may = create_engine(url)
+        self._kn = self._may.connect()
+
+    def execute(self, sql, tham=()):
+        from sqlalchemy import text
+        if tham:
+            goi = {}
+            ra = []
+            i = 0
+            for k in sql:
+                if k == "?":
+                    ra.append(":p%d" % i)
+                    goi["p%d" % i] = tham[i]
+                    i += 1
+                else:
+                    ra.append(k)
+            if i != len(tham):
+                raise ValueError("số dấu ? (%d) khác số tham số (%d): %s" % (i, len(tham), sql))
+            return self._kn.execute(text("".join(ra)), goi)
+        return self._kn.execute(text(sql))
+
+    def commit(self):
+        self._kn.commit()
+
+    def close(self):
+        try:
+            self._kn.close()
+        finally:
+            self._may.dispose()
+
+
+def ket_noi():
+    return KetNoi(_duong_csdl())
+
+
+def co_bang(c, ten):
+    """Bảng có tồn tại không — hỏi đúng theo từng loại cơ sở dữ liệu.
+
+    Bản trước hỏi `sqlite_master`, và trên PostgreSQL câu đó ném lỗi
+    `UndefinedTable` chứ không trả về rỗng — nên mọi phép kiểm sau nó cũng vỡ
+    theo (PostgreSQL huỷ cả giao dịch khi một câu lỗi).
+    """
+    if c.postgres:
+        return bool(list(c.execute(
+            "SELECT 1 FROM information_schema.tables "
+            "WHERE table_schema = 'public' AND table_name = ?", (ten,))))
+    return bool(list(c.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (ten,))))
+
+
+def dat_hoac_thay(c, bang, cac_cot, gia_tri):
+    """`INSERT OR REPLACE` của SQLite, viết lại cho cả PostgreSQL.
+
+    PostgreSQL không có `INSERT OR REPLACE`; câu tương đương là
+    `ON CONFLICT (<khoá chính>) DO UPDATE SET ...`. Cột đầu trong `cac_cot`
+    được coi là khoá chính — đúng với hai bảng dùng hàm này (`roles`, `users`).
+    """
+    cot = ", ".join('"%s"' % x for x in cac_cot)
+    cho = ", ".join("?" for _ in cac_cot)
+    if not c.postgres:
+        c.execute('INSERT OR REPLACE INTO "%s" (%s) VALUES (%s)' % (bang, cot, cho), gia_tri)
+        return
+    dat = ", ".join('"%s" = EXCLUDED."%s"' % (x, x) for x in cac_cot[1:])
+    c.execute('INSERT INTO "%s" (%s) VALUES (%s) ON CONFLICT ("%s") DO UPDATE SET %s'
+              % (bang, cot, cho, cac_cot[0], dat), gia_tri)
 
 
 # ======================================================================= hạ tầng
@@ -200,6 +305,57 @@ BANG_GIAO_DICH = [
     "driver_shift_assignments",
 ]
 
+def thu_tu_xoa(c, cac_bang):
+    """Sắp lại thứ tự xoá theo KHOÁ NGOẠI THẬT của cơ sở dữ liệu: con trước, cha sau.
+
+    VÌ SAO CẦN. PostgreSQL **cưỡng chế khoá ngoại**, SQLite trong dự án này thì
+    không (mặc định SQLite không bật, và bộ nâng cấp còn chủ động
+    `PRAGMA foreign_keys=OFF`). Nên một thứ tự xoá viết bằng tay chạy trơn trên
+    SQLite hoàn toàn có thể vỡ trên PostgreSQL — và đã vỡ thật:
+
+        ForeignKeyViolation: update or delete on table "freight_actual_costs"
+        violates foreign key constraint "epl_expense_vouchers_cost_id_fkey"
+        DETAIL: Key (id)=(DEMO-COST-2026-003) is still referenced from
+                table "epl_expense_vouchers".
+
+    Danh sách viết tay để `epl_expense_vouchers` ở gần cuối, sau
+    `freight_actual_costs` mà nó trỏ vào.
+
+    Không sửa bằng cách đổi chỗ hai dòng trong danh sách: lần sau thêm một bảng
+    mới là lại vỡ, và người sửa lúc đó phải tự dựng lại cây phụ thuộc trong đầu.
+    Thay vào đó ĐỌC quan hệ thật từ siêu dữ liệu và sắp thứ tự (sắp topo). Danh
+    sách viết tay vẫn được tôn trọng làm thứ tự ưu tiên giữa các bảng không phụ
+    thuộc nhau, nên hành vi trên SQLite không đổi.
+    """
+    from sqlalchemy import inspect as _inspect
+    tt = _inspect(c._may)
+    trong_ds = list(cac_bang)
+    tap = set(trong_ds)
+    # cha[b] = các bảng mà `b` TRỎ VÀO (phải xoá `b` trước chúng)
+    cha = {}
+    for b in trong_ds:
+        try:
+            cha[b] = {k["referred_table"] for k in tt.get_foreign_keys(b)
+                      if k.get("referred_table") in tap and k.get("referred_table") != b}
+        except Exception:
+            cha[b] = set()
+
+    ra, con_lai = [], list(trong_ds)
+    while con_lai:
+        # Bảng nào KHÔNG còn bảng nào trong `con_lai` trỏ vào nó thì xoá được ngay.
+        duoc = [b for b in con_lai
+                if not any(b in cha[x] for x in con_lai if x != b)]
+        if not duoc:
+            # Vòng phụ thuộc (khoá ngoại vòng tròn). Giữ nguyên thứ tự còn lại
+            # và để lỗi lộ ra kèm tên bảng, thay vì lặp vô hạn.
+            ra.extend(con_lai)
+            break
+        for b in duoc:
+            ra.append(b)
+            con_lai.remove(b)
+    return ra
+
+
 #: Bảng dữ liệu gốc — chỉ xoá những dòng THỬ NGHIỆM `AZ-*`, giữ phần `DEMO-*`.
 BANG_GOC_CAN_LOC = [
     ("driver_qualifications", "driver_id"),
@@ -212,28 +368,84 @@ BANG_GOC_CAN_LOC = [
 ]
 
 
-def co_bang(c, ten):
-    return bool(list(c.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (ten,))))
+#: Nơi đặt bản sao PostgreSQL. Đã có trong `.gitignore` — tệp dump chứa dữ liệu
+#: thật của khách hàng, chuyến và tiền, nên không bao giờ được chốt vào git.
+THU_MUC_SAO_LUU = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "backups")
+
+#: `pg_dump` không có trong PATH trên máy này; bản cài PostgreSQL 18 để nó ở đây.
+PG_DUMP = [
+    "pg_dump",
+    r"C:/Program Files/PostgreSQL/18/bin/pg_dump.exe",
+    r"C:/Program Files/PostgreSQL/17/bin/pg_dump.exe",
+    r"C:/Program Files/PostgreSQL/16/bin/pg_dump.exe",
+]
+
+
+def sao_luu_truoc_khi_xoa(c):
+    """Sao lưu ĐÚNG THEO LOẠI cơ sở dữ liệu, và KHÔNG xoá nếu chưa sao lưu được.
+
+    SQLite thì sao lưu là sao chép một tệp. PostgreSQL thì phải `pg_dump` —
+    bản trước sao chép `epl_sqlite_lam_viec.db` bất kể máy chủ đang dùng gì,
+    nên chạy trên PostgreSQL là xoá dữ liệu thật mà bản sao lại là một tệp
+    SQLite không liên quan.
+
+    Trả về đường dẫn bản sao, hoặc `None` nếu không sao lưu được — và người gọi
+    PHẢI dừng khi nhận `None`. Xoá dữ liệu thật mà không có đường về là việc
+    không được làm dù tệp lệnh có tiện đến đâu.
+    """
+    import shutil as _sh
+    import subprocess
+    import urllib.parse as _up
+
+    if not c.postgres:
+        if not os.path.isfile(DUONG_DB):
+            kiem("tìm thấy tệp cơ sở dữ liệu", False, DUONG_DB)
+            return None
+        ban_sao = "%s.truoc-khi-don-%s.bak" % (
+            DUONG_DB, datetime.now().strftime("%Y%m%d-%H%M%S"))
+        _sh.copy2(DUONG_DB, ban_sao)
+        return ban_sao
+
+    p = _up.urlparse(c.url.replace("postgresql+psycopg2://", "postgresql://"))
+    csdl = (p.path or "/").lstrip("/")
+    cong_cu = next((x for x in PG_DUMP if _sh.which(x) or os.path.isfile(x)), None)
+    if not cong_cu:
+        kiem("tìm thấy pg_dump để sao lưu PostgreSQL", False,
+             "đã thử: " + ", ".join(PG_DUMP))
+        return None
+    os.makedirs(THU_MUC_SAO_LUU, exist_ok=True)
+    ban_sao = os.path.join(THU_MUC_SAO_LUU, "postgres-%s-truoc-khi-don-%s.dump" % (
+        csdl, datetime.now().strftime("%Y%m%d-%H%M%S")))
+    kq = subprocess.run(
+        [cong_cu, "-h", p.hostname or "localhost", "-p", str(p.port or 5432),
+         "-U", _up.unquote(p.username or ""), "-d", csdl, "-Fc", "-f", ban_sao],
+        env=dict(os.environ, PGPASSWORD=_up.unquote(p.password or "")),
+        capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if kq.returncode:
+        kiem("pg_dump chạy được", False, (kq.stderr or "")[:200])
+        return None
+    return ban_sao
 
 
 def don_du_lieu():
     de("1. DỌN DỮ LIỆU SAI VÀ DỮ LIỆU THỬ NGHIỆM")
-    if not os.path.isfile(DUONG_DB):
-        kiem("tìm thấy tệp cơ sở dữ liệu", False, DUONG_DB)
-        return False
+    c = ket_noi()
+    print("   Cơ sở dữ liệu: %s" % ("PostgreSQL" if c.postgres else "SQLite"))
 
-    # SAO LƯU TRƯỚC KHI XOÁ. Một bản sao 1 MB rẻ hơn vô cùng so với việc dựng
-    # lại cả bộ dữ liệu demo lúc 2 giờ sáng.
-    ban_sao = "%s.truoc-khi-don-%s.bak" % (DUONG_DB, datetime.now().strftime("%Y%m%d-%H%M%S"))
-    shutil.copy2(DUONG_DB, ban_sao)
+    # SAO LƯU TRƯỚC KHI XOÁ. Một bản sao vài trăm KB rẻ hơn vô cùng so với việc
+    # dựng lại cả bộ dữ liệu demo lúc 2 giờ sáng.
+    ban_sao = sao_luu_truoc_khi_xoa(c)
+    if not ban_sao:
+        c.close()
+        print("   KHÔNG XOÁ GÌ — chưa sao lưu được thì không được xoá.")
+        return False
     print("   Đã sao lưu:", ban_sao)
 
-    c = sqlite3.connect(DUONG_DB)
     try:
         tong_xoa = 0
         print("   -- Xoá dữ liệu giao dịch")
-        for t in BANG_GIAO_DICH:
+        for t in thu_tu_xoa(c, BANG_GIAO_DICH):
             if not co_bang(c, t):
                 continue
             n = c.execute('SELECT COUNT(*) FROM "%s"' % t).fetchone()[0]
@@ -282,7 +494,7 @@ def chuan_lai_du_lieu_goc():
         "đang chạy" cho những chuyến đã bị xoá.
     """
     de("2. CHUẨN LẠI DỮ LIỆU GỐC CHO ĐÚNG LUỒNG")
-    c = sqlite3.connect(DUONG_DB)
+    c = ket_noi()
     try:
         n = c.execute("SELECT COUNT(*) FROM vehicles WHERE status <> 'Sẵn sàng'").fetchone()[0]
         c.execute("UPDATE vehicles SET status = 'Sẵn sàng'")
@@ -318,14 +530,12 @@ def chuan_lai_du_lieu_goc():
         #
         # Đây là dữ liệu PHÂN QUYỀN, tức việc của hệ thống cha cấp tài khoản —
         # không có đường API nào trong module này để tạo, nên ghi thẳng bảng.
-        c.execute(
-            "INSERT OR REPLACE INTO roles (id, permissions) VALUES (?, ?)",
-            ("DEMO-TMS-FINANCE-APPROVER",
-             '["finance_read", "finance_approver", "finance_poster"]'))
-        c.execute(
-            "INSERT OR REPLACE INTO users (id, username, role_id) VALUES (?, ?, ?)",
-            ("truong-phong-tai-chinh", "truong-phong-tai-chinh",
-             "DEMO-TMS-FINANCE-APPROVER"))
+        dat_hoac_thay(c, "roles", ("id", "permissions"),
+                      ("DEMO-TMS-FINANCE-APPROVER",
+                       '["finance_read", "finance_approver", "finance_poster"]'))
+        dat_hoac_thay(c, "users", ("id", "username", "role_id"),
+                      ("truong-phong-tai-chinh", "truong-phong-tai-chinh",
+                       "DEMO-TMS-FINANCE-APPROVER"))
         print("   Người duyệt chi phí: truong-phong-tai-chinh (không có quyền tạo)")
 
         n = c.execute("SELECT COUNT(*) FROM drivers WHERE status <> '🟢 Rảnh (Sẵn sàng)'").fetchone()[0]
@@ -1160,7 +1370,12 @@ def ghi_so_ke():
 def main():
     de("DỌN DỮ LIỆU SAI VÀ GIEO 10 CASE DEMO ĐI TRỌN LUỒNG A→Z")
     print("   Máy chủ:", GOC)
-    print("   Cơ sở dữ liệu:", DUONG_DB)
+    # In DUONG THAT, khong in duong SQLite dong cung: tep lenh nay chay tren
+    # ca hai co so du lieu, va biet no dang xoa cai nao la dieu dau tien
+    # nguoi chay can thay.
+    _u = _duong_csdl()
+    print("   Cơ sở dữ liệu:", _u.split("@")[0].split("//")[0] + "//***:***@" + _u.split("@")[1]
+          if "@" in _u else _u)
     ma, g = goi("/api/health/database")
     print("   Engine đang chạy:", json.dumps(du_lieu(g), ensure_ascii=False))
     if ma != 200:

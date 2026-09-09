@@ -32,6 +32,10 @@ coverage.xml
 *.sqlite3
 *.log
 backend/backups/
+# Ban sao PostgreSQL (`pg_dump`) o goc du an. Tep dump chua DU LIEU THAT
+# cua khach hang, chuyen va tien — khong bao gio duoc chot vao git.
+backups/
+*.dump
 backend/uploads/
 frontend/uploads/
 

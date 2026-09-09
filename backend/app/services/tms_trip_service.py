@@ -391,6 +391,36 @@ def create_trip_from_delivery_orders(db, data, actor):
     if pickup_start >= pickup_end or delivery_start >= delivery_end:
         raise conflict("DELIVERY_ORDERS_INCOMPATIBLE", "Khung giờ của các DO không giao nhau.")
 
+    # BỎ MÚI GIỜ, GIỮ UTC — bốn mốc này đi vào `freight_orders`, và cột ở đó
+    # KHÔNG mang múi giờ.
+    #
+    # LỖI ĐÃ ĐO ĐƯỢC, và chỉ xảy ra trên PostgreSQL. `models.py` khai không nhất
+    # quán: `DeliveryOrder` và `TransportTrip` dùng `DateTime(timezone=True)`,
+    # còn `FreightOrder` dùng `DateTime` trần. Trên PostgreSQL điều đó thành hai
+    # kiểu cột thật khác nhau (`timestamptz` và `timestamp`), nên bốn giá trị
+    # đọc ra từ `delivery_orders` là CÓ múi giờ (+07), và khi ghi vào cột trần
+    # thì PostgreSQL **bỏ phần múi giờ đi và giữ giờ đồng hồ địa phương**:
+    #
+    #     delivery_orders : 2026-09-08 23:11:00+07:00   (đúng)
+    #     freight_orders  : 2026-09-09 06:11:00         (mất 7 giờ)
+    #
+    # Rồi cửa chặn điều phối đọc lại bằng `_utc()`, mà hàm đó coi mốc trần LÀ
+    # UTC. Nên khung giờ của chuyến lệch đúng 7 giờ, và mọi lệnh điều phối bị
+    # chặn bằng `ASSIGNMENT_OUTSIDE_WINDOW` — "Thời gian điều phối phải nằm
+    # trong khung lấy và giao hàng của chuyến". Trên SQLite không lộ ra, vì
+    # SQLite không có kiểu thời gian thật và giữ nguyên thứ được đưa vào.
+    #
+    # Quy ước của dự án là LƯU UTC (hiển thị +7 ở tầng trình bày), nên chỗ đúng
+    # để sửa là ở đây — đổi về UTC rồi bỏ nhãn múi giờ — chứ không phải nới cửa
+    # chặn. Mốc đã trần thì giữ nguyên, nên SQLite không đổi hành vi.
+    def _utc_tran(x):
+        if x is None or x.tzinfo is None:
+            return x
+        return x.astimezone(dt.timezone.utc).replace(tzinfo=None)
+
+    pickup_start, pickup_end = _utc_tran(pickup_start), _utc_tran(pickup_end)
+    delivery_start, delivery_end = _utc_tran(delivery_start), _utc_tran(delivery_end)
+
     linked_freight_orders = {
         row[0] for row in (
             db.query(TransportTrip.freight_order_id)
