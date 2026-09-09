@@ -40,7 +40,16 @@ assert.doesNotMatch(html, /toggleRouteDeviationSimulation|Thẻ Cảnh Báo Lệ
 assert.doesNotMatch(html, /id=["']ai_btn_reject["']|data-i18n=["']ai_btn_reject["']/, 'AI check-in must not expose an unimplemented reject action.');
 assert.doesNotMatch(html, /Route segment details go here\.|Internal notes\.|File attachments\./, 'Delivery Order must not show placeholder-only tabs.');
 assert.doesNotMatch(html, /id=["']pod-(?:file-input|note|time|receiver)["']/, 'Tracking must not collect POD fields that it does not persist.');
-assert.match(html, /MỞ HỒ SƠ HOÀN TẤT GIAO HÀNG/, 'Tracking must describe the real hand-off to the delivery completion workflow.');
+// Truoc day man Theo doi co mot khung mo ta duong tat sang buoc hoan tat
+// ("MO HO SO HOAN TAT GIAO HANG"), va phep khang dinh o day chot dong chu do.
+// Khung ay bi `display:none` che tu lau nen khong ai doc duoc dong chu, va nay
+// da bo han. Y nghia goc van phai giu: man Theo doi khong duoc thu bang chung
+// giao hang ma khong luu (dong 42 ngay tren), va buoc hoan tat co luu that phai
+// co man rieng de di tiep.
+assert.match(html, /id=["']view-delivery-completion["']/,
+  'The persisted delivery-completion workflow must have its own screen.');
+assert.doesNotMatch(html, /MỞ HỒ SƠ HOÀN TẤT GIAO HÀNG/,
+  'The dead hand-off panel was removed from Tracking — it must not come back.');
 
 for (const legacyName of [
   'legacyModalApproveQuotation',

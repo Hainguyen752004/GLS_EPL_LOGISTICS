@@ -249,15 +249,16 @@ setTimeout(() => {
     assert.ok(/Không có tài xế nào/.test(lech.getAttribute('title') || ''),
       'thẻ disabled phải có chú giải nói rõ vì sao không bấm được');
 
-    // Mỗi dòng phải có đúng một nút mở phiếu, và nhãn nút phải nói đúng việc:
-    // "Khai" khi chưa có bằng, "Sửa" khi đã có.
+    // Mỗi dòng phải có đúng một nút mở phiếu bằng lái, và nhãn nút phải nói
+    // đúng việc: "Khai bằng" khi chưa có, "Sửa bằng" khi đã có.
     const nut = [...d.querySelectorAll('#btl-rows button[data-sua]')];
-    assert.strictEqual(nut.length, 3, 'mỗi dòng phải có đúng một nút mở phiếu');
+    assert.strictEqual(nut.length, 3, 'mỗi dòng phải có đúng một nút mở phiếu bằng lái');
     const nutC = nut.find(b => b.getAttribute('data-sua') === 'DRV-C');
-    assert.strictEqual(nutC.textContent.trim(), 'Khai',
-      'tài xế chưa có bằng thì nút phải ghi "Khai", không phải "Sửa"');
+    assert.strictEqual(nutC.textContent.trim(), 'Khai bằng',
+      'tài xế chưa có bằng thì nút phải ghi "Khai bằng", không phải "Sửa bằng"');
     const nutA = nut.find(b => b.getAttribute('data-sua') === 'DRV-A');
-    assert.strictEqual(nutA.textContent.trim(), 'Sửa', 'tài xế đã có bằng thì nút ghi "Sửa"');
+    assert.strictEqual(nutA.textContent.trim(), 'Sửa bằng',
+      'tài xế đã có bằng thì nút ghi "Sửa bằng"');
 
     // Ô "Xét theo ngày" phải đổi được kết luận — đây là điểm khác biệt chính so
     // với một bảng chỉ xét hôm nay: cửa chặn so với NGÀY CHẠY CHUYẾN.
@@ -269,11 +270,51 @@ setTimeout(() => {
     assert.strictEqual(hetHan, 2,
       `xét ngày 2031 thì hai bằng (hết hạn 2030) phải vào nhóm hết hạn, đang là ${hetHan}`);
 
-    assert.deepStrictEqual(loi.slice(0, 3), [], 'có lỗi JS: ' + loi.slice(0, 3).join(' | '));
+    // --- 5. CỬA CHO BIỂU MẪU HỒ SƠ TÀI XẾ ---------------------------------
+    //
+    // `driver-modal-dialog` là biểu mẫu duy nhất sửa được tên, số điện thoại,
+    // vai trò, hạng bằng, ca làm — và trước khi có màn này thì KHÔNG có nút nào
+    // trong toàn bộ trang mở nó, nên hồ sơ tài xế không sửa được từ giao diện.
+    // Bài này chốt lại cửa đó.
+    {
+      assert.ok(d.getElementById('btl-them-tx'), 'thiếu nút "Thêm tài xế"');
+      assert.strictEqual(typeof w.openAddDriverModal, 'function',
+        'không còn hàm openAddDriverModal — nút "Thêm tài xế" sẽ không mở được gì');
 
-    console.log('bang-lai-tai-xe: %d ca kết luận + %d ca biên + màn dựng được, khớp cửa chặn',
-      CAC_CA.length, CA_BIEN.length);
-    process.exit(0);
+      const hoSo = [...d.querySelectorAll('#btl-rows button[data-hoso]')];
+      assert.strictEqual(hoSo.length, 3, 'mỗi dòng phải có một nút "Hồ sơ"');
+      assert.strictEqual(hoSo[0].textContent.trim(), 'Hồ sơ');
+
+      // Và nó phải MỞ THẬT. `editDriverById` đọc từ mảng `fioriDrivers` của
+      // `app.js`, không đọc từ dữ liệu của màn này; mảng rỗng thì hàm im lặng
+      // thoát ngay. Nên phải bấm rồi đo, không chỉ kiểm nút có tồn tại.
+      const hop = d.getElementById('driver-modal-dialog');
+      assert.ok(hop, 'không có #driver-modal-dialog trong trang');
+      assert.ok(!hop.closest('.view-section'),
+        'hộp thoại phải được chuyển ra ngoài khung màn, không thì khối ẩn giam nó');
+
+      const nutA = hoSo.find(b => b.getAttribute('data-hoso') === 'DRV-A');
+      nutA.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      setTimeout(() => {
+        assert.strictEqual(hop.style.display, 'flex',
+          'bấm "Hồ sơ" phải mở được biểu mẫu tài xế — đang là "'
+          + hop.style.display + '"');
+        assert.strictEqual(d.getElementById('drv-name').value, 'Tài xế A',
+          'biểu mẫu phải điền sẵn đúng tài xế được chọn');
+        assert.strictEqual(d.getElementById('drv-phone').value, '0900000001',
+          'biểu mẫu phải điền sẵn số điện thoại — đây là trường dễ bị xoá trắng nhất');
+
+        // Và việc lưu hồ sơ phải làm màn này nạp lại, không thì sửa hạng bằng
+        // xong mà bảng vẫn hiện giá trị cũ.
+        assert.strictEqual(w.saveDriverModal.__btlDaBoc, true,
+          'bang-lai-tai-xe.js chưa bọc saveDriverModal — lưu hồ sơ xong bảng không nạp lại');
+
+        assert.deepStrictEqual(loi.slice(0, 3), [], 'có lỗi JS: ' + loi.slice(0, 3).join(' | '));
+        console.log('bang-lai-tai-xe: %d ca kết luận + %d ca biên + màn dựng được '
+          + '+ cửa hồ sơ tài xế mở được, khớp cửa chặn', CAC_CA.length, CA_BIEN.length);
+        process.exit(0);
+      }, 600);
+    }
   }, 700);
 
   function the2(ma) {

@@ -248,6 +248,9 @@
             <button id="btl-tai-lai" type="button" class="btl-nut btl-nut-phu">
               <i class="fa-solid fa-rotate"></i> Tải lại
             </button>
+            <button id="btl-them-tx" type="button" class="btl-nut btl-nut-phu">
+              <i class="fa-solid fa-user-plus"></i> Thêm tài xế
+            </button>
             <button id="btl-khai" type="button" class="btl-nut btl-nut-chinh">
               <i class="fa-solid fa-id-card"></i> Khai bằng lái
             </button>
@@ -416,8 +419,10 @@
           <div class="btl-vi">${esc(kl.vi)}</div>
         </td>
         <td class="btl-cot-nut">
-          <button type="button" class="btl-nut btl-nut-nho" data-sua="${esc(tx.id)}">
-            ${gp ? 'Sửa' : 'Khai'}
+          <button type="button" class="btl-nut btl-nut-nho" data-hoso="${esc(tx.id)}"
+                  title="Sửa tên, số điện thoại, vai trò, hạng bằng, ca làm">Hồ sơ</button>
+          <button type="button" class="btl-nut btl-nut-nho btl-nut-chinh" data-sua="${esc(tx.id)}">
+            ${gp ? 'Sửa bằng' : 'Khai bằng'}
           </button>
         </td>
       </tr>`;
@@ -595,11 +600,77 @@
     }
   }
 
+  /* =========================================================== hồ sơ tài xế ==
+
+     CỬA CHO MỘT BIỂU MẪU BỊ BỎ QUÊN.
+
+     `driver-modal-dialog` là biểu mẫu DUY NHẤT trong dự án sửa được tên, số
+     điện thoại, vai trò, hạng bằng và ca làm của tài xế. Nó vẫn nằm trong
+     trang, và lúc nạp `duaHopThoaiRaNgoaiKhungMan()` còn chuyển nó ra ngoài
+     khung màn nên nó không bị khối ẩn `ssv5-khoi-cu` giam. Nhưng dò cả trang
+     thì KHÔNG có một nút nào mở nó — nên trước hai nút dưới đây, hồ sơ tài xế
+     không sửa được từ giao diện, chỉ sửa được bằng tệp lệnh.
+
+     Đặt cửa ở đây là chỗ hợp nhất: đây là màn duy nhất liệt kê tài xế, và một
+     nửa số lỗi mà màn này báo ("lệch hạng với hồ sơ tài xế") chỉ chữa được khi
+     sửa được cả hồ sơ.
+
+     HAI CHỖ PHẢI CẨN THẬN:
+
+       1. `editDriverById` đọc từ mảng `fioriDrivers` của `app.js`, KHÔNG đọc từ
+          dữ liệu của màn này. Mảng đó rỗng thì hàm im lặng thoát ngay
+          (`if (!driver) return;`) — bấm vào không có gì xảy ra, đúng dạng nút
+          nói dối mà cả lần rà soát này đi dọn. Nên phải gọi
+          `loadFioriDrivers()` trước, và nếu vẫn không mở được thì NÓI RA.
+       2. `saveDriverModal` kết thúc bằng `loadFioriDrivers()` — nó không biết
+          gì về màn này. Nên phải bọc nó để màn tự nạp lại, không thì người dùng
+          sửa hạng bằng xong mà bảng vẫn hiện giá trị cũ.
+     ========================================================================== */
+
+  async function moHoSo(maTaiXe) {
+    if (typeof window.editDriverById !== 'function'
+        || !document.getElementById('driver-modal-dialog')) {
+      thongBao('Không mở được biểu mẫu hồ sơ tài xế trên trang này.', true);
+      return;
+    }
+    // Nạp mảng mà `editDriverById` đọc. Thất bại thì vẫn thử mở — có thể mảng
+    // đã được nạp sẵn từ lúc mở màn khác.
+    if (typeof window.loadFioriDrivers === 'function') {
+      try { await window.loadFioriDrivers(); } catch (e) { /* thử mở tiếp */ }
+    }
+    document.getElementById('driver-modal-dialog').style.display = 'none';
+    window.editDriverById(maTaiXe);
+    if (document.getElementById('driver-modal-dialog').style.display !== 'flex') {
+      thongBao(`Chưa mở được hồ sơ của ${maTaiXe}: danh sách tài xế của ứng dụng `
+        + 'chưa nạp xong. Bấm "Tải lại" rồi thử lại.', true);
+    }
+  }
+
+  function noiVaoLuuHoSo() {
+    const cu = window.saveDriverModal;
+    if (typeof cu !== 'function' || cu.__btlDaBoc) return false;
+    const moi = async function () {
+      const kq = await cu.apply(this, arguments);
+      // Chỉ nạp lại khi thẻ này đang mở — người dùng có thể sửa hồ sơ tài xế
+      // từ một màn khác, và lúc đó nạp lại là gọi máy chủ vô ích.
+      const goc = el(GOC);
+      if (goc && goc.style.display !== 'none' && S.daDung) nap();
+      return kq;
+    };
+    moi.__btlDaBoc = true;
+    window.saveDriverModal = moi;
+    return true;
+  }
+
   /* ---------------------------------------------------------------- sự kiện -- */
 
   function ganSuKien() {
     el('btl-tai-lai').addEventListener('click', nap);
     el('btl-khai').addEventListener('click', () => moPhieu(null));
+    el('btl-them-tx').addEventListener('click', () => {
+      if (typeof window.openAddDriverModal === 'function') window.openAddDriverModal();
+      else thongBao('Không mở được biểu mẫu thêm tài xế trên trang này.', true);
+    });
 
     el('btl-ngay').addEventListener('change', e => {
       S.ngayXet = e.target.value || ngayIso(homNay());
@@ -617,8 +688,10 @@
     });
 
     el('btl-rows').addEventListener('click', e => {
-      const nut = e.target.closest('button[data-sua]');
-      if (nut) moPhieu(nut.getAttribute('data-sua'));
+      const nutBang = e.target.closest('button[data-sua]');
+      if (nutBang) { moPhieu(nutBang.getAttribute('data-sua')); return; }
+      const nutHoSo = e.target.closest('button[data-hoso]');
+      if (nutHoSo) moHoSo(nutHoSo.getAttribute('data-hoso'));
     });
 
     el('btl-phieu').addEventListener('click', e => {
@@ -662,12 +735,15 @@
   };
 
   function batDau() {
-    if (noiVaoDieuHuong()) return;
-    // `app.js` nạp sau tệp này thì `switchMasterDataTab` chưa tồn tại. Thử lại
-    // vài nhịp rồi thôi — không lặp vô hạn.
+    // `app.js` nạp sau tệp này thì cả `switchMasterDataTab` lẫn `saveDriverModal`
+    // đều chưa tồn tại. Thử lại vài nhịp rồi thôi — không lặp vô hạn. Chỉ dừng
+    // khi bọc được CẢ HAI.
+    if (noiVaoDieuHuong() && noiVaoLuuHoSo()) return;
     let con = 40;
     const h = setInterval(() => {
-      if (noiVaoDieuHuong() || (con -= 1) <= 0) clearInterval(h);
+      const xong = noiVaoDieuHuong() || window.switchMasterDataTab?.__btlDaBoc;
+      const xong2 = noiVaoLuuHoSo() || window.saveDriverModal?.__btlDaBoc;
+      if ((xong && xong2) || (con -= 1) <= 0) clearInterval(h);
     }, 150);
   }
 

@@ -272,7 +272,15 @@
 #md-tab-drivers .btl-ten { font-weight: 600; color: var(--btl-ink); }
 #md-tab-drivers .btl-ma { font-size: 11.5px; color: var(--btl-ink-3); }
 #md-tab-drivers .btl-lech { color: var(--btl-red); font-weight: 700; }
-#md-tab-drivers .btl-cot-nut { text-align: right; white-space: nowrap; }
+/* Hai nút trong một ô: "Hồ sơ" mở biểu mẫu tài xế, "Sửa bằng" mở phiếu bằng
+   lái. Xếp bằng `gap` chứ không bằng lề từng nút, để hai nút luôn cách nhau
+   đúng một khoảng dù nhãn dài ngắn khác nhau. */
+#md-tab-drivers .btl-cot-nut {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  white-space: nowrap;
+}
 
 #md-tab-drivers .btl-vi {
   margin-top: 3px;

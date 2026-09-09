@@ -21,13 +21,26 @@ check('tracking page exposes a separate closeout selector for delivered DOs', ()
   assert.match(html, /loadDeliveryOrderCloseout\(this\.value\)/, 'Closeout selector must load selected DO.');
 });
 
-check('POD evidence card selects a DO before opening the persisted completion workflow', () => {
-  assert.match(html, /id=["']pod-delivery-do-select["']/, 'Missing POD DO selector.');
-  assert.match(html, /id=["']btn-open-pod-form["']/, 'Missing button to open the completion record after selecting DO.');
-  assert.doesNotMatch(html, /id=["']pod-entry-form["']/, 'Tracking must not expose an unpersisted POD entry form.');
-  assert.match(appSource, /window\.populatePODDeliverySelector\s*=\s*function/, 'Missing POD selector population function.');
-  assert.match(appSource, /window\.openPODFormForSelectedDO\s*=\s*async\s*function/, 'Missing completion hand-off function.');
-  assert.match(appSource, /await\s+window\.submitPOD\(\)/, 'Selected DO must continue to the atomic completion workflow.');
+// Khoi kiem nay TRUOC DAY chot duong tat "chon DO o man Theo doi roi bam Mo ho
+// so de nhay sang man Hoan tat" (`#legacy-tracking-pod-panel`,
+// `#btn-open-pod-form`, `openPODFormForSelectedDO`). Duong tat do bi
+// `display:none` che tu lau nen da chet trong thuc te — khong co nut nao nguoi
+// dung thay duoc — va khoi markup cua no da bo khoi index.html.
+//
+// Dieu PHAI GIU lai la y nghia goc cua khoi kiem: man Theo doi khong duoc co
+// mot form POD ghi khong vao dau, va bang chung giao hang phai di qua duong
+// hoan tat co luu that. Hai phep khang dinh duoi day chot dung hai dieu do.
+check('Tracking has no unpersisted POD form; completion lives on its own screen', () => {
+  assert.doesNotMatch(html, /id=["']pod-entry-form["']/,
+    'Tracking must not expose an unpersisted POD entry form.');
+  assert.doesNotMatch(html, /id=["']btn-open-pod-form["']/,
+    'The dead POD hand-off shortcut was removed — it must not come back.');
+  assert.match(html, /id=["']view-delivery-completion["']/,
+    'The persisted completion workflow must have its own screen.');
+  assert.match(html, /id=["']completion-do-list["']/,
+    'That screen must list delivery orders itself, so no hand-off shortcut is needed.');
+  assert.match(appSource, /window\.submitPOD\s*=/,
+    'The atomic completion submit must still exist.');
 });
 
 check('closeout selector uses delivered/completed status instead of GPS live status', () => {

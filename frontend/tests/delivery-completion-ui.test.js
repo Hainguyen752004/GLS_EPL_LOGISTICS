@@ -14,7 +14,13 @@ assert.match(html, /id="completion-do-details"/, 'Full read-only DO details regi
 assert.match(html, /id="completion-charge-lines"/, 'Customer surcharge editor is missing.');
 assert.match(html, /id="completion-final-total"/, 'Final DO total is missing.');
 assert.match(html, /id="tracking-do-list"/, 'Tracking DO list is missing.');
-assert.match(html, /id="legacy-tracking-pod-panel" style="display:none;/, 'Legacy POD form must be hidden from Tracking.');
+// Truoc day khung POD cu chi bi `display:none` che di, va phep khang dinh o day
+// chot dung trang thai "con nam do nhung bi che". Nay no da BO HAN khoi
+// index.html, nen phep khang dinh manh hon: no khong duoc con ton tai. Duong
+// tat "chon DO o man Theo doi roi nhay sang man Hoan tat" da chet tu lau vi bi
+// che; man Hoan tat tu liet ke va tu mo bang soan nen khong mat duong nao.
+assert.doesNotMatch(html, /id="legacy-tracking-pod-panel"/,
+  'Legacy POD panel was removed from Tracking — it must not come back.');
 assert.match(html, /id="tracking-closeout-panel" style="display:none;/, 'Legacy closeout must be hidden from Tracking.');
 
 assert.match(app, /complete-delivery/, 'Frontend must call the atomic completion API.');

@@ -5297,6 +5297,32 @@
                các đường gọi đó sang màn mới.
                ============================================================= -->
           <div id="qtv2-root"></div>
+              <!-- KHỐI BÁO GIÁ CŨ — GIỮ LẠI, có lý do, dù màn đã bị thay hẳn.
+
+                   Tôi đã bỏ khối này rồi HOÀN NGUYÊN. Lý do hoàn nguyên đáng ghi
+                   lại, vì nó là một hồi quy đang tồn tại chứ không phải chuyện
+                   dọn dẹp:
+
+                   Khối này chứa CỬA CHẶN TẢI TRỌNG của bước báo giá —
+                   `refreshQuotationVehicleRecommendations` trong `app.js`: nó đọc
+                   khối lượng / thể tích / số pallet, đánh giá loại xe nào chở
+                   được, LÀM MỜ loại xe không đủ tải, giải thích khi loại xe chưa
+                   khai sức chở (`CAPACITY_NOT_CONFIGURED`), nói rõ khi không loại
+                   xe đơn lẻ nào đủ tải, và CHẶN LƯU báo giá khi loại xe đang chọn
+                   không phù hợp. Có bài kiểm riêng:
+                   `tests/quotation-capacity-recommendation-ui.test.js`.
+
+                   Màn báo giá MỚI (`#qtv2-root`) KHÔNG có cửa chặn đó — nó chỉ đọc
+                   `max_weight` và `volume_capacity_m3` vào mô hình loại xe rồi
+                   thôi — và máy chủ cũng không chặn ở bước báo giá
+                   (`workflow_service`, `bao_gia_service` đều không kiểm sức chở).
+                   Nên hiện nay báo giá được một lô 20 tấn trên xe 5 tấn, và lỗi
+                   chỉ lộ ra tận bước điều phối.
+
+                   VÌ VẬY khối này là bản mẫu duy nhất của cửa chặn cần chuyển
+                   sang màn mới. Bỏ nó trước khi chuyển là xoá mất bản mẫu.
+                   Chuyển xong cửa chặn thì bỏ khối này, kèm bảy hàm cũ của nó.
+                   Xem `docs/ra-soat-nut-va-luong.md` §4. -->
           <div id="qtv2-khoi-cu" hidden>
           <h3 style="margin-bottom: 15px; color: #172b4d; margin-top: 20px;"><i class="fa-solid fa-file-signature"></i> <span data-i18n="title_quotation">2. Báo Giá Cước Vận Chuyển (Quotation)</span></h3>
           <div class="oracle-container" id="oracle-qt-list">
@@ -6964,33 +6990,16 @@
             </div>
 
             <!-- POD Upload Form (Redesigned Clean Vertical Card) -->
-            <div id="legacy-tracking-pod-panel" style="display:none; flex: 1.1; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 4px 12px rgba(15,23,42,0.03); flex-direction: column;">
-              <div style="border-bottom: 1px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
-                <h3 style="margin:0; color:#0f172a; font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px;">
-                  <i class="fa-solid fa-file-signature" style="color: #10b981;"></i> <span>Bằng chứng giao hàng (POD)</span>
-                </h3>
-                <span id="pod-do-badge" style="background: #ecfdf5; color: #059669; padding: 4px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 700; border: 1px solid #a7f3d0;">Chưa chọn DO</span>
-              </div>
-              
-              <div style="display: flex; flex-direction: column; gap: 16px; flex: 1;">
-                <div id="pod-do-picker-form" style="display:grid; gap:10px; padding:12px; border:1px solid #dbeafe; border-radius:10px; background:#f8fbff;">
-                  <label style="color:#334155; font-size:0.85rem; font-weight:800;">Chọn DO cần xác nhận giao hàng</label>
-                  <div style="display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center;">
-                    <select id="pod-delivery-do-select" class="fiori-input" onchange="previewPODDeliveryDO(this.value)" style="width:100%; font-weight:800; color:#0a6ed1;">
-                      <option value="">-- Chọn DO đang giao/chờ POD --</option>
-                    </select>
-                    <button type="button" id="btn-open-pod-form" class="fiori-btn fiori-btn-secondary" onclick="openPODFormForSelectedDO()" style="white-space:nowrap; justify-content:center; padding:9px 12px;"><i class="fa-solid fa-folder-open"></i> Mở hồ sơ</button>
-                  </div>
-                  <div id="pod-selected-do-summary" style="min-height:38px; display:grid; align-items:center; color:#64748b; font-size:.82rem; font-weight:800; border:1px dashed #cbd5e1; border-radius:8px; padding:8px 10px; background:#ffffff;">
-                    Chưa chọn DO. Chọn một DO để mở hồ sơ hoàn tất và nhập POD.
-                  </div>
-                </div>
-                <div style="padding:12px; border:1px solid #bbf7d0; border-radius:10px; background:#f0fdf4; color:#047857; font-size:.82rem; font-weight:700; line-height:1.45;">
-                  <i class="fa-solid fa-circle-check"></i>
-                  MỞ HỒ SƠ HOÀN TẤT GIAO HÀNG để nhập thời gian thực tế, người nhận, POD, chữ ký và chốt giá trong một giao dịch máy chủ.
-                </div>
-            </div>
-          </div> <!-- End Top Row (Map + POD) -->
+              <!-- KHUNG POD CŨ Ở MÀN THEO DÕI ĐÃ BỎ HẲN — 27 dòng, 1 nút.
+
+                   Khối này là một ĐƯỜNG TẮT: chọn một lệnh giao hàng ở màn Theo
+                   dõi rồi bấm "Mở hồ sơ" để nhảy sang màn Hoàn tất. Nó bị
+                   `display:none` che từ lâu, nên đường tắt đó đã chết trong thực
+                   tế — không có nút nào người dùng thấy được.
+
+                   Bỏ được vì màn Hoàn tất giao hàng TỰ liệt kê lệnh giao hàng và
+                   tự mở bảng soạn, nên không mất đường nào. `openPODFormForSelectedDO`
+                   chỉ khối này gọi, nên nó cũng thành mã chết. -->
           <div id="tracking-closeout-panel" style="display:none; background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:18px 20px; box-shadow:0 4px 12px rgba(15,23,42,0.03); gap:14px;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
               <div>

@@ -31,7 +31,18 @@ assert.deepStrictEqual(
   'Every configured checkpoint and leg distance must be available to the UI.'
 );
 
-for (const prefix of ['qt', 'so', 'do']) {
+// Tien to 'qt' da RA KHOI danh sach nay, va day KHONG phai mot lan cat bot pham
+// vi kiem.
+//
+// `#qt-route-checkpoints` va `#qt-route` thuoc man Bao gia CU (`#qtv2-khoi-cu`).
+// Khoi do van con trong index.html nhung bi `hidden` che, va se bo han khi cua
+// chan tai trong duoc chuyen sang man moi — xem chu thich tai khoi do. Kiem mot
+// khung khong ai thay duoc thi khong chung minh duoc gi ve nang luc that.
+//
+// Nang luc "chon tuyen thi hien so do chang" van duoc chot day du: hai tien to
+// `so`/`do` con dung khung kieu cu, con man Bao gia dang chay thi duoc chot boi
+// hai phep khang dinh ngay duoi day.
+for (const prefix of ['so', 'do']) {
   assert.match(
     html,
     new RegExp(`id=["']${prefix}-route-checkpoints["']`),
@@ -39,11 +50,17 @@ for (const prefix of ['qt', 'so', 'do']) {
   );
 }
 
-assert.match(
-  html,
-  /id="qt-route"[^>]+onchange="[^"]*selectMasterRoute\('qt',\s*this\.value\)/,
-  'Quotation route selection must force-sync Route Master context.'
-);
+// Man Bao gia MOI: khung so do chang, va no phai duoc ve tu `segments_json` that
+// (`dist_km`) chu khong phai chi danh so "chang 1 / chang 2".
+{
+  const quotationSource = fs.readFileSync(path.join(frontendRoot, 'js', 'bao-gia-v2.js'), 'utf8');
+  assert.match(quotationSource, /el\('qtv2-chain'\)/,
+    'New quotation screen must expose its own checkpoint timeline container.');
+  assert.match(quotationSource, /dist_km/,
+    'New quotation timeline must read real leg distances from segments_json.');
+  assert.match(html, /id="qtv2-root"/, 'New quotation screen root must exist.');
+}
+
 assert.match(
   html,
   /id="so-route-select"[^>]+onchange="[^"]*selectMasterRoute\('so',\s*this\.value\)/,
