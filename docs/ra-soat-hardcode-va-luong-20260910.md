@@ -374,6 +374,20 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
 - Tài liệu `docs/API_REFERENCE_VI.md` và `DATABASE_SCHEMA_VI.md` sinh lại từ OpenAPI/models (script
   sinh cũ đã xoá cùng đợt dọn script).
 
+### A26. Rà rác trên DB thật lần cuối — **ĐÃ DỌN**
+- Dữ liệu vận hành sạch: 19 báo giá đều có giá; 16 DO đều có `quotation_id` + `unit_price`; 15
+  chuyến đều gắn DO; không tuyến 0 km; không bản ghi treo khoá ngoại (xe, tài xế, tuyến, khách);
+  không bản/đính kèm báo giá mồ côi; không hồ sơ hoàn tất gắn DO chưa giao.
+- Đã xoá: mapping GL `carrier_expense:freight → 6427` (tàn dư AP đã bỏ); 20 bản ghi cache
+  idempotency của lần gieo demo 09/09; ba bảng di sản `items`, `uoms`, `price_lists` (1/3/1 dòng,
+  không route nào đọc) qua migration 052; công cụ `data_cleanup.py` chạy trên SQLite (+ stub
+  `clear_sample_data.py`, bài kiểm) vì dự án chỉ dùng PostgreSQL và nó trỏ vào bảng đã DROP.
+- Không đụng, nêu để anh quyết: hai tài xế cùng tên "Trần Quốc Huy" (DEMO-DRV-003 hạng C,
+  DEMO-DRV-013 B2 — khác SĐT, khác xe, đều đang chạy chuyến → coi là hai người); 2.088 dòng
+  `audit_logs` (1.802 do `demo-dispatcher` gieo 10 case qua API ngày 09/09 — là lịch sử thật của
+  lần gieo, xoá hay giữ tuỳ anh); 10/17 địa điểm chưa có toạ độ (thiếu dữ liệu, không phải rác);
+  13 bảng rỗng còn lại thuộc module đang có mã đọc/ghi (đấu thầu, đơn vị hàng, phiếu chi báo cáo…).
+
 ---
 
 ## B. Luồng có thể đi sai

@@ -7,7 +7,7 @@ upsert, nên khách hàng thật trùng ID bị ghi đè im lặng và bút toá
 sổ cái. Đây là rủi ro vận hành chứ không cần ai tấn công: một lần gõ
 ``python seed_db.py`` với ``.env`` production là đủ.
 
-``data_cleanup.py`` trong cùng dự án đã làm đúng việc này (bắt buộc
+(Công cụ ``data_cleanup.py`` chạy trên SQLite đã xoá 10/09 — dự án chỉ dùng PostgreSQL.) Nguyên tắc: (bắt buộc
 ``--approved-sha256`` của manifest, backup và verify restore trước khi xóa);
 module này mang cùng tinh thần sang phía nạp dữ liệu.
 """

@@ -695,37 +695,12 @@ class AuditLog(Base):
 # NEW MASTER DATA & FORMS
 # ==========================================
 
-# 15. Item / Cargo
-class Item(Base):
-    __tablename__ = "items"
-    id = Column(String, primary_key=True)
-    name = Column(String, nullable=False)
-    cargo_type = Column(String) # Container 20FT, Box, Pallet
-    notes = Column(Text)  # O Ghi chu tren man bao gia
-    default_uom = Column(String)
-    weight_kg = Column(Float, default=0.0)
-
-# 16. UOM (Unit of Measure)
-class UOM(Base):
-    __tablename__ = "uoms"
-    id = Column(String, primary_key=True) # PCS, KG, CBM, TEU
-    description = Column(String)
-
 # 17. Cost Formula
 class CostFormula(Base):
     __tablename__ = "cost_formulas"
     id = Column(String, primary_key=True)
     name = Column(String)
     formula_expression = Column(Text) # JSON or eval string
-
-# 18. Price List
-class PriceList(Base):
-    __tablename__ = "price_lists"
-    id = Column(String, primary_key=True)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    item_id = Column(String, ForeignKey("items.id"))
-    unit_price = Column(MONEY_TYPE, default=0.0)
-    valid_to = Column(String)
 
 # 19. Currency
 class Currency(Base):
