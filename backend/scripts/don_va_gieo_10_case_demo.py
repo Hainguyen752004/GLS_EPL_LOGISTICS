@@ -300,7 +300,7 @@ BANG_GIAO_DICH = [
     "resource_assignments", "transport_trips",
     "freight_order_legacy_links", "freight_orders",
     "delivery_order_details", "delivery_orders",
-    "sales_order_lines", "sales_order_documents", "sales_orders",
+
     "quotation_attachments", "quotation_items", "quotation_versions", "quotations",
     "epl_expense_vouchers", "vehicle_maintenance_requests",
     # Su co, phieu bai xe va ghi de gia thanh theo xe: ca ba deu duoc gieo lai

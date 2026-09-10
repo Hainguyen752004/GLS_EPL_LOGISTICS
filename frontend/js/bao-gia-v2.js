@@ -1745,7 +1745,7 @@
     const o = el('qtv2-sugs');
     if (!o) return;
     const moc = xt.goi_y_gia || {};
-    const nhan = { bien_muc_tieu: 'Biên mục tiêu', hop_dong: 'Hợp đồng', lan_truoc: 'Lần trước' };
+    const nhan = { theo_cong_thuc: 'Theo công thức', bien_muc_tieu: 'Biên mục tiêu', hop_dong: 'Hợp đồng', lan_truoc: 'Lần trước' };
     const ds = Object.keys(moc);
     if (!ds.length) { o.innerHTML = ''; return; }
     // Mốc là giá MỘT CHUYẾN. Đổi về đơn giá theo đơn vị đang chọn để bấm vào là

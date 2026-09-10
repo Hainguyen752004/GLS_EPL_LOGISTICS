@@ -418,11 +418,11 @@ def xem_truoc_gia(db, data):
         "km": boi_canh["km"], "so_chang": boi_canh["diem_giao"],
         "cac_loai_xe": cac_loai_xe,
         "nguong_bien": NGUONG_BIEN_PHAI_DUYET, "bien_muc_tieu": BIEN_MUC_TIEU,
-        "goi_y_gia": goi_y_gia(db, data, gia_thanh),
+        "goi_y_gia": goi_y_gia(db, data, gia_thanh, cac_dong),
     }
 
 
-def goi_y_gia(db, data, gia_thanh):
+def goi_y_gia(db, data, gia_thanh, cac_dong=None):
     """Ba moc gia goi y, THAY cho he so nhan bua.
 
     Ban mau dien san `gia thanh × 3,9`. Spec cua chu du an tu ghi rang he so do
@@ -436,6 +436,19 @@ def goi_y_gia(db, data, gia_thanh):
     goi y khong co nguon la mot con so nguoi dung se tin ma khong kiem lai.
     """
     ra = {}
+    # THEO CONG THUC — cac hang tu `kind=revenue` cua cong thuc loai xe (vi du
+    # "Cuoc phi van chuyen /kg" x khoi luong). Chu du an chot (10/09): dong thu
+    # nay khong cong vao gia thanh va khong tu thanh cuoc; no la MOC GOI Y dau
+    # tien, dung nhu bieu cuoc theo kg/tan trong nganh. Nguoi ban bam vao thi
+    # dien, khong bam thi khong con so nao tu chay vao bao gia.
+    dong_thu = [d for d in (cac_dong or []) if isinstance(d, dict) and d.get("loai") == "thu"
+                and _so(d.get("thanh_tien")) > 0]
+    if dong_thu:
+        ra["theo_cong_thuc"] = {
+            "gia": round(sum(_so(d["thanh_tien"]) for d in dong_thu), -3),
+            "mo_ta": "biểu cước của công thức loại xe: " + "; ".join(
+                "%s %s %s" % (d.get("nhan"), _dep_so(d.get("don_gia")), d.get("nhan_voi")) for d in dong_thu),
+        }
     if gia_thanh and gia_thanh > 0:
         muc_tieu = _bien_rieng(data.get("target_margin")) or BIEN_MUC_TIEU
         if 0 < muc_tieu < 1:
