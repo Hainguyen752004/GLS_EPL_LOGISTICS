@@ -300,6 +300,12 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   mức thuế do kế toán chốt lúc phát hành (bài kiểm `test_ar_invoice_contract.py` đổi theo).
   Bộ dựng dữ liệu kiểm `workflow_builder.delivery_order(...)` giờ đi đúng đường thật:
   báo giá → duyệt → gửi → khách chấp nhận → DO.
+  Packing list lấy dòng hàng từ `quotation_items` của báo giá (không còn
+  `delivery_order_details` theo đơn; báo giá vận tải không có SKU nên cột `sku` trống).
+  Nhãn `pending` của DO sinh từ báo giá thống nhất là "Chờ vận chuyển"; dữ liệu mẫu:
+  có DO thì báo giá ở `accepted`, DO mang `quotation_id` + `unit_price`.
+  `v010.validate_postgresql` không kiểm `sales_orders` nữa — trước đó máy chủ 8001 báo
+  `DATABASE_SCHEMA_INVALID` ngay sau khi 049 DROP bảng; đã xanh lại.
 - **Giao diện**: gỡ hẳn khối `#so-khoi-cu` (bảng + form Đơn vận chuyển), Kanban cơ hội
   chạy bằng SO, CSS kèm theo; ~40 hàm SO trong `app.js` (`saveOracleSO`, `approveSO`,
   `convertQTToSO`, `autoCalculateSOCost`, tài liệu SO…), bước SO trong
@@ -311,6 +317,26 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   `create_live_delivery_order.py`, `don_du_lieu_thu_nghiem.py`, `generate_system_docs.py`,
   `nang_moc_migration.py`, `don_va_gieo_10_case_demo.py` còn nhắc SO — chạy sẽ hỏng ở
   chỗ đó. Mốc nâng cấp cũ (v001…v030) giữ nguyên vì là lịch sử.
+
+### A23. Báo giá có HAI bản in: nội bộ và phiếu gửi khách — **ĐÃ LÀM**
+- Chủ dự án: xuất nội bộ = mọi thông tin để bên mình xem và chốt; gửi khách chỉ các trường
+  của form hệ thống cha (trọng lượng, tiền tệ, giá gốc, doanh thu dự kiến, giá gốc sau chiết
+  khấu, doanh thu có chiết khấu, ngày nhập). Trước chỉ có một nút "Xem PDF" in cả bảng giá
+  thành (xăng dầu, phụ cấp, BOT) — đưa khách là lộ giá thành.
+- Nút "In nội bộ" (`xemPdf`): thêm dòng thu của công thức, lợi nhuận + biên, biên mục tiêu,
+  giá đối thủ, chiết khấu, hàng hoá, cả ba ô ghi chú; đóng dấu "BẢN NỘI BỘ — không gửi khách".
+  Nút "Phiếu gửi khách" (`phieuKhach`): đúng các trường trên, không giá thành/biên/ghi chú nội bộ.
+- **Chiết khấu** chưa có trong hệ → migration `050_chiet_khau_bao_gia` thêm
+  `quotations.discount_percent` (0..1). Quy ước: `unit_price`/`selling_price` VẪN là giá cuối
+  (DO khoá giá, biên, closeout, hoá đơn không đổi); giá gốc trên phiếu = giá cuối / (1 − ck).
+  Ô nhập ở mục 5 màn Báo giá; 0 lưu thành null; ≥100% → 422. Bài kiểm:
+  `backend/tests/test_chiet_khau_bao_gia.py`, `frontend/tests/phieu-gui-khach-va-ban-noi-bo.test.js`.
+- Giải thích (ảnh bảng "5. Cước và giá thành"): "Cước phí vận chuyển /kg" là hàng tử
+  `kind=revenue` của công thức — KHÔNG cộng vào giá thành, KHÔNG phải cước báo khách; khi
+  hoàn tất DO chỉ mã Acc code của nó được dùng cho dòng thu "Cước vận chuyển theo báo giá", số
+  tiền thu là `selling_price` của báo giá. "Cước báo khách" = đơn giá người bán nhập × số lượng
+  theo đơn vị cước (gợi ý: giá thành / (1 − biên mục tiêu), hợp đồng, lần trước) — không do
+  công thức sinh ra. Đề xuất chưa làm: bỏ dòng /kg khỏi bảng hoặc biến nó thành mốc gợi ý.
 
 ---
 

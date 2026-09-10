@@ -141,5 +141,8 @@ def test_chay_toan_bo_chuoi_migration_len_den_v030(tmp_path, monkeypatch):
 
 
 def _chuoi_truoc_truc_xuat(monkeypatch):
-    import migrations.runner as _runner
-    monkeypatch.setattr(_runner, "MIGRATIONS", tuple(m for m in _runner.MIGRATIONS if not m.VERSION.startswith("049")))
+    # Va vao globals cua CHINH ham `upgrade` da import o dau tep: sau khi conftest dung
+    # app_client, `migrations.runner` trong sys.modules co the la MOT DOI TUONG MODULE KHAC,
+    # nen setattr len module do khong doi duoc bang `upgrade` dang doc.
+    g = upgrade.__globals__
+    monkeypatch.setitem(g, "MIGRATIONS", tuple(m for m in g["MIGRATIONS"] if int(m.VERSION.split("_")[0]) < 49))

@@ -21,7 +21,7 @@ from migrations import v001_workflow
 # co, va lui lai thi thao theo dung thu tu nguoc. Sinh tu `MIGRATIONS` giu dung
 # dieu do, va con giu manh hon: neu ai do dang ky mot moc sai thu tu thi phep
 # kiem lien tuc ben duoi bat duoc ngay.
-EXPECTED_MIGRATIONS = [m.VERSION for m in MIGRATIONS if not m.VERSION.startswith("049")]
+EXPECTED_MIGRATIONS = [m.VERSION for m in MIGRATIONS if int(m.VERSION.split("_")[0]) < 49]
 
 # Va chuoi phai LIEN TUC: so thu tu tang dung mot moi buoc, bat dau tu 001.
 # Thieu phep kiem nay thi `EXPECTED_MIGRATIONS` chi la mot ban sao cua chinh
@@ -621,4 +621,4 @@ import migrations.runner as _runner
 
 @_pytest.fixture(autouse=True)
 def _chuoi_truoc_truc_xuat(monkeypatch):
-    monkeypatch.setattr(_runner, "MIGRATIONS", tuple(m for m in _runner.MIGRATIONS if not m.VERSION.startswith("049")))
+    monkeypatch.setattr(_runner, "MIGRATIONS", tuple(m for m in _runner.MIGRATIONS if int(m.VERSION.split("_")[0]) < 49))

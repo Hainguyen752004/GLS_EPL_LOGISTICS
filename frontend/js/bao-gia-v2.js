@@ -659,7 +659,7 @@
       selling_price: 0, total_cost: 0, bien: null,
       currency_code: 'VND', fx_rate: 1, payment_terms: DIEU_KHOAN[0],
       waiting_surcharge: 0, sales_rep: nguoiDangDung(), trips_per_month: 0,
-      competitor_price: 0,
+      competitor_price: 0, discount_percent: 0,
       notes_customer: '', notes_ops: '', notes_internal: '',
       items: [{ line_no: 1, name: '', quantity: 1, uom: "40'", note: '' }],
       attachments: [], versions: [], delivery_orders: [],
@@ -1144,6 +1144,13 @@
               <span class="hint2">Ghi ở đây chứ không ghi vào ô ghi chú: một con số nằm
                 trong đoạn văn tự do thì sau này không lọc lại được để trả lời câu "mình
                 mất khách vì giá hay vì thứ khác".</span></div>
+            <div class="f"><label>Chiết khấu cho khách
+                <span class="hint">% · để trống nếu không chiết khấu</span></label>
+              <input id="qtv2-ck" inputmode="decimal"
+                value="${q.discount_percent ? so(q.discount_percent * 100) : ''}"
+                placeholder="5" ${suaDuoc() ? '' : 'disabled'}>
+              <span class="hint2">Đơn giá ở trên là giá CUỐI khách trả. Phần trăm này chỉ để
+                phiếu gửi khách in ra "giá gốc" trước chiết khấu — DO, biên, hoá đơn không đổi.</span></div>
           </div>
           <div id="qtv2-mgwarn"></div>
         </div>
@@ -1564,6 +1571,10 @@
       q.competitor_price = docSo(el('qtv2-competitor').value);
       napGiaDaBao();
     });
+    noi('qtv2-ck', 'change', () => {
+      const p = docSo(el('qtv2-ck').value);
+      q.discount_percent = p > 0 && p < 100 ? p / 100 : 0;
+    });
     noi('qtv2-target', 'change', () => {
       const p = docSo(el('qtv2-target').value);
       q.target_margin = p > 0 ? p / 100 : 0;
@@ -1888,7 +1899,13 @@
     const nut = [];
     nut.push(['qtv2-sb-huy', 'ghost', 'Huỷ', true]);
     if (suaDuoc()) nut.push(['qtv2-sb-nhap', 'ghost', S.dangLuu ? 'Đang lưu…' : 'Lưu nháp', !S.dangLuu]);
-    if (q.id) nut.push(['qtv2-sb-pdf', 'ghost', 'Xem PDF', true]);
+    if (q.id) {
+      // HAI ban in: NOI BO (du moi thu, de ben minh xem va chot) va PHIEU GUI KHACH
+      // (chi cac truong he thong cha can). Truoc chi co mot ban PDF chung in ca
+      // bang gia thanh cho khach doc — lo het don gia xang dau, phu cap, BOT.
+      nut.push(['qtv2-sb-pdf', 'ghost', 'In nội bộ', true]);
+      nut.push(['qtv2-sb-khach', 'ghost', 'Phiếu gửi khách', Number(q.unit_price || 0) > 0]);
+    }
 
     if (tt === 'draft') {
       nut.push(['qtv2-sb-gui', 'primary' + (duoiNguong ? ' amber' : ''),
@@ -1919,6 +1936,7 @@
     noi('qtv2-sb-huy', () => dongPhieu());
     noi('qtv2-sb-nhap', () => luuNhap(true));
     noi('qtv2-sb-pdf', xemPdf);
+    noi('qtv2-sb-khach', phieuKhach);
     noi('qtv2-sb-gui', guiKhach);
     noi('qtv2-sb-duyet', () => lenh('internal-approve', {}, 'Đã duyệt nội bộ.'));
     noi('qtv2-sb-tra', traVeNhap);
@@ -1978,6 +1996,7 @@
       // 0 là không khai, nhưng phía này đừng nói sai ngay từ đầu.
       target_margin: Number(q.target_margin) > 0 ? q.target_margin : null,
       competitor_price: Number(q.competitor_price) > 0 ? q.competitor_price : null,
+      discount_percent: Number(q.discount_percent) > 0 ? q.discount_percent : null,
       notes_customer: q.notes_customer || '',
       notes_ops: q.notes_ops || '',
       notes_internal: q.notes_internal || '',
@@ -2153,6 +2172,7 @@
       waiting_surcharge: goc.waiting_surcharge, trips_per_month: goc.trips_per_month,
       target_margin: goc.target_margin,
       competitor_price: goc.competitor_price,
+      discount_percent: goc.discount_percent,
       notes_customer: goc.notes_customer, notes_ops: goc.notes_ops,
       // Ghi chú NỘI BỘ không nhân bản: nó thường nói về một lần thương lượng cụ
       // thể ("tối đa giảm 3%"), và mang sang một báo giá khác thì sai ngữ cảnh.
@@ -2167,57 +2187,109 @@
     thongBao('Đã tạo bản nháp từ báo giá cũ. Soát lại giá rồi bấm "Lưu nháp".');
   }
 
-  function xemPdf() {
-    const q = S.q;
-    const rt = tuyenTheoMa(q.route_id);
-    const xt = S.xemTruoc;
-    const ty = tyGia(q.currency_code) || 1;
-    const sym = kyHieu(q.currency_code);
-    const w = window.open('', '_blank');
-    if (!w) { thongBao('Trình duyệt chặn cửa sổ mới — cho phép rồi bấm lại.', true); return; }
-    const dong = (xt && xt.cac_dong || []).filter(d => d.loai === 'chi')
-      .map(d => `<tr><td>${esc(d.nhan)}</td><td class="r">${tien(d.don_gia / ty)}</td>
-        <td>${esc(d.nhan_voi)}</td><td class="r">${tien(d.thanh_tien / ty)}</td></tr>`).join('');
-    const dv = DON_VI_CUOC.find(x => x[0] === (q.price_basis || 'per_trip')) || DON_VI_CUOC[0];
-    w.document.write(`<!doctype html><meta charset="utf-8">
-      <title>Báo giá ${esc(q.quote_no || q.id)}</title>
-      <style>body{font:13px/1.5 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 20px;color:#1e293b}
+  /* ------------------------------------------------ Hai bản in của báo giá ----
+     · `xemPdf`     BẢN NỘI BỘ: đủ mọi thông tin đang có — cấu phần giá thành, cước,
+                    biên, giá đối thủ, chiết khấu, ba ô ghi chú — để bên mình xem và chốt.
+     · `phieuKhach` PHIẾU GỬI KHÁCH: chỉ những trường hệ thống cha của tập đoàn cần
+                    (ảnh chủ dự án đưa 10/09): trọng lượng, tiền tệ, giá gốc, doanh thu
+                    dự kiến, giá sau chiết khấu, doanh thu có chiết khấu, ngày nhập.
+                    KHÔNG có giá thành, KHÔNG có biên, KHÔNG có ghi chú nội bộ. */
+  const KIEU_IN = `<style>body{font:13px/1.5 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 20px;color:#1e293b}
         h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:22px 0 6px}
         table{width:100%;border-collapse:collapse;margin-top:6px}
         th,td{border-bottom:1px solid #e4e9f0;padding:6px 8px;text-align:left;font-size:12.5px}
         th{background:#fafbfd;font-size:11px;color:#7b8796}
         .r{text-align:right;font-variant-numeric:tabular-nums}
         .tong{font-weight:700;background:#f8fafc}
-        .ghi{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px}</style>
-      <h1>BÁO GIÁ CƯỚC VẬN CHUYỂN</h1>
-      <div>${esc(q.quote_no || q.id || 'bản nháp')} · ngày ${new Date().toLocaleDateString('vi-VN')}</div>
+        .noibo{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
+        .ghi{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px}</style>`;
+
+  function moCuaSoIn(tieuDe, than) {
+    const w = window.open('', '_blank');
+    if (!w) { thongBao('Trình duyệt chặn cửa sổ mới — cho phép rồi bấm lại.', true); return; }
+    w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(tieuDe)}</title>${KIEU_IN}${than}`);
+    w.document.close();
+    setTimeout(() => { try { w.print(); } catch (e) { /* người dùng tự in */ } }, 400);
+  }
+
+  function xemPdf() {
+    const q = S.q;
+    const rt = tuyenTheoMa(q.route_id);
+    const xt = S.xemTruoc;
+    const ty = tyGia(q.currency_code) || 1;
+    const sym = kyHieu(q.currency_code);
+    const dongCua = loai => (xt && xt.cac_dong || []).filter(d => d.loai === loai)
+      .map(d => `<tr><td>${esc(d.nhan)}</td><td class="r">${tien(d.don_gia / ty)}</td>
+        <td>${esc(d.nhan_voi)}</td><td class="r">${tien(d.thanh_tien / ty)}</td></tr>`).join('');
+    const dv = DON_VI_CUOC.find(x => x[0] === (q.price_basis || 'per_trip')) || DON_VI_CUOC[0];
+    const bien = q.bien === null || q.bien === undefined ? '—' : phanTram(q.bien);
+    const ck = Number(q.discount_percent || 0);
+    moCuaSoIn(`Báo giá ${q.quote_no || q.id} — bản nội bộ`, `
+      <h1>BÁO GIÁ CƯỚC VẬN CHUYỂN <span class="noibo">BẢN NỘI BỘ — không gửi khách</span></h1>
+      <div>${esc(q.quote_no || q.id || 'bản nháp')} · ngày ${new Date().toLocaleDateString('vi-VN')}
+        · trạng thái ${esc(q.canonical_status || '')} · NVKD ${esc(q.sales_rep || '')}</div>
       <h2>Khách hàng</h2><div>${esc(tenKhach(q.customer_id))}</div>
       <h2>Tuyến và phương tiện</h2>
       <div>${esc((rt && (rt.name || rt.id)) || '—')} · ${esc(tenLoaiXe(q.vehicle_type_id))}
         · ${xt ? so(xt.km) + ' km' : '—'}</div>
       <div>Hàng: ${so(Number(q.weight_kg || 0) / 1000)} tấn${
-      q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''} · ${esc(q.cargo_type || '')}</div>
-      <h2>Khoản mục giá thành một chuyến</h2>
+      q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''}${q.pallet_count ? ' · ' + so(q.pallet_count) + ' pallet' : ''} · ${esc(q.cargo_type || '')}</div>
+      <h2>Khoản mục giá thành một chuyến (chi)</h2>
       <table><thead><tr><th>Khoản mục</th><th class="r">Đơn giá</th><th>Nhân với</th>
-        <th class="r">Thành tiền (${esc(sym)})</th></tr></thead><tbody>${dong}
+        <th class="r">Thành tiền (${esc(sym)})</th></tr></thead><tbody>${dongCua('chi')}
         <tr class="tong"><td colspan="3">Giá thành một chuyến</td>
           <td class="r">${tien(Number(q.total_cost || 0) / ty)}</td></tr></tbody></table>
-      <h2>Cước báo khách</h2>
+      ${dongCua('thu') ? `<h2>Khoản mục doanh thu trong công thức (thu · tham khảo)</h2>
+      <table><tbody>${dongCua('thu')}</tbody></table>` : ''}
+      <h2>Cước và biên</h2>
       <table><tbody>
-        <tr><td>Đơn giá</td><td class="r">${tien(Number(q.unit_price || 0) / ty)} ${esc(sym)} / ${esc(dv[2])}</td></tr>
-        <tr class="tong"><td>Cước một chuyến</td>
-          <td class="r">${tien(Number(q.selling_price || 0) / ty)} ${esc(sym)}</td></tr>
+        <tr><td>Đơn giá cước (giá cuối)</td><td class="r">${tien(Number(q.unit_price || 0) / ty)} ${esc(sym)} / ${esc(dv[2])}</td></tr>
+        ${ck > 0 ? `<tr><td>Giá gốc trước chiết khấu ${so(ck * 100)}%</td><td class="r">${tien(Number(q.unit_price || 0) / (1 - ck) / ty)} ${esc(sym)} / ${esc(dv[2])}</td></tr>` : ''}
+        <tr class="tong"><td>Cước một chuyến</td><td class="r">${tien(Number(q.selling_price || 0) / ty)} ${esc(sym)}</td></tr>
+        <tr><td>Lợi nhuận một chuyến</td><td class="r">${tien((Number(q.selling_price || 0) - Number(q.total_cost || 0)) / ty)} ${esc(sym)} · biên ${bien}</td></tr>
+        <tr><td>Biên mục tiêu</td><td class="r">${q.target_margin ? phanTram(q.target_margin, 0) + ' (riêng khách này)' : 'theo công ty'}</td></tr>
+        <tr><td>Giá đối thủ khách nói ra</td><td class="r">${Number(q.competitor_price) > 0 ? tien(q.competitor_price) + ' ₫/chuyến' : '—'}</td></tr>
         <tr><td>Phụ phí chờ quá 2 giờ</td><td class="r">${tien(Number(q.waiting_surcharge || 0) / ty)} ${esc(sym)}/giờ</td></tr>
         <tr><td>Điều khoản thanh toán</td><td class="r">${esc(q.payment_terms || '—')}</td></tr>
         <tr><td>Hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
+        <tr><td>Số chuyến / tháng dự kiến</td><td class="r">${q.trips_per_month || '—'}</td></tr>
         ${q.currency_code && q.currency_code !== 'VND'
       ? `<tr><td>Tỷ giá áp dụng</td><td class="r">1 ${esc(q.currency_code)} = ${tien(ty)} ₫</td></tr>` : ''}
       </tbody></table>
+      ${(q.items || []).length ? `<h2>Hàng hoá</h2><table><thead><tr><th>#</th><th>Tên hàng</th><th class="r">Số lượng</th><th>ĐVT</th><th>Ghi chú</th></tr></thead><tbody>${
+      (q.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.name || '')}</td><td class="r">${so(it.quantity)}</td><td>${esc(it.uom || '')}</td><td>${esc(it.note || '')}</td></tr>`).join('')}</tbody></table>` : ''}
+      ${q.notes_customer ? `<h2>Ghi chú gửi khách</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
+      ${q.notes_ops ? `<h2>Ghi chú vận hành</h2><div class="ghi">${esc(q.notes_ops)}</div>` : ''}
+      ${q.notes_internal ? `<h2>Ghi chú nội bộ</h2><div class="ghi">${esc(q.notes_internal)}</div>` : ''}
+      <p style="margin-top:24px;color:#7b8796;font-size:11.5px">Bản nội bộ in từ hệ thống EPL — số liệu
+        lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in. Gửi khách dùng nút "Phiếu gửi khách".</p>`);
+  }
+
+  function phieuKhach() {
+    const q = S.q;
+    const ty = tyGia(q.currency_code) || 1;
+    const tienTe = q.currency_code || 'VND';
+    const ck = Number(q.discount_percent || 0);
+    const donGiaCuoi = Number(q.unit_price || 0) / ty;
+    const cuocCuoi = Number(q.selling_price || 0) / ty;
+    const heSo = ck > 0 && ck < 1 ? 1 / (1 - ck) : 1;
+    const dv = DON_VI_CUOC.find(x => x[0] === (q.price_basis || 'per_trip')) || DON_VI_CUOC[0];
+    const dong = (nhan, giaTri) => `<tr><td>${nhan}</td><td class="r">${giaTri}</td></tr>`;
+    moCuaSoIn(`Báo giá ${q.quote_no || q.id} — phiếu gửi khách`, `
+      <h1>THÔNG TIN VẬN CHUYỂN</h1>
+      <div>Báo giá ${esc(q.quote_no || q.id || '')} · ${esc(tenKhach(q.customer_id))}</div>
+      <table><tbody>
+        ${dong('Trọng lượng', so(Number(q.weight_kg || 0) / 1000) + ' Tấn')}
+        ${dong('Tiền tệ thanh toán', esc(tienTe))}
+        ${dong('Giá gốc', tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
+        ${dong('(EPL) Doanh thu dự kiến từ vận chuyển dựa trên thực tế', tien(cuocCuoi * heSo) + ' ' + esc(tienTe))}
+        ${dong('Giá gốc sau chiết khấu' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''), tien(donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
+        ${dong('Tiền tệ · ສະກຸນເງິນ', esc(tienTe))}
+        ${dong('(Có chiết khấu) Doanh thu dự kiến từ vận chuyển', tien(cuocCuoi) + ' ' + esc(tienTe))}
+        ${dong('Ngày nhập dữ liệu', new Date().toLocaleDateString('vi-VN'))}
+      </tbody></table>
       ${q.notes_customer ? `<h2>Ghi chú</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
-      <p style="margin-top:24px;color:#7b8796;font-size:11.5px">Bản in từ hệ thống EPL — số liệu
-        lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in. Ghi chú nội bộ không in.</p>`);
-    w.document.close();
-    setTimeout(() => { try { w.print(); } catch (e) { /* người dùng tự in */ } }, 400);
+      <p style="margin-top:24px;color:#7b8796;font-size:11.5px">Báo giá có hiệu lực đến ${esc(q.valid_to || '—')}.</p>`);
   }
 
   /* =========================================================================

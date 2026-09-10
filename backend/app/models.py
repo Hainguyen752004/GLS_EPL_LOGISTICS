@@ -942,6 +942,9 @@ class Quotation(Base):
     # được, không dùng được làm mốc gợi ý giá, và không đối soát lại được sau
     # một quý là mình mất khách vì giá hay vì thứ khác.
     competitor_price = Column(Numeric(18, 2))
+    # Chiết khấu cho khách (0..1). `unit_price` vẫn là giá CUỐI; cột này chỉ để
+    # suy ngược "giá gốc trước chiết khấu" trên phiếu gửi khách (v050).
+    discount_percent = Column(Float)
     sent_at = Column(DateTime)
     accepted_at = Column(DateTime)
     closed_at = Column(DateTime)

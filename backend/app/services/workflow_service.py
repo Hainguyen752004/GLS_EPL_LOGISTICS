@@ -548,9 +548,15 @@ def _ap_truong_bao_gia_moi(db, q, data, route=None):
         q.price_basis = "per_trip"
 
     for ten in ("unit_price", "min_qty_per_trip", "waiting_surcharge", "cargo_value",
-                "target_margin", "competitor_price"):
+                "target_margin", "competitor_price", "discount_percent"):
         if ten in data:
             setattr(q, ten, _money(data, ten, getattr(q, ten, 0) or 0))
+    if "discount_percent" in data:
+        # 0 nghia la KHONG chiet khau -> luu None de giao dien doc la "de trong", va chan >= 100%.
+        ck = float(q.discount_percent or 0)
+        if ck >= 1:
+            raise DomainError("INVALID_VALUE", "Chiết khấu phải nhỏ hơn 100% (ghi dạng 0..1).", 422)
+        q.discount_percent = ck or None
     if "fx_rate" in data:
         q.fx_rate = _money(data, "fx_rate", q.fx_rate or 1) or 1
     if "trips_per_month" in data:

@@ -1240,6 +1240,7 @@ def _bung_bao_gia(db, q, kem_chi_tiet=False, hom_nay=None):
         # thu" khi co so that, chu khong hien mot o "—" lam nguoi doc tuong da
         # tra ma khong ra.
         "competitor_price": _so(q.competitor_price) or None,
+        "discount_percent": _so(q.discount_percent) or None,
         "notes_customer": q.notes_customer,
         "notes_ops": q.notes_ops,
         "notes_internal": q.notes_internal,
