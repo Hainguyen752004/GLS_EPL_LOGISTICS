@@ -793,6 +793,12 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
         # "components" voi nam khoa co dinh.
         "terms": _sanitize_formula_terms(data.get("terms")),
     }
+    # ACC CODE DUNG CHUNG THEO KHOAN MUC: dong chua co ma thi ke thua tu Mapping tai khoan;
+    # dong co ma thi ghi vao bang chung va lan sang cong thuc cua loai xe khac (chi dong
+    # trong hoac dang theo ma chung cu). Xem services/acc_code_chung.py.
+    from services import acc_code_chung
+    _bang_chung = acc_code_chung.bang_chung(db)
+    acc_code_chung.ke_thua(payload["terms"], _bang_chung)
     if data.get("expressions") is not None:
         from services.cost_expression import evaluate_expressions
         expressions = data["expressions"]
@@ -824,6 +830,7 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
               'formula_expression': json.dumps(payload, ensure_ascii=False)}
     from sqlalchemy.exc import IntegrityError
     try:
+        acc_code_chung.ghi_nhan_va_lan(db, payload["terms"], formula_id, _bang_chung)
         if previous:
             # Compare the original document inside the UPDATE, not only in Python.
             changed = db.query(CostFormula).filter(

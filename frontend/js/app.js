@@ -14975,6 +14975,9 @@ window.saveCostFormula = async function () {
       if (typeof window.renderDynamicFormulaVehicleTypes === 'function') {
         window.renderDynamicFormulaVehicleTypes();
       }
+      // Acc code dung chung: may chu vua lan ma sang cong thuc cua loai xe khac, nap lai
+      // de mo loai xe ke tiep khong con thay o trong.
+      if (typeof loadCostFormulasFromBackend === 'function') loadCostFormulasFromBackend();
     }
     if (!response.ok) {
       showToast(result?.detail || 'Không lưu được công thức giá thành vào CSDL.', 'error');
@@ -18253,7 +18256,9 @@ window.renderCostFormulaEditor = function () {
 
     <p class="cf-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
       Bấm vào câu công thức để thêm, bớt hoặc đổi cách tính. Khi báo giá thật, hệ thống
-      lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.</p>
+      lấy <b>tổng km của tuyến đường</b> và <b>tải trọng thực tế</b> đã nhập.
+      <b>Acc code dùng chung theo khoản mục</b>: đặt một lần ở một loại xe, các loại xe khác có cùng
+      khoản mục tự kế thừa khi lưu, đổi ở đâu thì đổi chung; chỉ khoản mục mới phát sinh mới phải chọn Acc code.</p>
     </div>
 
     <aside class="cf-side" aria-label="Chuyến mẫu để xem trước">

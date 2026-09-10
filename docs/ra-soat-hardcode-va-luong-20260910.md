@@ -338,6 +338,20 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   theo đơn vị cước (gợi ý: giá thành / (1 − biên mục tiêu), hợp đồng, lần trước) — không do
   công thức sinh ra. Đề xuất chưa làm: bỏ dòng /kg khỏi bảng hoặc biến nó thành mốc gợi ý.
 
+### A24. Acc code DÙNG CHUNG theo khoản mục — **ĐÃ LÀM**
+- Chủ dự án (hai ảnh): gán 1091 cho "Chi phí xăng dầu /km" ở Container 20FT, sang Xe tải
+  thùng 10 tấn cùng khoản mục lại trống, phải chọn lại. Gốc: Acc code được lưu trên từng
+  dòng của từng công thức loại xe, không có chỗ dùng chung.
+- Cách giải: Acc code là thuộc tính của KHOẢN MỤC. Khoá chung = `key` cho năm khoản mục
+  có sẵn (`fuel/driver/toll/wh/rate`), = TÊN chuẩn hoá (bỏ dấu, thường) cho khoản mục tự
+  thêm. Bảng chung nằm ở `account_mappings` với tiền tố `khoan_muc::` (không thêm bảng).
+  Lúc lưu công thức: dòng trống kế thừa; dòng có mã ghi vào bảng chung và lan sang mọi
+  công thức khác (dòng trống hoặc đang theo mã chung cũ). Một khoản mục = một mã; đổi ở
+  đâu là đổi chung; chỉ khoản mục mới (tên khác) mới phải chọn. `services/acc_code_chung.py`,
+  nối ở `POST /api/cost-formulas`; màn công thức nạp lại sau khi lưu.
+- Đã chạy một lượt điền trên DB demo: gom mã đang có vào bảng chung rồi điền vào dòng
+  trống của các loại xe khác. Bài kiểm: `backend/tests/test_acc_code_dung_chung_theo_khoan_muc.py`.
+
 ---
 
 ## B. Luồng có thể đi sai
