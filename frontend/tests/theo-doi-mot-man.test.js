@@ -41,7 +41,7 @@ const css = html.replace(/\/\*[\s\S]*?\*\//g, ' ');
 {
   const ds = html.split(NL);
   const n0 = ds.findIndex(d => d.includes('id="view-tracking"'));
-  const n1 = ds.findIndex(d => d.includes('id="view-accounting"'));
+  const n1 = ds.findIndex(d => d.includes('id="view-lab-summary"'));
   assert.ok(n0 > 0 && n1 > n0, 'không khoanh được màn Theo dõi');
 
   let sau = 0;

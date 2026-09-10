@@ -100,26 +100,6 @@ assert.ok(html.includes('id="inc-reporter"'),
   assert.ok(!/data\.message \|\| 'Báo cáo sự cố thành công!'/.test(fn));
 }
 
-// --- 3. Kế toán: gọi API thất bại phải nói ra, và NULL không làm vỡ bảng --
-
-{
-  const fn = hamThan('async function loadAccountingData');
-  assert.ok(/} else {/.test(fn), 'phải có nhánh else cho cả hai lần gọi API');
-  assert.ok(/bao_khong_nap_duoc/.test(fn), 'phải có chỗ báo là chưa nạp được');
-  // Không được để bảng treo nguyên chuỗi "Đang tải...".
-  assert.ok(/Chưa nạp được/.test(fn));
-  // Tiền phải qua `|| 0`: một bản ghi NULL không được làm vỡ cả bảng.
-  assert.ok(!/inv\.total\.toLocaleString/.test(fn),
-    'inv.total có thể là NULL — phải qua || 0');
-  assert.ok(!/gl\.debit\.toLocaleString/.test(fn));
-  assert.ok(!/gl\.credit\.toLocaleString/.test(fn));
-  assert.ok(/Number\(gia_tri \|\| 0\)/.test(fn), 'phải có guard cho tiền');
-  // 401/403 phải nói là thiếu quyền, không nói chung là lỗi máy chủ.
-  assert.ok(/401/.test(fn) && /403/.test(fn));
-  // `innerHTML +=` trong vòng lặp parse lại toàn bộ chuỗi mỗi vòng.
-  assert.ok(!/innerHTML \+=/.test(fn), 'không được cộng dồn innerHTML trong vòng lặp');
-}
-
 // --- 4. Đồng hồ sức chứa: đọc số thật, thiếu thì nói thiếu --------------
 
 {

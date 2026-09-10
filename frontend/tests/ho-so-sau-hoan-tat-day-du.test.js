@@ -147,7 +147,6 @@ function than(neo, ket) {
   assert.ok(/configured_cost_lines/.test(t), 'phải hiện giá thành theo loại xe');
   assert.ok(/actual_cost_lines/.test(t), 'phải hiện chi phí thực tế');
   assert.ok(/customer_charge_adjustments/.test(t), 'phải hiện khoản khách trả thêm');
-  assert.ok(/data\.invoice/.test(t), 'phải hiện hóa đơn phải thu');
   assert.ok(/resource_release/.test(t), 'phải hiện việc giải phóng xe/tài xế');
 
   // Không có CSS thì các khối không có định dạng — hồ sơ thành một khối chữ.

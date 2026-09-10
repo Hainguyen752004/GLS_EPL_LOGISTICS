@@ -335,7 +335,7 @@ async function kiemKhiTrangSan() {
       'màn CRM vẫn còn nút đầu trang — bước Đơn hàng (SO) đã bỏ khỏi luồng');
 
     // Màn không khai nút thì phải TRỐNG, không giữ lại nút của màn trước.
-    w.switchView('accounting');
+    w.switchView('lab-summary');
     assert.strictEqual(d.getElementById('epl-subacts').children.length, 0,
       'nút của màn trước còn sót lại ở màn không khai nút');
   }
@@ -350,7 +350,8 @@ async function kiemKhiTrangSan() {
     w.switchView('dashboard');
     const sang2 = [...d.querySelectorAll('.epl-nb.epl-on')];
     assert.strictEqual(sang2.length, 1, 'Bảng điều khiển phải sáng mục "Hôm nay"');
-    assert.strictEqual(sang2[0].dataset.view, 'dashboard');
+    // Trang chủ (os-home) là trang đầu; trang tổng quan mở từ đó nên cùng nhóm "Hôm nay".
+    assert.strictEqual(sang2[0].dataset.view, 'os-home');
   }
 
   // 4e. Ô tìm: gõ không dấu vẫn khớp, và Enter thì đi tới màn.
@@ -388,7 +389,7 @@ async function kiemKhiTrangSan() {
 
   // 4f. Nút sơ đồ A–Z phải về Bảng điều khiển.
   {
-    w.switchView('accounting');
+    w.switchView('lab-summary');
     bam(d.getElementById('nut-so-do-az'));
     assert.strictEqual(d.getElementById('view-dashboard').style.display, 'block',
       'nút sơ đồ A–Z không về được Bảng điều khiển');

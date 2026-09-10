@@ -4,8 +4,6 @@ import json
 from decimal import Decimal
 
 from models import (
-    AccountingPeriod,
-    ARInvoice,
     AuditLog,
     Carrier,
     CostFormula,
@@ -15,7 +13,6 @@ from models import (
     DeliveryOrder,
     DeliveryOrderChargeAdjustment,
     DeliveryOrderCloseout,
-    DeliveryOrderDetail,
     DeliveryPODDocument,
     DeliveryPODRecord,
     Driver,
@@ -27,10 +24,7 @@ from models import (
     FreightChargeItem,
     FreightOrder,
     FreightOrderLegacyLink,
-    GLTransaction,
     IdempotencyRecord,
-    JournalBatch,
-    JournalLine,
     Location,
     ParkingEvent,
     ParkingLabel,
@@ -41,7 +35,6 @@ from models import (
     ResourceAssignment,
     Role,
     Route,
-    ShipmentCost,
     TransportEvent,
     TransportEventDocument,
     TransportTrip,
@@ -198,18 +191,12 @@ def _delete_seeded_workflow(db):
     closeout_ids = [row[0] for row in db.query(DeliveryOrderCloseout.id).filter(
         DeliveryOrderCloseout.do_id.in_(do_ids)
     ).all()] if do_ids else []
-    invoice_ids = [row[0] for row in db.query(ARInvoice.id).filter(
-        ARInvoice.do_id.in_(do_ids)
-    ).all()] if do_ids else []
     event_ids = [row[0] for row in db.query(TransportEvent.id).filter(
         TransportEvent.freight_order_id.in_(fo_ids)
     ).all()] if fo_ids else []
     cost_ids = [row[0] for row in db.query(FreightActualCost.id).filter(
         FreightActualCost.trip_id.in_(trip_ids)
     ).all()] if trip_ids else []
-    batch_ids = [row[0] for row in db.query(JournalBatch.id).filter(
-        JournalBatch.invoice_id.in_(invoice_ids)
-    ).all()] if invoice_ids else []
 
     if pod_ids:
         db.query(DeliveryPODDocument).filter(DeliveryPODDocument.pod_record_id.in_(pod_ids)).delete(synchronize_session=False)
@@ -217,12 +204,6 @@ def _delete_seeded_workflow(db):
         db.query(DeliveryOrderChargeAdjustment).filter(
             DeliveryOrderChargeAdjustment.closeout_id.in_(closeout_ids)
         ).delete(synchronize_session=False)
-    if batch_ids:
-        db.query(JournalLine).filter(JournalLine.batch_id.in_(batch_ids)).delete(synchronize_session=False)
-    if invoice_ids:
-        db.query(GLTransaction).filter(GLTransaction.invoice_id.in_(invoice_ids)).delete(synchronize_session=False)
-        db.query(JournalBatch).filter(JournalBatch.invoice_id.in_(invoice_ids)).delete(synchronize_session=False)
-        db.query(ARInvoice).filter(ARInvoice.id.in_(invoice_ids)).delete(synchronize_session=False)
     if event_ids:
         db.query(TransportEventDocument).filter(TransportEventDocument.event_id.in_(event_ids)).delete(synchronize_session=False)
         db.query(TransportEvent).filter(TransportEvent.id.in_(event_ids)).delete(synchronize_session=False)
@@ -261,7 +242,6 @@ def _delete_seeded_workflow(db):
         db.query(DeliveryOrderCloseout).filter(DeliveryOrderCloseout.do_id.in_(do_ids)).delete(synchronize_session=False)
         db.query(VehicleTracking).filter(VehicleTracking.do_id.in_(do_ids)).delete(synchronize_session=False)
         db.query(FreightOrderLegacyLink).filter(FreightOrderLegacyLink.delivery_order_id.in_(do_ids)).delete(synchronize_session=False)
-        db.query(ShipmentCost).filter(ShipmentCost.do_id.in_(do_ids)).delete(synchronize_session=False)
         db.query(AuditLog).filter(AuditLog.record_id.in_(do_ids)).delete(synchronize_session=False)
     if trip_ids:
         db.query(ResourceAssignment).filter(ResourceAssignment.trip_id.in_(trip_ids)).delete(synchronize_session=False)
@@ -283,16 +263,6 @@ def _merge_master_data(db):
     db.flush()
     db.merge(FinanceControlConfig(
         id="GLOBAL", functional_currency="VND", distance_variance_threshold=_money(10)
-    ))
-    # Hạch toán AR (và AP, settlement) đòi một kỳ kế toán đang mở bao trùm thời
-    # điểm ghi sổ. Bản demo phải có cấu hình tài chính hợp lệ, nếu không luồng
-    # lập hóa đơn sẽ dừng ở MISSING_OPEN_ACCOUNTING_PERIOD.
-    _year = dt.datetime.now(dt.timezone.utc).year
-    db.merge(AccountingPeriod(
-        id=f"DEMO-{_year}",
-        starts_at=dt.datetime(_year - 1, 1, 1),
-        ends_at=dt.datetime(_year + 1, 12, 31, 23, 59, 59),
-        status="open",
     ))
     db.merge(Carrier(
         id="DEMO-CARRIER-INTERNAL", name="Đội xe nội bộ EPL", status="active", is_internal=True

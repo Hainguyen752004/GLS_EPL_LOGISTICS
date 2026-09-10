@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError, TimeoutError
 
 from database import engine
 from migrations.runner import required_migration_head
-from migrations import v006_tms_execution_events, v007_tms_freight_settlement, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers
+from migrations import v006_tms_execution_events, v008_driver_vehicle_images, v009_delivery_pod_eta, v010_route_context_flow, v011_transport_trips, v012_vehicle_speed_profile, v015_trip_stop_recipient, v016_delivery_completion_closeout, v017_driver_shift_turnaround, v018_dispatch_crew, v019_driver_availability, v020_epl_expense_vouchers
 from runtime_state import runtime_state
 
 
@@ -21,9 +21,8 @@ REQUIRED_TABLES = frozenset({
     "carriers", "tenders", "tender_offers",
     "driver_qualifications", "warehouse_appointments", "resource_assignments",
     "transport_events", "transport_event_documents", "freight_order_legacy_links",
-    "currency_definitions", "currency_rate_history", "tax_codes", "finance_control_config",
+    "currency_definitions", "currency_rate_history", "finance_control_config",
     "freight_actual_costs", "freight_charge_items", "freight_cost_documents",
-    "ap_invoices", "ap_invoice_lines", "freight_settlements", "settlement_payments",
     "delivery_pod_records", "delivery_order_closeouts",
     "delivery_order_charge_adjustments", "delivery_pod_documents",
     "transport_trips", "trip_delivery_orders", "transport_trip_legs",
@@ -95,7 +94,6 @@ class DatabaseReadinessChecker:
                 return  # các validator dưới đây chỉ đọc được catalog của Postgres
             try:
                 v006_tms_execution_events.validate_postgresql(connection)
-                v007_tms_freight_settlement.validate_postgresql(connection)
                 v008_driver_vehicle_images.validate_postgresql(connection)
                 v009_delivery_pod_eta.validate_postgresql(connection)
                 v010_route_context_flow.validate_postgresql(connection)

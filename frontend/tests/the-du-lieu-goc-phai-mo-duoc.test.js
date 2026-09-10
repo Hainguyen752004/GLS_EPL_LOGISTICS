@@ -6,7 +6,7 @@
  * `#md-tab-formulas` thiếu một thẻ `</div>`. Bộ phân tích HTML tự vá cây theo
  * cách của nó, nên chín thẻ sau đó — `md-tab-veh-types`, `md-tab-vehicles`,
  * `md-tab-drivers`, `md-tab-currencies`, `md-tab-customers`,
- * `md-tab-tax-codes`, `md-tab-accounting-periods`, `md-tab-carriers`,
+ * `md-tab-carriers`,
  * `md-tab-account-mappings` — có CHA THẬT là `#md-tab-formulas` thay vì
  * `#master-data-core-panel`.
  *
@@ -49,11 +49,11 @@ try {
   process.exit(0);
 }
 
-/** Mười hai thẻ của màn Dữ liệu gốc, theo đúng thứ tự trên dải nút. */
+/** Mười thẻ của màn Dữ liệu gốc (Thuế và Kỳ kế toán đã xoá 10/09), theo đúng thứ tự trên dải nút. */
 const CAC_THE = [
   'md-tab-setup', 'md-tab-routes', 'md-tab-formulas', 'md-tab-veh-types',
   'md-tab-vehicles', 'md-tab-drivers', 'md-tab-currencies', 'md-tab-customers',
-  'md-tab-tax-codes', 'md-tab-accounting-periods', 'md-tab-carriers',
+  'md-tab-carriers',
   'md-tab-account-mappings',
 ];
 

@@ -352,6 +352,28 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
 - Đã chạy một lượt điền trên DB demo: gom mã đang có vào bảng chung rồi điền vào dòng
   trống của các loại xe khác. Bài kiểm: `backend/tests/test_acc_code_dung_chung_theo_khoan_muc.py`.
 
+### A25. XOÁ HẲN backend bốn module ẩn: Kế toán (AR/AP/sổ cái/thanh toán), Thuế, Kỳ kế toán, Shipment 360 — **ĐÃ LÀM**
+- Chủ dự án gật: "xoá thì xoá luôn backend". Migration `051_xoa_ke_toan_thue_ky_ke_toan` DROP 15 bảng
+  (ar_invoices, gl_transactions, chart_of_accounts, tax_codes, accounting_periods, journal_*, ap_*,
+  freight_settlements, settlement_payments + bốn bảng di sản rỗng delivery_order_details,
+  quotation_details, pod, shipment_costs). 8001 đã áp; health xanh.
+- Backend bỏ: routes/accounting_routes.py, schemas/invoice.py, services ar_invoice / tms_ap /
+  tms_settlement / tms_journal, seed_db.py, seed_full_demo.py; tms_finance_routes chỉ còn chi phí
+  phát sinh (/costs, /trips/{id}/actual-cost, items, documents, approve, reverse); finance_master_routes
+  chỉ còn account-mappings; tms_money không còn mã thuế (dòng phí = số lượng × đơn giá, thuế do bên
+  công nợ tính); dossier Shipment 360 bỏ khỏi operations_routes.
+- Thay đổi nghiệp vụ: hoàn tất DO KHÔNG lập hoá đơn AR nữa (bàn giao qua handover API); báo cáo
+  doanh thu vận tải đọc `delivery_order_closeouts.final_selling_price` (ngoại lệ `CLOSEOUT_MISSING`
+  thay `AR_NOT_POSTED`, cột `closeout_id` thay `invoice_no`); `/api/dashboard/stats` (nay ở
+  operations_routes) trả `revenue_ytd` = tổng giá bán cuối hồ sơ hoàn tất, thêm `completed_deliveries`,
+  bỏ `booked_revenue_so`/`recognized_revenue_ar`.
+- Frontend bỏ: màn `#view-accounting`, `#view-operations-360`, hai thẻ Thuế/Kỳ kế toán, modal thao
+  tác tài chính, ~1.300 dòng app.js (Finance cockpit, Shipment 360, dossier), ~900 dòng
+  tms-cockpit-utils.js, 12 khoá lang.json; thẻ Dữ liệu gốc đánh số lại 1–9. Bước 7 sơ đồ luồng =
+  "Hoàn tất & bàn giao công nợ".
+- Tài liệu `docs/API_REFERENCE_VI.md` và `DATABASE_SCHEMA_VI.md` sinh lại từ OpenAPI/models (script
+  sinh cũ đã xoá cùng đợt dọn script).
+
 ---
 
 ## B. Luồng có thể đi sai

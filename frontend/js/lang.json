@@ -484,11 +484,6 @@
     "vi": "Form 7: Hóa đơn khách hàng - Live DB",
     "la": "ແບບຟອມທີ 7: ໃບເກັບເງິນ (AR)"
   },
-  "th_invoice_no": {
-    "en": "Invoice No.",
-    "vi": "Mã Hóa Đơn",
-    "la": "ເລກທີໃບເກັບເງິນ"
-  },
   "th_inv_date": {
     "en": "Invoice Date",
     "vi": "Ngày Hóa Đơn",
@@ -1164,55 +1159,10 @@
     "vi": "Làm Mới Dữ Liệu",
     "la": "ຣີເຟຣຊຂໍ້ມູນ"
   },
-  "title_ar_invoices": {
-    "en": "AR Invoices (Account Receivable)",
-    "vi": "Hóa Đơn Khách Hàng (Phải Thu)",
-    "la": "ໃບເກັບເງິນລູກຄ້າ (ຕ້ອງຮັບ)"
-  },
-  "th_do_ref": {
-    "en": "DO Ref",
-    "vi": "Tham Chiếu DO",
-    "la": "ອ້າງອີງ DO"
-  },
-  "th_date": {
-    "en": "Date",
-    "vi": "Ngày",
-    "la": "ວັນທີ"
-  },
   "th_amount_vnd": {
     "en": "Amount (VND)",
     "vi": "Số tiền (VNĐ)",
     "la": "ຈຳນວນເງິນ (VNĐ)"
-  },
-  "msg_loading_invoices": {
-    "en": "Loading Invoices...",
-    "vi": "Đang tải hóa đơn...",
-    "la": "ກຳລັງໂຫຼດໃບເກັບເງິນ..."
-  },
-  "title_gl": {
-    "en": "General Ledger (GL)",
-    "vi": "Sổ Cái Kế Toán (GL)",
-    "la": "ບັນຊີແຍກປະເພດ (GL)"
-  },
-  "th_account": {
-    "en": "Account",
-    "vi": "Tài Khoản",
-    "la": "ບັນຊີ"
-  },
-  "th_debit": {
-    "en": "Debit",
-    "vi": "Nợ",
-    "la": "ໜີ້"
-  },
-  "th_credit": {
-    "en": "Credit",
-    "vi": "Có",
-    "la": "ມີ"
-  },
-  "msg_loading_gl": {
-    "en": "Loading GL...",
-    "vi": "Đang tải Sổ Cái...",
-    "la": "ກຳລັງໂຫຼດ GL..."
   },
   "form_dashboard_title": {
     "en": "P&L Dashboard & KPI Analytics",
@@ -4104,25 +4054,15 @@
     "en": "7. Customer Directory",
     "la": "7. ລາຍຊື່ລູກຄ້າ"
   },
-  "tab_md_taxes": {
-    "vi": "8. Thuế",
-    "en": "8. Tax Codes",
-    "la": "8. ອາກອນ"
-  },
-  "tab_md_periods": {
-    "vi": "9. Kỳ Kế Toán",
-    "en": "9. Accounting Periods",
-    "la": "9. ງວດບັນຊີ"
-  },
   "tab_md_carriers": {
-    "vi": "10. Carrier / Vendor",
-    "en": "10. Carriers / Vendors",
-    "la": "10. ຜູ້ໃຫ້ບໍລິການຂົນສົ່ງ"
+    "vi": "8. Carrier / Vendor",
+    "en": "8. Carriers / Vendors",
+    "la": "8. ຜູ້ໃຫ້ບໍລິການຂົນສົ່ງ"
   },
   "tab_md_mappings": {
-    "vi": "11. Mapping Tài Khoản",
-    "en": "11. Account Mappings",
-    "la": "11. ຜັງບັນຊີ Mapping"
+    "vi": "9. Mapping Tài Khoản",
+    "en": "9. Account Mappings",
+    "la": "9. ຜັງບັນຊີ Mapping"
   },
   "badge_4_models": {
     "vi": "4 Mẫu",

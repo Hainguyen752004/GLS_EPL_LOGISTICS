@@ -83,7 +83,7 @@ def test_legacy_pod_write_is_blocked_in_favor_of_atomic_completion(app_client, w
     models = importlib.import_module("models")
     with database.SessionLocal() as db:
         assert db.query(models.DeliveryPODRecord).count() == 0
-        assert db.query(models.POD).count() == 0
+
         assert db.get(models.DeliveryOrder, "DO-POD-LINEAGE").canonical_status == "in_transit"
         assert db.get(models.TransportTrip, "TRIP-POD-001").status == "in_transit"
 

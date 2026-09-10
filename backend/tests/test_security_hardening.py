@@ -90,8 +90,6 @@ UNAUTHENTICATED_WRITES = [
     ("post", "/api/routes"),
     ("delete", "/api/routes/RT-001"),
     ("post", "/api/currencies"),
-    ("post", "/api/master-data/tax-codes"),
-    ("post", "/api/master-data/accounting-periods"),
     ("put", "/api/master-data/account-mappings/AR_TRADE"),
     ("post", "/api/incidents"),
     ("delete", "/api/tms/carriers/CAR-001"),
@@ -114,8 +112,6 @@ def test_mutating_endpoints_require_authentication(raw_client, method, path):
 
 # Các endpoint đọc dữ liệu tài chính và PII đã vòng qua lớp che của /api/data/all.
 SENSITIVE_READS = [
-    "/api/invoices",
-    "/api/gl-transactions",
     "/api/dashboard/stats",
     "/api/customers",
     "/api/drivers",
@@ -513,14 +509,6 @@ def test_rate_limit_counts_per_principal(raw_client, monkeypatch):
 # --------------------------------------------------------------------------
 
 FINANCE_MASTER_WRITES = [
-    ("post", "/api/master-data/tax-codes"),
-    ("put", "/api/master-data/tax-codes/VAT10"),
-    ("post", "/api/master-data/tax-codes/VAT10/status"),
-    ("delete", "/api/master-data/tax-codes/VAT10"),
-    ("post", "/api/master-data/accounting-periods"),
-    ("put", "/api/master-data/accounting-periods/2026-08"),
-    ("post", "/api/master-data/accounting-periods/2026-08/status"),
-    ("delete", "/api/master-data/accounting-periods/2026-08"),
     ("post", "/api/master-data/account-mappings"),
     ("put", "/api/master-data/account-mappings/AR_TRADE"),
     ("post", "/api/master-data/account-mappings/AR_TRADE/status"),
@@ -568,7 +556,7 @@ def test_finance_master_router_carries_its_own_auth_dependency():
     paths = [route.path for route in module.router.routes]
     assert paths, "router phải có route"
     assert all(path.startswith("/api/master-data") for path in paths), paths
-    assert len(paths) == 12, f"phải có đúng 12 endpoint, đang có {len(paths)}"
+    assert len(paths) == 4, f"phải có đúng 4 endpoint mapping tài khoản (thuế + kỳ kế toán đã xoá 10/09), đang có {len(paths)}"
 
 
 def test_main_no_longer_registers_master_data_endpoints_inline():

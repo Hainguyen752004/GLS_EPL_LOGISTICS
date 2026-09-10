@@ -92,8 +92,6 @@ def test_demo_seed_builds_three_complete_workflow_scenarios(app_client):
         }
         pod_document = next(document for document in documents if document.mime_type == "application/pdf")
         assert pod_document.content.startswith(b"%PDF")
-        invoice = db.query(models.ARInvoice).filter_by(do_id=completed.id, is_active=True).one()
-        assert invoice.amount == Decimal("4670000")
 
         cost = db.query(models.FreightActualCost).filter_by(
             trip_id=completed_trip.id, is_active=True

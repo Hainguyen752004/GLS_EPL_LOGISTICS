@@ -20,7 +20,6 @@ from models import (
     FreightOrder,
     FreightOrderLegacyLink,
     Location,
-    POD,
     ResourceAssignment,
     TransportEvent,
     TransportEventDocument,
@@ -463,7 +462,6 @@ def test_linked_delivered_event_does_not_dual_write_legacy_pod(db):
         "delivered", 7, NOW + dt.timedelta(minutes=6), note="Giao đủ",
         documents=[{"document_type": "pod", "storage_url": "https://store/pod.jpg", "checksum": "sha256:pod"}],
     ), "key-pod-projection", "dispatcher")
-    assert db.get(POD, "DO-LEGACY-1") is None
 
 
 def test_projection_failure_rolls_back_whole_command(db, monkeypatch):
@@ -503,7 +501,6 @@ def test_delivered_projection_failure_rolls_back_document_tracking_and_pod(db, m
     assert db.scalar(select(func.count()).select_from(TransportEvent)) == baseline_events
     assert db.scalar(select(func.count()).select_from(TransportEventDocument)) == 0
     assert db.get(VehicleTracking, "DO-LEGACY-1").last_update == baseline_tracking_time
-    assert db.get(POD, "DO-LEGACY-1") is None
     assert db.scalar(select(func.count()).select_from(AuditLog)) == baseline_audits
     assert (db.get(FreightOrder, "FO-EXEC-1").status, db.get(FreightOrder, "FO-EXEC-1").version) == ("unloading", 7)
 

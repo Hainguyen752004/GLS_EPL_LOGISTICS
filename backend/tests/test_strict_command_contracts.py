@@ -46,12 +46,6 @@ import pytest
             },
             {"Idempotency-Key": "strict-cost"},
         ),
-        (
-            "post",
-            "/api/invoices/post",
-            {"do_id": "DO-X", "posted_at": "2026-08-20T10:00:00+07:00", "approved": True},
-            {},
-        ),
     ],
 )
 def test_commands_reject_unknown_fields(app_client, method, path, payload, headers):

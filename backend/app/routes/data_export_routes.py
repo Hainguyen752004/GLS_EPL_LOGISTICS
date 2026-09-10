@@ -45,13 +45,12 @@ if app_dir not in sys.path:
     sys.path.append(app_dir)
 
 from database import get_db
-from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
-    DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
-    GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
+from models import (    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
+    VehicleTracking, DeliveryPODRecord, 
+    AuditLog, Quotation, Incident, 
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
     TransportEvent, ResourceAssignment, TripDeliveryOrder, TransportTripLeg,
-    FreightActualCost, FreightChargeItem, APInvoice, FreightSettlement,
+    FreightActualCost, FreightChargeItem, 
     CurrencyDefinition, CurrencyRateHistory, Role, User, CostFormula, DeliveryOrderCloseout,
     DeliveryOrderChargeAdjustment, DeliveryPODDocument, VehicleMaintenanceRequest,
     FreightOrderLegacyLink,
@@ -60,9 +59,7 @@ from gateway.router import GatewayRouter
 from agents.query_agent import QueryAgent
 from agents.action_agent import ActionAgent
 from runtime_state import runtime_state
-from schemas.invoice import ARInvoicePostRequest
 from schemas.workflow import RouteCreateRequest
-from services.ar_invoice_service import post_ar_invoice, serialize_ar_invoice
 from services.errors import DomainError, raise_http
 from services.vehicle_maintenance_service import (
     create_request as create_vehicle_maintenance_request,
@@ -184,21 +181,6 @@ async def get_all_data(request: Request, db: Session = Depends(get_db)):
             }
             for d in db.query(DeliveryOrder).order_by(DeliveryOrder.id.desc()).limit(100).all()
         ],
-        "invoices": [
-            {
-                "id": inv.id,
-                "customer": inv.customer_id,
-                "customer_id": inv.customer_id,
-                "do_id": inv.do_id,
-                "invoice_date": inv.invoice_date,
-                "due_date": None,
-                "subtotal": round((inv.amount or 0), 2),
-                "vat_amount": round((inv.vat_amount or 0), 2),
-                "total": inv.total,
-                "status": inv.status
-            }
-            for inv in db.query(ARInvoice).order_by(ARInvoice.id.desc()).limit(100).all()
-        ],
         "incidents": [
             {
                 "id": f"INC-{inc.id}",
@@ -215,23 +197,6 @@ async def get_all_data(request: Request, db: Session = Depends(get_db)):
         "currencies": [
             {"code": c.code, "minor_units": c.minor_units, "status": "active" if c.is_active else "inactive"}
             for c in db.query(CurrencyDefinition).order_by(CurrencyDefinition.code.asc()).limit(100).all()
-        ],
-        "tax_codes": [
-            {
-                "id": t.id,
-                "code": t.code,
-                "rate": float(t.rate or 0),
-                "mode": t.mode,
-                "effective_from": t.effective_from,
-                "effective_to": t.effective_to,
-                "is_active": t.is_active,
-                "status": "active" if t.is_active else "inactive",
-            }
-            for t in db.query(TaxCode).order_by(TaxCode.code.asc()).limit(100).all()
-        ],
-        "accounting_periods": [
-            {"id": p.id, "starts_at": p.starts_at, "ends_at": p.ends_at, "status": p.status}
-            for p in db.query(AccountingPeriod).order_by(AccountingPeriod.starts_at.desc()).limit(100).all()
         ],
         "carriers": [
             {
@@ -325,32 +290,6 @@ async def get_all_data(request: Request, db: Session = Depends(get_db)):
                 "version": c.version,
             }
             for c in db.query(FreightActualCost).order_by(FreightActualCost.created_at.desc()).limit(100).all()
-        ],
-        "ap_invoices": [
-            {
-                "id": ap.id,
-                "cost_id": ap.cost_id,
-                "carrier_id": ap.carrier_id,
-                "vendor_invoice_no": ap.vendor_invoice_no,
-                "total_amount": float(ap.total_amount or 0),
-                "currency_code": ap.currency_code,
-                "status": ap.status,
-                "version": ap.version,
-            }
-            for ap in db.query(APInvoice).order_by(APInvoice.created_at.desc()).limit(100).all()
-        ],
-        "settlements": [
-            {
-                "id": s.id,
-                "ap_invoice_id": s.ap_invoice_id,
-                "approved_amount": float(s.approved_amount or 0),
-                "paid_amount": float(s.paid_amount or 0),
-                "remaining_amount": float(s.remaining_amount or 0),
-                "currency_code": s.currency_code,
-                "status": s.status,
-                "version": s.version,
-            }
-            for s in db.query(FreightSettlement).order_by(FreightSettlement.created_at.desc()).limit(100).all()
         ],
         "roles": [
             {

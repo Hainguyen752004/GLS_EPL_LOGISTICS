@@ -7,13 +7,9 @@ def test_data_all_feeds_tms_cockpit_sections(app_client):
     assert response.status_code == 200
     payload = response.json()
     for key in [
-        "tax_codes",
-        "accounting_periods",
         "carriers",
         "account_mappings",
         "freight_actual_costs",
-        "ap_invoices",
-        "settlements",
         "freight_orders",
         "tenders",
         "tender_offers",

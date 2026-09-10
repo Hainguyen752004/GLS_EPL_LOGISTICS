@@ -86,28 +86,6 @@ def bao_gia_hop_le(**ghi_de):
     return payload
 
 
-def seed_open_accounting_period(db, period_id="TEST-OPEN-PERIOD"):
-    """Tạo một kỳ kế toán đang mở, bao trùm rộng.
-
-    Hạch toán AR, AP và settlement đều đòi một kỳ kế toán đang mở bao trùm thời
-    điểm ghi sổ, nên mọi luồng test đi tới bước lập hóa đơn đều cần gọi hàm này.
-    Trước đây riêng đường AR không kiểm, nên client có thể ghi doanh thu lùi vào
-    một kỳ đã đóng.
-    """
-    import datetime as _dt
-    import importlib as _importlib
-
-    models = _importlib.import_module("models")
-    year = _dt.datetime.now(_dt.timezone.utc).year
-    db.merge(models.AccountingPeriod(
-        id=period_id,
-        starts_at=_dt.datetime(year - 2, 1, 1),
-        ends_at=_dt.datetime(year + 2, 12, 31, 23, 59, 59),
-        status="open",
-    ))
-    db.commit()
-
-
 @pytest.fixture(scope="session", autouse=True)
 def configure_api_test_token():
     """Cấp một token API cố định cho cả phiên test."""
@@ -809,13 +787,6 @@ def quet_du_kien(client, do_id):
 @pytest.fixture
 def workflow_builder(app_client):
     client, _, _ = app_client
-
-    # Bộ dựng này chạy luồng nghiệp vụ tới bước lập hóa đơn, và hạch toán đòi
-    # một kỳ kế toán đang mở, nên cấu hình tài chính hợp lệ thuộc về nó.
-    import importlib as _importlib
-    _database = _importlib.import_module("database")
-    with _database.SessionLocal() as _db:
-        seed_open_accounting_period(_db)
 
     class Builder:
         def customer(self, id="CUS-T1"):

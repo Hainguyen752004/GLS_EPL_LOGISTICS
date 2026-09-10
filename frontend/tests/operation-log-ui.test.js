@@ -79,16 +79,6 @@ check('legacy quotation and delivery forms authenticate their direct API mutatio
   }
 });
 
-check('finance commands update the same log after backend response', () => {
-  const finance = appSource.match(/async function executeFinanceCommand[\s\S]*?\n\}/);
-  assert.ok(finance, 'Missing executeFinanceCommand().');
-  assert.match(finance[0], /const\s+opId\s*=\s*recordOperationLog/, 'Finance must create a pending operation log.');
-  assert.match(finance[0], /status:\s*['"]pending['"]/, 'Finance must show pending state.');
-  assert.match(finance[0], /status:\s*['"]success['"]/, 'Finance must show success state.');
-  assert.match(finance[0], /status:\s*['"]error['"]/, 'Finance must show error state.');
-  assert.match(finance[0], /payload\.message/, 'Finance must surface server success message.');
-  assert.match(finance[0], /error\.message/, 'Finance must surface connection errors.');
-});
 
 if (failures.length) {
   throw new Error(`Operation log UI contract is not implemented:\n- ${failures.join('\n- ')}`);

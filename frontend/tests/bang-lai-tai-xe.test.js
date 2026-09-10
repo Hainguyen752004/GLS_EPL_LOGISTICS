@@ -71,8 +71,8 @@ assert.ok(html.includes("switchMasterDataTab('md-tab-drivers'"),
     assert.ok(/^5\./.test(lang.tab_md_licenses[t]),
       `tab_md_licenses (${t}) phải mang số 5 — đang là "${lang.tab_md_licenses[t]}"`);
   });
-  ['tab_md_currencies', 'tab_md_customers', 'tab_md_taxes',
-    'tab_md_periods', 'tab_md_carriers', 'tab_md_mappings'].forEach(k => {
+  ['tab_md_currencies', 'tab_md_customers',
+    'tab_md_carriers', 'tab_md_mappings'].forEach(k => {
     ['vi', 'en', 'la'].forEach(t => {
       const so = Number(String(lang[k][t]).split('.')[0]);
       assert.ok(so >= 6, `${k} (${t}) phải mang số từ 6 trở lên sau khi chèn thẻ 5 `

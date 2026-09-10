@@ -20,7 +20,6 @@ from models import (
     TransportTripLeg,
     TripDeliveryOrder,
 )
-from services.ar_invoice_service import post_ar_invoice, serialize_ar_invoice
 from services.errors import DomainError, conflict
 from services.workflow_service import release_resources
 from services import parking_list_service
@@ -69,7 +68,7 @@ def request_hash(payload, files):
     return digest.hexdigest()
 
 
-def _serialize(closeout, adjustments, pod_records, documents, invoice):
+def _serialize(closeout, adjustments, pod_records, documents):
     docs_by_pod = {}
     for document in documents:
         docs_by_pod.setdefault(document.pod_record_id, []).append({
@@ -111,7 +110,6 @@ def _serialize(closeout, adjustments, pod_records, documents, invoice):
             "cargo_condition": row.cargo_condition,
             "documents": docs_by_pod.get(row.id, []),
         } for row in pod_records],
-        "invoice": serialize_ar_invoice(invoice),
     }
 
 
@@ -369,11 +367,9 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
             assignment.status = "completed"
         release_resources(db, delivery)
 
-    invoice = post_ar_invoice(db, {
-        "do_id": do_id, "posted_at": completed_at, "amount_override": final_price,
-    }, actor)
-    db.flush()
-    response = _serialize(closeout, adjustments, pod_rows, document_rows, invoice)
+    # KHONG lap hoa don AR o day nua (module ke toan da xoa 10/09): hoa don la viec
+    # cua he cong no dong nghiep, doc tu GET /api/handover/delivery-orders/{do_id}.
+    response = _serialize(closeout, adjustments, pod_rows, document_rows)
     db.add(IdempotencyRecord(
         actor=actor, method="POST", path=path, idempotency_key=idempotency_key,
         operation="complete_delivery", request_hash=payload_hash,

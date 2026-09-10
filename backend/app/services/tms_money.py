@@ -4,7 +4,7 @@ import datetime as dt
 
 from sqlalchemy import func
 
-from models import CurrencyDefinition, CurrencyRateHistory, FinanceControlConfig, TaxCode
+from models import CurrencyDefinition, CurrencyRateHistory, FinanceControlConfig
 from services.errors import DomainError
 
 
@@ -48,38 +48,28 @@ def quantize_currency(db, amount, currency_code):
     return _quantize(amount, currency.minor_units)
 
 
-def calculate_charge_line(db, quantity, unit_price, tax_code, tax_mode):
+def calculate_charge_line(db, quantity, unit_price, tax_code=None, tax_mode=None):
+    """Mot dong phi = so luong x don gia, KHONG THUE.
+
+    Module thue (bang tax_codes) da xoa 10/09 cung module ke toan: thue do he cong
+    no cua dong nghiep tinh luc phat hanh hoa don. Giu chu ky cu (tax_code,
+    tax_mode) de ben goi khong phai doi, nhung ket qua luon la exempt / 0.
+    """
     quantity = _decimal(quantity, "Số lượng", 18, 4)
     unit_price = _decimal(unit_price, "Đơn giá", 24, 6)
-    tax = require_tax_code(db, tax_code)
-    rate = _decimal(tax.rate, "Thuế suất", 18, 8)
-    if tax_mode != tax.mode:
-        raise DomainError("TAX_MODE_MISMATCH", "Chế độ thuế không khớp với mã thuế trong Master Data.", 422)
     config = require_finance_config(db)
     currency = require_currency(db, config.functional_currency)
     minor_units = currency.minor_units
-    if quantity < 0 or rate < 0:
-        raise DomainError("INVALID_DECIMAL", "Số lượng và thuế suất không được âm.", 422)
+    if quantity < 0:
+        raise DomainError("INVALID_DECIMAL", "Số lượng không được âm.", 422)
     gross = _quantize(quantity * unit_price, minor_units)
-    if tax_mode == "exclusive":
-        net = gross
-        tax_amount = _quantize(net * rate, minor_units)
-        total = _quantize(net + tax_amount, minor_units)
-    elif tax_mode == "inclusive":
-        net = _quantize(gross / (Decimal(1) + rate), minor_units)
-        total = gross
-        tax_amount = _quantize(total - net, minor_units)
-    elif tax_mode == "exempt":
-        net, tax_amount, total = gross, _quantize(Decimal(0), minor_units), gross
-    else:
-        raise DomainError("INVALID_TAX_MODE", "Chế độ thuế phải là exclusive, inclusive hoặc exempt.", 422)
     return {
-        "net_amount": net,
-        "tax_amount": tax_amount,
-        "total_amount": total,
-        "tax_code": tax.code,
-        "tax_rate": rate,
-        "tax_mode": tax.mode,
+        "net_amount": gross,
+        "tax_amount": _quantize(Decimal(0), minor_units),
+        "total_amount": gross,
+        "tax_code": "EXEMPT",
+        "tax_rate": Decimal(0),
+        "tax_mode": "exempt",
     }
 
 
@@ -151,27 +141,6 @@ def require_currency(db, currency_code):
     if not currency:
         raise DomainError("MISSING_CURRENCY", f"Thiếu tiền tệ {code}. Vui lòng vào Master Data để cấu hình trước khi tiếp tục luồng.", 422, ["master-data/currencies"])
     return currency
-
-
-def require_tax_code(db, tax_code, effective_date=None):
-    code = str(tax_code or "").strip().upper()
-    on_date = effective_date or dt.date.today()
-    try:
-        if isinstance(on_date, str):
-            on_date = dt.datetime.fromisoformat(on_date).date()
-        elif isinstance(on_date, dt.datetime):
-            on_date = on_date.date()
-        elif not isinstance(on_date, dt.date):
-            raise TypeError
-    except (TypeError, ValueError):
-        raise DomainError("INVALID_EFFECTIVE_DATE", "Ngày hiệu lực mã thuế không hợp lệ.", 422) from None
-    query = db.query(TaxCode).filter(func.upper(TaxCode.code) == code, TaxCode.is_active.is_(True))
-    query = query.filter((TaxCode.effective_from.is_(None)) | (TaxCode.effective_from <= on_date))
-    query = query.filter((TaxCode.effective_to.is_(None)) | (TaxCode.effective_to >= on_date))
-    tax = query.order_by(TaxCode.effective_from.desc(), TaxCode.id.desc()).first()
-    if not tax:
-        raise DomainError("MISSING_TAX_CODE", f"Thiếu mã thuế {code}. Vui lòng vào Master Data để cấu hình trước khi tiếp tục luồng.", 422, ["master-data/tax-codes"])
-    return tax
 
 
 def require_finance_config(db):

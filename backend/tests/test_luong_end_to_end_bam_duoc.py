@@ -155,7 +155,6 @@ def test_di_het_vong_nghiep_vu_qua_duong_api(app_client):
     assert tien.get("final_selling_price") is not None, "chua chot gia cuoi"
 
     # --- 7. Hach toan.
-    assert client.get("/api/invoices").status_code == 200
 
 
 def test_bao_duong_theo_tuan_hien_tai_co_du_hai_trang_thai(app_client):

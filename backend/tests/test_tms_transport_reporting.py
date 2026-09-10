@@ -114,14 +114,13 @@ def _seed_reporting_case(app_client, *, invoice_status="posted"):
         ])
         db.commit()
         db.add_all([
-            models.ARInvoice(
-                id="INV-RPT-001", do_id="DO-RPT-001", customer_id="CUS-RPT",
-                canonical_status=invoice_status, status=invoice_status.title(), is_active=True,
-                invoice_date="2026-08-21", amount=Decimal("1600000"),
-                vat_pct=Decimal("0"), vat_amount=Decimal("0"),
-                total=Decimal("1600000"), currency_code="VND",
-                exchange_rate_snapshot=Decimal("1"),
-            ),
+            # Doanh thu ghi nhan = HO SO HOAN TAT (module hoa don AR da xoa 10/09).
+            *([models.DeliveryOrderCloseout(
+                id="CLO-RPT-001", do_id="DO-RPT-001", base_selling_price_snapshot=Decimal("1600000"),
+                base_price_source="quotation", base_price_source_id="QT-RPT-001", surcharge_total=Decimal("0"),
+                final_selling_price=Decimal("1600000"), currency_code="VND",
+                completed_at=dt.datetime(2026, 8, 21, 10, 0, tzinfo=dt.timezone.utc), completed_by="ops",
+            )] if invoice_status == "posted" else []),
             models.FreightActualCost(
                 id="COST-RPT-001", freight_order_id="FO-RPT-001",
                 trip_id="TRIP-RPT-001", carrier_id="EPL-INTERNAL",
@@ -160,7 +159,7 @@ def test_transport_revenue_report_has_epl_columns_charts_and_recognized_totals(a
     }
     row = payload["rows"][0]
     assert row["dispatch_order_no"] == "DO-RPT-001"
-    assert row["invoice_no"] == "INV-RPT-001"
+    assert row["closeout_id"] == "CLO-RPT-001"
     assert row["driver_name"] == "Anh Van Dac"
     assert row["tractor_plate"] == "LAO-341"
     assert row["cargo_type"] == "Quang sat"
@@ -173,7 +172,7 @@ def test_transport_revenue_report_has_epl_columns_charts_and_recognized_totals(a
     assert payload["charts"]["by_customer"][0]["label"] == "Bai Inve"
 
 
-def test_transport_revenue_excludes_unposted_ar_from_recognized_totals(app_client):
+def test_transport_revenue_bo_qua_do_chua_co_ho_so_hoan_tat(app_client):
     client, headers = _seed_reporting_case(app_client, invoice_status="draft")
 
     response = client.get("/api/tms/reporting/transport-revenue", headers=headers)
@@ -182,7 +181,7 @@ def test_transport_revenue_excludes_unposted_ar_from_recognized_totals(app_clien
     payload = response.json()["data"]
     assert payload["summary"]["recognized_revenue"] == 0.0
     assert payload["summary"]["trip_count"] == 0
-    assert payload["exceptions"][0]["code"] == "AR_NOT_POSTED"
+    assert payload["exceptions"][0]["code"] == "CLOSEOUT_MISSING"
 
 
 def test_expense_voucher_persists_header_and_cost_lines(app_client):

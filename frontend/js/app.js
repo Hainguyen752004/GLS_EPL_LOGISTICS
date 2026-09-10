@@ -682,7 +682,7 @@ const workflowStepsData = {
   4: { id: 'step-4', view: 'ops-planning', title: '4. Kế hoạch tuyến đường (Route)', role: 'Planner / Route Ops', db: 'routes', icon: 'fa-route' },
   5: { id: 'step-5', view: 'dispatch', title: '5. Lập lịch & điều phối (Dispatch)', role: 'Fleet Dispatcher', db: 'delivery_orders', icon: 'fa-truck-ramp-box' },
   6: { id: 'step-6', view: 'tracking', title: '6. Giám sát GPS & ký nhận POD', role: 'Driver & GPS Monitor', db: 'vehicle_tracking, pod', icon: 'fa-location-crosshairs' },
-  7: { id: 'step-7', view: 'accounting', title: '7. Hóa đơn & kế toán (Invoice & GL)', role: 'Chief Accountant', db: 'ar_invoices, gl_transactions', icon: 'fa-file-invoice-dollar' }
+  7: { id: 'step-7', view: 'delivery-completion', title: '7. Hoàn tất & bàn giao công nợ', role: 'Điều phối / Công nợ', db: 'delivery_order_closeouts', icon: 'fa-file-circle-check' },
 };
 
 window.updateActiveFlowStep = function (stepNum, showToastMsg = false) {
@@ -793,7 +793,6 @@ window.switchView = function (targetView, scrollToId) {
     overview: 'dashboard',
     crm: 'co-hoi',
     'sales-orders': 'crm-sales',
-    tender: 'accounting',
     // Không có màn hình nào tên "transportation". Trip Return Cockpit — nơi
     // người dùng chọn Trip — nằm trong #view-delivery-shipment. Trước đây hai
     // lời gọi switchView('transportation') trong luồng điều phối chỉ hiện
@@ -820,9 +819,7 @@ window.switchView = function (targetView, scrollToId) {
     'ops-planning': 4,
     'dispatch': 5,
     'delivery-completion': 6,
-    'tracking': 6,
-    'operations-360': 6,
-    'accounting': 7
+    'tracking': 6
   };
   if (viewToStep[targetView] !== undefined) {
     window.updateActiveFlowStep(viewToStep[targetView], false);
@@ -914,10 +911,6 @@ window.switchView = function (targetView, scrollToId) {
         if (typeof gpsTrackingMap !== 'undefined' && gpsTrackingMap) gpsTrackingMap.invalidateSize();
       }, 200);
     }
-  } else if (targetView === 'operations-360') {
-    if (typeof renderTmsCockpit === 'function') renderTmsCockpit();
-  } else if (targetView === 'accounting') {
-    if (typeof loadAccountingData === 'function') loadAccountingData();
   } else if (targetView === 'lab-summary') {
     if (typeof loadDashboard === 'function') loadDashboard();
     // Pane Chất lượng dịch vụ nằm trong workspace này, nên dựng sẵn để khi
@@ -1065,34 +1058,6 @@ window.switchDemoReadinessTab = function (key, button) {
   });
 };
 
-window.switchOperations360Tab = function (key, button) {
-  const selected = key || 'shipment';
-  document.querySelectorAll('[data-operations-360-panel]').forEach(panel => {
-    panel.style.display = panel.getAttribute('data-operations-360-panel') === selected ? 'grid' : 'none';
-  });
-  document.querySelectorAll('.operations-360-tab').forEach(tab => {
-    const active = tab === button || tab.id === `operations-360-tab-${selected}`;
-    tab.classList.toggle('active', active);
-    tab.style.border = active ? '2px solid #2563eb' : '1px solid #dbeafe';
-    tab.style.background = active ? '#eff6ff' : '#ffffff';
-    tab.style.color = active ? '#2563eb' : '#475569';
-  });
-};
-
-window.switchFinanceSubTab = function (key, button) {
-  const selected = key || 'overview';
-  document.querySelectorAll('[data-finance-sub-panel]').forEach(panel => {
-    panel.style.display = panel.getAttribute('data-finance-sub-panel') === selected ? 'grid' : 'none';
-  });
-  document.querySelectorAll('.finance-sub-tab').forEach(tab => {
-    const active = tab === button || tab.id === `finance-sub-tab-${selected}`;
-    tab.classList.toggle('active', active);
-    tab.style.border = active ? '2px solid #2563eb' : '1px solid #dbeafe';
-    tab.style.background = active ? '#eff6ff' : '#ffffff';
-    tab.style.color = active ? '#2563eb' : '#475569';
-  });
-};
-
 window.installEnterpriseModuleTabs = function () {
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
   const crmTitle = lang === 'la' ? 'CRM / ໃບສະເໜີລາຄາ / ໃບສັ່ງຂາຍ' : (lang === 'en' ? 'CRM / Quotations / Transport Orders' : 'CRM / Báo giá cước / Đơn hàng vận chuyển');
@@ -1116,25 +1081,6 @@ window.installEnterpriseModuleTabs = function () {
     //
     // Nay ba khoi hien cung luc, xep thanh mot bang hai cot bang CSS tren
     // `#view-tracking`. Xem `.tk-board-view` trong index.html.
-    {
-      sectionId: 'view-accounting',
-      tabsId: 'accounting-folder-tabs',
-      title: 'Finance cockpit',
-      groups: [
-        {
-          key: 'cockpit',
-          label: 'Actual Cost / AP / Settlement',
-          hint: lang === 'la' ? 'ສາຍງານການເງິນການຂົນສົ່ງຫຼັກ.' : (lang === 'en' ? 'Main transportation finance pipeline.' : 'Luồng tài chính vận tải chính.'),
-          selectors: ['#finance-cockpit-panel']
-        },
-        {
-          key: 'legacy',
-          label: 'AR / GL',
-          hint: lang === 'la' ? 'ໃບເກັບເງິນ AR ແລະ ບັນຊີແຍກປະເພດ.' : (lang === 'en' ? 'AR Invoices and General Ledger.' : 'Hóa đơn AR và sổ cái kế toán.'),
-          selectors: ['#fiori-invoice-tbody', '#fiori-gl-tbody']
-        }
-      ]
-    }
   ];
 
   configs.forEach(config => {
@@ -1237,8 +1183,6 @@ function closeModal(id) {
  */
 async function hydrateFinanceState() {
   const sources = [
-    { key: 'invoices', path: '/api/invoices' },
-    { key: 'gl_transactions', path: '/api/gl-transactions' },
     // Ba tập của Finance Cockpit. `/api/data/all` bôi trắng đúng ba tập này
     // (xem `routes/data_export_routes.py`), nên trước đây cả bốn thẻ số liệu
     // và ba danh sách bên dưới đều hiện rỗng VĨNH VIỄN — kể cả khi trong cơ
@@ -1246,8 +1190,6 @@ async function hydrateFinanceState() {
     // chú thích ngay dưới đây nói tới, chỉ khác là nó chỉ được vá cho
     // `invoices` mà bỏ sót ba tập tài chính vận tải.
     { key: 'freight_actual_costs', path: '/api/tms/finance/costs' },
-    { key: 'ap_invoices', path: '/api/tms/finance/ap-invoices' },
-    { key: 'settlements', path: '/api/tms/finance/settlements' },
   ];
   await Promise.all(sources.map(async ({ key, path }) => {
     try {
@@ -1331,12 +1273,6 @@ function renderAllTables() {
   } else if (activeViewId === 'view-tracking') {
     renderGpsEventTimeline();
     napVetGpsChoManTheoDoi();
-  } else if (activeViewId === 'view-operations-360') {
-    renderTmsCockpit();
-  } else if (activeViewId === 'view-accounting') {
-    renderFinanceCockpit();
-    renderFinanceActionWorkbench();
-    renderFinanceMasterDataTabs();
   } else if (activeViewId === 'view-lab-summary') {
     // Pane Chất lượng dịch vụ (SLA) thuộc workspace Phân tích.
     renderReportingDrilldown();
@@ -1445,81 +1381,6 @@ function renderMasterDataSetupWizard() {
 
 let tmsActiveTimelineDoId = '';
 let tmsActiveShipment360Id = '';
-let shipmentDossierState = null;
-let activeShipmentDossierTab = 'overview';
-let activeShipment360StepContext = { deliveryOrderId: '', stepKey: 'delivery_order' };
-
-function shipmentStateFor(deliveryOrderId) {
-  const scopedId = shipmentDossierState?.delivery_orders?.[0]?.id || '';
-  return String(scopedId) === String(deliveryOrderId || '') ? shipmentDossierState : (appState || {});
-}
-
-async function loadShipmentDossier(deliveryOrderId) {
-  if (!deliveryOrderId) return null;
-  try {
-    const response = await fetch(
-      `${API_BASE}/api/delivery-orders/${encodeURIComponent(deliveryOrderId)}/dossier`,
-      { headers: financeAuthHeaders() }
-    );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    shipmentDossierState = await response.json();
-    return shipmentDossierState;
-  } catch (error) {
-    shipmentDossierState = null;
-    console.warn('Không tải được hồ sơ chuyến theo DO.', error);
-    if (typeof showToast === 'function') showToast('Không tải được hồ sơ chuyến. Dữ liệu tổng sẽ không được dùng thay thế.');
-    return null;
-  }
-}
-
-function selectOrderTimeline(deliveryOrderId) {
-  tmsActiveTimelineDoId = deliveryOrderId || '';
-  tmsActiveShipment360Id = deliveryOrderId || tmsActiveShipment360Id;
-  renderTmsCockpit();
-}
-
-async function selectShipment360(deliveryOrderId) {
-  tmsActiveShipment360Id = deliveryOrderId || '';
-  tmsActiveTimelineDoId = deliveryOrderId || tmsActiveTimelineDoId;
-  await loadShipmentDossier(deliveryOrderId);
-  renderShipment360Detail();
-}
-
-function selectShipmentDossierFromSearch(value) {
-  const deliveryOrderId = String(value || '').trim();
-  if (!deliveryOrderId) return;
-  selectShipment360(deliveryOrderId);
-}
-
-function switchShipmentDossierTab(tabName, button) {
-  activeShipmentDossierTab = ['overview', 'journey', 'finance'].includes(tabName) ? tabName : 'overview';
-  document.querySelectorAll('[data-dossier-tab]').forEach(item => {
-    item.classList.toggle('active', item === button || item.dataset.dossierTab === activeShipmentDossierTab);
-  });
-  const visibility = {
-    overview: ['shipment-360-summary', 'shipment-360-alerts', 'shipment-360-timeline', 'shipment-360-actions'],
-    journey: ['shipment-360-events', 'shipment-360-documents'],
-    finance: ['shipment-360-finance', 'shipment-360-settlement-readiness']
-  };
-  const visibleIds = new Set(visibility[activeShipmentDossierTab]);
-  Object.values(visibility).flat().forEach(id => {
-    const element = document.getElementById(id);
-    if (element) element.style.display = visibleIds.has(id) ? 'grid' : 'none';
-  });
-  const primaryGrid = document.getElementById('shipment-dossier-primary-grid');
-  const secondaryGrid = document.getElementById('shipment-dossier-secondary-grid');
-  if (primaryGrid) {
-    primaryGrid.style.display = activeShipmentDossierTab === 'finance' ? 'none' : 'grid';
-    primaryGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
-  }
-  if (secondaryGrid) {
-    secondaryGrid.style.display = activeShipmentDossierTab === 'overview' || activeShipmentDossierTab === 'journey' || activeShipmentDossierTab === 'finance' ? 'grid' : 'none';
-    secondaryGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
-  }
-}
-
-window.selectShipmentDossierFromSearch = selectShipmentDossierFromSearch;
-window.switchShipmentDossierTab = switchShipmentDossierTab;
 /* Trạng thái của màn Theo dõi chuyến (Trip Return Cockpit).
    ------------------------------------------------------------------------
    Năm dòng này TỪNG BỊ XÓA MẤT — và đó là lỗi của tôi. Khi gỡ chín trình vẽ
@@ -3223,563 +3084,6 @@ window.switchDeliveryShipmentFlowTab = switchDeliveryWorkbenchView;
 window.openTripReturnGuidanceModal = openTripReturnGuidanceModal;
 window.closeTripReturnGuidanceModal = closeTripReturnGuidanceModal;
 
-function renderTmsCockpit() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const state = appState || {};
-  const checklistEl = document.getElementById('tms-master-setup-checklist');
-  const towerEl = document.getElementById('tms-control-tower');
-  const workQueueEl = document.getElementById('transport-control-workqueue');
-  const timelineEl = document.getElementById('tms-order-timeline');
-  const timelineSelectorEl = document.getElementById('tms-order-timeline-selector');
-  const timelineDetailEl = document.getElementById('tms-order-timeline-detail');
-  const financeEl = document.getElementById('tms-finance-worklist');
-
-  if (checklistEl) {
-    const items = window.TmsCockpit.buildMasterSetupChecklist(state);
-    checklistEl.innerHTML = items.map(item => `
-      <div onclick="switchView('master-data')" title="${item.message}" style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 10px; border-radius:10px; background:${item.status === 'done' ? '#ecfdf5' : '#fff7ed'}; border:1px solid ${item.status === 'done' ? '#bbf7d0' : '#fed7aa'}; cursor:pointer;">
-        <span style="font-weight:700; color:#0f172a;"><i class="fa-solid ${item.icon}" style="color:${item.status === 'done' ? '#059669' : '#f97316'}; margin-right:7px;"></i>${item.label}</span>
-        <span style="font-size:.74rem; font-weight:800; color:${item.status === 'done' ? '#047857' : '#c2410c'};">${item.status === 'done' ? 'Đã cấu hình' : 'Cần cấu hình'}</span>
-      </div>
-    `).join('');
-  }
-
-  if (towerEl) {
-    const tower = window.TmsCockpit.buildControlTower(state);
-    towerEl.innerHTML = Object.values(tower).map(card => `
-      <div onclick="switchView('${card.target === 'accounting' ? 'accounting' : card.target === 'tracking' ? 'tracking' : card.target === 'dispatch' ? 'dispatch' : 'master-data'}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:13px; cursor:pointer;">
-        <div style="font-size:.76rem; color:#64748b; font-weight:700; min-height:30px;">${card.label}</div>
-        <div style="font-size:1.65rem; color:#2563eb; font-weight:900; margin-top:4px;">${card.count}</div>
-      </div>
-    `).join('');
-  }
-  renderTransportationWorkQueue(workQueueEl);
-
-
-  if (timelineEl) {
-    const deliveryOrders = state.delivery_orders || [];
-    const activeDo = deliveryOrders.find(d => String(d.id) === String(tmsActiveTimelineDoId))
-      || deliveryOrders.find(d => ['In Transit', 'Approved', 'Planned', 'Delivered'].includes(d.status))
-      || deliveryOrders[0];
-    if (activeDo && !tmsActiveTimelineDoId) tmsActiveTimelineDoId = activeDo.id;
-    if (activeDo && !tmsActiveShipment360Id) tmsActiveShipment360Id = activeDo.id;
-    if (timelineSelectorEl) {
-      timelineSelectorEl.innerHTML = [
-        '<option value="">Chọn đơn giao hàng</option>',
-        ...deliveryOrders.map(order => `<option value="${order.id}" ${activeDo && String(order.id) === String(activeDo.id) ? 'selected' : ''}>${order.id} • ${statusLabel(order.status || order.canonical_status || '')}</option>`)
-      ].join('');
-    }
-    const steps = window.TmsCockpit.buildOrderTimeline(state, activeDo && activeDo.id);
-    timelineEl.innerHTML = `
-      <div style="font-size:.78rem; color:#64748b; margin-bottom:10px;">${activeDo ? `Đang xem: <strong style="color:#0f172a;">${activeDo.id}</strong>` : 'Chưa có DO để hiển thị timeline.'}</div>
-      <div style="display:grid; gap:7px;">
-        ${steps.map((step, index) => `
-          <div onclick="openTimelineStepContext('${activeDo?.id || ''}', '${step.key}')" title="${step.message}" style="display:flex; align-items:center; gap:9px; cursor:pointer; padding:8px 9px; border-radius:10px; background:${step.status === 'done' ? '#f0fdf4' : step.status === 'blocked' ? '#fff1f2' : '#f8fafc'}; border:1px solid ${step.status === 'done' ? '#bbf7d0' : step.status === 'blocked' ? '#fecaca' : '#e2e8f0'};">
-            <span style="width:24px; height:24px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:900; color:white; background:${step.status === 'done' ? '#059669' : step.status === 'blocked' ? '#dc2626' : '#cbd5e1'};">${index + 1}</span>
-            <span style="font-weight:800; color:${step.status === 'done' ? '#0f172a' : step.status === 'blocked' ? '#991b1b' : '#64748b'};">${step.label}</span>
-            <span style="font-size:.68rem; font-weight:900; color:${step.health === 'critical' ? '#dc2626' : step.health === 'warning' ? '#d97706' : '#059669'}; margin-left:auto;">${step.status === 'done' ? 'Xong' : step.status === 'blocked' ? 'Thiếu dữ liệu' : 'Chờ xử lý'}</span>
-            <i class="fa-solid fa-chevron-right" style="margin-left:auto; color:#94a3b8; font-size:.7rem;"></i>
-          </div>
-        `).join('')}
-      </div>
-    `;
-    if (timelineDetailEl && activeDo) {
-      renderOrderTimelineDetail(activeDo.id, steps.find(step => step.status === 'pending')?.key || steps[0]?.key || 'delivery_order');
-    }
-  }
-
-  renderShipment360Detail();
-
-  if (financeEl) {
-    const finance = window.TmsCockpit.buildFinanceWorklist(state);
-    financeEl.innerHTML = [
-      ['Actual Cost chờ xử lý', finance.actual_cost_pending],
-      ['AP chờ hạch toán', finance.ap_waiting_post],
-      ['Settlement còn mở', finance.settlement_open]
-    ].map(([label, count]) => `
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; padding:10px 11px; border-radius:10px; background:#f8fafc; border:1px solid #e2e8f0;">
-        <span style="color:#475569; font-weight:700;">${label}</span>
-        <span style="font-weight:900; color:${count ? '#dc2626' : '#059669'};">${count}</span>
-      </div>
-    `).join('');
-  }
-}
-function uiHealthEscape(value) {
-  return escapeHtml(value);
-}
-function openUiHealthTarget(target) {
-  const view = target && target.view || 'overview';
-  const tabId = target && target.tabId || '';
-  const targetId = tabId || (target && target.target) || '';
-  switchView(view, targetId);
-  setTimeout(() => {
-    if (tabId && typeof switchMasterDataTab === 'function') {
-      const tabButton = document.querySelector(`.md-tab-btn[onclick*="${tabId}"]`);
-      switchMasterDataTab(tabId, tabButton || null);
-    }
-    const scrollId = (target && target.target) || tabId || '';
-    const scrollTarget = scrollId ? document.getElementById(scrollId) : null;
-    if (scrollTarget) scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 140);
-}
-
-window.openUiHealthActionByKey = function (key) {
-  if (!window.TmsCockpit?.buildUiHealthChecklist) return;
-  const health = window.TmsCockpit.buildUiHealthChecklist(appState || {}, new Date());
-  const item = (health.items || []).find(candidate => String(candidate.key) === String(key));
-  if (!item || !item.target) return;
-  openUiHealthTarget(item.target);
-  if (typeof showToast === 'function') showToast(item.message || 'Đã mở màn hình liên quan.');
-};
-
-window.openCockpitNavigation = function (view, targetId) {
-  switchView(view || 'overview', targetId || '');
-  if (!targetId) return;
-  setTimeout(() => {
-    if (targetId.startsWith('md-tab-') && typeof switchMasterDataTab === 'function') {
-      const tabButton = document.querySelector(`.md-tab-btn[onclick*="${targetId}"]`);
-      switchMasterDataTab(targetId, tabButton || null);
-    }
-    const target = document.getElementById(targetId);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 120);
-};
-
-function renderTransportationWorkQueue(container) {
-  if (!container || !window.TmsCockpit?.buildTransportationWorkQueue) return;
-  const queue = window.TmsCockpit.buildTransportationWorkQueue(appState || {}, new Date());
-  const color = item => item.severity === 'critical' ? '#dc2626' : item.severity === 'warning' ? '#d97706' : '#2563eb';
-  container.innerHTML = `
-    <div style="border:1px solid #dbeafe; background:#ffffff; border-radius:14px; padding:13px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px;">
-        <div>
-          <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-tower-broadcast" style="color:#2563eb;"></i> Transportation Work Queue</div>
-          <div style="font-size:.78rem; color:#64748b; margin-top:3px;">Danh sách việc vận chuyển cần xử lý theo mức ưu tiên, giống control tower vận hành.</div>
-        </div>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:8px; margin-bottom:10px;">
-        ${queue.kpis.map(kpi => `
-          <div style="border:1px solid #e2e8f0; border-radius:11px; padding:8px 9px; background:#f8fafc;">
-            <div style="font-size:.7rem; color:#64748b; font-weight:900;">${kpi.label}</div>
-            <div style="font-size:1.15rem; color:#2563eb; font-weight:950;">${kpi.count}</div>
-          </div>
-        `).join('')}
-      </div>
-      <div style="display:grid; gap:8px;">
-        ${queue.items.length ? queue.items.map(item => `
-          <div onclick="openCockpitNavigation('${item.navigation.view}', '${item.navigation.target || ''}')" style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; border:1px solid ${item.severity === 'critical' ? '#fecaca' : item.severity === 'warning' ? '#fed7aa' : '#bfdbfe'}; background:${item.severity === 'critical' ? '#fff1f2' : item.severity === 'warning' ? '#fff7ed' : '#eff6ff'}; border-radius:12px; padding:10px; cursor:pointer;">
-            <div>
-              <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-circle-dot" style="color:${color(item)};"></i> ${escapeHtml(item.title)}</div>
-              <div style="font-size:.76rem; color:#475569; margin-top:3px;">${item.message}</div>
-              <div style="font-size:.7rem; color:#64748b; margin-top:4px; font-weight:900;">Chủ trách nhiệm: ${item.owner}</div>
-            </div>
-            <button class="fiori-btn" style="padding:8px 10px; white-space:nowrap;" onclick="event.stopPropagation(); openCockpitNavigation('${item.navigation.view}', '${item.navigation.target || ''}')">${item.action_label}</button>
-          </div>
-        `).join('') : `<div style="color:#047857; background:#ecfdf5; border:1px solid #bbf7d0; border-radius:12px; padding:11px; font-weight:850;">${queue.empty_message}</div>`}
-      </div>
-    </div>
-  `;
-}
-
-function renderOrderTimelineDeepActions(detail) {
-  const actions = Array.isArray(detail && detail.deep_actions) ? detail.deep_actions : [];
-  return actions.map(action => {
-    const color = action.severity === 'warning' ? '#d97706' : action.severity === 'critical' ? '#dc2626' : '#2563eb';
-    const icon = action.code === 'OPEN_GPS_POD'
-      ? 'fa-location-dot'
-      : action.code === 'OPEN_DISPATCH'
-        ? 'fa-truck-ramp-box'
-        : action.code === 'OPEN_FINANCE_COCKPIT'
-          ? 'fa-file-invoice-dollar'
-          : action.code === 'OPEN_DELIVERY_ORDER'
-            ? 'fa-boxes-packing'
-            : 'fa-arrow-up-right-from-square';
-    const view = action.navigation && action.navigation.view || 'overview';
-    return `
-      <button class="fiori-btn" onclick="executeShipment360StepAction('${detail.key || 'delivery_order'}', '${action.code || 'OPEN_TIMELINE_CONTEXT'}')" style="justify-content:flex-start; align-items:flex-start; gap:8px; text-align:left; background:#ffffff; border-color:${color};">
-        <i class="fa-solid ${icon}" style="color:${color}; margin-top:2px;"></i>
-        <span>
-          <strong style="display:block; color:${color};">${action.label}</strong>
-          <small style="display:block; color:#64748b; font-weight:700; line-height:1.35;">${action.description}</small>
-        </span>
-      </button>
-    `;
-  }).join('');
-}
-
-function renderShipment360Detail() {
-  if (!window.TmsCockpit?.buildShipment360Detail || typeof document === 'undefined') return;
-  const selector = document.getElementById('shipment-360-selector');
-  const summaryEl = document.getElementById('shipment-360-summary');
-  const alertsEl = document.getElementById('shipment-360-alerts');
-  const timelineEl = document.getElementById('shipment-360-timeline');
-  const eventsEl = document.getElementById('shipment-360-events');
-  const documentsEl = document.getElementById('shipment-360-documents');
-  const financeEl = document.getElementById('shipment-360-finance');
-  const actionsEl = document.getElementById('shipment-360-actions');
-  const readinessEl = document.getElementById('shipment-360-settlement-readiness');
-  if (!summaryEl || !alertsEl || !timelineEl || !eventsEl || !documentsEl || !financeEl || !actionsEl) return;
-
-  const deliveryOrders = (typeof eplDeliveryOrders !== 'undefined' && eplDeliveryOrders.length)
-    ? eplDeliveryOrders
-    : (appState.delivery_orders || []);
-  const activeId = tmsActiveShipment360Id || tmsActiveTimelineDoId || deliveryOrders[0]?.id || '';
-  if (activeId && !tmsActiveShipment360Id) tmsActiveShipment360Id = activeId;
-  if (selector) {
-    selector.innerHTML = [
-      '<option value="">Chọn DO/FO</option>',
-      ...deliveryOrders.map(order => `<option value="${order.id}" ${String(order.id) === String(activeId) ? 'selected' : ''}>${order.id} • ${statusLabel(order.status || order.canonical_status || '')}</option>`)
-    ].join('');
-  }
-  const searchInput = document.getElementById('shipment-dossier-search');
-  const searchOptions = document.getElementById('shipment-dossier-options');
-  if (searchInput && document.activeElement !== searchInput) searchInput.value = activeId;
-  if (searchOptions) {
-    searchOptions.innerHTML = deliveryOrders.map(order =>
-      `<option value="${order.id}">${statusLabel(order.status || order.canonical_status || '')}</option>`
-    ).join('');
-  }
-
-  const shipment = window.TmsCockpit.buildShipment360Detail(shipmentStateFor(activeId), activeId, new Date());
-  const summaryCards = [
-    ['Mã đơn/chuyến', shipment.id || 'Chưa chọn'],
-    ['Trạng thái', shipment.summary.status_label],
-    ['Khách hàng', shipment.summary.customer_id],
-    ['Tuyến', shipment.summary.route_label],
-    ['Xe', shipment.summary.vehicle_label],
-    ['Tài xế', shipment.summary.driver_label],
-    ['ETA đến', shipment.summary.eta_label],
-    ['ETA quay đầu/về', shipment.summary.return_eta_label],
-    ['Khoảng cách', shipment.summary.distance_label]
-  ];
-  summaryEl.innerHTML = summaryCards.map(([label, value]) => `
-    <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:10px;">
-      <div style="font-size:.72rem; color:#64748b; font-weight:900;">${label}</div>
-      <div style="font-size:.92rem; color:#0f172a; font-weight:950; margin-top:4px;">${value || '—'}</div>
-    </div>
-  `).join('');
-
-  alertsEl.innerHTML = shipment.alerts.length ? shipment.alerts.map(alert => `
-    <div style="border:1px solid ${alert.severity === 'critical' ? '#fecaca' : '#fed7aa'}; background:${alert.severity === 'critical' ? '#fff1f2' : '#fff7ed'}; color:#7f1d1d; border-radius:11px; padding:9px 10px; font-size:.8rem; font-weight:850;">
-      <i class="fa-solid ${alert.severity === 'critical' ? 'fa-triangle-exclamation' : 'fa-circle-info'}"></i> ${alert.message}
-    </div>
-  `).join('') : '<div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:11px; padding:9px 10px; font-weight:850;">Hồ sơ chuyến chưa có cảnh báo nổi bật.</div>';
-
-  timelineEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-timeline" style="color:#2563eb;"></i> Timeline A-Z</div>
-    ${shipment.timeline.map((step, index) => `
-      <div onclick="openTimelineStepContext('${shipment.id}', '${step.key}')" style="display:flex; align-items:center; gap:8px; border:1px solid ${step.status === 'done' ? '#bbf7d0' : step.status === 'blocked' ? '#fecaca' : '#e2e8f0'}; background:${step.status === 'done' ? '#f0fdf4' : step.status === 'blocked' ? '#fff1f2' : '#ffffff'}; border-radius:10px; padding:8px; cursor:pointer;">
-        <span style="width:22px; height:22px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; background:${step.status === 'done' ? '#059669' : '#cbd5e1'}; color:white; font-size:.7rem; font-weight:950;">${index + 1}</span>
-        <span style="font-weight:850; color:#0f172a;">${step.label}</span>
-      </div>
-    `).join('')}
-  `;
-
-  eventsEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-location-dot" style="color:#dc2626;"></i> GPS/Event mới nhất</div>
-    ${shipment.latest_event && shipment.latest_event.label ? `
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:11px; padding:10px;">
-        <div style="font-weight:950; color:#0f172a;">${shipment.latest_event.label}</div>
-        <div style="font-size:.76rem; color:#64748b; margin-top:4px;">${shipment.latest_event.time_label || 'Chưa có thời gian'} • ${shipment.latest_event.source_label || 'Không rõ nguồn'}</div>
-        <div style="font-size:.78rem; color:#475569; margin-top:5px;">${shipment.latest_event.location_text || 'Chưa có vị trí'}</div>
-        <button class="fiori-btn fiori-btn-secondary" onclick="openShipment360Action('OPEN_GPS_POD', '${shipment.id || ''}')" style="margin-top:8px; padding:5px 9px; font-size:.72rem;"><i class="fa-solid fa-location-crosshairs"></i> Mở GPS/POD</button>
-      </div>
-    ` : '<div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:11px; padding:10px; color:#92400e;">Chưa có event GPS/POD.</div>'}
-    ${(shipment.events || []).slice(-3).reverse().map(event => `<div style="font-size:.76rem; color:#475569; background:#ffffff; border:1px solid #f1f5f9; border-radius:9px; padding:7px;">${event.label} • ${event.time_label}</div>`).join('')}
-  `;
-
-  documentsEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-file-signature" style="color:#059669;"></i> POD/Chứng từ</div>
-    <div style="border:1px solid ${shipment.pod.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${shipment.pod.status === 'done' ? '#f0fdf4' : '#fff7ed'}; border-radius:11px; padding:10px; color:#0f172a; font-weight:850;">${shipment.pod.label}</div>
-    ${(shipment.pod.records || []).map(record => `
-      <div style="background:#ffffff; border:1px solid #dcfce7; border-radius:10px; padding:8px; font-size:.76rem;">
-        <div style="font-weight:950; color:#0f172a;">POD điểm ${record.stop_no || 1} • Xe ${record.vehicle_id || '—'}</div>
-        <div style="color:#475569; margin-top:3px;">Tài xế ${record.driver_id || '—'} • Người nhận ${record.receiver_name || record.receiver || '—'}</div>
-        <div style="color:#64748b; margin-top:3px;">${record.delivery_time || 'Chưa có giờ giao'} ${record.location_text ? `• ${record.location_text}` : ''}</div>
-      </div>
-    `).join('')}
-    <button class="fiori-btn ${shipment.pod.status === 'done' ? 'fiori-btn-secondary' : 'fiori-btn-primary'}" onclick="openShipment360Action('OPEN_GPS_POD', '${shipment.id || ''}')" style="padding:7px 10px; font-size:.76rem; justify-content:center;">
-      <i class="fa-solid ${shipment.pod.status === 'done' ? 'fa-eye' : 'fa-upload'}"></i> ${shipment.pod.status === 'done' ? 'Xem POD' : 'Bổ sung POD'}
-    </button>
-  `;
-
-  const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
-  financeEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color:#2563eb;"></i> Cost/AP/Settlement</div>
-    ${shipment.finance.items.length ? shipment.finance.items.map(item => `
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:9px;">
-        <div style="font-weight:900; color:#0f172a;">${item.type} ${item.id ? `• ${item.id}` : ''}</div>
-        <div style="font-size:.76rem; color:#64748b;">${item.status_label} • ${money(item.amount, item.currency_code)}</div>
-        <button class="fiori-btn fiori-btn-secondary" onclick="openFinanceDeepForm('${item.type === 'AP Invoice' ? 'ap_invoice' : item.type === 'Settlement' ? 'settlement' : 'actual_cost'}', '${item.id || ''}')" style="margin-top:8px; padding:5px 9px; font-size:.72rem;"><i class="fa-solid fa-up-right-from-square"></i> Mở hồ sơ tài chính</button>
-      </div>
-    `).join('') : '<div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:11px; padding:10px; color:#92400e;">Chưa có Actual Cost/AP liên quan.</div>'}
-  `;
-
-  const nextAction = shipment.actions.find(action => action.severity !== 'info') || shipment.actions[0];
-  actionsEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-bolt" style="color:#f97316;"></i> Hành động tiếp theo</div>
-    ${nextAction ? `
-      <button class="fiori-btn ${nextAction.severity === 'info' ? 'fiori-btn-secondary' : ''}" onclick="openShipment360Action('${nextAction.code}', '${shipment.id || ''}')" title="${nextAction.description}" style="justify-content:flex-start; padding:9px 10px;">
-        <i class="fa-solid fa-arrow-right"></i> ${nextAction.label}
-      </button>
-    ` : ''}
-  `;
-  renderShipmentSettlementReadiness(shipment.id, readinessEl);
-  switchShipmentDossierTab(activeShipmentDossierTab);
-}
-
-function renderShipmentSettlementReadiness(deliveryOrderId, container) {
-  const target = container || document.getElementById('shipment-360-settlement-readiness');
-  if (!target || !window.TmsCockpit?.buildShipmentSettlementReadiness) return;
-  const targetId = deliveryOrderId || tmsActiveShipment360Id || tmsActiveTimelineDoId;
-  const readiness = window.TmsCockpit.buildShipmentSettlementReadiness(shipmentStateFor(targetId), targetId, new Date());
-  const color = readiness.status === 'ready' ? '#059669' : readiness.status === 'warning' ? '#d97706' : '#dc2626';
-  target.innerHTML = `
-    <div style="border:1px solid ${readiness.status === 'ready' ? '#bbf7d0' : readiness.status === 'warning' ? '#fed7aa' : '#fecaca'}; background:${readiness.status === 'ready' ? '#f0fdf4' : readiness.status === 'warning' ? '#fff7ed' : '#fff1f2'}; border-radius:14px; padding:12px;">
-      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px;">
-        <div>
-          <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-flag-checkered" style="color:${color};"></i> Điều kiện chốt chuyến / Settlement Readiness</div>
-          <div style="font-size:.8rem; color:#475569; margin-top:3px;">${readiness.status_label}</div>
-        </div>
-        <span style="font-size:.72rem; font-weight:950; color:${color}; background:#ffffff; border:1px solid ${color}; border-radius:999px; padding:5px 9px;">${readiness.status.toUpperCase()}</span>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:8px; margin-bottom:10px;">
-        ${readiness.summary.map(item => `
-          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:8px;">
-            <div style="font-size:.7rem; color:#64748b; font-weight:900;">${item.label}</div>
-            <div style="font-size:.82rem; color:#0f172a; font-weight:950; margin-top:3px;">${item.value}</div>
-          </div>
-        `).join('')}
-      </div>
-      <div style="display:grid; gap:7px; margin-bottom:10px;">
-        ${readiness.checks.map(check => `
-          <div style="display:grid; grid-template-columns:150px 1fr; gap:8px; align-items:center; background:#ffffff; border:1px solid ${check.status === 'done' ? '#bbf7d0' : check.status === 'not_applicable' ? '#bfdbfe' : check.status === 'warning' ? '#fed7aa' : '#fecaca'}; border-radius:10px; padding:8px;">
-            <strong style="font-size:.78rem; color:${check.status === 'done' ? '#047857' : check.status === 'not_applicable' ? '#075fb3' : check.status === 'warning' ? '#9a3412' : '#b91c1c'};"><i class="fa-solid ${check.status === 'done' ? 'fa-check' : check.status === 'not_applicable' ? 'fa-minus' : 'fa-circle-exclamation'}"></i> ${check.label}</strong>
-            <span style="font-size:.76rem; color:#475569;">${check.message}</span>
-          </div>
-        `).join('')}
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        ${readiness.actions.map(action => `
-          <button class="fiori-btn ${action.code === 'OPEN_TIMELINE' ? 'fiori-btn-secondary' : ''}" onclick="openShipment360Action('${action.code}', '${readiness.id || ''}')" style="padding:7px 10px; font-weight:900;">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i> ${action.label}
-          </button>
-        `).join('')}
-      </div>
-    </div>
-  `;
-}
-
-function renderOrderTimelineDetail(deliveryOrderId, stepKey) {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const detailEl = document.getElementById('tms-order-timeline-detail');
-  if (!detailEl) return;
-  const detail = window.TmsCockpit.buildOrderTimelineDetail(shipmentStateFor(deliveryOrderId), deliveryOrderId, stepKey || 'delivery_order');
-  const fieldRows = Object.entries(detail.primary || {})
-    .filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
-    .slice(0, 6)
-    .map(([key, value]) => `<div style="display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #e2e8f0; padding:5px 0;"><span style="color:#64748b;">${key}</span><strong style="color:#0f172a;">${String(value)}</strong></div>`)
-    .join('');
-  detailEl.innerHTML = `
-    <div style="margin-top:12px; border:1px solid ${detail.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${detail.status === 'done' ? '#f0fdf4' : '#fff7ed'}; border-radius:12px; padding:12px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:8px;">
-        <strong style="color:#0f172a;"><i class="fa-solid ${detail.status === 'done' ? 'fa-circle-check' : 'fa-circle-info'}" style="color:${detail.status === 'done' ? '#059669' : '#f97316'};"></i> ${detail.title}</strong>
-        <button class="fiori-btn fiori-btn-secondary" onclick="switchView('${detail.navigation.view}')" style="padding:5px 10px; font-size:.75rem;">Mở màn liên quan</button>
-      </div>
-      <div style="font-size:.8rem; color:#475569; margin-bottom:8px;">${detail.message}</div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; margin-bottom:9px;">
-        ${renderOrderTimelineDeepActions(detail)}
-      </div>
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:9px; font-size:.76rem;">
-        ${fieldRows || '<div style="color:#64748b;">Chưa có dữ liệu chi tiết cho bước này.</div>'}
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;">
-        ${(detail.checklist || []).map(item => `
-          <span style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:5px 8px; background:${item.status === 'done' ? '#ecfdf5' : '#fff7ed'}; border:1px solid ${item.status === 'done' ? '#bbf7d0' : '#fed7aa'}; color:${item.status === 'done' ? '#047857' : '#9a3412'}; font-size:.7rem; font-weight:900;">
-            <i class="fa-solid ${item.status === 'done' ? 'fa-check' : 'fa-circle-exclamation'}"></i> ${item.label}
-          </span>
-        `).join('')}
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:9px; font-size:.74rem;">
-        <div style="background:#ffffff; border-radius:9px; padding:8px; text-align:center;"><strong>${detail.related.events.length}</strong><br><span style="color:#64748b;">Event</span></div>
-        <div style="background:#ffffff; border-radius:9px; padding:8px; text-align:center;"><strong>${detail.related.pod ? 'Có' : 'Chưa'}</strong><br><span style="color:#64748b;">POD</span></div>
-        <div style="background:#ffffff; border-radius:9px; padding:8px; text-align:center;"><strong>${detail.related.finance.length}</strong><br><span style="color:#64748b;">Finance</span></div>
-      </div>
-    </div>
-  `;
-}
-
-window.openOrderTimelineStep = function (deliveryOrderId, stepKey) {
-  renderOrderTimelineDetail(deliveryOrderId, stepKey);
-};
-
-function openTimelineBusinessForm(detail) {
-  const navigation = detail && detail.navigation || {};
-  const view = navigation.view || 'overview';
-  const entityId = navigation.entity_id || '';
-  const scrollTarget = detail.navigation.scroll_to || navigation.scroll_to || '';
-  switchView(view, scrollTarget);
-
-  setTimeout(() => {
-    if (!entityId) return;
-    if (detail.key === 'quotation' && typeof editOracleQT === 'function') {
-      editOracleQT(entityId);
-    } else if (detail.key === 'delivery_order' && typeof editFioriDO === 'function') {
-      editFioriDO(entityId);
-    }
-  }, 80);
-}
-
-function closeShipment360StepModal() {
-  const modal = document.getElementById('shipment-360-step-modal');
-  if (modal) modal.style.display = 'none';
-}
-
-function shipment360FieldRows(primary) {
-  return Object.entries(primary || {})
-    .filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
-    .slice(0, 8)
-    .map(([key, value]) => `
-      <div style="display:flex; justify-content:space-between; gap:10px; border-bottom:1px dashed #e2e8f0; padding:6px 0;">
-        <span style="color:#64748b; font-size:.76rem; font-weight:800;">${key}</span>
-        <strong style="color:#0f172a; font-size:.78rem; text-align:right;">${String(value)}</strong>
-      </div>
-    `).join('');
-}
-
-function renderShipment360StepModal(detail) {
-  const modal = document.getElementById('shipment-360-step-modal');
-  if (!modal || !detail) return;
-  const titleEl = document.getElementById('shipment-360-step-title');
-  const subtitleEl = document.getElementById('shipment-360-step-subtitle');
-  const statusEl = document.getElementById('shipment-360-step-status');
-  const fieldsEl = document.getElementById('shipment-360-step-fields');
-  const checklistEl = document.getElementById('shipment-360-step-checklist');
-  const relatedEl = document.getElementById('shipment-360-step-related');
-  const actionsEl = document.getElementById('shipment-360-step-actions');
-  const statusColor = detail.status === 'done' ? '#059669' : detail.health === 'critical' ? '#dc2626' : '#d97706';
-  const related = detail.related || {};
-  const relatedCards = [
-    ['Báo giá', related.quotation && related.quotation.id],
-    ['DO', related.delivery_order && related.delivery_order.id],
-    ['POD', related.pod ? 'Có POD' : 'Chưa POD'],
-    ['Event', Array.isArray(related.events) ? related.events.length : 0],
-    ['Finance', Array.isArray(related.finance) ? related.finance.length : 0]
-  ];
-  if (titleEl) titleEl.textContent = detail.title || 'Shipment 360°';
-  if (subtitleEl) subtitleEl.textContent = `DO/FO: ${activeShipment360StepContext.deliveryOrderId || 'chưa chọn'} • Bước: ${detail.key || '—'}`;
-  if (statusEl) {
-    statusEl.innerHTML = `
-      <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-        <div>
-          <div style="font-size:.78rem; color:#64748b; font-weight:900;">Trạng thái bước</div>
-          <div style="font-size:1rem; color:${statusColor}; font-weight:950; margin-top:3px;">${detail.status === 'done' ? 'Đã có dữ liệu' : 'Chưa hoàn tất / cần bổ sung'}</div>
-        </div>
-        <button class="fiori-btn" onclick="executeShipment360StepAction('${detail.key || 'delivery_order'}', 'OPEN_TIMELINE_CONTEXT')" style="background:#2563eb; color:#ffffff; border-color:#2563eb; padding:7px 11px; white-space:nowrap;">
-          <i class="fa-solid fa-up-right-from-square"></i> Mở đúng form
-        </button>
-      </div>
-      <div style="font-size:.82rem; color:#475569; margin-top:8px;">${detail.message || 'Kiểm tra dữ liệu bước này trước khi đi tiếp.'}</div>
-    `;
-  }
-  if (fieldsEl) fieldsEl.innerHTML = shipment360FieldRows(detail.primary) || '<div style="color:#64748b; font-size:.8rem;">Chưa có dữ liệu chính cho bước này. Hãy dùng nút hành động để cấu hình/bổ sung.</div>';
-  if (checklistEl) {
-    checklistEl.innerHTML = (detail.checklist || []).map(item => `
-      <span style="display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:6px 9px; background:${item.status === 'done' ? '#ecfdf5' : '#fff7ed'}; border:1px solid ${item.status === 'done' ? '#bbf7d0' : '#fed7aa'}; color:${item.status === 'done' ? '#047857' : '#9a3412'}; font-size:.72rem; font-weight:900;">
-        <i class="fa-solid ${item.status === 'done' ? 'fa-check' : 'fa-circle-exclamation'}"></i> ${item.label}
-      </span>
-    `).join('');
-  }
-  if (relatedEl) {
-    relatedEl.innerHTML = relatedCards.map(([label, value]) => `
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:9px;">
-        <div style="font-size:.7rem; color:#64748b; font-weight:900;">${label}</div>
-        <div style="font-size:.9rem; color:#0f172a; font-weight:950; margin-top:3px;">${value || '—'}</div>
-      </div>
-    `).join('');
-  }
-  if (actionsEl) actionsEl.innerHTML = renderOrderTimelineDeepActions(detail) || '<div style="color:#64748b;">Chưa có hành động gợi ý.</div>';
-  modal.style.display = 'flex';
-}
-
-function openModalFromTimelineStep(deliveryOrderId, stepKey) {
-  const detail = window.TmsCockpit?.buildOrderTimelineDetail
-    ? window.TmsCockpit.buildOrderTimelineDetail(shipmentStateFor(deliveryOrderId), deliveryOrderId, stepKey || 'delivery_order')
-    : null;
-  if (!detail) return;
-  activeShipment360StepContext = { deliveryOrderId: deliveryOrderId || '', stepKey: stepKey || 'delivery_order' };
-  renderShipment360StepModal(detail);
-}
-
-function executeShipment360StepAction(stepKey, actionCode) {
-  const deliveryOrderId = activeShipment360StepContext.deliveryOrderId || tmsActiveShipment360Id || tmsActiveTimelineDoId || '';
-  const detail = window.TmsCockpit?.buildOrderTimelineDetail
-    ? window.TmsCockpit.buildOrderTimelineDetail(shipmentStateFor(deliveryOrderId), deliveryOrderId, stepKey || activeShipment360StepContext.stepKey || 'delivery_order')
-    : null;
-  if (!detail) {
-    showToast('Chưa có dữ liệu Shipment 360 để mở bước này.');
-    return;
-  }
-  if (actionCode === 'OPEN_GPS_POD') {
-    switchView('tracking');
-  } else if (actionCode === 'OPEN_DISPATCH') {
-    switchView('dispatch');
-  } else if (actionCode === 'OPEN_FINANCE_COCKPIT') {
-    switchView('accounting');
-  } else if (actionCode === 'OPEN_DELIVERY_ORDER') {
-    switchView('ops-planning', 'fiori-do-list');
-  } else {
-    openTimelineBusinessForm(detail);
-  }
-  closeShipment360StepModal();
-  setTimeout(() => {
-    if (detail.navigation.view === 'tracking' && typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
-    if (detail.navigation.view === 'dispatch' && typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
-    if (detail.navigation.view === 'accounting' && typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
-  }, 0);
-}
-
-window.openTimelineStepContext = function (deliveryOrderId, stepKey) {
-  if (deliveryOrderId) {
-    tmsActiveTimelineDoId = deliveryOrderId;
-    tmsActiveShipment360Id = deliveryOrderId;
-  }
-  renderOrderTimelineDetail(deliveryOrderId, stepKey);
-  openModalFromTimelineStep(deliveryOrderId, stepKey || 'delivery_order');
-  const detail = window.TmsCockpit?.buildOrderTimelineDetail
-    ? window.TmsCockpit.buildOrderTimelineDetail(shipmentStateFor(deliveryOrderId), deliveryOrderId, stepKey || 'delivery_order')
-    : null;
-  const view = detail?.navigation?.view || ({
-    quotation: 'crm-sales',
-    delivery_order: 'ops-planning',
-    dispatch: 'dispatch',
-    gps: 'tracking',
-    pod: 'tracking',
-    cost: 'accounting',
-    ap: 'accounting',
-    settlement: 'accounting'
-  })[stepKey] || 'overview';
-  setTimeout(() => {
-    if (view === 'tracking') {
-      const input = document.getElementById('tracking-do-search');
-      if (input && deliveryOrderId) input.value = deliveryOrderId;
-      if (typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
-    }
-    if (view === 'dispatch' && deliveryOrderId) {
-      selectedDispatchCalendarOrderId = deliveryOrderId;
-      if (typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
-    }
-    if (view === 'accounting') {
-      renderFinanceCockpit();
-    }
-  }, 0);
-};
-
-window.closeShipment360StepModal = closeShipment360StepModal;
-window.renderShipment360StepModal = renderShipment360StepModal;
-window.openModalFromTimelineStep = openModalFromTimelineStep;
-window.executeShipment360StepAction = executeShipment360StepAction;
-
 function renderRolePermissionBoard() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
   const kpisEl = document.getElementById('role-permission-kpis');
@@ -4140,237 +3444,6 @@ function apSoLieuMayChuVaoTheKpi(kpis) {
   return kpis;
 }
 
-function renderFinanceCockpit() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const kpisEl = document.getElementById('finance-cockpit-kpis');
-  const costsEl = document.getElementById('finance-cockpit-costs');
-  const apEl = document.getElementById('finance-cockpit-ap');
-  const settlementsEl = document.getElementById('finance-cockpit-settlements');
-  if (!kpisEl || !costsEl || !apEl || !settlementsEl) return;
-
-  // Lần đầu vào màn thì gói của máy chủ chưa có; nạp rồi vẽ lại đúng một lần.
-  if (!soLieuTaiChinhMayChu && !dangNapSoLieuTaiChinh) {
-    napSoLieuTaiChinhTuMayChu().then(goi => { if (goi) renderFinanceCockpit(); });
-  }
-
-  const cockpit = window.TmsCockpit.buildFinanceCockpitSummary(appState || {});
-  apSoLieuMayChuVaoTheKpi(cockpit.kpis);
-  const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
-  kpisEl.innerHTML = Object.values(cockpit.kpis).map(kpi => `
-    <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:14px; padding:14px; box-shadow:0 4px 12px rgba(15,23,42,0.04);">
-      <div style="font-size:.78rem; color:#64748b; font-weight:800; text-transform:uppercase;">${kpi.label}</div>
-      <div style="font-size:1.55rem; font-weight:950; color:#2563eb; margin-top:6px;">${kpi.amount !== undefined ? money(kpi.amount, kpi.currency) : kpi.count}</div>
-      ${kpi.note ? `<div style="font-size:.7rem; color:#94a3b8; font-weight:700; margin-top:4px;">${escapeHtml(kpi.note)}</div>` : ''}
-    </div>
-  `).join('');
-
-  const renderRows = (rows, emptyText, kind) => rows.length ? rows.map(row => `
-    <div style="border:1px solid #e2e8f0; border-radius:12px; padding:11px 12px; background:#f8fafc; display:grid; gap:5px;">
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-        <strong style="color:#0f172a;">${escapeHtml(row.title)}</strong>
-        <span style="font-size:.72rem; font-weight:900; color:#0369a1; background:#e0f2fe; border-radius:999px; padding:4px 8px;">${row.status_label}</span>
-      </div>
-      <div style="font-size:.78rem; color:#64748b;">${row.subtitle}</div>
-      <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
-        <div style="font-size:.9rem; color:#15803d; font-weight:900;">${money(row.amount, row.currency)}</div>
-        <button class="fiori-btn fiori-btn-secondary" onclick="openFinanceDeepForm('${escapeJsAttr(kind)}', '${escapeJsAttr(row.id || row.title || '')}')" style="padding:5px 9px; font-size:.72rem;"><i class="fa-solid fa-up-right-from-square"></i> Mở hồ sơ</button>
-      </div>
-    </div>
-  `).join('') : `
-    <div style="border:1px dashed #cbd5e1; border-radius:12px; padding:16px; color:#64748b; text-align:center; background:#ffffff;">${emptyText}</div>
-  `;
-
-  costsEl.innerHTML = renderRows(cockpit.costs, 'Không có Actual Cost đang chờ xử lý.', 'actual_cost');
-  apEl.innerHTML = renderRows(cockpit.ap_invoices, 'Không có AP Invoice đang chờ hạch toán.', 'ap_invoice');
-  settlementsEl.innerHTML = renderRows(cockpit.settlements, 'Không có settlement đang mở.', 'settlement');
-  renderFinanceProcessCockpit();
-  renderFinanceCloseoutWorkbench();
-  renderFinanceConfigHealth();
-  renderFinanceRecordDetail();
-}
-
-let selectedFinanceDetailKey = '';
-let financeCommandCounter = 0;
-let pendingFinanceAction = null;
-
-function renderFinanceProcessCockpit() {
-  if (!window.TmsCockpit || !window.TmsCockpit.buildFinanceProcessCockpit || typeof document === 'undefined') return;
-  const flowEl = document.getElementById('finance-process-flow');
-  const lanesEl = document.getElementById('finance-process-lanes');
-  const blockersEl = document.getElementById('finance-process-blockers');
-  if (!flowEl || !lanesEl || !blockersEl) return;
-  const process = window.TmsCockpit.buildFinanceProcessCockpit(appState || {});
-  flowEl.innerHTML = process.flow.map((step, index) => `
-    <div style="display:flex; align-items:center; gap:7px;">
-      <div style="border:1px solid ${step.status === 'active' ? '#93c5fd' : '#e2e8f0'}; background:${step.status === 'active' ? '#eff6ff' : '#ffffff'}; color:${step.status === 'active' ? '#2563eb' : '#64748b'}; border-radius:999px; padding:7px 10px; font-size:.78rem; font-weight:950;">
-        ${step.order}. ${step.label} <span style="margin-left:4px;">${step.count}</span>
-      </div>
-      ${index < process.flow.length - 1 ? '<i class="fa-solid fa-arrow-right" style="color:#94a3b8; font-size:.75rem;"></i>' : ''}
-    </div>
-  `).join('');
-  lanesEl.innerHTML = process.lanes.map(lane => `
-    <div style="border:1px solid #dbeafe; border-radius:13px; background:#ffffff; padding:11px; display:grid; gap:8px;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
-        <div>
-          <strong style="color:#0f172a;">${lane.label}</strong>
-          <div style="font-size:.73rem; color:#64748b; margin-top:3px;">${lane.description}</div>
-        </div>
-        <span style="font-size:.72rem; font-weight:950; color:#0369a1; background:#e0f2fe; border-radius:999px; padding:4px 8px;">${lane.count}</span>
-      </div>
-      <div style="display:grid; gap:7px;">
-        ${lane.cards.length ? lane.cards.map(card => {
-    const onClick = card.kind === 'payment' ? "switchView('accounting')" : `selectFinanceWorkItem('${card.detail_key}')`;
-    return `
-          <button onclick="${onClick}" style="text-align:left; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; padding:8px; cursor:pointer;">
-            <div style="display:flex; justify-content:space-between; gap:6px;"><strong style="color:#0f172a;">${card.title}</strong><span style="font-size:.68rem; font-weight:900; color:#64748b;">${card.status_label}</span></div>
-            <div style="font-size:.72rem; color:#64748b; margin-top:3px;">${card.subtitle}</div>
-            <div style="font-size:.76rem; color:#15803d; font-weight:950; margin-top:3px;">${card.amount_label}</div>
-          </button>
-        `;
-  }).join('') : `<div style="border:1px dashed #cbd5e1; border-radius:10px; padding:10px; color:#64748b; text-align:center; font-size:.78rem;">Chưa có hồ sơ ở bước này.</div>`}
-      </div>
-    </div>
-  `).join('');
-  blockersEl.innerHTML = process.blockers.length ? process.blockers.map(blocker => `
-    <button onclick="openCockpitNavigation('${blocker.navigation.view}', '${blocker.navigation.target}')" style="text-align:left; border:1px solid #fed7aa; background:#fff7ed; color:#92400e; border-radius:10px; padding:9px 11px; cursor:pointer; font-weight:850;">
-      <i class="fa-solid fa-triangle-exclamation"></i> ${blocker.message}
-    </button>
-  `).join('') : `
-    <div style="border:1px solid #bbf7d0; background:#ecfdf5; color:#047857; border-radius:10px; padding:9px 11px; font-weight:850;">
-      <i class="fa-solid fa-circle-check"></i> Cấu hình Finance đủ để chạy Actual Cost → AP → Settlement/Payment.
-    </div>
-  `;
-}
-
-function renderFinanceCloseoutWorkbench() {
-  if (!window.TmsCockpit?.buildFinanceCloseoutWorkbench || typeof document === 'undefined') return;
-  const kpisEl = document.getElementById('finance-closeout-kpis');
-  const listEl = document.getElementById('finance-closeout-list');
-  const actionsEl = document.getElementById('finance-closeout-actions');
-  if (!kpisEl || !listEl || !actionsEl) return;
-  const workbench = window.TmsCockpit.buildFinanceCloseoutWorkbench(appState || {});
-  const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
-  kpisEl.innerHTML = Object.values(workbench.kpis).map(kpi => `
-    <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:10px;">
-      <div style="font-size:.72rem; color:#64748b; font-weight:900;">${kpi.label}</div>
-      <div style="font-size:1.25rem; color:#2563eb; font-weight:950; margin-top:4px;">${kpi.count}</div>
-    </div>
-  `).join('');
-  listEl.innerHTML = workbench.items.length ? workbench.items.slice(0, 8).map(item => {
-    const color = item.readiness === 'ready' ? '#059669' : item.readiness === 'warning' ? '#d97706' : '#dc2626';
-    return `
-      <div style="display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; background:#ffffff; border:1px solid ${color}; border-radius:12px; padding:10px;">
-        <div>
-          <div style="font-weight:950; color:#0f172a;">${item.trace_label}</div>
-          <div style="font-size:.78rem; color:#64748b; margin-top:4px;">${item.status_label} • ${money(item.amount, item.currency_code)}</div>
-        </div>
-        <button class="fiori-btn" onclick="openFinanceCloseoutAction('${item.next_action.code}', '${item.next_action.detail_key}')" style="background:#ffffff; border-color:${color}; color:${color}; font-weight:950; white-space:nowrap;">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> ${item.next_action.label}
-        </button>
-      </div>
-    `;
-  }).join('') : '<div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:12px; padding:14px; color:#64748b; text-align:center;">Chưa có Actual Cost để closeout.</div>';
-  actionsEl.innerHTML = (workbench.guidance || []).map(text => `
-    <div style="background:#ffffff; border:1px dashed #bfdbfe; border-radius:10px; padding:8px 10px; color:#475569; font-size:.78rem; font-weight:800;">
-      <i class="fa-solid fa-circle-info" style="color:#2563eb;"></i> ${text}
-    </div>
-  `).join('');
-}
-
-function openFinanceCloseoutAction(actionCode, detailKey) {
-  selectedFinanceDetailKey = detailKey || selectedFinanceDetailKey;
-  switchView('accounting');
-  renderFinanceRecordDetail();
-  setTimeout(() => {
-    document.getElementById('finance-detail-summary')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast(actionCode === 'CLOSEOUT_DONE'
-      ? 'Hồ sơ này đã đủ điều kiện chốt/đối soát.'
-      : 'Đã mở hồ sơ tài chính đúng bước. Kiểm tra rồi bấm action trong hồ sơ để ghi nhận.');
-  }, 0);
-}
-
-function renderFinanceActionWorkbench() {
-  if (!window.TmsCockpit || typeof document === 'undefined') return;
-  const kpisEl = document.getElementById('finance-action-kpis');
-  const listEl = document.getElementById('finance-action-worklist');
-  const guidanceEl = document.getElementById('finance-action-guidance');
-  if (!kpisEl || !listEl || !guidanceEl || !window.TmsCockpit.buildFinanceActionWorkbench) return;
-
-  const filters = {
-    kind: document.getElementById('finance-action-kind-filter')?.value || '',
-    status: document.getElementById('finance-action-status-filter')?.value || '',
-    search: document.getElementById('finance-action-search-input')?.value || ''
-  };
-  const workbench = window.TmsCockpit.buildFinanceActionWorkbench(appState || {}, filters);
-  if (!selectedFinanceDetailKey && workbench.worklist[0]) {
-    selectedFinanceDetailKey = workbench.worklist[0].detail_key;
-  }
-  const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
-  kpisEl.innerHTML = Object.values(workbench.kpis).map(kpi => `
-    <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:11px 12px;">
-      <div style="font-size:.72rem; color:#64748b; font-weight:900; text-transform:uppercase;">${kpi.label}</div>
-      <div style="font-size:1.25rem; color:#2563eb; font-weight:950; margin-top:4px;">${kpi.count}</div>
-    </div>
-  `).join('');
-
-  const severityStyle = {
-    warning: { border: '#f59e0b', bg: '#fffbeb', color: '#92400e', label: 'Cần xử lý' },
-    success: { border: '#10b981', bg: '#ecfdf5', color: '#047857', label: 'Sẵn sàng' },
-    info: { border: '#38bdf8', bg: '#f0f9ff', color: '#0369a1', label: 'Theo dõi' }
-  };
-  listEl.innerHTML = workbench.worklist.length ? workbench.worklist.slice(0, 12).map(item => {
-    const style = severityStyle[item.severity] || severityStyle.info;
-    return `
-      <div style="border-left:4px solid ${style.border}; border-radius:12px; background:#ffffff; padding:12px 13px; box-shadow:0 3px 10px rgba(15,23,42,0.04); display:grid; gap:8px;">
-        <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
-          <div>
-            <div style="font-weight:950; color:#0f172a;">${escapeHtml(item.title)}</div>
-            <div style="font-size:.8rem; color:#64748b; margin-top:3px;">${item.subtitle}</div>
-          </div>
-          <span style="font-size:.72rem; font-weight:950; border-radius:999px; padding:4px 8px; background:${style.bg}; color:${style.color}; white-space:nowrap;">${style.label}</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <div style="font-size:.82rem; color:#334155;">
-            <strong>${item.status_label}</strong> • <span style="color:#15803d; font-weight:900;">${money(item.amount, item.currency)}</span>
-          </div>
-          <button class="fiori-btn fiori-btn-secondary" onclick="selectFinanceWorkItem('${item.detail_key}')" style="padding:6px 10px; font-size:.76rem;">Xem chi tiết</button>
-          <button class="fiori-btn fiori-btn-primary" onclick="runFinanceWorkbenchAction('${item.detail_key}')" style="padding:6px 10px; font-size:.76rem;">${item.action_label}</button>
-        </div>
-      </div>
-    `;
-  }).join('') : `
-    <div style="border:1px dashed #bfdbfe; border-radius:12px; padding:16px; color:#047857; background:#ffffff; text-align:center; font-weight:850;">Không có việc tài chính tồn đọng.</div>
-  `;
-
-  guidanceEl.innerHTML = workbench.guidance.map(text => `
-    <div style="border:1px solid #dbeafe; border-radius:10px; padding:9px 11px; background:#ffffff; color:#475569; font-size:.82rem;">
-      <i class="fa-solid fa-circle-info" style="color:#2563eb;"></i> ${text}
-    </div>
-  `).join('');
-  renderFinanceRecordDetail();
-}
-
-window.applyFinanceActionFilters = function () {
-  renderFinanceActionWorkbench();
-};
-
-window.selectFinanceWorkItem = function (detailKey) {
-  selectedFinanceDetailKey = detailKey || '';
-  renderFinanceRecordDetail();
-};
-
-window.openFinanceDeepForm = function (kind, id) {
-  const normalizedKind = kind === 'actual_cost' ? 'cost' : kind === 'ap_invoice' ? 'ap' : kind;
-  const candidateKey = `${normalizedKind}:${id}`;
-  selectedFinanceDetailKey = candidateKey;
-  switchView('accounting');
-  setTimeout(() => {
-    renderFinanceActionWorkbench();
-    renderFinanceRecordDetail();
-    document.getElementById('finance-detail-summary')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 0);
-};
-
 function financeAuthHeaders() {
   const token = (typeof window !== 'undefined' && window.EPL_TMS_API_TOKEN)
     || (typeof localStorage !== 'undefined' && localStorage.getItem('EPL_TMS_API_TOKEN'))
@@ -4378,317 +3451,10 @@ function financeAuthHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function executeFinanceCommand(command) {
-  if (!command || !command.path) {
-    showToast('Thao tác tài chính này chưa có endpoint xử lý. Vui lòng kiểm tra cấu hình Finance Cockpit.');
-    return { ok: false };
-  }
-  const opId = recordOperationLog({
-    status: 'pending',
-    title: `Dang xu ly: ${command.name || 'finance'}`,
-    detail: 'Dang gui lenh len server, vui long doi xac nhan.',
-    path: `${command?.method || 'POST'} ${command?.path || ''}`,
-  });
-  financeCommandCounter += 1;
-  const idempotencyKey = `finance-ui-${Date.now()}-${financeCommandCounter}`;
-  try {
-    const response = await fetch(`${API_BASE}${command.path}`, {
-      method: command.method || 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Idempotency-Key': idempotencyKey,
-        ...financeAuthHeaders()
-      },
-      body: JSON.stringify(command.body || {})
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = payload.detail || {};
-      const message = detail.message || payload.message || 'Thao tác tài chính chưa thực hiện được. Kiểm tra quyền, token hoặc Master Data.';
-      showToast(`⚠️ ${message}`);
-      recordOperationLog({
-        id: opId,
-        status: 'error',
-        title: `Khong luu duoc: ${command.name || 'finance'}`,
-        detail: message,
-        path: `${command?.method || 'POST'} ${command?.path || ''}`,
-      });
-      return { ok: false, payload };
-    }
-    showToast(payload.message || 'Đã xử lý thao tác tài chính thành công.');
-    recordOperationLog({
-      id: opId,
-      status: 'success',
-      title: `Da luu: ${command.name || 'finance'}`,
-      detail: payload.message || 'Server da xac nhan thao tac tai chinh.',
-      path: `${command?.method || 'POST'} ${command?.path || ''}`,
-    });
-    if (typeof window.loadAllData === 'function') await window.loadAllData();
-    // Vừa duyệt / hạch toán / thanh toán xong thì bốn con số đếm-toàn-bảng đã
-    // cũ. Bỏ gói cũ đi để lần vẽ ngay dưới đây nạp lại từ máy chủ — giữ gói cũ
-    // là hiện một con số mà chính người dùng vừa làm cho nó sai.
-    soLieuTaiChinhMayChu = null;
-    if (typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
-    if (typeof renderFinanceActionWorkbench === 'function') renderFinanceActionWorkbench();
-    return { ok: true, payload };
-  } catch (error) {
-    showToast(`⚠️ Không gọi được API tài chính: ${error.message}`);
-    recordOperationLog({
-      id: opId,
-      status: 'error',
-      title: `Mat ket noi: ${command.name || 'finance'}`,
-      detail: error.message,
-      path: `${command?.method || 'POST'} ${command?.path || ''}`,
-    });
-    return { ok: false, error };
-  }
-}
-
-function setFinanceActionFieldVisible(fieldId, visible) {
-  const element = document.getElementById(fieldId);
-  if (element) element.style.display = visible ? 'grid' : 'none';
-}
-
-function openFinanceActionForm(action) {
-  if (!action || !action.command) {
-    showToast('Thao tác tài chính này chưa có lệnh xử lý.');
-    return { ok: false };
-  }
-  const modal = document.getElementById('finance-action-form-modal');
-  if (!modal) return executeFinanceCommand(action.command);
-  pendingFinanceAction = action;
-  const command = action.command;
-  const body = command.body || {};
-  const isCreateAp = command.path.includes('/ap-invoices') && command.path.includes('/costs/');
-  const isCreateSettlement = command.path.includes('/settlements') && command.path.includes('/ap-invoices/');
-  const isPayment = command.path.includes('/payments');
-  // Đảo bút toán: backend BẮT BUỘC có `reason` (422 REVERSAL_REASON_REQUIRED).
-  const isReversal = command.path.endsWith('/reverse');
-  const today = FormatUtils.dateInputValue();
-
-  document.getElementById('finance-action-form-title').textContent = action.label || 'Thao tác tài chính';
-  document.getElementById('finance-action-form-subtitle').textContent = isCreateAp
-    ? 'Nhập thông tin hóa đơn nhà cung cấp trước khi tạo AP Invoice.'
-    : isCreateSettlement
-      ? 'Chọn kỳ đối soát trước khi tạo Settlement.'
-      : isPayment
-        ? 'Nhập chứng từ và số tiền thanh toán. Hệ thống sẽ kiểm tra số dư còn lại.'
-        : isReversal
-          ? 'Đảo bút toán hủy hiệu lực chứng từ đã hạch toán. Bắt buộc ghi lý do — lý do đi vào Audit Log và không sửa được sau.'
-          : 'Xác nhận chuyển trạng thái hồ sơ. Thao tác sẽ được ghi Audit Log.';
-  document.getElementById('finance-action-confirm-note').textContent = `Hồ sơ: ${selectedFinanceDetailKey || 'đang chọn'} • ${action.label || 'Xác nhận thao tác'}`;
-
-  setFinanceActionFieldVisible('finance-action-vendor-invoice-wrap', isCreateAp);
-  setFinanceActionFieldVisible('finance-action-invoice-date-wrap', isCreateAp);
-  setFinanceActionFieldVisible('finance-action-due-date-wrap', isCreateAp);
-  setFinanceActionFieldVisible('finance-action-settlement-period-wrap', isCreateSettlement);
-  setFinanceActionFieldVisible('finance-action-payment-amount-wrap', isPayment);
-  setFinanceActionFieldVisible('finance-action-payment-method-wrap', isPayment);
-  setFinanceActionFieldVisible('finance-action-reference-wrap', isPayment);
-  setFinanceActionFieldVisible('finance-action-posting-date-wrap', isPayment);
-  setFinanceActionFieldVisible('finance-action-reason-wrap', isReversal);
-
-  document.getElementById('finance-action-vendor-invoice').value = body.vendor_invoice_no || '';
-  document.getElementById('finance-action-invoice-date').value = body.invoice_date || today;
-  document.getElementById('finance-action-due-date').value = body.due_date || today;
-  document.getElementById('finance-action-settlement-period').value = body.settlement_period || today.slice(0, 7);
-  document.getElementById('finance-action-payment-amount').value = body.amount || '';
-  document.getElementById('finance-action-payment-method').value = body.payment_method === 'cash' ? 'cash' : 'bank_transfer';
-  document.getElementById('finance-action-reference').value = body.reference_no || '';
-  document.getElementById('finance-action-posting-date').value = body.posting_date || today;
-  document.getElementById('finance-action-reason').value = body.reason || '';
-  modal.style.display = 'flex';
-  return { ok: true };
-}
-
-function closeFinanceActionForm() {
-  const modal = document.getElementById('finance-action-form-modal');
-  if (modal) modal.style.display = 'none';
-  pendingFinanceAction = null;
-}
-
-async function submitFinanceActionForm() {
-  const action = pendingFinanceAction;
-  if (!action || !action.command) {
-    showToast('Chưa có thao tác tài chính để xác nhận.');
-    return { ok: false };
-  }
-  const command = action.command;
-  const body = { ...(command.body || {}) };
-  const isCreateAp = command.path.includes('/ap-invoices') && command.path.includes('/costs/');
-  const isCreateSettlement = command.path.includes('/settlements') && command.path.includes('/ap-invoices/');
-  const isPayment = command.path.includes('/payments');
-  const isReversal = command.path.endsWith('/reverse');
-
-  if (isReversal) {
-    body.reason = document.getElementById('finance-action-reason').value.trim();
-    // Chặn tại đây thay vì gửi lên rồi nhận 422: người dùng đang mở đúng cái form có ô đó.
-    if (body.reason.length < 10) {
-      showToast('⚠️ Lý do đảo bút toán phải ghi rõ, ít nhất 10 ký tự. Lý do này đi vào Audit Log.');
-      return { ok: false };
-    }
-  }
-
-  if (isCreateAp) {
-    body.vendor_invoice_no = document.getElementById('finance-action-vendor-invoice').value.trim();
-    body.invoice_date = document.getElementById('finance-action-invoice-date').value;
-    body.due_date = document.getElementById('finance-action-due-date').value;
-    if (!body.vendor_invoice_no || !body.invoice_date || !body.due_date) {
-      showToast('⚠️ Vui lòng nhập đủ số hóa đơn, ngày hóa đơn và ngày đến hạn.');
-      return { ok: false };
-    }
-    if (body.due_date < body.invoice_date) {
-      showToast('Ngày đến hạn không được nhỏ hơn ngày hóa đơn.');
-      return { ok: false };
-    }
-  }
-  if (isCreateSettlement) {
-    body.settlement_period = document.getElementById('finance-action-settlement-period').value;
-    if (!body.settlement_period) {
-      showToast('⚠️ Vui lòng chọn kỳ đối soát.');
-      return { ok: false };
-    }
-  }
-  if (isPayment) {
-    body.amount = Number(document.getElementById('finance-action-payment-amount').value || 0);
-    body.payment_method = document.getElementById('finance-action-payment-method').value;
-    body.reference_no = document.getElementById('finance-action-reference').value.trim();
-    body.posting_date = document.getElementById('finance-action-posting-date').value;
-    if (!Number.isFinite(body.amount) || body.amount <= 0) {
-      showToast('⚠️ Số tiền thanh toán phải lớn hơn 0.');
-      return { ok: false };
-    }
-    if (!body.reference_no || !body.posting_date) {
-      showToast('⚠️ Vui lòng nhập mã tham chiếu và ngày hạch toán.');
-      return { ok: false };
-    }
-  }
-  closeFinanceActionForm();
-  return executeFinanceCommand({ ...command, body });
-}
-
-async function runFinanceDetailAction(actionIndex = 0) {
-  const detail = window.TmsCockpit.buildFinanceRecordDetail(appState || {}, selectedFinanceDetailKey);
-  const action = (detail.actions || [])[Number(actionIndex) || 0];
-  if (!action) {
-    showToast('Chưa có thao tác tài chính cho hồ sơ này.');
-    return { ok: false };
-  }
-  if (!action.command) {
-    switchView('accounting');
-    return { ok: true };
-  }
-  return openFinanceActionForm(action);
-}
-
-async function runFinanceWorkbenchAction(detailKey) {
-  selectedFinanceDetailKey = detailKey || selectedFinanceDetailKey;
-  renderFinanceRecordDetail();
-  return runFinanceDetailAction(0);
-}
-
-function renderFinanceRecordDetail() {
-  if (!window.TmsCockpit || !window.TmsCockpit.buildFinanceRecordDetail || typeof document === 'undefined') return;
-  const summaryEl = document.getElementById('finance-detail-summary');
-  const timelineEl = document.getElementById('finance-detail-timeline');
-  const actionsEl = document.getElementById('finance-detail-actions');
-  if (!summaryEl || !timelineEl || !actionsEl) return;
-  const detail = window.TmsCockpit.buildFinanceRecordDetail(appState || {}, selectedFinanceDetailKey);
-  summaryEl.innerHTML = `
-    <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; border:1px solid #e2e8f0; border-radius:12px; padding:12px; background:#f8fafc;">
-      <div>
-        <div style="font-size:.78rem; color:#64748b; font-weight:900;">${detail.kind_label}</div>
-        <div style="font-size:1.05rem; color:#0f172a; font-weight:950; margin-top:3px;">${detail.title}</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:.78rem; color:#64748b; font-weight:900;">${detail.status_label}</div>
-        <div style="font-size:1rem; color:#15803d; font-weight:950; margin-top:3px;">${detail.amount_label}</div>
-      </div>
-    </div>
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px;">
-      ${detail.fields.map(field => `
-        <div style="border:1px solid #e2e8f0; border-radius:10px; padding:9px; background:#ffffff;">
-          <div style="font-size:.7rem; color:#64748b; font-weight:900; text-transform:uppercase;">${field.label}</div>
-          <div style="font-size:.85rem; color:#0f172a; font-weight:850; margin-top:3px;">${field.value}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-  const stageStyle = {
-    done: { bg: '#ecfdf5', color: '#047857', icon: 'fa-circle-check', label: 'Xong' },
-    current: { bg: '#eff6ff', color: '#2563eb', icon: 'fa-circle-play', label: 'Đang xử lý' },
-    pending: { bg: '#f8fafc', color: '#64748b', icon: 'fa-clock', label: 'Chờ' }
-  };
-  timelineEl.innerHTML = detail.timeline.map(step => {
-    const style = stageStyle[step.status] || stageStyle.pending;
-    return `
-      <div style="background:${style.bg}; color:${style.color}; border:1px solid #dbeafe; border-radius:12px; padding:10px;">
-        <div style="font-weight:950; display:flex; align-items:center; gap:6px;"><i class="fa-solid ${style.icon}"></i> ${step.label}</div>
-        <div style="font-size:.72rem; font-weight:900; margin-top:4px;">${style.label}</div>
-      </div>
-    `;
-  }).join('');
-  // Thao tác `critical` là đảo bút toán — nó hủy hiệu lực một chứng từ đã
-  // hạch toán. Cho nó màu đỏ và biểu tượng riêng, đừng để nó trông giống
-  // "bước tiếp theo" nằm ngay bên cạnh.
-  actionsEl.innerHTML = detail.actions.map((action, index) => {
-    const nangCap = action.severity === 'critical';
-    const lop = nangCap ? 'fiori-btn-secondary'
-      : (action.severity === 'success' ? 'fiori-btn-primary' : 'fiori-btn-secondary');
-    const mau = nangCap ? ' color:#b42318; border-color:#fecaca;' : '';
-    const icon = nangCap ? 'fa-rotate-left'
-      : (action.command ? 'fa-play' : 'fa-arrow-up-right-from-square');
-    return `
-    <button class="fiori-btn ${lop}" onclick="runFinanceDetailAction(${index})" style="padding:7px 11px; font-size:.78rem;${mau}">
-      <i class="fa-solid ${icon}"></i> ${escapeHtml(action.label)}
-    </button>`;
-  }).join('');
-}
-
-function renderFinanceConfigHealth() {
-  if (!window.TmsCockpit || !window.TmsCockpit.buildFinanceConfigHealth || typeof document === 'undefined') return;
-  const progressEl = document.getElementById('finance-config-health-progress');
-  const itemsEl = document.getElementById('finance-config-health-items');
-  if (!progressEl || !itemsEl) return;
-  const health = window.TmsCockpit.buildFinanceConfigHealth(appState || {});
-  progressEl.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <span style="font-size:.78rem; color:#64748b; font-weight:900;">Mức sẵn sàng cấu hình</span>
-      <strong style="color:#2563eb;">${health.progress.percent}%</strong>
-    </div>
-    <div style="height:8px; border-radius:999px; background:#e2e8f0; overflow:hidden;">
-      <div style="height:100%; width:${health.progress.percent}%; background:linear-gradient(90deg,#2563eb,#10b981);"></div>
-    </div>
-  `;
-  itemsEl.innerHTML = health.items.map(item => `
-    <button onclick="openCockpitNavigation('master-data', '${item.target}')" style="text-align:left; border:1px solid ${item.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${item.status === 'done' ? '#f0fdf4' : '#fff7ed'}; color:#0f172a; border-radius:10px; padding:9px 10px; cursor:pointer;">
-      <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
-        <strong>${item.label}</strong>
-        <span style="font-size:.7rem; font-weight:950; color:${item.status === 'done' ? '#047857' : '#92400e'};">${item.status === 'done' ? 'Đã có' : 'Thiếu'}</span>
-      </div>
-      <div style="font-size:.75rem; color:#64748b; margin-top:3px;">${item.message}</div>
-    </button>
-  `).join('');
-}
-
 function renderFinanceMasterDataTabs() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
   const tabs = window.TmsCockpit.buildFinanceMasterDataTabs(appState || {});
   const targets = {
-    'md-tab-tax-codes': {
-      bodyId: 'finance-master-tax-table',
-      actionId: 'finance-master-tax-actions',
-      kind: 'tax_code',
-      idKey: 'code',
-      columns: ['code', 'rate', 'mode', 'effective', 'status_label']
-    },
-    'md-tab-accounting-periods': {
-      bodyId: 'finance-master-period-table',
-      actionId: 'finance-master-period-actions',
-      kind: 'accounting_period',
-      idKey: 'id',
-      columns: ['id', 'name', 'range', 'status_label']
-    },
     'md-tab-carriers': {
       bodyId: 'finance-master-carrier-table',
       actionId: 'finance-master-carrier-actions',
@@ -4755,18 +3521,6 @@ function renderFinanceMasterConfigActions(tab, actionId) {
 }
 
 const FINANCE_MASTER_CONFIG = {
-  tax_code: {
-    title: 'Thêm mã thuế',
-    subtitle: 'Dùng cho Actual Cost, AP Invoice và hạch toán thuế.',
-    path: '/api/master-data/tax-codes',
-    fieldsId: 'finance-master-tax-fields'
-  },
-  accounting_period: {
-    title: 'Thêm kỳ kế toán',
-    subtitle: 'Kỳ mở/khóa kiểm soát thời điểm post AP, payment và settlement.',
-    path: '/api/master-data/accounting-periods',
-    fieldsId: 'finance-master-period-fields'
-  },
   carrier: {
     title: 'Thêm carrier/vendor',
     subtitle: 'Cấu hình nhà vận chuyển thuê ngoài hoặc đội xe nội bộ của công ty.',
@@ -4801,8 +3555,6 @@ function financeMasterDateInput(value) {
 
 function findFinanceMasterRecord(kind, id) {
   const value = String(id || '');
-  if (kind === 'tax_code') return (appState.tax_codes || []).find(row => String(row.code || row.id) === value);
-  if (kind === 'accounting_period') return (appState.accounting_periods || []).find(row => String(row.id || row.period_id) === value);
   if (kind === 'carrier') return (appState.carriers || []).find(row => String(row.id || row.carrier_id) === value);
   if (kind === 'account_mapping') return (appState.account_mappings || []).find(row => String(row.mapping_key || row.key) === value);
   return null;
@@ -4823,7 +3575,7 @@ window.openFinanceMasterConfig = function (kind, record = null) {
     : '';
   document.getElementById('finance-master-config-title').innerText = config.title;
   document.getElementById('finance-master-config-subtitle').innerText = config.subtitle;
-  ['finance-master-tax-fields', 'finance-master-period-fields', 'finance-master-carrier-fields', 'finance-master-mapping-fields'].forEach(id => {
+  ['finance-master-carrier-fields', 'finance-master-mapping-fields'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === config.fieldsId ? 'grid' : 'none';
   });
@@ -4831,18 +3583,7 @@ window.openFinanceMasterConfig = function (kind, record = null) {
   const titlePrefix = record ? 'Sửa' : 'Thêm';
   document.getElementById('finance-master-config-title').innerText = config.title.replace('Thêm', titlePrefix);
 
-  if (kind === 'tax_code') {
-    document.getElementById('finance-master-tax-code').value = record?.code || record?.id || '';
-    document.getElementById('finance-master-tax-rate').value = record?.rate ?? '0.08';
-    document.getElementById('finance-master-tax-mode').value = record?.mode || record?.tax_mode || 'exclusive';
-    document.getElementById('finance-master-tax-from').value = financeMasterDateInput(record?.effective_from) || today;
-    document.getElementById('finance-master-tax-to').value = financeMasterDateInput(record?.effective_to);
-  } else if (kind === 'accounting_period') {
-    document.getElementById('finance-master-period-id').value = record?.id || today.slice(0, 7);
-    document.getElementById('finance-master-period-start').value = financeMasterDateInput(record?.starts_at || record?.start_date) || `${today.slice(0, 7)}-01`;
-    document.getElementById('finance-master-period-end').value = financeMasterDateInput(record?.ends_at || record?.end_date) || today;
-    document.getElementById('finance-master-period-status').value = record?.status || 'open';
-  } else if (kind === 'carrier') {
+  if (kind === 'carrier') {
     document.getElementById('finance-master-carrier-id').value = record?.id || record?.carrier_id || '';
     document.getElementById('finance-master-carrier-name').value = record?.name || record?.carrier_name || '';
     document.getElementById('finance-master-carrier-tax').value = record?.tax_code || record?.tax_id || '';
@@ -4873,20 +3614,6 @@ window.submitFinanceMasterConfig = async function () {
     return;
   }
   const payloadByKind = {
-    tax_code: () => ({
-      code: financeMasterValue('finance-master-tax-code'),
-      rate: financeMasterValue('finance-master-tax-rate'),
-      mode: financeMasterValue('finance-master-tax-mode') || 'exclusive',
-      effective_from: financeMasterValue('finance-master-tax-from'),
-      effective_to: financeMasterValue('finance-master-tax-to') || null,
-      is_active: true
-    }),
-    accounting_period: () => ({
-      id: financeMasterValue('finance-master-period-id'),
-      starts_at: financeMasterDateTime(financeMasterValue('finance-master-period-start')),
-      ends_at: financeMasterDateTime(financeMasterValue('finance-master-period-end'), true),
-      status: financeMasterValue('finance-master-period-status') || 'open'
-    }),
     carrier: () => ({
       id: financeMasterValue('finance-master-carrier-id'),
       name: financeMasterValue('finance-master-carrier-name'),
@@ -4927,8 +3654,6 @@ window.submitFinanceMasterConfig = async function () {
 
 function financeMasterRecordPath(kind, id) {
   const encoded = encodeURIComponent(id || '');
-  if (kind === 'tax_code') return `/api/master-data/tax-codes/${encoded}`;
-  if (kind === 'accounting_period') return `/api/master-data/accounting-periods/${encoded}`;
   if (kind === 'carrier') return `/api/tms/carriers/${encoded}`;
   if (kind === 'account_mapping') return `/api/master-data/account-mappings/${encoded}`;
   return '';
@@ -4952,11 +3677,7 @@ window.toggleFinanceMasterStatus = async function (kind, id) {
   }
   const current = String(record.status || (record.is_active === false ? 'inactive' : 'active')).toLowerCase();
   const lock = !['inactive', 'closed'].includes(current);
-  const body = kind === 'accounting_period'
-    ? { status: lock ? 'closed' : 'open' }
-    : kind === 'tax_code'
-      ? { is_active: !lock }
-      : { status: lock ? 'inactive' : 'active' };
+  const body = { status: lock ? 'inactive' : 'active' };
   try {
     const response = await fetch(`${API_BASE}${basePath}/status`, {
       method: 'POST',
@@ -4999,14 +3720,6 @@ window.deleteFinanceMasterRecord = async function (kind, id) {
 window.seedFinanceMasterExample = async function (kind) {
   const today = FormatUtils.dateInputValue();
   const examples = {
-    tax_code: {
-      path: '/api/master-data/tax-codes',
-      payload: { code: 'VAT8', rate: '0.08', mode: 'exclusive', effective_from: today, is_active: true }
-    },
-    accounting_period: {
-      path: '/api/master-data/accounting-periods',
-      payload: { id: today.slice(0, 7), starts_at: `${today.slice(0, 7)}-01T00:00:00`, ends_at: `${today.slice(0, 7)}-28T23:59:59`, status: 'open' }
-    },
     carrier: {
       path: '/api/tms/carriers',
       payload: { id: 'EPL-INTERNAL-FLEET', name: 'EPL Logistics - Đội xe nội bộ', tax_code: '0312345678', is_internal: true, status: 'active' }
@@ -5280,55 +3993,6 @@ function selectDispatchCalendarItem(orderId) {
   if (orderId) openDispatchDetail(document.activeElement);
 }
 
-function openShipment360FromDispatch(orderId) {
-  const targetId = orderId || selectedDispatchCalendarOrderId || '';
-  if (targetId) {
-    tmsActiveShipment360Id = targetId;
-    tmsActiveTimelineDoId = targetId;
-  }
-  switchView('operations-360');
-  setTimeout(() => selectShipment360(targetId), 0);
-}
-
-window.openShipment360Action = function (actionCode, deliveryOrderId) {
-  const targetId = deliveryOrderId || tmsActiveShipment360Id || tmsActiveTimelineDoId || selectedDispatchCalendarOrderId || '';
-  if (targetId) {
-    tmsActiveShipment360Id = targetId;
-    tmsActiveTimelineDoId = targetId;
-    selectedDispatchCalendarOrderId = targetId;
-  }
-
-  if (actionCode === 'OPEN_DISPATCH') {
-    switchView('dispatch');
-    setTimeout(() => {
-      if (targetId) selectedDispatchCalendarOrderId = targetId;
-      if (typeof renderDispatchCalendar === 'function') renderDispatchCalendar();
-    }, 0);
-    return;
-  }
-
-  if (actionCode === 'OPEN_GPS_POD') {
-    switchView('tracking');
-    setTimeout(() => {
-      const input = document.getElementById('tracking-do-search');
-      if (input && targetId) input.value = targetId;
-      if (typeof renderGpsEventTimeline === 'function') renderGpsEventTimeline();
-      if (typeof window.trackDO === 'function' && targetId) window.trackDO();
-    }, 0);
-    return;
-  }
-
-  if (actionCode === 'OPEN_FINANCE' || actionCode === 'OPEN_FINANCE_COCKPIT') {
-    switchView('accounting');
-    setTimeout(() => {
-      if (typeof loadAccountingData === 'function') loadAccountingData();
-    }, 0);
-    return;
-  }
-
-  // Đường rơi về Shipment 360 đã bỏ: hành động không có màn riêng thì về Theo dõi.
-  switchView('tracking');
-};
 
 function renderDispatchSuggestedActions(detail) {
   const actionsEl = document.getElementById('dispatch-calendar-detail-actions');
@@ -6205,7 +4869,6 @@ function renderSummaryChart() {
   const qtCount = appState.quotations ? appState.quotations.length : 0;
   const doCount = appState.delivery_orders ? appState.delivery_orders.length : 0;
   const dispatchCount = appState.dispatches ? appState.dispatches.length : 0;
-  const invoiceCount = appState.invoices ? appState.invoices.length : 0;
   const incidentCount = appState.incidents ? appState.incidents.length : 0;
 
   // 2. Ham tien ich de ve bieu do con (Doughnut)
@@ -6252,10 +4915,6 @@ function renderSummaryChart() {
   chartVehInst = drawDoughnut('chartVehicles', chartVehInst, [t('chart_label_available'), t('chart_label_busy')], [vehAvail, vehBusy], ['#10b981', '#ef4444']);
 
   // --- Ve Bieu do Tai Chinh ---
-  const invs = appState.invoices || [];
-  const invPaid = invs.filter(i => i.status === 'Paid').length;
-  const invUnpaid = invs.length - invPaid;
-  chartFinInst = drawDoughnut('chartFinance', chartFinInst, [t('chart_label_paid'), t('chart_label_unpaid')], [invPaid, invUnpaid], ['#8b5cf6', '#f59e0b']);
 
 
   // --- Ve Bieu do Tong Quan Cuoi Cung (Pie Chart) ---
@@ -6265,9 +4924,9 @@ function renderSummaryChart() {
     summaryChartInstance = new Chart(ctx, {
       type: 'pie',
       data: {
-        labels: [t('chart_label_quotes'), t('chart_label_delivery_orders'), t('chart_label_dispatches'), t('chart_label_invoices'), t('chart_label_incidents')],
+        labels: [t('chart_label_quotes'), t('chart_label_delivery_orders'), t('chart_label_dispatches'), t('chart_label_incidents')],
         datasets: [{
-          data: [qtCount, doCount, dispatchCount, invoiceCount, incidentCount],
+          data: [qtCount, doCount, dispatchCount, incidentCount],
           backgroundColor: [
             '#3b82f6', // blue
             '#10b981', // emerald
@@ -12370,9 +11029,7 @@ function renderDeliveryOrderCloseout(data, target) {
   const moc = [
     ["Lệnh giao hàng", `${data.do_id} · ${statusLabel(data.status) || data.status || "—"}`],
     ["Trip vận chuyển", tripId ? `${tripId} · ${statusLabel(data.trip?.status) || data.trip?.status || ""}` : "—"],
-    ["Hóa đơn phải thu", data.invoice?.id
-      ? `${data.invoice.id} · ${statusLabel(data.invoice.canonical_status) || data.invoice.canonical_status || ""}`
-      : "Chưa lập hóa đơn"],
+    ["Bàn giao công nợ", `Header + detail qua API bàn giao · DO ${data.do_id}`],
     ["Xe & tài xế", [data.resource_release?.vehicle_status, data.resource_release?.driver_status]
       .filter(Boolean).join(" · ") || "—"],
   ].map(x => oHoSo(x[0], x[1])).join("");
@@ -12884,86 +11541,6 @@ window.loadDispatchBoard = loadDispatchBoard;
  *   3. `innerHTML +=` trong vong lap: moi vong parse lai toan bo chuoi HTML
  *      dang phinh. Dung mot lan `join('')` thay vi vay.
  */
-async function loadAccountingData() {
-  const bao_khong_nap_duoc = (id, so_cot, trang_thai) => {
-    const tbody = document.getElementById(id);
-    if (!tbody) return;
-    const ly_do = trang_thai === 401 || trang_thai === 403
-      ? 'Không có quyền xem số liệu kế toán.'
-      : trang_thai
-        ? `Máy chủ trả lỗi HTTP ${trang_thai}.`
-        : 'Không kết nối được tới máy chủ.';
-    // Dau gach, KHONG phai so 0: mot con so 0 tu tin te hon mot dau gach.
-    tbody.innerHTML = `<tr><td colspan="${so_cot}" style="text-align:center; padding:18px; color:#b45309;">`
-      + `<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> `
-      + `Chưa nạp được — ${escapeHtml(ly_do)}</td></tr>`;
-  };
-
-  let resInv = null;
-  let resGL = null;
-  try {
-    [resInv, resGL] = await Promise.all([
-      fetch(`${API_BASE}/api/invoices`),
-      fetch(`${API_BASE}/api/gl-transactions`)
-    ]);
-  } catch (e) {
-    console.error("Failed to load accounting data", e);
-    bao_khong_nap_duoc('fiori-invoice-tbody', 6, 0);
-    bao_khong_nap_duoc('fiori-gl-tbody', 4, 0);
-    showToast('❌ Không nạp được số liệu kế toán từ máy chủ.');
-    return;
-  }
-
-  // Tien luon lay qua `|| 0`: mot ban ghi NULL khong duoc lam vo ca bang.
-  const tien = gia_tri => Number(gia_tri || 0).toLocaleString('vi-VN');
-
-  if (resInv.ok) {
-    const invoices = await resInv.json().catch(() => []);
-    const tbody = document.getElementById('fiori-invoice-tbody');
-    if (tbody) {
-      tbody.innerHTML = (Array.isArray(invoices) ? invoices : []).length
-        ? invoices.map(inv => `
-            <tr>
-              <td><strong>${escapeHtml(inv.id)}</strong></td>
-              <td>${escapeHtml(inv.customer_id || '—')}</td>
-              <td>${escapeHtml(inv.do_id || '—')}</td>
-              <td>${escapeHtml(inv.invoice_date || '—')}</td>
-              <td>${tien(inv.total)}</td>
-              <td><span class="fiori-status status-transit">${escapeHtml(statusLabel(inv.status))}</span></td>
-            </tr>`).join('')
-        : `<tr><td colspan="6" style="text-align:center;">${t('msg_no_invoices_yet')}</td></tr>`;
-    }
-  } else {
-    bao_khong_nap_duoc('fiori-invoice-tbody', 6, resInv.status);
-  }
-
-  if (resGL.ok) {
-    const glList = await resGL.json().catch(() => []);
-    const tbody = document.getElementById('fiori-gl-tbody');
-    if (tbody) {
-      tbody.innerHTML = (Array.isArray(glList) ? glList : []).length
-        ? glList.map(gl => `
-            <tr>
-              <td>${escapeHtml(gl.date || '—')}</td>
-              <td><strong>${escapeHtml(gl.account_code || '—')}</strong></td>
-              <td style="color:#2bba66;">${tien(gl.debit)}</td>
-              <td style="color:#e53935;">${tien(gl.credit)}</td>
-            </tr>`).join('')
-        : `<tr><td colspan="4" style="text-align:center;">${t('msg_no_gl_entries')}</td></tr>`;
-    }
-  } else {
-    bao_khong_nap_duoc('fiori-gl-tbody', 4, resGL.status);
-  }
-
-  if (!resInv.ok || !resGL.ok) {
-    showToast('⚠️ Một phần số liệu kế toán chưa nạp được. Xem chi tiết trong bảng.');
-  }
-
-  if (typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
-  if (typeof renderFinanceActionWorkbench === 'function') renderFinanceActionWorkbench();
-
-}
-
 async function loadDashboard() {
   // Cố tình KHÔNG gọi TransportReporting.load() ở đây. loadDashboard() chạy
   // khi mở cả Bảng điều khiển lẫn màn "Báo cáo & Phân tích", nên kéo theo
@@ -13053,7 +11630,6 @@ function markDashboardUnavailable(status) {
   }
 }
 
-window.loadAccountingData = loadAccountingData;
 window.loadDashboard = loadDashboard;
 
 // ==========================================
@@ -13103,23 +11679,8 @@ window.publishMasterForm = function (formType) {
   }
 };
 
-/* `window.postInvoice` ĐÃ BỎ — mã chết, và là mã chết nguy hiểm.
- *
- * Nó ghi một hoá đơn thật cùng bút toán sổ cái qua `POST /api/invoices/post`,
- * chọn lệnh giao hàng bằng "lệnh đã giao ĐẦU TIÊN tìm thấy" chứ không phải thứ
- * người dùng chọn. Chỗ gọi duy nhất của nó là nút "Post" trên một thẻ MINH HOẠ
- * ở Bảng điều khiển — thẻ mà mọi ô nhập đều `disabled`. Nút đó đã bỏ, nên hàm
- * này không còn ai gọi.
- *
- * VÀ KHÔNG MẤT TÍNH NĂNG NÀO. Hoá đơn được phát hành NGAY TRONG bước hoàn tất
- * giao hàng: `delivery_completion_service` gọi `post_ar_invoice` trong cùng một
- * giao dịch với POD và giá cuối. Đó là lý do bộ dữ liệu demo có hoá đơn mà
- * không ai bấm "Post" lần nào.
- *
- * `POST /api/invoices/post` vẫn còn ở máy chủ, làm cửa lập hoá đơn thủ công cho
- * những đơn cũ chưa đi qua đường hoàn tất. Nó không có màn nào gọi — xem
- * `docs/ra-soat-nut-va-luong.md`.
- */
+/* `window.postInvoice` và toàn bộ module hoá đơn AR đã XOÁ (10/09): hoá đơn là việc của hệ công nợ
+   đồng nghiệp, hệ này bàn giao hồ sơ hoàn tất qua GET /api/handover/delivery-orders/{do_id}. */
 
 window.submitIncident = function () {
   if (typeof window.submitIncidentReport === 'function') {
@@ -13549,28 +12110,6 @@ const MASTER_DATA_GUIDANCE = {
     },
     primaryAction: 'customer'
   },
-  'md-tab-tax-codes': {
-    title: { vi: 'Thuế', en: 'Tax Codes', la: 'ລະຫັດອາກອນ' },
-    summary: { vi: 'Mã thuế và hiệu lực dùng cho actual cost, AP invoice và hạch toán.', en: 'Tax codes and validity for actual cost, AP and posting.', la: 'ລະຫັດອາກອນ ແລະ ຜົນບັງຄັບໃຊ້ ສຳລັບຕົ້ນທຶນຕົວຈິງ, ໃບແຈ້ງໜີ້ AP ແລະ ລົງບັນຊີ.' },
-    dataLabel: { vi: 'mã thuế', en: 'tax codes', la: 'ລະຫັດອາກອນ' },
-    next: {
-      vi: ['Thêm mã thuế VAT/miễn thuế', 'Kiểm tra ngày hiệu lực', 'Dùng khi tạo dòng chi phí/AP'],
-      en: ['Add VAT/exempt code', 'Check effective date', 'Use when creating cost/AP lines'],
-      la: ['ເພີ່ມລະຫັດອາກອນ VAT/ຍົກເວັ້ນ', 'ກວດສອບວັນທີ່ມີຜົນ', 'ໃຊ້ເມື່ອສ້າງລາຍການຕົ້ນທຶນ/AP']
-    },
-    primaryAction: 'tax_code'
-  },
-  'md-tab-accounting-periods': {
-    title: { vi: 'Kỳ kế toán', en: 'Accounting Periods', la: 'ງວດບັນຊີ' },
-    summary: { vi: 'Mở/khóa kỳ kế toán để kiểm soát ngày post AP, payment và settlement.', en: 'Open/lock accounting periods to control AP, payment and settlement.', la: 'ເປີດ/ລັອກ ງວດບັນຊີ ເພື່ອຄວບຄຸມການລົງບັນຊີ AP, ຊຳລະເງິນ ແລະ ສະສາງ.' },
-    dataLabel: { vi: 'kỳ kế toán', en: 'accounting periods', la: 'ງວດບັນຊີ' },
-    next: {
-      vi: ['Tạo kỳ tháng hiện tại', 'Mở kỳ trước demo', 'Khóa kỳ cũ khi cần kiểm soát'],
-      en: ['Create current month period', 'Open period before demo', 'Lock old periods for control'],
-      la: ['ສ້າງງວດເດືອນປັດຈຸບັນ', 'ເປີດງວດກ່ອນ demo', 'ລັອກງວດເກົ່າເມື່ອຕ້ອງການຄວບຄຸມ']
-    },
-    primaryAction: 'accounting_period'
-  },
   'md-tab-carriers': {
     title: { vi: 'Carrier / Vendor', en: 'Carriers / Vendors', la: 'ຜູ້ໃຫ້ບໍລິການຂົນສົ່ງ / Carrier' },
     summary: { vi: 'Danh sách nhà vận chuyển thuê ngoài và đội xe nội bộ. Nếu công ty tự vận chuyển thì cấu hình carrier nội bộ để đi thẳng Dispatch.', en: 'Outsourced carriers and internal fleet. Configure internal carrier for direct Dispatch.', la: 'ລາຍຊື່ຜູ້ຮັບເໝົາຂົນສົ່ງພາຍນອກ ແລະ ທີມລົດພາຍໃນ. ຖ້າຂົນສົ່ງເອງໃຫ້ກຳນົດ carrier ພາຍໃນເພື່ອໄປ Dispatch ໂດຍກົງ.' },
@@ -13603,8 +12142,6 @@ function countMasterDataRows(tabId) {
   if (tabId === 'md-tab-vehicles') return count(fioriVehicles) + count(fioriDrivers);
   if (tabId === 'md-tab-currencies') return count(appState.currencies) || count(appState.currency_rates);
   if (tabId === 'md-tab-customers') return count(eplCustomers) || count(appState.customers);
-  if (tabId === 'md-tab-tax-codes') return count(appState.tax_codes);
-  if (tabId === 'md-tab-accounting-periods') return count(appState.accounting_periods);
   if (tabId === 'md-tab-carriers') return count(appState.carriers);
   if (tabId === 'md-tab-account-mappings') return count(appState.account_mappings);
   return 0;
@@ -13612,7 +12149,7 @@ function countMasterDataRows(tabId) {
 
 window.openMasterDataPrimaryAction = function (tabId) {
   const guidance = MASTER_DATA_GUIDANCE[tabId] || MASTER_DATA_GUIDANCE['md-tab-routes'];
-  if (['tax_code', 'accounting_period', 'carrier', 'account_mapping'].includes(guidance.primaryAction)) {
+  if (['carrier', 'account_mapping'].includes(guidance.primaryAction)) {
     if (typeof openFinanceMasterConfig === 'function') return openFinanceMasterConfig(guidance.primaryAction);
   }
   if (guidance.primaryAction === 'route' && typeof createNewRouteForm === 'function') return createNewRouteForm();

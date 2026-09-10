@@ -39,13 +39,12 @@ if app_dir not in sys.path:
     sys.path.append(app_dir)
 
 from database import get_db
-from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
-    DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
-    GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
+from models import (    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
+    VehicleTracking, DeliveryPODRecord, 
+    AuditLog, Quotation, Incident, 
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
     TransportEvent, ResourceAssignment, TripDeliveryOrder, TransportTripLeg,
-    FreightActualCost, FreightChargeItem, APInvoice, FreightSettlement,
+    FreightActualCost, FreightChargeItem, 
     CurrencyDefinition, CurrencyRateHistory, Role, User, CostFormula, DeliveryOrderCloseout,
     DeliveryOrderChargeAdjustment, DeliveryPODDocument, VehicleMaintenanceRequest,
     FreightOrderLegacyLink,
@@ -54,9 +53,7 @@ from gateway.router import GatewayRouter
 from agents.query_agent import QueryAgent
 from agents.action_agent import ActionAgent
 from runtime_state import runtime_state
-from schemas.invoice import ARInvoicePostRequest
 from schemas.workflow import RouteCreateRequest
-from services.ar_invoice_service import post_ar_invoice, serialize_ar_invoice
 from services.errors import DomainError, raise_http
 from services.vehicle_maintenance_service import (
     create_request as create_vehicle_maintenance_request,
@@ -576,12 +573,6 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             .order_by(DeliveryPODDocument.created_at.asc())
             .all()
         ]
-    invoice = (
-        db.query(ARInvoice)
-        .filter(ARInvoice.do_id == do_id, ARInvoice.is_active.is_(True))
-        .order_by(ARInvoice.created_at.desc())
-        .first()
-    )
     selling_price = _decimal_to_float(quotation.selling_price if quotation is not None else None)
     actual_total = _decimal_to_float(actual_cost.total_amount if actual_cost else None)
     quoted_cost = _decimal_to_float(quotation.total_cost if quotation else None)
@@ -867,7 +858,6 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         "ledger_lines": so_dong,
         "ledger_totals": tong_so,
         "pod_documents": documents,
-        "invoice": serialize_ar_invoice(invoice) if invoice else None,
         "resource_release": {
             "assignment_status": assignment.status if assignment else "",
             "vehicle_status": assigned_vehicle.status if assigned_vehicle else "",

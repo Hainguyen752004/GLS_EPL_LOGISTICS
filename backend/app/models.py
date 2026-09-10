@@ -36,25 +36,6 @@ class CurrencyRateHistory(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
 
 
-class TaxCode(Base):
-    __tablename__ = "tax_codes"
-    __table_args__ = (
-        CheckConstraint("rate >= 0", name="ck_tax_code_rate_nonnegative"),
-        CheckConstraint("mode IN ('exclusive', 'inclusive', 'exempt')", name="ck_tax_code_mode"),
-        CheckConstraint("effective_to IS NULL OR effective_from <= effective_to", name="ck_tax_code_effective_range"),
-        UniqueConstraint("code", "effective_from", name="uq_tax_code_effective_from"),
-    )
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    code = Column(String(50), nullable=False, index=True)
-    rate = Column(RATE_TYPE, nullable=False)
-    mode = Column(String(20), nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    effective_from = Column(Date, nullable=False)
-    effective_to = Column(Date)
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-
-
 class FinanceControlConfig(Base):
     __tablename__ = "finance_control_config"
     __table_args__ = (
@@ -455,19 +436,6 @@ class DeliveryOrder(Base):
     # nào — bắt buộc ở đây thì mọi đơn lẻ cũng phải điền một ô vô nghĩa.
     seal_no = Column(String)
 
-# 8. DeliveryOrderDetails (Chi tiết hàng hóa)
-class DeliveryOrderDetail(Base):
-    __tablename__ = "delivery_order_details"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    sku = Column(String)
-    description = Column(String)
-    qty = Column(Integer, default=1)
-    uom = Column(String, default="PCS")
-    unit_price = Column(MONEY_TYPE, default=0.0)
-    amount = Column(MONEY_TYPE, default=0.0)
-    weight_kg = Column(Float, default=0.0)
-
-
 class ParkingList(Base):
     __tablename__ = "parking_lists"
     __table_args__ = (
@@ -549,19 +517,6 @@ class ParkingEvent(Base):
     note = Column(Text)
     parking_list = relationship("ParkingList", back_populates="events")
 
-# 9. ShipmentCosts (Chi phí vận chuyển)
-class ShipmentCost(Base):
-    __tablename__ = "shipment_costs"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    do_id = Column(String, ForeignKey("delivery_orders.id"))
-    fuel_cost = Column(MONEY_TYPE, default=0.0)
-    driver_cost = Column(MONEY_TYPE, default=0.0)
-    toll_fee = Column(MONEY_TYPE, default=0.0)
-    warehouse_fee = Column(MONEY_TYPE, default=0.0)
-    total_cost = Column(MONEY_TYPE, default=0.0)
-    selling_price = Column(MONEY_TYPE, default=0.0)
-    margin_pct = Column(Float, default=15.0)
-
 # 10. VehicleTracking (Dữ liệu GPS)
 class VehicleTracking(Base):
     __tablename__ = "vehicle_tracking"
@@ -574,16 +529,6 @@ class VehicleTracking(Base):
     eta = Column(String)
     planned_return_at = Column(String)
     last_update = Column(DateTime, default=datetime.datetime.utcnow)
-
-# 11. POD (Xác nhận giao hàng)
-class POD(Base):
-    __tablename__ = "pod"
-    do_id = Column(String, ForeignKey("delivery_orders.id"), primary_key=True)
-    delivery_time = Column(String)
-    photo_url = Column(String)
-    signature_url = Column(String)
-    note = Column(Text)
-
 
 class DeliveryPODRecord(Base):
     __tablename__ = "delivery_pod_records"
@@ -721,42 +666,6 @@ class DeliveryPODDocument(Base):
     )
     created_by = Column(String(255), nullable=False)
 
-# 12. ARInvoices (Hóa đơn công nợ)
-class ARInvoice(Base):
-    __tablename__ = "ar_invoices"
-    id = Column(String, primary_key=True) # INV-2026-001
-    canonical_status = Column(String, nullable=False, default="posted")
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    created_by = Column(String, nullable=False, default="system")
-    updated_by = Column(String, nullable=False, default="system")
-    version = Column(Integer, nullable=False, default=1)
-    is_active = Column(Boolean, nullable=False, default=True)
-    reversal_of_invoice_id = Column(String, ForeignKey("ar_invoices.id"))
-    currency_code = Column(String, nullable=False, default="VND")
-    exchange_rate_snapshot = Column(Numeric, nullable=False, default=1)
-    tax_rate_snapshot = Column(Numeric)
-    do_id = Column(String, ForeignKey("delivery_orders.id"))
-    customer_id = Column(String, ForeignKey("customers.id"))
-    invoice_date = Column(String)
-    amount = Column(MONEY_TYPE, nullable=False, default=0) # Giá vốn/Bán
-    vat_pct = Column(RATE_TYPE, nullable=False, default=10)
-    vat_amount = Column(MONEY_TYPE, nullable=False, default=0)
-    total = Column(MONEY_TYPE, nullable=False, default=0)
-    status = Column(String, default="Posted")
-
-Index("uq_active_invoice_do", ARInvoice.do_id, unique=True, sqlite_where=ARInvoice.is_active.is_(True), postgresql_where=ARInvoice.is_active.is_(True))
-
-# 13. GLTransactions (Bút toán kế toán)
-class GLTransaction(Base):
-    __tablename__ = "gl_transactions"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    invoice_id = Column(String, ForeignKey("ar_invoices.id"))
-    date = Column(String)
-    account_code = Column(String) # 131, 511, 3331...
-    debit = Column(MONEY_TYPE, default=0.0)
-    credit = Column(MONEY_TYPE, default=0.0)
-
 # 14. Incidents (Báo cáo sự cố)
 class Incident(Base):
     __tablename__ = "incidents"
@@ -835,13 +744,6 @@ class User(Base):
     id = Column(String, primary_key=True)
     username = Column(String, nullable=False)
     role_id = Column(String, ForeignKey("roles.id"))
-
-# 21. Chart of Account
-class ChartOfAccount(Base):
-    __tablename__ = "chart_of_accounts"
-    account_code = Column(String, primary_key=True) # 131, 511
-    account_name = Column(String)
-    type = Column(String) # Asset, Liability, Equity, Revenue, Expense
 
 # 22. Quotation
 class Quotation(Base):
@@ -1013,17 +915,6 @@ class QuotationVersion(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     created_by = Column(String, nullable=False, default="system")
 
-class QuotationDetail(Base):
-    __tablename__ = "quotation_details"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    quotation_id = Column(String, ForeignKey("quotations.id"))
-    item_id = Column(String, ForeignKey("items.id"))
-    qty = Column(Integer, default=1)
-    uom = Column(String)
-    unit_price = Column(MONEY_TYPE, default=0.0)
-    amount = Column(MONEY_TYPE, default=0.0)
-
-
 class IdempotencyRecord(Base):
     __tablename__ = "idempotency_records"
     __table_args__ = (UniqueConstraint("actor", "method", "path", "idempotency_key", name="uq_idempotency_scope"),)
@@ -1038,53 +929,12 @@ class IdempotencyRecord(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
 
 
-class AccountingPeriod(Base):
-    __tablename__ = "accounting_periods"
-    id = Column(String, primary_key=True)
-    starts_at = Column(DateTime, nullable=False)
-    ends_at = Column(DateTime, nullable=False)
-    status = Column(String, nullable=False)
-    closed_at = Column(DateTime)
-    closed_by = Column(String)
-
-
 class AccountMapping(Base):
     __tablename__ = "account_mappings"
     mapping_key = Column(String, primary_key=True)
     account_code = Column(String, nullable=False)
     effective_from = Column(DateTime)
     effective_to = Column(DateTime)
-
-
-class JournalBatch(Base):
-    __tablename__ = "journal_batches"
-    __table_args__ = (
-        UniqueConstraint("source_type", "source_id", name="uq_journal_source"),
-        CheckConstraint("source_type IS NULL OR source_type IN ('ar_invoice','ap_invoice','ap_payment','ap_reversal','payment_reversal')", name="ck_journal_source_type"),
-    )
-    id = Column(String, primary_key=True)
-    invoice_id = Column(String, ForeignKey("ar_invoices.id"), nullable=True, unique=True)
-    source_type = Column(String(32), nullable=True)
-    source_id = Column(String, nullable=True)
-    status = Column(String, nullable=False)
-    posted_at = Column(DateTime)
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-
-
-class JournalLine(Base):
-    __tablename__ = "journal_lines"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    batch_id = Column(String, ForeignKey("journal_batches.id"), nullable=False)
-    account_code = Column(String, nullable=False)
-    debit = Column(Numeric, nullable=False, default=0)
-    credit = Column(Numeric, nullable=False, default=0)
-    currency_code = Column(String, nullable=False, default="VND")
-    exchange_rate_snapshot = Column(Numeric, nullable=False, default=1)
-    transaction_amount = Column(MONEY_TYPE, nullable=False, default=0)
-    transaction_currency = Column(String(3), nullable=False, default="VND")
-    exchange_rate = Column(RATE_TYPE, nullable=False, default=1)
-    functional_debit = Column(MONEY_TYPE, nullable=False, default=0)
-    functional_credit = Column(MONEY_TYPE, nullable=False, default=0)
 
 
 class MigrationQuarantine(Base):
@@ -1556,144 +1406,11 @@ class EPLExpenseVoucher(Base):
     updated_by = Column(String(128), nullable=False)
 
 
-class APInvoice(Base):
-    __tablename__ = "ap_invoices"
-    __table_args__ = (
-        UniqueConstraint("carrier_id", "normalized_vendor_invoice_no", "document_kind", name="uq_ap_vendor_document"),
-        CheckConstraint("document_kind IN ('invoice','credit_memo')", name="ck_ap_document_kind"),
-        CheckConstraint("status IN ('draft','submitted','approved','posted','partially_paid','paid','reversed')", name="ck_ap_status"),
-        CheckConstraint("version > 0", name="ck_ap_version"),
-        CheckConstraint("reversal_of_ap_id IS NULL OR reversal_of_ap_id <> id", name="ck_ap_no_self_reversal"),
-        CheckConstraint("document_kind <> 'credit_memo' OR (subtotal_amount <= 0 AND tax_amount <= 0 AND total_amount <= 0)", name="ck_ap_credit_negative"),
-    )
-    id = Column(String, primary_key=True)
-    cost_id = Column(String, ForeignKey("freight_actual_costs.id"), nullable=False)
-    carrier_id = Column(String, ForeignKey("carriers.id"), nullable=False)
-    carrier_name_snapshot = Column(String, nullable=False)
-    carrier_tax_code_snapshot = Column(String)
-    vendor_invoice_no = Column(String(128), nullable=False)
-    normalized_vendor_invoice_no = Column(String(128), nullable=False)
-    document_kind = Column(String(20), nullable=False, default="invoice")
-    invoice_date = Column(Date, nullable=False)
-    due_date = Column(Date)
-    currency_code = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    functional_currency = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    exchange_rate_snapshot = Column(RATE_TYPE, nullable=False)
-    exchange_rate_date = Column(Date, nullable=False)
-    exchange_rate_source = Column(String(100), nullable=False)
-    subtotal_amount = Column(MONEY_TYPE, nullable=False)
-    tax_amount = Column(MONEY_TYPE, nullable=False)
-    total_amount = Column(MONEY_TYPE, nullable=False)
-    functional_subtotal_amount = Column(MONEY_TYPE, nullable=False)
-    functional_tax_amount = Column(MONEY_TYPE, nullable=False)
-    functional_total_amount = Column(MONEY_TYPE, nullable=False)
-    status = Column(String(20), nullable=False, default="draft")
-    is_active = Column(Boolean, nullable=False, default=True)
-    version = Column(Integer, nullable=False, default=1)
-    reversal_of_ap_id = Column(String, ForeignKey("ap_invoices.id"), unique=True)
-    reversed_by_ap_id = Column(String, ForeignKey("ap_invoices.id", deferrable=True, initially="DEFERRED"), unique=True)
-    reversal_reason = Column(Text)
-    posting_reference = Column(String)
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    submitted_at = Column(DateTime)
-    approved_at = Column(DateTime)
-    posted_at = Column(DateTime)
-    reversed_at = Column(DateTime)
-    created_by = Column(String, nullable=False)
-    updated_by = Column(String, nullable=False)
-    submitted_by = Column(String)
-    approved_by = Column(String)
-    posted_by = Column(String)
-    reversed_by = Column(String)
-
-
-Index("uq_active_ap_cost", APInvoice.cost_id, unique=True,
-      sqlite_where=APInvoice.is_active.is_(True), postgresql_where=APInvoice.is_active.is_(True))
-
-
-class APInvoiceLine(Base):
-    __tablename__ = "ap_invoice_lines"
-    __table_args__ = (CheckConstraint("tax_mode IN ('exclusive','inclusive','exempt')", name="ck_ap_line_tax_mode"),)
-    id = Column(String, primary_key=True)
-    ap_invoice_id = Column(String, ForeignKey("ap_invoices.id", ondelete="CASCADE"), nullable=False)
-    charge_item_id = Column(String, ForeignKey("freight_charge_items.id"), nullable=False)
-    charge_type = Column(String(32), nullable=False)
-    description = Column(String(500))
-    quantity = Column(QUANTITY_TYPE, nullable=False)
-    unit_price = Column(MONEY_TYPE, nullable=False)
-    currency_code = Column(String(3), nullable=False)
-    tax_code = Column(String(50), nullable=False)
-    tax_rate_snapshot = Column(RATE_TYPE, nullable=False)
-    tax_mode = Column(String(20), nullable=False)
-    account_mapping_key = Column(String(128), nullable=False)
-    account_code_snapshot = Column(String)
-    net_amount = Column(MONEY_TYPE, nullable=False)
-    tax_amount = Column(MONEY_TYPE, nullable=False)
-    total_amount = Column(MONEY_TYPE, nullable=False)
-    rounding_adjustment = Column(MONEY_TYPE, nullable=False, default=0)
-
-
-class FreightSettlement(Base):
-    __tablename__ = "freight_settlements"
-    __table_args__ = (
-        CheckConstraint("status IN ('open','partially_paid','paid','reversed')", name="ck_freight_settlement_status"),
-        CheckConstraint("version > 0", name="ck_freight_settlement_version"),
-        CheckConstraint("approved_amount >= 0 AND paid_amount >= 0 AND remaining_amount >= 0", name="ck_freight_settlement_nonnegative"),
-        CheckConstraint("paid_amount <= approved_amount", name="ck_freight_settlement_not_overpaid"),
-    )
-    id = Column(String, primary_key=True)
-    ap_invoice_id = Column(String, ForeignKey("ap_invoices.id"), nullable=False, unique=True)
-    settlement_period = Column(String(32), nullable=False)
-    currency_code = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    functional_currency = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    approved_amount = Column(MONEY_TYPE, nullable=False)
-    paid_amount = Column(MONEY_TYPE, nullable=False, default=0)
-    remaining_amount = Column(MONEY_TYPE, nullable=False)
-    status = Column(String(20), nullable=False, default="open")
-    version = Column(Integer, nullable=False, default=1)
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    created_by = Column(String, nullable=False)
-    updated_by = Column(String, nullable=False)
-
-
-class SettlementPayment(Base):
-    __tablename__ = "settlement_payments"
-    __table_args__ = (
-        CheckConstraint("amount > 0", name="ck_settlement_payment_positive"),
-        CheckConstraint("status IN ('posted','reversed')", name="ck_settlement_payment_status"),
-        CheckConstraint("reversal_of_payment_id IS NULL OR reversal_of_payment_id <> id", name="ck_settlement_payment_no_self_reversal"),
-    )
-    id = Column(String, primary_key=True)
-    settlement_id = Column(String, ForeignKey("freight_settlements.id"), nullable=False)
-    amount = Column(MONEY_TYPE, nullable=False)
-    currency_code = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    functional_currency = Column(String(3), ForeignKey("currency_definitions.code"), nullable=False)
-    exchange_rate_snapshot = Column(RATE_TYPE, nullable=False)
-    exchange_rate_date = Column(Date, nullable=False)
-    exchange_rate_source = Column(String(100), nullable=False)
-    functional_amount = Column(MONEY_TYPE, nullable=False)
-    posting_date = Column(Date, nullable=False)
-    payment_method = Column(String(32), nullable=False)
-    reference_no = Column(String(128))
-    status = Column(String(20), nullable=False, default="posted")
-    posting_reference = Column(String)
-    reversal_of_payment_id = Column(String, ForeignKey("settlement_payments.id"), unique=True)
-    reversed_by_payment_id = Column(String, ForeignKey("settlement_payments.id", deferrable=True, initially="DEFERRED"), unique=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    created_by = Column(String, nullable=False)
-    
-
+# Quan he cua ho so chi phi (khai sau vi hai lop tham chieu nhau).
 FreightActualCost.items = relationship(FreightChargeItem, cascade="all, delete-orphan", back_populates="cost")
 FreightActualCost.documents = relationship(FreightCostDocument, cascade="all, delete-orphan", back_populates="cost")
 FreightChargeItem.cost = relationship(FreightActualCost, back_populates="items")
 FreightCostDocument.cost = relationship(FreightActualCost, back_populates="documents")
-APInvoice.lines = relationship(APInvoiceLine, cascade="all, delete-orphan", back_populates="invoice")
-APInvoiceLine.invoice = relationship(APInvoice, back_populates="lines")
-FreightSettlement.payments = relationship(SettlementPayment, cascade="all, delete-orphan", back_populates="settlement")
-SettlementPayment.settlement = relationship(FreightSettlement, back_populates="payments")
-
 
 class FreightOrderLegacyLink(Base):
     __tablename__ = "freight_order_legacy_links"

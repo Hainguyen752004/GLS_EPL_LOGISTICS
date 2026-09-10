@@ -453,15 +453,11 @@ def reverse_cost(db, cost_id, data, method, path, key, actor, permissions):
 
 
 def _reverse_cost(db, cost_id, expected, reason, actor):
-    from models import APInvoice
-
     cost = _cost_for_update(db, cost_id)
     if cost.version != expected: raise conflict("VERSION_CONFLICT", "Chi phí đã thay đổi. Vui lòng tải lại dữ liệu.")
     if cost.status != "approved" or cost.reversal_of_cost_id: raise conflict("COST_REVERSAL_INVALID", "Chỉ được đảo chi ph? gốc đã duyệt.")
     if db.scalar(select(FreightActualCost.id).where(FreightActualCost.reversal_of_cost_id == cost.id)):
         raise conflict("COST_ALREADY_REVERSED", "Chi phí đã có chứng từ đảo.")
-    if db.scalar(select(APInvoice.id).where(APInvoice.cost_id == cost.id, APInvoice.is_active.is_(True))):
-        raise conflict("COST_HAS_ACTIVE_AP", "Chi phí đã có AP đang hoạt động. Vui lòng đảo AP trước khi đảo chi phí.")
     reversal_id = str(uuid.uuid4())
     changed = db.execute(update(FreightActualCost).where(FreightActualCost.id == cost.id,
         FreightActualCost.version == expected, FreightActualCost.status == "approved").values(

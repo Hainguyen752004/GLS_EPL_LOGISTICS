@@ -34,6 +34,7 @@ try {
 
 /** Ô mà người dùng PHẢI thấy khi mở từng màn. */
 const NOI_DUNG_CHINH = {
+  'os-home': ['#os-dock .os-app', '#os-tiles .os-tile', '#tim-man-hinh'],
   dashboard: ['#view-dashboard .card-panel'],
   'co-hoi': ['#cohoi-root'],
   'crm-sales': ['#qtv2-root'],
@@ -44,10 +45,8 @@ const NOI_DUNG_CHINH = {
   'delivery-completion': ['#view-delivery-completion'],
   'parking-list': ['#view-parking-list'],
   'ai-checkpoint': ['#view-ai-checkpoint'],
-  accounting: ['#view-accounting'],
   'master-data': ['#md-tab-routes', '#view-master-data'],
   'lab-summary': ['#view-lab-summary'],
-  'operations-360': ['#view-operations-360'],
 };
 
 const loi = [];

@@ -124,14 +124,14 @@
     const body = document.getElementById('transport-report-revenue-body');
     if (!body) return;
     if (!(report.rows || []).length) {
-      body.innerHTML = '<tr><td class="transport-report-empty" colspan="23">Chưa có chuyến có hóa đơn AR đã ghi sổ trong kỳ đã chọn.</td></tr>';
+      body.innerHTML = '<tr><td class="transport-report-empty" colspan="23">Chưa có chuyến có hồ sơ hoàn tất (chốt giá) trong kỳ đã chọn.</td></tr>';
       return;
     }
     body.innerHTML = report.rows.map((row, index) => {
       const total = row.totals || {};
       return `<tr>
         <td>${index + 1}</td><td>${dateText(row.departure_date)}</td><td title="${escapeHtml(row.dispatch_order_no)}">${escapeHtml(row.dispatch_order_no)}</td>
-        <td>${dateText(row.recognition_date)}</td><td>${escapeHtml(row.invoice_no)}</td><td title="${escapeHtml(row.origin)}">${escapeHtml(row.origin)}</td>
+        <td>${dateText(row.recognition_date)}</td><td>${escapeHtml(row.closeout_id)}</td><td title="${escapeHtml(row.origin)}">${escapeHtml(row.origin)}</td>
         <td title="${escapeHtml(row.destination)}">${escapeHtml(row.destination)}</td><td>${escapeHtml(row.agency_company || '-')}</td><td>${escapeHtml(row.driver_name || '-')}</td>
         <td>${escapeHtml(row.tractor_plate || '-')}</td><td>${escapeHtml(row.trailer_plate || '-')}</td><td>${escapeHtml(row.vehicle_code || '-')}</td>
         <td>${escapeHtml(row.customer_name || '-')}</td><td>${escapeHtml(row.cargo_type || '-')}</td><td>${row.trip_count}</td><td>${escapeHtml(row.uom || '-')}</td>

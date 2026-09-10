@@ -137,7 +137,6 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
     assert completion_response.status_code == 200, completion_response.text
     completion = completion_response.json()["data"]
     assert completion["status"] == "delivered"
-    assert completion["invoice"]["canonical_status"] == "posted"
     assert len(completion["pod_records"]) == len(loaded_trip["legs"])
     assert all(len(row["documents"]) == 2 for row in completion["pod_records"])
 

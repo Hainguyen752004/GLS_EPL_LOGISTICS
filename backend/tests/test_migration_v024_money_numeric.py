@@ -23,6 +23,8 @@ def test_every_money_column_is_numeric_in_the_models():
 
     wrong = []
     for table, column in v024.MONEY_COLUMNS:
+        if table not in by_table:
+            continue  # bang da DROP o 049/051 (SO, ke toan) — khong con model
         col = by_table[table].columns[column]
         if not isinstance(col.type, Numeric):
             wrong.append(f"{table}.{column}={col.type}")

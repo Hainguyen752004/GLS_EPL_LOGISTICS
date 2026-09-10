@@ -16,6 +16,17 @@ import pytest
 from migrations.runner import required_migration_head, rollback, upgrade
 
 
+@pytest.fixture(autouse=True)
+def _chuoi_truoc_xoa_ke_toan(monkeypatch):
+    """Moc 051 (10/09) DROP ap_invoices/settlements/tax_codes… — bai kiem nay la LICH SU cua v007,
+    nen chay chuoi toi truoc 051. Va vao globals cua ham `upgrade` da import (sau app_client,
+    `migrations.runner` trong sys.modules co the la module khac)."""
+    for ham in (upgrade, rollback, required_migration_head):
+        g = ham.__globals__
+        monkeypatch.setitem(g, "MIGRATIONS", tuple(m for m in g["MIGRATIONS"] if int(m.VERSION.split("_")[0]) < 51))
+
+
+
 def _legacy_base(path):
     connection = sqlite3.connect(path)
     connection.executescript("""

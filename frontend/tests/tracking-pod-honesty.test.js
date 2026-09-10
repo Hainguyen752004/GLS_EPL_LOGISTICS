@@ -101,9 +101,9 @@ assert.ok(html.includes('id="route-dev-text"'), 'badge lệch tuyến phải cò
   assert.ok(html.includes('id="tracking-do-search"'));
   assert.ok(!/'tracking-search-do'/.test(code),
     'id `tracking-search-do` không tồn tại trong trang — mọi nhánh đọc nó là no-op');
-  // Sáu chỗ trong app.js từng dùng id sai đó.
-  assert.ok((code.match(/'tracking-do-search'/g) || []).length >= 6,
-    'cả sáu chỗ phải dùng id thật');
+  // Năm chỗ trong app.js từng dùng id sai đó (chỗ thứ sáu ở Shipment 360 — đã xoá 10/09).
+  assert.ok((code.match(/'tracking-do-search'/g) || []).length >= 5,
+    'cả năm chỗ phải dùng id thật');
 }
 {
   // Neo vao ham ve dong thoi gian, khong lay mot cua so ky tu quanh

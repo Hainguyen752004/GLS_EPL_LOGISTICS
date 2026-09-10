@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from models import DeliveryOrder, ARInvoice as Invoice, Vehicle, Driver
+from models import DeliveryOrder, Vehicle, Driver
 from llm_helper import call_gemini_llm
 
 class QueryAgent:
@@ -11,15 +11,13 @@ class QueryAgent:
     def process(prompt: str, db: Session) -> Dict[str, Any]:
         # Comprehensive System Snapshot
         dos = db.query(DeliveryOrder).all()
-        invs = db.query(Invoice).all()
         vehicles = db.query(Vehicle).all()
         drivers = db.query(Driver).all()
 
-        total_rev = sum(i.total for i in invs if i.total)
+        total_rev = 0.0  # hoa don AR da xoa (10/09); doanh thu doc o ho so hoan tat
 
         context_data = "BÁO CÁO TOÀN DIỆN HỆ THỐNG LOGISTICS EPL:\n\n"
-        context_data += f"- DOANH THU & TÀI CHÍNH: Tổng doanh thu hóa đơn: {total_rev:,.0f} VNĐ.\n"
-        context_data += f"- TỔNG QUAN SỐ LƯỢNG: {len(dos)} Lệnh Giao Hàng DO, {len(invs)} Hóa đơn.\n"
+        context_data += f"- TỔNG QUAN SỐ LƯỢNG: {len(dos)} Lệnh Giao Hàng DO.\n"
         context_data += f"- ĐỘI XE & TÀI XẾ: Tổng {len(vehicles)} Xe, {len(drivers)} Tài xế.\n"
         
         # Chi tiết Xe

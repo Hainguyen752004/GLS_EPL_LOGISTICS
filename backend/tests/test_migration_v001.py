@@ -327,7 +327,7 @@ def test_status_mapping_and_audit_backfill_are_controlled(tmp_path):
 
 def test_orm_metadata_contains_migrated_schema():
     import models
-    required = {"idempotency_records", "accounting_periods", "account_mappings", "journal_batches", "journal_lines", "migration_quarantine"}
+    required = {"idempotency_records", "account_mappings", "migration_quarantine"}  # bang ke toan da xoa (051)
     assert required <= set(models.Base.metadata.tables)
     # Bang sales_orders da truc xuat (v049); cac cot v001 them vao lenh giao hang van phai co tren ORM.
     assert {"quotation_id", "canonical_status", "created_at", "updated_at", "created_by", "updated_by", "version"} <= set(models.DeliveryOrder.__table__.columns.keys())
@@ -493,11 +493,7 @@ def test_rollback_unmigrated_database_is_noop(tmp_path):
 
 def test_orm_unique_constraints_and_defaults_match_migration():
     import models
-    active = next(index for index in models.ARInvoice.__table__.indexes if index.name == "uq_active_invoice_do")
-    assert active.unique is True
-    assert str(active.dialect_options["sqlite"]["where"]) == "ar_invoices.is_active IS true"
     assert models.DeliveryOrder.__table__.c.canonical_status.default.arg == "pending"
-    assert models.ARInvoice.__table__.c.canonical_status.default.arg == "posted"
 
 
 def test_normalized_suffix_collision_quarantines_all_claiming_orders(tmp_path):

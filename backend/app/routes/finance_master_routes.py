@@ -1,4 +1,4 @@
-"""Dữ liệu điều khiển của nghiệp vụ tài chính: kỳ kế toán, mã thuế, ánh xạ GL.
+"""Mapping tài khoản (Acc code theo khoản mục). Thuế và kỳ kế toán đã xoá cùng module kế toán (10/09).
 
 Tách ra khỏi main.py vì hai lý do, và lý do thứ hai quan trọng hơn:
 
@@ -27,7 +27,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import AccountingPeriod, AccountMapping, TaxCode
+from models import AccountMapping
 from routes.shared import require_api_principal
 from services.errors import DomainError, raise_http
 
@@ -77,124 +77,6 @@ def _clean_master_string(data: dict, key: str, label: str, max_len: int = 100) -
 
 def _master_saved(entity):
     return {"message": "Đã lưu cấu hình Master Data vào CSDL.", "data": entity}
-
-
-@router.post("/api/master-data/tax-codes")
-def save_tax_code(data: dict = Body(...), db: Session = Depends(get_db)):
-    code = _clean_master_string(data, "code", "mã thuế", 50).upper()
-    try:
-        rate = Decimal(str(data.get("rate")))
-    except (InvalidOperation, TypeError, ValueError):
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Vui lòng nhập thuế suất hợp lệ."})
-    if rate < 0:
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Thuế suất không được âm."})
-    mode = str(data.get("mode") or "exclusive").strip().lower()
-    if mode not in {"exclusive", "inclusive", "exempt"}:
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Kiểu tính thuế không hợp lệ."})
-    effective_from = _parse_iso_date(data.get("effective_from"), "ngày hiệu lực")
-    tax = db.query(TaxCode).filter(TaxCode.code == code, TaxCode.effective_from == effective_from).first()
-    if not tax:
-        tax = TaxCode(code=code, effective_from=effective_from)
-        db.add(tax)
-    tax.rate = rate
-    tax.mode = mode
-    tax.effective_to = _parse_iso_date(data["effective_to"], "ngày hết hiệu lực") if data.get("effective_to") else None
-    tax.is_active = bool(data.get("is_active", True))
-    tax.updated_at = datetime.utcnow()
-    try:
-        db.commit()
-        db.refresh(tax)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail={"code": "MASTER_DATA_DUPLICATE", "message": "Mã thuế đã tồn tại hoặc dữ liệu không hợp lệ."})
-    return _master_saved(tax)
-
-
-@router.put("/api/master-data/tax-codes/{code}")
-def update_tax_code(code: str, data: dict = Body(...), db: Session = Depends(get_db)):
-    payload = dict(data or {})
-    payload["code"] = code
-    return save_tax_code(payload, db)
-
-
-@router.post("/api/master-data/tax-codes/{code}/status")
-def set_tax_code_status(code: str, data: dict = Body(default={}), db: Session = Depends(get_db)):
-    is_active = bool((data or {}).get("is_active", True))
-    rows = db.query(TaxCode).filter(func.upper(TaxCode.code) == str(code).upper()).all()
-    if not rows:
-        raise HTTPException(status_code=404, detail={"code": "MASTER_DATA_NOT_FOUND", "message": "Không tìm thấy mã thuế cần cập nhật."})
-    for row in rows:
-        row.is_active = is_active
-        row.updated_at = datetime.utcnow()
-    db.commit()
-    return {"message": "Đã cập nhật trạng thái mã thuế.", "data": {"code": code, "is_active": is_active}}
-
-
-@router.delete("/api/master-data/tax-codes/{code}")
-def delete_tax_code(code: str, db: Session = Depends(get_db)):
-    rows = db.query(TaxCode).filter(func.upper(TaxCode.code) == str(code).upper()).all()
-    if not rows:
-        raise HTTPException(status_code=404, detail={"code": "MASTER_DATA_NOT_FOUND", "message": "Không tìm thấy mã thuế cần xóa."})
-    for row in rows:
-        db.delete(row)
-    db.commit()
-    return {"message": "Đã xóa mã thuế khỏi Master Data.", "data": {"code": code}}
-
-
-@router.post("/api/master-data/accounting-periods")
-def save_accounting_period(data: dict = Body(...), db: Session = Depends(get_db)):
-    period_id = _clean_master_string(data, "id", "mã kỳ kế toán", 50)
-    starts_at = _parse_iso_datetime(data.get("starts_at"), "ngày bắt đầu kỳ")
-    ends_at = _parse_iso_datetime(data.get("ends_at"), "ngày kết thúc kỳ")
-    if starts_at > ends_at:
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Ngày bắt đầu kỳ không được sau ngày kết thúc kỳ."})
-    status = str(data.get("status") or "open").strip().lower()
-    if status not in {"open", "closed"}:
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Trạng thái kỳ kế toán chỉ được là mở hoặc đã khóa."})
-    period = db.get(AccountingPeriod, period_id) or AccountingPeriod(id=period_id)
-    db.add(period)
-    period.starts_at = starts_at
-    period.ends_at = ends_at
-    period.status = status
-    try:
-        db.commit()
-        db.refresh(period)
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(status_code=409, detail={"code": "MASTER_DATA_DUPLICATE", "message": "Kỳ kế toán đã tồn tại hoặc dữ liệu không hợp lệ."})
-    return _master_saved(period)
-
-
-@router.put("/api/master-data/accounting-periods/{period_id}")
-def update_accounting_period(period_id: str, data: dict = Body(...), db: Session = Depends(get_db)):
-    payload = dict(data or {})
-    payload["id"] = period_id
-    return save_accounting_period(payload, db)
-
-
-@router.post("/api/master-data/accounting-periods/{period_id}/status")
-def set_accounting_period_status(period_id: str, data: dict = Body(default={}), db: Session = Depends(get_db)):
-    period = db.get(AccountingPeriod, period_id)
-    if not period:
-        raise HTTPException(status_code=404, detail={"code": "MASTER_DATA_NOT_FOUND", "message": "Không tìm thấy kỳ kế toán cần cập nhật."})
-    status = str((data or {}).get("status") or "open").strip().lower()
-    if status not in {"open", "closed"}:
-        raise HTTPException(status_code=422, detail={"code": "MASTER_DATA_INVALID", "message": "Trạng thái kỳ kế toán chỉ được là mở hoặc đã khóa."})
-    period.status = status
-    period.closed_at = datetime.utcnow() if status == "closed" else None
-    period.closed_by = "ui" if status == "closed" else None
-    db.commit()
-    return {"message": "Đã cập nhật trạng thái kỳ kế toán.", "data": {"id": period_id, "status": status}}
-
-
-@router.delete("/api/master-data/accounting-periods/{period_id}")
-def delete_accounting_period(period_id: str, db: Session = Depends(get_db)):
-    period = db.get(AccountingPeriod, period_id)
-    if not period:
-        raise HTTPException(status_code=404, detail={"code": "MASTER_DATA_NOT_FOUND", "message": "Không tìm thấy kỳ kế toán cần xóa."})
-    db.delete(period)
-    db.commit()
-    return {"message": "Đã xóa kỳ kế toán khỏi Master Data.", "data": {"id": period_id}}
 
 
 @router.post("/api/master-data/account-mappings")

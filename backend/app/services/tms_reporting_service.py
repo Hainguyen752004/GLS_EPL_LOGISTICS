@@ -6,13 +6,12 @@ from decimal import Decimal
 from sqlalchemy import select
 
 from models import (
-    ARInvoice,
     AuditLog,
     Carrier,
     CurrencyRateHistory,
     Customer,
     DeliveryOrder,
-    DeliveryOrderDetail,
+    DeliveryOrderCloseout,
     Driver,
     EPLExpenseVoucher,
     FinanceControlConfig,
@@ -26,6 +25,7 @@ from models import (
 )
 from services import tms_cost_service
 from services.errors import DomainError, conflict
+from services.tms_money import resolve_exchange_rate
 
 
 REPORT_CURRENCIES = ("VND", "LAK", "THB", "USD", "CNY")
@@ -100,13 +100,25 @@ def _converted_totals(db, amount_functional, functional_currency, recognition_da
     return totals, missing
 
 
-def _active_invoice(db, do_id):
-    return db.scalar(
-        select(ARInvoice)
-        .where(ARInvoice.do_id == do_id, ARInvoice.is_active.is_(True))
-        .order_by(ARInvoice.updated_at.desc())
-        .limit(1)
-    )
+def _ho_so_hoan_tat(db, do_id):
+    """Ho so hoan tat (closeout) cua DO — NGUON DOANH THU cua bao cao.
+
+    Truoc day bao cao doc hoa don AR; module ke toan da xoa (10/09) nen doanh thu
+    ghi nhan = gia ban cuoi chot luc hoan tat giao hang, dung con so ban giao cho
+    he cong no. DO hoan thanh ma chua co ho so hoan tat thi la ngoai le, khong doan.
+    """
+    return db.scalar(select(DeliveryOrderCloseout).where(DeliveryOrderCloseout.do_id == do_id).limit(1))
+
+
+def _ty_gia_ve_chuc_nang(db, currency_code, functional_currency, on_date, missing):
+    """Ty gia quy doi ve tien te chuc nang; thieu thi ghi vao `missing` va dung 1."""
+    if not currency_code or currency_code == functional_currency:
+        return Decimal(1)
+    try:
+        return Decimal(resolve_exchange_rate(db, currency_code, functional_currency, on_date or dt.date.today()).rate)
+    except DomainError:
+        missing.append("exchange_rate_%s" % currency_code)
+        return Decimal(1)
 
 
 def _active_cost(db, trip_id):
@@ -156,23 +168,23 @@ def get_transport_revenue(
             continue
         if vehicle_id and trip.vehicle_id != vehicle_id:
             continue
-        invoice = _active_invoice(db, delivery.id)
-        recognition_date = _date(invoice.invoice_date if invoice else None) or _date(
+        ho_so = _ho_so_hoan_tat(db, delivery.id)
+        recognition_date = _date(ho_so.completed_at if ho_so else None) or _date(
             trip.actual_departure_at or trip.planned_departure_at or delivery.pickup_date
         )
         if date_from and (recognition_date is None or recognition_date < date_from):
             continue
         if date_to and (recognition_date is None or recognition_date > date_to):
             continue
-        if invoice is None or invoice.canonical_status != "posted":
+        if ho_so is None:
             exceptions.append({
-                "code": "AR_NOT_POSTED",
+                "code": "CLOSEOUT_MISSING",
                 "trip_id": trip.id,
                 "do_id": delivery.id,
-                "message": "DO đã hoàn thành nhưng hóa đơn AR chưa được ghi sổ.",
+                "message": "DO đã hoàn thành nhưng chưa có hồ sơ hoàn tất (chốt giá).",
             })
             continue
-        if currency_code and invoice.currency_code != currency_code:
+        if currency_code and ho_so.currency_code != currency_code:
             continue
 
         customer = db.get(Customer, delivery.customer_id) if delivery.customer_id else None
@@ -191,7 +203,9 @@ def get_transport_revenue(
             .limit(1)
         )
 
-        revenue = Decimal(invoice.total or 0) * Decimal(invoice.exchange_rate_snapshot or 1)
+        missing_fx = []
+        ty_gia = _ty_gia_ve_chuc_nang(db, ho_so.currency_code, functional_currency, recognition_date, missing_fx)
+        revenue = Decimal(ho_so.final_selling_price or 0) * ty_gia
 
         # GIÁ THÀNH CỦA MỘT CHUYẾN = GIÁ THÀNH KẾ HOẠCH + CHÊNH LỆCH ĐÃ DUYỆT.
         #
@@ -220,6 +234,7 @@ def get_transport_revenue(
             chenh_lech = _cost_total(cost) * Decimal(cost.exchange_rate_snapshot or 1)
         approved_cost = ke_hoach + chenh_lech
         totals, missing = _converted_totals(db, revenue, functional_currency, recognition_date)
+        missing.extend(missing_fx)
         if vehicle is None:
             missing.append("tractor_plate")
         missing.append("trailer_plate")
@@ -239,7 +254,7 @@ def get_transport_revenue(
             "departure_date": _date(trip.actual_departure_at or trip.planned_departure_at),
             "dispatch_order_no": delivery.id,
             "recognition_date": recognition_date,
-            "invoice_no": invoice.id,
+            "closeout_id": ho_so.id,
             "origin": origin,
             "destination": destination,
             "agency_company": carrier.name if carrier else None,
@@ -262,7 +277,7 @@ def get_transport_revenue(
             "approved_cost_functional": _number(approved_cost),
             "gross_profit": _number(profit),
             "margin_percent": round(_number(margin), 2),
-            "currency_code": invoice.currency_code,
+            "currency_code": ho_so.currency_code,
             "note": None,
             "missing_fields": sorted(set(missing)),
         }
@@ -272,7 +287,7 @@ def get_transport_revenue(
         _add_aggregate(by_customer, customer_name or "Chưa có khách hàng", _number(revenue), _number(approved_cost))
         _add_aggregate(by_route, route_label or "Chưa có tuyến", _number(revenue), _number(approved_cost))
         by_cargo[cargo_type or "Chưa phân loại"] += 1
-        by_currency[invoice.currency_code] += _number(invoice.total)
+        by_currency[ho_so.currency_code] += _number(ho_so.final_selling_price)
 
     recognized_revenue = sum(row["revenue_functional"] for row in rows)
     approved_cost = sum(row["approved_cost_functional"] for row in rows)

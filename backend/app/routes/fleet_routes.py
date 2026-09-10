@@ -41,11 +41,11 @@ if app_dir not in sys.path:
 from database import get_db
 from models import (Location, 
     Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
-    DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
-    GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
+    VehicleTracking, DeliveryPODRecord, 
+    AuditLog, Quotation, Incident, 
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
     TransportEvent, ResourceAssignment, TripDeliveryOrder, TransportTripLeg,
-    FreightActualCost, FreightChargeItem, APInvoice, FreightSettlement,
+    FreightActualCost, FreightChargeItem, 
     CurrencyDefinition, CurrencyRateHistory, Role, User, CostFormula, DeliveryOrderCloseout,
     DeliveryOrderChargeAdjustment, DeliveryPODDocument, VehicleMaintenanceRequest,
     FreightOrderLegacyLink, DriverShiftAssignment, DriverQualification,
@@ -54,9 +54,7 @@ from gateway.router import GatewayRouter
 from agents.query_agent import QueryAgent
 from agents.action_agent import ActionAgent
 from runtime_state import runtime_state
-from schemas.invoice import ARInvoicePostRequest
 from schemas.workflow import RouteCreateRequest
-from services.ar_invoice_service import post_ar_invoice, serialize_ar_invoice
 from services.errors import DomainError, raise_http
 from services.vehicle_maintenance_service import (
     create_request as create_vehicle_maintenance_request,

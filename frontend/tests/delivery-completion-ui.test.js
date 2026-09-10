@@ -44,7 +44,7 @@ assert.match(app, /customer_surcharge_total/, 'Final customer surcharge is not r
 // có Acc code) thay cho khối tóm tắt riêng — nên mốc cần thấy là lời gọi đó.
 assert.match(app, /renderDeliveryOrderCloseout\(data, document\.getElementById\('completion-history-closeout'\)\)/,
   'Completed delivery must render the full closeout ledger (per-line thu/chi with Acc code).');
-assert.match(app, /Hóa đơn phải thu/, 'Completed delivery must expose the posted AR invoice.');
+assert.doesNotMatch(app, /Hóa đơn phải thu/, 'Module hoá đơn AR đã xoá (10/09): hồ sơ hoàn tất bàn giao cho hệ công nợ, không lập hoá đơn ở đây.');
 assert.match(app, /data\.trip\?\.status/, 'Completed delivery must expose the persisted Trip status.');
 assert.match(app, /data\.pod_documents/, 'Completed delivery must expose persisted POD and signature documents.');
 assert.match(app, /data\.resource_release/, 'Completed delivery must expose released vehicle and driver state.');

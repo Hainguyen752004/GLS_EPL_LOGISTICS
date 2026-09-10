@@ -234,7 +234,7 @@ console.log('format-utils: tất cả kiểm tra đã qua');
 // --------------------------------------------------------------------------
 
 // Sáu hàm escape từng tồn tại song song trong app.js: escapeVehicleHtml,
-// escapeCloseoutText, escapeRouteCheckpointText, uiHealthEscape, doBoardEscape,
+// escapeCloseoutText, escapeRouteCheckpointText, doBoardEscape,
 // và window.escapeHtml. Tất cả đều viết đúng nhưng đã trôi khỏi nhau — một bản
 // biến số 0 thành chuỗi rỗng.
 {
@@ -245,7 +245,7 @@ console.log('format-utils: tất cả kiểm tra đã qua');
     0,
     `app.js còn ${copies} bản tự viết lại phép escape — phải uỷ quyền sang escapeHtml`
   );
-  for (const name of ['uiHealthEscape', 'doBoardEscape']) {
+  for (const name of ['doBoardEscape']) {
     const fn = app.slice(app.indexOf(`function ${name}(`), app.indexOf(`function ${name}(`) + 90);
     assert.ok(fn.includes('escapeHtml(value)'), `${name} phải uỷ quyền sang escapeHtml`);
   }

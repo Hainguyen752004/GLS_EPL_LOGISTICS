@@ -33,7 +33,7 @@ TILES.forEach(id => {
 {
   const start = app.indexOf('async function loadDashboard()');
   assert.ok(start > 0, 'phai con ham tai Bang dieu khien');
-  const fn = app.slice(start, app.indexOf('\nwindow.loadAccountingData', start));
+  const fn = app.slice(start, app.indexOf('\nwindow.loadDashboard', start));
 
   // Truoc day chi co `if (res.ok) { ... }` va khong he co nhanh nguoc lai.
   assert.match(fn, /if \(!res\.ok\)/, 'phai xu ly truong hop may chu tu choi');

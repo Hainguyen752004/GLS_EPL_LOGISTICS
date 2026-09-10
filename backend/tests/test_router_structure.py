@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 
 # Chỉ những đường thuộc VỎ ỨNG DỤNG được phép ở lại main.py: chúng phục vụ
@@ -32,7 +31,7 @@ BUSINESS_ROUTERS = [
     "routes.master_data_routes",
     "routes.fleet_routes",
     "routes.delivery_routes",
-    "routes.accounting_routes",
+
     "routes.operations_routes",
     "routes.data_export_routes",
     "routes.ai_upload_routes",
@@ -42,10 +41,8 @@ BUSINESS_ROUTERS = [
 # trong docstring của test tương ứng bên dưới.
 ROUTERS_REQUIRING_AUTH = [name for name in BUSINESS_ROUTERS if name != "routes.ai_upload_routes"]
 
-
 def _main_source():
     return (APP_DIR / "main.py").read_text(encoding="utf-8")
-
 
 def test_main_only_keeps_application_shell_endpoints():
     paths = set(re.findall(r'@app\.(?:get|post|put|patch|delete)\("([^"]+)"', _main_source()))
@@ -56,7 +53,6 @@ def test_main_only_keeps_application_shell_endpoints():
         f"main.py: {unexpected}"
     )
 
-
 def test_main_no_longer_declares_any_api_endpoint_inline():
     """Không một đường /api/ nào được đăng ký bằng @app."""
     api_paths = sorted(
@@ -65,7 +61,6 @@ def test_main_no_longer_declares_any_api_endpoint_inline():
         if path.startswith("/api/")
     )
     assert api_paths == []
-
 
 def test_main_stays_small():
     """main.py là nơi dựng ứng dụng, không phải nơi chứa nghiệp vụ.
@@ -77,7 +72,6 @@ def test_main_stays_small():
     assert line_count < 700, (
         f"main.py đang có {line_count} dòng — nghiệp vụ có lẽ đã bị thêm lại vào đây"
     )
-
 
 @pytest.mark.parametrize("module_name", ROUTERS_REQUIRING_AUTH)
 def test_business_routers_guard_at_router_level(module_name):
@@ -96,7 +90,6 @@ def test_business_routers_guard_at_router_level(module_name):
         f"{module_name} phải dùng require_api_principal ở tầng router"
     )
 
-
 def test_upload_router_is_deliberately_unguarded():
     """ai_upload_routes KHÔNG gác ở tầng router, và đó là chủ ý.
 
@@ -114,7 +107,6 @@ def test_upload_router_is_deliberately_unguarded():
     source = (APP_DIR / "routes" / "ai_upload_routes.py").read_text(encoding="utf-8")
     assert "img src" in source, "phải ghi rõ lý do không gác, để không ai 'sửa' lại"
 
-
 def test_uploads_path_is_public_in_the_middleware():
     """Danh sách công khai phải chứa /uploads/, nếu không ảnh biến thành 401."""
     auth = importlib.import_module("auth_middleware")
@@ -123,7 +115,6 @@ def test_uploads_path_is_public_in_the_middleware():
     # Nhưng các đường API khác thì không.
     assert auth._is_public("/api/vehicles", "GET") is False
     assert auth._is_public("/api/data/all", "GET") is False
-
 
 def test_cross_cutting_helpers_live_in_one_place():
     """Năm hàm dùng chéo phải có MỘT nguồn duy nhất.

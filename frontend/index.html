@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260910s-nut-ngon-ngu">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260910z-o-tim-vien-thuoc">
   <link rel="stylesheet" href="/static/css/bao-gia-v2.css?v=20260910n-tab-id">
   <link rel="stylesheet" href="/static/css/co-hoi.css?v=20260910s-co-hoi-mau">
   <link rel="stylesheet" href="/static/css/bang-lai-tai-xe.css?v=20260909a-bang-lai">
@@ -3751,44 +3751,25 @@
          phải lọc theo phạm vi. Để mỗi màn một ô lọc riêng thì người dùng phải
          đặt lại cùng một phạm vi ở từng màn.
          ================================================================== -->
+    <!-- Cờ vẽ bằng SVG symbol, không tải ảnh: ba hình nhỏ dùng chung cho nút và danh sách. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="f-vn" viewBox="0 0 30 20"><rect width="30" height="20" fill="#DA251D"/><polygon fill="#FFFF00" points="15,4 16.76,8.6 21.7,8.9 17.85,12 19.1,16.8 15,14.1 10.9,16.8 12.15,12 8.3,8.9 13.24,8.6"/></symbol>
+      <symbol id="f-gb" viewBox="0 0 60 30"><clipPath id="gbc"><rect width="60" height="30"/></clipPath><g clip-path="url(#gbc)"><rect width="60" height="30" fill="#012169"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></symbol>
+      <symbol id="f-la" viewBox="0 0 30 20"><rect width="30" height="20" fill="#CE1126"/><rect y="5" width="30" height="10" fill="#002868"/><circle cx="15" cy="10" r="4" fill="#fff"/></symbol>
+    </svg>
+    <!-- Sprite đặt NGOÀI .epl-bar1: bar1 ẩn ở trang chủ mà sprite nằm trong đó thì <use> không vẽ được cờ. -->
     <div class="epl-bar1">
-      <button type="button" class="epl-brand" data-view="dashboard" title="Về Bảng điều khiển">
+      <button type="button" class="epl-brand" data-view="os-home" title="Về trang chủ">
         <span class="epl-lg"><i class="fa-solid fa-truck-fast"></i></span>EPL Logistics
       </button>
 
-      <div class="epl-scope">
-        <select id="pham-vi-doi" aria-label="Phạm vi đội xe">
-          <option value="">Đội: Tất cả</option>
-        </select>
-        <select id="pham-vi-bai" aria-label="Phạm vi bãi">
-          <option value="">Bãi: Tất cả</option>
-        </select>
-      </div>
 
-      <!--
-        Ô tìm nhanh này đi TỚI MÀN, không tìm dữ liệu — và nói đúng như vậy
-        trong chữ mờ. Một ô hứa "tìm mọi thứ" mà chỉ nhảy màn thì tệ hơn là
-        không có ô nào: người dùng gõ mã DO vào, không thấy DO, và kết luận
-        là hệ thống hỏng.
-      -->
-      <div class="epl-gsearch">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="tim-man-hinh" autocomplete="off" role="combobox"
-               aria-expanded="false" aria-controls="ket-qua-tim-man"
-               placeholder="Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…">
-        <kbd>/</kbd>
-      </div>
-
+      <!-- Ô "Đi tới màn" đã chuyển xuống màn chính (Hôm nay), ngay dưới dock.
+           Phím "/" ở bất cứ màn nào vẫn về đó và đặt con trỏ vào ô. -->
       <button type="button" class="epl-ic" id="nut-so-do-az" title="Sơ đồ luồng A–Z">
         <i class="fa-solid fa-diagram-project"></i>
       </button>
 
-      <!-- Cờ vẽ bằng SVG symbol, không tải ảnh: ba hình nhỏ dùng chung cho nút và danh sách. -->
-      <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-        <symbol id="f-vn" viewBox="0 0 30 20"><rect width="30" height="20" fill="#DA251D"/><polygon fill="#FFFF00" points="15,4 16.76,8.6 21.7,8.9 17.85,12 19.1,16.8 15,14.1 10.9,16.8 12.15,12 8.3,8.9 13.24,8.6"/></symbol>
-        <symbol id="f-gb" viewBox="0 0 60 30"><clipPath id="gbc"><rect width="60" height="30"/></clipPath><g clip-path="url(#gbc)"><rect width="60" height="30" fill="#012169"/><path d="M0,0 60,30M60,0 0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 60,30M60,0 0,30" stroke="#C8102E" stroke-width="4"/><path d="M30,0v30M0,15h60" stroke="#fff" stroke-width="10"/><path d="M30,0v30M0,15h60" stroke="#C8102E" stroke-width="6"/></g></symbol>
-        <symbol id="f-la" viewBox="0 0 30 20"><rect width="30" height="20" fill="#CE1126"/><rect y="5" width="30" height="10" fill="#002868"/><circle cx="15" cy="10" r="4" fill="#fff"/></symbol>
-      </svg>
       <!-- Nút đổi ngôn ngữ theo mẫu nhap_UI__duan/language-switcher.html.
            data-lang trên gốc là ngôn ngữ hiện hành; app.js đọc nó lúc khởi
            tạo, js/khung-moi.js nối bấm chọn vào changeLanguage(). -->
@@ -3835,7 +3816,7 @@
          nhớ hàng nằm ở "Giao hàng & chứng từ" hay "Điều phối & thực thi".
          ================================================================== -->
     <nav class="epl-bar2" id="epl-bar2" aria-label="Điều hướng chính">
-      <button type="button" class="epl-nb" data-view="dashboard" data-i18n="khung_nav_today">⌂ Hôm nay</button>
+      <button type="button" class="epl-nb" data-view="os-home" data-i18n="khung_nav_today">⌂ Hôm nay</button>
       <button type="button" class="epl-nb" data-menu="ops" aria-haspopup="true" aria-expanded="false">
         <span data-i18n="khung_nav_ops">Vận hành</span> <span class="epl-car">▾</span>
       </button>
@@ -3868,13 +3849,11 @@
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="crm-sales"><i>▤</i><div><b data-i18n="khung_mi_crm">Báo giá cước</b><span data-i18n="khung_mi_crm_sub">Báo giá theo tuyến và loại xe · khách chấp nhận → lệnh giao hàng</span></div></div>
       <!-- Muc "Ke toan va tai chinh" DA GO khoi menu (10/09): chu du an khong dung
            module ke toan trong he nay — so thu/chi cua tung DO ban giao cho ben cong no
-           qua khoi "Ho so da hoan tat". Man `#view-accounting` van con trong DOM de khong
-           vo tham chieu, nhung khong con loi vao nao. -->
+           qua khoi "Ho so da hoan tat". Man `#view-accounting` va backend ke toan DA XOA HAN (10/09). -->
     </div>
 
     <div class="epl-menu epl-menu-2col" id="epl-m-master" role="menu">
-      <!-- "Thue" va "Ky ke toan" DA GO khoi bang chon (10/09): chu du an khong dung. The noi dung
-           con trong DOM (an) cho toi khi go hang backend cung module ke toan. -->
+      <!-- "Thue" va "Ky ke toan" DA XOA HAN cung module ke toan (10/09). -->
       <!-- DU 12 THE cua Du lieu goc, moi hang hai chuc nang (theo mau chu du an dua).
            Dai "Danh muc cau hinh Master Data" tren man da an — day la loi vao duy nhat. -->
       <div class="epl-mi" role="menuitem" tabindex="0" data-md-tab="md-tab-setup"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b data-i18n="khung_mi_md_setup">Thiết lập A–Z</b><span data-i18n="khung_mi_md_setup_sub">Thứ tự khai dữ liệu để chạy trọn luồng</span></div></div>
@@ -3892,7 +3871,7 @@
     <div class="epl-menu epl-menu-1col" id="epl-m-more" role="menu">
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="lab-summary"><i>▥</i><div><b data-i18n="khung_mi_analysis">Phân tích doanh thu và chi phí</b><span>Lợi nhuận theo tuyến, xe, khách</span></div></div>
       <!-- "Quan tri / Shipment 360" DA GO khoi bang chon (10/09): chu du an thay khong
-           can thiet. Man `#view-operations-360` giu trong DOM de khong vo tham chieu. -->
+           can thiet — man va backend (dossier) DA XOA HAN (10/09). -->
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="ai-checkpoint"><i>✦</i><div><b data-i18n="khung_mi_ai">Trạm kiểm soát AI</b><span>Đọc ảnh tại chốt, cảnh báo tự động</span></div></div>
       <div class="epl-sep"></div>
       <div class="epl-mi" role="menuitem" tabindex="0" data-view="dashboard" data-scroll="sec-so-do-tong-quan"><i>◈</i><div><b data-i18n="khung_mi_az">Sơ đồ luồng A–Z</b><span>Tám nhóm chức năng, từ báo giá tới hạch toán</span></div></div>
@@ -3920,7 +3899,132 @@
       <div class="content-body">
 
         <!-- 1. DASHBOARD VIEW -->
-        <section id="view-dashboard" class="view-section active">
+        <!--
+          TRANG CHỦ KIỂU OS — trang ĐẦU TIÊN, đứng riêng (theo
+          nhap_UI__duan/erp_next_gen_app_os.html). Không đè lên trang tổng quan:
+          trang tổng quan (#view-dashboard: số liệu, hình sơ đồ, lưới tám bước)
+          giữ nguyên bên dưới và chỉ mở khi bấm thẻ "Sơ đồ luồng A–Z".
+
+          Dock = tám bước của luồng A–Z: bấm là tới màn; chấm sáng là màn vừa mở
+          gần nhất; số đỏ là số thật từ máy chủ. Ô tìm ngay dưới dock là ô "Đi
+          tới màn" (chuyển từ header về đây). Lưới "Tiện ích chức năng" do
+          js/khung-moi.js vẽ từ MUC_TIM_MAN — cùng một danh sách với ô tìm.
+        -->
+        <section id="view-os-home" class="view-section active os-home">
+          <div class="os-top">
+            <!-- Ngôn ngữ: header ẩn ở trang chủ nên nút này thay nó; js/khung-moi.js
+                 giữ hai nút (đây và #epl-lang trong header) luôn cùng trạng thái. -->
+            <div class="epl-lang os-lang" id="os-lang" data-lang="vi">
+              <button type="button" class="epl-lang-btn" id="os-lang-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="os-lang-menu" title="Ngôn ngữ" aria-label="Ngôn ngữ">
+                <svg class="flag" aria-hidden="true"><use href="#f-vn"/></svg>
+                <span class="cur">VN</span>
+                <svg class="chev" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg>
+              </button>
+              <ul class="epl-lang-menu" id="os-lang-menu" role="listbox" aria-label="Chọn ngôn ngữ">
+                <li><button type="button" class="epl-lang-item" role="option" data-code="vi" data-short="VN" aria-selected="true">
+                  <svg class="flag" aria-hidden="true"><use href="#f-vn"/></svg>
+                  <span class="txt"><span class="name">Tiếng Việt</span><span class="native">Vietnamese</span></span>
+                  <span class="code">VN</span>
+                  <svg class="check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>
+                </button></li>
+                <li><button type="button" class="epl-lang-item" role="option" data-code="en" data-short="EN" aria-selected="false">
+                  <svg class="flag" aria-hidden="true"><use href="#f-gb"/></svg>
+                  <span class="txt"><span class="name">English</span><span class="native">Tiếng Anh</span></span>
+                  <span class="code">EN</span>
+                  <svg class="check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>
+                </button></li>
+                <li><button type="button" class="epl-lang-item" role="option" data-code="la" data-short="LA" aria-selected="false">
+                  <svg class="flag" aria-hidden="true"><use href="#f-la"/></svg>
+                  <span class="txt"><span class="name">ພາສາລາວ</span><span class="native">Tiếng Lào</span></span>
+                  <span class="code">LA</span>
+                  <svg class="check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5"/></svg>
+                </button></li>
+              </ul>
+            </div>
+            <div class="os-dock" id="os-dock" role="navigation" aria-label="Tám bước của luồng A–Z">
+              <button type="button" class="os-app" data-step="0" data-nhom="master" data-man="master-data" title="Dữ liệu gốc">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#2563eb,#1e3a8a)"><i class="fa-solid fa-database" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Dữ liệu gốc</span>
+              </button>
+              <button type="button" class="os-app" data-step="1" data-nhom="biz" data-man="co-hoi" title="Khách hàng & cơ hội">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#06b6d4,#2563eb)"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Khách hàng & cơ hội</span>
+              </button>
+              <button type="button" class="os-app" data-step="2" data-nhom="biz" data-man="crm-sales" data-cuon="qtv2-root" title="Báo giá cước">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#a855f7,#6d28d9)"><i class="fa-solid fa-file-contract" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Báo giá cước</span>
+              </button>
+              <button type="button" class="os-app" data-step="3" data-nhom="ops" data-man="ops-planning" data-cuon="fiori-do-list" title="Lệnh giao hàng">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#fb923c,#dc2626)"><i class="fa-solid fa-boxes-packing" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Lệnh giao hàng</span>
+              </button>
+              <button type="button" class="os-app" data-step="4" data-nhom="ops" data-man="delivery-shipment" title="Giao hàng & vận chuyển">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#34d399,#0f766e)"><i class="fa-solid fa-route" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Giao hàng & vận chuyển</span>
+              </button>
+              <button type="button" class="os-app" data-step="5" data-nhom="ops" data-man="dispatch" title="Điều phối">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#38bdf8,#1d4ed8)"><i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Điều phối</span>
+              </button>
+              <button type="button" class="os-app" data-step="6" data-nhom="ops" data-man="tracking" title="Theo dõi & kiểm soát">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#c084fc,#7e22ce)"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Theo dõi & kiểm soát</span>
+              </button>
+              <button type="button" class="os-app" data-step="7" data-nhom="ops" data-man="delivery-completion" title="Hoàn tất giao hàng">
+                <span class="os-app-icon" style="background:linear-gradient(135deg,#f472b6,#be123c)"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
+                <span class="os-app-title">Hoàn tất giao hàng</span>
+              </button>
+            </div>
+
+            <div class="epl-gsearch os-search">
+              <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              <input type="text" id="tim-man-hinh" autocomplete="off" role="combobox"
+                     aria-expanded="false" aria-controls="ket-qua-tim-man"
+                     placeholder="Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…">
+              <kbd>/</kbd>
+            </div>
+          </div>
+
+          <!-- Dải "hôm nay": lời chào + ngày, và các con số thật (bấm là tới màn).
+               Nội dung do js/khung-moi.js ghi từ /api/dashboard/stats và
+               /api/crm/opportunities/summary — không có số viết sẵn. -->
+          <div class="os-hello" id="os-hello" hidden></div>
+
+          <!-- Nhãn kiêm bộ lọc: bấm một icon trên dock thì lưới lọc về nhóm đó;
+               bấm nhãn này (hoặc icon đó lần nữa) thì bỏ lọc. -->
+          <button type="button" class="os-pill" id="os-pill"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><h2>Tiện ích chức năng</h2><span class="os-pill-loc" id="os-pill-loc" hidden></span></button>
+          <div class="os-tiles" id="os-tiles"></div>
+
+          <!-- Nút bảng màu + ngăn đổi hình nền — như bản mẫu. Ảnh chọn được nhớ
+               trong localStorage của trình duyệt này (khóa epl_os_bg). -->
+          <button type="button" class="os-fab" id="os-fab" title="Tùy chỉnh hình nền" aria-label="Tùy chỉnh hình nền"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
+          <div class="os-drawer-backdrop" id="os-drawer-backdrop"></div>
+          <aside class="os-drawer" id="os-drawer" aria-label="Tùy chỉnh hình nền" aria-hidden="true">
+            <div class="os-drawer-head">
+              <h3><i class="fa-solid fa-image" aria-hidden="true"></i> Tùy chỉnh hình nền</h3>
+              <button type="button" class="os-drawer-x" id="os-drawer-x" aria-label="Đóng"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+            </div>
+            <div class="os-drawer-body">
+              <section>
+                <h4><i class="fa-solid fa-mountain-sun" aria-hidden="true"></i> Thư viện tuyển chọn</h4>
+                <div class="os-gallery" id="os-gallery"></div>
+              </section>
+              <hr>
+              <section>
+                <h4><i class="fa-solid fa-desktop" aria-hidden="true"></i> Tải lên từ máy tính</h4>
+                <label class="os-upload"><i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i><span>Bấm để chọn ảnh</span><input type="file" accept="image/*" id="os-bg-file" hidden></label>
+              </section>
+              <hr>
+              <section>
+                <h4><i class="fa-solid fa-link" aria-hidden="true"></i> Nhập URL ảnh bất kỳ</h4>
+                <div class="os-url"><input type="text" id="os-bg-url" placeholder="https://example.com/image.jpg"><button type="button" id="os-bg-url-ok">Áp dụng</button></div>
+                <button type="button" class="os-reset" id="os-bg-reset">Về ảnh mặc định</button>
+              </section>
+            </div>
+          </aside>
+        </section>
+
+        <section id="view-dashboard" class="view-section">
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-info">
@@ -4455,122 +4559,6 @@
 
         <!-- Vietnamese source cleaned -->
 
-        <section id="view-operations-360" class="view-section shipment-dossier-view">
-                <div id="operations-360-hub" style="background:#ffffff; border:1px solid #dbeafe; border-radius:16px; padding:12px; box-shadow:0 6px 18px rgba(15,23,42,.04); display:grid; gap:12px;">
-                  <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
-                    <div>
-                      <div style="font-weight: 800; color:#0f172a;"><i class="fa-solid fa-box-archive" style="color:#2563eb;"></i> Hồ sơ chuyến</div>
-                      <div style="font-size:.76rem; color:#64748b; margin-top:3px;">Tra cứu một DO và xem đúng dữ liệu hành trình, POD, chi phí và đối soát của DO đó.</div>
-                    </div>
-                  </div>
-                  <div id="operations-360-tabs" style="display:none;">
-                    <button id="operations-360-tab-shipment" type="button" onclick="switchOperations360Tab('shipment', this)" class="operations-360-tab active" style="border:2px solid #2563eb; background:#eff6ff; color:#2563eb; border-radius:12px; padding:9px 10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-circle-nodes"></i> Shipment 360</button>
-                    <button id="operations-360-tab-timeline" type="button" onclick="switchOperations360Tab('timeline', this)" class="operations-360-tab" style="border:1px solid #dbeafe; background:#ffffff; color:#475569; border-radius:12px; padding:9px 10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-timeline"></i> Timeline A-Z</button>
-                    <button id="operations-360-tab-governance" type="button" onclick="switchOperations360Tab('governance', this)" class="operations-360-tab" style="border:1px solid #dbeafe; background:#ffffff; color:#475569; border-radius:12px; padding:9px 10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-user-shield"></i> Role / Audit</button>
-                  </div>
-                  <div id="operations-360-panel-governance" class="operations-360-panel" data-operations-360-panel="governance" style="display:none; gap:16px;">
-                <div id="role-permission-board-panel" style="border:1px solid #e9d5ff; background:#faf5ff; border-radius:14px; padding:14px;">
-                  <h4 style="margin:0 0 12px 0; color:#0f172a; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-user-shield" style="color:#7c3aed;"></i> Role & Permission Board</h4>
-                  <div id="role-permission-kpis" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:8px; margin-bottom:10px;"></div>
-                  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px;">
-                    <div id="role-permission-roles" style="display:grid; gap:8px;"></div>
-                    <div id="role-permission-users" style="display:grid; gap:8px;"></div>
-                  </div>
-                  <div id="role-permission-matrix" style="display:grid; gap:8px; margin-top:10px;"></div>
-                  <div id="role-permission-warnings" style="display:grid; gap:7px; margin-top:10px;"></div>
-                  <div id="role-admin-workbench" style="background:#ffffff; border:1px solid #e9d5ff; border-radius:12px; padding:12px; margin-top:10px;">
-                    <div style="font-weight: 800; color:#0f172a; margin-bottom:8px;"><i class="fa-solid fa-screwdriver-wrench" style="color:#7c3aed;"></i> Workbench quản trị quyền</div>
-                    <div id="role-admin-templates" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-bottom:9px;"></div>
-                    <div id="role-admin-worklist" style="display:grid; gap:7px; margin-bottom:9px;"></div>
-                    <div id="role-admin-guidance" style="display:grid; gap:7px;"></div>
-                  </div>
-                </div>
-                  </div>
-                  <div id="operations-360-panel-timeline" class="operations-360-panel" data-operations-360-panel="timeline" style="display:none; gap:16px;">
-                <div style="display:grid; grid-template-columns: minmax(260px, 1.2fr) minmax(220px, .8fr); gap:14px;">
-                  <div style="border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
-                    <h4 style="margin:0 0 12px 0; color:#0f172a; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-timeline" style="color:#2563eb;"></i> Timeline trạng thái đơn</h4>
-                    <select id="tms-order-timeline-selector" onchange="selectOrderTimeline(this.value)" style="width:100%; border:1px solid #cbd5e1; border-radius:10px; padding:8px 10px; margin-bottom:10px;">
-                      <option value="">Chọn đơn giao hàng</option>
-                    </select>
-                    <div id="tms-order-timeline"></div>
-                    <div id="tms-order-timeline-detail"></div>
-                  </div>
-                  <div style="border:1px solid #e2e8f0; border-radius:14px; padding:14px;">
-                    <h4 style="margin:0 0 12px 0; color:#0f172a; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-file-invoice-dollar" style="color:#059669;"></i> Tài chính vận tải</h4>
-                    <div id="tms-finance-worklist" style="display:grid; gap:8px;"></div>
-                  </div>
-                </div>
-                  </div>
-                  <div id="operations-360-panel-shipment" class="operations-360-panel" data-operations-360-panel="shipment" style="display:grid; gap:16px;">
-                <div id="shipment-360-panel" class="shipment-dossier-panel">
-                  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-                    <div>
-                      <h4 style="margin:0; color:#0f172a; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-box-archive" style="color:#2563eb;"></i> Hồ sơ chuyến theo DO</h4>
-                      <div style="font-size:.8rem; color:#64748b; margin-top:4px;">Dữ liệu bên dưới được tải riêng theo đúng mã DO đang chọn.</div>
-                    </div>
-                    <div class="shipment-dossier-search">
-                      <i class="fa-solid fa-magnifying-glass"></i>
-                      <input id="shipment-dossier-search" list="shipment-dossier-options" onchange="selectShipmentDossierFromSearch(this.value)" placeholder="Tìm mã DO..." autocomplete="off">
-                      <datalist id="shipment-dossier-options"></datalist>
-                    </div>
-                    <select id="shipment-360-selector" onchange="selectShipment360(this.value)" hidden>
-                      <option value="">Chọn DO/FO</option>
-                    </select>
-                  </div>
-                  <div id="shipment-dossier-tabs" class="shipment-dossier-tabs">
-                    <button type="button" class="active" data-dossier-tab="overview" onclick="switchShipmentDossierTab('overview', this)"><i class="fa-solid fa-gauge-high"></i> Tổng quan</button>
-                    <button type="button" data-dossier-tab="journey" onclick="switchShipmentDossierTab('journey', this)"><i class="fa-solid fa-route"></i> Hành trình & POD</button>
-                    <button type="button" data-dossier-tab="finance" onclick="switchShipmentDossierTab('finance', this)"><i class="fa-solid fa-file-invoice-dollar"></i> Chi phí & đối soát</button>
-                  </div>
-                  <div id="shipment-360-summary" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:10px;"></div>
-                  <div id="shipment-360-alerts" style="display:grid; gap:8px; margin-bottom:10px;"></div>
-                  <div id="shipment-dossier-primary-grid" style="display:grid; grid-template-columns:minmax(240px,1fr) minmax(240px,1fr); gap:12px; margin-bottom:10px;">
-                    <div id="shipment-360-timeline" style="display:grid; gap:7px;"></div>
-                    <div id="shipment-360-events" style="display:grid; gap:7px;"></div>
-                  </div>
-                  <div id="shipment-dossier-secondary-grid" style="display:grid; grid-template-columns:minmax(220px,.8fr) minmax(260px,1fr) minmax(220px,.8fr); gap:12px;">
-                    <div id="shipment-360-documents" style="display:grid; gap:7px;"></div>
-                    <div id="shipment-360-finance" style="display:grid; gap:7px;"></div>
-                    <div id="shipment-360-actions" style="display:grid; gap:7px;"></div>
-                  </div>
-                  <div id="shipment-360-settlement-readiness" style="display:grid; gap:10px; margin-top:12px;"></div>
-                </div>
-                <div id="shipment-360-step-modal" style="display:none; position:fixed; inset:0; z-index:10030; background:rgba(15,23,42,.58); align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(6px);">
-                  <div style="width:min(920px,96vw); max-height:92vh; overflow:auto; background:#ffffff; border-radius:18px; border:1px solid #bfdbfe; box-shadow:0 24px 72px rgba(15,23,42,.34);">
-                    <div style="background:linear-gradient(135deg,#2563eb,#075985); color:#ffffff; padding:16px 18px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
-                      <div>
-                        <h3 id="shipment-360-step-title" style="margin:0; font-size:1.12rem; font-weight: 800;">Shipment 360</h3>
-                        <div id="shipment-360-step-subtitle" style="font-size:.82rem; opacity:.92; margin-top:4px;">Drill-down từng bước nghiệp vụ vận chuyển</div>
-                      </div>
-                      <button type="button" onclick="closeShipment360StepModal()" style="border:0; background:rgba(255,255,255,.18); color:#ffffff; border-radius:999px; width:36px; height:36px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div style="padding:18px; display:grid; gap:14px;">
-                      <div id="shipment-360-step-status" style="border:1px solid #dbeafe; background:#f8fbff; border-radius:12px; padding:12px; color:#0f172a; font-weight: 800;"></div>
-                      <div style="display:grid; grid-template-columns:minmax(260px,1fr) minmax(260px,1fr); gap:12px;">
-                        <div style="border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-                          <div style="font-weight: 800; color:#0f172a; margin-bottom:8px;"><i class="fa-solid fa-table-list" style="color:#2563eb;"></i> Dữ liệu chính</div>
-                          <div id="shipment-360-step-fields" style="display:grid; gap:6px;"></div>
-                        </div>
-                        <div style="border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-                          <div style="font-weight: 800; color:#0f172a; margin-bottom:8px;"><i class="fa-solid fa-list-check" style="color:#059669;"></i> Checklist A-Z</div>
-                          <div id="shipment-360-step-checklist" style="display:flex; flex-wrap:wrap; gap:7px;"></div>
-                        </div>
-                      </div>
-                      <div style="border:1px solid #e2e8f0; border-radius:12px; padding:12px;">
-                        <div style="font-weight: 800; color:#0f172a; margin-bottom:8px;"><i class="fa-solid fa-link" style="color:#7c3aed;"></i> Dữ liệu liên quan</div>
-                        <div id="shipment-360-step-related" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px;"></div>
-                      </div>
-                      <div style="border:1px solid #dbeafe; background:#f8fbff; border-radius:12px; padding:12px;">
-                        <div style="font-weight: 800; color:#0f172a; margin-bottom:8px;"><i class="fa-solid fa-bolt" style="color:#f97316;"></i> Hành động đúng ngữ cảnh</div>
-                        <div id="shipment-360-step-actions" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px;"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-        </section>
         <section id="view-lab-panorama-source" class="view-section" aria-hidden="true">
           <div class="card-panel">
             <div class="panel-header">
@@ -6587,162 +6575,6 @@
         </section>
 
         <!-- 7. ACCOUNTING & FINANCE VIEW -->
-        <section id="view-accounting" class="view-section" style="background-color: #f4f5f7; min-height: 100vh; padding: 20px;">
-          <div id="finance-cockpit-panel" style="background:#ffffff; border-radius:14px; border:1px solid #dbeafe; padding:18px; box-shadow:0 6px 18px rgba(15,23,42,0.06); margin-bottom:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:14px;">
-              <div>
-                <h3 style="margin:0; color:#0f172a; font-size:1.15rem; font-weight:900; display:flex; align-items:center; gap:9px;">
-                  <i class="fa-solid fa-building-columns" style="color:#2563eb;"></i> Finance Cockpit Vận Tải
-                </h3>
-                <div style="font-size:.82rem; color:#64748b; margin-top:4px;">Theo dõi nhanh Actual Cost, AP Invoice và Settlement để demo luồng tài chính vận tải từ chi phí thực tế đến đối soát.</div>
-              </div>
-              <button class="fiori-btn fiori-btn-secondary" onclick="renderFinanceCockpit(); renderFinanceActionWorkbench();" style="white-space:nowrap;"><i class="fa-solid fa-arrows-rotate"></i> Cập nhật cockpit</button>
-            </div>
-            <div id="finance-sub-tabs" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:9px; margin-bottom:14px;">
-              <button id="finance-sub-tab-overview" type="button" class="finance-sub-tab active" onclick="switchFinanceSubTab('overview', this)" style="border:2px solid #2563eb; background:#eff6ff; color:#2563eb; border-radius:12px; padding:10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-gauge-high"></i> Tổng quan</button>
-              <button id="finance-sub-tab-process" type="button" class="finance-sub-tab" onclick="switchFinanceSubTab('process', this)" style="border:1px solid #dbeafe; background:#ffffff; color:#475569; border-radius:12px; padding:10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-route"></i> Vận chuyển</button>
-              <button id="finance-sub-tab-workbench" type="button" class="finance-sub-tab" onclick="switchFinanceSubTab('workbench', this)" style="border:1px solid #dbeafe; background:#ffffff; color:#475569; border-radius:12px; padding:10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-list-check"></i> Việc cần xử lý</button>
-              <button id="finance-sub-tab-master" type="button" class="finance-sub-tab" onclick="switchFinanceSubTab('master', this)" style="border:1px solid #dbeafe; background:#ffffff; color:#475569; border-radius:12px; padding:10px; font-weight: 800; cursor:pointer;"><i class="fa-solid fa-screwdriver-wrench"></i> Master Data Finance</button>
-            </div>
-            <div id="finance-sub-panel-overview" class="finance-sub-panel" data-finance-sub-panel="overview" style="display:grid; gap:14px;">
-            <div id="finance-cockpit-kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px;"></div>
-            </div>
-            <div id="finance-sub-panel-process" class="finance-sub-panel" data-finance-sub-panel="process" style="display:none; gap:14px;">
-            <div id="finance-process-cockpit-panel" style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px; margin-bottom:16px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-                <div>
-                  <h4 style="margin:0; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-route" style="color:#2563eb;"></i> Finance Process Cockpit</h4>
-                  <div style="font-size:.8rem; color:#64748b; margin-top:4px;">Nhìn một mạch Actual Cost → AP Invoice → Settlement → Payment → Reversal để demo luồng tài chính vận tải như app lớn.</div>
-                </div>
-              </div>
-              <div id="finance-process-flow" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;"></div>
-              <div id="finance-process-lanes" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px;"></div>
-              <div id="finance-process-blockers" style="display:grid; gap:8px; margin-top:12px;"></div>
-            </div>
-            </div>
-            <div id="finance-sub-panel-workbench" class="finance-sub-panel" data-finance-sub-panel="workbench" style="display:none; gap:14px;">
-            <div id="finance-action-workbench-panel" style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px; margin-bottom:16px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-                <div>
-                  <h4 style="margin:0; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-list-check" style="color:#2563eb;"></i> Finance Action Workbench</h4>
-                  <div style="font-size:.8rem; color:#64748b; margin-top:4px;">Việc cần làm theo thứ tự: duyệt Actual Cost → tạo AP → hạch toán → thanh toán/đối soát.</div>
-                </div>
-              </div>
-              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; margin-bottom:12px;">
-                <select id="finance-action-kind-filter" onchange="applyFinanceActionFilters()" style="border:1px solid #cbd5e1; border-radius:10px; padding:9px 11px; color:#334155; font-weight:700; background:#ffffff;">
-                  <option value="">Tất cả nghiệp vụ</option>
-                  <option value="actual_cost">Actual Cost</option>
-                  <option value="ap_invoice">AP Invoice</option>
-                  <option value="settlement">Settlement</option>
-                </select>
-                <select id="finance-action-status-filter" onchange="applyFinanceActionFilters()" style="border:1px solid #cbd5e1; border-radius:10px; padding:9px 11px; color:#334155; font-weight:700; background:#ffffff;">
-                  <option value="">Tất cả trạng thái</option>
-                  <option value="draft">Nháp</option>
-                  <option value="submitted">Chờ duyệt</option>
-                  <option value="approved">Đã duyệt</option>
-                  <option value="posted"> hạch toán</option>
-                  <option value="partially_paid">Thanh toán một phần</option>
-                  <option value="open">Còn mở</option>
-                </select>
-                <input id="finance-action-search-input" oninput="applyFinanceActionFilters()" placeholder="Tìm Cost/AP/Settlement..." style="border:1px solid #cbd5e1; border-radius:10px; padding:9px 11px; color:#334155; font-weight:700; background:#ffffff;">
-              </div>
-              <div id="finance-action-kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:10px; margin-bottom:12px;"></div>
-              <div id="finance-action-worklist" style="display:grid; gap:10px;"></div>
-              <div id="finance-action-guidance" style="display:grid; gap:8px; margin-top:12px;"></div>
-            </div>
-            <div id="finance-closeout-workbench-panel" style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px; margin-bottom:16px;">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-                <div>
-                  <h4 style="margin:0; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-flag-checkered" style="color:#059669;"></i> Finance Closeout Workbench</h4>
-                  <div style="font-size:.8rem; color:#64748b; margin-top:4px;">Kiểm tra từng hồ sơ để biết bước kế tiếp: tạo AP, hạch toán, thanh toán hay đã đủ điều kiện settlement.</div>
-                </div>
-              </div>
-              <div id="finance-closeout-kpis" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:12px;"></div>
-              <div id="finance-closeout-list" style="display:grid; gap:10px;"></div>
-              <div id="finance-closeout-actions" style="display:grid; gap:8px; margin-top:12px;"></div>
-            </div>
-            <div style="display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.9fr); gap:14px; margin-bottom:16px;">
-              <div id="finance-detail-panel" style="border:1px solid #dbeafe; border-radius:14px; background:#ffffff; padding:14px;">
-<h4 style="margin:0 0 10px; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-diagram-project" style="color:#2563eb;"></i> Drill-down hồ sơ tài chính</h4>
-                <div id="finance-detail-summary" style="display:grid; gap:8px;"></div>
-                <div id="finance-detail-timeline" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:8px; margin-top:12px;"></div>
-                <div id="finance-detail-actions" style="display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;"></div>
-              </div>
-              <div id="finance-config-health-panel" style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px;">
-                <h4 style="margin:0 0 10px; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-circle-check" style="color:#059669;"></i> Health cấu hình Finance</h4>
-                <div id="finance-config-health-progress" style="margin-bottom:10px;"></div>
-                <div id="finance-config-health-items" style="display:grid; gap:8px;"></div>
-              </div>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;">
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color:#f59e0b;"></i> Actual Cost chờ duyệt</h4>
-                <div id="finance-cockpit-costs" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-receipt" style="color:#7c3aed;"></i> AP Invoice chờ hạch toán</h4>
-                <div id="finance-cockpit-ap" style="display:grid; gap:9px;"></div>
-              </div>
-              <div style="border:1px solid #e2e8f0; border-radius:12px; padding:13px; background:#ffffff;">
-                <h4 style="margin:0 0 10px; color:#0f172a;"><i class="fa-solid fa-handshake" style="color:#059669;"></i> Settlement còn mở</h4>
-                <div id="finance-cockpit-settlements" style="display:grid; gap:9px;"></div>
-              </div>
-            </div>
-            </div>
-            <div id="finance-sub-panel-master" class="finance-sub-panel" data-finance-sub-panel="master" style="display:none; gap:14px;">
-              <div style="border:1px solid #bfdbfe; border-radius:14px; background:#f8fbff; padding:14px;">
-<h4 style="margin:0 0 10px; color:#0f172a; font-size:1rem; font-weight: 800;"><i class="fa-solid fa-screwdriver-wrench" style="color:#2563eb;"></i> Cấu hình nền tài chính</h4>
-                <div style="font-size:.82rem; color:#64748b; margin-bottom:12px;">Nếu post GL/AP/Payment bị thiếu cấu hình, vào đúng tab Master Data Finance bên dưới để bổ sung.</div>
-                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px;">
-                  <button class="fiori-btn fiori-btn-secondary" onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('md-tab-tax-codes', null), 80);"><i class="fa-solid fa-percent"></i> Thuế</button>
-                  <button class="fiori-btn fiori-btn-secondary" onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('md-tab-accounting-periods', null), 80);"><i class="fa-solid fa-calendar-days"></i> Kỳ kế toán</button>
-                  <button class="fiori-btn fiori-btn-secondary" onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('md-tab-carriers', null), 80);"><i class="fa-solid fa-warehouse"></i> Carrier/Vendor</button>
-                  <button class="fiori-btn fiori-btn-secondary" onclick="switchView('master-data'); setTimeout(() => switchMasterDataTab('md-tab-account-mappings', null), 80);"><i class="fa-solid fa-diagram-project"></i> Mapping tài khoản</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 20px;">
-            <!-- AR Invoice List -->
-            <div style="flex: 2; background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-               <h3 style="margin-top:0; color:#333; font-size:1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px;" data-i18n="title_ar_invoices">Hóa Đơn Khách Hàng (Phải Thu)</h3>
-              <table class="fiori-table" style="margin-top: 15px;">
-                <thead>
-                  <tr>
-                    <th data-i18n="th_invoice_no">Mã Hóa Đơn</th>
-<th data-i18n="lbl_customer">Khách hàng</th>
-                    <th data-i18n="th_do_ref">Tham Chiếu DO</th>
-                    <th data-i18n="th_date">Ngày</th>
-                    <th data-i18n="th_amount_vnd">Thành tiền cước (VNĐ)</th>
-                    <th data-i18n="th_status">Trạng Thái</th>
-                  </tr>
-                </thead>
-                <tbody id="fiori-invoice-tbody">
-                  <tr><td colspan="6" style="text-align:center;" data-i18n="msg_loading_invoices">Đang tải hóa đơn...</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- GL Ledger Entries -->
-            <div style="flex: 1; background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              <h3 style="margin-top:0; color:#333; font-size:1.1rem; border-bottom: 1px solid #eee; padding-bottom: 10px;" data-i18n="title_gl">Sổ Cái Kế Toán (GL)</h3>
-              <table class="fiori-table" style="margin-top: 15px;">
-                <thead>
-                  <tr>
-                    <th data-i18n="th_date">Ngày</th>
-                    <th data-i18n="th_account">Tài Khoản</th>
-                    <th data-i18n="th_debit">Nợ</th>
-                    <th data-i18n="th_credit">Có</th>
-                  </tr>
-                </thead>
-                <tbody id="fiori-gl-tbody">
-                  <tr><td colspan="4" style="text-align:center;" data-i18n="msg_loading_gl">Đang tải Sổ Cái...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
 
         <!-- 8. REPORTING & DASHBOARD VIEW -->
         <section id="view-lab-summary" class="view-section analysis-workspace-view">
@@ -6828,7 +6660,7 @@
               <div class="transport-report-table-wrap" tabindex="0" aria-label="Bảng doanh thu vận tải có thể cuộn ngang">
                 <table class="transport-report-table">
                   <thead><tr>
-                    <th>STT</th><th>Ngày đi</th><th>Số lệnh điều xe</th><th>Ngày ghi nhận</th><th>Số hóa đơn</th>
+                    <th>STT</th><th>Ngày đi</th><th>Số lệnh điều xe</th><th>Ngày ghi nhận</th><th>Hồ sơ hoàn tất</th>
                     <th>Điểm đi</th><th>Điểm đến</th><th>Công ty đại lý</th><th>Tên tài xế</th><th>Biển số đầu kéo</th>
                     <th>Biển số rơ-moóc</th><th>Mã số xe</th><th>Tên khách hàng</th><th>Loại hàng hóa</th><th>Số chuyến</th>
                     <th>Đơn vị tính</th><th>Trọng lượng (Tấn)</th><th>Tổng tiền (Kip)</th><th>Tổng tiền (Baht)</th>
@@ -6985,17 +6817,11 @@
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-customers', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
                <i class="fa-solid fa-building-user"></i> <span data-i18n="tab_md_customers">7. Danh Mục Khách Hàng</span>
             </button>
-            <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-tax-codes', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-percent"></i> <span data-i18n="tab_md_taxes">8. Thuế</span>
-            </button>
-            <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-accounting-periods', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-calendar-days"></i> <span data-i18n="tab_md_periods">9. Kỳ Kế Toán</span>
-            </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-carriers', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-warehouse"></i> <span data-i18n="tab_md_carriers">10. Carrier / Vendor</span>
+              <i class="fa-solid fa-warehouse"></i> <span data-i18n="tab_md_carriers">8. Carrier / Vendor</span>
             </button>
             <button class="md-tab-btn" onclick="switchMasterDataTab('md-tab-account-mappings', this)" style="padding: 10px 16px; border-radius: 8px; border: none; background: transparent; color: #64748b; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.83rem; transition: all 0.2s ease;">
-              <i class="fa-solid fa-diagram-project"></i> <span data-i18n="tab_md_mappings">11. Mapping Tài Khoản</span>
+              <i class="fa-solid fa-diagram-project"></i> <span data-i18n="tab_md_mappings">9. Mapping Tài Khoản</span>
             </button>
           </div>
           </div>
@@ -7332,7 +7158,6 @@
 
                Đo được bằng DOM: `md-tab-veh-types`, `md-tab-vehicles`,
                `md-tab-drivers`, `md-tab-currencies`, `md-tab-customers`,
-               `md-tab-tax-codes`, `md-tab-accounting-periods`,
                `md-tab-carriers` và `md-tab-account-mappings` — tức thẻ 3 đến
                11 — đều có cha thật là `#md-tab-formulas` thay vì
                `#master-data-core-panel`.
@@ -8055,38 +7880,6 @@
             </div>
           </div>
 
-          <div id="md-tab-tax-codes" class="md-tab-content" style="display: none;">
-            <div style="background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; padding:24px; box-shadow:0 4px 12px rgba(15,23,42,0.03);">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; border-bottom:1px solid #f1f5f9; padding-bottom:16px; margin-bottom:18px;">
-                <div>
-                  <h3 style="margin:0; color:#0f172a; font-size:1.2rem; font-weight:800;"><i class="fa-solid fa-percent" style="color:#2563eb;"></i> Master Data Thuế (Tax Codes)</h3>
-                  <div style="font-size:.83rem; color:#64748b; margin-top:4px;">Bảng đọc từ CSDL để kiểm tra mã thuế, thuế suất và hiệu lực trước khi tính chi phí/AP.</div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-                  <span data-finance-master-count="md-tab-tax-codes" style="font-weight:900; color:#2563eb;">0 dòng</span>
-                  <div id="finance-master-tax-actions" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;"></div>
-                </div>
-              </div>
-              <table class="fiori-table"><thead><tr><th>Mã thuế</th><th>Thuế suất</th><th>Kiểu tính</th><th>Hiệu lực</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="finance-master-tax-table"></tbody></table>
-            </div>
-          </div>
-
-          <div id="md-tab-accounting-periods" class="md-tab-content" style="display: none;">
-            <div style="background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; padding:24px; box-shadow:0 4px 12px rgba(15,23,42,0.03);">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; border-bottom:1px solid #f1f5f9; padding-bottom:16px; margin-bottom:18px;">
-                <div>
-                  <h3 style="margin:0; color:#0f172a; font-size:1.2rem; font-weight:800;"><i class="fa-solid fa-calendar-days" style="color:#2563eb;"></i> Master Data Kỳ Kế Toán</h3>
-                  <div style="font-size:.83rem; color:#64748b; margin-top:4px;">Kiểm tra kỳ mở/đóng để tránh hạch toán vào kỳ đã khóa.</div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-                  <span data-finance-master-count="md-tab-accounting-periods" style="font-weight:900; color:#2563eb;">0 dòng</span>
-                  <div id="finance-master-period-actions" style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;"></div>
-                </div>
-              </div>
-              <table class="fiori-table"><thead><tr><th>Mã kỳ</th><th>Tên kỳ</th><th>Khoảng thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="finance-master-period-table"></tbody></table>
-            </div>
-          </div>
-
           <div id="md-tab-carriers" class="md-tab-content" style="display: none;">
             <div style="background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; padding:24px; box-shadow:0 4px 12px rgba(15,23,42,0.03);">
               <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:14px; border-bottom:1px solid #f1f5f9; padding-bottom:16px; margin-bottom:18px;">
@@ -8136,20 +7929,7 @@
                 <input type="hidden" id="finance-master-kind">
                 <input type="hidden" id="finance-master-edit-id">
 
-                <div id="finance-master-tax-fields" style="display:none; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Mã thuế <input id="finance-master-tax-code" class="fiori-input" placeholder="Ví dụ: VAT8"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Thuế suất <input id="finance-master-tax-rate" class="fiori-input" type="number" step="0.0001" min="0" placeholder="Ví dụ: 0.08"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Kiểu tính <select id="finance-master-tax-mode" class="fiori-input"><option value="exclusive">Tính ngoài giá</option><option value="inclusive">Đã gồm thuế</option><option value="exempt">Miễn thuế</option></select></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Hiệu lực từ <input id="finance-master-tax-from" class="fiori-input" type="date"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Hiệu lực đến <input id="finance-master-tax-to" class="fiori-input" type="date"></label>
-                </div>
 
-                <div id="finance-master-period-fields" style="display:none; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Mã kỳ <input id="finance-master-period-id" class="fiori-input" placeholder="Ví dụ: 2026-08"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Bắt đầu <input id="finance-master-period-start" class="fiori-input" type="date"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Kết thúc <input id="finance-master-period-end" class="fiori-input" type="date"></label>
-                  <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">Trạng thái <select id="finance-master-period-status" class="fiori-input"><option value="open">Mở</option><option value="closed">Đã khóa</option></select></label>
-                </div>
 
                 <div id="finance-master-carrier-fields" style="display:none; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px;">
                   <label style="display:grid; gap:6px; font-weight: 800; color:#334155;">M carrier <input id="finance-master-carrier-id" class="fiori-input" placeholder="Ví dụ: EPL-INTERNAL-FLEET"></label>
@@ -8365,103 +8145,6 @@
   </div>
 
 
-  <!--
-    Hộp thoại xác nhận thao tác tài chính.
-
-    Toàn bộ phần JavaScript của hộp thoại này — `openFinanceActionForm`,
-    `submitFinanceActionForm`, cả phần kiểm tra dữ liệu — đã có sẵn và viết
-    đầy đủ. Chỉ riêng phần HTML là chưa bao giờ được dựng, nên
-    `document.getElementById('finance-action-form-modal')` luôn trả về null,
-    và mã rơi vào nhánh dự phòng `if (!modal) return executeFinanceCommand(...)`
-    — tức GỬI THẲNG lệnh lên máy chủ, bỏ qua mọi trường mà người dùng lẽ ra
-    phải nhập.
-
-    Hậu quả cụ thể: `create_ap_from_cost` ở backend đòi `vendor_invoice_no`,
-    `invoice_date` và `due_date`. Không có form thì ba trường đó trống, máy chủ
-    trả 422, và người dùng nhận một lỗi cho cái form họ chưa từng được thấy.
-
-    `setFinanceActionFieldVisible` bật/tắt từng khối `*-wrap` bằng
-    `style.display = 'grid'`, nên các khối đó mặc định để `display:none` ở đây
-    và do JavaScript quyết định khối nào hiện theo loại thao tác.
-  -->
-  <div id="finance-action-form-modal" class="modal-overlay" style="display: none;">
-    <div class="erp-modal-box" style="max-width: 560px;">
-      <div class="erp-blue-header">
-        <h3 id="finance-action-form-title">Thao tác tài chính</h3>
-        <button type="button" onclick="closeFinanceActionForm()"
-                style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-      </div>
-
-      <div class="erp-toolbar">
-        <div class="erp-toolbar-title" id="finance-action-form-subtitle">Xác nhận thao tác</div>
-        <div class="erp-toolbar-actions">
-          <button type="button" class="btn btn-primary btn-sm" onclick="submitFinanceActionForm()">
-            <i class="fa-solid fa-check"></i> <span data-i18n="btn_confirm">Xác nhận</span>
-          </button>
-          <button type="button" class="btn btn-sm" style="background:#e2e8f0;"
-                  onclick="closeFinanceActionForm()" data-i18n="btn_cancel">Hủy bỏ</button>
-        </div>
-      </div>
-
-      <div class="erp-form-body">
-        <p id="finance-action-confirm-note"
-           style="margin:0 0 16px; padding:10px 12px; background:#f1f5f9; border-left:3px solid #2563eb;
-                  border-radius:4px; font-size:.82rem; color:#334155; font-weight:600;"></p>
-
-        <div class="erp-grid" style="grid-template-columns: repeat(2, 1fr);">
-          <!-- Tạo AP Invoice từ chi phí thực tế -->
-          <div class="erp-field col-span-2" id="finance-action-vendor-invoice-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_vendor_invoice">Số hóa đơn nhà cung cấp</label>
-            <input type="text" id="finance-action-vendor-invoice" placeholder="VD: 0001234">
-          </div>
-          <div class="erp-field" id="finance-action-invoice-date-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_invoice_date">Ngày hóa đơn</label>
-            <input type="date" id="finance-action-invoice-date">
-          </div>
-          <div class="erp-field" id="finance-action-due-date-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_due_date">Hạn thanh toán</label>
-            <input type="date" id="finance-action-due-date">
-          </div>
-
-          <!-- Tạo Settlement từ AP Invoice -->
-          <div class="erp-field col-span-2" id="finance-action-settlement-period-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_settlement_period">Kỳ đối soát</label>
-            <input type="month" id="finance-action-settlement-period">
-          </div>
-
-          <!-- Ghi nhận thanh toán -->
-          <div class="erp-field" id="finance-action-payment-amount-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_payment_amount">Số tiền thanh toán</label>
-            <input type="number" id="finance-action-payment-amount" min="0" step="1000" placeholder="0">
-          </div>
-          <div class="erp-field" id="finance-action-payment-method-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_payment_method">Hình thức</label>
-            <select id="finance-action-payment-method">
-              <option value="bank_transfer" data-i18n="opt_fin_bank_transfer">Chuyển khoản</option>
-              <option value="cash" data-i18n="opt_fin_cash">Tiền mặt</option>
-            </select>
-          </div>
-          <div class="erp-field" id="finance-action-reference-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_reference">Số chứng từ</label>
-            <input type="text" id="finance-action-reference" placeholder="VD: UNC-2026-001">
-          </div>
-          <!-- Đảo bút toán: `reason` là BẮT BUỘC ở cả ba đường đảo của
-               backend (thiếu thì 422 REVERSAL_REASON_REQUIRED), và nó đi vào
-               Audit Log nên không sửa lại được sau. -->
-          <div class="erp-field col-span-2" id="finance-action-reason-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_reversal_reason">Lý do đảo bút toán</label>
-            <textarea id="finance-action-reason" rows="3"
-                      placeholder="Ví dụ: Hạch toán sai mã nhà cung cấp, đã đối chiếu với hóa đơn giấy ngày 05/09"></textarea>
-          </div>
-
-          <div class="erp-field" id="finance-action-posting-date-wrap" style="display:none;">
-            <label data-i18n="lbl_fin_posting_date">Ngày hạch toán</label>
-            <input type="date" id="finance-action-posting-date">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Vietnamese source cleaned -->
   <div id="modal-do" class="modal-overlay" style="display: none;">
@@ -8783,7 +8466,7 @@
   <script src="/static/js/command-policy.js?v=20260910p-ma-loi"></script>
   <script src="/static/js/workflow-command-adapters.js?v=20260911e-truc-xuat-so"></script>
   <script src="/static/js/workflow-ui-utils.js?v=20260819-crm-tabs-qt-vi-fix"></script>
-  <script src="/static/js/tms-cockpit-utils.js?v=20260911e-truc-xuat-so"></script>
+  <script src="/static/js/tms-cockpit-utils.js?v=20260911i-xoa-ke-toan"></script>
   <!-- Trình bày phần Chất lượng dịch vụ (SLA). Phải nạp trước app.js vì
        renderReportingDrilldown gọi window.SlaAnalytics. -->
   <script src="/static/js/sla-analytics.js?v=20260903-sla-in-analysis-v1"></script>
@@ -8833,10 +8516,10 @@
        chờ và bọc `switchMasterDataTab` khi hàm đó xuất hiện. -->
   <link rel="stylesheet" href="/static/css/sap-lich-v5.css?v=20260908d-bon-viec">
   <script src="/static/js/sap-lich-v5.js?v=20260908d-bon-viec"></script>
-  <script src="/static/js/app.js?v=20260911g-acc-code-chung"></script>
+  <script src="/static/js/app.js?v=20260911i-xoa-ke-toan"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260911e-truc-xuat-so"></script>
+  <script src="/static/js/khung-moi.js?v=20260910y-trang-chu-4-viec"></script>
   <!-- Màn Báo giá cước. Nạp SAU app.js và khung-moi.js: cả ba bọc lại
        `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
        thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->

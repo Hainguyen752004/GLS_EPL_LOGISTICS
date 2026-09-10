@@ -35,8 +35,6 @@ DUONG_SUA = [
     ("/api/quotations/" + MA_GIA, {}),
     ("/api/quotations/" + MA_GIA + "/status", {"status": "Đã duyệt"}),
     ("/api/delivery-orders/" + MA_GIA + "/status", {"status": "Đang vận chuyển"}),
-    ("/api/master-data/tax-codes/" + MA_GIA, {}),
-    ("/api/master-data/accounting-periods/" + MA_GIA, {}),
     ("/api/master-data/account-mappings/" + MA_GIA, {}),
 ]
 

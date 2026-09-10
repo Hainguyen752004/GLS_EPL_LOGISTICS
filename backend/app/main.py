@@ -33,13 +33,12 @@ if app_dir not in sys.path:
     sys.path.append(app_dir)
 
 from database import get_db, auto_migrate_db
-from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
-    DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
-    GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
+from models import (    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
+    VehicleTracking, DeliveryPODRecord, 
+    AuditLog, Quotation, Incident, 
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
     TransportEvent, ResourceAssignment, TripDeliveryOrder, TransportTripLeg,
-    FreightActualCost, FreightChargeItem, APInvoice, FreightSettlement,
+    FreightActualCost, FreightChargeItem, 
     CurrencyDefinition, CurrencyRateHistory, Role, User, CostFormula, DeliveryOrderCloseout,
     DeliveryOrderChargeAdjustment, DeliveryPODDocument, VehicleMaintenanceRequest,
     FreightOrderLegacyLink,
@@ -54,7 +53,6 @@ from routes.currency_routes import _start_currency_reference_scheduler
 from routes.master_data_routes import router as master_data_router
 from routes.fleet_routes import router as fleet_router
 from routes.delivery_routes import router as delivery_router
-from routes.accounting_routes import router as accounting_router
 from routes.operations_routes import router as operations_router
 from routes.data_export_routes import router as data_export_router
 from routes.ai_upload_routes import router as ai_upload_router
@@ -78,9 +76,7 @@ from routes.tms_reporting_routes import router as tms_reporting_router
 from routes.parking_list_routes import router as parking_list_router
 from runtime_state import runtime_state
 from auth_middleware import tms_bearer_auth
-from schemas.invoice import ARInvoicePostRequest
 from schemas.workflow import RouteCreateRequest
-from services.ar_invoice_service import post_ar_invoice, serialize_ar_invoice
 from services.errors import DomainError, raise_http
 from services.vehicle_maintenance_service import (
     create_request as create_vehicle_maintenance_request,
@@ -344,7 +340,6 @@ app.include_router(currency_router)
 app.include_router(master_data_router)
 app.include_router(fleet_router)
 app.include_router(delivery_router)
-app.include_router(accounting_router)
 app.include_router(operations_router)
 app.include_router(data_export_router)
 # ai_upload_router KHÔNG gắn dependency ở tầng router vì GET /uploads/ phải
@@ -390,7 +385,7 @@ def on_startup():
 
 # Tracking và chốt giá lệnh giao hàng đã chuyển sang routes/delivery_routes.py.
 
-# Hóa đơn, sổ cái và chỉ số bảng điều khiển đã chuyển sang routes/accounting_routes.py.
+# Chỉ số bảng điều khiển: routes/operations_routes.py (module kế toán đã xoá 10/09).
 
 # Sự cố và hồ sơ lệnh giao hàng đã chuyển sang routes/operations_routes.py.
 

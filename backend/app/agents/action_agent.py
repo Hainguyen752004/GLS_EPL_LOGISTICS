@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from models import DeliveryOrder, ARInvoice as Invoice
+from models import DeliveryOrder
 from llm_helper import call_gemini_llm
 
 class ActionAgent:
