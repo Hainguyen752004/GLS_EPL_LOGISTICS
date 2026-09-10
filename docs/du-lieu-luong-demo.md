@@ -1,6 +1,6 @@
 # Dữ liệu luồng của bộ demo EPL
 
-Sinh bởi `backend/scripts/don_va_gieo_10_case_demo.py` lúc 09/09/2026 23:30 (giờ Việt Nam).
+Sinh bởi `backend/scripts/don_va_gieo_10_case_demo.py` lúc 11/09/2026 00:33 (giờ Việt Nam).
 
 19 case dừng ở **những chặng khác nhau** của luồng, có chủ ý: một bộ dữ
 liệu toàn chuyến đã đóng sẽ làm màn Điều phối, màn Theo dõi và hàng đợi
@@ -14,17 +14,17 @@ Không còn bước Đơn hàng (SO).
 
 | Case | Dừng ở | Khách hàng | Tuyến | Loại xe | Giá thành | Cước/chuyến | Biên | DO | Chuyến | Sổ thu–chi |
 |---|---|---|---|---|---|---|---|---|---|---|
-| C01 | Hoàn tất | NIDEC | VSIP2A-CATLAI | TRACTOR40 | 1.714.540 đ | 2.486.000 đ | 31.0% | 1 | TRIP-7FCC99CA-C01 | 6 dòng · 6 dòng chờ acc code |
-| C02 | Hoàn tất | SGNFOOD | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.118.000 đ | 33.3% | 1 | TRIP-7FCC99CA-C02 | 6 dòng · 6 dòng chờ acc code |
-| C03 | Hoàn tất | POUYUEN | LONGAN-CAIMEP | TRACTOR40 | 2.409.255 đ | 3.421.600 đ | 29.6% | 1 | TRIP-7FCC99CA-C03 | 6 dòng · 6 dòng chờ acc code |
-| C15 | Hoàn tất | POUYUEN | VSIP2A-CAIMEP | TRACTOR20 | 1.750.650 đ | 2.556.000 đ | 31.5% | 1 | TRIP-7FCC99CA-C15 | 6 dòng · 6 dòng chờ acc code |
-| C16 | Hoàn tất | SGNFOOD | CATLAI-AMATA | REEFER5 | 1.117.900 đ | 1.789.000 đ | 37.5% | 1 | TRIP-7FCC99CA-C16 | 6 dòng · 6 dòng chờ acc code |
-| C04 | Đang giao | COLGATE | VSIP2A-CAIMEP | TRACTOR20 | 1.750.650 đ | 2.591.000 đ | 32.4% | 1 | TRIP-7FCC99CA-C04 | — |
-| C05 | Đang giao | UNILEVER | CATLAI-AMATA | TRUCK15 | 1.124.690 đ | 1.710.000 đ | 34.2% | 1 | TRIP-7FCC99CA-C05 | — |
-| C17 | Đang giao | NIDEC | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.074.000 đ | 30.6% | 1 | TRIP-7FCC99CA-C17 | — |
-| C19 | Đang giao | POUYUEN | LONGAN-CAIMEP | TRACTOR40 | 2.409.255 đ | 3.445.050 đ | 30.1% | 1 | TRIP-7FCC99CA-C19 | — |
-| C18 | Đã đến · chờ POD | UNILEVER | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.118.000 đ | 33.3% | 1 | TRIP-7FCC99CA-C18 | — |
-| C13 | Đã đến · chờ POD | SGNFOOD | VSIP2A-CATLAI | TRUCK10 | 855.440 đ | 1.283.000 đ | 33.3% | 1 | TRIP-7FCC99CA-C13 | — |
+| C01 | Hoàn tất | NIDEC | VSIP2A-CATLAI | TRACTOR40 | 1.714.540 đ | 2.486.000 đ | 31.0% | 1 | TRIP-850C247F-C01 | 6 dòng · đủ acc code |
+| C02 | Hoàn tất | SGNFOOD | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.118.000 đ | 33.3% | 1 | TRIP-850C247F-C02 | 6 dòng · đủ acc code |
+| C03 | Hoàn tất | POUYUEN | LONGAN-CAIMEP | TRACTOR40 | 2.409.255 đ | 3.421.600 đ | 29.6% | 1 | TRIP-850C247F-C03 | 6 dòng · đủ acc code |
+| C15 | Hoàn tất | POUYUEN | VSIP2A-CAIMEP | TRACTOR20 | 1.750.650 đ | 2.556.000 đ | 31.5% | 1 | TRIP-850C247F-C15 | 6 dòng · đủ acc code |
+| C16 | Hoàn tất | SGNFOOD | CATLAI-AMATA | REEFER5 | 1.117.900 đ | 1.789.000 đ | 37.5% | 1 | TRIP-850C247F-C16 | 6 dòng · đủ acc code |
+| C04 | Đang giao | COLGATE | VSIP2A-CAIMEP | TRACTOR20 | 1.750.650 đ | 2.591.000 đ | 32.4% | 1 | TRIP-850C247F-C04 | — |
+| C05 | Đang giao | UNILEVER | CATLAI-AMATA | TRUCK15 | 1.124.690 đ | 1.710.000 đ | 34.2% | 1 | TRIP-850C247F-C05 | — |
+| C17 | Đang giao | NIDEC | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.074.000 đ | 30.6% | 1 | TRIP-850C247F-C17 | — |
+| C19 | Đang giao | POUYUEN | LONGAN-CAIMEP | TRACTOR40 | 2.409.255 đ | 3.445.050 đ | 30.1% | 1 | TRIP-850C247F-C19 | — |
+| C18 | Đã đến · chờ POD | UNILEVER | SONGTHAN-CATLAI | 20FT | 745.520 đ | 1.118.000 đ | 33.3% | 1 | TRIP-850C247F-C18 | — |
+| C13 | Đã đến · chờ POD | SGNFOOD | VSIP2A-CATLAI | TRUCK10 | 855.440 đ | 1.283.000 đ | 33.3% | 1 | TRIP-850C247F-C13 | — |
 | C06 | Đã tách DO · chờ điều phối | NIDEC | SONGTHAN-CATLAI | TRACTOR20 | 1.277.310 đ | 1.878.000 đ | 32.0% | 2 | — | — |
 | C07 | Đã tách DO · chờ điều phối | SGNFOOD | VSIP2A-CATLAI | TRUCK10 | 855.440 đ | 1.326.200 đ | 35.5% | 1 | — | — |
 | C14 | Đã tách · một DO bị huỷ | UNILEVER | SONGTHAN-CATLAI | TRUCK15 | 1.040.694 đ | 1.561.000 đ | 33.3% | 2 | — | — |

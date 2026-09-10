@@ -28,7 +28,7 @@ CÁCH CHẠY
 
     python scripts/don_va_gieo_10_case_demo.py        # doc `.env` (PostgreSQL) nhu may chu
 
-Máy chủ phải đang chạy ở `http://127.0.0.1:8011` (đổi bằng biến `EPL_GOC`).
+Máy chủ phải đang chạy (mặc định `http://127.0.0.1:8001`, đổi bằng biến `EPL_GOC`).
 """
 
 import io
@@ -43,7 +43,7 @@ from datetime import datetime, timedelta, timezone
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
 
-GOC = os.environ.get("EPL_GOC", "http://127.0.0.1:8011")
+GOC = os.environ.get("EPL_GOC", "http://127.0.0.1:8001")
 VN = timezone(timedelta(hours=7))
 DAU = uuid.uuid4().hex[:8]
 
@@ -290,7 +290,7 @@ def de(s):
 #: khi có PRAGMA), mà để nếu dừng giữa đường thì không còn dòng con trỏ vào một
 #: cha đã mất — một bản ghi mồ côi khó tìm hơn một bảng rỗng.
 BANG_GIAO_DICH = [
-    "journal_lines", "journal_batches", "ar_invoices",
+    "crm_opportunities",
     "delivery_order_charge_adjustments", "delivery_order_closeouts",
     "delivery_pod_documents", "delivery_pod_records",
     "freight_charge_items", "freight_actual_costs",
@@ -299,7 +299,7 @@ BANG_GIAO_DICH = [
     "trip_delivery_orders", "transport_trip_legs",
     "resource_assignments", "transport_trips",
     "freight_order_legacy_links", "freight_orders",
-    "delivery_order_details", "delivery_orders",
+    "delivery_orders",
 
     "quotation_attachments", "quotation_items", "quotation_versions", "quotations",
     "epl_expense_vouchers", "vehicle_maintenance_requests",
@@ -555,18 +555,7 @@ def chuan_lai_du_lieu_goc():
     finally:
         c.close()
 
-    # KỲ KẾ TOÁN phải MỞ cho hôm nay, nếu không thì không phát hành hoá đơn được
-    # và ba case "hoàn tất" sẽ dừng ở bước cuối.
-    ma, g = goi("/api/master-data/accounting-periods", {
-        "id": "KY-%s" % datetime.now(VN).strftime("%Y-%m"),
-        "name": "Kỳ %s" % datetime.now(VN).strftime("%m/%Y"),
-        "starts_at": datetime.now(VN).replace(day=1, hour=0, minute=0, second=0,
-                                              microsecond=0).isoformat(),
-        "ends_at": (datetime.now(VN).replace(day=1) + timedelta(days=62)).replace(
-            hour=23, minute=59, second=59, microsecond=0).isoformat(),
-        "status": "open",
-    }, "POST")
-    print("   Kỳ kế toán tháng này:", ma, chu(g)[:120])
+    # (Kỳ kế toán / hoá đơn AR đã xoá 10/09: hoàn tất DO chỉ bàn giao hồ sơ, không cần kỳ mở.)
 
     # BẰNG LÁI và CA TRỰC cho tổ lái sẽ dùng.
     ma, g = goi("/api/drivers")
@@ -1234,7 +1223,7 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
 
     if c["chang"] == "huy" and ds_do:
         # Huy DO DAU (chua co chuyen nao) — DO con lai van o hang doi dieu phoi.
-        ma, g = goi("/api/delivery-orders/%s/status" % ds_do[0], {"status": "cancelled"}, "PUT")
+        ma, g = goi("/api/delivery-orders/%s/status" % ds_do[0], {"status": "cancelled", "reason": "Khách huỷ một lô — dữ liệu demo case huỷ"}, "PUT")
         d = du_lieu(g)
         kiem("%s huỷ một DO sau khi tách" % c["ma"], ma == 200,
              "%s -> %s · %s" % (ds_do[0], d.get("canonical_status"), chu(g)[:80]))
@@ -1316,7 +1305,9 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
         "vehicle_id": xe["id"], "driver_id": tx["id"],
         "co_driver_id": (px or {}).get("id"),
         "expected_version": pb,
-        "assignment_start": T(-240), "assignment_end": T(420),
+        # Nam HAN trong khung lay/giao (T(-240)..T(420)) 5 phut moi ben: moc "bay gio" tinh
+        # lai o moi loi goi, nen dat dung mep thi vai giay troi qua la vuot khung va may chu chan.
+        "assignment_start": T(-235), "assignment_end": T(415),
     }, "PUT")
     d = du_lieu(g)
     kiem("%s điều phối xe %s + tổ lái" % (c["ma"], xe["id"]), ma == 200,
@@ -1637,7 +1628,7 @@ def doi_chieu():
              tien(tong.get("approved_cost")), tien(tong.get("gross_profit")),
              tong.get("margin_percent")))
     kiem("báo cáo doanh thu có số", len(dong) > 0, "%d dòng" % len(dong))
-    kiem("không có ngoại lệ 'đã giao mà chưa ghi sổ hoá đơn'", not ngoai_le,
+    kiem("không có ngoại lệ 'đã giao mà chưa có hồ sơ hoàn tất'", not ngoai_le,
          "%d ngoại lệ" % len(ngoai_le))
 
     ma, g = goi("/api/dashboard/stats")

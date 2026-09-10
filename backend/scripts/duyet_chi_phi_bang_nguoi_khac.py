@@ -18,7 +18,7 @@ duyệt, và không có dòng nhật ký kiểm toán. Sau đó không ai trả 
 "ai duyệt khoản này" — mà đó chính là câu mà cả quy tắc bốn mắt tồn tại để trả
 lời được.
 
-CÁCH CHẠY (máy chủ chính đang chạy ở cổng 8011):
+CÁCH CHẠY (máy chủ chính đang chạy ở cổng 8001):
 
     python scripts/duyet_chi_phi_bang_nguoi_khac.py
 
@@ -36,7 +36,7 @@ import urllib.request
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", line_buffering=True)
 
-GOC = os.environ.get("EPL_GOC", "http://127.0.0.1:8011")
+GOC = os.environ.get("EPL_GOC", "http://127.0.0.1:8001")
 CONG_TAM = int(os.environ.get("EPL_CONG_TAM", "8019"))
 GOC_TAM = "http://127.0.0.1:%d" % CONG_TAM
 NGUOI_DUYET = os.environ.get("EPL_NGUOI_DUYET", "truong-phong-tai-chinh")
