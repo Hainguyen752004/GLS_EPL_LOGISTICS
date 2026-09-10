@@ -34,7 +34,7 @@ if app_dir not in sys.path:
 
 from database import get_db, auto_migrate_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -70,6 +70,8 @@ from routes.shared import (
 )
 from routes.workflow_routes import router as workflow_router
 from routes.bao_gia_routes import router as bao_gia_router
+from routes.crm_routes import router as crm_router
+from routes.handover_routes import router as handover_router
 from routes.tms_planning_routes import router as tms_planning_router
 from routes.tms_finance_routes import router as tms_finance_router
 from routes.tms_reporting_routes import router as tms_reporting_router
@@ -349,6 +351,8 @@ app.include_router(data_export_router)
 # công khai cho thẻ <img src>. Xem routes/ai_upload_routes.py.
 app.include_router(ai_upload_router)
 app.include_router(bao_gia_router)
+app.include_router(crm_router)
+app.include_router(handover_router)
 app.include_router(workflow_router)
 app.include_router(tms_planning_router)
 app.include_router(tms_finance_router)

@@ -21,7 +21,7 @@ def main():
     # NOI RA co so du lieu THAT vua ghi vao, khong ghi cung "PostgreSQL".
     #
     # Khi may chua PostgreSQL khong toi duoc, du an chay tam bang SQLite qua
-    # `EPL_ENV_FILE=.env.sqlite`. Luc do dong thong bao cung se noi la da nap
+    # `EPL_ENV_FILE` tro sang mot `.env` khac. Luc do dong thong bao cung se noi la da nap
     # vao PostgreSQL — va nguoi doc tin rang du lieu da nam tren co so du lieu
     # that. Mot cau bao sai o dung buoc xac nhan la cho de sai nhat.
     from database import engine as _engine

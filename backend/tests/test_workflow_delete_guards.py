@@ -1,4 +1,4 @@
-from conftest import bao_gia_hop_le
+from conftest import bao_gia_hop_le, dieu_phoi_qua_chuyen, san_sang_dieu_phoi
 
 
 def _create_master_data(client):
@@ -11,9 +11,8 @@ def _create_master_data(client):
 def _create_pending_do(client, suffix):
     assert client.post("/api/quotations", json=bao_gia_hop_le(id=f"QT-{suffix}", selling_price=3_500_000)).status_code == 200
     assert client.put(f"/api/quotations/QT-{suffix}/approve").status_code == 200
-    assert client.post("/api/sales-orders", json={"id": f"SO-{suffix}", "quotation_id": f"QT-{suffix}"}).status_code == 200
-    assert client.put(f"/api/sales-orders/SO-{suffix}/status", json={"status": "Confirmed"}).status_code == 200
-    assert client.post("/api/delivery-orders", json={"id": f"DO-{suffix}", "so_id": f"SO-{suffix}"}).status_code == 200
+    assert client.post(f"/api/quotations/QT-{suffix}/send", json={}).status_code == 200
+    assert client.post(f"/api/quotations/QT-{suffix}/accept", json={"dos": [{"id": f"DO-{suffix}", "quantity": 1}]}).status_code == 200
 
 
 def _entity(client, collection, entity_id):
@@ -38,23 +37,6 @@ def test_approved_quotation_cannot_be_deleted(app_client):
     assert (after["canonical_status"], after["version"]) == (before["canonical_status"], before["version"])
 
 
-def test_confirmed_sales_order_cannot_be_deleted(app_client):
-    client, _, _ = app_client
-    _create_master_data(client)
-    assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-T2")).status_code == 200
-    assert client.put("/api/quotations/QT-T2/approve").status_code == 200
-    assert client.post("/api/sales-orders", json={"id": "SO-T2", "quotation_id": "QT-T2"}).status_code == 200
-    assert client.put("/api/sales-orders/SO-T2/status", json={"status": "Confirmed"}).status_code == 200
-    before = _entity(client, "/api/sales-orders", "SO-T2")
-
-    delete = client.delete("/api/sales-orders/SO-T2")
-
-    assert delete.status_code == 409
-    assert delete.json()["detail"] == {"code": "LOCKED_RECORD", "message": "Đơn hàng đã xác nhận chỉ được xem, không được xóa.", "navigation_targets": ["sales-orders"]}
-    after = _entity(client, "/api/sales-orders", "SO-T2")
-    assert (after["canonical_status"], after["version"]) == (before["canonical_status"], before["version"])
-
-
 def test_pending_delivery_order_can_be_deleted(app_client):
     client, _, _ = app_client
     _create_master_data(client)
@@ -70,7 +52,8 @@ def test_in_transit_delivery_order_cannot_be_deleted(app_client):
     client, _, _ = app_client
     _create_master_data(client)
     _create_pending_do(client, "RUN")
-    assert client.put("/api/delivery-orders/DO-RUN/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}).status_code == 200
+    # Dieu phoi QUA CHUYEN: duong dieu phoi le da dong phan ghi.
+    dieu_phoi_qua_chuyen(client, "DO-RUN")
     before = _entity(client, "/api/delivery-orders", "DO-RUN")
     delete = client.delete("/api/delivery-orders/DO-RUN")
     after = _entity(client, "/api/delivery-orders", "DO-RUN")
@@ -102,8 +85,7 @@ def test_vehicle_crud_is_persistent_and_in_use_vehicle_cannot_be_deleted(app_cli
     assert persisted["weight_capacity"] == 12000
 
     _create_pending_do(client, "VEHLOCK")
-    dispatch = client.put("/api/delivery-orders/DO-VEHLOCK/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"})
-    assert dispatch.status_code == 200
+    dieu_phoi_qua_chuyen(client, "DO-VEHLOCK")
 
     delete = client.delete("/api/vehicles/VEH-T1")
 
@@ -132,9 +114,9 @@ def test_dispatch_updates_actor_timestamp_and_version(app_client):
     client, _, _ = app_client
     _create_master_data(client); _create_pending_do(client, "VER")
     before = _entity(client, "/api/delivery-orders", "DO-VER")
-    response = client.put("/api/delivery-orders/DO-VER/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}, headers={"X-Test-Principal": "dispatcher"})
-    after = response.json()["data"]
-    assert response.status_code == 200
+    dieu_phoi_qua_chuyen(client, "DO-VER", dau={"X-Test-Principal": "dispatcher"})
+    after = _entity(client, "/api/delivery-orders", "DO-VER")
+    assert after["canonical_status"] == "in_transit"
     assert after["updated_by"] == "dispatcher"
     assert after["updated_at"] != before["updated_at"]
     assert after["version"] == before["version"] + 1
@@ -152,28 +134,20 @@ def test_masterdata_to_pending_delivery_order_flow(app_client):
     assert approved_qt.status_code == 200
     assert approved_qt.json()["data"]["canonical_status"] == "approved"
 
-    so = client.post("/api/sales-orders", json={"id": "SO-E2E", "quotation_id": "QT-E2E"})
-    assert so.status_code == 200
-    assert so.json()["data"]["quotation_id"] == "QT-E2E"
-    assert so.json()["data"]["canonical_status"] == "draft"
-
-    confirmed_so = client.put("/api/sales-orders/SO-E2E/status", json={"status": "Confirmed"})
-    assert confirmed_so.status_code == 200
-    assert confirmed_so.json()["data"]["canonical_status"] == "confirmed"
-
-    delivery = client.post("/api/delivery-orders", json={"id": "DO-E2E", "so_id": "SO-E2E"})
-    assert delivery.status_code == 200
-    assert delivery.json()["data"]["canonical_status"] == "pending"
+    assert client.post("/api/quotations/QT-E2E/send", json={}).status_code == 200
+    accepted = client.post("/api/quotations/QT-E2E/accept", json={"dos": [{"id": "DO-E2E", "quantity": 1}]})
+    assert accepted.status_code == 200, accepted.text
+    delivery = _entity(client, "/api/delivery-orders", "DO-E2E")
+    assert delivery["canonical_status"] == "pending"
+    assert delivery["quotation_id"] == "QT-E2E"
 
 
 def test_dispatch_requires_pod_before_delivery(app_client):
     client, _, _ = app_client
     _create_master_data(client)
     _create_pending_do(client, "FULL")
-
-    dispatch = client.put("/api/delivery-orders/DO-FULL/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"})
-    assert dispatch.status_code == 200
-    assert dispatch.json()["data"]["canonical_status"] == "in_transit"
+    dieu_phoi_qua_chuyen(client, "DO-FULL")
+    assert _entity(client, "/api/delivery-orders", "DO-FULL")["canonical_status"] == "in_transit"
 
     tracking = client.get("/api/tracking/DO-FULL")
     assert tracking.status_code == 200

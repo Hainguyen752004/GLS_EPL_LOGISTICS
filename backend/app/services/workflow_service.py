@@ -16,8 +16,6 @@ from models import (
     Quotation,
     ResourceAssignment,
     Route,
-    SalesOrder,
-    SalesOrderLine,
     TransportTrip,
     TransportTripLeg,
     TripDeliveryOrder,
@@ -40,7 +38,6 @@ BUSINESS_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 
 STATUS = {
     "quotation": {"draft": "Bản nháp", "approved": "Đã duyệt"},
-    "sales_order": {"draft": "Bản nháp", "confirmed": "Đã xác nhận"},
     "delivery_order": {
         "pending": "Chờ vận chuyển",
         "in_transit": "Đang vận chuyển",
@@ -77,10 +74,19 @@ DO_ANALYSIS_STAGE = {
     "pending": "Chờ vận chuyển",
     "active": "Đang vận chuyển",
     "completed": "Hoàn thành",
+    # DA HUY LA MOT RO RIENG, khong phai "cho van chuyen".
+    #
+    # LOI DO DUOC TREN DU LIEU THAT: mot DO khach da huy roi van hien o tab
+    # "Gan tre" cua man Lenh giao hang, vi nhanh else cuoi cua ham phan loai
+    # coi moi trang thai khong phai da giao / dang chay la "cho van chuyen"
+    # roi do han giao cua no. Nguoi dieu phoi thay mot don sap tre ma khong
+    # co gi de lam — hang can xu ly bi lam ban boi nhung don da chet.
+    "cancelled": "Đã huỷ",
 }
 
 #: Thu tu cap bach, dung de chon tab mo san.
-DO_STAGE_URGENCY = ("incident", "overdue", "undated", "near_late", "pending", "active", "completed")
+DO_STAGE_URGENCY = ("incident", "overdue", "undated", "near_late", "pending", "active",
+                    "completed", "cancelled")
 
 
 # --------------------------------------------------------------------------
@@ -180,74 +186,6 @@ def _line_decimal(value, field):
     return result
 
 
-def _replace_sales_order_lines(db, so, rows):
-    """Ghi lại toàn bộ dòng hàng của một đơn, rồi tính lại số tổng.
-
-    Thay trọn bộ thay vì vá từng dòng: giao diện gửi lên cả bảng, và ghép từng
-    dòng sẽ để lại dòng mồ côi khi người dùng xóa bớt.
-    """
-    if rows is None:
-        return
-    if not isinstance(rows, list):
-        raise DomainError("SO_LINES_INVALID", "Danh sách hàng hóa vận chuyển phải là một mảng.", 422)
-    if len(rows) > 200:
-        raise DomainError("SO_LINES_TOO_MANY", "Một đơn hàng vận chuyển không được quá 200 dòng hàng.", 422)
-
-    db.query(SalesOrderLine).filter(SalesOrderLine.so_id == so.id).delete(synchronize_session=False)
-
-    total = Decimal(0)
-    total_kg = Decimal(0)
-    total_m3 = Decimal(0)
-    for index, row in enumerate(rows, start=1):
-        if not isinstance(row, dict):
-            raise DomainError("SO_LINES_INVALID", "Mỗi dòng hàng phải là một đối tượng.", 422)
-        quantity = _line_decimal(row.get("quantity"), "Số lượng")
-        unit_price = _line_decimal(row.get("unit_price"), "Đơn giá cước")
-        amount = quantity * unit_price
-        uom = str(row.get("uom") or "Tấn").strip() or "Tấn"
-        db.add(SalesOrderLine(
-            id=f"{so.id}-L{index:03d}",
-            so_id=so.id,
-            line_no=index,
-            description=str(row.get("description") or "").strip()[:500],
-            quantity=quantity,
-            uom=uom[:32],
-            unit_price=unit_price,
-            amount=amount,
-        ))
-        total += amount
-        kg, m3 = _line_quantity_split(uom, quantity)
-        total_kg += kg
-        total_m3 += m3
-
-    # Số tổng được TÍNH LẠI từ các dòng, không nhận từ giao diện: nếu nhận thì
-    # tổng và các dòng có thể nói hai con số khác nhau.
-    so.total_amount = total
-    if total_kg:
-        so.weight_kg = float(total_kg)
-    if total_m3:
-        so.volume_m3 = float(total_m3)
-
-
-def serialize_sales_order_lines(db, so_id):
-    rows = (
-        db.query(SalesOrderLine)
-        .filter(SalesOrderLine.so_id == so_id)
-        .order_by(SalesOrderLine.line_no)
-        .all()
-    )
-    return [
-        {
-            "line_no": row.line_no,
-            "description": row.description or "",
-            "quantity": float(row.quantity or 0),
-            "uom": row.uom,
-            "unit_price": float(row.unit_price or 0),
-            "amount": float(row.amount or 0),
-        }
-        for row in rows
-    ]
-
 def _parse_business_datetime(value):
     if not value:
         return None
@@ -297,7 +235,11 @@ def _delivery_order_analysis_record(order, pod_counts, incident_counts, now, nea
     has_open_incident = bool(incident_counts.get(order.id, 0))
 
     if has_open_incident:
+        # Su co van xet TRUOC ca huy: mot DO da huy nhung con su co chua dong
+        # thi su co do van phai co nguoi dong lai.
         stage = "incident"
+    elif key in {"cancelled", "canceled", "void", "voided"}:
+        stage = "cancelled"
     elif key in {"delivered", "completed", "settled", "posted"}:
         stage = "completed"
     elif key in {"dispatched", "in_transit", "arrived"}:
@@ -334,6 +276,7 @@ def _delivery_order_analysis_record(order, pod_counts, incident_counts, now, nea
         "active": "DO đã được điều phối xe và đang trong quá trình vận chuyển.",
         "pending": "DO đã lập kế hoạch hoặc đã đủ điều kiện điều phối, nhưng chưa có xe đang chạy.",
         "incident": "DO đang có sự cố vận hành chưa được xử lý.",
+        "cancelled": "DO đã huỷ — không còn nằm trong hàng đợi điều phối.",
     }[stage]
 
     return {
@@ -858,12 +801,27 @@ def approve_quotation(db, qid, user="system"):
         "volume_m3": q.volume_m3,
         "pallet_count": q.pallet_count,
     })
-    q.status = STATUS["quotation"]["approved"]
-    q.canonical_status = "approved"
+    # CÙNG CỬA BIÊN MỎNG với đường gửi khách (`bao_gia_service.gui_khach`).
+    #
+    # Rà soát trọn luồng đo được: đường duyệt cũ này qua được cửa lỗ / hết hạn /
+    # tải trọng nhưng KHÔNG rẽ sang chờ duyệt nội bộ khi biên dưới ngưỡng — một
+    # báo giá biên 5 % có thể được duyệt, khách chấp nhận và tách DO mà không ai
+    # ở cấp trưởng phòng nhìn qua, trong khi cùng báo giá đó đi đường "Gửi khách"
+    # thì bị giữ lại. Hai đường phải nói cùng một câu.
+    from services.bao_gia_service import NGUONG_BIEN_PHAI_DUYET, _bien_rieng, bien_loi_nhuan
+    bien = bien_loi_nhuan(q.selling_price, q.total_cost)
+    nguong = _bien_rieng(q.target_margin) or NGUONG_BIEN_PHAI_DUYET
+    if bien is not None and bien < nguong:
+        q.canonical_status = "pending_approval"
+        q.status = "Chờ duyệt nội bộ"
+        _audit(db, "QUOTATION_HELD_FOR_INTERNAL_APPROVAL", "quotations", q.id, user)
+    else:
+        q.status = STATUS["quotation"]["approved"]
+        q.canonical_status = "approved"
+        _audit(db, "APPROVE_QUOTATION", "quotations", q.id, user)
     q.updated_by = user
     q.updated_at = _now()
     q.version = (q.version or 1) + 1
-    _audit(db, "APPROVE_QUOTATION", "quotations", q.id, user)
     return q
 
 
@@ -920,113 +878,23 @@ def update_quotation(db, qid, data, user="system"):
         "volume_m3": q.volume_m3,
         "pallet_count": q.pallet_count,
     })
+    # SỬA BÁO GIÁ ĐÃ GỬI KHÁCH → VỀ NHÁP, phải gửi lại.
+    #
+    # Khách đang cầm bản đã gửi. Sửa giá hay khối lượng mà vẫn để `sent` thì bản
+    # trong hệ và bản khách cầm là hai bản khác nhau dưới cùng một mã — khách
+    # chấp nhận bản cũ, hệ tách DO theo bản mới. Về `draft` buộc người bán gửi
+    # lại (ghi thêm một phiên bản, đi lại cửa lỗ / biên mỏng), và `quote_no` giữ
+    # nguyên vì đó vẫn là cùng một báo giá với khách.
+    if q.canonical_status == "sent":
+        q.canonical_status = "draft"
+        q.status = "Bản nháp — đã sửa sau khi gửi, cần gửi lại"
+        q.sent_at = None
+        _audit(db, "QUOTATION_REOPENED_AFTER_SENT", "quotations", q.id, user)
     q.updated_by = user
     q.updated_at = _now()
     q.version = (q.version or 1) + 1
     _audit(db, "UPDATE_QUOTATION", "quotations", q.id, user)
     return q
-
-
-def create_sales_order(db, data, user="system"):
-    qid = data.get("quotation_id")
-    q = db.query(Quotation).filter(Quotation.id == qid).first()
-    if not q:
-        raise DomainError("QUOTATION_NOT_FOUND", "Không tìm thấy báo giá nguồn để tạo đơn hàng.", 404)
-    if q.canonical_status != "approved":
-        raise DomainError("QUOTATION_NOT_APPROVED", "Báo giá phải được duyệt trước khi tạo đơn hàng.")
-    route = _require(db, Route, q.route_id, "route", "tuyến đường")
-    route_context = _route_context_from_quote(q, route, data)
-    so = SalesOrder(
-        id=data.get("id") or q.id.replace("QT-", "SO-", 1),
-        quotation_id=q.id,
-        customer_id=q.customer_id,
-        route_id=route_context["route_id"],
-        origin=route_context["origin"],
-        destination=route_context["destination"],
-        pickup_window_start=route_context["pickup_window_start"],
-        pickup_window_end=route_context["pickup_window_end"],
-        delivery_window_start=route_context["delivery_window_start"],
-        delivery_window_end=route_context["delivery_window_end"],
-        weight_kg=route_context["weight_kg"],
-        pallet_count=route_context["pallet_count"],
-        total_amount=_money(data, "total_amount", q.selling_price or 0),
-        packaging_spec=q.packaging_spec,
-        # Ghi chu cua DON la thu khac voi ghi chu cua BAO GIA (dieu kien chao
-        # khach), nen KHONG ke thua — de trong cho nguoi dieu phoi tu ghi.
-        notes=data.get("notes") or None,
-        # Hai cot nay co that trong bang nhung schema chua bao gio nhan chung.
-        payment_terms=data.get("payment_terms") or None,
-        sales_rep=data.get("sales_rep") or None,
-        volume_m3=q.volume_m3,
-        status=STATUS["sales_order"]["draft"],
-        canonical_status="draft",
-        order_date=data.get("order_date") or datetime.date.today().isoformat(),
-        currency_code=data.get("currency_code") or "VND",
-        created_by=user,
-        updated_by=user,
-    )
-    # Don hang ke thua quy cach van chuyen tu bao gia da duyet — day la dieu
-    # kien da chao cho khach, bat khai lai la vua mat cong vua de lech voi cai
-    # da chao.
-    _inherit_shipping_spec(so, q)
-    _apply_shipping_spec(so, data)
-    db.add(so)
-    _audit(db, "CREATE_SALES_ORDER", "sales_orders", so.id, user)
-    return so
-
-
-def update_sales_order(db, so_id, data, user="system"):
-    so = db.query(SalesOrder).filter(SalesOrder.id == so_id).with_for_update().first()
-    if not so:
-        raise DomainError("SALES_ORDER_NOT_FOUND", f"Không tìm thấy đơn hàng {so_id}", 404)
-    if so.canonical_status != "draft":
-        raise conflict("LOCKED_RECORD", "Đơn hàng đã xác nhận chỉ được xem, không được sửa.", ["sales-orders"])
-    if data.get("route_id"):
-        route = _require(db, Route, data.get("route_id"), "route", "tuyến đường")
-        so.route_id = route.id
-    else:
-        route = db.query(Route).filter(Route.id == so.route_id).first()
-    fallback = _route_label(route) if route else ""
-    so.origin = data.get("origin", so.origin) or fallback
-    so.destination = data.get("destination", so.destination) or fallback
-    so.pickup_window_start = data.get("pickup_window_start", so.pickup_window_start) or ""
-    so.pickup_window_end = data.get("pickup_window_end", so.pickup_window_end) or ""
-    so.delivery_window_start = data.get("delivery_window_start", so.delivery_window_start) or ""
-    so.delivery_window_end = data.get("delivery_window_end", so.delivery_window_end) or ""
-    so.weight_kg = _money(data, "weight_kg", so.weight_kg or 0)
-    # Dong hang duoc ghi SAU cac truong tong, vi no tinh lai tong tu cac dong.
-    _apply_shipping_spec(so, data)
-    _replace_sales_order_lines(db, so, data.get("lines"))
-    so.pallet_count = _nonnegative_int(data, "pallet_count", so.pallet_count or 0)
-    so.total_amount = _money(data, "total_amount", so.total_amount or 0)
-    if "currency_code" in data:
-        so.currency_code = data.get("currency_code") or "VND"
-    if "packaging_spec" in data:
-        so.packaging_spec = data.get("packaging_spec") or ""
-    for truong in ("notes", "payment_terms", "sales_rep"):
-        if truong in data:
-            setattr(so, truong, data.get(truong) or None)
-    so.volume_m3 = _money(data, "volume_m3", so.volume_m3 or 0)
-    so.updated_by = user
-    so.updated_at = _now()
-    so.version = (so.version or 1) + 1
-    _audit(db, "UPDATE_SALES_ORDER", "sales_orders", so.id, user)
-    return so
-
-
-def confirm_sales_order(db, so_id, user="system"):
-    so = db.query(SalesOrder).filter(SalesOrder.id == so_id).with_for_update().first()
-    if not so:
-        raise DomainError("SALES_ORDER_NOT_FOUND", f"Không tìm thấy đơn hàng {so_id}", 404)
-    if so.canonical_status != "draft":
-        raise conflict("INVALID_TRANSITION", "Chỉ đơn hàng bản nháp mới được xác nhận.")
-    so.status = STATUS["sales_order"]["confirmed"]
-    so.canonical_status = "confirmed"
-    so.updated_by = user
-    so.updated_at = _now()
-    so.version = (so.version or 1) + 1
-    _audit(db, "CONFIRM_SALES_ORDER", "sales_orders", so.id, user)
-    return so
 
 
 def delete_quotation(db, qid, user="system"):
@@ -1038,56 +906,6 @@ def delete_quotation(db, qid, user="system"):
     db.delete(q)
     _audit(db, "DELETE_QUOTATION", "quotations", qid, user)
     return q
-
-
-def delete_sales_order(db, so_id, user="system"):
-    so = db.query(SalesOrder).filter(SalesOrder.id == so_id).with_for_update().first()
-    if not so:
-        raise DomainError("SALES_ORDER_NOT_FOUND", f"Không tìm thấy đơn hàng {so_id}", 404)
-    if so.canonical_status != "draft":
-        raise conflict("LOCKED_RECORD", "Đơn hàng đã xác nhận chỉ được xem, không được xóa.", ["sales-orders"])
-    db.delete(so)
-    _audit(db, "DELETE_SALES_ORDER", "sales_orders", so_id, user)
-    return so
-
-
-def create_delivery_order(db, data, user="system"):
-    so = db.query(SalesOrder).filter(SalesOrder.id == data.get("so_id")).first()
-    if not so:
-        raise DomainError("SALES_ORDER_NOT_FOUND", "Không tìm thấy đơn hàng nguồn để tạo lệnh giao hàng.", 404)
-    if so.canonical_status != "confirmed":
-        raise DomainError("SALES_ORDER_NOT_CONFIRMED", "Đơn hàng phải được xác nhận trước khi tạo lệnh giao hàng.")
-    route_id = data.get("route_id") or so.route_id
-    route = _require(db, Route, route_id, "route", "tuyến đường")
-    do = DeliveryOrder(
-        id=data.get("id") or so.id.replace("SO-", "DO-", 1),
-        so_id=so.id,
-        customer_id=so.customer_id,
-        route_id=route_id,
-        origin=data.get("origin") or so.origin or _route_label(route),
-        destination=data.get("destination") or so.destination or _route_label(route),
-        pickup_window_start=_parse_business_datetime(data.get("pickup_window_start") or so.pickup_window_start),
-        pickup_window_end=_parse_business_datetime(data.get("pickup_window_end") or so.pickup_window_end),
-        delivery_window_start=_parse_business_datetime(data.get("delivery_window_start") or so.delivery_window_start),
-        delivery_window_end=_parse_business_datetime(data.get("delivery_window_end") or so.delivery_window_end),
-        weight_kg=_money(data, "weight_kg", so.weight_kg or 0),
-        pallet_count=_nonnegative_int(data, "pallet_count", so.pallet_count or 0),
-        pickup_date=_parse_business_datetime(data.get("pickup_date") or so.pickup_window_start),
-        delivery_date=_parse_business_datetime(data.get("delivery_date") or so.delivery_window_end or so.delivery_date),
-        # Quy cach lay tu payload TRUOC, roi moi ke thua tu Don ban. Truoc day
-        # chi ke thua, nen mot don nguyen khoi khong khai duoc ngay luc tao va
-        # bi cua chan xuat ben chan lai cho tới khi co nguoi vao sua.
-        packaging_spec=data.get("packaging_spec") or so.packaging_spec,
-        seal_no=(data.get("seal_no") or "").strip() or None,
-        volume_m3=so.volume_m3,
-        status=STATUS["delivery_order"]["pending"],
-        canonical_status="pending",
-        created_by=user,
-        updated_by=user,
-    )
-    db.add(do)
-    _audit(db, "CREATE_DELIVERY_ORDER", "delivery_orders", do.id, user)
-    return do
 
 
 def _chan_doi_tuyen_lech_bao_gia(db, do, tuyen_moi):
@@ -1218,17 +1036,35 @@ def delete_delivery_order(db, do_id, user="system"):
     do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).with_for_update().first()
     if not do:
         raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy lệnh giao hàng {do_id}", 404)
-    if do.canonical_status != "pending":
+    # Xoa duoc khi CHO (chua ai dong vao) hoac DA HUY (chu du an: "đã hủy thì cho
+    # phép xóa"). Dang chay / da giao thi chi xem: tien va POD da gan vao.
+    if do.canonical_status not in ("pending", "cancelled"):
         raise conflict("LOCKED_RECORD", "Lệnh giao hàng đang vận chuyển hoặc đã kết thúc chỉ được xem, không được xóa.", ["delivery-orders"])
+    # DO da huy co the con dong lien ket voi chuyen DA HUY (huy chuyen tra DO ve
+    # cho, roi huy DO). Go lien ket chet do; con dinh chuyen dang song thi khong xoa.
+    lien_ket = db.query(TripDeliveryOrder, TransportTrip.status).join(
+        TransportTrip, TransportTrip.id == TripDeliveryOrder.trip_id
+    ).filter(TripDeliveryOrder.do_id == do.id).all()
+    for link, tt_trip in lien_ket:
+        if tt_trip not in ("cancelled", "completed"):
+            raise conflict("ACTIVE_TRIP_EXISTS",
+                           "Lệnh %s còn thuộc chuyến %s đang mở — huỷ chuyến trước." % (do.id, link.trip_id))
+        db.delete(link)
     db.delete(do)
     _audit(db, "DELETE_DELIVERY_ORDER", "delivery_orders", do_id, user)
     return do
 
 
-def update_delivery_status(db, do_id, status, user="system"):
+def update_delivery_status(db, do_id, status, user="system", reason=None):
     do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).with_for_update().first()
     if not do:
         raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy lệnh giao hàng {do_id}", 404)
+    ly_do_huy = str(reason or "").strip()
+    if status == "cancelled" and not ly_do_huy:
+        # Huy khong ly do la thu khong doi soat duoc voi khach. Bao gia da bat
+        # `close_reason`; DO cung vay.
+        raise DomainError("CANCEL_REASON_REQUIRED",
+                          "Huỷ lệnh giao hàng phải ghi lý do (khách huỷ, đổi ngày, trùng lệnh…).", 422)
     allowed = {
         "pending": {"in_transit", "cancelled"},
         # `arrived` là mốc "xe đã tới điểm giao, chưa có POD". Trước đây nó
@@ -1263,6 +1099,7 @@ def update_delivery_status(db, do_id, status, user="system"):
             ["dispatch"],
         )
     if status == "cancelled":
+        do.cancel_reason = ly_do_huy
         active_trip = db.query(TransportTrip.id).join(
             TripDeliveryOrder,
             TripDeliveryOrder.trip_id == TransportTrip.id,
@@ -1271,9 +1108,17 @@ def update_delivery_status(db, do_id, status, user="system"):
             ~TransportTrip.status.in_(("completed", "cancelled")),
         ).first()
         if active_trip:
+            # CAU BAO LOI PHAI CHI DUNG DUONG RA. Ban truoc chi noi "khong huy
+            # duoc" roi chi sang man Chuyen — ma luc do man Chuyen KHONG co nut
+            # huy nao, nen nguoi dung mac han o day va duong duy nhat con lai la
+            # xoa cung DO. Gio da co `POST /api/tms/trips/{id}/cancel`, nen noi
+            # ro ten chuyen va viec phai lam.
             raise conflict(
                 "ACTIVE_TRIP_EXISTS",
-                "Không thể hủy lệnh giao hàng khi còn chuyến vận tải đang hoạt động.",
+                "Lệnh %s đang thuộc chuyến %s. Huỷ chuyến đó trước "
+                "(POST /api/tms/trips/%s/cancel) — huỷ chuyến sẽ trả lệnh này về "
+                "chờ điều phối, rồi mới huỷ được lệnh."
+                % (do.id, active_trip[0], active_trip[0]),
                 ["transport-trips"],
             )
     if status == "delivered":
@@ -1295,97 +1140,59 @@ def update_delivery_status(db, do_id, status, user="system"):
 
 
 def dispatch(db, do_id, data, user="system"):
-    do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).with_for_update().first()
+    """ĐƯỜNG ĐIỀU PHỐI LẺ ĐÃ ĐÓNG PHẦN GHI. Điều phối đi qua CHUYẾN.
+
+    VÌ SAO ĐÓNG, chứ không vá thêm cửa. Bản trước đã được bổ sung đủ 5 cửa kiểm
+    của điều phối chuyến (hạn pháp lý xe, bằng lái, ca làm việc, Packing List,
+    niêm phong) — nhưng nó vẫn **không lập Chuyến và không tạo phân công**. Rà
+    soát trọn luồng đo được hậu quả: một lệnh giao hàng đi qua đây rơi vào một
+    trạng thái KHÔNG CÓ ĐƯỜNG RA.
+
+      · nộp POD               -> 422 POD_LINEAGE_INVALID (đòi chuyến + thành viên)
+      · đổi trạng thái sang đã giao -> 409 ATOMIC_COMPLETION_REQUIRED
+      · huỷ                   -> bảng chuyển trạng thái không cho `in_transit` sang huỷ
+      · lập chuyến để chữa    -> 409 DELIVERY_ORDER_NOT_PENDING
+      · ghi mốc thực thi      -> đòi một phân công đang mở, mà đường này không tạo
+
+    Và nặng nhất: `vehicle.status` thành "Đang vận chuyển đơn ..." trong khi mọi
+    đường giải phóng đều đi từ bước hoàn tất hoặc bước xe-về-bãi — cả hai đều
+    cần chuyến. Nên **xe và cả hai tài xế bị giữ vĩnh viễn**, và không có API
+    nào đặt lại `status` của xe. Bấm nút này một lần trong buổi demo là mất một
+    xe khỏi đội cho tới khi có người sửa tay trong cơ sở dữ liệu.
+
+    Thêm cửa không chữa được điều đó: vấn đề không phải thiếu cửa mà là đường
+    này tạo ra một bản ghi thiếu xương sống. Chuyến là nơi giữ phân công, chặng,
+    lệnh vận chuyển — tức là nơi giữ đường ra.
+
+    Nên đường này giờ CHỈ trả về một câu chỉ dẫn. Nó không còn ghi gì.
+    """
+    from models import TransportTrip, TripDeliveryOrder
+
+    do = db.query(DeliveryOrder).filter(DeliveryOrder.id == do_id).first()
     if not do:
         raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy lệnh giao hàng {do_id}", 404)
-    if do.canonical_status != "pending":
-        raise conflict("INVALID_TRANSITION", "Chỉ lệnh giao hàng đang chờ vận chuyển mới được điều phối.")
-    vehicle = db.query(Vehicle).filter(Vehicle.id == data.get("vehicle_id")).with_for_update().first()
-    driver = db.query(Driver).filter(Driver.id == data.get("driver_id")).with_for_update().first()
-    co_driver_id = str(data.get("co_driver_id") or "").strip() or None
-    co_driver = None
-    if co_driver_id:
-        co_driver = db.query(Driver).filter(Driver.id == co_driver_id).with_for_update().first()
-    if not vehicle:
-        raise missing_master("vehicle", "phương tiện")
-    if not driver:
-        raise missing_master("driver", "tài xế")
-    if co_driver_id and not co_driver:
-        raise missing_master("driver", "phụ xe")
-    require_crew(driver, co_driver)
-    crew_ids = [driver.id] + ([co_driver.id] if co_driver else [])
-    active = db.query(DeliveryOrder.id).filter(
-        DeliveryOrder.id != do.id,
-        DeliveryOrder.canonical_status == "in_transit",
-        or_(
-            DeliveryOrder.vehicle_id == vehicle.id,
-            DeliveryOrder.driver_id.in_(crew_ids),
-            DeliveryOrder.co_driver.in_(crew_ids),
-        ),
-    ).first()
-    if active:
-        raise conflict("RESOURCE_BUSY", "Phương tiện hoặc tài xế đang được gán cho lệnh giao hàng khác.", ["delivery-orders"])
-    if vehicle.status != READY_VEHICLE:
-        raise DomainError("VEHICLE_BUSY", f"Xe {vehicle.id} đang bận, vui lòng chọn xe khác.", 409, ["master-data/vehicles"])
-    require_vehicle_capacity(
-        vehicle,
-        weight_kg=do.weight_kg,
-        volume_m3=do.volume_m3,
-        pallet_count=do.pallet_count,
-        subject=f"DO {do.id}",
+
+    chuyen = (db.query(TransportTrip.id, TransportTrip.status)
+              .join(TripDeliveryOrder, TripDeliveryOrder.trip_id == TransportTrip.id)
+              .filter(TripDeliveryOrder.do_id == do.id,
+                      TransportTrip.status.notin_(("cancelled", "completed", "settled")))
+              .first())
+    if chuyen:
+        raise conflict(
+            "DISPATCH_VIA_TRIP_REQUIRED",
+            "Lệnh %s đã thuộc chuyến %s (%s). Điều phối qua chuyến: "
+            "PUT /api/tms/trips/%s/dispatch." % (do.id, chuyen[0], chuyen[1], chuyen[0]),
+            ["dispatch"],
+        )
+    raise conflict(
+        "DISPATCH_VIA_TRIP_REQUIRED",
+        "Không còn điều phối lẻ từng lệnh giao hàng. Lập chuyến cho %s trước "
+        "(POST /api/tms/trips/from-delivery-orders), rồi điều phối chuyến đó "
+        "(PUT /api/tms/trips/{id}/dispatch). Chuyến là nơi giữ phân công xe, "
+        "tổ lái và chặng giao — thiếu nó thì lệnh không nộp được POD và xe "
+        "không được giải phóng." % do.id,
+        ["dispatch"],
     )
-    route = db.query(Route).filter(Route.id == do.route_id).first()
-    distance = float(getattr(route, "distance_km", 0) or 0)
-    avg_speed = _positive_float(data, "avg_speed_kmh", 45)
-    return_speed = _positive_float(data, "return_speed_kmh", avg_speed)
-    load_minutes = _nonnegative_int(data, "load_minutes", 0)
-    unload_minutes = _nonnegative_int(data, "unload_minutes", 0)
-    timing = estimate_delivery_timing(
-        distance_km=distance,
-        departure_at=data.get("departure_at") or data.get("planned_departure_at") or _now(),
-        avg_speed_kmh=avg_speed,
-        load_minutes=load_minutes,
-        unload_minutes=unload_minutes,
-        return_speed_kmh=return_speed,
-        return_distance_km=data.get("return_distance_km", distance),
-    )
-    do.vehicle_id = vehicle.id
-    do.driver_id = driver.id
-    do.co_driver = co_driver.id if co_driver else None
-    if data.get("packaging_spec") is not None:
-        do.packaging_spec = data.get("packaging_spec") or ""
-    if data.get("volume_m3") is not None:
-        do.volume_m3 = _money(data, "volume_m3", do.volume_m3 or 0)
-    do.planned_departure_at = _aware_utc(timing["planned_departure_at"])
-    do.planned_arrival_at = _aware_utc(timing["planned_arrival_at"])
-    do.planned_return_at = _aware_utc(timing["planned_return_at"])
-    do.avg_speed_kmh = avg_speed
-    do.max_speed_kmh = _money(data, "max_speed_kmh", 0) or None
-    do.return_speed_kmh = return_speed
-    do.load_minutes = load_minutes
-    do.unload_minutes = unload_minutes
-    do.return_distance_km = timing["return_distance_km"]
-    vehicle.status = f"Đang vận chuyển đơn {do.id}"
-    mark_crew_busy(driver, vehicle.id, do.id)
-    if co_driver:
-        mark_crew_busy(co_driver, vehicle.id, do.id)
-    do.canonical_status = "in_transit"
-    do.status = STATUS["delivery_order"]["in_transit"]
-    do.updated_by = user
-    do.updated_at = _now()
-    do.version = (do.version or 1) + 1
-    tracking = db.get(VehicleTracking, do.id) or VehicleTracking(do_id=do.id)
-    tracking.vehicle_id = vehicle.id
-    tracking.lat = None
-    tracking.lng = None
-    tracking.speed_kmh = 0
-    tracking.remaining_distance_km = distance
-    tracking.eta = _iso(do.planned_arrival_at)
-    tracking.planned_return_at = _iso(do.planned_return_at)
-    tracking.last_update = _now()
-    db.add(tracking)
-    _audit(db, "DISPATCH_DELIVERY", "delivery_orders", do.id, user)
-    return do
 
 
 def _pod_record_payload(record):
@@ -1600,3 +1407,10 @@ def release_resources(db, do):
             crew_member = db.query(Driver).filter(Driver.id == crew_id).first()
             if crew_member:
                 mark_crew_ready(crew_member)
+    # MA TRANG THAI chieu lai tu lich sau khi phan cong da dong. Nhan o tren la
+    # ban chieu cu; ma moi la thu man hinh doc (moc 045).
+    from services import lich_xe
+    db.flush()
+    lich_xe.dong_bo_trang_thai_theo_lich(
+        db, vehicle_id=do.vehicle_id,
+        crew_ids=[x for x in (do.driver_id, do.co_driver) if x])

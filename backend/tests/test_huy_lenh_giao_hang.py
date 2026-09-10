@@ -48,7 +48,7 @@ def test_huy_don_dang_cho_van_chuyen(app_client):
     do_id = _don_cho_van_chuyen(app_client)
 
     r = client.put("/api/delivery-orders/%s/status" % do_id,
-                   json={"status": "cancelled"})
+                   json={"status": "cancelled", "reason": "khách huỷ (kiểm)"})
     assert r.status_code == 200, r.text
 
     canon, nhan = _trang_thai(app_client, do_id)
@@ -63,10 +63,10 @@ def test_huy_roi_thi_khong_huy_lai_duoc(app_client):
     client, _, _ = app_client
     do_id = _don_cho_van_chuyen(app_client, "DO-HUY-2")
     assert client.put("/api/delivery-orders/%s/status" % do_id,
-                      json={"status": "cancelled"}).status_code == 200
+                      json={"status": "cancelled", "reason": "khách huỷ (kiểm)"}).status_code == 200
 
     lai = client.put("/api/delivery-orders/%s/status" % do_id,
-                     json={"status": "cancelled"})
+                     json={"status": "cancelled", "reason": "khách huỷ (kiểm)"})
     assert lai.status_code == 409, lai.text
 
 
@@ -75,7 +75,7 @@ def test_don_da_huy_khong_di_tiep_duoc_sang_dang_van_chuyen(app_client):
     van xuat hien tren man dieu do va co the duoc gan xe."""
     client, _, _ = app_client
     do_id = _don_cho_van_chuyen(app_client, "DO-HUY-3")
-    client.put("/api/delivery-orders/%s/status" % do_id, json={"status": "cancelled"})
+    client.put("/api/delivery-orders/%s/status" % do_id, json={"status": "cancelled", "reason": "khách huỷ (kiểm)"})
 
     r = client.put("/api/delivery-orders/%s/status" % do_id,
                    json={"status": "in_transit"})
@@ -119,7 +119,7 @@ def test_khong_huy_duoc_khi_con_chuyen_dang_chay(app_client):
         db.commit()
 
     r = client.put("/api/delivery-orders/%s/status" % do_id,
-                   json={"status": "cancelled"})
+                   json={"status": "cancelled", "reason": "khách huỷ (kiểm)"})
     assert r.status_code == 409, r.text
     assert "ACTIVE_TRIP_EXISTS" in r.text, r.text
     # Va don phai con nguyen trang thai cu.
@@ -130,6 +130,6 @@ def test_khong_huy_duoc_khi_con_chuyen_dang_chay(app_client):
 def test_huy_don_khong_ton_tai_bao_404(app_client):
     client, _, _ = app_client
     r = client.put("/api/delivery-orders/DO-KHONG-CO/status",
-                   json={"status": "cancelled"})
+                   json={"status": "cancelled", "reason": "khách huỷ (kiểm)"})
     assert r.status_code == 404, r.text
     assert "Đã" not in r.text, r.text

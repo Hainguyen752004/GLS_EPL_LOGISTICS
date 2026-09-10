@@ -180,19 +180,35 @@ def _dong_bo_moc_do(db, order, event_type, actor):
     """
     if event_type != "arrival":
         return
-    # DO nối với chuyến hàng qua bảng riêng `freight_order_legacy_links`,
-    # không phải một cột trên `freight_orders`.
-    ma_do = db.scalar(select(FreightOrderLegacyLink.delivery_order_id).where(
-        FreightOrderLegacyLink.freight_order_id == order.id))
-    if not ma_do:
-        return
-    delivery = db.get(DeliveryOrder, ma_do)
-    if delivery is None or delivery.canonical_status != "in_transit":
-        return
-    delivery.canonical_status = "arrived"
-    delivery.status = "Đã đến nơi — chờ POD"
-    delivery.updated_by = actor
-    delivery.version = (delivery.version or 1) + 1
+    # HAI ĐƯỜNG NỐI DO ↔ chuyến hàng, và phải xét CẢ HAI:
+    #
+    #   · `freight_order_legacy_links` — cầu nối dữ liệu cũ (đơn tạo trước khi
+    #     có Trip);
+    #   · `transport_trips.freight_order_id` → `trip_delivery_orders` — đường
+    #     của MỌI chuyến lập từ lệnh giao hàng, tức luồng đang chạy.
+    #
+    # Bản trước chỉ xét đường thứ nhất. Chuyến lập từ DO không có dòng nào ở
+    # đó, nên mốc `arrival` KHÔNG BAO GIỜ đưa DO sang `arrived` trong luồng
+    # thật — hàng đợi "đã đến, chờ POD" của màn Hoàn tất luôn trống, dù xe đã
+    # báo tới nơi. Đo được khi gieo dữ liệu demo: 4/4 mốc ghi xong, DO vẫn
+    # `in_transit`.
+    cac_ma_do = set(db.scalars(select(FreightOrderLegacyLink.delivery_order_id).where(
+        FreightOrderLegacyLink.freight_order_id == order.id)).all())
+    from models import TransportTrip, TripDeliveryOrder
+    cac_ma_do.update(db.scalars(
+        select(TripDeliveryOrder.do_id)
+        .join(TransportTrip, TransportTrip.id == TripDeliveryOrder.trip_id)
+        .where(TransportTrip.freight_order_id == order.id,
+               TransportTrip.status.notin_(("cancelled",)))
+    ).all())
+    for ma_do in cac_ma_do:
+        delivery = db.get(DeliveryOrder, ma_do)
+        if delivery is None or delivery.canonical_status != "in_transit":
+            continue
+        delivery.canonical_status = "arrived"
+        delivery.status = "Đã đến nơi — chờ POD"
+        delivery.updated_by = actor
+        delivery.version = (delivery.version or 1) + 1
 
 def record_event(db, freight_order_id: str, data: dict, idempotency_key: str, actor: str) -> TransportEvent:
     if not str(idempotency_key or "").strip():

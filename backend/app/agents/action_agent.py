@@ -1,7 +1,7 @@
 import re
 from typing import Dict, Any
 from sqlalchemy.orm import Session
-from models import SalesOrder, DeliveryOrder, ARInvoice as Invoice
+from models import DeliveryOrder, ARInvoice as Invoice
 from llm_helper import call_gemini_llm
 
 class ActionAgent:
@@ -12,7 +12,7 @@ class ActionAgent:
         # Step 1: Use Gemini to extract intent and data as JSON
         sys_extract = (
             "Bạn là công cụ trích xuất dữ liệu Logistics. Hãy đọc câu lệnh của người dùng và trả về DUY NHẤT 1 object JSON hợp lệ (không chứa ký tự markdown ```json). "
-            "Cấu trúc JSON cần có: {'action': 'create'|'update'|'delete'|'none', 'entity': 'sales_order'|'delivery_order', "
+            "Cấu trúc JSON cần có: {'action': 'create'|'update'|'delete'|'none', 'entity': 'delivery_order', "
             "'customer': 'Tên KH', 'route': 'Tuyến đường', 'cargo_type': 'Loại hàng', 'target_id': 'Mã tham chiếu nếu có'}. "
             "Nếu không rõ thông tin, hãy điền chuỗi rỗng."
         )
@@ -67,18 +67,12 @@ class ActionAgent:
         navigation_targets = []
 
         if action == "create":
-            if entity == "sales_order":
+            if entity == "delivery_order":
                 action_summary = (
-                    "Cần tạo Đơn Hàng Bán. Hãy mở màn hình Đơn hàng, chọn báo giá "
-                    "đã duyệt và khách hàng, rồi bấm Lưu để ghi vào hệ thống."
+                    "Lệnh giao hàng sinh tự động khi khách chấp nhận báo giá. Hãy mở màn "
+                    "Báo giá cước, ghi nhận khách chấp nhận — hệ thống sẽ tạo lệnh."
                 )
-                navigation_targets = ["quotations", "master-data/customers"]
-            elif entity == "delivery_order":
-                action_summary = (
-                    "Cần tạo Lệnh Giao Hàng. Hãy mở màn hình Lệnh giao hàng, chọn "
-                    "đơn hàng đã xác nhận và tuyến đường, rồi bấm Lưu để ghi vào hệ thống."
-                )
-                navigation_targets = ["sales-orders", "master-data/routes"]
+                navigation_targets = ["quotations", "master-data/routes"]
             else:
                 action_summary = "Không nhận diện được đối tượng nghiệp vụ để tạo."
 
@@ -89,7 +83,7 @@ class ActionAgent:
                     f"hiện thao tác xóa tại đó — thao tác xóa cần kiểm tra ràng buộc "
                     f"dữ liệu nên không thể thực hiện từ khung trò chuyện."
                 )
-                navigation_targets = ["sales-orders", "delivery-orders"]
+                navigation_targets = ["delivery-orders"]
             else:
                 action_summary = "Thiếu mã bản ghi (ID) để thực hiện thao tác xóa."
 
@@ -100,7 +94,7 @@ class ActionAgent:
                     f"chuyển trạng thái tại đó — thao tác này cần kiểm tra quyền và "
                     f"ghi nhật ký kiểm toán nên không thể thực hiện từ khung trò chuyện."
                 )
-                navigation_targets = ["sales-orders", "delivery-orders"]
+                navigation_targets = ["delivery-orders"]
             else:
                 action_summary = "Thiếu mã bản ghi để cập nhật."
 

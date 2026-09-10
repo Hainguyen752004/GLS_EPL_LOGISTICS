@@ -1,10 +1,10 @@
-from conftest import bao_gia_hop_le
+from conftest import bao_gia_hop_le, dieu_phoi_qua_chuyen
 def _data(response):
     assert response.status_code == 200, response.text
     return response.json()["data"]
 
 
-def test_draft_quotation_sales_order_and_delivery_order_can_be_updated(app_client, workflow_builder):
+def test_draft_quotation_and_delivery_order_can_be_updated(app_client, workflow_builder):
     client, _, _ = app_client
     workflow_builder.master_data()
 
@@ -32,33 +32,11 @@ def test_draft_quotation_sales_order_and_delivery_order_can_be_updated(app_clien
     assert quote["selling_price"] == 3_500_000
     assert quote["canonical_status"] == "draft"
 
-    assert client.put("/api/quotations/QT-UPD/approve").status_code == 200
-    so = _data(client.post("/api/sales-orders", json={
-        "id": "SO-UPD",
-        "quotation_id": "QT-UPD",
-        "total_amount": 2500,
-    }))
-    assert so["origin"] == "Kho B"
-
-    so = _data(client.put("/api/sales-orders/SO-UPD", json={
-        "route_id": "RT-T1",
-        "origin": "Kho SO",
-        "destination": "Cang SO",
-        "total_amount": 3200,
-        "pickup_window_start": "2026-08-20T08:00:00",
-        "delivery_window_end": "2026-08-20T12:00:00",
-    }))
-    assert so["origin"] == "Kho SO"
-    assert so["destination"] == "Cang SO"
-    assert so["total_amount"] == 3200
-    assert so["canonical_status"] == "draft"
-
-    assert client.put("/api/sales-orders/SO-UPD/confirm").status_code == 200
-    delivery = _data(client.post("/api/delivery-orders", json={
-        "id": "DO-UPD",
-        "so_id": "SO-UPD",
-    }))
-    assert delivery["origin"] == "Kho SO"
+    duyet = client.put("/api/quotations/QT-UPD/approve")
+    assert duyet.status_code == 200, duyet.text
+    # Duyet lan hai: luong bao gia moi tra 409 INVALID_TRANSITION (da duyet roi), khong lap.
+    assert client.put("/api/quotations/QT-UPD/approve").status_code == 409
+    workflow_builder.delivery_order("DO-UPD", "QT-UPD")
 
     delivery = _data(client.put("/api/delivery-orders/DO-UPD", json={
         "route_id": "RT-T1",
@@ -89,16 +67,8 @@ def test_locked_workflow_rows_reject_update(app_client, workflow_builder):
     assert quote_update.status_code == 409
     assert quote_update.json()["detail"]["code"] == "LOCKED_RECORD"
 
-    workflow_builder.sales_order("SO-LOCK", "QT-LOCK", confirm=True)
-    so_update = client.put("/api/sales-orders/SO-LOCK", json={"origin": "Should Not Save"})
-    assert so_update.status_code == 409
-    assert so_update.json()["detail"]["code"] == "LOCKED_RECORD"
-
-    workflow_builder.delivery_order("DO-LOCK", "SO-LOCK", approve=True)
-    assert client.put(
-        "/api/delivery-orders/DO-LOCK/dispatch",
-        json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"},
-    ).status_code == 200
+    workflow_builder.delivery_order("DO-LOCK", "QT-LOCK", approve=True)
+    dieu_phoi_qua_chuyen(client, "DO-LOCK")
     do_update = client.put("/api/delivery-orders/DO-LOCK", json={"origin": "Should Not Save"})
     assert do_update.status_code == 409
     assert do_update.json()["detail"]["code"] == "LOCKED_RECORD"

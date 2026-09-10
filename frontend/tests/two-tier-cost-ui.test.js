@@ -52,7 +52,7 @@ function bodyOf(marker, stop) {
   assert.match(fn, /has_type_formula/);
   assert.match(fn, /chưa có công thức/);
   // Tiền tệ linh hoạt, không viết cứng.
-  assert.match(fn, /masterCostCurrencyCode\(\)/);
+  assert.match(fn, /vehicleCostDraft\.currency/, 'giá riêng phải dùng tiền tệ từ API của xe');
   assert.match(fn, /formatWorkflowCurrencyAmount/);
 }
 

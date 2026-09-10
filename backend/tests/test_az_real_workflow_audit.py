@@ -60,20 +60,7 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
         "delivery_window_end": "2026-08-21T14:00:00+07:00",
     })).status_code == 200
     assert client.put("/api/quotations/QT-AZ/approve").status_code == 200
-    assert client.post("/api/sales-orders", json={"id": "SO-AZ", "quotation_id": "QT-AZ"}).status_code == 200
-    assert client.put("/api/sales-orders/SO-AZ/confirm").status_code == 200
-    assert client.post("/api/delivery-orders", json={
-        "id": "DO-AZ",
-        "so_id": "SO-AZ",
-        "route_id": "RT-T1",
-        "pickup_window_start": "2026-08-21T07:00:00+07:00",
-        "pickup_window_end": "2026-08-21T09:00:00+07:00",
-        "delivery_window_start": "2026-08-21T11:00:00+07:00",
-        "delivery_window_end": "2026-08-21T14:00:00+07:00",
-    
-        "packaging_spec": "Container nguyên khối",
-        "seal_no": "SL-TEST-0001",
-    }).status_code == 200
+    workflow_builder.delivery_order("DO-AZ", "QT-AZ", route_id= "RT-T1", pickup_window_start= "2026-08-21T07:00:00+07:00", pickup_window_end= "2026-08-21T09:00:00+07:00", delivery_window_start= "2026-08-21T11:00:00+07:00", delivery_window_end= "2026-08-21T14:00:00+07:00", packaging_spec= "Container nguyên khối", seal_no= "SL-TEST-0001")
 
     trip_response = client.post("/api/tms/trips/from-delivery-orders", json={
         "id": "TRIP-AZ",

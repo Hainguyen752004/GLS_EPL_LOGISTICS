@@ -2,7 +2,7 @@
  * Bắt lỗi rồi chỉ `console.error` là NÓI SAI với người dùng, không phải
  * "mất một tính năng".
  *
- * `loadSalesOrders` hỏng thì `crmSalesOrders` GIỮ NGUYÊN giá trị cũ và không
+ * `loadDeliveryOrders` hỏng thì `eplDeliveryOrders` GIỮ NGUYÊN giá trị cũ và không
  * vẽ lại gì — màn hình vẫn hiện danh sách của lần nạp trước như thể đó là dữ
  * liệu hiện tại. Còn khi chưa nạp được lần nào thì mảng rỗng, và hàm vẽ hiện
  * đúng dòng "Chưa có dữ liệu": người dùng đọc thành "công ty chưa có đơn
@@ -104,7 +104,6 @@ async function thuGomLoiBao() {
 // --- 3. Các hàm nạp chính phải dùng nó ---------------------------------
 [
   ['loadFioriVehicles', 'phương tiện'],
-  ['loadSalesOrders', 'đơn hàng vận chuyển'],
   ['loadDeliveryOrders', 'vận hành'],
   ['loadIncidents', 'sự cố'],
   ['loadCostFormulasFromBackend', 'công thức giá thành'],

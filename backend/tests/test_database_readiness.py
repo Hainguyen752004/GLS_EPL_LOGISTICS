@@ -12,7 +12,7 @@ from migrations.runner import required_migration_head
 
 REQUIRED = {
     "customers", "routes", "vehicles", "drivers", "quotations",
-    "sales_orders", "delivery_orders",
+    "delivery_orders",
     "transport_demands", "freight_units", "freight_orders", "freight_order_units",
     "carriers", "tenders", "tender_offers",
     "driver_qualifications", "warehouse_appointments", "resource_assignments",
@@ -234,11 +234,10 @@ def test_checker_validates_query_migration_head_and_all_required_tables():
                             },
                         }.items() for column in columns]
                     )
-                if "quotations" in sql and "sales_orders" in sql and "delivery_orders" in sql:
+                if "table_name IN ('quotations','delivery_orders')" in sql:
                     return Result(
                         [(table, column) for table, columns in {
                             "quotations": health_routes.v010_route_context_flow.QUOTE_COLUMNS,
-                            "sales_orders": health_routes.v010_route_context_flow.SO_COLUMNS,
                             "delivery_orders": health_routes.v010_route_context_flow.DO_COLUMNS,
                         }.items() for column in columns]
                     )

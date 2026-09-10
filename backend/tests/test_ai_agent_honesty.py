@@ -25,7 +25,6 @@ PAST_TENSE_CLAIMS = ("Đã cập nhật", "Đã xóa", "Đã lưu", "Đã ghi", 
 @pytest.mark.parametrize("draft", [
     {"action": "update", "target_id": "SO-001"},
     {"action": "delete", "target_id": "SO-001"},
-    {"action": "create", "entity": "sales_order"},
     {"action": "create", "entity": "delivery_order"},
 ])
 def test_execute_draft_never_claims_work_it_did_not_do(agents, draft):

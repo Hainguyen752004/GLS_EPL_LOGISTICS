@@ -8,11 +8,9 @@ def test_primary_workflow_loaders_consume_canonical_paginated_items():
     source = APP_JS.read_text(encoding="utf-8")
 
     assert "function paginatedItems(payload)" in source
-    assert "crmSalesOrders = data;" in source
     assert "crmQuotations = data;" in source
     assert "eplDeliveryOrders = await fetchAllPaginated(`${API_BASE}/api/delivery-orders`)" in source
     assert "trips = paginatedItems(payload)" in source
-    assert "fetchAllPaginated(`${API_BASE}/api/sales-orders`, 200)" in source
     assert "fetchAllPaginated(`${API_BASE}/api/quotations`, 200)" in source
 
 

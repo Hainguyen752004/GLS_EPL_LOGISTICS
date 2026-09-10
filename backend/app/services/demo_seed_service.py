@@ -41,7 +41,6 @@ from models import (
     ResourceAssignment,
     Role,
     Route,
-    SalesOrder,
     ShipmentCost,
     TransportEvent,
     TransportEventDocument,
@@ -62,12 +61,10 @@ from services import demo_master_seed
 DEMO_SCENARIOS = {
     "waiting": {
         "quotation_id": "DEMO-QT-2026-001",
-        "sales_order_id": "DEMO-SO-2026-001",
         "delivery_order_id": "DEMO-DO-2026-001",
     },
     "tracking": {
         "quotation_id": "DEMO-QT-2026-002",
-        "sales_order_id": "DEMO-SO-2026-002",
         "delivery_order_id": "DEMO-DO-2026-002",
         "freight_order_id": "DEMO-FO-2026-002",
         "trip_id": "DEMO-TRIP-2026-002",
@@ -75,7 +72,6 @@ DEMO_SCENARIOS = {
     },
     "completed": {
         "quotation_id": "DEMO-QT-2026-003",
-        "sales_order_id": "DEMO-SO-2026-003",
         "delivery_order_id": "DEMO-DO-2026-003",
         "freight_order_id": "DEMO-FO-2026-003",
         "trip_id": "DEMO-TRIP-2026-003",
@@ -87,7 +83,6 @@ DEMO_SCENARIOS = {
     # hang khong the hien duoc cho chan do.
     "arrived": {
         "quotation_id": "DEMO-QT-2026-004",
-        "sales_order_id": "DEMO-SO-2026-004",
         "delivery_order_id": "DEMO-DO-2026-004",
         "freight_order_id": "DEMO-FO-2026-004",
         "trip_id": "DEMO-TRIP-2026-004",
@@ -98,7 +93,6 @@ DEMO_SCENARIOS = {
     # xe va bo loc khach o cac man deu chi co mot lua chon that.
     "second_route": {
         "quotation_id": "DEMO-QT-2026-005",
-        "sales_order_id": "DEMO-SO-2026-005",
         "delivery_order_id": "DEMO-DO-2026-005",
     },
 }
@@ -194,9 +188,6 @@ def _delete_seeded_workflow(db):
     fo_ids = [row[0] for row in db.query(FreightOrder.id).filter(
         FreightOrder.id.like("DEMO-FO-2026-%")
     ).all()]
-    so_ids = [row[0] for row in db.query(SalesOrder.id).filter(
-        SalesOrder.id.like("DEMO-SO-2026-%")
-    ).all()]
     quotation_ids = [row[0] for row in db.query(Quotation.id).filter(
         Quotation.id.like("DEMO-QT-2026-%")
     ).all()]
@@ -281,9 +272,6 @@ def _delete_seeded_workflow(db):
         db.query(DeliveryOrder).filter(DeliveryOrder.id.in_(do_ids)).delete(synchronize_session=False)
     if fo_ids:
         db.query(FreightOrder).filter(FreightOrder.id.in_(fo_ids)).delete(synchronize_session=False)
-    if so_ids:
-        db.query(DeliveryOrderDetail).filter(DeliveryOrderDetail.so_id.in_(so_ids)).delete(synchronize_session=False)
-        db.query(SalesOrder).filter(SalesOrder.id.in_(so_ids)).delete(synchronize_session=False)
     if quotation_ids:
         db.query(Quotation).filter(Quotation.id.in_(quotation_ids)).delete(synchronize_session=False)
     db.flush()
@@ -418,12 +406,18 @@ def _merge_master_data(db):
             # Hang tu cua cong thuc dong: moi hang tu khai ro minh nhan theo
             # gi, nen kiem duoc don vi. Dang cu chi co "unit" de xem, khong ai
             # tinh bang no ca.
+            #
+            # `cost_index` la MA COSTINDEX cua EPL — ma phan loai cua he ke toan
+            # ben cong no, do nguoi lam tai chinh dat tren cong thuc va di theo
+            # khoan muc toi ho so hoan tat. Nam ma duoi day la ma MAU cho bo
+            # demo (CP = chi phi, TH = thu), doi tren man Cong thuc gia thanh la
+            # moi noi doi theo — khong co cho nao khac viet cung chung.
             "terms": [
-                {"key": "fuel", "label": "Chi phí xăng dầu /km", "operator": "add", "factor": "per_km", "kind": "cost", "rate": 6250, "builtin": True},
-                {"key": "driver", "label": "Phụ cấp chuyến tài xế", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 500000, "builtin": True},
-                {"key": "toll", "label": "Phí cầu đường / BOT", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 300000, "builtin": True},
-                {"key": "wh", "label": "Phí bãi & lưu kho", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 200000, "builtin": True},
-                {"key": "rate", "label": "Cước phí vận chuyển /kg", "operator": "add", "factor": "per_kg", "kind": "revenue", "rate": 1500, "builtin": True},
+                {"key": "fuel", "label": "Chi phí xăng dầu /km", "operator": "add", "factor": "per_km", "kind": "cost", "rate": 6250, "builtin": True, "cost_index": "EPL-CP-XD"},
+                {"key": "driver", "label": "Phụ cấp chuyến tài xế", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 500000, "builtin": True, "cost_index": "EPL-CP-TX"},
+                {"key": "toll", "label": "Phí cầu đường / BOT", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 300000, "builtin": True, "cost_index": "EPL-CP-BOT"},
+                {"key": "wh", "label": "Phí bãi & lưu kho", "operator": "add", "factor": "per_trip", "kind": "cost", "rate": 200000, "builtin": True, "cost_index": "EPL-CP-BAI"},
+                {"key": "rate", "label": "Cước phí vận chuyển /kg", "operator": "add", "factor": "per_kg", "kind": "revenue", "rate": 1500, "builtin": True, "cost_index": "EPL-TH-CUOC"},
             ],
         }, ensure_ascii=False),
     ))
@@ -481,30 +475,6 @@ def _seed_sales_chain(db, key, pickup, delivery, price, tuyen=None,
         note="quấn màng PE, không xếp chồng",
     ))
     db.flush()
-    db.add(SalesOrder(
-        id=ids["sales_order_id"], quotation_id=ids["quotation_id"],
-        canonical_status="confirmed", customer_id=khach, route_id=tuyen,
-        origin=di, destination=den,
-        pickup_window_start=pickup.isoformat(),
-        pickup_window_end=(pickup + dt.timedelta(hours=1)).isoformat(),
-        delivery_window_start=delivery.isoformat(),
-        delivery_window_end=(delivery + dt.timedelta(hours=1)).isoformat(),
-        weight_kg=kg, pallet_count=pallet, status="Đã xác nhận", total_amount=_money(price),
-        currency_code="VND", exchange_rate_snapshot=_money(1), tax_rate_snapshot=_money(0),
-        # Ngay dat hang tinh LUI mot ngay tu moc giao, khong ghim: khach dat
-        # truoc khi xe chay, va ghim thi don hien "dat 22/08, giao hom nay".
-        order_date=(delivery - dt.timedelta(days=1)).date().isoformat(),
-        delivery_date=delivery.date().isoformat(),
-        payment_terms="30 ngày", sales_rep="Demo Sales",
-        packaging_spec="Pallet quấn màng PE", volume_m3=m3,
-        created_by="demo-seed", updated_by="demo-seed",
-    ))
-    db.flush()
-    db.add(DeliveryOrderDetail(
-        so_id=ids["sales_order_id"], sku="DEMO-FMCG-PALLET",
-        description="%d pallet hàng tiêu dùng, nguyên niêm phong" % pallet, qty=pallet,
-        uom="PALLET", unit_price=price / pallet, amount=price, weight_kg=kg,
-    ))
 
 
 def _seed_delivery_order(db, key, pickup, delivery, status="pending",
@@ -515,9 +485,17 @@ def _seed_delivery_order(db, key, pickup, delivery, status="pending",
     di = di or ORIGIN
     den = den or DESTINATION
     ids = _scenario_ids(key)
+    bao_gia = db.get(Quotation, ids["quotation_id"])
+    if bao_gia is not None:
+        # Co DO nghia la khach DA CHAP NHAN bao gia (DO chi sinh sau buoc do).
+        bao_gia.canonical_status = "accepted"
+        bao_gia.status = "Đã chấp nhận"
     db.add(DeliveryOrder(
         id=ids["delivery_order_id"], canonical_status=status,
-        so_id=ids["sales_order_id"], customer_id=khach, route_id=tuyen,
+        customer_id=khach, route_id=tuyen,
+        # DO sinh tu bao gia: mang `quotation_id` va gia KHOA `unit_price` (khong con SO).
+        quotation_id=ids["quotation_id"],
+        unit_price=getattr(bao_gia, "unit_price", None),
         origin=di, destination=den,
         pickup_window_start=pickup, pickup_window_end=pickup + dt.timedelta(hours=1),
         delivery_window_start=delivery, delivery_window_end=delivery + dt.timedelta(hours=1),

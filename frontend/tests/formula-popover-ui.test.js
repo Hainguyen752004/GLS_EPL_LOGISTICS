@@ -92,7 +92,7 @@ assert.ok(/đặt đơn giá 0 nếu không dùng/.test(pop), 'nút mờ phải 
 
 // --- 4. Câu công thức SINH TỪ hạng tử, không viết cứng -------------------
 
-assert.ok(/M\.toText\(costFormulaTerms\)/.test(editor), 'câu công thức phải sinh từ hạng tử đang có');
+assert.ok(/M\.toText\(costFormulaTerms\.filter/.test(editor), 'câu công thức phải sinh từ hạng tử theo nhóm chi phí/cước');
 assert.ok(!/\(Xăng dầu × số km\) \+ Phụ cấp/.test(code), 'không được còn công thức viết cứng trong app.js');
 assert.ok(!/\(Xăng dầu × số km\) \+ Phụ cấp/.test(html), 'không được còn công thức viết cứng trong index.html');
 

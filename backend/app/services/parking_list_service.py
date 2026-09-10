@@ -7,13 +7,14 @@ from sqlalchemy.orm import selectinload
 from models import (
     Customer,
     DeliveryOrder,
-    DeliveryOrderDetail,
+
     ParkingEvent,
     ParkingLabel,
     ParkingList,
     ParkingListItem,
     Route,
     TripDeliveryOrder,
+    QuotationItem,
 )
 from services import packing_control_policy
 from services.errors import DomainError, conflict
@@ -34,6 +35,32 @@ TRANSITIONS = {
 }
 
 AUTOMATED_STATUSES = {"ready", "parked", "gate_in", "loaded", "dispatched", "delivered"}
+
+class _DongHang:
+    """Một dòng hàng của packing list, lấy từ dòng hàng hoá của BÁO GIÁ mà DO kế thừa.
+
+    Bước Đơn hàng (SO) đã trục xuất (migration 049) nên không còn `delivery_order_details`
+    theo đơn; hàng hoá của một DO là hàng hoá báo giá đã chấp nhận. Báo giá vận tải không
+    có SKU — cột `sku` để trống, mô tả là tên hàng.
+    """
+    __slots__ = ("id", "sku", "description", "qty", "uom", "weight_kg")
+
+    def __init__(self, item):
+        self.id = None
+        self.sku = None
+        self.description = item.name
+        self.qty = int(item.quantity or 0)
+        self.uom = item.uom
+        self.weight_kg = 0.0
+
+
+def _dong_hang_theo_bao_gia(db, delivery):
+    qid = getattr(delivery, "quotation_id", None)
+    if not qid:
+        return []
+    items = (db.query(QuotationItem).filter(QuotationItem.quotation_id == qid)
+             .order_by(QuotationItem.line_no, QuotationItem.id).all())
+    return [_DongHang(it) for it in items if int(it.quantity or 0) > 0]
 
 
 def _now():
@@ -73,7 +100,6 @@ def serialize(item, include_events=True):
     data = {
         "id": item.id,
         "do_id": item.do_id,
-        "so_id": item.so_id,
         "trip_id": item.trip_id,
         "version": item.version,
         "customer_id": item.customer_id,
@@ -146,17 +172,11 @@ def generate_from_do(db, do_id, payload, actor):
         .order_by(TripDeliveryOrder.created_at.desc())
         .first()
     )
-    details = (
-        db.query(DeliveryOrderDetail)
-        .filter(DeliveryOrderDetail.so_id == delivery.so_id)
-        .order_by(DeliveryOrderDetail.id)
-        .all()
-    )
+    details = _dong_hang_theo_bao_gia(db, delivery)  # dong hang cua BAO GIA (SO da truc xuat)
     total_pieces = sum(max(int(row.qty or 0), 0) for row in details)
     parking = ParkingList(
         id=f"PL-{uuid4().hex[:20].upper()}",
         do_id=delivery.id,
-        so_id=delivery.so_id,
         trip_id=trip_link.trip_id if trip_link else None,
         version=latest_version,
         customer_id=delivery.customer_id,
@@ -177,7 +197,7 @@ def generate_from_do(db, do_id, payload, actor):
     db.add(parking)
     for row in details:
         parking.items.append(ParkingListItem(
-            source_detail_id=row.id,
+            source_detail_id=None,
             sku=row.sku,
             description=row.description,
             piece_qty=max(int(row.qty or 0), 0),
@@ -250,7 +270,6 @@ def _create_auto_snapshot(
     parking = ParkingList(
         id=f"PL-{uuid4().hex[:20].upper()}",
         do_id=delivery.id,
-        so_id=delivery.so_id,
         trip_id=trip_link.trip_id if trip_link else None,
         version=version,
         customer_id=delivery.customer_id,
@@ -276,7 +295,7 @@ def _create_auto_snapshot(
             else 0
         )
         parking.items.append(ParkingListItem(
-            source_detail_id=row.id,
+            source_detail_id=None,
             sku=row.sku,
             description=row.description,
             piece_qty=quantity,
@@ -317,12 +336,7 @@ def generate_many_from_do(db, do_id, list_count, actor):
         .order_by(TripDeliveryOrder.created_at.desc())
         .first()
     )
-    details = (
-        db.query(DeliveryOrderDetail)
-        .filter(DeliveryOrderDetail.so_id == delivery.so_id)
-        .order_by(DeliveryOrderDetail.id)
-        .all()
-    )
+    details = _dong_hang_theo_bao_gia(db, delivery)  # dong hang cua BAO GIA (SO da truc xuat)
     box_counts = _split_integer(total_packages, list_count)
     allocations_by_detail = [
         _split_integer(max(int(row.qty or 0), 0), list_count)

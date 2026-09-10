@@ -38,10 +38,13 @@
       'Nộp POD ký nhận, quyết toán chi phí và đóng DO. Tiền chỉ chốt được sau khi có POD.'],
     'parking-list': ['ops', 'Vận hành', 'Packing List và tem QR',
       'Gói hàng theo chuyến và in tem QR để soi ở chốt.'],
-    'ai-checkpoint': ['ops', 'Vận hành', 'Trạm kiểm soát AI',
+    'ai-checkpoint': ['more', 'Báo cáo và khác', 'Trạm kiểm soát AI',
       'Đọc ảnh biển số và niêm phong tại chốt, đối chiếu với Trip đang chạy.'],
-    'crm-sales': ['biz', 'Kinh doanh', 'CRM và Báo giá cước',
-      'Khách hàng và báo giá cước. Khách chấp nhận báo giá là tách thẳng thành '
+    'co-hoi': ['biz', 'Kinh doanh', 'Khách hàng và cơ hội',
+      'Ghi nhận yêu cầu của khách trước khi có báo giá. Từ cơ hội bấm "Lập báo giá" để sinh '
+      + 'báo giá nháp kế thừa khách, tuyến, hàng và sản lượng.'],
+    'crm-sales': ['biz', 'Kinh doanh', 'Báo giá cước',
+      'Báo giá theo tuyến và loại xe. Khách chấp nhận báo giá là tách thẳng thành '
       + 'lệnh giao hàng — không còn bước Đơn hàng ở giữa.'],
     'accounting': ['biz', 'Kinh doanh', 'Kế toán và tài chính',
       'Hóa đơn, công nợ và hạch toán từ các chuyến đã hoàn tất.'],
@@ -72,10 +75,17 @@
    * Nên bảng chỉ còn hai nút, là hai việc chưa có chỗ nào bấm được.
    */
   const NUT_DAU_TRANG = {
-    'ops-planning': [['+ Tạo lệnh giao hàng', 'primary', 'openFioriDOForm']],
+    // KHONG con nut "Tao lenh giao hang" tao ra mot DO trong.
+    //
+    // DO khong phai thu nguoi van hanh tu go ra: no la thu bao gia sinh ra khi
+    // khach chap nhan, mang theo tuyen, gia khoa va khung gio da thoa thuan.
+    // Mot form DO trong la moi nguoi dung dam ngang vao giua luong, va DO do
+    // khong co bao gia nao chong lung nen buoc quyet toan khong biet lay gia
+    // dau ra. Nut nay dan ve man Bao gia — dung cho de bat dau.
+    'ops-planning': [['Lệnh giao hàng sinh từ báo giá →', 'primary', 'openFioriDOForm']],
     // Màn CRM KHÔNG khai nút ở đây nữa.
     //
-    // Trước là "+ Đơn hàng vận chuyển" (`openOracleSOForm`). Bước Đơn hàng đã
+    // Trước là "+ Đơn hàng vận chuyển". Bước Đơn hàng (SO) đã trục xuất — và
     // bị bỏ khỏi luồng — báo giá được chấp nhận thì tách thẳng thành lệnh giao
     // hàng — nên một nút mở form của bước đó là mời người dùng đi vào một
     // đường không còn dẫn tới đâu. Nút "+ Báo giá" của luồng mới đã có sẵn
@@ -93,7 +103,19 @@
    * Thẻ không khai ở đây thì dùng đầu trang chung của màn Dữ liệu gốc.
    */
   const DAU_TRANG_THEO_THE = {
-    'md-tab-vehicles': ['ops', 'Vận hành', 'Sắp lịch xe và tài xế',
+    'md-tab-setup': ['master', 'Dữ liệu gốc', 'Thiết lập A–Z',
+      'Thứ tự khai dữ liệu gốc để chạy được trọn luồng báo giá → lệnh giao hàng → chuyến.'],
+    'md-tab-drivers': ['master', 'Dữ liệu gốc', 'Tài xế và bằng lái',
+      'Hạng bằng và hiệu lực của từng tài xế — cửa chặn điều phối đọc từ đây.'],
+    'md-tab-currencies': ['master', 'Dữ liệu gốc', 'Tỷ giá tiền tệ',
+      'VND, LAK, USD và tỷ giá tham chiếu dùng khi báo giá bằng ngoại tệ.'],
+    'md-tab-tax-codes': ['master', 'Dữ liệu gốc', 'Thuế',
+      'Mã thuế và thuế suất áp lên cước.'],
+    'md-tab-accounting-periods': ['master', 'Dữ liệu gốc', 'Kỳ kế toán',
+      'Kỳ đang mở để ghi sổ; hồ sơ hoàn tất phải rơi vào một kỳ đang mở.'],
+    'md-tab-account-mappings': ['master', 'Dữ liệu gốc', 'Mapping tài khoản',
+      'Nối khoản mục chi phí với tài khoản kế toán của bên công nợ.'],
+    'md-tab-vehicles': ['master', 'Dữ liệu gốc', 'Sắp lịch xe và tài xế',
       'Ca trực của tài xế, lịch xe theo tuần và kỳ bảo dưỡng — nguồn nhân lực mà màn Điều phối lấy để gán vào Trip.'],
     'md-tab-routes': ['master', 'Dữ liệu gốc', 'Tuyến đường',
       'Chặng A → B → C và km kế hoạch. Báo giá cước, lệnh giao hàng và ETA đều đọc từ đây.'],
@@ -265,14 +287,20 @@
      'packing list tem qr goi hang in tem parking'],
     ['Trạm kiểm soát AI', 'Đọc ảnh tại chốt', 'ai-checkpoint', '',
      'tram kiem soat ai checkpoint anh bien so niem phong'],
-    ['CRM và Kinh doanh', 'Khách hàng, báo giá cước, đơn hàng', 'crm-sales', '',
+    ['Thiết lập A–Z', 'Thứ tự khai dữ liệu gốc', 'master-data', 'md-tab-setup',
+     'thiet lap setup a-z khoi tao du lieu goc'],
+    ['Tài xế và bằng lái', 'Hạng bằng, hiệu lực', 'master-data', 'md-tab-drivers',
+     'tai xe bang lai license driver hang bang'],
+    ['Tỷ giá tiền tệ', 'VND, LAK, USD', 'master-data', 'md-tab-currencies',
+     'ty gia tien te currency lak usd vnd'],
+    ['Mapping tài khoản', 'Khoản mục ↔ tài khoản', 'master-data', 'md-tab-account-mappings',
+     'mapping tai khoan account mapping acc code'],
+    ['Khách hàng và cơ hội', 'Lead, cơ hội, hồ sơ khách', 'co-hoi', '',
+     'khach hang co hoi lead opportunity crm customer profile ho so khach'],
+    ['Báo giá cước', 'Báo giá theo tuyến, loại xe', 'crm-sales', '',
      'crm kinh doanh khach hang bao gia cuoc quotation don hang van chuyen sales order so qt'],
-    ['Kế toán và tài chính', 'Hóa đơn, công nợ', 'accounting', '',
-     'ke toan tai chinh accounting hoa don cong no hach toan invoice'],
     ['Phân tích doanh thu và chi phí', 'Lợi nhuận theo tuyến, xe, khách', 'lab-summary', '',
      'phan tich doanh thu chi phi loi nhuan bao cao report analysis'],
-    ['Quản trị / Shipment 360°', 'Một chuyến, xem hết mọi tầng', 'operations-360', '',
-     'quan tri shipment 360 mot chuyen tat ca'],
     ['Tuyến đường', 'Chặng A → B → C, km kế hoạch', 'master-data', 'md-tab-routes',
      'tuyen duong route chang km ke hoach'],
     ['Công thức giá thành', 'Chi phí trên 1 km và giá cước', 'master-data', 'md-tab-formulas',
@@ -500,4 +528,39 @@
   window.capNhatDauTrang = capNhatDauTrang;
   window.dongBangChon = dongBangChon;
   window.ganDiChuyenKhung = ganDiChuyen;
+})();
+
+/* ==========================================================================
+   Nút đổi ngôn ngữ — theo mẫu nhap_UI__duan/language-switcher.html.
+   Chỉ lo mở/đóng, phím mũi tên và đồng bộ cờ + mã trên nút. Việc dịch giao
+   diện vẫn là changeLanguage() của app.js — ở đây chỉ gọi nó với mã đã chọn.
+   ========================================================================== */
+(function () {
+  const root = document.getElementById('epl-lang'); if (!root) return;
+  const btn = document.getElementById('epl-lang-btn'), menu = document.getElementById('epl-lang-menu');
+  if (!btn || !menu) return;
+  const items = Array.from(menu.querySelectorAll('.epl-lang-item'));
+  const dangMo = () => root.classList.contains('open');
+  function moDong(mo) {
+    root.classList.toggle('open', mo);
+    btn.setAttribute('aria-expanded', String(mo));
+    if (mo) (items.find(i => i.getAttribute('aria-selected') === 'true') || items[0]).focus();
+  }
+  function chon(it, goiDich) {
+    items.forEach(i => i.setAttribute('aria-selected', String(i === it)));
+    btn.querySelector('.cur').textContent = it.dataset.short;
+    const co = it.querySelector('.flag use').getAttribute('href');
+    btn.querySelector('.flag use').setAttribute('href', co);
+    root.dataset.lang = it.dataset.code;
+    if (goiDich && typeof window.changeLanguage === 'function') window.changeLanguage(it.dataset.code);
+  }
+  btn.addEventListener('click', () => moDong(!dangMo()));
+  items.forEach(it => it.addEventListener('click', () => { chon(it, true); moDong(false); btn.focus(); }));
+  document.addEventListener('click', e => { if (!root.contains(e.target)) moDong(false); });
+  root.addEventListener('keydown', e => {
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { moDong(false); btn.focus(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); dangMo() ? items[(i + 1) % items.length].focus() : moDong(true); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); if (dangMo()) items[(i - 1 + items.length) % items.length].focus(); }
+  });
 })();

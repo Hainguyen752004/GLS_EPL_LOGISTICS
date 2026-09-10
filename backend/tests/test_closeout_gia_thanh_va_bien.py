@@ -38,19 +38,20 @@ def _tach_do(client, workflow_builder, ma_bao_gia="QT-CLOSE"):
 
     # Báo giá phải qua bước khách chấp nhận mới tách được, và đường đó đòi báo
     # giá đã gửi. Đi tuần tự đúng như người dùng đi.
-    for duong in ("send", "accept"):
-        tra = client.post("/api/quotations/%s/%s" % (ma_bao_gia, duong), json={},
-                          headers=API_TEST_HEADERS)
-        if tra.status_code >= 400:
-            pytest.skip("đường %s trả %s: %s" % (duong, tra.status_code, tra.text[:200]))
+    tra = client.post("/api/quotations/%s/send" % ma_bao_gia, json={},
+                      headers=API_TEST_HEADERS)
+    if tra.status_code >= 400:
+        pytest.skip("đường send trả %s: %s" % (tra.status_code, tra.text[:200]))
 
-    tra = client.post("/api/quotations/%s/split" % ma_bao_gia,
+    # KHACH CHAP NHAN thi he thong SINH DO NGAY trong cung giao dich — khong con
+    # buoc tach tay. `do_ids` nam ngay trong goi tra ve cua accept.
+    tra = client.post("/api/quotations/%s/accept" % ma_bao_gia,
                       json={"dos": [{"quantity": 1}]}, headers=API_TEST_HEADERS)
     if tra.status_code >= 400:
-        pytest.skip("đường tách DO trả %s: %s" % (tra.status_code, tra.text[:200]))
+        pytest.skip("đường accept trả %s: %s" % (tra.status_code, tra.text[:200]))
     goi = tra.json()
-    ds = (goi.get("data") or goi).get("do_ids") or []
-    assert ds, "tách xong phải trả về mã lệnh giao hàng: %s" % tra.text[:200]
+    ds = goi.get("do_ids") or (goi.get("data") or {}).get("do_ids") or []
+    assert ds, "chấp nhận xong phải trả về mã lệnh giao hàng: %s" % tra.text[:200]
     return ds[0]
 
 
@@ -137,3 +138,60 @@ def test_ho_so_chot_liet_ke_du_ba_con_so_tien_cho_moi_dong_chi_phi_thuc_te(
             assert truong in x, (
                 "dòng chi phí thực tế thiếu %r — thiếu nó thì gói này vô dụng "
                 "với ai đọc để hạch toán" % truong)
+
+
+def test_hai_con_so_tong_trong_cung_goi_khong_duoc_chong_nhau(app_client, workflow_builder):
+    """`gia ban - actual_cost_total` PHAI bang `margin_amount`.
+
+    LOI DA DO DUOC tren PostgreSQL that (DO-2026-0001-DO01): goi tra
+    `actual_cost_total = 17.227` cho mot chuyen co chi phi thuc te 1.731.767 —
+    sai 100 lan. Nguyen nhan la `actual_cost_total` lay thang
+    `freight_actual_costs.total_amount`, ma cot do o duong CHOT GIA mang PHAN
+    VUOT chu khong mang chi phi.
+
+    Nang hon la sau khi `cost_basis` duoc sua de lay tu `item.actual_amount`,
+    HAI CON SO TRONG CUNG MOT GOI tu chong nhau:
+
+        gia ban 2.666.000 − actual_cost_total 17.227 = 2.648.773
+        nhung margin_amount ghi                        934.233
+
+    Ai doc goi nay de hach toan se lap phieu chi 17.227 cho mot chuyen ton
+    1.731.767, va khong co gi trong goi cho biet vi sao. Phep bat buoc duoi day
+    la thu ma mot con so sai kieu do KHONG THE di qua: ba con so phai cong tru
+    khop nhau, du duong nao tao ra du lieu.
+    """
+    client, _, _ = app_client
+    do_id = _tach_do(client, workflow_builder)
+
+    tm = _hoso(client, do_id)["commercials"]
+    gia_ban = float(tm["final_selling_price"])
+    chi_phi = float(tm["actual_cost_total"])
+    lai = float(tm["margin_amount"])
+
+    # `cost_basis` la MAU SO that cua `margin_percent`. Tra no ra de ben doc
+    # KIEM duoc con so lai chu khong phai tin no, va phep dong nhat phai khop
+    # voi no o MOI trang thai — ke ca khi chua co bang chi phi thuc te.
+    assert "cost_basis" in tm and "cost_basis_source" in tm, tm
+    gia_thanh = float(tm["cost_basis"])
+    assert abs(gia_ban - gia_thanh - lai) < 1.0, (
+        "lai gop khong khop gia thanh: %.0f - %.0f = %.0f, nhung margin_amount = %.0f"
+        % (gia_ban, gia_thanh, gia_ban - gia_thanh, lai))
+
+    # Va KHI DA CO bang chi phi thuc te thi hai con so phai TRUNG. Day dung la
+    # cho da vo: `actual_cost_total` ghi 17.227 (phan vuot) trong khi lai gop
+    # duoc tinh tren 1.731.767 (chi phi thuc te).
+    #
+    # Con khi CHUA CO bang chi phi thi `actual_cost_total = 0` la dung — chua ghi
+    # dong chi phi nao thi khong duoc bia ra mot con so — va `margin_is_provisional`
+    # la thu noi rang lai gop dang tinh tren KE HOACH.
+    if not tm.get("margin_is_provisional"):
+        assert abs(gia_thanh - chi_phi) < 1.0, (
+            "da co bang chi phi thuc te ma `actual_cost_total` (%.0f) lech "
+            "`cost_basis` (%.0f) — mot ben nay mang phan vuot" % (chi_phi, gia_thanh))
+    else:
+        assert chi_phi == 0.0, (
+            "chua co bang chi phi thuc te thi `actual_cost_total` phai la 0, "
+            "khong phai %.0f" % chi_phi)
+
+    # Phan vuot van phai tra ra, chi la duoi TEN DUNG cua no.
+    assert "actual_cost_variance" in tm, tm

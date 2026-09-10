@@ -5,8 +5,8 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from models import (APInvoice, AccountMapping, AccountingPeriod, AuditLog, FreightSettlement,
-                    JournalBatch, JournalLine, SettlementPayment)
+from models import (APInvoice, AccountMapping, AccountingPeriod, AuditLog, FreightActualCost,
+                    FreightSettlement, JournalBatch, JournalLine, SettlementPayment)
 from services.errors import DomainError, conflict, missing_master
 from services.tms_cost_service import _actor, _idempotent, _require_permission
 from services.tms_money import quantize_currency, to_functional
@@ -265,11 +265,77 @@ def _reverse_payment(db, payment_id, data, actor):
     return reversal
 
 
+#: Giới hạn của ba đường liệt kê tài chính (`/costs`, `/ap-invoices`,
+#: `/settlements` đều `.limit(100)`). Trả con số này ra để màn hình nói được
+#: "đếm 240, xem được 100 mới nhất" thay vì lặng lẽ hiện 100 rồi để người
+#: dùng tưởng đó là tất cả.
+SO_BAN_GHI_LIET_KE_TOI_DA = 100
+
+
 def get_finance_dashboard(db, filters, actor, permissions):
+    """Bốn con số của Finance Cockpit, đếm trên TOÀN BỘ bảng.
+
+    VÌ SAO ĐƯỜNG NÀY PHẢI ĐƯỢC NỐI VÀO MÀN HÌNH. Trước đây màn Finance Cockpit
+    tự đếm bốn con số này ở máy khách, từ `appState.freight_actual_costs /
+    ap_invoices / settlements`. Nhưng `/api/data/all` CỐ TÌNH bôi trắng đúng
+    ba tập đó thành `[]` (xem `routes/data_export_routes.py` — dữ liệu tài
+    chính chỉ được phát qua endpoint có kiểm quyền), nên cả bốn thẻ hiện 0
+    VĨNH VIỄN. Đo trên dữ liệu thật của dự án: có ba hồ sơ chi phí đang ở
+    `submitted` chờ duyệt mà thẻ "Actual Cost chờ duyệt" vẫn ghi 0. Một con số
+    0 sai trông y hệt một con số 0 đúng, nên không ai phát hiện — và ba việc
+    cần duyệt biến mất khỏi tầm mắt người làm tài chính.
+
+    Bộ lọc ở đây phải TRÙNG VỚI NHÃN người dùng đọc, không phải trùng với một
+    tập trạng thái tiện tay:
+
+      · "chờ duyệt"     = draft, submitted            — còn phải làm gì đó
+      · "chờ hạch toán" = draft, submitted, approved  — chưa post lên sổ
+      · "còn mở"        = open, partially_paid        — chưa trả xong
+      · "tổng phải trả" = mọi trạng thái trừ `paid`   — còn nợ nhà xe
+
+    Hai điều dễ đếm sai, cả hai đều im lặng:
+
+      · Dòng đã đảo (`reversed`) mang `is_active = false` theo ràng buộc của
+        bảng. Không lọc `is_active` là cộng cả khoản đã bị huỷ vào công nợ.
+      · Tiền phải cộng theo CỘT QUY ĐỔI (`functional_*`), không phải theo
+        `total_amount` gốc: hai hoá đơn 1.000 LAK và 1.000 USD mà cộng thẳng
+        thì ra 2.000 của một đơn vị không tồn tại. Bản cũ của hàm này cộng
+        thẳng `total_amount`, và màn hình dán nhãn "VND" lên kết quả đó.
+    """
     _require_permission(permissions, "finance_read")
+
+    chi_phi_cho_duyet = db.query(FreightActualCost).filter(
+        FreightActualCost.is_active.is_(True),
+        FreightActualCost.status.in_(["draft", "submitted"]),
+    ).count()
+    ap_cho_hach_toan = db.query(APInvoice).filter(
+        APInvoice.is_active.is_(True),
+        APInvoice.status.in_(["draft", "submitted", "approved"]),
+    ).count()
+    doi_soat_con_mo = db.query(FreightSettlement).filter(
+        FreightSettlement.status.in_(["open", "partially_paid"]),
+    ).count()
+    # `functional_total_amount` có thể còn trống ở hồ sơ cũ tạo trước khi có
+    # cột quy đổi; `coalesce` về `total_amount` để không âm thầm bỏ sót một
+    # khoản nợ thật. Sai tỉ giá còn đỡ hơn mất hẳn một dòng.
+    tong_phai_tra = db.query(func.coalesce(func.sum(func.coalesce(
+        APInvoice.functional_total_amount, APInvoice.total_amount)), 0)).filter(
+        APInvoice.is_active.is_(True),
+        APInvoice.status.in_(["draft", "submitted", "approved", "posted", "partially_paid"]),
+    ).scalar()
+    da_thanh_toan = db.query(func.coalesce(func.sum(func.coalesce(
+        SettlementPayment.functional_amount, SettlementPayment.amount)), 0)).filter(
+        SettlementPayment.status == "posted",
+    ).scalar()
+    don_vi = db.query(func.min(APInvoice.functional_currency)).filter(
+        APInvoice.functional_currency.isnot(None)).scalar()
+
     return {
-        "actual_cost_total": db.query(func.coalesce(func.sum(APInvoice.total_amount), 0)).filter(APInvoice.is_active.is_(True)).scalar(),
-        "ap_open_count": db.query(APInvoice).filter(APInvoice.status.in_(["draft", "submitted", "approved", "posted"])).count(),
-        "settlement_open_count": db.query(FreightSettlement).filter(FreightSettlement.status.in_(["open", "partially_paid"])).count(),
-        "payment_total": db.query(func.coalesce(func.sum(SettlementPayment.amount), 0)).filter(SettlementPayment.status == "posted").scalar(),
+        "actual_cost_pending_count": chi_phi_cho_duyet,
+        "ap_waiting_post_count": ap_cho_hach_toan,
+        "settlement_open_count": doi_soat_con_mo,
+        "total_payable": tong_phai_tra,
+        "payment_total": da_thanh_toan,
+        "currency_code": don_vi or "VND",
+        "list_row_cap": SO_BAN_GHI_LIET_KE_TOI_DA,
     }

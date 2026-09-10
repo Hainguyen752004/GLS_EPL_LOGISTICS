@@ -1,9 +1,9 @@
 import sqlite3
-from conftest import bao_gia_hop_le
+from conftest import bao_gia_hop_le, dieu_phoi_qua_chuyen, ket_noi_du_lieu
 
 
 def _audits(database_file):
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         return connection.execute("SELECT user_id, action, record_id FROM audit_logs ORDER BY id").fetchall()
 
 
@@ -13,21 +13,22 @@ def test_successful_workflow_operations_record_actor_and_action(app_client, work
     headers = {"X-Test-Principal": "audit-user"}
     assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-A"), headers=headers).status_code == 200
     assert client.put("/api/quotations/QT-A/approve", headers=headers).status_code == 200
-    assert client.post("/api/sales-orders", json={"id": "SO-A", "quotation_id": "QT-A"}, headers=headers).status_code == 200
-    assert client.put("/api/sales-orders/SO-A/confirm", headers=headers).status_code == 200
-    assert client.post("/api/delivery-orders", json={"id": "DO-A", "so_id": "SO-A"}, headers=headers).status_code == 200
-    assert client.put("/api/delivery-orders/DO-A/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}, headers=headers).status_code == 200
+    assert client.post("/api/quotations/QT-A/send", json={}, headers=headers).status_code == 200
+    assert client.post("/api/quotations/QT-A/accept", json={"dos": [{"id": "DO-A", "quantity": 1}]}, headers=headers).status_code == 200
+    # Dieu phoi QUA CHUYEN: duong dieu phoi le da dong phan ghi.
+    dieu_phoi_qua_chuyen(client, "DO-A", dau=headers)
     assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-X"), headers=headers).status_code == 200
     assert client.delete("/api/quotations/QT-X", headers=headers).status_code == 200
     assert client.post("/api/quotations", json=bao_gia_hop_le(id="QT-SX"), headers=headers).status_code == 200
     assert client.put("/api/quotations/QT-SX/approve", headers=headers).status_code == 200
-    assert client.post("/api/sales-orders", json={"id": "SO-X", "quotation_id": "QT-SX"}, headers=headers).status_code == 200
-    assert client.delete("/api/sales-orders/SO-X", headers=headers).status_code == 200
-    assert client.post("/api/sales-orders", json={"id": "SO-DX", "quotation_id": "QT-SX"}, headers=headers).status_code == 200
-    assert client.put("/api/sales-orders/SO-DX/confirm", headers=headers).status_code == 200
-    assert client.post("/api/delivery-orders", json={"id": "DO-X", "so_id": "SO-DX"}, headers=headers).status_code == 200
+    assert client.post("/api/quotations/QT-SX/send", json={}, headers=headers).status_code == 200
+    assert client.post("/api/quotations/QT-SX/accept", json={"dos": [{"id": "DO-X", "quantity": 1}]}, headers=headers).status_code == 200
     assert client.delete("/api/delivery-orders/DO-X", headers=headers).status_code == 200
-    expected = {"CREATE_QUOTATION", "APPROVE_QUOTATION", "CREATE_SALES_ORDER", "CONFIRM_SALES_ORDER", "CREATE_DELIVERY_ORDER", "DISPATCH_DELIVERY", "DELETE_QUOTATION", "DELETE_SALES_ORDER", "DELETE_DELIVERY_ORDER"}
+    # "DISPATCH_DELIVERY" khong con: dieu phoi le da dong phan ghi, va dieu
+    # phoi di qua chuyen nen no ghi "CREATE_TRANSPORT_TRIP" + "DISPATCH_TRIP".
+    expected = {"CREATE_QUOTATION", "APPROVE_QUOTATION",
+                "CREATE_TRANSPORT_TRIP", "DISPATCH_TRIP",
+                "DELETE_QUOTATION", "DELETE_DELIVERY_ORDER"}
     rows = _audits(database_file)
     assert expected <= {action for user, action, record_id in rows if user == "audit-user"}
 

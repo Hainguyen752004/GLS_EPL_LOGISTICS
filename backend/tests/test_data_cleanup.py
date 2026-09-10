@@ -100,10 +100,9 @@ def test_orphan_descendants_are_quarantined_as_a_fixed_point(tmp_path):
     make_db(db)
     with sqlite3.connect(db) as con:
         con.execute("pragma foreign_keys=off")
-        con.execute("insert into sales_orders values ('SO-ORPHAN','missing')")
-        con.execute("insert into delivery_orders values ('DO-ORPHAN','SO-ORPHAN',NULL,NULL)")
+        con.execute("insert into delivery_orders values ('DO-ORPHAN','SO-MISSING',NULL,NULL)")
     plan = build_manifest(f"sqlite:///{db}")
-    assert plan["quarantined"]["sales_orders"] == ["SO-ORPHAN"]
+    assert "sales_orders" not in plan["quarantined"], "buoc Don hang da bo — khong con nhom SO"
     assert plan["quarantined"]["delivery_orders"] == ["DO-ORPHAN"]
 
 

@@ -2,15 +2,13 @@ def test_delivery_order_dossier_is_scoped_to_requested_order(app_client, workflo
     client, _, _ = app_client
     workflow_builder.master_data()
     workflow_builder.quotation(id="QT-DOSSIER-A", approve=True)
-    workflow_builder.sales_order(id="SO-DOSSIER-A", quotation_id="QT-DOSSIER-A", confirm=True)
-    workflow_builder.delivery_order(id="DO-DOSSIER-A", so_id="SO-DOSSIER-A")
+    workflow_builder.delivery_order(id="DO-DOSSIER-A", quotation_id="QT-DOSSIER-A")
 
     response = client.get("/api/delivery-orders/DO-DOSSIER-A/dossier")
 
     assert response.status_code == 200
     payload = response.json()
     assert [row["id"] for row in payload["delivery_orders"]] == ["DO-DOSSIER-A"]
-    assert [row["id"] for row in payload["sales_orders"]] == ["SO-DOSSIER-A"]
     assert [row["id"] for row in payload["quotations"]] == ["QT-DOSSIER-A"]
     assert payload["freight_actual_costs"] == []
     assert payload["ap_invoices"] == []
@@ -32,12 +30,7 @@ def test_broad_bootstrap_does_not_expose_finance_identity_or_audit_data(app_clie
     models = importlib.import_module("models")
     workflow_builder.master_data()
     workflow_builder.quotation(id="QT-BOOTSTRAP-SEC", approve=True)
-    workflow_builder.sales_order(
-        id="SO-BOOTSTRAP-SEC",
-        quotation_id="QT-BOOTSTRAP-SEC",
-        confirm=True,
-    )
-    workflow_builder.delivery_order(id="DO-BOOTSTRAP-SEC", so_id="SO-BOOTSTRAP-SEC")
+    workflow_builder.delivery_order(id="DO-BOOTSTRAP-SEC", quotation_id="QT-BOOTSTRAP-SEC")
     with database.SessionLocal() as db:
         db.add(models.Role(id="SEC-FINANCE", permissions='["finance_read"]'))
         db.add(models.User(id="sec-user", username="sec-user", role_id="SEC-FINANCE"))

@@ -17,10 +17,7 @@
  *          Năm dòng `let` này bị XÓA MẤT khi tôi gỡ chín trình vẽ chết: tôi
  *          cắt theo khoảng "từ hàm này đến hàm kế tiếp", mà chúng nằm đúng
  *          giữa hai hàm đó.
- *   currentSourceQuotationId
- *       -> `saveOracleSO` đọc nó ở dòng đầu. Mở form rồi bấm Lưu ngay là
- *          ReferenceError: nút "Lưu Đơn Hàng" bấm vào KHÔNG LÀM GÌ và cũng
- *          không báo gì. Lỗi này có từ trước, không phải do đợt dọn nào.
+ *   (currentSourceQuotationId — thuộc form Đơn hàng, đã trục xuất cùng SO.)
  *
  * === LOẠI 2: hàm bị khối chú thích nuốt ===
  *
@@ -112,10 +109,9 @@ const raw = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
     'biến được gán mà không hề khai báo — đọc nó trước lần ghi đầu tiên là'
     + ' ReferenceError, và cả hàm dừng giữa');
 
-  // Và sáu biến đã tìm được phải có khai báo thật.
+  // Và năm biến đã tìm được phải có khai báo thật.
   ['tripReturnStatusFilter', 'activeTripReturnId', 'tripReturnSearchQuery',
-    'tripReturnActionSequence', 'activeTripReturnDetailTab',
-    'currentSourceQuotationId'].forEach(ten => {
+    'tripReturnActionSequence', 'activeTripReturnDetailTab'].forEach(ten => {
     assert.ok(new RegExp(`\\blet ${ten}\\b`).test(raw), `thiếu khai báo ${ten}`);
   });
 }

@@ -1,3 +1,4 @@
+from conftest import ket_noi_du_lieu
 def test_data_all_feeds_tms_cockpit_sections(app_client):
     client, _, _ = app_client
 
@@ -30,7 +31,7 @@ def test_data_all_redacts_role_user_and_audit_data(app_client):
     import sqlite3
 
     client, database_file, _ = app_client
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         connection.execute("INSERT INTO roles(id, permissions) VALUES (?, ?)", ("BROKEN", "{not-json"))
         connection.execute("INSERT INTO users(id, username, role_id) VALUES (?, ?, ?)", ("u1", "demo.user", "BROKEN"))
         connection.execute(

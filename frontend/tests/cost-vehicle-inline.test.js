@@ -1,0 +1,61 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const {JSDOM} = require('jsdom');
+const dom = new JSDOM('<div id="md-tab-formulas"><div class="cfv2-workbench"><div class="cfv2-toolbar"></div><section id="cost-formula-view"></section></div></div>', {runScripts:'outside-only'});
+const w = dom.window;
+w.document.body.insertAdjacentHTML('afterbegin','<div class="cfv2-tree-vehicles"><button data-vehicle-cost-id="V1">V1</button><button data-vehicle-cost-id="V2">V2</button></div>');
+w.API_BASE = '';
+w.escapeHtml = s => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
+w.formatWorkflowCurrencyAmount = n => String(n);
+w.FormulaModel = require('../js/formula-model');
+w.costSampleTrip = {km:200,tonnes:15,stops:1};
+w.showToast = () => {};
+let saved;
+const data = {vehicle_id:'V1',vehicle_type:'T1',currency:'VND',has_type_formula:true,
+  components:[{component:'fuel',label:'Fuel',value:4800,inherited:4800,is_overridden:false,note:''}],
+  terms:[{key:'fuel',label:'Fuel',kind:'cost',factor:'per_km',rate:4800,operator:'add'}]};
+w.fetch = async (url,opts) => {
+  if(opts) {saved=JSON.parse(opts.body);return {ok:false,status:422,json:async()=>({detail:'Rejected'})};}
+  return {ok:true,json:async()=>({data})};
+};
+const source = fs.readFileSync(path.join(__dirname,'../js/cost-vehicle-inline.js'),'utf8');
+w.eval(source);
+(async()=>{
+  await w.CostVehicleInline.open('V1');
+  assert.equal(w.document.querySelector('[data-vehicle-cost-id="V1"]').getAttribute('aria-current'),'true');
+  assert.ok(w.document.querySelector('.cfv2-workbench.vehicle-mode'));
+  assert.ok(w.document.querySelector('#cfvi-table'));
+  assert.match(w.document.querySelector('#cfvi-table thead').textContent,/Chuẩn của loại/);
+  assert.match(w.document.querySelector('#cfvi-table thead').textContent,/Thành tiền/);
+  const input=w.document.querySelector('[data-rate="fuel"]');
+  input.value='';input.dispatchEvent(new w.Event('input'));
+  assert.equal(w.document.querySelector('#cfvi-save').disabled,true);
+  assert.match(w.document.querySelector('#cfvi-results').textContent,/Đơn giá/);
+  input.value='5100';input.dispatchEvent(new w.Event('input'));
+  const note=w.document.querySelector('[data-note="fuel"]');
+  note.value='Older vehicle';note.dispatchEvent(new w.Event('input'));
+  await w.CostVehicleInline.save();
+  assert.equal(saved.overrides[0].value,5100);
+  assert.equal(w.document.querySelector('[data-rate="fuel"]').value,'5100','API failure preserves draft');
+  w.document.querySelector('[data-reset="fuel"]').click();
+  assert.equal(w.document.querySelector('[data-rate="fuel"]').value,'4800');
+  w.CostVehicleInline.discard();
+  assert.equal(w.document.querySelectorAll('.cfv2-tree-vehicles .is-selected').length,0);
+  assert.equal(w.document.querySelector('.vehicle-mode'),null);
+  await w.CostVehicleInline.open('V1');
+  const table=w.document.querySelector('#cfvi-table');
+  let resolveNext;
+  w.fetch=()=>new Promise(resolve=>{resolveNext=resolve;});
+  const next=w.CostVehicleInline.open('V2');
+  assert.equal(w.document.querySelector('#cfvi-table'),table,'Keep existing table while loading');
+  resolveNext({ok:true,json:async()=>({data:{...data,vehicle_id:'V2'}})});
+  await next;
+  assert.equal(w.document.querySelector('[data-vehicle-cost-id="V2"]').getAttribute('aria-current'),'true');
+  assert.equal(w.document.querySelectorAll('.cfv2-tree-vehicles .is-selected').length,1);
+  w.document.querySelector('[data-vehicle-cost-id="V2"]').classList.remove('is-selected');
+  w.CostVehicleInline.syncSelection();
+  assert.ok(w.document.querySelector('[data-vehicle-cost-id="V2"]').classList.contains('is-selected'));
+  dom.window.close();
+  console.log('PASS inline vehicle, preview, failure preserves draft, reset and cancel');
+})().catch(e=>{console.error(e);process.exitCode=1;dom.window.close();});

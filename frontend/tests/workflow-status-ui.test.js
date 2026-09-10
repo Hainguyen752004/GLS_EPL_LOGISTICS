@@ -14,12 +14,6 @@ function optionValues(selectId) {
 }
 
 assert.deepStrictEqual(
-  optionValues('so-status'),
-  ['Draft', 'Confirmed'],
-  'Sales Order only has Draft and Confirmed states.'
-);
-
-assert.deepStrictEqual(
   optionValues('do-status'),
   ['Pending', 'In Transit', 'Delivered', 'Cancelled'],
   'Delivery Order UI must match the canonical backend lifecycle.'

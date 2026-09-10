@@ -191,7 +191,7 @@
    * trung chuyen mang so thu tu, va thanh chu giai duoi ban do liet ke theo
    * dung thu tu di. Nguoi khong phan biet duoc do—xanh van doc duoc tuyen.
    *
-   * Mau xanh cua diem trung chuyen trung voi mau duong ke tuyen (#0a6ed1) la
+   * Mau xanh cua diem trung chuyen trung voi mau duong ke tuyen (#2563eb) la
    * co y: chung deu la "dang tren duong", con do va xanh la la hai dau mut.
    */
   const WAYPOINT_ROLES = {

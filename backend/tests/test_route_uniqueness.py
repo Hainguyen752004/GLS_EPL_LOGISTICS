@@ -47,7 +47,7 @@ def test_workflow_routes_import_and_are_owned_by_workflow_module(app_client):
     client, _, _ = app_client
     importlib.import_module("routes.workflow_routes")
     importlib.import_module("routes.bao_gia_routes")
-    prefixes = ("/api/quotations", "/api/sales-orders", "/api/delivery-orders", "/api/pod")
+    prefixes = ("/api/quotations", "/api/delivery-orders", "/api/pod")
     owned = [
         r for r in _routes(client.app)
         if r.path.startswith(prefixes)

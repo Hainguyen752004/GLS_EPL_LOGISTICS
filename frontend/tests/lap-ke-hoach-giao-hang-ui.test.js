@@ -34,12 +34,13 @@ function than(neo, ket) {
 // --- 1. Bảy con chip gọn thành BA nhóm + một ô chọn ------------------
 
 {
-  ['need', 'run', 'all'].forEach(nhom => {
+  // 10/09 chu du an them hai chip "Hoan thanh" va "Da huy" — nam nhom, mot o chon.
+  ['need', 'run', 'done', 'cancelled', 'all'].forEach(nhom => {
     assert.ok(html.includes(`id="do-group-${nhom}"`), `thiếu chip nhóm ${nhom}`);
     assert.ok(html.includes(`id="do-group-count-${nhom}"`), `thiếu ô đếm ${nhom}`);
   });
   const soChip = (html.match(/class="do-chip( active)?"/g) || []).length;
-  assert.strictEqual(soChip, 3, `phải có đúng 3 chip nhóm, thấy ${soChip}`);
+  assert.strictEqual(soChip, 5, `phải có đúng 5 chip nhóm, thấy ${soChip}`);
   assert.ok(!/class="do-stage-tab"/.test(html), 'còn thẻ đếm bản 1');
   assert.ok(!/class="do-chips"/.test(html), 'còn dải bảy chip bản 2');
 
@@ -504,17 +505,16 @@ function than(neo, ket) {
   const i = app.indexOf('function demChungTuDungTuyen(routeId)');
   assert.ok(i > 0, 'phải có hàm đếm chứng từ dùng tuyến');
   const t = app.slice(i, app.indexOf(NL + '}', i) + 2);
-  const dem = new Function('crmQuotations', 'crmSalesOrders', 'eplDeliveryOrders',
+  const dem = new Function('crmQuotations', 'eplDeliveryOrders',
     t + NL + 'return demChungTuDungTuyen;');
 
   const f = dem(
     [{ route_id: 'RT-1' }, { route_id: 'RT-1' }],
-    [{ route_id: 'RT-1' }],
     [{ route_id: 'RT-1' }, { route_id: 'RT-2' }]);
   const kq = f('RT-1');
-  assert.strictEqual(kq.tong, 4, JSON.stringify(kq));
+  assert.strictEqual(kq.tong, 3, JSON.stringify(kq));
   // Phải NÓI RÕ vướng ở loại chứng từ nào, không chỉ một con số tổng.
-  assert.deepStrictEqual(kq.chi_tiet, ['2 báo giá', '1 đơn', '1 lệnh giao hàng']);
+  assert.deepStrictEqual(kq.chi_tiet, ['2 báo giá', '1 lệnh giao hàng']);
   assert.strictEqual(f('RT-9').tong, 0);
   assert.deepStrictEqual(f('RT-9').chi_tiet, []);
   // Mã rỗng không được đếm bừa mọi chứng từ chưa gán tuyến.

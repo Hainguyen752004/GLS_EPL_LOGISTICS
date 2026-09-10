@@ -31,8 +31,8 @@ from services.errors import DomainError
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'bao_gia_suc_cho.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([Location(id="L-A", name="Kho A"), Location(id="L-B", name="Kho B")])

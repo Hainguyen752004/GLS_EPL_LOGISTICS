@@ -7,15 +7,20 @@ from sqlalchemy.orm import sessionmaker
 
 from database import Base
 from models import Carrier, Customer, FreightOrder, Location
+from conftest import ket_noi_du_lieu
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'tender.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add(Customer(id="CUS-TENDER", name="Khách hàng Tender"))
     session.add_all([Location(id="A", name="Kho A"), Location(id="B", name="Kho B")])
+    # Dữ liệu gốc vào TRƯỚC: `FreightOrder.pickup_location_id` khai `ForeignKey`
+    # mà không khai `relationship()`, nên SQLAlchemy không có căn cứ nào để xếp
+    # `locations` đi trước và nó xếp theo tên bảng — `freight_orders` trước.
+    session.flush()
     session.add(FreightOrder(
         id="FO-TENDER-001", pickup_location_id="A", delivery_location_id="B",
         pickup_window_start=dt.datetime(2026, 8, 11, 8), pickup_window_end=dt.datetime(2026, 8, 11, 10),
@@ -76,7 +81,7 @@ def test_tender_rejects_late_offer_and_duplicate_carrier_offer(db, tender_servic
 
 def test_tender_api_vertical_slice(app_client):
     client, database_file, _ = app_client
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         connection.executemany("INSERT INTO locations(id,name,type) VALUES (?,?,?)", [("A", "Kho A", "Warehouse"), ("B", "Kho B", "Warehouse")])
         connection.execute("""INSERT INTO freight_orders(
             id,pickup_location_id,delivery_location_id,pickup_window_start,pickup_window_end,

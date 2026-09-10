@@ -40,7 +40,7 @@ if app_dir not in sys.path:
 
 from database import get_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -199,8 +199,7 @@ async def get_delivery_order_dossier(
     carrier_ids = {cost.carrier_id for cost in costs if cost.carrier_id}
     carriers = db.query(Carrier).filter(Carrier.id.in_(carrier_ids)).all() if carrier_ids else []
 
-    sales_order = db.get(SalesOrder, order.so_id) if order.so_id else None
-    quotation = db.get(Quotation, sales_order.quotation_id) if sales_order and sales_order.quotation_id else None
+    quotation = db.get(Quotation, order.quotation_id) if getattr(order, "quotation_id", None) else None
     route = db.get(Route, order.route_id) if order.route_id else None
     vehicle = db.get(Vehicle, order.vehicle_id) if order.vehicle_id else None
     driver_ids = {value for value in (order.driver_id, order.co_driver) if value}
@@ -216,7 +215,6 @@ async def get_delivery_order_dossier(
 
     return {
         "delivery_orders": [order_payload],
-        "sales_orders": [_dossier_row(sales_order)] if sales_order else [],
         "quotations": [_dossier_row(quotation)] if quotation else [],
         "routes": [_dossier_row(route)] if route else [],
         "vehicles": [_dossier_row(vehicle)] if vehicle else [],

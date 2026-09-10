@@ -45,7 +45,7 @@ if app_dir not in sys.path:
 
 from database import get_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -121,7 +121,7 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
     # nghĩa kế toán nào — rồi gắn nhãn "Doanh thu hóa đơn thực tế (AR)". Kết
     # quả là hai con số doanh thu lệch nhau hiển thị cách nhau vài trăm pixel
     # trên cùng một trang, vì màn Tóm tắt lấy số ghi sổ từ endpoint khác.
-    booked_revenue_so = db.query(func.sum(SalesOrder.total_amount)).scalar() or 0.0
+    booked_revenue_so = 0.0  # buoc Don hang (SO) da bo; giu khoa cho giao dien cu doc
     recognized_revenue_ar = db.query(func.sum(ARInvoice.total)).scalar() or 0.0
     total_rev = recognized_revenue_ar
 
@@ -130,13 +130,23 @@ async def get_dashboard_stats(db: Session = Depends(get_db)):
     # Số LỆNH GIAO HÀNG đang lăn bánh — không phải số xe. Tên cũ
     # "active_vehicles" khiến giao diện gắn giá trị này vào nhãn "Số Xe Hoạt
     # Động", và nó trông hợp lý chỉ vì đội xe demo tình cờ cũng có 3 chiếc.
+    # ĐẾM THEO TRẠNG THÁI CHUẨN, không theo cách viết nhãn.
+    #
+    # Bản trước liệt kê các cách viết tiếng Việt / tiếng Anh của nhãn
+    # (`status.in_(["In Transit", "Đang vận chuyển", ...])`). Nhãn nào không nằm
+    # trong danh sách thì đếm bằng KHÔNG — một con số sai âm thầm, ngay trong
+    # endpoint mà đầu tệp tự nhận là tính 100% thật từ cơ sở dữ liệu. Và danh
+    # sách xe còn trộn "Sẵn sàng" vào cùng rổ với "Đang vận chuyển", nên thẻ
+    # "xe hoạt động" đếm luôn cả xe đang đậu trong bãi.
+    from services import lich_xe
     in_transit_orders = db.query(DeliveryOrder).filter(
-        DeliveryOrder.status.in_(["In Transit", "Đang vận chuyển", "Ready for Dispatch", "Sẵn sàng điều phối"])
+        DeliveryOrder.canonical_status.in_(("in_transit", "arrived"))
     ).count()
 
-    active_vehicle_count = db.query(Vehicle).filter(
-        Vehicle.status.in_(["In Transit", "Đang vận chuyển", "Bận", "Sẵn sàng", "Ready"])
-    ).count()
+    # "Số xe hoạt động" = xe đang TRONG ĐỘI (không ngoài đội, không nằm xưởng),
+    # đếm theo mã trạng thái và lịch xưởng — không theo cách viết nhãn. Xe đậu
+    # bãi sẵn sàng nhận chuyến vẫn là xe hoạt động của đội.
+    active_vehicle_count = lich_xe.dem_xe_hoat_dong(db)
 
     incidents_count = db.query(Incident).count()
 

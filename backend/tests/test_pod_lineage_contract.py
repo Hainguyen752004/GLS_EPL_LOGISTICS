@@ -19,19 +19,7 @@ def _dispatch_trip(client, workflow_builder):
         "selling_price": 2_500_000,
     }).status_code == 200
     assert client.put("/api/quotations/QT-POD-LINEAGE/approve").status_code == 200
-    workflow_builder.sales_order("SO-POD-LINEAGE", "QT-POD-LINEAGE", confirm=True)
-    assert client.post("/api/delivery-orders", json={
-        "id": "DO-POD-LINEAGE",
-        "so_id": "SO-POD-LINEAGE",
-        "route_id": "RT-POD-LINEAGE",
-        "pickup_window_start": "2026-08-21T07:00:00+07:00",
-        "pickup_window_end": "2026-08-21T09:00:00+07:00",
-        "delivery_window_start": "2026-08-21T10:00:00+07:00",
-        "delivery_window_end": "2026-08-21T14:00:00+07:00",
-    
-        "packaging_spec": "Container nguyên khối",
-        "seal_no": "SL-TEST-0001",
-    }).status_code == 200
+    workflow_builder.delivery_order("DO-POD-LINEAGE", "QT-POD-LINEAGE", route_id= "RT-POD-LINEAGE", pickup_window_start= "2026-08-21T07:00:00+07:00", pickup_window_end= "2026-08-21T09:00:00+07:00", delivery_window_start= "2026-08-21T10:00:00+07:00", delivery_window_end= "2026-08-21T14:00:00+07:00", packaging_spec= "Container nguyên khối", seal_no= "SL-TEST-0001")
     assert client.post("/api/tms/trips/from-delivery-orders", json={
         "id": "TRIP-POD-001",
         "do_ids": ["DO-POD-LINEAGE"],
@@ -185,6 +173,10 @@ def test_trip_cost_rows_are_user_defined_decimal_and_transactional(app_client, w
     assert loaded.json()["data"]["lines"][0] == {
         "id": loaded.json()["data"]["lines"][0]["id"],
         "name": "Giá dầu tăng",
+        # Hai ma cua dong: `charge_type` (ma noi bo, suy tu ten: "dau" -> fuel)
+        # va `cost_index` (Acc code, rong khi cong thuc chua gan).
+        "charge_type": "fuel",
+        "cost_index": "",
         "original_amount": 1000.25,
         "actual_amount": 1500.75,
         "increase_amount": 500.5,

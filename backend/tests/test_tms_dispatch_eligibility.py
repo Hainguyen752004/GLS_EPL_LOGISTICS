@@ -9,11 +9,20 @@ from models import Driver, DriverQualification, DriverShiftAssignment, FreightOr
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'dispatch.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([Location(id="A", name="Kho A"), Location(id="B", name="Kho B")])
+    # NẠP DỮ LIỆU GỐC THÀNH MỘT LƯỢT RIÊNG, không gộp vào lượt chốt cuối.
+    #
+    # `FreightOrder.pickup_location_id` khai `ForeignKey("locations.id")` nhưng
+    # KHÔNG khai `relationship()`. SQLAlchemy xếp thứ tự chèn theo RELATIONSHIP
+    # chứ không theo cột khoá ngoại trần — nên khi không có relationship, nó
+    # không biết `locations` phải đi trước và xếp theo tên bảng: `freight_orders`
+    # trước `locations`. PostgreSQL cưỡng chế khoá ngoại nên vỡ ngay, còn SQLite
+    # trong dự án tắt `PRAGMA foreign_keys` nên chuyện này ẩn nhiều tháng.
+    session.flush()
     session.add(FreightOrder(
         id="FO-DSP-001", pickup_location_id="A", delivery_location_id="B",
         pickup_window_start=dt.datetime(2026, 8, 11, 8), pickup_window_end=dt.datetime(2026, 8, 11, 10),

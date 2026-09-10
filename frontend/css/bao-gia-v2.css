@@ -39,7 +39,7 @@
   --qt-ink: #1e293b;
   --qt-ink-2: #475569;
   --qt-ink-3: #7b8796;
-  --qt-blue: #1a73e8;
+  --qt-blue: #2563eb;
   --qt-blue-2: #e9f1fd;
   --qt-blue-3: #0b4faa;
   --qt-red: #d32f2f;
@@ -101,7 +101,7 @@
   font-weight: 500;
 }
 .qtv2 .ribbon b {
-  background: #0f1c2e;
+  background: #0b2e5c;
   color: #fff;
   border-radius: 6px;
   padding: 3px 9px;
@@ -294,6 +294,8 @@
 .qtv2 .so { font-size: 11.5px; font-weight: 600; color: var(--qt-blue); }
 .qtv2 .so.none { color: var(--qt-ink-3); font-weight: 500; }
 .qtv2 .so.green { color: var(--qt-green); }
+/* "Đã chấp nhận" mà chưa có DO nào — bất thường, không phải một việc để bấm. */
+.qtv2 .so.warn { color: #b45309; font-weight: 600; }
 .qtv2 .tfoot {
   display: flex;
   justify-content: space-between;
@@ -316,6 +318,24 @@
   .qtv2 .dt { grid-template-columns: minmax(0, 1fr); }
   .qtv2 .rail { position: static; }
 }
+
+/* Hai tab cua phieu. Nut la chu + gach chan, khong phai the/khung — de khong
+   sinh them mot lop khung trong khung. */
+.qtv2 .qtv2-tabs {
+  display: flex; gap: 2px; padding: 4px 12px 0;
+  border-bottom: 1px solid var(--qt-line); background: #fbfcfe;
+  border-radius: 12px 12px 0 0;
+}
+.qtv2 .qtv2-tabs button {
+  border: 0; background: none; cursor: pointer; font: inherit;
+  padding: 11px 12px 10px; font-size: 13px; font-weight: 600; color: var(--qt-ink-3);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.qtv2 .qtv2-tabs button:hover { color: var(--qt-ink); }
+.qtv2 .qtv2-tabs button.on { color: var(--qt-blue); border-bottom-color: var(--qt-blue); }
+.qtv2 .qtv2-tab[hidden] { display: none; }
+.qtv2 .qtv2-tab > .sec:last-child { border-bottom: 0; }
 
 .qtv2 .sec { padding: 14px 18px; border-bottom: 1px solid var(--qt-line); }
 .qtv2 .sec:last-child { border-bottom: 0; }
@@ -797,7 +817,7 @@
   height: 36px;
   border: 0;
   border-radius: 10px;
-  background: #1a73e8;
+  background: #2563eb;
   color: #fff;
   font-weight: 700;
   padding: 0 15px;

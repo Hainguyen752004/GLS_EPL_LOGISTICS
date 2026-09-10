@@ -34,7 +34,7 @@ def _du_lieu_goc(khach='CUS-CO', tuyen='RT-CO'):
 
 
 def _dung_don(do_id, loai_xe, trang_thai='in_transit', ma_xe=None):
-    """Mot DO co SO tien VND, gan mot chiec xe voi `loai_xe` cho truoc."""
+    """Mot DO co bao gia VND, gan mot chiec xe voi `loai_xe` cho truoc."""
     _du_lieu_goc()
     database = importlib.import_module('database')
     models = importlib.import_module('models')
@@ -48,14 +48,14 @@ def _dung_don(do_id, loai_xe, trang_thai='in_transit', ma_xe=None):
             db.add(models.Vehicle(id=ma_xe, type=loai_xe, status='Sẵn sàng'))
         if db.get(models.Driver, 'TX-CO') is None:
             db.add(models.Driver(id='TX-CO', name='Tai xe closeout', status='Sẵn sàng'))
-        db.add(models.SalesOrder(
-            id='SO-' + do_id, customer_id='CUS-CO', currency_code='VND',
-            total_amount=5000000, status='confirmed'))
+        db.add(models.Quotation(
+            id='QT-' + do_id, customer_id='CUS-CO', currency_code='VND', canonical_status='accepted',
+            selling_price=5000000, total_cost=3000000, status='Đã chấp nhận'))
         db.commit()
     with database.SessionLocal() as db:
         db.add(models.DeliveryOrder(
             id=do_id, customer_id='CUS-CO', route_id='RT-CO',
-            so_id='SO-' + do_id, vehicle_id=ma_xe, driver_id='TX-CO',
+            quotation_id='QT-' + do_id, vehicle_id=ma_xe, driver_id='TX-CO',
             weight_kg=1000, canonical_status=trang_thai,
             status='Đang vận chuyển' if trang_thai == 'in_transit' else 'Đã giao'))
         db.commit()

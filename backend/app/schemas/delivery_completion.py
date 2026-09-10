@@ -39,6 +39,10 @@ class DeliveryChargeAdjustmentInput(StrictRequest):
     original_amount: Money = Decimal("0")
     actual_amount: Money
     note: str | None = Field(default=None, max_length=2000)
+    # Ma costindex cua EPL — khoan khach tra them la mot dong THU can lap phieu,
+    # nen no mang ma nhu dong chi phi. Tuy chon: thieu thi may chu suy tu cong
+    # thuc gia thanh theo ten khoan muc.
+    cost_index: str | None = Field(default=None, max_length=32)
 
     @computed_field
     @property

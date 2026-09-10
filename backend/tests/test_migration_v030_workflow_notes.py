@@ -113,8 +113,9 @@ def test_kiem_tra_bat_duoc_cot_bi_thieu(tmp_path):
         ket_noi.close()
 
 
-def test_chay_toan_bo_chuoi_migration_len_den_v030(tmp_path):
+def test_chay_toan_bo_chuoi_migration_len_den_v030(tmp_path, monkeypatch):
     """v030 phai chay duoc trong ca chuoi, khong chi rieng le."""
+    _chuoi_truoc_truc_xuat(monkeypatch)  # chuoi den 048 — 049 da DROP sales_orders
     duong_dan = tmp_path / "day_du.db"
     ket_noi = sqlite3.connect(duong_dan)
     ket_noi.executescript("""
@@ -139,51 +140,6 @@ def test_chay_toan_bo_chuoi_migration_len_den_v030(tmp_path):
         ket_noi.close()
 
 
-def test_ba_o_ghi_chu_duoc_luu_va_doc_lai():
-    """Ba truong nay phai co mat trong schema, khong thi payload bi tu choi.
-
-    `payment_terms` va `sales_rep` da co cot trong bang tu lau nhung schema
-    chua bao gio nhan chung, nen hai o do tren man hinh khong bao gio duoc luu.
-    """
-    from schemas.workflow import (
-        QuotationCreateRequest,
-        SalesOrderCreateRequest,
-        SalesOrderUpdateRequest,
-    )
-
-    assert "notes" in QuotationCreateRequest.model_fields
-    for lop in (SalesOrderCreateRequest, SalesOrderUpdateRequest):
-        for truong in ("notes", "payment_terms", "sales_rep"):
-            assert truong in lop.model_fields, f"{lop.__name__} thieu {truong}"
-
-    # Va service phai ghi chung vao ban ghi.
-    import inspect
-
-    from services import workflow_service
-
-    nguon = inspect.getsource(workflow_service)
-    assert "notes=data.get(\"notes\")" in nguon
-    assert "payment_terms=data.get(\"payment_terms\")" in nguon
-    assert "sales_rep=data.get(\"sales_rep\")" in nguon
-    # Sua don hang cung phai ghi ba truong do.
-    assert '("notes", "payment_terms", "sales_rep")' in nguon
-
-
-def test_ghi_chu_cua_don_KHONG_ke_thua_tu_bao_gia():
-    """Ghi chu bao gia va ghi chu don hang la hai thu khac nhau.
-
-    Ghi chu bao gia la dieu kien CHAO KHACH ("chua gom VAT, hieu luc 30 ngay").
-    Ghi chu don hang la luu y DIEU PHOI. Ke thua sang la dua dieu kien thuong
-    mai vao cho lam viec cua doi xe.
-    """
-    import inspect
-
-    from services import workflow_service
-
-    nguon = inspect.getsource(workflow_service)
-    # Khac voi `packaging_spec=q.packaging_spec` (co ke thua), ghi chu doc tu
-    # payload cua chinh don hang.
-    assert "notes=q.notes" not in nguon
-    assert "packaging_spec=q.packaging_spec" in nguon
-    # Va `notes` KHONG duoc nam trong danh sach ke thua quy cach van chuyen.
-    assert "notes" not in workflow_service.SHIPPING_SPEC_FIELDS
+def _chuoi_truoc_truc_xuat(monkeypatch):
+    import migrations.runner as _runner
+    monkeypatch.setattr(_runner, "MIGRATIONS", tuple(m for m in _runner.MIGRATIONS if not m.VERSION.startswith("049")))

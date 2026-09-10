@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import DateTime, Numeric, create_engine
 
 from migrations.runner import MIGRATIONS, required_migration_head, upgrade
-from models import ARInvoice, Base, DeliveryOrder, DeliveryPODRecord, SalesOrder
+from models import ARInvoice, Base, DeliveryOrder, DeliveryPODRecord
 
 
 def _create_schema(database):
@@ -76,7 +76,6 @@ def test_v013_models_use_timezone_money_and_pod_idempotency():
         DeliveryPODRecord.delivery_time,
     )
     assert all(isinstance(column.type, DateTime) and column.type.timezone for column in operational_columns)
-    assert isinstance(SalesOrder.total_amount.type, Numeric)
     assert isinstance(ARInvoice.amount.type, Numeric)
     assert isinstance(ARInvoice.vat_amount.type, Numeric)
     assert isinstance(ARInvoice.total.type, Numeric)

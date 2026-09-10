@@ -4,7 +4,6 @@
 
 let appState = {
   quotations: [],
-  sales_orders: [],
   delivery_orders: [],
   routes: [],
   dispatches: [],
@@ -110,19 +109,6 @@ function contextualWorkflowStatusLabel(entity, status) {
     }
     return `Báo giá ${statusLabel(status)}`;
   }
-  if (entity === 'sales_order') {
-    if (key === 'confirmed' || key === 'da_xac_nhan' || key === 'approved') {
-      if (lang === 'la') return 'SO ຢືນຢັນແລ້ວ';
-      if (lang === 'en') return 'Confirmed SO';
-      return 'SO đã xác nhận';
-    }
-    if (!key || key === 'draft' || key === 'ban_nhap') {
-      if (lang === 'la') return 'SO àº®à»ˆàº²àº‡';
-      if (lang === 'en') return 'Draft SO';
-      return 'SO nháp';
-    }
-    return `SO ${statusLabel(status)}`;
-  }
   return statusLabel(status);
 }
 
@@ -195,19 +181,7 @@ function forceCriticalVietnameseLabels() {
   // Nhãn nào cần sửa thì sửa trong lang.json và trong index.html. Hai tầng là
   // đủ; tầng thứ ba chỉ tạo ra một chỗ để quên.
 
-  const soSearch = document.getElementById('oracle-search-so');
-  if (soSearch) {
-    soSearch.placeholder = 'Tìm mã đơn hàng, khách hàng, nơi đi, nơi đến, tổng tiền, trạng thái...';
-  }
-  // Ch\u1eef b\u1ecb l\u1ed7i m\u00e3 h\u00f3a th\u00ec X\u00d3A TR\u1eaeNG, kh\u00f4ng thay b\u1eb1ng m\u1ed9t c\u00e1i t\u00ean c\u1ee5 th\u1ec3.
-  //
-  // B\u1ea3n tr\u01b0\u1edbc g\u00e1n 'Nguy\u1ec5n V\u0103n Kinh Doanh' v\u00e0o \u0111\u00e2y. L\u1ed7i m\u00e3 h\u00f3a ngh\u0129a l\u00e0 gi\u00e1 tr\u1ecb
-  // kh\u00f4ng \u0111\u1ecdc \u0111\u01b0\u1ee3c \u2014 \u0111\u1eb7t t\u00ean m\u1ed9t ng\u01b0\u1eddi c\u1ee5 th\u1ec3 v\u00e0o \u0111\u00f3 l\u00e0 b\u1ecba ra d\u1eef li\u1ec7u, v\u00e0 n\u1ebfu
-  // ng\u01b0\u1eddi d\u00f9ng \u0111\u00e3 g\u00f5 t\u00ean th\u1eadt th\u00ec t\u00ean \u0111\u00f3 b\u1ecb ghi \u0111\u00e8 m\u1ea5t.
-  const salesRepInput = document.getElementById('so-sales-rep');
-  if (salesRepInput && String(salesRepInput.value || '').includes('\ufffd')) {
-    salesRepInput.value = '';
-  }
+  // Ô tìm và ô NVKD của form Đơn vận chuyển đã gỡ cùng bước SO (10/09).
 }
 
 function workflowActionMode(status, entity) {
@@ -244,16 +218,6 @@ function isWorkflowLocked(status) {
   return !workflowActionMode(status).canEdit;
 }
 
-function canonicalSOStatusValue(status) {
-  const key = window.WorkflowUIUtils?.workflowStatusKey?.(status || '') || String(status || '').toLowerCase().trim();
-  const map = {
-    draft: 'Draft',
-    confirmed: 'Confirmed',
-    approved: 'Confirmed'
-  };
-  return map[key] || 'Draft';
-}
-
 function canonicalDOStatusValue(order) {
   const status = order?.canonical_status || order?.status || 'pending';
   const key = window.WorkflowUIUtils?.workflowStatusKey?.(status) || String(status).toLowerCase().trim();
@@ -279,9 +243,9 @@ async function loadTranslations() {
     appTranslations.menu_fleet_catalog.vi = 'Danh Mục Đội Xe';
     // C\u1ed0 \u00dd kh\u00f4ng ghi \u0111\u00e8 `lbl_sales_rep` \u1edf \u0111\u00e2y \u2014 xem gi\u1ea3i th\u00edch \u1edf
     // forceCriticalVietnameseLabels(). lang.json \u0111\u00e3 c\u00f3 "Nh\u00e2n vi\u00ean kinh doanh".
-    // Khoi tao theo lang tu select
-    const sel = document.getElementById('lang-switcher');
-    if (sel) changeLanguage(sel.value);
+    // Khoi tao theo ngon ngu dang chon tren nut doi ngon ngu (data-lang o goc #epl-lang).
+    const nutNgonNgu = document.getElementById('epl-lang');
+    if (nutNgonNgu) changeLanguage(nutNgonNgu.dataset.lang || 'vi');
   } catch (e) {
     // Không có lang.json thì `appTranslations` rỗng, và `changeLanguage` có
     // `if (!value) return;` cho từng khóa — nên gạt sang tiếng Lào hay tiếng
@@ -343,8 +307,8 @@ window.baoMatKetNoi = baoMatKetNoi;
    Nạp danh sách thất bại thì phải NÓI RA.
 
    Mười tám chỗ trong tệp này từng bắt lỗi rồi chỉ `console.error(...)`. Hậu
-   quả không phải là "mất một tính năng" mà là NÓI SAI: `loadSalesOrders` hỏng
-   thì `crmSalesOrders` GIỮ NGUYÊN giá trị cũ và không vẽ lại gì cả, nên màn
+   quả không phải là "mất một tính năng" mà là NÓI SAI: `loadDeliveryOrders` hỏng
+   thì `eplDeliveryOrders` GIỮ NGUYÊN giá trị cũ và không vẽ lại gì cả, nên màn
    hình vẫn hiện danh sách của lần nạp trước như thể đó là dữ liệu hiện tại.
    Còn khi chưa nạp được lần nào thì mảng rỗng, và hàm vẽ hiện đúng dòng
    "Chưa có dữ liệu" — người dùng đọc thành "công ty chưa có đơn nào", trong
@@ -642,9 +606,7 @@ window.changeLanguage = function (lang) {
     updateActiveFlowStep(window.currentWorkflowStep !== undefined ? window.currentWorkflowStep : 1, false);
   }
   if (typeof installEnterpriseModuleTabs === 'function') installEnterpriseModuleTabs();
-  if (typeof renderKanbanBoard === 'function' && typeof crmSalesOrders !== 'undefined') renderKanbanBoard(crmSalesOrders);
   if (typeof renderOracleQTList === 'function' && typeof crmQuotations !== 'undefined') renderOracleQTList(crmQuotations);
-  if (typeof renderOracleSOList === 'function' && typeof crmSalesOrders !== 'undefined') renderOracleSOList(crmSalesOrders);
   if (typeof renderMasterDataCommandCenter === 'function') renderMasterDataCommandCenter();
   if (typeof renderDynamicFormulaVehicleTypes === 'function') renderDynamicFormulaVehicleTypes();
   if (typeof renderFioriVehicles === 'function' && typeof fioriVehicles !== 'undefined') renderFioriVehicles(fioriVehicles);
@@ -714,8 +676,8 @@ window.currentWorkflowStep = 0;
 
 const workflowStepsData = {
   0: { id: 'step-0', view: 'master-data', title: '0. Master Data & thiết lập nền', role: 'Admin / System Data Manager', db: 'vehicles, drivers, routes, cost_formulas', icon: 'fa-database' },
-  1: { id: 'step-1', view: 'crm-sales', title: '1. Báo giá vận tải (Quotation)', role: 'Pricing / Sales Rep', db: 'quotations', icon: 'fa-file-contract' },
-  2: { id: 'step-2', view: 'crm-sales', title: '2. Đơn hàng vận chuyển', role: 'Nhân viên kinh doanh', db: 'sales_orders', icon: 'fa-handshake' },
+  1: { id: 'step-1', view: 'co-hoi', title: '1. Khách hàng & cơ hội', role: 'Sales / CRM', db: 'crm_opportunities', icon: 'fa-handshake' },
+  2: { id: 'step-2', view: 'crm-sales', title: '2. Báo giá cước (Quotation)', role: 'Pricing / Sales Rep', db: 'quotations', icon: 'fa-file-contract' },
   3: { id: 'step-3', view: 'ops-planning', title: '3. Lệnh giao hàng (Delivery Order)', role: 'Kho / Điều phối', db: 'delivery_orders', icon: 'fa-clipboard-check' },
   4: { id: 'step-4', view: 'ops-planning', title: '4. Kế hoạch tuyến đường (Route)', role: 'Planner / Route Ops', db: 'routes', icon: 'fa-route' },
   5: { id: 'step-5', view: 'dispatch', title: '5. Lập lịch & điều phối (Dispatch)', role: 'Fleet Dispatcher', db: 'delivery_orders', icon: 'fa-truck-ramp-box' },
@@ -805,8 +767,6 @@ window.updateActiveFlowStep = function (stepNum, showToastMsg = false) {
    ========================================================================== */
 
 const HOP_THOAI_TOAN_MAN = [
-  'oracle-qt-form',        // Báo giá cước — trong #view-crm-sales
-  'oracle-so-form',        // Đơn vận chuyển — trong #view-crm-sales
   'route-detail-modal',    // Sơ đồ lộ trình — trong #view-ops-planning
   'fiori-do-form',         // Lệnh giao hàng — trong #view-ops-planning
   'incident-form-panel',   // Báo sự cố — trong #view-tracking
@@ -831,7 +791,7 @@ window.switchView = function (targetView, scrollToId) {
   if (!targetView) return;
   const viewAliases = {
     overview: 'dashboard',
-    crm: 'crm-sales',
+    crm: 'co-hoi',
     'sales-orders': 'crm-sales',
     tender: 'accounting',
     // Không có màn hình nào tên "transportation". Trip Return Cockpit — nơi
@@ -853,6 +813,7 @@ window.switchView = function (targetView, scrollToId) {
   const viewToStep = {
     'dashboard': 0,
     'master-data': 0,
+    'co-hoi': 1,
     'crm-sales': 1,
     'parking-list': 3,
     'delivery-shipment': 3,
@@ -927,21 +888,9 @@ window.switchView = function (targetView, scrollToId) {
   }
 
   if (targetView === 'crm-sales') {
-    // KHÔNG gọi `loadQuotations()` ở đây nữa.
-    //
-    // Mở màn Kinh doanh trước đây nổ BA lượt gọi danh sách: `loadQuotations`
-    // (`GET /api/quotations`), `loadSalesOrders` (`GET /api/sales-orders`), và
-    // `napDanhSach` của màn báo giá mới (`GET /api/quotations/board`). Hai lượt
-    // đầu nạp vào bảng "oracle" cũ — bảng đó nằm trong khối `#qtv2-khoi-cu`
-    // ĐANG ẨN, nên không ai nhìn thấy kết quả.
-    //
-    // Và `crmQuotations` không mất dữ liệu: `loadAllData` đã gán nó từ
-    // `appState.quotations` (xem chỗ gán quanh dòng 1326). Người tiêu thụ duy
-    // nhất của biến đó là bảng ẩn và ô tìm ẩn.
-    //
-    // `loadSalesOrders` thì PHẢI giữ: ngoài bảng đơn hàng ẩn, nó còn nạp bốn
-    // cột Kanban cơ hội (`kb-col-lead`, `kb-col-nego`, …) — phần đang hiện.
-    if (typeof loadSalesOrders === 'function') loadSalesOrders();
+    // Không nạp gì thêm: màn Báo giá mới tự nạp `GET /api/quotations/board`;
+    // bảng oracle cũ nằm trong `#qtv2-khoi-cu` đang ẩn, còn Kanban cơ hội
+    // (chạy bằng dữ liệu Đơn hàng — bước đã trục xuất) đã gỡ.
   } else if (targetView === 'ops-planning') {
     if (typeof loadDeliveryOrders === 'function') loadDeliveryOrders();
   } else if (targetView === 'delivery-shipment') {
@@ -1043,8 +992,13 @@ function releaseEnterpriseTabHostHeight(tabsId) {
 
 function selectEnterpriseTabForTarget(targetId) {
   const tabMap = {
-    'oracle-qt-list': ['crm-sales-folder-tabs', 'quotation'],
-    'oracle-so-list': ['crm-sales-folder-tabs', 'sales-order']
+    // `qtv2-root`, không còn `oracle-qt-list`: khối báo giá cũ đã bỏ hẳn, nên
+    // neo của bước Báo giá là màn mới. Bỏ sót chỗ này thì nút "Thao Tác Ở Bước
+    // Này" của bước 1 nhảy sang màn Kinh doanh mà KHÔNG mở thẻ Báo giá cước —
+    // và vì thẻ đó tình cờ là thẻ đầu nên lỗi chỉ lộ ra khi người dùng vừa xem
+    // thẻ Khách hàng rồi bấm nút đó.
+    // Man Kinh doanh khong con vo the (xem `installEnterpriseModuleTabs`), nen
+    // `qtv2-root` khong can chon the nao — de trong la dung.
   };
   const tabTarget = tabMap[targetId];
   if (!tabTarget || typeof window.showEnterpriseModuleTab !== 'function') return;
@@ -1059,9 +1013,9 @@ window.showEnterpriseModuleTab = function (tabsId, key) {
   document.querySelectorAll(`[data-enterprise-tab-button="${tabsId}"]`).forEach(button => {
     const active = button.getAttribute('data-enterprise-key') === key;
     button.classList.toggle('active', active);
-    button.style.borderColor = active ? '#0a6ed1' : '#e2e8f0';
+    button.style.borderColor = active ? '#2563eb' : '#e2e8f0';
     button.style.background = active ? '#eff6ff' : '#ffffff';
-    button.style.color = active ? '#0a6ed1' : '#334155';
+    button.style.color = active ? '#2563eb' : '#334155';
     button.style.boxShadow = active ? '0 4px 12px rgba(10,110,209,.12)' : 'none';
   });
   // CỐ Ý không còn nhánh riêng cho màn Theo dõi ở đây.
@@ -1105,9 +1059,9 @@ window.switchDemoReadinessTab = function (key, button) {
   document.querySelectorAll('.demo-readiness-tab').forEach(tab => {
     const active = tab === button || tab.id === `demo-readiness-tab-${selected}`;
     tab.classList.toggle('active', active);
-    tab.style.border = active ? '2px solid #0a6ed1' : '1px solid #dbeafe';
+    tab.style.border = active ? '2px solid #2563eb' : '1px solid #dbeafe';
     tab.style.background = active ? '#eff6ff' : '#ffffff';
-    tab.style.color = active ? '#0a6ed1' : '#475569';
+    tab.style.color = active ? '#2563eb' : '#475569';
   });
 };
 
@@ -1119,9 +1073,9 @@ window.switchOperations360Tab = function (key, button) {
   document.querySelectorAll('.operations-360-tab').forEach(tab => {
     const active = tab === button || tab.id === `operations-360-tab-${selected}`;
     tab.classList.toggle('active', active);
-    tab.style.border = active ? '2px solid #0a6ed1' : '1px solid #dbeafe';
+    tab.style.border = active ? '2px solid #2563eb' : '1px solid #dbeafe';
     tab.style.background = active ? '#eff6ff' : '#ffffff';
-    tab.style.color = active ? '#0a6ed1' : '#475569';
+    tab.style.color = active ? '#2563eb' : '#475569';
   });
 };
 
@@ -1133,9 +1087,9 @@ window.switchFinanceSubTab = function (key, button) {
   document.querySelectorAll('.finance-sub-tab').forEach(tab => {
     const active = tab === button || tab.id === `finance-sub-tab-${selected}`;
     tab.classList.toggle('active', active);
-    tab.style.border = active ? '2px solid #0a6ed1' : '1px solid #dbeafe';
+    tab.style.border = active ? '2px solid #2563eb' : '1px solid #dbeafe';
     tab.style.background = active ? '#eff6ff' : '#ffffff';
-    tab.style.color = active ? '#0a6ed1' : '#475569';
+    tab.style.color = active ? '#2563eb' : '#475569';
   });
 };
 
@@ -1145,38 +1099,13 @@ window.installEnterpriseModuleTabs = function () {
   const singleGroupHint = lang === 'la' ? 'ເປີດເທື່ອລະກຸ່ມເພື່ອບໍ່ໃຫ້ໜ້າຈໍສັບສົນ.' : (lang === 'en' ? 'Open one group at a time to reduce clutter.' : 'Chỉ mở một nhóm nghiệp vụ mỗi lần để đỡ rối màn hình.');
 
   const configs = [
-    {
-      sectionId: 'view-crm-sales',
-      tabsId: 'crm-sales-folder-tabs',
-      title: crmTitle,
-      // HAI THẺ, không còn ba.
-      //
-      // Thẻ "Báo giá cước" trỏ vào `#qtv2-root` — màn báo giá mới, dựng theo
-      // `nhap_UI__duan/quotation-page (1).html`. TRỎ SAI CHỖ NÀY LÀ MỘT LỖI
-      // THẬT chứ không phải chuyện gọn gàng: `moveElementWithHeading` DI
-      // CHUYỂN phần tử vào panel, nên nếu còn trỏ vào `#oracle-qt-list` thì
-      // màn báo giá cũ bị kéo ra khỏi khối `#qtv2-khoi-cu` đang ẩn và hiện
-      // lại — người dùng thấy hai màn báo giá cạnh nhau.
-      //
-      // Thẻ "Đơn hàng vận chuyển" đã bỏ: bước Đơn hàng (SO) không còn trong
-      // luồng, báo giá được chấp nhận thì tách thẳng thành lệnh giao hàng.
-      // Cùng lý do trên — để lại thẻ đó thì `#oracle-so-list` cũng bị kéo ra
-      // khỏi khối đang ẩn.
-      groups: [
-        {
-          key: 'quotation',
-          label: lang === 'la' ? 'ໃບສະເໜີລາຄາ' : (lang === 'en' ? 'Freight Quotation' : 'Báo giá cước'),
-          hint: lang === 'la' ? 'ສ້າງ ແລະ ອະນຸມັດໃບສະເໜີລາຄາ, ແລ້ວແຍກເປັນໃບສັ່ງສົ່ງ.' : (lang === 'en' ? 'Quote, get acceptance, then split straight into delivery orders.' : 'Báo giá, khách chấp nhận rồi tách thẳng thành lệnh giao hàng.'),
-          selectors: ['#qtv2-root']
-        },
-        {
-          key: 'crm',
-          label: lang === 'la' ? 'ລູກຄ້າ ແລະ ໂອກາດ' : (lang === 'en' ? 'Customers & pipeline' : 'Khách hàng và cơ hội'),
-          hint: lang === 'la' ? 'ຕິດຕາມໂອກາດການຂາຍກ່ອນມີໃບສະເໜີລາຄາ.' : (lang === 'en' ? 'Track opportunities before a quotation exists.' : 'Theo dõi cơ hội bán trước khi có báo giá.'),
-          selectors: ['#crm-kanban-board']
-        }
-      ]
-    },
+    // MAN KINH DOANH (view-crm-sales) CO Y KHONG CO O DAY.
+    //
+    // Truoc day no boc man Bao gia moi (`#qtv2-root`) trong mot vo hai the
+    // "Bao gia cuoc | Khach hang va co hoi". Chu du an nhin thay mot khung nam
+    // trong mot khung khac va noi ro: khong lam dang hai the nua. The "Khach
+    // hang va co hoi" la bang Kanban chay bang du lieu Don hang (SO) — buoc da
+    // truc xuat khoi he thong — nen da go han khoi index.html. Man Bao gia gio dung tran, khong vo.
     // MAN THEO DOI CO Y KHONG CO O DAY.
     //
     // Truoc day no chia ba the lon: GPS/POD, Su co, Chuoi su kien. Ba thu do la
@@ -1215,14 +1144,14 @@ window.installEnterpriseModuleTabs = function () {
     if (existingShell) {
       // Update text in place safely without removing child panels
       const titleEl = existingShell.querySelector('.enterprise-tabs-title');
-      if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-folder-tree" style="color:#0a6ed1;"></i> ${config.title}`;
+      if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-folder-tree" style="color:#2563eb;"></i> ${config.title}`;
       const hintEl = existingShell.querySelector('.enterprise-tabs-hint');
       if (hintEl) hintEl.textContent = singleGroupHint;
 
       config.groups.forEach(group => {
         const btn = existingShell.querySelector(`[data-enterprise-tab-button="${config.tabsId}"][data-enterprise-key="${group.key}"]`);
         if (btn) {
-          btn.innerHTML = `<i class="fa-solid fa-layer-group" style="color:#0a6ed1;margin-top:2px;"></i><span><span style="display:block;">${group.label}</span><small style="display:block;color:#64748b;font-weight:650;margin-top:3px;line-height:1.35;">${group.hint}</small></span>`;
+          btn.innerHTML = `<i class="fa-solid fa-layer-group" style="color:#2563eb;margin-top:2px;"></i><span><span style="display:block;">${group.label}</span><small style="display:block;color:#64748b;font-weight:650;margin-top:3px;line-height:1.35;">${group.hint}</small></span>`;
         }
       });
       return;
@@ -1235,7 +1164,7 @@ window.installEnterpriseModuleTabs = function () {
     shell.style.cssText = 'background:#ffffff;border:1px solid #dbeafe;border-radius:16px;padding:14px;margin:0 0 18px 0;box-shadow:0 6px 18px rgba(15,23,42,.05);';
     shell.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
-        <div class="enterprise-tabs-title" style="font-weight:950;color:#0f172a;"><i class="fa-solid fa-folder-tree" style="color:#0a6ed1;"></i> ${config.title}</div>
+        <div class="enterprise-tabs-title" style="font-weight:950;color:#0f172a;"><i class="fa-solid fa-folder-tree" style="color:#2563eb;"></i> ${config.title}</div>
         <div class="enterprise-tabs-hint" style="font-size:.76rem;color:#64748b;font-weight:800;">${singleGroupHint}</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;"></div>
@@ -1258,7 +1187,7 @@ window.installEnterpriseModuleTabs = function () {
       button.setAttribute('data-enterprise-key', group.key);
       button.onclick = () => window.showEnterpriseModuleTab(config.tabsId, group.key);
       button.style.cssText = 'border:2px solid #e2e8f0;background:#ffffff;color:#334155;border-radius:14px;padding:13px 14px;text-align:left;font-weight:900;cursor:pointer;display:flex;gap:10px;align-items:flex-start;';
-      button.innerHTML = `<i class="fa-solid fa-layer-group" style="color:#0a6ed1;margin-top:2px;"></i><span><span style="display:block;">${group.label}</span><small style="display:block;color:#64748b;font-weight:650;margin-top:3px;line-height:1.35;">${group.hint}</small></span>`;
+      button.innerHTML = `<i class="fa-solid fa-layer-group" style="color:#2563eb;margin-top:2px;"></i><span><span style="display:block;">${group.label}</span><small style="display:block;color:#64748b;font-weight:650;margin-top:3px;line-height:1.35;">${group.hint}</small></span>`;
       buttonRow.appendChild(button);
 
       const panel = document.createElement('div');
@@ -1310,6 +1239,15 @@ async function hydrateFinanceState() {
   const sources = [
     { key: 'invoices', path: '/api/invoices' },
     { key: 'gl_transactions', path: '/api/gl-transactions' },
+    // Ba tập của Finance Cockpit. `/api/data/all` bôi trắng đúng ba tập này
+    // (xem `routes/data_export_routes.py`), nên trước đây cả bốn thẻ số liệu
+    // và ba danh sách bên dưới đều hiện rỗng VĨNH VIỄN — kể cả khi trong cơ
+    // sở dữ liệu đang có hồ sơ chi phí chờ duyệt. Đó chính là cái bẫy mà đoạn
+    // chú thích ngay dưới đây nói tới, chỉ khác là nó chỉ được vá cho
+    // `invoices` mà bỏ sót ba tập tài chính vận tải.
+    { key: 'freight_actual_costs', path: '/api/tms/finance/costs' },
+    { key: 'ap_invoices', path: '/api/tms/finance/ap-invoices' },
+    { key: 'settlements', path: '/api/tms/finance/settlements' },
   ];
   await Promise.all(sources.map(async ({ key, path }) => {
     try {
@@ -1337,7 +1275,6 @@ async function loadAllData() {
     if (res.ok) {
       appState = await res.json();
       if (appState.quotations) crmQuotations = appState.quotations;
-      if (appState.sales_orders) crmSalesOrders = appState.sales_orders;
       if (appState.delivery_orders) eplDeliveryOrders = appState.delivery_orders;
       if (appState.routes) eplRoutes = appState.routes;
       if (appState.customers) eplCustomers = appState.customers;
@@ -1386,8 +1323,6 @@ function renderAllTables() {
 
   if (activeViewId === 'view-crm-sales') {
     if (typeof renderOracleQTList === 'function') renderOracleQTList(crmQuotations);
-    if (typeof renderOracleSOList === 'function') renderOracleSOList(crmSalesOrders);
-    if (crmSalesOrders) renderKanbanBoard(crmSalesOrders);
   } else if (activeViewId === 'view-master-data') {
     renderMasterDataSetupWizard();
   } else if (activeViewId === 'view-dispatch') {
@@ -1457,13 +1392,13 @@ function renderMasterDataSetupWizard() {
   progressEl.innerText = `${wizard.progress.percent}%`;
   progressEl.title = `${wizard.progress.done}/${wizard.progress.total} nhóm dữ liệu đã có`;
   stepsEl.innerHTML = wizard.steps.map(step => `
-    <div onclick="selectMasterSetupStep('${step.key}')" style="border:1px solid ${String(activeMasterSetupStepKey) === String(step.key) ? '#0a6ed1' : step.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${step.status === 'done' ? '#f0fdf4' : '#fff7ed'}; border-radius:12px; padding:12px; display:grid; gap:8px; cursor:pointer;">
+    <div onclick="selectMasterSetupStep('${step.key}')" style="border:1px solid ${String(activeMasterSetupStepKey) === String(step.key) ? '#2563eb' : step.status === 'done' ? '#bbf7d0' : '#fed7aa'}; background:${step.status === 'done' ? '#f0fdf4' : '#fff7ed'}; border-radius:12px; padding:12px; display:grid; gap:8px; cursor:pointer;">
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
         <span style="font-weight:900; color:#0f172a;">${step.order}. ${step.label}</span>
         <span style="font-size:.7rem; font-weight:900; color:${step.status === 'done' ? '#047857' : '#c2410c'};">${step.status === 'done' ? 'Đủ dữ liệu' : 'Thiếu'}</span>
       </div>
       <div style="color:#64748b; font-size:.78rem; line-height:1.35;">${step.message}</div>
-      <button class="fiori-btn" onclick="event.stopPropagation(); openMasterSetupStep('${step.tabId || ''}')" style="justify-content:center; background:${step.uiStatus === 'ready' ? '#0a6ed1' : '#64748b'}; color:#ffffff; border:none; font-weight:800; padding:7px 10px;">
+      <button class="fiori-btn" onclick="event.stopPropagation(); openMasterSetupStep('${step.tabId || ''}')" style="justify-content:center; background:${step.uiStatus === 'ready' ? '#2563eb' : '#64748b'}; color:#ffffff; border:none; font-weight:800; padding:7px 10px;">
         <i class="fa-solid ${step.uiStatus === 'ready' ? 'fa-arrow-right' : 'fa-screwdriver-wrench'}"></i> ${step.actionLabel}
       </button>
     </div>
@@ -1481,7 +1416,7 @@ function renderMasterDataSetupWizard() {
           </div>
           <span style="font-size:.72rem; font-weight:950; border-radius:999px; padding:5px 9px; color:${detail.status === 'done' ? '#047857' : '#c2410c'}; background:#ffffff; border:1px solid ${detail.status === 'done' ? '#bbf7d0' : '#fed7aa'};">${detail.status_label}</span>
         </div>
-        <button class="fiori-btn" onclick="openMasterSetupStep('${detail.tabId || ''}')" style="margin-top:10px; background:#0a6ed1; color:white; border:none; font-weight:900; padding:8px 12px;">
+        <button class="fiori-btn" onclick="openMasterSetupStep('${detail.tabId || ''}')" style="margin-top:10px; background:#2563eb; color:white; border:none; font-weight:900; padding:8px 12px;">
           <i class="fa-solid fa-arrow-right"></i> ${detail.actionLabel}
         </button>
       </div>
@@ -1491,7 +1426,7 @@ function renderMasterDataSetupWizard() {
       ...(detail.guidance || []).map(item => ({ icon: 'fa-lightbulb', text: item }))
     ].map(item => `
       <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:10px; padding:9px 11px; color:#475569; font-size:.82rem;">
-        <i class="fa-solid ${item.icon}" style="color:#0a6ed1;"></i> ${item.text}
+        <i class="fa-solid ${item.icon}" style="color:#2563eb;"></i> ${item.text}
       </div>
     `).join('');
   }
@@ -1711,7 +1646,7 @@ function renderTripKpis(items, groupFor) {
     ['thieu-ve', 'Chưa có chặng về', dem['thieu-ve'],
       kmRong ? '≈ ' + Math.round(kmRong).toLocaleString('vi-VN') + ' km chạy rỗng nếu không ghép'
         : 'không có km rỗng', 'amber'],
-    ['tre-han', 'Trễ hạn giao', dem['tre-han'], 'tới nơi sau hạn', 'red'],
+    ['tre-han', 'Trễ hạn giao', dem['tre-han'], 'tới nơi sau hạn khách cho phép', 'red'],
     ['thieu-pod', 'Xong nhưng thiếu POD', dem['thieu-pod'], 'không xuất được hoá đơn', 'purple'],
     ['doi-soat-duoc', 'Sẵn sàng đối soát', dem['doi-soat-duoc'], 'đủ POD trên mọi DO', 'green'],
   ];
@@ -1770,8 +1705,11 @@ function renderTripBang(items, groupFor) {
     const han = tripHanGiao(raw);
     const toi = tripGioToiNoi(raw);
     const thucTe = Boolean(raw.actual_arrival_at);
-    const treHan = thucTe && han && toi && toi > han;
+    const treHan = tripTreHan(raw);
+    // Lệch kế hoạch nội bộ: chỉ là ghi chú (xám/vàng), không phải "trễ hạn".
+    const lechKH = Number.isFinite(Number(raw.behind_plan_minutes)) ? Number(raw.behind_plan_minutes) : null;
     const gio = d => d ? d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '—';
+    const gioNgay = d => d ? d.toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '—';
 
     const dsDO = raw.delivery_order_ids || [];
     const chang = raw.legs || [];
@@ -1799,8 +1737,11 @@ function renderTripBang(items, groupFor) {
     const co = tripThieuChangVe(raw) && nhom !== 'completed';
     const canhBao = (nhom === 'missing_return' || co)
       ? '<span class="tag t-amber">thiếu chặng về</span>'
-      : (treHan ? '<span class="tag t-red">trễ hạn</span>'
-        : (xongRoi && pod.co < pod.tong ? '<span class="tag t-red">thiếu POD</span>' : ''));
+      : (treHan ? '<span class="tag t-red" title="Tới nơi sau hạn khách cho phép">trễ hạn</span>'
+        : (xongRoi && pod.co < pod.tong ? '<span class="tag t-red">thiếu POD</span>'
+          : (thucTe && lechKH !== null && lechKH > 0
+            ? '<span class="tag t-amber" title="Tới nơi chậm hơn kế hoạch nội bộ ' + lechKH + ' phút nhưng vẫn trong hạn khách">lệch KH +' + lechKH + "'</span>"
+            : '')));
 
     const mauTd = treHan ? 'r' : (xongRoi ? 'g' : '');
 
@@ -1819,9 +1760,9 @@ function renderTripBang(items, groupFor) {
       + '<td><div class="prog"><i class="' + mauTd + '" style="width:' + td.phanTram + '%"></i></div>'
       + '<div class="pl">chặng ' + td.xong + '/' + td.tong
       + (co ? ' · <b style="color:#b45309">thiếu chặng về</b>' : '') + '</div></td>'
-      + '<td class="eta ' + (treHan ? 'r' : '') + '">'
+      + '<td class="eta ' + (treHan ? 'r' : '') + '" title="Hạn khách: ' + escapeHtml(gioNgay(han)) + (tripKeHoachToi(raw) ? ' · Kế hoạch: ' + escapeHtml(gioNgay(tripKeHoachToi(raw))) : '') + '">'
       + '<b>' + (thucTe ? '' : 'dự kiến ') + gio(toi) + '</b>'
-      + '<span class="sub">hạn ' + gio(han) + '</span></td>'
+      + '<span class="sub">hạn khách ' + (han ? gioNgay(han) : '—') + '</span></td>'
       + '<td><span class="pod">' + chamPOD + '</span>'
       + '<span class="sub">' + (pod.tong ? pod.co + '/' + pod.tong : '—') + '</span></td>'
       + '<td>' + canhBao + '</td>'
@@ -1829,6 +1770,7 @@ function renderTripBang(items, groupFor) {
   }).join('');
 
   host.innerHTML = '<table class="trips">'
+    + '<colgroup><col class="c-id"><col class="c-rt"><col class="c-crew"><col class="c-prog"><col class="c-eta"><col class="c-pod"><col class="c-warn"></colgroup>'
     + '<thead><tr>'
     + '<th>Chuyến</th><th>Tuyến · DO</th><th>Xe · tổ lái</th>'
     + '<th>Tiến độ</th><th>Tới nơi / hạn</th><th>POD</th><th></th>'
@@ -1924,10 +1866,13 @@ function renderTripNext(selected, journey, nhom) {
     nhanNut = 'Lập lượt về';
     viec = "openTripReturnAction('add-leg')";
   } else if (nhom === 'completed' && pod.tong && pod.co === pod.tong) {
+    // Khong con buoc "hach toan" trong he nay: chu du an khong dung module ke
+    // toan. Diem cuoi cua mot chuyen la HO SO DA HOAN TAT — so thu/chi tung dong
+    // de ben cong no lap phieu.
     mau = 'green';
-    chu = 'Đủ POD trên mọi DO. Chuyến sẵn sàng đối soát.';
-    nhanNut = 'Qua hạch toán';
-    viec = "switchView('accounting')";
+    chu = 'Đủ POD trên mọi lệnh. Hồ sơ hoàn tất sẵn sàng bàn giao cho bên công nợ.';
+    nhanNut = 'Mở hồ sơ hoàn tất';
+    viec = "switchView('delivery-completion')";
   } else if (nhom === 'active') {
     mau = 'blue';
     nhanNut = 'Mở Theo dõi';
@@ -2022,7 +1967,7 @@ function renderTripReturnDetailPane(selected, journey) {
     const tongKH = dong.reduce((t, l) => t + Number(l.original_amount || 0), 0);
     const t = lech(tongThuc, tongKH);
     pane.innerHTML = '<div class="lbl">Chi phí thực so kế hoạch</div><div class="cost">'
-      + '<div class="crow"><span>Cấu phần</span><span class="n">Kế hoạch</span>'
+      + '<div class="crow"><span>Khoản mục</span><span class="n">Kế hoạch</span>'
       + '<span class="n">Thực</span><span class="dv">±</span></div>'
       + (dong.length
         ? dong.map(l => {
@@ -2039,7 +1984,7 @@ function renderTripReturnDetailPane(selected, journey) {
             + '<span class="n">' + tienChu(thuc) + '</span>'
             + '<span class="dv ' + d.lop + '">' + d.chu + '</span></div>';
         }).join('')
-        : '<div class="crow"><span style="color:#7b8796">chưa có cấu phần nào</span>'
+        : '<div class="crow"><span style="color:#7b8796">chưa có khoản mục nào</span>'
           + '<span class="n">—</span><span class="n">—</span><span class="dv">—</span></div>')
       + '<div class="crow tot"><span>Tổng</span>'
       + '<span class="n">' + (tongKH ? tienChu(tongKH) : '—') + '</span>'
@@ -2231,7 +2176,7 @@ function renderTripReturnCockpit() {
     nut.push(['red', 'Ghi POD thủ công', "switchView('tracking')"]);
   }
   if (nhom === 'completed' && pod.tong && pod.co === pod.tong) {
-    nut.push(['p', 'Chuyển đối soát', "switchView('accounting')"]);
+    nut.push(['p', 'Xem hồ sơ hoàn tất', "switchView('delivery-completion')"]);
   }
   if (tripThieuChangVe(raw) && nhom !== 'completed') {
     nut.push(['p', 'Lập lượt về cho chuyến này', "openTripReturnAction('add-leg')"]);
@@ -2248,8 +2193,17 @@ function renderTripReturnCockpit() {
       "xacNhanXeDaVe(decodeURIComponent('"
       + encodeURIComponent(String(raw.id || '')) + "'))"]);
   }
+  // HUỶ CHUYẾN — trước đây giao diện KHÔNG có nút này, và máy chủ cũng không
+  // có đường nào. Nên khách huỷ hàng sau khi đã lập chuyến thì: huỷ lệnh giao
+  // hàng bị chặn ("còn chuyến đang hoạt động") và màn Chuyến không có gì để
+  // bấm — người dùng mắc hẳn ở giữa. Chỉ hiện khi chuyến còn huỷ được.
+  if (tripCoTheHuy(raw)) {
+    nut.push(['red', 'Huỷ chuyến',
+      "huyChuyenVanTai(decodeURIComponent('"
+      + encodeURIComponent(String(raw.id || '')) + "'))"]);
+  }
   nut.push(['', 'Sửa ở Điều phối', "switchView('dispatch')"]);
-  nut.push(['', 'Xem 360° lô hàng', "switchView('operations-360')"]);
+  // "Xem 360° lô hàng" đã gỡ (10/09): chủ dự án bỏ module Shipment 360.
   detailPane.insertAdjacentHTML('beforeend', '<div class="acts">'
     + nut.map(n => '<button type="button"' + (n[0] ? ' class="' + n[0] + '"' : '')
       + ' onclick="' + n[2] + '">' + escapeHtml(n[1]) + '</button>').join('')
@@ -2258,7 +2212,7 @@ function renderTripReturnCockpit() {
   if (guidance) {
     guidance.innerHTML = cockpit.guidance.map(item =>
       '<div style="padding:9px 10px; border-bottom:1px solid #e2e8f0; color:#475569; font-size:.8rem;">'
-      + '<i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> '
+      + '<i class="fa-solid fa-circle-info" style="color:#2563eb;"></i> '
       + completionEscape(item) + '</div>').join('');
   }
 }
@@ -2324,14 +2278,46 @@ async function napPODChoBangChuyen() {
   }
 }
 
-/** Hạn giao của một chuyến: mốc muộn nhất mà chuyến phải tới nơi. */
+/** Hạn giao của một chuyến: mốc muộn nhất mà KHÁCH cho phép giao xong.
+ *
+ *  Lấy `delivery_due_at` backend đã tính (khung giao muộn nhất trên các DO của
+ *  chuyến). Không lấy `planned_arrival_at`: đó là KẾ HOẠCH nội bộ lúc lập
+ *  chuyến, không phải hạn với khách — so giờ tới thực tế với nó thì một chuyến
+ *  giao đúng hẹn nhưng chậm hơn kế hoạch 2 giờ vẫn bị gán "trễ hạn" (lỗi cũ).
+ *  Backend cũ chưa có trường này thì tra khung giao của DO đang nạp trên máy;
+ *  không có nốt thì trả null và bảng ghi "—", KHÔNG suy ra trễ.
+ */
 function tripHanGiao(raw) {
+  let moc = raw.delivery_due_at || null;
+  if (!moc) {
+    const ds = (appState && Array.isArray(appState.delivery_orders)) ? appState.delivery_orders : [];
+    const ids = new Set((raw.delivery_order_ids || []).map(String));
+    const han = ds.filter(d => ids.has(String(d.id)))
+      .map(d => d.delivery_window_end || d.planned_arrival_at || d.delivery_date)
+      .filter(Boolean).map(x => new Date(x)).filter(d => !isNaN(d));
+    if (han.length) moc = new Date(Math.max.apply(null, han));
+  }
+  if (!moc) return null;
+  const d = new Date(moc);
+  return isNaN(d) ? null : d;
+}
+
+/** Kế hoạch tới nơi nội bộ của chuyến (để ghi chú "lệch kế hoạch", không để kết luận trễ). */
+function tripKeHoachToi(raw) {
   const moc = raw.planned_arrival_at || (raw.legs || [])
     .filter(l => String(l.leg_type || '') === 'delivery')
     .map(l => l.planned_arrival_at).filter(Boolean).pop();
   if (!moc) return null;
   const d = new Date(moc);
   return isNaN(d) ? null : d;
+}
+
+/** Chuyến có trễ hạn với khách không: chỉ khi ĐÃ tới nơi và tới sau hạn khách. */
+function tripTreHan(raw) {
+  if (typeof raw.is_late === 'boolean') return raw.is_late && Boolean(raw.actual_arrival_at);
+  const han = tripHanGiao(raw);
+  const toi = tripGioToiNoi(raw);
+  return Boolean(raw.actual_arrival_at && han && toi && toi > han);
 }
 
 /** Giờ tới nơi thực tế, hoặc dự kiến nếu chưa tới. */
@@ -2361,7 +2347,13 @@ const changVeCua = raw => (raw.legs || [])
   .filter(l => LOAI_CHANG_VE.includes(String(l.leg_type || '')));
 
 function tripThieuChangVe(raw) {
-  if (String(raw.trip_type || '') === 'round_trip') return false;
+  // "Thiếu chặng về" chỉ có nghĩa với chuyến KHỨ HỒI / BACKHAUL. Chuyến một
+  // chiều và nhiều điểm dừng không có chặng về theo định nghĩa — bản trước gắn
+  // cảnh báo vàng lên MỌI chuyến một chiều, nên cả bảng nhấp nháy một cảnh báo
+  // không ai làm gì được.
+  const loai = String(raw.trip_type || 'one_way');
+  if (loai === 'one_way' || loai === 'multi_stop') return false;
+  if (loai === 'round_trip') return false;
   return changVeCua(raw).length === 0;
 }
 
@@ -2390,6 +2382,79 @@ function tripChoXacNhanVe(raw) {
  * trên màn: giữa lúc mở hồ sơ và lúc bấm nút, một người khác có thể đã sửa
  * chuyến — và chốt `expected_version` tồn tại đúng để chặn việc ghi đè đó.
  */
+/**
+ * Chuyến này còn huỷ được không.
+ *
+ * Máy chủ là nơi quyết định thật (`POST /api/tms/trips/{id}/cancel` từ chối
+ * chuyến đã hoàn tất, đã quyết toán, hoặc đã có POD). Hàm này chỉ để KHÔNG
+ * hiện một cái nút chắc chắn sẽ bị từ chối — mời người dùng bấm một nút rồi
+ * báo lỗi là tệ hơn không có nút.
+ */
+function tripCoTheHuy(chuyen) {
+  const tt = String((chuyen && chuyen.status) || '').trim().toLowerCase();
+  if (['completed', 'settled', 'cancelled'].includes(tt)) return false;
+  // Đã có POD thì chuyến đó đã giao thật một phần — huỷ là xoá dấu vết.
+  const pod = tripSoPOD(chuyen);
+  if (pod && pod.co > 0) return false;
+  return true;
+}
+
+/**
+ * Huỷ một chuyến: trả xe, tổ lái và lệnh giao hàng về đúng chỗ.
+ *
+ * Đọc lại phiên bản chuyến NGAY TRƯỚC KHI gửi, cùng lý do như
+ * `xacNhanXeDaVe`: giữa lúc mở hồ sơ và lúc bấm, người khác có thể đã sửa.
+ */
+window.huyChuyenVanTai = async function (tripId) {
+  const ma = String(tripId || '').trim();
+  if (!ma) {
+    showToast('Chưa chọn chuyến nào để huỷ.');
+    return;
+  }
+  const lyDo = window.prompt('Huỷ chuyến ' + ma + ' vì lý do gì?\n\n'
+    + 'Xe và tổ lái sẽ được trả về sẵn sàng, và lệnh giao hàng của chuyến quay '
+    + 'lại hàng đợi Điều phối (không bị xoá).', '');
+  if (lyDo === null) return;
+  if (!String(lyDo).trim()) {
+    showToast('Phải ghi lý do huỷ chuyến — người đọc sổ sau này cần biết vì sao xe không chạy.');
+    return;
+  }
+  try {
+    const tra = await fetch(`${API_BASE}/api/tms/trips/${encodeURIComponent(ma)}`,
+      { headers: financeAuthHeaders() });
+    const goi = await tra.json().catch(() => ({}));
+    if (!tra.ok) {
+      showToast(goi?.detail?.message || goi?.message || 'Không đọc được chuyến để huỷ.');
+      return;
+    }
+    const chuyen = goi?.data || goi || {};
+    const ketQua = await fetch(
+      `${API_BASE}/api/tms/trips/${encodeURIComponent(ma)}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Idempotency-Key': 'huy-chuyen-' + ma + '-' + Date.now(),
+          ...financeAuthHeaders(),
+        },
+        body: JSON.stringify({
+          expected_version: Number(chuyen.version) || 1,
+          reason: String(lyDo).trim(),
+        }),
+      });
+    const d = await ketQua.json().catch(() => ({}));
+    if (!ketQua.ok) {
+      showToast(d?.detail?.message || d?.message || 'Không huỷ được chuyến.');
+      return;
+    }
+    showToast('Đã huỷ chuyến ' + ma + '. Xe và tổ lái về sẵn sàng; lệnh giao hàng '
+      + 'quay lại hàng đợi Điều phối.');
+    if (typeof loadAllData === 'function') await loadAllData();
+    renderTripReturnCockpit();
+  } catch (error) {
+    showToast('Không kết nối được backend để huỷ chuyến.');
+  }
+};
+
 window.xacNhanXeDaVe = async function (tripId) {
   const ma = String(tripId || '').trim();
   if (!ma) {
@@ -2505,12 +2570,9 @@ function tripNhomKpi(raw, nhomVongDoi) {
   const nhom = new Set();
   if (tripThieuChangVe(raw)) nhom.add('thieu-ve');
 
-  const han = tripHanGiao(raw);
-  const toi = tripGioToiNoi(raw);
-  // Chi dem la tre khi da co gio toi noi THUC TE. Chua toi noi thi `toi` chinh
-  // la `planned_arrival_at`, tuc bang dung `han` — so hai con so giong nhau thi
-  // khong bao gio ra ket qua nao co nghia.
-  if (raw.actual_arrival_at && han && toi && toi > han) nhom.add('tre-han');
+  // Chi dem la tre khi DA toi noi THUC TE va toi SAU HAN KHACH (khong so voi
+  // ke hoach noi bo — xem `tripHanGiao`).
+  if (tripTreHan(raw)) nhom.add('tre-han');
 
   const pod = tripSoPOD(raw);
   const xongRoi = nhomVongDoi === 'completed';
@@ -2612,9 +2674,45 @@ function tripReturnIdempotencyKey(prefix) {
 }
 
 function tripReturnAllDeliveryOrders() {
-  return Array.isArray(eplDeliveryOrders) && eplDeliveryOrders.length
+  const tatCa = Array.isArray(eplDeliveryOrders) && eplDeliveryOrders.length
     ? eplDeliveryOrders
     : (Array.isArray(appState?.delivery_orders) ? appState.delivery_orders : []);
+  // CHI LENH LAP CHUYEN DUOC: dang cho dieu phoi va CHUA thuoc chuyen nao con
+  // song. Ban truoc liet ke moi lenh, nen mo hop thoai ra thay ca lenh da giao
+  // xong va lenh da co chuyen — chon nham la lap chuyen thu hai cho cung mot
+  // lenh, va mo lai FO cua chuyen cu (do duoc: o "Ma Freight Order" tu dien
+  // FO-TRIP-...-C14-1 khi tao chuyen moi cho DO-2026-0014-DO02).
+  const chuyen = Array.isArray(appState?.transport_trips) ? appState.transport_trips : [];
+  const dangSong = new Set(['draft', 'planned', 'dispatched', 'in_transit']);
+  const coChuyen = new Set();
+  chuyen.forEach(t => {
+    if (!dangSong.has(String(t.status || ''))) return;
+    (t.delivery_order_ids || t.do_ids || []).forEach(x => coChuyen.add(String(x && x.id ? x.id : x)));
+  });
+  return tatCa.filter(d => String(d.canonical_status || 'pending') === 'pending' && !coChuyen.has(String(d.id)));
+}
+
+/**
+ * Vận tốc kế hoạch cho một lệnh: lấy từ LOẠI XE trên báo giá của lệnh đó.
+ *
+ * Bản trước ghi cứng 45 km/h vào ô và vào cả payload (`|| 45`). Một xe lạnh 5
+ * tấn và một đầu kéo 40' không cùng tốc độ, và con số đó đi thẳng vào giờ dự
+ * kiến đến — thứ người điều phối và khách hàng nhìn. Loại xe có
+ * `avg_speed_kmh` là dữ liệu gốc thật; không tra được thì ĐỂ TRỐNG và bắt
+ * người dùng khai, không bịa.
+ */
+function vanTocKeHoachChoDO(doId) {
+  const don = tripReturnDeliveryOrderById(doId);
+  if (!don) return { toc: '', nguon: '' };
+  const dsBaoGia = (Array.isArray(crmQuotations) && crmQuotations.length) ? crmQuotations
+    : (Array.isArray(appState?.quotations) ? appState.quotations : []);
+  const bg = dsBaoGia.find(q => String(q.id) === String(don.quotation_id || ''));
+  const maLoai = bg && bg.vehicle_type_id;
+  const loai = maLoai ? (vehTypes || []).find(t => String(t.id) === String(maLoai)) : null;
+  if (loai && Number(loai.avg_speed_kmh) > 0) {
+    return { toc: String(Number(loai.avg_speed_kmh)), nguon: `theo loại xe ${loai.name || loai.id}` };
+  }
+  return { toc: '', nguon: don.quotation_id ? 'báo giá chưa khai loại xe có tốc độ — nhập tay' : 'lệnh không có báo giá — nhập tay' };
 }
 
 function tripReturnAllRoutes() {
@@ -2779,7 +2877,7 @@ function hydrateTripReturnRoutePreview() {
   const badge = tripReturnField('trip-return-route-badge');
   const sourceInput = tripReturnField('trip-return-route-source');
   const preview = tripReturnField('trip-return-route-preview');
-  const speed = tripReturnNumberValue('trip-return-speed', 45) || 45;
+  const speed = tripReturnNumberValue('trip-return-speed', 0) || 0;
   const dwell = tripReturnNumberValue('trip-return-dwell', 30) || 0;
   const departure = tripReturnBodyValue('trip-return-departure');
   const mode = tripReturnBodyValue('trip-return-action-mode') || 'create-trip';
@@ -2789,7 +2887,7 @@ function hydrateTripReturnRoutePreview() {
   const returnWarning = tripReturnField('trip-return-return-warning');
   if (returnConfig) returnConfig.style.display = mode === 'create-trip' && purpose !== 'none' ? 'block' : 'none';
   if (returnWarning) returnWarning.textContent = purpose !== 'none' && !returnRoute
-    ? 'Chon tuyen chieu ve tu Route Master de he thong tinh ETA va ngay xe san sang.'
+    ? 'Chọn tuyến chiều về trong Dữ liệu gốc để hệ thống tính giờ dự kiến và lúc xe sẵn sàng.'
     : '';
 
   // KHÔNG ghi đè `trip-return-do-ids` bằng MỘT mã DO.
@@ -2805,23 +2903,20 @@ function hydrateTripReturnRoutePreview() {
   if (doId && !tripReturnBodyValue('trip-return-do-ids')) {
     tripReturnSetValue('trip-return-do-ids', doId);
   }
-  if (deliveryOrder && !tripReturnBodyValue('trip-return-fo-id')) {
-    tripReturnSetValue('trip-return-fo-id', deliveryOrder.fo_id || deliveryOrder.freight_order_id || '');
-  }
 
   if (badge) {
     badge.textContent = route ? 'Lấy từ Master Data' : (deliveryOrder ? 'DO thiếu tuyến' : 'Chưa chọn DO');
     badge.className = `fiori-status ${route ? 'fiori-status-approved' : 'fiori-status-pending'}`;
   }
   if (sourceInput) {
-    sourceInput.value = route
-      ? `${route.id || routeId}: ${escapeHtml(route.name || routeId)}`
-      : (deliveryOrder ? `${routeId || 'Chưa có route_id'} theo DO ${deliveryOrder.id}` : '');
+    sourceInput.textContent = route
+      ? `${route.id || routeId} · ${route.name || routeId}`
+      : (deliveryOrder ? `${routeId || 'chưa có tuyến'} theo lệnh ${deliveryOrder.id}` : '');
   }
   if (!preview) return;
 
   if (!deliveryOrder) {
-    preview.innerHTML = '<div style="border:1px dashed #cbd5e1; border-radius:10px; padding:12px; color:#64748b;">Chọn DO/FO để xem các chặng lấy từ tuyến Master Data.</div>';
+    preview.innerHTML = '<div style="border:1px dashed #cbd5e1; border-radius:10px; padding:12px; color:#64748b;">Chọn lệnh giao hàng để xem các chặng lấy từ tuyến trong Dữ liệu gốc.</div>';
     return;
   }
 
@@ -2845,7 +2940,7 @@ function hydrateTripReturnRoutePreview() {
     totalKm += Number(leg.distance_km || 0);
     return `
       <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 92px 124px; gap:10px; align-items:center; padding:10px 0; border-top:1px solid #e2e8f0;">
-        <div style="width:30px; height:30px; border-radius:999px; background:#eff6ff; color:#0a6ed1; display:flex; align-items:center; justify-content:center; font-weight:900;">${leg.sequence_no}</div>
+        <div style="width:30px; height:30px; border-radius:999px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-weight:900;">${leg.sequence_no}</div>
         <div style="min-width:0;">
           <div style="font-weight:900; color:#0f172a; overflow-wrap:anywhere;">${doBoardEscape(leg.origin)} <span style="color:#64748b;">â†’</span> ${doBoardEscape(leg.destination)}</div>
           <div style="font-size:.78rem; color:#64748b; margin-top:3px;">${doBoardEscape(startText)} - ${doBoardEscape(endText)}</div>
@@ -2866,13 +2961,13 @@ function hydrateTripReturnRoutePreview() {
   if (mode === 'create-trip' && purpose !== 'none' && returnRoute) {
     const returnLegs = buildTripReturnLegsFromRoute({ route: returnRoute, routeId: returnRoute.id });
     returnRows = `
-      <div style="margin-top:12px; padding-top:10px; border-top:2px solid #fed7aa; color:#9a3412; font-weight:900;">&#8617; Chieu ve - ${doBoardEscape(returnRoute.name || returnRoute.id || '')}</div>
+      <div style="margin-top:12px; padding-top:10px; border-top:2px solid #fed7aa; color:#9a3412; font-weight:900;">&#8617; Chiều về · ${doBoardEscape(returnRoute.name || returnRoute.id || '')}</div>
       ${returnLegs.map(leg => `
         <div style="display:grid; grid-template-columns:44px minmax(0,1fr) 92px 124px; gap:10px; align-items:center; padding:10px 0; border-top:1px solid #ffedd5;">
           <div style="width:30px; height:30px; border-radius:999px; background:#fff7ed; color:#c2410c; display:flex; align-items:center; justify-content:center; font-weight:900;">&#8617;</div>
           <div style="min-width:0; font-weight:900; color:#7c2d12; overflow-wrap:anywhere;">${doBoardEscape(leg.origin)} <span style="color:#9a3412;">-&gt;</span> ${doBoardEscape(leg.destination)}</div>
           <div style="text-align:right;"><span class="fiori-status fiori-status-pending">${doBoardEscape(formatRouteKm(leg.distance_km))} km</span></div>
-          <div style="font-size:.78rem; color:#9a3412; text-align:right;">Dung ${doBoardEscape(dwell)} phut</div>
+          <div style="font-size:.78rem; color:#9a3412; text-align:right;">Dừng ${doBoardEscape(dwell)} phút</div>
         </div>
       `).join('')}
     `;
@@ -2924,7 +3019,7 @@ function openTripReturnAction(action, preferredDoId = '') {
 
   tripReturnSetValue('trip-return-action-mode', mode);
   tripReturnSetValue('trip-return-trip-id', mode === 'add-leg' ? tripId : generatedTripId);
-  tripReturnSetValue('trip-return-fo-id', preferredOrder?.freight_order_id || preferredOrder?.fo_id || raw.freight_order_id || raw.fo_id || '');
+  tripReturnSetValue('trip-return-fo-id', mode === 'add-leg' ? (raw.freight_order_id || raw.fo_id || '') : '');
   populateTripReturnDoSelect(dsDat);
   tripReturnSetValue('trip-return-do-ids', dsDat.join(','));
   tripReturnSetValue('trip-return-trip-type', raw.trip_type || (mode === 'add-leg' ? 'round_trip' : 'one_way'));
@@ -2935,7 +3030,12 @@ function openTripReturnAction(action, preferredDoId = '') {
   tripReturnSetValue('trip-return-origin', raw.destination || '');
   tripReturnSetValue('trip-return-destination', raw.origin || '');
   tripReturnSetValue('trip-return-distance', raw.total_distance_km || raw.distance_km || '');
-  tripReturnSetValue('trip-return-speed', '45');
+  {
+    const vt = vanTocKeHoachChoDO(selectedDoId);
+    tripReturnSetValue('trip-return-speed', vt.toc);
+    const goiY = tripReturnField('trip-return-speed-hint');
+    if (goiY) goiY.textContent = vt.nguon;
+  }
   tripReturnSetValue('trip-return-dwell', '30');
   tripReturnSetValue('trip-return-departure', preferredOrder?.pickup_window_start || preferredOrder?.pickup_date || tripReturnNowLocal());
   tripReturnSetValue('trip-return-version', raw.version || 1);
@@ -2950,7 +3050,7 @@ function openTripReturnAction(action, preferredDoId = '') {
     const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
     title.textContent = mode === 'add-leg'
       ? (lang === 'la' ? 'ເພີ່ມໄລຍະ / ຖ້ຽວກັບ / backhaul ສຳລັບ Trip' : (lang === 'en' ? 'Add Leg / Return / Backhaul for Trip' : 'Thêm chặng / lượt về / backhaul cho Trip'))
-      : (lang === 'la' ? 'ສ້າງ Trip / ເພີ່ມໄລຍະຂົນສົ່ງ' : (lang === 'en' ? 'Create Transport Trip from DO/FO' : 'Tạo Trip vận chuyển từ DO/FO'));
+      : (lang === 'la' ? 'ສ້າງ Trip / ເພີ່ມໄລຍະຂົນສົ່ງ' : (lang === 'en' ? 'Create trip from delivery orders' : 'Tạo chuyến từ lệnh giao hàng'));
   }
   hydrateTripReturnRoutePreview();
   syncTripReturnTripType();
@@ -3025,7 +3125,7 @@ async function submitTripReturnActionForm() {
       origin: tripReturnBodyValue('trip-return-origin'),
       destination: tripReturnBodyValue('trip-return-destination'),
       distance_km: tripReturnNumberValue('trip-return-distance', 0),
-      avg_speed_kmh: tripReturnNumberValue('trip-return-speed', 45),
+      avg_speed_kmh: tripReturnNumberValue('trip-return-speed', 0),
       dwell_minutes: tripReturnNumberValue('trip-return-dwell', 0),
       stop_name: tripReturnBodyValue('trip-return-stop-name') || undefined,
       receiver_name: tripReturnBodyValue('trip-return-receiver-name') || undefined,
@@ -3057,7 +3157,12 @@ async function submitTripReturnActionForm() {
   }
 
   if (!doIds.length) {
-    showToast('Chọn DO trước khi tạo Trip.');
+    showToast('Chọn lệnh giao hàng trước khi tạo chuyến.');
+    return;
+  }
+  if (!(tripReturnNumberValue('trip-return-speed', 0) > 0)) {
+    showToast('Nhập vận tốc kế hoạch (km/h). Loại xe trên báo giá chưa có tốc độ nên hệ thống không tự điền.');
+    tripReturnField('trip-return-speed')?.focus();
     return;
   }
   const returnRouteId = tripReturnBodyValue('trip-return-return-route-select');
@@ -3076,7 +3181,7 @@ async function submitTripReturnActionForm() {
     trip_type: tripReturnBodyValue('trip-return-trip-type') || 'one_way',
     do_ids: doIds,
     planned_departure_at: tripReturnIsoFromLocal(tripReturnBodyValue('trip-return-departure')) || undefined,
-    avg_speed_kmh: String(tripReturnNumberValue('trip-return-speed', 45) || 45),
+    avg_speed_kmh: String(tripReturnNumberValue('trip-return-speed', 0)),
     dwell_minutes: tripReturnNumberValue('trip-return-dwell', 30) || 0,
     stop_plan: tripReturnStopPlan(),
     return_purpose: purpose,
@@ -3144,7 +3249,7 @@ function renderTmsCockpit() {
     towerEl.innerHTML = Object.values(tower).map(card => `
       <div onclick="switchView('${card.target === 'accounting' ? 'accounting' : card.target === 'tracking' ? 'tracking' : card.target === 'dispatch' ? 'dispatch' : 'master-data'}')" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:13px; cursor:pointer;">
         <div style="font-size:.76rem; color:#64748b; font-weight:700; min-height:30px;">${card.label}</div>
-        <div style="font-size:1.65rem; color:#0a6ed1; font-weight:900; margin-top:4px;">${card.count}</div>
+        <div style="font-size:1.65rem; color:#2563eb; font-weight:900; margin-top:4px;">${card.count}</div>
       </div>
     `).join('');
   }
@@ -3243,12 +3348,12 @@ window.openCockpitNavigation = function (view, targetId) {
 function renderTransportationWorkQueue(container) {
   if (!container || !window.TmsCockpit?.buildTransportationWorkQueue) return;
   const queue = window.TmsCockpit.buildTransportationWorkQueue(appState || {}, new Date());
-  const color = item => item.severity === 'critical' ? '#dc2626' : item.severity === 'warning' ? '#d97706' : '#0a6ed1';
+  const color = item => item.severity === 'critical' ? '#dc2626' : item.severity === 'warning' ? '#d97706' : '#2563eb';
   container.innerHTML = `
     <div style="border:1px solid #dbeafe; background:#ffffff; border-radius:14px; padding:13px;">
       <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:10px;">
         <div>
-          <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-tower-broadcast" style="color:#0a6ed1;"></i> Transportation Work Queue</div>
+          <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-tower-broadcast" style="color:#2563eb;"></i> Transportation Work Queue</div>
           <div style="font-size:.78rem; color:#64748b; margin-top:3px;">Danh sách việc vận chuyển cần xử lý theo mức ưu tiên, giống control tower vận hành.</div>
         </div>
       </div>
@@ -3256,7 +3361,7 @@ function renderTransportationWorkQueue(container) {
         ${queue.kpis.map(kpi => `
           <div style="border:1px solid #e2e8f0; border-radius:11px; padding:8px 9px; background:#f8fafc;">
             <div style="font-size:.7rem; color:#64748b; font-weight:900;">${kpi.label}</div>
-            <div style="font-size:1.15rem; color:#0a6ed1; font-weight:950;">${kpi.count}</div>
+            <div style="font-size:1.15rem; color:#2563eb; font-weight:950;">${kpi.count}</div>
           </div>
         `).join('')}
       </div>
@@ -3279,7 +3384,7 @@ function renderTransportationWorkQueue(container) {
 function renderOrderTimelineDeepActions(detail) {
   const actions = Array.isArray(detail && detail.deep_actions) ? detail.deep_actions : [];
   return actions.map(action => {
-    const color = action.severity === 'warning' ? '#d97706' : action.severity === 'critical' ? '#dc2626' : '#0a6ed1';
+    const color = action.severity === 'warning' ? '#d97706' : action.severity === 'critical' ? '#dc2626' : '#2563eb';
     const icon = action.code === 'OPEN_GPS_POD'
       ? 'fa-location-dot'
       : action.code === 'OPEN_DISPATCH'
@@ -3361,7 +3466,7 @@ function renderShipment360Detail() {
   `).join('') : '<div style="background:#ecfdf5; border:1px solid #bbf7d0; color:#047857; border-radius:11px; padding:9px 10px; font-weight:850;">Hồ sơ chuyến chưa có cảnh báo nổi bật.</div>';
 
   timelineEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-timeline" style="color:#0a6ed1;"></i> Timeline A-Z</div>
+    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-timeline" style="color:#2563eb;"></i> Timeline A-Z</div>
     ${shipment.timeline.map((step, index) => `
       <div onclick="openTimelineStepContext('${shipment.id}', '${step.key}')" style="display:flex; align-items:center; gap:8px; border:1px solid ${step.status === 'done' ? '#bbf7d0' : step.status === 'blocked' ? '#fecaca' : '#e2e8f0'}; background:${step.status === 'done' ? '#f0fdf4' : step.status === 'blocked' ? '#fff1f2' : '#ffffff'}; border-radius:10px; padding:8px; cursor:pointer;">
         <span style="width:22px; height:22px; border-radius:999px; display:inline-flex; align-items:center; justify-content:center; background:${step.status === 'done' ? '#059669' : '#cbd5e1'}; color:white; font-size:.7rem; font-weight:950;">${index + 1}</span>
@@ -3400,7 +3505,7 @@ function renderShipment360Detail() {
 
   const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
   financeEl.innerHTML = `
-    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color:#0a6ed1;"></i> Cost/AP/Settlement</div>
+    <div style="font-weight:950; color:#0f172a;"><i class="fa-solid fa-file-invoice-dollar" style="color:#2563eb;"></i> Cost/AP/Settlement</div>
     ${shipment.finance.items.length ? shipment.finance.items.map(item => `
       <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:9px;">
         <div style="font-weight:900; color:#0f172a;">${item.type} ${item.id ? `• ${item.id}` : ''}</div>
@@ -3519,8 +3624,6 @@ function openTimelineBusinessForm(detail) {
     if (!entityId) return;
     if (detail.key === 'quotation' && typeof editOracleQT === 'function') {
       editOracleQT(entityId);
-    } else if (detail.key === 'sales_order' && typeof editOracleSO === 'function') {
-      editOracleSO(entityId);
     } else if (detail.key === 'delivery_order' && typeof editFioriDO === 'function') {
       editFioriDO(entityId);
     }
@@ -3558,7 +3661,6 @@ function renderShipment360StepModal(detail) {
   const related = detail.related || {};
   const relatedCards = [
     ['Báo giá', related.quotation && related.quotation.id],
-    ['SO', related.sales_order && related.sales_order.id],
     ['DO', related.delivery_order && related.delivery_order.id],
     ['POD', related.pod ? 'Có POD' : 'Chưa POD'],
     ['Event', Array.isArray(related.events) ? related.events.length : 0],
@@ -3573,7 +3675,7 @@ function renderShipment360StepModal(detail) {
           <div style="font-size:.78rem; color:#64748b; font-weight:900;">Trạng thái bước</div>
           <div style="font-size:1rem; color:${statusColor}; font-weight:950; margin-top:3px;">${detail.status === 'done' ? 'Đã có dữ liệu' : 'Chưa hoàn tất / cần bổ sung'}</div>
         </div>
-        <button class="fiori-btn" onclick="executeShipment360StepAction('${detail.key || 'delivery_order'}', 'OPEN_TIMELINE_CONTEXT')" style="background:#0a6ed1; color:#ffffff; border-color:#0a6ed1; padding:7px 11px; white-space:nowrap;">
+        <button class="fiori-btn" onclick="executeShipment360StepAction('${detail.key || 'delivery_order'}', 'OPEN_TIMELINE_CONTEXT')" style="background:#2563eb; color:#ffffff; border-color:#2563eb; padding:7px 11px; white-space:nowrap;">
           <i class="fa-solid fa-up-right-from-square"></i> Mở đúng form
         </button>
       </div>
@@ -3649,7 +3751,6 @@ window.openTimelineStepContext = function (deliveryOrderId, stepKey) {
     : null;
   const view = detail?.navigation?.view || ({
     quotation: 'crm-sales',
-    sales_order: 'crm-sales',
     delivery_order: 'ops-planning',
     dispatch: 'dispatch',
     gps: 'tracking',
@@ -3971,6 +4072,74 @@ function renderReportingDrilldown() {
   tableEl.innerHTML = view.drilldownRows(report.drilldown_rows, lang);
 }
 
+/*
+   Gói /api/tms/finance/dashboard gần nhất, và cờ chống gọi lặp.
+
+   VÌ SAO PHẢI LẤY SỐ TỪ MÁY CHỦ. Bốn thẻ số liệu của Finance Cockpit trước
+   đây được đếm ngay tại máy khách, trên ba mảng `appState.freight_actual_costs
+   / ap_invoices / settlements`. Hai điều làm con số đó sai mà không ai thấy:
+
+     · `/api/data/all` bôi trắng đúng ba mảng đó, nên chúng RỖNG. Đo trên dữ
+       liệu thật: ba hồ sơ chi phí đang chờ duyệt, thẻ vẫn ghi 0.
+     · Kể cả sau khi nạp bổ sung (`hydrateFinanceState`), ba đường liệt kê
+       đều chỉ trả 100 bản ghi mới nhất. Ở quy mô hàng nghìn chuyến thì đếm
+       trên 100 dòng là đếm sai, và màn hình không nói ra điều đó.
+
+   Máy chủ đếm bằng `COUNT(*)` trên toàn bảng nên không vướng cả hai. Danh
+   sách bên dưới vẫn là 100 dòng mới nhất — đó là việc CẦN LÀM GẦN NHẤT, khác
+   với con số tổng, nên khi hai bên lệch thì thẻ nói rõ "xem được N mới nhất".
+*/
+let soLieuTaiChinhMayChu = null;
+let dangNapSoLieuTaiChinh = false;
+
+async function napSoLieuTaiChinhTuMayChu() {
+  if (dangNapSoLieuTaiChinh) return soLieuTaiChinhMayChu;
+  dangNapSoLieuTaiChinh = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/tms/finance/dashboard`, { headers: financeAuthHeaders() });
+    // Không được im lặng ở đây. Một 403 vì thiếu quyền tài chính sẽ khiến
+    // màn hình quay về đếm tại máy — tức về đúng con số 0 sai cũ — nên phải
+    // báo ra, giống cách `hydrateFinanceState` xử lý.
+    if (!res.ok) {
+      baoNapThatBai('bảng số liệu tài chính', new Error(`Máy chủ trả về ${res.status}`));
+      return null;
+    }
+    const payload = await res.json();
+    soLieuTaiChinhMayChu = (payload && payload.data) || null;
+    return soLieuTaiChinhMayChu;
+  } catch (err) {
+    baoNapThatBai('bảng số liệu tài chính', err);
+    return null;
+  } finally {
+    dangNapSoLieuTaiChinh = false;
+  }
+}
+
+/**
+ * Thay bốn con số đếm-tại-máy bằng số đếm-toàn-bảng của máy chủ.
+ *
+ * Chỉ ghi đè những khoá máy chủ thật sự trả về: thiếu một khoá thì giữ số cũ
+ * chứ không đặt về 0 — số cũ sai vì hẹp, còn 0 thì sai hẳn.
+ */
+function apSoLieuMayChuVaoTheKpi(kpis) {
+  const goi = soLieuTaiChinhMayChu;
+  if (!goi || !kpis) return kpis;
+  const cap = Number(goi.list_row_cap || 0);
+  const dat = (khoa, so) => {
+    if (!kpis[khoa] || so === null || so === undefined) return;
+    kpis[khoa].count = Number(so);
+    if (cap > 0 && Number(so) > cap) kpis[khoa].note = `xem được ${cap} mới nhất bên dưới`;
+  };
+  dat('actual_cost_pending', goi.actual_cost_pending_count);
+  dat('ap_waiting_post', goi.ap_waiting_post_count);
+  dat('settlement_open', goi.settlement_open_count);
+  if (kpis.total_payable && goi.total_payable !== null && goi.total_payable !== undefined) {
+    kpis.total_payable.amount = Number(goi.total_payable);
+    kpis.total_payable.currency = goi.currency_code || kpis.total_payable.currency || 'VND';
+  }
+  return kpis;
+}
+
 function renderFinanceCockpit() {
   if (!window.TmsCockpit || typeof document === 'undefined') return;
   const kpisEl = document.getElementById('finance-cockpit-kpis');
@@ -3979,12 +4148,19 @@ function renderFinanceCockpit() {
   const settlementsEl = document.getElementById('finance-cockpit-settlements');
   if (!kpisEl || !costsEl || !apEl || !settlementsEl) return;
 
+  // Lần đầu vào màn thì gói của máy chủ chưa có; nạp rồi vẽ lại đúng một lần.
+  if (!soLieuTaiChinhMayChu && !dangNapSoLieuTaiChinh) {
+    napSoLieuTaiChinhTuMayChu().then(goi => { if (goi) renderFinanceCockpit(); });
+  }
+
   const cockpit = window.TmsCockpit.buildFinanceCockpitSummary(appState || {});
+  apSoLieuMayChuVaoTheKpi(cockpit.kpis);
   const money = (amount, currency = 'VND') => `${Number(amount || 0).toLocaleString('vi-VN')} ${currency}`;
   kpisEl.innerHTML = Object.values(cockpit.kpis).map(kpi => `
     <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:14px; padding:14px; box-shadow:0 4px 12px rgba(15,23,42,0.04);">
       <div style="font-size:.78rem; color:#64748b; font-weight:800; text-transform:uppercase;">${kpi.label}</div>
-      <div style="font-size:1.55rem; font-weight:950; color:#0a6ed1; margin-top:6px;">${kpi.amount !== undefined ? money(kpi.amount, kpi.currency) : kpi.count}</div>
+      <div style="font-size:1.55rem; font-weight:950; color:#2563eb; margin-top:6px;">${kpi.amount !== undefined ? money(kpi.amount, kpi.currency) : kpi.count}</div>
+      ${kpi.note ? `<div style="font-size:.7rem; color:#94a3b8; font-weight:700; margin-top:4px;">${escapeHtml(kpi.note)}</div>` : ''}
     </div>
   `).join('');
 
@@ -4026,7 +4202,7 @@ function renderFinanceProcessCockpit() {
   const process = window.TmsCockpit.buildFinanceProcessCockpit(appState || {});
   flowEl.innerHTML = process.flow.map((step, index) => `
     <div style="display:flex; align-items:center; gap:7px;">
-      <div style="border:1px solid ${step.status === 'active' ? '#93c5fd' : '#e2e8f0'}; background:${step.status === 'active' ? '#eff6ff' : '#ffffff'}; color:${step.status === 'active' ? '#0a6ed1' : '#64748b'}; border-radius:999px; padding:7px 10px; font-size:.78rem; font-weight:950;">
+      <div style="border:1px solid ${step.status === 'active' ? '#93c5fd' : '#e2e8f0'}; background:${step.status === 'active' ? '#eff6ff' : '#ffffff'}; color:${step.status === 'active' ? '#2563eb' : '#64748b'}; border-radius:999px; padding:7px 10px; font-size:.78rem; font-weight:950;">
         ${step.order}. ${step.label} <span style="margin-left:4px;">${step.count}</span>
       </div>
       ${index < process.flow.length - 1 ? '<i class="fa-solid fa-arrow-right" style="color:#94a3b8; font-size:.75rem;"></i>' : ''}
@@ -4077,7 +4253,7 @@ function renderFinanceCloseoutWorkbench() {
   kpisEl.innerHTML = Object.values(workbench.kpis).map(kpi => `
     <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:10px;">
       <div style="font-size:.72rem; color:#64748b; font-weight:900;">${kpi.label}</div>
-      <div style="font-size:1.25rem; color:#0a6ed1; font-weight:950; margin-top:4px;">${kpi.count}</div>
+      <div style="font-size:1.25rem; color:#2563eb; font-weight:950; margin-top:4px;">${kpi.count}</div>
     </div>
   `).join('');
   listEl.innerHTML = workbench.items.length ? workbench.items.slice(0, 8).map(item => {
@@ -4096,7 +4272,7 @@ function renderFinanceCloseoutWorkbench() {
   }).join('') : '<div style="background:#ffffff; border:1px dashed #cbd5e1; border-radius:12px; padding:14px; color:#64748b; text-align:center;">Chưa có Actual Cost để closeout.</div>';
   actionsEl.innerHTML = (workbench.guidance || []).map(text => `
     <div style="background:#ffffff; border:1px dashed #bfdbfe; border-radius:10px; padding:8px 10px; color:#475569; font-size:.78rem; font-weight:800;">
-      <i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> ${text}
+      <i class="fa-solid fa-circle-info" style="color:#2563eb;"></i> ${text}
     </div>
   `).join('');
 }
@@ -4133,7 +4309,7 @@ function renderFinanceActionWorkbench() {
   kpisEl.innerHTML = Object.values(workbench.kpis).map(kpi => `
     <div style="background:#ffffff; border:1px solid #dbeafe; border-radius:12px; padding:11px 12px;">
       <div style="font-size:.72rem; color:#64748b; font-weight:900; text-transform:uppercase;">${kpi.label}</div>
-      <div style="font-size:1.25rem; color:#0a6ed1; font-weight:950; margin-top:4px;">${kpi.count}</div>
+      <div style="font-size:1.25rem; color:#2563eb; font-weight:950; margin-top:4px;">${kpi.count}</div>
     </div>
   `).join('');
 
@@ -4168,7 +4344,7 @@ function renderFinanceActionWorkbench() {
 
   guidanceEl.innerHTML = workbench.guidance.map(text => `
     <div style="border:1px solid #dbeafe; border-radius:10px; padding:9px 11px; background:#ffffff; color:#475569; font-size:.82rem;">
-      <i class="fa-solid fa-circle-info" style="color:#0a6ed1;"></i> ${text}
+      <i class="fa-solid fa-circle-info" style="color:#2563eb;"></i> ${text}
     </div>
   `).join('');
   renderFinanceRecordDetail();
@@ -4248,6 +4424,10 @@ async function executeFinanceCommand(command) {
       path: `${command?.method || 'POST'} ${command?.path || ''}`,
     });
     if (typeof window.loadAllData === 'function') await window.loadAllData();
+    // Vừa duyệt / hạch toán / thanh toán xong thì bốn con số đếm-toàn-bảng đã
+    // cũ. Bỏ gói cũ đi để lần vẽ ngay dưới đây nạp lại từ máy chủ — giữ gói cũ
+    // là hiện một con số mà chính người dùng vừa làm cho nó sai.
+    soLieuTaiChinhMayChu = null;
     if (typeof renderFinanceCockpit === 'function') renderFinanceCockpit();
     if (typeof renderFinanceActionWorkbench === 'function') renderFinanceActionWorkbench();
     return { ok: true, payload };
@@ -4436,7 +4616,7 @@ function renderFinanceRecordDetail() {
   `;
   const stageStyle = {
     done: { bg: '#ecfdf5', color: '#047857', icon: 'fa-circle-check', label: 'Xong' },
-    current: { bg: '#eff6ff', color: '#0a6ed1', icon: 'fa-circle-play', label: 'Đang xử lý' },
+    current: { bg: '#eff6ff', color: '#2563eb', icon: 'fa-circle-play', label: 'Đang xử lý' },
     pending: { bg: '#f8fafc', color: '#64748b', icon: 'fa-clock', label: 'Chờ' }
   };
   timelineEl.innerHTML = detail.timeline.map(step => {
@@ -4474,10 +4654,10 @@ function renderFinanceConfigHealth() {
   progressEl.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
       <span style="font-size:.78rem; color:#64748b; font-weight:900;">Mức sẵn sàng cấu hình</span>
-      <strong style="color:#0a6ed1;">${health.progress.percent}%</strong>
+      <strong style="color:#2563eb;">${health.progress.percent}%</strong>
     </div>
     <div style="height:8px; border-radius:999px; background:#e2e8f0; overflow:hidden;">
-      <div style="height:100%; width:${health.progress.percent}%; background:linear-gradient(90deg,#0a6ed1,#10b981);"></div>
+      <div style="height:100%; width:${health.progress.percent}%; background:linear-gradient(90deg,#2563eb,#10b981);"></div>
     </div>
   `;
   itemsEl.innerHTML = health.items.map(item => `
@@ -5023,7 +5203,7 @@ function normalizeDispatchStaticText() {
     if (el) el.innerHTML = html;
   };
 
-  setHTML('#dispatch-workbench-header h2', '<i class="fa-solid fa-truck-ramp-box" style="color:#0a6ed1;"></i> Điều phối & thực thi');
+  setHTML('#dispatch-workbench-header h2', '<i class="fa-solid fa-truck-ramp-box" style="color:#2563eb;"></i> Điều phối & thực thi');
   const headerNote = document.querySelector('#dispatch-workbench-header h2')?.parentElement?.querySelector('div');
   if (headerNote) headerNote.textContent = 'Gán xe, tài xế, kiểm tra lịch và cảnh báo trước khi xuất bến.';
   setText('#dispatch-resource-subtitle', 'Chọn DO ở bên trái, gán xe/tài xế rồi chuyển sang lịch điều phối.');
@@ -5146,10 +5326,8 @@ window.openShipment360Action = function (actionCode, deliveryOrderId) {
     return;
   }
 
-  switchView('operations-360');
-  setTimeout(() => {
-    selectShipment360(targetId);
-  }, 0);
+  // Đường rơi về Shipment 360 đã bỏ: hành động không có màn riêng thì về Theo dõi.
+  switchView('tracking');
 };
 
 function renderDispatchSuggestedActions(detail) {
@@ -5213,7 +5391,7 @@ function renderDispatchSuggestedActions(detail) {
   };
 
   actionsEl.innerHTML = actions.length ? actions.map(action => {
-    const color = action.severity === 'critical' ? '#dc2626' : action.severity === 'warning' ? '#d97706' : '#0a6ed1';
+    const color = action.severity === 'critical' ? '#dc2626' : action.severity === 'warning' ? '#d97706' : '#2563eb';
     const icon = action.code === 'CHANGE_VEHICLE'
       ? 'fa-truck'
       : action.code === 'CHANGE_DRIVER'
@@ -5224,8 +5402,9 @@ function renderDispatchSuggestedActions(detail) {
     const view = action.navigation && action.navigation.view || 'dispatch';
     const clickHandler = ['CHANGE_VEHICLE', 'CHANGE_DRIVER'].includes(action.code)
       ? `openDispatchResourceChange('${orderId}', '${action.code}')`
+      // OPEN_SHIPMENT_360: module đã bỏ — đưa về màn Theo dõi, nơi có cùng dữ liệu chuyến.
       : action.code === 'OPEN_SHIPMENT_360'
-        ? `openShipment360FromDispatch('${orderId}')`
+        ? `switchView('tracking')`
         : `switchView('${view}')`;
 
     const trans = actionTranslationMap[action.code];
@@ -5293,7 +5472,7 @@ function renderDispatchResourceChangePanel() {
   if (modeEl) modeEl.value = mode;
   if (messageEl) {
     const modeLabel = mode === 'CHANGE_VEHICLE' ? 'Đổi xe' : mode === 'CHANGE_DRIVER' ? 'Đổi tài xế' : 'Đổi tài nguyên';
-    messageEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench" style="color:#0a6ed1;"></i> <strong>${modeLabel}</strong> cho ${orderId}: ${options.message}`;
+    messageEl.innerHTML = `<i class="fa-solid fa-screwdriver-wrench" style="color:#2563eb;"></i> <strong>${modeLabel}</strong> cho ${orderId}: ${options.message}`;
   }
   setDispatchResourceSelect(vehicleEl, options.vehicles, options.recommended_vehicle_id || options.current_vehicle_id);
   setDispatchResourceSelect(driverEl, options.drivers, options.recommended_driver_id || options.current_driver_id);
@@ -5334,19 +5513,41 @@ async function applyDispatchResourceChange() {
     showToast('Version kỳ vọng không hợp lệ. Vui lòng tải lại dữ liệu trước khi điều phối.');
     return;
   }
-  const result = await executeWorkflowCommand('dispatch', {
-    path: `/api/delivery-orders/${doId}/dispatch`,
+  // ĐI ĐƯỜNG CHUẨN — điều phối CHUYẾN, không điều lẻ từng DO.
+  //
+  // Bản trước gọi `PUT /api/delivery-orders/{id}/dispatch`: đường đó đưa DO sang
+  // "đang chạy" mà bỏ 9/13 cửa (hạn pháp lý xe, bằng lái, ca trực, Packing
+  // List…) và KHÔNG tạo Trip / Freight Order / phân công — DO đi đường đó không
+  // hoàn tất được, xe không được giải phóng đúng. Đây là nút duy nhất trên giao
+  // diện còn gọi nó. Máy chủ nay cũng từ chối điều lẻ một DO đã có chuyến.
+  const tripGate = resolveDispatchTripGate(doId);
+  const trip = tripGate && tripGate.trip;
+  if (!trip) {
+    showToast(`${doId} chưa có chuyến. Lập chuyến ở màn Lệnh giao hàng trước, rồi điều phối chuyến.`);
+    return;
+  }
+  if (trip.status !== 'planned') {
+    // Đổi xe / tài xế giữa chuyến đang chạy chưa có đường máy chủ nào hỗ trợ —
+    // nói thật thay vì đi cửa tắt và để lại một chuyến với phân công cũ.
+    showToast(`Chuyến ${trip.id} đã điều phối (${trip.status}). Đổi xe/tài xế giữa chuyến chưa hỗ trợ: huỷ chuyến rồi lập và điều lại.`);
+    return;
+  }
+  const tripStart = trip.planned_departure_at;
+  const tripEnd = trip.planned_return_at || trip.planned_arrival_at;
+  if (!tripStart || !tripEnd) {
+    showToast('Chuyến thiếu giờ khởi hành hoặc giờ kết thúc. Hoàn thiện chuyến trước khi điều phối.');
+    return;
+  }
+  const result = await dieuPhoiCoXacNhanLoaiXe({
+    path: `/api/tms/trips/${trip.id}/dispatch`,
     method: 'PUT',
     body: {
       vehicle_id: vehicleId,
       driver_id: driverId,
-      co_driver: '',
-      packaging_spec: reason || 'Điều chỉnh từ Dispatch Calendar',
-      volume_m3: 0,
-      expected_version: expectedVersion,
-      reason: reason || 'Điều chỉnh từ Dispatch Calendar/Gantt.',
-      action_code: mode,
-      idempotency_key: dispatchResourceIdempotencyKey(doId, mode)
+      co_driver_id: null,
+      expected_version: Number(trip.version || 1),
+      assignment_start: new Date(tripStart).toISOString(),
+      assignment_end: new Date(tripEnd).toISOString()
     }
   });
   if (!result.ok) return;
@@ -5569,7 +5770,7 @@ function dispatchWeekCellHTML(row, day) {
   const items = day.items || [];
   const firstTripId = completionEscape(items[0]?.id || '');
   const blocks = items.slice(0, 3).map(item => `
-    <div class="dispatch-week-time-block" style="--dispatch-block-color:${item.status_color || '#0a6ed1'};">
+    <div class="dispatch-week-time-block" style="--dispatch-block-color:${item.status_color || '#2563eb'};">
       <strong>${completionEscape(item.id || 'Trip')}</strong>
       <span>${completionEscape(item.start_label || '--:--')} → ${completionEscape(item.end_label || '--:--')}</span>
       <span>${completionEscape(statusLabel(item.status_label || ''))}</span>
@@ -5790,7 +5991,7 @@ function renderDispatchCalendar() {
   kpisEl.innerHTML = Object.values(calendar.kpis).map(kpi => `
     <div style="background:#ffffff; border:1px solid #e0f2fe; border-radius:12px; padding:12px;">
       <div style="font-size:.75rem; color:#64748b; font-weight:800;">${kpi.label}</div>
-      <div style="font-size:1.35rem; color:${kpi.count && kpi.label.includes('Cảnh báo') ? '#dc2626' : '#0a6ed1'}; font-weight:950; margin-top:4px;">${kpi.count}</div>
+      <div style="font-size:1.35rem; color:${kpi.count && kpi.label.includes('Cảnh báo') ? '#dc2626' : '#2563eb'}; font-weight:950; margin-top:4px;">${kpi.count}</div>
     </div>
   `).join('');
   const dayLanesHtml = calendar.lanes.length ? calendar.lanes.map(lane => `
@@ -5947,16 +6148,16 @@ function renderGpsEventTimeline() {
   kpisEl.innerHTML = Object.values(timeline.kpis).map(kpi => `
     <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;">
       <div style="font-size:.72rem; color:#64748b; font-weight:800;">${kpi.label}</div>
-      <div style="font-size:1.05rem; color:${kpi.status === 'missing' ? '#dc2626' : '#0a6ed1'}; font-weight:950; margin-top:3px;">${kpi.count ?? kpi.value}</div>
+      <div style="font-size:1.05rem; color:${kpi.status === 'missing' ? '#dc2626' : '#2563eb'}; font-weight:950; margin-top:3px;">${kpi.count ?? kpi.value}</div>
     </div>
   `).join('');
 
   listEl.innerHTML = timeline.events.length ? timeline.events.map((event, index) => `
     <div style="display:grid; grid-template-columns:36px minmax(0,1fr); gap:10px; align-items:start; background:#ffffff; border:1px solid ${event.severity === 'critical' ? '#fecaca' : event.severity === 'warning' ? '#fed7aa' : '#dbeafe'}; border-radius:12px; padding:10px;">
-      <div style="width:32px; height:32px; border-radius:999px; background:${event.severity === 'critical' ? '#dc2626' : event.severity === 'warning' ? '#f59e0b' : '#0a6ed1'}; color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:900;">${index + 1}</div>
+      <div style="width:32px; height:32px; border-radius:999px; background:${event.severity === 'critical' ? '#dc2626' : event.severity === 'warning' ? '#f59e0b' : '#2563eb'}; color:#ffffff; display:flex; align-items:center; justify-content:center; font-weight:900;">${index + 1}</div>
       <div>
         <div style="display:flex; justify-content:space-between; gap:8px;">
-          <strong style="color:#0f172a;"><i class="fa-solid ${event.icon}" style="color:${event.severity === 'warning' ? '#f59e0b' : '#0a6ed1'};"></i> ${event.label}</strong>
+          <strong style="color:#0f172a;"><i class="fa-solid ${event.icon}" style="color:${event.severity === 'warning' ? '#f59e0b' : '#2563eb'};"></i> ${event.label}</strong>
           <span style="font-size:.72rem; color:#64748b; font-weight:800;">${event.source_label}</span>
         </div>
         <div style="font-size:.78rem; color:#475569; margin-top:4px;">${event.time_label} • ${event.location_text}</div>
@@ -6176,9 +6377,9 @@ async function submitQuotationForm(e) {
 async function submitDOForm(e) {
   e.preventDefault();
   const id = document.getElementById("modal-do-id").value;
-  const sourceSOId = document.getElementById("do-so-no").value;
-  if (!id && !sourceSOId) {
-    showToast('Lệnh giao hàng phải được tạo từ một SO đã xác nhận.');
+  if (!id) {
+    // DO sinh tự động khi khách chấp nhận báo giá — không tạo tay (POST đã bỏ).
+    showToast('Lệnh giao hàng sinh từ báo giá được chấp nhận, không tạo tay.');
     return;
   }
   const payload = {
@@ -6187,7 +6388,6 @@ async function submitDOForm(e) {
     delivery_date: tripReturnIsoFromLocal(document.getElementById("do-delivery-date").value),
     weight_kg: parseFloat(document.getElementById("do-weight").value || 0)
   };
-  if (!id) payload.so_id = sourceSOId;
 
   const url = id ? `${API_BASE}/api/delivery-orders/${id}` : `${API_BASE}/api/delivery-orders`;
   const method = id ? "PUT" : "POST";
@@ -6522,7 +6722,6 @@ function editQuotation(qid) {
 function openNewDO() {
   document.getElementById("modal-do-id").value = "";
   document.getElementById("form-create-do").reset();
-  document.getElementById("do-so-no").value = "";
   document.getElementById("modal-do-subtitle").textContent = t("modal_delivery_new");
   document.getElementById("btn-do-save").style.display = "block";
   toggleFormMode("form-create-do", false);
@@ -6536,7 +6735,6 @@ function viewDO(doid) {
 
   document.getElementById("modal-do-id").value = d.id;
   document.getElementById("do-display-id").value = d.id;
-  document.getElementById("do-so-no").value = d.so_id || "";
   document.getElementById("modal-do-customer").value = d.customer || "";
   document.getElementById("modal-do-route").value = d.route || "";
   document.getElementById("do-vehicle").value = d.vehicle || "";
@@ -6561,7 +6759,6 @@ function editDO(doid) {
 
   document.getElementById("modal-do-id").value = d.id;
   document.getElementById("do-display-id").value = d.id;
-  document.getElementById("do-so-no").value = d.so_id || "";
   document.getElementById("modal-do-customer").value = d.customer || "";
   document.getElementById("modal-do-route").value = d.route || "";
   document.getElementById("do-vehicle").value = d.vehicle || "";
@@ -6731,8 +6928,212 @@ async function loadFioriVehicles() {
   } catch (error) {
     baoNapThatBai('danh sách phương tiện', error);
   }
-  renderFioriVehicles(fioriVehicles);
+  napBoLocDoiXe();
+  veKpiDoiXe();
+  filterFioriVehicles();
   if (typeof syncAllDynamicDropdowns === 'function') syncAllDynamicDropdowns();
+  // Bang loai xe co cot "xe thuoc loai" doc tu doi xe — ve lai cho khop.
+  if (document.getElementById('veh-types-tbody') && Array.isArray(vehTypes)) renderVehTypesTable(vehTypes);
+}
+
+/** Bộ lọc bãi và loại xe trên tab Đội xe — bãi đọc từ /api/depots, loại từ vehTypes. */
+async function napBoLocDoiXe() {
+  const selBai = document.getElementById('fleet-filter-depot');
+  const selLoai = document.getElementById('fleet-filter-type');
+  if (selBai) {
+    try {
+      const r = await fetch(`${API_BASE}/api/depots`, { headers: financeAuthHeaders() });
+      if (r.ok) { const j = await r.json(); danhMucBai = Array.isArray(j) ? j : []; }
+    } catch (e) { /* giu danh muc cu */ }
+    if (!Array.isArray(danhMucBai)) danhMucBai = [];
+    const cur = selBai.value;
+    selBai.innerHTML = '<option value="">' + escapeHtml(nhanDich('opt_all_depots', 'Tất cả bãi')) + '</option>'
+      + (danhMucBai || []).map(b => `<option value="${escapeHtml(b.name)}">${escapeHtml(b.name)} (${b.vehicle_count})</option>`).join('');
+    // Xe mang ten bai KHONG co trong danh muc: van cho loc duoc.
+    const la = [...new Set((fioriVehicles || []).map(v => String(v.depot_name || v.depot || '').trim()).filter(Boolean))]
+      .filter(x => !(danhMucBai || []).some(b => b.name === x));
+    la.forEach(x => selBai.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(x)}">${escapeHtml(x)} · ngoài danh mục</option>`));
+    if ([...selBai.options].some(o => o.value === cur)) selBai.value = cur;
+  }
+  if (selLoai) {
+    const cur = selLoai.value;
+    selLoai.innerHTML = '<option value="">' + escapeHtml(nhanDich('opt_all_types', 'Tất cả loại xe')) + '</option>'
+      + (Array.isArray(vehTypes) ? vehTypes : []).map(vt => `<option value="${escapeHtml(vt.id)}">${escapeHtml(vt.name)}</option>`).join('');
+    if ([...selLoai.options].some(o => o.value === cur)) selLoai.value = cur;
+  }
+}
+
+/** Mở hộp thoại thêm bãi. Bãi là một địa điểm trong `locations`, không phải chuỗi trên xe. */
+window.moThemBai = function () {
+  const dlg = document.getElementById('depot-dialog');
+  if (!dlg) return;
+  ['depot-id', 'depot-name', 'depot-address'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  document.getElementById('depot-id')?.focus();
+};
+
+window.luuBaiMoi = async function () {
+  const ma = String(document.getElementById('depot-id')?.value || '').trim().toUpperCase().replace(/\s+/g, '-');
+  const ten = String(document.getElementById('depot-name')?.value || '').trim();
+  const loai = document.getElementById('depot-type')?.value || 'Depot';
+  const diaChi = String(document.getElementById('depot-address')?.value || '').trim();
+  if (!ma || !ten) { showToast('Bãi cần cả mã (để lọc) và tên (để hiện).'); return; }
+  try {
+    const r = await fetch(`${API_BASE}/api/depots`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...financeAuthHeaders() },
+      body: JSON.stringify({ id: ma, name: ten, type: loai, address: diaChi }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { showToast(d?.detail?.message || d?.message || 'Không lưu được bãi.'); return; }
+    showToast(d.message || `Đã thêm bãi ${ten}.`);
+    document.getElementById('depot-dialog')?.close();
+    await napBoLocDoiXe();
+    const sel = document.getElementById('fleet-filter-depot');
+    if (sel && [...sel.options].some(o => o.value === ten)) { sel.value = ten; filterFioriVehicles(); }
+  } catch (e) {
+    showToast('Không kết nối được backend để lưu bãi.');
+  }
+};
+
+function nhanDich(khoa, macDinh) {
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
+  const g = (typeof appTranslations !== 'undefined' && appTranslations[khoa]) || null;
+  return (g && (g[lang] || g.vi)) || macDinh;
+}
+
+/** Hạn pháp lý gần nhất của một xe (đăng kiểm / bảo hiểm): số ngày còn lại, hoặc null. */
+function hanPhapLyXe(v) {
+  const moc = [v.inspection_exp, v.insurance_date].map(x => Date.parse(x || '')).filter(x => !Number.isNaN(x));
+  if (!moc.length) return null;
+  return Math.floor((Math.min(...moc) - Date.now()) / 86400000);
+}
+
+let fleetKpiFilter = '';
+/** Dải số liệu đội xe — mọi con số đếm từ mã trạng thái thật, bấm vào để lọc. */
+function veKpiDoiXe() {
+  const host = document.getElementById('fleet-kpi-strip');
+  if (!host) return;
+  const ds = fioriVehicles || [];
+  const dem = { available: 0, on_trip: 0, maintenance: 0, out_of_service: 0 };
+  let phapLy = 0;
+  ds.forEach(v => {
+    const k = String(v.operational_status || 'available');
+    if (k in dem) dem[k] += 1;
+    const ngay = hanPhapLyXe(v);
+    if (ngay !== null && ngay < 30) phapLy += 1;
+  });
+  const the = [
+    ['', 'kpi_fleet_total', ds.length, 'Tổng xe'],
+    ['available', 'kpi_fleet_available', dem.available, 'Sẵn sàng'],
+    ['on_trip', 'kpi_fleet_on_trip', dem.on_trip, 'Đang chạy'],
+    ['maintenance', 'kpi_fleet_maintenance', dem.maintenance, 'Bảo dưỡng'],
+    ['out_of_service', 'kpi_fleet_out', dem.out_of_service, 'Ngoài đội'],
+    ['legal', 'kpi_fleet_legal_due', phapLy, 'Sắp hết hạn pháp lý'],
+  ];
+  host.innerHTML = the.map(([k, khoa, n, mac]) =>
+    `<button type="button" class="fleet-kpi k-${k || 'total'}${fleetKpiFilter === k && k ? ' on' : ''}" onclick="locKpiDoiXe('${k}')"><span>${escapeHtml(nhanDich(khoa, mac))}</span><strong>${n}</strong></button>`).join('');
+  const seg = document.getElementById('fleet-seg-fleet-count');
+  if (seg) seg.textContent = String(ds.length);
+}
+window.locKpiDoiXe = function (k) {
+  fleetKpiFilter = fleetKpiFilter === k ? '' : k;
+  const sel = document.getElementById('fiori-filter-status');
+  if (sel) sel.value = ['available', 'on_trip', 'maintenance', 'out_of_service'].includes(fleetKpiFilter) ? fleetKpiFilter : '';
+  veKpiDoiXe();
+  filterFioriVehicles();
+};
+
+/**
+ * Nhãn trạng thái vận hành theo MÃ, đọc từ lang.json.
+ *
+ * Máy chủ trả `operational_status` là một mã chuẩn (available / on_trip /
+ * maintenance / out_of_service cho xe; available / on_trip / off_duty /
+ * inactive cho tài xế). Chữ hiện ra đi qua lang.json nên dịch được — trước
+ * đây nhãn tiếng Việt ghi cứng từ máy chủ, bản tiếng Lào đọc ra tiếng Việt.
+ */
+function nhanTrangThaiVanHanh(loai, ma, ref) {
+  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
+  const khoa = (loai === 'drv' ? 'drv_status_' : 'veh_status_') + String(ma || 'available');
+  const goi = (typeof appTranslations !== 'undefined' && appTranslations[khoa]) || null;
+  const chu = (goi && (goi[lang] || goi.vi)) || String(ma || '');
+  return ref && (ma === 'on_trip' || ma === 'maintenance') ? `${chu} · ${ref}` : chu;
+}
+
+/** Đặt tay trạng thái vận hành của một xe. */
+window.datTrangThaiXe = async function (vehicleId, trangThai) {
+  const ma = String(vehicleId || '').trim();
+  if (!ma) return;
+  let ghiChu = '';
+  if (trangThai === 'out_of_service') {
+    ghiChu = window.prompt('Đưa xe ' + ma + ' ra khỏi đội vì lý do gì?\n\n'
+      + 'Xe sẽ không điều được cho tới khi đưa lại hoạt động.', '');
+    if (ghiChu === null) return;
+    if (!ghiChu.trim()) { showToast('Phải ghi lý do đưa xe ra khỏi đội.'); return; }
+  }
+  try {
+    const tra = await fetch(`${API_BASE}/api/vehicles/${encodeURIComponent(ma)}/operational-status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...financeAuthHeaders() },
+      body: JSON.stringify({ status: trangThai, note: ghiChu.trim() }),
+    });
+    const d = await tra.json().catch(() => ({}));
+    if (!tra.ok) { showToast(d?.detail?.message || d?.message || 'Không cập nhật được trạng thái xe.'); return; }
+    showToast(d.message || 'Đã cập nhật trạng thái xe.');
+    if (typeof loadAllData === 'function') await loadAllData();
+  } catch (e) {
+    showToast('Không kết nối được backend để cập nhật trạng thái xe.');
+  }
+};
+
+/** Đặt tay trạng thái của một nhân sự. */
+window.datTrangThaiTaiXe = async function (driverId, trangThai) {
+  const ma = String(driverId || '').trim();
+  if (!ma) return;
+  let ghiChu = '';
+  if (trangThai === 'inactive') {
+    ghiChu = window.prompt('Cho nhân sự ' + ma + ' nghỉ việc vì lý do gì?', '');
+    if (ghiChu === null) return;
+    if (!ghiChu.trim()) { showToast('Phải ghi lý do cho nhân sự nghỉ việc.'); return; }
+  }
+  try {
+    const tra = await fetch(`${API_BASE}/api/drivers/${encodeURIComponent(ma)}/operational-status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...financeAuthHeaders() },
+      body: JSON.stringify({ status: trangThai, note: ghiChu.trim() }),
+    });
+    const d = await tra.json().catch(() => ({}));
+    if (!tra.ok) { showToast(d?.detail?.message || d?.message || 'Không cập nhật được trạng thái nhân sự.'); return; }
+    showToast(d.message || 'Đã cập nhật trạng thái nhân sự.');
+    if (typeof loadAllData === 'function') await loadAllData();
+  } catch (e) {
+    showToast('Không kết nối được backend để cập nhật trạng thái nhân sự.');
+  }
+};
+
+/** Danh mục bãi / chi nhánh, đọc từ `GET /api/depots`, nạp vào ô chọn của hồ sơ xe. */
+let danhMucBai = [];
+async function napDanhMucBai(maDangChon, tenCu) {
+  const sel = document.getElementById('fiori-veh-depot-code');
+  if (!sel) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/depots`, { headers: financeAuthHeaders() });
+    if (r.ok) { const j = await r.json(); danhMucBai = Array.isArray(j) ? j : []; }
+  } catch (e) { /* giu danh muc cu */ }
+  const ds = Array.isArray(danhMucBai) ? danhMucBai : [];
+  let html = '<option value="">-- Chưa gán bãi --</option>' + ds.map(b =>
+    `<option value="${escapeHtml(b.id)}" data-name="${escapeHtml(b.name)}">${escapeHtml(b.name)} · ${escapeHtml(b.id)}</option>`).join('');
+  // Xe cu mang mot ma bai KHONG co trong danh muc: van hien de nguoi dung thay
+  // va sua, khong am tham xoa.
+  if (maDangChon && !ds.some(b => String(b.id) === String(maDangChon))) {
+    html += `<option value="${escapeHtml(maDangChon)}" data-name="${escapeHtml(tenCu || maDangChon)}">${escapeHtml(tenCu || maDangChon)} · ${escapeHtml(maDangChon)} (không có trong danh mục)</option>`;
+  }
+  sel.innerHTML = html;
+  sel.value = maDangChon || '';
+  const ten = document.getElementById('fiori-veh-depot');
+  if (ten) ten.textContent = sel.value ? ((sel.options[sel.selectedIndex] || {}).dataset || {}).name || '' : '—';
+  sel.onchange = () => {
+    if (ten) ten.textContent = sel.value ? ((sel.options[sel.selectedIndex] || {}).dataset || {}).name || '' : '—';
+  };
 }
 
 function renderFioriVehicles(data) {
@@ -6740,139 +7141,117 @@ function renderFioriVehicles(data) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="fleet-empty">${escapeHtml(nhanDich('status_no_vehicles', 'Chưa có xe nào.'))}</td></tr>`;
+    return;
+  }
   data.forEach(v => {
-    let statusClass = 'status-available';
-    let inlineStyle = '';
-    const rawStatus = v.operational_status_label || v.status || 'Sẵn sàng';
-    let statusText = rawStatus;
+    // TRANG THAI THEO MA (moc 045) — nhan tra tu lang.json, nut dat tay theo ma.
+    const maTT = String(v.operational_status || 'available');
+    const nhanTT = nhanTrangThaiVanHanh('veh', maTT, null);
+    const nutTT = maTT === 'out_of_service'
+      ? `<button class="fiori-btn fiori-btn-secondary btn-ico" title="${escapeHtml(nhanDich('btn_veh_back_in_service', 'Đưa lại hoạt động'))}${v.operational_note ? ' — ' + escapeHtml(v.operational_note) : ''}" onclick="datTrangThaiXe('${escapeHtml(v.id)}','available')"><i class="fa-solid fa-rotate-left"></i></button>`
+      : (maTT === 'available'
+        ? `<button class="fiori-btn fiori-btn-secondary btn-ico" title="${escapeHtml(nhanDich('btn_veh_out_of_service', 'Ngưng hoạt động'))}" onclick="datTrangThaiXe('${escapeHtml(v.id)}','out_of_service')"><i class="fa-solid fa-power-off"></i></button>`
+        : '');
 
-    if (rawStatus === 'Bảo dưỡng' || rawStatus === 'Maintenance') {
-      statusClass = 'status-maintenance';
-      statusText = lang === 'la' ? 'ກຳລັງບຳລຸງຮັກສາ' : lang === 'en' ? 'Maintenance' : 'Đang bảo dưỡng';
-    } else if (rawStatus === 'Sẵn sàng' || rawStatus === 'Ready' || rawStatus === 'Available') {
-      statusClass = 'status-available';
-      statusText = lang === 'la' ? 'ພ້ອມໃຊ້ງານ' : lang === 'en' ? 'Ready' : 'Sẵn sàng';
-    } else if (rawStatus.includes('In Transit') || rawStatus.includes('Bận') || rawStatus.includes('Giao đơn')) {
-      statusClass = '';
-      inlineStyle = 'background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 12px; font-weight: 700; font-size: 0.82rem;';
-      if (lang === 'la') {
-        statusText = statusText.replace(/Giao đơn/gi, 'ສົ່ງໃບສັ່ງຊື້')
-                               .replace(/Cảng Cát Lái/gi, 'ທ່າເຮືອ Cát Lái')
-                               .replace(/Bận/gi, 'ບໍ່ຫວ່າງ');
-      }
-    }
-
-    // Xe chua gan loai xe la mot VAN DE, khong phai mot o trong: khong co loai
-    // thi khong co cong thuc gia thanh, va nang luc cho cua xe khong doi chieu
-    // duoc voi chuan nao ca. Da gap tren du lieu that (DEMO-61H-112.34).
-    const hasType = Boolean(String(v.type || '').trim());
-    let typeText = v.type || '';
-    if (lang === 'la') {
-      typeText = typeText.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
-                         .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
-    }
-
-    // Nang luc cho cua XE va cua LOAI XE la hai con so rieng, va dieu phoi dung
-    // con so cua XE. Nen mot chiec gan loai "Xe tai 10 tan" van co the khai
-    // 28 tan ma khong ai thay — da gap dung tinh huong do tren du lieu that.
-    const typeRow = (vehTypes || []).find(t => String(t.id) === String(v.type));
+    // Loai xe: hien TEN; xe chua gan loai la mot VAN DE, khong phai mot o trong.
+    const hasType = Boolean(String(v.vehicle_type_id || v.type || '').trim());
+    const typeRow = (vehTypes || []).find(t => String(t.id) === String(v.vehicle_type_id || v.type)
+      || String(t.name).toLowerCase() === String(v.type || '').toLowerCase());
+    const typeText = v.vehicle_type_name || (typeRow && typeRow.name) || v.type || '';
+    // Nang luc cua XE va cua LOAI la hai con so rieng; dieu phoi dung con so cua XE.
     const typeCap = Number(typeRow?.max_weight || 0);
     const vehCap = Number(v.weight_capacity || 0);
     const capacityWarning = (hasType && typeCap && vehCap && vehCap > typeCap)
-      ? `<span class="fv-cap-warn" title="${escapeHtml(`Loại xe ${typeRow.name || v.type} chuẩn hóa ${typeCap.toLocaleString('vi-VN')} kg. Điều phối dùng con số của XE, nên xe này sẽ được xếp quá chuẩn loại.`)}">
-           <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> vượt chuẩn loại (${typeCap.toLocaleString('vi-VN')} kg)
-         </span>`
+      ? `<span class="fv-cap-warn" title="${escapeHtml(`Loại xe ${typeRow.name} chuẩn hóa ${typeCap.toLocaleString('vi-VN')} kg. Điều phối dùng con số của XE, nên xe này sẽ được xếp hàng nặng hơn chuẩn loại.`)}"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> vượt chuẩn loại</span>`
       : '';
 
-    const editBtnText = lang === 'la' ? 'ແກ້ໄຂ' : lang === 'en' ? 'Edit' : 'Chỉnh sửa';
-    const delBtnText = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa';
+    // Han phap ly gan nhat: dang kiem / bao hiem.
+    const ngay = hanPhapLyXe(v);
+    let legal;
+    if (ngay === null) legal = `<span class="fleet-legal l-none">${escapeHtml(nhanDich('legal_none', 'chưa khai'))}</span>`;
+    else if (ngay < 0) legal = `<span class="fleet-legal l-expired">${escapeHtml(nhanDich('legal_expired', 'đã hết hạn'))}</span>`;
+    else legal = `<span class="fleet-legal ${ngay < 30 ? 'l-soon' : 'l-ok'}">${escapeHtml(nhanDich('legal_days', 'còn {n} ngày').replace('{n}', String(ngay)))}</span>`;
+    const legalPhu = [v.inspection_exp ? 'ĐK ' + escapeHtml(String(v.inspection_exp)) : '', v.insurance_date ? 'BH ' + escapeHtml(String(v.insurance_date)) : ''].filter(Boolean).join(' · ');
 
-    // Anh co the tro tro toi mot tep khong con ton tai (da gap tren du lieu
-    // that: image_url tra ve 404). Khi do the <img> hien ALT TEXT tran vao
-    // giua bang — "Vehicle DEMO-61H-112.34" nam giua o bien so.
-    //
-    // onerror doi sang icon xe, giong dung o cua nhung xe khong co anh, nen
-    // hang nao cung can nhau.
-    const fallbackIcon = `<span style="display:inline-flex; width:52px; height:36px; border-radius:8px; border:1px dashed #cbd5e1; margin-right:10px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle;"><i class="fa-solid fa-truck"></i></span>`;
-    const vehicleImage = v.image_url
-      ? `<img src="${escapeHtml(v.image_url)}" alt="" title="${escapeHtml(v.id)}" loading="lazy"
-              style="width:52px; height:36px; object-fit:cover; border-radius:8px; border:1px solid #dbeafe; margin-right:10px; vertical-align:middle;"
-              onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(fallbackIcon)}">`
-      : `<span style="display:inline-flex; width:52px; height:36px; border-radius:8px; border:1px dashed #cbd5e1; margin-right:10px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle;"><i class="fa-solid fa-truck"></i></span>`;
+    // Anh 404 khong duoc hien alt text tran vao bang: onerror doi sang icon xe,
+    // cung o kich voi xe khong co anh, nen moi hang can nhau.
+    const fallbackIcon = '<span class="fleet-img-none"><i class="fa-solid fa-truck"></i></span>';
+    const anh = v.image_url
+      ? `<img class="fleet-img" src="${escapeHtml(v.image_url)}" alt="" loading="lazy" onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(fallbackIcon)}">`
+      : fallbackIcon;
 
     tbody.insertAdjacentHTML('beforeend', `
-      <tr style="border-bottom: 1px solid #f1f5f9;">
-        <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${vehicleImage}<span>${v.id}</span></td>
-        <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${hasType
-          ? escapeHtml(typeText)
-          : '<span class="fv-untyped"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Chưa gán loại xe</span>'}</td>
-        <td style="padding: 14px 18px; font-weight: 600; color: #0a6ed1;">
-          ${Number(v.weight_capacity || 0).toLocaleString('vi-VN')} kg
-          ${capacityWarning}
+      <tr>
+        <td>${anh}<span class="ma">${escapeHtml(v.id)}</span>${v.brand ? `<span class="phu" style="margin-left:54px">${escapeHtml(v.brand)}</span>` : ''}</td>
+        <td>${hasType ? escapeHtml(typeText) : `<span class="fv-untyped"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> ${escapeHtml(nhanDich('vt_untyped', 'Chưa gán loại xe'))}</span>`}</td>
+        <td>${escapeHtml(v.depot_name || v.depot || '—')}${v.depot_code ? `<span class="phu">${escapeHtml(v.depot_code)}</span>` : ''}</td>
+        <td><span class="ma" style="color:#2563eb">${vehCap.toLocaleString('vi-VN')} kg</span>${capacityWarning}<span class="phu">${Number(v.volume_capacity_m3 || 0)} m³ · ${Number(v.pallet_capacity || 0)} pallet</span></td>
+        <td><span class="fleet-badge s-${maTT}">${escapeHtml(nhanTT)}</span>${v.operational_ref ? `<span class="phu">${escapeHtml(v.operational_ref)}</span>` : ''}</td>
+        <td>${legal}${legalPhu ? `<span class="phu">${legalPhu}</span>` : ''}</td>
+        <td class="act">
+          ${nutTT}<button class="fiori-btn fiori-btn-secondary btn-ico" onclick="editFioriVehicle('${escapeHtml(v.id)}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+          <button class="fiori-btn btn-ico" style="background:#ef4444;border-color:#ef4444;" onclick="deleteFioriVehicle('${escapeHtml(v.id)}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
         </td>
-        <td style="padding: 14px 18px;"><span class="${statusClass ? 'fiori-status ' + statusClass : ''}" style="${inlineStyle}">${statusText}</span></td>
-        <td style="padding: 14px 18px; text-align: center; white-space: nowrap;">
-          <button class="fiori-btn fiori-btn-secondary" style="padding: 6px 12px; font-size: 0.82rem; margin-right: 6px;" onclick="editFioriVehicle('${v.id}')"><i class="fa-solid fa-pen-to-square"></i> ${editBtnText}</button>
-          <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 6px 12px; font-size: 0.82rem;" onclick="deleteFioriVehicle('${v.id}')"><i class="fa-solid fa-trash"></i> ${delBtnText}</button>
-        </td>
-      </tr>
-    `);
+      </tr>`);
   });
 }
 
 function filterFioriVehicles() {
-  const query = document.getElementById('fiori-search-veh').value.toLowerCase();
-  const status = document.getElementById('fiori-filter-status').value;
-
-  const filtered = fioriVehicles.filter(v => {
-    const matchQuery = v.id.toLowerCase().includes(query) || (v.type || '').toLowerCase().includes(query);
-    const matchStatus = status === 'All' ? true : v.status === status;
-    return matchQuery && matchStatus;
+  const query = (document.getElementById('fiori-search-veh')?.value || '').toLowerCase();
+  const status = document.getElementById('fiori-filter-status')?.value || '';
+  const bai = document.getElementById('fleet-filter-depot')?.value || '';
+  const loai = document.getElementById('fleet-filter-type')?.value || '';
+  const filtered = (fioriVehicles || []).filter(v => {
+    const matchQuery = !query || v.id.toLowerCase().includes(query)
+      || (v.vehicle_type_name || v.type || '').toLowerCase().includes(query)
+      || (v.depot_name || v.depot || '').toLowerCase().includes(query);
+    // Loc theo MA trang thai, khong so nhan.
+    const matchStatus = !status || String(v.operational_status || 'available') === status;
+    const matchBai = !bai || String(v.depot_name || v.depot || '') === bai;
+    const matchLoai = !loai || String(v.vehicle_type_id || v.type || '') === loai;
+    const ngay = hanPhapLyXe(v);
+    const matchLegal = fleetKpiFilter !== 'legal' || (ngay !== null && ngay < 30);
+    return matchQuery && matchStatus && matchBai && matchLoai && matchLegal;
   });
   renderFioriVehicles(filtered);
 }
+window.filterFioriVehicles = filterFioriVehicles;
 
+/** Mở hộp thoại THÊM xe: xoá trắng mọi ô, mở khoá biển số, ảnh về ô trống. */
 window.openFioriVehicleForm = function () {
   const modal = document.getElementById('fiori-object-page');
   if (modal) modal.style.display = 'flex';
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const titleText = lang === 'la' ? 'ເພີ່ມພາຫະນະຂົນສົ່ງໃໝ່' : lang === 'en' ? 'Add New Vehicle' : 'Thêm Mới Phương Tiện Vận Tải';
-  document.getElementById('fiori-form-title').innerHTML = `<i class="fa-solid fa-truck" style="font-size: 1.3rem;"></i> <span>${titleText}</span>`;
+  const titleText = lang === 'la' ? 'ເພີ່ມພາຫະນະຂົນສົ່ງໃໝ່' : lang === 'en' ? 'Add New Vehicle' : 'Thêm Mới Phương Tiện';
+  const tieuDe = document.getElementById('fiori-form-title');
+  if (tieuDe) tieuDe.innerHTML = `<i class="fa-solid fa-truck" style="font-size: 1.3rem;"></i> <span>${titleText}</span>`;
   currentFioriVehMode = 'create';
-
-  document.getElementById('fiori-veh-id').value = '';
-  document.getElementById('fiori-veh-id').disabled = false;
-  document.getElementById('fiori-veh-weight').value = 0;
-  document.getElementById('fiori-veh-fuel').value = 0;
-  if (document.getElementById('fiori-veh-min-speed')) document.getElementById('fiori-veh-min-speed').value = 35;
-  if (document.getElementById('fiori-veh-max-speed')) document.getElementById('fiori-veh-max-speed').value = 80;
-  document.getElementById('fiori-veh-engine').value = '';
-  document.getElementById('fiori-veh-chassis').value = '';
-  if (document.getElementById('fiori-veh-brand')) document.getElementById('fiori-veh-brand').value = '';
-  if (document.getElementById('fiori-veh-type')) document.getElementById('fiori-veh-type').value = '';
-  if (document.getElementById('fiori-veh-maint')) document.getElementById('fiori-veh-maint').value = '';
-  if (document.getElementById('fiori-veh-insur')) document.getElementById('fiori-veh-insur').value = '';
-  if (document.getElementById('fiori-veh-insp-date')) document.getElementById('fiori-veh-insp-date').value = '';
-  if (document.getElementById('fiori-veh-insp-place')) document.getElementById('fiori-veh-insp-place').value = '';
-  if (document.getElementById('fiori-veh-insp-exp')) document.getElementById('fiori-veh-insp-exp').value = '';
-  if (document.getElementById('fiori-veh-engine-cap')) document.getElementById('fiori-veh-engine-cap').value = '';
-  if (document.getElementById('fiori-veh-dims')) document.getElementById('fiori-veh-dims').value = '';
-  if (document.getElementById('fiori-veh-status-text')) document.getElementById('fiori-veh-status-text').textContent = 'Sẵn sàng';
-  clearFioriVehicleImage();
-  currentVehicleMaintenanceRequests = [];
-  renderVehicleMaintenanceRequests();
-  switchVehicleFormTab('general', document.getElementById('vehicle-form-tab-general'));
-}
+  const dat = (id, gt) => { const el = document.getElementById(id); if (el) el.value = gt; };
+  const idEl = document.getElementById('fiori-veh-id');
+  if (idEl) { idEl.value = ''; idEl.disabled = false; }
+  dat('fiori-veh-brand', '');
+  dat('fiori-veh-type', '');
+  dat('fiori-veh-weight', '');
+  dat('fiori-veh-fuel', '');
+  // Toc do: de trong, khong dien mot con so bia — may chu doi khai neu can.
+  dat('fiori-veh-min-speed', '');
+  dat('fiori-veh-max-speed', '');
+  ['fiori-veh-maint', 'fiori-veh-engine', 'fiori-veh-chassis', 'fiori-veh-insur', 'fiori-veh-insp-date',
+    'fiori-veh-insp-place', 'fiori-veh-insp-exp', 'fiori-veh-engine-cap', 'fiori-veh-dims'].forEach(id => dat(id, ''));
+  const tt = document.getElementById('fiori-veh-status-text');
+  if (tt) tt.textContent = nhanTrangThaiVanHanh('veh', 'available', null);
+  napDanhMucBai('', '');
+  setFioriVehicleImage('');
+  if (typeof loadVehicleMaintenanceRequests === 'function') loadVehicleMaintenanceRequests('');
+};
 
 window.closeFioriVehicleForm = function () {
   const modal = document.getElementById('fiori-object-page');
   if (modal) modal.style.display = 'none';
-  if (vehicleScheduleRefreshTimer) {
-    clearInterval(vehicleScheduleRefreshTimer);
-    vehicleScheduleRefreshTimer = null;
-  }
-}
+  currentFioriVehMode = 'create';
+};
 
 window.editFioriVehicle = function (id) {
   const veh = fioriVehicles.find(v => v.id === id);
@@ -6887,13 +7266,20 @@ window.editFioriVehicle = function (id) {
   document.getElementById('fiori-veh-id').value = veh.id;
   document.getElementById('fiori-veh-id').disabled = true;
   if (document.getElementById('fiori-veh-brand')) document.getElementById('fiori-veh-brand').value = veh.brand || '';
-  document.getElementById('fiori-veh-type').value = veh.type || '';
+  // Chon theo MA; xe cu con luu ten thi tra ma tu ten.
+  {
+    const maLoai = veh.vehicle_type_id
+      || ((vehTypes || []).find(t => String(t.name).toLowerCase() === String(veh.type || '').toLowerCase()) || {}).id
+      || veh.type || '';
+    document.getElementById('fiori-veh-type').value = maLoai;
+  }
   document.getElementById('fiori-veh-weight').value = veh.weight_capacity || 0;
   document.getElementById('fiori-veh-fuel').value = veh.fuel_norm || 0;
   if (document.getElementById('fiori-veh-min-speed')) document.getElementById('fiori-veh-min-speed').value = veh.min_speed_kmh || veh.min_speed || veh.speed_min || 35;
   if (document.getElementById('fiori-veh-max-speed')) document.getElementById('fiori-veh-max-speed').value = veh.max_speed_kmh || veh.max_speed || veh.speed_max || 80;
   if (document.getElementById('fiori-veh-status-text')) {
-    document.getElementById('fiori-veh-status-text').textContent = veh.operational_status_label || veh.status || 'Sẵn sàng';
+    document.getElementById('fiori-veh-status-text').textContent =
+      nhanTrangThaiVanHanh('veh', veh.operational_status || 'available', veh.operational_ref);
   }
   document.getElementById('fiori-veh-maint').value = veh.maintenance_date || '';
   document.getElementById('fiori-veh-engine').value = veh.engine_no || '';
@@ -6903,8 +7289,7 @@ window.editFioriVehicle = function (id) {
   // New Inspection & Specs fields
   if (document.getElementById('fiori-veh-insp-date')) document.getElementById('fiori-veh-insp-date').value = veh.inspection_date || '';
   if (document.getElementById('fiori-veh-insp-place')) document.getElementById('fiori-veh-insp-place').value = veh.inspection_place || '';
-  if (document.getElementById('fiori-veh-depot')) document.getElementById('fiori-veh-depot').value = veh.depot || '';
-  if (document.getElementById('fiori-veh-depot-code')) document.getElementById('fiori-veh-depot-code').value = veh.depot_code || '';
+  napDanhMucBai(veh.depot_code || '', veh.depot || '');
   if (document.getElementById('fiori-veh-insp-exp')) document.getElementById('fiori-veh-insp-exp').value = veh.inspection_exp || '';
   if (document.getElementById('fiori-veh-engine-cap')) document.getElementById('fiori-veh-engine-cap').value = veh.engine_cap || '';
   if (document.getElementById('fiori-veh-dims')) document.getElementById('fiori-veh-dims').value = veh.dimensions || '';
@@ -7258,8 +7643,13 @@ window.saveFioriVehicle = async function () {
     insurance_date: document.getElementById('fiori-veh-insur').value,
     inspection_date: document.getElementById('fiori-veh-insp-date')?.value || '',
     inspection_place: document.getElementById('fiori-veh-insp-place')?.value || '',
-    depot: document.getElementById('fiori-veh-depot')?.value || '',
+    // Ten bai lay theo ma da chon trong danh muc — khong go tay hai o lech nhau.
     depot_code: document.getElementById('fiori-veh-depot-code')?.value || '',
+    depot: (function () {
+      const sel = document.getElementById('fiori-veh-depot-code');
+      const o = sel && sel.options[sel.selectedIndex];
+      return (o && o.value) ? (o.dataset.name || o.textContent) : '';
+    })(),
     inspection_exp: document.getElementById('fiori-veh-insp-exp')?.value || '',
     engine_cap: document.getElementById('fiori-veh-engine-cap')?.value || '',
     dimensions: document.getElementById('fiori-veh-dims')?.value || '',
@@ -7340,53 +7730,52 @@ function renderVehTypesTable(data) {
   if (!tbody) return;
   tbody.innerHTML = '';
   const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const emptyText = lang === 'la' ? 'ຍັງບໍ່ມີຂໍ້ມູນປະເພດພາຫະນະໃນ CSDL.<br>ກົດ "<strong>+ ເພີ່ມປະເພດພາຫະນະໃໝ່</strong>" ເພື່ອສ້າງປະເພດລົດທຳອິດ!' :
-                    lang === 'en' ? 'No vehicle types in DB.<br>Click "<strong>+ Add New Vehicle Type</strong>" to create one!' :
-                    'Chưa có dữ liệu Loại Phương Tiện trong CSDL.<br>Bấm "<strong>+ Thêm Loại Phương Tiện Mới</strong>" để tạo loại xe đầu tiên!';
+  const t = k => ((typeof appTranslations !== 'undefined' && appTranslations[k]) || {})[lang]
+    || ((typeof appTranslations !== 'undefined' && appTranslations[k]) || {}).vi || k;
+  const dem = document.getElementById('fleet-seg-types-count');
+  if (dem) dem.textContent = String((Array.isArray(vehTypes) ? vehTypes : []).length);
   if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="padding: 24px; text-align: center; color: #94a3b8;">${emptyText}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="fleet-empty">${t('status_no_vehicles')}</td></tr>`;
     syncAllDynamicDropdowns();
     return;
   }
-
-  const tonLabel = lang === 'la' ? 'ໂຕນ' : lang === 'en' ? 'Tons' : 'Tấn';
-  const editTitle = lang === 'la' ? 'ແກ້ໄຂ' : lang === 'en' ? 'Edit' : 'Sửa';
-  const delTitle = lang === 'la' ? 'ລຶບ' : lang === 'en' ? 'Delete' : 'Xóa';
-
-  data.forEach(vt => {
-    const maxW = ((vt.max_weight || vt.maxWeight || 0) / 1000).toFixed(1);
-    const maxVolume = Number(vt.volume_capacity_m3 || vt.volumeCapacityM3 || 0);
-    const maxPallet = Number(vt.pallet_capacity || vt.palletCapacity || 0);
-    const maint = (vt.maint_cost || vt.maintCost || 0).toLocaleString('vi-VN');
-    const fuel = vt.fuel_norm || vt.fuelNorm || 0;
-    const fType = vt.fuel_type || vt.fuelType || 'Diesel';
-    let vName = vt.name || '';
-    if (lang === 'la') {
-      vName = vName.replace(/Xe tải thùng 10 tấn|Xe Tải 10 Tấn/gi, 'ລົດບັນທຸກ 10 ໂຕນ')
-                   .replace(/Container Lạnh|Container Lệnh/gi, 'Container ຕູ້ເຢັນ');
-    }
-
-    tbody.insertAdjacentHTML('beforeend', `
-      <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 14px 18px; font-weight: 700; color: #0a6ed1;">${vt.id}</td>
-        <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${vName}</td>
-        <td style="padding: 14px 18px; font-weight: 600; color: #334155;">
-          <div>${maxW} ${tonLabel} (${(vt.max_weight || vt.maxWeight || 0).toLocaleString()} kg)</div>
-          <div style="font-size:.78rem;color:#64748b;margin-top:3px;">${maxVolume} m³ · ${maxPallet} pallet</div>
-        </td>
-        <td style="padding: 14px 18px; color: #475569; font-weight: 600;">${fuel} L/100km</td>
-        <td style="padding: 14px 18px; color: #475569; font-weight: 600;">${maint} VNĐ</td>
-        <td style="padding: 14px 18px;"><span style="background: #eff6ff; color: #0a6ed1; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">${fType}</span></td>
-        <td style="padding: 14px 18px; text-align: center; white-space: nowrap;">
-          <button class="fiori-btn fiori-btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; margin-right: 6px;" onclick="openVehTypeForm('${vt.id}')" title="${editTitle}"><i class="fa-solid fa-pen"></i></button>
-          <button class="fiori-btn" style="background:#ef4444; border-color:#ef4444; padding: 4px 10px; font-size: 0.78rem;" onclick="deleteVehType('${vt.id}')" title="${delTitle}"><i class="fa-solid fa-trash"></i></button>
-        </td>
-      </tr>
-    `);
+  // So xe thuoc tung loai — doc tu doi xe that, khop theo MA hoac TEN (xe cu).
+  const soXe = new Map();
+  (fioriVehicles || []).forEach(v => {
+    const k = String(v.vehicle_type_id || v.type || '').toLowerCase();
+    if (k) soXe.set(k, (soXe.get(k) || 0) + 1);
   });
-
+  data.forEach(vt => {
+    const kg = Number(vt.max_weight || 0);
+    const m3 = Number(vt.volume_capacity_m3 || 0);
+    const pallet = Number(vt.pallet_capacity || 0);
+    const n = (soXe.get(String(vt.id).toLowerCase()) || 0) + (soXe.get(String(vt.name || '').toLowerCase()) || 0);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><span class="ma">${escapeHtml(vt.name || '')}</span><span class="chip">${escapeHtml(vt.fuel_type || 'Diesel')}</span><span class="phu">${escapeHtml(vt.id)}${vt.dims ? ' · ' + escapeHtml(vt.dims) : ''}</span></td>
+        <td><span class="ma">${(kg / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} ${t('uom_ton')}</span><span class="phu">${kg.toLocaleString('vi-VN')} kg · ${m3} m³ · ${pallet} pallet</span></td>
+        <td class="num">${Number(vt.fuel_norm || 0)}<small>L/100km</small></td>
+        <td class="num">${vt.avg_speed_kmh ? Number(vt.avg_speed_kmh) + ' km/h' : '—'}</td>
+        <td class="num">${Number(vt.maint_cost || 0).toLocaleString('vi-VN')} ₫</td>
+        <td class="num">${n ? `<button type="button" class="fleet-count" onclick="locDoiXeTheoLoai('${escapeHtml(vt.id)}')" title="Xem các xe thuộc loại này"><i class="fa-solid fa-truck"></i> ${n} xe <i class="fa-solid fa-arrow-right"></i></button>` : '<span style="color:#94a3b8">0</span>'}</td>
+        <td class="act">
+          <button class="fiori-btn fiori-btn-secondary btn-ico" onclick="openVehTypeForm('${escapeHtml(vt.id)}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+          <button class="fiori-btn btn-ico" style="background:#ef4444;border-color:#ef4444;" onclick="deleteVehType('${escapeHtml(vt.id)}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+        </td>
+      </tr>`);
+  });
   syncAllDynamicDropdowns();
 }
+
+/** Bấm số xe ở bảng loại xe → sang tab Đội xe, đã lọc theo loại đó. */
+window.locDoiXeTheoLoai = function (maLoai) {
+  const nut = document.querySelector(".fleet-seg .vehicle-folder-tab[onclick*=\"'fleet'\"]");
+  switchVehicleCatalogFolder('fleet', nut);
+  setTimeout(() => {
+    const sel = document.getElementById('fleet-filter-type');
+    if (sel) { sel.value = maLoai; filterFioriVehicles(); }
+  }, 150);
+};
 
 window.openVehTypeForm = function (id = null) {
   const panel = document.getElementById('veh-type-form-panel');
@@ -7397,9 +7786,9 @@ window.openVehTypeForm = function (id = null) {
                      lang === 'en' ? '<i class="fa-solid fa-pen" style="font-size: 1.3rem;"></i> <span>Edit Vehicle Type</span>' :
                      '<i class="fa-solid fa-pen" style="font-size: 1.3rem;"></i> <span>Chỉnh Sửa Loại Phương Tiện</span>';
 
-  const addHeader = lang === 'la' ? '<i class="fa-solid fa-plus-circle" style="color:#0a6ed1;"></i> <span>ເພີ່ມໃໝ່ ປະເພດພາຫະນະ</span>' :
-                    lang === 'en' ? '<i class="fa-solid fa-plus-circle" style="color:#0a6ed1;"></i> <span>Add New Vehicle Type</span>' :
-                    '<i class="fa-solid fa-plus-circle" style="color:#0a6ed1;"></i> <span>Thêm Loại Phương Tiện Mới</span>';
+  const addHeader = lang === 'la' ? '<i class="fa-solid fa-plus-circle" style="color:#2563eb;"></i> <span>ເພີ່ມໃໝ່ ປະເພດພາຫະນະ</span>' :
+                    lang === 'en' ? '<i class="fa-solid fa-plus-circle" style="color:#2563eb;"></i> <span>Add New Vehicle Type</span>' :
+                    '<i class="fa-solid fa-plus-circle" style="color:#2563eb;"></i> <span>Thêm Loại Phương Tiện Mới</span>';
 
   if (id) {
     document.getElementById('veh-type-form-title').innerHTML = editHeader;
@@ -7498,125 +7887,8 @@ window.loadVehTypes = loadVehTypes;
 window.filterVehTypes = filterVehTypes;
 
 // ==========================================
-// CRM KANBAN & ORACLE FUSION SO
+// QUOTATION — bảng oracle cũ (đang ẩn trong `#qtv2-khoi-cu`)
 // ==========================================
-
-let crmSalesOrders = [];
-let currentSOMode = 'create';
-
-/* Mã báo giá nguồn khi đơn vận chuyển được tạo từ một báo giá.
-   ------------------------------------------------------------------------
-   Biến này CHƯA BAO GIỜ được khai báo — lỗi có từ trước, không phải do đợt
-   dọn dẹp nào. Nó được gán ở ba chỗ (`editOracleQT`, `openOracleSOForm`,
-   `editOracleSO`) nhưng `saveOracleSO` ĐỌC nó ở dòng đầu:
-
-       if (currentSOMode === 'create' && !currentSourceQuotationId) {
-
-   Ở chế độ không strict, ba phép gán kia tạo biến toàn cục ngầm nên không ai
-   báo gì. Nhưng mở form đơn vận chuyển rồi bấm Lưu NGAY — chưa đi qua chỗ nào
-   gán — thì đọc phải vùng chưa tồn tại và nhận ReferenceError. Nút "Lưu Đơn
-   Hàng" bấm vào KHÔNG LÀM GÌ, và cũng không báo gì. */
-
-let currentSourceQuotationId = '';
-
-async function loadSalesOrders() {
-  try {
-    const data = await fetchAllPaginated(`${API_BASE}/api/sales-orders`, 200);
-    if (data) {
-      crmSalesOrders = data;
-      renderKanbanBoard(crmSalesOrders);
-      renderOracleSOList(crmSalesOrders);
-    }
-  } catch (error) {
-    baoNapThatBai('danh sách đơn hàng vận chuyển', error);
-  }
-}
-
-function renderKanbanBoard(data) {
-  const colLead = document.getElementById('kb-col-lead');
-  const colNego = document.getElementById('kb-col-nego');
-  const colQuoted = document.getElementById('kb-col-quoted');
-  const colWon = document.getElementById('kb-col-won');
-
-  if (!colLead) return;
-
-  colLead.innerHTML = '';
-  colNego.innerHTML = '';
-  colQuoted.innerHTML = '';
-  colWon.innerHTML = '';
-
-  let cLead = 0, cNego = 0, cQuoted = 0, cWon = 0;
-  let totalWonAmount = 0;
-
-  data.forEach(so => {
-    const st = (so.status || 'lead').toLowerCase();
-    let badgeColor = '#0284c7';
-    let badgeBg = '#e0f2fe';
-
-    if (st === 'won' || st === 'confirmed' || st === 'chốt hd') {
-      badgeColor = '#16a34a';
-      badgeBg = '#dcfce7';
-    } else if (st === 'quoted' || st === 'đã báo giá') {
-      badgeColor = '#d97706';
-      badgeBg = '#fef3c7';
-    } else if (st === 'negotiation' || st === 'đàm phán') {
-      badgeColor = '#9333ea';
-      badgeBg = '#f3e8ff';
-    }
-
-    const cardHTML = `
-      <div class="kanban-card kb-${st.replace(/\s+/g, '-')}" onclick="editOracleSO('${so.id}')" style="cursor: pointer; transition: all 0.2s ease;">
-        <div class="kb-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-weight: 700; color: #0f172a;">${so.id}</span>
-          <span style="font-size: 0.72rem; font-weight: 700; color: ${badgeColor}; background: ${badgeBg}; padding: 2px 8px; border-radius: 12px;">${so.status || 'Active'}</span>
-        </div>
-        <div class="kb-customer" style="font-size: 0.83rem; color: #475569; margin-bottom: 4px;"><i class="fa-solid fa-building" style="color: #64748b; margin-right: 4px;"></i> ${so.customer_id}</div>
-        <div class="kb-amount" style="font-size: 0.88rem; font-weight: 700; color: #0a6ed1;"><i class="fa-solid fa-coins" style="margin-right: 4px;"></i> ${(so.total_amount || 0).toLocaleString()} VNĐ</div>
-      </div>
-    `;
-
-    if (st === 'lead' || st === 'mới' || st === 'draft') {
-      colLead.insertAdjacentHTML('beforeend', cardHTML);
-      cLead++;
-    } else if (st === 'negotiation' || st === 'đàm phán') {
-      colNego.insertAdjacentHTML('beforeend', cardHTML);
-      cNego++;
-    } else if (st === 'quoted' || st === 'đã báo giá') {
-      colQuoted.insertAdjacentHTML('beforeend', cardHTML);
-      cQuoted++;
-    } else {
-      cWon++;
-      totalWonAmount += (so.total_amount || 0);
-    }
-  });
-
-  // Render a clean minimal summary card for column 4 (Chốt HĐ) displaying ONLY the count number
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  const dealsClosedLabel = lang === 'la' ? 'ສັນຍາທີ່ປິດແລ້ວ' : (lang === 'en' ? 'CLOSED DEALS' : 'HỢP ĐỒNG ĐÃ CHỐT');
-  const noDealsLabel = lang === 'la' ? 'ຍັງບໍ່ມີສັນຍາປິດ' : (lang === 'en' ? 'No deals closed' : 'Chưa có HĐ chốt');
-  if (cWon > 0) {
-    colWon.innerHTML = `
-      <div style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
-        <div style="font-size:0.74rem; font-weight:800; color:#065f46; text-transform:uppercase; line-height:1.25;">${dealsClosedLabel}</div>
-        <div style="font-size:1.8rem; font-weight:900; color:#047857; line-height:1;">${cWon}</div>
-      </div>
-    `;
-  } else {
-    colWon.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 10px; font-size: 0.78rem;">${noDealsLabel}</div>`;
-  }
-
-  const elLead = document.getElementById('kb-count-lead');
-  if (elLead) elLead.innerText = cLead;
-
-  const elNego = document.getElementById('kb-count-nego');
-  if (elNego) elNego.innerText = cNego;
-
-  const elQuoted = document.getElementById('kb-count-quoted');
-  if (elQuoted) elQuoted.innerText = cQuoted;
-
-  const elWon = document.getElementById('kb-count-won');
-  if (elWon) elWon.innerText = cWon;
-}
 
 // --- QUOTATION LOGIC ---
 let crmQuotations = [];
@@ -7708,50 +7980,6 @@ function filterQuotations() {
 }
 window.filterQuotations = filterQuotations;
 
-window.convertQTToSO = function (qtId) {
-  const qt = crmQuotations.find(q => q.id === qtId);
-  if (!qt) return;
-
-  const statusKey = window.WorkflowUIUtils?.workflowStatusKey?.(qt.status || '') || '';
-  if (statusKey !== 'approved') {
-    showToast('Không thể chuyển Báo Giá sang SO. Báo giá phải được duyệt trước.');
-    return;
-  }
-
-  currentSourceQuotationId = qt.id;
-  currentSOMode = 'create';
-  openOracleSOForm({ fromQuotation: true });
-
-  const qtCurr = document.getElementById('qt-currency')?.value || 'VND';
-  if (document.getElementById('so-currency')) document.getElementById('so-currency').value = qtCurr;
-
-  if (document.getElementById('so-customer')) {
-    document.getElementById('so-customer').value = qt.customer_id || '';
-    document.getElementById('so-customer').disabled = true;
-    document.getElementById('so-customer').style.background = '#f1f5f9';
-  }
-  if (document.getElementById('so-route-select')) {
-    document.getElementById('so-route-select').value = qt.route_id || '';
-    document.getElementById('so-route-select').disabled = true;
-    document.getElementById('so-route-select').style.background = '#f1f5f9';
-    window.onSORouteSelectChange(qt.route_id || '');
-  }
-  setRouteContextFields('so', qt);
-
-  if (document.getElementById('so-item-desc')) {
-    document.getElementById('so-item-desc').value = 'Hàng hóa vận chuyển theo Báo giá ' + qt.id + ' (Container 20FT)';
-  }
-  if (document.getElementById('so-amount')) document.getElementById('so-amount').value = qt.selling_price || 0;
-  if (document.getElementById('so-item-unit-price')) document.getElementById('so-item-unit-price').value = qt.selling_price || 0;
-  const soAmountInput = document.getElementById('so-amount');
-  if (soAmountInput) soAmountInput.dataset.vndValue = String(qt.selling_price || 0);
-  const soLineTotal = document.getElementById('so-item-total-amount');
-  if (soLineTotal) soLineTotal.dataset.vndValue = String(qt.selling_price || 0);
-  if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
-
-  showToast('Đã kế thừa dữ liệu từ Báo giá ' + qt.id + ' vào Đơn Hàng (SO).');
-};
-
 window.deleteOracleQT = async function (id) {
   const qt = (crmQuotations || []).find(q => q.id === id);
   if (qt && isWorkflowLocked(qt.status)) {
@@ -7779,13 +8007,6 @@ window.openOracleQTForm = function () {
     el.style.display = 'flex';
   }
   setFormLoadingState('oracle-qt-form', true, 'Đang nạp danh mục...');
-  const soInfoTab = document.querySelector('#oracle-so-form .form-sec-tab[onclick*="so-sec-info"]');
-  if (soInfoTab && typeof window.switchFormSecTab === 'function') {
-    window.switchFormSecTab('so-sec-info', soInfoTab);
-  }
-  if (typeof window.switchSOTab === 'function') {
-    window.switchSOTab('lines');
-  }
   ['qt-id', 'qt-valid-to', 'qt-fuel', 'qt-driver', 'qt-toll', 'qt-selling-price'].forEach(id => {
     const input = document.getElementById(id);
     if (input) input.value = '';
@@ -7890,122 +8111,6 @@ window.legacyApproveQuotation = async function () {
   } catch (e) { console.error(e); }
 }
 
-// --- SALES ORDER LOGIC ---
-function renderOracleSOList(data) {
-  const tbody = document.getElementById('oracle-so-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  if (!data || data.length === 0) {
-    const emptyMsg = lang === 'la' ? 'ຍັງບໍ່ມີໃບສັ່ງຂາຍໃນຖານຂໍ້ມູນ. ກະລຸນາສ້າງໃບສັ່ງຂາຍຈາກໃບສະເໜີລາຄາທີ່ອະນຸມັດແລ້ວ.' : (lang === 'en' ? 'No sales orders in database. Please create from approved quotation.' : 'Chưa có đơn hàng vận chuyển nào trong CSDL. Vui lòng tạo đơn hàng từ báo giá đã duyệt.');
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#888; padding:15px;"><i class="fa-solid fa-folder-open"></i> ${emptyMsg}</td></tr>`;
-    return;
-  }
-
-  data.forEach(so => {
-    const presented = window.WorkflowPresentation?.presentRecord(so) || so;
-    const demoBadge = presented.is_demo ? ` <span class="fiori-status fiori-status-pending">${lang === 'la' ? 'ຂໍ້ມູນທົດລອງ' : (lang === 'en' ? 'Demo Data' : 'Dữ liệu demo')}</span>` : '';
-    const st = fixUIText(so.status || 'Bản nháp');
-    const actions = workflowActionMode(st, 'sales_order');
-    const statusKey = workflowStatusKeySafe(st);
-    const isConfirmed = ['confirmed', 'approved', 'da_xac_nhan'].includes(statusKey);
-    const editBtnText = lang === 'la' ? 'ເບິ່ງ / ແກ້ໄຂ' : (lang === 'en' ? 'View / Edit' : 'Xem / Sửa');
-    const viewBtnTitle = lang === 'la' ? 'ເບິ່ງໃບສັ່ງຂາຍ' : (lang === 'en' ? 'View sales order' : 'Xem sales order');
-    const approveBtnText = lang === 'la' ? 'ຢືນຢັນ SO' : (lang === 'en' ? 'Confirm SO' : 'Xác nhận SO');
-    const createDOBtnText = lang === 'la' ? 'ສ້າງໃບສັ່ງປ່ອຍສິນຄ້າ DO' : (lang === 'en' ? 'Create DO' : 'Tạo Lệnh DO');
-    const deleteBtnText = lang === 'la' ? 'ລຶບ' : (lang === 'en' ? 'Delete' : 'Xóa');
-
-    const editOrViewButton = actions.canEdit
-      ? `<button class="oracle-btn oracle-btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; border: 1px solid #ccc; white-space: nowrap;" onclick="editOracleSO('${so.id}')"><i class="fa-solid fa-pen-to-square"></i> ${editBtnText}</button>`
-      : `<button class="oracle-btn oracle-btn-secondary" title="${viewBtnTitle}" aria-label="${viewBtnTitle}" style="width:36px; height:32px; padding:0; font-size:0.8rem; border:1px solid #ccc; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center;" onclick="editOracleSO('${so.id}')"><i class="fa-solid fa-eye"></i></button>`;
-    const approveButton = actions.canEdit
-      ? `<button class="oracle-btn" style="padding: 4px 10px; font-size: 0.8rem; background: #059669; color: white; border: none; white-space: nowrap;" onclick="updateSOStatus('${so.id}', 'Confirmed')"><i class="fa-solid fa-check"></i> ${approveBtnText}</button>`
-      : '';
-    const createDOButton = isConfirmed
-      ? `<button class="oracle-btn" style="padding: 4px 10px; font-size: 0.8rem; background: #0284c7; color: white; border: none; white-space: nowrap;" onclick="createDOFromSO('${so.id}')"><i class="fa-solid fa-truck-ramp-box"></i> ${createDOBtnText}</button>`
-      : '';
-    const deleteButton = actions.canDelete
-      ? `<button class="oracle-btn" style="padding: 4px 10px; font-size: 0.8rem; background: #ef4444; color: white; border: none; white-space: nowrap;" onclick="deleteOracleSO('${so.id}')"><i class="fa-solid fa-trash"></i> ${deleteBtnText}</button>`
-      : '';
-
-    tbody.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><a href="#" onclick="editOracleSO('${so.id}')" style="color:#005a9e; font-weight:bold; text-decoration:none;">${so.id}</a>${demoBadge}</td>
-        <td>${so.customer_id || ''}</td>
-        <td>${escapeHtml(so.origin || '')}</td>
-        <td>${escapeHtml(so.destination || '')}</td>
-        <td class="so-amount-cell">${(so.total_amount || 0).toLocaleString('vi-VN')} VNĐ</td>
-        <td class="so-status-cell"><span class="fiori-status ${isConfirmed ? 'fiori-status-approved' : 'fiori-status-pending'}">${contextualWorkflowStatusLabel('sales_order', st)}</span></td>
-        <td class="so-action-cell">
-          <div>
-            ${editOrViewButton}
-            ${approveButton}
-            ${createDOButton}
-            ${deleteButton}
-          </div>
-        </td>
-      </tr>
-    `);
-  });
-}
-
-window.deleteOracleSO = async function (id) {
-  const so = (crmSalesOrders || []).find(s => s.id === id);
-  if (so && isWorkflowLocked(so.status)) {
-    showToast('Đơn hàng đã duyệt/xác nhận chỉ được xem, không được xóa.');
-    return;
-  }
-  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Vận Chuyển ' + id + '?')) return;
-  try {
-    const res = await fetch(API_BASE + '/api/sales-orders/' + id, { method: 'DELETE' });
-    if (res.ok) {
-      showToast('Đã xóa Đơn Hàng ' + id + ' thành công!');
-      loadSalesOrders();
-    } else {
-      showToast('⚠ Lỗi khi xóa Đơn Hàng ' + id);
-    }
-  } catch (e) {
-    console.error(e);
-    showToast('Lỗi kết nối mạng khi xóa Đơn Hàng. Vui lòng thử lại.');
-  }
-};
-
-window.updateSOStatus = async function (soId, newStatus) {
-  const result = await executeWorkflowCommand('salesOrderConfirm', {
-    path: `/api/sales-orders/${soId}/status`,
-    method: 'PUT',
-    body: { status: newStatus }
-  });
-  if (!result.ok) return;
-  showToast(`✅ Máy chủ đã xác nhận trạng thái SO ${soId}: ${statusLabel(newStatus)}.`);
-};
-
-window.createDOFromSO = function (soId) {
-  const so = crmSalesOrders.find(x => x.id === soId);
-  if (!so) return;
-  const st = so.status || '';
-  if (st !== 'Confirmed' && st !== 'Đã xác nhận' && st !== 'Won' && st !== 'Đã chốt' && st !== 'confirmed') {
-    showToast('⚠️ Không thể tạo Lệnh Giao Hàng! Đơn Hàng Vận Chuyển phải được xác nhận trước.');
-    return;
-  }
-
-  openFioriDOForm();
-
-  if (document.getElementById('do-so-ref')) {
-    document.getElementById('do-so-ref').value = so.id;
-    document.getElementById('do-so-ref').readOnly = true;
-    document.getElementById('do-so-ref').style.background = '#f1f5f9';
-  }
-  if (document.getElementById('do-customer')) document.getElementById('do-customer').value = so.customer_id || 'CUS-001';
-  if (document.getElementById('do-route')) document.getElementById('do-route').value = so.route_id || '';
-  setRouteContextFields('do', so);
-  setDOSettlementFromSource(so);
-
-  showToast(`Đã kế thừa dữ liệu từ Đơn Hàng ${so.id} vào Lệnh Giao Hàng (DO)!`);
-
-  window.switchView('ops-planning');
-};
-
 function normalizeSearchText(value) {
   return String(value ?? '')
     .normalize('NFD')
@@ -8015,124 +8120,6 @@ function normalizeSearchText(value) {
     .toLowerCase();
 }
 
-function salesOrderSearchText(so) {
-  const st = fixUIText(so.status || 'Bản nháp');
-  const amount = Number(so.total_amount || 0);
-  return [
-    so.id,
-    so.customer_id,
-    so.origin,
-    so.destination,
-    so.total_amount,
-    amount.toLocaleString('vi-VN'),
-    amount.toLocaleString('en-US'),
-    statusLabel(st),
-    contextualWorkflowStatusLabel('sales_order', st)
-  ].join(' ');
-}
-
-function filterSalesOrders() {
-  const query = normalizeSearchText(document.getElementById('oracle-search-so')?.value || '');
-  const filtered = crmSalesOrders.filter(so => normalizeSearchText(salesOrderSearchText(so)).includes(query));
-  renderOracleSOList(filtered);
-}
-
-window.openOracleSOForm = function (options = {}) {
-  const fromQuotation = Boolean(options.fromQuotation);
-  if (currentSOMode === 'create' && !fromQuotation) {
-    showToast('SO chỉ được tạo từ Báo giá đã duyệt. Vui lòng bấm "Chuyển thành SO" ở danh sách Báo giá.');
-    return;
-  }
-  if (currentSOMode !== 'create' || !fromQuotation) currentSourceQuotationId = '';
-  const el = document.getElementById('oracle-so-form');
-  if (el) {
-    el.style.display = 'flex';
-  }
-  setFormLoadingState('oracle-so-form', true, 'Đang nạp dữ liệu SO...');
-  const soInfoTab = document.querySelector('#oracle-so-form .form-sec-tab[onclick*="so-sec-info"]');
-  if (soInfoTab && typeof window.switchFormSecTab === 'function') {
-    window.switchFormSecTab('so-sec-info', soInfoTab);
-  }
-  if (typeof window.switchSOTab === 'function') {
-    window.switchSOTab('lines');
-  }
-  // Xoa TRANG moi o nhap, ke ca nam o quy cach van chuyen.
-  //
-  // Ban truoc rot san nam gia tri vao day:
-  //
-  //     'so-carrier-name': 'EPL Logistics Express',
-  //     'so-seal-weight': '25.0 Tonnes',
-  //     'so-cargo-insurance': 'Co bao hiem 100% gia tri',  ...
-  //
-  // Nam truong nay DUOC GUI THAT trong `saveOracleSO`. Nen nguoi dung mo don
-  // moi, bam Luu, va co so du lieu nhan "Co bao hiem 100% gia tri" cung
-  // "25.0 Tonnes trong tai niem phong" ma khong ai tung khai. Do la loi khai
-  // bao hiem va hop dong bia ra.
-  //
-  // `so-item-qty` cung vay: mac dinh 15 khien dong hang "15 Tan @ 0d, mo ta
-  // rong" duoc gui len cho MOI don moi, vi readSOLinesFromForm chi loc
-  // `quantity > 0`.
-  //
-  // Cac o nay deu co placeholder san, nen de trong van co goi y.
-  [
-    'so-id', 'so-amount', 'so-item-desc', 'so-item-unit-price', 'so-warehouse-owner',
-    'so-carrier-name', 'so-delivery-method', 'so-seal-weight',
-    'so-temperature-requirement', 'so-cargo-insurance',
-    'so-item-qty', 'so-notes', 'so-sales-rep',
-  ].forEach(id => {
-    const input = document.getElementById(id);
-    if (input) input.value = '';
-  });
-  // Don MOI chua co tep nao. Khong ve lai thi danh sach cua don truoc con nam
-  // do, va nguoi dung tuong don moi da co san hop dong dinh kem.
-  if (typeof window.napTaiLieuSO === 'function') window.napTaiLieuSO();
-  ['so-customer', 'so-route-select', 'so-status', 'so-currency'].forEach(id => {
-    const select = document.getElementById(id);
-    if (!select) return;
-    select.value = id === 'so-status' ? 'Draft' : (id === 'so-currency' ? 'VND' : '');
-    select.style.background = '';
-  });
-  if (document.getElementById('so-item-total-amount')) document.getElementById('so-item-total-amount').dataset.vndValue = '0';
-  if (document.getElementById('so-amount')) document.getElementById('so-amount').dataset.vndValue = '0';
-  if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
-  if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-  document.querySelectorAll('#oracle-so-form input, #oracle-so-form select, #oracle-so-form textarea').forEach(el => {
-    if (el.type !== 'hidden') el.disabled = false;
-    if (el.readOnly) el.readOnly = false;
-  });
-  const saveBtn = document.querySelector('#oracle-so-form button[onclick="saveOracleSO()"]');
-  if (saveBtn) saveBtn.style.display = 'inline-flex';
-  const closeBtn = document.getElementById('btn-close-so-form');
-  if (closeBtn) closeBtn.textContent = 'Hủy bỏ';
-  if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-  setRouteContextFields('so', {});
-  if (typeof window.syncAllDynamicDropdowns === 'function') {
-    window.syncAllDynamicDropdowns()
-      .then(() => {
-        const routeSelect = document.getElementById('so-route-select');
-        if (routeSelect && !routeSelect.value) routeSelect.value = '';
-        if (typeof window.onSORouteSelectChange === 'function') {
-          window.onSORouteSelectChange(routeSelect?.value || '');
-        }
-      })
-      .then(() => {
-        // Nap lai cac dong hang da luu. Truoc day bang nay luon trong khi mo
-        // lai mot don da luu, vi khong co noi nao chua no.
-        const openedId = document.getElementById('so-id')?.value || '';
-        if (openedId && currentSOMode !== 'create') return window.loadSOLinesFromServer(openedId);
-        return undefined;
-      })
-      .catch(err => console.error(err))
-      .finally(() => setFormLoadingState('oracle-so-form', false));
-  } else {
-    const routeSelect = document.getElementById('so-route-select');
-    if (routeSelect) routeSelect.value = '';
-    if (typeof window.onSORouteSelectChange === 'function') {
-      window.onSORouteSelectChange('');
-    }
-    setFormLoadingState('oracle-so-form', false);
-  }
-};
 function stabilizeModalContentHeight(formId) {
   const form = document.getElementById(formId);
   if (!form) return;
@@ -8141,27 +8128,6 @@ function stabilizeModalContentHeight(formId) {
   content.style.minHeight = 'calc(94vh - 210px)';
 }
 window.stabilizeModalContentHeight = stabilizeModalContentHeight;
-
-window.switchSOTab = function (tabName) {
-  document.querySelectorAll('.so-tab-content').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.so-tab-btn').forEach(btn => {
-    btn.style.color = '#666';
-    btn.style.borderBottom = 'none';
-    btn.style.fontWeight = 'normal';
-  });
-
-  const activeTabContent = document.getElementById(`so-tab-${tabName}`);
-  if (activeTabContent) activeTabContent.style.display = 'block';
-
-  const activeTabBtn = document.getElementById(`tab-btn-${tabName}`);
-  if (activeTabBtn) {
-    activeTabBtn.style.color = '#0a6ed1';
-    activeTabBtn.style.borderBottom = '2px solid #0a6ed1';
-    activeTabBtn.style.fontWeight = 'bold';
-  }
-  stabilizeModalContentHeight('oracle-so-form');
-  if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-};
 
 window.switchFormSecTab = function (contentId, tabBtn) {
   const parentSection = tabBtn.closest('.fiori-op-section, .master-form-card, .oracle-container');
@@ -8176,51 +8142,13 @@ window.switchFormSecTab = function (contentId, tabBtn) {
     const target = parentSection.querySelector('#' + contentId);
     if (target) target.style.display = 'block';
     tabBtn.classList.add('active');
-    tabBtn.style.color = '#0a6ed1';
-    tabBtn.style.borderBottom = '2px solid #0a6ed1';
+    tabBtn.style.color = '#2563eb';
+    tabBtn.style.borderBottom = '2px solid #2563eb';
     tabBtn.style.fontWeight = 'bold';
     const modal = parentSection.closest('.fiori-op-container');
     if (modal && modal.id) stabilizeModalContentHeight(modal.id);
   }
 };
-
-window.legacyCalcSOLineTotal = function () {
-  const qtyInput = document.getElementById('so-item-qty');
-  const priceInput = document.getElementById('so-item-unit-price');
-  const totalDiv = document.getElementById('so-item-total-amount');
-  const mainTotal = document.getElementById('so-amount');
-
-  if (qtyInput && priceInput && totalDiv) {
-    const qty = parseFloat(qtyInput.value) || 0;
-    const price = parseFloat(priceInput.value) || 0;
-    const total = qty * price;
-    totalDiv.innerText = total.toLocaleString('vi-VN');
-    if (mainTotal) mainTotal.value = total;
-  }
-};
-
-window.legacyAddSOLineRow = function () {
-  const tbody = document.getElementById('so-lines-tbody');
-  if (!tbody) return;
-  const count = tbody.querySelectorAll('tr').length + 1;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">ITM-00${count}</td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee;"><input type="text" style="width: 100%; border: none; background: transparent; border-bottom: 1px solid #0a6ed1; outline: none; font-weight: 600; color: #0f172a;" placeholder="Nhập chi tiết hàng..."></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;"><input type="number" value="1" style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;" oninput="calcSOLineTotal()"></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
-      <select style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
-        <option value="Tấn">Tấn</option>
-        <option value="Kg">Kg</option>
-        <option value="Chuyến">Chuyến</option>
-        <option value="Khối">Khối (m3)</option>
-      </select>
-    </td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: 700;"><input type="text" value="2500000" style="width:100px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;" oninput="calcSOLineTotal()"></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: bold; color: #0a6ed1;">2,500,000</td>
-  `;
-  tbody.appendChild(tr);
-}
 
 window.addRouteStop = function (containerId) {
   const container = document.getElementById(containerId);
@@ -8238,91 +8166,6 @@ window.addRouteStop = function (containerId) {
   `;
   container.appendChild(div);
 }
-
-window.closeOracleSOForm = function () {
-  setFormLoadingState('oracle-so-form', false);
-  document.getElementById('crm-kanban-board').style.display = 'grid';
-  document.getElementById('oracle-so-form').style.display = 'none';
-  if (typeof installEnterpriseModuleTabs === 'function') installEnterpriseModuleTabs();
-  selectEnterpriseTabForTarget('oracle-so-list');
-}
-
-window.editOracleSO = function (id) {
-  const so = (crmSalesOrders || []).find(s => s.id === id);
-  if (!so) return;
-  const actions = workflowActionMode(so.canonical_status || so.status, 'sales_order');
-  const locked = !actions.canEdit;
-
-  currentSOMode = locked ? 'view' : 'edit';
-  openOracleSOForm();
-  currentSourceQuotationId = so.quotation_id || '';
-  const titleEl = document.getElementById('oracle-form-title');
-  if (titleEl) titleEl.innerText = (locked ? 'Xem' : 'Chỉnh sửa') + ' Đơn Hàng Vận Chuyển: ' + so.id;
-
-  if (document.getElementById('so-id')) {
-    document.getElementById('so-id').value = so.id;
-    document.getElementById('so-id').disabled = true;
-  }
-  if (document.getElementById('so-customer')) document.getElementById('so-customer').value = so.customer_id || '';
-  if (document.getElementById('so-route-select')) document.getElementById('so-route-select').value = so.route_id || '';
-  if (document.getElementById('so-amount')) {
-    document.getElementById('so-amount').dataset.vndValue = String(so.total_amount || 0);
-    document.getElementById('so-amount').value = so.total_amount || 0;
-  }
-  if (document.getElementById('so-status')) document.getElementById('so-status').value = canonicalSOStatusValue(so.status || 'Confirmed');
-  // Loai phuong tien ke thua tu bao gia; doc lai de bang chi phi tinh dung.
-  if (document.getElementById('so-cargo-type')) document.getElementById('so-cargo-type').value = so.cargo_type || '';
-  // Ba o co cot that trong bang: doc lai, khong thi mo don ra la thay trong.
-  if (document.getElementById('so-notes')) document.getElementById('so-notes').value = so.notes || '';
-  if (document.getElementById('so-payment-terms')) document.getElementById('so-payment-terms').value = so.payment_terms || '';
-  if (document.getElementById('so-sales-rep')) document.getElementById('so-sales-rep').value = so.sales_rep || '';
-  if (document.getElementById('so-weight-kg')) document.getElementById('so-weight-kg').value = so.weight_kg || '';
-  const soDetailValues = {
-    'so-carrier-name': so.carrier_name || so.carrier || 'EPL Logistics Express',
-    'so-delivery-method': fixUIText(so.delivery_method || 'Vận tải đường bộ'),
-    'so-seal-weight': so.seal_weight || (so.weight_kg ? `${so.weight_kg} kg` : '25.0 Tonnes'),
-    'so-temperature-requirement': fixUIText(so.temperature_requirement || 'Hàng tiêu chuẩn (Thường)'),
-    'so-cargo-insurance': fixUIText(so.cargo_insurance || 'Có bảo hiểm 100% giá trị'),
-    'so-warehouse-owner': so.warehouse_owner || ''
-  };
-  Object.entries(soDetailValues).forEach(([fieldId, value]) => {
-    const input = document.getElementById(fieldId);
-    if (input) input.value = value;
-  });
-  setRouteContextFields('so', so);
-  if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
-  // Nap danh sach tep dinh kem cua chinh don nay.
-  if (typeof window.napTaiLieuSO === 'function') window.napTaiLieuSO();
-  if (typeof refreshSOAmountCurrency === 'function') refreshSOAmountCurrency();
-  if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-
-  document.querySelectorAll('#oracle-so-form input, #oracle-so-form select, #oracle-so-form textarea').forEach(el => {
-    if (el.type !== 'hidden') el.disabled = locked || el.id === 'so-id';
-  });
-  if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-}
-
-window.legacyApproveSO = async function () {
-  const id = document.getElementById('so-id').value;
-  if (!id) return;
-  try {
-    const res = await fetch(`${API_BASE}/api/sales-orders/${id}/status`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'Confirmed' })
-    });
-    if (res.ok) {
-      showToast(`✅ Đã xác nhận Đơn Hàng ${id} thành công!`);
-      closeOracleSOForm();
-      loadSalesOrders();
-    }
-  } catch (e) { console.error(e); }
-}
-
-// saveOracleSO is defined below with full CSDL support (search for window.saveOracleSO at line ~5153)
-
-window.loadSalesOrders = loadSalesOrders;
-window.filterSalesOrders = filterSalesOrders;
 
 // ==========================================
 // DELIVERY ORDER & OPERATIONS PLANNING
@@ -8412,17 +8255,22 @@ function deliveryOrderOperationalStatus(order) {
   if (analyzed?.operational_status) {
     const className = analyzed.stage === 'incident'
       ? 'fiori-status-danger'
-      : analyzed.stage === 'near_late'
-        ? 'fiori-status-warning'
-        : analyzed.stage === 'completed' || analyzed.stage === 'active'
-          ? 'fiori-status-approved'
-          : 'fiori-status-pending';
+      : analyzed.stage === 'cancelled'
+        ? 'fiori-status-rejected'
+        : analyzed.stage === 'near_late'
+          ? 'fiori-status-warning'
+          : analyzed.stage === 'completed' || analyzed.stage === 'active'
+            ? 'fiori-status-approved'
+            : 'fiori-status-pending';
     return { label: statusLabel(analyzed.operational_status), className };
   }
   const key = deliveryOrderStatusKey(order);
   const stage = deliveryOrderStage(order);
   if (stage === 'incident') {
     return { label: lang === 'la' ? 'ພົບບັນຫາ / ເກີດອຸບັດຕິເຫດ' : (lang === 'en' ? 'Incident' : 'Gặp sự cố'), className: 'fiori-status-danger' };
+  }
+  if (stage === 'cancelled') {
+    return { label: lang === 'la' ? 'ຍົກເລີກແລ້ວ' : (lang === 'en' ? 'Cancelled' : 'Đã huỷ'), className: 'fiori-status-rejected' };
   }
   if (stage === 'completed') {
     return { label: lang === 'la' ? 'ສຳເລັດແລ້ວ' : (lang === 'en' ? 'Completed' : 'Hoàn thành'), className: 'fiori-status-approved' };
@@ -8468,7 +8316,7 @@ function deliveryOrderDateLabel(value) {
 function deliveryOrderSearchText(order) {
   return normalizeSearchText([
     order?.id,
-    order?.so_id,
+    order?.quotation_id,
     order?.customer_id,
     order?.route_id,
     order?.origin,
@@ -8567,6 +8415,25 @@ window.ghiXeDaDenNoi = async function (id) {
   showToast(`✅ Đã ghi mốc: lệnh ${id} đã đến nơi. Nộp POD để chốt tiền.`);
   if (typeof loadDeliveryOrders === 'function') loadDeliveryOrders();
 };
+/** Xóa hẳn một DO ĐÃ HỦY (chủ dự án: "đã hủy thì cho phép xóa"). Máy chủ chỉ cho xóa pending/cancelled. */
+window.xoaLenhDaHuy = async function (id) {
+  const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(id));
+  if (!don || String(don.canonical_status || '').toLowerCase() !== 'cancelled') {
+    showToast('⚠️ Chỉ xóa được lệnh đã hủy.'); return;
+  }
+  if (!confirm(`Xóa hẳn lệnh ${id} khỏi danh sách?` + String.fromCharCode(10)
+    + (don.cancel_reason ? `Lý do hủy đã ghi: ${don.cancel_reason}` + String.fromCharCode(10) : '')
+    + 'Không khôi phục được; Audit Log vẫn giữ dấu vết.')) return;
+  const viec = `Xóa lệnh ${id}`;
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(id)}`, { method: 'DELETE', headers: financeAuthHeaders() });
+  } catch (e) { return baoMatKetNoi(viec, e); }
+  if (!res.ok) return baoLoiMayChu(res, viec);
+  showToast(`🗑 Đã xóa lệnh ${id}.`);
+  if (typeof loadDeliveryOrders === 'function') await loadDeliveryOrders();
+};
+
 window.huyLenhGiaoHang = async function (id) {
   const don = (eplDeliveryOrders || []).find(d => String(d.id) === String(id));
   if (don && !huyDuocDon(don)) {
@@ -8576,10 +8443,12 @@ window.huyLenhGiaoHang = async function (id) {
     return;
   }
   const XUONG_DONG = String.fromCharCode(10);
-  if (!confirm(`Hủy lệnh giao hàng ${id}?`
-    + XUONG_DONG + XUONG_DONG
-    + 'Lệnh sẽ chuyển sang trạng thái Đã hủy và không còn được điều xe.'
-    + ' Thao tác này được ghi vào Audit Log.')) return;
+  // Máy chủ đòi lý do (422 CANCEL_REASON_REQUIRED) — hỏi ngay ở đây, một lần.
+  const lyDo = window.prompt(`Hủy lệnh giao hàng ${id}?`
+    + XUONG_DONG + 'Lệnh sẽ chuyển sang Đã hủy, không còn được điều xe; ghi vào Audit Log.'
+    + XUONG_DONG + XUONG_DONG + 'Lý do hủy (bắt buộc):', '');
+  if (lyDo === null) return;
+  if (!lyDo.trim()) { showToast('⚠️ Hủy lệnh phải ghi lý do.'); return; }
 
   const viec = `Hủy lệnh giao hàng ${id}`;
   let res;
@@ -8587,7 +8456,7 @@ window.huyLenhGiaoHang = async function (id) {
     res = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(id)}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'cancelled' })
+      body: JSON.stringify({ status: 'cancelled', reason: lyDo.trim() })
     });
   } catch (e) {
     return baoMatKetNoi(viec, e);
@@ -8639,6 +8508,8 @@ const GIOI_HAN_DONG_DO = 100;
 const NHOM_DO = {
   need: ['incident', 'overdue', 'undated', 'near_late', 'pending'],
   run: ['active'],
+  done: ['completed'],
+  cancelled: ['cancelled'],
   all: null,
 };
 
@@ -8945,11 +8816,10 @@ function veChipVaChanTrang(soDongHien) {
     dem[ro] = (dem[ro] || 0) + 1;
   });
 
-  const demNhom = {
-    need: NHOM_DO.need.reduce((s, ro) => s + (dem[ro] || 0), 0),
-    run: NHOM_DO.run.reduce((s, ro) => s + (dem[ro] || 0), 0),
-    all: tong,
-  };
+  const demNhom = {};
+  Object.entries(NHOM_DO).forEach(([nhom, ds]) => {
+    demNhom[nhom] = ds ? ds.reduce((s, ro) => s + (dem[ro] || 0), 0) : tong;
+  });
   Object.entries(demNhom).forEach(([nhom, so]) => {
     const chip = document.getElementById(`do-group-${nhom}`);
     if (chip) chip.classList.toggle('active', nhom === activeDOGroup);
@@ -8978,7 +8848,7 @@ function veChipVaChanTrang(soDongHien) {
     const hien = Math.min(soDongHien, GIOI_HAN_DONG_DO);
     const nhanRo = activeDOStage
       ? (window.DoBoard?.BUCKETS || []).find(b => b.key === activeDOStage)?.label
-      : ({ need: 'cần xử lý', run: 'đang chạy', all: '' })[activeDOGroup];
+      : ({ need: 'cần xử lý', run: 'đang chạy', done: 'hoàn thành', cancelled: 'đã huỷ', all: '' })[activeDOGroup];
     oDem.textContent = soDongHien
       ? `Đang xem ${hien}${soDongHien > hien ? ` trên ${soDongHien}` : ''} DO`
         + `${nhanRo ? ' ' + String(nhanRo).toLowerCase() : ''} · tổng ${tong} DO`
@@ -9120,7 +8990,7 @@ function renderDeliveryOrders(data) {
                  onchange="tickDO('${doId}', this.checked, this)">
         </td>
         <td><div class="do-cell-id">${doId}</div>
-            <div class="do-cell-sub">${doBoardEscape(do_item.so_id || '—')}</div></td>
+            <div class="do-cell-sub">${doBoardEscape(do_item.quotation_id || '—')}</div></td>
         <td><div class="do-cell-main">${doBoardEscape(do_item.customer_id || '—')}</div>
             ${presented.is_demo ? '<div class="do-cell-sub">Dữ liệu mẫu</div>' : ''}</td>
         <td><div class="do-cell-main">${doBoardEscape(do_item.origin || '')}</div>
@@ -9138,6 +9008,7 @@ function renderDeliveryOrders(data) {
           <button type="button" class="do-status-pill ${mauRo}"
                   title="Bấm để lọc theo tình trạng này"
                   onclick="locTheoOTrangThai('${ro}')">${doBoardEscape(operationalStatus.label)}</button>
+          ${ro === 'cancelled' && do_item.cancel_reason ? `<div class="do-cell-sub" title="Lý do hủy">Lý do: ${doBoardEscape(do_item.cancel_reason)}</div>` : ''}
         </td>
         <td>
           <div class="do-row-act">
@@ -9147,6 +9018,8 @@ function renderDeliveryOrders(data) {
                     onclick="ghiXeDaDenNoi('${doId}')"><i class="fa-solid fa-map-pin"></i></button>` : ''}
             ${huyDuoc ? `<button type="button" class="huy" title="Hủy lệnh giao hàng"
                     onclick="huyLenhGiaoHang('${doId}')"><i class="fa-solid fa-ban"></i></button>` : ''}
+            ${ro === 'cancelled' ? `<button type="button" class="huy" title="Xóa lệnh đã hủy khỏi danh sách"
+                    onclick="xoaLenhDaHuy('${doId}')"><i class="fa-solid fa-trash"></i></button>` : ''}
           </div>
         </td>
       </tr>`);
@@ -9334,7 +9207,7 @@ window.openRouteDetailModal = function (routeId) {
       cumulative += segmentKm;
       return `
         <div style="display:grid; grid-template-columns:40px minmax(0,1fr) 118px; gap:12px; align-items:center; padding:13px 0; border-bottom:1px solid #e2e8f0;">
-          <div style="width:32px; height:32px; border-radius:999px; background:#eff6ff; color:#0a6ed1; display:flex; align-items:center; justify-content:center; font-weight:900;">${index + 1}</div>
+          <div style="width:32px; height:32px; border-radius:999px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-weight:900;">${index + 1}</div>
           <div style="min-width:0;">
             <div style="font-weight:900; color:#0f172a; overflow-wrap:anywhere;">${doBoardEscape(routeSegmentFrom(segment))} <span style="color:#64748b;">â†’</span> ${doBoardEscape(routeSegmentTo(segment))}</div>
             <div style="font-size:.8rem; color:#64748b; margin-top:3px;">Lũy kế ${doBoardEscape(formatRouteKm(cumulative))} km</div>
@@ -9398,7 +9271,6 @@ function demChungTuDungTuyen(routeId) {
   if (!ma) return { tong: 0, chi_tiet: [] };
   const nhom = [
     ['báo giá', (crmQuotations || []).filter(q => String(q.route_id || '') === ma).length],
-    ['đơn', (crmSalesOrders || []).filter(o => String(o.route_id || '') === ma).length],
     ['lệnh giao hàng', (eplDeliveryOrders || []).filter(d => String(d.route_id || '') === ma).length],
   ].filter(([, n]) => n > 0);
   return {
@@ -9522,7 +9394,21 @@ function renderRoutes(data) {
       </tr>`);
   });
 }
+// LỆNH GIAO HÀNG KHÔNG CÒN TẠO TAY, KHÔNG CÒN TẠO TỪ SO.
+//
+// Chủ dự án chốt: "DO kế thừa từ QT — gen tự động khi QT được duyệt hết".
+// Máy chủ sinh DO ngay lúc ghi nhận khách chấp nhận báo giá
+// (`POST /api/quotations/{id}/accept`), mang theo tuyến, giá khoá và khung giờ
+// của báo giá. Một form tạo DO trống ở đây là mời người dùng đâm ngang vào
+// luồng — nên nút "+ Tạo lệnh giao hàng" dẫn về màn Báo giá.
 window.openFioriDOForm = function () {
+  showToast('Lệnh giao hàng được sinh tự động từ báo giá khi khách chấp nhận. '
+    + 'Mở báo giá, ghi nhận khách chấp nhận — DO sẽ xuất hiện ở "Cần xử lý".');
+  if (typeof window.switchView === 'function') window.switchView('crm-sales', 'qtv2-root');
+};
+
+// Khung form DO — CHỈ dùng để XEM một DO đã có (editFioriDO).
+function moKhungFormDO() {
   const el = document.getElementById('fiori-do-form');
   if (el) {
     el.style.display = 'flex';
@@ -9530,7 +9416,7 @@ window.openFioriDOForm = function () {
   setFormLoadingState('fiori-do-form', true, 'Đang chuẩn bị form DO...');
   currentDOMode = 'create';
   const titleEl = document.getElementById('fiori-do-form-title');
-  if (titleEl) titleEl.innerText = 'Tạo Lệnh Giao Hàng';
+  if (titleEl) titleEl.innerText = 'Lệnh Giao Hàng';
   const subtitleEl = titleEl?.closest('div')?.querySelector('div');
   if (subtitleEl) subtitleEl.textContent = 'Lệnh giao hàng xuất kho - bản nháp';
   ['do-id', 'do-so-ref', 'do-customer', 'do-route', 'do-pickup', 'do-delivery', 'do-extra-cost-reason'].forEach(id => {
@@ -9559,13 +9445,13 @@ window.closeFioriDOForm = function () {
 window.editFioriDO = function (id) {
   const do_item = (eplDeliveryOrders || []).find(d => d.id === id) || {
     id: id || '',
-    so_id: '',
+    quotation_id: '',
     customer_id: '',
     route_id: ''
   };
   const locked = true;
 
-  openFioriDOForm();
+  moKhungFormDO();
   const titleEl = document.getElementById('fiori-do-form-title');
   if (titleEl) titleEl.innerText = 'Xem Lệnh Giao Hàng: ' + do_item.id;
   const subtitleEl = titleEl?.closest('div')?.querySelector('div');
@@ -9579,8 +9465,10 @@ window.editFioriDO = function (id) {
     document.getElementById('do-id').value = do_item.id;
     document.getElementById('do-id').disabled = true;
   }
-  if (document.getElementById('do-so-ref')) document.getElementById('do-so-ref').value = do_item.so_id || '';
-  if (document.getElementById('do-customer')) document.getElementById('do-customer').value = do_item.customer_id || 'CUS-001';
+  // Ô "Báo giá gốc": DO sinh từ báo giá mang `quotation_id`; DO cũ (trước khi
+  // bỏ bước Đơn hàng) không còn mã đơn — cột đó đã trục xuất ở migration 049.
+  if (document.getElementById('do-so-ref')) document.getElementById('do-so-ref').value = do_item.quotation_id || '';
+  if (document.getElementById('do-customer')) document.getElementById('do-customer').value = do_item.customer_id || '';
   if (document.getElementById('do-route')) document.getElementById('do-route').value = do_item.route_id || '';
   setRouteContextFields('do', do_item);
   setDOSettlementFromSource(do_item);
@@ -9616,8 +9504,10 @@ window.saveFioriDO = async function () {
     delivery_date: tripReturnIsoFromLocal(document.getElementById('do-delivery').value)
   };
   if (!currentDO) {
-    payload.id = currentId;
-    payload.so_id = document.getElementById('do-so-ref').value;
+    // Không có đường tạo DO tay: DO là thứ báo giá sinh ra khi khách chấp nhận.
+    showToast('Không tạo lệnh giao hàng bằng tay. Mở báo giá và ghi nhận khách chấp nhận — '
+      + 'DO sẽ được sinh tự động, kế thừa tuyến và giá khoá của báo giá.');
+    return;
   }
 
   const doPath = currentDO ? `/api/delivery-orders/${encodeURIComponent(currentId)}` : '/api/delivery-orders';
@@ -9967,12 +9857,13 @@ function renderDispatchKpis(dsTrongNgay, dsHienRa) {
   const xeDangChay = new Set((driverVehicleAvailability || [])
     .filter(x => String(x.kind || '') === 'trip' && x.vehicle_id)
     .map(x => String(x.vehicle_id)));
-  const xeBaoDuong = dsXe.filter(v =>
-    /bảo dưỡng|bao duong|inactive|disabled|sửa chữa|maintenance/i
-      .test(String(v.operational_status || '') + ' ' + String(v.status || ''))).length;
+  // Theo MA trang thai (moc 045), khong tim chuoi trong nhan. Xe ngoai doi
+  // (`out_of_service`) khong tinh vao "ranh".
+  const xeBaoDuong = dsXe.filter(v => String(v.operational_status || '') === 'maintenance').length;
+  const xeNgoaiDoi = dsXe.filter(v => String(v.operational_status || '') === 'out_of_service').length;
   const xeChay = dsXe.filter(v => xeDangChay.has(String(v.id))
-    || /đang vận chuyển|dang van chuyen|in transit/i.test(String(v.status || ''))).length;
-  const xeRanh = Math.max(0, dsXe.length - xeBaoDuong - xeChay);
+    || String(v.operational_status || '') === 'on_trip').length;
+  const xeRanh = Math.max(0, dsXe.length - xeBaoDuong - xeChay - xeNgoaiDoi);
 
   // "Tài xế trong ca", KHÔNG phải "tài xế còn giờ lái" như bản mẫu: hệ thống
   // không lưu số giờ đã lái trong ngày của từng người, nên không tính được con
@@ -10230,7 +10121,7 @@ function renderDispatchDOs(filterQuery = '') {
         + ' onclick="tickDO(' + maAn + ', event)" aria-label="Tick DO ' + escapeHtml(String(d.id)) + '">'
         + '<div><div class="id">' + escapeHtml(String(d.id)) + '</div>'
         + '<div class="m">' + escapeHtml(tenKH)
-        + (d.so_id ? ' · ' + escapeHtml(String(d.so_id)) : '') + '</div></div>'
+        + (d.quotation_id ? ' · ' + escapeHtml(String(d.quotation_id)) : '') + '</div></div>'
         // Giờ lấy và giờ giao gộp vào MỘT ô hai dòng. Cột DO nay hẹp lại để
         // nhường chỗ cho cột giữa, và sáu ô ngang trong khoảng đó thì mỗi ô
         // còn chưa tới 70px — chữ bị cắt hết. Cùng lượng thông tin, xếp theo
@@ -10286,7 +10177,7 @@ function renderDispatchFleet() {
 
   const theoBai = new Map();
   dsXe.forEach(v => {
-    const bai = String(v.depot || '').trim() || '(chưa gán bãi)';
+    const bai = String(v.depot_name || v.depot || '').trim() || '(chưa gán bãi)';
     if (!theoBai.has(bai)) theoBai.set(bai, []);
     theoBai.get(bai).push(v);
   });
@@ -10294,9 +10185,9 @@ function renderDispatchFleet() {
   const phanLoai = ds => {
     let ranh = 0, chay = 0, baoDuong = 0;
     ds.forEach(v => {
-      const tt = String(v.operational_status || '') + ' ' + String(v.status || '');
-      if (/bảo dưỡng|bao duong|inactive|disabled|sửa chữa|maintenance/i.test(tt)) baoDuong += 1;
-      else if (xeDangChay.has(String(v.id)) || /đang vận chuyển|dang van chuyen|in transit/i.test(tt)) chay += 1;
+      const tt = String(v.operational_status || '');
+      if (tt === 'maintenance' || tt === 'out_of_service') baoDuong += 1;
+      else if (xeDangChay.has(String(v.id)) || tt === 'on_trip') chay += 1;
       else ranh += 1;
     });
     return { ranh: ranh, chay: chay, baoDuong: baoDuong, tong: ds.length };
@@ -10381,7 +10272,7 @@ function renderDispatchCandidates() {
   const gio = khungGioLayHang(don);
   let ds = dispatchDanhSachXe().slice();
   const tong = ds.length;
-  if (dispatchScope.depot) ds = ds.filter(v => String(v.depot || '') === dispatchScope.depot);
+  if (dispatchScope.depot) ds = ds.filter(v => String(v.depot_name || v.depot || '') === dispatchScope.depot);
   if (dispatchScope.type) ds = ds.filter(v => (tenLoaiXe(v.type) || v.type) === dispatchScope.type);
 
   let cham = ds.map(xe => Object.assign({ xe: xe }, chamDiemXe(xe, don, gio)));
@@ -10880,8 +10771,9 @@ function chamDiemXe(xe, don, khung) {
   const lyDo = [];
   let chan = '';
 
-  const ttChu = String(xe.operational_status || '') + ' ' + String(xe.status || '');
-  if (/maintenance|bảo dưỡng|bao duong|sửa|repair/i.test(ttChu)) chan = 'bảo dưỡng';
+  const ttMa = String(xe.operational_status || '');
+  if (ttMa === 'maintenance') chan = 'bảo dưỡng';
+  if (ttMa === 'out_of_service') chan = 'ngưng hoạt động';
 
   const viec = viecDaXepCuaXe(xe.id, khung);
   const dangChay = viec.filter(v => String(v.kind || '') === 'trip');
@@ -10979,7 +10871,8 @@ function renderDispatchScopeOptions() {
         '<option value="' + escapeHtml(cap[0]) + '">' + escapeHtml(cap[0]) + ' (' + cap[1] + ')</option>').join('');
     if (dangChon && dem.has(dangChon)) el.value = dangChon;
   };
-  dat('dispatch-scope-depot', ds.map(v => v.depot), 'Tất cả bãi');
+  // Ten bai tu DANH MUC (depot_name), khong tu chuoi go tay.
+  dat('dispatch-scope-depot', ds.map(v => v.depot_name || v.depot), 'Tất cả bãi');
   dat('dispatch-scope-type', ds.map(v => tenLoaiXe(v.type) || v.type), 'Tất cả loại xe');
 }
 
@@ -11131,8 +11024,8 @@ window.switchDispatchResourceTab = function (tabName) {
     if (btnEl) {
       if (p === tabName) {
         btnEl.classList.add('active');
-        btnEl.style.color = '#0a6ed1';
-        btnEl.style.borderBottom = '3px solid #0a6ed1';
+        btnEl.style.color = '#2563eb';
+        btnEl.style.borderBottom = '3px solid #2563eb';
         btnEl.style.fontWeight = '700';
       } else {
         btnEl.classList.remove('active');
@@ -11186,9 +11079,9 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
     } else {
       freeVehs.forEach(v => {
         vehsList.insertAdjacentHTML('beforeend', `
-          <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #0a6ed1; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" title="Nhấp vào để Gán Xe Này vào Đơn">
+          <div style="padding:12px 14px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #2563eb; border-radius:8px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: all 0.2s ease;" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" title="Nhấp vào để Gán Xe Này vào Đơn">
             <div>
-              <div style="font-weight:800; color:#0a6ed1;">${v.id} <span style="font-size:0.8rem; color:#475569; font-weight:600;">(${escapeHtml(v.brand || 'Hyundai')} ${v.type || 'Container 20FT'})</span></div>
+              <div style="font-weight:800; color:#2563eb;">${v.id} <span style="font-size:0.8rem; color:#475569; font-weight:600;">(${escapeHtml(v.brand || 'Hyundai')} ${v.type || 'Container 20FT'})</span></div>
               <div style="font-size:0.8rem; color:#64748b; margin-top:2px;"><i class="fa-solid fa-cubes"></i> Sức chứa thùng: <strong>${v.volume_capacity_m3 || 30} m³</strong> | Tải trọng: ${v.weight_capacity || 15000} kg</div>
             </div>
             <button class="fiori-btn" style="padding:4px 10px; font-size:0.78rem; background:#e0f2fe; color:#0284c7; border:1px solid #7dd3fc; font-weight:700;">
@@ -11213,7 +11106,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
     if (busyVehicles.length === 0 && inTransitDOs.length === 0) {
       busyList.innerHTML = `
         <div style="padding:20px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; text-align:center; color:#64748b; font-size:0.88rem;">
-          <i class="fa-solid fa-circle-info" style="color:#0a6ed1; margin-right:6px;"></i>Hiện tại chưa có chuyến xe nào đang lăn bánh trên đường.
+          <i class="fa-solid fa-circle-info" style="color:#2563eb; margin-right:6px;"></i>Hiện tại chưa có chuyến xe nào đang lăn bánh trên đường.
         </div>
       `;
     } else {
@@ -11261,7 +11154,7 @@ function renderDispatchSubTabContents(readyVehCount, busyVehCount, readyDrvCount
 
             <div style="cursor:pointer;" onclick="jumpToGPSFromDispatch('${vehPlate}', '${d.id}')" title="Nhấp vào để xem GPS Realtime">
               <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-weight:700; color:#334155; margin-bottom:4px;">
-                <span><i class="fa-solid fa-route" style="color:#0a6ed1;"></i> Tiến độ quãng đường đã đi:</span>
+                <span><i class="fa-solid fa-route" style="color:#2563eb;"></i> Tiến độ quãng đường đã đi:</span>
                 <span style="color:#059669; font-weight:800;">${pctCompleted}% hoàn thành</span>
               </div>
               <div style="font-size:0.76rem; color:#64748b; margin-bottom:6px;">${progressDetail}</div>
@@ -11337,7 +11230,7 @@ window.openPanoramicSelector = function (targetType) {
 
   if (targetType === 'vehicle') {
     if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-truck-moving"></i> ${lang === 'la' ? 'ເບິ່ງພາບລວມລົດຂົນສົ່ງ & ເລືອກດ້ວຍຕາ' : (lang === 'en' ? 'VIEW TRANSPORT VEHICLES & SELECT' : 'XEM TOÀN CẢNH XE VẬN CHUYỂN & CHỌN TRỰC QUAN')}`;
-    if (btnVeh) { btnVeh.style.background = '#0a6ed1'; btnVeh.style.color = '#fff'; }
+    if (btnVeh) { btnVeh.style.background = '#2563eb'; btnVeh.style.color = '#fff'; }
     if (btnDrv) { btnDrv.style.background = '#f1f5f9'; btnDrv.style.color = '#475569'; }
   } else {
     const roleText = targetType === 'co-driver'
@@ -11345,7 +11238,7 @@ window.openPanoramicSelector = function (targetType) {
       : (lang === 'la' ? 'ຄົນຂັບຫຼັກ' : (lang === 'en' ? 'MAIN DRIVER' : 'TÀI XẾ CHÍNH'));
     if (titleEl) titleEl.innerHTML = `<i class="fa-solid fa-id-card"></i> ${lang === 'la' ? `ເບິ່ງພາບລວມພະນັກງານຄົນຂັບ & ເລືອກ (${roleText})` : (lang === 'en' ? `VIEW DRIVER STAFF & SELECT (${roleText})` : `XEM TOÀN CẢNH NHÂN SỰ LÁI XE & CHỌN (${roleText})`)}`;
     if (btnVeh) { btnVeh.style.background = '#f1f5f9'; btnVeh.style.color = '#475569'; }
-    if (btnDrv) { btnDrv.style.background = '#0a6ed1'; btnDrv.style.color = '#fff'; }
+    if (btnDrv) { btnDrv.style.background = '#2563eb'; btnDrv.style.color = '#fff'; }
   }
 
   if (document.getElementById('panoramic-search-input')) {
@@ -11434,10 +11327,10 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
       const assignVehBtn = lang === 'la' ? '+ ມອບໝາຍລົດນີ້ໃຫ້ໃບສັ່ງ' : (lang === 'en' ? '+ Assign This Vehicle' : '+ Gán Xe Này Vào Lệnh');
 
       container.insertAdjacentHTML('beforeend', `
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #0a6ed1; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 12px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s ease, box-shadow 0.2s ease;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <span style="font-size: 1.2rem; font-weight: 800; color: #0a6ed1;"><i class="fa-solid fa-truck"></i> ${v.id}</span>
+              <span style="font-size: 1.2rem; font-weight: 800; color: #2563eb;"><i class="fa-solid fa-truck"></i> ${v.id}</span>
               <span style="background: #f0fdf4; color: #16a34a; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">🟢 ${readyLabel}</span>
             </div>
             <div style="font-size: 0.85rem; color: #334155; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
@@ -11447,7 +11340,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
               <div><strong>${maxPayloadLabel}</strong> <span style="color: #059669; font-weight: 700;">${maxWeight.toLocaleString('vi-VN')} kg</span> (${(maxWeight / 1000).toFixed(0)} ${tonLabel})</div>
             </div>
           </div>
-          <button type="button" class="fiori-btn" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" style="width: 100%; justify-content: center; background: #0a6ed1; color: white; padding: 10px; font-weight: 700; border-radius: 8px;">
+          <button type="button" class="fiori-btn" onclick="selectResourceFromPanoramic('vehicle', '${v.id}')" style="width: 100%; justify-content: center; background: #2563eb; color: white; padding: 10px; font-weight: 700; border-radius: 8px;">
             <i class="fa-solid fa-plus-circle"></i> ${assignVehBtn}
           </button>
         </div>
@@ -11503,7 +11396,7 @@ function renderPanoramicCardsGrid(filterText = '', weightFilter = '') {
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
               <span style="font-size: 1.05rem; font-weight: 800; color: #0f172a;"><i class="fa-solid fa-user-gear" style="color: #059669;"></i> ${escapeHtml(d.name)}</span>
-              <span style="background: #eff6ff; color: #0a6ed1; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">🟢 ${readyLabel}</span>
+              <span style="background: #eff6ff; color: #2563eb; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700;">🟢 ${readyLabel}</span>
             </div>
             <div style="font-size: 0.85rem; color: #334155; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
               <div><strong>${driverIdLabel}</strong> ${d.id}</div>
@@ -11643,7 +11536,7 @@ window.openOrderDetailModal = function (doId, e) {
   }
 
   if (document.getElementById('detail-do-id')) document.getElementById('detail-do-id').innerText = d.id;
-  if (document.getElementById('detail-so-id')) document.getElementById('detail-so-id').innerText = d.so_id || '-';
+  if (document.getElementById('detail-so-id')) document.getElementById('detail-so-id').innerText = d.quotation_id || '-';
   if (document.getElementById('detail-customer')) document.getElementById('detail-customer').innerText = d.customer_id || '-';
   if (document.getElementById('detail-route')) document.getElementById('detail-route').innerText = d.route_id || '-';
   if (document.getElementById('detail-pickup-date')) document.getElementById('detail-pickup-date').innerText = d.pickup_date || '-';
@@ -11875,7 +11768,7 @@ window.submitDispatch = async function () {
       assignment_end: new Date(tripEnd).toISOString()
     }
   };
-  const commandResult = await executeWorkflowCommand('dispatch', command);
+  const commandResult = await dieuPhoiCoXacNhanLoaiXe(command);
 
   if (commandResult.ok) {
     showToast(`Đã điều phối & cấp lệnh xuất bến thành công cho Lệnh ${doId}! (Xe: ${vehId}, Tài xế: ${drvId})`);
@@ -12272,8 +12165,8 @@ function khoiLoiNhuanCloseout(data, currency) {
       + `Chưa có chi phí thực tế, nên con số này đang bằng toàn bộ giá bán.</div></div>`;
   }
   return `<div style="border:1px solid #bfdbfe; border-radius:9px; padding:10px; background:#eff6ff;">`
-    + `<div style="color:#0a6ed1; font-size:.75rem; font-weight:900;">Lợi nhuận</div>`
-    + `<div style="font-weight:950; color:#0a6ed1;">${tien} (${tiLe}%)</div></div>`;
+    + `<div style="color:#2563eb; font-size:.75rem; font-weight:900;">Lợi nhuận</div>`
+    + `<div style="font-weight:950; color:#2563eb;">${tien} (${tiLe}%)</div></div>`;
 }
 
 /**
@@ -12332,7 +12225,9 @@ function khoiThongTinDOHoSo(data) {
   const o = [
     ["Mã DO", d.id || data.do_id],
     ["Trạng thái", statusLabel(d.canonical_status || data.status) || d.status],
-    ["SO tham chiếu", data.sales_order_id || d.so_id],
+    // DONG "SO THAM CHIEU" DA BO. Buoc Don hang khong con trong luong, nen mot
+    // dong luon rong chi lam nguoi doc di tim mot ban ghi khong ton tai. DO cu
+    // (tao truoc khi bo buoc do) cung khong con ma don — cot da truc xuat (049).
     ["Báo giá cước", data.quotation_id],
     ["Khách hàng", d.customer_id || data.customer_id],
     ["Mã tuyến", d.route_id || data.route?.id],
@@ -12437,8 +12332,11 @@ function khoiPODHoSo(data) {
     </section>`;
 }
 
-function renderDeliveryOrderCloseout(data) {
-  const target = document.getElementById('tracking-closeout-content');
+function renderDeliveryOrderCloseout(data, target) {
+  // `target` tuỳ chọn: màn Theo dõi vẽ vào ô của nó; màn Hoàn tất giao hàng
+  // ("Hồ sơ đã hoàn tất") truyền ô riêng — CÙNG MỘT bản vẽ, để anh Khang lấy
+  // từng dòng thu/chi có Acc code ở bất kỳ màn nào cũng thấy đúng một bảng.
+  target = target || document.getElementById('tracking-closeout-content');
   if (!target) return;
   if (!data || !data.do_id) {
     target.innerHTML = 'Chưa có dữ liệu hồ sơ cho DO đang chọn.';
@@ -12451,7 +12349,10 @@ function renderDeliveryOrderCloseout(data) {
   // Năm con số tiền: giá ban đầu, khách trả thêm, giá cuối, chi phí, lợi
   // nhuận. Giữ nguyên vì đây là phần đọc nhanh nhất của hồ sơ.
   const soTien = [
-    ["Giá SO ban đầu", tm.base_selling_price, "#0f172a", "#f8fafc", "#e2e8f0"],
+    // "Cuoc theo bao gia", khong phai "Gia SO ban dau": con so nay la
+    // `unit_price` khoa theo bao gia luc khach chap nhan. Goi no la gia SO la
+    // tro nguoi doc sang mot buoc da bi bo khoi luong.
+    ["Cước theo báo giá", tm.base_selling_price, "#0f172a", "#f8fafc", "#e2e8f0"],
     ["Khách hàng trả thêm", tm.customer_surcharge_total, "#b45309", "#fff7ed", "#fed7aa"],
     ["Giá cuối DO", tm.selling_price ?? tm.final_selling_price, "#047857", "#f0fdf4", "#bbf7d0"],
     ["Chi phí nội bộ", tm.actual_cost_total, "#b42318", "#fef2f2", "#fecaca"],
@@ -12476,6 +12377,54 @@ function renderDeliveryOrderCloseout(data) {
       .filter(Boolean).join(" · ") || "—"],
   ].map(x => oHoSo(x[0], x[1])).join("");
 
+  // SỔ THU – CHI TỪNG DÒNG. Đây là phần anh Khang (bên công nợ) lấy để lập
+  // phiếu thu / phiếu chi, nên nó phải là TỪNG DÒNG có MÃ COSTINDEX, không phải
+  // ba khối tóm tắt như bản trước. Máy chủ gộp ba nguồn — chi theo công thức
+  // (đã áp đơn giá của xe), chi thực tế, thu theo báo giá + khách trả thêm —
+  // thành `ledger_lines`; ở đây chỉ vẽ, không tính lại con số nào.
+  const soDong = Array.isArray(data.ledger_lines) ? data.ledger_lines : [];
+  const tong = data.ledger_totals || {};
+  const nguonNhan = { vehicle: 'đơn giá của xe', cost_formula: 'công thức loại xe',
+    actual_cost: 'phát sinh khi chốt', quotation: 'theo báo giá',
+    delivery_order: 'theo lệnh giao', customer_surcharge: 'khách trả thêm' };
+  const oMa = d => d.cost_index
+    ? `<code class="cl-ma">${escapeCloseoutText(d.cost_index)}</code>`
+    : '<code class="cl-ma is-thieu" title="Công thức giá thành chưa chọn Acc code cho khoản mục này">chưa có acc code</code>';
+  const dongSo = (kind) => soDong.filter(d => d.kind === kind).map(d => `<tr class="cl-so-dong">
+      <td>${oMa(d)}</td>
+      <td><strong>${escapeCloseoutText(d.name)}</strong>
+          <small>${escapeCloseoutText(nguonNhan[d.source] || d.source || '')}${d.calculation ? ' · ' + escapeCloseoutText(d.calculation) : ''}</small></td>
+      <td class="cl-so-tien">${closeoutMoney(d.planned_amount, currency)}</td>
+      <td class="cl-so-tien"><b>${closeoutMoney(d.actual_amount, currency)}</b></td>
+      <td class="cl-so-tien ${d.kind === 'thu' ? 'cl-so-them' : 'cl-so-lech'}">${
+        d.kind === 'thu' ? closeoutMoney(d.customer_extra, currency)
+                         : (d.variance ? (d.variance > 0 ? '+' : '') + closeoutMoney(d.variance, currency) : '—')}</td>
+    </tr>`).join('');
+  const nhomSo = (kind, nhan, tongTien) => `
+      <tr class="cl-so-nhom"><td colspan="5">${nhan}</td></tr>
+      ${dongSo(kind) || `<tr><td colspan="5" class="cl-trong">Chưa có dòng ${kind}.</td></tr>`}
+      <tr class="cl-so-tong"><td colspan="3">Tổng ${kind}</td><td class="cl-so-tien"><b>${closeoutMoney(tongTien, currency)}</b></td><td></td></tr>`;
+  const doiChieu = [
+    tong.khop_gia_cuoi === false ? 'Tổng thu KHÔNG khớp giá cuối DO' : null,
+    tong.khop_gia_thanh === false ? 'Tổng chi KHÔNG khớp giá thành dùng tính lãi' : null,
+    tong.so_dong_thieu_ma ? `${tong.so_dong_thieu_ma} dòng chưa có Acc code — chọn ở Dữ liệu gốc → Công thức giá thành` : null,
+  ].filter(Boolean);
+  const bangSo = soDong.length ? `<section class="cl-khoi cl-so">
+      <div class="cl-khoi-dau"><div><span class="cl-kicker">Sổ thu – chi của lệnh giao hàng</span>
+        <h4>${soDong.length} dòng · lãi gộp ${closeoutMoney(tong.lai_gop, currency)}</h4></div>
+        ${doiChieu.length ? `<span class="cl-dem cl-dem-canh">${doiChieu.map(escapeCloseoutText).join(' · ')}</span>`
+                          : '<span class="cl-dem">Tổng thu và tổng chi khớp với hồ sơ</span>'}</div>
+      <div class="cl-so-cuon"><table class="cl-so-bang">
+        <thead><tr><th>Acc code</th><th>Khoản mục</th><th>Chốt ban đầu</th><th>Thực tế</th><th>Khách trả thêm / Chênh</th></tr></thead>
+        <tbody>
+          ${nhomSo('thu', 'THU — tiền khách trả', tong.tong_thu)}
+          ${nhomSo('chi', 'CHI — chi phí của chuyến (phí của xe)', tong.tong_chi)}
+        </tbody>
+      </table></div>
+    </section>` : '';
+
+  // Ba khối tóm tắt cũ giữ lại làm đường lùi khi máy chủ chưa trả `ledger_lines`
+  // (máy chủ cũ) — nhờ vậy hồ sơ vẫn đọc được, chỉ thiếu mã.
   const dongChiPhi = (data.configured_cost_lines || []).map(l => `<div class="cl-dong">
       <span><strong>${escapeCloseoutText(l.name)}</strong>
         <small>${escapeCloseoutText(l.calculation || "")}</small></span>
@@ -12483,9 +12432,9 @@ function renderDeliveryOrderCloseout(data) {
     || '<div class="cl-trong">Chưa có công thức giá thành cho loại xe này.</div>';
 
   const dongThucTe = (data.actual_cost_lines || []).map(l => `<div class="cl-dong">
-      <span><strong>${escapeCloseoutText(l.charge_type)}</strong>
-        <small>${escapeCloseoutText(l.description || "")}</small></span>
-      <b>${closeoutMoney(l.total_amount, currency)}</b></div>`).join("")
+      <span><strong>${escapeCloseoutText(l.description || l.charge_type)}</strong>
+        <small>${escapeCloseoutText(l.charge_type)}</small></span>
+      <b>${closeoutMoney(l.actual_amount ?? l.total_amount, currency)}</b></div>`).join("")
     || '<div class="cl-trong">Chưa ghi chi phí thực tế.</div>';
 
   const dongPhuThu = (data.customer_charge_adjustments || []).map(l => `<div class="cl-dong">
@@ -12510,8 +12459,9 @@ function renderDeliveryOrderCloseout(data) {
       <div class="cl-luoi cl-moc">${moc}</div>
       <div class="cl-tien-hang">${soTien}</div>
       ${khoiThongTinDOHoSo(data)}
+      ${bangSo}
       ${khoiPODHoSo(data)}
-      <div class="cl-hai-cot">
+      <div class="cl-hai-cot" ${soDong.length ? 'hidden' : ''}>
         <section class="cl-khoi">
           <div class="cl-khoi-dau"><div><span class="cl-kicker">Giá thành theo loại xe</span>
             <h4>${escapeCloseoutText(data.cost_formula?.name || "Chưa cấu hình")}</h4></div></div>
@@ -12613,8 +12563,8 @@ function ensureOperationLogPanel() {
   panel.style.display = 'none';
   panel.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
-      <div style="font-weight:950; color:#0f172a; display:flex; align-items:center; gap:7px;"><i class="fa-solid fa-clock-rotate-left" style="color:#0a6ed1;"></i> Lich su thao tac</div>
-      <button type="button" onclick="document.getElementById('operation-log-panel').style.display='none'" style="border:0; background:#eff6ff; color:#0a6ed1; width:28px; height:28px; border-radius:7px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+      <div style="font-weight:950; color:#0f172a; display:flex; align-items:center; gap:7px;"><i class="fa-solid fa-clock-rotate-left" style="color:#2563eb;"></i> Lich su thao tac</div>
+      <button type="button" onclick="document.getElementById('operation-log-panel').style.display='none'" style="border:0; background:#eff6ff; color:#2563eb; width:28px; height:28px; border-radius:7px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div id="operation-log-list" style="display:grid; gap:7px;"></div>
   `;
@@ -12635,7 +12585,7 @@ function recordOperationLog({ id, status = 'pending', title = '', detail = '', p
     list.prepend(item);
   }
   const palette = {
-    pending: { bg: '#eff6ff', bd: '#bfdbfe', fg: '#0a6ed1', icon: 'fa-spinner fa-spin', label: 'Dang xu ly' },
+    pending: { bg: '#eff6ff', bd: '#bfdbfe', fg: '#2563eb', icon: 'fa-spinner fa-spin', label: 'Dang xu ly' },
     success: { bg: '#f0fdf4', bd: '#bbf7d0', fg: '#047857', icon: 'fa-circle-check', label: 'Da luu DB' },
     error: { bg: '#fff7ed', bd: '#fed7aa', fg: '#b45309', icon: 'fa-triangle-exclamation', label: 'Loi' },
   }[status] || {};
@@ -13250,7 +13200,7 @@ window.loadIncidents = async function () {
           tbody.insertAdjacentHTML('beforeend', `
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 10px 14px; font-size: 0.83rem; color: #64748b;">${inc.reported_at || 'Vừa mới đây'}</td>
-              <td style="padding: 10px 14px; font-weight: 700; color: #0a6ed1;">${inc.do_id}</td>
+              <td style="padding: 10px 14px; font-weight: 700; color: #2563eb;">${inc.do_id}</td>
               <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${inc.vehicle_id}</td>
               <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${mainDriver}</td>
               <td style="padding: 10px 14px; font-weight: 600; color: #1e293b;">${coDriver}</td>
@@ -13498,8 +13448,8 @@ window.initLeafletRouteMap = async function (waypointsData, routeCode, routeName
    */
   const veHinh = (diem, laDuongBo) => {
     const polyline = L.polyline(diem, laDuongBo
-      ? { color: '#0a6ed1', weight: 6, opacity: 0.85 }
-      : { color: '#0a6ed1', weight: 4, opacity: 0.75, dashArray: '10 8' });
+      ? { color: '#2563eb', weight: 6, opacity: 0.85 }
+      : { color: '#2563eb', weight: 4, opacity: 0.75, dashArray: '10 8' });
     routeMapLayersGroup.addLayer(polyline);
     leafletRouteMap.fitBounds(polyline.getBounds(), { padding: [40, 40] });
     if (!laDuongBo) {
@@ -13546,7 +13496,7 @@ const MASTER_DATA_GUIDANCE = {
   },
   'md-tab-formulas': {
     title: { vi: 'Công thức giá thành & xăng dầu', en: 'Cost Formula & Fuel', la: 'ສູດຄິດໄລ່ຕົ້ນທຶນ & ນ້ຳມັນ' },
-    summary: { vi: 'Thiết lập cấu phần chi phí theo loại xe để tính giá kế hoạch và so sánh với chi phí thực tế.', en: 'Setup cost breakdown by vehicle type to calculate plan and actual cost.', la: 'ກຳນົດໂຄງສ້າງຕົ້ນທຶນຕາມປະເພດລົດເພື່ອຄິດໄລ່ລາຄາແຜນ ແລະ ສົມທຽບຕົ້ນທຶນຕົວຈິງ.' },
+    summary: { vi: 'Thiết lập khoản mục chi phí theo loại xe để tính giá kế hoạch và so sánh với chi phí thực tế.', en: 'Setup cost breakdown by vehicle type to calculate plan and actual cost.', la: 'ກຳນົດໂຄງສ້າງຕົ້ນທຶນຕາມປະເພດລົດເພື່ອຄິດໄລ່ລາຄາແຜນ ແລະ ສົມທຽບຕົ້ນທຶນຕົວຈິງ.' },
     dataLabel: { vi: 'loại xe/công thức', en: 'vehicle types/formulas', la: 'ປະເພດລົດ / ສູດຄິດໄລ່' },
     next: {
       vi: ['Chọn loại xe ở cột trái', 'Cấu hình định mức nhiên liệu, lương tài xế, phí cầu đường', 'Dùng để tính báo giá và actual cost'],
@@ -13717,6 +13667,10 @@ window.updateMasterDataGuidance = function (tabId = 'md-tab-routes') {
   if (oThem) {
     oThem.innerHTML = btnAdd;
     oThem.onclick = () => openMasterDataPrimaryAction(tabId);
+    // Tab "Xe, tài xế và sắp ca" đã có nút "Thêm tài xế / phụ xe" ngay trên
+    // thanh công cụ của bảng xếp ca; nút gộp "Thêm / cấu hình ngay" ở dải
+    // trên là nút thứ hai cho cùng một việc — chủ dự án yêu cầu bỏ.
+    oThem.hidden = tabId === 'md-tab-vehicles';
   }
   const oNapLai = document.getElementById("master-data-guide-reload");
   if (oNapLai) {
@@ -13804,7 +13758,7 @@ window.switchMasterDataTab = function (tabId, btn) {
   if (btn) {
     btn.classList.add('active');
     btn.style.background = '#eff6ff';
-    btn.style.color = '#0a6ed1';
+    btn.style.color = '#2563eb';
     btn.style.fontWeight = '700';
   }
 
@@ -13847,10 +13801,6 @@ window.switchVehicleCatalogFolder = function (folder, btn) {
   document.querySelectorAll('.vehicle-folder-tab').forEach(tab => {
     const isActive = tab === btn || (tab.getAttribute('onclick') || '').includes(`'${selected}'`);
     tab.classList.toggle('active', isActive);
-    tab.style.borderColor = isActive ? '#0a6ed1' : '#e2e8f0';
-    tab.style.background = isActive ? '#eff6ff' : '#ffffff';
-    tab.style.color = isActive ? '#0a6ed1' : '#334155';
-    tab.style.boxShadow = isActive ? '0 4px 12px rgba(10,110,209,0.12)' : 'none';
   });
 
   if (selected === 'types' && typeof loadVehTypes === 'function') loadVehTypes();
@@ -13872,9 +13822,9 @@ window.switchOpsPlanningFolder = function (folder, btn) {
   document.querySelectorAll('.ops-planning-folder-tab').forEach(tab => {
     const isActive = tab === btn || (tab.getAttribute('onclick') || '').includes(`'${selected}'`);
     tab.classList.toggle('active', isActive);
-    tab.style.borderColor = isActive ? '#0a6ed1' : '#e2e8f0';
+    tab.style.borderColor = isActive ? '#2563eb' : '#e2e8f0';
     tab.style.background = isActive ? '#eff6ff' : '#ffffff';
-    tab.style.color = isActive ? '#0a6ed1' : '#334155';
+    tab.style.color = isActive ? '#2563eb' : '#334155';
     tab.style.boxShadow = isActive ? '0 4px 12px rgba(10,110,209,0.12)' : 'none';
   });
   if (selected === 'do' && typeof loadDeliveryOrders === 'function') loadDeliveryOrders();
@@ -14029,7 +13979,7 @@ window.addRouteSegment = async function () {
       routeMapLayersGroup.addLayer(m2);
 
       if (realData.routePath && realData.routePath.length > 0) {
-        const line = L.polyline(realData.routePath, { color: '#0a6ed1', weight: 6, opacity: 0.85 });
+        const line = L.polyline(realData.routePath, { color: '#2563eb', weight: 6, opacity: 0.85 });
         routeMapLayersGroup.addLayer(line);
         leafletRouteMap.fitBounds(line.getBounds(), { padding: [30, 30] });
       }
@@ -14046,7 +13996,7 @@ window.addRouteSegment = async function () {
     tr.innerHTML = `
       <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;">${from}</td>
       <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;">${to}</td>
-      <td style="padding: 12px 16px; font-weight: 700; color: #0a6ed1;">${dist} km</td>
+      <td style="padding: 12px 16px; font-weight: 700; color: #2563eb;">${dist} km</td>
       <td style="padding: 12px 16px; text-align: right;">
         <button class="fiori-btn fiori-btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #ef4444; border-color: #fca5a5;" onclick="this.closest('tr').remove(); calculateTotalDistance();"><i class="fa-solid fa-trash"></i></button>
       </td>
@@ -14190,8 +14140,8 @@ window.addCustomCostComponent = function () {
     const tr = document.createElement('tr');
     tr.style.borderBottom = '1px solid #f1f5f9';
     tr.innerHTML = `
-      <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-coins" style="color: #0a6ed1; margin-right: 8px;"></i> ${name}</td>
-      <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" class="fiori-input" value="${val}" style="width: 160px !important; text-align: right; font-weight: 700; color: #0a6ed1;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">${currency}</span></div></td>
+      <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;"><i class="fa-solid fa-coins" style="color: #2563eb; margin-right: 8px;"></i> ${name}</td>
+      <td style="padding: 12px 16px; text-align: right;"><div style="display:inline-flex; align-items:center; gap:8px;"><input type="text" class="fiori-input" value="${val}" style="width: 160px !important; text-align: right; font-weight: 700; color: #2563eb;"><span class="md-cost-currency-suffix" style="font-size:.78rem; font-weight:900; color:#64748b; min-width:34px; text-align:left;">${currency}</span></div></td>
       <td style="text-align: center;"><button class="fiori-btn fiori-btn-secondary" style="padding: 3px 8px; font-size: 0.75rem; color: #ef4444;" onclick="this.closest('tr').remove()"><i class="fa-solid fa-trash"></i></button></td>
     `;
     tbody.appendChild(tr);
@@ -14281,6 +14231,7 @@ function ensureVehicleTypeFormula(vehicleType, currency = masterCostCurrencyCode
 }
 
 let activeCostFormulaKey = '';
+let savedCostFormulaDraft = '';
 
 function currentCostFormulaDraft() {
   return {
@@ -14290,10 +14241,15 @@ function currentCostFormulaDraft() {
     wh: document.getElementById('md-cost-warehouse-fee')?.value || '0',
     rate: document.getElementById('md-cost-freight-rate')?.value || '0',
     terms: JSON.stringify(costFormulaTerms || [])
+    ,expressions: JSON.stringify(costFormulaExpressions)
   };
 }
 
 function hasUnsavedCostFormulaChanges() {
+  if (savedCostFormulaDraft) {
+    const saved = JSON.parse(savedCostFormulaDraft), current = currentCostFormulaDraft();
+    return current.terms !== saved.terms || current.expressions !== saved.expressions;
+  }
   if (!activeCostFormulaKey || !masterFormulaStore[activeCostFormulaKey]) return false;
   const stored = masterFormulaStore[activeCostFormulaKey];
   const draft = currentCostFormulaDraft();
@@ -14329,6 +14285,7 @@ function showCostFormulaUnsavedDialog() {
 }
 
 window.requestCostFormulaContextChange = async function (vehicleTypeId, currency, element = null) {
+  if (window.CostVehicleInline && !window.CostVehicleInline.close()) return;
   const normalizedCurrency = String(currency || 'VND').toUpperCase();
   const vehicleType = (vehTypes || []).find(item => String(item.id) === String(vehicleTypeId));
   if (!vehicleType) return;
@@ -14350,6 +14307,12 @@ window.requestCostFormulaContextChange = async function (vehicleTypeId, currency
       const saved = await window.saveCostFormula();
       if (!saved) return;
     }
+    if (action === 'discard' && savedCostFormulaDraft) {
+      const saved = JSON.parse(savedCostFormulaDraft);
+      masterFormulaStore[activeCostFormulaKey] = {
+        ...masterFormulaStore[activeCostFormulaKey], ...saved, terms: JSON.parse(saved.terms), expressions: JSON.parse(saved.expressions || 'null')
+      };
+    }
   }
 
   const select = document.getElementById('md-cost-currency');
@@ -14361,6 +14324,7 @@ window.requestCostFormulaContextChange = async function (vehicleTypeId, currency
 
 window.loadSelectedFormulaPreset = function (key, options = {}) {
   const currentKey = key || document.getElementById('md-formula-preset-select')?.value || 'preset-1';
+  const changedContext = activeCostFormulaKey !== currentKey;
   const p = masterFormulaStore[currentKey] || masterFormulaStore['preset-1'];
 
   const fuelInput = document.getElementById('md-cost-fuel-rate');
@@ -14389,6 +14353,10 @@ window.loadSelectedFormulaPreset = function (key, options = {}) {
   }
 
   activeCostFormulaKey = currentKey;
+  if (changedContext && window.FormulaModel) {
+    window.loadCostFormulaTerms();
+    savedCostFormulaDraft = JSON.stringify(currentCostFormulaDraft());
+  }
 };
 
 
@@ -14522,65 +14490,6 @@ function workflowTotalFieldVndValue(id) {
   return parseWorkflowMoneyValue(el.dataset.vndValue || el.value);
 }
 
-function refreshSOAmountCurrency() {
-  const curr = document.getElementById('so-currency')?.value || 'VND';
-  const unitLabel = document.getElementById('so-line-currency-label');
-  const totalLabel = document.getElementById('so-line-total-currency-label');
-  [unitLabel, totalLabel].forEach(label => {
-    if (label) label.textContent = '';
-  });
-
-  document.querySelectorAll('[id^="so-item-total-amount"]').forEach(cell => {
-    const amountVnd = Number(cell.dataset.vndValue || parseWorkflowMoneyValue(cell.textContent));
-    cell.dataset.vndValue = String(amountVnd || 0);
-    cell.textContent = formatWorkflowCurrencyAmount(amountVnd, curr);
-  });
-
-  const totalInput = document.getElementById('so-amount');
-  if (totalInput) {
-    const amountVnd = Number(totalInput.dataset.vndValue || parseWorkflowMoneyValue(totalInput.value));
-    totalInput.dataset.vndValue = String(amountVnd || 0);
-    totalInput.value = formatWorkflowCurrencyAmount(amountVnd, curr);
-  }
-}
-window.refreshSOAmountCurrency = refreshSOAmountCurrency;
-
-function isSOFormLocked() {
-  const soId = document.getElementById('so-id')?.value || '';
-  const currentSO = (crmSalesOrders || []).find(so => String(so.id || '') === String(soId));
-  const status = currentSO?.canonical_status || currentSO?.status || document.getElementById('so-status')?.value || '';
-  const statusKey = window.WorkflowUIUtils?.workflowStatusKey?.(status) || status.toLowerCase();
-  return currentSOMode === 'view'
-    || !workflowActionMode(status, 'sales_order').canEdit
-    || ['confirmed', 'approved', 'completed', 'cancelled', 'in_transit'].includes(statusKey);
-}
-
-function refreshSOEditControls() {
-  const locked = isSOFormLocked();
-  const soId = document.getElementById('so-id')?.value || '';
-  const currentSO = (crmSalesOrders || []).find(so => String(so.id || '') === String(soId));
-  const status = currentSO?.canonical_status || currentSO?.status || document.getElementById('so-status')?.value || '';
-  const statusKey = window.WorkflowUIUtils?.workflowStatusKey?.(status) || status.toLowerCase();
-  const isDraft = !statusKey || statusKey === 'draft';
-  const addLineBtn = document.getElementById('btn-add-so-line');
-  if (addLineBtn) {
-    addLineBtn.disabled = locked;
-    addLineBtn.style.display = locked ? 'none' : 'inline-flex';
-  }
-  const saveBtn = document.querySelector('#oracle-so-form button[onclick="saveOracleSO()"]');
-  if (saveBtn) saveBtn.style.display = locked ? 'none' : 'inline-flex';
-  const approveBtn = document.getElementById('btn-approve-so');
-  if (approveBtn) approveBtn.style.display = (!locked && isDraft) ? 'inline-flex' : 'none';
-  const closeBtn = document.getElementById('btn-close-so-form');
-  if (closeBtn) closeBtn.textContent = locked ? 'Đóng' : 'Hủy bỏ';
-  const subtitle = document.getElementById('oracle-so-form-subtitle');
-  if (subtitle) {
-    const label = statusLabel(status || 'Bản nháp');
-    subtitle.textContent = `Đơn hàng vận chuyển - ${label}`;
-  }
-}
-window.refreshSOEditControls = refreshSOEditControls;
-
 function workflowNumberInputValue(id) {
   const el = document.getElementById(id);
   if (!el) return 0;
@@ -14588,19 +14497,10 @@ function workflowNumberInputValue(id) {
   return parseWorkflowMoneyValue(raw);
 }
 
-function findSalesOrderForDO(source) {
-  const soId = typeof source === 'string'
-    ? source
-    : (source?.so_id || source?.sales_order_id || source?.id || '');
-  const orders = crmSalesOrders?.length ? crmSalesOrders : (appState.sales_orders || []);
-  return orders.find(order => String(order.id) === String(soId));
-}
-window.findSalesOrderForDO = findSalesOrderForDO;
-
 /* ==========================================================================
    Đang vận chuyển thì CẤM sửa quyết toán chi phí.
 
-   Giá hợp đồng đã chốt từ SO. Trong lúc xe còn trên đường thì chưa biết
+   Giá đã chốt trên báo giá. Trong lúc xe còn trên đường thì chưa biết
    phát sinh là bao nhiêu, nên không được sửa tiền — mở ra là mở cửa cho
    người ta đổi số giữa chuyến, mà chứng từ ký nhận thì chưa có.
 
@@ -14669,10 +14569,12 @@ function doSettlementLineTemplate(line = {}, index = 0) {
   const actual = Number(line.actual_amount ?? line.actual ?? line.increased_amount ?? (original + legacyIncrease)) || 0;
   const increase = Math.max(0, actual - original);
   const note = fixUIText(line.note || line.reason || '');
+  const maCostindex = String(line.cost_index || '').trim();
   return `
-    <tr data-do-settlement-line>
+    <tr data-do-settlement-line data-cost-index="${doBoardEscape(maCostindex)}" data-charge-type="${doBoardEscape(line.charge_type || '')}">
       <td style="padding:9px 12px; border-bottom:1px solid #eef2f7;">
-        <input class="fiori-input do-settlement-item" type="text" value="${doBoardEscape(item)}" placeholder="Ví dụ: Xăng dầu" style="width:100%; border:0; border-bottom:1px solid #0a6ed1; background:transparent; outline:none; font-weight:800; color:#0f172a;">
+        <input class="fiori-input do-settlement-item" type="text" value="${doBoardEscape(item)}" placeholder="Ví dụ: Xăng dầu" style="width:100%; border:0; border-bottom:1px solid #2563eb; background:transparent; outline:none; font-weight:800; color:#0f172a;">
+        <small class="do-settlement-costindex" style="display:block; margin-top:3px; font-size:.7rem; color:${maCostindex ? '#0369a1' : '#b45309'}; font-weight:700;">${maCostindex ? 'Acc code ' + doBoardEscape(maCostindex) : 'chưa có acc code'}</small>
       </td>
       <td style="padding:9px 12px; border-bottom:1px solid #eef2f7;">
         <input class="fiori-input do-settlement-original" type="number" min="0" step="1000" value="${original}" oninput="refreshDOSettlementTotals()" placeholder="0" style="width:100%; padding:8px 10px; border:1px solid #cbd5e1; border-radius:7px; font-weight:800;">
@@ -14708,7 +14610,11 @@ function collectDOSettlementLines() {
     const original = parseWorkflowMoneyValue(row.querySelector('.do-settlement-original')?.value || 0);
     const actual = parseWorkflowMoneyValue(row.querySelector('.do-settlement-actual')?.value || 0);
     const note = row.querySelector('.do-settlement-note')?.value || '';
-    return { name: item, original_amount: original, actual_amount: actual, note };
+    // Mã costindex và mã khoản mục đi kèm dòng khi lưu, để bảng chi phí thực tế
+    // mang đúng mã mà dòng đã có từ công thức — không để máy chủ phải đoán lại.
+    const cost_index = (row.dataset.costIndex || '').trim() || undefined;
+    const charge_type = (row.dataset.chargeType || '').trim() || undefined;
+    return { name: item, original_amount: original, actual_amount: actual, note, cost_index, charge_type };
   }).filter(line => line.name || line.original_amount || line.actual_amount || line.note);
 }
 
@@ -14772,11 +14678,22 @@ function refreshDOSettlementTotals() {
 }
 window.refreshDOSettlementTotals = refreshDOSettlementTotals;
 
+/** Báo giá gốc của một DO (luồng mới: DO sinh từ báo giá, `quotation_id`). */
+function baoGiaCuaDO(source) {
+  const qid = source && (source.quotation_id || '');
+  if (!qid) return null;
+  const ds = (crmQuotations && crmQuotations.length) ? crmQuotations : (appState.quotations || []);
+  return ds.find(q => String(q.id) === String(qid)) || null;
+}
+
 function setDOSettlementFromSource(source = {}) {
-  const so = findSalesOrderForDO(source) || (source.id && findSalesOrderForDO(source.id)) || {};
-  const contractVnd = Number(source.contract_total || source.contract_total_amount || source.total_contract_amount || so.total_amount || source.total_amount || 0);
+  // Giá gốc theo BÁO GIÁ: DO kế thừa `unit_price` lúc sinh từ báo giá được
+  // chấp nhận. Bước Đơn hàng (SO) đã trục xuất khỏi hệ thống (migration 049).
+  const bg = baoGiaCuaDO(source);
+  const contractVnd = Number(source.contract_total || source.contract_total_amount || source.total_contract_amount
+    || (bg && bg.selling_price) || source.unit_price || source.total_amount || 0) || 0;
   const extraVnd = Number(source.additional_cost_amount || source.extra_cost_amount || source.extra_cost || 0);
-  const currency = source.currency_code || so.currency_code || 'VND';
+  const currency = source.currency_code || (bg && bg.currency_code) || 'VND';
   const contractInput = document.getElementById('do-contract-total');
   const originalDisplay = document.getElementById('do-original-contract-amount-display');
   const extraInput = document.getElementById('do-extra-cost');
@@ -14798,7 +14715,7 @@ function setDOSettlementFromSource(source = {}) {
     extraInput.dataset.vndValue = String(extraVnd || 0);
   }
   if (reasonInput) reasonInput.value = reason;
-  if (sourceBadge) sourceBadge.textContent = so.id ? `Theo SO ${so.id}` : 'Theo SO';
+  if (sourceBadge) sourceBadge.textContent = bg ? `Theo báo giá ${bg.id}` : (so.id ? `Theo đơn hàng cũ ${so.id}` : 'Theo báo giá');
   if (Array.isArray(savedLines) && savedLines.length) {
     renderDOSettlementLines(savedLines);
   } else if (extraVnd > 0) {
@@ -14935,10 +14852,6 @@ async function saveDOSettlementCost() {
 window.saveDOSettlementCost = saveDOSettlementCost;
 
 function refreshWorkflowCurrencyAmounts(formType = 'qt') {
-  if (formType === 'so') {
-    refreshSOAmountCurrency();
-    return;
-  }
   if (formType !== 'qt') return;
   const curr = document.getElementById('qt-currency')?.value || 'VND';
   const fuel = workflowCostFieldVndValue('qt-fuel');
@@ -14956,7 +14869,7 @@ window.onWorkflowCurrencyChange = function (formType = 'qt') {
   refreshWorkflowCurrencyAmounts(formType);
 };
 
-function renderWorkflowCurrencyOptions(selectIds = ['qt-currency', 'so-currency']) {
+function renderWorkflowCurrencyOptions(selectIds = ['qt-currency']) {
   const codes = workflowCurrencyCodes();
   selectIds.forEach(id => {
     const sel = document.getElementById(id);
@@ -14986,6 +14899,9 @@ async function loadCostFormulasFromBackend() {
         currency: row.currency || 'VND',
         configured: row.configured !== false,
         terms: Array.isArray(row.terms) ? row.terms : masterFormulaStore[storeKey]?.terms,
+        expressions: row.expressions || null,
+        history: row.history || [],
+        updatedAt: row.updated_at || null,
         fuel: components.fuel || masterFormulaStore[storeKey]?.fuel || '0',
         driver: components.driver || masterFormulaStore[storeKey]?.driver || '0',
         toll: components.toll || masterFormulaStore[storeKey]?.toll || '0',
@@ -15004,6 +14920,10 @@ async function loadCostFormulasFromBackend() {
 window.loadCostFormulasFromBackend = loadCostFormulasFromBackend;
 
 window.saveCostFormula = async function () {
+  if (costFormulaExpressions) {
+    try { window.CostExpression.evaluate(costFormulaExpressions, costFormulaTerms, costSampleTrip); }
+    catch (error) { showToast(error.message, 'error'); return false; }
+  }
   const currentKey = activeCostFormulaKey || document.getElementById('md-formula-preset-select')?.value || 'preset-1';
   const currency = masterCostCurrencyCode();
 
@@ -15031,6 +14951,8 @@ window.saveCostFormula = async function () {
     // Gui kem danh sach hang tu, de cong thuc dong di tron vong: mo lai
     // loai xe thi thay dung cac cau phan da them, ke ca cau phan tuy chinh.
     terms: costFormulaTerms,
+    expressions: costFormulaExpressions,
+    expected_updated_at: masterFormulaStore[currentKey]?.updatedAt || null,
     vehicle_type_id: selectedVehicleTypeId,
     name: vehTypeName,
     currency,
@@ -15038,6 +14960,7 @@ window.saveCostFormula = async function () {
     driver: driverInput,
     toll: tollInput,
     warehouse: whInput,
+    freight_rate: rateInput,
   };
   try {
     const response = await fetch(`${API_BASE}/api/cost-formulas`, {
@@ -15054,7 +14977,7 @@ window.saveCostFormula = async function () {
       }
     }
     if (!response.ok) {
-      showToast(result?.detail || 'Không lưu được công thức giá thành vào CSDL.');
+      showToast(result?.detail || 'Không lưu được công thức giá thành vào CSDL.', 'error');
       return false;
     }
     masterFormulaStore[currentKey] = {
@@ -15071,6 +14994,12 @@ window.saveCostFormula = async function () {
       terms: JSON.parse(JSON.stringify(costFormulaTerms || [])),
     };
     masterFormulaStore[currentKey].currency = currency;
+    masterFormulaStore[currentKey].expressions = result.data?.expressions || costFormulaExpressions;
+    masterFormulaStore[currentKey].history = result.data?.history || [];
+    masterFormulaStore[currentKey].updatedAt = result.data?.updated_at || null;
+    window.CostComparison?.invalidate();
+    window.CostFormulaBuilder?.refresh();
+    savedCostFormulaDraft = JSON.stringify(currentCostFormulaDraft());
     showToast(result?.message || `Đã lưu cấu hình giá thành ${currency} cho loại xe "${vehTypeName}" vào CSDL!`);
     return true;
   } catch (error) {
@@ -15156,7 +15085,7 @@ function renderCostBreakdown(hostId, quote, currencyId) {
     <div class="qt-cost-scroll">
       <table class="qt-cost-table">
         <thead>
-          <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+          <tr><th>Khoản mục</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
         </thead>
         <tbody>
           ${khoi('revenue', 'Cước thu khách', { nhan: 'Tổng cước báo giá', gia_tri: quote.revenue },
@@ -15213,7 +15142,7 @@ let lastQuotationQuote = null;
 window.autoCalculateMasterDataCost = function () {
   const setStatus = (text, tone) => setCostStatusBadge('qt-cost-status', text, tone);
 
-  renderWorkflowCurrencyOptions(['qt-currency', 'so-currency']);
+  renderWorkflowCurrencyOptions(['qt-currency']);
   const currency = document.getElementById('qt-currency')?.value || 'VND';
   const routeId = document.getElementById('qt-route')?.value || '';
   // Chua nhap KHAC 0 kg: chua nhap la chua biet, 0 la chuyen chay rong.
@@ -15282,105 +15211,6 @@ window.autoCalculateMasterDataCost = function () {
  * trên đơn, số km của tuyến đang chọn, và tải trọng THỰC TẾ của đơn — ô tải
  * trọng ở đây tính bằng kg nên phải quy về tấn.
  */
-window.autoCalculateSOCost = function () {
-  const host = document.getElementById('so-cost-breakdown');
-  if (!host) return null;
-
-  const routeId = document.getElementById('so-route-select')?.value || '';
-  const route = (eplRoutes || []).find(item => item.id === routeId) || null;
-  const kg = window.QuotationPricing.toNumber(document.getElementById('so-weight-kg')?.value);
-  const rawWeight = String(document.getElementById('so-weight-kg')?.value ?? '').trim();
-
-  const quote = window.QuotationPricing.price({
-    store: masterFormulaStore,
-    vehicleTypes: vehTypes,
-    cargoType: document.getElementById('so-cargo-type')?.value || '',
-    route,
-    // Ô trên màn là kg, mô hình nhận tấn. Chưa nhập thì để rỗng, không quy
-    // thành 0 tấn — 0 tấn là chuyến chạy rỗng, còn rỗng là chưa biết.
-    tonnes: rawWeight === '' ? '' : kg / 1000,
-    stops: route?.stop_count,
-    currency: document.getElementById('so-currency')?.value || 'VND',
-  });
-
-  renderCostBreakdown('so-cost-breakdown', quote, 'so-currency');
-  if (quote.ready) {
-    setCostStatusBadge('so-cost-status', `Theo công thức "${quote.formulaName || quote.formulaKey}"`, 'ok');
-  } else {
-    setCostStatusBadge('so-cost-status', 'Chưa đủ dữ liệu để áp công thức', 'warn');
-  }
-  return quote;
-};
-
-/**
- * Áp giá đã tính vào dòng cước của đơn.
- *
- * Tách riêng khỏi autoCalculateSOCost: xem chi phí là một việc, ghi đè đơn giá
- * đã chốt là một việc khác. Gộp hai việc là lý do bản cũ cứ đổi tuyến một cái
- * là mất giá đã chốt bên báo giá.
- */
-window.applySOCostToLine = function () {
-  const quote = window.autoCalculateSOCost();
-  if (!quote || !quote.ready) {
-    showToast('Chưa tính được cước nên chưa có số để áp.', 'warning');
-    return;
-  }
-  const unitPrice = document.getElementById('so-item-unit-price');
-  if (unitPrice) {
-    unitPrice.value = Math.round(quote.total);
-    if (typeof calcSOLineTotal === 'function') calcSOLineTotal();
-  }
-  showToast(`Đã áp cước theo công thức: ${formatWorkflowCurrencyAmount(quote.total, document.getElementById('so-currency')?.value || 'VND')}`);
-};
-
-window.onSORouteSelectChange = function (routeCode) {
-  const container = document.getElementById('so-stops-container');
-  const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
-  if (!routeCode) {
-    // KHONG xoa tien ve 0 o day. Bo chon tuyen la mot thao tac xem lai, khong
-    // phai mot quyet dinh gia; xoa don gia da chot ve 0 la mat thong tin ma
-    // khong mot loi nao. Bang chi phi ben duoi tu noi la chua chon tuyen.
-    if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
-    if (container) {
-      const emptyRouteMsg = lang === 'la' ? 'ກະລຸນາເລືອກເສັ້ນທາງຈາກລາຍການຂໍ້ມູນຫຼັກຂ້າງເທິງເພື່ອສະແດງເສັ້ນທາງ & ຄິດໄລ່ຕົ້ນທຶນ...' : (lang === 'en' ? 'Please select a Route from Master Data above to display route legs & calculate costs...' : 'Vui lòng chọn Tuyến Đường từ danh sách CSDL ở trên để hiển thị lộ trình chặng & tính chi phí...');
-      container.innerHTML = `<div style="color: #94a3b8; font-size: 0.85rem; font-style: italic; padding: 14px; text-align: center;"><i class="fa-solid fa-route" style="margin-right: 6px;"></i>${emptyRouteMsg}</div>`;
-    }
-    return;
-  }
-
-  // Try to get real route data from API first
-  const apiRoute = (eplRoutes || []).find(r => r.id === routeCode);
-
-  const routeLabel = lang === 'la' ? 'ເສົ້ນທາງ:' : (lang === 'en' ? 'Route:' : 'Tuyến:');
-
-  const stops = apiRoute
-    ? [{ label: routeLabel, text: `${escapeHtml(apiRoute.name || routeCode)} (${apiRoute.distance_km || 0} km)` }]
-    : [{ label: routeLabel, text: routeCode }];
-
-  // CỐ Ý KHÔNG tính lại tiền ở đây.
-  //
-  // Trước đây đổi tuyến là đơn giá bị ghi đè bằng `số km × 6250 + 800000`. Hai con số
-  // đó không có nguồn nào và không dính gì đến công thức đã cấu hình trong Dự liệu gốc, nên
-  // chỉ cần đổi tuyến là đơn giá đã chỏt bên báo giá bị xóa mất mà không một lời nào.
-  //
-  // Cước thuộc về báo giá và được kế thứa xuống đơn vận chuyển; renderSOCostBreakdown()
-  // mới là chỗ tính lại theo tải trọng thực tế của đơn. Ở đây chỉ vẽ lộ trình.
-
-  if (container) {
-    container.innerHTML = stops.map(s => `
-      <div class="route-stop-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
-        <span style="font-weight: 700; color: #0a6ed1; width: 80px;">${s.label}</span>
-        <span style="font-weight: 600; color: #0f172a;">${s.text}</span>
-      </div>
-    `).join('');
-  }
-
-  // Ve lai bang chi phi theo tuyen moi, nhung KHONG ghi de don gia da chot.
-  if (typeof window.autoCalculateSOCost === 'function') window.autoCalculateSOCost();
-
-  showToast(`Đã nạp lộ trình ${routeCode}. Cước giự nguyên theo báo giá đã chỏt.`);
-};
-
 let newRouteCounter = 1; // Will be updated dynamically from API
 
 window.createNewRouteForm = async function () {
@@ -15542,7 +15372,7 @@ window.loadSavedRoutePreset = async function (code) {
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;">${s.from || s.origin || ''}</td>
               <td style="padding: 12px 16px; color: #1e293b; font-weight: 600;">${s.to || s.destination || ''}</td>
-              <td style="padding: 12px 16px; font-weight: 700; color: #0a6ed1;">${kmText} km</td>
+              <td style="padding: 12px 16px; font-weight: 700; color: #2563eb;">${kmText} km</td>
               <td style="padding: 12px 16px; text-align: right;">
                 <button class="fiori-btn fiori-btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #ef4444; border-color: #fca5a5;" onclick="this.closest('tr').remove(); calculateTotalDistance();"><i class="fa-solid fa-trash"></i></button>
               </td>
@@ -15668,7 +15498,7 @@ window.selectFormulaVehicleType = function (presetKey, element, options = {}) {
 
   if (element) {
     element.classList.add('active');
-    element.style.border = '2px solid #0a6ed1';
+    element.style.border = '2px solid #2563eb';
     element.style.boxShadow = '0 2px 6px rgba(10,110,209,0.12)';
   }
 
@@ -15946,13 +15776,18 @@ function isDriverOperationalBusy(value) {
   return ['bận', 'theo xe', 'đang thực hiện', 'đang vận chuyển'].some(marker => lower.includes(marker));
 }
 
+// Nhan MA trang thai (moc 045) hoac ca ban ghi tai xe — khong nhan chuoi nhan.
 function setDriverOperationalStatus(value) {
   const display = document.getElementById('drv-status-display');
   const text = document.getElementById('drv-status-text');
   const vehicle = document.getElementById('drv-vehicle');
-  const busy = isDriverOperationalBusy(value);
-  if (display) display.classList.toggle('is-busy', busy);
-  if (text) text.textContent = cleanDriverStatus(value);
+  const ma = (value && typeof value === 'object')
+    ? String(value.operational_status || 'available')
+    : String(value || 'available');
+  const ref = (value && typeof value === 'object') ? value.operational_ref : null;
+  const busy = ma === 'on_trip';
+  if (display) display.classList.toggle('is-busy', busy || ma === 'inactive' || ma === 'off_duty');
+  if (text) text.textContent = nhanTrangThaiVanHanh('drv', ma, ref);
   if (vehicle) {
     vehicle.disabled = busy;
     vehicle.title = busy ? 'Xe đang do điều phối quản lý; hoàn tất chuyến trước khi đổi xe.' : '';
@@ -15987,14 +15822,20 @@ function renderFioriDrivers(data) {
   }
 
   data.forEach(d => {
-    const rawStatus = String(d.status || '');
-    const isBusy = isDriverOperationalBusy(rawStatus);
-    const statusText = cleanDriverStatus(rawStatus);
+    // TRANG THAI THEO MA (moc 045). `d.status` chi con la nhan chieu.
+    const maTT = String(d.operational_status || 'available');
+    const isBusy = maTT === 'on_trip';
+    const statusText = escapeHtml(nhanTrangThaiVanHanh('drv', maTT, d.operational_ref));
+    const nutTT = maTT === 'available'
+      ? `<button class="fiori-btn fiori-btn-secondary" title="${escapeHtml((appTranslations.btn_drv_off_duty || {})[lang] || 'Cho nghỉ phép')}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="datTrangThaiTaiXe('${escapeHtml(d.id)}','off_duty')"><i class="fa-solid fa-umbrella-beach"></i></button>`
+      : (maTT === 'off_duty' || maTT === 'inactive'
+        ? `<button class="fiori-btn fiori-btn-secondary" title="${escapeHtml((appTranslations.btn_drv_back_available || {})[lang] || 'Đưa lại làm việc')}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="datTrangThaiTaiXe('${escapeHtml(d.id)}','available')"><i class="fa-solid fa-rotate-left"></i></button>`
+        : '');
     const driverPhoto = d.photo_url || d.image_url || '';
     const driverAvatar = driverPhoto
       ? `<img src="${driverPhoto}" alt="Ảnh ${escapeHtml(d.name || d.id)}">`
       : `<span class="driver-avatar-fallback"><i class="fa-solid fa-user"></i></span>`;
-    const statusBadge = isBusy ?
+    const statusBadge = (isBusy || maTT === 'inactive' || maTT === 'off_duty') ?
       `<span class="driver-status-badge driver-status-badge--busy">${statusText}</span>` :
       `<span class="driver-status-badge driver-status-badge--ready">${statusText}</span>`;
 
@@ -16022,11 +15863,11 @@ function renderFioriDrivers(data) {
         <td style="padding: 12px 16px;">${roleBadge}</td>
         <td style="padding: 12px 16px; font-weight: 700; color: #334155;">${licenseLabel}</td>
         <td style="padding: 12px 16px; color: #64748b;">${d.phone || ''}</td>
-        <td style="padding: 12px 16px; font-weight: 700; color: #0a6ed1;">${assignedVehicle}</td>
+        <td style="padding: 12px 16px; font-weight: 700; color: #2563eb;">${assignedVehicle}</td>
         <td style="padding: 12px 16px; color: #334155; font-weight: 600;">${shiftLabel}</td>
         <td style="padding: 12px 16px;">${statusBadge}</td>
-        <td style="padding: 12px 8px; text-align: center; white-space: nowrap; width:96px;">
-          <button class="fiori-btn fiori-btn-secondary" title="${editTip}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="editDriverById('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-pen-to-square"></i></button>
+        <td style="padding: 12px 8px; text-align: center; white-space: nowrap; width:132px;">
+          ${nutTT}<button class="fiori-btn fiori-btn-secondary" title="${editTip}" style="width:32px; height:32px; padding:0; justify-content:center; margin-right:4px;" onclick="editDriverById('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-pen-to-square"></i></button>
           <button class="fiori-btn" title="${delTip}" style="width:32px; height:32px; padding:0; justify-content:center; background:#ef4444; border-color:#ef4444;" onclick="deleteDriverRow('${escapeJsAttr(d.id || d.name)}')"><i class="fa-solid fa-trash"></i></button>
         </td>
       </tr>
@@ -17638,7 +17479,7 @@ window.openAddDriverModal = function () {
   if (document.getElementById('drv-phone')) document.getElementById('drv-phone').value = '';
   if (document.getElementById('drv-vehicle')) document.getElementById('drv-vehicle').value = 'Chưa gán';
   if (document.getElementById('drv-shift')) document.getElementById('drv-shift').value = 'Ca sáng (06:00 - 14:00)';
-  setDriverOperationalStatus('Rảnh (Sẵn sàng)');
+  setDriverOperationalStatus('available');
   clearDriverPhoto();
   if (document.getElementById('driver-modal-dialog')) document.getElementById('driver-modal-dialog').style.display = 'flex';
 };
@@ -17715,7 +17556,7 @@ window.editDriverById = function (id) {
   if (document.getElementById('drv-phone')) document.getElementById('drv-phone').value = driver.phone || '';
   if (document.getElementById('drv-vehicle')) document.getElementById('drv-vehicle').value = cleanDriverMasterText(driver.assigned_vehicle, 'Chưa gán');
   if (document.getElementById('drv-shift')) document.getElementById('drv-shift').value = cleanDriverMasterText(driver.shift, 'Ca sáng (06:00 - 14:00)');
-  setDriverOperationalStatus(driver.status || 'Rảnh (Sẵn sàng)');
+  setDriverOperationalStatus(driver);
   setDriverPhoto(driver.photo_url || driver.image_url || '');
   if (document.getElementById('driver-modal-dialog')) document.getElementById('driver-modal-dialog').style.display = 'flex';
 };
@@ -17899,6 +17740,7 @@ let costFormulaTerms = [];
 
 /** Chuyến mẫu chỉ để XEM TRƯỚC. Báo giá thật dùng km của tuyến và tải trọng thật. */
 let costSampleTrip = { km: 200, tonnes: 15, stops: 1 };
+let costFormulaExpressions = null;
 
 /** Năm ô ẩn `md-cost-*` vẫn là nơi các phần khác của ứng dụng đọc số. */
 const BUILTIN_INPUT_IDS = {
@@ -17929,6 +17771,7 @@ function syncBuiltinCostInputs() {
 window.loadCostFormulaTerms = function () {
   const key = activeCostFormulaKey || document.getElementById('md-formula-preset-select')?.value || '';
   const stored = masterFormulaStore[key] || {};
+  costFormulaExpressions = stored.expressions || null;
   if (Array.isArray(stored.terms) && stored.terms.length) {
     costFormulaTerms = window.FormulaModel.normalize(stored.terms);
   } else {
@@ -17939,6 +17782,7 @@ window.loadCostFormulaTerms = function () {
     }));
   }
   window.renderCostFormulaEditor();
+  savedCostFormulaDraft = JSON.stringify(currentCostFormulaDraft());
 };
 
 function persistCostFormulaTerms() {
@@ -17968,7 +17812,8 @@ window.setCostTermField = function (index, field, value) {
   else term[field] = String(value || '');
   // Sửa đơn giá hay nhãn thì KHÔNG vẽ lại cả bảng: vẽ lại giữa lúc đang gõ sẽ
   // làm mất con trỏ. Chỉ cập nhật phần tổng.
-  if (field === 'rate' || field === 'label') {
+  // `cost_index` cũng gõ tay, nên cũng không vẽ lại cả bảng giữa lúc gõ.
+  if (field === 'rate' || field === 'label' || field === 'cost_index') {
     syncBuiltinCostInputs();
     persistCostFormulaTerms();
     updateCostFormulaTotals();
@@ -17978,8 +17823,26 @@ window.setCostTermField = function (index, field, value) {
   afterTermChange();
 };
 
+/**
+ * Xếp hàng tử để VẼ theo nhóm: mọi khoản CHI trước, mọi khoản THU sau — giữ thứ tự
+ * tương đối và giữ `index` gốc (ô nhập gọi setCostTermField(index) đúng dòng).
+ *
+ * Trước đây bảng vẽ theo thứ tự lưu và chỉ chèn tiêu đề nhóm khi `kind` đổi so với
+ * dòng liền trước — thêm một khoản chi SAU khoản thu là sinh ra hai tiêu đề
+ * "CHI RA — GIÁ THÀNH". Chủ dự án chỉ đúng lỗi đó.
+ */
+function hangTheoNhom(rows) {
+  const xep = (rows || []).map((row, index) => ({ row, index }))
+    .sort((a, b) => ((a.row.kind === 'revenue') - (b.row.kind === 'revenue')) || (a.index - b.index));
+  return xep.map((x, i) => ({ ...x, truoc: i ? xep[i - 1].row : null }));
+}
+
 window.addCostTerm = function () {
-  costFormulaTerms.push({
+  // Khoản mới mặc định là CHI: chèn vào cuối nhóm chi (trước khoản thu đầu tiên),
+  // để cả bảng lẫn bong bóng cấu hình đều thấy nó nằm đúng nhóm.
+  const viTriThu = costFormulaTerms.findIndex(t => t.kind === 'revenue');
+  const chenTai = viTriThu < 0 ? costFormulaTerms.length : viTriThu;
+  costFormulaTerms.splice(chenTai, 0, {
     key: `custom_${Date.now().toString(36)}`,
     label: '',
     operator: 'add',
@@ -17989,6 +17852,7 @@ window.addCostTerm = function () {
     // trong ra cao hon thuc te.
     kind: 'cost',
     rate: 0,
+    cost_index: '',
   });
   afterTermChange();
 };
@@ -17997,7 +17861,7 @@ window.removeCostTerm = function (index) {
   const term = costFormulaTerms[index];
   if (!term) return;
   if (term.builtin) {
-    showToast('Cấu phần dựng sẵn không xóa được. Đặt đơn giá về 0 nếu không dùng.', 'error');
+    showToast('Khoản mục dựng sẵn không xóa được. Đặt đơn giá về 0 nếu không dùng.', 'error');
     return;
   }
   costFormulaTerms.splice(index, 1);
@@ -18028,6 +17892,10 @@ window.setCostSampleTrip = function (field, value) {
 let costFormulaPopoverOpen = false;
 
 window.toggleCostFormulaPopover = function (force) {
+  if (window.CostFormulaBuilder) {
+    window.CostFormulaBuilder.toggle(force);
+    return;
+  }
   const next = typeof force === 'boolean' ? force : !costFormulaPopoverOpen;
   if (next === costFormulaPopoverOpen) return;
   costFormulaPopoverOpen = next;
@@ -18067,7 +17935,7 @@ document.addEventListener('mousedown', event => {
 function updateCostFormulaTotals() {
   const M = window.FormulaModel;
   if (!M) return;
-  const result = M.evaluate(costFormulaTerms, costSampleTrip);
+  const result = M.evaluate(costFormulaTerms, costSampleTrip, costFormulaExpressions);
   const currency = masterCostCurrencyCode();
   const money = amount => formatWorkflowCurrencyAmount(amount, currency);
   const setText = (id, value) => {
@@ -18101,10 +17969,13 @@ function updateCostFormulaTotals() {
   setText('cf-pmargin', result.marginPct === null ? '' : `${result.marginPct.toFixed(1)}%`);
   setText('cf-perkm', `${money(result.perKm)}/km`);
   setText('cf-trip-note', `${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn`);
-  setText('cf-text', M.toText(costFormulaTerms));
+  setText('cf-text', M.toText(costFormulaTerms.filter(t => t.kind !== 'revenue')));
+  setText('cfv2-cost-expression', M.toText(costFormulaTerms.filter(t => t.kind !== 'revenue')));
+  setText('cfv2-revenue-expression', M.toText(costFormulaTerms.filter(t => t.kind === 'revenue')));
 
   const issues = document.getElementById('cf-issues');
   if (issues) issues.innerHTML = renderCostFormulaIssues();
+  window.CostFormulaBuilder?.refresh();
 }
 
 /**
@@ -18144,7 +18015,7 @@ function renderCostFormulaPopover(result, money) {
   const factorOptions = Object.entries(M.FACTORS);
 
   const the = (row, index) => {
-    const nhan = escapeHtml(row.label || 'cấu phần');
+    const nhan = escapeHtml(row.label || 'khoản mục');
     return `
       <div class="cf-row cf-row--${escapeHtml(row.kind)} ${row.rate ? '' : 'is-zero'}">
         <div class="cf-row-top">
@@ -18158,9 +18029,9 @@ function renderCostFormulaPopover(result, money) {
           ${row.builtin
             ? `<b class="cf-row-name">${escapeHtml(row.label)}</b>`
             : `<input class="cf-row-name" type="text" value="${escapeHtml(row.label)}"
-                      placeholder="Tên cấu phần — ví dụ: Phí bốc xếp /tấn"
+                      placeholder="Tên khoản mục — ví dụ: Phí bốc xếp /tấn"
                       oninput="setCostTermField(${index}, 'label', this.value)"
-                      aria-label="Tên cấu phần">`}
+                      aria-label="Tên khoản mục">`}
 
           <select class="cf-kind cf-kind-${escapeHtml(row.kind)}" aria-label="Loại của ${nhan}"
                   onchange="setCostTermField(${index}, 'kind', this.value)">
@@ -18170,7 +18041,7 @@ function renderCostFormulaPopover(result, money) {
           </select>
 
           <button type="button" class="cf-del"
-                  title="${row.builtin ? 'Cấu phần dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa cấu phần'}"
+                  title="${row.builtin ? 'Khoản mục dựng sẵn — đặt đơn giá 0 nếu không dùng' : 'Xóa khoản mục'}"
                   aria-label="Xóa ${nhan}"
                   onclick="removeCostTerm(${index})" ${row.builtin ? 'disabled' : ''}>✕</button>
         </div>
@@ -18209,13 +18080,13 @@ function renderCostFormulaPopover(result, money) {
                 aria-label="Đóng cấu hình công thức" title="Đóng">✕</button>
       </div>
 
-      <p class="cf-pop-hint">Mỗi thẻ là một cấu phần. Chọn <b>loại</b> để nói đó là tiền
+      <p class="cf-pop-hint">Mỗi thẻ là một khoản mục. Chọn <b>loại</b> để nói đó là tiền
         <b>chi ra</b> hay tiền <b>thu của khách</b> — hai thứ đó không cộng chung được.</p>
 
       <div class="cf-pop-body">
         ${result.rows.map(the).join('')}
         <button type="button" class="cf-add" onclick="addCostTerm()">
-          <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm cấu phần
+          <i class="fa-solid fa-plus" aria-hidden="true"></i> Thêm khoản mục
         </button>
       </div>
 
@@ -18250,12 +18121,69 @@ function renderCostFormulaPopover(result, money) {
     </div>`;
 }
 
+/*
+   DANH MỤC ACC CODE — mã tài khoản kế toán của bên công nợ (anh Khang).
+
+   Chủ dự án chốt: ô này là Ô CHỌN, danh mục do API của bên công nợ cấp
+   (`GET /api/acc-codes` — máy chủ mình nối sang API đó qua biến
+   `EPL_ACC_CODE_API`). API chưa có thì ô chọn ở trạng thái CHỜ: không tuỳ chọn,
+   không tự sinh mã từ tên khoản mục. Giá trị đã lưu (nếu có) vẫn hiện để không
+   mất dữ liệu, kể cả khi nó không nằm trong danh mục.
+*/
+let danhMucAccCode = null;          // null = chưa tải · {data, source, message}
+
+let dangTaiAccCode = false;
+
+async function napDanhMucAccCode() {
+  if (dangTaiAccCode) return danhMucAccCode;
+  dangTaiAccCode = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/acc-codes`, { headers: financeAuthHeaders() });
+    const goi = await res.json().catch(() => ({}));
+    danhMucAccCode = res.ok ? goi : { data: [], source: 'error', message: `Máy chủ trả về ${res.status}` };
+  } catch (err) {
+    danhMucAccCode = { data: [], source: 'error', message: String(err && err.message || err) };
+  } finally {
+    dangTaiAccCode = false;
+  }
+  return danhMucAccCode;
+}
+
+function oChonAccCode(index, row) {
+  const ds = (danhMucAccCode && Array.isArray(danhMucAccCode.data)) ? danhMucAccCode.data : [];
+  const hienTai = String(row.cost_index || '').trim();
+  const coDanhMuc = ds.length > 0;
+  const mo = ds.find(x => x.code === hienTai);
+  const trong = !danhMucAccCode ? 'đang tải danh mục…'
+    : danhMucAccCode.source === 'unconfigured' ? 'chờ API mã tài khoản'
+    : danhMucAccCode.source === 'error' ? 'không đọc được danh mục'
+    : 'chọn Acc code';
+  // Ô CHỌN CÓ TÌM thay cho <select> gần 500 dòng: danh mục của bên công nợ là
+  // hệ thống tài khoản kế toán Lào (4 cấp), tên dài, không ai cuộn được. Ô hiện
+  // MÃ đậm + tên ngắn; bấm mở bảng có ô tìm theo mã / tên / diễn giải.
+  if (!coDanhMuc && !hienTai) {
+    return `<button type="button" class="cfv2-acc cfv2-acc-cho" disabled
+      title="${escapeHtml((danhMucAccCode && danhMucAccCode.message) || '')}">— ${escapeHtml(trong)} —</button>`;
+  }
+  // Tên tài khoản (tiếng Lào, đúng tên bên kế toán) đứng trên; diễn giải Việt ở dưới.
+  const ten = mo ? (mo.name || mo.description) : (hienTai ? 'không có trong danh mục' : '');
+  return `<button type="button" class="cfv2-acc ${hienTai ? '' : 'cfv2-acc-rong'} ${hienTai && !mo ? 'cfv2-acc-la' : ''}"
+      aria-label="Acc code ${escapeHtml(row.label)}"
+      title="${escapeHtml(mo ? (mo.code + ' · ' + mo.name + (mo.description ? ' — ' + mo.description : '')) : (hienTai || trong))}"
+      onclick="moBangChonAccCode(${index}, this)">
+      <b>${escapeHtml(hienTai || '—')}</b><small>${escapeHtml(hienTai ? ten : trong)}</small></button>`;
+}
+
 window.renderCostFormulaEditor = function () {
+  // Lần đầu mở màn thì danh mục Acc code chưa có; tải rồi vẽ lại đúng một lần.
+  if (danhMucAccCode === null && !dangTaiAccCode) {
+    napDanhMucAccCode().then(() => { if (typeof window.renderCostFormulaEditor === 'function') window.renderCostFormulaEditor(); });
+  }
   const host = document.getElementById('cost-formula-view');
   const M = window.FormulaModel;
   if (!host || !M) return;
   const currency = masterCostCurrencyCode();
-  const result = M.evaluate(costFormulaTerms, costSampleTrip);
+  const result = M.evaluate(costFormulaTerms, costSampleTrip, costFormulaExpressions);
   const money = amount => formatWorkflowCurrencyAmount(amount, currency);
 
   // HAI CỘT: cấu phần bên trái, chuyến mẫu và kết quả bên phải.
@@ -18276,13 +18204,18 @@ window.renderCostFormulaEditor = function () {
   host.innerHTML = `
     <div class="cf-head">
       <div class="cf-head-main">
-        <h4><i class="fa-solid fa-calculator" aria-hidden="true"></i> Công thức tính giá thành chuyến</h4>
+        <h4><i class="fa-solid fa-calculator" aria-hidden="true"></i> Công thức</h4>
         <button type="button" class="cf-trigger" id="cf-trigger" aria-haspopup="dialog"
                 aria-expanded="${costFormulaPopoverOpen ? 'true' : 'false'}"
                 onclick="toggleCostFormulaPopover()">
-          <span class="cf-equation" id="cf-text">${escapeHtml(M.toText(costFormulaTerms))}</span>
+          <span class="cf-equation" id="cf-text">${escapeHtml(M.toText(costFormulaTerms.filter(t => t.kind !== 'revenue')))}</span>
           <span class="cf-trigger-icon"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Sửa công thức</span>
         </button>
+        <div class="cfv2-equations">
+          <div><b>Giá thành</b><span id="cfv2-cost-expression">${escapeHtml(M.toText(costFormulaTerms.filter(t => t.kind !== 'revenue')))}</span></div>
+          <div><b>Cước</b><span id="cfv2-revenue-expression">${escapeHtml(M.toText(costFormulaTerms.filter(t => t.kind === 'revenue')))}</span></div>
+          <div><b>Lợi nhuận</b><span>Cước thu khách − Giá thành</span></div>
+        </div>
       </div>
     </div>
 
@@ -18293,20 +18226,27 @@ window.renderCostFormulaEditor = function () {
     <div class="cf-scroll">
       <table class="cf-table">
         <thead>
-          <tr><th>Cấu phần</th><th>Đơn giá</th><th>Nhân với</th><th>Thành tiền</th></tr>
+          <tr><th>Khoản mục</th><th title="Acc code — mã tài khoản kế toán của bên công nợ, chọn từ danh mục do API bên đó cấp">Acc code</th><th>Đơn giá · ${escapeHtml(currency)}</th><th id="th-base">Chuẩn của loại</th><th>Nhân với</th><th>Thành tiền · chuyến mẫu</th><th></th></tr>
         </thead>
         <tbody>
-          ${result.rows.map((row, index) => `
+          ${hangTheoNhom(result.rows).map(({ row, index, truoc }) => `
+            ${!truoc || truoc.kind !== row.kind ? `<tr class="cfv2-group"><td colspan="7">${row.kind === 'revenue' ? 'THU VỀ — CƯỚC KHÁCH' : 'CHI RA — GIÁ THÀNH'}</td></tr>` : ''}
             <tr class="${row.rate ? '' : 'is-zero'}">
               <td><span class="cf-sign" id="cf-sum-sign-${index}">${row.operator === 'sub' ? '−' : '+'}</span>
                   <span id="cf-sum-label-${index}">${escapeHtml(row.label)}</span>
                   <small class="cf-kind-tag cf-kind-${escapeHtml(row.kind)}" id="cf-sum-kind-${index}">${escapeHtml(M.KINDS[row.kind].short)}</small></td>
-              <td class="cf-num"><span id="cf-sum-rate-${index}">${money(row.rate)}</span>
+              <td>${oChonAccCode(index, row)}</td>
+              <td class="cf-num"><input class="cfv2-rate-input" type="number" min="0" step="any" value="${row.rate}"
+                  aria-label="Đơn giá ${escapeHtml(row.label)}" oninput="setCostTermField(${index}, 'rate', this.value)">
+                  <span hidden id="cf-sum-rate-${index}">${money(row.rate)}</span>
                   <small id="cf-sum-unit-${index}">${escapeHtml(row.unit)}</small></td>
-              <td class="cf-num" id="cf-sum-mul-${index}">${row.factor === 'per_trip'
-                ? '1 chuyến' : `× ${row.multiplier.toLocaleString('vi-VN')}`}</td>
+              <td><span class="cfb-source">chuẩn</span></td>
+              <td class="cf-num" id="cf-sum-mul-${index}">× ${row.multiplier.toLocaleString('vi-VN')} ${
+                escapeHtml((M.FACTORS[row.factor] || M.FACTORS.per_trip).unit.replace('/', ''))}</td>
               <td class="cf-num cf-amount" id="cf-sum-amount-${index}">${money(row.amount)}</td>
+              <td><button class="cfb-remove" type="button" title="Xóa khoản mục" onclick="CostFormulaBuilder.remove(${index})"><i class="fa-solid fa-xmark"></i></button></td>
             </tr>`).join('')}
+        <tr><td colspan="7"><button type="button" class="cfb-add" onclick="CostFormulaBuilder.add()">+ Thêm khoản mục</button></td></tr>
         </tbody>
       </table>
     </div>
@@ -18332,6 +18272,16 @@ window.renderCostFormulaEditor = function () {
           <span><input type="number" min="0" step="0.1" value="${costSampleTrip.tonnes}"
                        oninput="setCostSampleTrip('tonnes', this.value)"
                        aria-label="Số tấn của chuyến mẫu"> tấn</span>
+        </label>
+        <label>Điểm giao
+          <span><input type="number" min="1" step="1" value="${costSampleTrip.stops || 1}"
+                       oninput="setCostSampleTrip('stops', this.value)" aria-label="Số điểm giao chuyến mẫu"> điểm</span>
+        </label>
+        <label>Số chặng
+          <span><input type="number" min="1" step="1" value="${costSampleTrip.legs || 1}" oninput="setCostSampleTrip('legs', this.value)" aria-label="Số chặng chuyến mẫu"> chặng</span>
+        </label>
+        <label>Giá trị hàng
+          <span><input type="number" min="0" step="any" value="${costSampleTrip.value || 0}" oninput="setCostSampleTrip('value', this.value)" aria-label="Giá trị hàng chuyến mẫu"> ${escapeHtml(currency)}</span>
         </label>
       </div>
 
@@ -18365,7 +18315,85 @@ window.renderCostFormulaEditor = function () {
     ${costFormulaPopoverOpen ? renderCostFormulaPopover(result, money) : ''}`;
 
   syncBuiltinCostInputs();
+  window.CostFormulaBuilder?.mount();
 };
+
+/** Bảng chọn Acc code nổi cạnh ô: ô tìm + danh sách lọc theo mã/tên/diễn giải. */
+window.moBangChonAccCode = function (index, nut) {
+  const row = (Array.isArray(costFormulaTerms) && costFormulaTerms[index]) || {};
+  window.moBangChonAccCodeChung(nut, String(row.cost_index || '').trim(), ma => {
+    setCostTermField(index, 'cost_index', ma);
+    if (typeof window.renderCostFormulaEditor === 'function') window.renderCostFormulaEditor();
+  });
+};
+
+/** Bộ chọn Acc code dùng chung: `onChon(ma, banGhi)` — dùng cho công thức, danh mục khoản mục, … */
+window.moBangChonAccCodeChung = function (nut, hienTai, onChon) {
+  dongBangChonAccCode();
+  const ds = (danhMucAccCode && Array.isArray(danhMucAccCode.data)) ? danhMucAccCode.data : [];
+  hienTai = String(hienTai || '').trim();
+  if (!ds.length && danhMucAccCode === null && !dangTaiAccCode) {
+    napDanhMucAccCode().then(() => window.moBangChonAccCodeChung(nut, hienTai, onChon));
+    return;
+  }
+  const bang = document.createElement('div');
+  bang.className = 'cfv2-acc-pop';
+  bang.id = 'cfv2-acc-pop';
+  bang.innerHTML = `
+    <div class="cfv2-acc-pop-hd">
+      <input type="search" id="cfv2-acc-tim" placeholder="Gõ mã hoặc tên tài khoản… (${ds.length} mã)" autocomplete="off">
+      <label class="cfv2-acc-chk" title="Chỉ tài khoản được phép hạch toán (cấp chi tiết)"><input type="checkbox" id="cfv2-acc-post" checked> chi tiết</label>
+    </div>
+    <div class="cfv2-acc-pop-ds" id="cfv2-acc-ds"></div>
+    <div class="cfv2-acc-pop-ft">
+      ${hienTai ? '<button type="button" class="cfv2-acc-bo" id="cfv2-acc-bo">Bỏ mã</button>' : '<span></span>'}
+      <span class="cfv2-acc-hint">Enter chọn dòng đầu · Esc đóng</span>
+    </div>`;
+  document.body.appendChild(bang);
+  const r = nut.getBoundingClientRect();
+  const rong = 420;
+  bang.style.left = Math.max(8, Math.min(r.left, window.innerWidth - rong - 8)) + 'px';
+  bang.style.top = (r.bottom + 4 + window.scrollY) + 'px';
+
+  const veDs = () => {
+    const q = String(document.getElementById('cfv2-acc-tim').value || '').trim().toLowerCase();
+    const chiChiTiet = document.getElementById('cfv2-acc-post').checked;
+    const khop = ds.filter(x => (!chiChiTiet || x.postable !== false)
+      && (!q || String(x.code).toLowerCase().startsWith(q) || String(x.name || '').toLowerCase().includes(q)
+        || String(x.description || '').toLowerCase().includes(q)));
+    const hien = khop.slice(0, 80);
+    document.getElementById('cfv2-acc-ds').innerHTML = hien.length ? hien.map(x => `
+      <div class="cfv2-acc-row ${x.code === hienTai ? 'on' : ''}" data-code="${escapeHtml(x.code)}" role="option">
+        <b>${escapeHtml(x.code)}</b>
+        <div><span>${escapeHtml(x.name || x.description)}</span>${x.description && x.name ? `<small>${escapeHtml(x.description)}</small>` : ''}</div>
+      </div>`).join('') + (khop.length > hien.length ? `<div class="cfv2-acc-more">… còn ${khop.length - hien.length} mã, gõ thêm để lọc</div>` : '')
+      : '<div class="cfv2-acc-more">Không có mã nào khớp.</div>';
+    document.getElementById('cfv2-acc-ds').querySelectorAll('.cfv2-acc-row').forEach(d => d.addEventListener('click', () => chon(d.dataset.code)));
+  };
+  const chon = ma => {
+    dongBangChonAccCode();
+    onChon(ma, ds.find(x => x.code === ma) || null);
+  };
+  const tim = document.getElementById('cfv2-acc-tim');
+  tim.addEventListener('input', veDs);
+  document.getElementById('cfv2-acc-post').addEventListener('change', veDs);
+  tim.addEventListener('keydown', ev => {
+    if (ev.key === 'Escape') { dongBangChonAccCode(); return; }
+    if (ev.key === 'Enter') { const d = document.querySelector('#cfv2-acc-ds .cfv2-acc-row'); if (d) chon(d.dataset.code); }
+  });
+  const bo = document.getElementById('cfv2-acc-bo');
+  if (bo) bo.addEventListener('click', () => chon(''));
+  veDs();
+  setTimeout(() => { tim.focus(); document.addEventListener('mousedown', dongNeuNgoai, true); }, 0);
+  function dongNeuNgoai(ev) { if (!bang.contains(ev.target) && ev.target !== nut) dongBangChonAccCode(); }
+  bang._dong = () => document.removeEventListener('mousedown', dongNeuNgoai, true);
+};
+
+function dongBangChonAccCode() {
+  const cu = document.getElementById('cfv2-acc-pop');
+  if (cu) { if (typeof cu._dong === 'function') cu._dong(); cu.remove(); }
+}
+
 
 /* ==========================================================================
    Giá thành hai tầng — tầng thứ hai: từng chiếc xe
@@ -18415,7 +18443,7 @@ window.renderVehicleTypeFleetCounts = function () {
     if (!host) return;
     const fleet = vehiclesOfType(type.id);
     if (!fleet.length) {
-      host.innerHTML = '<span class="vt-fleet-empty">Chưa có xe nào thuộc loại này</span>';
+      host.innerHTML = '<span class="vt-fleet-empty">0 xe</span>';
       return;
     }
     const overridden = fleet.filter(v => vehicleOverrideCounts[v.id] > 0).length;
@@ -18425,8 +18453,14 @@ window.renderVehicleTypeFleetCounts = function () {
       <b>${fleet.length}</b> chiếc xe
       ${overridden ? `<em>${overridden} chiếc có giá riêng</em>` : ''}
       <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-    </button>`;
+    </button>
+    <div class="cfv2-tree-vehicles">${fleet.slice(0, 12).map(v => `<button type="button" data-vehicle-cost-id="${escapeHtml(v.id)}"
+      onclick="event.stopPropagation(); openVehicleCostEditor('${escapeJsAttr(v.id)}')">
+      <span><b>${escapeHtml(v.id)}</b><small>${escapeHtml(v.brand || '')}</small></span>
+      <em>${vehicleOverrideCounts[v.id] ? `${vehicleOverrideCounts[v.id]} ghi đè` : 'Kế thừa'}</em>
+    </button>`).join('')}</div>`;
   });
+  window.CostVehicleInline?.syncSelection();
 };
 
 /** Số cấu phần đã ghi đè của từng xe — nạp một lần để thẻ hiện được nhãn. */
@@ -18573,6 +18607,20 @@ window.closeVehicleCostPanel = function () {
 
 /** Mở bảng ghi đè của MỘT chiếc xe. */
 window.openVehicleCostEditor = async function (vehicleId) {
+  if (window.CostVehicleInline) {
+    if (hasUnsavedCostFormulaChanges()) {
+      const action = await showCostFormulaUnsavedDialog();
+      if (action === 'stay') return;
+      if (action === 'save' && !(await window.saveCostFormula())) return;
+      if (action === 'discard' && savedCostFormulaDraft) {
+        const saved = JSON.parse(savedCostFormulaDraft);
+        masterFormulaStore[activeCostFormulaKey] = {...masterFormulaStore[activeCostFormulaKey], ...saved,
+          terms: JSON.parse(saved.terms), expressions: JSON.parse(saved.expressions || 'null')};
+        window.loadCostFormulaTerms();
+      }
+    }
+    return window.CostVehicleInline.open(vehicleId);
+  }
   const host = document.getElementById('vehicle-cost-panel');
   if (!host) return;
   host.hidden = false;
@@ -18593,7 +18641,7 @@ window.openVehicleCostEditor = async function (vehicleId) {
 function renderVehicleCostEditor() {
   const host = document.getElementById('vehicle-cost-panel');
   if (!host || !vehicleCostDraft) return;
-  const currency = masterCostCurrencyCode();
+  const currency = vehicleCostDraft.currency || 'VND';
   const data = vehicleCostDraft;
 
   host.innerHTML = `
@@ -18605,14 +18653,14 @@ function renderVehicleCostEditor() {
              ? 'Các ô để trống nghĩa là <b>kế thừa</b> công thức của loại xe.'
              : '<b style="color:#b45309;">Loại xe này chưa có công thức</b> — hãy cấu hình ở panel bên phải trước.'}</p>
       </div>
-      <button type="button" class="vc-close" title="Quay lại danh sách xe"
-              onclick="openVehicleCostList(undefined, { keepFilters: true })"><i class="fa-solid fa-arrow-left"></i></button>
+      <button type="button" class="vc-close" title="Đóng giá riêng của xe"
+              onclick="closeVehicleCostPanel()"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
     <table class="vc-table">
       <thead>
         <tr>
-          <th>Cấu phần chi phí</th>
+          <th>Khoản mục chi phí</th>
           <th>Kế thừa từ loại xe</th>
           <th>Đặt riêng cho xe này</th>
           <th>Lý do</th>
@@ -18730,7 +18778,8 @@ window.renderDynamicFormulaVehicleTypes = function () {
   const all = (vehTypes || []).filter(vt => vt?.id && vt?.name);
   const keyword = formulaVehicleTypeSearch.trim().toLowerCase();
   const types = keyword
-    ? all.filter(vt => `${vt.id} ${vt.name} ${vt.fuel_type || ''}`.toLowerCase().includes(keyword))
+    ? all.filter(vt => `${vt.id} ${vt.name} ${vt.fuel_type || ''}`.toLowerCase().includes(keyword)
+        || vehiclesOfType(vt.id).some(v => String(v.id).toLowerCase().includes(keyword)))
     : all;
 
   // Con số này TRƯỚC ĐÂY viết cứng "4 Mẫu" trong index.html, nên nó nói dối cả
@@ -18742,11 +18791,11 @@ window.renderDynamicFormulaVehicleTypes = function () {
     counter.innerText = keyword ? `${types.length}/${all.length} ${word}` : `${all.length} ${word}`;
   }
 
-  const searchBox = all.length > 6
+  const searchBox = all.length > 0
     ? `<div class="vt-search">
         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
         <input id="formula-vehicle-type-search" type="search" value="${escapeHtml(formulaVehicleTypeSearch)}"
-               placeholder="Tìm loại xe..." oninput="filterFormulaVehicleTypes(this.value)" aria-label="Tìm loại xe">
+               placeholder="Tìm loại xe hoặc biển số" oninput="filterFormulaVehicleTypes(this.value)" aria-label="Tìm loại xe hoặc biển số">
       </div>`
     : '';
 
@@ -18819,7 +18868,7 @@ window.renderDynamicFormulaVehicleTypes = function () {
         ...term, rate: window.FormulaModel.toNumber(formula[term.key]),
       }));
     const estimate = window.FormulaModel
-      ? window.FormulaModel.evaluate(terms, costSampleTrip)
+      ? window.FormulaModel.evaluate(terms, costSampleTrip, formula.expressions)
       : { total: 0, perKm: 0 };
     // Xăng dầu/km lấy từ `terms`, KHÔNG lấy từ `components`.
     //
@@ -18842,7 +18891,7 @@ window.renderDynamicFormulaVehicleTypes = function () {
            onclick="requestCostFormulaContextChange(this.dataset.vehicleTypeId, masterCostCurrencyCode(), this)">
         <button type="button" class="vt-del" title="${escapeHtml(delTitle)}"
                 onclick="event.stopPropagation(); deleteVehicleTypeCard(this);"><i class="fa-solid fa-trash"></i></button>
-        <div class="vt-name">${escapeHtml(vehicleType.icon || '🚚')} ${escapeHtml(vName)}</div>
+        <div class="vt-name"><i class="fa-solid fa-truck" aria-hidden="true"></i> ${escapeHtml(vName)}</div>
         <div class="vt-id">${escapeHtml(vehicleType.id)}</div>
         ${facts.length ? `<div class="vt-facts">${facts.map(fact =>
           `<span title="${escapeHtml(fact.title)}"><i class="fa-solid ${fact.icon}" aria-hidden="true"></i> ${escapeHtml(fact.text)}</span>`
@@ -18881,7 +18930,7 @@ window.renderDynamicFormulaVehicleTypes = function () {
     ${costSampleTrip.km.toLocaleString('vi-VN')} km · ${costSampleTrip.tonnes.toLocaleString('vi-VN')} tấn:
     <b>lợi nhuận</b> = cước thu khách − giá thành.
     Đổi hai số đó ở khung <b>Chuyến mẫu</b> bên phải thì cả các thẻ này tính lại theo.</p>`;
-  container.innerHTML = searchBox + sampleNote + cards;
+  container.innerHTML = searchBox + cards;
 
   // Tang thu hai: moi the co mot dong "N chiec xe" bam duoc.
   if (typeof window.renderVehicleTypeFleetCounts === 'function') window.renderVehicleTypeFleetCounts();
@@ -18890,7 +18939,10 @@ window.renderDynamicFormulaVehicleTypes = function () {
   const firstFormulaKey = formulaKeys.includes(currentFormulaKey) ? currentFormulaKey : formulaKeys[0];
   const firstCard = Array.from(container.querySelectorAll('[data-formula-key]'))
     .find(card => card.dataset.formulaKey === firstFormulaKey);
-  if (firstFormulaKey && firstCard) window.selectFormulaVehicleType(firstFormulaKey, firstCard, { notify: false });
+  if (firstFormulaKey && firstCard) {
+    if (firstFormulaKey !== activeCostFormulaKey) window.selectFormulaVehicleType(firstFormulaKey, firstCard, { notify: false });
+    else firstCard.classList.add('active');
+  }
 };
 
 /** Mở thẳng tab Loại Phương Tiện thay vì bảo người dùng tự đi tìm "Tab 3". */
@@ -18923,9 +18975,9 @@ window.renderCustomerList = function (data) {
   data.forEach(c => {
     tbody.insertAdjacentHTML('beforeend', `
       <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-        <td style="padding: 14px 18px; font-weight: 700; color: #0a6ed1;">${c.id}</td>
+        <td style="padding: 14px 18px; font-weight: 700; color: #2563eb;">${c.id}</td>
         <td style="padding: 14px 18px; font-weight: 700; color: #0f172a;">${escapeHtml(c.name)}</td>
-        <td style="padding: 14px 18px;"><span style="background: #eff6ff; color: #0a6ed1; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">${c.type || 'Account'}</span></td>
+        <td style="padding: 14px 18px;"><span style="background: #eff6ff; color: #2563eb; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 0.78rem;">${c.type || 'Account'}</span></td>
         <td style="padding: 14px 18px; color: #334155; font-weight: 600;">${escapeHtml(c.contact_person || '-')}</td>
         <td style="padding: 14px 18px; color: #16a34a; font-weight: 700;">${c.phone || '-'}</td>
         <td style="padding: 14px 18px; color: #475569; font-weight: 500;">${escapeHtml(c.address || '-')}</td>
@@ -19140,8 +19192,8 @@ window.syncAllDynamicDropdowns = async function () {
       if (cur) doDrvSel.value = cur;
     }
 
-    // 4. Populate Route Select Dropdowns (#qt-route, #so-route-select, #do-route, #md-saved-routes-select)
-    ['qt-route', 'so-route-select', 'do-route', 'md-saved-routes-select'].forEach(id => {
+    // 4. Populate Route Select Dropdowns (#qt-route, #do-route, #md-saved-routes-select)
+    ['qt-route', 'do-route', 'md-saved-routes-select'].forEach(id => {
       const sel = document.getElementById(id);
       if (sel) {
         const cur = sel.value;
@@ -19153,8 +19205,8 @@ window.syncAllDynamicDropdowns = async function () {
       }
     });
 
-    // 5. Populate Customer Select Dropdowns (#qt-customer, #so-customer, #do-customer, #m-qt-customer)
-    ['qt-customer', 'so-customer', 'do-customer', 'm-qt-customer'].forEach(id => {
+    // 5. Populate Customer Select Dropdowns (#qt-customer, #do-customer, #m-qt-customer)
+    ['qt-customer', 'do-customer', 'm-qt-customer'].forEach(id => {
       const sel = document.getElementById(id);
       if (sel) {
         const cur = sel.value;
@@ -19198,12 +19250,15 @@ window.syncAllDynamicDropdowns = async function () {
     }
 
     // 6. Populate Vehicle Types (#qt-cargo-type, #fiori-veh-type) from CSDL Master Data
-    ['qt-cargo-type', 'so-cargo-type', 'fiori-veh-type'].forEach(id => {
+    ['qt-cargo-type', 'fiori-veh-type'].forEach(id => {
       const sel = document.getElementById(id);
       if (sel) {
         const cur = sel.value;
         if (vehTypes && vehTypes.length > 0) {
-          sel.innerHTML = `<option value="">-- Chọn loại xe phù hợp --</option>` + vehTypes.map(vt => `<option value="${vt.name}">${vt.name} (${vt.max_weight || 0} kg - ${vt.volume_capacity_m3 || 0} m³ - ${vt.pallet_capacity || 0} pallet)</option>`).join('');
+          // GIA TRI LA MA LOAI XE, nhan la ten. Xe luu ma (may chu chuan hoa khi
+          // luu), nen o chon theo ten thi mo xe ra thay trong — dung loi chu du an
+          // gap: "loai phuong tien bi sai / chua co loai xe".
+          sel.innerHTML = `<option value="">-- Chọn loại xe phù hợp --</option>` + vehTypes.map(vt => `<option value="${escapeHtml(vt.id)}">${escapeHtml(vt.name)} (${vt.max_weight || 0} kg - ${vt.volume_capacity_m3 || 0} m³ - ${vt.pallet_capacity || 0} pallet)</option>`).join('');
         } else {
           sel.innerHTML = '<option value="">-- Chưa có loại xe trong CSDL --</option>';
         }
@@ -19228,8 +19283,8 @@ window.syncAllDynamicDropdowns = async function () {
       if (cur) panoWeightSel.value = cur;
     }
 
-    // 6.8 Populate Currency Select Dropdowns from Master Data Currency (#so-currency, #qt-currency)
-    renderWorkflowCurrencyOptions(['so-currency', 'qt-currency']);
+    // 6.8 Populate Currency Select Dropdowns from Master Data Currency (#qt-currency)
+    renderWorkflowCurrencyOptions(['qt-currency']);
 
     // 7. Populate Dynamic Vehicle Types in Master Data Tab 2 (#formula-vehicle-types-list)
     if (typeof renderDynamicFormulaVehicleTypes === 'function') {
@@ -19315,7 +19370,7 @@ window.selectShipmentForExecution = function (id) {
   const s = (eplDeliveryOrders || []).find(d => d.id === id);
   if (!s) return;
   if (document.getElementById('exec-shipment-id')) document.getElementById('exec-shipment-id').value = s.id;
-  if (document.getElementById('exec-do-ref')) document.getElementById('exec-do-ref').value = s.so_id || s.id;
+  if (document.getElementById('exec-do-ref')) document.getElementById('exec-do-ref').value = s.id;
   if (document.getElementById('exec-warehouse')) document.getElementById('exec-warehouse').value = 'Kho Tổng Bình Dương';
   showToast(`📦 Đã chọn lô hàng ${id} để tiến hành xử lý!`);
 };
@@ -19392,7 +19447,6 @@ window.executeShipmentStep = async function (step) {
 window.saveMasterForm = function (type) {
   type = normalizeMasterFormType(type);
   if (type === 'qt') { window.saveOracleQT(); return; }
-  if (type === 'so') { window.saveOracleSO(); return; }
   if (type === 'do') { if (typeof window.saveFioriDO === 'function') window.saveFioriDO(); return; }
   if (type === 'route') { window.saveRouteConfig(); return; }
   if (type === 'dispatch' && typeof window.submitDispatch === 'function') { window.submitDispatch(); return; }
@@ -19402,7 +19456,6 @@ window.saveMasterForm = function (type) {
 window.approveMasterForm = function (type) {
   type = normalizeMasterFormType(type);
   if (type === 'qt') { window.approveQuotation(); return; }
-  if (type === 'so') { window.approveSO(); return; }
   if (type === 'do' && typeof window.saveFioriDO === 'function') { window.saveFioriDO(); return; }
   showToast('Chưa tìm thấy API duyệt cho form này. Vui lòng kiểm tra lại màn hình đang chọn.');
 };
@@ -19415,11 +19468,6 @@ async function refreshWorkflowCommandData(commandName) {
     appState.quotations = crmQuotations;
     return;
   }
-  if (commandName === 'salesOrderCreate' || commandName === 'salesOrderEdit' || commandName === 'salesOrderConfirm') {
-    await loadSalesOrders();
-    appState.sales_orders = crmSalesOrders;
-    return;
-  }
   if (commandName === 'dispatch') {
     await loadDispatchBoard();
     return;
@@ -19429,6 +19477,24 @@ async function refreshWorkflowCommandData(commandName) {
     await loadDeliveryOrders();
     appState.delivery_orders = eplDeliveryOrders;
   }
+}
+
+/** Điều phối chuyến; xe khác loại xe của báo giá thì hỏi xác nhận rồi gửi lại.
+ *
+ *  Máy chủ trả 409 `VEHICLE_TYPE_MISMATCH` kèm câu giải thích (loại báo giá,
+ *  loại xe thật, cước giữ theo báo giá, chi phí theo xe thật). Người điều phối
+ *  đồng ý thì gửi lại đúng lệnh đó với `confirm_vehicle_type_mismatch: true`.
+ *  Không chặn cứng vì có lúc cố ý lên loại to hơn để gộp chuyến.
+ */
+async function dieuPhoiCoXacNhanLoaiXe(command) {
+  const kq = await executeWorkflowCommand('dispatch', command);
+  if (kq.ok || (kq.error && kq.error.code) !== 'VEHICLE_TYPE_MISMATCH') return kq;
+  const dongY = window.confirm((kq.error.message || 'Xe khác loại xe của báo giá.')
+    + '\n\nVẫn điều xe này?');
+  if (!dongY) return kq;
+  return executeWorkflowCommand('dispatch', {
+    ...command, body: { ...(command.body || {}), confirm_vehicle_type_mismatch: true },
+  });
 }
 
 async function executeWorkflowCommand(commandName, command, applyServerState) {
@@ -19668,7 +19734,7 @@ window.refreshQuotationVehicleRecommendations = function () {
     ? `<div style="padding:10px 12px;border:1px solid #fca5a5;background:#fef2f2;color:#b91c1c;font-weight:800;border-radius:6px;"><i class="fa-solid fa-ban"></i> Đã bỏ chọn ${escapeRouteCheckpointText(previous)} vì ${recommendations.unsuitable.find(item => item.vehicleType.name === previous).reasons.map(capacityReasonText).join('; ')}.</div>`
     : '';
   panel.innerHTML = `${invalidNotice}<div style="margin-top:${invalidNotice ? '8px' : '0'};padding:12px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:6px;">
-    <div style="font-weight:900;color:#0f172a;margin-bottom:8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:#0a6ed1;"></i> Loại xe phù hợp đề xuất</div>
+    <div style="font-weight:900;color:#0f172a;margin-bottom:8px;"><i class="fa-solid fa-wand-magic-sparkles" style="color:#2563eb;"></i> Loại xe phù hợp đề xuất</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">${suitableCards || '<div style="color:#b91c1c;font-weight:800;">Không có loại xe đơn lẻ đủ tải. Cần chia nhiều xe/chuyến hoặc thuê ngoài.</div>'}</div>
   </div>`;
   return { valid: Boolean(selectedEvaluation?.fits), demand, recommendations };
@@ -19752,217 +19818,6 @@ window.approveQuotation = async function () {
   }
 };
 
-/* ==========================================================================
-   Tài liệu đính kèm của đơn vận chuyển: hợp đồng, báo giá đã ký.
-
-   Trước đây tab này có một ô chọn tệp, và khi chọn xong nó báo "Đã chọn hợp
-   đồng/báo giá đính kèm: <tên tệp>". Nhưng `so-contract-file` không xuất hiện
-   trong bất kỳ tệp JS nào — không upload, không FormData, không gắn vào đơn.
-   Tệp bị bỏ ngay tại đó, còn người dùng thì tưởng đã đính kèm xong.
-   ========================================================================== */
-
-/** Cỡ tệp viết cho người đọc. */
-function coTep(soByte) {
-  const n = Number(soByte || 0);
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
-
-/** Mã đơn đang mở. Chưa lưu đơn thì chưa có chỗ để gắn tệp vào. */
-function maDonDangMo() {
-  return document.getElementById('so-id')?.value?.trim() || '';
-}
-
-/** Vẽ danh sách tệp đã đính kèm. */
-function veDanhSachTaiLieuSO(danhSach) {
-  const host = document.getElementById('so-doc-list');
-  if (!host) return;
-  if (!Array.isArray(danhSach) || !danhSach.length) {
-    host.innerHTML = '<p class="so-doc-empty">Chưa có tệp nào được đính kèm.</p>';
-    return;
-  }
-  host.innerHTML = `<ul class="so-doc-items">${danhSach.map(tep => `
-    <li>
-      <i class="fa-solid ${tep.mime_type === 'application/pdf' ? 'fa-file-pdf'
-        : String(tep.mime_type || '').startsWith('image/') ? 'fa-file-image' : 'fa-file-lines'}"
-         aria-hidden="true"></i>
-      <span class="so-doc-name">
-        <b>${escapeHtml(tep.file_name)}</b>
-        <small>${escapeHtml(tep.document_type_label || '')} · ${coTep(tep.file_size)}${
-          tep.note ? ` · ${escapeHtml(tep.note)}` : ''}</small>
-      </span>
-      <a class="fiori-btn fiori-btn-secondary" href="${escapeHtml(tep.download_url)}"
-         download="${escapeHtml(tep.file_name)}"><i class="fa-solid fa-download"></i> Tải về</a>
-      <button type="button" class="fiori-btn fiori-btn-secondary so-doc-del"
-              onclick="xoaTaiLieuSO('${escapeJsAttr(tep.id)}', '${escapeJsAttr(tep.file_name)}')"
-              title="Xóa tệp đính kèm"><i class="fa-solid fa-trash"></i></button>
-    </li>`).join('')}</ul>`;
-}
-
-/** Nạp danh sách tệp của đơn đang mở. */
-window.napTaiLieuSO = async function () {
-  const host = document.getElementById('so-doc-list');
-  if (!host) return;
-  const soId = maDonDangMo();
-  if (!soId) {
-    host.innerHTML = '<p class="so-doc-empty">Lưu đơn trước, rồi mới đính kèm tệp được.</p>';
-    return;
-  }
-  let res;
-  try {
-    res = await fetch(`${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/documents`);
-  } catch (e) {
-    return baoMatKetNoi('Nạp danh sách tệp đính kèm', e);
-  }
-  if (!res.ok) return baoLoiMayChu(res, 'Nạp danh sách tệp đính kèm');
-  veDanhSachTaiLieuSO(await res.json().catch(() => []));
-};
-
-/** Tải một tệp lên cho đơn đang mở. */
-window.taiLenTaiLieuSO = async function () {
-  const oTep = document.getElementById('so-doc-file');
-  const tep = oTep?.files?.[0];
-  if (!tep) return;
-
-  const soId = maDonDangMo();
-  if (!soId) {
-    showToast('⚠️ Hãy lưu đơn vận chuyển trước, rồi mới đính kèm tệp được.');
-    oTep.value = '';
-    return;
-  }
-
-  // Chặn ngay tại đây thay vì gửi 25 MB lên rồi nhận 413.
-  const TOI_DA = 25 * 1024 * 1024;
-  if (tep.size > TOI_DA) {
-    showToast(`⚠️ Tệp ${coTep(tep.size)} vượt giới hạn 25 MB.`);
-    oTep.value = '';
-    return;
-  }
-
-  const bieuMau = new FormData();
-  bieuMau.append('file', tep);
-  bieuMau.append('document_type', document.getElementById('so-doc-type')?.value || 'contract');
-  bieuMau.append('note', document.getElementById('so-doc-note')?.value || '');
-
-  const nut = document.getElementById('so-doc-pick');
-  if (nut) nut.disabled = true;
-  showToast(`⏳ Đang tải lên ${tep.name}...`);
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/documents`,
-      { method: 'POST', body: bieuMau }
-    );
-    if (!res.ok) return baoLoiMayChu(res, `Đính kèm ${tep.name}`);
-    const data = await res.json().catch(() => ({}));
-    showToast(data.message || `✅ Đã đính kèm ${tep.name}.`);
-    const oGhiChu = document.getElementById('so-doc-note');
-    if (oGhiChu) oGhiChu.value = '';
-    await window.napTaiLieuSO();
-  } catch (e) {
-    return baoMatKetNoi(`Đính kèm ${tep.name}`, e);
-  } finally {
-    if (nut) nut.disabled = false;
-    // Xóa lựa chọn để chọn lại CÙNG một tệp vẫn kích hoạt `onchange`.
-    oTep.value = '';
-  }
-};
-
-/** Xóa một tệp đính kèm. */
-window.xoaTaiLieuSO = async function (documentId, tenTep) {
-  if (!confirm(`Xóa tệp đính kèm "${tenTep}" khỏi đơn?`)) return;
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/sales-order-documents/${encodeURIComponent(documentId)}`,
-      { method: 'DELETE' }
-    );
-    if (!res.ok) return baoLoiMayChu(res, `Xóa tệp ${tenTep}`);
-    showToast(`🗑️ Đã xóa tệp ${tenTep}.`);
-    await window.napTaiLieuSO();
-  } catch (e) {
-    return baoMatKetNoi(`Xóa tệp ${tenTep}`, e);
-  }
-};
-
-window.saveOracleSO = async function () {
-  const soId = document.getElementById('so-id')?.value;
-  const currentSO = (crmSalesOrders || []).find(s => s.id === soId);
-  if (currentSOMode === 'view' || isSOFormLocked()) {
-    showToast('SO đã xác nhận, chỉ xem và không chỉnh sửa trực tiếp.');
-    return;
-  }
-  if (currentSOMode === 'create' && !currentSourceQuotationId) {
-    showToast('SO chỉ được tạo từ Báo giá đã duyệt. Vui lòng chuyển từ màn Báo giá.');
-    return;
-  }
-  const customer = document.getElementById('so-customer')?.value;
-  const route = document.getElementById('so-route-select')?.value;
-  const amount = workflowTotalFieldVndValue('so-amount');
-  const routeContext = routeContextFromFields('so');
-
-  if (!customer || !route) {
-    showToast('⚠️ Vui lòng chọn Khách hàng và Tuyến đường!');
-    return;
-  }
-  showToast('⏳ Đang lưu đơn hàng vào PostgreSQL...');
-  const soPath = currentSO ? `/api/sales-orders/${encodeURIComponent(soId)}` : '/api/sales-orders';
-  const payload = {
-    route_id: route,
-    ...routeContext,
-    total_amount: amount,
-    // Loai phuong tien: cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen
-    // khong gui la don mat cach ap lai cong thuc theo tai trong thuc te.
-    cargo_type: document.getElementById('so-cargo-type')?.value || '',
-    // Ba o nay deu co cot that trong bang `sales_orders` nhung chua bao gio
-    // duoc gui len: o Ghi chu, Dieu khoan thanh toan, va Nhan vien kinh doanh.
-    notes: document.getElementById('so-notes')?.value || '',
-    payment_terms: document.getElementById('so-payment-terms')?.value || '',
-    sales_rep: document.getElementById('so-sales-rep')?.value || '',
-    // Quy cach van chuyen: sau truong nay tung khong duoc gui len bao gio, nen
-    // dien xong bam Luu la mat sach.
-    carrier_name: document.getElementById('so-carrier-name')?.value || '',
-    delivery_method: document.getElementById('so-delivery-method')?.value || '',
-    seal_weight: document.getElementById('so-seal-weight')?.value || '',
-    temperature_requirement: document.getElementById('so-temperature-requirement')?.value || '',
-    cargo_insurance: document.getElementById('so-cargo-insurance')?.value || '',
-    warehouse_owner: document.getElementById('so-warehouse-owner')?.value || '',
-    // May chu TINH LAI tong tu cac dong nay, nen tong va cac dong khong the
-    // noi hai con so khac nhau. Don vi tinh cua tung dong con duoc quy doi ra
-    // khoi luong / the tich de chan dieu xe qua tai.
-    lines: readSOLinesFromForm(),
-  };
-  if (!currentSO) {
-    payload.id = soId;
-    payload.quotation_id = currentSourceQuotationId;
-  }
-  const result = await executeWorkflowCommand(currentSO ? 'salesOrderEdit' : 'salesOrderCreate', {
-    path: soPath, method: currentSO ? 'PUT' : 'POST', body: payload
-  });
-  if (result.ok) {
-    showToast(`✅ Máy chủ đã xác nhận lưu SO ${soId}.`);
-    if (typeof window.closeOracleSOForm === 'function') window.closeOracleSOForm();
-  }
-};
-
-window.approveSO = async function () {
-  if (currentSOMode === 'view' || isSOFormLocked()) {
-    showToast('SO đã xác nhận, không cần xác nhận lại.');
-    return;
-  }
-  const soId = document.getElementById('so-id')?.value;
-  if (!soId) return;
-  showToast(`⏳ Đang xác nhận SO ${soId}...`);
-  const result = await executeWorkflowCommand('salesOrderConfirm', {
-    path: `/api/sales-orders/${soId}/status`, method: 'PUT', body: { status: 'Confirmed' }
-  });
-  if (result.ok) {
-    showToast(`✅ SO ${soId} đã được xác nhận!`);
-    const statusEl = document.getElementById('so-status');
-    if (statusEl) statusEl.value = 'Confirmed';
-    if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-    if (typeof window.updateActiveFlowStep === 'function') window.updateActiveFlowStep(4);
-  }
-};
 
 window.saveRouteConfig = async function () {
   const routeId = document.getElementById('md-route-code')?.value;
@@ -20076,120 +19931,6 @@ window.submitPOD = async function () {
  * don vi tinh, don gia cuoc — bam Luu — nhan thong bao thanh cong, va khong mot
  * dong nao duoc ghi lai.
  */
-function readSOLinesFromForm() {
-  const tbody = document.getElementById('so-lines-tbody');
-  if (!tbody) return [];
-  return [...tbody.querySelectorAll('tr')].map(tr => {
-    const qty = tr.querySelector('input[id^="so-item-qty"]');
-    const price = tr.querySelector('input[id^="so-item-unit-price"]');
-    const uom = tr.querySelector('select[id^="so-item-uom"]');
-    const desc = tr.querySelector('input[type="text"]');
-    return {
-      description: desc?.value || '',
-      quantity: parseFloat(qty?.value) || 0,
-      uom: uom?.value || 'Tấn',
-      unit_price: parseFloat(String(price?.value || '').replace(/,/g, '')) || 0,
-    };
-  }).filter(line => line.quantity > 0 || line.unit_price > 0 || line.description.trim());
-}
-
-/** Nap lai cac dong hang da luu khi mo mot don hang van chuyen. */
-window.loadSOLinesFromServer = async function (soId) {
-  const tbody = document.getElementById('so-lines-tbody');
-  if (!tbody || !soId) return;
-  let lines = [];
-  try {
-    const res = await fetch(`${API_BASE}/api/sales-orders/${encodeURIComponent(soId)}/lines`);
-    if (!res.ok) return;
-    lines = (await res.json()).data || [];
-  } catch (error) {
-    // Khong tai duoc thi giu nguyen bang dang co, dung xoa trang cua nguoi dung.
-    return;
-  }
-  if (!lines.length) return;
-
-  const curr = document.getElementById('so-currency')?.value || 'VND';
-  tbody.innerHTML = lines.map((line, index) => {
-    const no = index + 1;
-    const suffix = no === 1 ? '' : `-${no}`;
-    const options = ['Tấn', 'Kg', 'Chuyến', 'Khối (m³)']
-      .map(item => `<option value="${escapeHtml(item)}"${item === line.uom ? ' selected' : ''}>${escapeHtml(item)}</option>`)
-      .join('');
-    return `<tr>
-      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;">ITM-${String(no).padStart(3, '0')}</td>
-      <td style="padding:10px; border-bottom:1px solid #eee;"><input type="text" value="${escapeHtml(line.description || '')}" style="width:100%; border:none; background:#fff; border-bottom:1px solid #0a6ed1; outline:none;"></td>
-      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><input type="number" id="so-item-qty${suffix}" value="${Number(line.quantity) || 0}" oninput="calcSOLineTotal()" style="width:60px; padding:4px;"></td>
-      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><select id="so-item-uom${suffix}" onchange="calcSOLineTotal()" style="padding:4px; border:1px solid #ccc; border-radius:4px;">${options}</select></td>
-      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem;"><input type="number" id="so-item-unit-price${suffix}" value="${Number(line.unit_price) || 0}" oninput="calcSOLineTotal()" style="width:110px; padding:4px;"></td>
-      <td style="padding:10px; border-bottom:1px solid #eee; font-size:.9rem; font-weight:bold; color:#0a6ed1;" id="so-item-total-amount${suffix}" data-vnd-value="${Number(line.amount) || 0}">${formatWorkflowCurrencyAmount(Number(line.amount) || 0, curr)}</td>
-    </tr>`;
-  }).join('');
-  calcSOLineTotal();
-};
-
-window.calcSOLineTotal = function () {
-  const tbody = document.getElementById('so-lines-tbody');
-  if (!tbody) return;
-  const rows = tbody.querySelectorAll('tr');
-  let totalSOAmount = 0;
-  const curr = document.getElementById('so-currency')?.value || 'VND';
-
-  rows.forEach(tr => {
-    const qtyInput = tr.querySelector('input[id^="so-item-qty"]');
-    const priceInput = tr.querySelector('input[id^="so-item-unit-price"]');
-    const amountTd = tr.querySelector('td[id^="so-item-total-amount"]');
-
-    if (qtyInput && priceInput && amountTd) {
-      const qty = parseFloat(qtyInput.value) || 0;
-      const price = parseFloat(priceInput.value.replace(/,/g, '')) || 0;
-      const amount = qty * price;
-
-      amountTd.dataset.vndValue = String(amount);
-      amountTd.innerText = formatWorkflowCurrencyAmount(amount, curr);
-      totalSOAmount += amount;
-    }
-  });
-
-  const soAmountInput = document.getElementById('so-amount');
-  if (soAmountInput) {
-    soAmountInput.dataset.vndValue = String(totalSOAmount);
-  }
-  refreshSOAmountCurrency();
-};
-
-window.addSOLineRow = function () {
-  if (typeof isSOFormLocked === 'function' && isSOFormLocked()) {
-    showToast('Đơn hàng đã xác nhận, không thể thêm dòng mới.');
-    if (typeof refreshSOEditControls === 'function') refreshSOEditControls();
-    return;
-  }
-  const tbody = document.getElementById('so-lines-tbody');
-  if (!tbody) return;
-  const rowCount = tbody.querySelectorAll('tr').length + 1;
-  const itemId = `ITM-00${rowCount}`;
-
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">${itemId}</td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee;"><input type="text" style="width: 100%; border: none; background: #ffffff; border-bottom: 1px solid #0a6ed1; outline: none; font-weight: 600; color: #0f172a;" id="so-item-desc-${rowCount}" placeholder="Nhập tên hàng hóa..."></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;"><input type="number" id="so-item-qty-${rowCount}" value="1" oninput="calcSOLineTotal()" style="width:60px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;"></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
-      <select id="so-item-uom-${rowCount}" style="padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
-        <option value="Tấn">Tấn</option>
-        <option value="Kg">Kg</option>
-        <option value="Chuyến">Chuyến</option>
-        <option value="Khối">Khối (m3)</option>
-        <option value="Cái">Cái</option>
-        <option value="Pallet">Pallet</option>
-      </select>
-    </td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: 700;"><input type="text" id="so-item-unit-price-${rowCount}" value="0" oninput="calcSOLineTotal()" style="width:100px; padding: 4px; border: 1px solid #ccc; border-radius: 4px; outline: none;"></td>
-    <td style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; font-weight: bold; color: #0a6ed1;" id="so-item-total-amount-${rowCount}" data-vnd-value="0">${formatWorkflowCurrencyAmount(0, document.getElementById('so-currency')?.value || 'VND')}</td>
-  `;
-  tbody.appendChild(tr);
-  refreshSOAmountCurrency();
-};
-
 const deliveryCompletionState = {
   tab: 'pending', rows: [], selected: null, charges: [], submissionKey: ''
 };
@@ -20416,6 +20157,7 @@ window.openDeliveryCompletionEditor = function (doId) {
   const history = document.getElementById('completion-history-detail');
   if (history) history.hidden = true;
   editor.hidden = false;
+  moHoSoNoi(editor);
   document.getElementById('completion-editor-title').textContent = `Hoàn tất giao hàng · ${doId}`;
   const closeout = row.closeout || {}, commercials = closeout.commercials || {};
   const base = Number(commercials.base_selling_price ?? commercials.selling_price ?? 0);
@@ -20427,17 +20169,21 @@ window.openDeliveryCompletionEditor = function (doId) {
     actual_amount:Number(line.original_amount || 0),
     note:line.calculation || '',
     code:line.code,
+    // Mã costindex đi theo dòng từ công thức giá thành tới lúc chốt; gửi lại
+    // máy chủ khi hoàn tất để dòng "khách trả thêm" cũng mang mã.
+    cost_index:line.cost_index || '',
+    rate_source:line.rate_source || 'vehicle_type',
     source:'configured'
   }));
   document.getElementById('completion-do-summary').innerHTML = [
-    ['SO nguồn', closeout.sales_order_id || row.order.so_id || '-'], ['Xe vận chuyển', row.order.vehicle_id || row.trip.vehicle_id || '-'],
+    ['Báo giá nguồn', closeout.quotation_id || row.order.quotation_id || '-'], ['Xe vận chuyển', row.order.vehicle_id || row.trip.vehicle_id || '-'],
     ['Tài xế', row.order.driver_id || row.trip.driver_id || '-'], ['Tuyến', `${escapeHtml(row.order.origin || '-')} → ${escapeHtml(row.order.destination || '-')}`],
     ['Giá ban đầu', completionMoney(base, currency)]
   ].map(item => `<div><span>${item[0]}</span><strong>${completionEscape(item[1])}</strong></div>`).join('');
   const order = row.order;
   const doDetails = [
     ['Mã DO', order.id], ['Trạng thái', order.canonical_status || order.status],
-    ['SO tham chiếu', closeout.sales_order_id || order.so_id], ['Khách hàng', order.customer_id],
+    ['Báo giá cước', closeout.quotation_id || order.quotation_id], ['Khách hàng', order.customer_id],
     ['Mã tuyến', order.route_id], ['Trip', row.trip.id],
     ['Điểm đi', order.origin], ['Điểm đến', order.destination],
     ['Nhận hàng từ', order.pickup_window_start], ['Nhận hàng đến', order.pickup_window_end],
@@ -20447,7 +20193,7 @@ window.openDeliveryCompletionEditor = function (doId) {
     ['Thể tích', completionDisplayValue(order.volume_m3, ' m³')], ['Quy cách đóng gói', order.packaging_spec],
   ];
   document.getElementById('completion-do-details').innerHTML = doDetails.map(item => `<div class="completion-do-detail"><span>${item[0]}</span><strong>${completionEscape(completionDisplayValue(item[1]))}</strong></div>`).join('');
-  document.getElementById('completion-base-price-badge').textContent = `Theo SO: ${completionMoney(base, currency)}`;
+  document.getElementById('completion-base-price-badge').textContent = `Theo báo giá: ${completionMoney(base, currency)}`;
   const legs = (row.trip.legs || []).filter(leg => leg.do_id === doId && leg.leg_type === 'delivery');
   document.getElementById('completion-pod-fields').innerHTML = legs.map((leg, index) => `<div class="completion-pod-stop ${index === 0 ? 'expanded' : ''}" data-completion-leg="${completionEscape(leg.id)}">
     <button type="button" class="completion-pod-stop-toggle" data-completion-stop-toggle aria-expanded="${index === 0 ? 'true' : 'false'}" onclick="toggleDeliveryPodStop(this)">
@@ -20474,14 +20220,49 @@ window.openDeliveryCompletionEditor = function (doId) {
   initializeDeliverySignaturePads();
   renderDeliveryChargeLines();
   updateDeliveryCompletionTotals();
-  editor.scrollIntoView({behavior:'smooth', block:'start'});
 };
 
 window.closeDeliveryCompletionEditor = function () {
-  const editor = document.getElementById('completion-editor');
-  if (editor) editor.hidden = true;
+  dongHoSoNoi();
   deliveryCompletionState.selected = null;
 };
+
+/**
+ * HỒ SƠ MỞ THÀNH HỘP THOẠI NỔI, không đẩy xuống cuối trang.
+ *
+ * Chủ dự án bấm "Xem hồ sơ" và thấy nội dung xuất hiện DƯỚI bảng — phải cuộn
+ * xuống, bảng 5 dòng thì còn thấy, bảng 200 dòng thì hồ sơ nằm ở đâu không ai
+ * biết, và ở màn Chờ hoàn tất cũng vậy. Một hồ sơ là việc đang làm dở, nó phải
+ * đè lên bảng, đóng lại thì bảng còn nguyên chỗ cũ.
+ *
+ * Cùng một hàm cho cả hai khối (biên tập POD và hồ sơ đã hoàn tất) để hai màn
+ * mở giống nhau. Lớp `.completion-float` do CSS vẽ: cố định giữa màn, cuộn bên
+ * trong, bóng phủ nền. Esc để đóng. Khoá cuộn của trang khi đang mở.
+ */
+function moHoSoNoi(section) {
+  if (!section) return;
+  document.querySelectorAll('.completion-float').forEach(el => {
+    if (el !== section) { el.classList.remove('completion-float'); el.hidden = true; }
+  });
+  section.hidden = false;
+  section.classList.add('completion-float');
+  document.body.classList.add('completion-float-open');
+  section.scrollTop = 0;
+  if (!moHoSoNoi._esc) {
+    moHoSoNoi._esc = ev => { if (ev.key === 'Escape') dongHoSoNoi(); };
+    document.addEventListener('keydown', moHoSoNoi._esc);
+  }
+}
+
+function dongHoSoNoi() {
+  document.querySelectorAll('.completion-float').forEach(el => {
+    el.classList.remove('completion-float');
+    el.hidden = true;
+  });
+  document.body.classList.remove('completion-float-open');
+}
+window.moHoSoNoi = moHoSoNoi;
+window.dongHoSoNoi = dongHoSoNoi;
 
 window.addDeliveryChargeLine = function () {
   deliveryCompletionState.charges.push({name:'', original_amount:0, actual_amount:0, note:'', source:'manual'});
@@ -20507,8 +20288,14 @@ window.renderDeliveryChargeLines = function () {
   if (!target) return;
   target.innerHTML = deliveryCompletionState.charges.map((line, index) => {
     const increase = Math.max(0, Number(line.actual_amount || 0) - Number(line.original_amount || 0));
+    // Mã costindex hiện ngay cạnh tên: người chốt giá thấy dòng nào chưa có
+    // mã thì biết phải gán ở Công thức giá thành trước khi hồ sơ sang bên công nợ.
+    const maCostindex = line.cost_index
+      ? `<code class="completion-costindex" title="Acc code">${completionEscape(line.cost_index)}</code>`
+      : (line.source === 'configured' ? '<code class="completion-costindex is-missing" title="Công thức chưa chọn Acc code">chưa có acc code</code>' : '');
+    const nguon = line.rate_source === 'vehicle' ? ' · đơn giá của xe' : '';
     const nameField = line.source === 'configured'
-      ? `<div class="completion-configured-cost"><strong>${completionEscape(line.name)}</strong><small>${completionEscape(line.note || 'Theo cấu hình giá')}</small></div>`
+      ? `<div class="completion-configured-cost"><strong>${completionEscape(line.name)} ${maCostindex}</strong><small>${completionEscape((line.note || 'Theo cấu hình giá') + nguon)}</small></div>`
       : `<input aria-label="Khoản phí bổ sung" placeholder="Ví dụ: Phí chờ bốc dỡ" value="${completionEscape(line.name)}" onchange="updateDeliveryChargeLine(${index},'name',this.value)">`;
     const action = line.source === 'configured'
       ? '<span class="completion-cost-locked" title="Khoản đã chốt từ cấu hình"><i class="fa-solid fa-lock"></i></span>'
@@ -20551,7 +20338,7 @@ window.submitDeliveryCompletion = async function () {
   if (!podEntries.length) return showToast('Trip chưa có chặng giao hàng để nộp POD.', 'error');
   const invalidCharge = deliveryCompletionState.charges.find(line => !String(line.name || '').trim() || Number(line.actual_amount || 0) < 0);
   if (invalidCharge) return showToast('Khoản chi phí cần có tên và giá thực tế hợp lệ.', 'warning');
-  const payload = {trip_id:row.trip.id, currency_code:row.currency, pod_entries:podEntries, charge_adjustments:deliveryCompletionState.charges.map(line => ({name:String(line.name).trim(), original_amount:String(line.original_amount || 0), actual_amount:String(line.actual_amount || 0), note:line.note || null}))};
+  const payload = {trip_id:row.trip.id, currency_code:row.currency, pod_entries:podEntries, charge_adjustments:deliveryCompletionState.charges.map(line => ({name:String(line.name).trim(), original_amount:String(line.original_amount || 0), actual_amount:String(line.actual_amount || 0), note:line.note || null, cost_index:(line.cost_index || '').trim() || null}))};
   const form = new FormData(); form.append('payload', JSON.stringify(payload)); Object.entries(files).forEach(([field,file]) => form.append(field,file));
   const button = document.getElementById('completion-submit'); if (button) button.disabled = true;
   showToast(`Đang lưu POD và chốt giá DO ${row.order.id}...`, 'loading');
@@ -20574,13 +20361,13 @@ window.viewCompletedDelivery = async function (doId) {
   try {
     const response = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(doId)}/closeout`, {headers:financeAuthHeaders()}), data = await response.json();
     if (!response.ok) throw new Error(data?.detail?.message || 'Không tải được hồ sơ.');
-    const c = data.commercials || {}, currency = data.currency || 'VND';
-    const invoice = data.invoice || {};
-    const podCount = (data.pod_records || []).length;
-    const documentCount = (data.pod_documents || []).length;
-    const tripStatus = data.trip?.status || '-';
-    const released = data.resource_release || {};
-    target.innerHTML = `<header class="completion-editor-header"><div><span class="completion-eyebrow">Hồ sơ đã hoàn tất</span><h3>${completionEscape(doId)}</h3></div><button class="icon-button" title="Đóng" onclick="this.closest('section').hidden=true"><i class="fa-solid fa-xmark"></i></button></header><div class="completion-update-receipt"><div class="completion-update-receipt-title"><i class="fa-solid fa-circle-check"></i><div><strong>Đã cập nhật vào hệ thống</strong><span>Thông tin dưới đây được đọc lại từ database sau khi hoàn tất.</span></div></div><div class="completion-update-receipt-grid"><div><span>Lệnh giao hàng</span><strong>${completionEscape(doId)} · ${completionEscape(statusLabel(data.status))}</strong></div><div><span>Trip vận chuyển</span><strong>${completionEscape(data.trip?.id || '-')} · ${completionEscape(statusLabel(tripStatus))}</strong></div><div><span>POD & chữ ký</span><strong>${podCount} điểm giao · ${documentCount} chứng từ</strong></div><div><span>Hóa đơn phải thu</span><strong>${completionEscape(invoice.id || '-')} · ${completionEscape(statusLabel(invoice.canonical_status || '-'))}</strong></div><div><span>Xe & tài xế</span><strong>${completionEscape(statusLabel(released.vehicle_status || '-'))} · ${completionEscape(statusLabel(released.driver_status || '-'))}</strong></div></div></div><div class="completion-summary"><div><span>Giá SO ban đầu</span><strong>${completionMoney(c.base_selling_price,currency)}</strong></div><div><span>Khách hàng trả thêm</span><strong>${completionMoney(c.customer_surcharge_total,currency)}</strong></div><div><span>Giá cuối DO</span><strong>${completionMoney(c.final_selling_price,currency)}</strong></div><div><span>Chi phí nội bộ</span><strong>${completionMoney(c.actual_cost_total,currency)}</strong></div><div><span>Margin</span><strong>${completionMoney(c.margin_amount,currency)}</strong></div></div><div class="completion-form-grid"><section class="completion-pane"><div class="completion-pane-title"><span>POD đã nộp</span><b>${podCount} điểm</b></div>${(data.pod_records||[]).map(pod=>`<div style="padding:11px 0;border-bottom:1px solid #e5eaf1"><strong>${completionEscape(pod.location_text||'Điểm giao')}</strong><br><small>${completionEscape(pod.receiver_name||'-')} · ${completionEscape(pod.delivery_time||'')}</small></div>`).join('')}</section><section class="completion-pane"><div class="completion-pane-title"><span>Khoản khách hàng trả thêm</span><b>${completionMoney(c.customer_surcharge_total,currency)}</b></div>${(data.customer_charge_adjustments||[]).map(line=>`<div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #e5eaf1"><span>${completionEscape(line.name)}</span><strong>${completionMoney(line.increase_amount,currency)}</strong></div>`).join('')||'<div class="completion-empty">Không có phát sinh.</div>'}</section></div>`;
-    target.scrollIntoView({behavior:'smooth',block:'start'});
+    // BẢN VẼ ĐẦY ĐỦ, không phải bản tóm tắt. Trước đây khối này chỉ hiện năm
+    // con số tổng (giá SO, giá cuối, chi phí, margin) trong khi máy chủ đã trả
+    // `ledger_lines` — từng dòng thu/chi có Acc code — và chỉ màn Theo dõi vẽ
+    // nó. Anh Khang lấy hồ sơ từ MÀN NÀY để lập phiếu thu/chi, nên dùng chung
+    // `renderDeliveryOrderCloseout` để hai màn không bao giờ lệch nhau nữa.
+    target.innerHTML = `<header class="completion-editor-header"><div><span class="completion-eyebrow">Hồ sơ đã hoàn tất</span><h3>${completionEscape(doId)}</h3></div><button class="icon-button" title="Đóng (Esc)" onclick="dongHoSoNoi()"><i class="fa-solid fa-xmark"></i></button></header><div id="completion-history-closeout" class="completion-history-closeout"></div>`;
+    renderDeliveryOrderCloseout(data, document.getElementById('completion-history-closeout'));
+    moHoSoNoi(target);
   } catch (error) { target.innerHTML = `<div class="completion-empty">${completionEscape(error.message)}</div>`; showToast(error.message,'error'); }
 };

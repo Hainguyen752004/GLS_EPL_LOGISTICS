@@ -83,12 +83,14 @@ const cssMa = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
   // Xếp ca là việc làm hằng tuần, không phải dữ liệu gốc "khai một lần rồi để
   // đó". Để chung thì người điều phối phải vào "Dữ liệu gốc" để làm một việc
   // vận hành.
-  const iOps = html.indexOf('id="epl-m-ops"');
-  const iBiz = html.indexOf('id="epl-m-biz"');
+  // 10/09 chu du an doi y: "bo Chuan bi nguon luc vi no thuoc ve master data" —
+  // muc xep ca gio nam trong bang chon Du lieu goc, cung 11 the con lai.
+  const iMaster = html.indexOf('id="epl-m-master"');
+  const iMore = html.indexOf('id="epl-m-more"');
   const iMuc = html.indexOf('data-md-tab="md-tab-vehicles"');
-  assert.ok(iOps > 0 && iBiz > iOps, 'không khoanh được bảng chọn Vận hành');
-  assert.ok(iMuc > iOps && iMuc < iBiz,
-    'mục "Sắp lịch xe và tài xế" phải nằm trong bảng chọn Vận hành');
+  assert.ok(iMaster > 0 && iMore > iMaster, 'không khoanh được bảng chọn Dữ liệu gốc');
+  assert.ok(iMuc > iMaster && iMuc < iMore,
+    'mục "Xe, tài xế và sắp ca" phải nằm trong bảng chọn Dữ liệu gốc');
   assert.strictEqual((html.match(/data-md-tab="md-tab-vehicles"/g) || []).length, 1,
     'mục bị nhân đôi ở hai bảng chọn');
 
@@ -101,8 +103,8 @@ const cssMa = css.replace(/\/\*[\s\S]*?\*\//g, ' ');
     khung.slice(i, khung.indexOf(NL + '  };', i) + 5) + NL + 'return DAU_TRANG_THEO_THE;')();
   const d = bang['md-tab-vehicles'];
   assert.ok(d, 'thẻ md-tab-vehicles chưa khai đầu trang riêng');
-  assert.strictEqual(d[0], 'ops', 'thẻ xếp ca phải sáng mục Vận hành ở tầng 2');
-  assert.strictEqual(d[1], 'Vận hành', `đường dẫn phải là "Vận hành", thấy "${d[1]}"`);
+  assert.strictEqual(d[0], 'master', 'thẻ xếp ca sáng mục Dữ liệu gốc ở tầng 2 (chủ dự án đổi 10/09)');
+  assert.strictEqual(d[1], 'Dữ liệu gốc', `đường dẫn phải là "Dữ liệu gốc", thấy "${d[1]}"`);
 }
 
 // --- 3. Hai cột, cả hai tab -------------------------------------------

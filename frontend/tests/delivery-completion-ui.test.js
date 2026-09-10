@@ -40,7 +40,10 @@ assert.match(app, /configured_cost_lines/, 'Configured vehicle costs must preloa
 assert.match(app, /line\.source === 'configured'/, 'Configured and manually added cost lines need distinct behavior.');
 assert.match(app, /Chi phí chốt ban đầu/, 'The table must explain the initial configured cost column.');
 assert.match(app, /customer_surcharge_total/, 'Final customer surcharge is not rendered.');
-assert.match(app, /completion-update-receipt/, 'Completed delivery must show where persisted data was updated.');
+// "Hồ sơ đã hoàn tất" dùng chung bản vẽ closeout đầy đủ (sổ thu–chi từng dòng
+// có Acc code) thay cho khối tóm tắt riêng — nên mốc cần thấy là lời gọi đó.
+assert.match(app, /renderDeliveryOrderCloseout\(data, document\.getElementById\('completion-history-closeout'\)\)/,
+  'Completed delivery must render the full closeout ledger (per-line thu/chi with Acc code).');
 assert.match(app, /Hóa đơn phải thu/, 'Completed delivery must expose the posted AR invoice.');
 assert.match(app, /data\.trip\?\.status/, 'Completed delivery must expose the persisted Trip status.');
 assert.match(app, /data\.pod_documents/, 'Completed delivery must expose persisted POD and signature documents.');

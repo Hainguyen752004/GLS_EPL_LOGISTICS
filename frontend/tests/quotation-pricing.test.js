@@ -29,6 +29,13 @@ const FORMULA = {
   ],
 };
 const STORE = { 'vt-002-VND': FORMULA };
+{
+  const result=P.price({store:{test:{...FORMULA,expressions:{COST:'fuel * km + driver',REV:'max(rate * kg, 2500000)',PROFIT:'REV - COST'}}},
+    vehicleTypes:[{id:'VT-002',name:'Xe tải 5 tấn'}],cargoType:'Xe tải 5 tấn',route:{distance_km:100},tonnes:0});
+  assert.equal(result.revenue,2500000);
+  assert.equal(result.cost,880000);
+  assert.ok(result.ready);
+}
 const TYPES = [{ id: 'VT-002', name: 'Xe tải 5 tấn', max_weight: 5000 }];
 const ROUTE = { id: 'RT-001', name: 'Hà Nội ➔ Hải Phòng', distance_km: 128.45 };
 

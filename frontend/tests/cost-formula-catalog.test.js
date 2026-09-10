@@ -91,7 +91,7 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   assert.match(fn, /masterCostCurrencyCode\(\)/, 'the phai theo don vi tien te dang chon');
   assert.match(fn, /formatWorkflowCurrencyAmount\(fuelPerKm, currency\)/);
   // Icon lấy từ dữ liệu, chỉ dùng 🚚 khi thiếu.
-  assert.match(fn, /vehicleType\.icon \|\| '🚚'/);
+  assert.match(fn, /class="fa-solid fa-truck"/, 'loại xe dùng icon thư viện');
   // Tên loại xe do người dùng nhập nên phải thoát khi vào innerHTML.
   assert.match(fn, /escapeHtml\(vName\)/);
   assert.match(fn, /escapeHtml\(vehicleType\.id\)/);

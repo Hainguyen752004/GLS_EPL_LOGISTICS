@@ -65,7 +65,11 @@ function than(neo, ket) {
     'hồ sơ không được mượn bộ đệm trình duyệt — nó có thể trống hoặc cũ');
 
   // Đủ những ô mà màn Hoàn tất giao hàng đang hiện.
-  ['Mã DO', 'Trạng thái', 'SO tham chiếu', 'Khách hàng', 'Mã tuyến', 'Trip',
+  //
+  // "SO tham chiếu" ĐÃ BỎ khỏi danh sách này: bước Đơn hàng không còn trong
+  // luồng, DO sinh từ báo giá, nên ô đó luôn rỗng và chỉ khiến người đọc đi tìm
+  // một bản ghi không tồn tại. "Báo giá cước" ngay cạnh nó là thứ thật.
+  ['Mã DO', 'Trạng thái', 'Báo giá cước', 'Khách hàng', 'Mã tuyến', 'Trip',
     'Điểm đi', 'Điểm đến', 'Nhận hàng từ', 'Nhận hàng đến', 'Giao hàng từ',
     'Giao hàng đến', 'Xe vận chuyển', 'Tài xế', 'Tải trọng', 'Số pallet',
     'Thể tích', 'Quy cách đóng gói'].forEach(nhan => {
@@ -105,7 +109,7 @@ function than(neo, ket) {
 // bộ giá bán. `khoiLoiNhuanCloseout` đã xử lý đúng chuyện đó.
 
 {
-  const t = than('function renderDeliveryOrderCloseout(data)');
+  const t = than('function renderDeliveryOrderCloseout(data, target)');
   assert.ok(/khoiLoiNhuanCloseout\(data, currency\)/.test(t),
     'phải dùng lại khối lợi nhuận có xét cờ tạm tính');
   assert.ok(!/\["Lợi nhuận", tm\.margin_amount/.test(t),
@@ -139,7 +143,7 @@ function than(neo, ket) {
 // --- 6. Ba bảng tiền, và CSS phải có ---------------------------------
 
 {
-  const t = than('function renderDeliveryOrderCloseout(data)');
+  const t = than('function renderDeliveryOrderCloseout(data, target)');
   assert.ok(/configured_cost_lines/.test(t), 'phải hiện giá thành theo loại xe');
   assert.ok(/actual_cost_lines/.test(t), 'phải hiện chi phí thực tế');
   assert.ok(/customer_charge_adjustments/.test(t), 'phải hiện khoản khách trả thêm');

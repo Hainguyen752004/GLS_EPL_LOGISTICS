@@ -1,6 +1,65 @@
 import json
 
 
+def test_fleet_comparison_endpoint_returns_real_vehicle_and_audit(app_client):
+    client, _, _ = app_client
+    import database
+    from models import Vehicle
+    with database.SessionLocal() as db:
+        db.add(Vehicle(id='COMPARE-V1',type='COMPARE-TYPE'))
+        db.commit()
+    result=client.post('/api/cost-formulas',json={'vehicle_type_id':'COMPARE-TYPE','terms':[{'key':'fuel','rate':4800}]})
+    assert result.status_code == 200
+    saved=client.put('/api/vehicles/COMPARE-V1/cost-overrides',json={'overrides':[{'component':'fuel','value':5200,'note':'Older vehicle'}]})
+    assert saved.status_code == 200
+    response=client.get('/api/cost-formulas/fleet-overview')
+    assert response.status_code == 200
+    data=response.json()['data']
+    vehicle=next(v for v in data['vehicles'] if v['vehicle_id']=='COMPARE-V1')
+    assert vehicle['terms'][0]['rate'] == 5200
+    assert any(h['vehicle_id']=='COMPARE-V1' and '5200' in h['message'] for h in data['history'])
+
+
+def test_formula_rejects_stale_editor_and_records_actor(app_client):
+    client, _, _ = app_client
+    body = {'vehicle_type_id': 'CONCURRENT-CF', 'terms': [{'key':'fuel','rate':4800}]}
+    first = client.post('/api/cost-formulas', json=body)
+    assert first.status_code == 200
+    token = first.json()['data']['updated_at']
+    second = client.post('/api/cost-formulas', json={**body,
+        'expected_updated_at':token,'terms':[{'key':'fuel','rate':5000}]})
+    assert second.status_code == 200
+    stale = client.post('/api/cost-formulas', json={**body,'expected_updated_at':token})
+    assert stale.status_code == 409
+    row = next(r for r in client.get('/api/cost-formulas').json() if r['vehicle_type_id']=='CONCURRENT-CF')
+    assert row['terms'][0]['rate'] == 5000
+    assert row['history'][0]['actor']
+
+
+def test_expressions_roundtrip_and_server_evaluation(app_client):
+    client, _, _ = app_client
+    expressions = {"COST": "fuel * km", "REV": "max(rate * kg, 2500000)", "PROFIT": "REV - COST"}
+    response = client.post('/api/cost-formulas', json={
+        'vehicle_type_id': 'EXPRESSION-TEST', 'currency':'VND',
+        'terms':[{'key':'fuel','rate':4800},{'key':'rate','rate':1200}], 'expressions':expressions,
+    })
+    assert response.status_code == 200, response.text
+    formula_id = response.json()['data']['id']
+    row = next(r for r in client.get('/api/cost-formulas').json() if r['id'] == formula_id)
+    assert row['expressions'] == expressions
+    preview = client.post('/api/cost-formulas/evaluate', json={'formula_id':formula_id,'trip':{'km':100,'tonnes':0}})
+    assert preview.status_code == 200, preview.text
+    assert preview.json()['data']['revenue'] == 2500000
+    assert preview.json()['data']['cost'] == 480000
+    rejected = client.post('/api/cost-formulas', json={
+        'vehicle_type_id':'EXPRESSION-TEST','expressions':{**expressions,'COST':'fuel / 0'},
+        'terms':[{'key':'fuel','rate':4800},{'key':'rate','rate':1200}],
+    })
+    assert rejected.status_code == 422
+    row = next(r for r in client.get('/api/cost-formulas').json() if r['id'] == formula_id)
+    assert row['expressions'] == expressions
+
+
 def test_cost_formula_api_persists_currency_and_components(app_client):
     client, _, _ = app_client
 

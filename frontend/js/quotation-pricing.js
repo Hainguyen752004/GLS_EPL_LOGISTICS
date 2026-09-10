@@ -168,17 +168,30 @@
           field: 'tonnes',
           message: 'Công thức có cước tính theo khối lượng hàng, nên phải nhập tải trọng mới ra giá.',
         });
-      } else if (tonnes === 0) {
+      } else if (tonnes === 0 && !resolved?.formula?.expressions) {
         notes.push('Tải trọng đang là 0 tấn nên phần cước theo khối lượng bằng 0.');
       }
     }
 
     const stops = Math.max(1, Math.round(toNumber(source.stops)) || 1);
-    const result = FormulaModel.evaluate(terms, {
+    let segments = route?.segments || [];
+    try { if (route?.segments_json) segments = JSON.parse(route.segments_json); } catch { segments = []; }
+    const expressions = resolved?.formula?.expressions;
+    const uses = key => expressions && Object.values(expressions).some(e => new RegExp('\\b' + key + '\\b').test(e));
+    if (uses('legs') && !segments.length && !source.legs) blockers.push({field:'legs',message:'Tuyến chưa có số chặng để tính công thức.'});
+    if (uses('value') && source.value == null) blockers.push({field:'value',message:'Thiếu giá trị hàng để tính công thức.'});
+    let result;
+    try { result = FormulaModel.evaluate(terms, {
       km: routeKm,
       tonnes: tonnes === null ? 0 : tonnes,
       stops,
-    });
+      legs: source.legs || segments.length || 1,
+      value: source.value || 0,
+    }, resolved?.formula?.expressions);
+    } catch (error) {
+      blockers.push({field:'formula',message:error.message});
+      result = {rows:[]};
+    }
 
     const ready = blockers.length === 0;
     return {

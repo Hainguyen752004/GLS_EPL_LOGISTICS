@@ -64,13 +64,8 @@ def _seed_pod_document(db, models, *, suffix, mime_type, content, file_name):
     db.merge(models.Customer(id="CUS-POD", name="Khách POD"))
     db.merge(models.Vehicle(id="VEH-POD", status="Sẵn sàng"))
     db.commit()
-    db.merge(models.SalesOrder(
-        id=f"SO-POD-{suffix}", customer_id="CUS-POD",
-        canonical_status="confirmed", status="Confirmed", total_amount=1000000,
-    ))
-    db.commit()
     db.merge(models.DeliveryOrder(
-        id=f"DO-POD-{suffix}", so_id=f"SO-POD-{suffix}", customer_id="CUS-POD",
+        id=f"DO-POD-{suffix}", customer_id="CUS-POD",
         canonical_status="delivered", status="Delivered",
     ))
     db.commit()

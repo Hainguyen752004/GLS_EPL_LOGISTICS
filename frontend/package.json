@@ -25,5 +25,8 @@
       "Không cần cài gì:   for f in tests/*.test.js; do node \"$f\"; done",
       "Đầy đủ (có jsdom):  npm install && node tests/moi-module-phai-duoc-nap.test.js"
     ]
+  },
+  "dependencies": {
+    "jsep": "^1.4.0"
   }
 }

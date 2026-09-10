@@ -68,9 +68,8 @@ def test_di_het_vong_nghiep_vu_qua_duong_api(app_client):
         assert r.status_code == 200, (duong, r.text)
         assert _du_lieu(r), f"{duong} khong co dong nao — cac buoc sau se trong"
 
-    # --- 2. Bao gia cuoc → don hang van chuyen → lenh giao hang.
-    for duong in ("/api/quotations", "/api/sales-orders"):
-        assert client.get(duong).status_code == 200, duong
+    # --- 2. Bao gia cuoc → lenh giao hang (buoc Don hang da bo).
+    assert client.get("/api/quotations").status_code == 200
 
     r = client.get("/api/delivery-orders")
     assert r.status_code == 200, r.text

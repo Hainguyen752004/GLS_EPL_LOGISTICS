@@ -10,7 +10,7 @@ from urllib.parse import unquote, urlparse
 from types import SimpleNamespace
 from decimal import Decimal, ROUND_HALF_UP
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.exc import IntegrityError
 
 from models import (AuditLog, Carrier, IdempotencyRecord, FinanceControlConfig, FreightActualCost,
@@ -102,6 +102,13 @@ def _save_trip_cost_rows(db, trip_id, data, actor):
         cost.version += 1
         cost.items.clear()
         db.flush()
+    # Bang tra MA COSTINDEX cua xe chay chuyen, lap MOT lan cho ca bang chi phi.
+    # Man co gui `cost_index` thi ton trong; khong gui thi suy tu cong thuc gia
+    # thanh — ma phai co san o dong chi phi, vi ho so hoan tat va he cong no
+    # doc tu day, khong doc lai cong thuc.
+    from services.khoan_muc_chi_phi import bang_costindex_cua_xe, costindex_cho
+    bang_ma = bang_costindex_cua_xe(db, trip.vehicle_id)
+
     for line_data in data["lines"]:
         original = _decimal(line_data["original_amount"], "Giá ban đầu", 24, 6)
         actual = _decimal(line_data["actual_amount"], "Giá thực tế", 24, 6)
@@ -125,11 +132,16 @@ def _save_trip_cost_rows(db, trip_id, data, actor):
         # nhau, va luc do bang chi phi va phieu noi hai chuyen khac nhau ve cung
         # mot khoan tien.
         from services.khoan_muc_chi_phi import khoan_muc_tu
+        ma_khoan_muc = khoan_muc_tu(
+            line_data.get("charge_type") or line_data.get("key"),
+            line_data["name"])
         cost.items.append(FreightChargeItem(
             id=line_data.get("id") or str(uuid.uuid4()),
-            charge_type=khoan_muc_tu(
-                line_data.get("charge_type") or line_data.get("key"),
-                line_data["name"]),
+            charge_type=ma_khoan_muc,
+            cost_index=(str(line_data.get("cost_index") or "").strip()
+                        or costindex_cho(bang_ma, khoa=line_data.get("key"),
+                                         charge_type=ma_khoan_muc, ten=line_data["name"])
+                        or None),
             description=line_data["name"],
             original_amount=original,
             actual_amount=actual,
@@ -526,6 +538,28 @@ def _idempotent(db, actor, method, path, key, payload, operation):
     dialect = db.get_bind().dialect.name
     if dialect == "sqlite" and not db.in_transaction():
         db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+    elif dialect == "postgresql":
+        # PostgreSQL CŨNG cần một điểm tuần tự hoá trước phép tra, và trước đây
+        # nó không có — chỉ nhánh SQLite có.
+        #
+        # LỖI ĐÃ ĐO ĐƯỢC: hai yêu cầu CÙNG MỘT khoá idempotency chạy đồng thời
+        # thì một cái trả về `ACTIVE_COST_EXISTS` 409 thay vì phát lại kết quả
+        # của cái kia. Diễn biến:
+        #
+        #   · B tra `IdempotencyRecord` -> chưa có (A chưa chốt);
+        #   · B vào `operation()` rồi CHẶN ở `SELECT ... FOR UPDATE` trên lệnh
+        #     vận chuyển;
+        #   · A chốt; B đi tiếp, và ở mức cô lập READ COMMITTED nó THẤY chi phí
+        #     của A -> `ACTIVE_COST_EXISTS`.
+        #
+        # Tức phép "tra rồi làm" không nguyên tử. Khoá tư vấn theo phạm vi
+        # (actor, method, path, key) làm nó nguyên tử: B chờ ngay TRƯỚC phép
+        # tra, nên khi vào nó đọc được bản ghi của A và phát lại.
+        #
+        # Vì sao chuyện này ẩn lâu: SQLite khoá ở mức CẢ TỆP, nên hai luồng vốn
+        # đã bị xếp hàng và bài kiểm đồng thời luôn xanh.
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:pham_vi))"),
+                   {"pham_vi": "epl_idem:%s|%s|%s|%s" % (actor, method, path, key)})
     filters = (IdempotencyRecord.actor == actor, IdempotencyRecord.method == method,
                IdempotencyRecord.path == path, IdempotencyRecord.idempotency_key == key)
     existing = db.scalar(select(IdempotencyRecord).where(*filters))

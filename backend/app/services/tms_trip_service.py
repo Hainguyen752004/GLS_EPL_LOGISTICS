@@ -49,6 +49,39 @@ def _decimal_str(value):
     return str(value) if value is not None else None
 
 
+def han_giao_cua_chuyen(db, delivery_order_ids):
+    """Hạn giao của chuyến = mốc muộn nhất mà KHÁCH cho phép trên các DO nó chở.
+
+    Vì sao không dùng `trip.planned_arrival_at`. Mốc đó là KẾ HOẠCH nội bộ do
+    hệ thống tính lúc lập chuyến (giờ xuất bến + km / vận tốc + giờ dừng). Nó
+    trả lời "mình định tới lúc nào", không trả lời "khách cần trước lúc nào".
+    Hạn với khách nằm trên DO: `delivery_window_end`. Một chuyến tới nơi sau kế
+    hoạch 2 giờ nhưng vẫn trong khung giao của khách KHÔNG trễ hạn — nó chỉ
+    lệch kế hoạch. Trước đây bảng Trip so giờ tới thực tế với kế hoạch nội bộ
+    nên chuyến đã hoàn tất đúng hẹn vẫn bị gán "trễ hạn".
+    """
+    if not delivery_order_ids:
+        return None
+    moc = []
+    for order in db.query(DeliveryOrder).filter(DeliveryOrder.id.in_(delivery_order_ids)).all():
+        han = order.delivery_window_end or order.planned_arrival_at or order.delivery_date
+        if han is not None:
+            if han.tzinfo is None:
+                han = han.replace(tzinfo=dt.timezone.utc)
+            moc.append(han)
+    return max(moc) if moc else None
+
+
+def _phut_giua(sau, truoc):
+    if sau is None or truoc is None:
+        return None
+    if sau.tzinfo is None:
+        sau = sau.replace(tzinfo=dt.timezone.utc)
+    if truoc.tzinfo is None:
+        truoc = truoc.replace(tzinfo=dt.timezone.utc)
+    return int(round((sau - truoc).total_seconds() / 60.0))
+
+
 def serialize_trip(db, trip):
     delivery_order_ids = [
         row[0] for row in (
@@ -121,6 +154,7 @@ def serialize_trip(db, trip):
         }
         for leg in leg_rows
     ]
+    han_giao = han_giao_cua_chuyen(db, delivery_order_ids)
     return {
         "id": trip.id,
         "freight_order_id": trip.freight_order_id,
@@ -136,6 +170,20 @@ def serialize_trip(db, trip):
         "actual_departure_at": _iso(trip.actual_departure_at),
         "actual_arrival_at": _iso(trip.actual_arrival_at),
         "actual_return_at": _iso(trip.actual_return_at),
+        # HAN VOI KHACH va hai con so tre — tinh MOT CHO o day de moi man doc
+        # chung (bang Trip, ho so chuyen, theo doi) cung mot dinh nghia.
+        #   delivery_due_at     : muon nhat khach cho phep (delivery_window_end lon nhat)
+        #   is_late             : DA toi noi va toi SAU han khach -> "trễ hạn"
+        #   behind_plan_minutes : toi noi lech ke hoach noi bo bao nhieu phut
+        #                         (duong = tre hon ke hoach). Chi la lech, khong
+        #                         phai tre hạn.
+        "delivery_due_at": _iso(han_giao),
+        "is_late": bool(trip.actual_arrival_at and han_giao
+                        and _phut_giua(trip.actual_arrival_at, han_giao) > 0),
+        "late_minutes": (max(0, _phut_giua(trip.actual_arrival_at, han_giao))
+                         if trip.actual_arrival_at and han_giao else None),
+        "behind_plan_minutes": _phut_giua(trip.actual_arrival_at, trip.planned_arrival_at)
+        if trip.actual_arrival_at and trip.planned_arrival_at else None,
         "total_distance_km": _decimal_str(total_distance_km),
         "return_distance_km": _decimal_str(return_distance_km),
         "relationship_summary": relationship_summary,
@@ -642,6 +690,143 @@ def add_leg_payload(db, trip_id, data, expected_version, actor):
         "planned_arrival_at": _iso(leg.planned_arrival_at),
         "status": leg.status,
     }
+
+
+# ===========================================================================
+# HUY CHUYEN
+# ===========================================================================
+
+#: Chuyen da DONG SO — huy la sua so sach, khong phai sua ke hoach.
+CHUYEN_DA_DONG = {"completed", "settled"}
+
+
+def cancel_trip(db, trip_id, data, actor):
+    """Huy mot chuyen, tra xe / to lai / DO ve dung cho cua chung.
+
+    VI SAO PHAI CO DUONG NAY. Ra soat tron luong do duoc: **khong mot cho nao
+    trong ma nguon ghi trang thai huy cho mot chuyen**, va khong diem cuoi nao
+    cho phep. Nhung cua chan huy DO lai tu choi khi con mot chuyen chua
+    `completed`/`cancelled` — nen nhanh `cancelled` cua cua do KHONG BAO GIO toi
+    duoc. Khach huy hang sau khi da lap chuyen thi:
+
+      · huy DO  -> 409 ACTIVE_TRIP_EXISTS, va duoc chi sang man Chuyen,
+      · man Chuyen -> khong co nut huy nao,
+      · duong duy nhat con lai la XOA CUNG DO (duoc phep khi con `pending`)
+        trong khi `trip_delivery_orders` van tro vao no — vi pham khoa ngoai
+        tren PostgreSQL, hoac de lai mot chuyen mo coi.
+
+    HUY LA MOT PHEP TRA VE, KHONG PHAI MOT PHEP XOA. Ba thu phai ve dung cho:
+
+      1. **DO ve `pending`** — hang cua khach van con do, chi la chuyen nay
+         khong chay nua. Xoa DO la mat mot yeu cau that cua khach.
+      2. **Xe va to lai duoc giai phong** — dung `release_resources`, cung ham
+         ma buoc hoan tat va buoc xe-ve-bai dung, nen mot chuyen bi huy khong
+         giu xe lai qua buoi demo.
+      3. **Phan cong va chang chuyen sang `cancelled`** — `list_vehicle_availability`
+         loc bo chuyen da huy, nen lich xe sach ngay, khong con mot khoang bi
+         chiem boi mot chuyen khong chay.
+
+    HAI CUA KHONG DUOC MO. Chuyen da hoan tat / da quyet toan thi khong huy —
+    do la sua so sach. Va chuyen co DO **da nop POD hoac da giao** thi cung
+    khong: POD la bang chung giao hang co that, hoa don co the da phat sinh; huy
+    luc do la xoa dau vet cua mot lan giao that.
+    """
+    from models import DeliveryPODRecord
+    from services.workflow_service import STATUS, release_resources
+
+    trip = db.query(TransportTrip).filter(TransportTrip.id == trip_id).with_for_update().first()
+    if not trip:
+        raise DomainError("TRIP_NOT_FOUND", f"Không tìm thấy chuyến {trip_id}.", 404)
+    if trip.version != data.get("expected_version"):
+        raise conflict("VERSION_CONFLICT", "Chuyến đã thay đổi. Vui lòng tải lại dữ liệu.")
+    ly_do = str(data.get("reason") or "").strip()
+    if not ly_do:
+        raise DomainError(
+            "TRIP_CANCEL_REASON_REQUIRED",
+            "Phải ghi lý do huỷ chuyến — người đọc sổ sau này cần biết vì sao xe không chạy.",
+            422,
+        )
+    if len(ly_do) > 500:
+        raise DomainError("TRIP_CANCEL_REASON_TOO_LONG", "Lý do huỷ chuyến không được vượt quá 500 ký tự.", 422)
+    if trip.status in CHUYEN_DA_DONG:
+        raise conflict(
+            "TRIP_ALREADY_CLOSED",
+            f"Chuyến {trip.id} đã hoàn tất — không huỷ được. Sai số thì điều chỉnh ở bước quyết toán.",
+            ["transport-trips"],
+        )
+    # HUY MOT CHUYEN DA HUY LA MOT VIEC KHONG CAN LAM, khong phai mot loi: nut
+    # bam hai lan, hoac hai nguoi cung huy, thi ca hai nen thay cung ket qua.
+    if trip.status == "cancelled":
+        return serialize_trip(db, trip)
+
+    ma_do = [row[0] for row in db.query(TripDeliveryOrder.do_id).filter_by(trip_id=trip.id).all()]
+    deliveries = (
+        db.query(DeliveryOrder).filter(DeliveryOrder.id.in_(ma_do)).with_for_update().all()
+        if ma_do else []
+    )
+    da_giao = sorted(d.id for d in deliveries if d.canonical_status == "delivered")
+    if da_giao:
+        raise conflict(
+            "TRIP_HAS_DELIVERED_DO",
+            "Chuyến %s có lệnh đã giao xong (%s) — không huỷ được. Hàng đã tới tay khách."
+            % (trip.id, ", ".join(da_giao)),
+            ["delivery-completion"],
+        )
+    if ma_do:
+        co_pod = db.query(DeliveryPODRecord.id).filter(DeliveryPODRecord.do_id.in_(ma_do)).first()
+        if co_pod:
+            raise conflict(
+                "TRIP_HAS_POD",
+                "Chuyến %s đã có bằng chứng giao hàng (POD) — không huỷ được. "
+                "Hoàn tất giao hàng rồi xử lý ở bước quyết toán." % trip.id,
+                ["delivery-completion"],
+            )
+
+    for leg in db.query(TransportTripLeg).filter(TransportTripLeg.trip_id == trip.id).with_for_update().all():
+        if leg.status not in {"completed", "cancelled"}:
+            leg.status = "cancelled"
+
+    for assignment in db.query(ResourceAssignment).filter(
+        ResourceAssignment.trip_id == trip.id,
+        ResourceAssignment.status == "active",
+    ).with_for_update().all():
+        assignment.status = "cancelled"
+
+    for delivery in deliveries:
+        if delivery.canonical_status == "cancelled":
+            continue
+        # GIAI PHONG TRUOC KHI XOA GAN: `release_resources` doc
+        # `do.vehicle_id` / `do.driver_id` de biet tra ai ve. Xoa gan truoc thi
+        # no khong con gi de tra, va xe o lai trang thai "dang thuc hien".
+        release_resources(db, delivery)
+        delivery.canonical_status = "pending"
+        delivery.status = STATUS["delivery_order"]["pending"]
+        delivery.vehicle_id = None
+        delivery.driver_id = None
+        delivery.co_driver = None
+        delivery.planned_departure_at = None
+        delivery.planned_arrival_at = None
+        delivery.planned_return_at = None
+        delivery.version = (delivery.version or 1) + 1
+        delivery.updated_at = _now()
+        delivery.updated_by = actor
+
+    freight_order = db.get(FreightOrder, trip.freight_order_id)
+    if freight_order is not None and freight_order.status not in {"delivered", "cancelled"}:
+        # Lenh van chuyen ve `planned`: no van la mot lenh can chay, chi la
+        # chuyen thuc hien no da huy. Lap chuyen moi se dung lai chinh no.
+        freight_order.status = "planned"
+        freight_order.version = (freight_order.version or 1) + 1
+        freight_order.updated_at = _now()
+        freight_order.updated_by = actor
+
+    trip.status = "cancelled"
+    trip.version += 1
+    trip.updated_at = _now()
+    trip.updated_by = actor
+    _audit(db, "CANCEL_TRANSPORT_TRIP", "transport_trips", trip.id, actor)
+    db.flush()
+    return serialize_trip(db, trip)
 
 
 def complete_return(db, trip_id, data, actor):

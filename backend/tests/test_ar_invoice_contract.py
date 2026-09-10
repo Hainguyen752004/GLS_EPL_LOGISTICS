@@ -18,20 +18,21 @@ def _seed_invoice_source(client, delivered=True):
             status="open",
         ))
         db.commit()
-        db.add(models.SalesOrder(
-            id="SO-AR-001",
+        # Nguon gia cua hoa don la BAO GIA da chap nhan (buoc Don hang da bo).
+        db.add(models.Quotation(
+            id="QT-AR-001",
             customer_id="CUS-AR-001",
-            canonical_status="confirmed",
-            status="Confirmed",
+            canonical_status="accepted",
+            status="Đã chấp nhận",
             currency_code="VND",
-            exchange_rate_snapshot=Decimal("1"),
-            tax_rate_snapshot=Decimal("10"),
-            total_amount=Decimal("4200000"),
+            fx_rate=1.0,
+            selling_price=Decimal("4200000"),
+            total_cost=Decimal("3000000"),
         ))
         db.commit()
         db.add(models.DeliveryOrder(
             id="DO-AR-001",
-            so_id="SO-AR-001",
+            quotation_id="QT-AR-001",
             customer_id="CUS-AR-001",
             canonical_status="delivered" if delivered else "pending",
             status="Delivered" if delivered else "Pending",
@@ -59,8 +60,10 @@ def test_ar_invoice_uses_persisted_contract_amount_and_reads_back(app_client):
     assert payload["do_id"] == "DO-AR-001"
     assert payload["canonical_status"] == "posted"
     assert payload["amount"] == 4200000.0
-    assert payload["vat_amount"] == 420000.0
-    assert payload["total"] == 4620000.0
+    # Bao gia khong co cot thue (buoc Don hang mang % VAT da bo): VAT = 0,
+    # muc thue do ke toan chot luc phat hanh — khong doan.
+    assert payload["vat_amount"] == 0.0
+    assert payload["total"] == 4200000.0
     assert payload["posted_at"].endswith("Z")
 
     loaded = client.get("/api/invoices")
@@ -74,8 +77,8 @@ def test_ar_invoice_uses_persisted_contract_amount_and_reads_back(app_client):
     with database.SessionLocal() as db:
         invoice = db.get(models.ARInvoice, "INV-AR-001")
         assert invoice.amount == Decimal("4200000.000000")
-        assert invoice.vat_amount == Decimal("420000.000000")
-        assert invoice.total == Decimal("4620000.000000")
+        assert invoice.vat_amount == Decimal("0.000000")
+        assert invoice.total == Decimal("4200000.000000")
         assert db.query(models.JournalBatch).filter_by(
             source_type="ar_invoice", source_id="INV-AR-001"
         ).count() == 1
@@ -147,10 +150,10 @@ def test_ar_invoice_journal_converts_foreign_currency_to_functional_currency(app
         db.merge(models.CurrencyDefinition(code="VND", minor_units=0, is_active=True))
         db.merge(models.CurrencyDefinition(code="USD", minor_units=2, is_active=True))
         db.merge(models.FinanceControlConfig(id="GLOBAL", functional_currency="VND"))
-        order = db.get(models.SalesOrder, "SO-AR-001")
+        order = db.get(models.Quotation, "QT-AR-001")
         order.currency_code = "USD"
-        order.exchange_rate_snapshot = Decimal("25000")
-        order.total_amount = Decimal("100")
+        order.fx_rate = 25000.0
+        order.selling_price = Decimal("100")
         db.commit()
 
     response = client.post("/api/invoices/post", json={
@@ -161,10 +164,10 @@ def test_ar_invoice_journal_converts_foreign_currency_to_functional_currency(app
     with database.SessionLocal() as db:
         lines = db.query(models.JournalLine).order_by(models.JournalLine.id).all()
         receivable, revenue, vat = lines
-        assert receivable.transaction_amount == Decimal("110.000000")
-        assert receivable.debit == Decimal("2750000.000000")
+        assert receivable.transaction_amount == Decimal("100.000000")
+        assert receivable.debit == Decimal("2500000.000000")
         assert revenue.credit == Decimal("2500000.000000")
-        assert vat.credit == Decimal("250000.000000")
+        assert vat.credit == Decimal("0.000000")
         assert all(line.currency_code == "VND" for line in lines)
         assert all(line.transaction_currency == "USD" for line in lines)
 

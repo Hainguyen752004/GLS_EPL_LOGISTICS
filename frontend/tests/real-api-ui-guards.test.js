@@ -12,19 +12,6 @@ function functionBody(pattern, name) {
   return match[0];
 }
 
-const updateSOStatus = functionBody(
-  /window\.updateSOStatus\s*=\s*async\s*function\s*\([^)]*\)\s*\{[\s\S]*?\n\};/,
-  'updateSOStatus()'
-);
-
-assert.match(
-  updateSOStatus,
-  /executeWorkflowCommand\s*\(\s*['"]salesOrderConfirm['"]/,
-  'SO confirmation must use the shared server-confirmed command flow.'
-);
-assert.match(updateSOStatus, /if\s*\(\s*!result\.ok\s*\)\s*return/, 'SO confirmation must stop when the API fails.');
-assert.doesNotMatch(updateSOStatus, /catch\s*\([^)]*\)\s*\{\s*\}/, 'SO confirmation must not swallow network errors.');
-
 const trackDO = functionBody(
   /window\.trackDO\s*=\s*async\s*function\s*\([^)]*\)\s*\{[\s\S]*?\n\};/,
   'trackDO()'

@@ -14,6 +14,7 @@ from models import (
     DeliveryOrder,
     FreightOrder,
     Location,
+    Vehicle,
     Route,
     ResourceAssignment,
     TransportTrip,
@@ -81,13 +82,37 @@ def _freight_order(order_id="FO-TRIP-001"):
     )
 
 
-def test_trip_schema_supports_one_do_in_many_trips_and_many_legs(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-schema.db'}")
-    Base.metadata.create_all(engine)
-    db = sessionmaker(bind=engine)()
+def _gieo_dia_diem(db):
+    """Hai dia diem, va CHOT NGAY thay vi gop vao mot flush voi lenh van chuyen.
+
+    `FreightOrder.pickup_location_id` khai `ForeignKey("locations.id")` nhung
+    KHONG khai `relationship()`. SQLAlchemy xep thu tu chen theo relationship,
+    nen thieu quan he do thi no khong biet `locations` phai di truoc va xep theo
+    ten bang: `freight_orders` truoc `locations`. PostgreSQL cuong che khoa
+    ngoai nen vo ngay; SQLite trong du an tat `PRAGMA foreign_keys` nen bay bai
+    kiem trong tep nay da chay tren mot thu tu chen sai suot thoi gian dai.
+    """
     db.add_all([
         Location(id="LOC-A", name="Kho A"),
-        Location(id="LOC-B", name="Điểm B"),
+        Location(id="LOC-B", name="Diem B"),
+        # HAI XE, va chung cung phai co that.
+        #
+        # Ba bai kiem trong tep nay tao chuyen tro vao `VH-A` / `VH-B` ma khong
+        # tao xe nao — `transport_trips_vehicle_id_fkey` tren PostgreSQL tu
+        # choi. Gieo o day de moi bai kiem dung mot bo du lieu goc, thay vi moi
+        # bai tu gieo mot phan.
+        Vehicle(id="VH-A", type="Truck", status="San sang"),
+        Vehicle(id="VH-B", type="Truck", status="San sang"),
+    ])
+    db.flush()
+
+
+def test_trip_schema_supports_one_do_in_many_trips_and_many_legs(tmp_path, may_kiem):
+    engine = may_kiem()
+    Base.metadata.create_all(engine)
+    db = sessionmaker(bind=engine)()
+    _gieo_dia_diem(db)
+    db.add_all([
         DeliveryOrder(id="DO-TRIP-001"),
         _freight_order(),
     ])
@@ -103,9 +128,21 @@ def test_trip_schema_supports_one_do_in_many_trips_and_many_legs(tmp_path):
     )
     db.add_all([trip_out, trip_return])
     db.flush()
+    # THANH VIEN CHUYEN phai duoc chot TRUOC cac chang.
+    #
+    # `transport_trip_legs` co mot khoa ngoai KEP
+    # (`fk_trip_leg_delivery_order_membership`): cap `(trip_id, do_id)` cua mot
+    # chang phai co mat trong `trip_delivery_orders`. Do la mot rang buoc dung
+    # va dang gia — mot chang cho mot lenh giao hang KHONG thuoc chuyen do la
+    # du lieu vo nghia. Ban truoc them thanh vien va chang trong CUNG mot
+    # `add_all`, nen tren PostgreSQL cac chang di truoc va vo; SQLite tat khoa
+    # ngoai nen no chay tron suot thoi gian dai.
     db.add_all([
         TripDeliveryOrder(trip_id=trip_out.id, do_id="DO-TRIP-001"),
         TripDeliveryOrder(trip_id=trip_return.id, do_id="DO-TRIP-001"),
+    ])
+    db.flush()
+    db.add_all([
         TransportTripLeg(
             id="LEG-OUT-001", trip_id=trip_out.id, do_id="DO-TRIP-001",
             sequence_no=1, leg_type="delivery", origin="Kho A",
@@ -160,13 +197,20 @@ def test_trip_eta_columns_are_timezone_aware_and_lineage_columns_exist():
         assert {"trip_id", "leg_id"}.issubset(columns)
 
 
-def test_create_trip_from_do_persists_return_route_and_calculates_return_eta(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-create-return.db'}")
+def test_create_trip_from_do_persists_return_route_and_calculates_return_eta(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
+    # Tuyen duong vao TRUOC lenh giao hang: `delivery_orders.route_id` khai
+    # `ForeignKey("routes.id")` ma khong khai `relationship()`, nen trong cung
+    # mot flush SQLAlchemy xep theo ten bang va `delivery_orders` di truoc
+    # `routes`.
     db.add_all([
         _route("RT-OUT", "Kho A - Điểm B", "Kho A", "Điểm B"),
         _route("RT-RETURN", "Điểm B - Kho A", "Điểm B", "Kho A"),
+    ])
+    db.flush()
+    db.add_all([
         _timed_delivery_order("DO-OUT", "RT-OUT"),
         _timed_delivery_order("DO-RETURN", "RT-RETURN"),
     ])
@@ -226,14 +270,13 @@ def test_trip_scoped_assignment_cost_and_pod_indexes_preserve_legacy_rows():
     assert ResourceAssignment.__table__.c.freight_order_id.unique is not True
 
 
-def test_create_round_trip_with_multiple_dos_and_sequential_eta(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-service.db'}")
+def test_create_round_trip_with_multiple_dos_and_sequential_eta(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
     db.info["audit_ip"] = "10.0.0.8"
+    _gieo_dia_diem(db)
     db.add_all([
-        Location(id="LOC-A", name="Kho A"),
-        Location(id="LOC-B", name="Điểm B"),
         DeliveryOrder(id="DO-001"),
         DeliveryOrder(id="DO-002"),
         _freight_order(),
@@ -270,13 +313,12 @@ def test_create_round_trip_with_multiple_dos_and_sequential_eta(tmp_path):
     engine.dispose()
 
 
-def test_trip_relationship_summary_supports_many_dos_per_vehicle_and_split_do_return_distance(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-many-many.db'}")
+def test_trip_relationship_summary_supports_many_dos_per_vehicle_and_split_do_return_distance(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
+    _gieo_dia_diem(db)
     db.add_all([
-        Location(id="LOC-A", name="Kho A"),
-        Location(id="LOC-B", name="Điểm B"),
         DeliveryOrder(id="DO-SPLIT-001"),
         DeliveryOrder(id="DO-GROUP-002"),
         _freight_order(),
@@ -325,12 +367,12 @@ def test_trip_relationship_summary_supports_many_dos_per_vehicle_and_split_do_re
     engine.dispose()
 
 
-def test_backhaul_requires_a_do_but_empty_return_does_not(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-rules.db'}")
+def test_backhaul_requires_a_do_but_empty_return_does_not(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
+    _gieo_dia_diem(db)
     db.add_all([
-        Location(id="LOC-A", name="Kho A"), Location(id="LOC-B", name="Điểm B"),
         DeliveryOrder(id="DO-001"), _freight_order(),
     ])
     db.commit()
@@ -353,13 +395,12 @@ def test_backhaul_requires_a_do_but_empty_return_does_not(tmp_path):
     engine.dispose()
 
 
-def test_backhaul_can_attach_a_new_return_do_to_an_existing_trip(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-new-backhaul-do.db'}")
+def test_backhaul_can_attach_a_new_return_do_to_an_existing_trip(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
+    _gieo_dia_diem(db)
     db.add_all([
-        Location(id="LOC-A", name="Kho A"),
-        Location(id="LOC-B", name="Diem B"),
         DeliveryOrder(id="DO-OUTBOUND"),
         DeliveryOrder(id="DO-BACKHAUL"),
         _freight_order(),
@@ -407,13 +448,13 @@ def test_backhaul_can_attach_a_new_return_do_to_an_existing_trip(tmp_path):
     engine.dispose()
 
 
-def test_trip_api_requires_auth_and_creates_trip_with_leg_eta(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'trip-api.db'}")
+def test_trip_api_requires_auth_and_creates_trip_with_leg_eta(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     db = Session()
+    _gieo_dia_diem(db)
     db.add_all([
-        Location(id="LOC-A", name="Kho A"), Location(id="LOC-B", name="Diem B"),
         DeliveryOrder(id="DO-API-001"), _freight_order("FO-API-001"),
     ])
     db.commit()

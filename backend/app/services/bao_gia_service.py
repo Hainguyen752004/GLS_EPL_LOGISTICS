@@ -575,6 +575,10 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
     """Mot lenh giao hang tach tu bao gia."""
     ma = "%s-DO%02d" % ((q.quote_no or q.id).replace("QT-", "").replace("DEMO-", ""), chi_so + 1)
     ma = ("DO-%s" % ma)[:64]
+    # Nguoi goi (bo kiem, import) duoc dat ma DO cua minh; mac dinh sinh theo bao gia.
+    ma_tu_dat = str(dong.get("id") or "").strip()
+    if ma_tu_dat:
+        ma = ma_tu_dat[:64]
     if db.get(DeliveryOrder, ma):
         # Trung ma nghia la da tach roi. Noi ra chu khong ghi de: ghi de mot DO
         # dang chay se doi gia va han giao cua mot chuyen da dieu phoi.
@@ -583,7 +587,6 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
     return DeliveryOrder(
         id=ma,
         quotation_id=q.id,
-        so_id=None,
         customer_id=q.customer_id,
         route_id=q.route_id,
         origin=q.origin,
@@ -621,7 +624,7 @@ def _mot_do(db, q, chi_so, dong, gia_khoa, tong_do):
         # De rong duoc: hang roi va hang le khong co niem phong, va cua xuat ben
         # cua chung la phieu can hoac Packing List.
         seal_no=(str(dong.get("seal_no") or "").strip() or None),
-        status="Chờ xử lý",
+        status="Chờ vận chuyển",  # nhan chuan cua `pending` (workflow_service.STATUS)
         canonical_status="pending",
         created_by=dong.get("actor") or "system",
         updated_by=dong.get("actor") or "system",
@@ -866,6 +869,50 @@ def gui_khach(db, qid, actor="system"):
     return q
 
 
+def dong_tach_mac_dinh(db, q):
+    """Cac dong DO MAC DINH de sinh tu dong khi khach chap nhan bao gia.
+
+    CHU DU AN CHOT: "DO ke thua tu QT — gen tu dong khi QT duoc duyet het".
+    Truoc day, chap nhan xong con mot buoc TACH TAY o muc 6 cua phieu bao gia;
+    nguoi van hanh quen buoc do thi bao gia nam o `accepted` mai, va man Lenh
+    giao hang trong. Nen he thong tu sinh N DO ngay luc chap nhan, N = tong so
+    luong o bang Hang hoa (1 DO = 1 cont/1 xe = 1 chuyen), toi thieu mot DO.
+
+    Khung gio ke thua tu bao gia: gio lay cua DO thu i lech nhau 2 gio trong
+    khung lay hang (cung mot doi xe khong lay hai cont cung mot luc), han giao
+    la cuoi khung giao. So niem phong de trong — no chi biet luc lay hang, va
+    nguoi o bai ghi vao DO truoc khi dieu phoi (dieu phoi chan neu thieu).
+    """
+    n = max(1, so_do_du_kien(db, q.id))
+    dau = _moc_thoi_gian(q.pickup_window_start)
+    cuoi_lay = _moc_thoi_gian(q.pickup_window_end)
+    han = _moc_thoi_gian(q.delivery_window_end) or _moc_thoi_gian(q.delivery_window_start)
+    ra = []
+    for i in range(n):
+        moc = None
+        if dau is not None:
+            moc = dau + dt.timedelta(hours=2 * i)
+            if cuoi_lay is not None and moc > cuoi_lay:
+                moc = cuoi_lay
+        ra.append({"pickup_at": moc.isoformat() if moc else None,
+                   "due_at": han.isoformat() if han else None,
+                   "seal_no": "", "driver_note": q.notes_ops or ""})
+    return ra
+
+
+def chap_nhan_va_sinh_do(db, qid, actor="system", cac_dong=None):
+    """Khach chap nhan bao gia VA sinh DO trong CUNG MOT giao dich.
+
+    Hoac ca hai, hoac khong gi ca: bao gia `accepted` ma khong co DO la dung
+    trang thai cu (chap nhan roi cho tach tay) — trang thai ma chu du an muon
+    bo. Nguoi goi truyen `cac_dong` khi muon tu khai tung DO (gio lay, seal);
+    khong truyen thi dung dong mac dinh ke thua tu bao gia.
+    """
+    q = khach_chap_nhan(db, qid, actor)
+    dong = [d for d in (cac_dong or []) if isinstance(d, dict)] or dong_tach_mac_dinh(db, q)
+    return tach_thanh_do(db, q.id, dong, actor)
+
+
 def khach_chap_nhan(db, qid, actor="system"):
     """Ghi nhan khach chap nhan. Buoc nay MO KHOA muc tach DO."""
     q = db.query(Quotation).filter(Quotation.id == qid).with_for_update().first()
@@ -886,6 +933,11 @@ def khach_chap_nhan(db, qid, actor="system"):
     q.accepted_at = dt.datetime.utcnow()
     q.updated_by = actor
     q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    # CRM-01: co hoi da lap ra bao gia nay -> CHOT (`won`). Dat o day, khong dat
+    # tay tren man co hoi, vi "khach chap nhan bao gia" chinh la bang chung chot.
+    from services import co_hoi_service
+    co_hoi_service.danh_dau_thang_theo_bao_gia(db, q.id, actor)
     db.flush()
     return q
 
@@ -909,6 +961,12 @@ def khach_tu_choi(db, qid, ly_do="", actor="system"):
     q.close_reason = (ly_do or "").strip() or None
     q.updated_by = actor
     q.updated_at = dt.datetime.utcnow()
+    db.flush()
+    # CRM-01: doi xung voi khach_chap_nhan. Co hoi da lap ra bao gia nay -> MAT,
+    # ly do lay tu phieu tu choi. Khong co dong nay thi the co hoi nam o "Da bao
+    # gia" mai sau khi khach da noi khong.
+    from services import co_hoi_service
+    co_hoi_service.danh_dau_mat_theo_bao_gia(db, q.id, ly_do, actor)
     db.flush()
     return q
 
@@ -1185,6 +1243,8 @@ def _bung_bao_gia(db, q, kem_chi_tiet=False, hom_nay=None):
         "notes_customer": q.notes_customer,
         "notes_ops": q.notes_ops,
         "notes_internal": q.notes_internal,
+        # Ly do dong bao gia (khach tu choi / het han) — de tra loi "vi sao" khi doi soat.
+        "close_reason": q.close_reason,
         "sent_at": q.sent_at.isoformat() if q.sent_at else None,
         "accepted_at": q.accepted_at.isoformat() if q.accepted_at else None,
         "created_at": q.created_at.isoformat() if q.created_at else None,

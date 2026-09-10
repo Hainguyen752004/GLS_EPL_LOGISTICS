@@ -35,7 +35,8 @@ try {
 /** Ô mà người dùng PHẢI thấy khi mở từng màn. */
 const NOI_DUNG_CHINH = {
   dashboard: ['#view-dashboard .card-panel'],
-  'crm-sales': ['#qtv2-root', '#crm-kanban-board'],
+  'co-hoi': ['#cohoi-root'],
+  'crm-sales': ['#qtv2-root'],
   'ops-planning': ['#fiori-do-list', '#ops-planning-folder-tabs'],
   'delivery-shipment': ['#view-delivery-shipment'],
   dispatch: ['#view-dispatch'],

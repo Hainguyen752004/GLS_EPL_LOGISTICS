@@ -30,12 +30,13 @@ cho muoi bon bai con lai.
 
 import datetime as dt
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from models import (
     AuditLog,
     Driver,
     DriverShiftAssignment,
+    ResourceAssignment,
     TransportTrip,
     Vehicle,
     VehicleMaintenanceRequest,
@@ -168,6 +169,14 @@ def ten_ca(ma_ca):
     return next((c["ten"] for c in CA if c["ma"] == ma_ca), str(ma_ca or "?"))
 
 
+def ket_thuc_hanh_trinh(trip, ket_thuc_phan_cong=None):
+    """Moc xe va to lai duoc THA: muon nhat trong gio ve, gio toi va phan cong."""
+    ung_vien = [_bo_mui(trip.planned_return_at), _bo_mui(trip.planned_arrival_at),
+                _bo_mui(ket_thuc_phan_cong)]
+    ung_vien = [x for x in ung_vien if x is not None]
+    return max(ung_vien) if ung_vien else None
+
+
 def _trang_thai_trip(trip):
     if trip.status in TRIP_DA_XONG:
         return "done"
@@ -223,11 +232,28 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
     ).all()
 
     # ---- chuyen va bao duong ----
+    # Mot chuyen GIU xe va to lai tu luc xuat ben den luc XE VE BAI, khong phai
+    # den luc toi noi giao. Chuyen 3 ngay di 07:00 ngay 1, giao ngay 2, ve
+    # 15:00 ngay 3: ca ba ngay deu phai khoa. Ban truoc chi doc
+    # `planned_arrival_at` nen chang ve (va ca thoi gian giao/do hang) khong
+    # khoa — xe hien "ranh" trong khi dang tren duong ve. Ket thuc lay MUON
+    # NHAT trong: gio ve ke hoach, gio toi ke hoach, va `assignment_end` cua
+    # phan cong dang mo (Dieu phoi da tinh no = max cua ca ba, xem
+    # `tms_dispatch_service.dispatch_trip`).
     chuyen = db.query(TransportTrip).filter(
         TransportTrip.status.notin_(TRIP_BO),
         TransportTrip.planned_departure_at < den_utc,
-        TransportTrip.planned_arrival_at > tu_utc,
+        or_(
+            TransportTrip.planned_return_at > tu_utc,
+            TransportTrip.planned_arrival_at > tu_utc,
+        ),
     ).all()
+    ket_thuc_phan_cong = {}
+    if chuyen:
+        for ma_trip, ket_thuc in db.query(ResourceAssignment.trip_id, ResourceAssignment.assignment_end).filter(
+                ResourceAssignment.status == "active",
+                ResourceAssignment.trip_id.in_([t.id for t in chuyen])).all():
+            ket_thuc_phan_cong[ma_trip] = _bo_mui(ket_thuc)
     bao_duong = db.query(VehicleMaintenanceRequest).filter(
         VehicleMaintenanceRequest.status.in_(("requested", "approved", "in_progress")),
         VehicleMaintenanceRequest.planned_start < den_utc,
@@ -251,7 +277,7 @@ def bang_sap_lich(db, start, so_ngay=7, depot=None, team=None):
     can_theo_ca = {} # (ngay, ca) -> so xe phai chay
     for trip in chuyen:
         di = _bo_mui(trip.planned_departure_at)
-        den = _bo_mui(trip.planned_arrival_at) or di
+        den = ket_thuc_hanh_trinh(trip, ket_thuc_phan_cong.get(trip.id)) or di
         if di is None:
             continue
         for ngay in cac_ngay:

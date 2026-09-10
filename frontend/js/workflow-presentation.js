@@ -5,7 +5,6 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   const LOCKED = {
     quotation: new Set(['approved', 'da_duyet']),
-    sales_order: new Set(['confirmed', 'da_xac_nhan']),
     delivery_order: new Set([
       'approved',
       'da_duyet',

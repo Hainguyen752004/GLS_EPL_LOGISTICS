@@ -5,8 +5,6 @@ import pytest
     ("method", "path", "payload", "headers"),
     [
         ("post", "/api/quotations", {"customer_id": "CUS-X", "route_id": "RT-X", "approved": True}, {}),
-        ("post", "/api/sales-orders", {"quotation_id": "QT-X", "approved": True}, {}),
-        ("post", "/api/delivery-orders", {"so_id": "SO-X", "approved": True}, {}),
         ("post", "/api/routes", {"name": "Tuyến X", "approved": True}, {}),
         (
             "post",

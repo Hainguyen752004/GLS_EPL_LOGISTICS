@@ -54,17 +54,22 @@ sai ba lần trong lần rà này, nên tôi bỏ hẳn cách đó.
 Luồng của hệ thống hiện nay là:
 
 ```
-Dữ liệu gốc → Báo giá (QT) → duyệt → tách thành Lệnh giao hàng (DO)
+Dữ liệu gốc → Báo giá (QT) → duyệt → khách chấp nhận → Lệnh giao hàng (DO) SINH TỰ ĐỘNG
    → lập Chuyến (Trip) → điều phối xe → các mốc giao hàng
    → POD → Hoàn tất & chốt giá → Hoá đơn AR → Phiếu chi phí thực tế → Báo cáo
 ```
 
-**Không còn bước Đơn hàng (SO).** Bước đó đã bỏ ở mốc `7c445d1`; báo giá tách
-thẳng ra lệnh giao hàng.
+**Không còn bước Đơn hàng (SO), và không còn bước tách tay.** Bước SO đã bỏ ở
+mốc `7c445d1`. Từ 09/09, **ghi nhận khách chấp nhận là bước sinh DO**: máy chủ
+tạo N lệnh giao hàng ngay trong cùng giao dịch, kế thừa tuyến, giá khoá và khung
+giờ của báo giá (N = tổng số lượng ở bảng Hàng hoá, mỗi cont/xe một DO). Không
+còn đường tạo DO bằng tay — một DO không có báo giá chống lưng thì bước quyết
+toán không có giá nào để lấy.
 
-Luồng này đã chạy trọn A→Z trên dữ liệu thật: **68 điểm kiểm, 0 điểm đỏ**, và bộ
-10 case demo hiện có (`docs/du-lieu-luong-demo.md`) đi hết từ báo giá tới báo
-cáo. Doanh thu 8.081.400 đ · giá thành 5.298.531 đ · lãi gộp 34,44%.
+Luồng này đã chạy trọn A→Z trên dữ liệu thật: **173 điểm kiểm, 0 điểm đỏ** (đo
+09/09), và bộ **19 case demo** hiện có (`docs/du-lieu-luong-demo.md`) đi hết từ
+báo giá tới báo cáo. Doanh thu 12.270.600 đ · giá thành đã duyệt 7.850.758 đ ·
+lãi gộp 36,02%.
 
 **Một bước từng bị thiếu và đã thêm:** chuyến xe giao xong không có đường nào ghi
 nhận "xe đã về bãi", nên chuyến treo mãi ở trạng thái đang chạy và xe không bao
@@ -110,12 +115,48 @@ Cách kiểm đúng, và từ giờ phải làm trước mỗi lần bỏ một 
 | Khối | Nút | Kết luận | Vì sao |
 |---|---|---|---|
 | `so-khoi-cu` | 9 | **GIỮ** | Chứa tính năng đính kèm chứng từ đang chạy thật: gửi FormData, chặn tệp trên 25 MB, bảng `sales_order_documents`, 4 điểm cuối, kèm bộ kiểm riêng. |
-| `qtv2-khoi-cu` | 7 | **GIỮ tạm** | Chứa **cửa chặn tải trọng** của bước báo giá, mà màn mới không có — xem §4.1. Đây là bản mẫu duy nhất để chuyển. |
+| `qtv2-khoi-cu` | 7 | **ĐÃ BỎ** | Từng phải giữ vì chứa **cửa chặn tải trọng** duy nhất của bước báo giá. Nay cả màn mới lẫn máy chủ đều đã chặn thật, nên bản mẫu không còn cần — xem §4.1. |
 | `ssv5-khoi-cu` | 8 | **GIỮ** | Chứa `driver-modal-dialog`, biểu mẫu duy nhất sửa được hồ sơ tài xế. Nay đã có cửa mở nó — xem §4.2. |
 | `legacy-tracking-pod-panel` | 1 | **ĐÃ BỎ** | Đường tắt từ màn Theo dõi sang màn Hoàn tất, bị che từ lâu nên đã chết. Màn Hoàn tất tự liệt kê và tự mở bảng soạn nên không mất đường nào. |
 
-Vậy thực tế: **bỏ được 1 nút**, không phải 25. Còn 7 nút của `qtv2-khoi-cu` bỏ
-được **sau khi** chuyển cửa chặn tải trọng sang màn mới.
+Vậy thực tế: bỏ được **1 nút ngay**, không phải 25 — và **7 nút nữa sau khi**
+chuyển cửa chặn tải trọng sang màn mới. Điều kiện đó nay đã đủ, nên `qtv2-khoi-cu`
+**đã bỏ hẳn**: 20.085 ký tự HTML, cùng `oracle-qt-form` khỏi danh sách hộp thoại
+toàn màn.
+
+Hai chỗ **vỡ thật** mà việc bỏ khối làm lộ ra, cả hai đều là neo trỏ vào phần đã
+xoá và cả hai đều đã sửa:
+
+- Nút **"Thao Tác Ở Bước Này"** của bước 1 trong sơ đồ luồng A→Z gọi
+  `switchView('crm-sales', 'oracle-qt-list')` — neo đó nằm trong khối vừa xoá.
+  Nay trỏ `#qtv2-root`.
+- `selectEnterpriseTabForTarget` ánh xạ `oracle-qt-list` → thẻ "Báo giá cước".
+  Bỏ sót chỗ này thì nút trên nhảy sang màn Kinh doanh mà không mở thẻ Báo giá —
+  và vì thẻ đó tình cờ là thẻ đầu, lỗi chỉ lộ ra khi người dùng vừa xem thẻ
+  Khách hàng rồi bấm nút đó.
+
+**Ba hàm KHÔNG bỏ**, vì màn khác còn gọi — đây đúng là chỗ mà "khối ẩn nên hàm
+chết" sẽ lại sai:
+
+| Hàm | Ai còn gọi |
+|---|---|
+| `autoCalculateMasterDataCost` | Màn **Công thức giá thành** gọi mỗi lần đổi đơn giá (`oninput`, 5 chỗ), và `cost-formula-builder.js` gọi sau khi sửa công thức. |
+| `renderCostBreakdown` | Màn **Đơn vận chuyển** vẽ bảng chi phí của nó (`so-cost-breakdown`). |
+| `loadQuotations` | `refreshWorkflowCommandData` nạp `appState.quotations` từ đó sau mỗi lệnh báo giá. |
+
+**Còn nợ, đã đo:** chuỗi hàm cũ của màn báo giá (`openOracleQTForm`,
+`closeOracleQTForm`, `saveOracleQT`, `approveQuotation`, `filterQuotations`,
+`renderOracleQTList`, `refreshQuotationVehicleRecommendations`, cùng
+`editOracleQT` / `deleteOracleQT` / `convertQTToSO`) giờ **không có đường nào bấm
+tới**, khoảng 600 dòng trong `app.js`. Chúng vô hại — mọi hàm trong chuỗi đều đã
+có `if (!el) return` nên mất vật chứa thì không nổ — nhưng chúng là mã chết. Bỏ
+chuỗi này là một việc riêng: nó lan tới bốn bộ điều phối dùng chung
+(`saveMasterForm`, `approveMasterForm`, `sendMasterForm`, `submitMasterForm` —
+các nhánh `'so'` / `'do'` / `'route'` / `'dispatch'` vẫn sống), nên phải bỏ theo
+nhánh chứ không bỏ cả hàm. Cùng đó là **CSS chết** `#oracle-qt-form` và
+`.oracle-qt-table` trong `index.html`; chưa bỏ vì vùng `<style>` đó đang có người
+khác sửa, và bốn luật `.qt-cost-*` cạnh nó thì **vẫn còn dùng** cho màn Đơn vận
+chuyển.
 
 ### 4.1 Hồi quy: màn Báo giá mới thiếu cửa chặn tải trọng
 
@@ -128,17 +169,31 @@ khi **không loại xe đơn lẻ nào đủ tải** (gợi ý tách chuyến ho
 **chặn lưu** báo giá khi loại xe đang chọn không phù hợp. Có bài kiểm riêng:
 `tests/quotation-capacity-recommendation-ui.test.js`.
 
-Màn Báo giá **mới** không có cửa chặn đó — nó chỉ đọc `max_weight` và
+Màn Báo giá **mới** lúc đó không có cửa chặn đó — nó chỉ đọc `max_weight` và
 `volume_capacity_m3` vào mô hình loại xe rồi thôi. Và **máy chủ cũng không chặn**
 ở bước báo giá: `workflow_service` và `bao_gia_service` đều không kiểm sức chở.
 
-**Hệ quả:** hiện nay báo giá được một lô 20 tấn trên xe 5 tấn, và lỗi chỉ lộ ra
-tận bước điều phối — nơi `_require_dispatch_eligibility` mới kiểm sức chở so với
-lệnh vận chuyển. Người bán đã gửi giá cho khách rồi mới biết chuyến không chở
-được.
+**Hệ quả lúc đó:** báo giá được một lô 20 tấn trên xe 5 tấn, và lỗi chỉ lộ ra tận
+bước điều phối — nơi `_require_dispatch_eligibility` mới kiểm sức chở so với lệnh
+vận chuyển. Người bán đã gửi giá cho khách rồi mới biết chuyến không chở được.
 
-Đề nghị: chuyển cửa chặn sang màn mới, và **thêm một cửa chặn ở máy chủ** — vì
-một cửa chặn chỉ nằm ở trình duyệt thì gọi API trực tiếp là đi qua được.
+**ĐÃ SỬA, ở cả hai bên** — và phải là cả hai, vì một cửa chặn chỉ nằm ở trình
+duyệt thì gọi API trực tiếp là đi qua được:
+
+- **Màn mới** (`bao-gia-v2.js`): chặn ngay lúc **bấm** vào thẻ loại xe
+  (`if (n.dataset.hong)`), không chỉ đổi màu. Và thông báo nói rõ **chiều nào**
+  vượt cùng con số vượt (`lyDoKhongDu`) — nói "không đủ tải" cho một lô nhẹ mà
+  khối lớn là nói sai, người bán đổi sang xe nặng hơn rồi vẫn vướng. Dùng chung
+  bộ đánh giá ba chiều `WorkflowUIUtils.evaluateVehicleCapacity` với máy chủ, nên
+  hai bên không thể nói hai câu khác nhau.
+- **Máy chủ** (`bao_gia_service.xem_truoc_gia`): trả `tinh_duoc: False` kèm việc
+  còn thiếu khi loại xe không đủ năng lực — tức **không tính ra giá** cho lô vượt
+  tải, chứ không phải cảnh báo rồi vẫn trả số. Chốt bởi
+  `backend/tests/test_bao_gia_cua_chan_tai_trong.py`.
+
+Nửa phía giao diện của cửa chặn nay được chốt bởi phần dưới của
+`tests/quotation-capacity-recommendation-ui.test.js` — phần chốt màn cũ trong bài
+kiểm đó đã bỏ cùng khối.
 
 ### 4.2 Đã nối cửa cho biểu mẫu hồ sơ tài xế
 
@@ -232,9 +287,59 @@ GET  /api/parking-lists/{id}/packing-list    in phiếu đóng hàng
 GET  /api/parking-labels/{id}/qr.svg         in mã QR nhãn
 ```
 
-Hai đường in cuối đáng đưa lên trước: màn Bãi xe đã có nút tạo và nút quét, chỉ
-thiếu nút **in**. `POST /api/cost-formulas/evaluate` có thể sẽ được dùng bởi việc
-cost-formula v2 đang làm dở (xem §8), nên chưa nên tính là dư.
+**Rà lại từng đường thì bảy con số này rút xuống một.** Ghi lại cả chỗ tôi đếm
+sai, vì cách đếm sai đó sẽ lặp lại nếu không nói ra.
+
+**Hai đường KHÔNG hề thiếu màn — lỗi của phép rà, không phải của mã.** Màn Bãi xe
+đã có sẵn cả hai nút **"In tem kiện"** và **"In Packing List"**
+(`parking-list.js:233`), và hai hàm `printLabels` / `printPackingList` đã dựng
+xong, có ghi nhận lần in. Và `qr.svg` **đang được dùng**: `printLabels` đọc
+`label.qr_path`, mà `parking_list_service._label_dict` đặt trường đó bằng
+`/api/parking-labels/{id}/qr.svg`.
+
+> **Vì sao phép rà không thấy:** nó tìm **chuỗi URL viết trong JS**. Một điểm
+> cuối mà giao diện đi tới bằng **đường do máy chủ trả về** thì không có chuỗi
+> nào để tìm. Từ giờ, trước khi kết luận "không màn nào gọi", phải tìm thêm cả
+> tên **trường dữ liệu** dẫn tới nó (`*_path`, `*_url`, `href`).
+
+**Bốn đường là cửa thứ hai cho việc đã có cửa** — không phải tính năng thiếu màn:
+
+| Đường | Việc đó đã đi qua cửa nào |
+|---|---|
+| `GET /api/vehicle-types/recommendations` | Độ vừa tải của từng loại xe đã theo `/api/quotations/price-preview` về màn báo giá (`cac_loai_xe[].do_vua_tai`), và máy khách dùng chung bộ đánh giá `WorkflowUIUtils.evaluateVehicleCapacity`. |
+| `GET /api/tms/freight-orders/{id}/latest-position` | Vị trí GPS đã về **theo lô** qua `/api/tracking/control-tower`, kèm bốn trạng thái GPS và bản đồ. |
+| `GET /api/parking-lists/{id}/packing-list` | Trả đúng dữ liệu mà lời gọi GET chính đã trả. |
+| `POST /api/tms/freight-orders/{id}/legacy-link` | Cầu nối dữ liệu cũ, không có bước nghiệp vụ nào trong luồng hiện tại. |
+
+**Một đường là lỗi thật, và đã sửa: `GET /api/tms/finance/dashboard`.**
+`/api/data/all` **cố tình bôi trắng** ba tập `freight_actual_costs` /
+`ap_invoices` / `settlements` thành `[]` (dữ liệu tài chính chỉ phát qua endpoint
+có kiểm quyền), nhưng màn Finance Cockpit lại đếm bốn thẻ số liệu của nó **ngay
+trên ba mảng đó**. Đo trên PostgreSQL thật: **ba hồ sơ chi phí đang ở `submitted`
+chờ duyệt mà thẻ ghi 0**, và ba danh sách dưới nói "không có … đang chờ xử lý" —
+ba việc cần duyệt biến mất khỏi tầm mắt người làm tài chính. Đúng họ lỗi với
+`dashboard-load-honesty`: một con số 0 sai trông y hệt một con số 0 đúng.
+
+Đã sửa cả bốn phần:
+
+1. Bốn thẻ lấy số **đếm toàn bảng** từ máy chủ, và bộ lọc **trùng với nhãn**
+   người dùng đọc (`chờ duyệt` = draft + submitted, `chờ hạch toán` = chưa post,
+   `còn mở` = chưa trả xong).
+2. Ba mảng bị bôi trắng được **nạp bổ sung** từ ba đường có kiểm quyền, nên ba
+   danh sách việc cần xử lý hiện ra thật.
+3. Tiền cộng theo **cột quy đổi** (`functional_total_amount`,
+   `functional_amount`), không theo `total_amount` gốc — bản cũ cộng thẳng rồi
+   màn hình dán nhãn "VND" lên kết quả của hai loại tiền. Và mọi phép đếm lọc
+   `is_active` để không cộng dòng đã đảo.
+4. `list_row_cap` nói ra giới hạn 100 của ba đường liệt kê, để thẻ ghi được
+   "xem được 100 mới nhất" thay vì lặng lẽ hiện 100.
+
+Chốt bởi `frontend/tests/so-lieu-tai-chinh-tu-may-chu.test.js` (kiểm cả tên
+trường hai bên có trùng — đổi tên một bên thì màn hình lặng lẽ quay về số cũ) và
+hai bài mới trong `backend/tests/test_tms_finance_read_endpoints.py`.
+
+`POST /api/cost-formulas/evaluate` có thể sẽ được dùng bởi việc cost-formula v2
+đang làm dở (xem §8), nên chưa nên tính là dư.
 
 ---
 

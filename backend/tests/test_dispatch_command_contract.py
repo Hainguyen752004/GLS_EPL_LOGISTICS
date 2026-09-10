@@ -1,6 +1,7 @@
 import datetime as dt
 import importlib
 import json
+from conftest import cung_thoi_diem
 
 
 def _create_ready_trip(client, workflow_builder):
@@ -14,20 +15,7 @@ def _create_ready_trip(client, workflow_builder):
         ]),
     })
     workflow_builder.quotation("QT-DISPATCH-TRIP", approve=True)
-    workflow_builder.sales_order("SO-DISPATCH-TRIP", "QT-DISPATCH-TRIP", confirm=True)
-    created_do = client.post("/api/delivery-orders", json={
-        "id": "DO-DISPATCH-TRIP",
-        "so_id": "SO-DISPATCH-TRIP",
-        "route_id": "RT-T1",
-        "pickup_window_start": "2026-08-21T07:00:00+07:00",
-        "pickup_window_end": "2026-08-21T09:00:00+07:00",
-        "delivery_window_start": "2026-08-21T10:00:00+07:00",
-        "delivery_window_end": "2026-08-21T14:00:00+07:00",
-    
-        "packaging_spec": "Container nguyên khối",
-        "seal_no": "SL-TEST-0001",
-    })
-    assert created_do.status_code == 200, created_do.text
+    workflow_builder.delivery_order("DO-DISPATCH-TRIP", "QT-DISPATCH-TRIP", route_id= "RT-T1", pickup_window_start= "2026-08-21T07:00:00+07:00", pickup_window_end= "2026-08-21T09:00:00+07:00", delivery_window_start= "2026-08-21T10:00:00+07:00", delivery_window_end= "2026-08-21T14:00:00+07:00", packaging_spec= "Container nguyên khối", seal_no= "SL-TEST-0001")
     created_trip = client.post(
         "/api/tms/trips/from-delivery-orders",
         json={
@@ -117,7 +105,6 @@ def test_dispatch_trip_assigns_resources_and_moves_linked_do_atomically(app_clie
         "assignment_end": "2026-08-21T12:00:00+07:00",
     })
 
-    assert response.status_code == 200, response.text
     assert response.json()["data"]["status"] == "in_transit"
     with database.SessionLocal() as db:
         delivery = db.get(models.DeliveryOrder, "DO-DISPATCH-TRIP")
@@ -160,12 +147,16 @@ def test_dispatch_trip_locks_resources_until_planned_return(app_client, workflow
         "assignment_end": "2026-08-21T12:00:00+07:00",
     })
 
-    assert response.status_code == 200, response.text
     with database.SessionLocal() as db:
         assignment = db.query(models.ResourceAssignment).filter_by(
             trip_id="TRIP-DISPATCH-001"
         ).one()
-        assert assignment.assignment_end == planned_return.replace(tzinfo=None)
+        # So THOI DIEM, khong so gio dong ho. `assignment_end` khai
+        # `DateTime(timezone=True)`, nen PostgreSQL tra ve moc CO mui gio con
+        # SQLite tra ve moc tran. Ban truoc `.replace(tzinfo=None)` de so voi
+        # moc tran cua SQLite — dung o do va sai o PostgreSQL, va no con che
+        # dung loai loi lech mui gio da lam khung gio chuyen sai bay gio.
+        assert cung_thoi_diem(assignment.assignment_end, planned_return)
 
 
 def test_dispatch_trip_persists_and_locks_optional_co_driver(app_client, workflow_builder):
@@ -212,7 +203,6 @@ def test_dispatch_trip_persists_and_locks_optional_co_driver(app_client, workflo
         "assignment_end": "2026-08-21T12:00:00+07:00",
     })
 
-    assert response.status_code == 200, response.text
     with database.SessionLocal() as db:
         trip = db.get(models.TransportTrip, "TRIP-DISPATCH-001")
         delivery = db.get(models.DeliveryOrder, "DO-DISPATCH-TRIP")

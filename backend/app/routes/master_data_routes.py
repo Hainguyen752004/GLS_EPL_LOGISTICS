@@ -21,7 +21,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, DeliveryOrder, Quotation, Route, SalesOrder
+from models import Customer, DeliveryOrder, Quotation, Route
 from routes.finance_master_routes import require_authenticated_principal
 from schemas.workflow import RouteCreateRequest
 from services import duong_bo
@@ -95,7 +95,6 @@ async def delete_customer(customer_id: str, db: Session = Depends(get_db)):
 
     dang_dung = {
         "báo giá": db.query(Quotation.id).filter(Quotation.customer_id == customer_id).first(),
-        "đơn vận chuyển": db.query(SalesOrder.id).filter(SalesOrder.customer_id == customer_id).first(),
         "lệnh giao hàng": db.query(DeliveryOrder.id).filter(DeliveryOrder.customer_id == customer_id).first(),
     }
     vuong = [ten for ten, co in dang_dung.items() if co]
@@ -372,7 +371,6 @@ async def delete_route(route_id: str, db: Session = Depends(get_db)):
 
     dang_dung = {
         "báo giá": db.query(Quotation.id).filter(Quotation.route_id == route_id).first(),
-        "đơn vận chuyển": db.query(SalesOrder.id).filter(SalesOrder.route_id == route_id).first(),
         "lệnh giao hàng": db.query(DeliveryOrder.id).filter(DeliveryOrder.route_id == route_id).first(),
     }
     vuong = [ten for ten, co in dang_dung.items() if co]

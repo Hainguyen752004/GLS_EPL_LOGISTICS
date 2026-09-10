@@ -106,7 +106,7 @@
       document.body.appendChild(t);
     }
     t.innerHTML = `<i>${loi ? '⚠' : '✓'}</i><span>${esc(chu)}</span>`;
-    t.style.background = loi ? '#8a1c1c' : '#0f1c2e';
+    t.style.background = loi ? '#8a1c1c' : '#0b2e5c';
     t.hidden = false;
     clearTimeout(t._hen);
     t._hen = setTimeout(() => { t.hidden = true; }, 4600);
@@ -157,7 +157,7 @@
           <!-- Hộp thoại hồ sơ tài xế của bản cũ GIỮ NGUYÊN và nối vào đây: nó
                là chỗ duy nhất thêm được người mới, mà một màn xếp ca không thêm
                được người thì không dùng được ở tuần đầu triển khai. -->
-          <button type="button" class="ghost" id="ssv5-them-nguoi">+ Tài xế / phụ xe</button>
+          <button type="button" class="ghost" id="ssv5-them-nguoi">Thêm tài xế / phụ xe</button>
           <button type="button" class="ghost" id="ssv5-reload" title="Đọc lại từ máy chủ">↻</button>
           <button type="button" class="primary" id="ssv5-gen">⚙ Sinh lịch theo mẫu</button>
         </div>
@@ -182,9 +182,9 @@
             </div>
             <div class="legend">
               <span><i style="background:#f59e0b"></i>Sáng 06–14</span>
-              <span><i style="background:#1a73e8"></i>Chiều 14–22</span>
+              <span><i style="background:#2563eb"></i>Chiều 14–22</span>
               <span><i style="background:#7c3aed"></i>Đêm 22–06</span>
-              <span><i style="background:#0f1c2e"></i>Khoá (có Trip từ Điều phối)</span>
+              <span><i style="background:#0b2e5c"></i>Khoá (có Trip từ Điều phối)</span>
               <span><i style="background:#fff8e1;border:1.5px solid #f5d98a"></i>Nghỉ theo mẫu</span>
               <span><i style="background:#f1f5f9;border:1.5px solid #cbd5e1"></i>Nghỉ phép</span>
               <span><i style="background:#fdecec;border:1.5px dashed #d32f2f"></i>Cần người</span>
@@ -206,7 +206,7 @@
               <div class="scroller" id="ssv5-vrows"></div>
             </div>
             <div class="legend">
-              <span><i style="background:#1a73e8"></i>Trip đã điều phối</span>
+              <span><i style="background:#2563eb"></i>Trip đã điều phối</span>
               <span><i style="background:#7c3aed"></i>Đang chạy</span>
               <span><i style="background:#15803d"></i>Hoàn thành</span>
               <span><i style="background:#f6fcf8;border:1.5px dashed #bfe3cf"></i>Sẵn sàng (có tổ lái trong ca)</span>
@@ -229,7 +229,7 @@
               <div id="ssv5-drows"></div>
             </div>
             <div class="legend">
-              <span><i style="background:#1a73e8"></i>Đủ người</span>
+              <span><i style="background:#2563eb"></i>Đủ người</span>
               <span><i style="background:#eef2f7;border:1px solid #cbd5e1"></i>Không có xe nào phải chạy</span>
               <span><i style="background:#c7ddf8"></i>Thiếu ≤ 20%</span>
               <span><i style="background:#fbd0d0"></i>Thiếu 20–50%</span>
@@ -789,7 +789,7 @@
     // một bãi ngồi không cả tuần đọc ra như một bãi chạy hết công suất — và cả
     // dải nhiệt thành một khối xanh không nói gì. Xám nhạt = không có việc.
     const KHONG_VIEC = '#eef2f7';
-    const mau = t => t >= 1 ? '#1a73e8' : t >= 0.8 ? '#c7ddf8' : t >= 0.5 ? '#fbd0d0' : '#d32f2f';
+    const mau = t => t >= 1 ? '#2563eb' : t >= 0.8 ? '#c7ddf8' : t >= 0.5 ? '#fbd0d0' : '#d32f2f';
     const theoBai = b.do_phu_theo_bai || [];
     el('ssv5-drows').innerHTML = theoBai.map(bb => {
       const o = bb.cac_ngay.map(n => {

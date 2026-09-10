@@ -31,8 +31,6 @@ assert.match(toast[0], /toast\.style\.borderLeft\s*=\s*`3px solid \$\{tone\.prog
 [
   ['quotation save', /window\.saveOracleQT\s*=\s*async function[\s\S]*?executeWorkflowCommand[\s\S]*?showToast/],
   ['quotation approve', /window\.approveQuotation\s*=\s*async function[\s\S]*?executeWorkflowCommand[\s\S]*?showToast/],
-  ['sales order save', /window\.saveOracleSO\s*=\s*async function[\s\S]*?executeWorkflowCommand[\s\S]*?showToast/],
-  ['sales order approve', /window\.approveSO\s*=\s*async function[\s\S]*?executeWorkflowCommand[\s\S]*?showToast/],
   ['delivery completion', /window\.submitDeliveryCompletion\s*=\s*async function[\s\S]*?showToast\(`Đang lưu POD[\s\S]*?\/complete-delivery[\s\S]*?showToast\(`Đã hoàn tất/],
 ].forEach(([name, pattern]) => {
   assert.match(appSource, pattern, `${name} must show visible backend operation feedback.`);

@@ -19,7 +19,6 @@ from models import (
     FreightActualCost,
     FreightOrder,
     Quotation,
-    SalesOrder,
     TransportTrip,
     TransportTripLeg,
     TripDeliveryOrder,
@@ -176,7 +175,6 @@ def get_transport_revenue(
         if currency_code and invoice.currency_code != currency_code:
             continue
 
-        sales_order = db.get(SalesOrder, delivery.so_id) if delivery.so_id else None
         customer = db.get(Customer, delivery.customer_id) if delivery.customer_id else None
         vehicle = db.get(Vehicle, trip.vehicle_id or delivery.vehicle_id) if (trip.vehicle_id or delivery.vehicle_id) else None
         driver = db.get(Driver, trip.driver_id or delivery.driver_id) if (trip.driver_id or delivery.driver_id) else None
@@ -185,12 +183,7 @@ def get_transport_revenue(
         cost = _active_cost(db, trip.id)
         if cost and cost.carrier_id:
             carrier = db.get(Carrier, cost.carrier_id)
-        detail = db.scalar(
-            select(DeliveryOrderDetail)
-            .where(DeliveryOrderDetail.so_id == delivery.so_id)
-            .order_by(DeliveryOrderDetail.id)
-            .limit(1)
-        ) if delivery.so_id else None
+        detail = None
         leg = db.scalar(
             select(TransportTripLeg)
             .where(TransportTripLeg.trip_id == trip.id, TransportTripLeg.do_id == delivery.id)
@@ -219,8 +212,6 @@ def get_transport_revenue(
         bao_gia = None
         if getattr(delivery, "quotation_id", None):
             bao_gia = db.get(Quotation, delivery.quotation_id)
-        if bao_gia is None and sales_order is not None and sales_order.quotation_id:
-            bao_gia = db.get(Quotation, sales_order.quotation_id)
         if bao_gia is not None:
             ke_hoach = Decimal(bao_gia.total_cost or 0)
 
@@ -237,15 +228,14 @@ def get_transport_revenue(
 
         profit = revenue - approved_cost
         margin = (profit / revenue * Decimal("100")) if revenue else Decimal("0")
-        cargo_type = (detail.description if detail else None) or (sales_order.packaging_spec if sales_order else None)
+        cargo_type = (detail.description if detail else None) or (bao_gia.cargo_type if bao_gia is not None else None)
         origin = delivery.origin or (leg.origin if leg else None)
         destination = delivery.destination or (leg.destination if leg else None)
         customer_name = customer.name if customer else delivery.customer_id
-        route_label = getattr(sales_order, "route_id", None) or delivery.route_id or f"{origin} - {destination}"
+        route_label = delivery.route_id or f"{origin} - {destination}"
         row = {
             "trip_id": trip.id,
             "do_id": delivery.id,
-            "so_id": delivery.so_id,
             "departure_date": _date(trip.actual_departure_at or trip.planned_departure_at),
             "dispatch_order_no": delivery.id,
             "recognition_date": recognition_date,
@@ -385,7 +375,6 @@ def serialize_expense_voucher(db, voucher):
         .limit(1)
     )
     delivery = db.get(DeliveryOrder, do_id) if do_id else None
-    sales_order = db.get(SalesOrder, delivery.so_id) if delivery and delivery.so_id else None
     vehicle = db.get(Vehicle, trip.vehicle_id) if trip and trip.vehicle_id else None
     driver = db.get(Driver, trip.driver_id) if trip and trip.driver_id else None
     customer = db.get(Customer, delivery.customer_id) if delivery and delivery.customer_id else None
@@ -414,7 +403,7 @@ def serialize_expense_voucher(db, voucher):
         "shipment": {
             "origin": delivery.origin if delivery else None,
             "destination": delivery.destination if delivery else None,
-            "cargo_type": sales_order.packaging_spec if sales_order else None,
+            "cargo_type": delivery.packaging_spec if delivery else None,
             "weight_kg": delivery.weight_kg if delivery else None,
         },
         "cost": {

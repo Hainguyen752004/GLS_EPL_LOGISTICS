@@ -133,4 +133,28 @@ assert.deepStrictEqual(B.counts(null, NOW).pending, 0);
 assert.strictEqual(B.bucketOf({}, NOW), 'undated', 'không có gì thì là thiếu hạn giao');
 assert.strictEqual(B.bucketOf({ delivery_date: 'không phải ngày' }, NOW), 'undated');
 
+// --- Rổ "Đã huỷ" -----------------------------------------------------------
+//
+// LỖI ĐO ĐƯỢC TRÊN DỮ LIỆU THẬT: một DO khách đã huỷ hiện ở tab "Sắp tới hạn".
+// Nhánh else ở cuối coi mọi trạng thái không phải đã-giao / đang-chạy là chưa
+// lên đường rồi đo hạn giao của nó — nên một đơn đã chết vẫn báo sắp trễ, và
+// người điều phối thấy một việc không có gì để làm.
+{
+  const sapToiHan = new Date(NOW + 3 * 60 * 60 * 1000).toISOString();
+  assert.strictEqual(
+    B.bucketOf({ canonical_status: 'cancelled', delivery_window_end: sapToiHan }, NOW),
+    'cancelled',
+    'DO đã huỷ phải vào rổ Đã huỷ, không phải Sắp tới hạn'
+  );
+  assert.strictEqual(B.bucketOf({ canonical_status: 'Đã hủy' }, NOW), 'cancelled',
+    'nhãn tiếng Việt cũng phải vào rổ Đã huỷ');
+  // Và nó là rổ CUỐI thang cấp bách: việc đã huỷ không bao giờ là việc mở sẵn.
+  assert.strictEqual(B.BUCKETS[B.BUCKETS.length - 1].key, 'cancelled');
+  assert.strictEqual(
+    B.defaultBucket([{ canonical_status: 'cancelled' }, { canonical_status: 'in_transit' }], NOW),
+    'active',
+    'tab mở sẵn phải bỏ qua rổ Đã huỷ khi còn việc đang chạy'
+  );
+}
+
 console.log('do-board: tất cả kiểm tra đã qua');

@@ -122,7 +122,8 @@ def rollback_sqlite(connection):
 
 
 def validate_sqlite(connection):
-    for table, columns in (("quotations", QUOTE_COLUMNS), ("sales_orders", SO_COLUMNS), ("delivery_orders", DO_COLUMNS)):
+    # `sales_orders` da bi DROP o v049 (truc xuat Don hang) — khong kiem cot cua no nua.
+    for table, columns in (("quotations", QUOTE_COLUMNS), ("delivery_orders", DO_COLUMNS)):
         if _table_exists(connection, table) and not set(columns) <= _columns(connection, table):
             raise RuntimeError(f"{table} route context schema mismatch")
 
@@ -132,12 +133,13 @@ def validate_postgresql(connection):
         """
         SELECT table_name, column_name
         FROM information_schema.columns
-        WHERE table_name IN ('quotations','sales_orders','delivery_orders')
+        WHERE table_name IN ('quotations','delivery_orders')
         """
     ))
     rows = result.fetchall() if hasattr(result, "fetchall") else list(result)
     found = {(row[0], row[1]) for row in rows}
-    for table, columns in (("quotations", QUOTE_COLUMNS), ("sales_orders", SO_COLUMNS), ("delivery_orders", DO_COLUMNS)):
+    # `sales_orders` da bi DROP o v049 (truc xuat Don hang) — khong kiem cot cua no nua.
+    for table, columns in (("quotations", QUOTE_COLUMNS), ("delivery_orders", DO_COLUMNS)):
         for column in columns:
             if (table, column) not in found:
                 raise RuntimeError(f"{table} route context schema mismatch")

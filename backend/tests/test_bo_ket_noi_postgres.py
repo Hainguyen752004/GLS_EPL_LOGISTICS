@@ -106,19 +106,16 @@ def test_pre_ping_con_bat(nguon_database):
     """
     assert 'pool_pre_ping=True' in nguon_database
 
-
-def test_engine_dung_duoc_o_che_do_sqlite(monkeypatch):
-    """Chot moi khong duoc lam vo nhanh SQLite — bo kiem va CI dung nhanh do.
-
-    `options=-c ...` la cu phap cua libpq; SQLite khong hieu. Nen no phai nam
-    trong nhanh postgres, khong duoc dung chung.
-    """
-    monkeypatch.setenv('DATABASE_MODE', 'sqlite')
-    database = importlib.import_module('database')
-    importlib.reload(database)
-    assert database.engine is not None
-    assert database.engine.dialect.name == 'sqlite'
-    # Va ket noi that duoc.
-    with database.engine.connect() as c:
-        import sqlalchemy as sa
-        assert c.execute(sa.text('SELECT 1')).scalar() == 1
+# `test_engine_dung_duoc_o_che_do_sqlite` DA BO.
+#
+# Bai do chot rang mot moc moi khong lam vo nhanh SQLite cua `database.py`, va
+# ly do no tu khai la: *"bo kiem va CI dung nhanh do"*. Ly do do khong con —
+# bo kiem gio chay tren PostgreSQL, va chu du an da chot ngung SQLite hoan
+# toan. No cung khong con CHAY duoc: no dat `DATABASE_MODE=sqlite` roi nap lai
+# `database`, ma `DATABASE_URL` luc do la URL PostgreSQL nen `_sqlite_url()`
+# nem loi ngay.
+#
+# Phan `options=-c ...` ma no canh giu (cu phap libpq, SQLite khong hieu) van
+# nam trong nhanh postgres va van duoc chot boi cac bai con lai trong tep nay.
+# Khi nao bo han nhanh SQLite khoi `database.py` / `config.py` thi cho nay
+# khong con gi phai noi nua.

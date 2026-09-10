@@ -40,7 +40,7 @@ if app_dir not in sys.path:
 
 from database import get_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -222,7 +222,7 @@ def _khoan_muc_tu(khoa, ten):
     return khoan_muc_tu(khoa, ten)
 
 
-def _configured_delivery_cost_lines(formula, delivery_order, route):
+def _configured_delivery_cost_lines(formula, delivery_order, route, ghi_de_theo_xe=None):
     """Các dòng CHI PHÍ theo công thức giá thành của loại xe.
 
     Đọc tiền từ `terms[].rate` — đó là số học thực sự, kèm `factor` (đơn vị
@@ -286,6 +286,15 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
         if not khoa:
             continue
         don_gia = _doc_so_tien(term.get("rate"))
+        # PHÍ CỦA XE: xe chạy chuyến có ghi đè đơn giá cho khoản mục này thì
+        # dùng đơn giá của xe (xe cũ tốn dầu hơn, xe trả góp gánh khấu hao).
+        # Khoản mục và mã costindex vẫn kế thừa từ loại xe — ghi đè chỉ đổi SỐ.
+        # Ghi rõ nguồn để người đọc hồ sơ biết con số này là của xe hay của loại.
+        ghi_de = (ghi_de_theo_xe or {}).get(khoa)
+        nguon_don_gia = "vehicle_type"
+        if ghi_de is not None:
+            don_gia = _doc_so_tien(ghi_de)
+            nguon_don_gia = "vehicle"
         if don_gia <= 0:
             continue
         factor = str(term.get("factor") or "per_trip")
@@ -293,6 +302,12 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
         thanh_tien = don_gia * so_luong
         dong.append({
             "code": KHOA_TERM_SANG_COMPONENT.get(khoa, khoa),
+            "key": khoa,
+            # MÃ COSTINDEX của EPL — do người làm tài chính đặt trên công thức,
+            # hệ công nợ đọc mã này để lập phiếu. Rỗng = công thức chưa gán mã.
+            "cost_index": str(term.get("cost_index") or "").strip(),
+            "rate_source": nguon_don_gia,
+            "unit_rate": float(don_gia),
             # MÃ KHOẢN MỤC dùng chung với `actual_cost_lines[].charge_type`.
             #
             # `code` ở trên là mã CẤU PHẦN của công thức giá thành, và nó KHÁC
@@ -328,6 +343,12 @@ def _configured_delivery_cost_lines(formula, delivery_order, route):
         so_luong, mo_ta = NHAN[factor]
         dong.append({
             "code": khoa,
+            "key": khoa,
+            "charge_type": _khoan_muc_tu(khoa, ten),
+            # Công thức cũ dạng `components` không có chỗ ghi mã costindex.
+            "cost_index": "",
+            "rate_source": "vehicle_type",
+            "unit_rate": float(don_gia),
             "name": ten,
             "original_amount": float((don_gia * so_luong).quantize(
                 Decimal("0.000001"))),
@@ -348,14 +369,8 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             "navigation_targets": ["delivery-orders", "tracking"],
         })
 
-    sales_order = db.get(SalesOrder, delivery_order.so_id) if delivery_order.so_id else None
-    # BÁO GIÁ: đọc từ CHÍNH lệnh giao hàng trước, rồi mới lùi về đường qua Đơn hàng.
-    #
-    # Bản trước chỉ tra qua Đơn hàng (`so_id` → SO → báo giá). Bước Đơn hàng đã
-    # BỎ khỏi luồng ở mốc `7c445d1` — báo giá tách THẲNG ra lệnh giao hàng — nên
-    # `so_id` rỗng trên mọi lệnh mới, `sales_order` là None, và báo giá không bao
-    # giờ tìm ra được.
-    #
+    # BÁO GIÁ: đọc từ CHÍNH lệnh giao hàng (`quotation_id`). Bước Đơn hàng (SO)
+    # đã trục xuất khỏi hệ thống ở migration 049 — không còn đường tra nào khác.
     # Đã đo trên dữ liệu thật: `commercials.quoted_cost = 0` cho một lệnh đã
     # giao mà báo giá của nó ghi giá thành 2.409.255 đ. Giá thành bằng 0 thì lãi
     # gộp hiện ra 98,56% — con số đầu tiên người xem nhìn vào, và nó sai.
@@ -365,19 +380,20 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
     quotation = None
     if getattr(delivery_order, "quotation_id", None):
         quotation = db.get(Quotation, delivery_order.quotation_id)
-    if quotation is None and sales_order and sales_order.quotation_id:
-        quotation = db.get(Quotation, sales_order.quotation_id)
     route = db.get(Route, delivery_order.route_id) if delivery_order.route_id else None
-    formula_row = _select_closeout_formula(
-        db, delivery_order, sales_order.currency_code if sales_order else None
-    )
+    # Tien te cua ho so: theo Don hang (du lieu cu) hoac theo BAO GIA (luong moi).
+    # Truyen None la de `_select_closeout_formula` chon cong thuc dau tien theo ten
+    # — voi loai xe co ca hai cong thuc USD/VND thi no chon USD, va mot DO bao gia
+    # VND hien "1.118.000 USD". Da do duoc tren du lieu demo (DO-2026-0010).
+    tien_te_nguon = quotation.currency_code if quotation else None
+    formula_row = _select_closeout_formula(db, delivery_order, tien_te_nguon)
     # Chỉ đòi công thức khi còn phải TÍNH giá thành. DO đã giao xong thì hồ
     # sơ đã chốt, màn "Đã hoàn tất" chỉ xem lại — đòi công thức ở đó là chặn
     # một việc không cần đến nó, và hậu quả là không xem được hồ sơ của một
     # chuyến đã giao.
     con_phai_tinh = str(delivery_order.canonical_status or "").lower() not in (
         "delivered", "completed", "cancelled")
-    if sales_order and delivery_order.vehicle_id and formula_row is None and con_phai_tinh:
+    if quotation and delivery_order.vehicle_id and formula_row is None and con_phai_tinh:
         # Nói ĐÚNG cái đang thiếu. Xe chưa được gán loại xe thì có tạo bao
         # nhiêu công thức cũng không khớp được — mà lời báo cũ lại chỉ người
         # dùng đi tạo công thức, tức chỉ họ sửa đúng thứ không hỏng.
@@ -403,17 +419,25 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         raise HTTPException(status_code=409, detail={
             "code": "COST_FORMULA_REQUIRED",
             "message": (
-                f"Chưa cấu hình giá thành {sales_order.currency_code} cho loại xe"
+                f"Chưa cấu hình giá thành {tien_te_nguon or 'VND'} cho loại xe"
                 f" \"{vehicle.type}\" (xe {vehicle.id}). Hãy mở Dữ liệu gốc → Công thức"
                 " giá thành và thêm công thức cho loại xe này."
             ),
             "vehicle_id": vehicle.id,
             "vehicle_type": vehicle.type,
-            "currency": sales_order.currency_code,
+            "currency": tien_te_nguon or "VND",
             "navigation_targets": ["master-data/vehicle-types", "master-data/vehicles"],
         })
     formula = _serialize_closeout_formula(formula_row)
-    configured_cost_lines = _configured_delivery_cost_lines(formula, delivery_order, route)
+    # Ghi đè đơn giá theo XE chạy chuyến (bảng `vehicle_cost_overrides`), để
+    # dòng chi phí trong hồ sơ là phí của CHIẾC XE này, không chỉ chuẩn của loại.
+    ghi_de_theo_xe = {}
+    if delivery_order.vehicle_id:
+        from services.vehicle_cost_service import list_overrides
+        ghi_de_theo_xe = {r["component"]: r["value"]
+                          for r in list_overrides(db, delivery_order.vehicle_id)}
+    configured_cost_lines = _configured_delivery_cost_lines(
+        formula, delivery_order, route, ghi_de_theo_xe)
 
     trip_link = (
         db.query(TripDeliveryOrder)
@@ -465,6 +489,9 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             {
                 "id": item.id,
                 "charge_type": item.charge_type,
+                # Mã costindex ghi trên dòng lúc chốt chi phí; dòng cũ chưa có
+                # thì tra lại từ công thức theo `charge_type` ở bước lập sổ.
+                "cost_index": item.cost_index or "",
                 "description": item.description or "",
                 "quantity": _decimal_to_float(item.quantity),
                 "unit_price": _decimal_to_float(item.unit_price),
@@ -520,6 +547,7 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
                 "id": row.id,
                 "line_no": row.line_no,
                 "name": row.name,
+                "cost_index": row.cost_index or "",
                 "original_amount": _decimal_to_float(row.original_amount),
                 "actual_amount": _decimal_to_float(row.actual_amount),
                 "increase_amount": _decimal_to_float(row.increase_amount),
@@ -554,9 +582,7 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         .order_by(ARInvoice.created_at.desc())
         .first()
     )
-    selling_price = _decimal_to_float(sales_order.total_amount if sales_order else None)
-    if selling_price <= 0 and quotation is not None:
-        selling_price = _decimal_to_float(quotation.selling_price)
+    selling_price = _decimal_to_float(quotation.selling_price if quotation is not None else None)
     actual_total = _decimal_to_float(actual_cost.total_amount if actual_cost else None)
     quoted_cost = _decimal_to_float(quotation.total_cost if quotation else None)
 
@@ -597,10 +623,179 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         # hiện, nên hai bên không lệch nhau.
         cost_basis = quoted_cost or sum(
             float(x.get("original_amount") or 0) for x in (configured_cost_lines or []))
+
+    # HAI CON SỐ TỔNG PHẢI NÓI ĐÚNG TÊN CỦA CHÚNG.
+    #
+    # LỖI ĐÃ ĐO ĐƯỢC trên dữ liệu thật (DO-2026-0001-DO01): gói này trả
+    # `actual_cost_total = 17.227 đ` cho một chuyến có chi phí thực tế
+    # 1.731.767 đ. Sai 100 lần, và sai IM LẶNG — vì `freight_actual_costs.
+    # total_amount` là tổng của `item.total_amount`, mà cột đó ở đường CHỐT GIÁ
+    # mang PHẦN VƯỢT chứ không mang chi phí (xem chú thích ngay trên).
+    #
+    # Nặng hơn: sau khi `cost_basis` được sửa để lấy từ `item.actual_amount`,
+    # hai con số trong CÙNG MỘT GÓI tự chống nhau — `margin_amount` là
+    # 934.233 = 2.666.000 − 1.731.767, trong khi `actual_cost_total` ghi
+    # 17.227. Ai đọc gói này để hạch toán sẽ lập phiếu chi 17.227 đ cho một
+    # chuyến tốn 1.731.767 đ, và không có gì trong gói cho biết vì sao.
+    #
+    # Nên: `actual_cost_total` = chi phí thực tế (chính `cost_basis` khi đã có
+    # bảng chi phí), còn phần vượt được trả RIÊNG dưới tên đúng của nó.
+    tong_chi_phi_thuc_te = tong_thuc_te if tong_thuc_te > 0 else actual_total
+    phan_vuot_so_ke_hoach = actual_total if tong_thuc_te > 0 else 0.0
+
+    # ======================= SỔ THU – CHI TỪNG DÒNG (`ledger_lines`) =======================
+    #
+    # ĐÂY LÀ THỨ ĐỒNG NGHIỆP CỦA CHỦ DỰ ÁN (anh Khang) ĐỌC ĐỂ LẬP PHIẾU. Yêu cầu
+    # nguyên văn: *"chi tiết từng dòng luôn — chi tiết từng cái chi cái thu … đem
+    # mấy cái phí của xe các thứ ra luôn"*. Vài con số tổng (giá SO, giá cuối,
+    # chi phí, margin) không lập được phiếu; phải là TỪNG DÒNG, mỗi dòng mang MÃ
+    # COSTINDEX của hệ kế toán bên đó.
+    #
+    # Mỗi dòng: `kind` (thu | chi), `cost_index`, `charge_type`, `name`,
+    # `planned_amount` (chốt ban đầu), `actual_amount` (thực tế),
+    # `customer_extra` (khách trả thêm), `variance` (thực tế − ban đầu), `source`.
+    #
+    # Ba nguồn gộp về một sổ:
+    #   · CHI theo công thức (`configured_cost_lines`) — đơn giá đã áp ghi đè của
+    #     xe chạy chuyến, nên đây là "phí của xe";
+    #   · CHI thực tế (`actual_cost_lines`) — ghép vào dòng công thức cùng
+    #     `charge_type`; dòng thực tế không có dòng công thức tương ứng thì đứng
+    #     riêng (khoản phát sinh);
+    #   · THU: cước cơ sở theo báo giá, và từng khoản khách trả thêm.
+    #
+    # Mã costindex thiếu trên dòng (dữ liệu cũ) thì tra lại từ công thức theo
+    # `charge_type` / tên. Vẫn thiếu thì để RỖNG và `missing_cost_index = True` —
+    # nói ra là "chưa gán mã", không bịa.
+    from services.khoan_muc_chi_phi import (
+        TEN_KHOAN_MUC, bang_costindex, costindex_cho, khoan_muc_tu)
+    bang_ma = bang_costindex((formula or {}).get("terms"))
+
+    def _ma(dong, khoa=None, charge_type=None, ten=None):
+        return (str(dong.get("cost_index") or "").strip()
+                or costindex_cho(bang_ma, khoa=khoa, charge_type=charge_type, ten=ten)
+                or "")
+
+    # Điền mã cho các dòng chi phí thực tế ghi TRƯỚC khi có cột `cost_index`
+    # (dữ liệu cũ, NULL) — ngay trong `actual_cost_lines`, không chỉ trong sổ,
+    # vì bên đọc có thể đọc thẳng mảng này. Ghi rõ mã đến từ đâu: `stored` là
+    # mã đã ghi trên dòng lúc chốt, `formula` là mã tra lại từ công thức.
+    for a in actual_cost_lines:
+        if str(a.get("cost_index") or "").strip():
+            a["cost_index_source"] = "stored"
+        else:
+            a["cost_index"] = costindex_cho(bang_ma, charge_type=a["charge_type"],
+                                            ten=a.get("description")) or ""
+            a["cost_index_source"] = "formula" if a["cost_index"] else "missing"
+
+    so_dong = []
+    da_ghep = set()
+    # Đã có bảng chi phí thực tế hay chưa quyết định cách đọc một dòng công
+    # thức KHÔNG có dòng thực tế tương ứng:
+    #   · chưa có bảng  -> chưa ai chốt gì, thực tế TẠM = kế hoạch (tạm tính);
+    #   · đã có bảng    -> người chốt đã ghi mọi khoản thực chi; khoản không có
+    #                     trong bảng là KHÔNG phát sinh -> thực tế = 0, và dòng
+    #                     vẫn hiện với "chốt ban đầu" để thấy nó đã rơi đi đâu.
+    # Lấy kế hoạch làm thực tế ở trường hợp hai là cộng thêm một khoản không ai
+    # chi vào tổng chi — sổ lệch khỏi giá thành đúng bằng khoản đó, và
+    # `khop_gia_thanh` đỏ. Đã đo trên bộ demo: phí bãi 200.000 không có trong
+    # bảng chi phí thực tế làm tổng chi 2.580.000 trong khi giá thành 2.380.000.
+    co_bang_thuc_te = bool(actual_cost_lines)
+    for c in configured_cost_lines or []:
+        ct = c.get("charge_type") or khoan_muc_tu(c.get("key"), c.get("name"))
+        thuc = next((a for a in actual_cost_lines
+                     if a["charge_type"] == ct and a["id"] not in da_ghep), None)
+        if thuc:
+            da_ghep.add(thuc["id"])
+        ke_hoach = float(c.get("original_amount") or 0)
+        thuc_te = (float(thuc["actual_amount"]) if thuc
+                   else (0.0 if co_bang_thuc_te else ke_hoach))
+        ma = _ma(c, khoa=c.get("key"), charge_type=ct, ten=c.get("name")) \
+            or (_ma(thuc, charge_type=ct, ten=thuc.get("description")) if thuc else "")
+        so_dong.append({
+            "kind": "chi", "cost_index": ma, "missing_cost_index": not ma,
+            "charge_type": ct, "name": c.get("name") or TEN_KHOAN_MUC.get(ct, ct),
+            "planned_amount": ke_hoach, "actual_amount": thuc_te,
+            "variance": thuc_te - ke_hoach, "customer_extra": 0.0,
+            "source": "vehicle" if c.get("rate_source") == "vehicle" else "cost_formula",
+            "calculation": c.get("calculation") or "",
+            "actual_cost_line_id": thuc["id"] if thuc else "",
+        })
+    for a in actual_cost_lines or []:
+        if a["id"] in da_ghep:
+            continue
+        ma = _ma(a, charge_type=a["charge_type"], ten=a.get("description"))
+        so_dong.append({
+            "kind": "chi", "cost_index": ma, "missing_cost_index": not ma,
+            "charge_type": a["charge_type"],
+            "name": a.get("description") or TEN_KHOAN_MUC.get(a["charge_type"], a["charge_type"]),
+            "planned_amount": float(a["original_amount"] or 0),
+            "actual_amount": float(a["actual_amount"] or 0),
+            "variance": float(a["actual_amount"] or 0) - float(a["original_amount"] or 0),
+            "customer_extra": 0.0, "source": "actual_cost", "calculation": "",
+            "actual_cost_line_id": a["id"],
+        })
+
+    gia_ban_goc = _decimal_to_float(closeout.base_selling_price_snapshot) if closeout else selling_price
+    gia_ban_cuoi = _decimal_to_float(closeout.final_selling_price) if closeout else selling_price
+    # Cước cơ sở: mã costindex của khoản mục DOANH THU trong công thức (`rate`).
+    ma_cuoc = ""
+    for t in (formula or {}).get("terms") or []:
+        if isinstance(t, dict) and str(t.get("kind") or "").lower() == "revenue":
+            ma_cuoc = str(t.get("cost_index") or "").strip()
+            if ma_cuoc:
+                break
+    so_dong.append({
+        "kind": "thu", "cost_index": ma_cuoc, "missing_cost_index": not ma_cuoc,
+        "charge_type": "freight_revenue", "name": "Cước vận chuyển theo báo giá",
+        "planned_amount": gia_ban_goc, "actual_amount": gia_ban_goc,
+        "variance": 0.0, "customer_extra": 0.0,
+        "source": "quotation" if quotation else "delivery_order",
+        "calculation": (quotation.id if quotation else ""), "actual_cost_line_id": "",
+    })
+    for kt in customer_adjustments or []:
+        ct = khoan_muc_tu(None, kt.get("name"))
+        ma = _ma(kt, charge_type=ct, ten=kt.get("name"))
+        so_dong.append({
+            "kind": "thu", "cost_index": ma, "missing_cost_index": not ma,
+            "charge_type": ct, "name": kt.get("name") or "",
+            "planned_amount": float(kt.get("original_amount") or 0),
+            "actual_amount": float(kt.get("actual_amount") or 0),
+            "variance": float(kt.get("increase_amount") or 0),
+            "customer_extra": float(kt.get("increase_amount") or 0),
+            "source": "customer_surcharge", "calculation": kt.get("note") or "",
+            "actual_cost_line_id": "",
+        })
+
+    # Tên bên công nợ dùng là ACC CODE; `cost_index` là tên cột trong hệ này.
+    # Trả cả hai khoá, cùng một giá trị, để bên đọc dùng tên quen của họ.
+    for d in so_dong:
+        d["acc_code"] = d["cost_index"]
+    for danh_sach in (configured_cost_lines, actual_cost_lines, customer_adjustments):
+        for d in danh_sach or []:
+            d["acc_code"] = d.get("cost_index") or ""
+
+    tong_thu = sum(d["actual_amount"] if d["source"] != "customer_surcharge" else d["customer_extra"]
+                   for d in so_dong if d["kind"] == "thu")
+    tong_chi = sum(d["actual_amount"] for d in so_dong if d["kind"] == "chi")
+    tong_so = {
+        "tong_thu": tong_thu,
+        "tong_chi": tong_chi,
+        "lai_gop": tong_thu - tong_chi,
+        # Hai phép đối chiếu, để bên đọc KIỂM được sổ chứ không phải tin nó:
+        # tổng THU của sổ phải bằng giá cuối DO, tổng CHI phải bằng giá thành
+        # dùng tính lãi. Lệch là có dòng bị sót hoặc đếm hai lần.
+        "khop_gia_cuoi": abs(tong_thu - gia_ban_cuoi) < 1.0,
+        "khop_gia_thanh": abs(tong_chi - cost_basis) < 1.0 if cost_basis else True,
+        "so_dong_thieu_ma": sum(1 for d in so_dong if d["missing_cost_index"]),
+        "currency": (closeout.currency_code if closeout else None)
+                    or (actual_cost.currency_code if actual_cost else None)
+                    or tien_te_nguon or (formula or {}).get("currency") or "VND",
+    }
     currency = (
         (closeout.currency_code if closeout else None)
         or
         (actual_cost.currency_code if actual_cost else None)
+        or tien_te_nguon
         or formula.get("currency")
         or "VND"
     )
@@ -608,7 +803,6 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
     return {
         "do_id": delivery_order.id,
         "status": delivery_order.canonical_status or delivery_order.status or "",
-        "sales_order_id": sales_order.id if sales_order else "",
         "quotation_id": quotation.id if quotation else "",
         "customer_id": delivery_order.customer_id or "",
         "route": {
@@ -626,7 +820,6 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             "id": delivery_order.id,
             "canonical_status": delivery_order.canonical_status or "",
             "status": delivery_order.status or "",
-            "so_id": delivery_order.so_id or "",
             "customer_id": delivery_order.customer_id or "",
             "route_id": delivery_order.route_id or "",
             "origin": delivery_order.origin or "",
@@ -650,11 +843,19 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
         "configured_cost_lines": configured_cost_lines,
         "commercials": {
             "quoted_cost": quoted_cost,
-            "actual_cost_total": actual_total,
+            "actual_cost_total": tong_chi_phi_thuc_te,
+            # Mẫu số của `margin_percent`, trả ra để bên đọc kiểm được con số
+            # lãi chứ không phải tin nó. Thiếu nó thì một chênh lệch giữa
+            # `actual_cost_total` và giá thành dùng để tính lãi là vô hình.
+            "cost_basis": cost_basis,
+            "cost_basis_source": ("actual_cost_items" if tong_thuc_te > 0
+                                  else "actual_cost_total" if actual_total > 0
+                                  else "quotation" if quoted_cost else "cost_formula"),
+            "actual_cost_variance": phan_vuot_so_ke_hoach,
             "selling_price": _decimal_to_float(closeout.final_selling_price) if closeout else selling_price,
             "base_selling_price": _decimal_to_float(closeout.base_selling_price_snapshot) if closeout else selling_price,
-            "base_price_source": closeout.base_price_source if closeout else ("sales_order" if sales_order else "quotation"),
-            "base_price_source_id": closeout.base_price_source_id if closeout else (sales_order.id if sales_order else quotation.id if quotation else ""),
+            "base_price_source": closeout.base_price_source if closeout else "quotation",
+            "base_price_source_id": closeout.base_price_source_id if closeout else (quotation.id if quotation else ""),
             "customer_surcharge_total": _decimal_to_float(closeout.surcharge_total) if closeout else 0.0,
             "final_selling_price": _decimal_to_float(closeout.final_selling_price) if closeout else selling_price,
             "margin_amount": (_decimal_to_float(closeout.final_selling_price) if closeout else selling_price) - cost_basis,
@@ -662,6 +863,9 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             "margin_is_provisional": actual_cost is None,
         },
         "customer_charge_adjustments": customer_adjustments,
+        # Sổ thu–chi từng dòng, mỗi dòng mang mã costindex — gói cho hệ công nợ.
+        "ledger_lines": so_dong,
+        "ledger_totals": tong_so,
         "pod_documents": documents,
         "invoice": serialize_ar_invoice(invoice) if invoice else None,
         "resource_release": {
@@ -673,7 +877,13 @@ async def get_delivery_order_closeout(do_id: str, request: Request, db: Session 
             "id": actual_cost.id if actual_cost else "",
             "status": actual_cost.status if actual_cost else "",
             "currency": actual_cost.currency_code if actual_cost else currency,
-            "total_amount": actual_total,
+            # Chi phí THỰC TẾ, không phải phần vượt — xem chú thích ở chỗ tính
+            # `tong_chi_phi_thuc_te`.
+            "total_amount": tong_chi_phi_thuc_te,
+            "variance_amount": phan_vuot_so_ke_hoach,
+            # Tổng thô của bảng, giữ lại để đối chiếu khi nghi số lệch. Đây
+            # CHÍNH LÀ con số từng bị trả ra dưới tên `total_amount`.
+            "table_total_amount": actual_total,
         },
         "actual_cost_lines": actual_cost_lines,
         "pod_records": pod_records,

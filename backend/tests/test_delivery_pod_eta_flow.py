@@ -1,46 +1,61 @@
 import datetime as dt
 
+from conftest import dieu_phoi_qua_chuyen
 from services.workflow_service import estimate_delivery_timing
 
 
 def _ready_do(client, workflow_builder):
     workflow_builder.master_data()
     workflow_builder.quotation("QT-POD", approve=True)
-    workflow_builder.sales_order("SO-POD", "QT-POD", confirm=True)
-    workflow_builder.delivery_order("DO-POD", "SO-POD", approve=True)
+    workflow_builder.delivery_order("DO-POD", "QT-POD", approve=True)
+    workflow_builder.san_sang_dieu_phoi("DO-POD")
     return "DO-POD"
 
 
-def test_dispatch_sets_planned_eta_return_and_remaining_distance(app_client, workflow_builder):
+def test_duong_dieu_phoi_le_da_dong_phan_ghi(app_client, workflow_builder):
+    """`PUT /api/delivery-orders/{id}/dispatch` KHONG con ghi gi.
+
+    Duong do tung dua lenh sang `in_transit` ma khong lap chuyen, nen lenh do
+    khong nop duoc POD, khong huy duoc, va xe cung to lai bi giu vinh vien —
+    moi duong giai phong deu di qua chuyen. Gio no chi tra ve mot cau chi dan.
+    """
     client, _, _ = app_client
     do_id = _ready_do(client, workflow_builder)
+    r = client.put(f"/api/delivery-orders/{do_id}/dispatch",
+                   json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"})
+    assert r.status_code == 409, r.text
+    assert r.json()["detail"]["code"] == "DISPATCH_VIA_TRIP_REQUIRED"
+    assert "from-delivery-orders" in r.json()["detail"]["message"]
+    # Va no khong doi trang thai cua lenh.
+    ds = client.get("/api/delivery-orders?page=1&page_size=50").json()
+    ds = ds.get("items") if isinstance(ds, dict) else ds
+    assert next(x for x in ds if x["id"] == do_id)["canonical_status"] == "pending"
 
-    response = client.put(
-        f"/api/delivery-orders/{do_id}/dispatch",
-        json={
-            "vehicle_id": "VEH-T1",
-            "driver_id": "DRV-T1",
-            "departure_at": "2026-08-12T08:00:00+07:00",
-            "avg_speed_kmh": 50,
-            "return_speed_kmh": 40,
-            "load_minutes": 30,
-            "unload_minutes": 45,
-        },
-    )
 
-    assert response.status_code == 200
-    data = response.json()["data"]
-    assert data["planned_departure_at"] == "2026-08-12T01:00:00Z"
-    assert data["planned_arrival_at"] == "2026-08-12T01:42:00Z"
-    assert data["planned_return_at"] == "2026-08-12T02:42:00Z"
-    assert data["avg_speed_kmh"] == 50
+def test_dieu_phoi_qua_chuyen_ghi_eta_va_theo_doi(app_client, workflow_builder):
+    """Dieu phoi qua chuyen phai ghi ETA va dong theo doi cho lenh giao hang."""
+    client, _, _ = app_client
+    do_id = _ready_do(client, workflow_builder)
+    ma_trip = dieu_phoi_qua_chuyen(client, do_id)
+
+    ds = client.get("/api/delivery-orders?page=1&page_size=50").json()
+    ds = ds.get("items") if isinstance(ds, dict) else ds
+    do = next(x for x in ds if x["id"] == do_id)
+    assert do["canonical_status"] == "in_transit"
+    assert do["vehicle_id"] == "VEH-T1"
+    assert do["driver_id"] == "DRV-T1"
 
     tracking = client.get(f"/api/tracking/{do_id}")
-    assert tracking.status_code == 200
-    tracking_data = tracking.json()
-    assert tracking_data["remaining_distance_km"] == 10
-    assert tracking_data["eta"] == "2026-08-12T01:42:00Z"
-    assert tracking_data["planned_return_at"] == "2026-08-12T02:42:00Z"
+    assert tracking.status_code == 200, tracking.text
+    theo_doi = tracking.json()
+    assert theo_doi["vehicle_id"] == "VEH-T1"
+    # Quang duong con lai lay tu CHANG GIAO cua chuyen, khong bia.
+    assert float(theo_doi["remaining_distance_km"]) == 10
+    assert theo_doi["eta"], "phai co gio du kien den"
+
+    chuyen = client.get(f"/api/tms/trips/{ma_trip}").json()["data"]
+    assert chuyen["status"] == "in_transit"
+    assert chuyen["planned_arrival_at"], "chuyen phai co gio du kien den"
 
 
 def test_moc_arrived_ghi_duoc_nhung_pod_le_van_bi_tu_choi(app_client, workflow_builder):
@@ -59,7 +74,7 @@ def test_moc_arrived_ghi_duoc_nhung_pod_le_van_bi_tu_choi(app_client, workflow_b
     """
     client, _, _ = app_client
     do_id = _ready_do(client, workflow_builder)
-    assert client.put(f"/api/delivery-orders/{do_id}/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}).status_code == 200
+    dieu_phoi_qua_chuyen(client, do_id)
     ghi_moc = client.put(f"/api/delivery-orders/{do_id}/status", json={"status": "Arrived"})
     assert ghi_moc.status_code == 200, ghi_moc.text
     # Ghi lai lan hai thi phai bi tu choi, khong duoc bao thanh cong.
@@ -82,7 +97,7 @@ def test_moc_arrived_ghi_duoc_nhung_pod_le_van_bi_tu_choi(app_client, workflow_b
 def test_delivered_requires_pod_record_for_assigned_vehicle(app_client, workflow_builder):
     client, _, _ = app_client
     do_id = _ready_do(client, workflow_builder)
-    assert client.put(f"/api/delivery-orders/{do_id}/dispatch", json={"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}).status_code == 200
+    dieu_phoi_qua_chuyen(client, do_id)
     blocked = client.put(f"/api/delivery-orders/{do_id}/status", json={"status": "Delivered"})
     assert blocked.status_code == 409
     assert blocked.json()["detail"]["code"] == "ATOMIC_COMPLETION_REQUIRED"

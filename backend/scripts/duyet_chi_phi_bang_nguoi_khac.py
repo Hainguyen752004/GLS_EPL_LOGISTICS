@@ -98,8 +98,12 @@ def main():
 
     moi_truong = dict(os.environ)
     moi_truong["EPL_TMS_API_PRINCIPAL"] = NGUOI_DUYET
+    # CUNG `.env` voi may chu chinh — tuc PostgreSQL. Ban truoc mac dinh
+    # `.env.sqlite`: may chu tam mo mot co so du lieu KHAC, nen 5/5 bang chi phi
+    # deu 404 "khong tim thay" du chung dang cho duyet tren PostgreSQL. Du an da
+    # ngung SQLite hoan toan; day la vet cuoi.
     moi_truong.setdefault("EPL_ENV_FILE",
-                          os.path.join(os.path.dirname(THU_MUC_APP), "..", ".env.sqlite"))
+                          os.path.join(os.path.dirname(THU_MUC_APP), "..", ".env"))
     moi_truong["PYTHONUNBUFFERED"] = "1"
     tien_trinh = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "main:app",

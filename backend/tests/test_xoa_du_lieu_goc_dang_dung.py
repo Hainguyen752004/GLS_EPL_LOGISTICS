@@ -99,3 +99,37 @@ def test_xoa_loai_xe_khong_ton_tai_bao_404_khong_phai_200(app_client):
     client, _, _ = app_client
     r = client.delete("/api/vehicle-types/VT-KHONG-CO")
     assert r.status_code == 404, r.text
+
+def test_khong_xoa_duoc_loai_xe_khi_xe_ghi_theo_MA_loai(app_client, workflow_builder):
+    """Cùng lỗ hổng, nhưng với xe ghi theo MÃ loại xe thay vì TÊN.
+
+    LỖI ĐÃ XẢY RA THẬT: `POST /api/vehicles` chuẩn hoá `type` về mã loại xe
+    (nhận cả tên rồi đổi sang mã). Cửa chặn xoá lúc đó chỉ so theo TÊN, nên
+    với mọi xe tạo sau thay đổi ấy nó không khớp gì cả và loại xe bị xoá tự do
+    — đúng lỗ hổng mà nó được dựng để bịt. Bài kiểm cũ vẫn xanh vì nó gửi tên,
+    và tên được đổi thành mã trước khi lưu.
+
+    Nên phải kiểm CẢ HAI đường ghi: gửi tên, và gửi mã.
+    """
+    client, _, _ = app_client
+    workflow_builder.master_data()
+    assert client.post("/api/vehicle-types", json={
+        "id": "VT-MA", "name": "Xe tai theo ma", "max_weight": 12000,
+    }).status_code in (200, 201)
+    assert client.post("/api/vehicles", json={
+        "id": "VEH-MA", "type": "VT-MA", "status": "Sẵn sàng",
+    }).status_code in (200, 201)
+
+    r = client.delete("/api/vehicle-types/VT-MA")
+    assert r.status_code == 409, r.text
+    assert r.json()["detail"]["code"] == "LOCKED_RECORD"
+
+    # Đổi loại cho xe rồi mới xoá được.
+    assert client.post("/api/vehicle-types", json={
+        "id": "VT-MA-2", "name": "Xe tai thay the", "max_weight": 12000,
+    }).status_code in (200, 201)
+    # `POST /api/vehicles` la duong VUA TAO VUA SUA (upsert), khong co PUT.
+    assert client.post("/api/vehicles", json={
+        "id": "VEH-MA", "type": "VT-MA-2",
+    }).status_code in (200, 201)
+    assert client.delete("/api/vehicle-types/VT-MA").status_code == 200

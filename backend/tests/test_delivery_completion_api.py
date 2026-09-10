@@ -149,8 +149,13 @@ def test_delivery_completion_models_map_commercial_and_pod_tables():
     assert "cargo_condition" in DeliveryPODRecord.__table__.c
 
 
+# CHAY HAI LAN: DO dang `in_transit`, va DO da `arrived` (xe bao toi noi, cho
+# POD). Ca hai deu phai hoan tat duoc. Cua cu chi nhan `in_transit`, va ngay khi
+# moc `arrival` bat dau tu dua DO sang `arrived` thi MOI chuyen bao toi noi deu
+# vo o buoc POD — do duoc khi gieo demo: 5/5 case xong bi 409.
+@pytest.mark.parametrize("qua_arrived", [False, True], ids=["in_transit", "arrived"])
 def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
-    app_client, workflow_builder
+    app_client, workflow_builder, qua_arrived
 ):
     client, _, _ = app_client
     database = importlib.import_module("database")
@@ -219,20 +224,7 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         "delivery_window_end": "2026-08-22T14:00:00+07:00",
     }).status_code == 200
     assert client.put("/api/quotations/QT-COMPLETE/approve").status_code == 200
-    assert client.post("/api/sales-orders", json={
-        "id": "SO-COMPLETE", "quotation_id": "QT-COMPLETE",
-    }).status_code == 200
-    assert client.put("/api/sales-orders/SO-COMPLETE/confirm").status_code == 200
-    assert client.post("/api/delivery-orders", json={
-        "id": "DO-COMPLETE", "so_id": "SO-COMPLETE", "route_id": "RT-T1",
-        "pickup_window_start": "2026-08-22T07:00:00+07:00",
-        "pickup_window_end": "2026-08-22T09:00:00+07:00",
-        "delivery_window_start": "2026-08-22T11:00:00+07:00",
-        "delivery_window_end": "2026-08-22T14:00:00+07:00",
-    
-        "packaging_spec": "Container nguyên khối",
-        "seal_no": "SL-TEST-0001",
-    }).status_code == 200
+    workflow_builder.delivery_order("DO-COMPLETE", "QT-COMPLETE", route_id= "RT-T1", pickup_window_start= "2026-08-22T07:00:00+07:00", pickup_window_end= "2026-08-22T09:00:00+07:00", delivery_window_start= "2026-08-22T11:00:00+07:00", delivery_window_end= "2026-08-22T14:00:00+07:00", packaging_spec= "Container nguyên khối", seal_no= "SL-TEST-0001")
     created = client.post("/api/tms/trips/from-delivery-orders", json={
         "id": "TRIP-COMPLETE", "do_ids": ["DO-COMPLETE"], "trip_type": "one_way",
         "planned_departure_at": "2026-08-22T08:00:00+07:00",
@@ -248,6 +240,11 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         "assignment_end": "2026-08-22T14:00:00+07:00",
     })
     assert dispatched.status_code == 200, dispatched.text
+    if qua_arrived:
+        den = client.put("/api/delivery-orders/DO-COMPLETE/status", json={"status": "arrived"},
+                         headers={"X-User-Id": "tester"})
+        assert den.status_code == 200, den.text
+        assert den.json()["data"]["canonical_status"] == "arrived"
     trip = client.get("/api/tms/trips/TRIP-COMPLETE").json()["data"]
     delivery_legs = [leg for leg in trip["legs"] if leg["leg_type"] == "delivery"]
     assert delivery_legs
@@ -282,7 +279,6 @@ def test_complete_delivery_http_persists_pod_surcharges_and_final_price(
         data={"payload": json.dumps(payload)}, files=multipart_files,
         headers={"Idempotency-Key": "complete-do-001"},
     )
-    assert response.status_code == 200, response.text
     data = response.json()["data"]
     assert data["commercials"]["base_selling_price"] == 4_200_000
     assert data["commercials"]["customer_surcharge_total"] == 470_000

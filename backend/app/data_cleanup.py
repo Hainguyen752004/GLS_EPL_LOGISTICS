@@ -7,7 +7,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 ROOT_RE = re.compile(r"^QT-(\d{4})-(\d{3})$")
 MASTER = {"customers","vehicles","drivers","routes","locations","vehicle_types","items","uoms","cost_formulas","price_lists","currencies","users","roles","chart_of_accounts","account_mappings","accounting_periods"}
-BUSINESS = {"quotations","quotation_details","sales_orders","delivery_orders","delivery_order_details","shipment_costs","vehicle_tracking","pod","ar_invoices","gl_transactions","incidents","audit_logs","journal_batches","journal_lines"}
+BUSINESS = {"quotations","quotation_details","delivery_orders","delivery_order_details","shipment_costs","vehicle_tracking","pod","ar_invoices","gl_transactions","incidents","audit_logs","journal_batches","journal_lines"}
 LOGICAL_RELATIONS = {"incidents": ("do_id", "delivery_orders")}
 
 def _path(url):

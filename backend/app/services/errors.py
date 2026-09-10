@@ -5,6 +5,9 @@ MASTER_DATA_TARGETS = {
     "customer": "master-data/customers",
     "route": "master-data/routes",
     "vehicle": "master-data/vehicles",
+    # Thieu khoa nay thi `missing_master("vehicle_type", ...)` no KeyError -> 500,
+    # trong khi y dinh la 422 kem dieu huong toi man Loai xe.
+    "vehicle_type": "master-data/vehicle-types",
     "driver": "master-data/drivers",
     "location": "master-data/locations",
     "carrier": "master-data/carriers",

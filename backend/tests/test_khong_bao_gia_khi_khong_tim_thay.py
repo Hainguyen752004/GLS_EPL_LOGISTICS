@@ -25,9 +25,7 @@ DUONG_XOA = [
     "/api/vehicle-types/" + MA_GIA,
     "/api/drivers/" + MA_GIA,
     "/api/quotations/" + MA_GIA,
-    "/api/sales-orders/" + MA_GIA,
     "/api/delivery-orders/" + MA_GIA,
-    "/api/sales-order-documents/" + MA_GIA,
     "/api/tms/scheduling/driver-shifts/" + MA_GIA,
 ]
 
@@ -36,7 +34,6 @@ DUONG_XOA = [
 DUONG_SUA = [
     ("/api/quotations/" + MA_GIA, {}),
     ("/api/quotations/" + MA_GIA + "/status", {"status": "Đã duyệt"}),
-    ("/api/sales-orders/" + MA_GIA + "/status", {"status": "Đã xác nhận"}),
     ("/api/delivery-orders/" + MA_GIA + "/status", {"status": "Đang vận chuyển"}),
     ("/api/master-data/tax-codes/" + MA_GIA, {}),
     ("/api/master-data/accounting-periods/" + MA_GIA, {}),

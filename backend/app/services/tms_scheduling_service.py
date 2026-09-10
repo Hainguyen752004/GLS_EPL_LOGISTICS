@@ -339,7 +339,10 @@ def list_vehicle_availability(db, start, end):
     start_at = _utc(start, "ngày bắt đầu")
     end_at = _utc(end, "ngày kết thúc")
     trips = db.query(TransportTrip).filter(
-        TransportTrip.status.notin_(("cancelled", "settled")),
+        # Chuyen DA HOAN TAT khong con giu xe. Ban truoc de no trong lich, nen man
+        # Dieu phoi dem 9/9 xe "dang chay" trong khi chi 6 xe co chuyen mo — moi
+        # xe tung chay xong mot chuyen deu bi coi la ban mai.
+        TransportTrip.status.notin_(("cancelled", "settled", "completed")),
         TransportTrip.planned_departure_at < end_at,
         TransportTrip.planned_departure_at >= start_at - dt.timedelta(days=14),
     ).order_by(TransportTrip.planned_departure_at).all()

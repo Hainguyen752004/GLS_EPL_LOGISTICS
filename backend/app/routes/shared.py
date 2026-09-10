@@ -85,5 +85,8 @@ def serialize_cost_formula(row: CostFormula):
         "currency": payload.get("currency") or "VND",
         "components": components,
         "terms": payload.get("terms") if isinstance(payload.get("terms"), list) else [],
+        "expressions": payload.get("expressions") if isinstance(payload.get("expressions"), dict) else None,
+        "updated_at": payload.get("updated_at"),
+        "history": payload.get("history", []),
         "formula_expression": row.formula_expression,
     }

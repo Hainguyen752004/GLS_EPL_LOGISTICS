@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from models import AccountingPeriod, ARInvoice, DeliveryOrder, DeliveryOrderCloseout, FinanceControlConfig, JournalBatch, JournalLine, SalesOrder
+from models import AccountingPeriod, ARInvoice, DeliveryOrder, DeliveryOrderCloseout, FinanceControlConfig, JournalBatch, JournalLine
 from services.errors import DomainError, conflict
 
 
@@ -84,29 +84,21 @@ def post_ar_invoice(db, data, user="system"):
             ["delivery-orders", "pod"],
         )
 
-    # CHỨNG TỪ NGUỒN CỦA MỘT HOÁ ĐƠN: đơn hàng (đường cũ) HOẶC báo giá (luồng mới).
-    #
-    # Luồng mới bỏ bước Đơn hàng: báo giá được khách chấp nhận thì tách thẳng
-    # thành DO. Đoạn này trước đây chỉ biết đường `DO → so_id → SO`, và đòi SO
-    # ở trạng thái `confirmed`. Một DO của luồng mới không có `so_id` nào, nên
-    # nó dừng ở "Đơn hàng nguồn phải được xác nhận" — tức MỌI chuyến của luồng
-    # mới không phát hành được hoá đơn, và lỗi chỉ hiện ra sau khi tài xế đã
-    # giao hàng và POD đã ký xong.
+    # CHỨNG TỪ NGUỒN CỦA MỘT HOÁ ĐƠN: báo giá của lệnh giao hàng. Bước Đơn hàng (SO)
+    # đã trục xuất khỏi hệ thống (migration 049); báo giá được khách chấp nhận thì
+    # tách thẳng thành DO và giá khoá ngay trên DO.
     #
     # Với báo giá, trạng thái tương đương `confirmed` của đơn hàng là
     # `accepted` (khách đã chấp nhận) hoặc `split` (đã tách thành DO). Không
     # nhận `sent` hay `draft`: một con số khách chưa đồng ý thì chưa xuất được
     # hoá đơn.
-    sales_order = db.get(SalesOrder, delivery.so_id) if delivery.so_id else None
     quotation = None
     if getattr(delivery, "quotation_id", None):
         from models import Quotation
         quotation = db.get(Quotation, delivery.quotation_id)
 
     TRANG_THAI_BAO_GIA_XUAT_HOA_DON = ("accepted", "split")
-    if sales_order is not None and sales_order.canonical_status == "confirmed":
-        nguon, ten_nguon, man_nguon = sales_order, "đơn hàng", "sales-orders"
-    elif quotation is not None and quotation.canonical_status in TRANG_THAI_BAO_GIA_XUAT_HOA_DON:
+    if quotation is not None and quotation.canonical_status in TRANG_THAI_BAO_GIA_XUAT_HOA_DON:
         nguon, ten_nguon, man_nguon = quotation, "báo giá", "crm-sales"
     elif quotation is not None:
         raise conflict(
@@ -118,11 +110,10 @@ def post_ar_invoice(db, data, user="system"):
         )
     else:
         raise conflict(
-            "SALES_ORDER_NOT_CONFIRMED",
-            "Lệnh giao hàng %s không nối được chứng từ nguồn nào đã chốt: không có "
-            "đơn hàng đã xác nhận, cũng không có báo giá đã được khách chấp nhận."
+            "QUOTATION_NOT_FOUND",
+            "Lệnh giao hàng %s không nối được báo giá đã được khách chấp nhận."
             % delivery.id,
-            ["sales-orders", "crm-sales"],
+            ["crm-sales"],
         )
 
     if not delivery.customer_id or delivery.customer_id != nguon.customer_id:
@@ -146,8 +137,7 @@ def post_ar_invoice(db, data, user="system"):
     else:
         amount = _money(getattr(delivery, "unit_price", 0))
         if amount <= 0:
-            amount = _money(getattr(nguon, "total_amount", None)
-                            if sales_order is nguon else nguon.selling_price)
+            amount = _money(nguon.selling_price)
     if amount <= 0:
         raise DomainError(
             "INVOICE_AMOUNT_INVALID",

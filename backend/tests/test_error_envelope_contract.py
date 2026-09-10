@@ -13,7 +13,7 @@ def test_domain_errors_use_canonical_error_envelope(app_client):
 
 def test_validation_errors_identify_rejected_fields(app_client):
     client, _, _ = app_client
-    response = client.post("/api/delivery-orders", json={"so_id": "SO-X", "approved": True})
+    response = client.post("/api/quotations", json={"customer_id": "CUS-X", "route_id": "RT-X", "approved": True})
 
     assert response.status_code == 422
     error = response.json()["error"]

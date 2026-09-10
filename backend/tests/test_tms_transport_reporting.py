@@ -55,28 +55,23 @@ def _seed_reporting_case(app_client, *, invoice_status="posted"):
         ])
         db.commit()
         db.add_all([
-            models.SalesOrder(
-                id="SO-RPT-001", canonical_status="confirmed", status="Confirmed",
-                order_date="2026-08-20", delivery_date="2026-08-21",
+            models.Quotation(
+                id="QT-RPT-001", canonical_status="accepted", status="Đã chấp nhận",
                 customer_id="CUS-RPT", route_id="RT-RPT",
                 origin="Cong ty EPL", destination="Thanaleng",
-                weight_kg=41230, total_amount=Decimal("1600000"),
-                currency_code="VND", packaging_spec="Quang sat",
+                weight_kg=41230, selling_price=Decimal("1600000"), total_cost=Decimal("1000000"),
+                currency_code="VND", cargo_type="Quang sat",
             ),
         ])
         db.commit()
         db.add_all([
             models.DeliveryOrder(
                 id="DO-RPT-001", canonical_status="delivered", status="Da giao",
-                so_id="SO-RPT-001", customer_id="CUS-RPT", route_id="RT-RPT",
+                quotation_id="QT-RPT-001", customer_id="CUS-RPT", route_id="RT-RPT",
                 origin="Cong ty EPL", destination="Thanaleng",
                 vehicle_id="LAO-341", driver_id="DRV-RPT", weight_kg=41230,
                 pickup_date=dt.datetime(2026, 8, 21, 7, 30),
                 delivery_date=dt.datetime(2026, 8, 21, 11, 30),
-            ),
-            models.DeliveryOrderDetail(
-                so_id="SO-RPT-001", sku="ORE", description="Quang sat",
-                qty=1, uom="Tnu", weight_kg=41230,
             ),
         ])
         db.commit()
@@ -156,9 +151,10 @@ def test_transport_revenue_report_has_epl_columns_charts_and_recognized_totals(a
     payload = response.json()["data"]
     assert payload["summary"] == {
         "recognized_revenue": 1600000.0,
-        "approved_cost": 400000.0,
-        "gross_profit": 1200000.0,
-        "margin_percent": 75.0,
+        # gia thanh = ke hoach cua BAO GIA (1.000.000) + phat sinh da duyet (400.000)
+        "approved_cost": 1400000.0,
+        "gross_profit": 200000.0,
+        "margin_percent": 12.5,
         "trip_count": 1,
         "currency_code": "VND",
     }

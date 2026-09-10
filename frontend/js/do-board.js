@@ -50,6 +50,10 @@
     { key: 'pending', label: 'Chờ vận chuyển', hint: 'Đã có hạn, chờ điều phối xe', icon: 'fa-calendar-check', tone: 'info' },
     { key: 'active', label: 'Đang vận chuyển', hint: 'Xe đã nhận lệnh và đang chạy', icon: 'fa-truck-fast', tone: 'info' },
     { key: 'completed', label: 'Hoàn thành', hint: 'Đã có POD ghi nhận', icon: 'fa-circle-check', tone: 'ok' },
+    // "Đã huỷ" là rổ CUỐI và là một rổ RIÊNG. Trước đây một DO khách đã huỷ
+    // rơi vào nhánh else ở dưới rồi bị đo hạn giao, nên nó hiện ở tab "Sắp tới
+    // hạn" — người điều phối thấy một đơn sắp trễ mà không có gì để làm.
+    { key: 'cancelled', label: 'Đã huỷ', hint: 'Khách đã huỷ, không còn phải điều phối', icon: 'fa-ban', tone: 'muted' },
   ];
 
   function normalizeKey(value) {
@@ -89,6 +93,7 @@
     const key = normalizeKey(order?.canonical_status || order?.status);
 
     if (['incident', 'issue', 'exception', 'problem', 'gap_su_co', 'su_co'].includes(key)) return 'incident';
+    if (['cancelled', 'canceled', 'void', 'voided', 'da_huy', 'huy'].includes(key)) return 'cancelled';
     if (['delivered', 'completed', 'settled', 'posted', 'da_giao', 'hoan_thanh', 'hoan_tat'].includes(key)) return 'completed';
     if (['dispatched', 'in_transit', 'arrived', 'dang_van_chuyen', 'da_den_noi'].includes(key)) return 'active';
 

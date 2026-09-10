@@ -11,22 +11,18 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (DeliveryOrder, DeliveryPODDocument, IdempotencyRecord, Quotation,
-                    SalesOrder, SalesOrderDocument)
+                    )
 from schemas.delivery_completion import DeliveryCompletionRequest
 from schemas.pod import DeliveryPODRequest
 from schemas.workflow import (
-    DeliveryOrderCreateRequest,
     DeliveryOrderDispatchRequest,
     DeliveryOrderStatusRequest,
     DeliveryOrderUpdateRequest,
     QuotationCreateRequest,
     QuotationUpdateRequest,
-    SalesOrderCreateRequest,
-    SalesOrderUpdateRequest,
     WorkflowStatusRequest,
 )
 from schemas.common import paginated_query
-from services import sales_order_document_service as so_doc_svc
 from services import workflow_service as svc
 from services.delivery_completion_service import (
     ALLOWED_POD_MIME_TYPES,
@@ -362,59 +358,6 @@ async def delete_quotation(qid: str, request: Request, db: Session = Depends(get
     return _delete(request, db, qid, lambda actor: svc.delete_quotation(db, qid, actor))
 
 
-@router.get("/api/sales-orders")
-async def list_sales_orders(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),
-):
-    query = db.query(SalesOrder).order_by(SalesOrder.id.desc())
-    return paginated_query(query, page, page_size)
-
-
-@router.get("/api/sales-orders/{so_id}/lines")
-async def list_sales_order_lines(so_id: str, db: Session = Depends(get_db)):
-    """Dong hang hoa van chuyen cua mot don.
-
-    Truoc day man hinh co bang dong hang nhung khong co noi nao chua, nen mo
-    lai mot don da luu thi bang luon trong.
-    """
-    return {"data": svc.serialize_sales_order_lines(db, so_id)}
-
-
-@router.post("/api/sales-orders")
-async def create_sales_order(request: Request, payload: SalesOrderCreateRequest, db: Session = Depends(get_db)):
-    data = payload.model_dump(exclude_unset=True)
-    return _execute(request, db, data, lambda actor: svc.create_sales_order(db, data, actor))
-
-
-@router.put("/api/sales-orders/{so_id}")
-async def update_sales_order(so_id: str, request: Request, payload: SalesOrderUpdateRequest, db: Session = Depends(get_db)):
-    data = payload.model_dump(exclude_unset=True)
-    return _execute(request, db, data, lambda actor: svc.update_sales_order(db, so_id, data, actor))
-
-
-@router.put("/api/sales-orders/{so_id}/confirm")
-async def confirm_sales_order(so_id: str, request: Request, db: Session = Depends(get_db)):
-    return _execute(request, db, {}, lambda actor: svc.confirm_sales_order(db, so_id, actor))
-
-
-@router.put("/api/sales-orders/{so_id}/status")
-async def sales_order_status_compat(so_id: str, request: Request, payload: WorkflowStatusRequest, db: Session = Depends(get_db)):
-    data = payload.model_dump()
-    if data.get("status") not in ("Confirmed", "Đã xác nhận", "confirmed"):
-        raise_http(conflict(
-            "INVALID_TRANSITION",
-            "Đơn hàng chỉ được chuyển trạng thái qua bước xác nhận chuẩn.",
-        ))
-    return _execute(request, db, data, lambda actor: svc.confirm_sales_order(db, so_id, actor))
-
-
-@router.delete("/api/sales-orders/{so_id}")
-async def delete_sales_order(so_id: str, request: Request, db: Session = Depends(get_db)):
-    return _delete(request, db, so_id, lambda actor: svc.delete_sales_order(db, so_id, actor))
-
-
 @router.get("/api/delivery-orders")
 async def list_delivery_orders(
     page: int = Query(1, ge=1),
@@ -428,12 +371,6 @@ async def list_delivery_orders(
 @router.get("/api/delivery-orders/analysis")
 async def analyze_delivery_orders(db: Session = Depends(get_db)):
     return svc.delivery_order_analysis(db)
-
-
-@router.post("/api/delivery-orders")
-async def create_delivery_order(request: Request, payload: DeliveryOrderCreateRequest, db: Session = Depends(get_db)):
-    data = payload.model_dump(exclude_unset=True)
-    return _execute(request, db, data, lambda actor: svc.create_delivery_order(db, data, actor))
 
 
 @router.put("/api/delivery-orders/{do_id}")
@@ -475,7 +412,8 @@ async def update_delivery_order_status(do_id: str, request: Request, payload: De
             "Phải hoàn tất DO bằng hồ sơ POD, chữ ký và chốt giá trong cùng một giao dịch.",
             ["delivery-completion"],
         ))
-    return _execute(request, db, data, lambda actor: svc.update_delivery_status(db, do_id, status, actor))
+    return _execute(request, db, data, lambda actor: svc.update_delivery_status(
+        db, do_id, status, actor, reason=data.get("reason")))
 
 
 @router.put("/api/delivery-orders/{do_id}/dispatch")
@@ -566,88 +504,3 @@ async def get_pod(do_id: str, db: Session = Depends(get_db)):
 # ==========================================================================
 
 
-@router.post("/api/sales-orders/{so_id}/documents")
-async def upload_sales_order_document(so_id: str, request: Request, db: Session = Depends(get_db)):
-    actor = _context(request, db)
-    try:
-        form = await request.form()
-        uploaded = form.get("file")
-        if uploaded is None or not callable(getattr(uploaded, "read", None)):
-            raise DomainError("SO_DOCUMENT_REQUIRED", "Thiếu tệp đính kèm.", 422)
-
-        # Doc TOI DA gioi han cong 1 byte, roi kiem ngay. Doc het roi moi kiem
-        # nghia la ca tep da nam trong RAM truoc khi co bat ky loi tu choi nao.
-        content = await uploaded.read(so_doc_svc.MAX_DOCUMENT_BYTES + 1)
-        so_doc_svc.kiem_kich_thuoc(content)
-
-        ban_ghi, moi = so_doc_svc.them_tai_lieu(
-            db, so_id,
-            file_name=getattr(uploaded, "filename", None),
-            mime_type=getattr(uploaded, "content_type", None),
-            content=content,
-            document_type=str(form.get("document_type") or "contract"),
-            note=str(form.get("note") or ""),
-            actor=actor,
-        )
-        db.commit()
-    except DomainError as exc:
-        db.rollback()
-        raise_http(exc)
-    except Exception:
-        db.rollback()
-        raise
-    return {
-        "message": "Đã đính kèm tệp." if moi else "Tệp này đã đính kèm trước đó.",
-        "created": moi,
-        "data": so_doc_svc.serialize(ban_ghi),
-    }
-
-
-@router.get("/api/sales-orders/{so_id}/documents")
-async def list_sales_order_documents(so_id: str, request: Request, db: Session = Depends(get_db)):
-    _context(request, db)
-    return [so_doc_svc.serialize(row) for row in so_doc_svc.danh_sach(db, so_id)]
-
-
-@router.get("/api/sales-order-documents/{document_id}")
-async def download_sales_order_document(
-    document_id: str, request: Request, db: Session = Depends(get_db)
-):
-    _context(request, db)
-    document = db.get(SalesOrderDocument, document_id)
-    if not document:
-        raise_http(DomainError("SO_DOCUMENT_NOT_FOUND", "Không tìm thấy tệp đính kèm.", 404))
-    safe_name = (document.file_name or "tai-lieu").replace('"', "")
-    # `attachment` chu khong phai `inline`, kem `nosniff`: mot PDF dung kheo
-    # duoc phuc vu inline tu chinh origin cua ung dung se chay duoc JavaScript
-    # trong ngu canh do. Va chi tra ve kieu nam trong danh sach cho phep, de
-    # mot ban ghi cu co mime_type la khong tu chon duoc cach trinh duyet dien
-    # giai no.
-    media_type = document.mime_type if document.mime_type in so_doc_svc.ALLOWED_MIME_TYPES \
-        else "application/octet-stream"
-    return Response(
-        content=document.content,
-        media_type=media_type,
-        headers={
-            "Content-Disposition": f'attachment; filename="{safe_name}"',
-            "X-Content-Type-Options": "nosniff",
-        },
-    )
-
-
-@router.delete("/api/sales-order-documents/{document_id}")
-async def delete_sales_order_document(
-    document_id: str, request: Request, db: Session = Depends(get_db)
-):
-    _context(request, db)
-    try:
-        ban_ghi = so_doc_svc.xoa_tai_lieu(db, document_id)
-        ten = ban_ghi.file_name
-        db.commit()
-    except DomainError as exc:
-        db.rollback()
-        raise_http(exc)
-    except Exception:
-        db.rollback()
-        raise
-    return {"message": "Đã xóa tệp đính kèm: %s" % ten}

@@ -1,20 +1,18 @@
-import sqlite3
+from conftest import ket_noi_du_lieu
 
 
 def _completed_source_order(client, workflow_builder, database_file):
+    import importlib
     workflow_builder.master_data()
     workflow_builder.quotation(approve=True)
-    workflow_builder.sales_order(confirm=True)
+    # Hang hoa cua DO = dong hang cua BAO GIA (buoc Don hang da truc xuat).
+    database = importlib.import_module("database")
+    models = importlib.import_module("models")
+    with database.SessionLocal() as db:
+        db.add(models.QuotationItem(id="QT-T1-IT01", quotation_id="QT-T1", line_no=1,
+                                    name="Cafe sua hoa tan", quantity=24, uom="Thùng"))
+        db.commit()
     workflow_builder.delivery_order()
-    with sqlite3.connect(database_file) as connection:
-        connection.execute(
-            """
-            INSERT INTO delivery_order_details
-                (so_id, sku, description, qty, uom, unit_price, amount, weight_kg)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            ("SO-T1", "SKU-CAFE-01", "Cafe sua hoa tan", 24, "PCS", 10000, 240000, 12.5),
-        )
 
 
 def test_generate_parking_list_from_delivery_order_is_persistent_and_idempotent(
@@ -41,7 +39,7 @@ def test_generate_parking_list_from_delivery_order_is_persistent_and_idempotent(
     assert data["status"] == "ready"
     assert data["box_count"] == 2
     assert data["total_pieces"] == 24
-    assert data["items"][0]["sku"] == "SKU-CAFE-01"
+    assert data["items"][0]["sku"] is None  # bao gia van tai khong co SKU
     assert data["items"][0]["description"] == "Cafe sua hoa tan"
     assert [label["package_no"] for label in data["labels"]] == [1, 2]
     assert all(label["qr_token"] not in {"DO-T1", "SO-T1"} for label in data["labels"])
@@ -56,7 +54,7 @@ def test_auto_generate_can_split_one_delivery_order_into_multiple_packing_lists(
 ):
     client, database_file, _ = app_client
     _completed_source_order(client, workflow_builder, database_file)
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         connection.execute(
             "UPDATE delivery_orders SET pallet_count = 4, weight_kg = 120, volume_m3 = 8 WHERE id = ?",
             ("DO-T1",),
@@ -90,7 +88,7 @@ def test_auto_generate_rejects_more_packing_lists_than_packages(
 ):
     client, database_file, _ = app_client
     _completed_source_order(client, workflow_builder, database_file)
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         connection.execute(
             "UPDATE delivery_orders SET pallet_count = 2 WHERE id = ?",
             ("DO-T1",),

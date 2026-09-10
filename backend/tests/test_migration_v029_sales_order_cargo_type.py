@@ -104,12 +104,13 @@ def test_kiem_tra_bat_duoc_cot_bi_thieu(tmp_path):
         ket_noi.close()
 
 
-def test_chay_toan_bo_chuoi_migration_qua_v029(tmp_path):
+def test_chay_toan_bo_chuoi_migration_qua_v029(tmp_path, monkeypatch):
     """v029 phai chay duoc trong ca chuoi, khong chi rieng le.
 
     Dung cac bang goc giong test_migration_v006: v001 xay lai lai bang co san
     nen no khong chay tren mot tep hoan toan trong.
     """
+    _chuoi_truoc_truc_xuat(monkeypatch)  # chuoi den 048 — 049 da DROP sales_orders
     duong_dan = tmp_path / "day_du.db"
     ket_noi = sqlite3.connect(duong_dan)
     ket_noi.executescript("""
@@ -135,33 +136,6 @@ def test_chay_toan_bo_chuoi_migration_qua_v029(tmp_path):
         ket_noi.close()
 
 
-def test_ke_thua_tu_bao_gia_sang_don_hang():
-    """Loai phuong tien da chao cho khach phai di theo sang don hang.
-
-    Cung mot le voi quy cach van chuyen: bat khai lai la vua mat cong vua de
-    lech voi cai da chao.
-    """
-    from services.workflow_service import SHIPPING_SPEC_FIELDS, _inherit_shipping_spec
-
-    assert "cargo_type" in SHIPPING_SPEC_FIELDS
-
-    class Gia:
-        def __init__(self, **kwargs):
-            for khoa, gia_tri in kwargs.items():
-                setattr(self, khoa, gia_tri)
-
-    bao_gia = Gia(cargo_type="Xe tai 5 tan", carrier_name="EPL", delivery_method=None,
-                  seal_weight=None, temperature_requirement=None, cargo_insurance=None,
-                  warehouse_owner=None)
-    don = Gia(cargo_type=None, carrier_name=None, delivery_method=None, seal_weight=None,
-              temperature_requirement=None, cargo_insurance=None, warehouse_owner=None)
-    _inherit_shipping_spec(don, bao_gia)
-    assert don.cargo_type == "Xe tai 5 tan"
-
-    # Da nhap tren don thi KHONG ghi de: loai xe thuc te dieu di co the khac
-    # loai xe luc chao gia.
-    don_da_sua = Gia(cargo_type="Xe dau keo 40 tan", carrier_name=None, delivery_method=None,
-                     seal_weight=None, temperature_requirement=None, cargo_insurance=None,
-                     warehouse_owner=None)
-    _inherit_shipping_spec(don_da_sua, bao_gia)
-    assert don_da_sua.cargo_type == "Xe dau keo 40 tan"
+def _chuoi_truoc_truc_xuat(monkeypatch):
+    import migrations.runner as _runner
+    monkeypatch.setattr(_runner, "MIGRATIONS", tuple(m for m in _runner.MIGRATIONS if not m.VERSION.startswith("049")))

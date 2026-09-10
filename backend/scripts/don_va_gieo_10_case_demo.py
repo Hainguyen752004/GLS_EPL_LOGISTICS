@@ -26,7 +26,7 @@ BỐN PHẦN
 
 CÁCH CHẠY
 
-    EPL_ENV_FILE=/duong/den/.env.sqlite python scripts/don_va_gieo_10_case_demo.py
+    python scripts/don_va_gieo_10_case_demo.py        # doc `.env` (PostgreSQL) nhu may chu
 
 Máy chủ phải đang chạy ở `http://127.0.0.1:8011` (đổi bằng biến `EPL_GOC`).
 """
@@ -74,10 +74,16 @@ def _duong_csdl():
     tep_env = os.environ.get("EPL_ENV_FILE") or os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
     load_dotenv(tep_env)
-    url = os.environ.get("DATABASE_URL")
+    url = (os.environ.get("DATABASE_URL") or "").split("#")[0].strip()
     if not url:
         raise SystemExit("Không đọc được DATABASE_URL từ %s" % tep_env)
-    return url
+    # Cùng phép chuẩn hoá với máy chủ: mật khẩu có `@` / `/` / `#` phải được mã
+    # hoá, không thì URL bị cắt sai chỗ và lỗi báo ra là "không dịch được tên
+    # máy chủ" — đã gặp thật khi chuyển sang máy chủ PostgreSQL mới.
+    if THU_MUC_APP not in sys.path:
+        sys.path.insert(0, THU_MUC_APP)
+    from config import chuan_hoa_database_url
+    return chuan_hoa_database_url(url)
 
 
 class KetNoi:
@@ -297,6 +303,9 @@ BANG_GIAO_DICH = [
     "sales_order_lines", "sales_order_documents", "sales_orders",
     "quotation_attachments", "quotation_items", "quotation_versions", "quotations",
     "epl_expense_vouchers", "vehicle_maintenance_requests",
+    # Su co, phieu bai xe va ghi de gia thanh theo xe: ca ba deu duoc gieo lai
+    # moi lan, nen xoa han de khong con dong nao tro vao DO / chuyen da mat.
+    "incidents", "vehicle_cost_overrides",
     "idempotency_records",
     # CA TRUC cung xoa han roi gieo lai. Bo demo cu co ca 8 tieng, ma dieu phoi
     # doi lich bao phu TOAN BO thoi gian chuyen — mot chuyen di va ve dai hon
@@ -590,6 +599,111 @@ def chuan_lai_du_lieu_goc():
     return chinh, phu
 
 
+#: ACC CODE — ma tai khoan ke toan cua ben cong no (anh Khang) tren tung khoan
+#: muc cong thuc. Chu du an chot: ma do API ben cong no CAP, chon tu o chon; bo
+#: gieo KHONG tu dat ma nao. Chua co API thi moi khoan muc de rong va ho so hoan
+#: tat noi "chua co acc code" — dung la trang thai that. Danh sach nay giu rong
+#: co chu y; co API roi cung khong dien vao day, vi luc do ma da nam trong cong
+#: thuc do nguoi dung chon.
+MA_COSTINDEX = {}
+
+
+def chuan_lai_cong_thuc():
+    """Mot loai xe MOT cong thuc VND (Acc code de nguyen — cho API ben cong no).
+
+    HAI THU SAI trong du lieu cu:
+
+      · Loai xe 20FT co BA cong thuc VND, TRUCK10 co HAI. `cong_thuc_loai_xe`
+        lay ban co id lon nhat, man Du lieu goc lai co the mo ban khac — hai
+        cho noi hai gia thanh cho cung mot loai xe. Giu lai ban MOI NHAT theo
+        `updated_at` trong JSON (khong co thi theo id), xoa phan con lai.
+    Acc code cua tung khoan muc GIU NGUYEN nhu dang co trong cong thuc: bo gieo
+    khong gan, khong xoa — do la ma nguoi dung chon tu danh muc ben cong no.
+    """
+    de("2b. CHUAN LAI CONG THUC GIA THANH VA GAN MA COSTINDEX")
+    c = ket_noi()
+    try:
+        rows = list(c.execute("SELECT id, formula_expression FROM cost_formulas"))
+        theo_loai = {}
+        for ma, bieu_thuc in rows:
+            try:
+                g = json.loads(bieu_thuc or "{}")
+            except ValueError:
+                continue
+            if str(g.get("currency") or "VND") != "VND":
+                continue
+            theo_loai.setdefault(str(g.get("vehicle_type_id") or ""), []).append(
+                (str(g.get("updated_at") or ""), ma))
+        xoa = []
+        for loai, ds in theo_loai.items():
+            if not loai or len(ds) < 2:
+                continue
+            ds.sort()
+            giu = ds[-1][1]
+            xoa += [ma for _, ma in ds[:-1]]
+            print("   %-20s giu %-38s xoa %s" % (loai, giu, [ma for _, ma in ds[:-1]]))
+        for ma in xoa:
+            c.execute("DELETE FROM cost_formulas WHERE id = ?", (ma,))
+        c.commit()
+        kiem("moi loai xe con MOT cong thuc VND", True, "xoa %d ban trung" % len(xoa))
+    finally:
+        c.close()
+
+    ma, g = goi("/api/cost-formulas")
+    ds = du_lieu(g)
+    ds = ds if isinstance(ds, list) else (ds.get("items") or [])
+    co_ma = sum(1 for f in ds for t in (f.get("terms") or []) if str(t.get("cost_index") or "").strip())
+    tong = sum(len(f.get("terms") or []) for f in ds)
+    print("   Acc code: %d/%d khoan muc da co ma (do nguoi dung chon; bo gieo khong gan)" % (co_ma, tong))
+
+
+#: XE CO GHI DE GIA THANH — "phi cua xe". Xe cu ton dau hon chuan cua loai 12%.
+XE_GHI_DE = "DEMO-51C-129.03"
+
+
+def dat_ghi_de_xe():
+    """Mot chiec xe ghi de don gia dau, de ho so hoan tat co dong `rate_source = vehicle`."""
+    ma, g = goi("/api/cost-formulas/fleet-overview")
+    d = du_lieu(g)
+    xe = next((x for x in (d.get("vehicles") or d.get("items") or []) if x.get("vehicle_id") == XE_GHI_DE), None) \
+        if isinstance(d, dict) else None
+    chuan = 0
+    if xe:
+        chuan = next((float(k.get("inherited") or 0) for k in (xe.get("components") or [])
+                      if k.get("component") == "fuel"), 0)
+    if not chuan:
+        # Khong doc duoc chuan qua fleet-overview thi tinh theo cong thuc loai xe.
+        ma, g = goi("/api/vehicles/%s/cost-overrides" % XE_GHI_DE)
+        d = du_lieu(g) or {}
+        chuan = next((float(k.get("inherited") or 0) for k in (d.get("components") or [])
+                      if k.get("component") == "fuel"), 0)
+    gia_moi = round(chuan * 1.12) if chuan else 7000
+    ma, g = goi("/api/vehicles/%s/cost-overrides" % XE_GHI_DE, {"overrides": [
+        {"component": "fuel", "value": gia_moi,
+         "note": "Xe doi 2016, dinh muc dau cao hon chuan cua loai 12%"},
+    ]}, "PUT")
+    kiem("ghi de don gia dau cho xe %s" % XE_GHI_DE, ma == 200,
+         "chuan %s -> %s d/km · %s" % (tien(chuan), tien(gia_moi), chu(g)[:80]))
+
+
+#: XE DANG BAO DUONG — mot phieu sua chua dang mo, de man Phuong tien co viec.
+XE_BAO_DUONG = "DEMO-61H-112.34"
+
+
+def phieu_bao_duong():
+    ma, g = goi("/api/vehicles/%s/maintenance-requests" % XE_BAO_DUONG, {
+        "request_no": "VMR-DEMO-%s" % DAU[:6].upper(),
+        "category": "preventive", "priority": "normal",
+        "planned_start": M(60), "planned_end": M(60 + 8 * 60),
+        "description": "Bao duong dinh ky 20.000 km: thay dau, loc gio, kiem tra phanh",
+        "workshop": "Garage Truong Hai - Song Than", "odometer_km": 118400,
+        "estimated_total": 6500000, "currency_code": "VND",
+    }, "POST")
+    d = du_lieu(g)
+    kiem("phieu bao duong cho xe %s" % XE_BAO_DUONG, ma in (200, 201),
+         "%s · %s" % (d.get("id") or "", chu(g)[:80]))
+
+
 def chuan_lai_tuyen():
     """Bảo đảm mọi tuyến demo có km và toạ độ — nếu không thì bản đồ trắng."""
     print("   -- Toạ độ điểm của các tuyến")
@@ -679,75 +793,186 @@ TOA_DO_BO_SUNG = {
 #:
 #: `chang` nhận: nhap · cho_duyet · cho_khach · da_tach · dang_giao · xong
 CASE = [
+    # ---- BA CASE XONG HAN (bao cao doanh thu co so) ---------------------
     {"ma": "C01", "chang": "xong", "khach": "DEMO-CUS-NIDEC",
      "tuyen": "DEMO-RT-VSIP2A-CATLAI", "loai_xe": "DEMO-VT-TRACTOR40",
-     "kg": 24000, "m3": 58, "don_vi": "per_trip", "he_so_gia": 1.45,
-     "hang": [("Linh kiện motor điện", 2, "40'", "xếp 2 lớp, tránh ẩm")],
+     "kg": 24000, "m3": 58, "pallet": 24, "gia_tri": 1_800_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.45,
+     "hang": [("Linh kiện motor điện", 1, "40'", "xếp 2 lớp, tránh ẩm")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 40'",
      "chuyen_thang": 26, "nguoi_nhan": "Cổng B · Phạm T. Nga · 0912345678"},
 
     {"ma": "C02", "chang": "xong", "khach": "DEMO-CUS-SGNFOOD",
      "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-20FT",
-     "kg": 22000, "m3": 30, "don_vi": "per_trip", "he_so_gia": 1.5,
-     "hang": [("Gạo đóng bao 50kg", 2, "20'", "kê pallet, không xếp chồng")],
+     "kg": 22000, "m3": 30, "pallet": 20, "gia_tri": 420_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
+     "hang": [("Gạo đóng bao 50kg", 1, "20'", "kê pallet, không xếp chồng")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
      "chuyen_thang": 40, "nguoi_nhan": "Cổng A · Trần V. Long · 0908111222"},
 
     {"ma": "C03", "chang": "xong", "khach": "DEMO-CUS-POUYUEN",
      "tuyen": "DEMO-RT-LONGAN-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR40",
-     "kg": 26000, "m3": 62, "don_vi": "per_tonne", "he_so_gia": 1.42,
-     "hang": [("Giày xuất khẩu", 2, "40'", "hàng dễ móp, chèn kỹ")],
+     "kg": 26000, "m3": 62, "pallet": 24, "gia_tri": 2_600_000_000,
+     "don_vi": "per_tonne", "he_so_gia": 1.42,
+     "hang": [("Giày xuất khẩu", 1, "40'", "hàng dễ móp, chèn kỹ")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 40'",
      "chuyen_thang": 18, "nguoi_nhan": "Cổng CM3 · Lê T. Hoa · 0933444555"},
 
-    {"ma": "C04", "chang": "dang_giao", "khach": "DEMO-CUS-COLGATE",
+    # ---- XONG, tren XE CO GHI DE GIA THANH — "phi cua xe" -----------------
+    # Ho so hoan tat cua case nay co dong xang dau mang `rate_source = vehicle`:
+    # don gia la cua CHIEC XE nay (dinh muc dau cao hon chuan 12%), khong phai
+    # chuan cua loai. Xe chi dinh o `xe` de khong roi vao xe khac cung loai.
+    {"ma": "C15", "chang": "xong", "khach": "DEMO-CUS-POUYUEN",
      "tuyen": "DEMO-RT-VSIP2A-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR20",
-     "kg": 20000, "m3": 30, "don_vi": "per_trip", "he_so_gia": 1.48,
-     "hang": [("Kem đánh răng thùng carton", 2, "20'", "không xếp chồng quá 2 lớp")],
+     "xe": "DEMO-51C-129.03",
+     "kg": 21000, "m3": 31, "pallet": 18, "gia_tri": 950_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.46,
+     "hang": [("Đế giày cao su", 1, "20'", "xe đời cũ, tính đúng phí của xe")],
+     "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
+     "chuyen_thang": 14, "nguoi_nhan": "Cổng CM1 · Vũ M. Tuấn · 0977888999"},
+
+    # ---- XONG, HANG LANH — du truong nhiet do, pallet, gia tri --------------
+    {"ma": "C16", "chang": "xong", "khach": "DEMO-CUS-SGNFOOD",
+     "tuyen": "DEMO-RT-CATLAI-AMATA", "loai_xe": "DEMO-VT-REEFER5",
+     "kg": 4200, "m3": 16, "pallet": 6, "gia_tri": 380_000_000,
+     "nhiet_do": "-18°C, không được ngắt lạnh quá 15 phút",
+     "don_vi": "per_trip", "he_so_gia": 1.6,
+     "hang": [("Tôm đông lạnh block 10kg", 1, "Xe", "bốc xuống trước, kiểm nhiệt tại cửa")],
+     "loai_hang": "Hàng lạnh", "quy_cach": "Pallet quấn màng, thùng xốp",
+     "chuyen_thang": 30, "nguoi_nhan": "Kho lạnh A2 · Đỗ V. Hùng · 0966555444"},
+
+    # ---- DANG GIAO (man Theo doi co xe chay) -------------------------------
+    # C04 co MOT SU CO mo: no lam man Theo doi co the "can xu ly".
+    {"ma": "C04", "chang": "dang_giao", "su_co": True, "khach": "DEMO-CUS-COLGATE",
+     "tuyen": "DEMO-RT-VSIP2A-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR20",
+     "kg": 20000, "m3": 30, "pallet": 18, "gia_tri": 640_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.48,
+     "hang": [("Kem đánh răng thùng carton", 1, "20'", "không xếp chồng quá 2 lớp")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
      "chuyen_thang": 22, "nguoi_nhan": "Cổng CM1 · Vũ M. Tuấn · 0977888999"},
 
     {"ma": "C05", "chang": "dang_giao", "khach": "DEMO-CUS-UNILEVER",
      "tuyen": "DEMO-RT-CATLAI-AMATA", "loai_xe": "DEMO-VT-TRUCK15",
-     "kg": 14000, "m3": 55, "don_vi": "per_trip", "he_so_gia": 1.52,
-     "hang": [("Bột giặt đóng thùng", 2, "Kiện", "hàng nhập, giao nội bộ KCN")],
+     "kg": 14000, "m3": 55, "pallet": 16, "gia_tri": 260_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.52,
+     "hang": [("Bột giặt đóng thùng", 1, "Xe", "hàng nhập, giao nội bộ KCN")],
      "loai_hang": "Hàng khô", "quy_cach": "Hàng rời, đổ ben — cân tại kho",
      "chuyen_thang": 30, "nguoi_nhan": "Kho A2 · Đỗ V. Hùng · 0966555444"},
 
-    {"ma": "C06", "chang": "da_tach", "khach": "DEMO-CUS-NIDEC",
+    {"ma": "C17", "chang": "dang_giao", "khach": "DEMO-CUS-NIDEC",
      "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-20FT",
-     "kg": 21000, "m3": 30, "don_vi": "per_trip", "he_so_gia": 1.47,
-     "hang": [("Linh kiện motor điện", 3, "20'", "giao ba chuyến trong ngày")],
+     "xe": "DEMO-51C-268.89",
+     "kg": 22500, "m3": 31, "pallet": 20, "gia_tri": 1_650_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.44,
+     "hang": [("Stator motor điện", 1, "20'", "hàng nặng, kê chèn hai đầu")],
+     "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
+     "chuyen_thang": 28, "nguoi_nhan": "Cổng B · Phạm T. Nga · 0912345678"},
+
+    {"ma": "C19", "chang": "dang_giao", "khach": "DEMO-CUS-POUYUEN",
+     "tuyen": "DEMO-RT-LONGAN-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR40",
+     "xe": "DEMO-51C-412.09",
+     "kg": 25500, "m3": 61, "pallet": 24, "gia_tri": 2_300_000_000,
+     "don_vi": "per_tonne", "he_so_gia": 1.43,
+     "hang": [("Giày thể thao xuất khẩu", 1, "40'", "tàu cắt máng 23:00, không trễ")],
+     "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 40'",
+     "chuyen_thang": 18, "nguoi_nhan": "Cổng CM3 · Lê T. Hoa · 0933444555"},
+
+    # ---- DA DEN, CHO POD (hang doi cua man Hoan tat giao hang) -------------
+    {"ma": "C18", "chang": "da_den", "khach": "DEMO-CUS-UNILEVER",
+     "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-20FT",
+     "xe": "DEMO-61H-112.34",
+     "kg": 21500, "m3": 30, "pallet": 20, "gia_tri": 520_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
+     "hang": [("Dầu gội chai 650ml", 1, "20'", "xe đã vào cổng cảng, chờ hạ cont")],
+     "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
+     "chuyen_thang": 24, "nguoi_nhan": "Cổng A · Trần V. Long · 0908111222"},
+
+    {"ma": "C13", "chang": "da_den", "khach": "DEMO-CUS-SGNFOOD",
+     "tuyen": "DEMO-RT-VSIP2A-CATLAI", "loai_xe": "DEMO-VT-TRUCK10",
+     "kg": 9000, "m3": 38, "pallet": 10, "gia_tri": 150_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
+     "hang": [("Mì gói thùng 30", 1, "Xe", "xe đã tới cổng, chờ bốc")],
+     "loai_hang": "Hàng khô", "quy_cach": "Thùng carton trên pallet",
+     "chuyen_thang": 20, "nguoi_nhan": "Cổng A · Trần V. Long · 0908111222"},
+
+    # ---- DA TACH DO, CHO DIEU PHOI ------------------------------------------
+    # C06 co PHIEU BAI XE (packing list + nhan QR da in, da quet vao bai).
+    {"ma": "C06", "chang": "da_tach", "bai_xe": True, "khach": "DEMO-CUS-NIDEC",
+     "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-TRACTOR20",
+     "lech_phut": 24 * 60,
+     # 18 pallet, khong phai 20: dau keo 20' chi xep duoc 18, va buoc tao bao
+     # gia kiem nang luc loai xe ngay tu dau ("khong du nang luc: 20/18 pallet").
+     "kg": 21000, "m3": 30, "pallet": 18, "gia_tri": 1_500_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.47,
+     "hang": [("Linh kiện motor điện", 2, "20'", "giao hai chuyến trong ngày")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
      "chuyen_thang": 36, "nguoi_nhan": "Cổng B · Phạm T. Nga · 0912345678"},
 
-    {"ma": "C07", "chang": "da_tach", "khach": "DEMO-CUS-SGNFOOD",
+    # DO QUA HAN DUY NHAT cua bo demo: khung lay hang HOM QUA ma chua dieu
+    # phoi. Chu du an chi giu MOT cai lam mau; moi DO cho dieu phoi khac deu
+    # co khung gio ngay mai de khong roi vao "Da qua han" hang loat.
+    {"ma": "C07", "chang": "da_tach", "qua_han": True, "khach": "DEMO-CUS-SGNFOOD",
      "tuyen": "DEMO-RT-VSIP2A-CATLAI", "loai_xe": "DEMO-VT-TRUCK10",
-     "kg": 9500, "m3": 40, "don_vi": "per_tonne", "he_so_gia": 1.55,
-     "hang": [("Thực phẩm khô đóng thùng", 2, "Kiện", "giao trước 16:00")],
+     "lech_phut": -24 * 60,
+     "kg": 9500, "m3": 40, "pallet": 12, "gia_tri": 180_000_000,
+     "don_vi": "per_tonne", "he_so_gia": 1.55,
+     "hang": [("Thực phẩm khô đóng thùng", 1, "Xe", "giao trước 16:00")],
      "loai_hang": "Hàng khô", "quy_cach": "Thùng carton trên pallet",
      "chuyen_thang": 24, "nguoi_nhan": "Cổng A · Trần V. Long · 0908111222"},
 
+    # ---- MOT DO BI HUY sau khi tach (DO con lai van cho dieu phoi) -----------
+    {"ma": "C14", "chang": "huy", "khach": "DEMO-CUS-UNILEVER",
+     "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-TRUCK15",
+     "lech_phut": 24 * 60,
+     "kg": 13500, "m3": 50, "pallet": 16, "gia_tri": 240_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
+     "hang": [("Nước giặt can 5L", 2, "Xe", "khách rút một chuyến vì kho đầy")],
+     "loai_hang": "Hàng khô", "quy_cach": "Thùng carton trên pallet",
+     "chuyen_thang": 20, "nguoi_nhan": "Kho A2 · Đỗ V. Hùng · 0966555444"},
+
+    # ---- DA GUI, CHO KHACH ----------------------------------------------------
     {"ma": "C08", "chang": "cho_khach", "khach": "DEMO-CUS-COLGATE",
      "tuyen": "DEMO-RT-CATLAI-AMATA", "loai_xe": "DEMO-VT-TRUCK15",
-     "kg": 13000, "m3": 52, "don_vi": "per_trip", "he_so_gia": 1.5,
+     "kg": 13000, "m3": 52, "pallet": 16, "gia_tri": 300_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
      "hang": [("Kem đánh răng thùng carton", 2, "Kiện", "")],
      "loai_hang": "Hàng khô", "quy_cach": "Thùng carton trên pallet",
      "chuyen_thang": 20, "nguoi_nhan": "Kho A2 · Đỗ V. Hùng · 0966555444"},
+
+    # ---- KHACH TU CHOI --------------------------------------------------------
+    {"ma": "C11", "chang": "tu_choi", "khach": "DEMO-CUS-COLGATE",
+     "tuyen": "DEMO-RT-SONGTHAN-CATLAI", "loai_xe": "DEMO-VT-20FT",
+     "kg": 20000, "m3": 29, "pallet": 18, "gia_tri": 500_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.62,
+     "hang": [("Xà phòng thùng carton", 2, "20'", "khách chọn nhà xe khác")],
+     "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
+     "chuyen_thang": 8, "nguoi_nhan": "Cổng A · Trần V. Long · 0908111222",
+     "ly_do_tu_choi": "Khách chọn nhà xe khác rẻ hơn 8%"},
+
+    # ---- HET HAN (gui khach roi khach im, qua ngay hieu luc) ------------------
+    {"ma": "C12", "chang": "het_han", "khach": "DEMO-CUS-NIDEC",
+     "tuyen": "DEMO-RT-CATLAI-AMATA", "loai_xe": "DEMO-VT-TRUCK10",
+     "kg": 8800, "m3": 36, "pallet": 10, "gia_tri": 700_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
+     "hang": [("Bo mạch điều khiển", 2, "Kiện", "khách chưa phản hồi")],
+     "loai_hang": "Hàng khô", "quy_cach": "Thùng carton chống tĩnh điện",
+     "chuyen_thang": 10, "nguoi_nhan": "Cổng B · Phạm T. Nga · 0912345678"},
 
     # BIÊN MỎNG CÓ CHỦ Ý — để buổi demo thấy được cửa duyệt nội bộ. Hệ số 1.10
     # cho biên ~9%, dưới ngưỡng 15% nhưng VẪN TRÊN giá thành: báo giá lỗ thì bị
     # chặn hẳn, không vào được trạng thái chờ duyệt.
     {"ma": "C09", "chang": "cho_duyet", "khach": "DEMO-CUS-POUYUEN",
      "tuyen": "DEMO-RT-LONGAN-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR40",
-     "kg": 25000, "m3": 60, "don_vi": "per_trip", "he_so_gia": 1.10,
+     "kg": 25000, "m3": 60, "pallet": 24, "gia_tri": 2_400_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.10,
      "hang": [("Giày xuất khẩu", 2, "40'", "khách ép giá, cần trưởng phòng duyệt")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 40'",
      "chuyen_thang": 12, "nguoi_nhan": "Cổng CM3 · Lê T. Hoa · 0933444555"},
 
     {"ma": "C10", "chang": "nhap", "khach": "DEMO-CUS-UNILEVER",
      "tuyen": "DEMO-RT-VSIP2A-CAIMEP", "loai_xe": "DEMO-VT-TRACTOR20",
-     "kg": 19000, "m3": 32, "don_vi": "per_trip", "he_so_gia": 1.5,
+     "kg": 19000, "m3": 32, "pallet": 18, "gia_tri": 560_000_000,
+     "don_vi": "per_trip", "he_so_gia": 1.5,
      "hang": [("Hàng nhập khẩu", 2, "20'", "chờ khách chốt khung giờ")],
      "loai_hang": "Hàng khô", "quy_cach": "Container nguyên khối 20'",
      "chuyen_thang": 16, "nguoi_nhan": ""},
@@ -800,6 +1025,11 @@ def chon_xe(cac_xe, c):
             return False
         return tai >= c["kg"] and (the_tich <= 0 or the_tich >= c["m3"])
 
+    # Case chi dinh mot chiec xe (vi du xe co ghi de gia thanh) thi lay dung no.
+    if c.get("xe"):
+        chi_dinh = [x for x in cac_xe if x.get("id") == c["xe"]]
+        if chi_dinh:
+            return chi_dinh[0]
     cung_loai = [x for x in cac_xe
                  if str(x.get("type") or "") == c["loai_xe"] and du_suc(x)]
     if cung_loai:
@@ -810,12 +1040,55 @@ def chon_xe(cac_xe, c):
     return None
 
 
+def gieo_phieu_bai_xe(c, ma_do, so, du_ba_buoc=False):
+    """Phieu bai xe cho mot DO cho dieu phoi: tao -> in nhan & packing list -> quet QR.
+
+    Di dung ba buoc ma nguoi o bai lam: he thong chia kien theo `pallet_count`
+    cua DO, in nhan (ghi lich su in), roi quet ma QR cua nhan khi xe vao bai.
+    """
+    ma, g = goi("/api/parking-lists/auto-from-do/%s" % ma_do, {"list_count": 1}, "POST")
+    d = du_lieu(g)
+    ds = d if isinstance(d, list) else (d.get("items") or d.get("lists") or [d])
+    phieu = ds[0] if ds else {}
+    if not kiem("%s tạo phiếu bãi xe cho %s" % (c["ma"], ma_do), ma in (200, 201) and phieu.get("id"),
+                "%s · %s" % (ma, chu(g)[:100])):
+        return
+    so["bai_xe"] = phieu.get("id")
+    for loai in ("labels", "packing_list"):
+        m, _ = goi("/api/parking-lists/%s/print" % phieu["id"], {"document_type": loai}, "POST")
+    nhan = phieu.get("labels") or []
+    if not nhan:
+        m, g2 = goi("/api/parking-lists/%s" % phieu["id"])
+        nhan = (du_lieu(g2) or {}).get("labels") or []
+    # Moi buoc quet danh dau TUNG NHAN, ca phieu chi doi trang thai khi MOI nhan
+    # da qua buoc do — nen phai quet het nhan. `du_ba_buoc` (hang dem theo kien
+    # sap xuat ben) quet ca `load_package`; phieu chi vao bai thi dung o cong.
+    cac_buoc = ("yard_arrival", "gate_entry", "load_package") if du_ba_buoc else ("yard_arrival", "gate_entry")
+    quet = 0
+    for hanh_dong in cac_buoc:
+        for nh in nhan:
+            m, g2 = goi("/api/parking-qr/%s/scan" % nh.get("qr_token"),
+                        {"action": hanh_dong, "note": "Gieo demo: %s" % hanh_dong}, "POST")
+            quet += 1 if m in (200, 201) else 0
+    m, g2 = goi("/api/parking-lists/%s" % phieu["id"])
+    tt = (du_lieu(g2) or {}).get("status")
+    kiem("%s in nhãn + quét QR %s" % (c["ma"], "đủ kiện lên xe" if du_ba_buoc else "vào bãi"),
+         quet >= len(nhan) and (tt == "loaded" if du_ba_buoc else tt in ("parked", "gate_in")),
+         "%d lượt quét · %d nhãn · phiếu: %s" % (quet, len(nhan), tt))
+
+
 def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     """Gieo một case và đưa nó tới đúng chặng đã khai. Trả về bản ghi sổ kê."""
     print()
     print("-- %s · %s · %s · dừng ở: %s" % (c["ma"], c["khach"], c["tuyen"], c["chang"]))
     so = {"ma": c["ma"], "chang_dich": c["chang"], "khach": c["khach"],
           "tuyen": c["tuyen"], "loai_xe": c["loai_xe"]}
+
+    # MOC THOI GIAN CUA CASE. Case dang giao / xong neo vao qua khu gan (xe da
+    # chay); case cho dieu phoi neo vao NGAY MAI de khong "qua han" ngay luc gieo;
+    # case `qua_han` neo vao hom qua — do la DO qua han duy nhat, co chu y.
+    L = int(c.get("lech_phut") or 0)
+    T = lambda phut: M(phut + L)
 
     xt, thieu = gia_thanh_cua(c)
     if xt is None:
@@ -830,12 +1103,17 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     than = {
         "customer_id": c["khach"], "route_id": c["tuyen"],
         "vehicle_type_id": c["loai_xe"],
-        "pickup_window_start": M(-240), "pickup_window_end": M(-30),
-        "delivery_window_start": M(0), "delivery_window_end": M(420),
+        "pickup_window_start": T(-240), "pickup_window_end": T(-30),
+        "delivery_window_start": T(0), "delivery_window_end": T(420),
         "weight_kg": c["kg"], "volume_m3": c["m3"],
-        "pallet_count": 0, "cargo_type": c["loai_hang"],
-        "cargo_value": 0, "packaging_spec": c["quy_cach"],
-        "temperature_requirement": "",
+        # DU TRUONG: so pallet (phieu bai xe chia kien theo no), gia tri hang
+        # (bao hiem), nhiet do (hang lanh). Bo trong thi ba man doc chung hien
+        # "—" va nguoi xem tuong he thong khong co truong do.
+        "pallet_count": int(c.get("pallet") or 0), "cargo_type": c["loai_hang"],
+        "cargo_value": c.get("gia_tri") or 0, "packaging_spec": c["quy_cach"],
+        "temperature_requirement": c.get("nhiet_do") or "",
+        "cargo_insurance": "Có — theo giá trị khai" if c.get("gia_tri") else "Không",
+        "carrier_name": "EPL Logistics", "delivery_method": "Giao tận kho người nhận",
         "stacking": "Không xếp chồng" if "không xếp" in (c["hang"][0][3] or "").lower()
                     else "Tối đa 2 lớp",
         "sealing": "Có · ghi số seal khi lấy hàng"
@@ -897,31 +1175,89 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     if c["chang"] == "cho_khach":
         so["trang_thai"] = d.get("canonical_status")
         return so
+    if c["chang"] == "tu_choi":
+        ma, g = goi("/api/quotations/%s/reject" % qid,
+                    {"reason": c.get("ly_do_tu_choi") or "Khách không đồng ý giá"}, "POST")
+        d = du_lieu(g)
+        kiem("%s khách từ chối" % c["ma"], d.get("canonical_status") == "rejected",
+             "trạng thái %s · %s" % (d.get("canonical_status"), chu(g)[:90]))
+        so["trang_thai"] = d.get("canonical_status")
+        return so
+    if c["chang"] == "het_han":
+        # HET HAN la ham cua THOI GIAN, tinh luc doc (khong co trang thai luu):
+        # bao gia da gui ma qua `valid_to` thi man hinh hien "het han". Bo gieo
+        # chay hom nay khong the doi ba ngay, nen lui `valid_to` ve qua khu
+        # bang mot cau UPDATE — day la cho DUY NHAT tep nay sua du lieu giao
+        # dich ngoai API, va no chi doi mot ngay thang, khong doi trang thai.
+        c2 = ket_noi()
+        try:
+            c2.execute("UPDATE quotations SET valid_to = ? WHERE id = ?", (ngay(-3), qid))
+            c2.commit()
+        finally:
+            c2.close()
+        ma, g = goi("/api/quotations/%s/detail" % qid)
+        d = du_lieu(g)
+        kiem("%s hết hạn (gửi khách, quá ngày hiệu lực)" % c["ma"],
+             d.get("canonical_status") == "expired",
+             "trạng thái %s · hiệu lực tới %s" % (d.get("canonical_status"), d.get("valid_to")))
+        so["trang_thai"] = d.get("canonical_status")
+        return so
 
-    # --- Khách chấp nhận, rồi tách DO ---------------------------------------
-    ma, g = goi("/api/quotations/%s/accept" % qid, {}, "POST")
-    kiem("%s khách chấp nhận" % c["ma"], ma == 200, chu(g)[:110])
-
+    # --- Khách chấp nhận → hệ thống SINH DO ngay (kế thừa từ báo giá) --------
+    # Khong con buoc tach tay va khong di qua Don hang (SO): chu du an chot "DO
+    # ke thua tu QT, gen tu dong khi QT duoc duyet het". Bo gieo khai tung dong
+    # (gio lay, so seal) trong than cua chinh lenh chap nhan.
     n_do = int(so.get("so_do_du_kien") or 1)
     # SỐ NIÊM PHONG cho hàng nguyên khối — nó là một chốt xuất bến, không phải
     # một ô cho đẹp: bước điều phối chặn xe chở hàng nguyên cont mà không có số
     # seal, vì đó là bằng chứng duy nhất cho biết hàng không bị mở trên đường.
     co_seal = "nguyên khối" in c["quy_cach"]
-    dong = [{"pickup_at": M(-240 + i * 45), "due_at": M(300 + i * 45),
+    dong = [{"pickup_at": T(-240 + i * 45), "due_at": T(300 + i * 45),
              "seal_no": ("SL-%s-%s-%02d" % (DAU[:4].upper(), c["ma"], i + 1)
                          if co_seal else ""),
              "driver_note": c["hang"][0][3] or "Mang phiếu giao hàng"}
             for i in range(n_do)]
-    ma, g = goi("/api/quotations/%s/split" % qid, {"dos": dong}, "POST")
-    d = du_lieu(g)
-    ds_do = d.get("do_ids") or []
-    kiem("%s tách %d DO" % (c["ma"], n_do), ma == 200 and len(ds_do) == n_do,
-         "%s · giá khoá %s đ/chuyến" % (ds_do, tien(d.get("gia_moi_chuyen"))))
+    ma, g = goi("/api/quotations/%s/accept" % qid, {"dos": dong}, "POST")
+    ds_do = (g or {}).get("do_ids") or []
+    kiem("%s khách chấp nhận → sinh %d DO từ báo giá" % (c["ma"], n_do),
+         ma == 200 and len(ds_do) == n_do,
+         "%s · giá khoá %s đ/chuyến · %s" % (ds_do, tien((g or {}).get("gia_moi_chuyen")),
+                                            chu(g)[:80]))
     so["do"] = ds_do
-    so["gia_khoa"] = d.get("gia_moi_chuyen")
+    so["gia_khoa"] = (g or {}).get("gia_moi_chuyen")
+    ma, g = goi("/api/quotations/%s/detail" % qid)
+    kiem("%s báo giá sang ĐÃ TÁCH DO, DO mang quotation_id" % c["ma"],
+         du_lieu(g).get("canonical_status") == "split"
+         and len(du_lieu(g).get("delivery_orders") or []) == n_do,
+         "trạng thái %s · %d DO" % (du_lieu(g).get("canonical_status"),
+                                    len(du_lieu(g).get("delivery_orders") or [])))
 
-    if c["chang"] == "da_tach" or not ds_do:
-        so["trang_thai"] = "split"
+    if c["chang"] == "huy" and ds_do:
+        # Huy DO DAU (chua co chuyen nao) — DO con lai van o hang doi dieu phoi.
+        ma, g = goi("/api/delivery-orders/%s/status" % ds_do[0], {"status": "cancelled"}, "PUT")
+        d = du_lieu(g)
+        kiem("%s huỷ một DO sau khi tách" % c["ma"], ma == 200,
+             "%s -> %s · %s" % (ds_do[0], d.get("canonical_status"), chu(g)[:80]))
+        so["do_huy"] = ds_do[0]
+    if c.get("bai_xe") and ds_do:
+        gieo_phieu_bai_xe(c, ds_do[0], so)
+    if c["chang"] in ("da_tach", "huy") or not ds_do:
+        # DO CHO DIEU PHOI PHAI CO TRIP. Chu du an: "moi DO chuan bi qua dieu
+        # phoi phai tao Trip cho DO do luon" — man Dieu phoi xep xe cho MOT
+        # CHUYEN, khong xep cho mot DO tron. Lap chuyen (planned), chua dieu xe.
+        con_cho = [x for x in ds_do if x != so.get("do_huy")]
+        so["trip_cho"] = []
+        for i, md in enumerate(con_cho, start=1):
+            mt = "TRIP-%s-%s-%d" % (DAU.upper(), c["ma"], i)
+            ma, g = goi("/api/tms/trips/from-delivery-orders", {
+                "id": mt, "do_ids": [md], "trip_type": "one_way",
+                "planned_departure_at": T(-240), "avg_speed_kmh": 42,
+                "dwell_minutes": 30, "return_purpose": "none",
+            }, "POST", dau="gieo-trip-%s-%s-%d" % (DAU, c["ma"], i))
+            if kiem("%s lập Trip %s cho DO %s (chờ điều phối)" % (c["ma"], mt, md),
+                    ma in (200, 201), "%s · %s" % (ma, chu(g)[:100])):
+                so["trip_cho"].append(mt)
+        so["trang_thai"] = "cancelled" if c["chang"] == "huy" else "split"
         return so
 
     # --- Lập Trip và điều phối ---------------------------------------------
@@ -931,6 +1267,12 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     # chuyen ("vuot nang luc xe: tai trong 24.000/10.000 kg"), va no kiem dung.
     # Chon vong tron nghia la mot chuyen 24 tan roi vao mot xe 10 tan, va case
     # do dung ngay o buoc dieu phoi.
+    # CUA KIEM SOAT HANG truoc khi xuat ben (`packing_control_policy`): hang dem
+    # theo KIEN (khong nguyen khoi, khong hang roi) phai co Packing List quet du
+    # kien len xe. Day la dung cua ma nguoi o bai di qua — bo gieo di y nhu vay.
+    qc = (c.get("quy_cach") or "").lower()
+    if not c.get("bai_xe") and "nguyên khối" not in qc and "rời" not in qc:
+        gieo_phieu_bai_xe(c, ds_do[0], so, du_ba_buoc=True)
     xe = chon_xe(cac_xe, c)
     if xe is None:
         kiem("%s có xe phù hợp" % c["ma"], False,
@@ -938,8 +1280,11 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
              % (c["loai_xe"], c["kg"], c["m3"]))
         so["trang_thai"] = "split"
         return so
-    tx = tx_chinh[dem_xe[0] % len(tx_chinh)]
-    px = tx_phu[dem_xe[0] % len(tx_phu)] if tx_phu else None
+    # TAI XE: lay nguoi CHUA BAN. Xoay vong theo bo dem se dua mot tai xe dang
+    # chay chuyen "dang giao" vao chuyen thu hai, va dieu phoi tu choi.
+    ban = dem_xe[1] if len(dem_xe) > 1 else set()
+    tx = next((t for t in tx_chinh if t["id"] not in ban), None) or tx_chinh[0]
+    px = next((t for t in tx_phu if t["id"] not in ban), None) if tx_phu else None
     dem_xe[0] += 1
 
     ma_trip = "TRIP-%s-%s" % (DAU.upper(), c["ma"])
@@ -956,7 +1301,7 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
         # DO còn lại của báo giá ở lại hàng đợi `pending` — và đó cũng là thứ
         # màn Điều phối cần có để xem.
         "id": ma_trip, "do_ids": ds_do[:1], "trip_type": "one_way",
-        "planned_departure_at": M(-240), "avg_speed_kmh": 42,
+        "planned_departure_at": T(-240), "avg_speed_kmh": 42,
         "dwell_minutes": 30, "return_purpose": "none",
     }, "POST", dau="gieo-trip-%s-%s" % (DAU, c["ma"]))
     d = du_lieu(g)
@@ -971,7 +1316,7 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
         "vehicle_id": xe["id"], "driver_id": tx["id"],
         "co_driver_id": (px or {}).get("id"),
         "expected_version": pb,
-        "assignment_start": M(-240), "assignment_end": M(420),
+        "assignment_start": T(-240), "assignment_end": T(420),
     }, "PUT")
     d = du_lieu(g)
     kiem("%s điều phối xe %s + tổ lái" % (c["ma"], xe["id"]), ma == 200,
@@ -979,6 +1324,10 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
     so["xe"] = xe["id"]
     so["tai_xe"] = tx["id"]
     so["phu_xe"] = (px or {}).get("id")
+    if ma == 200 and len(dem_xe) > 1:
+        dem_xe[1].add(tx["id"])
+        if px:
+            dem_xe[1].add(px["id"])
 
     # --- Mốc thực thi -------------------------------------------------------
     ma_fo = so.get("lenh_van_chuyen")
@@ -993,6 +1342,10 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
         if c["chang"] == "xong":
             MOC += [("arrival", "Đã đến điểm giao", -70),
                     ("unloading", "Đang hạ hàng", -50)]
+        if c["chang"] == "da_den":
+            # Moc "arrival" tu dat DO sang `arrived` — xe da toi diem giao, chua
+            # co POD. Day la hang doi cua man Hoan tat giao hang.
+            MOC += [("arrival", "Đã đến điểm giao, chờ bốc", -25)]
         so_moc = 0
         for i, (loai, ghi, phut) in enumerate(MOC, start=1):
             ma, g = goi("/api/tms/freight-orders/%s/events" % ma_fo, {
@@ -1012,6 +1365,25 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
              "%d/%d" % (so_moc, len(MOC)))
         so["so_moc"] = so_moc
 
+    if c.get("su_co") and ds_do:
+        ma, g = goi("/api/incidents", {
+            "do_id": ds_do[0], "vehicle_id": xe["id"], "incident_type": "Hỏng xe",
+            "severity": "High", "location": "QL51 km 32, trước trạm BOT",
+            "description": "Nổ lốp sau bên phải, chờ cứu hộ thay lốp dự phòng. Dự kiến trễ 90 phút.",
+            "reporter": tx.get("name") or tx["id"],
+        }, "POST")
+        kiem("%s báo sự cố trên đường" % c["ma"], ma in (200, 201), chu(g)[:100])
+        so["su_co"] = True
+    if c["chang"] == "da_den":
+        # Doc lai tu DANH SACH lenh giao hang (duong chi tiet tra mot goi khac).
+        ma, g = goi("/api/delivery-orders?page=1&page_size=200")
+        dd = du_lieu(g)
+        dd = dd.get("items") if isinstance(dd, dict) else dd
+        d = next((x for x in (dd or []) if x.get("id") == ds_do[0]), {})
+        kiem("%s DO ở trạng thái ĐÃ ĐẾN, chờ POD (mốc arrival tự đồng bộ)" % c["ma"],
+             d.get("canonical_status") == "arrived", "trạng thái %s" % d.get("canonical_status"))
+        so["trang_thai"] = "arrived"
+        return so
     if c["chang"] == "dang_giao":
         so["trang_thai"] = "in_transit"
         return so
@@ -1146,7 +1518,7 @@ def gieo_mot_case(c, tx_chinh, tx_phu, cac_xe, dem_xe):
 
 
 def gieo_muoi_case(tx_chinh, tx_phu):
-    de("3. GIEO 10 CASE DEMO ĐI TRỌN LUỒNG")
+    de("3. GIEO %d CASE DEMO ĐI TRỌN LUỒNG" % len(CASE))
     ma, g = goi("/api/vehicles")
     ds_xe = du_lieu(g)
     ds_xe = ds_xe if isinstance(ds_xe, list) else (ds_xe.get("items") or [])
@@ -1156,10 +1528,10 @@ def gieo_muoi_case(tx_chinh, tx_phu):
     if not san_sang or not tx_chinh:
         kiem("có xe và tổ lái để điều phối", False, "")
         return
-    dem = [0]
-    # Xe cua nhung case DANG GIAO bi giu tới het buoi demo, nen bo chung ra khoi
-    # danh sach sau khi dung. Ba case "xong" thi tra xe lai, nhung don gian hon
-    # la khong dung lai xe nao trong mot lan gieo.
+    # dem[0]: bo dem; dem[1]: tai xe dang BAN (chuyen chua xong).
+    dem = [0, set()]
+    # Xe cua case DANG GIAO / DA DEN bi giu toi het buoi demo. Case "xong" tra
+    # xe lai — va PHAI dung lai: 5 case xong + 6 case con chay > 9 xe.
     da_dung = set()
     # THỨ TỰ CÓ Ý: gieo ba case "xong" TRƯỚC. Điều phối làm xe và tài xế thành
     # "đang chạy", và chỉ bước hoàn tất mới giải phóng họ — nên nếu gieo hai
@@ -1167,8 +1539,12 @@ def gieo_muoi_case(tx_chinh, tx_phu):
     for c in CASE:
         con_lai = [x for x in san_sang if x["id"] not in da_dung]
         so = gieo_mot_case(c, tx_chinh, tx_phu, con_lai or san_sang, dem)
-        if so.get("xe"):
+        if so.get("xe") and so.get("trang_thai") in ("in_transit", "arrived"):
             da_dung.add(so["xe"])
+        else:
+            # Chuyen da xong: xe va to lai duoc tra ve, dung lai duoc.
+            for k in ("tai_xe", "phu_xe"):
+                dem[1].discard(so.get(k))
         SO_KE.append(so)
 
 
@@ -1184,8 +1560,10 @@ NHAN_CHANG = {
     "in_transit": "Đang giao",
     "delivered": "Đã giao · chờ quyết toán",
     "completed": "Hoàn tất",
-    "rejected": "Từ chối",
+    "rejected": "Khách từ chối",
     "expired": "Hết hạn",
+    "arrived": "Đã đến · chờ POD",
+    "cancelled": "Đã tách · một DO bị huỷ",
 }
 
 
@@ -1199,7 +1577,7 @@ def doi_chieu():
 
     ma, g = goi("/api/quotations/board?status=all")
     ds = (du_lieu(g) or {}).get("items") or []
-    kiem("bảng báo giá có đủ 10 case", len(ds) >= 10, "%d báo giá" % len(ds))
+    kiem("bảng báo giá có đủ %d case" % len(CASE), len(ds) >= len(CASE), "%d báo giá" % len(ds))
 
     ma, g = goi("/api/delivery-orders?page=1&page_size=200")
     dd = du_lieu(g)
@@ -1215,6 +1593,39 @@ def doi_chieu():
     kiem("có DO đã giao xong", (theo_tt.get("delivered", 0)
                                 + theo_tt.get("completed", 0)) > 0,
          "%d DO đã giao" % (theo_tt.get("delivered", 0) + theo_tt.get("completed", 0)))
+    kiem("có DO đã đến chờ POD", theo_tt.get("arrived", 0) > 0, "%d DO" % theo_tt.get("arrived", 0))
+    kiem("có DO đã huỷ", theo_tt.get("cancelled", 0) > 0, "%d DO" % theo_tt.get("cancelled", 0))
+
+    # SO THU-CHI cua ho so hoan tat — goi ban giao cho he cong no.
+    xong = [x for x in SO_KE if x.get("trang_thai") == "completed" and x.get("do")]
+    du_ma = khop = 0
+    co_phi_xe = False
+    for x in xong:
+        m, g = goi("/api/delivery-orders/%s/closeout" % x["do"][0])
+        d = du_lieu(g)
+        t = d.get("ledger_totals") or {}
+        if t.get("khop_gia_cuoi") and t.get("khop_gia_thanh"):
+            khop += 1
+        if t.get("so_dong_thieu_ma") == 0:
+            du_ma += 1
+        if any(l.get("source") == "vehicle" for l in (d.get("ledger_lines") or [])):
+            co_phi_xe = True
+        x["so_dong"] = len(d.get("ledger_lines") or [])
+        x["thieu_ma"] = t.get("so_dong_thieu_ma")
+    kiem("sổ thu–chi khớp giá cuối và giá thành ở mọi DO xong", khop == len(xong),
+         "%d/%d" % (khop, len(xong)))
+    print("   Acc code trên sổ thu–chi: %d/%d hồ sơ đủ mã (chờ API danh mục bên công nợ — chưa tính là lỗi)"
+          % (du_ma, len(xong)))
+    kiem("có hồ sơ mang phí của xe (đơn giá ghi đè)", co_phi_xe, "")
+
+    m, g = goi("/api/incidents")
+    ds_sc = du_lieu(g)
+    ds_sc = ds_sc if isinstance(ds_sc, list) else (ds_sc.get("items") or [])
+    kiem("màn Theo dõi có sự cố mở", len(ds_sc) > 0, "%d sự cố" % len(ds_sc))
+    m, g = goi("/api/parking-lists?page=1&page_size=20")
+    d = du_lieu(g)
+    ds_bx = d.get("items") if isinstance(d, dict) else (d or [])
+    kiem("màn Bãi xe có phiếu", len(ds_bx or []) > 0, "%d phiếu" % len(ds_bx or []))
 
     ma, g = goi("/api/tms/reporting/transport-revenue")
     d = du_lieu(g)
@@ -1269,7 +1680,7 @@ def ghi_so_ke():
         "Sinh bởi `backend/scripts/don_va_gieo_10_case_demo.py` lúc %s (giờ Việt Nam)."
         % datetime.now(VN).strftime("%d/%m/%Y %H:%M"),
         "",
-        "Mười case dừng ở **những chặng khác nhau** của luồng, có chủ ý: một bộ dữ",
+        "%d case dừng ở **những chặng khác nhau** của luồng, có chủ ý: một bộ dữ" % len(CASE),
         "liệu toàn chuyến đã đóng sẽ làm màn Điều phối, màn Theo dõi và hàng đợi",
         "\"cần xử lý\" trống trơn — tức ba màn của người vận hành không có gì để xem.",
         "",
@@ -1277,13 +1688,13 @@ def ghi_so_ke():
         "Trip → Điều phối → Mốc thực thi → POD → Hoá đơn → Chi phí thực → Báo cáo.**",
         "Không còn bước Đơn hàng (SO).",
         "",
-        "## Mười case",
+        "## %d case" % len(CASE),
         "",
-        "| Case | Dừng ở | Khách hàng | Tuyến | Loại xe | Giá thành | Cước/chuyến | Biên | DO | Chuyến |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| Case | Dừng ở | Khách hàng | Tuyến | Loại xe | Giá thành | Cước/chuyến | Biên | DO | Chuyến | Sổ thu–chi |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for s in SO_KE:
-        dong_md.append("| %s | %s | %s | %s | %s | %s đ | %s đ | %s | %s | %s |" % (
+        dong_md.append("| %s | %s | %s | %s | %s | %s đ | %s đ | %s | %s | %s | %s |" % (
             s.get("ma", ""),
             NHAN_CHANG.get(s.get("trang_thai"), s.get("chang_dich", "")),
             (s.get("khach") or "").replace("DEMO-CUS-", ""),
@@ -1292,7 +1703,9 @@ def ghi_so_ke():
             tien(s.get("gia_thanh")), tien(s.get("cuoc")),
             ("%.1f%%" % ((s.get("bien") or 0) * 100)) if s.get("bien") is not None else "—",
             len(s.get("do") or []) or "—",
-            s.get("trip") or "—"))
+            s.get("trip") or "—",
+            ("%d dòng · %s" % (s["so_dong"], "đủ acc code" if not s.get("thieu_ma") else "%d dòng chờ acc code" % s["thieu_ma"]))
+            if s.get("so_dong") else "—"))
 
     dong_md += [
         "",
@@ -1300,15 +1713,20 @@ def ghi_so_ke():
         "",
         "| Màn hình | Case có dữ liệu | Xem được gì |",
         "|---|---|---|",
-        "| Kinh doanh › Báo giá cước | cả 10 | dải 6 số liệu, 6 thẻ trạng thái, bảng 9 cột |",
-        "| Báo giá › phiếu chi tiết | C01 (đã tách) · C10 (nháp) | 8 mục, cột phải, thanh đáy đổi nút theo trạng thái |",
+        "| Kinh doanh › Báo giá cước | cả %d | dải số liệu, thẻ trạng thái đủ: nháp · chờ duyệt · chờ khách · từ chối · hết hạn · đã tách |" % len(CASE),
+        "| Báo giá › phiếu chi tiết | C01 (đã tách) · C10 (nháp) · C11 (từ chối) · C12 (hết hạn) | đủ 8 mục: pallet, giá trị hàng, nhiệt độ (C16), bảo hiểm, niêm phong |",
         "| Báo giá › chờ duyệt nội bộ | C09 | biên dưới ngưỡng thì nút chính thành \"Gửi duyệt nội bộ\" |",
-        "| Lệnh giao hàng › cần xử lý | C06 · C07 | hàng đợi DO chờ lập Trip |",
-        "| Điều phối và thực thi | C04 · C05 | chuyến đã gán xe và tổ lái |",
-        "| Theo dõi và kiểm soát | C04 · C05 | mốc check-in → nhận hàng → xuất bến |",
-        "| Hoàn tất giao hàng | C01 · C02 · C03 | POD đã ký, giá cuối, phụ phí |",
-        "| Kế toán › hoá đơn | C01 · C02 · C03 | hoá đơn đã ghi sổ, bút toán 131/511 |",
-        "| Báo cáo doanh thu | C01 · C02 · C03 | doanh thu, giá thành, lãi gộp theo chuyến |",
+        "| Lệnh giao hàng › cần xử lý | C06 · C07 · C14 (một DO đã huỷ, một DO còn chờ) | hàng đợi DO chờ lập Trip |",
+        "| Bãi xe | C06 | phiếu bãi xe, nhãn QR đã in, đã quét vào bãi + qua cổng |",
+        "| Điều phối và thực thi | C04 · C05 · C13 | chuyến đã gán xe và tổ lái |",
+        "| Theo dõi và kiểm soát | C04 (có sự cố mở) · C05 · C13 (đã đến) | mốc check-in → nhận hàng → xuất bến → đến nơi |",
+        "| Hoàn tất giao hàng | C13 (chờ POD) · C01 · C02 · C03 · C15 · C16 | POD đã ký, giá cuối, phụ phí, **sổ thu–chi từng dòng** (Acc code chờ danh mục từ API bên công nợ) |",
+        "| Hồ sơ hoàn tất › phí của xe | C15 | dòng xăng dầu mang đơn giá ghi đè của xe DEMO-51C-129.03 (`rate_source = vehicle`) |",
+        "| Kế toán › hoá đơn | C01 · C02 · C03 · C15 · C16 | hoá đơn đã ghi sổ, bút toán 131/511 |",
+        "| Kế toán › Finance Cockpit | 5 bảng chi phí chờ duyệt | thẻ số liệu đếm toàn bảng từ máy chủ |",
+        "| Báo cáo doanh thu | C01 · C02 · C03 · C15 · C16 | doanh thu, giá thành, lãi gộp theo chuyến |",
+        "| Dữ liệu gốc › Công thức giá thành | 6 loại xe | mỗi khoản mục có ô chọn **Acc code** — danh mục chờ API bên công nợ (`EPL_ACC_CODE_API`) |",
+        "| Dữ liệu gốc › Phương tiện | DEMO-51C-129.03 (ghi đè dầu +12%) · DEMO-61H-112.34 (phiếu bảo dưỡng mở) | ghi đè giá thành theo xe, phiếu sửa chữa |",
         "| Dữ liệu gốc › Tuyến đường | 5 tuyến DEMO | sơ đồ lộ trình vẽ bằng đường bộ thật |",
         "",
         "## Ba điều cần biết khi demo",
@@ -1368,7 +1786,7 @@ def ghi_so_ke():
 # ================================================================== CỬA VÀO
 
 def main():
-    de("DỌN DỮ LIỆU SAI VÀ GIEO 10 CASE DEMO ĐI TRỌN LUỒNG A→Z")
+    de("DỌN DỮ LIỆU SAI VÀ GIEO %d CASE DEMO ĐI TRỌN LUỒNG A→Z" % len(CASE))
     print("   Máy chủ:", GOC)
     # In DUONG THAT, khong in duong SQLite dong cung: tep lenh nay chay tren
     # ca hai co so du lieu, va biet no dang xoa cai nao la dieu dau tien
@@ -1385,6 +1803,9 @@ def main():
     if not don_du_lieu():
         return 1
     tx_chinh, tx_phu = chuan_lai_du_lieu_goc()
+    chuan_lai_cong_thuc()
+    dat_ghi_de_xe()
+    phieu_bao_duong()
     chuan_lai_tuyen()
     # GỌI Ở ĐÂY, không gọi trong `chuan_lai_tuyen`: hàm đó trả về sớm khi không
     # thiếu toạ độ nào, nên một lời gọi đặt ở cuối nó sẽ không bao giờ chạy —

@@ -16,7 +16,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 REQUIRED_TABLES = frozenset({
     "customers", "routes", "vehicles", "drivers", "quotations",
-    "sales_orders", "delivery_orders",
+    "delivery_orders",
     "transport_demands", "freight_units", "freight_orders", "freight_order_units",
     "carriers", "tenders", "tender_offers",
     "driver_qualifications", "warehouse_appointments", "resource_assignments",

@@ -32,8 +32,8 @@ from services import toa_do_diem
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'toado.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([

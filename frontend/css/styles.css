@@ -987,7 +987,7 @@ video {
 }
 
 .master-form-badge {
-  background: linear-gradient(135deg, #0a6ed1 0%, #1e3a8a 100%) !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%) !important;
   color: #ffffff !important;
   padding: 6px 14px !important;
   border-radius: 6px !important;
@@ -1011,7 +1011,7 @@ video {
 }
 
 .master-form-card input:focus, .master-form-card select:focus {
-  border-color: #0a6ed1 !important;
+  border-color: #2563eb !important;
   background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(10, 110, 209, 0.15) !important;
 }
@@ -1089,7 +1089,7 @@ video {
 }
 
 .fiori-input:focus {
-  border-color: #0a6ed1 !important;
+  border-color: #2563eb !important;
   box-shadow: 0 0 0 3px rgba(10, 110, 209, 0.15) !important;
   background: #ffffff !important;
 }
@@ -1101,7 +1101,7 @@ video {
 }
 
 .fiori-btn {
-  background: linear-gradient(135deg, #0a6ed1, #0284c7) !important;
+  background: linear-gradient(135deg, #2563eb, #0284c7) !important;
   color: #ffffff !important;
   border: none !important;
   padding: 9px 18px !important;
@@ -1250,7 +1250,7 @@ video {
 
 .shipment-dossier-tabs button.active {
   color: #075fb3;
-  border-bottom-color: #0a6ed1;
+  border-bottom-color: #2563eb;
   background: #edf5ff;
 }
 
@@ -1309,7 +1309,7 @@ video {
   color: #0f172a !important;
   font-size: 1.05rem !important;
   font-weight: 700 !important;
-  border-left: 4px solid #0a6ed1 !important;
+  border-left: 4px solid #2563eb !important;
   padding-left: 12px !important;
   margin-top: 10px !important;
   margin-bottom: 16px !important;
@@ -1357,7 +1357,7 @@ video {
   right: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, #0a6ed1 0%, #93c5fd 44%, transparent 100%);
+  background: linear-gradient(180deg, #2563eb 0%, #93c5fd 44%, transparent 100%);
   opacity: .72;
 }
 
@@ -1386,7 +1386,7 @@ video {
 
 .workflow-rail-handle {
   padding: 0 11px;
-  color: #0a6ed1;
+  color: #2563eb;
   border: 1px solid #bfdbfe;
   background: #eff6ff;
   font-size: .82rem;
@@ -1466,7 +1466,7 @@ video {
   bottom: 21px;
   width: 2px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #22c55e 0%, #0a6ed1 54%, #cbd5e1 100%);
+  background: linear-gradient(180deg, #22c55e 0%, #2563eb 54%, #cbd5e1 100%);
   opacity: .55;
 }
 
@@ -1513,14 +1513,14 @@ video {
 .flow-bar-step-item:hover,
 .flow-bar-step-item:focus-visible {
   background: #f8fbff;
-  color: #0a6ed1;
+  color: #2563eb;
   border-color: #dbeafe;
   outline: none;
 }
 
 .flow-bar-step-item.active {
   background: #eff6ff !important;
-  color: #0a6ed1 !important;
+  color: #2563eb !important;
   border-color: #93c5fd !important;
   box-shadow: 0 8px 18px rgba(10, 110, 209, 0.12);
 }
@@ -1533,7 +1533,7 @@ video {
 
 .flow-bar-step-item.active i {
   color: #ffffff;
-  background: #0a6ed1;
+  background: #2563eb;
   border-color: #60a5fa;
   box-shadow: 0 0 0 5px rgba(10, 110, 209, .14);
 }
@@ -1548,7 +1548,7 @@ video {
   margin-top: auto;
   padding: 0 11px;
   border: 0;
-  background: #0a6ed1;
+  background: #2563eb;
   color: #ffffff;
   font-size: .82rem;
   font-weight: 800;
@@ -1599,11 +1599,11 @@ video {
 .flow-diagram-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(10, 110, 209, 0.12);
-  border-color: #0a6ed1;
+  border-color: #2563eb;
 }
 
 .flow-diagram-card.active-step-card {
-  border-color: #0a6ed1 !important;
+  border-color: #2563eb !important;
   background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%) !important;
   box-shadow: 0 0 0 4px rgba(10, 110, 209, 0.2), 0 12px 28px rgba(10, 110, 209, 0.18) !important;
 }
@@ -1613,7 +1613,7 @@ video {
   position: absolute;
   top: -12px;
   right: 16px;
-  background: #0a6ed1;
+  background: #2563eb;
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 800;
@@ -1661,8 +1661,29 @@ video {
 .completion-status { display:inline-flex; align-items:center; padding:4px 9px; border-radius:4px; background:#e8f7f1; color:#087a57; font-size:.72rem; font-weight:850; }
 .completion-actions { display:flex; justify-content:flex-end; gap:7px; }
 .completion-editor, .completion-history-detail { margin-top:18px; background:#fff; border:1px solid #b8cbe5; box-shadow:0 12px 30px rgba(30,55,85,.08); }
-.completion-editor-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; color:#fff; background:#096fbd; }
+.completion-editor-header { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; color:#fff; background:#1d4ed8; }
 .completion-editor-header h3 { margin:3px 0 0; font-size:1.1rem; letter-spacing:0; }
+/* Ô chứa hồ sơ closeout đầy đủ trong khối "Hồ sơ đã hoàn tất".
+   Khối này không có đệm ở thân — bản cũ đặt `margin:14px` lên từng khối con —
+   nên bản vẽ closeout dùng chung phải tự có đệm, không thì nó dính sát viền. */
+.completion-history-closeout { padding:14px; }
+
+/* HỘP THOẠI NỔI cho hồ sơ giao hàng (biên tập POD và hồ sơ đã hoàn tất).
+   Bóng 100vmax làm nền tối mà không cần thêm phần tử; cuộn bên trong khối. */
+.completion-float {
+  position: fixed !important;
+  inset: 3vh 3vw;
+  z-index: 10040;
+  margin: 0 !important;
+  overflow: auto;
+  border-radius: 14px;
+  box-shadow: 0 0 0 100vmax rgba(15, 23, 42, .55), 0 24px 60px rgba(15, 23, 42, .35) !important;
+  background: #fff;
+}
+.completion-float .completion-editor-header { position: sticky; top: 0; z-index: 2; }
+.completion-float .completion-editor-footer { position: sticky; bottom: 0; z-index: 2; background: #fff; border-top: 1px solid #e2e8f0; }
+body.completion-float-open { overflow: hidden; }
+@media (max-width: 760px) { .completion-float { inset: 0; border-radius: 0; } }
 .completion-update-receipt { margin:14px; border:1px solid #8dd9bd; border-left:4px solid #0b9668; background:#f4fcf8; }
 .completion-update-receipt-title { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid #ccecdf; color:#087452; }
 .completion-update-receipt-title > i { font-size:1.25rem; }
@@ -1697,7 +1718,7 @@ video {
 .completion-pod-stop.expanded { grid-column:1 / -1; border-color:#7fb2e6; box-shadow:0 5px 16px rgba(15,75,130,.08); }
 .completion-pod-stop-toggle { width:100%; min-height:66px; display:grid; grid-template-columns:32px minmax(0,1fr) auto 16px; gap:9px; align-items:center; border:0; background:#f8fbff; padding:9px 11px; color:#152036; text-align:left; cursor:pointer; font:inherit; }
 .completion-pod-stop-toggle:hover, .completion-pod-stop-toggle:focus-visible { background:#edf6ff; outline:2px solid #83b9ee; outline-offset:-2px; }
-.completion-stop-number { width:30px; height:30px; display:grid; place-items:center; background:#e4f1ff; color:#096fbd; border-radius:4px; font-size:.76rem; font-weight:850; }
+.completion-stop-number { width:30px; height:30px; display:grid; place-items:center; background:#e4f1ff; color:#1d4ed8; border-radius:4px; font-size:.76rem; font-weight:850; }
 .completion-stop-summary { min-width:0; display:grid; gap:3px; }
 .completion-stop-summary strong { font-size:.76rem; }
 .completion-stop-summary small { color:#64748b; font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1713,7 +1734,7 @@ video {
 .completion-signature { grid-column:1 / -1; display:grid; gap:7px; }
 .completion-signature-head { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .completion-signature-head label { color:#526079; font-size:.72rem; font-weight:750; }
-.completion-signature-clear { border:0; background:transparent; color:#096fbd; padding:4px 0; cursor:pointer; font:inherit; font-size:.7rem; font-weight:800; }
+.completion-signature-clear { border:0; background:transparent; color:#1d4ed8; padding:4px 0; cursor:pointer; font:inherit; font-size:.7rem; font-weight:800; }
 .completion-signature-pad { position:relative; min-height:180px; border:1px dashed #8ea8c6; background:#fbfdff; overflow:hidden; }
 .completion-signature-pad canvas { display:block; width:100%; height:180px; cursor:crosshair; touch-action:none; }
 .completion-signature-hint { position:absolute; inset:0; display:grid; place-items:center; padding:16px; color:#7b8799; text-align:center; font-size:.72rem; pointer-events:none; }
@@ -1880,7 +1901,7 @@ video {
 .currency-rate-history { margin-top:20px; padding-top:18px; border-top:1px solid #dce6f0; }
 .currency-rate-history-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:11px; }
 .currency-rate-history-head h4 { margin:0; color:#172033; font-size:.92rem; }
-.currency-rate-history-head h4 i { margin-right:7px; color:#0a6ed1; }
+.currency-rate-history-head h4 i { margin-right:7px; color:#2563eb; }
 .currency-rate-history-head p { margin:4px 0 0; color:#64748b; font-size:.72rem; }
 .currency-rate-history-table-wrap { max-width:100%; overflow:auto; border:1px solid #d8e5f2; }
 .currency-rate-history-table { width:100%; min-width:680px; border-collapse:collapse; font-size:.74rem; }
@@ -2007,3 +2028,104 @@ video {
     border-color: var(--border-strong) !important;
   }
 }
+
+
+/* ===================== LOẠI XE & ĐỘI XE (thiết kế lại 10/09) ===================== */
+.fleet-head { display:flex; justify-content:space-between; align-items:flex-end; gap:18px; flex-wrap:wrap; margin-bottom:14px; }
+.fleet-title { margin:0; font-size:1.25rem; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:10px; letter-spacing:-.01em; }
+.fleet-title i { color:#2563eb; }
+.fleet-sub { margin:4px 0 0; color:#64748b; font-size:.84rem; max-width:62ch; }
+.fleet-seg { display:inline-flex; padding:4px; border-radius:12px; background:#eef2f7; border:1px solid #e2e8f0; }
+.fleet-seg .vehicle-folder-tab { border:0; background:transparent; color:#475569; font-weight:700; font-size:.88rem; padding:8px 14px; border-radius:9px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+.fleet-seg .vehicle-folder-tab b { font-size:.72rem; padding:1px 7px; border-radius:999px; background:#dbe4f0; color:#334155; }
+.fleet-seg .vehicle-folder-tab.active { background:#fff; color:#2563eb; box-shadow:0 1px 3px rgba(15,23,42,.12); }
+.fleet-seg .vehicle-folder-tab.active b { background:#2563eb; color:#fff; }
+.fleet-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(128px, 1fr)); gap:10px; margin-bottom:18px; }
+.fleet-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; cursor:pointer; text-align:left; }
+.fleet-kpi:hover, .fleet-kpi.on { border-color:#2563eb; box-shadow:0 0 0 2px rgba(10,110,209,.12); }
+.fleet-kpi span { display:block; font-size:.72rem; font-weight:700; letter-spacing:.02em; color:#64748b; text-transform:uppercase; }
+.fleet-kpi strong { display:block; margin-top:4px; font-size:1.35rem; font-weight:800; color:#0f172a; font-variant-numeric:tabular-nums; }
+.fleet-kpi.k-available strong { color:#15803d; } .fleet-kpi.k-on_trip strong { color:#7c3aed; }
+.fleet-kpi.k-maintenance strong { color:#b45309; } .fleet-kpi.k-out_of_service strong { color:#475569; }
+.fleet-kpi.k-legal strong { color:#b42318; }
+.fleet-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+.fleet-search { flex:1 1 260px; display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; min-height:40px; }
+.fleet-search i { color:#94a3b8; }
+.fleet-search input { flex:1; border:0; outline:0; min-height:38px; background:transparent; font-size:.9rem; }
+/* MOT HANG: `.fiori-input` toan cuc ep width 100% nen bon o loc tung roi xuong bon
+   hang. Ghi de bang chon loc cu the hon, khong dung !important o cho khac. */
+.fleet-toolbar { flex-wrap:nowrap; }
+.fleet-toolbar .fleet-search { flex:1 1 220px; min-width:180px; }
+.fleet-toolbar select.fiori-input, .fleet-filter-group select.fiori-input { width:auto !important; min-width:150px; max-width:220px; flex:0 0 auto; min-height:40px; }
+.fleet-filter-group { display:inline-flex; gap:6px; align-items:center; flex:0 0 auto; }
+.fleet-filter-group .fiori-btn { min-height:40px; padding:0 12px; white-space:nowrap; }
+@media (max-width:1100px) { .fleet-toolbar { flex-wrap:wrap; } }
+.depot-dialog { border:0; border-radius:14px; padding:0; width:min(520px, 94vw); box-shadow:0 24px 60px rgba(15,23,42,.35); }
+.depot-dialog::backdrop { background:rgba(15,23,42,.55); }
+.depot-dialog form { display:grid; gap:12px; padding:0 0 16px; }
+.depot-dialog header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#1d4ed8; color:#fff; }
+.depot-dialog header h3 { margin:0; font-size:1rem; }
+.depot-dialog label { display:grid; gap:5px; padding:0 18px; font-size:.82rem; font-weight:700; color:#334155; }
+.depot-dialog .depot-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.depot-dialog .depot-row label { padding:0; }
+.depot-dialog .depot-row { padding:0 18px; }
+.depot-dialog footer { display:flex; justify-content:flex-end; gap:8px; padding:6px 18px 0; }
+.fleet-table-wrap { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:auto; box-shadow:0 4px 12px rgba(15,23,42,.03); }
+.fleet-table { width:100%; border-collapse:collapse; min-width:860px; }
+.fleet-table th { text-align:left; font-size:.74rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:#64748b; background:#f8fafc; padding:11px 14px; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
+.fleet-table th.num, .fleet-table td.num { text-align:right; font-variant-numeric:tabular-nums; }
+.fleet-table th.act, .fleet-table td.act { text-align:right; white-space:nowrap; }
+.fleet-table td { padding:11px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; color:#0f172a; font-size:.9rem; }
+.fleet-table tbody tr:hover { background:#f8fafc; }
+.fleet-table .ma { font-weight:800; color:#0f172a; }
+.fleet-table .phu { display:block; font-size:.76rem; color:#64748b; margin-top:2px; }
+.fleet-count { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; border:1px solid #bfdbfe; background:#eff6ff; color:#2563eb; font-weight:800; font-size:.78rem; cursor:pointer; }
+.fleet-count:hover { background:#dbeafe; }
+.fleet-count i { font-size:.7rem; }
+.fleet-table td.num small { color:#94a3b8; font-weight:600; margin-left:3px; }
+.fleet-table .chip { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:800; background:#eff6ff; color:#2563eb; margin-left:6px; vertical-align:middle; }
+.fleet-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; font-size:.78rem; font-weight:800; white-space:nowrap; }
+.fleet-badge::before { content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+.fleet-badge.s-available { background:#ecfdf5; color:#15803d; } .fleet-badge.s-on_trip { background:#f3e8ff; color:#7c3aed; }
+.fleet-badge.s-maintenance { background:#fffbeb; color:#b45309; } .fleet-badge.s-out_of_service { background:#f1f5f9; color:#475569; text-decoration:line-through; }
+.fleet-legal { font-variant-numeric:tabular-nums; } .fleet-legal.l-ok { color:#15803d; } .fleet-legal.l-soon { color:#b45309; font-weight:700; } .fleet-legal.l-expired { color:#b42318; font-weight:800; } .fleet-legal.l-none { color:#94a3b8; }
+.fleet-img { width:46px; height:32px; object-fit:cover; border-radius:7px; border:1px solid #dbeafe; vertical-align:middle; margin-right:8px; }
+.fleet-img-none { display:inline-flex; width:46px; height:32px; border-radius:7px; border:1px dashed #cbd5e1; margin-right:8px; align-items:center; justify-content:center; color:#94a3b8; vertical-align:middle; }
+.fleet-table .btn-ico { width:32px; height:32px; padding:0; justify-content:center; margin-left:4px; }
+.fleet-empty { padding:28px; text-align:center; color:#94a3b8; }
+@media (max-width:760px) { .fleet-head { align-items:stretch; } .fleet-seg { width:100%; } .fleet-seg .vehicle-folder-tab { flex:1; justify-content:center; } }
+
+
+/* ===================== HỘP THOẠI TẠO CHUYẾN (thiết kế lại 10/09) ===================== */
+.trip-dlg-backdrop { position:fixed; inset:0; z-index:10020; background:rgba(15,23,42,.55); align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
+.trip-dlg { width:min(1040px, 96vw); max-height:92vh; display:flex; flex-direction:column; background:#fff; border-radius:16px; border:1px solid #dbe4f0; box-shadow:0 24px 70px rgba(15,23,42,.32); overflow:hidden; }
+.trip-dlg-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:16px 20px; background:#1d4ed8; color:#fff; }
+.trip-dlg-head h3 { margin:0; font-size:1.05rem; font-weight:800; }
+.trip-dlg-head p { margin:4px 0 0; font-size:.8rem; opacity:.92; max-width:70ch; }
+.trip-dlg-head .icon-button { color:#fff; background:rgba(255,255,255,.18); border:0; width:34px; height:34px; border-radius:999px; cursor:pointer; }
+.trip-dlg-body { display:grid; grid-template-columns:minmax(300px, 5fr) minmax(320px, 6fr); gap:16px; padding:16px 20px 0; overflow:auto; }
+.trip-dlg-col h4 { margin:0 0 10px; font-size:.82rem; font-weight:800; letter-spacing:.03em; text-transform:uppercase; color:#475569; display:flex; align-items:center; gap:8px; }
+.trip-dlg-col h4 i { color:#2563eb; }
+.trip-dlg-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px; }
+.trip-dlg-grid.three { grid-template-columns:repeat(3, minmax(0,1fr)); }
+.trip-dlg-grid label { display:grid; gap:5px; font-size:.78rem; font-weight:800; color:#475569; min-width:0; }
+.trip-dlg-grid label small { font-weight:600; color:#64748b; min-height:1em; }
+.trip-dlg-grid .fiori-input { width:100% !important; min-height:40px; }
+.trip-dlg-return { margin-top:12px; border:1px solid #fed7aa; border-radius:12px; padding:12px; background:#fffaf5; }
+.trip-dlg-return-title { font-weight:800; color:#9a3412; margin-bottom:8px; }
+.trip-dlg-warn { margin-top:8px; color:#9a3412; font-size:.78rem; font-weight:700; }
+.trip-dlg-route { margin:16px 20px 0; border:1px solid #dbeafe; border-radius:12px; background:#f8fbff; padding:14px; overflow:auto; }
+.trip-dlg-route-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+.trip-dlg-route-head b { color:#0f172a; display:inline-flex; align-items:center; gap:8px; }
+.trip-dlg-route-head b i { color:#2563eb; }
+.trip-dlg-route-src { display:block; font-size:.78rem; color:#64748b; margin-top:3px; }
+.trip-dlg-stops { border:1px solid #dbeafe; background:#fff; border-radius:12px; padding:12px; margin-bottom:12px; }
+.trip-dlg-stops-title { font-weight:800; color:#0f172a; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.trip-dlg-stops-title i { color:#2563eb; }
+.trip-dlg-stops textarea { width:100% !important; margin-top:10px; }
+.trip-dlg-preview { display:grid; gap:8px; }
+.trip-dlg-foot { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 20px; border-top:1px solid #e2e8f0; background:#fff; position:sticky; bottom:0; }
+.trip-dlg-foot small { color:#64748b; font-size:.78rem; }
+.trip-dlg-foot > div { display:flex; gap:8px; }
+.do-picker .do-picker-list { max-height:38vh; }
+@media (max-width: 900px) { .trip-dlg-body { grid-template-columns:1fr; } .trip-dlg-grid, .trip-dlg-grid.three { grid-template-columns:1fr; } }

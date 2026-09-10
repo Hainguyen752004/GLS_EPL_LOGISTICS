@@ -335,6 +335,30 @@ def add_trip_leg(request: Request, trip_id: str, data: dict = Body(...),
     )
 
 
+@router.post("/trips/{trip_id}/cancel")
+def cancel_trip(request: Request, trip_id: str, data: dict = Body(...),
+                idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+                db: Session = Depends(get_db)):
+    """Huy mot chuyen: tra xe, to lai va DO ve dung cho cua chung.
+
+    Than dung DUNG hai truong, khong nhieu hon: `expected_version` (chot chong
+    ghi de) va `reason` (ly do, bat buoc). Cho phep them truong la mo duong cho
+    mot lan huy am tham doi luon thu khac cua chuyen.
+    """
+    _idempotency_key(idempotency_key, "huy chuyen van tai")
+    if not isinstance(data, dict) or set(data) != {"expected_version", "reason"}:
+        raise_http(DomainError(
+            "TRIP_CANCEL_PAYLOAD_INVALID",
+            "Dữ liệu huỷ chuyến không hợp lệ — cần đúng `expected_version` và `reason`.",
+            422,
+        ))
+    return _trip_command(
+        request, db,
+        lambda actor: trip_service.cancel_trip(db, trip_id, data, actor),
+        "Đã huỷ chuyến, trả xe và tổ lái về sẵn sàng, lệnh giao hàng về chờ điều phối.",
+    )
+
+
 @router.post("/trips/{trip_id}/complete-return")
 def complete_trip_return(request: Request, trip_id: str, data: dict = Body(...),
                          idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),

@@ -84,7 +84,18 @@ class Vehicle(Base):
     avg_speed_kmh = Column(Float, default=45.0) # Tốc độ kế hoạch riêng của xe
     max_speed_kmh = Column(Float, default=80.0) # Tốc độ tối đa dùng cảnh báo/GPS
     maintenance_date = Column(String) # Ngày bảo dưỡng
-    status = Column(String, default="Sẵn sàng") # Trạng thái
+    status = Column(String, default="Sẵn sàng") # Trạng thái — NHÃN CHỮ, chỉ để hiện; xem operational_status
+    # TRANG THAI VAN HANH LA MA CHUAN, KHONG PHAI NHAN CHU (moc 045).
+    #
+    # `status` o tren la mot chuoi tieng Viet do ma ghi cung; sua chu la moi xe
+    # thanh khong dieu duoc, va ban tieng Lao khong khop chuoi nao. Bon cot nay
+    # la su that: he thong cap nhat theo lich (dieu xe, xe ve, huy chuyen, lich
+    # xuong) va nguoi dung dat tay duoc (dua xe ra khoi doi / dua lai). Chu hien
+    # ra lay tu lang.json theo ma. `status` van duoc chieu tu ma cho cho cu.
+    operational_status = Column(String(32), nullable=False, default="available", server_default="available")
+    operational_ref = Column(String(128)) # Ma chuyen / phieu xuong dang giu xe
+    operational_note = Column(Text) # Ly do khi nguoi dung dat tay
+    operational_updated_at = Column(DateTime(timezone=True))
     engine_no = Column(String) # Số máy
     chassis_no = Column(String) # Số khung
     insurance_date = Column(String) # Bảo hiểm
@@ -201,7 +212,12 @@ class Driver(Base):
     phone = Column(String)
     assigned_vehicle = Column(String, default="Chưa gán")
     shift = Column(String, default="Ca Sáng (06:00 - 14:00)")
-    status = Column(String, default="🟢 Rảnh (Sẵn sàng)")
+    status = Column(String, default="🟢 Rảnh (Sẵn sàng)") # NHÃN CHỮ, chỉ để hiện; xem operational_status
+    # Cung mot ly do voi Vehicle.operational_status (moc 045).
+    operational_status = Column(String(32), nullable=False, default="available", server_default="available")
+    operational_ref = Column(String(128))
+    operational_note = Column(Text)
+    operational_updated_at = Column(DateTime(timezone=True))
     photo_url = Column(Text) # Ảnh chân dung tài xế/phụ xe dạng URL
     # Ba cột dưới đây là đơn vị XẾP CA. Khớp với `vehicles.depot_code` để một
     # bãi xem được cả người và xe của mình trong cùng một màn — ở đội ~500 xe,
@@ -298,7 +314,53 @@ class Customer(Base):
     address = Column(String)
     vendor_type = Column(String, nullable=True) # Carrier, Supplier, etc.
 
-# 6. SalesOrders
+class CoHoiKhach(Base):
+    """CƠ HỘI KHÁCH HÀNG (CRM-01) — bước đứng TRƯỚC báo giá.
+
+    Khách hỏi giá thì ghi ở đây: ai, tuyến nào, hàng gì, bao nhiêu tấn, mấy
+    chuyến/tháng, ai theo, hẹn liên hệ lại lúc nào. Từ cơ hội bấm "Lập báo giá"
+    sinh MỘT báo giá nháp (`quotation_id`), rồi báo giá đi tiếp luồng
+    QT → DO → Trip. Khách chưa có trong `customers` thì giữ `prospect_name`,
+    lúc lập báo giá mới tạo khách. Xem `migrations/v047_co_hoi_khach_hang.py`.
+    """
+    __tablename__ = "crm_opportunities"
+    __table_args__ = (
+        CheckConstraint("stage IN ('new','contacted','negotiating','quoted','won','lost')",
+                        name="ck_crm_opportunity_stage"),
+        CheckConstraint("version > 0", name="ck_crm_opportunity_version"),
+        Index("ix_crm_opportunity_stage", "stage"),
+        Index("ix_crm_opportunity_customer", "customer_id"),
+        Index("ix_crm_opportunity_quotation", "quotation_id"),
+    )
+    id = Column(String(64), primary_key=True)                     # LEAD-2026-001
+    customer_id = Column(String, ForeignKey("customers.id"))
+    prospect_name = Column(String(255))                           # khách chưa có trong danh mục
+    contact_name = Column(String(255))
+    contact_phone = Column(String(64))
+    contact_email = Column(String(255))
+    source = Column(String(32), nullable=False, default="other")  # phone|email|web|referral|tender|existing|other
+    route_id = Column(String, ForeignKey("routes.id"))
+    origin_text = Column(String(255))
+    destination_text = Column(String(255))
+    cargo_type = Column(String(255))
+    est_weight_kg = Column(Float, nullable=False, default=0.0)
+    est_trips_per_month = Column(Integer, nullable=False, default=0)
+    expected_start = Column(String(32))
+    expected_price = Column(MONEY_TYPE)
+    stage = Column(String(20), nullable=False, default="new")
+    owner = Column(String(128))
+    notes = Column(Text)
+    lost_reason = Column(Text)
+    quotation_id = Column(String, ForeignKey("quotations.id"))
+    next_action_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), nullable=False, default=datetime.datetime.utcnow)
+    created_by = Column(String(128), nullable=False, default="system")
+    updated_by = Column(String(128), nullable=False, default="system")
+    version = Column(Integer, nullable=False, default=1)
+
+
+# 6. (Đơn hàng SO đã bỏ khỏi luồng 10/09 — migration 049)
 class VehicleCostOverride(Base):
     """Phần chênh lệch giá thành của MỘT chiếc xe so với loại xe của nó.
 
@@ -316,77 +378,6 @@ class VehicleCostOverride(Base):
     updated_by = Column(String)
     __table_args__ = (UniqueConstraint("vehicle_id", "component", name="uq_vehicle_cost_overrides_vehicle_component"),)
 
-
-class SalesOrderLine(Base):
-    """Dòng hàng hóa vận chuyển của một đơn hàng vận chuyển.
-
-    Đơn vị tính (`uom`) vừa quyết định cách tính cước, vừa được quy đổi ra khối
-    lượng / thể tích để `vehicle_capacity_policy` chặn điều xe quá tải.
-    """
-    __tablename__ = "sales_order_lines"
-    id = Column(String, primary_key=True)
-    so_id = Column(String, ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    line_no = Column(Integer, nullable=False)
-    description = Column(String)
-    quantity = Column(MONEY_TYPE, nullable=False, default=0)
-    uom = Column(String, nullable=False, default="Tấn")
-    unit_price = Column(MONEY_TYPE, nullable=False, default=0)  # Đơn giá cước theo đơn vị tính
-    amount = Column(MONEY_TYPE, nullable=False, default=0)      # Thành tiền cước = số lượng × đơn giá
-    __table_args__ = (UniqueConstraint("so_id", "line_no", name="uq_sales_order_lines_so_line"),)
-
-
-class SalesOrder(Base):
-    __tablename__ = "sales_orders"
-    id = Column(String, primary_key=True) # SO-2026-001
-    quotation_id = Column(String, ForeignKey("quotations.id"), unique=True, nullable=True)
-    canonical_status = Column(String, nullable=False, default="draft")
-    created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    updated_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
-    created_by = Column(String, nullable=False, default="system")
-    updated_by = Column(String, nullable=False, default="system")
-    version = Column(Integer, nullable=False, default=1)
-    currency_code = Column(String, nullable=False, default="VND")
-    exchange_rate_snapshot = Column(Numeric, nullable=False, default=1)
-    tax_rate_snapshot = Column(Numeric)
-    order_date = Column(String)
-    delivery_date = Column(String)
-    customer_id = Column(String, ForeignKey("customers.id"))
-    route_id = Column(String, ForeignKey("routes.id"))
-    origin = Column(String) # Điểm đi
-    destination = Column(String) # Điểm đến
-    pickup_window_start = Column(String)
-    pickup_window_end = Column(String)
-    delivery_window_start = Column(String)
-    delivery_window_end = Column(String)
-    weight_kg = Column(Float, default=0.0)
-    pallet_count = Column(Integer, default=0)
-    # Loai phuong tien. Cuoc mot chuyen tinh bang cong thuc cua LOAI XE, nen
-    # thieu cot nay thi don van chuyen khong ap lai duoc cong thuc theo tai
-    # trong thuc te cua don. Ke thua tu bao gia khi chot nhung sua duoc, vi
-    # loai xe thuc te dieu di co the khac loai xe luc chao gia.
-    cargo_type = Column(String)
-    status = Column(String, default="Draft") # Draft, Confirmed
-    total_amount = Column(MONEY_TYPE, nullable=False, default=0)
-    payment_terms = Column(String, default="30 Days")
-    # O Ghi chu tren man hinh. Ba man deu co textarea nay kem placeholder rat
-    # cu the, nhung truoc day khong bang nao co cot de chua va khong payload
-    # nao gui len — nen go xong bam Luu la mat khong mot loi nao.
-    notes = Column(Text)
-    sales_rep = Column(String)
-    packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
-    # Quy cach va dieu kien van chuyen. Dat tren CA Quotation lan SalesOrder:
-    # day la dieu kien chao cho khach o buoc bao gia, va phai di theo sang don
-    # hang khi chot — khong bat khai lai. Tab nay tung co sau o nhap ma khong
-    # co cot nao de chua, nen dien xong la mat.
-    carrier_name = Column(String)             # Don vi van chuyen
-    delivery_method = Column(String)          # Phuong thuc giao
-    seal_weight = Column(String)              # Trong tai niem phong
-    temperature_requirement = Column(String)  # Yeu cau nhiet do
-    cargo_insurance = Column(String)          # Bao hiem hang hoa
-    warehouse_owner = Column(String)          # Nguoi phu trach kho
-    volume_m3 = Column(Float, default=1.0) # Thể tích m3
-    
-    details = relationship("DeliveryOrderDetail", back_populates="sales_order")
 
 # 7. DeliveryOrders
 class DeliveryOrder(Base):
@@ -408,7 +399,6 @@ class DeliveryOrder(Base):
     created_by = Column(String, nullable=False, default="system")
     updated_by = Column(String, nullable=False, default="system")
     version = Column(Integer, nullable=False, default=1)
-    so_id = Column(String, ForeignKey("sales_orders.id"), unique=True)
     # LUỒNG MỚI: DO sinh trực tiếp từ báo giá, không qua đơn hàng.
     #
     # Thiếu cột này thì đường chốt giá ở `delivery_completion_service` — vốn lần
@@ -434,6 +424,10 @@ class DeliveryOrder(Base):
     weight_kg = Column(Float, default=0.0)
     pallet_count = Column(Integer, default=0)
     notes = Column(Text)  # O Ghi chu tren man lenh giao hang
+    # Ly do huy — BAT BUOC khi chuyen sang `cancelled` (migration 048). Bao gia da
+    # co `close_reason`; DO truoc day huy khong ghi gi nen khong tra loi duoc
+    # "vi sao lenh nay bi huy" khi doi soat.
+    cancel_reason = Column(Text)
     vehicle_id = Column(String, ForeignKey("vehicles.id"), nullable=True)
     driver_id = Column(String, ForeignKey("drivers.id"), nullable=True)
     co_driver = Column(String, nullable=True) # Phụ xế (nếu có)
@@ -465,7 +459,6 @@ class DeliveryOrder(Base):
 class DeliveryOrderDetail(Base):
     __tablename__ = "delivery_order_details"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    so_id = Column(String, ForeignKey("sales_orders.id"))
     sku = Column(String)
     description = Column(String)
     qty = Column(Integer, default=1)
@@ -473,8 +466,6 @@ class DeliveryOrderDetail(Base):
     unit_price = Column(MONEY_TYPE, default=0.0)
     amount = Column(MONEY_TYPE, default=0.0)
     weight_kg = Column(Float, default=0.0)
-    
-    sales_order = relationship("SalesOrder", back_populates="details")
 
 
 class ParkingList(Base):
@@ -489,7 +480,6 @@ class ParkingList(Base):
     )
     id = Column(String(128), primary_key=True)
     do_id = Column(String, ForeignKey("delivery_orders.id"), nullable=False, index=True)
-    so_id = Column(String, ForeignKey("sales_orders.id"), nullable=True)
     trip_id = Column(String(128), ForeignKey("transport_trips.id"), nullable=True)
     version = Column(Integer, nullable=False, default=1)
     customer_id = Column(String, ForeignKey("customers.id"), nullable=True)
@@ -696,45 +686,13 @@ class DeliveryOrderChargeAdjustment(Base):
     )
     line_no = Column(Integer, nullable=False)
     name = Column(String(255), nullable=False)
+    # Mã costindex — khoản khách trả thêm cũng là một dòng THU cần lập phiếu,
+    # nên nó mang mã như dòng chi phí.
+    cost_index = Column(String(32))
     original_amount = Column(MONEY_TYPE, nullable=False, default=0)
     actual_amount = Column(MONEY_TYPE, nullable=False)
     increase_amount = Column(MONEY_TYPE, nullable=False)
     note = Column(Text)
-    created_at = Column(
-        DateTime(timezone=True), nullable=False,
-        default=lambda: datetime.datetime.now(datetime.timezone.utc),
-    )
-    created_by = Column(String(255), nullable=False)
-
-
-class SalesOrderDocument(Base):
-    """Tep dinh kem cua don van chuyen: hop dong, bao gia da ky.
-
-    Lam theo dung mau cua `DeliveryPODDocument`, ke ca cac rang buoc o TANG CO
-    SO DU LIEU — mot duong ghi khac quen kiem se bi chan tai day chu khong chi
-    o tang ung dung.
-    """
-    __tablename__ = "sales_order_documents"
-    __table_args__ = (
-        # Tai lai cung mot tep khong tao ra ban ghi thu hai.
-        UniqueConstraint("so_id", "checksum", name="uq_sales_order_document_checksum"),
-        # 25 MB, dung con so giao dien da hua voi nguoi dung.
-        CheckConstraint(
-            "file_size >= 0 AND file_size <= 26214400",
-            name="ck_sales_order_document_size",
-        ),
-    )
-    id = Column(String(128), primary_key=True)
-    so_id = Column(
-        String, ForeignKey("sales_orders.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    document_type = Column(String(64), nullable=False)
-    file_name = Column(String(255), nullable=False)
-    mime_type = Column(String(128), nullable=False)
-    file_size = Column(Integer, nullable=False)
-    checksum = Column(String(128), nullable=False)
-    content = Column(LargeBinary, nullable=False)
-    note = Column(String(500))
     created_at = Column(
         DateTime(timezone=True), nullable=False,
         default=lambda: datetime.datetime.now(datetime.timezone.utc),
@@ -888,6 +846,20 @@ class ChartOfAccount(Base):
 # 22. Quotation
 class Quotation(Base):
     __tablename__ = "quotations"
+    # Ràng buộc trạng thái CÙNG tập với mốc 040 (`ck_quotations_canonical_status`).
+    #
+    # Trước đây ràng buộc này chỉ có trên PostgreSQL (do mốc nâng cấp tạo), còn
+    # `models.py` không khai — nên mọi schema dựng từ model (bộ kiểm) nhận bất kỳ
+    # chuỗi nào, và bài đối chiếu schema chỉ soi chiều "model có → DB có" nên
+    # không thấy. Khai ở đây để hai bên nói cùng một tập; thêm trạng thái mới thì
+    # sửa CẢ đây và viết mốc mới.
+    __table_args__ = (
+        CheckConstraint(
+            "canonical_status IN ('draft','pending_approval','sent','approved','accepted',"
+            "'rejected','split','expired','cancelled','unknown')",
+            name="ck_quotations_canonical_status",
+        ),
+    )
     id = Column(String, primary_key=True) # QT-2026-001
     canonical_status = Column(String, nullable=False, default="draft")
     created_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
@@ -913,7 +885,7 @@ class Quotation(Base):
     total_cost = Column(MONEY_TYPE, default=0.0)
     selling_price = Column(MONEY_TYPE, default=0.0)
     packaging_spec = Column(String, default="Thùng Carton") # Quy cách đóng gói
-    # Quy cach va dieu kien van chuyen. Dat tren CA Quotation lan SalesOrder:
+    # Quy cach va dieu kien van chuyen. Dat tren Quotation:
     # day la dieu kien chao cho khach o buoc bao gia, va phai di theo sang don
     # hang khi chot — khong bat khai lai. Tab nay tung co sau o nhap ma khong
     # co cot nao de chua, nen dien xong la mat.
@@ -1509,6 +1481,10 @@ class FreightChargeItem(Base):
     id = Column(String, primary_key=True)
     cost_id = Column(String, ForeignKey("freight_actual_costs.id", ondelete="CASCADE"), nullable=False)
     charge_type = Column(String(32), nullable=False)
+    # Mã costindex của EPL — mã phân loại chi phí do người làm tài chính đặt
+    # trên công thức giá thành, đi theo dòng chi phí tới hồ sơ hoàn tất để hệ
+    # công nợ lập phiếu chi. Khác `charge_type` (mã nội bộ cố định của hệ).
+    cost_index = Column(String(32))
     description = Column(String(500))
     original_amount = Column(MONEY_TYPE, nullable=False, default=0)
     actual_amount = Column(MONEY_TYPE, nullable=False, default=0)

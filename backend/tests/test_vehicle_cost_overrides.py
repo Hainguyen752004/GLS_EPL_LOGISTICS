@@ -15,14 +15,14 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models import Base, CostFormula, Vehicle, VehicleCostOverride
+from models import Base, CostFormula, Vehicle, VehicleType, VehicleCostOverride
 from services import vehicle_cost_service as svc
 from services.errors import DomainError
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'cost.sqlite3'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add(Vehicle(id="51C-111.11", type="Container 20FT"))
@@ -61,6 +61,25 @@ def test_vehicle_without_overrides_inherits_everything(db):
     assert rows["fuel"]["value"] == 6250
     assert rows["driver"]["value"] == 500000
     assert all(not row["is_overridden"] for row in result["components"])
+
+
+def test_named_vehicle_uses_terms_and_vnd_formula(db):
+    db.add(VehicleType(id="VT20", name="Container 20FT"))
+    db.add(CostFormula(id="00-USD", name="USD", formula_expression=json.dumps({
+        "vehicle_type_id": "VT20", "currency": "USD", "components": {"fuel": 2},
+    })))
+    db.add(CostFormula(id="01-VND", name="VND", formula_expression=json.dumps({
+        "vehicle_type_id": "VT20", "currency": "VND",
+        "components": {"fuel": "6250", "warehouse": 100000, "freight_rate": 1200},
+        "terms": [{"key": "fuel", "rate": 4800}],
+    })))
+    db.commit()
+    result = svc.effective_cost(db, "51C-111.11")
+    rows = _by_component(result)
+    assert result["currency"] == "VND"
+    assert rows["fuel"]["value"] == 4800
+    assert rows["wh"]["value"] == 100000
+    assert rows["rate"]["value"] == 1200
 
 
 def test_no_rows_are_stored_for_a_vehicle_that_inherits(db):
@@ -181,3 +200,56 @@ def test_missing_key_leaves_overrides_untouched(db):
     db.commit()
     svc.replace_overrides(db, "51C-111.11", None, "kd")
     assert db.query(VehicleCostOverride).count() == 1
+
+
+def test_dynamic_component_and_expression_are_inherited_by_vehicle(db):
+    formula = db.get(CostFormula, "CF-20FT")
+    payload = json.loads(formula.formula_expression)
+    payload["terms"] = [
+        {"key": "fuel", "label": "Fuel", "kind": "cost", "factor": "per_km", "rate": 4800},
+        {"key": "dep", "label": "Depreciation", "kind": "cost", "factor": "per_km", "rate": 900},
+        {"key": "rate", "label": "Freight", "kind": "revenue", "factor": "per_kg", "rate": 1200},
+    ]
+    payload["expressions"] = {"COST": "(fuel + dep) * km", "REV": "rate * kg", "PROFIT": "REV - COST"}
+    formula.formula_expression = json.dumps(payload)
+    db.commit()
+    svc.replace_overrides(db, "51C-111.11", [{"component": "dep", "value": 1100, "note": "Older vehicle"}])
+    db.commit()
+    result = svc.effective_cost(db, "51C-111.11")
+    assert _by_component(result)["dep"]["inherited"] == 900
+    assert _by_component(result)["dep"]["value"] == 1100
+    assert result["expressions"] == payload["expressions"]
+    assert next(t for t in result["terms"] if t["key"] == "dep")["rate"] == 1100
+    assert _by_component(svc.effective_cost(db, "51C-222.22"))["dep"]["value"] == 900
+
+
+def test_invalid_replacement_does_not_delete_existing_override(db):
+    svc.replace_overrides(db, "51C-111.11", [{"component": "fuel", "value": 7100}])
+    db.commit()
+    with pytest.raises(DomainError):
+        svc.replace_overrides(db, "51C-111.11", [{"component": "unknown", "value": 1}])
+    assert svc.list_overrides(db, "51C-111.11")[0]["value"] == 7100
+
+
+def test_duplicate_legacy_formula_uses_same_order_as_catalog(db):
+    db.add(CostFormula(id="ZZ-20FT", name="Current catalog entry", formula_expression=json.dumps({
+        "vehicle_type_id": "Container 20FT", "currency": "VND",
+        "terms": [{"key": "fuel", "rate": 4800}],
+    })))
+    db.commit()
+    result = svc.effective_cost(db, "51C-111.11")
+    assert result["type_formula_id"] == "ZZ-20FT"
+    assert _by_component(result)["fuel"]["value"] == 4800
+
+
+def test_fleet_overview_matches_vehicle_price_and_has_persisted_history(db):
+    svc.replace_overrides(db, "51C-111.11", [{"component":"fuel", "value":7100, "note":"Older vehicle"}], "planner")
+    db.commit()
+    result = svc.fleet_overview(db)
+    vehicle = next(v for v in result["vehicles"] if v["vehicle_id"] == "51C-111.11")
+    assert vehicle["components"] == svc.effective_cost(db, "51C-111.11")["components"]
+    assert result["history"][0]["actor"] == "planner"
+    assert "7100" in result["history"][0]["message"]
+    svc.replace_overrides(db, "51C-111.11", [], "planner")
+    db.commit()
+    assert "chuẩn" in svc.fleet_overview(db)["history"][0]["message"]

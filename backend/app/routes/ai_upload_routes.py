@@ -47,7 +47,7 @@ if app_dir not in sys.path:
 
 from database import get_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,

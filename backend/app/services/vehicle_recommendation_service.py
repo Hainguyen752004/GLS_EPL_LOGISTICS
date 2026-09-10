@@ -128,6 +128,13 @@ def recommend_vehicle_types(db, demand):
 
 
 def _is_ready_status(status):
+    """CHỈ DÙNG KHI KHÔNG CÓ PHIÊN CƠ SỞ DỮ LIỆU để hỏi lịch.
+
+    Đếm "xe sẵn sàng" cho đúng thì phải hỏi lịch (`lich_xe.xe_dang_ranh`): một
+    chiếc rảnh bây giờ có thể đã được đặt cho chuyến chiều nay. Hàm so nhãn này
+    ở lại làm đường lùi cho chỗ chỉ có sẵn danh sách xe dạng từ điển; mọi chỗ có
+    `db` thì gọi `lich_xe.xe_dang_ranh`.
+    """
     normalized = str(status or "").strip().lower()
     busy_markers = (
         "busy", "in transit", "đang vận chuyển", "đang thực hiện",

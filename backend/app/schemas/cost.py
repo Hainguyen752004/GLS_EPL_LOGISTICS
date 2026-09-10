@@ -12,6 +12,12 @@ class TripCostLineRequest(BaseModel):
     original_amount: Decimal = Field(ge=0, max_digits=24, decimal_places=6)
     actual_amount: Decimal = Field(ge=0, max_digits=24, decimal_places=6)
     note: Optional[str] = Field(default=None, max_length=2000)
+    # Ma costindex cua EPL. Tuy chon: man khong gui thi may chu tu suy tu cong
+    # thuc gia thanh cua loai xe dang chay chuyen — ma phai co san o dong chi
+    # phi, khong duoc phu thuoc vao viec giao dien co nho gui hay khong.
+    cost_index: Optional[str] = Field(default=None, max_length=32)
+    charge_type: Optional[str] = Field(default=None, max_length=32)
+    key: Optional[str] = Field(default=None, max_length=64)
 
     @model_validator(mode="after")
     def actual_must_not_be_below_original(self):

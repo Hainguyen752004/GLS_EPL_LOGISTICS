@@ -47,8 +47,50 @@ if DATABASE_MODE == "postgres":
                 # đã mất cha. Chúng chiếm 30 trong 97 chỗ của Postgres, và
                 # giao dịch mở còn giữ snapshot nên VACUUM không dọn được
                 # dòng cũ. Đặt timeout thì Postgres tự kết thúc chúng.
-                "options": "-c idle_in_transaction_session_timeout=%s"
-                           % os.getenv("EPL_DB_IDLE_TX_TIMEOUT_MS", "60000"),
+                #
+                # `EPL_DB_SEARCH_PATH` ghép thêm vào ĐÂY, không đặt trong URL.
+                #
+                # `connect_args` GHI ĐÈ tham số trong chuỗi URL, nên một
+                # `?options=-csearch_path=...` viết trong `DATABASE_URL` bị bỏ
+                # lặng lẽ — đã mất một lượt tìm vì chuyện đó: bộ kiểm tưởng mình
+                # đang ghi vào một schema riêng, mà thật ra ghi vào `public`.
+                #
+                # Thứ cần nó là BỘ KIỂM CHẠY TRÊN POSTGRESQL: mỗi bài kiểm được
+                # một schema riêng nên chúng không đạp lên nhau, và không bài
+                # nào cần một cơ sở dữ liệu riêng (tạo cơ sở dữ liệu mất vài
+                # giây một bài, tạo schema tính bằng phần nghìn giây). Để trống
+                # thì không có gì thay đổi.
+                "options": " ".join(filter(None, (
+                    "-c idle_in_transaction_session_timeout=%s"
+                    % os.getenv("EPL_DB_IDLE_TX_TIMEOUT_MS", "60000"),
+                    #
+                    # MÚI GIỜ PHIÊN PHẢI LÀ UTC. Đây là chốt gốc của cả một họ
+                    # lỗi lệch bảy giờ, và nó đã được ĐO chứ không suy luận.
+                    #
+                    # Máy chủ PostgreSQL của dự án đặt `TimeZone` là
+                    # `Asia/Ho_Chi_Minh`. Ghi một mốc CÓ múi giờ UTC
+                    # (`04:23+00:00`) vào một cột `timestamp` TRẦN thì
+                    # PostgreSQL **đổi sang giờ phiên trước rồi mới bỏ nhãn** —
+                    # lưu ra `11:23`. Rồi mã nguồn đọc lại và coi mốc trần LÀ
+                    # UTC (quy ước của dự án), nên mọi giá trị như thế lệch đúng
+                    # bảy giờ.
+                    #
+                    # Đã cắn hai lần, cả hai chỉ lộ ra trên PostgreSQL:
+                    #   · khung giờ của `freight_orders` lệch bảy giờ, làm MỌI
+                    #     lệnh điều phối bị chặn bằng `ASSIGNMENT_OUTSIDE_WINDOW`;
+                    #   · `transport_events.event_time` lệch bảy giờ, làm màn
+                    #     Theo dõi báo GPS "cũ" (`stale`) cho một mốc vừa ghi.
+                    # Và đó chỉ là hai chỗ TÌNH CỜ có bài kiểm. Mọi cột `DateTime`
+                    # trần nhận một giá trị có múi giờ đều sai như vậy.
+                    #
+                    # Đặt phiên về UTC thì phép đổi kia thành phép đổi sang UTC,
+                    # tức đúng bằng quy ước lưu trữ — sửa cả họ lỗi ở một chỗ,
+                    # thay vì đi vá từng chỗ ghi. Cột `timestamptz` không đổi ý
+                    # nghĩa: chúng vẫn là cùng một thời điểm, chỉ hiện ra ở UTC.
+                    "-c timezone=UTC",
+                    ("-c search_path=%s" % os.getenv("EPL_DB_SEARCH_PATH").strip())
+                    if (os.getenv("EPL_DB_SEARCH_PATH") or "").strip() else "",
+                ))),
             },
             pool_pre_ping=True,
             # Postgres thật của dự án có max_connections=100, trừ 3 chỗ dành

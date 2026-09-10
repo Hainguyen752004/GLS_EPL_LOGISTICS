@@ -36,7 +36,7 @@ for (const field of [
 assert.doesNotMatch(legacyQuotationSave, /warehouse_fee\s*:/, 'Legacy Quotation form must not send unsupported warehouse_fee.');
 
 const legacyDeliverySave = latestFunctionBlock('async function submitDOForm', 'async function submitIncidentForm');
-assert.match(legacyDeliverySave, /payload\.so_id\s*=/, 'Legacy Delivery Order form must identify its confirmed Sales Order source.');
+assert.doesNotMatch(legacyDeliverySave, /so_id/, 'Legacy Delivery Order form must not reference Sales Order any more (SO expelled, migration 049).');
 assert.match(legacyDeliverySave, /route_id\s*:/, 'Legacy Delivery Order form must use route_id.');
 for (const field of ['customer', 'vehicle', 'driver', 'cargo_desc']) {
   assert.doesNotMatch(
@@ -53,50 +53,20 @@ assert.doesNotMatch(
   'Quotation create/update payload must not submit server-owned workflow status.'
 );
 
-const salesOrderSave = latestFunctionBlock('window.saveOracleSO = async function', 'window.approveSO');
-// customer_id va status van do MAY CHU so huu: customer_id ke thua tu bao gia,
-// status do luong nghiep vu dat. Gui len la giao dien tu quyet dinh thay.
-//
-// Rieng carrier_name / delivery_method / seal_weight TRUOC DAY nam trong danh
-// sach nay vi backend chua co cot nao chua chung, nen gui len se bi StrictRequest
-// tu choi. v028_shipping_spec da them cot cho ca sau truong quy cach van chuyen
-// tren Quotation lan SalesOrder, nen gio chung duoc phep — va PHAI duoc gui,
-// xem khoi kiem tra ngay ben duoi.
-for (const field of ['customer_id', 'status']) {
-  assert.doesNotMatch(
-    salesOrderSave,
-    new RegExp(`\\b${field}\\s*:`),
-    `Sales Order payload contains unsupported field ${field}.`
-  );
-}
-
-// Sau truong quy cach van chuyen phai duoc gui len. Truoc day chung khong duoc
-// gui bao gio, nen nguoi dung dien xong bam Luu la mat sach — va ban than cac o
-// nhap con bi ban dich xoa mat vi data-i18n nam tren the <label> boc <input>.
-for (const field of ['carrier_name', 'delivery_method', 'seal_weight',
-                     'temperature_requirement', 'cargo_insurance', 'warehouse_owner']) {
-  assert.match(
-    salesOrderSave,
-    new RegExp(`\\b${field}\\s*:`),
-    `Sales Order payload must send shipping spec field ${field}.`
-  );
-}
-assert.match(
-  salesOrderSave,
-  /if\s*\(!currentSO\)\s*\{[\s\S]*?payload\.id[\s\S]*?payload\.quotation_id/,
-  'Sales Order identity and quotation source must only be sent when creating.'
-);
-
 const deliveryOrderSave = latestFunctionBlock('window.saveFioriDO = async function', 'window.loadDeliveryOrders');
 assert.doesNotMatch(
   deliveryOrderSave,
   /\bcustomer_id\s*:/,
-  'Delivery Order customer must be inherited from the confirmed Sales Order.'
+  'Delivery Order customer must be inherited from the accepted quotation.'
 );
+// DO KHÔNG CÒN TẠO TAY, KHÔNG CÒN TỪ SO: máy chủ sinh DO khi khách chấp nhận báo
+// giá. Form DO chỉ còn sửa DO đã có, nên nhánh "tạo mới" phải dừng lại và không
+// được gửi `so_id` nữa.
 assert.match(
   deliveryOrderSave,
-  /if\s*\(!currentDO\)\s*\{[\s\S]*?payload\.id[\s\S]*?payload\.so_id/,
-  'Delivery Order identity and Sales Order source must only be sent when creating.'
+  /if\s*\(!currentDO\)\s*\{[\s\S]*?return;/,
+  'Delivery Order form must refuse to create a DO by hand — DOs are generated from accepted quotations.'
 );
+assert.doesNotMatch(deliveryOrderSave, /payload\.so_id/, 'Delivery Order form must not send so_id any more.');
 
 console.log('WORKFLOW_PAYLOAD_CONTRACT_UI_OK');

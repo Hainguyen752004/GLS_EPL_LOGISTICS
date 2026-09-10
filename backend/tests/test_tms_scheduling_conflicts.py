@@ -5,20 +5,45 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from database import Base
-from models import Driver, ResourceAssignment, Vehicle
+from models import Driver, FreightOrder, Location, ResourceAssignment, Vehicle
 from services import tms_scheduling_service
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'scheduling.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([
         Vehicle(id="VEH-01", type="Truck", status="busy"),
         Driver(id="DRV-MAIN", name="Main driver", status="busy"),
         Driver(id="DRV-CO", name="Co-driver", status="busy"),
+        Location(id="SC-A", name="Kho A"),
+        Location(id="SC-B", name="Kho B"),
     ])
+    # Địa điểm vào TRƯỚC — SQLAlchemy xếp thứ tự chèn theo `relationship()`, mà
+    # `FreightOrder` chỉ khai cột `ForeignKey` trần, nên thiếu lượt này thì nó
+    # xếp `freight_orders` trước `locations`.
+    session.flush()
+    # LỆNH VẬN CHUYỂN `FO-TRIP-01` PHẢI CÓ THẬT.
+    #
+    # Bản trước không tạo nó: fixture chỉ dựng một `ResourceAssignment` trỏ vào
+    # `freight_order_id="FO-TRIP-01"` — một lệnh không tồn tại. Chạy được trên
+    # SQLite vì SQLite trong dự án tắt `PRAGMA foreign_keys`, nhưng
+    # `resource_assignments_freight_order_id_fkey` trên PostgreSQL từ chối. Tức
+    # cả nhóm bài kiểm về đụng lịch tổ lái đang chốt hành vi trên một trạng thái
+    # dữ liệu mà cơ sở dữ liệu thật không cho phép tồn tại.
+    session.add(FreightOrder(
+        id="FO-TRIP-01", pickup_location_id="SC-A", delivery_location_id="SC-B",
+        pickup_window_start=dt.datetime(2026, 8, 24, 8),
+        pickup_window_end=dt.datetime(2026, 8, 24, 10),
+        delivery_window_start=dt.datetime(2026, 8, 26, 13),
+        delivery_window_end=dt.datetime(2026, 8, 26, 17),
+        total_weight_kg=1000, total_volume_m3=5, total_pallet_count=2,
+        max_weight_kg=3000, max_volume_m3=20, max_pallet_count=10,
+        status="dispatched",
+    ))
+    session.flush()
     session.add(ResourceAssignment(
         freight_order_id="FO-TRIP-01",
         trip_id=None,

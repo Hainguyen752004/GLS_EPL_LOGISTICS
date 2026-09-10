@@ -39,10 +39,10 @@ assert.deepStrictEqual(
 // chan tai trong duoc chuyen sang man moi — xem chu thich tai khoi do. Kiem mot
 // khung khong ai thay duoc thi khong chung minh duoc gi ve nang luc that.
 //
-// Nang luc "chon tuyen thi hien so do chang" van duoc chot day du: hai tien to
-// `so`/`do` con dung khung kieu cu, con man Bao gia dang chay thi duoc chot boi
+// Nang luc "chon tuyen thi hien so do chang" van duoc chot day du: tien to
+// `do` con dung khung kieu cu (tien to `so` da truc xuat cung Don hang), con man Bao gia dang chay thi duoc chot boi
 // hai phep khang dinh ngay duoi day.
-for (const prefix of ['so', 'do']) {
+for (const prefix of ['do']) {
   assert.match(
     html,
     new RegExp(`id=["']${prefix}-route-checkpoints["']`),
@@ -61,11 +61,6 @@ for (const prefix of ['so', 'do']) {
   assert.match(html, /id="qtv2-root"/, 'New quotation screen root must exist.');
 }
 
-assert.match(
-  html,
-  /id="so-route-select"[^>]+onchange="[^"]*selectMasterRoute\('so',\s*this\.value\)/,
-  'Sales Order route selection must force-sync Route Master context.'
-);
 assert.match(
   html,
   /id="do-route"[^>]+onchange="[^"]*selectMasterRoute\('do',\s*this\.value\)/,

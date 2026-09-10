@@ -41,8 +41,8 @@ LUC = dt.datetime.utcnow().replace(microsecond=0) - dt.timedelta(hours=1)
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'gan_chuyen.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([
@@ -51,6 +51,11 @@ def db(tmp_path):
         Vehicle(id="51C-001", type="Truck"),
         Driver(id="DRV-001", name="Tai xe Mot"),
     ])
+    # Dữ liệu gốc phải VÀO TRƯỚC: `FreightOrder.pickup_location_id` khai
+    # `ForeignKey` mà không khai `relationship()`, và SQLAlchemy xếp thứ tự chèn
+    # theo relationship chứ không theo cột khoá ngoại trần — thiếu nó thì nó xếp
+    # theo tên bảng và `freight_orders` đi trước `locations`.
+    session.flush()
     session.add(FreightOrder(
         id="FO-GAN-1", pickup_location_id="A", delivery_location_id="B",
         pickup_window_start=LUC, pickup_window_end=LUC + dt.timedelta(hours=1),
@@ -123,3 +128,41 @@ def test_lenh_chua_co_chuyen_thi_van_ghi_duoc_moc(db):
     """
     su_kien = service.record_event(db, "FO-GAN-1", _moc(), "khoa-4", "dispatcher")
     assert su_kien.trip_id is None
+
+
+def test_moc_ARRIVAL_dua_DO_sang_ARRIVED_qua_duong_chuyen_lap_tu_DO(db):
+    """Xe bao "arrival" thi DO cua chuyen phai sang `arrived` — qua `trip_delivery_orders`.
+
+    LOI DA DO DUOC khi gieo du lieu demo: ghi du 4 moc (co `arrival`) cho mot
+    chuyen lap tu lenh giao hang, DO van `in_transit`. `_dong_bo_moc_do` chi tra
+    DO qua `freight_order_legacy_links` — cau noi cho don CU — trong khi moi
+    chuyen lap tu DO noi qua `transport_trips.freight_order_id` ->
+    `trip_delivery_orders`. Tuc duong "GPS tu bao den noi" chua bao gio chay
+    trong luong that, va hang doi "da den, cho POD" cua man Hoan tat luon trong.
+    """
+    from models import DeliveryOrder, TripDeliveryOrder
+
+    db.add(DeliveryOrder(id="DO-GAN-1", canonical_status="in_transit", status="Đang vận chuyển",
+                         vehicle_id="51C-001", driver_id="DRV-001"))
+    db.flush()
+    _chuyen(db, "TRIP-GAN-DEN")
+    db.add(TripDeliveryOrder(trip_id="TRIP-GAN-DEN", do_id="DO-GAN-1"))
+    db.commit()
+
+    # Di dung TRINH TU moc cua chuyen hang (`EVENT_SEQUENCE_INVALID` neu nhay
+    # coc), va moi moc lam phien ban lenh tang — doc lai phien ban sau tung moc.
+    # Ba moc truoc `arrival` KHONG duoc dong DO.
+    for i, loai in enumerate(("check_in", "pickup", "departure")):
+        moc = _moc(loai)
+        moc["expected_version"] = db.get(FreightOrder, "FO-GAN-1").version
+        service.record_event(db, "FO-GAN-1", moc, "khoa-den-%d" % i, "dispatcher")
+        db.commit()
+        assert db.get(DeliveryOrder, "DO-GAN-1").canonical_status == "in_transit", loai
+
+    moc = _moc("arrival")
+    moc["expected_version"] = db.get(FreightOrder, "FO-GAN-1").version
+    service.record_event(db, "FO-GAN-1", moc, "khoa-den-9", "dispatcher")
+    db.commit()
+    do = db.get(DeliveryOrder, "DO-GAN-1")
+    assert do.canonical_status == "arrived", do.canonical_status
+    assert do.status == "Đã đến nơi — chờ POD"

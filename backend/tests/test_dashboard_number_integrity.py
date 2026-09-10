@@ -12,15 +12,12 @@ import pytest
 def _seed(db, models):
     db.add(models.Customer(id="CUS-DASH", name="Khách Dashboard"))
     db.commit()
-    db.add(models.SalesOrder(
-        id="SO-DASH-1", customer_id="CUS-DASH",
-        canonical_status="confirmed", status="Confirmed",
-        total_amount=90000000,
-    ))
-    db.commit()
     db.add(models.DeliveryOrder(
-        id="DO-DASH-1", so_id="SO-DASH-1", customer_id="CUS-DASH",
-        canonical_status="delivered", status="In Transit",
+        id="DO-DASH-1", customer_id="CUS-DASH",
+        # Nhan phai KHOP ma: mot lenh da giao thi nhan la "Da giao". Ban cu
+        # de "In Transit" o day, va phep dem theo nhan cua bang dieu khien
+        # dem ca no — dung kieu troi giua nhan va ma ma he da bo.
+        canonical_status="delivered", status="Đã giao",
     ))
     db.commit()
     db.add(models.ARInvoice(
@@ -47,16 +44,14 @@ def test_revenue_ytd_is_recognized_revenue_not_max_of_two_metrics(app_client):
 
     payload = client.get("/api/dashboard/stats").json()
 
-    # Đơn hàng 90tr lớn hơn hóa đơn 11tr — đúng tình huống mà max() chọn sai.
-    assert payload["booked_revenue_so"] >= 90000000
+    # Không còn Đơn hàng: doanh thu ký kết luôn 0, chỉ còn doanh thu ghi sổ (AR).
+    assert payload["booked_revenue_so"] == 0  # buoc Don hang da bo
     assert payload["recognized_revenue_ar"] == 11000000
     assert payload["revenue_ytd"] == payload["recognized_revenue_ar"], (
         "revenue_ytd phải khớp doanh thu ghi sổ để không mâu thuẫn với "
         "/api/tms/reporting/transport-revenue trên cùng một màn hình"
     )
-    assert payload["revenue_ytd"] != max(
-        payload["booked_revenue_so"], payload["recognized_revenue_ar"]
-    ), "vẫn đang dùng max() của hai chỉ tiêu khác bản chất"
+    # (Phép so với max() đã bỏ: booked_revenue_so luôn 0 sau khi trục xuất SO nên max() trùng AR.)
 
 
 def test_two_revenue_metrics_are_reported_separately(app_client):
@@ -79,24 +74,21 @@ def test_vehicle_count_and_in_transit_orders_are_distinct_fields(app_client):
         # Một chiếc xe, ba lệnh giao hàng đang chạy: hai con số phải khác nhau.
         db.add(models.Vehicle(id="VEH-DASH-1", status="Sẵn sàng"))
         db.commit()
-        # delivery_orders.so_id là UNIQUE (mỗi đơn hàng một lệnh giao hàng),
-        # nên mỗi lệnh thêm vào cần một đơn hàng riêng.
         for index in (2, 3):
-            db.add(models.SalesOrder(
-                id=f"SO-DASH-{index}", customer_id="CUS-DASH",
-                canonical_status="confirmed", status="Confirmed",
-                total_amount=1000000,
-            ))
-            db.commit()
             db.add(models.DeliveryOrder(
-                id=f"DO-DASH-{index}", so_id=f"SO-DASH-{index}", customer_id="CUS-DASH",
+                id=f"DO-DASH-{index}", customer_id="CUS-DASH",
                 canonical_status="in_transit", status="In Transit",
             ))
             db.commit()
 
     payload = client.get("/api/dashboard/stats").json()
 
-    assert payload["in_transit_orders"] == 3, "phải đếm lệnh giao hàng đang chạy"
+    # HAI, khong phai BA. Lenh DO-DASH-1 cua `_seed` mang `canonical_status =
+    # "delivered"` nhung nhan `status = "In Transit"` — mot dong tu mau thuan.
+    # Ban cu dem theo NHAN nen dem ca no; ban moi dem theo TRANG THAI CHUAN, va
+    # mot lenh da giao thi khong "dang chay" du nhan noi gi. Chinh su troi giua
+    # nhan va ma nay la ly do bo dem theo nhan.
+    assert payload["in_transit_orders"] == 2, "phải đếm lệnh giao hàng đang chạy theo canonical_status"
     assert payload["active_vehicles"] == 1, (
         "phải đếm phương tiện; trước đây trường này trả về số lệnh giao hàng"
     )

@@ -39,8 +39,6 @@ const code = stripComments(app);
 // mẫu; đó là mã chết cần dọn riêng, không phải việc của bài kiểm này.)
 const pricingPaths = [
   code.slice(code.indexOf('window.autoCalculateMasterDataCost = function'),
-    code.indexOf('window.autoCalculateSOCost = function')),
-  code.slice(code.indexOf('window.autoCalculateSOCost = function'),
     code.indexOf('let newRouteCounter')),
   stripComments(fs.readFileSync(path.join(ROOT, 'js', 'quotation-pricing.js'), 'utf8')),
 ].join(String.fromCharCode(10));
@@ -72,24 +70,26 @@ assert.ok(!/const multiplier = /.test(pricingPaths), 'không được còn hệ 
 // --- 2. Mọi con số đi qua một chỗ duy nhất -----------------------------
 
 assert.ok(/QuotationPricing\.price\(/.test(code), 'phải dùng module định giá dùng chung');
-assert.strictEqual((code.match(/QuotationPricing\.price\(/g) || []).length, 2,
-  'đúng hai màn gọi: báo giá và đơn vận chuyển');
+assert.strictEqual((code.match(/QuotationPricing\.price\(/g) || []).length, 1,
+  'đúng một màn gọi: báo giá (form Đơn vận chuyển đã trục xuất cùng SO)');
 assert.ok(html.includes('js/quotation-pricing.js?v='), 'phải nạp module định giá');
 // Nạp SAU formula-model, vì nó dùng FormulaModel.
 assert.ok(html.indexOf('formula-model.js') < html.indexOf('quotation-pricing.js'));
 
 // --- 3. Báo giá: đủ đầu vào, đủ cấu phần -------------------------------
-
-// Tải trọng lấy từ ô "Tải trọng (kg)" ĐÃ CÓ sẵn ở phần bối cảnh tuyến đường.
-// Ô đó vừa là chỗ nhập khối lượng hàng, vừa là căn cứ để đề xuất loại xe phù
-// hợp. Dựng thêm một ô riêng cho công thức là hai chỗ nói cùng một thứ, và
-// chắc chắn sẽ lệch nhau.
-assert.ok(!/id="qt-weight"/.test(html), 'không được có ô tải trọng thứ hai');
-assert.ok(html.includes('id="qt-weight-kg"'));
-assert.ok(/id="qt-weight-kg"[^>]*oninput="autoCalculateMasterDataCost/.test(html.replace(/\n/g, ' ')),
-  'đổi tải trọng phải tính lại cước ngay');
-// Và ô đó vẫn phải tiếp tục đề xuất loại xe như cũ — không được thay chức năng cũ.
-assert.ok(/id="qt-weight-kg"[^>]*refreshQuotationVehicleRecommendations/.test(html.replace(/\n/g, ' ')));
+//
+// KHOI BAO GIA CU (`#qtv2-khoi-cu`) DA BO HAN, nen cac o `qt-weight-kg /
+// qt-cargo-type / qt-cost-breakdown / qt-cost-status` khong con trong HTML va
+// cac phep khang dinh ve chung da bo khoi bai kiem nay. Duong tinh tien cua
+// man bao gia DANG CHAY nam o may chu (`/api/quotations/price-preview`), va no
+// co bo kiem rieng ben backend.
+//
+// Nhung `window.autoCalculateMasterDataCost` thi VAN CON, va van phai dung:
+// man Cong thuc gia thanh goi no moi lan doi don gia
+// (`oninput="autoCalculateMasterDataCost('qt')"`, va `cost-formula-builder.js`
+// goi sau khi sua cong thuc). Phan duoi giu nguyen cac phep chot ve CACH TINH
+// trong ham do — do la phan da tung sai tien, va no khong lien quan gi den
+// viec o nhap nam o man nao.
 
 {
   const fn = code.slice(code.indexOf('window.autoCalculateMasterDataCost = function'));
@@ -104,8 +104,10 @@ assert.ok(/id="qt-weight-kg"[^>]*refreshQuotationVehicleRecommendations/.test(ht
 }
 
 // Bảng chi phí vẽ động, không phải ba ô cố định viết cứng trong trang.
-assert.ok(html.includes('id="qt-cost-breakdown"'));
-assert.ok(/renderCostBreakdown\('qt-cost-breakdown'/.test(code));
+//
+// Form Đơn vận chuyển đã trục xuất cùng SO (10/09); bảng cấu phần chi phí của
+// màn báo giá mới do bao-gia-v2.js tự vẽ, nên ở đây chỉ chốt hàm vẽ còn tồn tại.
+assert.ok(/function renderCostBreakdown\(/.test(code), 'phải còn hàm vẽ bảng cấu phần');
 
 // --- 3b. Tiền VNĐ làm tròn về đồng, và không có dòng "bình quân/km" trên báo giá --
 //
@@ -158,26 +160,23 @@ assert.ok(/selling_price: quote \? quote\.revenue/.test(code), 'phải lưu cư�
 // CỌ Ý không lưu tỉ lệ lợi nhuận: bảng quotations không có cột đó, và tỉ lệ suy ra
 // được từ hai con số trên. Lưu thêm một cột thứ ba là tạo ra ba con số có thể trôi
 // khỏi nhau.
-{
-  const fn = code.slice(code.indexOf('window.saveOracleQT = async function'));
-  assert.ok(!/margin_pct/.test(fn.slice(0, fn.indexOf('};'))), 'không được gửi margin_pct');
-}
+// (`window.saveOracleQT` da bo cung khoi bao gia cu; man moi luu qua
+// `bao-gia-v2.js`, va no khong gui `margin_pct` — bang `quotations` khong co
+// cot do va ti le suy ra duoc tu hai con so kia.)
 // CSS của hai nhóm phải có thật.
 ['.qt-cost-group-revenue', '.qt-cost-group-cost', '.qt-cost-subtotal', '.cf-kind-tag'].forEach(sel => {
   assert.ok(new RegExp(sel.replace('.', '\\.') + '[\\s,:{]').test(html), `thiếu CSS cho ${sel}`);
 });
-// Ba ô cũ giữ lại nhưng ẩn, vì các chỗ khác đọc chúng.
-['qt-fuel', 'qt-driver', 'qt-toll', 'qt-selling-price'].forEach(id => {
-  assert.ok(html.includes(`type="hidden" id="${id}"`), `${id} phải thành ô ẩn`);
-});
+// Bon o an `qt-fuel / qt-driver / qt-toll / qt-selling-price` da bo cung khoi
+// bao gia cu. `autoCalculateMasterDataCost` van ghi vao chung qua `write()`,
+// va ham do da co san `if (!input) return` — nen mat vat chua khong nem loi.
 // Phí bãi KHÔNG được gộp vào ô phí cầu đường.
 assert.ok(!/tollCost \+ warehouseFee|toll \+ wh/.test(pricingPaths), 'không được gộp phí bãi vào phí cầu đường');
 
 // Nhãn "Đã áp dụng công thức Master Data" trước đây luôn hiện, kể cả khi chưa
 // tính được gì. Nay là chỗ báo trạng thái thật.
-assert.ok(html.includes('id="qt-cost-status"'));
 assert.ok(!html.includes('Đã áp dụng công thức Master Data'), 'không được còn nhãn khẳng định bừa');
-assert.ok(/setCostStatusBadge\('qt-cost-status'/.test(code));
+assert.ok(/setCostStatusBadge\(/.test(code), 'phải còn chỗ báo trạng thái tính được / chưa tính được');
 
 // --- 4. Thiếu đầu vào thì hiện lời nhắc, KHÔNG hiện số ------------------
 
@@ -199,52 +198,6 @@ assert.ok(/setCostStatusBadge\('qt-cost-status'/.test(code));
   const rule = new RegExp(selector.replace('.', '\\.') + '[\\s,:{]');
   assert.ok(rule.test(html), `thiếu CSS cho ${selector}`);
 });
-
-// --- 5. Đơn vận chuyển: có loại xe nên áp được công thức ---------------
-
-assert.ok(html.includes('id="so-cargo-type"'), 'đơn vận chuyển phải có ô loại phương tiện');
-assert.ok(/id="so-cargo-type"[^>]*onchange="autoCalculateSOCost\(\)"/.test(html.replace(/\n/g, ' ')));
-assert.ok(html.includes('id="so-cost-breakdown"'));
-assert.ok(/id="so-weight-kg"[^>]*oninput="autoCalculateSOCost\(\)"/.test(html),
-  'đổi tải trọng trên đơn phải tính lại');
-// Ô loại xe được nạp danh sách cùng lúc với ô của báo giá.
-assert.ok(/'qt-cargo-type', 'so-cargo-type'/.test(code), 'phải nạp danh sách loại xe cho cả hai ô');
-
-{
-  const fn = code.slice(code.indexOf('window.autoCalculateSOCost = function'),
-    code.indexOf('window.applySOCostToLine'));
-  assert.ok(/so-weight-kg/.test(fn));
-  // Ô trên màn là kg, mô hình nhận tấn. Nhầm ở đây là sai 1.000 lần.
-  assert.ok(/\/ 1000/.test(fn), 'phải quy kg về tấn');
-  // Chưa nhập KHÁC 0 tấn: chưa nhập là chưa biết, 0 là chuyến chạy rỗng.
-  assert.ok(/rawWeight === '' \? '' :/.test(fn), 'chưa nhập thì không được quy thành 0 tấn');
-}
-
-// --- 6. Đổi tuyến KHÔNG được ghi đè đơn giá đã chốt --------------------
-
-{
-  const fn = code.slice(code.indexOf('window.onSORouteSelectChange = function'),
-    code.indexOf('let newRouteCounter'));
-  assert.ok(fn.length > 200, 'phải tìm được hàm đổi tuyến');
-  assert.ok(!/Math\.round\(/.test(fn), 'không được tính tiền trong hàm đổi tuyến');
-  assert.ok(!/so-item-unit-price'\)\.value = /.test(fn), 'không được ghi đè đơn giá đã chốt');
-  assert.ok(!/\bamount\b/.test(fn), 'không được còn biến tiền nào ở đây');
-  assert.ok(/autoCalculateSOCost\(\)/.test(fn), 'đổi tuyến thì vẽ lại bảng chi phí');
-}
-// Áp giá vào dòng cước là một hành động RIÊNG, người dùng tự bấm.
-assert.ok(/window\.applySOCostToLine = function/.test(code));
-// Va phai co nut goi toi no, khong thi day la mot ham khong ai bam duoc.
-assert.ok(html.includes('onclick="applySOCostToLine()"'), 'phai co nut ap cuoc');
-{
-  const fn = code.slice(code.indexOf('window.applySOCostToLine = function'));
-  assert.ok(/if \(!quote \|\| !quote\.ready\)/.test(fn), 'chưa tính được thì không áp gì');
-}
-
-// --- 7. Loại xe của đơn được lưu và đọc lại ----------------------------
-
-assert.ok(/cargo_type: document\.getElementById\('so-cargo-type'\)/.test(code), 'phải gửi cargo_type khi lưu');
-assert.ok(/'so-cargo-type'\)\.value = so\.cargo_type/.test(code), 'mở đơn phải đọc lại cargo_type');
-assert.ok(/'so-weight-kg'\)\.value = so\.weight_kg/.test(code), 'mở đơn phải đọc lại tải trọng');
 
 // --- 8. Nhãn cấu phần do người dùng đặt không được thành mã ------------
 

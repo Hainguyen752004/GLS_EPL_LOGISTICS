@@ -81,7 +81,7 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8')
   assert.ok(/status: 'cancelled'/.test(than), "phải gửi đúng trạng thái 'cancelled'");
 
   // Hỏi lại trước khi hủy — đây là thao tác khó hoàn lại.
-  assert.ok(/confirm\(/.test(than), 'phải hỏi lại trước khi hủy');
+  assert.ok(/(confirm|prompt)\(/.test(than), 'phải hỏi lại (kèm lý do) trước khi hủy');
 
   // Thất bại phải nói ra, và nói LỜI CỦA MÁY CHỦ. 409 ACTIVE_TRIP_EXISTS là
   // câu trả lời có ích: còn chuyến đang chạy. Một câu "Lỗi khi hủy" chung

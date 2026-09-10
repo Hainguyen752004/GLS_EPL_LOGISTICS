@@ -1,13 +1,14 @@
 import datetime as dt
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 
-from models import (AuditLog, DeliveryOrder, Driver, DriverQualification,
+from models import (AuditLog, DeliveryOrder, Driver, DriverQualification, Quotation, VehicleType,
                     DriverShiftAssignment, FreightOrder, ResourceAssignment, Tender, TransportTrip,
                     TransportTripLeg, TripDeliveryOrder, Vehicle,
                     VehicleTracking, WarehouseAppointment)
 from services.errors import DomainError, conflict, missing_master
 from services.crew_policy import mark_crew_busy, require_crew
+from services import lich_xe
 from services.vehicle_capacity_policy import require_vehicle_capacity
 from services.vehicle_maintenance_service import require_no_maintenance_overlap
 from services import parking_list_service
@@ -171,8 +172,9 @@ def dispatch_freight_order(db, order_id, data, actor="system"):
         raise missing_master("driver", "tài xế")
     if co_driver_id and not co_driver:
         raise missing_master("driver", "phụ xe")
-    if vehicle.status != READY_VEHICLE:
-        raise conflict("RESOURCE_BUSY", "Xe hoặc tài xế không ở trạng thái sẵn sàng.")
+    # KHONG so nhan trang thai o day nua — xem `services/lich_xe.py`. Cua that
+    # la LICH: xuong, phan cong, ca lam viec — ba phep kiem do chay ben duoi voi
+    # DUNG khung gio cua lenh nay.
     require_crew(driver, co_driver)
     require_vehicle_capacity(
         vehicle,
@@ -219,10 +221,10 @@ def dispatch_freight_order(db, order_id, data, actor="system"):
         created_by=actor,
     )
     db.add(assignment)
-    vehicle.status = f"Đang thực hiện {order.id}"
-    mark_crew_busy(driver, vehicle.id, order.id)
-    if co_driver:
-        mark_crew_busy(co_driver, vehicle.id, order.id)
+    db.flush()
+    # MA TRANG THAI cua xe / to lai chieu tu LICH vua ghi (phan cong o tren).
+    lich_xe.dong_bo_trang_thai_theo_lich(
+        db, vehicle_id=vehicle.id, crew_ids=crew_ids, moc=assignment.assignment_start)
     order.status = "dispatched"
     order.version += 1
     order.updated_at = _now()
@@ -230,6 +232,45 @@ def dispatch_freight_order(db, order_id, data, actor="system"):
     _audit(db, "DISPATCH_FREIGHT_ORDER", "freight_orders", order.id, actor)
     db.flush()
     return order
+
+
+def _loai_xe(db, gia_tri):
+    """Ban ghi VehicleType theo MA hoac TEN — `vehicles.type` cu con luu ten."""
+    chu = str(gia_tri or "").strip()
+    if not chu:
+        return None
+    r = db.get(VehicleType, chu)
+    if r is None:
+        r = db.query(VehicleType).filter(func.lower(VehicleType.name) == chu.lower()).first()
+    return r
+
+
+def loai_xe_lech_bao_gia(db, vehicle, deliveries):
+    """Xe duoc dieu co KHAC loai xe ma bao gia da chot voi khach khong.
+
+    Tra ve (loai_bao_gia, loai_xe_that) khi lech; None khi khop hoac khong du du
+    lieu de so (DO tao tay khong co bao gia, bao gia chua chon loai xe, xe chua
+    gan loai). Khong du du lieu thi KHONG bao lech — bao lech gia con te hon
+    khong bao.
+
+    VI SAO CO CUA NAY. Bao gia khoa gia theo LOAI XE (khach mua "mot dau keo
+    20'"), con Dieu phoi chi kiem xe DU TAI. Nen mot chiec 40' dieu cho DO bao
+    gia 20' di qua im lang: khach van tra gia 20', ho so hoan tat tinh chi theo
+    cong thuc 40', cong ty ganh phan lech ma khong ai thay. Cua nay bat nguoi
+    dieu phoi NHIN THAY va XAC NHAN, khong chan cung — co luc co y len loai to
+    hon de gop hai DO mot chuyen.
+    """
+    loai_that = _loai_xe(db, getattr(vehicle, "type", None))
+    if loai_that is None:
+        return None
+    ma_bao_gia = {d.quotation_id for d in deliveries if getattr(d, "quotation_id", None)}
+    if not ma_bao_gia:
+        return None
+    for q in db.query(Quotation).filter(Quotation.id.in_(list(ma_bao_gia))).all():
+        loai_bao_gia = _loai_xe(db, q.vehicle_type_id)
+        if loai_bao_gia is not None and loai_bao_gia.id != loai_that.id:
+            return loai_bao_gia, loai_that
+    return None
 
 
 def dispatch_trip(db, trip_id, data, actor="system"):
@@ -280,8 +321,9 @@ def dispatch_trip(db, trip_id, data, actor="system"):
         raise missing_master("driver", "tài xế")
     if co_driver_id and not co_driver:
         raise missing_master("driver", "phụ xe")
-    if vehicle.status != READY_VEHICLE:
-        raise conflict("RESOURCE_BUSY", "Xe hoặc tài xế không ở trạng thái sẵn sàng.")
+    # KHONG so nhan trang thai o day nua. LICH la cua that, va no chay o duoi
+    # sau khi khung gio dieu phoi da duoc phan tich — `lich_xe.kiem_xe_ranh` va
+    # `lich_xe.kiem_to_lai_ranh`. Xem dau tep `services/lich_xe.py`.
     require_crew(driver, co_driver)
     require_vehicle_capacity(
         vehicle,
@@ -374,18 +416,13 @@ def dispatch_trip(db, trip_id, data, actor="system"):
             ["master-data/drivers"],
         )
 
-    overlap = db.query(ResourceAssignment.id).filter(
-        ResourceAssignment.status == "active",
-        ResourceAssignment.assignment_start < assignment_end,
-        ResourceAssignment.assignment_end > assignment_start,
-        or_(
-            ResourceAssignment.vehicle_id == vehicle.id,
-            ResourceAssignment.driver_id.in_(crew_ids),
-            ResourceAssignment.co_driver_id.in_(crew_ids),
-        ),
-    ).first()
-    if overlap:
-        raise conflict("RESOURCE_TIME_OVERLAP", "Xe hoặc tài xế đã được phân cho chuyến khác trong cùng thời gian.")
+    # MOT CHO DUY NHAT tra loi "xe / to lai co ranh trong khung nay khong", va
+    # no noi ro AI dang giu — cau bao loi cu chi noi "da duoc phan cho chuyen
+    # khac" ma khong noi chuyen nao, nen nguoi dieu phoi phai tu di do.
+    lich_xe.kiem_xe_ranh(db, vehicle.id, assignment_start, assignment_end,
+                         bo_qua_trip=trip.id)
+    lich_xe.kiem_to_lai_ranh(db, crew_ids, assignment_start, assignment_end,
+                             bo_qua_trip=trip.id)
 
     do_ids = [
         row[0]
@@ -400,6 +437,22 @@ def dispatch_trip(db, trip_id, data, actor="system"):
     if len(deliveries) != len(do_ids) or any(item.canonical_status != "pending" for item in deliveries):
         raise conflict("DELIVERY_ORDER_NOT_PENDING", "Mọi DO trong chuyến phải đang chờ vận chuyển.")
     parking_list_service.require_loaded_for_dispatch(db, do_ids)
+
+    # LOAI XE SO VOI BAO GIA — canh bao + bat xac nhan, khong chan cung.
+    lech = loai_xe_lech_bao_gia(db, vehicle, deliveries)
+    if lech is not None:
+        loai_bao_gia, loai_that = lech
+        if not data.get("confirm_vehicle_type_mismatch"):
+            raise conflict(
+                "VEHICLE_TYPE_MISMATCH",
+                "Báo giá chốt với khách loại xe \"%s\", nhưng xe %s thuộc loại \"%s\". "
+                "Cước khách vẫn theo báo giá; chi phí sẽ tính theo xe thật. "
+                "Xác nhận để vẫn điều xe này, hoặc chọn xe đúng loại."
+                % (loai_bao_gia.name, vehicle.id, loai_that.name),
+            )
+        # Da xac nhan: ghi nhat ky de ho so hoan tat va nguoi doc sau biet vi sao
+        # dong chi khac cong thuc cua bao gia.
+        _audit(db, "DISPATCH_TRIP_VEHICLE_TYPE_OVERRIDE", "transport_trips", trip.id, actor)
 
     assignment = ResourceAssignment(
         freight_order_id=order.id,
@@ -439,10 +492,11 @@ def dispatch_trip(db, trip_id, data, actor="system"):
             actor,
             note=f"Dong bo tu dieu phoi Trip {trip.id}",
         )
-    vehicle.status = f"Đang thực hiện {trip.id}"
-    mark_crew_busy(driver, vehicle.id, trip.id)
-    if co_driver:
-        mark_crew_busy(co_driver, vehicle.id, trip.id)
+    db.flush()
+    # MA TRANG THAI cua xe / to lai chieu tu LICH vua ghi (phan cong o tren),
+    # khong ghi cung chuoi nua.
+    lich_xe.dong_bo_trang_thai_theo_lich(
+        db, vehicle_id=vehicle.id, crew_ids=crew_ids, moc=assignment_start)
     for delivery in deliveries:
         leg_distances = db.query(TransportTripLeg.distance_km).filter(
             TransportTripLeg.trip_id == trip.id,

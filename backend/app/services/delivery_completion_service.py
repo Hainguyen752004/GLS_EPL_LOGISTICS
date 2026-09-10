@@ -16,7 +16,6 @@ from models import (
     IdempotencyRecord,
     Quotation,
     ResourceAssignment,
-    SalesOrder,
     TransportTrip,
     TransportTripLeg,
     TripDeliveryOrder,
@@ -31,6 +30,21 @@ MONEY_QUANTUM = Decimal("0.000001")
 MAX_POD_BYTES = 10 * 1024 * 1024
 ALLOWED_POD_MIME_TYPES = {"image/jpeg", "image/png", "application/pdf"}
 ALLOWED_SIGNATURE_MIME_TYPES = {"image/png"}
+
+
+def _costindex_theo_ten(db, trip_id, ten):
+    """Ma costindex cho mot khoan khach tra them, suy tu cong thuc cua xe chay chuyen.
+
+    Khoan khach tra them duoc nhap bang TEN ("Phi cau duong"), khong co khoa.
+    Tra "" khi khong suy duoc — ho so hoan tat se noi "chua gan ma" thay vi bia.
+    """
+    from models import TransportTrip
+    from services.khoan_muc_chi_phi import bang_costindex_cua_xe, costindex_cho
+
+    trip = db.get(TransportTrip, trip_id) if trip_id else None
+    if trip is None or not trip.vehicle_id:
+        return ""
+    return costindex_cho(bang_costindex_cua_xe(db, trip.vehicle_id), ten=ten) or ""
 
 
 def _money(value):
@@ -121,8 +135,16 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     delivery = db.scalar(select(DeliveryOrder).where(DeliveryOrder.id == do_id).with_for_update())
     if not delivery:
         raise DomainError("DELIVERY_ORDER_NOT_FOUND", f"Không tìm thấy DO {do_id}.", 404)
-    if delivery.canonical_status != "in_transit":
-        raise conflict("DELIVERY_ORDER_NOT_IN_TRANSIT", "Chỉ DO đang vận chuyển mới được hoàn tất giao.")
+    # `arrived` CŨNG được hoàn tất — đó chính là trạng thái "xe đã tới, chờ POD",
+    # tức bước ngay TRƯỚC hoàn tất. Bản trước chỉ nhận `in_transit`, và sau khi
+    # mốc `arrival` bắt đầu tự đưa DO sang `arrived` (đồng bộ qua
+    # `trip_delivery_orders`) thì MỌI chuyến báo tới nơi đều bị 409 ở bước POD —
+    # đo được khi gieo demo: 5/5 case xong vỡ với "Chỉ DO đang vận chuyển mới
+    # được hoàn tất giao". Chuyến không báo mốc tới nơi vẫn đi thẳng
+    # `in_transit -> delivered` như cũ.
+    if delivery.canonical_status not in ("in_transit", "arrived"):
+        raise conflict("DELIVERY_ORDER_NOT_IN_TRANSIT",
+                       "Chỉ DO đang vận chuyển hoặc đã đến nơi mới được hoàn tất giao.")
 
     trip = db.scalar(select(TransportTrip).where(TransportTrip.id == payload.trip_id).with_for_update())
     membership = db.get(TripDeliveryOrder, (payload.trip_id, do_id))
@@ -137,25 +159,16 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
     # thẳng thành DO, và giá được KHOÁ ngay trên từng DO (`unit_price`) — đó
     # chính là lý do bước SO bị bỏ.
     #
-    # Trước đây đoạn này chỉ đi một đường: DO → `so_id` → SO → báo giá. Một DO
-    # sinh từ báo giá không có `so_id`, nên nó dừng ở "DO chưa có giá SO/Báo giá
-    # hợp lệ" — nghĩa là MỌI chuyến của luồng mới không hoàn tất giao được, và
-    # lỗi hiện ra ở bước cuối cùng, sau khi tài xế đã giao hàng xong.
-    #
     # Thứ tự dưới đây theo mức cụ thể, cao nhất trước:
     #
     #   1. `delivery_orders.unit_price` — giá đã khoá cho ĐÚNG chuyến này. Nó cụ
     #      thể hơn cả báo giá, vì một báo giá tách ra nhiều DO và giá khoá là
     #      con số vận hành không sửa được ở dưới.
-    #   2. Báo giá mà DO trỏ tới (`quotation_id`).
-    #   3. Đường cũ: SO, rồi báo giá của SO. Giữ nguyên cho những DO tạo trước
-    #      khi bỏ bước SO — chúng vẫn phải quyết toán được.
-    sales_order = db.get(SalesOrder, delivery.so_id) if delivery.so_id else None
+    #   2. Báo giá mà DO trỏ tới (`quotation_id`). Không còn đường nào khác:
+    #      bước Đơn hàng (SO) đã trục xuất ở migration 049.
     quotation = None
     if getattr(delivery, "quotation_id", None):
         quotation = db.get(Quotation, delivery.quotation_id)
-    if quotation is None and sales_order is not None and sales_order.quotation_id:
-        quotation = db.get(Quotation, sales_order.quotation_id)
 
     base_price = _money(getattr(delivery, "unit_price", 0))
     source = "delivery_order"
@@ -164,28 +177,20 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
         base_price = _money(quotation.selling_price)
         source = "quotation"
         source_id = quotation.id
-    if base_price <= 0 and sales_order is not None:
-        base_price = _money(sales_order.total_amount)
-        source = "sales_order"
-        source_id = sales_order.id
     if base_price <= 0 or not source_id:
         raise DomainError(
             "BASE_PRICE_MISSING",
-            "Lệnh giao hàng %s chưa có giá: không có giá khoá trên lệnh, không nối "
-            "được báo giá, và cũng không có đơn hàng. Không có giá thì không "
+            "Lệnh giao hàng %s chưa có giá: không có giá khoá trên lệnh và không nối "
+            "được báo giá. Không có giá thì không "
             "quyết toán và không phát hành hoá đơn được." % delivery.id,
             422)
 
-    # ĐỒNG TIỀN lấy theo nguồn giá đang dùng, không lấy cứng từ SO: một DO của
-    # luồng mới không có SO, nên đọc từ SO sẽ luôn ra "VND" — và một báo giá
-    # bằng USD sẽ lặng lẽ được quyết toán như tiền đồng.
+    # ĐỒNG TIỀN lấy theo nguồn giá đang dùng (DO hoặc báo giá), không mặc định
+    # "VND": một báo giá bằng USD sẽ lặng lẽ bị quyết toán như tiền đồng.
     source_currency = "VND"
-    for nguoi_giu in (quotation if source in ("delivery_order", "quotation") else None,
-                      sales_order):
-        ma_tien = getattr(nguoi_giu, "currency_code", None) if nguoi_giu is not None else None
-        if ma_tien:
-            source_currency = str(ma_tien).upper()
-            break
+    ma_tien = getattr(quotation, "currency_code", None) if quotation is not None else None
+    if ma_tien:
+        source_currency = str(ma_tien).upper()
     if payload.currency_code != source_currency:
         raise DomainError(
             "CURRENCY_MISMATCH",
@@ -302,6 +307,10 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
             name=item.name, original_amount=_money(item.original_amount),
             actual_amount=_money(item.actual_amount), increase_amount=_money(item.increase_amount),
             note=item.note, created_by=actor,
+            # Ma costindex: man gui thi lay, khong thi suy tu cong thuc gia thanh
+            # cua xe chay chuyen theo ten khoan muc — de dong THU nao cung co ma
+            # cho he cong no, khong phu thuoc giao dien co nho gui hay khong.
+            cost_index=(item.cost_index or "").strip() or _costindex_theo_ten(db, payload.trip_id, item.name),
         )
         db.add(row)
         adjustments.append(row)

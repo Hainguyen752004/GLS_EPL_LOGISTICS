@@ -199,13 +199,30 @@ def test_config_does_not_search_above_project_root():
 
 
 def test_http_database_requests_are_isolated(app_client):
+    """Mot yeu cau HTTP cua bai kiem KHONG duoc doc/ghi co so du lieu that.
+
+    Y DINH GIU NGUYEN, PHEP DO THI DOI. Ban truoc do su co lap bang cach kiem
+    `database_file.exists()` — tuc "co mot TEP SQLite rieng cho bai kiem nay".
+    Bo kiem gio chay tren PostgreSQL nen khong con tep nao, va phep do do chi
+    con noi ve mot che do da bo.
+
+    Su co lap that thi van phai co, va gio no o hai cho: yeu cau chay trong mot
+    SCHEMA rieng (`EPL_DB_SEARCH_PATH` tro vao schema cua dung bai kiem nay), va
+    co so du lieu ung dung that KHONG doi mot byte nao.
+    """
+    import os
+
     client, database_file, real_before = app_client
 
     response = client.get("/api/vehicles")
 
     assert response.status_code == 200
     assert response.json() == []
-    assert database_file.exists()
+
+    schema = os.environ.get("EPL_DB_SEARCH_PATH") or ""
+    assert schema.startswith("t_"), (
+        "yeu cau HTTP khong chay trong schema rieng cua bai kiem (%r) — thieu no "
+        "thi hai bai kiem ghi de du lieu cua nhau" % schema)
     assert _database_fingerprint(APP_DIR / "epl_logistics.db") == real_before
 
 

@@ -114,6 +114,11 @@
       rate: Math.max(0, toNumber(term.rate)),
       // Cấu phần dựng sẵn thì không cho xóa, để công thức không bị rỗng ruột.
       builtin: Boolean(term.builtin),
+      // Mã costindex — mã phân loại chi phí của EPL, người làm tài chính tự đặt
+      // cho từng khoản mục. Phải đi qua đây nguyên vẹn: `normalize()` chạy mỗi
+      // lần vẽ lại bảng, và bản trước không giữ trường này nên mã vừa gõ biến
+      // mất ngay lần vẽ kế tiếp.
+      cost_index: String(term.cost_index || '').trim().slice(0, 32),
     };
   }
 
@@ -131,7 +136,7 @@
    * nên chỉ cần cộng dồn. Không có đường nào để một chuỗi từ người dùng chạy
    * thành mã.
    */
-  function evaluate(terms, trip) {
+  function evaluate(terms, trip, expressions) {
     const sample = normalizeTrip(trip);
     const rows = normalize(terms).map(term => {
       const factor = FACTORS[term.factor];
@@ -154,6 +159,8 @@
     // `total` van la tong dai so cua moi hang tu, chi de kiem tra va tuong
     // thich nguoc. KHONG dung no lam gia ban hay gia thanh.
     const total = cost + revenue;
+    const expressionResult = expressions ? (typeof module === 'object' && module.exports
+      ? require('./cost-expression') : globalThis.CostExpression).evaluate(expressions, rows, {...trip, ...sample}) : {};
     return {
       trip: sample,
       rows,
@@ -167,6 +174,7 @@
       total,
       perKm: sample.km ? cost / sample.km : 0,
       configured: rows.some(row => row.rate > 0),
+      ...expressionResult,
     };
   }
 
@@ -178,7 +186,7 @@
    */
   function toText(terms) {
     const rows = normalize(terms);
-    if (!rows.length) return 'Chưa có cấu phần nào';
+    if (!rows.length) return 'Chưa có khoản mục nào';
     return rows.map((term, index) => {
       const factor = FACTORS[term.factor];
       const piece = term.factor === 'per_trip'
@@ -199,13 +207,13 @@
     const rows = normalize(terms);
     const issues = [];
     if (!rows.length) {
-      issues.push({ level: 'error', message: 'Công thức chưa có cấu phần nào.' });
+      issues.push({ level: 'error', message: 'Công thức chưa có khoản mục nào.' });
       return issues;
     }
     const seen = new Map();
     rows.forEach(term => {
       if (seen.has(term.key)) {
-        issues.push({ level: 'error', key: term.key, message: `Cấu phần "${term.label}" bị khai hai lần.` });
+        issues.push({ level: 'error', key: term.key, message: `Khoản mục "${term.label}" bị khai hai lần.` });
       }
       seen.set(term.key, true);
       if (!term.rate) {
@@ -227,13 +235,13 @@
       }
     });
     if (rows.every(term => !term.rate)) {
-      issues.push({ level: 'error', message: 'Mọi cấu phần đều bằng 0 nên tổng luôn bằng 0.' });
+      issues.push({ level: 'error', message: 'Mọi khoản mục đều bằng 0 nên tổng luôn bằng 0.' });
     }
     // Khong co cau phan gia ban thi khong bao gia duoc - chi tinh ra gia thanh.
     if (!rows.some(term => term.kind === 'revenue' && term.rate > 0)) {
       issues.push({
         level: 'error',
-        message: 'Công thức chưa có cấu phần nào là giá bán, nên chưa ra được cước thu khách.',
+        message: 'Công thức chưa có khoản mục nào là giá bán, nên chưa ra được cước thu khách.',
       });
     }
     // Ban duoi gia thanh la lo. Khong chan, nhung phai noi ro.

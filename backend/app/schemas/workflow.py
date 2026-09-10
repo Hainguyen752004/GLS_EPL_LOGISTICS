@@ -105,85 +105,6 @@ class QuotationUpdateRequest(QuotationCreateRequest):
     route_id: Optional[str] = None
 
 
-class SalesOrderLineRequest(StrictRequest):
-    """Mot dong hang hoa van chuyen.
-
-    `uom` vua quyet dinh cach tinh cuoc, vua duoc quy doi ra khoi luong / the
-    tich de chan dieu xe qua tai.
-    """
-    description: Optional[str] = None
-    quantity: Optional[Number] = None
-    uom: Optional[str] = None
-    unit_price: Optional[Number] = None
-
-
-class SalesOrderCreateRequest(StrictRequest):
-    id: Optional[str] = None
-    quotation_id: str
-    route_id: Optional[str] = None
-    origin: Optional[str] = None
-    destination: Optional[str] = None
-    pickup_window_start: Optional[str] = None
-    pickup_window_end: Optional[str] = None
-    delivery_window_start: Optional[str] = None
-    delivery_window_end: Optional[str] = None
-    weight_kg: Optional[Number] = None
-    pallet_count: Optional[int] = None
-    total_amount: Optional[Number] = None
-    order_date: Optional[str] = None
-    currency_code: Optional[str] = None
-    lines: Optional[List[SalesOrderLineRequest]] = None
-    carrier_name: Optional[str] = None
-    delivery_method: Optional[str] = None
-    # Hai cot nay CO THAT trong bang sales_orders nhung schema chua bao gio
-    # nhan chung, nen o "Dieu khoan thanh toan" va "Nhan vien kinh doanh"
-    # tren man hinh khong bao gio duoc luu.
-    payment_terms: Optional[str] = None
-    sales_rep: Optional[str] = None
-    cargo_type: Optional[str] = None
-    seal_weight: Optional[str] = None
-    temperature_requirement: Optional[str] = None
-    cargo_insurance: Optional[str] = None
-    warehouse_owner: Optional[str] = None
-    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
-    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
-    notes: Optional[str] = None
-    packaging_spec: Optional[str] = None
-    volume_m3: Optional[Number] = None
-
-
-class SalesOrderUpdateRequest(StrictRequest):
-    route_id: Optional[str] = None
-    origin: Optional[str] = None
-    destination: Optional[str] = None
-    pickup_window_start: Optional[str] = None
-    pickup_window_end: Optional[str] = None
-    delivery_window_start: Optional[str] = None
-    delivery_window_end: Optional[str] = None
-    weight_kg: Optional[Number] = None
-    pallet_count: Optional[int] = None
-    total_amount: Optional[Number] = None
-    currency_code: Optional[str] = None
-    packaging_spec: Optional[str] = None
-    volume_m3: Optional[Number] = None
-    lines: Optional[List[SalesOrderLineRequest]] = None
-    carrier_name: Optional[str] = None
-    delivery_method: Optional[str] = None
-    # O Ghi chu tren man hinh. Truoc day khong bang nao co cot de chua va
-    # khong payload nao gui len, nen go xong bam Luu la mat khong mot loi nao.
-    notes: Optional[str] = None
-    # Hai cot nay CO THAT trong bang sales_orders nhung schema chua bao gio
-    # nhan chung, nen o "Dieu khoan thanh toan" va "Nhan vien kinh doanh"
-    # tren man hinh khong bao gio duoc luu.
-    payment_terms: Optional[str] = None
-    sales_rep: Optional[str] = None
-    cargo_type: Optional[str] = None
-    seal_weight: Optional[str] = None
-    temperature_requirement: Optional[str] = None
-    cargo_insurance: Optional[str] = None
-    warehouse_owner: Optional[str] = None
-
-
 class WorkflowStatusRequest(StrictRequest):
     status: str
 
@@ -193,35 +114,6 @@ class RouteCreateRequest(StrictRequest):
     name: Optional[str] = None
     distance_km: Optional[Number] = None
     segments_json: Optional[str] = None
-
-
-class DeliveryOrderCreateRequest(StrictRequest):
-    id: Optional[str] = None
-    so_id: str
-    route_id: Optional[str] = None
-    origin: Optional[str] = None
-    destination: Optional[str] = None
-    pickup_window_start: Optional[str] = None
-    pickup_window_end: Optional[str] = None
-    delivery_window_start: Optional[str] = None
-    delivery_window_end: Optional[str] = None
-    pickup_date: Optional[str] = None
-    delivery_date: Optional[str] = None
-    weight_kg: Optional[Number] = None
-    pallet_count: Optional[int] = None
-    # Quy cách đóng gói và số niêm phong khai được NGAY LÚC TẠO.
-    #
-    # Vì sao cần: cửa chặn xuất bến chia hai đường theo quy cách — hàng đếm được
-    # theo kiện thì phải quét đủ kiện, hàng nguyên khối thì phải có số niêm
-    # phong. Trước đây hai trường này chỉ sửa được SAU khi tạo, nên một đơn
-    # nguyên khối tạo xong là không xuất bến được cho tới khi có người vào sửa
-    # lại — một bước phụ không có lý do nào cả.
-    packaging_spec: Optional[str] = None
-    seal_no: Optional[str] = None
-
-    _validate_operational_datetimes = field_validator(
-        *DO_OPERATIONAL_DATETIME_FIELDS, mode="before"
-    )(_aware_utc_iso)
 
 
 class DeliveryOrderUpdateRequest(StrictRequest):
@@ -252,6 +144,8 @@ class DeliveryOrderUpdateRequest(StrictRequest):
 
 class DeliveryOrderStatusRequest(StrictRequest):
     status: str
+    # Ly do — bat buoc khi status = cancelled (may chu kiem), tuy chon cho cac chuyen khac.
+    reason: Optional[str] = None
 
 
 class DeliveryOrderDispatchRequest(StrictRequest):

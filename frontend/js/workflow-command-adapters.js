@@ -4,7 +4,7 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.WorkflowCommandAdapters = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function (policy) {
-  const COMMAND_NAMES = ['quotationCreate', 'quotationEdit', 'quotationApprove', 'salesOrderCreate', 'salesOrderEdit', 'salesOrderConfirm', 'deliveryOrderCreate', 'deliveryOrderEdit', 'deliveryOrderApprove', 'dispatch', 'shipmentStep', 'pod'];
+  const COMMAND_NAMES = ['quotationCreate', 'quotationEdit', 'quotationApprove', 'deliveryOrderCreate', 'deliveryOrderEdit', 'deliveryOrderApprove', 'dispatch', 'shipmentStep', 'pod'];
 
   function createWorkflowCommandAdapters({ request, reload, applyServerState, onError }) {
     const execute = ({ path, method = 'POST', body, headers = {} }) => policy.executeCommand({

@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.parametrize(
     "path",
-    ["/api/quotations", "/api/sales-orders", "/api/delivery-orders", "/api/tms/trips"],
+    ["/api/quotations", "/api/delivery-orders", "/api/tms/trips"],
 )
 def test_primary_workflow_lists_use_bounded_pagination(app_client, path):
     client, _, _ = app_client

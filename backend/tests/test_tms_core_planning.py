@@ -7,11 +7,12 @@ from sqlalchemy.orm import sessionmaker
 
 from database import Base
 from models import Customer, Location
+from conftest import ket_noi_du_lieu
 
 
 @pytest.fixture
-def db_session(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'tms-core.db'}")
+def db_session(may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     try:
@@ -101,7 +102,7 @@ def test_demand_validates_time_windows(db_session, tms_service, tms_master_data)
 
 def test_tms_api_runs_demand_to_freight_order_vertical_slice(app_client):
     client, database_file, _ = app_client
-    with sqlite3.connect(database_file) as connection:
+    with ket_noi_du_lieu(database_file) as connection:
         connection.execute("INSERT INTO customers(id,name) VALUES (?,?)", ("CUS-001", "Khách hàng API"))
         connection.executemany(
             "INSERT INTO locations(id,name,type) VALUES (?,?,?)",

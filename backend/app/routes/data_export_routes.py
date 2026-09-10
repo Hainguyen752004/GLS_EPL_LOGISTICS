@@ -46,7 +46,7 @@ if app_dir not in sys.path:
 
 from database import get_db
 from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -133,34 +133,9 @@ async def get_all_data(request: Request, db: Session = Depends(get_db)):
             }
             for q in db.query(Quotation).order_by(Quotation.id.desc()).limit(100).all()
         ],
-        "sales_orders": [
-            {
-                "id": s.id, 
-                "quotation_id": s.quotation_id, 
-                "customer": s.customer_id, 
-                "customer_id": s.customer_id, 
-                "origin": s.origin, 
-                "destination": s.destination, 
-                "route_id": s.route_id,
-                "pickup_window_start": s.pickup_window_start,
-                "pickup_window_end": s.pickup_window_end,
-                "delivery_window_start": s.delivery_window_start,
-                "delivery_window_end": s.delivery_window_end,
-                "weight_kg": s.weight_kg,
-                "pallet_count": s.pallet_count,
-                "order_date": s.order_date, 
-                "payment_terms": s.payment_terms, 
-                "sales_rep": s.sales_rep, 
-                "description": f"Vận chuyển {s.origin} -> {s.destination}", 
-                "status": s.status, 
-                "total_amount": s.total_amount
-            }
-            for s in db.query(SalesOrder).order_by(SalesOrder.id.desc()).limit(100).all()
-        ],
         "delivery_orders": [
             {
                 "id": d.id, 
-                "so_id": d.so_id, 
                 "customer": d.customer_id, 
                 "customer_id": d.customer_id, 
                 "route": d.route_id, 

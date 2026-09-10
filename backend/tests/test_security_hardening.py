@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from conftest import API_TEST_HEADERS, API_TEST_TOKEN
+from conftest import API_TEST_HEADERS, API_TEST_TOKEN, ket_noi_du_lieu
 
 
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
@@ -356,7 +356,7 @@ def test_seed_guard_allows_confirmed_sqlite(monkeypatch):
 
 def test_auto_migrate_targets_the_engine_database(tmp_path, monkeypatch):
     """Ở chế độ sqlite mà DATABASE_URL trống, engine tự tính đường dẫn còn
-    upgrade("") lại đi qua sqlite3.connect("") — lệnh này không báo lỗi, nó mở
+    upgrade("") lại đi qua ket_noi_du_lieu("") — lệnh này không báo lỗi, nó mở
     một database tạm rồi vứt đi, nên file thật không hề được nâng cấp."""
     monkeypatch.setenv("DATABASE_MODE", "sqlite")
     monkeypatch.setenv("DATABASE_URL", "")

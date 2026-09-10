@@ -36,13 +36,19 @@ from models import Customer, DeliveryOrder, Quotation, Route
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'do_tuyen.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add(Customer(id="CUS-RT", name="Khach kiem tuyen"))
     session.add(Route(id="RT-DAI", name="Tuyen dai", distance_km=120, segments_json="[]"))
     session.add(Route(id="RT-NGAN", name="Tuyen ngan", distance_km=40, segments_json="[]"))
+    # Khach hang va tuyen duong phai VAO TRUOC bao gia. `Quotation.route_id`
+    # khai `ForeignKey("routes.id")` ma khong khai `relationship()`, va
+    # SQLAlchemy xep thu tu chen theo RELATIONSHIP chu khong theo cot khoa ngoai
+    # tran — thieu no thi no xep theo ten bang, va `quotations` di truoc
+    # `routes`. PostgreSQL cuong che khoa ngoai nen vo ngay.
+    session.flush()
     session.add(Quotation(
         id="QT-RT", customer_id="CUS-RT", route_id="RT-DAI",
         canonical_status="split", status="Da tach DO",
@@ -126,13 +132,38 @@ def test_do_tao_tay_thi_doi_tuyen_tu_do(db):
     assert kq.route_id == "RT-NGAN"
 
 
-def test_khong_doi_tuyen_thi_khong_can_bao_gia_con_ton_tai(db):
-    """Sửa khối lượng của một DO cũ mà báo giá gốc đã bị xoá thì vẫn phải được.
+def test_khong_doi_tuyen_thi_khong_can_doc_bao_gia(db):
+    """Sửa khối lượng của một DO sinh từ báo giá thì cửa chặn không được xen vào.
 
     Cửa chặn chỉ nói về việc ĐỔI TUYẾN; nó không được biến thành một phép kiểm
     toàn vẹn dữ liệu chặn cả những việc không liên quan.
+
+    BÀI NÀY TRƯỚC ĐÂY DỰNG MỘT CẢNH KHÔNG TỒN TẠI. Nó tạo một DO trỏ vào
+    `quotation_id="QT-DA-XOA"` — một báo giá không có thật — để giả cảnh "báo giá
+    gốc đã bị xoá". Cảnh đó chạy được trên SQLite vì SQLite trong dự án tắt
+    `PRAGMA foreign_keys`. Trên PostgreSQL thật thì KHÔNG:
+
+        delivery_orders_quotation_id_fkey  FOREIGN KEY (quotation_id)
+            REFERENCES quotations(id)      -- ON DELETE NO ACTION
+
+    Nên một DO mồ côi báo giá không thể tồn tại, và một báo giá đã có DO cũng
+    không thể xoá. Giữ bài kiểm cũ là chốt lại hành vi cho một trạng thái dữ
+    liệu mà cơ sở dữ liệu thật không cho phép — tức chốt vào chỗ trống.
+
+    Phần đáng chốt thì vẫn còn: cửa chặn chỉ ĐỌC báo giá khi tuyến ĐỔI. Bài này
+    kiểm đúng điều đó, cộng thêm việc ghi nhận rằng trạng thái mồ côi là bất khả.
     """
+    import sqlalchemy.exc
     from services import workflow_service as svc
-    do = _do(db, id="DO-RT-MOCOI", quotation_id="QT-DA-XOA")
+
+    do = _do(db, id="DO-RT-SUA-CAN")
     kq = svc.update_delivery_order(db, do.id, {"weight_kg": 8000}, "nguoi-dieu-phoi")
     assert float(kq.weight_kg) == 8000
+    assert kq.route_id == "RT-DAI", "sửa khối lượng không được đổi tuyến"
+
+    # Và ghi lại vì sao cảnh "mồ côi báo giá" không cần bài kiểm nào: cơ sở dữ
+    # liệu chặn nó. Nếu một ngày khoá ngoại này bị bỏ thì phép dưới đây đỏ, và
+    # người sửa sẽ đọc được rằng phải xử lý trạng thái mồ côi ở tầng nghiệp vụ.
+    with pytest.raises(sqlalchemy.exc.IntegrityError):
+        _do(db, id="DO-RT-MOCOI", quotation_id="QT-KHONG-CO-THAT")
+    db.rollback()

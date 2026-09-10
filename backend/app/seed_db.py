@@ -1,6 +1,6 @@
 import os
 from database import engine, Base, SessionLocal
-from models import Vehicle, Driver, Route, Customer, Quotation, SalesOrder, DeliveryOrder, ARInvoice, GLTransaction, VehicleType
+from models import Vehicle, Driver, Route, Customer, Quotation, DeliveryOrder, ARInvoice, GLTransaction, VehicleType
 from seed_guard import assert_demo_seed_allowed
 
 def init_db():

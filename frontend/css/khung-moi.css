@@ -22,9 +22,9 @@
   --epl-ink-2: #475569;
   --epl-ink-3: #7b8796;
   /* Màu nhấn */
-  --epl-blue: #1a73e8;
-  --epl-blue-2: #e9f1fd;
-  --epl-blue-3: #0b4faa;
+  --epl-blue: #2563eb;
+  --epl-blue-2: #eff6ff;
+  --epl-blue-3: #1e40af;
   /* Màu trạng thái — dành riêng cho trạng thái, không dùng làm màu nhấn */
   --epl-red: #d32f2f;
   --epl-red-2: #fdecec;
@@ -35,13 +35,13 @@
   --epl-purple: #7c3aed;
   --epl-purple-2: #efe9fd;
   /* Dải thương hiệu tầng 1 */
-  --epl-nav: #0f1c2e;
-  --epl-nav-2: #1a2b45;
-  --epl-nav-line: #2e4260;
-  --epl-nav-ink: #b3c0d1;
+  --epl-nav: #0b2e5c;
+  --epl-nav-2: #12417c;
+  --epl-nav-line: #1f4f8c;
+  --epl-nav-ink: #cbd5e1;
   /* Chiều cao ba tầng — dùng lại ở nhiều nơi nên đặt tên */
-  --epl-h-bar1: 52px;
-  --epl-h-bar2: 48px;
+  --epl-h-bar1: 60px;
+  --epl-h-bar2: 54px;
 }
 
 /* ===== TẦNG 1: thương hiệu và việc toàn cục ===== */
@@ -61,7 +61,7 @@
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   white-space: nowrap;
   cursor: pointer;
   background: none;
@@ -85,13 +85,13 @@
   margin-left: 6px;
 }
 .epl-scope select {
-  height: 32px;
+  height: 40px;
   border: 1px solid var(--epl-nav-line);
   border-radius: 8px;
   padding: 0 10px;
   background: var(--epl-nav-2);
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 14px;
   color: #fff;
   font-family: inherit;
 }
@@ -100,12 +100,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
+  height: 40px;
   padding: 0 12px;
   border: 1px solid var(--epl-nav-line);
   border-radius: 9px;
-  color: #8898ae;
+  color: #cbd5e1;
   flex: 1;
+  min-width: 0;
   max-width: 520px;
   margin: 0 auto;
   font-size: 12.5px;
@@ -120,19 +121,19 @@
   border: 0;
   outline: 0;
   flex: 1;
-  font-size: 13px;
+  font-size: 15px;
   color: #fff;
   background: none;
   font-family: inherit;
   min-width: 0;
 }
-.epl-gsearch input::placeholder { color: #8898ae; }
+.epl-gsearch input::placeholder { color: #cbd5e1; opacity: 1; }
 .epl-gsearch kbd {
   font: 11px Inter, system-ui, sans-serif;
   border: 1px solid var(--epl-nav-line);
   border-radius: 4px;
   padding: 0 5px;
-  color: #8898ae;
+  color: #cbd5e1;
 }
 
 /* Bảng kết quả tìm nhanh — treo dưới ô tìm, không đẩy dải */
@@ -176,8 +177,8 @@
 }
 
 .epl-ic {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--epl-nav-line);
   border-radius: 9px;
   background: var(--epl-nav-2);
@@ -202,36 +203,47 @@
   line-height: 16px;
 }
 
-.epl-lang {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 10px;
-  border: 1px solid var(--epl-nav-line);
-  border-radius: 9px;
-  background: var(--epl-nav-2);
-  color: #dfe6ef;
-  font-size: 13px;
-  flex: none;
-}
-.epl-lang select {
-  border: 0;
-  outline: 0;
-  background: none;
-  color: #fff;
-  font-weight: 700;
-  font-size: 12.5px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.epl-lang select option { color: #000; }
+/* ---- Nút đổi ngôn ngữ — theo mẫu nhap_UI__duan/language-switcher.html ----
+   Nút cờ + mã, mở một danh sách (listbox) có tên ngôn ngữ, tên bản địa và dấu
+   tick ở dòng đang chọn. Thay cho <select> trần vì select không cho vẽ cờ và
+   trình duyệt tự vẽ danh sách rơi theo kiểu của hệ điều hành. */
+.epl-lang { position: relative; flex: none; font-family: "Be Vietnam Pro", Inter, system-ui, sans-serif; }
+.epl-lang-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px 0 10px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.10); color: #fff; font: inherit; font-weight: 600;
+  cursor: pointer; transition: background .15s, border-color .15s; letter-spacing: .02em; }
+.epl-lang-btn:hover { background: rgba(255,255,255,.18); }
+.epl-lang-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+.epl-lang-btn[aria-expanded="true"] { background: #fff; color: #0F3D91; border-color: #fff; }
+.epl-lang .flag { width: 20px; height: 14px; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.12); flex: none; }
+.epl-lang-btn .chev { transition: transform .18s; }
+.epl-lang-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.epl-lang-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; padding: 6px; margin: 0; list-style: none;
+  background: #fff; border: 1px solid #D9E1EE; border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(11,47,110,.06), 0 16px 40px -12px rgba(11,47,110,.30);
+  opacity: 0; transform: translateY(-6px) scale(.98); pointer-events: none; transform-origin: top right;
+  transition: opacity .15s, transform .15s; z-index: 1200; }
+.epl-lang.open .epl-lang-menu { opacity: 1; transform: none; pointer-events: auto; }
+.epl-lang-menu::before { content: ""; position: absolute; right: 18px; top: -6px; width: 10px; height: 10px; background: #fff;
+  border-left: 1px solid #D9E1EE; border-top: 1px solid #D9E1EE; transform: rotate(45deg); }
+.epl-lang-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px;
+  background: none; font: inherit; color: #132039; cursor: pointer; text-align: left; }
+.epl-lang-item:hover, .epl-lang-item:focus-visible { background: #F1F5FD; outline: none; }
+.epl-lang-item .flag { width: 24px; height: 17px; }
+.epl-lang-item .txt { display: flex; flex-direction: column; line-height: 1.25; flex: 1; }
+.epl-lang-item .name { font-weight: 500; }
+.epl-lang-item .native { font-size: 12px; color: #7C8AA3; }
+.epl-lang-item .code { font-size: 11px; font-weight: 600; color: #7C8AA3; letter-spacing: .06em; }
+.epl-lang-item[aria-selected="true"] { background: #E3ECFC; }
+.epl-lang-item[aria-selected="true"] .name, .epl-lang-item[aria-selected="true"] .code { color: #0F3D91; }
+.epl-lang-item .check { width: 16px; height: 16px; flex: none; visibility: hidden; color: #1D5FD1; }
+.epl-lang-item[aria-selected="true"] .check { visibility: visible; }
+@media (prefers-reduced-motion: reduce) { .epl-lang-btn .chev, .epl-lang-menu { transition: none; } }
 
 .epl-me {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 14px;
   padding-left: 6px;
   white-space: nowrap;
 }
@@ -247,7 +259,7 @@
   font-size: 11px;
 }
 .epl-me b { display: block; font-weight: 600; }
-.epl-me span { display: block; color: var(--epl-nav-ink); font-size: 11px; }
+.epl-me span { display: block; color: var(--epl-nav-ink); font-size: 12px; }
 
 /* ===== TẦNG 2: điều hướng theo công việc ===== */
 .epl-bar2 {
@@ -268,8 +280,8 @@
   background: none;
   padding: 0 14px;
   font-weight: 600;
-  font-size: 13.5px;
-  color: var(--epl-ink-2);
+  font-size: 15px;
+  color: var(--epl-ink);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -308,7 +320,7 @@
 .epl-menu.epl-show { display: block; }
 .epl-menu .epl-mi {
   display: grid;
-  grid-template-columns: 26px minmax(0, 1fr) auto;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   padding: 9px 10px;
@@ -318,13 +330,20 @@
 }
 .epl-menu .epl-mi:hover { background: #f6f8fb; }
 .epl-menu .epl-mi.epl-on { background: var(--epl-blue-2); }
+/* Bieu tuong trong O XANH NHAT bo tron — dong bo moi bang chon (chu du an chi
+   ba bang Van hanh / Kinh doanh / Bao cao con bieu tuong den). */
 .epl-menu .epl-mi i {
   font-style: normal;
   text-align: center;
-  font-size: 14px;
-  color: var(--epl-ink-3);
+  font-size: 16px;
+  font-weight: 700;
+  width: 34px; height: 34px; line-height: 34px;
+  border-radius: 10px;
+  background: var(--epl-blue-2);
+  color: var(--epl-blue-3);
+  display: inline-block;
 }
-.epl-menu .epl-mi.epl-on i { color: var(--epl-blue-3); }
+.epl-menu .epl-mi.epl-on i { background: var(--epl-blue); color: #fff; }
 .epl-menu .epl-mi b { display: block; font-size: 13px; font-weight: 600; }
 .epl-menu .epl-mi span { display: block; font-size: 11.5px; color: var(--epl-ink-3); }
 .epl-menu .epl-sep { height: 1px; background: var(--epl-line); margin: 5px 8px; }
@@ -335,6 +354,25 @@
   padding: 8px 10px 3px;
   letter-spacing: .4px;
 }
+/* Bang chon HAI COT (Du lieu goc): moi hang hai chuc nang, bieu tuong trong o
+   xanh nhat bo tron — theo mau chu du an dua. */
+.epl-menu.epl-menu-2col { min-width: 640px; display: none; grid-template-columns: 1fr 1fr; gap: 2px 8px; padding: 10px; }
+.epl-menu.epl-menu-2col.epl-show { display: grid; }
+.epl-menu.epl-menu-2col .epl-mi { grid-template-columns: 38px minmax(0, 1fr); align-items: start; padding: 10px 10px; }
+.epl-menu.epl-menu-2col .epl-mi i {
+  width: 38px; height: 38px; border-radius: 11px; background: var(--epl-blue-2); color: var(--epl-blue-3);
+  font-size: 15px; line-height: 38px; display: inline-block;
+}
+.epl-menu.epl-menu-2col .epl-mi b { font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+.epl-menu.epl-menu-2col .epl-mi span { line-height: 1.35; }
+@media (max-width: 760px) { .epl-menu.epl-menu-2col { min-width: 0; grid-template-columns: 1fr; } }
+/* Bang chon MOT COT nhung cung bieu tuong o xanh: dung cho nhom it muc (Kinh doanh
+   chi co hai) — hai cot o day chiem ngang ma khong them thong tin. */
+.epl-menu.epl-menu-1col { min-width: 360px; }
+.epl-menu.epl-menu-1col .epl-mi { grid-template-columns: 38px minmax(0, 1fr); align-items: start; padding: 10px; }
+.epl-menu.epl-menu-1col .epl-mi i { width: 38px; height: 38px; line-height: 38px; border-radius: 11px; font-size: 15px; }
+.epl-menu.epl-menu-1col .epl-mi b { font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+
 .epl-menu .epl-tag {
   font-size: 11px;
   font-weight: 600;
@@ -485,4 +523,11 @@
   .epl-bar1 { padding: 0 12px; gap: 8px; }
   .epl-bar2 { overflow-x: auto; }
   .epl-sub { padding: 10px 14px; }
+}
+
+@media (max-width: 600px) {
+  :root { --epl-h-bar1: 108px; }
+  .epl-bar1 { flex-wrap: wrap; align-content: center; }
+  .epl-brand { margin-right: auto; }
+  .epl-gsearch { order: 1; flex: 1 0 100%; box-sizing: border-box; }
 }

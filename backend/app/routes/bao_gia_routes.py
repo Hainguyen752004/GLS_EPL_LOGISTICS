@@ -213,15 +213,30 @@ async def gui_khach(request: Request, qid: str, db: Session = Depends(get_db)):
 
 
 @router.post("/api/quotations/{qid}/accept")
-async def khach_chap_nhan(request: Request, qid: str, db: Session = Depends(get_db)):
-    """Ghi nhan khach chap nhan — buoc nay MO KHOA muc tach DO."""
+async def khach_chap_nhan(
+    request: Request, qid: str,
+    data: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db),
+):
+    """Ghi nhan khach chap nhan VA SINH LENH GIAO HANG ngay — khong con buoc tach tay.
+
+    DO ke thua tuyen, gia khoa, khung gio tu bao gia (khong di qua Don hang).
+    Than tuy chon `{"dos": [...]}` cho phep khai tung DO (gio lay, so seal);
+    bo trong thi sinh N DO mac dinh, N = tong so luong o bang Hang hoa.
+    """
     actor = _actor(request)
+    ket_qua = {}
 
     def viec():
-        q = bao_gia.khach_chap_nhan(db, qid, actor)
-        return bao_gia.mot_bao_gia(db, q.id)
+        ket_qua.update(bao_gia.chap_nhan_va_sinh_do(db, qid, actor, (data or {}).get("dos")))
+        return bao_gia.mot_bao_gia(db, qid)
 
-    return _lenh(db, viec, "Đã ghi nhận khách chấp nhận. Mục tách lệnh giao hàng đã mở.")
+    goi = _lenh(db, viec, "Đã ghi nhận khách chấp nhận.")
+    goi["do_ids"] = ket_qua.get("do_ids") or []
+    goi["gia_moi_chuyen"] = ket_qua.get("gia_moi_chuyen")
+    goi["message"] = ("Đã ghi nhận khách chấp nhận · đã sinh %d lệnh giao hàng từ báo giá "
+                      "(giá khoá %s đ/chuyến). Xem ở Lệnh giao hàng → Cần xử lý."
+                      % (len(goi["do_ids"]), "{:,.0f}".format(ket_qua.get("gia_moi_chuyen") or 0)))
+    return goi
 
 
 @router.post("/api/quotations/{qid}/reject")

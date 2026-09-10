@@ -14,6 +14,10 @@ class TripDispatchRequest(BaseModel):
     expected_version: int = Field(ge=1)
     assignment_start: datetime.datetime
     assignment_end: datetime.datetime
+    # Xe duoc chon KHAC LOAI XE cua bao gia thi may chu tra 409
+    # VEHICLE_TYPE_MISMATCH; nguoi dieu phoi doc canh bao roi gui lai voi co nay
+    # = true de xac nhan (co luc co y len loai to hon de gop chuyen).
+    confirm_vehicle_type_mismatch: bool = False
 
     @field_validator("assignment_start", "assignment_end")
     @classmethod

@@ -76,13 +76,13 @@
   white-space: nowrap;
 }
 .dr-chip b { margin-left: 5px; font-weight: 800; }
-.dr-chip:hover:not(:disabled) { border-color: #0a6ed1; color: #0a6ed1; }
-.dr-chip.is-active { background: #0a6ed1; border-color: #0a6ed1; color: #fff; }
+.dr-chip:hover:not(:disabled) { border-color: #2563eb; color: #2563eb; }
+.dr-chip.is-active { background: #2563eb; border-color: #2563eb; color: #fff; }
 /* Nhóm rỗng vẫn hiện, chỉ mờ: ẩn hẳn thì dải nút nhảy chỗ mỗi lần đổi tuần. */
 .dr-chip.is-empty { opacity: .45; cursor: default; }
 .dr-chip--r:not(.is-active):not(.is-empty) { border-color: #f0b7b7; color: #b3261e; }
 .dr-chip--a:not(.is-active):not(.is-empty) { border-color: #f0d9a8; color: #92620a; }
-.dr-chip:focus-visible { outline: 2px solid #0a6ed1; outline-offset: 2px; }
+.dr-chip:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
 /* Nhắc bảo dưỡng chưa duyệt — màu hổ phách, KHÔNG dùng đỏ: nó chưa chặn gì,
    dùng đỏ là nói quá và làm loãng màu đỏ của những việc chặn thật. */
 .dr-mt-pending {

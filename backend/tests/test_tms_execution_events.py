@@ -37,8 +37,8 @@ NOW = dt.datetime.utcnow().replace(microsecond=0) - dt.timedelta(hours=1)
 
 
 @pytest.fixture
-def db(tmp_path):
-    engine = create_engine(f"sqlite:///{tmp_path / 'execution.db'}")
+def db(tmp_path, may_kiem):
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     session.add_all([
@@ -47,6 +47,11 @@ def db(tmp_path):
         Vehicle(id="51C-001", type="Truck"),
         Driver(id="DRV-001", name="Tai xe Mot"),
     ])
+    # Dia diem vao TRUOC: `FreightOrder` chi khai cot `ForeignKey` tran, khong
+    # khai `relationship()`, va SQLAlchemy xep thu tu chen theo relationship —
+    # thieu luot nay thi no xep theo ten bang va `freight_orders` di truoc
+    # `locations`. SQLite tat khoa ngoai nen chuyen nay an rat lau.
+    session.flush()
     session.add(FreightOrder(
         id="FO-EXEC-1", pickup_location_id="A", delivery_location_id="B",
         pickup_window_start=NOW, pickup_window_end=NOW + dt.timedelta(hours=1),
@@ -382,6 +387,22 @@ def test_list_events_is_stably_ordered(db):
 
 
 def test_link_legacy_delivery_order_writes_audit_with_actor_and_ip(db):
+    # LENH GIAO HANG PHAI CO THAT.
+    #
+    # Ban truoc noi thang `FO-EXEC-1` voi `DO-LEGACY-1` ma khong tao lenh giao
+    # hang nao — mot lien ket tro vao chỗ trống. Chay duoc tren SQLite vi khoa
+    # ngoai bi tat; `freight_order_legacy_links_delivery_order_id_fkey` tren
+    # PostgreSQL tu choi.
+    #
+    # Va PostgreSQL dung: mot lien ket "don cu" tro vao mot don khong ton tai
+    # thi khong bat che gi. Rang buoc do la phep kiem duy nhat dang bao ve
+    # `link_legacy_delivery_order` — ham do khong tu kiem lenh giao hang co that
+    # hay khong.
+    from models import DeliveryOrder
+    db.add(DeliveryOrder(id="DO-LEGACY-1", customer_id=None,
+                         canonical_status="pending", status="Cho van chuyen"))
+    db.flush()
+
     db.info["audit_ip"] = "198.51.100.8"
     link = service.link_legacy_delivery_order(db, "FO-EXEC-1", "DO-LEGACY-1", "integrator")
     assert isinstance(link, FreightOrderLegacyLink)

@@ -1,27 +1,31 @@
+/**
+ * CUA CHAN TAI TRONG cua buoc bao gia.
+ *
+ * Bai kiem nay TRUOC DAY chot man Bao gia CU (`#qtv2-khoi-cu`): no ghim bon o
+ * `qt-weight-kg / qt-volume-m3 / qt-pallet-count / qt-vehicle-recommendations`
+ * va ham `refreshQuotationVehicleRecommendations` — cua chan DUY NHAT luc do.
+ * Chinh vi bai kiem nay ma khoi cu tung bi bo roi phai HOAN NGUYEN: bo no la
+ * xoa mat cua chan, va mo lai duong bao gia mot lo 20 tan tren xe 5 tan.
+ *
+ * NAY KHOI CU DA BO HAN, vi ca hai ben deu da chan that:
+ *
+ *   · Man moi (`bao-gia-v2.js`) chan ngay luc BAM vao the loai xe, va noi ro
+ *     CHIEU nao vuot cung con so vuot.
+ *   · May chu (`bao_gia_service.xem_truoc_gia`) tra `tinh_duoc: False` kem
+ *     viec con thieu — tuc KHONG TINH RA GIA cho lo vuot tai, chu khong chi
+ *     canh bao. Chot boi `backend/tests/test_bao_gia_cua_chan_tai_trong.py`.
+ *
+ * Nen phan chot man cu da bo khoi bai kiem nay. Phan con lai duoi day la nua
+ * phia giao dien cua cua chan that.
+ */
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
-const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8');
-
-for (const id of ['qt-weight-kg', 'qt-volume-m3', 'qt-pallet-count', 'qt-vehicle-recommendations']) {
-  assert.ok(html.includes(`id="${id}"`), `Quotation form must expose ${id}.`);
-}
-
-assert.match(app, /window\.refreshQuotationVehicleRecommendations\s*=\s*function/, 'Quotation recommendation renderer is required.');
-assert.match(app, /disabled\s*=\s*hasDemand\s*&&\s*!evaluation\.fits/, 'Unsuitable vehicle types must be disabled.');
-assert.match(app, /CAPACITY_NOT_CONFIGURED/, 'Missing capacity configuration must be explained.');
-assert.match(app, /Không có loại xe đơn lẻ đủ tải/, 'No-fit state must explain split trip or outsource options.');
-assert.match(app, /readyVehicles[\s\S]*vehicle\.id/, 'Recommendation cards must expose currently ready vehicle ids.');
-assert.match(app, /const capacityState = window\.refreshQuotationVehicleRecommendations\(\)/, 'Quotation save must revalidate capacity.');
-assert.match(app, /if \(!capacityState\.valid\)/, 'Quotation save must stop when selected type is unsuitable.');
-
 // ---------------------------------------------------------------------------
 // MAN BAO GIA DANG CHAY (`bao-gia-v2.js`) cung phai co cua chan tai trong.
 //
-// Cac phep khang dinh tren chot man Bao gia CU. Man dang chay la man moi, va
-// mot lo that da do duoc: `do_vua_tai` o may chu TRUOC DAY chi xet `max_weight`,
+// Mot lo that da do duoc: `do_vua_tai` o may chu TRUOC DAY chi xet `max_weight`,
 // nen mot lo 40 m3 tren xe lanh 22 m3 duoc cham la "phu hop" va 30 pallet tren
 // xe 8 pallet cung vay. Nguoi ban chon dung cai the mau xanh do, luu lai, roi
 // nhan 409 tu cua chan o duong ghi — man hinh noi mot cau, may chu noi cau khac.

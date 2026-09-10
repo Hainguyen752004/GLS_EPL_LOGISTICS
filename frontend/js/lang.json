@@ -114,11 +114,6 @@
     "vi": "Lộ Trình & Điểm Dừng",
     "la": "ເສັ້ນທາງ & ຈຸດຈອດ"
   },
-  "tab_attachments": {
-    "en": "Attachments",
-    "vi": "Tài Liệu Đính Kèm",
-    "la": "ເອກະສານຕິດຄັດ"
-  },
   "btn_save": {
     "en": "Save",
     "vi": "Lưu",
@@ -698,11 +693,6 @@
     "en": "No quotations found. Click '+ Create New Quotation' to add one.",
     "vi": "Chưa có báo giá nào. Bấm '+ Tạo Báo Giá Cước' để thêm.",
     "la": "ບໍ່ພົບໃບສະເໜີລາຄາ. ກົດ '+ ສ້າງໃບສະເໜີລາຄາໃໝ່' ເພື່ອເພີ່ມ."
-  },
-  "status_no_sales_orders": {
-    "en": "No sales orders found.",
-    "vi": "Chưa có đơn hàng vận chuyển nào.",
-    "la": "ບໍ່ພົບຄຳສັ່ງຂາຍ."
   },
   "status_no_delivery_orders": {
     "en": "No delivery orders found. Click '+ Create New Delivery Order' to add one.",
@@ -1289,11 +1279,6 @@
     "vi": "Tạo Đơn Hàng (SO)",
     "la": "ສ້າງໃບສັ່ງຂາຍ"
   },
-  "lbl_order_no": {
-    "en": "Order Number",
-    "vi": "Mã Đơn Hàng",
-    "la": "ລະຫັດການຂາຍ"
-  },
   "lbl_customer_id": {
     "en": "Customer ID",
     "vi": "Mã Khách Hàng",
@@ -1314,16 +1299,6 @@
     "vi": "STT",
     "la": "ລຳດັບ"
   },
-  "th_item_desc": {
-    "en": "Item Description",
-    "vi": "Mô Tả Hàng Hóa",
-    "la": "ລາຍການ"
-  },
-  "btn_add_row": {
-    "en": "+ Add Row",
-    "vi": "+ Thêm Dòng",
-    "la": "+ ເພີ່ມແຖວ"
-  },
   "lbl_create_do": {
     "en": "Create Delivery Order",
     "vi": "Tạo Lệnh Giao Hàng",
@@ -1333,11 +1308,6 @@
     "en": "DO Number",
     "vi": "Mã Lệnh (DO)",
     "la": "ລະຫັດ DO"
-  },
-  "lbl_so_ref": {
-    "en": "Transport Order Ref",
-    "vi": "Tham Chiếu Đơn Hàng",
-    "la": "ອ້າງອີງ SO"
   },
   "lbl_route_id": {
     "en": "Route ID",
@@ -1499,46 +1469,6 @@
     "vi": "3. Xuất Kho (Issue)",
     "la": "3. ອອກສາງ"
   },
-  "title_sales_orders": {
-    "en": "3. Transport Order (Order)",
-    "vi": "3. Đơn Hàng Vận Chuyển",
-    "la": "3. ໃບສັ່ງຂາຍ"
-  },
-  "title_manage_so": {
-    "en": "Manage Transport Orders",
-    "vi": "Quản Lý Đơn Hàng Vận Chuyển",
-    "la": "ຄຸ້ມຄອງໃບສັ່ງຂາຍ"
-  },
-  "btn_create_so": {
-    "en": "+ Create Order",
-    "vi": "+ Tạo Đơn Hàng Mới",
-    "la": "+ ສ້າງໃບສັ່ງຂາຍ"
-  },
-  "ph_search_so": {
-    "en": "Search SO No...",
-    "vi": "Tìm Mã Đơn Hàng...",
-    "la": "ຊອກຫາ SO..."
-  },
-  "th_order_no": {
-    "en": "Order No.",
-    "vi": "Mã Đơn Hàng",
-    "la": "ລະຫັດໃບສັ່ງຂາຍ"
-  },
-  "th_origin": {
-    "en": "Origin",
-    "vi": "Nơi Đi",
-    "la": "ຕົ້ນທາງ"
-  },
-  "th_destination": {
-    "en": "Destination",
-    "vi": "Nơi Đến",
-    "la": "ປາຍທາງ"
-  },
-  "th_total_amount": {
-    "en": "Total Amount",
-    "vi": "Tổng cước",
-    "la": "ຈຳນວນເງິນລວມ"
-  },
   "lbl_pod_signatures": {
     "en": "Signatures & POD Document",
     "vi": "Chữ Ký & Biên Bản POD",
@@ -1614,11 +1544,6 @@
     "vi": "Tự động đẩy dữ liệu sang Phân hệ Kế Toán",
     "la": "ສົ່ງຂໍ້ມູນໄປບັນຊີໂດຍອັດໂນມັດ"
   },
-  "lbl_payment_terms": {
-    "en": "Payment Terms",
-    "vi": "Điều Khoản Thanh Toán",
-    "la": "ເງື່ອນໄຂການຊຳລະ"
-  },
   "lbl_sales_rep": {
     "en": "Account Manager.",
     "vi": "Nhân viên kinh doanh",
@@ -1628,21 +1553,6 @@
     "en": "Select Transport Route",
     "vi": "Chọn tuyến đường vận chuyển",
     "la": "ເລືອກເສັ້ນທາງ ແລະ ຂັ້ນຕອນການເດີນທາງ"
-  },
-  "tab_lines": {
-    "en": "Lines",
-    "vi": "Hàng Hóa Vận Chuyển",
-    "la": "ລາຍການສິນຄ້າ"
-  },
-  "tab_details": {
-    "en": "Shipping Terms",
-    "vi": "Quy Cách Vận Chuyển",
-    "la": "ລາຍລະອຽດ"
-  },
-  "th_unit_price": {
-    "en": "Unit Price",
-    "vi": "Đơn giá cước",
-    "la": "ລາຄາຕໍ່ໜ່ວຍ"
   },
   "th_amount": {
     "en": "Amount",
@@ -1670,14 +1580,14 @@
     "la": "0. ຂໍ້ມູນຫຼັກ (Master Data)"
   },
   "flow_step_1_title": {
-    "en": "1. Transportation Quotation",
-    "vi": "1. Báo Giá Cước Vận Chuyển (Quotation)",
-    "la": "1. ໃບສະເໜີລາຄາການຂົນສົ່ງ (Quotation)"
+    "en": "1. Customers & Opportunities",
+    "vi": "1. Khách Hàng & Cơ Hội",
+    "la": "1. ລູກຄ້າ ແລະ ໂອກາດ"
   },
   "flow_step_2_title": {
-    "en": "2. Transport Order",
-    "vi": "2. Đơn Hàng Vận Chuyển",
-    "la": "2. ໃບສັ່ງຂາຍ (Sales Order)"
+    "en": "2. Transportation Quotation",
+    "vi": "2. Báo Giá Cước Vận Chuyển (Quotation)",
+    "la": "2. ໃບສະເໜີລາຄາການຂົນສົ່ງ (Quotation)"
   },
   "flow_step_3_title": {
     "en": "3. Delivery Order",
@@ -1743,11 +1653,6 @@
     "en": "Margin (%)",
     "vi": "Biên lợi nhuận (%)",
     "la": "ອັດຕາກຳໄລ (%)"
-  },
-  "lbl_so_no_placeholder": {
-    "en": "e.g. SO-001",
-    "vi": "VD: SO-001",
-    "la": "ຕົວຢ່າງ: SO-001"
   },
   "lbl_order_date": {
     "en": "Order Date",
@@ -2434,11 +2339,6 @@
     "vi": "Cần xử lý",
     "la": "ຕ້ອງດຳເນີນການ"
   },
-  "Báo giá → SO → DO": {
-    "en": "Quotation → SO → DO",
-    "vi": "Báo giá → SO → DO",
-    "la": "ໃບສະເໜີລາຄາ → SO → DO"
-  },
   "Ổn": {
     "en": "Ready",
     "vi": "Ổn",
@@ -2478,11 +2378,6 @@
     "en": "Missing 4 Master Data groups. Enter Master Data to configure before running the flow.",
     "vi": "Thiếu 4 nhóm Master Data. Vào Master Data để cấu hình trước khi chạy luồng.",
     "la": "ຂາດ 4 ກຸ່ມຂໍ້ມູນຫຼັກ. ເຂົ້າໄປທີ່ຂໍ້ມູນຫຼັກເພື່ອຕັ້ງຄ່າກ່ອນເລີ່ມ."
-  },
-  "Cần có đủ Báo giá, Sales Order và Delivery Order để nhìn được luồng đơn hàng.": {
-    "en": "Requires Quotation, Transport Order and Delivery Order to visualize the order flow.",
-    "vi": "Cần có đủ Báo giá, đơn vận chuyển và Delivery Order để nhìn được luồng đơn hàng.",
-    "la": "ຕ້ອງມີໃບສະເໜີລາຄາ, ໃບສັ່ງຂາຍ ແລະ ໃບສັ່ງປ່ອຍສິນຄ້າເພື່ອເບິ່ງຂັ້ນຕອນ."
   },
   "Tuyến đã có tổng km để tính kế hoạch, ETA và lượt xe quay đầu.": {
     "en": "Route configured with total km for planning, ETA and turnaround.",
@@ -2910,9 +2805,9 @@
     "la": "<i class=\"fa-solid fa-user-tag\"></i> ພະນັກງານຂາຍ & ລາຄາ"
   },
   "role_sales_exec": {
-    "en": "<i class=\"fa-solid fa-handshake\"></i> Sales Executive",
-    "vi": "<i class=\"fa-solid fa-handshake\"></i> Chuyên Viên Kinh Doanh",
-    "la": "<i class=\"fa-solid fa-handshake\"></i> ພະນັກງານຂາຍອາວຸໂສ"
+    "en": "<i class=\"fa-solid fa-handshake\"></i> Sales / CRM",
+    "vi": "<i class=\"fa-solid fa-handshake\"></i> Kinh Doanh / CRM",
+    "la": "<i class=\"fa-solid fa-handshake\"></i> ພະນັກງານຂາຍ / CRM"
   },
   "role_wh_mgr": {
     "en": "<i class=\"fa-solid fa-warehouse\"></i> Warehouse Manager",
@@ -2955,34 +2850,34 @@
     "la": "ຕາຕະລາງຖານຂໍ້ມູນຄິດໄລ່ຄ່າຂົນສົ່ງ"
   },
   "flow_step_1_desc": {
-    "en": "Create quotation with auto-calculated fuel/km + tolls from Master Data formula.",
-    "vi": "Tạo báo giá và tự động tính cước xăng dầu/km + BOT từ bảng công thức Master Data.",
-    "la": "ສ້າງໃບສະເໜີລາຄາ ແລະ ຄິດໄລ່ຄ່ານ້ຳມັນ/km + ຄ່າທາງອັດຕະໂນມັດຈາກສູດຂໍ້ມູນຫຼັກ."
+    "en": "Record the customer's request before quoting; from the opportunity, create a draft quotation inheriting customer, route and cargo.",
+    "vi": "Ghi nhận yêu cầu của khách trước khi báo giá; từ cơ hội bấm \"Lập báo giá\" để sinh báo giá nháp kế thừa khách, tuyến, hàng.",
+    "la": "ບັນທຶກຄວາມຕ້ອງການຂອງລູກຄ້າກ່ອນສະເໜີລາຄາ; ຈາກໂອກາດ ສ້າງໃບສະເໜີລາຄາຮ່າງ ທີ່ສືບທອດລູກຄ້າ, ເສັ້ນທາງ, ສິນຄ້າ."
   },
   "flow_step_1_in": {
+    "en": "Customer, Route, Cargo, Volume",
+    "vi": "Khách hàng, Tuyến đường, Hàng hóa, Sản lượng",
+    "la": "ລູກຄ້າ, ເສັ້ນທາງ, ສິນຄ້າ, ປະລິມານ"
+  },
+  "flow_step_1_out": {
+    "en": "Opportunity → Draft Quotation",
+    "vi": "Cơ hội → Báo giá nháp",
+    "la": "ໂອກາດ → ໃບສະເໜີລາຄາ (ຮ່າງ)"
+  },
+  "flow_step_2_desc": {
+    "en": "Create quotation with auto-calculated fuel/km + tolls from Master Data formula; customer acceptance generates Delivery Orders.",
+    "vi": "Tạo báo giá và tự động tính cước xăng dầu/km + BOT từ bảng công thức Master Data; khách chấp nhận là sinh Lệnh giao hàng.",
+    "la": "ສ້າງໃບສະເໜີລາຄາ ແລະ ຄິດໄລ່ຄ່ານ້ຳມັນ/km + ຄ່າທາງ ຈາກຕາຕະລາງສູດຂໍ້ມູນຫຼັກ; ລູກຄ້ານຢືນຢັນແລ້ວ ສ້າງໃບສັ່ງສົ່ງ."
+  },
+  "flow_step_2_in": {
     "en": "Route, Vehicle Type, Master Data Unit Prices",
     "vi": "Tuyến đường, Loại xe, đơn giá Master Data",
     "la": "ເສັ້ນທາງ, ປະເພດລົດ, ລາຄາຕໍ່ຫົວໜ່ວຍຂໍ້ມູນຫຼັກ"
   },
-  "flow_step_1_out": {
-    "en": "Quotation `QT-2026-xxx` (Draft)",
-    "vi": "Báo Giá `QT-2026-xxx` (Bản nháp)",
-    "la": "ໃບສະເໜີລາຄາ `QT-2026-xxx` (ຮ່າງ)"
-  },
-  "flow_step_2_desc": {
-    "en": "Close deal with customer, generate SO-2026 sales order and lock selling price.",
-    "vi": "Chốt hợp đồng với khách hàng, mở đơn hàng vận chuyển SO-2026 và khóa đơn giá cước.",
-    "la": "ປິດສັນຍາກັບລູກຄ້າ, ສ້າງໃບສັ່ງຂາຍ SO-2026 ແລະ ລັອກລາຄາຂາຍ."
-  },
-  "flow_step_2_in": {
-    "en": "Approved Quotation `QT-2026` Details",
-    "vi": "Thông tin Báo Giá `QT-2026` đã duyệt",
-    "la": "ຂໍ້ມູນໃບສະເໜີລາຄາ `QT-2026` ທີ່ອະນຸມັດແລ້ວ"
-  },
   "flow_step_2_out": {
-    "en": "Transport Order `SO-2026-xxx` (Confirmed)",
-    "vi": "Đơn Hàng Vận Chuyển `SO-2026-xxx` (đã xác nhận)",
-    "la": "ໃບສັ່ງຂາຍ `SO-2026-xxx` (ຢືນຢັນແລ້ວ)"
+    "en": "Quotation `QT-2026-xxx` (Accepted) → Delivery Orders",
+    "vi": "Báo Giá `QT-2026-xxx` (Chấp nhận) → Lệnh giao hàng",
+    "la": "ໃບສະເໜີລາຄາ `QT-2026-xxx` (ຢືນຢັນແລ້ວ) → ໃບສັ່ງສົ່ງ"
   },
   "flow_step_3_desc": {
     "en": "Issue DO delivery order, pack shipments, and schedule pickup window.",
@@ -3059,16 +2954,6 @@
     "vi": "Hóa đơn `INV-2026-xxx` & Bút toán GL",
     "la": "ໃບເກັບເງິນ `INV-2026-xxx` & ລົງບັນຊີ GL"
   },
-  "kb_col_quoted": {
-    "vi": "3. Báo Giá",
-    "en": "3. Quotations",
-    "la": "3. ໃບສະເໜີລາຄາ"
-  },
-  "kb_col_won": {
-    "vi": "4. Chốt Hợp Đồng",
-    "en": "4. Deals Closed",
-    "la": "4. ປິດສັນຍາ"
-  },
   "lbl_deals_closed": {
     "vi": "HỢP ĐỒNG ĐÃ CHỐT",
     "en": "CLOSED DEALS",
@@ -3139,46 +3024,6 @@
     "en": "Transportation Context for Quotation",
     "la": "ບໍລິບົດການຂົນສົ່ງສຳລັບໃບສະເໜີລາຄາ"
   },
-  "lbl_origin": {
-    "vi": "Điểm đi",
-    "en": "Origin",
-    "la": "ຕົ້ນທາງ"
-  },
-  "lbl_destination": {
-    "vi": "Điểm đến",
-    "en": "Destination",
-    "la": "ປາຍທາງ"
-  },
-  "lbl_pickup_start": {
-    "vi": "Lấy hàng từ",
-    "en": "Pickup Window From",
-    "la": "ຮັບສິນຄ້າຈາກ"
-  },
-  "lbl_pickup_end": {
-    "vi": "Lấy hàng đến",
-    "en": "Pickup Window To",
-    "la": "ຮັບສິນຄ້າຮອດ"
-  },
-  "lbl_delivery_start": {
-    "vi": "Giao hàng từ",
-    "en": "Delivery Window From",
-    "la": "ສົ່ງສິນຄ້າຈາກ"
-  },
-  "lbl_delivery_end": {
-    "vi": "Giao hàng đến",
-    "en": "Delivery Window To",
-    "la": "ສົ່ງສິນຄ້າຮອດ"
-  },
-  "lbl_weight_kg": {
-    "vi": "Tải trọng (kg)",
-    "en": "Weight (kg)",
-    "la": "ນ້ຳໜັກ (kg)"
-  },
-  "lbl_pallet_count": {
-    "vi": "Số pallet",
-    "en": "Pallet Count",
-    "la": "ຈຳນວນພາເລັດ"
-  },
   "lbl_select_vehicle_md": {
     "vi": "Chọn Loại Phương Tiện (Master Data Vehicle)",
     "en": "Select Vehicle Type (Master Data Vehicle)",
@@ -3244,61 +3089,6 @@
     "en": "Save Quotation",
     "la": "ບັນທຶກໃບສະເໜີລາຄາ"
   },
-  "btn_convert_to_so": {
-    "vi": "Chuyển thành SO",
-    "en": "Convert to SO",
-    "la": "ປ່ຽນເປັນ SO"
-  },
-  "note_create_so_from_qt": {
-    "vi": "Tạo SO từ Báo giá đã duyệt",
-    "en": "Create SO from Approved Quotation",
-    "la": "ສ້າງ SO ຈາກໃບສະເໜີລາຄາທີ່ອະນຸມັດແລ້ວ"
-  },
-  "title_modal_so": {
-    "vi": "ĐƠN HÀNG VẬN CHUYỂN (SALES ORDER)",
-    "en": "SALES ORDER",
-    "la": "ໃບສັ່ງຂາຍ (SALES ORDER)"
-  },
-  "sub_modal_so": {
-    "vi": "Đơn hàng vận chuyển - Bản nháp",
-    "en": "Standard Transport Order - Draft",
-    "la": "ໃບສັ່ງຂາຍມາດຕະຖານ - ຮ່າງ"
-  },
-  "tab_so_info": {
-    "vi": "Thông Tin Đơn Hàng Vận Chuyển",
-    "en": "Transport Order Information",
-    "la": "ຂໍ້ມູນໃບສັ່ງຂາຍ"
-  },
-  "tab_so_details": {
-    "vi": "Chi Tiết Đơn Hàng",
-    "en": "Order Details",
-    "la": "ລາຍລະອຽດໃບສັ່ງຂາຍ"
-  },
-  "tip_so_banner": {
-    "vi": "Đơn hàng vận chuyển: Tổng hợp cước vận chuyển từ Báo giá + chi tiết hàng hóa vận chuyển thực tế. Đơn hàng vận chuyển lưu xong sẽ đủ điều kiện chuyển sang bước Xuất Lệnh Giao Hàng (DO) & Điều Phối Xe.",
-    "en": "Transport Order: Aggregates transportation freight from Quotation + cargo line items. Once saved, it qualifies for Delivery Order (DO) & Vehicle Dispatch.",
-    "la": "ໃບສັ່ງຂາຍ (Sales Order ທາງການ): ລວມຄ່າຂົນສົ່ງຈາກໃບສະເໜີລາຄາ + ລາຍການສິນຄ້າຕົວຈິງ. ໃບສັ່ງຂາຍບັນທຶກແລ້ວຈະພ້ອມປ່ຽນເປັນໃບສັ່ງປ່ອຍສິນຄ້າ DO & ປ່ອຍລົດ."
-  },
-  "lbl_currency_payment": {
-    "vi": "Loại Tiền Tệ Thanh Toán (Currency)",
-    "en": "Payment Currency",
-    "la": "ສະກຸນເງິນຊຳລະ (Currency)"
-  },
-  "badge_auto_calc_db": {
-    "vi": "Tự động tính chi phí chuẩn CSDL",
-    "en": "Auto Calculated Standard Cost",
-    "la": "ຄິດໄລ່ຕົ້ນທຶນມາດຕະຖານອັດຕະໂນມັດ"
-  },
-  "lbl_select_so_route": {
-    "vi": "Chọn Tuyến Đường Vận Chuyển:",
-    "en": "Select Transportation Route:",
-    "la": "ເລືອກເສັ້ນທາງການຂົນສົ່ງ:"
-  },
-  "lbl_so_route_context": {
-    "vi": "Ngữ cảnh vận chuyển kế thừa xuống DO",
-    "en": "Transportation Context inherited to DO",
-    "la": "ບໍລິບົດການຂົນສົ່ງສົ່ງຕໍ່ໄປຫາ DO"
-  },
   "lbl_leg_1": {
     "vi": "Chặng 1:",
     "en": "Leg 1:",
@@ -3308,51 +3098,6 @@
     "vi": "Chặng 2:",
     "en": "Leg 2:",
     "la": "ໄລຍະ 2:"
-  },
-  "status_confirmed_ready": {
-    "vi": "Đã xác nhận - Sẵn sàng giao hàng",
-    "en": "Confirmed - Ready for Delivery",
-    "la": "ຢືນຢັນແລ້ວ - ພ້ອມສົ່ງສິນຄ້າ"
-  },
-  "lbl_total_so_amount": {
-    "vi": "Tổng cước",
-    "en": "Total Order Amount",
-    "la": "ຈຳນວນເງິນລວມ"
-  },
-  "title_so_specs": {
-    "vi": "Quy Cách & Điều Kiện Vận Chuyển",
-    "en": "Shipping Terms & Technical Requirements",
-    "la": "ມາດຕະຖານການຂົນສົ່ງ & ຂໍ້ກຳນົດເຕັກນິກ"
-  },
-  "lbl_carrier_name": {
-    "vi": "Đơn vị vận chuyển",
-    "en": "Carrier Name",
-    "la": "ຫົວໜ່ວຍຂົນສົ່ງ"
-  },
-  "lbl_delivery_method": {
-    "vi": "Phương thức giao",
-    "en": "Delivery Method",
-    "la": "ຮູບແບບການຈັດສົ່ງ"
-  },
-  "lbl_seal_weight": {
-    "vi": "Trọng tải niêm phong",
-    "en": "Seal / Gross Weight",
-    "la": "ນ້ຳໜັກປະທັບກາ"
-  },
-  "lbl_temp_req": {
-    "vi": "Yêu cầu nhiệt độ",
-    "en": "Temperature Requirement",
-    "la": "ຂໍ້ກຳນົດອຸນຫະພູມ"
-  },
-  "lbl_cargo_insurance": {
-    "vi": "Bảo hiểm hàng hóa",
-    "en": "Cargo Insurance",
-    "la": "ປະກັນໄພສິນຄ້າ"
-  },
-  "lbl_warehouse_owner": {
-    "vi": "Người phụ trách kho",
-    "en": "Warehouse Officer",
-    "la": "ຜູ້ຮັບຜິດຊອບສາງ"
   },
   "lbl_contract_signed": {
     "vi": "Hợp đồng / Báo giá đã ký",
@@ -3369,70 +3114,10 @@
     "en": "Choose Signed Contract / Quotation File",
     "la": "ເລືອກໄຟລ໌ສັນຍາ / ໃບສະເໜີລາຄາທີ່ເຊັນແລ້ວ"
   },
-  "lbl_so_notes_content": {
-    "vi": "Nội Dung Ghi Chú Đơn Hàng",
-    "en": "Transport Order Notes Content",
-    "la": "ເນື້ອໃນໝາຍເຫດໃບສັ່ງຂາຍ"
-  },
-  "ph_so_notes": {
-    "vi": "Nhập ghi chú đơn hàng (Ví dụ: Yêu cầu đóng gói kiện gỗ, hàng dễ vỡ, giao hàng trước 17:00 giờ hành chính)...",
-    "en": "Enter order notes (e.g. wooden crates required, fragile cargo, delivery before 17:00)...",
-    "la": "ປ້ອນໝາຍເຫດໃບສັ່ງຂາຍ (ຕົວຢ່າງ: ຫຸ້ມຫໍ່ໄມ້, ສິນຄ້າແຕກງ່າຍ, ສົ່ງກ່ອນ 17:00)..."
-  },
-  "btn_confirm_so": {
-    "vi": "Xác nhận SO",
-    "en": "Confirm SO",
-    "la": "ຢືນຢັນ SO"
-  },
-  "btn_save_so": {
-    "vi": "Lưu Đơn Hàng",
-    "en": "Save Transport Order",
-    "la": "ບັນທຶກໃບສັ່ງຂາຍ"
-  },
   "uom_ton": {
     "vi": "Tấn",
     "en": "Ton",
     "la": "ໂຕນ"
-  },
-  "uom_kg": {
-    "vi": "Kg",
-    "en": "Kg",
-    "la": "Kg"
-  },
-  "uom_trip": {
-    "vi": "Chuyến",
-    "en": "Trip",
-    "la": "ຖ້ຽວ"
-  },
-  "uom_cbm": {
-    "vi": "Khối (m³)",
-    "en": "CBM (m³)",
-    "la": "ແມັດກ້ອນ (m³)"
-  },
-  "opt_net_30": {
-    "vi": "Thanh toán sau 30 ngày (Net 30)",
-    "en": "Net 30 Days",
-    "la": "ຊຳລະພາຍໃນ 30 ວັນ (Net 30)"
-  },
-  "opt_net_60": {
-    "vi": "Thanh toán sau 60 ngày (Net 60)",
-    "en": "Net 60 Days",
-    "la": "ຊຳລະພາຍໃນ 60 ວັນ (Net 60)"
-  },
-  "opt_cash": {
-    "vi": "Thanh toán tiền mặt/chuyển khoản ngay",
-    "en": "Cash / Immediate Transfer",
-    "la": "ຊຳລະເງິນສົດ / ໂອນທັນທີ"
-  },
-  "opt_loading_customers": {
-    "vi": "-- Đang tải danh sách khách hàng... --",
-    "en": "-- Loading customers... --",
-    "la": "-- ກຳລັງໂຫຼດລາຍຊື່ລູກຄ້າ... --"
-  },
-  "opt_loading_routes": {
-    "vi": "-- Đang tải danh sách tuyến đường... --",
-    "en": "-- Loading routes... --",
-    "la": "-- ກຳລັງໂຫຼດລາຍຊື່ເສັ້ນທາງ... --"
   },
   "th_valid_to": {
     "vi": "Hiệu Lực Đến",
@@ -3458,11 +3143,6 @@
     "vi": "Mã báo giá cước",
     "en": "Quotation ID",
     "la": "ລະຫັດໃບສະເໜີລາຄາ"
-  },
-  "btn_search": {
-    "vi": "Tìm Kiếm",
-    "en": "Search",
-    "la": "ຄົ້ນຫາ"
   },
   "btn_cancel": {
     "vi": "Hủy bỏ",
@@ -3590,7 +3270,7 @@
     "la": "ລະຫັດ DO"
   },
   "th_so_ref": {
-    "vi": "SO tham chiếu",
+    "vi": "Báo giá cước",
     "en": "Reference SO",
     "la": "SO ອ້າງອີງ"
   },
@@ -3980,9 +3660,9 @@
     "la": "ລະຫັດໃບສັ່ງສົ່ງສິນຄ້າ (DO)"
   },
   "lbl_ref_qt_so": {
-    "vi": "Tham Chiếu Báo Giá (QT / SO)",
-    "en": "Quotation / SO Reference",
-    "la": "ອ້າງອີງໃບສະເໜີລາຄາ (QT / SO)"
+    "vi": "Tham chiếu báo giá (QT)",
+    "en": "Quotation reference (QT)",
+    "la": "ອ້າງອີງໃບສະເໜີລາຄາ (QT)"
   },
   "lbl_order_status": {
     "vi": "Trạng Thái Đơn Hàng",
@@ -4949,26 +4629,6 @@
     "vi": "Báo cáo và khác",
     "la": "ບົດລາຍງານ ແລະ ອື່ນໆ"
   },
-  "khung_hd_daily": {
-    "en": "DAILY",
-    "vi": "HÀNG NGÀY",
-    "la": "ປະຈຳວັນ"
-  },
-  "khung_hd_docs": {
-    "en": "TRIPS AND DOCUMENTS",
-    "vi": "CHUYẾN VÀ CHỨNG TỪ",
-    "la": "ຖ້ຽວ ແລະ ເອກະສານ"
-  },
-  "khung_hd_md_flow": {
-    "en": "USED BY QUOTING AND DISPATCH",
-    "vi": "DÙNG CHO BÁO GIÁ VÀ ĐIỀU PHỐI",
-    "la": "ໃຊ້ສຳລັບໃບສະເໜີລາຄາ ແລະ ການຈັດສົ່ງ"
-  },
-  "khung_hd_md_res": {
-    "en": "PARTNERS AND CUSTOMERS",
-    "vi": "ĐỐI TÁC VÀ KHÁCH HÀNG",
-    "la": "ຄູ່ຮ່ວມງານ ແລະ ລູກຄ້າ"
-  },
   "khung_mi_do": {
     "en": "Delivery orders (DO)",
     "vi": "Lệnh giao hàng (DO)",
@@ -5005,14 +4665,9 @@
     "la": "ດ່ານກວດກາ AI"
   },
   "khung_mi_crm": {
-    "en": "CRM and business",
-    "vi": "CRM và Kinh doanh",
-    "la": "CRM ແລະ ການຂາຍ"
-  },
-  "khung_mi_acc": {
-    "en": "Accounting and finance",
-    "vi": "Kế toán và tài chính",
-    "la": "ບັນຊີແລະການເງິນ"
+    "en": "Freight quotation",
+    "vi": "Báo giá cước",
+    "la": "ໃບສະເໜີລາຄາ"
   },
   "khung_mi_routes": {
     "en": "Routes",
@@ -5040,34 +4695,19 @@
     "la": "ລູກຄ້າ"
   },
   "khung_mi_carriers": {
-    "en": "Carriers",
-    "vi": "Nhà vận chuyển",
-    "la": "ຜູ້ຮັບເໝົາຂົນສົ່ງ"
-  },
-  "khung_mi_md_all": {
-    "en": "Open all master data",
-    "vi": "Mở toàn bộ Dữ liệu gốc",
-    "la": "ເປີດຂໍ້ມູນຫຼັກທັງໝົດ"
+    "en": "Carriers / vendors",
+    "vi": "Nhà vận chuyển / Vendor",
+    "la": "ຜູ້ຂົນສົ່ງ / ຜູ້ສະໜອງ"
   },
   "khung_mi_analysis": {
     "en": "Revenue and cost analysis",
     "vi": "Phân tích doanh thu và chi phí",
     "la": "ວິເຄາະລາຍຮັບ ແລະ ຄ່າໃຊ້ຈ່າຍ"
   },
-  "khung_mi_ops360": {
-    "en": "Admin / Shipment 360°",
-    "vi": "Quản trị / Shipment 360°",
-    "la": "ການຄຸ້ມຄອງ / Shipment 360°"
-  },
   "khung_mi_az": {
     "en": "A–Z flow diagram",
     "vi": "Sơ đồ luồng A–Z",
     "la": "ແຜນວາດຂັ້ນຕອນ A–Z"
-  },
-  "khung_hd_ops_res": {
-    "en": "RESOURCE PREPARATION",
-    "vi": "CHUẨN BỊ NGUỒN LỰC",
-    "la": "ກະຕຽມຊັບພະຍາກອນ"
   },
   "title_dispatch_exceptions": {
     "en": "Exceptions to clear",
@@ -5108,5 +4748,325 @@
     "en": "7. INCIDENT REPORT",
     "vi": "7. BÁO CÁO SỰ CỐ",
     "la": "7. ບົດລາຍງານເຫດການ"
+  },
+  "veh_status_available": {
+    "en": "Available",
+    "vi": "Sẵn sàng",
+    "la": "ພ້ອມໃຊ້ງານ"
+  },
+  "veh_status_on_trip": {
+    "en": "On trip",
+    "vi": "Đang chạy chuyến",
+    "la": "ກຳລັງຂົນສົ່ງ"
+  },
+  "veh_status_maintenance": {
+    "en": "Maintenance",
+    "vi": "Bảo dưỡng / sửa chữa",
+    "la": "ກຳລັງບຳລຸງຮັກສາ"
+  },
+  "veh_status_out_of_service": {
+    "en": "Out of service",
+    "vi": "Ngưng hoạt động",
+    "la": "ນອກກອງລົດ"
+  },
+  "drv_status_available": {
+    "en": "Available",
+    "vi": "Rảnh (Sẵn sàng)",
+    "la": "ຫວ່າງ (ພ້ອມໃຊ້ງານ)"
+  },
+  "drv_status_on_trip": {
+    "en": "On trip",
+    "vi": "Đang chạy chuyến",
+    "la": "ບໍ່ຫວ່າງ - ພວມໄປກັບລົດ"
+  },
+  "drv_status_off_duty": {
+    "en": "On leave",
+    "vi": "Nghỉ phép",
+    "la": "ລາພັກ"
+  },
+  "drv_status_inactive": {
+    "en": "Inactive",
+    "vi": "Nghỉ việc",
+    "la": "ພັກວຽກ"
+  },
+  "btn_veh_out_of_service": {
+    "en": "Take out of service",
+    "vi": "Ngưng hoạt động",
+    "la": "ນອກກອງລົດ"
+  },
+  "btn_veh_back_in_service": {
+    "en": "Back in service",
+    "vi": "Đưa lại hoạt động",
+    "la": "ພ້ອມໃຊ້ງານ"
+  },
+  "btn_drv_off_duty": {
+    "en": "Set on leave",
+    "vi": "Cho nghỉ phép",
+    "la": "ລາພັກ"
+  },
+  "btn_drv_inactive": {
+    "en": "Set inactive",
+    "vi": "Cho nghỉ việc",
+    "la": "ພັກວຽກ"
+  },
+  "btn_drv_back_available": {
+    "en": "Back to available",
+    "vi": "Đưa lại làm việc",
+    "la": "ພ້ອມໃຊ້ງານ"
+  },
+  "fleet_title": {
+    "en": "Vehicle types & Fleet",
+    "vi": "Loại xe & Đội xe",
+    "la": "ປະເພດພາຫະນະ & ກອງລົດ"
+  },
+  "fleet_subtitle": {
+    "en": "Capacity, norms and operational status of every type and every vehicle.",
+    "vi": "Năng lực, định mức và trạng thái vận hành của từng loại xe và từng xe.",
+    "la": "ຄວາມສາມາດ, ມາດຕະຖານ ແລະ ສະຖານະການເຮັດວຽກ ຂອງທຸກປະເພດ ແລະ ທຸກຄັນ."
+  },
+  "fleet_seg_types": {
+    "en": "Vehicle types",
+    "vi": "Loại xe",
+    "la": "ປະເພດພາຫະນະ"
+  },
+  "fleet_seg_fleet": {
+    "en": "Fleet",
+    "vi": "Đội xe",
+    "la": "ກອງລົດ"
+  },
+  "kpi_fleet_total": {
+    "en": "Vehicles",
+    "vi": "Tổng xe",
+    "la": "ລົດທັງໝົດ"
+  },
+  "kpi_fleet_available": {
+    "en": "Available",
+    "vi": "Sẵn sàng",
+    "la": "ພ້ອມໃຊ້ງານ"
+  },
+  "kpi_fleet_on_trip": {
+    "en": "On trip",
+    "vi": "Đang chạy",
+    "la": "ກຳລັງຂົນສົ່ງ"
+  },
+  "kpi_fleet_maintenance": {
+    "en": "Maintenance",
+    "vi": "Bảo dưỡng",
+    "la": "ກຳລັງບຳລຸງຮັກສາ"
+  },
+  "kpi_fleet_out": {
+    "en": "Out of service",
+    "vi": "Ngoài đội",
+    "la": "ນອກກອງລົດ"
+  },
+  "kpi_fleet_legal_due": {
+    "en": "Legal due soon",
+    "vi": "Sắp hết hạn pháp lý",
+    "la": "ໃກ້ວັນໝົດອາຍຸ"
+  },
+  "kpi_fleet_types": {
+    "en": "Types",
+    "vi": "Loại xe",
+    "la": "ປະເພດພາຫະນະ"
+  },
+  "th_vt_capacity": {
+    "en": "Capacity",
+    "vi": "Năng lực chở",
+    "la": "ຄວາມສາມາດບັນຈຸ"
+  },
+  "th_vt_speed": {
+    "en": "Plan speed",
+    "vi": "Tốc độ KH",
+    "la": "ຄວາມໄວສະເລ່ຍ (km/h)"
+  },
+  "th_vt_vehicles": {
+    "en": "Vehicles",
+    "vi": "Xe thuộc loại",
+    "la": "ຈຳນວນລົດ"
+  },
+  "th_fleet_depot": {
+    "en": "Depot",
+    "vi": "Bãi",
+    "la": "ກອງລົດ / ສາຂາ"
+  },
+  "th_fleet_capacity": {
+    "en": "Capacity",
+    "vi": "Năng lực",
+    "la": "ຄວາມສາມາດບັນຈຸ"
+  },
+  "th_fleet_status": {
+    "en": "Operational status",
+    "vi": "Trạng thái vận hành",
+    "la": "ສະຖານະການເຮັດວຽກ"
+  },
+  "th_fleet_legal": {
+    "en": "Legal expiry",
+    "vi": "Hạn pháp lý",
+    "la": "ວັນໝົດອາຍຸ"
+  },
+  "th_actions": {
+    "en": "Actions",
+    "vi": "Thao tác",
+    "la": "ການດຳເນີນງານ"
+  },
+  "opt_all_depots": {
+    "en": "All depots",
+    "vi": "Tất cả bãi",
+    "la": "ທັງໝົດ"
+  },
+  "opt_all_types": {
+    "en": "All types",
+    "vi": "Tất cả loại xe",
+    "la": "ລົດທັງໝົດ"
+  },
+  "legal_none": {
+    "en": "not set",
+    "vi": "chưa khai",
+    "la": "ຍັງບໍ່ໄດ້ຕັ້ງ"
+  },
+  "legal_expired": {
+    "en": "expired",
+    "vi": "đã hết hạn",
+    "la": "ໝົດອາຍຸແລ້ວ"
+  },
+  "legal_days": {
+    "en": "{n} days left",
+    "vi": "còn {n} ngày",
+    "la": "ອີກ {n} ວັນ"
+  },
+  "vt_untyped": {
+    "en": "No type",
+    "vi": "Chưa gán loại xe",
+    "la": "ຍັງບໍ່ໄດ້ຕັ້ງປະເພດ"
+  },
+  "th_vt_fuel_short": {
+    "en": "Fuel norm",
+    "vi": "Định mức",
+    "la": "ມາດຕະຖານນ້ຳມັນ"
+  },
+  "btn_add_depot": {
+    "en": "+ Depot",
+    "vi": "+ Bãi",
+    "la": "+ ກອງລົດ"
+  },
+  "title_add_depot": {
+    "en": "Add depot / branch",
+    "vi": "Thêm bãi / chi nhánh",
+    "la": "ເພີ່ມກອງລົດ / ສາຂາ"
+  },
+  "lbl_depot_id": {
+    "en": "Depot code",
+    "vi": "Mã bãi (dùng để lọc)",
+    "la": "ລະຫັດກອງລົດ"
+  },
+  "lbl_depot_name": {
+    "en": "Depot name",
+    "vi": "Tên bãi",
+    "la": "ຊື່ກອງລົດ"
+  },
+  "lbl_depot_type": {
+    "en": "Type",
+    "vi": "Loại",
+    "la": "ປະເພດ"
+  },
+  "lbl_depot_address": {
+    "en": "Address",
+    "vi": "Địa chỉ",
+    "la": "ທີ່ຢູ່"
+  },
+  "khung_mi_crm_sub": {
+    "en": "Quote by route and vehicle type · accepted → delivery order",
+    "vi": "Báo giá theo tuyến và loại xe · khách chấp nhận → lệnh giao hàng",
+    "la": "ສະເໜີລາຄາຕາມເສັ້ນທາງ ແລະ ປະເພດລົດ · ລູກຄ້າຮັບ → ໃບສັ່ງສົ່ງ"
+  },
+  "khung_mi_cohoi": {
+    "en": "Customers & opportunities",
+    "vi": "Khách hàng và cơ hội",
+    "la": "ລູກຄ້າ ແລະ ໂອກາດ"
+  },
+  "khung_mi_cohoi_sub": {
+    "en": "Capture customer requests before quoting",
+    "vi": "Ghi nhận yêu cầu của khách trước khi báo giá",
+    "la": "ບັນທຶກຄວາມຕ້ອງການຂອງລູກຄ້າກ່ອນສະເໜີລາຄາ"
+  },
+  "khung_mi_md_setup": {
+    "en": "Setup A–Z",
+    "vi": "Thiết lập A–Z",
+    "la": "ຕັ້ງຄ່າ A–Z"
+  },
+  "khung_mi_md_setup_sub": {
+    "en": "Order of master data for the full flow",
+    "vi": "Thứ tự khai dữ liệu để chạy trọn luồng",
+    "la": "ລຳດັບການປ້ອນຂໍ້ມູນເພື່ອດຳເນີນງານຄົບຖ້ວນ"
+  },
+  "khung_mi_customers_sub": {
+    "en": "Profile, contacts and terms",
+    "vi": "Thông tin, liên hệ và điều khoản",
+    "la": "ຂໍ້ມູນ, ຜູ້ຕິດຕໍ່ ແລະ ເງື່ອນໄຂ"
+  },
+  "khung_mi_routes_sub": {
+    "en": "Legs A → B → C, planned km, tolls",
+    "vi": "Chặng A → B → C, km kế hoạch, BOT",
+    "la": "ຊ່ວງ A → B → C, ກມ ແຜນ, ຄ່າທາງ"
+  },
+  "khung_mi_carriers_sub": {
+    "en": "Outsourced transport partners",
+    "vi": "Đối tác chạy thuê ngoài",
+    "la": "ຄູ່ຮ່ວມຂົນສົ່ງພາຍນອກ"
+  },
+  "khung_mi_formulas_sub": {
+    "en": "Cost per km by vehicle type, Acc code",
+    "vi": "Chi phí trên 1 km theo loại xe, Acc code",
+    "la": "ຕົ້ນທຶນຕໍ່ 1 ກມ ຕາມປະເພດລົດ, Acc code"
+  },
+  "khung_mi_md_currencies": {
+    "en": "Currencies & rates",
+    "vi": "Tỷ giá tiền tệ",
+    "la": "ອັດຕາແລກປ່ຽນ"
+  },
+  "khung_mi_md_currencies_sub": {
+    "en": "VND, LAK, USD and reference rates",
+    "vi": "VND, LAK, USD và tỷ giá tham chiếu",
+    "la": "VND, LAK, USD ແລະ ອັດຕາອ້າງອີງ"
+  },
+  "khung_mi_veh_types_sub": {
+    "en": "Payload, fuel norm, speed",
+    "vi": "Tải trọng, định mức dầu, vận tốc",
+    "la": "ນ້ຳໜັກບັນທຸກ, ມາດຕະຖານນ້ຳມັນ, ຄວາມໄວ"
+  },
+  "khung_mi_vehicles_sub": {
+    "en": "Fleet by depot, shifts, weekly schedule",
+    "vi": "Đội xe theo bãi, ca trực, lịch xe tuần",
+    "la": "ກອງລົດຕາມກອງ, ກະເວັນ, ຕາຕະລາງລົດ"
+  },
+  "khung_mi_md_drivers": {
+    "en": "Drivers & licenses",
+    "vi": "Tài xế và bằng lái",
+    "la": "ຄົນຂັບ ແລະ ໃບຂັບຂີ່"
+  },
+  "khung_mi_md_drivers_sub": {
+    "en": "License class and validity — dispatch gate",
+    "vi": "Hạng bằng, hiệu lực — cửa chặn điều phối",
+    "la": "ປະເພດໃບຂັບຂີ່, ອາຍຸ — ດ່ານກວດການຈັດສົ່ງ"
+  },
+  "khung_mi_md_mappings": {
+    "en": "Account mapping",
+    "vi": "Mapping tài khoản",
+    "la": "ການເຊື່ອມບັນຊີ"
+  },
+  "khung_mi_md_mappings_sub": {
+    "vi": "Nối khoản mục với tài khoản kế toán",
+    "en": "Map cost items to GL accounts",
+    "la": "ເຊື່ອມລາຍການກັບບັນຊີ"
+  },
+  "grp_done": {
+    "vi": "Hoàn thành",
+    "en": "Completed",
+    "la": "ສຳເລັດ"
+  },
+  "grp_cancelled": {
+    "vi": "Đã hủy",
+    "en": "Cancelled",
+    "la": "ຍົກເລີກແລ້ວ"
   }
 }

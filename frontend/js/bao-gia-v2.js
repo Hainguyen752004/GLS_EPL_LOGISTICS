@@ -200,7 +200,7 @@
       document.body.appendChild(t);
     }
     t.innerHTML = `<span>${loi ? '⚠' : '✓'}</span><span>${esc(chu)}</span>`;
-    t.style.background = loi ? '#8a1c1c' : '#0f1c2e';
+    t.style.background = loi ? '#8a1c1c' : '#0b2e5c';
     t.hidden = false;
     clearTimeout(t._hen);
     t._hen = setTimeout(() => { t.hidden = true; }, loi ? 7000 : 4600);
@@ -559,7 +559,11 @@
         <td>${x.so_do
         ? `<span class="so">${x.so_do_xong || 0}/${x.so_do} DO xong →</span>`
         : x.canonical_status === 'accepted'
-          ? `<span class="so green">+ Tách ${x.so_do_du_kien || 1} DO</span>`
+          // "Đã chấp nhận" mà KHÔNG có DO nào là một BẤT THƯỜNG kể từ 09/09:
+          // ghi nhận chấp nhận và sinh DO nay là cùng một giao dịch. Còn thấy
+          // dòng này thì đó là bản ghi cũ, và nói "+ Tách N DO" là mời người
+          // dùng đi tìm một cái nút không còn nữa.
+          ? `<span class="so warn">⚠ chưa sinh DO (dữ liệu cũ)</span>`
           : '<span class="so none">—</span>'}</td></tr>`;
     }).join('');
     than.querySelectorAll('tr[data-id]').forEach(n => n.addEventListener('click',
@@ -673,9 +677,20 @@
 
   /* ------------------------------------------------------------- vẽ cả phiếu -- */
 
+  /** Chuyển tab của phiếu; nhớ vào S để vẽ lại (sau lưu) không nhảy tab. */
+  function chonTabPhieu(so) {
+    S.tabPhieu = so === 2 ? 2 : 1;
+    document.querySelectorAll('#qtv2-phieu-tabs button[data-tab]').forEach(b =>
+      b.classList.toggle('on', Number(b.dataset.tab) === S.tabPhieu));
+    document.querySelectorAll('.qtv2-tab[data-tab]').forEach(k => {
+      k.hidden = Number(k.dataset.tab) !== S.tabPhieu;
+    });
+  }
+
   function vePhieu() {
     const q = S.q;
     if (!q) return;
+    if (!S.tabPhieu) S.tabPhieu = 1;
     const tt = TRANG_THAI[q.canonical_status] || [q.canonical_status, ''];
     const rt = tuyenTheoMa(q.route_id);
     el('qtv2-detail').innerHTML = `
@@ -692,14 +707,26 @@
       </div>
       <div class="dt">
         <section class="card">
+          <!-- Hai tab: phieu tam muc don mot cot thi dai qua mot man, muc 7–8
+               (chung tu, ghi chu) la viec lam SAU khi da co gia, nen tach ra. -->
+          <!-- id RIÊNG: màn danh sách đã có #qtv2-tabs (thẻ lọc trạng thái); trùng id
+               thì el() bám vào thẻ đó và nút ở đây bấm không phản ứng. -->
+          <div class="qtv2-tabs" role="tablist" id="qtv2-phieu-tabs">
+            <button type="button" role="tab" data-tab="1" class="${S.tabPhieu === 2 ? '' : 'on'}">Báo giá &amp; lệnh giao hàng</button>
+            <button type="button" role="tab" data-tab="2" class="${S.tabPhieu === 2 ? 'on' : ''}">Chứng từ &amp; ghi chú</button>
+          </div>
+          <div class="qtv2-tab" data-tab="1" ${S.tabPhieu === 2 ? 'hidden' : ''}>
           ${mucChung(q)}
           ${mucTuyen(q, rt)}
           ${mucHangHoa(q, rt)}
           ${mucLoaiXe(q)}
           ${mucGia(q)}
           ${mucTachDo(q)}
+          </div>
+          <div class="qtv2-tab" data-tab="2" ${S.tabPhieu === 2 ? '' : 'hidden'}>
           ${mucChungTu(q)}
           ${mucGhiChu(q)}
+          </div>
         </section>
         <aside class="card rail">
           <div class="rl">
@@ -720,6 +747,11 @@
       </div>`;
 
     el('qtv2-quay-lai').addEventListener('click', dongPhieu);
+    el('qtv2-phieu-tabs').addEventListener('click', ev => {
+      const nut = ev.target.closest('button[data-tab]');
+      if (!nut) return;
+      chonTabPhieu(Number(nut.dataset.tab));
+    });
     if (el('qtv2-nhan-ban')) el('qtv2-nhan-ban').addEventListener('click', nhanBan);
     if (el('qtv2-lich-su')) el('qtv2-lich-su').addEventListener('click', () => {
       const n = el('qtv2-r-ver');
@@ -1123,10 +1155,12 @@
   function mucTachDo(q) {
     return `
       <div class="sec" id="qtv2-sec-do">
-        <h3>6. Tách lệnh giao hàng (DO)
-          <span class="tag" id="qtv2-dotag">mở khi khách chấp nhận</span></h3>
-        <p>Không còn bước Đơn hàng: báo giá được chấp nhận thì tách thẳng thành DO cho vận
-          hành. <b>1 DO = 1 cont (hoặc 1 xe) = 1 chuyến.</b></p>
+        <h3>6. Lệnh giao hàng (DO) sinh từ báo giá
+          <span class="tag" id="qtv2-dotag">sinh khi khách chấp nhận</span></h3>
+        <p>Không còn bước Đơn hàng và không còn tách tay: <b>ghi nhận khách chấp nhận là hệ
+          thống sinh DO ngay</b>, kế thừa tuyến, giá khoá và khung giờ của báo giá.
+          <b>1 DO = 1 cont (hoặc 1 xe) = 1 chuyến.</b> Số niêm phong ghi vào DO trước khi
+          điều phối.</p>
         <div class="rule">
           <div><b>Số DO</b>Gợi ý = tổng số lượng ở bảng Hàng hoá (mỗi cont/xe một DO). Thêm
             hoặc bớt được.</div>
@@ -1177,12 +1211,13 @@
     }
 
     if (q.canonical_status !== 'accepted') {
-      the.textContent = 'mở khi khách chấp nhận';
+      the.textContent = 'sinh khi khách chấp nhận';
       the.className = 'tag';
       muc.classList.add('lock');
       than.innerHTML = `<div class="warn blue">ⓘ <div>Báo giá đang ở trạng thái
         <b>${esc((TRANG_THAI[q.canonical_status] || [q.canonical_status])[0])}</b>. Khi ghi nhận
-        khách chấp nhận, mục này mở ra để tách ${soLuongHang()} DO.</div></div>`;
+        khách chấp nhận, hệ thống sinh ${soLuongHang()} DO (mỗi đơn vị hàng hoá một DO) và
+        chúng hiện ở đây.</div></div>`;
       return;
     }
 
@@ -1633,7 +1668,7 @@
 
     // Bảng cấu phần. Hàng `thu` KHÔNG được cộng vào giá thành — máy chủ đã tách
     // hai loại, ở đây chỉ hiện đúng thứ nó gửi về.
-    el('qtv2-ct').innerHTML = `<div class="r"><span>Cấu phần · công thức ${
+    el('qtv2-ct').innerHTML = `<div class="r"><span>Khoản mục · công thức ${
       esc(tenLoaiXe(q.vehicle_type_id))}</span><span class="n">Đơn giá</span>
       <span class="n">Nhân với</span><span class="amt">Thành tiền</span></div>`
       + (xt.cac_dong || []).map(d => `<div class="r ${d.loai === 'thu' ? 'rev' : 'cost'}">
@@ -2042,7 +2077,10 @@
   }
 
   async function ghiNhanChapNhan() {
-    await lenh('accept', {}, 'Đã ghi nhận khách chấp nhận. Mục tách lệnh giao hàng đã mở.', true);
+    if (!window.confirm(`Ghi nhận khách chấp nhận báo giá?\n\nHệ thống sẽ sinh ngay ${soLuongHang()} `
+      + `lệnh giao hàng, giá khoá ${tien(S.q.selling_price)} ₫/chuyến theo báo giá.`)) return;
+    await lenh('accept', {}, 'Đã ghi nhận khách chấp nhận và sinh lệnh giao hàng.', true);
+    chonTabPhieu(1);
     cuonToi(el('qtv2-sec-do'));
   }
 
@@ -2159,8 +2197,8 @@
         · ${xt ? so(xt.km) + ' km' : '—'}</div>
       <div>Hàng: ${so(Number(q.weight_kg || 0) / 1000)} tấn${
       q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''} · ${esc(q.cargo_type || '')}</div>
-      <h2>Cấu phần giá thành một chuyến</h2>
-      <table><thead><tr><th>Cấu phần</th><th class="r">Đơn giá</th><th>Nhân với</th>
+      <h2>Khoản mục giá thành một chuyến</h2>
+      <table><thead><tr><th>Khoản mục</th><th class="r">Đơn giá</th><th>Nhân với</th>
         <th class="r">Thành tiền (${esc(sym)})</th></tr></thead><tbody>${dong}
         <tr class="tong"><td colspan="3">Giá thành một chuyến</td>
           <td class="r">${tien(Number(q.total_cost || 0) / ty)}</td></tr></tbody></table>

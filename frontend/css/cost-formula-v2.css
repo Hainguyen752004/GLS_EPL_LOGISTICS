@@ -1,0 +1,253 @@
+#md-tab-formulas { padding: 18px 24px 32px; color: #1e293b; font: 13px/1.45 Inter, system-ui, sans-serif; }
+#md-tab-formulas * { letter-spacing: 0; box-sizing: border-box; }
+#md-tab-formulas .cfv2-shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 14px; align-items: start; max-width: 1760px; margin: 0 auto; }
+.cfb.fbox { border:1px solid #e4e9f0;border-radius:8px;overflow:hidden; }
+#md-tab-formulas .cf-head > .cfb.fbox { width: 100%; min-width: 0; flex: 1 1 100%; }
+.cfb .fhead { display:flex;align-items:center;gap:8px;padding:9px 12px;background:#fafbfd;border-bottom:1px solid #e4e9f0;flex-wrap:wrap; }
+.cfb .cfb-scope { font-size:10px;color:#7c3aed;background:#efe9fd;padding:3px 6px;border-radius:4px; }
+.cfb .sw { display:inline-flex;margin-left:auto;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden; }
+.cfb .sw button { border:0;background:white;padding:5px 8px;font-size:11px;color:#475569;cursor:pointer; }
+.cfb .sw button.on { background:#efe9fd;color:#7c3aed; }
+.cfb .edit { height:30px;border:1px solid #cbd5e1;border-radius:6px;background:white;color:#2563eb;font-size:11px;padding:0 9px;cursor:pointer; }
+.cfb .flines { padding:10px 12px;font:11px/2 ui-monospace,Consolas,monospace;color:#475569;overflow-wrap:anywhere; }
+.cfb .fbuild { padding:10px 12px;border-top:1px solid #e4e9f0; }
+.cfb .pal { display:flex;gap:5px;flex-wrap:wrap;margin-bottom:9px; }
+.cfb .vchip { display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #e4e9f0;border-radius:16px;background:white;cursor:grab;font-size:11px;font-weight:600; }
+.cfb .vchip code { font-size:10px;opacity:.6; }
+.cfb .cost { color:#b45309; }.cfb .rev { color:#15803d; }.cfb .ctx { color:#0b4faa; }.cfb .calc { color:#7c3aed; }
+.cfb .ops { display:flex;gap:4px;flex-wrap:wrap;margin-bottom:9px; }
+.cfb .ops button { min-width:28px;height:28px;border:1px solid #cbd5e1;border-radius:5px;background:white;color:#475569;font:12px ui-monospace,monospace;cursor:pointer; }
+.cfb .drop { border:1px solid #cbd5e1;border-radius:7px;padding:9px;min-height:60px;line-height:2.2; }
+.cfb .drop.over { background:#efe9fd;border-color:#7c3aed; }
+.cfb .tk { display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;font-size:11px; }
+.cfb .tk.cost { background:#fff4e0; }.cfb .tk.rev { background:#e7f6ec; }.cfb .tk.ctx { background:#e9f1fd; }.cfb .tk.calc { background:#efe9fd; }
+.cfb .tk button { border:0;background:none;font-size:12px;color:inherit;cursor:pointer;padding:0 2px; }
+.cfb .raw { width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;font:12px/1.5 ui-monospace,Consolas,monospace;margin-top:8px;resize:vertical; }
+.cfb .fmsg { padding:7px 10px;border-radius:6px;margin-top:8px;font-size:11px; }
+.cfb .fmsg.ok { background:#e7f6ec;color:#15803d; }.cfb .fmsg.bad { background:#fdecec;color:#d32f2f; }
+.cfb .presets { display:flex;gap:5px;flex-wrap:wrap;margin-top:9px; }
+.cfb .presets button { height:26px;border:1px solid #cbd5e1;border-radius:12px;background:white;font-size:10px;color:#475569;cursor:pointer; }
+.cfb .steps { background:#f8fafc;border-radius:6px;padding:8px 10px;margin-top:8px;font:11px/1.8 ui-monospace,Consolas,monospace;overflow-wrap:anywhere; }
+.cfb .fsave { display:flex;justify-content:flex-end;gap:6px;margin-top:9px; }
+.cfb .fsave button { height:32px;border-radius:6px;padding:0 12px;font-size:12px;cursor:pointer; }
+.cfb .fsave .c { border:1px solid #cbd5e1;background:white;color:#475569; }.cfb .fsave .a { border:0;background:#7c3aed;color:white;font-weight:600; }.cfb .fsave .a:disabled { background:#c9d3e2;cursor:not-allowed; }
+.cfb-source { background:#eef2f7;color:#7b8796;font-size:10px;padding:2px 5px;border-radius:4px; }
+.cfb-remove { width:24px;height:24px;background:white;border:1px solid #cbd5e1;border-radius:4px;color:#94a3b8;cursor:pointer; }
+.cfb-add { width:100%;height:30px;border:1px dashed #cbd5e1;border-radius:6px;background:white;color:#2563eb;font-size:11px;cursor:pointer; }
+#cfb-add-form { display:flex;gap:6px;padding:10px;flex-wrap:wrap; }
+#cfb-add-form input,#cfb-add-form select,#cfb-add-form button { min-width:0;height:32px;border:1px solid #cbd5e1;border-radius:5px;padding:4px 7px;font-size:12px; }
+#cfb-side-extra { padding:0 14px 14px; }
+#cfb-side-extra h5 { margin:14px 0 8px!important;font-size:11px!important;color:#7b8796; }
+.cfb-route-label { font-size:11px;color:#2563eb; }
+.cfb-route-label select { display:block;width:100%;height:32px;margin-top:6px;border:1px solid #cbd5e1;border-radius:5px;font-size:11px; }
+.cfb-compare { width:100%;border-collapse:collapse;border:1px solid #e4e9f0; }
+.cfb-compare td,.cfb-compare th { padding:7px 6px;border-bottom:1px solid #e4e9f0;font-size:10px;text-align:right; }
+.cfb-compare td:first-child,.cfb-compare th:first-child { text-align:left; }
+.cfb-history { padding:7px 0;border-bottom:1px solid #e4e9f0;font-size:10px; }
+.cfb-history time { display:block;color:#7b8796; }.cfb-muted { color:#7b8796;font-size:11px; }
+#md-tab-formulas .cfv2-card { border: 1px solid #e4e9f0; border-radius: 8px; box-shadow: none; background: white; min-width: 0; overflow: hidden; }
+#md-tab-formulas .cfv2-card-head { font-size: 14px; padding: 12px 14px; border-bottom: 1px solid #e4e9f0; }
+#md-tab-formulas #formula-vehicle-types-list { gap: 0 !important; max-height: 760px; overflow: auto; }
+#md-tab-formulas .vt-search { margin: 10px 14px; padding: 0 9px; height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; }
+#md-tab-formulas .vt-search input { min-width: 0; font-size: 12px; height: 32px; }
+#md-tab-formulas .veh-type-card { padding: 11px 14px !important; margin: 0; border: 0 !important; border-top: 1px solid #e4e9f0 !important; border-radius: 0 !important; box-shadow: none !important; background: white; }
+#md-tab-formulas .veh-type-card.active { background: #e9f1fd !important; }
+#md-tab-formulas .vt-name { font-size: 13px; font-weight: 650; padding-right: 18px; color: #1e293b; }
+#md-tab-formulas .vt-id { font-size: 11px; font-weight: 400; margin: 3px 0; }
+#md-tab-formulas .vt-facts { margin: 4px 0; gap: 6px; }
+#md-tab-formulas .vt-facts span { padding: 0; border: 0; background: transparent; font-size: 11px; }
+#md-tab-formulas .vt-rate { padding: 4px 0 0; border: 0; margin: 0; }
+#md-tab-formulas .vt-rate > b { font-size: 13px; color: #15803d; }
+#md-tab-formulas .vt-rate > small { font-size: 11px; }
+#md-tab-formulas .vt-flag { font-size: 10px; margin: 3px 0; }
+#md-tab-formulas .vt-breakdown { display: none; }
+#md-tab-formulas .vt-del { width: 24px; height: 24px; top: 8px; right: 8px; font-size: 11px; }
+#md-tab-formulas .vt-fleet { margin-top: 4px; }
+#md-tab-formulas .vt-fleet-btn { padding: 3px 0; border: 0; background: transparent; font-size: 11px; }
+.cfv2-tree-vehicles { display: none; margin: 8px -14px -11px; background: #fbfcfe; }
+.veh-type-card.active .cfv2-tree-vehicles { display: block; }
+.cfv2-tree-vehicles button { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 14px 9px 26px; border: 0; border-top: 1px dashed #e4e9f0; background: transparent; text-align: left; color: #334155; cursor: pointer; }
+.cfv2-tree-vehicles button:hover { background: #e9f1fd; }
+#md-tab-formulas .cfv2-tree-vehicles button { transition: none !important; }
+.cfv2-tree-vehicles button.is-selected,
+.cfv2-tree-vehicles button.is-selected:hover { background: #e5efff; box-shadow: inset 3px 0 #1671db; color: #163d70; }
+.cfv2-tree-vehicles button.is-selected b { font-weight: 700; }
+.cfv2-tree-vehicles b { font-size: 12px; }
+.cfv2-tree-vehicles small { display: block; font-size: 11px; color: #7b8796; }
+.cfv2-tree-vehicles em { font-size: 10px; font-style: normal; color: #b45309; background: #fff4e0; border-radius: 4px; padding: 2px 5px; white-space: nowrap; }
+#md-tab-formulas .cfv2-workbench { display: grid; grid-template-columns: minmax(0, 1fr) 275px; align-content: start; min-height: 0; overflow: visible; background: transparent; border: 0; column-gap: 14px; }
+/* The spanning comparison sidebar must not stretch the table/editor rows. */
+#md-tab-formulas .cfv2-workbench:not(.vehicle-mode) { grid-template-rows: auto min-content min-content minmax(0, 1fr); }
+#md-tab-formulas .cfv2-toolbar { grid-column: 1 / -1; padding: 10px 14px; background: white; border: 1px solid #e4e9f0; border-radius: 8px 8px 0 0; min-height: 56px; }
+#md-tab-formulas .cfv2-kicker { font-size: 10px; font-weight: 500; }
+#md-tab-formulas #selected-veh-type-badge { font-size: 14px; }
+#md-tab-formulas .cfv2-save { height: 34px; min-height: 34px; padding: 0 12px; border-radius: 6px; font-size: 12px; box-shadow: none; }
+#md-tab-formulas .cfv2-currency { padding: 4px 8px; font-size: 12px; }
+#md-tab-formulas .cfv2-editor, #md-tab-formulas .cf-shell { display: contents; }
+#md-tab-formulas .cf-main { grid-column: 1; grid-row: 2; min-width: 0; background: white; border: 1px solid #e4e9f0; border-top: 0; }
+#md-tab-formulas .cf-scroll { overflow-x: auto; }
+/* BẢY cột, theo đúng thứ tự trong `renderCostFormulaEditor`:
+   1 Khoản mục · 2 Acc code · 3 Đơn giá · 4 Chuẩn của loại · 5 Nhân với ·
+   6 Thành tiền · 7 nút xoá. `table-layout: fixed` chia theo `nth-child`, nên
+   chèn thêm một cột mà không sửa bộ bề rộng này là mọi cột dồn lệch một nấc —
+   "Thành tiền" từng ăn 5% của nút xoá và số tiền bị gãy dòng "960.0 / 00 VNĐ". */
+#md-tab-formulas .cf-table { width: 100%; margin: 0; min-width: 760px; table-layout: fixed; }
+#md-tab-formulas .cf-table th:nth-child(1) { width: 25%; }
+#md-tab-formulas .cf-table th:nth-child(2) { width: 12%; }
+#md-tab-formulas .cf-table th:nth-child(3) { width: 17%; }
+#md-tab-formulas .cf-table th:nth-child(4) { width: 10%; }
+#md-tab-formulas .cf-table th:nth-child(5) { width: 13%; }
+#md-tab-formulas .cf-table th:nth-child(6) { width: 18%; }
+#md-tab-formulas .cf-table th:nth-child(7) { width: 5%; }
+#md-tab-formulas .cf-table th { white-space: nowrap; }
+#md-tab-formulas .cf-table td.cf-amount { white-space: nowrap; overflow-wrap: normal; }
+#md-tab-formulas .cfv2-costindex-input, #md-tab-formulas .cfv2-acccode-select { width: 100%; box-sizing: border-box; height: 30px; padding: 3px 6px; border: 1px solid #d5dde8; border-radius: 5px; background: #fff; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; text-transform: uppercase; color: #334155; }
+#md-tab-formulas .cfv2-acccode-select:disabled { color: #94a3b8; background: #f8fafc; font-style: italic; text-transform: none; }
+#md-tab-formulas .cfv2-costindex-input:focus, #md-tab-formulas .cfv2-acccode-select:focus { border-color: #93bbee; outline: none; background: #f6faff; }
+#md-tab-formulas .cf-table td { overflow-wrap: anywhere; }
+#md-tab-formulas .cf-num { white-space: normal; font-variant-numeric: tabular-nums; }
+#md-tab-formulas .cf-table th { padding: 10px; font-size: 10px; font-weight: 600; background: white; }
+#md-tab-formulas .cf-table td { padding: 6px 10px; font-size: 12px; }
+#md-tab-formulas .cf-table .cfv2-group td { padding: 6px 10px; background: #fafbfd; font-size: 10px; color: #7b8796; }
+#md-tab-formulas .cf-kind-tag { display: none; }
+#md-tab-formulas .cf-sign { color: #94a3b8; }
+#md-tab-formulas .cf-num { white-space: nowrap; }
+#md-tab-formulas .cfv2-rate-input { width: 104px; height: 30px; padding: 3px 6px; border: 1px solid transparent; background: transparent; border-radius: 5px; text-align: right; font: inherit; font-weight: 600; color: #334155; }
+#md-tab-formulas .cfv2-rate-input:hover, #md-tab-formulas .cfv2-rate-input:focus { border-color: #93bbee; outline: none; background: #f6faff; }
+#md-tab-formulas .cf-num small { display: inline; font-size: 10px; color: #7b8796; }
+#md-tab-formulas .cf-head { grid-row: 3; grid-column: 1; border: 1px solid #e4e9f0; border-top: 0; background: white; padding: 14px; border-radius: 0 0 8px 8px; }
+#md-tab-formulas .cf-head-main { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#md-tab-formulas .cf-head h4 { font-size: 13px; margin: 0; }
+#md-tab-formulas .cf-trigger { width: auto; min-height: 30px; margin-left: auto; padding: 5px 8px; border-radius: 5px; background: white; font-size: 11px; }
+#md-tab-formulas .cf-trigger .cf-equation { display: none; }
+.cfv2-equations { width: 100%; background: #fafbfd; border: 1px solid #e4e9f0; border-radius: 6px; padding: 10px 12px; }
+.cfv2-equations > div { display: grid; grid-template-columns: 65px minmax(0, 1fr); gap: 10px; padding: 5px 0; font-size: 12px; }
+.cfv2-equations b { color: #64748b; font-size: 11px; }
+.cfv2-equations span { overflow-wrap: anywhere; }
+#md-tab-formulas .cf-note { margin: 0; padding: 10px 12px; background: #fafbfd; font-size: 11px; color: #7b8796; }
+#md-tab-formulas .cf-side { grid-column: 2; grid-row: 2 / span 3; align-self: start; width: auto; border: 1px solid #e4e9f0; background: white; border-radius: 0 0 8px 8px; padding: 0; }
+#md-tab-formulas .cf-side-head { padding: 12px 14px; border-bottom: 1px solid #e4e9f0; }
+#md-tab-formulas .cf-side h5 { font-size: 13px; margin: 0; }
+#md-tab-formulas .cf-side-head small { font-size: 10px; }
+#md-tab-formulas .cf-side-input { padding: 12px 14px; margin: 0; }
+#md-tab-formulas .cf-side-input label { font-size: 12px; }
+#md-tab-formulas .cf-side-input input { width: 80px; height: 32px; font-size: 13px; }
+#md-tab-formulas .cf-side-input { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+#md-tab-formulas .cf-side-input label { display:flex;flex-direction:column;align-items:stretch;gap:4px; }
+#md-tab-formulas .cf-side-input label span { display:flex;align-items:center;gap:4px; }
+#md-tab-formulas .cf-side-input input { width:75px;max-width:100%; }
+#md-tab-formulas .cf-side-res { padding: 0 14px 14px; margin: 0; }
+#md-tab-formulas .cf-res { border-radius: 6px; margin: 0 0 8px; padding: 10px 12px; box-shadow: none; }
+#md-tab-formulas .cf-res dt { font-size: 11px; }
+#md-tab-formulas .cf-res dd { font-size: 18px; margin: 4px 0 0; }
+#md-tab-formulas .cf-res { display:flex;justify-content:space-between;align-items:center;border:0;gap:8px; }
+#md-tab-formulas .cf-res dt small { display:none; }
+#md-tab-formulas .cf-res dd { font-size:14px;margin:0; }
+#md-tab-formulas .cf-res--cost { background:#fff4e0; }
+#md-tab-formulas .cf-res--rev { background:#e7f6ec; }
+#md-tab-formulas .cf-res--profit { background:#e9f1fd; }
+#md-tab-formulas #cf-issues { grid-column: 1; grid-row: 4; }
+#md-tab-formulas .vc-panel:not([hidden]) { position: fixed; z-index: 25000; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1000px, calc(100vw - 32px)); max-height: 85vh; overflow: auto; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 0 0 100vmax #0f172a70; }
+@media (max-width: 1250px) {
+  #md-tab-formulas { padding: 12px; }
+  #md-tab-formulas .cfv2-shell { grid-template-columns: 230px minmax(0, 1fr); gap: 10px; }
+  #md-tab-formulas .cfv2-workbench { grid-template-columns: minmax(0, 1fr) 230px; gap: 0 10px; }
+}
+@media (max-width: 1000px) {
+  #md-tab-formulas .cfv2-workbench { grid-template-columns: minmax(0, 1fr); }
+  #md-tab-formulas .cf-side { grid-column: 1; grid-row: 5; margin-top: 12px; border-radius: 8px; }
+}
+@media (max-width: 640px) {
+  #md-tab-formulas .cfv2-shell { grid-template-columns: minmax(0, 1fr); }
+  #md-tab-formulas #formula-vehicle-types-list { max-height: 260px; }
+  #md-tab-formulas .cfv2-toolbar { flex-wrap: wrap; gap: 8px; }
+  #md-tab-formulas .cfv2-toolbar-actions { flex-wrap: wrap; }
+  #md-tab-formulas .vc-table { min-width: 650px; }
+}
+
+/* Currency changes affect values, never the workbench's scale or column tracks. */
+#md-tab-formulas .cfv2-toolbar-actions { flex-shrink: 0; }
+#md-tab-formulas .cf-res { min-height: 54px; }
+#md-tab-formulas .cf-res dd { min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#md-tab-formulas .cf-table .cf-num { white-space: normal; }
+#md-tab-formulas .cfv2-workbench.vehicle-mode > .cfv2-toolbar,
+#md-tab-formulas .cfv2-workbench.vehicle-mode > #cost-formula-view { display: none; }
+#cfvi { display: contents; }
+#cfvi .cfvi-header { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; min-height: 56px; padding: 10px 14px; background: white; border: 1px solid #e4e9f0; border-radius: 8px 8px 0 0; }
+#cfvi .cfvi-header span { min-width: 0; overflow-wrap: anywhere; }
+#cfvi .cfvi-currency { margin-left: auto; flex-shrink: 0; }
+#cfvi .cfvi-main { grid-column: 1; min-width: 0; background: white; border: 1px solid #e4e9f0; }
+#cfvi .cfvi-inheritance { padding: 10px 12px; color: #7b8796; background: #fafbfd; font-size: 11px; }
+#cfvi .cfvi-side { grid-column: 2; background: white; border: 1px solid #e4e9f0; padding: 14px; }
+#cfvi h4 { font-size: 13px; margin: 0 0 12px; }
+#cfvi button { border: 1px solid #cbd5e1; background: white; color: #1264bd; min-height: 30px; border-radius: 5px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
+#cfvi button:disabled { opacity: .5; cursor: default; }
+#cfvi input { width: 100%; min-width: 0; height: 32px; padding: 5px 6px; border: 1px solid #cbd5e1; border-radius: 5px; font: inherit; font-size: 12px; }
+#cfvi [data-rate] { text-align: right; }
+#md-tab-formulas #cfvi th { width: auto; }
+#cfvi td small { display: block; color: #7b8796; font-size: 10px; }
+#cfvi .cfvi-sample { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 10px; }
+#cfvi .cfvi-sample label { min-width: 0; font-size: 11px; }
+#cfvi .cfvi-sample input { margin-top: 5px; }
+#cfvi .cfvi-result { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.6fr); align-items: center; gap: 8px; min-height: 54px; padding: 10px; margin-top: 8px; border-radius: 6px; background: #f4f6f8; font-size: 11px; }
+#cfvi .cfvi-result b { font-size: 13px; text-align: right; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+#cfvi .cfvi-result.cost { background: #fff4e0; color: #a65d0d; }
+#cfvi .cfvi-result.revenue { background: #e7f6ec; color: #15803d; }
+#cfvi .cfvi-result.profit { background: #e9f1fd; color: #1264bd; }
+#cfvi .cfvi-expressions { padding: 14px; border-top: 1px solid #e4e9f0; font-size: 11px; overflow-wrap: anywhere; }
+#cfvi .cfvi-savebar { display: flex; justify-content: flex-end; gap: 8px; align-items: center; padding: 12px; flex-wrap: wrap; border-top: 1px solid #e4e9f0; }
+#cfvi-change-count { margin-right: auto; font-size: 11px; }
+#cfvi-save { background: #1264bd !important; color: white !important; }
+#cfvi .cfvi-loading { grid-column: 1/-1; padding: 20px; background: white; }
+@media (max-width: 1000px) { #cfvi .cfvi-side { grid-column: 1; } }
+
+#md-tab-formulas .cfv2-workbench[aria-busy="true"] { cursor: progress; }
+#md-tab-formulas .cfv2-workbench[aria-busy="true"]::after { content: "Đang tải giá xe..."; position: fixed; bottom: 18px; right: 20px; padding: 8px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; z-index: 100; font-size: 12px; }
+#cfvi-table { min-width: 720px !important; }
+#cfvi-table .cfvi-price { display: flex; align-items: center; gap: 5px; }
+#cfvi-table .cfvi-price input { width: 100%; min-width: 0; border-color: transparent; background: transparent; font-weight: 600; }
+#cfvi-table .cfvi-price small { flex: 0 0 45px; }
+#cfvi-table [data-note] { border-color: transparent; background: transparent; font-size: 11px; padding: 4px 0; }
+#cfvi-table tr:not(.is-overridden) [data-note] { visibility: hidden; }
+#cfvi-table [data-note]:focus, #cfvi-table [data-rate]:focus { border-color: #83b2eb; background: white; }
+#cfvi-table .is-overridden [data-rate] { background: #fff4e0; border-color: #ffd599; color: #b45309; }
+#cfvi-table .is-overridden .cfvi-standard { text-decoration: line-through; color: #94a3b8; }
+#cfvi-table .is-overridden .cfb-source { color: #b45309; background: #fff4e0; }
+#cfvi-table [data-reset] { border: 0; padding: 0 3px; min-height: 24px; background: transparent; }
+#cfvi-table tr:not(.is-overridden) [data-reset] { visibility: hidden; }
+#cfvi-table td { height: 75px; }
+#cfvi-table .cfv2-group td { height: 30px; }
+.cfcompare-heading { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin-top: 16px; }
+.cfcompare-heading h5 { font-size: 12px; color: #7b8796; }
+.cfcompare-heading button { border: 0 !important; background: transparent; color: #1671db; font-size: 11px; white-space: nowrap; cursor: pointer; }
+.cfcompare-scroll { max-height: 420px; overflow: auto; }
+.cfb-compare { table-layout: fixed; }
+.cfb-compare th:first-child { width: 48%; }
+.cfb-compare td { overflow-wrap: anywhere; }
+.cfb-compare .is-current { background: #e9f1fd; font-weight: 600; }
+#cfvi-comparison h5 { margin: 16px 0 8px; font-size: 12px; color: #7b8796; }
+
+
+/* ---- Ô chọn Acc code có tìm (danh mục ~500 tài khoản kế toán của bên công nợ) ---- */
+#md-tab-formulas .cfv2-acc { width: 100%; box-sizing: border-box; min-height: 34px; padding: 3px 8px; border: 1px solid #d5dde8; border-radius: 6px; background: #fff; text-align: left; cursor: pointer; display: grid; gap: 0; font: inherit; }
+#md-tab-formulas .cfv2-acc:hover { border-color: #93bbee; background: #f6faff; }
+#md-tab-formulas .cfv2-acc b { font-size: .84rem; font-weight: 800; color: #1e40af; letter-spacing: .02em; }
+#md-tab-formulas .cfv2-acc small { display: block; font-size: .68rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+#md-tab-formulas .cfv2-acc.cfv2-acc-rong b { color: #94a3b8; }
+#md-tab-formulas .cfv2-acc.cfv2-acc-la b { color: #b45309; }
+#md-tab-formulas .cfv2-acc.cfv2-acc-cho, #md-tab-formulas .cfv2-acc:disabled { color: #94a3b8; background: #f8fafc; font-style: italic; font-size: .74rem; cursor: not-allowed; }
+.cfv2-acc-pop { position: absolute; z-index: 4000; width: 420px; max-width: calc(100vw - 16px); background: #fff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 18px 44px rgba(15, 28, 46, .22); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+.cfv2-acc-pop-hd { display: flex; gap: 8px; align-items: center; padding: 8px; border-bottom: 1px solid #e4e9f0; background: #f8fafc; }
+.cfv2-acc-pop-hd input[type="search"] { flex: 1; min-width: 0; height: 34px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0 10px; font: inherit; }
+.cfv2-acc-chk { display: inline-flex; align-items: center; gap: 4px; font-size: .74rem; color: #475569; white-space: nowrap; }
+.cfv2-acc-pop-ds { max-height: 320px; overflow: auto; }
+.cfv2-acc-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; padding: 7px 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; align-items: start; }
+.cfv2-acc-row:hover, .cfv2-acc-row.on { background: #eff6ff; }
+.cfv2-acc-row b { font-size: .82rem; color: #1e40af; font-weight: 800; }
+.cfv2-acc-row span { display: block; font-size: .8rem; color: #1e293b; line-height: 1.3; }
+.cfv2-acc-row small { display: block; font-size: .7rem; color: #64748b; line-height: 1.3; }
+.cfv2-acc-more { padding: 10px; font-size: .74rem; color: #64748b; text-align: center; }
+.cfv2-acc-pop-ft { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-top: 1px solid #e4e9f0; background: #f8fafc; }
+.cfv2-acc-bo { border: 1px solid #fecaca; background: #fff; color: #b91c1c; border-radius: 6px; padding: 3px 8px; font-size: .74rem; cursor: pointer; }
+.cfv2-acc-hint { font-size: .7rem; color: #94a3b8; }
+

@@ -92,7 +92,7 @@ const RATES = { fuel: 4800, driver: 400000, toll: 150000, wh: 100000, rate: 1200
   assert.notStrictEqual(changed, text);
   assert.ok(changed.includes('− Phí lưu ca'));
 
-  assert.strictEqual(M.toText([]), 'Chưa có cấu phần nào');
+  assert.strictEqual(M.toText([]), 'Chưa có khoản mục nào');
 }
 
 // --- 4. Bắt công thức tự mâu thuẫn ----------------------------------------

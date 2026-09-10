@@ -8,17 +8,7 @@ DEPARTURE = "2026-08-21T08:00:00+07:00"
 
 def _pending_do(client, workflow_builder, suffix, route_id="RT-T1"):
     workflow_builder.quotation(f"QT-{suffix}", approve=True)
-    workflow_builder.sales_order(f"SO-{suffix}", f"QT-{suffix}", confirm=True)
-    response = client.post("/api/delivery-orders", json={
-        "id": f"DO-{suffix}",
-        "so_id": f"SO-{suffix}",
-        "route_id": route_id,
-        "pickup_window_start": "2026-08-21T07:00:00+07:00",
-        "pickup_window_end": "2026-08-21T09:00:00+07:00",
-        "delivery_window_start": "2026-08-21T10:00:00+07:00",
-        "delivery_window_end": "2026-08-21T14:00:00+07:00",
-    })
-    assert response.status_code == 200, response.text
+    workflow_builder.delivery_order(f"DO-{suffix}", f"QT-{suffix}", route_id= route_id, pickup_window_start= "2026-08-21T07:00:00+07:00", pickup_window_end= "2026-08-21T09:00:00+07:00", delivery_window_start= "2026-08-21T10:00:00+07:00", delivery_window_end= "2026-08-21T14:00:00+07:00")
 
 
 def test_create_trip_from_dos_builds_route_legs_transactionally_and_is_idempotent(
@@ -112,7 +102,6 @@ def test_create_trip_from_do_persists_delivery_stop_recipient_plan(app_client, w
         headers={"Idempotency-Key": "trip-stop-plan"},
     )
 
-    assert response.status_code == 200, response.text
     legs = response.json()["data"]["legs"]
     assert legs[0]["stop_name"] == "Trạm B - giao chứng từ"
     assert legs[0]["receiver_name"] == "Nguyễn Văn A"

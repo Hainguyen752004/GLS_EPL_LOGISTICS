@@ -36,6 +36,10 @@ def _serialize_actual_cost(cost):
             {
                 "id": item.id,
                 "name": item.description,
+                # Hai ma cua dong: `charge_type` cho may cua minh (nhom, tinh),
+                # `cost_index` cho he cong no ben ngoai (lap phieu chi).
+                "charge_type": item.charge_type,
+                "cost_index": item.cost_index or "",
                 "original_amount": item.original_amount,
                 "actual_amount": item.actual_amount,
                 "increase_amount": item.increase_amount,

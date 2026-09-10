@@ -2,7 +2,7 @@ import datetime
 from database import engine, Base, SessionLocal
 from models import (
     Vehicle, VehicleType, Driver, Route, Location, Customer,
-    Quotation, SalesOrder, DeliveryOrder, DeliveryOrderDetail,
+    Quotation, DeliveryOrder, DeliveryOrderDetail,
     ShipmentCost, VehicleTracking, POD, ARInvoice, GLTransaction, ChartOfAccount
 )
 
@@ -10,7 +10,7 @@ import datetime
 from database import engine, Base, SessionLocal
 from models import (
     Vehicle, VehicleType, Driver, Route, Location, Customer,
-    Quotation, QuotationDetail, SalesOrder, DeliveryOrder, DeliveryOrderDetail,
+    Quotation, QuotationDetail, DeliveryOrder, DeliveryOrderDetail,
     ShipmentCost, VehicleTracking, POD, ARInvoice, GLTransaction, ChartOfAccount,
     Incident, AuditLog, Item, UOM
 )
@@ -118,25 +118,18 @@ def seed_full_demo_data():
         for q in quotations:
             db.merge(q)
 
-        # 9. SalesOrders
-        sales_orders = [
-            SalesOrder(id='SO-2026-001', order_date='2026-07-28', delivery_date='2026-07-31', customer_id='CUS-001', origin='KCN Sóng Thần 1', destination='Cảng Cát Lái', status='Confirmed', total_amount=3500000, sales_rep='Nguyễn Văn Kinh Doanh', packaging_spec='Thùng Carton (Tiêu chuẩn)', volume_m3=18.5),
-            SalesOrder(id='SO-2026-002', order_date='2026-07-29', delivery_date='2026-08-01', customer_id='CUS-002', origin='KCN Yên Phong', destination='Cảng Đình Vũ', status='Confirmed', total_amount=6800000, sales_rep='Trần Thị Sales', packaging_spec='Pallet Gỗ (1.2m x 1.0m)', volume_m3=24.0)
-        ]
-        for so in sales_orders:
-            db.merge(so)
 
         # 10. DeliveryOrders & Details
         delivery_orders = [
-            DeliveryOrder(id='DO-2026-001', so_id='SO-2026-001', customer_id='CUS-001', route_id='RT-001', vehicle_id='51C-123.45', driver_id='DRV-001', co_driver='Lê Hoàng Nam (DRV-003)', status='In Transit', pickup_date='2026-07-30', delivery_date='2026-07-31', packaging_spec='Thùng Carton (Tiêu chuẩn)', volume_m3=18.5),
-            DeliveryOrder(id='DO-2026-002', so_id='SO-2026-002', customer_id='CUS-002', route_id='RT-002', vehicle_id=None, driver_id=None, co_driver=None, status='Pending Approval', pickup_date='2026-07-31', delivery_date='2026-08-01', packaging_spec='Pallet Gỗ (1.2m x 1.0m)', volume_m3=24.0)
+            DeliveryOrder(id='DO-2026-001', customer_id='CUS-001', route_id='RT-001', vehicle_id='51C-123.45', driver_id='DRV-001', co_driver='Lê Hoàng Nam (DRV-003)', status='In Transit', pickup_date='2026-07-30', delivery_date='2026-07-31', packaging_spec='Thùng Carton (Tiêu chuẩn)', volume_m3=18.5),
+            DeliveryOrder(id='DO-2026-002', customer_id='CUS-002', route_id='RT-002', vehicle_id=None, driver_id=None, co_driver=None, status='Pending Approval', pickup_date='2026-07-31', delivery_date='2026-08-01', packaging_spec='Pallet Gỗ (1.2m x 1.0m)', volume_m3=24.0)
         ]
         for do in delivery_orders:
             db.merge(do)
 
         do_details = [
-            DeliveryOrderDetail(id=1, so_id='SO-2026-001', sku='ITM-001', description='Tivi Samsung QLED 65 inch', qty=40, uom='BOX', unit_price=87500, amount=3500000, weight_kg=1140.0),
-            DeliveryOrderDetail(id=2, so_id='SO-2026-002', sku='ITM-002', description='Tủ Lạnh Samsung Inverter 400L', qty=25, uom='BOX', unit_price=272000, amount=6800000, weight_kg=1875.0)
+            DeliveryOrderDetail(id=1, sku='ITM-001', description='Tivi Samsung QLED 65 inch', qty=40, uom='BOX', unit_price=87500, amount=3500000, weight_kg=1140.0),
+            DeliveryOrderDetail(id=2, sku='ITM-002', description='Tủ Lạnh Samsung Inverter 400L', qty=25, uom='BOX', unit_price=272000, amount=6800000, weight_kg=1875.0)
         ]
         for dod in do_details:
             db.merge(dod)

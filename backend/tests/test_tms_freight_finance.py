@@ -11,13 +11,13 @@ from database import Base
 
 
 @pytest.fixture
-def db_session(tmp_path):
+def db_session(tmp_path, may_kiem):
     import models  # register all mapped tables before creating the isolated schema
 
-    engine = create_engine(f"sqlite:///{tmp_path / 'finance.db'}")
-    @event.listens_for(engine, "connect")
-    def _enable_foreign_keys(connection, _):
-        connection.execute("PRAGMA foreign_keys=ON")
+    # PostgreSQL cuong che khoa ngoai san. Ban truoc phai bat tay
+    # `PRAGMA foreign_keys=ON` vi mac dinh cua SQLite la TAT — va `PRAGMA` khong
+    # phai cau lenh cua PostgreSQL, de lai la loi ngay o buoc mo ket noi.
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine)()
     try:
@@ -479,19 +479,15 @@ def test_idempotency_replay_is_snapshot_and_permission_precedes_replay(db_sessio
     assert caught.value.code == "FINANCE_PERMISSION_DENIED"
 
 
-def _concurrent_cost_database(tmp_path):
+def _concurrent_cost_database(may_kiem):
     import models
 
-    database = tmp_path / "concurrent-cost.sqlite3"
-    engine = create_engine(
-        f"sqlite:///{database}", connect_args={"check_same_thread": False, "timeout": 10}
-    )
-
-    @event.listens_for(engine, "connect")
-    def _configure(connection, _):
-        connection.execute("PRAGMA foreign_keys=ON")
-        connection.execute("PRAGMA busy_timeout=10000")
-
+    # Bai kiem GHI DONG THOI tu hai luong. Tren SQLite phai noi rong
+    # `busy_timeout` vi mot tep SQLite chi cho MOT nguoi ghi mot luc, va khoa
+    # o muc ca TEP — nen phep kiem "hai nguoi ghi cung luc" o day thuc ra chi
+    # kiem duoc rang mot nguoi phai xep hang. PostgreSQL khoa o muc DONG va co
+    # giao dich that, nen day moi la cho kiem duoc dung dieu bai nay muon noi.
+    engine = may_kiem()
     Base.metadata.create_all(engine)
     sessions = sessionmaker(bind=engine, expire_on_commit=False)
     seed = sessions()
@@ -508,11 +504,11 @@ def _concurrent_cost_database(tmp_path):
     return engine, sessions, order.id
 
 
-def test_cost_same_key_simultaneous_replays_one_atomic_result(tmp_path):
+def test_cost_same_key_simultaneous_replays_one_atomic_result(tmp_path, may_kiem):
     from models import AuditLog, FreightActualCost, IdempotencyRecord
     from services.tms_cost_service import create_cost
 
-    engine, sessions, order_id = _concurrent_cost_database(tmp_path)
+    engine, sessions, order_id = _concurrent_cost_database(may_kiem)
     gate = threading.Barrier(2)
 
     def invoke():
@@ -536,11 +532,11 @@ def test_cost_same_key_simultaneous_replays_one_atomic_result(tmp_path):
     verify.close(); engine.dispose()
 
 
-def test_cost_different_keys_same_version_has_one_winner(tmp_path):
+def test_cost_different_keys_same_version_has_one_winner(tmp_path, may_kiem):
     from models import AuditLog, FreightActualCost, FreightChargeItem, IdempotencyRecord
     from services.tms_cost_service import create_cost, save_charge_item
 
-    engine, sessions, order_id = _concurrent_cost_database(tmp_path)
+    engine, sessions, order_id = _concurrent_cost_database(may_kiem)
     seed = sessions()
     create_cost(seed, order_id, {"id": "C-CAS", "carrier_id": "INTERNAL", "currency_code": "VND"},
                 "POST", "/costs", "create", "maker", {"finance_creator"})
@@ -571,11 +567,11 @@ def test_cost_different_keys_same_version_has_one_winner(tmp_path):
     verify.close(); engine.dispose()
 
 
-def test_cost_documents_different_keys_same_version_have_one_winner(tmp_path):
+def test_cost_documents_different_keys_same_version_have_one_winner(tmp_path, may_kiem):
     from models import AuditLog, FreightCostDocument, IdempotencyRecord
     from services.tms_cost_service import create_cost, save_cost_document
 
-    engine, sessions, order_id = _concurrent_cost_database(tmp_path)
+    engine, sessions, order_id = _concurrent_cost_database(may_kiem)
     seed = sessions()
     create_cost(seed, order_id, {"id": "C-DOC-CAS", "carrier_id": "INTERNAL", "currency_code": "VND"},
                 "POST", "/costs", "create-doc-cas", "maker", {"finance_creator"})
@@ -727,11 +723,11 @@ def test_cost_outer_rollback_removes_header_audit_and_idempotency(db_session):
     assert db_session.query(IdempotencyRecord).filter(IdempotencyRecord.idempotency_key.like("rollback%")).count() == 0
 
 
-def test_cost_concurrent_reverse_has_one_winner(tmp_path):
+def test_cost_concurrent_reverse_has_one_winner(tmp_path, may_kiem):
     from models import AuditLog, FreightActualCost, IdempotencyRecord
     from services.tms_cost_service import approve_cost, create_cost, reverse_cost, submit_cost
 
-    engine, sessions, order_id = _concurrent_cost_database(tmp_path)
+    engine, sessions, order_id = _concurrent_cost_database(may_kiem)
     seed = sessions()
     create_cost(seed, order_id, {"id": "C-REVERSE", "carrier_id": "INTERNAL", "currency_code": "VND"},
                 "POST", "/costs", "create-reverse", "maker", {"finance_creator"})

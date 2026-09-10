@@ -428,8 +428,7 @@
     const order = deliveryOrderId
       ? firstById(deliveryOrders, deliveryOrderId)
       : deliveryOrders[0] || {};
-    const salesOrder = firstById(list(state, 'sales_orders'), order.so_id || order.sales_order_id);
-    const quotation = firstById(list(state, 'quotations'), (salesOrder && (salesOrder.quotation_id || salesOrder.quote_id)) || order.quotation_id);
+    const quotation = firstById(list(state, 'quotations'), order.quotation_id);
     const podRecords = podsForOrder(state, order.id);
     const pod = podRecords[0] || null;
     const status = normalized(order.status || order.canonical_status);
@@ -437,7 +436,6 @@
 
     const steps = [
       { key: 'quotation', label: 'Báo giá', done: quotation || order.quotation_id, view: 'crm-sales', action_label: 'Mở Báo giá' },
-      { key: 'sales_order', label: 'SO', done: salesOrder || order.so_id, view: 'crm-sales', action_label: 'Mở SO' },
       { key: 'delivery_order', label: 'DO', done: order.id, view: 'ops-planning', action_label: 'Mở DO' },
       { key: 'dispatch', label: 'Điều phối', done: Boolean(order.vehicle_id && order.driver_id), view: 'dispatch', action_label: 'Mở Dispatch' },
       { key: 'pickup', label: 'Pickup', done: ['picked', 'packed', 'in_transit', 'arrived', 'delivered', 'completed'].includes(status), view: 'tracking', action_label: 'Mở GPS/POD' },
@@ -447,7 +445,7 @@
       { key: 'settlement', label: 'AP / Đối soát', done: orderFinance.settlements.length > 0, view: 'accounting', action_label: 'Mở Tài chính' }
     ];
     return steps.map(step => {
-      const hardMissing = ['quotation', 'sales_order', 'delivery_order'].includes(step.key) && !step.done;
+      const hardMissing = ['quotation', 'delivery_order'].includes(step.key) && !step.done;
       const detail = buildOrderTimelineDetail(state, order.id, step.key);
       return {
         key: step.key,
@@ -466,8 +464,7 @@
     const order = deliveryOrderId
       ? firstById(deliveryOrders, deliveryOrderId)
       : deliveryOrders[0] || {};
-    const salesOrder = firstById(list(state, 'sales_orders'), order.so_id || order.sales_order_id);
-    const quotation = firstById(list(state, 'quotations'), (salesOrder && (salesOrder.quotation_id || salesOrder.quote_id)) || order.quotation_id);
+    const quotation = firstById(list(state, 'quotations'), order.quotation_id);
     const route = firstById(list(state, 'routes'), order.route_id || order.route, ['id', 'name']);
     const podRecords = podsForOrder(state, order.id);
     const pod = podRecords[0] || null;
@@ -483,7 +480,6 @@
     const status = normalized(order.status || order.canonical_status);
     const definitions = {
       quotation: { title: 'Báo giá', view: 'crm-sales', scrollTo: 'oracle-qt-list', primary: quotation, messageDone: 'Đã có báo giá liên kết với đơn.', messageMissing: 'Chưa có báo giá. Vào Nghiệp vụ → Báo giá để tạo trước.' },
-      sales_order: { title: 'Sales Order / Đơn hàng', view: 'crm-sales', scrollTo: 'oracle-so-list', primary: salesOrder, messageDone: 'Đã có SO liên kết từ báo giá.', messageMissing: 'Chưa có SO. Vào Nghiệp vụ → SO để chốt đơn.' },
       delivery_order: { title: 'Delivery Order / Lệnh giao hàng', view: 'ops-planning', scrollTo: 'fiori-do-list', primary: order.id ? order : null, messageDone: 'Đã có DO để lập kế hoạch giao hàng.', messageMissing: 'Chưa có DO. Vào Nghiệp vụ → DO để tạo lệnh giao hàng.' },
       dispatch: { title: 'Dispatch / Điều phối', view: 'dispatch', primary: order.vehicle_id && order.driver_id ? order : null, messageDone: 'Đã phân đủ xe và tài xế cho DO.', messageMissing: 'Chưa phân đủ xe và tài xế. Vào Dispatch để điều phối.' },
       pickup: { title: 'Pickup / Lấy hàng', view: 'tracking', primary: events.find(e => ['pickup', 'check_in', 'departure'].includes(normalized(e.event_type))) || null, messageDone: 'Đã có sự kiện vận hành ở bước lấy hàng.', messageMissing: 'Chưa có sự kiện pickup. Vào GPS/POD để ghi nhận.' },
@@ -496,7 +492,6 @@
     const done = Boolean(def.primary);
     const entityIds = {
       quotation: quotation && quotation.id,
-      sales_order: salesOrder && salesOrder.id,
       delivery_order: order && order.id,
       dispatch: order && order.id,
       pickup: order && order.id,
@@ -512,7 +507,6 @@
     };
     const actionLabels = {
       quotation: 'Mở Báo giá',
-      sales_order: 'Mở SO',
       delivery_order: 'Mở DO',
       dispatch: 'Mở Dispatch',
       pickup: 'Mở GPS/POD',
@@ -563,7 +557,6 @@
     );
     const checklist = [
       { label: 'Báo giá', status: quotation ? 'done' : 'missing' },
-      { label: 'SO', status: salesOrder ? 'done' : 'missing' },
       { label: 'DO', status: order.id ? 'done' : 'missing' },
       { label: 'Xe/tài xế', status: (order.vehicle_id && order.driver_id) ? 'done' : 'missing' },
       { label: 'Event vận hành', status: events.length ? 'done' : 'missing' },
@@ -576,7 +569,7 @@
       status: done ? 'done' : 'pending',
       health: done ? 'ok' : 'warning',
       primary: def.primary || {},
-      related: { quotation, sales_order: salesOrder, delivery_order: order, route, pod, pod_records: podRecords, events, finance },
+      related: { quotation, delivery_order: order, route, pod, pod_records: podRecords, events, finance },
       navigation,
       message: done ? def.messageDone : def.messageMissing,
       action_label: actionLabels[stepKey] || 'Mở màn liên quan',
@@ -590,8 +583,7 @@
     const order = deliveryOrderId
       ? firstById(deliveryOrders, deliveryOrderId)
       : deliveryOrders[0] || {};
-    const salesOrder = firstById(list(state, 'sales_orders'), order.so_id || order.sales_order_id);
-    const quotation = firstById(list(state, 'quotations'), (salesOrder && (salesOrder.quotation_id || salesOrder.quote_id)) || order.quotation_id);
+    const quotation = firstById(list(state, 'quotations'), order.quotation_id);
     const route = firstById(list(state, 'routes'), order.route_id || order.route, ['id', 'name']);
     const vehicle = firstById(list(state, 'vehicles'), order.vehicle_id || order.vehicle, ['id', 'vehicle_id', 'plate_no']);
     const driver = firstById(list(state, 'drivers'), order.driver_id || order.driver, ['id', 'driver_id', 'name']);
@@ -660,7 +652,7 @@
     return {
       id: order.id || deliveryOrderId || '',
       summary: {
-        customer_id: order.customer_id || (salesOrder && salesOrder.customer_id) || (quotation && quotation.customer_id) || 'Chưa gắn khách hàng',
+        customer_id: order.customer_id || (quotation && quotation.customer_id) || 'Chưa gắn khách hàng',
         status_label: statusLabel(order.status || order.canonical_status),
         route_label: route ? `${route.id || route.name || 'Tuyến'} • ${route.name || route.route_name || ''}`.trim() : (order.route_id || 'Chưa chọn tuyến'),
         vehicle_label: order.vehicle_id || (vehicle && (vehicle.plate_no || vehicle.id)) || 'Chưa phân xe',
@@ -2559,7 +2551,7 @@
       const actions = [{
         code: 'OPEN_ORDER_TIMELINE',
         label: 'Mở timeline đơn',
-        description: 'Xem toàn bộ luồng QT → SO → DO → Dispatch → GPS/POD → Finance của đơn này.',
+        description: 'Xem toàn bộ luồng QT → DO → Dispatch → GPS/POD → Finance của đơn này.',
         navigation: { view: 'overview', label: 'Timeline A-Z' }
       }];
       if (issue.category_code === 'LATE_PICKUP') actions.push({
@@ -3014,7 +3006,6 @@
 
   function buildReportingDrilldown(state, now = new Date()) {
     const deliveryOrders = list(state, 'delivery_orders');
-    const salesOrders = list(state, 'sales_orders');
     const quotations = list(state, 'quotations');
     const drilldown = buildSlaKpiDrilldown(state, now);
     const totalOrders = deliveryOrders.length;
@@ -3086,13 +3077,11 @@
       }))
     });
     const byCustomer = groupOrderPerformance(state, drilldown, order => {
-      const so = firstById(salesOrders, order.so_id || order.sales_order_id);
-      const quotation = firstById(quotations, (so && (so.quotation_id || so.quote_id)) || order.quotation_id);
-      return order.customer_id || order.customer || (so && (so.customer_id || so.customer)) || (quotation && (quotation.customer_id || quotation.customer));
+      const quotation = firstById(quotations, order.quotation_id);
+      return order.customer_id || order.customer || (quotation && (quotation.customer_id || quotation.customer));
     });
     const byRoute = groupOrderPerformance(state, drilldown, order => {
-      const so = firstById(salesOrders, order.so_id || order.sales_order_id);
-      const quotation = firstById(quotations, (so && (so.quotation_id || so.quote_id)) || order.quotation_id);
+      const quotation = firstById(quotations, order.quotation_id);
       return order.route_id || order.route || (quotation && (quotation.route_id || quotation.route));
     });
     const byDriver = groupOrderPerformance(state, drilldown, order => order.driver_id || order.driver || order.main_driver_id);
@@ -3211,13 +3200,13 @@
         action_label: masterMissing[0] ? `Cấu hình ${setupLabel(masterMissing[0].key)}` : 'Rà lại Master Data'
       },
       {
-        key: 'quotation_so_do',
-        label: 'Báo giá → SO → DO',
-        status: hasRows('quotations') && hasRows('sales_orders') && hasRows('delivery_orders') ? 'ready' : 'warning',
-        score: [hasRows('quotations'), hasRows('sales_orders'), hasRows('delivery_orders')].filter(Boolean).length * 33 + 1,
-        message: 'Cần có đủ Báo giá, Sales Order và Delivery Order để nhìn được luồng đơn hàng.',
+        key: 'quotation_do',
+        label: 'Báo giá → DO',
+        status: hasRows('quotations') && hasRows('delivery_orders') ? 'ready' : 'warning',
+        score: [hasRows('quotations'), hasRows('delivery_orders')].filter(Boolean).length * 50,
+        message: 'Cần có Báo giá và Lệnh giao hàng để nhìn được luồng đơn hàng.',
         target: { view: 'crm-sales', target: 'quotation-section' },
-        action_label: 'Mở Báo giá / SO / DO'
+        action_label: 'Mở Báo giá / DO'
       },
       {
         key: 'route_distance',
@@ -3389,7 +3378,7 @@
       currency: ['Tài chính, AP/AR và báo cáo cần tiền tệ để hiển thị số tiền đúng.', 'Nếu thiếu tiền tệ, user sẽ không biết đơn giá/chi phí dùng loại tiền nào.'],
       tax: ['Báo giá, Actual Cost và AP cần mã thuế để tính VAT/thuế đúng.', 'Nếu thiếu mã thuế, vào Master Data → Mã thuế trước khi demo tài chính.'],
       accounting_period: ['AP/Settlement cần kỳ kế toán mở để hạch toán và đối soát.', 'Nếu thiếu kỳ kế toán, Finance Cockpit chỉ nên xem dữ liệu, chưa nên post GL.'],
-      customer: ['Báo giá và Sales Order cần khách hàng để tạo luồng bán hàng.', 'Nếu thiếu khách hàng, luồng QT → SO sẽ bị chặn ngay từ đầu.'],
+      customer: ['Báo giá cần khách hàng để tạo luồng bán hàng.', 'Nếu thiếu khách hàng, luồng QT → DO sẽ bị chặn ngay từ đầu.'],
       route: ['Báo giá, Delivery Order và Dispatch cần tuyến đường/khoảng cách để tính kế hoạch.', 'Tuyến đường giúp bản đồ, Gantt và KPI đọc đúng quãng đường dự kiến.'],
       vehicle_driver: ['Dispatch nội bộ cần xe và tài xế rảnh để phân bổ nguồn lực.', 'Nếu thiếu xe/tài xế, hệ thống sẽ gợi ý thuê ngoài hoặc cần cấu hình Master Data.'],
       carrier: ['Tender/Carrier cần vendor hoặc carrier nội bộ để chọn nhà vận chuyển.', 'Nếu công ty tự chạy xe, cấu hình carrier nội bộ để FO có thể đi Dispatch nội bộ.'],

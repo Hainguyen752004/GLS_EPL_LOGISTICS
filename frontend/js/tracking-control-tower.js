@@ -431,7 +431,7 @@
     rows.forEach(item => {
       if (!position(item.gps)) return;
       const point = [Number(item.gps.lat), Number(item.gps.lng)]; bounds.push(point);
-      const mau = { red: '#d32f2f', amber: '#ef9f27', purple: '#7c3aed', gray: '#788493', blue: '#1a73e8' }[severity(item)] || '#1a73e8';
+      const mau = { red: '#d32f2f', amber: '#ef9f27', purple: '#7c3aed', gray: '#788493', blue: '#2563eb' }[severity(item)] || '#2563eb';
       // HUY HIEU XE, khong phai mot vong tron nho — va ve TREN CUNG.
       //
       // Ban truoc dung `L.circleMarker` ban kinh 8px, ve TRUOC cac co diem dau
@@ -511,12 +511,12 @@
         state.routeCache[cacheKey] = roadPoints;
       }
       if (token !== state.routeRequest || key !== state.selected || state.mode !== 'route') return;
-      L.polyline(roadPoints, { color: '#1a73e8', weight: 5, opacity: 0.88 }).addTo(layer);
+      L.polyline(roadPoints, { color: '#2563eb', weight: 5, opacity: 0.88 }).addTo(layer);
       el('ct-map-note').textContent = 'Đường xanh: tuyến kế hoạch theo đúng đường xe chạy. Đây chưa phải vệt GPS live.';
       requestAnimationFrame(() => { map.invalidateSize(); map.fitBounds(roadPoints, { padding: [30, 30], maxZoom: 13, animate: false }); });
     } catch (error) {
       if (token !== state.routeRequest || key !== state.selected || state.mode !== 'route') return;
-      L.polyline(fallbackPoints, { color: '#1a73e8', weight: 4, opacity: 0.7, dashArray: '6 8' }).addTo(layer);
+      L.polyline(fallbackPoints, { color: '#2563eb', weight: 4, opacity: 0.7, dashArray: '6 8' }).addTo(layer);
       el('ct-map-note').textContent = `Chưa gọi được OSRM, đang vẽ nối điểm trạm Master Data để đối chiếu: ${error.message}`;
     }
   }

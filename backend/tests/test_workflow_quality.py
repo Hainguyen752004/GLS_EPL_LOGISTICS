@@ -6,11 +6,39 @@ import pytest
 from services.errors import DomainError
 from routes.workflow_routes import _execute
 from models import IdempotencyRecord
-from conftest import bao_gia_hop_le
+from conftest import (bao_gia_hop_le, dieu_phoi_qua_chuyen, ket_noi_du_lieu,
+                      san_sang_dieu_phoi)
+
+
+def _khung_gio_va_trip(client, do_id, ma_trip):
+    """Dat khung gio cho mot lenh roi LAP CHUYEN cho no, chua dieu xe.
+
+    Dung cho phep do tranh chap: hai chuyen cung xin mot xe trong cung khung gio.
+    """
+    import datetime as _dt
+    import importlib as _importlib
+    database = _importlib.import_module("database")
+    models = _importlib.import_module("models")
+    dau = _dt.datetime(2026, 8, 12, 1, 0, tzinfo=_dt.timezone.utc)
+    with database.SessionLocal() as db:
+        do = db.get(models.DeliveryOrder, do_id)
+        do.pickup_window_start = dau
+        do.pickup_window_end = dau + _dt.timedelta(hours=3)
+        do.delivery_window_start = dau + _dt.timedelta(hours=3)
+        do.delivery_window_end = dau + _dt.timedelta(hours=12)
+        db.commit()
+    san_sang_dieu_phoi(client, do_id)
+    r = client.post("/api/tms/trips/from-delivery-orders", json={
+        "id": ma_trip, "do_ids": [do_id], "trip_type": "one_way",
+        "planned_departure_at": dau.isoformat(), "avg_speed_kmh": 40,
+        "dwell_minutes": 30, "return_purpose": "none",
+    }, headers={"Idempotency-Key": f"lap-{ma_trip}"})
+    assert r.status_code in (200, 201), r.text
+    return ma_trip
 
 
 def _audit_rows(path, record_id):
-    with sqlite3.connect(path) as connection:
+    with ket_noi_du_lieu(path) as connection:
         return connection.execute("SELECT user_id, ip_address, action FROM audit_logs WHERE record_id=? ORDER BY id", (record_id,)).fetchall()
 
 
@@ -40,16 +68,40 @@ def test_create_idempotency_replays_and_payload_mismatch_conflicts(app_client, w
 
 
 def test_dispatch_retries_are_idempotent(app_client, workflow_builder):
+    """Bam dieu phoi hai lan chi ghi MOT lan — do tren duong CHUYEN.
+
+    Truoc day bai nay do tren `PUT /api/delivery-orders/{id}/dispatch`. Duong do
+    da dong phan ghi (no khong lap chuyen nen lenh di qua no khong co duong ra),
+    va dieu phoi that di qua chuyen — nen phep do phai chuyen theo.
+    """
     client, database_file, _ = app_client
     workflow_builder.master_data()
     workflow_builder.quotation("QT-I", approve=True)
-    workflow_builder.sales_order("SO-I", "QT-I", confirm=True)
-    workflow_builder.delivery_order("DO-I", "SO-I", approve=True)
-    dispatch_headers = {"Idempotency-Key": "dispatch-one"}
-    payload = {"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}
-    first = client.put("/api/delivery-orders/DO-I/dispatch", json=payload, headers=dispatch_headers)
-    assert client.put("/api/delivery-orders/DO-I/dispatch", json=payload, headers=dispatch_headers).json() == first.json()
-    assert [row[2] for row in _audit_rows(database_file, "DO-I")].count("DISPATCH_DELIVERY") == 1
+    workflow_builder.delivery_order("DO-I", "QT-I", approve=True)
+    ma_trip = dieu_phoi_qua_chuyen(client, "DO-I")
+
+    # Dieu phoi lai chinh chuyen do: bi tu choi vi chuyen khong con `planned`.
+    tra = client.get(f"/api/tms/trips/{ma_trip}")
+    pb = int((tra.json()["data"] or {}).get("version") or 1)
+    lai = client.put(f"/api/tms/trips/{ma_trip}/dispatch", json={
+        "vehicle_id": "VEH-T1", "driver_id": "DRV-T1", "co_driver_id": None,
+        "expected_version": pb,
+        "assignment_start": "2026-08-12T01:00:00+00:00",
+        "assignment_end": "2026-08-12T13:00:00+00:00",
+    })
+    assert lai.status_code == 409, lai.text
+    assert lai.json()["detail"]["code"] == "INVALID_TRANSITION"
+
+    # Va chi co MOT phan cong dang mo cho chuyen do.
+    import importlib as _importlib
+    database = _importlib.import_module("database")
+    models = _importlib.import_module("models")
+    with database.SessionLocal() as db:
+        so_phan_cong = db.query(models.ResourceAssignment).filter(
+            models.ResourceAssignment.trip_id == ma_trip,
+            models.ResourceAssignment.status == "active",
+        ).count()
+    assert so_phan_cong == 1
 
 
 def test_duplicate_id_and_invalid_financial_values_are_stable(app_client, workflow_builder):
@@ -72,15 +124,28 @@ def test_sequential_sqlite_resource_guard_has_one_winner_and_one_audit(app_clien
     workflow_builder.master_data()
     for suffix in ("A", "B"):
         workflow_builder.quotation(f"QT-{suffix}", approve=True)
-        workflow_builder.sales_order(f"SO-{suffix}", f"QT-{suffix}", confirm=True)
-        workflow_builder.delivery_order(f"DO-{suffix}", f"SO-{suffix}", approve=True)
-    payload = {"vehicle_id": "VEH-T1", "driver_id": "DRV-T1"}
-    assert client.put("/api/delivery-orders/DO-A/dispatch", json=payload).status_code == 200
-    loser = client.put("/api/delivery-orders/DO-B/dispatch", json=payload)
-    assert loser.status_code == 409
-    assert loser.json()["detail"]["code"] in {"VEHICLE_BUSY", "DRIVER_BUSY", "RESOURCE_BUSY"}
+        workflow_builder.delivery_order(f"DO-{suffix}", f"QT-{suffix}", approve=True)
+    # Hai chuyen, CUNG mot xe va cung mot to lai, CUNG khung gio: chi mot ben
+    # thang. Cua chan la LICH XE (phan cong dang mo chong khung), khong phai
+    # nhan trang thai — xem `services/lich_xe.py`.
+    dieu_phoi_qua_chuyen(client, "DO-A")
+    _khung_gio_va_trip(client, "DO-B", "TRIP-B")
+    tra = client.get("/api/tms/trips/TRIP-B")
+    loser = client.put("/api/tms/trips/TRIP-B/dispatch", json={
+        "vehicle_id": "VEH-T1", "driver_id": "DRV-T1", "co_driver_id": None,
+        "expected_version": int((tra.json()["data"] or {}).get("version") or 1),
+        "assignment_start": "2026-08-12T01:00:00+00:00",
+        "assignment_end": "2026-08-12T13:00:00+00:00",
+    })
+    assert loser.status_code == 409, loser.text
+    # Chuyen A DANG CHAY (chua hoan tat) nen xe bi giu bat ke gio du kien —
+    # cua "dang giu" (RESOURCE_BUSY) bat truoc cua "chong khung gio"
+    # (RESOURCE_TIME_OVERLAP). Ca hai deu la lich, khong phai nhan.
+    assert loser.json()["detail"]["code"] in {"RESOURCE_BUSY", "RESOURCE_TIME_OVERLAP"}
+    # Cau bao loi phai NOI RO ai dang giu, khong chi noi "dang bi chiem".
+    assert "TRIP-DO-A" in loser.json()["detail"]["message"], loser.json()["detail"]["message"]
     rows = _audit_rows(database_file, "DO-A") + _audit_rows(database_file, "DO-B")
-    assert [row[2] for row in rows].count("DISPATCH_DELIVERY") == 1
+    assert [row[2] for row in rows].count("DISPATCH_DELIVERY") == 0
 
 
 def test_domain_conflict_rechecks_committed_idempotency_winner_before_returning_409():
@@ -150,11 +215,11 @@ def test_closeout_requires_authentication_with_readable_vietnamese_message():
     assert unauthenticated.value.detail["message"] == "Vui lòng đăng nhập."
 
 
-def test_delete_guards_lock_quotation_sales_order_and_delivery_order_rows():
+def test_delete_guards_lock_quotation_and_delivery_order_rows():
     from services import workflow_service
 
     source = open(workflow_service.__file__, encoding="utf-8").read()
-    for function_name in ("delete_quotation", "delete_sales_order", "delete_delivery_order"):
+    for function_name in ("delete_quotation", "delete_delivery_order"):
         start = source.index(f"def {function_name}(")
         next_def = source.find("\ndef ", start + 1)
         body = source[start : next_def if next_def >= 0 else len(source)]

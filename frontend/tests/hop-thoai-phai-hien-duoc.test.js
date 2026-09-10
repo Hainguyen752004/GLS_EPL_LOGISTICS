@@ -32,8 +32,14 @@ const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
   assert.ok(i > 0, 'thiếu danh sách hộp thoại toàn màn');
   const ds = new Function(
     app.slice(i, app.indexOf(NL + '];', i) + 3) + NL + 'return HOP_THOAI_TOAN_MAN;')();
-  assert.ok(Array.isArray(ds) && ds.length >= 9,
-    `danh sách phải có ít nhất 9 hộp thoại, thấy ${ds.length}`);
+  // TAM cai, khong con chin. `oracle-qt-form` da roi danh sach cung voi khoi
+  // bao gia cu (`#qtv2-khoi-cu`) bi bo han: man bao gia dang chay la
+  // `#qtv2-root`, do `bao-gia-v2.js` tu ve va tu quan hop thoai cua no. Giu
+  // mot id khong con trong HTML thi phep khang dinh ngay duoi day do — va do
+  // la dung, vi danh sach troi khoi markup thi ham doi cho lang le khong lam gi.
+  // BAY cai: `oracle-so-form` da roi danh sach cung buoc Don hang (SO), truc xuat 10/09.
+  assert.ok(Array.isArray(ds) && ds.length >= 7,
+    `danh sách phải có ít nhất 7 hộp thoại, thấy ${ds.length}`);
   // Mọi id trong danh sách phải THẬT SỰ có trong HTML — danh sách trôi khỏi
   // markup thì hàm dời chỗ lặng lẽ không làm gì.
   ds.forEach(ma => {
@@ -75,8 +81,12 @@ const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
     if (!phuKin) continue;
     bat.push({ ma: m[1], vi: m.index });
   }
-  assert.ok(bat.length >= 9,
-    `phép quét phải thấy ít nhất 9 hộp thoại toàn màn, thấy ${bat.length}`);
+  // TAM, khong con chin: `#oracle-qt-form` da bi bo cung khoi bao gia cu.
+  // Con so nay la SAN, khong phai muc tieu — no chi de bao rang phep quet con
+  // tim thay hop thoai. Rot xuong duoi tam nghia la mot hop thoai bien mat ma
+  // khong ai co y, va do la thu can biet.
+  assert.ok(bat.length >= 7,
+    `phép quét phải thấy ít nhất 7 hộp thoại toàn màn, thấy ${bat.length}`);
 
   // Cái nào nằm trong một khung màn? Dò bằng cách đếm thẻ mở/đóng của
   // `.view-section` phía trước nó.
@@ -93,7 +103,7 @@ const app = fs.readFileSync(path.join(ROOT, 'js', 'app.js'), 'utf8')
     if (mo > dong) trongKhung.push({ ma, khung: cuoi[1] });
   });
 
-  // Chín cái này VẪN nằm trong khung màn ở HTML — đó là bình thường, vì việc
+  // Số còn lại VẪN nằm trong khung màn ở HTML — đó là bình thường, vì việc
   // dời chỗ làm bằng JS lúc nạp trang, không cắt dán trong 570 KB HTML. Điều
   // bài kiểm giữ là: MỌI cái nằm trong khung màn đều phải có trong danh sách.
   const i = app.indexOf('const HOP_THOAI_TOAN_MAN = [');

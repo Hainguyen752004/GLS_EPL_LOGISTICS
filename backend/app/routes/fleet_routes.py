@@ -30,7 +30,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timedelta, timezone
 
@@ -39,8 +39,8 @@ if app_dir not in sys.path:
     sys.path.append(app_dir)
 
 from database import get_db
-from models import (
-    Vehicle, Driver, Route, Warehouse, Customer, SalesOrder, DeliveryOrder,
+from models import (Location, 
+    Vehicle, Driver, Route, Warehouse, Customer, DeliveryOrder,
     DeliveryOrderDetail, ShipmentCost, VehicleTracking, POD, DeliveryPODRecord, ARInvoice,
     GLTransaction, AuditLog, Quotation, Incident, TaxCode, AccountingPeriod,
     AccountMapping, Carrier, Tender, TenderOffer, FreightOrder, TransportTrip,
@@ -80,6 +80,77 @@ from services import vehicle_cost_service
 router = APIRouter(dependencies=[Depends(require_api_principal)])
 
 
+#: Loai dia diem duoc coi la BAI / CHI NHANH — noi xe dau va nhan su thuoc ve.
+#: `Waypoint` va `RoutePoint` la diem tren tuyen, khong phai bai.
+LOAI_BAI = ("Depot", "Branch", "Warehouse", "Yard")
+
+
+@router.get("/api/depots")
+async def list_depots(db: Session = Depends(get_db)):
+    """Danh muc BAI / CHI NHANH, doc tu bang `locations`.
+
+    VI SAO CO. O "Bai / Chi nhanh" va "Ma bai" tren ho so xe truoc day la HAI O GO
+    TU DO, khong co danh muc nao dung sau. Man Dieu phoi gom doi xe "theo bai"
+    bang chinh chuoi nguoi ta go — go lech mot chu la thanh hai bai. Bang
+    `locations` da co san (kho, chi nhanh, cang) nen bai la mot LOAI dia diem,
+    khong phai mot chuoi rieng. Moi xe / tai xe chon bai tu day.
+    """
+    from models import Location
+    from sqlalchemy import func as _f
+    rows = db.query(Location).filter(Location.type.in_(LOAI_BAI)).order_by(Location.name).all()
+    so_xe = dict(db.query(Vehicle.depot_code, _f.count(Vehicle.id))
+                 .filter(Vehicle.depot_code.isnot(None)).group_by(Vehicle.depot_code).all())
+    so_tx = dict(db.query(Driver.depot_code, _f.count(Driver.id))
+                 .filter(Driver.depot_code.isnot(None)).group_by(Driver.depot_code).all())
+    return [{
+        "id": r.id, "name": r.name, "type": r.type, "address": r.address,
+        "vehicle_count": int(so_xe.get(r.id, 0)), "driver_count": int(so_tx.get(r.id, 0)),
+    } for r in rows]
+
+
+@router.post("/api/depots")
+async def create_depot(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    """Them / sua mot bai. `id` la ma bai (dung de loc), `name` la ten hien."""
+    _require_api_principal(request)
+    from models import Location
+    ma = str(data.get("id") or "").strip()
+    ten = str(data.get("name") or "").strip()
+    if not ma or not ten:
+        raise HTTPException(status_code=422, detail={
+            "code": "DEPOT_ID_NAME_REQUIRED", "message": "Bãi cần cả mã (để lọc) và tên (để hiện)."})
+    loai = str(data.get("type") or "Depot").strip()
+    if loai not in LOAI_BAI:
+        raise HTTPException(status_code=422, detail={
+            "code": "DEPOT_TYPE_INVALID",
+            "message": "Loại bãi phải là một trong: %s." % ", ".join(LOAI_BAI)})
+    r = db.get(Location, ma)
+    if r is None:
+        r = Location(id=ma)
+        db.add(r)
+    r.name = ten
+    r.type = loai
+    if data.get("address") is not None:
+        r.address = str(data.get("address") or "")
+    db.commit()
+    return {"message": "Đã lưu bãi %s." % ma, "data": {"id": r.id, "name": r.name, "type": r.type}}
+
+
+def loai_xe_cua(gia_tri):
+    """Tra ban ghi VehicleType theo MA hoac TEN (xe cu con luu ten). Cache theo phien goi."""
+    from models import VehicleType
+    from database import SessionLocal
+    chu = str(gia_tri or "").strip()
+    if not chu:
+        return None
+    with SessionLocal() as db:
+        r = db.get(VehicleType, chu)
+        if r is None:
+            r = db.query(VehicleType).filter(func.lower(VehicleType.name) == chu.lower()).first()
+        if r is not None:
+            db.expunge(r)
+        return r
+
+
 @router.get("/api/vehicles")
 async def list_vehicles(
     paginated: bool = Query(False),
@@ -115,15 +186,24 @@ async def list_vehicles(
             VehicleMaintenanceRequest.planned_start <= now,
             VehicleMaintenanceRequest.planned_end > now,
         ).first()
-        if active_maintenance:
-            payload["operational_status"] = "maintenance"
-            payload["operational_status_label"] = "Đang sửa chữa / bảo dưỡng"
-        elif active_assignment:
-            payload["operational_status"] = "busy"
-            payload["operational_status_label"] = "Đang thực hiện chuyến"
-        else:
-            payload["operational_status"] = "ready"
-            payload["operational_status_label"] = "Sẵn sàng"
+        # MA CHUAN tu lich (moc 045): available | on_trip | maintenance |
+        # out_of_service. Chu hien ra do lang.json quyet theo ma — khong gui nhan
+        # tieng Viet cung nua. `operational_status_label` giu cho cho cu, chieu
+        # tu cung mot ma.
+        from services import lich_xe
+        ma, ref = lich_xe.trang_thai_xe_theo_lich(db, vehicle, now)
+        payload["operational_status"] = ma
+        payload["operational_ref"] = ref
+        payload["operational_note"] = vehicle.operational_note
+        payload["operational_status_label"] = lich_xe._nhan(lich_xe.NHAN_XE, ma, ref)
+        # LOAI XE: xe luu MA loai (sau khi POST chuan hoa), xe cu co the con TEN.
+        # Tra ca hai de giao dien hien TEN va chon theo MA — khong doan tu chuoi.
+        loai = loai_xe_cua(vehicle.type)
+        payload["vehicle_type_id"] = loai.id if loai else None
+        payload["vehicle_type_name"] = loai.name if loai else (vehicle.type or None)
+        # BAI: ten hien thi lay tu danh muc dia diem theo ma bai, neu co.
+        bai = db.get(Location, vehicle.depot_code) if vehicle.depot_code else None
+        payload["depot_name"] = (bai.name if bai else None) or vehicle.depot or None
         result.append(payload)
     if paginated:
         return {"items": result, "page": page, "page_size": page_size, "total": total}
@@ -183,6 +263,32 @@ async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db:
 
     _text("brand", "brand", default="Hyundai")
     _text("type", "type", default="")
+
+    # `type` PHẢI là MÃ loại xe có thật khi danh mục loại xe đã có.
+    #
+    # Lỗi đã gặp trên dữ liệu thật: hai xe ghi "Container 20FT" (TÊN hiển thị)
+    # thay vì "DEMO-VT-20FT" (MÃ). Mọi phép tra theo mã, nên hai xe đó không khớp
+    # loại nào — điều phối không so được năng lực, giá thành không tìm được công
+    # thức — và không có thông báo nào, vì chuỗi nào cũng lưu được. Nhận cả TÊN
+    # rồi tự đổi về MÃ (người nhập tay hay gõ tên), còn chuỗi không khớp gì thì
+    # 422 kèm danh mục để chọn. Danh mục còn trống (đang dựng dữ liệu gốc) thì cho
+    # qua — lúc đó chưa có gì để đối chiếu.
+    if "type" in data and str(veh.type or "").strip():
+        from models import VehicleType
+        cac_loai = db.query(VehicleType).all()
+        if cac_loai:
+            chu = str(veh.type).strip()
+            khop = next((t for t in cac_loai if t.id == chu), None) \
+                or next((t for t in cac_loai if str(t.name or "").strip().lower() == chu.lower()), None)
+            if khop is None:
+                raise HTTPException(status_code=422, detail={
+                    "code": "VEHICLE_TYPE_UNKNOWN",
+                    "message": (f"Loại xe \"{chu}\" không có trong danh mục Loại phương tiện. "
+                                "Chọn một mã loại xe có thật, hoặc thêm loại xe trước."),
+                    "vehicle_types": [{"id": t.id, "name": t.name} for t in cac_loai],
+                    "navigation_targets": ["master-data/vehicle-types"],
+                })
+            veh.type = khop.id
     _number("weight_capacity", "weight_capacity", "weightCapacity", "maxWeight")
     _number("volume_capacity_m3", "volume_capacity_m3", "volumeCapacityM3", default=30.0)
     _number("pallet_capacity", "pallet_capacity", "palletCapacity", default=0, cast=int)
@@ -415,11 +521,15 @@ async def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(
          bao "da xoa" — than phan hoi noi mot dieu, ma trang thai noi dieu
          nguoc lai, va giao dien tin ma trang thai.
 
-      2. Khong kiem dang-su-dung. `Vehicle.type` la mot chuoi tu do doi chieu
-         voi `VehicleType.name` (xem delivery_routes.py: tra tai trong theo
-         `func.lower(VehicleType.name) == vehicle.type`), nen xoa mot loai xe
-         ma doi xe con dung tên đó là làm phép tra tải trọng và giá thành mất
-         nguon — am tham, khong mot loi bao nao.
+      2. Khong kiem dang-su-dung. `Vehicle.type` doi chieu voi loai xe, nen xoa
+         mot loai xe ma doi xe con thuoc loai do la lam phep tra tai trong va
+         gia thanh mat nguon — am tham, khong mot loi bao nao.
+
+      3. LOI THU BA, do do bang bo kiem sau khi `POST /api/vehicles` bat dau
+         CHUAN HOA `type` ve MA loai xe (`veh.type = khop.id`): cua chan nay
+         chi so theo TEN, nen voi moi xe tao sau thay doi do no khong khop gi
+         ca va loai xe bi xoa tu do — dung lo hong ma no duoc dung de bit.
+         Phai so CA HAI: ma (xe moi) va ten (xe cu, tao truoc khi chuan hoa).
     """
     _require_api_principal(request)
     from models import VehicleType
@@ -430,9 +540,10 @@ async def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(
             "message": f"Không tìm thấy loại phương tiện {vid}.",
         })
 
-    dang_dung = db.query(Vehicle.id).filter(
-        func.lower(Vehicle.type) == str(vt.name or "").lower()
-    ).first()
+    dang_dung = db.query(Vehicle.id).filter(or_(
+        func.lower(Vehicle.type) == str(vt.id or "").lower(),
+        func.lower(Vehicle.type) == str(vt.name or "").lower(),
+    )).first()
     if dang_dung:
         raise HTTPException(status_code=409, detail={
             "code": "LOCKED_RECORD",
@@ -450,12 +561,136 @@ async def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(
 # 1.6 Cost Formula API
 
 
+#: API danh mục ACC CODE của bên công nợ (anh Khang) — Golden SME.
+#:
+#:   EPL_ACC_CODE_API     : gốc API (vd https://demo-lao-api.goldensme.com) HOẶC đường
+#:                          đầy đủ tới /api/v1/common/country-accounts.
+#:   EPL_ACC_CODE_TOKEN   : JWT Bearer bên đó cấp. KHÔNG ghi vào mã nguồn.
+#:   EPL_ACC_CODE_COUNTRY : `tryAutoId` — mã quốc gia trong PUBCOUNTRY (Lào = 11).
+#:
+#: Không đặt EPL_ACC_CODE_API thì ô chọn trên màn Công thức giá thành ở trạng
+#: thái CHỜ — không có tuỳ chọn nào, không tự sinh mã. Chủ dự án chốt: mã do bên
+#: kia cấp. Danh mục ~500 dòng, đổi hiếm, nên giữ trong bộ nhớ 10 phút.
+BIEN_API_ACC_CODE = "EPL_ACC_CODE_API"
+BIEN_TOKEN_ACC_CODE = "EPL_ACC_CODE_TOKEN"
+BIEN_QUOC_GIA_ACC_CODE = "EPL_ACC_CODE_COUNTRY"
+DUONG_COUNTRY_ACCOUNTS = "/api/v1/common/country-accounts"
+_BO_NHO_ACC_CODE = {"khoa": None, "luc": 0.0, "goi": None}
+ACC_CODE_CACHE_GIAY = 600
+
+
+def _url_acc_code():
+    goc = (os.getenv(BIEN_API_ACC_CODE) or "").strip()
+    if not goc:
+        return ""
+    if "country-accounts" in goc:
+        url = goc
+    else:
+        url = goc.rstrip("/") + DUONG_COUNTRY_ACCOUNTS
+    quoc_gia = (os.getenv(BIEN_QUOC_GIA_ACC_CODE) or "11").strip()
+    if "tryAutoId=" not in url:
+        url += ("&" if "?" in url else "?") + "tryAutoId=%s" % quoc_gia
+    if "onlyActive=" not in url:
+        url += "&onlyActive=true"
+    return url
+
+
+def _chuan_hoa_acc_code(goi):
+    """Đưa gói của bên công nợ về danh sách {code, name, description, parent, postable}.
+
+    Hai hình gói được nhận:
+      · Golden SME: {"Success", "Result": [{"AccCode", "AccName", "AccDescription",
+        "AccParentId", "AccAccountWrite", "AccIsActive"}, ...]}
+      · dạng chung {"data": [{"code","name"} | "6421" ...]} — giữ cho bộ kiểm cũ.
+    `name` là tên tài khoản (tiếng Lào theo bên đó), `description` là diễn giải
+    tiếng Việt; màn hiện cả hai vì người dùng đọc tiếng Việt nhưng mã phải khớp
+    tên của hệ kế toán bên kia.
+    """
+    if isinstance(goi, dict) and isinstance(goi.get("Result"), list):
+        ket = []
+        for x in goi["Result"]:
+            if not isinstance(x, dict):
+                continue
+            ma = str(x.get("AccCode") or "").strip()
+            if not ma:
+                continue
+            ket.append({
+                "code": ma,
+                "name": str(x.get("AccName") or "").strip() or ma,
+                "description": str(x.get("AccDescription") or "").strip(),
+                "parent": (str(x.get("AccParentId")).strip() if x.get("AccParentId") not in (None, "") else None),
+                "postable": bool(x.get("AccAccountWrite")),
+                "active": bool(x.get("AccIsActive", True)),
+            })
+        return ket
+    ds = goi.get("data") if isinstance(goi, dict) else goi
+    ket = []
+    for x in (ds if isinstance(ds, list) else []):
+        if isinstance(x, str):
+            ket.append({"code": x.strip(), "name": x.strip()})
+        elif isinstance(x, dict):
+            ma = str(x.get("code") or x.get("acc_code") or x.get("id") or "").strip()
+            if ma:
+                ket.append({"code": ma, "name": str(x.get("name") or x.get("label") or ma)})
+    return ket
+
+
+@router.get("/api/acc-codes")
+async def danh_muc_acc_code(request: Request, refresh: bool = False):
+    """Danh mục Acc code (mã tài khoản kế toán) cho ô chọn của từng khoản mục.
+
+    Trả `{"data": [...], "source", "message", "count"}`. `source` là `remote`
+    khi lấy được từ API bên công nợ, `cached` khi lấy từ bộ nhớ, `unconfigured`
+    khi chưa nối, `error` khi nối mà không đọc được — các trạng thái này phải
+    phân biệt được trên màn hình, vì "danh mục rỗng" và "chưa nối API" là hai
+    câu khác nhau với người dùng.
+    """
+    _require_api_principal(request)
+    url = _url_acc_code()
+    if not url:
+        return {"data": [], "source": "unconfigured", "count": 0,
+                "message": "Chưa nối API mã tài khoản của bên công nợ (đặt %s)." % BIEN_API_ACC_CODE}
+    import time as _time
+    bo = _BO_NHO_ACC_CODE
+    if (not refresh and bo["goi"] is not None and bo["khoa"] == url
+            and _time.time() - bo["luc"] < ACC_CODE_CACHE_GIAY):
+        return {"data": bo["goi"], "source": "cached", "count": len(bo["goi"]),
+                "message": "Danh mục %d mã (bộ nhớ, tối đa 10 phút)." % len(bo["goi"])}
+    try:
+        import json as _json
+        import urllib.request as _ur
+        dau = {"Accept": "application/json"}
+        token = (os.getenv(BIEN_TOKEN_ACC_CODE) or "").strip()
+        if token:
+            dau["Authorization"] = "Bearer " + token
+        with _ur.urlopen(_ur.Request(url, headers=dau), timeout=15) as tra:
+            goi = _json.loads(tra.read().decode("utf-8", "replace"))
+    except Exception as loi:  # noqa: BLE001 — mọi lỗi mạng/định dạng đều là "không đọc được"
+        # Không lộ token trong thông điệp lỗi.
+        return {"data": [], "source": "error", "count": 0,
+                "message": "Không đọc được danh mục Acc code từ API bên công nợ: %s"
+                           % str(loi).replace(token or "\x00", "***")[:160]}
+    if isinstance(goi, dict) and goi.get("Success") is False:
+        return {"data": [], "source": "error", "count": 0,
+                "message": "API bên công nợ từ chối: %s" % str(goi.get("Message") or goi.get("Code"))[:160]}
+    ket = _chuan_hoa_acc_code(goi)
+    bo["khoa"], bo["luc"], bo["goi"] = url, _time.time(), ket
+    return {"data": ket, "source": "remote", "count": len(ket), "message": "Đã tải %d mã." % len(ket)}
+
+
 @router.get("/api/cost-formulas")
 async def list_cost_formulas(db: Session = Depends(get_db)):
     return [
         _serialize_cost_formula(row)
         for row in db.query(CostFormula).order_by(CostFormula.id).all()
     ]
+
+
+@router.get("/api/cost-formulas/fleet-overview")
+async def cost_formula_fleet_overview(request: Request, db: Session = Depends(get_db)):
+    """Dữ liệu giá hiệu lực và lịch sử ghi đè để so sánh loại xe/xe."""
+    _require_api_principal(request)
+    return {'data': vehicle_cost_service.fleet_overview(db)}
 
 
 def _sanitize_formula_terms(rows):
@@ -502,13 +737,39 @@ def _sanitize_formula_terms(rows):
             "kind": kind,
             "rate": max(0.0, rate),
             "builtin": bool(row.get("builtin")),
+            # MA COSTINDEX — ma phan loai chi phi cua EPL, do nguoi lam tai chinh
+            # tu dat cho tung khoan muc (vi du "CP-XD-01"). Ma nay di theo khoan
+            # muc suot luong: cong thuc -> bao gia -> chi phi thuc te cua chuyen
+            # -> ho so hoan tat, va he cong no cua dong nghiep doc no de lap
+            # phieu thu / phieu chi. Khong co no thi ben kia phai doan theo ten.
+            "cost_index": str(row.get("cost_index") or "").strip()[:32],
         })
     return clean
 
 
+@router.post("/api/cost-formulas/evaluate")
+async def evaluate_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    _require_api_principal(request)
+    from services.cost_expression import evaluate_expressions
+    formula_id = str(data.get("formula_id") or "")
+    if formula_id:
+        row = db.get(CostFormula, formula_id)
+        if row is None:
+            raise HTTPException(status_code=404, detail="Không tìm thấy công thức.")
+        formula = _serialize_cost_formula(row)
+    else:
+        formula = data
+    try:
+        result = evaluate_expressions(formula.get("expressions") or {},
+                                      _sanitize_formula_terms(formula.get("terms")), data.get("trip") or {})
+    except (ValueError, TypeError, OverflowError, RecursionError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return {"data": result}
+
+
 @router.post("/api/cost-formulas")
 async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
-    _require_api_principal(request)
+    actor = _require_api_principal(request)
     requested_formula_id = str(data.get("id") or "").strip()
     vehicle_type_id = str(data.get("vehicle_type_id") or "").strip()
     if not requested_formula_id and not vehicle_type_id:
@@ -532,20 +793,115 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
         # "components" voi nam khoa co dinh.
         "terms": _sanitize_formula_terms(data.get("terms")),
     }
-    row = CostFormula(
-        id=formula_id,
-        name=str(data.get("name") or formula_id).strip(),
-        formula_expression=json.dumps(payload, ensure_ascii=False),
-    )
-    db.merge(row)
-    db.commit()
+    if data.get("expressions") is not None:
+        from services.cost_expression import evaluate_expressions
+        expressions = data["expressions"]
+        if not isinstance(expressions, dict) or set(expressions) != {"COST", "REV", "PROFIT"}:
+            raise HTTPException(status_code=422, detail="Cần đủ công thức Giá thành, Cước và Lợi nhuận.")
+        try:
+            evaluate_expressions(expressions, payload["terms"])
+        except (ValueError, TypeError, OverflowError, RecursionError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        payload["expressions"] = expressions
+    from datetime import datetime, timezone
+    previous = db.get(CostFormula, formula_id)
+    previous_raw = previous.formula_expression if previous else None
+    try:
+        previous_payload = json.loads(previous_raw or '{}')
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="Công thức cũ không đọc được. Chưa thay đổi dữ liệu.")
+    if not isinstance(previous_payload, dict):
+        raise HTTPException(status_code=422, detail="Công thức cũ không đúng cấu trúc.")
+    if ('expected_updated_at' in data
+            and data['expected_updated_at'] != previous_payload.get('updated_at')):
+        raise HTTPException(status_code=409, detail="Bộ giá đã được người khác thay đổi. Hãy tải lại trước khi lưu.")
+    history = previous_payload.get('history', [])
+    payload['updated_at'] = datetime.now(timezone.utc).isoformat()
+    payload['history'] = ([{'at': payload['updated_at'], 'terms': payload['terms'],
+                           'expressions': payload.get('expressions'), 'currency': currency,
+                           'actor': str(actor)}] + (history if isinstance(history, list) else []))[:100]
+    values = {'name': str(data.get("name") or formula_id).strip(),
+              'formula_expression': json.dumps(payload, ensure_ascii=False)}
+    from sqlalchemy.exc import IntegrityError
+    try:
+        if previous:
+            # Compare the original document inside the UPDATE, not only in Python.
+            changed = db.query(CostFormula).filter(
+                CostFormula.id == formula_id, CostFormula.formula_expression == previous_raw
+            ).update(values, synchronize_session=False)
+            if changed != 1:
+                db.rollback()
+                raise HTTPException(status_code=409, detail="Bộ giá vừa thay đổi. Chưa ghi đè dữ liệu mới.")
+        else:
+            db.add(CostFormula(id=formula_id, **values))
+        db.commit()
+        db.expire_all()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Bộ giá vừa được tạo ở phiên khác. Hãy tải lại.") from exc
     saved = db.get(CostFormula, formula_id)
     return {"message": "Đã lưu công thức giá thành vào CSDL.", "data": _serialize_cost_formula(saved)}
 
 # 2. Drivers API
 @router.get("/api/drivers")
 async def list_drivers(db: Session = Depends(get_db)):
-    return db.query(Driver).all()
+    from services import lich_xe
+    now = datetime.now(timezone.utc)
+    ra = []
+    for nguoi in db.query(Driver).all():
+        payload = jsonable_encoder(nguoi)
+        ma, ref = lich_xe.trang_thai_tai_xe_theo_lich(db, nguoi, now)
+        payload["operational_status"] = ma
+        payload["operational_ref"] = ref
+        payload["operational_status_label"] = lich_xe._nhan(lich_xe.NHAN_TAI_XE, ma, ref)
+        ra.append(payload)
+    return ra
+
+
+@router.put("/api/vehicles/{vehicle_id}/operational-status")
+async def dat_trang_thai_xe(vehicle_id: str, request: Request,
+                            data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    """Nguoi dung dat tay trang thai van hanh cua xe.
+
+    Chi nhan `available` (dua lai hoat dong) va `out_of_service` (dua ra khoi
+    doi, kem ly do). `on_trip` / `maintenance` do lich quyet — khong dat tay.
+    """
+    _require_api_principal(request)
+    from services import lich_xe
+    from services.errors import DomainError, raise_http
+    try:
+        xe = lich_xe.dat_trang_thai_xe(db, vehicle_id, str(data.get("status") or "").strip(),
+                                       data.get("note") or "")
+        db.commit()
+        db.refresh(xe)
+    except DomainError as loi:
+        db.rollback()
+        raise_http(loi)
+    return {"message": "Đã cập nhật trạng thái vận hành của xe %s: %s." % (xe.id, xe.operational_status),
+            "data": {"id": xe.id, "operational_status": xe.operational_status,
+                     "operational_ref": xe.operational_ref, "operational_note": xe.operational_note,
+                     "operational_updated_at": xe.operational_updated_at}}
+
+
+@router.put("/api/drivers/{driver_id}/operational-status")
+async def dat_trang_thai_tai_xe(driver_id: str, request: Request,
+                                data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+    """Nguoi dung dat tay trang thai nhan su: `available` / `off_duty` / `inactive`."""
+    _require_api_principal(request)
+    from services import lich_xe
+    from services.errors import DomainError, raise_http
+    try:
+        nguoi = lich_xe.dat_trang_thai_tai_xe(db, driver_id, str(data.get("status") or "").strip(),
+                                              data.get("note") or "")
+        db.commit()
+        db.refresh(nguoi)
+    except DomainError as loi:
+        db.rollback()
+        raise_http(loi)
+    return {"message": "Đã cập nhật trạng thái của nhân sự %s: %s." % (nguoi.id, nguoi.operational_status),
+            "data": {"id": nguoi.id, "operational_status": nguoi.operational_status,
+                     "operational_ref": nguoi.operational_ref, "operational_note": nguoi.operational_note,
+                     "operational_updated_at": nguoi.operational_updated_at}}
 
 @router.post("/api/drivers")
 async def create_driver(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):

@@ -8,6 +8,9 @@
     if (detail && typeof detail === 'object') {
       return {
         message: detail.message || fallback,
+        // Mã lỗi để màn quyết định cách xử lý (VD: VEHICLE_TYPE_MISMATCH → hỏi
+        // xác nhận rồi gửi lại), thay vì chỉ hiện chữ.
+        code: typeof detail.code === 'string' ? detail.code : '',
         navigation_targets: Array.isArray(detail.navigation_targets) ? detail.navigation_targets : []
       };
     }
