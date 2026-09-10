@@ -34,7 +34,7 @@ try {
 
 /** Ô mà người dùng PHẢI thấy khi mở từng màn. */
 const NOI_DUNG_CHINH = {
-  'os-home': ['#os-dock .os-app', '#os-tiles .os-tile', '#tim-man-hinh'],
+  'os-home': ['#os-dock .os-app', '#os-ban .os-panel', '#tim-man-hinh'],
   dashboard: ['#view-dashboard .card-panel'],
   'co-hoi': ['#cohoi-root'],
   'crm-sales': ['#qtv2-root'],

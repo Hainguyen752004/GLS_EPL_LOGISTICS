@@ -495,59 +495,161 @@
    * một màn vào bảng đó là có luôn trong lưới và trong ô tìm. Dock 8 bước lấy
    * chấm sáng từ `window.currentWorkflowStep`, số đỏ từ hai lời gọi máy chủ.
    */
-  const TEN_NHOM = { ops: 'Vận hành', biz: 'Kinh doanh', master: 'Dữ liệu gốc', more: 'Báo cáo và khác' };
-  const THU_TU_NHOM = ['ops', 'biz', 'master', 'more'];
-  let nhomDangLoc = null;
+  /* ------------------------- Bàn làm việc hôm nay ------------------------- */
 
-  /** Nhóm điều hướng của một dòng MUC_TIM_MAN — lấy từ bảng đầu trang, không khai lại. */
-  function nhomCua(m) {
-    const d = DAU_TRANG_THEO_MAN[m[2]];
-    const n = d && d[0];
-    return n || 'more'; // Sơ đồ luồng A–Z nằm ở "Báo cáo và khác" trên thanh điều hướng
+  const goc = function () { return window.API_BASE || ''; };
+  function layJson(duong) {
+    return fetch(goc() + duong).then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+      .then(function (g) { return g && Object.prototype.hasOwnProperty.call(g, 'data') ? g.data : g; });
   }
-  /** Bỏ thẻ bao trùm "Dữ liệu gốc — cả 11 thẻ": 11 thẻ con đã nằm ngay đó. */
-  const DS_THE = MUC_TIM_MAN.filter(function (m) { return m[2] !== 'os-home' && !(m[2] === 'master-data' && !m[3]); });
+  function danhSach(g) { return Array.isArray(g) ? g : (g && Array.isArray(g.items) ? g.items : []); }
+  const cuoiNgay = function () { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); };
+  function gioNgay(iso) {
+    const d = new Date(iso); if (isNaN(d)) return '';
+    const homNay = new Date().toDateString() === d.toDateString();
+    return homNay ? d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+  }
 
-  function veLuoi() {
-    const luoi = document.getElementById('os-tiles');
-    if (!luoi) return;
-    const nhomHien = nhomDangLoc ? [nhomDangLoc] : THU_TU_NHOM;
-    luoi.innerHTML = nhomHien.map(function (nhom) {
-      const ds = DS_THE.filter(function (m) { return nhomCua(m) === nhom; });
-      if (!ds.length) return '';
-      return '<h3 class="os-nhom"><span>' + chuAnToan(TEN_NHOM[nhom]) + '</span><small>' + ds.length + ' màn</small></h3>'
-        + '<div class="os-tiles-nhom">' + ds.map(function (m) {
-          const i = DS_THE.indexOf(m);
-          return '<button type="button" class="os-tile" data-i="' + i + '">'
-            + '<span class="os-tile-icon" style="background:linear-gradient(135deg,' + m[6] + ')"><i class="fa-solid ' + m[5] + '" aria-hidden="true"></i></span>'
-            + '<span><b>' + chuAnToan(m[0]) + '</b><span>' + chuAnToan(m[1]) + '</span></span></button>';
-        }).join('') + '</div>';
-    }).join('');
-    luoi.querySelectorAll('.os-tile').forEach(function (b) {
-      b.addEventListener('click', function () { diToiMuc(DS_THE[Number(b.dataset.i)]); });
-    });
-    const nhan = document.getElementById('os-pill-loc');
-    if (nhan) {
-      nhan.hidden = !nhomDangLoc;
-      nhan.textContent = nhomDangLoc ? '· ' + TEN_NHOM[nhomDangLoc] + '  ✕' : '';
+  /** Mở đúng bản ghi ở màn của nó; màn nạp dữ liệu xong mới mở hộp. */
+  function moBanGhi(loai, id) {
+    if (loai === 'co-hoi') {
+      window.switchView('co-hoi');
+      let lan = 0;
+      const cho = setInterval(function () {
+        const C = window.CoHoiV1; lan++;
+        if (C && C._trangThai && C._trangThai.ds.some(function (x) { return x.id === id; })) { clearInterval(cho); C.moHopThoai(id); }
+        else if (lan > 25) clearInterval(cho);
+      }, 120);
+    } else if (loai === 'bao-gia') {
+      window.switchView('crm-sales', 'qtv2-root');
+      setTimeout(function () { if (window.BaoGiaV2 && window.BaoGiaV2.moPhieu) window.BaoGiaV2.moPhieu(id); }, 150);
+    } else if (loai === 'do') {
+      window.switchView('ops-planning', 'fiori-do-list');
+    } else if (loai === 'su-co') {
+      window.switchView('tracking');
     }
-    sangBuocDock();
+  }
+
+  function dongViec(v) {
+    return '<button type="button" class="os-vi tone-' + v.tone + '" data-loai="' + v.loai + '" data-id="' + chuAnToan(v.id || '') + '">'
+      + '<span class="ic"><i class="fa-solid ' + v.icon + '" aria-hidden="true"></i></span>'
+      + '<span class="txt"><b>' + chuAnToan(v.tieuDe) + '</b><span>' + chuAnToan(v.chiTiet || '') + '</span></span>'
+      + (v.nhan ? '<span class="when">' + chuAnToan(v.nhan) + '</span>' : '') + '<i class="fa-solid fa-chevron-right mui" aria-hidden="true"></i></button>';
+  }
+
+  const BUOC_LUONG = [
+    { ten: 'Dữ liệu gốc', icon: 'fa-database', man: 'master-data' },
+    { ten: 'Cơ hội', icon: 'fa-handshake', man: 'co-hoi', khoa: 'coHoi', don: 'đang mở' },
+    { ten: 'Báo giá', icon: 'fa-file-contract', man: 'crm-sales', khoa: 'baoGia', don: 'đang mở' },
+    { ten: 'Lệnh giao hàng', icon: 'fa-boxes-packing', man: 'ops-planning', khoa: 'doCho', don: 'chưa lên đường' },
+    { ten: 'Điều phối', icon: 'fa-truck-ramp-box', man: 'dispatch', khoa: 'doDieuPhoi', don: 'chờ xe' },
+    { ten: 'Đang chạy', icon: 'fa-location-crosshairs', man: 'tracking', khoa: 'doChay', don: 'chuyến' },
+    { ten: 'Sự cố', icon: 'fa-triangle-exclamation', man: 'tracking', khoa: 'suCo', don: 'chưa xử lý' },
+    { ten: 'Hoàn tất', icon: 'fa-clipboard-check', man: 'delivery-completion', khoa: 'hoanTat', don: 'đã có POD' },
+  ];
+
+  function veLuong(so) {
+    const o = document.getElementById('os-luong-ds'); if (!o) return;
+    const dem = BUOC_LUONG.map(function (b) { return b.khoa && ['coHoi', 'baoGia', 'doCho', 'doDieuPhoi', 'suCo'].includes(b.khoa) ? Number(so[b.khoa]) || 0 : -1; });
+    const max = Math.max.apply(null, dem);
+    o.innerHTML = BUOC_LUONG.map(function (b, i) {
+      const n = b.khoa ? so[b.khoa] : undefined;
+      const coSo = isFinite(Number(n));
+      const nghen = coSo && max > 0 && dem[i] === max;
+      return '<li><button type="button" class="os-buoc' + (nghen ? ' nghen' : '') + (coSo && Number(n) === 0 ? ' trong' : '') + '" data-man="' + b.man + '">'
+        + '<span class="ic"><i class="fa-solid ' + b.icon + '" aria-hidden="true"></i></span>'
+        + '<b>' + (coSo ? Number(n).toLocaleString('vi-VN') : '·') + '</b>'
+        + '<span class="ten">' + b.ten + '</span>' + (coSo ? '<small>' + b.don + '</small>' : '<small>&nbsp;</small>') + '</button></li>';
+    }).join('');
+    o.querySelectorAll('.os-buoc').forEach(function (b) { b.addEventListener('click', function () { window.switchView(b.dataset.man); }); });
+  }
+
+  function veViec(ds, loi) {
+    const o = document.getElementById('os-viec-ds'), dem = document.getElementById('os-viec-dem');
+    if (!o) return;
+    if (!ds.length) {
+      o.innerHTML = '<div class="os-rong ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Không có việc gấp — mọi thứ đang đúng hạn.'
+        + (loi.length ? '<br><small>Chưa đọc được: ' + chuAnToan(loi.join(', ')) + '.</small>' : '') + '</div>';
+      if (dem) dem.textContent = '';
+    } else {
+      o.innerHTML = ds.map(dongViec).join('') + (loi.length ? '<div class="os-rong nho">Chưa đọc được: ' + chuAnToan(loi.join(', ')) + '.</div>' : '');
+      if (dem) dem.textContent = ds.length + ' việc';
+      o.querySelectorAll('.os-vi').forEach(function (b) { b.addEventListener('click', function () { moBanGhi(b.dataset.loai, b.dataset.id); }); });
+    }
+  }
+
+  /** Đọc bốn nguồn, mỗi nguồn hỏng riêng thì nói riêng — không để một lỗi làm trống cả bàn. */
+  function napBanLamViec() {
+    if (!document.getElementById('os-ban') || typeof fetch !== 'function') return;
+    const viec = [], loi = [], so = {};
+    const D = window.DoBoard;
+    const xong = function () { veViec(viec.slice(0, 12), loi); veLuong(so); };
+    Promise.all([
+      layJson('/api/crm/opportunities').then(function (g) {
+        const ds = danhSach(g), moc = cuoiNgay();
+        so.coHoi = ds.filter(function (x) { return !['won', 'lost'].includes(x.stage); }).length;
+        ds.filter(function (x) { return x.next_action_at && !['won', 'lost'].includes(x.stage) && new Date(x.next_action_at).getTime() <= moc; })
+          .sort(function (a, b) { return new Date(a.next_action_at) - new Date(b.next_action_at); })
+          .forEach(function (x) {
+            const tre = new Date(x.next_action_at).getTime() < Date.now();
+            viec.push({ loai: 'co-hoi', id: x.id, tone: tre ? 'do' : 'cam', icon: 'fa-phone', tieuDe: (tre ? 'Trễ hẹn liên hệ · ' : 'Hẹn liên hệ · ') + (x.customer_name || x.id),
+              chiTiet: [x.route_name, x.cargo_type].filter(Boolean).join(' · ') || x.id, nhan: gioNgay(x.next_action_at) });
+          });
+      }).catch(function () { loi.push('cơ hội'); }),
+      layJson('/api/quotations/board?status=all').then(function (g) {
+        const ds = danhSach(g);
+        so.baoGia = ds.filter(function (q) { return ['draft', 'pending_approval', 'approved', 'sent'].includes(q.canonical_status); }).length;
+        ds.filter(function (q) { return q.canonical_status === 'expired' || (q.canonical_status === 'sent' && isFinite(Number(q.con_lai_ngay)) && Number(q.con_lai_ngay) <= 3); })
+          .forEach(function (q) {
+            const het = q.canonical_status === 'expired';
+            viec.push({ loai: 'bao-gia', id: q.id, tone: het ? 'do' : 'cam', icon: 'fa-file-contract', tieuDe: (het ? 'Báo giá hết hạn · ' : 'Báo giá sắp hết hạn · ') + (q.quote_no || q.id),
+              chiTiet: [q.customer_name || q.customer_id, q.origin && q.destination ? q.origin + ' → ' + q.destination : ''].filter(Boolean).join(' · '), nhan: het ? 'gia hạn / đóng' : 'còn ' + q.con_lai_ngay + ' ngày' });
+          });
+        ds.filter(function (q) { return q.canonical_status === 'pending_approval'; }).forEach(function (q) {
+          viec.push({ loai: 'bao-gia', id: q.id, tone: 'vang', icon: 'fa-stamp', tieuDe: 'Chờ duyệt nội bộ · ' + (q.quote_no || q.id), chiTiet: (q.customer_name || q.customer_id || '') + (q.bien != null ? ' · biên ' + q.bien + '%' : ''), nhan: 'duyệt' });
+        });
+      }).catch(function () { loi.push('báo giá'); }),
+      layJson('/api/delivery-orders?page_size=200').then(function (g) {
+        const ds = danhSach(g);
+        if (!D) return;
+        const dem = D.counts(ds);
+        so.doCho = dem.overdue + dem.near_late + dem.pending + dem.undated;
+        so.doDieuPhoi = dem.pending + dem.near_late + dem.overdue;
+        so.doChay = dem.active; so.hoanTat = dem.completed;
+        D.sortWithin(D.filter(ds, 'overdue'), 'overdue').slice(0, 5).forEach(function (o) {
+          viec.push({ loai: 'do', id: o.id, tone: 'do', icon: 'fa-clock-rotate-left', tieuDe: 'DO quá hạn giao · ' + o.id, chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: 'quá ' + D.daysLate(o) + ' ngày' });
+        });
+        D.sortWithin(D.filter(ds, 'near_late'), 'near_late').slice(0, 5).forEach(function (o) {
+          viec.push({ loai: 'do', id: o.id, tone: 'cam', icon: 'fa-hourglass-half', tieuDe: 'DO tới hạn trong 24 giờ · ' + o.id, chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: 'điều phối xe' });
+        });
+        if (dem.undated) viec.push({ loai: 'do', id: '', tone: 'vang', icon: 'fa-calendar-xmark', tieuDe: dem.undated + ' DO thiếu hạn giao', chiTiet: 'Chưa có ngày lấy/giao nên chưa lập kế hoạch được', nhan: 'bổ sung' });
+      }).catch(function () { loi.push('lệnh giao hàng'); }),
+      layJson('/api/incidents').then(function (g) {
+        const ds = danhSach(g).filter(function (i) { return !['Resolved', 'Closed', 'resolved', 'closed', 'Đã xử lý'].includes(String(i.status || '')); });
+        so.suCo = ds.length;
+        ds.slice(0, 5).forEach(function (i) {
+          viec.push({ loai: 'su-co', id: String(i.id), tone: 'do', icon: 'fa-triangle-exclamation', tieuDe: 'Sự cố · ' + (i.incident_type || 'chưa rõ loại') + (i.do_id ? ' · ' + i.do_id : ''), chiTiet: [i.vehicle_id, i.location].filter(Boolean).join(' · ') || (i.description || '').slice(0, 60), nhan: i.severity || '' });
+        });
+      }).catch(function () { loi.push('sự cố'); }),
+    ]).then(function () {
+      const thuTu = { do: 0, cam: 1, vang: 2 };
+      viec.sort(function (a, b) { return (thuTu[a.tone] || 0) - (thuTu[b.tone] || 0); });
+      xong();
+    });
   }
 
   function veManChinh() {
-    veLuoi();
-    const pill = document.getElementById('os-pill');
-    if (pill) pill.addEventListener('click', function () { nhomDangLoc = null; veLuoi(); });
     const dock = document.getElementById('os-dock');
     if (dock) {
       dock.querySelectorAll('.os-app').forEach(function (b) {
         b.addEventListener('click', function () {
-          // Lần một: lọc lưới về nhóm của icon. Lần hai (đang lọc đúng nhóm này): mở màn.
-          if (nhomDangLoc !== b.dataset.nhom) { nhomDangLoc = b.dataset.nhom; veLuoi(); return; }
           if (b.dataset.cuon) window.switchView(b.dataset.man, b.dataset.cuon); else window.switchView(b.dataset.man);
         });
       });
     }
+    const soDo = document.getElementById('os-xem-so-do');
+    if (soDo) soDo.addEventListener('click', function () { window.switchView('dashboard', 'sec-so-do-tong-quan'); });
+    veLuong({});
     ganCuonDock();
     veHello();
   }
@@ -571,8 +673,11 @@
     const gio = new Date().getHours();
     const chao = gio < 11 ? 'Chào buổi sáng' : gio < 14 ? 'Chào buổi trưa' : gio < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
     const ngay = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
-    o.innerHTML = '<div class="os-hello-chao"><b>' + chao + '</b><span>' + chuAnToan(ngay) + '</span></div><div class="os-hello-so" id="os-hello-so"></div>';
+    o.innerHTML = '<div class="os-hello-chao"><b>' + chao + '</b><span>' + chuAnToan(ngay) + '</span></div>'
+      + '<div class="os-hello-so" id="os-hello-so"></div>'
+      + '<button type="button" class="os-vao" id="os-vao-trang-chinh"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Vào trang chính <span aria-hidden="true">→</span></button>';
     o.hidden = false;
+    document.getElementById('os-vao-trang-chinh').addEventListener('click', function () { window.switchView('dashboard'); });
   }
   function ghiSoHello(ds) {
     const o = document.getElementById('os-hello-so'); if (!o) return;
@@ -584,12 +689,13 @@
     o.querySelectorAll('.os-so').forEach(function (b) { b.addEventListener('click', function () { window.switchView(b.dataset.man); }); });
   }
 
-  /** Chấm sáng dưới dock: các icon thuộc nhóm đang lọc. */
+  /** Chấm sáng dưới dock: màn vừa mở gần nhất (trả lời "anh vừa ở đâu"). */
+  let manDockCuoi = null;
   function sangBuocDock() {
     const dock = document.getElementById('os-dock');
     if (!dock) return;
     dock.querySelectorAll('.os-app').forEach(function (b) {
-      b.classList.toggle('is-active', !!nhomDangLoc && b.dataset.nhom === nhomDangLoc);
+      b.classList.toggle('is-active', !!manDockCuoi && b.dataset.man === manDockCuoi);
     });
   }
 
@@ -602,9 +708,9 @@
   function apNen(url) {
     const man = document.getElementById('view-os-home');
     if (!man) return;
-    man.style.backgroundImage = url
-      ? 'url("' + url.replace(/"/g, '%22') + '"), linear-gradient(160deg, #0b1f3a 0%, #123a6b 45%, #0b2f6e 100%)'
-      : '';
+    // Có ảnh: ảnh đè lên cảnh cảng vẽ CSS (.os-scene ẩn đi). Không: trả lại cảnh.
+    man.classList.toggle('co-anh', !!url);
+    man.style.backgroundImage = url ? 'url("' + url.replace(/"/g, '%22') + '")' : '';
   }
   function nhoNen(url) {
     try { if (url) localStorage.setItem(KHOA_NEN, url); else localStorage.removeItem(KHOA_NEN); }
@@ -709,7 +815,7 @@
       const kq = goc.apply(this, arguments);
       if (kq !== false) {
         document.body.classList.toggle('epl-os-home', man === 'os-home');
-        if (man === 'os-home') { napSoDock(); }
+        if (man === 'os-home') { sangBuocDock(); napSoDock(); napBanLamViec(); } else { manDockCuoi = man; }
         try {
           capNhatDauTrang(man);
         } catch (loi) {
@@ -741,7 +847,7 @@
     document.body.classList.toggle('epl-os-home', man === 'os-home');
     veManChinh();
     ganNganNen();
-    if (man === 'os-home') napSoDock();
+    if (man === 'os-home') { napSoDock(); napBanLamViec(); }
   }
 
   // `app.js` cũng nghe `DOMContentLoaded`; tệp này nạp sau nên trình duyệt gọi

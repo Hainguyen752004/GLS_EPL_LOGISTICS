@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260910z-o-tim-vien-thuoc">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260911b-ban-lam-viec">
   <link rel="stylesheet" href="/static/css/bao-gia-v2.css?v=20260910n-tab-id">
   <link rel="stylesheet" href="/static/css/co-hoi.css?v=20260910s-co-hoi-mau">
   <link rel="stylesheet" href="/static/css/bang-lai-tai-xe.css?v=20260909a-bang-lai">
@@ -3911,6 +3911,9 @@
           js/khung-moi.js vẽ từ MUC_TIM_MAN — cùng một danh sách với ô tìm.
         -->
         <section id="view-os-home" class="view-section active os-home">
+          <!-- Nền cảng container vẽ bằng CSS (mẫu): không cần ảnh mạng. Chọn ảnh
+               trong ngăn Đổi giao diện thì ảnh đè lên cảnh này. -->
+          <div class="os-scene" aria-hidden="true"><div class="os-vignette"></div></div>
           <div class="os-top">
             <!-- Ngôn ngữ: header ẩn ở trang chủ nên nút này thay nó; js/khung-moi.js
                  giữ hai nút (đây và #epl-lang trong header) luôn cùng trạng thái. -->
@@ -3992,16 +3995,29 @@
 
           <!-- Nhãn kiêm bộ lọc: bấm một icon trên dock thì lưới lọc về nhóm đó;
                bấm nhãn này (hoặc icon đó lần nữa) thì bỏ lọc. -->
-          <button type="button" class="os-pill" id="os-pill"><i class="fa-solid fa-layer-group" aria-hidden="true"></i><h2>Tiện ích chức năng</h2><span class="os-pill-loc" id="os-pill-loc" hidden></span></button>
-          <div class="os-tiles" id="os-tiles"></div>
+          <!-- BÀN LÀM VIỆC HÔM NAY — trả lời "hôm nay cần làm gì", không lặp lại
+               danh mục màn (Bảng điều khiển và thanh điều hướng đã có). Hai cột
+               do js/khung-moi.js ghi từ bốn lời gọi thật: DO (phân loại bằng
+               DoBoard như màn Lệnh giao hàng), báo giá, cơ hội, sự cố. -->
+          <div class="os-ban" id="os-ban">
+            <section class="os-panel os-viec" aria-labelledby="os-viec-h">
+              <header><h2 id="os-viec-h"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Việc cần làm ngay</h2><span class="os-dem" id="os-viec-dem"></span></header>
+              <div class="os-viec-ds" id="os-viec-ds"><div class="os-rong"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Đang đọc dữ liệu…</div></div>
+            </section>
+            <section class="os-panel os-luong" aria-labelledby="os-luong-h">
+              <header><h2 id="os-luong-h"><i class="fa-solid fa-route" aria-hidden="true"></i> Luồng A–Z hôm nay</h2><button type="button" class="os-lk" id="os-xem-so-do">Sơ đồ đầy đủ →</button></header>
+              <ol class="os-luong-ds" id="os-luong-ds"></ol>
+              <p class="os-ghi">Con số là bản ghi đang nằm ở bước đó. Bước tô cam là chỗ đang dồn nhiều nhất.</p>
+            </section>
+          </div>
 
           <!-- Nút bảng màu + ngăn đổi hình nền — như bản mẫu. Ảnh chọn được nhớ
                trong localStorage của trình duyệt này (khóa epl_os_bg). -->
-          <button type="button" class="os-fab" id="os-fab" title="Tùy chỉnh hình nền" aria-label="Tùy chỉnh hình nền"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
+          <button type="button" class="os-fab" id="os-fab" title="Đổi giao diện" aria-label="Đổi giao diện"><i class="fa-solid fa-palette" aria-hidden="true"></i></button>
           <div class="os-drawer-backdrop" id="os-drawer-backdrop"></div>
           <aside class="os-drawer" id="os-drawer" aria-label="Tùy chỉnh hình nền" aria-hidden="true">
             <div class="os-drawer-head">
-              <h3><i class="fa-solid fa-image" aria-hidden="true"></i> Tùy chỉnh hình nền</h3>
+              <h3><i class="fa-solid fa-image" aria-hidden="true"></i> Đổi giao diện</h3>
               <button type="button" class="os-drawer-x" id="os-drawer-x" aria-label="Đóng"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
             </div>
             <div class="os-drawer-body">
@@ -4018,7 +4034,7 @@
               <section>
                 <h4><i class="fa-solid fa-link" aria-hidden="true"></i> Nhập URL ảnh bất kỳ</h4>
                 <div class="os-url"><input type="text" id="os-bg-url" placeholder="https://example.com/image.jpg"><button type="button" id="os-bg-url-ok">Áp dụng</button></div>
-                <button type="button" class="os-reset" id="os-bg-reset">Về ảnh mặc định</button>
+                <button type="button" class="os-reset" id="os-bg-reset">Về cảnh cảng mặc định</button>
               </section>
             </div>
           </aside>
@@ -8519,7 +8535,7 @@
   <script src="/static/js/app.js?v=20260911i-xoa-ke-toan"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260910y-trang-chu-4-viec"></script>
+  <script src="/static/js/khung-moi.js?v=20260911b-ban-lam-viec"></script>
   <!-- Màn Báo giá cước. Nạp SAU app.js và khung-moi.js: cả ba bọc lại
        `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
        thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->
