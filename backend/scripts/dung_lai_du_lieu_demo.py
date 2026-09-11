@@ -430,9 +430,21 @@ def sua_khung_do(do_id, lay1, lay2, giao1, giao2):
         "delivery_window_start": _iso(giao1), "delivery_window_end": _iso(giao2)})
 
 
-def lap_chuyen(ma, do_ids, khoi_hanh, stop_plan=None):
-    than = {"id": ma, "do_ids": do_ids, "trip_type": "one_way", "planned_departure_at": _iso(khoi_hanh),
+def lap_chuyen(ma, do_ids, khoi_hanh, stop_plan=None, kieu="one_way", tuyen_ve=None):
+    """Lập chuyến từ DO. `kieu` = one_way | multi_stop | round_trip.
+
+    Khứ hồi chỉ dùng XE VỀ RỖNG: chở hàng chiều về (`backhaul` / `returned_goods`) đã bị
+    chặn vì DO chiều về không ký nhận được, kéo theo chuyến không đóng được và xe bị giữ
+    mãi — xem `_chan_hang_chieu_ve` trong `tms_trip_service`.
+
+    Tuyến về phải BẮT ĐẦU tại điểm kết thúc của tuyến đi, nếu không máy chủ trả
+    `RETURN_ROUTE_DISCONNECTED`.
+    """
+    than = {"id": ma, "do_ids": do_ids, "trip_type": kieu, "planned_departure_at": _iso(khoi_hanh),
             "avg_speed_kmh": 40, "dwell_minutes": 30, "return_purpose": "none"}
+    if kieu == "round_trip":
+        than["return_purpose"] = "empty_return"
+        than["return_route_id"] = tuyen_ve
     if stop_plan:
         than["stop_plan"] = stop_plan
     return _du_lieu(goi("POST", "/api/tms/trips/from-delivery-orders", than,
@@ -504,6 +516,21 @@ def hoan_tat(do_id, trip, xe, giao_luc, nguoi_nhan, phu_phi=(), tien="VND"):
                                                                   "actual_amount": str(tien)}
                                                                  for ten, ly_do, tien in phu_phi]}},
                         files=tep, headers={"Idempotency-Key": "hoan-tat-" + do_id}))
+
+
+def xac_nhan_ve(trip_id, ve_luc):
+    """Xác nhận xe đã về bãi — bước ĐÓNG chuyến khứ hồi.
+
+    THỨ TỰ BẮT BUỘC: ký POD đủ mọi chặng giao → xác nhận xe về → rồi mới quyết toán chi phí.
+    Làm ngược lại thì `actual-cost` trả `409 TRIP_NOT_COMPLETED`, vì chuyến còn chặng về chưa
+    đi nên chưa `completed`. Chuyến một chiều không có bước này: POD xong là chuyến đóng.
+    """
+    chuyen = _du_lieu(goi("GET", "/api/tms/trips/%s" % trip_id))
+    if not any(l.get("leg_type") in ("empty_return", "backhaul") for l in chuyen.get("legs") or []):
+        return chuyen
+    return _du_lieu(goi("POST", "/api/tms/trips/%s/complete-return" % trip_id,
+                        {"expected_version": chuyen["version"], "actual_return_at": _iso(ve_luc)},
+                        headers={"Idempotency-Key": "ve-" + trip_id}))
 
 
 def chi_phi_thuc_te(trip, ma, dong, gui_duyet=True):
@@ -994,6 +1021,20 @@ TUYEN_DEMO = {
     "DEMO-RT-CATLAI-AMATA": (38.4, "CATLAI", "AMATA"),
     "DEMO-RT-LONGAN-CAIMEP": (112.0, "LONGAN", "CAIMEP"),
 }
+#: Tuyến VỀ của chuyến khứ hồi. Phải bắt đầu đúng nơi tuyến đi kết thúc, nếu không máy chủ
+#: trả `RETURN_ROUTE_DISCONNECTED`. Chỉ hai tuyến trong bộ dữ liệu có tuyến ngược tương ứng.
+TUYEN_VE = {
+    "DEMO-RT-VSIP2A-CATLAI": "DEMO-RT-CATLAI-VSIP2A",
+    "DEMO-RT-SONGTHAN-CATLAI": "DEMO-RT-CATLAI-SONGTHAN",
+}
+#: Xe THÊM cho đội. Đội 9 chiếc không giữ nổi 10 chuyến mở cùng lúc: một xe đang giữ chuyến
+#: chưa đóng thì không điều thêm được (`RESOURCE_BUSY`), nên 10 chuyến đang chạy đòi ít nhất
+#: 10 xe. Thêm 3 chiếc là vừa đủ và còn dư 2 chiếc rảnh để màn Điều phối không hiện 0/12.
+XE_THEM = [
+    ("DEMO-51C-777.01", "DEMO-VT-TRACTOR20", 24000, 33.0),
+    ("DEMO-61H-888.02", "DEMO-VT-TRUCK15", 15000, 60.0),
+    ("DEMO-50H-999.03", "DEMO-VT-20FT", 28000, 33.2),
+]
 #: Khách thêm cho đủ mặt hàng và đủ đầu mối (gieo qua POST /api/customers).
 KHACH_THEM = [
     ("DEMO-CUS-VINAMILK", "Vinamilk Bình Dương", "Chị Ngân", "0903111222", "KCN Mỹ Phước, Bình Dương"),
@@ -1054,8 +1095,8 @@ def _gia(tuyen, loai, kg, tien, ty_gia, bien=0.28, the_tich=None, im=True):
 
 
 def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_doan,
-              phu_xe=None, bien=0.28, so_cont=1):
-    """Gieo MỘT case tới `giai_doan`: bao_gia | do | trip | dang_chay | hoan_tat.
+              phu_xe=None, bien=0.28, so_cont=1, kieu_chuyen="one_way", chiet_khau=0.0):
+    """Gieo MỘT case tới `giai_doan`: bao_gia | do | trip | dang_chay | den_noi | hoan_tat.
 
     Trả `(qid, [do_id], trip_id|None)`. Mỗi giai đoạn là một điểm dừng thật của luồng, nên
     dữ liệu gieo ra nằm đúng màn mà người vận hành sẽ thấy nó.
@@ -1077,6 +1118,9 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
         packaging_spec="Nguyên khối, niêm phong tại kho", weight_kg=kg,
         volume_m3=round(THE_TICH_TOI_DA[loai] * 0.7, 1), pallet_count=0,
         price_basis="per_trip", unit_price=cuoc, currency_code=tien,
+        # CHIẾT KHẤU là tỉ lệ 0..1 (không phải phần trăm). Cước vẫn là con số suy từ công
+        # thức giá thành; chiết khấu chỉ là mức giảm thoả thuận với khách trên con số đó.
+        discount_percent=chiet_khau or None,
         fx_rate=ty_gia, total_cost=gia_thanh, selling_price=cuoc, valid_to=_han(30 + chi_so % 30),
         pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
         delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
@@ -1104,11 +1148,39 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
                          for i in range(so_cont)])
     if giai_doan == "do":
         return qid, ds, None
+    # KHUNG GIỜ CỦA CHUYẾN CÒN ĐANG CHẠY PHẢI PHỦ TỚI HIỆN TẠI — và phải nới TRƯỚC khi lập
+    # chuyến, vì lệnh vận chuyển chốt khung ngay lúc đó; nới sau thì phân công vẫn bị từ chối
+    # bằng `ASSIGNMENT_OUTSIDE_WINDOW`.
+    #
+    # Vì sao cần: máy chủ chặn mọi sự kiện nằm ngoài khung phân công, nên một chuyến gieo
+    # buổi sáng với khung kết thúc lúc chiều thì đến tối tài xế mở trang lên bấm "Ghi mốc" là
+    # ăn lỗi. Nó cũng phi lý về nghiệp vụ: xe còn trên đường mà phân công đã hết giờ.
+    ket_phan_cong = giao2
+    if giai_doan in ("dang_chay", "den_noi"):
+        ket_phan_cong = max(giao2, dt.datetime.now(VN) + dt.timedelta(hours=10))
+        for ma_do in ds:
+            sua_khung_do(ma_do, lay1, lay2, giao1, ket_phan_cong)
     ma_trip = "TRIP-%s-%03d" % (NHAN_LUOT, chi_so)
-    trip = lap_chuyen(ma_trip, ds, lay1 + dt.timedelta(hours=1),
-                      [{"sequence_no": 1, "stop_name": diem_cuoi.title(),
-                        "receiver_name": NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
-                        "receiver_phone": "09090%05d" % chi_so, "delivery_note": "Hạ hàng đúng cổng đã hẹn"}])
+    # NHIỀU ĐIỂM GIAO: mỗi DO một điểm dừng RIÊNG, khai bằng `do_id` trong `stop_plan`. Thiếu
+    # `do_id` thì máy chủ gom hết về một điểm cuối và chuyến chỉ còn một chặng giao — đúng
+    # hình dạng chuyến một chiều, không phải chuyến nhiều điểm.
+    if kieu_chuyen == "multi_stop" and len(ds) > 1:
+        ke_hoach = [{"sequence_no": i + 1, "do_id": ma_do, "stop_name": "%s · điểm %d" % (diem_cuoi.title(), i + 1),
+                     "receiver_name": NGUOI_NHAN[(chi_so + i) % len(NGUOI_NHAN)],
+                     "receiver_phone": "09090%05d" % (chi_so + i),
+                     "delivery_note": "Hạ hàng điểm %d, gọi trước 15 phút" % (i + 1)}
+                    for i, ma_do in enumerate(ds)]
+    else:
+        ke_hoach = [{"sequence_no": 1, "stop_name": diem_cuoi.title(),
+                     "receiver_name": NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
+                     "receiver_phone": "09090%05d" % chi_so, "delivery_note": "Hạ hàng đúng cổng đã hẹn"}]
+    # LOẠI CHUYẾN phải nói đúng hình dạng thật của nó. Một chuyến hai điểm giao mà khai
+    # `one_way` thì chặng đúng nhưng nhãn trên màn hình sai, và người đọc báo cáo đếm nhầm.
+    loai_chuyen = kieu_chuyen if kieu_chuyen in ("round_trip", "multi_stop") else "one_way"
+    if loai_chuyen == "multi_stop" and len(ds) < 2:
+        loai_chuyen = "one_way"
+    trip = lap_chuyen(ma_trip, ds, lay1 + dt.timedelta(hours=1), ke_hoach,
+                      kieu=loai_chuyen, tuyen_ve=TUYEN_VE.get(tuyen))
     if giai_doan == "trip":
         return qid, ds, ma_trip
     if giai_doan == "huy_trip":
@@ -1118,7 +1190,12 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
                         "Kho đóng cửa kiểm kê.")[chi_so % 3]},
             headers={"Idempotency-Key": "huy-" + ma_trip})
         return qid, ds, ma_trip
-    trip = dieu_phoi(trip, xe, tai_xe, lay1, giao2, phu_xe=phu_xe)
+    # KHUNG PHÂN CÔNG CỦA CHUYẾN CÒN ĐANG CHẠY PHẢI PHỦ TỚI HIỆN TẠI. Máy chủ từ chối mọi
+    # sự kiện nằm ngoài khung (`ASSIGNMENT_TIME_INVALID`), nên một chuyến gieo buổi sáng với
+    # khung kết thúc lúc chiều thì đến tối không ghi thêm được mốc nào — tài xế mở trang lên
+    # bấm "Ghi mốc" là ăn lỗi. Nó cũng phi lý về nghiệp vụ: xe còn trên đường mà phân công
+    # đã hết giờ. Chuyến đã đóng thì giữ nguyên khung thật của nó.
+    trip = dieu_phoi(trip, xe, tai_xe, lay1, ket_phan_cong, phu_xe=phu_xe)
     g0 = lay1
     day_du = [("check_in", g0), ("pickup", g0 + dt.timedelta(minutes=40 + chi_so % 30)),
               ("departure", g0 + dt.timedelta(hours=1, minutes=chi_so % 30)),
@@ -1126,7 +1203,12 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
               ("unloading", g0 + dt.timedelta(hours=2 + int(km // 45), minutes=25 + chi_so % 20))]
     if giai_doan == "dang_chay":
         # Xe đang trên đường: chỉ ghi tới mốc tương ứng, KHÔNG hoàn tất.
-        moc_thuc_thi(trip, xe, tai_xe, day_du[:1 + chi_so % 4], (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
+        moc_thuc_thi(trip, xe, tai_xe, day_du[:1 + chi_so % 3], (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
+        return qid, ds, ma_trip
+    if giai_doan == "den_noi":
+        # ĐÃ TỚI ĐIỂM GIAO, chờ ký nhận. Dừng đúng ở `arrival`: đó là mốc mở nút "Hoàn tất
+        # giao hàng" trên trang tài xế, nên đây là bộ dữ liệu để bấm thử luồng ký nhận.
+        moc_thuc_thi(trip, xe, tai_xe, day_du[:4], (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
         return qid, ds, ma_trip
     moc_thuc_thi(trip, xe, tai_xe, day_du, (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
     giao_luc = g0 + dt.timedelta(hours=3 + int(km // 45), minutes=chi_so % 45)
@@ -1138,6 +1220,9 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
     for do_id in ds:
         hoan_tat(do_id, trip, xe, giao_luc, NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
                  phu_phi=phu, tien=tien)
+    # KHỨ HỒI: đóng chuyến bằng bước xác nhận xe về bãi, trước khi quyết toán chi phí.
+    if kieu_chuyen == "round_trip":
+        xac_nhan_ve(ma_trip, giao_luc + dt.timedelta(hours=2))
     # Chi phí thực tế LUÔN bằng VNĐ (tiền chức năng): dầu, BOT, phụ cấp đều chi bằng đồng.
     # Cột chốt ban đầu lấy từ công thức; phần vượt xoay theo chỉ số case để mỗi
     # chuyến lệch một kiểu, có chuyến đúng kế hoạch, có chuyến vượt dầu hoặc bãi.
@@ -1148,6 +1233,66 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
         ghi={"fuel": "%.1f km" % km, "driver": "Có phụ xe" if phu_xe else ""}),
         gui_duyet=(chi_so % 5 != 0))   # một phần năm để NHÁP, cho kế toán thấy việc còn phải làm
     return qid, ds, ma_trip
+
+
+def lech_tuyen(trip, xe, tai_xe, diem_dau, diem_cuoi, lech_do=0.085):
+    """Ghim một chuyến đang chạy ra NGOÀI tuyến, để màn Theo dõi thấy xe đi sai đường.
+
+    Dùng loại sự kiện `route_deviation` — nó nằm trong `EXCEPTION_TYPES` nên KHÔNG đẩy mốc
+    hành trình sang bước kế tiếp, chuyến vẫn ở đúng chỗ nó đang đứng.
+
+    Giờ sự kiện đặt ở HIỆN TẠI có chủ ý: tháp theo dõi chỉ dùng toạ độ thiết bị khi nó còn
+    mới (dưới 15 phút), quá hạn thì nó tự mô phỏng vị trí bám theo đường bộ và điểm lệch bị
+    ghi đè. Một mốc cũ sẽ không hiện ra được gì.
+    """
+    a, b = TOA_DO[diem_dau], TOA_DO[diem_cuoi]
+    # Điểm giữa tuyến rồi đẩy chệch sang ngang — xe nằm hẳn ngoài đường bộ đã vẽ.
+    lat = (a[0] + b[0]) / 2 + lech_do
+    lng = (a[1] + b[1]) / 2 - lech_do
+    # NỚI KHUNG PHÂN CÔNG TRƯỚC. Máy chủ từ chối sự kiện nằm ngoài giờ phân công
+    # (`ASSIGNMENT_TIME_INVALID`), mà chuyến gieo buổi sáng có khung kết thúc trong chiều —
+    # nên một điểm lệch ghi vào "bây giờ" sẽ bị chặn. Kéo dài khung tới cuối ngày là đúng
+    # nghiệp vụ: xe đi lệch thì về trễ.
+    bay_gio = dt.datetime.now(VN)
+    goi("PUT", "/api/tms/trips/%s/dispatch" % trip["id"], {
+        "vehicle_id": xe, "driver_id": tai_xe, "expected_version": trip["version"],
+        "assignment_start": _iso(bay_gio - dt.timedelta(hours=12)),
+        "assignment_end": _iso(bay_gio + dt.timedelta(hours=12))}, cho_phep=(200, 201, 409))
+    fo_id = trip["freight_order_id"]
+    ban = _lenh_van_chuyen(fo_id)["version"]
+    goi("POST", "/api/tms/freight-orders/%s/events" % fo_id, {
+        "event_type": "route_deviation", "event_time": _iso(bay_gio),
+        "expected_version": ban, "vehicle_id": xe, "driver_id": tai_xe,
+        "lat": round(lat, 5), "lng": round(lng, 5), "speed_kmh": 38, "distance_km": 0,
+        "location_text": "Ngoài tuyến kế hoạch", "source": "device", "device_id": "GPS-" + xe,
+        "reason": "Tài xế đi đường vòng tránh kẹt xe, chưa báo điều độ.",
+        "note": "Vị trí lệch khỏi tuyến đã duyệt.", "documents": [],
+    }, headers={"Idempotency-Key": "lech-" + fo_id}, cho_phep=(200, 201, 409))
+
+
+#: PHÂN BỔ 60 CASE theo yêu cầu chủ dự án (11/09/2026). Tổng đúng 60, và mỗi bước của luồng
+#: đều có dữ liệu để mọi màn hình nói được một điều gì đó.
+#:
+#: "Đang chạy" và "đã đến nơi" cộng lại đúng 10 chuyến MỞ — cả hai đều là chuyến chưa đóng,
+#: mỗi chuyến giữ một xe và một tài xế cho tới khi hoàn tất, nên tổng của chúng bị chặn bởi
+#: số xe trong đội chứ không bởi ý muốn.
+PHAN_BO_60 = [
+    ("hoan_tat", 15),       # cho anh Khang có hồ sơ bàn giao
+    ("co_hoi", 5),          # CRM: chưa lên báo giá
+    ("bao_gia_nhap", 5),
+    ("cho_duyet", 4),       # biên mỏng → phải qua trưởng phòng
+    ("bao_gia", 5),         # đã gửi khách, đang chờ
+    ("tu_choi", 4),
+    ("do", 6),              # có lệnh giao hàng, chưa lập chuyến
+    ("trip", 6),            # có chuyến, chờ điều phối
+    ("den_noi", 4),         # đã tới điểm giao, chờ ký nhận
+    ("dang_chay", 6),       # đang trên đường
+]
+#: TIỀN TỆ — ưu tiên Kíp Lào vì buổi demo diễn ra ở Lào. Tỷ giá lấy đúng bảng `currencies`.
+TIEN_UU_TIEN_LAO = ([("LAK", 1.18)] * 4 + [("VND", 1.0)] * 3
+                    + [("USD", 26173.5)] + [("THB", 710.0)])
+#: Kiểu chuyến xoay vòng cho các case có lập chuyến.
+KIEU_CHUYEN = ["one_way", "multi_stop", "round_trip", "one_way"]
 
 
 def _nguon_luc_dang_bi_chiem():
@@ -1297,6 +1442,138 @@ def gieo_nhieu(so_hoan_tat=22, so_dang_chay=6):
     kiem()
 
 
+def gieo_60(chi_nhom=None):
+    """Gieo 60 case theo yêu cầu chủ dự án (11/09/2026), ĐI TRỌN LUỒNG từ cơ hội.
+
+    "Không tạo kiểu đâm ngang" — mọi case bắt đầu bằng một CƠ HỘI, rồi báo giá sinh từ cơ
+    hội đó, DO sinh tự động khi khách chấp nhận báo giá, chuyến lập từ DO. Không có đường
+    tắt nào tạo thẳng DO hay chuyến.
+
+    GIÁ KHÔNG BỊA. Giá thành hỏi thẳng công thức của loại xe đang chở (`gia_that`), cước =
+    giá thành + biên, và chiết khấu là một tỉ lệ thoả thuận trên con số đó. Sửa công thức
+    thì mọi con số ở đây đi theo.
+
+    THỨ TỰ GIEO KHÔNG TUỲ TIỆN. Case ĐÃ HOÀN TẤT gieo trước vì hoàn tất là NHẢ xe và tài xế;
+    case còn mở (đang chạy, đã đến nơi) gieo sau cùng vì chúng giữ nguồn lực cho tới khi
+    đóng. Gieo ngược lại là hết xe từ giữa chừng.
+    """
+    hom_nay = dt.datetime.now(VN).date()
+    bo_sung_du_lieu_goc()
+
+    _in("[0b] Thêm 3 xe cho đủ chỗ 10 chuyến mở cùng lúc")
+    for ma, loai, tai, tt in XE_THEM:
+        goi("POST", "/api/vehicles", {
+            "id": ma, "type": loai, "weight_capacity": tai, "volume_capacity_m3": tt,
+            "brand": "Hyundai", "status": "Sẵn sàng", "depot_code": "DEMO-DEPOT-SONGTHAN",
+            "inspection_exp": "2027-10-16", "insurance_date": "2027-10-16",
+            "maintenance_date": "2027-06-30", "fuel_norm": 28.0,
+        }, cho_phep=(200, 201, 409))
+
+    khach = sorted({k for k in HANG_THEO_KHACH})
+    tuyen = list(TUYEN_DEMO)
+    tuyen_khu_hoi = [t for t in tuyen if t in TUYEN_VE]
+    tuyen_nhieu_chang = [t for t in tuyen if SO_CHANG.get(t, 1) >= 2]
+    xe_bi_chiem, tx_bi_chiem = _nguon_luc_dang_bi_chiem()
+    cap_xe = [(loai, x) for loai, ds in XE_THEO_LOAI.items() for x in ds if x not in xe_bi_chiem]
+    cap_xe += [(loai, ma) for ma, loai, _, _ in XE_THEM if ma not in xe_bi_chiem]
+    tx_ranh = [t for t in TAI_XE_CHINH if t not in tx_bi_chiem]
+    if len(tx_ranh) < len(cap_xe):
+        cap_xe = cap_xe[:len(tx_ranh)]
+    _in("   Xe dùng được: %d · tài xế dùng được: %d" % (len(cap_xe), len(tx_ranh)))
+
+    dem = {}
+    chi_so = 500
+    con_tro_xe = 0          # chỉ dùng cho các nhóm giữ xe (đã đến nơi + đang chạy)
+    trip_dang_chay = []
+
+    # CHẠY THEO NHÓM để mỗi lượt gọn dưới mười phút và người chạy thấy được tiến trình —
+    # gieo cả 60 case một mạch mất hàng chục phút mà màn hình im lặng. Chỉ số case vẫn chạy
+    # liên tục qua các nhóm nên mã chuyến không trùng giữa hai lượt.
+    for giai_doan, so_luong in PHAN_BO_60:
+        if chi_nhom and giai_doan not in chi_nhom:
+            chi_so += so_luong          # giữ chỗ, để lượt sau không đụng mã của lượt này
+            continue
+        _in("\n[%s] %d case" % (giai_doan, so_luong))
+        for i in range(so_luong):
+            chi_so += 1
+            # XE CHO CHUYẾN CÒN MỞ PHẢI KHÁC NHAU. "Đã đến nơi" và "đang chạy" đều là chuyến
+            # chưa đóng, mỗi chuyến giữ một xe cho tới khi hoàn tất — nên hai nhóm này phải
+            # ăn tiếp vào danh sách xe, không được đếm lại từ 0. Đếm lại là nhóm sau đòi đúng
+            # chiếc nhóm trước đang giữ và ăn `RESOURCE_BUSY`.
+            #
+            # Các nhóm khác thì dùng lại xe thoải mái: hoàn tất là NHẢ xe, còn những bước
+            # dừng trước điều phối thì không đụng tới xe nào.
+            if giai_doan in ("den_noi", "dang_chay"):
+                vi_tri = con_tro_xe % len(cap_xe)
+                con_tro_xe += 1
+            else:
+                vi_tri = i % len(cap_xe)
+            loai, xe = cap_xe[vi_tri]
+            tien, ty_gia = TIEN_UU_TIEN_LAO[chi_so % len(TIEN_UU_TIEN_LAO)]
+            kieu = KIEU_CHUYEN[i % len(KIEU_CHUYEN)]
+            # Khứ hồi chỉ đi được trên tuyến CÓ tuyến ngược; tuyến khác thì về một chiều.
+            # NHIỀU ĐIỂM GIAO chỉ xếp được trên tuyến từ HAI CHẶNG trở lên: mỗi điểm dừng
+            # phải rơi vào một chặng của tuyến, nên tuyến một chặng không chứa nổi hai điểm
+            # và máy chủ trả `TRIP_DO_KHONG_CO_CHANG` cho DO thứ hai.
+            if kieu == "round_trip":
+                rt = tuyen_khu_hoi[i % len(tuyen_khu_hoi)]
+            elif kieu == "multi_stop":
+                rt = tuyen_nhieu_chang[i % len(tuyen_nhieu_chang)]
+            else:
+                rt = tuyen[chi_so % len(tuyen)]
+            # Nhiều điểm giao cần từ hai DO trở lên, và xe phải đủ tải cho cả hai.
+            so_do = 2 if (kieu == "multi_stop" and TAI_TOI_DA[loai] >= 24000) else 1
+            if kieu == "multi_stop" and so_do == 1:
+                kieu = "one_way"
+                rt = tuyen[chi_so % len(tuyen)]
+            # NGÀY: việc đã xong nằm ở quá khứ, việc đang chạy là hôm nay, việc chưa tới thì
+            # trải dần sang các tuần sau để màn Điều phối ngày nào cũng có đơn để xếp.
+            if giai_doan == "hoan_tat":
+                ngay = hom_nay - dt.timedelta(days=1 + i // max(1, len(cap_xe)))
+            elif giai_doan in ("dang_chay", "den_noi"):
+                ngay = hom_nay
+            else:
+                ngay = hom_nay + dt.timedelta(days=1 + (chi_so % 45))
+            bien = 0.10 if giai_doan == "cho_duyet" else (0.22 + (chi_so % 5) * 0.03)
+            # Chiết khấu chỉ đặt cho một phần case, để có cả phiếu có và không có chiết khấu.
+            ck = (0.03, 0.05, 0.08)[chi_so % 3] if chi_so % 4 == 0 else 0.0
+            qid, ds, ma_trip = _mot_case(
+                chi_so, khach[chi_so % len(khach)], rt, loai, xe, tx_ranh[vi_tri], ngay,
+                tien, ty_gia, giai_doan, bien=bien, so_cont=so_do, kieu_chuyen=kieu,
+                chiet_khau=ck)
+            dem[giai_doan] = dem.get(giai_doan, 0) + 1
+            if giai_doan == "dang_chay" and ma_trip:
+                trip_dang_chay.append((ma_trip, xe, tx_ranh[vi_tri], rt, ds))
+
+    if chi_nhom and "dang_chay" not in chi_nhom:
+        _in("Bỏ qua sự cố và lệch tuyến (chưa gieo nhóm đang chạy trong lượt này).")
+        return
+    _in("\n[sự cố] 5 chuyến đang chạy có sự cố chưa đóng")
+    loai_su_co = [("Hỏng hóc", "High", "Vành đai 3", "Nổ lốp sau bên phải, đã gọi cứu hộ."),
+                  ("Kẹt xe", "Medium", "QL51 đoạn Long Thành", "Kẹt 40 phút do tai nạn phía trước."),
+                  ("Thời tiết", "Medium", "Cầu Phú Mỹ", "Mưa lớn, giảm tốc độ để an toàn."),
+                  ("Giấy tờ", "Low", "Cổng cảng Cát Lái", "Thiếu một bản sao tờ khai, đã bổ sung."),
+                  ("Hàng hoá hư hỏng", "High", "Kho Long An", "Hai kiện bị móp góc khi bốc xếp.")]
+    ds_trip = _du_lieu(goi("GET", "/api/tms/trips?limit=300"))
+    dang = [t for t in (ds_trip if isinstance(ds_trip, list) else ds_trip.get("items") or [])
+            if t.get("status") == "in_transit" and t.get("vehicle_id")]
+    for i, t in enumerate(dang[:5]):
+        ma_do = (t.get("delivery_order_ids") or [None])[0]
+        if not ma_do:
+            continue
+        ten, muc, vi_tri, mo_ta = loai_su_co[i]
+        su_co(ma_do, t["vehicle_id"], ten, vi_tri, mo_ta, muc)
+
+    _in("\n[lệch tuyến] 2 chuyến đang chạy ra ngoài tuyến kế hoạch")
+    for ma_trip, xe, tx, rt, _ds in trip_dang_chay[:2]:
+        _, diem_dau, diem_cuoi = TUYEN_DEMO[rt]
+        chuyen = _du_lieu(goi("GET", "/api/tms/trips/%s" % ma_trip))
+        lech_tuyen(chuyen, xe, tx, diem_dau, diem_cuoi)
+
+    _in("\nĐÃ GIEO: %s = %d case" % (dem, sum(dem.values())))
+    kiem()
+
+
 # ================================================================ KIỂM
 def kiem():
     import database
@@ -1328,10 +1605,13 @@ if __name__ == "__main__":
     p.add_argument("--kiem", action="store_true")
     p.add_argument("--case", default="G,H", help="với --gieo-ngoai-te: chạy case nào, vd G hoặc H")
     p.add_argument("--gieo-nhieu", action="store_true", help="gieo THÊM nhiều dữ liệu (không xoá cái đang có)")
+    p.add_argument("--nhom", default="", help="với --gieo-60: chỉ gieo các nhóm này, cách nhau dấu phẩy")
+    p.add_argument("--gieo-60", action="store_true",
+                   help="gieo 60 case theo phân bổ chủ dự án chốt 11/09/2026")
     p.add_argument("--so-hoan-tat", type=int, default=22)
     p.add_argument("--so-dang-chay", type=int, default=6)
     a = p.parse_args()
-    if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.gieo_nhieu or a.kiem):
+    if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.gieo_nhieu or a.gieo_60 or a.kiem):
         p.print_help()
         sys.exit(1)
     if a.xoa:
@@ -1348,5 +1628,9 @@ if __name__ == "__main__":
         if not TOKEN:
             sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
         gieo_nhieu(a.so_hoan_tat, a.so_dang_chay)
+    if a.gieo_60:
+        if not TOKEN:
+            sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
+        gieo_60(set(x.strip() for x in a.nhom.split(",") if x.strip()) or None)
     if a.kiem:
         kiem()
