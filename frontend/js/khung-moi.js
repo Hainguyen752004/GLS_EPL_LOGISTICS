@@ -572,6 +572,59 @@
     }
   }
 
+  /**
+   * Thẻ "Nguồn lực hôm nay" dưới dòng chảy: xe/người đang ở đâu, và giấy tờ nào sắp chặn.
+   *
+   * Hai dòng cảnh báo đọc thẳng số của `GET /api/fleet/resource-summary`, và máy chủ đếm
+   * bằng ĐÚNG luật của hai cửa gác điều phối. Nên nhãn ở đây phải nói thật là nó chặn:
+   * "hết hạn" gồm cả trường hợp CHƯA KHAI ngày, vì cửa gác coi thiếu ngày là hết hạn.
+   * Viết "sắp hết hạn" cho một chiếc đang bị chặn là đẩy người điều độ vào lỗi 409.
+   */
+  function veNguonLuc(d, loi) {
+    const o = document.getElementById('os-nl'); if (!o) return;
+    if (!d) {
+      o.innerHTML = '<div class="os-rong nho">Chưa đọc được nguồn lực đội xe' + (loi ? ' (' + chuAnToan(loi) + ')' : '') + '.</div>';
+      o.hidden = false; return;
+    }
+    const xe = d.vehicles || {}, tx = d.drivers || {}, ngay = Number(d.warn_within_days) || 30;
+    const so = function (n) { const v = Number(n); return isFinite(v) ? v.toLocaleString('vi-VN') : '·'; };
+    const o1 = function (nhan, n, lop) {
+      return '<span class="nl-o' + (lop ? ' ' + lop : '') + (Number(n) ? '' : ' trong') + '"><b>' + so(n) + '</b>' + nhan + '</span>';
+    };
+    // Một dòng cảnh báo: đỏ nếu đang chặn, cam nếu sắp, xanh nếu sạch.
+    const canh = function (chan, sap, dsSap, tenChan, tenSap, tenSach, tab) {
+      let lop = 'ok', chu = tenSach, phu = '';
+      if (Number(chan) > 0) { lop = 'chan'; chu = so(chan) + tenChan; phu = 'Điều phối sẽ bị chặn ở những xe/người này.'; }
+      else if (Number(sap) > 0) {
+        lop = 'sap'; chu = so(sap) + tenSap + ' trong ' + ngay + ' ngày';
+        phu = (dsSap || []).slice(0, 3).map(function (x) {
+          return (x.name ? x.name : x.id) + ' còn ' + x.con_ngay + ' ngày';
+        }).join(' · ');
+      }
+      return '<button type="button" class="nl-canh ' + lop + '" data-tab="' + tab + '">'
+        + '<i class="fa-solid ' + (lop === 'ok' ? 'fa-circle-check' : lop === 'sap' ? 'fa-triangle-exclamation' : 'fa-ban') + '" aria-hidden="true"></i>'
+        + '<span><b>' + chuAnToan(chu) + '</b>' + (phu ? '<small>' + chuAnToan(phu) + '</small>' : '') + '</span>'
+        + '<i class="fa-solid fa-chevron-right mui" aria-hidden="true"></i></button>';
+    };
+    o.innerHTML = '<div class="nl-dau"><h3><i class="fa-solid fa-truck-front" aria-hidden="true"></i> Nguồn lực hôm nay</h3>'
+      + '<span>' + so(xe.tong) + ' xe · ' + so(tx.tong) + ' tài xế</span></div>'
+      + '<div class="nl-hang">' + o1(' xe rảnh', xe.ranh, 'xanh') + o1(' xe đang chạy', xe.dang_chay)
+      + o1(' nằm xưởng', xe.bao_duong) + (Number(xe.ngung_chay) ? o1(' ngừng chạy', xe.ngung_chay) : '')
+      + o1(' tài xế rảnh', tx.ranh, 'xanh') + '</div>'
+      + canh(xe.giay_to_het_han, xe.giay_to_sap_het, d.vehicles_expiring_soon,
+             ' xe thiếu / hết hạn giấy tờ', ' xe sắp hết hạn giấy tờ', 'Giấy tờ xe còn hạn cả đội', 'md-tab-vehicles')
+      + canh(tx.bang_het_han, tx.bang_sap_het, d.drivers_expiring_soon,
+             ' tài xế thiếu / hết hạn bằng lái', ' tài xế sắp hết hạn bằng lái', 'Bằng lái còn hạn cả đội', 'md-tab-drivers')
+      + (loi ? '<div class="os-rong nho">Chưa đọc được: ' + chuAnToan(loi) + '.</div>' : '');
+    o.hidden = false;
+    o.querySelectorAll('.nl-canh').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (typeof window.openMasterSetupStep === 'function') window.openMasterSetupStep(b.dataset.tab);
+        else window.switchView('master-data');
+      });
+    });
+  }
+
   function veViec(ds, loi) {
     const o = document.getElementById('os-viec-ds'), dem = document.getElementById('os-viec-dem');
     if (!o) return;
@@ -591,7 +644,8 @@
     if (!document.getElementById('os-ban') || typeof fetch !== 'function') return;
     const viec = [], loi = [], so = {};
     const D = window.DoBoard;
-    const xong = function () { veViec(viec.slice(0, 12), loi); veLuong(so); };
+    let nguonLuc = null, loiNguonLuc = '';
+    const xong = function () { veViec(viec.slice(0, 12), loi); veLuong(so); veNguonLuc(nguonLuc, loiNguonLuc); };
     Promise.all([
       layJson('/api/crm/opportunities').then(function (g) {
         const ds = danhSach(g), moc = cuoiNgay();
@@ -639,6 +693,9 @@
           viec.push({ loai: 'su-co', id: String(i.id), tone: 'do', icon: 'fa-triangle-exclamation', tieuDe: 'Sự cố · ' + (i.incident_type || 'chưa rõ loại') + (i.do_id ? ' · ' + i.do_id : ''), chiTiet: [i.vehicle_id, i.location].filter(Boolean).join(' · ') || (i.description || '').slice(0, 60), nhan: i.severity || '' });
         });
       }).catch(function () { loi.push('sự cố'); }),
+      // Nguồn lực: máy chủ đếm sẵn. Hỏng riêng thì thẻ đó nói riêng, không làm trống cả bàn.
+      layJson('/api/fleet/resource-summary').then(function (g) { nguonLuc = g; })
+        .catch(function (e) { loiNguonLuc = String((e && e.message) || e); }),
     ]).then(function () {
       const thuTu = { do: 0, cam: 1, vang: 2 };
       viec.sort(function (a, b) { return (thuTu[a.tone] || 0) - (thuTu[b.tone] || 0); });
@@ -792,10 +849,17 @@
         { so: so.transit, nhan: 'chuyến đang đi', man: 'tracking' },
         { so: so.dueCrm, nhan: 'cơ hội cần liên hệ hôm nay', man: 'co-hoi', nong: true },
         { so: so.incidents, nhan: 'sự cố phát sinh', man: 'tracking', nong: true },
+        // HỒ SƠ SẴN SÀNG BÀN GIAO — con số cuối của luồng, và là thứ bên công nợ chờ.
+        // Khác với "đã có POD": một DO đã giao xong mà chuyến chở nó còn mở (xe chưa về,
+        // chưa xác nhận) thì CHƯA xuất hiện ở API bàn giao, nên chưa lấy được. Đúng bộ lọc
+        // của `GET /api/handover/delivery-orders`, không đếm lại bằng luật riêng ở đây.
+        { so: so.banGiao, nhan: 'hồ sơ sẵn sàng bàn giao', man: 'delivery-completion' },
       ]);
     };
     fetch(goc + '/api/crm/opportunities/summary').then(function (r) { return r.ok ? r.json() : null; })
       .then(function (g) { const d = g && (g.data || g); if (d) { dat(1, d.open); so.dueCrm = d.due_follow_up; ve(); } }).catch(function () {});
+    fetch(goc + '/api/handover/delivery-orders?page_size=1').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (g) { const d = g && (g.data || g); if (d && isFinite(Number(d.total))) { so.banGiao = Number(d.total); ve(); } }).catch(function () {});
     fetch(goc + '/api/dashboard/stats').then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) { if (d) { dat(6, d.in_transit_orders); dat(3, d.pending_deliveries); so.doOpen = d.total_deliveries; so.transit = d.in_transit_orders; so.incidents = d.incidents_count; ve(); } }).catch(function () {});
   }

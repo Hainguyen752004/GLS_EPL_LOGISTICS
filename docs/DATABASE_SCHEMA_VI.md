@@ -443,7 +443,7 @@ Ca trực / ca nghỉ của tài xế; điều phối đòi ca phủ trọn th�
 | `created_by` | VARCHAR(128) | có |  |
 | `updated_by` | VARCHAR(128) | có |  |
 
-Ràng buộc: `status IN ('planned','confirmed','cancelled')`; `shift_type IN ('morning','afternoon','night','office','custom')`; `shift_end > shift_start`; `availability_kind IN ('work','leave','sick','off','unavailable')`
+Ràng buộc: `shift_end > shift_start`; `status IN ('planned','confirmed','cancelled')`; `availability_kind IN ('work','leave','sick','off','unavailable')`; `shift_type IN ('morning','afternoon','night','office','custom')`
 
 ### `drivers` — Dữ liệu gốc
 
@@ -1084,7 +1084,7 @@ Chặng của chuyến: điểm đi/đến, km, tốc độ, dừng, người nh
 | Cột | Kiểu | Bắt buộc | Khoá / tham chiếu |
 |---|---|---|---|
 | `id` | VARCHAR(128) | có | PK |
-| `trip_id` | VARCHAR(128) | có | FK → `transport_trips.id`, FK → `trip_delivery_orders.trip_id` |
+| `trip_id` | VARCHAR(128) | có | FK → `trip_delivery_orders.trip_id`, FK → `transport_trips.id` |
 | `do_id` | VARCHAR |  | FK → `trip_delivery_orders.do_id` |
 | `sequence_no` | INTEGER | có |  |
 | `leg_type` | VARCHAR(30) | có |  |
@@ -1189,7 +1189,7 @@ Dòng chi phí của phiếu bảo dưỡng.
 | `actual_unit_cost` | NUMERIC(24, 6) | có |  |
 | `actual_total` | NUMERIC(24, 6) | có |  |
 
-Ràng buộc: `estimated_unit_cost >= 0`; `actual_unit_cost >= 0`; `quantity > 0`
+Ràng buộc: `quantity > 0`; `actual_unit_cost >= 0`; `estimated_unit_cost >= 0`
 
 ### `vehicle_maintenance_requests` — Dữ liệu gốc
 

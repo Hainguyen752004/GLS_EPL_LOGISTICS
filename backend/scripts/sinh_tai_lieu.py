@@ -187,6 +187,9 @@ MO_TA_API = {
     "POST /api/vehicle-types": ("Thêm/sửa loại xe `{id, name, max_weight, volume_capacity_m3, pallet_capacity, fuel_norm, avg_speed_kmh, dep_cost_per_km, dims, fuel_type, icon, notes}`.", ""),
     "DELETE /api/vehicle-types/{vid}": ("Xoá loại xe chưa có xe/báo giá dùng (409 `LOCKED_RECORD` nếu đang dùng).", ""),
     "GET /api/vehicle-types/recommendations": ("Loại xe nào đủ tải cho `weight_kg`, `volume_m3`, `pallet_count` (ba chiều).", ""),
+    "GET /api/fleet/resource-summary": (
+        "**SỐ ĐẾM nguồn lực hôm nay** cho màn chủ: xe rảnh / đang chạy / nằm xưởng / ngừng chạy, tài xế rảnh / đang chạy / nghỉ, và số xe–tài xế sắp bị CHẶN điều phối vì giấy tờ.",
+        "Trả SỐ, không trả danh sách (đội ~500 xe). `vehicles.giay_to_het_han` và `drivers.bang_het_han` đếm đúng luật hai cửa gác `VEHICLE_LEGAL_EXPIRED` / `DRIVER_LICENSE_INVALID` — GỒM CẢ trường hợp chưa khai ngày, vì cửa gác coi thiếu ngày là hết hạn, và gồm cả bằng còn hạn nhưng lệch hạng so với hồ sơ tài xế. `*_sap_het` là trong `warn_within_days` (30) ngày tới, chưa chặn. `vehicles_expiring_soon` / `drivers_expiring_soon` là 5 dòng gần hạn nhất. Trạng thái vận hành suy từ LỊCH (`services/lich_xe.py`): chuyến chưa đóng thì xe chưa rảnh, kể cả khi giờ dự kiến đã trôi qua."),
     "GET /api/vehicles": ("Đội xe: `paginated`, `page`, `page_size`, `depot_code`. Mỗi xe kèm trạng thái vận hành và loại xe.", ""),
     "POST /api/vehicles": ("Thêm/sửa xe `{id (biển số), brand, type (MÃ loại xe), weight_capacity, volume_capacity_m3, pallet_capacity, inspection_exp, insurance_date, maintenance_date, depot_code, status, image_url…}`.", "`type` phải là MÃ loại xe (vd `DEMO-VT-20FT`), không phải tên."),
     "DELETE /api/vehicles/{vid}": ("Xoá xe không còn gắn chuyến.", ""),

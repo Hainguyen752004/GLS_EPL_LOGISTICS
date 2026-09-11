@@ -4012,6 +4012,14 @@
                    không phải một bước riêng. js/khung-moi.js vẽ từ số thật. -->
               <div class="os-dong" id="os-luong-ds" role="list"></div>
               <p class="os-ghi" id="os-dong-ghi">Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất.</p>
+
+              <!-- NGUON LUC HOM NAY: xe va nguoi, khong phai don hang. Man chu truoc day chi
+                   ke ve don; cau hoi dau ngay cua nguoi dieu do lai la "hom nay co bao nhieu
+                   xe ranh". Hai dong canh bao giay to dem DUNG hai cua chan dieu phoi
+                   (VEHICLE_LEGAL_EXPIRED / DRIVER_LICENSE_INVALID) — biet luc xep xe la qua
+                   muon, vi luc do da co don can chay. So do js/khung-moi.js ghi tu
+                   GET /api/fleet/resource-summary (may chu dem san, khong keo 500 xe ve day). -->
+              <div class="os-nl" id="os-nl" hidden></div>
             </section>
           </div>
 

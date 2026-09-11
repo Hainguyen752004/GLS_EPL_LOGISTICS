@@ -149,6 +149,21 @@ def loai_xe_cua(gia_tri):
         return r
 
 
+@router.get("/api/fleet/resource-summary")
+def resource_summary(db: Session = Depends(get_db)):
+    """SỐ ĐẾM nguồn lực hôm nay: xe rảnh / đang chạy / nằm xưởng, và giấy tờ sắp chặn điều phối.
+
+    Dùng cho màn chủ. Trả về SỐ, không trả danh sách — ở đội ~500 xe, kéo hết bản ghi về
+    trình duyệt rồi đếm bằng JavaScript là ba lượt gọi nặng chỉ để lấy bốn con số.
+
+    Hai ô quan trọng nhất là `giay_to_het_han` và `bang_het_han`: chúng đếm đúng những thứ mà
+    cửa gác `VEHICLE_LEGAL_EXPIRED` / `DRIVER_LICENSE_INVALID` sẽ chặn — gồm cả trường hợp
+    CHƯA KHAI ngày, vì cửa gác coi thiếu ngày là hết hạn. Xem `services/tom_luoc_nguon_luc.py`.
+    """
+    from services.tom_luoc_nguon_luc import tom_luoc
+    return {"message": "Tom luoc nguon luc doi xe.", "data": tom_luoc(db)}
+
+
 @router.get("/api/vehicles")
 def list_vehicles(
     paginated: bool = Query(False),

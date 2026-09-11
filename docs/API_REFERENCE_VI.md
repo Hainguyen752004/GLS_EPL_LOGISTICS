@@ -1532,6 +1532,12 @@ Xoá tài xế chưa gắn chuyến.
 
 Thân yêu cầu (JSON) — các trường máy chủ đọc: `note`, `status`.
 
+### `GET /api/fleet/resource-summary`
+
+**SỐ ĐẾM nguồn lực hôm nay** cho màn chủ: xe rảnh / đang chạy / nằm xưởng / ngừng chạy, tài xế rảnh / đang chạy / nghỉ, và số xe–tài xế sắp bị CHẶN điều phối vì giấy tờ.
+
+*Ghi chú:* Trả SỐ, không trả danh sách (đội ~500 xe). `vehicles.giay_to_het_han` và `drivers.bang_het_han` đếm đúng luật hai cửa gác `VEHICLE_LEGAL_EXPIRED` / `DRIVER_LICENSE_INVALID` — GỒM CẢ trường hợp chưa khai ngày, vì cửa gác coi thiếu ngày là hết hạn, và gồm cả bằng còn hạn nhưng lệch hạng so với hồ sơ tài xế. `*_sap_het` là trong `warn_within_days` (30) ngày tới, chưa chặn. `vehicles_expiring_soon` / `drivers_expiring_soon` là 5 dòng gần hạn nhất. Trạng thái vận hành suy từ LỊCH (`services/lich_xe.py`): chuyến chưa đóng thì xe chưa rảnh, kể cả khi giờ dự kiến đã trôi qua.
+
 ### `GET /api/vehicle-maintenance-requests`
 
 Bảo dưỡng của mọi xe giao với khoảng `start..end`.
