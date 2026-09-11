@@ -35,9 +35,14 @@ function than(neo) {
 // --- 2. Phiếu gửi khách: đúng các trường của hệ thống cha, không lộ nội bộ ----
 {
   const k = than('  function phieuKhach() {');
-  ['Trọng lượng', 'Tiền tệ thanh toán', "'Giá gốc'", 'Doanh thu dự kiến từ vận chuyển dựa trên thực tế',
-    'Giá gốc sau chiết khấu', '(Có chiết khấu) Doanh thu dự kiến từ vận chuyển', 'Ngày nhập dữ liệu']
+  // Chủ dự án chốt 11/09: bỏ hai dòng "Doanh thu dự kiến từ vận chuyển" khỏi
+  // phiếu GỬI KHÁCH. Doanh thu dự kiến là con số của mình, không phải thứ khách
+  // cần đọc; chỗ đó nay ghi SỐ TIỀN CHIẾT KHẤU cho khách.
+  ['Tuyến đường', 'Loại xe', 'Trọng lượng', 'Tiền tệ thanh toán', "'Giá gốc'",
+    'Giá gốc sau chiết khấu', 'Chiết khấu cho khách', 'Ngày nhập dữ liệu']
     .forEach(t => assert.ok(k.includes(t), 'phiếu khách thiếu trường: ' + t));
+  ['Doanh thu dự kiến từ vận chuyển']
+    .forEach(t => assert.ok(!k.includes(t), 'phiếu khách KHÔNG được còn: ' + t));
   // Không có gì của nội bộ.
   ['total_cost', 'cac_dong', 'notes_internal', 'notes_ops', 'competitor_price', 'target_margin', 'q.bien', 'Giá thành']
     .forEach(t => assert.ok(!k.includes(t), 'phiếu khách KHÔNG được chứa: ' + t));

@@ -2393,7 +2393,7 @@
   function phieuKhach() {
     const q = S.q;
     const ty = tyGia(q.currency_code) || 1;
-    const tienTe = q.currency_code || 'VND';
+    const tienTe = kyHieu(q.currency_code || 'VND');
     const ck = Number(q.discount_percent || 0);
     const donGiaCuoi = Number(q.unit_price || 0) / ty;
     const cuocCuoi = Number(q.selling_price || 0) / ty;
@@ -2421,9 +2421,11 @@
         ${dong('Trọng lượng', so(Number(q.weight_kg || 0) / 1000) + ' Tấn')}
         ${dong('Tiền tệ thanh toán · ສະກຸນເງິນ', esc(tienTe))}
         ${dong('Giá gốc', tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
-        ${dong('(EPL) Doanh thu dự kiến từ vận chuyển dựa trên thực tế', tien(cuocCuoi * heSo) + ' ' + esc(tienTe))}
         ${dong('Giá gốc sau chiết khấu' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''), tien(donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
-        ${dong('(Có chiết khấu) Doanh thu dự kiến từ vận chuyển', tien(cuocCuoi) + ' ' + esc(tienTe))}
+        ${dong('Chiết khấu cho khách' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''),
+      ck > 0
+        ? '− ' + tien(donGiaCuoi * heSo - donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2])
+        : 'Không có chiết khấu')}
         ${dong('Ngày nhập dữ liệu', new Date().toLocaleDateString('vi-VN'))}
         <tr class="tong"><td>Báo giá có hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
       </tbody></table>
