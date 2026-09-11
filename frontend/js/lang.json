@@ -14378,5 +14378,965 @@
     "en": "Goods (tonnes)",
     "vi": "Hàng (tấn)",
     "la": "ສິນຄ້າ (ໂຕນ)"
+  },
+  "tu_1718": {
+    "en": "The vehicle type's standard formula could not be determined.",
+    "vi": "Chưa xác định được công thức chuẩn của loại xe.",
+    "la": "ກຳນົດສູດມາດຕະຖານຂອງປະເພດລົດບໍ່ໄດ້."
+  },
+  "tu_1719": {
+    "en": "Unit prices must be non-negative and every override needs a reason.",
+    "vi": "Đơn giá phải không âm và mỗi ghi đè cần có lý do.",
+    "la": "ລາຄາຕໍ່ໜ່ວຍຕ້ອງບໍ່ຕິດລົບ ແລະ ທຸກການຂຽນທັບຕ້ອງມີເຫດຜົນ."
+  },
+  "tu_1720": {
+    "en": "The server has not confirmed the saved list",
+    "vi": "Máy chủ chưa xác nhận danh sách đã lưu",
+    "la": "ເຊີບເວີຍັງບໍ່ໄດ້ຢືນຢັນລາຍການທີ່ບັນທຶກ"
+  },
+  "tu_1721": {
+    "en": "The vehicle's own pricing has been saved.",
+    "vi": "Đã lưu giá riêng của xe.",
+    "la": "ບັນທຶກລາຄາສະເພາະຂອງລົດແລ້ວ."
+  },
+  "tu_1722": {
+    "en": "Back to the standard formula",
+    "vi": "Về công thức chuẩn",
+    "la": "ກັບໄປສູດມາດຕະຖານ"
+  },
+  "tu_1723": {
+    "en": "EPL's cost classification code — inherited from the vehicle type formula and read by the payables system to raise vouchers",
+    "vi": "Mã phân loại chi phí của EPL — kế thừa từ công thức loại xe, hệ công nợ đọc để lập phiếu",
+    "la": "ລະຫັດຈັດປະເພດຄ່າໃຊ້ຈ່າຍຂອງ EPL — ສືບທອດຈາກສູດປະເພດລົດ, ລະບົບໜີ້ສິນອ່ານເພື່ອອອກໃບ"
+  },
+  "tu_1724": {
+    "en": "Reason for the override",
+    "vi": "Lý do ghi đè",
+    "la": "ເຫດຜົນຂຽນທັບ"
+  },
+  "tu_1725": {
+    "en": "The cost index code inherited from the vehicle type formula",
+    "vi": "Mã costindex kế thừa từ công thức loại xe",
+    "la": "ລະຫັດ costindex ສືບທອດຈາກສູດປະເພດລົດ"
+  },
+  "tu_1726": {
+    "en": "Reset to the standard price",
+    "vi": "Trả về giá chuẩn",
+    "la": "ກັບໄປລາຄາມາດຕະຖານ"
+  },
+  "tu_1727": {
+    "en": "The comparison data is not valid",
+    "vi": "Dữ liệu so sánh chưa hợp lệ",
+    "la": "ຂໍ້ມູນປຽບທຽບຍັງບໍ່ຖືກຕ້ອງ"
+  },
+  "tu_1728": {
+    "en": "No comparison is possible while the formula has an error.",
+    "vi": "Chưa thể so sánh khi công thức đang lỗi.",
+    "la": "ປຽບທຽບບໍ່ໄດ້ຂະນະສູດຍັງຜິດພາດ."
+  },
+  "tu_1729": {
+    "en": "Full table",
+    "vi": "Bảng đầy đủ",
+    "la": "ຕາຕະລາງເຕັມ"
+  },
+  "tu_1730": {
+    "en": "× kilometres",
+    "vi": "× số km",
+    "la": "× ຈຳນວນກມ"
+  },
+  "tu_1731": {
+    "en": "per kilogram of goods",
+    "vi": "mỗi kg hàng",
+    "la": "ຕໍ່ກກສິນຄ້າ"
+  },
+  "tu_1732": {
+    "en": "× kilograms",
+    "vi": "× số kg",
+    "la": "× ຈຳນວນກກ"
+  },
+  "tu_1733": {
+    "en": "per tonne of goods",
+    "vi": "mỗi tấn hàng",
+    "la": "ຕໍ່ໂຕນສິນຄ້າ"
+  },
+  "tu_1734": {
+    "en": "× tonnes",
+    "vi": "× số tấn",
+    "la": "× ຈຳນວນໂຕນ"
+  },
+  "tu_1735": {
+    "en": "/tonne",
+    "vi": "/tấn",
+    "la": "/ໂຕນ"
+  },
+  "tu_1736": {
+    "en": "× 1 trip",
+    "vi": "× 1 chuyến",
+    "la": "× 1 ຖ້ຽວ"
+  },
+  "tu_1737": {
+    "en": "/trip",
+    "vi": "/chuyến",
+    "la": "/ຖ້ຽວ"
+  },
+  "tu_1738": {
+    "en": "per delivery point",
+    "vi": "mỗi điểm giao",
+    "la": "ຕໍ່ຈຸດສົ່ງ"
+  },
+  "tu_1739": {
+    "en": "× points",
+    "vi": "× số điểm",
+    "la": "× ຈຳນວນຈຸດ"
+  },
+  "tu_1740": {
+    "en": "/point",
+    "vi": "/điểm",
+    "la": "/ຈຸດ"
+  },
+  "tu_1741": {
+    "en": "Selling price",
+    "vi": "Giá bán",
+    "la": "ລາຄາຂາຍ"
+  },
+  "tu_1742": {
+    "en": "Add",
+    "vi": "Cộng",
+    "la": "ບວກ"
+  },
+  "tu_1743": {
+    "en": "Subtract",
+    "vi": "Trừ",
+    "la": "ລົບ"
+  },
+  "tu_1744": {
+    "en": "No item yet",
+    "vi": "Chưa có khoản mục nào",
+    "la": "ຍັງບໍ່ມີລາຍການ"
+  },
+  "tu_1745": {
+    "en": "The formula has no item yet.",
+    "vi": "Công thức chưa có khoản mục nào.",
+    "la": "ສູດຍັງບໍ່ມີລາຍການ."
+  },
+  "tu_1746": {
+    "en": "Every item is 0, so the total is always 0.",
+    "vi": "Mọi khoản mục đều bằng 0 nên tổng luôn bằng 0.",
+    "la": "ທຸກລາຍການເປັນ 0 ຈຶ່ງລວມເປັນ 0 ສະເໝີ."
+  },
+  "tu_1747": {
+    "en": "The formula has no selling-price item, so no customer freight can be produced.",
+    "vi": "Công thức chưa có khoản mục nào là giá bán, nên chưa ra được cước thu khách.",
+    "la": "ສູດຍັງບໍ່ມີລາຍການລາຄາຂາຍ ຈຶ່ງຄິດຄ່າຂົນສົ່ງລູກຄ້າບໍ່ໄດ້."
+  },
+  "tu_1748": {
+    "en": "Fuel cost per kilometre",
+    "vi": "Chi phí xăng dầu /km",
+    "la": "ຄ່ານ້ຳມັນຕໍ່ກມ"
+  },
+  "tu_1749": {
+    "en": "Driver trip allowance",
+    "vi": "Phụ cấp chuyến tài xế",
+    "la": "ເບ້ຍລ້ຽງຖ້ຽວຄົນຂັບ"
+  },
+  "tu_1750": {
+    "en": "Toll / BOT fee",
+    "vi": "Phí cầu đường / BOT",
+    "la": "ຄ່າຜ່ານທາງ / BOT"
+  },
+  "tu_1751": {
+    "en": "Freight rate per kilogram",
+    "vi": "Cước phí vận chuyển /kg",
+    "la": "ຄ່າຂົນສົ່ງຕໍ່ກກ"
+  },
+  "tu_1752": {
+    "en": "The parking list has been created",
+    "vi": "Đã tạo Parking List",
+    "la": "ສ້າງລາຍການຈອດແລ້ວ"
+  },
+  "tu_1753": {
+    "en": "The package labels have been printed",
+    "vi": "Đã in tem kiện",
+    "la": "ພິມສະຫຼາກຫໍ່ແລ້ວ"
+  },
+  "tu_1754": {
+    "en": "The packing list has been printed",
+    "vi": "Đã in Packing List",
+    "la": "ພິມລາຍການຫຸ້ມຫໍ່ແລ້ວ"
+  },
+  "tu_1755": {
+    "en": "A package has been scanned into the yard",
+    "vi": "Đã quét một kiện vào bãi",
+    "la": "ສະແກນຫໍ່ໜຶ່ງເຂົ້າເດີ່ນແລ້ວ"
+  },
+  "tu_1756": {
+    "en": "A package has been scanned through the gate",
+    "vi": "Đã quét một kiện qua cổng",
+    "la": "ສະແກນຫໍ່ໜຶ່ງຜ່ານປະຕູແລ້ວ"
+  },
+  "tu_1757": {
+    "en": "A package has been loaded",
+    "vi": "Đã bốc một kiện",
+    "la": "ຂຶ້ນຫໍ່ໜຶ່ງແລ້ວ"
+  },
+  "tu_1758": {
+    "en": "Scan the QR code into the waiting yard",
+    "vi": "Quét QR vào bãi chờ",
+    "la": "ສະແກນ QR ເຂົ້າເດີ່ນລໍຖ້າ"
+  },
+  "tu_1759": {
+    "en": "Scan the QR code through the gate",
+    "vi": "Quét QR qua cổng",
+    "la": "ສະແກນ QR ຜ່ານປະຕູ"
+  },
+  "tu_1760": {
+    "en": "Scan the label of a loaded package",
+    "vi": "Quét tem kiện đã bốc",
+    "la": "ສະແກນສະຫຼາກຫໍ່ທີ່ຂຶ້ນແລ້ວ"
+  },
+  "tu_1761": {
+    "en": "The parking list has been loaded from the database.",
+    "vi": "Đã tải Parking List từ cơ sở dữ liệu.",
+    "la": "ໂຫຼດລາຍການຈອດຈາກຖານຂໍ້ມູນແລ້ວ."
+  },
+  "tu_1762": {
+    "en": "No pickup point yet",
+    "vi": "Chưa có điểm nhận",
+    "la": "ຍັງບໍ່ມີຈຸດຮັບ"
+  },
+  "tu_1763": {
+    "en": "No customer yet",
+    "vi": "Chưa có khách",
+    "la": "ຍັງບໍ່ມີລູກຄ້າ"
+  },
+  "tu_1764": {
+    "en": "Please pick a delivery order.",
+    "vi": "Vui lòng chọn DO.",
+    "la": "ກະລຸນາເລືອກໃບສັ່ງສົ່ງ."
+  },
+  "tu_1765": {
+    "en": "The packing list number must be an integer greater than 0.",
+    "vi": "Số Packing List phải là số nguyên lớn hơn 0.",
+    "la": "ເລກລາຍການຫຸ້ມຫໍ່ຕ້ອງເປັນຈຳນວນເຕັມຫຼາຍກວ່າ 0."
+  },
+  "tu_1766": {
+    "en": "Please scan a valid QR code.",
+    "vi": "Vui lòng quét QR hợp lệ.",
+    "la": "ກະລຸນາສະແກນ QR ທີ່ຖືກຕ້ອງ."
+  },
+  "tu_1767": {
+    "en": "The QR code has been recorded in the system.",
+    "vi": "Đã ghi nhận QR vào hệ thống.",
+    "la": "ບັນທຶກ QR ເຂົ້າລະບົບແລ້ວ."
+  },
+  "tu_1768": {
+    "en": "The browser is blocking the print window. Please allow pop-ups.",
+    "vi": "Trình duyệt đang chặn cửa sổ in. Hãy cho phép popup.",
+    "la": "ບຣາວເຊີກຳລັງຂັດໜ້າຕ່າງພິມ. ກະລຸນາອະນຸຍາດປັອບອັບ."
+  },
+  "tu_1769": {
+    "en": "Met",
+    "vi": "Đạt",
+    "la": "ບັນລຸ"
+  },
+  "tu_1770": {
+    "en": "On-time delivery rate",
+    "vi": "Tỉ lệ giao đúng hạn",
+    "la": "ອັດຕາການສົ່ງຕົງເວລາ"
+  },
+  "tu_1771": {
+    "en": "orders analysed",
+    "vi": "đơn được phân tích",
+    "la": "ໃບສັ່ງທີ່ວິເຄາະ"
+  },
+  "tu_1772": {
+    "en": "Delay time buckets",
+    "vi": "Nhóm thời gian trễ",
+    "la": "ກຸ່ມເວລາຊ້າ"
+  },
+  "tu_1773": {
+    "en": "Alert trend",
+    "vi": "Diễn biến cảnh báo",
+    "la": "ແນວໂນ້ມການເຕືອນ"
+  },
+  "tu_1774": {
+    "en": "To-do",
+    "vi": "Việc cần làm",
+    "la": "ວຽກທີ່ຕ້ອງເຮັດ"
+  },
+  "tu_1775": {
+    "en": "Risk by customer, route and driver",
+    "vi": "Rủi ro theo khách hàng, tuyến và tài xế",
+    "la": "ຄວາມສ່ຽງຕາມລູກຄ້າ, ເສັ້ນທາງ ແລະ ຄົນຂັບ"
+  },
+  "tu_1776": {
+    "en": "Few alerts",
+    "vi": "Ít cảnh báo",
+    "la": "ການເຕືອນໜ້ອຍ"
+  },
+  "tu_1777": {
+    "en": "Many",
+    "vi": "Nhiều",
+    "la": "ຫຼາຍ"
+  },
+  "tu_1778": {
+    "en": "There is no delay alert yet.",
+    "vi": "Chưa có cảnh báo trễ nào.",
+    "la": "ຍັງບໍ່ມີການເຕືອນຄວາມຊ້າ."
+  },
+  "tu_1779": {
+    "en": "There is no alert to build a trend from.",
+    "vi": "Chưa có cảnh báo để dựng diễn biến.",
+    "la": "ຍັງບໍ່ມີການເຕືອນເພື່ອສ້າງແນວໂນ້ມ."
+  },
+  "tu_1780": {
+    "en": "There is nothing to handle.",
+    "vi": "Không có việc nào cần xử lý.",
+    "la": "ບໍ່ມີວຽກທີ່ຕ້ອງຈັດການ."
+  },
+  "tu_1781": {
+    "en": "No data yet.",
+    "vi": "Chưa có dữ liệu.",
+    "la": "ຍັງບໍ່ມີຂໍ້ມູນ."
+  },
+  "tu_1782": {
+    "en": "There is no SLA or KPI alert in the current data.",
+    "vi": "Không có cảnh báo SLA/KPI trong dữ liệu hiện tại.",
+    "la": "ບໍ່ມີການເຕືອນ SLA/KPI ໃນຂໍ້ມູນປັດຈຸບັນ."
+  },
+  "tu_1783": {
+    "en": "Custom",
+    "vi": "Tùy chỉnh",
+    "la": "ປັບແຕ່ງ"
+  },
+  "tu_1784": {
+    "en": "Pick at least one staff member.",
+    "vi": "Chọn ít nhất một nhân sự.",
+    "la": "ເລືອກພະນັກງານຢ່າງໜ້ອຍໜຶ່ງຄົນ."
+  },
+  "tu_1785": {
+    "en": "Pick at least one day of the week.",
+    "vi": "Chọn ít nhất một ngày trong tuần.",
+    "la": "ເລືອກຢ່າງໜ້ອຍໜຶ່ງວັນໃນອາທິດ."
+  },
+  "tu_1786": {
+    "en": "Enter the start time and the end time.",
+    "vi": "Nhập giờ bắt đầu và giờ kết thúc.",
+    "la": "ປ້ອນເວລາເລີ່ມ ແລະ ເວລາສິ້ນສຸດ."
+  },
+  "tu_1787": {
+    "en": "The end time must be after the start time.",
+    "vi": "Giờ kết thúc phải sau giờ bắt đầu.",
+    "la": "ເວລາສິ້ນສຸດຕ້ອງຢູ່ຫຼັງເວລາເລີ່ມ."
+  },
+  "tu_1788": {
+    "en": "Pick the date range it applies to.",
+    "vi": "Chọn khoảng ngày áp dụng.",
+    "la": "ເລືອກຊ່ວງວັນທີ່ນຳໃຊ້."
+  },
+  "tu_1789": {
+    "en": "The end date must be after the start date.",
+    "vi": "Ngày kết thúc phải sau ngày bắt đầu.",
+    "la": "ວັນສິ້ນສຸດຕ້ອງຢູ່ຫຼັງວັນເລີ່ມ."
+  },
+  "tu_1790": {
+    "en": "No day matches: the date range does not contain the selected weekdays.",
+    "vi": "Không có ngày nào khớp: khoảng ngày áp dụng không chứa ngày trong tuần đã chọn.",
+    "la": "ບໍ່ມີວັນທີ່ກົງ: ຊ່ວງວັນທີ່ນຳໃຊ້ບໍ່ມີວັນໃນອາທິດທີ່ເລືອກ."
+  },
+  "tu_1791": {
+    "en": "Not enough information to create the shift",
+    "vi": "Chưa đủ thông tin để tạo ca",
+    "la": "ຂໍ້ມູນບໍ່ພໍທີ່ຈະສ້າງກະ"
+  },
+  "tu_1792": {
+    "en": "(overnight)",
+    "vi": "(qua đêm)",
+    "la": "(ຂ້າມຄືນ)"
+  },
+  "tu_1793": {
+    "en": "The server could not process the request.",
+    "vi": "Máy chủ chưa xử lý được yêu cầu.",
+    "la": "ເຊີບເວີປະມວນຜົນຄຳຮ້ອງບໍ່ໄດ້."
+  },
+  "tu_1794": {
+    "en": "Cannot be done:",
+    "vi": "Không thể thực hiện:",
+    "la": "ດຳເນີນການບໍ່ໄດ້:"
+  },
+  "tu_1795": {
+    "en": "The data could not be loaded",
+    "vi": "Chưa tải được dữ liệu",
+    "la": "ໂຫຼດຂໍ້ມູນບໍ່ໄດ້"
+  },
+  "tu_1796": {
+    "en": "Loading the data",
+    "vi": "Đang tải dữ liệu",
+    "la": "ກຳລັງໂຫຼດຂໍ້ມູນ"
+  },
+  "tu_1797": {
+    "en": "Revenue posted",
+    "vi": "Doanh thu đã ghi sổ",
+    "la": "ລາຍຮັບທີ່ລົງບັນຊີ"
+  },
+  "tu_1798": {
+    "en": "Approved costs",
+    "vi": "Chi phí đã duyệt",
+    "la": "ຄ່າໃຊ້ຈ່າຍທີ່ອະນຸມັດ"
+  },
+  "tu_1799": {
+    "en": "Gross profit",
+    "vi": "Lợi nhuận gộp",
+    "la": "ກຳໄລລວມ"
+  },
+  "tu_1800": {
+    "en": "Profit margin",
+    "vi": "Biên lợi nhuận",
+    "la": "ອັດຕາກຳໄລ"
+  },
+  "tu_1801": {
+    "en": "Reconciling revenue and costs from the system.",
+    "vi": "Đang đối chiếu doanh thu và chi phí từ hệ thống.",
+    "la": "ກຳລັງກວດທຽບລາຍຮັບ ແລະ ຄ່າໃຊ້ຈ່າຍຈາກລະບົບ."
+  },
+  "tu_1802": {
+    "en": "The report could not be exported.",
+    "vi": "Không thể xuất báo cáo.",
+    "la": "ສົ່ງອອກລາຍງານບໍ່ໄດ້."
+  },
+  "tu_1803": {
+    "en": "The voucher must have at least one cost item.",
+    "vi": "Phiếu phải có ít nhất một khoản chi phí.",
+    "la": "ໃບຕ້ອງມີລາຍການຄ່າໃຊ້ຈ່າຍຢ່າງໜ້ອຍໜຶ່ງ."
+  },
+  "tu_1804": {
+    "en": "The EPL cost voucher has been saved to the database.",
+    "vi": "Đã lưu phiếu chi phí EPL vào cơ sở dữ liệu.",
+    "la": "ບັນທຶກໃບຄ່າໃຊ້ຈ່າຍ EPL ເຂົ້າຖານຂໍ້ມູນແລ້ວ."
+  },
+  "tu_1805": {
+    "en": "Cost description",
+    "vi": "Nội dung chi phí",
+    "la": "ເນື້ອໃນຄ່າໃຊ້ຈ່າຍ"
+  },
+  "tu_1806": {
+    "en": "Quantity / note",
+    "vi": "Số lượng / ghi chú",
+    "la": "ຈຳນວນ / ບັນທຶກ"
+  },
+  "tu_1807": {
+    "en": "Home",
+    "vi": "Trang chủ",
+    "la": "ໜ້າຫຼັກ"
+  },
+  "tu_1808": {
+    "en": "Pick a screen from the dock or the grid, or type to jump to one.",
+    "vi": "Chọn một màn trên dock hoặc lưới, hoặc gõ để đi tới màn.",
+    "la": "ເລືອກໜ້າຈໍຈາກແຖບ ຫຼື ຕາຕະລາງ, ຫຼື ພິມເພື່ອໄປຫາໜ້າຈໍ."
+  },
+  "tu_1809": {
+    "en": "Dashboard",
+    "vi": "Bảng điều khiển",
+    "la": "ແດຊບອດ"
+  },
+  "tu_1810": {
+    "en": "Today's figures and the end-to-end flow chart of the eight function groups.",
+    "vi": "Số liệu hôm nay và sơ đồ luồng A–Z của tám nhóm chức năng.",
+    "la": "ຕົວເລກມື້ນີ້ ແລະ ແຜນຜັງຂັ້ນຕອນ A–Z ຂອງແປດກຸ່ມໜ້າທີ່."
+  },
+  "tu_1811": {
+    "en": "Pick the delivery orders to run then create a trip. Vehicles and crews are matched on the dispatch screen.",
+    "vi": "Chọn DO cần chạy rồi lập Trip. Xe và tổ lái được ghép ở màn Điều phối.",
+    "la": "ເລືອກໃບສັ່ງສົ່ງທີ່ຕ້ອງແລ່ນແລ້ວສ້າງຖ້ຽວ. ລົດ ແລະ ໜ່ວຍຂັບຈັບຄູ່ໃນໜ້າປ່ອຍລົດ."
+  },
+  "tu_1812": {
+    "en": "Transport trip: group delivery orders on the same route, set loading times and plan the return leg.",
+    "vi": "Trip vận chuyển: gộp DO cùng tuyến, đặt thời gian bốc dỡ và kế hoạch chặng về.",
+    "la": "ຖ້ຽວຂົນສົ່ງ: ລວມໃບສັ່ງສົ່ງເສັ້ນທາງດຽວກັນ, ຕັ້ງເວລາຂຶ້ນລົງສິນຄ້າ ແລະ ວາງແຜນຊ່ວງຂາກັບ."
+  },
+  "tu_1813": {
+    "en": "Assign the vehicle and crew to the trip, check the conditions then let it depart.",
+    "vi": "Gán xe và tổ lái cho Trip, kiểm điều kiện rồi cho xuất bến.",
+    "la": "ມອບໝາຍລົດ ແລະ ໜ່ວຍຂັບໃຫ້ຖ້ຽວ, ກວດເງື່ອນໄຂແລ້ວໃຫ້ອອກເດີນທາງ."
+  },
+  "tu_1814": {
+    "en": "GPS, progress of each leg, arrival milestones and incidents of the running trips.",
+    "vi": "GPS, tiến độ từng chặng, mốc đã đến nơi và sự cố của các chuyến đang chạy.",
+    "la": "GPS, ຄວາມຄືບໜ້າແຕ່ລະຊ່ວງ, ໝາຍເຫດການຮອດ ແລະ ເຫດການຂອງຖ້ຽວທີ່ກຳລັງແລ່ນ."
+  },
+  "tu_1815": {
+    "en": "Packing list and QR labels",
+    "vi": "Packing List và tem QR",
+    "la": "ລາຍການຫຸ້ມຫໍ່ ແລະ ສະຫຼາກ QR"
+  },
+  "tu_1816": {
+    "en": "Pack the goods by trip and print QR labels to scan at checkpoints.",
+    "vi": "Gói hàng theo chuyến và in tem QR để soi ở chốt.",
+    "la": "ຫຸ້ມຫໍ່ສິນຄ້າຕາມຖ້ຽວ ແລະ ພິມສະຫຼາກ QR ເພື່ອສະແກນທີ່ດ່ານ."
+  },
+  "tu_1817": {
+    "en": "Read the plate and seal photos at the checkpoint and match them with the running trip.",
+    "vi": "Đọc ảnh biển số và niêm phong tại chốt, đối chiếu với Trip đang chạy.",
+    "la": "ອ່ານຮູບປ້າຍທະບຽນ ແລະ ກາປິດຜະນຶກທີ່ດ່ານ, ທຽບກັບຖ້ຽວທີ່ກຳລັງແລ່ນ."
+  },
+  "tu_1818": {
+    "en": "a draft quotation inheriting the customer, route, goods and volume.",
+    "vi": "báo giá nháp kế thừa khách, tuyến, hàng và sản lượng.",
+    "la": "ໃບສະເໜີລາຄາຮ່າງທີ່ສືບທອດລູກຄ້າ, ເສັ້ນທາງ, ສິນຄ້າ ແລະ ປະລິມານ."
+  },
+  "tu_1819": {
+    "en": "Routes, cost formulas, vehicle types, vehicles, customers — the source that quotations and dispatch read.",
+    "vi": "Tuyến, công thức giá thành, loại xe, xe, khách hàng — nguồn mà báo giá và điều phối đọc.",
+    "la": "ເສັ້ນທາງ, ສູດຕົ້ນທຶນ, ປະເພດລົດ, ລົດ, ລູກຄ້າ — ແຫຼ່ງທີ່ໃບສະເໜີລາຄາ ແລະ ການປ່ອຍລົດອ່ານ."
+  },
+  "tu_1820": {
+    "en": "Cost, quoted freight and profit by route, vehicle and customer.",
+    "vi": "Giá thành, cước báo giá và lợi nhuận theo tuyến, xe và khách.",
+    "la": "ຕົ້ນທຶນ, ຄ່າຂົນສົ່ງທີ່ສະເໜີ ແລະ ກຳໄລຕາມເສັ້ນທາງ, ລົດ ແລະ ລູກຄ້າ."
+  },
+  "tu_1821": {
+    "en": "Each driver's licence class and validity — the dispatch gate reads it from here.",
+    "vi": "Hạng bằng và hiệu lực của từng tài xế — cửa chặn điều phối đọc từ đây.",
+    "la": "ຊັ້ນ ແລະ ອາຍຸໃບຂັບຂີ່ຂອງແຕ່ລະຄົນຂັບ — ປະຕູຂັດຂອງການປ່ອຍລົດອ່ານຈາກນີ້."
+  },
+  "tu_1822": {
+    "en": "VNĐ, LAK, USD and the reference rates used when quoting in foreign currency.",
+    "vi": "VND, LAK, USD và tỷ giá tham chiếu dùng khi báo giá bằng ngoại tệ.",
+    "la": "VNĐ, LAK, USD ແລະ ອັດຕາອ້າງອີງທີ່ໃຊ້ເມື່ອສະເໜີລາຄາເປັນເງິນຕາຕ່າງປະເທດ."
+  },
+  "tu_1823": {
+    "en": "Link cost items to the payables team's accounting accounts.",
+    "vi": "Nối khoản mục chi phí với tài khoản kế toán của bên công nợ.",
+    "la": "ເຊື່ອມລາຍການຄ່າໃຊ້ຈ່າຍກັບບັນຊີຂອງພະແນກໜີ້ສິນ."
+  },
+  "tu_1824": {
+    "en": "Driver shifts, the weekly vehicle schedule and maintenance periods — the resource pool the dispatch screen draws on to staff a trip.",
+    "vi": "Ca trực của tài xế, lịch xe theo tuần và kỳ bảo dưỡng — nguồn nhân lực mà màn Điều phối lấy để gán vào Trip.",
+    "la": "ກະຂອງຄົນຂັບ, ຕາຕະລາງລົດປະຈຳອາທິດ ແລະ ງວດບຳລຸງຮັກສາ — ແຫຼ່ງຊັບພະຍາກອນທີ່ໜ້າປ່ອຍລົດເອົາໄປມອບໝາຍໃຫ້ຖ້ຽວ."
+  },
+  "tu_1825": {
+    "en": "Vehicle types and vehicles",
+    "vi": "Loại xe và phương tiện",
+    "la": "ປະເພດລົດ ແລະ ພາຫະນະ"
+  },
+  "tu_1826": {
+    "en": "Payload, fuel norm and base cost of each vehicle type.",
+    "vi": "Tải trọng, định mức dầu và giá thành nền của từng loại xe.",
+    "la": "ນ້ຳໜັກບັນທຸກ, ມາດຕະຖານນ້ຳມັນ ແລະ ຕົ້ນທຶນພື້ນຖານຂອງແຕ່ລະປະເພດລົດ."
+  },
+  "tu_1827": {
+    "en": "The customer's details and terms — the source that freight quotations and orders read.",
+    "vi": "Thông tin và điều khoản của khách — nguồn mà báo giá cước và đơn hàng đọc.",
+    "la": "ຂໍ້ມູນ ແລະ ເງື່ອນໄຂຂອງລູກຄ້າ — ແຫຼ່ງທີ່ໃບສະເໜີລາຄາ ແລະ ໃບສັ່ງອ່ານ."
+  },
+  "tu_1828": {
+    "en": "Carrier",
+    "vi": "Nhà vận chuyển",
+    "la": "ຜູ້ຂົນສົ່ງ"
+  },
+  "tu_1829": {
+    "en": "Outsourced partners, used when the in-house fleet is not enough.",
+    "vi": "Đối tác chạy thuê ngoài, dùng khi đội xe nội bộ không đủ.",
+    "la": "ຄູ່ຮ່ວມທີ່ຈ້າງພາຍນອກ, ໃຊ້ເມື່ອຂະບວນລົດພາຍໃນບໍ່ພໍ."
+  },
+  "tu_1830": {
+    "en": "Pick delivery orders, create a trip",
+    "vi": "Chọn DO, lập Trip",
+    "la": "ເລືອກໃບສັ່ງສົ່ງ, ສ້າງຖ້ຽວ"
+  },
+  "tu_1831": {
+    "en": "Trip, return leg",
+    "vi": "Trip, chặng về",
+    "la": "ຖ້ຽວ, ຊ່ວງຂາກັບ"
+  },
+  "tu_1832": {
+    "en": "GPS, progress, incidents",
+    "vi": "GPS, tiến độ, sự cố",
+    "la": "GPS, ຄວາມຄືບໜ້າ, ເຫດການ"
+  },
+  "tu_1833": {
+    "en": "POD, settlement, closing the delivery order",
+    "vi": "POD, quyết toán, đóng DO",
+    "la": "POD, ການສະສາງ, ປິດໃບສັ່ງສົ່ງ"
+  },
+  "tu_1834": {
+    "en": "Pack the goods, print labels",
+    "vi": "Gói hàng, in tem",
+    "la": "ຫຸ້ມຫໍ່ສິນຄ້າ, ພິມສະຫຼາກ"
+  },
+  "tu_1835": {
+    "en": "Read the photos at the checkpoint",
+    "vi": "Đọc ảnh tại chốt",
+    "la": "ອ່ານຮູບທີ່ດ່ານ"
+  },
+  "tu_1836": {
+    "en": "The order to enter master data",
+    "vi": "Thứ tự khai dữ liệu gốc",
+    "la": "ລຳດັບການປ້ອນຂໍ້ມູນຫຼັກ"
+  },
+  "tu_1837": {
+    "en": "Licence class, validity",
+    "vi": "Hạng bằng, hiệu lực",
+    "la": "ຊັ້ນໃບຂັບຂີ່, ອາຍຸ"
+  },
+  "tu_1838": {
+    "en": "Item ↔ account",
+    "vi": "Khoản mục ↔ tài khoản",
+    "la": "ລາຍການ ↔ ບັນຊີ"
+  },
+  "tu_1839": {
+    "en": "Leads, opportunities, customer records",
+    "vi": "Lead, cơ hội, hồ sơ khách",
+    "la": "ລີດ, ໂອກາດ, ໂປຣໄຟລ໌ລູກຄ້າ"
+  },
+  "tu_1840": {
+    "en": "Quotations by route and vehicle type",
+    "vi": "Báo giá theo tuyến, loại xe",
+    "la": "ໃບສະເໜີລາຄາຕາມເສັ້ນທາງ, ປະເພດລົດ"
+  },
+  "tu_1841": {
+    "en": "Legs A → B → C, planned kilometres",
+    "vi": "Chặng A → B → C, km kế hoạch",
+    "la": "ຊ່ວງ A → B → C, ກມຕາມແຜນ"
+  },
+  "tu_1842": {
+    "en": "Cost per kilometre and the freight rate",
+    "vi": "Chi phí trên 1 km và giá cước",
+    "la": "ຄ່າໃຊ້ຈ່າຍຕໍ່ 1 ກມ ແລະ ຄ່າຂົນສົ່ງ"
+  },
+  "tu_1843": {
+    "en": "Payload, fuel norm",
+    "vi": "Tải trọng, định mức dầu",
+    "la": "ນ້ຳໜັກບັນທຸກ, ມາດຕະຖານນ້ຳມັນ"
+  },
+  "tu_1844": {
+    "en": "Vehicles and equipment",
+    "vi": "Xe và thiết bị",
+    "la": "ລົດ ແລະ ອຸປະກອນ"
+  },
+  "tu_1845": {
+    "en": "Inspection, maintenance, yard",
+    "vi": "Đăng kiểm, bảo dưỡng, bãi",
+    "la": "ການກວດສະພາບ, ບຳລຸງຮັກສາ, ເດີ່ນ"
+  },
+  "tu_1846": {
+    "en": "Details and terms",
+    "vi": "Thông tin và điều khoản",
+    "la": "ຂໍ້ມູນ ແລະ ເງື່ອນໄຂ"
+  },
+  "tu_1847": {
+    "en": "All 11 tabs, with the setup steps",
+    "vi": "Cả 11 thẻ, kèm bước thiết lập",
+    "la": "ທັງ 11 ແຖບ, ພ້ອມຂັ້ນຕອນຕັ້ງຄ່າ"
+  },
+  "tu_1848": {
+    "en": "The page header could not be updated for the tab:",
+    "vi": "Không cập nhật được đầu trang theo thẻ:",
+    "la": "ອັບເດດຫົວໜ້າຕາມແຖບບໍ່ໄດ້:"
+  },
+  "tu_1849": {
+    "en": "The home page could not be redrawn after the language change:",
+    "vi": "Không vẽ lại được trang chủ sau khi đổi ngôn ngữ:",
+    "la": "ແຕ້ມໜ້າຫຼັກຄືນຫຼັງປ່ຽນພາສາບໍ່ໄດ້:"
+  },
+  "tu_1850": {
+    "en": "The image is too large for the browser to remember; it applies to this session only.",
+    "vi": "Ảnh quá lớn để nhớ trong trình duyệt; chỉ áp cho lần này.",
+    "la": "ຮູບໃຫຍ່ເກີນໄປທີ່ບຣາວເຊີຈະຈື່; ໃຊ້ສະເພາະຄັ້ງນີ້."
+  },
+  "tu_1851": {
+    "en": "The page header could not be updated:",
+    "vi": "Không cập nhật được đầu trang:",
+    "la": "ອັບເດດຫົວໜ້າບໍ່ໄດ້:"
+  },
+  "tu_1852": {
+    "en": "Create a quotation",
+    "vi": "Lập báo giá",
+    "la": "ສ້າງໃບສະເໜີລາຄາ"
+  },
+  "tu_1853": {
+    "en": "Upload from the computer",
+    "vi": "Tải lên từ máy tính",
+    "la": "ອັບໂຫຼດຈາກຄອມພິວເຕີ"
+  },
+  "tu_1854": {
+    "en": "The distance must be greater than 0 and no more than 5,000 km.",
+    "vi": "Khoảng cách phải lớn hơn 0 và không quá 5.000 km.",
+    "la": "ໄລຍະທາງຕ້ອງຫຼາຍກວ່າ 0 ແລະ ບໍ່ເກີນ 5.000 ກມ."
+  },
+  "tu_1855": {
+    "en": "Please confirm and pick the manual distance source.",
+    "vi": "Vui lòng xác nhận và chọn nguồn khoảng cách thủ công.",
+    "la": "ກະລຸນາຢືນຢັນ ແລະ ເລືອກແຫຼ່ງໄລຍະທາງດ້ວຍມື."
+  },
+  "tu_1856": {
+    "en": "The origin or the destination is missing.",
+    "vi": "Thiếu điểm đi hoặc điểm đến.",
+    "la": "ຂາດຈຸດອອກ ຫຼື ຈຸດຮອດ."
+  },
+  "tu_1857": {
+    "en": "The action could not be completed. Please check the data and try again.",
+    "vi": "Không thể hoàn tất thao tác. Vui lòng kiểm tra dữ liệu và thử lại.",
+    "la": "ດຳເນີນການໃຫ້ສຳເລັດບໍ່ໄດ້. ກະລຸນາກວດຂໍ້ມູນແລ້ວລອງໃໝ່."
+  },
+  "tu_1858": {
+    "en": "The server connection was lost. Nothing was changed; please try again.",
+    "vi": "Mất kết nối máy chủ. Dữ liệu chưa được thay đổi; vui lòng thử lại.",
+    "la": "ຂາດການເຊື່ອມຕໍ່ເຊີບເວີ. ຂໍ້ມູນຍັງບໍ່ປ່ຽນ; ກະລຸນາລອງໃໝ່."
+  },
+  "tu_1859": {
+    "en": "The server rejected the session, so the data could not be loaded.",
+    "vi": "Máy chủ từ chối phiên làm việc nên chưa tải được dữ liệu.",
+    "la": "ເຊີບເວີປະຕິເສດເຊສຊັນ ຈຶ່ງໂຫຼດຂໍ້ມູນບໍ່ໄດ້."
+  },
+  "tu_1860": {
+    "en": "The API token has been saved. Reloading the page.",
+    "vi": "Đã lưu token API. Đang tải lại trang.",
+    "la": "ບັນທຶກໂທເຄນ API ແລ້ວ. ກຳລັງໂຫຼດໜ້າຄືນ."
+  },
+  "tu_1861": {
+    "en": "Demo data",
+    "vi": "Dữ liệu demo",
+    "la": "ຂໍ້ມູນສາທິດ"
+  },
+  "tu_1862": {
+    "en": "The formula has a circular reference",
+    "vi": "Công thức tham chiếu vòng tròn",
+    "la": "ສູດອ້າງອີງເປັນວົງ"
+  },
+  "tu_1863": {
+    "en": "The formula is empty or too long",
+    "vi": "Công thức trống hoặc quá dài",
+    "la": "ສູດຫວ່າງ ຫຼື ຍາວເກີນໄປ"
+  },
+  "tu_1864": {
+    "en": "The formula is too complex",
+    "vi": "Công thức quá phức tạp",
+    "la": "ສູດຊັບຊ້ອນເກີນໄປ"
+  },
+  "tu_1865": {
+    "en": "Unrecognised variable:",
+    "vi": "Không nhận ra biến:",
+    "la": "ບໍ່ຮູ້ຈັກຕົວປ່ຽນ:"
+  },
+  "tu_1866": {
+    "en": "abs needs one argument",
+    "vi": "abs cần một tham số",
+    "la": "abs ຕ້ອງການໜຶ່ງພາລາມິເຕີ"
+  },
+  "tu_1867": {
+    "en": "Only numbers, variables, + − × ÷, brackets and min/max/abs are supported",
+    "vi": "Chỉ hỗ trợ số, biến, + − × ÷, ngoặc, min/max/abs",
+    "la": "ຮອງຮັບສະເພາະຕົວເລກ, ຕົວປ່ຽນ, + − × ÷, ວົງເລັບ, min/max/abs"
+  },
+  "tu_1868": {
+    "en": "The vehicle and crew are released back to available, and the trip's delivery order returns to the dispatch queue (it is not deleted).",
+    "vi": "Xe và tổ lái sẽ được trả về sẵn sàng, và lệnh giao hàng của chuyến quay lại hàng đợi Điều phối (không bị xoá).",
+    "la": "ລົດ ແລະ ໜ່ວຍຂັບຈະກັບເປັນພ້ອມໃຊ້, ແລະ ໃບສັ່ງສົ່ງຂອງຖ້ຽວຈະກັບເຂົ້າຄິວປ່ອຍລົດ (ບໍ່ຖືກລຶບ)."
+  },
+  "tu_1869": {
+    "en": "The vehicle and crew return to available; the delivery order goes back to the dispatch queue.",
+    "vi": "Xe và tổ lái về sẵn sàng; lệnh giao hàng quay lại hàng đợi Điều phối.",
+    "la": "ລົດ ແລະ ໜ່ວຍຂັບກັບເປັນພ້ອມໃຊ້; ໃບສັ່ງສົ່ງກັບເຂົ້າຄິວປ່ອຍລົດ."
+  },
+  "tu_1870": {
+    "en": "The trip moves to COMPLETED and releases the vehicle and crew.",
+    "vi": "Chuyến sẽ chuyển sang HOÀN THÀNH và giải phóng xe cùng tổ lái.",
+    "la": "ຖ້ຽວຈະປ່ຽນເປັນສຳເລັດ ແລະ ປ່ອຍລົດພ້ອມໜ່ວຍຂັບ."
+  },
+  "tu_1871": {
+    "en": "Only after this step can the trip's actual costs be settled.",
+    "vi": "Sau bước này mới quyết toán được chi phí thực của chuyến.",
+    "la": "ຫຼັງຂັ້ນຕອນນີ້ຈຶ່ງສະສາງຄ່າໃຊ້ຈ່າຍຕົວຈິງຂອງຖ້ຽວໄດ້."
+  },
+  "tu_1872": {
+    "en": "The vehicle's return to the yard is confirmed. The trip is completed — settle the actual costs on the accounting screen.",
+    "vi": "Đã xác nhận xe về bãi. Chuyến chuyển sang hoàn thành — quyết toán chi phí thực ở màn Kế toán.",
+    "la": "ຢືນຢັນລົດກັບເຖິງເດີ່ນແລ້ວ. ຖ້ຽວປ່ຽນເປັນສຳເລັດ — ສະສາງຄ່າໃຊ້ຈ່າຍຕົວຈິງໃນໜ້າບັນຊີ."
+  },
+  "tu_1873": {
+    "en": "This is only a journey milestone. The money is NOT settled yet — a signed POD must be submitted first.",
+    "vi": "Đây chỉ là mốc hành trình. Tiền vẫn CHƯA chốt được — phải nộp POD ký nhận trước.",
+    "la": "ນີ້ເປັນພຽງໝາຍເຫດການເດີນທາງ. ເງິນຍັງບໍ່ທັນສະສາງ — ຕ້ອງຍື່ນ POD ທີ່ເຊັນແລ້ວກ່ອນ."
+  },
+  "tu_1874": {
+    "en": "A delivery order has no route from the master data. Without a distance the server cannot compute the ETA and refuses to create the trip.",
+    "vi": "Có DO chưa gán tuyến trong Dữ liệu gốc. Không có quãng đường thì máy chủ không tính được ETA và từ chối lập Trip.",
+    "la": "ມີໃບສັ່ງສົ່ງທີ່ຍັງບໍ່ໄດ້ມອບເສັ້ນທາງໃນຂໍ້ມູນຫຼັກ. ບໍ່ມີໄລຍະທາງ ເຊີບເວີຄິດ ETA ບໍ່ໄດ້ ແລະ ປະຕິເສດການສ້າງຖ້ຽວ."
+  },
+  "tu_1875": {
+    "en": "One trip can only carry delivery orders on THE SAME route — split them and create one trip each.",
+    "vi": "Một Trip chỉ chở được các DO CÙNG MỘT tuyến — hãy tách ra và tạo từng Trip một.",
+    "la": "ຖ້ຽວໜຶ່ງບັນທຸກໄດ້ສະເພາະໃບສັ່ງສົ່ງເສັ້ນທາງດຽວກັນ — ໃຫ້ແຍກອອກ ແລະ ສ້າງເທື່ອລະຖ້ຽວ."
+  },
+  "tu_1876": {
+    "en": "If a quotation or an order references the route, the system refuses and says exactly what is blocking it.",
+    "vi": "Nếu tuyến đang được báo giá hoặc đơn nào tham chiếu thì hệ thống sẽ từ chối và nói rõ vướng ở đâu.",
+    "la": "ຖ້າໃບສະເໜີລາຄາ ຫຼື ໃບສັ່ງໃດອ້າງອີງເສັ້ນທາງ, ລະບົບຈະປະຕິເສດ ແລະ ບອກແຈ້ງວ່າຕິດຢູ່ໃສ."
+  },
+  "tu_1877": {
+    "en": "Delivery orders are not created by hand. Open the quotation and record the customer's acceptance — the delivery order is generated automatically, inheriting the quotation's route and locked price.",
+    "vi": "Không tạo lệnh giao hàng bằng tay. Mở báo giá và ghi nhận khách chấp nhận — DO sẽ được sinh tự động, kế thừa tuyến và giá khoá của báo giá.",
+    "la": "ບໍ່ສ້າງໃບສັ່ງສົ່ງດ້ວຍມື. ເປີດໃບສະເໜີລາຄາແລ້ວບັນທຶກການຮັບຂອງລູກຄ້າ — ໃບສັ່ງສົ່ງຈະສ້າງອັດຕະໂນມັດ, ສືບທອດເສັ້ນທາງ ແລະ ລາຄາທີ່ລ໋ອກໄວ້."
+  },
+  "tu_1878": {
+    "en": "The system CANNOT check whether the load fits — a 30-tonne container could still be put on a 2-tonne truck.",
+    "vi": "Hệ thống sẽ KHÔNG kiểm được xe có chở vừa hay không — một container 30 tấn vẫn có thể được xếp lên xe tải 2 tấn.",
+    "la": "ລະບົບຈະກວດບໍ່ໄດ້ວ່າບັນທຸກພໍບໍ — ຕູ້ 30 ໂຕນຍັງອາດຖືກຂຶ້ນລົດບັນທຸກ 2 ໂຕນ."
+  },
+  "tu_1879": {
+    "en": "If this is an empty run, click OK to continue. Otherwise declare the goods in the transport order first.",
+    "vi": "Nếu đây là chuyến chạy rỗng thì bấm OK để tiếp tục. Nếu không, hãy khai hàng hóa vận chuyển trong Đơn hàng vận chuyển trước.",
+    "la": "ຖ້ານີ້ແມ່ນຖ້ຽວແລ່ນເປົ່າ ໃຫ້ກົດຕົກລົງເພື່ອສືບຕໍ່. ຖ້າບໍ່ແມ່ນ, ໃຫ້ແຈ້ງສິນຄ້າໃນໃບສັ່ງຂົນສົ່ງກ່ອນ."
+  },
+  "tu_1880": {
+    "en": "The vehicle is on the road — the locked price may NOT be edited during transport. Only after delivery with a signed POD can incurred items be added and the final price settled.",
+    "vi": "Xe đang trên đường — trong lúc vận chuyển KHÔNG được sửa giá đã chốt. Sau khi giao xong và có POD ký nhận thì mới thêm được khoản phát sinh và chốt giá cuối.",
+    "la": "ລົດຢູ່ເທິງເສັ້ນທາງ — ລະຫວ່າງການຂົນສົ່ງຫ້າມແກ້ລາຄາທີ່ລ໋ອກແລ້ວ. ຫຼັງສົ່ງສຳເລັດ ແລະ ມີ POD ເຊັນຮັບ ຈຶ່ງເພີ່ມລາຍການທີ່ເກີດຂຶ້ນ ແລະ ສະສາງລາຄາສຸດທ້າຍໄດ້."
+  },
+  "tu_1881": {
+    "en": "Note: each leg keeps its old kilometres. Editing a leg recomputes the total from the legs and loses this measurement.",
+    "vi": "Lưu ý: km của từng chặng vẫn giữ số cũ. Nếu sửa một chặng thì tổng sẽ tính lại theo các chặng và mất số đo này.",
+    "la": "ໝາຍເຫດ: ກມຂອງແຕ່ລະຊ່ວງຍັງເປັນເລກເກົ່າ. ຖ້າແກ້ຊ່ວງໃດ ຜົນລວມຈະຄິດຄືນຕາມຊ່ວງ ແລະ ເສຍຄ່າວັດນີ້ໄປ."
+  },
+  "tu_1882": {
+    "en": "Quotations by route and vehicle type. The customer's acceptance turns straight into a delivery order — there is no order step in between.",
+    "vi": "Báo giá theo tuyến và loại xe. Khách chấp nhận báo giá là tách thẳng thành lệnh giao hàng — không còn bước Đơn hàng ở giữa.",
+    "la": "ໃບສະເໜີລາຄາຕາມເສັ້ນທາງ ແລະ ປະເພດລົດ. ການທີ່ລູກຄ້າຮັບຈະກາຍເປັນໃບສັ່ງສົ່ງໂດຍກົງ — ບໍ່ມີຂັ້ນຕອນໃບສັ່ງຢູ່ກາງ."
+  },
+  "tu_1883": {
+    "en": "No vehicle is in the selected scope. Remove the yard or vehicle-type limit at the top of the screen,",
+    "vi": "Không có xe nào trong phạm vi đang chọn. Bỏ giới hạn bãi hoặc loại xe ở đầu màn,",
+    "la": "ບໍ່ມີລົດໃນຂອບເຂດທີ່ເລືອກ. ເອົາການຈຳກັດເດີ່ນ ຫຼື ປະເພດລົດຢູ່ຫົວໜ້າຈໍອອກ,"
+  },
+  "tu_1884": {
+    "en": "below in operations.",
+    "vi": "ở dưới vận hành.",
+    "la": "ຢູ່ດ້ານລຸ່ມໃນການດຳເນີນງານ."
+  },
+  "tu_1885": {
+    "en": "The vehicle photo could not be uploaded; please choose another image.",
+    "vi": "Không tải được ảnh xe, anh chọn ảnh khác giúp em nhé.",
+    "la": "ອັບໂຫຼດຮູບລົດບໍ່ໄດ້; ກະລຸນາເລືອກຮູບອື່ນ."
+  },
+  "tu_1886": {
+    "en": "Satellite imagery &copy; Esri",
+    "vi": "Ảnh vệ tinh &copy; Esri",
+    "la": "ພາບດາວທຽມ &copy; Esri"
+  },
+  "tu_1887": {
+    "en": "Template 1: standard container cost (20FT container — standard)",
+    "vi": "Mẫu 1: Standard Container Cost (Container 20FT - Tiêu chuẩn)",
+    "la": "ແມ່ແບບ 1: ຕົ້ນທຶນຕູ້ມາດຕະຖານ (ຕູ້ 20FT — ມາດຕະຖານ)"
+  },
+  "tu_1888": {
+    "en": "Template 2: heavy 40FT container (40FT container — heavy load)",
+    "vi": "Mẫu 2: Heavy Container 40FT (Container 40FT - Tải Nặng)",
+    "la": "ແມ່ແບບ 2: ຕູ້ 40FT ໜັກ (ຕູ້ 40FT — ບັນທຸກໜັກ)"
+  },
+  "tu_1889": {
+    "en": "Template 3: express trucking cost (10-tonne truck — express)",
+    "vi": "Mẫu 3: Express Trucking Cost (Xe Tải 10 Tấn - Chuyển Phát Nhanh)",
+    "la": "ແມ່ແບບ 3: ຕົ້ນທຶນຂົນສົ່ງດ່ວນ (ລົດບັນທຸກ 10 ໂຕນ — ດ່ວນ)"
+  },
+  "tu_1890": {
+    "en": "Template 4: reefer cold chain (refrigerated container — frozen goods)",
+    "vi": "Mẫu 4: Reefer Cold Chain (Container Lạnh - Hàng Đông Lạnh)",
+    "la": "ແມ່ແບບ 4: ຕູ້ເຢັນ (ຕູ້ແຊ່ເຢັນ — ສິນຄ້າແຊ່ແຂງ)"
+  },
+  "tu_1891": {
+    "en": "Account code — the payables team's accounting account, picked from the list their API provides",
+    "vi": "Acc code — mã tài khoản kế toán của bên công nợ, chọn từ danh mục do API bên đó cấp",
+    "la": "ລະຫັດບັນຊີ — ບັນຊີຂອງພະແນກໜີ້ສິນ, ເລືອກຈາກລາຍການທີ່ API ຂອງເຂົາໃຫ້ມາ"
+  },
+  "tu_1892": {
+    "en": "Open Shipment 360°",
+    "vi": "Mở Shipment 360°",
+    "la": "ເປີດ Shipment 360°"
+  },
+  "tu_1893": {
+    "en": "Pickup",
+    "vi": "Pickup / Lấy hàng",
+    "la": "ການຮັບສິນຄ້າ"
+  },
+  "tu_1894": {
+    "en": "Departure",
+    "vi": "Departure / Xuất phát",
+    "la": "ການອອກເດີນທາງ"
+  },
+  "tu_1895": {
+    "en": "Arrival",
+    "vi": "Arrival / Đến nơi",
+    "la": "ການຮອດ"
+  },
+  "tu_1896": {
+    "en": "Unloading",
+    "vi": "Unloading / Dỡ hàng",
+    "la": "ການລົງສິນຄ້າ"
+  },
+  "tu_1897": {
+    "en": "Delivered",
+    "vi": "Delivered / Đã giao",
+    "la": "ສົ່ງແລ້ວ"
+  },
+  "tu_1898": {
+    "en": ", timeline =",
+    "vi": ", Dòng thời gian =",
+    "la": ", ໄທມ໌ໄລນ໌ ="
+  },
+  "tu_1899": {
+    "en": "The result exceeds the limit",
+    "vi": "Kết quả vượt giới hạn",
+    "la": "ຜົນລັບເກີນຂີດຈຳກັດ"
+  },
+  "tu_1900": {
+    "en": "Delivery orders generated from a quotation →",
+    "vi": "Lệnh giao hàng sinh từ báo giá →",
+    "la": "ໃບສັ່ງສົ່ງທີ່ສ້າງຈາກໃບສະເໜີລາຄາ →"
+  },
+  "tu_1901": {
+    "en": "seal, temperature…",
+    "vi": "seal, nhiệt độ…",
+    "la": "ກາປິດຜະນຶກ, ອຸນຫະພູມ…"
+  },
+  "tu_1902": {
+    "en": "gate B, bring the release note…",
+    "vi": "cổng B, mang phiếu xuất kho…",
+    "la": "ປະຕູ B, ເອົາໃບອອກສາງມາ…"
+  },
+  "tu_1903": {
+    "en": "Copy signed on 04/09",
+    "vi": "Bản ký ngày 04/09",
+    "la": "ສະບັບເຊັນວັນທີ 04/09"
+  },
+  "tu_1904": {
+    "en": "solid loads must have a seal number recorded, and",
+    "vi": "hàng nguyên khối phải ghi số niêm phong, và",
+    "la": "ສິນຄ້າເປັນກ້ອນຕ້ອງບັນທຶກເລກກາປິດຜະນຶກ, ແລະ"
+  },
+  "tu_1905": {
+    "en": "must have a pickup time. Without a seal number, the dispatch step",
+    "vi": "phải có giờ lấy hàng. Thiếu số niêm phong thì bước Điều phối",
+    "la": "ຕ້ອງມີເວລາຮັບສິນຄ້າ. ຖ້າຂາດເລກກາປິດຜະນຶກ ຂັ້ນຕອນປ່ອຍລົດ"
+  },
+  "tu_1906": {
+    "en": "seal, and the dispatch step will not let the vehicle depart without a seal number.",
+    "vi": "niêm phong, và bước Điều phối sẽ không cho xe xuất bến khi thiếu số seal.",
+    "la": "ກາປິດຜະນຶກ, ແລະ ຂັ້ນຕອນປ່ອຍລົດຈະບໍ່ໃຫ້ລົດອອກເດີນທາງເມື່ອຂາດເລກ seal."
+  },
+  "tu_1907": {
+    "en": "or make the origin/destination names clearer (for example add the province).",
+    "vi": "hoặc sửa tên điểm đi/điểm đến cho rõ hơn (ví dụ thêm tên tỉnh).",
+    "la": "ຫຼື ແກ້ຊື່ຈຸດອອກ/ຈຸດຮອດໃຫ້ຈະແຈ້ງກວ່າ (ຕົວຢ່າງ ເພີ່ມຊື່ແຂວງ)."
+  },
+  "tu_1908": {
+    "en": "The driver photo could not be uploaded; please choose another image.",
+    "vi": "Không tải được ảnh tài xế, anh chọn ảnh khác giúp em nhé.",
+    "la": "ອັບໂຫຼດຮູບຄົນຂັບບໍ່ໄດ້; ກະລຸນາເລືອກຮູບອື່ນ."
+  },
+  "tu_1909": {
+    "en": "Gate B · Nguyen T. · 090…",
+    "vi": "Cổng B · Nguyễn T. · 090…",
+    "la": "ປະຕູ B · Nguyen T. · 090…"
   }
 }
