@@ -196,6 +196,12 @@ def _cong_thuc_theo_tien_chuc_nang(db: Session, delivery_order: DeliveryOrder):
     return _select_closeout_formula(db, delivery_order, TIEN_CHUC_NANG)
 
 
+def _trang_thai_ghi_so(db, do_id):
+    from models import SalesOrderPush
+    from services.ghi_so_kinh_doanh import tom_tat_ban_ghi
+    return tom_tat_ban_ghi(db.get(SalesOrderPush, do_id))
+
+
 def _serialize_closeout_formula(row: Optional[CostFormula]):
     if row is None:
         return {"id": "", "name": "", "currency": "VND", "components": {}, "terms": []}
@@ -974,6 +980,9 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
         "currency": currency,
         "cost_formula": formula,
         "configured_cost_lines": configured_cost_lines,
+        # GHI SỔ KINH DOANH: DO này đã đẩy sang QLSX (hệ công nợ) chưa. Đặt ngay trong gói
+        # closeout để cả màn Theo dõi và màn Hoàn tất cùng thấy, không phải gọi thêm.
+        "ghi_so_kinh_doanh": _trang_thai_ghi_so(db, do_id),
         "commercials": {
             "quoted_cost": quoted_cost,
             "quoted_cost_currency": tien_thu,           # giá thành kế hoạch lấy từ báo giá

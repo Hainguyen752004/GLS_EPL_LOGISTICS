@@ -44,6 +44,12 @@ MO_TA_API = {
     "GET /api/handover/delivery-orders/{do_id}": (
         "**API HEADER + CHI TIẾT DO**: một mã DO → khối `header` (khách, tuyến, báo giá gốc, chuyến, xe, tài xế, mốc giao, POD, tổng cước/giá thành/lợi nhuận) và khối `details` (TỪNG DÒNG thu/chi, mỗi dòng có `acc_code`).",
         "Trả 404 `DELIVERY_ORDER_NOT_FOUND` nếu không có DO; 409 `DO_NOT_COMPLETED` nếu DO chưa `delivered` (không bàn giao số chưa chốt). Số liệu đọc cùng nguồn với khối 'Hồ sơ đã hoàn tất' trên màn, nên không lệch."),
+    "POST /api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh": (
+        "**GHI SỔ KINH DOANH**: đẩy một DO đã giao sang QLSX (hệ công nợ) qua `POST /api/v1/integrations/logistics/sales-orders` để tạo đơn hàng bán một dòng và ghi công nợ ban đầu bằng Tổng bán. Body gửi đi dựng từ chính gói bàn giao: đúng ba khoá gốc `schemaVersion / header / details`.",
+        "Token QLSX nằm ở máy chủ EPL (`QLSX_ACCESS_TOKEN`, gốc `QLSX_BASE_URL`), không xuống trình duyệt. Kiểm trước khi gửi bằng Decimal: `selling_price + customer_surcharge_total = final_selling_price`, `SUM(thu) = final_selling_price`, chỉ VND/LAK/USD (THB → 422 `GHI_SO_TIEN_TE_CHUA_HO_TRO`). Idempotency-Key ổn định `logistics:{do_id}`; lần gửi lại dùng CÙNG key và CÙNG body đã lưu. Đã `synced` thì trả kết quả cũ, không gọi QLSX nữa. `?xem_truoc=1` chỉ dựng và kiểm body, không gửi. Lỗi: 503 `QLSX_TOKEN_CHUA_CAU_HINH`, 409 khi QLSX báo trùng, 422/502 kèm `code`/`message` của QLSX — kể cả khi QLSX trả HTTP 200 với thân `Success:false`."),
+    "GET /api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh": (
+        "Trạng thái ghi sổ kinh doanh của một DO: `null` nếu chưa bấm; ngược lại `status` (synced|failed|conflict), mã SO (`order_code`), phiếu bán (`retk_code`), công nợ ban đầu, số lần thử và lỗi lần cuối.",
+        "Cùng dữ liệu được nhúng vào gói `GET /api/delivery-orders/{do_id}/closeout` dưới khoá `ghi_so_kinh_doanh`, để màn Hoàn tất và màn Theo dõi không phải gọi thêm."),
 
     # ---- CRM ---------------------------------------------------------------------
     "GET /api/crm/opportunities": ("Danh sách cơ hội khách hàng (bảng Kanban).", "Lọc `stage` (new|contacted|negotiating|quoted|won|lost), `owner`, `customer_id`, `q` (tìm chữ)."),

@@ -645,6 +645,45 @@ class DeliveryOrderChargeAdjustment(Base):
     created_by = Column(String(255), nullable=False)
 
 
+class SalesOrderPush(Base):
+    """Kết quả GHI SỔ KINH DOANH một DO đã giao sang QLSX (hệ công nợ của anh Khang).
+
+    Một dòng cho một DO — đúng như hợp đồng QLSX: khoá `doId` bên đó là duy nhất, và cùng
+    DO gửi lại với key khác hay nội dung khác là 409, không tự cập nhật. Nên bên này cũng
+    chỉ giữ MỘT bản ghi mỗi DO, lưu cả body đã gửi để lần gửi lại (timeout, 503) dùng lại
+    đúng key và đúng body — tài liệu nói thẳng: "Timeout/mất mạng không chứng minh thất
+    bại: DB có thể đã commit. Retry cùng key và body, không tạo key mới."
+
+    `status`: `synced` (201 hoặc 200 replayed, có kết quả hợp lệ) · `failed` (lỗi dữ liệu
+    hoặc lỗi bên QLSX) · `conflict` (409 — đối soát, không gửi lại tự động).
+    Chỉ `synced` mới được màn hình gọi là "đã ghi sổ".
+    """
+    __tablename__ = "sales_order_pushes"
+    do_id = Column(String, ForeignKey("delivery_orders.id"), primary_key=True)
+    idempotency_key = Column(String(100), nullable=False)
+    status = Column(String(16), nullable=False, default="failed")
+    http_status = Column(Integer)
+    request_body = Column(Text, nullable=False)     # JSON đã gửi, giữ nguyên để gửi lại
+    response_body = Column(Text)                    # JSON QLSX trả, nguyên văn
+    replayed = Column(Boolean, default=False)
+    order_id = Column(Integer)
+    order_code = Column(String(64))
+    order_status = Column(String(16))
+    retk_auto_id = Column(Integer)
+    retk_code = Column(String(64))
+    item_code = Column(String(128))
+    currency = Column(String(3))
+    total_amount = Column(MONEY_TYPE)
+    initial_debt_amount = Column(MONEY_TYPE)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    pushed_by = Column(String(255))
+    first_attempt_at = Column(DateTime(timezone=True))
+    last_attempt_at = Column(DateTime(timezone=True))
+    synced_at = Column(DateTime(timezone=True))
+
+
 class DeliveryPODDocument(Base):
     __tablename__ = "delivery_pod_documents"
     __table_args__ = (

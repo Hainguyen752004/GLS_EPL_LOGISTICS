@@ -11137,6 +11137,102 @@ function khoiPODHoSo(data) {
     </section>`;
 }
 
+/**
+ * GHI SỔ KINH DOANH — đẩy DO đã giao sang QLSX (hệ công nợ của anh Khang) để tạo đơn hàng bán.
+ *
+ * Chủ dự án và anh Khang chốt (11/09/2026): sau khi DO hoàn tất, cạnh nút "Cập nhật giá thực
+ * tế / Chốt cước" có thêm nút "Ghi sổ kinh doanh". Nút gọi API CỦA MÌNH
+ * (`POST /api/handover/delivery-orders/{do}/ghi-so-kinh-doanh`), rồi máy chủ mình mới gọi
+ * sang QLSX — vì hợp đồng QLSX cấm nhúng token vào trình duyệt.
+ *
+ * Trạng thái đọc từ `data.ghi_so_kinh_doanh` trong gói closeout: `null` là chưa bấm;
+ * `da_ghi_so` là đã có SO bên đó. Đã ghi sổ thì không hiện nút bấm nữa — bên QLSX không có
+ * API sửa/xoá, bấm lại chỉ tốn một vòng mạng để nhận lại kết quả cũ.
+ */
+function nutGhiSoKinhDoanh(data) {
+  if (String(data.status || '').toLowerCase() !== 'delivered') return '';
+  const gs = data.ghi_so_kinh_doanh || null;
+  const doId = escapeCloseoutText(data.do_id);
+  if (gs && gs.da_ghi_so) {
+    return `<span class="cl-ghi-so-xong" title="Đã ghi sổ kinh doanh QLSX lúc ${escapeCloseoutText(gs.synced_at || '')}">
+        <i class="fa-solid fa-book-open"></i> Đã ghi sổ kinh doanh · ${escapeCloseoutText(gs.order_code || gs.order_id || 'SO')}
+      </span>`;
+  }
+  const loiCu = gs && gs.error_message
+    ? `<small class="cl-ghi-so-loi" title="${escapeCloseoutText(gs.error_code || '')}">Lần trước: ${escapeCloseoutText(gs.error_message)}</small>`
+    : '';
+  return `<button type="button" class="fiori-btn fiori-btn-primary" data-ghi-so
+      onclick="ghiSoKinhDoanh('${doId}', this)">
+      <i class="fa-solid fa-book"></i> Ghi sổ kinh doanh
+    </button>
+    <button type="button" class="fiori-btn fiori-btn-ghost" title="Xem đúng dữ liệu sẽ gửi sang QLSX, chưa gửi"
+      onclick="xemTruocGhiSo('${doId}', this)"><i class="fa-solid fa-eye"></i> Xem dữ liệu gửi</button>
+    ${loiCu}`;
+}
+
+function mocBanGiaoCongNo(data) {
+  const gs = data.ghi_so_kinh_doanh || null;
+  if (gs && gs.da_ghi_so) {
+    const no = gs.initial_debt_amount != null
+      ? ` · công nợ ${closeoutMoney(gs.initial_debt_amount, gs.currency || data.currency || 'VND')}` : '';
+    return `Đã ghi sổ QLSX · ${gs.order_code || gs.order_id || 'SO'}${no}`;
+  }
+  if (gs && gs.status === 'conflict') return `QLSX báo trùng (409) — cần đối soát · DO ${data.do_id}`;
+  if (gs && gs.status === 'failed') return `Chưa ghi sổ được (lần thử ${gs.attempts || 1}) · DO ${data.do_id}`;
+  return `Header + detail qua API bàn giao · chưa ghi sổ QLSX`;
+}
+
+/** Vẽ lại đúng ô hồ sơ đang mở (màn Hoàn tất hoặc màn Theo dõi) sau khi ghi sổ. */
+async function taiLaiHoSoCloseout(doId, nut) {
+  const target = nut?.closest('.cl-goc')?.parentElement;
+  if (!target) return;
+  const r = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(doId)}/closeout`, {headers: financeAuthHeaders()});
+  const d = await r.json();
+  if (r.ok) renderDeliveryOrderCloseout(d.data || d, target);
+}
+
+window.ghiSoKinhDoanh = async function (doId, nut) {
+  if (!confirm(`Ghi sổ kinh doanh cho ${doId}?
+
+Sẽ tạo đơn hàng bán và ghi công nợ bên QLSX. Bên đó không có sửa/xoá — làm một lần.`)) return;
+  const cu = nut ? nut.innerHTML : '';
+  if (nut) { nut.disabled = true; nut.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang ghi sổ…'; }
+  try {
+    const r = await fetch(`${API_BASE}/api/handover/delivery-orders/${encodeURIComponent(doId)}/ghi-so-kinh-doanh`, {
+      method: 'POST', headers: {...financeAuthHeaders(), 'Content-Type': 'application/json'}});
+    // QLSX có thể trả thân không phải JSON (proxy, 413…): đọc chữ trước, rồi mới thử JSON.
+    const chu = await r.text(); let d = null; try { d = chu ? JSON.parse(chu) : null; } catch (e) { d = null; }
+    const loi = d?.error?.message || d?.detail?.message || (typeof d?.detail === 'string' ? d.detail : '');
+    if (!r.ok) throw new Error(loi || `Máy chủ trả HTTP ${r.status}`);
+    showToast(d?.message || `Đã ghi sổ kinh doanh ${doId}.`, 'success');
+  } catch (e) {
+    showToast(e.message || 'Không ghi sổ được.', 'error');
+  } finally {
+    if (nut) { nut.disabled = false; nut.innerHTML = cu; }
+    await taiLaiHoSoCloseout(doId, nut);
+  }
+};
+
+window.xemTruocGhiSo = async function (doId, nut) {
+  const o = document.getElementById('cl-ghi-so-xem-truoc');
+  if (!o) return;
+  if (!o.hidden) { o.hidden = true; o.innerHTML = ''; return; }
+  o.hidden = false; o.innerHTML = '<div class="cl-trong">Đang dựng dữ liệu…</div>';
+  try {
+    const r = await fetch(`${API_BASE}/api/handover/delivery-orders/${encodeURIComponent(doId)}/ghi-so-kinh-doanh?xem_truoc=1`, {
+      method: 'POST', headers: {...financeAuthHeaders(), 'Content-Type': 'application/json'}});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d?.error?.message || d?.detail?.message || `HTTP ${r.status}`);
+    const t = d.data?.tom_tat || {};
+    o.innerHTML = `<div class="cl-ghi-so-dau"><b>Dữ liệu sẽ gửi QLSX</b>
+        <span>${escapeCloseoutText(t.customer_id || '')} · tuyến ${escapeCloseoutText(t.route_id || '')} · ${t.so_dong || 0} dòng (${t.so_dong_thu || 0} thu) · tổng bán <b>${closeoutMoney(t.final_selling_price, t.currency || 'VND')}</b></span>
+        <code>Idempotency-Key: ${escapeCloseoutText(d.data?.idempotency_key || '')}</code></div>
+      <pre class="cl-ghi-so-json">${escapeCloseoutText(JSON.stringify(d.data?.body || {}, null, 2))}</pre>`;
+  } catch (e) {
+    o.innerHTML = `<div class="cl-trong" style="color:#b42318">${escapeCloseoutText(e.message)}</div>`;
+  }
+};
+
 function renderDeliveryOrderCloseout(data, target) {
   // `target` tuỳ chọn: màn Theo dõi vẽ vào ô của nó; màn Hoàn tất giao hàng
   // ("Hồ sơ đã hoàn tất") truyền ô riêng — CÙNG MỘT bản vẽ, để anh Khang lấy
@@ -11175,7 +11271,7 @@ function renderDeliveryOrderCloseout(data, target) {
   const moc = [
     ["Lệnh giao hàng", `${data.do_id} · ${statusLabel(data.status) || data.status || "—"}`],
     ["Trip vận chuyển", tripId ? `${tripId} · ${statusLabel(data.trip?.status) || data.trip?.status || ""}` : "—"],
-    ["Bàn giao công nợ", `Header + detail qua API bàn giao · DO ${data.do_id}`],
+    ["Bàn giao công nợ", mocBanGiaoCongNo(data)],
     ["Xe & tài xế", [data.resource_release?.vehicle_status, data.resource_release?.driver_status]
       .filter(Boolean).join(" · ") || "—"],
   ].map(x => oHoSo(x[0], x[1])).join("");
@@ -11254,11 +11350,15 @@ function renderDeliveryOrderCloseout(data, target) {
             Đã cập nhật vào hệ thống</div>
           <div class="cl-phu">Toàn bộ thông tin dưới đây đọc lại từ cơ sở dữ liệu sau khi hoàn tất.</div>
         </div>
-        <button type="button" class="fiori-btn" data-closeout-cost-action
-          onclick="openCloseoutActualCostEditor('${escapeCloseoutText(data.do_id)}', '${escapeCloseoutText(tripId)}')">
-          <i class="fa-solid fa-file-invoice-dollar"></i> Cập nhật giá thực tế / Chốt cước
-        </button>
+        <div class="cl-nut-hang">
+          <button type="button" class="fiori-btn" data-closeout-cost-action
+            onclick="openCloseoutActualCostEditor('${escapeCloseoutText(data.do_id)}', '${escapeCloseoutText(tripId)}')">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Cập nhật giá thực tế / Chốt cước
+          </button>
+          ${nutGhiSoKinhDoanh(data)}
+        </div>
       </div>
+      <div id="cl-ghi-so-xem-truoc" class="cl-ghi-so-xem" hidden></div>
       <div class="cl-luoi cl-moc">${moc}</div>
       <div class="cl-tien-hang">${soTien}</div>
       ${khoiThongTinDOHoSo(data)}

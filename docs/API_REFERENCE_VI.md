@@ -175,6 +175,27 @@ Ví dụ rút gọn:
 
 *Ghi chú:* Trả 404 `DELIVERY_ORDER_NOT_FOUND` nếu không có DO; 409 `DO_NOT_COMPLETED` nếu DO chưa `delivered` (không bàn giao số chưa chốt). Số liệu đọc cùng nguồn với khối 'Hồ sơ đã hoàn tất' trên màn, nên không lệch.
 
+### `GET /api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh`
+
+Trạng thái ghi sổ kinh doanh của một DO: `null` nếu chưa bấm; ngược lại `status` (synced|failed|conflict), mã SO (`order_code`), phiếu bán (`retk_code`), công nợ ban đầu, số lần thử và lỗi lần cuối.
+
+| Tham số | Vị trí | Kiểu | Bắt buộc |
+|---|---|---|---|
+| `do_id` | đường dẫn | chuỗi | có |
+
+*Ghi chú:* Cùng dữ liệu được nhúng vào gói `GET /api/delivery-orders/{do_id}/closeout` dưới khoá `ghi_so_kinh_doanh`, để màn Hoàn tất và màn Theo dõi không phải gọi thêm.
+
+### `POST /api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh`
+
+**GHI SỔ KINH DOANH**: đẩy một DO đã giao sang QLSX (hệ công nợ) qua `POST /api/v1/integrations/logistics/sales-orders` để tạo đơn hàng bán một dòng và ghi công nợ ban đầu bằng Tổng bán. Body gửi đi dựng từ chính gói bàn giao: đúng ba khoá gốc `schemaVersion / header / details`.
+
+| Tham số | Vị trí | Kiểu | Bắt buộc |
+|---|---|---|---|
+| `do_id` | đường dẫn | chuỗi | có |
+| `xem_truoc` | truy vấn | bool |  |
+
+*Ghi chú:* Token QLSX nằm ở máy chủ EPL (`QLSX_ACCESS_TOKEN`, gốc `QLSX_BASE_URL`), không xuống trình duyệt. Kiểm trước khi gửi bằng Decimal: `selling_price + customer_surcharge_total = final_selling_price`, `SUM(thu) = final_selling_price`, chỉ VND/LAK/USD (THB → 422 `GHI_SO_TIEN_TE_CHUA_HO_TRO`). Idempotency-Key ổn định `logistics:{do_id}`; lần gửi lại dùng CÙNG key và CÙNG body đã lưu. Đã `synced` thì trả kết quả cũ, không gọi QLSX nữa. `?xem_truoc=1` chỉ dựng và kiểm body, không gửi. Lỗi: 503 `QLSX_TOKEN_CHUA_CAU_HINH`, 409 khi QLSX báo trùng, 422/502 kèm `code`/`message` của QLSX — kể cả khi QLSX trả HTTP 200 với thân `Success:false`.
+
 ## 2. Khách hàng và cơ hội (CRM)
 
 ### `GET /api/crm/customers`

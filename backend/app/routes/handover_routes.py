@@ -131,8 +131,10 @@ def dong_goi_ban_giao(closeout):
     return {"header": header, "details": details}
 
 
-@router.get("/api/handover/delivery-orders/{do_id}")
-def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
+def _goi_ban_giao(do_id, request, db):
+    """Gói bàn giao `{header, details}` của một DO đã hoàn tất — dùng chung cho API bàn giao
+    (anh Khang kéo) và cho bước Ghi sổ kinh doanh (mình đẩy sang QLSX). Một chỗ dựng, để hai
+    đường không bao giờ lệch nhau về con số."""
     from routes.delivery_routes import get_delivery_order_closeout
     do = db.get(DeliveryOrder, do_id)
     if do is None:
@@ -154,7 +156,64 @@ def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
     except DomainError as loi:
         raise_http(loi)
     closeout = goi.get("data", goi) if isinstance(goi, dict) else goi
-    return {"message": "Hồ sơ bàn giao của %s." % do_id, "data": dong_goi_ban_giao(closeout)}
+    return dong_goi_ban_giao(closeout)
+
+
+@router.get("/api/handover/delivery-orders/{do_id}")
+def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
+    return {"message": "Hồ sơ bàn giao của %s." % do_id, "data": _goi_ban_giao(do_id, request, db)}
+
+
+def _actor(request):
+    return str(getattr(getattr(request, "state", None), "principal", None) or "system")
+
+
+@router.get("/api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh")
+def trang_thai_ghi_so(do_id: str, request: Request, db: Session = Depends(get_db)):
+    """Trạng thái GHI SỔ KINH DOANH của một DO: đã đẩy sang QLSX chưa, mã SO, công nợ ban đầu.
+
+    `null` = chưa từng bấm. Chỉ `status = synced` mới là đã ghi sổ; `failed`/`conflict` giữ
+    lại lỗi lần cuối để màn hình nói cho người dùng biết vì sao.
+    """
+    from models import SalesOrderPush
+    from services.ghi_so_kinh_doanh import tom_tat_ban_ghi
+    return {"data": tom_tat_ban_ghi(db.get(SalesOrderPush, do_id))}
+
+
+@router.post("/api/handover/delivery-orders/{do_id}/ghi-so-kinh-doanh")
+def ghi_so_kinh_doanh(do_id: str, request: Request, xem_truoc: bool = Query(False),
+                      db: Session = Depends(get_db)):
+    """GHI SỔ KINH DOANH: đẩy DO đã giao sang QLSX tạo đơn hàng bán + ghi công nợ.
+
+    Token QLSX nằm ở máy chủ này (`QLSX_ACCESS_TOKEN`), không xuống trình duyệt — nên nút trên
+    màn hình gọi vào đây, không gọi thẳng QLSX. Body dựng từ chính gói bàn giao, kiểm đủ luật
+    hợp đồng (tiền bằng Decimal, tổng khớp chính xác, chỉ VND/LAK/USD) TRƯỚC khi gửi.
+
+    `?xem_truoc=1`: chỉ dựng và kiểm body, không gửi — để nhìn đúng thứ sẽ đi.
+    Đã `synced` rồi thì trả lại kết quả cũ, không gọi QLSX lần nữa.
+    Lần gửi lại dùng CÙNG key và CÙNG body đã lưu (hợp đồng chống trùng của QLSX).
+    """
+    from services.ghi_so_kinh_doanh import ghi_so
+    goi = _goi_ban_giao(do_id, request, db)
+    try:
+        kq = ghi_so(db, do_id, goi, _actor(request), xem_truoc=xem_truoc)
+        db.commit()
+    except DomainError as loi:
+        # Lần gửi hỏng vẫn phải LƯU (trạng thái failed + lỗi) để lần sau gửi lại đúng key/body
+        # và để màn hình nói được vì sao. Chỉ rollback khi chính việc ghi bản ghi hỏng.
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+        raise_http(loi)
+    if xem_truoc:
+        return {"message": "Body sẽ gửi QLSX cho %s (chưa gửi)." % do_id, "data": kq}
+    return {"message": ("%s đã có trong sổ kinh doanh QLSX (%s)." % (do_id, kq.get("order_code") or "SO")
+                        if kq.get("da_co_truoc") else
+                        "Đã ghi sổ kinh doanh %s → %s, công nợ %s %s."
+                        % (do_id, kq.get("order_code") or kq.get("order_id"),
+                           kq.get("initial_debt_amount"), kq.get("currency"))),
+            "data": kq}
 
 
 def _ngay(chuoi, ten):

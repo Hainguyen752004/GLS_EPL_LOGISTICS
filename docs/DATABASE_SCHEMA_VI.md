@@ -1,6 +1,6 @@
 # Lược đồ cơ sở dữ liệu — EPL Logistics
 
-Sinh từ `backend/app/models.py` ngày 2026-09-11 bằng `backend/scripts/sinh_tai_lieu.py`. Cơ sở dữ liệu: **PostgreSQL** (duy nhất). Đầu mốc nâng cấp: `052_bo_bang_di_san_items_uoms_price_lists`. Tổng 57 bảng.
+Sinh từ `backend/app/models.py` ngày 2026-09-11 bằng `backend/scripts/sinh_tai_lieu.py`. Cơ sở dữ liệu: **PostgreSQL** (duy nhất). Đầu mốc nâng cấp: `053_ghi_so_kinh_doanh_qlsx`. Tổng 58 bảng.
 
 ## Mô hình ba tầng
 
@@ -122,6 +122,12 @@ Sinh từ `backend/app/models.py` ngày 2026-09-11 bằng `backend/scripts/sinh_
 | `audit_logs` | Nhật ký kiểm toán: ai làm gì, bảng nào, bản ghi nào, lúc nào, từ IP nào. | 7 |
 | `idempotency_records` | Cache trả lời theo `Idempotency-Key` để lệnh gọi lặp không tạo hai lần. | 9 |
 | `migration_quarantine` | Bản ghi bị cách ly khi nâng cấp không chuyển được. | 7 |
+
+### Khác
+
+| Bảng | Chức năng | Số cột |
+|---|---|---|
+| `sales_order_pushes` | (chưa có mô tả) | 23 |
 
 ## Chi tiết từng bảng
 
@@ -284,7 +290,7 @@ Các khoản khách trả thêm ghi lúc hoàn tất (kèm Acc code).
 | `created_at` | DATETIME | có |  |
 | `created_by` | VARCHAR(255) | có |  |
 
-Ràng buộc: `actual_amount >= original_amount`; `original_amount >= 0`; `increase_amount = actual_amount - original_amount`; `line_no > 0`
+Ràng buộc: `line_no > 0`; `actual_amount >= original_amount`; `original_amount >= 0`; `increase_amount = actual_amount - original_amount`
 
 ### `delivery_order_closeouts` — Vận hành
 
@@ -443,7 +449,7 @@ Ca trực / ca nghỉ của tài xế; điều phối đòi ca phủ trọn th�
 | `created_by` | VARCHAR(128) | có |  |
 | `updated_by` | VARCHAR(128) | có |  |
 
-Ràng buộc: `shift_end > shift_start`; `status IN ('planned','confirmed','cancelled')`; `availability_kind IN ('work','leave','sick','off','unavailable')`; `shift_type IN ('morning','afternoon','night','office','custom')`
+Ràng buộc: `status IN ('planned','confirmed','cancelled')`; `shift_end > shift_start`; `availability_kind IN ('work','leave','sick','off','unavailable')`; `shift_type IN ('morning','afternoon','night','office','custom')`
 
 ### `drivers` — Dữ liệu gốc
 
@@ -492,7 +498,7 @@ Phiếu chi vận tải lập từ chi phí đã duyệt (số phiếu, ngày, h
 | `created_by` | VARCHAR(128) | có |  |
 | `updated_by` | VARCHAR(128) | có |  |
 
-Ràng buộc: `payment_method IN ('cash','bank_transfer','credit','other')`; `version > 0`
+Ràng buộc: `version > 0`; `payment_method IN ('cash','bank_transfer','credit','other')`
 
 ### `finance_control_config` — Dữ liệu gốc
 
@@ -552,7 +558,7 @@ Bảng CHI PHÍ PHÁT SINH của một chuyến đã hoàn tất: tiền tệ, t
 | `approved_by` | VARCHAR |  |  |
 | `reversed_by` | VARCHAR |  |  |
 
-Ràng buộc: `planned_distance_km >= 0 AND actual_distance_km >= 0`; `reversal_of_cost_id IS NULL OR (status = 'reversed' AND is_active = false AND length(trim(reversal_reason)) > 0 AND subt`; `(status = 'reversed' AND is_active = false) OR (status <> 'reversed' AND is_active = true)`; `status <> 'reversed' OR reversal_of_cost_id IS NOT NULL OR reversed_by_cost_id IS NOT NULL`; `status IN ('draft','submitted','approved','reversed')`; `reversal_of_cost_id IS NULL OR reversal_of_cost_id <> id`; `version > 0`
+Ràng buộc: `status IN ('draft','submitted','approved','reversed')`; `reversal_of_cost_id IS NULL OR reversal_of_cost_id <> id`; `version > 0`; `planned_distance_km >= 0 AND actual_distance_km >= 0`; `reversal_of_cost_id IS NULL OR (status = 'reversed' AND is_active = false AND length(trim(reversal_reason)) > 0 AND subt`; `(status = 'reversed' AND is_active = false) OR (status <> 'reversed' AND is_active = true)`; `status <> 'reversed' OR reversal_of_cost_id IS NOT NULL OR reversed_by_cost_id IS NOT NULL`
 
 ### `freight_charge_items` — Chi phí
 
@@ -583,7 +589,7 @@ Dòng chi phí: khoản mục, Acc code, kế hoạch, thực tế, phần vư�
 | `created_by` | VARCHAR | có |  |
 | `updated_by` | VARCHAR | có |  |
 
-Ràng buộc: `quantity >= 0`; `charge_type = 'discount' OR unit_price >= 0`; `charge_type IN ('fuel','toll','driver','yard','waiting','loading','unloading','carrier_base','surcharge','discount','oth`
+Ràng buộc: `charge_type = 'discount' OR unit_price >= 0`; `charge_type IN ('fuel','toll','driver','yard','waiting','loading','unloading','carrier_base','surcharge','discount','oth`; `quantity >= 0`
 
 ### `freight_cost_documents` — Chi phí
 
@@ -975,6 +981,36 @@ Tuyến đường: số km, các chặng (`segments_json`), hình đường bộ
 | `road_distance_km` | FLOAT |  |  |
 | `bot_fee` | NUMERIC(24, 6) |  |  |
 
+### `sales_order_pushes` — Khác
+
+(chưa có mô tả)
+
+| Cột | Kiểu | Bắt buộc | Khoá / tham chiếu |
+|---|---|---|---|
+| `do_id` | VARCHAR | có | PK, FK → `delivery_orders.id` |
+| `idempotency_key` | VARCHAR(100) | có |  |
+| `status` | VARCHAR(16) | có |  |
+| `http_status` | INTEGER |  |  |
+| `request_body` | TEXT | có |  |
+| `response_body` | TEXT |  |  |
+| `replayed` | BOOLEAN |  |  |
+| `order_id` | INTEGER |  |  |
+| `order_code` | VARCHAR(64) |  |  |
+| `order_status` | VARCHAR(16) |  |  |
+| `retk_auto_id` | INTEGER |  |  |
+| `retk_code` | VARCHAR(64) |  |  |
+| `item_code` | VARCHAR(128) |  |  |
+| `currency` | VARCHAR(3) |  |  |
+| `total_amount` | NUMERIC(24, 6) |  |  |
+| `initial_debt_amount` | NUMERIC(24, 6) |  |  |
+| `error_code` | VARCHAR(64) |  |  |
+| `error_message` | TEXT |  |  |
+| `attempts` | INTEGER | có |  |
+| `pushed_by` | VARCHAR(255) |  |  |
+| `first_attempt_at` | DATETIME |  |  |
+| `last_attempt_at` | DATETIME |  |  |
+| `synced_at` | DATETIME |  |  |
+
 ### `tender_offers` — TMS gốc
 
 Chào giá của nhà vận chuyển.
@@ -1107,7 +1143,7 @@ Chặng của chuyến: điểm đi/đến, km, tốc độ, dừng, người nh
 | `created_at` | DATETIME | có |  |
 | `updated_at` | DATETIME | có |  |
 
-Ràng buộc: `status IN ('planned','ready','in_transit','arrived','completed','cancelled')`; `leg_type IN ('outbound','pickup','delivery','empty_return','backhaul','warehouse_transfer')`; `distance_km >= 0 AND avg_speed_kmh > 0 AND dwell_minutes >= 0`; `sequence_no > 0`
+Ràng buộc: `leg_type IN ('outbound','pickup','delivery','empty_return','backhaul','warehouse_transfer')`; `distance_km >= 0 AND avg_speed_kmh > 0 AND dwell_minutes >= 0`; `sequence_no > 0`; `status IN ('planned','ready','in_transit','arrived','completed','cancelled')`
 
 ### `transport_trips` — Vận hành
 
@@ -1134,7 +1170,7 @@ CHUYẾN XE — cách công ty thực hiện DO: loại chuyến, xe, tài xế,
 | `created_by` | VARCHAR(128) | có |  |
 | `updated_by` | VARCHAR(128) | có |  |
 
-Ràng buộc: `version > 0`; `status IN ('draft','planned','dispatched','in_transit','completed','settled','cancelled')`; `trip_type IN ('one_way','round_trip','backhaul','multi_stop')`
+Ràng buộc: `trip_type IN ('one_way','round_trip','backhaul','multi_stop')`; `status IN ('draft','planned','dispatched','in_transit','completed','settled','cancelled')`; `version > 0`
 
 ### `trip_delivery_orders` — Vận hành
 
@@ -1189,7 +1225,7 @@ Dòng chi phí của phiếu bảo dưỡng.
 | `actual_unit_cost` | NUMERIC(24, 6) | có |  |
 | `actual_total` | NUMERIC(24, 6) | có |  |
 
-Ràng buộc: `quantity > 0`; `actual_unit_cost >= 0`; `estimated_unit_cost >= 0`
+Ràng buộc: `actual_unit_cost >= 0`; `quantity > 0`; `estimated_unit_cost >= 0`
 
 ### `vehicle_maintenance_requests` — Dữ liệu gốc
 
@@ -1226,7 +1262,7 @@ Phiếu bảo dưỡng xe: kế hoạch, thực tế, xưởng, chi phí; xe tro
 | `completed_at` | DATETIME |  |  |
 | `completed_by` | VARCHAR(128) |  |  |
 
-Ràng buộc: `status IN ('requested','approved','in_progress','completed','cancelled')`; `planned_end > planned_start`
+Ràng buộc: `planned_end > planned_start`; `status IN ('requested','approved','in_progress','completed','cancelled')`
 
 ### `vehicle_tracking` — Vận hành
 
