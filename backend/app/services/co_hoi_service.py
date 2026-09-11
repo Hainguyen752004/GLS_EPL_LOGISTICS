@@ -19,7 +19,7 @@ Không có đường "đâm ngang": cơ hội KHÔNG sinh DO, chỉ sinh báo gi
 import datetime as dt
 from decimal import Decimal
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, case
 
 from models import (AuditLog, CoHoiKhach, Customer, DeliveryOrder, Quotation, Route,
                     TransportTrip, TripDeliveryOrder)
@@ -147,7 +147,59 @@ def _bang_ten(db, ds):
     return khach, tuyen, bao_gia
 
 
-def danh_sach(db, stage=None, owner=None, customer_id=None, q=None, limit=500):
+def _loc_chung(tv, owner=None, customer_id=None, q=None, source=None, since_days=None, due=None):
+    """Bộ lọc dùng chung cho danh sách và bảng theo cột — một chỗ, không lệch nhau."""
+    if owner:
+        tv = tv.filter(CoHoiKhach.owner == owner)
+    if customer_id:
+        tv = tv.filter(CoHoiKhach.customer_id == customer_id)
+    if source:
+        tv = tv.filter(CoHoiKhach.source == str(source).strip().lower())
+    if since_days:
+        tv = tv.filter(CoHoiKhach.updated_at >= _now() - dt.timedelta(days=int(since_days)))
+    if due == "today":
+        cuoi = _now().replace(hour=23, minute=59, second=59)
+        tv = tv.filter(CoHoiKhach.next_action_at.isnot(None), CoHoiKhach.next_action_at <= cuoi)
+    elif due == "week":
+        tv = tv.filter(CoHoiKhach.next_action_at.isnot(None), CoHoiKhach.next_action_at <= _now() + dt.timedelta(days=7))
+    if q:
+        chu = "%%%s%%" % str(q).strip().lower()
+        tv = tv.filter(or_(func.lower(CoHoiKhach.id).like(chu),
+                           func.lower(CoHoiKhach.prospect_name).like(chu),
+                           func.lower(CoHoiKhach.contact_name).like(chu),
+                           func.lower(CoHoiKhach.cargo_type).like(chu),
+                           func.lower(CoHoiKhach.notes).like(chu),
+                           func.lower(CoHoiKhach.owner).like(chu)))
+    return tv
+
+
+def _sap_xep(tv, sort):
+    """`urgency`: trễ hẹn trước, rồi hẹn gần nhất, rồi mới sửa gần nhất. Cơ hội đã
+    đóng thì theo lúc đóng (updated_at) mới nhất trước."""
+    bay_gio = _now()
+    huong = sort or "urgency"
+    if huong == "urgency":
+        tre = case((((CoHoiKhach.next_action_at.isnot(None)) & (CoHoiKhach.next_action_at <= bay_gio)), 0), else_=1)
+        return tv.order_by(tre, CoHoiKhach.next_action_at.asc().nullslast(), CoHoiKhach.updated_at.desc())
+    if huong == "updated":
+        return tv.order_by(CoHoiKhach.updated_at.desc())
+    if huong == "next_action":
+        return tv.order_by(CoHoiKhach.next_action_at.asc().nullslast())
+    if huong == "customer":
+        return tv.order_by(func.coalesce(CoHoiKhach.prospect_name, CoHoiKhach.customer_id).asc())
+    if huong == "stage":
+        return tv.order_by(CoHoiKhach.stage.asc(), CoHoiKhach.updated_at.desc())
+    if huong == "owner":
+        return tv.order_by(CoHoiKhach.owner.asc().nullslast(), CoHoiKhach.updated_at.desc())
+    if huong == "volume":
+        return tv.order_by((CoHoiKhach.est_weight_kg * CoHoiKhach.est_trips_per_month).desc())
+    return tv.order_by(CoHoiKhach.updated_at.desc())
+
+
+def danh_sach(db, stage=None, owner=None, customer_id=None, q=None, limit=500,
+              page=None, page_size=50, since_days=None, source=None, due=None, sort=None):
+    """Danh sách cơ hội. Không truyền `page` thì trả MẢNG như trước (tương thích
+    với mọi chỗ đang gọi); truyền `page` thì trả {items, total, page, page_size}."""
     tv = db.query(CoHoiKhach)
     if stage:
         ds_stage = [s for s in str(stage).split(",") if s]
@@ -155,20 +207,44 @@ def danh_sach(db, stage=None, owner=None, customer_id=None, q=None, limit=500):
             tv = tv.filter(CoHoiKhach.stage.in_(GIAI_DOAN_MO))
         else:
             tv = tv.filter(CoHoiKhach.stage.in_(ds_stage))
-    if owner:
-        tv = tv.filter(CoHoiKhach.owner == owner)
-    if customer_id:
-        tv = tv.filter(CoHoiKhach.customer_id == customer_id)
-    if q:
-        chu = "%%%s%%" % str(q).strip().lower()
-        tv = tv.filter(or_(func.lower(CoHoiKhach.id).like(chu),
-                           func.lower(CoHoiKhach.prospect_name).like(chu),
-                           func.lower(CoHoiKhach.contact_name).like(chu),
-                           func.lower(CoHoiKhach.cargo_type).like(chu),
-                           func.lower(CoHoiKhach.notes).like(chu)))
-    ds = tv.order_by(CoHoiKhach.updated_at.desc()).limit(limit).all()
+    tv = _loc_chung(tv, owner=owner, customer_id=customer_id, q=q, source=source, since_days=since_days, due=due)
+    tv = _sap_xep(tv, sort)
+    if page is None:
+        ds = tv.limit(limit).all()
+        khach, tuyen, bao_gia = _bang_ten(db, ds)
+        return [serialize(o, khach.get(o.customer_id), tuyen.get(o.route_id), bao_gia.get(o.quotation_id)) for o in ds]
+    page = max(1, int(page)); page_size = max(1, min(200, int(page_size or 50)))
+    total = tv.order_by(None).count()
+    ds = tv.offset((page - 1) * page_size).limit(page_size).all()
     khach, tuyen, bao_gia = _bang_ten(db, ds)
-    return [serialize(o, khach.get(o.customer_id), tuyen.get(o.route_id), bao_gia.get(o.quotation_id)) for o in ds]
+    return {"items": [serialize(o, khach.get(o.customer_id), tuyen.get(o.route_id), bao_gia.get(o.quotation_id)) for o in ds],
+            "total": total, "page": page, "page_size": page_size}
+
+
+def bang_co_hoi(db, per_col=10, since_days=7, owner=None, q=None, source=None, due=None):
+    """Bảng Kanban theo cột: mỗi giai đoạn trả SỐ ĐẾM + sản lượng + N thẻ đầu.
+
+    Trang không tải cả trăm thẻ nữa; phần còn lại lấy thêm bằng `danh_sach`
+    theo trang. Ba cột kho (`quoted`, `won`, `lost`) mặc định chỉ 7 ngày gần
+    đây — `since_days=0` là tất cả. Số đếm ở đầu cột luôn là số THẬT của cột
+    sau bộ lọc, dù chỉ tải N thẻ.
+    """
+    per_col = max(1, min(50, int(per_col or 10)))
+    since = int(since_days or 0)
+    cot = {}
+    for stage in GIAI_DOAN:
+        tv = db.query(CoHoiKhach).filter(CoHoiKhach.stage == stage)
+        tv = _loc_chung(tv, owner=owner, q=q, source=source, due=due,
+                        since_days=(since if (since and stage in ("quoted", "won", "lost")) else None))
+        tong = tv.order_by(None).count()
+        san_luong = tv.order_by(None).with_entities(
+            func.coalesce(func.sum(CoHoiKhach.est_weight_kg * CoHoiKhach.est_trips_per_month), 0)).scalar() or 0
+        ds = _sap_xep(tv, "updated" if stage in ("won", "lost") else "urgency").limit(per_col).all()
+        khach, tuyen, bao_gia = _bang_ten(db, ds)
+        cot[stage] = {"count": int(tong), "kg_per_month": float(san_luong),
+                      "items": [serialize(o, khach.get(o.customer_id), tuyen.get(o.route_id), bao_gia.get(o.quotation_id)) for o in ds]}
+    nguoi_theo = [r[0] for r in db.query(CoHoiKhach.owner).filter(CoHoiKhach.owner.isnot(None)).distinct().order_by(CoHoiKhach.owner).all()]
+    return {"columns": cot, "per_col": per_col, "since_days": since, "owners": nguoi_theo}
 
 
 def chi_tiet(db, ma):

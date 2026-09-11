@@ -36,8 +36,15 @@
   const KEO_DUOC = { new: ['contacted', 'negotiating', 'ket-qua'], contacted: ['new', 'negotiating', 'ket-qua'],
     negotiating: ['contacted', 'ket-qua'], quoted: ['ket-qua'], lost: ['new'], won: [] };
 
-  const S = { che: 'board', ds: [], kpi: null, khach: [], tuyen: [], dsKhach: [], hoSo: null,
-    loc: { q: '', owner: '', kpi: '' }, daDung: false, dangSua: null };
+  // bang: bảng theo cột từ máy chủ (mỗi cột N thẻ đầu + số đếm thật). ds: mọi thẻ đã tải
+  // (để hộp thoại, kéo thả, lập báo giá tra được). since: số ngày cho hai cột kho (0 = tất cả).
+  // trang: chế độ Danh sách phân trang. THE_MOI_COT: thẻ tải mỗi lần cho một cột.
+  const THE_MOI_COT = 10;
+  const S = { che: 'board', ds: [], bang: null, kpi: null, khach: [], tuyen: [], dsKhach: [], hoSo: null,
+    loc: { q: '', owner: '', kpi: '', nguon: '', hen: false }, since: 7, tabKetQua: 'won',
+    trang: { items: [], total: 0, page: 1, size: 50, sort: 'urgency', stage: '' },
+    daDung: false, dangSua: null };
+  try { const c = localStorage.getItem('chv1_che'); if (c === 'bang') S.che = 'bang'; } catch (e) { /* bỏ qua */ }
 
   /* ------------------------------------------------------------ tiện ích -- */
   function esc(s) {
@@ -90,7 +97,8 @@
         </div>
         <div class="acts">
           <div class="seg" id="chv1-che">
-            <button type="button" class="on" data-che="board">Bảng cơ hội</button>
+            <button type="button" class="on" data-che="board" title="Kanban theo giai đoạn">Bảng cơ hội</button>
+            <button type="button" data-che="bang" title="Danh sách phân trang, lọc và sắp xếp — cho hàng trăm cơ hội">Danh sách</button>
             <button type="button" data-che="khach">Khách hàng</button>
           </div>
           <button type="button" class="btn" id="chv1-lam-moi" title="Tải lại">↻</button>
@@ -101,9 +109,12 @@
       <div class="tools" id="chv1-tools">
         <input id="chv1-q" placeholder="Tìm khách, liên hệ, loại hàng, ghi chú…">
         <select id="chv1-owner"><option value="">Người theo: tất cả</option></select>
+        <select id="chv1-nguon"><option value="">Nguồn: tất cả</option>${Object.keys(NGUON).map(m => `<option value="${m}">${esc(NGUON[m])}</option>`).join('')}</select>
+        <label class="chk" id="chv1-hen-lbl"><input type="checkbox" id="chv1-hen"> Có hẹn tuần này</label>
         <span class="cnt" id="chv1-cnt"></span>
       </div>
       <div id="chv1-board" class="board"></div>
+      <div id="chv1-bang" class="bang ch-hide"></div>
       <div id="chv1-khach" class="kh ch-hide">
         <div class="tbl-wrap"><table class="tbl" id="chv1-bang-khach"></table></div>
         <div class="prof" id="chv1-prof"><div class="rong">Chọn một khách hàng để xem hồ sơ.</div></div>
@@ -115,19 +126,29 @@
     });
     el('chv1-them').addEventListener('click', () => moHopThoai(null));
     el('chv1-lam-moi').addEventListener('click', () => nap(true));
-    el('chv1-q').addEventListener('input', () => { S.loc.q = el('chv1-q').value.trim(); veBoard(); veBangKhach(); });
-    el('chv1-owner').addEventListener('change', () => { S.loc.owner = el('chv1-owner').value; veBoard(); });
+    // Lọc và tìm chạy ở MÁY CHỦ (bảng chỉ tải N thẻ mỗi cột, lọc phía trình duyệt sẽ sai số).
+    let hoanTim = null;
+    el('chv1-q').addEventListener('input', () => {
+      S.loc.q = el('chv1-q').value.trim(); veBangKhach();
+      clearTimeout(hoanTim); hoanTim = setTimeout(() => napTheoLoc(), 320);
+    });
+    el('chv1-owner').addEventListener('change', () => { S.loc.owner = el('chv1-owner').value; napTheoLoc(); });
+    el('chv1-nguon').addEventListener('change', () => { S.loc.nguon = el('chv1-nguon').value; napTheoLoc(); });
+    el('chv1-hen').addEventListener('change', () => { S.loc.hen = el('chv1-hen').checked; napTheoLoc(); });
     return true;
   }
 
   function doiChe(che) {
     S.che = che;
+    try { localStorage.setItem('chv1_che', che); } catch (e) { /* bỏ qua */ }
     el('chv1-che').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.che === che));
     el('chv1-board').classList.toggle('ch-hide', che !== 'board');
+    el('chv1-bang').classList.toggle('ch-hide', che !== 'bang');
     el('chv1-khach').classList.toggle('ch-hide', che !== 'khach');
-    el('chv1-owner').classList.toggle('ch-hide', che !== 'board');
-    el('chv1-q').placeholder = che === 'board' ? 'Tìm khách, liên hệ, loại hàng, ghi chú…' : 'Tìm khách hàng…';
+    ['chv1-owner', 'chv1-nguon', 'chv1-hen-lbl'].forEach(id => el(id).classList.toggle('ch-hide', che === 'khach'));
+    el('chv1-q').placeholder = che === 'khach' ? 'Tìm khách hàng…' : 'Tìm khách, liên hệ, loại hàng, ghi chú…';
     if (che === 'khach' && !S.dsKhach.length) napKhach();
+    if (che === 'bang') napTrang(1);
   }
 
   /* ----------------------------------------------------------------- nạp -- */
@@ -138,14 +159,42 @@
     S.khach = mang(ra[0]); S.tuyen = mang(ra[1]);
   }
 
+  /** Tham số lọc dùng chung cho bảng theo cột và danh sách — một nguồn, không lệch. */
+  function thamSoLoc() {
+    const p = new URLSearchParams();
+    if (S.loc.owner) p.set('owner', S.loc.owner);
+    if (S.loc.nguon) p.set('source', S.loc.nguon);
+    if (S.loc.q) p.set('q', S.loc.q);
+    if (S.loc.hen) p.set('due', 'week');
+    if (S.loc.kpi === 'due') p.set('due', 'today');
+    return p;
+  }
+  function gopDs(items) {
+    (items || []).forEach(x => { const i = S.ds.findIndex(y => y.id === x.id); if (i >= 0) S.ds[i] = x; else S.ds.push(x); });
+  }
+  /** Đổi bộ lọc: tải lại bảng (và trang danh sách nếu đang ở chế độ đó), không đụng KPI. */
+  async function napTheoLoc() {
+    try {
+      const p = thamSoLoc(); p.set('per_col', THE_MOI_COT); p.set('since_days', S.since);
+      S.bang = await api('/api/crm/opportunities/board?' + p.toString());
+      S.ds = []; Object.values(S.bang.columns).forEach(c => gopDs(c.items));
+      veOwner(); veBoard();
+      if (S.che === 'bang') napTrang(1);
+    } catch (loi) { thongBao('Không tải được bảng cơ hội: ' + loi.message, true); }
+  }
+
   async function nap(baoXong, lanThu) {
     if (!dungKhung()) return;
     try {
       await napDuLieuGoc();
-      const [ds, kpi] = await Promise.all([api('/api/crm/opportunities'), api('/api/crm/opportunities/summary')]);
-      S.ds = Array.isArray(ds) ? ds : []; S.kpi = kpi || null;
+      const p = thamSoLoc(); p.set('per_col', THE_MOI_COT); p.set('since_days', S.since);
+      const [bang, kpi] = await Promise.all([api('/api/crm/opportunities/board?' + p.toString()), api('/api/crm/opportunities/summary')]);
+      S.bang = bang; S.kpi = kpi || null;
+      S.ds = []; Object.values(S.bang.columns).forEach(c => gopDs(c.items));
       veKpi(); veOwner(); veBoard();
       if (S.che === 'khach') await napKhach();
+      if (S.che === 'bang') await napTrang(S.trang.page);
+      doiChe(S.che);
       if (baoXong) thongBao('Đã tải lại.');
     } catch (loi) {
       // Máy chủ đang nạp lại (uvicorn --reload) thì lời gọi đầu hay bị ngắt: thử
@@ -160,6 +209,34 @@
       const b = el('chv1-thu-lai'); if (b) b.onclick = () => nap(true);
       thongBao('Không tải được cơ hội: ' + loi.message, true);
     }
+  }
+
+  /** Tải thêm THE_MOI_COT thẻ cho một cột (trang kế tiếp theo cùng thứ tự với máy chủ). */
+  async function xemThem(stage) {
+    const c = S.bang && S.bang.columns[stage]; if (!c) return;
+    const daCo = c.items.length;
+    const p = thamSoLoc(); p.set('stage', stage); p.set('page', String(Math.floor(daCo / THE_MOI_COT) + 1)); p.set('page_size', String(THE_MOI_COT));
+    p.set('sort', ['won', 'lost'].includes(stage) ? 'updated' : 'urgency');
+    if (S.since && ['quoted', 'won', 'lost'].includes(stage)) p.set('since_days', String(S.since));
+    try {
+      const kq = await api('/api/crm/opportunities?' + p.toString());
+      const moi = (kq.items || []).filter(x => !c.items.some(y => y.id === x.id));
+      c.items = c.items.concat(moi); gopDs(moi); veBoard();
+    } catch (loi) { thongBao('Không tải thêm được: ' + loi.message, true); }
+  }
+
+  /** Chế độ Danh sách: một trang từ máy chủ, sắp xếp và lọc ở máy chủ. */
+  async function napTrang(page) {
+    const t = S.trang; t.page = Math.max(1, page || 1);
+    const p = thamSoLoc(); p.set('page', String(t.page)); p.set('page_size', String(t.size)); p.set('sort', t.sort);
+    if (t.stage) p.set('stage', t.stage);
+    if (S.loc.kpi === 'quoted') p.set('stage', 'quoted');
+    if (S.loc.kpi === 'won') p.set('stage', 'won');
+    el('chv1-bang').innerHTML = '<div class="rong">Đang tải…</div>';
+    try {
+      const kq = await api('/api/crm/opportunities?' + p.toString());
+      t.items = kq.items || []; t.total = Number(kq.total) || 0; gopDs(t.items); veBang();
+    } catch (loi) { el('chv1-bang').innerHTML = `<div class="rong">Không tải được danh sách: ${esc(loi.message)}</div>`; }
   }
 
   async function napKhach() {
@@ -182,50 +259,57 @@
     el('chv1-kpis').innerHTML = the.map(x => `<button type="button" class="kpi ${x[4]} ${S.loc.kpi === x[0] ? 'on' : ''}" data-k="${x[0]}">
       <span>${esc(x[1])}</span><b>${esc(x[2])}</b><small>${esc(x[3])}</small></button>`).join('');
     el('chv1-kpis').querySelectorAll('.kpi').forEach(b => b.addEventListener('click', () => {
-      S.loc.kpi = S.loc.kpi === b.dataset.k ? '' : b.dataset.k; veKpi(); doiChe('board'); veBoard();
+      S.loc.kpi = S.loc.kpi === b.dataset.k ? '' : b.dataset.k; veKpi();
+      if (S.loc.kpi === 'quoted' || S.loc.kpi === 'won') { S.trang.stage = S.loc.kpi; doiChe('bang'); } else { S.trang.stage = ''; if (S.che === 'khach') doiChe('board'); napTheoLoc(); }
     }));
   }
 
   function veOwner() {
     const o = el('chv1-owner'); const cu = o.value;
-    const ds = [...new Set(S.ds.map(x => x.owner).filter(Boolean))].sort();
+    const ds = (S.bang && S.bang.owners) || [...new Set(S.ds.map(x => x.owner).filter(Boolean))].sort();
     o.innerHTML = '<option value="">Người theo: tất cả</option>' + ds.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
-    o.value = ds.includes(cu) ? cu : '';
-  }
-
-  /* ------------------------------------------------------------- board -- */
-  function locDs() {
-    const q = S.loc.q.toLowerCase(); const bayGio = Date.now();
-    return S.ds.filter(x => {
-      if (S.loc.owner && x.owner !== S.loc.owner) return false;
-      if (q && ![x.id, x.customer_name, x.contact_name, x.cargo_type, x.notes, x.route_name].some(v => String(v || '').toLowerCase().includes(q))) return false;
-      if (S.loc.kpi === 'due') return ['new', 'contacted', 'negotiating', 'quoted'].includes(x.stage) && x.next_action_at && new Date(x.next_action_at).getTime() <= bayGio;
-      if (S.loc.kpi === 'quoted') return x.stage === 'quoted';
-      if (S.loc.kpi === 'won') return x.stage === 'won';
-      return true;
-    });
+    o.value = ds.includes(cu) ? cu : (ds.includes(S.loc.owner) ? S.loc.owner : '');
   }
 
   function cotCua(stage) { return (stage === 'won' || stage === 'lost') ? 'ket-qua' : stage; }
 
+  /* ------------------------------------------------------------- board -- */
+  const CHIP_SINCE = [[7, '7 ngày'], [30, '30 ngày'], [0, 'Tất cả']];
+
   function veBoard() {
-    const ds = locDs();
-    el('chv1-cnt').textContent = ds.length + ' cơ hội' + (ds.length !== S.ds.length ? ' (đang lọc, tổng ' + S.ds.length + ')' : '');
+    if (!S.bang) return;
+    const C = S.bang.columns;
+    const tong = Object.values(C).reduce((t, c) => t + c.count, 0);
+    el('chv1-cnt').textContent = tong + ' cơ hội' + (S.loc.q || S.loc.owner || S.loc.nguon || S.loc.hen ? ' (đang lọc)' : '');
     el('chv1-board').innerHTML = GIAI_DOAN.map(([ma, ten, goi]) => {
-      const trong = ds.filter(x => cotCua(x.stage) === ma);
-      const kg = trong.reduce((t, x) => t + Number(x.est_weight_kg || 0) * Number(x.est_trips_per_month || 0), 0);
+      const kho = ma === 'quoted' || ma === 'ket-qua';
+      let cot, items, dem, kg, tabs = '';
+      if (ma === 'ket-qua') {
+        const w = C.won, l = C.lost;
+        // Cột Kết quả tách hai tab Thắng / Mất, tab đang xem chọn theo S.tabKetQua.
+        if (S.tabKetQua === 'won' && !w.count && l.count) S.tabKetQua = 'lost';
+        cot = C[S.tabKetQua]; items = cot.items; dem = w.count + l.count; kg = w.kg_per_month;
+        tabs = `<div class="seg mini" data-tabs="ket-qua"><button type="button" class="${S.tabKetQua === 'won' ? 'on' : ''}" data-tab="won">Thắng <em>${w.count}</em></button><button type="button" class="${S.tabKetQua === 'lost' ? 'on' : ''}" data-tab="lost">Mất <em>${l.count}</em></button></div>`;
+      } else { cot = C[ma]; items = cot.items; dem = cot.count; kg = cot.kg_per_month; }
+      const conLai = (ma === 'ket-qua' ? cot.count : dem) - items.length;
+      const chips = kho ? `<div class="since">${CHIP_SINCE.map(([n, t]) => `<button type="button" class="${S.since === n ? 'on' : ''}" data-since="${n}">${t}</button>`).join('')}</div>` : '';
+      const rong = items.length ? '' : `<div class="rong">${ma === 'new' ? 'Chưa có cơ hội nào — bấm “+ Cơ hội”.' : kho && S.since ? `Không có gì trong ${S.since} ngày gần đây` : 'Kéo thẻ vào đây'}</div>`;
       return `<div class="col" data-col="${ma}" title="${esc(goi)}">
-        <h3><span>${esc(ten)} <span class="n">${trong.length}</span></span>${kg ? `<span class="kg">${esc(tan(kg))}/th</span>` : ''}</h3>
-        <div class="cards">${trong.length ? trong.map(veThe).join('') : `<div class="rong">${ma === 'new' ? 'Chưa có cơ hội nào — bấm “+ Cơ hội”.' : 'Kéo thẻ vào đây'}</div>`}</div>
+        <h3><span>${esc(ten)} <span class="n">${dem}</span></span>${kg ? `<span class="kg">${esc(tan(kg))}/th</span>` : ''}</h3>
+        ${tabs}${chips}
+        <div class="cards">${items.map(veThe).join('')}${rong}</div>
+        ${conLai > 0 ? `<button type="button" class="them" data-them="${S.tabKetQua && ma === 'ket-qua' ? S.tabKetQua : ma}">Xem thêm ${Math.min(conLai, THE_MOI_COT)} <small>· còn ${conLai}</small></button>` : ''}
       </div>`;
     }).join('');
     noiKeoTha();
-    el('chv1-board').querySelectorAll('.card').forEach(c => {
+    const board = el('chv1-board');
+    board.querySelectorAll('.card').forEach(c => {
       c.addEventListener('click', ev => { if (ev.target.closest('button')) return; moHopThoai(c.dataset.id); });
     });
-    el('chv1-board').querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', ev => {
-      ev.stopPropagation(); hanhDong(b.dataset.act, b.dataset.id);
-    }));
+    board.querySelectorAll('button[data-act]').forEach(b => b.addEventListener('click', ev => { ev.stopPropagation(); hanhDong(b.dataset.act, b.dataset.id); }));
+    board.querySelectorAll('button[data-them]').forEach(b => b.addEventListener('click', () => { b.disabled = true; b.textContent = 'Đang tải…'; xemThem(b.dataset.them); }));
+    board.querySelectorAll('button[data-since]').forEach(b => b.addEventListener('click', () => { S.since = Number(b.dataset.since); napTheoLoc(); }));
+    board.querySelectorAll('button[data-tab]').forEach(b => b.addEventListener('click', () => { S.tabKetQua = b.dataset.tab; veBoard(); }));
   }
 
   function veThe(x) {
@@ -238,25 +322,58 @@
     if (x.stage === 'quoted' && x.quotation_id) nut.push(`<button type="button" class="q" data-act="mo-bao-gia" data-id="${esc(x.id)}">Mở ${esc(x.quotation_id)}</button>`);
     if (x.stage === 'won' && x.quotation_id) nut.push(`<button type="button" data-act="mo-bao-gia" data-id="${esc(x.id)}">Xem báo giá</button>`);
     if (x.stage === 'lost') nut.push(`<button type="button" data-act="mo-lai" data-id="${esc(x.id)}">Mở lại</button>`);
+    // Một dòng meta gọn: sản lượng · hẹn · trạng thái đặc thù. Không lặp chip.
+    const meta = [];
+    if (x.est_weight_kg || x.est_trips_per_month) meta.push(`<span>${esc(tan(x.est_weight_kg))}${x.est_trips_per_month ? ' · ' + esc(x.est_trips_per_month) + ' ch/th' : ''}</span>`);
+    if (x.expected_price) meta.push(`<span title="Giá khách mong muốn">mong ${esc(tien(x.expected_price))}</span>`);
+    if (hen && !['won', 'lost'].includes(x.stage)) meta.push(`<span class="${treHen ? 'red' : 'blue'}" title="Hẹn liên hệ lại">⏰ ${esc(ngayGio(x.next_action_at))}</span>`);
+    if (x.stage === 'quoted') meta.push(x.quotation_expired ? '<span class="red" title="Báo giá đã quá ngày hiệu lực">Báo giá hết hạn</span>' : '<span class="violet">chờ khách</span>');
+    if (x.stage === 'won') meta.push('<span class="green">Khách đã chấp nhận</span>');
+    if (x.stage === 'lost') meta.push(`<span class="red" title="${esc(x.lost_reason || '')}">Mất · ${esc((x.lost_reason || '').slice(0, 28))}</span>`);
     return `<div class="card s-${esc(x.stage)}" draggable="${KEO_DUOC[x.stage] && KEO_DUOC[x.stage].length ? 'true' : 'false'}" data-id="${esc(x.id)}" data-stage="${esc(x.stage)}">
       <div class="t"><b>${esc(x.customer_name || '—')}</b><span class="id">${esc(x.id)}</span></div>
       <div class="rt">${tuyen}${x.cargo_type ? ' · ' + esc(x.cargo_type) : ''}</div>
-      <div class="meta">
-        ${x.est_weight_kg ? `<span class="chip">${esc(tan(x.est_weight_kg))}</span>` : ''}
-        ${x.est_trips_per_month ? `<span class="chip">${esc(x.est_trips_per_month)} chuyến/th</span>` : ''}
-        ${x.expected_price ? `<span class="chip">mong ${esc(tien(x.expected_price))}</span>` : ''}
-        ${x.stage === 'won' ? '<span class="chip green">Khách đã chấp nhận</span>' : ''}
-        ${x.stage === 'lost' ? `<span class="chip red" title="${esc(x.lost_reason || '')}">Mất · ${esc((x.lost_reason || '').slice(0, 28))}</span>` : ''}
-        ${x.stage === 'quoted' ? (x.quotation_expired
-          ? '<span class="chip red" title="Báo giá đã quá ngày hiệu lực. Gia hạn ở màn Báo giá, hoặc kéo thẻ vào Kết quả để đánh mất.">Báo giá hết hạn</span>'
-          : '<span class="chip violet">chờ khách</span>') : ''}
-        ${hen && !['won', 'lost'].includes(x.stage) ? `<span class="chip ${treHen ? 'red' : 'blue'}" title="Hẹn liên hệ lại">⏰ ${esc(ngayGio(x.next_action_at))}</span>` : ''}
-      </div>
+      <div class="meta1">${meta.join('<i>·</i>')}</div>
       <div class="ft">
         <span class="av" title="${esc(x.owner || '')}">${esc(chuCai(x.owner))}</span>
         <div class="acts">${nut.join('')}</div>
       </div>
     </div>`;
+  }
+
+  /* ------------------------------------------------------ chế độ Danh sách -- */
+  const COT_BANG = [['customer', 'Khách hàng'], ['stage', 'Giai đoạn'], ['volume', 'Sản lượng'], ['owner', 'Người theo'], ['next_action', 'Hẹn liên hệ'], ['updated', 'Cập nhật']];
+  function veBang() {
+    const t = S.trang, tongTrang = Math.max(1, Math.ceil(t.total / t.size));
+    el('chv1-cnt').textContent = t.total + ' cơ hội' + (S.loc.q || S.loc.owner || S.loc.nguon || S.loc.hen || t.stage ? ' (đang lọc)' : '');
+    const th = (khoa, ten) => `<th><button type="button" data-sort="${khoa}" class="${t.sort === khoa ? 'on' : ''}">${ten}${t.sort === khoa ? ' ▾' : ''}</button></th>`;
+    const bayGio = Date.now();
+    el('chv1-bang').innerHTML = `
+      <div class="bang-tools">
+        <select id="chv1-bang-stage"><option value="">Giai đoạn: tất cả</option>${GIAI_DOAN.filter(g => g[0] !== 'ket-qua').map(g => `<option value="${g[0]}" ${t.stage === g[0] ? 'selected' : ''}>${esc(g[1])}</option>`).join('')}<option value="won" ${t.stage === 'won' ? 'selected' : ''}>Đã chốt</option><option value="lost" ${t.stage === 'lost' ? 'selected' : ''}>Đã mất</option></select>
+        <span class="cnt">Trang ${t.page}/${tongTrang} · ${t.size} dòng/trang</span>
+        <div class="pager"><button type="button" data-page="${t.page - 1}" ${t.page <= 1 ? 'disabled' : ''}>‹ Trước</button><button type="button" data-page="${t.page + 1}" ${t.page >= tongTrang ? 'disabled' : ''}>Sau ›</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl bang-tbl"><thead><tr>${th('customer', 'Khách hàng')}<th>Tuyến · hàng</th>${th('stage', 'Giai đoạn')}${th('volume', 'Sản lượng')}${th('owner', 'Người theo')}${th('next_action', 'Hẹn liên hệ')}<th>Báo giá</th>${th('updated', 'Cập nhật')}</tr></thead>
+      <tbody>${t.items.length ? t.items.map(x => {
+        const hen = x.next_action_at ? new Date(x.next_action_at).getTime() : null;
+        const tre = hen && hen <= bayGio && !['won', 'lost'].includes(x.stage);
+        return `<tr data-id="${esc(x.id)}">
+          <td><b>${esc(x.customer_name || '—')}</b><span class="sub">${esc(x.id)}${x.contact_name ? ' · ' + esc(x.contact_name) : ''}</span></td>
+          <td>${esc(x.route_name || [x.origin_text, x.destination_text].filter(Boolean).join(' → ') || '—')}<span class="sub">${esc(x.cargo_type || '')}</span></td>
+          <td><span class="chip s-${esc(x.stage)}">${esc(TEN_GD[x.stage] || x.stage)}</span></td>
+          <td class="r">${esc(tan(x.est_weight_kg))}<span class="sub">${x.est_trips_per_month ? esc(x.est_trips_per_month) + ' chuyến/th' : ''}</span></td>
+          <td>${esc(x.owner || '—')}</td>
+          <td class="${tre ? 'tre' : ''}">${hen ? esc(ngayGio(x.next_action_at)) : '—'}</td>
+          <td>${x.quotation_id ? `<a data-bg="${esc(x.quotation_id)}">${esc(x.quotation_id)}</a>${x.quotation_expired ? ' <span class="chip red">hết hạn</span>' : ''}` : '—'}</td>
+          <td class="sub">${esc(ngayGio(x.updated_at))}</td></tr>`;
+      }).join('') : '<tr><td colspan="8" style="text-align:center;color:#64748b;padding:22px">Không có cơ hội nào khớp.</td></tr>'}</tbody></table></div>`;
+    const b = el('chv1-bang');
+    b.querySelectorAll('tr[data-id]').forEach(tr => tr.addEventListener('click', ev => { if (ev.target.closest('a')) return; moHopThoai(tr.dataset.id); }));
+    b.querySelectorAll('a[data-bg]').forEach(a => a.addEventListener('click', () => moBaoGia(a.dataset.bg)));
+    b.querySelectorAll('button[data-sort]').forEach(x => x.addEventListener('click', () => { t.sort = x.dataset.sort; napTrang(1); }));
+    b.querySelectorAll('button[data-page]').forEach(x => x.addEventListener('click', () => napTrang(Number(x.dataset.page))));
+    const st = el('chv1-bang-stage'); if (st) st.addEventListener('change', () => { t.stage = st.value; napTrang(1); });
   }
 
   // Cung loi voi may chu (CRM_STAGE_TRANSITION_INVALID): hai moc nay phai co bang chung.
@@ -343,10 +460,12 @@
 
   function capNhat(kq) {
     if (!kq || !kq.id) return;
-    const i = S.ds.findIndex(x => x.id === kq.id);
-    if (i >= 0) S.ds[i] = Object.assign({}, S.ds[i], kq); else S.ds.unshift(kq);
+    gopDs([kq]);
+    // Bảng theo cột do máy chủ cắt và đếm — đổi một thẻ thì tải lại bảng để số
+    // đầu cột và vị trí thẻ đúng, thay vì tự cộng trừ ở trình duyệt rồi lệch.
     api('/api/crm/opportunities/summary').then(k => { S.kpi = k; veKpi(); }).catch(() => {});
-    veOwner(); veBoard();
+    napTheoLoc();
+    if (S.che === 'bang') napTrang(S.trang.page);
   }
 
   /* ------------------------------------------------------- hộp thoại -- */

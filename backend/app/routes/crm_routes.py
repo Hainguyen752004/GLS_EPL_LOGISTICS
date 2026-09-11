@@ -57,11 +57,26 @@ def dai_so_lieu(db: Session = Depends(get_db)):
     return _doc(lambda: crm.dai_so_lieu(db), "Đã tải số liệu cơ hội.")
 
 
+@router.get("/api/crm/opportunities/board")
+def bang_co_hoi(per_col: int = Query(10, ge=1, le=50), since_days: int = Query(7, ge=0, le=3650),
+                owner: Optional[str] = Query(None), q: Optional[str] = Query(None),
+                source: Optional[str] = Query(None), due: Optional[str] = Query(None),
+                db: Session = Depends(get_db)):
+    """Bảng theo cột: số đếm thật + N thẻ đầu mỗi cột. Khai TRƯỚC `/{ma}`."""
+    return _doc(lambda: crm.bang_co_hoi(db, per_col=per_col, since_days=since_days, owner=owner, q=q, source=source, due=due),
+                "Đã tải bảng cơ hội.")
+
+
 @router.get("/api/crm/opportunities")
 def danh_sach(stage: Optional[str] = Query(None), owner: Optional[str] = Query(None),
-                    customer_id: Optional[str] = Query(None), q: Optional[str] = Query(None),
-                    db: Session = Depends(get_db)):
-    return _doc(lambda: crm.danh_sach(db, stage=stage, owner=owner, customer_id=customer_id, q=q),
+              customer_id: Optional[str] = Query(None), q: Optional[str] = Query(None),
+              page: Optional[int] = Query(None, ge=1), page_size: int = Query(50, ge=1, le=200),
+              since_days: Optional[int] = Query(None, ge=0), source: Optional[str] = Query(None),
+              due: Optional[str] = Query(None), sort: Optional[str] = Query(None),
+              db: Session = Depends(get_db)):
+    return _doc(lambda: crm.danh_sach(db, stage=stage, owner=owner, customer_id=customer_id, q=q,
+                                      page=page, page_size=page_size, since_days=since_days,
+                                      source=source, due=due, sort=sort),
                 "Đã tải danh sách cơ hội.")
 
 
