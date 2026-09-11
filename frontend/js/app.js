@@ -474,15 +474,32 @@ let _isTranslating = false;
 // cụm khớp là dựng `new RegExp` mới; với hơn ba nghìn cụm nhân với số nút chữ
 // trên màn thì riêng việc dựng regex đã đủ làm màn hình khựng.
 const _regexCumDich = new Map();
+
+// Chữ cái (kể cả chữ Việt có dấu) và chữ số. Dùng làm RÀO hai đầu cụm.
+const _CHU_CAI = 'A-Za-z0-9\\u00C0-\\u1EFF';
+
 function _regexCuaCum(k) {
   let re = _regexCumDich.get(k);
   if (!re) {
-    re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    const than = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // RÀO HAI ĐẦU là bắt buộc, không phải để cho đẹp. Thiếu nó thì cụm "khác"
+    // (Other) bị thay vào GIỮA chữ "khách" và màn hình hiện ra "Otherh". Cùng
+    // kiểu đó: "chưa" nằm trong "chưa từng", "hàng" nằm trong "hàng hoá".
+    // Chỉ thay khi hai đầu cụm không dính chữ cái nào khác.
+    try {
+      re = new RegExp('(?<![' + _CHU_CAI + '])' + than + '(?![' + _CHU_CAI + '])', 'gi');
+    } catch (e) {
+      // Trình duyệt quá cũ không có lookbehind: thà không thay còn hơn thay sai.
+      re = null;
+    }
     _regexCumDich.set(k, re);
   }
-  re.lastIndex = 0;
+  if (re) re.lastIndex = 0;
   return re;
 }
+
+// Còn sót chữ Việt có dấu nghĩa là câu MỚI DỊCH ĐƯỢC MỘT NỬA.
+const _CON_CHU_VIET = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
 // Danh sách cụm dùng cho bước tìm-trong-chuỗi, dài nhất đứng trước.
 // Lọc luôn những cặp mà bản dịch TRÙNG với chính khóa (ví dụ khóa tiếng Anh khi
@@ -532,11 +549,21 @@ function _dichMotNutChu(node, viMap, lang) {
   for (let i = 0; i < danhSach.length; i++) {
     const k = danhSach[i][0];
     if (thuong.indexOf(k) === -1) continue;
-    modified = modified.replace(_regexCuaCum(k), fixUIText(danhSach[i][1][lang]));
+    const re = _regexCuaCum(k);
+    if (!re) continue;
+    modified = modified.replace(re, fixUIText(danhSach[i][1][lang]));
     thuong = modified.toLowerCase();
   }
-  if (modified !== orig) {
+
+  // DỊCH TRỌN CÂU HOẶC KHÔNG DỊCH GÌ. Nếu thay xong mà vẫn còn chữ Việt thì câu
+  // đó đang nửa Việt nửa Anh — thứ mà chủ dự án gọi là "lỗi gần hết": ví dụ
+  // "Chọn khách đã có trong danh mục" thành "Chọn Otherh đã có within danh mục".
+  // Một câu tiếng Việt nguyên vẹn vẫn đọc được; một câu lai thì không đọc được
+  // bằng thứ tiếng nào cả. Nên thà trả về nguyên văn.
+  if (modified !== orig && !_CON_CHU_VIET.test(modified)) {
     node.nodeValue = modified;
+  } else if (node.nodeValue !== orig) {
+    node.nodeValue = orig;
   }
 }
 
