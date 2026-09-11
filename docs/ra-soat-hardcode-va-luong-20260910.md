@@ -438,6 +438,31 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   `test_route_dong_bo_khong_chan_vong_lap.py` chặn tái phạm. Pool giữ 5 + 10 vì mã đã ghi rõ giới
   hạn 100 kết nối của Postgres thật cho ba tiến trình.
 
+### A29. Gieo dày dữ liệu demo — và một lỗ hổng THẬT lộ ra khi ghép nhiều DO vào một chuyến (11/09)
+
+- Anh: *"thêm cho anh nhiều dữ liệu hơn đi hiện tại ít dữ liệu quá"* (màn Theo dõi chỉ có một
+  chuyến). Thêm `--gieo-nhieu` vào `dung_lai_du_lieu_demo.py`: gieo THÊM qua API thật, không xoá.
+  Hiện có 110 báo giá (78 đã tách DO, 11 chờ khách, 8 nháp, 6 chờ duyệt nội bộ, 7 bị từ chối),
+  87 DO (50 đã giao, 6 đang chạy, 31 chờ), 68 chuyến (45 hoàn tất, 6 đang chạy, 11 kế hoạch,
+  6 đã huỷ), 45 phiếu chi phí (34 đã gửi duyệt, 11 nháp), 124 cơ hội đủ 6 giai đoạn, 8 sự cố,
+  14 khách. Hồ sơ bàn giao: 50 DO, trong đó 40 VND, 4 USD, 4 LAK, 2 THB.
+- **LỖ HỔNG (chưa sửa, cần anh quyết).** Lập một chuyến chở **nhiều DO hơn số chặng của tuyến**
+  thì máy chủ chia chặng cho các DO **theo lượt**, nên có DO **không nhận được chặng giao nào**.
+  Đo được: chuyến chở 2 DO trên tuyến Sóng Thần → Cát Lái (MỘT chặng) → chặng duy nhất thuộc DO
+  thứ hai, DO thứ nhất không nộp POD được (`POD_LINEAGE_INVALID`) nên **không bao giờ hoàn tất
+  được**, và chuyến giữ xe cùng tài xế lại cho tới khi có người huỷ tay. Máy chủ **không chặn**
+  lúc lập chuyến.
+- Nặng hơn ở ca nhiều chặng: chuyến 2 DO trên tuyến 2 chặng thì DO thứ nhất nhận chặng
+  `VSIP II-A → Vành đai 3` làm "chặng giao" — Vành đai 3 là điểm giữa đường, không phải nơi giao
+  hàng. POD của DO đó được ghi vào một điểm không phải điểm giao. Đúng ra **mỗi DO phải có chặng
+  giao riêng đi hết tuyến của nó**, chứ không phải cắt tuyến ra chia nhau.
+- Tạm thời bộ gieo chỉ ghép nhiều DO khi tuyến có đủ chặng (`SO_CHANG` trong script), và một
+  chuyến bị kẹt do lỗi này đã được huỷ để nhả xe.
+- Hai chỗ khác cũng lộ ra khi gieo dày, đều là cửa chặn ĐÚNG, chỉ ghi lại để người sau biết:
+  xe/tài xế đang giữ chuyến chưa xong thì không điều thêm được (`RESOURCE_BUSY`, không xét khung
+  giờ); và ca làm việc mới **chồng** ca đã có thì bị từ chối, nên "đã gọi API tạo ca" không đồng
+  nghĩa với "tài xế đã có ca" — bộ gieo giờ in ra mỗi lần ca không lưu được.
+
 ---
 
 ## B. Luồng có thể đi sai

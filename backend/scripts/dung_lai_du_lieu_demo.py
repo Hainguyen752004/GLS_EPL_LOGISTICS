@@ -11,6 +11,7 @@ HAI BƯỚC, chạy tách nhau để nhìn được từng bước:
     python ..\\scripts\\dung_lai_du_lieu_demo.py --xoa      # bước 1: xoá dữ liệu vận hành
     python ..\\scripts\\dung_lai_du_lieu_demo.py --gieo     # bước 2: gieo case qua API 8001
     python ..\\scripts\\dung_lai_du_lieu_demo.py --gieo-ngoai-te  # thêm 2 case LAK/USD trọn luồng
+    python ..\\scripts\\dung_lai_du_lieu_demo.py --gieo-nhieu     # gieo THÊM nhiều dữ liệu
     python ..\\scripts\\dung_lai_du_lieu_demo.py --kiem     # đếm lại từng bảng
 
 BƯỚC 1 (--xoa) nối thẳng PostgreSQL (database.py của ứng dụng), TRUNCATE mọi bảng
@@ -56,6 +57,7 @@ import json
 import mimetypes
 import os
 import sys
+import time
 import uuid
 from pathlib import Path
 from urllib.error import HTTPError
@@ -179,13 +181,23 @@ def goi(method, path, body=None, headers=None, files=None, form=None, cho_phep=(
         data = json.dumps(body, ensure_ascii=False).encode("utf-8")
         h["Content-Type"] = "application/json"
     req = Request(BASE + path, data=data, method=method, headers=h)
-    try:
-        with urlopen(req, timeout=120) as r:
-            ma = r.status
-            noi = r.read().decode("utf-8")
-    except HTTPError as e:
-        ma = e.code
-        noi = e.read().decode("utf-8", "replace")
+    # Máy chủ 8001 chạy `--reload`: sửa một tệp backend là nó khởi động lại và cắt kết nối
+    # đang mở (`ConnectionResetError`). Gieo mấy trăm lệnh thì gặp là chuyện thường, nên
+    # THỬ LẠI ở tầng mạng — và IN RA mỗi lần thử lại, không lặng lẽ.
+    ma = noi = None
+    for lan in range(4):
+        try:
+            with urlopen(req, timeout=120) as r:
+                ma, noi = r.status, r.read().decode("utf-8")
+            break
+        except HTTPError as e:
+            ma, noi = e.code, e.read().decode("utf-8", "replace")
+            break
+        except Exception as loi_mang:
+            if lan == 3:
+                raise
+            _in("  … mất kết nối (%s), thử lại lần %d sau 4 giây" % (type(loi_mang).__name__, lan + 2))
+            time.sleep(4)
     try:
         goi_tra = json.loads(noi) if noi else {}
     except ValueError:
@@ -264,7 +276,13 @@ def ca_truc(ma, tai_xe, dau, cuoi, xe=None):
             "shift_start": _iso(dau), "shift_end": _iso(cuoi), "status": "confirmed"}
     if xe:
         than["vehicle_id"] = xe
-    goi("POST", "/api/tms/scheduling/driver-shifts", than, cho_phep=(200, 201, 409))
+    g = goi("POST", "/api/tms/scheduling/driver-shifts", than, cho_phep=(200, 201, 409))
+    # KHÔNG nuốt 409: ca mới CHỒNG ca đã có cũng trả 409, và nuốt nó nghĩa là tin rằng tài xế
+    # đã có lịch trong khi thực tế chưa — điều phối sẽ chặn DRIVER_WORK_SCHEDULE_REQUIRED ở
+    # một ngày mình tưởng đã phủ. Đã đo đúng lỗi này ngày 11/09.
+    if isinstance(g, dict) and (g.get("detail") or {}).get("code"):
+        _in("     ca %s không lưu được: %s" % (ma, (g["detail"] or {}).get("message", "")[:90]))
+    return g
 
 
 def sua_khung_do(do_id, lay1, lay2, giao1, giao2):
@@ -297,20 +315,35 @@ def _lenh_van_chuyen(ma):
 
 
 def moc_thuc_thi(trip, xe, tai_xe, cac_moc, toa_do):
-    """Ghi lần lượt các mốc (loại, giờ); toa_do = (lat, lng) điểm đầu → điểm cuối."""
+    """Ghi lần lượt các mốc (loại, giờ); toa_do = (lat, lng) điểm đầu → điểm cuối.
+
+    ĐỌC PHIÊN BẢN MỘT LẦN rồi tự tăng: mỗi mốc ghi thành công tăng `version` đúng 1.
+    Bản đầu gọi `GET /api/tms/freight-orders` (trả tới 100 lệnh) trước TỪNG mốc, nên
+    gieo 30 chuyến là hơn 150 lần đọc toàn danh sách. Lệch phiên bản (ai đó vừa ghi)
+    thì máy chủ trả 409 và ở đây đọc lại rồi thử tiếp — không đoán.
+    """
     fo_id = trip["freight_order_id"]
+    ban = _lenh_van_chuyen(fo_id)["version"]
     for i, (loai, luc) in enumerate(cac_moc):
-        fo = _lenh_van_chuyen(fo_id)
+        fo = {"version": ban}
         t = i / max(1, len(cac_moc) - 1)
         lat = toa_do[0][0] + (toa_do[1][0] - toa_do[0][0]) * t
         lng = toa_do[0][1] + (toa_do[1][1] - toa_do[0][1]) * t
-        goi("POST", "/api/tms/freight-orders/%s/events" % fo_id, {
-            "event_type": loai, "event_time": _iso(luc), "expected_version": fo["version"],
+        than = {
+            "event_type": loai, "event_time": _iso(luc),
             "vehicle_id": xe, "driver_id": tai_xe, "lat": round(lat, 5), "lng": round(lng, 5),
             "speed_kmh": 0 if loai in ("check_in", "pickup", "arrival", "unloading", "delivered") else 45,
             "distance_km": 0, "location_text": None, "source": "device", "device_id": "GPS-" + xe,
             "reason": None, "note": None, "documents": [],
-        }, headers={"Idempotency-Key": "moc-%s-%s" % (fo_id, loai)})
+        }
+        dau = {"Idempotency-Key": "moc-%s-%s" % (fo_id, loai)}
+        g = goi("POST", "/api/tms/freight-orders/%s/events" % fo_id,
+                dict(than, expected_version=fo["version"]), headers=dau, cho_phep=(200, 201, 409))
+        if isinstance(g, dict) and (g.get("detail") or {}).get("code") == "VERSION_CONFLICT":
+            ban = _lenh_van_chuyen(fo_id)["version"]
+            goi("POST", "/api/tms/freight-orders/%s/events" % fo_id,
+                dict(than, expected_version=ban), headers=dau)
+        ban += 1
 
 
 def hoan_tat(do_id, trip, xe, giao_luc, nguoi_nhan, phu_phi=(), tien="VND"):
@@ -742,6 +775,342 @@ def gieo_ngoai_te(cac_case=("G", "H")):
             h["currency"], h["actual_cost_total"], len(ct["details"]), sum(1 for x in ct["details"] if x["missing_acc_code"])))
 
 
+# ================================================================ BƯỚC 3: GIEO SỐ LƯỢNG LỚN
+#: Xe ↔ loại xe (báo giá chốt theo LOẠI, điều phối chặn nếu xe khác loại).
+XE_THEO_LOAI = {
+    "DEMO-VT-REEFER5": ["DEMO-50H-771.25"],
+    "DEMO-VT-TRACTOR20": ["DEMO-51C-129.03", "DEMO-51C-301.88"],
+    "DEMO-VT-20FT": ["DEMO-51C-268.89", "DEMO-61H-112.34"],
+    "DEMO-VT-TRACTOR40": ["DEMO-51C-412.09", "DEMO-51C-556.12"],
+    "DEMO-VT-TRUCK15": ["DEMO-61H-208.44"],
+    "DEMO-VT-TRUCK10": ["DEMO-61H-330.17"],
+}
+#: Tải trọng tối đa từng loại (kg) — khai hàng quá tải là bị chặn CAPACITY_EXCEEDED.
+TAI_TOI_DA = {"DEMO-VT-REEFER5": 5000, "DEMO-VT-TRUCK10": 10000, "DEMO-VT-TRUCK15": 15000,
+              "DEMO-VT-TRACTOR20": 24000, "DEMO-VT-20FT": 28000, "DEMO-VT-TRACTOR40": 30000}
+#: SỐ CHẶNG của tuyến — và đây là một GIỚI HẠN THẬT khi ghép nhiều DO vào một chuyến.
+#:
+#: Đo 11/09: lập chuyến chở 2 DO trên tuyến Sóng Thần → Cát Lái (MỘT chặng) thì máy chủ
+#: chia chặng cho các DO theo lượt, nên chặng duy nhất thuộc về DO thứ hai và **DO thứ nhất
+#: không có chặng giao nào**. DO đó không nộp POD được (`POD_LINEAGE_INVALID`) nên KHÔNG BAO
+#: GIỜ hoàn tất được, và chuyến giữ xe lại tới khi có người huỷ. Máy chủ không chặn lúc lập.
+#: Nên ở đây chỉ ghép nhiều DO khi tuyến có đủ chặng. (Đã báo chủ dự án để quyết cách sửa gốc.)
+SO_CHANG = {"DEMO-RT-VSIP2A-CATLAI": 2, "DEMO-RT-VSIP2A-CAIMEP": 2, "DEMO-RT-SONGTHAN-CATLAI": 1,
+            "DEMO-RT-CATLAI-AMATA": 2, "DEMO-RT-LONGAN-CAIMEP": 3}
+#: Thể tích tối đa từng loại (m³) — cửa năng lực xét CẢ tải trọng và thể tích.
+THE_TICH_TOI_DA = {"DEMO-VT-REEFER5": 22.0, "DEMO-VT-TRUCK10": 45.0, "DEMO-VT-TRUCK15": 60.0,
+                   "DEMO-VT-TRACTOR20": 33.0, "DEMO-VT-20FT": 33.2, "DEMO-VT-TRACTOR40": 67.0}
+#: Tài xế chính (bằng còn hạn, có ca) — phụ xe để riêng.
+TAI_XE_CHINH = ["DEMO-DRV-001", "DEMO-DRV-002", "DEMO-DRV-004", "DEMO-DRV-005",
+                "DEMO-DRV-006", "DEMO-DRV-008", "DEMO-DRV-009", "DEMO-DRV-010",
+                "DEMO-DRV-011", "DEMO-DRV-012"]
+#: Tuyến ↔ (km, toạ độ đầu, toạ độ cuối) để mốc thực thi có GPS vẽ được.
+TUYEN_DEMO = {
+    "DEMO-RT-VSIP2A-CATLAI": (44.7, "VSIP2A", "CATLAI"),
+    "DEMO-RT-VSIP2A-CAIMEP": (96.5, "VSIP2A", "CAIMEP"),
+    "DEMO-RT-SONGTHAN-CATLAI": (31.2, "SONGTHAN", "CATLAI"),
+    "DEMO-RT-CATLAI-AMATA": (38.4, "CATLAI", "AMATA"),
+    "DEMO-RT-LONGAN-CAIMEP": (112.0, "LONGAN", "CAIMEP"),
+}
+#: Khách thêm cho đủ mặt hàng và đủ đầu mối (gieo qua POST /api/customers).
+KHACH_THEM = [
+    ("DEMO-CUS-VINAMILK", "Vinamilk Bình Dương", "Chị Ngân", "0903111222", "KCN Mỹ Phước, Bình Dương"),
+    ("DEMO-CUS-SAMSUNG", "Samsung Electronics HCMC CE", "Anh Hoàng", "0903222333", "KCN Cao, TP. Thủ Đức"),
+    ("DEMO-CUS-ACECOOK", "Acecook Việt Nam", "Chị Thảo", "0903333444", "KCN Tân Bình, TP.HCM"),
+    ("DEMO-CUS-BIDRICO", "Nước giải khát Bidrico", "Anh Kiệt", "0903444555", "KCN Vĩnh Lộc, TP.HCM"),
+    ("DEMO-CUS-TAEKWANG", "Taekwang Vina", "Chị Hà", "0903555666", "KCN Amata, Biên Hoà"),
+    ("DEMO-CUS-DUCGIANG", "Hoá chất Đức Giang", "Anh Sơn", "0903666777", "KCN Long Thành, Đồng Nai"),
+    ("DEMO-CUS-THACO", "THACO Auto Chu Lai", "Anh Bình", "0903777888", "KCN Chu Lai, Quảng Nam"),
+    ("DEMO-CUS-LOTTE", "Lotte Mart Việt Nam", "Chị Quyên", "0903888999", "Quận 7, TP.HCM"),
+]
+#: Loại hàng theo khách — để màn nào cũng đọc ra nghiệp vụ thật, không phải chữ mẫu.
+HANG_THEO_KHACH = {
+    "DEMO-CUS-NIDEC": "Linh kiện điện tử", "DEMO-CUS-UNILEVER": "Hàng tiêu dùng",
+    "DEMO-CUS-COLGATE": "Hoá mỹ phẩm", "DEMO-CUS-POUYUEN": "Nguyên liệu giày",
+    "DEMO-CUS-SGNFOOD": "Thực phẩm đông lạnh", "DEMO-CUS-VINAMILK": "Sữa và sản phẩm sữa",
+    "DEMO-CUS-SAMSUNG": "Hàng điện tử gia dụng", "DEMO-CUS-ACECOOK": "Mì ăn liền",
+    "DEMO-CUS-BIDRICO": "Nước giải khát", "DEMO-CUS-TAEKWANG": "Nguyên phụ liệu may",
+    "DEMO-CUS-DUCGIANG": "Hoá chất công nghiệp (không nguy hại)", "DEMO-CUS-THACO": "Phụ tùng ô tô",
+    "DEMO-CUS-LOTTE": "Hàng bán lẻ siêu thị",
+}
+#: Nhãn của LƯỢT GIEO này, để mã chuyến và mã phiếu chi phí không trùng lượt trước
+#: (`TRIP_IDEMPOTENCY_CONFLICT`: cùng mã Trip mà danh sách DO khác thì máy chủ từ chối).
+NHAN_LUOT = dt.datetime.now(VN).strftime("%d%H%M") + uuid.uuid4().hex[:4].upper()
+NGUOI_NHAN = ["Anh Nam (cảng)", "Chị Thu (kho)", "Anh Phong (CMIT)", "Anh Dũng (Amata)",
+              "Chị Loan (kho Long An)", "Anh Tuấn (Sóng Thần)"]
+TIEN_VA_TY_GIA = [("VND", 1.0)] * 7 + [("USD", 26173.5), ("LAK", 1.18), ("THB", 710.0)]
+
+
+def bo_sung_du_lieu_goc():
+    """Thêm khách và ca trực — KHÔNG sửa khách/xe/tài xế/tuyến/công thức đang có."""
+    _in("[0] Bổ sung dữ liệu gốc (chỉ THÊM, không sửa cái đang có)")
+    for ma, ten, lh, dt_, dc in KHACH_THEM:
+        goi("POST", "/api/customers", {"id": ma, "name": ten, "type": "Account",
+                                       "contact_person": lh, "phone": dt_, "address": dc},
+            cho_phep=(200, 201, 409))
+    # Ca trực phủ rộng: gieo case ở nhiều ngày nên thiếu ca là bị chặn ngay. Chia thành các
+    # khoảng KHÔNG chồng nhau, vì ca chồng ca bị từ chối (và bộ dữ liệu đã có ca tháng 9–10).
+    khoang = [(dt.datetime(2026, 7, 1, 0, 0, tzinfo=VN), dt.datetime(2026, 8, 31, 23, 58, tzinfo=VN), "CA-T7T8"),
+              (dt.datetime(2026, 11, 1, 0, 0, tzinfo=VN), dt.datetime(2026, 12, 31, 23, 58, tzinfo=VN), "CA-T11T12")]
+    for tx in TAI_XE_CHINH:
+        ca_truc("CA-T9T10-" + tx, tx, dt.datetime(2026, 9, 1, 0, 0, tzinfo=VN),
+                dt.datetime(2026, 10, 31, 23, 59, tzinfo=VN))
+        for d1, d2, ten in khoang:
+            ca_truc("%s-%s" % (ten, tx), tx, d1, d2)
+
+
+def _gia(km, loai, tien, ty_gia, bien=0.28):
+    """Giá thành và cước, CÙNG đơn vị tiền của báo giá (máy chủ so hai số này với nhau)."""
+    gia_thanh_vnd = km * 7000 + 450000 + (200000 if loai.endswith(("40", "20FT")) else 0)
+    cuoc_vnd = gia_thanh_vnd / (1 - bien)
+    if tien == "VND":
+        return round(gia_thanh_vnd, -3), round(cuoc_vnd, -3)
+    return round(gia_thanh_vnd / ty_gia, 2), round(cuoc_vnd / ty_gia, 2)
+
+
+def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_doan,
+              phu_xe=None, bien=0.28, so_cont=1):
+    """Gieo MỘT case tới `giai_doan`: bao_gia | do | trip | dang_chay | hoan_tat.
+
+    Trả `(qid, [do_id], trip_id|None)`. Mỗi giai đoạn là một điểm dừng thật của luồng, nên
+    dữ liệu gieo ra nằm đúng màn mà người vận hành sẽ thấy nó.
+    """
+    km, diem_dau, diem_cuoi = TUYEN_DEMO[tuyen]
+    kg = int(TAI_TOI_DA[loai] * 0.7)
+    gia_thanh, cuoc = _gia(km, loai, tien, ty_gia, bien)
+    hang = HANG_THEO_KHACH.get(khach, "Hàng tổng hợp")
+    lay1, lay2, giao1, giao2 = _khung(ngay, 6 + (chi_so % 4), 15 + (chi_so % 4))
+    o = co_hoi(customer_id=khach, contact_name="Liên hệ %s" % khach.split("-")[-1].title(),
+               source=("email", "phone", "referral", "web")[chi_so % 4], route_id=tuyen,
+               cargo_type=hang, est_weight_kg=kg, est_trips_per_month=4 + chi_so % 12,
+               expected_price=cuoc, owner=("sales.hoa", "sales.minh")[chi_so % 2])
+    if giai_doan == "co_hoi":
+        return None, [], None
+    qid = bao_gia_tu_co_hoi(
+        o, vehicle_type_id=loai, cargo_type=hang,
+        packaging_spec="Nguyên khối, niêm phong tại kho", weight_kg=kg,
+        volume_m3=round(THE_TICH_TOI_DA[loai] * 0.7, 1), pallet_count=0,
+        price_basis="per_trip", unit_price=cuoc, currency_code=tien,
+        fx_rate=ty_gia, total_cost=gia_thanh, selling_price=cuoc, valid_to=_han(30 + chi_so % 30),
+        pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
+        delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
+        payment_terms=("30 ngày", "45 ngày", "15 ngày", "Trả ngay")[chi_so % 4],
+        sales_rep=("Hoa", "Minh")[chi_so % 2], trips_per_month=4 + chi_so % 12,
+        notes_customer="Giá gồm phí nâng hạ tại cảng." if chi_so % 3 == 0 else None,
+        notes_ops="Liên hệ bảo vệ cổng %d trước khi vào." % (1 + chi_so % 3))
+    hang_hoa(qid, [{"name": "%s (%s)" % (hang, tien), "quantity": so_cont,
+                    "uom": "Cont" if "TRACTOR" in loai or "20FT" in loai else "Chuyến"}])
+    if giai_doan == "bao_gia_nhap":
+        return qid, [], None
+    kq = gui(qid)
+    if (kq or {}).get("canonical_status") == "pending_approval":
+        if giai_doan == "cho_duyet":
+            return qid, [], None
+        duyet_noi_bo(qid)
+    if giai_doan == "bao_gia":
+        return qid, [], None
+    if giai_doan == "tu_choi":
+        tu_choi(qid, ("Khách chọn nhà xe khác.", "Khách lùi kế hoạch sang quý sau.",
+                      "Giá cao hơn ngân sách khách.")[chi_so % 3])
+        return qid, [], None
+    ds = chap_nhan(qid, [{"pickup_at": _iso(lay1 + dt.timedelta(hours=i)), "due_at": _iso(giao2),
+                          "seal_no": "SL-%s-%04d" % (khach.split("-")[-1][:3].upper(), chi_so * 10 + i)}
+                         for i in range(so_cont)])
+    if giai_doan == "do":
+        return qid, ds, None
+    ma_trip = "TRIP-%s-%03d" % (NHAN_LUOT, chi_so)
+    trip = lap_chuyen(ma_trip, ds, lay1 + dt.timedelta(hours=1),
+                      [{"sequence_no": 1, "stop_name": diem_cuoi.title(),
+                        "receiver_name": NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
+                        "receiver_phone": "09090%05d" % chi_so, "delivery_note": "Hạ hàng đúng cổng đã hẹn"}])
+    if giai_doan == "trip":
+        return qid, ds, ma_trip
+    if giai_doan == "huy_trip":
+        goi("POST", "/api/tms/trips/%s/cancel" % ma_trip,
+            {"expected_version": trip["version"],
+             "reason": ("Khách lùi ngày lấy hàng.", "Xe vào xưởng đột xuất.",
+                        "Kho đóng cửa kiểm kê.")[chi_so % 3]},
+            headers={"Idempotency-Key": "huy-" + ma_trip})
+        return qid, ds, ma_trip
+    trip = dieu_phoi(trip, xe, tai_xe, lay1, giao2, phu_xe=phu_xe)
+    g0 = lay1
+    day_du = [("check_in", g0), ("pickup", g0 + dt.timedelta(minutes=40 + chi_so % 30)),
+              ("departure", g0 + dt.timedelta(hours=1, minutes=chi_so % 30)),
+              ("arrival", g0 + dt.timedelta(hours=2 + int(km // 45), minutes=chi_so % 40)),
+              ("unloading", g0 + dt.timedelta(hours=2 + int(km // 45), minutes=25 + chi_so % 20))]
+    if giai_doan == "dang_chay":
+        # Xe đang trên đường: chỉ ghi tới mốc tương ứng, KHÔNG hoàn tất.
+        moc_thuc_thi(trip, xe, tai_xe, day_du[:1 + chi_so % 4], (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
+        return qid, ds, ma_trip
+    moc_thuc_thi(trip, xe, tai_xe, day_du, (TOA_DO[diem_dau], TOA_DO[diem_cuoi]))
+    giao_luc = g0 + dt.timedelta(hours=3 + int(km // 45), minutes=chi_so % 45)
+    phu = ()
+    if chi_so % 3 == 0:
+        muc = round((cuoc * 0.06) if tien != "VND" else round(cuoc * 0.06, -3), 2)
+        phu = ((("Chờ bãi quá giờ", "Cảng kẹt, xe chờ hạ hàng", muc),)
+               if chi_so % 6 == 0 else (("Bốc xếp thêm tại kho", "Kho không có xe nâng", muc),))
+    for do_id in ds:
+        hoan_tat(do_id, trip, xe, giao_luc, NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
+                 phu_phi=phu, tien=tien)
+    # Chi phí thực tế LUÔN bằng VNĐ (tiền chức năng): dầu, BOT, phụ cấp đều chi bằng đồng.
+    dau_km = 7000 + (chi_so % 5) * 120
+    chi_phi_thuc_te(trip, "COST-%s-%03d" % (NHAN_LUOT, chi_so), [
+        ("fuel", "Chi phí xăng dầu /km", round(km * 7000), round(km * dau_km), "%.1f km" % km),
+        ("driver", "Phụ cấp chuyến tài xế", 350000, 350000 + (50000 if phu_xe else 0),
+         "Có phụ xe" if phu_xe else ""),
+        ("toll", "Phí cầu đường / BOT", 150000, 150000 + (chi_so % 4) * 15000, ""),
+    ] + ([("wh", "Phí bãi / kho", 100000, 100000 + (chi_so % 3) * 40000, "")] if chi_so % 2 == 0 else []),
+        gui_duyet=(chi_so % 5 != 0))   # một phần năm để NHÁP, cho kế toán thấy việc còn phải làm
+    return qid, ds, ma_trip
+
+
+def _nguon_luc_dang_bi_chiem():
+    """Xe / tài xế đang giữ một chuyến CHƯA hoàn tất — điều thêm là 409 RESOURCE_BUSY.
+
+    Cửa này KHÁC cửa trùng giờ: nó không xét khung thời gian, chỉ cần người đó còn một
+    chuyến chưa đóng là chặn. Nên lịch gieo phải đọc trạng thái thật trước, không đoán.
+    """
+    ds = _du_lieu(goi("GET", "/api/tms/trips?limit=200"))
+    ds = ds if isinstance(ds, list) else (ds.get("items") or [])
+    xe, tx = set(), set()
+    for t in ds:
+        if str(t.get("status") or "") in ("completed", "cancelled"):
+            continue
+        if t.get("vehicle_id"):
+            xe.add(t["vehicle_id"])
+        for k in ("driver_id", "co_driver_id"):
+            if t.get(k):
+                tx.add(t[k])
+    return xe, tx
+
+
+def gieo_nhieu(so_hoan_tat=22, so_dang_chay=6):
+    """Gieo dày dữ liệu qua API thật: nhiều đơn đã xong, đang chạy, chờ điều phối, báo giá mở.
+
+    Chủ dự án (11/09): *"thêm cho anh nhiều dữ liệu hơn đi hiện tại ít dữ liệu quá"* — màn
+    Theo dõi chỉ có MỘT chuyến. Gieo THÊM, không xoá dữ liệu đang có.
+
+    RÀNG BUỘC THẬT phải tôn trọng, nên lịch xếp tay chứ không random:
+      · xe/tài xế đang giữ chuyến CHƯA hoàn tất thì không điều thêm (RESOURCE_BUSY) — nên
+        các case ĐÃ HOÀN TẤT gieo TRƯỚC (hoàn tất là nhả nguồn lực), các case ĐANG CHẠY gieo
+        SAU CÙNG (chúng giữ xe lại vĩnh viễn), và nguồn lực đang bị chiếm sẵn bị loại ra;
+      · mỗi case hoàn tất một NGÀY riêng → không trùng giờ phân công trên cùng một xe;
+      · xe phải đúng LOẠI của báo giá (VEHICLE_TYPE_MISMATCH) → chọn từ `XE_THEO_LOAI`;
+      · hàng không vượt tải và không vượt thể tích (CAPACITY_EXCEEDED) → khai 70% cả hai;
+      · quy cách phải "nguyên khối" và có số niêm phong, không thì cửa Packing List chặn —
+        và không được chứa chữ "kiện/thùng/pallet/bao" vì mẫu đếm kiện thắng trước;
+      · báo giá lỗ không gửi được → giá thành và cước CÙNG đơn vị tiền, biên 28%.
+    """
+    hom_nay = dt.datetime.now(VN).date()
+    bo_sung_du_lieu_goc()
+    khach = [k for k, _, _, _, _ in KHACH_THEM] + [
+        "DEMO-CUS-NIDEC", "DEMO-CUS-UNILEVER", "DEMO-CUS-COLGATE", "DEMO-CUS-POUYUEN", "DEMO-CUS-SGNFOOD"]
+    tuyen = list(TUYEN_DEMO)
+    xe_bi_chiem, tx_bi_chiem = _nguon_luc_dang_bi_chiem()
+    _in("   Đang bị chiếm bởi chuyến chưa xong: xe %s · tài xế %s"
+        % (sorted(xe_bi_chiem) or "(không)", sorted(tx_bi_chiem) or "(không)"))
+    cap_xe = [(loai, x) for loai, ds in XE_THEO_LOAI.items() for x in ds if x not in xe_bi_chiem]
+    tx_ranh = [t for t in TAI_XE_CHINH if t not in tx_bi_chiem]
+    if not cap_xe or not tx_ranh:
+        raise SystemExit("Hết xe hoặc tài xế rảnh — hoàn tất vài chuyến đang chạy rồi gieo lại.")
+
+    # MỘT XE MỘT CHUYẾN MỖI NGÀY, và xe thứ j luôn đi với tài xế thứ j trong ngày đó — nếu
+    # ghép lệch nhau thì cùng một tài xế có thể nhận hai chuyến trùng giờ trong một ngày
+    # (RESOURCE_TIME_OVERLAP). Ngày lùi dần từ hôm qua, nằm trong khoảng ca tháng 9 đã có.
+    if len(tx_ranh) < len(cap_xe):
+        cap_xe = cap_xe[:len(tx_ranh)]
+    _in("\n[1] %d đơn ĐÃ HOÀN TẤT (%d xe × nhiều ngày, mỗi xe một chuyến mỗi ngày)"
+        % (so_hoan_tat, len(cap_xe)))
+    for i in range(so_hoan_tat):
+        vi_tri = i % len(cap_xe)
+        loai, xe = cap_xe[vi_tri]
+        tien, ty_gia = TIEN_VA_TY_GIA[i % len(TIEN_VA_TY_GIA)]
+        rt = tuyen[i % len(tuyen)]
+        so_cont = 2 if (i % 7 == 0 and TAI_TOI_DA[loai] >= 24000 and SO_CHANG[rt] >= 2) else 1
+        _mot_case(100 + i, khach[i % len(khach)], rt, loai, xe,
+                  tx_ranh[vi_tri], hom_nay - dt.timedelta(days=1 + i // len(cap_xe)),
+                  tien, ty_gia, "hoan_tat", so_cont=so_cont)
+    _in("   → %d đơn hoàn tất" % so_hoan_tat)
+
+    _in("\n[2] Chuyến ĐÃ LẬP chờ điều phối, DO chờ lập chuyến, chuyến bị huỷ (không giữ xe)")
+    for i in range(4):
+        loai, xe = cap_xe[i % len(cap_xe)]
+        _mot_case(300 + i, khach[(i + 1) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=2 + i), "VND", 1.0, "trip")
+    for i in range(5):
+        loai, xe = cap_xe[(i + 2) % len(cap_xe)]
+        _mot_case(320 + i, khach[(i + 5) % len(khach)], tuyen[(i + 1) % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=4 + i), "VND", 1.0, "do")
+    for i in range(2):
+        loai, xe = cap_xe[(i + 4) % len(cap_xe)]
+        _mot_case(340 + i, khach[(i + 7) % len(khach)], tuyen[(i + 2) % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=6 + i), "VND", 1.0, "huy_trip")
+
+    _in("\n[3] Báo giá đang mở: chờ khách, chờ duyệt nội bộ (biên mỏng), nháp, bị từ chối")
+    for i in range(5):
+        loai, xe = cap_xe[i % len(cap_xe)]
+        tien, ty_gia = TIEN_VA_TY_GIA[(i + 2) % len(TIEN_VA_TY_GIA)]
+        _mot_case(400 + i, khach[(i + 2) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=8 + i), tien, ty_gia, "bao_gia")
+    for i in range(3):
+        loai, xe = cap_xe[i % len(cap_xe)]
+        _mot_case(420 + i, khach[(i + 4) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=10 + i), "VND", 1.0,
+                  "cho_duyet", bien=0.10)      # biên 10% < ngưỡng 15% → chờ duyệt nội bộ
+    for i in range(3):
+        loai, xe = cap_xe[i % len(cap_xe)]
+        _mot_case(440 + i, khach[(i + 6) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=12 + i), "VND", 1.0, "bao_gia_nhap")
+    for i in range(3):
+        loai, xe = cap_xe[i % len(cap_xe)]
+        _mot_case(460 + i, khach[(i + 8) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i % len(tx_ranh)], hom_nay + dt.timedelta(days=14 + i), "VND", 1.0, "tu_choi")
+
+    _in("\n[4] Cơ hội CRM chưa lập báo giá, ở các giai đoạn")
+    for i, gd in enumerate(["new", "contacted", "negotiating", "contacted", "new", "negotiating"]):
+        o = co_hoi(prospect_name=("Cơ khí Đại Dũng", "Gỗ An Cường", "Thép Hoà Phát Dung Quất",
+                                  "Bia Sài Gòn Miền Tây", "Nhựa Duy Tân", "Giấy Sài Gòn")[i],
+                   contact_name=("Anh Tú", "Chị Yến", "Anh Khánh", "Chị Diệp", "Anh Lộc", "Chị Vy")[i],
+                   source=("phone", "web", "tender", "referral", "email", "other")[i],
+                   route_id=tuyen[i % len(tuyen)],
+                   cargo_type=("Kết cấu thép", "Tấm gỗ MDF", "Thép cuộn", "Bia lon",
+                               "Hạt nhựa", "Giấy cuộn")[i],
+                   est_weight_kg=8000 + i * 2500, est_trips_per_month=3 + i * 2,
+                   expected_price=1200000 + i * 300000, owner=("sales.hoa", "sales.minh")[i % 2])
+        if gd in ("contacted", "negotiating"):
+            o = doi_giai_doan(o, "contacted")
+        if gd == "negotiating":
+            doi_giai_doan(o, "negotiating")
+
+    # ĐANG CHẠY gieo SAU CÙNG: mỗi chuyến giữ một xe và một tài xế cho tới khi hoàn tất, nên
+    # gieo trước sẽ làm mọi case sau đó hết nguồn lực.
+    _in("\n[5] %d chuyến ĐANG CHẠY hôm nay (mỗi chuyến một xe riêng, dừng ở mốc khác nhau)"
+        % min(so_dang_chay, len(cap_xe), len(tx_ranh)))
+    for i in range(min(so_dang_chay, len(cap_xe), len(tx_ranh))):
+        loai, xe = cap_xe[i]
+        tien, ty_gia = TIEN_VA_TY_GIA[i % len(TIEN_VA_TY_GIA)]
+        _mot_case(200 + i, khach[(i + 3) % len(khach)], tuyen[i % len(tuyen)], loai, xe,
+                  tx_ranh[i], hom_nay, tien, ty_gia, "dang_chay")
+
+    _in("\n[6] Sự cố trên các chuyến đang chạy")
+    ds_trip = _du_lieu(goi("GET", "/api/tms/trips?limit=200"))
+    dang = [t for t in (ds_trip if isinstance(ds_trip, list) else ds_trip.get("items") or [])
+            if t.get("status") == "in_transit"][:4]
+    loai_su_co = [("Kẹt xe", "Low", "QL51 đoạn Long Thành", "Kẹt 40 phút do tai nạn phía trước."),
+                  ("Hỏng hóc", "High", "Vành đai 3", "Nổ lốp sau bên phải, đã gọi cứu hộ."),
+                  ("Thời tiết", "Medium", "Cầu Phú Mỹ", "Mưa lớn, giảm tốc độ để an toàn."),
+                  ("Giấy tờ", "Low", "Cổng cảng Cát Lái", "Thiếu một bản sao tờ khai, đã bổ sung.")]
+    for i, t in enumerate(dang):
+        ma_do = (t.get("delivery_order_ids") or [None])[0]
+        if not ma_do or not t.get("vehicle_id"):
+            continue
+        ten, muc, vi_tri, mo_ta = loai_su_co[i % len(loai_su_co)]
+        su_co(ma_do, t["vehicle_id"], ten, vi_tri, mo_ta, muc)
+
+    _in("\nXONG. Đếm lại:")
+    kiem()
+
+
 # ================================================================ KIỂM
 def kiem():
     import database
@@ -772,8 +1141,11 @@ if __name__ == "__main__":
     p.add_argument("--gieo-ngoai-te", action="store_true", help="chỉ gieo thêm hai case LAK/USD đi trọn luồng")
     p.add_argument("--kiem", action="store_true")
     p.add_argument("--case", default="G,H", help="với --gieo-ngoai-te: chạy case nào, vd G hoặc H")
+    p.add_argument("--gieo-nhieu", action="store_true", help="gieo THÊM nhiều dữ liệu (không xoá cái đang có)")
+    p.add_argument("--so-hoan-tat", type=int, default=22)
+    p.add_argument("--so-dang-chay", type=int, default=6)
     a = p.parse_args()
-    if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.kiem):
+    if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.gieo_nhieu or a.kiem):
         p.print_help()
         sys.exit(1)
     if a.xoa:
@@ -786,5 +1158,9 @@ if __name__ == "__main__":
         if not TOKEN:
             sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
         gieo_ngoai_te(tuple(x.strip().upper() for x in a.case.split(",") if x.strip()))
+    if a.gieo_nhieu:
+        if not TOKEN:
+            sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
+        gieo_nhieu(a.so_hoan_tat, a.so_dang_chay)
     if a.kiem:
         kiem()
