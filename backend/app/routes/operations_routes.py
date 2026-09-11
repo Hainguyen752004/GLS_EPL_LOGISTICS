@@ -122,6 +122,46 @@ def create_incident(data: Dict[str, Any] = Body(...), db: Session = Depends(get_
     db.refresh(inc)
     return {"message": "Đã ghi nhận báo cáo sự cố vận chuyển thành công!", "data": inc}
 
+
+# Ba trang thai cua mot su co. "Resolved" la dong; "Open" dung de mo lai.
+TRANG_THAI_SU_CO = ("Open", "In Progress", "Resolved")
+
+
+@router.put("/api/incidents/{incident_id}/status")
+def update_incident_status(incident_id: int, request: Request, data: Dict[str, Any] = Body(...),
+                           db: Session = Depends(get_db)):
+    """Doi trang thai su co — dong (Resolved), dang xu ly, hoac mo lai.
+
+    Dong bat buoc ghi CACH XU LY (`note`), giong nhu danh mat co hoi phai ghi ly
+    do: mot su co dong ma khong noi da lam gi thi hom sau khong ai tra duoc.
+    Bang `incidents` khong co cot rieng cho nguoi/gio xu ly, nen ghi chu duoc
+    noi vao `description` kem dau thoi gian va danh tinh — khong phai nang schema.
+    """
+    inc = db.get(Incident, incident_id)
+    if inc is None:
+        raise HTTPException(status_code=404, detail={
+            "code": "INCIDENT_NOT_FOUND", "message": "Không tìm thấy sự cố #%s." % incident_id})
+    trang_thai = str(data.get("status") or "").strip()
+    if trang_thai not in TRANG_THAI_SU_CO:
+        raise HTTPException(status_code=422, detail={
+            "code": "INCIDENT_STATUS_INVALID",
+            "message": "Trạng thái sự cố không hợp lệ: %r. Chỉ nhận %s." % (trang_thai, ", ".join(TRANG_THAI_SU_CO))})
+    ghi_chu = str(data.get("note") or "").strip()
+    if trang_thai == "Resolved" and not ghi_chu:
+        raise HTTPException(status_code=422, detail={
+            "code": "INCIDENT_NOTE_REQUIRED",
+            "message": "Đóng sự cố phải ghi cách xử lý (đã làm gì, ai xử lý)."})
+    if trang_thai == inc.status and not ghi_chu:
+        return {"message": "Sự cố đã ở trạng thái %s." % trang_thai, "data": inc}
+    actor = require_api_principal(request)
+    nhan = {"Resolved": "Đã xử lý", "In Progress": "Đang xử lý", "Open": "Mở lại"}[trang_thai]
+    dong = "[%s %s bởi %s]%s" % (nhan, datetime.now().strftime("%H:%M %d/%m/%Y"), actor, (" " + ghi_chu) if ghi_chu else "")
+    inc.description = ((inc.description or "").rstrip() + "\n" + dong).strip()
+    inc.status = trang_thai
+    db.commit()
+    db.refresh(inc)
+    return {"message": "Đã cập nhật sự cố #%s: %s." % (inc.id, nhan), "data": inc}
+
 # 10. Bang dieu khien — chi so tong quan. (Shipment 360 / dossier da xoa 10/09.)
 
 

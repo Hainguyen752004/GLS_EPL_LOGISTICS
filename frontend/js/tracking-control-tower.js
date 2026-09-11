@@ -81,6 +81,7 @@
       if (b.dataset.action === 'close-incident-log') el('ct-incident-log').close();
       if (b.dataset.incFilter) { incLog.filter = b.dataset.incFilter; renderIncidentLog(); }
       if (b.dataset.inc !== undefined) { if (el('ct-incident-log').open) { incLog.selected = String(b.dataset.inc); renderIncidentLog(); } else openIncidentLog(String(b.dataset.inc)); }
+      if (b.dataset.incStatus) doiTrangThaiSuCo(b);
       if (b.dataset.incTrip) {
         // Mở chuyến của sự cố: tìm theo DO (và xe nếu có) trong danh sách đang theo dõi.
         const inc = incLog.items.find(i => String(i.id) === b.dataset.incTrip);
@@ -601,11 +602,11 @@
     if (incLog.loading) { list.innerHTML = '<p class="ct-empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải…</p>'; return; }
     if (incLog.error) { list.innerHTML = `<p class="ct-empty ct-inc-error">${esc(incLog.error)}</p>`; return; }
     if (!rows.length) { list.innerHTML = `<p class="ct-empty">${incLog.filter === 'open' && !incLog.q ? 'Không có sự cố nào đang mở.' : 'Không có sự cố nào khớp.'}</p>`; }
-    else list.innerHTML = `<table class="ct-inc-table"><thead><tr><th>Thời điểm</th><th>DO · xe</th><th>Loại</th><th>Mức</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(i => `
-      <tr><td colspan="5" class="ct-inc-cell"><button type="button" data-inc="${esc(i.id)}" aria-pressed="${String(i.id) === String(incLog.selected)}">
+    else list.innerHTML = `<div class="ct-inc-grid" role="table"><div class="ct-inc-hd" role="row"><span>Thời điểm</span><span>DO · xe</span><span>Loại · vị trí</span><span>Mức</span><span>Trạng thái</span></div>${rows.map(i => `
+      <button type="button" class="ct-inc-row" role="row" data-inc="${esc(i.id)}" aria-pressed="${String(i.id) === String(incLog.selected)}">
         <span>${esc(date(i.reported_at))}</span><span><strong>${esc(i.do_id || '—')}</strong><small>${esc(i.vehicle_id || '')}</small></span><span>${esc(i.incident_type || '—')}<small>${esc(i.location || '')}</small></span>
-        <span class="ct-sev ct-sev-${esc(String(i.severity || 'Medium').toLowerCase())}">${esc(sevLabel[i.severity] || i.severity || '—')}</span>
-        <span class="ct-inc-st ${incOpen(i) ? 'open' : 'done'}">${incOpen(i) ? 'Đang mở' : 'Đã xử lý'}</span></button></td></tr>`).join('')}</tbody></table>`;
+        <span><span class="ct-sev ct-sev-${esc(String(i.severity || 'Medium').toLowerCase())}">${esc(sevLabel[i.severity] || i.severity || '—')}</span></span>
+        <span class="ct-inc-st ${incOpen(i) ? 'open' : 'done'}">${incOpen(i) ? 'Đang mở' : 'Đã xử lý'}</span></button>`).join('')}</div>`;
     const i = incLog.items.find(x => String(x.id) === String(incLog.selected));
     if (!i) { detail.innerHTML = '<p class="ct-empty">Chọn một sự cố để xem phiếu.</p>'; return; }
     const coChuyen = state.items.some(r => r.do_id === i.do_id);
@@ -615,8 +616,29 @@
         ${pair('Lệnh giao hàng', i.do_id)}${pair('Xe', i.vehicle_id)}${pair('Vị trí', i.location)}${pair('Thời điểm báo', date(i.reported_at))}${pair('Người báo', i.reporter)}
       </dl>
       <h5>Mô tả</h5><p class="ct-inc-desc">${esc(i.description || 'Không có mô tả.')}</p>
-      <div class="ct-inc-actions"><button type="button" data-inc-trip="${esc(i.id)}" ${coChuyen ? '' : 'title="Chuyến của DO này không còn trong danh sách đang theo dõi"'}><i class="fa-solid fa-route"></i> Mở chuyến</button></div>
-      <p class="ct-inc-note">Phiếu chỉ đọc. Hệ thống chưa có bước đóng sự cố — khi có, nút "Đã xử lý" sẽ nằm ở đây.</p>`;
+      <div class="ct-inc-actions">
+        <button type="button" data-inc-trip="${esc(i.id)}" ${coChuyen ? '' : 'title="Chuyến của DO này không còn trong danh sách đang theo dõi"'}><i class="fa-solid fa-route"></i> Mở chuyến</button>
+        ${incOpen(i) ? `<button type="button" class="ct-inc-ok" data-inc-status="Resolved" data-inc-id="${esc(i.id)}"><i class="fa-solid fa-check"></i> Đã xử lý</button>` : `<button type="button" data-inc-status="Open" data-inc-id="${esc(i.id)}"><i class="fa-solid fa-rotate-left"></i> Mở lại</button>`}
+      </div>
+      <p class="ct-inc-note" id="ct-inc-msg">${incOpen(i) ? 'Đóng sự cố phải ghi cách xử lý — dòng ghi chú sẽ nối vào mô tả kèm người và giờ.' : 'Sự cố đã đóng. Mở lại nếu vấn đề tái diễn.'}</p>`;
+  }
+
+  /** Đóng / mở lại sự cố. Đóng bắt buộc ghi cách xử lý (máy chủ cũng chặn). */
+  async function doiTrangThaiSuCo(button) {
+    const id = button.dataset.incId, trangThai = button.dataset.incStatus;
+    const hoi = trangThai === 'Resolved' ? 'Đã xử lý thế nào? (bắt buộc — ai làm, làm gì, lúc nào)' : 'Vì sao mở lại? (có thể bỏ trống)';
+    const note = window.prompt(hoi, ''); if (note === null) return;
+    if (trangThai === 'Resolved' && !note.trim()) { el('ct-inc-msg').textContent = 'Đóng sự cố phải ghi cách xử lý.'; return; }
+    button.disabled = true;
+    try {
+      const headers = { 'Content-Type': 'application/json', ...(typeof financeAuthHeaders === 'function' ? financeAuthHeaders() : {}) };
+      const response = await fetch(`${base()}/api/incidents/${encodeURIComponent(id)}/status`, { method: 'PUT', headers, body: JSON.stringify({ status: trangThai, note: note.trim() }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail?.message || (typeof data.detail === 'string' && data.detail) || `HTTP ${response.status}`);
+      await openIncidentLog(String(id)); // đọc lại sổ để dòng và phiếu cùng đổi
+      el('ct-inc-msg').textContent = data.message || 'Đã cập nhật.';
+      load(); // tháp theo dõi: KPI "có sự cố mở" và màu chuyến đổi theo
+    } catch (error) { const m = el('ct-inc-msg'); if (m) m.textContent = `Chưa cập nhật được: ${error.message}`; button.disabled = false; }
   }
 
   function openIncident() {
