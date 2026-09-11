@@ -5008,5 +5008,405 @@
     "vi": "Đã hủy",
     "en": "Cancelled",
     "la": "ຍົກເລີກແລ້ວ"
+  },
+  "os_dock_master": {
+    "en": "Master data",
+    "vi": "Dữ liệu gốc",
+    "la": "ຂໍ້ມູນຫຼັກ"
+  },
+  "os_dock_cohoi": {
+    "en": "Customers & opportunities",
+    "vi": "Khách hàng & cơ hội",
+    "la": "ລູກຄ້າ & ໂອກາດ"
+  },
+  "os_dock_baogia": {
+    "en": "Freight quotation",
+    "vi": "Báo giá cước",
+    "la": "ໃບສະເໜີລາຄາຂົນສົ່ງ"
+  },
+  "os_dock_do": {
+    "en": "Delivery orders",
+    "vi": "Lệnh giao hàng",
+    "la": "ໃບສັ່ງສົ່ງສິນຄ້າ"
+  },
+  "os_dock_shipment": {
+    "en": "Delivery & transport",
+    "vi": "Giao hàng & vận chuyển",
+    "la": "ການຈັດສົ່ງ & ການຂົນສົ່ງ"
+  },
+  "os_dock_dispatch": {
+    "en": "Dispatch",
+    "vi": "Điều phối",
+    "la": "ການປ່ອຍລົດ"
+  },
+  "os_dock_tracking": {
+    "en": "Track & control",
+    "vi": "Theo dõi & kiểm soát",
+    "la": "ການຕິດຕາມ & ຄວບຄຸມ"
+  },
+  "os_dock_hoantat": {
+    "en": "Complete delivery",
+    "vi": "Hoàn tất giao hàng",
+    "la": "ສຳເລັດການຈັດສົ່ງ"
+  },
+  "os_tim_man": {
+    "en": "Go to screen: delivery orders, dispatch, routes, vehicles, quotations…",
+    "vi": "Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…",
+    "la": "ໄປທີ່ໜ້າ: ໃບສັ່ງສົ່ງສິນຄ້າ, ການປ່ອຍລົດ, ເສັ້ນທາງ, ລົດ, ໃບສະເໜີລາຄາ…"
+  },
+  "os_chao_sang": {
+    "en": "Good morning",
+    "vi": "Chào buổi sáng",
+    "la": "ສະບາຍດີຕອນເຊົ້າ"
+  },
+  "os_chao_trua": {
+    "en": "Good day",
+    "vi": "Chào buổi trưa",
+    "la": "ສະບາຍດີຕອນທ່ຽງ"
+  },
+  "os_chao_chieu": {
+    "en": "Good afternoon",
+    "vi": "Chào buổi chiều",
+    "la": "ສະບາຍດີຕອນບ່າຍ"
+  },
+  "os_chao_toi": {
+    "en": "Good evening",
+    "vi": "Chào buổi tối",
+    "la": "ສະບາຍດີຕອນແລງ"
+  },
+  "os_vao_trang_chinh": {
+    "en": "Open dashboard",
+    "vi": "Vào trang chính",
+    "la": "ເບິ່ງແຜງໜ້າປັດ"
+  },
+  "os_so_do": {
+    "en": "delivery orders",
+    "vi": "lệnh giao hàng",
+    "la": "ໃບສັ່ງສົ່ງສິນຄ້າ"
+  },
+  "os_so_chuyen": {
+    "en": "trips on the road",
+    "vi": "chuyến đang đi",
+    "la": "ຖ້ຽວກຳລັງເດີນທາງ"
+  },
+  "os_so_cohoi": {
+    "en": "opportunities to call today",
+    "vi": "cơ hội cần liên hệ hôm nay",
+    "la": "ໂອກາດທີ່ຕ້ອງຕິດຕໍ່ມື້ນີ້"
+  },
+  "os_so_suco": {
+    "en": "reported incidents",
+    "vi": "sự cố phát sinh",
+    "la": "ເຫດການທີ່ເກິດຂື້ນ"
+  },
+  "os_so_bangiao": {
+    "en": "dossiers ready to hand over",
+    "vi": "hồ sơ sẵn sàng bàn giao",
+    "la": "ໂປຣໄຟລ໌ພ້ອມສົ່ງມອບ"
+  },
+  "os_viec_h": {
+    "en": "Act on this now",
+    "vi": "Việc cần làm ngay",
+    "la": "ສິ່ງທີ່ຕ້ອງເຮັດດຽວນີ້"
+  },
+  "os_dem_viec": {
+    "en": "items",
+    "vi": "việc",
+    "la": "ລາຍການ"
+  },
+  "os_luong_h": {
+    "en": "Today’s flow",
+    "vi": "Dòng chảy hôm nay",
+    "la": "ຂັ້ນຕອນການເຮັດວຽກມື້ນີ້"
+  },
+  "os_so_do_day_du": {
+    "en": "Full diagram →",
+    "vi": "Sơ đồ đầy đủ →",
+    "la": "ເບິ່ງຂັ້ນຕອນທັງໝົດ →"
+  },
+  "os_dong_ghi": {
+    "en": "The number in a station is the records sitting there. The amber station is where work piles up.",
+    "vi": "Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất.",
+    "la": "ຕົວເລກໃນແຕ່ລະຂັ້ນຕອນແມ່ນລາຍການທີ່ຄ້າງຢູ່. ຂັ້ນຕອນສີສົ້ມແມ່ນຈຸດທີ່ຄ້າງຫຼາຍທີ່ສຸດ."
+  },
+  "os_cap_nhat": {
+    "en": "Updated",
+    "vi": "Cập nhật",
+    "la": "ອັບເດດ"
+  },
+  "os_khong_viec_gap": {
+    "en": "Nothing urgent — everything is on time.",
+    "vi": "Không có việc gấp — mọi thứ đang đúng hạn.",
+    "la": "ບໍ່ມີວຽກດ່ວນ — ທຸກຢ່າງຢູ່ໃນກຳນົດ."
+  },
+  "os_chua_doc_duoc": {
+    "en": "Could not read",
+    "vi": "Chưa đọc được",
+    "la": "ອ່ານບໍ່ໄດ້"
+  },
+  "os_tram_cohoi": {
+    "en": "Opportunities",
+    "vi": "Cơ hội",
+    "la": "ໂອກາດ"
+  },
+  "os_tram_baogia": {
+    "en": "Quotations",
+    "vi": "Báo giá",
+    "la": "ໃບສະເໜີລາຄາ"
+  },
+  "os_tram_do": {
+    "en": "Delivery orders",
+    "vi": "Lệnh giao hàng",
+    "la": "ໃບສັ່ງສົ່ງສິນຄ້າ"
+  },
+  "os_tram_dispatch": {
+    "en": "Dispatch",
+    "vi": "Điều phối",
+    "la": "ການປ່ອຍລົດ"
+  },
+  "os_tram_dangchay": {
+    "en": "On trip",
+    "vi": "Đang chạy",
+    "la": "ກຳລັງເດີນທາງ"
+  },
+  "os_tram_hoantat": {
+    "en": "Completed",
+    "vi": "Hoàn tất",
+    "la": "ສຳເລັດແລ້ວ"
+  },
+  "os_don_dangmo": {
+    "en": "open",
+    "vi": "đang mở",
+    "la": "ກຳລັງເປີດ"
+  },
+  "os_don_chualenduong": {
+    "en": "not dispatched yet",
+    "vi": "chưa lên đường",
+    "la": "ຍັງບໍ່ອອກເດີນທາງ"
+  },
+  "os_don_choxe": {
+    "en": "waiting for a vehicle",
+    "vi": "chờ xe",
+    "la": "ລໍຖ້າລົດ"
+  },
+  "os_don_chuyen": {
+    "en": "trips",
+    "vi": "chuyến",
+    "la": "ຖ້ຽວ"
+  },
+  "os_don_dacopod": {
+    "en": "POD received",
+    "vi": "đã có POD",
+    "la": "ມີ POD ແລ້ວ"
+  },
+  "os_dang_don": {
+    "en": "piling up",
+    "vi": "đang dồn",
+    "la": "ກຳລັງຄ້າງ"
+  },
+  "os_suco_chuaxuly": {
+    "en": "unresolved incidents",
+    "vi": "sự cố chưa xử lý",
+    "la": "ເຫດການທີ່ຍັງບໍ່ແກ້ໄຂ"
+  },
+  "os_tre_hen": {
+    "en": "Overdue follow-up",
+    "vi": "Trễ hẹn liên hệ",
+    "la": "ກາຍກຳນົດຕິດຕໍ່"
+  },
+  "os_hen_lien_he": {
+    "en": "Follow-up due",
+    "vi": "Hẹn liên hệ",
+    "la": "ນັດຕິດຕໍ່"
+  },
+  "os_bg_het_han": {
+    "en": "Quotation expired",
+    "vi": "Báo giá hết hạn",
+    "la": "ໃບສະເໜີລາຄາໝົດອາຍຸແລ້ວ"
+  },
+  "os_bg_sap_het": {
+    "en": "Quotation expiring",
+    "vi": "Báo giá sắp hết hạn",
+    "la": "ໃບສະເໜີລາຄາໃກ້ໝົດອາຍຸ"
+  },
+  "os_gia_han_dong": {
+    "en": "extend / close",
+    "vi": "gia hạn / đóng",
+    "la": "ຕໍ່ອາຍຸ / ປິດ"
+  },
+  "os_con_ngay": {
+    "en": "in",
+    "vi": "còn",
+    "la": "ຍັງເຫຼືອ"
+  },
+  "os_ngay": {
+    "en": "days",
+    "vi": "ngày",
+    "la": "ວັນ"
+  },
+  "os_cho_duyet": {
+    "en": "Pending internal approval",
+    "vi": "Chờ duyệt nội bộ",
+    "la": "ລໍຖ້າອະນຸມັດພາຍໃນ"
+  },
+  "os_bien": {
+    "en": "margin",
+    "vi": "biên",
+    "la": "ກຳໄລ"
+  },
+  "os_duyet": {
+    "en": "approve",
+    "vi": "duyệt",
+    "la": "ອະນຸມັດ"
+  },
+  "os_do_qua_han": {
+    "en": "Delivery order overdue",
+    "vi": "DO quá hạn giao",
+    "la": "ໃບສັ່ງສົ່ງກາຍກຳນົດແລ້ວ"
+  },
+  "os_qua": {
+    "en": "overdue by",
+    "vi": "quá",
+    "la": "ກາຍ"
+  },
+  "os_do_toi_han": {
+    "en": "Delivery order due within 24 hours",
+    "vi": "DO tới hạn trong 24 giờ",
+    "la": "ໃບສັ່ງສົ່ງຄົບກຳນົດໃນ 24 ຊົ່ວໂມງ"
+  },
+  "os_dieu_phoi_xe": {
+    "en": "assign a vehicle",
+    "vi": "điều phối xe",
+    "la": "ຈັດລົດ"
+  },
+  "os_do_thieu_han": {
+    "en": "delivery orders without a due date",
+    "vi": "DO thiếu hạn giao",
+    "la": "ໃບສັ່ງສົ່ງບໍ່ມີກຳນົດສົ່ງ"
+  },
+  "os_thieu_han_giai": {
+    "en": "No pickup/delivery date yet, so it cannot be planned",
+    "vi": "Chưa có ngày lấy/giao nên chưa lập kế hoạch được",
+    "la": "ຍັງບໍ່ມີວັນທີຮັບ/ສົ່ງ ຈຶ່ງວາງແຜນບໍ່ໄດ້"
+  },
+  "os_bo_sung": {
+    "en": "fill in",
+    "vi": "bổ sung",
+    "la": "ເພີ່ມຂໍ້ມູນ"
+  },
+  "os_su_co": {
+    "en": "Incident",
+    "vi": "Sự cố",
+    "la": "ເຫດການ"
+  },
+  "os_chua_ro_loai": {
+    "en": "type not set",
+    "vi": "chưa rõ loại",
+    "la": "ບໍ່ຮູ້ປະເພດ"
+  },
+  "os_nguon_cohoi": {
+    "en": "opportunities",
+    "vi": "cơ hội",
+    "la": "ໂອກາດ"
+  },
+  "os_nguon_baogia": {
+    "en": "quotations",
+    "vi": "báo giá",
+    "la": "ໃບສະເໜີລາຄາ"
+  },
+  "os_nguon_do": {
+    "en": "delivery orders",
+    "vi": "lệnh giao hàng",
+    "la": "ໃບສັ່ງສົ່ງສິນຄ້າ"
+  },
+  "os_nguon_suco": {
+    "en": "incidents",
+    "vi": "sự cố",
+    "la": "ເຫດການ"
+  },
+  "os_nl_h": {
+    "en": "Resources today",
+    "vi": "Nguồn lực hôm nay",
+    "la": "ຊັບພະຍາກອນມື້ນີ້"
+  },
+  "os_nl_xe": {
+    "en": "vehicles",
+    "vi": "xe",
+    "la": "ລົດ"
+  },
+  "os_nl_taixe": {
+    "en": "drivers",
+    "vi": "tài xế",
+    "la": "ຄົນຂັບ"
+  },
+  "os_nl_xe_ranh": {
+    "en": "vehicles free",
+    "vi": "xe rảnh",
+    "la": "ລົດວ່າງ"
+  },
+  "os_nl_xe_dang_chay": {
+    "en": "vehicles on trip",
+    "vi": "xe đang chạy",
+    "la": "ລົດກຳລັງໃຊ້ງານ"
+  },
+  "os_nl_nam_xuong": {
+    "en": "in maintenance",
+    "vi": "nằm xưởng",
+    "la": "ຢູ່ໃນການບຳລຸງຮັກສາ"
+  },
+  "os_nl_ngung_chay": {
+    "en": "out of service",
+    "vi": "ngừng chạy",
+    "la": "ຢຸດໃຫ້ບໍລິການ"
+  },
+  "os_nl_tx_ranh": {
+    "en": "drivers free",
+    "vi": "tài xế rảnh",
+    "la": "ຄົນຂັບວ່າງ"
+  },
+  "os_nl_xe_het_giay": {
+    "en": "vehicles missing / expired papers",
+    "vi": "xe thiếu / hết hạn giấy tờ",
+    "la": "ລົດຂາດ / ເອກະສານໝົດອາຍຸ"
+  },
+  "os_nl_xe_sap_giay": {
+    "en": "vehicles with papers expiring",
+    "vi": "xe sắp hết hạn giấy tờ",
+    "la": "ລົດເອກະສານໃກ້ໝົດອາຍຸ"
+  },
+  "os_nl_giay_con_han": {
+    "en": "All vehicle papers are valid",
+    "vi": "Giấy tờ xe còn hạn cả đội",
+    "la": "ເອກະສານລົດຍັງໃຊ້ໄດ້ທັງໝົດ"
+  },
+  "os_nl_tx_het_bang": {
+    "en": "drivers missing / expired licence",
+    "vi": "tài xế thiếu / hết hạn bằng lái",
+    "la": "ຄົນຂັບຂາດ / ໃບຂັບຂີ່ໝົດອາຍຸ"
+  },
+  "os_nl_tx_sap_bang": {
+    "en": "drivers with licence expiring",
+    "vi": "tài xế sắp hết hạn bằng lái",
+    "la": "ຄົນຂັບໃບຂັບຂີ່ໃກ້ໝົດອາຍຸ"
+  },
+  "os_nl_bang_con_han": {
+    "en": "All driver licences are valid",
+    "vi": "Bằng lái còn hạn cả đội",
+    "la": "ໃບຂັບຂີ່ຍັງໃຊ້ໄດ້ທັງໝົດ"
+  },
+  "os_nl_se_bi_chan": {
+    "en": "Dispatch will be blocked for these vehicles/drivers.",
+    "vi": "Điều phối sẽ bị chặn ở những xe/người này.",
+    "la": "ການປ່ອຍລົດຈະຖືກຂັດຂວາງສຳລັບລົດ/ຄົນຂັບເຫຼົ່ານີ້."
+  },
+  "os_nl_trong": {
+    "en": "within",
+    "vi": "trong",
+    "la": "ພາຍໃນ"
+  },
+  "os_nl_chua_doc": {
+    "en": "Could not read fleet resources",
+    "vi": "Chưa đọc được nguồn lực đội xe",
+    "la": "ອ່ານຂໍ້ມູນຊັບພະຍາກອນບໍ່ໄດ້"
   }
 }

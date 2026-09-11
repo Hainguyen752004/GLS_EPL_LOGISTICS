@@ -3947,35 +3947,35 @@
             <div class="os-dock" id="os-dock" role="navigation" aria-label="Tám bước của luồng A–Z">
               <button type="button" class="os-app" data-step="0" data-nhom="master" data-man="master-data" title="Dữ liệu gốc">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#2563eb,#1e3a8a)"><i class="fa-solid fa-database" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Dữ liệu gốc</span>
+                <span class="os-app-title" data-i18n="os_dock_master">Dữ liệu gốc</span>
               </button>
               <button type="button" class="os-app" data-step="1" data-nhom="biz" data-man="co-hoi" title="Khách hàng & cơ hội">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#06b6d4,#2563eb)"><i class="fa-solid fa-handshake" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Khách hàng & cơ hội</span>
+                <span class="os-app-title" data-i18n="os_dock_cohoi">Khách hàng & cơ hội</span>
               </button>
               <button type="button" class="os-app" data-step="2" data-nhom="biz" data-man="crm-sales" data-cuon="qtv2-root" title="Báo giá cước">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#a855f7,#6d28d9)"><i class="fa-solid fa-file-contract" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Báo giá cước</span>
+                <span class="os-app-title" data-i18n="os_dock_baogia">Báo giá cước</span>
               </button>
               <button type="button" class="os-app" data-step="3" data-nhom="ops" data-man="ops-planning" data-cuon="fiori-do-list" title="Lệnh giao hàng">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#fb923c,#dc2626)"><i class="fa-solid fa-boxes-packing" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Lệnh giao hàng</span>
+                <span class="os-app-title" data-i18n="os_dock_do">Lệnh giao hàng</span>
               </button>
               <button type="button" class="os-app" data-step="4" data-nhom="ops" data-man="delivery-shipment" title="Giao hàng & vận chuyển">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#34d399,#0f766e)"><i class="fa-solid fa-route" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Giao hàng & vận chuyển</span>
+                <span class="os-app-title" data-i18n="os_dock_shipment">Giao hàng & vận chuyển</span>
               </button>
               <button type="button" class="os-app" data-step="5" data-nhom="ops" data-man="dispatch" title="Điều phối">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#38bdf8,#1d4ed8)"><i class="fa-solid fa-truck-ramp-box" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Điều phối</span>
+                <span class="os-app-title" data-i18n="os_dock_dispatch">Điều phối</span>
               </button>
               <button type="button" class="os-app" data-step="6" data-nhom="ops" data-man="tracking" title="Theo dõi & kiểm soát">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#c084fc,#7e22ce)"><i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Theo dõi & kiểm soát</span>
+                <span class="os-app-title" data-i18n="os_dock_tracking">Theo dõi & kiểm soát</span>
               </button>
               <button type="button" class="os-app" data-step="7" data-nhom="ops" data-man="delivery-completion" title="Hoàn tất giao hàng">
                 <span class="os-app-icon" style="background:linear-gradient(135deg,#f472b6,#be123c)"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i><span class="os-badge" hidden></span></span>
-                <span class="os-app-title">Hoàn tất giao hàng</span>
+                <span class="os-app-title" data-i18n="os_dock_hoantat">Hoàn tất giao hàng</span>
               </button>
             </div>
 
@@ -3983,7 +3983,7 @@
               <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
               <input type="text" id="tim-man-hinh" autocomplete="off" role="combobox"
                      aria-expanded="false" aria-controls="ket-qua-tim-man"
-                     placeholder="Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…">
+                     data-i18n="os_tim_man" data-i18n-attr="placeholder" placeholder="Đi tới màn: lệnh giao hàng, điều phối, tuyến, xe, báo giá cước…">
               <kbd>/</kbd>
             </div>
           </div>
@@ -4001,11 +4001,11 @@
                DoBoard như màn Lệnh giao hàng), báo giá, cơ hội, sự cố. -->
           <div class="os-ban" id="os-ban">
             <section class="os-panel os-viec" aria-labelledby="os-viec-h">
-              <header><h2 id="os-viec-h"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Việc cần làm ngay</h2><span class="os-dem" id="os-viec-dem"></span></header>
+              <header><h2 id="os-viec-h"><i class="fa-solid fa-bolt" aria-hidden="true"></i> <span data-i18n="os_viec_h">Việc cần làm ngay</span></h2><span class="os-dem" id="os-viec-dem"></span></header>
               <div class="os-viec-ds" id="os-viec-ds"><div class="os-rong"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Đang đọc dữ liệu…</div></div>
             </section>
             <section class="os-panel os-luong" aria-labelledby="os-luong-h">
-              <header><h2 id="os-luong-h"><i class="fa-solid fa-water" aria-hidden="true"></i> Dòng chảy hôm nay</h2><button type="button" class="os-lk" id="os-xem-so-do">Sơ đồ đầy đủ →</button></header>
+              <header><h2 id="os-luong-h"><i class="fa-solid fa-water" aria-hidden="true"></i> <span data-i18n="os_luong_h">Dòng chảy hôm nay</span></h2><button type="button" class="os-lk" id="os-xem-so-do" data-i18n="os_so_do_day_du">Sơ đồ đầy đủ →</button></header>
               <!-- Sáu trạm nối ống, đọc trái → phải theo chiều luồng. Ống dày theo
                    số đang chuyển qua; trạm dồn nhiều nhất phồng lên tô cam; sự cố
                    là chấm đỏ đính lên trạm "Đang chạy" vì nó xảy ra TRÊN chuyến,
@@ -8547,7 +8547,7 @@
   <script src="/static/js/app.js?v=20260911i-xoa-ke-toan"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260911d-dong-chay"></script>
+  <script src="/static/js/khung-moi.js?v=20260911k-i18n-trang-chu"></script>
   <!-- Màn Báo giá cước. Nạp SAU app.js và khung-moi.js: cả ba bọc lại
        `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
        thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->

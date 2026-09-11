@@ -22,18 +22,30 @@ const ROOT = path.join(__dirname, '..');
 const ma = fs.readFileSync(path.join(ROOT, 'js', 'khung-moi.js'), 'utf8')
   .split(String.fromCharCode(13)).join('');
 
-// Lấy `veNguonLuc` ra chạy độc lập, kèm `chuAnToan` mà nó dùng.
+// Lấy `veNguonLuc` ra chạy độc lập, kèm ba hàm THẬT mà nó dùng: `chuAnToan`,
+// `T` (đọc bản dịch, tự lùi về tiếng Việt khi thiếu khoá) và `maVung` (mã vùng
+// để định dạng số). Bóc mã thật chứ không cắm hàm giả, để bài kiểm vẫn đo đúng
+// thứ chạy trên màn hình.
+/** Bóc một hằng khai trên MỘT dòng, ví dụ `const MA_NGON_NGU = {...};`. */
+function bocHang(ten) {
+  const i = ma.indexOf('const ' + ten + ' =');
+  assert.ok(i > 0, 'không thấy hằng ' + ten + ' trong khung-moi.js');
+  return ma.slice(i, ma.indexOf(String.fromCharCode(10), i));
+}
+function boc(ten) {
+  const i = ma.indexOf('function ' + ten + '(');
+  assert.ok(i > 0, 'không thấy ' + ten + ' trong khung-moi.js');
+  return ma.slice(i, ma.indexOf(String.fromCharCode(10) + '  }', i) + 4);
+}
 const iAn = ma.indexOf('function chuAnToan(');
-const jAn = ma.indexOf(String.fromCharCode(10) + '  }', iAn) + 4;
 const iVe = ma.indexOf('function veNguonLuc(');
-const jVe = ma.indexOf(String.fromCharCode(10) + '  }', iVe) + 4;
 assert.ok(iAn > 0 && iVe > 0, 'không thấy chuAnToan / veNguonLuc trong khung-moi.js');
 
 const dom = new JSDOM('<div id="os-nl" hidden></div>');
 global.document = dom.window.document;
 global.window = dom.window;
 const chay = new Function('document', 'window',
-  ma.slice(iAn, jAn) + String.fromCharCode(10) + ma.slice(iVe, jVe)
+  [boc('chuAnToan'), boc('T'), bocHang('MA_NGON_NGU'), boc('maVung'), boc('veNguonLuc')].join(String.fromCharCode(10))
   + String.fromCharCode(10) + 'return veNguonLuc;');
 const veNguonLuc = chay(dom.window.document, dom.window);
 const o = dom.window.document.getElementById('os-nl');

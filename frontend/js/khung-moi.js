@@ -495,6 +495,46 @@
    * một màn vào bảng đó là có luôn trong lưới và trong ô tìm. Dock 8 bước lấy
    * chấm sáng từ `window.currentWorkflowStep`, số đỏ từ hai lời gọi máy chủ.
    */
+  /* ----------------------------- Dịch thuật ------------------------------ */
+
+  /**
+   * Chữ trên trang chủ do JS sinh ra nên `changeLanguage` (chạy trên các thẻ
+   * `data-i18n`) không chạm tới được. `T` đọc `lang.json` qua `window.t`, và
+   * TRẢ VỀ TIẾNG VIỆT nếu khoá chưa có bản dịch — `t()` trả lại chính khoá khi
+   * thiếu, mà để nguyên khoá trên màn hình thì tệ hơn để tiếng Việt.
+   */
+  function T(khoa, macDinh) {
+    if (typeof window.t !== 'function') return macDinh;
+    const ra = window.t(khoa);
+    return (ra && ra !== khoa) ? ra : macDinh;
+  }
+  // `currentLang` trong app.js khai bằng `let` ở cấp cao nhất nên KHÔNG nằm trên
+  // `window` — đọc nó ở đây luôn ra undefined và ngày tháng kẹt ở tiếng Việt.
+  // `changeLanguage` có đặt `<html lang>`, nên lấy mã ngôn ngữ từ đó.
+  const MA_NGON_NGU = { vi: 'vi-VN', en: 'en-GB', la: 'lo-LA', lo: 'lo-LA' };
+  function maVung() {
+    const l = (document.documentElement && document.documentElement.lang) || 'vi';
+    return MA_NGON_NGU[String(l).toLowerCase()] || 'vi-VN';
+  }
+
+  /**
+   * Đổi ngôn ngữ thì vẽ lại trang chủ. Bọc `changeLanguage` thay vì sửa app.js:
+   * hàm đó có nhiều đường ra sớm, và ở đây chỉ cần THÊM việc chứ không đổi việc.
+   */
+  function bocDoiNgonNgu() {
+    const goc = window.changeLanguage;
+    if (typeof goc !== 'function' || goc.daBocTrangChu) return;
+    const boc = function () {
+      const kq = goc.apply(this, arguments);
+      try {
+        if (document.body.classList.contains('epl-os-home')) { veHello(); napSoDock(); veLuoiTram(); napBanLamViec(); }
+      } catch (loi) { console.error('Không vẽ lại được trang chủ sau khi đổi ngôn ngữ:', loi); }
+      return kq;
+    };
+    boc.daBocTrangChu = true;
+    window.changeLanguage = boc;
+  }
+
   /* ------------------------- Bàn làm việc hôm nay ------------------------- */
 
   const goc = function () { return window.API_BASE || ''; };
@@ -539,15 +579,20 @@
 
   /** Sáu trạm của dòng chảy. `khoa` là con số đo được ở napBanLamViec. */
   const TRAM = [
-    { ten: 'Cơ hội', icon: 'fa-handshake', man: 'co-hoi', khoa: 'coHoi', don: 'đang mở' },
-    { ten: 'Báo giá', icon: 'fa-file-contract', man: 'crm-sales', khoa: 'baoGia', don: 'đang mở' },
-    { ten: 'Lệnh giao hàng', icon: 'fa-boxes-packing', man: 'ops-planning', khoa: 'doCho', don: 'chưa lên đường' },
-    { ten: 'Điều phối', icon: 'fa-truck-ramp-box', man: 'dispatch', khoa: 'doDieuPhoi', don: 'chờ xe' },
-    { ten: 'Đang chạy', icon: 'fa-location-crosshairs', man: 'tracking', khoa: 'doChay', don: 'chuyến', suCo: true },
-    { ten: 'Hoàn tất', icon: 'fa-check', man: 'delivery-completion', khoa: 'hoanTat', don: 'đã có POD', cuoi: true },
+    { kTen: 'os_tram_cohoi', ten: 'Cơ hội', icon: 'fa-handshake', man: 'co-hoi', khoa: 'coHoi', kDon: 'os_don_dangmo', don: 'đang mở' },
+    { kTen: 'os_tram_baogia', ten: 'Báo giá', icon: 'fa-file-contract', man: 'crm-sales', khoa: 'baoGia', kDon: 'os_don_dangmo', don: 'đang mở' },
+    { kTen: 'os_tram_do', ten: 'Lệnh giao hàng', icon: 'fa-boxes-packing', man: 'ops-planning', khoa: 'doCho', kDon: 'os_don_chualenduong', don: 'chưa lên đường' },
+    { kTen: 'os_tram_dispatch', ten: 'Điều phối', icon: 'fa-truck-ramp-box', man: 'dispatch', khoa: 'doDieuPhoi', kDon: 'os_don_choxe', don: 'chờ xe' },
+    { kTen: 'os_tram_dangchay', ten: 'Đang chạy', icon: 'fa-location-crosshairs', man: 'tracking', khoa: 'doChay', kDon: 'os_don_chuyen', don: 'chuyến', suCo: true },
+    { kTen: 'os_tram_hoantat', ten: 'Hoàn tất', icon: 'fa-check', man: 'delivery-completion', khoa: 'hoanTat', kDon: 'os_don_dacopod', don: 'đã có POD', cuoi: true },
   ];
 
+  let soTramCuoi = {};
+  /** Vẽ lại dòng chảy bằng SỐ ĐÃ ĐỌC lần trước — dùng khi chỉ đổi ngôn ngữ. */
+  function veLuoiTram() { veLuong(soTramCuoi); }
+
   function veLuong(so) {
+    soTramCuoi = so || {};
     const o = document.getElementById('os-luong-ds'); if (!o) return;
     const gia = TRAM.map(function (t) { const n = Number(so[t.khoa]); return isFinite(n) ? n : null; });
     // Trạm tắc: nhiều nhất trong năm trạm đầu (Hoàn tất càng nhiều càng tốt, không tính).
@@ -558,17 +603,18 @@
       const suCo = t.suCo && isFinite(Number(so.suCo)) && Number(so.suCo) > 0 ? Number(so.suCo) : 0;
       // Ống nối tới trạm này: dày theo số đang chuyển qua (2–12px).
       const ong = i === 0 ? '' : '<span class="os-ong" aria-hidden="true"><span style="height:' + (coSo ? Math.max(2, Math.round(2 + 10 * n / lonNhat)) : 2) + 'px"></span></span>';
-      return ong + '<button type="button" role="listitem" class="os-tram' + (tac ? ' tac' : '') + (t.cuoi ? ' cuoi' : '') + (coSo && n === 0 ? ' trong' : '') + '" data-man="' + t.man + '" title="' + t.ten + (coSo ? ': ' + n + ' ' + t.don : '') + '">'
+      return ong + '<button type="button" role="listitem" class="os-tram' + (tac ? ' tac' : '') + (t.cuoi ? ' cuoi' : '') + (coSo && n === 0 ? ' trong' : '') + '" data-man="' + t.man + '" title="' + T(t.kTen, t.ten) + (coSo ? ': ' + n + ' ' + T(t.kDon, t.don) : '') + '">'
         + '<span class="vong"><b>' + (coSo ? n.toLocaleString('vi-VN') : '·') + '</b>'
-        + (suCo ? '<span class="su-co" title="' + suCo + ' sự cố chưa xử lý"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>' + suCo + '</span>' : '')
+        + (suCo ? '<span class="su-co" title="' + suCo + ' ' + T('os_suco_chuaxuly', 'sự cố chưa xử lý') + '"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>' + suCo + '</span>' : '')
         + '</span>'
-        + '<span class="ten"><i class="fa-solid ' + t.icon + '" aria-hidden="true"></i> ' + t.ten + '</span>'
-        + '<small>' + (coSo ? (tac ? 'đang dồn · ' : '') + t.don : '&nbsp;') + '</small></button>';
+        + '<span class="ten"><i class="fa-solid ' + t.icon + '" aria-hidden="true"></i> ' + T(t.kTen, t.ten) + '</span>'
+        + '<small>' + (coSo ? (tac ? T('os_dang_don', 'đang dồn') + ' · ' : '') + T(t.kDon, t.don) : '&nbsp;') + '</small></button>';
     }).join('');
     o.querySelectorAll('.os-tram').forEach(function (b) { b.addEventListener('click', function () { window.switchView(b.dataset.man); }); });
     const ghi = document.getElementById('os-dong-ghi');
     if (ghi && Object.keys(so).length) {
-      ghi.textContent = 'Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất. Cập nhật ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + '.';
+      ghi.textContent = T('os_dong_ghi', 'Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất.')
+        + ' ' + T('os_cap_nhat', 'Cập nhật') + ' ' + new Date().toLocaleTimeString(maVung(), { hour: '2-digit', minute: '2-digit' }) + '.';
     }
   }
 
@@ -583,22 +629,22 @@
   function veNguonLuc(d, loi) {
     const o = document.getElementById('os-nl'); if (!o) return;
     if (!d) {
-      o.innerHTML = '<div class="os-rong nho">Chưa đọc được nguồn lực đội xe' + (loi ? ' (' + chuAnToan(loi) + ')' : '') + '.</div>';
+      o.innerHTML = '<div class="os-rong nho">' + T('os_nl_chua_doc', 'Chưa đọc được nguồn lực đội xe') + (loi ? ' (' + chuAnToan(loi) + ')' : '') + '.</div>';
       o.hidden = false; return;
     }
     const xe = d.vehicles || {}, tx = d.drivers || {}, ngay = Number(d.warn_within_days) || 30;
-    const so = function (n) { const v = Number(n); return isFinite(v) ? v.toLocaleString('vi-VN') : '·'; };
+    const so = function (n) { const v = Number(n); return isFinite(v) ? v.toLocaleString(maVung()) : '·'; };
     const o1 = function (nhan, n, lop) {
       return '<span class="nl-o' + (lop ? ' ' + lop : '') + (Number(n) ? '' : ' trong') + '"><b>' + so(n) + '</b>' + nhan + '</span>';
     };
     // Một dòng cảnh báo: đỏ nếu đang chặn, cam nếu sắp, xanh nếu sạch.
     const canh = function (chan, sap, dsSap, tenChan, tenSap, tenSach, tab) {
       let lop = 'ok', chu = tenSach, phu = '';
-      if (Number(chan) > 0) { lop = 'chan'; chu = so(chan) + tenChan; phu = 'Điều phối sẽ bị chặn ở những xe/người này.'; }
+      if (Number(chan) > 0) { lop = 'chan'; chu = so(chan) + tenChan; phu = T('os_nl_se_bi_chan', 'Điều phối sẽ bị chặn ở những xe/người này.'); }
       else if (Number(sap) > 0) {
-        lop = 'sap'; chu = so(sap) + tenSap + ' trong ' + ngay + ' ngày';
+        lop = 'sap'; chu = so(sap) + tenSap + ' ' + T('os_nl_trong', 'trong') + ' ' + ngay + ' ' + T('os_ngay', 'ngày');
         phu = (dsSap || []).slice(0, 3).map(function (x) {
-          return (x.name ? x.name : x.id) + ' còn ' + x.con_ngay + ' ngày';
+          return (x.name ? x.name : x.id) + ' ' + T('os_con_ngay', 'còn') + ' ' + x.con_ngay + ' ' + T('os_ngay', 'ngày');
         }).join(' · ');
       }
       return '<button type="button" class="nl-canh ' + lop + '" data-tab="' + tab + '">'
@@ -606,16 +652,18 @@
         + '<span><b>' + chuAnToan(chu) + '</b>' + (phu ? '<small>' + chuAnToan(phu) + '</small>' : '') + '</span>'
         + '<i class="fa-solid fa-chevron-right mui" aria-hidden="true"></i></button>';
     };
-    o.innerHTML = '<div class="nl-dau"><h3><i class="fa-solid fa-truck-front" aria-hidden="true"></i> Nguồn lực hôm nay</h3>'
-      + '<span>' + so(xe.tong) + ' xe · ' + so(tx.tong) + ' tài xế</span></div>'
-      + '<div class="nl-hang">' + o1(' xe rảnh', xe.ranh, 'xanh') + o1(' xe đang chạy', xe.dang_chay)
-      + o1(' nằm xưởng', xe.bao_duong) + (Number(xe.ngung_chay) ? o1(' ngừng chạy', xe.ngung_chay) : '')
-      + o1(' tài xế rảnh', tx.ranh, 'xanh') + '</div>'
+    o.innerHTML = '<div class="nl-dau"><h3><i class="fa-solid fa-truck-front" aria-hidden="true"></i> ' + T('os_nl_h', 'Nguồn lực hôm nay') + '</h3>'
+      + '<span>' + so(xe.tong) + ' ' + T('os_nl_xe', 'xe') + ' · ' + so(tx.tong) + ' ' + T('os_nl_taixe', 'tài xế') + '</span></div>'
+      + '<div class="nl-hang">' + o1(' ' + T('os_nl_xe_ranh', 'xe rảnh'), xe.ranh, 'xanh') + o1(' ' + T('os_nl_xe_dang_chay', 'xe đang chạy'), xe.dang_chay)
+      + o1(' ' + T('os_nl_nam_xuong', 'nằm xưởng'), xe.bao_duong) + (Number(xe.ngung_chay) ? o1(' ' + T('os_nl_ngung_chay', 'ngừng chạy'), xe.ngung_chay) : '')
+      + o1(' ' + T('os_nl_tx_ranh', 'tài xế rảnh'), tx.ranh, 'xanh') + '</div>'
       + canh(xe.giay_to_het_han, xe.giay_to_sap_het, d.vehicles_expiring_soon,
-             ' xe thiếu / hết hạn giấy tờ', ' xe sắp hết hạn giấy tờ', 'Giấy tờ xe còn hạn cả đội', 'md-tab-vehicles')
+             ' ' + T('os_nl_xe_het_giay', 'xe thiếu / hết hạn giấy tờ'), ' ' + T('os_nl_xe_sap_giay', 'xe sắp hết hạn giấy tờ'),
+             T('os_nl_giay_con_han', 'Giấy tờ xe còn hạn cả đội'), 'md-tab-vehicles')
       + canh(tx.bang_het_han, tx.bang_sap_het, d.drivers_expiring_soon,
-             ' tài xế thiếu / hết hạn bằng lái', ' tài xế sắp hết hạn bằng lái', 'Bằng lái còn hạn cả đội', 'md-tab-drivers')
-      + (loi ? '<div class="os-rong nho">Chưa đọc được: ' + chuAnToan(loi) + '.</div>' : '');
+             ' ' + T('os_nl_tx_het_bang', 'tài xế thiếu / hết hạn bằng lái'), ' ' + T('os_nl_tx_sap_bang', 'tài xế sắp hết hạn bằng lái'),
+             T('os_nl_bang_con_han', 'Bằng lái còn hạn cả đội'), 'md-tab-drivers')
+      + (loi ? '<div class="os-rong nho">' + T('os_chua_doc_duoc', 'Chưa đọc được') + ': ' + chuAnToan(loi) + '.</div>' : '');
     o.hidden = false;
     o.querySelectorAll('.nl-canh').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -629,12 +677,12 @@
     const o = document.getElementById('os-viec-ds'), dem = document.getElementById('os-viec-dem');
     if (!o) return;
     if (!ds.length) {
-      o.innerHTML = '<div class="os-rong ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Không có việc gấp — mọi thứ đang đúng hạn.'
-        + (loi.length ? '<br><small>Chưa đọc được: ' + chuAnToan(loi.join(', ')) + '.</small>' : '') + '</div>';
+      o.innerHTML = '<div class="os-rong ok"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> ' + T('os_khong_viec_gap', 'Không có việc gấp — mọi thứ đang đúng hạn.')
+        + (loi.length ? '<br><small>' + T('os_chua_doc_duoc', 'Chưa đọc được') + ': ' + chuAnToan(loi.join(', ')) + '.</small>' : '') + '</div>';
       if (dem) dem.textContent = '';
     } else {
-      o.innerHTML = ds.map(dongViec).join('') + (loi.length ? '<div class="os-rong nho">Chưa đọc được: ' + chuAnToan(loi.join(', ')) + '.</div>' : '');
-      if (dem) dem.textContent = ds.length + ' việc';
+      o.innerHTML = ds.map(dongViec).join('') + (loi.length ? '<div class="os-rong nho">' + T('os_chua_doc_duoc', 'Chưa đọc được') + ': ' + chuAnToan(loi.join(', ')) + '.</div>' : '');
+      if (dem) dem.textContent = ds.length + ' ' + T('os_dem_viec', 'việc');
       o.querySelectorAll('.os-vi').forEach(function (b) { b.addEventListener('click', function () { moBanGhi(b.dataset.loai, b.dataset.id); }); });
     }
   }
@@ -654,23 +702,25 @@
           .sort(function (a, b) { return new Date(a.next_action_at) - new Date(b.next_action_at); })
           .forEach(function (x) {
             const tre = new Date(x.next_action_at).getTime() < Date.now();
-            viec.push({ loai: 'co-hoi', id: x.id, tone: tre ? 'do' : 'cam', icon: 'fa-phone', tieuDe: (tre ? 'Trễ hẹn liên hệ · ' : 'Hẹn liên hệ · ') + (x.customer_name || x.id),
+            viec.push({ loai: 'co-hoi', id: x.id, tone: tre ? 'do' : 'cam', icon: 'fa-phone', tieuDe: (tre ? T('os_tre_hen', 'Trễ hẹn liên hệ') : T('os_hen_lien_he', 'Hẹn liên hệ')) + ' · ' + (x.customer_name || x.id),
               chiTiet: [x.route_name, x.cargo_type].filter(Boolean).join(' · ') || x.id, nhan: gioNgay(x.next_action_at) });
           });
-      }).catch(function () { loi.push('cơ hội'); }),
+      }).catch(function () { loi.push(T('os_nguon_cohoi', 'cơ hội')); }),
       layJson('/api/quotations/board?status=all').then(function (g) {
         const ds = danhSach(g);
         so.baoGia = ds.filter(function (q) { return ['draft', 'pending_approval', 'approved', 'sent'].includes(q.canonical_status); }).length;
         ds.filter(function (q) { return q.canonical_status === 'expired' || (q.canonical_status === 'sent' && isFinite(Number(q.con_lai_ngay)) && Number(q.con_lai_ngay) <= 3); })
           .forEach(function (q) {
             const het = q.canonical_status === 'expired';
-            viec.push({ loai: 'bao-gia', id: q.id, tone: het ? 'do' : 'cam', icon: 'fa-file-contract', tieuDe: (het ? 'Báo giá hết hạn · ' : 'Báo giá sắp hết hạn · ') + (q.quote_no || q.id),
-              chiTiet: [q.customer_name || q.customer_id, q.origin && q.destination ? q.origin + ' → ' + q.destination : ''].filter(Boolean).join(' · '), nhan: het ? 'gia hạn / đóng' : 'còn ' + q.con_lai_ngay + ' ngày' });
+            viec.push({ loai: 'bao-gia', id: q.id, tone: het ? 'do' : 'cam', icon: 'fa-file-contract', tieuDe: (het ? T('os_bg_het_han', 'Báo giá hết hạn') : T('os_bg_sap_het', 'Báo giá sắp hết hạn')) + ' · ' + (q.quote_no || q.id),
+              chiTiet: [q.customer_name || q.customer_id, q.origin && q.destination ? q.origin + ' → ' + q.destination : ''].filter(Boolean).join(' · '),
+              nhan: het ? T('os_gia_han_dong', 'gia hạn / đóng') : T('os_con_ngay', 'còn') + ' ' + q.con_lai_ngay + ' ' + T('os_ngay', 'ngày') });
           });
         ds.filter(function (q) { return q.canonical_status === 'pending_approval'; }).forEach(function (q) {
-          viec.push({ loai: 'bao-gia', id: q.id, tone: 'vang', icon: 'fa-stamp', tieuDe: 'Chờ duyệt nội bộ · ' + (q.quote_no || q.id), chiTiet: (q.customer_name || q.customer_id || '') + (q.bien != null ? ' · biên ' + q.bien + '%' : ''), nhan: 'duyệt' });
+          viec.push({ loai: 'bao-gia', id: q.id, tone: 'vang', icon: 'fa-stamp', tieuDe: T('os_cho_duyet', 'Chờ duyệt nội bộ') + ' · ' + (q.quote_no || q.id),
+            chiTiet: (q.customer_name || q.customer_id || '') + (q.bien != null ? ' · ' + T('os_bien', 'biên') + ' ' + q.bien + '%' : ''), nhan: T('os_duyet', 'duyệt') });
         });
-      }).catch(function () { loi.push('báo giá'); }),
+      }).catch(function () { loi.push(T('os_nguon_baogia', 'báo giá')); }),
       layJson('/api/delivery-orders?page_size=200').then(function (g) {
         const ds = danhSach(g);
         if (!D) return;
@@ -679,20 +729,23 @@
         so.doDieuPhoi = dem.pending + dem.near_late + dem.overdue;
         so.doChay = dem.active; so.hoanTat = dem.completed;
         D.sortWithin(D.filter(ds, 'overdue'), 'overdue').slice(0, 5).forEach(function (o) {
-          viec.push({ loai: 'do', id: o.id, tone: 'do', icon: 'fa-clock-rotate-left', tieuDe: 'DO quá hạn giao · ' + o.id, chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: 'quá ' + D.daysLate(o) + ' ngày' });
+          viec.push({ loai: 'do', id: o.id, tone: 'do', icon: 'fa-clock-rotate-left', tieuDe: T('os_do_qua_han', 'DO quá hạn giao') + ' · ' + o.id,
+            chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: T('os_qua', 'quá') + ' ' + D.daysLate(o) + ' ' + T('os_ngay', 'ngày') });
         });
         D.sortWithin(D.filter(ds, 'near_late'), 'near_late').slice(0, 5).forEach(function (o) {
-          viec.push({ loai: 'do', id: o.id, tone: 'cam', icon: 'fa-hourglass-half', tieuDe: 'DO tới hạn trong 24 giờ · ' + o.id, chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: 'điều phối xe' });
+          viec.push({ loai: 'do', id: o.id, tone: 'cam', icon: 'fa-hourglass-half', tieuDe: T('os_do_toi_han', 'DO tới hạn trong 24 giờ') + ' · ' + o.id,
+            chiTiet: (o.customer_name || o.customer_id || '') + (o.route_name ? ' · ' + o.route_name : ''), nhan: T('os_dieu_phoi_xe', 'điều phối xe') });
         });
-        if (dem.undated) viec.push({ loai: 'do', id: '', tone: 'vang', icon: 'fa-calendar-xmark', tieuDe: dem.undated + ' DO thiếu hạn giao', chiTiet: 'Chưa có ngày lấy/giao nên chưa lập kế hoạch được', nhan: 'bổ sung' });
-      }).catch(function () { loi.push('lệnh giao hàng'); }),
+        if (dem.undated) viec.push({ loai: 'do', id: '', tone: 'vang', icon: 'fa-calendar-xmark', tieuDe: dem.undated + ' ' + T('os_do_thieu_han', 'DO thiếu hạn giao'),
+          chiTiet: T('os_thieu_han_giai', 'Chưa có ngày lấy/giao nên chưa lập kế hoạch được'), nhan: T('os_bo_sung', 'bổ sung') });
+      }).catch(function () { loi.push(T('os_nguon_do', 'lệnh giao hàng')); }),
       layJson('/api/incidents').then(function (g) {
         const ds = danhSach(g).filter(function (i) { return !['Resolved', 'Closed', 'resolved', 'closed', 'Đã xử lý'].includes(String(i.status || '')); });
         so.suCo = ds.length;
         ds.slice(0, 5).forEach(function (i) {
-          viec.push({ loai: 'su-co', id: String(i.id), tone: 'do', icon: 'fa-triangle-exclamation', tieuDe: 'Sự cố · ' + (i.incident_type || 'chưa rõ loại') + (i.do_id ? ' · ' + i.do_id : ''), chiTiet: [i.vehicle_id, i.location].filter(Boolean).join(' · ') || (i.description || '').slice(0, 60), nhan: i.severity || '' });
+          viec.push({ loai: 'su-co', id: String(i.id), tone: 'do', icon: 'fa-triangle-exclamation', tieuDe: T('os_su_co', 'Sự cố') + ' · ' + (i.incident_type || T('os_chua_ro_loai', 'chưa rõ loại')) + (i.do_id ? ' · ' + i.do_id : ''), chiTiet: [i.vehicle_id, i.location].filter(Boolean).join(' · ') || (i.description || '').slice(0, 60), nhan: i.severity || '' });
         });
-      }).catch(function () { loi.push('sự cố'); }),
+      }).catch(function () { loi.push(T('os_nguon_suco', 'sự cố')); }),
       // Nguồn lực: máy chủ đếm sẵn. Hỏng riêng thì thẻ đó nói riêng, không làm trống cả bàn.
       layJson('/api/fleet/resource-summary').then(function (g) { nguonLuc = g; })
         .catch(function (e) { loiNguonLuc = String((e && e.message) || e); }),
@@ -736,11 +789,12 @@
   function veHello() {
     const o = document.getElementById('os-hello'); if (!o) return;
     const gio = new Date().getHours();
-    const chao = gio < 11 ? 'Chào buổi sáng' : gio < 14 ? 'Chào buổi trưa' : gio < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-    const ngay = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    const chao = gio < 11 ? T('os_chao_sang', 'Chào buổi sáng') : gio < 14 ? T('os_chao_trua', 'Chào buổi trưa')
+      : gio < 18 ? T('os_chao_chieu', 'Chào buổi chiều') : T('os_chao_toi', 'Chào buổi tối');
+    const ngay = new Date().toLocaleDateString(maVung(), { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
     o.innerHTML = '<div class="os-hello-chao"><b>' + chao + '</b><span>' + chuAnToan(ngay) + '</span></div>'
       + '<div class="os-hello-so" id="os-hello-so"></div>'
-      + '<button type="button" class="os-vao" id="os-vao-trang-chinh"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Vào trang chính <span aria-hidden="true">→</span></button>';
+      + '<button type="button" class="os-vao" id="os-vao-trang-chinh"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> ' + T('os_vao_trang_chinh', 'Vào trang chính') + ' <span aria-hidden="true">→</span></button>';
     o.hidden = false;
     document.getElementById('os-vao-trang-chinh').addEventListener('click', function () { window.switchView('dashboard'); });
   }
@@ -845,10 +899,10 @@
     const so = {};
     const ve = function () {
       ghiSoHello([
-        { so: so.doOpen, nhan: 'lệnh giao hàng', man: 'ops-planning' },
-        { so: so.transit, nhan: 'chuyến đang đi', man: 'tracking' },
-        { so: so.dueCrm, nhan: 'cơ hội cần liên hệ hôm nay', man: 'co-hoi', nong: true },
-        { so: so.incidents, nhan: 'sự cố phát sinh', man: 'tracking', nong: true },
+        { so: so.doOpen, nhan: T('os_so_do', 'lệnh giao hàng'), man: 'ops-planning' },
+        { so: so.transit, nhan: T('os_so_chuyen', 'chuyến đang đi'), man: 'tracking' },
+        { so: so.dueCrm, nhan: T('os_so_cohoi', 'cơ hội cần liên hệ hôm nay'), man: 'co-hoi', nong: true },
+        { so: so.incidents, nhan: T('os_so_suco', 'sự cố phát sinh'), man: 'tracking', nong: true },
         // HỒ SƠ SẴN SÀNG BÀN GIAO — con số cuối của luồng, và là thứ bên công nợ chờ.
         // Khác với "đã có POD": một DO đã giao xong mà chuyến chở nó còn mở (xe chưa về,
         // chưa xác nhận) thì CHƯA xuất hiện ở API bàn giao, nên chưa lấy được. Đúng bộ lọc
@@ -919,6 +973,7 @@
     document.body.classList.toggle('epl-os-home', man === 'os-home');
     veManChinh();
     ganNganNen();
+    bocDoiNgonNgu();
     if (man === 'os-home') { napSoDock(); napBanLamViec(); }
   }
 
