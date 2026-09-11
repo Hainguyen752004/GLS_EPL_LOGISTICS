@@ -188,3 +188,33 @@ def test_bao_gia_ngoai_te_lui_ve_cong_thuc_vnd_va_NOI_RA(app_client):
     ho_so = inspect.getsource(delivery_routes)
     for khoa in ("currency_fallback", "fallback_reason", "quote_currency"):
         assert khoa in ho_so, "hồ sơ quyết toán thiếu %s" % khoa
+
+
+def test_lui_ve_cong_thuc_vnd_phai_chay_TRUOC_cua_chan_cong_thuc():
+    """Thứ tự trong hàm là điều kiện sống còn của việc này, không phải chi tiết trình bày.
+
+    ĐÃ HỎNG THẬT một lần. Bản sửa đầu đặt khối lùi-về-công-thức-VND SAU cửa chặn
+    `COST_FORMULA_REQUIRED`. Cửa đó chỉ bỏ qua lệnh ĐÃ CHỐT (`con_phai_tinh` là False), nên
+    lệnh đang chạy hay đã đến nơi vẫn ăn 409 trước khi chạm tới khối kia. Kết quả đo trên bộ
+    dữ liệu demo Lào: màn "Hoàn tất giao hàng" hiện "Chưa tải được giá" ở 10 trong 13 dòng —
+    đúng 10 dòng ngoại tệ, chỉ 3 dòng VND còn đọc được giá.
+
+    Bài này đọc mã nguồn vì thứ cần khoá là THỨ TỰ, và một bài chạy thật trên lệnh đã giao
+    sẽ xanh kể cả khi thứ tự bị đảo — đó chính là cách lỗi trên lọt qua.
+    """
+    import inspect
+
+    delivery_routes = importlib.import_module("routes.delivery_routes")
+    than = inspect.getsource(delivery_routes.get_delivery_order_closeout)
+
+    vi_tri_lui = than.find("_cong_thuc_theo_tien_chuc_nang")
+    # Tìm CHỖ NÉM LỖI, không phải chữ `COST_FORMULA_REQUIRED` nói chung: chính chú thích giải
+    # thích bài này cũng nhắc tên mã đó, và tìm theo tên trần sẽ khớp vào câu chú thích rồi
+    # kết luận ngược. Đã mắc đúng bẫy ấy một lần.
+    vi_tri_chan = than.find('"code": "COST_FORMULA_REQUIRED"')
+    assert vi_tri_lui > 0, "hàm dựng hồ sơ quyết toán không còn gọi công thức dự phòng"
+    assert vi_tri_chan > 0, "không thấy chỗ ném lỗi COST_FORMULA_REQUIRED"
+    assert vi_tri_lui < vi_tri_chan, (
+        "khối lùi về công thức VND phải nằm TRƯỚC cửa chặn COST_FORMULA_REQUIRED; "
+        "đặt sau thì mọi lệnh ngoại tệ chưa giao xong đều trả 409 và màn Hoàn tất "
+        "giao hàng hiện 'Chưa tải được giá'")

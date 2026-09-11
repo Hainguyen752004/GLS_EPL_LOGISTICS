@@ -411,6 +411,21 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
     # VND hien "1.118.000 USD". Da do duoc tren du lieu demo (DO-2026-0010).
     tien_te_nguon = quotation.currency_code if quotation else None
     formula_row = _select_closeout_formula(db, delivery_order, tien_te_nguon)
+    # BÁO GIÁ NGOẠI TỆ MÀ CHƯA CÓ CÔNG THỨC BẰNG ĐÚNG ĐƠN VỊ ĐÓ: lùi về công thức tiền chức
+    # năng (VND) và NÓI RA, thay vì để hồ sơ chết.
+    #
+    # PHẢI THỬ Ở ĐÂY, TRƯỚC MỌI CỬA CHẶN. Bản trước đặt khối này sau cửa
+    # `COST_FORMULA_REQUIRED`, nên nó chỉ cứu được lệnh ĐÃ GIAO (cửa đó bỏ qua lệnh đã chốt).
+    # Lệnh đang chạy hoặc đã đến nơi thì ăn 409 trước khi tới được đây, và màn Hoàn tất giao
+    # hàng hiện "Chưa tải được giá" cho mọi lệnh ngoại tệ — đo được trên dữ liệu demo Lào:
+    # 10/13 dòng hỏng, chỉ 3 dòng VND còn giá.
+    tien_cong_thuc = (tien_te_nguon or TIEN_CHUC_NANG).upper()
+    cong_thuc_quy_doi = False
+    if formula_row is None and tien_cong_thuc != TIEN_CHUC_NANG:
+        formula_row = _cong_thuc_theo_tien_chuc_nang(db, delivery_order)
+        if formula_row is not None:
+            cong_thuc_quy_doi = True
+            tien_cong_thuc = TIEN_CHUC_NANG
     # Chỉ đòi công thức khi còn phải TÍNH giá thành. DO đã giao xong thì hồ
     # sơ đã chốt, màn "Đã hoàn tất" chỉ xem lại — đòi công thức ở đó là chặn
     # một việc không cần đến nó, và hậu quả là không xem được hồ sơ của một
@@ -452,15 +467,6 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
             "currency": tien_te_nguon or "VND",
             "navigation_targets": ["master-data/vehicle-types", "master-data/vehicles"],
         })
-    # Báo giá ngoại tệ mà chưa có công thức bằng đúng đơn vị đó: lùi về công thức VND và
-    # NÓI RA, thay vì trả danh sách rỗng rồi để màn hình im lặng.
-    tien_cong_thuc = (tien_te_nguon or TIEN_CHUC_NANG).upper()
-    cong_thuc_quy_doi = False
-    if formula_row is None and tien_cong_thuc != TIEN_CHUC_NANG:
-        formula_row = _cong_thuc_theo_tien_chuc_nang(db, delivery_order)
-        if formula_row is not None:
-            cong_thuc_quy_doi = True
-            tien_cong_thuc = TIEN_CHUC_NANG
     formula = _serialize_closeout_formula(formula_row)
     formula["currency_fallback"] = cong_thuc_quy_doi
     formula["quote_currency"] = (tien_te_nguon or TIEN_CHUC_NANG).upper()
