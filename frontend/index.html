@@ -3514,6 +3514,20 @@
             .cl-tieu-de i { color: #16a34a; }
             .cl-phu { font-size: .8rem; color: #4b6b52; margin-top: 3px; }
             /* Ghi sổ kinh doanh (đẩy sang QLSX): hàng nút và chip đã ghi sổ. */
+            /* Hộp xác nhận trong ứng dụng (hoiXacNhan) — thay cho confirm() của trình duyệt. */
+            .hxn-nen { position: fixed; inset: 0; z-index: 12000; background: rgba(15, 23, 42, .55); display: grid; place-items: center; padding: 16px; }
+            .hxn-hop { width: min(440px, 100%); background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(15, 23, 42, .35); overflow: hidden; animation: hxn-len .16s ease-out; }
+            @keyframes hxn-len { from { transform: translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+            .hxn-dau { display: flex; align-items: center; gap: 10px; padding: 16px 18px 6px; }
+            .hxn-dau i { font-size: 1.15rem; color: #b45309; }
+            .hxn-dau h3 { margin: 0; font-size: 1rem; font-weight: 700; color: #0f172a; }
+            .hxn-than { padding: 4px 18px 14px; color: #334155; font-size: .9rem; line-height: 1.5; }
+            .hxn-than p { margin: 0 0 6px; }
+            .hxn-than p:first-child { font-weight: 600; color: #0f172a; }
+            .hxn-chan { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+            .fiori-btn.fiori-btn-danger { background: #b42318; border-color: #b42318; color: #fff; }
+            .fiori-btn.fiori-btn-danger:hover { background: #9a1c12; }
+            @media (prefers-reduced-motion: reduce) { .hxn-hop { animation: none; } }
             .cl-nut-hang { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
             .cl-ghi-so-xong {
               display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;

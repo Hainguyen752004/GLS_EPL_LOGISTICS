@@ -11180,6 +11180,43 @@ function khoiPODHoSo(data) {
  * `da_ghi_so` là đã có SO bên đó. Đã ghi sổ thì không hiện nút bấm nữa — bên QLSX không có
  * API sửa/xoá, bấm lại chỉ tốn một vòng mạng để nhận lại kết quả cũ.
  */
+/**
+ * HỘP XÁC NHẬN TRONG ỨNG DỤNG — thay cho `window.confirm`.
+ *
+ * Chủ dự án bấm "Ghi sổ kinh doanh", thấy hộp mặc định của Chrome tiêu đề "127.0.0.1:8001
+ * says" và bảo làm lại: *"đừng thông báo kiểu như trong ảnh nữa"* (12/09/2026). Hộp gốc của
+ * trình duyệt in địa chỉ máy chủ làm tiêu đề, dùng font của hệ điều hành, không có màu của ứng
+ * dụng — trước mặt khách nó đọc như một lỗi kỹ thuật, không phải một bước nghiệp vụ.
+ *
+ * Trả `Promise<boolean>`. Esc / bấm nền / nút Huỷ → false. Enter → nút hành động.
+ * `nguyHiem: true` tô nút hành động màu đỏ cho việc không hoàn lại được (xoá, ghi sổ…).
+ */
+window.hoiXacNhan = function ({ tieuDe, noiDung, nutOk = 'Đồng ý', nutHuy = 'Huỷ', nguyHiem = false } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('hop-xac-nhan')?.remove();
+    const o = document.createElement('div');
+    o.id = 'hop-xac-nhan'; o.className = 'hxn-nen'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    const dong = Array.isArray(noiDung) ? noiDung : String(noiDung || '').split(/\n+/);
+    o.innerHTML = `<div class="hxn-hop">
+        <div class="hxn-dau"><i class="fa-solid ${nguyHiem ? 'fa-triangle-exclamation' : 'fa-circle-question'}"></i>
+          <h3>${completionEscape(tieuDe || 'Xác nhận')}</h3></div>
+        <div class="hxn-than">${dong.filter(Boolean).map(d => `<p>${completionEscape(d)}</p>`).join('')}</div>
+        <div class="hxn-chan">
+          <button type="button" class="fiori-btn" data-hxn="huy">${completionEscape(nutHuy)}</button>
+          <button type="button" class="fiori-btn ${nguyHiem ? 'fiori-btn-danger' : 'fiori-btn-primary'}" data-hxn="ok">${completionEscape(nutOk)}</button>
+        </div></div>`;
+    const xong = kq => { o.remove(); document.removeEventListener('keydown', phim); resolve(kq); };
+    const phim = e => { if (e.key === 'Escape') xong(false); if (e.key === 'Enter') xong(true); };
+    o.addEventListener('click', e => {
+      if (e.target === o) return xong(false);
+      const b = e.target.closest('[data-hxn]'); if (b) xong(b.dataset.hxn === 'ok');
+    });
+    document.addEventListener('keydown', phim);
+    document.body.appendChild(o);
+    o.querySelector('[data-hxn="ok"]').focus();
+  });
+};
+
 function nutGhiSoKinhDoanh(data) {
   if (String(data.status || '').toLowerCase() !== 'delivered') return '';
   const gs = data.ghi_so_kinh_doanh || null;
@@ -11221,9 +11258,13 @@ async function taiLaiHoSoCloseout(doId, nut) {
 }
 
 window.ghiSoKinhDoanh = async function (doId, nut) {
-  if (!confirm(`Ghi sổ kinh doanh cho ${doId}?
-
-Sẽ tạo đơn hàng bán và ghi công nợ bên QLSX. Bên đó không có sửa/xoá — làm một lần.`)) return;
+  const dongY = await hoiXacNhan({
+    tieuDe: 'Ghi sổ kinh doanh',
+    noiDung: [`Ghi sổ kinh doanh cho lệnh ${doId}?`,
+              'Hệ công nợ sẽ tạo đơn hàng bán và ghi công nợ cho khách theo giá cuối đã chốt.',
+              'Việc này làm một lần và không sửa lại được từ đây.'],
+    nutOk: 'Ghi sổ', nutHuy: 'Để sau', nguyHiem: true });
+  if (!dongY) return;
   const cu = nut ? nut.innerHTML : '';
   if (nut) { nut.disabled = true; nut.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang ghi sổ…'; }
   try {

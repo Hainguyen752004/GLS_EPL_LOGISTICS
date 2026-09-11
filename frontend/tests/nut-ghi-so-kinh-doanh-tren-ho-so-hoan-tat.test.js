@@ -67,6 +67,12 @@ assert.strictEqual(nutGhiSoKinhDoanh({ do_id: 'DO-4', status: 'in_transit' }), '
 assert.ok(/\/api\/handover\/delivery-orders\/\$\{encodeURIComponent\(doId\)\}\/ghi-so-kinh-doanh/.test(ma));
 assert.ok(!/goldensme\.com/.test(ma), 'trình duyệt không được biết địa chỉ/token QLSX');
 assert.ok(/window\.ghiSoKinhDoanh = async function/.test(ma));
+// 6. KHÔNG dùng confirm() của trình duyệt: hộp "127.0.0.1:8001 says" trước mặt khách đọc như lỗi
+// kỹ thuật. Chủ dự án bảo làm lại — phải là hộp xác nhận trong ứng dụng `hoiXacNhan`.
+const thanGhiSo = ma.slice(ma.indexOf('window.ghiSoKinhDoanh = async function'), ma.indexOf('window.ghiSoKinhDoanh = async function') + 2500);
+assert.ok(!/[^.a-zA-Z]confirm\(/.test(thanGhiSo), 'ghiSoKinhDoanh vẫn gọi confirm() gốc của trình duyệt');
+assert.ok(/await hoiXacNhan\(/.test(thanGhiSo), 'phải hỏi bằng hoiXacNhan');
+assert.ok(/window\.hoiXacNhan = function/.test(ma), 'thiếu hộp xác nhận trong ứng dụng');
 assert.ok(/await r\.text\(\)/.test(ma), 'phải đọc thân dạng chữ trước — QLSX/proxy có thể trả không phải JSON');
 // Nút đứng trong hàng nút cạnh "Cập nhật giá thực tế / Chốt cước".
 assert.ok(/cl-nut-hang[\s\S]{0,400}Cập nhật giá thực tế \/ Chốt cước[\s\S]{0,200}\$\{nutGhiSoKinhDoanh\(data\)\}/.test(ma));
