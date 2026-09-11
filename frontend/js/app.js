@@ -11172,6 +11172,10 @@ function khoiPODHoSo(data) {
  * (`POST /api/handover/delivery-orders/{do}/ghi-so-kinh-doanh`), rồi máy chủ mình mới gọi
  * sang QLSX — vì hợp đồng QLSX cấm nhúng token vào trình duyệt.
  *
+ * KHÔNG có nút "xem dữ liệu gửi" ở đây. Bản đầu có, chủ dự án gỡ ngay: *"khách hàng thấy là
+ * chết anh luôn"* — màn này được chiếu cho khách, một khối JSON thô kèm Idempotency-Key đọc ra
+ * là hệ thống chưa xong. Đối soát body với bên QLSX thì dùng `?xem_truoc=1` ở tầng API.
+ *
  * Trạng thái đọc từ `data.ghi_so_kinh_doanh` trong gói closeout: `null` là chưa bấm;
  * `da_ghi_so` là đã có SO bên đó. Đã ghi sổ thì không hiện nút bấm nữa — bên QLSX không có
  * API sửa/xoá, bấm lại chỉ tốn một vòng mạng để nhận lại kết quả cũ.
@@ -11192,8 +11196,6 @@ function nutGhiSoKinhDoanh(data) {
       onclick="ghiSoKinhDoanh('${doId}', this)">
       <i class="fa-solid fa-book"></i> Ghi sổ kinh doanh
     </button>
-    <button type="button" class="fiori-btn fiori-btn-ghost" title="Xem đúng dữ liệu sẽ gửi sang QLSX, chưa gửi"
-      onclick="xemTruocGhiSo('${doId}', this)"><i class="fa-solid fa-eye"></i> Xem dữ liệu gửi</button>
     ${loiCu}`;
 }
 
@@ -11240,25 +11242,6 @@ Sẽ tạo đơn hàng bán và ghi công nợ bên QLSX. Bên đó không có s
   }
 };
 
-window.xemTruocGhiSo = async function (doId, nut) {
-  const o = document.getElementById('cl-ghi-so-xem-truoc');
-  if (!o) return;
-  if (!o.hidden) { o.hidden = true; o.innerHTML = ''; return; }
-  o.hidden = false; o.innerHTML = '<div class="cl-trong">Đang dựng dữ liệu…</div>';
-  try {
-    const r = await fetch(`${API_BASE}/api/handover/delivery-orders/${encodeURIComponent(doId)}/ghi-so-kinh-doanh?xem_truoc=1`, {
-      method: 'POST', headers: {...financeAuthHeaders(), 'Content-Type': 'application/json'}});
-    const d = await r.json();
-    if (!r.ok) throw new Error(d?.error?.message || d?.detail?.message || `HTTP ${r.status}`);
-    const t = d.data?.tom_tat || {};
-    o.innerHTML = `<div class="cl-ghi-so-dau"><b>Dữ liệu sẽ gửi QLSX</b>
-        <span>${escapeCloseoutText(t.customer_id || '')} · tuyến ${escapeCloseoutText(t.route_id || '')} · ${t.so_dong || 0} dòng (${t.so_dong_thu || 0} thu) · tổng bán <b>${closeoutMoney(t.final_selling_price, t.currency || 'VND')}</b></span>
-        <code>Idempotency-Key: ${escapeCloseoutText(d.data?.idempotency_key || '')}</code></div>
-      <pre class="cl-ghi-so-json">${escapeCloseoutText(JSON.stringify(d.data?.body || {}, null, 2))}</pre>`;
-  } catch (e) {
-    o.innerHTML = `<div class="cl-trong" style="color:#b42318">${escapeCloseoutText(e.message)}</div>`;
-  }
-};
 
 function renderDeliveryOrderCloseout(data, target) {
   // `target` tuỳ chọn: màn Theo dõi vẽ vào ô của nó; màn Hoàn tất giao hàng
@@ -11385,7 +11368,6 @@ function renderDeliveryOrderCloseout(data, target) {
           ${nutGhiSoKinhDoanh(data)}
         </div>
       </div>
-      <div id="cl-ghi-so-xem-truoc" class="cl-ghi-so-xem" hidden></div>
       <div class="cl-luoi cl-moc">${moc}</div>
       <div class="cl-tien-hang">${soTien}</div>
       ${khoiThongTinDOHoSo(data)}

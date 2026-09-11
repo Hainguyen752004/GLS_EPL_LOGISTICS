@@ -3,8 +3,8 @@
  *
  * Chủ dự án và anh Khang chốt 11/09/2026: cạnh "Cập nhật giá thực tế / Chốt cước" có thêm nút
  * này. Bài chạy THẬT hai hàm vẽ với ba trạng thái để khoá:
- *  1. DO đã giao, chưa ghi sổ → có nút bấm, gọi `ghiSoKinhDoanh(doId)`; mốc "Bàn giao công nợ"
- *     nói rõ "chưa ghi sổ".
+ *  1. DO đã giao, chưa ghi sổ → có đúng MỘT nút bấm, gọi `ghiSoKinhDoanh(doId)`; KHÔNG có nút
+ *     kỹ thuật "xem dữ liệu gửi" (khách nhìn màn này); mốc "Bàn giao công nợ" nói rõ "chưa ghi sổ".
  *  2. Đã ghi sổ → KHÔNG còn nút bấm (QLSX không có API sửa/xoá, bấm lại chỉ tốn một vòng
  *     mạng), thay bằng chip xanh ghi mã SO; mốc ghi mã SO và công nợ ban đầu.
  *  3. Lần trước hỏng → nút vẫn hiện, kèm dòng lỗi lần trước để người dùng biết vì sao.
@@ -35,7 +35,10 @@ const { nutGhiSoKinhDoanh, mocBanGiaoCongNo } = chay(
 let html = nutGhiSoKinhDoanh({ do_id: 'DO-1', status: 'delivered', ghi_so_kinh_doanh: null });
 assert.match(html, /Ghi sổ kinh doanh/);
 assert.match(html, /ghiSoKinhDoanh\('DO-1', this\)/);
-assert.match(html, /xemTruocGhiSo\('DO-1', this\)/);
+// KHÔNG có nút "xem dữ liệu gửi": chủ dự án gỡ ngay — "khách hàng thấy là chết anh luôn".
+// Màn này chiếu cho khách; đối soát body thì dùng ?xem_truoc=1 ở tầng API.
+assert.doesNotMatch(html, /Xem dữ liệu gửi|xemTruocGhiSo/, 'nút kỹ thuật xem JSON lại mọc ra trên màn khách nhìn');
+assert.ok(!/xemTruocGhiSo/.test(ma) && !/cl-ghi-so-xem-truoc/.test(ma), 'hàm/ô xem body còn sót trong app.js');
 assert.doesNotMatch(html, /cl-ghi-so-xong/);
 assert.match(mocBanGiaoCongNo({ do_id: 'DO-1', ghi_so_kinh_doanh: null }), /chưa ghi sổ QLSX/);
 
