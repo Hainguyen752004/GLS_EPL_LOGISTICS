@@ -8668,6 +8668,46 @@ function dpv2ConLai(don) {
   return { chu: 'Còn ' + h + 'h' + String(m).padStart(2, '0'), mau: mau };
 }
 
+/** Nhảy tới ngày ghi trên nút chỉ đường. */
+window.dpv2DiToiNgay = function (nut) {
+  const iso = nut && nut.getAttribute('data-iso');
+  if (iso && typeof window.setDispatchCalendarDate === 'function') window.setDispatchCalendarDate(iso);
+};
+
+/**
+ * Lời chỉ đường dưới ô trống của cột "DO chờ điều phối": ngày nào có việc thì bấm sang đó.
+ *
+ * VÌ SAO CÓ. Màn này lọc theo một ngày, nên một ngày rỗng trông y hệt một hệ thống hết dữ
+ * liệu — chủ dự án mở màn ngày 11/09 và hỏi "sao trang điều phối không nhận dữ liệu DO nữa",
+ * trong khi hệ vẫn còn 13 đơn đang chờ, chỉ nằm ở các ngày 12/09 đến 18/09. Câu trả lời phải
+ * nằm ngay trên màn, không bắt người trực bấm mò từng ngày.
+ *
+ * HAI DÒNG, ƯU TIÊN DÒNG TỒN ĐỌNG. Đơn nằm ở ngày ĐÃ QUA là đơn tới ngày lấy hàng mà chưa ai
+ * xếp xe — nó gấp hơn việc của ngày mai, nên hiện trước và tô cam.
+ */
+function dpv2ChiDuongNgayKhac(dsChoDieuPhoi, planningDate) {
+  const tim = window.TmsCockpit?.ngayGanNhatCoDonCho;
+  if (typeof tim !== 'function') return '';
+  const kq = tim(dsChoDieuPhoi, planningDate);
+  if (!kq || !kq.tong) return '';
+  const ngayVN = iso => {
+    const p = String(iso || '').split('-');
+    return p.length === 3 ? p[2] + '/' + p[1] : iso;
+  };
+  // Truyền ngày qua `data-iso` chứ không nhét thẳng vào `onclick`: khỏi phải escape
+  // dấu nháy trong chuỗi HTML, và ngày vẫn là dữ liệu chứ không thành mã.
+  const nut = (x, nhan, mau) =>
+    '<button type="button" class="dpv2-di-ngay' + (mau ? ' ' + mau : '') + '"'
+    + ' data-iso="' + x.iso + '" onclick="dpv2DiToiNgay(this)">'
+    + nhan + ' <b>' + ngayVN(x.iso) + '</b> · ' + x.so + ' DO <span aria-hidden="true">&rsaquo;</span>'
+    + '</button>';
+  return '<div class="dpv2-chi-duong">'
+    + '<span>Còn <b>' + kq.tong + ' DO</b> đang chờ điều phối ở ngày khác:</span>'
+    + (kq.truoc ? nut(kq.truoc, 'Tồn đọng', 'ton') : '')
+    + (kq.sau ? nut(kq.sau, 'Gần nhất', '') : '')
+    + '</div>';
+}
+
 function renderDispatchDOs(filterQuery = '') {
   const container = document.getElementById('dispatch-do-list');
   if (!container) return;
@@ -8678,6 +8718,8 @@ function renderDispatchDOs(filterQuery = '') {
   const allDOsRaw = eplDeliveryOrders && eplDeliveryOrders.length > 0 ? eplDeliveryOrders : (dispatchDOs || []);
   renderDispatchDOSelector(allDOsRaw);
   let allDOs = allDOsRaw.filter(isDispatchPendingDO);
+  // Giữ lại danh sách TRƯỚC khi lọc ngày: ô trống cần nó để chỉ đường sang ngày có việc.
+  const dsChoDieuPhoi = allDOs.slice();
   const planningDate = selectedDispatchFleetIsoDate || dispatchDateInputValue(dispatchCalendarDate);
   const dateResult = window.TmsCockpit?.filterDispatchOrdersByDate
     ? window.TmsCockpit.filterDispatchOrdersByDate(allDOs, planningDate)
@@ -8718,7 +8760,8 @@ function renderDispatchDOs(filterQuery = '') {
       + (query ? 'Không tìm thấy lệnh giao hàng phù hợp'
         : (dispatchKpiFilter ? 'Không có DO nào trong nhóm đang lọc. Bấm lại thẻ số liệu để bỏ lọc.'
           : 'Chưa có lệnh giao hàng sẵn sàng điều phối'))
-      + ' ngày ' + planningDate + '</div>';
+      + ' ngày ' + planningDate + '</div>'
+      + (query || dispatchKpiFilter ? '' : dpv2ChiDuongNgayKhac(dsChoDieuPhoi, planningDate));
     const foot = document.getElementById('dispatch-do-foot');
     if (foot) foot.textContent = '0 DO';
     return;

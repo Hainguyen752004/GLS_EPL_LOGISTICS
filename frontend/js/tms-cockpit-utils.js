@@ -2652,6 +2652,43 @@
     };
   }
 
+  /**
+   * Ngày gần nhất CÓ đơn chờ điều phối, tính từ `isoDate` đang xem.
+   *
+   * VÌ SAO CẦN. Màn điều phối lọc theo một ngày. Khi ngày đó rỗng, bản trước chỉ nói "chưa có
+   * lệnh giao hàng sẵn sàng điều phối ngày 2026-09-11" rồi im — trong khi hệ vẫn còn 13 đơn
+   * đang chờ, chỉ nằm ở ngày khác. Người trực không có cách nào biết ngoài việc bấm mò từng
+   * ngày một. Hàm này trả lời thẳng: đi đâu thì thấy việc.
+   *
+   * TRẢ VỀ HAI HƯỚNG, KHÔNG PHẢI MỘT. Ngày về sau là việc sắp tới; ngày về trước là **tồn
+   * đọng** — đơn đã tới ngày lấy hàng mà chưa ai xếp xe. Gộp hai thứ đó vào một con số "ngày
+   * gần nhất" sẽ giấu mất cái thứ hai, mà đó mới là cái cần xử lý gấp.
+   *
+   * `{ sau: {iso, so, cach_ngay} | null, truoc: {...} | null, tong: số đơn ở mọi ngày khác }`
+   */
+  function ngayGanNhatCoDonCho(orders, isoDate, timeZone = 'Asia/Bangkok') {
+    const nguon = Array.isArray(orders) ? orders : [];
+    const theoNgay = new Map();
+    nguon.forEach(order => {
+      const ngay = dispatchDateKey(
+        order.pickup_window_start || order.pickup_date || order.planned_pickup_at,
+        timeZone
+      );
+      if (!ngay || ngay === isoDate) return;
+      theoNgay.set(ngay, (theoNgay.get(ngay) || 0) + 1);
+    });
+    if (!theoNgay.size) return { sau: null, truoc: null, tong: 0 };
+    const cach = ngay => Math.round(
+      (Date.parse(ngay + 'T00:00:00Z') - Date.parse((isoDate || ngay) + 'T00:00:00Z')) / 86400000
+    );
+    const xep = [...theoNgay.entries()]
+      .map(([iso, so]) => ({ iso, so, cach_ngay: cach(iso) }))
+      .sort((a, b) => a.iso.localeCompare(b.iso));
+    const sau = xep.filter(x => x.cach_ngay > 0)[0] || null;
+    const truoc = xep.filter(x => x.cach_ngay < 0).slice(-1)[0] || null;
+    return { sau, truoc, tong: xep.reduce((t, x) => t + x.so, 0) };
+  }
+
   function resolveDispatchTripGate(doId, trips, tripLinks = []) {
     const targetId = String(doId || '');
     const linkedTripIds = new Set((Array.isArray(tripLinks) ? tripLinks : [])
@@ -2695,6 +2732,7 @@
     buildDriverShiftPlanner,
     buildDispatchCalendarDetail,
     filterDispatchOrdersByDate,
+    ngayGanNhatCoDonCho,
     resolveDispatchTripGate,
     buildDispatchResourceOptions,
     buildGpsEventTimeline,

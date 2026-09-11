@@ -1371,6 +1371,26 @@
       color:var(--dpv2-ink3); font-size:12.5px; text-align:center; padding:26px 12px;
       border:1.5px dashed var(--dpv2-line2); border-radius:12px; line-height:1.6;
     }
+    /* Chỉ đường khi ngày đang xem rỗng: ngày nào có DO chờ thì bấm sang đó.
+       Một ngày rỗng trông y hệt một hệ thống hết dữ liệu, nên ô trống phải tự nói
+       ra việc đang nằm ở đâu. `ton` là đơn ở ngày ĐÃ QUA — tồn đọng, nên tô cam. */
+    .dpv2 .dpv2-chi-duong {
+      margin:10px 14px 0; display:flex; flex-direction:column; gap:7px;
+      font-size:12.5px; color:var(--dpv2-ink2);
+    }
+    .dpv2 .dpv2-chi-duong > span { text-align:center; }
+    .dpv2 .dpv2-di-ngay {
+      display:flex; align-items:center; justify-content:center; gap:5px; width:100%;
+      min-height:38px; padding:8px 12px; cursor:pointer; font:inherit; font-size:12.5px;
+      font-weight:700; border-radius:9px; border:1px solid var(--dpv2-blue);
+      background:var(--dpv2-blue2); color:var(--dpv2-blue3);
+      transition:background .15s, transform .15s;
+    }
+    .dpv2 .dpv2-di-ngay:hover { background:#dbeafe; transform:translateY(-1px); }
+    .dpv2 .dpv2-di-ngay.ton {
+      border-color:#f0c67d; background:var(--dpv2-amber2); color:var(--dpv2-amber);
+    }
+    .dpv2 .dpv2-di-ngay.ton:hover { background:#ffe9c5; }
     .dpv2 .sum { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px; }
     .dpv2 .sum > div { background:#f8fafc; border-radius:8px; padding:7px 9px; min-width:0; }
     .dpv2 .sum > div span { display:block; font-size:11px; color:var(--dpv2-ink3); font-weight:600; }
