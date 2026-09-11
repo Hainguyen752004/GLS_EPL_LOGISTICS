@@ -3818,7 +3818,10 @@ window.deleteFinanceMasterRecord = async function (kind, id) {
     showToast('Không tìm thấy endpoint xóa Master Data.');
     return;
   }
-  if (!confirm(`Xóa cấu hình "${id}" khỏi Master Data Finance? Nếu dữ liệu đang được dùng, hệ thống sẽ báo khóa thay vì xóa.`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá cấu hình dữ liệu gốc',
+        noiDung: [`Xoá cấu hình "${id}"?`,
+                  'Nếu cấu hình này đang được dùng ở đâu đó, hệ thống sẽ giữ lại và báo vướng chỗ nào.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const response = await fetch(`${API_BASE}${basePath}`, { method: 'DELETE' });
     const payload = await response.json().catch(() => ({}));
@@ -5230,14 +5233,18 @@ function createDOFromQuotation(qId) {
 }
 
 async function deleteQuotation(qid) {
-  if (confirm(t('msg_confirm_delete_quote').replace('{id}', qid))) {
+  if (await hoiXacNhan({ tieuDe: 'Xoá báo giá',
+        noiDung: [t('msg_confirm_delete_quote').replace('{id}', qid)],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) {
     const res = await fetch(`${API_BASE}/api/quotations/${qid}`, { method: "DELETE" });
     if (res.ok) await loadAllData();
   }
 }
 
 async function deleteDO(doid) {
-  if (confirm(t('msg_confirm_delete_do').replace('{id}', doid))) {
+  if (await hoiXacNhan({ tieuDe: 'Xoá lệnh giao hàng',
+        noiDung: [t('msg_confirm_delete_do').replace('{id}', doid)],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) {
     const res = await fetch(`${API_BASE}/api/delivery-orders/${doid}`, { method: "DELETE" });
     if (res.ok) await loadAllData();
   }
@@ -6357,20 +6364,25 @@ window.saveVehicleMaintenanceRequest = async function (event) {
 window.transitionVehicleMaintenance = async function (requestId, action, version) {
   const payload = { expected_version: version };
   if (action === 'cancel') {
-    const reason = prompt('Nhập lý do hủy phiếu sửa chữa:');
+    const reason = await hoiNhapLieu({ tieuDe: 'Huỷ phiếu sửa chữa',
+      noiDung: ['Vì sao huỷ phiếu sửa chữa này?'], nhan: 'Lý do huỷ',
+      goiY: 'Ví dụ: xe đã sửa ở gara ngoài', batBuoc: true, nutOk: 'Huỷ phiếu' });
     if (!reason) return;
     payload.reason = reason;
   }
   if (action === 'complete') {
-    const nextDate = prompt('Ngày bảo dưỡng tiếp theo (YYYY-MM-DD), có thể để trống:') || '';
+    const nextDate = await hoiNhapLieu({ tieuDe: 'Hoàn tất phiếu sửa chữa',
+      noiDung: ['Hẹn lần bảo dưỡng tiếp theo cho xe này (để trống nếu chưa hẹn).'],
+      nhan: 'Ngày bảo dưỡng tiếp theo', kieu: 'date', nutOk: 'Tiếp tục' });
+    if (nextDate === null) return;
     payload.next_maintenance_date = nextDate;
     const item = currentVehicleMaintenanceRequests.find(row => row.id === requestId);
     const actualCostLines = [];
     for (const line of (item?.cost_lines || [])) {
-      const entered = prompt(
-        `Đơn giá thực tế - ${escapeHtml(line.description)} (${item.currency_code || 'VND'}):`,
-        String(Number(line.estimated_unit_cost || 0))
-      );
+      const entered = await hoiNhapLieu({ tieuDe: 'Đơn giá thực tế',
+        noiDung: [`Khoản mục: ${line.description}`],
+        nhan: `Đơn giá thực tế (${item.currency_code || 'VND'})`, kieu: 'number',
+        giaTri: String(Number(line.estimated_unit_cost || 0)), nutOk: 'Ghi' });
       if (entered === null) return;
       const actualUnitCost = Number(String(entered).replace(/[,\s]/g, ''));
       if (!Number.isFinite(actualUnitCost) || actualUnitCost < 0) {
@@ -6452,7 +6464,10 @@ window.saveFioriVehicle = async function () {
 }
 
 window.deleteFioriVehicle = async function (id) {
-  if (!confirm(`Sếp có chắc chắn muốn xóa phương tiện ${id} khỏi CSDL không?`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá phương tiện',
+        noiDung: [`Xoá xe ${id} khỏi đội xe?`,
+                  'Xe đang giữ chuyến chưa đóng thì hệ thống sẽ từ chối và nói rõ chuyến nào.'],
+        nutOk: 'Xoá xe', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const res = await fetch(`${API_BASE}/api/vehicles/${id}`, { method: 'DELETE' });
     if (!res.ok) return baoLoiMayChu(res, `Xóa phương tiện ${id}`);
@@ -6647,7 +6662,10 @@ window.saveVehType = async function () {
 }
 
 window.deleteVehType = async function (id) {
-  if (!confirm(`Bạn có chắc muốn xóa loại phương tiện ${id} khỏi CSDL?`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá loại xe',
+        noiDung: [`Xoá loại xe ${id}?`,
+                  'Các xe đang gán loại này sẽ mất định mức giá thành cho tới khi được gán loại khác.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const res = await fetch(`${API_BASE}/api/vehicle-types/${id}`, { method: 'DELETE' });
     if (!res.ok) return baoLoiMayChu(res, `Xóa loại phương tiện ${id}`);
@@ -6761,7 +6779,9 @@ window.deleteOracleQT = async function (id) {
     showToast('Đơn hàng đã duyệt/xác nhận chỉ được xem, không được xóa.');
     return;
   }
-  if (!confirm('Bạn có chắc chắn muốn xóa Đơn Hàng Vận Chuyển ' + id + '?')) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá báo giá',
+        noiDung: [`Xoá báo giá ${id} khỏi hệ thống?`],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const res = await fetch(API_BASE + '/api/quotations/' + id, { method: 'DELETE' });
     if (res.ok) {
@@ -7170,10 +7190,10 @@ window.ghiXeDaDenNoi = async function (id) {
     return;
   }
   const XUONG_DONG = String.fromCharCode(10);
-  if (!confirm(`Ghi nhận xe của lệnh ${id} đã đến điểm giao?`
-    + XUONG_DONG + XUONG_DONG
-    + 'Đây chỉ là mốc hành trình. Tiền vẫn CHƯA chốt được —'
-    + ' phải nộp POD ký nhận trước.')) return;
+  if (!await hoiXacNhan({ tieuDe: 'Ghi mốc: xe đã đến điểm giao',
+        noiDung: [`Ghi nhận xe của lệnh ${id} đã đến điểm giao?`,
+                  'Đây chỉ là mốc hành trình. Tiền vẫn CHƯA chốt được — phải nộp POD ký nhận trước.'],
+        nutOk: 'Ghi mốc', nutHuy: 'Chưa đến' })) return;
 
   const viec = `Ghi mốc đến nơi cho lệnh ${id}`;
   let res;
@@ -7196,9 +7216,11 @@ window.xoaLenhDaHuy = async function (id) {
   if (!don || String(don.canonical_status || '').toLowerCase() !== 'cancelled') {
     showToast('⚠️ Chỉ xóa được lệnh đã hủy.'); return;
   }
-  if (!confirm(`Xóa hẳn lệnh ${id} khỏi danh sách?` + String.fromCharCode(10)
-    + (don.cancel_reason ? `Lý do hủy đã ghi: ${don.cancel_reason}` + String.fromCharCode(10) : '')
-    + 'Không khôi phục được; Audit Log vẫn giữ dấu vết.')) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá lệnh đã huỷ',
+        noiDung: [`Xoá hẳn lệnh ${id} khỏi danh sách?`,
+                  don.cancel_reason ? `Lý do huỷ đã ghi: ${don.cancel_reason}` : '',
+                  'Không khôi phục lại được. Nhật ký hệ thống vẫn giữ dấu vết.'],
+        nutOk: 'Xoá hẳn', nutHuy: 'Để lại', nguyHiem: true })) return;
   const viec = `Xóa lệnh ${id}`;
   let res;
   try {
@@ -7823,7 +7845,10 @@ window.deleteFioriDO = async function (id) {
   }
   // XÓA khác HỦY. Xóa là bỏ hẳn bản ghi, dùng cho đơn nhập sai; hủy là ghi
   // nhận một việc đã xảy ra thật và giữ lại lịch sử — xem `huyLenhGiaoHang`.
-  if (!confirm('Bạn có chắc chắn muốn xóa Lệnh Giao Hàng ' + id + '?')) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá lệnh giao hàng',
+        noiDung: [`Xoá lệnh giao hàng ${id}?`,
+                  'Lệnh đang có chuyến chở thì hệ thống sẽ từ chối và nói rõ vướng ở đâu.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   const viec = 'Xóa lệnh giao hàng ' + id;
   let res;
   try {
@@ -8012,10 +8037,10 @@ window.openRouteDetailModal = function (routeId) {
 window.xoaTuyenDuong = async function (id) {
   const tuyen = (eplRoutes || []).find(r => String(r.id) === String(id));
   const ten = tuyen?.name ? `${id} — ${tuyen.name}` : id;
-  if (!confirm(`Xóa tuyến đường ${ten}?`
-    + String.fromCharCode(10) + String.fromCharCode(10)
-    + 'Nếu tuyến đang được báo giá hoặc đơn nào tham chiếu thì hệ thống sẽ'
-    + ' từ chối và nói rõ vướng ở đâu.')) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá tuyến đường',
+        noiDung: [`Xoá tuyến ${ten}?`,
+                  'Nếu tuyến đang được báo giá hay lệnh nào dùng tới, hệ thống sẽ từ chối và nói rõ vướng ở đâu.'],
+        nutOk: 'Xoá tuyến', nutHuy: 'Để lại', nguyHiem: true })) return;
 
   const viec = `Xóa tuyến đường ${id}`;
   let res;
@@ -10524,7 +10549,9 @@ window.selectDispatchDO = function (id, revealDetail = false) {
  * o may chu khong chan duoc gi ca — moi xe deu "vua". Chu du an da chot: canh
  * bao nhung van cho dieu, vi chuyen chay rong la co that trong van tai.
  */
-function confirmDispatchWithoutCargo(doId) {
+/** Hỏi trước khi điều xe cho lệnh CHƯA KHAI hàng hoá. Trả `Promise<boolean>` — hàm này
+ *  thành `async` khi bỏ `confirm()` gốc, nên nơi gọi (`submitDispatch`) phải `await`. */
+async function confirmDispatchWithoutCargo(doId) {
   const order = (eplDeliveryOrders || []).find(item => String(item.id) === String(doId));
   if (!order) return true;
   const weight = Number(order.weight_kg || order.total_weight_kg || 0);
@@ -10532,15 +10559,13 @@ function confirmDispatchWithoutCargo(doId) {
   const pallets = Number(order.pallet_count || order.total_pallet_count || 0);
   if (weight || volume || pallets) return true;
 
-  return confirm(
-    `Lệnh ${doId} chưa khai khối lượng, thể tích hay số pallet.`
-    + String.fromCharCode(10, 10)
-    + 'Hệ thống sẽ KHÔNG kiểm được xe có chở vừa hay không — một container 30 tấn '
-    + 'vẫn có thể được xếp lên xe tải 2 tấn.'
-    + String.fromCharCode(10, 10)
-    + 'Nếu đây là chuyến chạy rỗng thì bấm OK để tiếp tục. Nếu không, hãy khai '
-    + 'hàng hóa vận chuyển trong Đơn hàng vận chuyển trước.'
-  );
+  return hoiXacNhan({ tieuDe: 'Lệnh chưa khai hàng hoá',
+    noiDung: [`Lệnh ${doId} chưa khai khối lượng, thể tích hay số pallet.`,
+              'Hệ thống sẽ không kiểm được xe có chở vừa hay không — một container 30 tấn vẫn có '
+              + 'thể bị xếp lên xe tải 2 tấn.',
+              'Nếu đây là chuyến chạy rỗng thì đi tiếp được. Nếu không, hãy khai hàng hoá trên '
+              + 'lệnh giao hàng trước.'],
+    nutOk: 'Vẫn điều xe', nutHuy: 'Để khai hàng', nguyHiem: true });
 }
 
 window.submitDispatch = async function () {
@@ -10571,7 +10596,7 @@ window.submitDispatch = async function () {
   // gì cả: cả ba con số bằng 0 thì xe nào cũng "vừa", kể cả container 30 tấn
   // trên xe tải 2 tấn. Cố tình KHÔNG chặn — chuyến chạy rỗng là có thật — nhưng
   // phải nói rõ để người điều phối tự quyết.
-  if (!confirmDispatchWithoutCargo(doId)) return;
+  if (!await confirmDispatchWithoutCargo(doId)) return;
 
   showToast(`Đang đăng ký điều phối & cấp lệnh xuất bến cho Lệnh ${doId}...`);
 
@@ -11214,6 +11239,57 @@ window.hoiXacNhan = function ({ tieuDe, noiDung, nutOk = 'Đồng ý', nutHuy = 
     document.addEventListener('keydown', phim);
     document.body.appendChild(o);
     o.querySelector('[data-hxn="ok"]').focus();
+  });
+};
+
+/**
+ * HỘP NHẬP MỘT Ô — thay cho `window.prompt`.
+ *
+ * Cùng lý do với `hoiXacNhan`: hộp `prompt` của trình duyệt in địa chỉ máy chủ làm tiêu đề và
+ * không có gì của ứng dụng. Thêm vào đó nó chỉ nhận chữ thuần — không đặt được kiểu `date` hay
+ * `number`, nên người dùng phải tự gõ đúng `YYYY-MM-DD` và tự canh dấu phân cách hàng nghìn.
+ *
+ * Trả `Promise<string|null>` — `null` là người dùng huỷ, KHÁC với chuỗi rỗng (bỏ trống có chủ
+ * ý), đúng như `prompt` cũ, để chỗ gọi phân biệt được hai việc đó.
+ */
+window.hoiNhapLieu = function ({ tieuDe, noiDung, nhan, giaTri = '', kieu = 'text', batBuoc = false,
+                                 goiY = '', nutOk = 'Xong', nutHuy = 'Huỷ' } = {}) {
+  return new Promise(resolve => {
+    document.getElementById('hop-xac-nhan')?.remove();
+    const o = document.createElement('div');
+    o.id = 'hop-xac-nhan'; o.className = 'hxn-nen';
+    o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    const dong = Array.isArray(noiDung) ? noiDung : String(noiDung || '').split(/\n+/);
+    o.innerHTML = `<div class="hxn-hop">
+        <div class="hxn-dau"><i class="fa-solid fa-pen-to-square"></i>
+          <h3>${completionEscape(tieuDe || 'Nhập thông tin')}</h3></div>
+        <div class="hxn-than">${dong.filter(Boolean).map(d => `<p>${completionEscape(d)}</p>`).join('')}
+          <label class="hxn-nhap"><span>${completionEscape(nhan || '')}</span>
+            <input type="${completionEscape(kieu)}" value="${completionEscape(giaTri)}"
+              placeholder="${completionEscape(goiY)}" ${kieu === 'number' ? 'inputmode="decimal"' : ''}></label>
+          <div class="hxn-loi" hidden>Chưa nhập nội dung.</div>
+        </div>
+        <div class="hxn-chan">
+          <button type="button" class="fiori-btn" data-hxn="huy">${completionEscape(nutHuy)}</button>
+          <button type="button" class="fiori-btn fiori-btn-primary" data-hxn="ok">${completionEscape(nutOk)}</button>
+        </div></div>`;
+    const oInput = o.querySelector('input'), oLoi = o.querySelector('.hxn-loi');
+    const xong = kq => { o.remove(); document.removeEventListener('keydown', phim); resolve(kq); };
+    const gui = () => {
+      const v = oInput.value.trim();
+      if (batBuoc && !v) { oLoi.hidden = false; oInput.focus(); return; }
+      xong(v);
+    };
+    const phim = e => { if (e.key === 'Escape') xong(null); if (e.key === 'Enter') gui(); };
+    o.addEventListener('click', e => {
+      if (e.target === o) return xong(null);
+      const b = e.target.closest('[data-hxn]');
+      if (b) { b.dataset.hxn === 'ok' ? gui() : xong(null); }
+    });
+    oInput.addEventListener('input', () => { oLoi.hidden = true; });
+    document.addEventListener('keydown', phim);
+    document.body.appendChild(o);
+    oInput.focus(); oInput.select();
   });
 };
 
@@ -15094,7 +15170,11 @@ window.saveDriverShiftInspector = async function () {
 
 window.deleteSelectedDriverShift = async function () {
   const shift = driverShifts.find(item => String(item.id) === selectedDriverShiftId);
-  if (!shift || !confirm('Hủy ca làm việc này?')) return;
+  if (!shift) return;
+  if (!await hoiXacNhan({ tieuDe: 'Huỷ ca làm việc',
+        noiDung: ['Huỷ ca làm việc đang chọn?',
+                  'Tài xế mất ca này sẽ không điều được chuyến trong khung giờ đó.'],
+        nutOk: 'Huỷ ca', nutHuy: 'Giữ ca', nguyHiem: true })) return;
   try {
     await driverShiftApiJson(`/api/tms/scheduling/driver-shifts/${encodeURIComponent(shift.id)}`, { method: 'DELETE' });
     selectedDriverShiftId = '';
@@ -16470,7 +16550,10 @@ window.deleteDriverRow = async function (btnOrId) {
     id = tr ? tr.querySelector('td')?.innerText.trim() : '';
   }
   if (!id) return;
-  if (!confirm(`Sếp có chắc chắn muốn xóa nhân sự ${id} khỏi CSDL không?`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá tài xế',
+        noiDung: [`Xoá tài xế ${id} khỏi danh sách nhân sự?`,
+                  'Tài xế đang giữ chuyến chưa đóng thì hệ thống sẽ từ chối và nói rõ chuyến nào.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const res = await fetch(`${API_BASE}/api/drivers/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (!res.ok) return baoLoiMayChu(res, `Xóa nhân sự ${id}`);
@@ -16562,7 +16645,10 @@ window.deleteVehicleTypeCard = async function (btn) {
   const id = card?.dataset.vehicleTypeId || '';
   const name = card?.dataset.vehicleTypeName || id;
   if (!id) return;
-  if (!confirm(`Xóa loại xe "${name}" khỏi Master Data?\n\nCác xe đang gán loại này sẽ mất định mức giá thành cho tới khi được gán loại khác.`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá loại xe',
+        noiDung: [`Xoá loại xe "${name}"?`,
+                  'Các xe đang gán loại này sẽ mất định mức giá thành cho tới khi được gán loại khác.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
 
   btn.disabled = true;
   try {
@@ -17993,7 +18079,10 @@ window.saveCustomer = async function () {
 };
 
 window.deleteCustomer = async function (id) {
-  if (!confirm(`Bạn có chắc chắn muốn xóa Khách hàng "${id}" khỏi CSDL?`)) return;
+  if (!await hoiXacNhan({ tieuDe: 'Xoá khách hàng',
+        noiDung: [`Xoá khách hàng "${id}"?`,
+                  'Khách còn báo giá hay lệnh giao hàng thì hệ thống sẽ từ chối và nói rõ vướng ở đâu.'],
+        nutOk: 'Xoá', nutHuy: 'Để lại', nguyHiem: true })) return;
   try {
     const res = await fetch(`${API_BASE}/api/customers/${id}`, { method: 'DELETE' });
     // May chu tu choi (vi du 409 khi khach con don tham chieu) thi PHAI noi ra.

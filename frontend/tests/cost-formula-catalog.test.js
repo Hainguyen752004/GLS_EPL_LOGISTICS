@@ -52,7 +52,8 @@ assert.match(html, /id="formula-vehicle-types-list"/, 'phải còn khung để J
   assert.match(fn, /Đã xóa xong nhưng chưa tải lại được/, 'loi tai lai phai duoc phan biet voi loi xoa');
   assert.strictEqual((fn.match(/} catch/g) || []).length, 2, 'xoa va tai lai phai la hai viec rieng');
   // Xóa loại xe ảnh hưởng tới các xe đang gán — phải nói trước.
-  assert.match(fn, /confirm\(/, 'phải hỏi lại trước khi xóa');
+  assert.match(fn, /await hoiXacNhan\(/, 'phải hỏi lại bằng HỘP TRONG ỨNG DỤNG, không phải confirm() của trình duyệt (chủ dự án: hộp "127.0.0.1:8001 says" đọc như lỗi kỹ thuật khi chiếu cho khách)');
+  assert.doesNotMatch(fn, /[^.a-zA-Z_]confirm\(/, 'còn dùng confirm() gốc của trình duyệt');
   assert.match(fn, /mất định mức giá thành/, 'lời hỏi phải nói rõ hệ quả');
 }
 

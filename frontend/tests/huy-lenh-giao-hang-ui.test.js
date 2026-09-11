@@ -122,7 +122,8 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8')
   assert.ok(/\/api\/routes\/\$\{encodeURIComponent\(id\)\}/.test(than),
     'phải gọi đúng đường, và thoát ký tự trong mã tuyến');
   assert.ok(/method: 'DELETE'/.test(than));
-  assert.ok(/confirm\(/.test(than), 'phải hỏi lại trước khi xóa');
+  assert.ok(/await hoiXacNhan\(/.test(than), 'phải hỏi lại bằng HỘP TRONG ỨNG DỤNG, không phải confirm() của trình duyệt (chủ dự án: hộp "127.0.0.1:8001 says" đọc như lỗi kỹ thuật khi chiếu cho khách)');
+  assert.ok(!/[^.a-zA-Z_]confirm\(/.test(than), 'còn dùng confirm() gốc của trình duyệt');
   // Backend trả 409 LOCKED_RECORD kèm câu nói rõ vướng ở đâu — câu đó phải
   // đến được người dùng, không bị thay bằng "Lỗi khi xóa".
   assert.ok(/baoLoiMayChu\(res, viec\)/.test(than));
@@ -178,9 +179,12 @@ const app = fs.readFileSync(path.join(__dirname, '..', 'js', 'app.js'), 'utf8')
 
   // Và phải nói THẲNG là tiền chưa chốt được — đây đúng là mốc mà người ta
   // hay tưởng đã xong rồi đi chốt tiền.
-  assert.ok(/CHƯA chốt được/.test(than) && /POD/.test(than),
+  // Đo ý, không đo cách viết hoa: câu chữ có thể sửa lại cho dễ đọc, điều phải giữ là nó nói
+  // thẳng "tiền chưa chốt" và chỉ ra POD là bước mở quyết toán.
+  assert.ok(/chưa chốt được/i.test(than) && /POD/.test(than),
     'phải nói rõ ghi mốc này không mở quyết toán');
-  assert.ok(/confirm\(/.test(than), 'phải hỏi lại trước khi ghi mốc');
+  assert.ok(/await hoiXacNhan\(/.test(than), 'phải hỏi lại trước khi ghi mốc, bằng hộp trong ứng dụng');
+  assert.ok(!/[^.a-zA-Z_]confirm\(/.test(than), 'còn dùng confirm() gốc của trình duyệt');
 
   // Thất bại phải nói LỜI CỦA MÁY CHỦ.
   assert.ok(/baoLoiMayChu\(res, viec\)/.test(than) && /baoMatKetNoi\(viec, e\)/.test(than));

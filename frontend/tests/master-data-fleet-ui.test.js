@@ -55,7 +55,8 @@ HANDLERS.forEach(([name, method, endpoint]) => {
 // Xóa là việc không lùi lại được — phải hỏi lại trước.
 ['deleteVehType', 'deleteFioriVehicle'].forEach(name => {
   const fn = bodyOf(`window.${name} = `, String.fromCharCode(10) + '};');
-  assert.match(fn, /confirm\(/, `${name} phải hỏi lại trước khi xóa`);
+  assert.match(fn, /await hoiXacNhan\(/, `${name} phải hỏi lại bằng HỘP TRONG ỨNG DỤNG, không phải confirm() của trình duyệt (chủ dự án: hộp "127.0.0.1:8001 says" đọc như lỗi kỹ thuật khi chiếu cho khách)`);
+  assert.doesNotMatch(fn, /[^.a-zA-Z_]confirm\(/, `${name} còn dùng confirm() gốc của trình duyệt`);
 });
 
 // Nút bút chì phải nạp được dữ liệu cũ vào form, nếu không "sửa" thành "tạo mới".
