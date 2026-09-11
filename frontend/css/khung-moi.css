@@ -572,7 +572,8 @@ body.epl-os-home .samsung-main-wrapper, body.epl-os-home .content-body { padding
 #view-os-home.scrolled .os-app::after { bottom: -5px; }
 
 /* Ngôn ngữ (cột phải) */
-#view-os-home .os-lang { position: static; grid-column: 3; justify-self: end; }
+#view-os-home .os-lang { position: relative; grid-column: 3; justify-self: end; z-index: 45; }
+#view-os-home .os-lang .epl-lang-menu { top: calc(100% + 8px); right: 0; }
 #view-os-home .os-lang .epl-lang-btn { height: 38px; padding: 0 12px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--glass); color: var(--text); font-size: 13px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 #view-os-home .os-lang .epl-lang-btn:hover { background: var(--glass-strong); }
 #view-os-home.scrolled .os-lang .epl-lang-btn { height: 34px; }
@@ -632,19 +633,36 @@ body.epl-os-home .samsung-main-wrapper, body.epl-os-home .content-body { padding
 #view-os-home .os-rong.ok i { color: #3ccf8a; margin-right: 6px; }
 #view-os-home .os-rong.nho { padding: 8px; font-size: 12px; color: var(--dim); }
 #view-os-home .os-rong small { color: var(--dim); }
-/* Luồng A–Z thu nhỏ */
-#view-os-home .os-luong-ds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-@media (max-width: 640px) { #view-os-home .os-luong-ds { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-#view-os-home .os-buoc { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 12px 12px 10px; border-radius: var(--r-md); border: 1px solid var(--line); background: rgba(255, 255, 255, .05); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: background .15s, border-color .15s, transform .15s; }
-#view-os-home .os-buoc:hover { background: rgba(255, 255, 255, .1); border-color: var(--line-strong); transform: translateY(-2px); }
-#view-os-home .os-buoc .ic { position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: rgba(255, 255, 255, .1); color: var(--muted); font-size: 12px; }
-#view-os-home .os-buoc b { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
-#view-os-home .os-buoc .ten { font-size: 12.5px; font-weight: 600; margin-top: 4px; }
-#view-os-home .os-buoc small { font-size: 11px; color: var(--muted); }
-#view-os-home .os-buoc.trong b { color: var(--dim); }
-#view-os-home .os-buoc.nghen { border-color: rgba(255, 181, 69, .6); background: rgba(255, 181, 69, .12); }
-#view-os-home .os-buoc.nghen b, #view-os-home .os-buoc.nghen .ic { color: var(--accent); }
-#view-os-home .os-buoc.nghen .ic { background: rgba(255, 181, 69, .18); }
+/* Dòng chảy hôm nay: sáu trạm nối ống */
+#view-os-home .os-dong { display: flex; align-items: flex-start; justify-content: space-between; gap: 0; padding: 14px 4px 4px; overflow-x: auto; scrollbar-width: none; }
+#view-os-home .os-tram { position: relative; flex: 0 0 auto; width: 96px; display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; text-align: center; }
+#view-os-home .os-tram .vong { position: relative; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .08); border: 2px solid var(--line-strong); box-shadow: inset 0 2px 8px rgba(0, 0, 0, .25); transition: transform .2s, border-color .2s, background .2s; }
+#view-os-home .os-tram .vong b { font-size: 22px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+#view-os-home .os-tram:hover .vong { transform: translateY(-3px); border-color: rgba(255, 255, 255, .45); background: rgba(255, 255, 255, .14); }
+#view-os-home .os-tram:focus-visible { outline: none; } #view-os-home .os-tram:focus-visible .vong { box-shadow: 0 0 0 3px var(--accent); }
+#view-os-home .os-tram .ten { font-size: 12.5px; font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+#view-os-home .os-tram .ten i { font-size: 11px; color: var(--muted); }
+#view-os-home .os-tram small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+#view-os-home .os-tram.trong .vong b { color: var(--dim); }
+/* Trạm tắc: phồng, tô cam, vòng sáng thở nhẹ */
+#view-os-home .os-tram.tac .vong { width: 74px; height: 74px; margin: -6px 0; border-color: var(--accent); background: rgba(255, 181, 69, .16); box-shadow: 0 0 0 0 rgba(255, 181, 69, .55), inset 0 2px 8px rgba(0, 0, 0, .25); animation: os-tho 2.2s ease-out infinite; }
+#view-os-home .os-tram.tac .vong b { color: var(--accent); font-size: 26px; }
+#view-os-home .os-tram.tac .ten, #view-os-home .os-tram.tac small { color: var(--accent); }
+@keyframes os-tho { 0% { box-shadow: 0 0 0 0 rgba(255, 181, 69, .55), inset 0 2px 8px rgba(0, 0, 0, .25); } 70% { box-shadow: 0 0 0 14px rgba(255, 181, 69, 0), inset 0 2px 8px rgba(0, 0, 0, .25); } 100% { box-shadow: 0 0 0 0 rgba(255, 181, 69, 0), inset 0 2px 8px rgba(0, 0, 0, .25); } }
+/* Trạm cuối: xanh, dấu ✓ */
+#view-os-home .os-tram.cuoi .vong { border-color: rgba(60, 207, 138, .7); background: rgba(28, 171, 106, .18); }
+#view-os-home .os-tram.cuoi .vong b { color: #7fe3b0; }
+#view-os-home .os-tram.cuoi .ten i { color: #3ccf8a; }
+/* Sự cố: chấm đỏ đính lên trạm Đang chạy */
+#view-os-home .os-tram .su-co { position: absolute; top: -6px; right: -10px; display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 7px; border-radius: 11px; background: var(--danger); color: #fff; font-size: 11px; font-weight: 700; border: 2px solid rgba(17, 26, 41, .95); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+#view-os-home .os-tram .su-co i { font-size: 10px; }
+/* Ống nối: dày theo lượng, có mũi tên chảy */
+#view-os-home .os-ong { flex: 1 1 24px; min-width: 18px; height: 62px; display: flex; align-items: center; position: relative; }
+#view-os-home .os-ong > span { display: block; width: 100%; border-radius: 999px; background: linear-gradient(90deg, rgba(255, 255, 255, .18), rgba(255, 255, 255, .38)); position: relative; overflow: hidden; }
+#view-os-home .os-ong > span::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 10px, rgba(255, 255, 255, .45) 10px 14px); animation: os-chay 1.6s linear infinite; opacity: .7; }
+@keyframes os-chay { from { background-position: 0 0; } to { background-position: 28px 0; } }
+@media (max-width: 640px) { #view-os-home .os-tram { width: 78px; } #view-os-home .os-tram .vong { width: 54px; height: 54px; } #view-os-home .os-tram .vong b { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { #view-os-home .os-tram.tac .vong, #view-os-home .os-ong > span::after { animation: none; } }
 #view-os-home .os-ghi { margin: 12px 0 0; font-size: 12px; color: var(--dim); }
 
 /* Nút Đổi giao diện + ngăn (chức năng ảnh 1) */

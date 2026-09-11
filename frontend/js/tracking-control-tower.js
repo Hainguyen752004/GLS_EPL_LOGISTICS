@@ -33,7 +33,7 @@
     const root = document.createElement('div'); root.id = 'tracking-control-tower';
     root.innerHTML = `<header class="ct-header"><div><h2>Theo dõi và kiểm soát</h2><p>Chuyến · vị trí · bằng chứng giao hàng</p></div>
       <label class="ct-search"><i class="fa-solid fa-magnifying-glass"></i><input id="ct-search" type="search" placeholder="Tìm Trip, DO, khách, xe, tài xế" aria-label="Tìm chuyến"></label>
-      <label class="ct-auto"><input id="ct-auto" type="checkbox"> Tự cập nhật 30 giây</label><button data-action="refresh"><i class="fa-solid fa-rotate"></i> Cập nhật</button><button class="ct-danger" data-action="incident"><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button></header>
+      <label class="ct-auto"><input id="ct-auto" type="checkbox"> Tự cập nhật 30 giây</label><button data-action="refresh"><i class="fa-solid fa-rotate"></i> Cập nhật</button><button data-action="incident-log" title="Xem toàn bộ sự cố đã báo"><i class="fa-solid fa-clipboard-list"></i> Sổ sự cố</button><button class="ct-danger" data-action="incident"><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button></header>
       <div id="ct-status" role="status" aria-live="polite"></div><div id="ct-kpis" class="ct-kpis"></div>
       <div class="ct-board"><section class="ct-list-panel"><header class="ct-section-head"><h3>Chuyến đang theo dõi <span id="ct-count"></span></h3><div class="ct-segment" id="ct-sort" role="group" aria-label="Sắp xếp chuyến"><button data-sort="priority">Ưu tiên</button><button data-sort="due">Hạn giao</button><button data-sort="customer">Khách hàng</button></div></header><div id="ct-list"></div>
       <footer class="ct-legend-row"><small><i class="ct-dot ct-dot-red"></i>Cần xử lý · <i class="ct-dot ct-dot-amber"></i>Quá hạn · <i class="ct-dot ct-dot-purple"></i>Chờ POD · <i class="ct-dot ct-dot-gray"></i>Chưa có vị trí · <i class="ct-dot ct-dot-blue"></i>Đang chạy bình thường</small></footer></section>
@@ -42,7 +42,20 @@
       <dialog id="ct-incident"><form id="ct-incident-form"><header class="ct-section-head"><h3>Báo sự cố vận chuyển</h3><button type="button" data-action="close-incident" title="Đóng"><i class="fa-solid fa-xmark"></i></button></header><div class="ct-form-body"><p id="ct-incident-order"></p><div class="ct-form-grid">
       <label>Loại sự cố<select name="incident_type" required><option>Kẹt xe</option><option>Hỏng xe</option><option>Tai nạn</option><option>Thời tiết</option><option>Hàng hóa</option><option>Kiểm tra</option></select></label><label>Vị trí<input name="location" required maxlength="500"></label><label>Người báo cáo<input name="reporter" required maxlength="128"></label><label>Mức độ<select name="severity"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select></label></div><label>Mô tả<textarea name="description" rows="5" maxlength="5000"></textarea></label><div id="ct-incident-error" role="alert"></div></div><footer><button type="button" data-action="close-incident">Hủy</button><button type="submit" class="ct-danger">Gửi báo cáo sự cố</button></footer></form></dialog>`;
     view.prepend(root);
-    root.addEventListener('input', e => { if (e.target.id === 'ct-search') { state.query = e.target.value.toLocaleLowerCase('vi').trim(); render(); } });
+    // Sổ sự cố: danh sách + phiếu chi tiết. Backend chỉ có GET/POST /api/incidents,
+    // chưa có điểm cuối đóng/xử lý — nên phiếu là CHỈ ĐỌC, không vẽ nút "Đóng sự cố"
+    // giả. Muốn đóng được thì cần thêm PUT phía máy chủ trước.
+    root.insertAdjacentHTML('beforeend', `<dialog id="ct-incident-log" aria-labelledby="ct-inc-title">
+      <header class="ct-section-head"><h3 id="ct-inc-title">Sổ sự cố <span id="ct-inc-count"></span></h3>
+        <div class="ct-inc-tools"><div class="ct-segment" role="group" aria-label="Lọc sự cố"><button data-inc-filter="open" aria-pressed="true">Đang mở</button><button data-inc-filter="all" aria-pressed="false">Tất cả</button></div>
+        <label class="ct-search"><i class="fa-solid fa-magnifying-glass"></i><input id="ct-inc-search" type="search" placeholder="Tìm DO, xe, loại, vị trí" aria-label="Tìm sự cố"></label>
+        <button type="button" data-action="close-incident-log" title="Đóng"><i class="fa-solid fa-xmark"></i></button></div></header>
+      <div class="ct-inc-body"><div class="ct-inc-list" id="ct-inc-list"></div><aside class="ct-inc-detail" id="ct-inc-detail"><p class="ct-empty">Chọn một sự cố để xem phiếu.</p></aside></div>
+    </dialog>`);
+    root.addEventListener('input', e => {
+      if (e.target.id === 'ct-search') { state.query = e.target.value.toLocaleLowerCase('vi').trim(); render(); }
+      if (e.target.id === 'ct-inc-search') { incLog.q = e.target.value.toLocaleLowerCase('vi').trim(); renderIncidentLog(); }
+    });
     root.addEventListener('change', e => {
 
       if (e.target.id === 'ct-basemap') changeBasemap(e.target.value);
@@ -64,6 +77,17 @@
       if (b.dataset.action === 'refresh') await load();
       if (b.dataset.action === 'incident') openIncident();
       if (b.dataset.action === 'close-incident') el('ct-incident').close();
+      if (b.dataset.action === 'incident-log') openIncidentLog();
+      if (b.dataset.action === 'close-incident-log') el('ct-incident-log').close();
+      if (b.dataset.incFilter) { incLog.filter = b.dataset.incFilter; renderIncidentLog(); }
+      if (b.dataset.inc !== undefined) { if (el('ct-incident-log').open) { incLog.selected = String(b.dataset.inc); renderIncidentLog(); } else openIncidentLog(String(b.dataset.inc)); }
+      if (b.dataset.incTrip) {
+        // Mở chuyến của sự cố: tìm theo DO (và xe nếu có) trong danh sách đang theo dõi.
+        const inc = incLog.items.find(i => String(i.id) === b.dataset.incTrip);
+        const row = inc && state.items.find(r => r.do_id === inc.do_id && (!inc.vehicle_id || !r.vehicle_id || r.vehicle_id === inc.vehicle_id));
+        el('ct-incident-log').close();
+        if (row) select(row.key); else el('ct-status').textContent = `Chuyến của ${inc ? inc.do_id : 'sự cố này'} không còn trong danh sách đang theo dõi (đã hoàn tất hoặc chưa lập chuyến).`;
+      }
       if (b.dataset.action === 'dispatch') window.switchView?.('dispatch');
       if (b.dataset.action === 'milestone') await ghiMocTiepTheo(b);
       if (b.dataset.action === 'completion') moHoanTatGiaoHang();
@@ -369,7 +393,7 @@
       <h4>Tổ lái</h4><div class="ct-crew"><div><strong>${esc(r.driver_name || 'Chưa gán tài xế')}</strong><span>${esc(r.vehicle_id || 'Chưa gán xe')} · Phụ xe: ${esc(r.co_driver_name || 'Chưa gán')}</span></div>${phone ? `<a href="tel:${phone}" title="Gọi tài xế"><i class="fa-solid fa-phone"></i></a>` : ''}</div>
       ${daiGps(r)}
       <h4>Cần chú ý</h4><div class="ct-alert ${r.gps.status === 'fresh' ? 'blue' : 'amber'}">${esc(gpsLabel(r))}<br><small>Vị trí cuối: ${esc(date(r.gps.last_update))}</small></div>${r.overdue ? '<div class="ct-alert amber">Đã quá hạn giao trên DO, chưa ghi nhận giao hoàn tất.</div>' : ''}
-      ${r.incidents.map(i => `<div class="ct-alert red"><strong>${esc(i.incident_type)}</strong> · ${esc(i.status)}<br>${esc(i.description || i.location || '')}</div>`).join('')}
+      ${r.incidents.map(i => `<button type="button" class="ct-alert red ct-alert-btn" data-inc="${esc(i.id)}" title="Mở phiếu sự cố"><strong>${esc(i.incident_type)}</strong> · ${esc(i.status)}<br>${esc(i.description || i.location || '')}<span class="ct-alert-go">Xem phiếu →</span></button>`).join('')}
       <h4>Chặng của chuyến</h4><ol class="ct-timeline">${r.legs.map(l => `<li class="${l.status === 'completed' ? 'done' : ''}"><strong>${esc(l.origin)} → ${esc(l.destination)}</strong><span>${esc(labels[l.status] || l.status)} · ${esc(labels[l.type] || l.type)}</span><small>${l.actual_arrival_at ? 'Thực tế' : 'Kế hoạch'}: ${esc(date(l.actual_arrival_at || l.planned_arrival_at))}</small></li>`).join('') || '<li>Chưa có chặng Trip.</li>'}</ol>
       ${trucTienDo(r)}
       <h4>Bằng chứng giao hàng · ${r.pod_count || 0}</h4>${(r.pods || []).map(p => `<div class="ct-pod"><strong>${esc(p.receiver_name || 'Chưa có người nhận')}</strong><span>${esc(p.location || '')} · ${esc(date(p.time))}</span>${p.documents.map(d => `<button data-document="${esc(d.id)}" data-name="${esc(d.file_name)}" title="Tải chứng từ POD"><i class="fa-solid fa-download"></i> ${esc(d.file_name)}</button>`).join('')}</div>`).join('') || '<p>Chưa có bản ghi POD của chuyến này.</p>'}<div class="ct-actions">${r.next_milestone ? `<button class="ct-primary" data-action="milestone" title="Ghi mốc thật vào lịch sử chuyến và cập nhật vị trí xe">${bieuTuongMoc(r.next_milestone.ma)} Ghi mốc: ${esc(r.next_milestone.ten)}</button>` : ''}<button data-action="completion" ${r.status === 'arrived' ? '' : 'disabled'} title="${r.status === 'arrived' ? 'Mở form ký nhận POD và chốt giá' : 'Phải ghi nhận xe đã đến nơi trước khi ký POD'}"><i class="fa-solid fa-file-signature"></i> Mở hoàn tất giao hàng</button><button data-action="incident" ${!r.vehicle_id ? 'disabled' : ''}><i class="fa-solid fa-triangle-exclamation"></i> Báo sự cố</button><button data-action="dispatch"><i class="fa-solid fa-arrow-left"></i> Mở Điều phối</button></div>`;
@@ -549,6 +573,52 @@
     }
     render();
   }
+  /* ---------------------------- Sổ sự cố ---------------------------- */
+  const incLog = { items: [], filter: 'open', q: '', selected: null, loading: false, error: '' };
+  const incOpen = i => !['resolved', 'closed', 'đã xử lý', 'da xu ly'].includes(String(i.status || '').toLocaleLowerCase('vi'));
+  const sevLabel = { High: 'Cao', Medium: 'Trung bình', Low: 'Thấp', Critical: 'Nghiêm trọng' };
+  async function openIncidentLog(focusId) {
+    const dlg = el('ct-incident-log'); if (!dlg) return;
+    incLog.selected = focusId || null;
+    if (focusId) incLog.filter = 'all'; // phiếu được chỉ định có thể đã đóng — không để bộ lọc giấu nó
+    if (!dlg.open) dlg.showModal();
+    incLog.loading = true; incLog.error = ''; renderIncidentLog();
+    try {
+      const response = await fetch(`${base()}/api/incidents`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail?.message || data.detail || `HTTP ${response.status}`);
+      incLog.items = (Array.isArray(data) ? data : (data.items || data.data || [])).slice().sort((a, b) => String(b.reported_at || '').localeCompare(String(a.reported_at || '')) || Number(b.id) - Number(a.id));
+    } catch (error) { incLog.items = []; incLog.error = `Không tải được sổ sự cố: ${error.message}`; }
+    incLog.loading = false; renderIncidentLog();
+  }
+  function renderIncidentLog() {
+    const list = el('ct-inc-list'), detail = el('ct-inc-detail'); if (!list || !detail) return;
+    document.querySelectorAll('#ct-incident-log [data-inc-filter]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.incFilter === incLog.filter)));
+    const rows = incLog.items.filter(i => incLog.filter === 'all' || incOpen(i))
+      .filter(i => !incLog.q || [i.do_id, i.vehicle_id, i.incident_type, i.location, i.description, i.reporter].some(v => String(v || '').toLocaleLowerCase('vi').includes(incLog.q)));
+    const soMo = incLog.items.filter(incOpen).length;
+    el('ct-inc-count').textContent = incLog.loading ? '' : `· ${soMo} đang mở / ${incLog.items.length}`;
+    if (incLog.loading) { list.innerHTML = '<p class="ct-empty"><i class="fa-solid fa-circle-notch fa-spin"></i> Đang tải…</p>'; return; }
+    if (incLog.error) { list.innerHTML = `<p class="ct-empty ct-inc-error">${esc(incLog.error)}</p>`; return; }
+    if (!rows.length) { list.innerHTML = `<p class="ct-empty">${incLog.filter === 'open' && !incLog.q ? 'Không có sự cố nào đang mở.' : 'Không có sự cố nào khớp.'}</p>`; }
+    else list.innerHTML = `<table class="ct-inc-table"><thead><tr><th>Thời điểm</th><th>DO · xe</th><th>Loại</th><th>Mức</th><th>Trạng thái</th></tr></thead><tbody>${rows.map(i => `
+      <tr><td colspan="5" class="ct-inc-cell"><button type="button" data-inc="${esc(i.id)}" aria-pressed="${String(i.id) === String(incLog.selected)}">
+        <span>${esc(date(i.reported_at))}</span><span><strong>${esc(i.do_id || '—')}</strong><small>${esc(i.vehicle_id || '')}</small></span><span>${esc(i.incident_type || '—')}<small>${esc(i.location || '')}</small></span>
+        <span class="ct-sev ct-sev-${esc(String(i.severity || 'Medium').toLowerCase())}">${esc(sevLabel[i.severity] || i.severity || '—')}</span>
+        <span class="ct-inc-st ${incOpen(i) ? 'open' : 'done'}">${incOpen(i) ? 'Đang mở' : 'Đã xử lý'}</span></button></td></tr>`).join('')}</tbody></table>`;
+    const i = incLog.items.find(x => String(x.id) === String(incLog.selected));
+    if (!i) { detail.innerHTML = '<p class="ct-empty">Chọn một sự cố để xem phiếu.</p>'; return; }
+    const coChuyen = state.items.some(r => r.do_id === i.do_id);
+    detail.innerHTML = `<div class="ct-inc-head"><span class="ct-sev ct-sev-${esc(String(i.severity || 'Medium').toLowerCase())}">${esc(sevLabel[i.severity] || i.severity || '—')}</span><span class="ct-inc-st ${incOpen(i) ? 'open' : 'done'}">${incOpen(i) ? 'Đang mở' : 'Đã xử lý'}</span></div>
+      <h4>${esc(i.incident_type || 'Sự cố')} <small>#${esc(i.id)}</small></h4>
+      <dl class="ct-inc-fields">
+        ${pair('Lệnh giao hàng', i.do_id)}${pair('Xe', i.vehicle_id)}${pair('Vị trí', i.location)}${pair('Thời điểm báo', date(i.reported_at))}${pair('Người báo', i.reporter)}
+      </dl>
+      <h5>Mô tả</h5><p class="ct-inc-desc">${esc(i.description || 'Không có mô tả.')}</p>
+      <div class="ct-inc-actions"><button type="button" data-inc-trip="${esc(i.id)}" ${coChuyen ? '' : 'title="Chuyến của DO này không còn trong danh sách đang theo dõi"'}><i class="fa-solid fa-route"></i> Mở chuyến</button></div>
+      <p class="ct-inc-note">Phiếu chỉ đọc. Hệ thống chưa có bước đóng sự cố — khi có, nút "Đã xử lý" sẽ nằm ở đây.</p>`;
+  }
+
   function openIncident() {
     incidentRow = selected(); if (!incidentRow?.vehicle_id) return;
     const form = el('ct-incident-form'); form.reset();

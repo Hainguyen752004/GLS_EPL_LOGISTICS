@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/static/css/sla-analytics.css?v=20260903-sla-in-analysis-v1">
   <link rel="stylesheet" href="/static/css/driver-roster.css?v=20260908c-sap-lich">
   <!-- Khung tổng thể ba tầng. Nạp sau các tệp trên vì nó phải thắng phần đệm 104px mà `styles.css` chừa cho dải dọc đã bỏ. -->
-  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260911b-ban-lam-viec">
+  <link rel="stylesheet" href="/static/css/khung-moi.css?v=20260911d-dong-chay">
   <link rel="stylesheet" href="/static/css/bao-gia-v2.css?v=20260910n-tab-id">
   <link rel="stylesheet" href="/static/css/co-hoi.css?v=20260910s-co-hoi-mau">
   <link rel="stylesheet" href="/static/css/bang-lai-tai-xe.css?v=20260909a-bang-lai">
@@ -4005,9 +4005,13 @@
               <div class="os-viec-ds" id="os-viec-ds"><div class="os-rong"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Đang đọc dữ liệu…</div></div>
             </section>
             <section class="os-panel os-luong" aria-labelledby="os-luong-h">
-              <header><h2 id="os-luong-h"><i class="fa-solid fa-route" aria-hidden="true"></i> Luồng A–Z hôm nay</h2><button type="button" class="os-lk" id="os-xem-so-do">Sơ đồ đầy đủ →</button></header>
-              <ol class="os-luong-ds" id="os-luong-ds"></ol>
-              <p class="os-ghi">Con số là bản ghi đang nằm ở bước đó. Bước tô cam là chỗ đang dồn nhiều nhất.</p>
+              <header><h2 id="os-luong-h"><i class="fa-solid fa-water" aria-hidden="true"></i> Dòng chảy hôm nay</h2><button type="button" class="os-lk" id="os-xem-so-do">Sơ đồ đầy đủ →</button></header>
+              <!-- Sáu trạm nối ống, đọc trái → phải theo chiều luồng. Ống dày theo
+                   số đang chuyển qua; trạm dồn nhiều nhất phồng lên tô cam; sự cố
+                   là chấm đỏ đính lên trạm "Đang chạy" vì nó xảy ra TRÊN chuyến,
+                   không phải một bước riêng. js/khung-moi.js vẽ từ số thật. -->
+              <div class="os-dong" id="os-luong-ds" role="list"></div>
+              <p class="os-ghi" id="os-dong-ghi">Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất.</p>
             </section>
           </div>
 
@@ -8526,8 +8530,8 @@
   <script src="/static/js/transport-reporting.js?v=20260903-security-and-reporting-v1"></script>
   <!-- Lớp nền bản đồ có dự phòng. Nạp TRƯỚC mọi tệp vẽ bản đồ. -->
   <script src="/static/js/lop-nen-ban-do.js?v=20260908b-bo-carto"></script>
-  <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260908h-duong-bo">
-  <script src="/static/js/tracking-control-tower.js?v=20260909d-do-tu-qt"></script>
+  <link rel="stylesheet" href="/static/css/tracking-control-tower.css?v=20260911e-so-su-co">
+  <script src="/static/js/tracking-control-tower.js?v=20260911e-so-su-co"></script>
   <!-- Màn Sắp lịch xe và tài xế. Nạp TRƯỚC `app.js` cũng chạy được: tệp này tự
        chờ và bọc `switchMasterDataTab` khi hàm đó xuất hiện. -->
   <link rel="stylesheet" href="/static/css/sap-lich-v5.css?v=20260908d-bon-viec">
@@ -8535,7 +8539,7 @@
   <script src="/static/js/app.js?v=20260911i-xoa-ke-toan"></script>
   <!-- Khung ba tầng. Nạp SAU app.js vì nó bọc lại window.switchView để tầng 3
        đổi tiêu đề theo màn; nạp trước thì chưa có hàm nào để bọc. -->
-  <script src="/static/js/khung-moi.js?v=20260911b-ban-lam-viec"></script>
+  <script src="/static/js/khung-moi.js?v=20260911d-dong-chay"></script>
   <!-- Màn Báo giá cước. Nạp SAU app.js và khung-moi.js: cả ba bọc lại
        `window.switchView`, và tệp này phải là lớp ngoài cùng để còn ẩn được
        thanh đáy cố định khi người dùng rời màn Báo giá sang màn khác. -->

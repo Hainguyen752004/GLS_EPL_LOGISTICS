@@ -537,31 +537,39 @@
       + (v.nhan ? '<span class="when">' + chuAnToan(v.nhan) + '</span>' : '') + '<i class="fa-solid fa-chevron-right mui" aria-hidden="true"></i></button>';
   }
 
-  const BUOC_LUONG = [
-    { ten: 'Dữ liệu gốc', icon: 'fa-database', man: 'master-data' },
+  /** Sáu trạm của dòng chảy. `khoa` là con số đo được ở napBanLamViec. */
+  const TRAM = [
     { ten: 'Cơ hội', icon: 'fa-handshake', man: 'co-hoi', khoa: 'coHoi', don: 'đang mở' },
     { ten: 'Báo giá', icon: 'fa-file-contract', man: 'crm-sales', khoa: 'baoGia', don: 'đang mở' },
     { ten: 'Lệnh giao hàng', icon: 'fa-boxes-packing', man: 'ops-planning', khoa: 'doCho', don: 'chưa lên đường' },
     { ten: 'Điều phối', icon: 'fa-truck-ramp-box', man: 'dispatch', khoa: 'doDieuPhoi', don: 'chờ xe' },
-    { ten: 'Đang chạy', icon: 'fa-location-crosshairs', man: 'tracking', khoa: 'doChay', don: 'chuyến' },
-    { ten: 'Sự cố', icon: 'fa-triangle-exclamation', man: 'tracking', khoa: 'suCo', don: 'chưa xử lý' },
-    { ten: 'Hoàn tất', icon: 'fa-clipboard-check', man: 'delivery-completion', khoa: 'hoanTat', don: 'đã có POD' },
+    { ten: 'Đang chạy', icon: 'fa-location-crosshairs', man: 'tracking', khoa: 'doChay', don: 'chuyến', suCo: true },
+    { ten: 'Hoàn tất', icon: 'fa-check', man: 'delivery-completion', khoa: 'hoanTat', don: 'đã có POD', cuoi: true },
   ];
 
   function veLuong(so) {
     const o = document.getElementById('os-luong-ds'); if (!o) return;
-    const dem = BUOC_LUONG.map(function (b) { return b.khoa && ['coHoi', 'baoGia', 'doCho', 'doDieuPhoi', 'suCo'].includes(b.khoa) ? Number(so[b.khoa]) || 0 : -1; });
-    const max = Math.max.apply(null, dem);
-    o.innerHTML = BUOC_LUONG.map(function (b, i) {
-      const n = b.khoa ? so[b.khoa] : undefined;
-      const coSo = isFinite(Number(n));
-      const nghen = coSo && max > 0 && dem[i] === max;
-      return '<li><button type="button" class="os-buoc' + (nghen ? ' nghen' : '') + (coSo && Number(n) === 0 ? ' trong' : '') + '" data-man="' + b.man + '">'
-        + '<span class="ic"><i class="fa-solid ' + b.icon + '" aria-hidden="true"></i></span>'
-        + '<b>' + (coSo ? Number(n).toLocaleString('vi-VN') : '·') + '</b>'
-        + '<span class="ten">' + b.ten + '</span>' + (coSo ? '<small>' + b.don + '</small>' : '<small>&nbsp;</small>') + '</button></li>';
+    const gia = TRAM.map(function (t) { const n = Number(so[t.khoa]); return isFinite(n) ? n : null; });
+    // Trạm tắc: nhiều nhất trong năm trạm đầu (Hoàn tất càng nhiều càng tốt, không tính).
+    let max = 0; gia.slice(0, 5).forEach(function (n) { if (n !== null && n > max) max = n; });
+    const lonNhat = Math.max(1, max);
+    o.innerHTML = TRAM.map(function (t, i) {
+      const n = gia[i], coSo = n !== null, tac = coSo && max > 0 && n === max && !t.cuoi;
+      const suCo = t.suCo && isFinite(Number(so.suCo)) && Number(so.suCo) > 0 ? Number(so.suCo) : 0;
+      // Ống nối tới trạm này: dày theo số đang chuyển qua (2–12px).
+      const ong = i === 0 ? '' : '<span class="os-ong" aria-hidden="true"><span style="height:' + (coSo ? Math.max(2, Math.round(2 + 10 * n / lonNhat)) : 2) + 'px"></span></span>';
+      return ong + '<button type="button" role="listitem" class="os-tram' + (tac ? ' tac' : '') + (t.cuoi ? ' cuoi' : '') + (coSo && n === 0 ? ' trong' : '') + '" data-man="' + t.man + '" title="' + t.ten + (coSo ? ': ' + n + ' ' + t.don : '') + '">'
+        + '<span class="vong"><b>' + (coSo ? n.toLocaleString('vi-VN') : '·') + '</b>'
+        + (suCo ? '<span class="su-co" title="' + suCo + ' sự cố chưa xử lý"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>' + suCo + '</span>' : '')
+        + '</span>'
+        + '<span class="ten"><i class="fa-solid ' + t.icon + '" aria-hidden="true"></i> ' + t.ten + '</span>'
+        + '<small>' + (coSo ? (tac ? 'đang dồn · ' : '') + t.don : '&nbsp;') + '</small></button>';
     }).join('');
-    o.querySelectorAll('.os-buoc').forEach(function (b) { b.addEventListener('click', function () { window.switchView(b.dataset.man); }); });
+    o.querySelectorAll('.os-tram').forEach(function (b) { b.addEventListener('click', function () { window.switchView(b.dataset.man); }); });
+    const ghi = document.getElementById('os-dong-ghi');
+    if (ghi && Object.keys(so).length) {
+      ghi.textContent = 'Số trong trạm là bản ghi đang nằm ở đó. Trạm cam là chỗ đang dồn nhiều nhất. Cập nhật ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + '.';
+    }
   }
 
   function veViec(ds, loi) {
