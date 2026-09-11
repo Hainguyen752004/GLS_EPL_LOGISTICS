@@ -388,6 +388,34 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   lần gieo, xoá hay giữ tuỳ anh); 10/17 địa điểm chưa có toạ độ (thiếu dữ liệu, không phải rác);
   13 bảng rỗng còn lại thuộc module đang có mã đọc/ghi (đấu thầu, đơn vị hàng, phiếu chi báo cáo…).
 
+### A27. Dựng lại dữ liệu từ con số 0 qua API thật; API danh sách DO bàn giao; tài liệu — **ĐÃ LÀM** (11/09)
+
+- Anh chốt: *"xóa hết dựng từ con số 0 … chỉ giữ lại dữ liệu gốc … import dữ liệu chuẩn … đa dạng
+  loại và dữ liệu"*. Script `backend/scripts/dung_lai_du_lieu_demo.py`: `--xoa` TRUNCATE 40 bảng
+  vận hành trong một giao dịch (848 dòng → 0), trả 9 xe / 14 tài xế về rảnh, xoá 312 tệp đính kèm
+  cũ; `--gieo` đi **qua API của máy chủ 8001**, không ghi thẳng DB. Kết quả: 7 báo giá (4 đã tách
+  DO, 1 chờ khách bằng USD, 1 bị từ chối, 1 nháp có đính kèm), 7 DO (4 đã giao, 1 đang chạy, 2 chờ
+  điều phối), 6 chuyến (3 hoàn tất, 1 đang chạy, 1 kế hoạch, 1 đã huỷ), 3 phiếu chi phí thực tế
+  (2 đã gửi duyệt, 1 nháp), 9 cơ hội đủ 6 giai đoạn, 1 Packing List quét đủ 3 bước, 1 sự cố.
+- Gieo qua API bắt được **năm cửa chặn thật** đang hoạt động (đều đúng luật, không sửa): hàng nguyên
+  khối phải có số niêm phong trước khi xuất bến; chuyến chở 2 DO thì mỗi DO chỉ nộp POD cho chặng
+  giao của mình; điều phối phải nằm trong khung lấy–giao của DO; báo giá USD phải khai giá thành
+  bằng USD (cửa "báo giá lỗ" so cùng đơn vị tiền); mốc `delivered` đòi chứng từ POD ngay trong sự
+  kiện, nên luồng thật ghi mốc tới `unloading` rồi hoàn tất bằng bước POD.
+- **Một lỗi thật đã sửa**: huỷ chuyến thiếu `Idempotency-Key` → máy chủ trả `500 Internal Server
+  Error` trống, vì `DomainError` ném ở tầng route TRƯỚC khối `try` của `_trip_command` (cùng kiểu ở
+  bảy chỗ khác). Bộ kiểm không thấy vì TestClient ném lại ngoại lệ thay vì trả 500. Sửa bằng bộ đón
+  toàn cục `@app.exception_handler(DomainError)` trong `main.py` trả đúng phong bì `{error, detail}`;
+  bài kiểm `test_domain_error_ngoai_try_thanh_phong_bi.py` đo với `raise_server_exceptions=False`.
+- Chi phí thực tế dừng ở `submitted`: bốn mắt đang bật, máy chủ chạy một danh tính duy nhất
+  (`EPL_TMS_API_PRINCIPAL` = demo-dispatcher) nên không tự duyệt được — đúng luật.
+- Thêm `GET /api/handover/delivery-orders` (danh sách DO đã hoàn tất, lọc khách / ngày, phân trang)
+  — API thứ nhất trong hai API anh Khang cần; API thứ hai (header + chi tiết) đã có từ trước.
+- Tài liệu: `docs/API_REFERENCE_VI.md` và `DATABASE_SCHEMA_VI.md` sinh lại bằng
+  `backend/scripts/sinh_tai_lieu.py` (mô tả tay mọi endpoint, phần ★ bàn giao đặt đầu);
+  `docs/HUONG_DAN_LUONG_VA_CAU_HINH_VI.md` mới — thứ tự cấu hình dữ liệu gốc và trọn luồng cho
+  người chưa biết hệ.
+
 ---
 
 ## B. Luồng có thể đi sai

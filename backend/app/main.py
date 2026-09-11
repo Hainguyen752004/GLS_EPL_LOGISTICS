@@ -220,6 +220,29 @@ async def http_error_handler(request: Request, exc: HTTPException):
         headers=exc.headers,
     )
 
+
+@app.exception_handler(DomainError)
+async def domain_error_handler(request: Request, exc: DomainError):
+    """DomainError lọt ra NGOÀI khối `try` của route thì vẫn phải thành phong bì lỗi.
+
+    Đo được ngày 11/09 trên máy chủ thật: `POST /api/tms/trips/{id}/cancel` thiếu
+    `Idempotency-Key` → `_idempotency_key()` ném DomainError 422 TRƯỚC khi vào
+    `_trip_command` (nơi có `except DomainError → raise_http`), nên máy chủ trả
+    `500 Internal Server Error` trống — người gọi không biết mình thiếu gì. Bộ kiểm
+    không bắt được vì TestClient mặc định ném thẳng ngoại lệ thay vì trả 500.
+    Bộ đón toàn cục này biến mọi DomainError còn sót thành đúng phong bì mà
+    `raise_http` tạo, để `code` / `message` luôn tới tay người gọi.
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": _error_payload(exc.code, exc.message, links=exc.navigation_targets),
+            "detail": {"code": exc.code, "message": exc.message,
+                       "navigation_targets": exc.navigation_targets},
+        },
+    )
+
+
 MAX_REQUEST_BODY_BYTES = int(os.getenv("EPL_MAX_REQUEST_BODY_BYTES", str(16 * 1024 * 1024)))
 # Các đường upload tự có hạn mức riêng, rộng hơn hạn mức JSON chung.
 _UPLOAD_PATH_PREFIXES = ("/api/uploads/", "/api/ai/checkpoint/", "/api/pod/")
