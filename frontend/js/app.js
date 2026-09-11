@@ -538,6 +538,18 @@ function translateAllDOMTexts(lang) {
       }
     });
 
+    // Chữ gợi ý khi rê chuột (title) cũng phải dịch: nhiều nút chỉ có icon,
+    // nên title LÀ nhãn duy nhất người dùng đọc được.
+    document.querySelectorAll('[title]').forEach(el => {
+      if (el.hasAttribute('data-i18n')) return;
+      if (!el.dataset.origTitle) el.dataset.origTitle = el.getAttribute('title');
+      const orig = el.dataset.origTitle;
+      if (!orig) return;
+      if (lang === 'vi') { el.setAttribute('title', orig); return; }
+      const entry = viMap.get(orig.trim().toLowerCase());
+      if (entry && entry[lang]) el.setAttribute('title', fixUIText(entry[lang]));
+    });
+
     document.querySelectorAll('select option').forEach(opt => {
       if (opt.hasAttribute('data-i18n')) return;
       if (!opt.dataset.origText) opt.dataset.origText = opt.textContent.trim();

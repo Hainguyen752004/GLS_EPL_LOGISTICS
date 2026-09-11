@@ -2309,10 +2309,32 @@
   </style>`;
 
   /** Dải đầu trang dùng chung cho hai bản in. `nhan` là chip cạnh tiêu đề. */
+  /**
+   * Chữ trên PHIẾU IN phải dịch ngay lúc dựng chuỗi.
+   *
+   * Phiếu mở ở cửa sổ mới bằng window.open, là một tài liệu KHÁC — bộ dịch DOM
+   * của ứng dụng (translateAllDOMTexts) chỉ chạy trên trang chính nên không bao
+   * giờ với tới đó. Thiếu bản dịch thì lùi về tiếng Việt, không hiện tên khoá.
+   */
+  function TI(khoa, macDinh) {
+    if (typeof window.t !== 'function') return macDinh;
+    const ra = window.t(khoa);
+    return (ra && ra !== khoa) ? ra : macDinh;
+  }
+  const MA_VUNG_IN = { vi: 'vi-VN', en: 'en-GB', la: 'lo-LA', lo: 'lo-LA' };
+  /** Ngày trên phiếu theo ngôn ngữ đang chọn; `<html lang>` do changeLanguage đặt. */
+  function ngayIn(d) {
+    const l = (document.documentElement && document.documentElement.lang) || 'vi';
+    return (d || new Date()).toLocaleDateString(MA_VUNG_IN[String(l).toLowerCase()] || 'vi-VN');
+  }
+  /** Đơn vị tính cước, dịch được (chuyến / tấn / kg / km / m³). */
+  const KHOA_DV = { 'chuyến': 'in_dv_chuyen', 'tấn': 'in_dv_tan', 'kg': 'in_dv_kg', 'km': 'in_dv_km', 'm³': 'in_dv_m3' };
+  const dvIn = don => TI(KHOA_DV[don] || '', don);
+
   function dauTrangIn(tieuDe, ma, dongPhu, nhan) {
     return `<div class="dau">
       <img class="logo" src="${LOGO()}" alt="EPL Logistics">
-      <div class="ten"><b>EPL LOGISTICS</b><span>Vận tải và giao nhận · Việt Nam – Lào</span><em>ການຂົນສົ່ງ ແລະ ການຈັດສົ່ງ</em></div>
+      <div class="ten"><b>EPL LOGISTICS</b><span>${esc(TI('in_tagline', 'Vận tải và giao nhận · Việt Nam – Lào'))}</span>${(document.documentElement.lang || 'vi').toLowerCase().startsWith('lo') ? '' : `<em>ການຂົນສົ່ງ ແລະ ການຈັດສົ່ງ</em>`}</div>
       <div class="phai"><h1>${esc(tieuDe)}</h1><div class="ma">${ma}</div>${nhan ? `<div style="margin-top:6px">${nhan}</div>` : ''}</div>
     </div><div class="soc"></div>
     ${dongPhu ? `<div style="margin-top:10px;font-size:12.5px;color:var(--muc-2)">${dongPhu}</div>` : ''}`;
@@ -2344,50 +2366,50 @@
     const bien = q.bien === null || q.bien === undefined ? '—' : phanTram(q.bien);
     const ck = Number(q.discount_percent || 0);
     moCuaSoIn(`Báo giá ${q.quote_no || q.id} — bản nội bộ`, `
-      <div class="van" aria-hidden="true"><span>NỘI BỘ</span></div>
-      ${dauTrangIn('BÁO GIÁ CƯỚC VẬN CHUYỂN',
-    `<b>${esc(q.quote_no || q.id || 'bản nháp')}</b> · ngày ${new Date().toLocaleDateString('vi-VN')}`,
-    `Trạng thái <b>${esc(q.canonical_status || '')}</b> · NVKD ${esc(q.sales_rep || '')}`,
-    '<span class="noibo">BẢN NỘI BỘ — không gửi khách</span>')}
-      <h2>Khách hàng và hành trình</h2>
+      <div class="van" aria-hidden="true"><span>${esc(TI('in_van_noi_bo', 'NỘI BỘ'))}</span></div>
+      ${dauTrangIn(TI('in_tieu_de_noi_bo', 'BÁO GIÁ CƯỚC VẬN CHUYỂN'),
+    `<b>${esc(q.quote_no || q.id || TI('in_ban_nhap', 'bản nháp'))}</b> · ${esc(TI('in_ngay', 'ngày'))} ${ngayIn()}`,
+    `${esc(TI('in_trang_thai', 'Trạng thái'))} <b>${esc(q.canonical_status || '')}</b> · ${esc(TI('in_nvkd', 'NVKD'))} ${esc(q.sales_rep || '')}`,
+    `<span class="noibo">${esc(TI('in_nhan_noi_bo', 'BẢN NỘI BỘ — không gửi khách'))}</span>`)}
+      <h2>${esc(TI('in_kh_va_hanh_trinh', 'Khách hàng và hành trình'))}</h2>
       <div class="khoi cap">
-        <div><span>Khách hàng</span><b>${esc(tenKhach(q.customer_id))}</b></div>
-        <div><span>Tuyến</span><b>${esc((rt && (rt.name || rt.id)) || '—')}</b></div>
-        <div><span>Phương tiện</span><b>${esc(tenLoaiXe(q.vehicle_type_id))}</b></div>
-        <div><span>Quãng đường</span><b>${xt ? so(xt.km) + ' km' : '—'}</b></div>
-        <div><span>Hàng</span><b>${so(Number(q.weight_kg || 0) / 1000)} tấn${
+        <div><span>${esc(TI('in_khach_hang', 'Khách hàng'))}</span><b>${esc(tenKhach(q.customer_id))}</b></div>
+        <div><span>${esc(TI('in_tuyen', 'Tuyến'))}</span><b>${esc((rt && (rt.name || rt.id)) || '—')}</b></div>
+        <div><span>${esc(TI('in_phuong_tien', 'Phương tiện'))}</span><b>${esc(tenLoaiXe(q.vehicle_type_id))}</b></div>
+        <div><span>${esc(TI('in_quang_duong', 'Quãng đường'))}</span><b>${xt ? so(xt.km) + ' km' : '—'}</b></div>
+        <div><span>${esc(TI('in_hang', 'Hàng'))}</span><b>${so(Number(q.weight_kg || 0) / 1000)} ${esc(TI('in_tan', 'tấn'))}${
       q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''}${q.pallet_count ? ' · ' + so(q.pallet_count) + ' pallet' : ''}</b></div>
-        <div><span>Loại hàng</span><b>${esc(q.cargo_type || '—')}</b></div>
+        <div><span>${esc(TI('in_loai_hang', 'Loại hàng'))}</span><b>${esc(q.cargo_type || '—')}</b></div>
       </div>
-      <h2>Khoản mục giá thành một chuyến (chi)</h2>
-      <table><thead><tr><th>Khoản mục</th><th class="r">Đơn giá</th><th>Nhân với</th>
-        <th class="r">Thành tiền (${esc(sym)})</th></tr></thead><tbody>${dongCua('chi')}
-        <tr class="tong"><td colspan="3">Giá thành một chuyến</td>
+      <h2>${esc(TI('in_muc_chi', 'Khoản mục giá thành một chuyến (chi)'))}</h2>
+      <table><thead><tr><th>${esc(TI('in_khoan_muc', 'Khoản mục'))}</th><th class="r">${esc(TI('in_don_gia', 'Đơn giá'))}</th><th>${esc(TI('in_nhan_voi', 'Nhân với'))}</th>
+        <th class="r">${esc(TI('in_thanh_tien', 'Thành tiền'))} (${esc(sym)})</th></tr></thead><tbody>${dongCua('chi')}
+        <tr class="tong"><td colspan="3">${esc(TI('in_gia_thanh_chuyen', 'Giá thành một chuyến'))}</td>
           <td class="r">${tien(Number(q.total_cost || 0) / ty)}</td></tr></tbody></table>
-      ${dongCua('thu') ? `<h2>Khoản mục doanh thu trong công thức (thu · tham khảo)</h2>
+      ${dongCua('thu') ? `<h2>${esc(TI('in_muc_thu', 'Khoản mục doanh thu trong công thức (thu · tham khảo)'))}</h2>
       <table><tbody>${dongCua('thu')}</tbody></table>` : ''}
-      <h2>Cước và biên</h2>
+      <h2>${esc(TI('in_cuoc_va_bien', 'Cước và biên'))}</h2>
       <table><tbody>
-        <tr><td>Đơn giá cước (giá cuối)</td><td class="r">${tien(Number(q.unit_price || 0) / ty)} ${esc(sym)} / ${esc(dv[2])}</td></tr>
-        ${ck > 0 ? `<tr><td>Giá gốc trước chiết khấu ${so(ck * 100)}%</td><td class="r">${tien(Number(q.unit_price || 0) / (1 - ck) / ty)} ${esc(sym)} / ${esc(dv[2])}</td></tr>` : ''}
-        <tr class="tong"><td>Cước một chuyến</td><td class="r">${tien(Number(q.selling_price || 0) / ty)} ${esc(sym)}</td></tr>
-        <tr><td>Lợi nhuận một chuyến</td><td class="r">${tien((Number(q.selling_price || 0) - Number(q.total_cost || 0)) / ty)} ${esc(sym)} · biên ${bien}</td></tr>
-        <tr><td>Biên mục tiêu</td><td class="r">${q.target_margin ? phanTram(q.target_margin, 0) + ' (riêng khách này)' : 'theo công ty'}</td></tr>
-        <tr><td>Giá đối thủ khách nói ra</td><td class="r">${Number(q.competitor_price) > 0 ? tien(q.competitor_price) + ' VNĐ/chuyến' : '—'}</td></tr>
-        <tr><td>Phụ phí chờ quá 2 giờ</td><td class="r">${tien(Number(q.waiting_surcharge || 0) / ty)} ${esc(sym)}/giờ</td></tr>
-        <tr><td>Điều khoản thanh toán</td><td class="r">${esc(q.payment_terms || '—')}</td></tr>
-        <tr><td>Hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
-        <tr><td>Số chuyến / tháng dự kiến</td><td class="r">${q.trips_per_month || '—'}</td></tr>
+        <tr><td>${esc(TI('in_don_gia_cuoc', 'Đơn giá cước (giá cuối)'))}</td><td class="r">${tien(Number(q.unit_price || 0) / ty)} ${esc(sym)} / ${esc(dvIn(dv[2]))}</td></tr>
+        ${ck > 0 ? `<tr><td>${esc(TI('in_gia_goc_truoc_ck', 'Giá gốc trước chiết khấu'))} ${so(ck * 100)}%</td><td class="r">${tien(Number(q.unit_price || 0) / (1 - ck) / ty)} ${esc(sym)} / ${esc(dvIn(dv[2]))}</td></tr>` : ''}
+        <tr class="tong"><td>${esc(TI('in_cuoc_mot_chuyen', 'Cước một chuyến'))}</td><td class="r">${tien(Number(q.selling_price || 0) / ty)} ${esc(sym)}</td></tr>
+        <tr><td>${esc(TI('in_loi_nhuan_chuyen', 'Lợi nhuận một chuyến'))}</td><td class="r">${tien((Number(q.selling_price || 0) - Number(q.total_cost || 0)) / ty)} ${esc(sym)} · ${esc(TI('in_bien', 'biên'))} ${bien}</td></tr>
+        <tr><td>${esc(TI('in_bien_muc_tieu', 'Biên mục tiêu'))}</td><td class="r">${q.target_margin ? phanTram(q.target_margin, 0) + ' (' + TI('in_rieng_khach_nay', 'riêng khách này') + ')' : TI('in_theo_cong_ty', 'theo công ty')}</td></tr>
+        <tr><td>${esc(TI('in_gia_doi_thu', 'Giá đối thủ khách nói ra'))}</td><td class="r">${Number(q.competitor_price) > 0 ? tien(q.competitor_price) + ' ' + TI('in_vnd_moi_chuyen', 'VNĐ/chuyến') : '—'}</td></tr>
+        <tr><td>${esc(TI('in_phu_phi_cho', 'Phụ phí chờ quá 2 giờ'))}</td><td class="r">${tien(Number(q.waiting_surcharge || 0) / ty)} ${esc(sym)}/${esc(TI('in_gio', 'giờ'))}</td></tr>
+        <tr><td>${esc(TI('in_dieu_khoan_tt', 'Điều khoản thanh toán'))}</td><td class="r">${esc(q.payment_terms || '—')}</td></tr>
+        <tr><td>${esc(TI('in_hieu_luc_den', 'Hiệu lực đến'))}</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
+        <tr><td>${esc(TI('in_so_chuyen_thang', 'Số chuyến / tháng dự kiến'))}</td><td class="r">${q.trips_per_month || '—'}</td></tr>
         ${q.currency_code && q.currency_code !== 'VND'
-      ? `<tr><td>Tỷ giá áp dụng</td><td class="r">1 ${esc(q.currency_code)} = ${tien(ty)} VNĐ</td></tr>` : ''}
+      ? `<tr><td>${esc(TI('in_ty_gia', 'Tỷ giá áp dụng'))}</td><td class="r">1 ${esc(q.currency_code)} = ${tien(ty)} VNĐ</td></tr>` : ''}
       </tbody></table>
-      ${(q.items || []).length ? `<h2>Hàng hoá</h2><table><thead><tr><th>#</th><th>Tên hàng</th><th class="r">Số lượng</th><th>ĐVT</th><th>Ghi chú</th></tr></thead><tbody>${
+      ${(q.items || []).length ? `<h2>${esc(TI('in_hang_hoa', 'Hàng hoá'))}</h2><table><thead><tr><th>#</th><th>${esc(TI('in_ten_hang', 'Tên hàng'))}</th><th class="r">${esc(TI('in_so_luong', 'Số lượng'))}</th><th>${esc(TI('in_dvt', 'ĐVT'))}</th><th>${esc(TI('in_ghi_chu', 'Ghi chú'))}</th></tr></thead><tbody>${
       (q.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.name || '')}</td><td class="r">${so(it.quantity)}</td><td>${esc(it.uom || '')}</td><td>${esc(it.note || '')}</td></tr>`).join('')}</tbody></table>` : ''}
-      ${q.notes_customer ? `<h2>Ghi chú gửi khách</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
-      ${q.notes_ops ? `<h2>Ghi chú vận hành</h2><div class="ghi">${esc(q.notes_ops)}</div>` : ''}
-      ${q.notes_internal ? `<h2>Ghi chú nội bộ</h2><div class="ghi">${esc(q.notes_internal)}</div>` : ''}
-      <div class="chan"><span><b>EPL LOGISTICS</b> · bản nội bộ, không gửi khách</span>
-        <span>Số liệu lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in · gửi khách dùng nút “Phiếu gửi khách”</span></div>`);
+      ${q.notes_customer ? `<h2>${esc(TI('in_ghi_chu_khach', 'Ghi chú gửi khách'))}</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
+      ${q.notes_ops ? `<h2>${esc(TI('in_ghi_chu_van_hanh', 'Ghi chú vận hành'))}</h2><div class="ghi">${esc(q.notes_ops)}</div>` : ''}
+      ${q.notes_internal ? `<h2>${esc(TI('in_ghi_chu_noi_bo', 'Ghi chú nội bộ'))}</h2><div class="ghi">${esc(q.notes_internal)}</div>` : ''}
+      <div class="chan"><span><b>EPL LOGISTICS</b> · ${esc(TI('in_chan_noi_bo', 'bản nội bộ, không gửi khách'))}</span>
+        <span>${esc(TI('in_chan_nguon', 'Số liệu lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in'))} · ${esc(TI('in_chan_gui_khach', 'gửi khách dùng nút “Phiếu gửi khách”'))}</span></div>`);
   }
 
   function phieuKhach() {
@@ -2406,36 +2428,36 @@
     const tenTuyen = (rt && (rt.name || rt.id)) || '—';
     const dong = (nhan, giaTri) => `<tr><td>${nhan}</td><td class="r">${giaTri}</td></tr>`;
     moCuaSoIn(`Báo giá ${q.quote_no || q.id} — phiếu gửi khách`, `
-      ${dauTrangIn('THÔNG TIN VẬN CHUYỂN',
-    `<b>${esc(q.quote_no || q.id || '')}</b> · ngày ${new Date().toLocaleDateString('vi-VN')}`,
-    `Kính gửi <b>${esc(tenKhach(q.customer_id))}</b>`, '')}
-      <h2>Cước vận chuyển</h2>
+      ${dauTrangIn(TI('in_tieu_de_khach', 'THÔNG TIN VẬN CHUYỂN'),
+    `<b>${esc(q.quote_no || q.id || '')}</b> · ${esc(TI('in_ngay', 'ngày'))} ${ngayIn()}`,
+    `${esc(TI('in_kinh_gui', 'Kính gửi'))} <b>${esc(tenKhach(q.customer_id))}</b>`, '')}
+      <h2>${esc(TI('in_cuoc_van_chuyen', 'Cước vận chuyển'))}</h2>
       <div class="gia">
-        <div><div class="nhan">Đơn giá</div><div class="con">${tien(donGiaCuoi)} ${esc(tienTe)}</div><div class="don">/ ${esc(dv[2])}</div></div>
-        ${ck > 0 ? `<div class="ck">Đã chiết khấu ${so(ck * 100)}%</div>` : ''}
+        <div><div class="nhan">${esc(TI('in_don_gia', 'Đơn giá'))}</div><div class="con">${tien(donGiaCuoi)} ${esc(tienTe)}</div><div class="don">/ ${esc(dvIn(dv[2]))}</div></div>
+        ${ck > 0 ? `<div class="ck">${esc(TI('in_da_chiet_khau', 'Đã chiết khấu'))} ${so(ck * 100)}%</div>` : ''}
       </div>
-      <h2>Chi tiết</h2>
+      <h2>${esc(TI('in_chi_tiet', 'Chi tiết'))}</h2>
       <table><tbody>
-        ${dong('Tuyến đường', esc(tenTuyen) + (km > 0 ? ' · ' + so(km) + ' km' : ''))}
-        ${dong('Loại xe', esc(tenLoaiXe(q.vehicle_type_id)))}
-        ${dong('Trọng lượng', so(Number(q.weight_kg || 0) / 1000) + ' Tấn')}
-        ${dong('Tiền tệ thanh toán · ສະກຸນເງິນ', esc(tienTe))}
-        ${dong('Giá gốc', tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
-        ${dong('Giá gốc sau chiết khấu' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''), tien(donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
-        ${dong('Chiết khấu cho khách' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''),
+        ${dong(TI('in_tuyen_duong', 'Tuyến đường'), esc(tenTuyen) + (km > 0 ? ' · ' + so(km) + ' km' : ''))}
+        ${dong(TI('in_loai_xe', 'Loại xe'), esc(tenLoaiXe(q.vehicle_type_id)))}
+        ${dong(TI('in_trong_luong', 'Trọng lượng'), so(Number(q.weight_kg || 0) / 1000) + ' ' + TI('in_tan_hoa', 'Tấn'))}
+        ${dong(TI('in_tien_te_tt', 'Tiền tệ thanh toán'), esc(tienTe))}
+        ${dong(TI('in_gia_goc', 'Giá gốc'), tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dvIn(dv[2])))}
+        ${dong(TI('in_gia_goc_sau_ck', 'Giá gốc sau chiết khấu') + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''), tien(donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dvIn(dv[2])))}
+        ${dong(TI('in_chiet_khau_khach', 'Chiết khấu cho khách') + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''),
       ck > 0
-        ? '− ' + tien(donGiaCuoi * heSo - donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2])
-        : 'Không có chiết khấu')}
-        ${dong('Ngày nhập dữ liệu', new Date().toLocaleDateString('vi-VN'))}
-        <tr class="tong"><td>Báo giá có hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
+        ? '− ' + tien(donGiaCuoi * heSo - donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dvIn(dv[2]))
+        : TI('in_khong_chiet_khau', 'Không có chiết khấu'))}
+        ${dong(TI('in_ngay_nhap', 'Ngày nhập dữ liệu'), ngayIn())}
+        <tr class="tong"><td>${esc(TI('in_bao_gia_hieu_luc', 'Báo giá có hiệu lực đến'))}</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
       </tbody></table>
-      ${q.notes_customer ? `<h2>Ghi chú</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
+      ${q.notes_customer ? `<h2>${esc(TI('in_ghi_chu', 'Ghi chú'))}</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
       <div class="ky">
-        <div><b>Khách hàng</b><small>Ký, ghi rõ họ tên</small><i>ຜູ້ຮັບບໍລິການ</i></div>
-        <div><b>EPL Logistics</b><small>${esc(q.sales_rep || 'Nhân viên kinh doanh')}</small><i>ຜູ້ໃຫ້ບໍລິການ</i></div>
+        <div><b>${esc(TI('in_khach_hang', 'Khách hàng'))}</b><small>${esc(TI('in_ky_ten', 'Ký, ghi rõ họ tên'))}</small><i>${esc(TI('in_ben_nhan', 'Bên nhận dịch vụ'))}</i></div>
+        <div><b>EPL Logistics</b><small>${esc(q.sales_rep || TI('in_nvkd_dai', 'Nhân viên kinh doanh'))}</small><i>${esc(TI('in_ben_cung_cap', 'Bên cung cấp dịch vụ'))}</i></div>
       </div>
-      <div class="chan"><span><b>EPL LOGISTICS</b> · Vận tải và giao nhận Việt Nam – Lào</span>
-        <span>Báo giá có hiệu lực đến ${esc(q.valid_to || '—')}</span></div>`);
+      <div class="chan"><span><b>EPL LOGISTICS</b> · ${esc(TI('in_chan_khach', 'Vận tải và giao nhận Việt Nam – Lào'))}</span>
+        <span>${esc(TI('in_bao_gia_hieu_luc', 'Báo giá có hiệu lực đến'))} ${esc(q.valid_to || '—')}</span></div>`);
   }
 
   /* =========================================================================
