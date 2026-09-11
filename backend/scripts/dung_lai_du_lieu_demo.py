@@ -49,11 +49,32 @@ Các case cố ý ĐA DẠNG (xem `gieo()` để biết từng case làm gì):
 Chi phí thực tế dừng ở `submitted`: cấu hình bốn mắt đang BẬT và máy chủ 8001 chạy
 với một danh tính duy nhất (EPL_TMS_API_PRINCIPAL), nên người duyệt phải là người
 khác — đúng luật, không lách.
+
+KHÔNG CÒN MỘT CON SỐ TIỀN NÀO GÕ TAY TRONG SCRIPT NÀY
+-----------------------------------------------------
+Chủ dự án (11/09/2026) mở báo giá Unilever và hỏi cước 4.900.000 đ ở đâu ra. Không
+ở đâu cả: nó là con số viết cứng trong script, cạnh một giá thành cũng viết cứng
+(2.950.000 đ) lệch hẳn với công thức thật (2.082.425 đ). Trên màn hình, cước đọc từ
+cơ sở dữ liệu còn giá thành tính tươi từ công thức, nên hai số không cùng gốc và
+không kiểm chứng được nhau. Anh chốt: *"bỏ hết ... rõ sát triệt để giúp anh"*.
+
+Nên giờ mọi con số tiền đều suy ra từ công thức loại xe qua `price-preview`, đúng
+điểm cuối mà màn báo giá đang gọi:
+
+  · `gia_that()` cho giá thành và cước. Cước = giá thành / (1 − biên). Mỗi case
+    chỉ chọn MỨC BIÊN, không chọn số tiền. Case Pou Yuen cố ý lấy biên 9% để có
+    mẫu báo giá phải qua trưởng phòng.
+  · `dong_chi_phi()` cho bảng chi phí thực tế. Cột "chốt ban đầu" bằng đúng cấu
+    phần công thức, cột "thực tế" suy ra theo tỉ lệ vượt của từng khoản.
+
+Hệ quả: sửa đơn giá trong Dữ liệu gốc → Công thức giá thành rồi gieo lại thì toàn
+bộ dữ liệu demo đi theo, và mọi con số trên màn đều tra ngược được về công thức.
 """
 import argparse
 import datetime as dt
 import io
 import json
+import math
 import mimetypes
 import os
 import sys
@@ -252,6 +273,79 @@ def xem_truoc(qid_than):
     return _du_lieu(goi("POST", "/api/quotations/price-preview", qid_than))
 
 
+def lam_tron_tien(gia_tri, tien):
+    """Làm tròn cho số tiền dễ đọc mà không làm nó lệch khỏi giá thành thật.
+
+    VND luôn tròn nghìn: đó là cách người bán đọc giá, và một nghìn đồng trên vài
+    triệu là không đáng kể.
+
+    Ngoại tệ thì phải theo ĐỘ LỚN của con số, không theo tên đồng tiền. Lần đầu
+    viết hàm này tôi làm tròn nghìn cho mọi đồng không phải đô la, và hai báo giá
+    bằng Baht Thái lệch thật: giá thành 2.860 THB bị làm tròn thành 3.000 THB, tức
+    lệch 5% so với công thức, vì một Baht đáng 710 đồng nên "nghìn Baht" là một
+    bậc quá thô. Giữ năm chữ số ý nghĩa thì đúng cho cả đồng lớn như đô la và
+    đồng nhỏ như Kip Lào.
+    """
+    if tien == "VND":
+        return round(gia_tri, -3)
+    if gia_tri <= 0:
+        return 0.0
+    bac = 4 - int(math.floor(math.log10(abs(gia_tri))))
+    return round(gia_tri, max(-3, min(2, bac)))
+
+
+def gia_that(route_id, vehicle_type_id, weight_kg, volume_m3=None, pallet_count=None,
+             tien="VND", ty_gia=1.0, bien=None, chiet_khau=0.0, im=False):
+    """Giá thành và cước của MỘT chuyến, không có con số nào gõ tay.
+
+    Chủ dự án (11/09/2026) mở màn báo giá của Unilever và hỏi cước 4.900.000 đ ở
+    đâu ra. Không ở đâu cả: nó là một con số viết cứng ngay trong script này, cạnh
+    một `total_cost` cũng viết cứng và lệch với công thức thật. Nên trên màn hình,
+    cước đọc từ cơ sở dữ liệu còn giá thành lại tính tươi từ công thức, hai số
+    không cùng gốc và không kiểm chứng được nhau. Anh chốt bỏ hết cách gieo đó.
+
+    Giờ cả hai số đều có nguồn:
+
+    · `gia_thanh` lấy từ chính điểm cuối `price-preview` mà màn báo giá đang gọi,
+      nên con số lưu vào báo giá bằng đúng con số màn hình tính lại.
+    · `cuoc` suy ra từ giá thành đó theo biên: `gia_thanh / (1 - bien)`. Không có
+      `bien` truyền vào thì lấy biên mục tiêu do máy chủ trả về, tức chính sách
+      công ty — không phải một hệ số đoán.
+    · `chiet_khau` nâng giá niêm yết lên trước, để sau khi trừ chiết khấu cho
+      khách thì biên còn lại vẫn đúng mức đã định.
+
+    Trả `(gia_thanh, cuoc)` CÙNG đơn vị tiền của báo giá, vì máy chủ so hai số này
+    với nhau. Giá thành trong công thức là VND, nên báo giá ngoại tệ thì chia
+    `ty_gia` (số VND cho một đơn vị ngoại tệ).
+    """
+    than = {"route_id": route_id, "vehicle_type_id": vehicle_type_id, "weight_kg": weight_kg}
+    if volume_m3 is not None:
+        than["volume_m3"] = volume_m3
+    if pallet_count is not None:
+        than["pallet_count"] = pallet_count
+    xt = xem_truoc(than)
+    if not xt.get("tinh_duoc"):
+        raise SystemExit("Không xem trước được giá cho %s / %s: %s"
+                         % (route_id, vehicle_type_id, xt.get("viec_con_thieu")))
+    gia_thanh_vnd = float(xt.get("gia_thanh") or 0)
+    if gia_thanh_vnd <= 0:
+        raise SystemExit("Công thức của %s ra giá thành 0 — chưa khai đơn giá." % vehicle_type_id)
+    muc = float(bien if bien is not None else (xt.get("bien_muc_tieu") or 0.20))
+    if not 0 < muc < 1:
+        raise SystemExit("Biên %r không dùng được." % (bien,))
+    cuoc_vnd = gia_thanh_vnd / (1 - muc)
+    if chiet_khau:
+        cuoc_vnd = cuoc_vnd / (1 - float(chiet_khau))
+    ty = 1.0 if tien == "VND" else (float(ty_gia or 1) or 1)
+    gia_thanh = lam_tron_tien(gia_thanh_vnd / ty, tien)
+    cuoc = lam_tron_tien(cuoc_vnd / ty, tien)
+    if not im:
+        _in("     giá từ công thức: giá thành %s %s → cước %s %s (biên %.0f%%%s)"
+            % (gia_thanh, tien, cuoc, tien, muc * 100,
+               ", chiết khấu %.0f%%" % (chiet_khau * 100) if chiet_khau else ""))
+    return gia_thanh, cuoc
+
+
 def gui(qid):
     return _du_lieu(goi("POST", "/api/quotations/%s/send" % qid, {}))
 
@@ -381,6 +475,42 @@ def chi_phi_thuc_te(trip, ma, dong, gui_duyet=True):
     return d
 
 
+def dong_chi_phi(tuyen, loai, kg, the_tich=None, lech=None, ghi=None):
+    """Dòng chi phí thực tế của một chuyến, cột "chốt ban đầu" LẤY TỪ CÔNG THỨC.
+
+    Bảng "Chốt giá cuối cùng" ở màn Hoàn tất giao hàng đặt ba cột cạnh nhau: chi
+    phí chốt ban đầu, chi phí thực tế, và phần khách trả thêm. Cột đầu là con số
+    công ty đã tính khi nhận chuyến, nên nó phải bằng đúng cấu phần của công thức
+    loại xe. Trước đây script gõ tay cả cột đó, và nó lệch thật: chuyến Unilever
+    ghi chốt ban đầu 776.825 đ tiền dầu trong khi công thức ra 712.425 đ. Hồ sơ
+    bàn giao cho bên công nợ vì thế mang một con số không ai tra ngược được.
+
+    Giờ cột chốt ban đầu hỏi thẳng `price-preview`, còn cột thực tế suy ra từ nó
+    theo `lech` — tỉ lệ vượt của từng khoản (0,04 là thực tế cao hơn 4%). Khoản
+    nào không khai trong `lech` thì thực tế bằng chốt ban đầu, đúng như phần lớn
+    chuyến chạy đúng kế hoạch.
+    """
+    than = {"route_id": tuyen, "vehicle_type_id": loai, "weight_kg": kg}
+    if the_tich is not None:
+        than["volume_m3"] = the_tich
+    xt = xem_truoc(than)
+    if not xt.get("tinh_duoc"):
+        raise SystemExit("Không lấy được cấu phần chi phí cho %s / %s: %s"
+                         % (tuyen, loai, xt.get("viec_con_thieu")))
+    ra = []
+    for d in xt.get("cac_dong") or []:
+        khoa = d.get("khoa") or ""
+        chot = round(float(d.get("thanh_tien") or 0))
+        if chot <= 0:
+            continue
+        ty_le = float((lech or {}).get(khoa) or 0)
+        thuc_te = round(chot * (1 + ty_le), -3) if ty_le else chot
+        ra.append((khoa, d.get("nhan") or khoa, chot, thuc_te, (ghi or {}).get(khoa, "")))
+    if not ra:
+        raise SystemExit("Công thức của %s không có cấu phần chi nào." % loai)
+    return ra
+
+
 def packing_list(do_id):
     g = _du_lieu(goi("POST", "/api/parking-lists/auto-from-do/%s" % do_id, {"list_count": 1}))
     ds = g if isinstance(g, list) else (g.get("items") or g.get("lists") or [g])
@@ -434,21 +564,20 @@ def gieo():
 
     # ------------------------------------------------------------ A. Nidec
     _in("\n[A] Nidec — Container 20FT, 3 cont, tuyến VSIP II-A → Cát Lái (44,7 km)")
+    gtA, cuocA = gia_that("DEMO-RT-VSIP2A-CATLAI", "DEMO-VT-20FT", 18000, 28, 20, bien=0.24)
+    # Giá khách mong đợi đặt thấp hơn cước mình sẽ báo, đúng thế đàm phán thường
+    # gặp; con số vẫn neo vào cước thật nên không lệch khi công thức đổi.
     oA = co_hoi(customer_id="DEMO-CUS-NIDEC", contact_name="Anh Tuấn (Logistics)", source="email",
                 route_id="DEMO-RT-VSIP2A-CATLAI", cargo_type="Linh kiện điện tử đóng cont",
-                est_weight_kg=54000, est_trips_per_month=12, expected_price=2500000, owner="sales.hoa",
-                notes="Khách quen, cần giá cho quý 4")
+                est_weight_kg=54000, est_trips_per_month=12, expected_price=round(cuocA * 0.94, -3),
+                owner="sales.hoa", notes="Khách quen, cần giá cho quý 4")
     oA = doi_giai_doan(oA, "contacted")
     oA = doi_giai_doan(oA, "negotiating")
     lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 3), 7, 13)
-    xt = xem_truoc({"route_id": "DEMO-RT-VSIP2A-CATLAI", "vehicle_type_id": "DEMO-VT-20FT",
-                    "weight_kg": 18000, "volume_m3": 28, "pallet_count": 20})
-    _in("     xem trước giá: giá thành %s, gợi ý %s" % (
-        xt.get("gia_thanh"), {k: v.get("gia") for k, v in (xt.get("goi_y_gia") or {}).items() if isinstance(v, dict)}))
     qA = bao_gia_tu_co_hoi(oA, vehicle_type_id="DEMO-VT-20FT", cargo_type="Linh kiện điện tử",
                            packaging_spec="Container nguyên khối 20FT", weight_kg=18000, volume_m3=28,
-                           pallet_count=20, price_basis="per_trip", unit_price=2486000, currency_code="VND",
-                           total_cost=xt.get("gia_thanh") or 1714540, selling_price=2486000, valid_to=_han(45),
+                           pallet_count=20, price_basis="per_trip", unit_price=cuocA, currency_code="VND",
+                           total_cost=gtA, selling_price=cuocA, valid_to=_han(45),
                            pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                            delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                            payment_terms="30 ngày", sales_rep="Hoa", trips_per_month=12,
@@ -476,12 +605,10 @@ def gieo():
                  (TOA_DO["VSIP2A"], TOA_DO["CATLAI"]))
     hoan_tat(doA[0], tA1, xe, g0 + dt.timedelta(hours=3, minutes=20), "Anh Nam (Cát Lái)",
              phu_phi=[("Chờ bãi quá 2 giờ", "Cảng kẹt, xe chờ hạ cont 2h15", 180000)])
-    chi_phi_thuc_te(tA1, "COST-NIDEC-01", [
-        ("fuel", "Chi phí xăng dầu /km", 214560, 231800, "44,7 km, giá dầu tăng"),
-        ("driver", "Phụ cấp chuyến tài xế", 400000, 400000, ""),
-        ("toll", "Phí cầu đường / BOT", 150000, 165000, "Thêm trạm Phú Mỹ"),
-        ("wh", "Phí bãi / kho", 100000, 100000, ""),
-    ])
+    chi_phi_thuc_te(tA1, "COST-NIDEC-01", dong_chi_phi(
+        "DEMO-RT-VSIP2A-CATLAI", "DEMO-VT-20FT", 18000, 28,
+        lech={"fuel": 0.08, "toll": 0.10},
+        ghi={"fuel": "Giá dầu tăng giữa kỳ", "toll": "Thêm trạm Phú Mỹ"}))
 
     # A2: đang chạy giữa đường HÔM NAY (check_in, pickup, departure), chưa tới
     bay_gio = dt.datetime.now(VN).replace(microsecond=0)
@@ -504,14 +631,17 @@ def gieo():
 
     # ------------------------------------------------------------ B. Unilever
     _in("\n[B] Unilever — Đầu kéo 40', 2 cont chung một chuyến, tuyến VSIP II-A → Cái Mép (96,5 km)")
+    gtB, cuocB = gia_that("DEMO-RT-VSIP2A-CAIMEP", "DEMO-VT-TRACTOR40", 26000, 60, 22,
+                          bien=0.20, chiet_khau=0.05)
     oB = co_hoi(customer_id="DEMO-CUS-UNILEVER", contact_name="Chị Hạnh", source="referral",
                 route_id="DEMO-RT-VSIP2A-CAIMEP", cargo_type="Hàng tiêu dùng đóng cont 40'",
-                est_weight_kg=52000, est_trips_per_month=8, expected_price=4800000, owner="sales.minh")
+                est_weight_kg=52000, est_trips_per_month=8,
+                expected_price=round(cuocB * 0.93, -3), owner="sales.minh")
     lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 5), 6, 16)
     qB = bao_gia_tu_co_hoi(oB, vehicle_type_id="DEMO-VT-TRACTOR40", cargo_type="Hàng tiêu dùng",
                            packaging_spec="Container nguyên khối 40FT", weight_kg=26000, volume_m3=60, pallet_count=22,
-                           price_basis="per_trip", unit_price=4900000, currency_code="VND", discount_percent=0.05,
-                           total_cost=2950000, selling_price=4900000, valid_to=_han(60),
+                           price_basis="per_trip", unit_price=cuocB, currency_code="VND", discount_percent=0.05,
+                           total_cost=gtB, selling_price=cuocB, valid_to=_han(60),
                            pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                            delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                            payment_terms="45 ngày", sales_rep="Minh", trips_per_month=8,
@@ -536,23 +666,23 @@ def gieo():
     for i, do_id in enumerate(doB):
         hoan_tat(do_id, tB, xe, g0 + dt.timedelta(hours=5, minutes=45), "Anh Phong (CMIT)",
                  phu_phi=[("Phí lưu ca đêm", "Xe về sau 22h", 250000)] if i == 1 else ())
-    chi_phi_thuc_te(tB, "COST-UNILEVER-01", [
-        ("fuel", "Chi phí xăng dầu /km", 776825, 802000, "96,5 km × 2 cont chung chuyến"),
-        ("driver", "Phụ cấp chuyến tài xế", 600000, 600000, "Có phụ xe"),
-        ("toll", "Phí cầu đường / BOT", 320000, 320000, ""),
-        ("wh", "Phí bãi / kho", 200000, 240000, "Phí nâng hạ 2 cont"),
-    ])
+    chi_phi_thuc_te(tB, "COST-UNILEVER-01", dong_chi_phi(
+        "DEMO-RT-VSIP2A-CAIMEP", "DEMO-VT-TRACTOR40", 26000, 60,
+        lech={"fuel": 0.03, "wh": 0.20},
+        ghi={"fuel": "2 cont chung chuyến", "driver": "Có phụ xe", "wh": "Phí nâng hạ 2 cont"}))
 
     # ------------------------------------------------------------ C. Colgate — hàng KIỆN → Packing List
     _in("\n[C] Colgate — Xe tải 10 tấn, hàng đếm theo kiện (Packing List + quét QR), Sóng Thần → Cát Lái (31,2 km)")
+    gtC, cuocC = gia_that("DEMO-RT-SONGTHAN-CATLAI", "DEMO-VT-TRUCK10", 7800, 30, 10, bien=0.30)
     oC = co_hoi(customer_id="DEMO-CUS-COLGATE", contact_name="Anh Dũng", source="web",
                 route_id="DEMO-RT-SONGTHAN-CATLAI", cargo_type="Kem đánh răng đóng kiện",
-                est_weight_kg=8000, est_trips_per_month=20, expected_price=1300000, owner="sales.hoa")
+                est_weight_kg=8000, est_trips_per_month=20,
+                expected_price=round(cuocC * 0.96, -3), owner="sales.hoa")
     lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 8), 8, 14)
     qC = bao_gia_tu_co_hoi(oC, vehicle_type_id="DEMO-VT-TRUCK10", cargo_type="Hàng tiêu dùng",
                            packaging_spec="Kiện lẻ 120 kiện, xếp pallet", weight_kg=7800, volume_m3=30, pallet_count=10,
-                           price_basis="per_trip", unit_price=1350000, currency_code="VND",
-                           total_cost=780000, selling_price=1350000, valid_to=_han(30),
+                           price_basis="per_trip", unit_price=cuocC, currency_code="VND",
+                           total_cost=gtC, selling_price=cuocC, valid_to=_han(30),
                            pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                            delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                            payment_terms="15 ngày", sales_rep="Hoa", trips_per_month=20)
@@ -570,22 +700,23 @@ def gieo():
                               ("unloading", g0 + dt.timedelta(hours=2, minutes=30))],
                  (TOA_DO["SONGTHAN"], TOA_DO["CATLAI"]))
     hoan_tat(doC[0], tC, xe, g0 + dt.timedelta(hours=3), "Chị Thu (kho Cát Lái)")
-    chi_phi_thuc_te(tC, "COST-COLGATE-01", [
-        ("fuel", "Chi phí xăng dầu /km", 149760, 152000, ""),
-        ("driver", "Phụ cấp chuyến tài xế", 300000, 300000, ""),
-        ("toll", "Phí cầu đường / BOT", 80000, 80000, ""),
-    ], gui_duyet=False)  # còn NHÁP: kế toán chưa gửi duyệt
+    chi_phi_thuc_te(tC, "COST-COLGATE-01", dong_chi_phi(
+        "DEMO-RT-SONGTHAN-CATLAI", "DEMO-VT-TRUCK10", 7800, 30, lech={"fuel": 0.02}),
+        gui_duyet=False)  # còn NHÁP: kế toán chưa gửi duyệt
 
     # ------------------------------------------------------------ D. Pou Yuen — biên mỏng, duyệt nội bộ, chưa điều phối
     _in("\n[D] Pou Yuen — Xe tải 15 tấn, biên mỏng → duyệt nội bộ, DO đã lập chuyến chờ điều phối, Cát Lái → Amata (38,4 km)")
+    # Biên 9% là CỐ Ý dưới ngưỡng duyệt của công ty, để có mẫu báo giá phải qua
+    # trưởng phòng. Vẫn suy từ giá thành thật, chỉ khác chỗ chọn mức biên.
+    gtD, cuocD = gia_that("DEMO-RT-CATLAI-AMATA", "DEMO-VT-TRUCK15", 14000, 40, 0, bien=0.09)
     oD = co_hoi(customer_id="DEMO-CUS-POUYUEN", contact_name="Chị Mai", source="phone",
                 route_id="DEMO-RT-CATLAI-AMATA", cargo_type="Nguyên liệu giày", est_weight_kg=14000,
-                est_trips_per_month=6, expected_price=1200000, owner="sales.minh")
+                est_trips_per_month=6, expected_price=round(cuocD * 0.97, -3), owner="sales.minh")
     lay1, lay2, giao1, giao2 = _khung(hom_nay + dt.timedelta(days=4), 7, 15)
     qD = bao_gia_tu_co_hoi(oD, vehicle_type_id="DEMO-VT-TRUCK15", cargo_type="Nguyên liệu giày",
                            packaging_spec="Hàng rời đóng bao", weight_kg=14000, volume_m3=40, pallet_count=0,
-                           price_basis="per_trip", unit_price=1180000, currency_code="VND",
-                           total_cost=1075000, selling_price=1180000, valid_to=_han(20),
+                           price_basis="per_trip", unit_price=cuocD, currency_code="VND",
+                           total_cost=gtD, selling_price=cuocD, valid_to=_han(20),
                            pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                            delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                            payment_terms="30 ngày", sales_rep="Minh",
@@ -600,14 +731,18 @@ def gieo():
 
     # ------------------------------------------------------------ E. SGN Food — USD chờ khách; từ chối; nháp
     _in("\n[E] SGN Food — Xe lạnh 5 tấn, Long An → Cái Mép (112 km): báo giá USD chờ khách, một bị từ chối, một nháp")
+    gtE, cuocE = gia_that("DEMO-RT-LONGAN-CAIMEP", "DEMO-VT-REEFER5", 4500, 20, 8,
+                          tien="USD", ty_gia=26173.5, bien=0.26)
+    # Cơ hội ghi giá mong đợi bằng VND vì khách hỏi giá trước khi chốt hợp đồng USD.
     oE = co_hoi(customer_id="DEMO-CUS-SGNFOOD", contact_name="Anh Khoa", source="tender",
                 route_id="DEMO-RT-LONGAN-CAIMEP", cargo_type="Thực phẩm đông lạnh", est_weight_kg=4500,
-                est_trips_per_month=10, expected_price=3200000, owner="sales.hoa")
+                est_trips_per_month=10, expected_price=round(cuocE * 26173.5 * 0.95, -3),
+                owner="sales.hoa")
     lay1, lay2, giao1, giao2 = _khung(hom_nay + dt.timedelta(days=10), 5, 14)
     qE = bao_gia_tu_co_hoi(oE, vehicle_type_id="DEMO-VT-REEFER5", cargo_type="Thực phẩm đông lạnh",
                            packaging_spec="Thùng lạnh nguyên khối", weight_kg=4500, volume_m3=20, pallet_count=8,
-                           price_basis="per_trip", unit_price=140, currency_code="USD", fx_rate=26173.5,
-                           total_cost=94, selling_price=140, valid_to=_han(30),   # cả hai bằng USD (2.450.000 đ ≈ 94 USD)
+                           price_basis="per_trip", unit_price=cuocE, currency_code="USD", fx_rate=26173.5,
+                           total_cost=gtE, selling_price=cuocE, valid_to=_han(30),   # cả hai bằng USD
                            temperature_requirement="-18°C", pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                            delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                            payment_terms="Trả trước 50%", sales_rep="Hoa")
@@ -616,23 +751,27 @@ def gieo():
 
     # E2: báo giá thứ hai (tạo thẳng, không qua cơ hội) → gửi → khách từ chối
     lay1b, lay2b, giao1b, giao2b = _khung(hom_nay + dt.timedelta(days=6), 6, 15)
+    gtE2, cuocE2 = gia_that("DEMO-RT-SONGTHAN-CATLAI", "DEMO-VT-REEFER5", 3000, pallet_count=6, bien=0.32)
     qE2 = _du_lieu(goi("POST", "/api/quotations", {
         "customer_id": "DEMO-CUS-SGNFOOD", "route_id": "DEMO-RT-SONGTHAN-CATLAI", "vehicle_type_id": "DEMO-VT-REEFER5",
         "cargo_type": "Rau quả tươi", "packaging_spec": "Thùng lạnh nguyên khối", "weight_kg": 3000, "pallet_count": 6,
-        "price_basis": "per_trip", "unit_price": 1650000, "currency_code": "VND",
-        "total_cost": 690000, "selling_price": 1650000, "valid_to": _han(15),
+        "price_basis": "per_trip", "unit_price": cuocE2, "currency_code": "VND",
+        "total_cost": gtE2, "selling_price": cuocE2, "valid_to": _han(15),
         "pickup_window_start": _iso(lay1b), "pickup_window_end": _iso(lay2b),
         "delivery_window_start": _iso(giao1b), "delivery_window_end": _iso(giao2b)}))["id"]
     hang_hoa(qE2, [{"name": "Chuyến rau quả", "quantity": 1, "uom": "Chuyến"}])
     gui(qE2)
-    tu_choi(qE2, "Khách chọn nhà xe khác giá 1.500.000.")
+    # Lý do từ chối nhắc lại giá đối thủ, tính từ chính cước mình báo nên câu chữ
+    # không lệch con số trên báo giá khi công thức đổi.
+    tu_choi(qE2, "Khách chọn nhà xe khác, giá thấp hơn khoảng %s đ." % format(int(cuocE2 * 0.1), ",d").replace(",", "."))
 
     # E3: nháp có đính kèm, chưa gửi
+    gtE3, cuocE3 = gia_that("DEMO-RT-LONGAN-CAIMEP", "DEMO-VT-REEFER5", 4800, pallet_count=8, bien=0.27)
     qE3 = _du_lieu(goi("POST", "/api/quotations", {
         "customer_id": "DEMO-CUS-SGNFOOD", "route_id": "DEMO-RT-LONGAN-CAIMEP", "vehicle_type_id": "DEMO-VT-REEFER5",
         "cargo_type": "Hải sản đông lạnh", "packaging_spec": "Thùng lạnh nguyên khối", "weight_kg": 4800, "pallet_count": 8,
-        "price_basis": "per_trip", "unit_price": 3400000, "currency_code": "VND",
-        "total_cost": 2450000, "selling_price": 3400000, "valid_to": _han(30),
+        "price_basis": "per_trip", "unit_price": cuocE3, "currency_code": "VND",
+        "total_cost": gtE3, "selling_price": cuocE3, "valid_to": _han(30),
         "pickup_window_start": _iso(lay1), "pickup_window_end": _iso(lay2),
         "delivery_window_start": _iso(giao1), "delivery_window_end": _iso(giao2),
         "notes_internal": "Đang chờ khách xác nhận sản lượng tháng 10."}))["id"]
@@ -689,17 +828,21 @@ def gieo_ngoai_te(cac_case=("G", "H")):
     doG = doH = [""]
     if "G" in cac_case:
         # ------------------------------------------------------------ G. SGN Food — LAK (Kip Lào), xe lạnh 5 tấn
-        # Tỷ giá bảng currencies: 1 LAK = 1,18 VND. Giá thành ~2.480.000 VND ≈ 2.100.000 LAK; cước 2.900.000 LAK ≈ 3.422.000 VND.
-        # Quy cách KHÔNG dùng chữ "thùng": cửa Packing List coi "thùng" là hàng đếm kiện.
+        # Tỷ giá bảng currencies: 1 LAK = 1,18 VND, nên giá thành VND của công thức
+        # chia 1,18 là ra Kip. Quy cách KHÔNG dùng chữ "thùng": cửa Packing List
+        # coi "thùng" là hàng đếm kiện.
         _in("\n[G] SGN Food — báo giá LAK, Xe lạnh 5 tấn, Long An → Cái Mép (112 km), hoàn tất trọn luồng")
+        gtG, cuocG = gia_that("DEMO-RT-LONGAN-CAIMEP", "DEMO-VT-REEFER5", 4200, 20, 8,
+                              tien="LAK", ty_gia=1.18, bien=0.28)
         oG = co_hoi(customer_id="DEMO-CUS-SGNFOOD", contact_name="Anh Khoa", source="email",
                     route_id="DEMO-RT-LONGAN-CAIMEP", cargo_type="Thực phẩm đông lạnh xuất Lào", est_weight_kg=4200,
-                    est_trips_per_month=6, expected_price=2900000, owner="sales.hoa", notes="Khách thanh toán bằng Kip Lào")
+                    est_trips_per_month=6, expected_price=round(cuocG * 1.18 * 0.95, -3),
+                    owner="sales.hoa", notes="Khách thanh toán bằng Kip Lào")
         lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 9), 5, 15)
         qG = bao_gia_tu_co_hoi(oG, vehicle_type_id="DEMO-VT-REEFER5", cargo_type="Thực phẩm đông lạnh",
                                packaging_spec="Container lạnh nguyên khối", weight_kg=4200, volume_m3=20, pallet_count=8,
-                               price_basis="per_trip", unit_price=2900000, currency_code="LAK", fx_rate=1.18,
-                               total_cost=2100000, selling_price=2900000, valid_to=_han(30),
+                               price_basis="per_trip", unit_price=cuocG, currency_code="LAK", fx_rate=1.18,
+                               total_cost=gtG, selling_price=cuocG, valid_to=_han(30),
                                temperature_requirement="-18°C", pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                                delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                                payment_terms="Trả trước 50% bằng LAK", sales_rep="Hoa",
@@ -720,24 +863,25 @@ def gieo_ngoai_te(cac_case=("G", "H")):
                      (TOA_DO["LONGAN"], TOA_DO["CAIMEP"]))
         hoan_tat(doG[0], tG, xe, g0 + dt.timedelta(hours=5, minutes=30), "Anh Phong (CMIT)",
                  phu_phi=[("Chạy máy lạnh chờ bãi", "Chờ bãi lạnh 1h40, máy lạnh chạy liên tục", 150000)], tien="LAK")
-        chi_phi_thuc_te(tG, "COST-SGN-LAK-01", [
-            ("fuel", "Chi phí xăng dầu /km", 515200, 548000, "112 km, xe lạnh chạy máy lạnh"),
-            ("driver", "Phụ cấp chuyến tài xế", 350000, 350000, ""),
-            ("toll", "Phí cầu đường / BOT", 200000, 200000, ""),
-            ("wh", "Phí bãi / kho", 120000, 180000, "Phí bãi lạnh"),
-        ])
+        chi_phi_thuc_te(tG, "COST-SGN-LAK-01", dong_chi_phi(
+            "DEMO-RT-LONGAN-CAIMEP", "DEMO-VT-REEFER5", 4200, 20,
+            lech={"fuel": 0.06, "wh": 0.50},
+            ghi={"fuel": "Xe lạnh chạy máy lạnh cả chuyến", "wh": "Phí bãi lạnh"}))
     if "H" in cac_case:
         # ------------------------------------------------------------ H. Pou Yuen — USD, đầu kéo 20'
-        # Tỷ giá 1 USD = 26.173,5 VND. Giá thành ~1.180.000 VND ≈ 45 USD; cước 120 USD ≈ 3.141.000 VND.
+        # Tỷ giá 1 USD = 26.173,5 VND; giá thành và cước quy từ công thức VND sang USD.
         _in("\n[H] Pou Yuen — báo giá USD, Đầu kéo 20', Cát Lái → Amata (38,4 km), hoàn tất trọn luồng")
+        gtH, cuocH = gia_that("DEMO-RT-CATLAI-AMATA", "DEMO-VT-TRACTOR20", 18000, 28, 16,
+                              tien="USD", ty_gia=26173.5, bien=0.25)
         oH = co_hoi(customer_id="DEMO-CUS-POUYUEN", contact_name="Chị Mai", source="referral",
                     route_id="DEMO-RT-CATLAI-AMATA", cargo_type="Nguyên liệu giày nhập khẩu (cont 20')", est_weight_kg=18000,
-                    est_trips_per_month=10, expected_price=120, owner="sales.minh", notes="Khách FDI thanh toán USD")
+                    est_trips_per_month=10, expected_price=round(cuocH * 0.95, 2),
+                    owner="sales.minh", notes="Khách FDI thanh toán USD")
         lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 10), 8, 16)
         qH = bao_gia_tu_co_hoi(oH, vehicle_type_id="DEMO-VT-TRACTOR20", cargo_type="Nguyên liệu giày",
                                packaging_spec="Container nguyên khối 20FT", weight_kg=18000, volume_m3=28, pallet_count=16,
-                               price_basis="per_trip", unit_price=120, currency_code="USD", fx_rate=26173.5,
-                               total_cost=45, selling_price=120, valid_to=_han(30),
+                               price_basis="per_trip", unit_price=cuocH, currency_code="USD", fx_rate=26173.5,
+                               total_cost=gtH, selling_price=cuocH, valid_to=_han(30),
                                pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
                                delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
                                payment_terms="30 ngày, chuyển khoản USD", sales_rep="Minh",
@@ -758,11 +902,9 @@ def gieo_ngoai_te(cac_case=("G", "H")):
                      (TOA_DO["CATLAI"], TOA_DO["AMATA"]))
         hoan_tat(doH[0], tH, xe, g0 + dt.timedelta(hours=3, minutes=15), "Anh Dũng (kho Amata)",
                  phu_phi=[("Bốc xếp thêm tại kho", "Kho không có xe nâng, tổ lái hỗ trợ dỡ", 15)], tien="USD")
-        chi_phi_thuc_te(tH, "COST-PY-USD-01", [
-            ("fuel", "Chi phí xăng dầu /km", 296755, 301000, "38,4 km × 7.728 đ (đơn giá riêng của xe)"),
-            ("driver", "Phụ cấp chuyến tài xế", 400000, 400000, ""),
-            ("toll", "Phí cầu đường / BOT", 150000, 150000, ""),
-        ])
+        chi_phi_thuc_te(tH, "COST-PY-USD-01", dong_chi_phi(
+            "DEMO-RT-CATLAI-AMATA", "DEMO-VT-TRACTOR20", 18000, 28, lech={"fuel": 0.02},
+            ghi={"fuel": "Xe này có đơn giá dầu riêng"}))
 
     _in("\nXONG case ngoại tệ. Kiểm qua API bàn giao:")
     for do_id in (doG[0], doH[0]):
@@ -855,13 +997,16 @@ def bo_sung_du_lieu_goc():
             ca_truc("%s-%s" % (ten, tx), tx, d1, d2)
 
 
-def _gia(km, loai, tien, ty_gia, bien=0.28):
-    """Giá thành và cước, CÙNG đơn vị tiền của báo giá (máy chủ so hai số này với nhau)."""
-    gia_thanh_vnd = km * 7000 + 450000 + (200000 if loai.endswith(("40", "20FT")) else 0)
-    cuoc_vnd = gia_thanh_vnd / (1 - bien)
-    if tien == "VND":
-        return round(gia_thanh_vnd, -3), round(cuoc_vnd, -3)
-    return round(gia_thanh_vnd / ty_gia, 2), round(cuoc_vnd / ty_gia, 2)
+def _gia(tuyen, loai, kg, tien, ty_gia, bien=0.28, the_tich=None, im=True):
+    """Giá thành và cước của một case gieo hàng loạt, lấy từ công thức thật.
+
+    Trước đây hàm này tự bịa giá thành bằng `km × 7000 + 450000`, một công thức
+    không có ở đâu trong hệ thống. Nghĩa là hàng chục báo giá demo mang giá thành
+    không khớp công thức loại xe của chính chúng, và màn báo giá tính lại thì ra
+    số khác. Giờ hỏi thẳng máy chủ như màn hình vẫn làm.
+    """
+    return gia_that(tuyen, loai, kg, volume_m3=the_tich, tien=tien, ty_gia=ty_gia,
+                    bien=bien, im=im)
 
 
 def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_doan,
@@ -873,7 +1018,8 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
     """
     km, diem_dau, diem_cuoi = TUYEN_DEMO[tuyen]
     kg = int(TAI_TOI_DA[loai] * 0.7)
-    gia_thanh, cuoc = _gia(km, loai, tien, ty_gia, bien)
+    the_tich = round(THE_TICH_TOI_DA[loai] * 0.7, 1)
+    gia_thanh, cuoc = _gia(tuyen, loai, kg, tien, ty_gia, bien, the_tich=the_tich)
     hang = HANG_THEO_KHACH.get(khach, "Hàng tổng hợp")
     lay1, lay2, giao1, giao2 = _khung(ngay, 6 + (chi_so % 4), 15 + (chi_so % 4))
     o = co_hoi(customer_id=khach, contact_name="Liên hệ %s" % khach.split("-")[-1].title(),
@@ -949,13 +1095,13 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
         hoan_tat(do_id, trip, xe, giao_luc, NGUOI_NHAN[chi_so % len(NGUOI_NHAN)],
                  phu_phi=phu, tien=tien)
     # Chi phí thực tế LUÔN bằng VNĐ (tiền chức năng): dầu, BOT, phụ cấp đều chi bằng đồng.
-    dau_km = 7000 + (chi_so % 5) * 120
-    chi_phi_thuc_te(trip, "COST-%s-%03d" % (NHAN_LUOT, chi_so), [
-        ("fuel", "Chi phí xăng dầu /km", round(km * 7000), round(km * dau_km), "%.1f km" % km),
-        ("driver", "Phụ cấp chuyến tài xế", 350000, 350000 + (50000 if phu_xe else 0),
-         "Có phụ xe" if phu_xe else ""),
-        ("toll", "Phí cầu đường / BOT", 150000, 150000 + (chi_so % 4) * 15000, ""),
-    ] + ([("wh", "Phí bãi / kho", 100000, 100000 + (chi_so % 3) * 40000, "")] if chi_so % 2 == 0 else []),
+    # Cột chốt ban đầu lấy từ công thức; phần vượt xoay theo chỉ số case để mỗi
+    # chuyến lệch một kiểu, có chuyến đúng kế hoạch, có chuyến vượt dầu hoặc bãi.
+    chi_phi_thuc_te(trip, "COST-%s-%03d" % (NHAN_LUOT, chi_so), dong_chi_phi(
+        tuyen, loai, kg, the_tich,
+        lech={"fuel": (chi_so % 5) * 0.02, "toll": (chi_so % 4) * 0.05,
+              "wh": (chi_so % 3) * 0.15},
+        ghi={"fuel": "%.1f km" % km, "driver": "Có phụ xe" if phu_xe else ""}),
         gui_duyet=(chi_so % 5 != 0))   # một phần năm để NHÁP, cho kế toán thấy việc còn phải làm
     return qid, ds, ma_trip
 
