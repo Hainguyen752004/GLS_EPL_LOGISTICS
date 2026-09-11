@@ -13252,7 +13252,13 @@ function setDOSettlementFromSource(source = {}) {
     extraInput.dataset.vndValue = String(extraVnd || 0);
   }
   if (reasonInput) reasonInput.value = reason;
-  if (sourceBadge) sourceBadge.textContent = bg ? `Theo báo giá ${bg.id}` : (so.id ? `Theo đơn hàng cũ ${so.id}` : 'Theo báo giá');
+  // Không còn nhánh "đơn hàng cũ": biến `so` đã bị trục xuất cùng bước SO, và
+  // một vết đọc thuộc tính `id` của biến `so` ở đây từng ném ReferenceError ngay lúc mở khung form DO —
+  // spinner treo "Đang chuẩn bị form DO...", mọi ô trống, 0 VNĐ (đo 11/09).
+  if (sourceBadge) {
+    sourceBadge.textContent = bg ? `Theo báo giá ${bg.id}`
+      : (source.quotation_id ? `Theo báo giá ${source.quotation_id}` : 'Theo báo giá');
+  }
   if (Array.isArray(savedLines) && savedLines.length) {
     renderDOSettlementLines(savedLines);
   } else if (extraVnd > 0) {
