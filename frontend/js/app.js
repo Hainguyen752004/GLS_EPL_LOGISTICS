@@ -2233,6 +2233,17 @@ function tripChoXacNhanVe(raw) {
   const ve = changVeCua(raw);
   if (!ve.length) return false;
   if (['completed', 'settled', 'cancelled'].includes(String(raw.status || ''))) return false;
+  // CHƯA KÝ POD ĐỦ CHẶNG GIAO THÌ ĐỪNG HIỆN NÚT.
+  //
+  // Máy chủ từ chối bằng `OPEN_DELIVERY_LEG` — "Phải hoàn tất POD cho tất cả chặng giao
+  // trước khi xác nhận xe quay về". Bản trước chỉ xét chặng VỀ, nên nút hiện ngay từ lúc
+  // xe mới xuất bến: đo trên dữ liệu thật (11/09) một chuyến khứ hồi chưa ký POD nào vẫn
+  // có nút "Xác nhận xe đã về bãi", bấm vào chỉ nhận lỗi. Một nút chỉ có thể lỗi thì tệ
+  // hơn là không có nút.
+  const chuaGiaoXong = (Array.isArray(raw.legs) ? raw.legs : []).some(
+    l => String(l.leg_type || '') === 'delivery'
+      && !['completed', 'cancelled'].includes(String(l.status || '')));
+  if (chuaGiaoXong) return false;
   return ve.some(l => String(l.status || '') !== 'completed');
 }
 

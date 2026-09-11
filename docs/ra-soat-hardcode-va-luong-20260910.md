@@ -501,6 +501,33 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   (NOT EXISTS, `total` đúng), API chi tiết trả `409 DO_TRIP_CHUA_DONG`. Bài kiểm
   `test_theo_doi_neo_moc_va_ban_giao_khi_chuyen_dong.py` (2 bài).
 
+### A31. Dọn chuyến rác; hai chuyến KHỨ HỒI và nút "Xác nhận xe đã về bãi" (11/09)
+
+- Anh: *"xóa bớt mấy chuyến lỗi này đi — thêm 2 chuyến có khứ hồi thử đi như nào"*.
+- Huỷ 5 chuyến do bộ gieo tạo ra (đang chạy, 0 chặng hoàn tất, đứng yên ở mốc đầu, mỗi chuyến
+  còn một sự cố mở). HUỶ chứ không xoá dòng: huỷ là phép TRẢ VỀ — lệnh về chờ điều phối, xe và
+  tổ lái được nhả, và còn dấu vết vì sao chuyến không chạy. Đóng luôn 6 sự cố nhiễu kèm theo.
+- Thêm hai tuyến chiều về (`DEMO-RT-CATLAI-VSIP2A`, `DEMO-RT-CATLAI-SONGTHAN`) vì chặng về phải
+  bắt đầu ĐÚNG tại điểm kết thúc của chiều đi, và trước đó không có tuyến nào như vậy.
+- Hai chuyến `round_trip` / `empty_return`: một đã ký POD (đang chờ về), một mới đến nơi. Chặng
+  dựng đúng với mô hình mới: `outbound → delivery → empty_return → empty_return`, chặng về xếp
+  sau chặng hạ hàng. Chuyến đã giao mà chặng về còn mở thì KHÔNG đóng, tháp theo dõi đếm nó ở ô
+  "Đã giao · Trip còn mở" (`returning = 1`), và API bàn giao trả `409 DO_TRIP_CHUA_DONG` — khớp
+  đúng luật A30.
+- Không chọn `backhaul`: `complete_return` hiện KHÔNG chuyển trạng thái cho DO chiều về, nên nó
+  nằm lại ở chờ điều phối — một dấu vết trông như lỗi. Ghi lại để anh quyết, chưa sửa.
+- **Đo được: quyết toán chi phí của chuyến khứ hồi phải chờ xác nhận xe về.** `PUT
+  /api/tms/finance/trips/{id}/actual-cost` trả `409 TRIP_NOT_COMPLETED` khi chặng về còn mở.
+  Đúng luật, chỉ cần biết thứ tự: POD → xác nhận xe về → quyết toán.
+- **LỖI ĐÃ SỬA: nút "Xác nhận xe đã về bãi" hiện quá sớm.** `tripChoXacNhanVe` chỉ xét chặng VỀ,
+  nên nút hiện ngay từ lúc xe mới xuất bến; bấm vào máy chủ trả `OPEN_DELIVERY_LEG`. Đo trên dữ
+  liệu thật: chuyến khứ hồi chưa ký POD nào vẫn có nút. Nay nút chỉ hiện khi mọi chặng giao đã
+  `completed`/`cancelled`. Kiểm lại trên trang thật: chuyến chưa ký POD → 0 nút, chuyến đã ký →
+  1 nút đúng mã chuyến. Bài kiểm `nut-xac-nhan-xe-ve-chi-hien-khi-da-ky-pod.test.js` chạy thật
+  hàm với 7 hình dạng chặng.
+- Nút đó nằm ở màn **Vận hành → Giao hàng và vận chuyển**, trong hồ sơ của chuyến ĐANG CHỌN —
+  phải chọn chuyến trong hàng đợi thì khối thao tác mới hiện.
+
 ---
 
 ## B. Luồng có thể đi sai
