@@ -1056,6 +1056,17 @@ HANG_THEO_KHACH = {
     "DEMO-CUS-DUCGIANG": "Hoá chất công nghiệp (không nguy hại)", "DEMO-CUS-THACO": "Phụ tùng ô tô",
     "DEMO-CUS-LOTTE": "Hàng bán lẻ siêu thị",
 }
+#: HẠN CHÓT CỦA BỘ DỮ LIỆU DEMO — khung phân công của mọi chuyến còn đang chạy kéo tới đây.
+#:
+#: VÌ SAO KHÔNG PHẢI "BÂY GIỜ + VÀI GIỜ". Máy chủ chặn mọi sự kiện nằm ngoài khung phân công
+#: (`ASSIGNMENT_TIME_INVALID`), nên khung hết hạn là tài xế hết ghi mốc được. Dữ liệu này
+#: dựng TRƯỚC ngày demo vài hôm: chủ dự án bay sang Lào 13/09 và trình bày 15/09. Một khung
+#: "tới sáng mai" sẽ chết đúng lúc cần dùng nhất.
+#:
+#: Đổi ngày bằng `--han-demo YYYY-MM-DD`, không phải sửa mã.
+HAN_DEMO = dt.datetime(2026, 9, 16, 23, 59, tzinfo=VN)
+
+
 #: Nhãn của LƯỢT GIEO này, để mã chuyến và mã phiếu chi phí không trùng lượt trước
 #: (`TRIP_IDEMPOTENCY_CONFLICT`: cùng mã Trip mà danh sách DO khác thì máy chủ từ chối).
 NHAN_LUOT = dt.datetime.now(VN).strftime("%d%H%M") + uuid.uuid4().hex[:4].upper()
@@ -1157,7 +1168,7 @@ def _mot_case(chi_so, khach, tuyen, loai, xe, tai_xe, ngay, tien, ty_gia, giai_d
     # ăn lỗi. Nó cũng phi lý về nghiệp vụ: xe còn trên đường mà phân công đã hết giờ.
     ket_phan_cong = giao2
     if giai_doan in ("dang_chay", "den_noi"):
-        ket_phan_cong = max(giao2, dt.datetime.now(VN) + dt.timedelta(hours=10))
+        ket_phan_cong = max(giao2, HAN_DEMO)
         for ma_do in ds:
             sua_khung_do(ma_do, lay1, lay2, giao1, ket_phan_cong)
     ma_trip = "TRIP-%s-%03d" % (NHAN_LUOT, chi_so)
@@ -1605,12 +1616,17 @@ if __name__ == "__main__":
     p.add_argument("--kiem", action="store_true")
     p.add_argument("--case", default="G,H", help="với --gieo-ngoai-te: chạy case nào, vd G hoặc H")
     p.add_argument("--gieo-nhieu", action="store_true", help="gieo THÊM nhiều dữ liệu (không xoá cái đang có)")
+    p.add_argument("--han-demo", default="",
+                   help="hạn chót khung phân công của chuyến đang chạy, dạng YYYY-MM-DD")
     p.add_argument("--nhom", default="", help="với --gieo-60: chỉ gieo các nhóm này, cách nhau dấu phẩy")
     p.add_argument("--gieo-60", action="store_true",
                    help="gieo 60 case theo phân bổ chủ dự án chốt 11/09/2026")
     p.add_argument("--so-hoan-tat", type=int, default=22)
     p.add_argument("--so-dang-chay", type=int, default=6)
     a = p.parse_args()
+    if a.han_demo:
+        globals()["HAN_DEMO"] = dt.datetime.combine(
+            dt.date.fromisoformat(a.han_demo), dt.time(23, 59), tzinfo=VN)
     if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.gieo_nhieu or a.gieo_60 or a.kiem):
         p.print_help()
         sys.exit(1)
