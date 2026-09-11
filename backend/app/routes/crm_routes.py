@@ -53,12 +53,12 @@ def _doc(viec, thong_bao):
 # ------------------------------------------------------------------ CƠ HỘI --
 
 @router.get("/api/crm/opportunities/summary")
-async def dai_so_lieu(db: Session = Depends(get_db)):
+def dai_so_lieu(db: Session = Depends(get_db)):
     return _doc(lambda: crm.dai_so_lieu(db), "Đã tải số liệu cơ hội.")
 
 
 @router.get("/api/crm/opportunities")
-async def danh_sach(stage: Optional[str] = Query(None), owner: Optional[str] = Query(None),
+def danh_sach(stage: Optional[str] = Query(None), owner: Optional[str] = Query(None),
                     customer_id: Optional[str] = Query(None), q: Optional[str] = Query(None),
                     db: Session = Depends(get_db)):
     return _doc(lambda: crm.danh_sach(db, stage=stage, owner=owner, customer_id=customer_id, q=q),
@@ -66,24 +66,24 @@ async def danh_sach(stage: Optional[str] = Query(None), owner: Optional[str] = Q
 
 
 @router.post("/api/crm/opportunities")
-async def tao(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def tao(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     actor = _actor(request)
     return _lenh(db, lambda: crm.tao(db, data, actor), "Đã ghi nhận cơ hội.")
 
 
 @router.get("/api/crm/opportunities/{ma}")
-async def chi_tiet(ma: str, db: Session = Depends(get_db)):
+def chi_tiet(ma: str, db: Session = Depends(get_db)):
     return _doc(lambda: crm.chi_tiet(db, ma), "Đã tải cơ hội.")
 
 
 @router.put("/api/crm/opportunities/{ma}")
-async def sua(ma: str, request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def sua(ma: str, request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     actor = _actor(request)
     return _lenh(db, lambda: crm.sua(db, ma, data, actor), "Đã lưu cơ hội.")
 
 
 @router.put("/api/crm/opportunities/{ma}/stage")
-async def doi_giai_doan(ma: str, request: Request, data: Dict[str, Any] = Body(...),
+def doi_giai_doan(ma: str, request: Request, data: Dict[str, Any] = Body(...),
                         db: Session = Depends(get_db)):
     actor = _actor(request)
     return _lenh(db, lambda: crm.doi_giai_doan(
@@ -92,7 +92,7 @@ async def doi_giai_doan(ma: str, request: Request, data: Dict[str, Any] = Body(.
 
 
 @router.post("/api/crm/opportunities/{ma}/quotation")
-async def lap_bao_gia(ma: str, request: Request, data: Dict[str, Any] = Body(default={}),
+def lap_bao_gia(ma: str, request: Request, data: Dict[str, Any] = Body(default={}),
                       db: Session = Depends(get_db)):
     actor = _actor(request)
     return _lenh(db, lambda: crm.lap_bao_gia(db, ma, actor, (data or {}).get("expected_version"),
@@ -103,10 +103,10 @@ async def lap_bao_gia(ma: str, request: Request, data: Dict[str, Any] = Body(def
 # ------------------------------------------------------------- HỒ SƠ KHÁCH --
 
 @router.get("/api/crm/customers")
-async def danh_sach_khach(q: Optional[str] = Query(None), db: Session = Depends(get_db)):
+def danh_sach_khach(q: Optional[str] = Query(None), db: Session = Depends(get_db)):
     return _doc(lambda: crm.danh_sach_khach(db, q), "Đã tải danh sách khách hàng.")
 
 
 @router.get("/api/crm/customers/{customer_id}/profile")
-async def ho_so_khach(customer_id: str, db: Session = Depends(get_db)):
+def ho_so_khach(customer_id: str, db: Session = Depends(get_db)):
     return _doc(lambda: crm.ho_so_khach(db, customer_id), "Đã tải hồ sơ khách hàng.")

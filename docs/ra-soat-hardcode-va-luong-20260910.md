@@ -416,6 +416,28 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   `docs/HUONG_DAN_LUONG_VA_CAU_HINH_VI.md` mới — thứ tự cấu hình dữ liệu gốc và trọn luồng cho
   người chưa biết hệ.
 
+### A28. "Xem DO" treo 0 VNĐ ở mọi DO; máy chủ nghẹn khi 20 yêu cầu song song — **ĐÃ SỬA** (11/09)
+
+- Anh mở "Xem DO" thấy spinner "Đang chuẩn bị form DO..." treo, mọi ô trống, 0 VNĐ, ở mọi
+  trạng thái. Nguyên nhân: khi trục xuất SO, còn sót một vết đọc `id` của biến `so` (đã bị cắt
+  định nghĩa) trong `setDOSettlementFromSource`; `moKhungFormDO()` gọi hàm này với nguồn rỗng →
+  ReferenceError TRƯỚC khi lệnh tắt spinner được đặt. Bộ kiểm quét chữ không bắt được vì đó là mã
+  hợp lệ. Sửa nhãn nguồn đọc `quotation_id`; bài kiểm `gia-goc-theo-bao-gia-khong-so.test.js` nay
+  CHẠY THẬT hàm với ba nguồn (rỗng / có báo giá / báo giá không trong bộ nhớ).
+- Anh trách *"kiểm tra không kỹ"* — đúng. Em dựng **bài bấm thử bằng máy**: nạp cả `index.html`
+  trong jsdom, fetch nối vào 8001 thật, mở 13 màn, 7 DO, 7 báo giá, 9 xe, 14 tài xế, 5 tuyến, mọi
+  tab dữ liệu gốc, điều phối, theo dõi, hoàn tất — 98 thao tác, gom mọi ngoại lệ và toast lỗi. Kết
+  quả sau sửa: 0 lỗi; không `onclick` nào trong HTML trỏ tới hàm không tồn tại.
+- Chính bài bấm thử đó lộ ra **lỗi backend nghiêm trọng hơn**: 20 yêu cầu GET song song → 17 hết
+  giờ 45 s, health sau đó 17 s, máy chủ nghẹn vài phút (đo trên 8001 thật). 83 handler khai
+  `async def` nhưng gọi SQLAlchemy đồng bộ trên vòng lặp sự kiện; pool 5 + 10 cạn → handler đứng
+  chờ kết nối 30 s và chặn cả vòng lặp, coroutine đang giữ kết nối không trả được → kẹt dây chuyền.
+  Trình duyệt mở tối đa 6 kết nối nên một người dùng chưa gặp; hai ba người là gặp. Sửa: đổi 83
+  handler không có `await` sang `def` (FastAPI chạy trong threadpool), giữ 10 handler có `await`
+  thật. Đo lại: 20 yêu cầu song song trả 200 hết trong 0,9 s. Bài kiểm AST
+  `test_route_dong_bo_khong_chan_vong_lap.py` chặn tái phạm. Pool giữ 5 + 10 vì mã đã ghi rõ giới
+  hạn 100 kết nối của Postgres thật cho ba tiến trình.
+
 ---
 
 ## B. Luồng có thể đi sai

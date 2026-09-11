@@ -75,11 +75,11 @@ router = APIRouter(dependencies=[Depends(require_api_principal)])
 
 
 @router.get("/api/incidents")
-async def list_incidents(db: Session = Depends(get_db)):
+def list_incidents(db: Session = Depends(get_db)):
     return db.query(Incident).order_by(Incident.id.desc()).all()
 
 @router.post("/api/incidents")
-async def create_incident(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def create_incident(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     required = ["do_id", "vehicle_id", "incident_type", "location", "reporter"]
     missing = [key for key in required if not isinstance(data.get(key), str) or not data[key].strip()]
     if missing:
@@ -126,7 +126,7 @@ async def create_incident(data: Dict[str, Any] = Body(...), db: Session = Depend
 
 
 @router.get("/api/dashboard/stats")
-async def get_dashboard_stats(db: Session = Depends(get_db)):
+def get_dashboard_stats(db: Session = Depends(get_db)):
     """Chi so Bang dieu khien, do truc tiep tu du lieu.
 
     DOANH THU = tong gia ban cuoi cua HO SO HOAN TAT (delivery_order_closeouts).

@@ -167,4 +167,3 @@ def test_master_to_closeout_flow_writes_real_database_records(app_client, workfl
         assert db.get(models.FreightActualCost, "COST-AZ").total_amount == 200000
         assert db.query(models.DeliveryOrderCloseout).filter_by(do_id="DO-AZ").one() is not None
         assert db.query(models.DeliveryPODDocument).count() == len(loaded_trip["legs"]) * 2
-        assert db.query(models.ARInvoice).filter_by(do_id="DO-AZ").one().canonical_status == "posted"

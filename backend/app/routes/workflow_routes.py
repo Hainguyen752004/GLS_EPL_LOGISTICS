@@ -149,7 +149,7 @@ async def complete_delivery_order(do_id: str, request: Request, db: Session = De
 
 
 @router.get("/api/pod-documents/{document_id}")
-async def download_pod_document(document_id: str, request: Request, db: Session = Depends(get_db)):
+def download_pod_document(document_id: str, request: Request, db: Session = Depends(get_db)):
     _context(request, db)
     document = db.get(DeliveryPODDocument, document_id)
     if not document:
@@ -312,7 +312,7 @@ def _execute(request, db, data, callback):
 
 
 @router.get("/api/quotations")
-async def list_quotations(
+def list_quotations(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -322,24 +322,24 @@ async def list_quotations(
 
 
 @router.post("/api/quotations")
-async def create_quotation(request: Request, payload: QuotationCreateRequest, db: Session = Depends(get_db)):
+def create_quotation(request: Request, payload: QuotationCreateRequest, db: Session = Depends(get_db)):
     data = payload.model_dump(exclude_unset=True)
     return _execute(request, db, data, lambda actor: svc.create_quotation(db, data, actor))
 
 
 @router.put("/api/quotations/{qid}")
-async def update_quotation(qid: str, request: Request, payload: QuotationUpdateRequest, db: Session = Depends(get_db)):
+def update_quotation(qid: str, request: Request, payload: QuotationUpdateRequest, db: Session = Depends(get_db)):
     data = payload.model_dump(exclude_unset=True)
     return _execute(request, db, data, lambda actor: svc.update_quotation(db, qid, data, actor))
 
 
 @router.put("/api/quotations/{qid}/approve")
-async def approve_quotation(qid: str, request: Request, db: Session = Depends(get_db)):
+def approve_quotation(qid: str, request: Request, db: Session = Depends(get_db)):
     return _execute(request, db, {}, lambda actor: svc.approve_quotation(db, qid, actor))
 
 
 @router.put("/api/quotations/{qid}/status")
-async def quotation_status_compat(qid: str, request: Request, payload: WorkflowStatusRequest, db: Session = Depends(get_db)):
+def quotation_status_compat(qid: str, request: Request, payload: WorkflowStatusRequest, db: Session = Depends(get_db)):
     data = payload.model_dump()
     if data.get("status") not in ("Approved", "Đã duyệt", "approved"):
         raise_http(conflict(
@@ -354,12 +354,12 @@ def _delete(request, db, identity, action):
 
 
 @router.delete("/api/quotations/{qid}")
-async def delete_quotation(qid: str, request: Request, db: Session = Depends(get_db)):
+def delete_quotation(qid: str, request: Request, db: Session = Depends(get_db)):
     return _delete(request, db, qid, lambda actor: svc.delete_quotation(db, qid, actor))
 
 
 @router.get("/api/delivery-orders")
-async def list_delivery_orders(
+def list_delivery_orders(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
@@ -369,18 +369,18 @@ async def list_delivery_orders(
 
 
 @router.get("/api/delivery-orders/analysis")
-async def analyze_delivery_orders(db: Session = Depends(get_db)):
+def analyze_delivery_orders(db: Session = Depends(get_db)):
     return svc.delivery_order_analysis(db)
 
 
 @router.put("/api/delivery-orders/{do_id}")
-async def update_delivery_order(do_id: str, request: Request, payload: DeliveryOrderUpdateRequest, db: Session = Depends(get_db)):
+def update_delivery_order(do_id: str, request: Request, payload: DeliveryOrderUpdateRequest, db: Session = Depends(get_db)):
     data = payload.model_dump(exclude_unset=True)
     return _execute(request, db, data, lambda actor: svc.update_delivery_order(db, do_id, data, actor))
 
 
 @router.put("/api/delivery-orders/{do_id}/status")
-async def update_delivery_order_status(do_id: str, request: Request, payload: DeliveryOrderStatusRequest, db: Session = Depends(get_db)):
+def update_delivery_order_status(do_id: str, request: Request, payload: DeliveryOrderStatusRequest, db: Session = Depends(get_db)):
     data = payload.model_dump()
     status = {
         "In Transit": "in_transit",
@@ -417,18 +417,18 @@ async def update_delivery_order_status(do_id: str, request: Request, payload: De
 
 
 @router.put("/api/delivery-orders/{do_id}/dispatch")
-async def dispatch_delivery_order(do_id: str, request: Request, payload: DeliveryOrderDispatchRequest, db: Session = Depends(get_db)):
+def dispatch_delivery_order(do_id: str, request: Request, payload: DeliveryOrderDispatchRequest, db: Session = Depends(get_db)):
     data = payload.model_dump(exclude_unset=True)
     return _execute(request, db, data, lambda actor: svc.dispatch(db, do_id, data, actor))
 
 
 @router.delete("/api/delivery-orders/{do_id}")
-async def delete_delivery_order(do_id: str, request: Request, db: Session = Depends(get_db)):
+def delete_delivery_order(do_id: str, request: Request, db: Session = Depends(get_db)):
     return _delete(request, db, do_id, lambda actor: svc.delete_delivery_order(db, do_id, actor))
 
 
 @router.post("/api/pod/{do_id}")
-async def save_pod(do_id: str, request: Request, payload: DeliveryPODRequest, db: Session = Depends(get_db)):
+def save_pod(do_id: str, request: Request, payload: DeliveryPODRequest, db: Session = Depends(get_db)):
     raise_http(conflict(
         "ATOMIC_COMPLETION_REQUIRED",
         "API POD cũ chỉ còn để đọc. Hãy dùng hoàn tất giao hàng để lưu POD, chữ ký, giá cuối và hóa đơn cùng lúc.",
@@ -437,7 +437,7 @@ async def save_pod(do_id: str, request: Request, payload: DeliveryPODRequest, db
 
 
 @router.get("/api/pod-records")
-async def list_pod_records_bulk(do_ids: str = "", db: Session = Depends(get_db)):
+def list_pod_records_bulk(do_ids: str = "", db: Session = Depends(get_db)):
     """POD cua NHIEU lenh giao hang trong MOT loi goi.
 
     Duong nay sinh ra vi bang chuyen o man Giao hang & van chuyen phai hien "da
@@ -468,7 +468,7 @@ async def list_pod_records_bulk(do_ids: str = "", db: Session = Depends(get_db))
 
 
 @router.get("/api/pod/{do_id}")
-async def get_pod(do_id: str, db: Session = Depends(get_db)):
+def get_pod(do_id: str, db: Session = Depends(get_db)):
     records = svc.list_pod_records(db, do_id)
     if not records:
         raise_http(DomainError(

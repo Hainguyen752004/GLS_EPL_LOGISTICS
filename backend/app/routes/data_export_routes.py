@@ -81,7 +81,7 @@ router = APIRouter(dependencies=[Depends(require_api_principal)])
 
 
 @router.get("/api/data/all")
-async def get_all_data(request: Request, db: Session = Depends(get_db)):
+def get_all_data(request: Request, db: Session = Depends(get_db)):
     _require_api_principal(request)
     payload = {
         "vehicles": [

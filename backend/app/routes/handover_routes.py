@@ -124,7 +124,7 @@ def _ngay(chuoi, ten):
 
 
 @router.get("/api/handover/delivery-orders")
-async def danh_sach_ban_giao(
+def danh_sach_ban_giao(
     request: Request,
     customer_id: Optional[str] = Query(None, description="Chỉ lấy DO của một khách"),
     completed_from: Optional[str] = Query(None, description="Hoàn tất từ ngày (ISO, gồm cả ngày đó)"),

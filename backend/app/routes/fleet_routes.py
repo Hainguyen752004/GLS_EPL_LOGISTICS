@@ -84,7 +84,7 @@ LOAI_BAI = ("Depot", "Branch", "Warehouse", "Yard")
 
 
 @router.get("/api/depots")
-async def list_depots(db: Session = Depends(get_db)):
+def list_depots(db: Session = Depends(get_db)):
     """Danh muc BAI / CHI NHANH, doc tu bang `locations`.
 
     VI SAO CO. O "Bai / Chi nhanh" va "Ma bai" tren ho so xe truoc day la HAI O GO
@@ -107,7 +107,7 @@ async def list_depots(db: Session = Depends(get_db)):
 
 
 @router.post("/api/depots")
-async def create_depot(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def create_depot(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     """Them / sua mot bai. `id` la ma bai (dung de loc), `name` la ten hien."""
     _require_api_principal(request)
     from models import Location
@@ -150,7 +150,7 @@ def loai_xe_cua(gia_tri):
 
 
 @router.get("/api/vehicles")
-async def list_vehicles(
+def list_vehicles(
     paginated: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=200),
@@ -208,7 +208,7 @@ async def list_vehicles(
     return result
 
 @router.post("/api/vehicles")
-async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     """Tạo mới hoặc cập nhật một xe.
 
     Chỉ ghi những trường THẬT SỰ CÓ trong payload.
@@ -314,7 +314,7 @@ async def create_vehicle(request: Request, data: Dict[str, Any] = Body(...), db:
 
 
 @router.get("/api/vehicle-maintenance-requests")
-async def get_vehicle_maintenance_requests_in_period(
+def get_vehicle_maintenance_requests_in_period(
     start: str = Query(..., description="Dau khoang, dang ISO co mui gio"),
     end: str = Query(..., description="Cuoi khoang, dang ISO co mui gio"),
     db: Session = Depends(get_db),
@@ -332,7 +332,7 @@ async def get_vehicle_maintenance_requests_in_period(
 
 
 @router.get("/api/vehicles/{vehicle_id}/maintenance-requests")
-async def get_vehicle_maintenance_requests(vehicle_id: str, db: Session = Depends(get_db)):
+def get_vehicle_maintenance_requests(vehicle_id: str, db: Session = Depends(get_db)):
     try:
         items = list_vehicle_maintenance_requests(db, vehicle_id)
         return {"data": [serialize_vehicle_maintenance_request(item) for item in items]}
@@ -341,7 +341,7 @@ async def get_vehicle_maintenance_requests(vehicle_id: str, db: Session = Depend
 
 
 @router.post("/api/vehicles/{vehicle_id}/maintenance-requests", status_code=201)
-async def post_vehicle_maintenance_request(
+def post_vehicle_maintenance_request(
     vehicle_id: str,
     request: Request,
     data: Dict[str, Any] = Body(...),
@@ -398,7 +398,7 @@ async def cancel_vehicle_maintenance_request(request_id: str, request: Request, 
     return await _run_vehicle_maintenance_transition(request_id, "cancel", request, data, db)
 
 @router.delete("/api/vehicles/{vid}")
-async def delete_vehicle(vid: str, request: Request, db: Session = Depends(get_db)):
+def delete_vehicle(vid: str, request: Request, db: Session = Depends(get_db)):
     _require_api_principal(request)
     veh = db.query(Vehicle).filter(Vehicle.id == vid).first()
     # Truoc day khong tim thay thi ham roi xuong `return {"message": "Đã xóa
@@ -428,7 +428,7 @@ async def delete_vehicle(vid: str, request: Request, db: Session = Depends(get_d
 
 # 1.5 Vehicle Types API
 @router.get("/api/vehicles/{vehicle_id}/cost")
-async def get_vehicle_effective_cost(vehicle_id: str, db: Session = Depends(get_db)):
+def get_vehicle_effective_cost(vehicle_id: str, db: Session = Depends(get_db)):
     """Gia thanh THUC TE cua mot chiec xe: cong thuc loai xe + phan ghi de.
 
     Tra ve ca `inherited` lan `is_overridden` cho tung cau phan, de giao dien
@@ -442,7 +442,7 @@ async def get_vehicle_effective_cost(vehicle_id: str, db: Session = Depends(get_
 
 
 @router.put("/api/vehicles/{vehicle_id}/cost-overrides")
-async def put_vehicle_cost_overrides(
+def put_vehicle_cost_overrides(
     vehicle_id: str,
     request: Request,
     data: Dict[str, Any] = Body(...),
@@ -463,12 +463,12 @@ async def put_vehicle_cost_overrides(
 
 
 @router.get("/api/vehicle-types")
-async def list_vehicle_types(db: Session = Depends(get_db)):
+def list_vehicle_types(db: Session = Depends(get_db)):
     from models import VehicleType
     return db.query(VehicleType).all()
 
 @router.get("/api/vehicle-types/recommendations")
-async def get_vehicle_type_recommendations(
+def get_vehicle_type_recommendations(
     weight_kg: float = 0,
     volume_m3: float = 0,
     pallet_count: int = 0,
@@ -482,7 +482,7 @@ async def get_vehicle_type_recommendations(
     })}
 
 @router.post("/api/vehicle-types")
-async def save_vehicle_type(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def save_vehicle_type(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     _require_api_principal(request)
     from models import VehicleType
     vid = data.get("id")
@@ -509,7 +509,7 @@ async def save_vehicle_type(request: Request, data: Dict[str, Any] = Body(...), 
     return {"message": "Lưu loại phương tiện thành công", "data": vt}
 
 @router.delete("/api/vehicle-types/{vid}")
-async def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(get_db)):
+def delete_vehicle_type(vid: str, request: Request, db: Session = Depends(get_db)):
     """Xoa mot loai xe khoi Master Data.
 
     Truoc day co hai cho sai:
@@ -677,7 +677,7 @@ async def danh_muc_acc_code(request: Request, refresh: bool = False):
 
 
 @router.get("/api/cost-formulas")
-async def list_cost_formulas(db: Session = Depends(get_db)):
+def list_cost_formulas(db: Session = Depends(get_db)):
     return [
         _serialize_cost_formula(row)
         for row in db.query(CostFormula).order_by(CostFormula.id).all()
@@ -685,7 +685,7 @@ async def list_cost_formulas(db: Session = Depends(get_db)):
 
 
 @router.get("/api/cost-formulas/fleet-overview")
-async def cost_formula_fleet_overview(request: Request, db: Session = Depends(get_db)):
+def cost_formula_fleet_overview(request: Request, db: Session = Depends(get_db)):
     """Dữ liệu giá hiệu lực và lịch sử ghi đè để so sánh loại xe/xe."""
     _require_api_principal(request)
     return {'data': vehicle_cost_service.fleet_overview(db)}
@@ -746,7 +746,7 @@ def _sanitize_formula_terms(rows):
 
 
 @router.post("/api/cost-formulas/evaluate")
-async def evaluate_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def evaluate_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     _require_api_principal(request)
     from services.cost_expression import evaluate_expressions
     formula_id = str(data.get("formula_id") or "")
@@ -766,7 +766,7 @@ async def evaluate_cost_formula(request: Request, data: Dict[str, Any] = Body(..
 
 
 @router.post("/api/cost-formulas")
-async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     actor = _require_api_principal(request)
     requested_formula_id = str(data.get("id") or "").strip()
     vehicle_type_id = str(data.get("vehicle_type_id") or "").strip()
@@ -849,7 +849,7 @@ async def save_cost_formula(request: Request, data: Dict[str, Any] = Body(...), 
 
 # 2. Drivers API
 @router.get("/api/drivers")
-async def list_drivers(db: Session = Depends(get_db)):
+def list_drivers(db: Session = Depends(get_db)):
     from services import lich_xe
     now = datetime.now(timezone.utc)
     ra = []
@@ -864,7 +864,7 @@ async def list_drivers(db: Session = Depends(get_db)):
 
 
 @router.put("/api/vehicles/{vehicle_id}/operational-status")
-async def dat_trang_thai_xe(vehicle_id: str, request: Request,
+def dat_trang_thai_xe(vehicle_id: str, request: Request,
                             data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     """Nguoi dung dat tay trang thai van hanh cua xe.
 
@@ -889,7 +889,7 @@ async def dat_trang_thai_xe(vehicle_id: str, request: Request,
 
 
 @router.put("/api/drivers/{driver_id}/operational-status")
-async def dat_trang_thai_tai_xe(driver_id: str, request: Request,
+def dat_trang_thai_tai_xe(driver_id: str, request: Request,
                                 data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     """Nguoi dung dat tay trang thai nhan su: `available` / `off_duty` / `inactive`."""
     _require_api_principal(request)
@@ -909,7 +909,7 @@ async def dat_trang_thai_tai_xe(driver_id: str, request: Request,
                      "operational_updated_at": nguoi.operational_updated_at}}
 
 @router.post("/api/drivers")
-async def create_driver(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def create_driver(request: Request, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     _require_api_principal(request)
     did = data.get("id") or data.get("name")
     if not did:
@@ -937,7 +937,7 @@ async def create_driver(request: Request, data: Dict[str, Any] = Body(...), db: 
     return {"message": f"Đã lưu nhân sự {did}", "data": drv}
 
 @router.delete("/api/drivers/{did}")
-async def delete_driver(did: str, request: Request, db: Session = Depends(get_db)):
+def delete_driver(did: str, request: Request, db: Session = Depends(get_db)):
     """Xoa mot tai xe khoi Master Data.
 
     Truoc day ham nay co ba cho sai, va ca ba deu im lang:

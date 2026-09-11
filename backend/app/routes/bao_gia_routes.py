@@ -78,7 +78,7 @@ def _lenh(db: Session, viec, thong_bao: str):
 # ===========================================================================
 
 @router.get("/api/quotations/summary")
-async def dai_so_lieu(db: Session = Depends(get_db)):
+def dai_so_lieu(db: Session = Depends(get_db)):
     """Sau con so cua dai KPI — chinh la sau bo loc cua man danh sach."""
     try:
         return {"message": "Đã tải số liệu báo giá.", "data": bao_gia.dai_so_lieu(db)}
@@ -87,7 +87,7 @@ async def dai_so_lieu(db: Session = Depends(get_db)):
 
 
 @router.post("/api/quotations/price-preview")
-async def xem_truoc_gia(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def xem_truoc_gia(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     """Bang cau phan gia thanh, do vua tai cua tung loai xe, va goi y gia.
 
     DAY LA CHO TINH GIA — giao dien khong tu tinh. Spec ghi ro dieu do va no
@@ -102,7 +102,7 @@ async def xem_truoc_gia(data: Dict[str, Any] = Body(...), db: Session = Depends(
 
 
 @router.get("/api/quotations/board")
-async def bang_bao_gia(
+def bang_bao_gia(
     status: str = Query("all"),
     customer_id: Optional[str] = Query(None),
     route_id: Optional[str] = Query(None),
@@ -129,7 +129,7 @@ async def bang_bao_gia(
 
 
 @router.get("/api/quotations/{qid}/detail")
-async def chi_tiet(qid: str, db: Session = Depends(get_db)):
+def chi_tiet(qid: str, db: Session = Depends(get_db)):
     """Mot bao gia kem moi thu man chi tiet can, trong MOT loi goi.
 
     Mot loi goi chu khong sau: dong hang hoa, chung tu, phien ban gia va danh
@@ -145,7 +145,7 @@ async def chi_tiet(qid: str, db: Session = Depends(get_db)):
 
 
 @router.get("/api/customers/{cid}/price-history")
-async def gia_da_bao(
+def gia_da_bao(
     cid: str,
     route_id: Optional[str] = Query(None),
     limit: int = Query(3, ge=1, le=20),
@@ -170,7 +170,7 @@ async def gia_da_bao(
 # ===========================================================================
 
 @router.put("/api/quotations/{qid}/items")
-async def ghi_dong_hang_hoa(
+def ghi_dong_hang_hoa(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(...), db: Session = Depends(get_db),
 ):
@@ -187,7 +187,7 @@ async def ghi_dong_hang_hoa(
 
 
 @router.post("/api/quotations/{qid}/send")
-async def gui_khach(request: Request, qid: str, db: Session = Depends(get_db)):
+def gui_khach(request: Request, qid: str, db: Session = Depends(get_db)):
     """Gui bao gia cho khach: cap ma hien cho khach, chot phien ban gia.
 
     Bien duoi nguong thi KHONG sang "da gui" ma sang "cho duyet noi bo" — khac
@@ -213,7 +213,7 @@ async def gui_khach(request: Request, qid: str, db: Session = Depends(get_db)):
 
 
 @router.post("/api/quotations/{qid}/accept")
-async def khach_chap_nhan(
+def khach_chap_nhan(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db),
 ):
@@ -240,7 +240,7 @@ async def khach_chap_nhan(
 
 
 @router.post("/api/quotations/{qid}/reject")
-async def khach_tu_choi(
+def khach_tu_choi(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db),
 ):
@@ -254,7 +254,7 @@ async def khach_tu_choi(
 
 
 @router.post("/api/quotations/{qid}/extend")
-async def gia_han(
+def gia_han(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(...), db: Session = Depends(get_db),
 ):
@@ -274,7 +274,7 @@ async def gia_han(
 
 
 @router.post("/api/quotations/{qid}/split")
-async def tach_do(
+def tach_do(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(...), db: Session = Depends(get_db),
 ):
@@ -295,7 +295,7 @@ async def tach_do(
 # ===========================================================================
 
 @router.post("/api/quotations/{qid}/internal-approve")
-async def duyet_noi_bo(request: Request, qid: str, db: Session = Depends(get_db)):
+def duyet_noi_bo(request: Request, qid: str, db: Session = Depends(get_db)):
     """Trưởng phòng đồng ý bán dưới ngưỡng biên, báo giá đi tiếp sang khách.
 
     Báo giá LỖ không đi qua được đường này — `kiem_bao_gia_truoc_khi_duyet`
@@ -311,7 +311,7 @@ async def duyet_noi_bo(request: Request, qid: str, db: Session = Depends(get_db)
 
 
 @router.post("/api/quotations/{qid}/return-to-draft")
-async def tra_ve_nhap(
+def tra_ve_nhap(
     request: Request, qid: str,
     data: Dict[str, Any] = Body(default={}), db: Session = Depends(get_db),
 ):
@@ -414,7 +414,7 @@ async def them_chung_tu(
 
 
 @router.get("/api/quotations/{qid}/attachments/{aid}/file")
-async def tai_chung_tu(qid: str, aid: str, db: Session = Depends(get_db)):
+def tai_chung_tu(qid: str, aid: str, db: Session = Depends(get_db)):
     try:
         dong = bao_gia.mot_chung_tu(db, qid, aid)
     except DomainError as loi:
@@ -437,7 +437,7 @@ async def tai_chung_tu(qid: str, aid: str, db: Session = Depends(get_db)):
 
 
 @router.delete("/api/quotations/{qid}/attachments/{aid}")
-async def xoa_chung_tu(request: Request, qid: str, aid: str, db: Session = Depends(get_db)):
+def xoa_chung_tu(request: Request, qid: str, aid: str, db: Session = Depends(get_db)):
     actor = _actor(request)
 
     def viec():

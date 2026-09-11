@@ -82,7 +82,7 @@ def get_tracking_control_tower(db: Session = Depends(get_db)):
 
 
 @router.get("/api/tracking/{do_id}")
-async def get_tracking(do_id: str, db: Session = Depends(get_db)):
+def get_tracking(do_id: str, db: Session = Depends(get_db)):
     track = db.query(VehicleTracking).filter(VehicleTracking.do_id == do_id).first()
     if not track:
         raise HTTPException(status_code=404, detail={
@@ -356,7 +356,7 @@ def _configured_delivery_cost_lines(formula, delivery_order, route, ghi_de_theo_
     return dong
 
 @router.get("/api/delivery-orders/{do_id}/closeout")
-async def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depends(get_db)):
+def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depends(get_db)):
     _require_api_principal(request)
     delivery_order = db.get(DeliveryOrder, do_id)
     if delivery_order is None:

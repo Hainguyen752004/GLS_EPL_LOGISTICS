@@ -201,7 +201,7 @@ async def refresh_currency_reference_rates():
 
 
 @router.get("/api/currencies")
-async def list_currencies(db: Session = Depends(get_db)):
+def list_currencies(db: Session = Depends(get_db)):
     from models import Currency
     return db.query(Currency).all()
 
@@ -257,12 +257,12 @@ def _serialize_currency_history(db: Session):
 
 
 @router.get("/api/currencies/history")
-async def list_currency_history(db: Session = Depends(get_db)):
+def list_currency_history(db: Session = Depends(get_db)):
     return _serialize_currency_history(db)
 
 
 @router.post("/api/currencies")
-async def save_currency_rates(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def save_currency_rates(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     from models import Currency
     required_codes = ("USD", "THB", "LAK")
     parsed_rates = {}

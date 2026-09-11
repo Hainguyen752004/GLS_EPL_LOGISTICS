@@ -32,11 +32,11 @@ router = APIRouter(dependencies=[Depends(require_authenticated_principal)])
 
 
 @router.get("/api/customers")
-async def list_customers(db: Session = Depends(get_db)):
+def list_customers(db: Session = Depends(get_db)):
     return db.query(Customer).all()
 
 @router.post("/api/customers")
-async def create_customer(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def create_customer(data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     cid = data.get("id")
     if not cid:
         raise HTTPException(status_code=400, detail="Thiếu Mã khách hàng")
@@ -63,7 +63,7 @@ async def create_customer(data: Dict[str, Any] = Body(...), db: Session = Depend
     return {"message": "Tạo khách hàng thành công", "data": cus}
 
 @router.put("/api/customers/{customer_id}")
-async def update_customer(customer_id: str, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
+def update_customer(customer_id: str, data: Dict[str, Any] = Body(...), db: Session = Depends(get_db)):
     cus = db.query(Customer).filter(Customer.id == customer_id).first()
     if not cus:
         raise HTTPException(status_code=404, detail="Không tìm thấy Khách hàng")
@@ -77,7 +77,7 @@ async def update_customer(customer_id: str, data: Dict[str, Any] = Body(...), db
     return {"message": "Cập nhật khách hàng thành công", "data": cus}
 
 @router.delete("/api/customers/{customer_id}")
-async def delete_customer(customer_id: str, db: Session = Depends(get_db)):
+def delete_customer(customer_id: str, db: Session = Depends(get_db)):
     """Xoa mot khach hang khoi Master Data.
 
     Chu thich o dau tep nay da ghi tu truoc rang cho nay "khong co kiem tra
@@ -187,7 +187,7 @@ def _tuyen_kem_toa_do(row, db=None, cho_phep_ngoai=False):
 
 
 @router.get("/api/routes")
-async def list_routes(
+def list_routes(
     paginated: bool = Query(False),
     page: int = Query(1, ge=1),
     page_size: int = Query(100, ge=1, le=200),
@@ -202,7 +202,7 @@ async def list_routes(
             "total": total, "page": page, "page_size": page_size}
 
 @router.post("/api/routes")
-async def create_route(payload: RouteCreateRequest, db: Session = Depends(get_db)):
+def create_route(payload: RouteCreateRequest, db: Session = Depends(get_db)):
     data = payload.model_dump(exclude_unset=True)
     route_id = data.get("id")
     if not route_id:
@@ -269,7 +269,7 @@ async def create_route(payload: RouteCreateRequest, db: Session = Depends(get_db
     }
 
 @router.get("/api/routes/{route_id}/geo")
-async def route_geo(route_id: str, db: Session = Depends(get_db)):
+def route_geo(route_id: str, db: Session = Depends(get_db)):
     """Mot tuyen kem toa do, CO PHEP tra ra dich vu ngoai.
 
     Tach khoi `GET /api/routes` vi hai duong nay co gia khac nhau: danh sach
@@ -289,7 +289,7 @@ async def route_geo(route_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/api/locations/{location_id}/coordinates")
-async def set_location_coordinates(
+def set_location_coordinates(
     location_id: str,
     payload: Dict[str, Any] = Body(...),
     db: Session = Depends(get_db),
@@ -329,7 +329,7 @@ async def set_location_coordinates(
 
 
 @router.get("/api/locations/coordinates")
-async def list_location_coordinates(db: Session = Depends(get_db)):
+def list_location_coordinates(db: Session = Depends(get_db)):
     """Danh sach dia diem kem toa do, va nhung dia diem CON THIEU toa do.
 
     Man Du lieu goc dung danh sach thieu nay de noi ra viec can lam: mot dia
@@ -354,7 +354,7 @@ async def list_location_coordinates(db: Session = Depends(get_db)):
 
 
 @router.delete("/api/routes/{route_id}")
-async def delete_route(route_id: str, db: Session = Depends(get_db)):
+def delete_route(route_id: str, db: Session = Depends(get_db)):
     """Xoa mot tuyen duong khoi Master Data.
 
     Truoc day ham nay KHONG kiem dang-su-dung, khac han `delete_vehicle` va
