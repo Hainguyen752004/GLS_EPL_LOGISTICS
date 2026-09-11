@@ -26,6 +26,13 @@ from services import tms_trip_service as trip_service
 from routes.tms_planning_routes import router as tms_router
 
 
+def _bo_dau(chu):
+    """Bo dau tieng Viet de so chuoi trong bai kiem, khong phu thuoc cach go dau."""
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", str(chu).lower())
+                   if unicodedata.category(c) != "Mn")
+
+
 NOW = dt.datetime(2026, 8, 13, 8, 0, tzinfo=dt.timezone.utc)
 
 
@@ -223,13 +230,13 @@ def test_create_trip_from_do_persists_return_route_and_calculates_return_eta(tmp
         "planned_departure_at": NOW,
         "avg_speed_kmh": "60",
         "dwell_minutes": 30,
-        "return_purpose": "backhaul",
+        # Xe ve RONG: van do duoc tuyen chieu ve + ETA ve, ma khong dinh ngo cut hang chieu ve.
+        "return_purpose": "empty_return",
         "return_route_id": "RT-RETURN",
-        "return_do_id": "DO-RETURN",
     }, actor="dispatcher")
 
-    assert [leg["leg_type"] for leg in payload["legs"]] == ["delivery", "backhaul"]
-    assert payload["legs"][1]["do_id"] == "DO-RETURN"
+    assert [leg["leg_type"] for leg in payload["legs"]] == ["delivery", "empty_return"]
+    assert payload["legs"][1]["do_id"] is None
     assert payload["legs"][1]["origin"] == "Điểm B"
     assert payload["legs"][1]["destination"] == "Kho A"
     assert payload["planned_return_at"] is not None
@@ -367,83 +374,98 @@ def test_trip_relationship_summary_supports_many_dos_per_vehicle_and_split_do_re
     engine.dispose()
 
 
-def test_backhaul_requires_a_do_but_empty_return_does_not(tmp_path, may_kiem):
+# HANG CHIEU VE DA BI CHAN (11/09/2026). Ba bai duoi day truoc kia khoa hanh vi cu: tao
+# chuyen `backhaul` va them chang `backhaul` deu chay duoc. Hanh vi do la mot NGO CUT lam
+# mat doanh thu — DO chieu ve chi co chang `backhaul`, ma buoc hoan tat chi nhan POD cho
+# chang `delivery`, nen no khong ky nhan duoc; `complete_return` khi ay luon tra 409, xe bi
+# giu mai, va lo hang ve khong co ho so quyet toan de sang ben cong no.
+#
+# Nen ba bai nay gio khoa dieu NGUOC LAI: cua gac phai tu choi, va tu choi o CA HAI duong
+# vao. Xe ve RONG van phai chay tron ven — chan nham no la pha mot luong dang tot.
+def test_tao_chuyen_cho_hang_chieu_ve_bi_tu_choi(tmp_path, may_kiem):
     engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
     _gieo_dia_diem(db)
-    db.add_all([
-        DeliveryOrder(id="DO-001"), _freight_order(),
-    ])
+    db.add_all([DeliveryOrder(id="DO-001"), _freight_order()])
     db.commit()
-    trip = trip_service.create_trip(db, {
-        "id": "TRIP-002", "freight_order_id": "FO-TRIP-001",
-        "trip_type": "backhaul", "do_ids": ["DO-001"],
-    }, actor="dispatcher")
 
+    for muc_dich in ("backhaul", "returned_goods"):
+        with pytest.raises(DomainError) as caught:
+            trip_service.create_trip_from_delivery_orders(db, {
+                "id": "TRIP-CHIEU-VE-" + muc_dich,
+                "do_ids": ["DO-001"],
+                "trip_type": "round_trip",
+                "planned_departure_at": NOW,
+                "avg_speed_kmh": "60",
+                "return_purpose": muc_dich,
+                "return_route_id": "RT-RETURN",
+                "return_do_id": "DO-001",
+            }, actor="dispatcher")
+        assert caught.value.code == "TRIP_HANG_CHIEU_VE_CHUA_HO_TRO"
+        assert caught.value.status_code == 422
+        # Loi bao phai chi duong di tiep, khong chi noi "khong duoc".
+        assert "rong" in _bo_dau(caught.value.message), caught.value.message
+        db.rollback()
+
+    # Loai chuyen "backhaul" cung la mot duong vao cung ngo cut.
     with pytest.raises(DomainError) as caught:
-        trip_service.add_leg(db, trip.id, {
-            "id": "LEG-BAD", "sequence_no": 1, "leg_type": "backhaul",
-            "origin": "B", "destination": "A", "distance_km": 10,
-            "avg_speed_kmh": 40, "dwell_minutes": 0,
-            "planned_departure_at": NOW.isoformat(),
-        }, expected_version=1, actor="dispatcher")
-    assert caught.value.code == "BACKHAUL_DO_REQUIRED"
-    assert "đơn giao hàng" in caught.value.message.lower()
+        trip_service.create_trip_from_delivery_orders(db, {
+            "id": "TRIP-LOAI-BACKHAUL",
+            "do_ids": ["DO-001"],
+            "trip_type": "backhaul",
+            "planned_departure_at": NOW,
+            "avg_speed_kmh": "60",
+            "return_purpose": "backhaul",
+        }, actor="dispatcher")
+    assert caught.value.code == "TRIP_HANG_CHIEU_VE_CHUA_HO_TRO"
     db.rollback()
     db.close()
     engine.dispose()
 
 
-def test_backhaul_can_attach_a_new_return_do_to_an_existing_trip(tmp_path, may_kiem):
+def test_them_chang_hang_chieu_ve_cung_bi_tu_choi(tmp_path, may_kiem):
+    """Cua sau: `add_leg` nhan thang `leg_type="backhaul"`, khong di qua cho kiem
+    `return_purpose`. Chan cua truoc ma bo ngo cua nay thi coi nhu khong chan."""
     engine = may_kiem()
     Base.metadata.create_all(engine)
     db = sessionmaker(bind=engine)()
     _gieo_dia_diem(db)
-    db.add_all([
-        DeliveryOrder(id="DO-OUTBOUND"),
-        DeliveryOrder(id="DO-BACKHAUL"),
-        _freight_order(),
-    ])
+    db.add_all([DeliveryOrder(id="DO-OUTBOUND"), DeliveryOrder(id="DO-BACKHAUL"), _freight_order()])
     db.commit()
     trip = trip_service.create_trip(db, {
         "id": "TRIP-BACKHAUL-NEW-DO",
         "freight_order_id": "FO-TRIP-001",
-        "trip_type": "backhaul",
+        "trip_type": "round_trip",
         "do_ids": ["DO-OUTBOUND"],
     }, actor="dispatcher")
 
+    # Chang giao binh thuong van them duoc.
     trip_service.add_leg(db, trip.id, {
-        "id": "LEG-OUTBOUND",
-        "do_id": "DO-OUTBOUND",
-        "sequence_no": 1,
-        "leg_type": "delivery",
-        "origin": "Kho A",
-        "destination": "Diem B",
-        "distance_km": 120,
-        "avg_speed_kmh": 40,
-        "dwell_minutes": 30,
+        "id": "LEG-OUTBOUND", "do_id": "DO-OUTBOUND", "sequence_no": 1,
+        "leg_type": "delivery", "origin": "Kho A", "destination": "Diem B",
+        "distance_km": 120, "avg_speed_kmh": 40, "dwell_minutes": 30,
         "planned_departure_at": NOW.isoformat(),
     }, expected_version=1, actor="dispatcher")
+
+    with pytest.raises(DomainError) as caught:
+        trip_service.add_leg(db, trip.id, {
+            "id": "LEG-BACKHAUL", "do_id": "DO-BACKHAUL", "sequence_no": 2,
+            "leg_type": "backhaul", "origin": "Diem B", "destination": "Kho A",
+            "distance_km": 120, "avg_speed_kmh": 40, "dwell_minutes": 30,
+        }, expected_version=2, actor="dispatcher")
+    assert caught.value.code == "TRIP_HANG_CHIEU_VE_CHUA_HO_TRO"
+
+    # Chang VE RONG thi van them duoc — luong dang tot khong duoc dinh dang.
+    db.rollback()
     trip_service.add_leg(db, trip.id, {
-        "id": "LEG-BACKHAUL",
-        "do_id": "DO-BACKHAUL",
-        "sequence_no": 2,
-        "leg_type": "backhaul",
-        "origin": "Diem B",
-        "destination": "Kho A",
-        "distance_km": 120,
-        "avg_speed_kmh": 40,
-        "dwell_minutes": 30,
+        "id": "LEG-VE-RONG", "sequence_no": 2,
+        "leg_type": "empty_return", "origin": "Diem B", "destination": "Kho A",
+        "distance_km": 120, "avg_speed_kmh": 40, "dwell_minutes": 0,
     }, expected_version=2, actor="dispatcher")
     db.commit()
-
     payload = trip_service.serialize_trip(db, trip)
-    assert payload["delivery_order_ids"] == ["DO-OUTBOUND", "DO-BACKHAUL"]
-    assert payload["relationship_summary"]["do_count"] == 2
-    assert payload["legs"][-1]["do_id"] == "DO-BACKHAUL"
-    assert payload["legs"][-1]["leg_type"] == "backhaul"
-    assert payload["planned_return_at"] == payload["legs"][-1]["planned_arrival_at"]
+    assert payload["legs"][-1]["leg_type"] == "empty_return"
     db.close()
     engine.dispose()
 

@@ -5388,15 +5388,22 @@
                         <select id="trip-return-trip-type" class="fiori-input" onchange="syncTripReturnTripType()">
                           <option value="one_way" data-i18n="opt_one_way">Một chiều</option>
                           <option value="round_trip" data-i18n="opt_round_trip">Khứ hồi (có lượt về)</option>
-                          <option value="backhaul" data-i18n="opt_backhaul">Backhaul chiều về</option>
                           <option value="multi_stop" data-i18n="opt_multi_stop">Nhiều điểm dừng</option>
                         </select></label>
+                      <!-- HAI LỰA CHỌN CHỞ HÀNG CHIỀU VỀ ĐÃ BỎ KHỎI ĐÂY (11/09/2026):
+                           "Backhaul chiều về" ở ô trên, và "Ghép lệnh chiều về" / "Nhận hàng
+                           hoàn từ lệnh cũ" ở ô dưới. Chúng dẫn vào một ngõ cụt: lệnh giao hàng
+                           chiều về chỉ có chặng `backhaul`, mà bước hoàn tất giao hàng chỉ nhận
+                           POD cho chặng `delivery`, nên nó không ký nhận được — kéo theo chuyến
+                           không đóng được, xe bị giữ mãi, và chuyến hàng về không có hồ sơ
+                           quyết toán để chuyển sang bên công nợ. Máy chủ cũng chặn bằng
+                           `TRIP_HANG_CHIEU_VE_CHUA_HO_TRO` (xem `_chan_hang_chieu_ve`); ẩn ở đây
+                           để người điều phối khỏi chọn rồi mới ăn lỗi. Xe về RỖNG vẫn dùng bình
+                           thường — nhánh đó chạy đúng trọn luồng. -->
                       <label><span>Chặng về</span>
                         <select id="trip-return-purpose" class="fiori-input" onchange="syncTripReturnPurpose()">
                           <option value="none">Không tạo chặng về</option>
                           <option value="empty_return">Chạy rỗng về điểm gốc</option>
-                          <option value="backhaul">Ghép lệnh chiều về</option>
-                          <option value="returned_goods">Nhận hàng hoàn từ lệnh cũ</option>
                         </select></label>
                       <label><span data-i18n="lbl_departure_time">Giờ khởi hành</span><input id="trip-return-departure" type="datetime-local" class="fiori-input" onchange="hydrateTripReturnRoutePreview()"></label>
                       <label><span data-i18n="lbl_avg_speed">Vận tốc kế hoạch (km/h)</span><input id="trip-return-speed" type="number" min="1" step="0.1" class="fiori-input" oninput="hydrateTripReturnRoutePreview()" placeholder="lấy từ loại xe của báo giá"><small id="trip-return-speed-hint"></small></label>

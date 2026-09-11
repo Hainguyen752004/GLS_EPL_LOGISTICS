@@ -21,6 +21,43 @@ LEG_TYPES = {"outbound", "pickup", "delivery", "empty_return", "backhaul", "ware
 RETURN_LEG_TYPES = {"empty_return", "backhaul"}
 RETURN_PURPOSES = {"none", "empty_return", "backhaul", "returned_goods"}
 
+#: Mục đích chặng về CHƯA ĐI TRỌN LUỒNG — tạm khoá, xem `_chan_hang_chieu_ve`.
+RETURN_PURPOSE_CHUA_HO_TRO = {"backhaul", "returned_goods"}
+
+
+def _chan_hang_chieu_ve(gia_tri):
+    """Chặn chuyến CHỞ HÀNG chiều về cho tới khi nhánh đó đi trọn được luồng.
+
+    ĐÂY LÀ NGÕ CỤT LÀM MẤT DOANH THU, không phải một tính năng còn thiếu. Đo được
+    11/09/2026 trên mã hiện tại:
+
+    1. DO chiều về được gắn vào chuyến và nhận các chặng `backhaul`.
+    2. Nhưng bước hoàn tất giao hàng CHỈ nhận POD cho chặng `delivery`
+       (`delivery_completion_service`), mà DO chiều về không có chặng `delivery` nào —
+       nộp POD trả `422 POD_LINEAGE_INVALID`. Nên nó không bao giờ thành "đã giao" được.
+    3. `complete_return` lại đòi MỌI DO trên chuyến phải `delivered` hoặc `cancelled`,
+       nên luôn trả `409 OPEN_DELIVERY_ORDER`.
+
+    Kết quả: chuyến không đóng được, xe và tài xế bị giữ mãi, và chuyến hàng về không có
+    hồ sơ quyết toán nên không bao giờ sang được bên công nợ — tiền mất trắng. Lối thoát
+    duy nhất là huỷ DO chiều về.
+
+    Chặn ở ĐẦU VÀO thì người điều phối biết ngay và đi đường khác. Để hở thì họ chỉ phát
+    hiện ở bước cuối, lúc hàng đã chở xong rồi.
+
+    Xe về RỖNG (`empty_return`) KHÔNG bị chặn — nhánh đó chạy đúng trọn luồng.
+    """
+    if gia_tri not in RETURN_PURPOSE_CHUA_HO_TRO:
+        return
+    raise DomainError(
+        "TRIP_HANG_CHIEU_VE_CHUA_HO_TRO",
+        "Chuyến chở hàng chiều về (backhaul / nhận hàng hoàn) tạm thời chưa dùng được: lệnh "
+        "giao hàng chiều về chưa ký nhận được nên chuyến sẽ không đóng được và xe bị giữ lại. "
+        "Hãy chọn “Xe về rỗng”, hoặc lập một chuyến riêng cho lô hàng chiều về.",
+        422,
+        ["dispatch"],
+    )
+
 
 def _now():
     return dt.datetime.now(dt.timezone.utc)
@@ -460,6 +497,9 @@ def create_trip_from_delivery_orders(db, data, actor):
     trip_type = data.get("trip_type") or "one_way"
     if trip_type not in TRIP_TYPES:
         raise DomainError("TRIP_TYPE_INVALID", "Loại chuyến không hợp lệ.", 422)
+    _chan_hang_chieu_ve(return_purpose)
+    if trip_type == "backhaul":
+        _chan_hang_chieu_ve("backhaul")
     if trip_type in {"one_way", "multi_stop"} and return_purpose != "none":
         raise conflict("TRIP_RETURN_NOT_ALLOWED", "Loại Trip này không có chặng về.")
     if trip_type == "round_trip" and return_purpose == "none":
@@ -713,6 +753,10 @@ def add_leg(db, trip_id, data, expected_version, actor):
     if leg_type not in LEG_TYPES:
         raise DomainError("TRIP_LEG_TYPE_INVALID", "Loại chặng không hợp lệ.", 422)
     do_id = data.get("do_id")
+    # Đường thứ hai vào cùng ngõ cụt: thêm thẳng một chặng `backhaul` mà không đi qua
+    # `create_trip_from_do`. Chặn ở cả hai chỗ, nếu không thì bịt cửa trước bỏ ngỏ cửa sau.
+    if leg_type == "backhaul":
+        _chan_hang_chieu_ve("backhaul")
     if leg_type == "backhaul" and not do_id:
         raise DomainError("BACKHAUL_DO_REQUIRED", "Chặng backhaul phải gắn với một đơn giao hàng chiều về.", 422)
     membership = db.get(TripDeliveryOrder, (trip.id, do_id)) if do_id else None

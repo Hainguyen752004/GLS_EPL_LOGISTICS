@@ -96,6 +96,11 @@ def phan_cong_chong_lich(db, start_at, end_at, vehicle_id=None, crew_ids=(),
 #: Chuyen con DANG CHAY — phan cong tren no giu xe bat ke gio du kien.
 CHUYEN_DANG_CHAY = ("dispatched", "in_transit")
 
+#: Chặng đưa xe VỀ bãi. Khai lại ở đây thay vì nhập từ `tms_trip_service`: tệp đó đã nhập
+#: `lich_xe`, nên nhập ngược lại là vòng tròn. Hai bản sao của một tập nhỏ và ổn định thì
+#: rẻ hơn một vòng nhập gãy lúc khởi động.
+RETURN_LEG_TYPES = ("empty_return", "backhaul")
+
 
 def phan_cong_dang_giu(db, vehicle_id=None, crew_ids=(), bo_qua_trip=None):
     """Phan cong DANG GIU xe / to lai: con `active` VA chuyen cua no chua xong.
@@ -308,6 +313,44 @@ def trang_thai_xe_theo_lich(db, xe, moc=None):
     if phan_cong is not None:
         return "on_trip", str(phan_cong.trip_id or phan_cong.freight_order_id)
     return "available", None
+
+
+def xe_dang_quay_ve(db, xe_id):
+    """Chuyến đang giữ xe này đã giao xong hàng và chỉ còn chặng về, hay chưa.
+
+    Trả `(dang_quay_ve, du_kien_ve_luc)` — `du_kien_ve_luc` là `planned_return_at` của chuyến,
+    có thể `None` nếu chuyến không khai.
+
+    VÌ SAO KHÔNG THÊM MỘT MÃ TRẠNG THÁI MỚI. Thêm `returning` vào tập mã trạng thái xe nghe
+    nhỏ, nhưng mọi chỗ đang hỏi `== "available"` hay `!= "on_trip"` — cửa gác điều phối, bộ
+    lọc màn điều phối, nhãn ba thứ tiếng, badge giao diện — đều phải rà lại. Sót MỘT chỗ là
+    xe đang trên đường về bị coi là rảnh và bị xếp chồng chuyến; ở đội ~500 xe đó là lỗi tốn
+    tiền. Nên mã trạng thái giữ nguyên `on_trip`, còn đây là một thông tin PHỤ suy ra từ lịch.
+
+    Thứ người điều độ thật sự cần không phải cái nhãn, mà là "chiếc này mấy giờ rảnh" — để
+    xếp chuyến kế tiếp cho nó. Câu đó trả lời được mà không đụng vào tập mã.
+    """
+    if not xe_id:
+        return False, None
+    giu = phan_cong_dang_giu(db, vehicle_id=xe_id)
+    if giu is None or not giu.trip_id:
+        return False, None
+    from models import TransportTrip, TransportTripLeg
+    chuyen = db.get(TransportTrip, giu.trip_id)
+    if chuyen is None:
+        return False, None
+    chang = db.query(TransportTripLeg).filter(TransportTripLeg.trip_id == chuyen.id).all()
+    if not chang:
+        return False, None
+    # Đang quay về = mọi chặng GIAO đã đóng, mà vẫn còn chặng VỀ chưa đi. Chặng giao chưa
+    # đóng nghĩa là còn hàng trên xe; chặng về đã đóng hết nghĩa là xe đã tới bãi rồi.
+    con_giao = any(l.leg_type == "delivery" and l.status not in ("completed", "cancelled")
+                   for l in chang)
+    chang_ve = [l for l in chang if l.leg_type in RETURN_LEG_TYPES]
+    con_ve = any(l.status not in ("completed", "cancelled") for l in chang_ve)
+    if con_giao or not chang_ve or not con_ve:
+        return False, None
+    return True, chuyen.planned_return_at
 
 
 def trang_thai_tai_xe_theo_lich(db, nguoi, moc=None):

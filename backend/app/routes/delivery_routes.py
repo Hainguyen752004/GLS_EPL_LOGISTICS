@@ -73,6 +73,14 @@ from routes.shared import (
 
 router = APIRouter(dependencies=[Depends(require_api_principal)])
 
+#: TIỀN CHỨC NĂNG của công ty — đơn vị mọi khoản CHI được ghi sổ.
+#:
+#: Doanh thu ghi bằng tiền của báo giá, chi phí ghi bằng đồng. Hằng số này từng là một biến
+#: cục bộ trong hàm dựng hồ sơ quyết toán; nay còn chỗ thứ hai cần tới nó (chọn công thức giá
+#: thành dự phòng khi báo giá là ngoại tệ), nên nó phải đứng ở một chỗ duy nhất — hai bản sao
+#: của cùng một hằng số là hai chỗ để lệch nhau.
+TIEN_CHUC_NANG = "VND"
+
 
 @router.get("/api/tracking/control-tower", summary="Bảng theo dõi chuyến, GPS, POD và sự cố")
 def get_tracking_control_tower(db: Session = Depends(get_db)):
@@ -167,6 +175,25 @@ def _select_closeout_formula(db: Session, delivery_order: DeliveryOrder, currenc
         or db.get(CostFormula, "preset-1")
         or db.query(CostFormula).order_by(CostFormula.id).first()
     )
+
+
+def _cong_thuc_theo_tien_chuc_nang(db: Session, delivery_order: DeliveryOrder):
+    """Công thức giá thành bằng TIỀN CHỨC NĂNG (VND), dùng khi báo giá là ngoại tệ.
+
+    VÌ SAO CẦN. Công thức giá thành đánh mã kèm đơn vị tiền (`vehicle-type::X::VND`), nên một
+    báo giá USD đi tìm công thức USD, không có, và hồ sơ quyết toán trả về danh sách khoản mục
+    RỖNG. Đo 11/09/2026 trên dữ liệu thật: 8 trong 29 lệnh đã hoàn tất rơi vào cảnh đó — đúng
+    8 lệnh ngoại tệ. Màn "Hoàn tất giao hàng" khi ấy chỉ hiện một dòng "Chưa có khoản mục nào
+    từ công thức", người ký nhận không hiểu vì sao và KHÔNG khai được khoản khách trả thêm.
+
+    VÌ SAO KHÔNG GIẢ VỜ NÓ LÀ CÔNG THỨC CỦA BÁO GIÁ. Chi phí công ty ghi bằng VND, doanh thu
+    ghi bằng tiền báo giá — đó là sự thật hai đơn vị tiền mà hệ đã chấp nhận ở mọi chỗ khác.
+    Trả về công thức VND mà không nói gì thì màn hình sẽ đặt một con số VND cạnh một con số
+    USD, và cộng chúng lại là tái sinh đúng con bug lãi gộp −630.270% đã diệt hôm trước. Nên
+    hàm này chỉ TÌM, còn việc dán nhãn "đây là VND" do chỗ gọi làm, và mỗi dòng chi phí vẫn
+    mang `currency` của chính nó.
+    """
+    return _select_closeout_formula(db, delivery_order, TIEN_CHUC_NANG)
 
 
 def _serialize_closeout_formula(row: Optional[CostFormula]):
@@ -425,7 +452,23 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
             "currency": tien_te_nguon or "VND",
             "navigation_targets": ["master-data/vehicle-types", "master-data/vehicles"],
         })
+    # Báo giá ngoại tệ mà chưa có công thức bằng đúng đơn vị đó: lùi về công thức VND và
+    # NÓI RA, thay vì trả danh sách rỗng rồi để màn hình im lặng.
+    tien_cong_thuc = (tien_te_nguon or TIEN_CHUC_NANG).upper()
+    cong_thuc_quy_doi = False
+    if formula_row is None and tien_cong_thuc != TIEN_CHUC_NANG:
+        formula_row = _cong_thuc_theo_tien_chuc_nang(db, delivery_order)
+        if formula_row is not None:
+            cong_thuc_quy_doi = True
+            tien_cong_thuc = TIEN_CHUC_NANG
     formula = _serialize_closeout_formula(formula_row)
+    formula["currency_fallback"] = cong_thuc_quy_doi
+    formula["quote_currency"] = (tien_te_nguon or TIEN_CHUC_NANG).upper()
+    formula["fallback_reason"] = (
+        "Chưa có công thức giá thành bằng %s cho loại xe này, nên các khoản mục dưới đây lấy "
+        "từ công thức %s. Chi phí ghi bằng %s; khoản khách trả thêm vẫn khai bằng %s."
+        % (formula["quote_currency"], TIEN_CHUC_NANG, TIEN_CHUC_NANG, formula["quote_currency"])
+    ) if cong_thuc_quy_doi else ""
     # Ghi đè đơn giá theo XE chạy chuyến (bảng `vehicle_cost_overrides`), để
     # dòng chi phí trong hồ sơ là phí của CHIẾC XE này, không chỉ chuẩn của loại.
     ghi_de_theo_xe = {}
@@ -654,7 +697,6 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
     # Không có tỷ giá mà hai bên khác đơn vị thì KHÔNG BỊA: lãi trả `None` kèm lý
     # do. Một con số lãi sai trông không khác gì con số đúng, và đây là số bên
     # công nợ lập phiếu.
-    TIEN_CHUC_NANG = "VND"
     tien_thu = ((closeout.currency_code if closeout else None) or tien_te_nguon
                 or (formula or {}).get("currency") or TIEN_CHUC_NANG).upper()
     tien_chi = ((actual_cost.currency_code if actual_cost else None)

@@ -766,15 +766,39 @@ check('production drawer exposes the harness contract', () => {
   ].forEach(([pattern, message]) => assert.ok(pattern.test(combinedSource), message));
 });
 
-check('return trip form exposes empty, backhaul, and returned-goods purposes', () => {
+// CHẶNG VỀ CHỈ CÒN "XE VỀ RỖNG" (11/09/2026). Bài này trước đây đòi form phải có đủ
+// `backhaul` và `returned_goods` — tức là khoá đúng cái đã được gỡ đi có chủ đích.
+//
+// Chuyến CHỞ HÀNG chiều về là một ngõ cụt làm mất doanh thu: DO chiều về chỉ có chặng
+// `backhaul`, mà bước hoàn tất giao hàng chỉ nhận POD cho chặng `delivery`, nên nó không
+// ký nhận được; `complete_return` khi ấy luôn trả 409, xe bị giữ mãi, và lô hàng về không
+// có hồ sơ quyết toán để sang bên công nợ. Máy chủ chặn bằng
+// `TRIP_HANG_CHIEU_VE_CHUA_HO_TRO`; form ẩn hai lựa chọn đó để người điều phối khỏi chọn
+// rồi mới ăn lỗi.
+check('return trip form chi con chang ve "xe ve rong", khong co hang chieu ve', () => {
   const combinedSource = `${html}\n${appSource}`;
   assert.match(combinedSource, /id=["']trip-return-purpose["']/);
   assert.match(combinedSource, /value=["']empty_return["']/);
-  assert.match(combinedSource, /value=["']backhaul["']/);
-  assert.match(combinedSource, /value=["']returned_goods["']/);
   assert.match(appSource, /function\s+syncTripReturnPurpose/);
-  assert.match(appSource, /returned_goods[\s\S]*backhaul/);
-  assert.match(appSource, /BACKHAUL_DO_REQUIRED|phải chọn DO/i);
+
+  // Hai lua chon cho hang chieu ve KHONG duoc con tren form.
+  const oChon = html.slice(html.indexOf('id="trip-return-purpose"'));
+  const hetOChon = oChon.slice(0, oChon.indexOf('</select>'));
+  assert.doesNotMatch(hetOChon, /value=["']backhaul["']/,
+    'o chon chang ve van con lua chon backhaul - nguoi dieu phoi se chon roi an loi 422');
+  assert.doesNotMatch(hetOChon, /value=["']returned_goods["']/,
+    'o chon chang ve van con lua chon nhan hang hoan');
+
+  // Va loai chuyen "backhaul" cung phai roi khoi o chon loai chuyen.
+  const oLoai = html.slice(html.indexOf('id="trip-return-trip-type"'));
+  assert.doesNotMatch(oLoai.slice(0, oLoai.indexOf('</select>')), /value=["']backhaul["']/);
+
+  // Phep suy loai chang phai noi thang ra mot loai. Ma cu viet
+  // `purpose === 'empty_return' ? 'empty_return' : 'backhaul'`, nghia la chon "khong tao
+  // chang ve" o che do them chang van gui di `backhaul` - nay may chu chan loai do, nen
+  // phep suy ngam ay bien thanh loi 422 ma nguoi dung khong hieu vi sao.
+  assert.doesNotMatch(appSource, /\?\s*'empty_return'\s*:\s*'backhaul'/,
+    "con phep suy ngam ra 'backhaul' - se gui loai chang bi may chu chan");
 });
 
 check('empty detail hides actions and alerts', () => {

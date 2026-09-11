@@ -96,6 +96,11 @@ VN = dt.timezone(dt.timedelta(hours=7))
 BANG_GIU = (
     "customers", "locations", "routes", "vehicle_types", "vehicles", "vehicle_cost_overrides",
     "drivers", "driver_qualifications", "carriers", "cost_formulas", "account_mappings",
+    # LỊCH CA GIỮ LẠI. Nó không phải dữ liệu gốc theo nghĩa chặt, nhưng xoá đi thì mọi
+    # lệnh điều xe sau đó đều chết ở cửa `DRIVER_WORK_SCHEDULE_REQUIRED` cho tới khi có
+    # người ngồi xếp lại ca cho từng tài xế — mà lịch ca thì lặp theo tuần, không gắn với
+    # lô dữ liệu demo nào. Chủ dự án chốt giữ (11/09/2026).
+    "driver_shift_assignments",
     "currencies", "currency_definitions", "currency_rate_history", "finance_control_config",
     "roles", "users", "schema_migrations",
 )
@@ -109,7 +114,7 @@ BANG_XOA = (
     "delivery_pod_documents", "delivery_pod_records", "delivery_orders",
     "trip_delivery_orders", "transport_trip_legs", "transport_trips", "transport_demands",
     "freight_order_units", "freight_units", "freight_order_legacy_links", "freight_orders",
-    "resource_assignments", "driver_shift_assignments",
+    "resource_assignments",
     "transport_event_documents", "transport_events", "vehicle_tracking", "incidents",
     "freight_charge_items", "freight_cost_documents", "freight_actual_costs", "epl_expense_vouchers",
     "parking_events", "parking_labels", "parking_list_items", "parking_lists",
@@ -141,7 +146,46 @@ def xoa():
         for b, n in truoc.items():
             if n:
                 _in("   %-38s %6d" % (b, n))
-        c.execute(text("TRUNCATE TABLE %s" % ", ".join('"%s"' % b for b in xoa_that)))
+        # ---- Bảng bị một bảng GIỮ trỏ vào thì KHÔNG TRUNCATE được ----
+        #
+        # `driver_shift_assignments` (giữ lại theo yêu cầu chủ dự án) có khoá ngoại trỏ vào
+        # `transport_trips`. PostgreSQL từ chối TRUNCATE một bảng còn bị tham chiếu, VÀ NÓ
+        # NHÌN RÀNG BUỘC CHỨ KHÔNG NHÌN DỮ LIỆU — xoá sạch trip_id rồi vẫn bị từ chối. Hai
+        # lối ra là TRUNCATE ... CASCADE (kéo theo chính bảng lịch ca, tức mất thứ đang muốn
+        # giữ) hoặc DELETE. Chọn DELETE.
+        #
+        # `freight_orders` cũng phải ra khỏi câu TRUNCATE, vì `transport_trips` trỏ vào nó và
+        # hai bảng chỉ được truncate chung một lượt; trip đã chuyển sang DELETE nên freight
+        # order đi theo.
+        #
+        # Kiểm lại quan hệ ngay tại đây thay vì tin vào danh sách viết cứng: thêm một bảng
+        # giữ mới mà nó trỏ vào bảng vận hành thì lệnh xoá phải DỪNG và nói ra, chứ không đổ
+        # một lỗi PostgreSQL khó đọc ở giữa chừng.
+        quan_he = c.execute(text("""
+            SELECT tc.table_name, ccu.table_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.constraint_column_usage ccu
+              ON tc.constraint_name = ccu.constraint_name
+            WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'
+        """)).fetchall()
+        bi_giu_tro_vao = sorted({toi for tu, toi in quan_he
+                                 if tu in BANG_GIU and toi in set(xoa_that)})
+        la = set(bi_giu_tro_vao) - {"transport_trips"}
+        if la:
+            raise SystemExit(
+                "Bảng giữ đang trỏ vào bảng vận hành ngoài dự kiến: %s — bổ sung cách xoá "
+                "cho chúng rồi chạy lại." % sorted(la))
+
+        n = c.execute(text("UPDATE driver_shift_assignments SET trip_id=NULL, vehicle_id=NULL "
+                           "WHERE trip_id IS NOT NULL OR vehicle_id IS NOT NULL")).rowcount
+        _in("Gỡ liên kết chuyến/xe khỏi %d dòng lịch ca (ca trực giữ nguyên)." % n)
+
+        XOA_BANG_DELETE = ("transport_trips", "freight_orders")
+        cat = [b for b in xoa_that if b not in XOA_BANG_DELETE]
+        c.execute(text("TRUNCATE TABLE %s" % ", ".join('"%s"' % b for b in cat)))
+        for b in XOA_BANG_DELETE:
+            if b in co:
+                _in("   DELETE %-22s %d dòng" % (b, c.execute(text('DELETE FROM "%s"' % b)).rowcount))
         # Xe / tài xế đang ghi "Đang thực hiện TRIP-..." của chuyến vừa xoá → trả về rảnh.
         c.execute(text("UPDATE vehicles SET status='Sẵn sàng', operational_status='available', "
                        "operational_ref=NULL, operational_note=NULL, operational_updated_at=NULL"))

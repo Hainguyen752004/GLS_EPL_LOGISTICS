@@ -2736,7 +2736,6 @@ function syncTripReturnTripType() {
   const purpose = tripReturnField('trip-return-purpose');
   if (mode === 'create-trip' && purpose) {
     if (type === 'round_trip' && purpose.value === 'none') purpose.value = 'empty_return';
-    if (type === 'backhaul') purpose.value = 'backhaul';
     if (type === 'one_way' || type === 'multi_stop') purpose.value = 'none';
     purpose.disabled = type === 'one_way' || type === 'multi_stop';
   }
@@ -2921,7 +2920,7 @@ function openTripReturnAction(action, preferredDoId = '') {
   if (title) {
     const lang = (typeof currentLang !== 'undefined') ? currentLang : 'vi';
     title.textContent = mode === 'add-leg'
-      ? (lang === 'la' ? 'ເພີ່ມໄລຍະ / ຖ້ຽວກັບ / backhaul ສຳລັບ Trip' : (lang === 'en' ? 'Add Leg / Return / Backhaul for Trip' : 'Thêm chặng / lượt về / backhaul cho Trip'))
+      ? (lang === 'la' ? 'ເພີ່ມໄລຍະ / ຖ້ຽວກັບ ສຳລັບ Trip' : (lang === 'en' ? 'Add Leg / Return Leg for Trip' : 'Thêm chặng / lượt về cho Trip'))
       : (lang === 'la' ? 'ສ້າງ Trip / ເພີ່ມໄລຍະຂົນສົ່ງ' : (lang === 'en' ? 'Create trip from delivery orders' : 'Tạo chuyến từ lệnh giao hàng'));
   }
   hydrateTripReturnRoutePreview();
@@ -2931,12 +2930,11 @@ function openTripReturnAction(action, preferredDoId = '') {
 
 function syncTripReturnPurpose() {
   const purpose = tripReturnBodyValue('trip-return-purpose') || 'none';
-  const legType = purpose === 'empty_return' ? 'empty_return' : 'backhaul';
-  tripReturnSetValue('trip-return-leg-type', legType);
-  const note = tripReturnField('trip-return-delivery-note');
-  if (note && purpose === 'returned_goods' && !note.value.trim()) {
-    note.value = 'Nhận hàng hoàn từ DO nguồn';
-  }
+  // CHẶNG VỀ CHỈ CÒN MỘT LOẠI: xe về rỗng. Mã cũ viết `purpose === 'empty_return' ?
+  // 'empty_return' : 'backhaul'`, nghĩa là chọn "Không tạo chặng về" ở chế độ thêm chặng
+  // vẫn gửi đi `backhaul` — nay máy chủ chặn loại đó, nên phép suy ngầm ấy sẽ thành lỗi
+  // 422 mà người dùng không hiểu vì sao. Nói thẳng ra một loại.
+  tripReturnSetValue('trip-return-leg-type', 'empty_return');
   const returnDoSelect = tripReturnField('trip-return-return-do-select');
   const returnDoWrap = tripReturnField('trip-return-return-do-wrap');
   // Bộ chọn DO không phải một `<select>` nữa nên không đặt `required` lên nó
@@ -2944,11 +2942,13 @@ function syncTripReturnPurpose() {
   // chối khi ô ẩn `trip-return-do-ids` rỗng, và nói rõ là chưa chọn DO nào —
   // thay vì một dòng nhắc mặc định của trình duyệt.
   if (returnDoSelect) {
-    returnDoSelect.required = purpose === 'backhaul' || purpose === 'returned_goods';
+    // Chỉ còn "xe về rỗng" nên không còn lúc nào cần chọn DO chiều về. Giữ ô lại (ẩn)
+    // để khi nhánh chở hàng chiều về đi trọn được luồng thì mở lại, khỏi dựng lại từ đầu.
+    returnDoSelect.required = false;
     returnDoSelect.setAttribute('aria-required', returnDoSelect.required ? 'true' : 'false');
   }
   if (returnDoWrap) {
-    returnDoWrap.style.display = purpose === 'backhaul' || purpose === 'returned_goods' ? 'block' : 'none';
+    returnDoWrap.style.display = 'none';
   }
   hydrateTripReturnRoutePreview();
 }
@@ -2993,7 +2993,7 @@ async function submitTripReturnActionForm() {
       id: tripReturnBodyValue('trip-return-leg-id') || undefined,
       do_id: doIds[0] || undefined,
       sequence_no: tripReturnNumberValue('trip-return-leg-seq', 1),
-      leg_type: purpose === 'empty_return' ? 'empty_return' : 'backhaul',
+      leg_type: 'empty_return',
       origin: tripReturnBodyValue('trip-return-origin'),
       destination: tripReturnBodyValue('trip-return-destination'),
       distance_km: tripReturnNumberValue('trip-return-distance', 0),
@@ -3043,6 +3043,8 @@ async function submitTripReturnActionForm() {
     showToast('Chọn tuyến chiều về từ Route Master để tính ETA và ngày xe sẵn sàng.');
     return;
   }
+  // Giữ phép kiểm nhưng nó không còn cửa nào chạm tới: ô chọn chỉ còn "không" và
+  // "xe về rỗng". Để lại cho ngày mở lại nhánh chở hàng chiều về.
   if ((purpose === 'backhaul' || purpose === 'returned_goods') && !returnDoId) {
     showToast('Chọn DO chiều về cho chuyến backhaul hoặc nhận hàng hoàn.');
     return;
@@ -18863,12 +18865,26 @@ window.openDeliveryCompletionEditor = function (doId) {
   const base = Number(commercials.base_selling_price ?? commercials.selling_price ?? 0);
   const currency = closeout.currency || row.order.currency_code || 'VND';
   row.basePrice = base; row.currency = currency;
+  // CÔNG THỨC QUY ĐỔI: báo giá là ngoại tệ mà chưa có công thức giá thành bằng đúng đơn
+  // vị đó, nên máy chủ lùi về công thức VND và báo `currency_fallback`. Khi ấy các khoản
+  // mục dưới đây là VND, còn giá bán là ngoại tệ — chúng CHỈ ĐỂ THAM KHẢO, không được trừ
+  // nhau rồi cộng vào giá bán. Cộng hai đơn vị tiền vào một tổng chính là con bug lãi gộp
+  // −630.270% đã diệt hôm 11/09. Khoản khách trả thêm vẫn khai được, bằng dòng bổ sung
+  // nhập tay — dòng đó mang đúng đơn vị tiền của báo giá.
+  const congThuc = closeout.cost_formula || {};
+  deliveryCompletionState.congThucQuyDoi = congThuc.currency_fallback
+    ? { tien: congThuc.currency || 'VND', tienBan: congThuc.quote_currency || currency,
+        lyDo: congThuc.fallback_reason || '' }
+    : null;
   deliveryCompletionState.charges = (closeout.configured_cost_lines || []).map(line => ({
     name:line.name,
     original_amount:Number(line.original_amount || 0),
     actual_amount:Number(line.original_amount || 0),
     note:line.calculation || '',
     code:line.code,
+    // Dòng chỉ để tham khảo: khác đơn vị tiền với giá bán nên không tham gia phép cộng.
+    chi_tham_khao: !!congThuc.currency_fallback,
+    currency: congThuc.currency_fallback ? (congThuc.currency || 'VND') : currency,
     // Mã costindex đi theo dòng từ công thức giá thành tới lúc chốt; gửi lại
     // máy chủ khi hoàn tất để dòng "khách trả thêm" cũng mang mã.
     cost_index:line.cost_index || '',
@@ -18986,7 +19002,13 @@ window.updateDeliveryChargeLine = function (index, field, value) {
 window.renderDeliveryChargeLines = function () {
   const target = document.getElementById('completion-charge-lines');
   if (!target) return;
-  target.innerHTML = deliveryCompletionState.charges.map((line, index) => {
+  const quyDoi = deliveryCompletionState.congThucQuyDoi;
+  const loiNhac = quyDoi
+    ? `<div class="completion-quydoi-note"><i class="fa-solid fa-circle-info"></i> ${
+        completionEscape(quyDoi.lyDo || `Khoản mục lấy từ công thức ${quyDoi.tien}; giá bán bằng ${quyDoi.tienBan}.`)
+      }</div>`
+    : '';
+  target.innerHTML = loiNhac + deliveryCompletionState.charges.map((line, index) => {
     const increase = Math.max(0, Number(line.actual_amount || 0) - Number(line.original_amount || 0));
     // Mã costindex hiện ngay cạnh tên: người chốt giá thấy dòng nào chưa có
     // mã thì biết phải gán ở Công thức giá thành trước khi hồ sơ sang bên công nợ.
@@ -19000,7 +19022,15 @@ window.renderDeliveryChargeLines = function () {
     const action = line.source === 'configured'
       ? '<span class="completion-cost-locked" title="Khoản đã chốt từ cấu hình"><i class="fa-solid fa-lock"></i></span>'
       : `<button class="completion-remove" title="Xóa khoản phí" onclick="removeDeliveryChargeLine(${index})"><i class="fa-solid fa-trash"></i></button>`;
-    return `<div class="completion-charge-row ${line.source === 'configured' ? 'configured' : 'manual'}">${nameField}<input class="completion-original-cost" aria-label="Chi phí chốt ban đầu" type="number" min="0" value="${line.original_amount}" readonly><input aria-label="Chi phí thực tế" type="number" min="0" value="${line.actual_amount}" onchange="updateDeliveryChargeLine(${index},'actual_amount',this.value)"><input class="completion-charge-increase" aria-label="Khách hàng trả thêm" value="${increase.toLocaleString('vi-VN')}" readonly>${action}</div>`;
+    // Dòng tham khảo (khác đơn vị tiền với giá bán): khoá cả ô "thực tế" và không hiện số
+    // khách trả thêm — một ô nhập được mà con số của nó không đi tới đâu thì tệ hơn ô khoá.
+    const oThucTe = line.chi_tham_khao
+      ? `<input aria-label="Chi phí thực tế" type="number" value="${line.actual_amount}" readonly title="Khoản mục ${completionEscape(line.currency || '')} — chỉ để tham khảo">`
+      : `<input aria-label="Chi phí thực tế" type="number" min="0" value="${line.actual_amount}" onchange="updateDeliveryChargeLine(${index},'actual_amount',this.value)">`;
+    const oTraThem = line.chi_tham_khao
+      ? `<input class="completion-charge-increase" aria-label="Khách hàng trả thêm" value="${completionEscape(line.currency || '')}" readonly title="Khoản này ghi bằng ${completionEscape(line.currency || '')}, không cộng vào giá bán">`
+      : `<input class="completion-charge-increase" aria-label="Khách hàng trả thêm" value="${increase.toLocaleString('vi-VN')}" readonly>`;
+    return `<div class="completion-charge-row ${line.source === 'configured' ? 'configured' : 'manual'}${line.chi_tham_khao ? ' tham-khao' : ''}">${nameField}<input class="completion-original-cost" aria-label="Chi phí chốt ban đầu" type="number" min="0" value="${line.original_amount}" readonly>${oThucTe}${oTraThem}${action}</div>`;
   }).join('') || '<div style="padding:14px 4px;color:#64748b;font-size:.8rem;">Chưa có chi phí cấu hình hoặc khoản bổ sung.</div>';
   updateDeliveryCompletionTotals();
 };
@@ -19008,7 +19038,11 @@ window.renderDeliveryChargeLines = function () {
 window.updateDeliveryCompletionTotals = function () {
   const row = deliveryCompletionState.selected;
   const base = Number(row?.basePrice || 0);
-  const surcharge = deliveryCompletionState.charges.reduce((total, line) => total + Math.max(0, Number(line.actual_amount || 0) - Number(line.original_amount || 0)), 0);
+  // Dòng tham khảo mang đơn vị tiền khác giá bán nên KHÔNG vào tổng — xem chú thích ở
+  // chỗ dựng `deliveryCompletionState.charges`.
+  const surcharge = deliveryCompletionState.charges
+    .filter(line => !line.chi_tham_khao)
+    .reduce((total, line) => total + Math.max(0, Number(line.actual_amount || 0) - Number(line.original_amount || 0)), 0);
   const currency = row?.currency || 'VND';
   if (document.getElementById('completion-base-total')) document.getElementById('completion-base-total').textContent = completionMoney(base, currency);
   if (document.getElementById('completion-surcharge-total')) document.getElementById('completion-surcharge-total').textContent = completionMoney(surcharge, currency);
@@ -19038,7 +19072,7 @@ window.submitDeliveryCompletion = async function () {
   if (!podEntries.length) return showToast('Trip chưa có chặng giao hàng để nộp POD.', 'error');
   const invalidCharge = deliveryCompletionState.charges.find(line => !String(line.name || '').trim() || Number(line.actual_amount || 0) < 0);
   if (invalidCharge) return showToast('Khoản chi phí cần có tên và giá thực tế hợp lệ.', 'warning');
-  const payload = {trip_id:row.trip.id, currency_code:row.currency, pod_entries:podEntries, charge_adjustments:deliveryCompletionState.charges.map(line => ({name:String(line.name).trim(), original_amount:String(line.original_amount || 0), actual_amount:String(line.actual_amount || 0), note:line.note || null, cost_index:(line.cost_index || '').trim() || null}))};
+  const payload = {trip_id:row.trip.id, currency_code:row.currency, pod_entries:podEntries, charge_adjustments:deliveryCompletionState.charges.filter(line => !line.chi_tham_khao).map(line => ({name:String(line.name).trim(), original_amount:String(line.original_amount || 0), actual_amount:String(line.actual_amount || 0), note:line.note || null, cost_index:(line.cost_index || '').trim() || null}))};
   const form = new FormData(); form.append('payload', JSON.stringify(payload)); Object.entries(files).forEach(([field,file]) => form.append(field,file));
   const button = document.getElementById('completion-submit'); if (button) button.disabled = true;
   showToast(`Đang lưu POD và chốt giá DO ${row.order.id}...`, 'loading');

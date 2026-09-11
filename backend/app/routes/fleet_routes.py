@@ -209,6 +209,24 @@ def list_vehicles(
         payload["operational_ref"] = ref
         payload["operational_note"] = vehicle.operational_note
         payload["operational_status_label"] = lich_xe._nhan(lich_xe.NHAN_XE, ma, ref)
+        # ĐANG QUAY VỀ: không phải một mã trạng thái mới, mà là thông tin phụ suy từ lịch —
+        # chuyến đã giao xong hàng, chỉ còn chặng đưa xe về bãi. Thêm mã mới vào tập trạng
+        # thái thì mọi chỗ hỏi `== "available"` đều phải rà lại, sót một chỗ là xe đang trên
+        # đường về bị coi là rảnh và bị xếp chồng chuyến.
+        #
+        # Chỉ hỏi khi xe ĐANG bị chuyến giữ: ở đội ~500 xe, hỏi cho cả những chiếc đang đậu
+        # bãi là thêm 500 truy vấn cho một câu trả lời luôn là "không".
+        payload["dang_quay_ve"], payload["san_sang_luc"] = (False, None)
+        if ma == "on_trip":
+            quay_ve, ve_luc = lich_xe.xe_dang_quay_ve(db, vehicle.id)
+            payload["dang_quay_ve"] = quay_ve
+            payload["san_sang_luc"] = ve_luc.isoformat() if ve_luc else None
+            if quay_ve:
+                # Gắn thẳng vào NHÃN để mọi màn đang hiện trạng thái xe đều được hưởng, khỏi
+                # phải sửa từng màn một. Người điều độ cần đúng một câu: mấy giờ xe rảnh.
+                gio = ve_luc.strftime("%H:%M %d/%m") if ve_luc else None
+                payload["operational_status_label"] = (
+                    "Đang quay về · rảnh lúc %s" % gio if gio else "Đang quay về bãi")
         # LOAI XE: xe luu MA loai (sau khi POST chuan hoa), xe cu co the con TEN.
         # Tra ca hai de giao dien hien TEN va chon theo MA — khong doan tu chuoi.
         loai = loai_xe_cua(vehicle.type)
