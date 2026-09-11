@@ -59,8 +59,8 @@ Kiểm tra:
 | `EPL_TMS_API_TOKEN` | Có | Bearer token bảo vệ API nghiệp vụ. |
 | `EPL_TMS_API_PRINCIPAL` | Có | Danh tính kỹ thuật ghi vào audit. |
 | `GEMINI_API_KEY_GT` | Không | Chỉ dùng cho chức năng trợ lý AI. |
-| `QLSX_BASE_URL` | Không | Gốc HTTPS của QLSX (hệ công nợ) để ghi sổ kinh doanh; mặc định `https://demo-lao-api.goldensme.com`. |
-| `QLSX_ACCESS_TOKEN` | Không | Token tích hợp do đội QLSX cấp. Thiếu thì nút "Ghi sổ kinh doanh" báo 503 rõ ràng, không gọi mò. |
+| `QLSX_BASE_URL` | Không | Gốc HTTPS của QLSX (hệ công nợ) để ghi sổ kinh doanh. Trống thì dùng `EPL_ACC_CODE_API`. |
+| `QLSX_ACCESS_TOKEN` | Không | Token tích hợp QLSX. Trống thì dùng `EPL_ACC_CODE_TOKEN` (cùng hệ). Không có cả hai thì nút "Ghi sổ kinh doanh" báo 503 rõ ràng, không gọi mò. |
 
 Không commit `.env`, database cục bộ, POD/upload, log hoặc model AI. `.gitignore` đã
 được cấu hình cho các dữ liệu này.

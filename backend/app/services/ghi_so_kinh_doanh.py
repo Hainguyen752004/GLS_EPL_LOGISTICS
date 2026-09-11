@@ -51,9 +51,17 @@ def _now():
 
 
 def cau_hinh():
-    """Gốc và token QLSX từ môi trường. Thiếu token thì nói ra ngay, không gọi mò."""
-    goc = (os.getenv("QLSX_BASE_URL") or GOC_MAC_DINH).strip().rstrip("/")
-    token = (os.getenv("QLSX_ACCESS_TOKEN") or "").strip()
+    """Gốc và token QLSX từ môi trường. Thiếu token thì nói ra ngay, không gọi mò.
+
+    DÙNG LẠI TOKEN ĐÃ CÓ. Dự án đã có `EPL_ACC_CODE_TOKEN` / `EPL_ACC_CODE_API` — token và host
+    của cùng hệ QLSX, cấp cho API mã hạch toán (Acc code). Đo 12/09: token đó qua cửa xác thực
+    của API tạo SO (QLSX trả 400 INVALID_DO cho body cố ý thiếu, tức đã vượt 401), user
+    `tune`, còn hạn. Bắt người vận hành chép cùng một token sang tên biến thứ hai chỉ tạo thêm
+    một chỗ để hai bản lệch nhau khi đổi token. Nên: ưu tiên `QLSX_*` nếu có (tách riêng khi
+    hai API dùng hai tài khoản), không có thì lấy `EPL_ACC_CODE_*`.
+    """
+    goc = (os.getenv("QLSX_BASE_URL") or os.getenv("EPL_ACC_CODE_API") or GOC_MAC_DINH).strip().rstrip("/")
+    token = (os.getenv("QLSX_ACCESS_TOKEN") or os.getenv("EPL_ACC_CODE_TOKEN") or "").strip()
     return goc, token
 
 
@@ -271,8 +279,9 @@ def ghi_so(db, do_id, goi_ban_giao, actor, xem_truoc=False):
     goc, token = cau_hinh()
     if not token:
         raise DomainError("QLSX_TOKEN_CHUA_CAU_HINH",
-                          "Chưa cấu hình QLSX_ACCESS_TOKEN cho máy chủ EPL. Token do đội QLSX cấp; đặt vào .env "
-                          "rồi khởi động lại — token không được nhúng vào trình duyệt.", 503,
+                          "Chưa có token QLSX: đặt QLSX_ACCESS_TOKEN (hoặc EPL_ACC_CODE_TOKEN của API mã hạch "
+                          "toán, cùng hệ QLSX) vào .env rồi khởi động lại — token không được nhúng vào trình "
+                          "duyệt.", 503,
                           ["settings"])
 
     bay_gio = _now()

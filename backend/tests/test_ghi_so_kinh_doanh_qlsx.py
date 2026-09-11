@@ -209,3 +209,25 @@ def test_dung_body_tu_choi_tong_lech_va_so_json_gon():
     assert gs.doc_ket_qua(200, {"replayed": True, "data": {"orderId": 1}}, "")[0] == "synced"
     assert gs.doc_ket_qua(409, {"code": "LOGISTICS_52901"}, "")[0] == "conflict"
     assert gs.doc_ket_qua(502, None, "<html>bad gateway</html>")[0] == "failed"
+
+
+def test_dung_lai_token_acc_code_khi_chua_dat_qlsx_token(monkeypatch):
+    """`EPL_ACC_CODE_TOKEN` (API mã hạch toán) là token của CÙNG hệ QLSX và đã có trong .env.
+
+    Chủ dự án chỉ vào .env hỏi "token trong env nè em ơi bị gì vậy" khi nút báo chưa có token —
+    trong khi token bên anh Khang cấp đã nằm đó dưới tên khác. Ưu tiên `QLSX_*`, không có thì
+    lấy `EPL_ACC_CODE_*`; đo 12/09 token ấy qua được cửa xác thực của API tạo SO.
+    """
+    gs = importlib.import_module("services.ghi_so_kinh_doanh")
+    for k in ("QLSX_BASE_URL", "QLSX_ACCESS_TOKEN", "EPL_ACC_CODE_API", "EPL_ACC_CODE_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
+    assert gs.cau_hinh() == (gs.GOC_MAC_DINH, "")
+
+    monkeypatch.setenv("EPL_ACC_CODE_API", "https://demo-lao-api.goldensme.com/")
+    monkeypatch.setenv("EPL_ACC_CODE_TOKEN", "tok-acc")
+    assert gs.cau_hinh() == ("https://demo-lao-api.goldensme.com", "tok-acc")
+
+    # Có QLSX_* riêng thì QLSX_* thắng — hai API có thể dùng hai tài khoản.
+    monkeypatch.setenv("QLSX_ACCESS_TOKEN", "tok-qlsx")
+    monkeypatch.setenv("QLSX_BASE_URL", "https://qlsx.that/")
+    assert gs.cau_hinh() == ("https://qlsx.that", "tok-qlsx")
