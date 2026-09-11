@@ -244,6 +244,9 @@ def control_tower(db, now=None):
                     trip, enrich_route_segments(route_segments(route)), now,
                     tong_km=(hinh_bo.get('km') if hinh_bo else None) or (route.distance_km if route else None),
                     trang_thai_don=order.canonical_status,
+                    # Mốc cuối cùng đã ghi cho chuyến — để mô phỏng không đặt xe ở đích khi
+                    # lịch sử nói xe mới nhận hàng ở kho.
+                    moc_cuoi=(events[trip.id][-1]['type'] if events.get(trip.id) else None),
                     # Xe chay tren DUONG BO that, khong tren duong thang noi cac
                     # tram — mot duong thang tu Long An sang Cai Mep di xuyen
                     # qua song, va cai xe mo phong dung giua song.

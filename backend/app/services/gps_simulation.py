@@ -135,8 +135,15 @@ def _noi_suy(diem, ti_le):
     return (diem[-1][0], diem[-1][1])
 
 
+#: Mốc mà XE ĐANG ĐỨNG (không chạy): ở bãi/kho lấy hàng, hoặc đã tới điểm giao.
+MOC_DUNG_O_DAU = ("check_in", "pickup")
+MOC_DA_TOI_NOI = ("arrival", "unloading", "delivered")
+#: Xe đã xuất bến nhưng chưa ai ghi "đến nơi" thì mô phỏng KHÔNG được tự cho xe tới đích.
+TI_LE_TOI_DA_KHI_CHUA_DEN = 0.97
+
+
 def vi_tri_mo_phong(trip, segments, now, tong_km=None, trang_thai_don=None,
-                    duong_bo=None):
+                    duong_bo=None, moc_cuoi=None):
     """Vi tri mo phong cua mot chuyen, hoac `None` neu khong tinh duoc.
 
     Tra ve dict: `lat`, `lng`, `speed_kmh`, `con_lai_km`, `phan_tram`,
@@ -154,14 +161,27 @@ def vi_tri_mo_phong(trip, segments, now, tong_km=None, trang_thai_don=None,
     if len(diem) < 2:
         return None
 
-    # Don DA DEN NOI thi ghim o diem cuoi, toc do 0. Xe da do o cong cang cho ky
-    # nhan — de no van "dang chay" o giua duong la noi sai trang thai.
-    if str(trang_thai_don or "") == "arrived":
+    # NEO THEO MỐC CUỐI ĐÃ GHI, không chỉ theo giờ. Đo trên màn Theo dõi thật (11/09):
+    # sáu chuyến đang chạy nhưng bản đồ chỉ thấy HAI xe — vì khung giờ kế hoạch đã qua
+    # nên mô phỏng theo giờ dồn cả bốn xe về đúng điểm Cát Lái và hai xe về Cái Mép,
+    # chồng lên nhau, trong khi lịch sử chuyến nói rõ xe mới `check_in` ở kho. Giờ chỉ
+    # là một đầu vào; mốc người/thiết bị đã ghi mới là điều biết chắc:
+    #   · `check_in` / `pickup`      → xe còn ở điểm đầu (0%)
+    #   · `arrival` / `unloading`    → xe ở điểm cuối (100%)
+    #   · `departure`                → chạy theo giờ, nhưng KHÔNG quá 97% cho tới khi có
+    #                                  ai ghi "đến nơi" — máy không được tự khai xe đã tới.
+    #   · chưa có mốc nào            → như cũ, theo giờ kế hoạch.
+    moc = str(moc_cuoi or "")
+    if str(trang_thai_don or "") == "arrived" or moc in MOC_DA_TOI_NOI:
         ti_le = 1.0
+    elif moc in MOC_DUNG_O_DAU:
+        ti_le = 0.0
     else:
         ti_le = _phan_tram_da_di(trip, now)
         if ti_le is None:
             return None
+        if moc == "departure":
+            ti_le = min(ti_le, TI_LE_TOI_DA_KHI_CHUA_DEN)
 
     toa_do = _noi_suy(diem, ti_le)
     if not toa_do:

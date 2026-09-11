@@ -416,6 +416,7 @@ def sinh_api():
     w("## ★ DÀNH CHO BÊN CÔNG NỢ (anh Khang): HAI API BÀN GIAO")
     w("")
     w("> Hai đường này là **toàn bộ** những gì hệ kế toán cần móc vào. Mọi con số đọc từ hồ sơ hoàn tất đã chốt (cùng nguồn với khối \"Hồ sơ đã hoàn tất\" trên màn), nên không có hai con số khác nhau cho cùng một DO. Chỉ DO đã `delivered` mới được trả — hệ này không nhả số chưa chốt.")
+    w("> **Khi nào một DO xuất hiện:** DO đã `delivered` VÀ mọi chuyến chở nó đã `completed`. Chuyến nhiều điểm giao thì DO hạ ở điểm đầu chờ tới khi xe đi hết tuyến và hoàn tất — quét API 1 định kỳ là đủ, không cần đoán.")
     w("")
     w("### ★ API 1 — DANH SÁCH DO đã hoàn tất")
     w("")
@@ -512,7 +513,9 @@ def sinh_api():
     w("| `calculation` | Cách tính (ví dụ `96.5 km × 7.728 VND`) |")
     w("| `ref_id` | Mã dòng chi phí / khoản trả thêm gốc để đối soát |")
     w("")
-    w("Lỗi: `404 DELIVERY_ORDER_NOT_FOUND`; `409 DO_NOT_COMPLETED` khi DO chưa hoàn tất — hãy đợi DO `delivered` (xem API 1) rồi gọi lại.")
+    w("Lỗi: `404 DELIVERY_ORDER_NOT_FOUND`; `409 DO_NOT_COMPLETED` khi DO chưa hoàn tất — hãy đợi DO `delivered` (xem API 1) rồi gọi lại; "
+      "`409 DO_TRIP_CHUA_DONG` khi DO đã giao nhưng **chuyến chở nó còn chạy tới điểm giao khác** — hồ sơ chỉ bàn giao khi chuyến đã tới điểm cuối và hoàn tất, "
+      "vì tới lúc đó phụ phí và chi phí thực tế của chuyến còn có thể đổi. API 1 cũng chỉ liệt kê DO mà mọi chuyến chở nó đã đóng.")
     w("")
     w("Ví dụ rút gọn:")
     w("")

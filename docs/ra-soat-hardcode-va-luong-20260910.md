@@ -478,6 +478,29 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   đường còn lại 60 km cho cả hai DO.
 - Bộ gieo bỏ điều kiện "tuyến phải đủ chặng" để đường 2 DO trên tuyến một chặng được đi thật.
 
+### A30. Theo dõi → đến nơi → hoàn tất đúng DO → bàn giao khi chuyến đóng (11/09)
+
+- Anh gửi ba ảnh: sáu chuyến đang theo dõi mà bản đồ chỉ thấy HAI xe; nút "Ghi mốc: Đến điểm
+  giao" phải đi qua từng điểm và cập nhật THẬT; tới điểm cuối thì "Mở hoàn tất giao hàng" mở
+  đúng DO đó để ký POD rồi mới bàn giao cho anh Khang; chuyến nhiều điểm thì chờ tới điểm cuối.
+- **Bản đồ chỉ thấy 2 xe** — đo trên API tháp: cả sáu vị trí đều là mô phỏng theo GIỜ; khung giờ
+  kế hoạch đã qua nên bốn xe bị dồn về đúng một toạ độ Cát Lái, hai xe về Cái Mép, chồng lên
+  nhau, trong khi lịch sử chuyến nói xe mới `check_in`. Sửa: mô phỏng NEO THEO MỐC CUỐI đã ghi
+  (`check_in`/`pickup` → ở kho, `arrival`/`unloading` → ở đích, `departure` → theo giờ nhưng
+  không quá 97% cho tới khi có ai ghi "đến nơi"). Sau sửa: 6 chuyến, 5 toạ độ phân biệt.
+- **Nút "Ghi mốc"** vốn đã ghi sự kiện THẬT (`POST /api/tms/freight-orders/{id}/events`, có toạ
+  độ, đổi trạng thái lệnh vận chuyển, `arrival` đưa DO sang `arrived`) — không phải giả. Đã dùng
+  đúng đường này ghi "đến nơi" cho hai chuyến đang chạy để anh có DO ở trạng thái "Đã đến · chờ
+  POD" mà bấm tiếp.
+- **"Mở hoàn tất giao hàng"** gọi `window.selectCompletionDO(do_id)` — hàm này **chưa từng tồn
+  tại**, nên nút chỉ đổi màn và người dùng phải tự tìm DO (dễ ký nhầm khi 6 DO cùng "Đang vận
+  chuyển"). Đã viết: sang màn Hoàn tất, nạp lại bảng, mở đúng DO, lọc ô tìm kiếm về mã đó.
+- **Bảng Hoàn tất in "0 VND"** cho ba DO trong ảnh 3: hồ sơ gọi lỗi (máy chủ đang nạp lại) bị
+  `catch` nuốt im → giá 0. Giờ dòng đó hiện "Chưa tải được giá" kèm nút tải lại.
+- **Bàn giao chỉ khi CHUYẾN đã đóng**: API danh sách loại DO còn chuyến chưa `completed`
+  (NOT EXISTS, `total` đúng), API chi tiết trả `409 DO_TRIP_CHUA_DONG`. Bài kiểm
+  `test_theo_doi_neo_moc_va_ban_giao_khi_chuyen_dong.py` (2 bài).
+
 ---
 
 ## B. Luồng có thể đi sai

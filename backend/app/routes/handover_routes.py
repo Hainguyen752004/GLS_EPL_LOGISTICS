@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import DeliveryOrder, DeliveryOrderCloseout
+from models import DeliveryOrder, DeliveryOrderCloseout, TransportTrip, TripDeliveryOrder
 from routes.finance_master_routes import require_authenticated_principal
 from services.errors import DomainError, conflict, raise_http
 import datetime as dt
@@ -32,6 +32,23 @@ import datetime as dt
 router = APIRouter(dependencies=[Depends(require_authenticated_principal)])
 
 TRANG_THAI_DA_HOAN_TAT = ("delivered", "completed", "settled")
+
+
+def _chuyen_con_mo(db, do_id):
+    """Mã các chuyến của DO chưa đóng (không phải `completed` / `cancelled`).
+
+    CHỦ DỰ ÁN CHỐT (11/09): *"phải đến điểm cuối và hoàn tất mới quăng qua cho anh Khang"*.
+    Một chuyến nhiều điểm giao thì DO hạ ở điểm đầu đã `delivered` trong khi xe còn chạy
+    tiếp; bàn giao ngay lúc đó là đưa cho bên công nợ một hồ sơ mà chuyến của nó chưa kết
+    thúc — phụ phí, chi phí thực tế của chuyến còn có thể đổi. Nên hồ sơ chỉ được nhả khi
+    MỌI chuyến chở DO đó đã đóng.
+    """
+    return db.scalars(
+        __import__("sqlalchemy").select(TripDeliveryOrder.trip_id)
+        .join(TransportTrip, TransportTrip.id == TripDeliveryOrder.trip_id)
+        .where(TripDeliveryOrder.do_id == do_id,
+               TransportTrip.status.notin_(("completed", "cancelled")))
+    ).all()
 
 
 def _gon(d, *khoa):
@@ -124,6 +141,12 @@ def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
         raise_http(conflict("DO_NOT_COMPLETED",
                             "Lệnh %s đang ở trạng thái %s — chỉ bàn giao DO đã hoàn tất (delivered)."
                             % (do_id, do.canonical_status)))
+    chuyen_mo = _chuyen_con_mo(db, do_id)
+    if chuyen_mo:
+        raise_http(conflict("DO_TRIP_CHUA_DONG",
+                            "Lệnh %s đã giao nhưng chuyến %s còn chạy tới điểm giao khác — hồ sơ chỉ bàn "
+                            "giao khi chuyến đã tới điểm cuối và hoàn tất." % (do_id, ", ".join(chuyen_mo)),
+                            ["delivery-completion"]))
     try:
         # Handler closeout là hàm đồng bộ thường (chạy threadpool) — KHÔNG await: 11/09 một chữ await sót
         # ở đây làm API bàn giao chi tiết trả 500 cho mọi DO.
@@ -161,8 +184,17 @@ def danh_sach_ban_giao(
     tiết: không nhả số chưa chốt.
     """
     tu, den = _ngay(completed_from, "completed_from"), _ngay(completed_to, "completed_to")
+    # CHỈ DO MÀ MỌI CHUYẾN CHỞ NÓ ĐÃ ĐÓNG (xem `_chuyen_con_mo`). Viết bằng NOT EXISTS để
+    # phân trang và `total` vẫn đúng, không lọc sau khi đã cắt trang.
+    from sqlalchemy import exists, and_
+    con_mo = exists().where(and_(
+        TripDeliveryOrder.do_id == DeliveryOrderCloseout.do_id,
+        TransportTrip.id == TripDeliveryOrder.trip_id,
+        TransportTrip.status.notin_(("completed", "cancelled")),
+    ))
     q = (db.query(DeliveryOrderCloseout, DeliveryOrder)
-         .join(DeliveryOrder, DeliveryOrder.id == DeliveryOrderCloseout.do_id))
+         .join(DeliveryOrder, DeliveryOrder.id == DeliveryOrderCloseout.do_id)
+         .filter(~con_mo))
     if customer_id:
         q = q.filter(DeliveryOrder.customer_id == customer_id)
     if tu:

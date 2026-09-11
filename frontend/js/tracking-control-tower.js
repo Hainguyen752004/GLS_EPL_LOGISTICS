@@ -453,9 +453,32 @@
       return;
     }
     layer.clearLayers(); const bounds = [];
+    // XE ĐỨNG CÙNG MỘT CHỖ thì tách nhẹ huy hiệu ra một vòng ~35 m để thấy đủ số xe.
+    //
+    // Đo trên màn thật (11/09): sáu chuyến đang theo dõi, bốn xe cùng đứng ở kho VSIP II-A
+    // chờ lấy hàng — bốn huy hiệu vẽ đè lên nhau thành MỘT, người xem tưởng bản đồ chỉ có
+    // hai xe. Toạ độ thật vẫn giữ nguyên (khung nhìn và tooltip dùng toạ độ thật); chỉ chỗ
+    // ĐẶT huy hiệu lệch đi, và tooltip nói rõ "cùng vị trí với N xe" để không ai đọc nhầm
+    // độ lệch đó thành xe đã chạy.
+    const cungCho = new Map();
     rows.forEach(item => {
       if (!position(item.gps)) return;
-      const point = [Number(item.gps.lat), Number(item.gps.lng)]; bounds.push(point);
+      const k = `${Number(item.gps.lat).toFixed(4)},${Number(item.gps.lng).toFixed(4)}`;
+      cungCho.set(k, (cungCho.get(k) || 0) + 1);
+    });
+    const daVe = new Map();
+    rows.forEach(item => {
+      if (!position(item.gps)) return;
+      const that = [Number(item.gps.lat), Number(item.gps.lng)]; bounds.push(that);
+      const k = `${that[0].toFixed(4)},${that[1].toFixed(4)}`;
+      const soXe = cungCho.get(k) || 1, thuTu = daVe.get(k) || 0; daVe.set(k, thuTu + 1);
+      let point = that;
+      if (soXe > 1) {
+        const goc = (2 * Math.PI * thuTu) / soXe, banKinh = 0.00032;   // ≈ 35 m
+        point = [that[0] + banKinh * Math.cos(goc),
+                 that[1] + (banKinh * Math.sin(goc)) / Math.max(0.2, Math.cos(that[0] * Math.PI / 180))];
+      }
+      const nhanCungCho = soXe > 1 ? ` · cùng vị trí với ${soXe - 1} xe khác` : '';
       const mau = { red: '#d32f2f', amber: '#ef9f27', purple: '#7c3aed', gray: '#788493', blue: '#2563eb' }[severity(item)] || '#2563eb';
       // HUY HIEU XE, khong phai mot vong tron nho — va ve TREN CUNG.
       //
@@ -476,7 +499,7 @@
           html: `<span class="ct-veh-marker${noi ? ' on' : ''}" style="--ct-marker:${mau}"><i class="fa-solid fa-truck"></i></span>`,
           iconSize: [30, 30], iconAnchor: [15, 15],
         }),
-      }).bindTooltip(`${bien} · ${esc(gpsLabel(item))}`,
+      }).bindTooltip(`${bien} · ${esc(gpsLabel(item))}${nhanCungCho}`,
         state.mode === 'route' ? { permanent: true, direction: 'right', offset: [14, 0], className: 'ct-veh-label' } : {})
         .on('click', () => select(item.key)).addTo(layer);
     });

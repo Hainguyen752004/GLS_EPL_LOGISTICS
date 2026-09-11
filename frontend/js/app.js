@@ -18580,12 +18580,15 @@ window.loadDeliveryCompletionWorkbench = async function () {
       TRANG_THAI_LIEN_QUAN.includes(String(order.canonical_status || '').toLowerCase()));
     deliveryCompletionState.rows = await Promise.all(candidates.map(async order => {
       const trip = trips.find(item => (item.delivery_order_ids || []).includes(order.id)) || null;
-      let closeout = null;
+      let closeout = null, closeoutError = '';
       try {
         const response = await fetch(`${API_BASE}/api/delivery-orders/${encodeURIComponent(order.id)}/closeout`, {headers:financeAuthHeaders()});
         if (response.ok) closeout = await response.json();
-      } catch (_) {}
-      return { order, trip, closeout };
+        else closeoutError = `HTTP ${response.status}`;
+      } catch (e) { closeoutError = (e && e.message) || 'không gọi được máy chủ'; }
+      // Không nuốt lỗi: hồ sơ không tải được thì bảng phải NÓI RA, không in "0 VND" —
+      // anh đã thấy ba dòng 0 VND trên màn thật (11/09) đúng lúc máy chủ đang nạp lại.
+      return { order, trip, closeout, closeoutError };
     }));
     renderDeliveryCompletionList();
   } catch (error) {
@@ -18630,6 +18633,10 @@ window.renderDeliveryCompletionList = function () {
   body.innerHTML = rows.map(row => {
     const order = row.order, closeout = row.closeout || {}, commercials = closeout.commercials || {};
     const basePrice = commercials.base_selling_price ?? commercials.selling_price ?? 0;
+    // Hồ sơ không tải được → nói thẳng, kèm nút tải lại. Một con số 0 trông y như giá thật.
+    const oGia = row.closeout
+      ? `<strong>${completionMoney(basePrice, closeout.currency || 'VND')}</strong>`
+      : `<span class="completion-status" style="background:#fef3c7;color:#92400e" title="${completionEscape(row.closeoutError || '')}">Chưa tải được giá</span> <button class="fiori-btn fiori-btn-secondary" onclick="loadDeliveryCompletionWorkbench()" title="Đọc lại hồ sơ từ máy chủ"><i class="fa-solid fa-rotate"></i></button>`;
     // Ba mốc, ba nhãn tách rõ. "Đã giao" mơ hồ: xe tới bãi mà chưa ký
     // POD thì cũng là "đã giao" theo cách hiểu thường, nhưng lúc đó chưa
     // có gì xác nhận.
@@ -18647,7 +18654,7 @@ window.renderDeliveryCompletionList = function () {
     const action = trangThaiDong !== 'delivered'
       ? `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletionDO('${completionEscape(order.id)}')"><i class="fa-solid fa-eye"></i> Xem DO</button><button class="fiori-btn fiori-btn-primary" onclick="openDeliveryCompletionEditor('${completionEscape(order.id)}')"><i class="fa-solid fa-clipboard-check"></i> Hoàn tất giao</button>`
       : `<button class="fiori-btn fiori-btn-secondary" onclick="viewCompletedDelivery('${completionEscape(order.id)}')"><i class="fa-solid fa-folder-open"></i> Xem hồ sơ</button>`;
-    return `<tr><td><strong>${completionEscape(order.id)}</strong><br><small>${completionEscape(order.destination || '')}</small></td><td><strong>${completionEscape(order.vehicle_id || row.trip?.vehicle_id || '-')}</strong><br><small>${completionEscape(order.driver_id || row.trip?.driver_id || '-')}</small></td><td>${completionEscape(order.customer_id || '-')}<br><small>${completionEscape(order.destination || '-')}</small></td><td><strong>${completionMoney(basePrice, closeout.currency || 'VND')}</strong></td><td><span class="completion-status">${status}</span></td><td><div class="completion-actions">${action}</div></td></tr>`;
+    return `<tr><td><strong>${completionEscape(order.id)}</strong><br><small>${completionEscape(order.destination || '')}</small></td><td><strong>${completionEscape(order.vehicle_id || row.trip?.vehicle_id || '-')}</strong><br><small>${completionEscape(order.driver_id || row.trip?.driver_id || '-')}</small></td><td>${completionEscape(order.customer_id || '-')}<br><small>${completionEscape(order.destination || '-')}</small></td><td>${oGia}</td><td><span class="completion-status">${status}</span></td><td><div class="completion-actions">${action}</div></td></tr>`;
   }).join('');
 };
 
@@ -18750,6 +18757,38 @@ function deliverySignatureBlob(canvas) {
     'image/png'
   ));
 }
+
+/**
+ * Màn Theo dõi bấm "Mở hoàn tất giao hàng" → sang màn Hoàn tất và mở ĐÚNG DO đó.
+ *
+ * `tracking-control-tower.js` đã gọi `window.selectCompletionDO(do_id)` từ lâu, nhưng hàm
+ * này chưa từng tồn tại (đo 11/09): nút chỉ đổi màn, người dùng phải tự tìm DO trong bảng —
+ * và với 6 DO cùng "Đang vận chuyển" thì ký nhầm là chuyện dễ xảy ra. Ở đây NẠP LẠI bảng
+ * trước rồi mới mở, vì bộ đệm có thể chưa có DO vừa được ghi mốc "đến nơi".
+ */
+window.selectCompletionDO = async function (doId) {
+  if (!doId) return;
+  if (typeof window.switchView === 'function') window.switchView('delivery-completion');
+  try {
+    if (typeof window.loadDeliveryCompletionWorkbench === 'function') await window.loadDeliveryCompletionWorkbench();
+  } catch (_) { /* loadDeliveryCompletionWorkbench đã tự báo lỗi */ }
+  const row = (deliveryCompletionState.rows || []).find(item => item.order.id === doId);
+  if (!row) {
+    showToast(`Không thấy ${doId} trong danh sách chờ hoàn tất.`, 'warning');
+    return;
+  }
+  const tt = String(row.order.canonical_status || '').toLowerCase();
+  if (tt === 'delivered') {
+    if (typeof window.viewCompletedDelivery === 'function') window.viewCompletedDelivery(doId);
+    return;
+  }
+  if (tt !== 'arrived') {
+    showToast(`${doId} chưa ghi mốc "đến nơi" — ghi mốc trên màn Theo dõi rồi mới ký POD.`, 'warning');
+  }
+  window.openDeliveryCompletionEditor(doId);
+  const search = document.getElementById('completion-search');
+  if (search) { search.value = doId; window.renderDeliveryCompletionList(); }
+};
 
 window.openDeliveryCompletionEditor = function (doId) {
   const row = deliveryCompletionState.rows.find(item => item.order.id === doId);
