@@ -41,10 +41,44 @@ const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   assert.strictEqual(o('do-settlement-source-badge').textContent, 'Theo báo giá');
   assert.doesNotThrow(() => ham({ quotation_id: 'QT-1', unit_price: 2486000 }));
   assert.strictEqual(o('do-settlement-source-badge').textContent, 'Theo báo giá QT-1');
-  assert.strictEqual(o('do-original-contract-amount-display').value, '2486000 VND', 'cước theo báo giá phải hiện, không 0');
+  assert.strictEqual(o('do-original-contract-amount-display').value, '2.486.000 VNĐ', 'cước theo báo giá phải hiện, không 0');
+  assert.strictEqual(o('do-contract-total').dataset.currency, 'VND');
+  // Báo giá không trong bộ nhớ → CHƯA BIẾT tiền tệ: không được dán VNĐ; editFioriDO sẽ tải chi tiết.
   assert.doesNotThrow(() => ham({ quotation_id: 'QT-KHONG-TRONG-BO-NHO', unit_price: 1000 }));
   assert.strictEqual(o('do-settlement-source-badge').textContent, 'Theo báo giá QT-KHONG-TRONG-BO-NHO');
-  assert.strictEqual(o('do-original-contract-amount-display').value, '1000 VND', 'không có báo giá trong bộ nhớ thì lấy unit_price của DO');
+  assert.ok(/đang tải tiền tệ/.test(o('do-original-contract-amount-display').value), 'chưa rõ tiền tệ thì nói rõ, không đoán VNĐ');
+  assert.strictEqual(o('do-contract-total').dataset.currency, '', 'chưa rõ tiền tệ → dataset.currency rỗng');
+}
+
+// 1c. Báo giá NGOẠI TỆ: giá lưu bằng chính tiền báo giá → hiện đúng đơn vị, KHÔNG chia tỷ giá.
+//     Đo 11/09: báo giá 140 USD hiện "140 VNĐ (chưa có tỷ giá USD)" — sai đơn vị và tỷ giá đọc
+//     từ ô nhập tab Tiền tệ (rỗng tới khi ai mở tab) thay vì `fx_rate` báo giá đã khoá.
+{
+  const i = app.indexOf('function baoGiaCuaDO(source)');
+  const than = app.slice(i, app.indexOf('window.setDOSettlementFromSource', i));
+  const cacO = {};
+  const o = id => (cacO[id] ||= { value: '', textContent: '', dataset: {}, innerHTML: '' });
+  const chay = new Function('document', 'crmQuotations', 'appState', 'renderDOSettlementLines',
+    'refreshDOSettlementTotals', 'WORKFLOW_CURRENCY_META', 'window', than + '\nreturn setDOSettlementFromSource;');
+  const ham = chay({ getElementById: o },
+    [{ id: 'QT-USD', selling_price: 140, unit_price: 140, currency_code: 'USD', fx_rate: 26173.5 }], {},
+    () => {}, () => {}, { VND: { symbol: 'VNĐ' }, USD: { symbol: '$' } }, {});
+  ham({ quotation_id: 'QT-USD', unit_price: 140 });
+  assert.strictEqual(o('do-original-contract-amount-display').value, '$140 USD', 'giá USD phải hiện là USD, không chia tỷ giá');
+  assert.strictEqual(o('do-contract-total').dataset.currency, 'USD');
+  assert.strictEqual(o('do-contract-total').dataset.fxRate, '26173.5', 'tỷ giá lấy từ báo giá đã khoá');
+  assert.strictEqual(o('do-settlement-source-badge').textContent, 'Theo báo giá QT-USD · USD');
+}
+
+// 1d. Lưu chi phí: tiền của PHIẾU chi phí (dòng), không phải tiền của báo giá.
+{
+  const i = app.indexOf('async function saveDOSettlementCost()');
+  const than = app.slice(i, app.indexOf('window.saveDOSettlementCost', i));
+  assert.ok(/do-settlement-lines-tbody'\)\?\.dataset\.currency \|\| 'VND'/.test(than), 'currency_code khi lưu phải lấy từ tbody (phiếu), không từ do-contract-total (báo giá)');
+  assert.ok(!/do-contract-total'\)\?\.dataset\.currency/.test(than));
+  const j = app.indexOf('function refreshDOSettlementTotals()');
+  const t2 = app.slice(j, app.indexOf('window.refreshDOSettlementTotals', j));
+  assert.ok(/tienCuoc === tienDong/.test(t2) && /không cộng/.test(t2), 'hai đơn vị tiền khác nhau thì không cộng thành một giá cuối');
 }
 
 // 2. Không còn từ vựng SO trên màn Xem DO và Hoàn tất.

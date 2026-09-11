@@ -8131,6 +8131,20 @@ window.editFioriDO = function (id) {
   if (document.getElementById('do-route')) document.getElementById('do-route').value = do_item.route_id || '';
   setRouteContextFields('do', do_item);
   setDOSettlementFromSource(do_item);
+  // Báo giá của DO chưa nằm trong bộ nhớ trang (danh sách chưa tải, hoặc báo giá cũ ngoài trang
+  // đầu) → tải chi tiết để biết TIỀN TỆ và tỷ giá đã khoá, thay vì im lặng dán VNĐ.
+  if (!baoGiaCuaDO(do_item) && do_item.quotation_id && typeof fetch === 'function') {
+    fetch(`${API_BASE}/api/quotations/${encodeURIComponent(do_item.quotation_id)}/detail`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(goi => {
+        const bg = goi && (goi.data || goi);
+        if (!bg || !bg.id) return;
+        if (typeof crmQuotations !== 'undefined' && Array.isArray(crmQuotations) && !crmQuotations.some(q => q.id === bg.id)) crmQuotations.push(bg);
+        if (appState && Array.isArray(appState.quotations) && !appState.quotations.some(q => q.id === bg.id)) appState.quotations.push(bg);
+        if (document.getElementById('do-id')?.value === do_item.id) setDOSettlementFromSource(do_item);
+      })
+      .catch(() => {});
+  }
 
   document.querySelectorAll('#fiori-do-form input, #fiori-do-form select, #fiori-do-form textarea').forEach(el => {
     if (el.type !== 'hidden') el.disabled = true;
@@ -13174,8 +13188,13 @@ function refreshDOSettlementTotals() {
   const extraInput = document.getElementById('do-extra-cost');
   const extraDisplay = document.getElementById('do-extra-cost-total-display');
   const payableInput = document.getElementById('do-payable-total');
+  const tbody = document.getElementById('do-settlement-lines-tbody');
   if (!contractInput || !extraInput || !payableInput) return;
-  const currency = contractInput.dataset.currency || 'VND';
+  // HAI đơn vị tiền có thể khác nhau: cước theo BÁO GIÁ (khách trả, có thể USD), dòng chi phí
+  // theo PHIẾU CHI PHÍ THỰC TẾ của chuyến (công ty chi, thường VND). Không dán tiền báo giá lên
+  // số của phiếu, và không cộng hai đơn vị khác nhau thành một "giá cuối".
+  const tienCuoc = contractInput.dataset.currency || 'VND';
+  const tienDong = (tbody && tbody.dataset.currency) || 'VND';
   const contractVnd = workflowNumberInputValue('do-contract-total');
   let extraVnd = 0;
   const notes = [];
@@ -13187,15 +13206,14 @@ function refreshDOSettlementTotals() {
     const increaseInput = row.querySelector('.do-settlement-increase');
     if (increaseInput) {
       increaseInput.dataset.value = String(increase);
-      increaseInput.value = formatWorkflowCurrencyAmount(increase, currency);
+      increaseInput.value = dinhDangTienQuyetToan(increase, tienDong);
     }
     const item = row.querySelector('.do-settlement-item')?.value || '';
     const note = row.querySelector('.do-settlement-note')?.value || '';
     if (item || note || original || actual) {
-      notes.push(`${item || 'Khoản phát sinh'}: ${formatWorkflowCurrencyAmount(original, currency)} → ${formatWorkflowCurrencyAmount(actual, currency)}${note ? ` - ${note}` : ''}`);
+      notes.push(`${item || 'Khoản phát sinh'}: ${dinhDangTienQuyetToan(original, tienDong)} → ${dinhDangTienQuyetToan(actual, tienDong)}${note ? ` - ${note}` : ''}`);
     }
   });
-  const payableVnd = contractVnd + extraVnd;
   contractInput.dataset.vndValue = String(contractVnd);
   extraInput.dataset.vndValue = String(extraVnd);
   extraInput.value = String(extraVnd);
@@ -13203,15 +13221,33 @@ function refreshDOSettlementTotals() {
   if (reasonInput) reasonInput.value = notes.join('\n');
   if (extraDisplay) {
     extraDisplay.dataset.vndValue = String(extraVnd);
-    extraDisplay.value = formatWorkflowCurrencyAmount(extraVnd, currency);
+    extraDisplay.dataset.currency = tienDong;
+    extraDisplay.value = dinhDangTienQuyetToan(extraVnd, tienDong);
   }
-  if (originalDisplay) {
+  if (originalDisplay && contractInput.dataset.currency) {
     originalDisplay.dataset.vndValue = String(contractVnd);
-    originalDisplay.value = formatWorkflowCurrencyAmount(contractVnd, currency);
+    originalDisplay.value = dinhDangTienQuyetToan(contractVnd, tienCuoc);
   }
-  payableInput.dataset.vndValue = String(payableVnd);
-  contractInput.value = formatWorkflowCurrencyAmount(contractVnd, currency);
-  payableInput.value = formatWorkflowCurrencyAmount(payableVnd, currency);
+  if (!contractInput.dataset.currency) {
+    // Chưa biết tiền của báo giá (đang tải chi tiết) → không dán đơn vị nào lên số.
+    const chua = `${contractVnd.toLocaleString('vi-VN')} (đang tải tiền tệ báo giá…)`;
+    contractInput.value = chua;
+    payableInput.dataset.vndValue = '';
+    payableInput.value = chua;
+    payableInput.title = '';
+    return;
+  }
+  contractInput.value = dinhDangTienQuyetToan(contractVnd, tienCuoc);
+  if (tienCuoc === tienDong || extraVnd === 0) {
+    const payableVnd = contractVnd + extraVnd;
+    payableInput.dataset.vndValue = String(payableVnd);
+    payableInput.value = dinhDangTienQuyetToan(payableVnd, tienCuoc);
+    payableInput.title = '';
+  } else {
+    payableInput.dataset.vndValue = '';
+    payableInput.value = `${dinhDangTienQuyetToan(contractVnd, tienCuoc)} + ${dinhDangTienQuyetToan(extraVnd, tienDong)}`;
+    payableInput.title = `Cước theo báo giá tính bằng ${tienCuoc}, chi phí phát sinh của phiếu tính bằng ${tienDong} — hai đơn vị khác nhau nên không cộng thành một số.`;
+  }
 }
 window.refreshDOSettlementTotals = refreshDOSettlementTotals;
 
@@ -13223,13 +13259,30 @@ function baoGiaCuaDO(source) {
   return ds.find(q => String(q.id) === String(qid)) || null;
 }
 
+// Số đã ĐÚNG đơn vị `code` → chỉ định dạng, KHÔNG chia tỷ giá. Khác `formatWorkflowCurrencyAmount`
+// (nhận VNĐ rồi quy đổi): giá báo giá được lưu bằng chính tiền của báo giá (140 USD là 140, không phải
+// 140 VNĐ), nên đưa qua hàm quy đổi thì ra "$0,01 USD" hoặc "140 VNĐ (chưa có tỷ giá USD)" — đo 11/09.
+function dinhDangTienQuyetToan(amount, code) {
+  const giaTri = Number(amount || 0);
+  const ma = String(code || 'VND').toUpperCase();
+  if (ma === 'VND') return `${giaTri.toLocaleString('vi-VN', { maximumFractionDigits: 0 })} VNĐ`;
+  const meta = (typeof WORKFLOW_CURRENCY_META !== 'undefined' && WORKFLOW_CURRENCY_META[ma]) || null;
+  return `${meta ? meta.symbol : ''}${giaTri.toLocaleString('vi-VN', { maximumFractionDigits: 2 })} ${ma}`;
+}
+window.dinhDangTienQuyetToan = dinhDangTienQuyetToan;
+
 function setDOSettlementFromSource(source = {}) {
   // Giá gốc theo BÁO GIÁ: DO kế thừa `unit_price` lúc sinh từ báo giá được
   // chấp nhận. Bước Đơn hàng (SO) đã trục xuất khỏi hệ thống (migration 049).
+  // TIỀN TỆ cũng theo báo giá: DO không có cột tiền tệ riêng. Tỷ giá lấy `fx_rate`
+  // báo giá đã khoá, không lấy ô nhập ở tab Tiền tệ (ô đó rỗng tới khi ai mở tab).
   const bg = baoGiaCuaDO(source);
   const contractVnd = Number(source.contract_total || source.contract_total_amount || source.total_contract_amount
     || (bg && bg.selling_price) || source.unit_price || source.total_amount || 0) || 0;
   const extraVnd = Number(source.additional_cost_amount || source.extra_cost_amount || source.extra_cost || 0);
+  // Không có báo giá trong bộ nhớ mà DO có mã báo giá → CHƯA BIẾT tiền tệ, không đoán VND;
+  // `editFioriDO` sẽ tải chi tiết báo giá rồi gọi lại hàm này.
+  const chuaRoTien = !bg && !source.currency_code && !!source.quotation_id;
   const currency = source.currency_code || (bg && bg.currency_code) || 'VND';
   const contractInput = document.getElementById('do-contract-total');
   const originalDisplay = document.getElementById('do-original-contract-amount-display');
@@ -13241,22 +13294,22 @@ function setDOSettlementFromSource(source = {}) {
 
   if (contractInput) {
     contractInput.dataset.vndValue = String(contractVnd);
-    contractInput.dataset.currency = currency;
+    contractInput.dataset.currency = chuaRoTien ? '' : currency;
+    contractInput.dataset.fxRate = String((bg && bg.fx_rate) || (currency === 'VND' ? 1 : ''));
   }
   if (originalDisplay) {
     originalDisplay.dataset.vndValue = String(contractVnd);
-    originalDisplay.value = formatWorkflowCurrencyAmount(contractVnd, currency);
+    originalDisplay.value = chuaRoTien ? `${contractVnd.toLocaleString('vi-VN')} (đang tải tiền tệ báo giá…)`
+      : dinhDangTienQuyetToan(contractVnd, currency);
   }
   if (extraInput) {
     extraInput.value = String(extraVnd || 0);
     extraInput.dataset.vndValue = String(extraVnd || 0);
   }
   if (reasonInput) reasonInput.value = reason;
-  // Không còn nhánh "đơn hàng cũ": biến `so` đã bị trục xuất cùng bước SO, và
-  // một vết đọc thuộc tính `id` của biến `so` ở đây từng ném ReferenceError ngay lúc mở khung form DO —
-  // spinner treo "Đang chuẩn bị form DO...", mọi ô trống, 0 VNĐ (đo 11/09).
+  // Không còn nhánh "đơn hàng cũ": biến `so` đã bị trục xuất cùng bước SO.
   if (sourceBadge) {
-    sourceBadge.textContent = bg ? `Theo báo giá ${bg.id}`
+    sourceBadge.textContent = bg ? `Theo báo giá ${bg.id}${currency !== 'VND' ? ` · ${currency}` : ''}`
       : (source.quotation_id ? `Theo báo giá ${source.quotation_id}` : 'Theo báo giá');
   }
   if (Array.isArray(savedLines) && savedLines.length) {
@@ -13336,12 +13389,16 @@ async function loadDOSettlementCost(doId) {
     const response = await fetch(`${API_BASE}/api/tms/finance/trips/${encodeURIComponent(trip.id)}/actual-cost`, {
       headers: financeAuthHeaders()
     });
+    const tbody = document.getElementById('do-settlement-lines-tbody');
     if (response.status === 404) {
+      if (tbody) tbody.dataset.currency = '';   // chưa có phiếu → dòng mới ghi bằng VND (tiền chức năng)
       renderDOSettlementLines([]);
       return trip;
     }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload?.detail?.message || payload?.message || 'Không tải được chi phí thực tế.');
+    // Tiền của DÒNG CHI PHÍ là tiền của phiếu chi phí thực tế, không phải tiền của báo giá.
+    if (tbody) tbody.dataset.currency = String(payload?.data?.currency_code || '').toUpperCase();
     renderDOSettlementLines(payload?.data?.lines || []);
     return trip;
   } catch (error) {
@@ -13376,7 +13433,9 @@ async function saveDOSettlementCost() {
     showToast('Giá thực tế không được nhỏ hơn giá ban đầu.');
     return;
   }
-  const currencyCode = document.getElementById('do-contract-total')?.dataset.currency || 'VND';
+  // Phiếu chi phí giữ tiền của PHIẾU (VND nếu chưa có phiếu) — không lấy tiền báo giá của khách
+  // dán lên số chi phí của công ty (báo giá USD mà gửi USD thì 231.800 đồng dầu thành 231.800 đô).
+  const currencyCode = document.getElementById('do-settlement-lines-tbody')?.dataset.currency || 'VND';
   const result = await executeFinanceCommand({
     path: `/api/tms/finance/trips/${encodeURIComponent(tripId)}/actual-cost`,
     method: 'PUT',
