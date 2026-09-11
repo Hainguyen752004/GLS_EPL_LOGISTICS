@@ -411,10 +411,22 @@ def xem_truoc_gia(db, data):
 
     cac_dong, gia_thanh, cach_lay_bot = bang_cau_phan(
         db, route, loai_xe, kg, _so(data.get("cargo_value")))
+    # BANG CAU PHAN CHI CO DONG CHI.
+    #
+    # Chu du an chot (11/09): dong `kind=revenue` cua cong thuc loai xe (vi du
+    # "Cuoc phi van chuyen /kg") KHONG duoc hien trong bang nay nua. Truoc day
+    # no van duoc in kem nhan "thu" va chi bi loai khoi tong — nhung bang nay
+    # ten la "gia thanh mot chuyen", nen mot dong doanh thu nam giua no doc nhu
+    # he thong tinh sai: con so cuoc theo kg co the lon gap nhieu lan cuoc thuc
+    # su dang bao khach, ma lai hien ngay tren dong tong.
+    #
+    # Dong thu VAN duoc dung — nhung chi lam moc goi y gia ben duoi (`goi_y_gia`
+    # nhan `cac_dong` day du), khong lam mot hang trong bang.
+    dong_chi = [d for d in cac_dong if d.get("loai") != "thu"]
     boi_canh = _boi_canh_chuyen(route, kg)
     return {
         "tinh_duoc": True, "viec_con_thieu": [],
-        "cac_dong": cac_dong, "gia_thanh": gia_thanh, "cach_lay_bot": cach_lay_bot,
+        "cac_dong": dong_chi, "gia_thanh": gia_thanh, "cach_lay_bot": cach_lay_bot,
         "km": boi_canh["km"], "so_chang": boi_canh["diem_giao"],
         "cac_loai_xe": cac_loai_xe,
         "nguong_bien": NGUONG_BIEN_PHAI_DUYET, "bien_muc_tieu": BIEN_MUC_TIEU,
