@@ -52,7 +52,7 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
   const so = (n, le) => { const x = Number(n); return isFinite(x) ? x.toLocaleString('vi-VN', { maximumFractionDigits: le === undefined ? 1 : le }) : '—'; };
-  const tien = n => (n === null || n === undefined || !isFinite(Number(n))) ? '—' : Math.round(Number(n)).toLocaleString('vi-VN') + ' ₫';
+  const tien = n => (n === null || n === undefined || !isFinite(Number(n))) ? '—' : Math.round(Number(n)).toLocaleString('vi-VN') + ' VNĐ';
   const tan = kg => { const x = Number(kg || 0); return x >= 1000 ? so(x / 1000, 1) + ' tấn' : so(x, 0) + ' kg'; };
   const ngay = iso => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }); };
   const ngayGio = iso => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };

@@ -19,7 +19,7 @@
         gọi đó là "số demo, không có ý nghĩa nghiệp vụ". Thay bằng các mốc giá
         có nguồn mà `/price-preview` trả về (biên mục tiêu, lần trước).
      3. CÓ THÊM ĐƠN VỊ TÍNH CƯỚC. Chủ dự án chốt: báo giá theo đơn vị của
-        khách (chuyến / tấn / m³ / kg / km), còn lệnh giao hàng khoá `₫/chuyến`.
+        khách (chuyến / tấn / m³ / kg / km), còn lệnh giao hàng khoá `VNĐ/chuyến`.
         Máy chủ quy đổi, nên hai con số không thể lệch nhau.
      4. TỶ GIÁ LẤY TỪ BẢNG TỶ GIÁ THẬT, không phải `USD: 25.400` viết cứng
         trong mã.
@@ -260,6 +260,16 @@
   };
 
   const tuyenTheoMa = ma => S.tuyen.find(x => x.id === ma) || null;
+  /** Số km của một tuyến, theo đúng thứ tự ưu tiên mà máy chủ dùng khi tính cước.
+   *
+   *  Một tuyến có hai con số km: `distance_km` là quãng danh nghĩa, `km_duong_bo`
+   *  là quãng đường bộ thật (máy chủ gọi cột này là `road_distance_km`). Hàm tính
+   *  giá thành lấy km đường bộ trước, chỉ rơi về quãng danh nghĩa khi nó trống.
+   *  Tuyến VSIP II-A → Cái Mép chênh hẳn 8 km giữa hai con số, nên chỗ nào hiển
+   *  thị km mà quên thứ tự này là in một quãng đường trong khi tiền tính theo
+   *  quãng khác. Gom vào một chỗ để không phải nhớ lại ở từng màn.
+   */
+  const kmTuyen = rt => Number((rt && (rt.km_duong_bo || rt.road_distance_km || rt.distance_km)) || 0);
   const tenKhach = ma => {
     const k = S.khach.find(x => x.id === ma);
     return k ? (k.name || k.id) : (ma || '—');
@@ -274,7 +284,36 @@
     const r = Number((t && (t.exchange_rate || t.rate)) || 0);
     return r > 0 ? r : 0;
   };
-  const kyHieu = ma => ({ VND: '₫', USD: '$', THB: '฿', LAK: '₭' })[ma] || (ma || '₫');
+  /**
+   * Đơn vị tiền HIỆN RA MÀN HÌNH. Chủ dự án chốt dùng CHỮ chứ không dùng ký
+   * hiệu: "VNĐ" chứ không phải "₫", và ngoại tệ để nguyên mã (USD, THB, LAK).
+   */
+  const kyHieu = ma => ({ VND: 'VNĐ', USD: 'USD', THB: 'THB', LAK: 'LAK' })[ma] || (ma || 'VNĐ');
+
+  /**
+   * Tỷ giá của CHÍNH phiếu — `fx_rate` được khoá lúc gửi khách, nên số trên
+   * phiếu cũ không nhảy theo bảng tỷ giá hôm nay. Phiếu chưa có thì lấy tỷ giá
+   * hiện hành.
+   */
+  const tyGiaPhieu = q => {
+    const r = Number(q && q.fx_rate);
+    return r > 0 ? r : (tyGia(q && q.currency_code) || 1);
+  };
+
+  /**
+   * Tiền theo ĐÚNG tiền tệ của phiếu. Máy chủ lưu mọi số tiền bằng VNĐ, nên
+   * phải chia theo tỷ giá rồi mới gắn mã — gắn mã mà không chia là con số VNĐ
+   * đội lốt USD. Ngoại tệ giữ hai số lẻ; VNĐ làm tròn.
+   */
+  function tienTT(vnd, q) {
+    const ma = (q && q.currency_code) || 'VND';
+    const x = Number(vnd) / tyGiaPhieu(q);
+    if (!isFinite(x)) return '—';
+    return (ma === 'VND'
+      ? Math.round(x).toLocaleString('vi-VN')
+      : x.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    ) + ' ' + kyHieu(ma);
+  }
 
   /** Các chặng của một tuyến, theo thứ tự đi. */
   function changCuaTuyen(rt) {
@@ -471,7 +510,7 @@
       ['wait', 'amber', 'Chờ khách phản hồi', k.cho_khach_phan_hoi, 'đã gửi, chưa có trả lời'],
       ['exp', 'red', 'Hết hạn trong 7 ngày', k.het_han_trong_7_ngay, 'soát giá rồi gia hạn'],
       ['acc', 'green', 'Đã chấp nhận, chưa tách DO',
-        k.da_chap_nhan_chua_tach, '≈ ' + tien(k.tien_da_chap_nhan) + ' ₫'],
+        k.da_chap_nhan_chua_tach, '≈ ' + tien(k.tien_da_chap_nhan) + ' VNĐ'],
       ['low', 'red', 'Biên dưới ngưỡng ' + nguong, k.bien_duoi_nguong, 'cần duyệt nội bộ'],
       ['rate', 'purple', 'Tỷ lệ chốt 30 ngày',
         k.ty_le_chot_30_ngay === null || k.ty_le_chot_30_ngay === undefined
@@ -528,7 +567,7 @@
     }
     than.innerHTML = ds.map(x => {
       const rt = tuyenTheoMa(x.route_id);
-      const km = Number((rt && (rt.km_duong_bo || rt.distance_km)) || 0);
+      const km = kmTuyen(rt);
       const tt = TRANG_THAI[x.canonical_status] || [x.canonical_status, ''];
       const con = x.con_lai_ngay;
       const hieuLuc = !x.valid_to ? 'Chưa khai hiệu lực'
@@ -549,8 +588,8 @@
         : '<span style="color:#b45309">chưa kê hàng</span> · '
         + so(Number(x.weight_kg || 0) / 1000) + ' tấn'}
           <span class="sub">${esc(x.cargo_type || '—')} · ${x.trips_per_month || 0} chuyến/tháng</span></td>
-        <td class="r"><span class="money">${tien(x.selling_price)} ₫</span>
-          <span class="sub">giá thành ${tien(x.total_cost)}</span></td>
+        <td class="r"><span class="money">${tienTT(x.selling_price, x)}</span>
+          <span class="sub">giá thành ${tienTT(x.total_cost, x)}</span></td>
         <td class="r"><span class="mg ${mauBien(x.bien)}">${phanTram(x.bien)}${
         x.bien !== null && x.bien !== undefined && x.bien < 0.15 ? ' ⚠' : ''}</span></td>
         <td><span class="valid ${mauHl}">${esc(hieuLuc)}</span>
@@ -570,7 +609,7 @@
       () => moPhieu(n.dataset.id)));
     el('qtv2-dem').textContent = ds.length + ' báo giá';
     el('qtv2-chan').textContent = `${ds.length} báo giá · tổng cước `
-      + tien(ds.reduce((s, x) => s + Number(x.selling_price || 0), 0)) + ' ₫';
+      + tien(ds.reduce((s, x) => s + Number(x.selling_price || 0), 0)) + ' VNĐ';
   }
 
   function xuatExcel() {
@@ -796,7 +835,7 @@
           <div class="f"><label>Tiền tệ báo giá <span class="hint">lưu VNĐ</span></label>
             <select id="qtv2-tien" ${suaDuoc() ? '' : 'disabled'}>${dsTien.map(c =>
       `<option value="${esc(c)}" ${c === (q.currency_code || 'VND') ? 'selected' : ''}>${esc(c)}${
-        c === 'VND' ? ' · Việt Nam đồng' : ' · 1 = ' + tien(tyGia(c)) + ' ₫'}</option>`).join('')}</select></div>
+        c === 'VND' ? ' · Việt Nam đồng' : ' · 1 = ' + tien(tyGia(c)) + ' VNĐ'}</option>`).join('')}</select></div>
           <div class="f"><label>Hiệu lực đến <span class="req">*</span></label>
             <input type="date" id="qtv2-valid" value="${esc((q.valid_to || '').slice(0, 10))}"
               ${suaDuoc() ? '' : 'disabled'}></div>
@@ -852,11 +891,11 @@
     if (ma) { ma.textContent = rt ? rt.id : 'chưa chọn'; }
     if (!chu) return;
     if (!rt) { chu.textContent = 'Chọn tuyến để có số km, chặng và BOT.'; return; }
-    const km = Number(rt.km_duong_bo || rt.distance_km || 0);
+    const km = kmTuyen(rt);
     const nChang = changCuaTuyen(rt).length;
     const bot = Number(rt.bot_fee || 0);
     chu.textContent = `${km > 0 ? so(km) + ' km' : 'chưa khai km'} · ${nChang} chặng · `
-      + (bot > 0 ? 'BOT ước ' + tien(bot) + ' ₫' : 'chưa khai phí BOT cho tuyến này');
+      + (bot > 0 ? 'BOT ước ' + tien(bot) + ' VNĐ' : 'chưa khai phí BOT cho tuyến này');
     const [dau, cuoi] = diemDauCuoi(rt);
     if (el('qtv2-from')) el('qtv2-from').value = dau || '';
     if (el('qtv2-to')) el('qtv2-to').value = cuoi || '';
@@ -926,7 +965,7 @@
           <div class="f"><label>Số pallet</label>
             <input id="qtv2-pal" inputmode="numeric" value="${q.pallet_count || ''}"
               placeholder="12" ${suaDuoc() ? '' : 'disabled'}></div>
-          <div class="f"><label>Giá trị hàng (₫)
+          <div class="f"><label>Giá trị hàng (VNĐ)
               <span class="hint">chỉ để tính bảo hiểm</span></label>
             <input id="qtv2-val" inputmode="numeric" value="${q.cargo_value ? tien(q.cargo_value) : ''}"
               placeholder="800.000.000" ${suaDuoc() ? '' : 'disabled'}></div>
@@ -1067,9 +1106,9 @@
         // Hai con số này cho biết vì sao hai loại xe cùng chở được 24 tấn lại
         // ra hai giá thành khác nhau. Không có chúng thì người bán chọn xe chỉ
         // theo sức tải.
-        ? [Number(v.dau_moi_km) > 0 ? 'Dầu ' + tien(v.dau_moi_km) + ' ₫/km' : '',
-          Number(v.khau_hao_moi_km) > 0 ? 'khấu hao ' + tien(v.khau_hao_moi_km) + ' ₫/km' : '',
-          Number(v.phu_cap_chuyen) > 0 ? 'phụ cấp ' + tien(v.phu_cap_chuyen) + ' ₫' : '']
+        ? [Number(v.dau_moi_km) > 0 ? 'Dầu ' + tien(v.dau_moi_km) + ' VNĐ/km' : '',
+          Number(v.khau_hao_moi_km) > 0 ? 'khấu hao ' + tien(v.khau_hao_moi_km) + ' VNĐ/km' : '',
+          Number(v.phu_cap_chuyen) > 0 ? 'phụ cấp ' + tien(v.phu_cap_chuyen) + ' VNĐ' : '']
           .filter(Boolean).join(' · ') || 'Đã có công thức giá thành'
         : '⚠ chưa cấu hình công thức giá thành'}</span>
           <span class="fit ${mau}">${esc(nhan)}</span></div>`;
@@ -1122,7 +1161,7 @@
                 không giảm một đồng nào khi xe chở non tải.</span></div>
           </div>
           <div class="g3" style="margin-top:10px">
-            <div class="f"><label>Phụ phí chờ quá 2 giờ <span class="hint">₫ / giờ</span></label>
+            <div class="f"><label>Phụ phí chờ quá 2 giờ <span class="hint">VNĐ / giờ</span></label>
               <input id="qtv2-wait" inputmode="numeric"
                 value="${q.waiting_surcharge ? tien(q.waiting_surcharge) : ''}"
                 placeholder="200.000" ${suaDuoc() ? '' : 'disabled'}></div>
@@ -1137,7 +1176,7 @@
           </div>
           <div class="g3" style="margin-top:10px">
             <div class="f"><label>Giá đối thủ · khách nói ra
-                <span class="hint">₫/chuyến · để trống nếu khách không nói</span></label>
+                <span class="hint">VNĐ/chuyến · để trống nếu khách không nói</span></label>
               <input id="qtv2-competitor" inputmode="numeric"
                 value="${q.competitor_price ? tien(q.competitor_price) : ''}"
                 placeholder="3.850.000" ${suaDuoc() ? '' : 'disabled'}>
@@ -1200,7 +1239,7 @@
       than.innerHTML = q.delivery_orders.map(d => {
         const [mau, nhan] = mauTt[d.canonical_status] || ['', d.canonical_status];
         return `<div class="dorow"><span class="st ${mau}"></span>
-          <div><b>${esc(d.id)} · giá khoá ${tien(d.unit_price)} ₫/chuyến</b>
+          <div><b>${esc(d.id)} · giá khoá ${tien(d.unit_price)} VNĐ/chuyến</b>
             <span>lấy ${esc(gioVietNam(d.pickup_date))} · hạn giao ${esc(gioVietNam(d.delivery_date))}${
           d.driver_note ? ' · ' + esc(d.driver_note) : ''}</span></div>
           <span class="tag ${mau === 'd' ? 't-green' : mau === 'r' ? 't-purple' : 't-blue'}">${esc(nhan)}</span>
@@ -1271,7 +1310,7 @@
             + 'không cho xe xuất bến.</div>`'
         : `✓ <div>Sẽ tạo <b>${S.dongTach.length} DO</b> · tuyến ${esc(rt.name || rt.id)} ·
             xuất hiện ở "Lệnh giao hàng → Cần xử lý" để Điều phối xếp xe. Giá cước
-            <b>${tien(q.selling_price)} ₫/chuyến</b> được khoá theo báo giá.</div>`}</div>`;
+            <b>${tien(q.selling_price)} VNĐ/chuyến</b> được khoá theo báo giá.</div>`}</div>`;
 
     than.querySelectorAll('input,select').forEach(x => x.addEventListener('change', () => {
       S.dongTach[+x.dataset.i][x.dataset.f] = x.value;
@@ -1618,7 +1657,7 @@
   function soLuongMoiChuyen() {
     const q = S.q;
     const rt = tuyenTheoMa(q.route_id);
-    const km = Number((rt && (rt.km_duong_bo || rt.distance_km)) || 0);
+    const km = kmTuyen(rt);
     switch (q.price_basis || 'per_trip') {
       case 'per_tonne': return Number(q.weight_kg || 0) / 1000;
       case 'per_kg': return Number(q.weight_kg || 0);
@@ -1749,7 +1788,7 @@
     const ds = Object.keys(moc);
     if (!ds.length) { o.innerHTML = ''; return; }
     // Mốc là giá MỘT CHUYẾN. Đổi về đơn giá theo đơn vị đang chọn để bấm vào là
-    // điền đúng ô — điền giá một chuyến vào ô "₫/tấn" thì cước gấp 24 lần.
+    // điền đúng ô — điền giá một chuyến vào ô "VNĐ/tấn" thì cước gấp 24 lần.
     const sl = soLuongMoiChuyen();
     const chia = (S.q.price_basis || 'per_trip') === 'per_trip' ? 1 : (sl > 0 ? sl : 1);
     o.innerHTML = ds.map(k => {
@@ -1822,7 +1861,7 @@
     const ds = q.versions || [];
     o.innerHTML = '<h4>Phiên bản giá</h4>' + (ds.length
       ? ds.map((v, i) => `<div class="ver"><span>v${v.version}</span>
-          <b>${i === 0 ? 'Hiện tại · ' : ''}${tien(v.selling_price)} ₫</b>
+          <b>${i === 0 ? 'Hiện tại · ' : ''}${tien(v.selling_price)} VNĐ</b>
           <span>· ${esc((v.created_at || '').slice(0, 10))}${v.note ? ' · ' + esc(v.note) : ''}</span>
         </div>`).join('')
       : '<div class="hint2">Chưa có phiên bản nào — phiên bản được chốt mỗi lần gửi khách '
@@ -1844,7 +1883,7 @@
       o.innerHTML = '<h4>Giá đã báo cho khách này</h4>' + ((ds && ds.length)
         ? ds.map(x => `<div class="ver">
             <span>${esc((x.created_at || x.valid_to || '').slice(0, 10))}</span>
-            <b>${tien(x.selling_price)} ₫</b>
+            <b>${tien(x.selling_price)} VNĐ</b>
             <span>· ${esc(x.quote_no || x.id)} · ${esc((TRANG_THAI[x.canonical_status]
           || [x.canonical_status])[0])}</span></div>`).join('')
         : '<div class="hint2">Chưa từng báo giá cho khách này trên tuyến này — không có mốc để '
@@ -1853,12 +1892,12 @@
         // da tra ma khong ra, khac han voi viec khach chua noi gi.
         + (Number(q.competitor_price) > 0
           ? `<div class="ver"><span>Đối thủ · khách nói</span>
-              <b>≈ ${tien(q.competitor_price)} ₫</b>
+              <b>≈ ${tien(q.competitor_price)} VNĐ</b>
               <span>· ${Number(q.selling_price) > 0
             ? (q.selling_price > q.competitor_price
-              ? 'mình cao hơn ' + tien(q.selling_price - q.competitor_price) + ' ₫'
+              ? 'mình cao hơn ' + tien(q.selling_price - q.competitor_price) + ' VNĐ'
               : q.selling_price < q.competitor_price
-                ? 'mình thấp hơn ' + tien(q.competitor_price - q.selling_price) + ' ₫'
+                ? 'mình thấp hơn ' + tien(q.competitor_price - q.selling_price) + ' VNĐ'
                 : 'bằng nhau')
             : 'chưa có cước của mình để so'}</span></div>`
           : '');
@@ -2097,7 +2136,7 @@
 
   async function ghiNhanChapNhan() {
     if (!window.confirm(`Ghi nhận khách chấp nhận báo giá?\n\nHệ thống sẽ sinh ngay ${soLuongHang()} `
-      + `lệnh giao hàng, giá khoá ${tien(S.q.selling_price)} ₫/chuyến theo báo giá.`)) return;
+      + `lệnh giao hàng, giá khoá ${tien(S.q.selling_price)} VNĐ/chuyến theo báo giá.`)) return;
     await lenh('accept', {}, 'Đã ghi nhận khách chấp nhận và sinh lệnh giao hàng.', true);
     chonTabPhieu(1);
     cuonToi(el('qtv2-sec-do'));
@@ -2136,7 +2175,7 @@
       }
     }
     if (!window.confirm(`Tạo ${S.dongTach.length} lệnh giao hàng từ báo giá này?\n\n`
-      + `Giá cước ${tien(q.selling_price)} ₫/chuyến sẽ được khoá theo báo giá và không sửa `
+      + `Giá cước ${tien(q.selling_price)} VNĐ/chuyến sẽ được khoá theo báo giá và không sửa `
       + 'ở dưới vận hành.')) return;
     const dos = S.dongTach.map(d => ({
       unit: d.unit,
@@ -2147,7 +2186,7 @@
     }));
     const goi = await lenh('split', { dos }, 'Đang tạo lệnh giao hàng…', true);
     if (goi && goi.do_ids) {
-      thongBao(`Đã tạo ${goi.do_ids.length} DO · giá ${tien(goi.gia_moi_chuyen)} ₫/chuyến khoá `
+      thongBao(`Đã tạo ${goi.do_ids.length} DO · giá ${tien(goi.gia_moi_chuyen)} VNĐ/chuyến khoá `
         + 'theo báo giá. Chúng nằm ở "Lệnh giao hàng → Cần xử lý".');
       S.q = await doc('/api/quotations/' + encodeURIComponent(S.q.id || q.id) + '/detail');
       vePhieu();
@@ -2334,13 +2373,13 @@
         <tr class="tong"><td>Cước một chuyến</td><td class="r">${tien(Number(q.selling_price || 0) / ty)} ${esc(sym)}</td></tr>
         <tr><td>Lợi nhuận một chuyến</td><td class="r">${tien((Number(q.selling_price || 0) - Number(q.total_cost || 0)) / ty)} ${esc(sym)} · biên ${bien}</td></tr>
         <tr><td>Biên mục tiêu</td><td class="r">${q.target_margin ? phanTram(q.target_margin, 0) + ' (riêng khách này)' : 'theo công ty'}</td></tr>
-        <tr><td>Giá đối thủ khách nói ra</td><td class="r">${Number(q.competitor_price) > 0 ? tien(q.competitor_price) + ' ₫/chuyến' : '—'}</td></tr>
+        <tr><td>Giá đối thủ khách nói ra</td><td class="r">${Number(q.competitor_price) > 0 ? tien(q.competitor_price) + ' VNĐ/chuyến' : '—'}</td></tr>
         <tr><td>Phụ phí chờ quá 2 giờ</td><td class="r">${tien(Number(q.waiting_surcharge || 0) / ty)} ${esc(sym)}/giờ</td></tr>
         <tr><td>Điều khoản thanh toán</td><td class="r">${esc(q.payment_terms || '—')}</td></tr>
         <tr><td>Hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
         <tr><td>Số chuyến / tháng dự kiến</td><td class="r">${q.trips_per_month || '—'}</td></tr>
         ${q.currency_code && q.currency_code !== 'VND'
-      ? `<tr><td>Tỷ giá áp dụng</td><td class="r">1 ${esc(q.currency_code)} = ${tien(ty)} ₫</td></tr>` : ''}
+      ? `<tr><td>Tỷ giá áp dụng</td><td class="r">1 ${esc(q.currency_code)} = ${tien(ty)} VNĐ</td></tr>` : ''}
       </tbody></table>
       ${(q.items || []).length ? `<h2>Hàng hoá</h2><table><thead><tr><th>#</th><th>Tên hàng</th><th class="r">Số lượng</th><th>ĐVT</th><th>Ghi chú</th></tr></thead><tbody>${
       (q.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${esc(it.name || '')}</td><td class="r">${so(it.quantity)}</td><td>${esc(it.uom || '')}</td><td>${esc(it.note || '')}</td></tr>`).join('')}</tbody></table>` : ''}
@@ -2360,6 +2399,11 @@
     const cuocCuoi = Number(q.selling_price || 0) / ty;
     const heSo = ck > 0 && ck < 1 ? 1 / (1 - ck) : 1;
     const dv = DON_VI_CUOC.find(x => x[0] === (q.price_basis || 'per_trip')) || DON_VI_CUOC[0];
+    // Tuyến và loại xe là hai thứ khách cần đọc để biết mình đang mua chuyến nào.
+    // Số km đi qua kmTuyen() để in đúng quãng đường mà cước được tính theo.
+    const rt = tuyenTheoMa(q.route_id);
+    const km = kmTuyen(rt);
+    const tenTuyen = (rt && (rt.name || rt.id)) || '—';
     const dong = (nhan, giaTri) => `<tr><td>${nhan}</td><td class="r">${giaTri}</td></tr>`;
     moCuaSoIn(`Báo giá ${q.quote_no || q.id} — phiếu gửi khách`, `
       ${dauTrangIn('THÔNG TIN VẬN CHUYỂN',
@@ -2368,11 +2412,12 @@
       <h2>Cước vận chuyển</h2>
       <div class="gia">
         <div><div class="nhan">Đơn giá</div><div class="con">${tien(donGiaCuoi)} ${esc(tienTe)}</div><div class="don">/ ${esc(dv[2])}</div></div>
-        <div style="text-align:right"><div class="nhan">Doanh thu dự kiến từ vận chuyển</div><div class="con">${tien(cuocCuoi)} ${esc(tienTe)}</div></div>
         ${ck > 0 ? `<div class="ck">Đã chiết khấu ${so(ck * 100)}%</div>` : ''}
       </div>
       <h2>Chi tiết</h2>
       <table><tbody>
+        ${dong('Tuyến đường', esc(tenTuyen) + (km > 0 ? ' · ' + so(km) + ' km' : ''))}
+        ${dong('Loại xe', esc(tenLoaiXe(q.vehicle_type_id)))}
         ${dong('Trọng lượng', so(Number(q.weight_kg || 0) / 1000) + ' Tấn')}
         ${dong('Tiền tệ thanh toán · ສະກຸນເງິນ', esc(tienTe))}
         ${dong('Giá gốc', tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}

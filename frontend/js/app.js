@@ -6426,7 +6426,7 @@ function renderVehTypesTable(data) {
         <td><span class="ma">${(kg / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} ${t('uom_ton')}</span><span class="phu">${kg.toLocaleString('vi-VN')} kg · ${m3} m³ · ${pallet} pallet</span></td>
         <td class="num">${Number(vt.fuel_norm || 0)}<small>L/100km</small></td>
         <td class="num">${vt.avg_speed_kmh ? Number(vt.avg_speed_kmh) + ' km/h' : '—'}</td>
-        <td class="num">${Number(vt.maint_cost || 0).toLocaleString('vi-VN')} ₫</td>
+        <td class="num">${Number(vt.maint_cost || 0).toLocaleString('vi-VN')} VNĐ</td>
         <td class="num">${n ? `<button type="button" class="fleet-count" onclick="locDoiXeTheoLoai('${escapeHtml(vt.id)}')" title="Xem các xe thuộc loại này"><i class="fa-solid fa-truck"></i> ${n} xe <i class="fa-solid fa-arrow-right"></i></button>` : '<span style="color:#94a3b8">0</span>'}</td>
         <td class="act">
           <button class="fiori-btn fiori-btn-secondary btn-ico" onclick="openVehTypeForm('${escapeHtml(vt.id)}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
