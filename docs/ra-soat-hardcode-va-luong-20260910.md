@@ -456,8 +456,23 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   `VSIP II-A → Vành đai 3` làm "chặng giao" — Vành đai 3 là điểm giữa đường, không phải nơi giao
   hàng. POD của DO đó được ghi vào một điểm không phải điểm giao. Đúng ra **mỗi DO phải có chặng
   giao riêng đi hết tuyến của nó**, chứ không phải cắt tuyến ra chia nhau.
-- Tạm thời bộ gieo chỉ ghép nhiều DO khi tuyến có đủ chặng (`SO_CHANG` trong script), và một
-  chuyến bị kẹt do lỗi này đã được huỷ để nhả xe.
+- **ĐÃ SỬA cùng ngày** (`_chia_chang_cho_do` trong `tms_trip_service.py`). Luật mới:
+  (1) mỗi DO trong chuyến phải có ít nhất một chặng giao; (2) mặc định DO thứ i nhận chặng thứ i
+  và DO CUỐI nhận các chặng còn lại; (3) điều phối khai tay được `stop_plan[].do_id` để nói hàng
+  của DO nào hạ ở điểm dừng nào. Không xếp đủ thì TỪ CHỐI ngay lúc lập chuyến —
+  `409 TRIP_DO_NHIEU_HON_CHANG` khi DO nhiều hơn chặng, `409 TRIP_DO_KHONG_CO_CHANG` khi khai tay
+  bỏ sót DO, `422 TRIP_DO_INVALID` khi khai mã không thuộc chuyến — và KHÔNG tạo chuyến nửa vời.
+  Đo lại trên máy chủ thật với đúng hình dạng đã gây lỗi (2 DO trên tuyến Sóng Thần → Cát Lái):
+  trả 409 với câu chỉ việc phải làm, `GET` chuyến đó trả 404. Bài kiểm
+  `test_chia_chang_cho_do_du.py` (3 bài) khoá cả bốn nhánh; 223 bài về chuyến/điều phối/TMS và
+  32 bài bàn giao + hoàn tất + A→Z vẫn xanh.
+- Bộ gieo vẫn giữ `SO_CHANG` để không tạo ra hình dạng bị từ chối, và một chuyến bị kẹt do lỗi
+  cũ đã được huỷ để nhả xe.
+- **CÒN MỞ, cần chủ dự án quyết** (không sửa trong đợt này): hệ coi MỌI điểm cuối chặng là một
+  ĐIỂM GIAO cần POD. Nên tuyến có điểm trung chuyển (Vành đai 3) thì DO phải có POD tại đó, kể
+  cả chuyến chỉ chở MỘT DO — đó là hành vi từ trước tới nay, không phải mới. Đúng với chuyến
+  nhiều điểm giao thật, sai với tuyến chỉ đi ngang. Sửa là đổi nghĩa của "chặng" trên mọi tuyến
+  có điểm trung chuyển và chạm bảy chỗ đang lọc chặng theo DO, nên để anh quyết.
 - Hai chỗ khác cũng lộ ra khi gieo dày, đều là cửa chặn ĐÚNG, chỉ ghi lại để người sau biết:
   xe/tài xế đang giữ chuyến chưa xong thì không điều thêm được (`RESOURCE_BUSY`, không xét khung
   giờ); và ca làm việc mới **chồng** ca đã có thì bị từ chối, nên "đã gọi API tạo ca" không đồng

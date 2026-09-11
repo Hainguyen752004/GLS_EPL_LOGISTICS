@@ -354,6 +354,72 @@ def _location(db, location_id, name):
     return location
 
 
+def _chia_chang_cho_do(do_ids, segments, stop_plan):
+    """Chặng thứ i của chuyến thuộc DO nào. Trả danh sách cùng độ dài `segments`.
+
+    VÌ SAO CÓ HÀM NÀY — LỖI ĐÃ ĐO ĐƯỢC (11/09). Bản trước chia bằng một câu:
+
+        "do_id": do_ids[-1] if sequence == len(segments) else do_ids[0]
+
+    tức chặng cuối thuộc DO CUỐI, mọi chặng khác thuộc DO ĐẦU. Hệ quả: chuyến chở NHIỀU
+    DO hơn số chặng thì có DO **không nhận được chặng nào**. Đo trên máy chủ thật: 2 DO
+    trên tuyến Sóng Thần → Cát Lái (MỘT chặng) → chặng duy nhất thuộc DO thứ hai, DO thứ
+    nhất không nộp POD được (`POD_LINEAGE_INVALID` vì tập chặng của nó rỗng) nên KHÔNG BAO
+    GIỜ hoàn tất được; chuyến giữ xe và tài xế lại cho tới khi có người huỷ tay. Máy chủ
+    không chặn gì lúc lập chuyến. Với 3 DO trên 2 chặng thì DO ở giữa mất chặng y như vậy.
+
+    LUẬT MỚI, và nó là một luật chứ không phải một mẹo:
+
+      1. Mỗi DO trong chuyến PHẢI có ít nhất một chặng giao. Không xếp được thì TỪ CHỐI
+         ngay lúc lập chuyến, kèm lời nói rõ phải làm gì — thà không lập được chuyến, hơn
+         là lập ra một DO không bao giờ đóng được và một cái xe bị giữ.
+      2. Mặc định: DO thứ i nhận chặng thứ i; DO CUỐI nhận mọi chặng còn lại (nó là DO
+         được giao ở điểm cuối tuyến). Với một DO thì mọi chặng thuộc nó — y như trước.
+      3. Điều phối muốn khác thì khai tay `stop_plan[i].do_id` — hàng của DO nào hạ ở
+         điểm dừng nào. Khai một điểm thì các điểm còn lại vẫn theo mặc định, nhưng kết
+         quả cuối cùng vẫn phải phủ hết mọi DO.
+
+    CÒN MỘT CÂU HỎI RỘNG HƠN, cố ý KHÔNG giải ở đây: hệ đang coi mọi điểm cuối chặng là
+    một ĐIỂM GIAO cần POD, nên tuyến có điểm trung chuyển (ví dụ Vành đai 3) thì DO cũng
+    phải có POD tại đó. Điều này đúng với chuyến nhiều điểm giao thật, nhưng sai với tuyến
+    chỉ đi ngang một điểm trung chuyển — và nó đúng như vậy cho cả chuyến MỘT DO từ trước
+    tới nay. Sửa chỗ đó là đổi nghĩa của "chặng" trên mọi tuyến có điểm trung chuyển, chạm
+    vào bảy chỗ đang lọc chặng theo DO, nên phải do chủ dự án quyết — xem mục A29.
+    """
+    so_do, so_chang = len(do_ids), len(segments)
+    if so_do > so_chang:
+        raise conflict(
+            "TRIP_DO_NHIEU_HON_CHANG",
+            "Chuyến có %d lệnh giao hàng nhưng tuyến chỉ có %d chặng, nên sẽ có lệnh không có "
+            "chặng giao và không bao giờ hoàn tất được. Hãy tách thành nhiều chuyến, hoặc khai "
+            "thêm chặng cho tuyến ở Dữ liệu gốc." % (so_do, so_chang),
+            ["master-data/routes", "delivery-orders"],
+        )
+    ra = []
+    for sequence in range(1, so_chang + 1):
+        khai = (stop_plan.get(sequence) or {}).get("do_id")
+        khai = str(khai).strip() if khai is not None else ""
+        if khai:
+            if khai not in do_ids:
+                raise DomainError(
+                    "TRIP_DO_INVALID",
+                    "Điểm dừng %d khai lệnh giao hàng %s, nhưng lệnh đó không thuộc chuyến này."
+                    % (sequence, khai), 422, ["delivery-orders"])
+            ra.append(khai)
+        else:
+            ra.append(do_ids[min(sequence - 1, so_do - 1)])
+    thieu = [d for d in do_ids if d not in ra]
+    if thieu:
+        raise conflict(
+            "TRIP_DO_KHONG_CO_CHANG",
+            "Các lệnh giao hàng %s không được xếp vào chặng nào nên không nộp được POD. "
+            "Hãy khai `stop_plan[].do_id` cho đủ, hoặc bỏ chúng khỏi chuyến."
+            % ", ".join(thieu),
+            ["delivery-orders"],
+        )
+    return ra
+
+
 def create_trip_from_delivery_orders(db, data, actor):
     trip_id = _bounded_text(data.get("id"), "Mã chuyến", 128)
     do_ids = list(data.get("do_ids") or [])
@@ -521,11 +587,12 @@ def create_trip_from_delivery_orders(db, data, actor):
         for item in (data.get("stop_plan") or [])
         if isinstance(item, dict) and item.get("sequence_no") is not None
     }
+    do_theo_chang = _chia_chang_cho_do(do_ids, segments, stop_plan)
     for sequence, segment in enumerate(segments, start=1):
         stop = stop_plan.get(sequence) or {}
         add_leg(db, trip.id, {
             "id": f"{trip.id}-LEG-{sequence:03d}",
-            "do_id": do_ids[-1] if sequence == len(segments) else do_ids[0],
+            "do_id": do_theo_chang[sequence - 1],
             "sequence_no": sequence,
             "leg_type": "delivery",
             "origin": segment["origin"],

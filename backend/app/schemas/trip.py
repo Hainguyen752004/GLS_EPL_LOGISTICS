@@ -25,6 +25,11 @@ class TripStopPlanItem(BaseModel):
     receiver_phone: Optional[str] = Field(default=None, max_length=64)
     delivery_note: Optional[str] = Field(default=None, max_length=1000)
     dwell_minutes: Optional[int] = Field(default=None, ge=0)
+    # HÀNG CỦA LỆNH GIAO HÀNG NÀO hạ ở điểm dừng này. Bỏ trống thì hệ xếp theo mặc định
+    # (lệnh thứ i nhận chặng thứ i, lệnh cuối nhận các chặng còn lại) — xem
+    # `tms_trip_service._chia_chang_cho_do`. Khai sai mã hoặc xếp thiếu lệnh thì bị từ chối,
+    # vì một lệnh không có chặng giao là một lệnh không bao giờ nộp POD được.
+    do_id: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 class TripFromDeliveryOrdersRequest(BaseModel):
