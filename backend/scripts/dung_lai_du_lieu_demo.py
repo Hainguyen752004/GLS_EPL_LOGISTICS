@@ -10,6 +10,7 @@ HAI BƯỚC, chạy tách nhau để nhìn được từng bước:
     cd backend\\app
     python ..\\scripts\\dung_lai_du_lieu_demo.py --xoa      # bước 1: xoá dữ liệu vận hành
     python ..\\scripts\\dung_lai_du_lieu_demo.py --gieo     # bước 2: gieo case qua API 8001
+    python ..\\scripts\\dung_lai_du_lieu_demo.py --gieo-ngoai-te  # thêm 2 case LAK/USD trọn luồng
     python ..\\scripts\\dung_lai_du_lieu_demo.py --kiem     # đếm lại từng bảng
 
 BƯỚC 1 (--xoa) nối thẳng PostgreSQL (database.py của ứng dụng), TRUNCATE mọi bảng
@@ -39,6 +40,10 @@ Các case cố ý ĐA DẠNG (xem `gieo()` để biết từng case làm gì):
   E  SGN Food   Xe lạnh 5 tấn, báo giá USD đang CHỜ KHÁCH; một báo giá khác bị khách
                 TỪ CHỐI; một báo giá còn NHÁP có tệp đính kèm.
   F  CRM        Cơ hội ở đủ giai đoạn: mới, đã liên hệ, đang đàm phán, mất.
+  G  SGN Food   (--gieo-ngoai-te) báo giá bằng LAK, xe lạnh, đi trọn luồng tới hoàn tất; hồ sơ
+                bàn giao bằng LAK, chi phí thực tế bằng VND.
+  H  Pou Yuen   (--gieo-ngoai-te) báo giá bằng USD, đầu kéo 20' có đơn giá dầu riêng của xe, đi
+                trọn luồng tới hoàn tất; hồ sơ bàn giao bằng USD.
 
 Chi phí thực tế dừng ở `submitted`: cấu hình bốn mắt đang BẬT và máy chủ 8001 chạy
 với một danh tính duy nhất (EPL_TMS_API_PRINCIPAL), nên người duyệt phải là người
@@ -308,7 +313,7 @@ def moc_thuc_thi(trip, xe, tai_xe, cac_moc, toa_do):
         }, headers={"Idempotency-Key": "moc-%s-%s" % (fo_id, loai)})
 
 
-def hoan_tat(do_id, trip, xe, giao_luc, nguoi_nhan, phu_phi=()):
+def hoan_tat(do_id, trip, xe, giao_luc, nguoi_nhan, phu_phi=(), tien="VND"):
     chuyen = _du_lieu(goi("GET", "/api/tms/trips/%s" % trip["id"]))
     dong, tep = [], {}
     # Chuyến chở nhiều DO: mỗi DO chỉ nộp POD cho CHẶNG GIAO của chính nó.
@@ -323,7 +328,7 @@ def hoan_tat(do_id, trip, xe, giao_luc, nguoi_nhan, phu_phi=()):
         tep[f] = _png("pod-%s-%s" % (do_id, leg["sequence_no"]))
         tep[s] = _png("chu-ky-%s-%s" % (do_id, leg["sequence_no"]))
     return _du_lieu(goi("POST", "/api/delivery-orders/%s/complete-delivery" % do_id,
-                        form={"payload": {"trip_id": trip["id"], "currency_code": "VND", "pod_entries": dong,
+                        form={"payload": {"trip_id": trip["id"], "currency_code": tien, "pod_entries": dong,
                                           "charge_adjustments": [{"name": ten, "note": ly_do, "original_amount": "0",
                                                                   "actual_amount": str(tien)}
                                                                  for ten, ly_do, tien in phu_phi]}},
@@ -632,6 +637,111 @@ def gieo():
             ct["header"]["do_id"], len(ct["details"]), sum(1 for x in ct["details"] if x["missing_acc_code"])))
 
 
+# ================================================================ BƯỚC 2b: NGOẠI TỆ
+def gieo_ngoai_te(cac_case=("G", "H")):
+    """Hai case báo giá NGOẠI TỆ (LAK, USD) đi trọn luồng tới hoàn tất — để bên công nợ kiểm tiền tệ.
+
+    Chủ dự án (11/09): *"thêm cho anh 2 cái case … tiền tệ Lào, 1 case tiền tệ USD … đến khi nó
+    hoàn thành luôn — để cho ông anh của anh test"*. Điều khoá: giá của báo giá khai bằng CHÍNH tiền
+    của báo giá (cả `unit_price` và `total_cost`), phụ phí khách trả thêm và hồ sơ hoàn tất cũng bằng
+    tiền đó (máy chủ chặn CURRENCY_MISMATCH nếu lệch), còn chi phí thực tế của chuyến là VND (tiền
+    chức năng của công ty). Chạy bổ sung được, không cần xoá dữ liệu đang có; `--case G` hoặc `--case H`
+    để chạy riêng một case.
+    """
+    _in("Gieo case ngoại tệ %s qua API %s" % (",".join(cac_case), BASE))
+    dau_ca = dt.datetime(2026, 9, 1, 0, 0, tzinfo=VN)
+    cuoi_ca = dt.datetime(2026, 10, 31, 23, 59, tzinfo=VN)
+    for tx in ("DEMO-DRV-001", "DEMO-DRV-005"):
+        ca_truc("CA-T9T10-" + tx, tx, dau_ca, cuoi_ca)
+    doG = doH = [""]
+    if "G" in cac_case:
+        # ------------------------------------------------------------ G. SGN Food — LAK (Kip Lào), xe lạnh 5 tấn
+        # Tỷ giá bảng currencies: 1 LAK = 1,18 VND. Giá thành ~2.480.000 VND ≈ 2.100.000 LAK; cước 2.900.000 LAK ≈ 3.422.000 VND.
+        # Quy cách KHÔNG dùng chữ "thùng": cửa Packing List coi "thùng" là hàng đếm kiện.
+        _in("\n[G] SGN Food — báo giá LAK, Xe lạnh 5 tấn, Long An → Cái Mép (112 km), hoàn tất trọn luồng")
+        oG = co_hoi(customer_id="DEMO-CUS-SGNFOOD", contact_name="Anh Khoa", source="email",
+                    route_id="DEMO-RT-LONGAN-CAIMEP", cargo_type="Thực phẩm đông lạnh xuất Lào", est_weight_kg=4200,
+                    est_trips_per_month=6, expected_price=2900000, owner="sales.hoa", notes="Khách thanh toán bằng Kip Lào")
+        lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 9), 5, 15)
+        qG = bao_gia_tu_co_hoi(oG, vehicle_type_id="DEMO-VT-REEFER5", cargo_type="Thực phẩm đông lạnh",
+                               packaging_spec="Container lạnh nguyên khối", weight_kg=4200, volume_m3=20, pallet_count=8,
+                               price_basis="per_trip", unit_price=2900000, currency_code="LAK", fx_rate=1.18,
+                               total_cost=2100000, selling_price=2900000, valid_to=_han(30),
+                               temperature_requirement="-18°C", pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
+                               delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
+                               payment_terms="Trả trước 50% bằng LAK", sales_rep="Hoa",
+                               notes_customer="Giá bằng Kip Lào, tỷ giá 1 LAK = 1,18 VND tại ngày báo giá.")
+        hang_hoa(qG, [{"name": "Chuyến xe lạnh hàng đông (LAK)", "quantity": 1, "uom": "Chuyến"}])
+        gui(qG)
+        doG = chap_nhan(qG, [{"pickup_at": _iso(lay1), "due_at": _iso(giao2), "seal_no": "SL-SGN-LAK-0001"}])
+        xe, tx = "DEMO-50H-771.25", "DEMO-DRV-001"
+        tG = lap_chuyen("TRIP-SGN-LAK-01", doG, lay1 + dt.timedelta(hours=1),
+                        [{"sequence_no": 1, "stop_name": "Cảng Cái Mép", "receiver_name": "Anh Phong (CMIT)",
+                          "receiver_phone": "0909000002", "delivery_note": "Hàng lạnh -18°C, hạ thẳng bãi lạnh"}])
+        tG = dieu_phoi(tG, xe, tx, lay1, giao2)
+        g0 = lay1
+        moc_thuc_thi(tG, xe, tx, [("check_in", g0), ("pickup", g0 + dt.timedelta(minutes=50)),
+                                  ("departure", g0 + dt.timedelta(hours=1, minutes=20)),
+                                  ("arrival", g0 + dt.timedelta(hours=4, minutes=30)),
+                                  ("unloading", g0 + dt.timedelta(hours=4, minutes=50))],
+                     (TOA_DO["LONGAN"], TOA_DO["CAIMEP"]))
+        hoan_tat(doG[0], tG, xe, g0 + dt.timedelta(hours=5, minutes=30), "Anh Phong (CMIT)",
+                 phu_phi=[("Chạy máy lạnh chờ bãi", "Chờ bãi lạnh 1h40, máy lạnh chạy liên tục", 150000)], tien="LAK")
+        chi_phi_thuc_te(tG, "COST-SGN-LAK-01", [
+            ("fuel", "Chi phí xăng dầu /km", 515200, 548000, "112 km, xe lạnh chạy máy lạnh"),
+            ("driver", "Phụ cấp chuyến tài xế", 350000, 350000, ""),
+            ("toll", "Phí cầu đường / BOT", 200000, 200000, ""),
+            ("wh", "Phí bãi / kho", 120000, 180000, "Phí bãi lạnh"),
+        ])
+    if "H" in cac_case:
+        # ------------------------------------------------------------ H. Pou Yuen — USD, đầu kéo 20'
+        # Tỷ giá 1 USD = 26.173,5 VND. Giá thành ~1.180.000 VND ≈ 45 USD; cước 120 USD ≈ 3.141.000 VND.
+        _in("\n[H] Pou Yuen — báo giá USD, Đầu kéo 20', Cát Lái → Amata (38,4 km), hoàn tất trọn luồng")
+        oH = co_hoi(customer_id="DEMO-CUS-POUYUEN", contact_name="Chị Mai", source="referral",
+                    route_id="DEMO-RT-CATLAI-AMATA", cargo_type="Nguyên liệu giày nhập khẩu (cont 20')", est_weight_kg=18000,
+                    est_trips_per_month=10, expected_price=120, owner="sales.minh", notes="Khách FDI thanh toán USD")
+        lay1, lay2, giao1, giao2 = _khung(dt.date(2026, 9, 10), 8, 16)
+        qH = bao_gia_tu_co_hoi(oH, vehicle_type_id="DEMO-VT-TRACTOR20", cargo_type="Nguyên liệu giày",
+                               packaging_spec="Container nguyên khối 20FT", weight_kg=18000, volume_m3=28, pallet_count=16,
+                               price_basis="per_trip", unit_price=120, currency_code="USD", fx_rate=26173.5,
+                               total_cost=45, selling_price=120, valid_to=_han(30),
+                               pickup_window_start=_iso(lay1), pickup_window_end=_iso(lay2),
+                               delivery_window_start=_iso(giao1), delivery_window_end=_iso(giao2),
+                               payment_terms="30 ngày, chuyển khoản USD", sales_rep="Minh",
+                               notes_customer="Giá bằng USD, tỷ giá 26.173,5 VND/USD tại ngày báo giá.")
+        hang_hoa(qH, [{"name": "Cont 20FT nguyên liệu giày (USD)", "quantity": 1, "uom": "Cont"}])
+        gui(qH)
+        doH = chap_nhan(qH, [{"pickup_at": _iso(lay1), "due_at": _iso(giao2), "seal_no": "SL-PY-USD-0001"}])
+        xe, tx = "DEMO-51C-129.03", "DEMO-DRV-005"   # xe có đơn giá dầu ghi đè riêng (7.728 đ/km)
+        tH = lap_chuyen("TRIP-PY-USD-01", doH, lay1 + dt.timedelta(hours=1),
+                        [{"sequence_no": 1, "stop_name": "KCN Amata", "receiver_name": "Anh Dũng (kho Amata)",
+                          "receiver_phone": "0909000003", "delivery_note": "Hạ cont cổng 1"}])
+        tH = dieu_phoi(tH, xe, tx, lay1, giao2)
+        g0 = lay1
+        moc_thuc_thi(tH, xe, tx, [("check_in", g0), ("pickup", g0 + dt.timedelta(minutes=45)),
+                                  ("departure", g0 + dt.timedelta(hours=1, minutes=10)),
+                                  ("arrival", g0 + dt.timedelta(hours=2, minutes=30)),
+                                  ("unloading", g0 + dt.timedelta(hours=2, minutes=45))],
+                     (TOA_DO["CATLAI"], TOA_DO["AMATA"]))
+        hoan_tat(doH[0], tH, xe, g0 + dt.timedelta(hours=3, minutes=15), "Anh Dũng (kho Amata)",
+                 phu_phi=[("Bốc xếp thêm tại kho", "Kho không có xe nâng, tổ lái hỗ trợ dỡ", 15)], tien="USD")
+        chi_phi_thuc_te(tH, "COST-PY-USD-01", [
+            ("fuel", "Chi phí xăng dầu /km", 296755, 301000, "38,4 km × 7.728 đ (đơn giá riêng của xe)"),
+            ("driver", "Phụ cấp chuyến tài xế", 400000, 400000, ""),
+            ("toll", "Phí cầu đường / BOT", 150000, 150000, ""),
+        ])
+
+    _in("\nXONG case ngoại tệ. Kiểm qua API bàn giao:")
+    for do_id in (doG[0], doH[0]):
+        if not do_id:
+            continue
+        ct = _du_lieu(goi("GET", "/api/handover/delivery-orders/%s" % do_id))
+        h = ct["header"]
+        _in("   %s: %s  cước %s + trả thêm %s = giá cuối %s %s · giá thành thực tế %s · %d dòng, thiếu Acc code %d" % (
+            h["do_id"], h["customer_id"], h["selling_price"], h["customer_surcharge_total"], h["final_selling_price"],
+            h["currency"], h["actual_cost_total"], len(ct["details"]), sum(1 for x in ct["details"] if x["missing_acc_code"])))
+
+
 # ================================================================ KIỂM
 def kiem():
     import database
@@ -659,9 +769,11 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--xoa", action="store_true")
     p.add_argument("--gieo", action="store_true")
+    p.add_argument("--gieo-ngoai-te", action="store_true", help="chỉ gieo thêm hai case LAK/USD đi trọn luồng")
     p.add_argument("--kiem", action="store_true")
+    p.add_argument("--case", default="G,H", help="với --gieo-ngoai-te: chạy case nào, vd G hoặc H")
     a = p.parse_args()
-    if not (a.xoa or a.gieo or a.kiem):
+    if not (a.xoa or a.gieo or a.gieo_ngoai_te or a.kiem):
         p.print_help()
         sys.exit(1)
     if a.xoa:
@@ -670,5 +782,9 @@ if __name__ == "__main__":
         if not TOKEN:
             sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
         gieo()
+    if a.gieo_ngoai_te:
+        if not TOKEN:
+            sys.exit("Thiếu EPL_TMS_API_TOKEN (trong .env hoặc biến môi trường).")
+        gieo_ngoai_te(tuple(x.strip().upper() for x in a.case.split(",") if x.strip()))
     if a.kiem:
         kiem()

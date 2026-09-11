@@ -25,7 +25,7 @@ CHO_PHEP_ASYNC = {
     "bao_gia_routes.py:them_chung_tu",
     "fleet_routes.py:approve_vehicle_maintenance_request", "fleet_routes.py:start_vehicle_maintenance_request",
     "fleet_routes.py:complete_vehicle_maintenance_request", "fleet_routes.py:cancel_vehicle_maintenance_request",
-    "handover_routes.py:ban_giao_do", "workflow_routes.py:complete_delivery_order",
+    "workflow_routes.py:complete_delivery_order",
 }
 
 
@@ -58,3 +58,26 @@ def test_khong_co_async_handler_dung_session_ma_khong_await():
                 vi_pham.append(khoa + " (có await nhưng chưa ghi vào danh sách cho phép — xem có blocking DB trên vòng lặp không)")
     assert not vi_pham, "async def dùng Session đồng bộ mà không await → đổi sang def:\n  " + "\n  ".join(vi_pham)
     assert not async_khong_await_cho_phep, "mục trong CHO_PHEP_ASYNC không còn await, bỏ khỏi danh sách: %s" % async_khong_await_cho_phep
+
+
+def test_khong_await_mot_handler_dong_bo():
+    """Đo 11/09: sau khi đổi 83 handler sang `def`, `ban_giao_do` vẫn `await get_delivery_order_closeout(...)`
+    → `await` một dict → TypeError → API bàn giao chi tiết trả 500 cho MỌI DO. Bài này gom tên mọi hàm
+    `def` (đồng bộ) trong routes rồi bắt bất kỳ `await <tên>(` nào trong routes/ và services/."""
+    dong_bo = set()
+    for tep in glob.glob(os.path.join(GOC, "*.py")):
+        cay = ast.parse(io.open(tep, encoding="utf-8-sig").read())
+        for node in ast.walk(cay):
+            if isinstance(node, ast.FunctionDef):
+                dong_bo.add(node.name)
+    vi_pham = []
+    for thu_muc in (GOC, os.path.join(GOC, "..", "services")):
+        for tep in glob.glob(os.path.join(thu_muc, "*.py")):
+            cay = ast.parse(io.open(tep, encoding="utf-8-sig").read())
+            for node in ast.walk(cay):
+                if isinstance(node, ast.Await) and isinstance(node.value, ast.Call):
+                    f = node.value.func
+                    ten = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else None)
+                    if ten in dong_bo:
+                        vi_pham.append("%s:%d await %s(...)" % (os.path.basename(tep), node.lineno, ten))
+    assert not vi_pham, "await một hàm đồng bộ (trả giá trị, không phải coroutine):\n  " + "\n  ".join(vi_pham)

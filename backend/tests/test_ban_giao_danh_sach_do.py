@@ -53,3 +53,31 @@ def test_danh_sach_chi_gom_do_da_hoan_tat_loc_va_phan_trang(app_client, workflow
     r = client.get("/api/handover/delivery-orders?page=2&page_size=2", headers=API_TEST_HEADERS)
     d = r.json()["data"]
     assert [x["do_id"] for x in d["items"]] == ["DO-BG-A"] and d["page"] == 2 and d["total"] == 3
+
+
+def test_api_chi_tiet_tra_200_cho_do_da_hoan_tat_ca_vnd_va_ngoai_te(app_client, workflow_builder):
+    """Đường THÀNH CÔNG của API header + chi tiết. Đo 11/09 trên 8001: sau khi đổi 83 handler sang
+    `def`, `ban_giao_do` (còn async) vẫn `await get_delivery_order_closeout(...)` nay trả dict →
+    TypeError → 500 cho MỌI DO. Bài cũ chỉ kiểm 404/409 nên lọt. Ở đây gọi thật qua HTTP, kèm DO
+    ngoại tệ (LAK) để header mang đúng `currency`."""
+    client, _, _ = app_client
+    workflow_builder.master_data()
+    database = importlib.import_module("database")
+    models = importlib.import_module("models")
+    with database.SessionLocal() as db:
+        _closeout(db, models, "DO-BG-VND", "CUS-BG-9", 2_486_000, dt.datetime(2026, 9, 3, 3, tzinfo=dt.timezone.utc))
+        db.add(models.Customer(id="CUS-BG-8", name="CUS-BG-8"))
+        db.add(models.DeliveryOrder(id="DO-BG-LAK", customer_id="CUS-BG-8", canonical_status="delivered", status="Đã giao"))
+        db.flush()
+        db.add(models.DeliveryOrderCloseout(
+            id="CLO-DO-BG-LAK", do_id="DO-BG-LAK", base_selling_price_snapshot=2_900_000, base_price_source="quotation",
+            base_price_source_id="QT-LAK", surcharge_total=150_000, final_selling_price=3_050_000, currency_code="LAK",
+            completed_at=dt.datetime(2026, 9, 9, 5, tzinfo=dt.timezone.utc), completed_by="ops"))
+        db.commit()
+    for ma, tien, gia in (("DO-BG-VND", "VND", 2_486_000.0), ("DO-BG-LAK", "LAK", 3_050_000.0)):
+        r = client.get("/api/handover/delivery-orders/%s" % ma, headers=API_TEST_HEADERS)
+        assert r.status_code == 200, (ma, r.status_code, r.text[:300])
+        d = r.json()["data"]
+        assert d["header"]["do_id"] == ma and d["header"]["currency"] == tien
+        assert d["header"]["final_selling_price"] == gia
+        assert isinstance(d["details"], list)

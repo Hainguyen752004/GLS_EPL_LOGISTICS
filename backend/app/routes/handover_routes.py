@@ -97,7 +97,7 @@ def dong_goi_ban_giao(closeout):
 
 
 @router.get("/api/handover/delivery-orders/{do_id}")
-async def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
+def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db)):
     from routes.delivery_routes import get_delivery_order_closeout
     do = db.get(DeliveryOrder, do_id)
     if do is None:
@@ -107,7 +107,9 @@ async def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db
                             "Lệnh %s đang ở trạng thái %s — chỉ bàn giao DO đã hoàn tất (delivered)."
                             % (do_id, do.canonical_status)))
     try:
-        goi = await get_delivery_order_closeout(do_id, request, db)
+        # Handler closeout là hàm đồng bộ thường (chạy threadpool) — KHÔNG await: 11/09 một chữ await sót
+        # ở đây làm API bàn giao chi tiết trả 500 cho mọi DO.
+        goi = get_delivery_order_closeout(do_id, request, db)
     except DomainError as loi:
         raise_http(loi)
     closeout = goi.get("data", goi) if isinstance(goi, dict) else goi
