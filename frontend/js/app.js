@@ -235,7 +235,7 @@ function canonicalDOStatusValue(order) {
 
 async function loadTranslations() {
   try {
-    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260908g-dieu-phoi`);
+    const res = await fetch(`${API_BASE}/static/js/lang.json?v=20260912a-dich-tron-cau`);
     appTranslations = await res.json();
     appTranslations.menu_accounting = appTranslations.menu_accounting || {};
     appTranslations.menu_accounting.vi = '6. Kế toán & Tài chính';
@@ -243,9 +243,17 @@ async function loadTranslations() {
     appTranslations.menu_fleet_catalog.vi = 'Danh Mục Đội Xe';
     // C\u1ed0 \u00dd kh\u00f4ng ghi \u0111\u00e8 `lbl_sales_rep` \u1edf \u0111\u00e2y \u2014 xem gi\u1ea3i th\u00edch \u1edf
     // forceCriticalVietnameseLabels(). lang.json \u0111\u00e3 c\u00f3 "Nh\u00e2n vi\u00ean kinh doanh".
-    // Khoi tao theo ngon ngu dang chon tren nut doi ngon ngu (data-lang o goc #epl-lang).
+    // Ngôn ngữ phải GIỮ NGUYÊN sau khi tải lại trang. Trước đây nó chỉ đọc
+    // data-lang trên nút đổi ngôn ngữ, mà thuộc tính đó luôn là 'vi' lúc trang
+    // mới nạp — nên cứ F5 là về tiếng Việt dù người dùng đang xem tiếng Lào.
     const nutNgonNgu = document.getElementById('epl-lang');
-    if (nutNgonNgu) changeLanguage(nutNgonNgu.dataset.lang || 'vi');
+    let ngonNguDau = (nutNgonNgu && nutNgonNgu.dataset.lang) || 'vi';
+    try {
+      const daLuu = window.localStorage.getItem(KHOA_NGON_NGU);
+      if (daLuu === 'vi' || daLuu === 'en' || daLuu === 'la') ngonNguDau = daLuu;
+    } catch (e) { /* cửa sổ riêng tư chặn localStorage — cứ dùng mặc định */ }
+    if (nutNgonNgu) nutNgonNgu.dataset.lang = ngonNguDau;
+    changeLanguage(ngonNguDau);
   } catch (e) {
     // Không có lang.json thì `appTranslations` rỗng, và `changeLanguage` có
     // `if (!value) return;` cho từng khóa — nên gạt sang tiếng Lào hay tiếng
@@ -567,6 +575,39 @@ function _dichMotNutChu(node, viMap, lang) {
   }
 }
 
+// Thẻ mà KHÔNG được thay nguyên cụm: đụng vào là mất ô nhập, mất nút, mất ảnh.
+const _THE_KHONG_THAY_NGUYEN = 'input, select, textarea, button, a, img, svg, canvas, table, ul, ol, [data-i18n]';
+
+// Một câu trong HTML thường bị thẻ inline cắt làm mấy mảnh:
+//   <p>Các dòng bên dưới chỉ nhập <b>khoản phát sinh</b> sau vận hành.</p>
+// Dịch theo TỪNG nút chữ thì mảnh giữa dịch được còn hai mảnh ngoài thì không,
+// và người dùng đọc ra một câu nửa Việt nửa Lào. Nên phải thử khớp CẢ THẺ trước:
+// lấy toàn bộ chữ của thẻ, nếu trùng một khóa trong lang.json thì thay trọn.
+// Đổi lại là mất thẻ in đậm bên trong — chấp nhận được, vì đọc được quan trọng hơn.
+function _dichNguyenThe(el, viMap, lang) {
+  if (el._i18nKhongXet) return false;
+  if (el._i18nGocHTML === undefined) {
+    if (!el.children.length || el.hasAttribute('data-i18n') || el.querySelector(_THE_KHONG_THAY_NGUYEN)) {
+      el._i18nKhongXet = true;
+      return false;
+    }
+    const chu = el.textContent.replace(/\s+/g, ' ').trim();
+    if (chu.length < 2 || chu.length > 400) { el._i18nKhongXet = true; return false; }
+    el._i18nGocHTML = el.innerHTML;
+    el._i18nGocText = chu;
+  }
+  if (lang === 'vi') {
+    if (el.innerHTML !== el._i18nGocHTML) el.innerHTML = el._i18nGocHTML;
+    el._i18nXong = false;
+    return true;
+  }
+  const entry = viMap.get(el._i18nGocText.toLowerCase());
+  if (!entry || !entry[lang]) return false;
+  el.textContent = fixUIText(entry[lang]);
+  el._i18nXong = true;
+  return true;
+}
+
 // `goc` là một phần tử hoặc mảng phần tử cần dịch. Bỏ trống thì dịch cả trang.
 // Quan sát viên DOM chỉ truyền vào nhánh vừa được thêm, nên một lần vẽ lại bảng
 // không còn kéo theo việc quét lại toàn bộ trang.
@@ -581,10 +622,23 @@ function translateAllDOMTexts(lang, goc) {
 
   _isTranslating = true;
   try {
+    // Bước 1 — thử khớp CẢ THẺ, đi từ ngoài vào trong. Thẻ nào thay được trọn
+    // câu thì bỏ qua luôn các thẻ con của nó.
+    const daThayNguyenThe = [];
+    dsGoc.forEach(root => {
+      const dsThe = [root, ...root.querySelectorAll('*')];
+      for (const el of dsThe) {
+        if (daThayNguyenThe.some(x => x !== el && x.contains(el))) continue;
+        if (_dichNguyenThe(el, viMap, lang) && el._i18nXong) daThayNguyenThe.push(el);
+      }
+    });
+
+    // Bước 2 — các nút chữ còn lại dịch riêng từng nút.
     dsGoc.forEach(root => {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
       let node;
       while ((node = walker.nextNode())) {
+        if (node.parentElement && node.parentElement._i18nXong) continue;
         _dichMotNutChu(node, viMap, lang);
       }
     });
@@ -666,23 +720,28 @@ if (typeof MutationObserver !== 'undefined') {
     }
     if (_nhanhMoi.length === 0) return;
     clearTimeout(_transDebounceTimer);
+    // Dịch NGAY trong khung hình kế tiếp, không hẹn giờ dài và không chờ lúc
+    // trình duyệt rảnh. Hoãn thì người dùng kịp đọc chữ tiếng Việt rồi mới thấy
+    // nó nhảy sang tiếng Anh/Lào — đúng cái "giật giật nhảy chữ". Bước dịch giờ
+    // chỉ chạm nhánh vừa thêm nên đủ nhẹ để làm ngay.
     _transDebounceTimer = setTimeout(() => {
       const dsGoc = _nhanhMoi;
       _nhanhMoi = [];
-      // Chạy lúc trình duyệt rảnh để không giành khung hình với thao tác cuộn.
-      const chay = () => translateAllDOMTexts(currentLang, dsGoc);
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(chay, { timeout: 500 });
-      else chay();
-    }, 120);
+      translateAllDOMTexts(currentLang, dsGoc);
+    }, 0);
   });
   window.addEventListener('DOMContentLoaded', () => {
     observer.observe(document.body, { childList: true, subtree: true });
   });
 }
 
+// Khóa lưu ngôn ngữ đang chọn trong trình duyệt.
+const KHOA_NGON_NGU = 'EPL_TMS_NGON_NGU';
+
 window.changeLanguage = function (lang) {
   currentLang = lang;
   document.documentElement.lang = lang === 'la' ? 'lo' : lang;
+  try { window.localStorage.setItem(KHOA_NGON_NGU, lang); } catch (e) { /* bị chặn thì thôi */ }
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     const value = appTranslations[key] && appTranslations[key][lang];
