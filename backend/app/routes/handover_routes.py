@@ -18,13 +18,16 @@ trên số chưa chốt. Toàn bộ số đọc lại từ `get_delivery_order_c
 một nguồn với khối "Hồ sơ đã hoàn tất" trên màn, nên không có hai con số khác
 nhau cho cùng một DO.
 """
-from fastapi import APIRouter, Depends, Request
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import DeliveryOrder
+from models import DeliveryOrder, DeliveryOrderCloseout
 from routes.finance_master_routes import require_authenticated_principal
 from services.errors import DomainError, conflict, raise_http
+import datetime as dt
 
 router = APIRouter(dependencies=[Depends(require_authenticated_principal)])
 
@@ -109,3 +112,61 @@ async def ban_giao_do(do_id: str, request: Request, db: Session = Depends(get_db
         raise_http(loi)
     closeout = goi.get("data", goi) if isinstance(goi, dict) else goi
     return {"message": "Hồ sơ bàn giao của %s." % do_id, "data": dong_goi_ban_giao(closeout)}
+
+
+def _ngay(chuoi, ten):
+    if not chuoi:
+        return None
+    try:
+        return dt.datetime.fromisoformat(str(chuoi).strip()[:19])
+    except ValueError:
+        raise_http(DomainError("INVALID_DATE", "Tham số %s phải là ngày ISO (YYYY-MM-DD)." % ten, 422))
+
+
+@router.get("/api/handover/delivery-orders")
+async def danh_sach_ban_giao(
+    request: Request,
+    customer_id: Optional[str] = Query(None, description="Chỉ lấy DO của một khách"),
+    completed_from: Optional[str] = Query(None, description="Hoàn tất từ ngày (ISO, gồm cả ngày đó)"),
+    completed_to: Optional[str] = Query(None, description="Hoàn tất đến ngày (ISO, gồm cả ngày đó)"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    """DANH SÁCH DO đã hoàn tất — bước quét của bên công nợ, trước khi gọi chi tiết theo `do_id`.
+
+    Mỗi dòng là header RÚT GỌN (không có sổ thu–chi) đọc từ `delivery_order_closeouts`: DO, khách,
+    báo giá gốc, giá bán cuối đã chốt, tiền tệ, lúc hoàn tất, và `detail_url` để lấy header + detail
+    đầy đủ. Mới hoàn tất trước. Chỉ những DO đã chốt hồ sơ mới xuất hiện — cùng nguyên tắc với API chi
+    tiết: không nhả số chưa chốt.
+    """
+    tu, den = _ngay(completed_from, "completed_from"), _ngay(completed_to, "completed_to")
+    q = (db.query(DeliveryOrderCloseout, DeliveryOrder)
+         .join(DeliveryOrder, DeliveryOrder.id == DeliveryOrderCloseout.do_id))
+    if customer_id:
+        q = q.filter(DeliveryOrder.customer_id == customer_id)
+    if tu:
+        q = q.filter(DeliveryOrderCloseout.completed_at >= tu.replace(tzinfo=dt.timezone.utc))
+    if den:
+        q = q.filter(DeliveryOrderCloseout.completed_at < (den + dt.timedelta(days=1)).replace(tzinfo=dt.timezone.utc))
+    tong = q.count()
+    dong = (q.order_by(DeliveryOrderCloseout.completed_at.desc(), DeliveryOrderCloseout.do_id.desc())
+            .offset((page - 1) * page_size).limit(page_size).all())
+    items = [{
+        "do_id": c.do_id,
+        "status": d.canonical_status,
+        "customer_id": d.customer_id,
+        "quotation_id": d.quotation_id,
+        "route_id": d.route_id,
+        "vehicle_id": d.vehicle_id,
+        "driver_id": d.driver_id,
+        "selling_price": float(c.base_selling_price_snapshot or 0),
+        "customer_surcharge_total": float(c.surcharge_total or 0),
+        "final_selling_price": float(c.final_selling_price or 0),
+        "currency": c.currency_code,
+        "completed_at": c.completed_at.isoformat() if c.completed_at else None,
+        "completed_by": c.completed_by,
+        "detail_url": "/api/handover/delivery-orders/%s" % c.do_id,
+    } for c, d in dong]
+    return {"message": "Danh sách %d lệnh giao hàng đã hoàn tất (trang %d)." % (tong, page),
+            "data": {"items": items, "total": tong, "page": page, "page_size": page_size}}
