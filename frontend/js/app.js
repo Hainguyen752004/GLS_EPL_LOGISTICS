@@ -470,60 +470,108 @@ function getViTranslationMap() {
 let _transDebounceTimer = null;
 let _isTranslating = false;
 
-function translateAllDOMTexts(lang) {
+// Regex của mỗi cụm được biên dịch MỘT lần rồi giữ lại. Trước đây mỗi lần một
+// cụm khớp là dựng `new RegExp` mới; với hơn ba nghìn cụm nhân với số nút chữ
+// trên màn thì riêng việc dựng regex đã đủ làm màn hình khựng.
+const _regexCumDich = new Map();
+function _regexCuaCum(k) {
+  let re = _regexCumDich.get(k);
+  if (!re) {
+    re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    _regexCumDich.set(k, re);
+  }
+  re.lastIndex = 0;
+  return re;
+}
+
+// Danh sách cụm dùng cho bước tìm-trong-chuỗi, dài nhất đứng trước.
+// Lọc luôn những cặp mà bản dịch TRÙNG với chính khóa (ví dụ khóa tiếng Anh khi
+// đang dịch sang tiếng Anh): thay nó vào cũng ra đúng chuỗi cũ, chỉ tốn công.
+function _dsCumDaiTruoc(viMap, lang) {
+  if (window._sortedViKeys && window._sortedViKeysLang === lang) return window._sortedViKeys;
+  window._sortedViKeys = Array.from(viMap.entries())
+    .filter(([k, v]) => k.length >= 4 && v[lang] && v[lang].trim().toLowerCase() !== k)
+    .sort((a, b) => b[0].length - a[0].length);
+  window._sortedViKeysLang = lang;
+  return window._sortedViKeys;
+}
+
+function _dichMotNutChu(node, viMap, lang) {
+  const parent = node.parentElement;
+  if (!parent) return;
+  const tagName = parent.tagName;
+  if (tagName === 'SCRIPT' || tagName === 'STYLE' || tagName === 'CODE' || tagName === 'NOSCRIPT') return;
+  if (parent.closest('[data-i18n]')) return;
+
+  if (node._origText === undefined) {
+    node._origText = node.nodeValue;
+  }
+  const orig = node._origText;
+  if (!orig) return;
+  const trimmed = orig.trim();
+  if (trimmed.length < 2) return;
+  if (/^\d+([\.,]\d+)*\s*(VNĐ|USD|LAK|THB|%|min|m|h)?$/.test(trimmed)) return;
+
+  if (lang === 'vi') {
+    node.nodeValue = orig;
+    return;
+  }
+
+  const entry = viMap.get(trimmed.toLowerCase());
+  if (entry && entry[lang]) {
+    node.nodeValue = orig.replace(trimmed, fixUIText(entry[lang]));
+    return;
+  }
+
+  // Không khớp nguyên câu thì mới dò từng cụm. Hạ chữ thường MỘT lần ở đây và
+  // chỉ hạ lại sau khi thật sự có thay thế — trước đây chuỗi bị hạ chữ lại ở
+  // MỖI vòng lặp, tức hàng nghìn lần cấp phát chuỗi cho mỗi nút chữ.
+  const danhSach = _dsCumDaiTruoc(viMap, lang);
+  let modified = orig;
+  let thuong = orig.toLowerCase();
+  for (let i = 0; i < danhSach.length; i++) {
+    const k = danhSach[i][0];
+    if (thuong.indexOf(k) === -1) continue;
+    modified = modified.replace(_regexCuaCum(k), fixUIText(danhSach[i][1][lang]));
+    thuong = modified.toLowerCase();
+  }
+  if (modified !== orig) {
+    node.nodeValue = modified;
+  }
+}
+
+// `goc` là một phần tử hoặc mảng phần tử cần dịch. Bỏ trống thì dịch cả trang.
+// Quan sát viên DOM chỉ truyền vào nhánh vừa được thêm, nên một lần vẽ lại bảng
+// không còn kéo theo việc quét lại toàn bộ trang.
+function translateAllDOMTexts(lang, goc) {
   if (_isTranslating) return;
   const viMap = getViTranslationMap();
   if (!viMap || viMap.size === 0) return;
 
+  const dsGoc = (goc ? (Array.isArray(goc) ? goc : [goc]) : [document.body])
+    .filter(el => el && el.nodeType === 1 && el.isConnected !== false);
+  if (dsGoc.length === 0) return;
+
   _isTranslating = true;
   try {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    while ((node = walker.nextNode())) {
-      const parent = node.parentElement;
-      if (!parent) continue;
-      const tagName = parent.tagName;
-      if (tagName === 'SCRIPT' || tagName === 'STYLE' || tagName === 'CODE' || tagName === 'NOSCRIPT') continue;
-      if (parent.closest('[data-i18n]')) continue;
-
-      if (node._origText === undefined) {
-        node._origText = node.nodeValue;
+    dsGoc.forEach(root => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+      while ((node = walker.nextNode())) {
+        _dichMotNutChu(node, viMap, lang);
       }
-      const orig = node._origText;
-      if (!orig) continue;
-      const trimmed = orig.trim();
-      if (trimmed.length < 2) continue;
-      if (/^\d+([\.,]\d+)*\s*(VNĐ|USD|LAK|THB|%|min|m|h)?$/.test(trimmed)) continue;
+    });
 
-      if (lang === 'vi') {
-        node.nodeValue = orig;
-        continue;
-      }
+    const timTrongGoc = chon => {
+      const ra = [];
+      dsGoc.forEach(root => {
+        if (root.matches && root.matches(chon)) ra.push(root);
+        ra.push(...root.querySelectorAll(chon));
+      });
+      return ra;
+    };
 
-      let entry = viMap.get(trimmed.toLowerCase());
-      if (entry && entry[lang]) {
-        node.nodeValue = orig.replace(trimmed, fixUIText(entry[lang]));
-      } else {
-        let modified = orig;
-        if (!window._sortedViKeys || window._sortedViKeysLang !== lang) {
-          window._sortedViKeys = Array.from(viMap.entries())
-            .filter(([k, v]) => k.length >= 4 && v[lang])
-            .sort((a, b) => b[0].length - a[0].length);
-          window._sortedViKeysLang = lang;
-        }
-        for (const [k, v] of window._sortedViKeys) {
-          if (v[lang] && modified.toLowerCase().includes(k)) {
-            const regex = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            modified = modified.replace(regex, fixUIText(v[lang]));
-          }
-        }
-        if (modified !== orig) {
-          node.nodeValue = modified;
-        }
-      }
-    }
-
-    document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(input => {
+    timTrongGoc('input[placeholder], textarea[placeholder]').forEach(input => {
       if (input.hasAttribute('data-i18n')) return;
       if (!input.dataset.origPh) input.dataset.origPh = input.getAttribute('placeholder');
       const orig = input.dataset.origPh;
@@ -540,7 +588,7 @@ function translateAllDOMTexts(lang) {
 
     // Chữ gợi ý khi rê chuột (title) cũng phải dịch: nhiều nút chỉ có icon,
     // nên title LÀ nhãn duy nhất người dùng đọc được.
-    document.querySelectorAll('[title]').forEach(el => {
+    timTrongGoc('[title]').forEach(el => {
       if (el.hasAttribute('data-i18n')) return;
       if (!el.dataset.origTitle) el.dataset.origTitle = el.getAttribute('title');
       const orig = el.dataset.origTitle;
@@ -550,7 +598,7 @@ function translateAllDOMTexts(lang) {
       if (entry && entry[lang]) el.setAttribute('title', fixUIText(entry[lang]));
     });
 
-    document.querySelectorAll('select option').forEach(opt => {
+    timTrongGoc('select option').forEach(opt => {
       if (opt.hasAttribute('data-i18n')) return;
       if (!opt.dataset.origText) opt.dataset.origText = opt.textContent.trim();
       const orig = opt.dataset.origText;
@@ -576,13 +624,29 @@ function translateAllDOMTexts(lang) {
 }
 
 if (typeof MutationObserver !== 'undefined') {
-  const observer = new MutationObserver(() => {
-    if (typeof currentLang !== 'undefined' && currentLang !== 'vi') {
-      clearTimeout(_transDebounceTimer);
-      _transDebounceTimer = setTimeout(() => {
-        translateAllDOMTexts(currentLang);
-      }, 100);
+  // Gom các nhánh vừa được thêm vào DOM. Trước đây mỗi thay đổi dù nhỏ đều kéo
+  // theo một lượt quét LẠI CẢ TRANG sau 100ms; một màn vẽ bảng vài chục lần
+  // thì trình duyệt không còn thời gian cho cuộn và chuyển màn.
+  let _nhanhMoi = [];
+  const observer = new MutationObserver(muts => {
+    if (typeof currentLang === 'undefined' || currentLang === 'vi') return;
+    if (_isTranslating) return;
+    for (const m of muts) {
+      for (const n of m.addedNodes) {
+        if (n.nodeType === 1) _nhanhMoi.push(n);
+        else if (n.nodeType === 3 && n.parentElement) _nhanhMoi.push(n.parentElement);
+      }
     }
+    if (_nhanhMoi.length === 0) return;
+    clearTimeout(_transDebounceTimer);
+    _transDebounceTimer = setTimeout(() => {
+      const dsGoc = _nhanhMoi;
+      _nhanhMoi = [];
+      // Chạy lúc trình duyệt rảnh để không giành khung hình với thao tác cuộn.
+      const chay = () => translateAllDOMTexts(currentLang, dsGoc);
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(chay, { timeout: 500 });
+      else chay();
+    }, 120);
   });
   window.addEventListener('DOMContentLoaded', () => {
     observer.observe(document.body, { childList: true, subtree: true });
