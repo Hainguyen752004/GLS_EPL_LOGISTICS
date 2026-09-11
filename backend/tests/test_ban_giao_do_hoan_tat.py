@@ -51,7 +51,9 @@ def test_dong_goi_header_va_details_tu_closeout():
     assert h["pod_count"] == 1 and h["pod_receiver"] == "Anh Tư"
     assert h["final_selling_price"] == 2736000.0 and h["actual_cost_total"] == 1781182.0
     assert len(d) == 2
-    assert d[0] == {"line_no": 1, "kind": "chi", "acc_code": "6421", "missing_acc_code": False, "charge_type": "fuel",
+    # Mỗi dòng mang `currency` của chính nó (thêm 11/09): dòng chi theo phiếu chi phí, dòng
+    # thu theo báo giá — trước đây mảng này trộn hai đơn vị mà không có nhãn nào.
+    assert d[0] == {"line_no": 1, "kind": "chi", "acc_code": "6421", "missing_acc_code": False, "charge_type": "fuel", "currency": "VND",
                     "name": "Chi phí xăng dầu /km", "planned_amount": 745752.0, "actual_amount": 641182.0,
                     "customer_extra": 0.0, "variance": -104570.0, "source": "vehicle",
                     "calculation": "96.5 km × 7.728 VND", "ref_id": "L1"}

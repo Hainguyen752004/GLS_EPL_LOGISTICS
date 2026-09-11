@@ -634,6 +634,61 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
     tong_chi_phi_thuc_te = tong_thuc_te if tong_thuc_te > 0 else actual_total
     phan_vuot_so_ke_hoach = actual_total if tong_thuc_te > 0 else 0.0
 
+    # ================= HAI ĐƠN VỊ TIỀN TRONG MỘT HỒ SƠ =================
+    #
+    # LỖI ĐÃ ĐO ĐƯỢC (11/09, DO-2026-0008-DO01, báo giá 120 USD): gói này trả
+    # `currency: "USD"` cho CẢ hồ sơ, trong khi `actual_cost_total = 851.000` là
+    # ĐỒNG VIỆT NAM — nên `margin_amount = 135 − 851.000 = −850.865`,
+    # `margin_percent = −630.270%`, mà `khop_gia_thanh` vẫn báo `true`. Ai đọc gói
+    # này để lập phiếu sẽ thấy một chuyến lãi âm sáu trăm nghìn phần trăm.
+    #
+    # VÌ SAO HAI ĐƠN VỊ LÀ ĐÚNG, không phải lỗi dữ liệu: cước khách trả ghi bằng
+    # tiền của BÁO GIÁ (khách Lào trả Kip, khách FDI trả đô), còn chi phí thực tế
+    # của chuyến ghi bằng tiền CHỨC NĂNG của công ty (đồng) vì dầu, BOT, phụ cấp
+    # đều chi bằng đồng. Sai là ở chỗ gói chỉ có MỘT nhãn tiền tệ cho cả hai.
+    #
+    # Nên: nói rõ từng bên đang là tiền gì, và quy đổi bằng ĐÚNG tỷ giá báo giá đã
+    # khoá (`quotations.fx_rate`, số đồng cho một đơn vị ngoại tệ) — không lấy tỷ
+    # giá hôm nay, vì cước đã chốt với khách theo tỷ giá ngày báo giá.
+    #
+    # Không có tỷ giá mà hai bên khác đơn vị thì KHÔNG BỊA: lãi trả `None` kèm lý
+    # do. Một con số lãi sai trông không khác gì con số đúng, và đây là số bên
+    # công nợ lập phiếu.
+    TIEN_CHUC_NANG = "VND"
+    tien_thu = ((closeout.currency_code if closeout else None) or tien_te_nguon
+                or (formula or {}).get("currency") or TIEN_CHUC_NANG).upper()
+    tien_chi = ((actual_cost.currency_code if actual_cost else None)
+                or (TIEN_CHUC_NANG if tong_chi_phi_thuc_te else tien_thu)).upper()
+    ty_gia = None
+    nguon_ty_gia = ""
+    if tien_thu != tien_chi:
+        gia_tri = float(getattr(quotation, "fx_rate", 0) or 0) if quotation is not None else 0.0
+        # `quotations.fx_rate` có MẶC ĐỊNH 1.0, nên "chưa khai tỷ giá" và "tỷ giá bằng 1"
+        # trông giống nhau. Giữa hai đơn vị KHÁC nhau thì 1 không phải một tỷ giá thật
+        # (1 USD không bằng 1 đồng), nên coi là chưa khai và tra bảng tiền tệ.
+        if gia_tri > 0 and gia_tri != 1:
+            ty_gia, nguon_ty_gia = gia_tri, "quotation"
+        else:
+            from models import Currency
+            ma_ngoai = tien_thu if tien_chi == TIEN_CHUC_NANG else tien_chi
+            row = db.get(Currency, ma_ngoai)
+            gia_tri = float(row.exchange_rate or 0) if row is not None else 0.0
+            if gia_tri > 0:
+                ty_gia, nguon_ty_gia = gia_tri, "currency_table"
+
+    def _ve_tien_thu(so_tien, tien_goc):
+        """Quy đổi một số tiền về đơn vị của phần THU. `None` khi không có tỷ giá."""
+        if so_tien is None:
+            return None
+        goc = (tien_goc or TIEN_CHUC_NANG).upper()
+        if goc == tien_thu:
+            return float(so_tien)
+        if not ty_gia:
+            return None
+        if goc == TIEN_CHUC_NANG:
+            return round(float(so_tien) / ty_gia, 2)      # đồng -> ngoại tệ
+        return round(float(so_tien) * ty_gia, 2)          # ngoại tệ -> đồng
+
     # ======================= SỔ THU – CHI TỪNG DÒNG (`ledger_lines`) =======================
     #
     # ĐÂY LÀ THỨ ĐỒNG NGHIỆP CỦA CHỦ DỰ ÁN (anh Khang) ĐỌC ĐỂ LẬP PHIẾU. Yêu cầu
@@ -761,6 +816,9 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
     # Trả cả hai khoá, cùng một giá trị, để bên đọc dùng tên quen của họ.
     for d in so_dong:
         d["acc_code"] = d["cost_index"]
+        # TỪNG DÒNG mang đơn vị tiền của chính nó: dòng chi theo phiếu chi phí, dòng
+        # thu theo báo giá. Thiếu nó thì mảng này trộn hai đơn vị mà không có nhãn.
+        d["currency"] = tien_chi if d["kind"] == "chi" else tien_thu
     for danh_sach in (configured_cost_lines, actual_cost_lines, customer_adjustments):
         for d in danh_sach or []:
             d["acc_code"] = d.get("cost_index") or ""
@@ -768,6 +826,10 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
     tong_thu = sum(d["actual_amount"] if d["source"] != "customer_surcharge" else d["customer_extra"]
                    for d in so_dong if d["kind"] == "thu")
     tong_chi = sum(d["actual_amount"] for d in so_dong if d["kind"] == "chi")
+    # `cost_basis` lấy từ phiếu chi phí thực tế thì nó bằng tiền của phiếu; lấy từ
+    # báo giá / công thức thì bằng tiền báo giá.
+    _tien_cua_cost_basis = tien_chi if tong_chi_phi_thuc_te else tien_thu
+    _tong_chi_quy_doi = _ve_tien_thu(tong_chi, tien_chi)
     tong_so = {
         "tong_thu": tong_thu,
         "tong_chi": tong_chi,
@@ -776,12 +838,38 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
         # tổng THU của sổ phải bằng giá cuối DO, tổng CHI phải bằng giá thành
         # dùng tính lãi. Lệch là có dòng bị sót hoặc đếm hai lần.
         "khop_gia_cuoi": abs(tong_thu - gia_ban_cuoi) < 1.0,
-        "khop_gia_thanh": abs(tong_chi - cost_basis) < 1.0 if cost_basis else True,
+        # Đối chiếu giá thành CHỈ khi cùng đơn vị tiền. Trước đây nó so 851.000 VNĐ
+        # với `cost_basis` rồi trả `true` — khẳng định khớp giữa hai đơn vị khác nhau.
+        "khop_gia_thanh": ((abs(tong_chi - cost_basis) < 1.0 if cost_basis else True)
+                           if tien_chi == _tien_cua_cost_basis else None),
         "so_dong_thieu_ma": sum(1 for d in so_dong if d["missing_cost_index"]),
-        "currency": (closeout.currency_code if closeout else None)
-                    or (actual_cost.currency_code if actual_cost else None)
-                    or tien_te_nguon or (formula or {}).get("currency") or "VND",
+        # `currency` giữ nghĩa CŨ (tiền của phần thu) để bên đang đọc không đứt; hai
+        # khoá dưới nói chính xác từng bên.
+        "currency": tien_thu,
+        "currency_thu": tien_thu,
+        "currency_chi": tien_chi,
+        "tong_chi_quy_doi": _tong_chi_quy_doi,
+        "lai_gop_quy_doi": (None if _tong_chi_quy_doi is None
+                            else round(tong_thu - _tong_chi_quy_doi, 2)),
+        "fx_rate": ty_gia,
     }
+    if tien_thu != tien_chi:
+        # `lai_gop` cũ là phép trừ giữa hai đơn vị — thay bằng số đã quy đổi (hoặc
+        # `None`), thay vì để một con số vô nghĩa nằm cạnh những con số đúng.
+        tong_so["lai_gop"] = tong_so["lai_gop_quy_doi"]
+    # LÃI GỘP tính MỘT LẦN, trong đơn vị của phần thu: giá bán bằng tiền báo giá,
+    # giá thành quy đổi về đúng đơn vị đó.
+    _gia_ban = _decimal_to_float(closeout.final_selling_price) if closeout else selling_price
+    _cost_basis_quy_doi = _ve_tien_thu(cost_basis, _tien_cua_cost_basis)
+    if _cost_basis_quy_doi is None:
+        _lai_amount = _lai_percent = None
+        _lai_ly_do = ("Giá bán bằng %s, giá thành bằng %s, chưa có tỷ giá để quy đổi — "
+                      "nhập tỷ giá %s ở Dữ liệu gốc → Tiền tệ." % (tien_thu, tien_chi, tien_thu))
+    else:
+        _lai_amount = round(_gia_ban - _cost_basis_quy_doi, 2)
+        _lai_percent = round((_lai_amount / _gia_ban) * 100, 2) if _gia_ban else 0.0
+        _lai_ly_do = ""
+
     currency = (
         (closeout.currency_code if closeout else None)
         or
@@ -828,13 +916,21 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
             "pallet_count": delivery_order.pallet_count,
             "volume_m3": _decimal_to_float(delivery_order.volume_m3),
             "packaging_spec": delivery_order.packaging_spec or "",
+            # ĐƠN VỊ CƯỚC và SỐ LƯỢNG TÍNH TIỀN. Thiếu ba trường này thì bên công nợ
+            # chỉ thấy một số tiền tổng, không biết giá tính theo chuyến hay theo kg,
+            # nên không dựng được dòng hoá đơn có số lượng × đơn giá.
+            "price_basis": delivery_order.price_basis or "",
+            "billed_qty": _decimal_to_float(delivery_order.billed_qty),
+            "unit_price": _decimal_to_float(delivery_order.unit_price),
         },
         "currency": currency,
         "cost_formula": formula,
         "configured_cost_lines": configured_cost_lines,
         "commercials": {
             "quoted_cost": quoted_cost,
+            "quoted_cost_currency": tien_thu,           # giá thành kế hoạch lấy từ báo giá
             "actual_cost_total": tong_chi_phi_thuc_te,
+            "actual_cost_total_currency": tien_chi,     # chi phí thực tế theo phiếu chi phí
             # Mẫu số của `margin_percent`, trả ra để bên đọc kiểm được con số
             # lãi chứ không phải tin nó. Thiếu nó thì một chênh lệch giữa
             # `actual_cost_total` và giá thành dùng để tính lãi là vô hình.
@@ -849,9 +945,18 @@ def get_delivery_order_closeout(do_id: str, request: Request, db: Session = Depe
             "base_price_source_id": closeout.base_price_source_id if closeout else (quotation.id if quotation else ""),
             "customer_surcharge_total": _decimal_to_float(closeout.surcharge_total) if closeout else 0.0,
             "final_selling_price": _decimal_to_float(closeout.final_selling_price) if closeout else selling_price,
-            "margin_amount": (_decimal_to_float(closeout.final_selling_price) if closeout else selling_price) - cost_basis,
-            "margin_percent": round((((_decimal_to_float(closeout.final_selling_price) if closeout else selling_price) - cost_basis) / (_decimal_to_float(closeout.final_selling_price) if closeout else selling_price)) * 100, 2) if (_decimal_to_float(closeout.final_selling_price) if closeout else selling_price) else 0.0,
+            "margin_amount": _lai_amount,
+            "margin_percent": _lai_percent,
+            "margin_currency": tien_thu,
+            "margin_unavailable_reason": _lai_ly_do,
             "margin_is_provisional": actual_cost is None,
+            # Hai bên tiền tệ, nói rõ để bên công nợ không cộng trừ chéo đơn vị.
+            "currency_thu": tien_thu,
+            "currency_chi": tien_chi,
+            "cost_basis_currency": _tien_cua_cost_basis,
+            "cost_basis_quy_doi": _cost_basis_quy_doi,
+            "fx_rate": ty_gia,
+            "fx_rate_source": nguon_ty_gia,
         },
         "customer_charge_adjustments": customer_adjustments,
         # Sổ thu–chi từng dòng, mỗi dòng mang mã costindex — gói cho hệ công nợ.

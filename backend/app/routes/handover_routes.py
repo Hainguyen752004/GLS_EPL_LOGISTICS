@@ -48,7 +48,14 @@ def dong_goi_ban_giao(closeout):
     header = {
         "do_id": closeout.get("do_id") or do.get("id"),
         "status": closeout.get("status") or do.get("canonical_status"),
+        # `currency` = tiền của phần THU (khách trả) — giữ nghĩa cũ. Hai khoá dưới nói
+        # rõ từng bên: chi phí thực tế của chuyến ghi bằng tiền chức năng (VNĐ) trong
+        # khi cước khách theo báo giá có thể là USD / LAK.
         "currency": closeout.get("currency") or "VND",
+        "currency_thu": com.get("currency_thu") or closeout.get("currency") or "VND",
+        "currency_chi": com.get("currency_chi") or "VND",
+        "fx_rate": com.get("fx_rate"),
+        "fx_rate_source": com.get("fx_rate_source") or "",
         "customer_id": closeout.get("customer_id") or do.get("customer_id"),
         "quotation_id": closeout.get("quotation_id"),
         "route": _gon(closeout.get("route"), "id", "name", "origin", "destination", "distance_km"),
@@ -70,9 +77,19 @@ def dong_goi_ban_giao(closeout):
         "customer_surcharge_total": com.get("customer_surcharge_total"),
         "final_selling_price": com.get("final_selling_price"),
         "quoted_cost": com.get("quoted_cost"),
+        "quoted_cost_currency": com.get("quoted_cost_currency") or com.get("currency_thu") or "VND",
         "actual_cost_total": com.get("actual_cost_total"),
+        "actual_cost_total_currency": com.get("actual_cost_total_currency") or com.get("currency_chi") or "VND",
+        "actual_cost_total_quy_doi": com.get("cost_basis_quy_doi"),
         "margin_amount": com.get("margin_amount"),
         "margin_percent": com.get("margin_percent"),
+        "margin_currency": com.get("margin_currency") or com.get("currency_thu") or "VND",
+        "margin_unavailable_reason": com.get("margin_unavailable_reason") or "",
+        # Đơn vị cước và số lượng tính tiền: thiếu hai trường này thì bên công nợ không
+        # dựng được dòng hoá đơn, vì không biết giá tính theo chuyến hay theo kg.
+        "price_basis": do.get("price_basis") or "",
+        "billed_qty": do.get("billed_qty"),
+        "unit_price": do.get("unit_price"),
         "ledger_totals": tong,
         "cost_formula": _gon(closeout.get("cost_formula"), "id", "name", "currency"),
     }
@@ -89,6 +106,7 @@ def dong_goi_ban_giao(closeout):
             "actual_amount": l.get("actual_amount"),
             "customer_extra": l.get("customer_extra"),
             "variance": l.get("variance"),
+            "currency": l.get("currency") or "VND",
             "source": l.get("source"),
             "calculation": l.get("calculation"),
             "ref_id": l.get("actual_cost_line_id") or l.get("adjustment_id"),

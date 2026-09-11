@@ -304,7 +304,7 @@ HỒ SƠ HOÀN TẤT của DO: giá gốc, khách trả thêm, GIÁ BÁN CUỐI,
 | `completed_by` | VARCHAR(255) | có |  |
 | `created_at` | DATETIME | có |  |
 
-Ràng buộc: `base_selling_price_snapshot >= 0`; `surcharge_total >= 0`; `final_selling_price = base_selling_price_snapshot + surcharge_total`; `final_selling_price >= 0`
+Ràng buộc: `final_selling_price >= 0`; `base_selling_price_snapshot >= 0`; `surcharge_total >= 0`; `final_selling_price = base_selling_price_snapshot + surcharge_total`
 
 ### `delivery_orders` — Vận hành
 
@@ -443,7 +443,7 @@ Ca trực / ca nghỉ của tài xế; điều phối đòi ca phủ trọn th�
 | `created_by` | VARCHAR(128) | có |  |
 | `updated_by` | VARCHAR(128) | có |  |
 
-Ràng buộc: `shift_end > shift_start`; `status IN ('planned','confirmed','cancelled')`; `shift_type IN ('morning','afternoon','night','office','custom')`; `availability_kind IN ('work','leave','sick','off','unavailable')`
+Ràng buộc: `status IN ('planned','confirmed','cancelled')`; `shift_type IN ('morning','afternoon','night','office','custom')`; `shift_end > shift_start`; `availability_kind IN ('work','leave','sick','off','unavailable')`
 
 ### `drivers` — Dữ liệu gốc
 
@@ -552,7 +552,7 @@ Bảng CHI PHÍ PHÁT SINH của một chuyến đã hoàn tất: tiền tệ, t
 | `approved_by` | VARCHAR |  |  |
 | `reversed_by` | VARCHAR |  |  |
 
-Ràng buộc: `(status = 'reversed' AND is_active = false) OR (status <> 'reversed' AND is_active = true)`; `version > 0`; `status <> 'reversed' OR reversal_of_cost_id IS NOT NULL OR reversed_by_cost_id IS NOT NULL`; `status IN ('draft','submitted','approved','reversed')`; `reversal_of_cost_id IS NULL OR reversal_of_cost_id <> id`; `planned_distance_km >= 0 AND actual_distance_km >= 0`; `reversal_of_cost_id IS NULL OR (status = 'reversed' AND is_active = false AND length(trim(reversal_reason)) > 0 AND subt`
+Ràng buộc: `planned_distance_km >= 0 AND actual_distance_km >= 0`; `reversal_of_cost_id IS NULL OR (status = 'reversed' AND is_active = false AND length(trim(reversal_reason)) > 0 AND subt`; `(status = 'reversed' AND is_active = false) OR (status <> 'reversed' AND is_active = true)`; `status <> 'reversed' OR reversal_of_cost_id IS NOT NULL OR reversed_by_cost_id IS NOT NULL`; `status IN ('draft','submitted','approved','reversed')`; `reversal_of_cost_id IS NULL OR reversal_of_cost_id <> id`; `version > 0`
 
 ### `freight_charge_items` — Chi phí
 

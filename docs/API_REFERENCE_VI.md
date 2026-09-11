@@ -48,7 +48,7 @@ Trả `data.items[]` (mới hoàn tất trước), `data.total`, `data.page`, `d
 | `selling_price` | Cước theo báo giá (giá gốc đã khoá) |
 | `customer_surcharge_total` | Khách trả thêm lúc giao |
 | `final_selling_price` | **Giá bán cuối** = cước + khách trả thêm |
-| `currency` | Tiền tệ (VND, USD…) |
+| `currency` | Tiền tệ của CƯỚC KHÁCH TRẢ, theo báo giá (VND, USD, LAK…) |
 | `completed_at`, `completed_by` | Lúc chốt hồ sơ, người chốt |
 | `detail_url` | Đường gọi API 2 cho DO này |
 
@@ -64,7 +64,7 @@ Trả `data.header` và `data.details[]`.
 
 | Trường | Ý nghĩa |
 |---|---|
-| `do_id`, `status`, `currency` | Mã DO, trạng thái (`delivered`), tiền tệ |
+| `do_id`, `status` | Mã DO, trạng thái (luôn `delivered`) |
 | `customer_id`, `quotation_id` | Khách, báo giá gốc |
 | `route` {`id`,`name`,`origin`,`destination`,`distance_km`} | Tuyến |
 | `origin`, `destination`, `weight_kg`, `volume_m3`, `pallet_count` | Điểm và lô hàng |
@@ -72,14 +72,35 @@ Trả `data.header` và `data.details[]`.
 | `trip_id`, `trip_status`, `vehicle_id`, `driver_id`, `co_driver_id` | Chuyến và tổ lái đã chạy |
 | `actual_departure_at`, `actual_arrival_at` | Giờ đi/đến thực tế |
 | `pod_count`, `pod_signed_at`, `pod_receiver` | POD: số bản, giờ ký cuối, người nhận |
-| `selling_price` | Cước báo khách (giá gốc khoá theo báo giá) |
-| `customer_surcharge_total` | Tổng khách trả thêm |
-| `final_selling_price` | **Giá bán cuối** — số lập phiếu thu |
-| `quoted_cost` | Giá thành kế hoạch theo công thức lúc báo giá |
-| `actual_cost_total` | Giá thành thực tế đã chốt |
-| `margin_amount`, `margin_percent` | Lợi nhuận, biên |
-| `ledger_totals` {`tong_thu`,`tong_chi`,`lai_gop`,`khop_gia_cuoi`,`so_dong_thieu_ma`…} | Tổng sổ thu–chi và cờ khớp |
+| `price_basis` | Đơn vị cước: `per_trip` mỗi chuyến · `per_kg` · `per_tonne` · `per_m3` · `per_km` |
+| `unit_price`, `billed_qty` | Đơn giá theo `price_basis`, và số lượng tính tiền — dùng để dựng dòng hoá đơn |
+| `selling_price` | Cước báo khách (giá gốc khoá theo báo giá), bằng `currency_thu` |
+| `customer_surcharge_total` | Tổng khách trả thêm, bằng `currency_thu` |
+| `final_selling_price` | **Giá bán cuối** — số lập phiếu thu, bằng `currency_thu` |
+| `quoted_cost`, `quoted_cost_currency` | Giá thành kế hoạch theo báo giá, và đơn vị của nó |
+| `actual_cost_total`, `actual_cost_total_currency` | Giá thành thực tế đã chốt, và đơn vị của nó (thường VND) |
+| `actual_cost_total_quy_doi` | Giá thành thực tế QUY ĐỔI về `currency_thu`; `null` nếu chưa có tỷ giá |
+| `margin_amount`, `margin_percent`, `margin_currency` | Lợi nhuận và biên, tính trong `currency_thu` |
+| `margin_unavailable_reason` | Chuỗi rỗng khi tính được; có chữ khi hai đơn vị khác nhau mà chưa có tỷ giá |
+| `ledger_totals` {`tong_thu`,`tong_chi`,`tong_chi_quy_doi`,`lai_gop`,`currency_thu`,`currency_chi`,`fx_rate`,`khop_gia_cuoi`,`khop_gia_thanh`,`so_dong_thieu_ma`} | Tổng sổ thu–chi và cờ đối chiếu |
 | `cost_formula` {`id`,`name`,`currency`} | Công thức giá thành đã dùng |
+
+**HAI ĐƠN VỊ TIỀN TRONG MỘT HỒ SƠ — đọc kỹ chỗ này.** Cước khách trả ghi bằng tiền của
+BÁO GIÁ (khách Lào trả LAK, khách FDI trả USD), còn chi phí thực tế của chuyến ghi bằng
+tiền CHỨC NĂNG của công ty là VND, vì dầu, BOT, phụ cấp đều chi bằng đồng. Nên:
+
+| Trường | Ý nghĩa |
+|---|---|
+| `currency` | Giữ nghĩa cũ = `currency_thu`. Để mã đang đọc trường này không phải sửa |
+| `currency_thu` | Đơn vị của MỌI số phía THU: `selling_price`, `customer_surcharge_total`, `final_selling_price`, `margin_amount` |
+| `currency_chi` | Đơn vị của MỌI số phía CHI: `actual_cost_total` và các dòng `kind = "chi"` |
+| `fx_rate` | Tỷ giá đã dùng: số VND cho MỘT đơn vị `currency_thu`. `null` khi hai bên cùng đơn vị |
+| `fx_rate_source` | `quotation` (tỷ giá báo giá đã khoá với khách — ưu tiên) hoặc `currency_table` |
+
+Quy tắc: **không cộng hay trừ hai số khác `currency`**. Muốn một con số duy nhất thì dùng
+`actual_cost_total_quy_doi` và `ledger_totals.tong_chi_quy_doi`, cả hai đã về `currency_thu`.
+Khi hai đơn vị khác nhau mà không có tỷ giá, hệ trả `null` cho các trường quy đổi và ghi lý
+do ở `margin_unavailable_reason` — KHÔNG bịa một con số lãi.
 
 **`details[]`** — TỪNG DÒNG thu / chi để lập phiếu:
 
@@ -87,6 +108,7 @@ Trả `data.header` và `data.details[]`.
 |---|---|
 | `line_no` | Số dòng |
 | `kind` | `thu` (tiền thu của khách) hoặc `chi` (chi phí công ty) |
+| `currency` | Đơn vị tiền CỦA DÒNG NÀY: dòng `thu` theo báo giá, dòng `chi` theo phiếu chi phí |
 | `acc_code` | **Acc code** — mã tài khoản kế toán bên công nợ, chọn trên khoản mục công thức |
 | `missing_acc_code` | `true` nếu dòng chưa có Acc code (phải bổ sung ở Dữ liệu gốc → Công thức) |
 | `charge_type` | Loại khoản: `fuel`, `driver`, `toll`, `yard`, `freight_revenue`, `customer_surcharge`… |
@@ -104,13 +126,19 @@ Lỗi: `404 DELIVERY_ORDER_NOT_FOUND`; `409 DO_NOT_COMPLETED` khi DO chưa hoàn
 Ví dụ rút gọn:
 
 ```json
-{"message": "Hồ sơ bàn giao của DO-2026-0001-DO01.",
- "data": {"header": {"do_id": "DO-2026-0001-DO01", "status": "delivered", "currency": "VND",
-                     "customer_id": "DEMO-CUS-NIDEC", "quotation_id": "QT-2026-001",
-                     "trip_id": "TRIP-…-C01", "vehicle_id": "DEMO-51C-556.12", "driver_id": "DEMO-DRV-001",
-                     "selling_price": 2486000.0, "customer_surcharge_total": 180000.0, "final_selling_price": 2666000.0,
-                     "quoted_cost": 1714540.0, "actual_cost_total": 1731767.0, "margin_amount": 934233.0, "margin_percent": 35.04},
-          "details": [{"line_no": 1, "kind": "chi", "acc_code": "1091", "missing_acc_code": false, "charge_type": "fuel",
+{"message": "Hồ sơ bàn giao của DO-2026-0008-DO01.",
+ "data": {"header": {"do_id": "DO-2026-0008-DO01", "status": "delivered",
+                     "currency": "USD", "currency_thu": "USD", "currency_chi": "VND",
+                     "fx_rate": 26173.5, "fx_rate_source": "quotation",
+                     "customer_id": "DEMO-CUS-POUYUEN", "quotation_id": "QT-2026-009",
+                     "trip_id": "TRIP-PY-USD-01", "vehicle_id": "DEMO-51C-129.03", "driver_id": "DEMO-DRV-005",
+                     "price_basis": "per_trip", "unit_price": 120.0,
+                     "selling_price": 120.0, "customer_surcharge_total": 15.0, "final_selling_price": 135.0,
+                     "actual_cost_total": 851000.0, "actual_cost_total_currency": "VND",
+                     "actual_cost_total_quy_doi": 32.51,
+                     "margin_amount": 102.49, "margin_percent": 75.92, "margin_currency": "USD",
+                     "margin_unavailable_reason": ""},
+          "details": [{"line_no": 1, "kind": "chi", "currency": "VND", "acc_code": "1091", "missing_acc_code": false, "charge_type": "fuel",
                        "name": "Chi phí xăng dầu /km", "planned_amount": 344520.0, "actual_amount": 361746.0,
                        "customer_extra": 0.0, "variance": 17226.0, "source": "actual_cost", "calculation": "44.7 km × 7.708 VND", "ref_id": "…"},
                       {"line_no": 5, "kind": "thu", "acc_code": "1211", "missing_acc_code": false, "charge_type": "freight_revenue",
@@ -1780,6 +1808,18 @@ Sự cố trên đường.
 Báo sự cố `{do_id, vehicle_id, incident_type, severity, location, description, reporter}`. Xe phải thuộc DO/chuyến đó.
 
 Thân yêu cầu (JSON) — các trường máy chủ đọc: `description`, `do_id`, `incident_type`, `location`, `reporter`, `severity`, `vehicle_id`.
+
+### `PUT /api/incidents/{incident_id}/status`
+
+Đổi trạng thái một sự cố: đang xử lý, đã xử lý (đóng), hoặc mở lại.
+
+| Tham số | Vị trí | Kiểu | Bắt buộc |
+|---|---|---|---|
+| `incident_id` | đường dẫn | chuỗi | có |
+
+Thân yêu cầu (JSON) — các trường máy chủ đọc: `note`, `status`.
+
+*Ghi chú:* Thân: `status` nhận `Open` | `In Progress` | `Resolved`, và `note` (ghi chú xử lý). Đóng sự cố (`Resolved`) BẮT BUỘC có `note` — đóng mà không nói đã xử lý thế nào thì người đọc sổ sau này không biết gì. Gửi lại đúng trạng thái đang có mà không kèm ghi chú thì trả về nguyên trạng, không ghi thêm lịch sử.
 
 ## 15. Dữ liệu tổng cho giao diện
 
