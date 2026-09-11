@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#8E0E15">
+<title>EPL Tài xế</title>
+<link rel="icon" href="img/logo-epl.jpg">
+<link rel="apple-touch-icon" href="img/logo-epl.jpg">
+<!--
+  TRANG TÀI XẾ — DỰ ÁN RIÊNG, NẰM NGOÀI EPL_System.
+
+  Chủ dự án (11/09): *"trang tài xế là trang riêng dựng ra ngoài cái EPL"*, dùng API đã host
+  tại http://senvangsolutions.com:1506. Không một dòng nào của EPL_System bị sửa vì trang này.
+
+  HAI MÀN, KHÔNG PHẢI MỘT TRANG DÀI. Bản trước bấm vào thẻ chuyến thì hồ sơ đổ xuống DƯỚI
+  danh sách, nên tài xế phải cuộn để đọc và vẫn thấy danh sách chen ngang — chủ dự án nói
+  thẳng: *"lick vào chỉ mở cái from số xuống thoi thì nó xấu quá"*. Giờ bấm thẻ là MỞ HẲN màn
+  chi tiết (bản đồ trên, việc cần làm dưới, nút Quay lại ở góc) đúng như một ứng dụng điện
+  thoại. Hai màn nằm cùng một tệp và đổi bằng thuộc tính `hidden`, không cần bộ định tuyến.
+
+  MÀU LẤY TỪ LOGO EPL (img/logo-epl.jpg): rồng đỏ, vòng xanh lá, viên ngọc vàng. Đỏ là màu
+  thương hiệu và màu của việc-cần-làm; xanh lá là việc đã xong; vàng là cảnh báo. Nền xám hơi
+  ấm cho khớp với logo, không dùng xám trung tính lạnh.
+
+  Viết cho ĐIỆN THOẠI trước: một cột, nút cao tối thiểu 52px, mọi ô nhập cỡ chữ 1rem (dưới
+  16px thì iOS tự phóng to trang khi chạm vào ô), tôn trọng vùng an toàn tai thỏ. Không khung
+  cố định theo pixel, nên máy nhỏ 320px hay xoay ngang vẫn đọc được.
+
+  Tài xế chỉ thấy chuyến CỦA MÌNH: mọi dòng đọc từ `GET /api/tracking/control-tower` rồi lọc
+  theo `driver_id`/`co_driver_id`. Lọc ở đây là lọc TRÌNH BÀY cho bản demo, không phải lớp
+  bảo mật — xem README.
+-->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    /* Lấy từ logo EPL */
+    --do:#b4121b; --do-dam:#8e0e15; --do-nhat:#fdecec;
+    --luc:#3f8f21; --luc-nhat:#edf7e7;
+    --vang:#c98209; --vang-nhat:#fdf4e3;
+    --chu:#17181c; --mo:#6b6a67; --nhat:#96948f;
+    --nen:#f4f2ef; --the:#fff; --vien:#e4e0da; --vien-dam:#cfc9c0;
+    --bong:0 1px 2px rgba(23,24,28,.05), 0 6px 18px rgba(23,24,28,.06);
+    --bong-cao:0 -2px 16px rgba(23,24,28,.12);
+    --r:16px; --r-nho:10px; --cao-nut:52px;
+    --tren:env(safe-area-inset-top); --duoi:env(safe-area-inset-bottom);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--nen); color:var(--chu);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-variant-numeric:tabular-nums;
+  }
+  .khung{width:100%; max-width:34rem; margin:0 auto; padding-inline:.875rem}
+  b,strong{font-weight:700}
+  [hidden]{display:none!important}
+  button{font:inherit; color:inherit}
+
+  /* ---------- đầu trang ---------- */
+  header{background:linear-gradient(150deg,#a2101a,#6f0b11 72%); color:#fff;
+         padding-top:calc(.7rem + var(--tren)); padding-bottom:.8rem;
+         box-shadow:0 2px 14px rgba(110,10,16,.28); position:relative; z-index:5}
+  header .dong{display:flex; align-items:center; gap:.7rem}
+  .logo{width:2.6rem; height:2.6rem; border-radius:50%; background:#fff; flex:none;
+        object-fit:contain; padding:2px; box-shadow:0 2px 8px rgba(0,0,0,.22)}
+  .hieu{flex:1; min-width:0; line-height:1.15}
+  .hieu b{display:block; font-size:1.02rem; letter-spacing:-.01em}
+  .hieu span{display:block; font-size:.74rem; font-weight:600; letter-spacing:.1em;
+             text-transform:uppercase; color:#f3c9cb}
+  .nut-tron{width:2.6rem; height:2.6rem; flex:none; border-radius:50%; cursor:pointer;
+            background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
+            color:#fff; font-size:1.1rem; display:grid; place-items:center}
+  .nut-tron:active{background:rgba(255,255,255,.3)}
+  .toi{margin-top:.7rem; position:relative; display:flex; align-items:center; gap:.6rem;
+       background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.26);
+       border-radius:999px; padding:.4rem .5rem; min-height:3rem}
+  .toi .anh{width:2.15rem; height:2.15rem; border-radius:50%; flex:none; display:grid;
+            place-items:center; background:#fff; color:var(--do-dam); font-weight:800;
+            font-size:.85rem}
+  .toi .ten{flex:1; min-width:0; line-height:1.2}
+  .toi .ten b{display:block; font-size:.95rem; white-space:nowrap; overflow:hidden;
+              text-overflow:ellipsis}
+  .toi .ten small{display:block; font-size:.72rem; color:#f3c9cb}
+  .toi .mui{padding-right:.55rem; opacity:.85; font-size:.8rem}
+  /* Ô chọn thật nằm trong suốt phủ lên cả dải — điện thoại mở bộ chọn gốc của máy,
+     dễ bấm hơn mọi danh sách tự vẽ. */
+  .toi select{position:absolute; inset:0; width:100%; height:100%; opacity:0;
+              -webkit-appearance:none; appearance:none; border:0; font:inherit}
+
+  /* ---------- danh sách chuyến ---------- */
+  main{padding-bottom:calc(1.5rem + var(--duoi))}
+  .tieu{display:flex; align-items:baseline; justify-content:space-between; gap:.6rem;
+        margin:1.1rem 0 .55rem}
+  .tieu h2{margin:0; font-size:.76rem; font-weight:800; letter-spacing:.09em;
+           text-transform:uppercase; color:var(--mo)}
+  .tieu span{font-size:.78rem; font-weight:700; color:var(--nhat)}
+
+  .the-chuyen{display:block; width:100%; text-align:left; cursor:pointer; position:relative;
+              background:var(--the); border:1px solid var(--vien); border-radius:var(--r);
+              box-shadow:var(--bong); padding:.85rem .9rem .85rem 1.15rem; overflow:hidden}
+  .the-chuyen + .the-chuyen{margin-top:.7rem}
+  .the-chuyen::before{content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
+                      background:var(--vien-dam)}
+  .the-chuyen.di::before{background:var(--do)}
+  .the-chuyen.den::before{background:var(--vang)}
+  .the-chuyen.giao::before{background:var(--luc)}
+  .the-chuyen:active{transform:translateY(1px)}
+  .the-chuyen .hang1{display:flex; align-items:center; gap:.5rem}
+  .the-chuyen .ma{font-weight:800; font-size:1.02rem; letter-spacing:-.01em; flex:1;
+                  min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .the-chuyen .mui{color:var(--nhat); font-size:.9rem}
+  .phu{color:var(--mo); font-size:.88rem; margin-top:.18rem; overflow-wrap:anywhere}
+  .tuyen{display:flex; align-items:center; gap:.4rem; margin-top:.45rem; font-size:.92rem;
+         font-weight:600}
+  .tuyen i{width:.5rem; height:.5rem; border-radius:50%; flex:none; background:var(--luc)}
+  .tuyen i.cuoi{background:var(--do)}
+  .tuyen em{flex:1; height:1px; background:var(--vien-dam); font-style:normal}
+  .tuyen b{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+           font-weight:600; max-width:42%}
+  .chips{display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.6rem}
+  .chip{border-radius:999px; padding:.22rem .6rem; font-size:.75rem; font-weight:800;
+        background:var(--nen); color:var(--mo); white-space:nowrap}
+  .chip.do{background:var(--do-nhat); color:var(--do-dam)}
+  .chip.vang{background:var(--vang-nhat); color:var(--vang)}
+  .chip.luc{background:var(--luc-nhat); color:var(--luc)}
+
+  /* ---------- màn chi tiết ---------- */
+  #man-chitiet{position:fixed; inset:0; z-index:20; background:var(--nen);
+               display:flex; flex-direction:column; overflow:hidden}
+  .dau-ct{flex:none; display:flex; align-items:center; gap:.6rem; color:#fff;
+          background:linear-gradient(150deg,#a2101a,#6f0b11 72%);
+          padding:calc(.55rem + var(--tren)) .875rem .6rem;
+          box-shadow:0 2px 12px rgba(110,10,16,.3)}
+  .dau-ct .ten{flex:1; min-width:0; line-height:1.2}
+  .dau-ct .ten b{display:block; font-size:1rem; white-space:nowrap; overflow:hidden;
+                 text-overflow:ellipsis}
+  .dau-ct .ten small{display:block; font-size:.74rem; color:#f3c9cb; white-space:nowrap;
+                     overflow:hidden; text-overflow:ellipsis}
+  .than-ct{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+           padding-bottom:1.25rem; overscroll-behavior:contain}
+
+  /* bản đồ */
+  .banzo-boc{position:relative; height:38vh; min-height:13rem; max-height:20rem;
+             background:#e8e5e0; border-bottom:1px solid var(--vien)}
+  #banzo{position:absolute; inset:0}
+  #banzo.tat{display:none}
+  .banzo-thay{position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+              padding:1rem; color:var(--mo); font-size:.88rem}
+  /* Dải số nằm DƯỚI bản đồ, không đè lên. Bản trước đặt đè ở đáy khung thì nó che đúng
+     khúc cuối tuyến — chỗ có ghim xe khi chuyến đã tới nơi, tức che đúng thứ cần xem nhất. */
+  .banzo-so{display:flex; gap:1px; background:var(--vien); border-bottom:1px solid var(--vien)}
+  .banzo-so div{flex:1; min-width:0; background:var(--the); padding:.5rem .25rem; text-align:center}
+  .banzo-so span{display:block; font-size:.63rem; font-weight:800; letter-spacing:.04em;
+                 text-transform:uppercase; color:var(--nhat); white-space:nowrap}
+  .banzo-so b{display:block; font-size:.95rem; white-space:nowrap; overflow:hidden;
+              text-overflow:ellipsis}
+  .banzo-so b small{font-size:.68rem; font-weight:700; color:var(--mo)}
+  .xe-ghim{display:grid; place-items:center; width:2.1rem; height:2.1rem; border-radius:50%;
+           background:var(--do); color:#fff; font-size:1rem; border:3px solid #fff;
+           box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .diem-ghim{display:grid; place-items:center; width:1.45rem; height:1.45rem; border-radius:50%;
+             background:#fff; color:var(--chu); font-size:.72rem; font-weight:800;
+             border:2.5px solid var(--vien-dam); box-shadow:0 1px 5px rgba(0,0,0,.3)}
+  .diem-ghim.dau{border-color:var(--luc); color:var(--luc)}
+  .diem-ghim.cuoi{border-color:var(--do); color:var(--do)}
+
+  /* thanh mốc */
+  .moc-boc{position:relative; background:var(--the); border-bottom:1px solid var(--vien)}
+  .moc-boc::after{content:""; position:absolute; top:0; bottom:0; right:0; width:1.6rem;
+                  pointer-events:none;
+                  background:linear-gradient(90deg,rgba(255,255,255,0),#fff)}
+  .moc{display:flex; gap:0; padding:.9rem .875rem .2rem; overflow-x:auto;
+       scrollbar-width:none}
+  .moc::-webkit-scrollbar{display:none}
+  .moc .b{flex:1 0 auto; min-width:3.7rem; text-align:center; position:relative;
+          padding-bottom:.7rem}
+  .moc .b::after{content:""; position:absolute; top:.62rem; left:50%; right:-50%; height:2px;
+                 background:var(--vien-dam)}
+  .moc .b:last-child::after{display:none}
+  .moc .b.xong::after{background:var(--luc)}
+  .moc .o{position:relative; z-index:1; width:1.35rem; height:1.35rem; margin:0 auto .3rem;
+          border-radius:50%; background:var(--the); border:2px solid var(--vien-dam);
+          display:grid; place-items:center; font-size:.7rem; color:var(--nhat)}
+  .moc .b.xong .o{background:var(--luc); border-color:var(--luc); color:#fff}
+  .moc .b.toi .o{border-color:var(--do); color:var(--do); box-shadow:0 0 0 4px var(--do-nhat)}
+  .moc .b small{display:block; font-size:.66rem; line-height:1.2; color:var(--mo);
+                padding-inline:.15rem; overflow-wrap:anywhere; hyphens:auto}
+  .moc .b.toi small{color:var(--do-dam); font-weight:800}
+
+  /* thẻ nội dung */
+  .the{background:var(--the); border:1px solid var(--vien); border-radius:var(--r);
+       box-shadow:var(--bong); padding:.9rem}
+  .the + .the{margin-top:.7rem}
+  .the > h3{margin:0 0 .6rem; font-size:.76rem; font-weight:800; letter-spacing:.09em;
+            text-transform:uppercase; color:var(--mo)}
+  .luoi{display:grid; grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr)); gap:.7rem}
+  .o-tin span{display:block; color:var(--nhat); font-size:.7rem; font-weight:800;
+              text-transform:uppercase; letter-spacing:.05em}
+  .o-tin b{display:block; font-size:.95rem; font-weight:600; overflow-wrap:anywhere}
+  .luuy{display:flex; gap:.55rem; background:var(--vang-nhat); border:1px solid #f0dcb4;
+        color:#7c4d05; border-radius:var(--r-nho); padding:.6rem .7rem; margin-top:.7rem;
+        font-size:.85rem}
+  .luuy.nang{background:var(--do-nhat); border-color:#f6cdcd; color:var(--do-dam)}
+
+  ol.chang{list-style:none; margin:0; padding:0}
+  ol.chang li{position:relative; padding:0 0 .95rem 1.5rem; border-left:2px solid var(--vien);
+              margin-left:.42rem}
+  ol.chang li:last-child{border-left-color:transparent; padding-bottom:0}
+  ol.chang li::before{content:""; position:absolute; left:-.5rem; top:.25rem; width:.82rem;
+                      height:.82rem; border-radius:50%; background:var(--the);
+                      border:2px solid var(--vien-dam)}
+  ol.chang li.xong::before{background:var(--luc); border-color:var(--luc)}
+  ol.chang b{display:block; font-size:.93rem; font-weight:600}
+  ol.chang small{display:block; color:var(--mo); font-size:.78rem}
+  .nhan-chang{display:inline-block; font-size:.66rem; font-weight:800; letter-spacing:.04em;
+              text-transform:uppercase; color:var(--mo); background:var(--nen);
+              border-radius:4px; padding:.05rem .3rem; margin-right:.3rem}
+
+  /* thanh việc dán đáy */
+  .viec{flex:none; background:var(--the); border-top:1px solid var(--vien);
+        box-shadow:var(--bong-cao); padding:.7rem .875rem calc(.7rem + var(--duoi))}
+  .viec .cap{display:flex; gap:.55rem; margin-top:.55rem}
+  .viec .cap button{flex:1}
+  .goi-y{margin:.5rem 0 0; font-size:.78rem; color:var(--mo); text-align:center}
+
+  .nut{display:flex; align-items:center; justify-content:center; gap:.45rem; width:100%;
+       min-height:var(--cao-nut); padding:.75rem .8rem; border-radius:var(--r-nho);
+       cursor:pointer; border:1px solid var(--vien-dam); background:var(--the);
+       font-weight:800; line-height:1.2}
+  .nut.chinh{background:var(--do); border-color:var(--do); color:#fff;
+             box-shadow:0 3px 12px rgba(180,18,27,.3)}
+  .nut.luc{background:var(--luc); border-color:var(--luc); color:#fff;
+           box-shadow:0 3px 12px rgba(63,143,33,.28)}
+  .nut.canh{background:var(--the); border-color:#e9bcbc; color:var(--do-dam)}
+  .nut:disabled{opacity:.42; cursor:not-allowed; box-shadow:none}
+  .nut.nho{min-height:2.6rem; padding:.4rem .8rem; font-size:.85rem; width:auto;
+           border-radius:999px}
+
+  /* ---------- hộp thoại trồi từ đáy ---------- */
+  dialog{border:0; padding:0; width:100%; max-width:34rem; margin:auto auto 0;
+         max-height:92vh; border-radius:var(--r) var(--r) 0 0; background:var(--the);
+         color:var(--chu); overflow:hidden}
+  dialog::backdrop{background:rgba(23,24,28,.6)}
+  dialog form{display:flex; flex-direction:column; max-height:92vh}
+  .dau-hop{flex:none; display:flex; align-items:center; gap:.6rem; color:#fff;
+           background:linear-gradient(150deg,#a2101a,#6f0b11 72%); padding:.8rem .875rem}
+  .dau-hop b{flex:1; font-size:1rem}
+  .than-hop{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:.875rem;
+            background:var(--nen)}
+  .chan-hop{flex:none; display:flex; gap:.55rem; background:var(--the);
+            border-top:1px solid var(--vien); box-shadow:var(--bong-cao);
+            padding:.7rem .875rem calc(.7rem + var(--duoi))}
+  .chan-hop .nut{flex:1}
+  .chan-hop .nut.chinh{flex:1.6}
+
+  label.nhap{display:block; margin-bottom:.7rem}
+  label.nhap > span{display:block; font-weight:700; font-size:.82rem; margin-bottom:.28rem}
+  label.nhap input, label.nhap select, label.nhap textarea{
+    width:100%; min-height:var(--cao-nut); padding:.7rem .75rem; border:1px solid var(--vien-dam);
+    border-radius:var(--r-nho); font:inherit; font-size:1rem; background:var(--the);
+    color:var(--chu);
+  }
+  label.nhap textarea{min-height:4.6rem; resize:vertical}
+  label.nhap input[type=file]{padding:.5rem; min-height:auto; font-size:.9rem}
+  label.nhap input:focus-visible, label.nhap select:focus-visible,
+  label.nhap textarea:focus-visible, .nut:focus-visible, .the-chuyen:focus-visible{
+    outline:3px solid rgba(180,18,27,.35); outline-offset:1px;
+  }
+  .diem{background:var(--the); border:1px solid var(--vien); border-radius:var(--r);
+        padding:.85rem; margin-bottom:.8rem}
+  .diem > h4{margin:0 0 .7rem; font-size:.95rem; display:flex; align-items:center; gap:.45rem}
+  .diem > h4 i{display:grid; place-items:center; width:1.5rem; height:1.5rem; flex:none;
+               border-radius:50%; background:var(--do); color:#fff; font-size:.8rem;
+               font-style:normal; font-weight:800}
+  canvas.kyten{width:100%; height:9.5rem; border:2px dashed var(--vien-dam);
+               border-radius:var(--r-nho); background:#fffef9; touch-action:none; display:block}
+  .hang{display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+        font-size:.8rem; color:var(--mo); margin-top:.3rem}
+  .hang .daky{color:var(--luc); font-weight:800}
+  .hang button{background:none; border:0; color:var(--do); font-weight:800; cursor:pointer;
+               min-height:2.5rem; padding:.3rem .2rem}
+  table.gia{width:100%; border-collapse:collapse; font-size:.88rem}
+  table.gia th, table.gia td{text-align:left; padding:.45rem .2rem;
+                             border-bottom:1px solid var(--vien)}
+  table.gia th{font-size:.68rem; text-transform:uppercase; letter-spacing:.04em; color:var(--nhat)}
+  table.gia td.so, table.gia th.so{text-align:right; white-space:nowrap}
+  table.gia input{width:6.2rem; min-height:2.6rem; padding:.3rem .45rem; text-align:right;
+                  border:1px solid var(--vien-dam); border-radius:8px; font:inherit;
+                  font-size:.95rem}
+  .tong{display:flex; justify-content:space-between; gap:.6rem; padding:.5rem .2rem;
+        font-weight:800}
+  .tong.cuoi{border-top:2px solid var(--vien); color:var(--luc); font-size:1.05rem}
+
+  .trong{text-align:center; color:var(--mo); padding:2rem 1rem; font-size:.92rem}
+  .trong .to{display:block; font-size:2rem; margin-bottom:.4rem; opacity:.5}
+  .loi{background:var(--do-nhat); border:1px solid #f6cdcd; color:var(--do-dam);
+       border-radius:var(--r-nho); padding:.7rem .8rem; margin:.8rem 0; font-size:.88rem;
+       overflow-wrap:anywhere}
+  #bao{position:fixed; left:50%; transform:translateX(-50%); z-index:99;
+       bottom:calc(1.1rem + var(--duoi)); background:var(--chu); color:#fff;
+       padding:.7rem 1rem; border-radius:999px; font-weight:700; font-size:.9rem;
+       max-width:92vw; text-align:center; box-shadow:0 6px 22px rgba(0,0,0,.3)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= MÀN 1 · DANH SÁCH CHUYẾN ================= -->
+<div id="man-ds">
+  <header>
+    <div class="khung">
+      <div class="dong">
+        <img class="logo" src="img/logo-epl.jpg" alt="EPL Logistics">
+        <div class="hieu"><b>EPL Logistics</b><span>Ứng dụng tài xế</span></div>
+        <button type="button" class="nut-tron" id="nut-capnhat" aria-label="Cập nhật">↻</button>
+      </div>
+      <div class="toi">
+        <span class="anh" id="toi-chu" aria-hidden="true">?</span>
+        <span class="ten"><b id="toi-ten">Chọn tên của bạn</b><small id="toi-ma">Chạm để chọn</small></span>
+        <span class="mui" aria-hidden="true">▾</span>
+        <select id="chon-taixe" aria-label="Tôi là tài xế nào">
+          <option value="">Đang tải danh sách tài xế…</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="khung">
+    <div id="loi" class="loi" hidden></div>
+    <div class="tieu">
+      <h2>Chuyến của tôi</h2>
+      <span id="dem"></span>
+    </div>
+    <div id="ds">
+      <div class="trong"><span class="to">🚚</span>Chạm vào tên bạn ở trên để xem chuyến.</div>
+    </div>
+    <p class="goi-y" id="gio-server">—</p>
+  </main>
+</div>
+
+<!-- ================= MÀN 2 · CHI TIẾT CHUYẾN ================= -->
+<div id="man-chitiet" hidden>
+  <div class="dau-ct">
+    <button type="button" class="nut-tron" id="nut-quaylai" aria-label="Quay lại">←</button>
+    <span class="ten"><b id="ct-ma">—</b><small id="ct-phu">—</small></span>
+    <button type="button" class="nut-tron" id="nut-capnhat-2" aria-label="Cập nhật">↻</button>
+  </div>
+
+  <div class="than-ct">
+    <div class="banzo-boc">
+      <div id="banzo"></div>
+      <div class="banzo-thay" id="banzo-thay" hidden></div>
+    </div>
+    <div class="banzo-so" id="banzo-so"></div>
+    <div class="moc-boc"><div class="moc" id="ct-moc"></div></div>
+    <div class="khung" style="padding-top:.8rem">
+      <div id="ct-noidung"></div>
+    </div>
+  </div>
+
+  <div class="viec" id="ct-viec"></div>
+</div>
+
+<div id="bao" role="status" hidden></div>
+
+<!-- ================= BÁO SỰ CỐ ================= -->
+<dialog id="hop-suco">
+  <form id="form-suco">
+    <div class="dau-hop">
+      <b>⚠ Báo sự cố</b>
+      <button type="button" class="nut-tron" data-dong aria-label="Đóng">✕</button>
+    </div>
+    <div class="than-hop">
+      <p class="phu" id="suco-boicanh" style="margin-top:0"></p>
+      <label class="nhap"><span>Loại sự cố</span>
+        <select name="incident_type" required>
+          <option>Kẹt xe</option><option>Hỏng hóc</option><option>Thời tiết</option>
+          <option>Giấy tờ</option><option>Tai nạn</option><option>Hàng hoá hư hỏng</option>
+          <option>Khác</option>
+        </select></label>
+      <label class="nhap"><span>Mức độ</span>
+        <select name="severity" required>
+          <option value="Low">Thấp — vẫn chạy được</option>
+          <option value="Medium" selected>Trung bình — sẽ chậm giờ</option>
+          <option value="High">Cao — không chạy tiếp được</option>
+        </select></label>
+      <label class="nhap"><span>Đang ở đâu</span>
+        <input name="location" required placeholder="Ví dụ: QL51 đoạn Long Thành"></label>
+      <label class="nhap"><span>Chuyện gì xảy ra</span>
+        <textarea name="description" required
+                  placeholder="Nổ lốp sau bên phải, đã gọi cứu hộ."></textarea></label>
+    </div>
+    <div class="chan-hop">
+      <button type="button" class="nut" data-dong>Quay lại</button>
+      <button type="submit" class="nut chinh">Gửi báo cáo</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ================= HOÀN TẤT GIAO HÀNG ================= -->
+<dialog id="hop-hoantat">
+  <form id="form-hoantat">
+    <div class="dau-hop">
+      <b>✍ Hoàn tất giao hàng</b>
+      <button type="button" class="nut-tron" data-dong aria-label="Đóng">✕</button>
+    </div>
+    <div class="than-hop">
+      <div class="the" id="ht-dau"></div>
+      <div class="tieu"><h2>1 · Bằng chứng giao hàng</h2></div>
+      <div id="ht-diem"></div>
+      <div class="tieu"><h2>2 · Chốt giá cuối</h2></div>
+      <div class="the" id="ht-gia"></div>
+    </div>
+    <div class="chan-hop">
+      <button type="button" class="nut" data-dong>Quay lại</button>
+      <button type="submit" class="nut luc" id="nut-chot">✔ Hoàn tất</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/tai-xe.js?v=2"></script>
+</body>
+</html>
