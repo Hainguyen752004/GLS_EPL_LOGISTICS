@@ -2194,22 +2194,102 @@
                     (ảnh chủ dự án đưa 10/09): trọng lượng, tiền tệ, giá gốc, doanh thu
                     dự kiến, giá sau chiết khấu, doanh thu có chiết khấu, ngày nhập.
                     KHÔNG có giá thành, KHÔNG có biên, KHÔNG có ghi chú nội bộ. */
-  const KIEU_IN = `<style>body{font:13px/1.5 system-ui,sans-serif;max-width:760px;margin:32px auto;padding:0 20px;color:#1e293b}
-        h1{font-size:20px;margin:0 0 4px}h2{font-size:14px;margin:22px 0 6px}
-        table{width:100%;border-collapse:collapse;margin-top:6px}
-        th,td{border-bottom:1px solid #e4e9f0;padding:6px 8px;text-align:left;font-size:12.5px}
-        th{background:#fafbfd;font-size:11px;color:#7b8796}
-        .r{text-align:right;font-variant-numeric:tabular-nums}
-        .tong{font-weight:700;background:#f8fafc}
-        .noibo{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700}
-        .ghi{white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:8px}</style>`;
+  /* =========================================================================
+     HAI BẢN IN — áo thương hiệu EPL: đỏ #b5121b, xanh lá #3fa72f (màu logo).
+
+     `print-color-adjust: exact` là BẮT BUỘC: thiếu nó thì trình duyệt bỏ mọi
+     nền màu khi in, dải đầu trang và hàng tổng ra trắng trơn trên giấy.
+     Ảnh logo phải là đường TUYỆT ĐỐI — cửa sổ in mở bằng `about:blank` nên
+     đường tương đối `/static/...` không phân giải được.
+     ========================================================================= */
+  const LOGO = () => (typeof location !== 'undefined' ? location.origin : '') + '/static/img/logo-epl.jpg';
+  const KIEU_IN = `<style>
+    :root { --do:#b5121b; --do-2:#8d0d14; --do-nhat:#fdf2f2; --xanh:#3fa72f; --xanh-2:#2f7d23; --xanh-nhat:#f2faf0;
+            --muc:#1e293b; --muc-2:#475569; --muc-3:#7b8796; --vien:#e4e9f0; }
+    * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    body { font:13px/1.55 "Segoe UI",system-ui,-apple-system,sans-serif; color:var(--muc); margin:0;
+           background:#fff; }
+    .to { max-width:820px; margin:0 auto; padding:26px 30px 40px; position:relative; }
+    /* dải đầu trang: logo + tên công ty | tiêu đề phiếu */
+    .dau { display:flex; align-items:flex-start; gap:18px; padding-bottom:14px; border-bottom:3px solid var(--do); }
+    .dau .logo { width:70px; height:70px; flex:none; object-fit:contain; }
+    .dau .ten { flex:1; min-width:0; }
+    .dau .ten b { display:block; font-size:20px; font-weight:800; letter-spacing:.02em; color:var(--do); line-height:1.15; }
+    .dau .ten span { display:block; font-size:11.5px; color:var(--muc-3); margin-top:3px; }
+    .dau .ten em { display:block; font-style:normal; font-size:11.5px; color:var(--xanh-2); font-weight:700; margin-top:2px; }
+    .dau .phai { text-align:right; flex:none; }
+    .dau .phai h1 { margin:0; font-size:17px; font-weight:800; letter-spacing:.01em; color:var(--muc); }
+    .dau .phai .ma { font-size:12.5px; color:var(--muc-2); margin-top:4px; font-variant-numeric:tabular-nums; }
+    .dau .phai .ma b { color:var(--do); }
+    .soc { height:4px; background:linear-gradient(90deg,var(--do) 0 55%,var(--xanh) 55% 100%); border-radius:0 0 3px 3px; }
+    /* nhãn bản nội bộ + vân chìm */
+    .noibo { display:inline-block; background:var(--do-nhat); color:var(--do); border:1px solid #f0b9bc;
+             border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; letter-spacing:.04em; }
+    .van { position:fixed; inset:0; display:grid; place-items:center; pointer-events:none; z-index:0; }
+    .van span { font-size:120px; font-weight:800; color:rgba(181,18,27,.05); transform:rotate(-28deg);
+                letter-spacing:.1em; white-space:nowrap; }
+    .to > * { position:relative; z-index:1; }
+    /* mục */
+    h2 { font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muc-2);
+         margin:22px 0 8px; padding-left:10px; border-left:4px solid var(--xanh); }
+    .khoi { background:var(--xanh-nhat); border:1px solid #dcecd7; border-radius:10px; padding:11px 14px; }
+    .khoi.do { background:var(--do-nhat); border-color:#f3d4d6; }
+    .cap { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 22px; }
+    .cap div { display:flex; justify-content:space-between; gap:10px; padding:5px 0; border-bottom:1px dashed var(--vien); font-size:12.5px; }
+    .cap div span { color:var(--muc-3); } .cap div b { font-weight:700; text-align:right; }
+    /* bảng */
+    table { width:100%; border-collapse:collapse; margin-top:4px; border:1px solid var(--vien); border-radius:10px; overflow:hidden; }
+    th { background:var(--xanh-nhat); color:var(--xanh-2); font-size:10.5px; font-weight:800; text-transform:uppercase;
+         letter-spacing:.05em; text-align:left; padding:8px 10px; border-bottom:1px solid #dcecd7; }
+    td { border-bottom:1px solid var(--vien); padding:7px 10px; text-align:left; font-size:12.5px; }
+    tr:last-child td { border-bottom:0; }
+    .r { text-align:right; font-variant-numeric:tabular-nums; }
+    .tong td { font-weight:800; background:var(--do-nhat); color:var(--do-2); border-top:1px solid #f0b9bc; }
+    /* ô giá nổi bật trên phiếu khách */
+    .gia { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+           background:linear-gradient(100deg,var(--do) 0%,var(--do-2) 100%); color:#fff; border-radius:12px;
+           padding:16px 20px; margin-top:6px; }
+    .gia .nhan { font-size:12px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; opacity:.9; }
+    .gia .con { font-size:28px; font-weight:800; letter-spacing:-.01em; font-variant-numeric:tabular-nums; line-height:1.1; }
+    .gia .don { font-size:12.5px; opacity:.9; }
+    .gia .ck { background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:999px;
+               padding:4px 12px; font-size:12px; font-weight:700; }
+    .ghi { white-space:pre-wrap; background:#f8fafc; border:1px solid var(--vien); border-left:4px solid var(--xanh);
+           padding:11px 13px; border-radius:0 10px 10px 0; font-size:12.5px; }
+    /* chữ ký + chân trang */
+    .ky { display:grid; grid-template-columns:1fr 1fr; gap:40px; margin-top:34px; page-break-inside:avoid; }
+    .ky div { text-align:center; }
+    .ky b { display:block; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muc-2); }
+    .ky small { display:block; color:var(--muc-3); font-size:11px; margin-top:2px; }
+    .ky i { display:block; margin-top:58px; border-top:1px dotted var(--muc-3); font-style:normal; font-size:11px; color:var(--muc-3); padding-top:5px; }
+    .chan { margin-top:26px; padding-top:12px; border-top:1px solid var(--vien); display:flex; justify-content:space-between;
+            gap:14px; flex-wrap:wrap; font-size:11px; color:var(--muc-3); }
+    .chan b { color:var(--do); font-weight:700; }
+    @page { margin:12mm; }
+    @media print { .to { padding:0; max-width:none; } body { font-size:12px; } .van span { font-size:150px; } }
+  </style>`;
+
+  /** Dải đầu trang dùng chung cho hai bản in. `nhan` là chip cạnh tiêu đề. */
+  function dauTrangIn(tieuDe, ma, dongPhu, nhan) {
+    return `<div class="dau">
+      <img class="logo" src="${LOGO()}" alt="EPL Logistics">
+      <div class="ten"><b>EPL LOGISTICS</b><span>Vận tải và giao nhận · Việt Nam – Lào</span><em>ການຂົນສົ່ງ ແລະ ການຈັດສົ່ງ</em></div>
+      <div class="phai"><h1>${esc(tieuDe)}</h1><div class="ma">${ma}</div>${nhan ? `<div style="margin-top:6px">${nhan}</div>` : ''}</div>
+    </div><div class="soc"></div>
+    ${dongPhu ? `<div style="margin-top:10px;font-size:12.5px;color:var(--muc-2)">${dongPhu}</div>` : ''}`;
+  }
 
   function moCuaSoIn(tieuDe, than) {
     const w = window.open('', '_blank');
     if (!w) { thongBao('Trình duyệt chặn cửa sổ mới — cho phép rồi bấm lại.', true); return; }
-    w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(tieuDe)}</title>${KIEU_IN}${than}`);
+    w.document.write(`<!doctype html><html lang="vi"><meta charset="utf-8"><title>${esc(tieuDe)}</title>${KIEU_IN}<body><div class="to">${than}</div>`);
     w.document.close();
-    setTimeout(() => { try { w.print(); } catch (e) { /* người dùng tự in */ } }, 400);
+    // Chờ ẢNH LOGO tải xong mới gọi in: gọi sớm thì hộp in chụp trang khi logo
+    // còn trống, và bản in ra mất logo.
+    const inRa = () => { try { w.print(); } catch (e) { /* người dùng tự in */ } };
+    const anh = w.document.querySelector('img.logo');
+    if (anh && !anh.complete) { anh.addEventListener('load', () => setTimeout(inRa, 120)); anh.addEventListener('error', () => setTimeout(inRa, 120)); setTimeout(inRa, 2500); }
+    else setTimeout(inRa, 400);
   }
 
   function xemPdf() {
@@ -2225,15 +2305,21 @@
     const bien = q.bien === null || q.bien === undefined ? '—' : phanTram(q.bien);
     const ck = Number(q.discount_percent || 0);
     moCuaSoIn(`Báo giá ${q.quote_no || q.id} — bản nội bộ`, `
-      <h1>BÁO GIÁ CƯỚC VẬN CHUYỂN <span class="noibo">BẢN NỘI BỘ — không gửi khách</span></h1>
-      <div>${esc(q.quote_no || q.id || 'bản nháp')} · ngày ${new Date().toLocaleDateString('vi-VN')}
-        · trạng thái ${esc(q.canonical_status || '')} · NVKD ${esc(q.sales_rep || '')}</div>
-      <h2>Khách hàng</h2><div>${esc(tenKhach(q.customer_id))}</div>
-      <h2>Tuyến và phương tiện</h2>
-      <div>${esc((rt && (rt.name || rt.id)) || '—')} · ${esc(tenLoaiXe(q.vehicle_type_id))}
-        · ${xt ? so(xt.km) + ' km' : '—'}</div>
-      <div>Hàng: ${so(Number(q.weight_kg || 0) / 1000)} tấn${
-      q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''}${q.pallet_count ? ' · ' + so(q.pallet_count) + ' pallet' : ''} · ${esc(q.cargo_type || '')}</div>
+      <div class="van" aria-hidden="true"><span>NỘI BỘ</span></div>
+      ${dauTrangIn('BÁO GIÁ CƯỚC VẬN CHUYỂN',
+    `<b>${esc(q.quote_no || q.id || 'bản nháp')}</b> · ngày ${new Date().toLocaleDateString('vi-VN')}`,
+    `Trạng thái <b>${esc(q.canonical_status || '')}</b> · NVKD ${esc(q.sales_rep || '')}`,
+    '<span class="noibo">BẢN NỘI BỘ — không gửi khách</span>')}
+      <h2>Khách hàng và hành trình</h2>
+      <div class="khoi cap">
+        <div><span>Khách hàng</span><b>${esc(tenKhach(q.customer_id))}</b></div>
+        <div><span>Tuyến</span><b>${esc((rt && (rt.name || rt.id)) || '—')}</b></div>
+        <div><span>Phương tiện</span><b>${esc(tenLoaiXe(q.vehicle_type_id))}</b></div>
+        <div><span>Quãng đường</span><b>${xt ? so(xt.km) + ' km' : '—'}</b></div>
+        <div><span>Hàng</span><b>${so(Number(q.weight_kg || 0) / 1000)} tấn${
+      q.volume_m3 ? ' · ' + so(q.volume_m3) + ' m³' : ''}${q.pallet_count ? ' · ' + so(q.pallet_count) + ' pallet' : ''}</b></div>
+        <div><span>Loại hàng</span><b>${esc(q.cargo_type || '—')}</b></div>
+      </div>
       <h2>Khoản mục giá thành một chuyến (chi)</h2>
       <table><thead><tr><th>Khoản mục</th><th class="r">Đơn giá</th><th>Nhân với</th>
         <th class="r">Thành tiền (${esc(sym)})</th></tr></thead><tbody>${dongCua('chi')}
@@ -2261,8 +2347,8 @@
       ${q.notes_customer ? `<h2>Ghi chú gửi khách</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
       ${q.notes_ops ? `<h2>Ghi chú vận hành</h2><div class="ghi">${esc(q.notes_ops)}</div>` : ''}
       ${q.notes_internal ? `<h2>Ghi chú nội bộ</h2><div class="ghi">${esc(q.notes_internal)}</div>` : ''}
-      <p style="margin-top:24px;color:#7b8796;font-size:11.5px">Bản nội bộ in từ hệ thống EPL — số liệu
-        lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in. Gửi khách dùng nút "Phiếu gửi khách".</p>`);
+      <div class="chan"><span><b>EPL LOGISTICS</b> · bản nội bộ, không gửi khách</span>
+        <span>Số liệu lấy từ công thức giá thành ở Dữ liệu gốc tại thời điểm in · gửi khách dùng nút “Phiếu gửi khách”</span></div>`);
   }
 
   function phieuKhach() {
@@ -2276,20 +2362,33 @@
     const dv = DON_VI_CUOC.find(x => x[0] === (q.price_basis || 'per_trip')) || DON_VI_CUOC[0];
     const dong = (nhan, giaTri) => `<tr><td>${nhan}</td><td class="r">${giaTri}</td></tr>`;
     moCuaSoIn(`Báo giá ${q.quote_no || q.id} — phiếu gửi khách`, `
-      <h1>THÔNG TIN VẬN CHUYỂN</h1>
-      <div>Báo giá ${esc(q.quote_no || q.id || '')} · ${esc(tenKhach(q.customer_id))}</div>
+      ${dauTrangIn('THÔNG TIN VẬN CHUYỂN',
+    `<b>${esc(q.quote_no || q.id || '')}</b> · ngày ${new Date().toLocaleDateString('vi-VN')}`,
+    `Kính gửi <b>${esc(tenKhach(q.customer_id))}</b>`, '')}
+      <h2>Cước vận chuyển</h2>
+      <div class="gia">
+        <div><div class="nhan">Đơn giá</div><div class="con">${tien(donGiaCuoi)} ${esc(tienTe)}</div><div class="don">/ ${esc(dv[2])}</div></div>
+        <div style="text-align:right"><div class="nhan">Doanh thu dự kiến từ vận chuyển</div><div class="con">${tien(cuocCuoi)} ${esc(tienTe)}</div></div>
+        ${ck > 0 ? `<div class="ck">Đã chiết khấu ${so(ck * 100)}%</div>` : ''}
+      </div>
+      <h2>Chi tiết</h2>
       <table><tbody>
         ${dong('Trọng lượng', so(Number(q.weight_kg || 0) / 1000) + ' Tấn')}
-        ${dong('Tiền tệ thanh toán', esc(tienTe))}
+        ${dong('Tiền tệ thanh toán · ສະກຸນເງິນ', esc(tienTe))}
         ${dong('Giá gốc', tien(donGiaCuoi * heSo) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
         ${dong('(EPL) Doanh thu dự kiến từ vận chuyển dựa trên thực tế', tien(cuocCuoi * heSo) + ' ' + esc(tienTe))}
         ${dong('Giá gốc sau chiết khấu' + (ck > 0 ? ' (' + so(ck * 100) + '%)' : ''), tien(donGiaCuoi) + ' ' + esc(tienTe) + ' / ' + esc(dv[2]))}
-        ${dong('Tiền tệ · ສະກຸນເງິນ', esc(tienTe))}
         ${dong('(Có chiết khấu) Doanh thu dự kiến từ vận chuyển', tien(cuocCuoi) + ' ' + esc(tienTe))}
         ${dong('Ngày nhập dữ liệu', new Date().toLocaleDateString('vi-VN'))}
+        <tr class="tong"><td>Báo giá có hiệu lực đến</td><td class="r">${esc(q.valid_to || '—')}</td></tr>
       </tbody></table>
       ${q.notes_customer ? `<h2>Ghi chú</h2><div class="ghi">${esc(q.notes_customer)}</div>` : ''}
-      <p style="margin-top:24px;color:#7b8796;font-size:11.5px">Báo giá có hiệu lực đến ${esc(q.valid_to || '—')}.</p>`);
+      <div class="ky">
+        <div><b>Khách hàng</b><small>Ký, ghi rõ họ tên</small><i>ຜູ້ຮັບບໍລິການ</i></div>
+        <div><b>EPL Logistics</b><small>${esc(q.sales_rep || 'Nhân viên kinh doanh')}</small><i>ຜູ້ໃຫ້ບໍລິການ</i></div>
+      </div>
+      <div class="chan"><span><b>EPL LOGISTICS</b> · Vận tải và giao nhận Việt Nam – Lào</span>
+        <span>Báo giá có hiệu lực đến ${esc(q.valid_to || '—')}</span></div>`);
   }
 
   /* =========================================================================
