@@ -788,13 +788,9 @@ XE_THEO_LOAI = {
 #: Tải trọng tối đa từng loại (kg) — khai hàng quá tải là bị chặn CAPACITY_EXCEEDED.
 TAI_TOI_DA = {"DEMO-VT-REEFER5": 5000, "DEMO-VT-TRUCK10": 10000, "DEMO-VT-TRUCK15": 15000,
               "DEMO-VT-TRACTOR20": 24000, "DEMO-VT-20FT": 28000, "DEMO-VT-TRACTOR40": 30000}
-#: SỐ CHẶNG của tuyến — và đây là một GIỚI HẠN THẬT khi ghép nhiều DO vào một chuyến.
-#:
-#: Đo 11/09: lập chuyến chở 2 DO trên tuyến Sóng Thần → Cát Lái (MỘT chặng) thì máy chủ
-#: chia chặng cho các DO theo lượt, nên chặng duy nhất thuộc về DO thứ hai và **DO thứ nhất
-#: không có chặng giao nào**. DO đó không nộp POD được (`POD_LINEAGE_INVALID`) nên KHÔNG BAO
-#: GIỜ hoàn tất được, và chuyến giữ xe lại tới khi có người huỷ. Máy chủ không chặn lúc lập.
-#: Nên ở đây chỉ ghép nhiều DO khi tuyến có đủ chặng. (Đã báo chủ dự án để quyết cách sửa gốc.)
+#: SỐ CHẶNG của tuyến — chỉ còn để mô tả. Từ 11/09 máy chủ cho mọi DO trong chuyến một chặng
+#: HẠ HÀNG riêng tại điểm cuối (xem `tms_trip_service._xep_chang_cho_do`), nên ghép 2 DO lên
+#: tuyến một chặng cũng hoàn tất được — bộ gieo cố ý làm thế để đường đó được đi thật.
 SO_CHANG = {"DEMO-RT-VSIP2A-CATLAI": 2, "DEMO-RT-VSIP2A-CAIMEP": 2, "DEMO-RT-SONGTHAN-CATLAI": 1,
             "DEMO-RT-CATLAI-AMATA": 2, "DEMO-RT-LONGAN-CAIMEP": 3}
 #: Thể tích tối đa từng loại (m³) — cửa năng lực xét CẢ tải trọng và thể tích.
@@ -1026,7 +1022,7 @@ def gieo_nhieu(so_hoan_tat=22, so_dang_chay=6):
         loai, xe = cap_xe[vi_tri]
         tien, ty_gia = TIEN_VA_TY_GIA[i % len(TIEN_VA_TY_GIA)]
         rt = tuyen[i % len(tuyen)]
-        so_cont = 2 if (i % 7 == 0 and TAI_TOI_DA[loai] >= 24000 and SO_CHANG[rt] >= 2) else 1
+        so_cont = 2 if (i % 7 == 0 and TAI_TOI_DA[loai] >= 24000) else 1   # kể cả tuyến 1 chặng
         _mot_case(100 + i, khach[i % len(khach)], rt, loai, xe,
                   tx_ranh[vi_tri], hom_nay - dt.timedelta(days=1 + i // len(cap_xe)),
                   tien, ty_gia, "hoan_tat", so_cont=so_cont)

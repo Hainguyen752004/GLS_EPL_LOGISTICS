@@ -285,6 +285,20 @@ def complete_delivery(db, do_id, payload, files, idempotency_key, actor, path):
         leg.status = "completed"
         leg.actual_arrival_at = _utc_naive(entry.delivery_time)
 
+    # ĐÓNG LUÔN CÁC CHẶNG TRUNG CHUYỂN đã đi qua. Chặng `outbound` là đoạn xe chỉ đi ngang
+    # (ví dụ Vành đai 3) nên KHÔNG có POD — mà `open_legs` ở dưới lại đòi mọi chặng phải đóng
+    # trước khi chuyến hoàn tất. Không đóng chúng ở đây thì chuyến không bao giờ đóng được và
+    # xe bị giữ mãi. Chỉ đóng các chặng NẰM TRƯỚC chặng giao vừa ký: xe đã thật sự đi qua.
+    moc_da_giao = max((leg.sequence_no for leg in leg_map.values()), default=0)
+    for leg in db.scalars(select(TransportTripLeg).where(
+            TransportTripLeg.trip_id == trip.id,
+            TransportTripLeg.leg_type == "outbound",
+            TransportTripLeg.sequence_no <= moc_da_giao,
+            TransportTripLeg.status.notin_(("completed", "cancelled")),
+    ).with_for_update()).all():
+        leg.status = "completed"
+        leg.actual_arrival_at = _utc_naive(max(entry.delivery_time for entry in payload.pod_entries))
+
     surcharge_total = sum((row.increase_amount for row in payload.charge_adjustments), Decimal("0"))
     surcharge_total = _money(surcharge_total)
     final_price = _money(base_price + surcharge_total)

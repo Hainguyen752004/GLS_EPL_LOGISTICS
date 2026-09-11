@@ -497,13 +497,17 @@ def dispatch_trip(db, trip_id, data, actor="system"):
     # khong ghi cung chuoi nua.
     lich_xe.dong_bo_trang_thai_theo_lich(
         db, vehicle_id=vehicle.id, crew_ids=crew_ids, moc=assignment_start)
+    # QUÃNG ĐƯỜNG CÒN LẠI CỦA MỘT DO = quãng đường của CẢ CHUYẾN (trừ chặng về rỗng), không
+    # phải của riêng các chặng mang mã DO đó. Mọi DO trên chuyến đi cùng một xe nên chúng đi
+    # cùng một quãng đường. Từ 11/09 các chặng trung chuyển thuộc DO thứ nhất và DO còn lại chỉ
+    # có chặng hạ hàng 0 km, nên cách tính cũ cho ra 0 km cho chúng — sai, và làm màn Theo dõi
+    # hiện "còn 0 km" cho một xe vừa xuất bến.
+    leg_distances = db.query(TransportTripLeg.distance_km).filter(
+        TransportTripLeg.trip_id == trip.id,
+        TransportTripLeg.leg_type != "empty_return",
+    ).all()
+    remaining_distance = sum(float(row[0] or 0) for row in leg_distances)
     for delivery in deliveries:
-        leg_distances = db.query(TransportTripLeg.distance_km).filter(
-            TransportTripLeg.trip_id == trip.id,
-            TransportTripLeg.do_id == delivery.id,
-            TransportTripLeg.leg_type != "empty_return",
-        ).all()
-        remaining_distance = sum(float(row[0] or 0) for row in leg_distances)
         tracking = db.get(VehicleTracking, delivery.id) or VehicleTracking(do_id=delivery.id)
         tracking.vehicle_id = vehicle.id
         tracking.lat = None

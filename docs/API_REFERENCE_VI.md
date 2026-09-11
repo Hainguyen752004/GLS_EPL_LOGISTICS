@@ -204,6 +204,12 @@ Danh sách cơ hội khách hàng (bảng Kanban).
 | `owner` | truy vấn | chuỗi |  |
 | `customer_id` | truy vấn | chuỗi |  |
 | `q` | truy vấn | chuỗi |  |
+| `page` | truy vấn | chuỗi |  |
+| `page_size` | truy vấn | int |  |
+| `since_days` | truy vấn | chuỗi |  |
+| `source` | truy vấn | chuỗi |  |
+| `due` | truy vấn | chuỗi |  |
+| `sort` | truy vấn | chuỗi |  |
 
 *Ghi chú:* Lọc `stage` (new|contacted|negotiating|quoted|won|lost), `owner`, `customer_id`, `q` (tìm chữ).
 
@@ -212,6 +218,19 @@ Danh sách cơ hội khách hàng (bảng Kanban).
 Tạo cơ hội mới: khách có mã hoặc khách tiềm năng chưa có mã (`prospect_name`).
 
 *Ghi chú:* Thân: `customer_id` hoặc `prospect_name`, `contact_name/phone/email`, `source`, `route_id` hoặc `origin_text`/`destination_text`, `cargo_type`, `est_weight_kg`, `est_trips_per_month`, `expected_start`, `expected_price`, `owner`, `notes`.
+
+### `GET /api/crm/opportunities/board`
+
+Bảng theo cột: số đếm thật + N thẻ đầu mỗi cột. Khai TRƯỚC `/{ma}`.
+
+| Tham số | Vị trí | Kiểu | Bắt buộc |
+|---|---|---|---|
+| `per_col` | truy vấn | int |  |
+| `since_days` | truy vấn | int |  |
+| `owner` | truy vấn | chuỗi |  |
+| `q` | truy vấn | chuỗi |  |
+| `source` | truy vấn | chuỗi |  |
+| `due` | truy vấn | chuỗi |  |
 
 ### `GET /api/crm/opportunities/summary`
 
@@ -1015,7 +1034,7 @@ Thân yêu cầu — `TripFromDeliveryOrdersRequest`:
 | `return_route_id` | chuỗi | trống |  |
 | `return_do_id` | chuỗi | trống |  |
 
-*Ghi chú:* Thân `{id, do_ids[], trip_type: one_way|round_trip, planned_departure_at, avg_speed_kmh, dwell_minutes, stop_plan?, return_purpose, return_route_id?, return_do_id?}`. Header `Idempotency-Key`. Quy ước 1 DO = 1 chuyến (tuyến một chặng chỉ có một chặng giao).
+*Ghi chú:* Thân `{id, do_ids[], trip_type: one_way|round_trip, planned_departure_at, avg_speed_kmh, dwell_minutes, stop_plan?, return_purpose, return_route_id?, return_do_id?}`. Header `Idempotency-Key`. Chặng: các chặng giữa của tuyến là `outbound` (xe đi ngang, KHÔNG đòi POD), chặng cuối là `delivery`; chuyến nhiều DO thì mỗi DO còn lại có một chặng hạ hàng riêng 0 km tại điểm cuối, nên mọi DO đều nộp được POD và ETA không đổi. Muốn chuyến NHIỀU ĐIỂM GIAO thật thì khai `stop_plan[].do_id` (hàng DO nào hạ ở điểm dừng nào); khai thiếu DO → `409 TRIP_DO_KHONG_CO_CHANG`, khai mã lạ → `422 TRIP_DO_INVALID`.
 
 ### `GET /api/tms/trips/{trip_id}`
 
@@ -1911,4 +1930,8 @@ Trang chạy bộ kiểm giao diện.
 ### `GET /tongquan.jpg`
 
 Ảnh sơ đồ tổng quan.
+
+---
+
+Các đường chưa có mô tả tay (đang dùng chú thích trong mã): `GET /api/crm/opportunities/board`
 

@@ -97,7 +97,7 @@ MO_TA_API = {
     "GET /api/pod-documents/{document_id}": ("Tải một chứng từ POD (ảnh/PDF) đã nộp.", ""),
 
     # ---- Chuyến, điều phối, thực thi ------------------------------------------------
-    "POST /api/tms/trips/from-delivery-orders": ("**LẬP CHUYẾN TỪ DO**: tạo Trip + Freight Order + các chặng theo tuyến của DO.", "Thân `{id, do_ids[], trip_type: one_way|round_trip, planned_departure_at, avg_speed_kmh, dwell_minutes, stop_plan?, return_purpose, return_route_id?, return_do_id?}`. Header `Idempotency-Key`. Quy ước 1 DO = 1 chuyến (tuyến một chặng chỉ có một chặng giao)."),
+    "POST /api/tms/trips/from-delivery-orders": ("**LẬP CHUYẾN TỪ DO**: tạo Trip + Freight Order + các chặng theo tuyến của DO.", "Thân `{id, do_ids[], trip_type: one_way|round_trip, planned_departure_at, avg_speed_kmh, dwell_minutes, stop_plan?, return_purpose, return_route_id?, return_do_id?}`. Header `Idempotency-Key`. Chặng: các chặng giữa của tuyến là `outbound` (xe đi ngang, KHÔNG đòi POD), chặng cuối là `delivery`; chuyến nhiều DO thì mỗi DO còn lại có một chặng hạ hàng riêng 0 km tại điểm cuối, nên mọi DO đều nộp được POD và ETA không đổi. Muốn chuyến NHIỀU ĐIỂM GIAO thật thì khai `stop_plan[].do_id` (hàng DO nào hạ ở điểm dừng nào); khai thiếu DO → `409 TRIP_DO_KHONG_CO_CHANG`, khai mã lạ → `422 TRIP_DO_INVALID`."),
     "GET /api/tms/trips": ("Danh sách chuyến: `status`, `freight_order_id`, phân trang. Mỗi chuyến kèm ETA, `delivery_due_at`, `is_late`, `late_minutes`.", ""),
     "GET /api/tms/trips/{trip_id}": ("Chi tiết một chuyến: chặng, DO, xe/tổ lái, mốc kế hoạch và thực tế.", ""),
     "POST /api/tms/trips": ("Tạo chuyến thô cho Freight Order (đường TMS gốc; luồng chuẩn dùng `from-delivery-orders`).", ""),

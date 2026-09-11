@@ -456,27 +456,27 @@ có tìm trên từng dòng** + "Thêm khoản mục" gõ tay. Giữ lại phầ
   `VSIP II-A → Vành đai 3` làm "chặng giao" — Vành đai 3 là điểm giữa đường, không phải nơi giao
   hàng. POD của DO đó được ghi vào một điểm không phải điểm giao. Đúng ra **mỗi DO phải có chặng
   giao riêng đi hết tuyến của nó**, chứ không phải cắt tuyến ra chia nhau.
-- **ĐÃ SỬA cùng ngày** (`_chia_chang_cho_do` trong `tms_trip_service.py`). Luật mới:
-  (1) mỗi DO trong chuyến phải có ít nhất một chặng giao; (2) mặc định DO thứ i nhận chặng thứ i
-  và DO CUỐI nhận các chặng còn lại; (3) điều phối khai tay được `stop_plan[].do_id` để nói hàng
-  của DO nào hạ ở điểm dừng nào. Không xếp đủ thì TỪ CHỐI ngay lúc lập chuyến —
-  `409 TRIP_DO_NHIEU_HON_CHANG` khi DO nhiều hơn chặng, `409 TRIP_DO_KHONG_CO_CHANG` khi khai tay
-  bỏ sót DO, `422 TRIP_DO_INVALID` khi khai mã không thuộc chuyến — và KHÔNG tạo chuyến nửa vời.
-  Đo lại trên máy chủ thật với đúng hình dạng đã gây lỗi (2 DO trên tuyến Sóng Thần → Cát Lái):
-  trả 409 với câu chỉ việc phải làm, `GET` chuyến đó trả 404. Bài kiểm
-  `test_chia_chang_cho_do_du.py` (3 bài) khoá cả bốn nhánh; 223 bài về chuyến/điều phối/TMS và
-  32 bài bàn giao + hoàn tất + A→Z vẫn xanh.
-- Bộ gieo vẫn giữ `SO_CHANG` để không tạo ra hình dạng bị từ chối, và một chuyến bị kẹt do lỗi
-  cũ đã được huỷ để nhả xe.
-- **CÒN MỞ, cần chủ dự án quyết** (không sửa trong đợt này): hệ coi MỌI điểm cuối chặng là một
-  ĐIỂM GIAO cần POD. Nên tuyến có điểm trung chuyển (Vành đai 3) thì DO phải có POD tại đó, kể
-  cả chuyến chỉ chở MỘT DO — đó là hành vi từ trước tới nay, không phải mới. Đúng với chuyến
-  nhiều điểm giao thật, sai với tuyến chỉ đi ngang. Sửa là đổi nghĩa của "chặng" trên mọi tuyến
-  có điểm trung chuyển và chạm bảy chỗ đang lọc chặng theo DO, nên để anh quyết.
-- Hai chỗ khác cũng lộ ra khi gieo dày, đều là cửa chặn ĐÚNG, chỉ ghi lại để người sau biết:
-  xe/tài xế đang giữ chuyến chưa xong thì không điều thêm được (`RESOURCE_BUSY`, không xét khung
-  giờ); và ca làm việc mới **chồng** ca đã có thì bị từ chối, nên "đã gọi API tạo ca" không đồng
-  nghĩa với "tài xế đã có ca" — bộ gieo giờ in ra mỗi lần ca không lưu được.
+- **ĐÃ SỬA TRIỆT ĐỂ cùng ngày**, theo yêu cầu anh (*"em phân tích ok đó làm giúp anh đi nhé, cho
+  nó chi tiết hơn"*), ở `tms_trip_service._xep_chang_cho_do` + `delivery_completion_service` +
+  `tms_dispatch_service`:
+  1. **Chặng trung chuyển KHÔNG còn là điểm giao.** Mặc định mọi DO của chuyến giao ở ĐIỂM CUỐI
+     tuyến: chặng 1..N−1 là `outbound` (xe đi ngang, không đòi POD), chặng N là `delivery` của
+     DO thứ nhất, mỗi DO còn lại có một chặng HẠ HÀNG riêng tại đúng điểm cuối, 0 km và 0 phút
+     dừng nên ETA và tổng quãng đường không đổi. Chuyến MỘT DO trên tuyến có Vành đai 3 nay chỉ
+     cần MỘT POD tại Cát Lái — trước đây phải nộp thêm một POD "tại Vành đai 3".
+  2. **Mọi DO luôn có chặng giao riêng**, nên giới hạn "số DO không được nhiều hơn số chặng" bỏ
+     đi: 2 DO trên tuyến một chặng nay chạy được và cả hai đều nộp POD ở điểm cuối. Khai tay
+     `stop_plan[].do_id` để làm chuyến NHIỀU ĐIỂM GIAO thật; khai mã lạ → `422 TRIP_DO_INVALID`,
+     khai thiếu DO → `409 TRIP_DO_KHONG_CO_CHANG`.
+  3. Khi POD ký cho một chặng giao, các chặng `outbound` phía trước được đóng theo (xe đã đi
+     qua) — không thì `open_legs` không bao giờ rỗng, chuyến không đóng, xe bị giữ mãi.
+  4. Quãng đường còn lại của một DO tính theo CẢ CHUYẾN (trừ chặng về rỗng), vì mọi DO đi cùng
+     một xe; tính theo chặng riêng thì DO thứ hai ra 0 km.
+  Bài kiểm `test_chang_trung_chuyen_khong_doi_pod.py` (5 bài) khoá: tuyến 3 chặng một DO chỉ có
+  một chặng giao ở điểm cuối; 3 DO trên tuyến một chặng mỗi DO một chặng hạ, tổng km không nhân;
+  khai tay nhiều điểm giao; hoàn tất đóng cả chặng đi ngang, chuyến đóng, xe được trả; quãng
+  đường còn lại 60 km cho cả hai DO.
+- Bộ gieo bỏ điều kiện "tuyến phải đủ chặng" để đường 2 DO trên tuyến một chặng được đi thật.
 
 ---
 

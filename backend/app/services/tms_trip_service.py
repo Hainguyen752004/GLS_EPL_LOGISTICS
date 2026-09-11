@@ -354,70 +354,73 @@ def _location(db, location_id, name):
     return location
 
 
-def _chia_chang_cho_do(do_ids, segments, stop_plan):
-    """Chặng thứ i của chuyến thuộc DO nào. Trả danh sách cùng độ dài `segments`.
+def _xep_chang_cho_do(do_ids, segments, stop_plan):
+    """Xếp chặng cho từng DO. Trả `(theo_chang, ha_them)`.
 
-    VÌ SAO CÓ HÀM NÀY — LỖI ĐÃ ĐO ĐƯỢC (11/09). Bản trước chia bằng một câu:
+    · `theo_chang[i] = (do_id, leg_type)` cho chặng thứ i+1 của tuyến;
+    · `ha_them` = danh sách DO cần MỘT chặng hạ hàng riêng ở điểm cuối tuyến.
 
-        "do_id": do_ids[-1] if sequence == len(segments) else do_ids[0]
+    ================== VÌ SAO CÓ HÀM NÀY: HAI LỖI ĐÃ ĐO ĐƯỢC ==================
 
-    tức chặng cuối thuộc DO CUỐI, mọi chặng khác thuộc DO ĐẦU. Hệ quả: chuyến chở NHIỀU
-    DO hơn số chặng thì có DO **không nhận được chặng nào**. Đo trên máy chủ thật: 2 DO
-    trên tuyến Sóng Thần → Cát Lái (MỘT chặng) → chặng duy nhất thuộc DO thứ hai, DO thứ
-    nhất không nộp POD được (`POD_LINEAGE_INVALID` vì tập chặng của nó rỗng) nên KHÔNG BAO
-    GIỜ hoàn tất được; chuyến giữ xe và tài xế lại cho tới khi có người huỷ tay. Máy chủ
-    không chặn gì lúc lập chuyến. Với 3 DO trên 2 chặng thì DO ở giữa mất chặng y như vậy.
+    **(1) Điểm TRUNG CHUYỂN bị coi là điểm giao.** Bản trước đặt `leg_type="delivery"` cho
+    MỌI chặng của tuyến. Tuyến VSIP II-A → Vành đai 3 → Cảng Cát Lái có hai chặng, nên một
+    DO phải nộp POD tại **Vành đai 3** — một điểm xe chỉ đi ngang, không hạ hàng ở đó. POD là
+    bằng chứng giao hàng và nó đi vào hồ sơ bàn giao cho bên công nợ, nên ghi "đã giao tại
+    Vành đai 3" là ghi một việc không xảy ra. Lỗi này có với cả chuyến chở MỘT DO.
 
-    LUẬT MỚI, và nó là một luật chứ không phải một mẹo:
+    **(2) DO không có chặng nào.** Bản trước chia bằng một câu
+    `do_ids[-1] if sequence == len(segments) else do_ids[0]`, nên chuyến chở nhiều DO hơn số
+    chặng thì có DO không nhận được chặng — không nộp được POD nên không bao giờ đóng được,
+    và chuyến giữ xe lại tới khi có người huỷ tay.
 
-      1. Mỗi DO trong chuyến PHẢI có ít nhất một chặng giao. Không xếp được thì TỪ CHỐI
-         ngay lúc lập chuyến, kèm lời nói rõ phải làm gì — thà không lập được chuyến, hơn
-         là lập ra một DO không bao giờ đóng được và một cái xe bị giữ.
-      2. Mặc định: DO thứ i nhận chặng thứ i; DO CUỐI nhận mọi chặng còn lại (nó là DO
-         được giao ở điểm cuối tuyến). Với một DO thì mọi chặng thuộc nó — y như trước.
-      3. Điều phối muốn khác thì khai tay `stop_plan[i].do_id` — hàng của DO nào hạ ở
-         điểm dừng nào. Khai một điểm thì các điểm còn lại vẫn theo mặc định, nhưng kết
-         quả cuối cùng vẫn phải phủ hết mọi DO.
+    ====================== LUẬT MỚI ======================
 
-    CÒN MỘT CÂU HỎI RỘNG HƠN, cố ý KHÔNG giải ở đây: hệ đang coi mọi điểm cuối chặng là
-    một ĐIỂM GIAO cần POD, nên tuyến có điểm trung chuyển (ví dụ Vành đai 3) thì DO cũng
-    phải có POD tại đó. Điều này đúng với chuyến nhiều điểm giao thật, nhưng sai với tuyến
-    chỉ đi ngang một điểm trung chuyển — và nó đúng như vậy cho cả chuyến MỘT DO từ trước
-    tới nay. Sửa chỗ đó là đổi nghĩa của "chặng" trên mọi tuyến có điểm trung chuyển, chạm
-    vào bảy chỗ đang lọc chặng theo DO, nên phải do chủ dự án quyết — xem mục A29.
+    Mặc định (không khai tay): **mọi DO trong chuyến được giao ở ĐIỂM CUỐI tuyến** — đó là
+    ý nghĩa của việc các DO dùng chung một tuyến. Nên:
+
+      · chặng 1..N-1 là `outbound` — xe đi ngang, KHÔNG đòi POD;
+      · chặng N là `delivery` của DO thứ nhất;
+      · mỗi DO còn lại nhận một chặng HẠ HÀNG riêng tại đúng điểm cuối đó: quãng đường 0 km,
+        dừng 0 phút, `leg_type="delivery"`. Không km nên ETA và tổng quãng đường không đổi;
+        nó chỉ nói "ở điểm này hạ thêm hàng của DO kia" — đúng cách một chuyến gom hàng
+        nhiều chủ hạ nhiều lô tại một điểm.
+
+    Vì mỗi DO luôn có chặng giao riêng, giới hạn "số DO không được nhiều hơn số chặng" KHÔNG
+    còn cần: 2 DO trên tuyến một chặng nay chạy được và cả hai đều nộp POD tại điểm cuối.
+
+    Khai tay (`stop_plan[].do_id`): chuyến NHIỀU ĐIỂM GIAO thật — hàng của DO nào hạ ở điểm
+    dừng nào. Chặng được khai là `delivery` của DO đó, chặng không khai là `outbound`. Vẫn
+    bắt buộc phủ hết mọi DO, không thì từ chối.
     """
-    so_do, so_chang = len(do_ids), len(segments)
-    if so_do > so_chang:
-        raise conflict(
-            "TRIP_DO_NHIEU_HON_CHANG",
-            "Chuyến có %d lệnh giao hàng nhưng tuyến chỉ có %d chặng, nên sẽ có lệnh không có "
-            "chặng giao và không bao giờ hoàn tất được. Hãy tách thành nhiều chuyến, hoặc khai "
-            "thêm chặng cho tuyến ở Dữ liệu gốc." % (so_do, so_chang),
-            ["master-data/routes", "delivery-orders"],
-        )
-    ra = []
+    so_chang = len(segments)
+    khai = {}
     for sequence in range(1, so_chang + 1):
-        khai = (stop_plan.get(sequence) or {}).get("do_id")
-        khai = str(khai).strip() if khai is not None else ""
-        if khai:
-            if khai not in do_ids:
-                raise DomainError(
-                    "TRIP_DO_INVALID",
-                    "Điểm dừng %d khai lệnh giao hàng %s, nhưng lệnh đó không thuộc chuyến này."
-                    % (sequence, khai), 422, ["delivery-orders"])
-            ra.append(khai)
-        else:
-            ra.append(do_ids[min(sequence - 1, so_do - 1)])
-    thieu = [d for d in do_ids if d not in ra]
-    if thieu:
-        raise conflict(
-            "TRIP_DO_KHONG_CO_CHANG",
-            "Các lệnh giao hàng %s không được xếp vào chặng nào nên không nộp được POD. "
-            "Hãy khai `stop_plan[].do_id` cho đủ, hoặc bỏ chúng khỏi chuyến."
-            % ", ".join(thieu),
-            ["delivery-orders"],
-        )
-    return ra
+        gia_tri = (stop_plan.get(sequence) or {}).get("do_id")
+        gia_tri = str(gia_tri).strip() if gia_tri is not None else ""
+        if not gia_tri:
+            continue
+        if gia_tri not in do_ids:
+            raise DomainError(
+                "TRIP_DO_INVALID",
+                "Điểm dừng %d khai lệnh giao hàng %s, nhưng lệnh đó không thuộc chuyến này."
+                % (sequence, gia_tri), 422, ["delivery-orders"])
+        khai[sequence] = gia_tri
+    if khai:
+        thieu = [d for d in do_ids if d not in set(khai.values())]
+        if thieu:
+            raise conflict(
+                "TRIP_DO_KHONG_CO_CHANG",
+                "Các lệnh giao hàng %s không được xếp vào điểm dừng nào nên không nộp được POD. "
+                "Hãy khai `stop_plan[].do_id` cho đủ, hoặc bỏ chúng khỏi chuyến."
+                % ", ".join(thieu),
+                ["delivery-orders"],
+            )
+        theo_chang = [(khai.get(s) or do_ids[0], "delivery" if s in khai else "outbound")
+                      for s in range(1, so_chang + 1)]
+        return theo_chang, []
+    chinh = do_ids[0]
+    theo_chang = [(chinh, "outbound") for _ in range(so_chang - 1)] + [(chinh, "delivery")]
+    return theo_chang, list(do_ids[1:])
 
 
 def create_trip_from_delivery_orders(db, data, actor):
@@ -587,14 +590,15 @@ def create_trip_from_delivery_orders(db, data, actor):
         for item in (data.get("stop_plan") or [])
         if isinstance(item, dict) and item.get("sequence_no") is not None
     }
-    do_theo_chang = _chia_chang_cho_do(do_ids, segments, stop_plan)
+    theo_chang, ha_them = _xep_chang_cho_do(do_ids, segments, stop_plan)
     for sequence, segment in enumerate(segments, start=1):
         stop = stop_plan.get(sequence) or {}
+        do_cua_chang, loai_chang = theo_chang[sequence - 1]
         add_leg(db, trip.id, {
             "id": f"{trip.id}-LEG-{sequence:03d}",
-            "do_id": do_theo_chang[sequence - 1],
+            "do_id": do_cua_chang,
             "sequence_no": sequence,
-            "leg_type": "delivery",
+            "leg_type": loai_chang,
             "origin": segment["origin"],
             "destination": segment["destination"],
             "stop_name": stop.get("stop_name") or segment["destination"],
@@ -610,8 +614,33 @@ def create_trip_from_delivery_orders(db, data, actor):
                 else data.get("planned_departure_at") if sequence == 1 else None
             ),
         }, expected_version=trip.version, actor=actor)
+    # Chặng HẠ HÀNG của các DO còn lại — cùng điểm cuối, 0 km, 0 phút dừng (xem
+    # `_xep_chang_cho_do`). Nhờ nó mỗi DO có đúng một chặng giao tại nơi hàng thật sự được hạ.
+    diem_cuoi = segments[-1]["destination"]
+    for thu_tu, do_ha in enumerate(ha_them, start=len(segments) + 1):
+        stop = {}
+        for muc in (stop_plan or {}).values():
+            if str(muc.get("do_id") or "").strip() == do_ha:
+                stop = muc
+                break
+        add_leg(db, trip.id, {
+            "id": f"{trip.id}-LEG-{thu_tu:03d}",
+            "do_id": do_ha,
+            "sequence_no": thu_tu,
+            "leg_type": "delivery",
+            "origin": diem_cuoi,
+            "destination": diem_cuoi,
+            "stop_name": stop.get("stop_name") or diem_cuoi,
+            "receiver_name": stop.get("receiver_name"),
+            "receiver_phone": stop.get("receiver_phone"),
+            "delivery_note": stop.get("delivery_note") or "Hạ hàng cùng điểm giao",
+            "distance_km": "0",
+            "avg_speed_kmh": str(data.get("avg_speed_kmh")),
+            "dwell_minutes": 0,
+            "planned_departure_at": None,
+        }, expected_version=trip.version, actor=actor)
     return_leg_type = "empty_return" if return_purpose == "empty_return" else "backhaul"
-    for offset, segment in enumerate(return_segments, start=len(segments) + 1):
+    for offset, segment in enumerate(return_segments, start=len(segments) + len(ha_them) + 1):
         add_leg(db, trip.id, {
             "id": f"{trip.id}-LEG-{offset:03d}",
             "do_id": return_do.id if return_do is not None else None,

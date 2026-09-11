@@ -46,7 +46,17 @@ def test_create_trip_from_dos_builds_route_legs_transactionally_and_is_idempoten
     trip = created.json()["data"]
     assert trip["id"] == "TRIP-FROM-DO-001"
     assert trip["delivery_order_ids"] == ["DO-TRIP-A", "DO-TRIP-B"]
-    assert [leg["distance_km"] for leg in trip["legs"]] == ["10.000", "20.000"]
+    # Hai DO trên tuyến hai chặng (11/09): chặng 1 đi ngang (`outbound`), chặng 2 giao DO thứ
+    # nhất, và DO thứ hai có chặng HẠ HÀNG riêng 0 km tại đúng điểm cuối — nên 3 chặng, tổng km
+    # vẫn 30. Trước đây chặng 1 bị coi là điểm giao của DO-TRIP-A tại "Trạm B" — một điểm xe
+    # chỉ đi ngang.
+    assert [leg["distance_km"] for leg in trip["legs"]] == ["10.000", "20.000", "0.000"]
+    assert [(leg["leg_type"], leg["do_id"], leg["destination"]) for leg in trip["legs"]] == [
+        ("outbound", "DO-TRIP-A", "Trạm B"),
+        ("delivery", "DO-TRIP-A", "Cảng C"),
+        ("delivery", "DO-TRIP-B", "Cảng C"),
+    ]
+    assert trip["total_distance_km"] == "30.000"
     assert trip["planned_departure_at"].endswith("+00:00")
 
     database = importlib.import_module("database")
@@ -54,7 +64,7 @@ def test_create_trip_from_dos_builds_route_legs_transactionally_and_is_idempoten
     with database.SessionLocal() as db:
         assert db.query(models.TransportTrip).filter_by(id="TRIP-FROM-DO-001").count() == 1
         assert db.query(models.FreightOrder).filter_by(id="FO-TRIP-FROM-DO-001").count() == 1
-        assert db.query(models.TransportTripLeg).filter_by(trip_id="TRIP-FROM-DO-001").count() == 2
+        assert db.query(models.TransportTripLeg).filter_by(trip_id="TRIP-FROM-DO-001").count() == 3
 
 
 def test_create_trip_from_do_persists_delivery_stop_recipient_plan(app_client, workflow_builder):
