@@ -934,6 +934,77 @@
    * thiếu tham số…); thêm lời gọi vào giữa những nhánh đó là mời một nhánh bị
    * quên. Bọc ngoài thì chỉ chạy khi hàm gốc đã chạy xong và không trả `false`.
    */
+  /* ==================================================================
+     QUAY LẠI — lịch sử trình duyệt cho toàn ứng dụng.
+
+     VẤN ĐỀ ĐÃ ĐO (12/09/2026). Ứng dụng có 10 màn và KHÔNG một dòng
+     `pushState`/`popstate` nào, nên trình duyệt coi cả ứng dụng là MỘT
+     trang: bấm nút Back (hoặc vuốt lùi trên điện thoại, hoặc phím
+     Alt+←) là THOÁT HẲN khỏi ứng dụng, không phải lùi một màn. Chủ dự
+     án nói đúng: *"ấn vào tính năng gì đó không có nút quay về"*. Trước
+     đây chỉ có hai màn chắp tay một nút "Quay lại Dashboard", tám màn
+     còn lại không có đường lùi nào ngoài việc đi lại từ thanh menu.
+
+     Sửa ở ĐÚNG MỘT CHỖ: mọi lần đổi màn đều đi qua `switchView`, nên
+     gắn lịch sử vào đây thì cả mười màn được hưởng, kể cả màn thêm sau
+     này — thay vì đi dán một cái nút vào từng màn rồi quên mất vài màn.
+
+     Ba việc:
+       · đổi màn → đẩy một mốc vào lịch sử trình duyệt (kèm `#mã-màn`,
+         nên tải lại trang vẫn ở đúng màn đang xem);
+       · người dùng bấm Back → `popstate` mở lại màn trước;
+       · một nút "Quay lại" hiện trên đầu trang cho người không nghĩ tới
+         nút Back của trình duyệt.
+     ================================================================== */
+  let manHienTai = '';
+  let soBuocDaDay = 0;      // số mốc ứng dụng tự đẩy — biết còn chỗ nào để lùi không
+  let dangLuiLai = false;   // đang xử lý popstate: KHÔNG đẩy tiếp, nếu không sẽ lùi mãi không ra
+
+  function veNutQuayLai() {
+    const oSub = document.getElementById('epl-sub');
+    if (!oSub) return;
+    let b = document.getElementById('epl-quay-lai');
+    if (!b) {
+      b = document.createElement('button');
+      b.type = 'button';
+      b.id = 'epl-quay-lai';
+      b.className = 'epl-quay-lai';
+      b.title = 'Quay lại màn trước (hoặc bấm nút Back của trình duyệt)';
+      b.innerHTML = '<i class="fa-solid fa-arrow-left" aria-hidden="true"></i>'
+        + '<span>' + (typeof T === 'function' ? T('btn_back', 'Quay lại') : 'Quay lại') + '</span>';
+      b.addEventListener('click', function () { window.history.back(); });
+      oSub.insertBefore(b, oSub.firstChild);
+    }
+    // Ẩn khi chưa đi đâu cả: một nút quay lại không lùi được là một nút nói dối.
+    b.hidden = soBuocDaDay <= 0;
+  }
+
+  function ganLichSuMan() {
+    if (typeof window.history !== 'object' || !window.history.pushState) return;
+    window.addEventListener('popstate', function (su) {
+      const man = (su.state && su.state.eplMan)
+        || (String(location.hash || '').replace(/^#/, '') || '');
+      if (!man || typeof window.switchView !== 'function') return;
+      dangLuiLai = true;
+      try {
+        window.switchView(man, (su.state && su.state.eplScroll) || undefined);
+      } finally {
+        dangLuiLai = false;
+      }
+      soBuocDaDay = Math.max(0, soBuocDaDay - 1);
+      veNutQuayLai();
+    });
+  }
+
+  /** Mở màn ghi trong địa chỉ (`#ops-planning`) khi vừa tải trang — để F5 không văng về đầu. */
+  function moManTheoDiaChi() {
+    const man = String(location.hash || '').replace(/^#/, '').trim();
+    if (!man || typeof window.switchView !== 'function') return;
+    if (!document.getElementById('view-' + man)) return;
+    dangLuiLai = true;                 // đang khôi phục, không phải người dùng đi tới
+    try { window.switchView(man); } finally { dangLuiLai = false; }
+  }
+
   function bocSwitchView() {
     const goc = window.switchView;
     if (typeof goc !== 'function' || goc.daBocKhung) return;
@@ -949,6 +1020,12 @@
           // chặn cả việc chuyển màn.
           console.error('Không cập nhật được đầu trang:', loi);
         }
+        try {
+          ghiLichSu(man, scrollToId);
+        } catch (loi) {
+          // Lịch sử hỏng thì vẫn phải đổi màn được.
+          console.error('Không ghi được lịch sử màn:', loi);
+        }
       }
       dongBangChon();
       return kq;
@@ -957,8 +1034,26 @@
     window.switchView = boc;
   }
 
+  /** Ghi một mốc lịch sử cho màn vừa mở. Mở lại chính màn đang xem thì KHÔNG ghi —
+   *  nếu không, bấm hai lần vào một mục menu là phải bấm Back hai lần mới ra. */
+  function ghiLichSu(man, scrollToId) {
+    if (!window.history || !window.history.pushState || man === manHienTai) return;
+    const trangThai = { eplMan: man, eplScroll: scrollToId || null };
+    if (dangLuiLai || !manHienTai) {
+      // Lần đầu, hoặc đang lùi: thay mốc hiện tại, không tạo mốc mới.
+      history.replaceState(trangThai, '', '#' + man);
+    } else {
+      history.pushState(trangThai, '', '#' + man);
+      soBuocDaDay += 1;
+    }
+    manHienTai = man;
+    veNutQuayLai();
+  }
+
   function dungKhung() {
     bocSwitchView();
+    ganLichSuMan();
+    moManTheoDiaChi();
     bocSwitchMasterDataTab();
     ganBangChon();
     ganDiChuyen();

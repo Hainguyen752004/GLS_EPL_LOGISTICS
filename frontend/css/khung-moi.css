@@ -390,6 +390,21 @@
 }
 .epl-sub h1 { margin: 0; font-size: 19px; font-weight: 700; text-wrap: balance; }
 .epl-sub p { margin: 3px 0 0; color: var(--epl-ink-3); font-size: 12.5px; max-width: 78ch; }
+/* Nút Quay lại: đứng trước tiêu đề màn, cùng hàng với đường dẫn. */
+.epl-quay-lai {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 13px 0 11px; margin-right: 4px;
+  border: 1px solid var(--epl-line); border-radius: 9px;
+  background: #fff; color: var(--epl-ink); cursor: pointer;
+  font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.epl-quay-lai:hover { background: #f1f5f9; border-color: var(--epl-line-2, #cbd5e1); transform: translateX(-2px); }
+.epl-quay-lai:active { transform: translateX(-1px); }
+.epl-quay-lai:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.epl-quay-lai i { font-size: 12px; }
+@media (max-width: 680px) { .epl-quay-lai span { display: none; } .epl-quay-lai { padding: 0 10px; } }
+@media (prefers-reduced-motion: reduce) { .epl-quay-lai { transition: none; } }
 .epl-subacts { display: flex; gap: 8px; align-items: center; }
 .epl-btn-primary {
   height: 36px;
