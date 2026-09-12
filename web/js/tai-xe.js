@@ -105,6 +105,48 @@
     bao._t = setTimeout(function () { b.hidden = true; }, lau || 3200);
   }
 
+  /* ---------------- hộp xác nhận / nhập liệu TRONG ỨNG DỤNG ----------------
+   * Không dùng confirm() và prompt() của trình duyệt: hộp gốc in kèm dòng
+   * "127.0.0.1:8090 says", tài xế không hiểu đó là gì còn người demo thì lộ địa chỉ máy chủ.
+   * Trả Promise: `null` là người dùng huỷ; với hộp xác nhận thì `true` là đồng ý. */
+  function moHop(y) {
+    var h = el('hop-xacnhan'), xong = false;
+    el('xn-tieude').textContent = y.tieuDe || 'Xác nhận';
+    el('xn-noidung').textContent = y.noiDung || '';
+    var coNhap = !!y.nhap, o = el('xn-nhap');
+    el('xn-boc-nhap').hidden = !coNhap;
+    if (coNhap) {
+      el('xn-nhan').textContent = y.nhap.nhan || '';
+      o.value = y.nhap.giaTri || '';
+      o.placeholder = y.nhap.goiY || '';
+    }
+    el('xn-ok').textContent = y.nutOk || 'Đồng ý';
+    el('xn-huy').textContent = y.nutHuy || 'Quay lại';
+    el('xn-ok').classList.toggle('luc', !!y.lanh);
+    el('xn-ok').classList.toggle('chinh', !y.lanh);
+
+    return new Promise(function (xong_thi) {
+      function dong(gia) {
+        if (xong) return;
+        xong = true;
+        h.removeEventListener('close', huyKhiDong);
+        h.close();
+        xong_thi(gia);
+      }
+      function huyKhiDong() { if (!xong) { xong = true; xong_thi(null); } }   // Esc, hoặc đóng ngoài ý muốn
+      el('xn-ok').onclick = function () { dong(coNhap ? String(o.value).trim() : true); };
+      el('xn-huy').onclick = function () { dong(null); };
+      o.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); el('xn-ok').click(); } };
+      h.addEventListener('close', huyKhiDong);
+      h.showModal();
+      setTimeout(function () { (coNhap ? o : el('xn-ok')).focus(); }, 30);
+    });
+  }
+
+  function hoiXacNhan(y) { return moHop(y).then(function (g) { return g === true; }); }
+  function hoiNhapLieu(y) { return moHop({ tieuDe: y.tieuDe, noiDung: y.noiDung, nutOk: y.nutOk,
+                                           nutHuy: y.nutHuy, lanh: true, nhap: y }); }
+
   function loi(chu) {
     var o = el('loi');
     if (!chu) { o.hidden = true; o.textContent = ''; return; }
@@ -113,10 +155,16 @@
       + '<div style="margin-top:.6rem"><button type="button" class="nut nho" id="nut-doi-goc">'
       + 'Đổi địa chỉ máy chủ API</button></div>';
     el('nut-doi-goc').onclick = function () {
-      var moi = window.prompt('Địa chỉ máy chủ EPL (để trống = gọi cùng địa chỉ trang này):', goc());
-      if (moi === null) return;
-      nho(GOC_LUU, String(moi).trim().replace(/\/+$/, ''));
-      location.reload();
+      hoiNhapLieu({
+        tieuDe: 'Địa chỉ máy chủ EPL',
+        noiDung: 'Để trống thì trang này gọi API ở cùng địa chỉ với nó.',
+        nhan: 'Địa chỉ máy chủ', giaTri: goc(), goiY: 'http://192.168.1.10:8001',
+        nutOk: 'Lưu và tải lại'
+      }).then(function (moi) {
+        if (moi === null) return;
+        nho(GOC_LUU, String(moi).trim().replace(/\/+$/, ''));
+        location.reload();
+      });
     };
   }
 
@@ -523,8 +571,15 @@
     if (!r || !r.next_milestone) return;
     var moc = r.next_milestone, ten = moc.ten || MOC[moc.ma] || moc.ma;
     if (!r.freight_order_id) { bao('Chuyến này chưa có lệnh vận chuyển nên chưa ghi được mốc.'); return; }
-    if (!window.confirm('Ghi mốc "' + ten + '" cho ' + r.do_id + ' vào lúc này?\n\n'
-      + 'Mốc vào lịch sử chuyến và cập nhật vị trí xe. Không hoàn lại được.')) return;
+    hoiXacNhan({
+      tieuDe: 'Ghi mốc "' + ten + '"?',
+      noiDung: 'Ghi cho ' + r.do_id + ' vào lúc này. Mốc vào lịch sử chuyến và cập nhật vị trí xe '
+             + 'trên màn điều độ. Không hoàn lại được.',
+      nutOk: 'Ghi mốc', nutHuy: 'Chưa ghi'
+    }).then(function (dongY) { if (dongY) guiMoc(nut, r, moc, ten); });
+  }
+
+  function guiMoc(nut, r, moc, ten) {
     nut.disabled = true;
     var than = {
       event_type: moc.ma, source: 'manual', expected_version: r.freight_order_version,

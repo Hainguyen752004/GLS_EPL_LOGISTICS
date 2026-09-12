@@ -420,6 +420,30 @@
   </form>
 </dialog>
 
+<!-- ================= XÁC NHẬN / NHẬP LIỆU =================
+     Thay cho confirm() và prompt() của trình duyệt. Hộp gốc hiện dòng "127.0.0.1:8090 says"
+     ở đầu — tài xế đang đứng ở cổng cảng đọc thấy địa chỉ IP thì không hiểu là cái gì, và
+     người demo cho khách thì lộ luôn địa chỉ máy chủ. Hai nút ở đây GỌI TÊN VIỆC SẼ LÀM
+     ("Ghi mốc") chứ không phải OK/Cancel, để đọc một lần là biết bấm cái nào. -->
+<dialog id="hop-xacnhan" aria-labelledby="xn-tieude">
+  <div>
+    <div class="dau-hop">
+      <b id="xn-tieude">Xác nhận</b>
+    </div>
+    <div class="than-hop">
+      <p id="xn-noidung" style="margin:0 0 .2rem"></p>
+      <label class="nhap" id="xn-boc-nhap" hidden style="margin-top:.8rem">
+        <span id="xn-nhan"></span>
+        <input id="xn-nhap" autocomplete="off" spellcheck="false">
+      </label>
+    </div>
+    <div class="chan-hop">
+      <button type="button" class="nut" id="xn-huy">Quay lại</button>
+      <button type="button" class="nut chinh" id="xn-ok">Đồng ý</button>
+    </div>
+  </div>
+</dialog>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/tai-xe.js?v=2"></script>
 </body>
