@@ -33,7 +33,8 @@ const loiJS = [];
 const daPOST = [];
 
 const html = fs.readFileSync(path.join(GOC, 'web', 'index.html'), 'utf8')
-  .split('<script src="js/tai-xe.js?v=2"></script>').join('')
+  .split('<script src="js/ngon-ngu.js?v=1"></script>').join('')
+  .split('<script src="js/tai-xe.js?v=3"></script>').join('')
   .replace(/<script src="https:[^"]*"><\/script>/g, '')
   .replace(/<link rel="stylesheet" href="https:[^"]*">/g, '');
 
@@ -68,9 +69,12 @@ w.HTMLDialogElement.prototype.close = function () {
   this.dispatchEvent(new w.Event('close'));
 };
 
-const s = w.document.createElement('script');
-s.textContent = fs.readFileSync(path.join(GOC, 'web', 'js', 'tai-xe.js'), 'utf8');
-w.document.body.appendChild(s);
+// Nạp ĐÚNG thứ tự như trang thật: bảng chữ trước, rồi mã ứng dụng.
+['ngon-ngu.js', 'tai-xe.js'].forEach(function (ten) {
+  const s = w.document.createElement('script');
+  s.textContent = fs.readFileSync(path.join(GOC, 'web', 'js', ten), 'utf8');
+  w.document.body.appendChild(s);
+});
 
 const d = w.document;
 const el = (id) => d.getElementById(id);

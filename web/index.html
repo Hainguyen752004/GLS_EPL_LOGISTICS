@@ -69,6 +69,10 @@
   .hieu b{display:block; font-size:1.02rem; letter-spacing:-.01em}
   .hieu span{display:block; font-size:.74rem; font-weight:600; letter-spacing:.1em;
              text-transform:uppercase; color:#f3c9cb}
+  .chon-tieng{display:flex; gap:2px; background:rgba(255,255,255,.18); border-radius:999px; padding:2px}
+  .chon-tieng button{border:0; background:none; color:#fff; font:inherit; font-size:.74rem; font-weight:800;
+                     padding:.3rem .5rem; border-radius:999px; cursor:pointer; opacity:.72; line-height:1}
+  .chon-tieng button[aria-checked="true"]{background:#fff; color:var(--do-dam); opacity:1}
   .nut-tron{width:2.6rem; height:2.6rem; flex:none; border-radius:50%; cursor:pointer;
             background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3);
             color:#fff; font-size:1.1rem; display:grid; place-items:center}
@@ -313,15 +317,20 @@
     <div class="khung">
       <div class="dong">
         <img class="logo" src="img/logo-epl.jpg" alt="EPL Logistics">
-        <div class="hieu"><b>EPL Logistics</b><span>Ứng dụng tài xế</span></div>
-        <button type="button" class="nut-tron" id="nut-capnhat" aria-label="Cập nhật">↻</button>
+        <div class="hieu"><b>EPL Logistics</b><span data-i18n="ung_dung">Ứng dụng tài xế</span></div>
+        <div class="chon-tieng" id="chon-tieng" role="radiogroup" aria-label="Ngôn ngữ">
+          <button type="button" data-ngonngu="vi" role="radio" aria-checked="true">VI</button>
+          <button type="button" data-ngonngu="en" role="radio" aria-checked="false">EN</button>
+          <button type="button" data-ngonngu="lo" role="radio" aria-checked="false" lang="lo">ລາວ</button>
+        </div>
+        <button type="button" class="nut-tron" id="nut-capnhat" data-i18n-al="cap_nhat" aria-label="Cập nhật">↻</button>
       </div>
       <div class="toi">
         <span class="anh" id="toi-chu" aria-hidden="true">?</span>
-        <span class="ten"><b id="toi-ten">Chọn tên của bạn</b><small id="toi-ma">Chạm để chọn</small></span>
+        <span class="ten"><b id="toi-ten" data-i18n="chon_ten">Chọn tên của bạn</b><small id="toi-ma" data-i18n="cham_de_chon">Chạm để chọn</small></span>
         <span class="mui" aria-hidden="true">▾</span>
-        <select id="chon-taixe" aria-label="Tôi là tài xế nào">
-          <option value="">Đang tải danh sách tài xế…</option>
+        <select id="chon-taixe" data-i18n-al="toi_la_ai" aria-label="Tôi là tài xế nào">
+          <option value="" data-i18n="dang_tai_tai_xe">Đang tải danh sách tài xế…</option>
         </select>
       </div>
     </div>
@@ -330,11 +339,11 @@
   <main class="khung">
     <div id="loi" class="loi" hidden></div>
     <div class="tieu">
-      <h2>Chuyến của tôi</h2>
+      <h2 data-i18n="chuyen_cua_toi">Chuyến của tôi</h2>
       <span id="dem"></span>
     </div>
     <div id="ds">
-      <div class="trong"><span class="to">🚚</span>Chạm vào tên bạn ở trên để xem chuyến.</div>
+      <div class="trong"><span class="to">🚚</span><span data-i18n="cham_vao_ten">Chạm vào tên bạn ở trên để xem chuyến.</span></div>
     </div>
     <p class="goi-y" id="gio-server">—</p>
   </main>
@@ -343,9 +352,9 @@
 <!-- ================= MÀN 2 · CHI TIẾT CHUYẾN ================= -->
 <div id="man-chitiet" hidden>
   <div class="dau-ct">
-    <button type="button" class="nut-tron" id="nut-quaylai" aria-label="Quay lại">←</button>
+    <button type="button" class="nut-tron" id="nut-quaylai" data-i18n-al="quay_lai" aria-label="Quay lại">←</button>
     <span class="ten"><b id="ct-ma">—</b><small id="ct-phu">—</small></span>
-    <button type="button" class="nut-tron" id="nut-capnhat-2" aria-label="Cập nhật">↻</button>
+    <button type="button" class="nut-tron" id="nut-capnhat-2" data-i18n-al="cap_nhat" aria-label="Cập nhật">↻</button>
   </div>
 
   <div class="than-ct">
@@ -369,32 +378,32 @@
 <dialog id="hop-suco">
   <form id="form-suco">
     <div class="dau-hop">
-      <b>⚠ Báo sự cố</b>
-      <button type="button" class="nut-tron" data-dong aria-label="Đóng">✕</button>
+      <b data-i18n="bao_su_co">⚠ Báo sự cố</b>
+      <button type="button" class="nut-tron" data-dong data-i18n-al="dong" aria-label="Đóng">✕</button>
     </div>
     <div class="than-hop">
       <p class="phu" id="suco-boicanh" style="margin-top:0"></p>
-      <label class="nhap"><span>Loại sự cố</span>
+      <label class="nhap"><span data-i18n="loai_su_co">Loại sự cố</span>
         <select name="incident_type" required>
-          <option>Kẹt xe</option><option>Hỏng hóc</option><option>Thời tiết</option>
-          <option>Giấy tờ</option><option>Tai nạn</option><option>Hàng hoá hư hỏng</option>
-          <option>Khác</option>
+          <option data-i18n="sc_ket_xe">Kẹt xe</option><option data-i18n="sc_hong_hoc">Hỏng hóc</option><option data-i18n="sc_thoi_tiet">Thời tiết</option>
+          <option data-i18n="sc_giay_to">Giấy tờ</option><option data-i18n="sc_tai_nan">Tai nạn</option><option data-i18n="sc_hang_hu">Hàng hoá hư hỏng</option>
+          <option data-i18n="sc_khac">Khác</option>
         </select></label>
-      <label class="nhap"><span>Mức độ</span>
+      <label class="nhap"><span data-i18n="muc_do">Mức độ</span>
         <select name="severity" required>
-          <option value="Low">Thấp — vẫn chạy được</option>
-          <option value="Medium" selected>Trung bình — sẽ chậm giờ</option>
-          <option value="High">Cao — không chạy tiếp được</option>
+          <option value="Low" data-i18n="md_thap">Thấp — vẫn chạy được</option>
+          <option value="Medium" selected data-i18n="md_trung">Trung bình — sẽ chậm giờ</option>
+          <option value="High" data-i18n="md_cao">Cao — không chạy tiếp được</option>
         </select></label>
-      <label class="nhap"><span>Đang ở đâu</span>
-        <input name="location" required placeholder="Ví dụ: QL51 đoạn Long Thành"></label>
-      <label class="nhap"><span>Chuyện gì xảy ra</span>
+      <label class="nhap"><span data-i18n="dang_o_dau">Đang ở đâu</span>
+        <input name="location" required data-i18n-ph="vi_du_vi_tri" placeholder="Ví dụ: QL51 đoạn Long Thành"></label>
+      <label class="nhap"><span data-i18n="chuyen_gi_xay_ra">Chuyện gì xảy ra</span>
         <textarea name="description" required
-                  placeholder="Nổ lốp sau bên phải, đã gọi cứu hộ."></textarea></label>
+                  data-i18n-ph="vi_du_su_co" placeholder="Nổ lốp sau bên phải, đã gọi cứu hộ."></textarea></label>
     </div>
     <div class="chan-hop">
-      <button type="button" class="nut" data-dong>Quay lại</button>
-      <button type="submit" class="nut chinh">Gửi báo cáo</button>
+      <button type="button" class="nut" data-dong data-i18n="quay_lai">Quay lại</button>
+      <button type="submit" class="nut chinh" data-i18n="gui_bao_cao">Gửi báo cáo</button>
     </div>
   </form>
 </dialog>
@@ -403,8 +412,8 @@
 <dialog id="hop-hoantat">
   <form id="form-hoantat">
     <div class="dau-hop">
-      <b>✍ Hoàn tất giao hàng</b>
-      <button type="button" class="nut-tron" data-dong aria-label="Đóng">✕</button>
+      <b data-i18n="hoan_tat_giao_hang">✍ Hoàn tất giao hàng</b>
+      <button type="button" class="nut-tron" data-dong data-i18n-al="dong" aria-label="Đóng">✕</button>
     </div>
     <div class="than-hop">
       <div class="the" id="ht-dau"></div>
@@ -414,8 +423,8 @@
       <div class="the" id="ht-gia"></div>
     </div>
     <div class="chan-hop">
-      <button type="button" class="nut" data-dong>Quay lại</button>
-      <button type="submit" class="nut luc" id="nut-chot">✔ Hoàn tất</button>
+      <button type="button" class="nut" data-dong data-i18n="quay_lai">Quay lại</button>
+      <button type="submit" class="nut luc" id="nut-chot" data-i18n="nut_hoan_tat">✔ Hoàn tất</button>
     </div>
   </form>
 </dialog>
@@ -428,7 +437,7 @@
 <dialog id="hop-xacnhan" aria-labelledby="xn-tieude">
   <div>
     <div class="dau-hop">
-      <b id="xn-tieude">Xác nhận</b>
+      <b id="xn-tieude" data-i18n="xac_nhan">Xác nhận</b>
     </div>
     <div class="than-hop">
       <p id="xn-noidung" style="margin:0 0 .2rem"></p>
@@ -438,13 +447,14 @@
       </label>
     </div>
     <div class="chan-hop">
-      <button type="button" class="nut" id="xn-huy">Quay lại</button>
-      <button type="button" class="nut chinh" id="xn-ok">Đồng ý</button>
+      <button type="button" class="nut" id="xn-huy" data-i18n="quay_lai">Quay lại</button>
+      <button type="button" class="nut chinh" id="xn-ok" data-i18n="dong_y">Đồng ý</button>
     </div>
   </div>
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/tai-xe.js?v=2"></script>
+<script src="js/ngon-ngu.js?v=1"></script>
+<script src="js/tai-xe.js?v=3"></script>
 </body>
 </html>

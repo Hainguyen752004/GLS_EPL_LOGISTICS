@@ -26,19 +26,31 @@
   var TAIXE_LUU = 'EPL_TAIXE_ID';
   var NEN_LUU = 'EPL_TAIXE_NEN_BANDO';
 
-  var MOC = {
-    check_in: 'Vào bãi', pickup: 'Lấy hàng', departure: 'Xuất bến',
-    arrival: 'Đến điểm giao', unloading: 'Dỡ hàng', delivered: 'Giao xong'
+  //: Bảng tra giữ KHOÁ chứ không giữ chữ: chữ lấy qua T() đúng lúc vẽ, nên đổi ngôn ngữ
+  //: giữa chừng là mọi nhãn đổi theo mà không phải tải lại trang.
+  var MOC_KHOA = {
+    check_in: 'moc_check_in', pickup: 'moc_pickup', departure: 'moc_departure',
+    arrival: 'moc_arrival', unloading: 'moc_unloading', delivered: 'moc_delivered'
   };
+  function tenMoc(ma) { return MOC_KHOA[ma] ? T(MOC_KHOA[ma]) : ma; }
   //: Mốc nào thì xe đang ở đâu trên tuyến — dùng để gửi kèm toạ độ khi ghi mốc.
   var TIEN_DO = { check_in: 0, pickup: 0, departure: 0.05, arrival: 1, unloading: 1, delivered: 1 };
   //: Nhãn + màu viền thẻ theo trạng thái chuyến.
-  var TRANG_THAI = {
-    dispatched: ['Đã điều phối · chờ xuất bến', 'vang', 'den'],
-    in_transit: ['Đang trên đường', 'do', 'di'],
-    arrived: ['Đã đến · chờ ký nhận', 'vang', 'den'],
-    delivered: ['Đã giao · chờ xe về bãi', 'luc', 'giao']
+  var TRANG_THAI_KHOA = {
+    dispatched: ['tt_dispatched', 'vang', 'den'],
+    in_transit: ['tt_in_transit', 'do', 'di'],
+    arrived: ['tt_arrived', 'vang', 'den'],
+    delivered: ['tt_delivered', 'luc', 'giao'],
+    // Bảng theo dõi trả CẢ trạng thái của DO (departed, pending…) chứ không chỉ của chuyến —
+    // thiếu nhãn thì màn hình in ra nguyên mã tiếng Anh cho người dùng đọc.
+    departed: ['tt_departed', 'do', 'di'],
+    pending: ['tt_pending', 'vang', 'den'],
+    completed: ['tt_completed', 'luc', 'giao']
   };
+  function trangThaiCua(ma) {
+    var t = TRANG_THAI_KHOA[ma];
+    return t ? [T(t[0]), t[1], t[2]] : [ma || T('chua_ro'), '', ''];
+  }
 
   /* LỚP NỀN BẢN ĐỒ CÓ DỰ PHÒNG. Đo được trên mạng của dự án: `tile.openstreetmap.org` KHÔNG
    * tới được, nên bản đồ ra một ô xám trơn — có tuyến, có toạ độ, nhưng không có ảnh nền, và
@@ -111,7 +123,7 @@
    * Trả Promise: `null` là người dùng huỷ; với hộp xác nhận thì `true` là đồng ý. */
   function moHop(y) {
     var h = el('hop-xacnhan'), xong = false;
-    el('xn-tieude').textContent = y.tieuDe || 'Xác nhận';
+    el('xn-tieude').textContent = y.tieuDe || T('xac_nhan');
     el('xn-noidung').textContent = y.noiDung || '';
     var coNhap = !!y.nhap, o = el('xn-nhap');
     el('xn-boc-nhap').hidden = !coNhap;
@@ -120,8 +132,8 @@
       o.value = y.nhap.giaTri || '';
       o.placeholder = y.nhap.goiY || '';
     }
-    el('xn-ok').textContent = y.nutOk || 'Đồng ý';
-    el('xn-huy').textContent = y.nutHuy || 'Quay lại';
+    el('xn-ok').textContent = y.nutOk || T('dong_y');
+    el('xn-huy').textContent = y.nutHuy || T('quay_lai');
     el('xn-ok').classList.toggle('luc', !!y.lanh);
     el('xn-ok').classList.toggle('chinh', !y.lanh);
 
@@ -147,19 +159,24 @@
   function hoiNhapLieu(y) { return moHop({ tieuDe: y.tieuDe, noiDung: y.noiDung, nutOk: y.nutOk,
                                            nutHuy: y.nutHuy, lanh: true, nhap: y }); }
 
+  var loiCuoi = null;   // { khoa, chiTiet } — giữ để vẽ lại khi đổi ngôn ngữ
+  function loiTheoKhoa(khoa, chiTiet) {
+    loiCuoi = khoa ? { khoa: khoa, chiTiet: chiTiet || '' } : null;
+    loi(khoa ? (T(khoa) + ' ' + (chiTiet || '')).trim() : '');
+  }
   function loi(chu) {
     var o = el('loi');
-    if (!chu) { o.hidden = true; o.textContent = ''; return; }
+    if (!chu) { loiCuoi = null; o.hidden = true; o.textContent = ''; return; }
     o.hidden = false;
     o.innerHTML = esc(chu)
       + '<div style="margin-top:.6rem"><button type="button" class="nut nho" id="nut-doi-goc">'
-      + 'Đổi địa chỉ máy chủ API</button></div>';
+      + esc(T('doi_dia_chi')) + '</button></div>';
     el('nut-doi-goc').onclick = function () {
       hoiNhapLieu({
-        tieuDe: 'Địa chỉ máy chủ EPL',
-        noiDung: 'Để trống thì trang này gọi API ở cùng địa chỉ với nó.',
+        tieuDe: T('dia_chi_may_chu'),
+        noiDung: T('dia_chi_may_chu_noi'),
         nhan: 'Địa chỉ máy chủ', giaTri: goc(), goiY: 'http://192.168.1.10:8001',
-        nutOk: 'Lưu và tải lại'
+        nutOk: T('luu_va_tai_lai')
       }).then(function (moi) {
         if (moi === null) return;
         nho(GOC_LUU, String(moi).trim().replace(/\/+$/, ''));
@@ -270,9 +287,9 @@
 
   function veToi() {
     var t = trangThai.danhSachTaiXe.filter(function (d) { return d.id === trangThai.taiXe; })[0];
-    el('toi-ten').textContent = t ? (t.name || t.id) : 'Chọn tên của bạn';
+    el('toi-ten').textContent = t ? (t.name || t.id) : T('chon_ten');
     el('toi-ma').textContent = t
-      ? (t.id + (t.license_type ? ' · ' + t.license_type : '')) : 'Chạm để chọn';
+      ? (t.id + (t.license_type ? ' · ' + t.license_type : '')) : T('cham_de_chon');
     el('toi-chu').textContent = t ? chuDau(t.name || t.id) : '?';
   }
 
@@ -309,15 +326,15 @@
   function veDanhSach() {
     var o = el('ds');
     if (!trangThai.taiXe) {
-      o.innerHTML = '<div class="trong"><span class="to">🚚</span>Chạm vào tên bạn ở trên để xem chuyến.</div>';
+      o.innerHTML = '<div class="trong"><span class="to">🚚</span>' + esc(T('cham_vao_ten')) + '</div>';
       return;
     }
     if (!trangThai.dong.length) {
-      o.innerHTML = '<div class="trong"><span class="to">☕</span>Hôm nay bạn chưa được xếp chuyến nào đang chạy.</div>';
+      o.innerHTML = '<div class="trong"><span class="to">☕</span>' + esc(T('chua_co_chuyen')) + '</div>';
       return;
     }
     o.innerHTML = trangThai.dong.map(function (r) {
-      var tt = TRANG_THAI[r.status] || [r.status || 'Chưa rõ', '', ''];
+      var tt = trangThaiCua(r.status);
       var chang = r.legs || [];
       var xong = chang.filter(function (l) { return l.status === 'completed'; }).length;
       var dau = (chuyenChang(r)[0] || {}).from || r.origin || '';
@@ -364,9 +381,9 @@
     return '<div class="o-tin"><span>' + esc(nhan) + '</span><b>' + esc(giaTri || '—') + '</b></div>';
   }
   function loaiChang(t) {
-    return { delivery: 'Chặng giao', outbound: 'Đi ngang', pickup: 'Đi lấy hàng',
-             empty_return: 'Về rỗng', backhaul: 'Hàng về',
-             warehouse_transfer: 'Chuyển kho' }[t] || t;
+    // Nhãn lấy qua T() theo khoá, để đổi ngôn ngữ là đổi luôn — đừng nhớ chữ ở đây.
+    var co = ['delivery', 'outbound', 'pickup', 'empty_return', 'backhaul', 'warehouse_transfer'];
+    return co.indexOf(t) >= 0 ? T('chang_' + t) : t;
   }
 
   function veChiTiet() {
@@ -385,12 +402,12 @@
     var daGhi = {};
     (r.events || []).forEach(function (e) { daGhi[e.type] = true; });
     var dsMoc = (r.milestones && r.milestones.length ? r.milestones
-      : Object.keys(MOC).map(function (k) { return { ma: k, ten: MOC[k] }; }));
+      : Object.keys(MOC_KHOA).map(function (k) { return { ma: k, ten: tenMoc(k) }; }));
     el('ct-moc').innerHTML = dsMoc.map(function (m) {
       var xong = !!daGhi[m.ma], toi = moc && moc.ma === m.ma;
       return '<div class="b' + (xong ? ' xong' : '') + (toi ? ' toi' : '') + '">'
         + '<div class="o">' + (xong ? '✓' : toi ? '●' : '') + '</div>'
-        + '<small>' + esc(m.ten || MOC[m.ma] || m.ma) + '</small></div>';
+        + '<small>' + esc(tenMoc(m.ma) || m.ten || m.ma) + '</small></div>';
     }).join('');
     // Kéo mốc ĐANG TỚI vào giữa tầm nhìn: sáu mốc rộng hơn màn 390px, và mốc đang tới
     // thường là mốc cuối — không cuộn thì tài xế không thấy chính việc mình sắp làm.
@@ -406,52 +423,51 @@
     var canh = '';
     if (r.overdue) {
       canh += '<div class="luuy nang"><span aria-hidden="true">⏰</span><div>'
-        + '<b>Lệnh này đã quá hạn giao.</b> Nếu còn đang trên đường, hãy báo sự cố để điều độ biết lý do.'
-        + '</div></div>';
+        + T('canh_qua_han') + '</div></div>';
     }
     if (r.open_incident_count) {
       canh += '<div class="luuy nang"><span aria-hidden="true">⚠</span><div>'
-        + '<b>' + r.open_incident_count + ' sự cố chưa đóng</b> trên chuyến này.</div></div>';
+        + T('canh_su_co', { so: r.open_incident_count }) + '</div></div>';
     }
     if (g.status === 'simulated') {
       canh += '<div class="luuy"><span aria-hidden="true">📍</span><div>'
-        + 'Vị trí trên bản đồ đang là <b>mô phỏng theo tuyến</b>, không phải GPS của máy bạn. '
-        + 'Ghi mốc ở dưới để cập nhật vị trí thật.</div></div>';
+        + T('canh_gps_mo_phong') + '</div></div>';
     }
 
     el('ct-noidung').innerHTML =
-      '<div class="the"><h3>Lệnh giao hàng</h3><div class="luoi">'
-      + oTin('Khách hàng', r.customer_name)
-      + oTin('Mã chuyến', r.trip_id)
-      + oTin('Tuyến', r.route_name)
-      + oTin('Hạn giao', gio(r.delivery_due))
-      + oTin('Xe', r.vehicle_id)
-      + oTin('Tổ lái', (r.driver_name || '') + (r.co_driver_name ? ' + ' + r.co_driver_name : ''))
+      '<div class="the"><h3>' + esc(T('lenh_giao_hang')) + '</h3><div class="luoi">'
+      + oTin(T('khach_hang'), r.customer_name)
+      + oTin(T('ma_chuyen'), r.trip_id)
+      + oTin(T('tuyen'), r.route_name)
+      + oTin(T('han_giao'), gio(r.delivery_due))
+      + oTin(T('xe'), r.vehicle_id)
+      + oTin(T('to_lai'), (r.driver_name || '') + (r.co_driver_name ? ' + ' + r.co_driver_name : ''))
       + '</div>' + canh + '</div>'
-      + '<div class="the"><h3>Chặng của chuyến</h3><ol class="chang">'
+      + '<div class="the"><h3>' + esc(T('chang_cua_chuyen')) + '</h3><ol class="chang">'
       + (r.legs || []).map(function (l) {
         return '<li class="' + (l.status === 'completed' ? 'xong' : '') + '">'
           + '<b>' + esc(l.origin) + ' → ' + esc(l.destination) + '</b>'
           + '<small><span class="nhan-chang">' + esc(loaiChang(l.type)) + '</span>'
-          + esc(l.status === 'completed' ? 'đã xong' : l.status === 'cancelled' ? 'đã huỷ' : 'chưa đi')
+          + esc(l.status === 'completed' ? T('chang_da_xong')
+            : l.status === 'cancelled' ? T('chang_da_huy') : T('chang_chua_di'))
           + '</small><small>'
-          + (l.actual_arrival_at ? 'Đến thực tế: ' + esc(gio(l.actual_arrival_at))
-            : 'Kế hoạch: ' + esc(gio(l.planned_arrival_at))) + '</small></li>';
+          + esc(l.actual_arrival_at ? T('den_thuc_te', { gio: gio(l.actual_arrival_at) })
+            : T('ke_hoach', { gio: gio(l.planned_arrival_at) })) + '</small></li>';
       }).join('') + '</ol></div>';
 
     // --- thanh việc dán đáy ---
     el('ct-viec').innerHTML =
-      (moc ? '<button type="button" class="nut chinh" id="nut-moc">📍 Ghi mốc: '
-        + esc(moc.ten || MOC[moc.ma] || moc.ma) + '</button>' : '')
+      (moc ? '<button type="button" class="nut chinh" id="nut-moc">'
+        + esc(T('nut_ghi_moc_la', { ten: tenMoc(moc.ma) || moc.ten || moc.ma })) + '</button>' : '')
       + '<div class="cap">'
       + '<button type="button" class="nut luc" id="nut-hoantat"' + (chuaToiNoi ? ' disabled' : '')
-      + '>✍ Hoàn tất giao</button>'
+      + '>' + esc(T('nut_hoan_tat_giao')) + '</button>'
       + '<button type="button" class="nut canh" id="nut-suco"'
-      + (r.vehicle_id ? '' : ' disabled') + '>⚠ Báo sự cố</button>'
+      + (r.vehicle_id ? '' : ' disabled') + '>' + esc(T('bao_su_co')) + '</button>'
       + '</div>'
       + (chuaToiNoi
-        ? '<p class="goi-y">Ghi mốc <b>Đến điểm giao</b> trước, rồi mới ký nhận được.</p>'
-        : !chuaGiao ? '<p class="goi-y">Đã ký nhận đủ các điểm giao của lệnh này.</p>' : '');
+        ? '<p class="goi-y">' + T('goi_y_ghi_moc_truoc', { ten: esc(tenMoc('arrival')) }) + '</p>'
+        : !chuaGiao ? '<p class="goi-y">' + esc(T('goi_y_da_ky_du')) + '</p>' : '');
     if (el('nut-moc')) el('nut-moc').onclick = function () { ghiMoc(this); };
     el('nut-hoantat').onclick = moHoanTat;
     el('nut-suco').onclick = moSuCo;
@@ -474,17 +490,17 @@
 
     var den = new Date(r.predicted_eta || r.planned_arrival_at || 0);
     el('banzo-so').innerHTML =
-      '<div><span>Đã đi</span><b>' + so(g.progress_percent, 0) + '%</b></div>'
-      + '<div><span>Còn lại</span><b>' + so(g.remaining_km, 1) + ' km</b></div>'
-      + '<div><span>Tốc độ</span><b>' + so(g.speed_kmh, 0) + ' <small>km/h</small></b></div>'
-      + '<div><span>Đến lúc</span><b>' + (isNaN(den) || !+den ? '—'
+      '<div><span>' + esc(T('da_di')) + '</span><b>' + so(g.progress_percent, 0) + '%</b></div>'
+      + '<div><span>' + esc(T('con_lai')) + '</span><b>' + so(g.remaining_km, 1) + ' km</b></div>'
+      + '<div><span>' + esc(T('toc_do')) + '</span><b>' + so(g.speed_kmh, 0) + ' <small>km/h</small></b></div>'
+      + '<div><span>' + esc(T('den_luc')) + '</span><b>' + (isNaN(den) || !+den ? '—'
         : den.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false }))
       + '</b></div>';
 
     // Không có Leaflet (mất mạng CDN) hoặc không có toạ độ: nói thật, đừng để ô xám trơn.
     if (typeof L === 'undefined' || !window.L || typeof L.map !== 'function') {
       hop.classList.add('tat'); thay.hidden = false;
-      thay.innerHTML = 'Không tải được thư viện bản đồ.<br>Vẫn ghi mốc và ký nhận bình thường được.';
+      thay.innerHTML = T('ban_do_hong');
       return;
     }
     if (!duong.length && !chang.length) {
@@ -569,13 +585,12 @@
   function ghiMoc(nut) {
     var r = chonDong();
     if (!r || !r.next_milestone) return;
-    var moc = r.next_milestone, ten = moc.ten || MOC[moc.ma] || moc.ma;
-    if (!r.freight_order_id) { bao('Chuyến này chưa có lệnh vận chuyển nên chưa ghi được mốc.'); return; }
+    var moc = r.next_milestone, ten = tenMoc(moc.ma) || moc.ten || moc.ma;
+    if (!r.freight_order_id) { bao(T('chua_co_lenh')); return; }
     hoiXacNhan({
-      tieuDe: 'Ghi mốc "' + ten + '"?',
-      noiDung: 'Ghi cho ' + r.do_id + ' vào lúc này. Mốc vào lịch sử chuyến và cập nhật vị trí xe '
-             + 'trên màn điều độ. Không hoàn lại được.',
-      nutOk: 'Ghi mốc', nutHuy: 'Chưa ghi'
+      tieuDe: T('hoi_ghi_moc', { ten: ten }),
+      noiDung: T('hoi_ghi_moc_noi', { ma: r.do_id }),
+      nutOk: T('nut_ghi_moc'), nutHuy: T('nut_chua_ghi')
     }).then(function (dongY) { if (dongY) guiMoc(nut, r, moc, ten); });
   }
 
@@ -586,7 +601,7 @@
       event_time: new Date().toISOString(),
       location_text: (moc.ma === 'check_in' || moc.ma === 'pickup') ? (r.origin || null) : (r.destination || null),
       speed_kmh: moc.ma === 'departure' ? 40 : 0,
-      note: 'Tài xế ghi mốc "' + ten + '" trên trang tài xế'
+      note: T('ghi_chu_moc', { ten: ten })
     };
     var diem = toaDo(r, TIEN_DO[moc.ma] == null ? 0 : TIEN_DO[moc.ma]);
     if (diem) { than.lat = diem.lat; than.lng = diem.lng; }
@@ -598,9 +613,9 @@
       body: JSON.stringify(than)
     }).then(function (g) {
       if (!g.ok) { bao(loiCua(g), 6000); return; }
-      bao('Đã ghi mốc "' + ten + '".');
+      bao(T('da_ghi_moc', { ten: ten }));
       return nap();
-    }).catch(function (e) { bao('Không gọi được máy chủ: ' + (e && e.message), 6000); })
+    }).catch(function (e) { bao(T('khong_goi_duoc', { loi: (e && e.message) || '' }), 6000); })
       .then(function () { nut.disabled = false; });
   }
 
@@ -644,9 +659,9 @@
     if (!r) return;
     hoSoKy.dong = r; hoSoKy.ky = {};
     el('ht-dau').innerHTML = '<div class="luoi">'
-      + oTin('Lệnh giao hàng', r.do_id) + oTin('Khách', r.customer_name)
-      + oTin('Xe', r.vehicle_id) + oTin('Tuyến', r.route_name) + '</div>';
-    el('ht-diem').innerHTML = '<div class="trong">Đang đọc hồ sơ giá…</div>';
+      + oTin(T('lenh_giao_hang'), r.do_id) + oTin(T('khach'), r.customer_name)
+      + oTin(T('xe'), r.vehicle_id) + oTin(T('tuyen'), r.route_name) + '</div>';
+    el('ht-diem').innerHTML = '<div class="trong">' + esc(T('dang_doc_gia')) + '</div>';
     el('ht-gia').innerHTML = '';
     el('hop-hoantat').showModal();
     api('/api/delivery-orders/' + encodeURIComponent(r.do_id) + '/closeout').then(function (g) {
@@ -662,7 +677,7 @@
       return l.type === 'delivery' && ['completed', 'cancelled'].indexOf(l.status) < 0;
     });
     if (!chang.length) {
-      el('ht-diem').innerHTML = '<div class="loi">Lệnh này không còn chặng giao nào cần ký.</div>';
+      el('ht-diem').innerHTML = '<div class="loi">' + esc(T('khong_con_chang')) + '</div>';
       el('nut-chot').disabled = true;
       return;
     }
@@ -670,28 +685,28 @@
     el('ht-diem').innerHTML = chang.map(function (l, i) {
       var n = i + 1;
       return '<div class="diem"><h4><i>' + n + '</i>' + esc(l.destination)
-        + (chang.length > 1 ? ' <small style="color:var(--nhat);font-weight:600">(điểm '
-          + n + '/' + chang.length + ')</small>' : '') + '</h4>'
-        + '<label class="nhap"><span>Giao lúc</span>'
+        + (chang.length > 1 ? ' <small style="color:var(--nhat);font-weight:600">'
+          + esc(T('diem_so', { so: n + '/' + chang.length })) + '</small>' : '') + '</h4>'
+        + '<label class="nhap"><span>' + esc(T('giao_luc')) + '</span>'
         + '<input type="datetime-local" data-ky="' + n + '-luc" value="' + bayGio() + '" required>'
         + '</label>'
-        + '<label class="nhap"><span>Người nhận</span>'
+        + '<label class="nhap"><span>' + esc(T('nguoi_nhan')) + '</span>'
         + '<input data-ky="' + n + '-nguoi" value="' + esc(l.receiver_name || '') + '" required></label>'
-        + '<label class="nhap"><span>Số điện thoại người nhận</span>'
+        + '<label class="nhap"><span>' + esc(T('sdt_nguoi_nhan')) + '</span>'
         + '<input type="tel" inputmode="tel" data-ky="' + n + '-sdt" value="'
         + esc(l.receiver_phone || '') + '"></label>'
-        + '<label class="nhap"><span>Kết quả giao</span><select data-ky="' + n + '-ketqua">'
-        + '<option value="delivered_full">Giao đủ hàng</option>'
-        + '<option value="delivered_partial">Giao thiếu</option>'
-        + '<option value="refused">Khách từ chối nhận</option></select></label>'
-        + '<label class="nhap"><span>Ảnh biên bản / phiếu giao (bắt buộc)</span>'
+        + '<label class="nhap"><span>' + esc(T('ket_qua_giao')) + '</span><select data-ky="' + n + '-ketqua">'
+        + '<option value="delivered_full">' + esc(T('kq_du')) + '</option>'
+        + '<option value="delivered_partial">' + esc(T('kq_thieu')) + '</option>'
+        + '<option value="refused">' + esc(T('kq_tu_choi')) + '</option></select></label>'
+        + '<label class="nhap"><span>' + esc(T('anh_bien_ban')) + '</span>'
         + '<input type="file" accept="image/*" capture="environment" data-ky="' + n + '-anh" required></label>'
-        + '<label class="nhap"><span>Chữ ký người nhận — ký trực tiếp bên dưới</span></label>'
+        + '<label class="nhap"><span>' + esc(T('chu_ky_nguoi_nhan')) + '</span></label>'
         + '<canvas class="kyten" data-canvas="' + n + '"></canvas>'
-        + '<div class="hang"><span id="ky-trangthai-' + n + '">Chưa ký</span>'
-        + '<button type="button" data-xoaky="' + n + '">Ký lại</button></div>'
-        + '<label class="nhap" style="margin-top:.75rem"><span>Tình trạng hàng / ghi chú</span>'
-        + '<textarea data-ky="' + n + '-ghichu" placeholder="Nguyên niêm phong, không móp vỡ"></textarea></label>'
+        + '<div class="hang"><span id="ky-trangthai-' + n + '">' + esc(T('chua_ky')) + '</span>'
+        + '<button type="button" data-xoaky="' + n + '">' + esc(T('ky_lai')) + '</button></div>'
+        + '<label class="nhap" style="margin-top:.75rem"><span>' + esc(T('tinh_trang_hang')) + '</span>'
+        + '<textarea data-ky="' + n + '-ghichu" placeholder="' + esc(T('vi_du_tinh_trang')) + '"></textarea></label>'
         + '<input type="hidden" data-ky="' + n + '-leg" value="' + esc(l.id) + '">'
         + '</div>';
     }).join('');
@@ -747,7 +762,7 @@
       if (!dangVe) return; ev.preventDefault(); var p = diem(ev);
       ctx.lineTo(p.x, p.y); ctx.stroke(); daVe = true;
       var o = el('ky-trangthai-' + n);
-      o.textContent = 'Đã ký'; o.className = 'daky';
+      o.textContent = T('da_ky'); o.className = 'daky';
     };
     var ketThuc = function () { dangVe = false; hoSoKy.ky[n] = daVe; };
     canvas.addEventListener('pointerdown', batDau);
@@ -759,7 +774,7 @@
       xoa.onclick = function () {
         ctx.clearRect(0, 0, canvas.width, canvas.height); daVe = false; hoSoKy.ky[n] = false;
         var o = el('ky-trangthai-' + n);
-        o.textContent = 'Chưa ký'; o.className = '';
+        o.textContent = T('chua_ky'); o.className = '';
       };
     }
   }
@@ -780,10 +795,10 @@
     Array.prototype.forEach.call(canvasList, function (cv) {
       var n = cv.getAttribute('data-canvas');
       var anh = lay(n, 'anh').files[0];
-      if (!anh) { thieu = thieu || 'Điểm giao ' + n + ' chưa có ảnh biên bản.'; return; }
-      if (!hoSoKy.ky[n]) { thieu = thieu || 'Điểm giao ' + n + ' chưa có chữ ký người nhận.'; return; }
+      if (!anh) { thieu = thieu || T('thieu_anh', { so: n }); return; }
+      if (!hoSoKy.ky[n]) { thieu = thieu || T('thieu_chu_ky', { so: n }); return; }
       var luc = lay(n, 'luc').value;
-      if (!luc) { thieu = thieu || 'Điểm giao ' + n + ' chưa nhập giờ giao.'; return; }
+      if (!luc) { thieu = thieu || T('thieu_gio', { so: n }); return; }
       dong.push({
         leg_id: lay(n, 'leg').value, vehicle_id: r.vehicle_id, stop_no: Number(n),
         delivery_time: new Date(luc).toISOString(),
@@ -791,9 +806,9 @@
           .map(function (l) { return l.destination; })[0] || r.destination || '',
         receiver_name: lay(n, 'nguoi').value, receiver_phone: lay(n, 'sdt').value,
         delivery_result: lay(n, 'ketqua').value,
-        cargo_condition: lay(n, 'ghichu').value || 'Nguyên niêm phong',
+        cargo_condition: lay(n, 'ghichu').value || T('vi_du_tinh_trang'),
         file_field: 'pod_' + n, signature_file_field: 'sig_' + n,
-        note: 'Tài xế ký nhận trên trang tài xế'
+        note: T('ghi_chu_ky')
       });
       tep.push({ ten: 'pod_' + n, ten_tep: 'pod-' + n + '.jpg', blob: anh });
     });
@@ -805,7 +820,7 @@
       if (v > 0) {
         phu.push({
           name: i.getAttribute('data-ten'), original_amount: '0', actual_amount: String(v),
-          note: 'Tài xế khai khi ký nhận'
+          note: T('khai_khi_ky')
         });
       }
     });
@@ -833,13 +848,13 @@
         if (!g.ok) { bao(loiCua(g), 7000); return; }
         var d = duLieu(g.than) || {};
         el('hop-hoantat').close();
-        bao('Đã ký nhận và chốt giá cho ' + r.do_id
-          + (d.commercials ? '. Giá cuối: ' + tien(d.commercials.final_selling_price,
-            d.commercials.currency_code || 'VND') : '') + '.', 6000);
+        bao(T('da_ky_va_chot', { ma: r.do_id,
+          gia: d.commercials ? tien(d.commercials.final_selling_price,
+            d.commercials.currency_code || 'VND') : '—' }), 6000);
         dongChiTiet();
         return nap();
       })
-      .catch(function (e) { bao('Không gửi được: ' + (e && e.message), 7000); })
+      .catch(function (e) { bao(T('khong_gui_duoc', { loi: (e && e.message) || '' }), 7000); })
       .then(function () { nut.disabled = false; });
   });
 
@@ -855,14 +870,32 @@
     nap();
   };
   el('nut-quaylai').onclick = dongChiTiet;
-  var lamMoi = function () { nap().then(function () { bao('Đã cập nhật.'); }); };
+  var lamMoi = function () { nap().then(function () { bao(T('da_cap_nhat')); }); };
   el('nut-capnhat').onclick = lamMoi;
   el('nut-capnhat-2').onclick = lamMoi;
   // Nút back của máy: đóng màn chi tiết thay vì rời trang.
   window.addEventListener('popstate', function () { if (trangThai.chon) dongChiTiet(); });
 
+  /* ---------------- ba ngôn ngữ ----------------
+   * Đổi ngôn ngữ phải vẽ lại CẢ phần do JS sinh ra, không chỉ nhãn tĩnh — nếu không thì
+   * thanh đầu đổi sang tiếng Lào mà thẻ chuyến, mốc và hộp ký nhận vẫn tiếng Việt. */
+  window.veLaiTheoNgonNgu = function () {
+    if (loiCuoi) loiTheoKhoa(loiCuoi.khoa, loiCuoi.chiTiet);   // ô báo lỗi cũng phải đổi tiếng
+    veToi();
+    ve();
+    if (el('hop-hoantat').open && trangThai.chon) {
+      var r = trangThai.dong.filter(function (x) { return x.key === trangThai.chon; })[0];
+      if (r) moHoanTat();          // vẽ lại hộp ký nhận đang mở bằng ngôn ngữ mới
+    }
+  };
+  el('chon-tieng').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-ngonngu]');
+    if (b) datNgonNgu(b.getAttribute('data-ngonngu'));
+  });
+  veNhanTinh();                     // nhãn tĩnh theo ngôn ngữ đã lưu, ngay khi mở trang
+
   napTaiXe().then(nap).catch(function (e) {
-    loi('Không đọc được danh sách tài xế: ' + (e && e.message));
+    loiTheoKhoa('khong_doc_duoc_tai_xe', (e && e.message) || '');
   });
   // Tự cập nhật khi quay lại tab — tài xế mở/tắt máy liên tục.
   document.addEventListener('visibilitychange', function () {
