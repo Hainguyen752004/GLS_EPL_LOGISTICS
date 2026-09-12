@@ -528,8 +528,15 @@ function _dichMotNutChu(node, viMap, lang) {
   if (tagName === 'SCRIPT' || tagName === 'STYLE' || tagName === 'CODE' || tagName === 'NOSCRIPT') return;
   if (parent.closest('[data-i18n]')) return;
 
-  if (node._origText === undefined) {
+  // Nút chữ này có còn là thứ mình đã ghi nhớ không? Mã ứng dụng vẫn sửa thẳng
+  // `nodeValue` của nút cũ khi cập nhật số liệu. Nếu cứ tin vào bản nhớ đệm thì
+  // lượt dịch sau sẽ ghi CHỮ CŨ đè lên số vừa nạp — người dùng thấy như dữ liệu
+  // không tải được. Nên: giá trị hiện tại khác cả bản gốc lẫn bản mình vừa ghi
+  // thì đó là nội dung MỚI, phải ghi nhớ lại từ đầu.
+  if (node._origText === undefined
+      || (node.nodeValue !== node._origText && node.nodeValue !== node._dichRa)) {
     node._origText = node.nodeValue;
+    node._dichRa = undefined;
   }
   const orig = node._origText;
   if (!orig) return;
@@ -539,12 +546,14 @@ function _dichMotNutChu(node, viMap, lang) {
 
   if (lang === 'vi') {
     node.nodeValue = orig;
+    node._dichRa = undefined;
     return;
   }
 
   const entry = viMap.get(trimmed.toLowerCase());
   if (entry && entry[lang]) {
     node.nodeValue = orig.replace(trimmed, fixUIText(entry[lang]));
+    node._dichRa = node.nodeValue;
     return;
   }
 
@@ -570,12 +579,17 @@ function _dichMotNutChu(node, viMap, lang) {
   // bằng thứ tiếng nào cả. Nên thà trả về nguyên văn.
   if (modified !== orig && !_CON_CHU_VIET.test(modified)) {
     node.nodeValue = modified;
+    node._dichRa = modified;
   } else if (node.nodeValue !== orig) {
     node.nodeValue = orig;
+    node._dichRa = undefined;
   }
 }
 
 // Thẻ mà KHÔNG được thay nguyên cụm: đụng vào là mất ô nhập, mất nút, mất ảnh.
+// Thẻ định dạng trong dòng — thứ hay cắt một câu ra làm nhiều nút chữ.
+const _THE_TRONG_DONG = new Set(['B','STRONG','I','EM','SPAN','SMALL','U','MARK','SUP','SUB','BR','ABBR','WBR']);
+
 const _THE_KHONG_THAY_NGUYEN = 'input, select, textarea, button, a, img, svg, canvas, table, ul, ol, [data-i18n]';
 
 // Một câu trong HTML thường bị thẻ inline cắt làm mấy mảnh:
@@ -585,25 +599,64 @@ const _THE_KHONG_THAY_NGUYEN = 'input, select, textarea, button, a, img, svg, ca
 // lấy toàn bộ chữ của thẻ, nếu trùng một khóa trong lang.json thì thay trọn.
 // Đổi lại là mất thẻ in đậm bên trong — chấp nhận được, vì đọc được quan trọng hơn.
 function _dichNguyenThe(el, viMap, lang) {
-  if (el._i18nKhongXet) return false;
-  if (el._i18nGocHTML === undefined) {
-    if (!el.children.length || el.hasAttribute('data-i18n') || el.querySelector(_THE_KHONG_THAY_NGUYEN)) {
-      el._i18nKhongXet = true;
+  // ĐANG giữ bản dịch của thẻ này: chỉ đổi sang ngôn ngữ khác, hoặc trả nguyên văn.
+  if (el._i18nXong) {
+    // Nội dung có còn đúng thứ mình đã ghi không? Nếu mã ứng dụng đã vẽ lại thẻ
+    // này (dữ liệu thật vừa nạp) thì bản dịch cũ KHÔNG còn liên quan — quên nó
+    // đi và xử lại từ đầu. Bám theo bản cũ chính là cảnh "đổi ngôn ngữ xong mất
+    // hết data": chữ chờ "Đang tải dữ liệu..." được dựng lại đè lên bảng vừa vẽ.
+    if (el.textContent.replace(/\s+/g, ' ').trim() !== el._i18nDichRa) {
+      el._i18nXong = false;
+      el._i18nGocHTML = undefined;
+      el._i18nGocText = undefined;
+      el._i18nDichRa = undefined;
+    } else {
+      if (lang !== 'vi') {
+        const e2 = viMap.get(el._i18nGocText.toLowerCase());
+        if (e2 && e2[lang]) {
+          el.textContent = fixUIText(e2[lang]);
+          el._i18nDichRa = el.textContent.replace(/\s+/g, ' ').trim();
+          return true;
+        }
+      }
+      el.innerHTML = el._i18nGocHTML;
+      el._i18nXong = false;
+      el._i18nGocHTML = undefined;
+      el._i18nGocText = undefined;
+      el._i18nDichRa = undefined;
       return false;
     }
-    const chu = el.textContent.replace(/\s+/g, ' ').trim();
-    if (chu.length < 2 || chu.length > 400) { el._i18nKhongXet = true; return false; }
-    el._i18nGocHTML = el.innerHTML;
-    el._i18nGocText = chu;
   }
-  if (lang === 'vi') {
-    if (el.innerHTML !== el._i18nGocHTML) el.innerHTML = el._i18nGocHTML;
-    el._i18nXong = false;
-    return true;
+
+  if (lang === 'vi') return false;
+  if (!el.children.length) return false;
+
+  // CHỈ nhận thẻ mà mọi thẻ con đều là thẻ định dạng trong dòng (in đậm, in
+  // nghiêng, span…). Đó đúng là cảnh cần xử lý: một câu bị thẻ inline cắt đôi.
+  // Không có rào này thì cả <body> cũng thành ứng viên — bài kiểm đã bắt được:
+  // body có chữ khớp một khóa là toàn bộ trang bị thay bằng một câu dịch.
+  for (let i = 0; i < el.children.length; i++) {
+    if (!_THE_TRONG_DONG.has(el.children[i].tagName)) return false;
   }
-  const entry = viMap.get(el._i18nGocText.toLowerCase());
+
+  // ĐỌC LẠI chữ của thẻ MỖI LẦN, tuyệt đối không nhớ đệm. Bản trước nhớ đệm
+  // `_i18nGocText` ngay lần gặp đầu tiên — lúc đó thẻ mới chỉ là ô chứa với chữ
+  // "Đang tải dữ liệu...". Khi dữ liệu thật đổ vào, lượt dịch sau vẫn so theo
+  // chữ CŨ, khớp, rồi ghi đè bản dịch của "Đang tải dữ liệu..." lên trên dữ
+  // liệu vừa nạp — nhìn ra đúng như "chuyển tiếng Anh là mất hết data".
+  const chu = el.textContent.replace(/\s+/g, ' ').trim();
+  if (chu.length < 2 || chu.length > 400) return false;
+
+  const entry = viMap.get(chu.toLowerCase());
   if (!entry || !entry[lang]) return false;
+
+  // Chỉ soi thẻ con khi chữ ĐÃ khớp — phép soi này đắt, đừng chạy cho mọi thẻ.
+  if (el.hasAttribute('data-i18n') || el.querySelector(_THE_KHONG_THAY_NGUYEN)) return false;
+
+  el._i18nGocHTML = el.innerHTML;
+  el._i18nGocText = chu;
   el.textContent = fixUIText(entry[lang]);
+  el._i18nDichRa = el.textContent.replace(/\s+/g, ' ').trim();
   el._i18nXong = true;
   return true;
 }
