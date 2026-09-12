@@ -3,9 +3,16 @@
 **Hướng dẫn thao tác cho người dùng** — từng module, từng nút bấm, kèm bảng tra các lời từ chối
 thường gặp. Ba bản cùng một nội dung, khác ngôn ngữ:
 
-- [Tiếng Việt](HUONG_DAN_SU_DUNG_VI.md)
-- [English](USER_GUIDE_EN.md)
-- [ພາສາລາວ](HUONG_DAN_SU_DUNG_LO.md)
+- Tiếng Việt: [bản Word](HUONG_DAN_SU_DUNG_VI.docx) · [bản Markdown](HUONG_DAN_SU_DUNG_VI.md)
+- English: [Word](USER_GUIDE_EN.docx) · [Markdown](USER_GUIDE_EN.md)
+- ພາສາລາວ: [Word](HUONG_DAN_SU_DUNG_LO.docx) · [Markdown](HUONG_DAN_SU_DUNG_LO.md)
+
+Bản Word là bản để gửi đi và in. Sửa nội dung thì sửa tệp `.md` rồi sinh lại bản Word
+bằng `backend/scripts/sinh_tai_lieu_word.py` (cần `pip install python-docx`).
+
+Bản Lào dùng phông `Leelawadee UI` vì đó là phông duy nhất trên máy có glyph chữ Lào;
+các ký hiệu mũi tên và biểu tượng dùng `Segoe UI Symbol`. Word KHÔNG tự thay phông khi
+phông đã chỉ định thiếu glyph — nó vẽ ô vuông — nên bộ sinh chọn phông theo từng ký tự.
 
 Các tài liệu bên dưới là tài liệu **kỹ thuật**, dành cho người viết mã và người nối hệ thống:
 
