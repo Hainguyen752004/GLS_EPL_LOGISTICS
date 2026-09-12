@@ -460,6 +460,50 @@ def _xep_chang_cho_do(do_ids, segments, stop_plan):
     return theo_chang, list(do_ids[1:])
 
 
+def _lam_moi_lenh_van_chuyen(db, freight_order, orders, pickup_start, pickup_end,
+                             delivery_start, delivery_end, tong_kg, tong_m3, tong_pallet, actor):
+    """Làm mới KHUNG GIỜ và khối lượng của một lệnh vận chuyển đang được DÙNG LẠI.
+
+    LỖI ĐÃ ĐO (12/09/2026, trên dữ liệu thật). Lệnh vận chuyển được dùng lại cho cùng một DO:
+    lập chuyến lần đầu thì nó chốt khung giờ theo DO lúc ấy, nhưng lập LẠI thì nhánh này trước
+    đây không làm gì cả. Nên khi điều độ huỷ chuyến, dời ngày lấy hàng trên DO rồi lập chuyến
+    mới, lệnh vận chuyển vẫn giữ khung cũ — và bước điều xe bị chặn bằng
+    `ASSIGNMENT_OUTSIDE_WINDOW` ("thời gian điều phối phải nằm trong khung lấy và giao hàng
+    của chuyến") trong khi trên màn hình DO ghi đúng ngày mới. Người điều độ không có cách nào
+    nhìn ra, vì khung giờ sai nằm ở một bản ghi họ không thấy.
+
+    CHỈ LÀM MỚI KHI KHÔNG CÒN CHUYẾN NÀO SỐNG trên lệnh này. Một chuyến đang chạy (hoặc đã
+    hoàn tất) đã lấy khung đó làm cơ sở cho phân công và cho mọi mốc hành trình đã ghi; viết
+    đè lên là đổi luật giữa cuộc và làm những mốc đã ghi nằm ngoài khung của chính nó. Còn khi
+    mọi chuyến đã huỷ thì lệnh vận chuyển quay về đúng nghĩa một bản kế hoạch chưa ai thực
+    hiện — và nó phải nói đúng kế hoạch HIỆN TẠI của DO.
+
+    Trạng thái cũng trả về `planned`: chuyến trước có thể đã đẩy nó sang `dispatched`, mà giờ
+    chuyến đó không còn.
+    """
+    con_song = db.query(TransportTrip.id).filter(
+        TransportTrip.freight_order_id == freight_order.id,
+        TransportTrip.status != "cancelled",
+    ).first()
+    if con_song:
+        return
+    freight_order.pickup_window_start = pickup_start
+    freight_order.pickup_window_end = pickup_end
+    freight_order.delivery_window_start = delivery_start
+    freight_order.delivery_window_end = delivery_end
+    freight_order.total_weight_kg = tong_kg
+    freight_order.total_volume_m3 = tong_m3
+    freight_order.total_pallet_count = tong_pallet
+    freight_order.max_weight_kg = max(tong_kg, 1)
+    freight_order.max_volume_m3 = max(tong_m3, 1)
+    freight_order.max_pallet_count = max(tong_pallet, 1)
+    freight_order.status = "planned"
+    freight_order.version = (freight_order.version or 1) + 1
+    freight_order.updated_at = _now()
+    freight_order.updated_by = actor
+    db.flush()
+
+
 def create_trip_from_delivery_orders(db, data, actor):
     trip_id = _bounded_text(data.get("id"), "Mã chuyến", 128)
     do_ids = list(data.get("do_ids") or [])
@@ -618,6 +662,10 @@ def create_trip_from_delivery_orders(db, data, actor):
         )
         db.add(freight_order)
         db.flush()
+    else:
+        _lam_moi_lenh_van_chuyen(db, freight_order, orders, pickup_start, pickup_end,
+                                 delivery_start, delivery_end,
+                                 total_weight, total_volume, total_pallets, actor)
 
     trip = create_trip(db, {
         "id": trip_id,
