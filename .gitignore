@@ -73,3 +73,6 @@ frontend/_soi*.html
 # người, không phải thứ để chia sẻ — và mỗi bản nặng hơn một megabyte.
 *.db.truoc-khi-don-*.bak
 *.db.bak
+
+# Máy chủ chạy ở máy cá nhân ghi stderr ra tệp .log.err — `*.log` ở trên không bắt được.
+*.log.err
