@@ -1,0 +1,20 @@
+# Khoá và cấu hình riêng — KHÔNG BAO GIỜ đẩy lên.
+# Trợ lý đọc GEMINI_API_KEY_GT và EPL_TMS_API_TOKEN từ ../EPL_System/.env lúc chạy;
+# thư mục này không giữ khoá nào, và cũng không được giữ.
+.env
+.env.*
+*.token
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Nhật ký và tệp tạm khi chạy thử
+*.log
+*.log.err
+uvicorn.log
+~$*
+.DS_Store

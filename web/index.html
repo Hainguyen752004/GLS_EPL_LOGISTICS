@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EPL Trợ lý</title>
+<link rel="icon" href="img/logo-epl.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Noto+Sans+Lao:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/tro-ly.css">
+</head>
+<body>
+<div class="ung-dung" id="ung-dung">
+
+  <!-- ============ Thanh bên ============ -->
+  <aside class="ben" id="ben" aria-label="Danh sách trò chuyện">
+    <div class="ben-dau">
+      <div class="thuong-hieu">
+        <img src="img/logo-epl.jpg" alt="EPL" class="logo">
+        <div>
+          <div class="ten-ung-dung">EPL <span data-i18n="tro_ly">Trợ lý</span></div>
+          <div class="phu-ten" data-i18n="phu_ten">Quản lý vận tải</div>
+        </div>
+      </div>
+      <button class="nut-dong-ben" id="nut-dong-ben" type="button" aria-label="Đóng thanh bên">‹</button>
+    </div>
+
+    <button class="nut-moi" id="nut-moi" type="button">
+      <span class="dau">+</span><span data-i18n="tro_chuyen_moi">Trò chuyện mới</span>
+    </button>
+
+    <div class="ben-nhan" data-i18n="gan_day">Gần đây</div>
+    <nav class="ds-cuoc" id="ds-cuoc"></nav>
+
+    <div class="ben-cuoi">
+      <div class="chon-ngon-ngu" id="chon-ngon-ngu" role="radiogroup" aria-label="Ngôn ngữ">
+        <button type="button" data-ngon-ngu="vi" role="radio">Tiếng Việt</button>
+        <button type="button" data-ngon-ngu="en" role="radio">English</button>
+        <button type="button" data-ngon-ngu="lo" role="radio" lang="lo">ລາວ</button>
+      </div>
+      <button class="nut-giao-dien" id="nut-giao-dien" type="button">
+        <span class="bieu-tuong" aria-hidden="true">◐</span><span data-i18n="giao_dien">Giao diện</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ Khung chính ============ -->
+  <main class="chinh" id="chinh">
+    <header class="dau-chinh">
+      <button class="nut-mo-ben" id="nut-mo-ben" type="button" aria-label="Mở thanh bên">☰</button>
+      <div class="tieu-de-cuoc" id="tieu-de-cuoc"></div>
+      <div class="trang-thai-may" id="trang-thai-may" hidden></div>
+      <div class="chuong-vung">
+        <button class="nut-chuong" id="nut-chuong" type="button" aria-label="Thông báo" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2h-15L6 17Zm4 3a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>
+          <span class="dem-chuong" id="dem-chuong" hidden>0</span>
+        </button>
+        <div class="bang-thong-bao" id="bang-thong-bao" hidden>
+          <div class="bang-dau">
+            <strong data-i18n="thong_bao">Thông báo</strong>
+            <button type="button" id="nut-doc-het" class="nut-nho" data-i18n="doc_het">Đánh dấu đã đọc</button>
+          </div>
+          <div class="ds-thong-bao" id="ds-thong-bao"></div>
+          <div class="bang-cuoi">
+            <label class="o-check"><input type="checkbox" id="check-trinh-duyet"><span data-i18n="bao_ngoai">Báo cả khi đang ở tab khác</span></label>
+            <span class="giam-sat-luc" id="giam-sat-luc"></span>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="toast-vung" id="toast-vung" aria-live="polite"></div>
+
+    <!-- Trạng thái trống: lời chào ở giữa màn, ô hỏi ngay dưới -->
+    <section class="chao" id="chao">
+      <img src="img/logo-epl.jpg" alt="" class="logo-chao">
+      <h1 class="loi-chao" id="loi-chao">Chào buổi chiều</h1>
+      <p class="phu-chao" data-i18n="phu_chao">Hỏi em bất cứ gì về vận hành hôm nay — lệnh giao hàng, chuyến đang chạy, sự cố, báo giá, đội xe.</p>
+    </section>
+
+    <!-- Dòng tin nhắn -->
+    <section class="tin" id="tin" aria-live="polite"></section>
+
+    <!-- Ô hỏi -->
+    <div class="vung-hoi" id="vung-hoi">
+      <form class="o-hoi" id="o-hoi">
+        <textarea id="cau-hoi" rows="1" placeholder="Hỏi em điều gì về vận hành…" data-i18n-ph="goi_y_nhap" autocomplete="off"></textarea>
+        <div class="hang-nut">
+          <span class="nhan-mo-hinh" id="nhan-mo-hinh">Gemini 2.5 Flash</span>
+          <button class="nut-gui" id="nut-gui" type="submit" aria-label="Gửi" disabled>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5m0 0l-6 6m6-6l6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </form>
+      <div class="goi-y" id="goi-y"></div>
+      <p class="chu-thich" data-i18n="chu_thich">Trợ lý chỉ đọc dữ liệu thật từ hệ thống EPL và có thể nhầm — hãy kiểm lại con số quan trọng trên màn hình gốc.</p>
+    </div>
+  </main>
+</div>
+<script src="js/tro-ly.js"></script>
+</body>
+</html>
