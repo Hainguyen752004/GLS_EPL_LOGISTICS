@@ -18,6 +18,35 @@ Sửa `DATABASE_URL` trong `.env` để trỏ đến PostgreSQL thật trước 
 chạy migration lúc khởi động; tài khoản PostgreSQL cần quyền tạo/thay đổi bảng trong
 schema của ứng dụng.
 
+### Chạy riêng giao diện (khi host tách khỏi backend)
+
+Giao diện KHÔNG có bước build và KHÔNG cần `npm install` để chạy — `npm` ở đây chỉ phục vụ
+bộ kiểm. Nhưng nó **không bê thẳng lên máy chủ tĩnh được**: cả 44 tệp CSS/JS trong
+`index.html` trỏ tới `/static/...`, mà thư mục `static` không tồn tại trên đĩa — nó do dòng
+`app.mount("/static", StaticFiles(directory=frontend_dir))` trong `backend/app/main.py` dựng
+ra lúc chạy. Trỏ nginx thẳng vào `frontend/`, hay chạy `python -m http.server` trong đó, là
+mọi đường `/static/...` trả 404 và trang hiện ra trơ trụi không CSS không JS.
+
+Muốn tách giao diện khỏi backend thì dùng `chay_frontend.py` — nó dựng lại đúng phép ánh xạ:
+
+```powershell
+python chay_frontend.py                                    # trang :8080, API về :8001
+python chay_frontend.py --api http://senvangsolutions.com:1506
+python chay_frontend.py --cong 9000 --api http://192.168.1.50:8001
+```
+
+Hoặc bấm đúp `chay_frontend.bat` (sửa `CONG` và `API_GOC` trong đó nếu cần).
+
+Dùng nginx thì ba quy tắc này là đủ — điểm mấu chốt là dấu `/` cuối dòng `alias`, nó cắt
+tiền tố `/static/` đúng như backend vẫn làm:
+
+```nginx
+location /static/  { alias /duong/den/EPL_System/frontend/; }
+location /api/     { proxy_pass http://127.0.0.1:8001; }
+location /uploads/ { proxy_pass http://127.0.0.1:8001; }
+location /         { root /duong/den/EPL_System/frontend; try_files /index.html =404; }
+```
+
 ### Vì sao có `--no-access-log`, và cái bẫy console của Windows
 
 Cửa sổ Console/PowerShell của Windows bật sẵn **QuickEdit** (`HKCU\Console\QuickEdit = 1`).
