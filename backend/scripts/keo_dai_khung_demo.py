@@ -175,19 +175,42 @@ def main():
         if not a.ghi:
             print("\n  (chưa ghi gì — thêm --ghi để thực hiện)")
 
-    if a.ghi:
-        print("\nĐã cập nhật %d bản ghi." % tong)
-        with e.connect() as c:
-            print("\nKiểm lại — mốc muộn nhất của dữ liệu còn sống:")
-            for nhan, sql in [
-                ("Lệnh giao hàng", "SELECT max(delivery_window_end) FROM delivery_orders WHERE " + SONG_DO),
-                ("Lệnh vận chuyển", "SELECT max(delivery_window_end) FROM freight_orders WHERE " + SONG_TRIP),
-                ("Phân công", """SELECT max(a.assignment_end) FROM resource_assignments a
-                                  JOIN transport_trips t ON t.id = a.trip_id WHERE t.""" + SONG_TRIP),
-            ]:
-                print("  %-18s %s" % (nhan, c.execute(text(sql)).scalar()))
-    else:
+    if not a.ghi:
         print("Tổng: %d bản ghi sẽ được cập nhật." % tong)
+        return
+
+    print("\nĐã cập nhật %d bản ghi." % tong)
+    with e.connect() as c:
+        print("\nMốc muộn nhất của dữ liệu còn sống — thứ giữ cho thao tác không bị chặn:")
+        for nhan, sql in [
+            ("Lệnh vận chuyển", "SELECT max(delivery_window_end) FROM freight_orders WHERE " + SONG_TRIP),
+            ("Phân công xe", """SELECT max(a.assignment_end) FROM resource_assignments a
+                                 JOIN transport_trips t ON t.id = a.trip_id WHERE t.""" + SONG_TRIP),
+        ]:
+            print("  %-18s %s" % (nhan, c.execute(text(sql)).scalar()))
+
+        # Tóm lược nghiệp vụ: mấy con số người demo nhìn đầu tiên khi mở màn hình.
+        print("\nBộ dữ liệu bây giờ:")
+        for nhan, sql in [
+            ("Đang vận chuyển", "SELECT count(*) FROM delivery_orders WHERE canonical_status = 'in_transit'"),
+            ("Đã tới, chờ ký nhận", "SELECT count(*) FROM delivery_orders WHERE canonical_status = 'arrived'"),
+            ("Trễ hạn giao", """SELECT count(*) FROM delivery_orders
+                                 WHERE canonical_status IN ('in_transit', 'arrived')
+                                   AND delivery_window_end < now()"""),
+            ("Chờ điều phối", "SELECT count(*) FROM delivery_orders WHERE canonical_status = 'pending'"),
+            # `transport_trips` không giữ danh sách DO trong một cột — nối qua bảng liên kết.
+            ("  · trong đó đã có chuyến", """SELECT count(DISTINCT d.id) FROM delivery_orders d
+                                              JOIN trip_delivery_orders l ON l.do_id = d.id
+                                              JOIN transport_trips t ON t.id = l.trip_id
+                                             WHERE d.canonical_status = 'pending'
+                                               AND t.status = 'planned'"""),
+            ("Xe rảnh", "SELECT count(*) FROM vehicles WHERE operational_status = 'available'"),
+            ("Tài xế chính rảnh", """SELECT count(*) FROM drivers
+                                      WHERE operational_status = 'available' AND role = 'Lái xe chính'"""),
+            ("Sự cố đang mở", """SELECT count(*) FROM incidents
+                                  WHERE lower(coalesce(status, '')) NOT IN ('resolved', 'closed', 'completed')"""),
+        ]:
+            print("  %-28s %s" % (nhan, c.execute(text(sql)).scalar()))
 
 
 if __name__ == "__main__":
