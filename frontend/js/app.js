@@ -11482,9 +11482,30 @@ function renderDeliveryOrderCloseout(data, target) {
     target.innerHTML = 'Chưa có dữ liệu hồ sơ cho DO đang chọn.';
     return;
   }
-  const currency = data.currency || 'VND';
   const tripId = data.trip?.id || '';
   const tm = data.commercials || {};
+
+  // HAI BÊN TIỀN TỆ, KHÔNG PHẢI MỘT.
+  //
+  // Máy chủ nói rõ điều này và còn ghi hẳn lý do trong `delivery_routes.py`:
+  // "Hai bên tiền tệ, nói rõ để bên công nợ không cộng trừ chéo đơn vị."
+  //   · `currency_thu` — tiền của BÁO GIÁ, là thứ khách trả (USD, THB, LAK…);
+  //   · `currency_chi` — tiền ghi CHI PHÍ, luôn là tiền chức năng (VNĐ), vì công
+  //     thức giá thành khai đơn giá bằng VNĐ.
+  //
+  // Bản trước đóng dấu MỘT mã tiền (`data.currency`) lên mọi ô. Hậu quả đo được
+  // trên hồ sơ DO-2026-0011-DO01: phụ cấp tài xế 450.000 VNĐ hiện thành
+  // "450.000 USD", tổng chi 1.226.000 VNĐ hiện thành "1.226.000 USD" — trong khi
+  // ngay dưới đó lãi gộp vẫn là 11,58 USD. Con số nào cũng đúng, chỉ cái nhãn nói
+  // dối, và người đọc không có cách nào biết mình đang nhìn đồng nào.
+  const tienThu = tm.currency_thu || data.currency || 'VND';
+  const tienChi = tm.currency_chi || tienThu;
+  const khacTien = tienThu !== tienChi;
+  const tyGia = Number(tm.fx_rate || 0) || 0;
+  //: Quy đổi CHỈ để đọc cho dễ. Con số gốc vẫn hiện bằng đồng đã chi, không thay thế.
+  const quyDoi = (gia) => (khacTien && tyGia > 0 && Number.isFinite(Number(gia)) && Number(gia) !== 0)
+    ? ` <small class="cl-quy-doi">≈ ${closeoutMoney(Number(gia) / tyGia, tienThu)}</small>` : '';
+  const currency = tienThu;   // giữ tên cũ cho mọi chỗ đang hiện tiền THU
 
   // Năm con số tiền: giá ban đầu, khách trả thêm, giá cuối, chi phí, lợi
   // nhuận. Giữ nguyên vì đây là phần đọc nhanh nhất của hồ sơ.
@@ -11495,16 +11516,20 @@ function renderDeliveryOrderCloseout(data, target) {
     ["Cước theo báo giá", tm.base_selling_price, "#0f172a", "#f8fafc", "#e2e8f0"],
     ["Khách hàng trả thêm", tm.customer_surcharge_total, "#b45309", "#fff7ed", "#fed7aa"],
     ["Giá cuối DO", tm.selling_price ?? tm.final_selling_price, "#047857", "#f0fdf4", "#bbf7d0"],
-    ["Chi phí nội bộ", tm.actual_cost_total, "#b42318", "#fef2f2", "#fecaca"],
+    // Ô này là CHI, nên mang tiền chi — không phải tiền của báo giá.
+    ["Chi phí nội bộ", tm.actual_cost_total, "#b42318", "#fef2f2", "#fecaca", tienChi],
   ].map(x => `<div class="cl-tien" style="background:${x[3]}; border-color:${x[4]};">`
       + `<span>${escapeCloseoutText(x[0])}</span>`
-      + `<strong style="color:${x[2]};">${closeoutMoney(x[1], currency)}</strong></div>`).join("")
+      + `<strong style="color:${x[2]};">${closeoutMoney(x[1], x[5] || currency)}`
+      + `${x[5] === tienChi ? quyDoi(x[1]) : ''}</strong></div>`).join("")
     // Lợi nhuận KHÔNG hiện bằng một con số trần. Máy chủ gửi cờ
     // `margin_is_provisional`; bỏ qua nó là hiện "Lợi nhuận 100%" xanh lá khi
     // chưa có chi phí thực tế — lúc đó lợi nhuận đang bằng đúng toàn bộ giá
     // bán. `khoiLoiNhuanCloseout` đã xử lý đúng chuyện đó nên dùng lại, thay
     // vì viết một ô mới rồi vấp lại đúng cái bẫy cũ.
-    + khoiLoiNhuanCloseout(data, currency);
+    // Lợi nhuận = thu − chi đã quy đổi, nên nó nằm ở tiền THU. Máy chủ nói rõ
+    // bằng `margin_currency`; dùng nó chứ đừng đoán.
+    + khoiLoiNhuanCloseout(data, tm.margin_currency || tienThu);
 
   // Bốn mốc đã ghi vào hệ thống — để biết hồ sơ này đã đi hết luồng chưa.
   const moc = [
@@ -11528,28 +11553,38 @@ function renderDeliveryOrderCloseout(data, target) {
   const oMa = d => d.cost_index
     ? `<code class="cl-ma">${escapeCloseoutText(d.cost_index)}</code>`
     : '<code class="cl-ma is-thieu" title="Công thức giá thành chưa chọn Acc code cho khoản mục này">chưa có acc code</code>';
+  //: Mỗi dòng mang tiền của CHÍNH LOẠI dòng đó: `thu` theo báo giá, `chi` theo tiền chức năng.
+  const tienCua = (kind) => (kind === 'thu' ? tienThu : tienChi);
   const dongSo = (kind) => soDong.filter(d => d.kind === kind).map(d => `<tr class="cl-so-dong">
       <td>${oMa(d)}</td>
       <td><strong>${escapeCloseoutText(d.name)}</strong>
           <small>${escapeCloseoutText(nguonNhan[d.source] || d.source || '')}${d.calculation ? ' · ' + escapeCloseoutText(d.calculation) : ''}</small></td>
-      <td class="cl-so-tien">${closeoutMoney(d.planned_amount, currency)}</td>
-      <td class="cl-so-tien"><b>${closeoutMoney(d.actual_amount, currency)}</b></td>
+      <td class="cl-so-tien">${closeoutMoney(d.planned_amount, tienCua(d.kind))}</td>
+      <td class="cl-so-tien"><b>${closeoutMoney(d.actual_amount, tienCua(d.kind))}</b></td>
       <td class="cl-so-tien ${d.kind === 'thu' ? 'cl-so-them' : 'cl-so-lech'}">${
-        d.kind === 'thu' ? closeoutMoney(d.customer_extra, currency)
-                         : (d.variance ? (d.variance > 0 ? '+' : '') + closeoutMoney(d.variance, currency) : '—')}</td>
+        d.kind === 'thu' ? closeoutMoney(d.customer_extra, tienThu)
+                         : (d.variance ? (d.variance > 0 ? '+' : '') + closeoutMoney(d.variance, tienChi) : '—')}</td>
     </tr>`).join('');
   const nhomSo = (kind, nhan, tongTien) => `
       <tr class="cl-so-nhom"><td colspan="5">${nhan}</td></tr>
       ${dongSo(kind) || `<tr><td colspan="5" class="cl-trong">Chưa có dòng ${kind}.</td></tr>`}
-      <tr class="cl-so-tong"><td colspan="3">Tổng ${kind}</td><td class="cl-so-tien"><b>${closeoutMoney(tongTien, currency)}</b></td><td></td></tr>`;
+      <tr class="cl-so-tong"><td colspan="3">Tổng ${kind}</td><td class="cl-so-tien"><b>${
+        closeoutMoney(tongTien, tienCua(kind))}${kind === 'chi' ? quyDoi(tongTien) : ''}</b></td><td></td></tr>`;
   const doiChieu = [
     tong.khop_gia_cuoi === false ? 'Tổng thu KHÔNG khớp giá cuối DO' : null,
     tong.khop_gia_thanh === false ? 'Tổng chi KHÔNG khớp giá thành dùng tính lãi' : null,
     tong.so_dong_thieu_ma ? `${tong.so_dong_thieu_ma} dòng chưa có Acc code — chọn ở Dữ liệu gốc → Công thức giá thành` : null,
   ].filter(Boolean);
+  // Khi thu và chi khác đồng, PHẢI nói ra tỷ giá — không thì người đọc thấy tổng chi
+  // bằng VNĐ nằm cạnh tổng thu bằng USD mà không hiểu vì sao lãi gộp lại ra con số đó.
+  const dongTyGia = khacTien ? `<p class="cl-ghi-chu">Khoản thu ghi bằng <b>${
+      escapeCloseoutText(tienThu)}</b> theo báo giá; chi phí ghi bằng <b>${escapeCloseoutText(tienChi)}</b>${
+      tyGia > 0 ? ` và quy đổi theo tỷ giá đã khoá trên báo giá: 1 ${escapeCloseoutText(tienThu)} = ${
+        Number(tyGia).toLocaleString('vi-VN')} ${escapeCloseoutText(tienChi)}`
+                : ' — báo giá chưa khai tỷ giá nên chưa quy đổi được'}.</p>` : '';
   const bangSo = soDong.length ? `<section class="cl-khoi cl-so">
       <div class="cl-khoi-dau"><div><span class="cl-kicker">Sổ thu – chi của lệnh giao hàng</span>
-        <h4>${soDong.length} dòng · lãi gộp ${closeoutMoney(tong.lai_gop, currency)}</h4></div>
+        <h4>${soDong.length} dòng · lãi gộp ${closeoutMoney(tong.lai_gop, tong.currency_thu || tienThu)}</h4></div>
         ${doiChieu.length ? `<span class="cl-dem cl-dem-canh">${doiChieu.map(escapeCloseoutText).join(' · ')}</span>`
                           : '<span class="cl-dem">Tổng thu và tổng chi khớp với hồ sơ</span>'}</div>
       <div class="cl-so-cuon"><table class="cl-so-bang">
@@ -11559,6 +11594,7 @@ function renderDeliveryOrderCloseout(data, target) {
           ${nhomSo('chi', 'CHI — chi phí của chuyến (phí của xe)', tong.tong_chi)}
         </tbody>
       </table></div>
+      ${dongTyGia}
     </section>` : '';
 
   // Ba khối tóm tắt cũ giữ lại làm đường lùi khi máy chủ chưa trả `ledger_lines`
@@ -11566,13 +11602,14 @@ function renderDeliveryOrderCloseout(data, target) {
   const dongChiPhi = (data.configured_cost_lines || []).map(l => `<div class="cl-dong">
       <span><strong>${escapeCloseoutText(l.name)}</strong>
         <small>${escapeCloseoutText(l.calculation || "")}</small></span>
-      <b>${closeoutMoney(l.original_amount, currency)}</b></div>`).join("")
+      <b>${closeoutMoney(l.original_amount, tienChi)}${quyDoi(l.original_amount)}</b></div>`).join("")
     || '<div class="cl-trong">Chưa có công thức giá thành cho loại xe này.</div>';
 
   const dongThucTe = (data.actual_cost_lines || []).map(l => `<div class="cl-dong">
       <span><strong>${escapeCloseoutText(l.description || l.charge_type)}</strong>
         <small>${escapeCloseoutText(l.charge_type)}</small></span>
-      <b>${closeoutMoney(l.actual_amount ?? l.total_amount, currency)}</b></div>`).join("")
+      <b>${closeoutMoney(l.actual_amount ?? l.total_amount, tienChi)}${
+        quyDoi(l.actual_amount ?? l.total_amount)}</b></div>`).join("")
     || '<div class="cl-trong">Chưa ghi chi phí thực tế.</div>';
 
   const dongPhuThu = (data.customer_charge_adjustments || []).map(l => `<div class="cl-dong">
@@ -13419,12 +13456,29 @@ function workflowCurrencyCodes() {
  * Trả `null` chứ không rơi về một con số viết cứng: người gọi phải xử lý
  * trường hợp chưa có tỷ giá, thay vì nhận một con số trông như thật.
  */
+/** Tỷ giá đã lưu trong hệ, đọc từ dữ liệu đã tải chứ không từ một ô nhập trên màn khác. */
+function tyGiaDaLuu(code) {
+  const ds = Array.isArray(appState?.currencies) ? appState.currencies : [];
+  for (const c of ds) {
+    if (String(c.code || c.id || '').trim().toUpperCase() !== code) continue;
+    const n = Number(c.exchange_rate ?? c.rate ?? c.ty_gia);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
 function workflowCurrencyRate(code) {
   const meta = WORKFLOW_CURRENCY_META[code] || WORKFLOW_CURRENCY_META.VND;
   if (!meta.rateInputId) return meta.rate ?? null;
   const raw = document.getElementById(meta.rateInputId)?.value;
   const parsed = window.CurrencyRateUtils.parseCurrencyRateNumber(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  // Ô nhập chỉ có giá trị SAU KHI người dùng đã mở thẻ Tỷ giá tiền tệ — nó được điền
+  // lúc thẻ đó nạp. Mở thẳng màn Công thức giá thành rồi chọn LAK thì ô còn rỗng, nên
+  // màn báo "chưa có tỷ giá LAK" dù hệ có sẵn 1 LAK = 1,18 VNĐ trong Dữ liệu gốc.
+  // Chủ dự án gặp đúng cảnh đó ngày 13/09. Nguồn thật của tỷ giá là dữ liệu đã tải từ
+  // `/api/currencies`, không phải một ô nhập nằm ở màn khác.
+  return tyGiaDaLuu(code);
 }
 window.workflowCurrencyRate = workflowCurrencyRate;
 

@@ -110,8 +110,13 @@ function than(neo, ket) {
 
 {
   const t = than('function renderDeliveryOrderCloseout(data, target)');
-  assert.ok(/khoiLoiNhuanCloseout\(data, currency\)/.test(t),
+  // Không khoá đúng chữ `currency`: từ 13/09 hồ sơ mang HAI đồng tiền, nên lợi nhuận
+  // phải nhận tiền THU (`margin_currency`) chứ không phải một mã tiền dùng chung.
+  // Điều cần khoá là DÙNG LẠI khối có xét cờ tạm tính, không phải tên biến truyền vào.
+  assert.ok(/khoiLoiNhuanCloseout\(data,/.test(t),
     'phải dùng lại khối lợi nhuận có xét cờ tạm tính');
+  assert.ok(/khoiLoiNhuanCloseout\(data,\s*tm\.margin_currency/.test(t),
+    'lợi nhuận phải mang tiền THU do máy chủ khai, không dùng mã tiền chung');
   assert.ok(!/\["Lợi nhuận", tm\.margin_amount/.test(t),
     'không được hiện lợi nhuận bằng một con số trần');
   // Và hàm đó vẫn phải còn nguyên phép xét cờ.
