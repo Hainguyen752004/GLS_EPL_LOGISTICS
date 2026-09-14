@@ -71,15 +71,16 @@ def dung_markdown():
     # ---------------- 2
     w("## 2. Chuẩn bị — ba máy chủ")
     w("")
-    w("Trợ lý không có cơ sở dữ liệu riêng; nó đọc API của hệ EPL. Nên phải bật EPL trước.")
+    w("Trợ lý không có cơ sở dữ liệu riêng; nó đọc API của hệ EPL. Mặc định nó hỏi máy chủ đã host "
+      "ở cổng 1506 — máy chủ này chạy vĩnh viễn nên không cần bật gì thêm trên máy mình.")
     w("")
     w("| Máy chủ | Thư mục | Lệnh | Địa chỉ |")
     w("|---|---|---|---|")
-    w("| Hệ EPL (bắt buộc) | `EPL_System` | `python -m uvicorn backend.app.main:app --host 0.0.0.0 "
-      "--port 8001 --no-access-log` | http://localhost:8001 |")
+    w("| Hệ EPL đã host (luôn sống) | — | không cần bật; kiểm bằng `/api/health` | "
+      "http://senvangsolutions.com:1506 |")
     w("| Trợ lý | `EPL_TroLy` | `chay.bat` hoặc `python chay.py` | http://localhost:8090 |")
-    w("| Trang tài xế (nếu cần) | `EPL_TaiXe` | `python chay.py --api http://127.0.0.1:8001 --cong 8099` | "
-      "http://localhost:8099 |")
+    w("| Trang tài xế (nếu cần) | `EPL_TaiXe` | `python chay.py --cong 8081` (8080 thường bị Apache giữ) | "
+      "http://localhost:8081 |")
     w("")
     w("Trợ lý tự đọc `GEMINI_API_KEY_GT` và `EPL_TMS_API_TOKEN` từ `EPL_System\\.env`. Hai khoá này "
       "nằm ở máy chủ, trình duyệt không bao giờ thấy.")
@@ -184,17 +185,80 @@ def dung_markdown():
     w("")
 
     # ---------------- 8
-    w("## 8. Số liệu tham chiếu (12/09/2026)")
+    bang, nguon = tham_chieu_song()
+    w("## 8. Số liệu tham chiếu (%s)" % nguon)
     w("")
-    w("Số liệu của bộ dữ liệu demo lúc soạn tài liệu. Dữ liệu đổi thì các con số này đổi theo — "
-      "dùng để biết *thứ tự độ lớn* có đúng không, còn con số chính xác thì đối chiếu màn hình gốc.")
+    w("Số liệu của bộ dữ liệu demo lúc SINH tài liệu này. Dữ liệu được làm tươi trước mỗi buổi "
+      "demo, nên hãy sinh lại tài liệu cùng ngày kiểm — hoặc dùng bảng này để biết *thứ tự độ "
+      "lớn*, còn con số chính xác thì đối chiếu màn hình gốc.")
     w("")
     w("| Mục | Giá trị |")
     w("|---|---|")
-    for muc, gia_tri in B.THAM_CHIEU:
+    for muc, gia_tri in bang:
         w("| %s | %s |" % (muc, gia_tri))
     w("")
     return "\n".join(d)
+
+
+def tham_chieu_song():
+    """Đọc số liệu tham chiếu TỪ HỆ THẬT. Trả (danh sách cặp, nhãn nguồn).
+
+    Không nối được thì rơi về bảng chốt cứng trong `bo_cau_hoi.THAM_CHIEU` và nói rõ đó là số
+    cũ — thà ghi "số cũ" còn hơn in một con số sai mà trông như số của hôm nay.
+    """
+    import datetime as _dt
+    sys.path.insert(0, os.path.dirname(GOC))
+    try:
+        import cong_cu
+        env = {}
+        duong_env = os.path.normpath(os.path.join(GOC, "..", "..", "EPL_System", ".env"))
+        if os.path.exists(duong_env):
+            for dong in io.open(duong_env, encoding="utf-8"):
+                dong = dong.strip()
+                if dong and not dong.startswith("#") and "=" in dong:
+                    k, v = dong.split("=", 1)
+                    env[k.strip()] = v.strip().strip('"').strip("'")
+        cong_cu.cau_hinh(cong_cu.GOC_API, env.get("EPL_TMS_API_TOKEN", ""))
+
+        pt = cong_cu.chay_cong_cu("phan_tich_lenh_giao_hang", {})
+        nhom = pt.get("nhom") or {}
+        def so(k):
+            return (nhom.get(k) or {}).get("so", "?")
+
+        thap = cong_cu.goi_api("/api/tracking/control-tower") or {}
+        kpi = thap.get("kpis") or {}
+        doi = cong_cu.chay_cong_cu("nguon_luc_doi_xe", {})
+        tien = {c.get("id"): c.get("exchange_rate") for c in (cong_cu.goi_api("/api/currencies") or [])}
+
+        bang = [
+            ("DO chờ điều phối", str(so("pending"))),
+            ("DO đang vận chuyển", str(so("active"))),
+            ("DO đã hoàn tất", str(so("completed"))),
+            ("DO quá hạn", str(so("overdue"))),
+            ("DO gần trễ (24h)", str(so("near_late"))),
+            ("DO gặp sự cố", str(so("incident"))),
+            ("Chuyến đang chạy", "%s dòng / %s xe · %s chờ ký POD · %s trễ hạn"
+                                 % (kpi.get("total", "?"), kpi.get("vehicles", "?"),
+                                    kpi.get("awaiting_pod", "?"), kpi.get("overdue", "?"))),
+            ("Sự cố đang mở", str(kpi.get("incidents", "?"))),
+            ("Tiền tệ", " · ".join("%s %s" % (k, v) for k, v in tien.items()) or "?"),
+        ]
+        xe = doi.get("vehicles") or {}
+        tx = doi.get("drivers") or {}
+        if xe:
+            bang.append(("Xe rảnh / đang chạy / tổng",
+                         "%s / %s / %s · %s giấy tờ sắp hết hạn · %s đã hết hạn"
+                         % (xe.get("ranh", "?"), xe.get("dang_chay", "?"), xe.get("tong", "?"),
+                            xe.get("giay_to_sap_het", "?"), xe.get("giay_to_het_han", "?"))))
+        if tx:
+            bang.append(("Tài xế rảnh / đang chạy / tổng",
+                         "%s / %s / %s · %s bằng lái sắp hết hạn · %s đã hết hạn"
+                         % (tx.get("ranh", "?"), tx.get("dang_chay", "?"), tx.get("tong", "?"),
+                            tx.get("bang_sap_het", "?"), tx.get("bang_het_han", "?"))))
+        return bang, _dt.datetime.now().strftime("đọc từ hệ thật lúc %H:%M %d/%m/%Y")
+    except Exception as loi:                       # noqa: BLE001 — mất mạng cũng phải sinh được tài liệu
+        return (list(B.THAM_CHIEU),
+                "SỐ CŨ ngày 12/09/2026 — không đọc được hệ thật: %s" % str(loi)[:80])
 
 
 def sinh_word():

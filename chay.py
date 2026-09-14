@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """EPL Trợ lý — máy chủ nhỏ phục vụ trang chat, chạy tác tử và bộ giám sát thông báo.
 
-    python chay.py                      # trang: http://localhost:8090 · API EPL: http://127.0.0.1:8001
-    python chay.py --api http://senvangsolutions.com:1506 --cong 8090
+    python chay.py                      # trang: http://localhost:8090 · API EPL: máy chủ đã host (1506)
+    python chay.py --api http://127.0.0.1:8001   # chạy với máy chủ EPL trên máy mình
 
 Đọc `GEMINI_API_KEY_GT` và `EPL_TMS_API_TOKEN` từ `.env` của EPL_System (hoặc biến môi trường).
 Hai khóa này nằm Ở ĐÂY, phía máy chủ; trình duyệt chỉ gửi câu hỏi lên `POST /hoi`.
@@ -161,8 +161,8 @@ class MayChu(socketserver.ThreadingTCPServer):
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--cong", type=int, default=int(os.getenv("PORT", "8090")))
-    p.add_argument("--api", default=os.getenv("EPL_API_BASE", "http://127.0.0.1:8001"),
-                   help="gốc máy chủ EPL")
+    p.add_argument("--api", default=os.getenv("EPL_API_BASE", cong_cu.GOC_API),
+                   help="gốc máy chủ EPL; mặc định là máy chủ đã host, chạy vĩnh viễn")
     p.add_argument("--env", default=os.getenv("EPL_ENV_FILE", ENV_MAC_DINH),
                    help="tệp .env chứa GEMINI_API_KEY_GT và EPL_TMS_API_TOKEN")
     p.add_argument("--mo-hinh", default=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))

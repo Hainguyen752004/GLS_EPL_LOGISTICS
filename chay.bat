@@ -4,17 +4,23 @@ title EPL Tro ly
 cd /d "%~dp0"
 
 rem Bat may chu tro ly. Doc GEMINI_API_KEY_GT va EPL_TMS_API_TOKEN tu ..\EPL_System\.env
-rem He EPL (cong 8001) phai chay truoc: tro ly khong co co so du lieu rieng.
+rem Tro ly khong co co so du lieu rieng - no hoi API cua he EPL.
+rem Mac dinh hoi MAY CHU DA HOST (1506), chay vinh vien, nen khong can bat gi tren may nay.
+rem Muon chay voi may chu trong nha thi doi API_GOC thanh http://127.0.0.1:8001.
 
 set PY=C:\Users\zinnn\miniconda3\python.exe
 if not exist "%PY%" set PY=python
 
+set CONG=8090
+set API_GOC=http://senvangsolutions.com:1506
+
 echo.
-echo   Dang kiem he EPL o cong 8001...
-curl -s -o nul -m 5 http://127.0.0.1:8001/api/currencies
+echo   Dang kiem he EPL tai %API_GOC% ...
+curl -s -o nul -m 10 %API_GOC%/api/currencies
 if errorlevel 1 (
-  echo   [!] CHUA BAT HE EPL. Mo mot cua so khac, vao thu muc EPL_System va chay:
-  echo       python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --no-access-log
+  echo   [!] KHONG NOI DUOC %API_GOC%
+  echo       Kiem duong mang, hoac doi API_GOC trong tep nay thanh http://127.0.0.1:8001
+  echo       roi bat may chu EPL tren may nay.
   echo.
   echo   Tro ly van bat duoc, nhung moi cau hoi se bao "khong noi duoc he thong EPL".
   echo.
@@ -24,5 +30,8 @@ if errorlevel 1 (
 )
 
 echo.
-"%PY%" -X utf8 chay.py --cong 8090
+echo   Trang     : http://localhost:%CONG%
+echo   API EPL   : %API_GOC%
+echo.
+"%PY%" -X utf8 chay.py --cong %CONG% --api %API_GOC%
 pause

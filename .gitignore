@@ -18,3 +18,6 @@ venv/
 uvicorn.log
 ~$*
 .DS_Store
+
+# Báo cáo do kiem/chay_bo_cau_hoi.py sinh ra — kết quả của một lần chạy, không phải mã nguồn.
+kiem/ket_qua_bo_cau_hoi.md

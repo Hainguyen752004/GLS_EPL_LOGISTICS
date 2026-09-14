@@ -21,7 +21,15 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-GOC_API = "http://127.0.0.1:8001"
+# Mặc định trỏ vào MÁY CHỦ ĐÃ HOST, không phải máy trong nhà.
+#
+# Máy chủ 1506 chạy vĩnh viễn, còn cổng 8001 chỉ sống khi chủ dự án đang mở cửa sổ
+# uvicorn trên máy mình. Lấy 8001 làm mặc định nghĩa là mỗi lần quên bật cửa sổ đó
+# thì trợ lý trả lời "không nối được hệ thống EPL" — hỏng giữa buổi demo.
+#
+# Hai đường vẫn chạm cùng một PostgreSQL, nên dữ liệu là một; khác nhau chỉ ở chỗ
+# đi qua máy chủ nào. Muốn chạy với máy chủ trong nhà thì `--api http://127.0.0.1:8001`.
+GOC_API = "http://senvangsolutions.com:1506"
 TOKEN = ""
 VN = dt.timezone(dt.timedelta(hours=7))
 
@@ -165,6 +173,41 @@ def _tuyen_ten():
     return _dem_lay("tuyen", lambda: {r.get("id"): r.get("name") for r in goi_api("/api/routes")})
 
 
+def _tai_xe_ten():
+    """Mã tài xế → tên. Danh sách lệnh chỉ có driver_id; đọc lên "tài xế DEMO-DRV-010" thì
+    người nghe không biết đó là ai.
+
+    Tên tài xế là phần TÔ THÊM, không phải nội dung chính của danh sách lệnh — nên
+    `/api/drivers` hỏng thì trả bảng rỗng và danh sách lệnh vẫn ra, chỉ thiếu tên. Không bọc
+    lỗi thì một trục trặc ở điểm cuối phụ này làm chết cả công cụ chính.
+    """
+    def lay():
+        try:
+            return {t.get("id"): (t.get("full_name") or t.get("name"))
+                    for t in _muc(goi_api("/api/drivers"))}
+        except LoiAPI:
+            return {}
+    return _dem_lay("tai_xe_ten", lay)
+
+
+def _moc_da_ghi(events):
+    """Các mốc ĐÃ GHI của một lệnh, theo thứ tự thời gian — trả lời 'hàng đi tới đâu rồi'.
+
+    `rut_gon()` loại khoá "events" vì với 20 chuyến thì nó quá thô. Nhưng khi hỏi về ĐÚNG MỘT
+    lệnh thì đây chính là câu trả lời, nên bóc riêng và chỉ giữ ba thứ người ta cần: mốc nào,
+    lúc nào, ai ghi.
+    """
+    TEN_MOC = {"check_in": "Check-in điểm lấy hàng", "pickup": "Lấy hàng",
+               "departure": "Xuất bến", "arrival": "Đến điểm giao",
+               "unloading": "Dỡ hàng", "delivered": "Giao xong"}
+    ra = []
+    for e in sorted(events or [], key=lambda e: str(e.get("time") or "")):
+        ma = e.get("type")
+        ra.append({"ma": ma, "ten": TEN_MOC.get(ma, ma), "luc": e.get("time"),
+                   "nguon": e.get("source"), "ghi_chu": e.get("note")})
+    return ra
+
+
 # ================================================================== các công cụ
 def tong_quan_hom_nay(_=None):
     """Một lần gọi cho câu 'hôm nay thế nào': số liệu chung, DO theo mức khẩn, sự cố đang
@@ -225,6 +268,7 @@ def lenh_giao_hang(a):
     ds = [d for d in ds if _khop(d, a.get("tim"), "id", "customer_id", "customer_name", "route_id",
                                  "origin", "destination", "vehicle_id", "driver_id", "quotation_id")]
     tien = _tien_theo_bao_gia()
+    ten_tai_xe = _tai_xe_ten()
     ra = []
     for d in ds:
         r = chon(d, "id", "customer_id", "quotation_id", "canonical_status", "status", "origin",
@@ -232,11 +276,24 @@ def lenh_giao_hang(a):
                  "pickup_window_start", "pickup_window_end", "delivery_window_start",
                  "delivery_window_end", "seal_no", "cancel_reason")
         r["customer_name"] = d.get("customer_name")
+        r["driver_name"] = ten_tai_xe.get(d.get("driver_id"))
         r["currency_code"] = tien.get(d.get("quotation_id"))
         ra.append(r)
     ra.sort(key=lambda r: r.get("delivery_window_end") or "", reverse=False)
     phan, tong = _cat(ra, a.get("gioi_han"))
-    return {"tong_khop": tong, "tra_ve": len(phan), "lenh": phan}
+    ket = {"tong_khop": tong, "tra_ve": len(phan), "lenh": phan}
+    # `tong_khop` là ĐẾM THÔ theo trạng thái, KHÔNG bằng ô tương ứng trên bảng "Phân tích
+    # lệnh giao hàng" mà người dùng đang nhìn: bảng tách tiếp "quá hạn" và "gần trễ" ra khỏi
+    # "chờ vận chuyển", và để "đã tới chờ ký" riêng khỏi "đang vận chuyển". Không nói ra thì
+    # trợ lý đọc 26 trong khi màn hình hiện 22 — hai con số cùng đúng, người xem không biết
+    # tin ai.
+    if tt != "all":
+        ket["ghi_chu"] = ("tong_khop là số lệnh có trạng thái '%s' (đếm thô). Bảng 'Phân tích "
+                          "lệnh giao hàng' trên màn hình chia nhỏ hơn: 'chờ vận chuyển' đã trừ "
+                          "các lệnh quá hạn và gần trễ, 'đang vận chuyển' không gộp lệnh đã tới "
+                          "chờ ký. Câu hỏi ĐẾM theo nhóm thì gọi phan_tich_lenh_giao_hang để "
+                          "con số khớp đúng màn hình." % tt)
+    return ket
 
 
 def theo_doi_lenh(a):
@@ -255,6 +312,16 @@ def theo_doi_lenh(a):
     cac_hang = [x for x in (goi_api("/api/tracking/control-tower") or {}).get("items", [])
                 if x.get("do_id") == ma]
     ket["chuyen_dang_chay"] = [_dong_thap(x) for x in cac_hang]
+    if cac_hang:
+        x = cac_hang[0]
+        da_qua = _moc_da_ghi(x.get("events"))
+        ket["moc_da_qua"] = da_qua
+        xong = {m["ma"] for m in da_qua}
+        ket["moc_con_lai"] = [m.get("ten") or m.get("ma")
+                              for m in (x.get("milestones") or []) if m.get("ma") not in xong]
+        ket["giai_thich_moc"] = ("moc_da_qua là các mốc tài xế ĐÃ ghi, theo thứ tự thời gian; "
+                                 "moc_con_lai là các mốc còn phải ghi. Đây là câu trả lời cho "
+                                 "'hàng đi tới đâu rồi'.")
     return ket
 
 
@@ -282,9 +349,20 @@ def chuyen_dang_chay(a):
     if a.get("chi_cho_ky"):
         ds = [x for x in ds if x.get("awaiting_pod")]
     phan, tong = _cat(ds, a.get("gioi_han"))
-    return {"tong_khop": tong, "chi_so": bang.get("kpis"),
-            "gps_cu_sau_giay": bang.get("gps_stale_after_seconds"),
-            "chuyen": [_dong_thap(x) for x in phan]}
+    ra = {"tong_khop": tong, "chi_so": bang.get("kpis"),
+          "gps_cu_sau_giay": bang.get("gps_stale_after_seconds"),
+          "chuyen": [_dong_thap(x) for x in phan]}
+    # Lệch tuyến: máy chủ có trường deviation_km nhưng chỉ đo được khi có GPS thật. Bộ demo
+    # chạy GPS mô phỏng nên trường này trống ở mọi dòng — nói thẳng, để mô hình trả lời
+    # "chưa có số đo" thay vì "không có công cụ" (đo 13/09, câu C6).
+    co_do = [x for x in ds if x.get("deviation_km") is not None]
+    if ds and not co_do:
+        ra["lech_tuyen"] = ("Chưa có số đo lệch tuyến cho chuyến nào: GPS đang ở chế độ mô phỏng, "
+                            "độ lệch km chỉ tính được khi có GPS thật từ xe.")
+    elif co_do:
+        ra["lech_tuyen"] = [chon(x, "do_id", "trip_id", "vehicle_id", "deviation_km")
+                            for x in sorted(co_do, key=lambda x: -float(x.get("deviation_km") or 0))[:10]]
+    return ra
 
 
 def su_co(a):
@@ -431,17 +509,63 @@ def doanh_thu(a):
     d = goi_api("/api/tms/reporting/transport-revenue", {
         "date_from": a.get("tu_ngay"), "date_to": a.get("den_ngay"),
         "customer_id": a.get("customer_id"), "vehicle_id": a.get("vehicle_id"),
-        "currency_code": a.get("currency_code")})
-    return rut_gon(d, toi_da_muc=25)
+        "currency_code": a.get("currency_code")}) or {}
+    du_lieu = d.get("data") if isinstance(d.get("data"), dict) else d
+    bieu = du_lieu.get("charts") or {}
+    # Bóc sẵn các nhóm mà máy chủ đã tổng hợp. Trước đây trả nguyên khối `charts` thô nên mô
+    # hình không nhận ra là mình ĐÃ CÓ lợi nhuận theo tuyến / theo khách — đo 13/09: hỏi
+    # "tuyến nào lợi nhuận cao nhất" nó trả lời "không có công cụ tổng hợp theo tuyến", hỏi
+    # "doanh thu theo khách tháng này" nó hỏi ngược lại tên khách.
+    def nhom(ten):
+        return [chon(x, "label", "revenue", "cost", "gross_profit", "trip_count", "value")
+                for x in (bieu.get(ten) or [])[:25]]
+    hang = du_lieu.get("rows") or []
+    return {
+        "ghi_chu": "Mọi số tiền trong tong/theo_khach/theo_tuyen/xu_huong là VNĐ đã quy đổi "
+                   "(tiền chức năng). theo_tien_te là doanh thu gốc theo từng đồng tiền.",
+        "tong": chon(du_lieu.get("summary") or {}, "recognized_revenue", "approved_cost",
+                     "gross_profit", "margin_percent", "trip_count", "currency_code"),
+        "theo_khach": nhom("by_customer"),
+        "theo_tuyen": nhom("by_route"),
+        "theo_loai_hang": nhom("by_cargo"),
+        "theo_tien_te": nhom("by_currency"),
+        "xu_huong_theo_ngay": nhom("trend"),
+        "so_chuyen": len(hang),
+        "chuyen": [chon(h, "do_id", "trip_id", "customer_name", "origin", "destination",
+                        "departure_date", "currency_code", "revenue_functional",
+                        "approved_cost_functional", "gross_profit", "margin_percent",
+                        "driver_name", "vehicle_code") for h in hang[:25]],
+    }
 
 
 def ho_so_hoan_tat(a):
     d = goi_api("/api/handover/delivery-orders")
     ds = _muc(d)
+    ten_khach = _khach_hang_ten()
+    # Máy chủ chỉ trả customer_id. Mô hình (và người đọc) cần TÊN khách, nếu không câu trả
+    # lời toàn mã DEMO-CUS-… — đã đo thấy ở câu I3/I5 ngày 13/09.
+    ds = [dict(h, customer_name=ten_khach.get(h.get("customer_id"))) for h in ds]
+    # Độ lệch giá báo ↔ giá chốt nằm sẵn trong cùng một dòng (selling_price và
+    # final_selling_price) nhưng phải TRỪ mới thấy. Không tính sẵn thì mô hình nhìn hai cột
+    # rời rạc và kết luận "không so sánh được" — đo 13/09, câu I7.
+    for h in ds:
+        try:
+            bao = float(h.get("selling_price") or 0)
+            chot = float(h.get("final_selling_price") or 0)
+        except (TypeError, ValueError):
+            continue
+        h["lech_gia"] = round(chot - bao, 2)
+        h["co_lech_gia"] = abs(chot - bao) > 0.005
     ds = [h for h in ds if _khop(h, a.get("tim"), "do_id", "customer_id", "customer_name",
                                  "route_name", "quotation_id")]
+    if a.get("chi_lech_gia"):
+        ds = [h for h in ds if h.get("co_lech_gia")]
     phan, tong = _cat(ds, a.get("gioi_han"))
     return {"tong_khop": tong, "ghi_chu": (d or {}).get("message"),
+            "so_ho_so_lech_gia": sum(1 for h in ds if h.get("co_lech_gia")),
+            "giai_thich_lech_gia": "lech_gia = final_selling_price − selling_price, tính bằng "
+                                   "currency của chính hồ sơ đó. Dương là khách trả thêm "
+                                   "(phụ phí), âm là giảm giá khi chốt.",
             "ho_so": [rut_gon(h, toi_da_muc=10) for h in phan]}
 
 
@@ -512,24 +636,33 @@ CONG_CU = [
                "chung chung kiểu 'hôm nay thế nào', 'có gì cần lo', 'tình hình'.",
          tham_so={}),
     dict(ten="phan_tich_lenh_giao_hang", chay=phan_tich_lenh_giao_hang,
-         mo_ta="Lệnh giao hàng (DO) chia theo mức khẩn kèm mã từng lệnh: quá hạn, thiếu hạn, "
-               "gần trễ (24 giờ tới), chờ vận chuyển, đang vận chuyển, gặp sự cố.", tham_so={}),
+         mo_ta="ĐÂY LÀ NGUỒN SỐ LIỆU CHO MỌI CÂU ĐẾM lệnh giao hàng — nó chính là bảng 'Phân "
+               "tích lệnh giao hàng' người dùng đang nhìn, nên con số trả về khớp đúng màn hình. "
+               "Chia theo mức khẩn kèm mã từng lệnh: quá hạn, thiếu hạn, gần trễ (24 giờ tới), "
+               "chờ vận chuyển, đang vận chuyển, hoàn thành, gặp sự cố. Dùng cho 'bao nhiêu lệnh "
+               "đang chạy', 'còn bao nhiêu lệnh chờ điều phối', 'bao nhiêu lệnh đã hoàn tất'.",
+         tham_so={}),
     dict(ten="lenh_giao_hang", chay=lenh_giao_hang,
-         mo_ta="Danh sách lệnh giao hàng (DO) kèm khách, tuyến, khung giờ, giá và MÃ TIỀN TỆ của "
-               "báo giá gốc, xe và tài xế đã gán.",
+         mo_ta="DANH SÁCH chi tiết lệnh giao hàng (DO) kèm khách, tuyến, khung giờ, giá và MÃ "
+               "TIỀN TỆ của báo giá gốc, xe và tài xế đã gán. Dùng khi cần LIỆT KÊ hoặc tra một "
+               "nhóm lệnh cụ thể. Câu hỏi chỉ cần CON SỐ theo nhóm thì dùng "
+               "phan_tich_lenh_giao_hang — số của công cụ này là đếm thô theo trạng thái, không "
+               "bằng ô tương ứng trên bảng.",
          tham_so={"trang_thai": _S("Lọc trạng thái: in_transit gồm cả xe đã tới chờ ký (arrived)",
                                    enum=["all", "pending", "in_transit", "arrived", "delivered", "cancelled"]),
                   "tim": _S("Chuỗi tìm trong mã lệnh, TÊN khách hoặc mã khách, tuyến, xe, tài xế, mã báo giá "
                             "(không phân biệt hoa thường)."),
                   "gioi_han": GIOI_HAN}),
     dict(ten="theo_doi_lenh", chay=theo_doi_lenh,
-         mo_ta="Chi tiết MỘT lệnh giao hàng: hồ sơ lệnh, vết GPS và mốc đã ghi, chuyến đang chở "
-               "nó (tài xế, xe, mốc kế tiếp, ETA, sự cố).",
+         mo_ta="Chi tiết MỘT lệnh giao hàng: hồ sơ lệnh, vết GPS, DANH SÁCH MỐC ĐÃ QUA kèm giờ "
+               "ghi (moc_da_qua) và mốc còn lại (moc_con_lai), chuyến đang chở nó (tài xế, xe, "
+               "mốc kế tiếp, ETA, sự cố). Dùng cho 'lệnh X đã chạy chưa', 'hàng tới đâu rồi', "
+               "'đã qua những mốc nào', 'bao giờ tới'.",
          tham_so={"do_id": _S("Mã lệnh, ví dụ DO-2026-0050-DO01")}, bat_buoc=["do_id"]),
     dict(ten="chuyen_dang_chay", chay=chuyen_dang_chay,
          mo_ta="Tháp kiểm soát: mọi chuyến ĐANG CHẠY với tài xế, xe, mốc kế tiếp, ETA, trễ hạn, "
-               "chờ ký POD, tình trạng GPS, sự cố. Dùng cho 'xe nào đang ở đâu', 'chuyến nào trễ', "
-               "'tài xế X đang chở gì'.",
+               "chờ ký POD, tình trạng GPS, sự cố, độ lệch tuyến (deviation_km). Dùng cho 'xe nào "
+               "đang ở đâu', 'chuyến nào trễ', 'tài xế X đang chở gì', 'có chuyến nào lệch tuyến'.",
          tham_so={"tim": TIM, "chi_tre": _B("Chỉ lấy chuyến đã trễ hạn giao"),
                   "chi_cho_ky": _B("Chỉ lấy chuyến đã tới nơi, chờ ký nhận POD"),
                   "gioi_han": GIOI_HAN}),
@@ -542,8 +675,10 @@ CONG_CU = [
     dict(ten="bao_gia", chay=bao_gia,
          mo_ta="Báo giá cước: khách, tuyến, loại xe, giá bán, giá thành, biên lợi nhuận, TIỀN TỆ, "
                "hạn hiệu lực, trạng thái (draft nháp · pending_approval chờ duyệt · sent đã gửi "
-               "khách · split khách đã chấp nhận và đã tách DO · rejected khách từ chối). Kèm tóm "
-               "lược: đang mở, chờ khách, hết hạn trong 7 ngày, biên dưới ngưỡng, tỉ lệ chốt.",
+               "khách · split khách đã chấp nhận và đã tách DO · rejected khách từ chối). Kèm khối "
+               "`tom_luoc`: dang_mo, cho_khach_phan_hoi, het_han_trong_7_ngay, bien_duoi_nguong, "
+               "ty_le_chot_30_ngay. LƯU Ý: 'đang mở' KHÔNG phải một trạng thái lọc được — lấy con "
+               "số tom_luoc.dang_mo, đừng lọc trang_thai rồi đếm.",
          tham_so={"trang_thai": _S("Lọc trạng thái", enum=["all", "draft", "pending_approval",
                                                             "sent", "split", "rejected", "expired"]),
                   "het_han_trong_ngay": _I("Chỉ lấy báo giá còn mở sẽ hết hạn trong N ngày tới"),
@@ -588,14 +723,27 @@ CONG_CU = [
                                                             "completed", "cancelled"]),
                   "tim": TIM, "gioi_han": GIOI_HAN}),
     dict(ten="doanh_thu", chay=doanh_thu,
-         mo_ta="Báo cáo doanh thu vận tải theo chuyến đã hoàn tất: doanh thu, giá thành, lãi gộp, "
-               "biên; theo ngày, khách, tuyến, loại hàng, tiền tệ. Lọc theo khoảng ngày (YYYY-MM-DD).",
+         mo_ta="Báo cáo doanh thu vận tải của các chuyến đã hoàn tất, ĐÃ TỔNG HỢP SẴN theo khách "
+               "(theo_khach), theo tuyến (theo_tuyen), theo loại hàng, theo tiền tệ và theo ngày — "
+               "mỗi nhóm có doanh thu, giá thành, lãi gộp, số chuyến. Danh sách `chuyen` còn cho "
+               "lãi gộp và biên % CỦA TỪNG LỆNH, nên xếp hạng được: 'lệnh nào lãi cao nhất / thấp "
+               "nhất', 'chuyến nào lỗ'. GỌI NGAY công cụ này cho 'doanh thu theo khách', 'tuyến "
+               "nào lợi nhuận cao nhất', 'khách nào đem lại nhiều tiền nhất', 'lãi gộp tháng này' "
+               "— không cần hỏi lại tên khách. Không truyền ngày thì lấy toàn bộ; lọc theo khoảng "
+               "ngày YYYY-MM-DD nếu câu hỏi có mốc thời gian.",
          tham_so={"tu_ngay": _S("Từ ngày YYYY-MM-DD"), "den_ngay": _S("Đến ngày YYYY-MM-DD"),
                   "customer_id": _S("Mã khách"), "vehicle_id": _S("Biển số xe"),
                   "currency_code": _S("Mã tiền tệ", enum=["VND", "USD", "THB", "LAK"])}),
     dict(ten="ho_so_hoan_tat", chay=ho_so_hoan_tat,
-         mo_ta="Hồ sơ đã hoàn tất giao hàng (đã ký POD, đã chốt giá) — bộ số liệu bàn giao cho "
-               "kế toán.", tham_so={"tim": TIM, "gioi_han": GIOI_HAN}),
+         mo_ta="Hồ sơ đã hoàn tất giao hàng (đã ký POD, đã chốt giá) — ĐÂY CHÍNH LÀ hàng chờ bàn "
+               "giao cho kế toán, nên câu 'bao nhiêu hồ sơ chờ bàn giao kế toán' trả lời bằng "
+               "tong_khop của công cụ này. Mỗi hồ sơ có giá báo (selling_price), giá chốt "
+               "(final_selling_price), "
+               "phụ phí khách trả và ĐỘ LỆCH đã tính sẵn (lech_gia, co_lech_gia). Dùng cho 'hồ sơ "
+               "nào lệch giữa giá báo và giá chốt', 'lệnh nào khách trả thêm'.",
+         tham_so={"tim": TIM,
+                  "chi_lech_gia": _B("Chỉ lấy hồ sơ có giá chốt khác giá báo"),
+                  "gioi_han": GIOI_HAN}),
     dict(ten="chi_tiet_hoan_tat", chay=chi_tiet_hoan_tat,
          mo_ta="Chi tiết hồ sơ hoàn tất của MỘT lệnh: giá cuối, phụ phí khách trả, giá thành, lợi "
                "nhuận, từng khoản thu chi kèm Acc code, POD.",

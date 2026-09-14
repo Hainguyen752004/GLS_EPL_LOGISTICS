@@ -87,7 +87,8 @@ class LenhGiaoHang(unittest.TestCase):
             "/api/delivery-orders": {"items": [
                 {"id": "DO-1", "customer_id": "C1", "quotation_id": "QT-LAK", "canonical_status": "in_transit",
                  "unit_price": 1728118, "origin": "Vientiane", "destination": "Cửa Lò",
-                 "delivery_window_end": "2026-09-16T16:59:00+00:00", "duong_bo": [[1, 2]]},
+                 "delivery_window_end": "2026-09-16T16:59:00+00:00", "duong_bo": [[1, 2]],
+                 "driver_id": "DRV-1"},
                 {"id": "DO-2", "customer_id": "C2", "quotation_id": "QT-VND", "canonical_status": "pending",
                  "unit_price": 1406000, "origin": "Sóng Thần", "destination": "Cát Lái",
                  "delivery_window_end": "2026-09-13T10:00:00+00:00"},
@@ -95,6 +96,7 @@ class LenhGiaoHang(unittest.TestCase):
             "/api/quotations": {"items": [{"id": "QT-LAK", "currency_code": "LAK"},
                                           {"id": "QT-VND", "currency_code": "VND"}]},
             "/api/crm/customers": {"data": [{"id": "C1", "name": "Khách Lào"}, {"id": "C2", "name": "Vinamilk"}]},
+            "/api/drivers": [{"id": "DRV-1", "full_name": "Somsak Phommachanh"}],
         })
 
     def tearDown(self):
@@ -108,6 +110,19 @@ class LenhGiaoHang(unittest.TestCase):
         self.assertEqual(theo_ma["DO-2"]["currency_code"], "VND")
         self.assertEqual(theo_ma["DO-1"]["customer_name"], "Khách Lào")
         self.assertNotIn("duong_bo", theo_ma["DO-1"])
+
+    def test_dong_do_mang_ten_tai_xe_khong_chi_ma(self):
+        """Đọc 'tài xế DEMO-DRV-010' thì người nghe không biết đó là ai."""
+        theo_ma = {d["id"]: d for d in cong_cu.lenh_giao_hang({})["lenh"]}
+        self.assertEqual(theo_ma["DO-1"]["driver_name"], "Somsak Phommachanh")
+
+    def test_api_tai_xe_hong_thi_van_ra_danh_sach_lenh(self):
+        """Tên tài xế là phần tô thêm; nó hỏng không được làm chết cả công cụ."""
+        cong_cu._dem.clear()
+        del cong_cu.goi_api.bang["/api/drivers"]
+        r = cong_cu.lenh_giao_hang({})
+        self.assertEqual(sorted(d["id"] for d in r["lenh"]), ["DO-1", "DO-2"])
+        self.assertIsNone(r["lenh"][0].get("driver_name"))
 
     def test_loc_trang_thai_va_tim(self):
         self.assertEqual([d["id"] for d in cong_cu.lenh_giao_hang({"trang_thai": "pending"})["lenh"]], ["DO-2"])

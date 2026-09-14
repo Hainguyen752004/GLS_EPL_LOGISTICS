@@ -442,7 +442,8 @@
   function kiemSucKhoe() {
     var $t = el('trang-thai-may');
     fetch('/suc-khoe').then(function (r) { return r.json(); }).then(function (g) {
-      if (g.mo_hinh) el('nhan-mo-hinh').textContent = String(g.mo_hinh).replace(/^gemini-/i, 'Gemini ').replace(/-/g, ' ').replace(/\b\w/g, function (x) { return x.toUpperCase(); });
+      // Tên mô hình KHÔNG hiện lên ô hỏi: người dùng nghiệp vụ không cần biết bên
+      // dưới chạy mô hình nào. Muốn xem thì gọi thẳng /suc-khoe.
       var loi = [];
       if (!g.gemini_co_khoa) loi.push(t('thieu_khoa'));
       if (!g.epl_ok) loi.push(t('epl_tat'));

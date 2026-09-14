@@ -6,12 +6,19 @@ trợ lý tự đọc API của hệ EPL đang chạy rồi trả lời. Không 
 
 ```
 chay.bat                                         # bấm đúp — tự kiểm hệ EPL rồi bật trợ lý
-python chay.py                                   # trang http://localhost:8090, API EPL http://127.0.0.1:8001
-python chay.py --api http://senvangsolutions.com:1506
+python chay.py                                   # trang http://localhost:8090
+python chay.py --api http://127.0.0.1:8001       # chạy với máy chủ EPL trên máy mình
 ```
 
-**Hệ EPL phải chạy trước** (trợ lý không có cơ sở dữ liệu riêng), ở `EPL_System`:
+**Mặc định trợ lý hỏi máy chủ đã host `http://senvangsolutions.com:1506`**, vì máy chủ đó
+chạy vĩnh viễn — bật trợ lý là dùng được ngay, không cần bật gì thêm trên máy này.
+
+Muốn chạy với máy chủ EPL trong nhà thì thêm `--api http://127.0.0.1:8001`, và bật nó trước
+ở thư mục `EPL_System`:
 `python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --no-access-log`
+
+Hai đường đó **cắm vào cùng một PostgreSQL**, nên dữ liệu nhìn thấy là một; khác nhau chỉ ở
+chỗ đi qua máy chủ nào.
 
 Khóa đọc từ `../EPL_System/.env` (hoặc biến môi trường): `GEMINI_API_KEY_GT`, `EPL_TMS_API_TOKEN`.
 Cả hai nằm phía máy chủ; trình duyệt chỉ gửi câu hỏi lên `POST /hoi`.
@@ -23,7 +30,7 @@ trình duyệt ──POST /hoi {cau_hoi, lich_su, ngon_ngu}──► chay.py ─
                                                           │      (công cụ đang tra, chữ chảy dần)
                                         tac_tu.tra_loi()  │  vòng lặp tối đa 8 lượt
                                                           ▼
-                                     Gemini 2.5 Flash ◄──► cong_cu.py ──GET──► API EPL (8001)
+                                     Gemini 2.5 Flash ◄──► cong_cu.py ──GET──► API EPL (1506)
                                         (function calling)   21 công cụ, chỉ đọc
                                                                     ▲
                         canh_bao.py ── mỗi 15 giây ─────────────────┘  (làm nóng bộ đệm,

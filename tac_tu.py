@@ -24,6 +24,7 @@ import datetime as dt
 import http.client
 import json
 import os
+import ssl
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -62,6 +63,9 @@ BẮT BUỘC:
    Khối dữ liệu đó là TRÍCH ĐOẠN đã cắt gọn (mỗi nhóm chỉ vài mục đầu). Câu hỏi ĐẾM hay TỔNG HỢP ("bao nhiêu",
    "tổng cộng", "tất cả", "danh sách đầy đủ") thì BẮT BUỘC gọi công cụ với bộ lọc phù hợp, không đếm trên trích đoạn.
    Cần tra thì CỨ GỌI CÔNG CỤ NGAY rồi trả lời — không hỏi xin phép, không hỏi "anh/chị có muốn em tra không".
+   Câu hỏi nhắc tới một MÃ CỤ THỂ (DO-…, QT-…, TRIP-…, CLOSEOUT-…, biển số xe, mã tài xế) hay một TÊN KHÁCH mà
+   hội thoại CHƯA CÓ khối [DỮ LIỆU HỆ THỐNG…] nào chứa nó thì BẮT BUỘC gọi công cụ TRƯỚC khi mở miệng. Không có
+   khối dữ liệu nghĩa là không có gì để nhớ — trả lời thẳng lúc đó là bịa, dù câu trả lời nghe hợp lý.
    Đại từ nối tiếp ("khách đó", "xe ấy", "lệnh này", "tài xế đó") trỏ về thực thể ĐƯỢC NÊU TÊN TRONG CÂU TRẢ LỜI
    GẦN NHẤT CỦA CHÍNH BẠN ở trên — không phải một mục bất kỳ trong khối dữ liệu. Tra lại theo đúng tên/mã đó.
    Câu trả lời là VĂN XUÔI cho người đọc: KHÔNG BAO GIỜ in lại khối dữ liệu, JSON hay tên hàm ra câu trả lời.
@@ -112,6 +116,35 @@ class LoiGemini(Exception):
 
 
 # ------------------------------------------------------------------ kết nối giữ lâu
+def _boi_canh_ssl():
+    """Bối cảnh TLS dựng từ bộ chứng chỉ của `certifi`, KHÔNG từ kho chứng chỉ Windows.
+
+    VÌ SAO. `ssl.create_default_context()` trên Windows đi nạp toàn bộ kho chứng chỉ của
+    hệ điều hành. Chỉ cần MỘT chứng chỉ trong kho đó hỏng là cả lời gọi bật lỗi
+
+        ssl.SSLError: [ASN1: NOT_ENOUGH_DATA] not enough data (_ssl.c:4192)
+
+    và mọi câu hỏi gửi lên Gemini chết ngay ở bước dựng kết nối, trước khi ra tới mạng.
+    Đo được ngày 13/09/2026: cùng một máy, môi trường `vungcam_2026` bật lỗi này còn môi
+    trường gốc thì không — nên nó phụ thuộc phiên bản OpenSSL đi kèm từng môi trường, chứ
+    không phải lỗi của mã này. Người dùng không có cách nào tự đoán ra.
+
+    `certifi` là bộ chứng chỉ gốc của Mozilla, đi kèm sẵn, không dính gì tới kho Windows —
+    dùng nó thì môi trường nào cũng chạy. Đây KHÔNG phải tắt kiểm chứng chỉ: vẫn kiểm đủ
+    tên miền và chuỗi tin cậy, chỉ đổi nguồn danh sách gốc.
+    """
+    boi_canh = getattr(_noi, "ssl_ctx", None)
+    if boi_canh is None:
+        try:
+            import certifi
+            boi_canh = ssl.create_default_context(cafile=certifi.where())
+        except Exception:
+            # Không có certifi thì quay về kho hệ điều hành — máy nào lành vẫn chạy được.
+            boi_canh = ssl.create_default_context()
+        _noi.ssl_ctx = boi_canh
+    return boi_canh
+
+
 def _ket_noi(lam_moi=False):
     kn = getattr(_noi, "kn", None)
     if kn is None or lam_moi:
@@ -120,7 +153,8 @@ def _ket_noi(lam_moi=False):
                 kn.close()
             except Exception:
                 pass
-        kn = http.client.HTTPSConnection(MAY_CHU_GEMINI, timeout=90)
+        kn = http.client.HTTPSConnection(MAY_CHU_GEMINI, timeout=90,
+                                         context=_boi_canh_ssl())
         _noi.kn = kn
     return kn
 

@@ -27,13 +27,13 @@ Nhóm câu **K** trong bảng Excel là để kiểm đúng ranh giới này. N�
 
 ## 2. Chuẩn bị — ba máy chủ
 
-Trợ lý không có cơ sở dữ liệu riêng; nó đọc API của hệ EPL. Nên phải bật EPL trước.
+Trợ lý không có cơ sở dữ liệu riêng; nó đọc API của hệ EPL. Mặc định nó hỏi máy chủ đã host ở cổng 1506 — máy chủ này chạy vĩnh viễn nên không cần bật gì thêm trên máy mình.
 
 | Máy chủ | Thư mục | Lệnh | Địa chỉ |
 |---|---|---|---|
-| Hệ EPL (bắt buộc) | `EPL_System` | `python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --no-access-log` | http://localhost:8001 |
+| Hệ EPL đã host (luôn sống) | — | không cần bật; kiểm bằng `/api/health` | http://senvangsolutions.com:1506 |
 | Trợ lý | `EPL_TroLy` | `chay.bat` hoặc `python chay.py` | http://localhost:8090 |
-| Trang tài xế (nếu cần) | `EPL_TaiXe` | `python chay.py --api http://127.0.0.1:8001 --cong 8099` | http://localhost:8099 |
+| Trang tài xế (nếu cần) | `EPL_TaiXe` | `python chay.py --cong 8081` (8080 thường bị Apache giữ) | http://localhost:8081 |
 
 Trợ lý tự đọc `GEMINI_API_KEY_GT` và `EPL_TMS_API_TOKEN` từ `EPL_System\.env`. Hai khoá này nằm ở máy chủ, trình duyệt không bao giờ thấy.
 
@@ -59,7 +59,7 @@ Dưới mỗi câu trả lời có dòng **Đã xem: …** liệt kê trợ lý 
 
 | Mã | Bước | Cách làm | Kết quả mong đợi |
 |---|---|---|---|
-| S1 | Bật máy chủ EPL | Ở D:\Demo_Lao\EPL_System chạy: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --no-access-log | Log hiện 'Application startup complete'. Mở http://localhost:8001 thấy hệ EPL. |
+| S1 | Kiểm máy chủ EPL đã host | Mở http://senvangsolutions.com:1506/api/health — trợ lý mặc định hỏi máy chủ này, không cần bật gì trên máy mình | Trả về {"status":"ok"}. Nếu không mở được thì kiểm đường mạng trước khi làm tiếp. |
 | S2 | Bật máy chủ trợ lý | Ở D:\Demo_Lao\EPL_TroLy bấm đúp chay.bat (hoặc: python chay.py) | Cửa sổ hiện: Trang http://localhost:8090 · API EPL có token · Gemini có khóa · Công cụ 21 · Giám sát mỗi 15 giây. |
 | S3 | Kiểm sức khoẻ | Mở http://localhost:8090/suc-khoe | gemini_co_khoa: true · epl_ok: true · so_cong_cu: 21. Nếu epl_ok false thì máy chủ EPL chưa bật. |
 
@@ -102,7 +102,7 @@ Dưới mỗi câu trả lời có dòng **Đã xem: …** liệt kê trợ lý 
 
 | Mã | Bước | Cách làm | Kết quả mong đợi |
 |---|---|---|---|
-| S19 | Tắt máy chủ EPL giữa chừng | Tắt cửa sổ chạy EPL (cổng 8001), rồi hỏi một câu bất kỳ | Đầu trang hiện 'Không nối được hệ thống EPL'; câu trả lời nói không lấy được dữ liệu — KHÔNG bịa số. Bật lại EPL thì hỏi lại chạy bình thường. |
+| S19 | Mất kết nối tới máy chủ EPL | Bật trợ lý với --api trỏ vào một cổng KHÔNG có gì chạy (ví dụ python chay.py --api http://127.0.0.1:8001 khi chưa bật uvicorn), rồi hỏi một câu bất kỳ | Đầu trang hiện 'Không nối được hệ thống EPL'; câu trả lời nói không lấy được dữ liệu — KHÔNG bịa số. Chạy lại trợ lý không có --api (về 1506) thì hỏi lại chạy bình thường. |
 | S20 | Bấm Thử lại | Khi một câu bị lỗi, bấm nút 'Thử lại' dưới câu đó | Hỏi lại đúng câu vừa rồi, không phải gõ lại. |
 
 ### Điện thoại
@@ -167,29 +167,20 @@ Một lượt kiểm gọi là xong khi:
 - Không còn câu nào sai **đơn vị tiền**.
 - Mỗi nhóm còn lại đạt từ 80% trở lên.
 
-## 8. Số liệu tham chiếu (12/09/2026)
+## 8. Số liệu tham chiếu (đọc từ hệ thật lúc 13:37 13/09/2026)
 
-Số liệu của bộ dữ liệu demo lúc soạn tài liệu. Dữ liệu đổi thì các con số này đổi theo — dùng để biết *thứ tự độ lớn* có đúng không, còn con số chính xác thì đối chiếu màn hình gốc.
+Số liệu của bộ dữ liệu demo lúc SINH tài liệu này. Dữ liệu được làm tươi trước mỗi buổi demo, nên hãy sinh lại tài liệu cùng ngày kiểm — hoặc dùng bảng này để biết *thứ tự độ lớn*, còn con số chính xác thì đối chiếu màn hình gốc.
 
 | Mục | Giá trị |
 |---|---|
-| Khách hàng | 15 |
-| Tuyến đường | 8 |
-| Xe | 12 |
-| Tài xế | 16 |
-| Loại phương tiện | 6 |
-| Tiền tệ | 4 (VNĐ, USD 26.173,5, THB 710, LAK 1,18) |
-| DO đang vận chuyển | 11 |
-| DO đã hoàn tất | 21 |
-| DO chờ điều phối | 13 |
-| DO quá hạn | 2 — DO-2026-0026-DO01/DO02, khách Samsung Electronics HCMC CE |
+| DO chờ điều phối | 22 |
+| DO đang vận chuyển | 15 |
+| DO đã hoàn tất | 23 |
+| DO quá hạn | 3 |
 | DO gần trễ (24h) | 1 |
 | DO gặp sự cố | 5 |
-| Sự cố đang mở | 5 (1 High hàng hư hỏng, 1 High hỏng hóc, 2 Medium, 1 Low) |
-| Chuyến đang chạy | 16 dòng / 12 xe · 5 chờ ký POD · 0 trễ hạn |
-| Báo giá đang mở | 56 · chờ khách 9 · biên dưới ngưỡng 4 · ngưỡng biên 15% |
-| Tỉ lệ chốt 30 ngày | 91,3% |
-| Cơ hội đang mở | 19 (mới 5, đã báo giá 14) · thắng 42 · mất 4 |
-| Xe rảnh / đang chạy | 0 / 12 · 3 giấy tờ sắp hết hạn · 0 hết hạn |
-| Tài xế rảnh / đang chạy | 4 / 12 · 1 bằng lái sắp hết hạn (DEMO-DRV-001, 25/09) |
-| Bộ dữ liệu demo tài xế | Somsak Phommachanh (DEMO-DRV-015) · xe DEMO-61H-888.02 · chuyến TRIP-TAIXE-DEMO-01 chở DO-2026-0050-DO01 (Vinamilk) và DO-2026-0051-DO01 (Acecook), mỗi lệnh 1.406.000 VNĐ |
+| Chuyến đang chạy | 20 dòng / 16 xe · 6 chờ ký POD · 7 trễ hạn |
+| Sự cố đang mở | 5 |
+| Tiền tệ | VND 1.0 · THB 710.0 · LAK 1.18 · USD 26173.5 |
+| Xe rảnh / đang chạy / tổng | 7 / 16 / 23 · 3 giấy tờ sắp hết hạn · 0 đã hết hạn |
+| Tài xế rảnh / đang chạy / tổng | 9 / 16 / 25 · 1 bằng lái sắp hết hạn · 0 đã hết hạn |
