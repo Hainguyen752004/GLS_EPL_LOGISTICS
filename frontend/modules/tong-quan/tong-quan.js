@@ -31,7 +31,7 @@
 
     const cy = d.chu_y || [];
     root.querySelector('#tq-chu-y').innerHTML = cy.length
-      ? `<div class="tq-chu-y">${cy.map(c => `<div data-doc="${esc(c.doc_no || '')}">${esc(NN.t('attention_' + c.loai, c))}</div>`).join('')}</div>`
+      ? `<div class="tq-chu-y">${cy.map(c => `<div data-doc="${esc(c.doc_no || '')}">${NN.h('attention_' + c.loai, c)}</div>`).join('')}</div>`
       : `<div class="muted small">${NN.h('none_attention')}</div>`;
     root.querySelectorAll('.tq-chu-y div[data-doc]').forEach(el => el.addEventListener('click', () => {
       if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe');

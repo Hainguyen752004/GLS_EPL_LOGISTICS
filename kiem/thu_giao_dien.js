@@ -78,6 +78,9 @@ async function main() {
     const chu = d.body.textContent;
     const lo_khoa = chu.match(/\b(nav|title|sec|stt|a|s|c|r|hint|wf|sg|st|x|fp|pm|u|pt|acct)_[a-z0-9_]+\b/g) || [];
     assert.deepStrictEqual(lo_khoa, [], 'ngôn ngữ ' + ng + ' lộ khoá thô: ' + lo_khoa.slice(0, 5));
+    // Thẻ HTML trong từ điển phải được DỰNG, không hiện ra chữ — lỗi thật ngày 14/09: tiêu đề in "<span class="sub">"
+    assert.ok(!/<(span|small|b|br)\b/.test(chu), 'ngôn ngữ ' + ng + ' hiện thẻ HTML ra chữ: ' + (chu.match(/<(span|small|b|br)[^>]*>/) || [''])[0]);
+    assert.ok(!/ \/ [຀-໿]/.test(d.getElementById('pageTitle').textContent), 'tiêu đề trang không được nối hai thứ tiếng bằng " / "');
     if (ng === 'lo') assert.ok(/[຀-໿]/.test(goc().textContent), 'chọn tiếng Lào mà không thấy chữ Lào');
     if (ng === 'both') assert.ok(goc().querySelector('.lo-sub'), 'chế độ VI+ລາວ phải có dòng Lào phụ');
     console.log(`  ✓ ngôn ngữ ${ng.padEnd(4)} không lộ khoá`);

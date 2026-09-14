@@ -46,21 +46,26 @@
 
   const NN = EPL.NN = {
     get lang() { return lang; },
-    /** Chữ thuần. Chế độ vi+lo → "vi / lo". Không có khoá → trả chính khoá để lộ ra mà sửa. */
+    /** Chữ THUẦN (cho placeholder, title, toast): bỏ thẻ HTML trong từ điển. Chế độ vi+lo → "vi / lo".
+     *  Không có khoá → trả chính khoá để lộ ra mà sửa. */
     t(khoa, thay) {
       const m = TU_DIEN[khoa];
       let s;
       if (!m) s = khoa;
       else if (lang === 'both') s = (m.vi || '') + (m.lo ? ' / ' + m.lo : '');
       else s = m[lang] || m.vi || khoa;
+      s = s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
       return thay ? s.replace(/\{(\w+)\}/g, (_, k) => (thay[k] === undefined ? '' : thay[k])) : s;
     },
-    /** HTML. Chế độ vi+lo → dòng Việt, dưới là dòng Lào nhỏ. */
+    /** HTML. Chuỗi trong từ điển là của mình, có thẻ <span class="sub">, <small> — TRẢ NGUYÊN, không thoát
+     *  (đã có lần thoát nhầm và tiêu đề hiện chữ "<span class="sub">" ra màn). Giá trị thay {x} thì thoát,
+     *  vì đó là dữ liệu (mã phiếu, con số). Chế độ vi+lo → dòng Việt, dưới là dòng Lào nhỏ. */
     h(khoa, thay) {
       const m = TU_DIEN[khoa];
       if (!m) return esc(khoa);
-      if (lang === 'both') return esc(m.vi || '') + (m.lo ? '<span class="lo-sub" lang="lo">' + esc(m.lo) + '</span>' : '');
-      return esc(NN.t(khoa, thay));
+      const th = (s) => thay ? s.replace(/\{(\w+)\}/g, (_, k) => esc(thay[k] === undefined ? '' : thay[k])) : s;
+      if (lang === 'both') return th(m.vi || '') + (m.lo ? '<span class="lo-sub" lang="lo">' + th(m.lo) + '</span>' : '');
+      return th(m[lang] || m.vi || khoa);
     },
     /** Áp mọi data-i18n trong một gốc DOM. */
     apDung(root) {
