@@ -1,0 +1,16 @@
+<!-- Tiền chuyến & tiền nước tài xế — ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນ້ຳ. Gom từ mục IV của phiếu theo tháng, trả cùng lương. -->
+<div class="toolbar">
+  <div class="field"><label data-i18n="month"></label><input type="month" id="ttx-thang"></div>
+  <div class="grow"></div>
+  <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>
+</div>
+<div class="card">
+  <div class="hd"><h3 data-i18n="nav_driver"></h3><div class="grow"></div><span class="small muted" id="ttx-ky"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th data-i18n="driver"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="trip_money"></th><th class="num" data-i18n="water_money"></th><th class="num" data-i18n="phone_money"></th><th class="num" data-i18n="vn_money"></th><th class="num" data-i18n="x_food"></th><th class="num" data-i18n="total_lak"></th><th data-i18n="pay_with"></th><th data-i18n="status"></th></tr></thead>
+      <tbody id="ttx-than"></tbody>
+      <tfoot id="ttx-chan"></tfoot>
+    </table>
+  </div>
+</div>

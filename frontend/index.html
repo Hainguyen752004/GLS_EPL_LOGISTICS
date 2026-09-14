@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EPL Transport · ຂົນສົ່ງ EPL</title>
+<link rel="icon" href="img/logo-epl.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/chung.css">
+</head>
+<body>
+
+<!-- ===== Đăng nhập ===== -->
+<div class="login" id="login">
+  <div class="box">
+    <div class="l">
+      <img class="logo" src="img/logo-epl.jpg" alt="EPL">
+      <h2 data-i18n="login_title"></h2>
+      <p data-i18n="login_sub"></p>
+    </div>
+    <div class="r">
+      <div class="lang lang-login" role="group" aria-label="Language"></div>
+      <h3 data-i18n="login_h"></h3>
+      <span class="small muted" data-i18n="login_demo"></span>
+      <div class="field"><label data-i18n="username"></label><input id="lgU" autocomplete="username"></div>
+      <div class="field"><label data-i18n="password"></label><input id="lgP" type="password" autocomplete="current-password"></div>
+      <div class="err" id="lgErr"></div>
+      <button class="btn primary w100" id="lgBtn" data-i18n="login_btn"></button>
+      <div class="small muted mt14" data-i18n="quick_pick"></div>
+      <div class="accts" id="acctList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Ứng dụng ===== -->
+<div class="app" id="app" hidden>
+  <aside class="side">
+    <div class="brand">
+      <img class="mark" src="img/logo-epl.jpg" alt="EPL">
+      <h1 data-i18n="brand"></h1>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="foot">
+      <div>SAMKET VILLAGE, SIKHOTTABONG</div>
+      <div>VIENTIANE · 020 5889 9983</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <h2 id="pageTitle"></h2>
+      <div class="grow"></div>
+      <div class="lang" role="group" aria-label="Language"></div>
+      <div class="userbox">
+        <div class="av" id="roleAv"></div>
+        <div><div class="nm" id="uName"></div><div class="rl2" id="uRole"></div></div>
+        <button class="btn sm" id="btnLogout" data-i18n="switch_acct"></button>
+      </div>
+    </header>
+    <main class="page" id="noi-dung"></main>
+  </div>
+</div>
+
+<!-- Hộp thoại trong ứng dụng — không dùng confirm()/alert() của trình duyệt -->
+<dialog id="hop-thoai" class="hop-thoai">
+  <form method="dialog">
+    <h3 id="ht-tieu-de"></h3>
+    <div id="ht-noi-dung" class="ht-noi-dung"></div>
+    <div class="ht-nut">
+      <button class="btn" value="huy" id="ht-huy"></button>
+      <button class="btn primary" value="ok" id="ht-ok"></button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/ngon_ngu.js"></script>
+<script src="js/chung.js"></script>
+</body>
+</html>

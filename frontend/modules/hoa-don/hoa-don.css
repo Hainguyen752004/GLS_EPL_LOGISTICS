@@ -1,0 +1,21 @@
+/* Hoá đơn vận chuyển — bản in A4 */
+.hd-giay{max-width:900px;padding:28px 32px;background:#fff}
+.hd-dau{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:14px}
+.hd-dau>div{display:flex;gap:12px;align-items:center}
+.hd-logo{width:52px;height:52px;border-radius:8px;object-fit:cover}
+.hd-tieu-de{text-align:center;font-size:18px;font-weight:700;margin:6px 0 14px;letter-spacing:.02em}
+.hd-meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;font-size:13px;margin-bottom:14px}
+.hd-meta>div{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line-2);padding:3px 0}
+.hd-meta span:first-child{color:var(--ink-2)}
+.hd-giay h5{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-2)}
+.hd-tong{display:flex;justify-content:flex-end;margin-top:14px;font-size:15px}
+.hd-tong div{border-top:2px solid var(--ink);padding:8px 0 0;min-width:320px;display:flex;justify-content:space-between;font-weight:700}
+.hd-ky{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px;text-align:center;font-size:12.5px}
+.hd-ky .line{height:56px;border-bottom:1px solid var(--ink-3);margin-bottom:6px}
+.hd-tt{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.hd-tt .o{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;font-size:13px}
+.hd-tt .o .r{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line)}
+.hd-tt .o .r.tot{border-bottom:0;border-top:2px solid var(--ink);margin-top:4px;padding-top:6px;font-weight:700}
+.hd-tt .o small{display:block;color:var(--ink-3);font-size:11.5px}
+.hd-mo{opacity:.55}
+@media print{.hd-giay{border:0;padding:0;max-width:none}}

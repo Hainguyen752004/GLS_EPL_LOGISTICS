@@ -1,0 +1,129 @@
+/* Thử giao diện EPL Lào trên jsdom, nối vào MÁY CHỦ THẬT đang chạy (mặc định :8010).
+ *
+ *   node kiem/thu_giao_dien.js [http://127.0.0.1:8010]
+ *
+ * Kiểm: đăng nhập từng vai → nạp đủ 14 module không lỗi → đổi 4 ngôn ngữ không lộ khoá thô
+ * (kiểu "nav_dash") và không còn chữ "undefined" → mở phiếu thật, số trên màn khớp số máy chủ
+ * → vai Bãi không thấy nút kiểm/chi. Không phải bộ kiểm đơn vị: nó cần máy chủ và DB thật.
+ * Dùng jsdom của EPL_System (đã cài).
+ */
+const path = require('path');
+const assert = require('assert');
+const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
+
+const GOC = process.argv[2] || 'http://127.0.0.1:8010';
+const MODULES = ['tong-quan', 'theo-doi', 'phieu-xuat-xe', 'hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap',
+  'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'quy-trinh', 'tai-khoan'];
+
+/** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
+class ChiNoiBo extends ResourceLoader {
+  fetch(url, options) {
+    if (!url.startsWith(GOC)) return Promise.resolve(Buffer.from(''));
+    return super.fetch(url, options);
+  }
+}
+
+const cho = (ms) => new Promise(r => setTimeout(r, ms));
+async function choDen(dk, mo_ta, toi_da = 20000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < toi_da) { if (dk()) return; await cho(60); }
+  throw new Error('Hết giờ chờ: ' + mo_ta);
+}
+
+async function main() {
+  const html = await (await fetch(GOC + '/')).text();
+  const dom = new JSDOM(html, { url: GOC + '/', runScripts: 'dangerously', resources: new ChiNoiBo(), pretendToBeVisual: true });
+  const w = dom.window;
+  // jsdom thiếu fetch và <dialog>.showModal — vá tối thiểu
+  w.fetch = (u, o) => fetch(new URL(u, GOC).href, o);
+  w.HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', ''); };
+  w.HTMLDialogElement.prototype.close = function (v) { this.returnValue = v || this.returnValue; this.removeAttribute('open'); this.dispatchEvent(new w.Event('close')); };
+  const loiJS = []; w.addEventListener('error', e => loiJS.push(String(e.message || e.error)));
+  w.console.error = (...a) => loiJS.push(a.join(' '));
+  const d = w.document;
+  /** Đổi hash rồi chờ đúng lượt nạp module đó xong (EPL.sanSang), không đoán bằng setTimeout. */
+  async function di(hash) {
+    const cu = w.EPL.sanSang;
+    if (w.location.hash === hash) w.dispatchEvent(new w.HashChangeEvent('hashchange'));   // cùng hash thì trình duyệt không bắn sự kiện
+    else w.location.hash = hash;
+    await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash); await w.EPL.sanSang; await cho(80);
+  }
+  const goc = () => d.getElementById('noi-dung');
+
+  await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập tải tài khoản mẫu');
+  console.log('✓ màn đăng nhập: %d tài khoản mẫu', d.getElementById('acctList').children.length);
+
+  // 1. đăng nhập admin, đi hết module
+  await w.EPL.AUTH.dangNhap('admin', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào ứng dụng');
+  await w.EPL.sanSang;
+  const nav = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  assert.deepStrictEqual(nav, MODULES, 'thanh điều hướng phải đủ 14 module đúng thứ tự');
+  console.log('✓ admin: thanh điều hướng đủ %d module', nav.length);
+
+  for (const m of MODULES) {
+    await di('#/' + m);
+    const chu = goc().textContent;
+    assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
+    assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
+    assert.ok(goc().querySelector('table, .kpis, .px-phieu'), 'module ' + m + ' không có bảng/thẻ nào');
+    console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
+  }
+  assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
+
+  // 2. bốn ngôn ngữ trên màn phiếu — không lộ khoá thô, không lai
+  await di('#/phieu-xuat-xe');
+  for (const ng of ['vi', 'lo', 'en', 'both']) {
+    w.EPL.NN.dat(ng); await cho(150);
+    const chu = d.body.textContent;
+    const lo_khoa = chu.match(/\b(nav|title|sec|stt|a|s|c|r|hint|wf|sg|st|x|fp|pm|u|pt|acct)_[a-z0-9_]+\b/g) || [];
+    assert.deepStrictEqual(lo_khoa, [], 'ngôn ngữ ' + ng + ' lộ khoá thô: ' + lo_khoa.slice(0, 5));
+    if (ng === 'lo') assert.ok(/[຀-໿]/.test(goc().textContent), 'chọn tiếng Lào mà không thấy chữ Lào');
+    if (ng === 'both') assert.ok(goc().querySelector('.lo-sub'), 'chế độ VI+ລາວ phải có dòng Lào phụ');
+    console.log(`  ✓ ngôn ngữ ${ng.padEnd(4)} không lộ khoá`);
+  }
+  w.EPL.NN.dat('vi'); await cho(100);
+
+  // 3. số trên màn phiếu khớp máy chủ
+  const dsPhieu = await (await fetch(GOC + '/api/trips', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
+  const p0 = dsPhieu.find(p => p.doc_no === 'T4-0428-08/EPL');
+  await di('#/phieu-xuat-xe?id=' + p0.id);
+  assert.strictEqual(d.getElementById('px-doc-no').value, 'T4-0428-08/EPL', 'phải mở đúng phiếu T4-0428');
+  const val = d.getElementById('v-val-usd').textContent;
+  assert.ok(val.startsWith(w.EPL.so(p0.tinh.doanh_thu_usd, 2)), 'thành tiền trên màn (' + val + ') phải khớp máy chủ ' + p0.tinh.doanh_thu_usd);
+  const tongChi = d.querySelector('.px-tong .o:nth-child(2) .v').textContent;
+  assert.ok(tongChi.includes(w.EPL.so(p0.tinh.tong_chi_lak)), 'tổng chi trên màn (' + tongChi + ') phải khớp máy chủ ' + p0.tinh.tong_chi_lak);
+  const soDongChi = goc().querySelectorAll('.px-chi tbody tr[data-i]').length;
+  assert.strictEqual(soDongChi, p0.tinh ? (await (await fetch(GOC + '/api/trips/' + p0.id, { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json()).expenses.length : 0, 'số dòng chi trên màn phải bằng máy chủ');
+  console.log('✓ phiếu T4-0428: thành tiền %s · tổng chi khớp · %d dòng chi', val, soDongChi);
+
+  // 3b. xe liên kết: bảng thanh toán chủ xe hiện ra và khớp
+  const pj = dsPhieu.find(p => p.company === 'joint');
+  await di('#/phieu-xuat-xe?id=' + pj.id);
+  assert.ok(goc().querySelector('.px-phieu').classList.contains('is-joint'), 'phiếu xe liên kết phải bật lớp is-joint');
+  const tt = goc().querySelector('.px-tt'); assert.ok(tt, 'phiếu xe liên kết phải có bảng thanh toán chủ xe');
+  assert.ok(tt.textContent.includes(w.EPL.so(pj.tinh.tra_chu_xe_usd, 2)), 'tiền trả chủ xe trên màn phải khớp máy chủ ' + pj.tinh.tra_chu_xe_usd);
+  console.log('✓ phiếu xe liên kết %s: trả chủ xe %s USD khớp máy chủ', pj.doc_no, w.EPL.so(pj.tinh.tra_chu_xe_usd, 2));
+
+  // 4. vai Bãi: không thấy Tài khoản, không thấy nút kiểm/chi
+  w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi'); await w.EPL.sanSang;
+  assert.ok(![...d.querySelectorAll('#nav button')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
+  await di('#/phieu-xuat-xe?id=' + dsPhieu.find(p => p.transport_status === 'dispatched').id);
+  const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
+  assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);
+  console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
+
+  // 5. vai kho nhiên liệu: chỉ mục III có nút
+  w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khonl', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào với vai kho NL'); await w.EPL.sanSang;
+  await di('#/phieu-xuat-xe?id=' + dsPhieu.find(p => p.transport_status === 'dispatched').id);
+  const mucCoNut = [...new Set([...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.mucAct))];
+  assert.deepStrictEqual(mucCoNut, ['fuel'], 'vai kho nhiên liệu chỉ được có nút ở mục III: ' + mucCoNut);
+  console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
+
+  assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
+  console.log('\nTHỦ GIAO DIỆN: ĐẠT — 14 module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng');
+  w.close();
+}
+main().catch(e => { console.error('THỬ GIAO DIỆN: HỎNG —', e.message); process.exit(1); });

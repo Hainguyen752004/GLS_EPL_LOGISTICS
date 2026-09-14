@@ -1,0 +1,10 @@
+/* Tổng quan */
+.tq-khoi{margin-bottom:16px}
+.tq-hai{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.tq-doc{display:grid;gap:16px;align-content:start}
+.tq-ty-gia{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tq-ty-gia div{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.tq-ty-gia b{display:block;font-size:16px;font-variant-numeric:tabular-nums}
+.tq-chu-y div{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;cursor:pointer}
+.tq-chu-y div:last-child{border-bottom:0} .tq-chu-y div:hover{color:var(--green)}
+@media (max-width:1000px){.tq-hai{grid-template-columns:1fr}}

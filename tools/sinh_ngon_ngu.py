@@ -1,0 +1,224 @@
+# -*- coding: utf-8 -*-
+"""Sinh frontend/js/ngon_ngu.js cho EPL Lào.
+
+Nguồn tiếng Việt và tiếng Lào: T_mau.json — bóc nguyên từ bản giao diện mẫu bên Lào đã duyệt
+(EPL-Transport-UI.html). KHÔNG sửa chữ Lào của họ. Tiếng Anh thêm ở đây. Khoá mới cho các
+màn danh mục/tài khoản thêm ở KHOA_MOI, tiếng Lào ráp từ cụm đã có trong Excel và bản mẫu.
+"""
+import io
+import json
+import os
+
+GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NGUON = os.path.join(GOC, 'tools', 'tu_dien_mau_vi_lo.json')       # vi/lo bóc từ bản mẫu bên Lào đã duyệt
+DICH = os.path.join(GOC, 'frontend', 'js', 'ngon_ngu.js')
+
+T = json.load(io.open(NGUON, encoding='utf-8'))
+
+EN = {
+ 'brand': 'EPL Transport Management<small>Ore haulage · Vientiane</small>',
+ 'nav_dash': 'Overview', 'mod_transport': 'Transport module', 'mod_warehouse': 'Warehouse module', 'mod_system': 'System',
+ 'nav_tracking': 'Transport slip tracking', 'nav_dispatch': 'Dispatch slip', 'nav_bill': 'Transport bill', 'nav_joint': 'Joint trucks',
+ 'nav_driver': "Driver trip & water money", 'nav_supplier': 'Supplier tracking', 'nav_fuel': 'Fuel store', 'nav_parts': 'Spare parts store',
+ 'nav_workflow': 'Workflow & responsibility', 'user_role': 'Thabok yard · Data entry',
+ 'title_dashboard': 'Overview<span class="sub">Monthly · EPL company</span>',
+ 'title_tracking': 'Transport slip tracking report<span class="sub">Revenue · Expenses · Status of each trip</span>',
+ 'title_dispatch': 'Dispatch slip<span class="sub">Entered by role · pick a slip in the toolbar</span>',
+ 'title_bill': 'Transport bill<span class="sub">Print version · pick a slip in the toolbar</span>',
+ 'title_joint': 'Joint truck transport report<span class="sub">Outside trucks hauling EPL cargo</span>',
+ 'title_driver': 'Driver trip & water money<span class="sub">Monthly summary paid with salary</span>',
+ 'title_supplier': 'Supplier tracking<span class="sub">Payables settled in instalments</span>',
+ 'title_fuel': 'Fuel store<span class="sub">Thabok store · In – Out – Balance</span>',
+ 'title_parts': 'Spare parts store<span class="sub">Stock & issues per truck</span>',
+ 'title_workflow': 'Workflow & responsibility<span class="sub">Who enters – who verifies – who books – who pays</span>',
+ 'period': 'Period', 'p_aug26': 'August 2026', 'p_sep26': 'September 2026', 'company': 'Ore receiving company', 'all': 'All',
+ 'export': 'Export report', 'new_dispatch': 'New dispatch slip', 'k_rev': 'Transport revenue', 'k_exp': 'Total expenses',
+ 'k_tons': 'Tonnage hauled', 'k_unpaid': 'Unpaid by customers', 'trips': 'trips', 'of_total': 'of total',
+ 'pipe_title': 'Trip progress this period', 'pipe_hint': 'Click a step to filter the list',
+ 's_dispatched': 'Dispatched', 's_transit': 'In transit', 's_arrived': 'Delivered', 's_unpaid': 'Unpaid', 's_partial': 'Partly paid',
+ 's_paid': 'Paid', 'p_invoiced': 'Invoiced', 'exp_break': 'Expense breakdown', 'e_fuel': 'Fuel', 'e_travel': 'Travel expenses',
+ 'e_repair': 'Repairs', 'e_other': 'Other', 'rates': 'Exchange rates (to LAK)', 'attention': 'Needs attention',
+ 'att1': 'T4-0428-08/EPL – ore bill number missing', 'att2': 'Truck 341 – weight loss 0.76 t (1.8%) above 1.5%',
+ 'att3': 'Vietnam chipping – instalment 2 due (25/09)', 'att4': '3 delivered slips not yet invoiced',
+ 'search_ph': 'Search slip no., driver, truck, customer…', 'st_transport': 'Transport status', 'st_finance': 'Finance status',
+ 'joint_truck': 'Joint truck', 'track_title': 'Transport slips', 'rows': 'rows', 'revenue': 'Revenue (USD)', 'expense': 'Expenses (LAK)',
+ 'net': 'Net', 'status': 'Status', 'c_date': 'Date', 'c_billno': 'Slip no.', 'c_orebill': 'Ore bill', 'c_route': 'Route',
+ 'c_company': 'Receiver', 'c_driver': 'Driver', 'c_truck': 'Truck', 'c_plates': 'Head / trailer plates', 'c_customer': 'Customer',
+ 'c_goods': 'Goods', 'c_trips': 'Trips', 'c_w_origin': 'Origin wt (t)', 'c_w_dest': 'Dest. wt (t)', 'c_price': 'Price/t',
+ 'c_value': 'Amount', 'c_joint_fee': 'Joint hire', 'c_fee2': '2% fee/slip', 'c_over': 'Overload 1$/t', 'c_fuel': 'Fuel',
+ 'c_travel': 'Travel', 'c_repair': 'Repairs', 'c_other': 'Other', 'c_totexp': 'Total exp.', 'c_net': 'USD', 'c_st_t': 'Transport',
+ 'c_st_f': 'Finance', 'track_note': 'Net converted at the rate on the slip date (USD 22,000 · THB 700 · VND 1.2). Click a row to open the dispatch slip.',
+ 'back_list': 'Slip list', 'print': 'Print', 'save_draft': 'Save draft', 'submit_verify': 'Submit for verification', 'mark_paid': 'Confirm payment received',
+ 'wf1': 'Data entry', 'wf1d': 'Thabok yard', 'wf2': 'Verification', 'wf2d': 'Vientiane accounting', 'wf3': 'Bookkeeping', 'wf3d': 'I/O accountant',
+ 'wf4': 'Payment', 'wf4d': 'Treasury / petty cash', 'wf5': 'Invoice', 'wf5d': 'Revenue accountant',
+ 'doc_dispatch': 'DISPATCH SLIP', 'doc_bill': 'TRANSPORT BILL · ໃບບິນຂົນສົ່ງ', 'doc_no': 'Slip no.',
+ 'sec1': 'Truck information', 'sec2': 'Transport & revenue information', 'sec3': 'Fuel expenses', 'sec4': 'Travel expenses',
+ 'sec5': 'Repair expenses', 'sec6': 'Other expenses', 'resp': 'In charge', 'verifier': 'Verifier', 'bookkeeper': 'Bookkeeper', 'payer': 'Payer',
+ 'r_yard': 'Thabok yard', 'r_fuel_acct': 'Fuel store accountant', 'r_exp_acct': 'Expense accountant', 'r_rev_acct': 'Revenue accountant',
+ 'r_io_acct': 'I/O accountant (Vientiane)', 'r_treasury': 'Vientiane treasury', 'r_petty': 'Thabok petty cash',
+ 'acct_entry': 'Account entry', 'acct_1211_70': 'Transport service sales', 'acct_625_371': 'Fuel issued from store', 'acct_code': 'Account code',
+ 'truck_no': 'Truck no.', 'brand_model': 'Brand / model', 'driver': 'Driver', 'plate_head': 'Tractor plate', 'plate_trailer': 'Trailer plate',
+ 'd_issue': 'Slip date', 'd_out': 'Departure date', 'd_back': 'Return date', 'days_out': 'Days out', 'days': 'days',
+ 'odometer': 'Odometer', 'odo_out': 'Out', 'odo_back': 'Back', 'odo_km': 'Km driven', 'customer': 'Customer', 'goods_type': 'Goods type',
+ 'iron_ore': 'Iron ore', 'other_goods': 'Other goods', 'ore_bill_no': 'Ore bill no.', 'ore_bill_date': 'Ore bill date',
+ 'origin': 'Origin', 'dest': 'Destination', 'route': 'Route', 'w_origin': 'Origin weight (t)', 'w_dest': 'Destination weight (t)',
+ 'w_loss': 'Loss', 'ton': 't', 'price_usd': 'Unit price (USD/t)', 'value_usd': 'Amount (USD)', 'value_lak': 'Converted (LAK)',
+ 'value_rule': 'Amount is computed on the destination weight. Loss above 1.5% is flagged for reconciliation.',
+ 'item': 'Item', 'qty': 'Qty', 'qty_l': 'Litres', 'unit_price': 'Unit price', 'cur': 'Currency', 'amount': 'Amount', 'amount_lak': 'Amount (LAK)',
+ 'fill_place': 'Filled at', 'pay_method': 'Payment method', 'note': 'Note', 'total': 'Total', 'add_row': 'Add row', 'diesel': 'Diesel',
+ 'fp_yard': 'Thabok store', 'fp_vn': 'Vietnam station', 'pm_trip_salary': 'Per trip with salary', 'pm_on_dispatch': 'Paid at dispatch',
+ 'pm_supplier': 'Supplier credit / instalments', 'pm_card': 'Per trip via card (15M top-up)', 'pm_store': 'Issued from parts store',
+ 'x_water': 'Water money', 'x_vn': 'Driver expenses in Vietnam', 'x_chip_lao': 'Lao chipping fee (customs yard)', 'x_chip_vn': 'Vietnam chipping fee (1,800,000 VND)',
+ 'x_bridge': 'Bridge & road fee', 'x_toll': 'Expressway toll', 'x_trip': 'Ore trip money', 'x_phone': 'Phone money', 'x_tire': 'Tyre repair / replacement',
+ 'x_food': 'Driver meals', 'x_parking': 'Parking / yard fee', 'x_border': 'Border fee', 'x_oil': 'Engine oil change', 'x_brake': 'Brake pads',
+ 'x_tow': 'Rescue / towing', 'x_misc': 'Other expense', 'x_custom': 'Other (type in)…',
+ 'edit_hint': 'Every row is editable: change item, quantity, unit price; delete with × or add a new row.',
+ 'x_air': 'Air-brake chamber part', 'sum_rev': 'Trip revenue (converted)', 'sum_exp': 'Trip expenses', 'sum_net': 'Trip net',
+ 'sg_driver': 'Driver', 'sg_driver_d': 'Received money & goods', 'sg_issuer': 'Issued by', 'sg_issuer_d': 'Thabok yard', 'sg_verify': 'Verified by',
+ 'sg_verify_d': 'Vientiane accounting', 'sg_payer': 'Paid by', 'sg_payer_d': 'Treasury / petty cash', 'sg_printer': 'Printed by',
+ 'sg_filler': 'Fuelled by', 'sg_fuel_check': 'Fuel checked by', 'bill_fuel': 'Fuelling', 'bill_pay': 'Payments', 'pay_driver_total': 'Total payable to driver',
+ 'grand_total': 'Grand total (LAK)', 'joint_rule': 'Joint truck: owner payout = hire − management fee − overload − EPL advances (EPL fuel, travel).',
+ 'owner': 'Truck owner', 'pay_owner': 'Owner payout (USD)', 'trip_money': 'Trip money', 'water_money': 'Water money', 'phone_money': 'Phone',
+ 'vn_money': 'Vietnam expenses', 'total_lak': 'Total (LAK)', 'pay_with': 'Paid via', 'salary': 'With salary', 'cash_dispatch': 'Cash at dispatch',
+ 'supplier': 'Supplier', 'service': 'Service', 'owed_lak': 'Incurred (LAK)', 'paid_lak': 'Paid', 'balance_lak': 'Balance', 'terms': 'Terms',
+ 'sup_hint': 'Payables under 625/402 and 614/402', 'sup_chip_lao': 'Customs yard (Lao chipping)', 'sup_chip_vn': 'Vietnam chipping',
+ 'sup_tire': 'Tyre shop', 'sup_toll': 'Expressway card', 't_monthly': 'Monthly instalments', 't_prepaid': 'Prepaid 15M per top-up',
+ 'fuel_stock': 'Current stock', 'fuel_out_month': 'Issued this month', 'fuel_avg': 'Average cost', 'fuel_avg_d': 'Weighted average by receipt',
+ 'ref': 'Document', 'type': 'Type', 'in_l': 'In (L)', 'out_l': 'Out (L)', 'balance_l': 'Balance (L)', 'checked_by': 'Checked by',
+ 'fs_in': 'Receipt', 'fs_out': 'Issued per slip', 'part': 'Part', 'unit': 'Unit', 'stock': 'Stock', 'min_stock': 'Min. stock',
+ 'last_issue': 'Last issue', 'u_pc': 'pc', 'u_set': 'set', 'u_l': 'L', 'pt_air': 'Brake air chamber', 'pt_filter': 'Oil filter',
+ 'pt_tire': 'Tyre 12R22.5', 'pt_brake': 'Brake pads', 'pt_oil': 'Engine oil 15W-40', 'st_ok': 'OK', 'st_low': 'Low',
+ 'wf_doc1': '1. Dispatch slip', 'wf_doc2': '2. Transport invoice', 'wf_hint': 'From the assignment sheet (ໜ້າວຽກ)', 'wf_invoice': 'Issue transport invoice',
+ 'wfr1': 'Enter truck data', 'wfr2': 'Enter customer data', 'wfr3': 'Fuel expenses', 'wfr4': 'Travel expenses', 'wfr5': 'Repair expenses', 'wfr6': 'Other expenses',
+ 'login_as': 'Login:', 'r_acct_vc': 'Vientiane accountant (verification)', 'r_admin': 'Administrator (sees all)',
+ 'has_expense': 'Has expenses', 'no_expense': 'None on this trip', 'stt_wait': 'Awaiting entry', 'stt_entered': 'Entered · awaiting check',
+ 'stt_verified': 'Verified · awaiting booking', 'stt_paid': 'Paid', 'stt_na': 'Not applicable', 'readonly': 'View only',
+ 'hint_yard': 'You are entering as Thabok yard: sections I–VI editable. Accounting and treasury view only.',
+ 'hint_acct': 'Vientiane accountant: verify sections I, II, IV, V, VI and book them. Yard figures cannot be edited.',
+ 'hint_fuel': 'Fuel store accountant: works only on section III (verify & book fuel).',
+ 'hint_cash': 'Treasury / petty cash: pay verified sections IV, V, VI; mark "Paid".',
+ 'hint_rev': 'Revenue accountant: issue the invoice from section II; expense sections view only.',
+ 'hint_admin': 'Administrator: view and edit everything.',
+ 'truck_type': 'Truck type', 'co_epl': 'Company truck (EPL)', 'co_joint': 'Joint (outside) truck', 'ded_title': 'Joint truck hire & deductions',
+ 'hire_usd': 'Truck hire (USD)', 'fee_pct': 'Management fee (% of hire / slip)', 'fee_amt': 'Fee deducted (USD)', 'limit_t': 'Allowed load (t)',
+ 'over_t': 'Overload (t)', 'over_p': 'Overload penalty (USD/t)', 'over_amt': 'Overload deducted (USD)',
+ 'ded_note': 'Overload is computed on destination weight. Deductions and EPL advances are subtracted from the owner payout in the summary below.',
+ 'who_pays': 'Who pays', 'pay_epl': 'EPL advance', 'pay_own': 'Owner pays', 'fuel_joint_note': 'Joint truck: fuel from the EPL store is deducted from the owner payout. Fuel the owner buys outside is not.',
+ 'fp_other': 'Outside station (Laos)', 'st_cust_rev': 'Received from customer', 'st_hire': 'Truck hire', 'st_fee': 'Management fee deducted',
+ 'st_over': 'Overload deducted', 'st_adv': 'Less EPL advances', 'st_adv_fuel': '· EPL store fuel', 'st_adv_travel': '· travel', 'st_adv_repair': '· repairs',
+ 'st_adv_other': '· other', 'st_net_owner': 'Payable to owner', 'st_profit': 'EPL profit on trip', 'st_own_paid': 'Paid by owner (not counted)',
+ 'settle_title': 'Joint truck settlement', 'settle_ex': 'Profit = customer amount − truck hire. Owner payout = hire − fee − overload − EPL advances.',
+ 'pick_bill': 'Pick slip', 'bill_repair': 'Repairs', 'bill_other': 'Other', 'bill_settle': 'Owner settlement',
+ 'login_title': 'EPL Transport Management', 'login_sub': 'Each user signs in with their own account. Entry, verification, booking, payment and invoicing rights depend on the role.',
+ 'login_h': 'Sign in', 'login_demo': 'Demo: password for every account is 1234', 'username': 'Username', 'password': 'Password', 'login_btn': 'Sign in',
+ 'quick_pick': 'Or pick an account:', 'login_err': 'Wrong username or password', 'switch_acct': 'Switch account', 'r_treasury_role': 'Vientiane treasury',
+ 'hint_treasury': 'Vientiane treasury: confirm fuel payment (section III) after the fuel accountant has booked it.',
+ 'stt_booked': 'Booked · awaiting payment', 'stt_wait2': 'Not sent', 'a_send': 'Send for verification', 'a_verify': 'Confirm verified', 'a_book': 'Book',
+ 'a_pay': 'Confirm paid', 'a_return': 'Return for correction', 'a_invoice': 'Issue invoice', 'a_collect': 'Confirm customer paid', 'a_unlock': 'Unlock (admin)',
+ 'log_title': 'Approval history', 'log_empty': 'No actions yet', 'locked_after': 'Verified – locked', 'inv_done': 'Invoiced', 'trip_status': 'Slip status',
+ 'acct_625_402': 'Travel expenses', 'acct_614_402': 'Repairs paid to supplier', 'acct_614_371': 'Repairs from store', 'acct_1211_402': 'Outside transport charge',
+ 'hire_pt': 'Their hire price (USD/t)', 'do_title': 'Profit on this order', 'do_recv': 'Price we receive from customer', 'do_hire': 'What we pay the outside truck',
+ 'do_diff': 'Rate difference', 'do_cuts': 'Plus owner deductions (fee + overload)', 'do_profit': 'EPL profit', 'per_ton': '/t', 'col_price': 'Price/t',
+ 'col_tons': 'Tons', 'col_total': 'Amount (USD)', 'do_money': 'Order amount (from customer)', 'trip_profit': 'Profit on this trip',
+ 'lg_yard': 'Thabok yard (entry)', 'lg_acct': 'Vientiane accounting', 'lg_cash': 'Treasury / cash',
+}
+
+# Khoá mới — tiếng Lào ráp từ cụm đã có trong Excel / bản mẫu
+KHOA_MOI = {
+ 'mod_master':       ('Danh mục', 'ຂໍ້ມູນພື້ນຖານ', 'Master data'),
+ 'nav_customers':    ('Khách hàng', 'ລູກຄ້າ', 'Customers'),
+ 'nav_vehicles':     ('Xe', 'ພາຫະນະ', 'Vehicles'),
+ 'nav_drivers':      ('Tài xế', 'ໂຊເຟີ', 'Drivers'),
+ 'nav_users':        ('Tài khoản', 'ບັນຊີຜູ້ໃຊ້', 'User accounts'),
+ 'title_khach_hang': ('Khách hàng<span class="sub">Danh mục khách nhận quặng</span>', 'ລູກຄ້າ<span class="sub">ບັນຊີລູກຄ້າຮັບແຮ່</span>', 'Customers<span class="sub">Ore receiving customers</span>'),
+ 'title_xe':         ('Xe<span class="sub">Số xe · biển đầu kéo · biển rơ-moóc · xe liên kết</span>', 'ພາຫະນະ<span class="sub">ເບີລົດ · ທະບຽນຫົວ · ທະບຽນຫາງ · ລົດຮ່ວມ</span>', 'Vehicles<span class="sub">Truck no. · tractor plate · trailer plate · joint trucks</span>'),
+ 'title_tai_xe':     ('Tài xế<span class="sub">Danh mục tài xế</span>', 'ໂຊເຟີ<span class="sub">ບັນຊີໂຊເຟີ</span>', 'Drivers<span class="sub">Driver list</span>'),
+ 'title_tai_khoan':  ('Tài khoản<span class="sub">Người dùng và vai trò</span>', 'ບັນຊີຜູ້ໃຊ້<span class="sub">ຜູ້ໃຊ້ ແລະ ໜ້າທີ່</span>', 'User accounts<span class="sub">Users and roles</span>'),
+ 'r_acct':  None, 'r_fuel': None, 'r_cash': None, 'r_rev': None,      # alias, gán bên dưới
+ 'ok':       ('Đồng ý', 'ຕົກລົງ', 'OK'),
+ 'cancel':   ('Huỷ', 'ຍົກເລີກ', 'Cancel'),
+ 'save':     ('Lưu', 'ບັນທຶກ', 'Save'),
+ 'add':      ('Thêm', 'ເພີ່ມ', 'Add'),
+ 'edit':     ('Sửa', 'ແກ້ໄຂ', 'Edit'),
+ 'delete':   ('Xoá', 'ລຶບ', 'Delete'),
+ 'close':    ('Đóng', 'ປິດ', 'Close'),
+ 'search':   ('Tìm', 'ຄົ້ນຫາ', 'Search'),
+ 'actions':  ('Thao tác', 'ການດຳເນີນ', 'Actions'),
+ 'active':   ('Đang dùng', 'ໃຊ້ຢູ່', 'Active'),
+ 'inactive': ('Ngưng dùng', 'ຢຸດໃຊ້', 'Inactive'),
+ 'loading':  ('Đang tải…', 'ກຳລັງໂຫຼດ…', 'Loading…'),
+ 'no_permission': ('Bạn không có quyền vào màn này', 'ທ່ານບໍ່ມີສິດເຂົ້າໜ້ານີ້', 'You have no permission for this screen'),
+ 'err_generic': ('Có lỗi xảy ra', 'ເກີດຂໍ້ຜິດພາດ', 'Something went wrong'),
+ 'saved':    ('Đã lưu', 'ບັນທຶກແລ້ວ', 'Saved'),
+ 'name':     ('Tên', 'ຊື່', 'Name'),
+ 'phone':    ('Điện thoại', 'ໂທລະສັບ', 'Phone'),
+ 'address':  ('Địa chỉ', 'ທີ່ຢູ່', 'Address'),
+ 'license_no': ('Số bằng lái', 'ເລກໃບຂັບຂີ່', 'Licence no.'),
+ 'owner_type': ('Loại xe', 'ປະເພດລົດ', 'Truck type'),
+ 'month':    ('Tháng', 'ເດືອນ', 'Month'),
+ 'role':     ('Vai trò', 'ໜ້າທີ່', 'Role'),
+ 'full_name': ('Họ tên', 'ຊື່ ແລະ ນາມສະກຸນ', 'Full name'),
+ 'new_password': ('Mật khẩu mới (bỏ trống nếu không đổi)', 'ລະຫັດຜ່ານໃໝ່ (ປະຫວ່າງຖ້າບໍ່ປ່ຽນ)', 'New password (leave blank to keep)'),
+ 'confirm_delete': ('Xoá mục này?', 'ລຶບລາຍການນີ້ບໍ?', 'Delete this item?'),
+ 'confirm_action': ('Xác nhận thực hiện?', 'ຢືນຢັນການດຳເນີນ?', 'Confirm this action?'),
+ 'a_create': ('Lập phiếu', 'ສ້າງບິນ', 'Slip created'),
+ 'a_save':   ('Lưu phiếu', 'ບັນທຶກບິນ', 'Slip saved'),
+ 'st_dispatched': ('Xe đã xuất bến', 'ລົດອອກແລ້ວ', 'Truck dispatched'),
+ 'st_transit':    ('Xe đang chạy', 'ກຳລັງຈັດສົ່ງ', 'Truck in transit'),
+ 'st_arrived':    ('Xe đã tới, đã cân', 'ຮອດແລ້ວ ຊັ່ງແລ້ວ', 'Arrived, weighed'),
+ 'fin_unpaid':    ('Chưa thu', 'ຄ້າງຊໍາລະ', 'Unpaid'),
+ 'fin_partial':   ('Thu một phần', 'ຊໍາລະບາງສ່ວນ', 'Partly paid'),
+ 'fin_paid':      ('Đã thu đủ', 'ຊໍາລະແລ້ວ', 'Fully paid'),
+ 'mark_transit':  ('Xe đã lăn bánh', 'ລົດອອກເດີນທາງແລ້ວ', 'Truck departed'),
+ 'mark_arrived':  ('Xe đã tới · nhập cân cuối', 'ລົດຮອດແລ້ວ · ໃສ່ນ້ຳໜັກປາຍທາງ', 'Truck arrived · enter destination weight'),
+ 'new_slip':      ('Phiếu mới', 'ບິນໃໝ່', 'New slip'),
+ 'open_slip':     ('Mở phiếu', 'ເປີດບິນ', 'Open slip'),
+ 'fuel_in':       ('Nhập kho', 'ນຳເຂົ້າສາງ', 'Receive'),
+ 'fuel_out':      ('Xuất cho xe', 'ເບີກໃຫ້ລົດ', 'Issue to truck'),
+ 'pay_supplier':  ('Trả nhà cung cấp', 'ຈ່າຍຜູ້ສະໜອງ', 'Pay supplier'),
+ 'pay_date':      ('Ngày trả', 'ວັນທີຈ່າຽ', 'Payment date'),
+ 'payments':      ('Các lần trả', 'ລາຍການຈ່າຍ', 'Payments'),
+ 'no_data':       ('Chưa có dữ liệu', 'ຍັງບໍ່ມີຂໍ້ມູນ', 'No data yet'),
+ 'weight_dest_prompt': ('Cân cuối (tấn)', 'ນ້ຳໜັກປາຍທາງ (ໂຕນ)', 'Destination weight (t)'),
+ 'attention_hao_hut': ('{doc_no} – hao hụt cân {gia_tri}% vượt mức 1,5%', '{doc_no} – ຫາຍເກີນ {gia_tri}% (ເກີນ 1,5%)', '{doc_no} – weight loss {gia_tri}% above 1.5%'),
+ 'attention_chua_hoa_don': ('{doc_no} – đã giao nhưng chưa lập hoá đơn', '{doc_no} – ຮອດແລ້ວ ແຕ່ຍັງບໍ່ອອກໃບບິນ', '{doc_no} – delivered but not invoiced'),
+ 'attention_chua_can': ('{doc_no} – đã tới nhưng chưa nhập cân cuối', '{doc_no} – ຮອດແລ້ວ ແຕ່ຍັງບໍ່ໃສ່ນ້ຳໜັກປາຍທາງ', '{doc_no} – arrived but destination weight missing'),
+ 'attention_cho_kiem': ('{so} mục đã nhập đang chờ kế toán kiểm', '{so} ລາຍການລໍຖ້າບັນຊີກວດ', '{so} entered sections awaiting verification'),
+ 'none_attention': ('Không có việc cần xử lý', 'ບໍ່ມີວຽກຄ້າງ', 'Nothing needs attention'),
+ 'sections_status': ('Trạng thái các mục', 'ສະຖານະລາຍການ', 'Section status'),
+ 'stock_moves': ('Nhập / xuất', 'ນຳເຂົ້າ / ເບີກ', 'Movements'),
+ 'trip_doc_no': ('Theo phiếu', 'ຕາມບິນ', 'Per slip'),
+}
+# alias vai — cùng chữ với khoá đã có
+ALIAS = {'r_acct': 'r_acct_vc', 'r_fuel': 'r_fuel_acct', 'r_cash': 'r_petty', 'r_rev': 'r_rev_acct'}
+
+thieu = [k for k in T if k not in EN]
+assert not thieu, 'thieu EN cho: %s' % thieu
+
+ra = {}
+for k, (vi, lo) in T.items():
+    ra[k] = {'vi': vi, 'lo': lo, 'en': EN[k]}
+for k, v in KHOA_MOI.items():
+    if v is None:
+        continue
+    ra[k] = {'vi': v[0], 'lo': v[1], 'en': v[2]}
+for k, goc in ALIAS.items():
+    ra[k] = dict(ra[goc])
+# tiêu đề module theo id mới ← tiêu đề cũ của bản mẫu
+for moi, cu in (('title_tong_quan', 'title_dashboard'), ('title_theo_doi', 'title_tracking'),
+                ('title_phieu_xuat_xe', 'title_dispatch'), ('title_hoa_don', 'title_bill'),
+                ('title_xe_lien_ket', 'title_joint'), ('title_tien_tai_xe', 'title_driver'),
+                ('title_nha_cung_cap', 'title_supplier'), ('title_kho_nhien_lieu', 'title_fuel'),
+                ('title_kho_phu_tung', 'title_parts'), ('title_quy_trinh', 'title_workflow')):
+    ra[moi] = dict(ra[cu])
+# tiêu đề tổng quan không ghim tháng 8/2026 nữa — tháng lấy theo bộ lọc
+ra['title_tong_quan'] = {'vi': 'Tổng quan<span class="sub">Theo tháng · Công ty EPL</span>',
+                         'lo': 'ພາບລວມ<span class="sub">ຕາມເດືອນ · ບໍລິສັດ EPL</span>',
+                         'en': 'Overview<span class="sub">Monthly · EPL company</span>'}
+
+dau = ('/* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.\n'
+       ' * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.\n'
+       ' * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng %d khoá. */\n' % len(ra))
+noi_dung = dau + 'window.EPL_TU_DIEN = ' + json.dumps(ra, ensure_ascii=False, indent=1) + ';\n'
+io.open(DICH, 'w', encoding='utf-8', newline='\n').write(noi_dung)
+print('Đã sinh %s · %d khoá' % (DICH, len(ra)))

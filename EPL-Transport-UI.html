@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EPL Transport · ຂົນສົ່ງ EPL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1C2229; --ink-2:#4A5560; --ink-3:#7A858F;
+  --paper:#FFFFFF; --bg:#EDF0EC; --bg-2:#E2E7E1;
+  --line:#D3DAD3; --line-2:#BFC8C0;
+  --green:#145C4A; --green-2:#1E7A63; --green-soft:#DDEDE6;
+  --ore:#8C4A1F; --ore-soft:#F3E3D6;
+  --amber:#A86B12; --amber-soft:#F6E9D0;
+  --red:#A83232; --red-soft:#F5DDDD;
+  --blue:#2F5D8A; --blue-soft:#DCE6F1;
+  --side:#10231E; --side-2:#183129; --side-text:#C9D8D0;
+  --r:6px; --r-lg:10px;
+  --font:'Be Vietnam Pro','Noto Sans Lao',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--bg);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+:lang(lo),.lo{font-family:'Noto Sans Lao',var(--font);line-height:1.7}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:inherit;color:var(--ink)}
+a{color:var(--green)}
+:focus-visible{outline:2px solid var(--green-2);outline-offset:2px}
+
+/* ---------- Shell ---------- */
+.app{display:grid;grid-template-columns:256px 1fr;min-height:100vh}
+.side{background:var(--side);color:var(--side-text);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 8px 20px;border-bottom:1px solid #244037;margin-bottom:14px}
+.brand .mark{width:40px;height:40px;background:var(--green-2);border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;letter-spacing:.02em}
+.brand h1{margin:0;font-size:15px;font-weight:600;color:#fff;line-height:1.25}
+.brand small{display:block;color:var(--side-text);font-weight:400;font-size:12px}
+.nav-group{margin:16px 0 4px;padding:0 8px;font-size:12px;color:#8AA398}
+.nav-group .sub{display:block;font-size:11px;color:#6E877D}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;color:var(--side-text);padding:9px 10px;border-radius:var(--r);line-height:1.35}
+.nav button:hover{background:var(--side-2)}
+.nav button.active{background:var(--green-2);color:#fff}
+.nav button .ic{width:18px;height:18px;flex:none;opacity:.85}
+.nav button .sub{display:block;font-size:11.5px;opacity:.8}
+.nav button.disabled{opacity:.45}
+.side .foot{margin-top:24px;padding:12px 10px;border-top:1px solid #244037;font-size:12px;color:#8AA398}
+
+.main{min-width:0}
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 28px;background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.topbar h2{margin:0;font-size:18px;font-weight:600}
+.topbar h2 .sub{display:block;font-size:12.5px;color:var(--ink-3);font-weight:400}
+.topbar .grow{flex:1}
+.lang{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
+.lang button{border:0;background:none;padding:6px 14px;border-radius:999px;color:var(--ink-2);font-weight:500}
+.lang button.active{background:var(--ink);color:#fff}
+.user{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.user .av{width:32px;height:32px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:600}
+
+.page{padding:24px 28px 48px;max-width:1500px}
+.view{display:none}.view.active{display:block}
+
+/* ---------- Common components ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);background:var(--paper);color:var(--ink);padding:8px 14px;border-radius:var(--r);font-weight:500;line-height:1.3}
+.btn:hover{border-color:var(--ink-3)}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-2)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn .ic{width:16px;height:16px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.toolbar .grow{flex:1}
+.field{display:flex;flex-direction:column;gap:4px;min-width:150px}
+.field label{font-size:12px;color:var(--ink-2)}
+.field input,.field select{border:1px solid var(--line-2);border-radius:var(--r);padding:8px 10px;background:var(--paper)}
+.search{position:relative}
+.search input{padding-left:32px;width:260px}
+.search .ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-3)}
+
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg)}
+.card .hd{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.card .hd h3{margin:0;font-size:15px;font-weight:600}
+.card .hd h3 .sub{display:block;font-size:12px;color:var(--ink-3);font-weight:400}
+.card .hd .grow{flex:1}
+.card .bd{padding:18px}
+.muted{color:var(--ink-3)}
+.small{font-size:12.5px}
+.sub{display:block;font-size:.85em;color:var(--ink-3);font-weight:400}
+th .sub,.nav .sub,.side .sub{color:inherit;opacity:.75}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.mono{font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.neg{color:var(--red)} .pos{color:var(--green)}
+
+.tag{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;line-height:1.6}
+.tag::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8}
+.tag.dispatched{background:var(--blue-soft);color:var(--blue)}
+.tag.transit{background:var(--amber-soft);color:var(--amber)}
+.tag.arrived{background:var(--green-soft);color:var(--green)}
+.tag.unpaid{background:var(--red-soft);color:var(--red)}
+.tag.partial{background:var(--amber-soft);color:var(--amber)}
+.tag.paid{background:var(--green-soft);color:var(--green)}
+.tag.ore{background:var(--ore-soft);color:var(--ore)}
+.tag.plain{background:var(--bg-2);color:var(--ink-2)}
+.tag.plain::before{display:none}
+.acct{font-size:11.5px;background:var(--bg-2);border-radius:4px;padding:1px 6px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+
+/* ---------- Tables ---------- */
+.tbl-wrap{overflow:auto;border-radius:0 0 var(--r-lg) var(--r-lg)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+thead th{background:var(--bg);color:var(--ink-2);font-weight:600;font-size:12.5px;position:sticky;top:0;white-space:nowrap}
+thead tr.grp th{background:var(--bg-2);color:var(--ink);text-align:center;border-bottom:1px solid var(--line-2)}
+thead tr.grp th.rev{background:var(--green-soft);color:var(--green)}
+thead tr.grp th.exp{background:var(--red-soft);color:var(--red)}
+thead tr.grp th.st{background:var(--blue-soft);color:var(--blue)}
+tbody tr:hover td{background:#F7F9F6}
+tbody tr.sel td{background:var(--green-soft)}
+tfoot td{font-weight:600;background:var(--bg)}
+td.nowrap{white-space:nowrap}
+.tbl-compact th,.tbl-compact td{padding:7px 10px}
+
+/* ---------- Dashboard ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px}
+.kpi .lbl{font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.kpi .val{font-size:26px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1.15}
+.kpi .val small{font-size:13px;font-weight:500;color:var(--ink-3);margin-left:4px}
+.kpi .delta{font-size:12.5px;margin-top:6px;color:var(--ink-3)}
+.kpi.green{border-top:3px solid var(--green)}
+.kpi.red{border-top:3px solid var(--red)}
+.kpi.ore{border-top:3px solid var(--ore)}
+.kpi.blue{border-top:3px solid var(--blue)}
+.grid-2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:0;padding:8px 0}
+.pipe{position:relative;padding:12px 14px 12px 22px;background:var(--bg);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%);margin-right:-10px}
+.pipe:first-child{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);padding-left:14px}
+.pipe .n{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.pipe .l{font-size:12px;color:var(--ink-2)}
+.pipe.p1{background:var(--blue-soft)} .pipe.p2{background:var(--amber-soft)} .pipe.p3{background:var(--green-soft)} .pipe.p4{background:var(--bg-2)} .pipe.p5{background:var(--green);color:#fff}
+.pipe.p5 .l{color:#CFE5DC}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:150px 1fr 150px;gap:12px;align-items:center;font-size:13px}
+.bar .track{height:12px;background:var(--bg-2);border-radius:3px;overflow:hidden}
+.bar .fill{height:100%;background:var(--red);opacity:.75}
+.bar .fill.fuel{background:var(--ore)} .bar .fill.rep{background:var(--blue)} .bar .fill.oth{background:var(--ink-3)}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums}
+.rates{display:flex;gap:10px;flex-wrap:wrap}
+.rate{flex:1;min-width:110px;background:var(--bg);border-radius:var(--r);padding:10px 12px}
+.rate .c{font-size:12px;color:var(--ink-2)}
+.rate .v{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.rate .v small{font-size:11px;color:var(--ink-3);font-weight:400}
+
+/* ---------- Dispatch form ---------- */
+.doc-head{display:flex;gap:20px;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--line)}
+.doc-head .co h3{margin:0 0 2px;font-size:16px}
+.doc-head .co p{margin:0;font-size:12.5px;color:var(--ink-2)}
+.doc-head .grow{flex:1}
+.doc-no{text-align:right}
+.doc-no .no{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.doc-no .lbl{font-size:12px;color:var(--ink-3)}
+.sec{border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec-hd{display:flex;align-items:center;gap:12px;padding:12px 22px;background:var(--bg);border-bottom:1px solid var(--line)}
+.sec-hd .rn{width:30px;height:30px;border-radius:6px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px;flex:none}
+.sec-hd h4{margin:0;font-size:14px;font-weight:600}
+.sec-hd h4 .sub{font-size:12px}
+.sec-hd .who{margin-left:auto;font-size:12px;color:var(--ink-2);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sec-bd{padding:16px 22px}
+.f-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px}
+.f-grid .field.w2{grid-column:span 2}
+.field .ro{border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;background:var(--bg);color:var(--ink);min-height:38px}
+.field .ro.hi{background:var(--green-soft);color:var(--green);font-weight:600}
+.odo{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.odo .field .ro{text-align:right}
+.exp-table th:first-child,.exp-table td:first-child{width:36px;text-align:center;color:var(--ink-3)}
+.exp-table td:nth-child(2){min-width:200px}
+.sec-bd .exp-table{display:block;overflow-x:auto}
+.sec-bd .exp-table thead,.sec-bd .exp-table tbody,.sec-bd .exp-table tfoot{display:table;width:100%;table-layout:auto}
+#fuelTbl td:nth-child(2){min-width:150px}
+.is-joint .exp-table td:nth-child(2){min-width:170px}
+.exp-table input.p{min-width:120px}
+.exp-table input.q{min-width:60px}
+.exp-table input{width:100%;border:1px solid var(--line-2);border-radius:4px;padding:6px 8px;background:#fff}
+.exp-table select.itm{width:100%;border:1px solid var(--line-2);background:#fff;padding:6px 6px;border-radius:4px}
+.exp-table .itm-wrap{display:flex;gap:6px}
+.exp-table .itm-wrap input{display:none}
+.exp-table .itm-wrap.custom select{width:38%}
+.exp-table .itm-wrap.custom input{display:block}
+.exp-table input:hover{border-color:var(--line-2)} .exp-table input:focus{background:#fff;border-color:var(--green-2)}
+.exp-table input.num{text-align:right}
+.exp-table select{border:1px solid var(--line-2);background:#fff;padding:6px 6px;border-radius:4px;max-width:100%}
+.addrow{margin-top:8px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:18px 22px;background:var(--bg)}
+.sum{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.sum .l{font-size:12.5px;color:var(--ink-2)}
+.sum .v{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.sum .v small{font-size:12px;font-weight:400;color:var(--ink-3);margin-left:4px}
+.sum.net{border-color:var(--ink);background:var(--ink);color:#fff}
+.sum.net .l{color:#B9C4CC} .sum.net .v small{color:#9AA7B0}
+.sign-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:22px}
+.sign{text-align:center;font-size:12.5px;color:var(--ink-2)}
+.sign .line{height:56px;border-bottom:1px dotted var(--ink-3);margin-bottom:6px}
+.sign .rl{color:var(--ink);font-weight:500}
+
+/* ---------- Bill (printable) ---------- */
+.bill{max-width:820px;margin:0 auto;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:32px 36px}
+.bill .head{text-align:center;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:18px}
+.bill .head h3{margin:0;font-size:20px;letter-spacing:.02em}
+.bill .head p{margin:2px 0;font-size:12.5px;color:var(--ink-2)}
+.bill .title{font-size:18px;font-weight:600;margin:16px 0 14px;text-align:center}
+.bill .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;font-size:13px;margin-bottom:16px}
+.bill .meta div{display:grid;grid-template-columns:150px 1fr;padding:4px 0;border-bottom:1px dotted var(--line-2)}
+.bill .meta div span:first-child{color:var(--ink-2)}
+.bill table{margin-top:10px}
+.bill th{background:var(--bg)}
+.bill h5{margin:18px 0 6px;font-size:13.5px;font-weight:600}
+.bill .grand{display:flex;justify-content:flex-end;margin-top:14px}
+.bill .grand div{border:2px solid var(--ink);padding:10px 16px;min-width:300px;display:flex;justify-content:space-between;font-weight:600;font-size:15px}
+
+/* ---------- Workflow ---------- */
+.wf th,.wf td{vertical-align:middle}
+.role{display:inline-flex;align-items:center;gap:6px;background:var(--bg-2);border-radius:999px;padding:3px 10px 3px 4px;font-size:12px;white-space:nowrap}
+.role .av{width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;font-size:10px;display:grid;place-items:center;font-weight:600}
+.role.f .av{background:var(--blue)} .role.c .av{background:var(--ore)} .role.a .av{background:var(--ink-2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);padding:12px 18px;border-top:1px solid var(--line)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.flow{display:flex;align-items:stretch;gap:0;overflow:auto;padding:6px 0}
+.step{flex:1;min-width:170px;position:relative;padding:14px 16px 14px 20px;background:var(--bg);border:1px solid var(--line);border-left:0}
+.step:first-child{border-left:1px solid var(--line);border-radius:var(--r) 0 0 var(--r)}
+.step:last-child{border-radius:0 var(--r) var(--r) 0}
+.step .t{font-weight:600;font-size:13.5px}
+.step .d{font-size:12.5px;color:var(--ink-2);margin-top:4px}
+.step .k{position:absolute;right:-9px;top:50%;transform:translateY(-50%) rotate(45deg);width:16px;height:16px;background:var(--bg);border-right:1px solid var(--line);border-top:1px solid var(--line);z-index:1}
+.step:last-child .k{display:none}
+.step.done{background:var(--green-soft)} .step.done .k{background:var(--green-soft)}
+.step.now{background:var(--amber-soft);border-color:var(--amber)} .step.now .k{background:var(--amber-soft);border-color:var(--amber)}
+
+.notice{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;background:var(--amber-soft);border-radius:var(--r);color:#6B4608;font-size:13px;margin-bottom:16px}
+.notice .ic{width:18px;height:18px;flex:none;margin-top:1px}
+.empty{padding:40px;text-align:center;color:var(--ink-3)}
+
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}.f-grid{grid-template-columns:repeat(2,1fr)}.pipeline{grid-template-columns:repeat(5,minmax(120px,1fr));overflow:auto}}
+@media (max-width:800px){.app{grid-template-columns:1fr}.side{position:static;height:auto}.page{padding:16px}.topbar{padding:12px 16px;flex-wrap:wrap}.summary,.sign-row{grid-template-columns:1fr}}
+@media print{.side,.topbar,.toolbar,.notice{display:none}.app{grid-template-columns:1fr}.page{padding:0}.bill{border:0}}
+@media (prefers-reduced-motion:no-preference){.view.active{animation:fade .18s ease-out}@keyframes fade{from{opacity:0}to{opacity:1}}}
+
+.rolebar{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);border-radius:var(--r);padding:4px 6px 4px 10px;background:var(--bg);font-size:13px}
+.rolebar select{border:0;background:transparent;font-weight:500;padding:4px}
+.sec.locked .sec-bd{position:relative}
+.sec.locked input,.sec.locked select,.sec.locked .addrow,.sec.locked .del,.sec.locked .sec-toggle{pointer-events:none}
+.sec.locked input,.sec.locked select{background:transparent;border-color:transparent;color:var(--ink);appearance:none;-webkit-appearance:none}
+.sec.locked .itm-wrap.custom select{display:none}.sec.locked .itm-wrap.custom input{display:block}
+.sec.locked .addrow,.sec.locked .del,.sec.locked .sec-toggle{display:none}
+.sec.mine .sec-hd{background:var(--green-soft);border-left:4px solid var(--green)}
+.sec-hd .stt{font-size:12px;padding:2px 9px;border-radius:999px;background:var(--bg-2);color:var(--ink-2);white-space:nowrap}
+.sec-hd .stt.wait{background:var(--amber-soft);color:var(--amber)} .sec-hd .stt.done{background:var(--green-soft);color:var(--green)} .sec-hd .stt.na{background:var(--bg-2);color:var(--ink-3)}
+.lock{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-3)}
+.lock svg{width:13px;height:13px}
+.del{border:0;background:none;color:var(--ink-3);padding:2px 6px;border-radius:4px;line-height:1}
+.del:hover{background:var(--red-soft);color:var(--red)}
+.exp-table th:last-child,.exp-table td:last-child{width:34px;text-align:center}
+.sec-off .sec-bd{display:none}
+.sec-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);cursor:pointer}
+.sec-toggle input{width:16px;height:16px;accent-color:var(--green)}
+.sec-hd h4 .na-note{display:block;font-size:12px;color:var(--ink-3);font-weight:400}
+.rolehint{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--green-soft);border-radius:var(--r);color:var(--green);font-size:13px;margin-bottom:14px}
+.rolehint b{font-weight:600}
+
+.joint-only{display:none}.is-joint .joint-only{display:block}.is-joint .field.joint-only{display:flex}
+.joint-col{display:none}.is-joint .joint-col{display:table-cell}
+.deduct{margin-top:18px;padding:16px 18px;background:var(--ore-soft);border-radius:var(--r);border:1px solid #E4C9B4}
+.deduct h5{margin:0 0 12px;font-size:14px;color:var(--ore)}
+.deduct .field .ro{background:#fff}
+.settle{padding:18px 22px;background:var(--bg)}
+.settle table{max-width:640px;margin-left:auto;font-size:14px}
+.settle td{padding:8px 12px;border-bottom:1px dotted var(--line-2)}
+.settle tr.tot td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0;font-size:16px}
+.settle tr.sub td{color:var(--ink-2)}
+.settle .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.pill-toggle{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden;font-size:12px;white-space:nowrap}
+.pill-toggle button{border:0;background:#fff;padding:4px 10px;color:var(--ink-2)}
+.pill-toggle button.on{background:var(--green);color:#fff}
+.pill-toggle button.on.own{background:var(--ore)}
+.bill .settle{background:transparent;padding:0}
+.bill .settle table{max-width:100%}
+
+.login{position:fixed;inset:0;background:var(--side);display:grid;place-items:center;z-index:50;padding:20px}
+.login .box{background:var(--paper);border-radius:14px;width:min(920px,100%);display:grid;grid-template-columns:1fr 1.2fr;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.login .l{padding:36px 32px;background:var(--green);color:#fff}
+.login .l h2{margin:14px 0 6px;font-size:22px}
+.login .l p{margin:0;color:#CFE5DC;font-size:13.5px;line-height:1.6}
+.login .r{padding:32px}
+.login .r h3{margin:0 0 4px;font-size:16px}
+.login .r .field{margin-top:12px}
+.login .err{color:var(--red);font-size:13px;min-height:18px;margin-top:6px}
+.accts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.acct-btn{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;text-align:left}
+.acct-btn:hover{border-color:var(--green)}
+.acct-btn .av{width:30px;height:30px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+.acct-btn b{display:block;font-size:13px;font-weight:600}
+.acct-btn small{color:var(--ink-3);font-size:11.5px}
+.userbox{display:flex;align-items:center;gap:10px;font-size:13px}
+.userbox .nm{font-weight:600;line-height:1.2}.userbox .rl2{color:var(--ink-3);font-size:12px}
+.sec-hd .act{display:flex;gap:6px;flex-wrap:wrap;margin-left:12px}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.btn.warn{background:var(--red-soft);border-color:var(--red-soft);color:var(--red)}
+.stt.booked{background:var(--blue-soft);color:var(--blue)}
+.log{padding:14px 22px;border-top:1px solid var(--line);background:var(--bg)}
+.log h5{margin:0 0 8px;font-size:13.5px}
+.log ul{margin:0;padding:0;list-style:none;font-size:12.5px}
+.log li{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:5px 0;border-bottom:1px dotted var(--line-2)}
+.log li .ts{color:var(--ink-3);font-variant-numeric:tabular-nums}
+.trip-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 22px;border-top:1px solid var(--line)}
+
+.acct-col,.acct-hd{display:none}
+body.role-acct .acct-col{display:table-cell}
+body.role-acct .acct-hd{display:inline}
+body:not(.role-acct) #view-workflow .acct,body:not(.role-acct) #view-supplier .acct,body:not(.role-acct) #view-fuel .hd .acct,body:not(.role-acct) #view-parts .hd .acct,body:not(.role-acct) #view-workflow th:last-child,body:not(.role-acct) #view-workflow td:last-child{display:none}
+.acct-sel{border:1px solid var(--line-2);border-radius:4px;background:#fff;padding:4px 6px;font-size:12px;font-variant-numeric:tabular-nums}
+.sec.locked .acct-sel{pointer-events:auto;border-color:var(--line-2);background:#fff;appearance:auto;-webkit-appearance:auto}
+.sec.locked .acct-col .acct-sel:disabled{border-color:transparent;background:transparent;appearance:none;-webkit-appearance:none;color:var(--ink)}
+
+.do-profit{margin-top:16px;background:#fff;border:1px solid #E4C9B4;border-radius:var(--r);overflow:hidden}
+.do-profit table{font-size:13.5px}
+.do-profit th{background:var(--bg);text-align:left;font-weight:600}
+.do-profit td.num{font-variant-numeric:tabular-nums}
+.do-profit tr.res td{background:var(--green);color:#fff;font-weight:600;font-size:15px;border:0}
+.do-profit tr.res td small{color:#CFE5DC;font-weight:400}
+
+.stl{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stl-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.stl-hd{display:flex;align-items:center;gap:10px;padding:12px 16px;font-weight:600;font-size:14px;background:var(--bg);border-bottom:1px solid var(--line)}
+.stl-n{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;display:grid;place-items:center}
+.stl-row{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13.5px}
+.stl-l small{display:block;color:var(--ink-3);font-size:12px;margin-top:1px;font-weight:400}
+.stl-v{font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:500}
+.stl-row.neg .stl-v{color:var(--red)}
+.stl-subs{padding:6px 16px 8px 30px;border-bottom:1px solid var(--line);background:#FAFBF9}
+.stl-sub{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);padding:3px 0;font-variant-numeric:tabular-nums}
+.stl-row.tot{border-bottom:0;padding:14px 16px;font-size:15px;font-weight:600}
+.stl-row.tot .stl-v{font-size:19px}
+.stl-row.tot.ore{background:var(--ore-soft)} .stl-row.tot.ore .stl-v{color:var(--ore)}
+.stl-row.tot.green{background:var(--green);color:#fff} .stl-row.tot.green .stl-l small{color:#CFE5DC} .stl-row.tot.green .stl-v{color:#fff}
+.stl-note{padding:8px 16px;font-size:12px;color:var(--ink-3);border-top:1px solid var(--line)}
+@media (max-width:900px){.stl{grid-template-columns:1fr}}
+.bill .stl{grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+<div class="login" id="login">
+  <div class="box">
+    <div class="l"><div class="mark" style="width:44px;height:44px;background:#fff;color:var(--green);border-radius:9px;display:grid;place-items:center;font-weight:700">EPL</div>
+      <h2 data-i18n="login_title"></h2><p data-i18n="login_sub"></p></div>
+    <div class="r">
+      <h3 data-i18n="login_h"></h3><span class="small muted" data-i18n="login_demo"></span>
+      <div class="field"><label data-i18n="username"></label><input id="lgU" autocomplete="username"></div>
+      <div class="field"><label data-i18n="password"></label><input id="lgP" type="password" value="1234" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="err" id="lgErr"></div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="doLogin()" data-i18n="login_btn"></button>
+      <div class="small muted" style="margin-top:14px" data-i18n="quick_pick"></div>
+      <div class="accts" id="acctList"></div>
+    </div>
+  </div>
+</div>
+<div class="app">
+
+<!-- ================= SIDEBAR ================= -->
+<aside class="side">
+  <div class="brand">
+    <div class="mark">EPL</div>
+    <h1 data-i18n="brand"></h1>
+  </div>
+  <nav class="nav">
+    <button data-view="dashboard" class="active"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg><span data-i18n="nav_dash"></span></button>
+    <div class="nav-group" data-i18n="mod_transport"></div>
+    <button data-view="tracking"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg><span data-i18n="nav_tracking"></span></button>
+    <button data-view="dispatch"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><span data-i18n="nav_dispatch"></span></button>
+    <button data-view="bill"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg><span data-i18n="nav_bill"></span></button>
+    <button data-view="joint"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg><span data-i18n="nav_joint"></span></button>
+    <button data-view="driver"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg><span data-i18n="nav_driver"></span></button>
+    <button data-view="supplier"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg><span data-i18n="nav_supplier"></span></button>
+    <div class="nav-group" data-i18n="mod_warehouse"></div>
+    <button data-view="fuel"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M15 10h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-3-3"/><path d="M6 6h6v5H6z"/></svg><span data-i18n="nav_fuel"></span></button>
+    <button data-view="parts"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="nav_parts"></span></button>
+    <div class="nav-group" data-i18n="mod_system"></div>
+    <button data-view="workflow"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M6 21v-4M18 21v-4M4 11h16"/><rect x="9" y="7" width="6" height="4"/><rect x="3" y="17" width="6" height="4"/><rect x="15" y="17" width="6" height="4"/></svg><span data-i18n="nav_workflow"></span></button>
+  </nav>
+  <div class="foot">
+    <div>SAMKET VILLAGE, SIKHOTTABONG</div>
+    <div>VIENTIANE · 020 5889 9983</div>
+  </div>
+</aside>
+
+<!-- ================= MAIN ================= -->
+<div class="main">
+  <header class="topbar">
+    <h2 id="pageTitle"></h2>
+    <div class="grow"></div>
+    <div class="lang" role="group" aria-label="Language">
+      <button data-lang="vi" class="active">Tiếng Việt</button>
+      <button data-lang="lo" lang="lo">ພາສາລາວ</button>
+      <button data-lang="both">VI + ລາວ</button>
+    </div>
+    <div class="userbox"><div class="av" id="roleAv" style="width:34px;height:34px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:600;font-size:12px">TB</div><div><div class="nm" id="uName"></div><div class="rl2" id="uRole"></div></div>
+<button class="btn sm" onclick="logout()" data-i18n="switch_acct"></button></div>
+  </header>
+
+  <main class="page">
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="view active" id="view-dashboard">
+    <div class="toolbar">
+      <div class="field"><label data-i18n="period"></label><select><option data-i18n="p_aug26"></option><option data-i18n="p_sep26"></option></select></div>
+      <div class="field"><label data-i18n="company"></label><select><option>EPL</option><option data-i18n="all"></option></select></div>
+      <div class="grow"></div>
+      <button class="btn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span data-i18n="export"></span></button>
+      <button class="btn primary" data-goto="dispatch"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="new_dispatch"></span></button>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi green"><div class="lbl" data-i18n="k_rev"></div><div class="val" id="kRev"></div><div class="delta" id="kRevSub"></div></div>
+      <div class="kpi red"><div class="lbl" data-i18n="k_exp"></div><div class="val" id="kExp"></div><div class="delta" id="kExpSub"></div></div>
+      <div class="kpi ore"><div class="lbl" data-i18n="k_tons"></div><div class="val" id="kTons"></div><div class="delta" id="kTonsSub"></div></div>
+      <div class="kpi blue"><div class="lbl" data-i18n="k_unpaid"></div><div class="val" id="kUnpaid"></div><div class="delta" id="kUnpaidSub"></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="hd"><h3 data-i18n="pipe_title"></h3><div class="grow"></div><span class="small muted" data-i18n="pipe_hint"></span></div>
+      <div class="bd"><div class="pipeline" id="pipeline"></div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="hd"><h3 data-i18n="exp_break"></h3><div class="grow"></div><span class="small muted">LAK</span></div>
+        <div class="bd"><div class="bars" id="expBars"></div></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="hd"><h3 data-i18n="rates"></h3><div class="grow"></div><span class="small muted">19/08/2026</span></div>
+          <div class="bd"><div class="rates">
+            <div class="rate"><div class="c">USD → LAK</div><div class="v">22,000</div></div>
+            <div class="rate"><div class="c">THB → LAK</div><div class="v">700</div></div>
+            <div class="rate"><div class="c">VND → LAK</div><div class="v">1.2</div></div>
+          </div></div>
+        </div>
+        <div class="card">
+          <div class="hd"><h3 data-i18n="attention"></h3></div>
+          <div class="bd" id="attention"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TRACKING REPORT ===== -->
+  <section class="view" id="view-tracking">
+    <div class="toolbar">
+      <div class="search"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" data-i18n-ph="search_ph"></div>
+      <div class="field"><label data-i18n="st_transport"></label><select id="fT"><option value="" data-i18n="all"></option><option value="dispatched" data-i18n="s_dispatched"></option><option value="transit" data-i18n="s_transit"></option><option value="arrived" data-i18n="s_arrived"></option></select></div>
+      <div class="field"><label data-i18n="st_finance"></label><select id="fF"><option value="" data-i18n="all"></option><option value="unpaid" data-i18n="s_unpaid"></option><option value="partial" data-i18n="s_partial"></option><option value="paid" data-i18n="s_paid"></option></select></div>
+      <div class="field"><label data-i18n="company"></label><select id="fC"><option value="" data-i18n="all"></option><option>EPL</option><option data-i18n="joint_truck" value="joint"></option></select></div>
+      <div class="grow"></div>
+      <button class="btn"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Excel</button>
+      <button class="btn primary" data-goto="dispatch"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="new_dispatch"></span></button>
+    </div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="track_title"></h3><div class="grow"></div><span class="small muted" id="rowCount"></span></div>
+      <div class="tbl-wrap">
+        <table class="tbl-compact" id="trackTbl">
+          <thead>
+            <tr class="grp">
+              <th colspan="10" style="background:var(--bg);border-bottom-color:var(--line)"></th>
+              <th colspan="7" class="rev" data-i18n="revenue"></th>
+              <th colspan="7" class="exp" data-i18n="expense"></th>
+              <th class="rev" data-i18n="net"></th>
+              <th colspan="2" class="st" data-i18n="status"></th>
+            </tr>
+            <tr>
+              <th>#</th><th data-i18n="c_date"></th><th data-i18n="c_billno"></th><th data-i18n="c_orebill"></th><th data-i18n="c_route"></th><th data-i18n="c_company"></th><th data-i18n="c_driver"></th><th data-i18n="c_truck"></th><th data-i18n="c_plates"></th><th data-i18n="c_customer"></th>
+              <th data-i18n="c_goods"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="c_w_origin"></th><th class="num" data-i18n="c_w_dest"></th><th class="num" data-i18n="c_price"></th><th class="num" data-i18n="c_value"></th><th class="num" data-i18n="c_joint_fee"></th>
+              <th class="num" data-i18n="c_fee2"></th><th class="num" data-i18n="c_over"></th><th class="num" data-i18n="c_fuel"></th><th class="num" data-i18n="c_travel"></th><th class="num" data-i18n="c_repair"></th><th class="num" data-i18n="c_other"></th><th class="num" data-i18n="c_totexp"></th>
+              <th class="num" data-i18n="c_net"></th><th data-i18n="c_st_t"></th><th data-i18n="c_st_f"></th>
+            </tr>
+          </thead>
+          <tbody id="trackBody"></tbody>
+          <tfoot id="trackFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:10px" data-i18n="track_note"></p>
+  </section>
+
+  <!-- ===== DISPATCH FORM ===== -->
+  <section class="view" id="view-dispatch">
+    <div class="toolbar">
+      <button class="btn quiet" data-goto="tracking">← <span data-i18n="back_list"></span></button>
+      <div class="field"><label data-i18n="doc_no"></label><select id="tripSel" onchange="loadTrip(+this.value)"></select></div>
+      <div class="grow"></div>
+      <button class="btn" onclick="window.print()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i18n="print"></span></button>
+      <button class="btn"><span data-i18n="save_draft"></span></button>
+      <button class="btn primary"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="submit_verify"></span></button>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="bd" style="padding:14px 18px">
+        <div class="flow">
+          <div class="step done"><div class="t" data-i18n="wf1"></div><div class="d" data-i18n="wf1d"></div><div class="k"></div></div>
+          <div class="step now"><div class="t" data-i18n="wf2"></div><div class="d" data-i18n="wf2d"></div><div class="k"></div></div>
+          <div class="step"><div class="t" data-i18n="wf3"></div><div class="d" data-i18n="wf3d"></div><div class="k"></div></div>
+          <div class="step"><div class="t" data-i18n="wf4"></div><div class="d" data-i18n="wf4d"></div><div class="k"></div></div>
+          <div class="step"><div class="t" data-i18n="wf5"></div><div class="d" data-i18n="wf5d"></div><div class="k"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rolehint" id="roleHint"></div>
+    <div class="card" id="dispatchCard">
+      <div class="doc-head">
+        <div class="co"><h3 data-i18n="doc_dispatch"></h3><p>SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO · Tel 020 5889 9983</p></div>
+        <div class="grow"></div>
+        <div class="doc-no"><div class="lbl" data-i18n="doc_no"></div><div class="no" id="docNo"></div><span id="docSt"></span></div>
+      </div>
+
+      <!-- I -->
+      <div class="sec" data-sec="info">
+        <div class="sec-hd"><div class="rn">I</div><h4 data-i18n="sec1"></h4><span class="stt" data-stt="info"></span><div class="act" data-act="info"></div><div class="who"><span data-i18n="resp"></span> <span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span></div></div>
+        <div class="sec-bd">
+          <div class="f-grid">
+            <div class="field"><label data-i18n="truck_type"></label><select id="coSel" onchange="setCompany(this.value)"><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
+            <div class="field joint-only"><label data-i18n="owner"></label><input id="ownerIn" lang="lo"></div>
+            <div class="field"><label data-i18n="truck_no"></label><input id="truckIn"></div>
+            <div class="field"><label data-i18n="brand_model"></label><input id="brandIn"></div>
+            <div class="field"><label data-i18n="driver"></label><input id="drvIn" lang="lo"></div>
+            <div class="field"><label data-i18n="plate_head"></label><input id="plateH" lang="lo"></div>
+            <div class="field"><label data-i18n="plate_trailer"></label><input id="plateT" lang="lo"></div>
+            <div class="field"><label data-i18n="d_issue"></label><input type="date" value="2026-08-19"></div>
+            <div class="field"><label data-i18n="d_out"></label><input type="date" value="2026-08-19"></div>
+            <div class="field"><label data-i18n="d_back"></label><input type="date" value="2026-08-22"></div>
+            <div class="field w2"><label data-i18n="odometer"></label>
+              <div class="odo">
+                <div class="field"><input class="num" value="7891" id="odoA" oninput="odo()"><span class="small muted" data-i18n="odo_out"></span></div>
+                <div class="field"><input class="num" value="6921" id="odoB" oninput="odo()"><span class="small muted" data-i18n="odo_back"></span></div>
+                <div class="field"><div class="ro num" id="odoK">970</div><span class="small muted" data-i18n="odo_km"></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- II -->
+      <div class="sec" data-sec="trans">
+        <div class="sec-hd"><div class="rn">II</div><h4 data-i18n="sec2"></h4><span class="stt" data-stt="trans"></span><div class="act" data-act="trans"></div><div class="who"><span data-i18n="resp"></span> <span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span> <span class="acct-hd">· <span data-i18n="acct_entry"></span> <span class="acct">1211/70</span> <span class="small muted" data-i18n="acct_1211_70"></span></span></div></div>
+        <div class="sec-bd">
+          <div class="f-grid">
+            <div class="field"><label data-i18n="customer"></label><input id="custIn" lang="lo"></div>
+            <div class="field"><label data-i18n="goods_type"></label><select><option data-i18n="iron_ore"></option><option data-i18n="other_goods"></option></select></div>
+            <div class="field"><label data-i18n="ore_bill_no"></label><input id="oreIn" placeholder="—"></div>
+            <div class="field"><label data-i18n="ore_bill_date"></label><input type="date" value="2026-08-19"></div>
+            <div class="field"><label data-i18n="origin"></label><input id="origIn" lang="lo"></div>
+            <div class="field"><label data-i18n="dest"></label><input id="destIn" lang="lo"></div>
+            <div class="field"><label data-i18n="w_origin"></label><input class="num" id="wO" oninput="calc()"></div>
+            <div class="field"><label data-i18n="w_dest"></label><input class="num" id="wD" oninput="calc()"></div>
+            <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="wLoss"></div></div>
+            <div class="field"><label data-i18n="price_usd"></label><input class="num" id="price" oninput="calc()"></div>
+            <div class="field"><label data-i18n="value_usd"></label><div class="ro hi num" id="valUSD"></div></div>
+            <div class="field"><label data-i18n="value_lak"></label><div class="ro num" id="valLAK"></div></div>
+          </div>
+          <p class="small muted" style="margin:12px 0 0" data-i18n="value_rule"></p>
+
+          <div class="joint-only deduct">
+            <h5 data-i18n="ded_title"></h5>
+            <div class="f-grid">
+              <div class="field"><label data-i18n="hire_pt"></label><input class="num" id="hireP" oninput="calc()"></div>
+              <div class="field"><label data-i18n="hire_usd"></label><div class="ro num" id="hire"></div></div>
+              <div class="field"><label data-i18n="fee_pct"></label><input class="num" id="feePct" oninput="calc()"></div>
+              <div class="field"><label data-i18n="fee_amt"></label><div class="ro num neg" id="feeAmt"></div></div>
+              <div class="field"><label data-i18n="limit_t"></label><input class="num" id="limitT" oninput="calc()"></div>
+              <div class="field"><label data-i18n="over_t"></label><div class="ro num" id="overT"></div></div>
+              <div class="field"><label data-i18n="over_p"></label><input class="num" id="overP" oninput="calc()"></div>
+              <div class="field"><label data-i18n="over_amt"></label><div class="ro num neg" id="overAmt"></div></div>
+            </div>
+            <p class="small muted" style="margin:10px 0 0" data-i18n="ded_note"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- III fuel -->
+      <div class="sec" data-sec="fuel">
+        <div class="sec-hd"><div class="rn">III</div><h4 data-i18n="sec3"></h4><span class="stt" data-stt="fuel"></span><div class="act" data-act="fuel"></div><div class="who"><span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span><span class="role f"><span class="av">KT</span><span data-i18n="r_fuel_acct"></span></span><span class="role c"><span class="av">CE</span><span data-i18n="r_treasury"></span></span> <span class="acct-hd">· <span class="acct">625/371</span> <span class="small muted" data-i18n="acct_625_371"></span></span></div></div>
+        <div class="sec-bd">
+          <p class="small muted joint-only" style="margin:0 0 10px" data-i18n="fuel_joint_note"></p>
+          <table class="exp-table" id="fuelTbl">
+            <thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_l"></th><th class="num" data-i18n="unit_price"></th><th data-i18n="cur"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="fill_place"></th><th class="joint-col" data-i18n="who_pays"></th><th class="acct-col" data-i18n="acct_code"></th><th></th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td></td><td data-i18n="total"></td><td class="num" id="fuelQty"></td><td></td><td></td><td class="num" id="fuelTot"></td><td colspan="4"></td></tr></tfoot>
+          </table>
+          <button class="btn quiet addrow" onclick="addRow('fuel')">+ <span data-i18n="add_row"></span></button>
+        </div>
+      </div>
+
+      <!-- IV travel -->
+      <div class="sec" data-sec="travel">
+        <div class="sec-hd"><div class="rn">IV</div><h4 data-i18n="sec4"></h4><span class="stt" data-stt="travel"></span><div class="act" data-act="travel"></div><div class="who"><span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span><span class="role f"><span class="av">KT</span><span data-i18n="r_exp_acct"></span></span><span class="role c"><span class="av">CE</span><span data-i18n="r_petty"></span></span> <span class="acct-hd">· <span class="acct">625/402</span></span></div></div>
+        <div class="sec-bd">
+          <p class="small muted" style="margin:0 0 10px" data-i18n="edit_hint"></p>
+          <table class="exp-table" id="travelTbl">
+            <thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="joint-col" data-i18n="who_pays"></th><th class="acct-col" data-i18n="acct_code"></th><th></th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td></td><td data-i18n="total"></td><td></td><td></td><td class="num" id="travelTot"></td><td colspan="3"></td></tr></tfoot>
+          </table>
+          <button class="btn quiet addrow" onclick="addRow('travel')">+ <span data-i18n="add_row"></span></button>
+        </div>
+      </div>
+
+      <!-- V repair -->
+      <div class="sec" data-sec="repair">
+        <div class="sec-hd"><div class="rn">V</div><h4 data-i18n="sec5"></h4><span class="stt" data-stt="repair"></span><div class="act" data-act="repair"></div><div class="who"><span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span><span class="role f"><span class="av">KT</span><span data-i18n="r_exp_acct"></span></span><span class="role c"><span class="av">CE</span><span data-i18n="r_petty"></span></span> <span class="acct-hd">· <span class="acct">614/402</span> · <span class="acct">614/371</span></span></div><label class="sec-toggle" style="margin-left:12px"><input type="checkbox" id="tg_repair" onchange="toggleSec('repair',this.checked)"><span data-i18n="has_expense"></span></label></div>
+        <div class="sec-bd">
+          <table class="exp-table" id="repairTbl">
+            <thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="joint-col" data-i18n="who_pays"></th><th class="acct-col" data-i18n="acct_code"></th><th></th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td></td><td data-i18n="total"></td><td></td><td></td><td class="num" id="repairTot"></td><td colspan="3"></td></tr></tfoot>
+          </table>
+          <button class="btn quiet addrow" onclick="addRow('repair')">+ <span data-i18n="add_row"></span></button>
+        </div>
+      </div>
+
+      <!-- VI other -->
+      <div class="sec" data-sec="other">
+        <div class="sec-hd"><div class="rn">VI</div><h4 data-i18n="sec6"></h4><span class="stt" data-stt="other"></span><div class="act" data-act="other"></div><div class="who"><span class="role"><span class="av">TB</span><span data-i18n="r_yard"></span></span><span class="role f"><span class="av">KT</span><span data-i18n="r_exp_acct"></span></span><span class="role c"><span class="av">CE</span><span data-i18n="r_petty"></span></span></div><label class="sec-toggle" style="margin-left:12px"><input type="checkbox" id="tg_other" onchange="toggleSec('other',this.checked)"><span data-i18n="has_expense"></span></label></div>
+        <div class="sec-bd">
+          <table class="exp-table" id="otherTbl">
+            <thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="joint-col" data-i18n="who_pays"></th><th class="acct-col" data-i18n="acct_code"></th><th></th></tr></thead>
+            <tbody></tbody>
+            <tfoot><tr><td></td><td data-i18n="total"></td><td></td><td></td><td class="num" id="otherTot"></td><td colspan="3"></td></tr></tfoot>
+          </table>
+          <button class="btn quiet addrow" onclick="addRow('other')">+ <span data-i18n="add_row"></span></button>
+        </div>
+      </div>
+
+      <div id="summaryBox"></div>
+      <div class="trip-actions" id="tripActions"></div>
+      <div class="log" id="apprLog"></div>
+      <div class="sign-row">
+        <div class="sign"><div class="line"></div><div class="rl" data-i18n="sg_driver"></div><div data-i18n="sg_driver_d"></div></div>
+        <div class="sign"><div class="line"></div><div class="rl" data-i18n="sg_issuer"></div><div data-i18n="sg_issuer_d"></div></div>
+        <div class="sign"><div class="line"></div><div class="rl" data-i18n="sg_verify"></div><div data-i18n="sg_verify_d"></div></div>
+        <div class="sign"><div class="line"></div><div class="rl" data-i18n="sg_payer"></div><div data-i18n="sg_payer_d"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TRANSPORT BILL ===== -->
+  <section class="view" id="view-bill">
+    <div class="toolbar">
+      <button class="btn quiet" data-goto="tracking">← <span data-i18n="back_list"></span></button>
+      <div class="field"><label data-i18n="pick_bill"></label><select id="billSel" onchange="renderBill()"></select></div>
+      <div class="grow"></div>
+      <button class="btn" onclick="window.print()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span data-i18n="print"></span></button>
+      <button class="btn primary"><span data-i18n="mark_paid"></span></button>
+    </div>
+    <div class="bill">
+      <div class="head">
+        <h3>EPL TRANSPORT</h3>
+        <p>SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO</p>
+        <p>ໂທລະສັບ/Tel: 020 5889 9983</p>
+      </div>
+      <div id="billBody"></div>
+    </div>
+  </section>
+
+  <!-- ===== JOINT TRUCK ===== -->
+  <section class="view" id="view-joint">
+    <div class="notice"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span data-i18n="joint_rule"></span></div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="nav_joint"></h3></div>
+      <div class="tbl-wrap"><table class="tbl-compact">
+        <thead><tr><th>#</th><th data-i18n="c_date"></th><th data-i18n="c_billno"></th><th data-i18n="owner"></th><th data-i18n="c_plates"></th><th data-i18n="c_driver"></th><th class="num" data-i18n="c_w_dest"></th><th class="num" data-i18n="c_price"></th><th class="num" data-i18n="hire_usd"></th><th class="num" data-i18n="c_fee2"></th><th class="num" data-i18n="c_over"></th><th class="num" data-i18n="st_adv"></th><th class="num" data-i18n="st_net_owner"></th><th data-i18n="c_st_f"></th></tr></thead>
+        <tbody id="jointBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===== DRIVER MONEY ===== -->
+  <section class="view" id="view-driver">
+    <div class="card">
+      <div class="hd"><h3 data-i18n="nav_driver"></h3><div class="grow"></div><span class="small muted" data-i18n="p_aug26"></span></div>
+      <div class="tbl-wrap"><table class="tbl-compact">
+        <thead><tr><th data-i18n="driver"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="trip_money"></th><th class="num" data-i18n="water_money"></th><th class="num" data-i18n="phone_money"></th><th class="num" data-i18n="vn_money"></th><th class="num" data-i18n="total_lak"></th><th data-i18n="pay_with"></th><th data-i18n="c_st_f"></th></tr></thead>
+        <tbody id="driverBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===== SUPPLIER ===== -->
+  <section class="view" id="view-supplier">
+    <div class="card">
+      <div class="hd"><h3 data-i18n="nav_supplier"></h3><div class="grow"></div><span class="small muted" data-i18n="sup_hint"></span></div>
+      <div class="tbl-wrap"><table class="tbl-compact">
+        <thead><tr><th data-i18n="supplier"></th><th data-i18n="service"></th><th data-i18n="acct_code"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="owed_lak"></th><th class="num" data-i18n="paid_lak"></th><th class="num" data-i18n="balance_lak"></th><th data-i18n="terms"></th></tr></thead>
+        <tbody id="supBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===== FUEL STORE ===== -->
+  <section class="view" id="view-fuel">
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi ore"><div class="lbl" data-i18n="fuel_stock"></div><div class="val">4,150<small>L</small></div><div class="delta" lang="lo">ສາງທ່າບົກ</div></div>
+      <div class="kpi red"><div class="lbl" data-i18n="fuel_out_month"></div><div class="val">3,480<small>L</small></div><div class="delta" data-i18n="p_aug26"></div></div>
+      <div class="kpi green"><div class="lbl" data-i18n="fuel_avg"></div><div class="val">29,120<small>LAK/L</small></div><div class="delta" data-i18n="fuel_avg_d"></div></div>
+    </div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="nav_fuel"></h3><div class="grow"></div><span class="acct">625/371</span></div>
+      <div class="tbl-wrap"><table class="tbl-compact">
+        <thead><tr><th data-i18n="c_date"></th><th data-i18n="ref"></th><th data-i18n="type"></th><th data-i18n="c_truck"></th><th class="num" data-i18n="in_l"></th><th class="num" data-i18n="out_l"></th><th class="num" data-i18n="balance_l"></th><th class="num" data-i18n="unit_price"></th><th data-i18n="checked_by"></th></tr></thead>
+        <tbody id="fuelStoreBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===== PARTS STORE ===== -->
+  <section class="view" id="view-parts">
+    <div class="card">
+      <div class="hd"><h3 data-i18n="nav_parts"></h3><div class="grow"></div><span class="acct">614/371</span></div>
+      <div class="tbl-wrap"><table class="tbl-compact">
+        <thead><tr><th data-i18n="part"></th><th data-i18n="unit"></th><th class="num" data-i18n="stock"></th><th class="num" data-i18n="min_stock"></th><th class="num" data-i18n="unit_price"></th><th data-i18n="last_issue"></th><th data-i18n="c_truck"></th><th data-i18n="status"></th></tr></thead>
+        <tbody id="partsBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ===== WORKFLOW ===== -->
+  <section class="view" id="view-workflow">
+    <div class="card" style="margin-bottom:16px">
+      <div class="hd"><h3 data-i18n="wf_doc1"></h3><div class="grow"></div><span class="small muted" data-i18n="wf_hint"></span></div>
+      <div class="tbl-wrap"><table class="wf">
+        <thead><tr><th data-i18n="item"></th><th data-i18n="resp"></th><th data-i18n="verifier"></th><th data-i18n="bookkeeper"></th><th data-i18n="payer"></th><th data-i18n="acct_code"></th></tr></thead>
+        <tbody id="wfBody"></tbody>
+      </table></div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--green)"></span><span data-i18n="lg_yard"></span></span>
+        <span><span class="dot" style="background:var(--blue)"></span><span data-i18n="lg_acct"></span></span>
+        <span><span class="dot" style="background:var(--ore)"></span><span data-i18n="lg_cash"></span></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="wf_doc2"></h3></div>
+      <div class="tbl-wrap"><table class="wf">
+        <thead><tr><th data-i18n="item"></th><th data-i18n="resp"></th><th data-i18n="bookkeeper"></th><th data-i18n="acct_code"></th></tr></thead>
+        <tbody><tr><td data-i18n="wf_invoice"></td><td><span class="role f"><span class="av">KT</span><span data-i18n="r_rev_acct"></span></span></td><td><span class="role f"><span class="av">KT</span><span data-i18n="r_rev_acct"></span></span></td><td><span class="acct">1211/70</span></td></tr></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  </main>
+</div>
+</div>
+
+<script>
+/* ================= I18N ================= */
+const T = {
+brand:['Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>','ຄຸ້ມຄອງການຂົນສົ່ງ EPL<small>ຂົນສົ່ງແຮ່ · ວຽງຈັນ</small>'],
+nav_dash:['Tổng quan','ພາບລວມ'],
+mod_transport:['Mô-đun vận tải','ໂມດູນການຂົນສົ່ງ'],
+mod_warehouse:['Mô-đun kho','ໂມດູນສາງ'],
+mod_system:['Hệ thống','ລະບົບ'],
+nav_tracking:['Theo dõi phiếu vận chuyển','ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ'],
+nav_dispatch:['Phiếu xuất xe','ໃບເບີກລົດອອກໄປຂົນສົ່ງ'],
+nav_bill:['Hóa đơn vận chuyển','ໃບບິນຂົນສົ່ງ'],
+nav_joint:['Xe liên kết','ລົດຮ່ວມ'],
+nav_driver:['Tiền chuyến & tiền nước tài xế','ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນໍ້າ'],
+nav_supplier:['Theo dõi nhà cung cấp','ຕິດຕາມຜູ້ສະໜອງ'],
+nav_fuel:['Kho nhiên liệu','ສາງນໍ້າມັນ'],
+nav_parts:['Kho phụ tùng','ສາງອາໄຫຼ່'],
+nav_workflow:['Quy trình & trách nhiệm','ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ'],
+user_role:['Bãi Thà Bốc · Nhập liệu','ສະໜາມທ່າບົກ · ລົງຂໍ້ມູນ'],
+title_dashboard:['Tổng quan<span class="sub">Tháng 8/2026 · Công ty EPL</span>','ພາບລວມ<span class="sub">ເດືອນ 8/2026 · ບໍລິສັດ EPL</span>'],
+title_tracking:['Báo cáo theo dõi phiếu vận chuyển<span class="sub">Doanh thu · Chi phí · Trạng thái từng chuyến</span>','ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ<span class="sub">ລາຍຮັບ · ລາຍຈ່າຍ · ສະຖານະແຕ່ລະຖ້ຽວ</span>'],
+title_dispatch:['Phiếu xuất xe đi vận chuyển<span class="sub">Nhập theo vai trò · chọn phiếu ở thanh công cụ</span>','ໃບເບີກລົດອອກໄປຂົນສົ່ງ<span class="sub">ລົງຕາມໜ້າທີ່ · ເລືອກບິນຢູ່ແຖບເຄື່ອງມື</span>'],
+title_bill:['Hóa đơn vận chuyển<span class="sub">Bản in · chọn phiếu ở thanh công cụ</span>','ໃບບິນຂົນສົ່ງ<span class="sub">ສະບັບພິມ · ເລືອກບິນຢູ່ແຖບເຄື່ອງມື</span>'],
+title_joint:['Báo cáo vận chuyển xe liên kết<span class="sub">Xe ngoài công ty chạy hàng EPL</span>','ລາຍງານການຂົນສົ່ງລົດຮ່ວມ<span class="sub">ລົດນອກບໍລິສັດຂົນສິນຄ້າ EPL</span>'],
+title_driver:['Tiền chuyến & tiền nước tài xế<span class="sub">Tổng hợp theo tháng để trả cùng lương</span>','ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນໍ້າ<span class="sub">ສະຫຼຸບຕາມເດືອນ ຈ່າຍພ້ອມເງິນເດືອນ</span>'],
+title_supplier:['Theo dõi nhà cung cấp<span class="sub">Công nợ trả theo đợt</span>','ຕິດຕາມຜູ້ສະໜອງ<span class="sub">ໜີ້ຊໍາລະເປັນງວດ</span>'],
+title_fuel:['Kho nhiên liệu<span class="sub">Kho Thà Bốc · Nhập – xuất – tồn</span>','ສາງນໍ້າມັນ<span class="sub">ສາງທ່າບົກ · ຮັບ – ເບີກ – ຄົງເຫຼືອ</span>'],
+title_parts:['Kho phụ tùng<span class="sub">Tồn kho & xuất theo xe</span>','ສາງອາໄຫຼ່<span class="sub">ຍອດຄົງເຫຼືອ ແລະ ເບີກຕາມລົດ</span>'],
+title_workflow:['Quy trình & trách nhiệm<span class="sub">Ai nhập – ai kiểm – ai ghi sổ – ai chi tiền</span>','ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ<span class="sub">ໃຜລົງຂໍ້ມູນ – ໃຜກວດ – ໃຜບັນທຶກ – ໃຜຈ່າຍ</span>'],
+period:['Kỳ báo cáo','ງວດລາຍງານ'], p_aug26:['Tháng 8/2026','ເດືອນ 8/2026'], p_sep26:['Tháng 9/2026','ເດືອນ 9/2026'],
+company:['Công ty nhận quặng','ບໍລິສັດຮັບແກ່'], all:['Tất cả','ທັງໝົດ'], export:['Xuất báo cáo','ສົ່ງອອກລາຍງານ'], new_dispatch:['Tạo phiếu xuất xe','ສ້າງໃບເບີກລົດ'],
+k_rev:['Doanh thu vận chuyển','ລາຍຮັບຂົນສົ່ງ'], k_exp:['Tổng chi phí','ລວມລາຍຈ່າຍ'], k_tons:['Khối lượng đã chở','ນໍ້າໜັກທີ່ຂົນແລ້ວ'], k_unpaid:['Khách chưa thanh toán','ລູກຄ້າຄ້າງຊໍາລະ'],
+trips:['chuyến','ຖ້ຽວ'], of_total:['trên tổng','ຈາກທັງໝົດ'],
+pipe_title:['Tiến độ chuyến trong kỳ','ຄວາມຄືບໜ້າຖ້ຽວໃນງວດ'], pipe_hint:['Bấm vào từng bước để lọc danh sách','ກົດແຕ່ລະຂັ້ນເພື່ອຕອງລາຍການ'],
+s_dispatched:['Đã xuất xe','ອອກລົດແລ້ວ'], s_transit:['Đang vận chuyển','ກຳລັງຈັດສົ່ງ'], s_arrived:['Đã giao hàng','ສົ່ງຮອດແລ້ວ'],
+s_unpaid:['Chưa thanh toán','ຄ້າງຊໍາລະ'], s_partial:['Thanh toán một phần','ຊໍາລະບາງສ່ວນ'], s_paid:['Đã thanh toán','ຊໍາລະແລ້ວ'],
+p_invoiced:['Đã lập hóa đơn','ອອກໃບເກັບເງິນແລ້ວ'],
+exp_break:['Cơ cấu chi phí trong kỳ','ໂຄງສ້າງລາຍຈ່າຍໃນງວດ'],
+e_fuel:['Nhiên liệu','ນໍ້າມັນ'], e_travel:['Chi phí đi đường','ຄ່າເດີນທາງ'], e_repair:['Sửa chữa','ສ້ອມແປງ'], e_other:['Chi khác','ອື່ນໆ'],
+rates:['Tỷ giá quy đổi (LAK)','ອັດຕາແລກປ່ຽນ (ກີບ)'],
+attention:['Cần xử lý','ຕ້ອງດຳເນີນການ'],
+att1:['<b>T4-0428-08/EPL</b> – chưa có số phiếu quặng (bill quặng)','<b>T4-0428-08/EPL</b> – ຍັງບໍ່ມີເລກທີບິນແຮ່'],
+att2:['<b>Xe 341</b> – hao hụt cân 0,76 tấn (1,8%) vượt mức 1,5%','<b>ລົດ 341</b> – ນໍ້າໜັກຫາຍ 0,76 ໂຕນ (1,8%) ເກີນ 1,5%'],
+att3:['<b>Chipping Việt Nam</b> – công nợ đến hạn đợt 2 (25/09)','<b>ຊີບປີງຫວຽດ</b> – ໜີ້ຄົບກຳນົດງວດ 2 (25/09)'],
+att4:['<b>3 phiếu</b> đã giao nhưng chưa lập hóa đơn thu tiền','<b>3 ໃບ</b> ສົ່ງຮອດແລ້ວ ແຕ່ຍັງບໍ່ໄດ້ອອກໃບເກັບເງິນ'],
+search_ph:['Tìm số phiếu, tài xế, xe, khách hàng…','ຄົ້ນຫາ ເລກທີ, ໂຊເຟີ, ລົດ, ລູກຄ້າ…'],
+st_transport:['Trạng thái vận chuyển','ສະຖານະຂົນສົ່ງ'], st_finance:['Trạng thái tài chính','ສະຖານະການເງິນ'], joint_truck:['Xe liên kết','ລົດຮ່ວມ'],
+track_title:['Danh sách phiếu vận chuyển','ລາຍການໃບຂົນສົ່ງ'], rows:['dòng','ແຖວ'],
+revenue:['Doanh thu (USD)','ລາຍຮັບ (USD)'], expense:['Chi phí (LAK)','ລາຍຈ່າຍ (ກີບ)'], net:['Thu – Chi','ຮັບ – ຈ່າຍ'], status:['Trạng thái','ສະຖານະ'],
+c_date:['Ngày','ວດປ'], c_billno:['Số phiếu VC','ເລກທີບິນຂົນສົ່ງ'], c_orebill:['Phiếu quặng','ບິນແຮ່'], c_route:['Tuyến','ສາຍທາງ'], c_company:['Cty nhận','ບໍລິສັດຮັບ'], c_driver:['Tài xế','ໂຊເຟີ'], c_truck:['Số xe','ເບີລົດ'], c_plates:['Biển đầu / rơ-moóc','ທະບຽນ ຫົວ / ຫາງ'], c_customer:['Khách hàng','ລູກຄ້າ'],
+c_goods:['Loại hàng','ປະເພດສິນຄ້າ'], c_trips:['Chuyến','ຖ້ຽວ'], c_w_origin:['Cân đầu (t)','ໜັກຕົ້ນທາງ (ໂຕນ)'], c_w_dest:['Cân cuối (t)','ໜັກປາຍທາງ (ໂຕນ)'], c_price:['Giá/t','ລາຄາ/ໂຕນ'], c_value:['Thành tiền','ມູນຄ່າ'], c_joint_fee:['Cước xe LK','ຄ່າຂົນສົ່ງລົດຮ່ວມ'],
+c_fee2:['Phí 2%/phiếu','ຄ່າທຳນຽມ 2%/ບິນ'], c_over:['Quá tải 1$/t','ແກ່ເກີນ 1$/ໂຕນ'], c_fuel:['Nhiên liệu','ຄ່ານໍ້າມັນ'], c_travel:['Đi đường','ຄ່າເດີນທາງ'], c_repair:['Sửa chữa','ສ້ອມແປງ'], c_other:['Khác','ອື່ນໆ'], c_totexp:['Tổng chi','ລວມລາຍຈ່າຍ'],
+c_net:['USD','USD'], c_st_t:['Vận chuyển','ຂົນສົ່ງ'], c_st_f:['Tài chính','ການເງິນ'],
+track_note:['Thu – Chi quy đổi theo tỷ giá ngày lập phiếu (USD 22.000 · THB 700 · VND 1,2). Bấm vào dòng để mở phiếu xuất xe.','ຮັບ – ຈ່າຍ ແປງຕາມອັດຕາວັນອອກບິນ (USD 22.000 · THB 700 · VND 1,2). ກົດແຖວເພື່ອເປີດໃບເບີກລົດ.'],
+back_list:['Danh sách phiếu','ລາຍການໃບບິນ'], print:['In','ພິມ'], save_draft:['Lưu nháp','ບັນທຶກຮ່າງ'], submit_verify:['Gửi kiểm tra xác nhận','ສົ່ງກວດຢັ້ງຢືນ'], mark_paid:['Xác nhận đã thu tiền','ຢືນຢັນເກັບເງິນແລ້ວ'],
+wf1:['Nhập liệu','ລົງຂໍ້ມູນ'], wf1d:['Bãi Thà Bốc','ສະໜາມທ່າບົກ'], wf2:['Kiểm tra xác nhận','ກວດຢັ້ງຢືນ'], wf2d:['Kế toán Viêng Chăn','ບັນຊີ ວຽງຈັນ'], wf3:['Ghi sổ kế toán','ລົງບັນທຶກບັນຊີ'], wf3d:['Kế toán thu/chi','ບັນຊີລາຍຈ່າຍ/ຮັບ'], wf4:['Chi tiền','ຊໍາລະຄ່າໃຊ້ຈ່າຍ'], wf4d:['Quỹ / tiền mặt lẻ','ຄັງເງິນ / ເງິນສົດຍ່ອຍ'], wf5:['Lập hóa đơn thu','ອອກໃບເກັບເງິນ'], wf5d:['Kế toán doanh thu','ບັນຊີລາຍຮັບ'],
+doc_dispatch:['PHIẾU XUẤT XE ĐI VẬN CHUYỂN','ໃບເບີກລົດອອກໄປຂົນສົ່ງ'], doc_bill:['HÓA ĐƠN VẬN CHUYỂN · ໃບບິນຂົນສົ່ງ','ໃບບິນຂົນສົ່ງ · HÓA ĐƠN VẬN CHUYỂN'], doc_no:['Số phiếu','ເລກທີ'],
+sec1:['Thông tin xe vận chuyển','ຂໍ້ມູນລົດຂົນສົ່ງ'], sec2:['Thông tin vận chuyển & doanh thu','ຂໍ້ມູນການຂົນສົ່ງ ແລະ ລາຍຮັບ'], sec3:['Chi phí nhiên liệu','ລາຍຈ່າຍນໍ້າມັນ'], sec4:['Chi phí đi đường','ລາຍຈ່າຍເດີນທາງ'], sec5:['Chi phí sửa chữa','ລາຍຈ່າຍສ້ອມແປງ'], sec6:['Chi phí khác','ລາຍຈ່າຍອື່ນໆ'],
+resp:['Phụ trách','ຮັບຜິດຊອບ'], verifier:['Kiểm tra xác nhận','ຜູ້ກວດຢັ້ງຢືນ'], bookkeeper:['Ghi sổ kế toán','ລົງບັນທຶກບັນຊີ'], payer:['Người chi tiền','ຜູ້ຊໍາລະຄ່າໃຊ້ຈ່າຍ'],
+r_yard:['Bãi Thà Bốc','ສະໜາມທ່າບົກ'], r_fuel_acct:['Kế toán kho NL VC','ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ'], r_exp_acct:['Kế toán chi VC','ບັນຊີລາຍຈ່າຍ ວຽງຈັນ'], r_rev_acct:['Kế toán thu VC','ບັນຊີລາຍຮັບ ວຽງຈັນ'], r_io_acct:['Kế toán thu/chi VC','ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ'], r_treasury:['Quỹ Viêng Chăn','ຄັງເງິນ ວຽງຈັນ'], r_petty:['Tiền mặt lẻ TC Thà Bốc','ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ'],
+acct_entry:['Định khoản','ເດິນບັນຊີ'], acct_1211_70:['Bán dịch vụ vận tải','ຂາຍບໍລິການຂົນສົ່ງ'], acct_625_371:['Xuất nhiên liệu qua kho','ເບີກນໍ້າມັນຜ່ານສາງ'], acct_code:['Mã kế toán','ເລກບັນຊີ'],
+truck_no:['Số xe','ເບີລົດ'], brand_model:['Hãng / đời xe','ຍີ່ຫໍ້'], driver:['Tài xế','ຊື່ໂຊເຟີ'], plate_head:['Biển số đầu kéo','ທະບຽນ ຫົວ'], plate_trailer:['Biển số rơ-moóc','ທະບຽນຫາງ'],
+d_issue:['Ngày lập phiếu','ວັນທີອອກບິນ'], d_out:['Ngày xe đi','ວັນທີອອກລົດ'], d_back:['Ngày xe về','ວັນທີລົດກັບ'], days_out:['Số ngày đi','ຈຳນວນວັນ'], days:['ngày','ວັນ'],
+odometer:['Số công-tơ-mét','ເລກກົງເຕີ'], odo_out:['Lúc đi','ຕອນອອກ'], odo_back:['Lúc về','ຕອນກັບ'], odo_km:['Km chạy','ກມ ແລ່ນ'],
+customer:['Khách hàng','ຊື່ລູກຄ້າ'], goods_type:['Loại hàng','ປະເພດສິນຄ້າ'], iron_ore:['Quặng sắt','ແຮ່ເຫຼັກ'], other_goods:['Hàng khác','ສິນຄ້າອື່ນ'], ore_bill_no:['Số phiếu quặng','ເລກທີບິນແຮ່'], ore_bill_date:['Ngày phiếu quặng','ວັນທີບິນແຮ່'],
+origin:['Điểm đi','ຕົ້ນທາງ'], dest:['Điểm đến','ປາຍທາງ'], route:['Tuyến đường','ສາຍທາງ'], w_origin:['Cân đầu (tấn)','ນໍ້າໜັກຕົ້ນທາງ (ໂຕນ)'], w_dest:['Cân cuối (tấn)','ນໍ້າໜັກປາຍທາງ (ໂຕນ)'], w_loss:['Hao hụt','ຫາຍ'], ton:['tấn','ໂຕນ'],
+price_usd:['Đơn giá (USD/tấn)','ລາຄາ (USD/ໂຕນ)'], value_usd:['Thành tiền (USD)','ມູນຄ່າ (USD)'], value_lak:['Quy đổi (LAK)','ມູນຄ່າ (ກີບ)'],
+value_rule:['Thành tiền tính theo cân cuối (cân nơi giao). Hao hụt vượt 1,5% sẽ được đánh dấu để đối chiếu.','ມູນຄ່າຄິດຕາມນໍ້າໜັກປາຍທາງ. ຫາຍເກີນ 1,5% ຈະຖືກໝາຍໄວ້ເພື່ອກວດຄືນ.'],
+item:['Khoản mục','ລາຍການ'], qty:['SL','ຈຳນວນ'], qty_l:['Lít','ລິດ'], unit_price:['Đơn giá','ລາຄາ'], cur:['Tiền tệ','ສະກຸນ'], amount:['Số tiền','ຈຳນວນເງິນ'], amount_lak:['Thành tiền (LAK)','ມູນຄ່າ (ກີບ)'], fill_place:['Nơi đổ','ສະຖານທີ່ໃສ່'], pay_method:['Hình thức chi','ວິທີຈ່າຍ'], note:['Ghi chú','ໝາຍເຫດ'], total:['Tổng','ລວມ'], add_row:['Thêm dòng','ເພີ່ມແຖວ'],
+diesel:['Dầu diesel','ນໍ້າມັນກາຊວນ'],
+fp_yard:['Kho Thà Bốc','ໃສ່ສາງທ່າບົກ'], fp_vn:['Trạm xăng VN','ຢູ່ປໍ້າ VN'],
+pm_trip_salary:['Trả theo chuyến cùng lương','ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ'], pm_on_dispatch:['Chi ngay khi xe đi','ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ'], pm_supplier:['Nợ NCC / trả theo đợt','ຕິດໜີ້ຜູ້ສະໜອງ/ຊໍາລະເປັນງວດ'], pm_card:['Trả theo chuyến qua thẻ (nạp 15 tr/lần)','ຈ່າຍຕາມຖ້ຽວ ຜ່ານບັດ (ອັບເທື່ອລະ 15 ລ້ານ)'], pm_store:['Xuất kho phụ tùng','ເບີກອາໄຫຼ່ຜ່ານສາງ'],
+x_water:['Tiền nước','ເງິນເຕີມນໍ້າ'], x_vn:['Tiền chi phí sang Việt Nam cho tài xế','ເງິນໃຊ້ຈ່າຍໄປຫວຽດນາມໃຫ້ໂຊເຟີ'], x_chip_lao:['Phí chipping Lào (kho hải quan)','ຄ່າຊີບປີງລາວ (ສາງພາສີ)'], x_chip_vn:['Phí chipping Việt (1.800.000 đồng)','ຄ່າຊີບປີງຫວຽດ (1.800.000 ດົງ)'], x_bridge:['Phí cầu đường','ເງິນຄ່າຂົ້ວ'], x_toll:['Phí cao tốc','ເງິນຄ່າທາງດ່ວນ'], x_trip:['Tiền chuyến chở quặng','ເງິນຖ້ຽວແກ່ແຮ່'], x_phone:['Tiền điện thoại','ຄ່າເບີໂທ'],
+x_tire:['Vá / thay lốp','ຄ່າຈອດຢາງ'], x_food:['Tiền ăn tài xế','ຄ່າອາຫານໂຊເຟີ'], x_parking:['Phí đỗ xe / bãi','ຄ່າຈອດລົດ'], x_border:['Phí cửa khẩu','ຄ່າດ່ານ'], x_oil:['Thay dầu máy','ປ່ຽນນໍ້າມັນເຄື່ອງ'], x_brake:['Má phanh','ຜ້າເບຣກ'], x_tow:['Cứu hộ / kéo xe','ລົດຍົກ'], x_misc:['Chi khác','ອື່ນໆ'], x_custom:['Khác (tự gõ)…','ອື່ນໆ (ພິມເອງ)…'], edit_hint:['Mọi dòng đều sửa được: đổi khoản mục, số lượng, đơn giá; xóa dòng bằng × hoặc thêm dòng mới. Danh mục khác nhau theo từng chuyến.','ທຸກແຖວແກ້ໄດ້: ປ່ຽນລາຍການ, ຈຳນວນ, ລາຄາ; ລຶບແຖວດ້ວຍ × ຫຼື ເພີ່ມແຖວໃໝ່. ລາຍການຕ່າງກັນແຕ່ລະຖ້ຽວ.'], x_air:['Phụ tùng bầu hơi','ອາໄຫຼ່ເຕົ້າລົມ'],
+sum_rev:['Doanh thu chuyến (quy đổi)','ລາຍຮັບຖ້ຽວ (ແປງເປັນກີບ)'], sum_exp:['Tổng chi phí chuyến','ລາຍຈ່າຍທັງໝົດ'], sum_net:['Thu – Chi trong chuyến','ຮັບ – ຈ່າຍໃນຖ້ຽວ'],
+sg_driver:['Tài xế','ໂຊເຟີ'], sg_driver_d:['Ký nhận tiền & hàng','ເຊັນຮັບເງິນ ແລະ ສິນຄ້າ'], sg_issuer:['Người lập phiếu','ຜູ້ອອກບິນ'], sg_issuer_d:['Bãi Thà Bốc','ສະໜາມທ່າບົກ'], sg_verify:['Người kiểm tra','ຜູ້ກວດຢັ້ງຢືນ'], sg_verify_d:['Kế toán Viêng Chăn','ບັນຊີ ວຽງຈັນ'], sg_payer:['Người chi tiền','ຜູ້ຈ່າຍເງິນ'], sg_payer_d:['Quỹ / tiền mặt lẻ','ຄັງເງິນ / ເງິນສົດຍ່ອຍ'],
+sg_printer:['Người in phiếu','ຜູ້ພິມບິນ'], sg_filler:['Người đổ nhiên liệu','ຜູ້ໃສ່ນໍ້າມັນ'], sg_fuel_check:['Người kiểm tra nhiên liệu','ຜູ້ກວດການໍ້າມັນ'],
+bill_fuel:['Đổ nhiên liệu','ລາຍການໃສ່ນໍ້າມັນ'], bill_pay:['Các khoản chi','ລາຍການຈ່າຍ'], pay_driver_total:['Tổng phải trả tài xế','ລວມ ຕ້ອງຈ່າຍໃຫ້ໂຊເຟີ'], grand_total:['Tổng cộng (LAK)','ລວມທັງໝົດລາວ'],
+joint_rule:['Xe thuê ngoài: tiền trả chủ xe = tiền thuê − phí quản lý − quá tải − chi phí EPL đã ứng (dầu kho EPL, đi đường, sửa chữa). Chủ xe tự trả (đổ dầu ngoài…) thì không trừ.','ລົດເຊົ່ານອກ: ເງິນຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ (ນໍ້ານັນສາງ EPL, ເດີນທາງ, ສ້ອມແປງ). ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ.'],
+owner:['Chủ xe','ເຈົ້າຂອງລົດ'], pay_owner:['Trả chủ xe (USD)','ຈ່າຍເຈົ້າຂອງລົດ (USD)'],
+trip_money:['Tiền chuyến','ເງິນຖ້ຽວ'], water_money:['Tiền nước','ເງິນເຕີມນໍ້າ'], phone_money:['Điện thoại','ຄ່າເບີໂທ'], vn_money:['Chi phí VN','ໄປຫວຽດນາມ'], total_lak:['Tổng (LAK)','ລວມ (ກີບ)'], pay_with:['Kênh chi','ຈ່າຍຜ່ານ'],
+salary:['Cùng lương','ພ້ອມເງິນເດືອນ'], cash_dispatch:['Chi khi xe đi','ຈ່າຍຕອນອອກລົດ'],
+supplier:['Nhà cung cấp','ຜູ້ສະໜອງ'], service:['Dịch vụ','ບໍລິການ'], owed_lak:['Phát sinh (LAK)','ເກີດຂຶ້ນ (ກີບ)'], paid_lak:['Đã trả','ຈ່າຽແລ້ວ'], balance_lak:['Còn nợ','ຍັງຄ້າງ'], terms:['Điều kiện','ເງື່ອນໄຂ'], sup_hint:['Công nợ theo mã 625/402 và 614/402','ໜີ້ຕາມເລກ 625/402 ແລະ 614/402'],
+sup_chip_lao:['Kho hải quan (chipping Lào)','ສາງພາສີ (ຊີບປີງລາວ)'], sup_chip_vn:['Chipping Việt Nam','ຊີບປີງຫວຽດ'], sup_tire:['Tiệm lốp xe','ຮ້ານຢາງ'], sup_toll:['Thẻ cao tốc','ບັດທາງດ່ວນ'],
+t_monthly:['Trả theo đợt hàng tháng','ຊໍາລະເປັນງວດ ລາຍເດືອນ'], t_prepaid:['Nạp trước 15 tr/lần','ອັບບັດເທື່ອລະ 15 ລ້ານ'],
+fuel_stock:['Tồn kho hiện tại','ຍອດຄົງເຫຼືອ'], fuel_out_month:['Xuất trong tháng','ເບີກໃນເດືອນ'], fuel_avg:['Giá vốn bình quân','ລາຄາທຶນສະເລ່ຍ'], fuel_avg_d:['Bình quân gia quyền theo lô nhập','ສະເລ່ຍຖ່ວງນໍ້າໜັກຕາມລ໊ອດຮັບ'],
+ref:['Chứng từ','ເອກະສານ'], type:['Loại','ປະເພດ'], in_l:['Nhập (L)','ຮັບ (ລິດ)'], out_l:['Xuất (L)','ເບີກ (ລິດ)'], balance_l:['Tồn (L)','ຄົງເຫຼືອ (ລິດ)'], checked_by:['Người kiểm','ຜູ້ກວດ'],
+fs_in:['Nhập kho','ຮັບເຂົ້າສາງ'], fs_out:['Xuất theo phiếu','ເບີກຕາມບິນ'],
+part:['Phụ tùng','ອາໄຫຼ່'], unit:['ĐVT','ຫົວໜ່ວຍ'], stock:['Tồn','ຄົງເຫຼືອ'], min_stock:['Tồn tối thiểu','ຂັ້ນຕໍ່າ'], last_issue:['Xuất gần nhất','ເບີກລ່າສຸດ'],
+u_pc:['cái','ອັນ'], u_set:['bộ','ຊຸດ'], u_l:['lít','ລິດ'],
+pt_air:['Bầu hơi phanh','ເຕົ້າລົມເບຣກ'], pt_filter:['Lọc dầu','ໄສ້ກອງນໍ້າມັນ'], pt_tire:['Lốp 12R22.5','ຢາງ 12R22.5'], pt_brake:['Má phanh','ຜ້າເບຣກ'], pt_oil:['Dầu máy 15W-40','ນໍ້າມັນເຄື່ອງ 15W-40'],
+st_ok:['Đủ','ພໍ'], st_low:['Sắp hết','ໃກ້ໝົດ'],
+wf_doc1:['1. Phiếu xuất xe đi vận chuyển','1. ໃບເບີກລົດອອກໄປຂົນສົ່ງ'], wf_doc2:['2. Hóa đơn thu tiền vận chuyển','2. ໃບເກັບເງິນຄ່າຂົນສົ່ງ'], wf_hint:['Trích từ bảng phân công (sheet ໜ້າວຽກ)','ຈາກຕາຕະລາງໜ້າວຽກ'], wf_invoice:['Lập hóa đơn thu tiền vận chuyển','ໃບເກັບເງິນຄ່າຂົນສົ່ງ'],
+wfr1:['Nhập dữ liệu xe vận chuyển','ລົງຂໍ້ມູນລົດຂົນສົ່ງ'], wfr2:['Nhập dữ liệu khách hàng','ລົງຂໍ້ມູນລູກຄ້າ'], wfr3:['Chi phí nhiên liệu','ລາຍຈ່າຍນໍ້າມັນ'], wfr4:['Chi phí đi đường','ລາຍຈ່າຍເດີນທາງ'], wfr5:['Chi phí sửa chữa','ລາຍຈ່າຍສ້ອມແປງ'], wfr6:['Chi phí khác','ລາຍຈ່າຍອື່ນໆ'],
+login_as:['Đăng nhập:','ເຂົ້າລະບົບ:'], r_acct_vc:['Kế toán Viêng Chăn (kiểm tra)','ບັນຊີ ວຽງຈັນ (ກວດ)'], r_admin:['Quản trị (xem tất cả)','ຜູ້ບໍລິຫານ (ເບິ່ງທັງໝົດ)'],
+has_expense:['Có phát sinh chi phí','ມີລາຍຈ່າຍເກີດຂຶ້ນ'], no_expense:['Không phát sinh trong chuyến này','ບໍ່ມີເກີດຂຶ້ນໃນຖ້ຽວນີ້'],
+stt_wait:['Chờ nhập','ລໍຖ້າລົງຂໍ້ມູນ'], stt_entered:['Đã nhập · chờ kiểm','ລົງແລ້ວ · ລໍກວດ'], stt_verified:['Đã kiểm · chờ ghi sổ','ກວດແລ້ວ · ລໍບັນທຶກ'], stt_paid:['Đã chi','ຈ່າຽແລ້ວ'], stt_na:['Không phát sinh','ບໍ່ມີ'],
+readonly:['Chỉ xem','ເບິ່ງຢ່າງດຽວ'],
+hint_yard:['Anh/chị đang nhập với vai trò <b>Bãi Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.','ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ສະໜາມທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ.'],
+hint_acct:['Vai trò <b>Kế toán Viêng Chăn</b>: kiểm tra xác nhận mục I, II, IV, V, VI và ghi sổ. Không sửa số bãi đã nhập.','<b>ບັນຊີ ວຽງຈັນ</b>: ກວດຢັ້ງຢືນ I, II, IV, V, VI ແລະ ບັນທຶກບັນຊີ. ບໍ່ແກ້ຕັວເລກທີ່ສະໜາມລົງ.'],
+hint_fuel:['Vai trò <b>Kế toán kho nhiên liệu</b>: chỉ làm việc với mục III (kiểm & ghi sổ nhiên liệu).','<b>ບັນຊີສາງນໍ້າມັນ</b>: ເຮັດວຽກສະເພາະໜ້າ III (ກວດ ແລະ ບັນທຶກນໍ້າມັນ).'],
+hint_cash:['Vai trò <b>Quỹ / tiền mặt lẻ</b>: chi tiền theo mục IV, V, VI đã được kiểm; đánh dấu "Đã chi".','<b>ຄັງເງິນ / ເງິນສົດຍ່ອຍ</b>: ຈ່າຽຕາມ IV, V, VI ທີ່ກວດແລ້ວ; ໝາຍ "ຈ່າຽແລ້ວ".'],
+hint_rev:['Vai trò <b>Kế toán doanh thu</b>: lập hóa đơn thu tiền từ mục II; các mục chi chỉ xem.','<b>ບັນຊີລາຍຮັບ</b>: ອອກໃບເກັບເງິນຈາກໜ້າ II; ໜ້າລາຍຈ່າຍເບິ່ງຢ່າງດຽວ.'],
+hint_admin:['Vai trò <b>Quản trị</b>: xem và sửa tất cả.','<b>ຜູ້ບໍລິຫານ</b>: ເບິ່ງ ແລະ ແກ້ໄດ້ທັງໝົດ.'],
+truck_type:['Loại xe','ປະເພດລົດ'], co_epl:['Xe công ty (EPL)','ລົດບໍລິສັດ (EPL)'], co_joint:['Xe thuê ngoài','ລົດເຊົ່ານອກ / ລົດຮ່ວມ'],
+ded_title:['Tiền thuê & khấu trừ xe thuê ngoài','ຄ່າເຊົ່າ ແລະ ຫັກຄ່າລົດເຊົ່ານອກ'],
+hire_usd:['Tiền thuê xe (USD)','ຄ່າເຊົ່າລົດ (USD)'], fee_pct:['Phí quản lý (% tiền thuê / phiếu)','ຄ່າທຳນຽມ (% ຂອງຄ່າເຊົ່າ / ບິນ)'], fee_amt:['Cắt phí (USD)','ຫັກຄ່າທຳນຽມ (USD)'],
+limit_t:['Tải cho phép (tấn)','ນໍ້ານັກອະນຸຍາດ (ໂຕນ)'], over_t:['Quá tải (tấn)','ແກ່ເກີນ (ໂຕນ)'], over_p:['Phạt quá tải (USD/tấn)','ຫັກແກ່ເກີນ (USD/ໂຕນ)'], over_amt:['Cắt quá tải (USD)','ຫັກແກ່ເກີນ (USD)'],
+ded_note:['Quá tải tính trên cân cuối. Các khoản cắt và chi phí EPL đã ứng sẽ trừ vào tiền trả chủ xe ở phần tổng kết bên dưới.','ແກ່ເກີນຄິດຈາກນໍ້າໜັກປາຍທາງ. ຄ່າຫັກ ແລະ ຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດຢູ່ສ່ວນສະຫຼຸບລຸ່ມ.'],
+who_pays:['Ai chi','ໃຜຈ່າຽ'], pay_epl:['EPL ứng','EPL ອອກກ່ອນ'], pay_own:['Chủ xe tự trả','ເຈົ້າຂອງລົດຈ່າຽເອງ'],
+fuel_joint_note:['Xe thuê ngoài: dầu đổ tại kho EPL sẽ trừ vào tiền trả chủ xe. Đổ ở trạm ngoài do chủ xe tự trả thì không trừ.','ລົດເຊົ່ານອກ: ນໍ້ານັນທີ່ໃສ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດ. ໃສ່ປໍ້ານອກ ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ.'],
+fp_other:['Trạm ngoài (Lào)','ປໍ້ານອກ (ລາວ)'],
+st_cust_rev:['Thu từ khách hàng','ຮັບຈາກລູກຄ້າ'], st_hire:['Tiền thuê xe','ຄ່າເຊົ່າລົດ'], st_fee:['Cắt phí quản lý','ຫັກຄ່າທຳນຽມ'], st_over:['Cắt quá tải','ຫັກແກ່ເກີນ'], st_adv:['Trừ chi phí EPL đã ứng','ຫັກຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ'], st_adv_fuel:['· dầu kho EPL','· ນໍ້ານັນສາງ EPL'], st_adv_travel:['· đi đường','· ຄ່າເດີນທາງ'], st_adv_repair:['· sửa chữa','· ສ້ອມແປງ'], st_adv_other:['· khác','· ອື່ນໆ'],
+st_net_owner:['Còn phải trả chủ xe','ຍັງຕ້ອງຈ່າຽເຈົ້າຂອງລົດ'], st_profit:['Lãi EPL trên chuyến','ກຳໄລ EPL ຕໍ່ຖ້ຽວ'], st_own_paid:['Chủ xe tự trả (không tính)','ເຈົ້າຂອງລົດຈ່າຽເອງ (ບໍ່ນັບ)'],
+settle_title:['Tổng kết thanh toán xe thuê ngoài','ສະຫຼຸບການຈ່າຽລົດເຊົ່ານອກ'], settle_ex:['Lãi = tiền DO − tiền thuê xe. Trả chủ xe = tiền thuê − phí − quá tải − chi phí EPL đã ứng (thuê 50, ứng 20 → trả 30).','ກຳໄລ = ເງິນ DO − ຄ່າເຊົ່າ. ຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − EPL ອອກກ່ອນ (ເຊົ່າ 50, ອອກກ່ອນ 20 → ຈ່າຽ 30).'],
+pick_bill:['Chọn phiếu','ເລືອກບິນ'], bill_repair:['Sửa chữa','ລາຍການສ້ອມແປງ'], bill_other:['Chi khác','ລາຍຈ່າຽອື່ນໆ'], bill_settle:['Thanh toán chủ xe','ຈ່າຽເຈົ້າຂອງລົດ'],
+login_title:['Quản lý vận tải EPL','ຄຸ້ມຄອງການຂົນສົ່ງ EPL'], login_sub:['Mỗi người dùng đăng nhập bằng tài khoản riêng. Quyền nhập, kiểm tra, ghi sổ, chi tiền và lập hóa đơn phụ thuộc vào vai trò của tài khoản.','ຜູ້ໃຊ້ແຕ່ລະຄົນເຂົ້າລະບົບດ້ວຽບັນຊີຂອງຕົນ. ສິດລົງຂໍ້ມູນ, ກວດ, ບັນທຶກ, ຈ່າຽ ແລະ ອອກໃບເກັບເງິນ ຂຶ້ນກັບໜ້າທີ່ຂອງບັນຊີ.'],
+login_h:['Đăng nhập','ເຂົ້າລະບົບ'], login_demo:['Bản demo: mật khẩu tất cả tài khoản là 1234','ສະບັບທົດລອງ: ລະຫັດທຸກບັນຊີ 1234'], username:['Tên đăng nhập','ຊື່ຜູ້ໃຊ້'], password:['Mật khẩu','ລະຫັດຜ່ານ'], login_btn:['Đăng nhập','ເຂົ້າລະບົບ'], quick_pick:['Hoặc chọn nhanh tài khoản:','ຫຼື ເລືອກບັນຊີ:'], login_err:['Sai tên đăng nhập hoặc mật khẩu','ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດ ບໍ່ຖືກ'], switch_acct:['Đổi tài khoản','ປ່ຽນບັນຊີ'],
+r_treasury_role:['Quỹ Viêng Chăn','ຄັງເງິນ ວຽງຈັນ'],
+hint_treasury:['Vai trò <b>Quỹ Viêng Chăn</b>: xác nhận đã chi tiền nhiên liệu (mục III) sau khi kế toán kho đã ghi sổ.','<b>ຄັງເງິນ ວຽງຈັນ</b>: ຢືນຢັນຈ່າຽເງິນນໍ້ານັນ (III) ຫຼັງບັນຊີສາງບັນທຶກແລ້ວ.'],
+stt_booked:['Đã ghi sổ · chờ chi','ບັນທຶກແລ້ວ · ລໍຈ່າຽ'], stt_wait2:['Chưa gửi','ຍັງບໍ່ສົ່ງ'],
+a_send:['Gửi kiểm tra','ສົ່ງກວດ'], a_verify:['Xác nhận kiểm tra','ຢືນຢັນກວດແລ້ວ'], a_book:['Ghi sổ kế toán','ບັນທຶກບັນຊີ'], a_pay:['Xác nhận đã chi','ຢືນຢັນຈ່າຽແລ້ວ'], a_return:['Trả lại sửa','ສົ່ງຄືນແກ້'], a_invoice:['Lập hóa đơn thu','ອອກໃບເກັບເງິນ'], a_collect:['Xác nhận đã thu tiền khách','ຢືນຢັນເກັບເງິນລູກຄ້າແລ້ວ'], a_unlock:['Mở khóa (admin)','ປົດລ໊ອກ (admin)'],
+log_title:['Lịch sử duyệt','ປະຫວັດການອະນຸມັດ'], log_empty:['Chưa có thao tác nào','ຍັງບໍ່ມີ'], locked_after:['Đã kiểm tra – không sửa được nữa','ກວດແລ້ວ – ແກ້ບໍ່ໄດ້'],
+inv_done:['Đã lập hóa đơn','ອອກໃບເກັບເງິນແລ້ວ'], trip_status:['Trạng thái phiếu','ສະຖານະບິນ'],
+acct_625_402:['Chi phí đi đường','ຄ່າເດີນທາງ'], acct_614_402:['Sửa chữa trả NCC','ສ້ອມແປງ ຈ່າຽຜູ້ສະໜອງ'], acct_614_371:['Sửa chữa xuất kho','ສ້ອມແປງ ເບີກສາງ'], acct_1211_402:['Cước vận chuyển ngoài','ຄ່າຂົນສົ່ງນອກ'],
+hire_pt:['Giá thuê họ (USD/tấn)','ລາຄາເຊົ່າເຂົາ (USD/ໂຕນ)'], do_title:['Lãi trong DO này','ກຳໄລໃນ DO ນີ້'], do_recv:['Giá mình nhận từ khách hàng','ລາຄາທີ່ເຮົາຮັບຈາກລູກຄ້າ'], do_hire:['Tiền mình thuê xe ngoài','ເງິນເຮົາເຊົ່າລົດນອກ'], do_diff:['Chênh lệch giá cước','ສ່ວນຕ່າງຄ່າຂົນສົ່ງ'], do_cuts:['Cộng phí cắt của chủ xe (phí quản lý + quá tải)','ບວກຄ່າຫັກເຈົ້າຂອງລົດ (ຄ່າທຳນຽມ + ແກ່ເກີນ)'], do_profit:['Lãi EPL trong DO','ກຳໄລ EPL ໃນ DO'], per_ton:['/tấn','/ໂຕນ'], col_price:['Giá/tấn','ລາຄາ/ໂຕນ'], col_tons:['Tấn','ໂຕນ'], col_total:['Thành tiền (USD)','ມູນຄ່າ (USD)'],
+do_money:['Tiền DO (thu từ khách hàng)','ເງິນ DO (ຮັບຈາກລູກຄ້າ)'], trip_profit:['Lãi trong chuyến này','ກຳໄລໃນຖ້ຽວນີ້'],
+lg_yard:['Bãi Thà Bốc (nhập liệu)','ສະໜາມທ່າບົກ (ລົງຂໍ້ມູນ)'], lg_acct:['Kế toán Viêng Chăn','ບັນຊີ ວຽງຈັນ'], lg_cash:['Quỹ / tiền mặt','ຄັງເງິນ / ເງິນສົດ'],
+};
+
+let LANG='vi';
+function tt(k){const v=T[k];if(!v)return k;if(LANG==='vi')return v[0];if(LANG==='lo')return v[1];return v[0]+'<span class="sub" lang="lo">'+v[1]+'</span>';}
+function tp(k){const v=T[k];if(!v)return k;if(LANG==='vi')return v[0];if(LANG==='lo')return v[1];return v[0]+' / '+v[1];}
+function applyLang(){
+  document.documentElement.lang = LANG==='lo'?'lo':'vi';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.innerHTML=(el.tagName==='OPTION'||el.closest('.tag'))?tp(el.dataset.i18n):tt(el.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=T[el.dataset.i18nPh][LANG==='lo'?1:0];});
+  document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('active',b.dataset.lang===LANG));
+  document.getElementById('pageTitle').innerHTML=tt('title_'+CUR);
+  renderAll();
+}
+document.querySelectorAll('.lang button').forEach(b=>b.onclick=()=>{LANG=b.dataset.lang;applyLang();});
+
+/* ================= NAV ================= */
+let CUR='dashboard';
+function go(v){CUR=v;document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active',s.id==='view-'+v));document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));document.getElementById('pageTitle').innerHTML=tt('title_'+v);window.scrollTo(0,0);}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));
+document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
+
+/* ================= DATA ================= */
+const RATE={USD:22000,THB:700,VND:1.2,LAK:1};
+const fmt=(n,d=0)=>Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const R=(k,q,p,extra={})=>Object.assign({k,q,p,adv:true},extra);
+const TRAVEL_STD=()=>[R('x_water',1,60000),R('x_vn',1,430000),R('x_chip_lao',1,620000),R('x_chip_vn',1,1500000),R('x_toll',1,1833500),R('x_trip',1,1800000),R('x_phone',1,150000)];
+const TRIPS=[
+ {id:1,date:'19/08',no:'T4-0428-08/EPL',ore:'',from:'ກາສີ',to:'ກາລໍ',co:'EPL',drv:'ທ້າວ ທັດສະດາພອນ',truck:'341',brand:'HOWO-430',head:'ບອ 3262',trail:'ບອ 3282',cust:'ຄຳຕຸ້ຍ',wO:42.06,wD:41.30,price:41,st:'transit',fin:'unpaid',
+  exp:{fuel:[R('diesel',100,30000,{c:'LAK',pl:'fp_yard'}),R('diesel',750,28000,{c:'VND',pl:'fp_vn'})],travel:TRAVEL_STD(),repair:[],other:[]}},
+ {id:2,date:'19/08',no:'T4-0429-08/EPL',ore:'HR-2231',from:'ກາສີ',to:'ທ່າເຮືອກະລໍ',co:'EPL',drv:'ທ້າວ ບຸນມີ',truck:'342',brand:'HOWO-430',head:'ບອ 3311',trail:'ບອ 3312',cust:'ຄຳຕຸ້ຍ',wO:42.30,wD:42.06,price:41,st:'arrived',fin:'unpaid',
+  exp:{fuel:[R('diesel',120,30000,{c:'LAK',pl:'fp_yard'}),R('diesel',700,28000,{c:'VND',pl:'fp_vn'})],travel:TRAVEL_STD(),repair:[R('x_tire',1,150000,{a:'614/402'}),R('x_air',1,500000,{a:'614/371'})],other:[R('x_misc',1,150000)]}},
+ {id:3,date:'20/08',no:'T4-0430-08/EPL',ore:'HR-2235',from:'ກາສີ',to:'ທ່າເຮືອກະລໍ',co:'joint',owner:'ທ້າວ ຄຳຫລ້າ',drv:'ທ້າວ ສົມພອນ',truck:'ຮ່ວມ-07',brand:'SHACMAN',head:'ກຂ 8812',trail:'ກຂ 8813',cust:'ຄຳຕຸ້ຍ',wO:41.00,wD:40.50,price:41,hireP:40.5,feePct:2,limit:40,overP:1,st:'arrived',fin:'partial',
+  exp:{fuel:[R('diesel',150,30000,{c:'LAK',pl:'fp_yard'}),R('diesel',600,28000,{c:'VND',pl:'fp_vn',adv:false})],travel:[R('x_toll',1,1833500),R('x_chip_lao',1,620000),R('x_vn',1,430000,{adv:false})],repair:[],other:[]}},
+ {id:4,date:'21/08',no:'T4-0431-08/EPL',ore:'HR-2240',from:'ກາສີ',to:'ກາລໍ',co:'EPL',drv:'ທ້າວ ທັດສະດາພອນ',truck:'341',brand:'HOWO-430',head:'ບອ 3262',trail:'ບອ 3282',cust:'ນາງ ວັນນາ',wO:40.80,wD:40.60,price:42,st:'arrived',fin:'paid',
+  exp:{fuel:[R('diesel',110,30000,{c:'LAK',pl:'fp_yard'}),R('diesel',720,28000,{c:'VND',pl:'fp_vn'})],travel:TRAVEL_STD(),repair:[],other:[]}},
+ {id:5,date:'23/08',no:'T4-0432-08/EPL',ore:'',from:'ກາສີ',to:'ທ່າເຮືອກະລໍ',co:'EPL',drv:'ທ້າວ ບຸນມີ',truck:'342',brand:'HOWO-430',head:'ບອ 3311',trail:'ບອ 3312',cust:'ຄຳຕຸ້ຍ',wO:41.90,wD:null,price:41,st:'dispatched',fin:'unpaid',
+  exp:{fuel:[R('diesel',150,30000,{c:'LAK',pl:'fp_yard'})],travel:[R('x_water',1,60000),R('x_vn',1,430000),R('x_phone',1,150000)],repair:[],other:[]}},
+];
+function rowAmt(sec,r){return sec==='fuel'?r.q*r.p*(RATE[r.c]||1):r.q*r.p;}
+function rowEPL(t,sec,r){return t.co!=='joint'||r.adv!==false;}
+function secSum(t,sec,eplOnly=true){return (t.exp[sec]||[]).reduce((a,r)=>a+((!eplOnly||rowEPL(t,sec,r))?rowAmt(sec,r):0),0);}
+function tripCalc(t){
+  const w=t.wD??t.wO, val=+(w*t.price).toFixed(2), joint=t.co==='joint';
+  const fuel=secSum(t,'fuel'),travel=secSum(t,'travel'),repair=secSum(t,'repair'),other=secSum(t,'other'), totExp=fuel+travel+repair+other;
+  if(!joint) return {w,val,joint,fuel,travel,repair,other,totExp,net:+(val-totExp/RATE.USD).toFixed(2)};
+  const hire=t.hireP!=null?+(w*t.hireP).toFixed(2):(t.hire??val), fee=+(hire*(t.feePct??2)/100).toFixed(2), overT=Math.max(0,w-(t.limit??40)), over=+(overT*(t.overP??1)).toFixed(2), advUSD=totExp/RATE.USD;
+  const netPay=+(hire-fee-over-advUSD).toFixed(2), profit=+(val-hire).toFixed(2);
+  return {w,val,joint,fuel,travel,repair,other,totExp,hire,fee,overT,over,advUSD,netPay,profit,net:profit};
+}
+
+/* ================= DASHBOARD ================= */
+function renderDash(){
+  let rev=0,exp=0,tons=0,unpaid=0,unpaidN=0; const cnt={dispatched:0,transit:0,arrived:0,invoiced:0,paid:0};
+  TRIPS.forEach(t=>{const c=tripCalc(t); rev+=c.val; exp+=c.joint?c.hire*RATE.USD-(c.fee+c.over)*RATE.USD:c.totExp; if(t.wD)tons+=t.wD; if(t.fin!=='paid'&&t.st==='arrived'){unpaid+=c.val;unpaidN++;} cnt[t.st]++; if(t.fin==='paid')cnt.paid++;});
+  cnt.invoiced=1;
+  document.getElementById('kRev').innerHTML=fmt(rev,2)+'<small>USD</small>';
+  document.getElementById('kRevSub').textContent=`${TRIPS.length} ${T.trips[LANG==='lo'?1:0]} · ≈ ${fmt(rev*RATE.USD)} LAK`;
+  document.getElementById('kExp').innerHTML=fmt(exp/1e6,1)+'<small>tr. LAK</small>';
+  document.getElementById('kExpSub').textContent=`≈ ${fmt(exp/RATE.USD,0)} USD · ${fmt(exp/rev/RATE.USD*100,0)}% ${LANG==='lo'?'ຂອງລາຽຮັບ':'doanh thu'}`;
+  document.getElementById('kTons').innerHTML=fmt(tons,2)+'<small>'+T.ton[LANG==='lo'?1:0]+'</small>';
+  document.getElementById('kTonsSub').textContent=`${TRIPS.filter(t=>t.wD).length} ${T.trips[LANG==='lo'?1:0]} ${LANG==='lo'?'ຊັ່ງປາຽທາງແລ້ວ':'đã cân nơi giao'}`;
+  document.getElementById('kUnpaid').innerHTML=fmt(unpaid,2)+'<small>USD</small>';
+  document.getElementById('kUnpaidSub').textContent=`${unpaidN} ${T.trips[LANG==='lo'?1:0]} · ${T.s_unpaid[LANG==='lo'?1:0]}`;
+  const P=[['p1','s_dispatched',cnt.dispatched,'dispatched'],['p2','s_transit',cnt.transit,'transit'],['p3','s_arrived',cnt.arrived,'arrived'],['p4','p_invoiced',cnt.invoiced,''],['p5','s_paid',cnt.paid,'']];
+  document.getElementById('pipeline').innerHTML=P.map(p=>`<div class="pipe ${p[0]}" role="button" tabindex="0" onclick="filterFromPipe('${p[3]}')"><div class="n">${p[2]}</div><div class="l">${tp(p[1])}</div></div>`).join('');
+  const sum=k=>TRIPS.reduce((a,t)=>a+tripCalc(t)[k],0); const tot=sum('fuel')+sum('travel')+sum('repair')+sum('other')||1;
+  const B=[['e_fuel','fuel','fuel'],['e_travel','travel',''],['e_repair','repair','rep'],['e_other','other','oth']];
+  document.getElementById('expBars').innerHTML=B.map(b=>`<div class="bar"><span>${tt(b[0])}</span><div class="track"><div class="fill ${b[2]}" style="width:${sum(b[1])/tot*100}%"></div></div><span class="v">${fmt(sum(b[1]))} <span class="muted small">${fmt(sum(b[1])/tot*100,0)}%</span></span></div>`).join('');
+  document.getElementById('attention').innerHTML=['att1','att2','att3','att4'].map(k=>`<div style="padding:8px 0;border-bottom:1px solid var(--line);font-size:13px">${tt(k)}</div>`).join('');
+}
+function filterFromPipe(v){go('tracking');document.getElementById('fT').value=v;renderTrack();}
+
+/* ================= TRACKING ================= */
+function renderTrack(){
+  const q=(document.getElementById('q').value||'').toLowerCase(), fT=document.getElementById('fT').value, fF=document.getElementById('fF').value, fC=document.getElementById('fC').value;
+  const rows=TRIPS.filter(t=>(!fT||t.st===fT)&&(!fF||t.fin===fF)&&(!fC||t.co===fC)&&(!q||[t.no,t.drv,t.truck,t.cust,t.head].join(' ').toLowerCase().includes(q)));
+  let sVal=0,sExp=0,sNet=0;
+  document.getElementById('trackBody').innerHTML=rows.map(t=>{const c=tripCalc(t); sVal+=c.val; sExp+=c.totExp; sNet+=c.net;
+    const loss=t.wD?((t.wO-t.wD)/t.wO*100):0; const lossFlag=loss>1.5?` <span class="tag ore" title="${LANG==='lo'?'ຫາຽເກີນ 1,5%':'Hao hụt vượt 1,5%'}">${loss.toFixed(1)}%</span>`:'';
+    const d='<span class="muted">—</span>';
+    return `<tr class="${t.id===CUR_TRIP?'sel':''}" onclick="openTrip(${t.id})" style="cursor:pointer">
+    <td>${t.id}</td><td class="nowrap">${t.date}</td><td class="nowrap mono"><b>${t.no}</b></td><td class="mono">${t.ore||d}</td><td class="nowrap" lang="lo">${t.from} → ${t.to}</td><td>${c.joint?`<span class="tag plain">${tp('co_joint')}</span>`:'EPL'}</td><td lang="lo" class="nowrap">${t.drv}</td><td>${t.truck}</td><td lang="lo" class="nowrap small">${t.head}<br>${t.trail}</td><td lang="lo">${t.cust}</td>
+    <td><span class="tag ore">${tp('iron_ore')}</span></td><td class="num">1</td><td class="num">${fmt(t.wO,2)}</td><td class="num">${t.wD?fmt(t.wD,2):d}${lossFlag}</td><td class="num">${fmt(t.price,2)}</td><td class="num"><b>${fmt(c.val,2)}</b></td><td class="num">${c.joint?fmt(c.hire,2):d}</td>
+    <td class="num">${c.joint?fmt(c.fee,2)+' $':d}</td><td class="num">${c.joint?fmt(c.over,2)+' $':d}</td><td class="num">${fmt(c.fuel)}</td><td class="num">${fmt(c.travel)}</td><td class="num">${c.repair?fmt(c.repair):d}</td><td class="num">${c.other?fmt(c.other):d}</td><td class="num"><b>${fmt(c.totExp)}</b></td>
+    <td class="num ${c.net<0?'neg':'pos'}"><b>${fmt(c.net,2)}</b></td><td><span class="tag ${t.st}">${tp('s_'+t.st)}</span></td><td><span class="tag ${t.fin}">${tp('s_'+t.fin)}</span></td></tr>`;}).join('');
+  document.getElementById('trackFoot').innerHTML=`<tr><td colspan="15">${tp('total')} · ${rows.length} ${tp('trips')}</td><td class="num">${fmt(sVal,2)}</td><td colspan="7"></td><td class="num">${fmt(sExp)}</td><td class="num ${sNet<0?'neg':'pos'}">${fmt(sNet,2)}</td><td colspan="2"></td></tr>`;
+  document.getElementById('rowCount').textContent=`${rows.length} / ${TRIPS.length} ${T.rows[LANG==='lo'?1:0]}`;
+}
+['q','fT','fF','fC'].forEach(id=>document.getElementById(id).addEventListener('input',renderTrack));
+
+/* ================= ACCOUNTS & ROLES ================= */
+const ACCOUNTS=[
+ {u:'thabok',name:'ສົມໄຊ (Somchai)',role:'yard',av:'TB'},
+ {u:'ketoan',name:'ນາງ ພອນ (Phone)',role:'acct',av:'KT'},
+ {u:'khonl',name:'ທ້າວ ວິໄລ (Vilay)',role:'fuel',av:'KN'},
+ {u:'quyvc',name:'ນາງ ມະນີ (Manee)',role:'treasury',av:'QV'},
+ {u:'quytb',name:'ນາງ ດາວ (Dao)',role:'cash',av:'CE'},
+ {u:'doanhthu',name:'ທ້າວ ຄຳ (Kham)',role:'rev',av:'DT'},
+ {u:'admin',name:'Admin',role:'admin',av:'AD'}];
+const ROLE_NAME={yard:'r_yard',acct:'r_acct_vc',fuel:'r_fuel_acct',treasury:'r_treasury_role',cash:'r_petty',rev:'r_rev_acct',admin:'r_admin'};
+const ALL=['info','trans','fuel','travel','repair','other'];
+// who may edit content (only while status is wait/entered); who verifies, books, pays
+const PERM={
+ yard:{edit:ALL,verify:[],book:[],pay:[]},
+ acct:{edit:[],verify:['info','trans','travel','repair','other'],book:['travel','repair','other'],pay:[]},
+ fuel:{edit:[],verify:['fuel'],book:['fuel'],pay:[]},
+ treasury:{edit:[],verify:[],book:[],pay:['fuel']},
+ cash:{edit:[],verify:[],book:[],pay:['travel','repair','other']},
+ rev:{edit:[],verify:[],book:[],pay:[]},
+ admin:{edit:ALL,verify:ALL,book:ALL,pay:ALL}};
+const ROLE_SECS={yard:ALL,acct:['info','trans','travel','repair','other'],fuel:['fuel'],treasury:['fuel'],cash:['travel','repair','other'],rev:['trans'],admin:ALL};
+const CHAIN={info:['wait','entered','verified'],trans:['wait','entered','verified'],fuel:['wait','entered','verified','booked','paid'],travel:['wait','entered','verified','booked','paid'],repair:['wait','entered','verified','booked','paid'],other:['wait','entered','verified','booked','paid']};
+let USER=null, ROLE='yard';
+function initAppr(){TRIPS.forEach(t=>{if(!t.appr){t.appr={}; ALL.forEach(k=>t.appr[k]=t.st==='dispatched'?'entered':(k==='fuel'?'verified':'entered')); if(t.fin==='paid'){ALL.forEach(k=>t.appr[k]=CHAIN[k].at(-1));t.invoiced=true;} } if(!t.log)t.log=[];});}
+function renderAccts(){document.getElementById('acctList').innerHTML=ACCOUNTS.map(a=>`<button class="acct-btn" onclick="quickLogin('${a.u}')"><span class="av">${a.av}</span><span><b>${a.name}</b><small>${tp(ROLE_NAME[a.role])} · ${a.u}</small></span></button>`).join('');}
+function quickLogin(u){document.getElementById('lgU').value=u;document.getElementById('lgP').value='1234';doLogin();}
+function doLogin(){const u=document.getElementById('lgU').value.trim(),pw=document.getElementById('lgP').value;const a=ACCOUNTS.find(x=>x.u===u);
+  if(!a||pw!=='1234'){document.getElementById('lgErr').textContent=tp('login_err');return;}
+  USER=a;ROLE=a.role;document.getElementById('lgErr').textContent='';document.getElementById('login').style.display='none';
+  document.body.classList.toggle('role-acct',ACCT_ROLES.includes(ROLE));renderExp();document.getElementById('roleAv').textContent=a.av;document.getElementById('uName').textContent=a.name;document.getElementById('uRole').textContent=tp(ROLE_NAME[ROLE]);applyRole();}
+function logout(){document.getElementById('login').style.display='grid';document.getElementById('lgU').value='';}
+const now=()=>{const d=new Date();return d.toLocaleDateString('en-GB')+' '+d.toTimeString().slice(0,5);};
+function act(sec,to,label){const t=TRIP();t.appr[sec]=to;t.log.unshift({ts:now(),who:USER.name,role:tp(ROLE_NAME[ROLE]),what:`${tp('sec'+(ALL.indexOf(sec)+1))} → ${tp(label)}`});applyRole();}
+function tripAct(kind){const t=TRIP(); if(kind==='invoice'){t.invoiced=true;t.log.unshift({ts:now(),who:USER.name,role:tp(ROLE_NAME[ROLE]),what:tp('a_invoice')});}
+  if(kind==='collect'){t.fin='paid';t.log.unshift({ts:now(),who:USER.name,role:tp(ROLE_NAME[ROLE]),what:tp('a_collect')});}
+  applyRole();renderTrack();renderDash();}
+function applyRole(){
+  const t=TRIP(), P=PERM[ROLE];
+  document.getElementById('roleHint').innerHTML=tt('hint_'+ROLE);
+  document.querySelectorAll('.sec[data-sec]').forEach(sec=>{
+    const id=sec.dataset.sec, st=t.appr[id], chain=CHAIN[id], idx=chain.indexOf(st);
+    const canEdit=P.edit.includes(id)&&(ROLE==='admin'||idx<=1), mine=ROLE_SECS[ROLE].includes(id);
+    sec.classList.toggle('locked',!canEdit); sec.classList.toggle('mine',mine);
+    const who=sec.querySelector('.who'); const lk=who.querySelector('.lock'); if(lk)lk.remove();
+    if(!canEdit)who.insertAdjacentHTML('beforeend',`<span class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${P.edit.includes(id)&&idx>1?tp('locked_after'):tp('readonly')}</span>`);
+    const el=sec.querySelector('.stt'); const optional=(id==='repair'||id==='other')&&t.exp[id].length===0;
+    let k=optional?'na':st; el.className='stt '+(k==='na'?'na':k==='wait'?'wait':k==='entered'?'wait':k==='booked'?'booked':'done'); el.textContent=tp(k==='wait'?'stt_wait2':'stt_'+k);
+    // action buttons
+    const btns=[]; const next=chain[idx+1];
+    if(!optional){
+      if(st==='wait'&&P.edit.includes(id))btns.push(['ok','entered','a_send']);
+      if(st==='entered'&&P.verify.includes(id)){btns.push(['ok','verified','a_verify']);btns.push(['warn','wait','a_return']);}
+      if(st==='verified'&&next==='booked'&&P.book.includes(id))btns.push(['ok','booked','a_book']);
+      if(st==='booked'&&P.pay.includes(id))btns.push(['ok','paid','a_pay']);
+      if(ROLE==='admin'&&idx>1)btns.push(['','entered','a_unlock']);
+    }
+    sec.querySelector('.act').innerHTML=btns.map(b=>`<button class="btn sm ${b[0]}" onclick="act('${id}','${b[1]}','${b[2]}')">${tp(b[2])}</button>`).join('');
+  });
+  ['repair','other'].forEach(id=>{const sec=document.querySelector(`.sec[data-sec=${id}]`);const on=t.exp[id].length>0;sec.classList.toggle('sec-off',!on);document.getElementById('tg_'+id).checked=on;
+    const h=sec.querySelector('h4'); let n=h.querySelector('.na-note'); if(n)n.remove(); if(!on)h.insertAdjacentHTML('beforeend',`<span class="na-note">${tp('no_expense')}</span>`);});
+  // trip level
+  const ta=[]; ta.push(`<span class="small muted">${tp('trip_status')}:</span> <span class="tag ${t.st}">${tp('s_'+t.st)}</span> <span class="tag ${t.fin}">${tp('s_'+t.fin)}</span>`);
+  if(t.invoiced)ta.push(`<span class="tag paid">${tp('inv_done')}</span>`);
+  if((ROLE==='rev'||ROLE==='admin')&&t.appr.trans==='verified'&&!t.invoiced)ta.push(`<button class="btn sm ok" onclick="tripAct('invoice')">${tp('a_invoice')}</button>`);
+  if((ROLE==='rev'||ROLE==='admin')&&t.invoiced&&t.fin!=='paid')ta.push(`<button class="btn sm ok" onclick="tripAct('collect')">${tp('a_collect')}</button>`);
+  document.getElementById('tripActions').innerHTML=ta.join(' ');
+  document.getElementById('apprLog').innerHTML=`<h5>${tt('log_title')}</h5><ul>${t.log.length?t.log.map(l=>`<li><span class="ts">${l.ts}</span><span><b>${l.who}</b> <span class="muted">(${l.role})</span> · ${l.what}</span></li>`).join(''):`<li><span></span><span class="muted">${tp('log_empty')}</span></li>`}</ul>`;
+  // workflow strip
+  const steps=document.querySelectorAll('#view-dispatch .flow .step');
+  const done=[true, ALL.every(k=>CHAIN[k].indexOf(t.appr[k])>=2||((k==='repair'||k==='other')&&!t.exp[k].length)), ['fuel','travel','repair','other'].every(k=>CHAIN[k].indexOf(t.appr[k])>=3||!t.exp[k].length), ['fuel','travel','repair','other'].every(k=>t.appr[k]==='paid'||!t.exp[k].length), !!t.invoiced];
+  let cur=done.findIndex(x=>!x); steps.forEach((el,i)=>{el.classList.toggle('done',done[i]);el.classList.toggle('now',i===cur);});
+}
+function toggleSec(id,on){const t=TRIP(); if(on&&t.exp[id].length===0){addRow(id);t.appr[id]='wait';} if(!on)t.exp[id]=[]; renderExp(); applyRole();}
+function delRow(sec,i){TRIP().exp[sec].splice(i,1);renderExp();applyRole();}
+
+/* ================= DISPATCH FORM ================= */
+let CUR_TRIP=1;
+const TRIP=()=>TRIPS.find(t=>t.id===CUR_TRIP);
+const CAT={travel:['x_water','x_vn','x_chip_lao','x_chip_vn','x_bridge','x_toll','x_trip','x_phone','x_food','x_parking','x_border'],repair:['x_tire','x_air','x_oil','x_brake','x_tow'],fuel:['diesel'],other:['x_misc']};
+const ACCT={fuel:'625/371',travel:'625/402',repair:'614/402',other:'625/402'};
+const ACCT_CODES=[['625/371','acct_625_371'],['625/402','acct_625_402'],['614/402','acct_614_402'],['614/371','acct_614_371'],['1211/70','acct_1211_70'],['1211/402','acct_1211_402']];
+const ACCT_ROLES=['acct','fuel','rev','admin'];
+function acctSel(sec,i,cur){const can=ACCT_ROLES.includes(ROLE);return `<select class="acct-sel" ${can?'':'disabled'} onchange="TRIP().exp['${sec}'][${i}].a=this.value">${ACCT_CODES.map(c=>`<option value="${c[0]}" ${c[0]===cur?'selected':''}>${c[0]} · ${tp(c[1])}</option>`).join('')}</select>`;}
+function openTrip(id){go('dispatch');loadTrip(id);}
+function fillTripSelects(){
+  const opts=TRIPS.map(t=>`<option value="${t.id}">${t.no} · ${t.truck}${t.co==='joint'?' · '+tp('co_joint'):''}${t.exp.repair.length?' · '+tp('e_repair'):''}</option>`).join('');
+  document.getElementById('tripSel').innerHTML=opts; document.getElementById('billSel').innerHTML=opts;
+  document.getElementById('tripSel').value=CUR_TRIP; document.getElementById('billSel').value=CUR_TRIP;
+}
+function loadTrip(id){
+  CUR_TRIP=id; const t=TRIP(); const g=i=>document.getElementById(i);
+  g('tripSel').value=id; g('docNo').textContent=t.no; g('docSt').innerHTML=`<span class="tag ${t.st}">${tp('s_'+t.st)}</span>`;
+  g('coSel').value=t.co; g('ownerIn').value=t.owner||''; g('truckIn').value=t.truck; g('brandIn').value=t.brand||''; g('drvIn').value=t.drv; g('plateH').value=t.head; g('plateT').value=t.trail;
+  g('custIn').value=t.cust; g('oreIn').value=t.ore||''; g('origIn').value=t.from; g('destIn').value=t.to; g('wO').value=t.wO; g('wD').value=t.wD??''; g('price').value=t.price;
+  g('hireP').value=t.hireP??''; g('feePct').value=t.feePct??2; g('limitT').value=t.limit??40; g('overP').value=t.overP??1;
+  g('dispatchCard').classList.toggle('is-joint',t.co==='joint');
+  renderExp(); calc(); applyRole(); renderTrack();
+}
+function setCompany(v){const t=TRIP(); t.co=v; if(v==='joint'&&t.hireP==null){t.hireP=t.price;} document.getElementById('dispatchCard').classList.toggle('is-joint',v==='joint'); loadTrip(t.id);}
+function pickItem(sec,i,v){const r=TRIP().exp[sec][i]; if(v==='__c'){r.k='';r.name='';}else r.k=v; renderExp();}
+function setAdv(sec,i,v){TRIP().exp[sec][i].adv=v;renderExp();}
+function addRow(sec){const t=TRIP(); t.exp[sec].push(sec==='fuel'?R('diesel',0,0,{c:'LAK',pl:'fp_yard'}):R('',1,0,{name:''})); renderExp(); applyRole();}
+function num(s){return parseFloat(String(s).replace(/,/g,''))||0;}
+function payToggle(sec,i,adv){return `<div class="pill-toggle"><button class="${adv?'on':''}" onclick="setAdv('${sec}',${i},true)">${tp('pay_epl')}</button><button class="${!adv?'on own':''}" onclick="setAdv('${sec}',${i},false)">${tp('pay_own')}</button></div>`;}
+function renderExp(){
+  const t=TRIP(), joint=t.co==='joint';
+  ['fuel','travel','repair','other'].forEach(sec=>{
+    const tb=document.querySelector('#'+sec+'Tbl tbody'), cat=CAT[sec];
+    tb.innerHTML=t.exp[sec].map((r,i)=>{
+      const isC=!cat.includes(r.k);
+      const label=`<div class="itm-wrap ${isC?'custom':''}"><select class="itm" onchange="pickItem('${sec}',${i},this.value)">${cat.map(k=>`<option value="${k}" ${k===r.k?'selected':''}>${tp(k)}</option>`).join('')}<option value="__c" ${isC?'selected':''}>${tp('x_custom')}</option></select><input value="${isC?(r.name||''):''}" placeholder="${LANG==='lo'?'ພິມຊື່ລາຽການ':'Gõ tên khoản mục'}" oninput="TRIP().exp['${sec}'][${i}].name=this.value"></div>`;
+      const qty=`<input class="num q" value="${r.q}" oninput="TRIP().exp['${sec}'][${i}].q=num(this.value);recalcExp()">`, prc=`<input class="num p" value="${fmt(r.p)}" oninput="TRIP().exp['${sec}'][${i}].p=num(this.value);recalcExp()">`;
+      const own=joint&&r.adv===false?' style="opacity:.55"':'';
+      if(sec==='fuel'){
+        const cs=`<select class="cur" onchange="TRIP().exp.fuel[${i}].c=this.value;recalcExp()">${['LAK','VND','THB','USD'].map(c=>`<option ${c===r.c?'selected':''}>${c}</option>`).join('')}</select>`;
+        const pl=`<select onchange="TRIP().exp.fuel[${i}].pl=this.value;if(TRIP().co==='joint')TRIP().exp.fuel[${i}].adv=(this.value==='fp_yard');renderExp()">${['fp_yard','fp_vn','fp_other'].map(k=>`<option value="${k}" ${k===r.pl?'selected':''}>${tp(k)}</option>`).join('')}</select>`;
+        return `<tr data-sec="fuel" data-i="${i}"${own}><td>${i+1}</td><td>${label}</td><td>${qty}</td><td>${prc}</td><td>${cs}</td><td class="num amt"></td><td>${pl}</td><td class="joint-col">${payToggle('fuel',i,r.adv!==false)}</td><td class="acct-col">${acctSel('fuel',i,r.a||ACCT.fuel)}</td><td><button class="del" onclick="delRow('fuel',${i})">×</button></td></tr>`;}
+      return `<tr data-sec="${sec}" data-i="${i}"${own}><td>${i+1}</td><td>${label}</td><td>${qty}</td><td>${prc}</td><td class="num amt"></td><td class="joint-col">${payToggle(sec,i,r.adv!==false)}</td><td class="acct-col">${acctSel(sec,i,r.a||ACCT[sec])}</td><td><button class="del" onclick="delRow('${sec}',${i})">×</button></td></tr>`;
+    }).join('') || `<tr><td colspan="10" class="empty small">${LANG==='lo'?'ຍັງບໍ່ມີລາຽການ — ກົດ “ເພີ່ມແຖວ”':'Chưa có khoản mục — bấm “Thêm dòng”'}</td></tr>`;
+  });
+  recalcExp();
+}
+function recalcExp(){
+  const t=TRIP(), joint=t.co==='joint'; let fq=0;
+  document.querySelectorAll('.exp-table tbody tr[data-sec]').forEach(tr=>{const sec=tr.dataset.sec,r=t.exp[sec][+tr.dataset.i]; if(sec==='fuel')fq+=r.q; tr.querySelector('.amt').textContent=fmt(rowAmt(sec,r));});
+  ['fuel','travel','repair','other'].forEach(s=>document.getElementById(s+'Tot').textContent=fmt(secSum(t,s,!joint?true:true)));
+  document.getElementById('fuelQty').textContent=fmt(fq);
+  renderSummary();
+}
+function calc(){
+  const t=TRIP(), g=i=>document.getElementById(i);
+  t.wO=num(g('wO').value); t.wD=g('wD').value===''?null:num(g('wD').value); t.price=num(g('price').value);
+  if(t.co==='joint'){t.hireP=num(g('hireP').value);t.feePct=num(g('feePct').value);t.limit=num(g('limitT').value);t.overP=num(g('overP').value);}
+  const o=t.wO,d=t.wD, loss=o&&d?o-d:0, pct=o&&d?loss/o*100:0;
+  g('wLoss').innerHTML=o&&d?`${fmt(loss,2)} t <span class="${pct>1.5?'neg':'muted'}">(${pct.toFixed(1)}%)</span>`:'—';
+  const c=tripCalc(t); g('valUSD').textContent=fmt(c.val,2)+' USD'; g('valLAK').textContent=fmt(c.val*RATE.USD)+' LAK';
+  if(c.joint){g('hire').textContent=fmt(c.hire,2)+' USD'; g('feeAmt').textContent='− '+fmt(c.fee,2)+' USD'; g('overT').textContent=fmt(c.overT,2)+' t'; g('overAmt').textContent='− '+fmt(c.over,2)+' USD';}
+  renderSummary();
+}
+function renderSummary(){
+  const t=TRIP(), c=tripCalc(t), box=document.getElementById('summaryBox');
+  if(!c.joint){
+    const revLAK=c.val*RATE.USD, net=revLAK-c.totExp;
+    box.innerHTML=`<div class="summary"><div class="sum"><div class="l">${tt('sum_rev')}</div><div class="v">${fmt(revLAK)}<small>LAK · ${fmt(c.val,2)} USD</small></div></div>
+    <div class="sum"><div class="l">${tt('sum_exp')}</div><div class="v">${fmt(c.totExp)}<small>LAK · ${fmt(c.totExp/RATE.USD,2)} USD</small></div></div>
+    <div class="sum net"><div class="l">${tt('sum_net')}</div><div class="v">${net<0?'−':''}${fmt(Math.abs(net))}<small>LAK · ${net<0?'−':''}${fmt(Math.abs(net)/RATE.USD,2)} USD</small></div></div></div>`;
+    return;
+  }
+  box.innerHTML=`<div class="settle">${settleTable(t,c)}<p class="small muted" style="margin:12px 0 0">${tt('settle_ex')}</p></div>`;
+}
+function doTable(t,c){
+  return `<table style="width:100%"><thead><tr><th>${tt('do_title')}</th><th class="num">${tt('col_price')}</th><th class="num">${tt('col_tons')}</th><th class="num">${tt('col_total')}</th></tr></thead><tbody>
+  <tr><td>${tt('do_recv')}</td><td class="num">${fmt(t.price,2)} $</td><td class="num">${fmt(c.w,2)}</td><td class="num"><b>${fmt(c.val,2)}</b></td></tr>
+  <tr><td>${tt('do_hire')}</td><td class="num">${fmt(t.hireP??0,2)} $</td><td class="num">${fmt(c.w,2)}</td><td class="num neg">− ${fmt(c.hire,2)}</td></tr>
+  <tr><td>${tt('do_diff')}</td><td class="num">${fmt(t.price-(t.hireP??0),2)} $${tt('per_ton')}</td><td></td><td class="num">${fmt(c.val-c.hire,2)}</td></tr>
+  <tr><td>${tt('do_cuts')}</td><td></td><td></td><td class="num pos">+ ${fmt(c.fee+c.over,2)}</td></tr>
+  <tr class="res"><td colspan="3">${tt('do_profit')} <small>· ${c.val?fmt(c.profit/c.val*100,1):0}% ${LANG==='lo'?'ຂອງລາຽຮັບ':'doanh thu'}</small></td><td class="num">${fmt(c.profit,2)} USD <small>≈ ${fmt(c.profit*RATE.USD)} LAK</small></td></tr></tbody></table>`;
+}
+function settleTable(t,c){
+  const own=['fuel','travel','repair','other'].reduce((a,s)=>a+secSum(t,s,false)-secSum(t,s,true),0);
+  const advRows=['fuel','travel','repair','other'].filter(k=>c[k]).map(k=>`<div class="stl-sub"><span>${tt('st_adv_'+k).replace('· ','')}</span><span>${fmt(c[k])} LAK</span></div>`).join('');
+  const row=(l,d,v,cls='')=>`<div class="stl-row ${cls}"><span class="stl-l">${l}${d?`<small>${d}</small>`:''}</span><span class="stl-v">${v}</span></div>`;
+  return `<div class="stl">
+    <div class="stl-card">
+      <div class="stl-hd"><span class="stl-n">1</span>${tt('settle_title')}</div>
+      ${row(tt('st_hire'),`${fmt(t.hireP??0,2)} $/t × ${fmt(c.w,2)} t`,fmt(c.hire,2)+' USD')}
+      ${row(tt('st_fee'),`${t.feePct}% × ${fmt(c.hire,2)}`,'− '+fmt(c.fee,2)+' USD','neg')}
+      ${row(tt('st_over'),`${fmt(c.overT,2)} t × ${t.overP} $`,'− '+fmt(c.over,2)+' USD','neg')}
+      ${row(tt('st_adv'),`${fmt(c.totExp)} LAK ÷ ${fmt(RATE.USD)}`,'− '+fmt(c.advUSD,2)+' USD','neg')}
+      ${advRows?`<div class="stl-subs">${advRows}</div>`:''}
+      ${row(tt('st_net_owner'),`≈ ${fmt(c.netPay*RATE.USD)} LAK`,fmt(c.netPay,2)+' USD','tot ore')}
+      ${own?`<div class="stl-note">${tt('st_own_paid')}: ${fmt(own)} LAK</div>`:''}
+    </div>
+    <div class="stl-card">
+      <div class="stl-hd"><span class="stl-n">2</span>${tt('trip_profit')}</div>
+      ${row(tt('do_money'),`${fmt(t.price,2)} $/t × ${fmt(c.w,2)} t`,fmt(c.val,2)+' USD')}
+      ${row(tt('st_hire'),`${fmt(t.hireP??0,2)} $/t × ${fmt(c.w,2)} t`,'− '+fmt(c.hire,2)+' USD','neg')}
+      ${row(tt('trip_profit'),`≈ ${fmt(c.profit*RATE.USD)} LAK · ${c.val?fmt(c.profit/c.val*100,1):0}%`,fmt(c.profit,2)+' USD','tot green')}
+    </div>
+  </div>`;
+}
+function odo(){const a=num(document.getElementById('odoA').value),b=num(document.getElementById('odoB').value);document.getElementById('odoK').textContent=fmt(Math.abs(b-a));}
+
+/* ================= BILL ================= */
+function renderBill(){
+  const id=+document.getElementById('billSel').value||CUR_TRIP, t=TRIPS.find(x=>x.id===id), c=tripCalc(t);
+  const item=r=>r.k?tt(r.k):(r.name||'—');
+  const table=(sec,title,cols)=>{ if(!t.exp[sec].length)return ''; 
+    const rows=t.exp[sec].map((r,i)=>`<tr${c.joint&&r.adv===false?' style="opacity:.55"':''}><td>${i+1}</td><td>${item(r)}${sec==='fuel'?` <span class="muted small">(${tp(r.pl)})</span>`:''}</td><td class="num">${fmt(r.q)}</td><td class="num">${fmt(r.p)}${sec==='fuel'?' '+r.c:''}</td><td class="num">${fmt(rowAmt(sec,r))}</td>${c.joint?`<td>${r.adv===false?tp('pay_own'):tp('pay_epl')}</td>`:''}</tr>`).join('');
+    return `<h5>${title}</h5><table class="tbl-compact"><thead><tr><th>#</th><th>${tt('item')}</th><th class="num">${tt(cols)}</th><th class="num">${tt('unit_price')}</th><th class="num">${tt('amount_lak')}</th>${c.joint?`<th>${tt('who_pays')}</th>`:''}</tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr><td></td><td>${tt('total')}</td><td class="num">${sec==='fuel'?fmt(t.exp.fuel.reduce((a,r)=>a+r.q,0)):''}</td><td></td><td class="num">${fmt(secSum(t,sec))}</td>${c.joint?'<td></td>':''}</tr></tfoot></table>`;};
+  const m=(k,v,lo)=>`<div><span>${tt(k)}</span><span ${lo?'lang="lo"':''}>${v}</span></div>`;
+  document.getElementById('billBody').innerHTML=`
+    <div class="title">${tt('doc_bill')}</div>
+    <div class="meta" style="grid-template-columns:1fr;margin-bottom:6px"><div><span>${tt('doc_no')}</span><span><b>${t.no}</b> · ${t.date}/2026 · <span class="tag ${t.fin}">${tp('s_'+t.fin)}</span></span></div></div>
+    <div class="meta">
+      ${m('truck_type',c.joint?tp('co_joint')+(t.owner?' · '+t.owner:''):'EPL',true)}${m('goods_type',tt('iron_ore'))}
+      ${m('brand_model',t.brand||'—')}${m('w_origin',fmt(t.wO,2)+' '+tt('ton'))}
+      ${m('truck_no',t.truck)}${m('w_dest',(t.wD?fmt(t.wD,2):'—')+' '+tt('ton'))}
+      ${m('plate_head',t.head,true)}${m('price_usd',fmt(t.price,2)+' USD')}
+      ${m('plate_trailer',t.trail,true)}${m('value_usd','<b>'+fmt(c.val,2)+' USD</b>')}
+      ${m('driver',t.drv,true)}${m('customer',t.cust,true)}
+      ${m('route',t.from+' → '+t.to,true)}${m('ore_bill_no',t.ore||'—')}
+    </div>
+    ${table('fuel','I. '+tt('bill_fuel'),'qty_l')}
+    ${t.exp.fuel.length?`<div class="sign-row" style="grid-template-columns:1fr 1fr;padding:12px 0 0"><div class="sign"><div class="line" style="height:32px"></div><div class="rl">${tt('sg_filler')}</div></div><div class="sign"><div class="line" style="height:32px"></div><div class="rl">${tt('sg_fuel_check')}</div></div></div>`:''}
+    ${table('travel','II. '+tt('bill_pay'),'qty')}
+    ${table('repair','III. '+tt('bill_repair'),'qty')}
+    ${table('other','IV. '+tt('bill_other'),'qty')}
+    ${c.joint?`<div class="settle" style="margin-top:18px">${settleTable(t,c)}</div>`:`<div class="grand"><div><span>${tt('grand_total')}</span><span>${fmt(c.totExp)} LAK</span></div></div>`}
+    <div class="sign-row" style="grid-template-columns:repeat(3,1fr);padding:28px 0 0">
+      <div class="sign"><div class="line"></div><div class="rl">${tt(c.joint?'owner':'sg_driver')}</div></div>
+      <div class="sign"><div class="line"></div><div class="rl">${tt('sg_printer')}</div></div>
+      <div class="sign"><div class="line"></div><div class="rl">${tt('sg_payer')}</div></div>
+    </div>`;
+}
+
+/* ================= OTHER MODULES ================= */
+function renderJoint(){
+  document.getElementById('jointBody').innerHTML=TRIPS.filter(t=>t.co==='joint').map(t=>{const c=tripCalc(t);return `<tr onclick="openTrip(${t.id})" style="cursor:pointer"><td>${t.id}</td><td>${t.date}</td><td class="mono"><b>${t.no}</b></td><td lang="lo">${t.owner||''}</td><td lang="lo">${t.head} / ${t.trail}</td><td lang="lo">${t.drv}</td><td class="num">${fmt(c.w,2)}</td><td class="num">${fmt(t.price,2)}</td><td class="num">${fmt(c.hire,2)}</td><td class="num neg">− ${fmt(c.fee,2)}</td><td class="num neg">− ${fmt(c.over,2)}</td><td class="num neg">− ${fmt(c.advUSD,2)}</td><td class="num"><b>${fmt(c.netPay,2)}</b></td><td><span class="tag ${t.fin}">${tp('s_'+t.fin)}</span></td></tr>`;}).join('');
+}
+function renderDriver(){
+  const D=[['ທ້າວ ທັດສະດາພອນ',2,3600000,120000,300000,860000,'pm_trip_salary','partial'],['ທ້າວ ບຸນມີ',2,3600000,120000,300000,860000,'pm_trip_salary','unpaid'],['ທ້າວ ສົມພອນ',1,0,60000,0,0,'pm_on_dispatch','paid']];
+  document.getElementById('driverBody').innerHTML=D.map(d=>`<tr><td lang="lo"><b>${d[0]}</b></td><td class="num">${d[1]}</td><td class="num">${fmt(d[2])}</td><td class="num">${fmt(d[3])}</td><td class="num">${fmt(d[4])}</td><td class="num">${fmt(d[5])}</td><td class="num"><b>${fmt(d[2]+d[3]+d[4]+d[5])}</b></td><td>${tt(d[6])}</td><td><span class="tag ${d[7]}">${tp('s_'+d[7])}</span></td></tr>`).join('');
+}
+function renderSupplier(){
+  const S=[['sup_chip_lao','x_chip_lao','625/402',4,2480000,1240000,'t_monthly'],['sup_chip_vn','x_chip_vn','625/402',4,6000000,3000000,'t_monthly'],['sup_tire','x_tire','614/402',3,450000,0,'t_monthly'],['sup_toll','x_toll','625/402',4,7334000,15000000,'t_prepaid']];
+  document.getElementById('supBody').innerHTML=S.map(s=>{const bal=s[4]-s[5];return `<tr><td><b>${tt(s[0])}</b></td><td>${tt(s[1])}</td><td><span class="acct">${s[2]}</span></td><td class="num">${s[3]}</td><td class="num">${fmt(s[4])}</td><td class="num">${fmt(s[5])}</td><td class="num ${bal>0?'neg':'pos'}"><b>${bal<0?'+':''}${fmt(Math.abs(bal))}</b></td><td>${tt(s[6])}</td></tr>`;}).join('');
+}
+function renderFuelStore(){
+  const F=[['15/08','PN-0815','fs_in','—',5000,0,7630,28500,'KT'],['19/08','T4-0428','fs_out','341',0,100,7530,30000,'KT'],['19/08','T4-0429','fs_out','342',0,120,7410,30000,'KT'],['21/08','T4-0431','fs_out','341',0,110,7300,30000,'KT'],['23/08','T4-0432','fs_out','342',0,150,7150,30000,'KT'],['28/08','PN-0828','fs_in','—',3000,0,10150,29000,'KT'],['—','—','fs_out','…',0,3000,4150,'',''],];
+  document.getElementById('fuelStoreBody').innerHTML=F.slice(0,6).map(f=>`<tr><td>${f[0]}</td><td class="mono">${f[1]}</td><td><span class="tag plain">${tp(f[2])}</span></td><td>${f[3]}</td><td class="num pos">${f[4]?fmt(f[4]):''}</td><td class="num neg">${f[5]?fmt(f[5]):''}</td><td class="num"><b>${fmt(f[6])}</b></td><td class="num">${fmt(f[7])}</td><td>${f[8]}</td></tr>`).join('');
+}
+function renderParts(){
+  const P=[['pt_air','u_pc',2,2,500000,'19/08','341','st_low'],['pt_filter','u_pc',8,4,180000,'21/08','341','st_ok'],['pt_tire','u_pc',3,4,3200000,'10/08','342','st_low'],['pt_brake','u_set',5,2,950000,'02/08','341','st_ok'],['pt_oil','u_l',60,40,85000,'21/08','341','st_ok']];
+  document.getElementById('partsBody').innerHTML=P.map(p=>`<tr><td><b>${tt(p[0])}</b></td><td>${tt(p[1])}</td><td class="num">${p[2]}</td><td class="num">${p[3]}</td><td class="num">${fmt(p[4])}</td><td>${p[5]}</td><td>${p[6]}</td><td><span class="tag ${p[7]==='st_ok'?'paid':'unpaid'}">${tp(p[7])}</span></td></tr>`).join('');
+}
+function role(cls,ini,k){return `<span class="role ${cls}"><span class="av">${ini}</span><span>${tt(k)}</span></span>`;}
+function renderWF(){
+  const R=[['wfr1',role('','TB','r_yard'),role('f','KT','r_io_acct'),'','',''],['wfr2',role('','TB','r_yard'),role('f','KT','r_io_acct'),'','',''],
+   ['wfr3',role('','TB','r_yard'),role('f','KT','r_fuel_acct'),role('f','KT','r_fuel_acct'),role('c','CE','r_treasury'),'625/371'],
+   ['wfr4',role('','TB','r_yard'),role('f','KT','r_exp_acct'),role('f','KT','r_exp_acct'),role('c','CE','r_petty'),'625/402'],
+   ['wfr5',role('','TB','r_yard'),role('f','KT','r_exp_acct'),role('f','KT','r_exp_acct'),role('c','CE','r_petty'),'614/402 · 614/371'],
+   ['wfr6',role('','TB','r_yard'),role('f','KT','r_exp_acct'),role('f','KT','r_exp_acct'),role('c','CE','r_petty'),'625/402']];
+  document.getElementById('wfBody').innerHTML=R.map(r=>`<tr><td>${tt(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]||'<span class="muted">—</span>'}</td><td>${r[4]||'<span class="muted">—</span>'}</td><td>${r[5]?r[5].split(' · ').map(a=>`<span class="acct">${a}</span>`).join(' '):'<span class="muted">—</span>'}</td></tr>`).join('');
+}
+
+function renderAll(){initAppr();renderAccts();fillTripSelects();renderDash();loadTrip(CUR_TRIP);renderBill();renderJoint();renderDriver();renderSupplier();renderFuelStore();renderParts();renderWF();}
+applyLang();
+if(USER){document.getElementById('uRole').textContent=tp(ROLE_NAME[ROLE]);}
+</script>
+</body>
+</html>

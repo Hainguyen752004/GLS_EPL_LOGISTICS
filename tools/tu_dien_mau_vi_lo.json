@@ -1,0 +1,1530 @@
+{
+ "brand": [
+  "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
+  "ຄຸ້ມຄອງການຂົນສົ່ງ EPL<small>ຂົນສົ່ງແຮ່ · ວຽງຈັນ</small>"
+ ],
+ "nav_dash": [
+  "Tổng quan",
+  "ພາບລວມ"
+ ],
+ "mod_transport": [
+  "Mô-đun vận tải",
+  "ໂມດູນການຂົນສົ່ງ"
+ ],
+ "mod_warehouse": [
+  "Mô-đun kho",
+  "ໂມດູນສາງ"
+ ],
+ "mod_system": [
+  "Hệ thống",
+  "ລະບົບ"
+ ],
+ "nav_tracking": [
+  "Theo dõi phiếu vận chuyển",
+  "ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ"
+ ],
+ "nav_dispatch": [
+  "Phiếu xuất xe",
+  "ໃບເບີກລົດອອກໄປຂົນສົ່ງ"
+ ],
+ "nav_bill": [
+  "Hóa đơn vận chuyển",
+  "ໃບບິນຂົນສົ່ງ"
+ ],
+ "nav_joint": [
+  "Xe liên kết",
+  "ລົດຮ່ວມ"
+ ],
+ "nav_driver": [
+  "Tiền chuyến & tiền nước tài xế",
+  "ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນໍ້າ"
+ ],
+ "nav_supplier": [
+  "Theo dõi nhà cung cấp",
+  "ຕິດຕາມຜູ້ສະໜອງ"
+ ],
+ "nav_fuel": [
+  "Kho nhiên liệu",
+  "ສາງນໍ້າມັນ"
+ ],
+ "nav_parts": [
+  "Kho phụ tùng",
+  "ສາງອາໄຫຼ່"
+ ],
+ "nav_workflow": [
+  "Quy trình & trách nhiệm",
+  "ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ"
+ ],
+ "user_role": [
+  "Bãi Thà Bốc · Nhập liệu",
+  "ສະໜາມທ່າບົກ · ລົງຂໍ້ມູນ"
+ ],
+ "title_dashboard": [
+  "Tổng quan<span class=\"sub\">Tháng 8/2026 · Công ty EPL</span>",
+  "ພາບລວມ<span class=\"sub\">ເດືອນ 8/2026 · ບໍລິສັດ EPL</span>"
+ ],
+ "title_tracking": [
+  "Báo cáo theo dõi phiếu vận chuyển<span class=\"sub\">Doanh thu · Chi phí · Trạng thái từng chuyến</span>",
+  "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ<span class=\"sub\">ລາຍຮັບ · ລາຍຈ່າຍ · ສະຖານະແຕ່ລະຖ້ຽວ</span>"
+ ],
+ "title_dispatch": [
+  "Phiếu xuất xe đi vận chuyển<span class=\"sub\">Nhập theo vai trò · chọn phiếu ở thanh công cụ</span>",
+  "ໃບເບີກລົດອອກໄປຂົນສົ່ງ<span class=\"sub\">ລົງຕາມໜ້າທີ່ · ເລືອກບິນຢູ່ແຖບເຄື່ອງມື</span>"
+ ],
+ "title_bill": [
+  "Hóa đơn vận chuyển<span class=\"sub\">Bản in · chọn phiếu ở thanh công cụ</span>",
+  "ໃບບິນຂົນສົ່ງ<span class=\"sub\">ສະບັບພິມ · ເລືອກບິນຢູ່ແຖບເຄື່ອງມື</span>"
+ ],
+ "title_joint": [
+  "Báo cáo vận chuyển xe liên kết<span class=\"sub\">Xe ngoài công ty chạy hàng EPL</span>",
+  "ລາຍງານການຂົນສົ່ງລົດຮ່ວມ<span class=\"sub\">ລົດນອກບໍລິສັດຂົນສິນຄ້າ EPL</span>"
+ ],
+ "title_driver": [
+  "Tiền chuyến & tiền nước tài xế<span class=\"sub\">Tổng hợp theo tháng để trả cùng lương</span>",
+  "ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນໍ້າ<span class=\"sub\">ສະຫຼຸບຕາມເດືອນ ຈ່າຍພ້ອມເງິນເດືອນ</span>"
+ ],
+ "title_supplier": [
+  "Theo dõi nhà cung cấp<span class=\"sub\">Công nợ trả theo đợt</span>",
+  "ຕິດຕາມຜູ້ສະໜອງ<span class=\"sub\">ໜີ້ຊໍາລະເປັນງວດ</span>"
+ ],
+ "title_fuel": [
+  "Kho nhiên liệu<span class=\"sub\">Kho Thà Bốc · Nhập – xuất – tồn</span>",
+  "ສາງນໍ້າມັນ<span class=\"sub\">ສາງທ່າບົກ · ຮັບ – ເບີກ – ຄົງເຫຼືອ</span>"
+ ],
+ "title_parts": [
+  "Kho phụ tùng<span class=\"sub\">Tồn kho & xuất theo xe</span>",
+  "ສາງອາໄຫຼ່<span class=\"sub\">ຍອດຄົງເຫຼືອ ແລະ ເບີກຕາມລົດ</span>"
+ ],
+ "title_workflow": [
+  "Quy trình & trách nhiệm<span class=\"sub\">Ai nhập – ai kiểm – ai ghi sổ – ai chi tiền</span>",
+  "ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ<span class=\"sub\">ໃຜລົງຂໍ້ມູນ – ໃຜກວດ – ໃຜບັນທຶກ – ໃຜຈ່າຍ</span>"
+ ],
+ "period": [
+  "Kỳ báo cáo",
+  "ງວດລາຍງານ"
+ ],
+ "p_aug26": [
+  "Tháng 8/2026",
+  "ເດືອນ 8/2026"
+ ],
+ "p_sep26": [
+  "Tháng 9/2026",
+  "ເດືອນ 9/2026"
+ ],
+ "company": [
+  "Công ty nhận quặng",
+  "ບໍລິສັດຮັບແກ່"
+ ],
+ "all": [
+  "Tất cả",
+  "ທັງໝົດ"
+ ],
+ "export": [
+  "Xuất báo cáo",
+  "ສົ່ງອອກລາຍງານ"
+ ],
+ "new_dispatch": [
+  "Tạo phiếu xuất xe",
+  "ສ້າງໃບເບີກລົດ"
+ ],
+ "k_rev": [
+  "Doanh thu vận chuyển",
+  "ລາຍຮັບຂົນສົ່ງ"
+ ],
+ "k_exp": [
+  "Tổng chi phí",
+  "ລວມລາຍຈ່າຍ"
+ ],
+ "k_tons": [
+  "Khối lượng đã chở",
+  "ນໍ້າໜັກທີ່ຂົນແລ້ວ"
+ ],
+ "k_unpaid": [
+  "Khách chưa thanh toán",
+  "ລູກຄ້າຄ້າງຊໍາລະ"
+ ],
+ "trips": [
+  "chuyến",
+  "ຖ້ຽວ"
+ ],
+ "of_total": [
+  "trên tổng",
+  "ຈາກທັງໝົດ"
+ ],
+ "pipe_title": [
+  "Tiến độ chuyến trong kỳ",
+  "ຄວາມຄືບໜ້າຖ້ຽວໃນງວດ"
+ ],
+ "pipe_hint": [
+  "Bấm vào từng bước để lọc danh sách",
+  "ກົດແຕ່ລະຂັ້ນເພື່ອຕອງລາຍການ"
+ ],
+ "s_dispatched": [
+  "Đã xuất xe",
+  "ອອກລົດແລ້ວ"
+ ],
+ "s_transit": [
+  "Đang vận chuyển",
+  "ກຳລັງຈັດສົ່ງ"
+ ],
+ "s_arrived": [
+  "Đã giao hàng",
+  "ສົ່ງຮອດແລ້ວ"
+ ],
+ "s_unpaid": [
+  "Chưa thanh toán",
+  "ຄ້າງຊໍາລະ"
+ ],
+ "s_partial": [
+  "Thanh toán một phần",
+  "ຊໍາລະບາງສ່ວນ"
+ ],
+ "s_paid": [
+  "Đã thanh toán",
+  "ຊໍາລະແລ້ວ"
+ ],
+ "p_invoiced": [
+  "Đã lập hóa đơn",
+  "ອອກໃບເກັບເງິນແລ້ວ"
+ ],
+ "exp_break": [
+  "Cơ cấu chi phí trong kỳ",
+  "ໂຄງສ້າງລາຍຈ່າຍໃນງວດ"
+ ],
+ "e_fuel": [
+  "Nhiên liệu",
+  "ນໍ້າມັນ"
+ ],
+ "e_travel": [
+  "Chi phí đi đường",
+  "ຄ່າເດີນທາງ"
+ ],
+ "e_repair": [
+  "Sửa chữa",
+  "ສ້ອມແປງ"
+ ],
+ "e_other": [
+  "Chi khác",
+  "ອື່ນໆ"
+ ],
+ "rates": [
+  "Tỷ giá quy đổi (LAK)",
+  "ອັດຕາແລກປ່ຽນ (ກີບ)"
+ ],
+ "attention": [
+  "Cần xử lý",
+  "ຕ້ອງດຳເນີນການ"
+ ],
+ "att1": [
+  "<b>T4-0428-08/EPL</b> – chưa có số phiếu quặng (bill quặng)",
+  "<b>T4-0428-08/EPL</b> – ຍັງບໍ່ມີເລກທີບິນແຮ່"
+ ],
+ "att2": [
+  "<b>Xe 341</b> – hao hụt cân 0,76 tấn (1,8%) vượt mức 1,5%",
+  "<b>ລົດ 341</b> – ນໍ້າໜັກຫາຍ 0,76 ໂຕນ (1,8%) ເກີນ 1,5%"
+ ],
+ "att3": [
+  "<b>Chipping Việt Nam</b> – công nợ đến hạn đợt 2 (25/09)",
+  "<b>ຊີບປີງຫວຽດ</b> – ໜີ້ຄົບກຳນົດງວດ 2 (25/09)"
+ ],
+ "att4": [
+  "<b>3 phiếu</b> đã giao nhưng chưa lập hóa đơn thu tiền",
+  "<b>3 ໃບ</b> ສົ່ງຮອດແລ້ວ ແຕ່ຍັງບໍ່ໄດ້ອອກໃບເກັບເງິນ"
+ ],
+ "search_ph": [
+  "Tìm số phiếu, tài xế, xe, khách hàng…",
+  "ຄົ້ນຫາ ເລກທີ, ໂຊເຟີ, ລົດ, ລູກຄ້າ…"
+ ],
+ "st_transport": [
+  "Trạng thái vận chuyển",
+  "ສະຖານະຂົນສົ່ງ"
+ ],
+ "st_finance": [
+  "Trạng thái tài chính",
+  "ສະຖານະການເງິນ"
+ ],
+ "joint_truck": [
+  "Xe liên kết",
+  "ລົດຮ່ວມ"
+ ],
+ "track_title": [
+  "Danh sách phiếu vận chuyển",
+  "ລາຍການໃບຂົນສົ່ງ"
+ ],
+ "rows": [
+  "dòng",
+  "ແຖວ"
+ ],
+ "revenue": [
+  "Doanh thu (USD)",
+  "ລາຍຮັບ (USD)"
+ ],
+ "expense": [
+  "Chi phí (LAK)",
+  "ລາຍຈ່າຍ (ກີບ)"
+ ],
+ "net": [
+  "Thu – Chi",
+  "ຮັບ – ຈ່າຍ"
+ ],
+ "status": [
+  "Trạng thái",
+  "ສະຖານະ"
+ ],
+ "c_date": [
+  "Ngày",
+  "ວດປ"
+ ],
+ "c_billno": [
+  "Số phiếu VC",
+  "ເລກທີບິນຂົນສົ່ງ"
+ ],
+ "c_orebill": [
+  "Phiếu quặng",
+  "ບິນແຮ່"
+ ],
+ "c_route": [
+  "Tuyến",
+  "ສາຍທາງ"
+ ],
+ "c_company": [
+  "Cty nhận",
+  "ບໍລິສັດຮັບ"
+ ],
+ "c_driver": [
+  "Tài xế",
+  "ໂຊເຟີ"
+ ],
+ "c_truck": [
+  "Số xe",
+  "ເບີລົດ"
+ ],
+ "c_plates": [
+  "Biển đầu / rơ-moóc",
+  "ທະບຽນ ຫົວ / ຫາງ"
+ ],
+ "c_customer": [
+  "Khách hàng",
+  "ລູກຄ້າ"
+ ],
+ "c_goods": [
+  "Loại hàng",
+  "ປະເພດສິນຄ້າ"
+ ],
+ "c_trips": [
+  "Chuyến",
+  "ຖ້ຽວ"
+ ],
+ "c_w_origin": [
+  "Cân đầu (t)",
+  "ໜັກຕົ້ນທາງ (ໂຕນ)"
+ ],
+ "c_w_dest": [
+  "Cân cuối (t)",
+  "ໜັກປາຍທາງ (ໂຕນ)"
+ ],
+ "c_price": [
+  "Giá/t",
+  "ລາຄາ/ໂຕນ"
+ ],
+ "c_value": [
+  "Thành tiền",
+  "ມູນຄ່າ"
+ ],
+ "c_joint_fee": [
+  "Cước xe LK",
+  "ຄ່າຂົນສົ່ງລົດຮ່ວມ"
+ ],
+ "c_fee2": [
+  "Phí 2%/phiếu",
+  "ຄ່າທຳນຽມ 2%/ບິນ"
+ ],
+ "c_over": [
+  "Quá tải 1$/t",
+  "ແກ່ເກີນ 1$/ໂຕນ"
+ ],
+ "c_fuel": [
+  "Nhiên liệu",
+  "ຄ່ານໍ້າມັນ"
+ ],
+ "c_travel": [
+  "Đi đường",
+  "ຄ່າເດີນທາງ"
+ ],
+ "c_repair": [
+  "Sửa chữa",
+  "ສ້ອມແປງ"
+ ],
+ "c_other": [
+  "Khác",
+  "ອື່ນໆ"
+ ],
+ "c_totexp": [
+  "Tổng chi",
+  "ລວມລາຍຈ່າຍ"
+ ],
+ "c_net": [
+  "USD",
+  "USD"
+ ],
+ "c_st_t": [
+  "Vận chuyển",
+  "ຂົນສົ່ງ"
+ ],
+ "c_st_f": [
+  "Tài chính",
+  "ການເງິນ"
+ ],
+ "track_note": [
+  "Thu – Chi quy đổi theo tỷ giá ngày lập phiếu (USD 22.000 · THB 700 · VND 1,2). Bấm vào dòng để mở phiếu xuất xe.",
+  "ຮັບ – ຈ່າຍ ແປງຕາມອັດຕາວັນອອກບິນ (USD 22.000 · THB 700 · VND 1,2). ກົດແຖວເພື່ອເປີດໃບເບີກລົດ."
+ ],
+ "back_list": [
+  "Danh sách phiếu",
+  "ລາຍການໃບບິນ"
+ ],
+ "print": [
+  "In",
+  "ພິມ"
+ ],
+ "save_draft": [
+  "Lưu nháp",
+  "ບັນທຶກຮ່າງ"
+ ],
+ "submit_verify": [
+  "Gửi kiểm tra xác nhận",
+  "ສົ່ງກວດຢັ້ງຢືນ"
+ ],
+ "mark_paid": [
+  "Xác nhận đã thu tiền",
+  "ຢືນຢັນເກັບເງິນແລ້ວ"
+ ],
+ "wf1": [
+  "Nhập liệu",
+  "ລົງຂໍ້ມູນ"
+ ],
+ "wf1d": [
+  "Bãi Thà Bốc",
+  "ສະໜາມທ່າບົກ"
+ ],
+ "wf2": [
+  "Kiểm tra xác nhận",
+  "ກວດຢັ້ງຢືນ"
+ ],
+ "wf2d": [
+  "Kế toán Viêng Chăn",
+  "ບັນຊີ ວຽງຈັນ"
+ ],
+ "wf3": [
+  "Ghi sổ kế toán",
+  "ລົງບັນທຶກບັນຊີ"
+ ],
+ "wf3d": [
+  "Kế toán thu/chi",
+  "ບັນຊີລາຍຈ່າຍ/ຮັບ"
+ ],
+ "wf4": [
+  "Chi tiền",
+  "ຊໍາລະຄ່າໃຊ້ຈ່າຍ"
+ ],
+ "wf4d": [
+  "Quỹ / tiền mặt lẻ",
+  "ຄັງເງິນ / ເງິນສົດຍ່ອຍ"
+ ],
+ "wf5": [
+  "Lập hóa đơn thu",
+  "ອອກໃບເກັບເງິນ"
+ ],
+ "wf5d": [
+  "Kế toán doanh thu",
+  "ບັນຊີລາຍຮັບ"
+ ],
+ "doc_dispatch": [
+  "PHIẾU XUẤT XE ĐI VẬN CHUYỂN",
+  "ໃບເບີກລົດອອກໄປຂົນສົ່ງ"
+ ],
+ "doc_bill": [
+  "HÓA ĐƠN VẬN CHUYỂN · ໃບບິນຂົນສົ່ງ",
+  "ໃບບິນຂົນສົ່ງ · HÓA ĐƠN VẬN CHUYỂN"
+ ],
+ "doc_no": [
+  "Số phiếu",
+  "ເລກທີ"
+ ],
+ "sec1": [
+  "Thông tin xe vận chuyển",
+  "ຂໍ້ມູນລົດຂົນສົ່ງ"
+ ],
+ "sec2": [
+  "Thông tin vận chuyển & doanh thu",
+  "ຂໍ້ມູນການຂົນສົ່ງ ແລະ ລາຍຮັບ"
+ ],
+ "sec3": [
+  "Chi phí nhiên liệu",
+  "ລາຍຈ່າຍນໍ້າມັນ"
+ ],
+ "sec4": [
+  "Chi phí đi đường",
+  "ລາຍຈ່າຍເດີນທາງ"
+ ],
+ "sec5": [
+  "Chi phí sửa chữa",
+  "ລາຍຈ່າຍສ້ອມແປງ"
+ ],
+ "sec6": [
+  "Chi phí khác",
+  "ລາຍຈ່າຍອື່ນໆ"
+ ],
+ "resp": [
+  "Phụ trách",
+  "ຮັບຜິດຊອບ"
+ ],
+ "verifier": [
+  "Kiểm tra xác nhận",
+  "ຜູ້ກວດຢັ້ງຢືນ"
+ ],
+ "bookkeeper": [
+  "Ghi sổ kế toán",
+  "ລົງບັນທຶກບັນຊີ"
+ ],
+ "payer": [
+  "Người chi tiền",
+  "ຜູ້ຊໍາລະຄ່າໃຊ້ຈ່າຍ"
+ ],
+ "r_yard": [
+  "Bãi Thà Bốc",
+  "ສະໜາມທ່າບົກ"
+ ],
+ "r_fuel_acct": [
+  "Kế toán kho NL VC",
+  "ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ"
+ ],
+ "r_exp_acct": [
+  "Kế toán chi VC",
+  "ບັນຊີລາຍຈ່າຍ ວຽງຈັນ"
+ ],
+ "r_rev_acct": [
+  "Kế toán thu VC",
+  "ບັນຊີລາຍຮັບ ວຽງຈັນ"
+ ],
+ "r_io_acct": [
+  "Kế toán thu/chi VC",
+  "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ"
+ ],
+ "r_treasury": [
+  "Quỹ Viêng Chăn",
+  "ຄັງເງິນ ວຽງຈັນ"
+ ],
+ "r_petty": [
+  "Tiền mặt lẻ TC Thà Bốc",
+  "ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ"
+ ],
+ "acct_entry": [
+  "Định khoản",
+  "ເດິນບັນຊີ"
+ ],
+ "acct_1211_70": [
+  "Bán dịch vụ vận tải",
+  "ຂາຍບໍລິການຂົນສົ່ງ"
+ ],
+ "acct_625_371": [
+  "Xuất nhiên liệu qua kho",
+  "ເບີກນໍ້າມັນຜ່ານສາງ"
+ ],
+ "acct_code": [
+  "Mã kế toán",
+  "ເລກບັນຊີ"
+ ],
+ "truck_no": [
+  "Số xe",
+  "ເບີລົດ"
+ ],
+ "brand_model": [
+  "Hãng / đời xe",
+  "ຍີ່ຫໍ້"
+ ],
+ "driver": [
+  "Tài xế",
+  "ຊື່ໂຊເຟີ"
+ ],
+ "plate_head": [
+  "Biển số đầu kéo",
+  "ທະບຽນ ຫົວ"
+ ],
+ "plate_trailer": [
+  "Biển số rơ-moóc",
+  "ທະບຽນຫາງ"
+ ],
+ "d_issue": [
+  "Ngày lập phiếu",
+  "ວັນທີອອກບິນ"
+ ],
+ "d_out": [
+  "Ngày xe đi",
+  "ວັນທີອອກລົດ"
+ ],
+ "d_back": [
+  "Ngày xe về",
+  "ວັນທີລົດກັບ"
+ ],
+ "days_out": [
+  "Số ngày đi",
+  "ຈຳນວນວັນ"
+ ],
+ "days": [
+  "ngày",
+  "ວັນ"
+ ],
+ "odometer": [
+  "Số công-tơ-mét",
+  "ເລກກົງເຕີ"
+ ],
+ "odo_out": [
+  "Lúc đi",
+  "ຕອນອອກ"
+ ],
+ "odo_back": [
+  "Lúc về",
+  "ຕອນກັບ"
+ ],
+ "odo_km": [
+  "Km chạy",
+  "ກມ ແລ່ນ"
+ ],
+ "customer": [
+  "Khách hàng",
+  "ຊື່ລູກຄ້າ"
+ ],
+ "goods_type": [
+  "Loại hàng",
+  "ປະເພດສິນຄ້າ"
+ ],
+ "iron_ore": [
+  "Quặng sắt",
+  "ແຮ່ເຫຼັກ"
+ ],
+ "other_goods": [
+  "Hàng khác",
+  "ສິນຄ້າອື່ນ"
+ ],
+ "ore_bill_no": [
+  "Số phiếu quặng",
+  "ເລກທີບິນແຮ່"
+ ],
+ "ore_bill_date": [
+  "Ngày phiếu quặng",
+  "ວັນທີບິນແຮ່"
+ ],
+ "origin": [
+  "Điểm đi",
+  "ຕົ້ນທາງ"
+ ],
+ "dest": [
+  "Điểm đến",
+  "ປາຍທາງ"
+ ],
+ "route": [
+  "Tuyến đường",
+  "ສາຍທາງ"
+ ],
+ "w_origin": [
+  "Cân đầu (tấn)",
+  "ນໍ້າໜັກຕົ້ນທາງ (ໂຕນ)"
+ ],
+ "w_dest": [
+  "Cân cuối (tấn)",
+  "ນໍ້າໜັກປາຍທາງ (ໂຕນ)"
+ ],
+ "w_loss": [
+  "Hao hụt",
+  "ຫາຍ"
+ ],
+ "ton": [
+  "tấn",
+  "ໂຕນ"
+ ],
+ "price_usd": [
+  "Đơn giá (USD/tấn)",
+  "ລາຄາ (USD/ໂຕນ)"
+ ],
+ "value_usd": [
+  "Thành tiền (USD)",
+  "ມູນຄ່າ (USD)"
+ ],
+ "value_lak": [
+  "Quy đổi (LAK)",
+  "ມູນຄ່າ (ກີບ)"
+ ],
+ "value_rule": [
+  "Thành tiền tính theo cân cuối (cân nơi giao). Hao hụt vượt 1,5% sẽ được đánh dấu để đối chiếu.",
+  "ມູນຄ່າຄິດຕາມນໍ້າໜັກປາຍທາງ. ຫາຍເກີນ 1,5% ຈະຖືກໝາຍໄວ້ເພື່ອກວດຄືນ."
+ ],
+ "item": [
+  "Khoản mục",
+  "ລາຍການ"
+ ],
+ "qty": [
+  "SL",
+  "ຈຳນວນ"
+ ],
+ "qty_l": [
+  "Lít",
+  "ລິດ"
+ ],
+ "unit_price": [
+  "Đơn giá",
+  "ລາຄາ"
+ ],
+ "cur": [
+  "Tiền tệ",
+  "ສະກຸນ"
+ ],
+ "amount": [
+  "Số tiền",
+  "ຈຳນວນເງິນ"
+ ],
+ "amount_lak": [
+  "Thành tiền (LAK)",
+  "ມູນຄ່າ (ກີບ)"
+ ],
+ "fill_place": [
+  "Nơi đổ",
+  "ສະຖານທີ່ໃສ່"
+ ],
+ "pay_method": [
+  "Hình thức chi",
+  "ວິທີຈ່າຍ"
+ ],
+ "note": [
+  "Ghi chú",
+  "ໝາຍເຫດ"
+ ],
+ "total": [
+  "Tổng",
+  "ລວມ"
+ ],
+ "add_row": [
+  "Thêm dòng",
+  "ເພີ່ມແຖວ"
+ ],
+ "diesel": [
+  "Dầu diesel",
+  "ນໍ້າມັນກາຊວນ"
+ ],
+ "fp_yard": [
+  "Kho Thà Bốc",
+  "ໃສ່ສາງທ່າບົກ"
+ ],
+ "fp_vn": [
+  "Trạm xăng VN",
+  "ຢູ່ປໍ້າ VN"
+ ],
+ "pm_trip_salary": [
+  "Trả theo chuyến cùng lương",
+  "ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ"
+ ],
+ "pm_on_dispatch": [
+  "Chi ngay khi xe đi",
+  "ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ"
+ ],
+ "pm_supplier": [
+  "Nợ NCC / trả theo đợt",
+  "ຕິດໜີ້ຜູ້ສະໜອງ/ຊໍາລະເປັນງວດ"
+ ],
+ "pm_card": [
+  "Trả theo chuyến qua thẻ (nạp 15 tr/lần)",
+  "ຈ່າຍຕາມຖ້ຽວ ຜ່ານບັດ (ອັບເທື່ອລະ 15 ລ້ານ)"
+ ],
+ "pm_store": [
+  "Xuất kho phụ tùng",
+  "ເບີກອາໄຫຼ່ຜ່ານສາງ"
+ ],
+ "x_water": [
+  "Tiền nước",
+  "ເງິນເຕີມນໍ້າ"
+ ],
+ "x_vn": [
+  "Tiền chi phí sang Việt Nam cho tài xế",
+  "ເງິນໃຊ້ຈ່າຍໄປຫວຽດນາມໃຫ້ໂຊເຟີ"
+ ],
+ "x_chip_lao": [
+  "Phí chipping Lào (kho hải quan)",
+  "ຄ່າຊີບປີງລາວ (ສາງພາສີ)"
+ ],
+ "x_chip_vn": [
+  "Phí chipping Việt (1.800.000 đồng)",
+  "ຄ່າຊີບປີງຫວຽດ (1.800.000 ດົງ)"
+ ],
+ "x_bridge": [
+  "Phí cầu đường",
+  "ເງິນຄ່າຂົ້ວ"
+ ],
+ "x_toll": [
+  "Phí cao tốc",
+  "ເງິນຄ່າທາງດ່ວນ"
+ ],
+ "x_trip": [
+  "Tiền chuyến chở quặng",
+  "ເງິນຖ້ຽວແກ່ແຮ່"
+ ],
+ "x_phone": [
+  "Tiền điện thoại",
+  "ຄ່າເບີໂທ"
+ ],
+ "x_tire": [
+  "Vá / thay lốp",
+  "ຄ່າຈອດຢາງ"
+ ],
+ "x_food": [
+  "Tiền ăn tài xế",
+  "ຄ່າອາຫານໂຊເຟີ"
+ ],
+ "x_parking": [
+  "Phí đỗ xe / bãi",
+  "ຄ່າຈອດລົດ"
+ ],
+ "x_border": [
+  "Phí cửa khẩu",
+  "ຄ່າດ່ານ"
+ ],
+ "x_oil": [
+  "Thay dầu máy",
+  "ປ່ຽນນໍ້າມັນເຄື່ອງ"
+ ],
+ "x_brake": [
+  "Má phanh",
+  "ຜ້າເບຣກ"
+ ],
+ "x_tow": [
+  "Cứu hộ / kéo xe",
+  "ລົດຍົກ"
+ ],
+ "x_misc": [
+  "Chi khác",
+  "ອື່ນໆ"
+ ],
+ "x_custom": [
+  "Khác (tự gõ)…",
+  "ອື່ນໆ (ພິມເອງ)…"
+ ],
+ "edit_hint": [
+  "Mọi dòng đều sửa được: đổi khoản mục, số lượng, đơn giá; xóa dòng bằng × hoặc thêm dòng mới. Danh mục khác nhau theo từng chuyến.",
+  "ທຸກແຖວແກ້ໄດ້: ປ່ຽນລາຍການ, ຈຳນວນ, ລາຄາ; ລຶບແຖວດ້ວຍ × ຫຼື ເພີ່ມແຖວໃໝ່. ລາຍການຕ່າງກັນແຕ່ລະຖ້ຽວ."
+ ],
+ "x_air": [
+  "Phụ tùng bầu hơi",
+  "ອາໄຫຼ່ເຕົ້າລົມ"
+ ],
+ "sum_rev": [
+  "Doanh thu chuyến (quy đổi)",
+  "ລາຍຮັບຖ້ຽວ (ແປງເປັນກີບ)"
+ ],
+ "sum_exp": [
+  "Tổng chi phí chuyến",
+  "ລາຍຈ່າຍທັງໝົດ"
+ ],
+ "sum_net": [
+  "Thu – Chi trong chuyến",
+  "ຮັບ – ຈ່າຍໃນຖ້ຽວ"
+ ],
+ "sg_driver": [
+  "Tài xế",
+  "ໂຊເຟີ"
+ ],
+ "sg_driver_d": [
+  "Ký nhận tiền & hàng",
+  "ເຊັນຮັບເງິນ ແລະ ສິນຄ້າ"
+ ],
+ "sg_issuer": [
+  "Người lập phiếu",
+  "ຜູ້ອອກບິນ"
+ ],
+ "sg_issuer_d": [
+  "Bãi Thà Bốc",
+  "ສະໜາມທ່າບົກ"
+ ],
+ "sg_verify": [
+  "Người kiểm tra",
+  "ຜູ້ກວດຢັ້ງຢືນ"
+ ],
+ "sg_verify_d": [
+  "Kế toán Viêng Chăn",
+  "ບັນຊີ ວຽງຈັນ"
+ ],
+ "sg_payer": [
+  "Người chi tiền",
+  "ຜູ້ຈ່າຍເງິນ"
+ ],
+ "sg_payer_d": [
+  "Quỹ / tiền mặt lẻ",
+  "ຄັງເງິນ / ເງິນສົດຍ່ອຍ"
+ ],
+ "sg_printer": [
+  "Người in phiếu",
+  "ຜູ້ພິມບິນ"
+ ],
+ "sg_filler": [
+  "Người đổ nhiên liệu",
+  "ຜູ້ໃສ່ນໍ້າມັນ"
+ ],
+ "sg_fuel_check": [
+  "Người kiểm tra nhiên liệu",
+  "ຜູ້ກວດການໍ້າມັນ"
+ ],
+ "bill_fuel": [
+  "Đổ nhiên liệu",
+  "ລາຍການໃສ່ນໍ້າມັນ"
+ ],
+ "bill_pay": [
+  "Các khoản chi",
+  "ລາຍການຈ່າຍ"
+ ],
+ "pay_driver_total": [
+  "Tổng phải trả tài xế",
+  "ລວມ ຕ້ອງຈ່າຍໃຫ້ໂຊເຟີ"
+ ],
+ "grand_total": [
+  "Tổng cộng (LAK)",
+  "ລວມທັງໝົດລາວ"
+ ],
+ "joint_rule": [
+  "Xe thuê ngoài: tiền trả chủ xe = tiền thuê − phí quản lý − quá tải − chi phí EPL đã ứng (dầu kho EPL, đi đường, sửa chữa). Chủ xe tự trả (đổ dầu ngoài…) thì không trừ.",
+  "ລົດເຊົ່ານອກ: ເງິນຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ (ນໍ້ານັນສາງ EPL, ເດີນທາງ, ສ້ອມແປງ). ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ."
+ ],
+ "owner": [
+  "Chủ xe",
+  "ເຈົ້າຂອງລົດ"
+ ],
+ "pay_owner": [
+  "Trả chủ xe (USD)",
+  "ຈ່າຍເຈົ້າຂອງລົດ (USD)"
+ ],
+ "trip_money": [
+  "Tiền chuyến",
+  "ເງິນຖ້ຽວ"
+ ],
+ "water_money": [
+  "Tiền nước",
+  "ເງິນເຕີມນໍ້າ"
+ ],
+ "phone_money": [
+  "Điện thoại",
+  "ຄ່າເບີໂທ"
+ ],
+ "vn_money": [
+  "Chi phí VN",
+  "ໄປຫວຽດນາມ"
+ ],
+ "total_lak": [
+  "Tổng (LAK)",
+  "ລວມ (ກີບ)"
+ ],
+ "pay_with": [
+  "Kênh chi",
+  "ຈ່າຍຜ່ານ"
+ ],
+ "salary": [
+  "Cùng lương",
+  "ພ້ອມເງິນເດືອນ"
+ ],
+ "cash_dispatch": [
+  "Chi khi xe đi",
+  "ຈ່າຍຕອນອອກລົດ"
+ ],
+ "supplier": [
+  "Nhà cung cấp",
+  "ຜູ້ສະໜອງ"
+ ],
+ "service": [
+  "Dịch vụ",
+  "ບໍລິການ"
+ ],
+ "owed_lak": [
+  "Phát sinh (LAK)",
+  "ເກີດຂຶ້ນ (ກີບ)"
+ ],
+ "paid_lak": [
+  "Đã trả",
+  "ຈ່າຽແລ້ວ"
+ ],
+ "balance_lak": [
+  "Còn nợ",
+  "ຍັງຄ້າງ"
+ ],
+ "terms": [
+  "Điều kiện",
+  "ເງື່ອນໄຂ"
+ ],
+ "sup_hint": [
+  "Công nợ theo mã 625/402 và 614/402",
+  "ໜີ້ຕາມເລກ 625/402 ແລະ 614/402"
+ ],
+ "sup_chip_lao": [
+  "Kho hải quan (chipping Lào)",
+  "ສາງພາສີ (ຊີບປີງລາວ)"
+ ],
+ "sup_chip_vn": [
+  "Chipping Việt Nam",
+  "ຊີບປີງຫວຽດ"
+ ],
+ "sup_tire": [
+  "Tiệm lốp xe",
+  "ຮ້ານຢາງ"
+ ],
+ "sup_toll": [
+  "Thẻ cao tốc",
+  "ບັດທາງດ່ວນ"
+ ],
+ "t_monthly": [
+  "Trả theo đợt hàng tháng",
+  "ຊໍາລະເປັນງວດ ລາຍເດືອນ"
+ ],
+ "t_prepaid": [
+  "Nạp trước 15 tr/lần",
+  "ອັບບັດເທື່ອລະ 15 ລ້ານ"
+ ],
+ "fuel_stock": [
+  "Tồn kho hiện tại",
+  "ຍອດຄົງເຫຼືອ"
+ ],
+ "fuel_out_month": [
+  "Xuất trong tháng",
+  "ເບີກໃນເດືອນ"
+ ],
+ "fuel_avg": [
+  "Giá vốn bình quân",
+  "ລາຄາທຶນສະເລ່ຍ"
+ ],
+ "fuel_avg_d": [
+  "Bình quân gia quyền theo lô nhập",
+  "ສະເລ່ຍຖ່ວງນໍ້າໜັກຕາມລ໊ອດຮັບ"
+ ],
+ "ref": [
+  "Chứng từ",
+  "ເອກະສານ"
+ ],
+ "type": [
+  "Loại",
+  "ປະເພດ"
+ ],
+ "in_l": [
+  "Nhập (L)",
+  "ຮັບ (ລິດ)"
+ ],
+ "out_l": [
+  "Xuất (L)",
+  "ເບີກ (ລິດ)"
+ ],
+ "balance_l": [
+  "Tồn (L)",
+  "ຄົງເຫຼືອ (ລິດ)"
+ ],
+ "checked_by": [
+  "Người kiểm",
+  "ຜູ້ກວດ"
+ ],
+ "fs_in": [
+  "Nhập kho",
+  "ຮັບເຂົ້າສາງ"
+ ],
+ "fs_out": [
+  "Xuất theo phiếu",
+  "ເບີກຕາມບິນ"
+ ],
+ "part": [
+  "Phụ tùng",
+  "ອາໄຫຼ່"
+ ],
+ "unit": [
+  "ĐVT",
+  "ຫົວໜ່ວຍ"
+ ],
+ "stock": [
+  "Tồn",
+  "ຄົງເຫຼືອ"
+ ],
+ "min_stock": [
+  "Tồn tối thiểu",
+  "ຂັ້ນຕໍ່າ"
+ ],
+ "last_issue": [
+  "Xuất gần nhất",
+  "ເບີກລ່າສຸດ"
+ ],
+ "u_pc": [
+  "cái",
+  "ອັນ"
+ ],
+ "u_set": [
+  "bộ",
+  "ຊຸດ"
+ ],
+ "u_l": [
+  "lít",
+  "ລິດ"
+ ],
+ "pt_air": [
+  "Bầu hơi phanh",
+  "ເຕົ້າລົມເບຣກ"
+ ],
+ "pt_filter": [
+  "Lọc dầu",
+  "ໄສ້ກອງນໍ້າມັນ"
+ ],
+ "pt_tire": [
+  "Lốp 12R22.5",
+  "ຢາງ 12R22.5"
+ ],
+ "pt_brake": [
+  "Má phanh",
+  "ຜ້າເບຣກ"
+ ],
+ "pt_oil": [
+  "Dầu máy 15W-40",
+  "ນໍ້າມັນເຄື່ອງ 15W-40"
+ ],
+ "st_ok": [
+  "Đủ",
+  "ພໍ"
+ ],
+ "st_low": [
+  "Sắp hết",
+  "ໃກ້ໝົດ"
+ ],
+ "wf_doc1": [
+  "1. Phiếu xuất xe đi vận chuyển",
+  "1. ໃບເບີກລົດອອກໄປຂົນສົ່ງ"
+ ],
+ "wf_doc2": [
+  "2. Hóa đơn thu tiền vận chuyển",
+  "2. ໃບເກັບເງິນຄ່າຂົນສົ່ງ"
+ ],
+ "wf_hint": [
+  "Trích từ bảng phân công (sheet ໜ້າວຽກ)",
+  "ຈາກຕາຕະລາງໜ້າວຽກ"
+ ],
+ "wf_invoice": [
+  "Lập hóa đơn thu tiền vận chuyển",
+  "ໃບເກັບເງິນຄ່າຂົນສົ່ງ"
+ ],
+ "wfr1": [
+  "Nhập dữ liệu xe vận chuyển",
+  "ລົງຂໍ້ມູນລົດຂົນສົ່ງ"
+ ],
+ "wfr2": [
+  "Nhập dữ liệu khách hàng",
+  "ລົງຂໍ້ມູນລູກຄ້າ"
+ ],
+ "wfr3": [
+  "Chi phí nhiên liệu",
+  "ລາຍຈ່າຍນໍ້າມັນ"
+ ],
+ "wfr4": [
+  "Chi phí đi đường",
+  "ລາຍຈ່າຍເດີນທາງ"
+ ],
+ "wfr5": [
+  "Chi phí sửa chữa",
+  "ລາຍຈ່າຍສ້ອມແປງ"
+ ],
+ "wfr6": [
+  "Chi phí khác",
+  "ລາຍຈ່າຍອື່ນໆ"
+ ],
+ "login_as": [
+  "Đăng nhập:",
+  "ເຂົ້າລະບົບ:"
+ ],
+ "r_acct_vc": [
+  "Kế toán Viêng Chăn (kiểm tra)",
+  "ບັນຊີ ວຽງຈັນ (ກວດ)"
+ ],
+ "r_admin": [
+  "Quản trị (xem tất cả)",
+  "ຜູ້ບໍລິຫານ (ເບິ່ງທັງໝົດ)"
+ ],
+ "has_expense": [
+  "Có phát sinh chi phí",
+  "ມີລາຍຈ່າຍເກີດຂຶ້ນ"
+ ],
+ "no_expense": [
+  "Không phát sinh trong chuyến này",
+  "ບໍ່ມີເກີດຂຶ້ນໃນຖ້ຽວນີ້"
+ ],
+ "stt_wait": [
+  "Chờ nhập",
+  "ລໍຖ້າລົງຂໍ້ມູນ"
+ ],
+ "stt_entered": [
+  "Đã nhập · chờ kiểm",
+  "ລົງແລ້ວ · ລໍກວດ"
+ ],
+ "stt_verified": [
+  "Đã kiểm · chờ ghi sổ",
+  "ກວດແລ້ວ · ລໍບັນທຶກ"
+ ],
+ "stt_paid": [
+  "Đã chi",
+  "ຈ່າຽແລ້ວ"
+ ],
+ "stt_na": [
+  "Không phát sinh",
+  "ບໍ່ມີ"
+ ],
+ "readonly": [
+  "Chỉ xem",
+  "ເບິ່ງຢ່າງດຽວ"
+ ],
+ "hint_yard": [
+  "Anh/chị đang nhập với vai trò <b>Bãi Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.",
+  "ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ສະໜາມທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ."
+ ],
+ "hint_acct": [
+  "Vai trò <b>Kế toán Viêng Chăn</b>: kiểm tra xác nhận mục I, II, IV, V, VI và ghi sổ. Không sửa số bãi đã nhập.",
+  "<b>ບັນຊີ ວຽງຈັນ</b>: ກວດຢັ້ງຢືນ I, II, IV, V, VI ແລະ ບັນທຶກບັນຊີ. ບໍ່ແກ້ຕັວເລກທີ່ສະໜາມລົງ."
+ ],
+ "hint_fuel": [
+  "Vai trò <b>Kế toán kho nhiên liệu</b>: chỉ làm việc với mục III (kiểm & ghi sổ nhiên liệu).",
+  "<b>ບັນຊີສາງນໍ້າມັນ</b>: ເຮັດວຽກສະເພາະໜ້າ III (ກວດ ແລະ ບັນທຶກນໍ້າມັນ)."
+ ],
+ "hint_cash": [
+  "Vai trò <b>Quỹ / tiền mặt lẻ</b>: chi tiền theo mục IV, V, VI đã được kiểm; đánh dấu \"Đã chi\".",
+  "<b>ຄັງເງິນ / ເງິນສົດຍ່ອຍ</b>: ຈ່າຽຕາມ IV, V, VI ທີ່ກວດແລ້ວ; ໝາຍ \"ຈ່າຽແລ້ວ\"."
+ ],
+ "hint_rev": [
+  "Vai trò <b>Kế toán doanh thu</b>: lập hóa đơn thu tiền từ mục II; các mục chi chỉ xem.",
+  "<b>ບັນຊີລາຍຮັບ</b>: ອອກໃບເກັບເງິນຈາກໜ້າ II; ໜ້າລາຍຈ່າຍເບິ່ງຢ່າງດຽວ."
+ ],
+ "hint_admin": [
+  "Vai trò <b>Quản trị</b>: xem và sửa tất cả.",
+  "<b>ຜູ້ບໍລິຫານ</b>: ເບິ່ງ ແລະ ແກ້ໄດ້ທັງໝົດ."
+ ],
+ "truck_type": [
+  "Loại xe",
+  "ປະເພດລົດ"
+ ],
+ "co_epl": [
+  "Xe công ty (EPL)",
+  "ລົດບໍລິສັດ (EPL)"
+ ],
+ "co_joint": [
+  "Xe thuê ngoài",
+  "ລົດເຊົ່ານອກ / ລົດຮ່ວມ"
+ ],
+ "ded_title": [
+  "Tiền thuê & khấu trừ xe thuê ngoài",
+  "ຄ່າເຊົ່າ ແລະ ຫັກຄ່າລົດເຊົ່ານອກ"
+ ],
+ "hire_usd": [
+  "Tiền thuê xe (USD)",
+  "ຄ່າເຊົ່າລົດ (USD)"
+ ],
+ "fee_pct": [
+  "Phí quản lý (% tiền thuê / phiếu)",
+  "ຄ່າທຳນຽມ (% ຂອງຄ່າເຊົ່າ / ບິນ)"
+ ],
+ "fee_amt": [
+  "Cắt phí (USD)",
+  "ຫັກຄ່າທຳນຽມ (USD)"
+ ],
+ "limit_t": [
+  "Tải cho phép (tấn)",
+  "ນໍ້ານັກອະນຸຍາດ (ໂຕນ)"
+ ],
+ "over_t": [
+  "Quá tải (tấn)",
+  "ແກ່ເກີນ (ໂຕນ)"
+ ],
+ "over_p": [
+  "Phạt quá tải (USD/tấn)",
+  "ຫັກແກ່ເກີນ (USD/ໂຕນ)"
+ ],
+ "over_amt": [
+  "Cắt quá tải (USD)",
+  "ຫັກແກ່ເກີນ (USD)"
+ ],
+ "ded_note": [
+  "Quá tải tính trên cân cuối. Các khoản cắt và chi phí EPL đã ứng sẽ trừ vào tiền trả chủ xe ở phần tổng kết bên dưới.",
+  "ແກ່ເກີນຄິດຈາກນໍ້າໜັກປາຍທາງ. ຄ່າຫັກ ແລະ ຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດຢູ່ສ່ວນສະຫຼຸບລຸ່ມ."
+ ],
+ "who_pays": [
+  "Ai chi",
+  "ໃຜຈ່າຽ"
+ ],
+ "pay_epl": [
+  "EPL ứng",
+  "EPL ອອກກ່ອນ"
+ ],
+ "pay_own": [
+  "Chủ xe tự trả",
+  "ເຈົ້າຂອງລົດຈ່າຽເອງ"
+ ],
+ "fuel_joint_note": [
+  "Xe thuê ngoài: dầu đổ tại kho EPL sẽ trừ vào tiền trả chủ xe. Đổ ở trạm ngoài do chủ xe tự trả thì không trừ.",
+  "ລົດເຊົ່ານອກ: ນໍ້ານັນທີ່ໃສ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດ. ໃສ່ປໍ້ານອກ ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ."
+ ],
+ "fp_other": [
+  "Trạm ngoài (Lào)",
+  "ປໍ້ານອກ (ລາວ)"
+ ],
+ "st_cust_rev": [
+  "Thu từ khách hàng",
+  "ຮັບຈາກລູກຄ້າ"
+ ],
+ "st_hire": [
+  "Tiền thuê xe",
+  "ຄ່າເຊົ່າລົດ"
+ ],
+ "st_fee": [
+  "Cắt phí quản lý",
+  "ຫັກຄ່າທຳນຽມ"
+ ],
+ "st_over": [
+  "Cắt quá tải",
+  "ຫັກແກ່ເກີນ"
+ ],
+ "st_adv": [
+  "Trừ chi phí EPL đã ứng",
+  "ຫັກຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ"
+ ],
+ "st_adv_fuel": [
+  "· dầu kho EPL",
+  "· ນໍ້ານັນສາງ EPL"
+ ],
+ "st_adv_travel": [
+  "· đi đường",
+  "· ຄ່າເດີນທາງ"
+ ],
+ "st_adv_repair": [
+  "· sửa chữa",
+  "· ສ້ອມແປງ"
+ ],
+ "st_adv_other": [
+  "· khác",
+  "· ອື່ນໆ"
+ ],
+ "st_net_owner": [
+  "Còn phải trả chủ xe",
+  "ຍັງຕ້ອງຈ່າຽເຈົ້າຂອງລົດ"
+ ],
+ "st_profit": [
+  "Lãi EPL trên chuyến",
+  "ກຳໄລ EPL ຕໍ່ຖ້ຽວ"
+ ],
+ "st_own_paid": [
+  "Chủ xe tự trả (không tính)",
+  "ເຈົ້າຂອງລົດຈ່າຽເອງ (ບໍ່ນັບ)"
+ ],
+ "settle_title": [
+  "Tổng kết thanh toán xe thuê ngoài",
+  "ສະຫຼຸບການຈ່າຽລົດເຊົ່ານອກ"
+ ],
+ "settle_ex": [
+  "Lãi = tiền DO − tiền thuê xe. Trả chủ xe = tiền thuê − phí − quá tải − chi phí EPL đã ứng (thuê 50, ứng 20 → trả 30).",
+  "ກຳໄລ = ເງິນ DO − ຄ່າເຊົ່າ. ຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − EPL ອອກກ່ອນ (ເຊົ່າ 50, ອອກກ່ອນ 20 → ຈ່າຽ 30)."
+ ],
+ "pick_bill": [
+  "Chọn phiếu",
+  "ເລືອກບິນ"
+ ],
+ "bill_repair": [
+  "Sửa chữa",
+  "ລາຍການສ້ອມແປງ"
+ ],
+ "bill_other": [
+  "Chi khác",
+  "ລາຍຈ່າຽອື່ນໆ"
+ ],
+ "bill_settle": [
+  "Thanh toán chủ xe",
+  "ຈ່າຽເຈົ້າຂອງລົດ"
+ ],
+ "login_title": [
+  "Quản lý vận tải EPL",
+  "ຄຸ້ມຄອງການຂົນສົ່ງ EPL"
+ ],
+ "login_sub": [
+  "Mỗi người dùng đăng nhập bằng tài khoản riêng. Quyền nhập, kiểm tra, ghi sổ, chi tiền và lập hóa đơn phụ thuộc vào vai trò của tài khoản.",
+  "ຜູ້ໃຊ້ແຕ່ລະຄົນເຂົ້າລະບົບດ້ວຽບັນຊີຂອງຕົນ. ສິດລົງຂໍ້ມູນ, ກວດ, ບັນທຶກ, ຈ່າຽ ແລະ ອອກໃບເກັບເງິນ ຂຶ້ນກັບໜ້າທີ່ຂອງບັນຊີ."
+ ],
+ "login_h": [
+  "Đăng nhập",
+  "ເຂົ້າລະບົບ"
+ ],
+ "login_demo": [
+  "Bản demo: mật khẩu tất cả tài khoản là 1234",
+  "ສະບັບທົດລອງ: ລະຫັດທຸກບັນຊີ 1234"
+ ],
+ "username": [
+  "Tên đăng nhập",
+  "ຊື່ຜູ້ໃຊ້"
+ ],
+ "password": [
+  "Mật khẩu",
+  "ລະຫັດຜ່ານ"
+ ],
+ "login_btn": [
+  "Đăng nhập",
+  "ເຂົ້າລະບົບ"
+ ],
+ "quick_pick": [
+  "Hoặc chọn nhanh tài khoản:",
+  "ຫຼື ເລືອກບັນຊີ:"
+ ],
+ "login_err": [
+  "Sai tên đăng nhập hoặc mật khẩu",
+  "ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດ ບໍ່ຖືກ"
+ ],
+ "switch_acct": [
+  "Đổi tài khoản",
+  "ປ່ຽນບັນຊີ"
+ ],
+ "r_treasury_role": [
+  "Quỹ Viêng Chăn",
+  "ຄັງເງິນ ວຽງຈັນ"
+ ],
+ "hint_treasury": [
+  "Vai trò <b>Quỹ Viêng Chăn</b>: xác nhận đã chi tiền nhiên liệu (mục III) sau khi kế toán kho đã ghi sổ.",
+  "<b>ຄັງເງິນ ວຽງຈັນ</b>: ຢືນຢັນຈ່າຽເງິນນໍ້ານັນ (III) ຫຼັງບັນຊີສາງບັນທຶກແລ້ວ."
+ ],
+ "stt_booked": [
+  "Đã ghi sổ · chờ chi",
+  "ບັນທຶກແລ້ວ · ລໍຈ່າຽ"
+ ],
+ "stt_wait2": [
+  "Chưa gửi",
+  "ຍັງບໍ່ສົ່ງ"
+ ],
+ "a_send": [
+  "Gửi kiểm tra",
+  "ສົ່ງກວດ"
+ ],
+ "a_verify": [
+  "Xác nhận kiểm tra",
+  "ຢືນຢັນກວດແລ້ວ"
+ ],
+ "a_book": [
+  "Ghi sổ kế toán",
+  "ບັນທຶກບັນຊີ"
+ ],
+ "a_pay": [
+  "Xác nhận đã chi",
+  "ຢືນຢັນຈ່າຽແລ້ວ"
+ ],
+ "a_return": [
+  "Trả lại sửa",
+  "ສົ່ງຄືນແກ້"
+ ],
+ "a_invoice": [
+  "Lập hóa đơn thu",
+  "ອອກໃບເກັບເງິນ"
+ ],
+ "a_collect": [
+  "Xác nhận đã thu tiền khách",
+  "ຢືນຢັນເກັບເງິນລູກຄ້າແລ້ວ"
+ ],
+ "a_unlock": [
+  "Mở khóa (admin)",
+  "ປົດລ໊ອກ (admin)"
+ ],
+ "log_title": [
+  "Lịch sử duyệt",
+  "ປະຫວັດການອະນຸມັດ"
+ ],
+ "log_empty": [
+  "Chưa có thao tác nào",
+  "ຍັງບໍ່ມີ"
+ ],
+ "locked_after": [
+  "Đã kiểm tra – không sửa được nữa",
+  "ກວດແລ້ວ – ແກ້ບໍ່ໄດ້"
+ ],
+ "inv_done": [
+  "Đã lập hóa đơn",
+  "ອອກໃບເກັບເງິນແລ້ວ"
+ ],
+ "trip_status": [
+  "Trạng thái phiếu",
+  "ສະຖານະບິນ"
+ ],
+ "acct_625_402": [
+  "Chi phí đi đường",
+  "ຄ່າເດີນທາງ"
+ ],
+ "acct_614_402": [
+  "Sửa chữa trả NCC",
+  "ສ້ອມແປງ ຈ່າຽຜູ້ສະໜອງ"
+ ],
+ "acct_614_371": [
+  "Sửa chữa xuất kho",
+  "ສ້ອມແປງ ເບີກສາງ"
+ ],
+ "acct_1211_402": [
+  "Cước vận chuyển ngoài",
+  "ຄ່າຂົນສົ່ງນອກ"
+ ],
+ "hire_pt": [
+  "Giá thuê họ (USD/tấn)",
+  "ລາຄາເຊົ່າເຂົາ (USD/ໂຕນ)"
+ ],
+ "do_title": [
+  "Lãi trong DO này",
+  "ກຳໄລໃນ DO ນີ້"
+ ],
+ "do_recv": [
+  "Giá mình nhận từ khách hàng",
+  "ລາຄາທີ່ເຮົາຮັບຈາກລູກຄ້າ"
+ ],
+ "do_hire": [
+  "Tiền mình thuê xe ngoài",
+  "ເງິນເຮົາເຊົ່າລົດນອກ"
+ ],
+ "do_diff": [
+  "Chênh lệch giá cước",
+  "ສ່ວນຕ່າງຄ່າຂົນສົ່ງ"
+ ],
+ "do_cuts": [
+  "Cộng phí cắt của chủ xe (phí quản lý + quá tải)",
+  "ບວກຄ່າຫັກເຈົ້າຂອງລົດ (ຄ່າທຳນຽມ + ແກ່ເກີນ)"
+ ],
+ "do_profit": [
+  "Lãi EPL trong DO",
+  "ກຳໄລ EPL ໃນ DO"
+ ],
+ "per_ton": [
+  "/tấn",
+  "/ໂຕນ"
+ ],
+ "col_price": [
+  "Giá/tấn",
+  "ລາຄາ/ໂຕນ"
+ ],
+ "col_tons": [
+  "Tấn",
+  "ໂຕນ"
+ ],
+ "col_total": [
+  "Thành tiền (USD)",
+  "ມູນຄ່າ (USD)"
+ ],
+ "do_money": [
+  "Tiền DO (thu từ khách hàng)",
+  "ເງິນ DO (ຮັບຈາກລູກຄ້າ)"
+ ],
+ "trip_profit": [
+  "Lãi trong chuyến này",
+  "ກຳໄລໃນຖ້ຽວນີ້"
+ ],
+ "lg_yard": [
+  "Bãi Thà Bốc (nhập liệu)",
+  "ສະໜາມທ່າບົກ (ລົງຂໍ້ມູນ)"
+ ],
+ "lg_acct": [
+  "Kế toán Viêng Chăn",
+  "ບັນຊີ ວຽງຈັນ"
+ ],
+ "lg_cash": [
+  "Quỹ / tiền mặt",
+  "ຄັງເງິນ / ເງິນສົດ"
+ ]
+}

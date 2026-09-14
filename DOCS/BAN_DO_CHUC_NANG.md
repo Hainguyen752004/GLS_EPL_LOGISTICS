@@ -1,0 +1,95 @@
+# Bản đồ chức năng: từ EPL_System sang bản Lào (EPL_LAO_REAL)
+
+Tài liệu này trả lời một câu: **mỗi thứ trong EPL_System đi đâu** khi làm lại theo Excel `ຂົນສົ່ງ EPL.xlsx` và bản giao diện bên Lào đã duyệt. Ba nhóm: **giữ và làm gọn** · **thay bằng thứ họ đang dùng** · **bỏ hẳn**.
+
+Nguyên tắc chọn: Excel của họ có ô nào thì bản Lào có cột đó; không có thì không thêm. Khi phân vân, hỏi *"trong Excel của họ có ô này không?"*.
+
+## 1. Vì sao phải làm lại
+
+Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận hành của họ:
+
+- Làm việc và phân quyền **trên một tệp Excel** — không kiểm xe rảnh, không kiểm tài xế rảnh, không tạo Trip, không công thức giá thành, không sắp ca.
+- **Xe container có hai biển số**: biển đầu kéo (ທະບຽນຫົວ) và biển thùng (ທະບຽນຫາງ), cộng số hiệu nội bộ (ເບີລົດ, ví dụ 341). Module xe của EPL_System thiếu chỗ này.
+- **Mô hình môi giới**: bên A thuê họ giá 2, họ thuê lại xe ngoài (ລົດຮ່ວມ) giá 1, lời 1. Xe ngoài bị trừ 2%/phiếu và 1 USD/tấn vượt 40 tấn.
+- **Tiền trộn trong một phiếu**: cước tính USD, chi phí LAK/VND/THB, tỷ giá ghi ngay đầu phiếu (USD 22.000 · THB 700 · VND 1,2).
+- **Chuỗi duyệt theo vai**: Bãi Thà Bốc nhập → Kế toán Viêng Chăn kiểm → ghi sổ → Quỹ chi. Mỗi khoản chi có mã tài khoản kép (`625/371`, `625/402`, `614/402`).
+- Họ **rất thích module Tracking** và bảng theo dõi phiếu vận chuyển đã dựng lại theo ý họ.
+
+## 2. Bảng ánh xạ
+
+| EPL_System | Bản Lào | Quyết định | Vì sao |
+|---|---|---|---|
+| Báo giá (QT) | — | **Bỏ** | Họ không báo giá trên hệ; giá USD/tấn ghi thẳng vào phiếu xuất xe |
+| Lệnh giao hàng (DO) | — | **Bỏ** | Không có tầng "yêu cầu của khách" riêng; một tờ phiếu là đủ |
+| Chuyến (Trip) + điều phối | **Phiếu xuất xe** (ໃບເບີກລົດອອກໄປຂົນສົ່ງ) | **Thay** | Đơn vị làm việc duy nhất của họ: 6 mục I–VI, mỗi mục một trạng thái duyệt |
+| Kiểm xe rảnh / tài xế rảnh / trùng lịch | — | **Bỏ** | Excel của họ không kiểm; thêm vào là thêm một thứ họ không hiểu |
+| Tracking / tháp kiểm soát | **Theo dõi phiếu vận chuyển** | **Giữ, làm gọn** | Bảng họ thích nhất: một dòng một phiếu, đủ 29 cột như sheet ໜ້າລາຍງານຂົນສົ່ງ |
+| Trạng thái DO (pending → in_transit → arrived → delivered) | Trạng thái vận chuyển: **xuất bến → đang chạy → đã tới** + trạng thái tài chính: **chưa thu → thu một phần → đã thu** | **Thay** | Đúng hai cột ສະຖານະ trong Excel |
+| Hoàn tất giao hàng · POD · chốt giá | **Hoá đơn vận chuyển** (bản in) + nút *Lập hoá đơn* / *Đã thu tiền* của kế toán doanh thu | **Thay** | Họ không ký POD điện tử; hoá đơn giấy in ra và ký tay |
+| Master data: Khách hàng | **Khách hàng** | **Giữ** | Danh mục duy nhất họ còn dùng — anh đã nói *"chỉ giữ lại được khách hàng"* |
+| Master data: Xe · Loại xe | **Xe** (số hiệu · biển đầu kéo · biển rơ-moóc · xe công ty / xe liên kết · chủ xe) | **Thay** | Thêm hai biển số theo yêu cầu; bỏ loại xe, tải trọng, giấy tờ hết hạn |
+| Master data: Tài xế · bằng lái · lịch ca | **Tài xế** (tên · điện thoại · số bằng lái) | **Giữ, làm gọn** | Bỏ lịch ca, hạn bằng lái, trạng thái rảnh/bận |
+| Công thức giá thành theo loại xe | — | **Bỏ** | Họ ghi từng khoản chi thật vào phiếu, không tính giá thành theo công thức |
+| Tỷ giá tiền tệ | **Tỷ giá** (USD · THB · VND → LAK), khoá vào từng phiếu lúc lập | **Giữ, làm gọn** | Đúng ba dòng Rate trên đầu phiếu của họ |
+| Sổ thu – chi · Acc code từ hệ công nợ | **Mã tài khoản kép** trên từng dòng chi (625/371 · 625/402 · 614/402 · 614/371 · 1211/70 · 1211/402) | **Thay** | Chép nguyên cột ເດິນບັນຊີ trong Excel |
+| Sự cố · GPS · mốc tài xế | — | **Bỏ** | Không có trong Excel; họ gọi điện |
+| Bãi xe · Packing list · QR | — | **Bỏ** | Hàng quặng nguyên khối, không có kiện |
+| Xe liên kết (chưa có) | **Xe liên kết** — báo cáo riêng + bảng thanh toán chủ xe trên phiếu | **Mới** | Trọng tâm mô hình môi giới của họ |
+| Tiền chuyến tài xế (chưa có) | **Tiền chuyến & tiền nước tài xế** — gom từ mục IV theo tháng | **Mới** | Sheet báo cáo số 5 của họ |
+| Công nợ nhà cung cấp (chưa có) | **Theo dõi nhà cung cấp** — phát sinh từ phiếu, đã trả, còn nợ | **Mới** | Sheet báo cáo số 6 |
+| Kho nhiên liệu (chưa có) | **Kho nhiên liệu** — sổ nhập / xuất cho xe / tồn | **Mới** | Sheet báo cáo số 3 · TK 625/371 |
+| Kho phụ tùng (chưa có) | **Kho phụ tùng** — tồn, tồn tối thiểu, xuất theo xe | **Mới** | Sheet báo cáo số 4 · TK 614/371 |
+| Phân quyền (hệ cha lo) | **Tài khoản & vai** — 7 vai, mỗi vai được làm một bước trên phiếu | **Mới** | Sheet ໜ້າວຽກ: ai nhập, ai kiểm, ai ghi sổ, ai chi |
+| Trợ lý AI (EPL_TroLy) | — | **Không mang sang** | Ngoài phạm vi "năm 2016" |
+| Trang tài xế (EPL_TaiXe) | — | **Không mang sang** | Tài xế không thao tác trên hệ |
+
+## 3. Bảy vai và việc của từng vai
+
+| Vai | Tên trong Excel | Trên phiếu xuất xe |
+|---|---|---|
+| `yard` | ສະໜາມທ່າບົກ — Bãi Thà Bốc | **Nhập** mục I–VI, lập phiếu, cập nhật xe đã chạy / đã tới |
+| `acct` | ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ — Kế toán thu/chi Viêng Chăn | **Kiểm** I, II, IV, V, VI · **ghi sổ** IV, V, VI · trả lại cho Bãi sửa |
+| `fuel` | ບັນຊີສາງນໍ້າມັນ — Kế toán kho nhiên liệu | **Kiểm** và **ghi sổ** mục III |
+| `treasury` | ຄັງເງິນ ວຽງຈັນ — Quỹ Viêng Chăn | **Chi** mục III |
+| `cash` | ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ — Tiền mặt lẻ Thà Bốc | **Chi** mục IV, V, VI |
+| `rev` | ບັນຊີລາຍຮັບ — Kế toán doanh thu | **Lập hoá đơn**, **ghi thu tiền** khách (mức phiếu) |
+| `admin` | — | Mọi việc, kể cả mở khoá mục đã duyệt và quản lý tài khoản |
+
+Chuỗi trạng thái từng mục: `chờ → đã nhập → đã kiểm → đã ghi sổ → đã chi` (mục I–II dừng ở *đã kiểm*). Bãi chỉ sửa được khi mục còn ở *chờ* / *đã nhập*; kế toán đã kiểm là khoá.
+
+## 4. Phép tính trên phiếu (chép từ Excel)
+
+**Xe công ty (EPL):**
+```
+Tấn tính tiền = tấn cân nơi giao (chưa cân thì tạm dùng tấn đầu đi)
+Doanh thu USD = tấn × giá USD/tấn
+Chi LAK       = Σ (số lượng × đơn giá × tỷ giá về LAK) của mục III + IV + V + VI
+Lãi USD       = doanh thu − chi ÷ tỷ giá USD
+```
+
+**Xe liên kết:**
+```
+Tiền thuê     = tấn × giá thuê USD/tấn
+Phí           = tiền thuê × 2%
+Trừ vượt      = max(0, tấn − 40) × 1 USD
+Ứng trước     = Σ dòng chi EPL đã ứng ÷ tỷ giá USD   (dòng "chủ xe tự trả" không tính)
+Trả chủ xe    = tiền thuê − phí − trừ vượt − ứng trước
+Lãi EPL       = (giá nhận − giá thuê) × tấn
+```
+
+Ví dụ thật từ dữ liệu mẫu — phiếu `T4-0430-08/EPL`, xe ຮ່ວມ-07: 40,50 t × 40,5 = 1.640,25 · phí 32,80 · vượt 0,5 t = 0,50 · ứng 316,07 → **trả chủ xe 1.290,88 USD**; lãi EPL (41 − 40,5) × 40,5 = **20,25 USD**.
+
+## 5. Kiến trúc — cố ý đơn giản
+
+- **Một DB riêng** `epl_lao` trên cùng máy chủ PostgreSQL; không đụng `epl_logistics` của EPL_System.
+- **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
+- **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
+- **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 458 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
+
+## 6. Những gì cố ý KHÔNG làm
+
+Không kiểm xe rảnh. Không kiểm tài xế trùng lịch. Không công thức giá thành. Không sắp ca. Không GPS. Không POD điện tử. Không QR. Không trợ lý AI. Không hạn giấy tờ xe. Không cảnh báo hạn bằng lái.
+
+Mỗi thứ trên đều là một tính năng họ không có trong Excel — tức một tính năng họ sẽ không hiểu, và không hiểu thì không dùng.

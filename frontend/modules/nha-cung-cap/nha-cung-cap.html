@@ -1,0 +1,19 @@
+<!-- Theo dõi nhà cung cấp — ຕິດຕາມຜູ້ສະໜອງ. Phát sinh từ phiếu, đã trả, còn nợ. -->
+<div class="toolbar">
+  <div class="grow"></div>
+  <button class="btn primary" id="ncc-them"><span data-i18n="add"></span></button>
+</div>
+<div class="card">
+  <div class="hd"><h3 data-i18n="nav_supplier"></h3><div class="grow"></div><span class="small muted" data-i18n="sup_hint"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th data-i18n="supplier"></th><th data-i18n="service"></th><th data-i18n="acct_code"></th><th class="num" data-i18n="c_trips"></th><th class="num" data-i18n="owed_lak"></th><th class="num" data-i18n="paid_lak"></th><th class="num" data-i18n="balance_lak"></th><th data-i18n="terms"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
+      <tbody id="ncc-than"></tbody>
+      <tfoot id="ncc-chan"></tfoot>
+    </table>
+  </div>
+</div>
+<div class="card ncc-lich-su" id="ncc-lich-su" hidden>
+  <div class="hd"><h3 id="ncc-ls-ten"></h3><div class="grow"></div><button class="btn sm" id="ncc-ls-dong" data-i18n="close"></button></div>
+  <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="pay_date"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="note"></th><th data-i18n="payer"></th></tr></thead><tbody id="ncc-ls-than"></tbody></table></div>
+</div>

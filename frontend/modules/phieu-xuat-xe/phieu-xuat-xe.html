@@ -1,0 +1,113 @@
+<!-- Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Tờ giấy duy nhất họ làm việc: 6 mục, mỗi mục một trạng thái duyệt. -->
+<div class="toolbar no-print">
+  <button class="btn quiet" id="px-ve">← <span data-i18n="back_list"></span></button>
+  <div class="field"><label data-i18n="doc_no"></label><select id="px-chon"></select></div>
+  <button class="btn" id="px-moi">+ <span data-i18n="new_slip"></span></button>
+  <div class="grow"></div>
+  <button class="btn" id="px-hoa-don"><span data-i18n="nav_bill"></span></button>
+  <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>
+  <button class="btn primary" id="px-luu"><span data-i18n="save"></span></button>
+</div>
+
+<div class="card px-buoc no-print"><div class="bd">
+  <div class="px-flow" id="px-flow">
+    <div class="step" data-b="0"><div class="t" data-i18n="wf1"></div><div class="d" data-i18n="wf1d"></div></div>
+    <div class="step" data-b="1"><div class="t" data-i18n="wf2"></div><div class="d" data-i18n="wf2d"></div></div>
+    <div class="step" data-b="2"><div class="t" data-i18n="wf3"></div><div class="d" data-i18n="wf3d"></div></div>
+    <div class="step" data-b="3"><div class="t" data-i18n="wf4"></div><div class="d" data-i18n="wf4d"></div></div>
+    <div class="step" data-b="4"><div class="t" data-i18n="wf5"></div><div class="d" data-i18n="wf5d"></div></div>
+  </div>
+</div></div>
+<div class="px-goi-y no-print" id="px-goi-y"></div>
+
+<div class="card px-phieu" id="px-phieu">
+  <div class="px-dau">
+    <div><h3 data-i18n="doc_dispatch"></h3><p class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO · Tel 020 5889 9983</p></div>
+    <div class="grow"></div>
+    <div class="px-so"><div class="small muted" data-i18n="doc_no"></div><input id="px-doc-no" class="px-so-nhap"><div id="px-trang-thai"></div></div>
+  </div>
+
+  <!-- I -->
+  <section class="px-muc" data-muc="info">
+    <div class="px-muc-dau"><span class="rn">I</span><h4 data-i18n="sec1"></h4><span class="px-stt" data-stt="info"></span><div class="grow"></div><div class="px-act no-print" data-act="info"></div><div class="px-who small muted"><span data-i18n="resp"></span> <span data-i18n="r_yard"></span></div></div>
+    <div class="px-muc-than f-grid">
+      <div class="field"><label data-i18n="truck_type"></label><select id="f-company"><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
+      <div class="field px-lk"><label data-i18n="owner"></label><input id="f-owner_name" lang="lo"></div>
+      <div class="field"><label data-i18n="truck_no"></label><select id="f-vehicle_id"></select></div>
+      <div class="field"><label data-i18n="brand_model"></label><input id="f-brand_model"></div>
+      <div class="field"><label data-i18n="plate_head"></label><input id="f-plate_head" lang="lo"></div>
+      <div class="field"><label data-i18n="plate_trailer"></label><input id="f-plate_trailer" lang="lo"></div>
+      <div class="field"><label data-i18n="driver"></label><select id="f-driver_id"></select></div>
+      <div class="field"><label data-i18n="d_issue"></label><input type="date" id="f-doc_date"></div>
+      <div class="field"><label data-i18n="d_out"></label><input type="date" id="f-out_date"></div>
+      <div class="field"><label data-i18n="d_back"></label><input type="date" id="f-back_date"></div>
+      <div class="field"><label data-i18n="odo_out"></label><input class="num" id="f-odo_out" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="odo_back"></label><input class="num" id="f-odo_back" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="odo_km"></label><div class="ro num" id="v-odo_km">—</div></div>
+    </div>
+  </section>
+
+  <!-- II -->
+  <section class="px-muc" data-muc="trans">
+    <div class="px-muc-dau"><span class="rn">II</span><h4 data-i18n="sec2"></h4><span class="px-stt" data-stt="trans"></span><div class="grow"></div><div class="px-act no-print" data-act="trans"></div><div class="px-who small muted"><span data-i18n="verifier"></span> <span data-i18n="r_acct_vc"></span></div></div>
+    <div class="px-muc-than">
+      <div class="f-grid">
+        <div class="field"><label data-i18n="customer"></label><select id="f-customer_id"></select></div>
+        <div class="field"><label data-i18n="goods_type"></label><select id="f-goods_type"><option value="iron_ore" data-i18n="iron_ore"></option><option value="other_goods" data-i18n="other_goods"></option></select></div>
+        <div class="field"><label data-i18n="ore_bill_no"></label><input id="f-ore_bill_no"></div>
+        <div class="field"><label data-i18n="ore_bill_date"></label><input type="date" id="f-ore_bill_date"></div>
+        <div class="field"><label data-i18n="origin"></label><input id="f-origin" lang="lo"></div>
+        <div class="field"><label data-i18n="dest"></label><input id="f-destination" lang="lo"></div>
+        <div class="field"><label data-i18n="w_origin"></label><input class="num" id="f-weight_origin" inputmode="decimal"></div>
+        <div class="field"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"></div>
+        <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
+        <div class="field"><label data-i18n="price_usd"></label><input class="num" id="f-price_usd" inputmode="decimal"></div>
+        <div class="field"><label data-i18n="value_usd"></label><div class="ro hi num" id="v-val-usd">—</div></div>
+        <div class="field"><label data-i18n="value_lak"></label><div class="ro num" id="v-val-lak">—</div></div>
+      </div>
+      <p class="small muted" data-i18n="value_rule"></p>
+      <div class="px-lk px-khau-tru">
+        <h5 data-i18n="ded_title"></h5>
+        <div class="f-grid">
+          <div class="field"><label data-i18n="hire_pt"></label><input class="num" id="f-hire_price_usd" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="hire_usd"></label><div class="ro num" id="v-hire">—</div></div>
+          <div class="field"><label data-i18n="fee_pct"></label><input class="num" id="f-fee_pct" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="fee_amt"></label><div class="ro num neg" id="v-fee">—</div></div>
+          <div class="field"><label data-i18n="limit_t"></label><input class="num" id="f-over_limit_t" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="over_t"></label><div class="ro num" id="v-over-t">—</div></div>
+          <div class="field"><label data-i18n="over_p"></label><input class="num" id="f-over_price_usd" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="over_amt"></label><div class="ro num neg" id="v-over">—</div></div>
+        </div>
+        <p class="small muted" data-i18n="ded_note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- III–VI: bốn mục chi, cùng một khuôn bảng -->
+  <section class="px-muc" data-muc="fuel">
+    <div class="px-muc-dau"><span class="rn">III</span><h4 data-i18n="sec3"></h4><span class="px-stt" data-stt="fuel"></span><div class="grow"></div><div class="px-act no-print" data-act="fuel"></div><div class="px-who small muted"><span data-i18n="r_fuel_acct"></span> · <span data-i18n="r_treasury"></span></div></div>
+    <div class="px-muc-than"><p class="small muted px-lk" data-i18n="fuel_joint_note"></p><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="fuel"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty_l"></th><th class="num" data-i18n="unit_price"></th><th data-i18n="cur"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="fill_place"></th><th class="px-lk" data-i18n="who_pays"></th><th data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="fuel">+ <span data-i18n="add_row"></span></button></div>
+  </section>
+  <section class="px-muc" data-muc="travel">
+    <div class="px-muc-dau"><span class="rn">IV</span><h4 data-i18n="sec4"></h4><span class="px-stt" data-stt="travel"></span><div class="grow"></div><div class="px-act no-print" data-act="travel"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
+    <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="travel"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="travel">+ <span data-i18n="add_row"></span></button></div>
+  </section>
+  <section class="px-muc" data-muc="repair">
+    <div class="px-muc-dau"><span class="rn">V</span><h4 data-i18n="sec5"></h4><span class="px-stt" data-stt="repair"></span><div class="grow"></div><div class="px-act no-print" data-act="repair"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
+    <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="repair"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="repair">+ <span data-i18n="add_row"></span></button></div>
+  </section>
+  <section class="px-muc" data-muc="other">
+    <div class="px-muc-dau"><span class="rn">VI</span><h4 data-i18n="sec6"></h4><span class="px-stt" data-stt="other"></span><div class="grow"></div><div class="px-act no-print" data-act="other"></div><div class="px-who small muted"><span data-i18n="r_exp_acct"></span> · <span data-i18n="r_petty"></span></div></div>
+    <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="other"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="other">+ <span data-i18n="add_row"></span></button></div>
+  </section>
+
+  <div id="px-tong-ket"></div>
+  <div class="px-hanh-dong no-print" id="px-hanh-dong"></div>
+  <div class="px-log no-print" id="px-log"></div>
+  <div class="px-ky">
+    <div><div class="line"></div><b data-i18n="sg_driver"></b><div class="small muted" data-i18n="sg_driver_d"></div></div>
+    <div><div class="line"></div><b data-i18n="sg_issuer"></b><div class="small muted" data-i18n="sg_issuer_d"></div></div>
+    <div><div class="line"></div><b data-i18n="sg_verify"></b><div class="small muted" data-i18n="sg_verify_d"></div></div>
+    <div><div class="line"></div><b data-i18n="sg_payer"></b><div class="small muted" data-i18n="sg_payer_d"></div></div>
+  </div>
+</div>

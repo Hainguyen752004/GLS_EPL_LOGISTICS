@@ -1,0 +1,53 @@
+<!-- Theo dõi phiếu vận chuyển — ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ. Bảng họ thích nhất: một dòng một phiếu, 29 cột như Excel. -->
+<div class="toolbar">
+  <div class="field td-tim"><label data-i18n="search"></label><input id="td-q" data-i18n-ph="search_ph"></div>
+  <div class="field"><label data-i18n="st_transport"></label>
+    <select id="td-vc"><option value="" data-i18n="all"></option><option value="dispatched" data-i18n="s_dispatched"></option><option value="transit" data-i18n="s_transit"></option><option value="arrived" data-i18n="s_arrived"></option></select></div>
+  <div class="field"><label data-i18n="st_finance"></label>
+    <select id="td-tc"><option value="" data-i18n="all"></option><option value="unpaid" data-i18n="s_unpaid"></option><option value="partial" data-i18n="s_partial"></option><option value="paid" data-i18n="s_paid"></option></select></div>
+  <div class="field"><label data-i18n="truck_type"></label>
+    <select id="td-cty"><option value="" data-i18n="all"></option><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
+  <div class="field"><label data-i18n="month"></label><input type="month" id="td-thang"></div>
+  <div class="grow"></div>
+  <button class="btn" id="td-xuat"><span data-i18n="export"></span></button>
+  <button class="btn primary" id="td-moi"><span data-i18n="new_dispatch"></span></button>
+</div>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="track_title"></h3><div class="grow"></div><span class="small muted" id="td-dem"></span></div>
+  <div class="tbl-wrap td-cuon">
+    <table class="tbl td-bang">
+      <thead>
+        <tr>
+          <th rowspan="2">#</th>
+          <th colspan="2" class="grp" data-i18n="c_billno"></th>
+          <th rowspan="2" data-i18n="c_orebill"></th>
+          <th rowspan="2" data-i18n="c_route"></th>
+          <th rowspan="2" data-i18n="c_company"></th>
+          <th rowspan="2" data-i18n="c_driver"></th>
+          <th colspan="3" class="grp" data-i18n="c_plates"></th>
+          <th rowspan="2" data-i18n="c_customer"></th>
+          <th rowspan="2" data-i18n="c_goods"></th>
+          <th colspan="2" class="grp" data-i18n="w_origin"></th>
+          <th rowspan="2" class="num" data-i18n="c_price"></th>
+          <th rowspan="2" class="num" data-i18n="c_value"></th>
+          <th colspan="3" class="grp" data-i18n="co_joint"></th>
+          <th colspan="5" class="grp" data-i18n="expense"></th>
+          <th rowspan="2" class="num" data-i18n="net"></th>
+          <th colspan="2" class="grp" data-i18n="status"></th>
+        </tr>
+        <tr>
+          <th data-i18n="c_date"></th><th data-i18n="doc_no"></th>
+          <th data-i18n="plate_head"></th><th data-i18n="plate_trailer"></th><th data-i18n="c_truck"></th>
+          <th class="num" data-i18n="c_w_origin"></th><th class="num" data-i18n="c_w_dest"></th>
+          <th class="num" data-i18n="c_joint_fee"></th><th class="num" data-i18n="c_fee2"></th><th class="num" data-i18n="c_over"></th>
+          <th class="num" data-i18n="c_fuel"></th><th class="num" data-i18n="c_travel"></th><th class="num" data-i18n="c_repair"></th><th class="num" data-i18n="c_other"></th><th class="num" data-i18n="c_totexp"></th>
+          <th data-i18n="c_st_t"></th><th data-i18n="c_st_f"></th>
+        </tr>
+      </thead>
+      <tbody id="td-than"></tbody>
+      <tfoot id="td-chan"></tfoot>
+    </table>
+  </div>
+  <div class="bd small muted" data-i18n="track_note"></div>
+</div>

@@ -1,0 +1,16 @@
+# Khoá và cấu hình riêng — KHÔNG BAO GIỜ đẩy lên.
+.env
+.env.*
+!.env.example
+*.token
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Nhật ký, tệp tạm
+*.log
+~$*
+.DS_Store

@@ -1,0 +1,345 @@
+# -*- coding: utf-8 -*-
+"""Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Trái tim của bản Lào.
+
+Một phiếu = một tờ giấy họ đang dùng: sáu mục I–VI, mỗi mục một trạng thái duyệt riêng,
+ai làm gì ghi vào nhật ký. Không có Trip, không có DO, không có báo giá.
+"""
+import datetime as dt
+
+from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from database import get_db
+from models import (CHUOI, MUC, MUC_CHI, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+                    Customer, Driver, ExchangeRate, Trip, TripExpense, TripLog, TripSection, Vehicle)
+from services.bao_mat import nguoi_hien_tai
+from services.phan_quyen import chuyen_muc, duoc_sua_muc
+from services.tinh_toan import tinh_phieu
+
+router = APIRouter()
+
+# Khoản mục chuẩn của từng mục chi — chép từ Excel; người dùng vẫn gõ tên tự do được.
+KHOAN_MUC = {
+    "fuel":   ["diesel"],
+    "travel": ["x_water", "x_vn", "x_chip_lao", "x_chip_vn", "x_bridge", "x_toll", "x_trip",
+               "x_phone", "x_food", "x_parking", "x_border"],
+    "repair": ["x_tire", "x_air", "x_oil", "x_brake", "x_tow"],
+    "other":  ["x_misc"],
+}
+MA_TK_MAC_DINH = {"fuel": "625/371", "travel": "625/402", "repair": "614/402", "other": "625/402"}
+MA_TK = ["625/371", "625/402", "614/402", "614/371", "1211/70", "1211/402"]
+COT_PHIEU = ("doc_no", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
+             "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
+             "odo_out", "odo_back", "customer_id", "customer_name", "goods_type", "ore_bill_no",
+             "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price_usd",
+             "hire_price_usd", "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb",
+             "rate_vnd", "note")
+COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
+COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price_usd", "hire_price_usd",
+          "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb", "rate_vnd")
+# Trường nào thuộc mục nào — để khoá theo trạng thái duyệt của mục
+MUC_CUA_COT = {
+    "info":  {"doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id", "truck_no",
+              "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name", "odo_out", "odo_back"},
+    "trans": {"customer_id", "customer_name", "goods_type", "ore_bill_no", "ore_bill_date", "origin",
+              "destination", "weight_origin", "weight_dest", "price_usd", "hire_price_usd", "fee_pct",
+              "over_limit_t", "over_price_usd"},
+}
+
+
+def _ngay(v):
+    if v in (None, ""):
+        return None
+    if isinstance(v, dt.date):
+        return v
+    try:
+        return dt.date.fromisoformat(str(v)[:10])
+    except ValueError:
+        raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD, nhận '%s'." % v})
+
+
+def _so(v, ten):
+    if v in (None, ""):
+        return None
+    try:
+        return float(str(v).replace(",", ""))
+    except ValueError:
+        raise HTTPException(422, {"ma": "SO_SAI", "loi": "Ô %s phải là số, nhận '%s'." % (ten, v)})
+
+
+def _ghi_log(db, phieu, user, hanh_dong):
+    db.add(TripLog(trip_id=phieu.id, user_name=user.full_name, role=user.role, action=hanh_dong))
+
+
+def _muc_cua(db, phieu):
+    ds = {s.section: s for s in db.query(TripSection).filter(TripSection.trip_id == phieu.id).all()}
+    for m in MUC:                       # phiếu cũ thiếu dòng nào thì bù "wait"
+        if m not in ds:
+            s = TripSection(trip_id=phieu.id, section=m, status="wait"); db.add(s); ds[m] = s
+    return ds
+
+
+def _dong_chi(db, phieu):
+    return (db.query(TripExpense).filter(TripExpense.trip_id == phieu.id)
+            .order_by(TripExpense.section, TripExpense.line_no).all())
+
+
+def _xuat_dong(d):
+    return {"id": d.id, "section": d.section, "line_no": d.line_no, "item_key": d.item_key,
+            "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price, "currency": d.currency,
+            "place": d.place, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "note": d.note}
+
+
+def xuat_phieu(db, phieu, day_du=True):
+    dong = _dong_chi(db, phieu)
+    ra = {c: getattr(phieu, c) for c in COT_PHIEU}
+    for c in COT_NGAY:
+        ra[c] = ra[c].isoformat() if ra[c] else None
+    ra.update({"id": phieu.id, "transport_status": phieu.transport_status,
+               "finance_status": phieu.finance_status, "invoiced": phieu.invoiced,
+               "created_by": phieu.created_by,
+               "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
+               "tinh": tinh_phieu(phieu, dong),
+               "sections": {s.section: s.status for s in _muc_cua(db, phieu).values()}})
+    if day_du:
+        ra["expenses"] = [_xuat_dong(d) for d in dong]
+        ra["logs"] = [{"ts": l.ts.isoformat() if l.ts else None, "user": l.user_name, "role": l.role,
+                       "action": l.action}
+                      for l in db.query(TripLog).filter(TripLog.trip_id == phieu.id)
+                      .order_by(TripLog.ts.desc()).limit(60).all()]
+    return ra
+
+
+# ---------------------------------------------------------------- danh sách & xem
+@router.get("/api/khoan-muc")
+def khoan_muc():
+    return {"items": KHOAN_MUC, "acct_default": MA_TK_MAC_DINH, "acct_codes": MA_TK,
+            "chain": {k: list(v) for k, v in CHUOI.items()}}
+
+
+@router.get("/api/trips")
+def ds_phieu(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai),
+             transport_status: str = None, finance_status: str = None, company: str = None, q: str = None):
+    qs = db.query(Trip)
+    if transport_status: qs = qs.filter(Trip.transport_status == transport_status)
+    if finance_status: qs = qs.filter(Trip.finance_status == finance_status)
+    if company: qs = qs.filter(Trip.company == company)
+    ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).all()
+    if q:
+        t = q.strip().lower()
+        ds = [p for p in ds if t in " ".join(str(x or "") for x in (
+            p.doc_no, p.driver_name, p.truck_no, p.customer_name, p.plate_head, p.plate_trailer,
+            p.origin, p.destination, p.ore_bill_no)).lower()]
+    return [xuat_phieu(db, p, day_du=False) for p in ds]
+
+
+@router.get("/api/trips/{tid}")
+def xem_phieu(tid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    return xuat_phieu(db, p)
+
+
+# ---------------------------------------------------------------- lập & sửa
+def _so_phieu_moi(db):
+    """T4-0428-08/EPL → số kế tiếp trong tháng hiện tại. Chỉ là gợi ý, người lập sửa được."""
+    thang = dt.date.today().strftime("%m")
+    cuoi = (db.query(Trip).filter(Trip.doc_no.like("T4-%%-%s/EPL" % thang))
+            .order_by(Trip.doc_no.desc()).first())
+    so = 1
+    if cuoi:
+        try:
+            so = int(cuoi.doc_no.split("-")[1]) + 1
+        except (IndexError, ValueError):
+            so = 1
+    return "T4-%04d-%s/EPL" % (so, thang)
+
+
+@router.get("/api/trips-so-moi")
+def so_moi(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    return {"doc_no": _so_phieu_moi(db)}
+
+
+def _ap_truong(db, p, data, user, muc_tt=None):
+    """Ghi các trường vào phiếu. Khi sửa, chỉ ghi trường của mục còn được sửa."""
+    for c in COT_PHIEU:
+        if c not in data:
+            continue
+        if muc_tt is not None:
+            muc = next((m for m, cot in MUC_CUA_COT.items() if c in cot), None)
+            if muc and not duoc_sua_muc(user.role, muc, muc_tt[muc]):
+                raise HTTPException(409, {"ma": "MUC_DA_KHOA",
+                                          "loi": "Mục %s đã khoá (%s); phải trả lại mới sửa được." % (muc, muc_tt[muc])})
+        v = data[c]
+        if c in COT_NGAY: v = _ngay(v)
+        elif c in COT_SO: v = _so(v, c)
+        elif isinstance(v, str): v = v.strip() or None
+        setattr(p, c, v)
+    # Chép tên/biển từ danh mục nếu chỉ gửi mã
+    if p.vehicle_id and not data.get("truck_no"):
+        x = db.get(Vehicle, p.vehicle_id)
+        if x:
+            p.truck_no, p.brand_model, p.plate_head, p.plate_trailer = x.truck_no, x.brand_model, x.plate_head, x.plate_trailer
+            if x.owner_type == "joint" and not p.owner_name: p.owner_name = x.owner_name
+    if p.driver_id and not data.get("driver_name"):
+        d = db.get(Driver, p.driver_id)
+        if d: p.driver_name = d.name
+    if p.customer_id and not data.get("customer_name"):
+        k = db.get(Customer, p.customer_id)
+        if k: p.customer_name = k.name
+    if p.company not in ("EPL", "joint"):
+        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "company phải là EPL hoặc joint."})
+    if p.company == "joint" and p.hire_price_usd is None:
+        p.hire_price_usd = p.price_usd     # mặc định bằng giá nhận — người lập sửa sau
+
+
+def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
+    """Thay TOÀN BỘ dòng chi của những mục được gửi lên. Mục đã khoá thì từ chối."""
+    theo_muc = {}
+    for i, d in enumerate(cac_dong or []):
+        m = d.get("section")
+        if m not in MUC_CHI:
+            raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Dòng %d: mục %s không hợp lệ." % (i + 1, m)})
+        theo_muc.setdefault(m, []).append(d)
+    for m in theo_muc:
+        if not duoc_sua_muc(user.role, m, muc_tt[m]):
+            raise HTTPException(409, {"ma": "MUC_DA_KHOA",
+                                      "loi": "Mục %s đã khoá (%s), không sửa được dòng chi." % (m, muc_tt[m])})
+        db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == m).delete()
+        for i, d in enumerate(theo_muc[m], 1):
+            db.add(TripExpense(
+                trip_id=p.id, section=m, line_no=i,
+                item_key=(d.get("item_key") or None), item_name=(d.get("item_name") or None),
+                qty=_so(d.get("qty"), "qty") or 0, unit_price=_so(d.get("unit_price"), "unit_price") or 0,
+                currency=str(d.get("currency") or "LAK").upper(), place=d.get("place"),
+                paid_by_epl=bool(d.get("paid_by_epl", True)),
+                acct_code=d.get("acct_code") or MA_TK_MAC_DINH[m], note=d.get("note")))
+
+
+@router.post("/api/trips")
+def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    if user.role not in ("yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc lập phiếu xuất xe."})
+    p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db)).strip(), created_by=user.full_name)
+    if db.query(Trip).filter(Trip.doc_no == p.doc_no).first():
+        raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s đã có." % p.doc_no})
+    # Tỷ giá mặc định lấy từ bảng tỷ giá, rồi khoá vào phiếu
+    tg = {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
+    p.rate_usd, p.rate_thb, p.rate_vnd = tg.get("USD", 22000), tg.get("THB", 700), tg.get("VND", 1.2)
+    _ap_truong(db, p, data, user)
+    db.add(p); db.flush()
+    muc_tt = {m: "wait" for m in MUC}
+    for m in MUC:
+        db.add(TripSection(trip_id=p.id, section=m, status="wait"))
+    _ap_dong_chi(db, p, data.get("expenses"), user, muc_tt)
+    _ghi_log(db, p, user, "a_create")
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.put("/api/trips/{tid}")
+def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    muc_tt = {m: s.status for m, s in _muc_cua(db, p).items()}
+    if "doc_no" in data and str(data["doc_no"]).strip() != p.doc_no:
+        if db.query(Trip).filter(Trip.doc_no == str(data["doc_no"]).strip()).first():
+            raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu đã có."})
+    _ap_truong(db, p, data, user, muc_tt)
+    if "expenses" in data:
+        _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
+    _ghi_log(db, p, user, "a_save")
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+# ---------------------------------------------------------------- duyệt từng mục
+@router.post("/api/trips/{tid}/sections/{muc}/{hanh_dong}")
+def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    ds = _muc_cua(db, p)
+    s = ds[muc] if muc in ds else None
+    if s is None:
+        raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Không có mục %s." % muc})
+    if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
+        raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
+    s.status = chuyen_muc(user.role, muc, s.status, hanh_dong)
+    _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+# ---------------------------------------------------------------- mức phiếu
+@router.post("/api/trips/{tid}/transport-status")
+def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """ອອກລົດ → ກຳລັງຈັດສົ່ງ → ຮອດແລ້ວ. Bãi Thà Bốc ghi khi xe báo về."""
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc cập nhật trạng thái xe."})
+    moi = data.get("status")
+    if moi not in TRANG_THAI_VAN_CHUYEN:
+        raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái phải là %s." % ", ".join(TRANG_THAI_VAN_CHUYEN)})
+    if moi == "arrived" and data.get("weight_dest") not in (None, ""):
+        p.weight_dest = _so(data["weight_dest"], "weight_dest")
+    if moi == "arrived" and data.get("back_date"):
+        p.back_date = _ngay(data["back_date"])
+    p.transport_status = moi
+    _ghi_log(db, p, user, "st_%s" % moi)
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.post("/api/trips/{tid}/invoice")
+def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("rev", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu xuất hoá đơn."})
+    if _muc_cua(db, p)["trans"].status != "verified":
+        raise HTTPException(409, {"ma": "CHUA_KIEM", "loi": "Mục II (vận chuyển) phải được kiểm xong trước khi xuất hoá đơn."})
+    p.invoiced = True
+    _ghi_log(db, p, user, "a_invoice")
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.post("/api/trips/{tid}/finance-status")
+def doi_trang_thai_tai_chinh(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("rev", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi thu tiền."})
+    moi = data.get("status")
+    if moi not in TRANG_THAI_TAI_CHINH:
+        raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái phải là %s." % ", ".join(TRANG_THAI_TAI_CHINH)})
+    if moi != "unpaid" and not p.invoiced:
+        raise HTTPException(409, {"ma": "CHUA_HOA_DON", "loi": "Chưa xuất hoá đơn thì chưa ghi thu."})
+    p.finance_status = moi
+    _ghi_log(db, p, user, "fin_%s" % moi)
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.delete("/api/trips/{tid}")
+def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Chỉ xoá được phiếu chưa mục nào qua bước kiểm — đã kiểm là chứng từ, không xoá."""
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc hoặc quản trị xoá phiếu."})
+    if any(s.status not in ("wait", "entered") for s in _muc_cua(db, p).values()) and user.role != "admin":
+        raise HTTPException(409, {"ma": "DA_DUYET", "loi": "Phiếu đã có mục được kiểm, không xoá được."})
+    db.query(TripExpense).filter(TripExpense.trip_id == p.id).delete()
+    db.query(TripSection).filter(TripSection.trip_id == p.id).delete()
+    db.query(TripLog).filter(TripLog.trip_id == p.id).delete()
+    db.delete(p); db.commit()
+    return {"ok": True}
