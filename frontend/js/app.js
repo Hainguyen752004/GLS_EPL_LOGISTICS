@@ -8340,6 +8340,9 @@ function moKhungFormDO() {
   });
   setDOSettlementFromSource({});
   setDOSettlementSaveState(null, false);
+  // Không xoá thì mở lệnh khác sẽ thấy hàng hoá của lệnh vừa xem — sai hẳn về nghiệp vụ.
+  const oHang = document.getElementById('do-cargo-items');
+  if (oHang) oHang.innerHTML = '';
   document.querySelectorAll('#fiori-do-form input, #fiori-do-form select, #fiori-do-form textarea').forEach(el => {
     if (el.type !== 'hidden') el.disabled = false;
   });
@@ -8353,6 +8356,70 @@ window.closeFioriDOForm = function () {
   const el = document.getElementById('fiori-do-form');
   if (el) el.style.display = 'none';
 };
+
+/** Vẽ khối "Hàng hoá vận chuyển" trên màn Xem DO — CHỈ ĐỌC, lấy từ báo giá gốc.
+ *
+ * Dòng hàng hoá (`quotation_items`) chỉ tồn tại trên BÁO GIÁ; lệnh giao hàng không có bảng
+ * riêng và cố ý không có. Nên đây là chỗ HIỂN THỊ lại thoả thuận, không phải chỗ khai mới —
+ * khai ở hai nơi thì lúc đối soát không biết tin bên nào. Đổi hàng thì sửa trên báo giá.
+ */
+function veHangHoaTrenDO(do_item) {
+  const o = document.getElementById('do-cargo-items');
+  if (!o) return;
+  const maQT = do_item && do_item.quotation_id ? String(do_item.quotation_id) : '';
+  const bg = typeof baoGiaCuaDO === 'function' ? baoGiaCuaDO(do_item) : null;
+  const hang = bg && Array.isArray(bg.items) ? bg.items.filter(i => i && (i.name || i.quantity)) : null;
+
+  const vien = 'border:1px solid #e2e8f0; border-radius:10px; background:#ffffff;';
+  const dau = '<div style="font-weight:900; color:#0f172a; display:flex; align-items:center; gap:8px;">'
+    + '<i class="fa-solid fa-boxes-stacked" style="color:#2563eb;"></i> Hàng hoá vận chuyển</div>';
+  // Nói rõ nguồn: người đọc phải biết con số này do đâu mà có, và sửa ở đâu.
+  const nguon = maQT
+    ? `<div style="font-size:.78rem; color:#64748b; margin-top:3px;">Theo báo giá
+         <b>${escapeHtml(maQT)}</b> — chỉ xem. Muốn đổi hàng hoá thì sửa trên báo giá.</div>`
+    : '<div style="font-size:.78rem; color:#64748b; margin-top:3px;">Lệnh này không gắn báo giá gốc.</div>';
+
+  let than;
+  if (hang === null) {
+    than = '<div style="padding:12px; color:#64748b; font-size:.85rem;">Đang tải dòng hàng hoá từ báo giá…</div>';
+  } else if (!hang.length) {
+    // Nói THẲNG là báo giá không khai, đừng để ô trống cho người đọc tự đoán là hệ thống hỏng.
+    than = '<div style="padding:12px; color:#64748b; font-size:.85rem;">'
+      + 'Báo giá gốc không khai dòng hàng hoá nào.</div>';
+  } else {
+    than = `<div style="overflow-x:auto; ${vien} margin-top:8px;">
+      <table style="width:100%; border-collapse:collapse; min-width:520px; font-size:.85rem;">
+        <thead><tr style="background:#f8fafc; color:#475569; text-align:left;">
+          <th style="padding:8px 10px; font-weight:800;">Tên hàng hoá</th>
+          <th style="padding:8px 10px; font-weight:800; text-align:right;">Số lượng</th>
+          <th style="padding:8px 10px; font-weight:800;">ĐVT</th>
+          <th style="padding:8px 10px; font-weight:800;">Ghi chú</th>
+        </tr></thead>
+        <tbody>${hang.map(i => `<tr style="border-top:1px solid #eef2f7;">
+          <td style="padding:8px 10px; font-weight:700; color:#0f172a;">${escapeHtml(i.name || '—')}</td>
+          <td style="padding:8px 10px; text-align:right; font-variant-numeric:tabular-nums;">${escapeHtml(String(i.quantity ?? ''))}</td>
+          <td style="padding:8px 10px;">${escapeHtml(i.uom || '')}</td>
+          <td style="padding:8px 10px; color:#64748b;">${escapeHtml(i.note || '')}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+
+  // Quy cách đi kèm: loại hàng, đóng gói, niêm phong — của CHÍNH lệnh, không phải báo giá.
+  const y = [
+    ['Loại hàng', (bg && bg.cargo_type) || do_item.cargo_type],
+    ['Quy cách đóng gói', do_item.packaging_spec],
+    ['Thể tích (m³)', do_item.volume_m3],
+    ['Số niêm phong', do_item.seal_no],
+  ].filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== '');
+  const quyCach = y.length
+    ? `<div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;">${y.map(([k, v]) =>
+        `<span style="background:#f1f5f9; border:1px solid #e2e8f0; border-radius:999px; padding:4px 10px;
+           font-size:.76rem; color:#334155;"><b>${escapeHtml(k)}:</b> ${escapeHtml(String(v))}</span>`).join('')}</div>`
+    : '';
+
+  o.innerHTML = `<div style="margin-top:16px; padding:14px; ${vien}">${dau}${nguon}${than}${quyCach}</div>`;
+}
+window.veHangHoaTrenDO = veHangHoaTrenDO;
 
 window.editFioriDO = function (id) {
   const do_item = (eplDeliveryOrders || []).find(d => d.id === id) || {
@@ -8383,18 +8450,30 @@ window.editFioriDO = function (id) {
   if (document.getElementById('do-customer')) document.getElementById('do-customer').value = do_item.customer_id || '';
   if (document.getElementById('do-route')) document.getElementById('do-route').value = do_item.route_id || '';
   setRouteContextFields('do', do_item);
+  veHangHoaTrenDO(do_item);
   setDOSettlementFromSource(do_item);
   // Báo giá của DO chưa nằm trong bộ nhớ trang (danh sách chưa tải, hoặc báo giá cũ ngoài trang
   // đầu) → tải chi tiết để biết TIỀN TỆ và tỷ giá đã khoá, thay vì im lặng dán VNĐ.
-  if (!baoGiaCuaDO(do_item) && do_item.quotation_id && typeof fetch === 'function') {
+  const bgDaCo = baoGiaCuaDO(do_item);
+  if ((!bgDaCo || !Array.isArray(bgDaCo.items)) && do_item.quotation_id && typeof fetch === 'function') {
     fetch(`${API_BASE}/api/quotations/${encodeURIComponent(do_item.quotation_id)}/detail`)
       .then(r => (r.ok ? r.json() : null))
       .then(goi => {
         const bg = goi && (goi.data || goi);
         if (!bg || !bg.id) return;
-        if (typeof crmQuotations !== 'undefined' && Array.isArray(crmQuotations) && !crmQuotations.some(q => q.id === bg.id)) crmQuotations.push(bg);
-        if (appState && Array.isArray(appState.quotations) && !appState.quotations.some(q => q.id === bg.id)) appState.quotations.push(bg);
-        if (document.getElementById('do-id')?.value === do_item.id) setDOSettlementFromSource(do_item);
+        // Bản danh sách đã nằm sẵn thì GỘP chi tiết vào chính nó, đừng bỏ qua — bỏ qua là
+        // mất `items`, đúng lỗi đang sửa.
+        const gop = (ds) => {
+          if (!Array.isArray(ds)) return;
+          const k = ds.findIndex(q => String(q.id) === String(bg.id));
+          if (k >= 0) Object.assign(ds[k], bg); else ds.push(bg);
+        };
+        if (typeof crmQuotations !== 'undefined') gop(crmQuotations);
+        if (appState) gop(appState.quotations);
+        if (document.getElementById('do-id')?.value === do_item.id) {
+          setDOSettlementFromSource(do_item);
+          veHangHoaTrenDO(do_item);          // lần vẽ đầu chỉ có chữ "đang tải"
+        }
       })
       .catch(() => {});
   }
