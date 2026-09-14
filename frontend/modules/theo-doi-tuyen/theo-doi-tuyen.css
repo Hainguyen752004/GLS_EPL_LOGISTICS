@@ -1,0 +1,22 @@
+/* Theo dõi tuyến */
+.tdt-loc{display:inline-flex;align-items:center;gap:6px;padding-bottom:9px}
+.tdt-hai{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start}
+.tdt-khoi{margin-top:16px}
+.tdt-tuyen{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;align-items:start;margin:6px 0 10px}
+.tdt-moc{position:relative;text-align:center;padding:0 6px}
+.tdt-moc::before{content:'';position:absolute;top:13px;left:-50%;width:100%;height:3px;background:var(--line-2);z-index:0}
+.tdt-moc:first-child::before{display:none}
+.tdt-moc.done::before{background:var(--green-2)}
+.tdt-moc .cham{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--paper);border:3px solid var(--line-2);color:var(--ink-3)}
+.tdt-moc.done .cham{background:var(--green-2);border-color:var(--green-2);color:#fff}
+.tdt-moc.now .cham{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 4px var(--amber-soft)}
+.tdt-moc .ten{font-size:12.5px;font-weight:600;line-height:1.3} .tdt-moc .km{font-size:11.5px;color:var(--ink-3)}
+.tdt-moc .btn{margin-top:6px}
+.tdt-xe{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:13px}
+.tdt-xe div{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:3px 0}
+.tdt-xe span:first-child{color:var(--ink-2)}
+.tdt-hop{width:min(640px,94vw)}
+.tdt-sua-khung{margin-top:10px;border:1px dashed var(--line-2);border-radius:var(--r);padding:10px 12px}
+.tdt-nguon button{padding:5px 12px;font-size:12.5px}
+.tdt-tag-in{background:var(--red-soft);color:var(--red)} .tdt-tag-rp{background:var(--amber-soft);color:var(--amber)}
+@media (max-width:1000px){.tdt-hai{grid-template-columns:1fr}}

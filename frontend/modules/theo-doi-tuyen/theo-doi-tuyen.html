@@ -1,0 +1,60 @@
+<!-- Theo dõi tuyến — ຕິດຕາມເສັ້ນທາງ. Không GPS: Bãi bấm "xe đã tới điểm X" khi tài xế gọi về.
+     Sự cố / sửa xe khai ở đây → dòng chi rơi vào mục V của phiếu xuất xe. -->
+<div class="toolbar">
+  <div class="field"><label data-i18n="doc_no"></label><select id="tdt-chon"></select></div>
+  <label class="tdt-loc small"><input type="checkbox" id="tdt-chi-chay" checked> <span data-i18n="in_transit_only"></span></label>
+  <div class="grow"></div>
+  <button class="btn" id="tdt-mo-phieu"><span data-i18n="open_slip"></span></button>
+</div>
+
+<div class="tdt-hai">
+  <div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="progress"></h3><div class="grow"></div><span id="tdt-dau"></span></div>
+      <div class="bd" id="tdt-tien-do"></div>
+    </div>
+    <div class="card tdt-khoi">
+      <div class="hd"><h3 data-i18n="events"></h3><div class="grow"></div>
+        <button class="btn sm" id="tdt-ghi-chu"><span data-i18n="add_note"></span></button>
+        <button class="btn sm warn" id="tdt-su-co"><span data-i18n="report_incident"></span></button></div>
+      <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="c_date"></th><th data-i18n="type"></th><th data-i18n="stop"></th><th data-i18n="note"></th><th data-i18n="resp"></th></tr></thead><tbody id="tdt-su-kien"></tbody></table></div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="sec5"></h3><div class="grow"></div><span class="small muted" data-i18n="reopen_note"></span></div>
+      <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="item"></th><th data-i18n="source"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="acct_code"></th></tr></thead><tbody id="tdt-sua"></tbody></table></div>
+      <div class="bd small muted" id="tdt-sua-tom"></div>
+    </div>
+    <div class="card tdt-khoi">
+      <div class="hd"><h3 data-i18n="sec1"></h3></div>
+      <div class="bd tdt-xe" id="tdt-xe"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hộp báo sự cố / sửa xe -->
+<dialog id="tdt-hop" class="hop-thoai tdt-hop">
+  <form method="dialog">
+    <h3 data-i18n="report_incident"></h3>
+    <div class="f-grid">
+      <div class="field"><label data-i18n="incident_type"></label><select id="tdt-f-loai"><option value="breakdown" data-i18n="inc_breakdown"></option><option value="accident" data-i18n="inc_accident"></option><option value="delay" data-i18n="inc_delay"></option><option value="other" data-i18n="inc_other"></option></select></div>
+      <div class="field"><label data-i18n="stop"></label><select id="tdt-f-diem"></select></div>
+      <div class="field w2"><label data-i18n="note"></label><input id="tdt-f-ghi" lang="lo"></div>
+    </div>
+    <label class="tdt-loc" style="margin-top:10px"><input type="checkbox" id="tdt-f-co-sua"> <b data-i18n="has_repair_cost"></b></label>
+    <div id="tdt-f-sua" class="tdt-sua-khung" hidden>
+      <p class="small muted" data-i18n="src_rule"></p>
+      <div class="f-grid">
+        <div class="field w2"><label data-i18n="source"></label>
+          <div class="px-pay tdt-nguon"><button type="button" data-src="kho" class="on" data-i18n="src_kho"></button><button type="button" data-src="mua" data-i18n="src_mua"></button></div></div>
+        <div class="field w2" id="tdt-f-o-part"><label data-i18n="pick_part"></label><select id="tdt-f-part"></select></div>
+        <div class="field w2" id="tdt-f-o-ten" hidden><label data-i18n="item"></label><input id="tdt-f-ten" placeholder="…" lang="lo"></div>
+        <div class="field"><label data-i18n="qty"></label><input class="num" id="tdt-f-sl" value="1" inputmode="decimal"></div>
+        <div class="field"><label data-i18n="unit_price"></label><input class="num" id="tdt-f-gia" inputmode="decimal"></div>
+        <div class="field"><label data-i18n="cur"></label><select id="tdt-f-tien"><option>LAK</option><option>VND</option><option>THB</option><option>USD</option></select></div>
+      </div>
+    </div>
+    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>
+  </form>
+</dialog>

@@ -1,0 +1,41 @@
+<!-- Tuyến đường — ເສັ້ນທາງ. Chặng A → B → C, km từng chặng, BOT. Mang từ EPL_System, bỏ hình đường bộ / GPS / ETA. -->
+<div class="toolbar">
+  <div class="field td2-tim"><label data-i18n="search"></label><input id="tuy-q"></div>
+  <div class="grow"></div>
+  <span class="small muted" data-i18n="route_hint"></span>
+  <button class="btn primary" id="tuy-them"><span data-i18n="add"></span></button>
+</div>
+<div class="tuy-hai">
+  <div class="card">
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>#</th><th data-i18n="route_name"></th><th data-i18n="origin"></th><th data-i18n="dest"></th><th class="num" data-i18n="stops"></th><th class="num" data-i18n="total_km"></th><th class="num" data-i18n="toll_bot"></th><th data-i18n="status"></th></tr></thead>
+        <tbody id="tuy-than"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card tuy-chi-tiet" id="tuy-chi-tiet" hidden>
+    <div class="hd"><h3 id="tuy-ten"></h3><div class="grow"></div><button class="btn sm" id="tuy-sua" data-i18n="edit"></button></div>
+    <div class="bd">
+      <div class="tuy-chang" id="tuy-chang"></div>
+      <div class="small muted" id="tuy-tom"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hộp sửa tuyến: tên, BOT, danh sách điểm với km -->
+<dialog id="tuy-hop" class="hop-thoai tuy-hop">
+  <form method="dialog">
+    <h3 id="tuy-hop-tieu-de"></h3>
+    <div class="f-grid">
+      <div class="field w2"><label data-i18n="route_name"></label><input id="tuy-f-name" lang="lo"></div>
+      <div class="field"><label data-i18n="toll_bot"></label><input id="tuy-f-toll" class="num" inputmode="numeric"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label data-i18n="stops"></label></div>
+    <table class="tbl tbl-compact" id="tuy-f-diem"><thead><tr><th>#</th><th data-i18n="stop"></th><th class="num" data-i18n="km_from_prev"></th><th></th></tr></thead><tbody></tbody></table>
+    <button type="button" class="btn quiet sm" id="tuy-f-them-diem">+ <span data-i18n="add_stop"></span></button>
+    <div class="field" style="margin-top:8px"><label data-i18n="note"></label><input id="tuy-f-note"></div>
+    <div class="field" id="tuy-f-active-o" hidden><label data-i18n="status"></label><select id="tuy-f-active"><option value="1" data-i18n="active"></option><option value="0" data-i18n="inactive"></option></select></div>
+    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>
+  </form>
+</dialog>

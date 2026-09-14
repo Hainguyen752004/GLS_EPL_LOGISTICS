@@ -27,12 +27,15 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | Trạng thái DO (pending → in_transit → arrived → delivered) | Trạng thái vận chuyển: **xuất bến → đang chạy → đã tới** + trạng thái tài chính: **chưa thu → thu một phần → đã thu** | **Thay** | Đúng hai cột ສະຖານະ trong Excel |
 | Hoàn tất giao hàng · POD · chốt giá | **Hoá đơn vận chuyển** (bản in) + nút *Lập hoá đơn* / *Đã thu tiền* của kế toán doanh thu | **Thay** | Họ không ký POD điện tử; hoá đơn giấy in ra và ký tay |
 | Master data: Khách hàng | **Khách hàng** | **Giữ** | Danh mục duy nhất họ còn dùng — anh đã nói *"chỉ giữ lại được khách hàng"* |
-| Master data: Xe · Loại xe | **Xe** (số hiệu · biển đầu kéo · biển rơ-moóc · xe công ty / xe liên kết · chủ xe) | **Thay** | Thêm hai biển số theo yêu cầu; bỏ loại xe, tải trọng, giấy tờ hết hạn |
-| Master data: Tài xế · bằng lái · lịch ca | **Tài xế** (tên · điện thoại · số bằng lái) | **Giữ, làm gọn** | Bỏ lịch ca, hạn bằng lái, trạng thái rảnh/bận |
+| Master data: Xe · Loại xe · giấy tờ xe | **Xe — đầu kéo** (hồ sơ như EPL_System: số máy, số khung, hạn bảo hiểm / đăng kiểm / giấy lưu hành, công-tơ-mét, mốc bảo dưỡng, trạng thái) + **Rơ-moóc** là thực thể riêng | **Giữ, làm gọn + Mới** | Anh yêu cầu mang cả module xe sang; rơ-moóc tách riêng vì "hư cái này thì lấy cái kia lắp vào" — có lịch sử lắp/tháo |
+| Tuyến đường (chặng A→B→C, km, BOT) | **Tuyến đường** | **Giữ, làm gọn** | Bỏ hình đường bộ, toạ độ, ETA; giữ chặng, km từng chặng, BOT. Chọn tuyến trên phiếu → tự điền điểm đi/đến và dòng phí cao tốc |
+| Tracking / GPS / tiến độ chặng / sự cố | **Theo dõi tuyến** | **Thay** | Không GPS: Bãi bấm "xe đã tới điểm X" khi tài xế gọi về. Sự cố / sửa xe khai ở đây → dòng chi rơi vào mục V của phiếu |
+| Master data: Tài xế · bằng lái · lịch ca | **Tài xế & bằng lái** (hồ sơ, hạng bằng, ngày cấp, hạn, lịch sử gia hạn, xe thường lái) | **Giữ, làm gọn** | Anh yêu cầu mang module tài xế + bằng lái sang; bỏ ca, tổ, lịch trực |
+| Bảo dưỡng / phiếu sửa chữa xe | **Mục V của phiếu** + báo cáo sửa chữa theo xe (gom từ mục V) | **Thay** | Quy trình của họ: sửa xe gắn vào số phiếu xuất xe, không có phiếu bảo dưỡng riêng |
 | Công thức giá thành theo loại xe | — | **Bỏ** | Họ ghi từng khoản chi thật vào phiếu, không tính giá thành theo công thức |
 | Tỷ giá tiền tệ | **Tỷ giá** (USD · THB · VND → LAK), khoá vào từng phiếu lúc lập | **Giữ, làm gọn** | Đúng ba dòng Rate trên đầu phiếu của họ |
 | Sổ thu – chi · Acc code từ hệ công nợ | **Mã tài khoản kép** trên từng dòng chi (625/371 · 625/402 · 614/402 · 614/371 · 1211/70 · 1211/402) | **Thay** | Chép nguyên cột ເດິນບັນຊີ trong Excel |
-| Sự cố · GPS · mốc tài xế | — | **Bỏ** | Không có trong Excel; họ gọi điện |
+| Sự cố · GPS · mốc tài xế | **Diễn biến trên đường** trong Theo dõi tuyến (tới điểm · sự cố · sửa xe · ghi chú) — Bãi ghi tay | **Thay** | Không GPS, không ứng dụng tài xế: tài xế gọi điện, Bãi bấm. Đúng cách họ đang làm |
 | Bãi xe · Packing list · QR | — | **Bỏ** | Hàng quặng nguyên khối, không có kiện |
 | Xe liên kết (chưa có) | **Xe liên kết** — báo cáo riêng + bảng thanh toán chủ xe trên phiếu | **Mới** | Trọng tâm mô hình môi giới của họ |
 | Tiền chuyến tài xế (chưa có) | **Tiền chuyến & tiền nước tài xế** — gom từ mục IV theo tháng | **Mới** | Sheet báo cáo số 5 của họ |
@@ -79,6 +82,22 @@ Lãi EPL       = (giá nhận − giá thuê) × tấn
 
 Ví dụ thật từ dữ liệu mẫu — phiếu `T4-0430-08/EPL`, xe ຮ່ວມ-07: 40,50 t × 40,5 = 1.640,25 · phí 32,80 · vượt 0,5 t = 0,50 · ứng 316,07 → **trả chủ xe 1.290,88 USD**; lãi EPL (41 − 40,5) × 40,5 = **20,25 USD**.
 
+## 4b. Có trong kho thì xuất kho, không có thì chi mua ngoài
+
+Quy tắc anh chốt sau khi đọc quy trình của họ (*EPL flow of Logistics*): **vật tư có trong kho → phiếu xuất kho; không có → phiếu chi đi mua**. Hệ áp thẳng vào từng dòng chi:
+
+| Khoản | Nguồn | Điều gì xảy ra | Định khoản xe nhà | Định khoản xe liên kết |
+|---|---|---|---|---|
+| Nhiên liệu đổ ở **kho Thà Bốc** | kho | Kế toán kho **ghi sổ** mục III → tự sinh dòng **xuất kho nhiên liệu** theo số phiếu | `625/371` | `4022/371` |
+| Nhiên liệu đổ **trạm ngoài / Việt Nam** | mua | Chi tiền / công nợ | `625/402` | `4022/402` |
+| Sửa xe **lấy phụ tùng từ kho** | kho | Trừ tồn kho phụ tùng **ngay lúc khai** trên màn Theo dõi tuyến | `614/371` | `4022/371` |
+| Sửa xe **mua ngoài / garage** | mua | Công nợ nhà cung cấp / tiền mặt | `614/402` | `4022/402` |
+| Đi đường, khác | mua | Chi tiền | `625/402` | `4022/402` |
+
+Xe liên kết đi mã `4022/…` vì đó là **chi hộ nhà thầu phụ** — sau trừ vào tiền trả chủ xe — đúng cột "for Sub contracts" trong tài liệu quy trình của họ.
+
+Sửa xe khai trên đường (màn **Theo dõi tuyến → Báo sự cố / sửa xe**) trở thành một dòng trong **mục V của phiếu xuất xe**; mục V quay về *đã nhập* để kế toán kiểm lại. Dòng đã sinh phiếu xuất kho là chứng từ kho — không xoá, không đổi số trên phiếu.
+
 ## 5. Kiến trúc — cố ý đơn giản
 
 - **Một DB riêng** `epl_lao` trên cùng máy chủ PostgreSQL; không đụng `epl_logistics` của EPL_System.
@@ -90,6 +109,8 @@ Ví dụ thật từ dữ liệu mẫu — phiếu `T4-0430-08/EPL`, xe ຮ່�
 
 ## 6. Những gì cố ý KHÔNG làm
 
-Không kiểm xe rảnh. Không kiểm tài xế trùng lịch. Không công thức giá thành. Không sắp ca. Không GPS. Không POD điện tử. Không QR. Không trợ lý AI. Không hạn giấy tờ xe. Không cảnh báo hạn bằng lái.
+Không kiểm xe rảnh khi lập phiếu (chỉ hiện trạng thái xe/tài xế để người lập tự nhìn). Không kiểm tài xế trùng lịch. Không công thức giá thành. Không sắp ca. Không GPS — "xe tới điểm X" là do Bãi bấm. Không POD điện tử. Không QR. Không trợ lý AI. Không ứng dụng cho tài xế.
+
+Hạn giấy tờ xe, hạn đăng kiểm, hạn bằng lái thì **có** — nhưng chỉ là cờ màu trên danh mục (còn hạn · sắp hết · đã hết), không chặn lập phiếu. Chặn là thêm một cái họ không hiểu; cờ màu thì ai cũng hiểu.
 
 Mỗi thứ trên đều là một tính năng họ không có trong Excel — tức một tính năng họ sẽ không hiểu, và không hiểu thì không dùng.

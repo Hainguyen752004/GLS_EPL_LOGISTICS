@@ -1,14 +1,20 @@
-<!-- Tài xế — ໂຊເຟີ. Tên, điện thoại, số bằng lái. -->
+<!-- Tài xế & bằng lái — ໂຊເຟີ ແລະ ໃບຂັບຂີ່. Mang từ module tài xế của EPL_System, bỏ ca/tổ/lịch. -->
 <div class="toolbar">
   <div class="field tx-tim"><label data-i18n="search"></label><input id="tx-q"></div>
+  <div class="field"><label data-i18n="status"></label>
+    <select id="tx-tt"><option value="" data-i18n="all"></option><option value="available" data-i18n="d_available"></option><option value="on_trip" data-i18n="d_on_trip"></option><option value="leave" data-i18n="d_leave"></option></select></div>
   <div class="grow"></div>
   <button class="btn primary" id="tx-them"><span data-i18n="add"></span></button>
 </div>
-<div class="card">
-  <div class="tbl-wrap">
+<div class="tx-hai">
+  <div class="card"><div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="name"></th><th data-i18n="phone"></th><th data-i18n="license_no"></th><th data-i18n="note"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
+      <thead><tr><th>#</th><th data-i18n="name"></th><th data-i18n="phone"></th><th data-i18n="driver_role"></th><th data-i18n="license_type"></th><th data-i18n="license_no"></th><th data-i18n="license_valid_to"></th><th data-i18n="default_vehicle"></th><th data-i18n="status"></th></tr></thead>
       <tbody id="tx-than"></tbody>
     </table>
+  </div></div>
+  <div class="card tx-ho-so" id="tx-ho-so" hidden>
+    <div class="hd"><h3 id="tx-hs-ten" lang="lo"></h3><div class="grow"></div><span id="tx-hs-tt"></span><button class="btn sm" id="tx-hs-sua" data-i18n="edit"></button></div>
+    <div class="bd" id="tx-hs-than"></div>
   </div>
 </div>

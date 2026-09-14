@@ -12,8 +12,8 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const MODULES = ['tong-quan', 'theo-doi', 'phieu-xuat-xe', 'hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap',
-  'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'quy-trinh', 'tai-khoan'];
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap',
+  'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -126,7 +126,7 @@ async function main() {
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
 
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
-  console.log('\nTHỦ GIAO DIỆN: ĐẠT — 14 module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng');
+  console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng`);
   w.close();
 }
 main().catch(e => { console.error('THỬ GIAO DIỆN: HỎNG —', e.message); process.exit(1); });

@@ -37,7 +37,9 @@ kiem/
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
 
-14 module: Tổng quan · Theo dõi phiếu vận chuyển · Phiếu xuất xe · Hoá đơn vận chuyển · Xe liên kết · Tiền chuyến & tiền nước tài xế · Theo dõi nhà cung cấp · Kho nhiên liệu · Kho phụ tùng · Khách hàng · Xe · Tài xế · Quy trình & trách nhiệm · Tài khoản.
+16 module: Tổng quan · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (xe tới điểm nào, sự cố, sửa xe trên đường → mục V) · Phiếu xuất xe · Hoá đơn vận chuyển · Xe liên kết · Tiền chuyến & tiền nước tài xế · Theo dõi nhà cung cấp · Kho nhiên liệu · Kho phụ tùng · Khách hàng · **Xe** (đầu kéo + rơ-moóc lắp/tháo được, giấy tờ & hạn, sửa chữa) · **Tài xế & bằng lái** · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
+
+Quy tắc kho: nhiên liệu đổ ở kho Thà Bốc → khi kế toán kho ghi sổ mục III thì tự sinh dòng xuất kho; sửa xe lấy phụ tùng từ kho → trừ tồn ngay lúc khai; mua ngoài → công nợ. Xe nhà định khoản `625/…`, `614/…`; xe liên kết `4022/…`. Chi tiết trong [DOCS/BAN_DO_CHUC_NANG.md](DOCS/BAN_DO_CHUC_NANG.md) mục 4b.
 
 Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາວ** (nút ở góc trên phải và trên màn đăng nhập).
 

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 458 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 555 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2221,6 +2221,491 @@ window.EPL_TU_DIEN = {
   "vi": "Theo phiếu",
   "lo": "ຕາມບິນ",
   "en": "Per slip"
+ },
+ "nav_routes": {
+  "vi": "Tuyến đường",
+  "lo": "ເສັ້ນທາງ",
+  "en": "Routes"
+ },
+ "title_tuyen_duong": {
+  "vi": "Tuyến đường<span class=\"sub\">Chặng A → B → C · km từng chặng · phí cao tốc (BOT)</span>",
+  "lo": "ເສັ້ນທາງ<span class=\"sub\">ຊ່ວງ A → B → C · ກິໂລແມັດແຕ່ລະຊ່ວງ · ຄ່າທາງດ່ວນ</span>",
+  "en": "Routes<span class=\"sub\">Legs A → B → C · km per leg · toll (BOT)</span>"
+ },
+ "route_name": {
+  "vi": "Tên tuyến",
+  "lo": "ຊື່ເສັ້ນທາງ",
+  "en": "Route name"
+ },
+ "stops": {
+  "vi": "Các điểm trên tuyến",
+  "lo": "ຈຸດຕາມເສັ້ນທາງ",
+  "en": "Stops"
+ },
+ "stop": {
+  "vi": "Điểm",
+  "lo": "ຈຸດ",
+  "en": "Stop"
+ },
+ "km_from_prev": {
+  "vi": "Km từ điểm trước",
+  "lo": "ກິໂລແມັດຈາກຈຸດກ່ອນ",
+  "en": "Km from previous"
+ },
+ "total_km": {
+  "vi": "Tổng km",
+  "lo": "ລວມກິໂລແມັດ",
+  "en": "Total km"
+ },
+ "toll_bot": {
+  "vi": "Phí cao tốc (BOT) cả tuyến",
+  "lo": "ຄ່າທາງດ່ວນທັງເສັ້ນ",
+  "en": "Expressway toll (BOT) for route"
+ },
+ "add_stop": {
+  "vi": "Thêm điểm",
+  "lo": "ເພີ່ມຈຸດ",
+  "en": "Add stop"
+ },
+ "pick_route": {
+  "vi": "Chọn tuyến",
+  "lo": "ເລືອກເສັ້ນທາງ",
+  "en": "Pick route"
+ },
+ "route_hint": {
+  "vi": "Chọn tuyến thì điểm đi / điểm đến tự điền và phí cao tốc tự thành một dòng chi phí đi đường.",
+  "lo": "ເລືອກເສັ້ນທາງ ຕົ້ນທາງ/ປາຍທາງ ຈະຖືກຕື່ມເອງ ແລະ ຄ່າທາງດ່ວນຈະເປັນລາຍຈ່າຍເດີນທາງເອງ.",
+  "en": "Picking a route fills origin/destination and adds the toll as a travel expense line."
+ },
+ "nav_track_route": {
+  "vi": "Theo dõi tuyến",
+  "lo": "ຕິດຕາມເສັ້ນທາງ",
+  "en": "Route tracking"
+ },
+ "title_theo_doi_tuyen": {
+  "vi": "Theo dõi tuyến<span class=\"sub\">Xe đang ở chặng nào · sự cố · sửa xe trên đường</span>",
+  "lo": "ຕິດຕາມເສັ້ນທາງ<span class=\"sub\">ລົດຢູ່ຊ່ວງໃດ · ເຫດການ · ສ້ອມແປງລະຫວ່າງທາງ</span>",
+  "en": "Route tracking<span class=\"sub\">Which leg the truck is on · incidents · roadside repairs</span>"
+ },
+ "progress": {
+  "vi": "Tiến độ trên tuyến",
+  "lo": "ຄວາມຄືບໜ້າຕາມເສັ້ນທາງ",
+  "en": "Progress on route"
+ },
+ "events": {
+  "vi": "Diễn biến",
+  "lo": "ເຫດການ",
+  "en": "Events"
+ },
+ "mark_stop": {
+  "vi": "Xe đã tới điểm này",
+  "lo": "ລົດຮອດຈຸດນີ້ແລ້ວ",
+  "en": "Truck reached this stop"
+ },
+ "report_incident": {
+  "vi": "Báo sự cố / sửa xe",
+  "lo": "ແຈ້ງເຫດການ / ສ້ອມແປງ",
+  "en": "Report incident / repair"
+ },
+ "add_note": {
+  "vi": "Ghi chú diễn biến",
+  "lo": "ບັນທຶກເຫດການ",
+  "en": "Add note"
+ },
+ "ev_arrive_stop": {
+  "vi": "Tới điểm",
+  "lo": "ຮອດຈຸດ",
+  "en": "Reached stop"
+ },
+ "ev_incident": {
+  "vi": "Sự cố",
+  "lo": "ເຫດການ",
+  "en": "Incident"
+ },
+ "ev_repair": {
+  "vi": "Sửa xe",
+  "lo": "ສ້ອມແປງ",
+  "en": "Repair"
+ },
+ "ev_note": {
+  "vi": "Ghi chú",
+  "lo": "ໝາຍເຫດ",
+  "en": "Note"
+ },
+ "incident_type": {
+  "vi": "Loại sự cố",
+  "lo": "ປະເພດເຫດການ",
+  "en": "Incident type"
+ },
+ "inc_breakdown": {
+  "vi": "Hỏng xe",
+  "lo": "ລົດເສຍ",
+  "en": "Breakdown"
+ },
+ "inc_accident": {
+  "vi": "Tai nạn",
+  "lo": "ອຸບັດເຫດ",
+  "en": "Accident"
+ },
+ "inc_delay": {
+  "vi": "Chậm / chờ",
+  "lo": "ຊ້າ / ລໍຖ້າ",
+  "en": "Delay"
+ },
+ "inc_other": {
+  "vi": "Khác",
+  "lo": "ອື່ນໆ",
+  "en": "Other"
+ },
+ "has_repair_cost": {
+  "vi": "Có chi phí sửa xe",
+  "lo": "ມີຄ່າສ້ອມແປງ",
+  "en": "Has repair cost"
+ },
+ "source": {
+  "vi": "Nguồn",
+  "lo": "ແຫຼ່ງ",
+  "en": "Source"
+ },
+ "src_kho": {
+  "vi": "Lấy từ kho (xuất kho)",
+  "lo": "ເບີກຈາກສາງ",
+  "en": "From stock (stock issue)"
+ },
+ "src_mua": {
+  "vi": "Mua ngoài / garage (chi tiền)",
+  "lo": "ຊື້ນອກ / ອູ່ (ຈ່າຍເງິນ)",
+  "en": "Bought outside / garage (payment)"
+ },
+ "src_rule": {
+  "vi": "Có trong kho thì xuất kho (TK …/371); không có thì chi mua ngoài (TK …/402).",
+  "lo": "ມີໃນສາງ → ເບີກສາງ (…/371); ບໍ່ມີ → ຈ່າຍຊື້ນອກ (…/402).",
+  "en": "In stock → stock issue (acct …/371); otherwise → purchase (acct …/402)."
+ },
+ "pick_part": {
+  "vi": "Phụ tùng trong kho",
+  "lo": "ອາໄຫຼ່ໃນສາງ",
+  "en": "Part in stock"
+ },
+ "stock_left": {
+  "vi": "Tồn",
+  "lo": "ຍັງເຫຼືອ",
+  "en": "In stock"
+ },
+ "a_reopen": {
+  "vi": "Mở lại để kiểm (có chi mới)",
+  "lo": "ເປີດຄືນເພື່ອກວດ (ມີລາຍຈ່າຍໃໝ່)",
+  "en": "Reopened for check (new expense)"
+ },
+ "reopen_note": {
+  "vi": "Sửa xe khai ở đây sẽ thành một dòng chi trong mục V của phiếu; mục V quay về \"chờ kiểm\".",
+  "lo": "ການສ້ອມແປງທີ່ແຈ້ງບ່ອນນີ້ ຈະເປັນລາຍຈ່າຍໃນຂໍ້ V ຂອງບິນ; ຂໍ້ V ກັບໄປ \"ລໍຖ້າກວດ\".",
+  "en": "A repair declared here becomes a line in section V of the slip; section V goes back to \"awaiting check\"."
+ },
+ "no_route": {
+  "vi": "Phiếu chưa chọn tuyến — vào Phiếu xuất xe, mục II, chọn tuyến.",
+  "lo": "ບິນຍັງບໍ່ເລືອກເສັ້ນທາງ — ເຂົ້າໃບເບີກລົດ ຂໍ້ II ເລືອກເສັ້ນທາງ.",
+  "en": "No route on this slip — open the dispatch slip, section II, pick a route."
+ },
+ "in_transit_only": {
+  "vi": "Chỉ phiếu đang chạy",
+  "lo": "ສະເພາະບິນທີ່ກຳລັງແລ່ນ",
+  "en": "In-transit slips only"
+ },
+ "tractors": {
+  "vi": "Đầu kéo",
+  "lo": "ຫົວລົດ",
+  "en": "Tractors"
+ },
+ "trailers": {
+  "vi": "Rơ-moóc",
+  "lo": "ຫາງລົດ",
+  "en": "Trailers"
+ },
+ "trailer": {
+  "vi": "Rơ-moóc",
+  "lo": "ຫາງລົດ",
+  "en": "Trailer"
+ },
+ "plate": {
+  "vi": "Biển số",
+  "lo": "ທະບຽນ",
+  "en": "Plate"
+ },
+ "trailer_type": {
+  "vi": "Loại rơ-moóc",
+  "lo": "ປະເພດຫາງ",
+  "en": "Trailer type"
+ },
+ "capacity_t": {
+  "vi": "Tải trọng (tấn)",
+  "lo": "ນ້ຳໜັກບັນທຸກ (ໂຕນ)",
+  "en": "Capacity (t)"
+ },
+ "year": {
+  "vi": "Năm SX",
+  "lo": "ປີຜະລິດ",
+  "en": "Year"
+ },
+ "attach_trailer": {
+  "vi": "Lắp rơ-moóc",
+  "lo": "ຕິດຫາງ",
+  "en": "Attach trailer"
+ },
+ "detach_trailer": {
+  "vi": "Tháo rơ-moóc",
+  "lo": "ຖອດຫາງ",
+  "en": "Detach trailer"
+ },
+ "attached_to": {
+  "vi": "Đang lắp vào",
+  "lo": "ຕິດຢູ່ກັບ",
+  "en": "Attached to"
+ },
+ "not_attached": {
+  "vi": "Chưa lắp xe nào",
+  "lo": "ຍັງບໍ່ຕິດລົດ",
+  "en": "Not attached"
+ },
+ "swap_reason": {
+  "vi": "Lý do tháo / đổi",
+  "lo": "ເຫດຜົນຖອດ / ປ່ຽນ",
+  "en": "Reason for swap"
+ },
+ "trailer_history": {
+  "vi": "Lịch sử lắp / tháo rơ-moóc",
+  "lo": "ປະຫວັດຕິດ / ຖອດຫາງ",
+  "en": "Trailer attach / detach history"
+ },
+ "attached_at": {
+  "vi": "Lắp ngày",
+  "lo": "ຕິດວັນທີ",
+  "en": "Attached"
+ },
+ "detached_at": {
+  "vi": "Tháo ngày",
+  "lo": "ຖອດວັນທີ",
+  "en": "Detached"
+ },
+ "engine_no": {
+  "vi": "Số máy",
+  "lo": "ເລກຈັກ",
+  "en": "Engine no."
+ },
+ "chassis_no": {
+  "vi": "Số khung",
+  "lo": "ເລກຖັງ",
+  "en": "Chassis no."
+ },
+ "insurance_exp": {
+  "vi": "Hạn bảo hiểm",
+  "lo": "ປະກັນໄພໝົດອາຍຸ",
+  "en": "Insurance expiry"
+ },
+ "inspection_exp": {
+  "vi": "Hạn đăng kiểm",
+  "lo": "ກວດສະພາບໝົດອາຍຸ",
+  "en": "Inspection expiry"
+ },
+ "road_permit_exp": {
+  "vi": "Hạn giấy lưu hành",
+  "lo": "ໃບອະນຸຍາດແລ່ນໝົດອາຍຸ",
+  "en": "Road permit expiry"
+ },
+ "odometer_km": {
+  "vi": "Công-tơ-mét (km)",
+  "lo": "ເລກກົງເຕີ (ກມ)",
+  "en": "Odometer (km)"
+ },
+ "next_service_km": {
+  "vi": "Mốc bảo dưỡng kế tiếp (km)",
+  "lo": "ບຳລຸງຮັກສາຄັ້ງຕໍ່ໄປ (ກມ)",
+  "en": "Next service (km)"
+ },
+ "depot": {
+  "vi": "Bãi đậu",
+  "lo": "ສະໜາມຈອດ",
+  "en": "Depot"
+ },
+ "docs_status": {
+  "vi": "Giấy tờ",
+  "lo": "ເອກະສານ",
+  "en": "Documents"
+ },
+ "doc_ok": {
+  "vi": "Còn hạn",
+  "lo": "ຍັງບໍ່ໝົດອາຍຸ",
+  "en": "Valid"
+ },
+ "doc_soon": {
+  "vi": "Sắp hết hạn",
+  "lo": "ໃກ້ໝົດອາຍຸ",
+  "en": "Expiring soon"
+ },
+ "doc_expired": {
+  "vi": "Đã hết hạn",
+  "lo": "ໝົດອາຍຸແລ້ວ",
+  "en": "Expired"
+ },
+ "doc_none": {
+  "vi": "Chưa khai",
+  "lo": "ຍັງບໍ່ລົງ",
+  "en": "Not entered"
+ },
+ "service_due": {
+  "vi": "Đến kỳ bảo dưỡng",
+  "lo": "ຮອດກຳນົດບຳລຸງຮັກສາ",
+  "en": "Service due"
+ },
+ "repairs_of_vehicle": {
+  "vi": "Chi phí sửa chữa (từ mục V các phiếu)",
+  "lo": "ຄ່າສ້ອມແປງ (ຈາກຂໍ້ V ຂອງບິນ)",
+  "en": "Repair costs (from section V of slips)"
+ },
+ "trips_count": {
+  "vi": "Số phiếu đã chạy",
+  "lo": "ຈຳນວນບິນ",
+  "en": "Slips"
+ },
+ "v_available": {
+  "vi": "Rảnh",
+  "lo": "ຫວ່າງ",
+  "en": "Available"
+ },
+ "v_on_trip": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "On trip"
+ },
+ "v_maintenance": {
+  "vi": "Đang sửa",
+  "lo": "ກຳລັງສ້ອມ",
+  "en": "In maintenance"
+ },
+ "v_inactive": {
+  "vi": "Ngưng dùng",
+  "lo": "ຢຸດໃຊ້",
+  "en": "Inactive"
+ },
+ "v_attached": {
+  "vi": "Đang lắp",
+  "lo": "ຕິດຢູ່",
+  "en": "Attached"
+ },
+ "profile": {
+  "vi": "Hồ sơ",
+  "lo": "ຂໍ້ມູນ",
+  "en": "Profile"
+ },
+ "back": {
+  "vi": "Quay lại",
+  "lo": "ກັບຄືນ",
+  "en": "Back"
+ },
+ "driver_code": {
+  "vi": "Mã tài xế",
+  "lo": "ລະຫັດໂຊເຟີ",
+  "en": "Driver code"
+ },
+ "dob": {
+  "vi": "Ngày sinh",
+  "lo": "ວັນເດືອນປີເກີດ",
+  "en": "Date of birth"
+ },
+ "id_card": {
+  "vi": "Số CMND / căn cước",
+  "lo": "ເລກບັດປະຈຳຕົວ",
+  "en": "ID card no."
+ },
+ "hire_date": {
+  "vi": "Ngày vào làm",
+  "lo": "ວັນທີເຂົ້າວຽກ",
+  "en": "Hire date"
+ },
+ "driver_role": {
+  "vi": "Vai trên xe",
+  "lo": "ໜ້າທີ່ໃນລົດ",
+  "en": "Role on truck"
+ },
+ "role_main": {
+  "vi": "Lái chính",
+  "lo": "ຂັບຫຼັກ",
+  "en": "Main driver"
+ },
+ "role_co": {
+  "vi": "Phụ xe",
+  "lo": "ຜູ້ຊ່ວຍ",
+  "en": "Co-driver"
+ },
+ "license": {
+  "vi": "Bằng lái",
+  "lo": "ໃບຂັບຂີ່",
+  "en": "Licence"
+ },
+ "licenses": {
+  "vi": "Bằng lái & gia hạn",
+  "lo": "ໃບຂັບຂີ່ ແລະ ການຕໍ່ອາຍຸ",
+  "en": "Licences & renewals"
+ },
+ "license_type": {
+  "vi": "Hạng bằng",
+  "lo": "ປະເພດໃບຂັບຂີ່",
+  "en": "Licence class"
+ },
+ "license_valid_from": {
+  "vi": "Ngày cấp",
+  "lo": "ວັນທີອອກ",
+  "en": "Issued on"
+ },
+ "license_valid_to": {
+  "vi": "Hạn bằng lái",
+  "lo": "ໃບຂັບຂີ່ໝົດອາຍຸ",
+  "en": "Licence expiry"
+ },
+ "issued_by": {
+  "vi": "Nơi cấp",
+  "lo": "ອອກໂດຍ",
+  "en": "Issued by"
+ },
+ "add_license": {
+  "vi": "Ghi bằng lái mới / gia hạn",
+  "lo": "ລົງໃບຂັບຂີ່ໃໝ່ / ຕໍ່ອາຍຸ",
+  "en": "Add licence / renewal"
+ },
+ "default_vehicle": {
+  "vi": "Xe thường lái",
+  "lo": "ລົດປະຈຳ",
+  "en": "Usual truck"
+ },
+ "d_available": {
+  "vi": "Rảnh",
+  "lo": "ຫວ່າງ",
+  "en": "Available"
+ },
+ "d_on_trip": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "On trip"
+ },
+ "d_leave": {
+  "vi": "Nghỉ",
+  "lo": "ພັກ",
+  "en": "On leave"
+ },
+ "d_inactive": {
+  "vi": "Ngưng làm",
+  "lo": "ຢຸດວຽກ",
+  "en": "Inactive"
+ },
+ "recent_trips": {
+  "vi": "Phiếu gần đây",
+  "lo": "ບິນຫຼ້າສຸດ",
+  "en": "Recent slips"
+ },
+ "verified_by": {
+  "vi": "Người kiểm",
+  "lo": "ຜູ້ກວດ",
+  "en": "Verified by"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

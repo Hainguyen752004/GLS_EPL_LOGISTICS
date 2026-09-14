@@ -1,4 +1,20 @@
-/* Xe */
-.xe-tim{min-width:240px}
-.xe-tat{opacity:.55}
+/* Xe — đầu kéo & rơ-moóc */
+.xe-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;align-self:flex-end}
+.xe-tab button{border:0;background:var(--paper);padding:8px 16px;font-weight:600;color:var(--ink-2)}
+.xe-tab button.active{background:var(--green-2);color:#fff}
+.xe-tim{min-width:220px}
+.xe-hai{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:start}
+.xe-hai .tbl tbody tr{cursor:pointer} .xe-tat{opacity:.55}
 .xe-bien{font-family:'Noto Sans Lao',var(--font);font-weight:600;white-space:nowrap}
+.xe-gt{display:inline-flex;gap:4px}
+.xe-cham{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--line-2)}
+.xe-cham.ok{background:var(--green-2)} .xe-cham.soon{background:var(--amber)} .xe-cham.expired{background:var(--red)}
+.xe-hs-luoi{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px}
+.xe-hs-luoi div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:3px 0}
+.xe-hs-luoi span:first-child{color:var(--ink-2)} .xe-hs-luoi b{text-align:right}
+.xe-ho-so h5{margin:16px 0 6px;font-size:13px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.xe-rm{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.xe-rm .bien{font-size:16px} .xe-rm .grow{flex:1}
+.xe-canh{background:var(--red-soft);color:var(--red);border-radius:var(--r);padding:6px 10px;font-size:12.5px;margin-top:8px}
+.xe-canh.vang{background:var(--amber-soft);color:var(--amber)}
+@media (max-width:1000px){.xe-hai{grid-template-columns:1fr}}

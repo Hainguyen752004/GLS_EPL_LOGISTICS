@@ -97,13 +97,53 @@ def main():
     s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 200, "Tiền mặt lẻ chi mục IV", g)
     assert g["sections"]["fuel"] == "paid" and g["sections"]["travel"] == "paid"
 
+    # ---- 3b. Trên đường: tới điểm theo tuyến, sửa xe lấy phụ tùng từ kho / mua ngoài → rơi vào mục V
+    s, tuyen = goi("/api/routes", vai="thabok"); r0 = tuyen[0]
+    s, g = goi("/api/trips/%s" % P, {"route_id": r0["id"], "origin": "", "destination": ""}, vai="thabok", method="PUT")
+    phai(s, 409, "Bãi gắn tuyến khi mục II đã kiểm → bị khoá", g)
+    s, g = goi("/api/trips/%s/sections/trans/return" % P, {}, vai="ketoan"); phai(s, 200, "Kế toán trả lại mục II để Bãi gắn tuyến", g)
+    s, g = goi("/api/trips/%s" % P, {"route_id": r0["id"]}, vai="thabok", method="PUT"); phai(s, 200, "Bãi gắn tuyến %s" % r0["name"], g)
+    assert len(g["route_stops"]) == r0["so_diem"], "phiếu phải mang đủ điểm của tuyến"
+    s, g = goi("/api/trips/%s/sections/trans/send" % P, {}, vai="thabok"); s, g = goi("/api/trips/%s/sections/trans/verify" % P, {}, vai="ketoan")
+    phai(s, 200, "Kiểm lại mục II sau khi gắn tuyến", g)
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "arrive_stop", "stop_seq": 2, "note": "về bãi"}, vai="thabok"); phai(s, 200, "Bãi ghi xe tới điểm 2", g)
+    assert g["stop_reached"] == 2 and g["transport_status"] == "transit", g["transport_status"]
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "arrive_stop", "stop_seq": 99}, vai="thabok"); phai(s, 422, "Tới điểm không có trên tuyến → bị từ chối", g)
+    s, parts = goi("/api/parts", vai="thabok"); pt = next(x for x in parts if x["qty"] >= 1); ton = pt["qty"]
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "incident_type": "breakdown", "stop_seq": 3, "note": "thử: hỏng bầu hơi",
+                                              "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="thabok")
+    phai(s, 200, "Sửa xe lấy phụ tùng từ KHO → dòng mục V, trừ tồn", g)
+    d_kho = [e for e in g["expenses"] if e["section"] == "repair" and e["source"] == "kho"][-1]
+    assert d_kho["acct_code"] == "4022/371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /371
+    assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập' để kiểm lại"
+    s, parts2 = goi("/api/parts", vai="thabok"); assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="thabok")
+    phai(s, 200, "Sửa xe MUA NGOÀI → dòng mục V, định khoản …/402", g)
+    assert [e for e in g["expenses"] if e["section"] == "repair"][-1]["acct_code"] == "4022/402"
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "kho", "part_id": pt["id"], "qty": 10 ** 6}}, vai="thabok"); phai(s, 409, "Xuất quá tồn kho → bị từ chối", g)
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "note", "note": "x"}, vai="ketoan"); phai(s, 403, "Kế toán ghi diễn biến → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "repair", "item_name": "xoá hết"}]}, vai="thabok", method="PUT")
+    phai(s, 409, "Bãi xoá dòng đã xuất kho khỏi phiếu → bị từ chối", g)
+    # Sửa xe khai từ màn theo dõi đã đặt mục V ở "đã nhập" — kế toán kiểm thẳng, không cần Bãi gửi nữa
+    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
+    for hd, v in (("verify", "ketoan"), ("book", "ketoan"), ("pay", "quytb")):
+        s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
+    s, kho = goi("/api/fuel-moves", vai="khonl")
+    assert any(r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out" for r in kho["rows"]), "ghi sổ mục III phải sinh dòng xuất kho nhiên liệu theo phiếu"
+    print("  ✓ ghi sổ mục III đã sinh dòng xuất kho nhiên liệu THU-LUONG-01/EPL")
+
     # ---- 4. Xe về, cân cuối, hoá đơn, thu tiền
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="thabok"); phai(s, 403, "Bãi lập hoá đơn → bị từ chối", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 40.5, "back_date": "2026-09-16"}, vai="thabok")
     phai(s, 200, "Bãi báo xe đã tới, cân cuối 40,5 t", g)
     # Tính lại đúng cách trên giấy: từng khoản làm tròn 2 số lẻ rồi mới trừ — như máy chủ và như Excel.
     thue = round(40.5 * 40.5, 2); phi = round(thue * 0.02, 2); vuot = 0.5
-    ung = round((100 * 30000 + 1833500 + 150000) / 22000, 2)          # dòng x_vn chủ xe tự trả → không tính
+    # EPL đã ứng = dầu kho 100 L + cao tốc + mục VI 150.000 + hai khoản sửa xe vừa khai (phụ tùng kho + vá lốp) ÷ tỷ giá.
+    # Dòng x_vn "chủ xe tự trả" không tính. Lấy tổng chi từ máy chủ rồi kiểm lại từng phần.
+    chi = g["tinh"]["chi"]
+    assert chi["fuel"] == 100 * 30000 and chi["travel"] == 1833500 and chi["other"] == 150000, chi
+    assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])
+    ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]
     assert g["tinh"]["tra_chu_xe_usd"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe_usd"], thue, phi, vuot, ung)
     s, g = goi("/api/trips/%s/finance-status" % P, {"status": "paid"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
@@ -118,8 +158,14 @@ def main():
     s, g = goi("/api/bao-cao/theo-doi?thang=2026-09", vai="doanhthu"); assert any(p["id"] == P for p in g)
     print("  ✓ báo cáo xe liên kết và theo dõi đều thấy phiếu thử")
 
-    # ---- 6. Dọn
+    # ---- 6. Dọn — trả lại kho đúng những gì phiếu thử đã lấy, rồi xoá phiếu
     s, g = goi("/api/trips/%s" % P, vai="thabok", method="DELETE"); phai(s, 409, "Bãi xoá phiếu đã duyệt → bị từ chối", g)
+    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok"); phai(s, 200, "Trả lại 1 phụ tùng vào kho", g)
+    s, kho = goi("/api/fuel-moves", vai="khonl")
+    for r in kho["rows"]:
+        if r["doc_no"] == "THU-LUONG-01/EPL":
+            goi("/api/fuel-moves/%s" % r["id"], vai="khonl", method="DELETE")
+    print("  ✓ đã xoá dòng xuất kho nhiên liệu của phiếu thử")
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
     print("\nTHỬ LUỒNG API: ĐẠT — 7 vai · 6 mục · 5 bước duyệt · 10 chỗ từ chối đúng")
 

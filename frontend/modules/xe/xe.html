@@ -1,16 +1,21 @@
-<!-- Xe — ພາຫະນະ. Điểm họ nói EPL_System thiếu: mỗi xe container có HAI biển — đầu kéo và rơ-moóc — cộng số hiệu nội bộ. -->
+<!-- Xe — ພາຫະນະ. Hai thẻ: ĐẦU KÉO (hồ sơ như module Xe của EPL_System) và RƠ-MOÓC (thực thể riêng, lắp/tháo được).
+     Bên trái danh sách, bên phải hồ sơ chiếc đang chọn: giấy tờ & hạn, rơ-moóc đang lắp, chi phí sửa chữa từ mục V. -->
 <div class="toolbar">
+  <div class="xe-tab" role="tablist">
+    <button class="active" data-tab="tractor" data-i18n="tractors"></button>
+    <button data-tab="trailer" data-i18n="trailers"></button>
+  </div>
   <div class="field xe-tim"><label data-i18n="search"></label><input id="xe-q"></div>
   <div class="field"><label data-i18n="owner_type"></label>
     <select id="xe-loai"><option value="" data-i18n="all"></option><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
   <div class="grow"></div>
   <button class="btn primary" id="xe-them"><span data-i18n="add"></span></button>
 </div>
-<div class="card">
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="truck_no"></th><th data-i18n="brand_model"></th><th data-i18n="plate_head"></th><th data-i18n="plate_trailer"></th><th data-i18n="owner_type"></th><th data-i18n="owner"></th><th data-i18n="note"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
-      <tbody id="xe-than"></tbody>
-    </table>
+
+<div class="xe-hai">
+  <div class="card"><div class="tbl-wrap"><table class="tbl" id="xe-bang"><thead id="xe-dau"></thead><tbody id="xe-than"></tbody></table></div></div>
+  <div class="card xe-ho-so" id="xe-ho-so" hidden>
+    <div class="hd"><h3 id="xe-hs-ten"></h3><div class="grow"></div><span id="xe-hs-tt"></span><button class="btn sm" id="xe-hs-sua" data-i18n="edit"></button></div>
+    <div class="bd" id="xe-hs-than"></div>
   </div>
 </div>

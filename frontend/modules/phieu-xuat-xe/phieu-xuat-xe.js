@@ -11,7 +11,7 @@
   const { API, NN, esc, so, AUTH, tag } = EPL;
   const MUC = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'], MUC_CHI = ['fuel', 'travel', 'repair', 'other'];
   const COT_INFO = ['company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
-  const COT_TRANS = ['customer_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd'];
+  const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd'];
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
     yard: { edit: MUC, verify: [], book: [], pay: [] },
@@ -22,7 +22,16 @@
     rev: { edit: [], verify: [], book: [], pay: [] },
     admin: { edit: MUC, verify: MUC, book: MUC, pay: MUC },
   };
-  let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [] }, moi = false, ty_gia = {};
+  let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [] }, moi = false, ty_gia = {};
+  /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402. */
+  function tkMacDinh(m, d) {
+    const cty = P && P.company === 'joint' ? 'joint' : 'EPL', rule = KM.acct_rule[cty];
+    let src = d && d.source;
+    if (m === 'fuel') src = ((d && d.place) || 'fp_yard') === 'fp_yard' ? 'kho' : 'mua';
+    if (m === 'repair' && src !== 'kho') src = 'mua';
+    if (m === 'travel' || m === 'other') return rule.mua[m];
+    return rule[src][m];
+  }
   const q = (s) => root.querySelector(s), g = (id) => root.querySelector('#' + id);
   const vai = () => AUTH.role;
   const perm = () => QUYEN[vai()] || QUYEN.yard;
@@ -53,6 +62,7 @@
   function veDanhMuc() {
     g('f-vehicle_id').innerHTML = `<option value="">—</option>` + DM.vehicles.filter(x => x.active || x.id === P.vehicle_id).map(x => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''}>${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
     g('f-driver_id').innerHTML = `<option value="">—</option>` + DM.drivers.filter(x => x.active || x.id === P.driver_id).map(x => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    g('f-route_id').innerHTML = `<option value="">—</option>` + DM.routes.filter(x => x.active || x.id === P.route_id).map(x => `<option value="${x.id}" ${x.id === P.route_id ? 'selected' : ''}>${esc(x.name)} · ${so(x.total_km, 1)} km</option>`).join('');
     g('f-customer_id').innerHTML = `<option value="">—</option>` + DM.customers.filter(x => x.active || x.id === P.customer_id).map(x => `<option value="${x.id}" ${x.id === P.customer_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
   }
   function doTruong() {
@@ -68,8 +78,8 @@
     if (k.lk) { g('v-hire').textContent = so(k.thue, 2) + ' USD'; g('v-fee').textContent = '− ' + so(k.phi, 2) + ' USD'; g('v-over-t').textContent = so(k.vuot, 2) + ' t'; g('v-over').textContent = '− ' + so(k.truVuot, 2) + ' USD'; }
     // chỉ dòng có data-i — dòng "chưa có dữ liệu" không phải dòng chi
     MUC_CHI.forEach(m => { const tb = q(`table[data-bang="${m}"]`); tb.querySelectorAll('tbody tr[data-i]').forEach(tr => { const d = P.expenses[+tr.dataset.i]; if (d) tr.querySelector('.amt').textContent = so(tienDong(d)); });
-      const lk = k.lk; const cols = m === 'fuel' ? 9 : 7;
-      tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : '<td></td><td></td>'}<td class="num"><b>${so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
+      const lk = k.lk; const cols = m === 'fuel' ? 9 : (m === 'repair' ? 8 : 7);
+      tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : (m === 'repair' ? '<td></td><td></td><td></td>' : '<td></td><td></td>')}<td class="num"><b>${so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
     const box = g('px-tong-ket');
     if (!k.lk) {
       const net = k.dt * k.rU - k.tongChi;
@@ -101,18 +111,27 @@
         const sel = `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${khoa.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
         const inp = (f, cls = 'num') => `<input class="${cls}" data-i="${i}" data-f="${f}" value="${esc(d[f] == null ? '' : d[f])}" ${khoaDuoc ? '' : 'disabled'} inputmode="decimal">`;
         const pay = `<td class="px-lk"><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
-        const acct = `<td><select data-i="${i}" data-f="acct_code" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'}>${tk.map(c => `<option ${c === (d.acct_code || KM.acct_default[m]) ? 'selected' : ''}>${c}</option>`).join('')}</select></td>`;
+        const acct = `<td><select data-i="${i}" data-f="acct_code" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'}>${tk.map(c => `<option ${c === (d.acct_code || tkMacDinh(m, d)) ? 'selected' : ''}>${c}</option>`).join('')}</select></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td>${inp('unit_price')}</td>
           <td><select data-i="${i}" data-f="currency" ${khoaDuoc ? '' : 'disabled'}>${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === d.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></td><td class="num amt"></td>
           <td><select data-i="${i}" data-f="place" ${khoaDuoc ? '' : 'disabled'}>${['fp_yard', 'fp_vn', 'fp_other'].map(k => `<option value="${k}" ${k === d.place ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select></td>${pay}${acct}${xoa}</tr>`;
-        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td>${inp('unit_price')}</td><td class="num amt"></td>${pay}${acct}${xoa}</tr>`;
+        let nguon = '';
+        if (m === 'repair') {
+          const kho = d.source === 'kho', daXuat = !!d.stock_move_id;
+          nguon = `<td><select data-i="${i}" data-f="source" ${khoaDuoc && !daXuat ? '' : 'disabled'}><option value="mua" ${!kho ? 'selected' : ''}>${esc(NN.t('src_mua'))}</option><option value="kho" ${kho ? 'selected' : ''}>${esc(NN.t('src_kho'))}</option></select>${
+            kho ? `<select data-i="${i}" data-f="part_id" ${khoaDuoc && !daXuat ? '' : 'disabled'} style="margin-top:4px"><option value="">—</option>${DM.parts.map(p => `<option value="${p.id}" ${p.id === d.part_id ? 'selected' : ''}>${esc(p.name)} · ${so(p.qty)}</option>`).join('')}</select>` : ''}${
+            daXuat ? `<div class="small muted">${esc(NN.t('fs_out'))} ✓</div>` : ''}</td>`;
+        }
+        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td>${nguon}<td>${inp('qty')}</td><td>${inp('unit_price')}</td><td class="num amt"></td>${pay}${acct}${xoa}</tr>`;
       }).join('') : `<tr><td colspan="10" class="empty small">${NN.h('no_data')}</td></tr>`;
     });
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value;
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; veChi(); }
-      if (f === 'place' && P.company === 'joint') { d.paid_by_epl = el.value === 'fp_yard'; veChi(); }
+      if (f === 'place') { if (P.company === 'joint') d.paid_by_epl = el.value === 'fp_yard'; d.acct_code = tkMacDinh('fuel', d); veChi(); }
+      if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = tkMacDinh('repair', d); veChi(); }
+      if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; d.unit_price = p.unit_price || 0; } veChi(); }
       veSo();
     }));
     root.querySelectorAll('.px-chi [data-pay]').forEach(b => b.addEventListener('click', () => { P.expenses[+b.dataset.i].paid_by_epl = b.dataset.pay === '1'; veChi(); veSo(); }));
@@ -189,7 +208,7 @@
     const k = DM.customers.find(v => v.id === P.customer_id); if (k) P.customer_name = k.name;
     const body = {}; ['doc_no', 'truck_no', 'driver_name', 'customer_name', ...COT_INFO, ...COT_TRANS].forEach(c => { if (P[c] !== undefined) body[c] = P[c]; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
-    body.expenses = P.expenses.filter(e => suaDuoc(e.section)).map(e => ({ ...e, qty: EPL.doc(e.qty), unit_price: EPL.doc(e.unit_price), acct_code: e.acct_code || KM.acct_default[e.section] }));
+    body.expenses = P.expenses.filter(e => suaDuoc(e.section)).map(e => ({ ...e, qty: EPL.doc(e.qty), unit_price: EPL.doc(e.unit_price), acct_code: e.acct_code || tkMacDinh(e.section, e) }));
     if (!moi) { MUC_CHI.forEach(m => { if (!suaDuoc(m)) body.expenses = body.expenses.filter(e => e.section !== m); }); }
     try {
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
@@ -221,15 +240,17 @@
   }
   function themDong(m) {
     if (!suaDuoc(m)) return;
-    P.expenses.push(m === 'fuel' ? { section: 'fuel', item_key: 'diesel', qty: 0, unit_price: 0, currency: 'LAK', place: 'fp_yard', paid_by_epl: true, acct_code: KM.acct_default.fuel }
-      : { section: m, item_key: KM.items[m][0], qty: 1, unit_price: 0, currency: 'LAK', paid_by_epl: true, acct_code: KM.acct_default[m] });
+    const d = m === 'fuel' ? { section: 'fuel', item_key: 'diesel', qty: 0, unit_price: 0, currency: 'LAK', place: 'fp_yard', paid_by_epl: true, source: 'kho' }
+      : { section: m, item_key: KM.items[m][0], qty: 1, unit_price: 0, currency: 'LAK', paid_by_epl: true, source: m === 'repair' ? 'mua' : null };
+    d.acct_code = tkMacDinh(m, d);
+    P.expenses.push(d);
     veChi(); veVaiVaTrangThai();
   }
 
   EPL.modules['phieu-xuat-xe'] = {
     async init(r, ctx) {
       root = r;
-      [KM, DS, ty_gia, DM.customers, DM.vehicles, DM.drivers] = await Promise.all([API.get('/api/khoan-muc'), API.get('/api/trips'), API.get('/api/rates'), API.get('/api/customers'), API.get('/api/vehicles'), API.get('/api/drivers')]);
+      [KM, DS, ty_gia, DM.customers, DM.vehicles, DM.drivers, DM.routes, DM.parts] = await Promise.all([API.get('/api/khoan-muc'), API.get('/api/trips'), API.get('/api/rates'), API.get('/api/customers'), API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts')]);
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
@@ -239,7 +260,8 @@
       // đầu vào mục I–II → cập nhật số ngay
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
-        if (c === 'company') { if (P.company === 'joint' && (P.hire_price_usd == null || P.hire_price_usd === '')) { P.hire_price_usd = P.price_usd; g('f-hire_price_usd').value = P.price_usd ?? ''; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
+        if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price_usd == null || P.hire_price_usd === '')) { P.hire_price_usd = P.price_usd; g('f-hire_price_usd').value = P.price_usd ?? ''; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
+        if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; } }
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();
       }); });

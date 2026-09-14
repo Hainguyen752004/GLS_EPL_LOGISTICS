@@ -67,6 +67,13 @@
       if (lang === 'both') return th(m.vi || '') + (m.lo ? '<span class="lo-sub" lang="lo">' + th(m.lo) + '</span>' : '');
       return th(m[lang] || m.vi || khoa);
     },
+    /** Ghép nhiều mảnh thành MỘT khối hai dòng ở chế độ vi+lo: mảnh {k:'khoá'} được dịch, chuỗi thường giữ nguyên.
+     *  Dùng cho dòng "Tổng · 3 chuyến": trước đây mỗi khoá tự xuống dòng Lào riêng nên đọc rất rối. */
+    ghep(manh) {
+      const lay = (ng) => manh.map(m => typeof m === 'string' ? esc(m) : (TU_DIEN[m.k] ? (TU_DIEN[m.k][ng] || TU_DIEN[m.k].vi || m.k) : m.k)).join('');
+      if (lang === 'both') return lay('vi') + '<span class="lo-sub" lang="lo">' + lay('lo') + '</span>';
+      return lay(lang);
+    },
     /** Áp mọi data-i18n trong một gốc DOM. */
     apDung(root) {
       (root || document).querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = NN.h(el.dataset.i18n); });
@@ -179,6 +186,7 @@
   const MODULES = EPL.MODULES = [
     { id: 'tong-quan',      nhom: 'mod_transport', nav: 'nav_dash',     ic: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z' },
     { id: 'theo-doi',       nhom: 'mod_transport', nav: 'nav_tracking', ic: 'M3 6h18M3 12h18M3 18h12' },
+    { id: 'theo-doi-tuyen', nhom: 'mod_transport', nav: 'nav_track_route', ic: 'M4 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M7 15l10-6' },
     { id: 'phieu-xuat-xe',  nhom: 'mod_transport', nav: 'nav_dispatch', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7z' },
     { id: 'hoa-don',        nhom: 'mod_transport', nav: 'nav_bill',     ic: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8' },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint',    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
@@ -189,6 +197,7 @@
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     { id: 'xe',             nhom: 'mod_master',    nav: 'nav_vehicles', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tai-xe',         nhom: 'mod_master',    nav: 'nav_drivers',  ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0' },
+    { id: 'tuyen-duong',    nhom: 'mod_master',    nav: 'nav_routes',   ic: 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3' },
     { id: 'quy-trinh',      nhom: 'mod_system',    nav: 'nav_workflow', ic: 'M12 3v4M6 21v-4M18 21v-4M4 11h16M9 7h6v4H9zM3 17h6v4H3zM15 17h6v4h-6z' },
     { id: 'tai-khoan',      nhom: 'mod_system',    nav: 'nav_users',    ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M19 8l2 2-4 4-2-2', vai: ['admin'] },
   ];

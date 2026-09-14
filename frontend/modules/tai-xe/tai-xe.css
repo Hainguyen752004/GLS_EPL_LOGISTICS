@@ -1,3 +1,15 @@
-/* Tài xế */
-.tx-tim{min-width:260px}
-.tx-tat{opacity:.55}
+/* Tài xế & bằng lái */
+.tx-tim{min-width:240px}
+.tx-hai{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;align-items:start}
+.tx-hai .tbl tbody tr{cursor:pointer} .tx-tat{opacity:.55}
+.tx-hs-luoi{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px}
+.tx-hs-luoi div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--line);padding:3px 0}
+.tx-hs-luoi span:first-child{color:var(--ink-2)} .tx-hs-luoi b{text-align:right}
+.tx-ho-so h5{margin:16px 0 6px;font-size:13px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.tx-bang-lai{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tx-bang-lai .so{font-size:16px;font-weight:700;font-family:ui-monospace,Consolas,monospace}
+.tx-canh{border-radius:var(--r);padding:6px 10px;font-size:12.5px;margin-top:8px}
+.tx-canh.do{background:var(--red-soft);color:var(--red)} .tx-canh.vang{background:var(--amber-soft);color:var(--amber)}
+.tx-cham{width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--line-2);margin-right:6px}
+.tx-cham.ok{background:var(--green-2)} .tx-cham.soon{background:var(--amber)} .tx-cham.expired{background:var(--red)}
+@media (max-width:1000px){.tx-hai{grid-template-columns:1fr}}

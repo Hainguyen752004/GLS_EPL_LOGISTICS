@@ -36,8 +36,25 @@ Base = declarative_base()
 
 
 def tao_bang():
+    """Dựng bảng còn thiếu, và THÊM CỘT còn thiếu vào bảng đã có.
+
+    create_all không thêm cột vào bảng đã tồn tại. Không có tầng migration nên khi model có thêm
+    cột (ví dụ trips.route_id), ta so cột trong model với cột thật trong DB rồi ALTER TABLE ADD
+    COLUMN cho phần thiếu. Chỉ THÊM, không đổi kiểu, không xoá — đủ cho hệ này, và không bao giờ
+    làm mất dữ liệu.
+    """
     import models  # noqa: F401 — nạp để Base biết hết bảng
+    from sqlalchemy import inspect, text
     Base.metadata.create_all(bind=engine)
+    insp = inspect(engine)
+    with engine.begin() as c:
+        for bang in Base.metadata.sorted_tables:
+            co = {col["name"] for col in insp.get_columns(bang.name)}
+            for col in bang.columns:
+                if col.name in co:
+                    continue
+                kieu = col.type.compile(dialect=engine.dialect)
+                c.execute(text('ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" %s' % (bang.name, col.name, kieu)))
 
 
 def get_db():

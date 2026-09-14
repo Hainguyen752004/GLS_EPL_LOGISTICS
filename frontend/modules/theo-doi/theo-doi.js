@@ -26,7 +26,7 @@
         <td class="num ${c.lai_usd < 0 ? 'neg' : 'pos'}"><b>${so(c.lai_usd, 2)}</b></td>
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="28" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.h('total')} · ${rows.length} ${NN.h('trips')}</td><td class="num">${so(sVal, 2)}</td><td colspan="7"></td><td class="num">${so(sExp)}</td><td class="num ${sNet < 0 ? 'neg' : 'pos'}">${so(sNet, 2)}</td><td colspan="2"></td></tr>`;
+    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + rows.length + ' ', { k: 'trips' }])}</td><td class="num">${so(sVal, 2)}</td><td colspan="7"></td><td class="num">${so(sExp)}</td><td class="num ${sNet < 0 ? 'neg' : 'pos'}">${so(sNet, 2)}</td><td colspan="2"></td></tr>`;
     root.querySelector('#td-dem').textContent = `${rows.length} / ${ds.length} ${NN.t('rows')}`;
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
   }
