@@ -5,6 +5,8 @@ SQLAlchemy đồng bộ mà đặt trong `async def` thì nó chặn vòng lặp
 máy chủ đứng im dưới tải — EPL_System đã có hẳn một bài kiểm để chặn chuyện này.
 """
 
+from typing import Optional
+
 from fastapi import APIRouter, Body, Depends, Query, Request
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
@@ -105,8 +107,8 @@ def ds_tai_xe(db: Session = Depends(get_db)):
 # --------------------------------------------------------------------------
 @router.get("/api/sales-orders")
 def ds_don(
-    q: str | None = None,
-    status: str | None = None,
+    q: Optional[str] = None,
+    status: Optional[str] = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -141,10 +143,10 @@ def huy_don(so_id: str, request: Request, payload: dict = Body(default={}), db: 
 # --------------------------------------------------------------------------
 @router.get("/api/packing-lists")
 def ds_pl(
-    q: str | None = None,
-    status: str | None = None,
-    so_id: str | None = None,
-    delivery_id: str | None = None,
+    q: Optional[str] = None,
+    status: Optional[str] = None,
+    so_id: Optional[str] = None,
+    delivery_id: Optional[str] = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -249,8 +251,8 @@ def quet_tem(request: Request, payload: dict = Body(...), db: Session = Depends(
 # --------------------------------------------------------------------------
 @router.get("/api/deliveries")
 def ds_giao(
-    q: str | None = None,
-    status: str | None = None,
+    q: Optional[str] = None,
+    status: Optional[str] = None,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
