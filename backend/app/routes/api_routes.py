@@ -7,7 +7,8 @@ máy chủ đứng im dưới tải — EPL_System đã có hẳn một bài ki�
 
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, File, Form, Query, Request, UploadFile
+from fastapi.responses import Response
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from database import get_db
 from models import Customer, Driver, Vehicle
 from services import (
     don_hang_service,
+    nhan_don_service,
     giao_hang_service,
     khach_hang_service,
     packing_service,
@@ -412,3 +414,123 @@ def mo_phong(gh_id: str, request: Request, payload: dict = Body(default={}), db:
     buoc = float(payload.get("step") or 0.15)
     kq = _lam(db, lambda: theo_doi_service.mo_phong_chay_tiep(db, gh_id, buoc, nguoi))
     return _tra(kq, "Đã cập nhật vị trí mô phỏng")
+
+
+# --------------------------------------------------------------------------
+# Nhận đơn tự động (email / tệp tải lên  ->  hộp chờ duyệt  ->  đơn hàng)
+# --------------------------------------------------------------------------
+@router.get("/api/inbound/status")
+def nhan_don_trang_thai():
+    """Giao diện hỏi trước khi vẽ màn: có nối được hộp thư và AI không."""
+    return _tra(nhan_don_service.trang_thai_ket_noi())
+
+
+@router.get("/api/inbound")
+def nhan_don_danh_sach(
+    status: Optional[str] = Query(default="pending"),
+    q: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 25,
+    db: Session = Depends(get_db),
+):
+    return _tra(nhan_don_service.danh_sach(db, status, q, page, page_size))
+
+
+@router.get("/api/inbound/{ib_id}")
+def nhan_don_chi_tiet(ib_id: str, db: Session = Depends(get_db)):
+    try:
+        return _tra(nhan_don_service.ra_dict(nhan_don_service.nap(db, ib_id)))
+    except LoiNghiepVu as loi:
+        nem_http(loi)
+
+
+@router.get("/api/inbound/{ib_id}/file")
+def nhan_don_tep_goc(ib_id: str, db: Session = Depends(get_db)):
+    """Tệp gốc khách gửi — người duyệt mở ra đối chiếu với bản nháp."""
+    try:
+        du_lieu, mime, ten = nhan_don_service.tep_goc(db, ib_id)
+    except LoiNghiepVu as loi:
+        nem_http(loi)
+    return Response(
+        content=du_lieu,
+        media_type=mime,
+        headers={"Content-Disposition": 'inline; filename="%s"' % (ten or "phieu")},
+    )
+
+
+@router.post("/api/inbound/scan")
+def nhan_don_quet_hop_thu(
+    request: Request, payload: dict = Body(default={}), db: Session = Depends(get_db)
+):
+    """Quét thư chưa đọc trong hộp thư đặt hàng."""
+    nguoi = _nguoi(request)
+    gioi_han = int(payload.get("limit") or 10)
+    try:
+        kq = nhan_don_service.quet_hop_thu(db, gioi_han, nguoi)
+    except LoiNghiepVu as loi:
+        db.rollback()
+        nem_http(loi)
+    except Exception:
+        db.rollback()
+        raise
+    return _tra(kq, "Đã quét hộp thư")
+
+
+@router.post("/api/inbound/upload")
+def nhan_don_tai_len(
+    request: Request,
+    file: UploadFile = File(...),
+    note: Optional[str] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    """Tự tải phiếu lên: khách gửi qua Zalo, WhatsApp, hay cầm giấy tới quầy."""
+    nguoi = _nguoi(request)
+    du_lieu = file.file.read()
+    ib = _lam(
+        db,
+        lambda: nhan_don_service.them_tu_tep(
+            db, file.filename, file.content_type, du_lieu, nguoi, note
+        ),
+    )
+    # Đọc luôn cho người dùng khỏi phải bấm hai lần. AI hỏng thì phiếu vẫn còn
+    # trong hộp chờ ở trạng thái "đọc không ra", bấm Đọc lại là xong.
+    try:
+        ib = _lam(db, lambda: nhan_don_service.doc_bang_ai(db, ib.id))
+    except Exception:  # noqa: BLE001
+        db.rollback()
+        ib = nhan_don_service.nap(db, ib.id)
+    return _tra(nhan_don_service.ra_dict(ib), "Đã nhận phiếu")
+
+
+@router.post("/api/inbound/{ib_id}/parse")
+def nhan_don_doc_lai(ib_id: str, db: Session = Depends(get_db)):
+    ib = _lam(db, lambda: nhan_don_service.doc_bang_ai(db, ib_id))
+    return _tra(nhan_don_service.ra_dict(ib), "Đã đọc lại phiếu")
+
+
+@router.put("/api/inbound/{ib_id}/draft")
+def nhan_don_sua_nhap(ib_id: str, payload: dict = Body(...), db: Session = Depends(get_db)):
+    ib = _lam(db, lambda: nhan_don_service.sua_nhap(db, ib_id, payload))
+    return _tra(nhan_don_service.ra_dict(ib), "Đã lưu bản nháp")
+
+
+@router.post("/api/inbound/{ib_id}/approve")
+def nhan_don_duyet(
+    ib_id: str, request: Request, payload: dict = Body(default={}), db: Session = Depends(get_db)
+):
+    """Duyệt bản nháp thành đơn hàng thật, rồi màn Packing List đóng gói như bình thường."""
+    nguoi = _nguoi(request)
+    ib, don = _lam(db, lambda: nhan_don_service.duyet(db, ib_id, payload, nguoi))
+    return _tra(
+        {"inbound": nhan_don_service.ra_dict(ib), "order": don_hang_service.ra_dict(db, don)},
+        "Đã duyệt thành đơn hàng",
+    )
+
+
+@router.post("/api/inbound/{ib_id}/reject")
+def nhan_don_bo(
+    ib_id: str, request: Request, payload: dict = Body(default={}), db: Session = Depends(get_db)
+):
+    nguoi = _nguoi(request)
+    ib = _lam(db, lambda: nhan_don_service.bo(db, ib_id, payload.get("reason"), nguoi))
+    return _tra(nhan_don_service.ra_dict(ib), "Đã bỏ phiếu này")

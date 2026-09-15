@@ -1,0 +1,58 @@
+/* Màn Nhận đơn tự động */
+
+.nd-thanh { margin-bottom: 16px; }
+.nd-thanh-trong {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.nd-nguon { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#nd-tai-len-nhan { cursor: pointer; }
+.nd-trang-thai { font-size: 12px; color: var(--chu-mo); text-align: right; }
+.nd-trang-thai .cham { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.nd-trang-thai .cham.bat { background: #16a34a; }
+.nd-trang-thai .cham.tat { background: #cbd5e1; }
+
+/* Thẻ tin cậy của AI: xanh là đọc chắc, vàng là nên soi kỹ, đỏ là đọc hỏng. */
+.nd-tin-cay { font-weight: 600; }
+.nd-tin-cay.cao { color: #16a34a; }
+.nd-tin-cay.vua { color: #d97706; }
+.nd-tin-cay.thap { color: #dc2626; }
+
+.nd-canh-bao {
+  border: 1px solid #fcd34d; background: #fffbeb; border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 12px; font-size: 13px;
+}
+.nd-canh-bao h4 { margin: 0 0 6px; font-size: 13px; color: #92400e; }
+.nd-canh-bao ul { margin: 0; padding-left: 18px; color: #78350f; }
+.nd-canh-bao li { margin: 2px 0; }
+
+.nd-loi {
+  border: 1px solid #fca5a5; background: #fef2f2; border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 12px; font-size: 13px; color: #991b1b;
+}
+
+/* Tệp gốc xem ngay trong màn — người duyệt phải đối chiếu được mà không rời trang. */
+.nd-goc { border: 1px solid var(--vien); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
+.nd-goc-dau {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; padding: 8px 10px; background: var(--nen); font-size: 13px;
+}
+.nd-goc iframe, .nd-goc img { width: 100%; height: 420px; border: 0; display: block; background: #fff; }
+.nd-goc img { object-fit: contain; }
+
+.nd-bang-nhap { width: 100%; border-collapse: collapse; font-size: 13px; }
+.nd-bang-nhap th, .nd-bang-nhap td { border: 1px solid var(--vien); padding: 4px 6px; text-align: left; }
+.nd-bang-nhap th { background: var(--nen); font-weight: 600; white-space: nowrap; }
+.nd-bang-nhap td.so { text-align: right; }
+.nd-bang-nhap input {
+  width: 100%; border: 1px solid transparent; background: transparent;
+  padding: 2px 4px; font: inherit; border-radius: 4px;
+}
+.nd-bang-nhap input:focus { border-color: var(--chinh); background: #fff; outline: none; }
+.nd-bang-nhap input.so { text-align: right; }
+.nd-cuon { overflow-x: auto; }
+
+.nd-nut-day { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.nd-nut-day .trai { margin-right: auto; }
+
+.nd-ly-do { color: #b45309; }

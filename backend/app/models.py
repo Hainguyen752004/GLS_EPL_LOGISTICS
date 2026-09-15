@@ -490,3 +490,52 @@ class VehiclePosition(Base):
     source = Column(String(32), nullable=False, default="manual")  # manual / gps / simulated
     note = Column(String(255))
     recorded_at = Column(DateTime, nullable=False, default=_bay_gio)
+
+
+# --------------------------------------------------------------------------
+# Nhận đơn tự động từ email
+# --------------------------------------------------------------------------
+class InboundOrder(Base):
+    """Một phiếu đặt hàng KHÁCH GỬI TỚI, chưa phải đơn hàng thật.
+
+    Đây cố ý là bảng riêng chứ không ghi thẳng vào `sales_orders`. Máy đọc phiếu
+    bằng AI thì có lúc đọc sai, mà một đơn sai chui được vào luồng đóng gói là
+    hàng ra khỏi kho sai. Nên mọi thứ máy đọc ra nằm ở đây dưới dạng BẢN NHÁP,
+    có người mở tệp gốc ra đối chiếu, sửa lại rồi mới bấm duyệt; lúc duyệt mới
+    sinh SalesOrder thật.
+
+    Tệp gốc lưu luôn trong `file_data` để người duyệt còn mở ra soi. Bản demo
+    chạy một máy nên để trong DB là đủ và không sợ lạc tệp.
+    """
+
+    __tablename__ = "inbound_orders"
+    id = Column(String(64), primary_key=True, default=lambda: "IB" + uuid.uuid4().hex[:10].upper())
+
+    source = Column(String(16), nullable=False, default="upload")   # gmail / upload
+    message_id = Column(String(255), unique=True)                   # chống nhận trùng một email
+    from_email = Column(String(255))
+    subject = Column(String(500))
+    body_text = Column(Text)
+    received_at = Column(DateTime, nullable=False, default=_bay_gio)
+
+    file_name = Column(String(255))
+    file_mime = Column(String(128))
+    file_size = Column(Integer, nullable=False, default=0)
+    file_data = Column(Text)                                        # base64 của tệp gốc
+
+    # new: vừa nhận, chưa đọc · parsed: AI đọc xong, chờ duyệt
+    # failed: đọc không ra · approved: đã thành đơn thật · rejected: người duyệt bỏ
+    status = Column(String(16), nullable=False, default="new", index=True)
+    ai_confidence = Column(Integer, nullable=False, default=0)
+    ai_warnings = Column(Text)                                      # JSON mảng chuỗi
+    ai_error = Column(String(500))
+    draft = Column(Text)                                            # JSON bản nháp đơn hàng
+
+    so_id = Column(String(64), ForeignKey("sales_orders.id"), nullable=True)
+    reviewed_by = Column(String(128))
+    reviewed_at = Column(DateTime)
+    note = Column(Text)
+    created_at = Column(DateTime, nullable=False, default=_bay_gio)
+    updated_at = Column(DateTime, nullable=False, default=_bay_gio, onupdate=_bay_gio)
+
+    sales_order = relationship("SalesOrder")

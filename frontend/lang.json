@@ -1898,5 +1898,390 @@
     "vi": "Chặng phải có đủ điểm đi và điểm đến.",
     "en": "A segment needs both a start and an end point.",
     "lo": "ຊ່ວງທາງຕ້ອງມີທັງຈຸດອອກ ແລະ ຈຸດຮອດ."
+  },
+  "nav_nhan_don": {
+    "vi": "Nhận đơn",
+    "en": "Order intake",
+    "lo": "ຮັບໃບສັ່ງ"
+  },
+  "nd_title": {
+    "vi": "Nhận đơn tự động",
+    "en": "Automatic order intake",
+    "lo": "ຮັບໃບສັ່ງອັດຕະໂນມັດ"
+  },
+  "nd_intro": {
+    "vi": "Phiếu đặt hàng khách gửi qua email hoặc tự tải lên được máy đọc thành bản nháp. Người duyệt đối chiếu với tệp gốc, sửa lại nếu cần, rồi bấm duyệt để tạo đơn hàng thật.",
+    "en": "Purchase orders arriving by email or uploaded by hand are read into a draft. A reviewer checks the draft against the original file, edits it if needed, then approves it to create the real order.",
+    "lo": "ໃບສັ່ງຊື້ທີ່ລູກຄ້າສົ່ງມາທາງອີເມວ ຫຼື ອັບໂຫຼດເອງ ຈະຖືກເຄື່ອງອ່ານອອກເປັນຮ່າງ. ຜູ້ອະນຸມັດກວດກັບແຟ້ມຕົ້ນສະບັບ ແກ້ໄຂຖ້າຈຳເປັນ ແລ້ວກົດອະນຸມັດເພື່ອສ້າງໃບສັ່ງຈິງ."
+  },
+  "nd_inbox": {
+    "vi": "Hộp chờ duyệt",
+    "en": "Approval inbox",
+    "lo": "ກ່ອງລໍຖ້າອະນຸມັດ"
+  },
+  "nd_pending": {
+    "vi": "Chờ duyệt",
+    "en": "Pending",
+    "lo": "ລໍຖ້າອະນຸມັດ"
+  },
+  "nd_empty": {
+    "vi": "Chưa có phiếu nào",
+    "en": "Nothing here yet",
+    "lo": "ຍັງບໍ່ມີໃບໃດ"
+  },
+  "nd_pick_hint": {
+    "vi": "Chọn một phiếu bên trái để xem bản nháp",
+    "en": "Pick a document on the left to see its draft",
+    "lo": "ເລືອກໃບໜຶ່ງເບື້ອງຊ້າຍເພື່ອເບິ່ງຮ່າງ"
+  },
+  "nd_search_ph": {
+    "vi": "Tìm theo tiêu đề, người gửi, tên tệp…",
+    "en": "Search by subject, sender, file name…",
+    "lo": "ຄົ້ນຫາຕາມຫົວຂໍ້ ຜູ້ສົ່ງ ຊື່ແຟ້ມ…"
+  },
+  "nd_scan": {
+    "vi": "Quét hộp thư",
+    "en": "Scan mailbox",
+    "lo": "ສະແກນກ່ອງຈົດໝາຍ"
+  },
+  "nd_scanning": {
+    "vi": "Đang quét hộp thư…",
+    "en": "Scanning the mailbox…",
+    "lo": "ກຳລັງສະແກນກ່ອງຈົດໝາຍ…"
+  },
+  "nd_scan_done": {
+    "vi": "Quét xong: {new} phiếu mới, bỏ qua {skipped}",
+    "en": "Scan finished: {new} new, {skipped} skipped",
+    "lo": "ສະແກນແລ້ວ: ໃໝ່ {new} ໃບ, ຂ້າມ {skipped}"
+  },
+  "nd_upload": {
+    "vi": "Tải phiếu lên",
+    "en": "Upload a document",
+    "lo": "ອັບໂຫຼດໃບສັ່ງ"
+  },
+  "nd_mailbox": {
+    "vi": "Hộp thư",
+    "en": "Mailbox",
+    "lo": "ກ່ອງຈົດໝາຍ"
+  },
+  "nd_reader": {
+    "vi": "Máy đọc phiếu",
+    "en": "Document reader",
+    "lo": "ເຄື່ອງອ່ານໃບສັ່ງ"
+  },
+  "nd_connected": {
+    "vi": "Đã nối",
+    "en": "Connected",
+    "lo": "ເຊື່ອມຕໍ່ແລ້ວ"
+  },
+  "nd_not_connected": {
+    "vi": "Chưa nối",
+    "en": "Not connected",
+    "lo": "ຍັງບໍ່ເຊື່ອມຕໍ່"
+  },
+  "nd_confidence": {
+    "vi": "Độ chắc chắn",
+    "en": "Confidence",
+    "lo": "ຄວາມໝັ້ນໃຈ"
+  },
+  "nd_warnings": {
+    "vi": "Máy đọc không chắc ở những chỗ này",
+    "en": "The reader was unsure about these",
+    "lo": "ເຄື່ອງອ່ານບໍ່ແນ່ໃຈບ່ອນເຫຼົ່ານີ້"
+  },
+  "nd_read_failed": {
+    "vi": "Máy không đọc được phiếu này",
+    "en": "The reader could not read this document",
+    "lo": "ເຄື່ອງອ່ານໃບນີ້ບໍ່ໄດ້"
+  },
+  "nd_read_on_paper": {
+    "vi": "Nơi nhận ghi trên phiếu",
+    "en": "Ship-to printed on the document",
+    "lo": "ບ່ອນຮັບທີ່ພິມຢູ່ໃນໃບ"
+  },
+  "nd_file": {
+    "vi": "Tệp gốc",
+    "en": "Original file",
+    "lo": "ແຟ້ມຕົ້ນສະບັບ"
+  },
+  "nd_open_file": {
+    "vi": "Mở tệp gốc",
+    "en": "Open original",
+    "lo": "ເປີດແຟ້ມຕົ້ນສະບັບ"
+  },
+  "nd_reading": {
+    "vi": "Đang đọc phiếu…",
+    "en": "Reading the document…",
+    "lo": "ກຳລັງອ່ານໃບສັ່ງ…"
+  },
+  "nd_reparse": {
+    "vi": "Đọc lại",
+    "en": "Read again",
+    "lo": "ອ່ານຄືນ"
+  },
+  "nd_save_draft": {
+    "vi": "Lưu nháp",
+    "en": "Save draft",
+    "lo": "ບັນທຶກຮ່າງ"
+  },
+  "nd_approve": {
+    "vi": "Duyệt, tạo đơn hàng",
+    "en": "Approve and create order",
+    "lo": "ອະນຸມັດ ແລະ ສ້າງໃບສັ່ງ"
+  },
+  "nd_reject": {
+    "vi": "Bỏ phiếu này",
+    "en": "Discard",
+    "lo": "ຖິ້ມໃບນີ້"
+  },
+  "nd_add_line": {
+    "vi": "Thêm dòng hàng",
+    "en": "Add a line",
+    "lo": "ເພີ່ມແຖວສິນຄ້າ"
+  },
+  "nd_confirm_approve": {
+    "vi": "Bản nháp đã khớp với tệp gốc chưa? Duyệt là tạo đơn hàng thật.",
+    "en": "Does the draft match the original file? Approving creates a real order.",
+    "lo": "ຮ່າງກົງກັບແຟ້ມຕົ້ນສະບັບແລ້ວບໍ? ອະນຸມັດແມ່ນສ້າງໃບສັ່ງຈິງ."
+  },
+  "nd_confirm_reject": {
+    "vi": "Bỏ phiếu này khỏi hộp chờ duyệt?",
+    "en": "Discard this document from the inbox?",
+    "lo": "ຖິ້ມໃບນີ້ອອກຈາກກ່ອງລໍຖ້າບໍ?"
+  },
+  "nd_approved_hint": {
+    "vi": "Phiếu này đã thành đơn hàng",
+    "en": "This document is now order",
+    "lo": "ໃບນີ້ໄດ້ກາຍເປັນໃບສັ່ງ"
+  },
+  "nd_open_order": {
+    "vi": "Xem đơn hàng",
+    "en": "Open the order",
+    "lo": "ເບິ່ງໃບສັ່ງ"
+  },
+  "nd_lines": {
+    "vi": "dòng hàng",
+    "en": "lines",
+    "lo": "ແຖວສິນຄ້າ"
+  },
+  "nd_po": {
+    "vi": "Số PO",
+    "en": "PO number",
+    "lo": "ເລກ PO"
+  },
+  "nd_order_date": {
+    "vi": "Ngày đặt",
+    "en": "Order date",
+    "lo": "ວັນທີສັ່ງ"
+  },
+  "nd_ship_date": {
+    "vi": "Ngày giao",
+    "en": "Delivery date",
+    "lo": "ວັນທີສົ່ງ"
+  },
+  "nd_currency": {
+    "vi": "Tiền tệ",
+    "en": "Currency",
+    "lo": "ສະກຸນເງິນ"
+  },
+  "nd_customer": {
+    "vi": "Khách nhận hàng",
+    "en": "Ship to",
+    "lo": "ລູກຄ້າຮັບສິນຄ້າ"
+  },
+  "nd_vendor": {
+    "vi": "Nhà cung cấp",
+    "en": "Vendor",
+    "lo": "ຜູ້ສະໜອງ"
+  },
+  "nd_tax": {
+    "vi": "Mã số thuế",
+    "en": "Tax number",
+    "lo": "ເລກປະຈຳຕົວຜູ້ເສຍພາສີ"
+  },
+  "nd_barcode": {
+    "vi": "Mã vạch",
+    "en": "Barcode",
+    "lo": "ບາໂຄດ"
+  },
+  "nd_code": {
+    "vi": "Mã hàng",
+    "en": "Item code",
+    "lo": "ລະຫັດສິນຄ້າ"
+  },
+  "nd_desc": {
+    "vi": "Tên hàng",
+    "en": "Description",
+    "lo": "ຊື່ສິນຄ້າ"
+  },
+  "nd_pack": {
+    "vi": "Quy cách",
+    "en": "Pack size",
+    "lo": "ຂະໜາດຫຸ້ມຫໍ່"
+  },
+  "nd_case": {
+    "vi": "Thùng",
+    "en": "Cases",
+    "lo": "ກັບ"
+  },
+  "nd_piece": {
+    "vi": "Cái",
+    "en": "Pieces",
+    "lo": "ອັນ"
+  },
+  "nd_price": {
+    "vi": "Đơn giá",
+    "en": "Unit price",
+    "lo": "ລາຄາຫົວໜ່ວຍ"
+  },
+  "nd_st_new": {
+    "vi": "Mới nhận",
+    "en": "Just received",
+    "lo": "ຫາກໍ່ຮັບ"
+  },
+  "nd_st_parsed": {
+    "vi": "Chờ duyệt",
+    "en": "Awaiting approval",
+    "lo": "ລໍຖ້າອະນຸມັດ"
+  },
+  "nd_st_failed": {
+    "vi": "Đọc không ra",
+    "en": "Could not read",
+    "lo": "ອ່ານບໍ່ອອກ"
+  },
+  "nd_st_approved": {
+    "vi": "Đã duyệt",
+    "en": "Approved",
+    "lo": "ອະນຸມັດແລ້ວ"
+  },
+  "nd_st_rejected": {
+    "vi": "Đã bỏ",
+    "en": "Discarded",
+    "lo": "ຖິ້ມແລ້ວ"
+  },
+  "nd_filter_pending": {
+    "vi": "Đang chờ duyệt",
+    "en": "Awaiting approval",
+    "lo": "ກຳລັງລໍຖ້າອະນຸມັດ"
+  },
+  "nd_filter_parsed": {
+    "vi": "Đã đọc xong",
+    "en": "Read",
+    "lo": "ອ່ານແລ້ວ"
+  },
+  "nd_filter_failed": {
+    "vi": "Đọc không ra",
+    "en": "Could not read",
+    "lo": "ອ່ານບໍ່ອອກ"
+  },
+  "nd_filter_approved": {
+    "vi": "Đã duyệt",
+    "en": "Approved",
+    "lo": "ອະນຸມັດແລ້ວ"
+  },
+  "nd_filter_rejected": {
+    "vi": "Đã bỏ",
+    "en": "Discarded",
+    "lo": "ຖິ້ມແລ້ວ"
+  },
+  "nd_filter_all": {
+    "vi": "Tất cả",
+    "en": "All",
+    "lo": "ທັງໝົດ"
+  },
+  "common_choose": {
+    "vi": "— Chọn —",
+    "en": "— Choose —",
+    "lo": "— ເລືອກ —"
+  },
+  "ok_draft_saved": {
+    "vi": "Đã lưu bản nháp",
+    "en": "Draft saved",
+    "lo": "ບັນທຶກຮ່າງແລ້ວ"
+  },
+  "ok_inbound_approved": {
+    "vi": "Đã tạo đơn hàng",
+    "en": "Order created",
+    "lo": "ສ້າງໃບສັ່ງແລ້ວ"
+  },
+  "err_IB_NOT_FOUND": {
+    "vi": "Không tìm thấy phiếu nhận này",
+    "en": "This document was not found",
+    "lo": "ບໍ່ພົບໃບຮັບນີ້"
+  },
+  "err_IB_NO_FILE": {
+    "vi": "Phiếu này không có tệp đính kèm",
+    "en": "This document has no attached file",
+    "lo": "ໃບນີ້ບໍ່ມີແຟ້ມແນບ"
+  },
+  "err_IB_FILE_TOO_BIG": {
+    "vi": "Tệp lớn hơn 15 MB, máy chủ không nhận",
+    "en": "The file is larger than 15 MB and cannot be accepted",
+    "lo": "ແຟ້ມໃຫຍ່ກວ່າ 15 MB, ຮັບບໍ່ໄດ້"
+  },
+  "err_IB_FILE_TYPE": {
+    "vi": "Chỉ nhận tệp PDF, ảnh, Excel, CSV hoặc TXT",
+    "en": "Only PDF, image, Excel, CSV or TXT files are accepted",
+    "lo": "ຮັບສະເພາະແຟ້ມ PDF, ຮູບ, Excel, CSV ຫຼື TXT"
+  },
+  "err_IB_AI_FAILED": {
+    "vi": "Máy không đọc được phiếu này — thử Đọc lại hoặc nhập tay",
+    "en": "The reader could not read this document — try Read again or type it in",
+    "lo": "ເຄື່ອງອ່ານໃບນີ້ບໍ່ໄດ້ — ລອງອ່ານຄືນ ຫຼື ພິມເອງ"
+  },
+  "err_IB_NO_LINES": {
+    "vi": "Bản nháp chưa có dòng hàng nào",
+    "en": "The draft has no lines yet",
+    "lo": "ຮ່າງຍັງບໍ່ມີແຖວສິນຄ້າ"
+  },
+  "err_IB_NO_CUSTOMER": {
+    "vi": "Phải chọn khách hàng trong danh mục trước khi duyệt",
+    "en": "Choose a customer from the directory before approving",
+    "lo": "ຕ້ອງເລືອກລູກຄ້າຈາກລາຍການກ່ອນອະນຸມັດ"
+  },
+  "err_IB_ALREADY_APPROVED": {
+    "vi": "Phiếu này đã duyệt thành đơn hàng rồi",
+    "en": "This document has already become an order",
+    "lo": "ໃບນີ້ໄດ້ອະນຸມັດເປັນໃບສັ່ງແລ້ວ"
+  },
+  "err_IB_REJECTED": {
+    "vi": "Phiếu này đã bị bỏ, không duyệt được nữa",
+    "en": "This document was discarded and can no longer be approved",
+    "lo": "ໃບນີ້ຖືກຖິ້ມແລ້ວ, ອະນຸມັດບໍ່ໄດ້ອີກ"
+  },
+  "err_IB_DRAFT_INVALID": {
+    "vi": "Bản nháp gửi lên không đúng định dạng",
+    "en": "The draft sent up is not in the right shape",
+    "lo": "ຮ່າງທີ່ສົ່ງມາຮູບແບບບໍ່ຖືກ"
+  },
+  "err_GM_NO_LIB": {
+    "vi": "Máy chủ chưa cài thư viện đọc hộp thư",
+    "en": "The server is missing the mailbox library",
+    "lo": "ເຊີບເວີຍັງບໍ່ໄດ້ຕິດຕັ້ງໄລບຣາຣີກ່ອງຈົດໝາຍ"
+  },
+  "err_GM_NO_TOKEN": {
+    "vi": "Chưa cấp quyền đọc hộp thư",
+    "en": "The mailbox has not been authorised yet",
+    "lo": "ຍັງບໍ່ໄດ້ອະນຸຍາດອ່ານກ່ອງຈົດໝາຍ"
+  },
+  "err_GM_TOKEN_EXPIRED": {
+    "vi": "Quyền đọc hộp thư đã hết hạn, cần cấp lại",
+    "en": "Mailbox access has expired and must be granted again",
+    "lo": "ສິດອ່ານກ່ອງຈົດໝາຍໝົດອາຍຸ, ຕ້ອງອະນຸຍາດໃໝ່"
+  },
+  "err_GM_LIST_FAILED": {
+    "vi": "Không đọc được danh sách thư",
+    "en": "Could not read the message list",
+    "lo": "ອ່ານລາຍການຈົດໝາຍບໍ່ໄດ້"
+  },
+  "err_GM_GET_FAILED": {
+    "vi": "Không đọc được nội dung thư",
+    "en": "Could not read the message",
+    "lo": "ອ່ານເນື້ອໃນຈົດໝາຍບໍ່ໄດ້"
+  },
+  "nd_grant_hint": {
+    "vi": "chạy lệnh python cap_quyen_hop_thu.py rồi khởi động lại máy chủ",
+    "en": "run python cap_quyen_hop_thu.py then restart the server",
+    "lo": "ແລ່ນຄຳສັ່ງ python cap_quyen_hop_thu.py ແລ້ວເລີ່ມເຊີບເວີໃໝ່"
   }
 }

@@ -6,6 +6,8 @@ Sau khi chạy, mở trang lên là đã có sẵn:
   · một đơn ĐÃ lên chuyến và đang trên đường → để thử quét tem và ký nhận.
 """
 
+import io
+import json
 import os
 import sys
 import uuid
@@ -16,6 +18,7 @@ from database import SessionLocal, tao_luoc_do
 from models import (
     Customer,
     Delivery,
+    InboundOrder,
     DeliveryEvent,
     Driver,
     PackingEvent,
@@ -70,9 +73,24 @@ def _dong(i, thung):
 
 def don_sach(db):
     """Xoá dữ liệu do bài kiểm sinh ra. Chỉ đụng vào PO có tiền tố của bài kiểm."""
+    # Phiếu trong hộp chờ duyệt do bài kiểm nhận đơn tải lên. Xoá trước đơn hàng
+    # vì phiếu đã duyệt trỏ tới đơn; xoá đơn trước là vướng khoá ngoại.
+    so_phieu = (
+        db.query(InboundOrder)
+        .filter(InboundOrder.file_name.like("PO_6003990311%") | InboundOrder.subject.like("KIEM-%"))
+        .delete(synchronize_session=False)
+    )
+    if so_phieu:
+        print("Đã xoá %d phiếu nhận của bài kiểm." % so_phieu)
+    db.flush()
+
     xoa = (
         db.query(SalesOrder)
-        .filter(SalesOrder.po_number.like("KIEM-%") | SalesOrder.po_number.like("HTTP-%"))
+        .filter(
+            SalesOrder.po_number.like("KIEM-%")
+            | SalesOrder.po_number.like("HTTP-%")
+            | SalesOrder.po_number.like("6003990311%")
+        )
         .all()
     )
     for don in xoa:
@@ -91,6 +109,9 @@ def don_sach(db):
                     gh = db.query(Delivery).filter(Delivery.id == gh_id).first()
                     if gh:
                         db.delete(gh)
+        db.query(InboundOrder).filter(InboundOrder.so_id == don.id).delete(
+            synchronize_session=False
+        )
         db.query(SalesOrderLine).filter(SalesOrderLine.so_id == don.id).delete()
         db.delete(don)
     db.commit()
@@ -188,6 +209,112 @@ def _ma_po_moi(db):
     while db.query(SalesOrder).filter(SalesOrder.po_number == "60039902%02d" % n).first():
         n += 1
     return "60039902%02d" % n
+
+
+def _phieu_po_mau():
+    """Dựng một phiếu PURCHASE ORDER dạng PDF để bấm thử màn Nhận đơn.
+
+    Không có reportlab thì trả về None và bước gieo này bỏ qua — một bản demo
+    thiếu phiếu mẫu vẫn chạy được, còn cài thêm thư viện cho máy người dùng thì
+    không phải việc của lệnh gieo dữ liệu.
+    """
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    except ImportError:
+        return None, None
+
+    hang_hoa = [
+        ("8850002001234", "LA-100231", "LAY POTATO CHIP ORIGINAL 48G", 12, 24, 10000),
+        ("8850002005678", "LA-100232", "TASTO BBQ FLAVOUR 62G", 12, 18, 12000),
+        ("8851959132111", "LA-100233", "MAMA INSTANT NOODLE PORK 60G", 30, 40, 4500),
+        ("8858891302222", "LA-100234", "BEER LAO LAGER CAN 330ML", 24, 60, 8500),
+    ]
+    po = "6003990%03d" % (300 + (uuid.uuid4().int % 90))
+
+    bo_nho = io.BytesIO()
+    kieu = getSampleStyleSheet()
+    tai_lieu = SimpleDocTemplate(bo_nho, pagesize=A4, topMargin=15 * mm, bottomMargin=15 * mm,
+                                 leftMargin=12 * mm, rightMargin=12 * mm)
+    dau = [
+        ["PO NUMBER:", po, "ORDER DATE:", "2026-09-14"],
+        ["VENDOR:", "SENVANG TRADING CO., LTD", "SHIPPING DATE:", "2026-09-20"],
+        ["TAX NUMBER:", "0105556098765", "CURRENCY:", "LAK"],
+        ["SHIP TO CODE:", "PTTLAO-DONEKOY", "", ""],
+        ["SHIP TO:", "PTTLAO DONEKOY", "", ""],
+        ["ADDRESS:", "Donekoy Village, Sisattanak, Vientiane", "", ""],
+    ]
+    b1 = Table(dau, colWidths=[30 * mm, 75 * mm, 30 * mm, 45 * mm])
+    b1.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 8.5),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+    ]))
+
+    bang = [["NO", "BARCODE", "ITEM ID", "ITEM DESCRIPTION", "PACK\nSIZE",
+             "UNIT QUANTITY\n(UNIT/PACK/CASE)", "UNIT PRICE", "AMOUNT"]]
+    tong = 0
+    for i, (bc, ma, ten, quy, thung, gia) in enumerate(hang_hoa, start=1):
+        tien = quy * thung * gia
+        tong += tien
+        bang.append([str(i), bc, ma, ten, str(quy), "%dCT" % thung,
+                     "{:,.2f}".format(gia), "{:,.2f}".format(tien)])
+    bang.append(["", "", "", "TOTAL", "", "", "", "{:,.2f}".format(tong)])
+    b2 = Table(bang, colWidths=[9 * mm, 28 * mm, 22 * mm, 58 * mm, 13 * mm,
+                                26 * mm, 20 * mm, 24 * mm], repeatRows=1)
+    b2.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 7.5),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.black),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("ALIGN", (4, 1), (-1, -1), "RIGHT"),
+    ]))
+    tai_lieu.build([Paragraph("<b>PURCHASE ORDER</b>", kieu["Title"]), Spacer(1, 4 * mm),
+                    b1, Spacer(1, 5 * mm), b2])
+    return bo_nho.getvalue(), po
+
+
+def them_phieu_cho_duyet(db):
+    """LUÔN có một phiếu nằm trong hộp chờ duyệt của màn Nhận đơn.
+
+    Để mở trang lên là bấm duyệt thử được ngay, không cần hộp thư đã cấp quyền.
+    Phiếu này do AI đọc thật, nên con số hiện trên màn đúng là thứ máy đọc ra.
+    """
+    from services import doc_don_ai, nhan_don_service
+
+    co = (
+        db.query(InboundOrder)
+        .filter(InboundOrder.status.in_(["new", "parsed", "failed"]))
+        .count()
+    )
+    if co:
+        print("Đang có %d phiếu chờ duyệt — không gieo thêm." % co)
+        return None
+    if not doc_don_ai.san_sang():
+        print("Chưa cấu hình GEMINI_API_KEY_GT — bỏ qua phiếu chờ duyệt.")
+        return None
+
+    du_lieu, po = _phieu_po_mau()
+    if du_lieu is None:
+        print("Máy chưa có reportlab — bỏ qua phiếu chờ duyệt mẫu.")
+        return None
+
+    ib = nhan_don_service.them_tu_tep(
+        db, "PO_%s.pdf" % po, "application/pdf", du_lieu, "khach@demo.la",
+        "Phiếu mẫu để bấm thử màn Nhận đơn",
+    )
+    db.commit()
+    try:
+        ib = nhan_don_service.doc_bang_ai(db, ib.id)
+        db.commit()
+        print("Phiếu CHỜ DUYỆT mới: %s / PO %s — AI đọc %d%%, %d dòng hàng"
+              % (ib.id, po, ib.ai_confidence, len(json.loads(ib.draft or "{}").get("lines") or [])))
+    except Exception as loi:  # noqa: BLE001
+        db.rollback()
+        print("Đã nhận phiếu %s nhưng AI chưa đọc được: %s" % (ib.id, loi))
+    return ib
 
 
 def them_don_chua_dong(db):
@@ -394,6 +521,7 @@ def gieo():
         # 4) LUÔN đủ BA trạng thái để bấm thử. Chủ dự án bấm hết kịch bản rồi
         # thì mọi đơn đều đã đóng đủ và mọi chuyến đều đã đóng; gieo lại mà
         # không có ba bước này là mở lên không còn gì để thao tác.
+        them_phieu_cho_duyet(db)
         them_don_chua_dong(db)
         them_don_dong_do(db)
         them_don_dang_giao(db)

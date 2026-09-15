@@ -139,7 +139,7 @@ function dungKhung() {
 
   // Nạp sẵn JS của mọi module và cắm thẻ đánh dấu, để khung không đi tải qua
   // mạng (jsdom không tải được) mà vẫn đi đúng nhánh "đã có sẵn".
-  for (const ten of ['don-hang', 'packing-list', 'giao-hang', 'quet-tem', 'khach-hang', 'theo-doi', 'tuyen-duong']) {
+  for (const ten of ['nhan-don', 'don-hang', 'packing-list', 'giao-hang', 'quet-tem', 'khach-hang', 'theo-doi', 'tuyen-duong']) {
     w.eval(fs.readFileSync(path.join(GOC, 'modules', ten, ten + '.js'), 'utf8'));
     const s = w.document.createElement('script');
     s.dataset.mod = ten;
@@ -165,6 +165,7 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     ['khach-hang', 'kh-danh-sach'],
     ['theo-doi', 'td-danh-sach'],
     ['tuyen-duong', 'rt-bang-chang'],
+    ['nhan-don', 'nd-danh-sach'],
   ];
 
   const { w, nhat } = dungKhung();
@@ -202,6 +203,6 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     loi.forEach(x => console.log('  - ' + x));
     process.exit(1);
   }
-  console.log('BẢY MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
+  console.log('TÁM MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
   process.exit(0);
 })();

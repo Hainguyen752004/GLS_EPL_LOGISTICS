@@ -4,8 +4,10 @@ Bản demo tách riêng, dựng lại module Packing List của EPL_System và n
 phần còn thiếu: **đơn hàng của khách ở đầu luồng** và **giao hàng ở cuối luồng**.
 
 ```
-Danh mục khách hàng + Tuyến đường
-        ↓ (chọn, không gõ tay)
+Email khách gửi / phiếu tải lên  →  máy đọc  →  hộp chờ duyệt  →  người duyệt
+                                                                      ↓
+Danh mục khách hàng + Tuyến đường                                     ↓
+        ↓ (chọn, không gõ tay)                                        ↓
 Đơn hàng khách (SO)  →  nhiều Packing List  →  chuyến giao hàng  →  theo dõi xe trên bản đồ  →  ký nhận
 ```
 
@@ -23,6 +25,9 @@ Muốn có sẵn dữ liệu để bấm thử:
 ```bash
 python backend\app\gieo_demo.py
 ```
+
+Lệnh này còn để sẵn **một phiếu trong hộp chờ duyệt** của màn Nhận đơn, đã được
+máy đọc thật, để bấm thử nút Duyệt ngay mà không cần cấp quyền hộp thư.
 
 Lệnh này **luôn giữ đủ ba trạng thái** để demo: một đơn **chưa đóng gì**, một
 đơn **đóng dở** (để thấy cột *Còn lại* hoạt động), và một chuyến **đang giao**
@@ -45,6 +50,59 @@ bàn giao cho bên Lào.
 
 Mọi chữ đều lấy theo KHOÁ từ `frontend/lang.json`, không đoán theo nội dung —
 nên không bao giờ có câu nửa Việt nửa Lào.
+
+## Nhận đơn tự động
+
+Nút **0 · Nhận đơn**. Phiếu đặt hàng của khách vào hệ thống theo hai đường:
+
+- **Quét hộp thư** — đọc thư chưa đọc trong hộp thư đặt hàng, lấy tệp đính kèm.
+- **Tải phiếu lên** — dùng khi khách gửi qua Zalo, WhatsApp, hay cầm giấy tới quầy.
+
+Máy đọc phiếu bằng Gemini, ra một **bản nháp** nằm trong hộp chờ duyệt. Màn hình
+đặt **tệp gốc ngay cạnh bản nháp** để người duyệt soi từng dòng; sửa được mọi ô,
+thêm bớt được dòng hàng, rồi bấm **Duyệt** để tạo đơn hàng thật.
+
+**Vì sao phải có người duyệt.** AI đọc phiếu nhanh nhưng không phải lúc nào cũng
+đúng, mà một đơn sai đi thẳng vào luồng đóng gói nghĩa là hàng ra khỏi kho sai.
+Nên **không có đường nào từ email đi thẳng vào đơn hàng**. Bản nháp nằm ở bảng
+riêng `inbound_orders`; lúc duyệt mới gọi đúng `don_hang_service.tao` như khi gõ
+tay, nên mọi ràng buộc của đơn hàng áp y hệt: phải có PO, PO không trùng, phải
+chọn khách từ danh mục, dòng hàng phải có số lượng.
+
+Máy đọc còn nói ra **độ chắc chắn** và **những chỗ nó không chắc** — đó là danh
+sách người duyệt nhìn vào để biết soi kỹ dòng nào.
+
+Duyệt hai lần bị chặn (`IB_ALREADY_APPROVED`), tệp không phải phiếu đặt hàng bị
+chặn (`IB_FILE_TYPE`), và phiếu đã duyệt thì không đọc lại được nữa.
+
+Điều dễ đọc sai nhất là cột `UNIT QUANTITY (UNIT/PACK/CASE)`: ô ghi `24CT` nghĩa
+là **24 thùng**, không phải 24 cái. Bộ kiểm `test_nhan_don.py` gọi Gemini thật và
+đối chiếu đúng con số đó cho từng dòng, vì đọc sai chỗ này là kho lấy thiếu hàng
+mà không ai biết.
+
+### Cấu hình
+
+Hai thứ nằm trong `.env` (tệp này **không** lên GitHub):
+
+| Khoá | Dùng để |
+|---|---|
+| `GEMINI_API_KEY_GT` | máy đọc phiếu |
+| `GMAIL_CREDENTIALS_PATH` · `GMAIL_TOKEN_PATH` | đọc hộp thư |
+
+Màn Nhận đơn hiện sẵn trạng thái của cả hai. Hộp thư báo *chưa nối* thì chạy:
+
+```bash
+python cap_quyen_hop_thu.py
+```
+
+Lệnh này mở trình duyệt để đăng nhập Google rồi ghi quyền vào `secrets/token.json`.
+Bản demo chỉ xin quyền **đọc** thư và đánh dấu đã đọc, không xin quyền gửi thư.
+Nếu Google trả lỗi `invalid_client` thì khoá OAuth cũ đã bị thu hồi: tạo OAuth
+client ID mới kiểu *Desktop app* trong Google Cloud Console, tải về và thay
+`secrets/OAuth2.json`.
+
+Chưa cấu hình gì thì màn vẫn mở được, chỉ là nút Quét hộp thư mờ đi và nó nói rõ
+lý do kèm đúng lệnh cần chạy. Phần tải phiếu lên không cần hộp thư.
 
 ## Danh mục khách hàng
 
@@ -121,11 +179,15 @@ backend/app/
   services/khach_hang_service.py  danh mục khách hàng / nhà cung cấp / kho
   services/theo_doi_service.py    vị trí xe, vệt đường, mô phỏng chạy
   services/tuyen_service.py       danh mục tuyến đường
+  services/doc_don_ai.py          máy đọc phiếu (gọi thẳng REST của Gemini)
+  services/gmail_service.py       đọc hộp thư đặt hàng
+  services/nhan_don_service.py    hộp chờ duyệt, duyệt ra đơn hàng thật
   routes/api_routes.py            điểm cuối HTTP
   seed.py / gieo_demo.py          dữ liệu mẫu
 backend/tests/
   test_luong_a_z.py          chạy trọn luồng trên DB thật, có đi cả lối sai
   test_api_http.py           gọi thật các điểm cuối HTTP
+  test_nhan_don.py           nhận đơn tự động, gọi THẬT Gemini để soát số lượng
 frontend/
   index.html  css/khung.css  js/khung.js   khung chung, bốn ngôn ngữ
   lang.json                                toàn bộ chữ
@@ -136,8 +198,9 @@ frontend/
   modules/khach-hang/       .html .css .js
   modules/theo-doi/         .html .css .js   (Leaflet)
   modules/tuyen-duong/      .html .css .js
+  modules/nhan-don/         .html .css .js
   tests/kiem-giao-dien.js   cú pháp JS, khoá dịch, bốn chế độ
-  tests/kiem-ve-man.js      dựng thật bảy màn trong jsdom
+  tests/kiem-ve-man.js      dựng thật tám màn trong jsdom
   tests/kiem-ban-in.js      hai bản in có đúng hai mẫu không
 ```
 
@@ -148,10 +211,11 @@ Mỗi module một bộ **html + css + js riêng** — sai màn nào sửa đún
 ```bash
 python backend\tests\test_luong_a_z.py     # nghiệp vụ, chạy trên DB thật
 python backend\tests\test_api_http.py      # API và tệp tĩnh
+python backend\tests\test_nhan_don.py      # nhận đơn tự động, gọi thật Gemini
 node frontend\tests\kiem-giao-dien.js      # giao diện và bản dịch
 ```
 
-Hoặc chạy cả năm:
+Hoặc chạy cả sáu:
 
 ```bash
 chay_kiem.bat

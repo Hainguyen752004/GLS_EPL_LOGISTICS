@@ -15,7 +15,7 @@ window.PL = (function () {
   // mà JS thì trình duyệt vẫn dùng bản cũ trong bộ nhớ đệm — bản cũ đi tìm một
   // phần tử không còn tồn tại nên không đổ được dữ liệu, và màn hiện ra trống
   // trơn dù máy chủ trả đủ. Gom vào một chỗ để không bao giờ lệch nữa.
-  var PHIEN_BAN = '20260915b';
+  var PHIEN_BAN = '20260915c';
   var KHOA_NGON_NGU = 'PL_DEMO_NGON_NGU';
   var tuDien = {};
   var ngonNgu = 'vi';
@@ -220,6 +220,7 @@ window.PL = (function () {
 
   /* ------------------------------------------------------------- chuyển màn */
   var MODULE = {
+    'nhan-don': { js: 'NhanDon' },
     'don-hang': { js: 'DonHang' },
     'packing-list': { js: 'PackingList' },
     'giao-hang': { js: 'GiaoHang' },
