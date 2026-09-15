@@ -1,0 +1,40 @@
+/* Màn Packing List */
+
+.day-nut {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 12px;
+}
+.day-nut .ngan { flex: 1 1 10px; }
+.day-nut .nhan-chia { color: var(--chu-mo); font-size: 12.5px; font-weight: 600; }
+.day-nut .o-nho { width: 74px; }
+
+#pk-bang-dong .o-dong { padding: 5px 7px; text-align: right; }
+#pk-bang-dong td { padding: 6px 8px; }
+
+.thong-tin { gap: 10px 16px; }
+.o-tt .nhan-tt { color: var(--chu-mo); font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+.o-tt .gia-tri-tt { margin-top: 2px; font-weight: 600; word-break: break-word; }
+
+.tinh-trang { padding: 9px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.tinh-trang.du { background: var(--xanh-nhat); color: var(--xanh); }
+.tinh-trang.thieu { background: var(--cam-nhat); color: var(--cam); }
+
+.phu-mo { margin-top: 2px; color: var(--chu-mo); font-size: 11.5px; }
+b.con { color: var(--cam); }
+
+/* -------------------------------------------------------------- tem QR */
+.luoi-tem { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.tem {
+  padding: 10px; text-align: center;
+  border: 1px solid var(--vien-dam); border-radius: 10px; background: var(--the);
+}
+.tem-dau {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; margin-bottom: 6px;
+}
+.tem-qr { width: 100%; max-width: 140px; height: auto; }
+.tem-chan { margin-top: 6px; font-size: 11.5px; line-height: 1.4; color: var(--chu-mo); }
+.tem-chan b { color: var(--chu); }
+.tem-chan code { display: block; margin-top: 4px; font-size: 9.5px; word-break: break-all; }
+
+.o-lo { font-size: 12.5px; color: var(--chu-mo); font-weight: 600; }

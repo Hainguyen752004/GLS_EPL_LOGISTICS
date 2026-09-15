@@ -1,0 +1,11 @@
+# KHÔNG đẩy .env lên: tệp này chứa mật khẩu cơ sở dữ liệu.
+.env
+
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

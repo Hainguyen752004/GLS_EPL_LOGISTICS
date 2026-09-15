@@ -1,0 +1,76 @@
+<div class="man-dau">
+  <h2 data-i18n="so_title"></h2>
+  <p class="gioi-thieu" data-i18n="so_intro"></p>
+</div>
+
+<div class="the" style="margin-bottom:14px">
+  <div class="the-dau">
+    <h3 data-i18n="so_new_title"></h3>
+    <button type="button" class="nut phu nho" id="dh-bat-tat-form" data-i18n="common_create"></button>
+  </div>
+  <div class="the-than" id="dh-form" hidden>
+    <div class="hang-o">
+      <label class="o"><span data-i18n="so_po"></span><input type="text" id="dh-po"></label>
+      <label class="o"><span data-i18n="so_order_date"></span><input type="date" id="dh-ngay-dat"></label>
+      <label class="o"><span data-i18n="so_shipping_date"></span><input type="date" id="dh-ngay-giao"></label>
+      <label class="o"><span data-i18n="so_currency"></span>
+        <select id="dh-tien-te">
+          <option value="LAK">LAK</option>
+          <option value="USD">USD</option>
+          <option value="THB">THB</option>
+          <option value="VND">VNĐ</option>
+        </select>
+      </label>
+    </div>
+    <div class="hang-o">
+      <label class="o"><span data-i18n="so_ship_to_code"></span><input type="text" id="dh-ma-giao"></label>
+      <label class="o"><span data-i18n="so_ship_to"></span><input type="text" id="dh-ten-giao"></label>
+      <label class="o"><span data-i18n="so_vendor"></span><input type="text" id="dh-vendor"></label>
+      <label class="o"><span data-i18n="so_tax_number"></span><input type="text" id="dh-mst"></label>
+    </div>
+    <label class="o"><span data-i18n="so_ship_to_address"></span><input type="text" id="dh-dia-chi"></label>
+
+    <h4 style="margin:14px 0 8px" data-i18n="so_lines"></h4>
+    <div class="bang-cuon">
+      <table class="bang" id="dh-bang-dong">
+        <thead>
+          <tr>
+            <th style="width:46px" data-i18n="so_line_no"></th>
+            <th data-i18n="so_barcode"></th>
+            <th data-i18n="so_product_code"></th>
+            <th data-i18n="so_description"></th>
+            <th class="phai" style="width:96px" data-i18n="so_case_qty"></th>
+            <th class="phai" style="width:96px" data-i18n="so_piece_qty"></th>
+            <th class="phai" style="width:110px" data-i18n="so_unit_price"></th>
+            <th class="phai" style="width:110px" data-i18n="so_weight"></th>
+            <th style="width:44px"></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button type="button" class="nut nho" id="dh-them-dong" data-i18n="common_add_line"></button>
+      <span style="flex:1"></span>
+      <button type="button" class="nut chinh" id="dh-luu" data-i18n="common_save"></button>
+    </div>
+  </div>
+</div>
+
+<div class="luoi-2">
+  <div class="the">
+    <div class="the-dau">
+      <h3 data-i18n="nav_don_hang"></h3>
+      <button type="button" class="nut nho" id="dh-lam-moi" data-i18n="common_refresh"></button>
+    </div>
+    <div class="the-than" style="padding-bottom:8px">
+      <input type="text" id="dh-tim" data-i18n-ph="so_search_ph">
+      <select id="dh-loc-trang-thai" style="margin-top:8px"></select>
+    </div>
+    <div class="ds" id="dh-danh-sach"></div>
+  </div>
+
+  <div id="dh-chi-tiet">
+    <div class="the"><div class="trong" data-i18n="so_pick_hint"></div></div>
+  </div>
+</div>

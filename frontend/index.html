@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Packing List Demo</title>
+  <link rel="stylesheet" href="/static/css/khung.css?v=1">
+</head>
+<body>
+
+<header class="pl-dau">
+  <div class="pl-nhan">
+    <div class="pl-logo">PL</div>
+    <div>
+      <h1 data-i18n="app_title"></h1>
+      <p data-i18n="app_subtitle"></p>
+    </div>
+  </div>
+
+  <div class="pl-ngon-ngu" role="group" aria-label="Language">
+    <span class="nhan-nn" data-i18n="lang_label"></span>
+    <button type="button" class="nut-ngon-ngu" data-lang="vi" data-i18n-title="lang_vi">VI</button>
+    <button type="button" class="nut-ngon-ngu" data-lang="en" data-i18n-title="lang_en">EN</button>
+    <button type="button" class="nut-ngon-ngu" data-lang="lo" data-i18n-title="lang_lo">ລາວ</button>
+    <button type="button" class="nut-ngon-ngu rong" data-lang="both" data-i18n-title="lang_both">VI+ລາວ</button>
+  </div>
+</header>
+
+<nav class="pl-nav">
+  <button type="button" class="nut-nav" data-man="don-hang">
+    <span class="bieu-tuong">1</span><span data-i18n="nav_don_hang"></span>
+  </button>
+  <span class="mui-ten">→</span>
+  <button type="button" class="nut-nav" data-man="packing-list">
+    <span class="bieu-tuong">2</span><span data-i18n="nav_packing"></span>
+  </button>
+  <span class="mui-ten">→</span>
+  <button type="button" class="nut-nav" data-man="giao-hang">
+    <span class="bieu-tuong">3</span><span data-i18n="nav_giao_hang"></span>
+  </button>
+  <span class="ngan"></span>
+  <button type="button" class="nut-nav phu" data-man="quet-tem">
+    <span class="bieu-tuong">QR</span><span data-i18n="nav_quet_tem"></span>
+  </button>
+</nav>
+
+<main id="pl-noi-dung"></main>
+
+<div id="pl-toast" class="pl-toast"></div>
+<div id="pl-hop-thoai" class="pl-nen-hop-thoai"></div>
+
+<script src="/static/js/khung.js?v=1"></script>
+</body>
+</html>

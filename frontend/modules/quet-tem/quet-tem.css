@@ -1,0 +1,19 @@
+/* Màn Quét tem QR */
+
+.hang-quet { display: flex; gap: 8px; flex-wrap: wrap; }
+.hang-quet input { flex: 1 1 320px; font-size: 15px; font-family: ui-monospace, monospace; }
+.hang-quet select { flex: 0 1 240px; }
+
+.thong-tin { gap: 10px 16px; }
+.o-tt .nhan-tt { color: var(--chu-mo); font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+.o-tt .gia-tri-tt { margin-top: 2px; font-weight: 600; word-break: break-word; }
+
+.bang-truy-nguoc { margin-top: 4px; }
+.bang-truy-nguoc td b { color: var(--chinh-dam); }
+
+.lan-quet { padding: 10px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; }
+.lan-quet.dau { background: var(--xanh-nhat); color: var(--xanh); }
+.lan-quet.lap { background: var(--cam-nhat); color: var(--cam); }
+
+.day-so { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; }
+.day-so b { font-size: 17px; }
