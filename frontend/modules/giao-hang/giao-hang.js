@@ -119,6 +119,7 @@ window.GiaoHang = (function () {
           '<div class="day-nut" style="margin:0">' +
             (buocSau ? '<button type="button" class="nut chinh nho" id="gh-buoc-sau">' +
               an(mot('pack_next_step')) + ': ' + an(nhanGH(buocSau)) + '</button>' : '') +
+            '<button type="button" class="nut nho" id="gh-xem-ban-do">' + an(mot('dl_view_map')) + '</button>' +
             (g.status === 'planned' || g.status === 'loading'
               ? '<button type="button" class="nut nguy-hiem nho" id="gh-huy">' +
                 an(mot('dl_cancel_title')) + '</button>' : '') +
@@ -174,6 +175,10 @@ window.GiaoHang = (function () {
     }
     var nutHuy = document.getElementById('gh-huy');
     if (nutHuy) nutHuy.addEventListener('click', huyChuyen);
+    document.getElementById('gh-xem-ban-do').addEventListener('click', function () {
+      try { localStorage.setItem('PL_DEMO_TD_DANG_CHON', g.id); } catch (e) { /* bỏ qua */ }
+      PL.moMan('theo-doi');
+    });
 
     khung.querySelectorAll('.nut-pod').forEach(function (n) {
       n.addEventListener('click', function () { moFormPOD(n.dataset.pl); });
@@ -456,7 +461,10 @@ window.GiaoHang = (function () {
     ]).then(veDanhMuc);
 
     napDanhSach().then(function () {
-      if (dsChuyen.length) moChuyen(dsChuyen[0].id);
+      var luu = null;
+      try { luu = localStorage.getItem('PL_DEMO_GH_DANG_CHON'); } catch (e) { /* bỏ qua */ }
+      var dau = dsChuyen.filter(function (x) { return x.id === luu; })[0] || dsChuyen[0];
+      if (dau) moChuyen(dau.id);
     });
     napChoXep();
     PL.goi('/api/deliveries/stats').then(veSoLieu).catch(function () {});

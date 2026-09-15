@@ -27,7 +27,7 @@ from models import (
     SalesOrderLine,
     Vehicle,
 )
-from services import don_hang_service, giao_hang_service, packing_service
+from services import don_hang_service, giao_hang_service, packing_service, theo_doi_service
 import seed
 
 NGUOI = "demo"
@@ -100,17 +100,16 @@ def _tao_don(db, po, ship_to, ship_code, dong):
     co = db.query(SalesOrder).filter(SalesOrder.po_number == po).first()
     if co:
         return co
+    khach = db.query(Customer).filter(Customer.code == ship_code).first()
+    ncc = db.query(Customer).filter(Customer.code == "KPA-TRADE").first()
     return don_hang_service.tao(
         db,
         {
             "po_number": po,
             "order_date": "2026-09-14",
             "shipping_date": "2026-09-17",
-            "ship_to_code": ship_code,
-            "ship_to_name": ship_to,
-            "ship_to_address": "Vientiane Capital 00000",
-            "vendor_code": "2052891-31",
-            "vendor_name": "KPA Trade Import-Export Sole Co Ltd",
+            "customer_id": khach.id if khach else None,
+            "vendor_id": ncc.id if ncc else None,
             "tax_number": "083753885-0-00",
             "currency": "LAK",
             "zone": "L0",
@@ -130,11 +129,25 @@ def gieo():
         if bo:
             print(f"Đã dọn {bo} đơn rác của bài kiểm.")
 
+        # Đơn gieo từ trước khi có danh mục thì chưa gắn customer_id. Gắn lại theo
+        # mã hoặc tên điểm giao, để màn Theo dõi biết điểm đến của chuyến.
+        for don in db.query(SalesOrder).filter(SalesOrder.customer_id.is_(None)).all():
+            kh = (
+                db.query(Customer).filter(Customer.code == (don.ship_to_code or "")).first()
+                or db.query(Customer).filter(Customer.name == (don.ship_to_name or "")).first()
+                or db.query(Customer).filter(Customer.tax_number == (don.ship_to_code or "")).first()
+            )
+            if kh:
+                don.customer_id = kh.id
+                don.ship_to_code = kh.code
+                don.ship_to_address = don.ship_to_address or kh.address
+        db.commit()
+
         # 1) Đơn chưa đóng gì — chính là phiếu PO thật đã gieo ở seed.py
         print("Đơn 1 (chưa đóng): SO-2026-0001 / PO 6003990191")
 
         # 2) Đơn đang đóng dở
-        d2 = _tao_don(db, "6003990192", "PTTLAO SIKHAY", "60041",
+        d2 = _tao_don(db, "6003990192", "PTTLAO SIKHAY", "PTTLAO-SIKHAY",
                       [_dong(0, 20), _dong(1, 12), _dong(3, 30)])
         db.commit()
         if not db.query(PackingList).filter(PackingList.so_id == d2.id).count():
@@ -157,7 +170,7 @@ def gieo():
         print(f"Đơn 2 (đóng dở): {d2.id} / PO 6003990192")
 
         # 3) Đơn đã đóng đủ, đã lên chuyến và đang trên đường
-        d3 = _tao_don(db, "6003990193", "PTTLAO DONEKOY", "60039",
+        d3 = _tao_don(db, "6003990193", "PTTLAO DONEKOY", "PTTLAO-DONEKOY",
                       [_dong(1, 10), _dong(2, 10)])
         db.commit()
         if not db.query(PackingList).filter(PackingList.so_id == d3.id).count():
@@ -194,6 +207,21 @@ def gieo():
             print(f"Đơn 3 (đang giao): {d3.id} / chuyến {gh.code}")
         else:
             print(f"Đơn 3 (đang giao): {d3.id} — đã có sẵn")
+
+        # Vệt GPS mô phỏng cho mọi chuyến đang chạy mà chưa có mốc nào
+        from models import VehiclePosition
+        for gh in db.query(Delivery).filter(Delivery.status.in_(["in_transit", "arrived"])).all():
+            if db.query(VehiclePosition).filter(VehiclePosition.delivery_id == gh.id).count():
+                continue
+            gh = giao_hang_service.nap(db, gh.id)
+            try:
+                for _ in range(4):
+                    theo_doi_service.mo_phong_chay_tiep(db, gh.id, 0.2, NGUOI)
+                db.commit()
+                print(f"  Đã gieo vệt GPS mô phỏng cho {gh.code}")
+            except Exception as loi:  # noqa: BLE001
+                db.rollback()
+                print(f"  Bỏ qua vệt GPS cho {gh.code}: {loi}")
 
         print("\nXong. Chạy: python chay.py  →  http://127.0.0.1:8042")
     finally:

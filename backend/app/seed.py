@@ -21,28 +21,58 @@ def _ma():
 
 KHACH = [
     {
+        "code": "KHO-VTE",
+        "name": "Kho Vientiane (Thà Bốc)",
+        "kind": "depot",
+        "address": "Ban Thabok, Vientiane Capital",
+        "phone": "+856 21 000 000",
+        "contact_name": "Kho xuất hàng",
+        "lat": 17.9757,
+        "lng": 102.6331,
+    },
+    {
         "code": "CPALL-LAOS",
         "name": "CP ALL Laos Co., Ltd.",
+        "kind": "customer",
         "tax_number": "083753885-0-00",
         "address": "Souphaouvong Road, Xiengngeun Village, Sikhottabong District, Vientiane Capital",
         "phone": "+856 21 000 111",
         "contact_name": "7-Eleven Laos",
+        "lat": 17.9660,
+        "lng": 102.5870,
     },
     {
         "code": "KPA-TRADE",
         "name": "KPA Trade Import-Export Sole Co Ltd",
+        "kind": "vendor",
         "tax_number": "2052891-31",
         "address": "Thatluang Tai Village, Xaysettha District, Vientiane Capital",
         "phone": "+856 20 555 222",
         "contact_name": "KPA Logistics",
+        "lat": 17.9750,
+        "lng": 102.6410,
     },
     {
         "code": "PTTLAO-DONEKOY",
         "name": "PTTLAO DONEKOY",
+        "kind": "customer",
         "tax_number": "60039",
         "address": "Sisattanak, Vientiane Capital 00000",
         "phone": "+856 20 777 333",
         "contact_name": "Cửa hàng Donekoy",
+        "lat": 17.9380,
+        "lng": 102.6250,
+    },
+    {
+        "code": "PTTLAO-SIKHAY",
+        "name": "PTTLAO SIKHAY",
+        "kind": "customer",
+        "tax_number": "60041",
+        "address": "Sikhay, Sikhottabong District, Vientiane Capital",
+        "phone": "+856 20 888 444",
+        "contact_name": "Cửa hàng Sikhay",
+        "lat": 17.9790,
+        "lng": 102.5720,
     },
 ]
 
@@ -146,7 +176,12 @@ def gieo():
     db = SessionLocal()
     try:
         for k in KHACH:
-            if not db.query(Customer).filter(Customer.code == k["code"]).first():
+            co = db.query(Customer).filter(Customer.code == k["code"]).first()
+            if co:
+                # Cập nhật loại và toạ độ cho bản ghi gieo từ trước — không tạo trùng.
+                for kh, gt in k.items():
+                    setattr(co, kh, gt)
+            else:
                 db.add(Customer(id=_ma(), **k))
         for v in XE:
             if not db.query(Vehicle).filter(Vehicle.plate_head == v["plate_head"]).first():

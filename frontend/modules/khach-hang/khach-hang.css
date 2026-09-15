@@ -1,0 +1,12 @@
+/* Màn Danh mục khách hàng */
+
+.kh-form .hang-o { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.kh-form .nut-day { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+.kh-toa-do {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin-top: 4px; font-size: 12px; color: var(--chu-mo);
+}
+.kh-toa-do code { background: var(--nen); padding: 1px 6px; border-radius: 4px; }
+
+.ds-muc .loai { margin-right: 6px; }

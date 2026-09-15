@@ -23,6 +23,8 @@ const tepJS = [
   'modules/packing-list/packing-list.js',
   'modules/giao-hang/giao-hang.js',
   'modules/quet-tem/quet-tem.js',
+  'modules/khach-hang/khach-hang.js',
+  'modules/theo-doi/theo-doi.js',
 ];
 for (const tep of tepJS) {
   try {
@@ -42,6 +44,8 @@ const tepHTML = [
   'modules/packing-list/packing-list.html',
   'modules/giao-hang/giao-hang.html',
   'modules/quet-tem/quet-tem.html',
+  'modules/khach-hang/khach-hang.html',
+  'modules/theo-doi/theo-doi.html',
 ];
 let thieu = [];
 for (const tep of tepHTML) {
@@ -96,7 +100,8 @@ const canCo = []
   .concat(['new', 'packing', 'packed', 'delivering', 'delivered', 'cancelled'].map(x => 'so_status_' + x))
   .concat(['ready', 'parked', 'gate_in', 'loaded', 'dispatched', 'delivered', 'cancelled'].map(x => 'pack_status_' + x))
   .concat(['planned', 'loading', 'in_transit', 'arrived', 'delivered', 'cancelled'].map(x => 'dl_status_' + x))
-  .concat(['full', 'short', 'failed', 'returned'].map(x => 'pod_result_' + x));
+  .concat(['full', 'short', 'failed', 'returned'].map(x => 'pod_result_' + x))
+  .concat(['customer', 'vendor', 'depot'].map(x => 'kh_kind_' + x));
 const thieuTT = canCo.filter(k => !tuDien[k]);
 kiem(thieuTT.length === 0, 'đủ nhãn trạng thái' + (thieuTT.length ? ' — thiếu: ' + thieuTT.join(', ') : ''));
 

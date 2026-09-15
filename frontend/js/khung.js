@@ -216,6 +216,8 @@ window.PL = (function () {
     'packing-list': { js: 'PackingList' },
     'giao-hang': { js: 'GiaoHang' },
     'quet-tem': { js: 'QuetTem' },
+    'khach-hang': { js: 'KhachHang' },
+    'theo-doi': { js: 'TheoDoi' },
   };
 
   function napTaiNguyen(ten) {

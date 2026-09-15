@@ -53,6 +53,12 @@ const GH = { id: 'GH-2026-0001', code: 'GH-2026-0001', status: 'arrived', plate_
   packing_lists: [Object.assign({}, PL_MAU, { status: 'dispatched', pod_received_by: null, pod_result: null })],
   events: [{ id: 1, event_type: 'created', occurred_at: '2026-09-14T10:00:00', actor: 'demo', note: '' }] };
 
+const TRK = { delivery: GH, orders: ['SO-2026-0001'], packing_lists: ['PL-2026-0001-01'],
+  depot: { lat: 17.9757, lng: 102.6331, name: 'Kho Vientiane' },
+  destination: { lat: 17.938, lng: 102.625, name: 'PTTLAO DONEKOY' },
+  position: { lat: 17.96, lng: 102.628, speed_kmh: 48, heading: 190, progress: 0.4, source: 'simulated', recorded_at: '2026-09-14T11:30:00' },
+  stale: false, remaining_km: 2.5, route_km: 4.3 };
+
 function duLieuApi(url) {
   if (url.indexOf('/api/sales-orders?') >= 0) return { items: [DON], total: 1 };
   if (/\/api\/sales-orders\/[^/?]+$/.test(url)) return DON;
@@ -64,7 +70,13 @@ function duLieuApi(url) {
   if (/\/api\/deliveries\/[^/?]+$/.test(url)) return GH;
   if (url.indexOf('/api/vehicles') >= 0) return [{ id: 'v1', plate_head: 'ກທ 1234', plate_trailer: 'ກທ 5678', internal_no: '341' }];
   if (url.indexOf('/api/drivers') >= 0) return [{ id: 'd1', full_name: 'Somsak', phone: '020' }];
-  if (url.indexOf('/api/customers') >= 0) return [];
+  if (url.indexOf('/api/customers') >= 0) return [
+    { id: 'c1', code: 'PTTLAO-DONEKOY', name: 'PTTLAO DONEKOY', kind: 'customer', address: 'Vientiane', lat: 17.938, lng: 102.625 },
+    { id: 'c2', code: 'KPA-TRADE', name: 'KPA Trade', kind: 'vendor', tax_number: '2052891-31' },
+    { id: 'c3', code: 'KHO-VTE', name: 'Kho Vientiane', kind: 'depot', lat: 17.9757, lng: 102.6331 },
+  ];
+  if (/\/api\/tracking\/[^/?]+$/.test(url)) return Object.assign({}, TRK, { trail: [{ lat: 17.97, lng: 102.63 }, { lat: 17.96, lng: 102.628 }] });
+  if (url.indexOf('/api/tracking') >= 0) return [TRK];
   return null;
 }
 
@@ -98,6 +110,12 @@ function dungKhung() {
     });
   };
   w.open = function () { return null; };
+  // Leaflet không tải được trong jsdom — dựng bản giả tối thiểu để màn Theo dõi
+  // vẫn đi hết đường vẽ. Bản đồ thật do trình duyệt kiểm khi anh bấm.
+  const gia = () => ({ addTo() { return this; }, bindTooltip() { return this; }, on() { return this; },
+    setView() { return this; }, clearLayers() {}, addLayer() {}, removeLayer() {}, fitBounds() {}, pad() { return this; } });
+  w.L = { map: () => gia(), tileLayer: () => gia(), layerGroup: () => gia(), marker: () => gia(),
+    polyline: () => gia(), divIcon: () => ({}), latLngBounds: () => gia() };
   w.HTMLCanvasElement.prototype.getContext = function () {
     return { lineWidth: 0, lineCap: '', strokeStyle: '', beginPath() {}, moveTo() {},
       lineTo() {}, stroke() {}, clearRect() {} };
@@ -109,7 +127,7 @@ function dungKhung() {
 
   // Nạp sẵn JS của mọi module và cắm thẻ đánh dấu, để khung không đi tải qua
   // mạng (jsdom không tải được) mà vẫn đi đúng nhánh "đã có sẵn".
-  for (const ten of ['don-hang', 'packing-list', 'giao-hang', 'quet-tem']) {
+  for (const ten of ['don-hang', 'packing-list', 'giao-hang', 'quet-tem', 'khach-hang', 'theo-doi']) {
     w.eval(fs.readFileSync(path.join(GOC, 'modules', ten, ten + '.js'), 'utf8'));
     const s = w.document.createElement('script');
     s.dataset.mod = ten;
@@ -132,6 +150,8 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     ['packing-list', 'pk-danh-sach'],
     ['giao-hang', 'gh-danh-sach'],
     ['quet-tem', 'qt-ket-qua'],
+    ['khach-hang', 'kh-danh-sach'],
+    ['theo-doi', 'td-danh-sach'],
   ];
 
   const { w, nhat } = dungKhung();
@@ -169,6 +189,6 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     loi.forEach(x => console.log('  - ' + x));
     process.exit(1);
   }
-  console.log('BỐN MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
+  console.log('SÁU MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
   process.exit(0);
 })();

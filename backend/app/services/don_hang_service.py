@@ -11,7 +11,7 @@ import uuid
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
-from models import PackingList, PackingListItem, SalesOrder, SalesOrderLine
+from models import Customer, PackingList, PackingListItem, SalesOrder, SalesOrderLine
 from services.loi import LoiNghiepVu
 
 
@@ -157,6 +157,33 @@ def tao(db, payload, nguoi):
         raise LoiNghiepVu("SO_NO_PO", "Đơn hàng phải có số PO")
     if db.query(SalesOrder).filter(SalesOrder.po_number == po).first():
         raise LoiNghiepVu("SO_PO_DUPLICATE", f"Số PO {po} đã tồn tại", 409)
+
+    # Chủ dự án chốt: thông tin khách và nhà cung cấp phải CHỌN từ danh mục,
+    # không gõ tay trên phiếu. Có id thì lấy từ danh mục và ghi đè mọi ô gõ tay.
+    khach = None
+    if payload.get("customer_id"):
+        khach = db.query(Customer).filter(Customer.id == payload["customer_id"]).first()
+        if not khach:
+            raise LoiNghiepVu("CUST_NOT_FOUND", "Không tìm thấy khách hàng đã chọn", 404)
+        payload = {
+            **payload,
+            "ship_to_code": khach.code,
+            "ship_to_name": khach.name,
+            "ship_to_address": khach.address,
+        }
+    if payload.get("vendor_id"):
+        ncc = db.query(Customer).filter(Customer.id == payload["vendor_id"]).first()
+        if not ncc:
+            raise LoiNghiepVu("CUST_NOT_FOUND", "Không tìm thấy nhà cung cấp đã chọn", 404)
+        payload = {
+            **payload,
+            "vendor_code": ncc.code,
+            "vendor_name": ncc.name,
+            "vendor_address": ncc.address,
+            "tax_number": payload.get("tax_number") or ncc.tax_number,
+        }
+    if not khach:
+        raise LoiNghiepVu("SO_NO_CUSTOMER", "Đơn hàng phải chọn khách hàng từ danh mục")
 
     don = SalesOrder(
         id=_ma_don(db),

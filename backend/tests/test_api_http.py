@@ -54,6 +54,12 @@ def chay():
         "/static/modules/quet-tem/quet-tem.html",
         "/static/modules/quet-tem/quet-tem.js",
         "/static/modules/quet-tem/quet-tem.css",
+        "/static/modules/khach-hang/khach-hang.html",
+        "/static/modules/khach-hang/khach-hang.js",
+        "/static/modules/khach-hang/khach-hang.css",
+        "/static/modules/theo-doi/theo-doi.html",
+        "/static/modules/theo-doi/theo-doi.js",
+        "/static/modules/theo-doi/theo-doi.css",
     ]:
         kiem(client.get(tep).status_code == 200, f"tải được {tep}")
 
@@ -67,12 +73,21 @@ def chay():
     kiem(not thieu, f"mọi khoá đều có vi/en/lo ({len(tu_dien)} khoá)" + (f" — thiếu: {thieu[:5]}" if thieu else ""))
 
     print("\n[D] Luồng qua API")
+    khach = [c for c in client.get("/api/customers").json()["data"] if c["kind"] == "customer"]
+    kiem(bool(khach), "danh mục có khách nhận hàng để chọn")
+    ncc = [c for c in client.get("/api/customers?kind=vendor").json()["data"]]
+    r = client.post("/api/sales-orders", json={"po_number": "HTTP-KHONG-KHACH", "lines": [{"description": "x", "case_qty": 1}]})
+    kiem(
+        r.status_code == 400 and (r.json().get("detail") or {}).get("code") == "SO_NO_CUSTOMER",
+        "đơn không chọn khách từ danh mục bị chặn (SO_NO_CUSTOMER)",
+    )
     po = "HTTP-" + uuid.uuid4().hex[:6].upper()
     r = client.post(
         "/api/sales-orders",
         json={
             "po_number": po,
-            "ship_to_name": "PTTLAO DONEKOY",
+            "customer_id": khach[0]["id"],
+            "vendor_id": ncc[0]["id"] if ncc else None,
             "currency": "LAK",
             "lines": [
                 {"line_no": 1, "description": "BISKIO DINO 15g", "barcode": "885", "case_qty": 8, "piece_qty": 96, "unit_price": 343000, "amount": 686000, "weight_kg": 6.5},
@@ -101,6 +116,38 @@ def chay():
     kq = r.json()["data"]
     kiem(kq["sales_order"]["id"] == don["id"], "quét ra đúng đơn hàng")
     kiem(kq["packing_list"]["id"] == pl["id"], "quét ra đúng Packing List")
+
+    kiem(don["ship_to_name"] == khach[0]["name"], "tên khách trên đơn lấy từ danh mục, không từ ô gõ tay")
+
+    print("\n[D2] Danh mục khách hàng")
+    ma = "KH-" + uuid.uuid4().hex[:5].upper()
+    r = client.post("/api/customers", json={"code": ma, "name": "Khách kiểm", "kind": "customer", "lat": 17.9, "lng": 102.6})
+    kiem(r.status_code == 200, "tạo khách hàng")
+    kh_id = r.json()["data"]["id"]
+    r = client.post("/api/customers", json={"code": ma, "name": "Trùng", "kind": "customer"})
+    kiem(r.status_code == 409 and r.json()["detail"]["code"] == "CUST_CODE_DUPLICATE", "mã trùng bị chặn")
+    r = client.post("/api/customers", json={"code": ma + "X", "name": "Nửa toạ độ", "lat": 17.9})
+    kiem(r.status_code == 400 and r.json()["detail"]["code"] == "CUST_COORD_HALF", "toạ độ thiếu một nửa bị chặn")
+    r = client.put(f"/api/customers/{kh_id}", json={"code": ma, "name": "Khách kiểm 2", "kind": "customer"})
+    kiem(r.status_code == 200 and r.json()["data"]["name"] == "Khách kiểm 2", "sửa khách hàng")
+    kiem(client.delete(f"/api/customers/{kh_id}").status_code == 200, "xoá khách chưa dùng")
+    r = client.delete(f"/api/customers/{khach[0]['id']}")
+    kiem(r.status_code == 409 and r.json()["detail"]["code"] == "CUST_IN_USE", "khách đang có đơn thì không xoá được")
+
+    print("\n[D3] Theo dõi xe")
+    r = client.get("/api/tracking")
+    kiem(r.status_code == 200 and isinstance(r.json()["data"], list), "danh sách chuyến đang theo dõi")
+    ds_gh = client.get("/api/deliveries?status=arrived").json()["data"]["items"] or client.get("/api/deliveries?status=in_transit").json()["data"]["items"]
+    if ds_gh:
+        gh_id = ds_gh[0]["id"]
+        r = client.post(f"/api/tracking/{gh_id}/position", json={"lat": 17.95, "lng": 102.62, "speed_kmh": 40, "source": "gps"})
+        kiem(r.status_code == 200 and r.json()["data"]["position"]["lat"] == 17.95, "thiết bị gửi vị trí GPS lên được")
+        r = client.get(f"/api/tracking/{gh_id}")
+        kiem(r.status_code == 200 and len(r.json()["data"]["trail"]) >= 1, "đọc được vệt đường của chuyến")
+        r = client.post(f"/api/tracking/{gh_id}/position", json={"lat": 999, "lng": 0})
+        kiem(r.status_code == 400 and r.json()["detail"]["code"] == "TRK_BAD_COORD", "toạ độ ngoài phạm vi bị chặn")
+    else:
+        print("  (bỏ qua: không có chuyến đang chạy để thử vị trí)")
 
     print("\n[E] Lỗi nghiệp vụ trả về MÃ ổn định để giao diện dịch được")
     r = client.post(

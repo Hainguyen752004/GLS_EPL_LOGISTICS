@@ -52,7 +52,14 @@ class Customer(Base):
     address = Column(String(500))
     phone = Column(String(64))
     contact_name = Column(String(255))
+    # customer = khách nhận hàng · vendor = nhà cung cấp · depot = kho xuất hàng của mình
+    kind = Column(String(16), nullable=False, default="customer")
+    # Toạ độ điểm giao, để màn Theo dõi vẽ được đường xe đi và biết còn bao xa.
+    lat = Column(Float)
+    lng = Column(Float)
+    note = Column(Text)
     created_at = Column(DateTime, nullable=False, default=_bay_gio)
+    updated_at = Column(DateTime, nullable=False, default=_bay_gio, onupdate=_bay_gio)
 
 
 class Vehicle(Base):
@@ -396,3 +403,30 @@ class PackingListPOD(Base):
     signature_data = Column(Text)
 
     packing_list = relationship("PackingList", back_populates="pod")
+
+
+# --------------------------------------------------------------------------
+# Theo dõi xe
+# --------------------------------------------------------------------------
+class VehiclePosition(Base):
+    """Một mốc GPS của MỘT chuyến giao hàng.
+
+    Ghi theo chuyến chứ không theo xe: câu người dùng hỏi là "hàng của đơn này
+    đang ở đâu", và đơn gắn với chuyến. Mốc mới nhất của mỗi chuyến là vị trí
+    hiện tại; toàn bộ mốc là vệt đường xe đã đi.
+    """
+
+    __tablename__ = "vehicle_positions"
+    __table_args__ = (Index("ix_vpos_delivery_time", "delivery_id", "recorded_at"),)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    delivery_id = Column(
+        String(64), ForeignKey("deliveries.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    speed_kmh = Column(Float, nullable=False, default=0)
+    heading = Column(Float)
+    progress = Column(Float, nullable=False, default=0)   # 0..1 dọc tuyến, để mô phỏng chạy tiếp
+    source = Column(String(32), nullable=False, default="manual")  # manual / gps / simulated
+    note = Column(String(255))
+    recorded_at = Column(DateTime, nullable=False, default=_bay_gio)

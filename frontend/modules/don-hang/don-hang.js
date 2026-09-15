@@ -11,6 +11,7 @@ window.DonHang = (function () {
   var danhSach = [];
   var dangChon = null;
   var soDongMoi = 0;
+  var dsKhach = [];     // danh mục khách hàng — nguồn cho hai ô chọn trên phiếu
 
   var TRANG_THAI = ['new', 'packing', 'packed', 'delivering', 'delivered', 'cancelled'];
   var MAU = {
@@ -219,7 +220,47 @@ window.DonHang = (function () {
     });
   }
 
+  /* ------------------------------------------------- danh mục cho ô chọn */
+  function veChonKhach() {
+    var oKhach = document.getElementById('dh-khach');
+    var oNcc = document.getElementById('dh-vendor');
+    if (!oKhach || !oNcc) return;
+    var cuK = oKhach.value, cuN = oNcc.value;
+    oKhach.innerHTML = '<option value="">' + an(t('so_pick_customer').replace('\n', ' · ')) + '</option>' +
+      dsKhach.filter(function (c) { return c.kind === 'customer'; }).map(function (c) {
+        return '<option value="' + an(c.id) + '">' + an(c.name) + ' · ' + an(c.code) + '</option>';
+      }).join('');
+    oNcc.innerHTML = '<option value="">' + an(t('so_pick_vendor').replace('\n', ' · ')) + '</option>' +
+      dsKhach.filter(function (c) { return c.kind === 'vendor'; }).map(function (c) {
+        return '<option value="' + an(c.id) + '">' + an(c.name) + ' · ' + an(c.code) + '</option>';
+      }).join('');
+    oKhach.value = cuK; oNcc.value = cuN;
+    hienThongTinKhach();
+  }
+
+  function hienThongTinKhach() {
+    var o = document.getElementById('dh-khach-tt');
+    var id = (document.getElementById('dh-khach') || {}).value;
+    if (!o) return;
+    var c = dsKhach.filter(function (x) { return x.id === id; })[0];
+    o.textContent = c ? [c.address, c.phone, c.contact_name].filter(Boolean).join(' · ') : '';
+    var ncc = dsKhach.filter(function (x) { return x.id === (document.getElementById('dh-vendor') || {}).value; })[0];
+    var mst = document.getElementById('dh-mst');
+    if (ncc && mst && !mst.value) mst.value = ncc.tax_number || '';
+  }
+
+  function napKhach() {
+    return PL.goi('/api/customers').then(function (d) {
+      dsKhach = d || [];
+      veChonKhach();
+    }).catch(PL.baoLoi);
+  }
+
   function luuDon() {
+    if (!document.getElementById('dh-khach').value) {
+      PL.baoLoi({ ma: 'SO_NO_CUSTOMER' });
+      return;
+    }
     var dong = [];
     document.querySelectorAll('#dh-bang-dong tbody tr').forEach(function (tr, i) {
       var mo_ta = tr.querySelector('.c-mo-ta').value.trim();
@@ -247,10 +288,8 @@ window.DonHang = (function () {
         order_date: document.getElementById('dh-ngay-dat').value,
         shipping_date: document.getElementById('dh-ngay-giao').value,
         currency: document.getElementById('dh-tien-te').value,
-        ship_to_code: document.getElementById('dh-ma-giao').value.trim(),
-        ship_to_name: document.getElementById('dh-ten-giao').value.trim(),
-        ship_to_address: document.getElementById('dh-dia-chi').value.trim(),
-        vendor_name: document.getElementById('dh-vendor').value.trim(),
+        customer_id: document.getElementById('dh-khach').value,
+        vendor_id: document.getElementById('dh-vendor').value || null,
         tax_number: document.getElementById('dh-mst').value.trim(),
         lines: dong,
       },
@@ -265,8 +304,7 @@ window.DonHang = (function () {
   function dungForm() {
     document.querySelector('#dh-bang-dong tbody').innerHTML = '';
     soDongMoi = 0;
-    ['dh-po', 'dh-ngay-dat', 'dh-ngay-giao', 'dh-ma-giao', 'dh-ten-giao',
-     'dh-dia-chi', 'dh-vendor', 'dh-mst'].forEach(function (id) {
+    ['dh-po', 'dh-ngay-dat', 'dh-ngay-giao', 'dh-khach', 'dh-vendor', 'dh-mst'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -294,6 +332,10 @@ window.DonHang = (function () {
       f.hidden = !f.hidden;
     });
     document.getElementById('dh-them-dong').addEventListener('click', function () { themDongMoi(); });
+    document.getElementById('dh-khach').addEventListener('change', hienThongTinKhach);
+    document.getElementById('dh-vendor').addEventListener('change', hienThongTinKhach);
+    document.getElementById('dh-quan-ly-khach').addEventListener('click', function () { PL.moMan('khach-hang'); });
+    napKhach();
     document.getElementById('dh-luu').addEventListener('click', luuDon);
     document.getElementById('dh-lam-moi').addEventListener('click', napDanhSach);
 
@@ -314,6 +356,7 @@ window.DonHang = (function () {
 
   function veLai() {
     veLocTrangThai();
+    veChonKhach();
     veDanhSach();
     veChiTiet();
   }

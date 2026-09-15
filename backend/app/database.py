@@ -32,7 +32,27 @@ def tao_luoc_do():
     import models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)
+    _bo_sung_cot()
     logger.info("Đã dựng lược đồ cho parking_list_demo")
+
+
+def _bo_sung_cot():
+    """create_all KHÔNG thêm cột vào bảng đã có. Bổ sung tay các cột mới ở đây.
+
+    Dùng `ADD COLUMN IF NOT EXISTS` nên chạy lại bao nhiêu lần cũng vô hại.
+    """
+    from sqlalchemy import text
+
+    cau = [
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'customer'",
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION",
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION",
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS note TEXT",
+        "ALTER TABLE customers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW()",
+    ]
+    with engine.begin() as ket_noi:
+        for c in cau:
+            ket_noi.execute(text(c))
 
 
 def get_db():

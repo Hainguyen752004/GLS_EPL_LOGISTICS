@@ -46,10 +46,14 @@ def chay():
         hau_to = uuid.uuid4().hex[:6].upper()
 
         print("\n[1] Tạo đơn hàng khách")
+        from models import Customer
+        kh = db.query(Customer).filter(Customer.kind == "customer").first()
+        kiem(kh is not None, "danh mục có khách hàng để chọn")
         don = don_hang_service.tao(
             db,
             {
                 "po_number": f"KIEM-{hau_to}",
+                "customer_id": kh.id if kh else None,
                 "order_date": "2026-09-14",
                 "shipping_date": "2026-09-17",
                 "ship_to_code": "60039",

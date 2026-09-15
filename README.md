@@ -4,7 +4,9 @@ Bản demo tách riêng, dựng lại module Packing List của EPL_System và n
 phần còn thiếu: **đơn hàng của khách ở đầu luồng** và **giao hàng ở cuối luồng**.
 
 ```
-Đơn hàng khách (SO)  →  nhiều Packing List  →  chuyến giao hàng  →  ký nhận
+Danh mục khách hàng
+        ↓ (chọn, không gõ tay)
+Đơn hàng khách (SO)  →  nhiều Packing List  →  chuyến giao hàng  →  theo dõi xe trên bản đồ  →  ký nhận
 ```
 
 ## Chạy
@@ -38,6 +40,24 @@ bàn giao cho bên Lào.
 Mọi chữ đều lấy theo KHOÁ từ `frontend/lang.json`, không đoán theo nội dung —
 nên không bao giờ có câu nửa Việt nửa Lào.
 
+## Danh mục khách hàng
+
+Nút **KH** trên thanh đầu trang. Ba loại trong cùng một danh mục: khách nhận
+hàng, nhà cung cấp, kho xuất hàng. Phiếu đơn hàng **chọn** khách và nhà cung cấp
+từ đây — máy chủ từ chối đơn không có `customer_id` (`SO_NO_CUSTOMER`). Toạ độ
+khai ở đây là thứ màn Theo dõi dùng để vẽ đường xe.
+
+## Theo dõi xe
+
+Nút **④ Theo dõi xe**. Bản đồ Leaflet, nền OSM hoặc ảnh vệ tinh Esri — cùng
+thư viện và nền với EPL_System. Mỗi chuyến đang chạy hiện: vị trí hiện tại, vệt
+đường đã đi, kho → điểm giao, còn cách bao xa, tốc độ, lần cập nhật cuối. GPS
+cũ quá 15 phút thì cảnh báo.
+
+Vị trí lấy từ `POST /api/tracking/{chuyến}/position` — điểm cuối cho thiết bị
+GPS hay app tài xế gửi lên. Bản demo chưa có thiết bị nên có nút **Chạy tiếp
+(mô phỏng)** nhích xe dọc tuyến; tới đích thì chuyến tự sang *Đã tới nơi*.
+
 ## Điều bản demo phải làm cho đúng
 
 **1. Không đóng vượt số đã đặt.** Mỗi lần đóng gói đều so với phần còn lại của
@@ -61,6 +81,8 @@ backend/app/
   services/don_hang_service.py    đơn hàng, tính phần còn lại
   services/packing_service.py     đóng gói, tem QR, đổi trạng thái
   services/giao_hang_service.py   chuyến giao hàng, ký nhận
+  services/khach_hang_service.py  danh mục khách hàng / nhà cung cấp / kho
+  services/theo_doi_service.py    vị trí xe, vệt đường, mô phỏng chạy
   routes/api_routes.py            điểm cuối HTTP
   seed.py / gieo_demo.py          dữ liệu mẫu
 backend/tests/
@@ -73,7 +95,10 @@ frontend/
   modules/packing-list/     .html .css .js
   modules/giao-hang/        .html .css .js
   modules/quet-tem/         .html .css .js
+  modules/khach-hang/       .html .css .js
+  modules/theo-doi/         .html .css .js   (Leaflet)
   tests/kiem-giao-dien.js   cú pháp JS, khoá dịch, bốn chế độ
+  tests/kiem-ve-man.js      dựng thật sáu màn trong jsdom
 ```
 
 Mỗi module một bộ **html + css + js riêng** — sai màn nào sửa đúng màn đó.
@@ -86,7 +111,7 @@ python backend\tests\test_api_http.py      # API và tệp tĩnh
 node frontend\tests\kiem-giao-dien.js      # giao diện và bản dịch
 ```
 
-Hoặc chạy cả ba:
+Hoặc chạy cả bốn:
 
 ```bash
 chay_kiem.bat

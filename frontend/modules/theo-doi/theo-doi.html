@@ -1,0 +1,34 @@
+<div class="man-dau">
+  <h2 data-i18n="trk_title"></h2>
+  <p class="gioi-thieu" data-i18n="trk_intro"></p>
+</div>
+
+<div class="luoi-theo-doi">
+  <div class="the">
+    <div class="the-dau">
+      <h3 data-i18n="trk_active"></h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="o-lo" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <input type="checkbox" id="td-tu-lam-moi" style="width:auto" checked>
+          <span data-i18n="trk_refresh_auto"></span>
+        </label>
+        <button type="button" class="nut nho" id="td-lam-moi" data-i18n="common_refresh"></button>
+      </div>
+    </div>
+    <div class="ds" id="td-danh-sach"></div>
+  </div>
+
+  <div class="the">
+    <div class="the-dau">
+      <h3 id="td-tieu-de-ban-do" data-i18n="trk_position"></h3>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="nut nho dang-chon" id="td-nen-duong" data-i18n="trk_layer_street"></button>
+        <button type="button" class="nut nho" id="td-nen-ve-tinh" data-i18n="trk_layer_satellite"></button>
+      </div>
+    </div>
+    <div id="td-ban-do" class="ban-do"></div>
+    <div class="the-than" id="td-chi-tiet">
+      <div class="trong" data-i18n="trk_none"></div>
+    </div>
+  </div>
+</div>
