@@ -182,6 +182,61 @@ def _tao_don(db, po, ship_to, ship_code, dong):
     )
 
 
+def _ma_po_moi(db):
+    """Sinh số PO chưa dùng, theo dãy 600399xxxx của phiếu mẫu."""
+    n = 200
+    while db.query(SalesOrder).filter(SalesOrder.po_number == "60039902%02d" % n).first():
+        n += 1
+    return "60039902%02d" % n
+
+
+def them_don_chua_dong(db):
+    """LUÔN có một đơn CHƯA đóng gì, để bấm thử màn Packing List từ đầu.
+
+    Chủ dự án bấm hết kịch bản thì mọi đơn đều đã đóng đủ; mở lại mà không còn
+    đơn trắng nào thì màn đóng gói không có gì để gõ.
+    """
+    co = db.query(SalesOrder).filter(SalesOrder.status == "new").count()
+    if co:
+        print(f"Đang có {co} đơn chưa đóng — không gieo thêm.")
+        return None
+    po = _ma_po_moi(db)
+    don = _tao_don(db, po, "PTTLAO DONEKOY", "PTTLAO-DONEKOY", [_dong(0, 24), _dong(1, 24), _dong(2, 24)])
+    db.commit()
+    print(f"Đơn CHƯA ĐÓNG mới: {don.id} / PO {po} — 3 dòng hàng, 72 thùng")
+    return don
+
+
+def them_don_dong_do(db):
+    """LUÔN có một đơn ĐANG ĐÓNG DỞ, để thấy cột 'Còn lại' hoạt động."""
+    co = db.query(SalesOrder).filter(SalesOrder.status == "packing").count()
+    if co:
+        print(f"Đang có {co} đơn đóng dở — không gieo thêm.")
+        return None
+    po = _ma_po_moi(db)
+    don = _tao_don(db, po, "PTTLAO SIKHAY", "PTTLAO-SIKHAY", [_dong(0, 20), _dong(1, 12), _dong(3, 30)])
+    db.commit()
+
+    don = don_hang_service.nap(db, don.id)
+    pl = packing_service.tao(
+        db, don.id,
+        {
+            "items": [
+                {"so_line_id": don.lines[0].id, "case_qty": 8, "piece_qty": 96},
+                {"so_line_id": don.lines[2].id, "case_qty": 10, "piece_qty": 120},
+            ],
+            "box_count": 18,
+            "route_id": _tuyen(db, "RT-VTE-SIKHAY"),
+            "wave": "W1",
+            "gate": "B",
+        },
+        NGUOI,
+    )
+    db.commit()
+    print(f"Đơn ĐÓNG DỞ mới: {don.id} / PO {po} — đã đóng {pl.id}, còn 44 thùng")
+    return don
+
+
 def them_don_dang_giao(db):
     """Sinh thêm một đơn đã đóng đủ, đã lên chuyến, đang ở trạng thái ĐÃ TỚI NƠI
     với một Packing List CHƯA ký nhận — để lúc nào mở lên cũng có cái để bấm.
@@ -336,9 +391,11 @@ def gieo():
         _dung_chang_cho_tuyen_cu(db)
         _gan_tuyen_cho_phieu_cu(db)
 
-        # 4) LUÔN có ít nhất một chuyến ĐANG GIAO để bấm thử.
-        # Chủ dự án bấm hết kịch bản rồi thì hai chuyến cũ đều đã đóng; gieo lại
-        # mà không có bước này là mở lên không còn gì để thao tác.
+        # 4) LUÔN đủ BA trạng thái để bấm thử. Chủ dự án bấm hết kịch bản rồi
+        # thì mọi đơn đều đã đóng đủ và mọi chuyến đều đã đóng; gieo lại mà
+        # không có ba bước này là mở lên không còn gì để thao tác.
+        them_don_chua_dong(db)
+        them_don_dong_do(db)
         them_don_dang_giao(db)
 
         # Vệt GPS mô phỏng cho mọi chuyến đang chạy mà chưa có mốc nào

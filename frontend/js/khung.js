@@ -8,6 +8,14 @@ window.PL = (function () {
   'use strict';
 
   var API = '';                 // cùng gốc với trang, không cần cấu hình
+
+  // MỘT mã phiên bản cho MỌI tệp tĩnh. Sửa bất cứ module nào cũng đổi số này.
+  //
+  // Lỗi đã xảy ra thật: HTML của màn Tuyến đường đã là bản mới (có bảng chặng)
+  // mà JS thì trình duyệt vẫn dùng bản cũ trong bộ nhớ đệm — bản cũ đi tìm một
+  // phần tử không còn tồn tại nên không đổ được dữ liệu, và màn hiện ra trống
+  // trơn dù máy chủ trả đủ. Gom vào một chỗ để không bao giờ lệch nữa.
+  var PHIEN_BAN = '20260915b';
   var KHOA_NGON_NGU = 'PL_DEMO_NGON_NGU';
   var tuDien = {};
   var ngonNgu = 'vi';
@@ -227,7 +235,7 @@ window.PL = (function () {
       cho.push(new Promise(function (xong) {
         var link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/static/modules/' + ten + '/' + ten + '.css?v=1';
+        link.href = '/static/modules/' + ten + '/' + ten + '.css?v=' + PHIEN_BAN;
         link.dataset.mod = ten;
         link.onload = link.onerror = xong;
         document.head.appendChild(link);
@@ -236,7 +244,7 @@ window.PL = (function () {
     if (!document.querySelector('script[data-mod="' + ten + '"]')) {
       cho.push(new Promise(function (xong, hong) {
         var s = document.createElement('script');
-        s.src = '/static/modules/' + ten + '/' + ten + '.js?v=1';
+        s.src = '/static/modules/' + ten + '/' + ten + '.js?v=' + PHIEN_BAN;
         s.dataset.mod = ten;
         s.onload = xong;
         s.onerror = function () { hong(new Error('Không nạp được ' + ten + '.js')); };
@@ -257,7 +265,7 @@ window.PL = (function () {
     });
     try { localStorage.setItem('PL_DEMO_MAN', ten); } catch (e) { /* bỏ qua */ }
 
-    return fetch('/static/modules/' + ten + '/' + ten + '.html?v=1')
+    return fetch('/static/modules/' + ten + '/' + ten + '.html?v=' + PHIEN_BAN)
       .then(function (r) { return r.text(); })
       .then(function (html) {
         khung.innerHTML = html;
@@ -276,7 +284,7 @@ window.PL = (function () {
 
   /* ---------------------------------------------------------------- khởi động */
   function batDau() {
-    fetch('/static/lang.json?v=1')
+    fetch('/static/lang.json?v=' + PHIEN_BAN)
       .then(function (r) { return r.json(); })
       .then(function (d) { tuDien = d; })
       .catch(function () { tuDien = {}; })
