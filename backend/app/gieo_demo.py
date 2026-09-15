@@ -23,6 +23,7 @@ from models import (
     PackingList,
     PackingListItem,
     PackingListPOD,
+    Route,
     SalesOrder,
     SalesOrderLine,
     Vehicle,
@@ -96,6 +97,33 @@ def don_sach(db):
     return len(xoa)
 
 
+def _tuyen(db, ma):
+    r = db.query(Route).filter(Route.code == ma).first()
+    return r.id if r else None
+
+
+def _gan_tuyen_cho_phieu_cu(db):
+    """Phiếu gieo trước khi có danh mục tuyến thì route_id rỗng — gắn lại theo
+    điểm giao của đơn, để màn Theo dõi vẽ được đường."""
+    for pl in db.query(PackingList).filter(PackingList.route_id.is_(None)).all():
+        don = db.query(SalesOrder).filter(SalesOrder.id == pl.so_id).first()
+        if not don:
+            continue
+        # Dò theo CHÍNH khách của đơn, không dò theo mã điểm giao: mã đó có thể
+        # là số cũ ("60039") chứ không phải mã trong danh mục.
+        r = None
+        if don.customer_id:
+            r = db.query(Route).filter(Route.to_id == don.customer_id).first()
+        if not r and don.ship_to_code:
+            kh = db.query(Customer).filter(Customer.code == don.ship_to_code).first()
+            if kh:
+                r = db.query(Route).filter(Route.to_id == kh.id).first()
+        if r:
+            pl.route_id = r.id
+            pl.route_name = r.name
+    db.commit()
+
+
 def _tao_don(db, po, ship_to, ship_code, dong):
     co = db.query(SalesOrder).filter(SalesOrder.po_number == po).first()
     if co:
@@ -117,6 +145,68 @@ def _tao_don(db, po, ship_to, ship_code, dong):
         },
         NGUOI,
     )
+
+
+def them_don_dang_giao(db):
+    """Sinh thêm một đơn đã đóng đủ, đã lên chuyến, đang ở trạng thái ĐÃ TỚI NƠI
+    với một Packing List CHƯA ký nhận — để lúc nào mở lên cũng có cái để bấm.
+
+    Chỉ sinh khi KHÔNG còn chuyến nào đang chạy. Chạy lại nhiều lần không đẻ ra
+    một đống chuyến rác.
+    """
+    dang_chay = (
+        db.query(Delivery)
+        .filter(Delivery.status.in_(["planned", "loading", "in_transit", "arrived"]))
+        .count()
+    )
+    if dang_chay:
+        print(f"Đang có {dang_chay} chuyến chưa đóng — không gieo thêm.")
+        return None
+
+    dem = db.query(SalesOrder).filter(SalesOrder.po_number.like("600399019%")).count()
+    po = "600399019%d" % (dem + 4)
+    while db.query(SalesOrder).filter(SalesOrder.po_number == po).first():
+        dem += 1
+        po = "600399019%d" % (dem + 4)
+
+    don = _tao_don(db, po, "PTTLAO SIKHAY", "PTTLAO-SIKHAY", [_dong(0, 8), _dong(3, 12)])
+    db.commit()
+
+    packing_service.tao_tu_dong(db, don.id, 2, NGUOI)
+    db.commit()
+
+    ds = db.query(PackingList).filter(PackingList.so_id == don.id).all()
+    rid = _tuyen(db, "RT-VTE-SIKHAY")
+    for pl in ds:
+        pl.route_id = rid
+    db.commit()
+    xe = db.query(Vehicle).filter(Vehicle.internal_no == "342").first() or db.query(Vehicle).first()
+    tx = db.query(Driver).filter(Driver.code == "DRV-002").first() or db.query(Driver).first()
+    gh = giao_hang_service.tao(
+        db,
+        {
+            "packing_list_ids": [p.id for p in ds],
+            "vehicle_id": xe.id if xe else None,
+            "driver_id": tx.id if tx else None,
+            "route_name": "Kho Vientiane → PTTLAO SIKHAY",
+        },
+        NGUOI,
+    )
+    db.commit()
+    for buoc in ("loading", "in_transit", "arrived"):
+        giao_hang_service.doi_trang_thai(db, gh.id, buoc, NGUOI)
+        db.commit()
+
+    # Ký nhận MỘT phiếu, chừa phiếu còn lại cho người xem tự bấm.
+    giao_hang_service.ghi_pod(
+        db, ds[0].id,
+        {"received_by": "Bounma", "result": "full", "goods_condition": "Nguyên kiện"},
+        NGUOI,
+    )
+    db.commit()
+    print(f"Đơn ĐANG GIAO mới: {don.id} / PO {po} / chuyến {gh.code} "
+          f"— còn {ds[1].id} chưa ký nhận")
+    return gh
 
 
 def gieo():
@@ -160,7 +250,7 @@ def gieo():
                         {"so_line_id": d2.lines[2].id, "case_qty": 10, "piece_qty": 120},
                     ],
                     "box_count": 18,
-                    "route_name": "Kho Vientiane → PTTLAO SIKHAY",
+                    "route_id": _tuyen(db, "RT-VTE-SIKHAY"),
                     "wave": "W1",
                     "gate": "B",
                 },
@@ -207,6 +297,13 @@ def gieo():
             print(f"Đơn 3 (đang giao): {d3.id} / chuyến {gh.code}")
         else:
             print(f"Đơn 3 (đang giao): {d3.id} — đã có sẵn")
+
+        _gan_tuyen_cho_phieu_cu(db)
+
+        # 4) LUÔN có ít nhất một chuyến ĐANG GIAO để bấm thử.
+        # Chủ dự án bấm hết kịch bản rồi thì hai chuyến cũ đều đã đóng; gieo lại
+        # mà không có bước này là mở lên không còn gì để thao tác.
+        them_don_dang_giao(db)
 
         # Vệt GPS mô phỏng cho mọi chuyến đang chạy mà chưa có mốc nào
         from models import VehiclePosition

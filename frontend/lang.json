@@ -1488,5 +1488,300 @@
     "vi": "Đã cập nhật vị trí xe.",
     "en": "The vehicle position has been updated.",
     "lo": "ອັບເດດຕຳແໜ່ງລົດແລ້ວ."
+  },
+  "in_rdc": {
+    "vi": "RDC LAOS",
+    "en": "RDC LAOS",
+    "lo": "RDC LAOS"
+  },
+  "in_store": {
+    "vi": "Cửa hàng",
+    "en": "STORE",
+    "lo": "ຮ້ານ"
+  },
+  "in_route": {
+    "vi": "Tuyến",
+    "en": "ROUTE",
+    "lo": "ເສັ້ນທາງ"
+  },
+  "in_wave": {
+    "vi": "Đợt",
+    "en": "WAVE",
+    "lo": "ຮອບ"
+  },
+  "in_gate": {
+    "vi": "Cổng",
+    "en": "GATE",
+    "lo": "ປະຕູ"
+  },
+  "in_to": {
+    "vi": "Giao tới",
+    "en": "TO",
+    "lo": "ສົ່ງເຖິງ"
+  },
+  "in_so": {
+    "vi": "Đơn hàng",
+    "en": "SO",
+    "lo": "ໃບສັ່ງ"
+  },
+  "in_item": {
+    "vi": "Mặt hàng",
+    "en": "ITEM",
+    "lo": "ລາຍການ"
+  },
+  "in_pack": {
+    "vi": "Kiện",
+    "en": "PACK",
+    "lo": "ຫໍ່"
+  },
+  "in_weight": {
+    "vi": "Trọng lượng",
+    "en": "Weight",
+    "lo": "ນ້ຳໜັກ"
+  },
+  "in_cube": {
+    "vi": "Thể tích",
+    "en": "Cube",
+    "lo": "ປະລິມາດ"
+  },
+  "in_packing_list": {
+    "vi": "Packing List",
+    "en": "Packing List",
+    "lo": "Packing List"
+  },
+  "in_date": {
+    "vi": "Ngày",
+    "en": "Date",
+    "lo": "ວັນທີ"
+  },
+  "in_store_id": {
+    "vi": "Mã cửa hàng",
+    "en": "Store ID",
+    "lo": "ລະຫັດຮ້ານ"
+  },
+  "in_box": {
+    "vi": "Số kiện",
+    "en": "Box",
+    "lo": "ຈຳນວນຫໍ່"
+  },
+  "in_no": {
+    "vi": "STT",
+    "en": "No",
+    "lo": "ລຳດັບ"
+  },
+  "in_barcode": {
+    "vi": "Mã vạch",
+    "en": "Barcode",
+    "lo": "ບາໂຄດ"
+  },
+  "in_item_id_laos": {
+    "vi": "Mã hàng (Lào)",
+    "en": "Item ID Laos",
+    "lo": "ລະຫັດສິນຄ້າ (ລາວ)"
+  },
+  "in_item_id_thai": {
+    "vi": "Mã hàng (Thái)",
+    "en": "Item ID Thai",
+    "lo": "ລະຫັດສິນຄ້າ (ໄທ)"
+  },
+  "in_item_desc": {
+    "vi": "Mô tả hàng",
+    "en": "Item Description",
+    "lo": "ລາຍລະອຽດສິນຄ້າ"
+  },
+  "in_case": {
+    "vi": "Thùng",
+    "en": "Case",
+    "lo": "ກັບ"
+  },
+  "in_piece": {
+    "vi": "Cái",
+    "en": "Piece",
+    "lo": "ອັນ"
+  },
+  "in_total_weight": {
+    "vi": "Tổng trọng lượng (kg)",
+    "en": "Total weight (kg)",
+    "lo": "ນ້ຳໜັກລວມ (ກກ)"
+  },
+  "in_total": {
+    "vi": "TỔNG",
+    "en": "TOTAL",
+    "lo": "ລວມ"
+  },
+  "in_po": {
+    "vi": "Số PO",
+    "en": "PO",
+    "lo": "ເລກ PO"
+  },
+  "in_scan_hint": {
+    "vi": "Quét QR này để xem phiếu, đơn hàng và toàn bộ dòng hàng.",
+    "en": "Scan this QR to see the list, the order and every line.",
+    "lo": "ສະແກນ QR ນີ້ເພື່ອເບິ່ງໃບ, ໃບສັ່ງ ແລະ ທຸກແຖວ."
+  },
+  "in_print_button": {
+    "vi": "In tài liệu",
+    "en": "Print",
+    "lo": "ພິມເອກະສານ"
+  },
+  "scan_list_qr": {
+    "vi": "Quét QR của cả phiếu Packing List",
+    "en": "Scanned the packing list's own QR",
+    "lo": "ສະແກນ QR ຂອງໃບ Packing List"
+  },
+  "pack_list_qr": {
+    "vi": "QR của phiếu",
+    "en": "List QR",
+    "lo": "QR ຂອງໃບ"
+  },
+  "nav_tuyen_duong": {
+    "vi": "Tuyến đường",
+    "en": "Routes",
+    "lo": "ເສັ້ນທາງ"
+  },
+  "rt_title": {
+    "vi": "Danh mục tuyến đường",
+    "en": "Route directory",
+    "lo": "ລາຍການເສັ້ນທາງ"
+  },
+  "rt_intro": {
+    "vi": "Tuyến giao hàng: đi từ kho nào, tới điểm giao nào, dài bao nhiêu km. Phiếu đóng gói CHỌN tuyến ở đây, và bản đồ theo dõi vẽ đường theo điểm đầu — điểm cuối của tuyến.",
+    "en": "Delivery routes: which depot they start from, which drop point they end at, how many kilometres. Packing lists PICK a route here, and the tracking map draws the line between its two ends.",
+    "lo": "ເສັ້ນທາງສົ່ງ: ອອກຈາກສາງໃດ, ໄປຮອດຈຸດສົ່ງໃດ, ໄກເທົ່າໃດ. ໃບຫຸ້ມຫໍ່ເລືອກເສັ້ນທາງຢູ່ນີ້, ແລະ ແຜນທີ່ຕິດຕາມແຕ້ມເສັ້ນຕາມສອງປາຍ."
+  },
+  "rt_new": {
+    "vi": "Thêm tuyến",
+    "en": "Add a route",
+    "lo": "ເພີ່ມເສັ້ນທາງ"
+  },
+  "rt_edit": {
+    "vi": "Sửa tuyến",
+    "en": "Edit the route",
+    "lo": "ແກ້ໄຂເສັ້ນທາງ"
+  },
+  "rt_code": {
+    "vi": "Mã tuyến",
+    "en": "Route code",
+    "lo": "ລະຫັດເສັ້ນທາງ"
+  },
+  "rt_name": {
+    "vi": "Tên tuyến",
+    "en": "Route name",
+    "lo": "ຊື່ເສັ້ນທາງ"
+  },
+  "rt_from": {
+    "vi": "Điểm đi",
+    "en": "From",
+    "lo": "ຈຸດອອກ"
+  },
+  "rt_to": {
+    "vi": "Điểm đến",
+    "en": "To",
+    "lo": "ຈຸດຮອດ"
+  },
+  "rt_distance": {
+    "vi": "Số km",
+    "en": "Distance (km)",
+    "lo": "ໄລຍະທາງ (ກມ)"
+  },
+  "rt_active": {
+    "vi": "Đang dùng",
+    "en": "Active",
+    "lo": "ກຳລັງໃຊ້"
+  },
+  "rt_inactive": {
+    "vi": "Ngưng dùng",
+    "en": "Inactive",
+    "lo": "ເຊົາໃຊ້"
+  },
+  "rt_no_point": {
+    "vi": "Chưa chọn",
+    "en": "Not set",
+    "lo": "ຍັງບໍ່ໄດ້ເລືອກ"
+  },
+  "rt_has_coord": {
+    "vi": "Có toạ độ hai đầu",
+    "en": "Both ends have coordinates",
+    "lo": "ສອງປາຍມີພິກັດ"
+  },
+  "rt_coord_missing": {
+    "vi": "Thiếu toạ độ — bản đồ không vẽ được",
+    "en": "Coordinates missing — the map cannot draw it",
+    "lo": "ຂາດພິກັດ — ແຜນທີ່ແຕ້ມບໍ່ໄດ້"
+  },
+  "rt_coord_hint": {
+    "vi": "Điểm đi và điểm đến lấy từ danh mục khách hàng. Muốn bản đồ vẽ được đường thì hai đầu phải có toạ độ.",
+    "en": "The two ends come from the customer directory. For the map to draw the line, both must have coordinates.",
+    "lo": "ສອງປາຍເອົາຈາກລາຍຊື່ລູກຄ້າ. ຖ້າຢາກໃຫ້ແຜນທີ່ແຕ້ມເສັ້ນ ສອງປາຍຕ້ອງມີພິກັດ."
+  },
+  "rt_search_ph": {
+    "vi": "Tìm mã hoặc tên tuyến…",
+    "en": "Search a route code or name…",
+    "lo": "ຄົ້ນຫາລະຫັດ ຫຼື ຊື່ເສັ້ນທາງ…"
+  },
+  "rt_pick_hint": {
+    "vi": "Chọn một tuyến để xem hoặc sửa.",
+    "en": "Pick a route to view or edit.",
+    "lo": "ເລືອກເສັ້ນທາງເພື່ອເບິ່ງ ຫຼື ແກ້ໄຂ."
+  },
+  "rt_delete_title": {
+    "vi": "Xoá tuyến đường",
+    "en": "Delete the route",
+    "lo": "ລຶບເສັ້ນທາງ"
+  },
+  "rt_delete_warn": {
+    "vi": "Tuyến đang được Packing List dùng thì hệ thống sẽ từ chối.",
+    "en": "If a packing list uses this route, the system refuses.",
+    "lo": "ຖ້າມີ Packing List ໃຊ້ເສັ້ນທາງນີ້ ລະບົບຈະປະຕິເສດ."
+  },
+  "rt_pick": {
+    "vi": "— Chọn tuyến giao —",
+    "en": "— Pick a delivery route —",
+    "lo": "— ເລືອກເສັ້ນທາງສົ່ງ —"
+  },
+  "rt_manage": {
+    "vi": "Quản lý tuyến →",
+    "en": "Manage routes →",
+    "lo": "ຈັດການເສັ້ນທາງ →"
+  },
+  "err_RT_NOT_FOUND": {
+    "vi": "Không tìm thấy tuyến đường.",
+    "en": "Route not found.",
+    "lo": "ບໍ່ພົບເສັ້ນທາງ."
+  },
+  "err_RT_NO_CODE": {
+    "vi": "Tuyến đường phải có mã.",
+    "en": "The route needs a code.",
+    "lo": "ເສັ້ນທາງຕ້ອງມີລະຫັດ."
+  },
+  "err_RT_NO_NAME": {
+    "vi": "Tuyến đường phải có tên.",
+    "en": "The route needs a name.",
+    "lo": "ເສັ້ນທາງຕ້ອງມີຊື່."
+  },
+  "err_RT_CODE_DUPLICATE": {
+    "vi": "Mã tuyến này đã tồn tại.",
+    "en": "This route code already exists.",
+    "lo": "ລະຫັດເສັ້ນທາງນີ້ມີຢູ່ແລ້ວ."
+  },
+  "err_RT_KM_NEGATIVE": {
+    "vi": "Số km không được âm.",
+    "en": "The distance cannot be negative.",
+    "lo": "ໄລຍະທາງຕ້ອງບໍ່ຕິດລົບ."
+  },
+  "err_RT_IN_USE": {
+    "vi": "Tuyến đang được Packing List dùng nên không xoá được.",
+    "en": "The route is used by a packing list and cannot be deleted.",
+    "lo": "ເສັ້ນທາງຖືກ Packing List ໃຊ້ຢູ່ ຈຶ່ງລຶບບໍ່ໄດ້."
+  },
+  "ok_rt_saved": {
+    "vi": "Đã lưu tuyến đường.",
+    "en": "The route has been saved.",
+    "lo": "ບັນທຶກເສັ້ນທາງແລ້ວ."
+  },
+  "ok_rt_deleted": {
+    "vi": "Đã xoá tuyến đường.",
+    "en": "The route has been deleted.",
+    "lo": "ລຶບເສັ້ນທາງແລ້ວ."
   }
 }

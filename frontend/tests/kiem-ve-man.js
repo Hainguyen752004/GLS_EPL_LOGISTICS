@@ -70,6 +70,11 @@ function duLieuApi(url) {
   if (/\/api\/deliveries\/[^/?]+$/.test(url)) return GH;
   if (url.indexOf('/api/vehicles') >= 0) return [{ id: 'v1', plate_head: 'ກທ 1234', plate_trailer: 'ກທ 5678', internal_no: '341' }];
   if (url.indexOf('/api/drivers') >= 0) return [{ id: 'd1', full_name: 'Somsak', phone: '020' }];
+  if (url.indexOf('/api/routes') >= 0) return [
+    { id: 'r1', code: 'RT-VTE-DONEKOY', name: 'Kho Vientiane -> PTTLAO DONEKOY', from_id: 'c3', to_id: 'c1',
+      from_name: 'Kho Vientiane', to_name: 'PTTLAO DONEKOY', from_lat: 17.9757, from_lng: 102.6331,
+      to_lat: 17.938, to_lng: 102.625, distance_km: 5.2, active: true },
+  ];
   if (url.indexOf('/api/customers') >= 0) return [
     { id: 'c1', code: 'PTTLAO-DONEKOY', name: 'PTTLAO DONEKOY', kind: 'customer', address: 'Vientiane', lat: 17.938, lng: 102.625 },
     { id: 'c2', code: 'KPA-TRADE', name: 'KPA Trade', kind: 'vendor', tax_number: '2052891-31' },
@@ -127,7 +132,7 @@ function dungKhung() {
 
   // Nạp sẵn JS của mọi module và cắm thẻ đánh dấu, để khung không đi tải qua
   // mạng (jsdom không tải được) mà vẫn đi đúng nhánh "đã có sẵn".
-  for (const ten of ['don-hang', 'packing-list', 'giao-hang', 'quet-tem', 'khach-hang', 'theo-doi']) {
+  for (const ten of ['don-hang', 'packing-list', 'giao-hang', 'quet-tem', 'khach-hang', 'theo-doi', 'tuyen-duong']) {
     w.eval(fs.readFileSync(path.join(GOC, 'modules', ten, ten + '.js'), 'utf8'));
     const s = w.document.createElement('script');
     s.dataset.mod = ten;
@@ -152,6 +157,7 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     ['quet-tem', 'qt-ket-qua'],
     ['khach-hang', 'kh-danh-sach'],
     ['theo-doi', 'td-danh-sach'],
+    ['tuyen-duong', 'td2-danh-sach'],
   ];
 
   const { w, nhat } = dungKhung();
@@ -189,6 +195,6 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     loi.forEach(x => console.log('  - ' + x));
     process.exit(1);
   }
-  console.log('SÁU MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
+  console.log('BẢY MÀN ĐỀU DỰNG ĐƯỢC, VẼ RA NỘI DUNG VÀ ĐỔI ĐƯỢC BỐN NGÔN NGỮ');
   process.exit(0);
 })();

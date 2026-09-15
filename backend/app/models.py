@@ -77,6 +77,28 @@ class Vehicle(Base):
     created_at = Column(DateTime, nullable=False, default=_bay_gio)
 
 
+class Route(Base):
+    """Tuyến giao hàng: đi từ kho nào, tới điểm giao nào, dài bao nhiêu km.
+
+    Trước đây "tuyến" chỉ là một ô gõ tay trên phiếu đóng gói — ai không gõ thì
+    phiếu in ra để trống, và màn Theo dõi không biết vẽ đường từ đâu tới đâu.
+    Thành một danh mục thì khai một lần rồi mọi phiếu chọn lại, và bản đồ có
+    điểm đầu điểm cuối thật.
+    """
+
+    __tablename__ = "routes"
+    id = Column(String(64), primary_key=True)
+    code = Column(String(64), nullable=False, unique=True)
+    name = Column(String(255), nullable=False)
+    from_id = Column(String(64), ForeignKey("customers.id"), nullable=True)
+    to_id = Column(String(64), ForeignKey("customers.id"), nullable=True)
+    distance_km = Column(Float, nullable=False, default=0)
+    note = Column(Text)
+    active = Column(Integer, nullable=False, default=1)
+    created_at = Column(DateTime, nullable=False, default=_bay_gio)
+    updated_at = Column(DateTime, nullable=False, default=_bay_gio, onupdate=_bay_gio)
+
+
 class Driver(Base):
     __tablename__ = "drivers"
     id = Column(String(64), primary_key=True)
@@ -201,6 +223,7 @@ class PackingList(Base):
 
     store_code = Column(String(64))
     store_name = Column(String(255))
+    route_id = Column(String(64), ForeignKey("routes.id"), nullable=True)
     route_name = Column(String(500))
     wave = Column(String(32))
     gate = Column(String(32))

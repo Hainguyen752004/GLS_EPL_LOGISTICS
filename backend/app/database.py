@@ -49,6 +49,7 @@ def _bo_sung_cot():
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION",
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS note TEXT",
         "ALTER TABLE customers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW()",
+        "ALTER TABLE packing_lists ADD COLUMN IF NOT EXISTS route_id VARCHAR(64)",
     ]
     with engine.begin() as ket_noi:
         for c in cau:

@@ -14,7 +14,14 @@ from sqlalchemy.orm import Session
 from config import NGUOI_DUNG_DEMO
 from database import get_db
 from models import Customer, Driver, Vehicle
-from services import don_hang_service, giao_hang_service, khach_hang_service, packing_service, theo_doi_service
+from services import (
+    don_hang_service,
+    giao_hang_service,
+    khach_hang_service,
+    packing_service,
+    theo_doi_service,
+    tuyen_service,
+)
 from services.loi import LoiNghiepVu, nem_http
 
 router = APIRouter()
@@ -74,6 +81,29 @@ def sua_khach(id_: str, payload: dict = Body(...), db: Session = Depends(get_db)
 def xoa_khach(id_: str, db: Session = Depends(get_db)):
     _lam(db, lambda: khach_hang_service.xoa(db, id_))
     return _tra({"deleted": id_}, "Đã xoá khách hàng")
+
+
+@router.get("/api/routes")
+def ds_tuyen(q: Optional[str] = None, active_only: bool = False, db: Session = Depends(get_db)):
+    return _tra(tuyen_service.danh_sach(db, q=q, chi_dang_dung=active_only))
+
+
+@router.post("/api/routes")
+def tao_tuyen(payload: dict = Body(...), db: Session = Depends(get_db)):
+    r = _lam(db, lambda: tuyen_service.tao(db, payload))
+    return _tra(tuyen_service.ra_dict(r, tuyen_service._diem(db, r)), "Đã tạo tuyến đường")
+
+
+@router.put("/api/routes/{id_}")
+def sua_tuyen(id_: str, payload: dict = Body(...), db: Session = Depends(get_db)):
+    r = _lam(db, lambda: tuyen_service.sua(db, id_, payload))
+    return _tra(tuyen_service.ra_dict(r, tuyen_service._diem(db, r)), "Đã cập nhật tuyến đường")
+
+
+@router.delete("/api/routes/{id_}")
+def xoa_tuyen(id_: str, db: Session = Depends(get_db)):
+    _lam(db, lambda: tuyen_service.xoa(db, id_))
+    return _tra({"deleted": id_}, "Đã xoá tuyến đường")
 
 
 @router.get("/api/vehicles")
@@ -227,6 +257,23 @@ def huy_pl(pl_id: str, request: Request, payload: dict = Body(default={}), db: S
     nguoi = _nguoi(request)
     pl = _lam(db, lambda: packing_service.huy(db, pl_id, payload.get("reason"), nguoi))
     return _tra(packing_service.ra_dict(pl), "Đã huỷ Packing List")
+
+
+@router.get("/api/packing-lists/{pl_id}/qr.svg")
+def qr_cua_phieu(pl_id: str, db: Session = Depends(get_db)):
+    """QR in ở góc phiếu Packing List (mẫu 2). Nội dung: PL:<mã phiếu>."""
+    import qrcode
+    import qrcode.image.svg
+    from fastapi.responses import Response
+
+    try:
+        packing_service.nap(db, pl_id)
+    except LoiNghiepVu as loi:
+        nem_http(loi)
+    anh = qrcode.make("PL:" + pl_id, image_factory=qrcode.image.svg.SvgImage, box_size=10, border=2)
+    dem = __import__("io").BytesIO()
+    anh.save(dem)
+    return Response(content=dem.getvalue(), media_type="image/svg+xml")
 
 
 @router.get("/api/labels/{token}/qr.svg")

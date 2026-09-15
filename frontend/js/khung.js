@@ -218,6 +218,7 @@ window.PL = (function () {
     'quet-tem': { js: 'QuetTem' },
     'khach-hang': { js: 'KhachHang' },
     'theo-doi': { js: 'TheoDoi' },
+    'tuyen-duong': { js: 'TuyenDuong' },
   };
 
   function napTaiNguyen(ten) {

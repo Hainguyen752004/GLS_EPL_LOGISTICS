@@ -4,7 +4,7 @@ Bản demo tách riêng, dựng lại module Packing List của EPL_System và n
 phần còn thiếu: **đơn hàng của khách ở đầu luồng** và **giao hàng ở cuối luồng**.
 
 ```
-Danh mục khách hàng
+Danh mục khách hàng + Tuyến đường
         ↓ (chọn, không gõ tay)
 Đơn hàng khách (SO)  →  nhiều Packing List  →  chuyến giao hàng  →  theo dõi xe trên bản đồ  →  ký nhận
 ```
@@ -47,6 +47,14 @@ hàng, nhà cung cấp, kho xuất hàng. Phiếu đơn hàng **chọn** khách 
 từ đây — máy chủ từ chối đơn không có `customer_id` (`SO_NO_CUSTOMER`). Toạ độ
 khai ở đây là thứ màn Theo dõi dùng để vẽ đường xe.
 
+## Tuyến đường
+
+Nút **TĐ** trên thanh đầu trang. Mỗi tuyến có **mã, tên, điểm đi, điểm đến, số
+km** — hai đầu chọn từ danh mục khách hàng. Ô "Tuyến giao" trên phiếu đóng gói
+**chọn** từ đây thay vì gõ tay, nên phiếu in ra không còn để trống, và màn Theo
+dõi vẽ đường theo đúng hai đầu của tuyến. Xoá tuyến đang có Packing List dùng
+thì bị chặn (`RT_IN_USE`).
+
 ## Theo dõi xe
 
 Nút **④ Theo dõi xe**. Bản đồ Leaflet, nền OSM hoặc ảnh vệ tinh Esri — cùng
@@ -70,7 +78,18 @@ kiện là ra ngay: kiện số mấy trên tổng mấy, thuộc Packing List n
 nào, và trong đó có những dòng hàng nào. Tem in ra cũng ghi thẳng mã đơn và PO
 lên giấy, để người giao hàng không cần mở máy.
 
-**3. Huỷ thì trả hàng về cho đơn.** Huỷ một Packing List thì số hàng trong đó
+**3. Hai bản in theo đúng mẫu.** Tem kiện (mẫu 1) có RDC LAOS, bốn ô STORE ·
+ROUTE · WAVE · GATE, dòng TO, QR riêng của từng kiện và số kiện n/N — mỗi kiện
+một trang. Phiếu Packing List (mẫu 2) có RDC / mã phiếu / mã đơn ở góc trái,
+**QR của cả phiếu** ở góc phải, bảng Date · Store · Store ID · Box và bảng hàng
+kết thúc bằng dòng TOTAL. Quét QR của phiếu ra **phiếu + đơn + toàn bộ dòng
+hàng**; quét tem kiện ra thêm kiện số mấy trên tổng mấy.
+
+Nhãn khung của hai biểu mẫu giữ nguyên **tiếng Anh** ở mọi chế độ ngôn ngữ —
+đây là biểu mẫu chuẩn của kho, y như chữ PURCHASE ORDER trên phiếu CP ALL, và
+tem đi qua Việt · Lào · Thái nên nhãn tiếng Anh là thứ cả ba bên đọc được.
+
+**4. Huỷ thì trả hàng về cho đơn.** Huỷ một Packing List thì số hàng trong đó
 được cộng lại vào phần chưa đóng của đơn, không mất đi.
 
 ## Cấu trúc
@@ -83,6 +102,7 @@ backend/app/
   services/giao_hang_service.py   chuyến giao hàng, ký nhận
   services/khach_hang_service.py  danh mục khách hàng / nhà cung cấp / kho
   services/theo_doi_service.py    vị trí xe, vệt đường, mô phỏng chạy
+  services/tuyen_service.py       danh mục tuyến đường
   routes/api_routes.py            điểm cuối HTTP
   seed.py / gieo_demo.py          dữ liệu mẫu
 backend/tests/
@@ -97,8 +117,10 @@ frontend/
   modules/quet-tem/         .html .css .js
   modules/khach-hang/       .html .css .js
   modules/theo-doi/         .html .css .js   (Leaflet)
+  modules/tuyen-duong/      .html .css .js
   tests/kiem-giao-dien.js   cú pháp JS, khoá dịch, bốn chế độ
-  tests/kiem-ve-man.js      dựng thật sáu màn trong jsdom
+  tests/kiem-ve-man.js      dựng thật bảy màn trong jsdom
+  tests/kiem-ban-in.js      hai bản in có đúng hai mẫu không
 ```
 
 Mỗi module một bộ **html + css + js riêng** — sai màn nào sửa đúng màn đó.
@@ -111,7 +133,7 @@ python backend\tests\test_api_http.py      # API và tệp tĩnh
 node frontend\tests\kiem-giao-dien.js      # giao diện và bản dịch
 ```
 
-Hoặc chạy cả bốn:
+Hoặc chạy cả năm:
 
 ```bash
 chay_kiem.bat

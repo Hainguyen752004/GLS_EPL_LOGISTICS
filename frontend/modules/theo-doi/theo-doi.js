@@ -170,6 +170,7 @@ window.TheoDoi = (function () {
         oTT(t('so_code'), c.orders.join(', ') || '—') +
         oTT(t('trk_depot'), (c.depot && c.depot.name) || '—') +
         oTT(t('trk_destination'), (c.destination && c.destination.name) || '—') +
+        oTT(t('nav_tuyen_duong'), c.route ? c.route.code + ' · ' + c.route.name : '—') +
         oTT(t('trk_route_km'), c.route_km != null ? so(c.route_km, 1) + ' km' : '—') +
         oTT(t('trk_position'), p ? p.lat.toFixed(5) + ', ' + p.lng.toFixed(5) : mot('trk_no_position')) +
         oTT(t('trk_remaining'), c.remaining_km != null ? so(c.remaining_km, 1) + ' km' : '—') +

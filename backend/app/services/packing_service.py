@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from models import (
     Delivery,
+    Route,
     PackingEvent,
     PackingLabel,
     PackingList,
@@ -84,6 +85,7 @@ def ra_dict(pl, day_du=True):
         "delivery_id": pl.delivery_id,
         "store_code": pl.store_code,
         "store_name": pl.store_name,
+        "route_id": pl.route_id,
         "route_name": pl.route_name,
         "wave": pl.wave,
         "gate": pl.gate,
@@ -277,6 +279,21 @@ def _ghi_hang(db, pl, don, theo_dong, dong_vao):
     db.flush()
 
 
+def _gan_tuyen(db, pl, payload):
+    """Có chọn tuyến thì lấy TÊN từ danh mục, không tin ô gõ tay."""
+    if "route_id" not in payload:
+        return
+    rid = payload.get("route_id") or None
+    if not rid:
+        pl.route_id = None
+        return
+    r = db.query(Route).filter(Route.id == rid).first()
+    if not r:
+        raise LoiNghiepVu("RT_NOT_FOUND", "Không tìm thấy tuyến đường đã chọn", 404)
+    pl.route_id = r.id
+    pl.route_name = r.name
+
+
 def _gom_xin_them(dong_vao):
     gom = {}
     for d in dong_vao:
@@ -328,6 +345,7 @@ def tao(db, so_id, payload, nguoi):
     )
     db.add(pl)
     db.flush()
+    _gan_tuyen(db, pl, payload)
 
     _ghi_hang(db, pl, don, theo_dong, dong_vao)
     _tinh_tong(pl)
@@ -354,6 +372,7 @@ def sua(db, pl_id, payload, nguoi):
     for khoa in ("store_code", "store_name", "route_name", "wave", "gate", "note"):
         if khoa in payload:
             setattr(pl, khoa, payload.get(khoa))
+    _gan_tuyen(db, pl, payload)
 
     _ghi_hang(db, pl, don, theo_dong, dong_vao)
     _tinh_tong(pl)
@@ -481,7 +500,23 @@ def quet_tem(db, token, nguoi, buoc=None):
 
     Trả về đủ dây truy ngược: kiện -> Packing List -> đơn hàng -> từng dòng hàng.
     """
-    lb = db.query(PackingLabel).filter(PackingLabel.qr_token == (token or "").strip()).first()
+    token = (token or "").strip()
+
+    # QR in trên PHIẾU Packing List (mẫu 2) mã hoá "PL:<mã phiếu>". Quét nó thì
+    # trả cả phiếu + đơn + mọi dòng hàng — không gắn với một kiện cụ thể nào.
+    if token.upper().startswith("PL:"):
+        pl = nap(db, token[3:].strip())
+        if pl.status == "cancelled":
+            raise LoiNghiepVu("PL_CANCELLED", "Packing List này đã huỷ", 409)
+        ghi_su_kien(db, pl, "list_scanned", nguoi, "Quét QR phiếu")
+        db.flush()
+        return {
+            "label": None,
+            "packing_list": ra_dict(pl),
+            "sales_order": don_hang_service.ra_dict(db, pl.order),
+        }
+
+    lb = db.query(PackingLabel).filter(PackingLabel.qr_token == token).first()
     if not lb:
         raise LoiNghiepVu("LABEL_NOT_FOUND", "Không nhận ra tem QR này", 404)
     pl = nap(db, lb.packing_list_id)

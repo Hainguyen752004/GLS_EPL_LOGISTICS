@@ -1,0 +1,19 @@
+/* Màn Tuyến đường */
+
+.rt-form .hang-o { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.rt-form .nut-day { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+
+.thong-tin { gap: 10px 16px; }
+.o-tt .nhan-tt { color: var(--chu-mo); font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
+.o-tt .gia-tri-tt { margin-top: 2px; font-weight: 600; word-break: break-word; }
+
+.rt-duong {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 12px; padding: 10px 12px;
+  background: var(--nen); border-radius: 8px; font-size: 13px;
+}
+.rt-duong .diem { font-weight: 700; }
+.rt-duong .mui { color: var(--chu-mo); }
+.rt-duong .km { margin-left: auto; color: var(--chinh-dam); font-weight: 700; }
+
+.ds-muc .rt-doan { margin-top: 2px; color: var(--chu-mo); font-size: 12px; }

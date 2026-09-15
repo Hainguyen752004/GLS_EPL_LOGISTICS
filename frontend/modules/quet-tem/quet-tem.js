@@ -55,14 +55,18 @@ window.QuetTem = (function () {
           '<span class="nhan ' + (MAU_PL[p.status] || 'xam') + '">' + an(nhanPL(p.status)) + '</span>' +
         '</div>' +
         '<div class="the-than">' +
-          '<div class="lan-quet ' + (lb.first_scan ? 'dau' : 'lap') + '">' +
-            an(lb.first_scan ? mot('scan_first') : mot('scan_again')) +
-          '</div>' +
-          '<div class="day-so">' +
-            '<span>' + an(mot('pack_package_no')) + ': <b>' + lb.package_no + ' / ' + lb.package_total + '</b></span>' +
-            '<span>' + an(mot('scan_scanned_count')) + ': <b>' + lb.scanned_count + '</b> ' +
-              an(mot('common_of')) + ' ' + so(p.box_count, 0) + '</span>' +
-          '</div>' +
+          (lb
+            ? '<div class="lan-quet ' + (lb.first_scan ? 'dau' : 'lap') + '">' +
+                an(lb.first_scan ? mot('scan_first') : mot('scan_again')) +
+              '</div>' +
+              '<div class="day-so">' +
+                '<span>' + an(mot('pack_package_no')) + ': <b>' + lb.package_no + ' / ' + lb.package_total + '</b></span>' +
+                '<span>' + an(mot('scan_scanned_count')) + ': <b>' + lb.scanned_count + '</b> ' +
+                  an(mot('common_of')) + ' ' + so(p.box_count, 0) + '</span>' +
+              '</div>'
+            : '<div class="lan-quet dau">' + an(mot('scan_list_qr')) + '</div>' +
+              '<div class="day-so"><span>' + an(mot('pack_box_count')) + ': <b>' + so(p.box_count, 0) + '</b></span>' +
+              '<span>' + an(mot('so_case_qty')) + ': <b>' + so(p.total_cases, 0) + '</b></span></div>') +
         '</div>' +
       '</div>' +
 

@@ -12,7 +12,7 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import SessionLocal, tao_luoc_do
-from models import Customer, Driver, SalesOrder, SalesOrderLine, Vehicle
+from models import Customer, Driver, Route, SalesOrder, SalesOrderLine, Vehicle
 
 
 def _ma():
@@ -74,6 +74,12 @@ KHACH = [
         "lat": 17.9790,
         "lng": 102.5720,
     },
+]
+
+TUYEN = [
+    ("RT-VTE-DONEKOY", "Kho Vientiane → PTTLAO DONEKOY", "KHO-VTE", "PTTLAO-DONEKOY", 5.2),
+    ("RT-VTE-SIKHAY", "Kho Vientiane → PTTLAO SIKHAY", "KHO-VTE", "PTTLAO-SIKHAY", 6.8),
+    ("RT-VTE-CPALL", "Kho Vientiane → CP ALL Laos", "KHO-VTE", "CPALL-LAOS", 5.5),
 ]
 
 XE = [
@@ -183,6 +189,19 @@ def gieo():
                     setattr(co, kh, gt)
             else:
                 db.add(Customer(id=_ma(), **k))
+        db.flush()
+        # Tuyến đường mẫu — nối kho với từng cửa hàng đã khai toạ độ.
+        for ma_t, ten_t, ma_di, ma_den, km in TUYEN:
+            if db.query(Route).filter(Route.code == ma_t).first():
+                continue
+            di = db.query(Customer).filter(Customer.code == ma_di).first()
+            den = db.query(Customer).filter(Customer.code == ma_den).first()
+            db.add(Route(
+                id=_ma(), code=ma_t, name=ten_t,
+                from_id=di.id if di else None, to_id=den.id if den else None,
+                distance_km=km, active=1,
+            ))
+
         for v in XE:
             if not db.query(Vehicle).filter(Vehicle.plate_head == v["plate_head"]).first():
                 db.add(Vehicle(id=_ma(), **v))

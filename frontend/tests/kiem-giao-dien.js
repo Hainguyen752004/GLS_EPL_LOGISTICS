@@ -25,6 +25,7 @@ const tepJS = [
   'modules/quet-tem/quet-tem.js',
   'modules/khach-hang/khach-hang.js',
   'modules/theo-doi/theo-doi.js',
+  'modules/tuyen-duong/tuyen-duong.js',
 ];
 for (const tep of tepJS) {
   try {
@@ -46,6 +47,7 @@ const tepHTML = [
   'modules/quet-tem/quet-tem.html',
   'modules/khach-hang/khach-hang.html',
   'modules/theo-doi/theo-doi.html',
+  'modules/tuyen-duong/tuyen-duong.html',
 ];
 let thieu = [];
 for (const tep of tepHTML) {

@@ -60,6 +60,9 @@ def chay():
         "/static/modules/theo-doi/theo-doi.html",
         "/static/modules/theo-doi/theo-doi.js",
         "/static/modules/theo-doi/theo-doi.css",
+        "/static/modules/tuyen-duong/tuyen-duong.html",
+        "/static/modules/tuyen-duong/tuyen-duong.js",
+        "/static/modules/tuyen-duong/tuyen-duong.css",
     ]:
         kiem(client.get(tep).status_code == 200, f"tải được {tep}")
 
@@ -110,6 +113,16 @@ def chay():
     token = pl["labels"][0]["qr_token"]
     r = client.get(f"/api/labels/{token}/qr.svg")
     kiem(r.status_code == 200 and b"<svg" in r.content, "sinh được ảnh QR cho tem")
+
+    r = client.get(f"/api/packing-lists/{pl['id']}/qr.svg")
+    kiem(r.status_code == 200 and b"<svg" in r.content, "sinh được QR cho cả phiếu Packing List")
+    r = client.post("/api/labels/scan", json={"token": "PL:" + pl["id"]})
+    kq = r.json().get("data") or {}
+    kiem(
+        r.status_code == 200 and kq.get("label") is None and kq["packing_list"]["id"] == pl["id"]
+        and kq["sales_order"]["id"] == don["id"] and len(kq["packing_list"]["items"]) >= 1,
+        "quét QR của phiếu ra phiếu + đơn + dòng hàng",
+    )
 
     r = client.post("/api/labels/scan", json={"token": token})
     kiem(r.status_code == 200, "quét tem qua API")

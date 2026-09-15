@@ -13,6 +13,7 @@ window.PackingList = (function () {
   var donDangChon = null;     // dữ liệu đầy đủ của đơn đang đóng
   var dsPL = [];
   var plDangChon = null;
+  var dsTuyen = [];     // danh mục tuyến đường — nguồn cho ô chọn "Tuyến giao"
 
   var BUOC = ['ready', 'parked', 'gate_in', 'loaded', 'dispatched', 'delivered'];
   var MAU = {
@@ -85,7 +86,13 @@ window.PackingList = (function () {
       '<div class="hang-o" style="margin-top:12px">' +
         '<label class="o"><span data-i18n="pack_box_count"></span>' +
           '<input type="number" id="pk-so-kien" min="1" value="1"></label>' +
-        '<label class="o"><span data-i18n="pack_route"></span><input type="text" id="pk-tuyen"></label>' +
+        '<label class="o"><span data-i18n="pack_route"></span><select id="pk-tuyen">' +
+          '<option value="">' + an(mot('rt_pick')) + '</option>' +
+          dsTuyen.filter(function (r) { return r.active; }).map(function (r) {
+            return '<option value="' + an(r.id) + '">' + an(r.code) + ' · ' + an(r.name) +
+              (r.distance_km ? ' (' + so(r.distance_km, 1) + ' km)' : '') + '</option>';
+          }).join('') +
+        '</select></label>' +
         '<label class="o"><span data-i18n="pack_wave"></span><input type="text" id="pk-dot"></label>' +
         '<label class="o"><span data-i18n="pack_gate"></span><input type="text" id="pk-cong"></label>' +
       '</div>' +
@@ -98,7 +105,9 @@ window.PackingList = (function () {
         '<input type="number" id="pk-so-phieu" min="1" max="50" value="2" class="o-nho">' +
         '<button type="button" class="nut" id="pk-chia" data-i18n="pack_auto"></button>' +
       '</div>' +
-      '<p class="goi-y" data-i18n="pack_auto_hint"></p>';
+      '<p class="goi-y" data-i18n="pack_auto_hint"></p>' +
+      '<div style="margin-top:6px"><button type="button" class="nut nho" id="pk-quan-ly-tuyen">' +
+        an(mot('rt_manage')) + '</button></div>';
 
     PL.apDungNgonNgu(khung);
 
@@ -116,6 +125,9 @@ window.PackingList = (function () {
 
     document.getElementById('pk-tao').addEventListener('click', taoPhieu);
     document.getElementById('pk-chia').addEventListener('click', chiaTuDong);
+    document.getElementById('pk-quan-ly-tuyen').addEventListener('click', function () {
+      PL.moMan('tuyen-duong');
+    });
   }
 
   function taoPhieu() {
@@ -133,7 +145,7 @@ window.PackingList = (function () {
       body: {
         items: mon,
         box_count: Number((document.getElementById('pk-so-kien') || {}).value || 1),
-        route_name: (document.getElementById('pk-tuyen') || {}).value || '',
+        route_id: (document.getElementById('pk-tuyen') || {}).value || null,
         wave: (document.getElementById('pk-dot') || {}).value || '',
         gate: (document.getElementById('pk-cong') || {}).value || '',
       },
@@ -269,6 +281,14 @@ window.PackingList = (function () {
       '</div>' +
 
       '<div class="the">' +
+        '<div class="the-dau"><h3 data-i18n="pack_list_qr"></h3></div>' +
+        '<div class="the-than qr-phieu">' +
+          '<img alt="QR" src="/api/packing-lists/' + encodeURIComponent(p.id) + '/qr.svg">' +
+          '<div><b>PL:' + an(p.id) + '</b><div class="phu-mo">' + an(mot('in_scan_hint')) + '</div></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="the">' +
         '<div class="the-dau"><h3 data-i18n="pack_labels"></h3></div>' +
         '<div class="the-than luoi-tem">' +
           (p.labels || []).map(function (lb) { return veTem(p, lb); }).join('') +
@@ -333,76 +353,149 @@ window.PackingList = (function () {
     '</div>';
   }
 
+  /* Nhãn KHUNG của hai biểu mẫu giữ nguyên tiếng Anh, KHÔNG dịch theo nút ngôn
+   * ngữ. Đây là biểu mẫu chuẩn của kho — y như chữ PURCHASE ORDER trên phiếu
+   * của CP ALL. Tem dán lên thùng đi qua Việt · Lào · Thái nên nhãn tiếng Anh
+   * là thứ cả ba bên đọc được. Phần NỘI DUNG (tên hàng, tên cửa hàng) vẫn là dữ
+   * liệu thật nên vẫn ra đúng tiếng của hàng hoá. */
+  var NHAN_IN = {
+    rdc: 'RDC LAOS', store: 'STORE', route: 'ROUTE', wave: 'WAVE', gate: 'GATE',
+    to: 'TO', so: 'SO', po: 'PO', item: 'ITEM', pack: 'PACK',
+    weight: 'Weight', cube: 'Cube',
+    packingList: 'Packing List', date: 'Date', storeName: 'Store',
+    storeId: 'Store ID', box: 'Box',
+    no: 'No', barcode: 'Barcode', idLaos: 'Item ID Laos', idThai: 'Item ID Thai',
+    desc: 'Item Description', cas: 'Case', piece: 'Piece',
+    totalWeight: 'Total weight (kg)', total: 'TOTAL',
+  };
+
   /* ----------------------------------------------------------------- in ấn
-   * Cửa sổ in là một tài liệu RIÊNG nên bộ dịch của trang không với tới được:
-   * mọi chữ ở đây phải dịch ngay lúc dựng chuỗi. */
+   * Hai bản in đi theo ĐÚNG hai mẫu của EPL_System: mẫu 1 là tem kiện, mẫu 2 là
+   * phiếu Packing List. Cửa sổ in là tài liệu riêng nên bộ dịch của trang không
+   * với tới — mọi chữ phải dịch ngay lúc dựng chuỗi. */
   function moCuaSoIn(tieu_de, than, css) {
-    var w = window.open('', '_blank', 'width=900,height=700');
+    var w = window.open('', '_blank', 'width=960,height=760');
     if (!w) { PL.thongBao(mot('err_UNKNOWN'), 'loi'); return; }
     w.document.write(
       '<!doctype html><html><head><meta charset="utf-8"><title>' + an(tieu_de) + '</title>' +
       '<style>' +
-      'body{font:13px/1.5 "Segoe UI","Noto Sans Lao",sans-serif;color:#0f172a;padding:18px}' +
-      'h1{font-size:17px;margin:0 0 4px}h2{font-size:14px;margin:16px 0 6px}' +
-      'table{width:100%;border-collapse:collapse;margin-top:8px}' +
-      'th,td{border:1px solid #cbd5e1;padding:6px 8px;text-align:left;font-size:12px}' +
-      'th{background:#f1f5f9}.phai{text-align:right}.giua{text-align:center}' +
-      '.mo{color:#64748b;font-size:11.5px}' + (css || '') +
-      '</style></head><body>' + than + '</body></html>'
+      'body{font:13px/1.45 Arial,"Segoe UI","Noto Sans Lao",sans-serif;color:#000;margin:0;padding:16px}' +
+      '.thanh-in{display:flex;justify-content:flex-end;padding:0 0 12px}' +
+      '.thanh-in button{padding:8px 16px;font:inherit;font-weight:700;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;cursor:pointer}' +
+      '@media print{.thanh-in{display:none}body{padding:0}}' +
+      (css || '') +
+      '</style></head><body>' +
+      '<div class="thanh-in"><button onclick="window.print()">' + an(mot('in_print_button')) + '</button></div>' +
+      than + '</body></html>'
     );
     w.document.close();
     w.focus();
-    setTimeout(function () { w.print(); }, 350);
   }
 
+  /* Mẫu 2 — phiếu Packing List: RDC / Packing List / Đơn ở góc trái, QR của
+   * phiếu ở góc phải, bảng đầu Date · Store · Store ID · Box, bảng hàng, dòng TỔNG. */
   function inPhieu(p) {
+    var ngay = new Date(p.created_at && p.created_at.indexOf('Z') < 0 ? p.created_at + 'Z' : p.created_at);
+    var ngayChu = isNaN(ngay.getTime()) ? '' : ngay.getDate() + '/' + (ngay.getMonth() + 1) + '/' + ngay.getFullYear();
+    var tongThung = 0, tongCai = 0, tongKg = 0;
+    var hang = (p.items || []).map(function (it, i) {
+      tongThung += Number(it.case_qty || 0); tongCai += Number(it.piece_qty || 0); tongKg += Number(it.weight_kg || 0);
+      return '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + an(it.barcode || '-') + '</td>' +
+        '<td>' + an(it.product_code || '-') + '</td>' +
+        '<td>-</td>' +
+        '<td>' + an(it.description || '') + (it.description_en ? '<div class="mo">' + an(it.description_en) + '</div>' : '') + '</td>' +
+        '<td>' + so(it.case_qty, 0) + '</td>' +
+        '<td>' + so(it.piece_qty, 0) + '</td>' +
+        '<td>' + so(it.weight_kg, 3) + '</td>' +
+      '</tr>';
+    }).join('');
+
     var than =
-      '<h1>' + an(mot('pack_list_title')) + ' — ' + an(p.id) + '</h1>' +
-      '<div class="mo">' + an(mot('pack_belongs_to')) + ': <b>' + an(p.so_id) + '</b>' +
-      (p.po_number ? ' · PO ' + an(p.po_number) : '') + '</div>' +
-      '<div class="mo">' + an(mot('pack_store')) + ': ' + an(p.store_name || '—') +
-      ' · ' + an(mot('pack_route')) + ': ' + an(p.route_name || '—') + '</div>' +
-      '<div class="mo">' + an(mot('pack_box_count')) + ': ' + so(p.box_count, 0) +
-      ' · ' + an(mot('so_case_qty')) + ': ' + so(p.total_cases, 0) +
-      ' · ' + an(mot('so_weight')) + ': ' + so(p.total_weight_kg, 2) + ' kg</div>' +
-      '<table><thead><tr>' +
-      '<th>' + an(mot('pack_from_line')) + '</th>' +
-      '<th>' + an(mot('so_barcode')) + '</th>' +
-      '<th>' + an(mot('so_description')) + '</th>' +
-      '<th class="phai">' + an(mot('so_case_qty')) + '</th>' +
-      '<th class="phai">' + an(mot('so_weight')) + '</th>' +
-      '</tr></thead><tbody>' +
-      (p.items || []).map(function (it) {
-        return '<tr><td class="giua">#' + (it.line_no || '?') + '</td>' +
-          '<td>' + an(it.barcode || '') + '</td><td>' + an(it.description || '') + '</td>' +
-          '<td class="phai">' + so(it.case_qty, 0) + '</td>' +
-          '<td class="phai">' + so(it.weight_kg, 2) + '</td></tr>';
-      }).join('') +
+      '<div class="dau">' +
+        '<div class="trai">' +
+          '<div><b>RDC:</b> ' + an(p.route_name || mot('in_rdc')) + '</div>' +
+          '<div>' + an(NHAN_IN.packingList) + ': ' + an(p.id) + '</div>' +
+          '<div>' + an(NHAN_IN.so) + ': ' + an(p.so_id) + (p.po_number ? ' · ' + an(NHAN_IN.po) + ' ' + an(p.po_number) : '') + '</div>' +
+        '</div>' +
+        '<div class="phai">' +
+          '<img src="/api/packing-lists/' + encodeURIComponent(p.id) + '/qr.svg" alt="QR">' +
+          '<div class="mo">' + an(mot('in_scan_hint')) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<h1>' + an(NHAN_IN.packingList) + '</h1>' +
+      '<table class="bang-dau"><tr>' +
+        '<td><b>' + an(NHAN_IN.date) + '</b><br>' + an(ngayChu) + '</td>' +
+        '<td><b>' + an(NHAN_IN.storeName) + '</b><br>' + an(p.store_name || '-') + '</td>' +
+        '<td><b>' + an(NHAN_IN.storeId) + '</b><br>' + an(p.store_code || '-') + '</td>' +
+        '<td><b>' + an(NHAN_IN.box) + '</b><br>' + so(p.box_count, 0) + '</td>' +
+      '</tr></table>' +
+      '<table class="bang-hang"><thead><tr>' +
+        '<th>' + an(NHAN_IN.no) + '</th><th>' + an(NHAN_IN.barcode) + '</th>' +
+        '<th>' + an(NHAN_IN.idLaos) + '</th><th>' + an(NHAN_IN.idThai) + '</th>' +
+        '<th>' + an(NHAN_IN.desc) + '</th><th>' + an(NHAN_IN.cas) + '</th>' +
+        '<th>' + an(NHAN_IN.piece) + '</th><th>' + an(NHAN_IN.totalWeight) + '</th>' +
+      '</tr></thead><tbody>' + hang +
+      '<tr class="tong"><td colspan="5">' + an(NHAN_IN.total) + '</td>' +
+        '<td>' + so(tongThung, 0) + '</td><td>' + so(tongCai, 0) + '</td><td>' + so(tongKg, 3) + '</td></tr>' +
       '</tbody></table>';
-    moCuaSoIn(p.id, than);
+
+    moCuaSoIn(mot('in_packing_list') + ' ' + p.id, than,
+      '.dau{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;font-size:16px;line-height:1.5}' +
+      '.dau .trai div:first-child{font-weight:700}' +
+      '.dau .phai{text-align:center;width:170px}.dau img{width:150px;height:150px;display:block;margin:0 auto}' +
+      '.mo{color:#475569;font-size:11px}' +
+      'h1{text-align:center;font-size:30px;margin:10px 0 12px}' +
+      'table{width:100%;border-collapse:collapse}' +
+      'td,th{border:1px solid #000;padding:6px 8px;text-align:left;vertical-align:top}' +
+      '.bang-dau td{font-size:16px}.bang-dau b{display:block;font-size:17px}' +
+      '.bang-hang{margin-top:12px;font-size:13px}.bang-hang th{font-weight:700}' +
+      '.bang-hang .tong td{font-weight:700}');
   }
 
+  /* Mẫu 1 — tem kiện: RDC LAOS, bốn ô STORE · ROUTE · WAVE · GATE, dòng TO,
+   * QR + Đơn / ITEM / PACK / Weight / Cube, số kiện n/N ở góc. Mỗi kiện một tem,
+   * mỗi tem một trang khi in. */
   function inTem(p) {
     PL.goi('/api/packing-lists/' + encodeURIComponent(p.id) + '/print', {
       method: 'POST', body: { reprint: true },
     }).then(function (moi) {
-      var than = '<h1>' + an(mot('pack_print_labels')) + ' — ' + an(p.id) + '</h1>' +
-        '<div class="luoi">' + (moi.labels || []).map(function (lb) {
-          return '<div class="tem">' +
-            '<div class="dau"><b>' + an(p.id) + '</b><span>' + lb.package_no + '/' + lb.package_total + '</span></div>' +
-            '<img src="/api/labels/' + encodeURIComponent(lb.qr_token) + '/qr.svg">' +
-            '<div class="chan">' + an(mot('pack_belongs_to')) + ': <b>' + an(p.so_id) + '</b><br>' +
-            (p.po_number ? 'PO ' + an(p.po_number) + '<br>' : '') +
-            an(p.store_name || '') + '<br><code>' + an(lb.qr_token) + '</code></div>' +
-          '</div>';
-        }).join('') + '</div>';
-      moCuaSoIn(mot('pack_print_labels'), than,
-        '.luoi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}' +
-        '.tem{border:1px solid #0f172a;border-radius:6px;padding:10px;text-align:center;page-break-inside:avoid}' +
-        '.tem .dau{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}' +
-        '.tem img{width:150px;height:150px}' +
-        '.tem .chan{font-size:11px;margin-top:6px;line-height:1.35}' +
-        '.tem code{font-size:9px;word-break:break-all}');
+      var soMat = (p.items || []).length;
+      var than = (moi.labels || []).map(function (lb) {
+        return '<div class="tem">' +
+          '<div class="rdc">' + an(NHAN_IN.rdc) + '</div>' +
+          '<table class="bon-o"><tr>' +
+            '<td><div class="nh">' + an(NHAN_IN.store) + '</div><div class="gt">' + an(p.store_code || p.store_name || '-') + '</div></td>' +
+            '<td><div class="nh">' + an(NHAN_IN.route) + '</div><div class="gt">' + an(p.route_name || '-') + '</div></td>' +
+            '<td><div class="nh">' + an(NHAN_IN.wave) + '</div><div class="gt">' + an(p.wave || '-') + '</div></td>' +
+            '<td><div class="nh">' + an(NHAN_IN.gate) + '</div><div class="gt">' + an(p.gate || '-') + '</div></td>' +
+          '</tr></table>' +
+          '<div class="to"><b>' + an(NHAN_IN.to) + ':</b> ' + an(p.store_name || '-') + '</div>' +
+          '<div class="duoi">' +
+            '<img src="/api/labels/' + encodeURIComponent(lb.qr_token) + '/qr.svg" alt="QR">' +
+            '<div class="tt">' +
+              '<div>' + an(NHAN_IN.so) + ': <b>' + an(p.so_id) + '</b>' + (p.po_number ? ' &nbsp; ' + an(NHAN_IN.po) + ': <b>' + an(p.po_number) + '</b>' : '') + '</div>' +
+              '<div>' + an(NHAN_IN.item) + ': <b>' + soMat + '</b> &nbsp; ' + an(NHAN_IN.pack) + ': <b>' + so(p.box_count, 0) + '</b></div>' +
+              '<div>' + an(NHAN_IN.weight) + ': <b>' + so(p.total_weight_kg, 3) + ' kg</b></div>' +
+              '<div>' + an(NHAN_IN.cube) + ': <b>' + so(p.total_cube_m3, 3) + ' m³</b></div>' +
+            '</div>' +
+            '<div class="so-kien">' + lb.package_no + '/' + lb.package_total + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+
+      moCuaSoIn(mot('pack_print_labels') + ' ' + p.id, than,
+        '.tem{border:2px solid #000;padding:14px 16px;margin-bottom:14px;page-break-after:always;break-after:page}' +
+        '.tem:last-child{page-break-after:auto;break-after:auto}' +
+        '.rdc{font-size:22px;font-weight:800;margin-bottom:8px}' +
+        '.bon-o{width:100%;border-collapse:collapse}.bon-o td{border:1px solid #000;padding:10px 6px;text-align:center;width:25%;vertical-align:top}' +
+        '.bon-o .nh{font-size:17px;letter-spacing:.3px}.bon-o .gt{font-size:30px;font-weight:800;line-height:1.15;margin-top:6px;word-break:break-word}' +
+        '.to{font-size:17px;margin:10px 0}' +
+        '.duoi{display:flex;align-items:flex-start;gap:24px;position:relative}' +
+        '.duoi img{width:160px;height:160px;flex:none}' +
+        '.tt{font-size:17px;line-height:1.7}' +
+        '.so-kien{position:absolute;right:0;bottom:0;font-size:30px;font-weight:800}');
       PL.thongBao(mot('ok_pl_printed'));
       return lamMoiTatCa(p.id);
     }).catch(PL.baoLoi);
@@ -494,12 +587,20 @@ window.PackingList = (function () {
     });
     document.getElementById('pk-loc-trang-thai').addEventListener('change', napDanhSach);
 
+    napDsTuyen();
     napDsDon().then(function () {
       return Promise.all([
         napDanhSach(),
         PL.goi('/api/packing-lists/stats').then(veSoLieu).catch(function () {}),
       ]);
     });
+  }
+
+  function napDsTuyen() {
+    return PL.goi('/api/routes?active_only=true').then(function (d) {
+      dsTuyen = d || [];
+      veKhungDongGoi();
+    }).catch(function () {});
   }
 
   function napDsDon() {

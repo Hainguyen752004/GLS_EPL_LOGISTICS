@@ -12,7 +12,7 @@ import math
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
-from models import Customer, Delivery, PackingList, SalesOrder, VehiclePosition
+from models import Customer, Delivery, PackingList, Route, SalesOrder, VehiclePosition
 from services import giao_hang_service
 from services.loi import LoiNghiepVu
 
@@ -41,15 +41,39 @@ def _huong(a, b):
     return (math.degrees(math.atan2(y, x)) + 360) % 360
 
 
-def kho_cua(db):
+def kho_cua(db, gh=None):
+    """Điểm xuất phát: ưu tiên điểm đi của TUYẾN, không có thì lấy kho mặc định."""
+    if gh is not None:
+        r = tuyen_cua(db, gh)
+        if r and r.from_id:
+            kh = db.query(Customer).filter(Customer.id == r.from_id).first()
+            if kh and kh.lat is not None and kh.lng is not None:
+                return (kh.lat, kh.lng), kh.name
     kho = db.query(Customer).filter(Customer.kind == "depot", Customer.lat.isnot(None)).first()
     if kho:
         return (kho.lat, kho.lng), kho.name
     return KHO_MAC_DINH, "Kho Vientiane"
 
 
+def tuyen_cua(db, gh):
+    """Tuyến của chuyến = tuyến trên Packing List đầu tiên còn hiệu lực."""
+    for pl in gh.packing_lists:
+        if pl.status == "cancelled" or not pl.route_id:
+            continue
+        r = db.query(Route).filter(Route.id == pl.route_id).first()
+        if r:
+            return r
+    return None
+
+
 def diem_giao_cua(db, gh):
-    """Điểm giao = toạ độ khách của Packing List đầu tiên trên chuyến."""
+    """Điểm giao: ưu tiên điểm đến của TUYẾN, không có thì lấy toạ độ khách."""
+    r = tuyen_cua(db, gh)
+    if r and r.to_id:
+        kh = db.query(Customer).filter(Customer.id == r.to_id).first()
+        if kh and kh.lat is not None and kh.lng is not None:
+            return (kh.lat, kh.lng), kh.name
+
     for pl in gh.packing_lists:
         if pl.status == "cancelled":
             continue
@@ -87,7 +111,7 @@ def _moc_ra_dict(m):
 
 def tinh_trang_chuyen(db, gh):
     """Gói đủ thứ màn Theo dõi cần cho MỘT chuyến."""
-    kho, ten_kho = kho_cua(db)
+    kho, ten_kho = kho_cua(db, gh)
     dich, ten_dich = diem_giao_cua(db, gh)
     moc = moc_moi_nhat(db, gh.id)
 
@@ -99,8 +123,10 @@ def tinh_trang_chuyen(db, gh):
             con_km = round(_khoang_cach_km((moc.lat, moc.lng), dich), 1)
     tong_km = round(_khoang_cach_km(kho, dich), 1) if dich else None
 
+    r = tuyen_cua(db, gh)
     return {
         "delivery": giao_hang_service.ra_dict(gh, day_du=False),
+        "route": {"code": r.code, "name": r.name, "distance_km": r.distance_km} if r else None,
         "orders": sorted({pl.so_id for pl in gh.packing_lists if pl.status != "cancelled"}),
         "packing_lists": [pl.id for pl in gh.packing_lists if pl.status != "cancelled"],
         "depot": {"lat": kho[0], "lng": kho[1], "name": ten_kho},
@@ -148,7 +174,7 @@ def ghi_vi_tri(db, gh_id, payload, nguon="manual"):
     if not (-90 <= lat <= 90 and -180 <= lng <= 180):
         raise LoiNghiepVu("TRK_BAD_COORD", "Toạ độ ngoài phạm vi")
 
-    kho, _ = kho_cua(db)
+    kho, _ = kho_cua(db, gh)
     dich, _ = diem_giao_cua(db, gh)
     tien_do = 0.0
     if dich:
@@ -180,7 +206,7 @@ def mo_phong_chay_tiep(db, gh_id, buoc=0.15, nguoi="demo"):
     gh = giao_hang_service.nap(db, gh_id)
     if gh.status in ("delivered", "cancelled"):
         raise LoiNghiepVu("TRK_DELIVERY_CLOSED", "Chuyến đã đóng nên không chạy tiếp được", 409)
-    kho, _ = kho_cua(db)
+    kho, _ = kho_cua(db, gh)
     dich, ten = diem_giao_cua(db, gh)
     if not dich:
         raise LoiNghiepVu(
