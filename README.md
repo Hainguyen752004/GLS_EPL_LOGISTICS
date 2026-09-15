@@ -24,6 +24,12 @@ Muốn có sẵn dữ liệu để bấm thử:
 python backend\app\gieo_demo.py
 ```
 
+Lệnh này **luôn giữ đủ ba trạng thái** để demo: một đơn **chưa đóng gì**, một
+đơn **đóng dở** (để thấy cột *Còn lại* hoạt động), và một chuyến **đang giao**
+còn phiếu chưa ký nhận. Bấm hết kịch bản rồi chạy lại là có ngay bộ mới — mỗi
+bước chỉ sinh thêm khi trạng thái đó không còn cái nào, nên chạy bao nhiêu lần
+cũng không đẻ ra một đống đơn rác.
+
 ## Cơ sở dữ liệu
 
 Bản demo dùng **database riêng** tên `parking_list_demo` trên cùng máy chủ
