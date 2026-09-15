@@ -98,6 +98,43 @@ class Route(Base):
     created_at = Column(DateTime, nullable=False, default=_bay_gio)
     updated_at = Column(DateTime, nullable=False, default=_bay_gio, onupdate=_bay_gio)
 
+    segments = relationship(
+        "RouteSegment",
+        back_populates="route",
+        cascade="all, delete-orphan",
+        order_by="RouteSegment.seq",
+    )
+
+
+class RouteSegment(Base):
+    """Một CHẶNG của tuyến: đi từ đâu tới đâu, bao nhiêu km.
+
+    Tuyến thật hiếm khi là một đường thẳng kho → cửa hàng; nó đi qua mấy chặng
+    A → B → C. Tách chặng ra thì tổng km là tổng các chặng (không ai gõ tay một
+    con số rồi quên cập nhật), và bản đồ vẽ được đúng lộ trình chứ không phải
+    một đoạn thẳng nối hai đầu.
+
+    `from_id` / `to_id` trỏ vào danh mục địa điểm để có toạ độ; ai gõ một địa
+    điểm chưa có trong danh mục thì vẫn lưu được bằng `from_name` / `to_name`,
+    chỉ là chặng đó không hiện trên bản đồ.
+    """
+
+    __tablename__ = "route_segments"
+    __table_args__ = (
+        UniqueConstraint("route_id", "seq", name="uq_route_segment_seq"),
+        CheckConstraint("distance_km >= 0", name="ck_route_segment_km"),
+    )
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    route_id = Column(String(64), ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
+    seq = Column(Integer, nullable=False, default=1)
+    from_id = Column(String(64), ForeignKey("customers.id"), nullable=True)
+    to_id = Column(String(64), ForeignKey("customers.id"), nullable=True)
+    from_name = Column(String(255), nullable=False)
+    to_name = Column(String(255), nullable=False)
+    distance_km = Column(Float, nullable=False, default=0)
+
+    route = relationship("Route", back_populates="segments")
+
 
 class Driver(Base):
     __tablename__ = "drivers"

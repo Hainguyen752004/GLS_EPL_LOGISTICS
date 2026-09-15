@@ -71,9 +71,16 @@ function duLieuApi(url) {
   if (url.indexOf('/api/vehicles') >= 0) return [{ id: 'v1', plate_head: 'ກທ 1234', plate_trailer: 'ກທ 5678', internal_no: '341' }];
   if (url.indexOf('/api/drivers') >= 0) return [{ id: 'd1', full_name: 'Somsak', phone: '020' }];
   if (url.indexOf('/api/routes') >= 0) return [
-    { id: 'r1', code: 'RT-VTE-DONEKOY', name: 'Kho Vientiane -> PTTLAO DONEKOY', from_id: 'c3', to_id: 'c1',
-      from_name: 'Kho Vientiane', to_name: 'PTTLAO DONEKOY', from_lat: 17.9757, from_lng: 102.6331,
-      to_lat: 17.938, to_lng: 102.625, distance_km: 5.2, active: true },
+    { id: 'r1', code: 'RT-VTE-DONEKOY', name: 'Kho Vientiane -> PTTLAO DONEKOY',
+      distance_km: 7.7, active: true, segment_count: 2,
+      from_id: 'c3', to_id: 'c1', from_name: 'Kho Vientiane', to_name: 'PTTLAO DONEKOY',
+      from_lat: 17.9757, from_lng: 102.6331, to_lat: 17.938, to_lng: 102.625,
+      segments: [
+        { id: 1, seq: 1, from_id: 'c3', to_id: 'c2', from_name: 'Kho Vientiane', to_name: 'CP ALL Laos',
+          distance_km: 3.1, from_lat: 17.9757, from_lng: 102.6331, to_lat: 17.966, to_lng: 102.587 },
+        { id: 2, seq: 2, from_id: 'c2', to_id: 'c1', from_name: 'CP ALL Laos', to_name: 'PTTLAO DONEKOY',
+          distance_km: 4.6, from_lat: 17.966, from_lng: 102.587, to_lat: 17.938, to_lng: 102.625 },
+      ] },
   ];
   if (url.indexOf('/api/customers') >= 0) return [
     { id: 'c1', code: 'PTTLAO-DONEKOY', name: 'PTTLAO DONEKOY', kind: 'customer', address: 'Vientiane', lat: 17.938, lng: 102.625 },
@@ -157,7 +164,7 @@ function cho(ms) { return new Promise(r => setTimeout(r, ms)); }
     ['quet-tem', 'qt-ket-qua'],
     ['khach-hang', 'kh-danh-sach'],
     ['theo-doi', 'td-danh-sach'],
-    ['tuyen-duong', 'td2-danh-sach'],
+    ['tuyen-duong', 'rt-bang-chang'],
   ];
 
   const { w, nhat } = dungKhung();

@@ -12,7 +12,7 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import SessionLocal, tao_luoc_do
-from models import Customer, Driver, Route, SalesOrder, SalesOrderLine, Vehicle
+from models import Customer, Driver, Route, RouteSegment, SalesOrder, SalesOrderLine, Vehicle
 
 
 def _ma():
@@ -76,10 +76,18 @@ KHACH = [
     },
 ]
 
+# Tuyến mẫu, mỗi tuyến là một chuỗi CHẶNG A → B → C.
 TUYEN = [
-    ("RT-VTE-DONEKOY", "Kho Vientiane → PTTLAO DONEKOY", "KHO-VTE", "PTTLAO-DONEKOY", 5.2),
-    ("RT-VTE-SIKHAY", "Kho Vientiane → PTTLAO SIKHAY", "KHO-VTE", "PTTLAO-SIKHAY", 6.8),
-    ("RT-VTE-CPALL", "Kho Vientiane → CP ALL Laos", "KHO-VTE", "CPALL-LAOS", 5.5),
+    ("RT-VTE-DONEKOY", "Kho Vientiane → PTTLAO DONEKOY", [
+        ("KHO-VTE", "CPALL-LAOS", 3.1),
+        ("CPALL-LAOS", "PTTLAO-DONEKOY", 4.6),
+    ]),
+    ("RT-VTE-SIKHAY", "Kho Vientiane → PTTLAO SIKHAY", [
+        ("KHO-VTE", "PTTLAO-SIKHAY", 6.8),
+    ]),
+    ("RT-VTE-CPALL", "Kho Vientiane → CP ALL Laos", [
+        ("KHO-VTE", "CPALL-LAOS", 5.5),
+    ]),
 ]
 
 XE = [
@@ -191,16 +199,23 @@ def gieo():
                 db.add(Customer(id=_ma(), **k))
         db.flush()
         # Tuyến đường mẫu — nối kho với từng cửa hàng đã khai toạ độ.
-        for ma_t, ten_t, ma_di, ma_den, km in TUYEN:
+        for ma_t, ten_t, ds_chang in TUYEN:
             if db.query(Route).filter(Route.code == ma_t).first():
                 continue
-            di = db.query(Customer).filter(Customer.code == ma_di).first()
-            den = db.query(Customer).filter(Customer.code == ma_den).first()
-            db.add(Route(
-                id=_ma(), code=ma_t, name=ten_t,
-                from_id=di.id if di else None, to_id=den.id if den else None,
-                distance_km=km, active=1,
-            ))
+            r = Route(id=_ma(), code=ma_t, name=ten_t, active=1,
+                      distance_km=round(sum(x[2] for x in ds_chang), 2))
+            db.add(r)
+            db.flush()
+            for i, (ma_di, ma_den, km) in enumerate(ds_chang, start=1):
+                di = db.query(Customer).filter(Customer.code == ma_di).first()
+                den = db.query(Customer).filter(Customer.code == ma_den).first()
+                db.add(RouteSegment(
+                    route_id=r.id, seq=i,
+                    from_id=di.id if di else None, to_id=den.id if den else None,
+                    from_name=di.name if di else ma_di,
+                    to_name=den.name if den else ma_den,
+                    distance_km=km,
+                ))
 
         for v in XE:
             if not db.query(Vehicle).filter(Vehicle.plate_head == v["plate_head"]).first():

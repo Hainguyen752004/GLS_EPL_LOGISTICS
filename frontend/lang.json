@@ -1645,9 +1645,9 @@
     "lo": "ລາຍການເສັ້ນທາງ"
   },
   "rt_intro": {
-    "vi": "Tuyến giao hàng: đi từ kho nào, tới điểm giao nào, dài bao nhiêu km. Phiếu đóng gói CHỌN tuyến ở đây, và bản đồ theo dõi vẽ đường theo điểm đầu — điểm cuối của tuyến.",
-    "en": "Delivery routes: which depot they start from, which drop point they end at, how many kilometres. Packing lists PICK a route here, and the tracking map draws the line between its two ends.",
-    "lo": "ເສັ້ນທາງສົ່ງ: ອອກຈາກສາງໃດ, ໄປຮອດຈຸດສົ່ງໃດ, ໄກເທົ່າໃດ. ໃບຫຸ້ມຫໍ່ເລືອກເສັ້ນທາງຢູ່ນີ້, ແລະ ແຜນທີ່ຕິດຕາມແຕ້ມເສັ້ນຕາມສອງປາຍ."
+    "vi": "Mỗi tuyến là một chuỗi chặng A → B → C. Tổng km là tổng các chặng. Phiếu đóng gói CHỌN tuyến ở đây, và bản đồ theo dõi vẽ đường theo đúng lộ trình.",
+    "en": "Each route is a chain of segments A → B → C. The total distance is the sum of the segments. Packing lists PICK a route here, and the tracking map follows that exact path.",
+    "lo": "ແຕ່ລະເສັ້ນທາງແມ່ນລຳດັບຊ່ວງ A → B → C. ໄລຍະທາງລວມແມ່ນຜົນບວກຂອງຊ່ວງທາງ. ໃບຫຸ້ມຫໍ່ເລືອກເສັ້ນທາງຢູ່ນີ້, ແລະ ແຜນທີ່ຕິດຕາມແຕ້ມຕາມເສັ້ນທາງນັ້ນ."
   },
   "rt_new": {
     "vi": "Thêm tuyến",
@@ -1783,5 +1783,120 @@
     "vi": "Đã xoá tuyến đường.",
     "en": "The route has been deleted.",
     "lo": "ລຶບເສັ້ນທາງແລ້ວ."
+  },
+  "rt_planning_title": {
+    "vi": "Kế hoạch tuyến đường",
+    "en": "Route planning",
+    "lo": "ແຜນເສັ້ນທາງ"
+  },
+  "rt_saved_label": {
+    "vi": "Xem & chọn tuyến đã lưu:",
+    "en": "View & pick a saved route:",
+    "lo": "ເບິ່ງ & ເລືອກເສັ້ນທາງທີ່ບັນທຶກ:"
+  },
+  "rt_pick_saved": {
+    "vi": "— Chọn tuyến đường —",
+    "en": "— Pick a route —",
+    "lo": "— ເລືອກເສັ້ນທາງ —"
+  },
+  "rt_code_ph": {
+    "vi": "Ví dụ: RT-VTE-DONEKOY",
+    "en": "e.g. RT-VTE-DONEKOY",
+    "lo": "ຕົວຢ່າງ: RT-VTE-DONEKOY"
+  },
+  "rt_name_ph": {
+    "vi": "Ví dụ: Kho Vientiane → PTTLAO DONEKOY",
+    "en": "e.g. Vientiane depot → PTTLAO DONEKOY",
+    "lo": "ຕົວຢ່າງ: ສາງວຽງຈັນ → PTTLAO DONEKOY"
+  },
+  "rt_segments_title": {
+    "vi": "Các chặng của tuyến",
+    "en": "Route segments",
+    "lo": "ຊ່ວງທາງຂອງເສັ້ນທາງ"
+  },
+  "rt_total_distance": {
+    "vi": "Tổng quãng đường:",
+    "en": "Total distance:",
+    "lo": "ໄລຍະທາງລວມ:"
+  },
+  "rt_seg_from": {
+    "vi": "Điểm đi",
+    "en": "From",
+    "lo": "ຈຸດອອກ"
+  },
+  "rt_seg_to": {
+    "vi": "Điểm đến",
+    "en": "To",
+    "lo": "ຈຸດຮອດ"
+  },
+  "rt_seg_distance": {
+    "vi": "Khoảng cách",
+    "en": "Distance",
+    "lo": "ໄລຍະທາງ"
+  },
+  "rt_seg_from_ph": {
+    "vi": "Điểm đi (ví dụ: Kho Vientiane)",
+    "en": "From (e.g. Vientiane depot)",
+    "lo": "ຈຸດອອກ (ຕົວຢ່າງ: ສາງວຽງຈັນ)"
+  },
+  "rt_seg_to_ph": {
+    "vi": "Điểm đến (ví dụ: PTTLAO DONEKOY)",
+    "en": "To (e.g. PTTLAO DONEKOY)",
+    "lo": "ຈຸດຮອດ (ຕົວຢ່າງ: PTTLAO DONEKOY)"
+  },
+  "rt_seg_km_ph": {
+    "vi": "km (ví dụ: 5)",
+    "en": "km (e.g. 5)",
+    "lo": "ກມ (ຕົວຢ່າງ: 5)"
+  },
+  "rt_add_segment_title": {
+    "vi": "+ Thêm chặng mới cho tuyến",
+    "en": "+ Add a new segment",
+    "lo": "+ ເພີ່ມຊ່ວງທາງໃໝ່"
+  },
+  "rt_add_segment": {
+    "vi": "Thêm chặng",
+    "en": "Add segment",
+    "lo": "ເພີ່ມຊ່ວງທາງ"
+  },
+  "rt_save_route": {
+    "vi": "Hoàn tất & lưu tuyến đường",
+    "en": "Finish & save the route",
+    "lo": "ສຳເລັດ & ບັນທຶກເສັ້ນທາງ"
+  },
+  "rt_no_segment_yet": {
+    "vi": "Chưa có chặng nào. Thêm chặng đầu tiên ở khung bên dưới.",
+    "en": "No segment yet. Add the first one in the box below.",
+    "lo": "ຍັງບໍ່ມີຊ່ວງທາງ. ເພີ່ມອັນທຳອິດໃນກອບຂ້າງລຸ່ມ."
+  },
+  "rt_map_title": {
+    "vi": "Sơ đồ lộ trình nhiều chặng",
+    "en": "Multi-segment route map",
+    "lo": "ແຜນຜັງເສັ້ນທາງຫຼາຍຊ່ວງ"
+  },
+  "rt_map_hint": {
+    "vi": "Đường xanh đi qua đúng thứ tự các chặng. Số trên ghim là thứ tự điểm dừng.",
+    "en": "The blue line follows the segments in order. The number on each pin is the stop order.",
+    "lo": "ເສັ້ນຟ້າຜ່ານຕາມລຳດັບຊ່ວງທາງ. ເລກເທິງໝຸດແມ່ນລຳດັບຈຸດຢຸດ."
+  },
+  "rt_map_no_coord": {
+    "vi": "Chặng chưa đủ toạ độ nên chưa vẽ được. Khai toạ độ cho địa điểm ở danh mục khách hàng.",
+    "en": "The segments lack coordinates, so nothing can be drawn. Set coordinates for the places in the customer directory.",
+    "lo": "ຊ່ວງທາງຂາດພິກັດ ຈຶ່ງແຕ້ມບໍ່ໄດ້. ຕັ້ງພິກັດໃຫ້ສະຖານທີ່ໃນລາຍຊື່ລູກຄ້າ."
+  },
+  "rt_segment_count": {
+    "vi": "Số chặng",
+    "en": "Segments",
+    "lo": "ຈຳນວນຊ່ວງທາງ"
+  },
+  "err_RT_NO_SEGMENT": {
+    "vi": "Tuyến đường phải có ít nhất một chặng.",
+    "en": "The route needs at least one segment.",
+    "lo": "ເສັ້ນທາງຕ້ອງມີຢ່າງໜ້ອຍໜຶ່ງຊ່ວງທາງ."
+  },
+  "err_RT_SEGMENT_NO_POINT": {
+    "vi": "Chặng phải có đủ điểm đi và điểm đến.",
+    "en": "A segment needs both a start and an end point.",
+    "lo": "ຊ່ວງທາງຕ້ອງມີທັງຈຸດອອກ ແລະ ຈຸດຮອດ."
   }
 }

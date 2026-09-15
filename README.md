@@ -49,11 +49,23 @@ khai ở đây là thứ màn Theo dõi dùng để vẽ đường xe.
 
 ## Tuyến đường
 
-Nút **TĐ** trên thanh đầu trang. Mỗi tuyến có **mã, tên, điểm đi, điểm đến, số
-km** — hai đầu chọn từ danh mục khách hàng. Ô "Tuyến giao" trên phiếu đóng gói
-**chọn** từ đây thay vì gõ tay, nên phiếu in ra không còn để trống, và màn Theo
-dõi vẽ đường theo đúng hai đầu của tuyến. Xoá tuyến đang có Packing List dùng
-thì bị chặn (`RT_IN_USE`).
+Nút **TĐ** trên thanh đầu trang — dựng theo module Tuyến đường của EPL_System.
+
+Một tuyến là một **chuỗi chặng A → B → C**, không phải một đoạn thẳng nối hai
+đầu. Màn có: ô chọn tuyến đã lưu, mã và tên tuyến, **bảng các chặng** với tổng
+quãng đường tự cộng, khung **thêm chặng mới**, và **sơ đồ lộ trình** vẽ đường
+xanh đi qua đúng thứ tự các chặng.
+
+**Tổng km LÀ tổng các chặng** — không ai gõ tay một con số rồi quên sửa. Thêm
+hay bớt một chặng là tổng đổi theo ngay.
+
+Điểm đi / điểm đến của mỗi chặng gõ tự do, nhưng có gợi ý từ danh mục khách
+hàng; gõ trúng tên trong danh mục thì chặng lấy luôn toạ độ và hiện trên bản
+đồ, gõ tên lạ thì vẫn lưu được, chỉ là chặng đó không vẽ ra.
+
+Ô "Tuyến giao" trên phiếu đóng gói **chọn** từ đây thay vì gõ tay, nên phiếu in
+ra không còn để trống. Màn Theo dõi vẽ đường theo đúng lộ trình nhiều chặng.
+Xoá tuyến đang có Packing List dùng thì bị chặn (`RT_IN_USE`).
 
 ## Theo dõi xe
 

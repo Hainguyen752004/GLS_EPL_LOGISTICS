@@ -91,13 +91,13 @@ def ds_tuyen(q: Optional[str] = None, active_only: bool = False, db: Session = D
 @router.post("/api/routes")
 def tao_tuyen(payload: dict = Body(...), db: Session = Depends(get_db)):
     r = _lam(db, lambda: tuyen_service.tao(db, payload))
-    return _tra(tuyen_service.ra_dict(r, tuyen_service._diem(db, r)), "Đã tạo tuyến đường")
+    return _tra(tuyen_service.ra_dict(db, tuyen_service.nap(db, r.id)), "Đã tạo tuyến đường")
 
 
 @router.put("/api/routes/{id_}")
 def sua_tuyen(id_: str, payload: dict = Body(...), db: Session = Depends(get_db)):
     r = _lam(db, lambda: tuyen_service.sua(db, id_, payload))
-    return _tra(tuyen_service.ra_dict(r, tuyen_service._diem(db, r)), "Đã cập nhật tuyến đường")
+    return _tra(tuyen_service.ra_dict(db, tuyen_service.nap(db, r.id)), "Đã cập nhật tuyến đường")
 
 
 @router.delete("/api/routes/{id_}")

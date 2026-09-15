@@ -1,19 +1,59 @@
-/* Màn Tuyến đường */
+/* Màn Tuyến đường — bố cục theo module Tuyến đường của EPL_System */
 
-.rt-form .hang-o { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-.rt-form .nut-day { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-
-.thong-tin { gap: 10px 16px; }
-.o-tt .nhan-tt { color: var(--chu-mo); font-size: 11.5px; text-transform: uppercase; letter-spacing: .3px; }
-.o-tt .gia-tri-tt { margin-top: 2px; font-weight: 600; word-break: break-word; }
-
-.rt-duong {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-top: 12px; padding: 10px 12px;
-  background: var(--nen); border-radius: 8px; font-size: 13px;
+.rt-chon-luu {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--chinh-nhat); border: 1px solid var(--vien); border-radius: 8px;
 }
-.rt-duong .diem { font-weight: 700; }
-.rt-duong .mui { color: var(--chu-mo); }
-.rt-duong .km { margin-left: auto; color: var(--chinh-dam); font-weight: 700; }
+.rt-chon-luu .nhan { color: var(--chinh-dam); font-weight: 700; font-size: 13px; }
+.rt-chon-luu select {
+  flex: 1; max-width: 480px;
+  border-color: var(--chinh); color: var(--chinh-dam); font-weight: 700;
+}
 
-.ds-muc .rt-doan { margin-top: 2px; color: var(--chu-mo); font-size: 12px; }
+/* -------------------------------------------------------------- bảng chặng */
+.rt-khoi-chang {
+  margin-top: 18px;
+  border: 1px solid var(--vien); border-radius: 10px; overflow: hidden;
+}
+.rt-khoi-dau {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--nen); border-bottom: 1px solid var(--vien);
+  font-weight: 700; font-size: 13.5px;
+}
+.rt-khoi-dau .rt-tong { color: var(--chu-mo); font-size: 12.5px; font-weight: 600; }
+.rt-khoi-dau .rt-tong strong { color: var(--chinh-dam); font-size: 15px; margin-left: 4px; }
+
+#rt-bang-chang td { padding: 7px 10px; vertical-align: middle; }
+#rt-bang-chang .diem { font-weight: 600; }
+#rt-bang-chang .thieu-toa-do { color: var(--cam); font-size: 11.5px; margin-top: 2px; }
+#rt-bang-chang .co-toa-do { color: var(--xanh); font-size: 11.5px; margin-top: 2px; }
+
+/* ------------------------------------------------------------- thêm chặng */
+.rt-them-chang {
+  margin-top: 18px; padding: 16px;
+  background: var(--nen); border: 1px dashed var(--vien-dam); border-radius: 10px;
+}
+.rt-them-chang .nhan-them { font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+.rt-them-chang .hang-them {
+  display: grid; grid-template-columns: 1fr 1fr 130px 150px; gap: 10px; align-items: center;
+}
+@media (max-width: 900px) {
+  .rt-them-chang .hang-them { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------- bản đồ */
+.ban-do-tuyen { height: 420px; background: var(--nen); border-bottom: 1px solid var(--vien); }
+
+.ghim-chang {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--chinh); color: #fff; border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+}
+.ghim-chang.dau { background: var(--tim); }
+.ghim-chang.cuoi { background: var(--do); }

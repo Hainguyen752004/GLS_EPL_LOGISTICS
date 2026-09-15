@@ -3,22 +3,84 @@
   <p class="gioi-thieu" data-i18n="rt_intro"></p>
 </div>
 
-<div class="luoi-2">
-  <div class="the">
-    <div class="the-dau">
-      <h3 data-i18n="nav_tuyen_duong"></h3>
-      <div style="display:flex;gap:8px">
-        <button type="button" class="nut nho" id="td2-lam-moi" data-i18n="common_refresh"></button>
-        <button type="button" class="nut chinh nho" id="td2-them" data-i18n="rt_new"></button>
-      </div>
+<div class="the">
+  <div class="the-dau">
+    <h3 data-i18n="rt_planning_title"></h3>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="nut chinh nho" id="rt-them" data-i18n="rt_new"></button>
+      <button type="button" class="nut nho" id="rt-huy" data-i18n="common_cancel"></button>
     </div>
-    <div class="the-than" style="padding-bottom:8px">
-      <input type="text" id="td2-tim" data-i18n-ph="rt_search_ph">
-    </div>
-    <div class="ds" id="td2-danh-sach"></div>
   </div>
 
-  <div id="td2-chi-tiet">
-    <div class="the"><div class="trong" data-i18n="rt_pick_hint"></div></div>
+  <div class="the-than">
+    <!-- Chọn tuyến đã lưu -->
+    <div class="rt-chon-luu">
+      <span class="nhan" data-i18n="rt_saved_label"></span>
+      <select id="rt-chon-tuyen"></select>
+    </div>
+
+    <!-- Mã và tên tuyến -->
+    <div class="hang-o" style="margin-top:16px">
+      <label class="o"><span data-i18n="rt_code"></span>
+        <input type="text" id="rt-ma" data-i18n-ph="rt_code_ph"></label>
+      <label class="o"><span data-i18n="rt_name"></span>
+        <input type="text" id="rt-ten" data-i18n-ph="rt_name_ph"></label>
+    </div>
+
+    <!-- Bảng chặng -->
+    <div class="rt-khoi-chang">
+      <div class="rt-khoi-dau">
+        <span data-i18n="rt_segments_title"></span>
+        <span class="rt-tong">
+          <span data-i18n="rt_total_distance"></span>
+          <strong id="rt-tong-km">0 km</strong>
+        </span>
+      </div>
+      <div class="bang-cuon">
+        <table class="bang">
+          <thead>
+            <tr>
+              <th style="width:44px" class="giua" data-i18n="so_line_no"></th>
+              <th data-i18n="rt_seg_from"></th>
+              <th data-i18n="rt_seg_to"></th>
+              <th class="phai" style="width:140px" data-i18n="rt_seg_distance"></th>
+              <th class="phai" style="width:90px" data-i18n="common_actions"></th>
+            </tr>
+          </thead>
+          <tbody id="rt-bang-chang"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Thêm chặng -->
+    <div class="rt-them-chang">
+      <div class="nhan-them" data-i18n="rt_add_segment_title"></div>
+      <div class="hang-them">
+        <input type="text" id="rt-chang-di" list="rt-goi-y-diem" data-i18n-ph="rt_seg_from_ph">
+        <input type="text" id="rt-chang-den" list="rt-goi-y-diem" data-i18n-ph="rt_seg_to_ph">
+        <input type="number" id="rt-chang-km" min="0" step="0.1" data-i18n-ph="rt_seg_km_ph">
+        <button type="button" class="nut chinh" id="rt-nut-them-chang" data-i18n="rt_add_segment"></button>
+      </div>
+      <datalist id="rt-goi-y-diem"></datalist>
+      <p class="goi-y" data-i18n="rt_coord_hint"></p>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button type="button" class="nut nguy-hiem" id="rt-xoa" hidden data-i18n="common_delete"></button>
+        <button type="button" class="nut chinh" id="rt-luu" data-i18n="rt_save_route"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="the">
+  <div class="the-dau">
+    <h3 data-i18n="rt_map_title"></h3>
+    <div style="display:flex;gap:6px">
+      <button type="button" class="nut nho dang-chon" id="rt-nen-duong" data-i18n="trk_layer_street"></button>
+      <button type="button" class="nut nho" id="rt-nen-ve-tinh" data-i18n="trk_layer_satellite"></button>
+    </div>
+  </div>
+  <div id="rt-ban-do" class="ban-do-tuyen"></div>
+  <div class="the-than">
+    <p class="goi-y" id="rt-ghi-chu-ban-do" data-i18n="rt_map_hint"></p>
   </div>
 </div>

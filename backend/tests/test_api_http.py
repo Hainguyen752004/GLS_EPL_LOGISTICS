@@ -147,6 +147,93 @@ def chay():
     r = client.delete(f"/api/customers/{khach[0]['id']}")
     kiem(r.status_code == 409 and r.json()["detail"]["code"] == "CUST_IN_USE", "khách đang có đơn thì không xoá được")
 
+    print("\n[D2b] Tuyến đường nhiều chặng")
+    r = client.get("/api/routes")
+    kiem(r.status_code == 200 and len(r.json()["data"]) >= 1, "danh mục có tuyến đường")
+    tuyen = r.json()["data"]
+    kiem(all(x.get("segments") for x in tuyen[:1]), "tuyến có danh sách chặng")
+    nhieu = [x for x in tuyen if x.get("segment_count", 0) >= 2]
+    if nhieu:
+        m = nhieu[0]
+        tong = round(sum(c["distance_km"] for c in m["segments"]), 2)
+        kiem(abs(m["distance_km"] - tong) < 0.01, "tổng km của tuyến = tổng các chặng")
+        kiem(m["from_name"] == m["segments"][0]["from_name"], "điểm đầu tuyến lấy từ chặng đầu")
+        kiem(m["to_name"] == m["segments"][-1]["to_name"], "điểm cuối tuyến lấy từ chặng cuối")
+    else:
+        print("  (bỏ qua: chưa có tuyến nhiều chặng để đối chiếu)")
+
+    ma_t = "RT-" + uuid.uuid4().hex[:5].upper()
+    r = client.post("/api/routes", json={"code": ma_t, "name": "Tuyến kiểm"})
+    kiem(
+        r.status_code == 400 and (r.json().get("detail") or {}).get("code") == "RT_NO_SEGMENT",
+        "tuyến không có chặng bị chặn (RT_NO_SEGMENT)",
+    )
+    r = client.post("/api/routes", json={
+        "code": ma_t, "name": "Tuyến kiểm",
+        "segments": [
+            {"from_name": "Kho A", "to_name": "Trạm B", "distance_km": 4},
+            {"from_name": "Trạm B", "to_name": "Cửa hàng C", "distance_km": 6.5},
+        ],
+    })
+    kiem(r.status_code == 200, "tạo tuyến nhiều chặng (HTTP %s)" % r.status_code)
+    rt = r.json()["data"]
+    rt_id = rt["id"]
+    kiem(len(rt["segments"]) == 2, "lưu đủ 2 chặng")
+    kiem(abs(rt["distance_km"] - 10.5) < 0.01, "tổng km tự cộng từ chặng (%s)" % rt["distance_km"])
+    kiem(rt["from_name"] == "Kho A" and rt["to_name"] == "Cửa hàng C", "hai đầu tuyến suy từ chặng")
+
+    r = client.post("/api/routes", json={
+        "code": ma_t, "name": "Trùng",
+        "segments": [{"from_name": "a", "to_name": "b", "distance_km": 1}],
+    })
+    kiem(
+        r.status_code == 409 and r.json()["detail"]["code"] == "RT_CODE_DUPLICATE",
+        "mã tuyến trùng bị chặn",
+    )
+    r = client.post("/api/routes", json={
+        "code": ma_t + "X", "name": "Âm km",
+        "segments": [{"from_name": "a", "to_name": "b", "distance_km": -5}],
+    })
+    kiem(r.status_code == 400 and r.json()["detail"]["code"] == "RT_KM_NEGATIVE", "số km âm bị chặn")
+    r = client.post("/api/routes", json={
+        "code": ma_t + "Y", "name": "Thiếu điểm",
+        "segments": [{"from_name": "", "to_name": "b", "distance_km": 1}],
+    })
+    kiem(
+        r.status_code == 400 and r.json()["detail"]["code"] == "RT_SEGMENT_NO_POINT",
+        "chặng thiếu điểm bị chặn",
+    )
+
+    # Sửa tuyến: thay cả cụm chặng thì tổng km phải tính lại theo cụm mới.
+    r = client.put(f"/api/routes/{rt_id}", json={
+        "code": ma_t, "name": "Tuyến kiểm 2",
+        "segments": [{"from_name": "Kho A", "to_name": "Cửa hàng C", "distance_km": 9}],
+    })
+    kiem(
+        r.status_code == 200 and len(r.json()["data"]["segments"]) == 1
+        and abs(r.json()["data"]["distance_km"] - 9) < 0.01,
+        "sửa tuyến thì chặng và tổng km tính lại",
+    )
+    kiem(client.delete(f"/api/routes/{rt_id}").status_code == 200, "xoá tuyến chưa dùng")
+
+    # Tuyến ĐANG ĐƯỢC PHIẾU DÙNG thì phải bị chặn. Chỉ thử trên tuyến thật sự
+    # có phiếu — không được đụng vào tuyến demo chưa ai dùng, vì gọi DELETE lên
+    # nó là xoá thật và lần sau mở trang lại thiếu tuyến.
+    dang_dung = None
+    for x in tuyen:
+        ds_pl = client.get("/api/packing-lists?page_size=100").json()["data"]["items"]
+        if any(p.get("route_id") == x["id"] for p in ds_pl):
+            dang_dung = x
+            break
+    if dang_dung:
+        r = client.delete(f"/api/routes/{dang_dung['id']}")
+        kiem(
+            r.status_code == 409 and r.json()["detail"]["code"] == "RT_IN_USE",
+            "xoá tuyến đang có phiếu dùng bị chặn (RT_IN_USE)",
+        )
+    else:
+        print("  (bỏ qua: không có tuyến nào đang được phiếu dùng)")
+
     print("\n[D3] Theo dõi xe")
     r = client.get("/api/tracking")
     kiem(r.status_code == 200 and isinstance(r.json()["data"], list), "danh sách chuyến đang theo dõi")

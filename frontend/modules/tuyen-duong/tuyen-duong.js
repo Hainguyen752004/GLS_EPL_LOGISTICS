@@ -1,208 +1,316 @@
-/* Module Tuyến đường.
+/* Module Tuyến đường — dựng theo module Tuyến đường của EPL_System.
  *
- * Nguồn cho ô "Tuyến giao" trên phiếu đóng gói. Trước đây tuyến là ô gõ tay nên
- * ai không gõ thì phiếu in ra để trống và bản đồ không biết vẽ từ đâu tới đâu.
- * Thành danh mục thì khai một lần, mọi phiếu chọn lại, và màn Theo dõi có điểm
- * đầu điểm cuối thật.
+ * Một tuyến là một chuỗi CHẶNG A → B → C. Tổng km LÀ tổng các chặng, không ai
+ * gõ tay một con số rồi quên sửa. Bản đồ vẽ đúng lộ trình qua từng chặng chứ
+ * không phải một đoạn thẳng nối hai đầu.
  */
 
 window.TuyenDuong = (function () {
   'use strict';
 
   var t = PL.t, an = PL.an, so = PL.so;
-  var ds = [], dsDiem = [], dangChon = null, dangSua = false;
+  var ds = [], dsDiem = [], dangSua = null;   // dangSua = tuyến đang mở trong form
+  var chang = [];                             // các chặng đang soạn
+  var banDo = null, lopNen = null, lopVe = null;
 
   function mot(k) { return t(k).replace('\n', ' · '); }
 
-  function oTT(nhanChu, giaTri) {
-    var chu = String(nhanChu);
-    var hai = chu.indexOf('\n') >= 0 ? chu.split('\n') : null;
-    return '<div class="o-tt"><div class="nhan-tt">' +
-      (hai ? '<span class="d-vi">' + an(hai[0]) + '</span><span class="d-lo">' + an(hai[1]) + '</span>' : an(chu)) +
-      '</div><div class="gia-tri-tt">' + an(giaTri) + '</div></div>';
-  }
-
-  /* ------------------------------------------------------------ danh sách */
-  function veDanhSach() {
-    var khung = document.getElementById('td2-danh-sach');
-    if (!khung) return;
-    if (!ds.length) {
-      khung.innerHTML = '<div class="trong">' + an(mot('common_empty')) + '</div>';
-      return;
-    }
-    khung.innerHTML = ds.map(function (r) {
-      return '<div class="ds-muc' + (dangChon && dangChon.id === r.id ? ' dang-chon' : '') +
-        '" data-id="' + an(r.id) + '">' +
-        '<div style="display:flex;justify-content:space-between;gap:8px;align-items:start">' +
-        '<span class="ma">' + an(r.code) + '</span>' +
-        '<span class="nhan ' + (r.active ? 'xanh' : 'xam') + '">' +
-          an(r.active ? mot('rt_active') : mot('rt_inactive')) + '</span></div>' +
-        '<div class="phu-de">' + an(r.name) + '</div>' +
-        '<div class="rt-doan">' + an(r.from_name || '—') + ' → ' + an(r.to_name || '—') +
-          (r.distance_km ? ' · ' + so(r.distance_km, 1) + ' km' : '') + '</div>' +
-        '</div>';
-    }).join('');
-    khung.querySelectorAll('.ds-muc').forEach(function (el) {
-      el.addEventListener('click', function () {
-        dangChon = ds.filter(function (r) { return r.id === el.dataset.id; })[0] || null;
-        dangSua = false;
-        veDanhSach(); veChiTiet();
-      });
+  /* ------------------------------------------------------------- Leaflet */
+  function napLeaflet() {
+    if (window.L) return Promise.resolve();
+    return new Promise(function (xong, hong) {
+      if (!document.querySelector('link[data-leaflet]')) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet'; l.dataset.leaflet = '1';
+        l.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(l);
+      }
+      var sc = document.createElement('script');
+      sc.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      sc.onload = xong;
+      sc.onerror = function () { hong(new Error('Leaflet')); };
+      document.head.appendChild(sc);
     });
   }
 
+  var NEN = {
+    street: { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attr: 'Tiles &copy; Esri',
+    },
+  };
+
+  function dungBanDo() {
+    var o = document.getElementById('rt-ban-do');
+    if (!o || banDo) return;
+    banDo = L.map(o, { zoomControl: true }).setView([17.9757, 102.6331], 12);
+    doiNen('street');
+    lopVe = L.layerGroup().addTo(banDo);
+    veBanDo();
+  }
+
+  function doiNen(ten) {
+    if (!banDo) return;
+    if (lopNen) banDo.removeLayer(lopNen);
+    lopNen = L.tileLayer(NEN[ten].url, { attribution: NEN[ten].attr, maxZoom: 19 }).addTo(banDo);
+    var a = document.getElementById('rt-nen-duong'), b = document.getElementById('rt-nen-ve-tinh');
+    if (a) a.classList.toggle('dang-chon', ten === 'street');
+    if (b) b.classList.toggle('dang-chon', ten === 'satellite');
+  }
+
+  function ghim(lop, chu) {
+    return L.divIcon({
+      className: '',
+      html: '<div class="ghim-chang ' + lop + '">' + an(chu) + '</div>',
+      iconSize: [26, 26], iconAnchor: [13, 13],
+    });
+  }
+
+  function veBanDo() {
+    if (!banDo || !lopVe) return;
+    lopVe.clearLayers();
+
+    // Chuỗi điểm dọc lộ trình, bỏ điểm trùng liền nhau.
+    var diem = [];
+    chang.forEach(function (c) {
+      [[c.from_lat, c.from_lng, c.from_name], [c.to_lat, c.to_lng, c.to_name]].forEach(function (x) {
+        if (x[0] == null || x[1] == null) return;
+        var cuoi = diem[diem.length - 1];
+        if (cuoi && cuoi[0] === x[0] && cuoi[1] === x[1]) return;
+        diem.push(x);
+      });
+    });
+
+    var ghiChu = document.getElementById('rt-ghi-chu-ban-do');
+    if (ghiChu) {
+      ghiChu.textContent = diem.length >= 2 ? mot('rt_map_hint') : mot('rt_map_no_coord');
+    }
+    if (!diem.length) return;
+
+    diem.forEach(function (x, i) {
+      var lop = i === 0 ? 'dau' : (i === diem.length - 1 ? 'cuoi' : '');
+      lopVe.addLayer(L.marker([x[0], x[1]], { icon: ghim(lop, String(i + 1)) })
+        .bindTooltip(String(x[2] || '')));
+    });
+    if (diem.length >= 2) {
+      lopVe.addLayer(L.polyline(diem.map(function (x) { return [x[0], x[1]]; }),
+        { color: '#2563eb', weight: 4, opacity: .85 }));
+    }
+    try {
+      banDo.fitBounds(L.latLngBounds(diem.map(function (x) { return [x[0], x[1]]; })).pad(0.3),
+        { maxZoom: 14 });
+    } catch (e) { /* bỏ qua */ }
+  }
+
+  /* ---------------------------------------------------------- danh mục điểm */
+  function veGoiYDiem() {
+    var dl = document.getElementById('rt-goi-y-diem');
+    if (!dl) return;
+    dl.innerHTML = dsDiem.map(function (c) {
+      return '<option value="' + an(c.name) + '">' + an(c.code) +
+        (c.lat == null ? ' · ' + an(mot('kh_no_coord')) : '') + '</option>';
+    }).join('');
+  }
+
+  function timDiem(ten) {
+    var khoa = String(ten || '').trim().toLowerCase();
+    return dsDiem.filter(function (c) {
+      return (c.name || '').toLowerCase() === khoa || (c.code || '').toLowerCase() === khoa;
+    })[0] || null;
+  }
+
+  /* --------------------------------------------------------------- chặng */
+  function veChang() {
+    var tb = document.getElementById('rt-bang-chang');
+    if (!tb) return;
+    if (!chang.length) {
+      tb.innerHTML = '<tr><td colspan="5" class="trong">' + an(mot('rt_no_segment_yet')) + '</td></tr>';
+    } else {
+      tb.innerHTML = chang.map(function (c, i) {
+        var duCho = c.from_lat != null && c.to_lat != null;
+        return '<tr>' +
+          '<td class="giua">' + (i + 1) + '</td>' +
+          '<td><div class="diem">' + an(c.from_name) + '</div>' +
+            '<div class="' + (c.from_lat != null ? 'co-toa-do' : 'thieu-toa-do') + '">' +
+            an(c.from_lat != null ? '📍 ' + c.from_lat + ', ' + c.from_lng : mot('kh_no_coord')) + '</div></td>' +
+          '<td><div class="diem">' + an(c.to_name) + '</div>' +
+            '<div class="' + (c.to_lat != null ? 'co-toa-do' : 'thieu-toa-do') + '">' +
+            an(c.to_lat != null ? '📍 ' + c.to_lat + ', ' + c.to_lng : mot('kh_no_coord')) + '</div></td>' +
+          '<td class="phai">' + so(c.distance_km, 1) + ' km</td>' +
+          '<td class="phai">' +
+            '<button type="button" class="nut nho" data-len="' + i + '"' + (i === 0 ? ' disabled' : '') + '>↑</button> ' +
+            '<button type="button" class="nut nho nguy-hiem" data-bo="' + i + '">×</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+      tb.querySelectorAll('[data-bo]').forEach(function (n) {
+        n.addEventListener('click', function () {
+          chang.splice(Number(n.dataset.bo), 1);
+          veChang();
+        });
+      });
+      tb.querySelectorAll('[data-len]').forEach(function (n) {
+        n.addEventListener('click', function () {
+          var i = Number(n.dataset.len);
+          if (i <= 0) return;
+          var tam = chang[i - 1]; chang[i - 1] = chang[i]; chang[i] = tam;
+          veChang();
+        });
+      });
+    }
+
+    var tong = chang.reduce(function (a, c) { return a + Number(c.distance_km || 0); }, 0);
+    var oTong = document.getElementById('rt-tong-km');
+    if (oTong) oTong.textContent = so(tong, 1) + ' km';
+    veBanDo();
+  }
+
+  function themChang() {
+    var oDi = document.getElementById('rt-chang-di');
+    var oDen = document.getElementById('rt-chang-den');
+    var oKm = document.getElementById('rt-chang-km');
+    var tenDi = (oDi.value || '').trim();
+    var tenDen = (oDen.value || '').trim();
+    if (!tenDi || !tenDen) { PL.baoLoi({ ma: 'RT_SEGMENT_NO_POINT' }); return; }
+    var km = Number(oKm.value || 0);
+    if (km < 0) { PL.baoLoi({ ma: 'RT_KM_NEGATIVE' }); return; }
+
+    var di = timDiem(tenDi), den = timDiem(tenDen);
+    chang.push({
+      from_id: di ? di.id : null, to_id: den ? den.id : null,
+      from_name: di ? di.name : tenDi, to_name: den ? den.name : tenDen,
+      distance_km: km,
+      from_lat: di ? di.lat : null, from_lng: di ? di.lng : null,
+      to_lat: den ? den.lat : null, to_lng: den ? den.lng : null,
+    });
+    // Chặng kế tiếp thường bắt đầu ở nơi chặng này kết thúc — điền sẵn cho nhanh.
+    oDi.value = tenDen;
+    oDen.value = '';
+    oKm.value = '';
+    veChang();
+    oDen.focus();
+  }
+
+  /* ------------------------------------------------------------- danh sách */
+  function veChonTuyen() {
+    var el = document.getElementById('rt-chon-tuyen');
+    if (!el) return;
+    el.innerHTML = '<option value="">' + an(mot('rt_pick_saved')) + '</option>' +
+      ds.map(function (r) {
+        return '<option value="' + an(r.id) + '"' + (dangSua && dangSua.id === r.id ? ' selected' : '') + '>' +
+          an(r.code) + ' · ' + an(r.name) + ' · ' + so(r.distance_km, 1) + ' km' +
+          (r.active ? '' : ' (' + an(mot('rt_inactive')) + ')') + '</option>';
+      }).join('');
+  }
+
   function napDanhSach() {
-    var tim = (document.getElementById('td2-tim') || {}).value || '';
-    var dd = '/api/routes?x=1';
-    if (tim.trim()) dd += '&q=' + encodeURIComponent(tim.trim());
-    return PL.goi(dd).then(function (kq) {
+    return PL.goi('/api/routes').then(function (kq) {
       ds = kq || [];
-      if (dangChon) dangChon = ds.filter(function (r) { return r.id === dangChon.id; })[0] || null;
-      veDanhSach();
+      veChonTuyen();
     }).catch(PL.baoLoi);
   }
 
-  function napDiem() {
-    return PL.goi('/api/customers').then(function (d) { dsDiem = d || []; }).catch(function () {});
+  function moTuyen(id) {
+    var r = ds.filter(function (x) { return x.id === id; })[0];
+    if (!r) { formTrong(); return; }
+    dangSua = r;
+    document.getElementById('rt-ma').value = r.code || '';
+    document.getElementById('rt-ten').value = r.name || '';
+    chang = (r.segments || []).map(function (c) { return Object.assign({}, c); });
+    document.getElementById('rt-xoa').hidden = false;
+    veChonTuyen();
+    veChang();
   }
 
-  /* ------------------------------------------------------------- chi tiết */
-  function veChiTiet() {
-    var khung = document.getElementById('td2-chi-tiet');
-    if (!khung) return;
-    if (dangSua) { veForm(khung, dangChon); return; }
-    if (!dangChon) {
-      khung.innerHTML = '<div class="the"><div class="trong">' + an(mot('rt_pick_hint')) + '</div></div>';
-      return;
-    }
-    var r = dangChon;
-    khung.innerHTML =
-      '<div class="the">' +
-        '<div class="the-dau">' +
-          '<h3>' + an(r.code) + ' · ' + an(r.name) + '</h3>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button type="button" class="nut nho" id="td2-sua">' + an(mot('rt_edit')) + '</button>' +
-            '<button type="button" class="nut nguy-hiem nho" id="td2-xoa">' + an(mot('common_delete')) + '</button>' +
-          '</div>' +
-        '</div>' +
-        '<div class="the-than">' +
-          '<div class="rt-duong">' +
-            '<span class="diem">' + an(r.from_name || mot('rt_no_point')) + '</span>' +
-            '<span class="mui">→</span>' +
-            '<span class="diem">' + an(r.to_name || mot('rt_no_point')) + '</span>' +
-            '<span class="km">' + so(r.distance_km, 1) + ' km</span>' +
-          '</div>' +
-          '<div class="luoi-3 thong-tin" style="margin-top:12px">' +
-            oTT(t('rt_code'), r.code) +
-            oTT(t('rt_from'), r.from_name || '—') +
-            oTT(t('rt_to'), r.to_name || '—') +
-            oTT(t('rt_distance'), so(r.distance_km, 1) + ' km') +
-            oTT(t('common_status'), r.active ? mot('rt_active') : mot('rt_inactive')) +
-            oTT(t('rt_has_coord'),
-              (r.from_lat != null && r.to_lat != null) ? mot('common_yes') : mot('rt_coord_missing')) +
-          '</div>' +
-          (r.note ? '<p class="goi-y" style="margin-top:10px">' + an(r.note) + '</p>' : '') +
-        '</div>' +
-      '</div>';
-    PL.apDungNgonNgu(khung);
-    document.getElementById('td2-sua').addEventListener('click', function () { dangSua = true; veChiTiet(); });
-    document.getElementById('td2-xoa').addEventListener('click', xoa);
+  function formTrong() {
+    dangSua = null;
+    chang = [];
+    ['rt-ma', 'rt-ten', 'rt-chang-di', 'rt-chang-den', 'rt-chang-km'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    var x = document.getElementById('rt-xoa');
+    if (x) x.hidden = true;
+    veChonTuyen();
+    veChang();
   }
 
-  function oChonDiem(id, chon, nhan) {
-    return '<label class="o"><span>' + an(nhan) + '</span><select id="' + id + '">' +
-      '<option value="">—</option>' +
-      dsDiem.map(function (c) {
-        return '<option value="' + an(c.id) + '"' + (chon === c.id ? ' selected' : '') + '>' +
-          an(c.name) + ' · ' + an(c.code) + (c.lat == null ? ' (' + an(mot('kh_no_coord')) + ')' : '') +
-          '</option>';
-      }).join('') + '</select></label>';
-  }
-
-  function veForm(khung, r) {
-    r = r || {};
-    khung.innerHTML =
-      '<div class="the rt-form">' +
-        '<div class="the-dau"><h3>' + an(r.id ? mot('rt_edit') : mot('rt_new')) + '</h3></div>' +
-        '<div class="the-than">' +
-          '<div class="hang-o">' +
-            '<label class="o"><span>' + an(mot('rt_code')) + ' *</span><input type="text" id="rtf-code" value="' + an(r.code || '') + '"></label>' +
-            '<label class="o"><span>' + an(mot('rt_name')) + ' *</span><input type="text" id="rtf-name" value="' + an(r.name || '') + '"></label>' +
-          '</div>' +
-          '<div class="hang-o">' +
-            oChonDiem('rtf-from', r.from_id, mot('rt_from')) +
-            oChonDiem('rtf-to', r.to_id, mot('rt_to')) +
-            '<label class="o"><span>' + an(mot('rt_distance')) + '</span>' +
-              '<input type="number" step="0.1" min="0" id="rtf-km" value="' + (r.distance_km != null ? r.distance_km : 0) + '"></label>' +
-          '</div>' +
-          '<p class="goi-y">' + an(mot('rt_coord_hint')) + '</p>' +
-          '<label class="o"><span>' + an(mot('common_note')) + '</span><input type="text" id="rtf-note" value="' + an(r.note || '') + '"></label>' +
-          '<label class="o-lo" style="display:flex;align-items:center;gap:8px">' +
-            '<input type="checkbox" id="rtf-active" style="width:auto"' + (r.id && !r.active ? '' : ' checked') + '>' +
-            '<span>' + an(mot('rt_active')) + '</span></label>' +
-          '<div class="nut-day">' +
-            '<button type="button" class="nut phu" id="rtf-huy">' + an(mot('common_cancel')) + '</button>' +
-            '<button type="button" class="nut chinh" id="rtf-luu">' + an(mot('common_save')) + '</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>';
-    document.getElementById('rtf-huy').addEventListener('click', function () { dangSua = false; veChiTiet(); });
-    document.getElementById('rtf-luu').addEventListener('click', function () { luu(r.id); });
-  }
-
-  function luu(id) {
+  function luu() {
+    if (!chang.length) { PL.baoLoi({ ma: 'RT_NO_SEGMENT' }); return; }
     var body = {
-      code: document.getElementById('rtf-code').value.trim(),
-      name: document.getElementById('rtf-name').value.trim(),
-      from_id: document.getElementById('rtf-from').value || null,
-      to_id: document.getElementById('rtf-to').value || null,
-      distance_km: Number(document.getElementById('rtf-km').value || 0),
-      note: document.getElementById('rtf-note').value.trim(),
-      active: document.getElementById('rtf-active').checked,
+      code: document.getElementById('rt-ma').value.trim(),
+      name: document.getElementById('rt-ten').value.trim(),
+      active: true,
+      segments: chang.map(function (c) {
+        return {
+          from_id: c.from_id, to_id: c.to_id,
+          from_name: c.from_name, to_name: c.to_name,
+          distance_km: c.distance_km,
+        };
+      }),
     };
-    var yc = id
-      ? PL.goi('/api/routes/' + encodeURIComponent(id), { method: 'PUT', body: body })
+    var yc = dangSua
+      ? PL.goi('/api/routes/' + encodeURIComponent(dangSua.id), { method: 'PUT', body: body })
       : PL.goi('/api/routes', { method: 'POST', body: body });
     yc.then(function (r) {
       PL.thongBao(mot('ok_rt_saved'));
-      dangSua = false;
-      dangChon = r;
-      return napDanhSach().then(veChiTiet);
+      return napDanhSach().then(function () { moTuyen(r.id); });
     }).catch(PL.baoLoi);
   }
 
   function xoa() {
-    if (!dangChon) return;
+    if (!dangSua) return;
     PL.hoiXacNhan({
       tieu_de: mot('rt_delete_title'),
-      mo_ta: dangChon.name + ' — ' + t('rt_delete_warn').replace('\n', ' '),
+      mo_ta: dangSua.name + ' — ' + t('rt_delete_warn').replace('\n', ' '),
       nguy_hiem: true,
     }).then(function (kq) {
       if (!kq) return;
-      PL.goi('/api/routes/' + encodeURIComponent(dangChon.id), { method: 'DELETE' })
+      PL.goi('/api/routes/' + encodeURIComponent(dangSua.id), { method: 'DELETE' })
         .then(function () {
           PL.thongBao(mot('ok_rt_deleted'));
-          dangChon = null;
-          return napDanhSach().then(veChiTiet);
+          formTrong();
+          return napDanhSach();
         }).catch(PL.baoLoi);
     });
   }
 
+  /* ------------------------------------------------------------- khởi động */
   function khoiDong() {
-    document.getElementById('td2-lam-moi').addEventListener('click', napDanhSach);
-    document.getElementById('td2-them').addEventListener('click', function () {
-      dangChon = null; dangSua = true; veDanhSach(); veChiTiet();
+    banDo = null;
+    document.getElementById('rt-them').addEventListener('click', formTrong);
+    document.getElementById('rt-huy').addEventListener('click', formTrong);
+    document.getElementById('rt-luu').addEventListener('click', luu);
+    document.getElementById('rt-xoa').addEventListener('click', xoa);
+    document.getElementById('rt-nut-them-chang').addEventListener('click', themChang);
+    document.getElementById('rt-chang-km').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); themChang(); }
     });
-    var hen = null;
-    document.getElementById('td2-tim').addEventListener('input', function () {
-      clearTimeout(hen); hen = setTimeout(napDanhSach, 300);
+    document.getElementById('rt-chon-tuyen').addEventListener('change', function (e) {
+      if (e.target.value) moTuyen(e.target.value); else formTrong();
     });
-    napDiem().then(napDanhSach).then(function () {
-      if (ds.length && !dangChon) { dangChon = ds[0]; veDanhSach(); veChiTiet(); }
+    document.getElementById('rt-nen-duong').addEventListener('click', function () { doiNen('street'); });
+    document.getElementById('rt-nen-ve-tinh').addEventListener('click', function () { doiNen('satellite'); });
+
+    PL.goi('/api/customers').then(function (d) {
+      dsDiem = d || [];
+      veGoiYDiem();
+    }).catch(function () {}).then(napDanhSach).then(function () {
+      if (ds.length) moTuyen(ds[0].id); else formTrong();
+    });
+
+    napLeaflet().then(dungBanDo).catch(function () {
+      var o = document.getElementById('rt-ban-do');
+      if (o) o.innerHTML = '<div class="trong">' + an(mot('err_NETWORK')) + '</div>';
     });
   }
 
-  function veLai() { veDanhSach(); veChiTiet(); }
+  function veLai() {
+    veGoiYDiem();
+    veChonTuyen();
+    veChang();
+  }
 
   return { khoiDong: khoiDong, veLai: veLai };
 })();

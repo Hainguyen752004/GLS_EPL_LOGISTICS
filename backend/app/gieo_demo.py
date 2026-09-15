@@ -102,6 +102,32 @@ def _tuyen(db, ma):
     return r.id if r else None
 
 
+def _dung_chang_cho_tuyen_cu(db):
+    """Tuyến gieo từ trước khi có bảng chặng thì chưa có chặng nào — dựng lại từ
+    bảng TUYEN trong seed, để bản đồ vẽ được lộ trình và tổng km có nguồn."""
+    from models import RouteSegment
+
+    for ma_t, ten_t, ds_chang in seed.TUYEN:
+        r = db.query(Route).filter(Route.code == ma_t).first()
+        if not r:
+            continue
+        if db.query(RouteSegment).filter(RouteSegment.route_id == r.id).count():
+            continue
+        for i, (ma_di, ma_den, km) in enumerate(ds_chang, start=1):
+            di = db.query(Customer).filter(Customer.code == ma_di).first()
+            den = db.query(Customer).filter(Customer.code == ma_den).first()
+            db.add(RouteSegment(
+                route_id=r.id, seq=i,
+                from_id=di.id if di else None, to_id=den.id if den else None,
+                from_name=di.name if di else ma_di,
+                to_name=den.name if den else ma_den,
+                distance_km=km,
+            ))
+        r.distance_km = round(sum(x[2] for x in ds_chang), 2)
+        print(f"  Đã dựng {len(ds_chang)} chặng cho tuyến {ma_t}")
+    db.commit()
+
+
 def _gan_tuyen_cho_phieu_cu(db):
     """Phiếu gieo trước khi có danh mục tuyến thì route_id rỗng — gắn lại theo
     điểm giao của đơn, để màn Theo dõi vẽ được đường."""
@@ -111,13 +137,22 @@ def _gan_tuyen_cho_phieu_cu(db):
             continue
         # Dò theo CHÍNH khách của đơn, không dò theo mã điểm giao: mã đó có thể
         # là số cũ ("60039") chứ không phải mã trong danh mục.
-        r = None
-        if don.customer_id:
-            r = db.query(Route).filter(Route.to_id == don.customer_id).first()
-        if not r and don.ship_to_code:
+        from models import RouteSegment
+        kh_id = don.customer_id
+        if not kh_id and don.ship_to_code:
             kh = db.query(Customer).filter(Customer.code == don.ship_to_code).first()
-            if kh:
-                r = db.query(Route).filter(Route.to_id == kh.id).first()
+            kh_id = kh.id if kh else None
+        r = None
+        if kh_id:
+            # Tuyến có CHẶNG CUỐI dừng ở khách của đơn.
+            chang = (
+                db.query(RouteSegment)
+                .filter(RouteSegment.to_id == kh_id)
+                .order_by(RouteSegment.seq.desc())
+                .first()
+            )
+            if chang:
+                r = db.query(Route).filter(Route.id == chang.route_id).first()
         if r:
             pl.route_id = r.id
             pl.route_name = r.name
@@ -298,6 +333,7 @@ def gieo():
         else:
             print(f"Đơn 3 (đang giao): {d3.id} — đã có sẵn")
 
+        _dung_chang_cho_tuyen_cu(db)
         _gan_tuyen_cho_phieu_cu(db)
 
         # 4) LUÔN có ít nhất một chuyến ĐANG GIAO để bấm thử.

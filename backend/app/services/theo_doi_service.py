@@ -12,7 +12,7 @@ import math
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
 
-from models import Customer, Delivery, PackingList, Route, SalesOrder, VehiclePosition
+from models import Customer, Delivery, PackingList, Route, RouteSegment, SalesOrder, VehiclePosition
 from services import giao_hang_service
 from services.loi import LoiNghiepVu
 
@@ -45,8 +45,8 @@ def kho_cua(db, gh=None):
     """Điểm xuất phát: ưu tiên điểm đi của TUYẾN, không có thì lấy kho mặc định."""
     if gh is not None:
         r = tuyen_cua(db, gh)
-        if r and r.from_id:
-            kh = db.query(Customer).filter(Customer.id == r.from_id).first()
+        if r:
+            kh = _diem_dau_tuyen(db, r)
             if kh and kh.lat is not None and kh.lng is not None:
                 return (kh.lat, kh.lng), kh.name
     kho = db.query(Customer).filter(Customer.kind == "depot", Customer.lat.isnot(None)).first()
@@ -66,11 +66,66 @@ def tuyen_cua(db, gh):
     return None
 
 
-def diem_giao_cua(db, gh):
-    """Điểm giao: ưu tiên điểm đến của TUYẾN, không có thì lấy toạ độ khách."""
+def lo_trinh_cua(db, gh):
+    """Danh sách điểm dọc tuyến, để bản đồ vẽ đúng lộ trình A → B → C."""
     r = tuyen_cua(db, gh)
-    if r and r.to_id:
-        kh = db.query(Customer).filter(Customer.id == r.to_id).first()
+    if not r:
+        return []
+    chang = (
+        db.query(RouteSegment)
+        .filter(RouteSegment.route_id == r.id)
+        .order_by(RouteSegment.seq)
+        .all()
+    )
+    if not chang:
+        return []
+    can = [x for c in chang for x in (c.from_id, c.to_id) if x]
+    diem = {}
+    if can:
+        for kh in db.query(Customer).filter(Customer.id.in_(set(can))).all():
+            diem[kh.id] = kh
+
+    ra = []
+    for c in chang:
+        for khoa, ten in ((c.from_id, c.from_name), (c.to_id, c.to_name)):
+            kh = diem.get(khoa)
+            if not kh or kh.lat is None or kh.lng is None:
+                continue
+            if ra and ra[-1]["lat"] == kh.lat and ra[-1]["lng"] == kh.lng:
+                continue
+            ra.append({"lat": kh.lat, "lng": kh.lng, "name": ten or kh.name})
+    return ra
+
+
+def _diem_cuoi_tuyen(db, r):
+    chang = (
+        db.query(RouteSegment)
+        .filter(RouteSegment.route_id == r.id)
+        .order_by(RouteSegment.seq.desc())
+        .first()
+    )
+    if chang and chang.to_id:
+        return db.query(Customer).filter(Customer.id == chang.to_id).first()
+    return None
+
+
+def _diem_dau_tuyen(db, r):
+    chang = (
+        db.query(RouteSegment)
+        .filter(RouteSegment.route_id == r.id)
+        .order_by(RouteSegment.seq)
+        .first()
+    )
+    if chang and chang.from_id:
+        return db.query(Customer).filter(Customer.id == chang.from_id).first()
+    return None
+
+
+def diem_giao_cua(db, gh):
+    """Điểm giao: ưu tiên điểm cuối của TUYẾN, không có thì lấy toạ độ khách."""
+    r = tuyen_cua(db, gh)
+    if r:
+        kh = _diem_cuoi_tuyen(db, r)
         if kh and kh.lat is not None and kh.lng is not None:
             return (kh.lat, kh.lng), kh.name
 
@@ -127,6 +182,7 @@ def tinh_trang_chuyen(db, gh):
     return {
         "delivery": giao_hang_service.ra_dict(gh, day_du=False),
         "route": {"code": r.code, "name": r.name, "distance_km": r.distance_km} if r else None,
+        "path": lo_trinh_cua(db, gh),
         "orders": sorted({pl.so_id for pl in gh.packing_lists if pl.status != "cancelled"}),
         "packing_lists": [pl.id for pl in gh.packing_lists if pl.status != "cancelled"],
         "depot": {"lat": kho[0], "lng": kho[1], "name": ten_kho},
