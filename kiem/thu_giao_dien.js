@@ -12,8 +12,8 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap',
-  'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu', 'phieu-cua-toi', 'xe-lien-ket',
+  'tien-tai-xe', 'nha-cung-cap', 'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -52,13 +52,28 @@ async function main() {
 
   await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập tải tài khoản mẫu');
   console.log('✓ màn đăng nhập: %d tài khoản mẫu', d.getElementById('acctList').children.length);
+  // Màn đăng nhập là TRANG riêng chiếm trọn màn hình (trước đây là thẻ nhỏ, 10 tài khoản xếp dọc
+  // nên phải thu nhỏ trình duyệt mới thấy hết) — kiểm đủ khung trái, cột phải và nút hiện mật khẩu.
+  assert.ok(d.querySelector('#login .lg-brand') && d.querySelector('#login .lg-cot'), 'màn đăng nhập phải có hai cột');
+  assert.ok(d.getElementById('lgMat'), 'màn đăng nhập phải có nút hiện/ẩn mật khẩu');
+  assert.strictEqual(d.getElementById('lgP').type, 'password', 'mật khẩu mặc định phải ẩn');
+  d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
+  assert.strictEqual(d.getElementById('lgP').type, 'text', 'bấm con mắt thì mật khẩu phải hiện');
+  d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
+  assert.strictEqual(d.getElementById('lgP').type, 'password', 'bấm lần nữa thì mật khẩu phải ẩn lại');
+  const goiY = [...d.querySelectorAll('#acctList .acct-btn')];
+  assert.ok(goiY.length >= 10, 'phải gợi ý đủ tài khoản demo, đang có ' + goiY.length);
+  assert.strictEqual(goiY[0].dataset.u, 'admin', 'gợi ý phải xếp quản trị lên đầu');
+  assert.ok(goiY.some(b => b.dataset.u === 'tx01' && b.classList.contains('tx')), 'phải có tài khoản tài xế tx01');
+  assert.ok(goiY.every(b => !/<(span|small|b)\b/.test(b.textContent)), 'thẻ tài khoản không được lộ thẻ HTML');
+  console.log('✓ màn đăng nhập: hai cột · nút hiện mật khẩu · %d thẻ gợi ý, quản trị đứng đầu', goiY.length);
 
   // 1. đăng nhập admin, đi hết module
   await w.EPL.AUTH.dangNhap('admin', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào ứng dụng');
   await w.EPL.sanSang;
   const nav = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
-  assert.deepStrictEqual(nav, MODULES, 'thanh điều hướng phải đủ 14 module đúng thứ tự');
+  assert.deepStrictEqual(nav, MODULES, 'thanh điều hướng phải đủ ' + MODULES.length + ' module đúng thứ tự');
   console.log('✓ admin: thanh điều hướng đủ %d module', nav.length);
 
   for (const m of MODULES) {
@@ -66,7 +81,7 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .px-phieu'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .px-phieu, .pct-ds'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
@@ -108,11 +123,13 @@ async function main() {
   assert.ok(tt.textContent.includes(w.EPL.so(pj.tinh.tra_chu_xe_usd, 2)), 'tiền trả chủ xe trên màn phải khớp máy chủ ' + pj.tinh.tra_chu_xe_usd);
   console.log('✓ phiếu xe liên kết %s: trả chủ xe %s USD khớp máy chủ', pj.doc_no, w.EPL.so(pj.tinh.tra_chu_xe_usd, 2));
 
+  // Phiếu còn đang chạy (chưa tới nơi) — dùng cho hai bước phân vai bên dưới.
+  const pDang = dsPhieu.find(p => p.transport_status !== 'arrived') || dsPhieu[0];
   // 4. vai Bãi: không thấy Tài khoản, không thấy nút kiểm/chi
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi'); await w.EPL.sanSang;
   assert.ok(![...d.querySelectorAll('#nav button')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
-  await di('#/phieu-xuat-xe?id=' + dsPhieu.find(p => p.transport_status === 'dispatched').id);
+  await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
   assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
@@ -120,13 +137,23 @@ async function main() {
   // 5. vai kho nhiên liệu: chỉ mục III có nút
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khonl', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai kho NL'); await w.EPL.sanSang;
-  await di('#/phieu-xuat-xe?id=' + dsPhieu.find(p => p.transport_status === 'dispatched').id);
+  await di('#/phieu-xuat-xe?id=' + pDang.id);
   const mucCoNut = [...new Set([...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.mucAct))];
   assert.deepStrictEqual(mucCoNut, ['fuel'], 'vai kho nhiên liệu chỉ được có nút ở mục III: ' + mucCoNut);
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
 
+  // 6. vai tài xế: chỉ thấy "Phiếu của tôi", có nút xuất phát / báo hỏng
+  w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('tx01', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào với vai tài xế'); await w.EPL.sanSang;
+  const navTx = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  assert.deepStrictEqual(navTx, ['phieu-cua-toi'], 'tài xế chỉ được thấy Phiếu của tôi: ' + navTx);
+  const chuTx = goc().textContent;
+  assert.ok(!chuTx.includes(w.EPL.NN.t('err_generic')), 'màn tài xế báo lỗi: ' + chuTx.slice(0, 200));
+  assert.ok(!/\bundefined\b|\bNaN\b/.test(chuTx), 'màn tài xế có chữ undefined/NaN');
+  console.log('✓ vai tài xế: chỉ thấy Phiếu của tôi · %d ký tự', chuTx.length);
+
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
-  console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng`);
+  console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng (kể cả tài xế)`);
   w.close();
 }
 main().catch(e => { console.error('THỬ GIAO DIỆN: HỎNG —', e.message); process.exit(1); });

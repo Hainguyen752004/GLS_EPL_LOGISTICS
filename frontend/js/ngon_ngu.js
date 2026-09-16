@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 555 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 607 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1957,6 +1957,16 @@ window.EPL_TU_DIEN = {
   "lo": "ບັນຊີຜູ້ໃຊ້<span class=\"sub\">ຜູ້ໃຊ້ ແລະ ໜ້າທີ່</span>",
   "en": "User accounts<span class=\"sub\">Users and roles</span>"
  },
+ "show_pw": {
+  "vi": "Hiện mật khẩu",
+  "lo": "ສະແດງລະຫັດຜ່ານ",
+  "en": "Show password"
+ },
+ "hide_pw": {
+  "vi": "Ẩn mật khẩu",
+  "lo": "ເຊື່ອງລະຫັດຜ່ານ",
+  "en": "Hide password"
+ },
  "ok": {
   "vi": "Đồng ý",
   "lo": "ຕົກລົງ",
@@ -2706,6 +2716,256 @@ window.EPL_TU_DIEN = {
   "vi": "Người kiểm",
   "lo": "ຜູ້ກວດ",
   "en": "Verified by"
+ },
+ "r_driver": {
+  "vi": "Tài xế (chỉ phiếu của mình)",
+  "lo": "ໂຊເຟີ (ສະເພາະບິນຂອງຕົນ)",
+  "en": "Driver (own slips only)"
+ },
+ "nav_my_slips": {
+  "vi": "Phiếu của tôi",
+  "lo": "ບິນຂອງຂ້ອຍ",
+  "en": "My slips"
+ },
+ "title_phieu_cua_toi": {
+  "vi": "Phiếu của tôi<span class=\"sub\">Nhận tiền tạm ứng · Xuất phát · Báo hỏng trên đường</span>",
+  "lo": "ບິນຂອງຂ້ອຍ<span class=\"sub\">ຮັບເງິນລ່ວງໜ້າ · ອອກລົດ · ແຈ້ງລົດເສຍ</span>",
+  "en": "My slips<span class=\"sub\">Cash advance · Depart · Report breakdown</span>"
+ },
+ "hint_driver": {
+  "vi": "Tài xế: xem phiếu của mình, bấm \"Xuất phát\" sau khi đã nhận tiền tạm ứng, \"Báo hỏng\" khi có sự cố trên đường.",
+  "lo": "ໂຊເຟີ: ເບິ່ງບິນຂອງຕົນ, ກົດ \"ອອກລົດ\" ຫຼັງຮັບເງິນລ່ວງໜ້າ, \"ແຈ້ງລົດເສຍ\" ເມື່ອມີເຫດການ.",
+  "en": "Driver: see your slips, press \"Depart\" after receiving the advance, \"Report breakdown\" on the road."
+ },
+ "advance": {
+  "vi": "Tiền tạm ứng",
+  "lo": "ເງິນລ່ວງໜ້າ",
+  "en": "Cash advance"
+ },
+ "advance_received": {
+  "vi": "Đã nhận tiền",
+  "lo": "ຮັບເງິນແລ້ວ",
+  "en": "Advance received"
+ },
+ "advance_pending": {
+  "vi": "Chưa nhận tiền — chờ duyệt / chi",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບເງິນ — ລໍຖ້າກວດ / ຈ່າຍ",
+  "en": "Advance not yet paid — awaiting approval / payment"
+ },
+ "depart": {
+  "vi": "Xuất phát",
+  "lo": "ອອກລົດ",
+  "en": "Depart"
+ },
+ "depart_blocked": {
+  "vi": "Chưa nhận tiền tạm ứng thì chưa xuất phát",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບເງິນລ່ວງໜ້າ ບໍ່ສາມາດອອກລົດ",
+  "en": "Cannot depart before the cash advance is paid"
+ },
+ "report_breakdown": {
+  "vi": "Báo hỏng / sự cố",
+  "lo": "ແຈ້ງລົດເສຍ / ເຫດການ",
+  "en": "Report breakdown / incident"
+ },
+ "reported_cost": {
+  "vi": "Số tiền dự kiến",
+  "lo": "ຈຳນວນເງິນຄາດຄະເນ",
+  "en": "Estimated cost"
+ },
+ "what_broke": {
+  "vi": "Hỏng gì / việc gì",
+  "lo": "ເສຍຫຍັງ / ເກີດຫຍັງ",
+  "en": "What happened"
+ },
+ "st_reported": {
+  "vi": "Chờ duyệt",
+  "lo": "ລໍຖ້າອະນຸມັດ",
+  "en": "Awaiting approval"
+ },
+ "st_approved": {
+  "vi": "Đã duyệt",
+  "lo": "ອະນຸມັດແລ້ວ",
+  "en": "Approved"
+ },
+ "st_rejected": {
+  "vi": "Từ chối",
+  "lo": "ປະຕິເສດ",
+  "en": "Rejected"
+ },
+ "pending_reports": {
+  "vi": "Báo hỏng chờ duyệt",
+  "lo": "ແຈ້ງລົດເສຍລໍຖ້າອະນຸມັດ",
+  "en": "Breakdown reports awaiting approval"
+ },
+ "approve": {
+  "vi": "Duyệt",
+  "lo": "ອະນຸມັດ",
+  "en": "Approve"
+ },
+ "reject": {
+  "vi": "Từ chối",
+  "lo": "ປະຕິເສດ",
+  "en": "Reject"
+ },
+ "approve_note": {
+  "vi": "Duyệt xong, hệ tự thêm dòng sửa chữa vào mục V của phiếu với số tiền duyệt.",
+  "lo": "ອະນຸມັດແລ້ວ ລະບົບຈະເພີ່ມລາຍຈ່າຍສ້ອມແປງເຂົ້າຂໍ້ V ຂອງບິນຕາມຈຳນວນທີ່ອະນຸມັດ.",
+  "en": "On approval the system adds a repair line to section V with the approved amount."
+ },
+ "ev_reported": {
+  "vi": "Tài xế báo hỏng",
+  "lo": "ໂຊເຟີແຈ້ງລົດເສຍ",
+  "en": "Driver reported breakdown"
+ },
+ "ev_approved": {
+  "vi": "Duyệt báo hỏng → vào mục V",
+  "lo": "ອະນຸມັດແຈ້ງລົດເສຍ → ຂໍ້ V",
+  "en": "Breakdown approved → section V"
+ },
+ "ev_rejected": {
+  "vi": "Từ chối báo hỏng",
+  "lo": "ປະຕິເສດແຈ້ງລົດເສຍ",
+  "en": "Breakdown report rejected"
+ },
+ "reject_reason": {
+  "vi": "Lý do từ chối",
+  "lo": "ເຫດຜົນປະຕິເສດ",
+  "en": "Reason for rejection"
+ },
+ "my_trip_status": {
+  "vi": "Chuyến của tôi",
+  "lo": "ຖ້ຽວຂອງຂ້ອຍ",
+  "en": "My trip"
+ },
+ "no_my_slips": {
+  "vi": "Bạn chưa có phiếu xuất xe nào",
+  "lo": "ທ່ານຍັງບໍ່ມີໃບເບີກລົດ",
+  "en": "You have no dispatch slips"
+ },
+ "nav_vouchers": {
+  "vi": "Phiếu chi · Phiếu thu",
+  "lo": "ໃບຈ່າຍ · ໃບຮັບເງິນ",
+  "en": "Payment · Receipt vouchers"
+ },
+ "title_chung_tu": {
+  "vi": "Phiếu chi tạm ứng & Phiếu thu<span class=\"sub\">Mỗi giai đoạn một chứng từ · in cho tài xế / kế toán</span>",
+  "lo": "ໃບຈ່າຍເງິນລ່ວງໜ້າ ແລະ ໃບຮັບເງິນ<span class=\"sub\">ແຕ່ລະຂັ້ນຕອນມີເອກະສານ · ພິມໃຫ້ໂຊເຟີ / ບັນຊີ</span>",
+  "en": "Advance payment & receipt vouchers<span class=\"sub\">One voucher per stage · print for driver / accounting</span>"
+ },
+ "voucher_payment": {
+  "vi": "Phiếu chi tạm ứng",
+  "lo": "ໃບຈ່າຍເງິນລ່ວງໜ້າ",
+  "en": "Advance payment voucher"
+ },
+ "voucher_receipt": {
+  "vi": "Phiếu thu",
+  "lo": "ໃບຮັບເງິນ",
+  "en": "Receipt voucher"
+ },
+ "voucher_no": {
+  "vi": "Số chứng từ",
+  "lo": "ເລກທີເອກະສານ",
+  "en": "Voucher no."
+ },
+ "payee": {
+  "vi": "Người nhận tiền",
+  "lo": "ຜູ້ຮັບເງິນ",
+  "en": "Payee"
+ },
+ "payer_name": {
+  "vi": "Người nộp tiền",
+  "lo": "ຜູ້ຈ່າຍເງິນ",
+  "en": "Payer"
+ },
+ "amount_words": {
+  "vi": "Bằng chữ",
+  "lo": "ເປັນຕົວອັກສອນ",
+  "en": "In words"
+ },
+ "purpose": {
+  "vi": "Nội dung",
+  "lo": "ເນື້ອໃນ",
+  "en": "Purpose"
+ },
+ "purpose_advance": {
+  "vi": "Tạm ứng chi phí chuyến {doc_no}: {tuyen}",
+  "lo": "ເງິນລ່ວງໜ້າຄ່າໃຊ້ຈ່າຍຖ້ຽວ {doc_no}: {tuyen}",
+  "en": "Cash advance for trip {doc_no}: {tuyen}"
+ },
+ "purpose_receipt": {
+  "vi": "Thu tiền cước vận chuyển phiếu {doc_no}: {tuyen}",
+  "lo": "ຮັບເງິນຄ່າຂົນສົ່ງບິນ {doc_no}: {tuyen}",
+  "en": "Freight payment for slip {doc_no}: {tuyen}"
+ },
+ "voucher_stage": {
+  "vi": "Trạng thái chứng từ",
+  "lo": "ສະຖານະເອກະສານ",
+  "en": "Voucher status"
+ },
+ "not_invoiced_yet": {
+  "vi": "Chưa lập hoá đơn — mục II phải được kiểm xong",
+  "lo": "ຍັງບໍ່ອອກໃບບິນ — ຂໍ້ II ຕ້ອງກວດແລ້ວ",
+  "en": "Not invoiced yet — section II must be verified first"
+ },
+ "sg_receiver": {
+  "vi": "Người nhận",
+  "lo": "ຜູ້ຮັບ",
+  "en": "Received by"
+ },
+ "sg_cashier": {
+  "vi": "Thủ quỹ",
+  "lo": "ພະນັກງານຄັງເງິນ",
+  "en": "Cashier"
+ },
+ "sg_chief_acct": {
+  "vi": "Kế toán trưởng",
+  "lo": "ຫົວໜ້າບັນຊີ",
+  "en": "Chief accountant"
+ },
+ "sg_director": {
+  "vi": "Giám đốc",
+  "lo": "ຜູ້ອຳນວຍການ",
+  "en": "Director"
+ },
+ "no_advance_lines": {
+  "vi": "Phiếu này không có khoản tạm ứng tiền mặt (mọi chi đều từ kho hoặc chủ xe tự trả).",
+  "lo": "ບິນນີ້ບໍ່ມີເງິນລ່ວງໜ້າ (ລາຍຈ່າຍທັງໝົດຈາກສາງ ຫຼື ເຈົ້າຂອງລົດຈ່າຍເອງ).",
+  "en": "This slip has no cash advance lines (everything from stock or paid by the owner)."
+ },
+ "acct_pair": {
+  "vi": "Định khoản (Nợ / Có)",
+  "lo": "ບັນຊີ (ໜີ້ / ມີ)",
+  "en": "Account entry (Dr / Cr)"
+ },
+ "acct_debit": {
+  "vi": "Tài khoản Nợ",
+  "lo": "ບັນຊີໜີ້",
+  "en": "Debit account"
+ },
+ "acct_credit": {
+  "vi": "Tài khoản Có",
+  "lo": "ບັນຊີມີ",
+  "en": "Credit account"
+ },
+ "acct_source_remote": {
+  "vi": "Danh mục từ API kế toán (anh Khang)",
+  "lo": "ບັນຊີຈາກ API ບັນຊີ",
+  "en": "Catalogue from accounting API"
+ },
+ "acct_source_fallback": {
+  "vi": "Chưa nối được API kế toán — đang dùng bản tạm từ Excel",
+  "lo": "ຍັງເຊື່ອມ API ບັນຊີບໍ່ໄດ້ — ໃຊ້ບັນຊີຊົ່ວຄາວຈາກ Excel",
+  "en": "Accounting API unreachable — using temporary list from Excel"
+ },
+ "acct_not_in_catalogue": {
+  "vi": "không có trong danh mục",
+  "lo": "ບໍ່ມີໃນບັນຊີ",
+  "en": "not in catalogue"
+ },
+ "acct_search": {
+  "vi": "Gõ mã hoặc tên tài khoản…",
+  "lo": "ພິມລະຫັດ ຫຼື ຊື່ບັນຊີ…",
+  "en": "Type account code or name…"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

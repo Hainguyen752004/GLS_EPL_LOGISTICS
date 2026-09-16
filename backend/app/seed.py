@@ -110,6 +110,9 @@ def gieo(db):
     for d in tx.values():
         db.add(DriverLicense(driver_id=d.id, license_no=d.license_no, license_type=d.license_type, valid_from=d.license_valid_from,
                              valid_to=d.license_valid_to, issued_by="ກົມຂົນສົ່ງ ວຽງຈັນ", verified_by="ນາງ ພອນ (Phone)"))
+    # Tài khoản vai TÀI XẾ — mỗi tài xế một tài khoản, chỉ thấy phiếu của mình: bấm Xuất phát, Báo hỏng
+    for u, d in (("tx01", tx["ທ້າວ ທັດສະດາພອນ"]), ("tx02", tx["ທ້າວ ບຸນມີ"]), ("tx03", tx["ທ້າວ ສົມພອນ"])):
+        db.add(User(username=u, password_hash=bam_mat_khau(MAT_KHAU_DEMO), full_name=d.name, role="driver", avatar="TX", driver_id=d.id))
 
     for ten, khoa, tk, han in (("ຊີບປີງ ລາວ (ສາງພາສີ)", "x_chip_lao", "625/402", "t_monthly"),
                                ("ຊີບປີງ ຫວຽດ", "x_chip_vn", "625/402", "t_monthly"),

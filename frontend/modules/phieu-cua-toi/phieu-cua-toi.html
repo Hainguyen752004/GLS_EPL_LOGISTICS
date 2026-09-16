@@ -1,0 +1,17 @@
+<!-- Phiếu của tôi — ບິນຂອງຂ້ອຍ. Màn của TÀI XẾ: thấy phiếu của mình, nhận tiền tạm ứng → Xuất phát → Báo hỏng. -->
+<div class="px-goi-y" data-i18n="hint_driver"></div>
+<div id="pct-ds" class="pct-ds"></div>
+
+<dialog id="pct-hop" class="hop-thoai">
+  <form method="dialog">
+    <h3 data-i18n="report_breakdown"></h3>
+    <div class="f-grid">
+      <div class="field"><label data-i18n="incident_type"></label><select id="pct-f-loai"><option value="breakdown" data-i18n="inc_breakdown"></option><option value="accident" data-i18n="inc_accident"></option><option value="delay" data-i18n="inc_delay"></option><option value="other" data-i18n="inc_other"></option></select></div>
+      <div class="field"><label data-i18n="stop"></label><select id="pct-f-diem"></select></div>
+      <div class="field w2"><label data-i18n="what_broke"></label><textarea id="pct-f-ghi" rows="3" lang="lo"></textarea></div>
+      <div class="field"><label data-i18n="reported_cost"></label><input class="num" id="pct-f-tien" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="cur"></label><select id="pct-f-tt"><option>LAK</option><option>VND</option><option>THB</option><option>USD</option></select></div>
+    </div>
+    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="report_breakdown"></button></div>
+  </form>
+</dialog>

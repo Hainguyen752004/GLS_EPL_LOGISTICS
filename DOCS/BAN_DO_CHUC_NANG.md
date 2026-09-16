@@ -46,7 +46,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | Trợ lý AI (EPL_TroLy) | — | **Không mang sang** | Ngoài phạm vi "năm 2016" |
 | Trang tài xế (EPL_TaiXe) | — | **Không mang sang** | Tài xế không thao tác trên hệ |
 
-## 3. Bảy vai và việc của từng vai
+## 3. Tám vai và việc của từng vai
 
 | Vai | Tên trong Excel | Trên phiếu xuất xe |
 |---|---|---|
@@ -56,6 +56,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | `treasury` | ຄັງເງິນ ວຽງຈັນ — Quỹ Viêng Chăn | **Chi** mục III |
 | `cash` | ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ — Tiền mặt lẻ Thà Bốc | **Chi** mục IV, V, VI |
 | `rev` | ບັນຊີລາຍຮັບ — Kế toán doanh thu | **Lập hoá đơn**, **ghi thu tiền** khách (mức phiếu) |
+| `driver` | ໂຊເຟີ — Tài xế | Chỉ thấy **phiếu của mình**: xem tiền tạm ứng đã chi chưa, bấm **Xuất phát**, **Báo hỏng** trên đường |
 | `admin` | — | Mọi việc, kể cả mở khoá mục đã duyệt và quản lý tài khoản |
 
 Chuỗi trạng thái từng mục: `chờ → đã nhập → đã kiểm → đã ghi sổ → đã chi` (mục I–II dừng ở *đã kiểm*). Bãi chỉ sửa được khi mục còn ở *chờ* / *đã nhập*; kế toán đã kiểm là khoá.
@@ -98,18 +99,44 @@ Xe liên kết đi mã `4022/…` vì đó là **chi hộ nhà thầu phụ** �
 
 Sửa xe khai trên đường (màn **Theo dõi tuyến → Báo sự cố / sửa xe**) trở thành một dòng trong **mục V của phiếu xuất xe**; mục V quay về *đã nhập* để kế toán kiểm lại. Dòng đã sinh phiếu xuất kho là chứng từ kho — không xoá, không đổi số trên phiếu.
 
+## 4c. Acc code lấy từ API bên công nợ (anh Khang), không tự đặt
+
+Mỗi dòng chi trên phiếu phải có **Acc code** thì mới lập được phiếu thu / phiếu chi. Danh mục mã
+**không khai trong hệ này** mà gọi sang API bên công nợ (`GET /api/acc-codes` proxy sang Golden SME,
+nhớ đệm 10 phút). Màn phiếu xuất xe cho bấm vào ô mã để chọn từ danh mục đó.
+
+Hệ tự gợi ý mã mặc định theo đúng bảng định khoản của họ: xe nhà `625/…` (nhiên liệu, đi đường,
+khác) và `614/…` (sửa chữa); xe liên kết `4022/…`; lấy kho thì vế sau là `…/371`, mua ngoài là
+`…/402`. Mã nào **chưa có trong danh mục bên công nợ** thì màn hình ghi rõ "không có trong danh
+mục" — không bịa thêm mã, cũng không im lặng bỏ qua.
+
+## 4d. Một giai đoạn một tờ chứng từ
+
+Phiếu xuất xe không phải một tờ giấy chết: nó **mở suốt chuyến**, mỗi giai đoạn sinh một chứng từ.
+
+1. **Lập phiếu xuất xe** → bấm **Phiếu chi tạm ứng**, in cho tài xế cầm đi lấy tiền. Phiếu chi
+   gom đúng những dòng EPL ứng trước (mục III · IV · VI, không phải hàng lấy từ kho).
+2. **Duyệt hết dây chuyền** (Bãi nhập → Kế toán kiểm → ghi sổ → Quỹ chi) thì tài xế mới nhận tiền.
+3. **Tài xế bấm Xuất phát.** Mục IV chưa ở trạng thái *đã chi* mà bấm thì hệ chặn
+   (`CHUA_NHAN_TAM_UNG`) — chỉ admin đi tắt được.
+4. **Đang chạy, xe hỏng** → tài xế bấm **Báo hỏng**, khai hỏng gì và bao nhiêu tiền.
+5. **Bãi hoặc admin duyệt** báo hỏng đó → hệ **tự mở lại phiếu**, thêm dòng sửa chữa vào **mục V**
+   đúng số tiền đã duyệt, định khoản theo quy tắc kho / mua ở mục 4b. Từ chối thì không sinh dòng nào.
+6. **Xe tới nơi** → cân cuối, lập hoá đơn, ghi thu tiền khách.
+
 ## 5. Kiến trúc — cố ý đơn giản
 
 - **Một DB riêng** `epl_lao` trên cùng máy chủ PostgreSQL; không đụng `epl_logistics` của EPL_System.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 458 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 607 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
+- **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
 
 ## 6. Những gì cố ý KHÔNG làm
 
-Không kiểm xe rảnh khi lập phiếu (chỉ hiện trạng thái xe/tài xế để người lập tự nhìn). Không kiểm tài xế trùng lịch. Không công thức giá thành. Không sắp ca. Không GPS — "xe tới điểm X" là do Bãi bấm. Không POD điện tử. Không QR. Không trợ lý AI. Không ứng dụng cho tài xế.
+Không kiểm xe rảnh khi lập phiếu (chỉ hiện trạng thái xe/tài xế để người lập tự nhìn). Không kiểm tài xế trùng lịch. Không công thức giá thành. Không sắp ca. Không GPS — "xe tới điểm X" là do Bãi bấm. Không POD điện tử. Không QR. Không trợ lý AI. Không ứng dụng riêng cho tài xế — tài xế dùng chính web này, đăng nhập vào chỉ thấy một màn "Phiếu của tôi" với ba việc: xem tiền tạm ứng, bấm xuất phát, báo hỏng.
 
 Hạn giấy tờ xe, hạn đăng kiểm, hạn bằng lái thì **có** — nhưng chỉ là cờ màu trên danh mục (còn hạn · sắp hết · đã hết), không chặn lập phiếu. Chặn là thêm một cái họ không hiểu; cờ màu thì ai cũng hiểu.
 

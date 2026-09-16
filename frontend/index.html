@@ -12,25 +12,58 @@
 <body>
 
 <!-- ===== Đăng nhập ===== -->
+<!-- Trang đăng nhập đứng riêng, chiếm trọn màn hình: trái là bảng thương hiệu, phải là biểu mẫu.
+     Cột phải tự cuộn nên danh sách tài khoản gợi ý dài bao nhiêu cũng không đẩy vỡ trang. -->
 <div class="login" id="login">
-  <div class="box">
-    <div class="l">
-      <img class="logo" src="img/logo-epl.jpg" alt="EPL">
+
+  <section class="lg-brand">
+    <div class="lg-top">
+      <img class="lg-logo" src="img/logo-epl.jpg" alt="EPL">
+      <div class="lg-ten">EPL<span lang="lo">ຂົນສົ່ງ · Logistics</span></div>
+    </div>
+
+    <div class="lg-giua">
       <h2 data-i18n="login_title"></h2>
       <p data-i18n="login_sub"></p>
+      <ul class="lg-diem">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/></svg><span data-i18n="nav_dispatch"></span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M7 15l10-6"/></svg><span data-i18n="nav_track_route"></span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3"/></svg><span data-i18n="nav_vouchers"></span></li>
+      </ul>
     </div>
-    <div class="r">
-      <div class="lang lang-login" role="group" aria-label="Language"></div>
+
+    <div class="lg-chan">
+      <div>SAMKET VILLAGE, SIKHOTTABONG</div>
+      <div>VIENTIANE · 020 5889 9983</div>
+    </div>
+  </section>
+
+  <section class="lg-cot">
+    <div class="lang lang-login" role="group" aria-label="Language"></div>
+    <div class="lg-form">
       <h3 data-i18n="login_h"></h3>
-      <span class="small muted" data-i18n="login_demo"></span>
-      <div class="field"><label data-i18n="username"></label><input id="lgU" autocomplete="username"></div>
-      <div class="field"><label data-i18n="password"></label><input id="lgP" type="password" autocomplete="current-password"></div>
-      <div class="err" id="lgErr"></div>
-      <button class="btn primary w100" id="lgBtn" data-i18n="login_btn"></button>
-      <div class="small muted mt14" data-i18n="quick_pick"></div>
+      <p class="lg-demo" data-i18n="login_demo"></p>
+
+      <div class="field"><label for="lgU" data-i18n="username"></label>
+        <input id="lgU" autocomplete="username" spellcheck="false" data-i18n-ph="username"></div>
+      <div class="field"><label for="lgP" data-i18n="password"></label>
+        <div class="lg-mk">
+          <input id="lgP" type="password" autocomplete="current-password" data-i18n-ph="password">
+          <button type="button" class="lg-mat" id="lgMat" data-i18n-title="show_pw" aria-label="show">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M1.5 12S5 5.5 12 5.5 22.5 12 22.5 12 19 18.5 12 18.5 1.5 12 1.5 12"/>
+              <circle cx="12" cy="12" r="3"/><path class="gach" d="M3 21 21 3"/>
+            </svg></button>
+        </div></div>
+
+      <div class="err" id="lgErr" role="alert"></div>
+      <button class="btn primary lg-vao" id="lgBtn" data-i18n="login_btn"></button>
+
+      <div class="lg-chia"><span data-i18n="quick_pick"></span></div>
       <div class="accts" id="acctList"></div>
     </div>
-  </div>
+  </section>
+
 </div>
 
 <!-- ===== Ứng dụng ===== -->

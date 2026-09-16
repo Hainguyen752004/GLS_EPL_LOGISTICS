@@ -27,6 +27,7 @@ QUYEN = {
     "treasury": {"edit": set(), "verify": set(), "book": set(), "pay": {"fuel"}},
     "cash":     {"edit": set(), "verify": set(), "book": set(), "pay": {"travel", "repair", "other"}},
     "rev":      {"edit": set(), "verify": set(), "book": set(), "pay": set()},
+    "driver":   {"edit": set(), "verify": set(), "book": set(), "pay": set()},   # tài xế không đụng mục nào
     "admin":    {"edit": set(MUC), "verify": set(MUC), "book": set(MUC), "pay": set(MUC)},
 }
 

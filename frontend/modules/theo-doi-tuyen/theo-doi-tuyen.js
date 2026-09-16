@@ -32,6 +32,14 @@
       <td><span class="tag ${e.kind === 'incident' ? 'tdt-tag-in' : e.kind === 'repair' ? 'tdt-tag-rp' : 'plain'}">${NN.h('ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</span></td>
       <td lang="lo">${e.stop_seq ? esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq) : '—'}</td><td lang="lo">${esc(e.note) || ''}</td><td lang="lo">${esc(e.by_user) || ''}</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">${NN.h('log_empty')}</td></tr>`;
+    // Báo hỏng của TÀI XẾ đang chờ: Bãi/admin duyệt (→ dòng mục V) hoặc từ chối
+    const cho = (P.events || []).filter(e => e.status === 'reported');
+    q('#tdt-khoi-cho').hidden = !cho.length;
+    q('#tdt-cho-duyet').innerHTML = cho.map(e => `<tr><td class="nowrap">${EPL.ngayGio(e.ts)}</td><td>${NN.h('inc_' + (e.incident_type || 'other'))}</td><td lang="lo">${esc(e.note || '')}</td>
+      <td class="num">${e.reported_cost != null ? so(e.reported_cost) + ' ' + esc(e.currency || 'LAK') : '—'}</td><td lang="lo">${esc(e.by_user || '')}</td>
+      <td class="no-print">${laBai() ? `<button class="btn sm ok" data-duyet="${e.id}">${NN.h('approve')}</button> <button class="btn sm danger" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`).join('');
+    q('#tdt-cho-duyet').querySelectorAll('[data-duyet]').forEach(b => b.addEventListener('click', () => duyet(cho.find(e => e.id === b.dataset.duyet))));
+    q('#tdt-cho-duyet').querySelectorAll('[data-tu-choi]').forEach(b => b.addEventListener('click', () => tuChoi(cho.find(e => e.id === b.dataset.tuChoi))));
     const sua = (P.expenses || []).filter(d => d.section === 'repair'); let tong = 0;
     q('#tdt-sua').innerHTML = sua.length ? sua.map(d => { const t = d.qty * d.unit_price * rate(d.currency); tong += t;
       return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td><td class="num">${so(d.qty)}</td><td class="num">${so(t)}</td><td><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')
@@ -78,6 +86,25 @@
       try { P = await API.post(`/api/trips/${P.id}/events`, body); PARTS = await API.get('/api/parts'); EPL.toast(NN.t('saved'), 'ok'); ve(); } catch (e) { EPL.baoLoi(e); }
     });
     dlg.showModal();
+  }
+  async function duyet(e) {
+    const v = await EPL.hopNhap(NN.t('approve') + ' — ' + (e.note || ''), [
+      { id: 'source', label: 'source', type: 'select', value: 'mua', options: [['mua', NN.t('src_mua')], ['kho', NN.t('src_kho')]] },
+      { id: 'part_id', label: 'pick_part', type: 'select', value: '', options: [['', '—']].concat(PARTS.filter(p => p.qty > 0).map(p => [p.id, p.name + ' · ' + NN.t('stock_left') + ' ' + so(p.qty)])) },
+      { id: 'item_name', label: 'item', value: e.note || '', lo: true },
+      { id: 'qty', label: 'qty', type: 'number', value: '1' },
+      { id: 'unit_price', label: 'unit_price', type: 'number', value: e.reported_cost != null ? e.reported_cost : '' },
+      { id: 'currency', label: 'cur', type: 'select', value: e.currency || 'LAK', options: [['LAK', 'LAK'], ['VND', 'VND'], ['THB', 'THB'], ['USD', 'USD']] },
+    ], NN.t('approve'));
+    if (!v) return;
+    if (v.source !== 'kho') delete v.part_id;
+    if (v.unit_price === '') delete v.unit_price;
+    try { P = await API.post(`/api/trips/${P.id}/events/${e.id}/duyet`, v); PARTS = await API.get('/api/parts'); EPL.toast(NN.t('saved'), 'ok'); ve(); } catch (x) { EPL.baoLoi(x); }
+  }
+  async function tuChoi(e) {
+    const v = await EPL.hopNhap(NN.t('reject') + ' — ' + (e.note || ''), [{ id: 'reason', label: 'reject_reason', value: '', lo: true }], NN.t('reject'));
+    if (!v) return;
+    try { P = await API.post(`/api/trips/${P.id}/events/${e.id}/duyet`, { reject: true, reason: v.reason }); ve(); } catch (x) { EPL.baoLoi(x); }
   }
   function datNguon(n) {
     nguon = n; root.querySelectorAll('.tdt-nguon button').forEach(b => b.classList.toggle('on', b.dataset.src === n));

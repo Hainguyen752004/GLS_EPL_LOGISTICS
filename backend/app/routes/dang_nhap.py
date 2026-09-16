@@ -12,7 +12,8 @@ router = APIRouter()
 
 def xuat_user(u):
     return {"id": u.id, "username": u.username, "full_name": u.full_name,
-            "role": u.role, "avatar": u.avatar or u.full_name[:2].upper(), "active": u.active}
+            "role": u.role, "avatar": u.avatar or u.full_name[:2].upper(), "active": u.active,
+            "driver_id": u.driver_id}
 
 
 @router.post("/api/dang-nhap")
@@ -52,7 +53,10 @@ def them_user(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(c
         raise HTTPException(409, {"ma": "TRUNG", "loi": "Tên đăng nhập đã có."})
     u = User(username=ten, password_hash=bam_mat_khau(str(data["password"])),
              full_name=str(data["full_name"]).strip(), role=data["role"],
-             avatar=str(data.get("avatar") or "")[:2].upper())
+             avatar=str(data.get("avatar") or "")[:2].upper(),
+             driver_id=(data.get("driver_id") or None) if data["role"] == "driver" else None)
+    if u.role == "driver" and not u.driver_id:
+        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Tài khoản vai tài xế phải gắn với một tài xế trong danh mục."})
     db.add(u); db.commit(); db.refresh(u)
     return xuat_user(u)
 
@@ -68,6 +72,9 @@ def sua_user(uid: str, data: dict = Body(...), db: Session = Depends(get_db), _=
             raise HTTPException(422, {"ma": "VAI_SAI", "loi": "Vai không hợp lệ."})
         u.role = data["role"]
     if "avatar" in data: u.avatar = str(data["avatar"] or "")[:2].upper()
+    if "driver_id" in data: u.driver_id = data["driver_id"] or None
+    if u.role == "driver" and not u.driver_id:
+        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Tài khoản vai tài xế phải gắn với một tài xế trong danh mục."})
     if "active" in data: u.active = bool(data["active"])
     if data.get("password"): u.password_hash = bam_mat_khau(str(data["password"]))
     db.commit(); db.refresh(u)

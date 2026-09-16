@@ -28,7 +28,8 @@ def bay_gio():
 
 
 # ---------------------------------------------------------------- người dùng & vai
-VAI = ("yard", "acct", "fuel", "treasury", "cash", "rev", "admin")
+VAI = ("yard", "acct", "fuel", "treasury", "cash", "rev", "admin", "driver")
+#   driver    Tài xế — chỉ thấy phiếu của mình: bấm "Xuất phát" sau khi nhận tiền tạm ứng, "Báo hỏng" trên đường
 #   yard      Bãi Thà Bốc — nhập liệu (ສະໜາມທ່າບົກ)
 #   acct      Kế toán thu/chi Viêng Chăn — kiểm & ghi sổ chi phí
 #   fuel      Kế toán kho nhiên liệu — kiểm & ghi sổ mục nhiên liệu
@@ -46,6 +47,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     role = Column(String, nullable=False, default="yard")
     avatar = Column(String, default="")          # hai chữ cái hiện ở góc trên
+    driver_id = Column(String, ForeignKey("drivers.id"))   # tài khoản vai driver gắn với tài xế nào
     active = Column(Boolean, nullable=False, default=True)
 
 
@@ -348,6 +350,13 @@ class TripEvent(Base):
     note = Column(Text)
     expense_id = Column(String)                                # dòng chi mục V sinh ra từ sự kiện này
     by_user = Column(String)
+    # Báo hỏng của TÀI XẾ: tài xế khai số tiền dự kiến → chờ admin/Bãi duyệt → duyệt mới sinh dòng
+    # chi vào mục V. Bãi tự ghi thì status = approved ngay (Bãi là người duyệt).
+    status = Column(String, default="approved")                # reported · approved · rejected
+    reported_cost = Column(Float)                              # số tiền tài xế báo
+    currency = Column(String)                                  # tiền của số tiền báo
+    approved_by = Column(String)
+    approved_at = Column(DateTime)
 
 
 # ---------------------------------------------------------------- kho

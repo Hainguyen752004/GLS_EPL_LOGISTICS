@@ -111,7 +111,7 @@
         const sel = `<select data-i="${i}" data-f="item_key" ${khoaDuoc ? '' : 'disabled'}>${khoa.map(k => `<option value="${k}" ${k === d.item_key ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}<option value="" ${tuGo ? 'selected' : ''}>${esc(NN.t('x_custom'))}</option></select>${tuGo ? `<input data-i="${i}" data-f="item_name" value="${esc(d.item_name || '')}" placeholder="…" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">` : ''}`;
         const inp = (f, cls = 'num') => `<input class="${cls}" data-i="${i}" data-f="${f}" value="${esc(d[f] == null ? '' : d[f])}" ${khoaDuoc ? '' : 'disabled'} inputmode="decimal">`;
         const pay = `<td class="px-lk"><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
-        const acct = `<td><select data-i="${i}" data-f="acct_code" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'}>${tk.map(c => `<option ${c === (d.acct_code || tkMacDinh(m, d)) ? 'selected' : ''}>${c}</option>`).join('')}</select></td>`;
+        const acct = `<td><button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'} title="${esc(NN.t('acct_pair'))}">${esc(d.acct_code || tkMacDinh(m, d))}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td>${inp('unit_price')}</td>
           <td><select data-i="${i}" data-f="currency" ${khoaDuoc ? '' : 'disabled'}>${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === d.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></td><td class="num amt"></td>
@@ -136,6 +136,10 @@
     }));
     root.querySelectorAll('.px-chi [data-pay]').forEach(b => b.addEventListener('click', () => { P.expenses[+b.dataset.i].paid_by_epl = b.dataset.pay === '1'; veChi(); veSo(); }));
     root.querySelectorAll('.px-chi [data-xoa]').forEach(b => b.addEventListener('click', () => { P.expenses.splice(+b.dataset.xoa, 1); veChi(); veSo(); }));
+    root.querySelectorAll('.px-chi [data-acct]').forEach(b => b.addEventListener('click', async () => {
+      const d = P.expenses[+b.dataset.acct]; const v = await EPL.chonDinhKhoan(d.acct_code || tkMacDinh(d.section, d));
+      if (v) { d.acct_code = v; veChi(); }
+    }));
     veSo();
   }
   function suaDuoc(m) { if (moi) return true; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
@@ -255,6 +259,7 @@
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
       g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('hoa-don', { id: P.id }));
+      g('px-chung-tu').addEventListener('click', () => P && P.id && EPL.di('chung-tu', { id: P.id }));
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
       root.querySelectorAll('.px-them').forEach(b => b.addEventListener('click', () => themDong(b.dataset.them)));
       // đầu vào mục I–II → cập nhật số ngay

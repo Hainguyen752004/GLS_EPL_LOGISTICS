@@ -1,0 +1,20 @@
+<!-- Chứng từ — Phiếu chi tạm ứng (in cho tài xế cầm đi lấy tiền) và Phiếu thu (thu tiền khách theo hoá đơn).
+     Mỗi giai đoạn một chứng từ, số liệu lấy từ phiếu xuất xe, định khoản theo danh mục Acc code của bên kế toán. -->
+<div class="toolbar no-print">
+  <div class="ct-tab" role="tablist">
+    <button class="active" data-tab="chi" data-i18n="voucher_payment"></button>
+    <button data-tab="thu" data-i18n="voucher_receipt"></button>
+  </div>
+  <div class="field"><label data-i18n="doc_no"></label><select id="ct-chon"></select></div>
+  <div class="grow"></div>
+  <span class="small muted" id="ct-acc-nguon"></span>
+  <button class="btn" id="ct-mo-phieu"><span data-i18n="open_slip"></span></button>
+  <button class="btn primary" onclick="window.print()"><span data-i18n="print"></span></button>
+</div>
+<div class="card ct-giay" id="ct-giay">
+  <div class="ct-dau">
+    <div><img src="img/logo-epl.jpg" alt="EPL" class="ct-logo"><div><b>EPL TRANSPORT</b><div class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO<br>ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
+    <div class="ct-so" id="ct-so"></div>
+  </div>
+  <div id="ct-than"></div>
+</div>

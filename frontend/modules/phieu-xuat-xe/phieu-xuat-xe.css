@@ -33,6 +33,7 @@
 .px-chi input.num{text-align:right} .px-chi .amt{font-weight:600}
 .px-chi tr.own{opacity:.55}
 .px-chi .x{border:0;background:none;color:var(--red);font-size:16px;line-height:1;padding:0 4px}
+.px-acct{cursor:pointer;border:1px solid var(--line-2)} .px-acct:disabled{cursor:default;opacity:.8}
 .px-pay{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden}
 .px-pay button{border:0;background:none;padding:2px 8px;font-size:11.5px;color:var(--ink-3)} .px-pay button.on{background:var(--green-soft);color:var(--green);font-weight:600}
 .px-tong{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}

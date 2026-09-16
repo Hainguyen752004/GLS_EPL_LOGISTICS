@@ -139,6 +139,33 @@
     return ra;
   };
 
+  /* ================================================================ Định khoản (Acc code từ API bên công nợ) */
+  let ACC_CACHE = null;
+  /** Danh mục Acc code — tải một lần, dùng chung mọi module. Trả {data, source}. */
+  EPL.accCodes = async (refresh) => {
+    if (ACC_CACHE && !refresh) return ACC_CACHE;
+    try { ACC_CACHE = await API.get('/api/acc-codes' + (refresh ? '?refresh=true' : '')); }
+    catch (e) { ACC_CACHE = { data: [], source: 'error', message: e.message }; }
+    return ACC_CACHE;
+  };
+  /** Hộp chọn định khoản "Nợ / Có". Mỗi nửa chọn từ danh mục anh Khang; nửa hiện tại không có trong
+   *  danh mục vẫn được giữ làm một tuỳ chọn có ghi rõ "không có trong danh mục" — không tự đổi mã của họ. */
+  EPL.chonDinhKhoan = async (hienTai) => {
+    const acc = await EPL.accCodes();
+    const [no, co] = String(hienTai || '/').split('/');
+    const ds = (acc.data || []).slice().sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    const opts = (chon) => {
+      const o = ds.map(x => [x.code, x.code + ' — ' + (x.description || x.name || '')]);
+      if (chon && !ds.some(x => x.code === chon)) o.unshift([chon, chon + ' — ' + NN.t('acct_not_in_catalogue')]);
+      return o;
+    };
+    const v = await EPL.hopNhap(NN.t('acct_pair') + (acc.source === 'remote' || acc.source === 'cached' ? '' : ' · ' + NN.t('acct_source_fallback')), [
+      { id: 'no', label: 'acct_debit', type: 'select', value: no, options: opts(no) },
+      { id: 'co', label: 'acct_credit', type: 'select', value: co, options: opts(co) },
+    ], NN.t('ok'));
+    return v ? v.no + '/' + v.co : null;
+  };
+
   /* ================================================================ Đăng nhập */
   let USER = null;
   const AUTH = EPL.AUTH = {
@@ -154,19 +181,31 @@
       try { localStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
       USER = null; document.getElementById('app').hidden = true; document.getElementById('login').hidden = false;
       document.getElementById('lgU').value = ''; document.getElementById('lgP').value = '';
+      document.getElementById('lgP').type = 'password';
+      const nm = document.getElementById('lgMat'); if (nm) nm.classList.remove('mo');
       if (xoaHash) location.hash = '';
       veTaiKhoanMau();
     },
   };
+  // Thứ tự gợi ý: quản trị → theo đúng dây chuyền duyệt phiếu → tài xế cuối cùng.
+  const THU_TU_VAI = ['admin', 'yard', 'acct', 'fuel', 'treasury', 'cash', 'rev', 'driver'];
   async function veTaiKhoanMau() {
+    const o = document.getElementById('acctList');
     try {
-      const ds = await API.get('/api/tai-khoan-mau');
-      document.getElementById('acctList').innerHTML = ds.map(a => `<button class="acct-btn" data-u="${esc(a.username)}">
-        <span class="av">${esc(a.avatar)}</span><span><b>${esc(a.full_name)}</b><small>${NN.h('r_' + a.role)} · ${esc(a.username)}</small></span></button>`).join('');
-      document.querySelectorAll('.acct-btn').forEach(b => b.addEventListener('click', () => {
+      const ds = (await API.get('/api/tai-khoan-mau')).slice().sort((a, b) => {
+        const x = THU_TU_VAI.indexOf(a.role), y = THU_TU_VAI.indexOf(b.role);
+        return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || a.username.localeCompare(b.username);
+      });
+      o.innerHTML = ds.map(a => {
+        const vai = NN.t('r_' + a.role);
+        return `<button class="acct-btn ${a.role === 'driver' ? 'tx' : ''}" data-u="${esc(a.username)}" title="${esc(a.username + ' · ' + vai)}">
+          <span class="av">${esc(a.avatar)}</span>
+          <span class="tt"><b>${esc(a.full_name)}</b><small>${esc(a.username)} · ${esc(vai)}</small></span></button>`;
+      }).join('');
+      o.querySelectorAll('.acct-btn').forEach(b => b.addEventListener('click', () => {
         document.getElementById('lgU').value = b.dataset.u; document.getElementById('lgP').value = '1234'; dangNhapTuForm();
       }));
-    } catch (e) { document.getElementById('acctList').innerHTML = `<div class="small neg">${esc(e.message)}</div>`; }
+    } catch (e) { o.innerHTML = `<div class="small neg">${esc(e.message)}</div>`; }
   }
   async function dangNhapTuForm() {
     const u = document.getElementById('lgU').value.trim(), p = document.getElementById('lgP').value;
@@ -189,6 +228,8 @@
     { id: 'theo-doi-tuyen', nhom: 'mod_transport', nav: 'nav_track_route', ic: 'M4 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M7 15l10-6' },
     { id: 'phieu-xuat-xe',  nhom: 'mod_transport', nav: 'nav_dispatch', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7z' },
     { id: 'hoa-don',        nhom: 'mod_transport', nav: 'nav_bill',     ic: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8' },
+    { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },
+    { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint',    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver',   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'nha-cung-cap',   nhom: 'mod_transport', nav: 'nav_supplier', ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21V12h6v9' },
@@ -204,7 +245,13 @@
   let moduleHienTai = '';
   const daNapJS = new Set(), daNapCSS = new Set();
 
-  function thayDuoc(m) { return !m.vai || AUTH.la(...m.vai); }
+  // Tài xế chỉ thấy module ghi rõ vai driver; các vai khác thấy mọi module trừ module "chỉ vai".
+  function thayDuoc(m) {
+    if (AUTH.role === 'driver') return !!(m.vai && m.vai.includes('driver'));
+    if (m.vai) return AUTH.la(...m.vai);
+    return true;
+  }
+  const moduleDau = () => (MODULES.find(thayDuoc) || MODULES[0]).id;
   function veNav() {
     const nav = document.getElementById('nav'); if (!nav || !USER) return;
     let html = '', nhom = '';
@@ -224,7 +271,7 @@
 
   async function napModule(id) {
     const m = MODULES.find(x => x.id === id) || MODULES[0];
-    if (!thayDuoc(m)) { EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di('tong-quan'); }
+    if (!thayDuoc(m)) { EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di(moduleDau()); }
     const noiDung = document.getElementById('noi-dung');
     const truoc = EPL.modules[moduleHienTai]; if (truoc && truoc.destroy) { try { truoc.destroy(); } catch (e) { /* bỏ qua */ } }
     moduleHienTai = m.id; veNav(); datTieuDe();
@@ -258,7 +305,7 @@
   }
   function dieuHuong() {
     if (!USER) return;
-    const id = (location.hash.replace(/^#\/?/, '').split('?')[0]) || 'tong-quan';
+    const id = (location.hash.replace(/^#\/?/, '').split('?')[0]) || moduleDau();
     // Lời hứa của lượt nạp hiện tại — bộ kiểm chờ nó thay vì đoán bằng setTimeout.
     EPL.sanSang = napModule(id);
   }
@@ -270,6 +317,14 @@
     document.getElementById('lgBtn').addEventListener('click', dangNhapTuForm);
     document.getElementById('lgP').addEventListener('keydown', e => { if (e.key === 'Enter') dangNhapTuForm(); });
     document.getElementById('lgU').addEventListener('keydown', e => { if (e.key === 'Enter') dangNhapTuForm(); });
+    const mat = document.getElementById('lgMat');
+    mat.addEventListener('click', () => {
+      const o = document.getElementById('lgP'), hien = o.type === 'password';
+      o.type = hien ? 'text' : 'password';
+      mat.classList.toggle('mo', hien);
+      mat.title = NN.t(hien ? 'hide_pw' : 'show_pw');
+      o.focus();
+    });
     document.getElementById('btnLogout').addEventListener('click', () => AUTH.dangXuat());
     if (API.token()) {
       try { USER = await API.get('/api/toi'); hienApp(); return; } catch (e) { /* phiên hết hạn → về đăng nhập */ }

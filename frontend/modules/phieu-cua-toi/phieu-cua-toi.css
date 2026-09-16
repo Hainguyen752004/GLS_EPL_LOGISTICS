@@ -1,0 +1,15 @@
+/* Phiếu của tôi — thẻ to, nút to, cho tài xế bấm trên điện thoại */
+.pct-ds{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.pct-the{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px}
+.pct-the .so{font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:17px}
+.pct-the .tuyen{font-size:15px;font-weight:600;margin:6px 0 2px}
+.pct-the .meta{font-size:13px;color:var(--ink-2);display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:8px}
+.pct-the .meta b{color:var(--ink)}
+.pct-tu{margin-top:12px;border-radius:var(--r);padding:10px 12px;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pct-tu.ok{background:var(--green-soft);color:var(--green)} .pct-tu.cho{background:var(--amber-soft);color:var(--amber)} .pct-tu.khong{background:var(--bg-2);color:var(--ink-2)}
+.pct-tu b{font-size:16px;font-variant-numeric:tabular-nums}
+.pct-nut{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pct-nut .btn{flex:1;justify-content:center;padding:12px 14px;font-size:15px;font-weight:600}
+.pct-bao{margin-top:10px;font-size:12.5px}
+.pct-bao div{padding:4px 0;border-top:1px dotted var(--line);display:flex;gap:8px;align-items:center}
+@media (max-width:600px){.pct-ds{grid-template-columns:1fr}}
