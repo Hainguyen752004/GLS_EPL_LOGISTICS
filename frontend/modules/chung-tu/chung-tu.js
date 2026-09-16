@@ -1,7 +1,7 @@
 /* Chứng từ — Phiếu chi tạm ứng (in cho tài xế) và Phiếu thu (thu tiền khách). Số liệu từ /api/trips/{id}/phieu-chi|phieu-thu. */
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
-  let root, tab = 'chi', DS = [], P = null, ACC = {};
+  let root, tab = 'chi', DS = [], P = null, ACC = {}, LINH = [], vChon = null;
   const q = (s) => root.querySelector(s);
 
   function tenTK(ma) {
@@ -9,6 +9,18 @@
     return String(ma || '').split('/').map(m => { const x = ACC[m]; return `<span class="ct-acc" title="${esc(x ? (x.description || x.name) : NN.t('acct_not_in_catalogue'))}">${esc(m)}</span>`; }).join(' / ');
   }
   function chuSo(n) { return so(n) + ' LAK'; }
+
+  /** Khối mã QR in trên phiếu. QR chỉ chứa ĐƯỜNG DẪN TRA CỨU, không nhồi số liệu:
+   *  số liệu còn đổi sau lúc in, nhồi vào là tờ giấy nói một đằng hệ thống nói một nẻo.
+   *  Người cấp quét ra màn "Cấp phát" với số mới nhất; mã chữ in dưới để gõ tay khi máy quét hỏng. */
+  function khoiQR(v) {
+    if (!v) return '';
+    return `<div class="ct-qr">
+      <img src="${esc(v.qr)}" alt="QR" width="132" height="132">
+      <div><div class="small muted">${NN.h('v_qr_hint')}</div>
+        <div class="ct-ma">${NN.h('v_code')}: <b class="mono">${esc(v.token)}</b></div>
+        <div class="small muted">${EPL.tag(v.status === 'da_cap' ? 'paid' : 'plain', 'v_' + v.status)}</div></div></div>`;
+  }
 
   function veChi(d) {
     q('#ct-so').innerHTML = `${NN.h('voucher_no')}<b>${esc(d.so_phieu_chi)}</b>${EPL.ngay(d.doc_date)}`;
@@ -26,6 +38,7 @@
         <tbody>${d.dong.map((x, i) => `<tr><td>${i + 1}</td><td lang="lo">${esc(x.item_key ? NN.t(x.item_key) : x.item_name)}</td><td class="num">${so(x.qty)}</td><td class="num">${so(x.unit_price)}${x.currency !== 'LAK' ? ' ' + esc(x.currency) : ''}</td><td class="num">${so(x.tien_lak)}</td><td>${tenTK(x.acct_code)}</td></tr>`).join('')}</tbody></table>
       <div class="ct-tong"><div><span>${NN.h('total')}</span><span>${chuSo(d.tong_lak)}</span></div></div>
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.trang_thai === 'paid' ? 'paid' : d.trang_thai === 'wait' ? 'plain' : 'partial', tt)} ${d.tra_tien_xong ? '· ' + NN.h('advance_received') : ''}</div>
+      ${khoiQR(LINH.find(v => v.kind === 'advance'))}
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
   function veThu(d) {
@@ -44,10 +57,51 @@
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.finance_status, 'fin_' + d.finance_status)}</div>
       <div class="ct-ky"><div><div class="line"></div>${NN.h('payer_name')}</div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
+  /** PHIẾU LĨNH NHIÊN LIỆU — tài xế cầm đến đúng kho ghi ở ô Nơi đổ.
+   *  Là phiếu lập LÚC XE CHƯA ĐI nên cố ý KHÔNG in: ngày về, lúc về, km chạy, cân cuối, hao hụt,
+   *  thành tiền và quy đổi — những ô đó lúc này chưa ai biết, in ô trống chỉ tổ rối. */
+  function veLinh(v, p) {
+    if (!v) {
+      q('#ct-so').innerHTML = '';
+      q('#ct-than').innerHTML = `<div class="ct-tieu-de">${NN.h('v_fuel')}</div><div class="ct-trong">${NN.h('v_none')}
+        <div class="small" style="margin-top:8px">${NN.h('v_make_fuel')}: ${NN.h('nav_dispatch')}</div></div>`;
+      return;
+    }
+    q('#ct-so').innerHTML = `${NN.h('voucher_no')}<b>${esc(v.doc_no)}</b>${EPL.ngay(v.doc_date)}`;
+    const o = (k, val, lo) => `<div><span>${NN.h(k)}</span><span ${lo ? 'lang="lo"' : ''}>${esc(val == null || val === '' ? '—' : val)}</span></div>`;
+    q('#ct-than').innerHTML = `
+      <div class="ct-tieu-de">${NN.h('v_fuel')}</div>
+      <div class="ct-phu">ໃບເບີກນໍ້າມັນ · Fuel draw slip</div>
+      <div class="ct-meta">
+        ${o('doc_no', v.doc_no)}${o('fp_place', v.place_name, true)}
+        ${o('truck_no', p.truck_no)}${o('driver', v.driver_name, true)}
+        ${o('plate_head', p.plate_head, true)}${o('plate_trailer', p.plate_trailer, true)}
+        ${o('customer', p.customer_name, true)}${o('goods_type', p.goods_type ? NN.t(p.goods_type) : '')}
+        ${o('origin', p.origin, true)}${o('dest', p.destination, true)}
+        ${o('c_w_origin', p.weight_origin != null ? so(p.weight_origin, 2) + ' ' + NN.t('ton') : '')}${o('d_out', EPL.ngay(p.out_date))}
+      </div>
+      <div class="ct-tong"><div><span>${NN.h('v_qty_ok')}</span><span>${so(v.qty_l, 1)} L</span></div></div>
+      ${khoiQR(v)}
+      ${v.status === 'da_cap' ? `<div class="ct-tt"><span class="muted">${NN.h('v_granted_by')}:</span> <b lang="lo">${esc(v.granted_by || '')}</b>
+        ${v.granted_qty != null ? ' · ' + NN.h('v_qty_real') + ' <b>' + so(v.granted_qty, 1) + ' L</b>' : ''}</div>` : ''}
+      <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(v.driver_name || '')}</div></div>
+        <div><div class="line"></div>${NN.h('fp_keeper')}</div>
+        <div><div class="line"></div>${NN.h('sg_chief_acct')}</div>
+        <div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
+  }
+
   async function ve() {
     if (!P) { q('#ct-than').innerHTML = `<div class="ct-trong">${NN.h('no_data')}</div>`; return; }
     try {
+      LINH = await API.get(`/api/trips/${P.id}/vouchers`).catch(() => []);
+      const lo = LINH.filter(v => v.kind === 'fuel');
+      q('#ct-o-linh').hidden = tab !== 'linh' || lo.length < 2;
+      if (lo.length) {
+        if (!vChon || !lo.some(v => v.id === vChon)) vChon = lo[0].id;
+        q('#ct-linh').innerHTML = lo.map(v => `<option value="${v.id}" ${v.id === vChon ? 'selected' : ''}>${esc(v.doc_no)} · ${esc(v.place_name || '')}</option>`).join('');
+      } else { vChon = null; q('#ct-linh').innerHTML = ''; }
       if (tab === 'chi') veChi(await API.get(`/api/trips/${P.id}/phieu-chi`));
+      else if (tab === 'linh') veLinh(lo.find(v => v.id === vChon), P);
       else veThu(await API.get(`/api/trips/${P.id}/phieu-thu`));
     } catch (e) { q('#ct-than').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
   }
@@ -62,7 +116,14 @@
       q('#ct-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       root.querySelectorAll('.ct-tab button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x === b)); ve(); }));
       if (AUTH.role === 'driver') root.querySelector('.ct-tab button[data-tab="thu"]').hidden = true;
-      const t = ctx.tham || {}; P = DS.find(p => p.id === t.id) || DS[0] || null;
+      q('#ct-linh').addEventListener('change', e => { vChon = e.target.value; ve(); });
+      const t = ctx.tham || {};
+      if (t.tab && ['chi', 'linh', 'thu'].includes(t.tab)) {
+        tab = t.tab;
+        root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
+      }
+      if (t.v) vChon = t.v;
+      P = DS.find(p => p.id === t.id) || DS[0] || null;
       if (P) q('#ct-chon').value = P.id;
       await ve();
     },

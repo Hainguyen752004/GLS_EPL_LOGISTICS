@@ -17,8 +17,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
-from models import (MUC, Customer, Driver, DriverLicense, ExchangeRate, FuelMove, Part, Route, RouteStop, Supplier,  # noqa: E402
-                    Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog, TripSection, User, Vehicle)
+from models import (MUC, Customer, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
+                    RouteStop, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
+                    TripSection, User, Vehicle, Voucher)
 from services.bao_mat import bam_mat_khau  # noqa: E402
 
 D = dt.date
@@ -48,15 +49,34 @@ def di_duong_chuan():
 
 
 def gieo(db):
+    # ---- điểm đổ nhiên liệu (ສະຖານທີ່ໃສ່ນໍ້າມັນ). Kho của EPL thì LĨNH; trạm bán dầu thì MUA.
+    diem_do = {
+        "fp_yard": FuelPlace(code="KHO-TB", name="ສາງນໍ້າມັນ ທ່າບົກ (Kho dầu Thà Bốc)", country="LA",
+                             owner_type="epl", address="ສະໜາມທ່າບົກ"),
+        "fp_vc": FuelPlace(code="KHO-VC", name="ສາງນໍ້າມັນ ວຽງຈັນ (Kho dầu Viêng Chăn)", country="LA",
+                           owner_type="epl", address="ວຽງຈັນ"),
+        "fp_vn": FuelPlace(code="VN-01", name="ປໍ້ານໍ້າມັນ ຫວຽດນາມ (Trạm dầu Việt Nam)", country="VN",
+                           owner_type="ngoai", note="Đổ chiều về để chạy ngược sang Lào"),
+        "fp_other": FuelPlace(code="LA-02", name="ປໍ້ານໍ້າມັນ ຂ້າງທາງ (Trạm dầu dọc đường)", country="LA",
+                              owner_type="ngoai"),
+    }
+    for x in diem_do.values():
+        db.add(x)
+    db.flush()
+
     # ---- tài khoản theo vai (sheet ໜ້າວຽກ)
     users = [
-        ("thabok", "ສົມໄຊ (Somchai)", "yard", "TB"), ("ketoan", "ນາງ ພອນ (Phone)", "acct", "KT"),
-        ("khonl", "ທ້າວ ວິໄລ (Vilay)", "fuel", "KN"), ("quyvc", "ນາງ ມະນີ (Manee)", "treasury", "QV"),
-        ("quytb", "ນາງ ດາວ (Dao)", "cash", "CE"), ("doanhthu", "ທ້າວ ຄຳ (Kham)", "rev", "DT"),
-        ("admin", "Admin", "admin", "AD"),
+        ("thabok", "ສົມໄຊ (Somchai)", "yard", "TB", None), ("ketoan", "ນາງ ພອນ (Phone)", "acct", "KT", None),
+        ("khonl", "ທ້າວ ວິໄລ (Vilay)", "fuel", "KN", None), ("quyvc", "ນາງ ມະນີ (Manee)", "treasury", "QV", None),
+        ("quytb", "ນາງ ດາວ (Dao)", "cash", "CE", None), ("doanhthu", "ທ້າວ ຄຳ (Kham)", "rev", "DT", None),
+        # Thủ kho tại điểm đổ: mỗi người giữ MỘT kho, chỉ thấy phiếu lĩnh của kho mình.
+        ("khotb", "ທ້າວ ບຸນມາ (Bounma)", "depot", "KT", "fp_yard"),
+        ("khovc", "ນາງ ສີດາ (Sida)", "depot", "KV", "fp_vc"),
+        ("admin", "Admin", "admin", "AD", None),
     ]
-    for u, ten, vai, av in users:
-        db.add(User(username=u, password_hash=bam_mat_khau(MAT_KHAU_DEMO), full_name=ten, role=vai, avatar=av))
+    for u, ten, vai, av, kho in users:
+        db.add(User(username=u, password_hash=bam_mat_khau(MAT_KHAU_DEMO), full_name=ten, role=vai, avatar=av,
+                    place_id=diem_do[kho].id if kho else None))
 
     for ma, gt in (("USD", 22000), ("THB", 700), ("VND", 1.2), ("LAK", 1)):
         db.add(ExchangeRate(code=ma, rate_to_lak=gt))
@@ -151,6 +171,8 @@ def gieo(db):
         db.add(p); db.flush()
         for i, d in enumerate(chi, 1):
             d = dict(d); d["acct_code"] = ma_tk(p.company, d["section"], d.get("source"), d.get("place"))
+            if d.get("place") in diem_do:                   # nơi đổ cũ (chuỗi) → điểm đổ thật (bản ghi)
+                d["place_id"] = diem_do[d["place"]].id
             db.add(TripExpense(trip_id=p.id, line_no=i, **d))
         # trạng thái duyệt mặc định: xe vừa xuất bến = đã nhập; đã tới = nhiên liệu đã kiểm; đã thu = xong hết
         for m in MUC:
@@ -204,6 +226,30 @@ def gieo(db):
           weight_origin=41.90, weight_dest=None, price_usd=41, transport_status="dispatched", finance_status="unpaid",
           chi=[dong("fuel", "diesel", 150, 30000, "LAK", "fp_yard"),
                dong("travel", "x_water", 1, 60000), dong("travel", "x_vn", 1, 430000), dong("travel", "x_phone", 1, 150000)])
+
+    # ---- phiếu lĩnh (tờ giấy tài xế cầm đi, có mã QR)
+    # Phiếu vừa xuất bến còn ĐANG CHỜ CẤP để màn Cấp phát có việc; các phiếu cũ thì tiền đã trao
+    # tay rồi, đánh dấu "đã cấp" để bảng Tất toán có cả cột đã ứng lẫn cột đã chi.
+    import secrets as _sc
+    db.flush()          # phiên này autoflush=False: dòng chi của phiếu cuối chưa xuống DB thì query không thấy
+    for pp in db.query(Trip).order_by(Trip.doc_no).all():
+        dong_p = db.query(TripExpense).filter(TripExpense.trip_id == pp.id).all()
+        tg = {"USD": pp.rate_usd or 22000, "THB": pp.rate_thb or 700, "VND": pp.rate_vnd or 1.2, "LAK": 1.0}
+        ung = sum((e.qty or 0) * (e.unit_price or 0) * tg.get(e.currency or "LAK", 1)
+                  for e in dong_p if e.paid_by_epl and e.source != "kho" and e.section in ("fuel", "travel", "other"))
+        moi_chay = pp.transport_status == "dispatched"
+        chung = dict(trip_id=pp.id, doc_date=pp.out_date or pp.doc_date, driver_id=pp.driver_id,
+                     driver_name=pp.driver_name, truck_no=pp.truck_no, issued_by="ສົມໄຊ (Somchai)")
+        if ung > 0:
+            db.add(Voucher(kind="advance", doc_no="PTU-" + pp.doc_no, token=_sc.token_urlsafe(9),
+                           amount_lak=round(ung, 2), status="cho" if moi_chay else "da_cap",
+                           granted_by=None if moi_chay else "ນາງ ດາວ (Dao)",
+                           granted_at=None if moi_chay else dt.datetime.utcnow(), **chung))
+        if moi_chay:
+            lit = sum(e.qty or 0 for e in dong_p if e.section == "fuel" and e.source == "kho" and e.paid_by_epl)
+            if lit > 0:
+                db.add(Voucher(kind="fuel", doc_no="PLNL-%s-1" % pp.doc_no, token=_sc.token_urlsafe(9),
+                               place_id=diem_do["fp_yard"].id, qty_l=lit, status="cho", **chung))
 
     # ---- kho nhiên liệu: một lần nhập, các lần xuất theo phiếu
     db.add(FuelMove(move_date=D(2026, 8, 15), doc_no="PN-0815", kind="in", qty_l=5000, unit_price=28500, by_user="ນາງ ພອນ (Phone)"))

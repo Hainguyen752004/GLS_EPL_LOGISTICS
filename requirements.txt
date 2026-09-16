@@ -1,0 +1,9 @@
+# EPL Lào — thư viện máy chủ cần có. Cài: python -m pip install -r requirements.txt
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+python-dotenv
+qrcode          # sinh ảnh mã QR in trên phiếu lĩnh
+pillow          # qrcode cần để xuất PNG
+python-docx     # chỉ dùng cho tools/sinh_word.py khi sinh tài liệu Word

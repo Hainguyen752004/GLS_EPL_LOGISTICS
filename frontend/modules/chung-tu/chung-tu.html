@@ -2,10 +2,12 @@
      Mỗi giai đoạn một chứng từ, số liệu lấy từ phiếu xuất xe, định khoản theo danh mục Acc code của bên kế toán. -->
 <div class="toolbar no-print">
   <div class="ct-tab" role="tablist">
-    <button class="active" data-tab="chi" data-i18n="voucher_payment"></button>
+    <button class="active" data-tab="chi" data-i18n="v_advance"></button>
+    <button data-tab="linh" data-i18n="v_fuel"></button>
     <button data-tab="thu" data-i18n="voucher_receipt"></button>
   </div>
   <div class="field"><label data-i18n="doc_no"></label><select id="ct-chon"></select></div>
+  <div class="field" id="ct-o-linh" hidden><label data-i18n="v_fuel"></label><select id="ct-linh"></select></div>
   <div class="grow"></div>
   <span class="small muted" id="ct-acc-nguon"></span>
   <button class="btn" id="ct-mo-phieu"><span data-i18n="open_slip"></span></button>

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 607 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 663 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1966,6 +1966,286 @@ window.EPL_TU_DIEN = {
   "vi": "Ẩn mật khẩu",
   "lo": "ເຊື່ອງລະຫັດຜ່ານ",
   "en": "Hide password"
+ },
+ "r_depot": {
+  "vi": "Thủ kho nhiên liệu (một kho)",
+  "lo": "ຜູ້ຮັກສາສາງນໍ້າມັນ (ໜຶ່ງສາງ)",
+  "en": "Fuel depot keeper (one depot)"
+ },
+ "nav_issue": {
+  "vi": "Cấp phát",
+  "lo": "ການຈ່າຍອອກ",
+  "en": "Issuing"
+ },
+ "nav_settle": {
+  "vi": "Tất toán tài xế",
+  "lo": "ສະສາງໂຊເຟີ",
+  "en": "Driver settlement"
+ },
+ "nav_place": {
+  "vi": "Điểm đổ nhiên liệu",
+  "lo": "ສະຖານທີ່ໃສ່ນໍ້າມັນ",
+  "en": "Fuel places"
+ },
+ "title_cap_phat": {
+  "vi": "Cấp phát<span class=\"sub\">Phiếu lĩnh đang chờ · quét mã QR của tài xế</span>",
+  "lo": "ການຈ່າຍອອກ<span class=\"sub\">ໃບເບີກລໍຖ້າ · ສະແກນ QR ຂອງໂຊເຟີ</span>",
+  "en": "Issuing<span class=\"sub\">Pending draw slips · scan the driver QR</span>"
+ },
+ "title_tat_toan": {
+  "vi": "Tất toán tài xế<span class=\"sub\">Đối tiền ứng và tiền chi theo tháng</span>",
+  "lo": "ສະສາງໂຊເຟີ<span class=\"sub\">ທຽບເງິນລ່ວງໜ້າ ແລະ ເງິນຈ່າຍ ຕາມເດືອນ</span>",
+  "en": "Driver settlement<span class=\"sub\">Advances against actual spend, by month</span>"
+ },
+ "title_diem_do": {
+  "vi": "Điểm đổ nhiên liệu<span class=\"sub\">Kho của EPL và trạm bán dầu bên ngoài</span>",
+  "lo": "ສະຖານທີ່ໃສ່ນໍ້າມັນ<span class=\"sub\">ສາງ EPL ແລະ ປໍ້ານໍ້າມັນທາງນອກ</span>",
+  "en": "Fuel places<span class=\"sub\">EPL depots and outside stations</span>"
+ },
+ "v_fuel": {
+  "vi": "Phiếu lĩnh nhiên liệu",
+  "lo": "ໃບເບີກນໍ້າມັນ",
+  "en": "Fuel draw slip"
+ },
+ "v_advance": {
+  "vi": "Phiếu tạm ứng đi đường",
+  "lo": "ໃບເບີກເງິນລ່ວງໜ້າ",
+  "en": "Travel advance slip"
+ },
+ "v_cho": {
+  "vi": "Chờ cấp",
+  "lo": "ລໍຖ້າຈ່າຍ",
+  "en": "Pending"
+ },
+ "v_da_cap": {
+  "vi": "Đã cấp",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Issued"
+ },
+ "v_huy": {
+  "vi": "Đã huỷ",
+  "lo": "ຍົກເລີກແລ້ວ",
+  "en": "Cancelled"
+ },
+ "v_make_fuel": {
+  "vi": "Lập phiếu lĩnh nhiên liệu",
+  "lo": "ສ້າງໃບເບີກນໍ້າມັນ",
+  "en": "Create fuel draw slip"
+ },
+ "v_make_adv": {
+  "vi": "Lập phiếu tạm ứng",
+  "lo": "ສ້າງໃບເບີກເງິນລ່ວງໜ້າ",
+  "en": "Create advance slip"
+ },
+ "v_none": {
+  "vi": "Chưa lập phiếu lĩnh nào",
+  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບເບີກ",
+  "en": "No draw slip yet"
+ },
+ "v_qr_hint": {
+  "vi": "Tài xế đưa mã này cho người cấp quét",
+  "lo": "ໂຊເຟີຍື່ນລະຫັດນີ້ໃຫ້ຜູ້ຈ່າຍສະແກນ",
+  "en": "The driver shows this code to the issuer"
+ },
+ "v_code": {
+  "vi": "Mã tra cứu",
+  "lo": "ລະຫັດຄົ້ນຫາ",
+  "en": "Lookup code"
+ },
+ "v_scan": {
+  "vi": "Nhập mã QR",
+  "lo": "ໃສ່ລະຫັດ QR",
+  "en": "Enter QR code"
+ },
+ "v_issue": {
+  "vi": "Cấp",
+  "lo": "ຈ່າຍ",
+  "en": "Issue"
+ },
+ "v_issue_fuel": {
+  "vi": "Cấp dầu",
+  "lo": "ຈ່າຍນໍ້າມັນ",
+  "en": "Issue fuel"
+ },
+ "v_issue_cash": {
+  "vi": "Chi tiền",
+  "lo": "ຈ່າຍເງິນ",
+  "en": "Pay cash"
+ },
+ "v_qty_real": {
+  "vi": "Số lít cấp thật",
+  "lo": "ຈຳນວນລິດຈ່າຍຈິງ",
+  "en": "Litres actually issued"
+ },
+ "v_qty_ok": {
+  "vi": "Số lít duyệt",
+  "lo": "ຈຳນວນລິດອະນຸມັດ",
+  "en": "Litres approved"
+ },
+ "v_reason": {
+  "vi": "Lý do cấp lệch số duyệt",
+  "lo": "ເຫດຜົນທີ່ຈ່າຍບໍ່ກົງ",
+  "en": "Reason for the difference"
+ },
+ "v_cancel": {
+  "vi": "Huỷ phiếu lĩnh",
+  "lo": "ຍົກເລີກໃບເບີກ",
+  "en": "Cancel draw slip"
+ },
+ "v_empty": {
+  "vi": "Không có phiếu nào đang chờ",
+  "lo": "ບໍ່ມີໃບເບີກລໍຖ້າ",
+  "en": "Nothing pending"
+ },
+ "v_granted_by": {
+  "vi": "Người cấp",
+  "lo": "ຜູ້ຈ່າຍ",
+  "en": "Issued by"
+ },
+ "v_check": {
+  "vi": "Đối chiếu trước khi cấp",
+  "lo": "ກວດກ່ອນຈ່າຍ",
+  "en": "Check before issuing"
+ },
+ "v_not_found": {
+  "vi": "Không tìm thấy mã này",
+  "lo": "ບໍ່ພົບລະຫັດນີ້",
+  "en": "Code not found"
+ },
+ "fp_place": {
+  "vi": "Điểm đổ",
+  "lo": "ສະຖານທີ່ໃສ່",
+  "en": "Fuel place"
+ },
+ "fp_epl": {
+  "vi": "Kho của EPL (lĩnh)",
+  "lo": "ສາງ EPL (ເບີກ)",
+  "en": "EPL depot (draw)"
+ },
+ "fp_ngoai": {
+  "vi": "Trạm bán dầu (mua)",
+  "lo": "ປໍ້ານໍ້າມັນ (ຊື້)",
+  "en": "Outside station (buy)"
+ },
+ "fp_la": {
+  "vi": "Lào",
+  "lo": "ລາວ",
+  "en": "Laos"
+ },
+ "fp_vn2": {
+  "vi": "Việt Nam",
+  "lo": "ຫວຽດນາມ",
+  "en": "Vietnam"
+ },
+ "fp_country": {
+  "vi": "Nước",
+  "lo": "ປະເທດ",
+  "en": "Country"
+ },
+ "fp_keeper": {
+  "vi": "Người giữ kho",
+  "lo": "ຜູ້ຮັກສາສາງ",
+  "en": "Keeper"
+ },
+ "fp_pending": {
+  "vi": "Đang chờ cấp",
+  "lo": "ລໍຖ້າຈ່າຍ",
+  "en": "Pending"
+ },
+ "fp_new": {
+  "vi": "Thêm điểm đổ",
+  "lo": "ເພີ່ມສະຖານທີ່",
+  "en": "Add place"
+ },
+ "tt_period": {
+  "vi": "Kỳ (tháng)",
+  "lo": "ໄລຍະ (ເດືອນ)",
+  "en": "Period (month)"
+ },
+ "tt_advanced": {
+  "vi": "Đã ứng",
+  "lo": "ເບີກລ່ວງໜ້າແລ້ວ",
+  "en": "Advanced"
+ },
+ "tt_spent": {
+  "vi": "Đã chi thật",
+  "lo": "ຈ່າຍຈິງ",
+  "en": "Actually spent"
+ },
+ "tt_diff": {
+  "vi": "Chênh lệch",
+  "lo": "ຜົນຕ່າງ",
+  "en": "Difference"
+ },
+ "tt_pay_more": {
+  "vi": "Công ty chi bù",
+  "lo": "ບໍລິສັດຈ່າຍເພີ່ມ",
+  "en": "Company pays more"
+ },
+ "tt_give_back": {
+  "vi": "Tài xế nộp lại",
+  "lo": "ໂຊເຟີສົ່ງຄືນ",
+  "en": "Driver returns"
+ },
+ "tt_even": {
+  "vi": "Vừa đủ",
+  "lo": "ພໍດີ",
+  "en": "Even"
+ },
+ "tt_do": {
+  "vi": "Tất toán",
+  "lo": "ສະສາງ",
+  "en": "Settle"
+ },
+ "tt_done": {
+  "vi": "Đã tất toán",
+  "lo": "ສະສາງແລ້ວ",
+  "en": "Settled"
+ },
+ "tt_undo": {
+  "vi": "Bỏ chốt",
+  "lo": "ຍົກເລີກການສະສາງ",
+  "en": "Reopen"
+ },
+ "tt_slips": {
+  "vi": "Phiếu trong kỳ",
+  "lo": "ໃບໃນໄລຍະ",
+  "en": "Slips in period"
+ },
+ "tt_note": {
+  "vi": "Không tính khoản công ty trả thẳng nhà cung cấp theo đợt",
+  "lo": "ບໍ່ນັບລາຍການທີ່ບໍລິສັດຈ່າຍໃຫ້ຜູ້ສະໜອງເປັນງວດ",
+  "en": "Excludes items the company pays suppliers in batches"
+ },
+ "tt_confirm": {
+  "vi": "Tất toán kỳ {ky} cho {ten}?",
+  "lo": "ສະສາງໄລຍະ {ky} ໃຫ້ {ten}?",
+  "en": "Settle {ky} for {ten}?"
+ },
+ "df_declare": {
+  "vi": "Khai đổ nhiên liệu",
+  "lo": "ແຈ້ງການໃສ່ນໍ້າມັນ",
+  "en": "Declare refuelling"
+ },
+ "df_litres": {
+  "vi": "Số lít",
+  "lo": "ຈຳນວນລິດ",
+  "en": "Litres"
+ },
+ "df_where": {
+  "vi": "Đổ ở đâu",
+  "lo": "ໃສ່ຢູ່ໃສ",
+  "en": "Where"
+ },
+ "df_hint": {
+  "vi": "Dầu mua dọc đường (thường bên Việt Nam để chạy về). Kế toán duyệt thì vào mục III.",
+  "lo": "ນໍ້າມັນຊື້ຂ້າງທາງ (ປົກກະຕິຢູ່ຫວຽດນາມເພື່ອຂັບກັບ). ບັນຊີອະນຸມັດແລ້ວຈຶ່ງເຂົ້າພາກ III.",
+  "en": "Fuel bought on the road (usually in Vietnam for the return leg). Booked into section III once accounting approves."
+ },
+ "ev_refuel": {
+  "vi": "Đổ dầu dọc đường",
+  "lo": "ໃສ່ນໍ້າມັນຂ້າງທາງ",
+  "en": "Refuelled on the road"
  },
  "ok": {
   "vi": "Đồng ý",

@@ -1,0 +1,31 @@
+<!-- Tất toán tài xế — ສະສາງໂຊເຟີ. Chốt THEO THÁNG.
+     Đã ứng bao nhiêu, đã chi thật bao nhiêu, chênh lệch thì bù hoặc thu lại một lần. -->
+<div class="toolbar">
+  <div class="field"><label data-i18n="tt_period"></label><input type="month" id="tt-ky"></div>
+  <div class="grow"></div>
+  <span class="small muted" data-i18n="tt_note"></span>
+</div>
+
+<div class="tt-tom" id="tt-tom"></div>
+
+<div class="card">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th data-i18n="driver"></th><th class="num" data-i18n="tt_slips"></th>
+        <th class="num" data-i18n="tt_advanced"></th><th class="num" data-i18n="tt_spent"></th>
+        <th class="num" data-i18n="tt_diff"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
+      <tbody id="tt-than"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card tt-chi-tiet" id="tt-khoi" hidden>
+  <div class="hd"><h3 id="tt-ten"></h3><div class="grow"></div><span class="small muted" id="tt-ky-hien"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl tbl-compact">
+      <thead><tr><th data-i18n="doc_no"></th><th data-i18n="d_out"></th><th data-i18n="truck_no"></th>
+        <th data-i18n="route"></th><th class="num" data-i18n="tt_spent"></th></tr></thead>
+      <tbody id="tt-phieu"></tbody>
+    </table>
+  </div>
+</div>

@@ -22,12 +22,12 @@
     rev: { edit: [], verify: [], book: [], pay: [] },
     admin: { edit: MUC, verify: MUC, book: MUC, pay: MUC },
   };
-  let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [] }, moi = false, ty_gia = {};
+  let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [] }, moi = false, ty_gia = {};
   /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402. */
   function tkMacDinh(m, d) {
     const cty = P && P.company === 'joint' ? 'joint' : 'EPL', rule = KM.acct_rule[cty];
     let src = d && d.source;
-    if (m === 'fuel') src = ((d && d.place) || 'fp_yard') === 'fp_yard' ? 'kho' : 'mua';
+    if (m === 'fuel') src = nguonCuaDiem(d || {});
     if (m === 'repair' && src !== 'kho') src = 'mua';
     if (m === 'travel' || m === 'other') return rule.mua[m];
     return rule[src][m];
@@ -115,7 +115,8 @@
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td>${inp('unit_price')}</td>
           <td><select data-i="${i}" data-f="currency" ${khoaDuoc ? '' : 'disabled'}>${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === d.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></td><td class="num amt"></td>
-          <td><select data-i="${i}" data-f="place" ${khoaDuoc ? '' : 'disabled'}>${['fp_yard', 'fp_vn', 'fp_other'].map(k => `<option value="${k}" ${k === d.place ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select></td>${pay}${acct}${xoa}</tr>`;
+          <td><select data-i="${i}" data-f="place_id" ${khoaDuoc ? '' : 'disabled'}>${diemChon(d)}</select>
+            <div class="small muted px-nguon">${NN.h(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')}</div></td>${pay}${acct}${xoa}</tr>`;
         let nguon = '';
         if (m === 'repair') {
           const kho = d.source === 'kho', daXuat = !!d.stock_move_id;
@@ -129,7 +130,12 @@
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value;
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; veChi(); }
-      if (f === 'place') { if (P.company === 'joint') d.paid_by_epl = el.value === 'fp_yard'; d.acct_code = tkMacDinh('fuel', d); veChi(); }
+      if (f === 'place_id') {
+        // Nơi đổ quyết định LĨNH hay MUA, kéo theo định khoản …/371 hay …/402.
+        d.source = nguonCuaDiem(d);
+        if (P.company === 'joint') d.paid_by_epl = d.source === 'kho';
+        d.acct_code = tkMacDinh('fuel', d); veChi();
+      }
       if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = tkMacDinh('repair', d); veChi(); }
       if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; d.unit_price = p.unit_price || 0; } veChi(); }
       veSo();
@@ -242,9 +248,34 @@
     if (!await EPL.hoi(NN.t('delete') + ' ' + P.doc_no, NN.t('confirm_delete'), NN.t('delete'))) return;
     try { await API.del('/api/trips/' + P.id); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); if (DS.length) await moPhieu(DS[0].id); else await phieuMoi(); } catch (e) { EPL.baoLoi(e); }
   }
+  /** Ô chọn nơi đổ — lấy từ danh mục Điểm đổ. Kho EPL xếp trước, trạm ngoài xếp sau. */
+  function diemChon(d) {
+    const ds = DM.places || [];
+    if (!ds.length) return `<option value="">${esc(NN.t('no_data'))}</option>`;
+    const nhom = (loai) => ds.filter(x => x.owner_type === loai)
+      .map(x => `<option value="${x.id}" ${x.id === d.place_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
+    return `<optgroup label="${esc(NN.t('fp_epl'))}">${nhom('epl')}</optgroup>`
+      + `<optgroup label="${esc(NN.t('fp_ngoai'))}">${nhom('ngoai')}</optgroup>`;
+  }
+  function nguonCuaDiem(d) {
+    const x = (DM.places || []).find(y => y.id === d.place_id);
+    return x ? (x.owner_type === 'epl' ? 'kho' : 'mua') : (d.source || 'kho');
+  }
+
+  /** Lập phiếu lĩnh nhiên liệu cho chuyến này rồi mở màn Chứng từ để in. */
+  async function lapPhieuLinh() {
+    if (!P || !P.id) return;
+    try {
+      const v = await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'fuel' });
+      EPL.toast(NN.t('saved'), 'ok');
+      EPL.di('chung-tu', { id: P.id, tab: 'linh', v: v[0] ? v[0].id : '' });
+    } catch (e) { EPL.baoLoi(e); }
+  }
+
   function themDong(m) {
     if (!suaDuoc(m)) return;
-    const d = m === 'fuel' ? { section: 'fuel', item_key: 'diesel', qty: 0, unit_price: 0, currency: 'LAK', place: 'fp_yard', paid_by_epl: true, source: 'kho' }
+    const khoDau = (DM.places || []).find(x => x.owner_type === 'epl');
+    const d = m === 'fuel' ? { section: 'fuel', item_key: 'diesel', qty: 0, unit_price: 0, currency: 'LAK', place_id: khoDau ? khoDau.id : null, paid_by_epl: true, source: 'kho' }
       : { section: m, item_key: KM.items[m][0], qty: 1, unit_price: 0, currency: 'LAK', paid_by_epl: true, source: m === 'repair' ? 'mua' : null };
     d.acct_code = tkMacDinh(m, d);
     P.expenses.push(d);
@@ -254,12 +285,16 @@
   EPL.modules['phieu-xuat-xe'] = {
     async init(r, ctx) {
       root = r;
-      [KM, DS, ty_gia, DM.customers, DM.vehicles, DM.drivers, DM.routes, DM.parts] = await Promise.all([API.get('/api/khoan-muc'), API.get('/api/trips'), API.get('/api/rates'), API.get('/api/customers'), API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts')]);
+      [KM, DS, ty_gia, DM.customers, DM.vehicles, DM.drivers, DM.routes, DM.parts, DM.places] = await Promise.all([
+        API.get('/api/khoan-muc'), API.get('/api/trips'), API.get('/api/rates'), API.get('/api/customers'),
+        API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
+        API.get('/api/fuel-places')]);
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
       g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('hoa-don', { id: P.id }));
       g('px-chung-tu').addEventListener('click', () => P && P.id && EPL.di('chung-tu', { id: P.id }));
+      g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
       root.querySelectorAll('.px-them').forEach(b => b.addEventListener('click', () => themDong(b.dataset.them)));
       // đầu vào mục I–II → cập nhật số ngay

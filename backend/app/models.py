@@ -28,11 +28,12 @@ def bay_gio():
 
 
 # ---------------------------------------------------------------- người dùng & vai
-VAI = ("yard", "acct", "fuel", "treasury", "cash", "rev", "admin", "driver")
+VAI = ("yard", "acct", "fuel", "depot", "treasury", "cash", "rev", "admin", "driver")
 #   driver    Tài xế — chỉ thấy phiếu của mình: bấm "Xuất phát" sau khi nhận tiền tạm ứng, "Báo hỏng" trên đường
 #   yard      Bãi Thà Bốc — nhập liệu (ສະໜາມທ່າບົກ)
 #   acct      Kế toán thu/chi Viêng Chăn — kiểm & ghi sổ chi phí
 #   fuel      Kế toán kho nhiên liệu — kiểm & ghi sổ mục nhiên liệu
+#   depot     Thủ kho tại MỘT điểm đổ nhiên liệu — chỉ thấy phiếu lĩnh của kho mình, cấp dầu và lập phiếu xuất kho
 #   treasury  Quỹ Viêng Chăn — chi tiền nhiên liệu
 #   cash      Quỹ tiền mặt lẻ Thà Bốc — chi tiền đi đường / sửa chữa / khác
 #   rev       Kế toán doanh thu — xuất hoá đơn, thu tiền khách
@@ -48,6 +49,7 @@ class User(Base):
     role = Column(String, nullable=False, default="yard")
     avatar = Column(String, default="")          # hai chữ cái hiện ở góc trên
     driver_id = Column(String, ForeignKey("drivers.id"))   # tài khoản vai driver gắn với tài xế nào
+    place_id = Column(String, ForeignKey("fuel_places.id"))  # tài khoản vai depot phụ trách điểm đổ nào
     active = Column(Boolean, nullable=False, default=True)
 
 
@@ -274,7 +276,9 @@ class TripExpense(Base):
     qty = Column(Float, nullable=False, default=1)
     unit_price = Column(Float, nullable=False, default=0)
     currency = Column(String, nullable=False, default="LAK")   # nhiên liệu đổ ở VN tính VND
-    place = Column(String)                                     # fp_yard | fp_vn | fp_other (nhiên liệu)
+    place = Column(String)                                     # fp_yard | fp_vn | fp_other — khoá cũ, giữ để đọc dữ liệu cũ
+    place_id = Column(String, ForeignKey("fuel_places.id"))    # ĐIỂM ĐỔ thật: quyết định kho nào cấp, và kho hay mua
+    supplier_id = Column(String, ForeignKey("suppliers.id"))   # mua ngoài thì mua của ai (dầu đổ dọc đường, bên VN)
     paid_by_epl = Column(Boolean, nullable=False, default=True)  # xe liên kết: EPL ứng hay chủ xe tự trả
     acct_code = Column(String)                                 # 625/371, 625/402, 614/402…
     # NGUỒN của khoản chi — quy tắc của họ: có trong kho thì XUẤT KHO, không có thì CHI MUA NGOÀI.
@@ -333,7 +337,9 @@ class RouteStop(Base):
     note = Column(String)
 
 
-SU_KIEN = ("arrive_stop", "incident", "repair", "note")        # tới điểm · sự cố · sửa xe · ghi chú
+SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note")   # tới điểm · sự cố · sửa xe · đổ dầu · ghi chú
+#   refuel  Tài xế đổ dầu DỌC ĐƯỜNG (thường là mua ở Việt Nam để chạy về). Khai xong ở trạng thái
+#           "reported"; kế toán duyệt mới thành dòng chi mục III nguồn "mua".
 LOAI_SU_CO = ("breakdown", "accident", "delay", "other")       # hỏng xe · tai nạn · chậm · khác
 
 
@@ -353,7 +359,10 @@ class TripEvent(Base):
     # Báo hỏng của TÀI XẾ: tài xế khai số tiền dự kiến → chờ admin/Bãi duyệt → duyệt mới sinh dòng
     # chi vào mục V. Bãi tự ghi thì status = approved ngay (Bãi là người duyệt).
     status = Column(String, default="approved")                # reported · approved · rejected
-    reported_cost = Column(Float)                              # số tiền tài xế báo
+    reported_cost = Column(Float)
+    qty_l = Column(Float)                                      # refuel: số lít đổ
+    place_id = Column(String, ForeignKey("fuel_places.id"))    # refuel: đổ ở trạm nào
+    supplier_id = Column(String, ForeignKey("suppliers.id"))   # refuel: mua của nhà cung cấp nào                              # số tiền tài xế báo
     currency = Column(String)                                  # tiền của số tiền báo
     approved_by = Column(String)
     approved_at = Column(DateTime)
@@ -374,6 +383,8 @@ class FuelMove(Base):
     note = Column(String)
     by_user = Column(String)
     expense_id = Column(String)                                # dòng chi mục III sinh ra phiếu xuất này
+    place_id = Column(String, ForeignKey("fuel_places.id"))    # xuất từ kho nào
+    voucher_id = Column(String, ForeignKey("vouchers.id"))     # do phiếu lĩnh nào sinh ra
 
 
 class Part(Base):
@@ -401,3 +412,87 @@ class PartMove(Base):
     note = Column(String)
     by_user = Column(String)
     expense_id = Column(String)                                # dòng chi mục V sinh ra phiếu xuất này
+
+
+# ---------------------------------------------------------------- điểm đổ nhiên liệu
+class FuelPlace(Base):
+    """Nơi đổ dầu — ສະຖານທີ່ໃສ່ນໍ້າມັນ.
+
+    Trước đây "nơi đổ" chỉ là ba chữ chết trong mã (bãi · Việt Nam · nơi khác). Nhưng phiếu lĩnh
+    nhiên liệu phải chạy ĐẾN ĐÚNG người giữ kho đó, nên nơi đổ phải là một bản ghi có chủ.
+
+      owner_type = 'epl'   kho của công ty  → lĩnh dầu, XUẤT KHO, định khoản …/371
+      owner_type = 'ngoai' trạm bán dầu     → mua ngoài, phiếu chi / công nợ, định khoản …/402
+    """
+    __tablename__ = "fuel_places"
+    id = Column(String, primary_key=True, default=ma_moi)
+    code = Column(String)                                      # KHO-TB, VN-01…
+    name = Column(String, nullable=False)                      # tên tiếng Lào/Việt hiện trên phiếu
+    country = Column(String, nullable=False, default="LA")     # LA | VN
+    owner_type = Column(String, nullable=False, default="epl")  # epl | ngoai
+    supplier_id = Column(String, ForeignKey("suppliers.id"))   # trạm ngoài thì của nhà cung cấp nào
+    address = Column(String)
+    note = Column(String)
+    active = Column(Boolean, nullable=False, default=True)
+
+
+# ---------------------------------------------------------------- phiếu lĩnh (có mã QR)
+LOAI_PHIEU_LINH = ("fuel", "advance")
+#   fuel     Phiếu lĩnh nhiên liệu — tài xế cầm đến kho ghi ở ô Nơi đổ để lấy dầu
+#   advance  Phiếu tạm ứng đi đường — tài xế cầm đến kế toán/quỹ để lấy tiền mặt
+TRANG_THAI_PHIEU_LINH = ("cho", "da_cap", "huy")
+
+
+class Voucher(Base):
+    """Một tờ giấy tài xế cầm đi, in từ MỘT mục của phiếu xuất xe.
+
+    Phiếu xuất xe là hồ sơ của cả chuyến; phiếu lĩnh là tờ đi lấy hàng/lấy tiền. Một chuyến có thể
+    có nhiều phiếu lĩnh nhiên liệu (mỗi điểm đổ một tờ) nhưng chỉ một phiếu tạm ứng đi đường.
+
+    `token` là chuỗi ngẫu nhiên nằm trong mã QR. Quét QR ra một đường dẫn tra cứu, KHÔNG nhồi số
+    liệu vào QR: số liệu còn đổi sau lúc in, nhồi vào là tờ giấy nói một đằng hệ thống nói một nẻo.
+    """
+    __tablename__ = "vouchers"
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind = Column(String, nullable=False)                      # fuel | advance
+    doc_no = Column(String, nullable=False)                    # PLNL-T4-0428-08/EPL · PTU-T4-0428-08/EPL
+    doc_date = Column(Date, nullable=False)
+    place_id = Column(String, ForeignKey("fuel_places.id"))    # phiếu nhiên liệu: lĩnh ở kho nào
+    driver_id = Column(String, ForeignKey("drivers.id"))
+    driver_name = Column(String)
+    truck_no = Column(String)
+    qty_l = Column(Float, default=0)                           # phiếu nhiên liệu: số lít được duyệt
+    amount_lak = Column(Float, default=0)                      # phiếu tạm ứng: số tiền quy LAK
+    status = Column(String, nullable=False, default="cho")     # cho | da_cap | huy
+    token = Column(String, unique=True, nullable=False)        # nội dung mã QR
+    issued_by = Column(String)                                 # ai in phiếu
+    issued_at = Column(DateTime, default=bay_gio)
+    granted_by = Column(String)                                # ai cấp dầu / chi tiền
+    granted_at = Column(DateTime)
+    granted_qty = Column(Float)                                # số lít cấp THẬT (có thể lệch số duyệt)
+    granted_note = Column(String)                              # lệch thì bắt buộc ghi lý do
+    note = Column(String)
+
+
+# ---------------------------------------------------------------- tất toán tiền tài xế
+class DriverSettlement(Base):
+    """Tất toán tạm ứng của MỘT tài xế trong MỘT tháng — chủ dự án chốt chốt theo tháng.
+
+    Ứng 10 triệu, chi thật 11 triệu thì công ty chi bù 1 triệu; chi thật 9 triệu thì tài xế nộp
+    lại 1 triệu. Tất toán xong là khoá, không ai sửa ngược các phiếu trong kỳ nữa.
+    """
+    __tablename__ = "driver_settlements"
+    id = Column(String, primary_key=True, default=ma_moi)
+    driver_id = Column(String, ForeignKey("drivers.id"), nullable=False, index=True)
+    driver_name = Column(String)
+    period = Column(String, nullable=False)                    # YYYY-MM
+    so_phieu = Column(Integer, default=0)                      # bao nhiêu phiếu xuất xe trong kỳ
+    tong_ung_lak = Column(Float, default=0)
+    tong_chi_lak = Column(Float, default=0)
+    chenh_lech_lak = Column(Float, default=0)                  # chi - ứng; dương = công ty trả thêm
+    status = Column(String, nullable=False, default="done")    # done
+    settled_by = Column(String)
+    settled_at = Column(DateTime, default=bay_gio)
+    note = Column(String)
+    __table_args__ = (UniqueConstraint("driver_id", "period", name="uq_tat_toan_ky"),)

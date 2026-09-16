@@ -12,8 +12,9 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu', 'phieu-cua-toi', 'xe-lien-ket',
-  'tien-tai-xe', 'nha-cung-cap', 'kho-nhien-lieu', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu',
+  'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-nhien-lieu',
+  'diem-do', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -152,8 +153,17 @@ async function main() {
   assert.ok(!/\bundefined\b|\bNaN\b/.test(chuTx), 'màn tài xế có chữ undefined/NaN');
   console.log('✓ vai tài xế: chỉ thấy Phiếu của tôi · %d ký tự', chuTx.length);
 
+  // 7. vai thủ kho nhiên liệu: chỉ thấy hàng chờ cấp và tồn kho dầu
+  w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khotb', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào với vai thủ kho'); await w.EPL.sanSang;
+  const navKho = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  assert.deepStrictEqual(navKho, ['cap-phat', 'kho-nhien-lieu'], 'thủ kho chỉ được thấy Cấp phát và Kho nhiên liệu: ' + navKho);
+  const chuKho = goc().textContent;
+  assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')), 'màn thủ kho báo lỗi: ' + chuKho.slice(0, 200));
+  console.log('✓ vai thủ kho: chỉ thấy %s', navKho.join(', '));
+
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
-  console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng (kể cả tài xế)`);
+  console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng (tài xế · thủ kho)`);
   w.close();
 }
 main().catch(e => { console.error('THỬ GIAO DIỆN: HỎNG —', e.message); process.exit(1); });

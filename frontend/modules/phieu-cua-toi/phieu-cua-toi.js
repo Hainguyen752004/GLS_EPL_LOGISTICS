@@ -1,7 +1,7 @@
 /* Phiếu của tôi — màn tài xế. Máy chủ chỉ trả phiếu của chính tài xế đang đăng nhập. */
 (function () {
   const { API, NN, esc, so, tag } = EPL;
-  let root, DS = [], CHON = null;
+  let root, DS = [], CHON = null, DIEM = [];
   const q = (s) => root.querySelector(s);
 
   function tamUng(p) {
@@ -26,12 +26,14 @@
         <div class="pct-nut">
           ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
           ${!xong ? `<button class="btn warn" data-bao="${p.id}">${NN.h('report_breakdown')}</button>` : ''}
+          ${!xong ? `<button class="btn" data-dau="${p.id}">${NN.h('df_declare')}</button>` : ''}
           <button class="btn" data-pc="${p.id}">${NN.h('voucher_payment')}</button>
         </div></div>`;
     }).join('');
     root.querySelectorAll('[data-di]').forEach(b => b.addEventListener('click', () => xuatPhat(b.dataset.di)));
     root.querySelectorAll('[data-bao]').forEach(b => b.addEventListener('click', () => moBao(b.dataset.bao)));
     root.querySelectorAll('[data-pc]').forEach(b => b.addEventListener('click', () => EPL.di('chung-tu', { id: b.dataset.pc })));
+    root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
   }
   async function tai() {
     const ds = await API.get('/api/trips');
@@ -56,5 +58,35 @@
     });
     dlg.showModal();
   }
-  EPL.modules['phieu-cua-toi'] = { async init(r) { root = r; await tai(); }, onLang() { if (root) ve(); } };
+  /** Khai đổ dầu DỌC ĐƯỜNG. Chỉ cho chọn trạm bán dầu bên ngoài: dầu lấy ở kho công ty thì phải
+   *  có phiếu lĩnh và do thủ kho cấp, không phải tài xế tự khai. */
+  function moDau(id) {
+    CHON = DS.find(p => p.id === id);
+    const ngoai = DIEM.filter(x => x.owner_type === 'ngoai');
+    if (!ngoai.length) return EPL.toast(NN.t('no_data'), 'loi');
+    const dlg = q('#pct-dau');
+    q('#pct-d-diem').innerHTML = ngoai.map(x => `<option value="${x.id}">${esc(x.name)}${x.country === 'VN' ? ' · ' + NN.t('fp_vn2') : ''}</option>`).join('');
+    q('#pct-d-lit').value = ''; q('#pct-d-gia').value = ''; q('#pct-d-ghi').value = '';
+    NN.apDung(dlg); dlg.returnValue = '';
+    dlg.addEventListener('close', async function xong() {
+      dlg.removeEventListener('close', xong);
+      if (dlg.returnValue !== 'ok') return;
+      const lit = EPL.doc(q('#pct-d-lit').value);
+      if (lit <= 0) return EPL.toast(NN.t('df_litres') + '?', 'loi');
+      const body = { qty_l: lit, place_id: q('#pct-d-diem').value, currency: q('#pct-d-tt').value, note: q('#pct-d-ghi').value };
+      if (q('#pct-d-gia').value !== '') body.unit_price = EPL.doc(q('#pct-d-gia').value);
+      try { await API.post(`/api/trips/${CHON.id}/bao-nhien-lieu`, body); EPL.toast(NN.t('saved'), 'ok'); await tai(); }
+      catch (e) { EPL.baoLoi(e); }
+    });
+    dlg.showModal();
+  }
+
+  EPL.modules['phieu-cua-toi'] = {
+    async init(r) {
+      root = r;
+      DIEM = await API.get('/api/fuel-places').catch(() => []);
+      await tai();
+    },
+    onLang() { if (root) ve(); },
+  };
 })();

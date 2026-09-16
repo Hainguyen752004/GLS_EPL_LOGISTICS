@@ -1,0 +1,20 @@
+/* Cấp phát — trái là hàng chờ, phải là khối đối chiếu trước khi cấp */
+.cp-hai{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:start}
+.cp-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
+.cp-tab button{border:0;background:none;padding:6px 14px;border-radius:999px;color:var(--ink-2);font-weight:500}
+.cp-tab button.active{background:var(--ink);color:#fff}
+.cp-ma{min-width:230px}
+.cp-ma input{font-family:ui-monospace,Consolas,monospace}
+#cp-than tr[data-v]{cursor:pointer}
+#cp-than tr.chon{background:var(--green-soft)}
+
+.cp-dau{display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;margin-bottom:12px;border-bottom:2px solid var(--ink)}
+.cp-dau>div:first-child{flex:1}
+.cp-tien{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.cp-o{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;margin-bottom:14px;font-size:13px}
+.cp-o>div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dotted var(--line)}
+.cp-o>div>span:first-child{color:var(--ink-3)}
+.cp-o>div>span:last-child{text-align:right;font-weight:500}
+.cp-xong{margin-top:12px;padding:10px 12px;border-radius:var(--r);background:var(--green-soft);color:var(--green);font-size:13px}
+.cp-nut{display:flex;gap:8px;margin-top:14px}
+@media (max-width:1100px){.cp-hai{grid-template-columns:1fr}.cp-o{grid-template-columns:1fr}}

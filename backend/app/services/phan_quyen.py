@@ -24,6 +24,8 @@ QUYEN = {
     "acct":     {"edit": set(), "verify": {"info", "trans", "travel", "repair", "other"},
                  "book": {"travel", "repair", "other"}, "pay": set()},
     "fuel":     {"edit": set(), "verify": {"fuel"}, "book": {"fuel"}, "pay": set()},
+    # Thủ kho tại điểm đổ: không duyệt mục nào, việc của họ là CẤP DẦU theo phiếu lĩnh.
+    "depot":    {"edit": set(), "verify": set(), "book": set(), "pay": set()},
     "treasury": {"edit": set(), "verify": set(), "book": set(), "pay": {"fuel"}},
     "cash":     {"edit": set(), "verify": set(), "book": set(), "pay": {"travel", "repair", "other"}},
     "rev":      {"edit": set(), "verify": set(), "book": set(), "pay": set()},

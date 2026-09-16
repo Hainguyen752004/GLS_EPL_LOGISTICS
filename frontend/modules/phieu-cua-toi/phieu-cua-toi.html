@@ -15,3 +15,20 @@
     <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="report_breakdown"></button></div>
   </form>
 </dialog>
+
+<!-- Hộp khai đổ nhiên liệu dọc đường: dầu MUA, không phải lĩnh kho -->
+<dialog id="pct-dau" class="hop-thoai">
+  <form method="dialog">
+    <h3 data-i18n="df_declare"></h3>
+    <p class="small muted" data-i18n="df_hint"></p>
+    <div class="f-grid">
+      <div class="field w2"><label data-i18n="df_where"></label><select id="pct-d-diem"></select></div>
+      <div class="field"><label data-i18n="df_litres"></label><input class="num" id="pct-d-lit" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="unit_price"></label><input class="num" id="pct-d-gia" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="cur"></label><select id="pct-d-tt"><option>VND</option><option>LAK</option><option>THB</option><option>USD</option></select></div>
+      <div class="field w2"><label data-i18n="note"></label><input id="pct-d-ghi" lang="lo"></div>
+    </div>
+    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button>
+      <button class="btn primary" value="ok" data-i18n="df_declare"></button></div>
+  </form>
+</dialog>

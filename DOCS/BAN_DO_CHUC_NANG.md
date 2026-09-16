@@ -46,7 +46,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | Trợ lý AI (EPL_TroLy) | — | **Không mang sang** | Ngoài phạm vi "năm 2016" |
 | Trang tài xế (EPL_TaiXe) | — | **Không mang sang** | Tài xế không thao tác trên hệ |
 
-## 3. Tám vai và việc của từng vai
+## 3. Chín vai và việc của từng vai
 
 | Vai | Tên trong Excel | Trên phiếu xuất xe |
 |---|---|---|
@@ -57,6 +57,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | `cash` | ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ — Tiền mặt lẻ Thà Bốc | **Chi** mục IV, V, VI |
 | `rev` | ບັນຊີລາຍຮັບ — Kế toán doanh thu | **Lập hoá đơn**, **ghi thu tiền** khách (mức phiếu) |
 | `driver` | ໂຊເຟີ — Tài xế | Chỉ thấy **phiếu của mình**: xem tiền tạm ứng đã chi chưa, bấm **Xuất phát**, **Báo hỏng** trên đường |
+| `depot` | ຜູ້ຮັກສາສາງນໍ້າມັນ — Thủ kho nhiên liệu | Giữ **một** điểm đổ. Chỉ thấy phiếu lĩnh của kho mình; cấp dầu là sinh luôn phiếu xuất kho |
 | `admin` | — | Mọi việc, kể cả mở khoá mục đã duyệt và quản lý tài khoản |
 
 Chuỗi trạng thái từng mục: `chờ → đã nhập → đã kiểm → đã ghi sổ → đã chi` (mục I–II dừng ở *đã kiểm*). Bãi chỉ sửa được khi mục còn ở *chờ* / *đã nhập*; kế toán đã kiểm là khoá.
@@ -124,13 +125,62 @@ Phiếu xuất xe không phải một tờ giấy chết: nó **mở suốt chuy
    đúng số tiền đã duyệt, định khoản theo quy tắc kho / mua ở mục 4b. Từ chối thì không sinh dòng nào.
 6. **Xe tới nơi** → cân cuối, lập hoá đơn, ghi thu tiền khách.
 
+## 4e. Mỗi mục có tiền đẻ ra một tờ phiếu lĩnh, có mã QR
+
+Phiếu xuất xe là hồ sơ của cả chuyến, nhưng tài xế không cầm cả hồ sơ đi lấy dầu. Nên mỗi mục có
+tiền in ra một tờ riêng, tài xế cầm tờ đó đi:
+
+| Mục | Phiếu lĩnh | Cầm đến ai | Người đó làm gì |
+|---|---|---|---|
+| III | Phiếu lĩnh nhiên liệu | Kho ghi ở ô **Nơi đổ** | Cấp dầu, hệ sinh phiếu xuất kho ngay |
+| IV | Phiếu tạm ứng đi đường | Kế toán / Quỹ | Chi tiền mặt, mục IV chuyển sang *đã chi* |
+
+Phiếu lĩnh lập lúc xe **chưa đi**, nên cố ý **không in** những ô lúc đó chưa ai biết: ngày về, lúc
+về, km chạy, cân cuối, hao hụt, thành tiền và quy đổi. In ô trống chỉ tổ rối mắt.
+
+**Mã QR chứa một đường dẫn tra cứu, không nhồi số liệu.** Hai lý do: số liệu còn đổi sau lúc in,
+nhồi vào rồi là tờ giấy nói một đằng hệ thống nói một nẻo; và QR nhồi nhiều thì ô vuông dày đặc,
+máy quét rẻ đọc không ra. Người quét đằng nào cũng phải đăng nhập mới cấp được. Dưới mã QR có in
+mã chữ để gõ tay khi máy quét hỏng.
+
+## 4f. Nơi đổ là một danh mục, không phải ba chữ chết
+
+Trước đây "nơi đổ" chỉ là ba lựa chọn viết cứng trong mã. Nay là danh mục **Điểm đổ nhiên liệu**,
+mỗi điểm ghi rõ ở Lào hay Việt Nam, là **kho của EPL** hay **trạm bán dầu bên ngoài**, và nhà cung
+cấp nào. Chính ô này quyết định hai việc:
+
+- Phiếu lĩnh chạy tới **đúng người giữ kho đó** — thủ kho kho khác bấm cấp là bị chặn.
+- Khoản dầu đó là **lĩnh kho** (định khoản …/371, sinh phiếu xuất kho) hay **mua ngoài**
+  (định khoản …/402, thành công nợ nhà cung cấp).
+
+Chiều về từ Việt Nam tài xế phải mua dầu chạy về: tài xế tự **Khai đổ nhiên liệu** trên màn của
+mình (bao nhiêu lít, trạm nào, nhà cung cấp nào), kế toán duyệt thì thành một dòng mục III nguồn
+mua. Khai nhầm vào kho của công ty thì hệ chặn và bảo dùng phiếu lĩnh.
+
+## 4g. Tất toán tiền tài xế — chốt theo tháng
+
+    chênh lệch = đã chi thật − đã ứng
+        dương → công ty CHI BÙ cho tài xế
+        âm    → tài xế NỘP LẠI
+
+**Đã ứng** là các phiếu tạm ứng **đã cấp** trong kỳ, không phải số in trên giấy: giấy in rồi mà
+chưa ra quỹ lấy tiền thì tài xế chưa cầm đồng nào.
+
+**Đã chi thật** là các khoản EPL ứng, không lấy từ kho, thuộc mục III (dầu mua dọc đường), IV và
+VI. **Không** tính những khoản công ty trả thẳng nhà cung cấp theo đợt (chipping Lào, chipping
+Việt, thẻ đường cao tốc, lốp): tiền đó chưa bao giờ đi qua tay tài xế, tính vào là bảng phình lên
+mấy chục lần và người đọc không hiểu vì sao.
+
+Hai bên cùng một bộ khoản, nên phiếu tạm ứng và bảng tất toán không bao giờ nói hai con số khác
+nhau về cùng một chuyến. Tất toán xong là khoá kỳ.
+
 ## 5. Kiến trúc — cố ý đơn giản
 
 - **Một DB riêng** `epl_lao` trên cùng máy chủ PostgreSQL; không đụng `epl_logistics` của EPL_System.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 607 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 663 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
 - **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
 

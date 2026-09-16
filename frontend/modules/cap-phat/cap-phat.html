@@ -1,0 +1,46 @@
+<!-- Cấp phát — ການຈ່າຍອອກ. Màn của NGƯỜI CẤP: thủ kho cấp dầu, quỹ chi tiền tạm ứng.
+     Xe tới nơi, tài xế đưa tờ phiếu lĩnh có mã QR; người cấp quét (hoặc bấm thẳng vào dòng),
+     đối chiếu đúng xe đúng tài xế rồi mới cấp. Thủ kho chỉ thấy phiếu của kho mình. -->
+<div class="toolbar">
+  <div class="cp-tab" role="tablist">
+    <button class="active" data-loai="" data-i18n="all"></button>
+    <button data-loai="fuel" data-i18n="v_fuel"></button>
+    <button data-loai="advance" data-i18n="v_advance"></button>
+  </div>
+  <div class="field cp-ma"><label data-i18n="v_scan"></label><input id="cp-ma" placeholder="…" spellcheck="false"></div>
+  <div class="grow"></div>
+  <span class="small muted" id="cp-kho"></span>
+</div>
+
+<div class="cp-hai">
+  <div class="card">
+    <div class="hd"><h3 data-i18n="v_cho"></h3><div class="grow"></div><span class="small muted" id="cp-dem"></span></div>
+    <div class="tbl-wrap">
+      <table class="tbl tbl-compact">
+        <thead><tr><th data-i18n="doc_no"></th><th data-i18n="type"></th><th data-i18n="truck_no"></th><th data-i18n="driver"></th>
+          <th data-i18n="fp_place"></th><th class="num" data-i18n="amount"></th><th class="no-print"></th></tr></thead>
+        <tbody id="cp-than"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card cp-xem" id="cp-xem" hidden>
+    <div class="hd"><h3 data-i18n="v_check"></h3><div class="grow"></div><span id="cp-tt"></span></div>
+    <div class="bd" id="cp-chi-tiet"></div>
+  </div>
+</div>
+
+<!-- Hộp cấp dầu: đối chiếu số lít, lệch số duyệt thì bắt buộc ghi lý do -->
+<dialog id="cp-hop" class="hop-thoai">
+  <form method="dialog">
+    <h3 id="cp-hop-tieu-de"></h3>
+    <div class="bd small muted" id="cp-hop-tom"></div>
+    <div class="f-grid" id="cp-hop-o">
+      <div class="field"><label data-i18n="v_qty_ok"></label><input id="cp-f-duyet" class="num" disabled></div>
+      <div class="field"><label data-i18n="v_qty_real"></label><input id="cp-f-that" class="num" inputmode="decimal"></div>
+      <div class="field w2"><label data-i18n="v_reason"></label><input id="cp-f-ly-do" lang="lo"></div>
+    </div>
+    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button>
+      <button class="btn primary" value="ok" id="cp-hop-ok"></button></div>
+  </form>
+</dialog>

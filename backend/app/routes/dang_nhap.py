@@ -13,7 +13,18 @@ router = APIRouter()
 def xuat_user(u):
     return {"id": u.id, "username": u.username, "full_name": u.full_name,
             "role": u.role, "avatar": u.avatar or u.full_name[:2].upper(), "active": u.active,
-            "driver_id": u.driver_id}
+            "driver_id": u.driver_id, "place_id": u.place_id}
+
+
+def _kiem_gan(u):
+    """Hai vai bắt buộc gắn với một bản ghi cụ thể, nếu không thì màn của họ trống trơn:
+    tài xế phải gắn với tài xế trong danh mục, thủ kho phải gắn với một điểm đổ."""
+    if u.role == "driver" and not u.driver_id:
+        raise HTTPException(422, {"ma": "THIEU_TAI_XE",
+                                  "loi": "Tài khoản vai tài xế phải gắn với một tài xế trong danh mục."})
+    if u.role == "depot" and not u.place_id:
+        raise HTTPException(422, {"ma": "THIEU_KHO",
+                                  "loi": "Tài khoản vai thủ kho phải gắn với một điểm đổ nhiên liệu."})
 
 
 @router.post("/api/dang-nhap")
@@ -54,9 +65,9 @@ def them_user(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(c
     u = User(username=ten, password_hash=bam_mat_khau(str(data["password"])),
              full_name=str(data["full_name"]).strip(), role=data["role"],
              avatar=str(data.get("avatar") or "")[:2].upper(),
-             driver_id=(data.get("driver_id") or None) if data["role"] == "driver" else None)
-    if u.role == "driver" and not u.driver_id:
-        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Tài khoản vai tài xế phải gắn với một tài xế trong danh mục."})
+             driver_id=(data.get("driver_id") or None) if data["role"] == "driver" else None,
+             place_id=(data.get("place_id") or None) if data["role"] == "depot" else None)
+    _kiem_gan(u)
     db.add(u); db.commit(); db.refresh(u)
     return xuat_user(u)
 
@@ -73,8 +84,8 @@ def sua_user(uid: str, data: dict = Body(...), db: Session = Depends(get_db), _=
         u.role = data["role"]
     if "avatar" in data: u.avatar = str(data["avatar"] or "")[:2].upper()
     if "driver_id" in data: u.driver_id = data["driver_id"] or None
-    if u.role == "driver" and not u.driver_id:
-        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Tài khoản vai tài xế phải gắn với một tài xế trong danh mục."})
+    if "place_id" in data: u.place_id = data["place_id"] or None
+    _kiem_gan(u)
     if "active" in data: u.active = bool(data["active"])
     if data.get("password"): u.password_hash = bam_mat_khau(str(data["password"]))
     db.commit(); db.refresh(u)

@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (CHUOI, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
-                    Customer, Driver, ExchangeRate, FuelMove, Part, PartMove, Route, RouteStop, Trip, TripEvent,
-                    TripExpense, TripLog, TripSection, Vehicle)
+                    Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
+                    TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc
 from services.tinh_toan import tinh_phieu
@@ -103,7 +103,7 @@ def _dong_chi(db, phieu):
 def _xuat_dong(d):
     return {"id": d.id, "section": d.section, "line_no": d.line_no, "item_key": d.item_key,
             "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price, "currency": d.currency,
-            "place": d.place, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "source": d.source,
+            "place": d.place, "place_id": d.place_id, "supplier_id": d.supplier_id, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "source": d.source,
             "part_id": d.part_id, "stock_move_id": d.stock_move_id, "note": d.note}
 
 
@@ -111,6 +111,7 @@ def _xuat_su_kien(e):
     return {"id": e.id, "ts": e.ts.isoformat() if e.ts else None, "kind": e.kind, "stop_seq": e.stop_seq,
             "incident_type": e.incident_type, "note": e.note, "expense_id": e.expense_id, "by_user": e.by_user,
             "status": e.status or "approved", "reported_cost": e.reported_cost, "currency": e.currency,
+            "qty_l": e.qty_l, "place_id": e.place_id, "supplier_id": e.supplier_id,
             "approved_by": e.approved_by, "approved_at": e.approved_at.isoformat() if e.approved_at else None}
 
 
@@ -258,11 +259,21 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         p.hire_price_usd = p.price_usd     # mặc định bằng giá nhận — người lập sửa sau
 
 
-def _dong_tu_du_lieu(p, m, i, d):
+def _nguon_theo_diem(db, d):
+    """Kho hay mua là do ĐIỂM ĐỔ quyết định: kho của EPL thì lĩnh (kho), trạm bán dầu thì mua.
+    Phiếu cũ chưa có điểm đổ thì vẫn đọc khoá cũ fp_yard/fp_vn để không mất dữ liệu."""
+    if d.get("place_id"):
+        x = db.get(FuelPlace, d["place_id"])
+        if x:
+            return "kho" if x.owner_type == "epl" else "mua"
+    return "kho" if (d.get("place") or "fp_yard") == "fp_yard" else "mua"
+
+
+def _dong_tu_du_lieu(p, m, i, d, db=None):
     """Dựng một dòng chi từ dữ liệu gửi lên; áp định khoản mặc định theo xe nhà/liên kết và nguồn kho/mua."""
     source = d.get("source")
     if m == "fuel":
-        source = "kho" if (d.get("place") or "fp_yard") == "fp_yard" else "mua"
+        source = _nguon_theo_diem(db, d) if db is not None else ("kho" if (d.get("place") or "fp_yard") == "fp_yard" else "mua")
     elif m == "repair":
         if source not in ("kho", "mua"):
             source = "kho" if d.get("part_id") else "mua"
@@ -273,6 +284,7 @@ def _dong_tu_du_lieu(p, m, i, d):
         item_key=(d.get("item_key") or None), item_name=(d.get("item_name") or None),
         qty=_so(d.get("qty"), "qty") or 0, unit_price=_so(d.get("unit_price"), "unit_price") or 0,
         currency=str(d.get("currency") or "LAK").upper(), place=d.get("place"),
+        place_id=d.get("place_id") or None, supplier_id=d.get("supplier_id") or None,
         paid_by_epl=bool(d.get("paid_by_epl", True)),
         acct_code=d.get("acct_code") or ma_tk_mac_dinh(p.company, m, source, d.get("place")),
         source=source, part_id=d.get("part_id") or None, stock_move_id=d.get("stock_move_id") or None, note=d.get("note"))
@@ -310,7 +322,7 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             if e:
                 e.line_no = i; e.note = d.get("note"); e.acct_code = d.get("acct_code") or e.acct_code
                 continue
-            db.add(_dong_tu_du_lieu(p, m, i, d))
+            db.add(_dong_tu_du_lieu(p, m, i, d, db))
 
 
 def _doi_trang_thai_xe_tai_xe(db, p, trang_thai_xe, trang_thai_tai_xe):
@@ -588,16 +600,87 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
     return xuat_phieu(db, p)
 
 
+def _duyet_do_dau(db, p, e, data, user):
+    """Duyệt khai đổ dầu của tài xế → một dòng mục III, nguồn MUA (không đụng kho).
+
+    Số lít và đơn giá lấy theo số tài xế khai, người duyệt sửa được. Tiền tệ thường là VND vì dầu
+    mua bên Việt Nam; quy đổi về LAK dùng tỷ giá ghi trên chính phiếu này.
+    """
+    lit = _so(data.get("qty_l"), "qty_l") or e.qty_l or 0
+    gia = _so(data.get("unit_price"), "unit_price")
+    if gia is None:
+        gia = e.reported_cost or 0
+    if lit <= 0 or gia <= 0:
+        raise HTTPException(422, {"ma": "THIEU_SO", "loi": "Phải có số lít và đơn giá lớn hơn 0."})
+    diem = db.get(FuelPlace, e.place_id) if e.place_id else None
+    so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "fuel").count()
+    dong = TripExpense(trip_id=p.id, section="fuel", line_no=so_dong + 1, item_key="diesel",
+                       qty=lit, unit_price=gia, currency=str(data.get("currency") or e.currency or "VND").upper(),
+                       place=None, place_id=e.place_id, supplier_id=e.supplier_id, paid_by_epl=True, source="mua",
+                       acct_code=ma_tk_mac_dinh(p.company, "fuel", "mua"),
+                       note="Tài xế đổ dọc đường%s%s" % (" tại " + diem.name if diem else "",
+                                                         " — " + e.note if e.note else ""))
+    db.add(dong); db.flush()
+    e.status, e.expense_id = "approved", dong.id
+    muc = _muc_cua(db, p)["fuel"]
+    if muc.status not in ("wait", "entered"):
+        _ghi_log(db, p, user, "sec_fuel:reopen")
+    muc.status = "entered"
+    _ghi_log(db, p, user, "ev_refuel_approved")
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.post("/api/trips/{tid}/bao-nhien-lieu")
+def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """TÀI XẾ khai đổ dầu DỌC ĐƯỜNG — chiều về từ Việt Nam phải mua dầu chạy về.
+
+    Đây là dầu MUA NGOÀI, không phải lĩnh kho, nên không có phiếu xuất kho: nó thành một dòng chi
+    mục III nguồn "mua", định khoản …/402, và ghi rõ mua ở trạm nào của nhà cung cấp nào. Khai xong
+    chỉ là BÁO, kế toán duyệt mới thành dòng chi thật — giống hệt cách báo hỏng.
+    """
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("driver", "yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ tài xế của phiếu (hoặc Bãi) khai đổ dầu."})
+    _cua_tai_xe(db, p, user)
+    if p.finance_status == "paid":
+        raise HTTPException(409, {"ma": "PHIEU_DA_XONG", "loi": "Phiếu đã thu tiền xong, không khai thêm."})
+    lit = _so(data.get("qty_l"), "qty_l") or 0
+    if lit <= 0:
+        raise HTTPException(422, {"ma": "THIEU_SO_LIT", "loi": "Phải khai đổ bao nhiêu lít."})
+    diem = db.get(FuelPlace, data.get("place_id") or "")
+    if not diem:
+        raise HTTPException(422, {"ma": "THIEU_NOI_DO", "loi": "Phải chọn nơi đổ."})
+    if diem.owner_type == "epl":
+        raise HTTPException(422, {"ma": "NOI_DO_LA_KHO",
+                                  "loi": "%s là kho của công ty, lĩnh dầu ở kho thì dùng phiếu lĩnh." % diem.name})
+    e = TripEvent(trip_id=p.id, kind="refuel", note=(data.get("note") or "").strip() or None,
+                  by_user=user.full_name, status="reported", qty_l=lit,
+                  reported_cost=_so(data.get("unit_price"), "unit_price") or 0,
+                  currency=str(data.get("currency") or "VND").upper(), place_id=diem.id,
+                  supplier_id=(data.get("supplier_id") or diem.supplier_id or None))
+    db.add(e)
+    _ghi_log(db, p, user, "ev_refuel_reported")
+    db.commit()
+    return xuat_phieu(db, p)
+
+
 @router.post("/api/trips/{tid}/events/{eid}/duyet")
 def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Admin / Bãi DUYỆT báo hỏng của tài xế → mở phiếu, thêm dòng sửa chữa vào mục V với số tiền duyệt
-    (mặc định = số tài xế báo). Nguồn: kho (chọn phụ tùng, trừ tồn ngay) hoặc mua ngoài. Hoặc TỪ CHỐI."""
+    (mặc định = số tài xế báo). Nguồn: kho (chọn phụ tùng, trừ tồn ngay) hoặc mua ngoài. Hoặc TỪ CHỐI.
+
+    Khai đổ dầu dọc đường (kind='refuel') cũng duyệt ở đây, nhưng rơi vào MỤC III nguồn mua."""
     p = db.get(Trip, tid)
     e = db.get(TripEvent, eid)
     if not p or not e or e.trip_id != p.id:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có báo hỏng này."})
-    if user.role not in ("yard", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc hoặc quản trị duyệt báo hỏng."})
+    duoc = ("yard", "acct", "fuel", "admin") if e.kind == "refuel" else ("yard", "admin")
+    if user.role not in duoc:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
+                                  "loi": "Vai %s không được duyệt khai báo này." % user.role})
     if e.status != "reported":
         raise HTTPException(409, {"ma": "DA_XU_LY", "loi": "Báo hỏng này đã được xử lý (%s)." % e.status})
     e.approved_by, e.approved_at = user.full_name, dt.datetime.utcnow()
@@ -605,6 +688,8 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         e.status = "rejected"; e.note = (e.note or "") + (" — " + data["reason"] if data.get("reason") else "")
         _ghi_log(db, p, user, "ev_rejected"); db.commit()
         return xuat_phieu(db, p)
+    if e.kind == "refuel":
+        return _duyet_do_dau(db, p, e, data, user)
     source = data.get("source") or "mua"
     if source not in ("kho", "mua"):
         raise HTTPException(422, {"ma": "NGUON_SAI", "loi": "Nguồn phải là kho hay mua."})
