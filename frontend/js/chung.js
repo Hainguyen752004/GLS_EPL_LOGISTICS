@@ -175,7 +175,15 @@
     async dangNhap(u, p) {
       const g = await API.post('/api/dang-nhap', { username: u, password: p });
       try { localStorage.setItem(KHOA_PHIEN, g.token); } catch (e) { /* bỏ qua */ }
-      USER = g.user; hienApp();
+      USER = g.user;
+      // Mờ màn đăng nhập rồi mới đổi sang ứng dụng — chuyển cảnh mềm thay vì cụp một cái.
+      const lg = document.getElementById('login');
+      if (lg && !lg.hidden && typeof lg.getAnimations === 'function') {
+        lg.classList.add('di');
+        await new Promise(r => setTimeout(r, 240));
+        lg.classList.remove('di');
+      }
+      hienApp();
     },
     dangXuat(xoaHash = true) {
       try { localStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
@@ -196,9 +204,9 @@
         const x = THU_TU_VAI.indexOf(a.role), y = THU_TU_VAI.indexOf(b.role);
         return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || a.username.localeCompare(b.username);
       });
-      o.innerHTML = ds.map(a => {
+      o.innerHTML = ds.map((a, i) => {
         const vai = NN.t('r_' + a.role);
-        return `<button class="acct-btn ${a.role === 'driver' ? 'tx' : ''}" data-u="${esc(a.username)}" title="${esc(a.username + ' · ' + vai)}">
+        return `<button class="acct-btn ${a.role === 'driver' ? 'tx' : ''}" style="--i:${i}" data-u="${esc(a.username)}" title="${esc(a.username + ' · ' + vai)}">
           <span class="av">${esc(a.avatar)}</span>
           <span class="tt"><b>${esc(a.full_name)}</b><small>${esc(a.username)} · ${esc(vai)}</small></span></button>`;
       }).join('');
@@ -207,10 +215,19 @@
       }));
     } catch (e) { o.innerHTML = `<div class="small neg">${esc(e.message)}</div>`; }
   }
+  let dangBan = false;
   async function dangNhapTuForm() {
+    if (dangBan) return;
     const u = document.getElementById('lgU').value.trim(), p = document.getElementById('lgP').value;
-    const err = document.getElementById('lgErr'); err.textContent = '';
-    try { await AUTH.dangNhap(u, p); } catch (e) { err.textContent = e.ma === 'SAI_TAI_KHOAN' ? NN.t('login_err') : e.message; }
+    const err = document.getElementById('lgErr'), nut = document.getElementById('lgBtn');
+    err.textContent = ''; dangBan = true; nut.classList.add('dang-vao');
+    try {
+      await AUTH.dangNhap(u, p);
+    } catch (e) {
+      // Xoá rồi gán lại để hoạt ảnh "rung" chạy lại mỗi lần sai, không chỉ lần đầu.
+      err.textContent = ''; void err.offsetWidth;
+      err.textContent = e.ma === 'SAI_TAI_KHOAN' ? NN.t('login_err') : e.message;
+    } finally { dangBan = false; nut.classList.remove('dang-vao'); }
   }
   function hienApp() {
     document.getElementById('login').hidden = true; document.getElementById('app').hidden = false;

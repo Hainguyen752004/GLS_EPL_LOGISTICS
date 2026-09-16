@@ -110,6 +110,49 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .acct-btn small{display:block;font-size:11px;line-height:1.35;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct-btn.tx{border-color:#C8D9CF;background:#F6FAF8}
 
+/* ---- Chuyển động màn đăng nhập ----
+   Vào trang thì từng khối hiện dần theo nhịp (thương hiệu trước, biểu mẫu sau, tài khoản
+   gợi ý sau cùng), nền xanh có một quầng sáng trôi rất chậm cho đỡ chết cứng. Toàn bộ tắt
+   sạch khi máy người dùng đặt "giảm chuyển động". */
+@keyframes lg-len{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes lg-sang{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+@keyframes lg-quang{0%{transform:translate(0,0) scale(1);opacity:.30}
+  50%{transform:translate(-40px,-30px) scale(1.14);opacity:.55}
+  100%{transform:translate(0,0) scale(1);opacity:.30}}
+@keyframes lg-rung{0%,100%{transform:none}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+
+.lg-brand::after{animation:lg-quang 18s ease-in-out infinite}
+.lg-top,.lg-giua,.lg-chan{animation:lg-sang .6s cubic-bezier(.22,.9,.3,1) both}
+.lg-giua{animation-delay:.10s} .lg-chan{animation-delay:.20s}
+.lg-diem li{animation:lg-sang .5s cubic-bezier(.22,.9,.3,1) both}
+.lg-diem li:nth-child(1){animation-delay:.26s} .lg-diem li:nth-child(2){animation-delay:.34s} .lg-diem li:nth-child(3){animation-delay:.42s}
+
+.lang-login,.lg-form>*{animation:lg-len .55s cubic-bezier(.22,.9,.3,1) both}
+.lg-form>h3{animation-delay:.12s} .lg-demo{animation-delay:.18s}
+.lg-form>.field:nth-of-type(1){animation-delay:.24s} .lg-form>.field:nth-of-type(2){animation-delay:.30s}
+.lg-form>.err{animation-delay:.34s} .lg-vao{animation-delay:.38s} .lg-chia{animation-delay:.44s} .accts{animation-delay:.48s}
+/* Thẻ tài khoản do JS vẽ sau — mỗi thẻ trễ thêm một nhịp, biến --i do chung.js gán. */
+.acct-btn{animation:lg-len .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(.52s + var(--i,0) * .04s)}
+
+.lg-vao{transition:background .18s,box-shadow .18s,transform .12s}
+.lg-vao:hover{box-shadow:0 8px 20px rgba(20,92,74,.28);transform:translateY(-1px)}
+.lg-vao:active{transform:translateY(0)}
+.lg-vao.dang-vao{pointer-events:none;opacity:.75}
+.acct-btn{transition:background .16s,border-color .16s,transform .12s,box-shadow .16s}
+.acct-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(20,92,74,.12)}
+.acct-btn .av{transition:transform .16s}
+.acct-btn:hover .av{transform:scale(1.08)}
+.lg-form .field input{transition:border-color .16s,box-shadow .16s}
+.login .err:not(:empty){animation:lg-rung .42s ease both}
+/* Rời màn đăng nhập thì mờ đi rồi mới ẩn, không biến mất cụp một cái. */
+.login{transition:opacity .28s ease}
+.login.di{opacity:0}
+
+@media (prefers-reduced-motion:reduce){
+  .lg-brand::after,.lg-top,.lg-giua,.lg-chan,.lg-diem li,.lang-login,.lg-form>*,.acct-btn,.login .err:not(:empty){animation:none!important}
+  .lg-vao:hover,.acct-btn:hover{transform:none}
+}
+
 @media (max-width:1040px){
   .login{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .lg-brand{flex-direction:row;align-items:center;justify-content:flex-start;gap:16px;padding:16px 22px}
