@@ -207,14 +207,25 @@ sang. Bố cục bê nguyên: thanh công cụ, dải ô số, rồi ba cột.
 | Thanh công cụ | Tìm Trip/DO/khách/xe/tài xế · tự cập nhật 30 giây · sổ sự cố · báo sự cố | Giữ nguyên, tìm theo số phiếu thay cho Trip/DO |
 | Dải ô số | 6 ô: DO theo chuyến, quá hạn giao, GPS thiếu, chờ POD, sự cố mở, Trip còn mở | 7 ô theo dữ liệu họ có, bấm vào ô là lọc danh sách |
 | Cột trái | Danh sách chuyến, ba cách xếp | Giữ nguyên: ưu tiên · ngày đi · khách hàng |
-| Cột giữa | Bản đồ vệ tinh đội xe | **Tiến độ trên tuyến** |
+| Cột giữa | Bản đồ vệ tinh đội xe | **Bản đồ tuyến** + tiến độ từng chặng |
 | Cột phải | Hồ sơ chuyến | Giữ nguyên, thêm dải trạng thái sáu mục |
 
-**Hai chỗ cố ý làm khác, và vì sao.**
+**Bản đồ thì có, nhưng vẽ đúng thứ mình biết.**
 
-Bản đồ vệ tinh cần toạ độ GPS. Bên Lào không gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài
-xế gọi về. Vẽ bản đồ mà không có toạ độ thì chỉ là hình trang trí, nên cột giữa là tiến độ từng
-chặng, thứ họ thật sự có.
+Điểm dừng của tuyến nay có ô vĩ độ và kinh độ, khai ngay trên màn Tuyến đường. Bản đồ vẽ **tuyến kế
+hoạch** nối các điểm đã khai, và chấm xe đứng ở **mốc đã xác nhận tới** gần nhất. Bên Lào không gắn
+GPS nên hệ **không nội suy** vị trí giữa hai chặng: không biết thì không vẽ. Chính EPL_System cũng
+ghi trên màn của nó rằng đó là "vị trí mô phỏng theo tuyến, chưa phải vệt GPS live".
+
+Hai chế độ như bản gốc: **Đội xe** chấm mọi chuyến đang theo dõi, màu theo tình trạng (đang chạy ·
+đi lâu · có sự cố · chưa có vị trí); **Tuyến đang chọn** vẽ đường và các mốc của đúng chuyến đang mở.
+Tuyến chưa khai toạ độ thì màn nói thẳng là chưa vẽ được và chỉ hiện dải tiến độ.
+
+Thư viện bản đồ Leaflet để **sẵn trong dự án** (`frontend/vendor/leaflet`), không gọi CDN, vì máy
+chủ bên Lào có lúc không ra được Internet. Riêng ảnh nền vẫn phải tải từ mạng: mất mạng thì nền
+trống nhưng đường tuyến và các chấm vẫn hiện, vì chúng lấy từ toạ độ trong DB.
+
+**Còn một chỗ nữa cố ý làm khác.**
 
 Ô "quá hạn giao" cần hạn giao hàng, mà Excel của họ không có ô đó. Thay bằng **"đi lâu chưa về"**:
 xe rời bãi quá năm ngày mà chưa báo tới nơi thì gắn cờ đỏ. Cùng mục đích là gọi sự chú ý của người

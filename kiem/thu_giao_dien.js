@@ -148,6 +148,15 @@ async function main() {
   assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
   console.log('✓ theo dõi tuyến: 7 ô số · 3 cột · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
+  // Bản đồ: Leaflet để sẵn trong dự án nên phải vẽ được cả khi không ra Internet (ảnh nền thì
+  // không có, nhưng đường tuyến và chấm xe lấy từ toạ độ trong DB nên vẫn phải hiện).
+  await choDen(() => goc().querySelectorAll('#tdt-map .leaflet-pane').length > 0, 'bản đồ dựng xong', 15000);
+  const oMap = goc().querySelector('#tdt-map');
+  assert.ok(oMap.querySelectorAll('path').length >= 2, 'bản đồ phải vẽ đường tuyến và các mốc');
+  assert.ok(oMap.querySelector('.tdt-xe-cham'), 'bản đồ phải có chấm xe ở mốc đã xác nhận tới');
+  console.log('✓ bản đồ tuyến: %d lớp · %d hình vẽ · có chấm xe',
+    oMap.querySelectorAll('.leaflet-pane').length, oMap.querySelectorAll('path').length);
+
 
   // 4. vai Bãi: không thấy Tài khoản, không thấy nút kiểm/chi
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');

@@ -5,7 +5,9 @@ Bố cục lấy từ màn "Theo dõi và kiểm soát" của EPL_System: dải 
 trái, chi tiết chuyến ở giữa, hồ sơ chuyến bên phải. Nhưng số liệu thì của bên Lào, không bịa:
 
   · KHÔNG có GPS. Bên Lào không gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về.
-    Nên chỗ bản đồ vệ tinh của EPL_System ở đây là TIẾN ĐỘ TRÊN TUYẾN — thứ họ thật sự có.
+    Bản đồ vẫn có, nhưng vẽ TUYẾN KẾ HOẠCH nối các điểm đã khai toạ độ, và chấm xe đứng ở MỐC ĐÃ
+    XÁC NHẬN TỚI gần nhất. Không nội suy vị trí giữa hai chặng: không biết thì không vẽ.
+    (Chính EPL_System cũng ghi trên màn "vị trí mô phỏng theo tuyến, chưa phải vệt GPS live".)
   · KHÔNG có hạn giao hàng. Excel của họ không có ô đó. Thay bằng "đi lâu chưa về": xe rời bãi
     quá nhiều ngày mà chưa báo tới nơi thì đáng để người điều hành nhìn.
 
@@ -79,11 +81,25 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
         if p.finance_status != "paid": kpi["chua_thu_tien"] += 1
         if cho_linh: kpi["cho_cap_phat"] += cho_linh
 
+        # Điểm đi / điểm đến: phiếu nào bỏ trống thì lấy theo tuyến, đừng để màn hiện hai gạch ngang.
+        diem_dau = diem[0].name if diem else None
+        diem_cuoi = diem[-1].name if diem else None
+        # Vị trí trên bản đồ = ĐIỂM ĐÃ XÁC NHẬN TỚI gần nhất. Không GPS nên không bịa vị trí giữa
+        # hai chặng; chấm đứng ở mốc cuối cùng mà Bãi đã bấm.
+        # Xe đã báo tới nơi thì đứng ở điểm cuối, dù Bãi không bấm đủ từng chặng trên đường.
+        toi_ve = len(diem) if p.transport_status == "arrived" else max(toi, 1)
+        moc = None
+        for st in diem:
+            if st.lat is not None and st.lng is not None and st.seq <= toi_ve:
+                moc = st
         ra.append({
             "id": p.id, "doc_no": p.doc_no, "company": p.company, "owner_name": p.owner_name,
             "truck_no": p.truck_no, "plate_head": p.plate_head, "plate_trailer": p.plate_trailer,
             "driver_name": p.driver_name, "customer_name": p.customer_name,
-            "origin": p.origin, "destination": p.destination,
+            "origin": p.origin or diem_dau, "destination": p.destination or diem_cuoi,
+            "stops": [{"seq": st.seq, "name": st.name, "km_from_prev": st.km_from_prev,
+                       "lat": st.lat, "lng": st.lng} for st in diem],
+            "vi_tri": ({"lat": moc.lat, "lng": moc.lng, "seq": moc.seq, "name": moc.name} if moc else None),
             "route_name": tuyen[p.route_id].name if p.route_id in tuyen else None,
             "out_date": ngay_di.isoformat() if ngay_di else None,
             "back_date": p.back_date.isoformat() if p.back_date else None,

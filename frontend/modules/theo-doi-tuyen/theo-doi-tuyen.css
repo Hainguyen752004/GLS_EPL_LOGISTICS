@@ -38,6 +38,27 @@
 .tdt-the .chan{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-3);margin-top:5px;padding-top:5px;border-top:1px dotted var(--line)}
 .tdt-trong{padding:22px 14px;text-align:center;color:var(--ink-3);font-size:13px}
 
+/* cột giữa: bản đồ tuyến */
+.tdt-bd-the .hd{gap:10px;flex-wrap:wrap}
+.tdt-bd-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
+.tdt-bd-tab button{border:0;background:none;padding:4px 12px;border-radius:999px;font-size:12.5px;color:var(--ink-2)}
+.tdt-bd-tab button.active{background:var(--ink);color:#fff;font-weight:600}
+.tdt-nen{border:1px solid var(--line-2);border-radius:var(--r);padding:4px 8px;font-size:12.5px;background:var(--paper)}
+.tdt-chu-thich{display:flex;flex-wrap:wrap;gap:14px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+.tdt-chu-thich span{display:inline-flex;align-items:center;gap:6px}
+.tdt-chu-thich .cham{width:10px;height:10px;border-radius:50%;display:inline-block}
+.tdt-chu-thich .cham.chay{background:#2F5D8A} .tdt-chu-thich .cham.lau{background:#A86B12}
+.tdt-chu-thich .cham.su-co{background:#A83232} .tdt-chu-thich .cham.khong{background:#7A858F}
+.tdt-map{height:380px;background:#DDE5E0;position:relative}
+.tdt-map.trong{display:grid;place-items:center}
+.tdt-map-trong{padding:18px 24px;text-align:center;color:var(--ink-3);font-size:13px;max-width:460px}
+.tdt-chu{padding:8px 14px;border-top:1px solid var(--line)}
+/* chấm xe trên bản đồ: vòng tròn màu + số xe bên cạnh */
+.tdt-xe-cham{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.tdt-xe-cham span{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);flex:none}
+.tdt-xe-cham b{background:rgba(28,34,41,.82);color:#fff;font-size:11px;padding:1px 5px;border-radius:3px}
+.leaflet-container{font-family:var(--font)}
+
 /* cột giữa: tiến độ trên tuyến */
 .tdt-tuyen{display:flex;gap:6px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
 .tdt-moc{flex:1;min-width:110px;text-align:center;position:relative}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 701 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 715 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2436,6 +2436,76 @@ window.EPL_TU_DIEN = {
   "vi": "Máy chủ đang chạy bản cũ nên chưa có chức năng này. Dừng máy chủ (Ctrl+C) rồi chạy lại là xong.",
   "lo": "ເຊີບເວີກຳລັງແລ່ນລຸ້ນເກົ່າ ຈຶ່ງຍັງບໍ່ມີໜ້າທີ່ນີ້. ຢຸດເຊີບເວີ (Ctrl+C) ແລ້ວແລ່ນໃໝ່ແມ່ນໄດ້.",
   "en": "The server is running an older build, so this feature is missing. Stop it (Ctrl+C) and start it again."
+ },
+ "map_title": {
+  "vi": "Bản đồ tuyến",
+  "lo": "ແຜນທີ່ເສັ້ນທາງ",
+  "en": "Route map"
+ },
+ "map_fleet": {
+  "vi": "Đội xe",
+  "lo": "ກອງລົດ",
+  "en": "Fleet"
+ },
+ "map_one": {
+  "vi": "Tuyến đang chọn",
+  "lo": "ເສັ້ນທາງທີ່ເລືອກ",
+  "en": "Selected route"
+ },
+ "map_sat": {
+  "vi": "Vệ tinh",
+  "lo": "ດາວທຽມ",
+  "en": "Satellite"
+ },
+ "map_road": {
+  "vi": "Đường phố",
+  "lo": "ຖະໜົນ",
+  "en": "Street"
+ },
+ "map_running": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "Running"
+ },
+ "map_late": {
+  "vi": "Đi lâu",
+  "lo": "ໄປດົນ",
+  "en": "Out long"
+ },
+ "map_inc": {
+  "vi": "Có sự cố",
+  "lo": "ມີເຫດການ",
+  "en": "Incident"
+ },
+ "map_nopos": {
+  "vi": "Chưa có vị trí",
+  "lo": "ຍັງບໍ່ມີຕຳແໜ່ງ",
+  "en": "No position"
+ },
+ "map_note": {
+  "vi": "Đường xanh là tuyến kế hoạch. Chấm xe đứng ở mốc đã xác nhận tới gần nhất, không phải vệt GPS.",
+  "lo": "ເສັ້ນສີຟ້າແມ່ນເສັ້ນທາງຕາມແຜນ. ຈຸດລົດຢູ່ບ່ອນທີ່ຢືນຢັນວ່າຮອດຫຼ້າສຸດ, ບໍ່ແມ່ນ GPS.",
+  "en": "The blue line is the planned route. The truck sits at the last confirmed stop, not a GPS trace."
+ },
+ "map_none": {
+  "vi": "Tuyến này chưa khai toạ độ điểm dừng nên chưa vẽ được bản đồ. Khai ở màn Tuyến đường.",
+  "lo": "ເສັ້ນທາງນີ້ຍັງບໍ່ໄດ້ໃສ່ພິກັດຈຸດຈອດ ຈຶ່ງຍັງບໍ່ທັນແຕ້ມແຜນທີ່. ໃສ່ຢູ່ໜ້າເສັ້ນທາງ.",
+  "en": "This route has no stop coordinates yet, so no map. Enter them on the Routes screen."
+ },
+ "map_pos_at": {
+  "vi": "Đang ở mốc {ten}",
+  "lo": "ຢູ່ຈຸດ {ten}",
+  "en": "At stop {ten}"
+ },
+ "st_lat": {
+  "vi": "Vĩ độ",
+  "lo": "ລາຕິຈູດ",
+  "en": "Latitude"
+ },
+ "st_lng": {
+  "vi": "Kinh độ",
+  "lo": "ລອງຈິຈູດ",
+  "en": "Longitude"
  },
  "ok": {
   "vi": "Đồng ý",

@@ -333,7 +333,11 @@ class RouteStop(Base):
     route_id = Column(String, ForeignKey("routes.id", ondelete="CASCADE"), nullable=False, index=True)
     seq = Column(Integer, nullable=False)
     name = Column(String, nullable=False)
-    km_from_prev = Column(Float, default=0)                    # km từ điểm trước
+    km_from_prev = Column(Float, default=0)
+    # Toạ độ để vẽ bản đồ. Không bắt buộc: tuyến chưa khai toạ độ thì màn Theo dõi chỉ vẽ
+    # dải tiến độ, không vẽ bản đồ — thiếu toạ độ mà vẫn chấm đại lên bản đồ là nói dối.
+    lat = Column(Float)
+    lng = Column(Float)                    # km từ điểm trước
     note = Column(String)
 
 

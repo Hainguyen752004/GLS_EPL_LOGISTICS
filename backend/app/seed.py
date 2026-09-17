@@ -141,6 +141,15 @@ def gieo(db):
         db.add(Supplier(name=ten, item_key=khoa, acct_code=tk, payment_term=han))
 
     # ---- tuyến đường (chặng, km, BOT)
+    # Toạ độ ĐẠI KHÁI của các điểm trên hai tuyến, đủ để bản đồ vẽ đúng hình. Người dùng sửa lại
+    # cho chuẩn ngay trên màn Tuyến đường; không có toạ độ thì màn Theo dõi chỉ bỏ phần bản đồ.
+    TOA_DO = {
+        "ກາສີ (ບ່ອນຂຸດແຮ່)": (19.1500, 102.2500),      # mỏ quặng Kasi
+        "ທ່າບົກ (ສະໜາມ EPL)": (18.4400, 103.1500),     # bãi Thà Bốc
+        "ດ່ານ ນໍ້າພາວ": (18.3800, 105.1100),            # cửa khẩu Nậm Phao
+        "ກາລໍ": (18.1000, 105.9000),
+        "ທ່າເຮືອກະລໍ": (18.0700, 106.4200),            # cảng
+    }
     tuyen = {}
     for ten, bot, diem in (
         ("ກາສີ → ກາລໍ", 1833500, [("ກາສີ (ບ່ອນຂຸດແຮ່)", 0), ("ທ່າບົກ (ສະໜາມ EPL)", 145), ("ດ່ານ ນໍ້າພາວ", 210), ("ກາລໍ", 130)]),
@@ -149,7 +158,8 @@ def gieo(db):
         r = Route(name=ten, origin=diem[0][0], destination=diem[-1][0], total_km=sum(k for _, k in diem), toll_lak=bot)
         db.add(r); db.flush()
         for i, (n, km) in enumerate(diem, 1):
-            db.add(RouteStop(route_id=r.id, seq=i, name=n, km_from_prev=km))
+            vt = TOA_DO.get(n, (None, None))
+            db.add(RouteStop(route_id=r.id, seq=i, name=n, km_from_prev=km, lat=vt[0], lng=vt[1]))
         tuyen[ten] = r
     db.flush()
 

@@ -59,6 +59,8 @@ app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND, "css")), name="cs
 app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND, "js")), name="js")
 app.mount("/modules", StaticFiles(directory=os.path.join(FRONTEND, "modules")), name="modules")
 app.mount("/img", StaticFiles(directory=os.path.join(FRONTEND, "img")), name="img")
+# Thư viện ngoài để SẴN trong dự án, không gọi CDN: máy chủ bên Lào có lúc không ra được Internet.
+app.mount("/vendor", StaticFiles(directory=os.path.join(FRONTEND, "vendor")), name="vendor")
 
 
 @app.get("/")

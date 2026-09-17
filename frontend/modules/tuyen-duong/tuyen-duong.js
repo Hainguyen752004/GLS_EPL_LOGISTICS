@@ -28,8 +28,12 @@
   /* ------------------------------------------------ hộp sửa */
   function veDiemTam() {
     const tb = root.querySelector('#tuy-f-diem tbody');
+    // Toạ độ để màn Theo dõi tuyến vẽ được bản đồ. Để trống cũng được: thiếu toạ độ thì màn đó
+    // chỉ bỏ phần bản đồ chứ không hỏng, và thà bỏ còn hơn chấm đại một chỗ không đúng.
     tb.innerHTML = diemTam.map((d, i) => `<tr><td>${i + 1}</td><td><input data-i="${i}" data-f="name" value="${esc(d.name || '')}" lang="lo"></td>
       <td><input class="num" data-i="${i}" data-f="km_from_prev" value="${i ? esc(d.km_from_prev ?? '') : ''}" ${i ? '' : 'disabled placeholder="—"'}></td>
+      <td><input class="num" data-i="${i}" data-f="lat" value="${esc(d.lat ?? '')}" placeholder="${esc(NN.t('st_lat'))}" inputmode="decimal"></td>
+      <td><input class="num" data-i="${i}" data-f="lng" value="${esc(d.lng ?? '')}" placeholder="${esc(NN.t('st_lng'))}" inputmode="decimal"></td>
       <td>${diemTam.length > 2 ? `<button type="button" class="x" data-xoa="${i}">×</button>` : ''}</td></tr>`).join('');
     tb.querySelectorAll('input[data-f]').forEach(el => el.addEventListener('input', () => { diemTam[+el.dataset.i][el.dataset.f] = el.value; }));
     tb.querySelectorAll('[data-xoa]').forEach(b => b.addEventListener('click', () => { diemTam.splice(+b.dataset.xoa, 1); veDiemTam(); }));
@@ -41,14 +45,18 @@
     root.querySelector('#tuy-f-toll').value = r ? r.toll_lak : '';
     root.querySelector('#tuy-f-note').value = r ? (r.note || '') : '';
     root.querySelector('#tuy-f-active-o').hidden = !r; if (r) root.querySelector('#tuy-f-active').value = r.active ? '1' : '0';
-    diemTam = r ? r.stops.map(s => ({ name: s.name, km_from_prev: s.km_from_prev })) : [{ name: '' }, { name: '', km_from_prev: '' }];
+    diemTam = r ? r.stops.map(s => ({ name: s.name, km_from_prev: s.km_from_prev, lat: s.lat, lng: s.lng }))
+      : [{ name: '' }, { name: '', km_from_prev: '' }];
     veDiemTam(); NN.apDung(dlg);
     dlg.returnValue = '';
     dlg.addEventListener('close', async function xong() {
       dlg.removeEventListener('close', xong);
       if (dlg.returnValue !== 'ok') return;
       const body = { name: root.querySelector('#tuy-f-name').value, toll_lak: EPL.doc(root.querySelector('#tuy-f-toll').value),
-        note: root.querySelector('#tuy-f-note').value, stops: diemTam.map(d => ({ name: d.name, km_from_prev: EPL.doc(d.km_from_prev) })) };
+        note: root.querySelector('#tuy-f-note').value,
+        stops: diemTam.map(d => ({ name: d.name, km_from_prev: EPL.doc(d.km_from_prev),
+          lat: d.lat === '' || d.lat == null ? null : EPL.doc(d.lat),
+          lng: d.lng === '' || d.lng == null ? null : EPL.doc(d.lng) })) };
       if (r) body.active = root.querySelector('#tuy-f-active').value === '1';
       try { const moi = await (r ? API.put('/api/routes/' + r.id, body) : API.post('/api/routes', body)); EPL.toast(NN.t('saved'), 'ok'); ds = await API.get('/api/routes'); await moChiTiet(moi.id); }
       catch (e) { EPL.baoLoi(e); }

@@ -28,10 +28,24 @@ def xuat_tuyen(db, r, chi_tiet=False):
     diem = db.query(RouteStop).filter(RouteStop.route_id == r.id).order_by(RouteStop.seq).all()
     ra = {"id": r.id, "name": r.name, "origin": r.origin, "destination": r.destination, "total_km": r.total_km,
           "toll_lak": r.toll_lak, "note": r.note, "active": r.active, "so_diem": len(diem),
-          "stops": [{"id": s.id, "seq": s.seq, "name": s.name, "km_from_prev": s.km_from_prev, "note": s.note} for s in diem]}
+          "stops": [{"id": s.id, "seq": s.seq, "name": s.name, "km_from_prev": s.km_from_prev,
+                     "lat": s.lat, "lng": s.lng, "note": s.note} for s in diem]}
     if chi_tiet:
         ra["so_phieu"] = db.query(Trip).filter(Trip.route_id == r.id).count()
     return ra
+
+
+def _toa_do(v, nho_nhat, lon_nhat, ten, i):
+    if v in (None, ""):
+        return None
+    try:
+        x = float(str(v).replace(",", ""))
+    except ValueError:
+        raise HTTPException(422, {"ma": "TOA_DO_SAI", "loi": "Điểm %d: %s phải là số." % (i, ten)})
+    if not (nho_nhat <= x <= lon_nhat):
+        raise HTTPException(422, {"ma": "TOA_DO_SAI",
+                                  "loi": "Điểm %d: %s phải từ %s đến %s." % (i, ten, nho_nhat, lon_nhat)})
+    return x
 
 
 def _ghi_diem(db, r, stops):
@@ -46,7 +60,9 @@ def _ghi_diem(db, r, stops):
             raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Điểm thứ %d chưa có tên." % i})
         km = _so(s.get("km_from_prev"), "km điểm %d" % i) if i > 1 else 0.0
         tong += km
-        db.add(RouteStop(route_id=r.id, seq=i, name=ten, km_from_prev=km, note=s.get("note")))
+        # Toạ độ không bắt buộc; có thì phải nằm trong khoảng hợp lệ, không thì chấm bay ra biển.
+        lat, lng = _toa_do(s.get("lat"), -90, 90, "vĩ độ", i), _toa_do(s.get("lng"), -180, 180, "kinh độ", i)
+        db.add(RouteStop(route_id=r.id, seq=i, name=ten, km_from_prev=km, lat=lat, lng=lng, note=s.get("note")))
     r.origin, r.destination, r.total_km = stops[0]["name"].strip(), stops[-1]["name"].strip(), round(tong, 1)
 
 

@@ -1,9 +1,9 @@
 <!-- Theo dõi tuyến — ຕິດຕາມເສັ້ນທາງ. Dựng theo màn "Theo dõi và kiểm soát" của EPL_System:
      thanh công cụ · dải ô số · ba cột (danh sách chuyến · chi tiết · hồ sơ chuyến).
 
-     Khác một chỗ có lý do: EPL_System đặt bản đồ vệ tinh ở cột giữa vì xe có GPS. Bên Lào không
-     gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về — nên cột giữa ở đây là TIẾN ĐỘ
-     TRÊN TUYẾN, thứ họ thật sự có. Sự cố / sửa xe khai ở đây rơi vào mục V của phiếu xuất xe. -->
+     Bản đồ vẽ tuyến kế hoạch nối các điểm đã khai toạ độ, chấm xe đứng ở mốc đã xác nhận tới gần
+     nhất — bên Lào không gắn GPS nên không nội suy vị trí giữa hai chặng.
+     Sự cố / sửa xe khai ở màn này rơi vào mục V của phiếu xuất xe. -->
 <div class="toolbar tdt-thanh">
   <div class="field tdt-tim"><label data-i18n="search"></label><input id="tdt-q" data-i18n-ph="td_search"></div>
   <label class="tdt-loc small"><input type="checkbox" id="tdt-chi-chay" checked> <span data-i18n="td_only_run"></span></label>
@@ -32,8 +32,26 @@
 
   <!-- Cột giữa: tiến độ trên tuyến + diễn biến + chi phí sửa chữa -->
   <div class="tdt-giua">
-    <div class="card">
-      <div class="hd"><h3 data-i18n="progress"></h3><div class="grow"></div><span id="tdt-dau"></span></div>
+    <!-- Bản đồ tuyến: vẽ tuyến kế hoạch nối các điểm đã khai toạ độ, chấm xe đứng ở mốc đã
+         xác nhận tới gần nhất. Không GPS nên không nội suy vị trí giữa hai chặng. -->
+    <div class="card tdt-bd-the">
+      <div class="hd"><h3 data-i18n="map_title"></h3>
+        <div class="tdt-bd-tab" role="tablist">
+          <button data-bd="doi" data-i18n="map_fleet"></button>
+          <button class="active" data-bd="mot" data-i18n="map_one"></button>
+        </div>
+        <div class="grow"></div>
+        <span id="tdt-dau"></span>
+        <select id="tdt-nen" class="tdt-nen"><option value="ve-tinh" data-i18n="map_sat"></option><option value="duong" data-i18n="map_road"></option></select>
+      </div>
+      <div class="tdt-chu-thich">
+        <span><i class="cham chay"></i><span data-i18n="map_running"></span></span>
+        <span><i class="cham lau"></i><span data-i18n="map_late"></span></span>
+        <span><i class="cham su-co"></i><span data-i18n="map_inc"></span></span>
+        <span><i class="cham khong"></i><span data-i18n="map_nopos"></span></span>
+      </div>
+      <div class="tdt-map" id="tdt-map"></div>
+      <div class="tdt-chu small muted" data-i18n="map_note"></div>
       <div class="bd" id="tdt-tien-do"></div>
     </div>
 

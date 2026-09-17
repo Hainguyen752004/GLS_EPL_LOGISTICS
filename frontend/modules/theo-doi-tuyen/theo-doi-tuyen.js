@@ -2,10 +2,11 @@
  *
  *   thanh công cụ (tìm · tự cập nhật · sổ sự cố · báo sự cố)
  *   dải ô số      (bấm một ô là lọc danh sách theo đúng ô đó)
- *   ba cột        (danh sách chuyến · tiến độ + diễn biến + sửa chữa · hồ sơ chuyến)
+ *   ba cột        (danh sách chuyến · bản đồ + diễn biến + sửa chữa · hồ sơ chuyến)
  *
- * Chỗ EPL_System để bản đồ vệ tinh thì đây là TIẾN ĐỘ TRÊN TUYẾN: bên Lào không gắn GPS, "xe tới
- * điểm X" là do Bãi bấm khi tài xế gọi về. Vẽ bản đồ mà không có toạ độ thì chỉ là hình trang trí.
+ * Bản đồ vẽ TUYẾN KẾ HOẠCH nối các điểm đã khai toạ độ, chấm xe đứng ở MỐC ĐÃ XÁC NHẬN TỚI gần
+ * nhất. Bên Lào không gắn GPS, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về — nên không nội suy
+ * vị trí giữa hai chặng: không biết thì không vẽ. Tuyến chưa khai toạ độ thì bỏ hẳn phần bản đồ.
  *
  * Số liệu cả màn lấy một lần từ /api/theo-doi để danh sách vài chục chuyến không thành vài chục
  * lượt gọi; mở một chuyến mới gọi chi tiết phiếu đó.
@@ -14,6 +15,7 @@
   const { API, NN, esc, so, AUTH, tag } = EPL;
   let root, BANG = null, P = null, PARTS = [], KM = null, nguon = 'kho';
   let sap = 'uu-tien', locO = '', dongHo = null;
+  let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot';
   const q = (s) => root.querySelector(s);
   const laBai = () => AUTH.la('yard');
 
@@ -78,6 +80,119 @@
           <span>${EPL.ngay(c.out_date)}</span></div></button>`;
     }).join('') : `<div class="tdt-trong">${NN.h('td_none_watch')}</div>`;
     q('#tdt-the-ds').querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => mo(b.dataset.c)));
+    if (cheDoBD === 'doi') veBanDo();
+  }
+
+  /* ---------------------------------------------------------------- bản đồ
+   * Leaflet để SẴN trong dự án (frontend/vendor/leaflet), không gọi CDN: máy chủ bên Lào có lúc
+   * không ra được Internet. Ảnh nền thì vẫn phải tải từ mạng — mất mạng thì nền trống nhưng đường
+   * tuyến và các chấm vẫn vẽ, vì chúng lấy từ toạ độ trong DB.
+   */
+  const NEN = {
+    've-tinh': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      'Tiles © Esri'],
+    'duong': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      'Tiles © Esri'],
+  };
+  const MAU = { chay: '#2F5D8A', lau: '#A86B12', suCo: '#A83232', khong: '#7A858F', xong: '#145C4A' };
+
+  function napLeaflet() {
+    if (window.L) return Promise.resolve(window.L);
+    if (!document.getElementById('leaflet-css')) {
+      const l = document.createElement('link');
+      l.id = 'leaflet-css'; l.rel = 'stylesheet'; l.href = 'vendor/leaflet/leaflet.css';
+      document.head.appendChild(l);
+    }
+    return new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'vendor/leaflet/leaflet.js';
+      sc.onload = () => res(window.L);
+      sc.onerror = () => rej(new Error('leaflet'));
+      document.head.appendChild(sc);
+    });
+  }
+
+  function mauCuaChuyen(c) {
+    if (c.su_co_mo) return MAU.suCo;
+    if (c.di_lau) return MAU.lau;
+    if (c.transport_status === 'arrived') return MAU.xong;
+    if (!c.vi_tri) return MAU.khong;
+    return MAU.chay;
+  }
+  function chamXe(mau, chu) {
+    return window.L.divIcon({ className: 'tdt-xe-cham',
+      html: `<span style="background:${mau}"></span>${chu ? `<b>${esc(chu)}</b>` : ''}`,
+      iconSize: [18, 18], iconAnchor: [9, 9] });
+  }
+
+  async function veBanDo() {
+    // Bản đồ là phần PHỤ của màn: hỏng bản đồ thì vẫn phải xem được tiến độ, diễn biến, chi phí.
+    try { await veBanDoThat(); } catch (e) { /* không nối được thư viện hay ảnh nền — bỏ qua */ }
+  }
+  async function veBanDoThat() {
+    const o = q('#tdt-map');
+    if (!o) return;
+    const L = await napLeaflet();
+    if (!MAP) {
+      MAP = L.map(o, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
+      MAP.setView([18.6, 104.2], 7);
+      datNen(q('#tdt-nen').value || 've-tinh');
+    }
+    if (lopVe) { MAP.removeLayer(lopVe); lopVe = null; }
+    lopVe = L.layerGroup().addTo(MAP);
+
+    const ds = cheDoBD === 'doi' ? loc() : (P ? [BANG.chuyen.find(c => c.id === P.id)].filter(Boolean) : []);
+    const diemVe = [];
+
+    if (cheDoBD === 'mot') {
+      const c = ds[0];
+      const dd = (c && c.stops || []).filter(s => s.lat != null && s.lng != null);
+      if (!dd.length) {
+        o.classList.add('trong');
+        o.querySelectorAll('.tdt-map-trong').forEach(x => x.remove());
+        const bao = document.createElement('div');
+        bao.className = 'tdt-map-trong'; bao.innerHTML = NN.h('map_none');
+        o.appendChild(bao);
+        return;
+      }
+      o.classList.remove('trong');
+      o.querySelectorAll('.tdt-map-trong').forEach(x => x.remove());
+      const toaDo = dd.map(s => [s.lat, s.lng]);
+      L.polyline(toaDo, { color: '#2F5D8A', weight: 4, opacity: .85 }).addTo(lopVe);
+      dd.forEach(s => {
+        const daToi = s.seq <= (c.stop_reached || 0);
+        L.circleMarker([s.lat, s.lng], { radius: 9, weight: 2, color: daToi ? MAU.xong : '#2F5D8A',
+          fillColor: daToi ? MAU.xong : '#fff', fillOpacity: 1 })
+          .bindTooltip(`${s.seq}. ${esc(s.name)}`, { direction: 'top' }).addTo(lopVe);
+        diemVe.push([s.lat, s.lng]);
+      });
+      if (c.vi_tri) {
+        L.marker([c.vi_tri.lat, c.vi_tri.lng], { icon: chamXe(mauCuaChuyen(c), c.truck_no), zIndexOffset: 500 })
+          .bindTooltip(`${esc(c.truck_no || '')} · ${NN.t('map_pos_at', { ten: c.vi_tri.name })}`, { direction: 'top' })
+          .addTo(lopVe);
+      }
+    } else {
+      ds.forEach(c => {
+        if (!c.vi_tri) return;
+        L.marker([c.vi_tri.lat, c.vi_tri.lng], { icon: chamXe(mauCuaChuyen(c), c.truck_no) })
+          .bindTooltip(`${esc(c.doc_no)} · ${esc(c.truck_no || '')}<br>${esc(c.origin || '')} → ${esc(c.destination || '')}`,
+            { direction: 'top' })
+          .on('click', () => mo(c.id))
+          .addTo(lopVe);
+        diemVe.push([c.vi_tri.lat, c.vi_tri.lng]);
+      });
+      o.classList.remove('trong');
+      o.querySelectorAll('.tdt-map-trong').forEach(x => x.remove());
+    }
+    if (diemVe.length) MAP.fitBounds(window.L.latLngBounds(diemVe).pad(0.25), { maxZoom: 11 });
+    setTimeout(() => MAP && MAP.invalidateSize(), 60);
+  }
+
+  function datNen(ma) {
+    if (!MAP || !window.L) return;
+    if (lopNen) MAP.removeLayer(lopNen);
+    const [url, ghi] = NEN[ma] || NEN['ve-tinh'];
+    lopNen = window.L.tileLayer(url, { maxZoom: 17, attribution: ghi }).addTo(MAP);
   }
 
   /* ---------------------------------------------------------------- cột giữa */
@@ -128,6 +243,7 @@
     q('#tdt-sua-tom').innerHTML = `${NN.h('total')}: <b>${so(tong)} LAK</b> · ${NN.h('sections_status')} V: ${NN.h((P.sections || {}).repair === 'wait' ? 'stt_wait2' : 'stt_' + ((P.sections || {}).repair || 'wait'))}`;
 
     veHoSo();
+    veBanDo();
     q('#tdt-su-co').hidden = q('#tdt-ghi-chu').hidden = !laBai() || P.finance_status === 'paid';
   }
 
@@ -266,6 +382,11 @@
         root.querySelectorAll('.tdt-sap button').forEach(x => x.classList.toggle('active', x === b));
         sap = b.dataset.sap; veDanhSach();
       }));
+      root.querySelectorAll('.tdt-bd-tab button').forEach(b => b.addEventListener('click', () => {
+        root.querySelectorAll('.tdt-bd-tab button').forEach(x => x.classList.toggle('active', x === b));
+        cheDoBD = b.dataset.bd; veBanDo();
+      }));
+      q('#tdt-nen').addEventListener('change', e => { datNen(e.target.value); });
       root.querySelectorAll('.tdt-nguon button').forEach(b => b.addEventListener('click', () => datNguon(b.dataset.src)));
       q('#tdt-f-part').addEventListener('change', () => datNguon('kho'));
       await tai();
@@ -273,7 +394,10 @@
       const dau = t.id || (loc()[0] || {}).id;
       if (dau) await mo(dau); else ve();
     },
-    destroy() { clearInterval(dongHo); dongHo = null; },
+    destroy() {
+      clearInterval(dongHo); dongHo = null;
+      if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
+    },
     onLang() { if (root) { veOSo(); veDanhSach(); ve(); } },
   };
 })();
