@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 748 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 741 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2636,41 +2636,6 @@ window.EPL_TU_DIEN = {
   "vi": "Tài xế",
   "lo": "ໂຊເຟີ",
   "en": "Drivers"
- },
- "lg_flow": {
-  "vi": "Một chuyến đi qua sáu bước",
-  "lo": "ໜຶ່ງຖ້ຽວຜ່ານ 6 ຂັ້ນຕອນ",
-  "en": "Every trip runs through six steps"
- },
- "lg_q1": {
-  "vi": "Lập phiếu",
-  "lo": "ສ້າງໃບ",
-  "en": "Create slip"
- },
- "lg_q2": {
-  "vi": "Lĩnh dầu",
-  "lo": "ເບີກນໍ້າມັນ",
-  "en": "Draw fuel"
- },
- "lg_q3": {
-  "vi": "Tạm ứng",
-  "lo": "ເບີກເງິນລ່ວງໜ້າ",
-  "en": "Advance"
- },
- "lg_q4": {
-  "vi": "Xuất phát",
-  "lo": "ອອກເດີນທາງ",
-  "en": "Depart"
- },
- "lg_q5": {
-  "vi": "Về bãi",
-  "lo": "ກັບສະໜາມ",
-  "en": "Back to yard"
- },
- "lg_q6": {
-  "vi": "Hoá đơn",
-  "lo": "ໃບເກັບເງິນ",
-  "en": "Invoice"
  },
  "ok": {
   "vi": "Đồng ý",
