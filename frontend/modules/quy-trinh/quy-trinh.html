@@ -1,19 +1,55 @@
-<!-- Quy trình & trách nhiệm — sheet ໜ້າວຽກ: ai nhập, ai kiểm, ai ghi sổ, ai chi. In từ luật đang chạy trên máy chủ. -->
-<div class="card qt-khoi">
-  <div class="hd"><h3 data-i18n="wf_doc1"></h3><div class="grow"></div><span class="small muted" data-i18n="wf_hint"></span></div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th data-i18n="item"></th><th data-i18n="resp"></th><th data-i18n="verifier"></th><th data-i18n="bookkeeper"></th><th data-i18n="payer"></th><th data-i18n="acct_code"></th></tr></thead>
-      <tbody id="qt-than"></tbody>
-    </table>
+<!-- Sơ đồ luồng nghiệp vụ — trang để đi từng vai, từng bước: ai nhập gì, ẩn gì, sinh chứng từ nào,
+     định khoản ra sao. Đây là trang THAM CHIẾU và THẢO LUẬN: bước nào đang chạy thật thì đánh dấu
+     "đang có", bước nào là đề nghị của em thì đánh dấu "đề nghị · chờ anh chốt". Bấm vào một bước
+     để xem chi tiết bên phải; có nút mở thẳng màn tương ứng để đối chiếu.
+
+     Nội dung mô tả để tiếng Việt (đây là trang làm việc nội bộ của dự án), riêng tên vai, tên mục,
+     tên chứng từ lấy từ từ điển để đổi ngôn ngữ vẫn khớp với phần còn lại của ứng dụng. -->
+<div class="toolbar qt-thanh">
+  <div class="qt-tab" role="tablist">
+    <button class="active" data-xem="so-do">Sơ đồ luồng</button>
+    <button data-xem="ma-tran">Ma trận vai × mục</button>
+    <button data-xem="chung-tu">Chứng từ theo bước</button>
   </div>
+  <div class="grow"></div>
+  <span class="qt-chu-thich small">
+    <i class="co"></i> Đang chạy thật &nbsp;&nbsp; <i class="de-nghi"></i> Đề nghị · chờ anh chốt
+  </span>
 </div>
-<div class="card">
-  <div class="hd"><h3 data-i18n="wf_doc2"></h3></div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th data-i18n="item"></th><th data-i18n="resp"></th><th data-i18n="bookkeeper"></th><th data-i18n="acct_code"></th></tr></thead>
-      <tbody id="qt-hd"></tbody>
-    </table>
+
+<div class="qt-hai">
+  <div class="qt-trai">
+    <!-- Sơ đồ: mỗi vai một làn, mỗi bước một ô, đọc từ trái sang phải theo số thứ tự -->
+    <div class="card qt-so-do" id="qt-so-do">
+      <div class="hd"><h3>Một chuyến đi qua những bước nào, ai làm bước đó</h3><div class="grow"></div>
+        <span class="small muted">Cuộn ngang để xem hết · bấm vào ô để xem chi tiết</span></div>
+      <div class="qt-cuon"><div class="qt-lan-ds" id="qt-lan-ds"></div></div>
+    </div>
+
+    <!-- Ma trận: vai nào làm gì với từng mục của phiếu -->
+    <div class="card" id="qt-ma-tran" hidden>
+      <div class="hd"><h3>Vai nào nhập, kiểm, ghi sổ, chi, hay chỉ xem</h3><div class="grow"></div>
+        <span class="small muted">Ô có viền đứt là đề nghị thay đổi so với hiện tại</span></div>
+      <div class="tbl-wrap"><table class="tbl tbl-compact qt-mt"><thead id="qt-mt-dau"></thead><tbody id="qt-mt-than"></tbody></table></div>
+      <div class="bd small muted">
+        <b>N</b> nhập · <b>K</b> kiểm tra · <b>G</b> ghi sổ · <b>C</b> chi tiền · <b>X</b> chỉ xem · <b>Ẩ</b> ẩn một phần ô ·
+        <b>—</b> không thấy mục này
+      </div>
+    </div>
+
+    <!-- Chứng từ: tờ nào sinh ở bước nào, định khoản gì, đã là chứng từ thật hay mới là màn tính tạm -->
+    <div class="card" id="qt-chung-tu" hidden>
+      <div class="hd"><h3>Chứng từ sinh ra ở từng bước</h3><div class="grow"></div>
+        <span class="small muted">Phải khớp với sổ thu chi và sổ nhập xuất kho bên kế toán</span></div>
+      <div class="tbl-wrap"><table class="tbl tbl-compact">
+        <thead><tr><th>Chứng từ</th><th>Sinh ở bước</th><th>Ai lập · ai giữ</th><th>Định khoản</th><th>Tình trạng</th><th>Ghi chú</th></tr></thead>
+        <tbody id="qt-ct-than"></tbody></table></div>
+    </div>
   </div>
+
+  <!-- Chi tiết bước đang chọn -->
+  <aside class="card qt-panel" id="qt-panel">
+    <div class="hd"><h3 id="qt-p-ten">Chọn một bước</h3><div class="grow"></div><span id="qt-p-tt"></span></div>
+    <div class="bd" id="qt-p-than"><div class="muted small">Bấm vào một ô trên sơ đồ để xem: ai làm, nhập gì, ẩn gì, sinh chứng từ nào, định khoản ra sao.</div></div>
+  </aside>
 </div>
