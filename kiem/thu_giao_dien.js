@@ -76,8 +76,31 @@ async function main() {
   console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ tuyến · %d thẻ gợi ý trong %d nhóm vai',
     goiY.length, nhom.length);
 
-  // 1. đăng nhập admin, đi hết module
-  await w.EPL.AUTH.dangNhap('admin', '1234');
+  // 0b. Bấm thẻ tài khoản rồi bấm NÚT đăng nhập — đúng đường người dùng đi. Trước đây bộ kiểm gọi
+  // thẳng AUTH.dangNhap nên một lỗi ở nút (thiếu biến `dangBan`) lọt qua mà không ai biết.
+  d.getElementById('lgU').value = 'admin';
+  d.getElementById('lgP').value = 'sai-mat-khau';
+  d.getElementById('lgBtn').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await choDen(() => !d.getElementById('lgErr').hidden, 'bấm nút với mật khẩu sai phải hiện lỗi');
+  assert.ok(d.getElementById('app').hidden, 'sai mật khẩu thì không được vào ứng dụng');
+  assert.ok(d.getElementById('lgErr').textContent.trim(), 'phải có câu báo lỗi, không để trống');
+  console.log('✓ bấm nút với mật khẩu sai: hiện lỗi, không vào được');
+
+  d.getElementById('lgP').value = '1234';
+  d.getElementById('lgBtn').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await choDen(() => !d.getElementById('app').hidden, 'bấm nút với mật khẩu đúng phải vào được', 15000);
+  await w.EPL.sanSang;
+  console.log('✓ bấm nút với mật khẩu đúng: vào được ứng dụng');
+  w.EPL.AUTH.dangXuat(false);
+  await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'về lại màn đăng nhập');
+
+  // 0c. Bấm thẳng vào thẻ tài khoản là vào luôn, không phải bấm nút nữa
+  [...d.querySelectorAll('#acctList .person')].find(x => x.dataset.u === 'admin')
+    .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await choDen(() => !d.getElementById('app').hidden, 'bấm thẻ tài khoản phải vào thẳng', 15000);
+  console.log('✓ bấm thẻ tài khoản: vào thẳng, không cần bấm nút');
+
+  // 1. đã ở trong ứng dụng với vai admin, đi hết module
   await choDen(() => !d.getElementById('app').hidden, 'vào ứng dụng');
   await w.EPL.sanSang;
   const nav = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);

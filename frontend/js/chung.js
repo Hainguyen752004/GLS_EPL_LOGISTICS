@@ -250,6 +250,8 @@
       }));
     } catch (e) { o.innerHTML = `<div class="small neg" style="padding:12px 14px">${esc(e.message)}</div>`; }
   }
+  // Cờ chống bấm hai lần: đang gọi máy chủ mà bấm nữa thì bỏ qua, không gửi thêm lần đăng nhập.
+  let dangBan = false;
   async function dangNhapTuForm() {
     if (dangBan) return;
     const u = document.getElementById('lgU').value.trim(), p = document.getElementById('lgP').value;

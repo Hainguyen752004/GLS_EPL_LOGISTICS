@@ -64,7 +64,9 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 /* Bố cục và kiểu dáng lấy từ bản mẫu frontend/modules/epl-login-page. MỌI selector đều nằm trong
    `.login` vì bản mẫu dùng tên chung (.field, .row, .error, .form…) trùng với tên đã dùng khắp các
    module; không lồng vào thì nó phá giao diện phần còn lại của ứng dụng. */
-.login{position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(420px,640px);background:var(--bg)}
+/* Rời màn đăng nhập thì mờ đi rồi mới ẩn, không biến mất cụp một cái. */
+.login{position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(420px,640px);background:var(--bg);transition:opacity .28s ease}
+.login.di{opacity:0}
 
 /* ---- nửa trái: thương hiệu và sơ đồ tuyến ---- */
 .login .hero{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:32px;
