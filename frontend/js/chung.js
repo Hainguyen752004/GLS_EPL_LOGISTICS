@@ -112,11 +112,61 @@
     },
     danhSach: NGON_NGU, nhan: NHAN_NN,
   };
+  /* ---------------------------------------------------------------- chọn ngôn ngữ
+   * Hai chỗ, hai cách, cố ý khác nhau:
+   *   · MÀN ĐĂNG NHẬP giữ dãy phẳng bốn nút — người mới mở máy phải thấy ngay là có tiếng Lào,
+   *     không bắt họ đoán trong một cái nút thả xuống.
+   *   · TRONG ỨNG DỤNG là nút thả xuống gọn (cờ + mã), vì chỗ trên thanh chật và người dùng đã
+   *     chọn ngôn ngữ của mình từ lúc đăng nhập rồi.
+   */
+  const CO_NN = {            // cờ vẽ bằng SVG, KHÔNG dùng emoji: Windows hiện emoji cờ thành hai chữ cái
+    vi: '<rect width="24" height="16" fill="#DA251D"/><path d="M12 3.4l1.42 4.37h4.6l-3.72 2.7 1.42 4.37L12 12.13l-3.72 2.71 1.42-4.37-3.72-2.7h4.6z" fill="#FFFF00"/>',
+    lo: '<rect width="24" height="16" fill="#CE1126"/><rect y="4" width="24" height="8" fill="#002868"/><circle cx="12" cy="8" r="2.7" fill="#fff"/>',
+    en: '<rect width="24" height="16" fill="#012169"/><path d="M0 0l24 16M24 0L0 16" stroke="#fff" stroke-width="3.4"/>'
+        + '<path d="M0 0l24 16M24 0L0 16" stroke="#C8102E" stroke-width="2"/>'
+        + '<path d="M12 0v16M0 8h24" stroke="#fff" stroke-width="5.4"/><path d="M12 0v16M0 8h24" stroke="#C8102E" stroke-width="3.2"/>',
+  };
+  const MA_NN = { vi: 'VN', lo: 'LA', en: 'EN', both: 'VI·LA' };
+  // Tên từng ngôn ngữ, viết trong từng ngôn ngữ giao diện — dòng phụ dưới tên gốc
+  const TEN_NN = {
+    vi:   { vi: 'Tiếng Việt', lo: 'Tiếng Lào', en: 'Tiếng Anh', both: 'Việt + Lào' },
+    lo:   { vi: 'ພາສາຫວຽດນາມ', lo: 'ພາສາລາວ', en: 'ພາສາອັງກິດ', both: 'ຫວຽດ + ລາວ' },
+    en:   { vi: 'Vietnamese', lo: 'Lao', en: 'English', both: 'Vietnamese + Lao' },
+  };
+  const co = (m) => m === 'both'
+    ? `<span class="co hai"><svg viewBox="0 0 24 16">${CO_NN.vi}</svg><svg viewBox="0 0 24 16">${CO_NN.lo}</svg></span>`
+    : `<span class="co"><svg viewBox="0 0 24 16">${CO_NN[m]}</svg></span>`;
+
   function veNutNgonNgu() {
-    document.querySelectorAll('.lang').forEach(o => {
+    // màn đăng nhập: dãy phẳng như cũ
+    document.querySelectorAll('.lang:not(.lang-tha)').forEach(o => {
       o.innerHTML = NGON_NGU.map(m => `<button data-lang="${m}" class="${m === lang ? 'active' : ''}" ${m === 'lo' ? 'lang="lo"' : ''}>${NHAN_NN[m]}</button>`).join('');
       o.querySelectorAll('button').forEach(b => b.addEventListener('click', () => NN.dat(b.dataset.lang)));
     });
+    // trong ứng dụng: nút thả xuống
+    document.querySelectorAll('.lang-tha').forEach(o => {
+      const phu = (m) => {
+        const t = (TEN_NN[lang === 'both' ? 'vi' : lang] || TEN_NN.vi)[m];
+        return t === NHAN_NN[m] ? TEN_NN.en[m] : t;         // trùng tên gốc thì lấy tên tiếng Anh
+      };
+      o.innerHTML = `<button type="button" class="ln-nut" aria-haspopup="true" title="${esc(NHAN_NN[lang])}">
+          ${co(lang)}<span class="ma">${MA_NN[lang]}</span>
+          <svg class="mui" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="ln-menu" hidden>${NGON_NGU.map(m => `
+          <button type="button" class="ln-muc ${m === lang ? 'active' : ''}" data-lang="${m}">
+            ${co(m)}
+            <span class="tt"><b ${m === 'lo' || m === 'both' ? 'lang="lo"' : ''}>${NHAN_NN[m]}</b><small>${esc(phu(m))}</small></span>
+            <span class="ma">${MA_NN[m]}</span>
+            <svg class="tick" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>`).join('')}</div>`;
+      const nut = o.querySelector('.ln-nut'), menu = o.querySelector('.ln-menu');
+      nut.addEventListener('click', (e) => { e.stopPropagation(); const mo = menu.hidden; dongMenuPhu(); menu.hidden = !mo; o.classList.toggle('mo', mo); });
+      o.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => { menu.hidden = true; o.classList.remove('mo'); NN.dat(b.dataset.lang); }));
+    });
+  }
+  /** Đóng mọi menu nhỏ đang mở (ngôn ngữ, người dùng). */
+  function dongMenuPhu() {
+    document.querySelectorAll('.lang-tha').forEach(o => { o.classList.remove('mo'); const m = o.querySelector('.ln-menu'); if (m) m.hidden = true; });
+    const n = document.getElementById('nguoiMenu'); if (n) n.hidden = true;
   }
 
   /* ================================================================ Định dạng */
@@ -542,7 +592,7 @@
     if (!document.body.dataset.noiMenu) {
       document.body.dataset.noiMenu = '1';
       document.addEventListener('click', () => {
-        const m = document.getElementById('nguoiMenu'); if (m) m.hidden = true;
+        dongMenuPhu();
         dongMenuTren();
       });
       document.addEventListener('keydown', (e) => {

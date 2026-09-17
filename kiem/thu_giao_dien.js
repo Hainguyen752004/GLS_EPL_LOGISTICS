@@ -299,6 +299,28 @@ async function main() {
     assert.strictEqual(app.dataset.hep, '1', 'bấm nút thu gọn phải chuyển thanh bên sang chế độ hẹp');
     d.getElementById('btnThuGon').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     assert.strictEqual(app.dataset.hep, '0', 'bấm lần nữa phải mở rộng lại');
+    // Nút ngôn ngữ trong ứng dụng là menu thả xuống có cờ, tên, mã và dấu tích ở dòng đang chọn;
+    // màn đăng nhập thì CỐ Ý giữ dãy phẳng để người mới thấy ngay là có tiếng Lào.
+    {
+      const o = d.getElementById('langApp');
+      assert.ok(o.querySelector('.ln-nut .co svg'), 'nút ngôn ngữ phải có cờ vẽ bằng SVG (emoji cờ không hiện trên Windows)');
+      const muc = [...o.querySelectorAll('.ln-muc')];
+      assert.strictEqual(muc.length, w.EPL.NN.danhSach.length, 'menu phải đủ 4 ngôn ngữ');
+      assert.ok(muc.every(b => b.querySelector('b').textContent.trim() && b.querySelector('small').textContent.trim() && b.querySelector('.ma').textContent.trim()),
+        'dòng ngôn ngữ nào cũng phải có tên gốc, tên phụ và mã');
+      assert.strictEqual(o.querySelectorAll('.ln-muc.active').length, 1, 'đúng một dòng được đánh dấu đang chọn');
+      const menu = o.querySelector('.ln-menu');
+      assert.ok(menu.hidden, 'menu ngôn ngữ lúc đầu phải đóng');
+      o.querySelector('.ln-nut').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      assert.ok(!menu.hidden, 'bấm nút phải mở menu ngôn ngữ');
+      o.querySelector('.ln-muc[data-lang="en"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      assert.strictEqual(w.EPL.NN.lang, 'en', 'chọn English phải đổi ngôn ngữ');
+      assert.strictEqual(d.querySelector('#langApp .ln-nut .ma').textContent, 'EN', 'nút phải hiện mã ngôn ngữ đang dùng');
+      d.querySelector('#langApp .ln-nut').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      d.querySelector('#langApp .ln-muc[data-lang="vi"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      assert.ok(d.querySelectorAll('#login .lang button').length >= 4, 'màn đăng nhập vẫn giữ dãy phẳng bốn nút');
+      console.log('✓ nút ngôn ngữ: thả xuống có cờ · tên · mã · dấu tích, đổi được ngôn ngữ');
+    }
     console.log('✓ hai kiểu xem: thanh bên ↔ thanh trên, ngôn ngữ và người dùng chuyển chỗ, tìm nhanh lọc được');
   }
 
