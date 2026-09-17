@@ -233,6 +233,7 @@ KHOA_MOI = {
  'td_sections':  ('Duyệt sáu mục', 'ອະນຸມັດ 6 ພາກ', 'Six sections'),
  'td_none_watch': ('Không có chuyến nào đang theo dõi', 'ບໍ່ມີຖ້ຽວທີ່ຕິດຕາມ', 'No trips being tracked'),
  'td_inc_empty': ('Chưa có sự cố nào', 'ຍັງບໍ່ມີເຫດການ', 'No incidents yet'),
+ 'err_old_server': ('Máy chủ đang chạy bản cũ nên chưa có chức năng này. Dừng máy chủ (Ctrl+C) rồi chạy lại là xong.', 'ເຊີບເວີກຳລັງແລ່ນລຸ້ນເກົ່າ ຈຶ່ງຍັງບໍ່ມີໜ້າທີ່ນີ້. ຢຸດເຊີບເວີ (Ctrl+C) ແລ້ວແລ່ນໃໝ່ແມ່ນໄດ້.', 'The server is running an older build, so this feature is missing. Stop it (Ctrl+C) and start it again.'),
  'ok':       ('Đồng ý', 'ຕົກລົງ', 'OK'),
  'cancel':   ('Huỷ', 'ຍົກເລີກ', 'Cancel'),
  'save':     ('Lưu', 'ບັນທຶກ', 'Save'),

@@ -25,6 +25,12 @@
       if (r.status === 401 && !duong.startsWith('/api/dang-nhap')) { AUTH.dangXuat(false); throw new LoiAPI(401, 'CHUA_DANG_NHAP', NN.t('login_err')); }
       if (!r.ok) {
         const ct = (d && d.detail) || {};
+        // Lỗi NGHIỆP VỤ của mình luôn có dạng {ma, loi} bằng tiếng người. Còn 404 kèm chuỗi thô
+        // "Not Found" là của FastAPI: đường API không tồn tại, gần như luôn vì máy chủ đang chạy
+        // bản cũ hơn giao diện. Nói thẳng câu đó ra, đừng bày chữ tiếng Anh kỹ thuật lên màn.
+        if (r.status === 404 && typeof ct === 'string' && duong.startsWith('/api/')) {
+          throw new LoiAPI(404, 'THIEU_DUONG_API', NN.t('err_old_server'));
+        }
         throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || (typeof ct === 'string' ? ct : NN.t('err_generic')));
       }
       return d;
