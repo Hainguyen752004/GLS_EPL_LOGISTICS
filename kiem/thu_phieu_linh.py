@@ -165,5 +165,4 @@ if tt["dong"]:
     ma, r = goi("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), tk=tk["ketoan"], cach="DELETE")
     bao("Kế toán bỏ chốt để sửa lại", ma, 200)
 
-print("
-THỬ PHIẾU LĨNH: ĐẠT — QR · thủ kho cấp dầu · chặn đúng chỗ · khai đổ dọc đường · tất toán")
+print("\nTHỬ PHIẾU LĨNH: ĐẠT — QR · thủ kho cấp dầu · chặn đúng chỗ · khai đổ dọc đường · tất toán")

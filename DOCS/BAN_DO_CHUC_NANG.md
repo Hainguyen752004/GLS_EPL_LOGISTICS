@@ -197,13 +197,40 @@ mấy chục lần và người đọc không hiểu vì sao.
 Hai bên cùng một bộ khoản, nên phiếu tạm ứng và bảng tất toán không bao giờ nói hai con số khác
 nhau về cùng một chuyến. Tất toán xong là khoá kỳ.
 
+## 4h. Màn Theo dõi tuyến dựng theo trung tâm điều hành của EPL_System
+
+Chủ dự án yêu cầu lấy **giao diện và chức năng** màn "Theo dõi và kiểm soát" của EPL_System mang
+sang. Bố cục bê nguyên: thanh công cụ, dải ô số, rồi ba cột.
+
+| Khối | EPL_System | Bản Lào |
+|---|---|---|
+| Thanh công cụ | Tìm Trip/DO/khách/xe/tài xế · tự cập nhật 30 giây · sổ sự cố · báo sự cố | Giữ nguyên, tìm theo số phiếu thay cho Trip/DO |
+| Dải ô số | 6 ô: DO theo chuyến, quá hạn giao, GPS thiếu, chờ POD, sự cố mở, Trip còn mở | 7 ô theo dữ liệu họ có, bấm vào ô là lọc danh sách |
+| Cột trái | Danh sách chuyến, ba cách xếp | Giữ nguyên: ưu tiên · ngày đi · khách hàng |
+| Cột giữa | Bản đồ vệ tinh đội xe | **Tiến độ trên tuyến** |
+| Cột phải | Hồ sơ chuyến | Giữ nguyên, thêm dải trạng thái sáu mục |
+
+**Hai chỗ cố ý làm khác, và vì sao.**
+
+Bản đồ vệ tinh cần toạ độ GPS. Bên Lào không gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài
+xế gọi về. Vẽ bản đồ mà không có toạ độ thì chỉ là hình trang trí, nên cột giữa là tiến độ từng
+chặng, thứ họ thật sự có.
+
+Ô "quá hạn giao" cần hạn giao hàng, mà Excel của họ không có ô đó. Thay bằng **"đi lâu chưa về"**:
+xe rời bãi quá năm ngày mà chưa báo tới nơi thì gắn cờ đỏ. Cùng mục đích là gọi sự chú ý của người
+điều hành, nhưng đo bằng con số họ thật sự có.
+
+Bảy ô số: phiếu đang chạy · chưa xuất bến · đi lâu chưa về · đã tới chờ hoá đơn · sự cố chưa duyệt ·
+phiếu lĩnh chờ cấp · chưa thu tiền. Cả màn lấy số một lần qua `/api/theo-doi` để danh sách vài chục
+chuyến không thành vài chục lượt gọi.
+
 ## 5. Kiến trúc — cố ý đơn giản
 
 - **Một DB riêng** `epl_lao` trên cùng máy chủ PostgreSQL; không đụng `epl_logistics` của EPL_System.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 673 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 700 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
 - **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
 

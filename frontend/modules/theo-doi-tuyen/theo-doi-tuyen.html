@@ -1,40 +1,66 @@
-<!-- Theo dõi tuyến — ຕິດຕາມເສັ້ນທາງ. Không GPS: Bãi bấm "xe đã tới điểm X" khi tài xế gọi về.
-     Sự cố / sửa xe khai ở đây → dòng chi rơi vào mục V của phiếu xuất xe. -->
-<div class="toolbar">
-  <div class="field"><label data-i18n="doc_no"></label><select id="tdt-chon"></select></div>
-  <label class="tdt-loc small"><input type="checkbox" id="tdt-chi-chay" checked> <span data-i18n="in_transit_only"></span></label>
-  <div class="grow"></div>
-  <button class="btn" id="tdt-mo-phieu"><span data-i18n="open_slip"></span></button>
-</div>
+<!-- Theo dõi tuyến — ຕິດຕາມເສັ້ນທາງ. Dựng theo màn "Theo dõi và kiểm soát" của EPL_System:
+     thanh công cụ · dải ô số · ba cột (danh sách chuyến · chi tiết · hồ sơ chuyến).
 
-<div class="tdt-hai">
-  <div>
+     Khác một chỗ có lý do: EPL_System đặt bản đồ vệ tinh ở cột giữa vì xe có GPS. Bên Lào không
+     gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về — nên cột giữa ở đây là TIẾN ĐỘ
+     TRÊN TUYẾN, thứ họ thật sự có. Sự cố / sửa xe khai ở đây rơi vào mục V của phiếu xuất xe. -->
+<div class="toolbar tdt-thanh">
+  <div class="field tdt-tim"><label data-i18n="search"></label><input id="tdt-q" data-i18n-ph="td_search"></div>
+  <label class="tdt-loc small"><input type="checkbox" id="tdt-chi-chay" checked> <span data-i18n="td_only_run"></span></label>
+  <label class="tdt-loc small"><input type="checkbox" id="tdt-tu-dong"> <span data-i18n="td_auto"></span></label>
+  <div class="grow"></div>
+  <button class="btn" id="tdt-lam-moi"><span data-i18n="td_refresh"></span></button>
+  <button class="btn" id="tdt-so-su-co"><span data-i18n="td_book"></span></button>
+  <button class="btn warn" id="tdt-su-co"><span data-i18n="report_incident"></span></button>
+</div>
+<div class="tdt-luc small muted" id="tdt-luc"></div>
+
+<!-- Dải ô số: bấm vào ô là lọc danh sách bên dưới theo đúng ô đó -->
+<div class="tdt-o-so" id="tdt-o-so"></div>
+
+<div class="tdt-ba">
+  <!-- Cột trái: danh sách chuyến đang theo dõi -->
+  <aside class="card tdt-ds">
+    <div class="hd"><h3 data-i18n="td_watch"></h3><span class="tdt-dem" id="tdt-dem"></span><div class="grow"></div></div>
+    <div class="tdt-sap" role="tablist">
+      <button class="active" data-sap="uu-tien" data-i18n="td_by_pri"></button>
+      <button data-sap="ngay" data-i18n="td_by_date"></button>
+      <button data-sap="khach" data-i18n="td_by_cust"></button>
+    </div>
+    <div class="tdt-the-ds" id="tdt-the-ds"></div>
+  </aside>
+
+  <!-- Cột giữa: tiến độ trên tuyến + diễn biến + chi phí sửa chữa -->
+  <div class="tdt-giua">
     <div class="card">
       <div class="hd"><h3 data-i18n="progress"></h3><div class="grow"></div><span id="tdt-dau"></span></div>
       <div class="bd" id="tdt-tien-do"></div>
     </div>
+
     <div class="card tdt-khoi" id="tdt-khoi-cho">
       <div class="hd"><h3 data-i18n="pending_reports"></h3><div class="grow"></div><span class="small muted" data-i18n="approve_note"></span></div>
       <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="c_date"></th><th data-i18n="incident_type"></th><th data-i18n="what_broke"></th><th class="num" data-i18n="reported_cost"></th><th data-i18n="resp"></th><th class="no-print"></th></tr></thead><tbody id="tdt-cho-duyet"></tbody></table></div>
     </div>
+
     <div class="card tdt-khoi">
       <div class="hd"><h3 data-i18n="events"></h3><div class="grow"></div>
-        <button class="btn sm" id="tdt-ghi-chu"><span data-i18n="add_note"></span></button>
-        <button class="btn sm warn" id="tdt-su-co"><span data-i18n="report_incident"></span></button></div>
+        <button class="btn sm" id="tdt-ghi-chu"><span data-i18n="add_note"></span></button></div>
       <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="c_date"></th><th data-i18n="type"></th><th data-i18n="stop"></th><th data-i18n="note"></th><th data-i18n="resp"></th></tr></thead><tbody id="tdt-su-kien"></tbody></table></div>
     </div>
-  </div>
-  <div>
-    <div class="card">
+
+    <div class="card tdt-khoi">
       <div class="hd"><h3 data-i18n="sec5"></h3><div class="grow"></div><span class="small muted" data-i18n="reopen_note"></span></div>
       <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="item"></th><th data-i18n="source"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="acct_code"></th></tr></thead><tbody id="tdt-sua"></tbody></table></div>
       <div class="bd small muted" id="tdt-sua-tom"></div>
     </div>
-    <div class="card tdt-khoi">
-      <div class="hd"><h3 data-i18n="sec1"></h3></div>
-      <div class="bd tdt-xe" id="tdt-xe"></div>
-    </div>
   </div>
+
+  <!-- Cột phải: hồ sơ chuyến -->
+  <aside class="card tdt-ho-so">
+    <div class="hd"><h3 data-i18n="td_profile"></h3><div class="grow"></div>
+      <button class="btn sm" id="tdt-mo-phieu"><span data-i18n="open_slip"></span></button></div>
+    <div class="bd" id="tdt-xe"></div>
+  </aside>
 </div>
 
 <!-- Hộp báo sự cố / sửa xe -->
@@ -60,5 +86,17 @@
       </div>
     </div>
     <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>
+  </form>
+</dialog>
+
+<!-- Sổ sự cố: mọi diễn biến bất thường của mọi phiếu -->
+<dialog id="tdt-so" class="hop-thoai tdt-so">
+  <form method="dialog">
+    <h3 data-i18n="td_book"></h3>
+    <div class="tbl-wrap"><table class="tbl tbl-compact">
+      <thead><tr><th data-i18n="c_date"></th><th data-i18n="doc_no"></th><th data-i18n="truck_no"></th><th data-i18n="type"></th>
+        <th data-i18n="note"></th><th class="num" data-i18n="reported_cost"></th><th data-i18n="status"></th></tr></thead>
+      <tbody id="tdt-so-than"></tbody></table></div>
+    <div class="ht-nut"><button class="btn primary" value="ok" data-i18n="ok"></button></div>
   </form>
 </dialog>

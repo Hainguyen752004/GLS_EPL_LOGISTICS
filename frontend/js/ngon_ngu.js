@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 673 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 700 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2296,6 +2296,141 @@ window.EPL_TU_DIEN = {
   "vi": "{n} việc bị máy chủ từ chối, xem lại",
   "lo": "{n} ລາຍການຖືກປະຕິເສດ, ກວດຄືນ",
   "en": "{n} rejected by the server, please review"
+ },
+ "td_sub": {
+  "vi": "GPS không có — tiến độ từng chặng, sự cố và sửa xe của các phiếu đang chạy.",
+  "lo": "ບໍ່ມີ GPS — ຄວາມຄືບໜ້າແຕ່ລະຊ່ວງ, ເຫດການ ແລະ ການສ້ອມແປງ ຂອງໃບທີ່ກຳລັງແລ່ນ.",
+  "en": "No GPS — leg progress, incidents and repairs of running slips."
+ },
+ "td_search": {
+  "vi": "Tìm số phiếu, xe, tài xế, khách hàng",
+  "lo": "ຄົ້ນຫາ ເລກໃບ, ລົດ, ໂຊເຟີ, ລູກຄ້າ",
+  "en": "Search slip, truck, driver, customer"
+ },
+ "td_auto": {
+  "vi": "Tự cập nhật 30 giây",
+  "lo": "ອັບເດດເອງ 30 ວິນາທີ",
+  "en": "Auto refresh 30s"
+ },
+ "td_refresh": {
+  "vi": "Cập nhật",
+  "lo": "ອັບເດດ",
+  "en": "Refresh"
+ },
+ "td_book": {
+  "vi": "Sổ sự cố",
+  "lo": "ປຶ້ມເຫດການ",
+  "en": "Incident log"
+ },
+ "td_asof": {
+  "vi": "Dữ liệu máy chủ lúc {luc}",
+  "lo": "ຂໍ້ມູນເຊີບເວີເມື່ອ {luc}",
+  "en": "Server data at {luc}"
+ },
+ "td_running": {
+  "vi": "Phiếu đang chạy",
+  "lo": "ໃບກຳລັງແລ່ນ",
+  "en": "Running slips"
+ },
+ "td_notout": {
+  "vi": "Chưa xuất bến",
+  "lo": "ຍັງບໍ່ທັນອອກ",
+  "en": "Not departed"
+ },
+ "td_long": {
+  "vi": "Đi lâu chưa về",
+  "lo": "ໄປດົນຍັງບໍ່ກັບ",
+  "en": "Out too long"
+ },
+ "td_await_inv": {
+  "vi": "Đã tới, chờ hoá đơn",
+  "lo": "ຮອດແລ້ວ, ລໍໃບເກັບເງິນ",
+  "en": "Arrived, awaiting invoice"
+ },
+ "td_open_inc": {
+  "vi": "Sự cố chưa duyệt",
+  "lo": "ເຫດການຍັງບໍ່ອະນຸມັດ",
+  "en": "Unapproved incidents"
+ },
+ "td_unpaid": {
+  "vi": "Chưa thu tiền",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບເງິນ",
+  "en": "Unpaid"
+ },
+ "td_await_iss": {
+  "vi": "Phiếu lĩnh chờ cấp",
+  "lo": "ໃບເບີກລໍຖ້າຈ່າຍ",
+  "en": "Draw slips pending"
+ },
+ "td_watch": {
+  "vi": "Chuyến đang theo dõi",
+  "lo": "ຖ້ຽວທີ່ຕິດຕາມ",
+  "en": "Trips being tracked"
+ },
+ "td_by_pri": {
+  "vi": "Ưu tiên",
+  "lo": "ບຸລິມະສິດ",
+  "en": "Priority"
+ },
+ "td_by_date": {
+  "vi": "Ngày đi",
+  "lo": "ວັນທີອອກ",
+  "en": "Departure"
+ },
+ "td_by_cust": {
+  "vi": "Khách hàng",
+  "lo": "ລູກຄ້າ",
+  "en": "Customer"
+ },
+ "td_legs": {
+  "vi": "{toi}/{tong} chặng",
+  "lo": "{toi}/{tong} ຊ່ວງ",
+  "en": "{toi}/{tong} legs"
+ },
+ "td_days_out": {
+  "vi": "Đi {n} ngày",
+  "lo": "ໄປ {n} ວັນ",
+  "en": "Out {n} day(s)"
+ },
+ "td_inc_open": {
+  "vi": "{n} sự cố chưa duyệt",
+  "lo": "{n} ເຫດການຍັງບໍ່ອະນຸມັດ",
+  "en": "{n} incident(s) unapproved"
+ },
+ "td_iss_wait": {
+  "vi": "{n} phiếu lĩnh chờ cấp",
+  "lo": "{n} ໃບເບີກລໍຖ້າຈ່າຍ",
+  "en": "{n} draw slip(s) pending"
+ },
+ "td_profile": {
+  "vi": "Hồ sơ chuyến",
+  "lo": "ຂໍ້ມູນຖ້ຽວ",
+  "en": "Trip profile"
+ },
+ "td_pick": {
+  "vi": "Chọn một chuyến bên trái để xem.",
+  "lo": "ເລືອກຖ້ຽວທາງຊ້າຍເພື່ອເບິ່ງ.",
+  "en": "Pick a trip on the left."
+ },
+ "td_only_run": {
+  "vi": "Chỉ phiếu chưa xong",
+  "lo": "ສະເພາະໃບຍັງບໍ່ແລ້ວ",
+  "en": "Unfinished only"
+ },
+ "td_sections": {
+  "vi": "Duyệt sáu mục",
+  "lo": "ອະນຸມັດ 6 ພາກ",
+  "en": "Six sections"
+ },
+ "td_none_watch": {
+  "vi": "Không có chuyến nào đang theo dõi",
+  "lo": "ບໍ່ມີຖ້ຽວທີ່ຕິດຕາມ",
+  "en": "No trips being tracked"
+ },
+ "td_inc_empty": {
+  "vi": "Chưa có sự cố nào",
+  "lo": "ຍັງບໍ່ມີເຫດການ",
+  "en": "No incidents yet"
  },
  "ok": {
   "vi": "Đồng ý",

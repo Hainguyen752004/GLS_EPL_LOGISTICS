@@ -126,6 +126,29 @@ async function main() {
 
   // Phiếu còn đang chạy (chưa tới nơi) — dùng cho hai bước phân vai bên dưới.
   const pDang = dsPhieu.find(p => p.transport_status !== 'arrived') || dsPhieu[0];
+  // 3c. Màn Theo dõi tuyến dựng theo trung tâm điều hành: dải ô số · ba cột · bấm ô là lọc
+  await di('#/theo-doi-tuyen');
+  const oSo = [...goc().querySelectorAll('#tdt-o-so .tdt-o')];
+  assert.strictEqual(oSo.length, 7, 'dải ô số phải có đủ 7 ô, đang có ' + oSo.length);
+  assert.ok(oSo.every(o => /^\d/.test(o.querySelector('.v').textContent.trim())), 'mỗi ô phải hiện một con số');
+  assert.ok(goc().querySelector('.tdt-ds') && goc().querySelector('.tdt-giua') && goc().querySelector('.tdt-ho-so'),
+    'phải đủ ba cột: danh sách · giữa · hồ sơ chuyến');
+  const the = [...goc().querySelectorAll('#tdt-the-ds .tdt-the')];
+  assert.ok(the.length, 'cột trái phải liệt kê chuyến đang theo dõi');
+  assert.ok(goc().querySelector('#tdt-xe').textContent.trim().length > 20, 'hồ sơ chuyến phải có nội dung');
+  assert.ok(goc().querySelector('.tdt-muc-hang .tdt-muc-o'), 'hồ sơ chuyến phải hiện trạng thái sáu mục');
+  // bấm ô "chưa xuất bến" thì danh sách chỉ còn phiếu chưa xuất bến
+  const soTruoc = the.length;
+  goc().querySelector('.tdt-o[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
+  await cho(120);
+  const soSau = goc().querySelectorAll('#tdt-the-ds .tdt-the').length;
+  assert.ok(soSau <= soTruoc, 'bấm ô số phải lọc bớt danh sách: ' + soTruoc + ' → ' + soSau);
+  goc().querySelector('.tdt-o[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
+  await cho(120);
+  assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
+  console.log('✓ theo dõi tuyến: 7 ô số · 3 cột · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
+
+
   // 4. vai Bãi: không thấy Tài khoản, không thấy nút kiểm/chi
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi'); await w.EPL.sanSang;
