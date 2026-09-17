@@ -32,10 +32,12 @@ frontend/
   index.html         khung: đăng nhập, thanh điều hướng, nút ngôn ngữ, chỗ nạp module
   css/chung.css      bảng màu bên Lào đã duyệt, nút, bảng, ô nhập
   js/chung.js        gọi API, ngôn ngữ, đăng nhập, nạp module theo #/ten-module
-  js/ngon_ngu.js     từ điển Việt · Lào · Anh (663 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
+  js/ngon_ngu.js     từ điển Việt · Lào · Anh (673 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
+  thu_ngoai_tuyen.js màn Cấp phát khi MẤT MẠNG: lưu đệm · hàng đợi · tự gửi khi có mạng lại
+  thu_phieu_linh.py  luồng phiếu lĩnh: QR · thủ kho cấp dầu · khai đổ dọc đường · tất toán
   thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```

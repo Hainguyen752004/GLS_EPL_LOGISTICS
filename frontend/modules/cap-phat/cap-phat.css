@@ -17,4 +17,13 @@
 .cp-o>div>span:last-child{text-align:right;font-weight:500}
 .cp-xong{margin-top:12px;padding:10px 12px;border-radius:var(--r);background:var(--green-soft);color:var(--green);font-size:13px}
 .cp-nut{display:flex;gap:8px;margin-top:14px}
+/* Mất mạng: dải báo ở đầu màn, dòng đã cấp nhưng chưa gửi được tô vàng */
+.cp-mang{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--r);margin-bottom:12px;font-size:13px}
+.cp-mang.ngoai{background:var(--amber-soft);color:var(--amber);border:1px solid #E3D0AA}
+.cp-mang.cho{background:var(--blue-soft);color:var(--blue);border:1px solid #C3D4E6}
+.cp-mang .small{opacity:.85}
+.cp-dem-hang{font-weight:600;white-space:nowrap}
+#cp-than tr.cho-gui{background:var(--amber-soft)}
+.cp-cho{font-size:12px;font-weight:600;color:var(--amber);white-space:nowrap}
+
 @media (max-width:1100px){.cp-hai{grid-template-columns:1fr}.cp-o{grid-template-columns:1fr}}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 663 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 673 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2246,6 +2246,56 @@ window.EPL_TU_DIEN = {
   "vi": "Đổ dầu dọc đường",
   "lo": "ໃສ່ນໍ້າມັນຂ້າງທາງ",
   "en": "Refuelled on the road"
+ },
+ "off_title": {
+  "vi": "Đang ngoại tuyến",
+  "lo": "ກຳລັງອອບລາຍ",
+  "en": "Offline"
+ },
+ "off_hint": {
+  "vi": "Không nối được máy chủ. Đang dùng bản lưu trong máy; việc cấp sẽ tự gửi khi có mạng lại.",
+  "lo": "ຕິດຕໍ່ເຊີບເວີບໍ່ໄດ້. ກຳລັງໃຊ້ຂໍ້ມູນທີ່ເກັບໄວ້ໃນເຄື່ອງ; ການຈ່າຍຈະສົ່ງເມື່ອມີເນັດຄືນ.",
+  "en": "No connection. Using the copy stored on this device; issues will be sent when the network returns."
+ },
+ "off_queued": {
+  "vi": "{n} việc chờ gửi",
+  "lo": "{n} ລາຍການລໍຖ້າສົ່ງ",
+  "en": "{n} waiting to send"
+ },
+ "off_sync": {
+  "vi": "Gửi lại ngay",
+  "lo": "ສົ່ງດຽວນີ້",
+  "en": "Send now"
+ },
+ "off_synced": {
+  "vi": "Đã gửi xong {n} việc",
+  "lo": "ສົ່ງສຳເລັດ {n} ລາຍການ",
+  "en": "Sent {n} item(s)"
+ },
+ "off_cached": {
+  "vi": "Bản lưu lúc {luc}",
+  "lo": "ຂໍ້ມູນເກັບເມື່ອ {luc}",
+  "en": "Stored at {luc}"
+ },
+ "off_wait": {
+  "vi": "Chờ gửi",
+  "lo": "ລໍຖ້າສົ່ງ",
+  "en": "Queued"
+ },
+ "off_none": {
+  "vi": "Máy này chưa lưu phiếu nào. Cần nối mạng một lần trước khi ra kho.",
+  "lo": "ເຄື່ອງນີ້ຍັງບໍ່ໄດ້ເກັບໃບໃດ. ຕ້ອງຕໍ່ເນັດເທື່ອໜຶ່ງກ່ອນອອກໄປສາງ.",
+  "en": "Nothing stored on this device yet. Connect once before going to the depot."
+ },
+ "off_online": {
+  "vi": "Đã có mạng lại",
+  "lo": "ມີເນັດຄືນແລ້ວ",
+  "en": "Back online"
+ },
+ "off_conflict": {
+  "vi": "{n} việc bị máy chủ từ chối, xem lại",
+  "lo": "{n} ລາຍການຖືກປະຕິເສດ, ກວດຄືນ",
+  "en": "{n} rejected by the server, please review"
  },
  "ok": {
   "vi": "Đồng ý",

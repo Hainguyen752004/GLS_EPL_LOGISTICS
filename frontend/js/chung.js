@@ -294,6 +294,26 @@
   EPL.di = (id, tham) => { location.hash = '#/' + id + (tham ? '?' + new URLSearchParams(tham).toString() : ''); };
   EPL.thamSo = () => { const q = location.hash.split('?')[1] || ''; return Object.fromEntries(new URLSearchParams(q)); };
 
+  /** Lấy HTML của module, có NHỚ ĐỆM để còn dùng được khi mất mạng.
+   *  Kho dầu ngoài hiện trường hay rớt mạng giữa chừng; nếu khung cứ phải tải lại tệp .html mỗi
+   *  lần chuyển màn thì mất mạng là cả ứng dụng đứng, dù dữ liệu đã lưu sẵn trong máy. */
+  const HTML_DEM = new Map();
+  const khoaHTML = (id) => 'epl_lao_html_' + id;
+  async function napHTML(id, goc) {
+    try {
+      const html = await (await fetch(goc + '.html', { cache: 'no-cache' })).text();
+      HTML_DEM.set(id, html);
+      try { localStorage.setItem(khoaHTML(id), html); } catch (e) { /* hết chỗ thì thôi */ }
+      return html;
+    } catch (e) {
+      if (HTML_DEM.has(id)) return HTML_DEM.get(id);
+      let cu = null;
+      try { cu = localStorage.getItem(khoaHTML(id)); } catch (e2) { cu = null; }
+      if (cu) { HTML_DEM.set(id, cu); return cu; }
+      throw e;
+    }
+  }
+
   async function napModule(id) {
     const m = MODULES.find(x => x.id === id) || MODULES[0];
     if (!thayDuoc(m)) { EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di(moduleDau()); }
@@ -311,7 +331,7 @@
     const goc = `modules/${m.id}/${m.id}`;
     try {
       if (!daNapCSS.has(m.id)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = goc + '.css'; document.head.appendChild(l); daNapCSS.add(m.id); }
-      const html = await (await fetch(goc + '.html', { cache: 'no-cache' })).text();
+      const html = await napHTML(m.id, goc);
       if (!daNapJS.has(m.id)) {
         await new Promise((res, rej) => { const s = document.createElement('script'); s.src = goc + '.js'; s.onload = res; s.onerror = () => rej(new Error('Không nạp được ' + goc + '.js')); document.head.appendChild(s); });
         daNapJS.add(m.id);

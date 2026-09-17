@@ -157,6 +157,29 @@ Chiều về từ Việt Nam tài xế phải mua dầu chạy về: tài xế t
 mình (bao nhiêu lít, trạm nào, nhà cung cấp nào), kế toán duyệt thì thành một dòng mục III nguồn
 mua. Khai nhầm vào kho của công ty thì hệ chặn và bảo dùng phiếu lĩnh.
 
+## 4f-bis. Kho dầu mất mạng thì vẫn cấp được
+
+Điểm đổ nằm ngoài hiện trường, mạng chập chờn, nhưng xe thì vẫn tới. Nên màn **Cấp phát** làm được
+việc cả khi không nối được máy chủ:
+
+1. Còn mạng thì máy tự **lưu đệm** danh sách phiếu chờ và chi tiết từng phiếu (biển số, tài xế,
+   tuyến) vào chính trình duyệt đó.
+2. Mất mạng, quét mã QR vẫn **tra ra** phiếu từ bản lưu, màn ghi rõ "bản lưu lúc …".
+3. Bấm Cấp khi mất mạng thì thao tác vào **hàng đợi** trong máy, dòng đó hiện "chờ gửi". Dầu cứ ra,
+   xe cứ đi.
+4. Có mạng lại là hàng đợi **tự gửi**. Việc nào máy chủ từ chối (ví dụ người khác đã cấp rồi) thì
+   hiện danh sách để xem lại, không im lặng bỏ qua.
+
+Khung giao diện cũng nhớ đệm phần HTML của từng màn, nếu không thì mất mạng là chuyển màn cũng
+đứng dù dữ liệu đã nằm sẵn trong máy.
+
+**Vì sao không nhồi số liệu vào mã QR cho xong.** Vì số liệu còn đổi sau lúc in: nhồi vào rồi thì
+tờ giấy nói một đằng hệ thống nói một nẻo, và QR nhồi nhiều thì máy quét rẻ đọc không ra. Bản lưu
+trong máy luôn mới hơn tờ giấy, nên giải bài toán mất mạng ở phía trình duyệt là đúng chỗ hơn.
+
+**Giới hạn phải nói thật:** bản lưu nằm trong đúng trình duyệt đó, nên máy phải mở ứng dụng khi còn
+mạng ít nhất một lần trước khi ra kho. Mất mạng rồi mới mở lần đầu thì chưa có gì để lưu.
+
 ## 4g. Tất toán tiền tài xế — chốt theo tháng
 
     chênh lệch = đã chi thật − đã ứng
@@ -180,7 +203,7 @@ nhau về cùng một chuyến. Tất toán xong là khoá kỳ.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 663 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 673 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
 - **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
 
