@@ -12,7 +12,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 - **Xe container có hai biển số**: biển đầu kéo (ທະບຽນຫົວ) và biển thùng (ທະບຽນຫາງ), cộng số hiệu nội bộ (ເບີລົດ, ví dụ 341). Module xe của EPL_System thiếu chỗ này.
 - **Mô hình môi giới**: bên A thuê họ giá 2, họ thuê lại xe ngoài (ລົດຮ່ວມ) giá 1, lời 1. Xe ngoài bị trừ 2%/phiếu và 1 USD/tấn vượt 40 tấn.
 - **Tiền trộn trong một phiếu**: cước tính USD, chi phí LAK/VND/THB, tỷ giá ghi ngay đầu phiếu (USD 22.000 · THB 700 · VND 1,2).
-- **Chuỗi duyệt theo vai**: Bãi Thà Bốc nhập → Kế toán Viêng Chăn kiểm → ghi sổ → Quỹ chi. Mỗi khoản chi có mã tài khoản kép (`625/371`, `625/402`, `614/402`).
+- **Chuỗi duyệt theo vai**: Admin Thà Bốc nhập → Kế toán Viêng Chăn kiểm → ghi sổ → Quỹ chi. Mỗi khoản chi có mã tài khoản kép (`625/371`, `625/402`, `614/402`).
 - Họ **rất thích module Tracking** và bảng theo dõi phiếu vận chuyển đã dựng lại theo ý họ.
 
 ## 2. Bảng ánh xạ
@@ -50,7 +50,7 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 
 | Vai | Tên trong Excel | Trên phiếu xuất xe |
 |---|---|---|
-| `yard` | ສະໜາມທ່າບົກ — Bãi Thà Bốc | **Nhập** mục I–VI, lập phiếu, cập nhật xe đã chạy / đã tới |
+| `yard` | ສະໜາມທ່າບົກ — Admin Thà Bốc | **Nhập** mục I–VI, lập phiếu, cập nhật xe đã chạy / đã tới |
 | `acct` | ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ — Kế toán thu/chi Viêng Chăn | **Kiểm** I, II, IV, V, VI · **ghi sổ** IV, V, VI · trả lại cho Bãi sửa |
 | `fuel` | ບັນຊີສາງນໍ້າມັນ — Kế toán kho nhiên liệu | **Kiểm** và **ghi sổ** mục III |
 | `treasury` | ຄັງເງິນ ວຽງຈັນ — Quỹ Viêng Chăn | **Chi** mục III |

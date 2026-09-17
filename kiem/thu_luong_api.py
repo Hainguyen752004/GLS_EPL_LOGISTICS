@@ -3,7 +3,7 @@
 
     python kiem/thu_luong_api.py [http://127.0.0.1:8010]
 
-  Bãi Thà Bốc lập phiếu xe liên kết, nhập 6 mục, gửi kiểm
+  Admin Thà Bốc lập phiếu xe liên kết, nhập 6 mục, gửi kiểm
   → Kế toán Viêng Chăn kiểm I, II, IV; kế toán kho kiểm III; ghi sổ
   → Quỹ Viêng Chăn chi III; tiền mặt lẻ chi IV
   → Bãi báo xe đã tới, nhập cân cuối

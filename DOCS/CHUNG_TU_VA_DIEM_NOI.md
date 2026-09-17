@@ -6,7 +6,7 @@ Nguyên tắc giữ xuyên suốt: bên vận hành **không có sổ kế toán
 
 ## 1. Ai nhập ô nào (đã chốt)
 
-| Mục trên phiếu | Bãi Thà Bốc nhập | Bãi không thấy | Kế toán Viêng Chăn nhập hoặc sửa | Vai khác |
+| Mục trên phiếu | Admin Thà Bốc nhập | Bãi không thấy | Kế toán Viêng Chăn nhập hoặc sửa | Vai khác |
 |---|---|---|---|---|
 | I. Xe | loại xe, số xe, hai biển, tài xế, ngày, km đi | | kiểm | |
 | I. Km về ước tính | máy tự tính = km đi + km tuyến, chỉ đọc | | đối với km về thật | |

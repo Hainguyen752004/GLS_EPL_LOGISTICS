@@ -3,7 +3,7 @@
 
 Mỗi mục I–VI của phiếu đi qua một chuỗi trạng thái, mỗi bước do MỘT vai làm:
 
-    Bãi Thà Bốc NHẬP  →  Kế toán KIỂM  →  Kế toán GHI SỔ  →  Quỹ CHI
+    Admin Thà Bốc NHẬP  →  Kế toán KIỂM  →  Kế toán GHI SỔ  →  Quỹ CHI
       (yard)              (acct/fuel)       (acct/fuel)        (treasury/cash)
 
   · Mục III nhiên liệu đi qua kế toán KHO NHIÊN LIỆU (fuel) và Quỹ Viêng Chăn (treasury).

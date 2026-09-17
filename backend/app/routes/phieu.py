@@ -357,7 +357,7 @@ def _ghi_do(db, p, user):
 @router.post("/api/trips")
 def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role not in ("yard", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc lập phiếu xuất xe."})
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc lập phiếu xuất xe."})
     p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db)).strip(), created_by=user.full_name)
     if db.query(Trip).filter(Trip.doc_no == p.doc_no).first():
         raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s đã có." % p.doc_no})
@@ -476,7 +476,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("yard", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc ghi diễn biến trên đường."})
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc ghi diễn biến trên đường."})
     if p.finance_status == "paid":
         raise HTTPException(409, {"ma": "PHIEU_DA_XONG", "loi": "Phiếu đã thu tiền xong, không ghi thêm diễn biến."})
     kind = data.get("kind")
@@ -553,13 +553,13 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
 # ---------------------------------------------------------------- mức phiếu
 @router.post("/api/trips/{tid}/transport-status")
 def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """ອອກລົດ → ກຳລັງຈັດສົ່ງ → ຮອດແລ້ວ. Bãi Thà Bốc ghi khi xe báo về. Xe về thì xe & tài xế rảnh lại,
+    """ອອກລົດ → ກຳລັງຈັດສົ່ງ → ຮອດແລ້ວ. Admin Thà Bốc ghi khi xe báo về. Xe về thì xe & tài xế rảnh lại,
     công-tơ-mét của xe cập nhật theo số lúc về."""
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("yard", "admin", "driver"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc hoặc tài xế của phiếu cập nhật trạng thái xe."})
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc hoặc tài xế của phiếu cập nhật trạng thái xe."})
     _cua_tai_xe(db, p, user)
     _chan_khoa(p, user)
     moi = data.get("status")
@@ -1049,7 +1049,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("yard", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Bãi Thà Bốc hoặc quản trị xoá phiếu."})
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc hoặc Sếp xoá phiếu."})
     if any(s.status not in ("wait", "entered") for s in _muc_cua(db, p).values()) and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_DUYET", "loi": "Phiếu đã có mục được kiểm, không xoá được."})
     if any(e.stock_move_id for e in _dong_chi(db, p)) and user.role != "admin":

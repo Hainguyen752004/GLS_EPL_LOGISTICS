@@ -73,9 +73,9 @@ window.EPL_TU_DIEN = {
   "en": "Workflow & responsibility"
  },
  "user_role": {
-  "vi": "Bãi Thà Bốc · Nhập liệu",
-  "lo": "ສະໜາມທ່າບົກ · ລົງຂໍ້ມູນ",
-  "en": "Thabok yard · Data entry"
+  "vi": "Admin Thà Bốc · Nhập liệu",
+  "lo": "ແອັດມິນ ທ່າບົກ · ລົງຂໍ້ມູນ",
+  "en": "Thabok admin · Data entry"
  },
  "title_dashboard": {
   "vi": "Tổng quan<span class=\"sub\">Tháng 8/2026 · Công ty EPL</span>",
@@ -508,9 +508,9 @@ window.EPL_TU_DIEN = {
   "en": "Data entry"
  },
  "wf1d": {
-  "vi": "Bãi Thà Bốc",
-  "lo": "ສະໜາມທ່າບົກ",
-  "en": "Thabok yard"
+  "vi": "Admin Thà Bốc",
+  "lo": "ແອັດມິນ ທ່າບົກ",
+  "en": "Thabok admin"
  },
  "wf2": {
   "vi": "Kiểm tra xác nhận",
@@ -618,9 +618,9 @@ window.EPL_TU_DIEN = {
   "en": "Payer"
  },
  "r_yard": {
-  "vi": "Bãi Thà Bốc",
-  "lo": "ສະໜາມທ່າບົກ",
-  "en": "Thabok yard"
+  "vi": "Admin Thà Bốc",
+  "lo": "ແອັດມິນ ທ່າບົກ",
+  "en": "Thabok admin"
  },
  "r_fuel_acct": {
   "vi": "Kế toán kho NL VC",
@@ -1053,9 +1053,9 @@ window.EPL_TU_DIEN = {
   "en": "Issued by"
  },
  "sg_issuer_d": {
-  "vi": "Bãi Thà Bốc",
-  "lo": "ສະໜາມທ່າບົກ",
-  "en": "Thabok yard"
+  "vi": "Admin Thà Bốc",
+  "lo": "ແອັດມິນ ທ່າບົກ",
+  "en": "Thabok admin"
  },
  "sg_verify": {
   "vi": "Người kiểm tra",
@@ -1428,9 +1428,9 @@ window.EPL_TU_DIEN = {
   "en": "Vientiane accountant (verification)"
  },
  "r_admin": {
-  "vi": "Quản trị (xem tất cả)",
-  "lo": "ຜູ້ບໍລິຫານ (ເບິ່ງທັງໝົດ)",
-  "en": "Administrator (sees all)"
+  "vi": "Sếp (xem tất cả)",
+  "lo": "ຫົວໜ້າ (ເບິ່ງທັງໝົດ)",
+  "en": "Boss (sees all)"
  },
  "has_expense": {
   "vi": "Có phát sinh chi phí",
@@ -1473,9 +1473,9 @@ window.EPL_TU_DIEN = {
   "en": "View only"
  },
  "hint_yard": {
-  "vi": "Anh/chị đang nhập với vai trò <b>Bãi Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.",
-  "lo": "ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ສະໜາມທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ.",
-  "en": "You are entering as Thabok yard: sections I–VI editable. Accounting and treasury view only."
+  "vi": "Anh/chị đang nhập với vai trò <b>Admin Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.",
+  "lo": "ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ແອັດມິນ ທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ.",
+  "en": "You are entering as Thabok admin: sections I–VI editable. Accounting and treasury view only."
  },
  "hint_acct": {
   "vi": "Vai trò <b>Kế toán Viêng Chăn</b>: kiểm tra xác nhận mục I, II, IV, V, VI và ghi sổ. Không sửa số bãi đã nhập.",
@@ -1498,9 +1498,9 @@ window.EPL_TU_DIEN = {
   "en": "Revenue accountant: issue the invoice from section II; expense sections view only."
  },
  "hint_admin": {
-  "vi": "Vai trò <b>Quản trị</b>: xem và sửa tất cả.",
-  "lo": "<b>ຜູ້ບໍລິຫານ</b>: ເບິ່ງ ແລະ ແກ້ໄດ້ທັງໝົດ.",
-  "en": "Administrator: view and edit everything."
+  "vi": "Vai trò <b>Sếp</b>: xem và sửa tất cả.",
+  "lo": "<b>ຫົວໜ້າ</b>: ເບິ່ງ ແລະ ແກ້ໄດ້ທັງໝົດ.",
+  "en": "Boss: view and edit everything."
  },
  "truck_type": {
   "vi": "Loại xe",
@@ -1898,9 +1898,9 @@ window.EPL_TU_DIEN = {
   "en": "Profit on this trip"
  },
  "lg_yard": {
-  "vi": "Bãi Thà Bốc (nhập liệu)",
-  "lo": "ສະໜາມທ່າບົກ (ລົງຂໍ້ມູນ)",
-  "en": "Thabok yard (entry)"
+  "vi": "Admin Thà Bốc (nhập liệu)",
+  "lo": "ແອັດມິນ ທ່າບົກ (ລົງຂໍ້ມູນ)",
+  "en": "Thabok admin (entry)"
  },
  "lg_acct": {
   "vi": "Kế toán Viêng Chăn",
@@ -2613,9 +2613,9 @@ window.EPL_TU_DIEN = {
   "en": "Remember me"
  },
  "lg_g_admin": {
-  "vi": "Quản trị",
-  "lo": "ຜູ້ບໍລິຫານ",
-  "en": "Admin"
+  "vi": "Sếp",
+  "lo": "ຫົວໜ້າ",
+  "en": "Boss"
  },
  "lg_g_acct": {
   "vi": "Kế toán",

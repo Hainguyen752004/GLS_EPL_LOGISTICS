@@ -552,6 +552,21 @@ KHOA_MOI = {
  'a_attach':      ('Đính kèm tệp', 'ຄັດຕິດໄຟລ໌', 'Attached a file'),
  'a_detach':      ('Xoá tệp đính kèm', 'ລຶບໄຟລ໌ຄັດຕິດ', 'Removed an attachment'),
  'a_pay_owner':   ('Chi trả chủ xe liên kết', 'ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ', 'Paid the truck owner'),
+ # ---- v7: anh đổi tên hai vai. `yard` không gọi là "Bãi Thà Bốc" nữa mà là ADMIN THÀ BỐC (người
+ # quản lý tại bãi, không phải cái bãi); `admin` gọi là SẾP cho đúng người dùng thật ở EPL.
+ # Ghi đè ở đây chứ không sửa tu_dien_mau_vi_lo.json — tệp đó chép nguyên từ bản mẫu bên Lào.
+ 'r_yard':    ('Admin Thà Bốc', 'ແອັດມິນ ທ່າບົກ', 'Thabok admin'),
+ 'r_admin':   ('Sếp (xem tất cả)', 'ຫົວໜ້າ (ເບິ່ງທັງໝົດ)', 'Boss (sees all)'),
+ 'user_role': ('Admin Thà Bốc · Nhập liệu', 'ແອັດມິນ ທ່າບົກ · ລົງຂໍ້ມູນ', 'Thabok admin · Data entry'),
+ 'hint_yard': ('Anh/chị đang nhập với vai trò <b>Admin Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.',
+               'ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ແອັດມິນ ທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ.',
+               'You are entering as Thabok admin: sections I–VI editable. Accounting and treasury view only.'),
+ 'hint_admin': ('Vai trò <b>Sếp</b>: xem và sửa tất cả.', '<b>ຫົວໜ້າ</b>: ເບິ່ງ ແລະ ແກ້ໄດ້ທັງໝົດ.', 'Boss: view and edit everything.'),
+ # cùng tên vai ấy ở các chỗ khác: bước 1 trên phiếu, ô ký tên người lập, nhóm ở màn đăng nhập
+ 'wf1d':        ('Admin Thà Bốc', 'ແອັດມິນ ທ່າບົກ', 'Thabok admin'),
+ 'sg_issuer_d': ('Admin Thà Bốc', 'ແອັດມິນ ທ່າບົກ', 'Thabok admin'),
+ 'lg_yard':     ('Admin Thà Bốc (nhập liệu)', 'ແອັດມິນ ທ່າບົກ (ລົງຂໍ້ມູນ)', 'Thabok admin (entry)'),
+ 'lg_g_admin':  ('Sếp', 'ຫົວໜ້າ', 'Boss'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {'r_acct': 'r_acct_vc', 'r_fuel': 'r_fuel_acct', 'r_cash': 'r_petty', 'r_rev': 'r_rev_acct'}

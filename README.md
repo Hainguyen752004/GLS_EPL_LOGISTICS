@@ -11,7 +11,7 @@ python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8010 --no-access-lo
 ```
 Hoặc bấm đúp `chay.bat`. Mở **http://localhost:8010** — giao diện và API cùng một cổng.
 
-Tài khoản demo (mật khẩu tất cả là `1234`): `thabok` Bãi Thà Bốc · `ketoan` Kế toán Viêng Chăn · `khonl` Kế toán kho nhiên liệu · `quyvc` Quỹ Viêng Chăn · `quytb` Tiền mặt lẻ Thà Bốc · `doanhthu` Kế toán doanh thu · `admin` · `tx01` `tx02` `tx03` tài xế · `khotb` `khovc` thủ kho nhiên liệu.
+Tài khoản demo (mật khẩu tất cả là `1234`): `thabok` Admin Thà Bốc · `ketoan` Kế toán Viêng Chăn · `khonl` Kế toán kho nhiên liệu · `quyvc` Quỹ Viêng Chăn · `quytb` Tiền mặt lẻ Thà Bốc · `doanhthu` Kế toán doanh thu · `admin` · `tx01` `tx02` `tx03` tài xế · `khotb` `khovc` thủ kho nhiên liệu.
 
 Màn đăng nhập liệt kê sẵn mười tài khoản này — bấm một cái là vào thẳng, khỏi gõ.
 

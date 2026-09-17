@@ -30,7 +30,7 @@ def bay_gio():
 # ---------------------------------------------------------------- người dùng & vai
 VAI = ("yard", "acct", "fuel", "depot", "treasury", "cash", "rev", "admin", "driver")
 #   driver    Tài xế — chỉ thấy phiếu của mình: bấm "Xuất phát" sau khi nhận tiền tạm ứng, "Báo hỏng" trên đường
-#   yard      Bãi Thà Bốc — nhập liệu (ສະໜາມທ່າບົກ)
+#   yard      Admin Thà Bốc — nhập liệu (ແອັດມິນ ທ່າບົກ)
 #   acct      Kế toán thu/chi Viêng Chăn — kiểm & ghi sổ chi phí
 #   fuel      Kế toán kho nhiên liệu — kiểm & ghi sổ mục nhiên liệu
 #   depot     Thủ kho tại MỘT điểm đổ nhiên liệu — chỉ thấy phiếu lĩnh của kho mình, cấp dầu và lập phiếu xuất kho
