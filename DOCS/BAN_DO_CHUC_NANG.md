@@ -260,9 +260,15 @@ chuyến không thành vài chục lượt gọi.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 729 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 741 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
-- **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
+- **Màn đăng nhập** dựng theo bản mẫu `frontend/modules/epl-login-page`: nửa trái là thương hiệu
+  kèm sơ đồ tuyến, nửa phải là biểu mẫu và khung chọn nhanh tài khoản gom theo năm nhóm vai
+  (quản trị · kế toán · bãi và kho · quỹ · tài xế). Bản demo chạy trên máy chiếu nên phải bấm được
+  thẳng vào tài khoản, không ai muốn gõ tay mười hai cái. Khác bản mẫu hai chỗ theo yêu cầu: logo
+  dùng **ảnh EPL thật** thay ô chữ, và sơ đồ vẽ theo **tuyến thật của họ** (Kasi → Thà Bốc → Nậm
+  Phao → cảng) thay tuyến Vientiane – TP.HCM chung chung. Ô **Ghi nhớ đăng nhập**: bỏ tick thì
+  phiên nằm ở sessionStorage, đóng trình duyệt là mất, đúng thói quen của máy dùng chung ngoài bãi.
 
 ## 6. Những gì cố ý KHÔNG làm
 

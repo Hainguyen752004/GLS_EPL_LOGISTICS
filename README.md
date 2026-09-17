@@ -33,7 +33,7 @@ frontend/
   css/chung.css      bảng màu bên Lào đã duyệt, nút, bảng, ô nhập
   vendor/leaflet/    thư viện bản đồ để sẵn trong dự án, KHÔNG gọi CDN
   js/chung.js        gọi API, ngôn ngữ, đăng nhập, nạp module theo #/ten-module
-  js/ngon_ngu.js     từ điển Việt · Lào · Anh (729 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
+  js/ngon_ngu.js     từ điển Việt · Lào · Anh (741 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật

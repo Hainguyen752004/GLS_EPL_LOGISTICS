@@ -12,57 +12,91 @@
 <body>
 
 <!-- ===== Đăng nhập ===== -->
-<!-- Trang đăng nhập đứng riêng, chiếm trọn màn hình: trái là bảng thương hiệu, phải là biểu mẫu.
-     Cột phải tự cuộn nên danh sách tài khoản gợi ý dài bao nhiêu cũng không đẩy vỡ trang. -->
+<!-- Bố cục và kiểu dáng lấy từ bản mẫu frontend/modules/epl-login-page: nửa trái thương hiệu kèm
+     sơ đồ tuyến, nửa phải biểu mẫu và khung chọn nhanh theo vai trò.
+     Khác bản mẫu hai chỗ, đúng như yêu cầu: logo là ẢNH EPL thật chứ không phải ô chữ, và sơ đồ
+     vẽ theo TUYẾN THẬT của họ (Kasi → Thà Bốc → Nậm Phao → cảng). -->
 <div class="login" id="login">
 
-  <section class="lg-brand">
-    <div class="lg-top">
-      <img class="lg-logo" src="img/logo-epl.jpg" alt="EPL">
-      <div class="lg-ten">EPL<span lang="lo">ຂົນສົ່ງ · Logistics</span></div>
+  <aside class="hero">
+    <div class="hero__brand">
+      <img class="hero__logo" src="img/logo-epl.jpg" alt="EPL">
+      <div><div class="hero__name">EPL Logistics</div>
+        <div class="hero__sub" data-i18n="lg_brand_sub"></div></div>
     </div>
 
-    <div class="lg-giua">
-      <h2 data-i18n="login_title"></h2>
-      <p data-i18n="login_sub"></p>
-      <ul class="lg-diem">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/></svg><span data-i18n="nav_dispatch"></span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M7 15l10-6"/></svg><span data-i18n="nav_track_route"></span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3"/></svg><span data-i18n="nav_vouchers"></span></li>
-      </ul>
+    <div class="hero__body">
+      <div>
+        <h1 data-i18n="login_title"></h1>
+        <p class="hero__desc" data-i18n="login_sub"></p>
+      </div>
+
+      <svg class="route" viewBox="0 0 640 420" fill="none" aria-hidden="true">
+        <defs><pattern id="luoi" width="32" height="32" patternUnits="userSpaceOnUse">
+          <path d="M32 0H0V32" stroke="#fff" stroke-opacity=".06"/></pattern></defs>
+        <rect width="640" height="420" fill="url(#luoi)"/>
+        <path d="M80 80 C 150 110, 190 160, 250 185 S 360 225, 420 300 S 520 345, 570 360"
+              stroke="#7fc8ad" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 8"/>
+        <path class="route__done" d="M80 80 C 150 110, 190 160, 250 185 S 360 225, 420 300"
+              stroke="#7fc8ad" stroke-width="3"/>
+        <circle cx="80" cy="80" r="9" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
+        <text x="100" y="76" lang="lo">ກາສີ</text><text class="sm" x="100" y="96" data-i18n="lg_s1"></text>
+        <circle cx="250" cy="185" r="8" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
+        <text x="268" y="166" lang="lo">ທ່າບົກ</text><text class="sm" x="268" y="186" data-i18n="lg_s2"></text>
+        <circle class="pulse" cx="420" cy="300" r="9" fill="#7fc8ad" stroke="#fff" stroke-width="3"/>
+        <text x="438" y="296" lang="lo">ດ່ານ ນໍ້າພາວ</text><text class="sm" x="438" y="316" data-i18n="lg_s3"></text>
+        <circle cx="570" cy="360" r="7" fill="#0b2a22" stroke="#7fc8ad" stroke-opacity=".5" stroke-width="3"/>
+        <text class="dim" x="470" y="394" lang="lo">ທ່າເຮືອ</text>
+        <g transform="translate(288,254)"><rect width="104" height="26" rx="6" fill="#1f8a6a"/>
+          <text x="52" y="17" fill="#fff" font-size="11" font-weight="600" text-anchor="middle" data-i18n="lg_badge"></text></g>
+      </svg>
+
+      <div class="feats">
+        <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+          <div><b data-i18n="nav_dispatch"></b></div></div>
+        <div class="feat"><svg viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M7.5 18H14a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7.5"/></svg>
+          <div><b data-i18n="nav_track_route"></b></div></div>
+        <div class="feat"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+          <div><b data-i18n="nav_vouchers"></b></div></div>
+      </div>
     </div>
 
-    <div class="lg-chan">
-      <div>SAMKET VILLAGE, SIKHOTTABONG</div>
-      <div>VIENTIANE · 020 5889 9983</div>
+    <div class="hero__foot">SAMKET VILLAGE, SIKHOTTABONG · VIENTIANE · 020 5889 9983</div>
+  </aside>
+
+  <main class="panel">
+    <div class="panel__top"><div class="lang lang-login" role="group" aria-label="Language"></div></div>
+
+    <div class="panel__head">
+      <h2 data-i18n="login_h"></h2>
+      <div class="demo"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg><span data-i18n="login_demo"></span></div>
     </div>
-  </section>
 
-  <section class="lg-cot">
-    <div class="lang lang-login" role="group" aria-label="Language"></div>
-    <div class="lg-form">
-      <h3 data-i18n="login_h"></h3>
-      <p class="lg-demo" data-i18n="login_demo"></p>
+    <div class="form">
+      <label class="field"><span class="field__label"><b data-i18n="username"></b></span>
+        <span class="field__box"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <input id="lgU" autocomplete="username" spellcheck="false" data-i18n-ph="username"></span></label>
 
-      <div class="field"><label for="lgU" data-i18n="username"></label>
-        <input id="lgU" autocomplete="username" spellcheck="false" data-i18n-ph="username"></div>
-      <div class="field"><label for="lgP" data-i18n="password"></label>
-        <div class="lg-mk">
+      <label class="field"><span class="field__label"><b data-i18n="password"></b></span>
+        <span class="field__box"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
           <input id="lgP" type="password" autocomplete="current-password" data-i18n-ph="password">
-          <button type="button" class="lg-mat" id="lgMat" data-i18n-title="show_pw" aria-label="show">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M1.5 12S5 5.5 12 5.5 22.5 12 22.5 12 19 18.5 12 18.5 1.5 12 1.5 12"/>
-              <circle cx="12" cy="12" r="3"/><path class="gach" d="M3 21 21 3"/>
-            </svg></button>
-        </div></div>
+          <button type="button" class="eye" id="lgMat" data-i18n-title="show_pw">
+            <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
+              <path class="gach" d="M3 21 21 3"/></svg></button></span></label>
 
-      <div class="err" id="lgErr" role="alert"></div>
-      <button class="btn primary lg-vao" id="lgBtn" data-i18n="login_btn"></button>
+      <div class="row">
+        <label class="remember"><input type="checkbox" id="lgNho" checked><span data-i18n="lg_remember"></span></label>
+      </div>
 
-      <div class="lg-chia"><span data-i18n="quick_pick"></span></div>
-      <div class="accts" id="acctList"></div>
+      <div class="error" id="lgErr" role="alert" hidden></div>
+
+      <button class="submit" id="lgBtn" type="button"><span data-i18n="login_btn"></span>
+        <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
     </div>
-  </section>
+
+    <div class="divider"><span data-i18n="quick_pick"></span></div>
+    <div class="roles" id="acctList"></div>
+  </main>
 
 </div>
 

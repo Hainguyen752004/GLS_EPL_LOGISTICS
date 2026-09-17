@@ -53,21 +53,28 @@ async function main() {
 
   await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập tải tài khoản mẫu');
   console.log('✓ màn đăng nhập: %d tài khoản mẫu', d.getElementById('acctList').children.length);
-  // Màn đăng nhập là TRANG riêng chiếm trọn màn hình (trước đây là thẻ nhỏ, 10 tài khoản xếp dọc
-  // nên phải thu nhỏ trình duyệt mới thấy hết) — kiểm đủ khung trái, cột phải và nút hiện mật khẩu.
-  assert.ok(d.querySelector('#login .lg-brand') && d.querySelector('#login .lg-cot'), 'màn đăng nhập phải có hai cột');
+  // Màn đăng nhập dựng theo bản mẫu epl-login-page: nửa trái thương hiệu kèm sơ đồ tuyến, nửa phải
+  // biểu mẫu và khung chọn nhanh gom theo nhóm vai.
+  assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .panel'),
+    'màn đăng nhập phải có hai nửa: thương hiệu và biểu mẫu');
+  assert.ok(d.querySelector('#login .hero__logo'), 'nửa trái phải có ảnh logo EPL');
+  assert.ok(d.querySelector('#login svg.route'), 'nửa trái phải có sơ đồ tuyến');
   assert.ok(d.getElementById('lgMat'), 'màn đăng nhập phải có nút hiện/ẩn mật khẩu');
   assert.strictEqual(d.getElementById('lgP').type, 'password', 'mật khẩu mặc định phải ẩn');
   d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
   assert.strictEqual(d.getElementById('lgP').type, 'text', 'bấm con mắt thì mật khẩu phải hiện');
   d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
   assert.strictEqual(d.getElementById('lgP').type, 'password', 'bấm lần nữa thì mật khẩu phải ẩn lại');
-  const goiY = [...d.querySelectorAll('#acctList .acct-btn')];
+  const goiY = [...d.querySelectorAll('#acctList .person')];
   assert.ok(goiY.length >= 10, 'phải gợi ý đủ tài khoản demo, đang có ' + goiY.length);
   assert.strictEqual(goiY[0].dataset.u, 'admin', 'gợi ý phải xếp quản trị lên đầu');
-  assert.ok(goiY.some(b => b.dataset.u === 'tx01' && b.classList.contains('tx')), 'phải có tài khoản tài xế tx01');
-  assert.ok(goiY.every(b => !/<(span|small|b)\b/.test(b.textContent)), 'thẻ tài khoản không được lộ thẻ HTML');
-  console.log('✓ màn đăng nhập: hai cột · nút hiện mật khẩu · %d thẻ gợi ý, quản trị đứng đầu', goiY.length);
+  assert.ok(goiY.some(b => b.dataset.u === 'tx01'), 'phải có tài khoản tài xế tx01');
+  const nhom = [...d.querySelectorAll('#acctList .role__head')];
+  assert.ok(nhom.length >= 4, 'tài khoản phải gom theo nhóm vai, đang có ' + nhom.length);
+  assert.ok(nhom.every(x => x.textContent.trim() && !/^lg_g_/.test(x.textContent.trim())),
+    'tên nhóm vai không được lộ khoá thô');
+  console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ tuyến · %d thẻ gợi ý trong %d nhóm vai',
+    goiY.length, nhom.length);
 
   // 1. đăng nhập admin, đi hết module
   await w.EPL.AUTH.dangNhap('admin', '1234');

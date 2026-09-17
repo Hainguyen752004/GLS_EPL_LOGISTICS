@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 729 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 741 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2576,6 +2576,66 @@ window.EPL_TU_DIEN = {
   "vi": "Đường xanh đậm là vệt GPS thật của xe; đường xanh nhạt là tuyến kế hoạch.",
   "lo": "ເສັ້ນສີຟ້າເຂັ້ມແມ່ນເສັ້ນ GPS ຈິງ; ເສັ້ນອ່ອນແມ່ນເສັ້ນທາງຕາມແຜນ.",
   "en": "The solid line is the real GPS trail; the pale line is the planned route."
+ },
+ "lg_brand_sub": {
+  "vi": "Vận chuyển quặng · Viêng Chăn – Việt Nam",
+  "lo": "ຂົນສົ່ງແຮ່ · ວຽງຈັນ – ຫວຽດນາມ",
+  "en": "Ore haulage · Vientiane – Vietnam"
+ },
+ "lg_s1": {
+  "vi": "Mỏ quặng",
+  "lo": "ບ່ອນຂຸດແຮ່",
+  "en": "Ore mine"
+ },
+ "lg_s2": {
+  "vi": "Bãi EPL",
+  "lo": "ສະໜາມ EPL",
+  "en": "EPL yard"
+ },
+ "lg_s3": {
+  "vi": "Cửa khẩu",
+  "lo": "ດ່ານຊາຍແດນ",
+  "en": "Border gate"
+ },
+ "lg_s4": {
+  "vi": "Cảng",
+  "lo": "ທ່າເຮືອ",
+  "en": "Port"
+ },
+ "lg_badge": {
+  "vi": "Xe đang ở đây",
+  "lo": "ລົດຢູ່ນີ້",
+  "en": "Truck here"
+ },
+ "lg_remember": {
+  "vi": "Ghi nhớ đăng nhập",
+  "lo": "ຈື່ການເຂົ້າລະບົບ",
+  "en": "Remember me"
+ },
+ "lg_g_admin": {
+  "vi": "Quản trị",
+  "lo": "ຜູ້ບໍລິຫານ",
+  "en": "Admin"
+ },
+ "lg_g_acct": {
+  "vi": "Kế toán",
+  "lo": "ບັນຊີ",
+  "en": "Accounting"
+ },
+ "lg_g_wh": {
+  "vi": "Bãi và kho",
+  "lo": "ສະໜາມ ແລະ ສາງ",
+  "en": "Yard and stores"
+ },
+ "lg_g_cash": {
+  "vi": "Quỹ",
+  "lo": "ຄັງເງິນ",
+  "en": "Cash desks"
+ },
+ "lg_g_drv": {
+  "vi": "Tài xế",
+  "lo": "ໂຊເຟີ",
+  "en": "Drivers"
  },
  "ok": {
   "vi": "Đồng ý",

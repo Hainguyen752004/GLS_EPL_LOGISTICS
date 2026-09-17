@@ -14,7 +14,12 @@
   /* ================================================================ API */
   const KHOA_PHIEN = 'epl_lao_phien';
   const API = EPL.API = {
-    token() { try { return localStorage.getItem(KHOA_PHIEN) || ''; } catch (e) { return ''; } },
+    // Không tick "ghi nhớ" thì phiên nằm ở sessionStorage: đóng trình duyệt là mất, đúng thói quen
+    // của máy dùng chung ngoài bãi. Đọc thì phải dò cả hai chỗ.
+    token() {
+      try { return localStorage.getItem(KHOA_PHIEN) || sessionStorage.getItem(KHOA_PHIEN) || ''; }
+      catch (e) { return ''; }
+    },
     async goi(duong, tuy_chon = {}) {
       const dau = { 'Accept': 'application/json' };
       if (tuy_chon.body !== undefined) dau['Content-Type'] = 'application/json';
@@ -82,7 +87,11 @@
     },
     /** Áp mọi data-i18n trong một gốc DOM. */
     apDung(root) {
-      (root || document).querySelectorAll('[data-i18n]').forEach(el => { el.innerHTML = NN.h(el.dataset.i18n); });
+      (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+        // Trong SVG không dựng được HTML: <span> nhét vào <text> là mất chữ. Dùng bản chữ thuần.
+        if (el.ownerSVGElement) el.textContent = NN.t(el.dataset.i18n);
+        else el.innerHTML = NN.h(el.dataset.i18n);
+      });
       (root || document).querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = NN.t(el.dataset.i18nPh); });
       (root || document).querySelectorAll('[data-i18n-title]').forEach(el => { el.title = NN.t(el.dataset.i18nTitle); });
       document.documentElement.lang = lang === 'both' ? 'vi' : lang;
@@ -180,7 +189,12 @@
     la: (...vai) => USER && (USER.role === 'admin' || vai.includes(USER.role)),
     async dangNhap(u, p) {
       const g = await API.post('/api/dang-nhap', { username: u, password: p });
-      try { localStorage.setItem(KHOA_PHIEN, g.token); } catch (e) { /* bỏ qua */ }
+      const nho = document.getElementById('lgNho');
+      try {
+        const kho = (nho && !nho.checked) ? sessionStorage : localStorage;
+        localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN);
+        kho.setItem(KHOA_PHIEN, g.token);
+      } catch (e) { /* bỏ qua */ }
       USER = g.user;
       // Mờ màn đăng nhập rồi mới đổi sang ứng dụng — chuyển cảnh mềm thay vì cụp một cái.
       const lg = document.getElementById('login');
@@ -192,47 +206,62 @@
       hienApp();
     },
     dangXuat(xoaHash = true) {
-      try { localStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
+      try { localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
       USER = null; document.getElementById('app').hidden = true; document.getElementById('login').hidden = false;
       document.getElementById('lgU').value = ''; document.getElementById('lgP').value = '';
       document.getElementById('lgP').type = 'password';
       const nm = document.getElementById('lgMat'); if (nm) nm.classList.remove('mo');
+      const ne = document.getElementById('lgErr'); if (ne) { ne.textContent = ''; ne.hidden = true; }
       if (xoaHash) location.hash = '';
       veTaiKhoanMau();
     },
   };
-  // Thứ tự gợi ý: quản trị → theo đúng dây chuyền duyệt phiếu → tài xế cuối cùng.
-  const THU_TU_VAI = ['admin', 'yard', 'acct', 'fuel', 'treasury', 'cash', 'rev', 'driver'];
+  /* Chọn nhanh tài khoản, gom theo NHÓM VAI như bản mẫu. Hệ có chín vai nhưng người dùng chỉ nghĩ
+     theo năm nhóm việc, nên gộp lại cho dễ tìm: quản trị · kế toán · bãi và kho · quỹ · tài xế. */
+  const NHOM_VAI = [
+    { id: 'admin', khoa: 'lg_g_admin', vai: ['admin'] },
+    { id: 'acct', khoa: 'lg_g_acct', vai: ['acct', 'rev'] },
+    { id: 'wh', khoa: 'lg_g_wh', vai: ['yard', 'fuel', 'depot'] },
+    { id: 'cash', khoa: 'lg_g_cash', vai: ['treasury', 'cash'] },
+    { id: 'drv', khoa: 'lg_g_drv', vai: ['driver'] },
+  ];
   async function veTaiKhoanMau() {
     const o = document.getElementById('acctList');
     try {
-      const ds = (await API.get('/api/tai-khoan-mau')).slice().sort((a, b) => {
-        const x = THU_TU_VAI.indexOf(a.role), y = THU_TU_VAI.indexOf(b.role);
-        return (x < 0 ? 99 : x) - (y < 0 ? 99 : y) || a.username.localeCompare(b.username);
-      });
-      o.innerHTML = ds.map((a, i) => {
-        const vai = NN.t('r_' + a.role);
-        return `<button class="acct-btn ${a.role === 'driver' ? 'tx' : ''}" style="--i:${i}" data-u="${esc(a.username)}" title="${esc(a.username + ' · ' + vai)}">
-          <span class="av">${esc(a.avatar)}</span>
-          <span class="tt"><b>${esc(a.full_name)}</b><small>${esc(a.username)} · ${esc(vai)}</small></span></button>`;
+      const ds = await API.get('/api/tai-khoan-mau');
+      const dang = document.getElementById('lgU').value.trim();
+      o.innerHTML = NHOM_VAI.map(n => {
+        const trong = ds.filter(a => n.vai.includes(a.role));
+        if (!trong.length) return '';
+        return `<div class="role__head"><b>${NN.h(n.khoa)}</b></div>` + trong.map(a => {
+          const vai = NN.t('r_' + a.role);
+          return `<button type="button" class="person ${a.username === dang ? 'active' : ''}" data-u="${esc(a.username)}"
+            title="${esc(a.username + ' · ' + vai)}">
+            <span class="person__ini">${esc(a.avatar)}</span>
+            <span class="tt"><span lang="lo">${esc(a.full_name)}</span><small>${esc(a.username)} · ${esc(vai)}</small></span>
+            <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>`;
+        }).join('');
       }).join('');
-      o.querySelectorAll('.acct-btn').forEach(b => b.addEventListener('click', () => {
-        document.getElementById('lgU').value = b.dataset.u; document.getElementById('lgP').value = '1234'; dangNhapTuForm();
+      o.querySelectorAll('.person').forEach(b => b.addEventListener('click', () => {
+        document.getElementById('lgU').value = b.dataset.u;
+        document.getElementById('lgP').value = '1234';
+        o.querySelectorAll('.person').forEach(x => x.classList.toggle('active', x === b));
+        dangNhapTuForm();
       }));
-    } catch (e) { o.innerHTML = `<div class="small neg">${esc(e.message)}</div>`; }
+    } catch (e) { o.innerHTML = `<div class="small neg" style="padding:12px 14px">${esc(e.message)}</div>`; }
   }
-  let dangBan = false;
   async function dangNhapTuForm() {
     if (dangBan) return;
     const u = document.getElementById('lgU').value.trim(), p = document.getElementById('lgP').value;
     const err = document.getElementById('lgErr'), nut = document.getElementById('lgBtn');
-    err.textContent = ''; dangBan = true; nut.classList.add('dang-vao');
+    err.textContent = ''; err.hidden = true; dangBan = true; nut.classList.add('dang-vao');
     try {
       await AUTH.dangNhap(u, p);
     } catch (e) {
       // Xoá rồi gán lại để hoạt ảnh "rung" chạy lại mỗi lần sai, không chỉ lần đầu.
       err.textContent = ''; void err.offsetWidth;
       err.textContent = e.ma === 'SAI_TAI_KHOAN' ? NN.t('login_err') : e.message;
+      err.hidden = false;
     } finally { dangBan = false; nut.classList.remove('dang-vao'); }
   }
   function hienApp() {
