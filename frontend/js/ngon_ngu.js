@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 823 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 845 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4046,6 +4046,116 @@ window.EPL_TU_DIEN = {
   "vi": "Thanh bên chỉ hiện biểu tượng",
   "lo": "ແຖບຂ້າງສະແດງແຕ່ໄອຄອນ",
   "en": "Icon-only sidebar"
+ },
+ "d_tong_quan": {
+  "vi": "Doanh thu, chi phí, việc cần xử lý",
+  "lo": "ລາຍຮັບ, ລາຍຈ່າຍ, ວຽກຕ້ອງເຮັດ",
+  "en": "Revenue, costs, what needs attention"
+ },
+ "d_theo_doi": {
+  "vi": "Bảng phiếu vận chuyển theo tháng",
+  "lo": "ຕາຕະລາງໃບຂົນສົ່ງຕາມເດືອນ",
+  "en": "Monthly table of transport slips"
+ },
+ "d_theo_doi_tuyen": {
+  "vi": "Bản đồ GPS, chặng đã qua, sự cố",
+  "lo": "ແຜນທີ່ GPS, ຈຸດຜ່ານ, ເຫດການ",
+  "en": "GPS map, stops reached, incidents"
+ },
+ "d_phieu_xuat_xe": {
+  "vi": "Lập và duyệt sáu mục của phiếu",
+  "lo": "ສ້າງ ແລະ ອະນຸມັດຫົກໜ້າຂອງໃບ",
+  "en": "Create and approve the six sections"
+ },
+ "d_hoa_don": {
+  "vi": "Hoá đơn vận chuyển để in",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງເພື່ອພິມ",
+  "en": "Printable transport invoice"
+ },
+ "d_chung_tu": {
+  "vi": "Phiếu chi, phiếu thu, sổ chứng từ",
+  "lo": "ໃບຈ່າຍ, ໃບຮັບ, ປື້ມເອກະສານ",
+  "en": "Payment, receipt and the document register"
+ },
+ "d_phieu_cua_toi": {
+  "vi": "Phiếu của tài xế, khai dầu, vị trí",
+  "lo": "ໃບຂອງໂຊເຟີ, ແຈ້ງນ້ຳມັນ, ຕຳແໜ່ງ",
+  "en": "Driver's slips, fuel reports, location"
+ },
+ "d_cap_phat": {
+  "vi": "Quét QR, cấp dầu và chi tạm ứng",
+  "lo": "ສະແກນ QR, ຈ່າຍນ້ຳມັນ ແລະ ເງິນລ່ວງໜ້າ",
+  "en": "Scan QR, issue fuel and advances"
+ },
+ "d_xe_lien_ket": {
+  "vi": "Tính tiền trả chủ xe thuê ngoài",
+  "lo": "ຄິດໄລ່ເງິນຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "What to pay each joint-truck owner"
+ },
+ "d_tien_tai_xe": {
+  "vi": "Tiền chuyến và tiền nước theo tháng",
+  "lo": "ເງິນຖ້ຽວ ແລະ ເງິນນ້ຳຕາມເດືອນ",
+  "en": "Monthly trip and water money"
+ },
+ "d_tat_toan": {
+  "vi": "Đối đã ứng với chi thật cuối tháng",
+  "lo": "ທຽບເງິນລ່ວງໜ້າກັບລາຍຈ່າຍຈິງທ້າຍເດືອນ",
+  "en": "Advances against real spending, monthly"
+ },
+ "d_nha_cung_cap": {
+  "vi": "Công nợ nhà cung cấp, trả theo đợt",
+  "lo": "ໜີ້ຜູ້ສະໜອງ, ຈ່າຍເປັນງວດ",
+  "en": "Supplier debt, paid in instalments"
+ },
+ "d_kho_nhien_lieu": {
+  "vi": "Nhập, xuất, tồn dầu ở kho",
+  "lo": "ຮັບ, ເບີກ, ຍອດນ້ຳມັນໃນສາງ",
+  "en": "Fuel in, out and balance"
+ },
+ "d_diem_do": {
+  "vi": "Kho dầu của EPL và trạm bên ngoài",
+  "lo": "ສາງນ້ຳມັນ EPL ແລະ ປ້ຳພາຍນອກ",
+  "en": "EPL fuel stores and outside stations"
+ },
+ "d_kho_phu_tung": {
+  "vi": "Tồn phụ tùng và xuất theo xe",
+  "lo": "ຍອດອາໄຫຼ່ ແລະ ການເບີກຕາມລົດ",
+  "en": "Parts stock and issues per truck"
+ },
+ "d_ban_hang": {
+  "vi": "Bán phụ tùng, xăng dầu cho bên ngoài",
+  "lo": "ຂາຍອາໄຫຼ່, ນ້ຳມັນ ໃຫ້ພາຍນອກ",
+  "en": "Sell parts and fuel to outside buyers"
+ },
+ "d_khach_hang": {
+  "vi": "Danh mục khách nhận quặng",
+  "lo": "ບັນຊີລູກຄ້າຮັບແຮ່",
+  "en": "Ore receiving customers"
+ },
+ "d_xe": {
+  "vi": "Đầu kéo, rơ-moóc, công-tơ-mét",
+  "lo": "ຫົວລາກ, ຫາງ, ເລກກົງເຕີ",
+  "en": "Tractors, trailers, odometers"
+ },
+ "d_tai_xe": {
+  "vi": "Tài xế và bằng lái",
+  "lo": "ໂຊເຟີ ແລະ ໃບຂັບຂີ່",
+  "en": "Drivers and licences"
+ },
+ "d_tuyen_duong": {
+  "vi": "Chặng, số km, phí cao tốc",
+  "lo": "ຈຸດຜ່ານ, ກິໂລແມັດ, ຄ່າທາງດ່ວນ",
+  "en": "Stops, kilometres, toll"
+ },
+ "d_quy_trinh": {
+  "vi": "Ai làm bước nào, sinh chứng từ gì",
+  "lo": "ໃຜເຮັດຂັ້ນໃດ, ອອກເອກະສານໃດ",
+  "en": "Who does what, which document each step makes"
+ },
+ "d_tai_khoan": {
+  "vi": "Người dùng và vai trò",
+  "lo": "ຜູ້ໃຊ້ ແລະ ໜ້າທີ່",
+  "en": "Users and roles"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

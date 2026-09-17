@@ -432,47 +432,64 @@
     }));
   }
 
-  /** Thanh trên: tầng 1 bốn nhóm, tầng 2 các màn của nhóm đang chọn; mục dư gom vào "Thêm". */
+  /** Thanh trên kiểu MENU THẢ XUỐNG: một hàng, mỗi nhóm một menu mở ra bảng hai cột.
+   *  Mỗi dòng có biểu tượng, tên màn và một câu nói màn đó làm gì — đọc là biết vào đâu, thay cho
+   *  một hàng dài mười chữ chen nhau. Màn đang mở được tô sáng ngay trong bảng. */
   function veThanhTren() {
-    const oMod = document.getElementById('tbarMod'), o2 = document.getElementById('tbar2');
-    if (!oMod || !o2) return;
+    const o2 = document.getElementById('tbar2'); if (!o2) return;
     const hien = MODULES.filter(thayDuoc);
-    const cua = hien.find(m => m.id === moduleHienTai) || hien[0];
-    const nhomDang = cua ? cua.nhom : NHOM_MOD[0].id;
+    const cua = hien.find(m => m.id === moduleHienTai);
+    const dau = hien[0];
+    const rieng = dau && dau.nhom === NHOM_MOD[0].id ? dau : null;   // màn đứng riêng ngoài menu
     const demNhom = (n) => hien.filter(m => m.nhom === n).reduce((a, m) => a + (DEM[m.id] || 0), 0);
-    oMod.innerHTML = NHOM_MOD.filter(n => hien.some(m => m.nhom === n.id)).map(n => {
-      const d = demNhom(n.id);
-      return `<button type="button" data-nhom="${n.id}" class="${n.id === nhomDang ? 'active' : ''}">${svgIc(n.ic)}<span>${NN.h(n.tab)}</span>${d ? `<span class="dem">${d}</span>` : ''}</button>`;
-    }).join('');
-    oMod.querySelectorAll('[data-nhom]').forEach(b => b.addEventListener('click', () => {
-      const dau = hien.find(m => m.nhom === b.dataset.nhom); if (dau) location.hash = '#/' + dau.id;
-    }));
-    const trong = hien.filter(m => m.nhom === nhomDang);
-    o2.innerHTML = trong.map(m => `<button type="button" data-mod="${m.id}" class="${m.id === moduleHienTai ? 'active' : ''}" title="${esc(tenModTho(m))}">${tenMod(m, true)}${pillDem(m.id)}</button>`).join('')
-      + `<span class="them" hidden><button type="button" class="mo-them">${NN.h('nav_more')} ▾</button><div class="them-menu" hidden></div></span>`;
-    o2.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; }));
-    donHang(o2);
-  }
+    const mucPanel = (m) => `<button type="button" class="mn-muc ${m.id === moduleHienTai ? 'active' : ''}" data-mod="${m.id}">
+      <span class="ic">${svgIc(m.ic)}</span>
+      <span class="tt"><b>${NN.h(m.nav)}</b><small>${NN.h('d_' + m.id.replace(/-/g, '_'))}</small></span>
+      ${DEM[m.id] ? `<span class="dem">${DEM[m.id]}</span>` : ''}</button>`;
 
-  /** Không đủ chỗ thì đẩy dần mục cuối vào nút "Thêm ▾" — hàng không bao giờ xuống dòng. */
-  function donHang(o2) {
-    const boc = o2.querySelector('.them'); if (!boc) return;
-    const menu = boc.querySelector('.them-menu');
-    const nut = [...o2.querySelectorAll(':scope > [data-mod]')];
-    nut.forEach(b => { b.hidden = false; });
-    menu.innerHTML = ''; boc.hidden = true;
-    const thua = () => o2.scrollWidth > o2.clientWidth + 1;
-    if (!o2.clientWidth) return;
-    for (let i = nut.length - 1; i >= 0 && thua(); i--) {
-      if (nut[i].classList.contains('active')) continue;      // mục đang mở luôn ở lại hàng
-      nut[i].hidden = true; boc.hidden = false;
-      const b = document.createElement('button');
-      b.type = 'button'; b.innerHTML = nut[i].innerHTML; b.dataset.mod = nut[i].dataset.mod;
-      b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; menu.hidden = true; });
-      menu.prepend(b);
+    let html = '';
+    if (rieng) {
+      html += `<div class="mn"><button type="button" class="mn-nut ${rieng.id === moduleHienTai ? 'dang' : ''}" data-mod="${rieng.id}">
+        ${svgIc(rieng.ic)}<span>${NN.h(rieng.nav)}</span></button></div>`;
     }
-    const mo = boc.querySelector('.mo-them');
-    mo.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+    NHOM_MOD.forEach(n => {
+      const trong = hien.filter(m => m.nhom === n.id && m !== rieng);
+      if (!trong.length) return;
+      const d = demNhom(n.id), dangO = cua && cua.nhom === n.id && cua !== rieng;
+      html += `<div class="mn" data-nhom="${n.id}">
+        <button type="button" class="mn-nut ${dangO ? 'dang' : ''}"><span>${NN.h(n.tab)}</span>
+          ${d ? `<span class="dem">${d}</span>` : ''}
+          <svg class="mui" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+        <div class="mn-panel ${trong.length < 4 ? 'mot-cot' : ''}" hidden>${trong.map(mucPanel).join('')}</div></div>`;
+    });
+    o2.innerHTML = html;
+    o2.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => {
+      dongMenuTren(); location.hash = '#/' + b.dataset.mod;
+    }));
+    o2.querySelectorAll('.mn[data-nhom] > .mn-nut').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const mn = b.parentElement, dangMo = mn.classList.contains('mo');
+      dongMenuTren();
+      if (!dangMo) moMenuTren(mn);
+    }));
+    // đang mở một menu mà rê sang menu khác thì chuyển luôn, khỏi bấm hai lần
+    o2.querySelectorAll('.mn[data-nhom]').forEach(mn => mn.addEventListener('mouseenter', () => {
+      if (o2.querySelector('.mn.mo') && !mn.classList.contains('mo')) { dongMenuTren(); moMenuTren(mn); }
+    }));
+  }
+  function moMenuTren(mn) {
+    mn.classList.add('mo');
+    const p = mn.querySelector('.mn-panel'); if (!p) return;
+    p.hidden = false; p.classList.remove('phai');
+    // tràn khỏi mép phải thì neo bảng vào bên phải nút
+    const r = p.getBoundingClientRect();
+    if (r.right > (window.innerWidth || 0) - 8) p.classList.add('phai');
+  }
+  function dongMenuTren() {
+    document.querySelectorAll('#tbar2 .mn.mo').forEach(mn => {
+      mn.classList.remove('mo');
+      const p = mn.querySelector('.mn-panel'); if (p) p.hidden = true;
+    });
   }
 
   function veNav() {
@@ -526,7 +543,7 @@
       document.body.dataset.noiMenu = '1';
       document.addEventListener('click', () => {
         const m = document.getElementById('nguoiMenu'); if (m) m.hidden = true;
-        document.querySelectorAll('.them-menu').forEach(x => { x.hidden = true; });
+        dongMenuTren();
       });
       document.addEventListener('keydown', (e) => {
         if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
@@ -534,7 +551,6 @@
           if (t && kieuXem === 'side' && !thanhHep) { e.preventDefault(); t.focus(); t.select(); }
         }
       });
-      window.addEventListener('resize', () => { if (kieuXem === 'top') { const o = document.getElementById('tbar2'); if (o) donHang(o); } });
     }
   }
   EPL.noiVoBoc = noiVoBoc;

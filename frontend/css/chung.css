@@ -120,37 +120,51 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .nguoi-menu button:hover{background:var(--bg)}
 .nguoi-menu svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;color:var(--ink-3)}
 
-/* ---- kiểu THANH TRÊN: tầng 1 thương hiệu + nhóm, tầng 2 các màn của nhóm ---- */
+/* ---- kiểu THANH TRÊN: tầng 1 thương hiệu, tầng 2 hàng menu thả xuống ----
+   Mỗi menu mở ra một bảng hai cột, mỗi dòng có biểu tượng, tên màn và một câu nói màn đó làm gì —
+   đọc là biết vào đâu, thay cho một hàng dài mười chữ chen nhau. */
 .tbar{display:none;position:sticky;top:0;z-index:6}
-.tbar1{display:flex;align-items:center;gap:24px;height:52px;padding:0 20px;background:var(--side)}
+.tbar1{display:flex;align-items:center;gap:16px;height:46px;padding:0 20px;background:var(--side)}
 .tbar-brand{display:flex;align-items:center;gap:10px;flex:none}
-.tbar-brand img{width:30px;height:30px;border-radius:7px;object-fit:cover;background:#fff}
-.tbar-brand b{font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
-.tbar-mod{display:flex;align-items:center;gap:24px;height:100%}
-.tbar-mod button{display:flex;align-items:center;gap:7px;height:100%;padding:0 2px;border:0;background:none;
-  color:var(--side-text);font-size:13px;font-weight:600;font-family:inherit;border-bottom:2px solid transparent;white-space:nowrap}
-.tbar-mod button:hover{color:#fff}
-.tbar-mod button.active{color:#fff;border-bottom-color:var(--mint)}
-.tbar-mod svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round}
-.tbar-mod .dem{min-width:16px;padding:0 5px;border-radius:999px;background:rgba(255,255,255,.16);font-size:10.5px;line-height:15px;text-align:center}
+.tbar-brand img{width:28px;height:28px;border-radius:7px;object-fit:cover;background:#fff}
+.tbar-brand b{font-size:13.5px;font-weight:700;color:#fff;white-space:nowrap}
 .tbar-phai{display:flex;align-items:center;gap:12px}
 /* khối ngôn ngữ đứng trên nền xanh đậm thì phải đổi áo, không để pill trắng chóe */
 .tbar-phai .lang{height:28px;padding:2px;border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.08)}
 .tbar-phai .lang button{padding:0 10px;font-size:12px;color:var(--side-text)}
 .tbar-phai .lang button.active{background:#fff;color:var(--side)}
 .tbar-phai .userbox .nguoi{padding:2px 6px}
-.tbar2{display:flex;align-items:center;gap:20px;height:40px;padding:0 20px;background:var(--side-3);position:relative}
-.tbar2 button{height:100%;padding:0 2px;border:0;background:none;color:var(--side-text);font-size:12.5px;font-weight:500;
-  font-family:inherit;border-bottom:2px solid transparent;white-space:nowrap}
-.tbar2 button:hover{color:#fff}
-.tbar2 button.active{color:#fff;font-weight:600;border-bottom-color:var(--mint)}
-.tbar2 .dem{display:inline-block;margin-left:5px;min-width:16px;padding:0 5px;border-radius:999px;background:rgba(255,255,255,.16);font-size:10.5px;line-height:15px}
-.tbar2 .them{position:relative}
-.tbar2 .them-menu{position:absolute;right:0;top:calc(100% + 2px);min-width:190px;z-index:30;padding:4px;display:flex;flex-direction:column;
-  background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.22)}
-.tbar2 .them-menu button{height:auto;padding:8px 10px;border:0;border-radius:6px;color:var(--ink);text-align:left}
-.tbar2 .them-menu button:hover{background:var(--bg)}
-.tbar2 .them-menu button.active{color:var(--green);background:var(--green-soft)}
+
+.tbar2{display:flex;align-items:center;flex-wrap:wrap;gap:2px;min-height:48px;padding:4px 14px;background:var(--paper);
+  border-bottom:1px solid var(--line);position:relative}
+.mn{position:relative;flex:none}
+.mn-nut{display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border:1.5px solid transparent;border-radius:9px;
+  background:none;color:var(--ink-2);font-size:13.5px;font-weight:600;font-family:inherit;white-space:nowrap}
+.mn-nut:hover{background:var(--bg);color:var(--ink)}
+.mn-nut .mui{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;opacity:.6;transition:transform .15s}
+.mn-nut>svg:first-child{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round}
+.mn-nut.dang{color:var(--green);background:var(--green-soft)}
+.mn.mo .mn-nut{border-color:var(--green-2);background:var(--green-soft);color:var(--green)}
+.mn.mo .mn-nut .mui{transform:rotate(180deg);opacity:1}
+.mn-nut .dem{min-width:17px;padding:0 5px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:10.5px;font-weight:700;line-height:16px}
+
+.mn-panel{position:absolute;top:calc(100% + 4px);left:0;z-index:40;width:max-content;max-width:min(720px,calc(100vw / var(--ty-le) - 28px));
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 8px;padding:10px;background:var(--paper);
+  border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(16,35,30,.18)}
+.mn-panel.phai{left:auto;right:0}
+.mn-panel.mot-cot{grid-template-columns:minmax(0,1fr)}
+.mn-muc{display:flex;align-items:flex-start;gap:10px;width:100%;padding:9px 10px;border:0;border-radius:10px;background:none;
+  text-align:left;font-family:inherit}
+.mn-muc:hover{background:var(--bg)}
+.mn-muc.active{background:var(--green-soft)}
+.mn-muc .ic{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:9px;background:var(--bg-2);color:var(--green)}
+.mn-muc.active .ic{background:#fff}
+.mn-muc .ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round}
+.mn-muc .tt{min-width:0;flex:1}
+.mn-muc b{display:block;font-size:13px;font-weight:600;color:var(--ink);line-height:1.3}
+.mn-muc small{display:block;margin-top:1px;font-size:11.5px;color:var(--ink-3);line-height:1.35}
+.mn-muc .dem{flex:none;min-width:18px;margin-top:8px;padding:0 6px;border-radius:999px;background:var(--amber-soft);color:var(--amber);
+  font-size:10.5px;font-weight:700;line-height:17px;text-align:center}
 /* thanh trên đã có thương hiệu rồi, thanh tiêu đề bên dưới nhẹ đi */
 .app[data-view="top"] .topbar{padding:16px 20px 12px;background:var(--bg);border-bottom:0}
 .app[data-view="top"] .topbar h2{font-size:20px;font-weight:700}

@@ -253,12 +253,27 @@ async function main() {
   // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN
   // CHỖ chứ không nhân đôi — nhân đôi là hai nút cùng id, bấm cái nào cũng sai.
   {
+    // vào lại bằng vai xem được mọi module, vì đây là phép thử của khung chứ không phải của phân vai
+    w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('admin', '1234');
+    await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Sếp'); await w.EPL.sanSang;
+    await di('#/theo-doi');
     const app = d.getElementById('app');
     w.EPL.datKieuXem('top');
     assert.strictEqual(app.dataset.view, 'top');
     assert.ok(!d.getElementById('tbar').hidden, 'kiểu thanh trên phải hiện thanh hai tầng');
-    assert.ok(d.querySelectorAll('#tbarMod [data-nhom]').length >= 2, 'tầng 1 phải có các nhóm module');
-    assert.ok(d.querySelectorAll('#tbar2 [data-mod]').length >= 1, 'tầng 2 phải có màn của nhóm đang chọn');
+    assert.ok(d.querySelectorAll('#tbar2 .mn[data-nhom]').length >= 2, 'hàng menu phải có các nhóm');
+    assert.ok(d.querySelectorAll('#tbar2 .mn-panel .mn-muc[data-mod]').length >= 5, 'mỗi menu phải thả xuống danh sách màn');
+    // mỗi dòng trong menu phải có tên VÀ một câu mô tả — đó là điểm khác của kiểu này
+    const mucMenu = [...d.querySelectorAll('#tbar2 .mn-muc')];
+    assert.ok(mucMenu.every(b => b.querySelector('b') && b.querySelector('small') && b.querySelector('small').textContent.trim()),
+      'dòng menu nào cũng phải có tên và câu mô tả');
+    assert.ok(mucMenu.every(b => !/^[a-z_]+$/.test(b.querySelector('small').textContent.trim())), 'mô tả không được lộ khoá từ điển');
+    // bấm mở menu rồi bấm ra ngoài phải đóng
+    const mnNhom = d.querySelector('#tbar2 .mn[data-nhom]');
+    mnNhom.querySelector('.mn-nut').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.ok(mnNhom.classList.contains('mo') && !mnNhom.querySelector('.mn-panel').hidden, 'bấm tên nhóm phải mở bảng');
+    d.body.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.ok(!mnNhom.classList.contains('mo'), 'bấm ra ngoài phải đóng bảng');
     assert.strictEqual(d.querySelectorAll('#langApp').length, 1, 'khối ngôn ngữ của ứng dụng chỉ được có MỘT bản');
     assert.strictEqual(d.querySelectorAll('#userbox').length, 1, 'khối người dùng chỉ được có MỘT bản');
     assert.ok(d.getElementById('tbarPhai').contains(d.getElementById('langApp')), 'kiểu thanh trên: ngôn ngữ nằm ở tầng 1');
