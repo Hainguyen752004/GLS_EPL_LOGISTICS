@@ -124,7 +124,7 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .login .hero__foot{font-size:12.5px;color:rgba(255,255,255,.6);letter-spacing:.04em}
 
 /* ---- nửa phải: biểu mẫu ---- */
-.login .panel{display:flex;flex-direction:column;gap:22px;padding:28px 48px 32px;overflow:auto}
+.login .panel{display:flex;flex-direction:column;gap:22px;padding:28px 48px 32px;overflow:auto;min-height:0}
 .login .panel__top{display:flex;justify-content:flex-end;flex:none}
 .login .panel__head h2{margin:0;font-size:28px;font-weight:700;letter-spacing:-.01em}
 .login .demo{display:flex;align-items:flex-start;gap:8px;margin-top:6px;font-size:13px;color:var(--amber)}
@@ -153,10 +153,13 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .login .divider::before,.login .divider::after{content:"";flex:1;height:1px;background:var(--line)}
 
 /* ---- chọn nhanh tài khoản, gom theo vai ---- */
-.login .roles{border:1px solid var(--line);border-radius:12px;background:var(--paper);max-height:300px;overflow:auto}
-.login .role__head{position:sticky;top:0;padding:10px 14px 4px;background:var(--paper)}
+.login .roles{border:1px solid var(--line);border-radius:12px;background:var(--paper);padding-bottom:6px;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 4px;align-content:start;
+  flex:1 1 auto;min-height:150px;overflow:auto}
+.login .role__head{grid-column:1/-1;position:sticky;top:0;z-index:1;padding:10px 14px 4px;background:var(--paper)}
 .login .role__head b{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 .login .person{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:6px 14px;border:0;border-radius:8px;background:none;text-align:left}
+.login .person.mot{grid-column:1/-1}
 .login .person:hover,.login .person.active{background:var(--green-soft)}
 .login .person__ini{display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:11.5px;font-weight:700}
 .login .person.active .person__ini{background:var(--green);color:#fff}
@@ -178,7 +181,7 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
   .login .panel{gap:16px;padding:22px 20px 28px}
   .login .panel__top{justify-content:flex-start}
   .login .panel__head h2{font-size:22px}
-  .login .roles{max-height:240px}
+  .login .roles{grid-template-columns:1fr;max-height:240px;flex:none}
 }
 
 /* ---------- Thẻ, thanh công cụ, ô nhập ---------- */

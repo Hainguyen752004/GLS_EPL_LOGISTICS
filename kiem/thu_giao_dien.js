@@ -52,7 +52,17 @@ async function main() {
   const goc = () => d.getElementById('noi-dung');
 
   await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập tải tài khoản mẫu');
-  console.log('✓ màn đăng nhập: %d tài khoản mẫu', d.getElementById('acctList').children.length);
+  // Lối tắt demo phải hiện ĐỦ tài khoản, và Bãi Thà Bốc (vai chính của nhóm kho) phải đứng đầu nhóm
+  // của nó — trước đây máy chủ trả theo chữ cái nên thabok rơi xuống cuối, bị khuất trong ô cuộn.
+  {
+    const ten = [...d.querySelectorAll('#acctList .person')].map(b => b.dataset.u);
+    const may = await (await fetch(GOC + '/api/tai-khoan-mau')).json();
+    assert.strictEqual(ten.length, may.length, `lối tắt phải có đủ ${may.length} tài khoản, đang có ${ten.length}`);
+    assert.ok(ten.includes('thabok'), 'phải có tài khoản Bãi Thà Bốc (thabok): ' + ten.join(','));
+    const kho = ten.filter(u => ['thabok', 'khonl', 'khotb', 'khovc'].includes(u));
+    assert.strictEqual(kho[0], 'thabok', 'Bãi Thà Bốc phải đứng đầu nhóm Bãi và kho: ' + kho.join(','));
+  }
+  console.log('✓ màn đăng nhập: %d tài khoản mẫu · Bãi Thà Bốc đứng đầu nhóm kho', d.querySelectorAll('#acctList .person').length);
   // Màn đăng nhập dựng theo bản mẫu epl-login-page: nửa trái thương hiệu kèm sơ đồ tuyến, nửa phải
   // biểu mẫu và khung chọn nhanh gom theo nhóm vai.
   assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .panel'),

@@ -239,11 +239,15 @@
       const ds = await API.get('/api/tai-khoan-mau');
       const dang = document.getElementById('lgU').value.trim();
       o.innerHTML = NHOM_VAI.map(n => {
-        const trong = ds.filter(a => n.vai.includes(a.role));
+        // Máy chủ trả theo thứ tự chữ cái của vai, nên Bãi Thà Bốc (yard) rơi xuống cuối nhóm kho và
+        // bị khuất. Xếp lại theo đúng thứ tự vai ghi trong nhóm: vai chính của nhóm đứng trước.
+        const trong = ds.filter(a => n.vai.includes(a.role))
+          .sort((a, b) => n.vai.indexOf(a.role) - n.vai.indexOf(b.role) || a.username.localeCompare(b.username));
         if (!trong.length) return '';
         return `<div class="role__head"><b>${NN.h(n.khoa)}</b></div>` + trong.map(a => {
           const vai = NN.t('r_' + a.role);
-          return `<button type="button" class="person ${a.username === dang ? 'active' : ''}" data-u="${esc(a.username)}"
+          // Nhóm chỉ có một tài khoản thì trải hết hàng, khỏi cụt chữ vì nửa cột quá hẹp
+          return `<button type="button" class="person ${trong.length === 1 ? 'mot' : ''} ${a.username === dang ? 'active' : ''}" data-u="${esc(a.username)}"
             title="${esc(a.username + ' · ' + vai)}">
             <span class="person__ini">${esc(a.avatar)}</span>
             <span class="tt"><span lang="lo">${esc(a.full_name)}</span><small>${esc(a.username)} · ${esc(vai)}</small></span>
