@@ -500,3 +500,29 @@ class DriverSettlement(Base):
     settled_at = Column(DateTime, default=bay_gio)
     note = Column(String)
     __table_args__ = (UniqueConstraint("driver_id", "period", name="uq_tat_toan_ky"),)
+
+
+# ---------------------------------------------------------------- vị trí xe (GPS thật)
+class VehiclePosition(Base):
+    """Một điểm GPS do ĐIỆN THOẠI TÀI XẾ gửi về khi đang bật chia sẻ vị trí.
+
+    Đây là vị trí THẬT, khác hẳn "mốc đã xác nhận tới" mà Bãi bấm tay. Màn Theo dõi ưu tiên vị trí
+    thật; GPS cũ quá ngưỡng thì coi như không có và lùi về mốc, chứ không vẽ một chấm đứng im từ
+    hôm qua như thể xe đang ở đó.
+
+    Ghi theo CHUYẾN chứ không chỉ theo xe: cùng một xe chạy nhiều phiếu, và người điều hành hỏi
+    "phiếu này đang ở đâu" chứ không hỏi "cái xe này đang ở đâu".
+    """
+    __tablename__ = "vehicle_positions"
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    vehicle_id = Column(String, ForeignKey("vehicles.id"))
+    driver_id = Column(String, ForeignKey("drivers.id"))
+    ts = Column(DateTime, nullable=False, default=bay_gio, index=True)
+    lat = Column(Float, nullable=False)
+    lng = Column(Float, nullable=False)
+    accuracy_m = Column(Float)                                 # sai số máy báo, mét
+    speed_kmh = Column(Float)
+    heading = Column(Float)                                    # hướng, độ
+    source = Column(String, nullable=False, default="driver_app")   # driver_app | manual
+    by_user = Column(String)

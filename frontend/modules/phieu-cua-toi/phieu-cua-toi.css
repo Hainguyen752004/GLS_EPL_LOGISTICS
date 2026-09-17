@@ -13,3 +13,10 @@
 .pct-bao{margin-top:10px;font-size:12.5px}
 .pct-bao div{padding:4px 0;border-top:1px dotted var(--line);display:flex;gap:8px;align-items:center}
 @media (max-width:600px){.pct-ds{grid-template-columns:1fr}}
+
+/* Dải báo đang chia sẻ vị trí — chấm nhấp nháy để tài xế biết máy đang gửi */
+.pct-gps{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 14px;border-radius:var(--r);
+  background:var(--green-soft);color:var(--green);border:1px solid #B7D8CB;font-size:13px}
+.pct-gps .cham{width:10px;height:10px;border-radius:50%;background:var(--green);flex:none;animation:pct-nhay 1.6s infinite}
+@keyframes pct-nhay{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.pct-gps .cham{animation:none}}

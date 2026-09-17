@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 715 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 729 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2506,6 +2506,76 @@ window.EPL_TU_DIEN = {
   "vi": "Kinh độ",
   "lo": "ລອງຈິຈູດ",
   "en": "Longitude"
+ },
+ "gps_share": {
+  "vi": "Chia sẻ vị trí",
+  "lo": "ແບ່ງປັນຕຳແໜ່ງ",
+  "en": "Share location"
+ },
+ "gps_sharing": {
+  "vi": "Đang chia sẻ vị trí",
+  "lo": "ກຳລັງແບ່ງປັນຕຳແໜ່ງ",
+  "en": "Sharing location"
+ },
+ "gps_stop": {
+  "vi": "Ngưng chia sẻ",
+  "lo": "ຢຸດແບ່ງປັນ",
+  "en": "Stop sharing"
+ },
+ "gps_hint": {
+  "vi": "Bật lúc bắt đầu chạy. Máy gửi vị trí về văn phòng để họ thấy xe trên bản đồ. Giữ trang này mở.",
+  "lo": "ເປີດຕອນເລີ່ມແລ່ນ. ເຄື່ອງຈະສົ່ງຕຳແໜ່ງໄປຫ້ອງການເພື່ອເຫັນລົດຢູ່ແຜນທີ່. ເປີດໜ້ານີ້ໄວ້.",
+  "en": "Turn on when you set off. The phone sends your position to the office so they can see the truck. Keep this page open."
+ },
+ "gps_denied": {
+  "vi": "Máy không cho lấy vị trí. Vào cài đặt trình duyệt bật quyền vị trí rồi thử lại.",
+  "lo": "ເຄື່ອງບໍ່ອະນຸຍາດເອົາຕຳແໜ່ງ. ໄປຕັ້ງຄ່າໂປຣແກຣມທ່ອງເວັບເປີດສິດຕຳແໜ່ງແລ້ວລອງໃໝ່.",
+  "en": "The phone refused location access. Enable it in the browser settings and try again."
+ },
+ "gps_nosupport": {
+  "vi": "Máy này không có chức năng định vị.",
+  "lo": "ເຄື່ອງນີ້ບໍ່ມີລະບົບຫາຕຳແໜ່ງ.",
+  "en": "This device has no location service."
+ },
+ "gps_last": {
+  "vi": "Gửi lúc {luc}",
+  "lo": "ສົ່ງເມື່ອ {luc}",
+  "en": "Sent at {luc}"
+ },
+ "gps_missing": {
+  "vi": "GPS thiếu hoặc cũ",
+  "lo": "GPS ຂາດ ຫຼື ເກົ່າ",
+  "en": "GPS missing or stale"
+ },
+ "gps_age": {
+  "vi": "GPS {n} phút trước",
+  "lo": "GPS {n} ນາທີກ່ອນ",
+  "en": "GPS {n} min ago"
+ },
+ "gps_speed": {
+  "vi": "Tốc độ",
+  "lo": "ຄວາມໄວ",
+  "en": "Speed"
+ },
+ "gps_src_gps": {
+  "vi": "Vị trí GPS thật",
+  "lo": "ຕຳແໜ່ງ GPS ຈິງ",
+  "en": "Live GPS position"
+ },
+ "gps_src_moc": {
+  "vi": "Theo mốc đã xác nhận tới",
+  "lo": "ຕາມຈຸດທີ່ຢືນຢັນຮອດ",
+  "en": "At the last confirmed stop"
+ },
+ "gps_trail": {
+  "vi": "Vệt đã đi",
+  "lo": "ເສັ້ນທາງທີ່ຜ່ານມາ",
+  "en": "Trail"
+ },
+ "map_note2": {
+  "vi": "Đường xanh đậm là vệt GPS thật của xe; đường xanh nhạt là tuyến kế hoạch.",
+  "lo": "ເສັ້ນສີຟ້າເຂັ້ມແມ່ນເສັ້ນ GPS ຈິງ; ເສັ້ນອ່ອນແມ່ນເສັ້ນທາງຕາມແຜນ.",
+  "en": "The solid line is the real GPS trail; the pale line is the planned route."
  },
  "ok": {
   "vi": "Đồng ý",

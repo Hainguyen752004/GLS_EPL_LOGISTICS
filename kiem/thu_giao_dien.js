@@ -129,7 +129,7 @@ async function main() {
   // 3c. Màn Theo dõi tuyến dựng theo trung tâm điều hành: dải ô số · ba cột · bấm ô là lọc
   await di('#/theo-doi-tuyen');
   const oSo = [...goc().querySelectorAll('#tdt-o-so .tdt-o')];
-  assert.strictEqual(oSo.length, 7, 'dải ô số phải có đủ 7 ô, đang có ' + oSo.length);
+  assert.strictEqual(oSo.length, 8, 'dải ô số phải có đủ 8 ô, đang có ' + oSo.length);
   assert.ok(oSo.every(o => /^\d/.test(o.querySelector('.v').textContent.trim())), 'mỗi ô phải hiện một con số');
   assert.ok(goc().querySelector('.tdt-ds') && goc().querySelector('.tdt-giua') && goc().querySelector('.tdt-ho-so'),
     'phải đủ ba cột: danh sách · giữa · hồ sơ chuyến');
@@ -146,7 +146,7 @@ async function main() {
   goc().querySelector('.tdt-o[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
   await cho(120);
   assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
-  console.log('✓ theo dõi tuyến: 7 ô số · 3 cột · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
+  console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
   // Bản đồ: Leaflet để sẵn trong dự án nên phải vẽ được cả khi không ra Internet (ảnh nền thì
   // không có, nhưng đường tuyến và chấm xe lấy từ toạ độ trong DB nên vẫn phải hiện).

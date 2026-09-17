@@ -210,12 +210,31 @@ sang. Bố cục bê nguyên: thanh công cụ, dải ô số, rồi ba cột.
 | Cột giữa | Bản đồ vệ tinh đội xe | **Bản đồ tuyến** + tiến độ từng chặng |
 | Cột phải | Hồ sơ chuyến | Giữ nguyên, thêm dải trạng thái sáu mục |
 
-**Bản đồ thì có, nhưng vẽ đúng thứ mình biết.**
+**GPS thật: tài xế bật chia sẻ vị trí ngay trên trang của mình.**
 
-Điểm dừng của tuyến nay có ô vĩ độ và kinh độ, khai ngay trên màn Tuyến đường. Bản đồ vẽ **tuyến kế
-hoạch** nối các điểm đã khai, và chấm xe đứng ở **mốc đã xác nhận tới** gần nhất. Bên Lào không gắn
-GPS nên hệ **không nội suy** vị trí giữa hai chặng: không biết thì không vẽ. Chính EPL_System cũng
-ghi trên màn của nó rằng đó là "vị trí mô phỏng theo tuyến, chưa phải vệt GPS live".
+Không cần cài app từ chợ ứng dụng — trình duyệt điện thoại có sẵn Geolocation. Tài xế mở màn
+"Phiếu của tôi", bấm **Chia sẻ vị trí** trên chuyến đang chạy, máy gửi toạ độ về mỗi 25 giây và
+văn phòng thấy xe chạy thật trên bản đồ. Vệt GPS vẽ đè lên tuyến kế hoạch bằng đường xanh đậm.
+
+Ba luật giữ dữ liệu sạch:
+
+1. Tài xế chỉ gửi được cho **phiếu của chính mình**, và chỉ khi phiếu chưa tới nơi.
+2. Điểm gửi **quá dày thì bỏ**: cách nhau dưới 20 giây là không ghi. Điện thoại bắn mỗi giây thì
+   bảng phình vô ích mà đường vẽ ra cũng không đẹp hơn.
+3. **GPS cũ coi như không có**: quá 15 phút thì màn lùi về mốc đã xác nhận tới và gắn cờ. Một chấm
+   từ hôm qua không nói được xe đang ở đâu. Đúng ngưỡng EPL_System đang dùng.
+
+Có ô số **"GPS thiếu hoặc cũ"** đếm số xe đang chạy mà không thấy tín hiệu, giống ô "GPS thiếu/cũ"
+của bản gốc. Giới hạn phải nói thật: trình duyệt ngừng gửi khi tài xế đóng tab, nên trang phải để
+mở suốt chuyến.
+
+**Khi chưa có GPS thì bản đồ vẫn vẽ, nhưng vẽ đúng thứ mình biết.**
+
+Điểm dừng của tuyến có ô vĩ độ và kinh độ, khai ngay trên màn Tuyến đường. Bản đồ vẽ **tuyến kế
+hoạch** nối các điểm đã khai, và chấm xe đứng ở **mốc đã xác nhận tới** gần nhất do Bãi bấm. Hệ
+**không nội suy** vị trí giữa hai chặng: không biết thì không vẽ, chứ không đoán.
+
+Thứ tự ưu tiên khi chọn chỗ đặt chấm xe: **GPS thật còn mới → mốc đã xác nhận tới → không vẽ.**
 
 Hai chế độ như bản gốc: **Đội xe** chấm mọi chuyến đang theo dõi, màu theo tình trạng (đang chạy ·
 đi lâu · có sự cố · chưa có vị trí); **Tuyến đang chọn** vẽ đường và các mốc của đúng chuyến đang mở.
@@ -241,7 +260,7 @@ chuyến không thành vài chục lượt gọi.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 700 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 729 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
 - **Màn đăng nhập** là một trang riêng chiếm trọn màn hình (trái: thương hiệu, phải: biểu mẫu tự cuộn), có sẵn danh sách tài khoản demo để bấm thẳng vào — bản demo chạy trên máy chiếu, không ai muốn gõ tay mười tài khoản.
 

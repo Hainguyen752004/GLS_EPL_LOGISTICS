@@ -15,7 +15,7 @@
   const { API, NN, esc, so, AUTH, tag } = EPL;
   let root, BANG = null, P = null, PARTS = [], KM = null, nguon = 'kho';
   let sap = 'uu-tien', locO = '', dongHo = null;
-  let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot';
+  let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot', VET = null;
   const q = (s) => root.querySelector(s);
   const laBai = () => AUTH.la('yard');
 
@@ -25,6 +25,8 @@
     { id: 'dang_chay', khoa: 'td_running', loc: (c) => ['dispatched', 'transit'].includes(c.transport_status) },
     { id: 'chua_xuat_ben', khoa: 'td_notout', loc: (c) => c.transport_status === 'dispatched' },
     { id: 'di_lau', khoa: 'td_long', mau: 'do', loc: (c) => c.di_lau },
+    { id: 'gps_thieu', khoa: 'gps_missing', mau: 'vang',
+      loc: (c) => ['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu) },
     { id: 'cho_hoa_don', khoa: 'td_await_inv', loc: (c) => c.transport_status === 'arrived' && !c.invoiced },
     { id: 'su_co_mo', khoa: 'td_open_inc', mau: 'do', loc: (c) => c.su_co_mo > 0 },
     { id: 'cho_cap_phat', khoa: 'td_await_iss', mau: 'vang', loc: (c) => c.cho_cap_phat > 0 },
@@ -69,6 +71,11 @@
       if (c.su_co_mo) canh.push(`<div class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</div>`);
       if (c.cho_cap_phat) canh.push(`<div class="canh vang">${NN.h('td_iss_wait', { n: c.cho_cap_phat })}</div>`);
       if (c.di_lau) canh.push(`<div class="canh do">${NN.h('td_days_out', { n: c.so_ngay_di })}</div>`);
+      if (['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu)) {
+        canh.push(`<div class="canh vang">${NN.h('gps_missing')}</div>`);
+      } else if (c.gps) {
+        canh.push(`<div class="canh xanh">${NN.h('gps_age', { n: Math.round(c.gps.tuoi_phut) })}</div>`);
+      }
       return `<button class="tdt-the ${P && P.id === c.id ? 'chon' : ''} ${c.su_co_mo ? 'gap' : ''}" data-c="${c.id}">
         <div class="so"><span class="mono">${esc(c.doc_no)}</span>${tag(c.transport_status)}</div>
         <div class="kh" lang="lo">${esc(c.customer_name || '—')}</div>
@@ -166,9 +173,19 @@
           .bindTooltip(`${s.seq}. ${esc(s.name)}`, { direction: 'top' }).addTo(lopVe);
         diemVe.push([s.lat, s.lng]);
       });
+      // Vệt GPS THẬT vẽ đè lên tuyến kế hoạch — đó mới là đường xe đã đi.
+      if (VET && VET.trip_id === c.id && VET.vet.length > 1) {
+        L.polyline(VET.vet.map(v => [v.lat, v.lng]), { color: '#145C4A', weight: 5, opacity: .95 }).addTo(lopVe);
+        VET.vet.forEach(v => diemVe.push([v.lat, v.lng]));
+      }
       if (c.vi_tri) {
+        const laGps = c.vi_tri.nguon === 'gps';
+        const chu = laGps
+          ? `${NN.t('gps_src_gps')}${c.vi_tri.speed_kmh != null ? ' · ' + NN.t('gps_speed') + ' ' + so(c.vi_tri.speed_kmh, 0) + ' km/h' : ''}`
+            + ` · ${NN.t('gps_age', { n: Math.round(c.vi_tri.tuoi_phut || 0) })}`
+          : NN.t('map_pos_at', { ten: c.vi_tri.name });
         L.marker([c.vi_tri.lat, c.vi_tri.lng], { icon: chamXe(mauCuaChuyen(c), c.truck_no), zIndexOffset: 500 })
-          .bindTooltip(`${esc(c.truck_no || '')} · ${NN.t('map_pos_at', { ten: c.vi_tri.name })}`, { direction: 'top' })
+          .bindTooltip(`${esc(c.truck_no || '')} · ${esc(chu)}`, { direction: 'top' })
           .addTo(lopVe);
       }
     } else {
@@ -277,7 +294,11 @@
     if (giuChon && P) { const con = BANG.chuyen.find(c => c.id === P.id); if (!con) { P = null; ve(); } }
   }
   async function mo(id) {
-    try { P = await API.get('/api/trips/' + id); veDanhSach(); ve(); } catch (e) { EPL.baoLoi(e); }
+    try {
+      P = await API.get('/api/trips/' + id);
+      VET = await API.get('/api/trips/' + id + '/vet').catch(() => null);
+      veDanhSach(); ve();
+    } catch (e) { EPL.baoLoi(e); }
   }
   async function toiDiem(seq, tong) {
     try {

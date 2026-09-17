@@ -2,6 +2,7 @@
 (function () {
   const { API, NN, esc, so, tag } = EPL;
   let root, DS = [], CHON = null, DIEM = [];
+  let theoDoiId = null, phieuChiaSe = null, lanGuiCuoi = 0;
   const q = (s) => root.querySelector(s);
 
   function tamUng(p) {
@@ -27,6 +28,8 @@
           ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
           ${!xong ? `<button class="btn warn" data-bao="${p.id}">${NN.h('report_breakdown')}</button>` : ''}
           ${!xong ? `<button class="btn" data-dau="${p.id}">${NN.h('df_declare')}</button>` : ''}
+          ${p.transport_status === 'transit'
+            ? `<button class="btn ${phieuChiaSe === p.id ? 'ok' : ''}" data-gps="${p.id}">${NN.h(phieuChiaSe === p.id ? 'gps_stop' : 'gps_share')}</button>` : ''}
           <button class="btn" data-pc="${p.id}">${NN.h('voucher_payment')}</button>
         </div></div>`;
     }).join('');
@@ -34,6 +37,8 @@
     root.querySelectorAll('[data-bao]').forEach(b => b.addEventListener('click', () => moBao(b.dataset.bao)));
     root.querySelectorAll('[data-pc]').forEach(b => b.addEventListener('click', () => EPL.di('chung-tu', { id: b.dataset.pc })));
     root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
+    root.querySelectorAll('[data-gps]').forEach(b => b.addEventListener('click', () => batTatGPS(b.dataset.gps)));
+    q('#pct-gps').hidden = !phieuChiaSe;
   }
   async function tai() {
     const ds = await API.get('/api/trips');
@@ -81,12 +86,57 @@
     dlg.showModal();
   }
 
+  /* ---------------------------------------------------------------- chia sẻ vị trí
+   * Không cần cài app từ chợ ứng dụng: trình duyệt điện thoại có sẵn Geolocation. Tài xế bấm bật,
+   * máy theo dõi vị trí và gửi về; văn phòng thấy xe chạy thật trên bản đồ màn Theo dõi tuyến.
+   * Giữ trang mở thì mới gửi được — trình duyệt dừng nền khi đóng tab, và đó là giới hạn phải nói
+   * thật với người dùng chứ không giấu.
+   */
+  const NHIP_GIAY = 25;                    // gửi thưa lại cho đỡ tốn pin và sóng
+
+  function ngungGPS() {
+    if (theoDoiId != null && navigator.geolocation) navigator.geolocation.clearWatch(theoDoiId);
+    theoDoiId = null; phieuChiaSe = null; lanGuiCuoi = 0;
+    if (root) { q('#pct-gps').hidden = true; ve(); }
+  }
+
+  function batTatGPS(id) {
+    if (phieuChiaSe === id) return ngungGPS();
+    if (!navigator.geolocation) return EPL.toast(NN.t('gps_nosupport'), 'loi');
+    ngungGPS();
+    phieuChiaSe = id;
+    q('#pct-gps').hidden = false;
+    q('#pct-gps-tin').textContent = NN.t('gps_hint');
+    theoDoiId = navigator.geolocation.watchPosition(async (vt) => {
+      const gio = Date.now();
+      if (gio - lanGuiCuoi < NHIP_GIAY * 1000) return;
+      lanGuiCuoi = gio;
+      const c = vt.coords;
+      try {
+        await API.post(`/api/trips/${id}/vi-tri`, {
+          lat: c.latitude, lng: c.longitude, accuracy_m: c.accuracy,
+          speed_kmh: c.speed == null ? null : Math.round(c.speed * 3.6 * 10) / 10,
+          heading: c.heading,
+        });
+        q('#pct-gps-tin').textContent = NN.t('gps_last', { luc: EPL.ngayGio(new Date().toISOString()) });
+      } catch (e) {
+        // Mất sóng giữa đường là chuyện thường: im lặng, lần sau gửi tiếp.
+        if (e instanceof EPL.LoiAPI && e.status) { EPL.baoLoi(e); ngungGPS(); }
+      }
+    }, (loi) => {
+      EPL.toast(NN.t(loi && loi.code === 1 ? 'gps_denied' : 'gps_nosupport'), 'loi');
+      ngungGPS();
+    }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
+    ve();
+  }
+
   EPL.modules['phieu-cua-toi'] = {
     async init(r) {
       root = r;
       DIEM = await API.get('/api/fuel-places').catch(() => []);
       await tai();
     },
+    destroy() { ngungGPS(); },
     onLang() { if (root) ve(); },
   };
 })();

@@ -4,10 +4,9 @@
 Bố cục lấy từ màn "Theo dõi và kiểm soát" của EPL_System: dải ô số ở trên, danh sách chuyến bên
 trái, chi tiết chuyến ở giữa, hồ sơ chuyến bên phải. Nhưng số liệu thì của bên Lào, không bịa:
 
-  · KHÔNG có GPS. Bên Lào không gắn thiết bị, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về.
-    Bản đồ vẫn có, nhưng vẽ TUYẾN KẾ HOẠCH nối các điểm đã khai toạ độ, và chấm xe đứng ở MỐC ĐÃ
-    XÁC NHẬN TỚI gần nhất. Không nội suy vị trí giữa hai chặng: không biết thì không vẽ.
-    (Chính EPL_System cũng ghi trên màn "vị trí mô phỏng theo tuyến, chưa phải vệt GPS live".)
+  · Vị trí xe lấy theo thứ tự: GPS THẬT do điện thoại tài xế gửi về (bảng vehicle_positions) →
+    nếu không có hoặc quá cũ thì lùi về MỐC ĐÃ XÁC NHẬN TỚI do Bãi bấm. Không nội suy vị trí giữa
+    hai chặng: không biết thì không vẽ, chứ không đoán.
   · KHÔNG có hạn giao hàng. Excel của họ không có ô đó. Thay bằng "đi lâu chưa về": xe rời bãi
     quá nhiều ngày mà chưa báo tới nơi thì đáng để người điều hành nhìn.
 
@@ -21,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Route, RouteStop, Trip, TripEvent, TripSection, Voucher
+from routes.vi_tri import vi_tri_moi_nhat, xuat_vi_tri
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
@@ -47,6 +47,7 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
         for s in db.query(RouteStop).filter(RouteStop.route_id.in_(ma_tuyen)).order_by(RouteStop.seq).all():
             chang.setdefault(s.route_id, []).append(s)
     tuyen = {r.id: r for r in db.query(Route).filter(Route.id.in_(ma_tuyen)).all()} if ma_tuyen else {}
+    gps = vi_tri_moi_nhat(db, ma)          # GPS thật mới nhất của từng phiếu
 
     theo_phieu = {}
     for e in su_kien:
@@ -60,7 +61,8 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
 
     hom_nay = dt.date.today()
     ra, kpi = [], {"dang_chay": 0, "chua_xuat_ben": 0, "di_lau": 0, "cho_hoa_don": 0,
-                   "su_co_mo": 0, "chua_thu_tien": 0, "cho_cap_phat": 0}
+                   "su_co_mo": 0, "chua_thu_tien": 0, "cho_cap_phat": 0, "gps_thieu": 0}
+    gio_utc = dt.datetime.utcnow()
     for p in ds:
         ev = theo_phieu.get(p.id, [])
         diem = chang.get(p.route_id, [])
@@ -80,6 +82,11 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
         if mo: kpi["su_co_mo"] += 1
         if p.finance_status != "paid": kpi["chua_thu_tien"] += 1
         if cho_linh: kpi["cho_cap_phat"] += cho_linh
+        # GPS thiếu / cũ: chỉ tính trên xe ĐANG CHẠY — xe đã về thì không cần GPS nữa.
+        g = gps.get(p.id)
+        gps_ra = xuat_vi_tri(g, gio_utc) if g else None
+        dang_chay = p.transport_status in ("dispatched", "transit")
+        if dang_chay and (gps_ra is None or gps_ra["cu"]): kpi["gps_thieu"] += 1
 
         # Điểm đi / điểm đến: phiếu nào bỏ trống thì lấy theo tuyến, đừng để màn hiện hai gạch ngang.
         diem_dau = diem[0].name if diem else None
@@ -99,7 +106,13 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
             "origin": p.origin or diem_dau, "destination": p.destination or diem_cuoi,
             "stops": [{"seq": st.seq, "name": st.name, "km_from_prev": st.km_from_prev,
                        "lat": st.lat, "lng": st.lng} for st in diem],
-            "vi_tri": ({"lat": moc.lat, "lng": moc.lng, "seq": moc.seq, "name": moc.name} if moc else None),
+            # vi_tri = chấm vẽ lên bản đồ. GPS thật còn mới thì dùng nó; không thì lùi về mốc.
+            "vi_tri": ({"lat": gps_ra["lat"], "lng": gps_ra["lng"], "seq": None, "name": None,
+                        "nguon": "gps", "tuoi_phut": gps_ra["tuoi_phut"], "speed_kmh": gps_ra["speed_kmh"]}
+                       if (gps_ra and not gps_ra["cu"])
+                       else ({"lat": moc.lat, "lng": moc.lng, "seq": moc.seq, "name": moc.name,
+                              "nguon": "moc"} if moc else None)),
+            "gps": gps_ra,
             "route_name": tuyen[p.route_id].name if p.route_id in tuyen else None,
             "out_date": ngay_di.isoformat() if ngay_di else None,
             "back_date": p.back_date.isoformat() if p.back_date else None,
