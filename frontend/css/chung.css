@@ -32,7 +32,9 @@ a{color:var(--green)}
 th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 
 /* ---------- Khung ---------- */
-.app{display:grid;grid-template-columns:256px 1fr;min-height:100vh}
+/* Thanh bên co giãn theo bề ngang màn: phóng to trình duyệt thì nó hẹp lại nhường chỗ cho
+   nội dung, thu nhỏ thì rộng ra. Cứng 256px thì lúc phóng 150% nó chiếm gần nửa màn. */
+.app{display:grid;grid-template-columns:clamp(196px,17vw,256px) 1fr;min-height:100vh}
 .side{background:var(--side);color:var(--side-text);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
 .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 20px;border-bottom:1px solid #244037;margin-bottom:14px}
 .brand .mark{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#fff}
@@ -47,7 +49,7 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .side .foot{margin-top:24px;padding:12px 10px;border-top:1px solid #244037;font-size:12px;color:#8AA398}
 
 .main{min-width:0}
-.topbar{display:flex;align-items:center;gap:16px;padding:14px 28px;background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:14px 28px;background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 .topbar h2{margin:0;font-size:18px;font-weight:600}
 .topbar h2 .sub{display:block;font-size:12.5px;color:var(--ink-3);font-weight:400}
 .lang{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
@@ -56,7 +58,7 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .userbox{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
 .userbox .av{width:34px;height:34px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:600;font-size:12px}
 .userbox .nm{font-weight:600;color:var(--ink)} .userbox .rl2{font-size:12px}
-.page{padding:24px 28px 48px;max-width:1560px}
+.page{padding:24px 28px 48px;max-width:1560px;margin:0 auto;width:100%}
 
 /* ---------- Đăng nhập ---------- */
 /* Bố cục và kiểu dáng lấy từ bản mẫu frontend/modules/epl-login-page. MỌI selector đều nằm trong
@@ -224,4 +226,22 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
   .app{grid-template-columns:1fr} .page{padding:0;max-width:none} body{background:#fff}
   .card{border:0}
 }
-@media (max-width:900px){.app{grid-template-columns:1fr}.side{position:static;height:auto}.page{padding:16px}.pipeline{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:1280px){
+  .side{padding:16px 10px}
+  .topbar{padding:12px 18px}
+  .page{padding:18px 18px 40px}
+}
+/* Hẹp quá thì thanh bên nằm ngang thành một dải cuộn được, thay vì xếp dọc 21 nút đẩy nội dung
+   xuống tận đáy. Nhãn nhóm và chân trang bỏ đi cho gọn. */
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:static;height:auto;padding:12px}
+  .brand{padding:0 4px 10px;margin-bottom:10px}
+  .brand h1{font-size:14px}
+  .nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+  .nav button{flex:none;white-space:nowrap}
+  .nav button .lo-sub{display:none}
+  .nav-group,.side .foot{display:none}
+  .page{padding:14px}
+  .pipeline{grid-template-columns:repeat(2,1fr)}
+}
