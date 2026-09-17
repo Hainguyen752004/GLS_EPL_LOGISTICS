@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Sinh DOCS/BAN_DO_CHUC_NANG.docx từ tệp Markdown cùng tên.
+"""Sinh tệp .docx từ một tệp Markdown (mặc định là bản đồ chức năng).
 
 Tài liệu giao cho người dùng phải là Word, Markdown chỉ là bản nguồn. Chạy lại mỗi khi sửa .md:
 
-    python tools/sinh_word.py
+    python tools/sinh_word.py                     # DOCS/BAN_DO_CHUC_NANG.md
+    python tools/sinh_word.py DOCS/<tệp>.md       # tệp bất kỳ, .docx đặt cạnh nó
 """
 import io
 import os
@@ -14,8 +15,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NGUON = os.path.join(GOC, 'DOCS', 'BAN_DO_CHUC_NANG.md')
-DICH = os.path.join(GOC, 'DOCS', 'BAN_DO_CHUC_NANG.docx')
+MAC_DINH = os.path.join(GOC, 'DOCS', 'BAN_DO_CHUC_NANG.md')
 
 XANH = RGBColor(0x14, 0x5C, 0x4A)
 
@@ -36,7 +36,12 @@ def dam_va_ma(p, chu):
 
 
 def main():
-    dong = io.open(NGUON, encoding='utf-8').read().split('\n')
+    import sys
+    nguon = sys.argv[1] if len(sys.argv) > 1 else MAC_DINH
+    if not os.path.isabs(nguon):
+        nguon = os.path.join(GOC, nguon)
+    dich = os.path.splitext(nguon)[0] + '.docx'
+    dong = io.open(nguon, encoding='utf-8').read().split(chr(10))
     d = Document()
     d.styles['Normal'].font.name = 'Segoe UI'
     d.styles['Normal'].font.size = Pt(10.5)
@@ -90,8 +95,8 @@ def main():
             dam_va_ma(p, l)
         i += 1
 
-    d.save(DICH)
-    print('Đã sinh %s' % DICH)
+    d.save(dich)
+    print('Đã sinh %s' % dich)
 
 
 if __name__ == '__main__':
