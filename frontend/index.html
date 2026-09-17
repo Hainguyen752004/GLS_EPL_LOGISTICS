@@ -121,31 +121,60 @@
 </div>
 
 <!-- ===== Ứng dụng ===== -->
-<div class="app" id="app" hidden>
-  <aside class="side">
+<!-- Hai kiểu xem, người dùng tự chọn ở nút bánh răng: data-view="side" thanh bên, "top" thanh trên.
+     Khối .lang và .userbox là MỘT bản duy nhất, đổi kiểu thì chuyển chỗ chứ không nhân đôi. -->
+<div class="app" id="app" data-view="side" hidden>
+  <aside class="side" id="side">
     <div class="brand">
       <img class="mark" src="img/logo-epl.jpg" alt="EPL">
       <h1 data-i18n="brand"></h1>
     </div>
+    <div class="side-tim">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="navTim" type="search" autocomplete="off" data-i18n-ph="nav_search">
+    </div>
     <nav class="nav" id="nav"></nav>
-    <div class="foot">
-      <div>SAMKET VILLAGE, SIKHOTTABONG</div>
-      <div>VIENTIANE · 020 5889 9983</div>
+    <div class="side-chan" id="sideChan">
+      <div class="chan-oi" id="chanOi"></div>
+      <button class="side-thu" id="btnThuGon" type="button" data-i18n-title="nav_collapse">
+        <svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
     </div>
   </aside>
 
   <div class="main">
-    <header class="topbar">
+    <!-- Kiểu thanh trên: tầng 1 thương hiệu + nhóm module, tầng 2 các màn của nhóm đang chọn -->
+    <header class="tbar" id="tbar" hidden>
+      <div class="tbar1">
+        <div class="tbar-brand"><img src="img/logo-epl.jpg" alt="EPL"><b data-i18n="brand_short"></b></div>
+        <nav class="tbar-mod" id="tbarMod"></nav>
+        <div class="grow"></div>
+        <div class="tbar-phai" id="tbarPhai"></div>
+      </div>
+      <nav class="tbar2" id="tbar2"></nav>
+    </header>
+
+    <header class="topbar" id="topbar">
       <h2 id="pageTitle"></h2>
       <div class="grow"></div>
-      <div class="lang" role="group" aria-label="Language"></div>
-      <div class="userbox">
-        <div class="av" id="roleAv"></div>
-        <div><div class="nm" id="uName"></div><div class="rl2" id="uRole"></div></div>
-        <button class="btn sm" id="btnLogout" data-i18n="switch_acct"></button>
-      </div>
+      <div class="topbar-phai" id="topbarPhai"></div>
     </header>
     <main class="page" id="noi-dung"></main>
+  </div>
+</div>
+
+<!-- Khối ngôn ngữ và người dùng: js chuyển vào thanh bên hay thanh trên tuỳ kiểu xem -->
+<div id="khoi-di-dong" hidden>
+  <div class="lang" id="langApp" role="group" aria-label="Language"></div>
+  <div class="userbox" id="userbox">
+    <button class="nguoi" id="btnNguoi" type="button">
+      <span class="av" id="roleAv"></span>
+      <span class="tt"><span class="nm" id="uName"></span><span class="rl2" id="uRole"></span></span>
+      <svg class="mui" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <div class="nguoi-menu" id="nguoiMenu" hidden>
+      <button type="button" data-mn="giao-dien"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg><span data-i18n="view_settings"></span></button>
+      <button type="button" data-mn="doi"><svg viewBox="0 0 24 24"><path d="M16 17l5-5-5-5M21 12H9M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/></svg><span data-i18n="switch_acct"></span></button>
+    </div>
   </div>
 </div>
 

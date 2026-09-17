@@ -284,7 +284,7 @@
     document.getElementById('roleAv').textContent = USER.avatar || USER.full_name.slice(0, 2).toUpperCase();
     document.getElementById('uName').textContent = USER.full_name;
     document.getElementById('uRole').innerHTML = NN.h('r_' + USER.role);
-    veNav(); dieuHuong();
+    noiVoBoc(); apKieuXem(); veNav(); dieuHuong(); taiDem();
   }
 
   /* ---------------------------------------------------------------- nhãn xe trên sơ đồ đăng nhập
@@ -314,20 +314,20 @@
   // Thứ tự nhóm và module đúng theo sheet "ລາຍງານ" của Excel + hai nhóm danh mục/hệ thống.
   const MODULES = EPL.MODULES = [
     { id: 'tong-quan',      nhom: 'mod_transport', nav: 'nav_dash',     ic: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z' },
-    { id: 'theo-doi',       nhom: 'mod_transport', nav: 'nav_tracking', ic: 'M3 6h18M3 12h18M3 18h12' },
+    { id: 'theo-doi',       nhom: 'mod_transport', nav: 'nav_tracking', nav_s: 'nav_tracking_s', ic: 'M3 6h18M3 12h18M3 18h12' },
     { id: 'theo-doi-tuyen', nhom: 'mod_transport', nav: 'nav_track_route', ic: 'M4 18a3 3 0 1 0 0-6 3 3 0 0 0 0 6M20 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6M7 15l10-6' },
     { id: 'phieu-xuat-xe',  nhom: 'mod_transport', nav: 'nav_dispatch', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7z' },
-    { id: 'hoa-don',        nhom: 'mod_transport', nav: 'nav_bill',     ic: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8' },
+    { id: 'hoa-don',        nhom: 'mod_transport', nav: 'nav_bill', nav_s: 'nav_bill_s',     ic: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8' },
     { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },
     { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true },
     { id: 'cap-phat',       nhom: 'mod_transport', nav: 'nav_issue',    ic: 'M3 6h13v9H3zM16 9h3l2 3v3h-5M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4', vai: ['yard', 'acct', 'fuel', 'depot', 'treasury', 'cash'] },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint',    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
-    { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver',   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
+    { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver', nav_s: 'nav_driver_s',   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tat-toan',       nhom: 'mod_transport', nav: 'nav_settle',   ic: 'M9 3h6l1 4H8zM5 7h14l1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM12 11v6M9.5 13h5M9.5 16h5', vai: ['acct', 'cash', 'treasury'] },
-    { id: 'nha-cung-cap',   nhom: 'mod_transport', nav: 'nav_supplier', ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21V12h6v9' },
+    { id: 'nha-cung-cap',   nhom: 'mod_transport', nav: 'nav_supplier', nav_s: 'nav_supplier_s', ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21V12h6v9' },
     { id: 'kho-nhien-lieu', nhom: 'mod_warehouse', nav: 'nav_fuel',     ic: 'M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M6 6h6v5H6z',
       vai: ['yard', 'acct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
-    { id: 'diem-do',        nhom: 'mod_warehouse', nav: 'nav_place',    ic: 'M12 22s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12M12 7v6M9.5 9.5h5', vai: ['yard', 'acct', 'fuel'] },
+    { id: 'diem-do',        nhom: 'mod_warehouse', nav: 'nav_place', nav_s: 'nav_place_s',    ic: 'M12 22s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12M12 7v6M9.5 9.5h5', vai: ['yard', 'acct', 'fuel'] },
     { id: 'kho-phu-tung',   nhom: 'mod_warehouse', nav: 'nav_parts',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19 12l2 1-1 3-2-.5a7 7 0 0 1-2 2l.5 2-3 1-1-2a7 7 0 0 1-3 0l-1 2-3-1 .5-2a7 7 0 0 1-2-2L2 16l-1-3 2-1a7 7 0 0 1 0-3L1 8l1-3 2 .5a7 7 0 0 1 2-2L5.5 1.5l3-1 1 2a7 7 0 0 1 3 0l1-2 3 1-.5 2a7 7 0 0 1 2 2l2-.5 1 3-2 1a7 7 0 0 1 0 3z' },
     { id: 'ban-hang',       nhom: 'mod_warehouse', nav: 'nav_sales',    ic: 'M3 3h2l2 12h11l2-8H6M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
       vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'] },
@@ -335,11 +335,19 @@
     { id: 'xe',             nhom: 'mod_master',    nav: 'nav_vehicles', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tai-xe',         nhom: 'mod_master',    nav: 'nav_drivers',  ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0' },
     { id: 'tuyen-duong',    nhom: 'mod_master',    nav: 'nav_routes',   ic: 'M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6M18 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6M6 9v3a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3' },
-    { id: 'quy-trinh',      nhom: 'mod_system',    nav: 'nav_workflow', ic: 'M12 3v4M6 21v-4M18 21v-4M4 11h16M9 7h6v4H9zM3 17h6v4H3zM15 17h6v4h-6z' },
+    { id: 'quy-trinh',      nhom: 'mod_system',    nav: 'nav_workflow', nav_s: 'nav_workflow_s', ic: 'M12 3v4M6 21v-4M18 21v-4M4 11h16M9 7h6v4H9zM3 17h6v4H3zM15 17h6v4h-6z' },
     { id: 'tai-khoan',      nhom: 'mod_system',    nav: 'nav_users',    ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M19 8l2 2-4 4-2-2', vai: ['admin'] },
   ];
   let moduleHienTai = '';
   const daNapJS = new Set(), daNapCSS = new Set();
+
+  // Bốn nhóm module — dùng cho tiêu đề nhóm ở thanh bên và bốn tab ở thanh trên.
+  const NHOM_MOD = [
+    { id: 'mod_transport', tab: 'tab_transport', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
+    { id: 'mod_warehouse', tab: 'tab_warehouse', ic: 'M3 21V9l9-6 9 6v12M3 21h18M9 21v-7h6v7' },
+    { id: 'mod_master',    tab: 'tab_master',    ic: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01' },
+    { id: 'mod_system',    tab: 'tab_system',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.6H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.7 7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9.4A1.6 1.6 0 0 0 10.4 3V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.4 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z' },
+  ];
 
   // Tài xế chỉ thấy module ghi rõ vai driver; các vai khác thấy mọi module trừ module "chỉ vai".
   function thayDuoc(m) {
@@ -352,16 +360,185 @@
     return true;
   }
   const moduleDau = () => (MODULES.find(thayDuoc) || MODULES[0]).id;
-  function veNav() {
-    const nav = document.getElementById('nav'); if (!nav || !USER) return;
-    let html = '', nhom = '';
-    MODULES.filter(thayDuoc).forEach(m => {
-      if (m.nhom !== nhom) { nhom = m.nhom; html += `<div class="nav-group">${NN.h(nhom)}</div>`; }
-      html += `<button data-mod="${m.id}" class="${m.id === moduleHienTai ? 'active' : ''}"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="${m.ic}"/></svg><span>${NN.h(m.nav)}</span></button>`;
+
+  /* ---------------------------------------------------------------- kiểu xem
+   * Hai kiểu đều có cái lợi riêng nên giữ cả hai, người dùng tự chọn ở nút bánh răng:
+   *   'side' thanh bên  — thấy hết màn cùng lúc, gắn được số việc đang chờ cạnh từng mục;
+   *   'top'  thanh trên — nhường trọn chiều ngang cho bảng, hợp bảng nhiều cột.
+   * Nhớ theo máy (localStorage) chứ không theo tài khoản: một máy ngoài bãi nhiều người dùng chung,
+   * nhưng màn hình thì vẫn là màn hình ấy. */
+  const K_VIEW = 'epl_lao_kieu_xem', K_HEP = 'epl_lao_thanh_hep', K_GAP = 'epl_lao_nhom_gap';
+  const docLS = (k, md) => { try { const v = localStorage.getItem(k); return v === null ? md : v; } catch (e) { return md; } };
+  const ghiLS = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* riêng tư thì thôi */ } };
+  let kieuXem = docLS(K_VIEW, 'side') === 'top' ? 'top' : 'side';
+  let thanhHep = docLS(K_HEP, '0') === '1';
+  let nhomGap = new Set((docLS(K_GAP, '') || '').split(',').filter(Boolean));
+  let timMenu = '';
+  let DEM = {};                                    // số việc đang chờ theo từng module
+
+  function apKieuXem() {
+    const app = document.getElementById('app'); if (!app) return;
+    app.dataset.view = kieuXem;
+    app.dataset.hep = kieuXem === 'side' && thanhHep ? '1' : '0';
+    const tbar = document.getElementById('tbar'); if (tbar) tbar.hidden = kieuXem !== 'top';
+    // .lang và .userbox là một bản duy nhất — chuyển chỗ chứ không nhân đôi
+    const oi = document.getElementById(kieuXem === 'top' ? 'tbarPhai' : 'topbarPhai');
+    // Màn đăng nhập cũng có một khối .lang, nên phải gọi đúng khối của ứng dụng bằng id
+    const lang = document.getElementById('langApp'), hop = document.getElementById('userbox');
+    if (oi && lang) oi.appendChild(lang);
+    const chan = document.getElementById(kieuXem === 'top' ? 'tbarPhai' : 'chanOi');
+    if (chan && hop) chan.appendChild(hop);
+  }
+  EPL.datKieuXem = (k) => { kieuXem = k === 'top' ? 'top' : 'side'; ghiLS(K_VIEW, kieuXem); apKieuXem(); veNav(); };
+
+  async function taiDem() {
+    try { DEM = await API.get('/api/dem-viec'); } catch (e) { DEM = {}; }
+    // Người dùng có thể đăng xuất hoặc đóng trang trong lúc chờ; vẽ vào trang đã mất thì bỏ qua.
+    try { veNav(); } catch (e) { /* trang không còn */ }
+  }
+  EPL.lamMoiDem = taiDem;
+
+  const tenMod = (m, ngan) => NN.h(ngan && m.nav_s ? m.nav_s : m.nav);
+  const tenModTho = (m) => NN.t(m.nav);
+  const svgIc = (d, cls) => `<svg class="${cls || ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round" stroke-linecap="round"><path d="${d}"/></svg>`;
+  const pillDem = (id) => DEM[id] ? `<span class="dem">${DEM[id]}</span>` : '';
+
+  /** Một mục ở thanh bên. `data-ten` để chế độ hẹp còn hiện được mách nhỏ. */
+  function nutBen(m) {
+    return `<button type="button" class="muc ${m.id === moduleHienTai ? 'active' : ''}" data-mod="${m.id}" data-ten="${esc(tenModTho(m))}" title="${esc(tenModTho(m))}">
+      ${svgIc(m.ic, 'ic')}<span class="ten">${tenMod(m, true)}</span>${pillDem(m.id)}</button>`;
+  }
+
+  function veThanhBen() {
+    const nav = document.getElementById('nav'); if (!nav) return;
+    const loc = timMenu.trim().toLowerCase();
+    const hop = MODULES.filter(thayDuoc).filter(m => !loc || tenModTho(m).toLowerCase().includes(loc) || m.id.includes(loc));
+    let html = '';
+    if (!hop.length) html = `<div class="trong">${NN.h('nav_none')}</div>`;
+    NHOM_MOD.forEach(n => {
+      const trong = hop.filter(m => m.nhom === n.id);
+      if (!trong.length) return;
+      const gap = !loc && nhomGap.has(n.id);      // đang tìm thì mở hết ra cho thấy kết quả
+      html += `<button type="button" class="nav-group ${gap ? 'gap' : ''}" data-nhom="${n.id}">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6"/></svg><span>${NN.h(n.id)}</span><i class="vach"></i></button>`;
+      if (!gap) html += trong.map(nutBen).join('');
     });
     nav.innerHTML = html;
-    nav.querySelectorAll('button').forEach(b => b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; }));
+    nav.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; }));
+    nav.querySelectorAll('[data-nhom]').forEach(b => b.addEventListener('click', () => {
+      const id = b.dataset.nhom;
+      if (nhomGap.has(id)) nhomGap.delete(id); else nhomGap.add(id);
+      ghiLS(K_GAP, [...nhomGap].join(',')); veThanhBen();
+    }));
   }
+
+  /** Thanh trên: tầng 1 bốn nhóm, tầng 2 các màn của nhóm đang chọn; mục dư gom vào "Thêm". */
+  function veThanhTren() {
+    const oMod = document.getElementById('tbarMod'), o2 = document.getElementById('tbar2');
+    if (!oMod || !o2) return;
+    const hien = MODULES.filter(thayDuoc);
+    const cua = hien.find(m => m.id === moduleHienTai) || hien[0];
+    const nhomDang = cua ? cua.nhom : NHOM_MOD[0].id;
+    const demNhom = (n) => hien.filter(m => m.nhom === n).reduce((a, m) => a + (DEM[m.id] || 0), 0);
+    oMod.innerHTML = NHOM_MOD.filter(n => hien.some(m => m.nhom === n.id)).map(n => {
+      const d = demNhom(n.id);
+      return `<button type="button" data-nhom="${n.id}" class="${n.id === nhomDang ? 'active' : ''}">${svgIc(n.ic)}<span>${NN.h(n.tab)}</span>${d ? `<span class="dem">${d}</span>` : ''}</button>`;
+    }).join('');
+    oMod.querySelectorAll('[data-nhom]').forEach(b => b.addEventListener('click', () => {
+      const dau = hien.find(m => m.nhom === b.dataset.nhom); if (dau) location.hash = '#/' + dau.id;
+    }));
+    const trong = hien.filter(m => m.nhom === nhomDang);
+    o2.innerHTML = trong.map(m => `<button type="button" data-mod="${m.id}" class="${m.id === moduleHienTai ? 'active' : ''}" title="${esc(tenModTho(m))}">${tenMod(m, true)}${pillDem(m.id)}</button>`).join('')
+      + `<span class="them" hidden><button type="button" class="mo-them">${NN.h('nav_more')} ▾</button><div class="them-menu" hidden></div></span>`;
+    o2.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; }));
+    donHang(o2);
+  }
+
+  /** Không đủ chỗ thì đẩy dần mục cuối vào nút "Thêm ▾" — hàng không bao giờ xuống dòng. */
+  function donHang(o2) {
+    const boc = o2.querySelector('.them'); if (!boc) return;
+    const menu = boc.querySelector('.them-menu');
+    const nut = [...o2.querySelectorAll(':scope > [data-mod]')];
+    nut.forEach(b => { b.hidden = false; });
+    menu.innerHTML = ''; boc.hidden = true;
+    const thua = () => o2.scrollWidth > o2.clientWidth + 1;
+    if (!o2.clientWidth) return;
+    for (let i = nut.length - 1; i >= 0 && thua(); i--) {
+      if (nut[i].classList.contains('active')) continue;      // mục đang mở luôn ở lại hàng
+      nut[i].hidden = true; boc.hidden = false;
+      const b = document.createElement('button');
+      b.type = 'button'; b.innerHTML = nut[i].innerHTML; b.dataset.mod = nut[i].dataset.mod;
+      b.addEventListener('click', () => { location.hash = '#/' + b.dataset.mod; menu.hidden = true; });
+      menu.prepend(b);
+    }
+    const mo = boc.querySelector('.mo-them');
+    mo.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+  }
+
+  function veNav() {
+    if (!USER) return;
+    apKieuXem();
+    if (kieuXem === 'top') veThanhTren(); else veThanhBen();
+  }
+  EPL.veNav = veNav;
+
+  /* ---------------------------------------------------------------- hộp chọn kiểu xem */
+  async function hopGiaoDien() {
+    const html = `<div class="chon-view">
+      <label><input type="radio" name="kx" value="side" ${kieuXem === 'side' ? 'checked' : ''}>
+        <span class="the"><span class="ve side"><i></i></span><b>${NN.h('view_side')}</b><small>${NN.h('view_side_d')}</small></span></label>
+      <label><input type="radio" name="kx" value="top" ${kieuXem === 'top' ? 'checked' : ''}>
+        <span class="the"><span class="ve top"><i></i><i></i></span><b>${NN.h('view_top')}</b><small>${NN.h('view_top_d')}</small></span></label>
+    </div>
+    <label class="remember" style="margin-top:6px"><input type="checkbox" id="kxHep" ${thanhHep ? 'checked' : ''}> <span>${NN.h('view_narrow')}</span></label>`;
+    const ok = await EPL.hoi(NN.t('view_settings'), html, NN.t('save'));
+    if (!ok) return;
+    const chon = document.querySelector('input[name="kx"]:checked');
+    thanhHep = !!(document.getElementById('kxHep') || {}).checked;
+    ghiLS(K_HEP, thanhHep ? '1' : '0');
+    EPL.datKieuXem(chon ? chon.value : kieuXem);
+    EPL.toast(NN.t('saved'), 'ok');
+  }
+  EPL.hopGiaoDien = hopGiaoDien;
+
+  function noiVoBoc() {
+    const nut = document.getElementById('btnNguoi'), menu = document.getElementById('nguoiMenu');
+    if (nut && menu && !nut.dataset.noi) {
+      nut.dataset.noi = '1';
+      nut.addEventListener('click', (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; });
+      menu.querySelectorAll('[data-mn]').forEach(b => b.addEventListener('click', () => {
+        menu.hidden = true;
+        if (b.dataset.mn === 'doi') AUTH.dangXuat(); else hopGiaoDien();
+      }));
+    }
+    const thu = document.getElementById('btnThuGon');
+    if (thu && !thu.dataset.noi) {
+      thu.dataset.noi = '1';
+      thu.addEventListener('click', () => { thanhHep = !thanhHep; ghiLS(K_HEP, thanhHep ? '1' : '0'); apKieuXem(); });
+    }
+    const tim = document.getElementById('navTim');
+    if (tim && !tim.dataset.noi) {
+      tim.dataset.noi = '1';
+      tim.addEventListener('input', () => { timMenu = tim.value; veThanhBen(); });
+      tim.addEventListener('keydown', (e) => { if (e.key === 'Escape') { tim.value = ''; timMenu = ''; veThanhBen(); } });
+    }
+    if (!document.body.dataset.noiMenu) {
+      document.body.dataset.noiMenu = '1';
+      document.addEventListener('click', () => {
+        const m = document.getElementById('nguoiMenu'); if (m) m.hidden = true;
+        document.querySelectorAll('.them-menu').forEach(x => { x.hidden = true; });
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+          const t = document.getElementById('navTim');
+          if (t && kieuXem === 'side' && !thanhHep) { e.preventDefault(); t.focus(); t.select(); }
+        }
+      });
+      window.addEventListener('resize', () => { if (kieuXem === 'top') { const o = document.getElementById('tbar2'); if (o) donHang(o); } });
+    }
+  }
+  EPL.noiVoBoc = noiVoBoc;
+
   function datTieuDe() {
     const m = MODULES.find(x => x.id === moduleHienTai); const h = document.getElementById('pageTitle');
     if (m && h) h.innerHTML = NN.h('title_' + m.id.replace(/-/g, '_'));
@@ -459,7 +636,6 @@
       mat.title = NN.t(hien ? 'hide_pw' : 'show_pw');
       o.focus();
     });
-    document.getElementById('btnLogout').addEventListener('click', () => AUTH.dangXuat());
     if (API.token()) {
       try { USER = await API.get('/api/toi'); hienApp(); return; } catch (e) { /* phiên hết hạn → về đăng nhập */ }
     }

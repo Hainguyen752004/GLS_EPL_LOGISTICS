@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 802 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 823 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -3941,6 +3941,111 @@ window.EPL_TU_DIEN = {
   "vi": "Chi trả chủ xe liên kết",
   "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
   "en": "Paid the truck owner"
+ },
+ "brand_short": {
+  "vi": "Quản lý vận tải EPL",
+  "lo": "ຈັດການຂົນສົ່ງ EPL",
+  "en": "EPL Transport Management"
+ },
+ "nav_search": {
+  "vi": "Tìm chức năng… (Ctrl K)",
+  "lo": "ຄົ້ນຫາໜ້າທີ່… (Ctrl K)",
+  "en": "Find a screen… (Ctrl K)"
+ },
+ "nav_none": {
+  "vi": "Không có chức năng nào khớp",
+  "lo": "ບໍ່ມີໜ້າທີ່ກົງກັນ",
+  "en": "No screen matches"
+ },
+ "nav_more": {
+  "vi": "Thêm",
+  "lo": "ເພີ່ມ",
+  "en": "More"
+ },
+ "nav_collapse": {
+  "vi": "Thu gọn · mở rộng thanh bên",
+  "lo": "ຫຍໍ້ · ຂະຫຍາຍແຖບຂ້າງ",
+  "en": "Collapse · expand sidebar"
+ },
+ "tab_transport": {
+  "vi": "Vận tải",
+  "lo": "ຂົນສົ່ງ",
+  "en": "Transport"
+ },
+ "tab_warehouse": {
+  "vi": "Kho",
+  "lo": "ສາງ",
+  "en": "Stores"
+ },
+ "tab_master": {
+  "vi": "Danh mục",
+  "lo": "ຂໍ້ມູນພື້ນຖານ",
+  "en": "Master data"
+ },
+ "tab_system": {
+  "vi": "Hệ thống",
+  "lo": "ລະບົບ",
+  "en": "System"
+ },
+ "nav_tracking_s": {
+  "vi": "Theo dõi phiếu",
+  "lo": "ຕິດຕາມໃບ",
+  "en": "Slip tracking"
+ },
+ "nav_bill_s": {
+  "vi": "Hoá đơn",
+  "lo": "ໃບເກັບເງິນ",
+  "en": "Invoices"
+ },
+ "nav_driver_s": {
+  "vi": "Tiền chuyến & nước",
+  "lo": "ເງິນຖ້ຽວ & ນ້ຳ",
+  "en": "Trip & water money"
+ },
+ "nav_supplier_s": {
+  "vi": "Theo dõi NCC",
+  "lo": "ຕິດຕາມຜູ້ສະໜອງ",
+  "en": "Suppliers"
+ },
+ "nav_place_s": {
+  "vi": "Điểm đổ dầu",
+  "lo": "ຈຸດເຕີມນ້ຳມັນ",
+  "en": "Fuel points"
+ },
+ "nav_workflow_s": {
+  "vi": "Quy trình",
+  "lo": "ຂັ້ນຕອນ",
+  "en": "Workflow"
+ },
+ "view_settings": {
+  "vi": "Cài đặt giao diện",
+  "lo": "ຕັ້ງຄ່າໜ້າຈໍ",
+  "en": "Display settings"
+ },
+ "view_side": {
+  "vi": "Thanh bên",
+  "lo": "ແຖບຂ້າງ",
+  "en": "Sidebar"
+ },
+ "view_side_d": {
+  "vi": "Thấy hết chức năng cùng lúc, có số việc đang chờ cạnh từng mục.",
+  "lo": "ເຫັນທຸກໜ້າທີ່ພ້ອມກັນ, ມີຕົວເລກວຽກລໍຖ້າຢູ່ຂ້າງແຕ່ລະລາຍການ.",
+  "en": "See every screen at once, with pending counts beside each item."
+ },
+ "view_top": {
+  "vi": "Thanh trên",
+  "lo": "ແຖບເທິງ",
+  "en": "Top bar"
+ },
+ "view_top_d": {
+  "vi": "Nhường trọn chiều ngang cho bảng — hợp bảng nhiều cột.",
+  "lo": "ໃຫ້ຄວາມກວ້າງທັງໝົດແກ່ຕາຕະລາງ — ເໝາະກັບຕາຕະລາງຫຼາຍຖັນ.",
+  "en": "Gives the full width to tables — good for wide tables."
+ },
+ "view_narrow": {
+  "vi": "Thanh bên chỉ hiện biểu tượng",
+  "lo": "ແຖບຂ້າງສະແດງແຕ່ໄອຄອນ",
+  "en": "Icon-only sidebar"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

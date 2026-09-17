@@ -48,6 +48,8 @@ kiem/
 
 Quy tắc kho: nhiên liệu đổ ở kho Thà Bốc → khi kế toán kho ghi sổ mục III thì tự sinh dòng xuất kho; sửa xe lấy phụ tùng từ kho → trừ tồn ngay lúc khai; mua ngoài → công nợ. Xe nhà định khoản `625/…`, `614/…`; xe liên kết `4022/…`. Chi tiết trong [DOCS/BAN_DO_CHUC_NANG.md](DOCS/BAN_DO_CHUC_NANG.md) mục 4b.
 
+Điều hướng có **hai kiểu xem**, đổi ở nút tên người dùng → Cài đặt giao diện: *thanh bên* (thấy hết chức năng, có số việc đang chờ cạnh từng mục, thu gọn còn biểu tượng được) và *thanh trên* hai tầng (nhường trọn chiều ngang cho bảng). Máy nào nhớ theo máy đó.
+
 Xe về thì kế toán bấm **Khoá phiếu** (máy rà km, hao hụt, phiếu quặng đính kèm, mục chưa kiểm rồi mới cho khoá); khoá xong mới xuất hoá đơn và mới trả được chủ xe liên kết. Bán phụ tùng, xăng dầu cho bên ngoài ở màn **Bán hàng**. Mỗi bước sinh ra tiền hoặc hàng để lại một tờ trong **Sổ chứng từ** (`GET /api/chung-tu`, màn Chứng từ → tab Sổ chứng từ) cho module kế toán kéo về: ai nhập ô nào, tờ nào sinh ở bước nào, định khoản gợi ý, mã còn thiếu — xem [DOCS/CHUNG_TU_VA_DIEM_NOI.md](DOCS/CHUNG_TU_VA_DIEM_NOI.md) (có bản Word cạnh đó).
 
 Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາວ** (nút ở góc trên phải và trên màn đăng nhập).

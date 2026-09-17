@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Trip, TripExpense, TripSection
+from models import ChungTu, Part, Trip, TripExpense, TripSection, Voucher
 from routes.phieu import xuat_phieu
 from services.bao_mat import nguoi_hien_tai
 from services.tinh_toan import tien_dong, tinh_phieu
@@ -123,3 +123,48 @@ def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), _=Depends(nguo
         r["trang_thai"] = "paid" if r["cho_chi"] == 0 else ("partial" if r["da_chi"] else "unpaid")
         ra.append(r)
     return {"tu": dau.isoformat(), "den": cuoi.isoformat(), "rows": sorted(ra, key=lambda x: x["driver"])}
+
+
+@router.get("/api/dem-viec")
+def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Số việc đang chờ của TỪNG MÀN, để gắn con số nhỏ cạnh mục menu.
+
+    Chỉ đếm việc mà vai ĐANG ĐĂNG NHẬP thật sự phải làm — gắn số vào màn người ta không có quyền
+    làm gì thì chỉ tổ gây lo. Không trả khoá nào bằng 0 để giao diện khỏi vẽ pill rỗng.
+    """
+    r = {}
+    vai = user.role
+    admin = vai == "admin"
+
+    if vai == "driver":
+        r["phieu-cua-toi"] = (db.query(Trip).filter(Trip.driver_id == user.driver_id,
+                                                    Trip.transport_status != "arrived").count()
+                              if getattr(user, "driver_id", None) else 0)
+        return {k: v for k, v in r.items() if v}
+
+    # Phiếu chưa xong: chưa về, hoặc về rồi mà chưa xong phần tiền
+    if admin or vai in ("yard", "acct", "rev", "cash", "treasury", "fuel"):
+        r["theo-doi"] = db.query(Trip).filter(
+            (Trip.transport_status != "arrived") | (Trip.finance_status != "paid")).count()
+
+    # Phiếu lĩnh · tạm ứng đang chờ cấp
+    cho = db.query(Voucher).filter(Voucher.status == "cho")
+    if vai == "depot":
+        n = cho.filter(Voucher.kind == "fuel", Voucher.place_id == user.place_id).count()
+        if n:
+            r["cap-phat"] = n
+            r["kho-nhien-lieu"] = n
+        return {k: v for k, v in r.items() if v}
+    if admin or vai in ("yard", "fuel", "cash", "treasury", "acct"):
+        r["cap-phat"] = cho.count()
+        r["kho-nhien-lieu"] = cho.filter(Voucher.kind == "fuel").count()
+
+    # Phụ tùng dưới tồn tối thiểu
+    if admin or vai in ("yard", "fuel", "acct"):
+        r["kho-phu-tung"] = db.query(Part).filter(Part.qty < Part.min_qty).count()
+
+    # Chứng từ bên kế toán chưa đối chiếu
+    if admin or vai in ("acct", "rev", "cash", "treasury"):
+        r["chung-tu"] = db.query(ChungTu).filter(ChungTu.da_day.is_(False)).count()
+
+    return {k: v for k, v in r.items() if v}

@@ -113,7 +113,7 @@ async function main() {
   // 1. đã ở trong ứng dụng với vai admin, đi hết module
   await choDen(() => !d.getElementById('app').hidden, 'vào ứng dụng');
   await w.EPL.sanSang;
-  const nav = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  const nav = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
   assert.deepStrictEqual(nav, MODULES, 'thanh điều hướng phải đủ ' + MODULES.length + ' module đúng thứ tự');
   console.log('✓ admin: thanh điều hướng đủ %d module', nav.length);
 
@@ -214,7 +214,7 @@ async function main() {
   // 4. vai Bãi: không thấy Tài khoản, không thấy nút kiểm/chi
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi'); await w.EPL.sanSang;
-  assert.ok(![...d.querySelectorAll('#nav button')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
+  assert.ok(![...d.querySelectorAll('#nav [data-mod]')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
   assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);
@@ -234,7 +234,7 @@ async function main() {
   // 6. vai tài xế: chỉ thấy "Phiếu của tôi", có nút xuất phát / báo hỏng
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('tx01', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai tài xế'); await w.EPL.sanSang;
-  const navTx = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  const navTx = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
   assert.deepStrictEqual(navTx, ['phieu-cua-toi'], 'tài xế chỉ được thấy Phiếu của tôi: ' + navTx);
   const chuTx = goc().textContent;
   assert.ok(!chuTx.includes(w.EPL.NN.t('err_generic')), 'màn tài xế báo lỗi: ' + chuTx.slice(0, 200));
@@ -244,11 +244,48 @@ async function main() {
   // 7. vai thủ kho nhiên liệu: chỉ thấy hàng chờ cấp và tồn kho dầu
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khotb', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai thủ kho'); await w.EPL.sanSang;
-  const navKho = [...d.querySelectorAll('#nav button')].map(b => b.dataset.mod);
+  const navKho = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
   assert.deepStrictEqual(navKho, ['cap-phat', 'kho-nhien-lieu'], 'thủ kho chỉ được thấy Cấp phát và Kho nhiên liệu: ' + navKho);
   const chuKho = goc().textContent;
   assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')), 'màn thủ kho báo lỗi: ' + chuKho.slice(0, 200));
   console.log('✓ vai thủ kho: chỉ thấy %s', navKho.join(', '));
+
+  // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN
+  // CHỖ chứ không nhân đôi — nhân đôi là hai nút cùng id, bấm cái nào cũng sai.
+  {
+    const app = d.getElementById('app');
+    w.EPL.datKieuXem('top');
+    assert.strictEqual(app.dataset.view, 'top');
+    assert.ok(!d.getElementById('tbar').hidden, 'kiểu thanh trên phải hiện thanh hai tầng');
+    assert.ok(d.querySelectorAll('#tbarMod [data-nhom]').length >= 2, 'tầng 1 phải có các nhóm module');
+    assert.ok(d.querySelectorAll('#tbar2 [data-mod]').length >= 1, 'tầng 2 phải có màn của nhóm đang chọn');
+    assert.strictEqual(d.querySelectorAll('#langApp').length, 1, 'khối ngôn ngữ của ứng dụng chỉ được có MỘT bản');
+    assert.strictEqual(d.querySelectorAll('#userbox').length, 1, 'khối người dùng chỉ được có MỘT bản');
+    assert.ok(d.getElementById('tbarPhai').contains(d.getElementById('langApp')), 'kiểu thanh trên: ngôn ngữ nằm ở tầng 1');
+    w.EPL.datKieuXem('side');
+    assert.strictEqual(app.dataset.view, 'side');
+    assert.ok(d.getElementById('tbar').hidden, 'kiểu thanh bên thì ẩn thanh trên');
+    assert.ok(d.getElementById('chanOi').contains(d.getElementById('userbox')), 'kiểu thanh bên: người dùng nằm ở chân thanh');
+    assert.ok(d.querySelectorAll('#nav [data-nhom]').length >= 2, 'thanh bên phải có tiêu đề nhóm gấp được');
+    const tim = d.getElementById('navTim');
+    tim.value = 'kho'; tim.dispatchEvent(new w.Event('input'));
+    const loc = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
+    assert.ok(loc.length && loc.every(x => /kho|phu-tung|nhien-lieu/.test(x)), 'gõ "kho" phải lọc menu: ' + loc.join(','));
+    tim.value = ''; tim.dispatchEvent(new w.Event('input'));
+    // Menu người dùng (bánh răng "Cài đặt giao diện" và "Đổi tài khoản") và nút thu gọn thanh bên
+    const menu = d.getElementById('nguoiMenu');
+    assert.ok(menu.hidden, 'menu người dùng lúc đầu phải đóng');
+    d.getElementById('btnNguoi').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.ok(!menu.hidden, 'bấm vào tên người dùng phải mở menu');
+    assert.strictEqual(menu.querySelectorAll('[data-mn]').length, 2, 'menu phải có Cài đặt giao diện và Đổi tài khoản');
+    d.body.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.ok(menu.hidden, 'bấm ra ngoài phải đóng menu');
+    d.getElementById('btnThuGon').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.strictEqual(app.dataset.hep, '1', 'bấm nút thu gọn phải chuyển thanh bên sang chế độ hẹp');
+    d.getElementById('btnThuGon').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.strictEqual(app.dataset.hep, '0', 'bấm lần nữa phải mở rộng lại');
+    console.log('✓ hai kiểu xem: thanh bên ↔ thanh trên, ngôn ngữ và người dùng chuyển chỗ, tìm nhanh lọc được');
+  }
 
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
   console.log(`\nTHỬ GIAO DIỆN: ĐẠT — ${MODULES.length} module · 4 ngôn ngữ · số khớp máy chủ · phân vai đúng (tài xế · thủ kho)`);
