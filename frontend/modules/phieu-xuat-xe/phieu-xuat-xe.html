@@ -44,6 +44,7 @@
       <div class="field"><label data-i18n="d_out"></label><input type="date" id="f-out_date"></div>
       <div class="field"><label data-i18n="d_back"></label><input type="date" id="f-back_date"></div>
       <div class="field"><label data-i18n="odo_out"></label><input class="num" id="f-odo_out" inputmode="decimal"></div>
+      <div class="field"><label data-i18n="odo_est"></label><div class="ro num" id="v-odo_est" title="km đi + km tuyến">—</div></div>
       <div class="field"><label data-i18n="odo_back"></label><input class="num" id="f-odo_back" inputmode="decimal"></div>
       <div class="field"><label data-i18n="odo_km"></label><div class="ro num" id="v-odo_km">—</div></div>
     </div>
@@ -64,12 +65,12 @@
         <div class="field"><label data-i18n="w_origin"></label><input class="num" id="f-weight_origin" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
-        <div class="field"><label data-i18n="price_usd"></label><input class="num" id="f-price_usd" inputmode="decimal"></div>
-        <div class="field"><label data-i18n="value_usd"></label><div class="ro hi num" id="v-val-usd">—</div></div>
-        <div class="field"><label data-i18n="value_lak"></label><div class="ro num" id="v-val-lak">—</div></div>
+        <div class="field px-tien"><label data-i18n="price_usd"></label><input class="num" id="f-price_usd" inputmode="decimal"></div>
+        <div class="field px-tien"><label data-i18n="value_usd"></label><div class="ro hi num" id="v-val-usd">—</div></div>
+        <div class="field px-tien"><label data-i18n="value_lak"></label><div class="ro num" id="v-val-lak">—</div></div>
       </div>
-      <p class="small muted" data-i18n="value_rule"></p>
-      <div class="px-lk px-khau-tru">
+      <p class="small muted px-tien" data-i18n="value_rule"></p>
+      <div class="px-lk px-khau-tru px-tien">
         <h5 data-i18n="ded_title"></h5>
         <div class="f-grid">
           <div class="field"><label data-i18n="hire_pt"></label><input class="num" id="f-hire_price_usd" inputmode="decimal"></div>
@@ -104,7 +105,7 @@
     <div class="px-muc-than"><div class="tbl-wrap"><table class="tbl tbl-compact px-chi" data-bang="other"><thead><tr><th>#</th><th data-i18n="item"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="unit_price"></th><th class="num" data-i18n="amount_lak"></th><th class="px-lk" data-i18n="who_pays"></th><th data-i18n="acct_code"></th><th class="no-print"></th></tr></thead><tbody></tbody><tfoot></tfoot></table></div><button class="btn quiet sm no-print px-them" data-them="other">+ <span data-i18n="add_row"></span></button></div>
   </section>
 
-  <div id="px-tong-ket"></div>
+  <div id="px-tong-ket" class="px-tien"></div>
   <div class="px-hanh-dong no-print" id="px-hanh-dong"></div>
   <div class="px-log no-print" id="px-log"></div>
   <div class="px-ky">

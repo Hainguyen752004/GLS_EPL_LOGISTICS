@@ -25,3 +25,16 @@
 .ct-ma{font-size:14px;margin:4px 0}
 .ct-ma b{font-size:16px;letter-spacing:.06em}
 @media print{.ct-giay{border:0;padding:0;max-width:none}.ct-qr{border-style:solid}}
+
+/* ---- sổ chứng từ ---- */
+.ct-check{display:inline-flex;align-items:center;gap:6px;align-self:flex-end;padding-bottom:8px;font-size:13px;white-space:nowrap}
+.ct-tong-loai{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 12px}
+.ct-tong-loai .o{border:1px solid var(--line);border-radius:var(--r);padding:6px 10px;font-size:12.5px;cursor:pointer;background:var(--paper)}
+.ct-tong-loai .o:hover,.ct-tong-loai .o.chon{border-color:var(--green-2);background:var(--green-soft)}
+.ct-tong-loai .o b{display:block;font-size:11px;letter-spacing:.04em;color:var(--ink-3)}
+.ct-tong-loai .o .n{font-weight:700;font-variant-numeric:tabular-nums}
+.ct-tong-loai .o .c{color:var(--amber);font-weight:600}
+#ct-so-bang td .acct{font-size:11.5px}
+#ct-so-bang tr.da-day td{color:var(--ink-3)}
+#ct-so-bang .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+@media print{#ct-so-ct .hd .field,#ct-so-ct .ct-check,#ct-so-bang th:last-child,#ct-so-bang td:last-child{display:none}}

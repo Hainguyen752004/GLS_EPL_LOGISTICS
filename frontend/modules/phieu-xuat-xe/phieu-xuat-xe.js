@@ -73,6 +73,9 @@
   function veSo() {
     const k = tinh();
     g('v-odo_km').textContent = P.odo_out && P.odo_back ? so(Math.abs(EPL.doc(P.odo_back) - EPL.doc(P.odo_out))) : '—';
+    // Km về ước tính = km lúc đi + km tuyến — để kế toán đối với km về thật ở bước kiểm lại
+    const tuyen = (DM.routes || []).find(x => x.id === P.route_id);
+    g('v-odo_est').textContent = P.odo_out && tuyen && tuyen.total_km ? so(EPL.doc(P.odo_out) + EPL.doc(tuyen.total_km)) : '—';
     g('v-hao').innerHTML = k.hao === null ? '—' : `${so(EPL.doc(P.weight_origin) - EPL.doc(P.weight_dest), 2)} t <span class="${k.hao > 1.5 ? 'neg' : 'muted'}">(${k.hao.toFixed(1)}%)</span>`;
     g('v-val-usd').textContent = so(k.dt, 2) + ' USD'; g('v-val-lak').textContent = so(k.dt * k.rU) + ' LAK';
     if (k.lk) { g('v-hire').textContent = so(k.thue, 2) + ' USD'; g('v-fee').textContent = '− ' + so(k.phi, 2) + ' USD'; g('v-over-t').textContent = so(k.vuot, 2) + ' t'; g('v-over').textContent = '− ' + so(k.truVuot, 2) + ' USD'; }
@@ -197,7 +200,7 @@
     if (!a) return ''; const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
     return NN.t(a);
   }
-  function veHet() { veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai(); NN.apDung(root); }
+  function veHet() { q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard'); veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai(); NN.apDung(root); }
 
   /* ---------------------------------------------------------------- dữ liệu */
   function phieuTrong() {

@@ -195,6 +195,8 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
   assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);
+  assert.ok(goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai Bãi phải có lớp px-an-tien để ẩn đơn giá/thành tiền/quy đổi');
+  assert.ok(goc().querySelector('#v-odo_est'), 'phiếu phải có ô Km về ước tính');
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
 
   // 5. vai kho nhiên liệu: chỉ mục III có nút
@@ -203,6 +205,7 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const mucCoNut = [...new Set([...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.mucAct))];
   assert.deepStrictEqual(mucCoNut, ['fuel'], 'vai kho nhiên liệu chỉ được có nút ở mục III: ' + mucCoNut);
+  assert.ok(!goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai khác Bãi phải thấy ô tiền');
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
 
   // 6. vai tài xế: chỉ thấy "Phiếu của tôi", có nút xuất phát / báo hỏng

@@ -2,6 +2,8 @@
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
   let root, tab = 'chi', DS = [], P = null, ACC = {}, LINH = [], vChon = null;
+  let SO_LOAI = [], soLoaiChon = '';           // sổ chứng từ: danh mục loại · loại đang lọc
+  const XEM_SO = ['acct', 'rev', 'treasury', 'cash', 'fuel', 'depot', 'admin'];
   const q = (s) => root.querySelector(s);
 
   function tenTK(ma) {
@@ -90,7 +92,51 @@
         <div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
 
+  /* ---------------------------------------------------------------- sổ chứng từ */
+  function veSoTong(tong) {
+    q('#ct-so-tong').innerHTML = Object.keys(tong).length ? SO_LOAI.filter(l => tong[l.ma]).map(l => {
+      const t = tong[l.ma];
+      return `<button type="button" class="o ${soLoaiChon === l.ma ? 'chon' : ''}" data-loai="${l.ma}"><b>${esc(l.ma)}</b>${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}
+        <div><span class="n">${t.so_to}</span> ${NN.h('ct_so_to').toLowerCase()} · <span class="n">${so(t.tien_lak)}</span> LAK${t.chua_day ? ` · <span class="c">${t.chua_day} ${NN.h('ct_chua_day').toLowerCase()}</span>` : ''}</div></button>`;
+    }).join('') : '';
+    q('#ct-so-tong').querySelectorAll('[data-loai]').forEach(b => b.addEventListener('click', () => { soLoaiChon = soLoaiChon === b.dataset.loai ? '' : b.dataset.loai; q('#ct-so-loai').value = soLoaiChon; veSo(); }));
+  }
+  async function veSo() {
+    const th = new URLSearchParams();
+    if (soLoaiChon) th.set('loai', soLoaiChon);
+    if (q('#ct-so-tu').value) th.set('tu', q('#ct-so-tu').value);
+    if (q('#ct-so-den').value) th.set('den', q('#ct-so-den').value);
+    if (q('#ct-so-chua').checked) th.set('chua_day', '1');
+    let r;
+    try { r = await API.get('/api/chung-tu?' + th.toString()); } catch (e) { q('#ct-so-than').innerHTML = `<tr><td colspan="10" class="empty neg">${esc(e.message)}</td></tr>`; return; }
+    veSoTong(r.tong);
+    const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
+    const suaDuoc = AUTH.la('acct', 'rev', 'treasury', 'cash');
+    q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day ? 'da-day' : ''}" data-id="${c.id}">
+      <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
+      <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
+      <td>${c.trip_id ? `<a href="#/phieu-xuat-xe?id=${esc(c.trip_id)}" class="mono">${esc(c.trip_doc_no || '')}</a>` : '<span class="muted">—</span>'}</td>
+      <td lang="lo">${esc(c.doi_tuong_ten || '')}<div class="small muted">${esc(c.doi_tuong_loai || '')}</div></td>
+      <td class="num">${c.tien == null ? '—' : so(c.tien, c.tien_te === 'USD' ? 2 : 0) + ' ' + esc(c.tien_te)}</td>
+      <td class="num">${c.tien_lak == null ? '—' : so(c.tien_lak)}</td>
+      <td>${c.no || c.co || c.no_ten ? `${tk(c.no, c.no_ten)} / ${tk(c.co, c.co_ten)}` : '<span class="muted">—</span>'}</td>
+      <td class="small">${esc(c.mo_ta || '')}<div class="muted">${esc(c.by_user || '')}</div></td>
+      <td class="no-print">${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
+    </tr>`).join('') : `<tr><td colspan="10" class="empty small">${NN.h('ct_khong_co')}</td></tr>`;
+    q('#ct-so-than').querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', async () => {
+      try { await API.post(`/api/chung-tu/${b.dataset.day}/da-day`, { da_day: b.dataset.giaTri === '1' }); await veSo(); } catch (e) { EPL.baoLoi(e); }
+    }));
+  }
+  function doiTab() {
+    const la = tab === 'so';
+    q('#ct-so-ct').hidden = !la; q('#ct-giay').hidden = la;
+    root.querySelectorAll('.ct-khi-in').forEach(el => { el.hidden = la; });
+    q('#ct-o-linh').hidden = la || tab !== 'linh' || LINH.filter(v => v.kind === 'fuel').length < 2;
+  }
+
   async function ve() {
+    doiTab();
+    if (tab === 'so') { await veSo(); return; }
     if (!P) { q('#ct-than').innerHTML = `<div class="ct-trong">${NN.h('no_data')}</div>`; return; }
     try {
       LINH = await API.get(`/api/trips/${P.id}/vouchers`).catch(() => []);
@@ -116,15 +162,23 @@
       q('#ct-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       root.querySelectorAll('.ct-tab button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x === b)); ve(); }));
       if (AUTH.role === 'driver') root.querySelector('.ct-tab button[data-tab="thu"]').hidden = true;
+      if (!XEM_SO.includes(AUTH.role)) root.querySelector('.ct-tab button[data-tab="so"]').hidden = true;
+      else {
+        SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
+        q('#ct-so-loai').innerHTML = `<option value="">${NN.h('all')}</option>` + SO_LOAI.map(l => `<option value="${l.ma}">${esc(l.ma)} · ${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}</option>`).join('');
+        q('#ct-so-loai').addEventListener('change', e => { soLoaiChon = e.target.value; veSo(); });
+        ['ct-so-tu', 'ct-so-den', 'ct-so-chua'].forEach(id => q('#' + id).addEventListener('change', veSo));
+      }
       q('#ct-linh').addEventListener('change', e => { vChon = e.target.value; ve(); });
       const t = ctx.tham || {};
-      if (t.tab && ['chi', 'linh', 'thu'].includes(t.tab)) {
+      if (t.tab && ['chi', 'linh', 'thu', 'so'].includes(t.tab) && !root.querySelector(`.ct-tab button[data-tab="${t.tab}"]`).hidden) {
         tab = t.tab;
         root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
       }
       if (t.v) vChon = t.v;
       P = DS.find(p => p.id === t.id) || DS[0] || null;
       if (P) q('#ct-chon').value = P.id;
+      if (t.loai) soLoaiChon = String(t.loai).toUpperCase();
       await ve();
     },
     onLang() { if (root) ve(); },

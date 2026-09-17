@@ -5,13 +5,14 @@
     <button class="active" data-tab="chi" data-i18n="v_advance"></button>
     <button data-tab="linh" data-i18n="v_fuel"></button>
     <button data-tab="thu" data-i18n="voucher_receipt"></button>
+    <button data-tab="so" data-i18n="ct_so"></button>
   </div>
-  <div class="field"><label data-i18n="doc_no"></label><select id="ct-chon"></select></div>
+  <div class="field ct-khi-in"><label data-i18n="doc_no"></label><select id="ct-chon"></select></div>
   <div class="field" id="ct-o-linh" hidden><label data-i18n="v_fuel"></label><select id="ct-linh"></select></div>
   <div class="grow"></div>
   <span class="small muted" id="ct-acc-nguon"></span>
-  <button class="btn" id="ct-mo-phieu"><span data-i18n="open_slip"></span></button>
-  <button class="btn primary" onclick="window.print()"><span data-i18n="print"></span></button>
+  <button class="btn ct-khi-in" id="ct-mo-phieu"><span data-i18n="open_slip"></span></button>
+  <button class="btn primary ct-khi-in" onclick="window.print()"><span data-i18n="print"></span></button>
 </div>
 <div class="card ct-giay" id="ct-giay">
   <div class="ct-dau">
@@ -19,4 +20,22 @@
     <div class="ct-so" id="ct-so"></div>
   </div>
   <div id="ct-than"></div>
+</div>
+
+<!-- Sổ chứng từ: hộp thư đi cho bên kế toán. Mỗi bước nghiệp vụ bỏ vào đây một tờ (DO, PLNL, PTU, PXK_NL, PC_TU, HD, PT…),
+     bên anh Khang kéo về (GET /api/chung-tu?chua_day=1) rồi đánh dấu đã đối chiếu. Không phải sổ kế toán. -->
+<div class="card" id="ct-so-ct" hidden>
+  <div class="hd">
+    <h3 data-i18n="ct_so"></h3><div class="grow"></div>
+    <div class="field"><label data-i18n="ct_loai"></label><select id="ct-so-loai"><option value="" data-i18n="all"></option></select></div>
+    <div class="field"><label data-i18n="ct_tu"></label><input type="date" id="ct-so-tu"></div>
+    <div class="field"><label data-i18n="ct_den"></label><input type="date" id="ct-so-den"></div>
+    <label class="ct-check"><input type="checkbox" id="ct-so-chua"> <span data-i18n="ct_chua_day"></span></label>
+  </div>
+  <div class="bd small muted" data-i18n="ct_hint"></div>
+  <div class="ct-tong-loai" id="ct-so-tong"></div>
+  <div class="tbl-wrap"><table class="tbl tbl-compact" id="ct-so-bang">
+    <thead><tr><th data-i18n="voucher_no"></th><th data-i18n="c_date"></th><th data-i18n="ct_loai"></th><th data-i18n="doc_no"></th><th data-i18n="ct_doi_tuong"></th>
+      <th class="num" data-i18n="amount"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="ct_no_co"></th><th data-i18n="note"></th><th></th></tr></thead>
+    <tbody id="ct-so-than"></tbody></table></div>
 </div>

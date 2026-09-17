@@ -30,6 +30,7 @@ from database import get_db
 from models import Driver, DriverSettlement, Supplier, Trip, TripExpense, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import ty_gia
+from services import chung_tu as CT
 
 router = APIRouter()
 CHOT = can_vai("acct", "cash", "treasury")
@@ -139,7 +140,15 @@ def chot_ky(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(CHO
                          tong_ung_lak=k["tong_ung_lak"], tong_chi_lak=k["tong_chi_lak"],
                          chenh_lech_lak=k["chenh_lech_lak"], settled_by=user.full_name,
                          settled_at=dt.datetime.utcnow(), note=d.get("note"))
-    db.add(x); db.commit()
+    db.add(x); db.flush()
+    ch = k["chenh_lech_lak"]
+    if abs(ch) >= 1:
+        CT.ghi(db, "TT_CHI" if ch > 0 else "TT_THU", nguon_bang="driver_settlements", nguon_id=x.id,
+               ngay=dt.date.today(), doi_tuong_loai="tai_xe", doi_tuong_ten=t.name, tien=abs(ch), tien_te="LAK",
+               section="travel", by_user=user.full_name,
+               mo_ta="Tất toán kỳ %s · %s" % (ky, "công ty chi bù" if ch > 0 else "tài xế nộp lại"),
+               payload={"period": ky, "tong_ung_lak": k["tong_ung_lak"], "tong_chi_lak": k["tong_chi_lak"], "driver_id": t.id})
+    db.commit()
     return tinh_ky(db, t, ky)
 
 
@@ -150,5 +159,6 @@ def bo_chot(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=De
          .filter(DriverSettlement.driver_id == driver_id, DriverSettlement.period == _ky_hop_le(ky)).first())
     if not x:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Kỳ này chưa tất toán."})
+    CT.rut(db, nguon_bang="driver_settlements", nguon_id=x.id)
     db.delete(x); db.commit()
     return {"ok": True}

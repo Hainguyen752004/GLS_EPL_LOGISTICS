@@ -27,36 +27,31 @@
   const BUOC = [
     { so: 1, vai: 'yard', tt: 'co', ten: 'Mở phiếu xuất xe (DO)', muc: 'sec1', man: 'phieu-xuat-xe',
       mo_ta: 'Bãi mở phiếu mới. Chọn loại xe: xe nhà hay xe thuê (xe liên kết). Đây là điều xe bằng tay, hạn chế nhưng hợp với bên Lào lúc này; sau nối module điều xe của EPL_System.',
-      nhap: ['Loại xe: EPL hay liên kết', 'Số xe, biển đầu kéo, biển rơ-moóc', 'Tài xế', 'Ngày lập, ngày xe đi', 'Km lúc đi'],
-      de_nghi: ['Km về ƯỚC TÍNH tự điền = km lúc đi + km tuyến (chọn tuyến ở bước 2). Km về THẬT nhập ở bước 13.'],
-      chung_tu: ['Phiếu xuất xe (DO)'], trang_thai: 'Mới → Đã xuất xe' },
+      nhap: ['Loại xe: EPL hay liên kết', 'Số xe, biển đầu kéo, biển rơ-moóc', 'Tài xế', 'Ngày lập, ngày xe đi', 'Km lúc đi', 'Km về ước tính: máy tự tính = km đi + km tuyến (chỉ đọc). Km về thật nhập ở bước 13.'],
+      chung_tu: ['Phiếu xuất xe · DO'], trang_thai: 'Mới → Đã xuất xe' },
 
     { so: 2, vai: 'yard', tt: 'co', ten: 'Mục II: tuyến, khách, hàng', muc: 'sec2', man: 'phieu-xuat-xe',
-      mo_ta: 'Bãi chọn tuyến (điểm đi, điểm đến tự điền), khách hàng, loại hàng. Số phiếu quặng là của khách gửi, coi như tệp đính kèm theo DO cho tài xế cầm.',
-      nhap: ['Tuyến đường', 'Khách hàng', 'Loại hàng', 'Điểm đi, điểm đến (tự theo tuyến)'],
-      an: ['Cân đầu', 'Cân cuối', 'Hao hụt', 'Đơn giá USD/tấn', 'Thành tiền', 'Quy đổi LAK'],
-      de_nghi: ['ẨN sáu ô trên với vai Bãi: đó là số kế toán, Bãi không cần và không nên thấy.',
-        'Đính kèm tệp phiếu quặng của khách vào phiếu (ảnh hoặc PDF).',
-        'Cân đầu: em đề nghị KẾ TOÁN nhập từ phiếu quặng đính kèm khi kiểm mục II (bước 5), vì cân đầu ghi trên phiếu quặng lúc bốc. Anh chốt lại nếu Bãi là người có tờ đó trước.'],
+      mo_ta: 'Bãi chọn tuyến (điểm đi, điểm đến tự điền), khách hàng, loại hàng, số phiếu quặng và CÂN ĐẦU. Em chốt Bãi nhập cân vì tờ phiếu quặng nằm ở bãi lúc bốc hàng, kế toán ở Viêng Chăn không cầm tờ đó; kế toán chỉ kiểm lại con số. Tiền (đơn giá, thành tiền, quy đổi, khấu trừ) Bãi không thấy.',
+      nhap: ['Tuyến đường', 'Khách hàng', 'Loại hàng', 'Số phiếu quặng, ngày', 'Điểm đi, điểm đến (tự theo tuyến)', 'Cân đầu (tấn) từ phiếu quặng'],
+      an: ['Đơn giá USD/tấn', 'Thành tiền USD', 'Quy đổi LAK', 'Khấu trừ xe liên kết', 'Tổng kết doanh thu · chi · lãi'],
+      de_nghi: ['Đính kèm tệp phiếu quặng của khách vào phiếu (ảnh hoặc PDF) — chưa làm.'],
       chung_tu: [], trang_thai: 'Mục II: Chưa gửi → Đã nhập' },
 
     { so: 3, vai: 'yard', tt: 'co', ten: 'Mục III: nhiên liệu', muc: 'sec3', man: 'phieu-xuat-xe',
       mo_ta: 'Bãi khai số lít và nơi đổ. Nơi đổ là kho dầu của EPL thì ra phiếu lĩnh có mã QR cho tài xế cầm tới kho. Giá dầu là giá vốn, chỉ thủ kho và kế toán thấy.',
       nhap: ['Số lít', 'Nơi đổ (kho EPL)'],
       an: ['Đơn giá', 'Tiền tệ', 'Thành tiền', 'Mã kế toán'],
-      de_nghi: ['ẨN bốn ô trên với vai Bãi. Đơn giá lấy theo giá kho lúc thủ kho cấp (bước 7), không để Bãi gõ.'],
-      chung_tu: ['Phiếu lĩnh nhiên liệu (QR)'], trang_thai: 'Phiếu lĩnh: Chờ cấp' },
+      chung_tu: ['Phiếu lĩnh nhiên liệu (QR) · PLNL'], trang_thai: 'Phiếu lĩnh: Chờ cấp' },
 
     { so: 4, vai: 'yard', tt: 'co', ten: 'Mục IV: chi phí đi đường', muc: 'sec4', man: 'phieu-xuat-xe',
       mo_ta: 'Bãi khai các khoản tiền mặt tài xế cần cầm đi: tiền nước, chi phí sang Việt Nam, điện thoại, chipping, cao tốc. Ra phiếu tạm ứng có mã QR.',
       nhap: ['Khoản mục', 'Số lượng', 'Đơn giá'],
-      chung_tu: ['Phiếu tạm ứng đi đường (QR)'], trang_thai: 'Mục IV: Đã nhập · chờ kiểm' },
+      chung_tu: ['Phiếu tạm ứng đi đường (QR) · PTU'], trang_thai: 'Mục IV: Đã nhập · chờ kiểm' },
 
     { so: 5, vai: 'acct', tt: 'co', ten: 'Kiểm mục I, II, IV · nhập ô kế toán', muc: 'sec2', man: 'phieu-xuat-xe',
       mo_ta: 'Kế toán Viêng Chăn mở phiếu, kiểm những gì Bãi nhập, sửa nếu sai hoặc trả lại cho Bãi. Nhập các ô đã ẩn với Bãi.',
-      nhap: ['Cân đầu (từ phiếu quặng đính kèm)', 'Đơn giá USD/tấn theo hợp đồng', 'Xe liên kết: giá thuê, phí 2%, ngưỡng tấn'],
-      kiem: ['Mục I', 'Mục II', 'Mục IV'],
-      de_nghi: ['Hiện kế toán kiểm được nhưng các ô cân, đơn giá đang mở cho cả Bãi. Đề nghị chỉ kế toán nhập.'],
+      nhap: ['Đơn giá USD/tấn theo hợp đồng', 'Xe liên kết: giá thuê, phí 2%, ngưỡng tấn', 'Đơn giá dầu, tiền tệ, mã TK ở mục III nếu kho nhiên liệu chưa điền'],
+      kiem: ['Mục I', 'Mục II (cân đầu Bãi nhập so với phiếu quặng)', 'Mục IV'],
       chung_tu: [], trang_thai: 'I, II: Đã kiểm · IV: Đã kiểm' },
 
     { so: 6, vai: 'fuel', tt: 'co', ten: 'Kiểm và ghi sổ mục III', muc: 'sec3', man: 'phieu-xuat-xe',
@@ -67,7 +62,7 @@
     { so: 7, vai: 'depot', tt: 'co', ten: 'Quét QR, cấp dầu', muc: 'sec3', man: 'cap-phat',
       mo_ta: 'Xe tới kho, tài xế đưa phiếu lĩnh. Thủ kho quét mã, đối chiếu đúng xe đúng tài xế, nhập số lít cấp thật rồi bấm Cấp. Cấp lệch số duyệt thì bắt ghi lý do. Mất mạng vẫn cấp được, gửi lại sau.',
       nhap: ['Số lít cấp thật', 'Lý do nếu lệch'],
-      chung_tu: ['Phiếu xuất kho nhiên liệu'], dinh_khoan: '625/371', trang_thai: 'Phiếu lĩnh: Đã cấp · Tồn kho trừ ngay' },
+      chung_tu: ['Phiếu xuất kho nhiên liệu · PXK_NL'], dinh_khoan: '625/371', trang_thai: 'Phiếu lĩnh: Đã cấp · Tồn kho trừ ngay' },
 
     { so: 8, vai: 'acct', tt: 'co', ten: 'Ghi sổ mục IV', muc: 'sec4', man: 'phieu-xuat-xe',
       mo_ta: 'Kế toán ghi sổ khoản đi đường sau khi kiểm. Ghi sổ xong quỹ mới được chi.',
@@ -75,8 +70,7 @@
 
     { so: 9, vai: 'cash', tt: 'co', ten: 'Chi tạm ứng theo QR', muc: 'sec4', man: 'cap-phat',
       mo_ta: 'Tài xế cầm phiếu tạm ứng tới quỹ. Quỹ quét mã, đối chiếu, bấm Chi tiền. Mục IV chưa ghi sổ thì máy chặn.',
-      chung_tu: ['Phiếu chi tạm ứng'], dinh_khoan: '625/402',
-      de_nghi: ['Phiếu chi hiện là màn tính từ phiếu xuất xe, chưa là chứng từ có số riêng. Khi nối sổ của anh Khang thì đẩy bút toán sang bên đó, không dựng sổ quỹ thứ hai.'],
+      chung_tu: ['Phiếu chi tạm ứng · PC_TU'], dinh_khoan: '625/… · Có: tiền mặt (mã bên kế toán cấp)',
       trang_thai: 'Mục IV: Đã chi · Phiếu lĩnh: Đã cấp' },
 
     { so: 10, vai: 'driver', tt: 'co', ten: 'Xuất phát · chia sẻ vị trí', muc: 'sec1', man: 'phieu-cua-toi',
@@ -91,7 +85,7 @@
     { so: 12, vai: 'yard', tt: 'co', ten: 'Duyệt báo hỏng → mục V, VI', muc: 'sec5', man: 'theo-doi-tuyen',
       mo_ta: 'Bãi duyệt báo hỏng của tài xế. Có phụ tùng trong kho thì xuất kho (trừ tồn ngay); không có thì chi mua ngoài. Phiếu tự mở lại mục V. Khai đổ dầu do kế toán hoặc kho nhiên liệu duyệt, rơi vào mục III nguồn mua.',
       nhap: ['Duyệt hoặc từ chối', 'Nguồn: kho hay mua', 'Phụ tùng nếu lấy kho', 'Số tiền duyệt'],
-      chung_tu: ['Phiếu xuất kho phụ tùng (nếu lấy kho)'], dinh_khoan: '614/371 (kho) · 614/402 (mua)',
+      chung_tu: ['Phiếu xuất kho phụ tùng (nếu lấy kho) · PXK_PT'], dinh_khoan: '614/371 (kho) · 614/402 (mua)',
       trang_thai: 'Mục V: Đã nhập · chờ kiểm' },
 
     { so: 13, vai: 'yard', tt: 'co', ten: 'Xe tới nơi', muc: 'sec2', man: 'theo-doi-tuyen',
@@ -110,11 +104,11 @@
 
     { so: 16, vai: 'cash', tt: 'co', ten: 'Chi mục V, VI', muc: 'sec5', man: 'phieu-xuat-xe',
       mo_ta: 'Tiền mặt lẻ Thà Bốc chi các khoản sửa chữa mua ngoài và chi khác.',
-      chung_tu: ['Phiếu chi sửa chữa · chi khác'], dinh_khoan: '614/402 · 625/402', trang_thai: 'V, VI: Đã chi' },
+      chung_tu: ['Phiếu chi sửa chữa · chi khác · PC_SC'], dinh_khoan: '614/… · 625/… · Có: tiền mặt', trang_thai: 'V, VI: Đã chi' },
 
     { so: 17, vai: 'rev', tt: 'co', ten: 'Lập hoá đơn, thu tiền khách', muc: 'sec2', man: 'hoa-don',
       mo_ta: 'Kế toán doanh thu đối chiếu số phiếu, cân cuối, đơn giá hợp đồng rồi lập hoá đơn vận chuyển và ghi thu.',
-      nhap: ['Lập hoá đơn', 'Ghi đã thu'], chung_tu: ['Hoá đơn vận chuyển', 'Phiếu thu'], dinh_khoan: '1211/70',
+      nhap: ['Lập hoá đơn', 'Ghi đã thu'], chung_tu: ['Hoá đơn vận chuyển · HD', 'Phiếu thu tiền khách · PT'], dinh_khoan: '1211/70 (hoá đơn) · tiền mặt/1211 (thu)',
       trang_thai: 'Chưa thanh toán → Đã thanh toán' },
 
     { so: 18, vai: 'acct', tt: 'co', ten: 'Xe liên kết: trả chủ xe', muc: 'sec2', man: 'xe-lien-ket',
@@ -125,15 +119,15 @@
 
     { so: 19, vai: 'cash', tt: 'co', ten: 'Tất toán tài xế theo tháng', muc: 'sec4', man: 'tat-toan',
       mo_ta: 'Cuối tháng đối: đã ứng bao nhiêu, đã chi thật bao nhiêu. Dương thì công ty chi bù, âm thì tài xế nộp lại. Không tính khoản công ty trả nhà cung cấp theo đợt.',
-      chung_tu: ['Bảng tất toán · phiếu chi bù hoặc phiếu thu hoàn'], trang_thai: 'Kỳ: Đã tất toán · khoá' },
+      chung_tu: ['Phiếu chi bù · TT_CHI', 'hoặc Phiếu thu hoàn · TT_THU'], trang_thai: 'Kỳ: Đã tất toán · khoá' },
   ];
 
   /* ---------------------------------------------------------------- ma trận vai × mục (đề nghị) */
   // Ô: chữ cái · có dấu * là ĐỀ NGHỊ thay đổi so với hiện tại
   const MUC = [
     { khoa: 'sec1', ten: 'I. Xe' },
-    { khoa: 'sec2', ten: 'II. Vận chuyển' },
-    { khoa: 'sec2b', ten: 'II. Cân · đơn giá · thành tiền' },
+    { khoa: 'sec2', ten: 'II. Tuyến · khách · cân đầu · cân cuối' },
+    { khoa: 'sec2b', ten: 'II. Đơn giá · thành tiền · khấu trừ' },
     { khoa: 'sec3', ten: 'III. Nhiên liệu (lít, nơi đổ)' },
     { khoa: 'sec3b', ten: 'III. Đơn giá dầu · mã TK' },
     { khoa: 'sec4', ten: 'IV. Đi đường' },
@@ -145,9 +139,9 @@
     //         yard    acct    fuel   depot   cash   driver  rev
     sec1:  ['N',    'K',    'X',   '—',    'X',   'X',    'X'],
     sec2:  ['N',    'K',    'X',   '—',    'X',   'X',    'X'],
-    sec2b: ['Ẩ*',   'N*K',  'X',   '—',    'X',   '—',    'X'],
+    sec2b: ['Ẩ',    'N K',  'X',   '—',    'X',   '—',    'X'],
     sec3:  ['N',    'X',    'K G', 'X',    'X',   'X',    'X'],
-    sec3b: ['Ẩ*',   'X',    'K G', 'N*',   'X',   '—',    'X'],
+    sec3b: ['Ẩ',    'N K',  'K G', 'N',    'X',   '—',    'X'],
     sec4:  ['N',    'K G',  '—',   '—',    'C',   'X',    'X'],
     sec5:  ['N K',  'K G',  '—',   '—',    'C',   'N',    'X'],
     sec6:  ['N K',  'K G',  '—',   '—',    'C',   'X',    'X'],
@@ -155,19 +149,23 @@
   };
 
   /* ---------------------------------------------------------------- chứng từ */
+  // [tên · MÃ trong Sổ chứng từ, bước, ai lập, định khoản gợi ý, tình trạng, ghi chú]
+  // "Đang chạy" = bước đó đã ghi một tờ vào Sổ chứng từ (/api/chung-tu), bên anh Khang kéo về được.
   const CHUNG_TU = [
-    ['Phiếu xuất xe (DO)', '1', 'Bãi lập · cả hệ dùng', '—', 'co', 'Hồ sơ của cả chuyến, mọi chứng từ khác treo vào đây.'],
-    ['Phiếu lĩnh nhiên liệu (QR)', '3', 'Bãi in · tài xế cầm · thủ kho cấp', '625/371', 'co', 'Mỗi điểm đổ một tờ. QR chỉ mang mã tra cứu.'],
-    ['Phiếu tạm ứng đi đường (QR)', '4', 'Bãi in · tài xế cầm · quỹ chi', '625/402', 'co', 'Gom mục IV, VI và dầu mua ngoài.'],
-    ['Phiếu xuất kho nhiên liệu', '7', 'Thủ kho lập khi cấp', '625/371', 'co', 'Sinh tự động, trừ tồn ngay. Xem ở Kho nhiên liệu.'],
-    ['Phiếu chi tạm ứng', '9', 'Quỹ', '625/402', 'de_nghi', 'Đang là màn tính từ phiếu. Đề nghị thành chứng từ có số, đẩy sang sổ anh Khang.'],
-    ['Phiếu xuất kho phụ tùng', '12', 'Bãi khi duyệt sửa xe lấy kho', '614/371', 'co', 'Sinh tự động, trừ tồn ngay. Xem ở Kho phụ tùng.'],
-    ['Phiếu chi sửa chữa · chi khác', '16', 'Tiền mặt lẻ Thà Bốc', '614/402 · 625/402', 'de_nghi', 'Cùng tình trạng với phiếu chi tạm ứng.'],
-    ['Hoá đơn vận chuyển', '17', 'Kế toán doanh thu', '1211/70', 'co', 'Hiện là cờ trên phiếu, một chuyến một hoá đơn.'],
-    ['Phiếu thu', '17', 'Kế toán doanh thu', '1211/70', 'co', 'Màn in có sẵn.'],
-    ['Bảng thanh toán chủ xe liên kết', '18', 'Kế toán', '4022/…', 'de_nghi', 'Đang là bảng tính; đề nghị thành phiếu chi riêng.'],
-    ['Bảng tất toán tài xế', '19', 'Kế toán · quỹ', '—', 'co', 'Theo tháng. Chốt rồi thì khoá kỳ.'],
-    ['Phiếu nhập kho (dầu, phụ tùng)', 'Ngoài chuyến', 'Kế toán kho', '…/371', 'co', 'Ở màn Kho nhiên liệu và Kho phụ tùng. Bán phụ tùng và bán dầu tính sau.'],
+    ['Phiếu xuất xe · DO', '1', 'Bãi lập · cả hệ dùng', '—', 'co', 'Hồ sơ của cả chuyến, mọi chứng từ khác treo vào đây.'],
+    ['Phiếu lĩnh nhiên liệu (QR) · PLNL', '3', 'Bãi in · tài xế cầm · thủ kho cấp', '—', 'co', 'Mỗi điểm đổ một tờ. Chưa định khoản: là cam kết, chưa ra hàng.'],
+    ['Phiếu tạm ứng đi đường (QR) · PTU', '4', 'Bãi in · tài xế cầm · quỹ chi', '—', 'co', 'Gom mục IV, VI và dầu mua ngoài. Chưa định khoản: chưa ra tiền.'],
+    ['Phiếu xuất kho nhiên liệu · PXK_NL', '6 · 7', 'Thủ kho khi cấp · kế toán kho khi ghi sổ', '625/371 · 4022/371', 'co', 'Sinh tự động, trừ tồn ngay.'],
+    ['Phiếu chi tạm ứng · PC_TU', '9', 'Quỹ', '625/tiền mặt · 4022/tiền mặt', 'co', 'Có số riêng PC_TU/YYMM/0001. Vế Có để bên kế toán cấp mã tiền mặt.'],
+    ['Phiếu xuất kho phụ tùng · PXK_PT', '12', 'Bãi khi duyệt sửa xe lấy kho', '614/371', 'co', 'Sinh tự động, trừ tồn ngay.'],
+    ['Phiếu chi sửa chữa · chi khác · PC_SC', '16', 'Tiền mặt lẻ Thà Bốc', '614/tiền mặt · 625/tiền mặt', 'co', 'Một tờ cho cả mục, kèm từng dòng trong payload. Dòng lấy kho không tính (đã có PXK_PT).'],
+    ['Hoá đơn vận chuyển · HD', '17', 'Kế toán doanh thu', '1211/70', 'co', 'Một chuyến một hoá đơn.'],
+    ['Phiếu thu tiền khách · PT', '17', 'Kế toán doanh thu', 'tiền mặt/1211', 'co', 'Khi đổi trạng thái sang Đã thanh toán.'],
+    ['Phiếu chi trả chủ xe liên kết · PC_CX', '18', 'Kế toán', '4022/tiền mặt', 'de_nghi', 'Đang là bảng tính; chưa có nút chi trả riêng.'],
+    ['Tất toán tài xế · TT_CHI hoặc TT_THU', '19', 'Kế toán · quỹ', '625/tiền mặt hoặc tiền mặt/625', 'co', 'Chi bù khi chi thật > ứng; thu hoàn khi ngược lại.'],
+    ['Phiếu nhập kho nhiên liệu · PNK_NL', 'Ngoài chuyến', 'Kế toán kho', '371/402', 'co', 'Màn Kho nhiên liệu, nhập dầu.'],
+    ['Phiếu nhập · xuất kho phụ tùng · PNK_PT · PXK_PT', 'Ngoài chuyến', 'Kế toán kho', '371/402 · 614/371', 'co', 'Màn Kho phụ tùng, nhập xuất tay.'],
+    ['Phiếu chi trả nhà cung cấp · PC_NCC', 'Ngoài chuyến', 'Kế toán · quỹ', '402/tiền mặt', 'co', 'Màn Nhà cung cấp, trả theo đợt.'],
   ];
 
   /* ---------------------------------------------------------------- vẽ */
@@ -240,6 +238,7 @@
       root = r;
       root.querySelectorAll('.qt-tab button').forEach(b => b.addEventListener('click', () => doiXem(b.dataset.xem)));
       veSoDo(); veMaTran(); veChungTu();
+      const moSo = q('#qt-mo-so'); if (moSo) moSo.addEventListener('click', () => EPL.di('chung-tu', { tab: 'so' }));
       chon = 1; veSoDo(); vePanel(); doiXem('so-do');
     },
     onLang() { if (root) { veSoDo(); veMaTran(); veChungTu(); vePanel(); } },

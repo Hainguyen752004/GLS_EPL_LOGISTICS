@@ -20,8 +20,8 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from database import engine, tao_bang  # noqa: E402
-from routes import (acc_code, bao_cao, dang_nhap, danh_muc, kho, nha_cung_cap, phieu, phieu_linh,  # noqa: E402
-                    quy_trinh, tat_toan, theo_doi, tuyen, vi_tri)  # noqa: E402
+from routes import (acc_code, bao_cao, chung_tu, dang_nhap, danh_muc, kho, nha_cung_cap, phieu,  # noqa: E402
+                    phieu_linh, quy_trinh, tat_toan, theo_doi, tuyen, vi_tri)  # noqa: E402
 
 FRONTEND = os.path.normpath(os.path.join(APP_DIR, "..", "..", "frontend"))
 
@@ -51,7 +51,7 @@ def suc_khoe():
 
 
 for r in (dang_nhap, danh_muc, tuyen, phieu, phieu_linh, tat_toan, theo_doi, vi_tri, bao_cao,
-          kho, nha_cung_cap, quy_trinh, acc_code):
+          kho, nha_cung_cap, quy_trinh, acc_code, chung_tu):
     app.include_router(r.router)
 
 # Giao diện: / → index.html ; mọi tệp khác lấy thẳng từ thư mục frontend

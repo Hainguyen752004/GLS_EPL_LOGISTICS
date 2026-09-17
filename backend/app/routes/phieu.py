@@ -21,7 +21,8 @@ from models import (CHUOI, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHI
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc
-from services.tinh_toan import tinh_phieu
+from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
+from services import chung_tu as CT
 
 router = APIRouter()
 
@@ -334,6 +335,13 @@ def _doi_trang_thai_xe_tai_xe(db, p, trang_thai_xe, trang_thai_tai_xe):
         if d and d.status != "inactive": d.status = trang_thai_tai_xe
 
 
+def _ghi_do(db, p, user):
+    CT.ghi(db, "DO", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.doc_date or dt.date.today(),
+           doi_tuong_loai="khach", doi_tuong_ten=p.customer_name, by_user=user.full_name,
+           mo_ta="Phiếu xuất xe %s · %s → %s" % (p.doc_no, p.origin or "", p.destination or ""),
+           payload={"truck_no": p.truck_no, "driver_name": p.driver_name, "company": p.company})
+
+
 @router.post("/api/trips")
 def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role not in ("yard", "admin"):
@@ -358,7 +366,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     _ap_dong_chi(db, p, dong, user, muc_tt)
     _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     _ghi_log(db, p, user, "a_create")
-    db.commit()
+    db.flush(); _ghi_do(db, p, user); db.commit()
     return xuat_phieu(db, p)
 
 
@@ -391,6 +399,10 @@ def _xuat_kho_nhien_lieu(db, p, user):
                      note="Xuất theo phiếu %s" % p.doc_no, by_user=user.full_name, expense_id=e.id)
         db.add(m); db.flush()
         e.stock_move_id = m.id
+        CT.ghi(db, "PXK_NL", nguon_bang="fuel_moves", nguon_id=m.id, trip=p, ngay=m.move_date, doi_tuong_loai="kho",
+               tien=(e.qty or 0) * (e.unit_price or 0), tien_te=e.currency or "LAK", tien_lak=tien_dong(p, e),
+               section="fuel", by_user=user.full_name, mo_ta="Xuất %s lít dầu theo phiếu %s (ghi sổ)" % (e.qty, p.doc_no),
+               payload={"qty_l": e.qty, "unit_price": e.unit_price, "currency": e.currency, "truck_no": p.truck_no})
 
 
 @router.post("/api/trips/{tid}/sections/{muc}/{hanh_dong}")
@@ -407,6 +419,16 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     s.status = chuyen_muc(user.role, muc, s.status, hanh_dong)
     if muc == "fuel" and hanh_dong == "book":
         _xuat_kho_nhien_lieu(db, p, user)
+    if hanh_dong == "pay" and muc in ("repair", "other"):
+        # Quỹ chi các khoản của mục này: khoản mua ngoài / chi khác. Dòng lấy kho đã có PXK_PT riêng.
+        dong = [d for d in _dong_chi(db, p) if d.section == muc and d.paid_by_epl and d.source != "kho"]
+        tong = sum(tien_dong(p, d) for d in dong)
+        if tong > 0:
+            CT.ghi(db, "PC_SC", nguon_bang="trip_sections", nguon_id="%s:%s" % (p.id, muc), trip=p, ngay=dt.date.today(),
+                   doi_tuong_loai="tai_xe", doi_tuong_ten=p.driver_name, tien=tong, tien_te="LAK", section=muc,
+                   by_user=user.full_name, mo_ta="Chi mục %s phiếu %s" % ({"repair": "V sửa chữa", "other": "VI khác"}[muc], p.doc_no),
+                   payload={"lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
+                                       "currency": d.currency, "acct_code": d.acct_code} for d in dong]})
     _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
     db.commit()
     return xuat_phieu(db, p)
@@ -486,6 +508,10 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
                           trip_doc_no=p.doc_no, note="Sửa xe trên đường — %s" % (e.note or ""), by_user=user.full_name, expense_id=dong.id)
             part.qty = (part.qty or 0) - qty; part.last_date = dt.date.today(); part.last_truck = p.truck_no
             db.add(mv); db.flush(); dong.stock_move_id = mv.id
+            CT.ghi(db, "PXK_PT", nguon_bang="part_moves", nguon_id=mv.id, trip=p, ngay=mv.move_date, doi_tuong_loai="kho",
+                   doi_tuong_ten=part.name, tien=qty * (dong.unit_price or 0), tien_te=dong.currency, tien_lak=tien_dong(p, dong),
+                   section="repair", by_user=user.full_name, mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
+                   payload={"part_id": part.id, "qty": qty, "unit_price": dong.unit_price, "currency": dong.currency, "truck_no": p.truck_no})
         e.expense_id = dong.id
         # Khoản sửa xe khai từ màn theo dõi là dữ liệu ĐÃ NHẬP: mục V vào thẳng hàng chờ kế toán kiểm.
         # Mục đã qua bước kiểm/ghi sổ/chi thì kéo về "đã nhập" và ghi rõ là mở lại vì có chi mới.
@@ -547,6 +573,11 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
     if _muc_cua(db, p)["trans"].status != "verified":
         raise HTTPException(409, {"ma": "CHUA_KIEM", "loi": "Mục II (vận chuyển) phải được kiểm xong trước khi xuất hoá đơn."})
     p.invoiced = True
+    k = tinh_phieu(p, _dong_chi(db, p))
+    CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
+           doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
+           by_user=user.full_name, mo_ta="Hoá đơn vận chuyển %s · %s t × %s USD" % (p.doc_no, k["tan_tinh"], p.price_usd),
+           payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
     _ghi_log(db, p, user, "a_invoice")
     db.commit()
     return xuat_phieu(db, p)
@@ -565,6 +596,12 @@ def doi_trang_thai_tai_chinh(tid: str, data: dict = Body(...), db: Session = Dep
     if moi != "unpaid" and not p.invoiced:
         raise HTTPException(409, {"ma": "CHUA_HOA_DON", "loi": "Chưa xuất hoá đơn thì chưa ghi thu."})
     p.finance_status = moi
+    if moi == "paid":
+        k = tinh_phieu(p, _dong_chi(db, p))
+        CT.ghi(db, "PT", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
+               doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
+               by_user=user.full_name, mo_ta="Thu tiền khách theo hoá đơn phiếu %s" % p.doc_no,
+               payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
     _ghi_log(db, p, user, "fin_%s" % moi)
     db.commit()
     return xuat_phieu(db, p)
@@ -719,6 +756,10 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
                       note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""), by_user=user.full_name, expense_id=dong.id)
         part.qty = (part.qty or 0) - qty; part.last_date = dt.date.today(); part.last_truck = p.truck_no
         db.add(mv); db.flush(); dong.stock_move_id = mv.id
+        CT.ghi(db, "PXK_PT", nguon_bang="part_moves", nguon_id=mv.id, trip=p, ngay=mv.move_date, doi_tuong_loai="kho",
+               doi_tuong_ten=part.name, tien=qty * (dong.unit_price or 0), tien_te=dong.currency, tien_lak=tien_dong(p, dong),
+               section="repair", by_user=user.full_name, mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
+               payload={"part_id": part.id, "qty": qty, "unit_price": dong.unit_price, "currency": dong.currency, "truck_no": p.truck_no})
     e.status = "approved"; e.kind = "repair"; e.expense_id = dong.id
     s = _muc_cua(db, p)["repair"]
     if s.status not in ("wait", "entered"):
@@ -792,5 +833,6 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     db.query(TripExpense).filter(TripExpense.trip_id == p.id).delete()
     db.query(TripSection).filter(TripSection.trip_id == p.id).delete()
     db.query(TripLog).filter(TripLog.trip_id == p.id).delete()
+    CT.rut(db, trip_id=p.id)
     db.delete(p); db.commit()
     return {"ok": True}

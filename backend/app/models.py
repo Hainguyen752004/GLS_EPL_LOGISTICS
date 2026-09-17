@@ -526,3 +526,36 @@ class VehiclePosition(Base):
     heading = Column(Float)                                    # hướng, độ
     source = Column(String, nullable=False, default="driver_app")   # driver_app | manual
     by_user = Column(String)
+
+
+# ---------------------------------------------------------------- sổ chứng từ (điểm nối kế toán)
+class ChungTu(Base):
+    """Một bản ghi chứng từ sinh ra ở một bước nghiệp vụ, để module kế toán (anh Khang) kéo về.
+
+    Không phải sổ kế toán: bên mình không ghi bút toán, không cộng sổ. Hai vế `no`/`co` chỉ là
+    GỢI Ý theo đúng bảng định khoản trong quy trình của họ; vế nào họ không ghi mã thì để trống
+    mã, ghi tên. Xem services/chung_tu.py.
+    """
+    __tablename__ = "chung_tu"
+    id = Column(String, primary_key=True, default=ma_moi)
+    loai = Column(String, nullable=False, index=True)          # DO · PLNL · PTU · PXK_NL · PC_TU · HD · PT …
+    so = Column(String, nullable=False, unique=True)           # PXK_NL/2609/0001
+    ngay = Column(Date, nullable=False)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)
+    trip_doc_no = Column(String)
+    doi_tuong_loai = Column(String)                            # khach · ncc · tai_xe · kho · chu_xe
+    doi_tuong_ten = Column(String)
+    tien = Column(Float)                                       # theo tiền tệ gốc
+    tien_te = Column(String, default="LAK")
+    tien_lak = Column(Float)                                   # quy về LAK theo tỷ giá trên phiếu
+    no = Column(String); no_ten = Column(String)               # vế Nợ gợi ý
+    co = Column(String); co_ten = Column(String)               # vế Có gợi ý
+    mo_ta = Column(String)
+    nguon_bang = Column(String, nullable=False)                # bảng gốc: vouchers · fuel_moves · trips …
+    nguon_id = Column(String, nullable=False)
+    by_user = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
+    da_day = Column(Boolean, nullable=False, default=False)    # bên kế toán đã nhận chưa
+    day_luc = Column(DateTime)
+    payload = Column(Text)                                     # JSON chi tiết dòng, để bên kia khỏi gọi lại
+    __table_args__ = (UniqueConstraint("loai", "nguon_bang", "nguon_id", name="uq_chung_tu_nguon"),)

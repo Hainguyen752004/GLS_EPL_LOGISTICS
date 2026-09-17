@@ -20,7 +20,9 @@ from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
 from models import (MUC, Customer, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
                     RouteStop, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
                     TripSection, User, Vehicle, Voucher)
+from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
+from services.tinh_toan import tinh_phieu  # noqa: E402
 
 D = dt.date
 MAT_KHAU_DEMO = "1234"     # bản demo — đổi ngay khi lên máy thật (qua màn Tài khoản)
@@ -275,6 +277,49 @@ def gieo(db):
                                                      ("ຜ້າເບຣກ (bố thắng)", "u_set", 5, 2, 950000, D(2026, 8, 2), "341"),
                                                      ("ນ້ຳມັນເຄື່ອງ 15W-40 (nhớt)", "u_l", 60, 40, 85000, D(2026, 8, 21), "341")):
         db.add(Part(name=ten, unit=dv, qty=ton, min_qty=toi_thieu, unit_price=gia, last_date=ngay, last_truck=xe_))
+    db.commit()
+    gieo_chung_tu(db)
+
+
+def gieo_chung_tu(db):
+    """Sổ chứng từ cho dữ liệu mẫu — đúng những tờ mà luồng thật đã sinh nếu các phiếu này đi qua máy.
+    Dữ liệu gieo thẳng vào bảng nên không qua route; gieo lại ở đây để màn Sổ chứng từ có gì mà xem."""
+    from models import PartMove, SupplierPayment, Voucher  # noqa: F401
+    for p in db.query(Trip).order_by(Trip.doc_date).all():
+        CT.ghi(db, "DO", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.doc_date, doi_tuong_loai="khach",
+               doi_tuong_ten=p.customer_name, by_user=p.created_by,
+               mo_ta="Phiếu xuất xe %s · %s → %s" % (p.doc_no, p.origin or "", p.destination or ""),
+               payload={"truck_no": p.truck_no, "driver_name": p.driver_name, "company": p.company})
+        if p.invoiced:
+            dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id).all()
+            k = tinh_phieu(p, dong)
+            CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.back_date or p.doc_date, doi_tuong_loai="khach",
+                   doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
+                   by_user="ນາງ ຄຳ (Kham)", mo_ta="Hoá đơn vận chuyển %s" % p.doc_no,
+                   payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
+            if p.finance_status == "paid":
+                CT.ghi(db, "PT", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.back_date or p.doc_date, doi_tuong_loai="khach",
+                       doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
+                       by_user="ນາງ ຄຳ (Kham)", mo_ta="Thu tiền khách theo hoá đơn phiếu %s" % p.doc_no, payload={})
+    phieu_theo_so = {p.doc_no: p for p in db.query(Trip).all()}
+    for m in db.query(FuelMove).order_by(FuelMove.move_date).all():
+        p = phieu_theo_so.get(m.doc_no)
+        if m.kind == "in":
+            CT.ghi(db, "PNK_NL", nguon_bang="fuel_moves", nguon_id=m.id, ngay=m.move_date, doi_tuong_loai="ncc",
+                   tien=(m.qty_l or 0) * (m.unit_price or 0), tien_te=m.currency or "LAK", by_user=m.by_user,
+                   mo_ta="Nhập %s lít dầu · %s" % (m.qty_l, m.doc_no or ""), payload={"qty_l": m.qty_l, "unit_price": m.unit_price})
+        else:
+            CT.ghi(db, "PXK_NL", nguon_bang="fuel_moves", nguon_id=m.id, trip=p, ngay=m.move_date, doi_tuong_loai="kho",
+                   tien=(m.qty_l or 0) * (m.unit_price or 0), tien_te=m.currency or "LAK", section="fuel", by_user=m.by_user,
+                   mo_ta="Xuất %s lít dầu · %s" % (m.qty_l, m.doc_no or ""), payload={"qty_l": m.qty_l, "unit_price": m.unit_price, "truck_no": m.truck_no})
+    for v in db.query(Voucher).filter(Voucher.kind == "advance", Voucher.status == "da_cap").all():
+        p = db.get(Trip, v.trip_id)
+        CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=v.doc_date, doi_tuong_loai="tai_xe",
+               doi_tuong_ten=v.driver_name, tien=v.amount_lak, by_user=v.issued_by,
+               mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+        CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=v.doc_date, doi_tuong_loai="tai_xe",
+               doi_tuong_ten=v.driver_name, tien=v.amount_lak, section="travel", by_user=v.granted_by,
+               mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no, payload={"voucher_doc_no": v.doc_no, "truck_no": p.truck_no})
     db.commit()
 
 

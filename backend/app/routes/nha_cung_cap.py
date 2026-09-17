@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Supplier, SupplierPayment, Trip, TripExpense
+from services import chung_tu as CT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import tien_dong
 
@@ -79,6 +80,11 @@ def tra(sid: str, data: dict = Body(...), db: Session = Depends(get_db), user=De
         ngay = dt.date.fromisoformat(str(data.get("pay_date") or dt.date.today())[:10])
     except ValueError:
         raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD."})
-    db.add(SupplierPayment(supplier_id=s.id, pay_date=ngay, amount_lak=tien, note=data.get("note"), by_user=user.full_name))
+    tra_ncc = SupplierPayment(supplier_id=s.id, pay_date=ngay, amount_lak=tien, note=data.get("note"), by_user=user.full_name)
+    db.add(tra_ncc); db.flush()
+    CT.ghi(db, "PC_NCC", nguon_bang="supplier_payments", nguon_id=tra_ncc.id, ngay=ngay, doi_tuong_loai="ncc",
+           doi_tuong_ten=s.name, tien=tien, tien_te="LAK", by_user=user.full_name,
+           mo_ta="Trả nhà cung cấp %s%s" % (s.name, (" · " + data["note"]) if data.get("note") else ""),
+           payload={"supplier_id": s.id, "item_key": s.item_key, "acct_code": s.acct_code})
     db.commit()
     return _xuat(db, s)

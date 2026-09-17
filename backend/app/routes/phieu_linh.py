@@ -31,6 +31,7 @@ from models import FuelMove, FuelPlace, Supplier, Trip, TripExpense, TripSection
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc
 from services.tinh_toan import ty_gia
+from services import chung_tu as CT
 
 router = APIRouter()
 SUA_DIEM = can_vai("yard", "acct", "fuel")
@@ -180,6 +181,10 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
             db.add(v)
         elif v.status == "cho":
             v.amount_lak = tien                     # chưa ai lấy tiền thì cập nhật theo số mới nhất
+        db.flush()
+        CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
+               doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
+               mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
         db.commit()
         ra = [v]
     else:
@@ -202,6 +207,13 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
                 v.status = "huy"
         if not ra:
             raise HTTPException(422, {"ma": "KHONG_CO_DONG", "loi": "Phiếu chưa có dòng dầu nào lĩnh từ kho EPL."})
+        db.flush()
+        for v in ra:
+            diem = db.get(FuelPlace, v.place_id) if v.place_id else None
+            CT.ghi(db, "PLNL", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="kho",
+                   doi_tuong_ten=diem.name if diem else None, tien=v.qty_l, tien_te="L", by_user=user.full_name,
+                   mo_ta="Lĩnh %s lít tại %s" % (v.qty_l, diem.name if diem else "?"),
+                   payload={"voucher_id": v.id, "doc_no": v.doc_no, "qty_l": v.qty_l})
         db.commit()
     return [xuat_phieu_linh(db, v, goc) for v in ra]
 
@@ -295,6 +307,13 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
         db.add(m); db.flush()
         for e in dong:
             e.stock_move_id = m.id
+        diem = db.get(FuelPlace, v.place_id) if v.place_id else None
+        CT.ghi(db, "PXK_NL", nguon_bang="fuel_moves", nguon_id=m.id, trip=p, ngay=m.move_date, doi_tuong_loai="kho",
+               doi_tuong_ten=diem.name if diem else None, tien=lit * don_gia, tien_te=m.currency,
+               tien_lak=lit * don_gia * ty_gia(p, m.currency), section="fuel", by_user=user.full_name,
+               mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no),
+               payload={"voucher_doc_no": v.doc_no, "qty_l": lit, "unit_price": don_gia, "currency": m.currency,
+                        "place_id": v.place_id, "truck_no": p.truck_no, "driver_name": p.driver_name})
         if abs(lit - (v.qty_l or 0)) > 0.001 and len(dong) == 1:
             dong[0].qty = lit                        # cấp lệch thì phiếu xuất xe ghi theo số thật
         v.granted_qty, v.granted_note = lit, ly_do or None
@@ -304,6 +323,10 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
         # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
         tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
+        CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="tai_xe",
+               doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
+               mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,
+               payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})
 
     v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
     db.commit()

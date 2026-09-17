@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+"""Sổ chứng từ — mỗi bước nghiệp vụ sinh ra một BẢN GHI chứng từ, để bên kế toán (module của anh
+Khang) kéo về tạo phiếu thu, phiếu chi, phiếu nhập kho, phiếu xuất kho.
+
+Đây KHÔNG phải sổ kế toán. Bên mình không ghi bút toán, không cộng sổ, không tính công nợ — đó là
+việc của module anh Khang. Bên mình chỉ ghi lại: chứng từ gì, sinh lúc nào, từ phiếu nào, của đối
+tượng nào, bao nhiêu tiền, và HAI VẾ ĐỊNH KHOẢN GỢI Ý theo đúng quy trình họ viết (625/371, 614/402,
+1211/70…). Vế nào quy trình của họ không ghi mã (tiền mặt, ngân hàng) thì để trống mã và ghi tên,
+KHÔNG bịa mã.
+
+Mỗi chứng từ có `da_day` = đã được bên kế toán nhận chưa. Bên kia kéo `GET /api/chung-tu?chua_day=1`,
+xử lý xong gọi `POST /api/chung-tu/{id}/da-day`. Một chứng từ chỉ sinh MỘT lần cho một nguồn
+(nguon_bang + nguon_id), gọi lại không sinh trùng.
+"""
+import datetime as dt
+import json
+
+from models import ChungTu
+
+# ------------------------------------------------------------------ danh mục loại chứng từ
+# ma → (tên Việt, tên Lào, có định khoản không)
+LOAI = {
+    "DO":     ("Phiếu xuất xe", "ໃບເບີກລົດ", False),
+    "PLNL":   ("Phiếu lĩnh nhiên liệu", "ໃບເບີກນໍ້າມັນ", False),
+    "PTU":    ("Phiếu tạm ứng đi đường", "ໃບເບີກເງິນລ່ວງໜ້າ", False),
+    "PXK_NL": ("Phiếu xuất kho nhiên liệu", "ໃບເບີກນໍ້າມັນອອກສາງ", True),
+    "PXK_PT": ("Phiếu xuất kho phụ tùng", "ໃບເບີກອະໄຫຼ່ອອກສາງ", True),
+    "PNK_NL": ("Phiếu nhập kho nhiên liệu", "ໃບຮັບນໍ້າມັນເຂົ້າສາງ", True),
+    "PNK_PT": ("Phiếu nhập kho phụ tùng", "ໃບຮັບອະໄຫຼ່ເຂົ້າສາງ", True),
+    "PC_TU":  ("Phiếu chi tạm ứng", "ໃບຈ່າຍເງິນລ່ວງໜ້າ", True),
+    "PC_SC":  ("Phiếu chi sửa chữa · chi khác", "ໃບຈ່າຍສ້ອມແປງ · ອື່ນໆ", True),
+    "PC_NCC": ("Phiếu chi trả nhà cung cấp", "ໃບຈ່າຍຜູ້ສະໜອງ", True),
+    "PC_CX":  ("Phiếu chi trả chủ xe liên kết", "ໃບຈ່າຍເຈົ້າຂອງລົດຮ່ວມ", True),
+    "HD":     ("Hoá đơn vận chuyển", "ໃບເກັບເງິນຂົນສົ່ງ", True),
+    "PT":     ("Phiếu thu tiền khách", "ໃບຮັບເງິນລູກຄ້າ", True),
+    "TT_CHI": ("Tất toán tài xế · chi bù", "ສະສາງໂຊເຟີ · ຈ່າຍເພີ່ມ", True),
+    "TT_THU": ("Tất toán tài xế · thu hoàn", "ສະສາງໂຊເຟີ · ຮັບຄືນ", True),
+}
+
+# Vế Có "tiền mặt / ngân hàng": quy trình của họ không ghi mã. Để tên, không bịa mã.
+TIEN = (None, "Tiền mặt · ngân hàng (mã do bên kế toán cấp)")
+
+
+def dinh_khoan(loai, company="EPL", section=None):
+    """Hai vế gợi ý theo đúng bảng định khoản trong quy trình của họ. Trả (no, no_ten, co, co_ten)."""
+    chi_phi = ("4022", "Chi hộ xe liên kết") if company == "joint" else (
+        ("614", "Chi phí sửa chữa") if section == "repair" else ("625", "Chi phí vận chuyển"))
+    KHO = ("371", "Kho (theo quy trình của họ; danh mục anh Khang chưa có mã này)")
+    NCC = ("402", "Phải trả nhà cung cấp")
+    b = {
+        "PXK_NL": (chi_phi, KHO),
+        "PXK_PT": (chi_phi, KHO),
+        "PNK_NL": (KHO, NCC),
+        "PNK_PT": (KHO, NCC),
+        "PC_TU":  (chi_phi, TIEN),
+        "PC_SC":  (chi_phi, TIEN),
+        "PC_NCC": (NCC, TIEN),
+        "PC_CX":  (("4022", "Phải trả chủ xe liên kết"), TIEN),
+        "HD":     (("1211", "Phải thu khách hàng"), ("70", "Doanh thu bán hàng và dịch vụ")),
+        "PT":     (TIEN, ("1211", "Phải thu khách hàng")),
+        "TT_CHI": (chi_phi, TIEN),
+        "TT_THU": (TIEN, chi_phi),
+    }.get(loai)
+    if not b:
+        return (None, None, None, None)
+    (no, no_ten), (co, co_ten) = b
+    return (no, no_ten, co, co_ten)
+
+
+def _so_moi(db, loai, ngay):
+    """Số chứng từ: LOAI/YYMM/0001, đếm theo loại và theo tháng."""
+    tien_to = "%s/%s/" % (loai, ngay.strftime("%y%m"))
+    n = db.query(ChungTu).filter(ChungTu.loai == loai, ChungTu.so.like(tien_to + "%")).count()
+    return "%s%04d" % (tien_to, n + 1)
+
+
+def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=None, doi_tuong_ten=None,
+        tien=None, tien_te="LAK", tien_lak=None, section=None, mo_ta=None, by_user=None, payload=None,
+        company=None):
+    """Ghi MỘT chứng từ. Gọi lại với cùng (nguon_bang, nguon_id, loai) thì trả bản đã có, không sinh trùng."""
+    if loai not in LOAI:
+        raise ValueError("Không có loại chứng từ %s" % loai)
+    cu = db.query(ChungTu).filter(ChungTu.loai == loai, ChungTu.nguon_bang == nguon_bang,
+                                  ChungTu.nguon_id == str(nguon_id)).first()
+    if cu:
+        return cu
+    ngay = ngay or dt.date.today()
+    cty = company or (trip.company if trip is not None else "EPL")
+    no, no_ten, co, co_ten = dinh_khoan(loai, cty, section) if LOAI[loai][2] else (None, None, None, None)
+    c = ChungTu(loai=loai, so=_so_moi(db, loai, ngay), ngay=ngay,
+                trip_id=trip.id if trip is not None else None,
+                trip_doc_no=trip.doc_no if trip is not None else None,
+                doi_tuong_loai=doi_tuong_loai, doi_tuong_ten=doi_tuong_ten,
+                tien=tien, tien_te=(tien_te or "LAK").upper(),
+                tien_lak=tien_lak if tien_lak is not None else (tien if (tien_te or "LAK").upper() == "LAK" else None),
+                no=no, no_ten=no_ten, co=co, co_ten=co_ten, mo_ta=mo_ta,
+                nguon_bang=nguon_bang, nguon_id=str(nguon_id), by_user=by_user,
+                payload=json.dumps(payload or {}, ensure_ascii=False, default=str))
+    db.add(c)
+    db.flush()
+    return c
+
+
+def rut(db, *, nguon_bang=None, nguon_id=None, trip_id=None):
+    """Nguồn bị xoá (bỏ chốt tất toán, xoá phiếu thử, xoá dòng kho) → rút các tờ CHƯA đối chiếu của nó.
+    Tờ đã đối chiếu thì giữ: bên kế toán đã nhận, rút đi là hai bên lệch nhau mà không ai biết."""
+    q = db.query(ChungTu).filter(ChungTu.da_day.is_(False))
+    if trip_id is not None:
+        q = q.filter(ChungTu.trip_id == trip_id)
+    else:
+        q = q.filter(ChungTu.nguon_bang == nguon_bang, ChungTu.nguon_id == str(nguon_id))
+    return q.delete(synchronize_session=False)
+
+
+def xuat(c):
+    try:
+        pl = json.loads(c.payload) if c.payload else {}
+    except ValueError:
+        pl = {}
+    ten = LOAI.get(c.loai, (c.loai, c.loai, False))
+    return {"id": c.id, "loai": c.loai, "loai_ten": ten[0], "loai_ten_lo": ten[1], "so": c.so,
+            "ngay": c.ngay.isoformat() if c.ngay else None,
+            "trip_id": c.trip_id, "trip_doc_no": c.trip_doc_no,
+            "doi_tuong_loai": c.doi_tuong_loai, "doi_tuong_ten": c.doi_tuong_ten,
+            "tien": c.tien, "tien_te": c.tien_te, "tien_lak": c.tien_lak,
+            "no": c.no, "no_ten": c.no_ten, "co": c.co, "co_ten": c.co_ten,
+            "mo_ta": c.mo_ta, "nguon_bang": c.nguon_bang, "nguon_id": c.nguon_id,
+            "by_user": c.by_user, "ts": c.ts.isoformat() if c.ts else None,
+            "da_day": bool(c.da_day), "day_luc": c.day_luc.isoformat() if c.day_luc else None,
+            "payload": pl}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 751 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 765 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -3686,6 +3686,76 @@ window.EPL_TU_DIEN = {
   "vi": "Gõ mã hoặc tên tài khoản…",
   "lo": "ພິມລະຫັດ ຫຼື ຊື່ບັນຊີ…",
   "en": "Type account code or name…"
+ },
+ "odo_est": {
+  "vi": "Km về ước tính",
+  "lo": "ກມ ກັບ ຄາດຄະເນ",
+  "en": "Est. return odometer"
+ },
+ "ct_so": {
+  "vi": "Sổ chứng từ",
+  "lo": "ປື້ມເອກະສານ",
+  "en": "Document register"
+ },
+ "ct_loai": {
+  "vi": "Loại chứng từ",
+  "lo": "ປະເພດເອກະສານ",
+  "en": "Document type"
+ },
+ "ct_tu": {
+  "vi": "Từ ngày",
+  "lo": "ແຕ່ວັນທີ",
+  "en": "From"
+ },
+ "ct_den": {
+  "vi": "Đến ngày",
+  "lo": "ຖຶງວັນທີ",
+  "en": "To"
+ },
+ "ct_chua_day": {
+  "vi": "Chưa đối chiếu",
+  "lo": "ຍັງບໍ່ກວດສອບ",
+  "en": "Not reconciled"
+ },
+ "ct_da_day": {
+  "vi": "Đã đối chiếu",
+  "lo": "ກວດສອບແລ້ວ",
+  "en": "Reconciled"
+ },
+ "ct_danh_dau": {
+  "vi": "Đã đối chiếu ✓",
+  "lo": "ກວດສອບແລ້ວ ✓",
+  "en": "Mark reconciled ✓"
+ },
+ "ct_mo_lai": {
+  "vi": "Mở lại",
+  "lo": "ເປີດຄືນ",
+  "en": "Reopen"
+ },
+ "ct_doi_tuong": {
+  "vi": "Đối tượng",
+  "lo": "ຄູ່ສັນຍາ",
+  "en": "Party"
+ },
+ "ct_no_co": {
+  "vi": "Nợ / Có",
+  "lo": "ໜີ້ / ມີ",
+  "en": "Debit / Credit"
+ },
+ "ct_so_to": {
+  "vi": "Số tờ",
+  "lo": "ຈຳນວນໃບ",
+  "en": "Documents"
+ },
+ "ct_khong_co": {
+  "vi": "Chưa có chứng từ nào trong khoảng này",
+  "lo": "ຍັງບໍ່ມີເອກະສານໃນຊ່ວງນີ້",
+  "en": "No documents in this range"
+ },
+ "ct_hint": {
+  "vi": "Mỗi bước nghiệp vụ bỏ vào đây một tờ. Bên kế toán kéo về để lập phiếu thu, phiếu chi, phiếu nhập kho, phiếu xuất kho; xong thì đánh dấu đã đối chiếu. Đây không phải sổ kế toán.",
+  "lo": "ແຕ່ລະຂັ້ນຕອນສ້າງເອກະສານໜຶ່ງໃບຢູ່ນີ້. ພະແນກບັນຊີດຶງໄປສ້າງໃບຮັບເງິນ, ໃບຈ່າຍເງິນ, ໃບຮັບເຂົ້າສາງ, ໃບເບີກອອກສາງ; ແລ້ວໝາຍວ່າກວດສອບແລ້ວ. ນີ້ບໍ່ແມ່ນປື້ມບັນຊີ.",
+  "en": "Each step drops one document here. Accounting pulls them to create receipts, payments, stock-in and stock-out slips, then marks them reconciled. This is not the ledger."
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

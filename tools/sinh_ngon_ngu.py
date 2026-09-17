@@ -495,6 +495,23 @@ KHOA_MOI = {
  'acct_source_fallback': ('Chưa nối được API kế toán — đang dùng bản tạm từ Excel', 'ຍັງເຊື່ອມ API ບັນຊີບໍ່ໄດ້ — ໃຊ້ບັນຊີຊົ່ວຄາວຈາກ Excel', 'Accounting API unreachable — using temporary list from Excel'),
  'acct_not_in_catalogue': ('không có trong danh mục', 'ບໍ່ມີໃນບັນຊີ', 'not in catalogue'),
  'acct_search':  ('Gõ mã hoặc tên tài khoản…', 'ພິມລະຫັດ ຫຼື ຊື່ບັນຊີ…', 'Type account code or name…'),
+ # ---- v5: sổ chứng từ (điểm nối kế toán) · km về ước tính · ẩn ô tiền với Bãi
+ 'odo_est':      ('Km về ước tính', 'ກມ ກັບ ຄາດຄະເນ', 'Est. return odometer'),
+ 'ct_so':        ('Sổ chứng từ', 'ປື້ມເອກະສານ', 'Document register'),
+ 'ct_loai':      ('Loại chứng từ', 'ປະເພດເອກະສານ', 'Document type'),
+ 'ct_tu':        ('Từ ngày', 'ແຕ່ວັນທີ', 'From'),
+ 'ct_den':       ('Đến ngày', 'ຖຶງວັນທີ', 'To'),
+ 'ct_chua_day':  ('Chưa đối chiếu', 'ຍັງບໍ່ກວດສອບ', 'Not reconciled'),
+ 'ct_da_day':    ('Đã đối chiếu', 'ກວດສອບແລ້ວ', 'Reconciled'),
+ 'ct_danh_dau':  ('Đã đối chiếu ✓', 'ກວດສອບແລ້ວ ✓', 'Mark reconciled ✓'),
+ 'ct_mo_lai':    ('Mở lại', 'ເປີດຄືນ', 'Reopen'),
+ 'ct_doi_tuong': ('Đối tượng', 'ຄູ່ສັນຍາ', 'Party'),
+ 'ct_no_co':     ('Nợ / Có', 'ໜີ້ / ມີ', 'Debit / Credit'),
+ 'ct_so_to':     ('Số tờ', 'ຈຳນວນໃບ', 'Documents'),
+ 'ct_khong_co':  ('Chưa có chứng từ nào trong khoảng này', 'ຍັງບໍ່ມີເອກະສານໃນຊ່ວງນີ້', 'No documents in this range'),
+ 'ct_hint':      ('Mỗi bước nghiệp vụ bỏ vào đây một tờ. Bên kế toán kéo về để lập phiếu thu, phiếu chi, phiếu nhập kho, phiếu xuất kho; xong thì đánh dấu đã đối chiếu. Đây không phải sổ kế toán.',
+                  'ແຕ່ລະຂັ້ນຕອນສ້າງເອກະສານໜຶ່ງໃບຢູ່ນີ້. ພະແນກບັນຊີດຶງໄປສ້າງໃບຮັບເງິນ, ໃບຈ່າຍເງິນ, ໃບຮັບເຂົ້າສາງ, ໃບເບີກອອກສາງ; ແລ້ວໝາຍວ່າກວດສອບແລ້ວ. ນີ້ບໍ່ແມ່ນປື້ມບັນຊີ.',
+                  'Each step drops one document here. Accounting pulls them to create receipts, payments, stock-in and stock-out slips, then marks them reconciled. This is not the ledger.'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {'r_acct': 'r_acct_vc', 'r_fuel': 'r_fuel_acct', 'r_cash': 'r_petty', 'r_rev': 'r_rev_acct'}

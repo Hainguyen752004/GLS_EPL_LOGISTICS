@@ -165,4 +165,29 @@ if tt["dong"]:
     ma, r = goi("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), tk=tk["ketoan"], cach="DELETE")
     bao("Kế toán bỏ chốt để sửa lại", ma, 200)
 
-print("\nTHỬ PHIẾU LĨNH: ĐẠT — QR · thủ kho cấp dầu · chặn đúng chỗ · khai đổ dọc đường · tất toán")
+# 15. sổ chứng từ — mỗi bước ở trên phải để lại đúng tờ của nó
+ma, so = goi("/api/chung-tu?trip_id=" + p["id"], tk=tk["ketoan"])
+bao("Kế toán xem sổ chứng từ của phiếu", ma, 200, "%d tờ" % len(so["ds"]))
+loai_co = {c["loai"] for c in so["ds"]}
+for c in so["ds"]:
+    print("      %-18s %-10s %-24s %12s %s  %s / %s" % (c["so"], c["ngay"], (c["mo_ta"] or "")[:24], round(c["tien_lak"] or 0),
+                                                    c["tien_te"], c["no"] or (c["no_ten"] or "-")[:10], c["co"] or (c["co_ten"] or "-")[:10]))
+for can in ("DO", "PLNL", "PXK_NL", "PTU"):
+    if can not in loai_co:
+        raise SystemExit("DUNG: sổ chứng từ thiếu %s (có: %s)" % (can, sorted(loai_co)))
+so_pxk = [c["so"] for c in so["ds"] if c["loai"] == "PXK_NL"]
+assert all(x.startswith("PXK_NL/") for x in so_pxk), so_pxk
+print("  OK  có đủ DO · PLNL · PXK_NL · PTU, số chứng từ dạng LOAI/YYMM/000n")
+ma, r = goi("/api/chung-tu?trip_id=" + p["id"], tk=tk["thabok"])
+bao("Bãi xem sổ chứng từ → từ chối (số kế toán)", ma, 403, (r or {}).get("detail", {}).get("ma", ""))
+mot = so["ds"][0]
+ma, r = goi("/api/chung-tu/%s/da-day" % mot["id"], {}, tk["ketoan"])
+bao("Kế toán đánh dấu đã đối chiếu", ma, 200, "da_day=%s" % r["da_day"])
+_, so2 = goi("/api/chung-tu?trip_id=%s&chua_day=1" % p["id"], tk=tk["ketoan"])
+assert all(c["id"] != mot["id"] for c in so2["ds"]), "tờ đã đối chiếu vẫn nằm trong danh sách chưa đối chiếu"
+ma, r = goi("/api/chung-tu/%s/da-day" % mot["id"], {"da_day": False}, tk["ketoan"])
+bao("Mở lại tờ đã đối chiếu", ma, 200, "da_day=%s" % r["da_day"])
+ma, ds_loai = goi("/api/chung-tu/loai", tk=tk["ketoan"])
+bao("Danh mục loại chứng từ", ma, 200, "%d loại" % len(ds_loai))
+
+print("\nTHỬ PHIẾU LĨNH: ĐẠT — QR · thủ kho cấp dầu · chặn đúng chỗ · khai đổ dọc đường · tất toán · sổ chứng từ")
