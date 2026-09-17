@@ -247,28 +247,6 @@ Nói cách khác: **mua thiết bị để biết xe ở đâu thì đắt, mua 
 Con số 5 triệu USD tiền dầu mỗi tháng là suy từ giả định 5.000 chuyến. Xin anh xác nhận lại sản
 lượng thật, vì cả lập luận ở mục này dựa vào nó.
 
----
-
-## 10. Đề nghị
-
-**Tầng một, làm ngay, chi phí gần như bằng không.** Điện thoại tài xế cho toàn bộ đội, kể cả xe
-liên kết. Đã chạy được trong hệ thống, chỉ cần bảo tài xế bật. Trước khi mở rộng thì làm ba việc ở
-mục 7 để cơ sở dữ liệu không phình.
-
-**Tầng hai, làm sau, chỉ cho xe nhà.** Thiết bị GPS kèm cảm biến mức dầu. Đừng mua vì vị trí, hãy
-mua vì dầu. Nên thử 10 xe trong ba tháng, đo xem mức dầu báo về có khớp với số lít khai trên phiếu
-xuất xe không, rồi mới quyết mua cho cả đội.
-
-**Không nên thuê nền tảng của hãng thiết bị.** Tốn thêm 90.000 USD ba năm, mà dữ liệu lại nằm ngoài
-hệ thống của mình, vẫn phải làm thêm một lớp nối để ghép vào phiếu xuất xe. Hệ thống EPL đã có sẵn
-chỗ nhận vị trí, hãng nào cũng đẩy được vào đó.
-
-**Về API Google.** Khi anh có khoá thì nối hai thứ đáng tiền nhất: **Routes** để vẽ đường đi thật
-theo đường bộ thay cho đường thẳng nối các mốc, và **Geocoding** để gõ tên điểm là ra toạ độ, khỏi
-nhập tay vĩ độ kinh độ. Nền bản đồ thì giữ Esri cũng được, đổi sang Google ít lợi mà tốn tiền.
-
----
-
 ## 11. Những con số cần anh xác nhận
 
 Tài liệu này sẽ sai nếu các con số dưới đây sai. Xin anh cho số thật trước khi đưa cho khách.
