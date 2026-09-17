@@ -50,7 +50,7 @@
 .tdt-chu-thich .cham{width:10px;height:10px;border-radius:50%;display:inline-block}
 .tdt-chu-thich .cham.chay{background:#2F5D8A} .tdt-chu-thich .cham.lau{background:#A86B12}
 .tdt-chu-thich .cham.su-co{background:#A83232} .tdt-chu-thich .cham.khong{background:#7A858F}
-.tdt-map{height:380px;background:#DDE5E0;position:relative}
+.tdt-map{height:calc(380px * var(--ty-le,1));background:#DDE5E0;position:relative;zoom:calc(1 / var(--ty-le,1))}
 .tdt-map.trong{display:grid;place-items:center}
 .tdt-map-trong{padding:18px 24px;text-align:center;color:var(--ink-3);font-size:13px;max-width:460px}
 .tdt-chu{padding:8px 14px;border-top:1px solid var(--line)}

@@ -41,9 +41,46 @@ Mỗi tờ có số riêng dạng `LOAI/YYMM/0001`, đếm theo loại và theo 
 | `PNK_NL` | Phiếu nhập kho nhiên liệu | Kho nhiên liệu, nhập dầu | Kế toán kho | 371 | 402 | Ngoài chuyến |
 | `PNK_PT` | Phiếu nhập kho phụ tùng | Kho phụ tùng, nhập tay | Kế toán kho | 371 | 402 | Ngoài chuyến |
 | `PC_NCC` | Phiếu chi trả nhà cung cấp | Nhà cung cấp, trả theo đợt | Kế toán, quỹ | 402 | tiền mặt | Ngoài chuyến |
-| `PC_CX` | Phiếu chi trả chủ xe liên kết | 18. Bảng thanh toán chủ xe | Kế toán | 4022 | tiền mặt | **Chưa móc**: đang là bảng tính, chưa có nút chi |
+| `PC_CX` | Phiếu chi trả chủ xe liên kết | 18. Quỹ bấm Trả chủ xe | Quỹ | 4022 | tiền mặt | Phiếu phải đã khoá; mỗi phiếu trả một lần |
+| `PXK_BAN` | Phiếu xuất kho bán hàng | 20. Lập phiếu bán | Kế toán, kho | giá vốn | 371 | Giá vốn hàng xuất; vế Nợ chờ mã của bên kế toán |
+| `HD_BAN` | Hoá đơn bán hàng | 20. Lập phiếu bán | Kế toán | 1211 | 70 | Sinh cùng lúc với phiếu xuất kho bán |
+| `PT_BAN` | Phiếu thu bán hàng | 20. Bấm Đã thu | Doanh thu, quỹ | tiền mặt | 1211 | |
 
-Bước 14 "kiểm lại toàn phiếu rồi khoá" vẫn là đề nghị, chưa làm.
+## 2b. Bước 14 — kiểm lại toàn phiếu rồi khoá
+
+Xe về rồi, kế toán Viêng Chăn bấm **Khoá phiếu** trên phiếu xuất xe. Máy rà một lượt
+(`GET /api/trips/{id}/kiem-lai`) và liệt kê những điểm cần nhìn:
+
+- km về thật lệch quá 10 % so với km ước tính (km đi + km tuyến);
+- hao hụt vượt 1,5 %;
+- thiếu cân cuối, thiếu km về;
+- chưa đính kèm phiếu quặng của khách;
+- mục nào có dòng chi mà chưa kiểm.
+
+Đây chỉ là **cảnh báo**, không chặn: số thật đôi khi lệch thật. Kế toán đọc rồi xác nhận khoá
+(`POST /api/trips/{id}/khoa` với `{"xac_nhan": true}`).
+
+Khoá rồi thì: Bãi và tài xế **không ghi thêm gì** (sửa phiếu, đổi trạng thái, lập phiếu lĩnh, đính kèm,
+xoá phiếu đều bị chặn với mã `DA_KHOA`); kế toán, quỹ, kho nhiên liệu vẫn kiểm, ghi sổ và chi tiếp.
+**Chỉ phiếu đã khoá mới xuất được hoá đơn**, và **chỉ phiếu đã khoá mới trả được chủ xe liên kết**.
+Kế toán mở khoá lại được, trừ khi đã xuất hoá đơn.
+
+## 2c. Tệp đính kèm (phiếu quặng của khách)
+
+Bãi chụp phiếu quặng lúc bốc hàng và đưa lên ngay trên phiếu xuất xe, ô **Phiếu quặng đính kèm**
+(ngay dưới số phiếu quặng). Nhận ảnh JPG, PNG, WEBP, HEIC hoặc PDF, tối đa 8 MB một tệp.
+Chỉ Bãi và kế toán được đưa lên; tài xế không. Người đưa lên hoặc kế toán xoá được, và phiếu đã khoá
+thì không đổi tệp nữa.
+
+| Việc | Gọi |
+|---|---|
+| Danh sách tệp của phiếu | `GET /api/trips/{id}/tep` |
+| Đưa tệp lên | `POST /api/trips/{id}/tep` (multipart: `tep`, `kind`, `note`) |
+| Mở tệp | `GET /api/tep/{id}` — thẻ `<img>` không gửi được header nên nhận phiên qua `?tk=…`; không có phiên là 401 |
+| Xoá tệp | `DELETE /api/tep/{id}` |
+
+Tệp nằm trên đĩa máy chủ, thư mục `backend/tep/<id phiếu>/` (đổi được bằng biến môi trường
+`EPL_LAO_TEP`). Thư mục này **không đẩy lên git**.
 
 ## 3. Cách module kế toán kéo về
 
@@ -89,12 +126,32 @@ Danh mục Acc code bên anh Khang hiện có `402`, `614`, `625`, `1211`, `70`,
 | `4021`, `402` (nhà cung cấp) | `402` | Có tách `4021` không? |
 | `4022` (xe liên kết) | `4022` | Chưa có trong danh mục |
 | tiền mặt, ngân hàng | để trống mã | Bên kế toán cấp mã, hoặc cho API trả về |
+| giá vốn hàng bán (tờ `PXK_BAN`) | để trống mã | Bên kế toán cấp mã |
 
 Chỗ nào chốt khác thì chỉ sửa một bảng `dinh_khoan()` trong `backend/app/services/chung_tu.py`; các tờ đã sinh không đổi (định khoản đã khoá vào tờ lúc sinh), nên cần chốt sớm trước khi chạy thật.
 
-## 5. Ngoài phạm vi lần này
+## 5. Bán phụ tùng và xăng dầu (bước 20)
 
-- Bán phụ tùng, bán dầu cho bên ngoài (`PXK` kèm `HD` bán hàng, phiếu thu bán hàng): tính sau, đúng như anh dặn.
-- Đính kèm tệp phiếu quặng của khách vào phiếu.
-- Nút "Khoá phiếu" sau khi xe về (bước 14).
-- Phiếu chi trả chủ xe liên kết (`PC_CX`) thành nút chi thật.
+Đây là việc **ngoài chuyến**: EPL bán hàng cho người ngoài, không phải chi cho một phiếu xuất xe.
+Màn **Bán hàng** (nhóm Mô-đun kho). Kế toán, kế toán doanh thu hoặc kho nhiên liệu lập phiếu:
+chọn khách (hoặc gõ tên người mua), tiền tệ, rồi thêm dòng — **phụ tùng** (trừ tồn ngay) hoặc
+**dầu kho** (ghi một dòng xuất trong sổ kho nhiên liệu). Lưu phiếu là xuất kho và hoá đơn bán ra cùng lúc.
+Kế toán doanh thu hoặc quỹ bấm **Đã thu** thì sinh phiếu thu. Chưa thu thì còn bỏ phiếu được:
+hàng về kho, tờ chứng từ chưa đối chiếu rút theo.
+
+| Việc | Gọi |
+|---|---|
+| Danh sách phiếu bán | `GET /api/ban-hang?thang=YYYY-MM` |
+| Lập phiếu | `POST /api/ban-hang` |
+| Ghi đã thu | `POST /api/ban-hang/{id}/thu` |
+| Bỏ phiếu chưa thu | `DELETE /api/ban-hang/{id}` |
+
+Giá vốn: phụ tùng lấy đơn giá trong danh mục kho; dầu lấy đơn giá **lần nhập gần nhất**
+(họ không tính bình quân gia quyền). Giá vốn nằm ở tờ `PXK_BAN`, giá bán ở tờ `HD_BAN`,
+nên bên kế toán tự tính được lãi gộp mà không cần bên mình cộng sổ.
+
+## 6. Còn để lại
+
+- Bảng giá bán riêng cho phụ tùng (hiện gõ tay đơn giá từng lần, mặc định lấy giá kho).
+- Bán chịu theo công nợ khách (hiện một phiếu chỉ có hai trạng thái: đã lập, đã thu).
+- Mã tiền mặt, mã giá vốn hàng bán chờ bên anh Khang cấp (mục 4).

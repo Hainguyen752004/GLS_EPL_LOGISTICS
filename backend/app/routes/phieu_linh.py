@@ -162,6 +162,8 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
     Phiếu đã cấp rồi thì trả nguyên, không lập đè.
     """
     p = _phieu(db, tid)
+    if p.locked and user.role in ("yard", "driver"):
+        raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu %s đã khoá, không lập thêm phiếu lĩnh." % p.doc_no})
     loai = d.get("kind") or "fuel"
     if loai not in TIEN_TO:
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Chỉ có phiếu lĩnh nhiên liệu hoặc tạm ứng."})

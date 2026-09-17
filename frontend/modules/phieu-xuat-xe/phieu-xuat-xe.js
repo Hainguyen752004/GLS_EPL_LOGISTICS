@@ -151,11 +151,13 @@
     }));
     veSo();
   }
-  function suaDuoc(m) { if (moi) return true; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
+  const VAI_SAU_KHOA = ['acct', 'rev', 'treasury', 'cash', 'fuel', 'admin'];
+  const biKhoa = () => !moi && P.locked && !VAI_SAU_KHOA.includes(vai());
+  function suaDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
   function veVaiVaTrangThai() {
     g('px-goi-y').innerHTML = NN.h('hint_' + (vai() === 'treasury' ? 'treasury' : vai()));
     g('px-doc-no').disabled = !suaDuoc('info');
-    g('px-trang-thai').innerHTML = moi ? '' : `${tag(P.transport_status)} ${tag(P.finance_status)}${P.invoiced ? ' ' + tag('paid', 'inv_done') : ''}`;
+    g('px-trang-thai').innerHTML = moi ? '' : `${tag(P.transport_status)} ${tag(P.finance_status)}${P.invoiced ? ' ' + tag('paid', 'inv_done') : ''}${P.locked ? ` <span class="px-khoa" title="${esc(P.locked_by || '')}">🔒 ${NN.h('s_locked')}</span>` : ''}${P.owner_paid ? ' ' + tag('paid', 'owner_paid') : ''}`;
     MUC.forEach(m => {
       const sec = q(`.px-muc[data-muc="${m}"]`), st = moi ? 'wait' : (P.sections[m] || 'wait'), tuyChon = (m === 'repair' || m === 'other') && !P.expenses.some(d => d.section === m);
       const khoa = !suaDuoc(m); sec.classList.toggle('locked', khoa);
@@ -184,16 +186,20 @@
     // hành động mức phiếu
     const ta = [];
     if (!moi) {
-      if (AUTH.la('yard') && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
-      if (AUTH.la('yard') && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
+      if (AUTH.la('acct') && P.transport_status === 'arrived' && !P.locked) ta.push(`<button class="btn sm ok" data-hd-phieu="khoa">🔒 ${NN.h('a_lock')}</button>`);
+      if (AUTH.la('acct') && P.locked && !P.invoiced) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
+      if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe_usd > 0) ta.push(`<button class="btn sm ok" data-hd-phieu="tra-chu-xe">${NN.h('pay_owner')} · ${so(P.tinh.tra_chu_xe_usd, 2)} USD</button>`);
+      if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
+      if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
       if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced) ta.push(`<button class="btn sm ok" data-hd-phieu="invoice">${NN.h('a_invoice')}</button>`);
       if (AUTH.la('rev') && P.invoiced && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-fin="paid">${NN.h('a_collect')}</button><button class="btn sm" data-fin="partial">${NN.h('s_partial')}</button>`);
-      if (AUTH.la('yard') && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
+      if (AUTH.la('yard') && !P.locked && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
     }
     g('px-hanh-dong').innerHTML = ta.length ? `<span class="small muted">${NN.h('trip_status')}:</span> ${ta.join(' ')}` : `<span class="small muted">${NN.h('trip_status')}: ${moi ? NN.h('new_slip') : tag(P.transport_status) + ' ' + tag(P.finance_status)}</span>`;
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
     root.querySelectorAll('[data-fin]').forEach(b => b.addEventListener('click', () => hanhDongPhieu('finance-status', { status: b.dataset.fin })));
-    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : hanhDongPhieu(b.dataset.hdPhieu)));
+    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : hanhDongPhieu(b.dataset.hdPhieu)));
+    veTep();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
   }
   function nhanLog(a) {
@@ -246,6 +252,51 @@
   async function hanhDongPhieu(hd, body) {
     if (!await EPL.hoi(NN.t(hd === 'invoice' ? 'a_invoice' : 'a_collect'), NN.t('confirm_action'))) return;
     try { P = await API.post(`/api/trips/${P.id}/${hd}`, body || {}); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
+  }
+  /** Bước 14: kế toán rà lại rồi khoá. Máy chủ trả các điểm lệch; có lệch thì hiện ra cho kế toán đọc rồi mới xác nhận khoá. */
+  async function khoaPhieu() {
+    try {
+      const k = await API.get(`/api/trips/${P.id}/kiem-lai`);
+      const cb = k.canh_bao || [];
+      const ok = await EPL.hoi(NN.t('a_lock'), cb.length
+        ? `<p class="small muted">${NN.h('lock_warn')}</p><ul class="px-cb">${cb.map(x => `<li>${esc(x.loi)}</li>`).join('')}</ul>`
+        : `<p>${NN.h('lock_ok')}</p>`, NN.t('a_lock'));
+      if (!ok) return;
+      P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
+    } catch (e) { EPL.baoLoi(e); }
+  }
+  async function traChuXe() {
+    const k = P.tinh || {};
+    const ok = await EPL.hoi(NN.t('pay_owner'), `<p><b lang="lo">${esc(P.owner_name || '')}</b> · <span class="mono">${esc(P.doc_no)}</span></p>
+      <p class="hi">${so(k.tra_chu_xe_usd, 2)} USD <small class="muted">≈ ${so(k.tra_chu_xe_usd * rate('USD'))} LAK</small></p>
+      <p class="small muted">${so(k.tien_thue_usd, 2)} − ${so(k.phi_usd, 2)} − ${so(k.tru_vuot_usd, 2)} − ${so(k.ung_truoc_usd, 2)} USD</p>`, NN.t('pay_owner'));
+    if (!ok) return;
+    try { P = await API.post(`/api/trips/${P.id}/tra-chu-xe`, {}); EPL.toast(NN.t('saved'), 'ok'); veHet(); } catch (e) { EPL.baoLoi(e); }
+  }
+  /* ---- tệp đính kèm: phiếu quặng của khách. Bãi chụp đưa lên lúc bốc; kế toán xem khi kiểm mục II. ---- */
+  let TEP = [];
+  async function veTep() {
+    const o = g('px-tep'); if (!o) return;
+    if (moi || !P.id) { o.innerHTML = `<span class="small muted">${NN.h('attach_after_save')}</span>`; return; }
+    try { TEP = await API.get(`/api/trips/${P.id}/tep`); } catch (e) { TEP = []; }
+    const tk = API.token();
+    const themDuoc = AUTH.la('yard', 'acct', 'rev') && !biKhoa();
+    o.innerHTML = TEP.map(t => `<div class="tep">
+        ${t.la_anh ? `<img src="${esc(t.url)}?tk=${encodeURIComponent(tk)}" alt="">` : `<span class="pdf">PDF</span>`}
+        <div><a href="${esc(t.url)}?tk=${encodeURIComponent(tk)}" target="_blank" rel="noopener" title="${esc(t.filename)}">${esc(t.filename)}</a>
+          <small lang="lo">${esc(t.by_user || '')} · ${EPL.ngayGio ? EPL.ngayGio(t.ts) : EPL.ngay(t.ts)}</small></div>
+        ${(AUTH.la('acct') || t.by_user === AUTH.user?.full_name) && !biKhoa() ? `<button type="button" class="x" data-xoa-tep="${t.id}" title="${esc(NN.t('delete'))}">×</button>` : ''}
+      </div>`).join('') + (themDuoc ? `<label class="btn sm quiet them">+ ${NN.h('attach_add')}<input type="file" accept="image/*,application/pdf" data-them-tep></label>` : '')
+      + (!TEP.length && !themDuoc ? `<span class="small muted">${NN.h('attach_none')}</span>` : '');
+    o.querySelectorAll('[data-them-tep]').forEach(inp => inp.addEventListener('change', async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      const fd = new FormData(); fd.append('tep', f, f.name); fd.append('kind', 'ore_bill');
+      try { await API.tep(`/api/trips/${P.id}/tep`, fd); EPL.toast(NN.t('saved'), 'ok'); await veTep(); } catch (e) { EPL.baoLoi(e); }
+    }));
+    o.querySelectorAll('[data-xoa-tep]').forEach(b => b.addEventListener('click', async () => {
+      const ok = await EPL.hoi(NN.t('delete'), `<p>${NN.h('attach_del')}</p>`, NN.t('delete')); if (!ok) return;
+      try { await API.goi('/api/tep/' + b.dataset.xoaTep, { method: 'DELETE' }); await veTep(); } catch (e) { EPL.baoLoi(e); }
+    }));
   }
   async function xoaPhieu() {
     if (!await EPL.hoi(NN.t('delete') + ' ' + P.doc_no, NN.t('confirm_delete'), NN.t('delete'))) return;

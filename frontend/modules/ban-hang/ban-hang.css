@@ -1,0 +1,13 @@
+/* Bán hàng — phiếu bán phụ tùng · dầu cho bên ngoài */
+.bh-lap{margin-bottom:14px;border-color:#B7D8CB}
+.bh-lap .f-grid{margin-bottom:12px}
+.bh-dong input,.bh-dong select{width:100%;min-width:90px}
+.bh-dong td.num input{text-align:right}
+.bh-dong .amt{font-weight:600;font-variant-numeric:tabular-nums}
+.bh-dong .x{border:0;background:none;color:var(--ink-3);font-size:16px;cursor:pointer;padding:0 6px}
+.bh-dong .x:hover{color:var(--red)}
+.bh-nut{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.bh-dong-ct{font-size:12px;color:var(--ink-2)}
+.bh-dong-ct b{color:var(--ink)}
+tr.bh-da-thu td{color:var(--ink-3)}
+tr.bh-da-thu td .tag{opacity:.85}

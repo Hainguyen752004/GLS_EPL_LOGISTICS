@@ -14,7 +14,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu',
   'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-nhien-lieu',
-  'diem-do', 'kho-phu-tung', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+  'diem-do', 'kho-phu-tung', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -115,6 +115,19 @@ async function main() {
     assert.ok(goc().querySelector('table, .kpis, .px-phieu, .pct-ds'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
+  // Co giãn theo zoom: đổi bề rộng cửa sổ (đúng thứ trình duyệt làm khi zoom) thì --ty-le phải đổi theo
+  const tyLe = () => Number(d.documentElement.style.getPropertyValue('--ty-le'));
+  assert.ok(tyLe() > 0, 'phải đặt --ty-le ngay khi tải: ' + tyLe());
+  const doTyLe = (w2, h2) => { w.innerWidth = w2; w.innerHeight = h2 === undefined ? Math.round(w2 * 9 / 16) : h2; w.EPL.coGian(); return tyLe(); };
+  assert.strictEqual(doTyLe(1600, 900), 1, 'đúng khung thiết kế 1600×900 thì tỷ lệ phải là 1');
+  assert.ok(doTyLe(2400, 1350) > 1, 'zoom ra (cửa sổ lớn hơn) thì --ty-le phải tăng: ' + doTyLe(2400, 1350));
+  assert.ok(doTyLe(1400, 790) < 1, 'zoom vào thì --ty-le phải giảm: ' + doTyLe(1400, 790));
+  assert.strictEqual(doTyLe(2560, 900), 1, 'màn rộng mà thấp thì theo chiều thấp, không phóng cho tràn đáy');
+  assert.strictEqual(doTyLe(300, 200), 0.85, 'màn rất nhỏ vẫn dừng ở 0,85');
+  assert.strictEqual(doTyLe(9000, 5000), 2, 'màn rất lớn vẫn dừng ở 2');
+  console.log('✓ co giãn theo zoom: 1600×900→1 · 2400×1350→%s · 1400×790→%s · 2560×900→1, kẹp 0,85–2', doTyLe(2400, 1350), doTyLe(1400, 790));
+  doTyLe(1600, 900);
+
   assert.deepStrictEqual(loiJS, [], 'không được có lỗi JS: ' + loiJS.join(' | '));
 
   // 2. bốn ngôn ngữ trên màn phiếu — không lộ khoá thô, không lai

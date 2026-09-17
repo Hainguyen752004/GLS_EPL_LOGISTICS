@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
 from models import (MUC, Customer, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
-                    RouteStop, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
+                    RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
                     TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
@@ -230,6 +230,7 @@ def gieo(db):
           truck_no="341", driver_name="ທ້າວ ທັດສະດາພອນ", odo_out=6921, odo_back=7900, tuyen="ກາສີ → ກາລໍ",
           customer_name="ນາງ ວັນນາ", ore_bill_no="HR-2240",
           weight_origin=40.80, weight_dest=40.60, price_usd=42, transport_status="arrived", finance_status="paid", invoiced=True,
+          locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 8, 25, 9, 0),
           chi=[dong("fuel", "diesel", 110, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 720, 28000, "VND", "fp_vn")]
               + di_duong_chuan())
     phieu(doc_no="T4-0432-08/EPL", doc_date=D(2026, 8, 23), out_date=D(2026, 8, 23),
@@ -278,7 +279,35 @@ def gieo(db):
                                                      ("ນ້ຳມັນເຄື່ອງ 15W-40 (nhớt)", "u_l", 60, 40, 85000, D(2026, 8, 21), "341")):
         db.add(Part(name=ten, unit=dv, qty=ton, min_qty=toi_thieu, unit_price=gia, last_date=ngay, last_truck=xe_))
     db.commit()
+    gieo_ban_hang(db)
     gieo_chung_tu(db)
+
+
+def gieo_ban_hang(db):
+    """Một phiếu bán mẫu: bán 2 lọc dầu cho khách ngoài, đã thu. Để màn Bán hàng và Sổ chứng từ có gì mà xem."""
+    loc = db.query(Part).filter(Part.name.like("%lọc dầu%")).first()
+    kh = db.query(Customer).first()
+    if not loc or not kh:
+        return
+    s = Sale(doc_no="BH-2608-0001", sale_date=D(2026, 8, 26), customer_id=kh.id, customer_name=kh.name, currency="LAK",
+             rate_to_lak=1, status="paid", total=2 * 220000, total_lak=2 * 220000, cost_lak=2 * (loc.unit_price or 0),
+             note="Bán lẻ tại bãi", by_user="ນາງ ຄຳ (Kham)", paid_at=dt.datetime(2026, 8, 26, 10, 0), paid_by="ນາງ ຄຳ (Kham)")
+    db.add(s); db.flush()
+    from models import PartMove
+    mv = PartMove(part_id=loc.id, move_date=D(2026, 8, 26), kind="out", qty=2, note="Bán · BH-2608-0001 · %s" % kh.name, by_user="ນາງ ຄຳ (Kham)")
+    db.add(mv); db.flush()
+    loc.qty = (loc.qty or 0) - 2
+    db.add(SaleLine(sale_id=s.id, line_no=1, item_type="part", part_id=loc.id, name=loc.name, unit=loc.unit, qty=2, unit_price=220000,
+                    amount=440000, cost_lak=2 * (loc.unit_price or 0), stock_move_id=mv.id))
+    db.flush()
+    dong = [{"line_no": 1, "item_type": "part", "name": loc.name, "qty": 2, "unit_price": 220000, "amount": 440000}]
+    CT.ghi(db, "PXK_BAN", nguon_bang="sales", nguon_id=s.id, ngay=s.sale_date, doi_tuong_loai="khach", doi_tuong_ten=kh.name,
+           tien=s.cost_lak, by_user=s.by_user, mo_ta="Xuất kho bán hàng %s (giá vốn)" % s.doc_no, payload={"doc_no": s.doc_no, "lines": dong})
+    CT.ghi(db, "HD_BAN", nguon_bang="sales", nguon_id=s.id, ngay=s.sale_date, doi_tuong_loai="khach", doi_tuong_ten=kh.name,
+           tien=s.total, by_user=s.by_user, mo_ta="Hoá đơn bán hàng %s · %s" % (s.doc_no, kh.name), payload={"doc_no": s.doc_no, "lines": dong})
+    CT.ghi(db, "PT_BAN", nguon_bang="sales", nguon_id=s.id, ngay=s.sale_date, doi_tuong_loai="khach", doi_tuong_ten=kh.name,
+           tien=s.total, by_user=s.paid_by, mo_ta="Thu tiền bán hàng %s · %s" % (s.doc_no, kh.name), payload={"doc_no": s.doc_no})
+    db.commit()
 
 
 def gieo_chung_tu(db):

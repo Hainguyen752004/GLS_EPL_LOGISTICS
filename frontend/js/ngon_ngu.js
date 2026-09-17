@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 765 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 802 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1123,9 +1123,9 @@ window.EPL_TU_DIEN = {
   "en": "Truck owner"
  },
  "pay_owner": {
-  "vi": "Trả chủ xe (USD)",
-  "lo": "ຈ່າຍເຈົ້າຂອງລົດ (USD)",
-  "en": "Owner payout (USD)"
+  "vi": "Trả chủ xe",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດ",
+  "en": "Pay truck owner"
  },
  "trip_money": {
   "vi": "Tiền chuyến",
@@ -3756,6 +3756,191 @@ window.EPL_TU_DIEN = {
   "vi": "Mỗi bước nghiệp vụ bỏ vào đây một tờ. Bên kế toán kéo về để lập phiếu thu, phiếu chi, phiếu nhập kho, phiếu xuất kho; xong thì đánh dấu đã đối chiếu. Đây không phải sổ kế toán.",
   "lo": "ແຕ່ລະຂັ້ນຕອນສ້າງເອກະສານໜຶ່ງໃບຢູ່ນີ້. ພະແນກບັນຊີດຶງໄປສ້າງໃບຮັບເງິນ, ໃບຈ່າຍເງິນ, ໃບຮັບເຂົ້າສາງ, ໃບເບີກອອກສາງ; ແລ້ວໝາຍວ່າກວດສອບແລ້ວ. ນີ້ບໍ່ແມ່ນປື້ມບັນຊີ.",
   "en": "Each step drops one document here. Accounting pulls them to create receipts, payments, stock-in and stock-out slips, then marks them reconciled. This is not the ledger."
+ },
+ "a_lock": {
+  "vi": "Khoá phiếu",
+  "lo": "ລັອກໃບ",
+  "en": "Lock slip"
+ },
+ "a_unlock_slip": {
+  "vi": "Mở khoá phiếu",
+  "lo": "ປົດລັອກໃບ",
+  "en": "Unlock slip"
+ },
+ "s_locked": {
+  "vi": "Đã khoá",
+  "lo": "ລັອກແລ້ວ",
+  "en": "Locked"
+ },
+ "lock_warn": {
+  "vi": "Máy rà thấy các điểm sau. Đọc xong nếu vẫn đúng thì xác nhận khoá:",
+  "lo": "ລະບົບພົບຈຸດຕ່ອງໄປນີ້. ຖ້າຖືກຕ້ອງແລ້ວ ໃຫ້ຢືນຢັນລັອກ:",
+  "en": "These points need a look. If they are right, confirm the lock:"
+ },
+ "lock_ok": {
+  "vi": "Phiếu không có điểm lệch. Khoá rồi Bãi không sửa được nữa.",
+  "lo": "ໃບບໍ່ມີຈຸດຜິດພາດ. ລັອກແລ້ວ ລານຈະແກ້ບໍ່ໄດ້ອີກ.",
+  "en": "No discrepancies found. Once locked the yard cannot edit."
+ },
+ "attach_ore": {
+  "vi": "Phiếu quặng đính kèm",
+  "lo": "ບິນແຮ່ຄັດຕິດ",
+  "en": "Attached ore bill"
+ },
+ "attach_add": {
+  "vi": "Thêm ảnh · PDF",
+  "lo": "ເພີ່ມຮູບ · PDF",
+  "en": "Add photo · PDF"
+ },
+ "attach_none": {
+  "vi": "Chưa đính kèm",
+  "lo": "ຍັງບໍ່ໄດ້ຄັດຕິດ",
+  "en": "Nothing attached"
+ },
+ "attach_del": {
+  "vi": "Xoá tệp này khỏi phiếu?",
+  "lo": "ລຶບໄຟລ໌ນີ້ອອກຈາກໃບ?",
+  "en": "Remove this file from the slip?"
+ },
+ "attach_after_save": {
+  "vi": "Lưu phiếu rồi mới đính kèm được",
+  "lo": "ບັນທຶກໃບກ່ອນ ແລ້ວຈຶ່ງຄັດຕິດໄດ້",
+  "en": "Save the slip first, then attach"
+ },
+ "owner_paid": {
+  "vi": "Đã trả chủ xe",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດແລ້ວ",
+  "en": "Owner paid"
+ },
+ "owner_unpaid": {
+  "vi": "Chưa trả",
+  "lo": "ຍັງບໍ່ຈ່າຍ",
+  "en": "Unpaid"
+ },
+ "owner_wait_lock": {
+  "vi": "Chờ khoá phiếu",
+  "lo": "ລໍຖ້າລັອກໃບ",
+  "en": "Waiting for lock"
+ },
+ "nav_sales": {
+  "vi": "Bán hàng",
+  "lo": "ຂາຍສິນຄ້າ",
+  "en": "Sales"
+ },
+ "title_ban_hang": {
+  "vi": "Bán hàng<span class=\"sub\">Bán phụ tùng · xăng dầu cho bên ngoài</span>",
+  "lo": "ຂາຍສິນຄ້າ<span class=\"sub\">ຂາຍອາໄຫຼ່ · ນໍ້າມັນ ໃຫ້ພາຍນອກ</span>",
+  "en": "Sales<span class=\"sub\">Spare parts · fuel sold to outside buyers</span>"
+ },
+ "sale_new": {
+  "vi": "Lập phiếu bán",
+  "lo": "ສ້າງໃບຂາຍ",
+  "en": "New sale"
+ },
+ "sale_issue": {
+  "vi": "Lập phiếu · xuất kho",
+  "lo": "ສ້າງໃບ · ເບີກສາງ",
+  "en": "Issue · stock out"
+ },
+ "sale_no": {
+  "vi": "Số phiếu bán",
+  "lo": "ເລກໃບຂາຍ",
+  "en": "Sale no."
+ },
+ "sale_lines": {
+  "vi": "Hàng bán",
+  "lo": "ສິນຄ້າ",
+  "en": "Items"
+ },
+ "sale_hint": {
+  "vi": "Có trong kho thì xuất kho. Lập phiếu là có xuất kho và hoá đơn bán; thu tiền thì bấm Đã thu.",
+  "lo": "ມີໃນສາງແລ້ວເບີກອອກ. ສ້າງໃບແລ້ວມີໃບເບີກ ແລະ ໃບເກັບເງິນ; ຮັບເງິນແລ້ວກົດ ຮັບແລ້ວ.",
+  "en": "Stock is issued on save. Saving creates the stock-out and the invoice; press Collected when paid."
+ },
+ "sale_customer_free": {
+  "vi": "Hoặc tên người mua",
+  "lo": "ຫຼື ຊື່ຜູ້ຊື້",
+  "en": "Or buyer name"
+ },
+ "item_type": {
+  "vi": "Loại hàng",
+  "lo": "ປະເພດສິນຄ້າ",
+  "en": "Type"
+ },
+ "it_part": {
+  "vi": "Phụ tùng",
+  "lo": "ອາໄຫຼ່",
+  "en": "Spare part"
+ },
+ "it_fuel": {
+  "vi": "Dầu kho",
+  "lo": "ນໍ້າມັນສາງ",
+  "en": "Fuel from store"
+ },
+ "sale_fuel_l": {
+  "vi": "số lượng tính bằng lít",
+  "lo": "ຈຳນວນເປັນລິດ",
+  "en": "quantity in litres"
+ },
+ "sale_no_lines": {
+  "vi": "Chưa có dòng nào — bấm + Phụ tùng hoặc + Dầu kho",
+  "lo": "ຍັງບໍ່ມີແຖວ — ກົດ + ອາໄຫຼ່ ຫຼື + ນໍ້າມັນສາງ",
+  "en": "No lines yet — press + Spare part or + Fuel"
+ },
+ "sale_collect": {
+  "vi": "Đã thu",
+  "lo": "ຮັບເງິນແລ້ວ",
+  "en": "Collected"
+ },
+ "sale_collect_hint": {
+  "vi": "Ghi đã thu sẽ sinh phiếu thu bán hàng trong Sổ chứng từ.",
+  "lo": "ການບັນທຶກຮັບເງິນຈະສ້າງໃບຮັບເງິນຂາຍໃນປື້ມເອກະສານ.",
+  "en": "Marking collected creates a sales receipt in the document register."
+ },
+ "sale_delete_hint": {
+  "vi": "Bỏ phiếu chưa thu: hàng trả về kho, tờ chứng từ chưa đối chiếu rút theo.",
+  "lo": "ຍົກເລີກໃບທີ່ຍັງບໍ່ຮັບເງິນ: ສິນຄ້າກັບຄືນສາງ, ເອກະສານທີ່ຍັງບໍ່ກວດຈະຖືກຖອນ.",
+  "en": "Cancel an unpaid sale: stock returns, unreconciled documents are withdrawn."
+ },
+ "sale_paid": {
+  "vi": "Đã thu",
+  "lo": "ຮັບເງິນແລ້ວ",
+  "en": "Paid"
+ },
+ "sale_issued": {
+  "vi": "Chưa thu",
+  "lo": "ຍັງບໍ່ຮັບເງິນ",
+  "en": "Unpaid"
+ },
+ "sale_unpaid": {
+  "vi": "Chưa thu",
+  "lo": "ຍັງບໍ່ຮັບ",
+  "en": "Unpaid"
+ },
+ "by_user": {
+  "vi": "Người lập",
+  "lo": "ຜູ້ສ້າງ",
+  "en": "Created by"
+ },
+ "a_lock_warn": {
+  "vi": "Khoá phiếu (có ghi nhận điểm lệch)",
+  "lo": "ລັອກໃບ (ມີຈຸດຕ່າງ)",
+  "en": "Locked (with noted discrepancies)"
+ },
+ "a_attach": {
+  "vi": "Đính kèm tệp",
+  "lo": "ຄັດຕິດໄຟລ໌",
+  "en": "Attached a file"
+ },
+ "a_detach": {
+  "vi": "Xoá tệp đính kèm",
+  "lo": "ລຶບໄຟລ໌ຄັດຕິດ",
+  "en": "Removed an attachment"
+ },
+ "a_pay_owner": {
+  "vi": "Chi trả chủ xe liên kết",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "Paid the truck owner"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

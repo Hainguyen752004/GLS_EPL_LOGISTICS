@@ -147,9 +147,28 @@ def main():
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]
     assert g["tinh"]["tra_chu_xe_usd"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe_usd"], thue, phi, vuot, ung)
     s, g = goi("/api/trips/%s/finance-status" % P, {"status": "paid"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
+    # ---- 4b. Bước 14: kế toán rà lại rồi KHOÁ. Chưa khoá thì chưa có hoá đơn; khoá rồi Bãi hết sửa.
+    s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 409, "Lập hoá đơn khi phiếu chưa khoá → sai bước", g)
+    s, g = goi("/api/trips/%s/khoa" % P, {}, vai="thabok"); phai(s, 403, "Bãi khoá phiếu → bị từ chối", g)
+    s, g = goi("/api/trips/%s/kiem-lai" % P, vai="ketoan"); phai(s, 200, "Kế toán bấm Kiểm lại → bảng cảnh báo", g)
+    ma_cb = [x["ma"] for x in g["canh_bao"]]
+    assert "THIEU_PHIEU_QUANG" in ma_cb and "THIEU_KM_VE" in ma_cb, "phải cảnh báo thiếu phiếu quặng và thiếu km về: %s" % ma_cb
+    s, g = goi("/api/trips/%s/khoa" % P, {}, vai="ketoan"); phai(s, 409, "Khoá khi còn cảnh báo mà chưa xác nhận → chặn", g)
+    s, g = goi("/api/trips/%s/khoa" % P, {"xac_nhan": True}, vai="ketoan"); phai(s, 200, "Kế toán xác nhận khoá phiếu", g)
+    assert g["locked"] and g["locked_by"], g.get("locked")
+    s, g = goi("/api/trips/%s" % P, {"odo_back": 9999}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa phiếu đã khoá → bị chặn", g)
+    s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="thabok"); phai(s, 403, "Bãi trả chủ xe → bị từ chối", g)
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu lập hoá đơn", g)
     s, g = goi("/api/trips/%s/finance-status" % P, {"status": "paid"}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu ghi đã thu tiền", g)
     assert g["invoiced"] and g["finance_status"] == "paid"
+    # ---- 4c. Xe liên kết: quỹ trả chủ xe một lần → chứng từ PC_CX
+    s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="quytb"); phai(s, 200, "Quỹ trả chủ xe liên kết", g)
+    assert g["owner_paid"] and g["owner_paid_usd"] == g["tinh"]["tra_chu_xe_usd"], (g["owner_paid_usd"], g["tinh"]["tra_chu_xe_usd"])
+    s, g2 = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="quytb"); phai(s, 409, "Trả chủ xe lần hai → từ chối", g2)
+    s, so = goi("/api/chung-tu?trip_id=%s&loai=PC_CX" % P, vai="ketoan"); phai(s, 200, "Sổ chứng từ có tờ PC_CX", so)
+    assert len(so["ds"]) == 1 and so["ds"][0]["tien_te"] == "USD" and so["ds"][0]["no"] == "4022", so["ds"]
+    s, g3 = goi("/api/trips/%s/mo-khoa" % P, vai="ketoan", method="POST"); phai(s, 409, "Mở khoá sau khi đã xuất hoá đơn → chặn", g3)
+    s, g = goi("/api/trips/%s" % P, vai="admin")     # lấy lại phiếu đầy đủ để soi nhật ký
     assert any(l["action"] == "a_invoice" for l in g["logs"]) and any(l["action"] == "sec_fuel:pay" for l in g["logs"]), "nhật ký phải ghi từng bước"
     print("  ✓ nhật ký có %d dòng, đủ các bước" % len(g["logs"]))
 

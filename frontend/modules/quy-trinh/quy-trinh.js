@@ -32,9 +32,8 @@
 
     { so: 2, vai: 'yard', tt: 'co', ten: 'Mục II: tuyến, khách, hàng', muc: 'sec2', man: 'phieu-xuat-xe',
       mo_ta: 'Bãi chọn tuyến (điểm đi, điểm đến tự điền), khách hàng, loại hàng, số phiếu quặng và CÂN ĐẦU. Em chốt Bãi nhập cân vì tờ phiếu quặng nằm ở bãi lúc bốc hàng, kế toán ở Viêng Chăn không cầm tờ đó; kế toán chỉ kiểm lại con số. Tiền (đơn giá, thành tiền, quy đổi, khấu trừ) Bãi không thấy.',
-      nhap: ['Tuyến đường', 'Khách hàng', 'Loại hàng', 'Số phiếu quặng, ngày', 'Điểm đi, điểm đến (tự theo tuyến)', 'Cân đầu (tấn) từ phiếu quặng'],
+      nhap: ['Tuyến đường', 'Khách hàng', 'Loại hàng', 'Số phiếu quặng, ngày', 'Đính kèm ảnh hoặc PDF phiếu quặng của khách', 'Điểm đi, điểm đến (tự theo tuyến)', 'Cân đầu (tấn) từ phiếu quặng'],
       an: ['Đơn giá USD/tấn', 'Thành tiền USD', 'Quy đổi LAK', 'Khấu trừ xe liên kết', 'Tổng kết doanh thu · chi · lãi'],
-      de_nghi: ['Đính kèm tệp phiếu quặng của khách vào phiếu (ảnh hoặc PDF) — chưa làm.'],
       chung_tu: [], trang_thai: 'Mục II: Chưa gửi → Đã nhập' },
 
     { so: 3, vai: 'yard', tt: 'co', ten: 'Mục III: nhiên liệu', muc: 'sec3', man: 'phieu-xuat-xe',
@@ -92,11 +91,11 @@
       mo_ta: 'Bãi bấm mốc cuối trên màn Theo dõi. Máy hỏi cân cuối, km về thật, ngày về.',
       nhap: ['Cân cuối (tấn)', 'Km về thật', 'Ngày về'], chung_tu: [], trang_thai: 'Đang vận chuyển → Đã giao hàng' },
 
-    { so: 14, vai: 'acct', tt: 'de_nghi', ten: 'Kiểm lại toàn phiếu, khoá', muc: 'sec2', man: 'phieu-xuat-xe',
-      mo_ta: 'Sau khi xe về, kế toán rà lại cả phiếu một lượt rồi mới khoá để ghi công nợ. Hiện chưa có bước này: đang kiểm rời từng mục.',
-      kiem: ['Km ước tính so với km thật', 'Cân đầu so với cân cuối, hao hụt quá 1,5% thì gắn cờ', 'Chi phí phát sinh mục V, VI', 'Dầu mua bên Việt Nam đã quy đổi đúng chưa'],
-      de_nghi: ['Thêm nút "Khoá phiếu" cho kế toán. Khoá rồi thì Bãi không sửa được gì nữa, và chỉ phiếu đã khoá mới sang được bước hoá đơn.'],
-      chung_tu: [], trang_thai: 'Phiếu: Đã khoá' },
+    { so: 14, vai: 'acct', tt: 'co', ten: 'Kiểm lại toàn phiếu, khoá', muc: 'sec2', man: 'phieu-xuat-xe',
+      mo_ta: 'Xe về rồi, kế toán bấm Khoá phiếu. Máy rà một lượt và liệt kê điểm lệch: km về thật so với ước tính (lệch quá 10%), hao hụt quá 1,5%, thiếu cân cuối, thiếu km về, chưa đính kèm phiếu quặng, mục có chi mà chưa kiểm. Kế toán đọc rồi xác nhận khoá. Khoá rồi Bãi và tài xế không ghi gì thêm; kế toán, quỹ, kho vẫn kiểm và chi tiếp. Chỉ phiếu đã khoá mới xuất hoá đơn và mới trả chủ xe liên kết.',
+      kiem: ['Km ước tính so với km thật', 'Cân đầu so với cân cuối, hao hụt quá 1,5%', 'Phiếu quặng đã đính kèm chưa', 'Mục V, VI có chi mà chưa kiểm'],
+      nhap: ['Bấm Khoá phiếu, đọc cảnh báo, xác nhận', 'Mở khoá nếu cần sửa (chưa xuất hoá đơn)'],
+      chung_tu: [], trang_thai: 'Phiếu: Đã khoá 🔒' },
 
     { so: 15, vai: 'acct', tt: 'co', ten: 'Kiểm và ghi sổ mục V, VI', muc: 'sec5', man: 'phieu-xuat-xe',
       mo_ta: 'Kế toán kiểm và ghi sổ sửa chữa và chi khác phát sinh trên đường.',
@@ -111,15 +110,21 @@
       nhap: ['Lập hoá đơn', 'Ghi đã thu'], chung_tu: ['Hoá đơn vận chuyển · HD', 'Phiếu thu tiền khách · PT'], dinh_khoan: '1211/70 (hoá đơn) · tiền mặt/1211 (thu)',
       trang_thai: 'Chưa thanh toán → Đã thanh toán' },
 
-    { so: 18, vai: 'acct', tt: 'co', ten: 'Xe liên kết: trả chủ xe', muc: 'sec2', man: 'xe-lien-ket',
+    { so: 18, vai: 'cash', tt: 'co', ten: 'Xe liên kết: trả chủ xe', muc: 'sec2', man: 'xe-lien-ket',
       mo_ta: 'Với xe thuê ngoài: tiền trả chủ xe = giá thuê × tấn, trừ 2% mỗi phiếu, trừ 1 USD mỗi tấn vượt 40 t, trừ các khoản EPL đã ứng thay.',
-      chung_tu: ['Bảng thanh toán chủ xe'], dinh_khoan: '4022/…',
-      de_nghi: ['Hiện là bảng tính. Đề nghị thành phiếu chi riêng cho chủ xe khi nối sổ anh Khang.'],
-      trang_thai: '—' },
+      chung_tu: ['Phiếu chi trả chủ xe · PC_CX'], dinh_khoan: '4022/tiền mặt',
+      nhap: ['Quỹ bấm Trả chủ xe (ở màn Xe liên kết hoặc trên phiếu) — phiếu phải đã khoá, mỗi phiếu trả một lần'],
+      trang_thai: 'Chủ xe: Chưa trả → Đã trả' },
 
     { so: 19, vai: 'cash', tt: 'co', ten: 'Tất toán tài xế theo tháng', muc: 'sec4', man: 'tat-toan',
       mo_ta: 'Cuối tháng đối: đã ứng bao nhiêu, đã chi thật bao nhiêu. Dương thì công ty chi bù, âm thì tài xế nộp lại. Không tính khoản công ty trả nhà cung cấp theo đợt.',
       chung_tu: ['Phiếu chi bù · TT_CHI', 'hoặc Phiếu thu hoàn · TT_THU'], trang_thai: 'Kỳ: Đã tất toán · khoá' },
+
+    { so: 20, vai: 'acct', tt: 'co', ten: 'Bán phụ tùng · xăng dầu', muc: 'sec_ban', man: 'ban-hang',
+      mo_ta: 'Ngoài chuyến: EPL bán phụ tùng, dầu cho bên ngoài. Kế toán hoặc kho lập phiếu bán: chọn khách, thêm dòng phụ tùng (trừ tồn ngay) hoặc dầu kho, đơn giá bán, tiền tệ. Lập xong là có xuất kho và hoá đơn bán; kế toán doanh thu hoặc quỹ bấm Đã thu. Chưa thu thì còn bỏ được, hàng về kho.',
+      nhap: ['Khách, ngày, tiền tệ', 'Dòng: phụ tùng hoặc dầu, số lượng, đơn giá bán', 'Ghi đã thu'],
+      chung_tu: ['Phiếu xuất kho bán hàng · PXK_BAN', 'Hoá đơn bán hàng · HD_BAN', 'Phiếu thu bán hàng · PT_BAN'], dinh_khoan: 'giá vốn/371 · 1211/70 · tiền mặt/1211',
+      trang_thai: 'Phiếu bán: Đã lập → Đã thu' },
   ];
 
   /* ---------------------------------------------------------------- ma trận vai × mục (đề nghị) */
@@ -161,11 +166,14 @@
     ['Phiếu chi sửa chữa · chi khác · PC_SC', '16', 'Tiền mặt lẻ Thà Bốc', '614/tiền mặt · 625/tiền mặt', 'co', 'Một tờ cho cả mục, kèm từng dòng trong payload. Dòng lấy kho không tính (đã có PXK_PT).'],
     ['Hoá đơn vận chuyển · HD', '17', 'Kế toán doanh thu', '1211/70', 'co', 'Một chuyến một hoá đơn.'],
     ['Phiếu thu tiền khách · PT', '17', 'Kế toán doanh thu', 'tiền mặt/1211', 'co', 'Khi đổi trạng thái sang Đã thanh toán.'],
-    ['Phiếu chi trả chủ xe liên kết · PC_CX', '18', 'Kế toán', '4022/tiền mặt', 'de_nghi', 'Đang là bảng tính; chưa có nút chi trả riêng.'],
+    ['Phiếu chi trả chủ xe liên kết · PC_CX', '18', 'Quỹ', '4022/tiền mặt', 'co', 'Nút Trả chủ xe ở màn Xe liên kết; phiếu phải đã khoá; mỗi phiếu một lần.'],
     ['Tất toán tài xế · TT_CHI hoặc TT_THU', '19', 'Kế toán · quỹ', '625/tiền mặt hoặc tiền mặt/625', 'co', 'Chi bù khi chi thật > ứng; thu hoàn khi ngược lại.'],
     ['Phiếu nhập kho nhiên liệu · PNK_NL', 'Ngoài chuyến', 'Kế toán kho', '371/402', 'co', 'Màn Kho nhiên liệu, nhập dầu.'],
     ['Phiếu nhập · xuất kho phụ tùng · PNK_PT · PXK_PT', 'Ngoài chuyến', 'Kế toán kho', '371/402 · 614/371', 'co', 'Màn Kho phụ tùng, nhập xuất tay.'],
     ['Phiếu chi trả nhà cung cấp · PC_NCC', 'Ngoài chuyến', 'Kế toán · quỹ', '402/tiền mặt', 'co', 'Màn Nhà cung cấp, trả theo đợt.'],
+    ['Phiếu xuất kho bán hàng · PXK_BAN', '20', 'Kế toán · kho', 'giá vốn/371', 'co', 'Bán phụ tùng, dầu cho bên ngoài. Vế Nợ để bên kế toán cấp mã giá vốn.'],
+    ['Hoá đơn bán hàng · HD_BAN', '20', 'Kế toán', '1211/70', 'co', 'Sinh cùng lúc lập phiếu bán.'],
+    ['Phiếu thu bán hàng · PT_BAN', '20', 'Doanh thu · quỹ', 'tiền mặt/1211', 'co', 'Khi bấm Đã thu.'],
   ];
 
   /* ---------------------------------------------------------------- vẽ */
@@ -196,7 +204,7 @@
     const ds = (tieu, arr, cls) => arr && arr.length
       ? `<div class="qt-p-khoi ${cls || ''}"><div class="l">${tieu}</div><ul>${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
     q('#qt-p-than').innerHTML = `
-      <div class="qt-p-vai">${tenVai(b.vai)} · ${NN.h(b.muc)}</div>
+      <div class="qt-p-vai">${tenVai(b.vai)} · ${b.muc === 'sec_ban' ? NN.h('nav_sales') : NN.h(b.muc)}</div>
       <p>${esc(b.mo_ta)}</p>
       ${ds('Nhập', b.nhap)}
       ${ds('Kiểm', b.kiem)}

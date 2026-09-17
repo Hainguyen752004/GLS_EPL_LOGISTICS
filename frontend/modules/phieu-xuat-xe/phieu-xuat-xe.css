@@ -59,3 +59,19 @@
 .px-an-tien table[data-bang="fuel"] th:nth-child(5),.px-an-tien table[data-bang="fuel"] td:nth-child(5),
 .px-an-tien table[data-bang="fuel"] th:nth-child(6),.px-an-tien table[data-bang="fuel"] td:nth-child(6),
 .px-an-tien table[data-bang="fuel"] th:nth-child(9),.px-an-tien table[data-bang="fuel"] td:nth-child(9){display:none}
+
+/* ---- tệp đính kèm (phiếu quặng của khách) ---- */
+.px-tep-o{grid-column:1/-1}
+.px-tep{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.px-tep .tep{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:4px 8px 4px 4px;background:var(--paper);font-size:12.5px}
+.px-tep .tep img{width:44px;height:44px;object-fit:cover;border-radius:6px;background:var(--bg)}
+.px-tep .tep .pdf{width:44px;height:44px;display:grid;place-items:center;border-radius:6px;background:var(--ore-soft);color:var(--ore);font-weight:700;font-size:11px}
+.px-tep .tep a{color:var(--ink);text-decoration:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.px-tep .tep small{display:block;color:var(--ink-3)}
+.px-tep .tep .x{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:15px;padding:0 4px}
+.px-tep .tep .x:hover{color:var(--red)}
+.px-tep .them{position:relative;overflow:hidden}
+.px-tep .them input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* phiếu đã khoá */
+.px-khoa{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:12px;font-weight:600;border:1px solid var(--amber)}
+.px-cb{margin:0;padding-left:18px;text-align:left} .px-cb li{margin:3px 0}

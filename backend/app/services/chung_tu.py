@@ -35,6 +35,10 @@ LOAI = {
     "PT":     ("Phiếu thu tiền khách", "ໃບຮັບເງິນລູກຄ້າ", True),
     "TT_CHI": ("Tất toán tài xế · chi bù", "ສະສາງໂຊເຟີ · ຈ່າຍເພີ່ມ", True),
     "TT_THU": ("Tất toán tài xế · thu hoàn", "ສະສາງໂຊເຟີ · ຮັບຄືນ", True),
+    # bán phụ tùng · xăng dầu cho bên ngoài (không phải chi cho chuyến)
+    "PXK_BAN": ("Phiếu xuất kho bán hàng", "ໃບເບີກສິນຄ້າຂາຍ", True),
+    "HD_BAN":  ("Hoá đơn bán hàng", "ໃບເກັບເງິນຂາຍສິນຄ້າ", True),
+    "PT_BAN":  ("Phiếu thu bán hàng", "ໃບຮັບເງິນຂາຍສິນຄ້າ", True),
 }
 
 # Vế Có "tiền mặt / ngân hàng": quy trình của họ không ghi mã. Để tên, không bịa mã.
@@ -60,6 +64,9 @@ def dinh_khoan(loai, company="EPL", section=None):
         "PT":     (TIEN, ("1211", "Phải thu khách hàng")),
         "TT_CHI": (chi_phi, TIEN),
         "TT_THU": (TIEN, chi_phi),
+        "PXK_BAN": ((None, "Giá vốn hàng bán (mã do bên kế toán cấp)"), KHO),
+        "HD_BAN":  (("1211", "Phải thu khách hàng"), ("70", "Doanh thu bán hàng và dịch vụ")),
+        "PT_BAN":  (TIEN, ("1211", "Phải thu khách hàng")),
     }.get(loai)
     if not b:
         return (None, None, None, None)

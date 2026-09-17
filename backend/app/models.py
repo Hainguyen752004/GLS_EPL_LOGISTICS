@@ -254,6 +254,16 @@ class Trip(Base):
     transport_status = Column(String, nullable=False, default="dispatched")
     finance_status = Column(String, nullable=False, default="unpaid")
     invoiced = Column(Boolean, nullable=False, default=False)
+    # Bước 14: xe về, kế toán rà cả phiếu rồi KHOÁ. Khoá rồi Bãi không sửa gì nữa; chỉ phiếu đã khoá mới xuất hoá đơn.
+    locked = Column(Boolean, nullable=False, default=False)
+    locked_by = Column(String)
+    locked_at = Column(DateTime)
+    # Xe liên kết: đã chi trả chủ xe chưa (một lần cho cả phiếu) → chứng từ PC_CX
+    owner_paid = Column(Boolean, nullable=False, default=False)
+    owner_paid_usd = Column(Float)
+    owner_paid_lak = Column(Float)
+    owner_paid_by = Column(String)
+    owner_paid_at = Column(DateTime)
     # Tỷ giá KHOÁ trên phiếu lúc lập
     rate_usd = Column(Float, default=22000)
     rate_thb = Column(Float, default=700)
@@ -559,3 +569,57 @@ class ChungTu(Base):
     day_luc = Column(DateTime)
     payload = Column(Text)                                     # JSON chi tiết dòng, để bên kia khỏi gọi lại
     __table_args__ = (UniqueConstraint("loai", "nguon_bang", "nguon_id", name="uq_chung_tu_nguon"),)
+
+
+# ---------------------------------------------------------------- tệp đính kèm phiếu (phiếu quặng của khách…)
+class TripAttachment(Base):
+    """Ảnh hoặc PDF kèm phiếu xuất xe. Tệp nằm trên đĩa (thư mục EPL_LAO_TEP, mặc định backend/tep), bảng chỉ giữ tên."""
+    __tablename__ = "trip_attachments"
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind = Column(String, nullable=False, default="ore_bill")   # ore_bill · other
+    filename = Column(String, nullable=False)                   # tên gốc người dùng đưa lên
+    stored = Column(String, nullable=False)                     # tên trên đĩa: <id>.<ext>
+    content_type = Column(String)
+    size = Column(Integer, default=0)
+    note = Column(String)
+    by_user = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
+
+
+# ---------------------------------------------------------------- bán phụ tùng · xăng dầu cho bên ngoài
+class Sale(Base):
+    __tablename__ = "sales"
+    id = Column(String, primary_key=True, default=ma_moi)
+    doc_no = Column(String, unique=True, nullable=False)        # BH-2609-0001
+    sale_date = Column(Date, nullable=False)
+    customer_id = Column(String, ForeignKey("customers.id"))
+    customer_name = Column(String, nullable=False)
+    currency = Column(String, nullable=False, default="LAK")
+    rate_to_lak = Column(Float, default=1)
+    status = Column(String, nullable=False, default="issued")   # issued · paid
+    total = Column(Float, default=0)                            # theo tiền tệ của phiếu
+    total_lak = Column(Float, default=0)
+    cost_lak = Column(Float, default=0)                         # giá vốn hàng xuất, LAK
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+    paid_at = Column(DateTime)
+    paid_by = Column(String)
+
+
+class SaleLine(Base):
+    __tablename__ = "sale_lines"
+    id = Column(String, primary_key=True, default=ma_moi)
+    sale_id = Column(String, ForeignKey("sales.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_no = Column(Integer, nullable=False, default=1)
+    item_type = Column(String, nullable=False)                  # part · fuel
+    part_id = Column(String, ForeignKey("parts.id"))
+    place_id = Column(String, ForeignKey("fuel_places.id"))     # kho dầu xuất (dòng fuel)
+    name = Column(String)
+    unit = Column(String)
+    qty = Column(Float, nullable=False, default=0)
+    unit_price = Column(Float, nullable=False, default=0)
+    amount = Column(Float, nullable=False, default=0)
+    cost_lak = Column(Float, default=0)
+    stock_move_id = Column(String)                              # part_moves.id hoặc fuel_moves.id

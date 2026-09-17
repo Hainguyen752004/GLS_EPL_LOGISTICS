@@ -40,6 +40,14 @@
       }
       return d;
     },
+    /** Gửi tệp (multipart) — không đặt Content-Type để trình duyệt tự ghi boundary. */
+    async tep(duong, formData) {
+      const dau = { 'Accept': 'application/json' }; const tk = API.token(); if (tk) dau['Authorization'] = 'Bearer ' + tk;
+      const r = await fetch(duong, { method: 'POST', headers: dau, body: formData });
+      let d = null; try { d = await r.json(); } catch (e) { d = null; }
+      if (!r.ok) { const ct = (d && d.detail) || {}; throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || NN.t('err_generic')); }
+      return d;
+    },
     get: (d) => API.goi(d),
     post: (d, b) => API.goi(d, { method: 'POST', body: b === undefined ? {} : b }),
     put: (d, b) => API.goi(d, { method: 'PUT', body: b }),
@@ -317,6 +325,8 @@
       vai: ['yard', 'acct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
     { id: 'diem-do',        nhom: 'mod_warehouse', nav: 'nav_place',    ic: 'M12 22s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12M12 7v6M9.5 9.5h5', vai: ['yard', 'acct', 'fuel'] },
     { id: 'kho-phu-tung',   nhom: 'mod_warehouse', nav: 'nav_parts',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19 12l2 1-1 3-2-.5a7 7 0 0 1-2 2l.5 2-3 1-1-2a7 7 0 0 1-3 0l-1 2-3-1 .5-2a7 7 0 0 1-2-2L2 16l-1-3 2-1a7 7 0 0 1 0-3L1 8l1-3 2 .5a7 7 0 0 1 2-2L5.5 1.5l3-1 1 2a7 7 0 0 1 3 0l1-2 3 1-.5 2a7 7 0 0 1 2 2l2-.5 1 3-2 1a7 7 0 0 1 0 3z' },
+    { id: 'ban-hang',       nhom: 'mod_warehouse', nav: 'nav_sales',    ic: 'M3 3h2l2 12h11l2-8H6M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+      vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'] },
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     { id: 'xe',             nhom: 'mod_master',    nav: 'nav_vehicles', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tai-xe',         nhom: 'mod_master',    nav: 'nav_drivers',  ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0' },
@@ -352,6 +362,20 @@
     const m = MODULES.find(x => x.id === moduleHienTai); const h = document.getElementById('pageTitle');
     if (m && h) h.innerHTML = NN.h('title_' + m.id.replace(/-/g, '_'));
   }
+  /** Tỷ lệ co giãn của cả ứng dụng. Khung thiết kế là 1600 × 900.
+   *  Lấy số NHỎ HƠN của hai tỷ lệ ngang và dọc: zoom trình duyệt làm cả hai chiều cùng tăng nên
+   *  phóng theo đúng mức zoom, còn màn rộng mà thấp (2560 × 900) thì không bị phóng quá rồi tràn đáy.
+   *  Kẹp 0,85–2 để màn quá nhỏ vẫn đọc được và màn quá lớn không thành chữ khổng lồ. */
+  const KHUNG_W = 1600, KHUNG_H = 900;
+  function coGian() {
+    const w = window.innerWidth || KHUNG_W, h = window.innerHeight || KHUNG_H;
+    const t = Math.min(2, Math.max(0.85, Math.min(w / KHUNG_W, h / KHUNG_H)));
+    document.documentElement.style.setProperty('--ty-le', t.toFixed(3));
+  }
+  EPL.coGian = coGian; coGian();
+  let choCoGian = 0;
+  window.addEventListener('resize', () => { clearTimeout(choCoGian); choCoGian = setTimeout(coGian, 60); });
+
   EPL.di = (id, tham) => { location.hash = '#/' + id + (tham ? '?' + new URLSearchParams(tham).toString() : ''); };
   EPL.thamSo = () => { const q = location.hash.split('?')[1] || ''; return Object.fromEntries(new URLSearchParams(q)); };
 

@@ -14,3 +14,6 @@ venv/
 *.log
 ~$*
 .DS_Store
+
+# tệp đính kèm người dùng đưa lên (phiếu quặng…) — không đẩy lên git
+backend/tep/

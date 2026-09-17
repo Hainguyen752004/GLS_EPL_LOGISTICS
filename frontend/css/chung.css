@@ -34,8 +34,15 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 /* ---------- Khung ---------- */
 /* Thanh bên co giãn theo bề ngang màn: phóng to trình duyệt thì nó hẹp lại nhường chỗ cho
    nội dung, thu nhỏ thì rộng ra. Cứng 256px thì lúc phóng 150% nó chiếm gần nửa màn. */
-.app{display:grid;grid-template-columns:clamp(196px,17vw,256px) 1fr;min-height:100vh}
-.side{background:var(--side);color:var(--side-text);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+/* Co giãn theo cửa sổ: --ty-le do js/chung.js đặt = bề rộng cửa sổ ÷ 1600 (kẹp 0,85–2). Zoom ra thì mọi
+   thứ to lên theo, zoom vào thì nhỏ lại — bố cục giữ nguyên hình, không co cụm vào giữa.
+   Quy tắc khi viết CSS trong vùng có `zoom` (đã đo bằng Chrome, đừng đoán lại):
+     · % và inset tự tính trong hệ toạ độ đã phóng → dùng như bình thường, KHÔNG chia cho tỷ lệ;
+     · vw/vh vẫn là pixel thật của cửa sổ → phải chia cho var(--ty-le);
+     · bản đồ Leaflet tính sai toạ độ chuột khi bị zoom → trả riêng nó về tỷ lệ 1. */
+:root{--ty-le:1}
+.app{display:grid;grid-template-columns:clamp(196px,calc(17vw / var(--ty-le)),256px) 1fr;min-height:calc(100vh / var(--ty-le));zoom:var(--ty-le)}
+.side{background:var(--side);color:var(--side-text);padding:20px 14px;position:sticky;top:0;height:calc(100vh / var(--ty-le));overflow:auto}
 .brand{display:flex;align-items:center;gap:12px;padding:6px 8px 20px;border-bottom:1px solid #244037;margin-bottom:14px}
 .brand .mark{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#fff}
 .brand h1{margin:0;font-size:15px;font-weight:600;color:#fff;line-height:1.25}
@@ -58,14 +65,14 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .userbox{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
 .userbox .av{width:34px;height:34px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:600;font-size:12px}
 .userbox .nm{font-weight:600;color:var(--ink)} .userbox .rl2{font-size:12px}
-.page{padding:24px 28px 48px;max-width:1560px;margin:0 auto;width:100%}
+.page{padding:24px 28px 48px;width:100%}
 
 /* ---------- Đăng nhập ---------- */
 /* Bố cục và kiểu dáng lấy từ bản mẫu frontend/modules/epl-login-page. MỌI selector đều nằm trong
    `.login` vì bản mẫu dùng tên chung (.field, .row, .error, .form…) trùng với tên đã dùng khắp các
    module; không lồng vào thì nó phá giao diện phần còn lại của ứng dụng. */
 /* Rời màn đăng nhập thì mờ đi rồi mới ẩn, không biến mất cụp một cái. */
-.login{position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(420px,640px);background:var(--bg);transition:opacity .28s ease}
+.login{position:fixed;inset:0;zoom:var(--ty-le);z-index:50;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(420px,640px);background:var(--bg);transition:opacity .28s ease}
 .login.di{opacity:0}
 
 /* ---- nửa trái: thương hiệu và sơ đồ tuyến ---- */
@@ -234,12 +241,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .bar .v{text-align:right;font-variant-numeric:tabular-nums}
 
 /* ---------- Hộp thoại, toast ---------- */
-.hop-thoai{border:0;border-radius:var(--r-lg);padding:0;width:min(440px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.hop-thoai{zoom:var(--ty-le);border:0;border-radius:var(--r-lg);padding:0;width:min(440px,calc(92vw / var(--ty-le)));box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .hop-thoai::backdrop{background:rgba(16,35,30,.55)}
 .hop-thoai form{padding:20px 22px} .hop-thoai h3{margin:0 0 10px;font-size:16px}
 .ht-noi-dung{color:var(--ink-2);line-height:1.6} .ht-noi-dung .field{margin-top:10px}
 .ht-nut{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
-.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13.5px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:92vw}
+.toast{zoom:var(--ty-le);position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13.5px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(92vw / var(--ty-le))}
 .toast.loi{background:var(--red)} .toast.ok{background:var(--green)}
 
 /* ---------- In ---------- */
