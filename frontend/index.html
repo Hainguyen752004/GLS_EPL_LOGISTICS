@@ -43,21 +43,41 @@
         <text x="100" y="76" lang="lo">ກາສີ</text><text class="sm" x="100" y="96" data-i18n="lg_s1"></text>
         <circle cx="250" cy="185" r="8" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
         <text x="268" y="166" lang="lo">ທ່າບົກ</text><text class="sm" x="268" y="186" data-i18n="lg_s2"></text>
-        <circle class="pulse" cx="420" cy="300" r="9" fill="#7fc8ad" stroke="#fff" stroke-width="3"/>
+        <circle cx="420" cy="300" r="8" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
         <text x="438" y="296" lang="lo">ດ່ານ ນໍ້າພາວ</text><text class="sm" x="438" y="316" data-i18n="lg_s3"></text>
         <circle cx="570" cy="360" r="7" fill="#0b2a22" stroke="#7fc8ad" stroke-opacity=".5" stroke-width="3"/>
         <text class="dim" x="470" y="394" lang="lo">ທ່າເຮືອ</text>
-        <g transform="translate(288,254)"><rect width="104" height="26" rx="6" fill="#1f8a6a"/>
+        <!-- Bốn chấm XE trên đường (khác với chấm MỐC ở trên). Một chấm màu hổ phách là xe đi
+             lâu chưa về, khớp với con số ở dải số liệu ngay dưới bản đồ. -->
+        <g class="lg-xe" data-x="165" data-y="133" data-nhan="175,92"><circle cx="165" cy="133" r="6"/></g>
+        <g class="lg-xe" data-x="330" data-y="228" data-nhan="300,198"><circle cx="330" cy="228" r="6"/></g>
+        <g class="lg-xe lau" data-x="492" data-y="334" data-nhan="368,344"><circle cx="492" cy="334" r="6"/></g>
+        <g class="lg-xe" data-x="545" data-y="352" data-nhan="430,330"><circle cx="545" cy="352" r="6"/></g>
+        <g id="lg-nhan-xe" transform="translate(300,198)"><rect width="104" height="26" rx="6" fill="#1f8a6a"/>
           <text x="52" y="17" fill="#fff" font-size="11" font-weight="600" text-anchor="middle" data-i18n="lg_badge"></text></g>
       </svg>
 
+      <!-- Dải số liệu: mô tả đúng CẢNH đang vẽ trên bản đồ ở trên, không phải số liệu công ty. -->
+      <div class="hero__so">
+        <div><b>4</b><span data-i18n="lg_st1"></span></div>
+        <div><b class="lau">1</b><span data-i18n="lg_st2"></span></div>
+        <div><b>2</b><span data-i18n="lg_st3"></span></div>
+        <div><b>1</b><span data-i18n="lg_st4"></span></div>
+      </div>
+
+      <!-- Ba thẻ: mỗi thẻ một việc, một dòng mô tả và VAI nào làm. Câu mô tả phía trên nhấn vào
+           vai trò nên bên dưới phải minh hoạ được điều đó.
+           Cố ý KHÔNG lấy "Theo dõi tuyến" làm một thẻ: bản đồ ngay trên đầu đã là nó rồi. -->
       <div class="feats">
         <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
-          <div><b data-i18n="nav_dispatch"></b></div></div>
-        <div class="feat"><svg viewBox="0 0 24 24"><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="6" r="2.5"/><path d="M7.5 18H14a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7.5"/></svg>
-          <div><b data-i18n="nav_track_route"></b></div></div>
+          <div><b data-i18n="nav_dispatch"></b><span data-i18n="lg_c1_d"></span>
+            <i data-i18n="lg_r1"></i></div></div>
+        <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 6h13v9H3z"/><path d="M16 9h3l2 3v3h-5"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
+          <div><b data-i18n="nav_issue"></b><span data-i18n="lg_c2_d"></span>
+            <i data-i18n="lg_r2"></i></div></div>
         <div class="feat"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
-          <div><b data-i18n="nav_vouchers"></b></div></div>
+          <div><b data-i18n="nav_vouchers"></b><span data-i18n="lg_c3_d"></span>
+            <i data-i18n="lg_r3"></i></div></div>
       </div>
     </div>
 

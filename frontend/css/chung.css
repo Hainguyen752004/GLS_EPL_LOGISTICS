@@ -84,10 +84,31 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .login .pulse{animation:lg-dap 2s ease-in-out infinite;transform-origin:420px 300px}
 @keyframes lg-ve{to{stroke-dashoffset:0}}
 @keyframes lg-dap{0%,100%{opacity:1}50%{opacity:.55}}
-.login .feats{display:flex;gap:28px;flex-wrap:wrap}
-.login .feat{display:flex;align-items:center;gap:10px}
-.login .feat svg{width:20px;height:20px;flex:none;fill:none;stroke:#7FC8AD;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
-.login .feat b{font-size:14px;font-weight:600}
+/* Chấm XE trên bản đồ — khác chấm MỐC: đặc ruột, có viền trắng mảnh cho nổi trên nền ảnh.
+   Chấm đang được nhãn trỏ tới thì to hơn và sáng hơn. Một chấm màu hổ phách là xe đi lâu. */
+.login .lg-xe circle{fill:#7FC8AD;stroke:#fff;stroke-width:1.5;opacity:.55;transition:opacity .4s,r .4s}
+.login .lg-xe.lau circle{fill:#E0A93F}
+.login .lg-xe.dam circle{opacity:1;r:8}
+#lg-nhan-xe{transition:transform .6s cubic-bezier(.22,.9,.3,1)}
+
+/* Dải số liệu dưới bản đồ: mô tả đúng cảnh đang vẽ ở trên, cùng nhịp với các ô ở màn Tổng quan. */
+.login .hero__so{display:flex;flex-wrap:wrap;gap:10px 26px}
+.login .hero__so>div{display:flex;align-items:baseline;gap:7px;font-size:12.5px;color:rgba(255,255,255,.62)}
+.login .hero__so b{font-size:19px;font-weight:700;color:#7FC8AD;font-variant-numeric:tabular-nums}
+.login .hero__so b.lau{color:#E0A93F}
+.login .hero__so .lo-sub{color:rgba(255,255,255,.45)}
+
+/* Ba thẻ tính năng: một dòng mô tả và một nhãn vai. */
+.login .feats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.login .feat{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;
+  background:rgba(255,255,255,.045);border:1px solid rgba(127,200,173,.18)}
+.login .feat svg{width:20px;height:20px;flex:none;margin-top:1px;fill:none;stroke:#7FC8AD;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.login .feat>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.login .feat b{font-size:13.5px;font-weight:600}
+.login .feat span{font-size:11.5px;line-height:1.45;color:rgba(255,255,255,.62)}
+.login .feat i{align-self:flex-start;margin-top:2px;padding:1px 8px;border-radius:999px;font-style:normal;
+  font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  background:rgba(127,200,173,.14);color:#7FC8AD}
 .login .feat .lo-sub{color:#7FC8AD}
 /* Chế độ VI + ລາວ: dòng Lào phụ mặc định màu ghi đậm, trên nền xanh đen thì gần như mất chữ. */
 .login .hero .lo-sub{color:#7FC8AD}
@@ -142,7 +163,8 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
   .login .hero{gap:18px;padding:24px 20px 32px}
   .login .hero__body{gap:14px}
   .login .route,.login .hero__desc,.login .hero__foot{display:none}
-  .login .feats{gap:16px}
+  .login .feats{grid-template-columns:1fr;gap:8px}
+  .login .hero__so{gap:8px 18px}
   .login .hero h1{font-size:26px}
   .login .panel{gap:16px;padding:22px 20px 28px}
   .login .panel__top{justify-content:flex-start}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 741 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 751 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2636,6 +2636,56 @@ window.EPL_TU_DIEN = {
   "vi": "Tài xế",
   "lo": "ໂຊເຟີ",
   "en": "Drivers"
+ },
+ "lg_st1": {
+  "vi": "xe đang chạy",
+  "lo": "ລົດກຳລັງແລ່ນ",
+  "en": "trucks running"
+ },
+ "lg_st2": {
+  "vi": "xe đi lâu",
+  "lo": "ລົດໄປດົນ",
+  "en": "out too long"
+ },
+ "lg_st3": {
+  "vi": "phiếu chờ duyệt",
+  "lo": "ໃບລໍອະນຸມັດ",
+  "en": "slips to approve"
+ },
+ "lg_st4": {
+  "vi": "phiếu lĩnh chờ cấp",
+  "lo": "ໃບເບີກລໍຖ້າຈ່າຍ",
+  "en": "draw slips pending"
+ },
+ "lg_c1_d": {
+  "vi": "Lập phiếu, gán xe và tài xế, in phiếu lĩnh có mã QR",
+  "lo": "ສ້າງໃບ, ກຳນົດລົດ ແລະ ໂຊເຟີ, ພິມໃບເບີກມີ QR",
+  "en": "Create the slip, assign truck and driver, print QR draw slips"
+ },
+ "lg_c2_d": {
+  "vi": "Quét mã, đối chiếu đúng xe rồi cấp dầu, trừ tồn ngay",
+  "lo": "ສະແກນລະຫັດ, ກວດໃຫ້ຖືກລົດ ແລ້ວຈ່າຍນໍ້າມັນ, ຫັກສາງທັນທີ",
+  "en": "Scan, check the truck, issue fuel and cut stock at once"
+ },
+ "lg_c3_d": {
+  "vi": "Duyệt sáu mục, chi tiền, lập hoá đơn và thu tiền khách",
+  "lo": "ອະນຸມັດ 6 ພາກ, ຈ່າຍເງິນ, ອອກໃບເກັບເງິນ ແລະ ຮັບເງິນ",
+  "en": "Approve six sections, pay out, invoice and collect"
+ },
+ "lg_r1": {
+  "vi": "Điều độ",
+  "lo": "ຜູ້ຈັດຖ້ຽວ",
+  "en": "Dispatch"
+ },
+ "lg_r2": {
+  "vi": "Thủ kho",
+  "lo": "ຜູ້ຮັກສາສາງ",
+  "en": "Storekeeper"
+ },
+ "lg_r3": {
+  "vi": "Kế toán",
+  "lo": "ບັນຊີ",
+  "en": "Accounting"
  },
  "ok": {
   "vi": "Đồng ý",

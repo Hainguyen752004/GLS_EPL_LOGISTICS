@@ -213,7 +213,7 @@
       const nm = document.getElementById('lgMat'); if (nm) nm.classList.remove('mo');
       const ne = document.getElementById('lgErr'); if (ne) { ne.textContent = ''; ne.hidden = true; }
       if (xoaHash) location.hash = '';
-      veTaiKhoanMau();
+      veTaiKhoanMau(); chayNhanXe();
     },
   };
   /* Chọn nhanh tài khoản, gom theo NHÓM VAI như bản mẫu. Hệ có chín vai nhưng người dùng chỉ nghĩ
@@ -265,12 +265,36 @@
     } finally { dangBan = false; nut.classList.remove('dang-vao'); }
   }
   function hienApp() {
+    dungNhanXe();
     document.getElementById('login').hidden = true; document.getElementById('app').hidden = false;
     document.getElementById('roleAv').textContent = USER.avatar || USER.full_name.slice(0, 2).toUpperCase();
     document.getElementById('uName').textContent = USER.full_name;
     document.getElementById('uRole').innerHTML = NN.h('r_' + USER.role);
     veNav(); dieuHuong();
   }
+
+  /* ---------------------------------------------------------------- nhãn xe trên sơ đồ đăng nhập
+   * Bản đồ ở nửa trái có bốn chấm xe; nhãn "Xe đang ở đây" nhảy lần lượt sang từng chấm cho màn
+   * đỡ chết cứng. Dừng hẳn khi người dùng đặt "giảm chuyển động", và dừng khi rời màn đăng nhập
+   * để không chạy vô ích suốt phiên làm việc.
+   */
+  let nhipXe = null;
+  function chayNhanXe() {
+    dungNhanXe();
+    const nhan = document.getElementById('lg-nhan-xe');
+    const xe = [...document.querySelectorAll('.lg-xe')];
+    if (!nhan || !xe.length) return;
+    let i = 0;
+    const dat = () => {
+      xe.forEach((x, n) => x.classList.toggle('dam', n === i));
+      const v = xe[i].dataset.nhan;
+      if (v) nhan.setAttribute('transform', 'translate(' + v + ')');
+    };
+    dat();
+    try { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) { /* bỏ qua */ }
+    nhipXe = setInterval(() => { i = (i + 1) % xe.length; dat(); }, 3600);
+  }
+  function dungNhanXe() { if (nhipXe) clearInterval(nhipXe); nhipXe = null; }
 
   /* ================================================================ Module & điều hướng */
   // Thứ tự nhóm và module đúng theo sheet "ລາຍງານ" của Excel + hai nhóm danh mục/hệ thống.
