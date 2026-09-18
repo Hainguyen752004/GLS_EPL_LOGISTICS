@@ -136,4 +136,26 @@ print("  OK  hàng về kho, chứng từ của %s đã rút" % bh2["doc_no"])
 ma, ds_bh = goi("/api/ban-hang?thang=2026-09", tk=tk["doanhthu"])
 bao("Danh sách phiếu bán tháng 9", ma, 200, "%d phiếu · %s LAK" % (len(ds_bh["ds"]), round(ds_bh["tong_lak"])))
 
+# 3. đánh số chứng từ: rút một tờ rồi ghi tờ mới thì KHÔNG được đụng số cũ
+#    (trước đây đánh số bằng cách đếm dòng nên sau khi rút, số tụt lại và trùng)
+def so_cua(bh_doc_no, loai):
+    _, so = goi("/api/chung-tu?loai=" + loai, tk=tk["ketoan"])
+    return [c["so"] for c in so["ds"] if (c["payload"] or {}).get("doc_no") == bh_doc_no]
+
+
+mot = {"sale_date": "2026-09-17", "customer_id": kh[0]["id"], "currency": "LAK",
+       "lines": [{"item_type": "part", "part_id": mon["id"], "qty": 1, "unit_price": 50000}]}
+ma, a = goi("/api/ban-hang", mot, tk["ketoan"]); bao("Lập phiếu bán A", ma, 200, a["doc_no"])
+ma, b = goi("/api/ban-hang", mot, tk["ketoan"]); bao("Lập phiếu bán B", ma, 200, b["doc_no"])
+so_b = so_cua(b["doc_no"], "PXK_BAN")
+ma, _r = goi("/api/ban-hang/%s" % a["id"], tk=tk["ketoan"], cach="DELETE"); bao("Bỏ phiếu A (rút tờ chứng từ)", ma, 200)
+ma, c = goi("/api/ban-hang", mot, tk["ketoan"]); bao("Lập phiếu bán C sau khi đã rút", ma, 200, c["doc_no"])
+so_c = so_cua(c["doc_no"], "PXK_BAN")
+print("      số tờ PXK_BAN: B %s · C %s" % (so_b, so_c))
+if not so_c or so_c == so_b:
+    raise SystemExit("DUNG: số chứng từ của C trùng số của B (%s) — phải lấy số lớn nhất + 1" % so_b)
+print("  OK  số chứng từ không tụt lại sau khi rút tờ, không đụng số cũ")
+for x in (b, c):
+    goi("/api/ban-hang/%s" % x["id"], tk=tk["ketoan"], cach="DELETE")
+
 print("\nTHỬ BÁN HÀNG: ĐẠT — đính kèm phiếu quặng · bán phụ tùng, dầu · xuất kho · hoá đơn · thu · bỏ phiếu")

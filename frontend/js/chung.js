@@ -426,17 +426,21 @@
   let timMenu = '';
   let DEM = {};                                    // số việc đang chờ theo từng module
 
+  const HEP_MAN = 900;                       // khớp với @media (max-width:900px) trong chung.css
+  /** Kiểu ĐANG DÙNG THẬT: màn hẹp thì luôn là thanh bên, dù người dùng chọn thanh trên. */
+  const kieuThuc = () => ((window.innerWidth || 1600) <= HEP_MAN ? 'side' : kieuXem);
   function apKieuXem() {
     const app = document.getElementById('app'); if (!app) return;
-    app.dataset.view = kieuXem;
-    app.dataset.hep = kieuXem === 'side' && thanhHep ? '1' : '0';
-    const tbar = document.getElementById('tbar'); if (tbar) tbar.hidden = kieuXem !== 'top';
+    const kt = kieuThuc();
+    app.dataset.view = kt;
+    app.dataset.hep = kt === 'side' && thanhHep ? '1' : '0';
+    const tbar = document.getElementById('tbar'); if (tbar) tbar.hidden = kt !== 'top';
     // .lang và .userbox là một bản duy nhất — chuyển chỗ chứ không nhân đôi
-    const oi = document.getElementById(kieuXem === 'top' ? 'tbarPhai' : 'topbarPhai');
+    const oi = document.getElementById(kt === 'top' ? 'tbarPhai' : 'topbarPhai');
     // Màn đăng nhập cũng có một khối .lang, nên phải gọi đúng khối của ứng dụng bằng id
     const lang = document.getElementById('langApp'), hop = document.getElementById('userbox');
     if (oi && lang) oi.appendChild(lang);
-    const chan = document.getElementById(kieuXem === 'top' ? 'tbarPhai' : 'chanOi');
+    const chan = document.getElementById(kt === 'top' ? 'tbarPhai' : 'chanOi');
     if (chan && hop) chan.appendChild(hop);
   }
   EPL.datKieuXem = (k) => { kieuXem = k === 'top' ? 'top' : 'side'; ghiLS(K_VIEW, kieuXem); apKieuXem(); veNav(); };
@@ -545,7 +549,7 @@
   function veNav() {
     if (!USER) return;
     apKieuXem();
-    if (kieuXem === 'top') veThanhTren(); else veThanhBen();
+    if (kieuThuc() === 'top') veThanhTren(); else veThanhBen();
   }
   EPL.veNav = veNav;
 
@@ -598,7 +602,7 @@
       document.addEventListener('keydown', (e) => {
         if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
           const t = document.getElementById('navTim');
-          if (t && kieuXem === 'side' && !thanhHep) { e.preventDefault(); t.focus(); t.select(); }
+          if (t && kieuThuc() === 'side' && !thanhHep) { e.preventDefault(); t.focus(); t.select(); }
         }
       });
     }
@@ -621,7 +625,15 @@
   }
   EPL.coGian = coGian; coGian();
   let choCoGian = 0;
-  window.addEventListener('resize', () => { clearTimeout(choCoGian); choCoGian = setTimeout(coGian, 60); });
+  let kieuTruoc = '';
+  window.addEventListener('resize', () => {
+    clearTimeout(choCoGian);
+    choCoGian = setTimeout(() => {
+      coGian();
+      const kt = kieuThuc();
+      if (USER && kt !== kieuTruoc) { kieuTruoc = kt; try { veNav(); } catch (e) { /* trang không còn */ } }
+    }, 60);
+  });
 
   EPL.di = (id, tham) => { location.hash = '#/' + id + (tham ? '?' + new URLSearchParams(tham).toString() : ''); };
   EPL.thamSo = () => { const q = location.hash.split('?')[1] || ''; return Object.fromEntries(new URLSearchParams(q)); };
@@ -630,10 +642,14 @@
    *  Kho dầu ngoài hiện trường hay rớt mạng giữa chừng; nếu khung cứ phải tải lại tệp .html mỗi
    *  lần chuyển màn thì mất mạng là cả ứng dụng đứng, dù dữ liệu đã lưu sẵn trong máy. */
   const HTML_DEM = new Map();
-  const khoaHTML = (id) => 'epl_lao_html_' + id;
+  // Dấu phiên bản do máy chủ đóng vào index.html — đổi tệp là đổi đường dẫn nên trình duyệt
+  // tự tải lại, và bản nhớ đệm ngoại tuyến của bản cũ cũng không bị dùng nhầm.
+  const VER = (window.EPL_VER && window.EPL_VER !== '__VER__') ? window.EPL_VER : '';
+  const themVer = (u) => VER ? u + (u.includes('?') ? '&' : '?') + 'v=' + VER : u;
+  const khoaHTML = (id) => 'epl_lao_html_' + id + (VER ? '_' + VER : '');
   async function napHTML(id, goc) {
     try {
-      const html = await (await fetch(goc + '.html', { cache: 'no-cache' })).text();
+      const html = await (await fetch(themVer(goc + '.html'), { cache: 'no-cache' })).text();
       HTML_DEM.set(id, html);
       try { localStorage.setItem(khoaHTML(id), html); } catch (e) { /* hết chỗ thì thôi */ }
       return html;
@@ -662,10 +678,10 @@
     const conHienTai = () => moduleHienTai === m.id && root.isConnected;
     const goc = `modules/${m.id}/${m.id}`;
     try {
-      if (!daNapCSS.has(m.id)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = goc + '.css'; document.head.appendChild(l); daNapCSS.add(m.id); }
+      if (!daNapCSS.has(m.id)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = themVer(goc + '.css'); document.head.appendChild(l); daNapCSS.add(m.id); }
       const html = await napHTML(m.id, goc);
       if (!daNapJS.has(m.id)) {
-        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = goc + '.js'; s.onload = res; s.onerror = () => rej(new Error('Không nạp được ' + goc + '.js')); document.head.appendChild(s); });
+        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = themVer(goc + '.js'); s.onload = res; s.onerror = () => rej(new Error('Không nạp được ' + goc + '.js')); document.head.appendChild(s); });
         daNapJS.add(m.id);
       }
       if (!conHienTai()) return;          // người dùng đã bấm sang module khác trong lúc chờ

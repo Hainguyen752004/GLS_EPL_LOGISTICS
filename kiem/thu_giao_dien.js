@@ -51,6 +51,18 @@ async function main() {
   }
   const goc = () => d.getElementById('noi-dung');
 
+  // Một ký tự lạc trong CSS (có lần là một dấu nháy thừa) làm trình duyệt bỏ luôn cả khối quy tắc
+  // ngay sau nó, mà màn vẫn dựng được nên bộ kiểm DOM không thấy gì. Soát thô tệp kiểu ở đây.
+  {
+    const css = await (await fetch(GOC + '/css/chung.css')).text();
+    assert.strictEqual((css.match(/\{/g) || []).length, (css.match(/\}/g) || []).length, 'chung.css lệch ngoặc { }');
+    const lac = css.split(/\r?\n/).map((l, i) => [i + 1, l.trim()]).filter(([, l]) => /^["']/.test(l));
+    assert.deepStrictEqual(lac, [], 'chung.css có dòng bắt đầu bằng dấu nháy (ký tự lạc): ' + JSON.stringify(lac));
+    ['.ln-nut{', '.tbar-phai .ln-nut{', '.lang button.active{', '.nav .muc{'].forEach(k =>
+      assert.ok(css.includes(k), 'chung.css thiếu quy tắc ' + k));
+    console.log('✓ tệp kiểu: ngoặc cân, không ký tự lạc, đủ các quy tắc chính');
+  }
+
   await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập tải tài khoản mẫu');
   // Lối tắt demo phải hiện ĐỦ tài khoản, và Admin Thà Bốc (vai chính của nhóm kho) phải đứng đầu nhóm
   // của nó — trước đây máy chủ trả theo chữ cái nên thabok rơi xuống cuối, bị khuất trong ô cuộn.

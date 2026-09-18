@@ -15,6 +15,9 @@ xử lý xong gọi `POST /api/chung-tu/{id}/da-day`. Một chứng từ chỉ s
 import datetime as dt
 import json
 
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
+
 from models import ChungTu
 
 # ------------------------------------------------------------------ danh mục loại chứng từ
@@ -75,9 +78,20 @@ def dinh_khoan(loai, company="EPL", section=None):
 
 
 def _so_moi(db, loai, ngay):
-    """Số chứng từ: LOAI/YYMM/0001, đếm theo loại và theo tháng."""
+    """Số chứng từ: LOAI/YYMM/0001, đánh theo loại và theo tháng.
+
+    Lấy SỐ LỚN NHẤT đang có rồi cộng một, chứ không đếm số dòng: đếm dòng thì sau khi rút một tờ
+    chưa đối chiếu (xoá phiếu, bỏ chốt) số sẽ tụt lại và đụng số cũ.
+    """
     tien_to = "%s/%s/" % (loai, ngay.strftime("%y%m"))
-    n = db.query(ChungTu).filter(ChungTu.loai == loai, ChungTu.so.like(tien_to + "%")).count()
+    cuoi = (db.query(ChungTu.so).filter(ChungTu.loai == loai, ChungTu.so.like(tien_to + "%"))
+            .order_by(ChungTu.so.desc()).first())          # 4 chữ số có đệm 0 nên xếp chữ = xếp số
+    n = 0
+    if cuoi:
+        try:
+            n = int(str(cuoi[0]).rsplit("/", 1)[-1])
+        except ValueError:
+            n = 0
     return "%s%04d" % (tien_to, n + 1)
 
 
@@ -94,7 +108,7 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
     ngay = ngay or dt.date.today()
     cty = company or (trip.company if trip is not None else "EPL")
     no, no_ten, co, co_ten = dinh_khoan(loai, cty, section) if LOAI[loai][2] else (None, None, None, None)
-    c = ChungTu(loai=loai, so=_so_moi(db, loai, ngay), ngay=ngay,
+    c = ChungTu(loai=loai, ngay=ngay,
                 trip_id=trip.id if trip is not None else None,
                 trip_doc_no=trip.doc_no if trip is not None else None,
                 doi_tuong_loai=doi_tuong_loai, doi_tuong_ten=doi_tuong_ten,
@@ -103,9 +117,19 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
                 no=no, no_ten=no_ten, co=co, co_ten=co_ten, mo_ta=mo_ta,
                 nguon_bang=nguon_bang, nguon_id=str(nguon_id), by_user=by_user,
                 payload=json.dumps(payload or {}, ensure_ascii=False, default=str))
-    db.add(c)
-    db.flush()
-    return c
+    # Hai người cùng lúc (thủ kho hai kho, hàng đợi ngoại tuyến gửi lại) có thể cùng tính ra một số.
+    # Ghi trong SAVEPOINT: đụng số thì lùi lại chỗ đó, lấy số kế tiếp rồi ghi lại, không hỏng cả phiên.
+    for _lan in range(6):
+        c.so = _so_moi(db, loai, ngay)
+        try:
+            with db.begin_nested():
+                db.add(c)
+                db.flush()
+            return c
+        except IntegrityError:
+            db.expunge(c)
+    raise HTTPException(409, {"ma": "TRUNG_SO_CHUNG_TU",
+                              "loi": "Không cấp được số chứng từ %s, thử lại giúp em." % loai})
 
 
 def rut(db, *, nguon_bang=None, nguon_id=None, trip_id=None):

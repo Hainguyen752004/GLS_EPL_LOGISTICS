@@ -45,8 +45,20 @@ def _ngay(v):
 
 
 def _so_phieu_moi(db, ngay):
+    """BH-YYMM-0001 — lấy SỐ LỚN NHẤT đang có rồi cộng một.
+
+    Không đếm số dòng: bỏ một phiếu chưa thu là số tụt lại, phiếu sau ra trùng số phiếu cũ và
+    máy chủ báo lỗi. (Cùng một lỗi với số chứng từ, đã sửa trong services/chung_tu.py.)
+    """
     tien_to = "BH-%s-" % ngay.strftime("%y%m")
-    n = db.query(Sale).filter(Sale.doc_no.like(tien_to + "%")).count()
+    cuoi = (db.query(Sale.doc_no).filter(Sale.doc_no.like(tien_to + "%"))
+            .order_by(Sale.doc_no.desc()).first())        # 4 chữ số có đệm 0 nên xếp chữ = xếp số
+    n = 0
+    if cuoi:
+        try:
+            n = int(str(cuoi[0]).rsplit("-", 1)[-1])
+        except ValueError:
+            n = 0
     return "%s%04d" % (tien_to, n + 1)
 
 

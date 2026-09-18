@@ -7,6 +7,7 @@
 Giao diện phục vụ ở `/` (thư mục frontend), API ở `/api/...`. Mỗi module một tệp route,
 mỗi module một thư mục giao diện — sai đâu sửa đó.
 """
+import io
 import os
 import sys
 
@@ -15,7 +16,7 @@ if APP_DIR not in sys.path:
     sys.path.insert(0, APP_DIR)
 
 from fastapi import FastAPI, Request  # noqa: E402
-from fastapi.responses import FileResponse, JSONResponse  # noqa: E402
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse  # noqa: E402
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
@@ -63,6 +64,33 @@ app.mount("/img", StaticFiles(directory=os.path.join(FRONTEND, "img")), name="im
 app.mount("/vendor", StaticFiles(directory=os.path.join(FRONTEND, "vendor")), name="vendor")
 
 
+# ---------------------------------------------------------------- dấu phiên bản cho tệp giao diện
+# Trình duyệt giữ css/js rất dai: sửa giao diện xong mà không Ctrl+F5 thì người dùng vẫn thấy bản cũ
+# (markup mới mà kiểu cũ → hỏng màu, lệch khung). Đóng số phiên bản = lần sửa mới nhất của thư mục
+# frontend vào đường dẫn tệp, đổi tệp là đổi đường dẫn, trình duyệt tự tải lại. Nhớ 5 giây cho nhẹ.
+_ver = {"luc": 0.0, "ma": ""}
+
+
+def phien_ban_giao_dien():
+    import time
+    if time.time() - _ver["luc"] < 5 and _ver["ma"]:
+        return _ver["ma"]
+    moi_nhat = 0.0
+    for goc, _thu_muc, tep in os.walk(FRONTEND):
+        if "vendor" in goc or "epl-login-page" in goc:
+            continue
+        for t in tep:
+            if t.rsplit(".", 1)[-1].lower() in ("css", "js", "html"):
+                try:
+                    moi_nhat = max(moi_nhat, os.path.getmtime(os.path.join(goc, t)))
+                except OSError:
+                    pass
+    _ver["luc"], _ver["ma"] = time.time(), format(int(moi_nhat), "x")
+    return _ver["ma"]
+
+
 @app.get("/")
 def trang_chu():
-    return FileResponse(os.path.join(FRONTEND, "index.html"))
+    html = io.open(os.path.join(FRONTEND, "index.html"), encoding="utf-8").read()
+    return HTMLResponse(html.replace("__VER__", phien_ban_giao_dien()),
+                        headers={"Cache-Control": "no-cache"})
