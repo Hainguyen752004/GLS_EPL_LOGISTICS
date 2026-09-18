@@ -1,11 +1,11 @@
-# Phiếu xuất xe EPL — mô tả cách phần mềm đang chạy và các câu hỏi cần anh Khampla xác nhận
+# Phiếu xuất xe EPL — mô tả cách phần mềm đang chạy và các câu hỏi nghiệp vụ xin bên EPL xác nhận
 
-Kính gửi anh Khampla,
+Kính gửi anh Khampla, anh Ped và các anh chị phụ trách nghiệp vụ vận tải bên EPL,
 
 Bên em đã dựng xong phần lớn phần mềm quản lý vận tải theo đúng bộ Excel *Báo cáo vận tải EPL* và
-quy trình *Luân chuyển lệnh điều xe* mà bên anh gửi. Trước khi đi tiếp, em xin trình bày **phần mềm
-hiện đang chạy như thế nào** và **xin anh xác nhận một số điểm nghiệp vụ** mà bên em chưa dám tự
-quyết. Mỗi câu hỏi có sẵn các lựa chọn để anh đánh dấu; chỗ nào không đúng lựa chọn nào anh cứ ghi
+quy trình *Luân chuyển lệnh điều xe* mà bên EPL gửi. Trước khi đi tiếp, bên em xin trình bày **phần mềm
+hiện đang chạy như thế nào** và **xin các anh chị xác nhận một số điểm nghiệp vụ** mà bên em chưa dám tự
+quyết. Mỗi câu hỏi có sẵn các lựa chọn để đánh dấu; chỗ nào không đúng lựa chọn nào các anh chị cứ ghi
 thêm.
 
 ---
@@ -14,28 +14,28 @@ thêm.
 
 ### A1. Một phiếu xuất xe đi qua những bước nào
 
-Phiếu xuất xe (bên anh gọi là *Lệnh điều xe*, số dạng `T4-0428-08/EPL`) có sáu mục như trên giấy:
+Phiếu xuất xe (bên EPL gọi là *Lệnh điều xe*, số dạng `T4-0428-08/EPL`) có sáu mục như trên giấy:
 I Thông tin xe · II Thông tin vận chuyển · III Chi phí xăng dầu · IV Chi phí đi lại · V Chi phí sửa
 chữa · VI Chi phí khác. Mỗi mục đi qua chuỗi:
 
-**Bãi cảng cạn NHẬP → Kế toán KIỂM TRA → Kế toán GHI SỔ → Quỹ CHI TIỀN**
+**Kho Thabok NHẬP → Kế toán KIỂM TRA → Kế toán GHI SỔ → Quỹ CHI TIỀN**
 
-Ai làm bước nào lấy đúng theo sheet *Nhiệm Vụ* trong Excel của bên anh:
+Ai làm bước nào lấy đúng theo sheet *Nhiệm Vụ* trong Excel của bên EPL:
 
 | Mục | Người nhập | Người xác nhận | Ghi sổ kế toán | Người thanh toán |
 |---|---|---|---|---|
-| I. Thông tin xe | Bãi cảng cạn | KT Thu/Chi Viêng Chăn | — | — |
-| II. Thông tin khách hàng, vận chuyển | Bãi cảng cạn | KT Thu/Chi Viêng Chăn | — | — |
-| III. Chi phí xăng dầu | Bãi cảng cạn | KT kho xăng dầu VC | KT kho xăng dầu VC | Thủ quỹ VC |
-| IV. Chi phí đi lại | Bãi cảng cạn | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
-| V. Chi phí sửa chữa | Bãi cảng cạn | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
-| VI. Chi phí khác | Bãi cảng cạn | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
+| I. Thông tin xe | Kho Thabok | KT Thu/Chi Viêng Chăn | — | — |
+| II. Thông tin khách hàng, vận chuyển | Kho Thabok | KT Thu/Chi Viêng Chăn | — | — |
+| III. Chi phí xăng dầu | Kho Thabok | KT kho xăng dầu VC | KT kho xăng dầu VC | Thủ quỹ VC |
+| IV. Chi phí đi lại | Kho Thabok | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
+| V. Chi phí sửa chữa | Kho Thabok | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
+| VI. Chi phí khác | Kho Thabok | KT Chi phí VC | KT Chi phí VC | Quỹ tiền mặt cảng cạn |
 | Hoá đơn thu phí vận tải | KT Doanh thu VC | — | KT Doanh thu VC | — |
 
 Quy tắc khoá: người nhập chỉ sửa được khi mục còn *chờ* hoặc *đã nhập*. Kế toán đã **kiểm** là mục
 đó khoá; muốn sửa kế toán phải **trả lại** cho Bãi. Chỉ tài khoản quản trị (Sếp) mở khoá được.
 
-### A2. Những gì Bãi cảng cạn không nhìn thấy
+### A2. Những gì Kho Thabok không nhìn thấy
 
 Bãi nhập cân, số lít, nơi đổ, các khoản đi đường, duyệt sửa xe — nhưng **không nhìn thấy tiền**: đơn
 giá cước, thành tiền, quy đổi, đơn giá dầu, mã tài khoản, khấu trừ xe thuê ngoài, bảng lãi. Các ô
@@ -50,14 +50,14 @@ này chỉ kế toán, quỹ và Sếp thấy.
    kho xăng dầu duyệt → thành một dòng mua ngoài trong mục III, tự quy đổi về LAK theo tỷ giá ghi trên
    phiếu.
 
-### A4. Tiền đi đường — trả đúng lúc như ghi chú trong Excel của bên anh
+### A4. Tiền đi đường — trả đúng lúc như ghi chú trong Excel của bên EPL
 
 | Khoản | Ghi chú trong Excel | Phần mềm làm |
 |---|---|---|
 | Chi tiêu đi VN, điện thoại | Trả ngay khi tài xế xuất xe | **Phiếu tạm ứng có mã QR**, quỹ quét mã chi tiền; chưa nhận tiền thì tài xế chưa bấm được *Xuất phát* |
 | Tiền đổ nước, tiền chuyến chở quặng | Trả theo chuyến cùng lương | **Tất toán tài xế theo tháng**: đã ứng bao nhiêu, chi thật bao nhiêu, dương công ty trả thêm, âm tài xế nộp lại |
 | Shipping Lào, shipping Việt | Nợ nhà cung cấp, trả theo đợt | Màn **Theo dõi nhà cung cấp**, trả theo đợt, không tính vào tất toán tài xế |
-| Cao tốc | Trả qua thẻ, nạp 15 triệu kíp mỗi lần | Hiện ghi như khoản chi thường — **xem câu hỏi C10** |
+| Cao tốc | Trả qua thẻ, nạp 15 triệu kíp mỗi lần | Hiện ghi như khoản chi thường — **xem câu hỏi C6.1** |
 
 ### A5. Xe về, khoá phiếu, hoá đơn, xe thuê ngoài
 
@@ -80,14 +80,14 @@ xế, chi trả chủ xe, nhập kho, trả nhà cung cấp, và ba tờ cho **b
 
 ## Phần B. Câu hỏi quan trọng nhất — một phiếu xuất xe là chuyến nào?
 
-Trong Excel của bên anh, **cùng số phiếu `T4-0428-08/EPL`** nhưng:
+Trong Excel của bên EPL, **cùng số phiếu `T4-0428-08/EPL`** nhưng:
 
 - sheet *Phiếu Xuất Xe* ghi: Điểm đi **Kasi** → Điểm đến **Kalo**;
 - sheet *BC Vận Tải* ghi: Điểm đi **Bãi EPL** → Điểm đến **Cảng Kalo**, và chỉ có **Trọng lượng đến
   42,06 t**, Trọng lượng đi để trống.
 
 Bên em hiểu luồng thực tế là: **xe từ bãi đi mỏ lấy quặng → chở về bãi/kho → rồi từ bãi chở đi giao
-ở cảng**. Xin anh xác nhận:
+ở cảng**. Xin các anh chị xác nhận:
 
 **B1.** Một phiếu xuất xe bao gồm:
 - [ ] cả vòng: bãi → mỏ → bãi → cảng (một số phiếu cho cả vòng)
@@ -116,10 +116,10 @@ Bên em hiểu luồng thực tế là: **xe từ bãi đi mỏ lấy quặng �
 ### C1. Vai người dùng
 
 - **C1.1** Phần mềm đã làm đúng bảng *Nhiệm Vụ*: *KT Thu/Chi Viêng Chăn* là một tài khoản (xác nhận mục
-  I, II), *KT Chi phí VC* là một tài khoản khác (xác nhận và ghi sổ mục IV–VI). Anh xác nhận giúp tên
+  I, II), *KT Chi phí VC* là một tài khoản khác (xác nhận và ghi sổ mục IV–VI). Xin xác nhận giúp tên
   người giữ từng tài khoản: KT Thu/Chi VC: .................. · KT Chi phí VC: ..................
 - **C1.2** Quy trình chữ có *Kho phụ tùng Thabok* và *Tổ sửa chữa Thabok*. Đó là:
-  - [ ] Người riêng, cần tài khoản riêng — [ ] Cũng là người của Bãi cảng cạn
+  - [ ] Người riêng, cần tài khoản riêng — [ ] Cũng là người của Kho Thabok
 - **C1.3** Tài xế có dùng điện thoại được không (để nhận phiếu, khai đổ dầu, báo hỏng, chia sẻ vị trí)?
   - [ ] Có, tất cả tài xế — [ ] Chỉ một số — [ ] Không, Bãi nhập thay
 
@@ -185,7 +185,7 @@ Bên em hiểu luồng thực tế là: **xe từ bãi đi mỏ lấy quặng �
 ### C7. Mục V — Sửa chữa
 
 - **C7.1** Xe hỏng dọc đường, tài xế báo về ai?
-  - [ ] Bãi cảng cạn — [ ] Tổ sửa chữa Thabok — [ ] Cả hai
+  - [ ] Kho Thabok — [ ] Tổ sửa chữa Thabok — [ ] Cả hai
 - **C7.2** Ai quyết định sửa bằng phụ tùng kho hay đưa gara ngoài?
   - [ ] Bãi — [ ] Tổ sửa chữa Thabok — [ ] Kế toán duyệt trước
 - **C7.3** Sửa xe **tại bãi** lúc xe không chạy (bảo dưỡng) ghi vào phiếu xuất xe nào?
@@ -202,12 +202,12 @@ Bên em hiểu luồng thực tế là: **xe từ bãi đi mỏ lấy quặng �
 ### C9. Màn hình
 
 - **C9.1** Phần mềm dự định đổi màn phiếu xuất xe thành **tab theo mục**, mỗi vai vào chỉ thấy tab của
-  mình, ô ngoài thẩm quyền ẩn hoặc chỉ đọc, tab cuối là *Toàn phiếu* để xem và in. Anh thấy phù hợp
+  mình, ô ngoài thẩm quyền ẩn hoặc chỉ đọc, tab cuối là *Toàn phiếu* để xem và in. Các anh chị thấy phù hợp
   không?
   - [ ] Phù hợp — [ ] Giữ phiếu dài như giấy — [ ] Ý khác: ..............................
 - **C9.2** Ngôn ngữ mặc định khi mở máy ở bãi: [ ] Lào — [ ] Việt — [ ] Việt + Lào
 
 ---
 
-Anh trả lời tới đâu bên em làm tới đó; những phần chưa có trả lời bên em giữ như đang chạy. Cảm ơn
-anh Khampla.
+Các anh chị trả lời tới đâu bên em làm tới đó; những phần chưa có trả lời bên em giữ như đang chạy. Cảm ơn
+anh Khampla, anh Ped và các anh chị bên EPL.

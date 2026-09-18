@@ -2,7 +2,7 @@
 
 Tài liệu này là **ghi chép làm việc giữa anh và em**: phần anh nêu, phần em đối chiếu với bộ Excel và
 quy trình chữ của bên Lào, chỗ nào chốt được thì chốt, chỗ nào phải hỏi thì đánh dấu để đưa sang tài
-liệu gửi anh Khampla (`CAU_HOI_NGHIEP_VU_GUI_ANH_KHAMPLA.md`).
+liệu gửi bên EPL (`CAU_HOI_NGHIEP_VU_EPL_VI.md`, kèm bản Lào `_LAO` và Anh `_EN`).
 
 Nguồn đối chiếu:
 
