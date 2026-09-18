@@ -23,6 +23,8 @@
     rev: { edit: [], verify: [], book: [], pay: [] },
     admin: { edit: MUC, verify: MUC, book: MUC, pay: MUC },
   };
+  let tab = 'all', tabTay = false;            // tab đang mở · người dùng đã tự chọn tab chưa
+  const SO_LA_MA = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [] }, moi = false, ty_gia = {};
   /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402. */
   function tkMacDinh(m, d) {
@@ -207,7 +209,46 @@
     if (!a) return ''; const m = a.match(/^sec_(\w+):(\w+)$/); if (m) return `${NN.t('sec' + (MUC.indexOf(m[1]) + 1))} → ${NN.t('a_' + m[2])}`;
     return NN.t(a);
   }
-  function veHet() { q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard'); veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai(); NN.apDung(root); }
+  /** Trạng thái mà vai này CÓ VIỆC ở một mục: nhập khi chờ/đã nhập, kiểm khi đã nhập, ghi sổ khi đã kiểm, chi khi đã ghi sổ. */
+  function coViec(m, st) {
+    if (moi) return m === 'info';
+    const pq = perm();
+    return (pq.edit.includes(m) && ['wait', 'entered'].includes(st)) || (pq.verify.includes(m) && st === 'entered')
+      || (pq.book.includes(m) && st === 'verified') || (pq.pay.includes(m) && st === 'booked');
+  }
+  /** Tab mở sẵn theo vai: mục đầu tiên vai này có việc; không có việc thì mục đầu tiên vai này phụ trách;
+   *  vai chỉ xem (doanh thu, Sếp, tài xế) thì Toàn phiếu. */
+  function tabMacDinh() {
+    if (moi) return 'info';
+    const s = P.sections || {}, pq = perm();
+    const cua = MUC.filter(m => pq.edit.includes(m) || pq.verify.includes(m) || pq.book.includes(m) || pq.pay.includes(m));
+    if (!cua.length || vai() === 'admin') return 'all';
+    return cua.find(m => coViec(m, s[m] || 'wait')) || cua[0];
+  }
+  function datTab(t, tay) {
+    tab = t; if (tay) tabTay = true;
+    const ph = q('#px-phieu'); ph.dataset.tab = tab;
+    MUC.forEach(m => { const sec = q(`.px-muc[data-muc="${m}"]`); if (sec) sec.classList.toggle('px-muc-hien', tab === 'all' || tab === m); });
+    root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    const luu = g('px-luu'); if (luu) luu.hidden = tab === 'all';
+  }
+  function veTabs() {
+    const s = (P && P.sections) || {};
+    q('#px-tabs').innerHTML = MUC.map((m, i) => {
+      const st = moi ? 'wait' : (s[m] || 'wait');
+      const tuyChon = (m === 'repair' || m === 'other') && !moi && !P.expenses.some(d => d.section === m);
+      return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(NN.t(tuyChon ? 'na' : (st === 'wait' ? 'stt_wait2' : 'stt_' + st)))}">
+        <b>${SO_LA_MA[i]}</b><span>${NN.h('sec' + (i + 1))}</span><i class="stt ${tuyChon ? 'na' : st}"></i></button>`;
+    }).join('') + `<button type="button" class="px-tab tat-ca ${tab === 'all' ? 'active' : ''}" data-tab="all"><span>${NN.h('px_tab_all')}</span></button>`;
+    root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.addEventListener('click', () => datTab(b.dataset.tab, true)));
+  }
+
+  function veHet() {
+    q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard');
+    veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai();
+    if (!tabTay) tab = tabMacDinh();
+    veTabs(); datTab(tab, false); NN.apDung(root);
+  }
 
   /* ---------------------------------------------------------------- dữ liệu */
   function phieuTrong() {
@@ -215,8 +256,8 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; P = await API.get('/api/trips/' + id); veHet(); }
-  async function phieuMoi() { moi = true; P = phieuTrong(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); veHet(); }
+  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; veHet(); }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
     [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
@@ -362,6 +403,7 @@
       }); });
       const t = ctx.tham || {};
       if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (DS.length) await moPhieu(DS[0].id); else await phieuMoi();
+      if (t.tab && (MUC.includes(t.tab) || t.tab === 'all')) datTab(t.tab, true);
     },
     onLang() { if (P) veHet(); },
   };

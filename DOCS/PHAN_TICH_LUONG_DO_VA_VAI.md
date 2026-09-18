@@ -225,11 +225,11 @@ rồi mới xuất hoá đơn `HD` và thu `PT` → khoá rồi mới trả ch�
 | K4 | Thẻ cao tốc | Chi như tiền mặt | Nếu V10 xác nhận: thêm "ví thẻ cao tốc", phiếu nạp thẻ, mỗi phiếu trừ thẻ |
 | K5 | Vai sửa chữa | Bãi duyệt báo hỏng | Nếu V11 xác nhận: thêm vai *Tổ sửa chữa* nhận báo hỏng và chọn trong / ngoài |
 | K6 | Trả chủ xe liên kết | Từng phiếu | Nếu V12 là theo tháng: bảng tất toán chủ xe giống tất toán tài xế |
-| K7 | Giao diện phiếu | Một tờ cuộn dài, mọi vai thấy cả sáu mục (ô tiền ẩn với Bãi) | **Thanh tiến trình + tab theo mục**, vai nào vào đúng tab của vai đó, ô ngoài thẩm quyền ẩn/chỉ đọc, tab cuối *Toàn phiếu* chỉ xem và in |
+| K7 | Giao diện phiếu | **ĐÃ LÀM (18/09)**: thanh tiến trình + tab theo mục I–VI, vai nào vào tự mở tab có việc của vai đó (Bãi → mục đầu chờ nhập, KT Thu/Chi → I/II, KT kho xăng dầu và Thủ quỹ → III, KT Chi phí và Quỹ tiền mặt → IV–VI, Doanh thu/Sếp → Toàn phiếu); tab khác vẫn bấm xem được nhưng chỉ có nút ở mục mình phụ trách; tab cuối *Toàn phiếu* chỉ xem và in; chấm đỏ trên tab = còn việc | Đường dẫn `#/phieu-xuat-xe?id=…&tab=fuel` mở thẳng tab |
 
 ---
 
-## 4. Hướng làm màn phiếu xuất xe dạng tab (K7) — để làm ngay sau khi có trả lời
+## 4. Màn phiếu xuất xe dạng tab (K7) — đã dựng 18/09, đây là bố cục đã theo
 
 Anh nói: *"nếu chuẩn là phải làm dạng thanh process và dạng tab, mỗi role vào chỉ thấy tab của mình,
 thông tin không thuộc thẩm quyền phải ẩn hoặc chỉ đọc; phiếu dài chỉ để xem tổng thể ở tab cuối."*

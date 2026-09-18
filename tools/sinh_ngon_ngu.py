@@ -263,7 +263,7 @@ KHOA_MOI = {
  'gps_src_moc': ('Theo mốc đã xác nhận tới', 'ຕາມຈຸດທີ່ຢືນຢັນຮອດ', 'At the last confirmed stop'),
  'gps_trail':   ('Vệt đã đi', 'ເສັ້ນທາງທີ່ຜ່ານມາ', 'Trail'),
  'map_note2':   ('Đường xanh đậm là vệt GPS thật của xe; đường xanh nhạt là tuyến kế hoạch.', 'ເສັ້ນສີຟ້າເຂັ້ມແມ່ນເສັ້ນ GPS ຈິງ; ເສັ້ນອ່ອນແມ່ນເສັ້ນທາງຕາມແຜນ.', 'The solid line is the real GPS trail; the pale line is the planned route.'),
- # ---- v8: màn đăng nhập dựng theo bản mẫu epl-login-page
+ # ---- v8: màn đăng nhập dựng theo bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án)
  'lg_brand_sub': ('Vận chuyển quặng · Viêng Chăn – Việt Nam', 'ຂົນສົ່ງແຮ່ · ວຽງຈັນ – ຫວຽດນາມ', 'Ore haulage · Vientiane – Vietnam'),
  'lg_s1':       ('Mỏ quặng', 'ບ່ອນຂຸດແຮ່', 'Ore mine'),
  'lg_s2':       ('Bãi EPL', 'ສະໜາມ EPL', 'EPL yard'),
@@ -661,6 +661,8 @@ KHOA_MOI = {
  'td_days':        ('Số ngày đi', 'ຈຳນວນວັນ', 'Days out'),
  'td_days_n':      ('{n} ngày', '{n} ວັນ', '{n} days'),
  'td_legs_short':  ('Chặng · km', 'ຈຸດ · ກມ', 'Stops · km'),
+ # ---- v12: màn phiếu xuất xe dạng tab theo vai
+ 'px_tab_all':     ('Toàn phiếu', 'ໃບເຕັມ', 'Whole slip'),
  'td_hide_profile': ('Thu thanh xem nhanh', 'ຫຍໍ້ແຖບເບິ່ງດ່ວນ', 'Hide the quick view'),
  'td_paid_part':   ('Thu một phần', 'ຮັບບາງສ່ວນ', 'Partly collected'),
 }

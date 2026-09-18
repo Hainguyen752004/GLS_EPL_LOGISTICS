@@ -75,7 +75,7 @@ async function main() {
     assert.strictEqual(kho[0], 'thabok', 'Admin Thà Bốc phải đứng đầu nhóm Bãi và kho: ' + kho.join(','));
   }
   console.log('✓ màn đăng nhập: %d tài khoản mẫu · Admin Thà Bốc đứng đầu nhóm kho', d.querySelectorAll('#acctList .person').length);
-  // Màn đăng nhập dựng theo bản mẫu epl-login-page: nửa trái thương hiệu kèm sơ đồ tuyến, nửa phải
+  // Màn đăng nhập dựng theo bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án): nửa trái thương hiệu kèm sơ đồ tuyến, nửa phải
   // biểu mẫu và khung chọn nhanh gom theo nhóm vai.
   assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .panel'),
     'màn đăng nhập phải có hai nửa: thương hiệu và biểu mẫu');
@@ -248,6 +248,21 @@ async function main() {
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
   assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);
   assert.ok(goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai Bãi phải có lớp px-an-tien để ẩn đơn giá/thành tiền/quy đổi');
+  // Tab theo vai: Bãi vào phải rơi vào MỘT mục (mục đầu còn việc), không phải Toàn phiếu; chỉ mục đó hiện
+  {
+    const tabs = [...goc().querySelectorAll('#px-tabs .px-tab')].map(b => b.dataset.tab);
+    assert.deepStrictEqual(tabs, ['info', 'trans', 'fuel', 'travel', 'repair', 'other', 'all'], 'phải đủ 6 tab mục + Toàn phiếu: ' + tabs);
+    const dang = goc().querySelector('#px-phieu').dataset.tab;
+    assert.ok(dang && dang !== 'all', 'vai Bãi phải mở sẵn một tab mục, đang: ' + dang);
+    const hien = [...goc().querySelectorAll('.px-muc.px-muc-hien')].map(x => x.dataset.muc);
+    assert.deepStrictEqual(hien, [dang], 'chỉ mục của tab đang mở được hiện: ' + hien);
+    goc().querySelector('#px-tabs .px-tab[data-tab="all"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.strictEqual(goc().querySelectorAll('.px-muc.px-muc-hien').length, 6, 'Toàn phiếu phải hiện cả 6 mục');
+    assert.ok(goc().querySelector('#px-luu').hidden, 'Toàn phiếu là để xem — nút Lưu phải ẩn');
+    goc().querySelector('#px-tabs .px-tab[data-tab="fuel"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.deepStrictEqual([...goc().querySelectorAll('.px-muc.px-muc-hien')].map(x => x.dataset.muc), ['fuel'], 'bấm tab III chỉ còn mục III');
+    console.log('✓ phiếu dạng tab: Bãi mở sẵn tab %s · Toàn phiếu chỉ xem · đổi tab được', dang);
+  }
   assert.ok(goc().querySelector('#v-odo_est'), 'phiếu phải có ô Km về ước tính');
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
 
@@ -257,6 +272,7 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const mucCoNut = [...new Set([...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.mucAct))];
   assert.deepStrictEqual(mucCoNut, ['fuel'], 'vai kho nhiên liệu chỉ được có nút ở mục III: ' + mucCoNut);
+  assert.strictEqual(goc().querySelector('#px-phieu').dataset.tab, 'fuel', 'KT kho xăng dầu vào phải mở sẵn tab III');
   assert.ok(!goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai khác Bãi phải thấy ô tiền');
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
 

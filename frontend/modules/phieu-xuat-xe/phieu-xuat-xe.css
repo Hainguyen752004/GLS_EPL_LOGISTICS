@@ -75,3 +75,28 @@
 /* phiếu đã khoá */
 .px-khoa{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--amber-soft);color:var(--amber);font-size:12px;font-weight:600;border:1px solid var(--amber)}
 .px-cb{margin:0;padding-left:18px;text-align:left} .px-cb li{margin:3px 0}
+
+/* ---- tab theo mục ---- */
+.px-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 0;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+.px-tab{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:0;border-radius:7px;background:none;
+  color:var(--ink-2);font-family:inherit;font-size:13px;font-weight:500;white-space:nowrap;position:relative}
+.px-tab:hover{background:var(--bg)}
+.px-tab.active{background:var(--ink);color:#fff;font-weight:600}
+.px-tab b{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;border-radius:999px;background:var(--bg-2);color:var(--ink-2);font-size:11px;font-weight:700}
+.px-tab.active b{background:rgba(255,255,255,.18);color:#fff}
+.px-tab .stt{width:8px;height:8px;border-radius:50%;background:var(--line-2);flex:none}
+.px-tab .stt.entered{background:var(--amber)} .px-tab .stt.verified,.px-tab .stt.booked{background:var(--blue)} .px-tab .stt.paid{background:var(--green)} .px-tab .stt.na{background:transparent;border:1px dashed var(--line-2)}
+.px-tab.viec::after{content:'';position:absolute;top:5px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px var(--paper)}
+.px-tab.active.viec::after{box-shadow:0 0 0 2px var(--ink)}
+.px-tab.tat-ca{margin-left:auto;color:var(--green)}
+.px-tab.tat-ca.active{background:var(--green);color:#fff}
+/* trong một tab: mục khác ẩn, tổng kết/ký/nhật ký chỉ ở Toàn phiếu */
+.px-phieu[data-tab]:not([data-tab="all"]) .px-muc:not(.px-muc-hien){display:none}
+.px-phieu[data-tab]:not([data-tab="all"]) #px-tong-ket,.px-phieu[data-tab]:not([data-tab="all"]) .px-ky,.px-phieu[data-tab]:not([data-tab="all"]) #px-log{display:none}
+.px-phieu[data-tab]:not([data-tab="all"]) .px-muc{margin-top:0;border-top-left-radius:0;border-top-right-radius:0}
+/* Toàn phiếu = xem và in: không ô nhập, không nút mục */
+.px-phieu[data-tab="all"] .px-act,.px-phieu[data-tab="all"] .px-them,.px-phieu[data-tab="all"] .px-chi .x{display:none}
+.px-phieu[data-tab="all"] input,.px-phieu[data-tab="all"] select{pointer-events:none;background:var(--bg)!important;color:var(--ink-2);border-color:transparent}
+.px-phieu[data-tab="all"] .px-acct{pointer-events:none}
+@media print{.px-phieu .px-muc{display:block!important}.px-phieu #px-tong-ket,.px-phieu .px-ky{display:block!important}}
+@media (max-width:900px){.px-tab span{display:none}.px-tab.tat-ca span{display:inline}}

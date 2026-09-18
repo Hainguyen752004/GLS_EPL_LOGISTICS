@@ -77,7 +77,7 @@ def phien_ban_giao_dien():
         return _ver["ma"]
     moi_nhat = 0.0
     for goc, _thu_muc, tep in os.walk(FRONTEND):
-        if "vendor" in goc or "epl-login-page" in goc:
+        if "vendor" in goc:
             continue
         for t in tep:
             if t.rsplit(".", 1)[-1].lower() in ("css", "js", "html"):

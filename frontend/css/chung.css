@@ -216,7 +216,7 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .page{padding:24px 28px 48px;width:100%}
 
 /* ---------- Đăng nhập ---------- */
-/* Bố cục và kiểu dáng lấy từ bản mẫu frontend/modules/epl-login-page. MỌI selector đều nằm trong
+/* Bố cục và kiểu dáng lấy từ bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án). MỌI selector đều nằm trong
    `.login` vì bản mẫu dùng tên chung (.field, .row, .error, .form…) trùng với tên đã dùng khắp các
    module; không lồng vào thì nó phá giao diện phần còn lại của ứng dụng. */
 /* Rời màn đăng nhập thì mờ đi rồi mới ẩn, không biến mất cụp một cái. */
