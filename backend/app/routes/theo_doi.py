@@ -68,6 +68,9 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
         diem = chang.get(p.route_id, [])
         da_toi = [e.stop_seq for e in ev if e.kind == "arrive_stop" and e.stop_seq]
         toi = max(da_toi) if da_toi else (1 if p.transport_status != "dispatched" else 0)
+        # Xe ĐÃ BÁO TỚI NƠI thì coi như đã qua hết chặng, dù Bãi không bấm đủ từng mốc trên đường.
+        if p.transport_status == "arrived" and diem:
+            toi = max(toi, len(diem))
         # Sự cố ĐANG MỞ = tài xế báo mà chưa ai duyệt hoặc từ chối.
         mo = len([e for e in ev if e.status == "reported"])
         ngay_di = p.out_date or p.doc_date
@@ -121,7 +124,10 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
             "so_diem": len(diem), "stop_reached": toi,
             "tong_km": round(sum(s.km_from_prev or 0 for s in diem), 1),
             "su_co_mo": mo, "cho_cap_phat": cho_linh, "di_lau": lau,
-            "so_ngay_di": (hom_nay - ngay_di).days if ngay_di else None,
+            # Xe còn ngoài đường thì đếm tới hôm nay; xe đã về thì đếm tới ngày về — không thì
+            # một chuyến xong từ tháng trước cứ mỗi ngày lại "đi thêm một ngày".
+            "so_ngay_di": ((p.back_date if p.transport_status == "arrived" and p.back_date else hom_nay)
+                           - ngay_di).days if ngay_di else None,
             "sections": muc_cua.get(p.id, {}),
         })
 

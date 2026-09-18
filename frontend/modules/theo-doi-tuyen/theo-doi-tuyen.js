@@ -225,6 +225,25 @@
    * khác nhau, và cả trang còn co giãn theo mức zoom. Đo bằng offsetTop (đơn vị của trang, không
    * bị mức zoom làm lệch) rồi trừ khỏi chiều cao cửa sổ đã quy về cùng đơn vị.
    */
+  /** Mở / đóng thanh xem nhanh hồ sơ chuyến.
+   *  Bề rộng cột đổi có chuyển động nên bản đồ phải ĐO LẠI sau khi chạy xong, không thì Leaflet giữ
+   *  kích thước cũ: nửa bản đồ xám, chấm xe lệch chỗ. Nghe transitionend, kèm một lần chờ dự phòng
+   *  cho trường hợp người dùng đặt "giảm chuyển động" (không có sự kiện nào bắn ra). */
+  function moHoSo(mo) {
+    const cols = q('#tdt-cols'); if (!cols) return;
+    if (cols.classList.contains('mo-ho-so') === mo) return;
+    cols.classList.toggle('mo-ho-so', mo);
+    let xong = false;
+    const khiXong = (e) => {
+      if (e && e.target !== cols) return;
+      if (xong) return;
+      xong = true; cols.removeEventListener('transitionend', khiXong);
+      if (MAP) MAP.invalidateSize();
+    };
+    cols.addEventListener('transitionend', khiXong);
+    setTimeout(khiXong, 380);
+  }
+
   function caoCot() {
     const el = q('#tdt-cols'); if (!el) return;
     if ((window.innerWidth || 1600) <= 1000) { el.style.height = ''; return; }
@@ -403,7 +422,10 @@
     const tiep = diem.find(s => s.seq > toi);
     const k = P.tinh || {};
     const cuoc = k.doanh_thu_lak || 0;
-    const conNo = P.finance_status === 'paid' ? 0 : cuoc;
+    // Chỉ có tổng cước, không có số đã thu từng phần — 'thu một phần' thì ghi rõ là không biết
+    // còn bao nhiêu, chứ không lấy tổng cước ra làm số còn nợ.
+    const nhanThu = P.finance_status === 'paid' ? 'td_paid_full' : P.finance_status === 'partial' ? 'td_paid_part' : 'td_unpaid_amt';
+    const soThu = P.finance_status === 'partial' ? '—' : so(cuoc) + ' LAK';
     const canh = [];
     if (c.di_lau) canh.push(`<span class="tag partial">${NN.h('td_days_out', { n: c.so_ngay_di })}</span>`);
     if (c.su_co_mo) canh.push(`<span class="tag unpaid">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);
@@ -435,10 +457,10 @@
       </div>
       <div class="tdt2-tien">
         <div><small>${NN.h('td_fare_est')}</small><b>${so(cuoc)} LAK</b></div>
-        <div class="${conNo ? 'no' : ''}"><small>${NN.h(conNo ? 'td_unpaid_amt' : 'td_paid_full')}</small><b>${so(conNo || cuoc)} LAK</b></div>
+        <div class="${P.finance_status === 'unpaid' ? 'no' : ''}"><small>${NN.h(nhanThu)}</small><b>${soThu}</b></div>
       </div>
       <div class="tdt2-thao-tac">
-        ${laBai() && tiep && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn dam" data-toi="${tiep.seq}">${NN.h('td_confirm_stop', { n: tiep.seq })}: <span lang="lo">${esc(tiep.name)}</span></button>` : ''}
+        ${laBai() && tiep && P.transport_status !== 'arrived' && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn dam" data-toi="${tiep.seq}">${NN.h('td_confirm_stop', { n: tiep.seq })}: <span lang="lo">${esc(tiep.name)}</span></button>` : ''}
         ${c.cho_cap_phat ? `<button type="button" class="tdt2-btn tan" data-cap>${NN.h('td_issue_fuel')}</button>` : ''}
         ${laBai() && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn do" data-su-co>${NN.h('report_incident')}</button>` : ''}
       </div>`;
@@ -469,7 +491,7 @@
       P = await API.get('/api/trips/' + id);
       VET = await API.get('/api/trips/' + id + '/vet').catch(() => null);
       CHUNG_TU = null; mocSang = 0;
-      veDanhSach(); ve();
+      veDanhSach(); ve(); moHoSo(true);
     } catch (e) { EPL.baoLoi(e); }
   }
   async function toiDiem(seq, tong) {
@@ -573,6 +595,7 @@
       q('#tdt-lam-moi').addEventListener('click', () => tai(true).catch(EPL.baoLoi));
       q('#tdt-so-su-co').addEventListener('click', moSo);
       q('#tdt-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
+      q('#tdt-dong-hs').addEventListener('click', () => moHoSo(false));
       q('#tdt-su-co').addEventListener('click', moSuCo);
       q('#tdt-f-co-sua').addEventListener('change', e => { q('#tdt-f-sua').hidden = !e.target.checked; });
       root.querySelectorAll('#tdt-sap button').forEach(b => b.addEventListener('click', () => {
@@ -591,6 +614,8 @@
       const t = ctx.tham || {};
       const dau = t.id || (loc()[0] || {}).id;
       if (dau) await mo(dau); else ve();
+      // Mở màn bằng đường dẫn có ?hs=0 thì thu sẵn thanh xem nhanh, nhường cả chỗ cho bản đồ.
+      if (t.hs === '0') moHoSo(false);
       caoCot();
     },
     destroy() {

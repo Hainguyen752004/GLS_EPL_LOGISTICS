@@ -639,6 +639,8 @@ KHOA_MOI = {
  'td_days':        ('Số ngày đi', 'ຈຳນວນວັນ', 'Days out'),
  'td_days_n':      ('{n} ngày', '{n} ວັນ', '{n} days'),
  'td_legs_short':  ('Chặng · km', 'ຈຸດ · ກມ', 'Stops · km'),
+ 'td_hide_profile': ('Thu thanh xem nhanh', 'ຫຍໍ້ແຖບເບິ່ງດ່ວນ', 'Hide the quick view'),
+ 'td_paid_part':   ('Thu một phần', 'ຮັບບາງສ່ວນ', 'Partly collected'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {'r_acct': 'r_acct_vc', 'r_fuel': 'r_fuel_acct', 'r_cash': 'r_petty', 'r_rev': 'r_rev_acct'}

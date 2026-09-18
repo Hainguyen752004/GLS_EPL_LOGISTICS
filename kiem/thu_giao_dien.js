@@ -220,6 +220,15 @@ async function main() {
   goc().querySelector('.tdt2-tile[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
   await cho(120);
   assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt2-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
+  // Thanh xem nhanh: bấm một phiếu thì trượt ra, bấm × thì thu lại (bản đồ ăn hết chỗ trống).
+  const cols = goc().querySelector('#tdt-cols');
+  assert.ok(cols.classList.contains('mo-ho-so'), 'bấm một phiếu phải mở thanh xem nhanh');
+  goc().querySelector('#tdt-dong-hs').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await cho(150);
+  assert.ok(!cols.classList.contains('mo-ho-so'), 'bấm × phải thu thanh xem nhanh');
+  goc().querySelector('#tdt-the-ds .tdt2-the').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await cho(400);
+  assert.ok(cols.classList.contains('mo-ho-so'), 'bấm lại một phiếu phải mở lại thanh xem nhanh');
   console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · mốc chặng · 3 tab · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
   // Bản đồ: Leaflet để sẵn trong dự án nên phải vẽ được cả khi không ra Internet (ảnh nền thì

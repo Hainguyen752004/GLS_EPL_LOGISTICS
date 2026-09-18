@@ -44,8 +44,20 @@
 .tdt2-tile.do .l,.tdt2-tile.do .v.khac0{color:var(--red)}
 .tdt2-tile.vang .l,.tdt2-tile.vang .v.khac0{color:var(--amber)}
 
-/* ---- ba cột: cao đúng phần màn còn trống, js đặt chiều cao ---- */
-.tdt2-cols{display:grid;grid-template-columns:280px minmax(0,1fr) 330px;gap:12px;min-height:0}
+/* ---- ba cột: cao đúng phần màn còn trống, js đặt chiều cao ----
+   Cột phải là THANH XEM NHANH: đóng thì bề rộng về 0 và bản đồ ăn hết chỗ, mở thì trượt vào.
+   Đổi bề rộng bằng grid-template-columns để hai cột kia tự giãn theo, khỏi tính tay. */
+.tdt2-cols{display:grid;grid-template-columns:280px minmax(0,1fr) 0px;gap:12px;min-height:0;
+  transition:grid-template-columns .28s cubic-bezier(.4,0,.2,1)}
+.tdt2-cols.mo-ho-so{grid-template-columns:280px minmax(0,1fr) 330px}
+.tdt2-card.ho-so{min-width:0;opacity:0;transform:translateX(14px);pointer-events:none;
+  transition:opacity .2s ease,transform .24s cubic-bezier(.4,0,.2,1)}
+.tdt2-cols.mo-ho-so .tdt2-card.ho-so{opacity:1;transform:none;pointer-events:auto}
+.tdt2-dong{width:28px;height:28px;flex:none;display:grid;place-items:center;border:0;border-radius:6px;
+  background:none;color:var(--ink-3)}
+.tdt2-dong:hover{background:var(--bg);color:var(--ink)}
+.tdt2-dong svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+@media (prefers-reduced-motion:reduce){.tdt2-cols,.tdt2-card.ho-so{transition:none}}
 .tdt2-card{display:flex;flex-direction:column;min-height:0;overflow:hidden;
   background:var(--paper);border:1px solid var(--line);border-radius:12px}
 .tdt2-hd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -158,7 +170,8 @@
 
 @media (max-width:1280px){.tdt2-cols{grid-template-columns:240px minmax(0,1fr) 300px}.tdt2-chu-thich{display:none}}
 @media (max-width:1000px){
-  .tdt2-cols{grid-template-columns:1fr;height:auto!important}
+  .tdt2-cols,.tdt2-cols.mo-ho-so{grid-template-columns:1fr;height:auto!important}
+  .tdt2-card.ho-so{opacity:1;transform:none;pointer-events:auto}
   .tdt2-card{min-height:380px}
   .tdt2-tile{flex:1 1 30%}
 }

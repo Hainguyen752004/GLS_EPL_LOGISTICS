@@ -170,7 +170,12 @@ def xuat_phieu(db, phieu, day_du=True):
         ra["route_stops"] = _diem_tuyen(db, phieu)
         # điểm xa nhất đã tới trên tuyến — để vẽ tiến độ
         da_toi = [e.stop_seq for e in su_kien if e.kind == "arrive_stop" and e.stop_seq]
-        ra["stop_reached"] = max(da_toi) if da_toi else (1 if phieu.transport_status != "dispatched" else 0)
+        toi = max(da_toi) if da_toi else (1 if phieu.transport_status != "dispatched" else 0)
+        # Xe ĐÃ BÁO TỚI NƠI thì coi như đã qua hết chặng, dù Bãi không bấm đủ từng mốc trên đường.
+        # Không vậy thì màn theo dõi ghi "Đã giao hàng" mà vẫn "1/4 chặng" — hai câu đá nhau.
+        if phieu.transport_status == "arrived" and ra["route_stops"]:
+            toi = max(toi, len(ra["route_stops"]))
+        ra["stop_reached"] = toi
     return ra
 
 

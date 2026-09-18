@@ -136,6 +136,15 @@ def main():
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="thabok"); phai(s, 403, "Bãi lập hoá đơn → bị từ chối", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 40.5, "back_date": "2026-09-16"}, vai="thabok")
     phai(s, 200, "Bãi báo xe đã tới, cân cuối 40,5 t", g)
+    # Trạng thái phải nhất quán: đã giao hàng thì coi như qua hết chặng, và số ngày đi dừng ở ngày về.
+    s, bang = goi("/api/theo-doi?tat_ca=1", vai="thabok")
+    ct = next(x for x in bang["chuyen"] if x["id"] == P)
+    assert ct["transport_status"] == "arrived", ct["transport_status"]
+    if ct["so_diem"]:
+        assert ct["stop_reached"] == ct["so_diem"], (
+            "đã giao hàng mà vẫn %s/%s chặng" % (ct["stop_reached"], ct["so_diem"]))
+    print("  ✓ đã giao hàng: %s/%s chặng · đi %s ngày (đếm tới ngày về)"
+          % (ct["stop_reached"], ct["so_diem"], ct["so_ngay_di"]))
     # Tính lại đúng cách trên giấy: từng khoản làm tròn 2 số lẻ rồi mới trừ — như máy chủ và như Excel.
     thue = round(40.5 * 40.5, 2); phi = round(thue * 0.02, 2); vuot = 0.5
     # EPL đã ứng = dầu kho 100 L + cao tốc + mục VI 150.000 + hai khoản sửa xe vừa khai (phụ tùng kho + vá lốp) ÷ tỷ giá.

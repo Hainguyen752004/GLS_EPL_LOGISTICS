@@ -72,11 +72,16 @@
       <div class="tdt2-cuon tdt2-tab-than" id="tdt-tab-than"></div>
     </section>
 
-    <!-- Cột phải: hồ sơ chuyến -->
-    <aside class="tdt2-card">
+    <!-- Cột phải: thanh xem nhanh hồ sơ chuyến — trượt ra khi bấm một phiếu ở cột trái,
+         bấm × thì thu lại và bản đồ ăn hết chỗ trống. -->
+    <aside class="tdt2-card ho-so" id="tdt-ho-so">
       <div class="tdt2-hd"><b data-i18n="td_profile"></b>
-        <button class="tdt2-btn sm" id="tdt-mo-phieu" type="button">
-          <svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg><span data-i18n="open_slip"></span></button>
+        <div class="tdt2-hd-phai">
+          <button class="tdt2-btn sm" id="tdt-mo-phieu" type="button">
+            <svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg><span data-i18n="open_slip"></span></button>
+          <button class="tdt2-dong" id="tdt-dong-hs" type="button" data-i18n-title="td_hide_profile">
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
       </div>
       <div class="tdt2-cuon tdt2-ho-so" id="tdt-xe"></div>
     </aside>
