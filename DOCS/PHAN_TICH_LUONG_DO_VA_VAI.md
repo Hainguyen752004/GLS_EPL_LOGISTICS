@@ -2,7 +2,7 @@
 
 Tài liệu này là **ghi chép làm việc giữa anh và em**: phần anh nêu, phần em đối chiếu với bộ Excel và
 quy trình chữ của bên Lào, chỗ nào chốt được thì chốt, chỗ nào phải hỏi thì đánh dấu để đưa sang tài
-liệu gửi bên EPL (`CAU_HOI_NGHIEP_VU_EPL_VI.md`, kèm bản Lào `_LAO` và Anh `_EN`).
+liệu gửi bên EPL (`CAU_HOI_NGHIEP_VU_EPL.md`, bản Lào `ຄຳຖາມວິຊາການ_EPL.md`, bản Anh `EPL_BUSINESS_QUESTIONS.md`).
 
 Nguồn đối chiếu:
 
