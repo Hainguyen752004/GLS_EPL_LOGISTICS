@@ -12,3 +12,19 @@
     </table>
   </div>
 </div>
+
+<!-- Bảng giá khách × tuyến (K3): bấm "Bảng giá" ở một khách thì khối này hiện ra. Bãi không thấy (tiền). -->
+<div class="card kh-gia" id="kh-gia" hidden>
+  <div class="kh-gia-dau">
+    <div><h3 id="kh-gia-ten"></h3><div class="small muted" data-i18n="kh_gia_mota"></div></div>
+    <div class="grow"></div>
+    <button class="btn primary sm" id="kh-gia-them"><span data-i18n="add"></span></button>
+    <button class="btn sm" id="kh-gia-dong"><span data-i18n="close"></span></button>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th data-i18n="route"></th><th data-i18n="goods_type"></th><th class="num" data-i18n="price_usd"></th><th class="num" data-i18n="hire_pt"></th><th data-i18n="valid_from"></th><th data-i18n="note"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
+      <tbody id="kh-gia-than"></tbody>
+    </table>
+  </div>
+</div>

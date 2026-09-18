@@ -157,6 +157,9 @@
   const VAI_SAU_KHOA = ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'admin'];
   const biKhoa = () => !moi && P.locked && !VAI_SAU_KHOA.includes(vai());
   function suaDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
+  // Ô tiền của mục II (đơn giá, giá thuê, phí, ngưỡng): Bãi không thấy → người KIỂM mục II sửa được khi khác hợp đồng (chép luật máy chủ)
+  const COT_TIEN = ['price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd'];
+  function suaTienDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().verify.includes(m) && (st === 'wait' || st === 'entered')); }
   function veVaiVaTrangThai() {
     g('px-goi-y').innerHTML = NN.h('hint_' + (vai() === 'treasury' ? 'treasury' : vai()));
     g('px-doc-no').disabled = !suaDuoc('info');
@@ -165,7 +168,8 @@
       const sec = q(`.px-muc[data-muc="${m}"]`), st = moi ? 'wait' : (P.sections[m] || 'wait'), tuyChon = (m === 'repair' || m === 'other') && !P.expenses.some(d => d.section === m);
       const khoa = !suaDuoc(m); sec.classList.toggle('locked', khoa);
       const cot = m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : [];
-      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = khoa; });
+      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m)); });
+      if (m === 'trans' && khoa && suaTienDuoc(m)) sec.classList.remove('locked');   // kế toán còn sửa được ô tiền thì mục chưa "khoá" với họ
       const e = sec.querySelector('.px-stt'); const k = tuyChon ? 'na' : st;
       e.className = 'px-stt ' + k; e.innerHTML = NN.h(k === 'wait' ? 'stt_wait2' : 'stt_' + k);
       const nut = []; const p = perm();
@@ -243,6 +247,19 @@
     root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.addEventListener('click', () => datTab(b.dataset.tab, true)));
   }
 
+  /** K3: có khách + tuyến mà ô đơn giá còn trống → lấy giá hợp đồng từ bảng giá. Bãi không thấy tiền nên
+   *  không hỏi (máy chủ tự điền khi Bãi lưu); kế toán đã gõ giá thì giữ nguyên. */
+  async function dienGiaHopDong() {
+    if (vai() === 'yard' || !P.customer_id || !P.route_id || EPL.doc(P.price_usd) > 0) return;
+    try {
+      const gia = await API.get(`/api/bang-gia/tra?customer_id=${encodeURIComponent(P.customer_id)}&route_id=${encodeURIComponent(P.route_id)}&goods_type=${encodeURIComponent(P.goods_type || 'iron_ore')}${P.doc_date ? '&ngay=' + P.doc_date : ''}`);
+      if (!gia || !gia.price_usd) return;
+      P.price_usd = gia.price_usd; g('f-price_usd').value = gia.price_usd;
+      if (gia.hire_price_usd && (P.hire_price_usd == null || P.hire_price_usd === '')) { P.hire_price_usd = gia.hire_price_usd; g('f-hire_price_usd').value = gia.hire_price_usd; }
+      veSo(); EPL.toast(NN.t('px_gia_tu_bang'), 'ok');
+    } catch (e) { /* không có quyền xem giá hoặc chưa có bảng giá — để trống cho kế toán gõ */ }
+  }
+
   function veHet() {
     q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard');
     veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai();
@@ -267,7 +284,11 @@
     const x = DM.vehicles.find(v => v.id === P.vehicle_id); if (x) { P.truck_no = x.truck_no; if (!P.brand_model) P.brand_model = x.brand_model; if (!P.plate_head) P.plate_head = x.plate_head; if (!P.plate_trailer) P.plate_trailer = x.plate_trailer; }
     const d = DM.drivers.find(v => v.id === P.driver_id); if (d) P.driver_name = d.name;
     const k = DM.customers.find(v => v.id === P.customer_id); if (k) P.customer_name = k.name;
-    const body = {}; ['doc_no', 'truck_no', 'driver_name', 'customer_name', ...COT_INFO, ...COT_TRANS].forEach(c => { if (P[c] !== undefined) body[c] = P[c]; });
+    // chỉ gửi ô còn mở với vai này — ô của mục đã khoá gửi lên là máy chủ từ chối cả phiếu
+    const body = {};
+    if (suaDuoc('info')) ['doc_no', 'truck_no', 'driver_name'].forEach(c => { if (P[c] !== undefined) body[c] = P[c]; });
+    if (suaDuoc('trans') && P.customer_name !== undefined) body.customer_name = P.customer_name;
+    [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (P[c] !== undefined && (!el || !el.disabled)) body[c] = P[c]; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
     body.expenses = P.expenses.filter(e => suaDuoc(e.section)).map(e => ({ ...e, qty: EPL.doc(e.qty), unit_price: EPL.doc(e.unit_price), acct_code: e.acct_code || tkMacDinh(e.section, e) }));
     if (!moi) { MUC_CHI.forEach(m => { if (!suaDuoc(m)) body.expenses = body.expenses.filter(e => e.section !== m); }); }
@@ -398,6 +419,7 @@
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
         if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price_usd == null || P.hire_price_usd === '')) { P.hire_price_usd = P.price_usd; g('f-hire_price_usd').value = P.price_usd ?? ''; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
         if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; } }
+        if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();
       }); });

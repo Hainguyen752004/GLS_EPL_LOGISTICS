@@ -221,7 +221,7 @@ rồi mới xuất hoá đơn `HD` và thu `PT` → khoá rồi mới trả ch�
 |---|---|---|---|
 | K1 | Phiếu = một vòng hay một chặng | Một phiếu một tuyến nhiều chặng (phương án A) | Hỏi V1 trước; nếu B thì thêm loại phiếu *gom hàng* không có mục II tiền |
 | K2 | Vai kế toán | ~~Một vai `acct` gộp~~ → **đã tách** `acct` (KT Thu/Chi, I–II) và `expacct` (KT Chi phí, IV–VI) | Xong 18/09 theo lời anh |
-| K3 | Giá cước | Kế toán gõ tay đơn giá từng phiếu | Bảng giá khách × tuyến trong Danh mục, tự điền, kế toán chỉ sửa khi khác hợp đồng |
+| K3 | Giá cước | **ĐÃ LÀM (18/09)**: bảng giá khách × tuyến (× loại hàng, có ngày hiệu lực) trong Danh mục khách hàng; Bãi lập phiếu không gửi giá, máy tự điền đơn giá và giá thuê xe ngoài; KT Thu/Chi VC (người kiểm mục II) sửa được ô tiền trên phiếu khi chuyến khác hợp đồng | Bãi không thấy bảng giá; C3.5 chỉ còn hỏi giá lấy từ đâu để nhập vào bảng |
 | K4 | Thẻ cao tốc | Chi như tiền mặt | Nếu V10 xác nhận: thêm "ví thẻ cao tốc", phiếu nạp thẻ, mỗi phiếu trừ thẻ |
 | K5 | Vai sửa chữa | Bãi duyệt báo hỏng | Nếu V11 xác nhận: thêm vai *Tổ sửa chữa* nhận báo hỏng và chọn trong / ngoài |
 | K6 | Trả chủ xe liên kết | Từng phiếu | Nếu V12 là theo tháng: bảng tất toán chủ xe giống tất toán tài xế |

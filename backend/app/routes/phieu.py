@@ -24,7 +24,8 @@ from models import (TripAttachment, ma_moi, CHUOI, LOAI_SU_CO, MUC, MUC_CHI, SU_
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, duoc_sua_muc
+from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien
+from routes.danh_muc import tim_gia
 from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
 from services import chung_tu as CT
 
@@ -46,6 +47,8 @@ COT_PHIEU = ("doc_no", "doc_date", "out_date", "back_date", "company", "owner_na
              "hire_price_usd", "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb",
              "rate_vnd", "note")
 COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
+# Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
+COT_TIEN = ("price_usd", "hire_price_usd", "fee_pct", "over_limit_t", "over_price_usd")
 COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price_usd", "hire_price_usd",
           "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb", "rate_vnd")
 # Trường nào thuộc mục nào — để khoá theo trạng thái duyệt của mục
@@ -244,7 +247,7 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             continue
         if muc_tt is not None:
             muc = next((m for m, cot in MUC_CUA_COT.items() if c in cot), None)
-            if muc and not duoc_sua_muc(user.role, muc, muc_tt[muc]):
+            if muc and not duoc_sua_muc(user.role, muc, muc_tt[muc]) and not (c in COT_TIEN and duoc_sua_tien(user.role, muc, muc_tt[muc])):
                 raise HTTPException(409, {"ma": "MUC_DA_KHOA",
                                           "loi": "Mục %s đã khoá (%s); phải trả lại mới sửa được." % (muc, muc_tt[muc])})
         v = data[c]
@@ -273,6 +276,14 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         if not p.destination: p.destination = r.destination
     if p.company not in ("EPL", "joint"):
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "company phải là EPL hoặc joint."})
+    # K3: Bãi không thấy tiền nên không gửi giá; có khách + tuyến trong bảng giá thì máy điền đơn giá hợp đồng.
+    # Chỉ điền khi phiếu CHƯA có giá — kế toán đã gõ giá khác hợp đồng thì giữ của kế toán.
+    if p.customer_id and p.route_id and not p.price_usd:
+        g = tim_gia(db, p.customer_id, p.route_id, p.goods_type, p.doc_date)
+        if g:
+            p.price_usd = g.price_usd
+            if p.hire_price_usd is None and g.hire_price_usd:
+                p.hire_price_usd = g.hire_price_usd
     if p.company == "joint" and p.hire_price_usd is None:
         p.hire_price_usd = p.price_usd     # mặc định bằng giá nhận — người lập sửa sau
 

@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
-from models import (MUC, Customer, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
+from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
                     RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
                     TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
@@ -164,6 +164,12 @@ def gieo(db):
             vt = TOA_DO.get(n, (None, None))
             db.add(RouteStop(route_id=r.id, seq=i, name=n, km_from_prev=km, lat=vt[0], lng=vt[1]))
         tuyen[ten] = r
+    db.flush()
+
+    # ---- bảng giá khách × tuyến (K3): 41 USD/t như hoá đơn trong Excel; tuyến cảng xa hơn 43 USD/t
+    for k in kh.values():
+        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ກາລໍ"].id, price_usd=41, hire_price_usd=40.5, valid_from=D(2026, 1, 1), created_by="seed"))
+        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ທ່າເຮືອກະລໍ"].id, price_usd=43, valid_from=D(2026, 1, 1), created_by="seed"))
     db.flush()
 
     # ---- năm phiếu

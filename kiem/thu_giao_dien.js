@@ -265,6 +265,20 @@ async function main() {
   }
   assert.ok(goc().querySelector('#v-odo_est'), 'phiếu phải có ô Km về ước tính');
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
+  // K3: Bãi mở Khách hàng không thấy nút Bảng giá (tiền); kế toán thì thấy, bấm ra bảng có dòng giá gieo sẵn
+  await di('#/khach-hang');
+  assert.strictEqual(goc().querySelectorAll('[data-gia]').length, 0, 'vai Bãi không được thấy nút Bảng giá');
+  w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('ketoan', '1234');
+  await choDen(() => !d.getElementById('app').hidden, 'vào với vai KT Thu/Chi'); await w.EPL.sanSang;
+  await di('#/khach-hang');
+  const nutGia = goc().querySelectorAll('[data-gia]');
+  assert.ok(nutGia.length >= 2, 'kế toán phải thấy nút Bảng giá ở từng khách');
+  nutGia[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await choDen(() => !goc().querySelector('#kh-gia').hidden && goc().querySelectorAll('#kh-gia-than tr').length > 0, 'bảng giá hiện ra');
+  const dongGia = [...goc().querySelectorAll('#kh-gia-than tr')].filter(tr => !tr.querySelector('.empty'));
+  assert.ok(dongGia.length >= 2, 'khách gieo sẵn phải có ít nhất 2 dòng giá: ' + dongGia.length);
+  assert.ok(!goc().querySelector('#kh-gia-them').hidden, 'kế toán phải có nút thêm giá');
+  console.log('✓ bảng giá khách × tuyến: Bãi không thấy · kế toán thấy %d dòng', dongGia.length);
 
   // 5. vai kho nhiên liệu: chỉ mục III có nút
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khonl', '1234');

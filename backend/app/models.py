@@ -590,6 +590,25 @@ class TripAttachment(Base):
 
 
 # ---------------------------------------------------------------- bán phụ tùng · xăng dầu cho bên ngoài
+class CustomerRate(Base):
+    """Bảng giá hợp đồng: khách × tuyến × loại hàng → đơn giá USD/tấn (và giá thuê xe ngoài nếu tuyến đó
+    hay đi xe liên kết). Bước 7 quy trình chữ của họ: "theo đơn giá quy định trong hợp đồng" — nên giá
+    nằm ở danh mục, mở phiếu là tự điền; kế toán chỉ sửa trên phiếu khi chuyến đó khác hợp đồng.
+    Nhiều dòng cùng khách × tuyến với valid_from khác nhau = lịch sử giá; lấy dòng mới nhất còn hiệu lực."""
+    __tablename__ = "customer_rates"
+    id = Column(String, primary_key=True, default=ma_moi)
+    customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
+    route_id = Column(String, ForeignKey("routes.id"), nullable=False)
+    goods_type = Column(String, nullable=False, default="iron_ore")
+    price_usd = Column(Float, nullable=False)                  # USD/tấn bên A trả
+    hire_price_usd = Column(Float)                             # USD/tấn trả chủ xe ngoài (nếu có thoả thuận sẵn)
+    valid_from = Column(Date)                                  # trống = áp dụng từ đầu
+    note = Column(Text)
+    active = Column(Boolean, nullable=False, default=True)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+
+
 class Sale(Base):
     __tablename__ = "sales"
     id = Column(String, primary_key=True, default=ma_moi)

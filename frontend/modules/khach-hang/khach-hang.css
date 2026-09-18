@@ -1,3 +1,8 @@
 /* Khách hàng */
 .kh-tim{min-width:260px}
 .kh-tat{opacity:.55}
+.kh-gia{margin-top:14px}
+.kh-gia-dau{display:flex;align-items:center;gap:10px;padding:0 0 10px}
+.kh-gia-dau h3{margin:0;font-size:15px}
+.kh-gia .tbl td.num,.kh-gia .tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.kh-gia tr.kh-tat{opacity:.55}

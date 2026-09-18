@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 870 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 876 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4291,6 +4291,36 @@ window.EPL_TU_DIEN = {
   "vi": "Toàn phiếu",
   "lo": "ໃບເຕັມ",
   "en": "Whole slip"
+ },
+ "kh_bang_gia": {
+  "vi": "Bảng giá",
+  "lo": "ຕາຕະລາງລາຄາ",
+  "en": "Price list"
+ },
+ "kh_gia_cua": {
+  "vi": "Bảng giá · {n}",
+  "lo": "ຕາຕະລາງລາຄາ · {n}",
+  "en": "Price list · {n}"
+ },
+ "kh_gia_mota": {
+  "vi": "Giá hợp đồng theo tuyến (USD/tấn). Mở phiếu chọn khách và tuyến là tự điền; kế toán chỉ sửa trên phiếu khi chuyến đó khác hợp đồng.",
+  "lo": "ລາຄາສັນຍາຕາມເສັ້ນທາງ (USD/ໂຕນ). ເປີດໃບເລືອກລູກຄ້າ ແລະ ເສັ້ນທາງ ລາຄາຈະຕື່ມເອງ; ບັນຊີແກ້ໃນໃບສະເພາະຖ້ຽວທີ່ຕ່າງຈາກສັນຍາ.",
+  "en": "Contract rate per route (USD/t). When a slip has a customer and a route the rate is filled in automatically; accounting edits it on the slip only when that trip differs from the contract."
+ },
+ "kh_gia_trong": {
+  "vi": "Chưa có giá cho khách này. Thêm giá theo tuyến để phiếu tự điền đơn giá.",
+  "lo": "ຍັງບໍ່ມີລາຄາສຳລັບລູກຄ້ານີ້. ເພີ່ມລາຄາຕາມເສັ້ນທາງ ເພື່ອໃຫ້ໃບຕື່ມລາຄາເອງ.",
+  "en": "No rates for this customer yet. Add a rate per route so slips fill the price automatically."
+ },
+ "valid_from": {
+  "vi": "Áp dụng từ",
+  "lo": "ນຳໃຊ້ຕັ້ງແຕ່",
+  "en": "Valid from"
+ },
+ "px_gia_tu_bang": {
+  "vi": "Đã điền đơn giá theo bảng giá khách × tuyến",
+  "lo": "ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ",
+  "en": "Rate filled from the customer × route price list"
  },
  "td_hide_profile": {
   "vi": "Thu thanh xem nhanh",

@@ -663,6 +663,16 @@ KHOA_MOI = {
  'td_legs_short':  ('Chặng · km', 'ຈຸດ · ກມ', 'Stops · km'),
  # ---- v12: màn phiếu xuất xe dạng tab theo vai
  'px_tab_all':     ('Toàn phiếu', 'ໃບເຕັມ', 'Whole slip'),
+ # ---- v13: bảng giá khách × tuyến (K3)
+ 'kh_bang_gia':    ('Bảng giá', 'ຕາຕະລາງລາຄາ', 'Price list'),
+ 'kh_gia_cua':     ('Bảng giá · {n}', 'ຕາຕະລາງລາຄາ · {n}', 'Price list · {n}'),
+ 'kh_gia_mota':    ('Giá hợp đồng theo tuyến (USD/tấn). Mở phiếu chọn khách và tuyến là tự điền; kế toán chỉ sửa trên phiếu khi chuyến đó khác hợp đồng.',
+                    'ລາຄາສັນຍາຕາມເສັ້ນທາງ (USD/ໂຕນ). ເປີດໃບເລືອກລູກຄ້າ ແລະ ເສັ້ນທາງ ລາຄາຈະຕື່ມເອງ; ບັນຊີແກ້ໃນໃບສະເພາະຖ້ຽວທີ່ຕ່າງຈາກສັນຍາ.',
+                    'Contract rate per route (USD/t). When a slip has a customer and a route the rate is filled in automatically; accounting edits it on the slip only when that trip differs from the contract.'),
+ 'kh_gia_trong':   ('Chưa có giá cho khách này. Thêm giá theo tuyến để phiếu tự điền đơn giá.', 'ຍັງບໍ່ມີລາຄາສຳລັບລູກຄ້ານີ້. ເພີ່ມລາຄາຕາມເສັ້ນທາງ ເພື່ອໃຫ້ໃບຕື່ມລາຄາເອງ.', 'No rates for this customer yet. Add a rate per route so slips fill the price automatically.'),
+ 'valid_from':     ('Áp dụng từ', 'ນຳໃຊ້ຕັ້ງແຕ່', 'Valid from'),
+ 'px_gia_tu_bang': ('Đã điền đơn giá theo bảng giá khách × tuyến', 'ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ', 'Rate filled from the customer × route price list'),
+ 'close':          ('Đóng', 'ປິດ', 'Close'),
  'td_hide_profile': ('Thu thanh xem nhanh', 'ຫຍໍ້ແຖບເບິ່ງດ່ວນ', 'Hide the quick view'),
  'td_paid_part':   ('Thu một phần', 'ຮັບບາງສ່ວນ', 'Partly collected'),
 }

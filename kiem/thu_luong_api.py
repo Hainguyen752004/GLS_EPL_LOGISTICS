@@ -52,11 +52,20 @@ def main():
     print("✓ đăng nhập 7 vai")
 
     # ---- 0. Dọn phiếu thử còn sót từ lần chạy trước (nếu có)
-    s, cu = goi("/api/trips?q=THU-LUONG-01", vai="admin")
-    for p in cu:
-        if p["doc_no"] == "THU-LUONG-01/EPL":
-            goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
-            print("  · đã dọn phiếu thử sót lại từ lần trước")
+    for so_thu in ("01", "02"):
+        s, cu = goi("/api/trips?q=THU-LUONG-" + so_thu, vai="admin")
+        for p in cu:
+            if p["doc_no"] == "THU-LUONG-%s/EPL" % so_thu:
+                goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
+                print("  · đã dọn phiếu thử %s sót lại từ lần trước" % so_thu)
+
+    # dòng giá thử K3 sót lại (lần chạy trước hỏng giữa đường)
+    s, kh0 = goi("/api/customers", vai="ketoan")
+    for k in kh0:
+        s, ds = goi("/api/customers/%s/bang-gia" % k["id"], vai="ketoan")
+        for r in ds:
+            if r.get("note") == "thử K3":
+                goi("/api/bang-gia/%s" % r["id"], vai="ketoan", method="DELETE"); print("  · đã dọn dòng giá thử sót lại")
 
     # ---- 1. Bãi lập phiếu xe liên kết
     s, xe = goi("/api/vehicles", vai="thabok"); lk = next(x for x in xe if x["owner_type"] == "joint")
@@ -72,6 +81,28 @@ def main():
     assert g["tinh"]["lien_ket"] and g["tinh"]["tien_thue_usd"] == round(42 * 40.5, 2)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="ketoan"); phai(s, 403, "Kế toán lập phiếu → bị từ chối", g)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="thabok"); phai(s, 409, "Trùng số phiếu → bị từ chối", g)
+
+    # ---- 1b. K3: bảng giá khách × tuyến — kế toán đặt giá, Bãi lập phiếu KHÔNG gửi giá, máy tự điền
+    s, tuyen = goi("/api/routes", vai="ketoan"); T = tuyen[0]["id"]
+    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], vai="thabok"); phai(s, 403, "Bãi xem bảng giá → bị từ chối (Bãi không thấy tiền)", g)
+    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 39, "hire_price_usd": 38.5, "valid_from": "2026-01-01"}, vai="thabok")
+    phai(s, 403, "Bãi đặt giá → bị từ chối", g)
+    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 0}, vai="ketoan"); phai(s, 422, "Giá 0 → bị từ chối", g)
+    s, gia = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 39, "hire_price_usd": 38.5, "valid_from": "2026-01-01", "note": "thử K3"}, vai="ketoan")
+    phai(s, 200, "Kế toán đặt giá 39 USD/t cho khách × tuyến", gia)
+    s, g = goi("/api/bang-gia/tra?customer_id=%s&route_id=%s&ngay=2026-09-14" % (kh[0]["id"], T), vai="ketoan"); phai(s, 200, "Hỏi giá", g)
+    assert g.get("price_usd") == 39, "hỏi giá phải trả dòng mới nhất còn hiệu lực (39): %s" % g
+    s, g = goi("/api/bang-gia/tra?customer_id=%s&route_id=%s&ngay=2025-12-31" % (kh[0]["id"], T), vai="ketoan"); phai(s, 200, "Hỏi giá trước ngày hiệu lực", g)
+    assert not g.get("price_usd") or g.get("id") != gia["id"], "trước ngày hiệu lực không được lấy dòng giá này"
+    s, p2 = goi("/api/trips", {"doc_no": "THU-LUONG-02/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
+                               "route_id": T, "doc_date": "2026-09-14", "out_date": "2026-09-14", "weight_origin": 40}, vai="thabok")
+    phai(s, 200, "Bãi lập phiếu có khách + tuyến, không gửi giá", p2)
+    assert p2["price_usd"] == 39 and p2["hire_price_usd"] == 38.5, "máy phải tự điền giá 39 và giá thuê 38.5 từ bảng giá: %s / %s" % (p2["price_usd"], p2["hire_price_usd"])
+    s, g = goi("/api/trips/%s" % p2["id"], {"price_usd": 45}, vai="ketoan", method="PUT"); phai(s, 200, "Kế toán sửa giá khác hợp đồng", g)
+    assert g["price_usd"] == 45, "giá kế toán gõ phải được giữ, không bị bảng giá ghi đè"
+    s, g = goi("/api/trips/%s" % p2["id"], vai="admin", method="DELETE"); phai(s, 200, "Dọn phiếu thử 02", g)
+    s, g = goi("/api/bang-gia/%s" % gia["id"], vai="ketoan", method="DELETE"); phai(s, 200, "Dọn dòng giá thử", g)
+    print("  ✓ K3 bảng giá: Bãi không thấy · kế toán đặt giá · phiếu tự điền 39/38.5 · kế toán sửa được · ngày hiệu lực đúng")
 
     # ---- 2. Gửi kiểm & kiểm
     for m in ("info", "trans", "fuel", "travel"):
@@ -200,7 +231,7 @@ def main():
             goi("/api/fuel-moves/%s" % r["id"], vai="khonl", method="DELETE")
     print("  ✓ đã xoá dòng xuất kho nhiên liệu của phiếu thử")
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
-    print("\nTHỬ LUỒNG API: ĐẠT — 7 vai · 6 mục · 5 bước duyệt · 10 chỗ từ chối đúng")
+    print("\nTHỬ LUỒNG API: ĐẠT — 7 vai · 6 mục · 5 bước duyệt · bảng giá khách × tuyến · 13 chỗ từ chối đúng")
 
 
 if __name__ == "__main__":

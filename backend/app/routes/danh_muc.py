@@ -13,13 +13,15 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, Driver, DriverLicense, ExchangeRate, Trailer,
-                    TrailerAssignment, Trip, TripExpense, Vehicle)
+from models import (TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
+                    Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import tien_dong
 
 router = APIRouter()
 SUA_DANH_MUC = can_vai("yard", "acct")       # Bãi và Kế toán được sửa danh mục
+SUA_BANG_GIA = can_vai("acct", "admin")      # giá là tiền: chỉ KT Thu/Chi VC (người kiểm mục II) và Sếp
+XEM_BANG_GIA = can_vai("acct", "expacct", "rev", "treasury", "cash", "admin")   # Bãi không thấy tiền
 NGAY_CANH_BAO = 30                            # giấy tờ hết hạn trong 30 ngày → cờ vàng
 
 
@@ -91,6 +93,97 @@ def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), _
     _ap(c, data, ("name", "phone", "address", "note", "active"))
     db.commit(); db.refresh(c)
     return _dict(c)
+
+
+# ================================================================ bảng giá khách × tuyến (K3)
+def tim_gia(db, customer_id, route_id, goods_type=None, ngay=None):
+    """Dòng giá mới nhất còn hiệu lực cho khách × tuyến (× loại hàng) tại ngày `ngay`. Không có thì None."""
+    if not customer_id or not route_id:
+        return None
+    ngay = ngay or dt.date.today()
+    q = (db.query(CustomerRate).filter(CustomerRate.customer_id == customer_id, CustomerRate.route_id == route_id,
+                                        CustomerRate.active.is_(True)))
+    ds = [r for r in q.all() if r.valid_from is None or r.valid_from <= ngay]
+    if goods_type:
+        cung = [r for r in ds if r.goods_type == goods_type]
+        ds = cung or [r for r in ds if r.goods_type == "iron_ore"]   # không có giá riêng loại hàng → dùng giá quặng
+    if not ds:
+        return None
+    ds.sort(key=lambda r: (r.valid_from or dt.date.min, r.created_at or dt.datetime.min), reverse=True)
+    return ds[0]
+
+
+def _xuat_gia(db, r):
+    d = _dict(r)
+    t = db.get(Route, r.route_id); k = db.get(Customer, r.customer_id)
+    d["route_name"] = t.name if t else None
+    d["customer_name"] = k.name if k else None
+    return d
+
+
+def _ap_gia(db, r, data):
+    if "route_id" in data:
+        if not db.get(Route, data["route_id"] or ""):
+            raise HTTPException(422, {"ma": "TUYEN_SAI", "loi": "Không có tuyến này."})
+        r.route_id = data["route_id"]
+    if "goods_type" in data: r.goods_type = (data["goods_type"] or "iron_ore").strip()
+    if "price_usd" in data:
+        gia = _so(data["price_usd"], "price_usd")
+        if gia is None or gia <= 0:
+            raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Đơn giá USD/tấn phải lớn hơn 0."})
+        r.price_usd = gia
+    if "hire_price_usd" in data: r.hire_price_usd = _so(data["hire_price_usd"], "hire_price_usd")
+    if "valid_from" in data: r.valid_from = _ngay(data["valid_from"], "valid_from")
+    if "note" in data: r.note = (data["note"] or "").strip() or None
+    if "active" in data: r.active = bool(data["active"])
+
+
+@router.get("/api/customers/{cid}/bang-gia")
+def ds_gia(cid: str, db: Session = Depends(get_db), _=Depends(XEM_BANG_GIA)):
+    if not db.get(Customer, cid):
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    ds = db.query(CustomerRate).filter(CustomerRate.customer_id == cid).all()
+    ds.sort(key=lambda r: (not r.active, r.route_id, -(r.valid_from or dt.date.min).toordinal()))
+    return [_xuat_gia(db, r) for r in ds]
+
+
+@router.post("/api/customers/{cid}/bang-gia")
+def them_gia(cid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_BANG_GIA)):
+    if not db.get(Customer, cid):
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    if not data.get("route_id"):
+        raise HTTPException(422, {"ma": "THIEU_TUYEN", "loi": "Phải chọn tuyến."})
+    if "price_usd" not in data:
+        raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Phải có đơn giá USD/tấn."})
+    r = CustomerRate(customer_id=cid, created_by=user.full_name); _ap_gia(db, r, data)
+    db.add(r); db.commit(); db.refresh(r)
+    return _xuat_gia(db, r)
+
+
+@router.put("/api/bang-gia/{gid}")
+def sua_gia(gid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_BANG_GIA)):
+    r = db.get(CustomerRate, gid)
+    if not r:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có dòng giá này."})
+    _ap_gia(db, r, data); db.commit(); db.refresh(r)
+    return _xuat_gia(db, r)
+
+
+@router.delete("/api/bang-gia/{gid}")
+def xoa_gia(gid: str, db: Session = Depends(get_db), _=Depends(SUA_BANG_GIA)):
+    r = db.get(CustomerRate, gid)
+    if not r:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có dòng giá này."})
+    db.delete(r); db.commit()
+    return {"ok": True}
+
+
+@router.get("/api/bang-gia/tra")
+def tra_gia(customer_id: str, route_id: str, goods_type: str = None, ngay: str = None,
+            db: Session = Depends(get_db), _=Depends(XEM_BANG_GIA)):
+    """Màn phiếu hỏi: khách này đi tuyến này giá bao nhiêu? Trả {} nếu chưa có trong bảng."""
+    r = tim_gia(db, customer_id, route_id, goods_type, _ngay(ngay, "ngay") if ngay else None)
+    return _xuat_gia(db, r) if r else {}
 
 
 # ================================================================ xe (đầu kéo)

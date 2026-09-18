@@ -55,6 +55,15 @@ def duoc_sua_muc(vai, muc, trang_thai):
     return muc in QUYEN.get(vai, QUYEN["yard"])["edit"] and trang_thai in ("wait", "entered")
 
 
+def duoc_sua_tien(vai, muc, trang_thai):
+    """Ô TIỀN của mục (đơn giá, giá thuê, phí, ngưỡng tấn) là thẩm quyền của người KIỂM mục đó, không phải người
+    nhập: Bãi không thấy tiền, nên kế toán kiểm mục II mới là người sửa giá khi chuyến khác hợp đồng. Chỉ sửa
+    được khi mục chưa kiểm xong (chờ / đã nhập); kiểm rồi thì trả lại mới sửa, như mọi ô khác."""
+    if vai == "admin":
+        return True
+    return muc in QUYEN.get(vai, QUYEN["yard"])["verify"] and trang_thai in ("wait", "entered")
+
+
 def chuyen_muc(vai, muc, trang_thai_hien_tai, hanh_dong):
     """Trả trạng thái mới, hoặc bật lỗi 403/409 nói rõ vì sao."""
     if muc not in MUC:
