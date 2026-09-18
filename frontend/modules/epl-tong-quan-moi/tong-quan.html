@@ -1,0 +1,74 @@
+<!-- Tổng quan — ພາບລວມ (bản B: mẫu A + thanh xem nhanh + dòng thời gian chuyến)
+     Bố cục 12 cột: KPI + xu hướng 6 tháng → tiến trình chuyến (process) → doanh thu/chi phí theo ngày + cơ cấu chi
+     → hao hụt cân theo chuyến + hiệu suất xe + cần xử lý. Chart.js 4.5.1 UMD phải được nạp ở shell (index.html):
+     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script> -->
+<div class="toolbar tq-toolbar">
+  <div class="field"><label data-i18n="month"></label><input type="month" id="tq-thang"></div>
+  <label class="tq-chk"><input type="checkbox" id="tq-so-sanh" checked><span data-i18n="tq_compare"></span></label>
+  <span class="small muted" id="tq-stamp"></span>
+  <div class="grow"></div>
+  <button class="btn" id="tq-xuat"><span data-i18n="export"></span></button>
+  <button class="btn primary" id="tq-moi"><span data-i18n="new_dispatch"></span></button>
+</div>
+
+<!-- B1. Thanh xem nhanh — dính dưới toolbar khi cuộn; mỗi chip là một bộ lọc dẫn sang Theo dõi phiếu -->
+<div class="tq-quick" id="tq-xem-nhanh"></div>
+
+<!-- 1. Bốn con số + delta so tháng trước + sparkline 6 tháng -->
+<div class="tq-kpis" id="tq-kpi"></div>
+
+<!-- B2. Dòng thời gian chuyến trong tháng — mỗi chuyến một thanh tiến trình theo ngày, tô màu theo giai đoạn -->
+<div class="card tq-khoi">
+  <div class="hd"><h3 data-i18n="tq_gantt_title"></h3><span class="small muted" id="tq-gantt-sub"></span><div class="grow"></div>
+    <div class="tq-legend" id="tq-gantt-legend"></div></div>
+  <div class="bd tq-gantt-bd"><div class="tq-gantt" id="tq-gantt"></div></div>
+</div>
+
+<!-- 2. Tiến trình chuyến: 5 bước nối nhau, thanh phân bố, 3 chỉ số vận hành -->
+<div class="card tq-khoi">
+  <div class="hd"><h3 data-i18n="pipe_title"></h3><div class="grow"></div><span class="small muted" data-i18n="pipe_hint"></span></div>
+  <div class="bd">
+    <div class="tq-flow" id="tq-tien-do"></div>
+    <div class="tq-flow-bar" id="tq-phan-bo"></div>
+    <div class="tq-ops" id="tq-ops"></div>
+  </div>
+</div>
+
+<!-- 3. Doanh thu & chi phí theo ngày (một trục USD) | Cơ cấu chi phí -->
+<div class="tq-grid tq-3-2">
+  <div class="card">
+    <div class="hd"><h3 data-i18n="tq_daily_title"></h3><div class="grow"></div>
+      <div class="tq-legend" id="tq-legend-ngay"></div></div>
+    <div class="bd"><div class="tq-canvas tq-canvas--lg"><canvas id="tq-c-ngay"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="hd"><h3 data-i18n="exp_break"></h3><div class="grow"></div><span class="small muted">LAK</span></div>
+    <div class="bd tq-donut-wrap">
+      <div class="tq-donut"><canvas id="tq-c-cocau"></canvas><div class="tq-donut-center" id="tq-donut-center"></div></div>
+      <div class="tq-donut-list" id="tq-co-cau"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Hao hụt cân theo chuyến | Hiệu suất xe | Tỷ giá + Cần xử lý -->
+<div class="tq-grid tq-3-cot">
+  <div class="card">
+    <div class="hd"><h3 data-i18n="tq_loss_title"></h3><div class="grow"></div><span class="small muted" id="tq-loss-sub"></span></div>
+    <div class="bd"><div class="tq-canvas"><canvas id="tq-c-haohut"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="hd"><h3 data-i18n="tq_fleet_title"></h3><div class="grow"></div><span class="small muted" data-i18n="tq_fleet_sub"></span></div>
+    <div class="bd tq-fleet" id="tq-xe"></div>
+  </div>
+  <div class="tq-doc">
+    <div class="card">
+      <div class="hd"><h3 data-i18n="rates"></h3><div class="grow"></div><span class="small muted" id="tq-rate-date"></span></div>
+      <div class="bd" id="tq-ty-gia"></div>
+    </div>
+    <div class="card">
+      <div class="hd"><h3 data-i18n="attention"></h3><span class="tq-count" id="tq-chu-y-n"></span><div class="grow"></div>
+        <button class="btn sm" id="tq-chu-y-all"><span data-i18n="tq_view_all"></span></button></div>
+      <div class="bd" id="tq-chu-y"></div>
+    </div>
+  </div>
+</div>

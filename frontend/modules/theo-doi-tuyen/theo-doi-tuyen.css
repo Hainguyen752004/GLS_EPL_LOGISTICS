@@ -1,4 +1,5 @@
-/* Theo dõi tuyến — kiểu lấy từ bản mẫu frontend/modules/trip-tracking.
+/* Theo dõi tuyến — kiểu lấy từ bản mẫu "trip-tracking" anh gửi (bản mẫu đã bỏ khỏi dự án sau khi
+ * dựng xong màn này; xem lịch sử git nếu cần đối chiếu).
  *
  * Hai điều chỉnh cố ý so với bản mẫu:
  *   · Mọi quy tắc nằm dưới `.tdt2` — bản mẫu là trang đứng riêng nên nó định nghĩa lại .btn, .card,

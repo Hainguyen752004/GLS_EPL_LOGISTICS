@@ -1,4 +1,4 @@
-/* Theo dõi tuyến — trung tâm điều hành, bố cục dựng lại theo bản mẫu frontend/modules/trip-tracking:
+/* Theo dõi tuyến — trung tâm điều hành, bố cục dựng lại theo bản mẫu "trip-tracking" anh gửi:
  *
  *   thanh trên (tìm · chỉ phiếu chưa xong · tự cập nhật · sổ sự cố · báo sự cố)
  *   dải ô số   (bấm một ô là lọc danh sách theo đúng ô đó)

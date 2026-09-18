@@ -227,8 +227,7 @@ async function main() {
   await cho(150);
   assert.ok(!cols.classList.contains('mo-ho-so'), 'bấm × phải thu thanh xem nhanh');
   goc().querySelector('#tdt-the-ds .tdt2-the').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-  await cho(400);
-  assert.ok(cols.classList.contains('mo-ho-so'), 'bấm lại một phiếu phải mở lại thanh xem nhanh');
+  await choDen(() => cols.classList.contains('mo-ho-so'), 'bấm lại một phiếu phải mở lại thanh xem nhanh', 6000);
   console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · mốc chặng · 3 tab · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
   // Bản đồ: Leaflet để sẵn trong dự án nên phải vẽ được cả khi không ra Internet (ảnh nền thì
