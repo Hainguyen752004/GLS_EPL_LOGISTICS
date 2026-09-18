@@ -15,7 +15,8 @@
   /* ---------------------------------------------------------------- các làn (vai) */
   const LAN = [
     { id: 'yard',   khoa: 'r_yard',   av: 'TB', ghi: 'Điều độ tại bãi · người mở phiếu' },
-    { id: 'acct',   khoa: 'r_acct',   av: 'KT', ghi: 'Kiểm, sửa, nhập các ô kế toán, khoá phiếu' },
+    { id: 'acct',   khoa: 'r_acct',   av: 'KT', ghi: 'Xác nhận mục I, II · nhập các ô tiền · khoá phiếu' },
+    { id: 'expacct', khoa: 'r_expacct', av: 'KC', ghi: 'Xác nhận và ghi sổ mục IV, V, VI · nhà cung cấp · tất toán' },
     { id: 'fuel',   khoa: 'r_fuel',   av: 'KN', ghi: 'Kiểm và ghi sổ nhiên liệu' },
     { id: 'depot',  khoa: 'r_depot',  av: 'KH', ghi: 'Cấp dầu tại kho theo phiếu lĩnh' },
     { id: 'cash',   khoa: 'r_cash',   av: 'QU', ghi: 'Quỹ Viêng Chăn và tiền mặt lẻ Thà Bốc' },
@@ -47,10 +48,10 @@
       nhap: ['Khoản mục', 'Số lượng', 'Đơn giá'],
       chung_tu: ['Phiếu tạm ứng đi đường (QR) · PTU'], trang_thai: 'Mục IV: Đã nhập · chờ kiểm' },
 
-    { so: 5, vai: 'acct', tt: 'co', ten: 'Kiểm mục I, II, IV · nhập ô kế toán', muc: 'sec2', man: 'phieu-xuat-xe',
+    { so: 5, vai: 'acct', tt: 'co', ten: 'Kiểm mục I, II · nhập ô kế toán', muc: 'sec2', man: 'phieu-xuat-xe',
       mo_ta: 'Kế toán Viêng Chăn mở phiếu, kiểm những gì Bãi nhập, sửa nếu sai hoặc trả lại cho Bãi. Nhập các ô đã ẩn với Bãi.',
       nhap: ['Đơn giá USD/tấn theo hợp đồng', 'Xe liên kết: giá thuê, phí 2%, ngưỡng tấn', 'Đơn giá dầu, tiền tệ, mã TK ở mục III nếu kho nhiên liệu chưa điền'],
-      kiem: ['Mục I', 'Mục II (cân đầu Bãi nhập so với phiếu quặng)', 'Mục IV'],
+      kiem: ['Mục I', 'Mục II (cân đầu Bãi nhập so với phiếu quặng)'],
       chung_tu: [], trang_thai: 'I, II: Đã kiểm · IV: Đã kiểm' },
 
     { so: 6, vai: 'fuel', tt: 'co', ten: 'Kiểm và ghi sổ mục III', muc: 'sec3', man: 'phieu-xuat-xe',
@@ -63,8 +64,8 @@
       nhap: ['Số lít cấp thật', 'Lý do nếu lệch'],
       chung_tu: ['Phiếu xuất kho nhiên liệu · PXK_NL'], dinh_khoan: '625/371', trang_thai: 'Phiếu lĩnh: Đã cấp · Tồn kho trừ ngay' },
 
-    { so: 8, vai: 'acct', tt: 'co', ten: 'Ghi sổ mục IV', muc: 'sec4', man: 'phieu-xuat-xe',
-      mo_ta: 'Kế toán ghi sổ khoản đi đường sau khi kiểm. Ghi sổ xong quỹ mới được chi.',
+    { so: 8, vai: 'expacct', tt: 'co', ten: 'Kiểm và ghi sổ mục IV', muc: 'sec4', man: 'phieu-xuat-xe',
+      mo_ta: 'KT Chi phí VC kiểm rồi ghi sổ khoản đi đường. Ghi sổ xong quỹ mới được chi. (Bảng Nhiệm Vụ: người xác nhận và ghi sổ mục IV là KT Chi phí VC, không phải KT Thu/Chi.)',
       dinh_khoan: '625/402', chung_tu: [], trang_thai: 'Mục IV: Đã ghi sổ · chờ chi' },
 
     { so: 9, vai: 'cash', tt: 'co', ten: 'Chi tạm ứng theo QR', muc: 'sec4', man: 'cap-phat',
@@ -97,7 +98,7 @@
       nhap: ['Bấm Khoá phiếu, đọc cảnh báo, xác nhận', 'Mở khoá nếu cần sửa (chưa xuất hoá đơn)'],
       chung_tu: [], trang_thai: 'Phiếu: Đã khoá 🔒' },
 
-    { so: 15, vai: 'acct', tt: 'co', ten: 'Kiểm và ghi sổ mục V, VI', muc: 'sec5', man: 'phieu-xuat-xe',
+    { so: 15, vai: 'expacct', tt: 'co', ten: 'Kiểm và ghi sổ mục V, VI', muc: 'sec5', man: 'phieu-xuat-xe',
       mo_ta: 'Kế toán kiểm và ghi sổ sửa chữa và chi khác phát sinh trên đường.',
       kiem: ['Mục V', 'Mục VI'], dinh_khoan: '614/… · 625/402', chung_tu: [], trang_thai: 'V, VI: Đã ghi sổ · chờ chi' },
 
@@ -141,16 +142,16 @@
     { khoa: 'hd', ten: 'Hoá đơn · thu tiền' },
   ];
   const MT = {
-    //         yard    acct    fuel   depot   cash   driver  rev
-    sec1:  ['N',    'K',    'X',   '—',    'X',   'X',    'X'],
-    sec2:  ['N',    'K',    'X',   '—',    'X',   'X',    'X'],
-    sec2b: ['Ẩ',    'N K',  'X',   '—',    'X',   '—',    'X'],
-    sec3:  ['N',    'X',    'K G', 'X',    'X',   'X',    'X'],
-    sec3b: ['Ẩ',    'N K',  'K G', 'N',    'X',   '—',    'X'],
-    sec4:  ['N',    'K G',  '—',   '—',    'C',   'X',    'X'],
-    sec5:  ['N K',  'K G',  '—',   '—',    'C',   'N',    'X'],
-    sec6:  ['N K',  'K G',  '—',   '—',    'C',   'X',    'X'],
-    hd:    ['X',    'X',    '—',   '—',    'X',   '—',    'N K'],
+    //         yard    acct    expacct  fuel   depot   cash   driver  rev
+    sec1:  ['N',    'K',    'X',     'X',   '—',    'X',   'X',    'X'],
+    sec2:  ['N',    'K',    'X',     'X',   '—',    'X',   'X',    'X'],
+    sec2b: ['Ẩ',    'N K',  'X',     'X',   '—',    'X',   '—',    'X'],
+    sec3:  ['N',    'X',    'X',     'K G', 'X',    'X',   'X',    'X'],
+    sec3b: ['Ẩ',    'N K',  'X',     'K G', 'N',    'X',   '—',    'X'],
+    sec4:  ['N',    'X',    'K G',   '—',   '—',    'C',   'X',    'X'],
+    sec5:  ['N K',  'X',    'K G',   '—',   '—',    'C',   'N',    'X'],
+    sec6:  ['N K',  'X',    'K G',   '—',   '—',    'C',   'X',    'X'],
+    hd:    ['X',    'X',    'X',     '—',   '—',    'X',   '—',    'N K'],
   };
 
   /* ---------------------------------------------------------------- chứng từ */

@@ -69,6 +69,7 @@ def gieo(db):
     # ---- tài khoản theo vai (sheet ໜ້າວຽກ)
     users = [
         ("thabok", "ສົມໄຊ (Somchai)", "yard", "TB", None), ("ketoan", "ນາງ ພອນ (Phone)", "acct", "KT", None),
+        ("ketoancp", "ນາງ ວິໄລວັນ (Vilayvanh)", "expacct", "KC", None),
         ("khonl", "ທ້າວ ວິໄລ (Vilay)", "fuel", "KN", None), ("quyvc", "ນາງ ມະນີ (Manee)", "treasury", "QV", None),
         ("quytb", "ນາງ ດາວ (Dao)", "cash", "CE", None), ("doanhthu", "ທ້າວ ຄຳ (Kham)", "rev", "DT", None),
         # Thủ kho tại điểm đổ: mỗi người giữ MỘT kho, chỉ thấy phiếu lĩnh của kho mình.

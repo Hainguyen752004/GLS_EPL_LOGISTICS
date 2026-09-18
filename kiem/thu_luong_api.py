@@ -47,7 +47,7 @@ def phai(s, mong, buoc, g=None):
 
 
 def main():
-    for u in ("thabok", "ketoan", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
+    for u in ("thabok", "ketoan", "ketoancp", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
         dang_nhap(u)
     print("✓ đăng nhập 7 vai")
 
@@ -79,8 +79,12 @@ def main():
     s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 409, "Gửi kiểm mục V rỗng → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="ketoan"); phai(s, 403, "Kế toán thu/chi kiểm nhiên liệu → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="thabok"); phai(s, 403, "Bãi tự kiểm → bị từ chối", g)
-    for m in ("info", "trans", "travel"):
-        s, g = goi("/api/trips/%s/sections/%s/verify" % (P, m), {}, vai="ketoan"); phai(s, 200, "Kế toán Viêng Chăn kiểm mục %s" % m, g)
+    # Bảng Nhiệm Vụ của khách: KT Thu/Chi VC xác nhận I–II; KT Chi phí VC xác nhận IV–VI. Không chéo.
+    s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoan"); phai(s, 403, "KT Thu/Chi kiểm mục IV → bị từ chối (việc của KT Chi phí)", g)
+    s, g = goi("/api/trips/%s/sections/info/verify" % P, {}, vai="ketoancp"); phai(s, 403, "KT Chi phí kiểm mục I → bị từ chối (việc của KT Thu/Chi)", g)
+    for m in ("info", "trans"):
+        s, g = goi("/api/trips/%s/sections/%s/verify" % (P, m), {}, vai="ketoan"); phai(s, 200, "KT Thu/Chi Viêng Chăn kiểm mục %s" % m, g)
+    s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí VC kiểm mục IV", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="khonl"); phai(s, 200, "Kế toán kho kiểm mục III", g)
     s, g = goi("/api/trips/%s" % P, {"weight_origin": 43}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa mục II đã kiểm → bị khoá", g)
     s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "travel", "item_key": "x_food", "qty": 1, "unit_price": 1}]}, vai="thabok", method="PUT")
@@ -90,7 +94,8 @@ def main():
 
     # ---- 3. Ghi sổ & chi
     s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 409, "Chi khi chưa ghi sổ → sai bước", g)
-    s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoan"); phai(s, 200, "Kế toán ghi sổ mục IV", g)
+    s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoan"); phai(s, 403, "KT Thu/Chi ghi sổ mục IV → bị từ chối", g)
+    s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí VC ghi sổ mục IV", g)
     s, g = goi("/api/trips/%s/sections/fuel/book" % P, {}, vai="khonl"); phai(s, 200, "Kế toán kho ghi sổ mục III", g)
     s, g = goi("/api/trips/%s/sections/fuel/pay" % P, {}, vai="quytb"); phai(s, 403, "Tiền mặt lẻ chi nhiên liệu → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/pay" % P, {}, vai="quyvc"); phai(s, 200, "Quỹ Viêng Chăn chi mục III", g)
@@ -126,7 +131,7 @@ def main():
     phai(s, 409, "Bãi xoá dòng đã xuất kho khỏi phiếu → bị từ chối", g)
     # Sửa xe khai từ màn theo dõi đã đặt mục V ở "đã nhập" — kế toán kiểm thẳng, không cần Bãi gửi nữa
     s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
-    for hd, v in (("verify", "ketoan"), ("book", "ketoan"), ("pay", "quytb")):
+    for hd, v in (("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
     s, kho = goi("/api/fuel-moves", vai="khonl")
     assert any(r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out" for r in kho["rows"]), "ghi sổ mục III phải sinh dòng xuất kho nhiên liệu theo phiếu"

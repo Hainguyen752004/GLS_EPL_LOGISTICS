@@ -28,15 +28,17 @@ def bay_gio():
 
 
 # ---------------------------------------------------------------- người dùng & vai
-VAI = ("yard", "acct", "fuel", "depot", "treasury", "cash", "rev", "admin", "driver")
+VAI = ("yard", "acct", "expacct", "fuel", "depot", "treasury", "cash", "rev", "admin", "driver")
 #   driver    Tài xế — chỉ thấy phiếu của mình: bấm "Xuất phát" sau khi nhận tiền tạm ứng, "Báo hỏng" trên đường
 #   yard      Admin Thà Bốc — nhập liệu (ແອັດມິນ ທ່າບົກ)
-#   acct      Kế toán thu/chi Viêng Chăn — kiểm & ghi sổ chi phí
-#   fuel      Kế toán kho nhiên liệu — kiểm & ghi sổ mục nhiên liệu
+#   acct      KT Thu/Chi Viêng Chăn — xác nhận mục I (xe) và II (khách hàng, vận chuyển)
+#   expacct   KT Chi phí VC — xác nhận và ghi sổ mục IV, V, VI (đi lại, sửa chữa, khác)
+#   (Hai vai này là HAI NGƯỜI trong bảng Nhiệm Vụ của khách — không gộp.)
+#   fuel      KT kho xăng dầu VC — xác nhận & ghi sổ mục III, duyệt dầu tài xế đổ dọc đường
 #   depot     Thủ kho tại MỘT điểm đổ nhiên liệu — chỉ thấy phiếu lĩnh của kho mình, cấp dầu và lập phiếu xuất kho
-#   treasury  Quỹ Viêng Chăn — chi tiền nhiên liệu
-#   cash      Quỹ tiền mặt lẻ Thà Bốc — chi tiền đi đường / sửa chữa / khác
-#   rev       Kế toán doanh thu — xuất hoá đơn, thu tiền khách
+#   treasury  Thủ quỹ VC — thanh toán mục III
+#   cash      Quỹ tiền mặt cảng cạn — thanh toán mục IV, V, VI
+#   rev       KT Doanh thu VC — lập và ghi sổ hoá đơn thu phí vận tải
 #   admin     Quản trị
 
 

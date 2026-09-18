@@ -46,7 +46,7 @@ def bao(nhan, ma, mong=200, chi_tiet=""):
         raise SystemExit("DUNG: %s tra %s, mong %s" % (nhan, ma, mong))
 
 
-tk = {u: vao(u) for u in ("admin", "thabok", "ketoan", "khotb", "khovc", "quytb", "tx01")}
+tk = {u: vao(u) for u in ("admin", "thabok", "ketoan", "ketoancp", "khonl", "khotb", "khovc", "quytb", "tx01")}
 print("Đăng nhập %d vai OK" % len(tk))
 
 _, ds = goi("/api/trips", tk=tk["admin"])
@@ -141,7 +141,9 @@ if px:
     _, ct2 = goi("/api/trips/" + px["id"], tk=tk["admin"])
     ev = [e for e in ct2["events"] if e["kind"] == "refuel" and e["status"] == "reported"][-1]
     ma, r = goi("/api/trips/%s/events/%s/duyet" % (px["id"], ev["id"]), {}, tk["ketoan"])
-    bao("Kế toán duyệt → thành dòng mục III nguồn mua", ma, 200)
+    bao("KT Thu/Chi duyệt dầu dọc đường → từ chối (việc của KT kho xăng dầu)", ma, 403)
+    ma, r = goi("/api/trips/%s/events/%s/duyet" % (px["id"], ev["id"]), {}, tk["khonl"])
+    bao("KT kho xăng dầu duyệt → thành dòng mục III nguồn mua", ma, 200)
     d3 = [d for d in r["expenses"] if d["section"] == "fuel" and d["source"] == "mua" and d["place_id"] == vn["id"]]
     print("      dòng mới: %d lít · %s · %s" % (d3[-1]["qty"], d3[-1]["currency"], d3[-1]["acct_code"]))
     ma, r = goi("/api/trips/%s/bao-nhien-lieu" % px["id"],
@@ -150,7 +152,7 @@ if px:
 
 # 14. tất toán theo tháng
 ky = (p.get("out_date") or p.get("doc_date"))[:7]
-ma, tt = goi("/api/tat-toan?ky=" + ky, tk=tk["ketoan"])
+ma, tt = goi("/api/tat-toan?ky=" + ky, tk=tk["ketoancp"])
 bao("Bảng tất toán tháng %s" % ky, ma, 200, "%d tài xế" % len(tt["dong"]))
 for d in tt["dong"]:
     print("      %-22s %d phiếu · ứng %10s · chi %10s · chênh %10s"
@@ -159,10 +161,12 @@ for d in tt["dong"]:
 if tt["dong"]:
     mot = tt["dong"][0]
     ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoan"])
-    bao("Kế toán chốt tất toán", ma, 200, "đã tất toán = %s" % r["da_tat_toan"])
-    ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoan"])
+    bao("KT Thu/Chi chốt tất toán → từ chối (việc của KT Chi phí)", ma, 403)
+    ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoancp"])
+    bao("KT Chi phí VC chốt tất toán", ma, 200, "đã tất toán = %s" % r["da_tat_toan"])
+    ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoancp"])
     bao("Chốt lần hai → từ chối", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
-    ma, r = goi("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), tk=tk["ketoan"], cach="DELETE")
+    ma, r = goi("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), tk=tk["ketoancp"], cach="DELETE")
     bao("Kế toán bỏ chốt để sửa lại", ma, 200)
 
 # 15. sổ chứng từ — mỗi bước ở trên phải để lại đúng tờ của nó

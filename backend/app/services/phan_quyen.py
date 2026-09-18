@@ -4,11 +4,12 @@
 Mỗi mục I–VI của phiếu đi qua một chuỗi trạng thái, mỗi bước do MỘT vai làm:
 
     Admin Thà Bốc NHẬP  →  Kế toán KIỂM  →  Kế toán GHI SỔ  →  Quỹ CHI
-      (yard)              (acct/fuel)       (acct/fuel)        (treasury/cash)
+      (yard)          (acct/expacct/fuel)  (expacct/fuel)     (treasury/cash)
 
-  · Mục III nhiên liệu đi qua kế toán KHO NHIÊN LIỆU (fuel) và Quỹ Viêng Chăn (treasury).
-  · Mục IV–VI đi qua kế toán THU CHI (acct) và Quỹ tiền mặt lẻ Thà Bốc (cash).
-  · Mục I–II chỉ tới "đã kiểm" — không có tiền để chi.
+  Đúng bảng "Nhiệm Vụ" trong Excel của khách, KHÔNG gộp vai:
+  · Mục I–II   : KT Thu/Chi Viêng Chăn (acct) xác nhận — chỉ tới "đã kiểm", không có tiền để chi.
+  · Mục III    : KT kho xăng dầu VC (fuel) xác nhận + ghi sổ; Thủ quỹ VC (treasury) chi.
+  · Mục IV–VI  : KT Chi phí VC (expacct) xác nhận + ghi sổ; Quỹ tiền mặt cảng cạn (cash) chi.
   · Kế toán doanh thu (rev) xuất hoá đơn và ghi thu tiền ở mức PHIẾU, không đụng từng mục.
   · Admin làm được mọi việc, kể cả mở khoá mục đã duyệt.
 
@@ -21,7 +22,10 @@ from models import CHUOI, MUC
 
 QUYEN = {
     "yard":     {"edit": set(MUC), "verify": set(), "book": set(), "pay": set()},
-    "acct":     {"edit": set(), "verify": {"info", "trans", "travel", "repair", "other"},
+    # Bảng "Nhiệm Vụ" của khách tách hai người: KT Thu/Chi VC xác nhận mục I–II (không có tiền để
+    # ghi sổ); KT Chi phí VC xác nhận và ghi sổ mục IV–VI. Người kiểm I–II không được đụng IV–VI.
+    "acct":     {"edit": set(), "verify": {"info", "trans"}, "book": set(), "pay": set()},
+    "expacct":  {"edit": set(), "verify": {"travel", "repair", "other"},
                  "book": {"travel", "repair", "other"}, "pay": set()},
     "fuel":     {"edit": set(), "verify": {"fuel"}, "book": {"fuel"}, "pay": set()},
     # Thủ kho tại điểm đổ: không duyệt mục nào, việc của họ là CẤP DẦU theo phiếu lĩnh.

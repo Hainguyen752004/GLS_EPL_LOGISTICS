@@ -33,7 +33,7 @@ from services.tinh_toan import ty_gia
 from services import chung_tu as CT
 
 router = APIRouter()
-CHOT = can_vai("acct", "cash", "treasury")
+CHOT = can_vai("expacct", "cash", "treasury")
 
 
 def _ky_hop_le(ky):
@@ -153,7 +153,7 @@ def chot_ky(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(CHO
 
 
 @router.delete("/api/tat-toan/{driver_id}")
-def bo_chot(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=Depends(can_vai("acct"))):
+def bo_chot(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=Depends(can_vai("expacct"))):
     """Bỏ chốt để sửa lại. Cố ý hẹp quyền: chỉ kế toán và quản trị."""
     x = (db.query(DriverSettlement)
          .filter(DriverSettlement.driver_id == driver_id, DriverSettlement.period == _ky_hop_le(ky)).first())

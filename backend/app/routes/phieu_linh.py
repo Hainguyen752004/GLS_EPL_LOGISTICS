@@ -154,7 +154,7 @@ def ds_phieu_linh_cua_phieu(tid: str, request: Request, db: Session = Depends(ge
 
 @router.post("/api/trips/{tid}/vouchers")
 def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session = Depends(get_db),
-                   user=Depends(can_vai("yard", "acct", "fuel", "cash", "treasury"))):
+                   user=Depends(can_vai("yard", "acct", "expacct", "fuel", "cash", "treasury"))):
     """Lập (hoặc lấy lại) phiếu lĩnh của một chuyến.
 
     kind='fuel'    → mỗi ĐIỂM ĐỔ của kho EPL một tờ, số lít là tổng các dòng dầu lĩnh ở kho đó.

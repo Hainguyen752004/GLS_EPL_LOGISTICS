@@ -37,7 +37,7 @@ def ds(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.post("/api/suppliers")
-def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("acct"))):
+def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("expacct"))):
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhà cung cấp phải có tên."})
     s = Supplier(name=data["name"].strip(), item_key=data.get("item_key"), acct_code=data.get("acct_code"),
@@ -47,7 +47,7 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_va
 
 
 @router.put("/api/suppliers/{sid}")
-def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("acct"))):
+def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("expacct"))):
     s = db.get(Supplier, sid)
     if not s:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
@@ -66,7 +66,7 @@ def cac_lan_tra(sid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_ta
 
 
 @router.post("/api/suppliers/{sid}/payments")
-def tra(sid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("acct", "cash", "treasury"))):
+def tra(sid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("expacct", "cash", "treasury"))):
     s = db.get(Supplier, sid)
     if not s:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})

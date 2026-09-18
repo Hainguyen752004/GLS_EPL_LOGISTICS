@@ -320,7 +320,7 @@
   function veTabDienBien() {
     const diem = P.route_stops || [];
     const ev = (P.events || []).slice().reverse();
-    const duyetDuoc = laBai() || AUTH.la('acct', 'fuel');
+    const duyetDuoc = laBai() || AUTH.la('fuel');   // dầu dọc đường là mục III → KT kho xăng dầu
     const than = ev.length ? `<table><thead><tr>
         <th style="width:112px">${NN.h('c_date')}</th><th style="width:132px">${NN.h('type')}</th>
         <th>${NN.h('note')}</th><th style="width:120px">${NN.h('resp')}</th><th class="no-print" style="width:118px"></th></tr></thead>

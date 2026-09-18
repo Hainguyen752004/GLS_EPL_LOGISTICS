@@ -112,11 +112,23 @@ class PhanQuyen(unittest.TestCase):
 
     def test_ke_toan_khong_sua_noi_dung(self):
         self.assertFalse(duoc_sua_muc("acct", "travel", "wait"))
+        self.assertFalse(duoc_sua_muc("expacct", "travel", "wait"))
+
+    def test_hai_ke_toan_khong_cheo_nhau(self):
+        """Bảng Nhiệm Vụ của khách: KT Thu/Chi VC xác nhận I–II, KT Chi phí VC xác nhận + ghi sổ IV–VI."""
+        self.assertEqual(chuyen_muc("acct", "info", "entered", "verify"), "verified")
+        self.assertEqual(chuyen_muc("acct", "trans", "entered", "verify"), "verified")
+        with self.assertRaises(HTTPException) as c:
+            chuyen_muc("acct", "travel", "entered", "verify")       # KT Thu/Chi không kiểm mục IV
+        self.assertEqual(c.exception.status_code, 403)
+        with self.assertRaises(HTTPException) as c:
+            chuyen_muc("expacct", "trans", "entered", "verify")     # KT Chi phí không kiểm mục II
+        self.assertEqual(c.exception.status_code, 403)
 
     def test_chuoi_duyet_muc_chi(self):
         self.assertEqual(chuyen_muc("yard", "travel", "wait", "send"), "entered")
-        self.assertEqual(chuyen_muc("acct", "travel", "entered", "verify"), "verified")
-        self.assertEqual(chuyen_muc("acct", "travel", "verified", "book"), "booked")
+        self.assertEqual(chuyen_muc("expacct", "travel", "entered", "verify"), "verified")
+        self.assertEqual(chuyen_muc("expacct", "travel", "verified", "book"), "booked")
         self.assertEqual(chuyen_muc("cash", "travel", "booked", "pay"), "paid")
 
     def test_nhien_lieu_di_qua_kho_va_quy_vieng_chan(self):
@@ -131,14 +143,14 @@ class PhanQuyen(unittest.TestCase):
 
     def test_sai_buoc_bat_409(self):
         with self.assertRaises(HTTPException) as c:
-            chuyen_muc("acct", "travel", "wait", "verify")          # chưa gửi mà đã kiểm
+            chuyen_muc("expacct", "travel", "wait", "verify")       # chưa gửi mà đã kiểm
         self.assertEqual(c.exception.status_code, 409)
         with self.assertRaises(HTTPException) as c:
             chuyen_muc("acct", "info", "verified", "book")          # mục I không có bước ghi sổ
         self.assertEqual(c.exception.status_code, 403)
 
     def test_tra_lai_va_mo_khoa(self):
-        self.assertEqual(chuyen_muc("acct", "travel", "verified", "return"), "wait")
+        self.assertEqual(chuyen_muc("expacct", "travel", "verified", "return"), "wait")
         self.assertEqual(chuyen_muc("admin", "travel", "paid", "unlock"), "entered")
         with self.assertRaises(HTTPException):
             chuyen_muc("yard", "travel", "paid", "unlock")

@@ -15,7 +15,8 @@
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
     yard: { edit: MUC, verify: [], book: [], pay: [] },
-    acct: { edit: [], verify: ['info', 'trans', 'travel', 'repair', 'other'], book: ['travel', 'repair', 'other'], pay: [] },
+    acct: { edit: [], verify: ['info', 'trans'], book: [], pay: [] },
+    expacct: { edit: [], verify: ['travel', 'repair', 'other'], book: ['travel', 'repair', 'other'], pay: [] },
     fuel: { edit: [], verify: ['fuel'], book: ['fuel'], pay: [] },
     treasury: { edit: [], verify: [], book: [], pay: ['fuel'] },
     cash: { edit: [], verify: [], book: [], pay: ['travel', 'repair', 'other'] },
@@ -151,7 +152,7 @@
     }));
     veSo();
   }
-  const VAI_SAU_KHOA = ['acct', 'rev', 'treasury', 'cash', 'fuel', 'admin'];
+  const VAI_SAU_KHOA = ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'admin'];
   const biKhoa = () => !moi && P.locked && !VAI_SAU_KHOA.includes(vai());
   function suaDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
   function veVaiVaTrangThai() {

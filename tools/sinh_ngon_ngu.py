@@ -134,7 +134,6 @@ KHOA_MOI = {
  'title_xe':         ('Xe<span class="sub">Số xe · biển đầu kéo · biển rơ-moóc · xe liên kết</span>', 'ພາຫະນະ<span class="sub">ເບີລົດ · ທະບຽນຫົວ · ທະບຽນຫາງ · ລົດຮ່ວມ</span>', 'Vehicles<span class="sub">Truck no. · tractor plate · trailer plate · joint trucks</span>'),
  'title_tai_xe':     ('Tài xế<span class="sub">Danh mục tài xế</span>', 'ໂຊເຟີ<span class="sub">ບັນຊີໂຊເຟີ</span>', 'Drivers<span class="sub">Driver list</span>'),
  'title_tai_khoan':  ('Tài khoản<span class="sub">Người dùng và vai trò</span>', 'ບັນຊີຜູ້ໃຊ້<span class="sub">ຜູ້ໃຊ້ ແລະ ໜ້າທີ່</span>', 'User accounts<span class="sub">Users and roles</span>'),
- 'r_acct':  None, 'r_fuel': None, 'r_cash': None, 'r_rev': None,      # alias, gán bên dưới
  'show_pw':  ('Hiện mật khẩu', 'ສະແດງລະຫັດຜ່ານ', 'Show password'),
  'hide_pw':  ('Ẩn mật khẩu', 'ເຊື່ອງລະຫັດຜ່ານ', 'Hide password'),
  # ---- v4: phiếu lĩnh có mã QR · điểm đổ nhiên liệu · cấp phát · tất toán tài xế
@@ -552,6 +551,29 @@ KHOA_MOI = {
  'a_attach':      ('Đính kèm tệp', 'ຄັດຕິດໄຟລ໌', 'Attached a file'),
  'a_detach':      ('Xoá tệp đính kèm', 'ລຶບໄຟລ໌ຄັດຕິດ', 'Removed an attachment'),
  'a_pay_owner':   ('Chi trả chủ xe liên kết', 'ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ', 'Paid the truck owner'),
+ # ---- v11: vai theo ĐÚNG bảng "Nhiệm Vụ" trong Excel của khách (anh chốt: "phải theo role của họ").
+ #      KT Thu/Chi VC và KT Chi phí VC là hai người, hai vai. Tiếng Lào ráp từ nhãn bản mẫu đã có.
+ 'r_acct':      ('KT Thu/Chi Viêng Chăn', 'ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ', 'Vientiane receipts & payments accountant'),
+ 'r_expacct':   ('KT Chi phí VC', 'ບັນຊີລາຍຈ່າຍ ວຽງຈັນ', 'Vientiane cost accountant'),
+ 'r_fuel':      ('KT kho xăng dầu VC', 'ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ', 'Vientiane fuel store accountant'),
+ 'r_treasury':  ('Thủ quỹ VC', 'ຄັງເງິນ ວຽງຈັນ', 'Vientiane treasurer'),
+ 'r_cash':      ('Quỹ tiền mặt cảng cạn', 'ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ', 'Dry-port petty cash'),
+ 'r_rev':       ('KT Doanh thu VC', 'ບັນຊີລາຍຮັບ ວຽງຈັນ', 'Vientiane revenue accountant'),
+ 'hint_acct':   ('Vai trò <b>KT Thu/Chi Viêng Chăn</b>: xác nhận mục I và II. Không sửa số Bãi đã nhập; mục IV–VI thuộc KT Chi phí VC.',
+                 '<b>ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ</b>: ຢັ້ງຢືນໜ້າ I ແລະ II. ບໍ່ແກ້ຕັວເລກທີ່ສະໜາມລົງ; ໜ້າ IV–VI ແມ່ນຂອງບັນຊີລາຍຈ່າຍ.',
+                 'Receipts & payments accountant: verify sections I and II. Yard figures cannot be edited; IV–VI belong to the cost accountant.'),
+ 'hint_expacct': ('Vai trò <b>KT Chi phí VC</b>: kiểm tra và ghi sổ mục IV, V, VI; theo dõi nhà cung cấp; chốt tất toán tài xế.',
+                 '<b>ບັນຊີລາຍຈ່າຍ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ IV, V, VI; ຕິດຕາມຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.',
+                 'Cost accountant: verify and book sections IV, V, VI; suppliers; driver settlement.'),
+ 'hint_fuel':   ('Vai trò <b>KT kho xăng dầu VC</b>: kiểm và ghi sổ mục III, duyệt dầu tài xế đổ dọc đường.',
+                 '<b>ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ III, ອະນຸມັດນໍ້າມັນທີ່ໂຊເຟີເຕີມລະຫວ່າງທາງ.',
+                 'Fuel store accountant: verify and book section III, approve roadside refuels.'),
+ 'hint_treasury': ('Vai trò <b>Thủ quỹ VC</b>: thanh toán mục III sau khi KT kho xăng dầu đã ghi sổ.',
+                 '<b>ຄັງເງິນ ວຽງຈັນ</b>: ຈ່າຍໜ້າ III ຫຼັງບັນຊີສາງນໍ້າມັນບັນທຶກແລ້ວ.',
+                 'Treasurer: pay section III after the fuel accountant has booked it.'),
+ 'hint_cash':   ('Vai trò <b>Quỹ tiền mặt cảng cạn</b>: thanh toán mục IV, V, VI đã ghi sổ; đánh dấu "Đã chi".',
+                 '<b>ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ</b>: ຈ່າຍໜ້າ IV, V, VI ທີ່ບັນທຶກແລ້ວ; ໝາຍ "ຈ່າຍແລ້ວ".',
+                 'Dry-port petty cash: pay booked sections IV, V, VI; mark "Paid".'),
  # ---- v7: anh đổi tên hai vai. `yard` không gọi là "Bãi Thà Bốc" nữa mà là ADMIN THÀ BỐC (người
  # quản lý tại bãi, không phải cái bãi); `admin` gọi là SẾP cho đúng người dùng thật ở EPL.
  # Ghi đè ở đây chứ không sửa tu_dien_mau_vi_lo.json — tệp đó chép nguyên từ bản mẫu bên Lào.
@@ -643,7 +665,7 @@ KHOA_MOI = {
  'td_paid_part':   ('Thu một phần', 'ຮັບບາງສ່ວນ', 'Partly collected'),
 }
 # alias vai — cùng chữ với khoá đã có
-ALIAS = {'r_acct': 'r_acct_vc', 'r_fuel': 'r_fuel_acct', 'r_cash': 'r_petty', 'r_rev': 'r_rev_acct'}
+ALIAS = {}   # nhãn vai nay ghi thẳng trong KHOA_MOI theo đúng chữ bảng Nhiệm Vụ của khách
 
 thieu = [k for k in T if k not in EN]
 assert not thieu, 'thieu EN cho: %s' % thieu

@@ -3,7 +3,7 @@
   const { API, NN, esc, so, tag, AUTH } = EPL;
   let root, tab = 'chi', DS = [], P = null, ACC = {}, LINH = [], vChon = null;
   let SO_LOAI = [], soLoaiChon = '';           // sổ chứng từ: danh mục loại · loại đang lọc
-  const XEM_SO = ['acct', 'rev', 'treasury', 'cash', 'fuel', 'depot', 'admin'];
+  const XEM_SO = ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'depot', 'admin'];
   const q = (s) => root.querySelector(s);
 
   function tenTK(ma) {
@@ -111,7 +111,7 @@
     try { r = await API.get('/api/chung-tu?' + th.toString()); } catch (e) { q('#ct-so-than').innerHTML = `<tr><td colspan="10" class="empty neg">${esc(e.message)}</td></tr>`; return; }
     veSoTong(r.tong);
     const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
-    const suaDuoc = AUTH.la('acct', 'rev', 'treasury', 'cash');
+    const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');
     q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day ? 'da-day' : ''}" data-id="${c.id}">
       <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
       <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>

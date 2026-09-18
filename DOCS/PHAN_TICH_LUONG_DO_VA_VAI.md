@@ -37,10 +37,10 @@ Nguồn đối chiếu:
    báo giá riêng — họ đang ở "năm 2016", báo giá là thứ họ không có trong Excel.
 
 4. **Bảng "Nhiệm Vụ" trong Excel là bản phân vai chính thức của họ.** Web đang khớp 80 %, lệch ở
-   ba chỗ: (a) họ tách *KT Thu/Chi VC* (kiểm I, II) khỏi *KT Chi phí VC* (kiểm + ghi sổ IV–VI), web
-   gộp thành một vai `acct`; (b) họ có *Thủ quỹ VC* trả mục III và *Quỹ tiền mặt cảng cạn* trả IV–VI,
-   web đã có (`treasury`, `cash`); (c) quy trình chữ còn *Kho phụ tùng Thabok* và *Tổ sửa chữa Thabok*,
-   web chưa có vai.
+   một chỗ còn hở: quy trình chữ có *Kho phụ tùng Thabok* và *Tổ sửa chữa Thabok*, web chưa có vai.
+   **Anh chốt (18/09): vai của họ là chuẩn, web phải theo đúng bảng đó.** Em đã tách *KT Thu/Chi VC*
+   (`acct`, kiểm I–II) khỏi *KT Chi phí VC* (`expacct`, kiểm + ghi sổ IV–VI, nhà cung cấp, tất toán)
+   và đổi nhãn mọi vai về đúng chữ của họ.
 
 5. **Hướng giao diện anh nêu là đúng và nên làm ngay sau khi hỏi xong:** thanh tiến trình trên đầu,
    **mỗi vai vào chỉ thấy tab của mình**, ô không thuộc thẩm quyền thì ẩn hoặc chỉ đọc, **tab cuối là
@@ -53,8 +53,8 @@ Nguồn đối chiếu:
 | Tên trong Excel "Nhiệm Vụ" của họ | Tên trong quy trình chữ | Vai trên web | Việc |
 |---|---|---|---|
 | Bãi cảng cạn | Văn phòng hiện trường (Thabok) | `yard` — **Admin Thà Bốc** | Nhập cả sáu mục I–VI, lập phiếu, bấm xe đi / xe tới |
-| KT Thu/Chi Viêng Chăn | — | `acct` — Kế toán Viêng Chăn | Xác nhận mục I, II |
-| KT Chi phí VC | Kế toán chi phí – công nợ phải trả | `acct` (gộp) | Xác nhận + ghi sổ IV, V, VI |
+| KT Thu/Chi Viêng Chăn | — | `acct` — KT Thu/Chi Viêng Chăn | Xác nhận mục I, II; khoá phiếu khi xe về |
+| KT Chi phí VC | Kế toán chi phí – công nợ phải trả | `expacct` — KT Chi phí VC | Xác nhận + ghi sổ IV, V, VI; nhà cung cấp; tất toán tài xế |
 | KT kho xăng dầu VC | Kho nhiên liệu | `fuel` — Kế toán kho nhiên liệu | Xác nhận + ghi sổ III |
 | Thủ quỹ VC | — | `treasury` — Quỹ Viêng Chăn | Chi tiền mục III |
 | Quỹ tiền mặt cảng cạn | — | `cash` — Tiền mặt lẻ Thà Bốc | Chi tiền mục IV, V, VI |
@@ -65,9 +65,9 @@ Nguồn đối chiếu:
 | — | — | `driver` — Tài xế | Xem phiếu của mình, xuất phát, báo hỏng, khai đổ dầu, chia sẻ GPS (web thêm) |
 | — | — | `admin` — Sếp | Xem và sửa tất cả |
 
-**Việc phải hỏi (V1):** *KT Thu/Chi VC* và *KT Chi phí VC* là hai người hay một người? Nếu hai người
-thì web tách `acct` thành hai vai. *Kho phụ tùng Thabok* và *Tổ sửa chữa Thabok* có phải người
-riêng không, hay cũng là Bãi cảng cạn?
+**Đã chốt, không hỏi nữa:** *KT Thu/Chi VC* và *KT Chi phí VC* là hai vai riêng đúng như bảng của họ
+(anh chốt "phải theo role của họ"). **Việc phải hỏi (V1):** *Kho phụ tùng Thabok* và *Tổ sửa chữa
+Thabok* có phải người riêng không, hay cũng là Bãi cảng cạn?
 
 ---
 
@@ -220,7 +220,7 @@ rồi mới xuất hoá đơn `HD` và thu `PT` → khoá rồi mới trả ch�
 | # | Điều | Web hiện tại | Đề nghị |
 |---|---|---|---|
 | K1 | Phiếu = một vòng hay một chặng | Một phiếu một tuyến nhiều chặng (phương án A) | Hỏi V1 trước; nếu B thì thêm loại phiếu *gom hàng* không có mục II tiền |
-| K2 | Vai kế toán | Một vai `acct` kiểm I–II và kiểm + ghi sổ IV–VI | Nếu họ là hai người → tách `acct_thuchi` và `acct_chiphi` |
+| K2 | Vai kế toán | ~~Một vai `acct` gộp~~ → **đã tách** `acct` (KT Thu/Chi, I–II) và `expacct` (KT Chi phí, IV–VI) | Xong 18/09 theo lời anh |
 | K3 | Giá cước | Kế toán gõ tay đơn giá từng phiếu | Bảng giá khách × tuyến trong Danh mục, tự điền, kế toán chỉ sửa khi khác hợp đồng |
 | K4 | Thẻ cao tốc | Chi như tiền mặt | Nếu V10 xác nhận: thêm "ví thẻ cao tốc", phiếu nạp thẻ, mỗi phiếu trừ thẻ |
 | K5 | Vai sửa chữa | Bãi duyệt báo hỏng | Nếu V11 xác nhận: thêm vai *Tổ sửa chữa* nhận báo hỏng và chọn trong / ngoài |

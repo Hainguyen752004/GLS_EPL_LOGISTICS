@@ -8,7 +8,7 @@
   const { API, NN, esc, so, AUTH } = EPL;
   let root, BANG = null, CHON = null;
   const q = (s) => root.querySelector(s);
-  const chotDuoc = () => AUTH.la('acct', 'cash', 'treasury');
+  const chotDuoc = () => AUTH.la('expacct', 'cash', 'treasury');
 
   function veTom() {
     if (!BANG) return;

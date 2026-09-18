@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 867 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 869 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -643,9 +643,9 @@ window.EPL_TU_DIEN = {
   "en": "I/O accountant (Vientiane)"
  },
  "r_treasury": {
-  "vi": "Quỹ Viêng Chăn",
+  "vi": "Thủ quỹ VC",
   "lo": "ຄັງເງິນ ວຽງຈັນ",
-  "en": "Vientiane treasury"
+  "en": "Vientiane treasurer"
  },
  "r_petty": {
   "vi": "Tiền mặt lẻ TC Thà Bốc",
@@ -1478,19 +1478,19 @@ window.EPL_TU_DIEN = {
   "en": "You are entering as Thabok admin: sections I–VI editable. Accounting and treasury view only."
  },
  "hint_acct": {
-  "vi": "Vai trò <b>Kế toán Viêng Chăn</b>: kiểm tra xác nhận mục I, II, IV, V, VI và ghi sổ. Không sửa số bãi đã nhập.",
-  "lo": "<b>ບັນຊີ ວຽງຈັນ</b>: ກວດຢັ້ງຢືນ I, II, IV, V, VI ແລະ ບັນທຶກບັນຊີ. ບໍ່ແກ້ຕັວເລກທີ່ສະໜາມລົງ.",
-  "en": "Vientiane accountant: verify sections I, II, IV, V, VI and book them. Yard figures cannot be edited."
+  "vi": "Vai trò <b>KT Thu/Chi Viêng Chăn</b>: xác nhận mục I và II. Không sửa số Bãi đã nhập; mục IV–VI thuộc KT Chi phí VC.",
+  "lo": "<b>ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ</b>: ຢັ້ງຢືນໜ້າ I ແລະ II. ບໍ່ແກ້ຕັວເລກທີ່ສະໜາມລົງ; ໜ້າ IV–VI ແມ່ນຂອງບັນຊີລາຍຈ່າຍ.",
+  "en": "Receipts & payments accountant: verify sections I and II. Yard figures cannot be edited; IV–VI belong to the cost accountant."
  },
  "hint_fuel": {
-  "vi": "Vai trò <b>Kế toán kho nhiên liệu</b>: chỉ làm việc với mục III (kiểm & ghi sổ nhiên liệu).",
-  "lo": "<b>ບັນຊີສາງນໍ້າມັນ</b>: ເຮັດວຽກສະເພາະໜ້າ III (ກວດ ແລະ ບັນທຶກນໍ້າມັນ).",
-  "en": "Fuel store accountant: works only on section III (verify & book fuel)."
+  "vi": "Vai trò <b>KT kho xăng dầu VC</b>: kiểm và ghi sổ mục III, duyệt dầu tài xế đổ dọc đường.",
+  "lo": "<b>ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ III, ອະນຸມັດນໍ້າມັນທີ່ໂຊເຟີເຕີມລະຫວ່າງທາງ.",
+  "en": "Fuel store accountant: verify and book section III, approve roadside refuels."
  },
  "hint_cash": {
-  "vi": "Vai trò <b>Quỹ / tiền mặt lẻ</b>: chi tiền theo mục IV, V, VI đã được kiểm; đánh dấu \"Đã chi\".",
-  "lo": "<b>ຄັງເງິນ / ເງິນສົດຍ່ອຍ</b>: ຈ່າຽຕາມ IV, V, VI ທີ່ກວດແລ້ວ; ໝາຍ \"ຈ່າຽແລ້ວ\".",
-  "en": "Treasury / petty cash: pay verified sections IV, V, VI; mark \"Paid\"."
+  "vi": "Vai trò <b>Quỹ tiền mặt cảng cạn</b>: thanh toán mục IV, V, VI đã ghi sổ; đánh dấu \"Đã chi\".",
+  "lo": "<b>ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ</b>: ຈ່າຍໜ້າ IV, V, VI ທີ່ບັນທຶກແລ້ວ; ໝາຍ \"ຈ່າຍແລ້ວ\".",
+  "en": "Dry-port petty cash: pay booked sections IV, V, VI; mark \"Paid\"."
  },
  "hint_rev": {
   "vi": "Vai trò <b>Kế toán doanh thu</b>: lập hóa đơn thu tiền từ mục II; các mục chi chỉ xem.",
@@ -1733,9 +1733,9 @@ window.EPL_TU_DIEN = {
   "en": "Vientiane treasury"
  },
  "hint_treasury": {
-  "vi": "Vai trò <b>Quỹ Viêng Chăn</b>: xác nhận đã chi tiền nhiên liệu (mục III) sau khi kế toán kho đã ghi sổ.",
-  "lo": "<b>ຄັງເງິນ ວຽງຈັນ</b>: ຢືນຢັນຈ່າຽເງິນນໍ້ານັນ (III) ຫຼັງບັນຊີສາງບັນທຶກແລ້ວ.",
-  "en": "Vientiane treasury: confirm fuel payment (section III) after the fuel accountant has booked it."
+  "vi": "Vai trò <b>Thủ quỹ VC</b>: thanh toán mục III sau khi KT kho xăng dầu đã ghi sổ.",
+  "lo": "<b>ຄັງເງິນ ວຽງຈັນ</b>: ຈ່າຍໜ້າ III ຫຼັງບັນຊີສາງນໍ້າມັນບັນທຶກແລ້ວ.",
+  "en": "Treasurer: pay section III after the fuel accountant has booked it."
  },
  "stt_booked": {
   "vi": "Đã ghi sổ · chờ chi",
@@ -3942,6 +3942,36 @@ window.EPL_TU_DIEN = {
   "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
   "en": "Paid the truck owner"
  },
+ "r_acct": {
+  "vi": "KT Thu/Chi Viêng Chăn",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ",
+  "en": "Vientiane receipts & payments accountant"
+ },
+ "r_expacct": {
+  "vi": "KT Chi phí VC",
+  "lo": "ບັນຊີລາຍຈ່າຍ ວຽງຈັນ",
+  "en": "Vientiane cost accountant"
+ },
+ "r_fuel": {
+  "vi": "KT kho xăng dầu VC",
+  "lo": "ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ",
+  "en": "Vientiane fuel store accountant"
+ },
+ "r_cash": {
+  "vi": "Quỹ tiền mặt cảng cạn",
+  "lo": "ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ",
+  "en": "Dry-port petty cash"
+ },
+ "r_rev": {
+  "vi": "KT Doanh thu VC",
+  "lo": "ບັນຊີລາຍຮັບ ວຽງຈັນ",
+  "en": "Vientiane revenue accountant"
+ },
+ "hint_expacct": {
+  "vi": "Vai trò <b>KT Chi phí VC</b>: kiểm tra và ghi sổ mục IV, V, VI; theo dõi nhà cung cấp; chốt tất toán tài xế.",
+  "lo": "<b>ບັນຊີລາຍຈ່າຍ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ IV, V, VI; ຕິດຕາມຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.",
+  "en": "Cost accountant: verify and book sections IV, V, VI; suppliers; driver settlement."
+ },
  "brand_short": {
   "vi": "Quản lý vận tải EPL",
   "lo": "ຈັດການຂົນສົ່ງ EPL",
@@ -4266,26 +4296,6 @@ window.EPL_TU_DIEN = {
   "vi": "Thu một phần",
   "lo": "ຮັບບາງສ່ວນ",
   "en": "Partly collected"
- },
- "r_acct": {
-  "vi": "Kế toán Viêng Chăn (kiểm tra)",
-  "lo": "ບັນຊີ ວຽງຈັນ (ກວດ)",
-  "en": "Vientiane accountant (verification)"
- },
- "r_fuel": {
-  "vi": "Kế toán kho NL VC",
-  "lo": "ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ",
-  "en": "Fuel store accountant"
- },
- "r_cash": {
-  "vi": "Tiền mặt lẻ TC Thà Bốc",
-  "lo": "ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ",
-  "en": "Thabok petty cash"
- },
- "r_rev": {
-  "vi": "Kế toán thu VC",
-  "lo": "ບັນຊີລາຍຮັບ ວຽງຈັນ",
-  "en": "Revenue accountant"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

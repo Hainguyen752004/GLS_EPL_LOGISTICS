@@ -115,9 +115,9 @@ Bên em hiểu luồng thực tế là: **xe từ bãi đi mỏ lấy quặng �
 
 ### C1. Vai người dùng
 
-- **C1.1** *KT Thu/Chi Viêng Chăn* (xác nhận mục I, II) và *KT Chi phí VC* (xác nhận, ghi sổ mục IV–VI)
-  là **hai người** hay **một người**?
-  - [ ] Hai người khác nhau — [ ] Một người
+- **C1.1** Phần mềm đã làm đúng bảng *Nhiệm Vụ*: *KT Thu/Chi Viêng Chăn* là một tài khoản (xác nhận mục
+  I, II), *KT Chi phí VC* là một tài khoản khác (xác nhận và ghi sổ mục IV–VI). Anh xác nhận giúp tên
+  người giữ từng tài khoản: KT Thu/Chi VC: .................. · KT Chi phí VC: ..................
 - **C1.2** Quy trình chữ có *Kho phụ tùng Thabok* và *Tổ sửa chữa Thabok*. Đó là:
   - [ ] Người riêng, cần tài khoản riêng — [ ] Cũng là người của Bãi cảng cạn
 - **C1.3** Tài xế có dùng điện thoại được không (để nhận phiếu, khai đổ dầu, báo hỏng, chia sẻ vị trí)?

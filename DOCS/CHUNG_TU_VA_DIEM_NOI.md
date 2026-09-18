@@ -84,7 +84,7 @@ Tệp nằm trên đĩa máy chủ, thư mục `backend/tep/<id phiếu>/` (đ�
 
 ## 3. Cách module kế toán kéo về
 
-Tất cả đều cần đăng nhập bằng vai kế toán (`acct`, `rev`, `treasury`, `cash`, `fuel`, `depot`, `admin`). Vai Bãi và tài xế bị từ chối vì đây là số kế toán.
+Tất cả đều cần đăng nhập bằng vai kế toán (`acct` KT Thu/Chi VC, `expacct` KT Chi phí VC, `rev`, `treasury`, `cash`, `fuel`, `depot`, `admin`). Vai Bãi và tài xế bị từ chối vì đây là số kế toán.
 
 | Việc | Gọi |
 |---|---|

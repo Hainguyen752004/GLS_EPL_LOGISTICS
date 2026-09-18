@@ -143,7 +143,7 @@ def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
         return {k: v for k, v in r.items() if v}
 
     # Phiếu chưa xong: chưa về, hoặc về rồi mà chưa xong phần tiền
-    if admin or vai in ("yard", "acct", "rev", "cash", "treasury", "fuel"):
+    if admin or vai in ("yard", "acct", "expacct", "rev", "cash", "treasury", "fuel"):
         r["theo-doi"] = db.query(Trip).filter(
             (Trip.transport_status != "arrived") | (Trip.finance_status != "paid")).count()
 
@@ -155,16 +155,16 @@ def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
             r["cap-phat"] = n
             r["kho-nhien-lieu"] = n
         return {k: v for k, v in r.items() if v}
-    if admin or vai in ("yard", "fuel", "cash", "treasury", "acct"):
+    if admin or vai in ("yard", "fuel", "cash", "treasury", "acct", "expacct"):
         r["cap-phat"] = cho.count()
         r["kho-nhien-lieu"] = cho.filter(Voucher.kind == "fuel").count()
 
     # Phụ tùng dưới tồn tối thiểu
-    if admin or vai in ("yard", "fuel", "acct"):
+    if admin or vai in ("yard", "fuel", "expacct"):
         r["kho-phu-tung"] = db.query(Part).filter(Part.qty < Part.min_qty).count()
 
     # Chứng từ bên kế toán chưa đối chiếu
-    if admin or vai in ("acct", "rev", "cash", "treasury"):
+    if admin or vai in ("acct", "expacct", "rev", "cash", "treasury"):
         r["chung-tu"] = db.query(ChungTu).filter(ChungTu.da_day.is_(False)).count()
 
     return {k: v for k, v in r.items() if v}

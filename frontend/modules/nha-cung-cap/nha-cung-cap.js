@@ -13,8 +13,8 @@
       <td class="num">${s.so_dong}</td><td class="num">${so(s.phat_sinh_lak)}</td><td class="num">${so(s.da_tra_lak)}</td><td class="num ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${so(s.con_no_lak)}</td>
       <td>${NN.h(s.payment_term || 't_monthly')}</td>
       <td class="no-print"><button class="btn sm" data-ls="${s.id}">${NN.h('payments')}</button>
-        ${AUTH.la('acct', 'cash', 'treasury') ? `<button class="btn sm ok" data-tra="${s.id}">${NN.h('pay_supplier')}</button>` : ''}
-        ${AUTH.la('acct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</td></tr>`; }).join('')
+        ${AUTH.la('expacct', 'cash', 'treasury') ? `<button class="btn sm ok" data-tra="${s.id}">${NN.h('pay_supplier')}</button>` : ''}
+        ${AUTH.la('expacct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</td></tr>`; }).join('')
       : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${so(tPS)}</td><td class="num">${so(tDT)}</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${so(tCN)}</td><td colspan="2"></td></tr>`;
     root.querySelectorAll('[data-ls]').forEach(b => b.addEventListener('click', () => lichSu(ds.find(x => x.id === b.dataset.ls))));
@@ -51,7 +51,7 @@
   async function tai() { ds = await API.get('/api/suppliers'); ve(); }
   EPL.modules['nha-cung-cap'] = {
     async init(r) {
-      root = r; const t = r.querySelector('#ncc-them'); t.hidden = !AUTH.la('acct'); t.addEventListener('click', () => sua(null));
+      root = r; const t = r.querySelector('#ncc-them'); t.hidden = !AUTH.la('expacct'); t.addEventListener('click', () => sua(null));
       r.querySelector('#ncc-ls-dong').addEventListener('click', () => { r.querySelector('#ncc-lich-su').hidden = true; });
       await tai();
     },

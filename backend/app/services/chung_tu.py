@@ -108,26 +108,28 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
     ngay = ngay or dt.date.today()
     cty = company or (trip.company if trip is not None else "EPL")
     no, no_ten, co, co_ten = dinh_khoan(loai, cty, section) if LOAI[loai][2] else (None, None, None, None)
-    c = ChungTu(loai=loai, ngay=ngay,
-                trip_id=trip.id if trip is not None else None,
-                trip_doc_no=trip.doc_no if trip is not None else None,
-                doi_tuong_loai=doi_tuong_loai, doi_tuong_ten=doi_tuong_ten,
-                tien=tien, tien_te=(tien_te or "LAK").upper(),
-                tien_lak=tien_lak if tien_lak is not None else (tien if (tien_te or "LAK").upper() == "LAK" else None),
-                no=no, no_ten=no_ten, co=co, co_ten=co_ten, mo_ta=mo_ta,
-                nguon_bang=nguon_bang, nguon_id=str(nguon_id), by_user=by_user,
-                payload=json.dumps(payload or {}, ensure_ascii=False, default=str))
+    thuoc_tinh = dict(loai=loai, ngay=ngay,
+                      trip_id=trip.id if trip is not None else None,
+                      trip_doc_no=trip.doc_no if trip is not None else None,
+                      doi_tuong_loai=doi_tuong_loai, doi_tuong_ten=doi_tuong_ten,
+                      tien=tien, tien_te=(tien_te or "LAK").upper(),
+                      tien_lak=tien_lak if tien_lak is not None else (tien if (tien_te or "LAK").upper() == "LAK" else None),
+                      no=no, no_ten=no_ten, co=co, co_ten=co_ten, mo_ta=mo_ta,
+                      nguon_bang=nguon_bang, nguon_id=str(nguon_id), by_user=by_user,
+                      payload=json.dumps(payload or {}, ensure_ascii=False, default=str))
     # Hai người cùng lúc (thủ kho hai kho, hàng đợi ngoại tuyến gửi lại) có thể cùng tính ra một số.
-    # Ghi trong SAVEPOINT: đụng số thì lùi lại chỗ đó, lấy số kế tiếp rồi ghi lại, không hỏng cả phiên.
+    # Ghi trong SAVEPOINT: đụng số thì lùi về chỗ đó, lấy số kế tiếp rồi ghi lại, không hỏng cả phiên.
+    # Mỗi vòng dựng một đối tượng MỚI: sau khi savepoint lùi lại, đối tượng cũ đã bị gỡ khỏi phiên,
+    # đụng vào nó (expunge, add lại) là InvalidRequestError — lỗi đó đã từng làm lần thử lại chết.
     for _lan in range(6):
-        c.so = _so_moi(db, loai, ngay)
+        c = ChungTu(so=_so_moi(db, loai, ngay), **thuoc_tinh)
         try:
             with db.begin_nested():
                 db.add(c)
                 db.flush()
             return c
         except IntegrityError:
-            db.expunge(c)
+            continue
     raise HTTPException(409, {"ma": "TRUNG_SO_CHUNG_TU",
                               "loi": "Không cấp được số chứng từ %s, thử lại giúp em." % loai})
 

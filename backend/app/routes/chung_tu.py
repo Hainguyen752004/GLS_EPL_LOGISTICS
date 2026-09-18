@@ -15,7 +15,7 @@ from services import chung_tu as CT
 from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
-XEM = ("acct", "rev", "treasury", "cash", "fuel", "depot", "admin")
+XEM = ("acct", "expacct", "rev", "treasury", "cash", "fuel", "depot", "admin")
 
 
 def _ngay(s, ten):
@@ -75,7 +75,7 @@ def mot_chung_tu(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*
 
 @router.post("/api/chung-tu/{cid}/da-day")
 def danh_dau_da_day(cid: str, d: dict = Body(default={}), db: Session = Depends(get_db),
-                    user=Depends(can_vai("acct", "rev", "treasury", "cash", "admin"))):
+                    user=Depends(can_vai("acct", "expacct", "rev", "treasury", "cash", "admin"))):
     """Bên kế toán (hoặc người đối chiếu) báo đã nhận tờ này. Gửi {"da_day": false} để mở lại."""
     c = db.get(ChungTu, cid)
     if not c:

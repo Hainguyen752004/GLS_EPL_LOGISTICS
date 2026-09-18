@@ -387,7 +387,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     return xuat_phieu(db, p)
 
 
-VAI_SAU_KHOA = ("acct", "rev", "treasury", "cash", "fuel", "admin")   # vai còn được thao tác khi phiếu đã khoá
+VAI_SAU_KHOA = ("acct", "expacct", "rev", "treasury", "cash", "fuel", "admin")   # vai còn được thao tác khi phiếu đã khoá
 
 
 def _chan_khoa(p, user):
@@ -945,7 +945,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
     e = db.get(TripEvent, eid)
     if not p or not e or e.trip_id != p.id:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có báo hỏng này."})
-    duoc = ("yard", "acct", "fuel", "admin") if e.kind == "refuel" else ("yard", "admin")
+    duoc = ("yard", "fuel", "admin") if e.kind == "refuel" else ("yard", "admin")
     if user.role not in duoc:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                   "loi": "Vai %s không được duyệt khai báo này." % user.role})
