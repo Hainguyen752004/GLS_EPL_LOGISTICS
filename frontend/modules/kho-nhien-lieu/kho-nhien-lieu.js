@@ -15,7 +15,7 @@
     root.querySelector('#knl-than').innerHTML = rows.length ? rows.map(r => `<tr>
       <td>${EPL.ngay(r.move_date)}</td><td class="mono">${esc(r.doc_no) || '—'}</td><td>${EPL.tag('plain', r.kind === 'in' ? 'fs_in' : 'fs_out')}</td><td>${esc(r.truck_no) || '—'}</td>
       <td class="num knl-in">${r.qty_in ? so(r.qty_in) : ''}</td><td class="num knl-out">${r.qty_out ? so(r.qty_out) : ''}</td><td class="num"><b>${so(r.balance, 1)}</b></td>
-      <td class="num">${r.unit_price ? so(r.unit_price) + ' ' + esc(r.currency) : '—'}</td><td lang="lo">${esc(r.by_user) || '—'}</td></tr>`).join('')
+      <td class="num tien">${r.unit_price ? so(r.unit_price) + ' ' + esc(r.currency) : '—'}</td><td lang="lo">${esc(r.by_user) || '—'}</td></tr>`).join('')
       : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
   }
   async function ghi(kind) {

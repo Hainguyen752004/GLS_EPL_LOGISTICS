@@ -244,6 +244,16 @@ async function main() {
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('thabok', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi'); await w.EPL.sanSang;
   assert.ok(![...d.querySelectorAll('#nav [data-mod]')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
+  {
+    const modBai = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
+    ['hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module tiền ' + m));
+    assert.ok(d.body.classList.contains('vai-yard'), 'thân trang phải mang lớp vai-yard');
+    await di('#/theo-doi');
+    const thTien = [...goc().querySelectorAll('th.tien')];
+    assert.ok(thTien.length >= 10, 'bảng theo dõi phải đánh dấu các cột tiền: ' + thTien.length);
+    assert.ok(thTien.every(th => w.getComputedStyle(th).display === 'none'), 'với Bãi mọi cột tiền của bảng theo dõi phải ẩn');
+    console.log('✓ vai Bãi: không có 4 module tiền · %d cột tiền của bảng theo dõi đã ẩn', thTien.length);
+  }
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);
   assert.ok(!nut.includes('verify') && !nut.includes('pay') && !nut.includes('book'), 'vai Bãi không được thấy nút kiểm/ghi sổ/chi: ' + nut);

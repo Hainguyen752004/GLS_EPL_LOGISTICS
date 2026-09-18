@@ -36,9 +36,9 @@
         <div><span>${NN.h('truck_no')}</span><span>${esc(d.truck_no)} · <span lang="lo">${esc(d.plate_head)} / ${esc(d.plate_trailer)}</span></span></div><div><span>${NN.h('truck_type')}</span><span>${d.company === 'joint' ? NN.h('co_joint') + ' · ' + esc(d.owner_name || '') : NN.h('co_epl')}</span></div>
         <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_advance', { doc_no: d.doc_no, tuyen: (d.origin || '') + ' → ' + (d.destination || '') })}</span></div>
       </div>
-      <table class="tbl tbl-compact"><thead><tr><th>#</th><th>${NN.h('item')}</th><th class="num">${NN.h('qty')}</th><th class="num">${NN.h('unit_price')}</th><th class="num">${NN.h('amount_lak')}</th><th>${NN.h('acct_pair')}</th></tr></thead>
-        <tbody>${d.dong.map((x, i) => `<tr><td>${i + 1}</td><td lang="lo">${esc(x.item_key ? NN.t(x.item_key) : x.item_name)}</td><td class="num">${so(x.qty)}</td><td class="num">${so(x.unit_price)}${x.currency !== 'LAK' ? ' ' + esc(x.currency) : ''}</td><td class="num">${so(x.tien_lak)}</td><td>${tenTK(x.acct_code)}</td></tr>`).join('')}</tbody></table>
-      <div class="ct-tong"><div><span>${NN.h('total')}</span><span>${chuSo(d.tong_lak)}</span></div></div>
+      <table class="tbl tbl-compact"><thead><tr><th>#</th><th>${NN.h('item')}</th><th class="num">${NN.h('qty')}</th><th class="num tien">${NN.h('unit_price')}</th><th class="num tien">${NN.h('amount_lak')}</th><th class="tien">${NN.h('acct_pair')}</th></tr></thead>
+        <tbody>${d.dong.map((x, i) => `<tr><td>${i + 1}</td><td lang="lo">${esc(x.item_key ? NN.t(x.item_key) : x.item_name)}</td><td class="num">${so(x.qty)}</td><td class="num tien">${so(x.unit_price)}${x.currency !== 'LAK' ? ' ' + esc(x.currency) : ''}</td><td class="num tien">${so(x.tien_lak)}</td><td class="tien">${tenTK(x.acct_code)}</td></tr>`).join('')}</tbody></table>
+      <div class="ct-tong tien"><div><span>${NN.h('total')}</span><span>${chuSo(d.tong_lak)}</span></div></div>
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.trang_thai === 'paid' ? 'paid' : d.trang_thai === 'wait' ? 'plain' : 'partial', tt)} ${d.tra_tien_xong ? '· ' + NN.h('advance_received') : ''}</div>
       ${khoiQR(LINH.find(v => v.kind === 'advance'))}
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
@@ -51,10 +51,10 @@
       <div class="ct-phu">ໃບຮັບເງິນ · Receipt voucher</div>
       <div class="ct-meta">
         <div><span>${NN.h('payer_name')}</span><span lang="lo"><b>${esc(d.customer_name || '—')}</b></span></div><div><span>${NN.h('doc_no')}</span><span class="mono"><b>${esc(d.doc_no)}</b></span></div>
-        <div><span>${NN.h('c_w_dest')}</span><span>${so(d.tan_tinh, 2)} ${NN.h('ton')} × ${so(d.price_usd, 2)} USD</span></div><div><span>${NN.h('acct_pair')}</span><span>${tenTK(d.acct_code)}</span></div>
+        <div><span>${NN.h('c_w_dest')}</span><span>${so(d.tan_tinh, 2)} ${NN.h('ton')}<span class="tien"> × ${so(d.price_usd, 2)} USD</span></span></div><div class="tien"><span>${NN.h('acct_pair')}</span><span>${tenTK(d.acct_code)}</span></div>
         <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_receipt', { doc_no: d.doc_no, tuyen: (d.origin || '') + ' → ' + (d.destination || '') })}</span></div>
       </div>
-      <div class="ct-tong"><div><span>${NN.h('amount')}</span><span>${so(d.doanh_thu_usd, 2)} USD</span></div></div>
+      <div class="ct-tong tien"><div><span>${NN.h('amount')}</span><span>${so(d.doanh_thu_usd, 2)} USD</span></div></div>
       <div class="ct-chu">≈ ${so(d.doanh_thu_lak)} LAK (1 USD = ${so(d.rate_usd)} LAK)</div>
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.finance_status, 'fin_' + d.finance_status)}</div>
       <div class="ct-ky"><div><div class="line"></div>${NN.h('payer_name')}</div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;

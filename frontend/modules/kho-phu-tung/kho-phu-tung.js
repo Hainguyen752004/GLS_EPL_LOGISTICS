@@ -7,7 +7,7 @@
   function ve() {
     root.querySelector('#kpt-than').innerHTML = ds.length ? ds.map(p => `<tr class="${p.status === 'st_low' ? 'kpt-thap' : ''}">
       <td lang="lo"><b>${esc(p.name)}</b></td><td>${NN.h(p.unit)}</td><td class="num"><b>${so(p.qty)}</b></td><td class="num">${so(p.min_qty)}</td>
-      <td class="num">${so(p.unit_price)}</td><td>${EPL.ngay(p.last_date)}</td><td>${esc(p.last_truck) || '—'}</td><td>${EPL.tag(p.status, p.status)}</td>
+      <td class="num tien">${so(p.unit_price)}</td><td>${EPL.ngay(p.last_date)}</td><td>${esc(p.last_truck) || '—'}</td><td>${EPL.tag(p.status, p.status)}</td>
       <td class="no-print">${suaDuoc() ? `<button class="btn sm ok" data-nhap="${p.id}">+ ${NN.h('fs_in')}</button> <button class="btn sm warn" data-xuat="${p.id}">− ${NN.h('fuel_out')}</button> <button class="btn sm" data-sua="${p.id}">${NN.h('edit')}</button>` : ''}</td></tr>`).join('')
       : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('[data-nhap]').forEach(b => b.addEventListener('click', () => chuyen(b.dataset.nhap, 'in')));
