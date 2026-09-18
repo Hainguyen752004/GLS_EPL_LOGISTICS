@@ -1,21 +1,25 @@
-/* Theo dõi tuyến — trung tâm điều hành, bố cục lấy từ màn "Theo dõi và kiểm soát" của EPL_System.
+/* Theo dõi tuyến — trung tâm điều hành, bố cục dựng lại theo bản mẫu frontend/modules/trip-tracking:
  *
- *   thanh công cụ (tìm · tự cập nhật · sổ sự cố · báo sự cố)
- *   dải ô số      (bấm một ô là lọc danh sách theo đúng ô đó)
- *   ba cột        (danh sách chuyến · bản đồ + diễn biến + sửa chữa · hồ sơ chuyến)
+ *   thanh trên (tìm · chỉ phiếu chưa xong · tự cập nhật · sổ sự cố · báo sự cố)
+ *   dải ô số   (bấm một ô là lọc danh sách theo đúng ô đó)
+ *   ba cột     (danh sách chuyến · bản đồ + mốc chặng + ba tab · hồ sơ chuyến)
  *
- * Bản đồ vẽ TUYẾN KẾ HOẠCH nối các điểm đã khai toạ độ, chấm xe đứng ở MỐC ĐÃ XÁC NHẬN TỚI gần
- * nhất. Bên Lào không gắn GPS, "xe tới điểm X" là do Bãi bấm khi tài xế gọi về — nên không nội suy
- * vị trí giữa hai chặng: không biết thì không vẽ. Tuyến chưa khai toạ độ thì bỏ hẳn phần bản đồ.
+ * Ba cột cao đúng phần màn còn trống và mỗi khối tự cuộn bên trong, nên cả màn vừa MỘT màn hình —
+ * đó là điểm chính của bản mẫu. Chiều cao do js đo, không đoán bằng CSS, vì thanh điều hướng có hai
+ * kiểu (thanh bên · thanh trên) và cả trang còn co giãn theo mức zoom.
+ *
+ * Khác bản mẫu một chỗ cố ý: BẢN ĐỒ LÀ LEAFLET THẬT. Bản mẫu vẽ hình SVG minh hoạ và README của nó
+ * dặn "khi có GPS thì thay renderMap() bằng Leaflet" — bên mình đã có GPS thật từ điện thoại tài xế
+ * nên dùng thẳng bản đồ thật, giữ nguyên phần còn lại của bố cục.
  *
  * Số liệu cả màn lấy một lần từ /api/theo-doi để danh sách vài chục chuyến không thành vài chục
  * lượt gọi; mở một chuyến mới gọi chi tiết phiếu đó.
  */
 (function () {
   const { API, NN, esc, so, AUTH, tag } = EPL;
-  let root, BANG = null, P = null, PARTS = [], KM = null, nguon = 'kho';
-  let sap = 'uu-tien', locO = '', dongHo = null;
-  let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot', VET = null;
+  let root, BANG = null, P = null, PARTS = [], nguon = 'kho';
+  let sap = 'uu-tien', locO = '', dongHo = null, tab = 'dien-bien', CHUNG_TU = null;
+  let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot', VET = null, mocSang = 0;
   const q = (s) => root.querySelector(s);
   const laBai = () => AUTH.la('yard');
 
@@ -35,8 +39,11 @@
 
   function veOSo() {
     const k = (BANG && BANG.kpi) || {};
-    q('#tdt-o-so').innerHTML = O_SO.map(o => `<button class="tdt-o ${o.mau || ''} ${locO === o.id ? 'chon' : ''}" data-o="${o.id}">
-      <span class="l">${NN.h(o.khoa)}</span><span class="v">${so(k[o.id] || 0)}</span></button>`).join('');
+    q('#tdt-o-so').innerHTML = O_SO.map(o => {
+      const n = k[o.id] || 0;
+      return `<button type="button" class="tdt2-tile ${o.mau || ''} ${locO === o.id ? 'chon' : ''}" data-o="${o.id}" title="${esc(NN.t('td_tile_hint'))}">
+        <span class="l">${NN.h(o.khoa)}</span><span class="v ${n ? 'khac0' : ''}">${so(n)}</span></button>`;
+    }).join('');
     q('#tdt-o-so').querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => {
       locO = locO === b.dataset.o ? '' : b.dataset.o;      // bấm lại chính ô đó là bỏ lọc
       veOSo(); veDanhSach();
@@ -65,27 +72,26 @@
 
   function veDanhSach() {
     const ds = loc();
-    q('#tdt-dem').textContent = ds.length ? String(ds.length) : '';
+    q('#tdt-dem').textContent = BANG ? `${ds.length} / ${BANG.chuyen.length}` : '';
     q('#tdt-the-ds').innerHTML = ds.length ? ds.map(c => {
       const canh = [];
-      if (c.su_co_mo) canh.push(`<div class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</div>`);
-      if (c.cho_cap_phat) canh.push(`<div class="canh vang">${NN.h('td_iss_wait', { n: c.cho_cap_phat })}</div>`);
-      if (c.di_lau) canh.push(`<div class="canh do">${NN.h('td_days_out', { n: c.so_ngay_di })}</div>`);
+      if (c.su_co_mo) canh.push(`<span class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);
+      if (c.di_lau) canh.push(`<span class="canh do">${NN.h('td_days_out', { n: c.so_ngay_di })}</span>`);
+      if (c.cho_cap_phat) canh.push(`<span class="canh vang">${NN.h('td_iss_wait', { n: c.cho_cap_phat })}</span>`);
       if (['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu)) {
-        canh.push(`<div class="canh vang">${NN.h('gps_missing')}</div>`);
+        canh.push(`<span class="canh vang">${NN.h('gps_missing')}</span>`);
       } else if (c.gps) {
-        canh.push(`<div class="canh xanh">${NN.h('gps_age', { n: Math.round(c.gps.tuoi_phut) })}</div>`);
+        canh.push(`<span class="canh xanh">${NN.h('gps_age', { n: Math.round(c.gps.tuoi_phut) })}</span>`);
       }
-      return `<button class="tdt-the ${P && P.id === c.id ? 'chon' : ''} ${c.su_co_mo ? 'gap' : ''}" data-c="${c.id}">
-        <div class="so"><span class="mono">${esc(c.doc_no)}</span>${tag(c.transport_status)}</div>
-        <div class="kh" lang="lo">${esc(c.customer_name || '—')}</div>
-        <div class="tuyen" lang="lo">${esc(c.origin || '')} → ${esc(c.destination || '')}</div>
-        <div class="xe">${esc(c.truck_no || '')}${c.plate_head ? ' · <span lang="lo">' + esc(c.plate_head) + '</span>' : ''}
-          ${c.driver_name ? ' · <span lang="lo">' + esc(c.driver_name) + '</span>' : ''}</div>
-        ${canh.join('')}
-        <div class="chan"><span>${c.so_diem ? NN.h('td_legs', { toi: c.stop_reached, tong: c.so_diem }) : NN.h('no_route')}</span>
-          <span>${EPL.ngay(c.out_date)}</span></div></button>`;
-    }).join('') : `<div class="tdt-trong">${NN.h('td_none_watch')}</div>`;
+      return `<button type="button" class="tdt2-the ${P && P.id === c.id ? 'chon' : ''}" data-c="${c.id}">
+        <span class="so"><span class="mono">${esc(c.doc_no)}</span>${tag(c.transport_status)}</span>
+        <span class="kh" lang="lo">${esc(c.customer_name || '—')}</span>
+        <span class="xe" lang="lo">${esc(c.origin || '')} → ${esc(c.destination || '')}</span>
+        <span class="xe">${esc(c.truck_no || '')}${c.plate_head ? ' · <span lang="lo">' + esc(c.plate_head) + '</span>' : ''}${c.driver_name ? ' · <span lang="lo">' + esc(c.driver_name) + '</span>' : ''}</span>
+        ${canh.length ? `<span class="chan">${canh.join(' · ')}</span>` : ''}
+        <span class="chan"><span>${c.so_diem ? NN.h('td_legs', { toi: c.stop_reached, tong: c.so_diem }) : NN.h('no_route')}</span><span>${EPL.ngay(c.out_date)}</span></span>
+      </button>`;
+    }).join('') : `<div class="tdt2-trong">${NN.h('td_none_watch')}</div>`;
     q('#tdt-the-ds').querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => mo(b.dataset.c)));
     if (cheDoBD === 'doi') veBanDo();
   }
@@ -133,7 +139,7 @@
   }
 
   async function veBanDo() {
-    // Bản đồ là phần PHỤ của màn: hỏng bản đồ thì vẫn phải xem được tiến độ, diễn biến, chi phí.
+    // Bản đồ là phần PHỤ của màn: hỏng bản đồ thì vẫn phải xem được mốc chặng, diễn biến, chi phí.
     try { await veBanDoThat(); } catch (e) { /* không nối được thư viện hay ảnh nền — bỏ qua */ }
   }
   async function veBanDoThat() {
@@ -167,8 +173,9 @@
       const toaDo = dd.map(s => [s.lat, s.lng]);
       L.polyline(toaDo, { color: '#2F5D8A', weight: 4, opacity: .85 }).addTo(lopVe);
       dd.forEach(s => {
-        const daToi = s.seq <= (c.stop_reached || 0);
-        L.circleMarker([s.lat, s.lng], { radius: 9, weight: 2, color: daToi ? MAU.xong : '#2F5D8A',
+        const daToi = s.seq <= (c.stop_reached || 0), sang = s.seq === mocSang;
+        L.circleMarker([s.lat, s.lng], { radius: sang ? 12 : 9, weight: sang ? 3 : 2,
+          color: sang ? '#A86B12' : (daToi ? MAU.xong : '#2F5D8A'),
           fillColor: daToi ? MAU.xong : '#fff', fillOpacity: 1 })
           .bindTooltip(`${s.seq}. ${esc(s.name)}`, { direction: 'top' }).addTo(lopVe);
         diemVe.push([s.lat, s.lng]);
@@ -212,78 +219,242 @@
     lopNen = window.L.tileLayer(url, { maxZoom: 17, attribution: ghi }).addTo(MAP);
   }
 
-  /* ---------------------------------------------------------------- cột giữa */
-  function rate(ma) { return { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, LAK: 1 }[ma] || 1; }
-
-  function ve() {
-    const co = !!P;
-    q('#tdt-su-co').disabled = q('#tdt-ghi-chu').disabled = q('#tdt-mo-phieu').disabled = !co;
-    if (!co) {
-      q('#tdt-tien-do').innerHTML = `<div class="muted">${NN.h('td_pick')}</div>`;
-      q('#tdt-dau').innerHTML = ''; q('#tdt-khoi-cho').hidden = true;
-      q('#tdt-su-kien').innerHTML = q('#tdt-sua').innerHTML = '';
-      q('#tdt-sua-tom').innerHTML = ''; q('#tdt-xe').innerHTML = `<div class="muted small">${NN.h('td_pick')}</div>`;
-      return;
-    }
-    q('#tdt-dau').innerHTML = `${tag(P.transport_status)} ${tag(P.finance_status)}`;
-    const diem = P.route_stops || [], toi = P.stop_reached || 0;
-    if (!diem.length) {
-      q('#tdt-tien-do').innerHTML = `<div class="muted small">${NN.h('no_route')}</div>`;
-    } else {
-      q('#tdt-tien-do').innerHTML = `<div class="tdt-tuyen">${diem.map(s => {
-        const done = s.seq <= toi, now = s.seq === toi + 1 && P.transport_status !== 'arrived';
-        return `<div class="tdt-moc ${done ? 'done' : ''} ${now ? 'now' : ''}"><div class="cham">${done ? '✓' : s.seq}</div>
-          <div class="ten" lang="lo">${esc(s.name)}</div><div class="km">${s.seq > 1 ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</div>
-          ${laBai() && now ? `<button class="btn sm ok" data-toi="${s.seq}">${NN.h('mark_stop')}</button>` : ''}</div>`; }).join('')}</div>
-        <div class="small muted">${NN.h('total_km')}: <b>${so(diem.reduce((a, s) => a + (s.km_from_prev || 0), 0), 1)}</b> km · ${NN.h('ev_arrive_stop')}: ${toi}/${diem.length}</div>`;
-      q('#tdt-tien-do').querySelectorAll('[data-toi]').forEach(b => b.addEventListener('click', () => toiDiem(+b.dataset.toi, diem.length)));
-    }
-
-    const ev = (P.events || []).slice().reverse();
-    q('#tdt-su-kien').innerHTML = ev.length ? ev.map(e => `<tr><td class="nowrap">${EPL.ngayGio(e.ts)}</td>
-      <td><span class="tag ${e.kind === 'incident' ? 'tdt-tag-in' : e.kind === 'repair' ? 'tdt-tag-rp' : 'plain'}">${NN.h('ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</span></td>
-      <td lang="lo">${e.stop_seq ? esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq) : '—'}</td><td lang="lo">${esc(e.note) || ''}</td><td lang="lo">${esc(e.by_user) || ''}</td></tr>`).join('')
-      : `<tr><td colspan="5" class="empty">${NN.h('log_empty')}</td></tr>`;
-
-    const cho = (P.events || []).filter(e => e.status === 'reported');
-    q('#tdt-khoi-cho').hidden = !cho.length;
-    q('#tdt-cho-duyet').innerHTML = cho.map(e => `<tr><td class="nowrap">${EPL.ngayGio(e.ts)}</td><td>${NN.h(e.kind === 'refuel' ? 'ev_refuel' : 'inc_' + (e.incident_type || 'other'))}</td><td lang="lo">${esc(e.note || '')}</td>
-      <td class="num">${e.reported_cost != null ? so(e.reported_cost) + ' ' + esc(e.currency || 'LAK') : '—'}</td><td lang="lo">${esc(e.by_user || '')}</td>
-      <td class="no-print">${laBai() || AUTH.la('acct', 'fuel') ? `<button class="btn sm ok" data-duyet="${e.id}">${NN.h('approve')}</button> <button class="btn sm danger" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`).join('');
-    q('#tdt-cho-duyet').querySelectorAll('[data-duyet]').forEach(b => b.addEventListener('click', () => duyet(cho.find(e => e.id === b.dataset.duyet))));
-    q('#tdt-cho-duyet').querySelectorAll('[data-tu-choi]').forEach(b => b.addEventListener('click', () => tuChoi(cho.find(e => e.id === b.dataset.tuChoi))));
-
-    const sua = (P.expenses || []).filter(d => d.section === 'repair'); let tong = 0;
-    q('#tdt-sua').innerHTML = sua.length ? sua.map(d => { const t = d.qty * d.unit_price * rate(d.currency); tong += t;
-      return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td><td class="num">${so(d.qty)}</td><td class="num">${so(t)}</td><td><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')
-      : `<tr><td colspan="5" class="empty">${NN.h('no_expense')}</td></tr>`;
-    q('#tdt-sua-tom').innerHTML = `${NN.h('total')}: <b>${so(tong)} LAK</b> · ${NN.h('sections_status')} V: ${NN.h((P.sections || {}).repair === 'wait' ? 'stt_wait2' : 'stt_' + ((P.sections || {}).repair || 'wait'))}`;
-
-    veHoSo();
-    veBanDo();
-    q('#tdt-su-co').hidden = q('#tdt-ghi-chu').hidden = !laBai() || P.finance_status === 'paid';
+  /* ---------------------------------------------------------------- chiều cao ba cột
+   * Ba cột phải cao đúng phần màn còn trống thì cả màn mới vừa một màn hình. Không đặt cứng trong
+   * CSS được: thanh điều hướng có hai kiểu (thanh bên · thanh trên) nên khối này bắt đầu ở độ cao
+   * khác nhau, và cả trang còn co giãn theo mức zoom. Đo bằng offsetTop (đơn vị của trang, không
+   * bị mức zoom làm lệch) rồi trừ khỏi chiều cao cửa sổ đã quy về cùng đơn vị.
+   */
+  function caoCot() {
+    const el = q('#tdt-cols'); if (!el) return;
+    if ((window.innerWidth || 1600) <= 1000) { el.style.height = ''; return; }
+    let tren = 0, n = el;
+    while (n) { tren += n.offsetTop; n = n.offsetParent; }
+    const ty = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    el.style.height = Math.max(420, (window.innerHeight || 900) / ty - tren - 24) + 'px';
+    setTimeout(() => MAP && MAP.invalidateSize(), 60);
   }
 
-  /* ---------------------------------------------------------------- cột phải */
+  /* ---------------------------------------------------------------- cột giữa: mốc chặng */
+  function rate(ma) { return { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, LAK: 1 }[ma] || 1; }
+
+  function veMoc() {
+    if (!P) { q('#tdt-moc').innerHTML = ''; q('#tdt-moc-chan').innerHTML = ''; return; }
+    const diem = P.route_stops || [], toi = P.stop_reached || 0;
+    if (!diem.length) {
+      q('#tdt-moc').innerHTML = `<div class="tdt2-trong" style="flex:1">${NN.h('no_route')}</div>`;
+      q('#tdt-moc-chan').innerHTML = ''; return;
+    }
+    const tiep = diem.find(s => s.seq > toi);
+    q('#tdt-moc').innerHTML = diem.map(s => {
+      const done = s.seq <= toi, now = tiep && s.seq === tiep.seq && P.transport_status !== 'arrived';
+      return `<button type="button" class="m ${done ? 'done' : ''} ${now ? 'next' : ''}" data-moc="${s.seq}">
+        <i>${done ? '✓' : s.seq}</i><b lang="lo">${esc(s.name)}</b>
+        <small>${s.seq > 1 ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</small></button>`;
+    }).join('');
+    const tongKm = diem.reduce((a, s) => a + (s.km_from_prev || 0), 0);
+    const diKm = diem.filter(s => s.seq <= toi).reduce((a, s) => a + (s.km_from_prev || 0), 0);
+    q('#tdt-moc-chan').innerHTML = `<span>${NN.h('td_route_total')} <b>${so(tongKm, 1)} km</b> · ${NN.h('td_gone_km')} ${so(diKm, 1)} km</span>
+      <span>${NN.h('ev_arrive_stop')} <b>${toi}/${diem.length}</b>${tiep ? ` · ${NN.h('td_next_stop')} <span lang="lo">${esc(tiep.name)}</span>` : ` · ${NN.h('td_done_route')}`}</span>`;
+    q('#tdt-moc').querySelectorAll('[data-moc]').forEach(b => b.addEventListener('click', () => {
+      mocSang = mocSang === +b.dataset.moc ? 0 : +b.dataset.moc;
+      if (cheDoBD !== 'mot') { cheDoBD = 'mot'; root.querySelectorAll('#tdt-bd-tab button').forEach(x => x.classList.toggle('active', x.dataset.bd === 'mot')); }
+      veBanDo();
+    }));
+  }
+
+  /* ---------------------------------------------------------------- cột giữa: ba tab */
+  const TAB = [['dien-bien', 'events'], ['chi-phi', 'sec5'], ['chung-tu', 'td_docs']];
+
+  function demTab(id) {
+    if (!P) return 0;
+    if (id === 'dien-bien') return (P.events || []).length;
+    if (id === 'chi-phi') return (P.expenses || []).filter(d => d.section === 'repair').length;
+    return CHUNG_TU ? CHUNG_TU.length : 0;
+  }
+
+  function veTabs() {
+    if (!P) {
+      q('#tdt-tabs').innerHTML = ''; q('#tdt-tab-nut').innerHTML = '';
+      q('#tdt-tab-than').innerHTML = `<div class="trong">${NN.h('td_pick')}</div>`;
+      return;
+    }
+    q('#tdt-tabs').innerHTML = TAB.map(([id, khoa]) =>
+      `<button type="button" class="tdt2-tab ${tab === id ? 'active' : ''}" data-tab="${id}">${NN.h(khoa)}<span class="n">${demTab(id)}</span></button>`).join('');
+    q('#tdt-tabs').querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; veTabs(); }));
+
+    const suaDuoc = laBai() && P.finance_status !== 'paid';
+    q('#tdt-tab-nut').innerHTML = tab === 'dien-bien'
+      ? (suaDuoc ? `<button type="button" class="tdt2-btn sm" id="tdt-ghi-chu">+ ${NN.h('add_note')}</button>` : '')
+      : tab === 'chi-phi'
+        ? (suaDuoc ? `<button type="button" class="tdt2-btn sm tan" id="tdt-khai-sua">+ ${NN.h('report_incident')}</button>` : '')
+        : `<button type="button" class="tdt2-btn sm" id="tdt-mo-so-ct">${NN.h('ct_so')}</button>`;
+    const ghi = q('#tdt-ghi-chu'); if (ghi) ghi.addEventListener('click', ghiChu);
+    const khai = q('#tdt-khai-sua'); if (khai) khai.addEventListener('click', moSuCo);
+    const moCt = q('#tdt-mo-so-ct'); if (moCt) moCt.addEventListener('click', () => EPL.di('chung-tu', { tab: 'so' }));
+
+    if (tab === 'dien-bien') veTabDienBien();
+    else if (tab === 'chi-phi') veTabChiPhi();
+    else veTabChungTu();
+  }
+
+  function veTabDienBien() {
+    const diem = P.route_stops || [];
+    const ev = (P.events || []).slice().reverse();
+    const duyetDuoc = laBai() || AUTH.la('acct', 'fuel');
+    const than = ev.length ? `<table><thead><tr>
+        <th style="width:112px">${NN.h('c_date')}</th><th style="width:132px">${NN.h('type')}</th>
+        <th>${NN.h('note')}</th><th style="width:120px">${NN.h('resp')}</th><th class="no-print" style="width:118px"></th></tr></thead>
+      <tbody>${ev.map(e => {
+        const cho = e.status === 'reported';
+        return `<tr><td class="nowrap">${EPL.ngayGio(e.ts)}</td>
+          <td><span class="tag ${e.kind === 'incident' ? 'tdt-tag-in' : e.kind === 'repair' ? 'tdt-tag-rp' : 'plain'}">${NN.h('ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</span></td>
+          <td lang="lo">${esc(e.note) || ''}${e.stop_seq ? ` <span class="muted">· ${esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq)}</span>` : ''}
+            ${e.reported_cost != null ? ` <span class="muted">· ${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</span>` : ''}
+            ${cho ? ` <span class="tag partial">${NN.h('st_reported')}</span>` : ''}</td>
+          <td lang="lo">${esc(e.by_user) || ''}</td>
+          <td class="no-print">${cho && duyetDuoc ? `<button type="button" class="tdt2-btn sm" data-duyet="${e.id}">${NN.h('approve')}</button> <button type="button" class="tdt2-btn sm do" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`;
+      }).join('')}</tbody></table>` : `<div class="trong">${NN.h('log_empty')}</div>`;
+    const cho = (P.events || []).filter(e => e.status === 'reported').length;
+    q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
+      <span>${NN.h('td_ev_count', { n: ev.length })}${cho ? ` · <b style="color:var(--red)">${NN.h('td_inc_open', { n: cho })}</b>` : ''}</span>
+      <span>${NN.h('td_last_ev')}: ${ev[0] ? EPL.ngayGio(ev[0].ts) : '—'}</span></div>`;
+    q('#tdt-tab-than').querySelectorAll('[data-duyet]').forEach(b => b.addEventListener('click', () => duyet((P.events || []).find(e => e.id === b.dataset.duyet))));
+    q('#tdt-tab-than').querySelectorAll('[data-tu-choi]').forEach(b => b.addEventListener('click', () => tuChoi((P.events || []).find(e => e.id === b.dataset.tuChoi))));
+  }
+
+  function veTabChiPhi() {
+    const sua = (P.expenses || []).filter(d => d.section === 'repair');
+    let tong = 0;
+    const than = sua.length ? `<table><thead><tr>
+        <th>${NN.h('item')}</th><th style="width:96px">${NN.h('source')}</th><th class="num" style="width:60px">${NN.h('qty')}</th>
+        <th class="num" style="width:110px">${NN.h('unit_price')}</th><th class="num" style="width:120px">${NN.h('amount_lak')}</th>
+        <th style="width:96px">${NN.h('acct_code')}</th></tr></thead>
+      <tbody>${sua.map(d => { const t = (d.qty || 0) * (d.unit_price || 0) * rate(d.currency); tong += t;
+        return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td>
+          <td class="num">${so(d.qty)}</td><td class="num">${so(d.unit_price)}${d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
+          <td class="num"><b>${so(t)}</b></td><td><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
+      : `<div class="trong">${NN.h('no_expense')}</div>`;
+    const tt = (P.sections || {}).repair || 'wait';
+    q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
+      <span>${NN.h('total')}: <b style="color:var(--ink)">${so(tong)} LAK</b></span>
+      <span>${NN.h('td_cost_note')} · ${NN.h(tt === 'wait' ? 'stt_wait2' : 'stt_' + tt)}</span></div>`;
+  }
+
+  /** Chứng từ của chuyến: phiếu lĩnh · tạm ứng, tệp đính kèm, và sổ chứng từ nếu vai được xem. */
+  function veTabChungTu() {
+    if (CHUNG_TU === null) {
+      q('#tdt-tab-than').innerHTML = `<div class="trong">${NN.h('loading')}</div>`;
+      napChungTu();
+      return;
+    }
+    const than = CHUNG_TU.length ? `<table><thead><tr>
+        <th>${NN.h('doc_no')}</th><th>${NN.h('ct_loai')}</th><th style="width:104px">${NN.h('c_date')}</th>
+        <th class="num" style="width:120px">${NN.h('amount')}</th><th style="width:110px">${NN.h('status')}</th></tr></thead>
+      <tbody>${CHUNG_TU.map(c => `<tr>
+        <td class="mono">${esc(c.so)}</td><td>${esc(c.ten)}</td><td>${EPL.ngay(c.ngay)}</td>
+        <td class="num">${c.tien == null ? '—' : so(c.tien, c.tien_te === 'USD' ? 2 : 0) + ' ' + esc(c.tien_te || '')}</td>
+        <td>${tag(c.mau, c.tt_khoa)}</td></tr>`).join('')}</tbody></table>`
+      : `<div class="trong">${NN.h('td_no_docs')}</div>`;
+    q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
+      <span>${NN.h('td_doc_count', { n: CHUNG_TU.length })}</span><span>${NN.h('td_doc_note')}</span></div>`;
+  }
+
+  async function napChungTu() {
+    const id = P && P.id;
+    // Ba nguồn, vai nào xem được nguồn nào thì lấy nguồn đó — không có quyền thì bỏ qua, đừng báo lỗi.
+    const [vc, tep, so_ct] = await Promise.all([
+      API.get(`/api/trips/${id}/vouchers`).catch(() => []),
+      API.get(`/api/trips/${id}/tep`).catch(() => []),
+      API.get(`/api/chung-tu?trip_id=${id}`).catch(() => null),
+    ]);
+    if (!P || P.id !== id) return;                       // đã bấm sang chuyến khác trong lúc chờ
+    const ds = [];
+    (vc || []).forEach(v => ds.push({
+      so: v.doc_no, ten: NN.t(v.kind === 'fuel' ? 'v_fuel' : 'v_advance'), ngay: v.doc_date,
+      tien: v.kind === 'fuel' ? v.qty_l : v.amount_lak, tien_te: v.kind === 'fuel' ? 'L' : 'LAK',
+      mau: v.status === 'da_cap' ? 'paid' : v.status === 'huy' ? 'unpaid' : 'partial', tt_khoa: 'v_' + v.status,
+    }));
+    (tep || []).forEach(t => ds.push({
+      so: t.filename, ten: NN.t('attach_ore'), ngay: t.ts, tien: null, tien_te: '',
+      mau: 'paid', tt_khoa: 'ct_da_day',
+    }));
+    (so_ct && so_ct.ds ? so_ct.ds : []).forEach(c => ds.push({
+      so: c.so, ten: c.loai_ten, ngay: c.ngay, tien: c.tien, tien_te: c.tien_te,
+      mau: c.da_day ? 'paid' : 'partial', tt_khoa: c.da_day ? 'ct_da_day' : 'ct_chua_day',
+    }));
+    CHUNG_TU = ds;
+    if (tab === 'chung-tu') veTabChungTu(); else veTabs();
+  }
+
+  /* ---------------------------------------------------------------- cột phải: hồ sơ chuyến */
+  const MUC_MA = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'];
+  const MUC_SO = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  const MUC_KHOA = ['sec1', 'sec2', 'sec3', 'sec4', 'sec5', 'sec6'];
+  /** Tên trạng thái một mục — 'wait' trong từ điển là 'stt_wait2' (chưa gửi kiểm). */
+  const tenTT = (tt) => NN.t(!tt || tt === 'wait' ? 'stt_wait2' : 'stt_' + tt);
+
   function veHoSo() {
-    const o = (k, v, lo) => `<div><span>${NN.h(k)}</span><span ${lo ? 'lang="lo"' : ''}>${esc(v == null || v === '' ? '—' : v)}</span></div>`;
+    if (!P) { q('#tdt-xe').innerHTML = `<div class="tdt2-trong">${NN.h('td_pick')}</div>`; return; }
+    const c = (BANG && BANG.chuyen.find(x => x.id === P.id)) || {};
+    const kv = (k, v, cls) => `<div class="tdt2-kv"><span>${NN.h(k)}</span><b class="${cls || ''}">${v == null || v === '' ? '—' : v}</b></div>`;
     const m = P.sections || {};
-    const nhanMuc = ['sec1', 'sec2', 'sec3', 'sec4', 'sec5', 'sec6'];
-    const maMuc = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'];
+    const diem = P.route_stops || [], toi = P.stop_reached || 0;
+    const tiep = diem.find(s => s.seq > toi);
+    const k = P.tinh || {};
+    const cuoc = k.doanh_thu_lak || 0;
+    const conNo = P.finance_status === 'paid' ? 0 : cuoc;
+    const canh = [];
+    if (c.di_lau) canh.push(`<span class="tag partial">${NN.h('td_days_out', { n: c.so_ngay_di })}</span>`);
+    if (c.su_co_mo) canh.push(`<span class="tag unpaid">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);
+    if (c.cho_cap_phat) canh.push(`<span class="tag partial">${NN.h('td_iss_wait', { n: c.cho_cap_phat })}</span>`);
+    if (P.locked) canh.push(`<span class="tag paid">🔒 ${NN.h('s_locked')}</span>`);
+
     q('#tdt-xe').innerHTML = `
-      <div class="tdt-ho-so-so"><b class="mono">${esc(P.doc_no)}</b>
-        <div class="small muted">${P.company === 'joint' ? NN.h('co_joint') + ' · ' + esc(P.owner_name || '') : NN.h('co_epl')}</div></div>
-      <div class="tdt-o-hs">
-        ${o('truck_no', P.truck_no)}${o('driver', P.driver_name, true)}
-        ${o('plate_head', P.plate_head, true)}${o('plate_trailer', P.plate_trailer, true)}
-        ${o('customer', P.customer_name, true)}${o('goods_type', P.goods_type ? NN.t(P.goods_type) : '')}
-        ${o('origin', P.origin, true)}${o('dest', P.destination, true)}
-        ${o('w_origin', P.weight_origin != null ? so(P.weight_origin, 2) + ' t' : '')}${o('w_dest', P.weight_dest != null ? so(P.weight_dest, 2) + ' t' : '')}
-        ${o('d_out', EPL.ngay(P.out_date))}${o('d_back', EPL.ngay(P.back_date))}
+      <div>
+        <div class="dau"><b class="mono">${esc(P.doc_no)}</b>${tag(P.transport_status)}</div>
+        <div class="small muted">${P.company === 'joint' ? NN.h('co_joint') + ' · ' + esc(P.owner_name || '') : NN.h('co_epl')}</div>
+        ${canh.length ? `<div class="tdt2-canh">${canh.join('')}</div>` : ''}
       </div>
-      <div class="tdt-muc"><div class="small muted">${NN.h('td_sections')}</div>
-        <div class="tdt-muc-hang">${maMuc.map((k, i) => `<span class="tdt-muc-o ${m[k] || 'wait'}" title="${esc(NN.t(nhanMuc[i]))}">
-          <b>${['I', 'II', 'III', 'IV', 'V', 'VI'][i]}</b></span>`).join('')}</div></div>`;
+      <div>
+        ${kv('truck_no', `${esc(P.truck_no || '')}${P.plate_head ? ' · <span lang="lo">' + esc(P.plate_head) + '</span>' : ''}`)}
+        ${kv('driver', `<span lang="lo">${esc(P.driver_name || '')}</span>`)}
+        ${kv('customer', `<span lang="lo">${esc(P.customer_name || '')}</span>`)}
+        ${kv('goods_type', P.goods_type ? NN.h(P.goods_type) : '')}
+        ${kv('w_origin', P.weight_origin != null ? so(P.weight_origin, 2) + ' t' : '')}
+        ${kv('w_dest', P.weight_dest != null ? so(P.weight_dest, 2) + ' t' : '')}
+        ${kv('d_out', EPL.ngay(P.out_date))}
+        ${kv('td_days', c.so_ngay_di != null ? NN.t('td_days_n', { n: c.so_ngay_di }) : '—', c.di_lau ? 'tre' : '')}
+        ${kv('td_legs_short', diem.length ? `${toi}/${diem.length} · ${so(diem.reduce((a, s) => a + (s.km_from_prev || 0), 0), 1)} km` : '—')}
+      </div>
+      <div>
+        <div class="tdt2-muc-dau"><span>${NN.h('td_sections')}</span><span>${MUC_MA.filter(x => ['verified', 'booked', 'paid'].includes(m[x])).length}/6</span></div>
+        <div class="tdt2-duyet">${MUC_MA.map((ma, i) => { const tt = tenTT(m[ma]);
+          return `<button type="button" class="tdt2-ap ${m[ma] || 'wait'}" data-muc="${ma}" title="${esc(NN.t(MUC_KHOA[i]) + ' — ' + tt)}">
+          <b>${MUC_SO[i]}</b><span class="vong"></span></button>`; }).join('')}</div>
+      </div>
+      <div class="tdt2-tien">
+        <div><small>${NN.h('td_fare_est')}</small><b>${so(cuoc)} LAK</b></div>
+        <div class="${conNo ? 'no' : ''}"><small>${NN.h(conNo ? 'td_unpaid_amt' : 'td_paid_full')}</small><b>${so(conNo || cuoc)} LAK</b></div>
+      </div>
+      <div class="tdt2-thao-tac">
+        ${laBai() && tiep && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn dam" data-toi="${tiep.seq}">${NN.h('td_confirm_stop', { n: tiep.seq })}: <span lang="lo">${esc(tiep.name)}</span></button>` : ''}
+        ${c.cho_cap_phat ? `<button type="button" class="tdt2-btn tan" data-cap>${NN.h('td_issue_fuel')}</button>` : ''}
+        ${laBai() && P.finance_status !== 'paid' ? `<button type="button" class="tdt2-btn do" data-su-co>${NN.h('report_incident')}</button>` : ''}
+      </div>`;
+
+    q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => b.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: P.id })));
+    const nutToi = q('#tdt-xe [data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
+    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', () => EPL.di('cap-phat'));
+    const nutSC = q('#tdt-xe [data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
+  }
+
+  /* ---------------------------------------------------------------- vẽ cả màn chi tiết */
+  function ve() {
+    const co = !!P;
+    q('#tdt-su-co').disabled = q('#tdt-mo-phieu').disabled = !co;
+    veMoc(); veTabs(); veHoSo(); veBanDo();
+    caoCot();
   }
 
   /* ---------------------------------------------------------------- tải & thao tác */
@@ -297,6 +468,7 @@
     try {
       P = await API.get('/api/trips/' + id);
       VET = await API.get('/api/trips/' + id + '/vet').catch(() => null);
+      CHUNG_TU = null; mocSang = 0;
       veDanhSach(); ve();
     } catch (e) { EPL.baoLoi(e); }
   }
@@ -338,6 +510,7 @@
     dlg.showModal();
   }
   async function duyet(e) {
+    if (!e) return;
     const v = await EPL.hopNhap(NN.t('approve') + ' — ' + (e.note || ''), [
       { id: 'source', label: 'source', type: 'select', value: 'mua', options: [['mua', NN.t('src_mua')], ['kho', NN.t('src_kho')]] },
       { id: 'part_id', label: 'pick_part', type: 'select', value: '', options: [['', '—']].concat(PARTS.filter(p => p.qty > 0).map(p => [p.id, p.name + ' · ' + NN.t('stock_left') + ' ' + so(p.qty)])) },
@@ -352,6 +525,7 @@
     try { P = await API.post(`/api/trips/${P.id}/events/${e.id}/duyet`, v); PARTS = await API.get('/api/parts'); EPL.toast(NN.t('saved'), 'ok'); await tai(true); ve(); } catch (x) { EPL.baoLoi(x); }
   }
   async function tuChoi(e) {
+    if (!e) return;
     const v = await EPL.hopNhap(NN.t('reject') + ' — ' + (e.note || ''), [{ id: 'reason', label: 'reject_reason', value: '', lo: true }], NN.t('reject'));
     if (!v) return;
     try { P = await API.post(`/api/trips/${P.id}/events/${e.id}/duyet`, { reject: true, reason: v.reason }); await tai(true); ve(); } catch (x) { EPL.baoLoi(x); }
@@ -386,10 +560,13 @@
     if (bat) dongHo = setInterval(() => tai(true).catch(() => {}), 30000);
   }
 
+  let choCao = 0;
+  function khiDoiCo() { clearTimeout(choCao); choCao = setTimeout(caoCot, 80); }
+
   EPL.modules['theo-doi-tuyen'] = {
     async init(r, ctx) {
       root = r;
-      [PARTS, KM] = await Promise.all([API.get('/api/parts'), API.get('/api/khoan-muc')]);
+      PARTS = await API.get('/api/parts').catch(() => []);
       q('#tdt-q').addEventListener('input', veDanhSach);
       q('#tdt-chi-chay').addEventListener('change', veDanhSach);
       q('#tdt-tu-dong').addEventListener('change', e => datTuDong(e.target.checked));
@@ -397,26 +574,28 @@
       q('#tdt-so-su-co').addEventListener('click', moSo);
       q('#tdt-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       q('#tdt-su-co').addEventListener('click', moSuCo);
-      q('#tdt-ghi-chu').addEventListener('click', ghiChu);
       q('#tdt-f-co-sua').addEventListener('change', e => { q('#tdt-f-sua').hidden = !e.target.checked; });
-      root.querySelectorAll('.tdt-sap button').forEach(b => b.addEventListener('click', () => {
-        root.querySelectorAll('.tdt-sap button').forEach(x => x.classList.toggle('active', x === b));
+      root.querySelectorAll('#tdt-sap button').forEach(b => b.addEventListener('click', () => {
+        root.querySelectorAll('#tdt-sap button').forEach(x => x.classList.toggle('active', x === b));
         sap = b.dataset.sap; veDanhSach();
       }));
-      root.querySelectorAll('.tdt-bd-tab button').forEach(b => b.addEventListener('click', () => {
-        root.querySelectorAll('.tdt-bd-tab button').forEach(x => x.classList.toggle('active', x === b));
+      root.querySelectorAll('#tdt-bd-tab button').forEach(b => b.addEventListener('click', () => {
+        root.querySelectorAll('#tdt-bd-tab button').forEach(x => x.classList.toggle('active', x === b));
         cheDoBD = b.dataset.bd; veBanDo();
       }));
       q('#tdt-nen').addEventListener('change', e => { datNen(e.target.value); });
       root.querySelectorAll('.tdt-nguon button').forEach(b => b.addEventListener('click', () => datNguon(b.dataset.src)));
       q('#tdt-f-part').addEventListener('change', () => datNguon('kho'));
+      window.addEventListener('resize', khiDoiCo);
       await tai();
       const t = ctx.tham || {};
       const dau = t.id || (loc()[0] || {}).id;
       if (dau) await mo(dau); else ve();
+      caoCot();
     },
     destroy() {
       clearInterval(dongHo); dongHo = null;
+      window.removeEventListener('resize', khiDoiCo);
       if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
     },
     onLang() { if (root) { veOSo(); veDanhSach(); ve(); } },

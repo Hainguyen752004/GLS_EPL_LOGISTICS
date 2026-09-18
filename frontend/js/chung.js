@@ -134,8 +134,8 @@
     en:   { vi: 'Vietnamese', lo: 'Lao', en: 'English', both: 'Vietnamese + Lao' },
   };
   const co = (m) => m === 'both'
-    ? `<span class="co hai"><svg viewBox="0 0 24 16">${CO_NN.vi}</svg><svg viewBox="0 0 24 16">${CO_NN.lo}</svg></span>`
-    : `<span class="co"><svg viewBox="0 0 24 16">${CO_NN[m]}</svg></span>`;
+    ? `<span class="ln-co hai"><svg viewBox="0 0 24 16">${CO_NN.vi}</svg><svg viewBox="0 0 24 16">${CO_NN.lo}</svg></span>`
+    : `<span class="ln-co"><svg viewBox="0 0 24 16">${CO_NN[m]}</svg></span>`;
 
   function veNutNgonNgu() {
     // màn đăng nhập: dãy phẳng như cũ

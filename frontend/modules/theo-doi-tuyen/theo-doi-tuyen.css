@@ -1,98 +1,164 @@
-/* Theo dõi tuyến — trung tâm điều hành: dải ô số trên, ba cột dưới */
-.tdt-thanh{flex-wrap:wrap}
-.tdt-tim{min-width:320px;flex:1}
-.tdt-loc{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.tdt-luc{margin:-4px 0 12px}
+/* Theo dõi tuyến — kiểu lấy từ bản mẫu frontend/modules/trip-tracking.
+ *
+ * Hai điều chỉnh cố ý so với bản mẫu:
+ *   · Mọi quy tắc nằm dưới `.tdt2` — bản mẫu là trang đứng riêng nên nó định nghĩa lại .btn, .card,
+ *     table, th, td…; bê thẳng vào đây là đè lên cả ứng dụng.
+ *   · Màu lấy từ bảng màu EPL Lào đang dùng (var(--ink), var(--green)…) thay cho navy/tan riêng của
+ *     bản mẫu, để màn này không lạc lõng giữa các màn khác.
+ */
+.tdt2{display:flex;flex-direction:column;gap:12px;min-height:0}
+.tdt2 .mono{font-family:ui-monospace,Consolas,monospace}
 
-/* ---- dải ô số: bấm một ô là lọc danh sách theo ô đó ---- */
-.tdt-o-so{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin-bottom:14px}
-.tdt-o{display:block;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);transition:border-color .15s,box-shadow .15s}
-.tdt-o:hover{border-color:var(--line-2)}
-.tdt-o.chon{border-color:var(--green-2);box-shadow:inset 0 0 0 1px var(--green-2);background:var(--green-soft)}
-.tdt-o .l{display:block;font-size:12px;color:var(--ink-2);line-height:1.35;min-height:2.7em}
-.tdt-o .v{display:block;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
-.tdt-o.do .v{color:var(--red)} .tdt-o.vang .v{color:var(--amber)}
+/* ---- thanh trên ---- */
+.tdt2-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tdt2-top__l,.tdt2-top__r{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tdt2-tim{display:flex;align-items:center;gap:8px;height:34px;width:320px;max-width:100%;padding:0 12px;
+  border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink-3)}
+.tdt2-tim svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round}
+.tdt2-tim input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--ink);font-size:12.5px;font-family:inherit}
+.tdt2-chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.tdt2-chk input{width:15px;height:15px;margin:0;accent-color:var(--green-2)}
+.tdt2-luc{font-size:11.5px;color:var(--ink-3)}
+.tdt2-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;
+  border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);
+  font-family:inherit;font-size:12.5px;font-weight:600;white-space:nowrap}
+.tdt2-btn:hover{background:var(--bg)}
+.tdt2-btn:disabled{opacity:.5;pointer-events:none}
+.tdt2-btn svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tdt2-btn.sm{height:30px;padding:0 10px;font-size:12px}
+.tdt2-btn.dam{background:var(--ink);border-color:var(--ink);color:#fff}
+.tdt2-btn.dam:hover{background:#2a3745}
+.tdt2-btn.tan{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.tdt2-btn.tan:hover{background:#f0dfbc}
+.tdt2-btn.do{background:var(--red-soft);border-color:#EAC3C3;color:var(--red)}
 
-/* ---- ba cột ---- */
-.tdt-ba{display:grid;grid-template-columns:300px minmax(0,1fr) 300px;gap:14px;align-items:start}
-.tdt-giua{display:grid;gap:14px;min-width:0}
-.tdt-khoi{margin:0}
+/* ---- dải ô số ---- */
+.tdt2-tiles{display:flex;gap:10px;flex-wrap:wrap}
+.tdt2-tile{flex:1 1 0;min-width:120px;min-height:68px;display:flex;flex-direction:column;justify-content:center;
+  align-items:flex-start;gap:2px;padding:9px 14px;overflow:visible;
+  border:1px solid var(--line);border-radius:10px;background:var(--paper);text-align:left;font-family:inherit}
+.tdt2-tile:hover{border-color:var(--line-2)}
+.tdt2-tile.chon{outline:2px solid var(--ink);outline-offset:-1px}
+.tdt2-tile .l{font-size:11.5px;line-height:1.3;color:var(--blue)}
+.tdt2-tile .v{font-size:22px;line-height:1.15;font-weight:600;font-variant-numeric:tabular-nums}
+.tdt2-tile.do .l,.tdt2-tile.do .v.khac0{color:var(--red)}
+.tdt2-tile.vang .l,.tdt2-tile.vang .v.khac0{color:var(--amber)}
 
-/* cột trái: danh sách chuyến */
-.tdt-ds .hd{gap:8px}
-.tdt-dem{font-size:13px;font-weight:700;color:var(--green)}
-.tdt-sap{display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line)}
-.tdt-sap button{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--ink-2)}
-.tdt-sap button.active{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:600}
-.tdt-the-ds{max-height:70vh;overflow:auto}
-.tdt-the{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;background:none;padding:10px 12px}
-.tdt-the:hover{background:var(--bg)}
-.tdt-the.chon{background:var(--green-soft);border-left-color:var(--green-2)}
-.tdt-the.gap{border-left-color:var(--red)}
-.tdt-the .so{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12.5px;font-weight:700}
-.tdt-the .kh{font-size:12.5px;color:var(--ink);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tdt-the .tuyen{font-size:12px;color:var(--ink-2);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tdt-the .xe{font-size:11.5px;color:var(--ink-3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tdt-the .canh{font-size:11.5px;font-weight:600;margin-top:4px}
-.tdt-the .canh.do{color:var(--red)} .tdt-the .canh.vang{color:var(--amber)}
-.tdt-the .canh.xanh{color:var(--green);font-weight:500}
-.tdt-the .chan{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:var(--ink-3);margin-top:5px;padding-top:5px;border-top:1px dotted var(--line)}
-.tdt-trong{padding:22px 14px;text-align:center;color:var(--ink-3);font-size:13px}
+/* ---- ba cột: cao đúng phần màn còn trống, js đặt chiều cao ---- */
+.tdt2-cols{display:grid;grid-template-columns:280px minmax(0,1fr) 330px;gap:12px;min-height:0}
+.tdt2-card{display:flex;flex-direction:column;min-height:0;overflow:hidden;
+  background:var(--paper);border:1px solid var(--line);border-radius:12px}
+.tdt2-hd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;border-bottom:1px solid var(--bg-2)}
+.tdt2-hd b{font-size:14px}
+.tdt2-hd-phai{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.tdt2-mo{font-size:12px;color:var(--ink-3)}
+.tdt2-sub{flex:none;padding:8px 14px;border-bottom:1px solid var(--bg-2)}
+.tdt2-cuon{flex:1 1 0;min-height:0;overflow:auto}
+.tdt2-seg{display:inline-flex;gap:2px;padding:3px;background:var(--bg-2);border-radius:8px}
+.tdt2-seg button{height:26px;padding:0 10px;border:0;border-radius:6px;background:none;
+  color:var(--ink-3);font-family:inherit;font-size:12px;font-weight:500}
+.tdt2-seg button.active{background:var(--ink);color:#fff;font-weight:600}
+.tdt2-nen{height:28px;padding:0 8px;font-size:12px}
+.tdt2-chu-thich{display:flex;gap:10px}
+.tdt2-chu-thich span{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.tdt2-chu-thich i{width:8px;height:8px;border-radius:50%}
+.tdt2-chu-thich i.chay{background:var(--blue)} .tdt2-chu-thich i.lau{background:var(--amber)}
+.tdt2-chu-thich i.su-co{background:var(--red)} .tdt2-chu-thich i.khong{background:var(--ink-3)}
 
-/* cột giữa: bản đồ tuyến */
-.tdt-bd-the .hd{gap:10px;flex-wrap:wrap}
-.tdt-bd-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
-.tdt-bd-tab button{border:0;background:none;padding:4px 12px;border-radius:999px;font-size:12.5px;color:var(--ink-2)}
-.tdt-bd-tab button.active{background:var(--ink);color:#fff;font-weight:600}
-.tdt-nen{border:1px solid var(--line-2);border-radius:var(--r);padding:4px 8px;font-size:12.5px;background:var(--paper)}
-.tdt-chu-thich{display:flex;flex-wrap:wrap;gap:14px;padding:8px 14px;border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-2)}
-.tdt-chu-thich span{display:inline-flex;align-items:center;gap:6px}
-.tdt-chu-thich .cham{width:10px;height:10px;border-radius:50%;display:inline-block}
-.tdt-chu-thich .cham.chay{background:#2F5D8A} .tdt-chu-thich .cham.lau{background:#A86B12}
-.tdt-chu-thich .cham.su-co{background:#A83232} .tdt-chu-thich .cham.khong{background:#7A858F}
-.tdt-map{height:calc(380px * var(--ty-le,1));background:#DDE5E0;position:relative;zoom:calc(1 / var(--ty-le,1))}
+/* ---- danh sách chuyến ---- */
+.tdt2-the{display:flex;flex-direction:column;gap:6px;width:100%;padding:11px 14px;text-align:left;
+  border:0;border-bottom:1px solid var(--bg-2);border-left:3px solid transparent;background:none;font-family:inherit}
+.tdt2-the:hover{background:var(--bg)}
+.tdt2-the.chon{background:var(--blue-soft);border-left-color:var(--blue)}
+.tdt2-the .so{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tdt2-the .so span:first-child{font-size:12px;font-weight:600}
+.tdt2-the .kh{font-size:12px}
+.tdt2-the .xe,.tdt2-the .chan{font-size:11.5px;color:var(--ink-3)}
+.tdt2-the .chan{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px}
+.tdt2-the .canh{font-size:11.5px;font-weight:600}
+.tdt2-the .canh.do{color:var(--red)} .tdt2-the .canh.vang{color:var(--amber)} .tdt2-the .canh.xanh{color:var(--green)}
+.tdt2-trong{padding:26px 14px;text-align:center;color:var(--ink-3);font-size:12.5px}
+
+/* ---- bản đồ: Leaflet thật. Trả riêng về tỷ lệ 1 vì Leaflet tính sai toạ độ chuột khi bị zoom ---- */
+.tdt-map{flex:none;height:calc(250px * var(--ty-le,1));zoom:calc(1 / var(--ty-le,1));
+  background:#DDE5E0;position:relative}
 .tdt-map.trong{display:grid;place-items:center}
-.tdt-map-trong{padding:18px 24px;text-align:center;color:var(--ink-3);font-size:13px;max-width:460px}
-.tdt-chu{padding:8px 14px;border-top:1px solid var(--line)}
-/* chấm xe trên bản đồ: vòng tròn màu + số xe bên cạnh */
-.tdt-xe-cham{display:flex;align-items:center;gap:4px;white-space:nowrap}
-.tdt-xe-cham span{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);flex:none}
-.tdt-xe-cham b{background:rgba(28,34,41,.82);color:#fff;font-size:11px;padding:1px 5px;border-radius:3px}
+.tdt-map-trong{padding:16px 22px;text-align:center;color:var(--ink-3);font-size:13px;max-width:460px}
 .leaflet-container{font-family:var(--font)}
+.tdt-xe-cham{display:flex;align-items:center;gap:4px}
+.tdt-xe-cham span{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45);flex:none}
+.tdt-xe-cham b{background:#fff;border-radius:4px;padding:0 4px;font-size:10.5px;box-shadow:0 1px 3px rgba(0,0,0,.3);white-space:nowrap}
 
-/* cột giữa: tiến độ trên tuyến */
-.tdt-tuyen{display:flex;gap:6px;align-items:flex-start;overflow-x:auto;padding-bottom:6px}
-.tdt-moc{flex:1;min-width:110px;text-align:center;position:relative}
-.tdt-moc:not(:first-child)::before{content:'';position:absolute;top:15px;left:-50%;width:100%;height:2px;background:var(--line-2)}
-.tdt-moc.done::before,.tdt-moc.now::before{background:var(--green-2)}
-.tdt-moc .cham{position:relative;width:32px;height:32px;margin:0 auto 6px;border-radius:50%;border:2px solid var(--line-2);background:var(--paper);display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--ink-3)}
-.tdt-moc.done .cham{background:var(--green-2);border-color:var(--green-2);color:#fff}
-.tdt-moc.now .cham{border-color:var(--ore);color:var(--ore);box-shadow:0 0 0 4px var(--ore-soft)}
-.tdt-moc .ten{font-size:12.5px;font-weight:600;line-height:1.35}
-.tdt-moc .km{font-size:11.5px;color:var(--ink-3)}
-.tdt-moc .btn{margin-top:6px}
-.tdt-tag-in{background:var(--red-soft);color:var(--red)}
-.tdt-tag-rp{background:var(--ore-soft);color:var(--ore)}
-.tdt-sua-khung{margin-top:10px;padding:12px;border:1px dashed var(--line-2);border-radius:var(--r)}
+/* ---- mốc chặng ---- */
+.tdt2-moc{flex:none;display:flex;align-items:flex-start;padding:12px 18px 6px;position:relative}
+.tdt2-moc::before{content:'';position:absolute;left:60px;right:60px;top:25px;height:2px;background:var(--line)}
+.tdt2-moc .m{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;
+  text-align:center;border:0;background:none;font-family:inherit;padding:0}
+.tdt2-moc .m i{width:26px;height:26px;border-radius:50%;background:var(--paper);border:2px solid var(--line);
+  color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-style:normal}
+.tdt2-moc .m.done i{background:var(--ink);border-color:var(--ink);color:#fff}
+.tdt2-moc .m.next i{border-color:var(--blue);color:var(--blue)}
+.tdt2-moc .m b{font-size:12px;font-weight:600}
+.tdt2-moc .m small{font-size:11px;color:var(--ink-3)}
+.tdt2-moc-chan{flex:none;display:flex;justify-content:space-between;gap:10px;padding:0 18px 10px;
+  font-size:11.5px;color:var(--ink-3)}
 
-/* cột phải: hồ sơ chuyến */
-.tdt-ho-so-so{padding:0 0 10px;border-bottom:2px solid var(--ink);margin-bottom:10px}
-.tdt-ho-so-so b{font-size:15px}
-.tdt-o-hs{display:grid;gap:2px;font-size:12.5px}
-.tdt-o-hs>div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dotted var(--line)}
-.tdt-o-hs>div>span:first-child{color:var(--ink-3);white-space:nowrap}
-.tdt-o-hs>div>span:last-child{text-align:right;font-weight:500}
-.tdt-muc{margin-top:12px}
-.tdt-muc-hang{display:flex;gap:5px;margin-top:5px}
-.tdt-muc-o{flex:1;text-align:center;padding:5px 0;border-radius:4px;font-size:11.5px;background:var(--bg-2);color:var(--ink-3)}
-.tdt-muc-o.entered{background:var(--amber-soft);color:var(--amber)}
-.tdt-muc-o.verified{background:var(--blue-soft);color:var(--blue)}
-.tdt-muc-o.booked{background:var(--ore-soft);color:var(--ore)}
-.tdt-muc-o.paid{background:var(--green-soft);color:var(--green)}
+/* ---- ba tab ---- */
+.tdt2-tabs{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;
+  border-top:1px solid var(--line);border-bottom:1px solid var(--bg-2);background:var(--bg)}
+.tdt2-tabs__ds{display:flex;gap:18px}
+.tdt2-tabs__nut{display:flex;gap:8px}
+.tdt2-tab{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 4px;margin-bottom:-1px;
+  border:0;border-bottom:2px solid transparent;background:none;color:var(--ink-3);
+  font-family:inherit;font-size:13px;font-weight:500}
+.tdt2-tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+.tdt2-tab .n{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:999px;
+  background:var(--bg-2);color:var(--ink-3);font-size:11px;font-weight:600}
+.tdt2-tab.active .n{background:var(--ink);color:#fff}
+.tdt2-tab-than table{border-collapse:collapse;width:100%}
+.tdt2-tab-than th{position:sticky;top:0;z-index:1;text-align:left;white-space:nowrap;
+  padding:8px 12px;background:var(--bg);border-bottom:1px solid var(--line);
+  font-size:11.5px;font-weight:600;color:var(--ink-3)}
+.tdt2-tab-than td{padding:8px 12px;border-bottom:1px solid var(--bg-2);vertical-align:top;font-size:12.5px}
+.tdt2-tab-than td.num,.tdt2-tab-than th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tdt2-tab-than .trong{padding:30px 14px;text-align:center;color:var(--ink-3)}
+.tdt2-chan{display:flex;justify-content:space-between;gap:10px;padding:9px 14px;
+  border-top:1px solid var(--bg-2);background:var(--bg);font-size:12.5px;color:var(--ink-3)}
 
-.tdt-so{max-width:1000px;width:92vw}
-.tdt-so .tbl-wrap{max-height:60vh;overflow:auto}
+/* ---- hồ sơ chuyến ---- */
+.tdt2-ho-so{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.tdt2-ho-so .dau{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tdt2-ho-so .dau b{font-size:15px}
+.tdt2-canh{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tdt2-kv{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--bg-2);font-size:12.5px}
+.tdt2-kv span{color:var(--ink-3)} .tdt2-kv b{font-weight:600;text-align:right}
+.tdt2-kv b.tre{color:var(--red)}
+.tdt2-muc-dau{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.tdt2-duyet{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.tdt2-ap{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 2px;border-radius:8px;
+  border:1px solid var(--line);background:var(--paper);font-family:inherit}
+.tdt2-ap b{font-size:12px;color:var(--ink-3)}
+.tdt2-ap .vong{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--line-2)}
+.tdt2-ap.verified,.tdt2-ap.booked,.tdt2-ap.paid{background:var(--green-soft);border-color:var(--green)}
+.tdt2-ap.verified b,.tdt2-ap.booked b,.tdt2-ap.paid b{color:var(--green)}
+.tdt2-ap.verified .vong,.tdt2-ap.booked .vong,.tdt2-ap.paid .vong{background:var(--green);border-color:var(--green)}
+.tdt2-ap.entered{background:var(--amber-soft);border-color:var(--amber)}
+.tdt2-ap.entered b{color:var(--amber)}
+.tdt2-ap.entered .vong{background:var(--amber);border-color:var(--amber)}
+.tdt2-tien{display:flex;gap:8px}
+.tdt2-tien>div{flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:8px}
+.tdt2-tien small{display:block;font-size:11px;color:var(--ink-3)}
+.tdt2-tien b{font-size:13px;font-variant-numeric:tabular-nums}
+.tdt2-tien .no{background:var(--red-soft);border-color:#EAC3C3}
+.tdt2-tien .no small,.tdt2-tien .no b{color:var(--red)}
+.tdt2-thao-tac{display:flex;flex-direction:column;gap:8px}
+.tdt2-thao-tac .tdt2-btn{width:100%}
 
-@media (max-width:1500px){.tdt-o-so{grid-template-columns:repeat(4,1fr)}}
-@media (max-width:1280px){.tdt-ba{grid-template-columns:270px minmax(0,1fr)}.tdt-ho-so{grid-column:1/-1}}
-@media (max-width:900px){.tdt-ba{grid-template-columns:1fr}.tdt-o-so{grid-template-columns:repeat(2,1fr)}.tdt-the-ds{max-height:340px}}
+@media (max-width:1280px){.tdt2-cols{grid-template-columns:240px minmax(0,1fr) 300px}.tdt2-chu-thich{display:none}}
+@media (max-width:1000px){
+  .tdt2-cols{grid-template-columns:1fr;height:auto!important}
+  .tdt2-card{min-height:380px}
+  .tdt2-tile{flex:1 1 30%}
+}

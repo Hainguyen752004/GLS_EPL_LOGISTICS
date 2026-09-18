@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 845 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 865 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4156,6 +4156,106 @@ window.EPL_TU_DIEN = {
   "vi": "Người dùng và vai trò",
   "lo": "ຜູ້ໃຊ້ ແລະ ໜ້າທີ່",
   "en": "Users and roles"
+ },
+ "td_tile_hint": {
+  "vi": "Bấm để lọc danh sách",
+  "lo": "ກົດເພື່ອກັ່ນຕອງລາຍການ",
+  "en": "Click to filter the list"
+ },
+ "td_docs": {
+  "vi": "Chứng từ",
+  "lo": "ເອກະສານ",
+  "en": "Documents"
+ },
+ "td_route_total": {
+  "vi": "Tổng tuyến",
+  "lo": "ລວມເສັ້ນທາງ",
+  "en": "Route total"
+ },
+ "td_gone_km": {
+  "vi": "đã đi",
+  "lo": "ໄປແລ້ວ",
+  "en": "covered"
+ },
+ "td_next_stop": {
+  "vi": "tiếp theo:",
+  "lo": "ຕໍ່ໄປ:",
+  "en": "next:"
+ },
+ "td_done_route": {
+  "vi": "đã đi hết tuyến",
+  "lo": "ໄປຄົບເສັ້ນທາງແລ້ວ",
+  "en": "route complete"
+ },
+ "td_ev_count": {
+  "vi": "{n} diễn biến",
+  "lo": "{n} ເຫດການ",
+  "en": "{n} events"
+ },
+ "td_last_ev": {
+  "vi": "Gần nhất",
+  "lo": "ລ່າສຸດ",
+  "en": "Latest"
+ },
+ "td_cost_note": {
+  "vi": "Ghi vào mục V của phiếu xuất xe",
+  "lo": "ລົງໃນໜ້າ V ຂອງໃບເບີກລົດ",
+  "en": "Booked to section V of the slip"
+ },
+ "td_no_docs": {
+  "vi": "Chuyến này chưa có chứng từ nào",
+  "lo": "ຖ້ຽວນີ້ຍັງບໍ່ມີເອກະສານ",
+  "en": "No documents for this trip yet"
+ },
+ "td_doc_count": {
+  "vi": "{n} chứng từ",
+  "lo": "{n} ເອກະສານ",
+  "en": "{n} documents"
+ },
+ "td_doc_note": {
+  "vi": "Phiếu lĩnh · tạm ứng · tệp đính kèm · sổ chứng từ",
+  "lo": "ໃບເບີກ · ເງິນລ່ວງໜ້າ · ໄຟລ໌ຄັດຕິດ · ປື້ມເອກະສານ",
+  "en": "Draw slips · advances · attachments · document register"
+ },
+ "td_fare_est": {
+  "vi": "Cước dự kiến",
+  "lo": "ຄ່າຂົນສົ່ງຄາດຄະເນ",
+  "en": "Expected freight"
+ },
+ "td_unpaid_amt": {
+  "vi": "Chưa thu",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບ",
+  "en": "Unpaid"
+ },
+ "td_paid_full": {
+  "vi": "Đã thu đủ",
+  "lo": "ຮັບຄົບແລ້ວ",
+  "en": "Fully collected"
+ },
+ "td_confirm_stop": {
+  "vi": "Xác nhận tới điểm {n}",
+  "lo": "ຢືນຢັນຮອດຈຸດ {n}",
+  "en": "Confirm arrival at stop {n}"
+ },
+ "td_issue_fuel": {
+  "vi": "Cấp phiếu lĩnh nhiên liệu",
+  "lo": "ຈ່າຍໃບເບີກນໍ້າມັນ",
+  "en": "Issue the fuel draw slip"
+ },
+ "td_days": {
+  "vi": "Số ngày đi",
+  "lo": "ຈຳນວນວັນ",
+  "en": "Days out"
+ },
+ "td_days_n": {
+  "vi": "{n} ngày",
+  "lo": "{n} ວັນ",
+  "en": "{n} days"
+ },
+ "td_legs_short": {
+  "vi": "Chặng · km",
+  "lo": "ຈຸດ · ກມ",
+  "en": "Stops · km"
  },
  "r_acct": {
   "vi": "Kế toán Viêng Chăn (kiểm tra)",

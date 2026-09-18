@@ -1,84 +1,86 @@
-<!-- Theo dõi tuyến — ຕິດຕາມເສັ້ນທາງ. Dựng theo màn "Theo dõi và kiểm soát" của EPL_System:
-     thanh công cụ · dải ô số · ba cột (danh sách chuyến · chi tiết · hồ sơ chuyến).
+<!-- Theo dõi tuyến — dựng lại theo bản mẫu frontend/modules/trip-tracking: ba cột vừa MỘT màn hình,
+     khối nào cuộn trong khối đó, cột giữa gộp bản đồ + mốc chặng + ba tab (Diễn biến · Chi phí sửa
+     chữa · Chứng từ), cột phải là hồ sơ chuyến với trình tự duyệt và các nút thao tác.
 
-     Bản đồ vẽ tuyến kế hoạch nối các điểm đã khai toạ độ, chấm xe đứng ở mốc đã xác nhận tới gần
-     nhất — bên Lào không gắn GPS nên không nội suy vị trí giữa hai chặng.
+     Khác bản mẫu một chỗ cố ý: BẢN ĐỒ LÀ LEAFLET THẬT với GPS của tài xế, không phải hình SVG minh
+     hoạ — đúng như README của bản mẫu dặn khi đã có GPS. Mọi con số lấy từ máy chủ, không có dữ
+     liệu giả và không lưu localStorage.
+
      Sự cố / sửa xe khai ở màn này rơi vào mục V của phiếu xuất xe. -->
-<div class="toolbar tdt-thanh">
-  <div class="field tdt-tim"><label data-i18n="search"></label><input id="tdt-q" data-i18n-ph="td_search"></div>
-  <label class="tdt-loc small"><input type="checkbox" id="tdt-chi-chay" checked> <span data-i18n="td_only_run"></span></label>
-  <label class="tdt-loc small"><input type="checkbox" id="tdt-tu-dong"> <span data-i18n="td_auto"></span></label>
-  <div class="grow"></div>
-  <button class="btn" id="tdt-lam-moi"><span data-i18n="td_refresh"></span></button>
-  <button class="btn" id="tdt-so-su-co"><span data-i18n="td_book"></span></button>
-  <button class="btn warn" id="tdt-su-co"><span data-i18n="report_incident"></span></button>
-</div>
-<div class="tdt-luc small muted" id="tdt-luc"></div>
-
-<!-- Dải ô số: bấm vào ô là lọc danh sách bên dưới theo đúng ô đó -->
-<div class="tdt-o-so" id="tdt-o-so"></div>
-
-<div class="tdt-ba">
-  <!-- Cột trái: danh sách chuyến đang theo dõi -->
-  <aside class="card tdt-ds">
-    <div class="hd"><h3 data-i18n="td_watch"></h3><span class="tdt-dem" id="tdt-dem"></span><div class="grow"></div></div>
-    <div class="tdt-sap" role="tablist">
-      <button class="active" data-sap="uu-tien" data-i18n="td_by_pri"></button>
-      <button data-sap="ngay" data-i18n="td_by_date"></button>
-      <button data-sap="khach" data-i18n="td_by_cust"></button>
+<div class="tdt2">
+  <div class="tdt2-top">
+    <div class="tdt2-top__l">
+      <label class="tdt2-tim">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="tdt-q" type="search" autocomplete="off" data-i18n-ph="td_search">
+      </label>
+      <label class="tdt2-chk"><input type="checkbox" id="tdt-chi-chay" checked><span data-i18n="td_only_run"></span></label>
+      <label class="tdt2-chk"><input type="checkbox" id="tdt-tu-dong"><span data-i18n="td_auto"></span></label>
+      <span class="tdt2-luc" id="tdt-luc"></span>
     </div>
-    <div class="tdt-the-ds" id="tdt-the-ds"></div>
-  </aside>
-
-  <!-- Cột giữa: tiến độ trên tuyến + diễn biến + chi phí sửa chữa -->
-  <div class="tdt-giua">
-    <!-- Bản đồ tuyến: vẽ tuyến kế hoạch nối các điểm đã khai toạ độ, chấm xe đứng ở mốc đã
-         xác nhận tới gần nhất. Không GPS nên không nội suy vị trí giữa hai chặng. -->
-    <div class="card tdt-bd-the">
-      <div class="hd"><h3 data-i18n="map_title"></h3>
-        <div class="tdt-bd-tab" role="tablist">
-          <button data-bd="doi" data-i18n="map_fleet"></button>
-          <button class="active" data-bd="mot" data-i18n="map_one"></button>
-        </div>
-        <div class="grow"></div>
-        <span id="tdt-dau"></span>
-        <select id="tdt-nen" class="tdt-nen"><option value="ve-tinh" data-i18n="map_sat"></option><option value="duong" data-i18n="map_road"></option></select>
-      </div>
-      <div class="tdt-chu-thich">
-        <span><i class="cham chay"></i><span data-i18n="map_running"></span></span>
-        <span><i class="cham lau"></i><span data-i18n="map_late"></span></span>
-        <span><i class="cham su-co"></i><span data-i18n="map_inc"></span></span>
-        <span><i class="cham khong"></i><span data-i18n="map_nopos"></span></span>
-      </div>
-      <div class="tdt-map" id="tdt-map"></div>
-      <div class="tdt-chu small muted"><span data-i18n="map_note2"></span> <span data-i18n="map_note"></span></div>
-      <div class="bd" id="tdt-tien-do"></div>
-    </div>
-
-    <div class="card tdt-khoi" id="tdt-khoi-cho">
-      <div class="hd"><h3 data-i18n="pending_reports"></h3><div class="grow"></div><span class="small muted" data-i18n="approve_note"></span></div>
-      <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="c_date"></th><th data-i18n="incident_type"></th><th data-i18n="what_broke"></th><th class="num" data-i18n="reported_cost"></th><th data-i18n="resp"></th><th class="no-print"></th></tr></thead><tbody id="tdt-cho-duyet"></tbody></table></div>
-    </div>
-
-    <div class="card tdt-khoi">
-      <div class="hd"><h3 data-i18n="events"></h3><div class="grow"></div>
-        <button class="btn sm" id="tdt-ghi-chu"><span data-i18n="add_note"></span></button></div>
-      <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="c_date"></th><th data-i18n="type"></th><th data-i18n="stop"></th><th data-i18n="note"></th><th data-i18n="resp"></th></tr></thead><tbody id="tdt-su-kien"></tbody></table></div>
-    </div>
-
-    <div class="card tdt-khoi">
-      <div class="hd"><h3 data-i18n="sec5"></h3><div class="grow"></div><span class="small muted" data-i18n="reopen_note"></span></div>
-      <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th data-i18n="item"></th><th data-i18n="source"></th><th class="num" data-i18n="qty"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="acct_code"></th></tr></thead><tbody id="tdt-sua"></tbody></table></div>
-      <div class="bd small muted" id="tdt-sua-tom"></div>
+    <div class="tdt2-top__r">
+      <button class="tdt2-btn" id="tdt-lam-moi" type="button">
+        <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span data-i18n="td_refresh"></span></button>
+      <button class="tdt2-btn" id="tdt-so-su-co" type="button"><span data-i18n="td_book"></span></button>
+      <button class="tdt2-btn tan" id="tdt-su-co" type="button">
+        <svg viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5"/><circle cx="12" cy="18" r=".8"/></svg><span data-i18n="report_incident"></span></button>
     </div>
   </div>
 
-  <!-- Cột phải: hồ sơ chuyến -->
-  <aside class="card tdt-ho-so">
-    <div class="hd"><h3 data-i18n="td_profile"></h3><div class="grow"></div>
-      <button class="btn sm" id="tdt-mo-phieu"><span data-i18n="open_slip"></span></button></div>
-    <div class="bd" id="tdt-xe"></div>
-  </aside>
+  <!-- Dải ô số: bấm một ô là lọc danh sách theo đúng ô đó, bấm lại thì bỏ lọc -->
+  <div class="tdt2-tiles" id="tdt-o-so"></div>
+
+  <div class="tdt2-cols" id="tdt-cols">
+    <!-- Cột trái: danh sách chuyến -->
+    <section class="tdt2-card">
+      <div class="tdt2-hd"><b data-i18n="td_watch"></b><span class="tdt2-mo" id="tdt-dem"></span></div>
+      <div class="tdt2-sub">
+        <div class="tdt2-seg" id="tdt-sap" role="tablist">
+          <button class="active" data-sap="uu-tien" data-i18n="td_by_pri"></button>
+          <button data-sap="ngay" data-i18n="td_by_date"></button>
+          <button data-sap="khach" data-i18n="td_by_cust"></button>
+        </div>
+      </div>
+      <div class="tdt2-cuon" id="tdt-the-ds"></div>
+    </section>
+
+    <!-- Cột giữa: bản đồ thật + mốc chặng + ba tab -->
+    <section class="tdt2-card">
+      <div class="tdt2-hd">
+        <b data-i18n="map_title"></b>
+        <div class="tdt2-hd-phai">
+          <div class="tdt2-seg" id="tdt-bd-tab" role="tablist">
+            <button data-bd="doi" data-i18n="map_fleet"></button>
+            <button class="active" data-bd="mot" data-i18n="map_one"></button>
+          </div>
+          <div class="tdt2-chu-thich">
+            <span><i class="chay"></i><span data-i18n="map_running"></span></span>
+            <span><i class="lau"></i><span data-i18n="map_late"></span></span>
+            <span><i class="su-co"></i><span data-i18n="map_inc"></span></span>
+            <span><i class="khong"></i><span data-i18n="map_nopos"></span></span>
+          </div>
+          <select id="tdt-nen" class="tdt2-nen">
+            <option value="ve-tinh" data-i18n="map_sat"></option>
+            <option value="duong" data-i18n="map_road"></option>
+          </select>
+        </div>
+      </div>
+      <div class="tdt-map" id="tdt-map"></div>
+      <div class="tdt2-moc" id="tdt-moc"></div>
+      <div class="tdt2-moc-chan" id="tdt-moc-chan"></div>
+      <div class="tdt2-tabs"><div class="tdt2-tabs__ds" id="tdt-tabs"></div><div class="tdt2-tabs__nut" id="tdt-tab-nut"></div></div>
+      <div class="tdt2-cuon tdt2-tab-than" id="tdt-tab-than"></div>
+    </section>
+
+    <!-- Cột phải: hồ sơ chuyến -->
+    <aside class="tdt2-card">
+      <div class="tdt2-hd"><b data-i18n="td_profile"></b>
+        <button class="tdt2-btn sm" id="tdt-mo-phieu" type="button">
+          <svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg><span data-i18n="open_slip"></span></button>
+      </div>
+      <div class="tdt2-cuon tdt2-ho-so" id="tdt-xe"></div>
+    </aside>
+  </div>
 </div>
 
 <!-- Hộp báo sự cố / sửa xe -->

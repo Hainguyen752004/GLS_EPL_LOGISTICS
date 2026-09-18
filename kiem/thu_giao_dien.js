@@ -193,25 +193,34 @@ async function main() {
   const pDang = dsPhieu.find(p => p.transport_status !== 'arrived') || dsPhieu[0];
   // 3c. Màn Theo dõi tuyến dựng theo trung tâm điều hành: dải ô số · ba cột · bấm ô là lọc
   await di('#/theo-doi-tuyen');
-  const oSo = [...goc().querySelectorAll('#tdt-o-so .tdt-o')];
+  const oSo = [...goc().querySelectorAll('#tdt-o-so .tdt2-tile')];
   assert.strictEqual(oSo.length, 8, 'dải ô số phải có đủ 8 ô, đang có ' + oSo.length);
   assert.ok(oSo.every(o => /^\d/.test(o.querySelector('.v').textContent.trim())), 'mỗi ô phải hiện một con số');
-  assert.ok(goc().querySelector('.tdt-ds') && goc().querySelector('.tdt-giua') && goc().querySelector('.tdt-ho-so'),
-    'phải đủ ba cột: danh sách · giữa · hồ sơ chuyến');
-  const the = [...goc().querySelectorAll('#tdt-the-ds .tdt-the')];
+  assert.strictEqual(goc().querySelectorAll('#tdt-cols > .tdt2-card').length, 3, 'phải đủ ba cột: danh sách · giữa · hồ sơ chuyến');
+  const the = [...goc().querySelectorAll('#tdt-the-ds .tdt2-the')];
   assert.ok(the.length, 'cột trái phải liệt kê chuyến đang theo dõi');
   assert.ok(goc().querySelector('#tdt-xe').textContent.trim().length > 20, 'hồ sơ chuyến phải có nội dung');
-  assert.ok(goc().querySelector('.tdt-muc-hang .tdt-muc-o'), 'hồ sơ chuyến phải hiện trạng thái sáu mục');
+  assert.strictEqual(goc().querySelectorAll('#tdt-xe .tdt2-ap').length, 6, 'hồ sơ chuyến phải hiện trạng thái sáu mục');
+  // mốc chặng và ba tab của bản mẫu
+  assert.ok(goc().querySelectorAll('#tdt-moc .m').length >= 2, 'phải vẽ mốc chặng của tuyến');
+  const tabs = [...goc().querySelectorAll('#tdt-tabs .tdt2-tab')].map(b => b.dataset.tab);
+  assert.deepStrictEqual(tabs, ['dien-bien', 'chi-phi', 'chung-tu'], 'phải đủ ba tab: ' + tabs.join(','));
+  assert.ok(goc().querySelector('#tdt-tab-than').textContent.trim().length > 0, 'tab đang mở phải có nội dung');
+  goc().querySelector('#tdt-tabs [data-tab="chi-phi"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await cho(120);
+  assert.ok(goc().querySelector('#tdt-tabs [data-tab="chi-phi"]').classList.contains('active'), 'bấm tab phải đổi tab');
+  goc().querySelector('#tdt-tabs [data-tab="dien-bien"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await cho(120);
   // bấm ô "chưa xuất bến" thì danh sách chỉ còn phiếu chưa xuất bến
   const soTruoc = the.length;
-  goc().querySelector('.tdt-o[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
+  goc().querySelector('.tdt2-tile[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
   await cho(120);
-  const soSau = goc().querySelectorAll('#tdt-the-ds .tdt-the').length;
+  const soSau = goc().querySelectorAll('#tdt-the-ds .tdt2-the').length;
   assert.ok(soSau <= soTruoc, 'bấm ô số phải lọc bớt danh sách: ' + soTruoc + ' → ' + soSau);
-  goc().querySelector('.tdt-o[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
+  goc().querySelector('.tdt2-tile[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
   await cho(120);
-  assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
-  console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
+  assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt2-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
+  console.log('✓ theo dõi tuyến: 8 ô số · 3 cột · mốc chặng · 3 tab · %d chuyến · bấm ô lọc được (%d → %d)', soTruoc, soTruoc, soSau);
 
   // Bản đồ: Leaflet để sẵn trong dự án nên phải vẽ được cả khi không ra Internet (ảnh nền thì
   // không có, nhưng đường tuyến và chấm xe lấy từ toạ độ trong DB nên vẫn phải hiện).
@@ -315,7 +324,7 @@ async function main() {
     // màn đăng nhập thì CỐ Ý giữ dãy phẳng để người mới thấy ngay là có tiếng Lào.
     {
       const o = d.getElementById('langApp');
-      assert.ok(o.querySelector('.ln-nut .co svg'), 'nút ngôn ngữ phải có cờ vẽ bằng SVG (emoji cờ không hiện trên Windows)');
+      assert.ok(o.querySelector('.ln-nut .ln-co svg'), 'nút ngôn ngữ phải có cờ vẽ bằng SVG (emoji cờ không hiện trên Windows)');
       const muc = [...o.querySelectorAll('.ln-muc')];
       assert.strictEqual(muc.length, w.EPL.NN.danhSach.length, 'menu phải đủ 4 ngôn ngữ');
       assert.ok(muc.every(b => b.querySelector('b').textContent.trim() && b.querySelector('small').textContent.trim() && b.querySelector('.ma').textContent.trim()),
