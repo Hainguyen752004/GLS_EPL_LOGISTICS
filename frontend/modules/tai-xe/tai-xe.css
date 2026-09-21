@@ -144,5 +144,4 @@
 .tx-gate.ok { background: var(--tx-good-50); color: var(--tx-good); } .tx-gate.warn { background: var(--tx-warn-50); color: var(--tx-warn); } .tx-gate.bad { background: var(--tx-bad-50); color: var(--tx-bad); }
 .tx-gate b { display: block; font-size: 13px; } .tx-gate small { display: block; opacity: .85; margin-top: 2px; }
 .tx-gate svg { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; }
-.tx-shift { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--tx-muted); }
 .tx-week--grid .tx-day .ev.off { border-color: var(--tx-faint); background: #f1f2f1; color: var(--tx-muted); }

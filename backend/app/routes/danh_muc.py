@@ -424,11 +424,10 @@ def lap_ro_mooc(vid: str, data: dict = Body(...), db: Session = Depends(get_db),
 
 
 # ================================================================ tài xế & bằng lái
-COT_TX = ("driver_code", "name", "name_latin", "phone", "dob", "id_card", "address", "role", "hire_date", "shift",
+COT_TX = ("driver_code", "name", "name_latin", "phone", "dob", "id_card", "address", "role", "hire_date",
           "license_no", "license_type", "license_class_hr", "license_status",
           "license_valid_from", "license_valid_to", "default_vehicle_id", "status", "note")
 NGAY_TX = ("dob", "hire_date", "license_valid_from", "license_valid_to")
-CA_TX = ("sang", "chieu", "dem", "linh_hoat")
 TRANG_THAI_BANG = ("active", "suspended", "revoked")
 
 
@@ -523,8 +522,6 @@ def _kiem_tx(d):
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Tài xế phải có tên."})
     if d.role not in ("main", "co"):
         raise HTTPException(422, {"ma": "VAI_SAI", "loi": "role phải là main (lái chính) hoặc co (phụ xe)."})
-    if d.shift and d.shift not in CA_TX:
-        raise HTTPException(422, {"ma": "CA_SAI", "loi": "Ca phải là %s." % ", ".join(CA_TX)})
     if d.license_status and d.license_status not in TRANG_THAI_BANG:
         raise HTTPException(422, {"ma": "TRANG_THAI_BANG_SAI", "loi": "Trạng thái bằng lái phải là %s." % ", ".join(TRANG_THAI_BANG)})
     if d.status not in TRANG_THAI_TAI_XE:

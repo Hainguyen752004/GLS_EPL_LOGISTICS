@@ -27,7 +27,6 @@
   const pill = (k, t) => `<span class="tx-pill ${k}">${esc(t)}</span>`;
   const ST = { running: ['amber', 'xe_st_running'], idle: ['green', 'xe_st_idle'], off: ['muted', 'tx_st_off'] };
   const stPill = (k) => { const s = ST[k] || ST.idle; return pill(s[0], NN.t(s[1])); };
-  const CA = { sang: 'tx_ca_sang', chieu: 'tx_ca_chieu', dem: 'tx_ca_dem', linh_hoat: 'tx_ca_linh_hoat' };
   const initials = (d) => (d.ten_latin || d.ten || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
   const avatar = (d, sm) => `<span class="tx-avatar ${sm ? 'sm' : ''}">${esc(initials(d))}</span>`;
   const toast = (m) => EPL.toast(m, 'ok');          // hộp báo chung của khung, không dựng cái thứ hai
@@ -45,7 +44,7 @@
       _id: d.id, ma: d.driver_code || d.id, ten: d.name, ten_latin: d.name_latin,
       vai: d.role === 'co' ? 'phu' : 'chinh', sdt: d.phone, ngay_sinh: ngay(d.dob), cmnd: d.id_card,
       ngay_vao: ngay(d.hire_date), dia_chi: d.address, hang_ho_so: d.license_class_hr,
-      xe_thuong_lai: d.default_vehicle, xe_thuong_lai_id: d.default_vehicle_id, ca: d.shift,
+      xe_thuong_lai: d.default_vehicle, xe_thuong_lai_id: d.default_vehicle_id,
       trang_thai: d.active === false ? 'off' : (TT_TX[d.status] || 'idle'),
       _status: d.status, _active: d.active !== false,
       phieu_hien_tai: d.phieu_hien_tai, so_phieu: d.so_phieu, ghi_chu: d.note, anh: null,
@@ -69,7 +68,7 @@
     return {
       driver_code: o.ma, name: o.ten, name_latin: o.ten_latin, phone: o.sdt, dob: o.ngay_sinh || null,
       id_card: o.cmnd, address: o.dia_chi, role: o.vai === 'phu' ? 'co' : 'main',
-      hire_date: o.ngay_vao || null, shift: o.ca || null, license_class_hr: o.hang_ho_so || null,
+      hire_date: o.ngay_vao || null, license_class_hr: o.hang_ho_so || null,
       default_vehicle_id: o.xe_thuong_lai_id || null,
       // "off" trên màn gộp hai thứ khác nhau; giữ nguyên trạng thái máy chủ nếu nó vốn đã là off,
       // để đổi từ "đang chạy" sang "nghỉ" không âm thầm biến người ta thành đã nghỉ việc.
@@ -208,7 +207,7 @@
     if (!d) { box.innerHTML = `<div class="tx-empty">${NN.h('tx_pick')}</div>`; return; }
     const xe = xeList.find(x => x.so_xe === d.xe_thuong_lai), kl = ketLuan(d);
     box.innerHTML = CLOSE_BTN + `
-      <div class="tx-head">${avatar(d)}<div class="t"><b class="lo">${esc(d.ten)}</b>${d.ten_latin ? ` <span class="muted">(${esc(d.ten_latin)})</span>` : ''} ${stPill(d.trang_thai)}<small><span class="mono">${esc(d.ma)}</span> · ${NN.h(d.vai === 'phu' ? 'tx_role_assist' : 'tx_role_main')}${d.ca ? ` · ${NN.h(CA[d.ca] || 'tx_ca_linh_hoat')}` : ''}</small>
+      <div class="tx-head">${avatar(d)}<div class="t"><b class="lo">${esc(d.ten)}</b>${d.ten_latin ? ` <span class="muted">(${esc(d.ten_latin)})</span>` : ''} ${stPill(d.trang_thai)}<small><span class="mono">${esc(d.ma)}</span> · ${NN.h(d.vai === 'phu' ? 'tx_role_assist' : 'tx_role_main')}</small>
         <div class="acts"><button class="tx-btn-sm dark" data-act="open"><svg class="tx-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button><button class="tx-btn-sm" data-act="dispatch" ${d.trang_thai === 'idle' && kl.lv !== 'bad' ? '' : 'disabled'}>${NN.h('new_dispatch')}</button>${d.sdt ? `<a class="tx-btn-sm" href="tel:${esc(d.sdt.replace(/\s/g, ''))}">${NN.h('tx_call')}</a>` : ''}</div></div></div>
       <div class="tx-kv">
         <div><span>${NN.h('tx_phone')}</span><b class="mono">${esc(d.sdt || '—')}</b></div><div><span>${NN.h('tx_dob')}</span><b>${fmt(d.ngay_sinh)}</b></div>
@@ -238,7 +237,7 @@
     closeDetail();                     // mở hộp đầy đủ thì thu ngăn trượt, không chồng hai lớp
     const isNew = !o._id;
     o.bang_lai = o.bang_lai || {}; o.lich_su_bang = o.lich_su_bang || [];
-    const TABS = [['chung', 'xe_tab_general'], ['bang', 'tx_tab_license'], ['xe', 'tx_tab_vehicle_shift'], ['lich', 'tx_tab_schedule'], ['phieu', 'xe_tab_trips_full']];
+    const TABS = [['chung', 'xe_tab_general'], ['bang', 'tx_tab_license'], ['xe', 'tx_tab_vehicle'], ['lich', 'tx_tab_schedule'], ['phieu', 'xe_tab_trips_full']];
     let cur = tab || 'chung', sub = null; const vals = {};
     const rt = root.querySelector('#tx-modal-root');
     rt.innerHTML = `<div class="tx-backdrop"><div class="tx-modal tx-modal--lg">
@@ -267,7 +266,8 @@
           + `<div class="f w3"><div class="small muted">${NN.h('tx_lic_hint')}</div></div>`;
       }
       const xeOpts = [['', NN.t('tx_no_vehicle')], ...xeList.map(x => [x._id, `${x.so_xe}${x.bien ? ' · ' + x.bien : ''}${x.hang ? ' · ' + x.hang : ''}`])];
-      return `<div class="sech">${NN.h('tx_tab_vehicle_shift')}</div>` + F('f-xe', NN.h('tx_vehicle'), SEL('f-xe', xeOpts, o.xe_thuong_lai_id || '')) + F('f-ca', NN.h('tx_shift'), SEL('f-ca', Object.entries(CA).map(([k, v]) => [k, NN.t(v)]), o.ca || 'linh_hoat')) + `<div class="f w3"><div class="small muted">${NN.h('tx_vehicle_hint')}</div></div>`;
+      // Tab chỉ còn một ô nên không cần dòng tiêu đề nữa — tên tab đã nói rồi, để thêm là đọc hai lần.
+      return F('f-xe', NN.h('tx_vehicle'), SEL('f-xe', xeOpts, o.xe_thuong_lai_id || ''), 2) + `<div class="f w3"><div class="small muted">${NN.h('tx_vehicle_hint')}</div></div>`;
     };
     const histRows = () => {
       const h = o.lich_su_bang.slice().sort((a, c) => (c.cap || '').localeCompare(a.cap || ''));
@@ -286,7 +286,7 @@
       const cnt = { trip: 0, off: 0, free: 0 };
       days.forEach(d => { const e = ev(iso(d)); cnt[e && e.su_kien.length ? (e.su_kien.some(s => s.loai === 'off') ? 'off' : 'trip') : 'free']++; });
       body.innerHTML = `<div class="tx-weekhd" style="padding:0 0 6px"><button class="tx-btn-sm" data-w="-1">‹</button><b>${fmt(iso(days[0]))} – ${fmt(iso(days[6]))}</b><button class="tx-btn-sm" data-w="1">›</button><span class="grow"></span>${pill('blue', cnt.trip + ' ' + NN.t('xe_days_trip'))} ${pill('muted', cnt.off + ' ' + NN.t('tx_days_off'))} ${pill('green', cnt.free + ' ' + NN.t('xe_days_free'))}</div>
-        <div class="tx-week tx-week--grid">${days.map(d => { const e = ev(iso(d)), isT = iso(d) === iso(today()); return `<div class="tx-day ${isT ? 'today' : ''}"><div class="d">${NN.t('xe_dow_' + d.getDay())}<b>${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</b></div><div class="evs">${e && e.su_kien.length ? e.su_kien.map(s => `<span class="ev ${s.loai}">${esc(s.text)}</span>`).join('') : `<span class="ev">${NN.h('tx_free_day')}${o.ca ? ` · ${NN.h(CA[o.ca] || 'tx_ca_linh_hoat')}` : ''}</span>`}</div></div>`; }).join('')}</div>
+        <div class="tx-week tx-week--grid">${days.map(d => { const e = ev(iso(d)), isT = iso(d) === iso(today()); return `<div class="tx-day ${isT ? 'today' : ''}"><div class="d">${NN.t('xe_dow_' + d.getDay())}<b>${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}</b></div><div class="evs">${e && e.su_kien.length ? e.su_kien.map(s => `<span class="ev ${s.loai}">${esc(s.text)}</span>`).join('') : `<span class="ev">${NN.h('tx_free_day')}</span>`}</div></div>`; }).join('')}</div>
         <div class="small muted" style="margin-top:8px">${NN.h('tx_schedule_hint')}</div>`;
       body.querySelectorAll('[data-w]').forEach(bt => bt.onclick = () => { const d = new Date(tuan + 'T00:00:00'); d.setDate(d.getDate() + 7 * +bt.dataset.w); ui.tuan = iso(d); lichTab(); });
     }
@@ -336,7 +336,7 @@
         ma: g('f-ma') ?? o.ma, ten: g('f-ten') ?? o.ten, ten_latin: g('f-latin') ?? o.ten_latin, vai: g('f-vai') || o.vai,
         sdt: g('f-sdt') ?? o.sdt, ngay_sinh: g('f-ns') ?? o.ngay_sinh, cmnd: g('f-cmnd') ?? o.cmnd,
         ngay_vao: g('f-vao') ?? o.ngay_vao, hang_ho_so: g('f-hangho') ?? o.hang_ho_so, dia_chi: g('f-diachi') ?? o.dia_chi,
-        trang_thai: g('f-tt') || o.trang_thai, ghi_chu: g('f-ghichu') ?? o.ghi_chu, ca: g('f-ca') || o.ca,
+        trang_thai: g('f-tt') || o.trang_thai, ghi_chu: g('f-ghichu') ?? o.ghi_chu,
       });
       if (g('f-xe') !== undefined) {
         o.xe_thuong_lai_id = g('f-xe') || null;

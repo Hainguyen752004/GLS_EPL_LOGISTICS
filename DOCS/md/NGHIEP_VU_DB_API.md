@@ -214,7 +214,7 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 | `vehicles` | Đầu kéo | `truck_no`, `plate_head`, `owner_type` (EPL/joint), `trailer_id`, ba hạn giấy tờ, `odometer_km`, `next_service_km`, `fuel_norm`, `engine_cap`, `box_size`, `tyre` |
 | `trailers` | Rơ-moóc (thực thể riêng) | `plate`, `trailer_type`, `capacity_t`, `status` |
 | `trailer_assignments` | Lịch sử lắp/tháo | `attached_at`, `detached_at`, `reason` |
-| `drivers` | Tài xế | `driver_code`, `name` + `name_latin`, `role`, `shift` (ca quen chạy), bằng lái hiện hành (`license_no`, `license_type`, `license_status`, hai mốc hạn), **`license_class_hr`** (hạng ghi trong hồ sơ nhân sự — lệch với hạng trên bằng là dấu hiệu hồ sơ sai), `default_vehicle_id`, `status` |
+| `drivers` | Tài xế | `driver_code`, `name` + `name_latin`, `role`, bằng lái hiện hành (`license_no`, `license_type`, `license_status`, hai mốc hạn), **`license_class_hr`** (hạng ghi trong hồ sơ nhân sự — lệch với hạng trên bằng là dấu hiệu hồ sơ sai), `default_vehicle_id`, `status` |
 | `driver_licenses` | Từng bằng lái và lần gia hạn | `license_no`, `valid_from`, `valid_to`, `issued_by`, `verified_by` |
 | `routes`, `route_stops` | Tuyến và các chặng | `total_km`, `toll_lak`; mỗi chặng có `km_from_prev`, `lat`, `lng` |
 | `suppliers`, `supplier_payments` | Nhà cung cấp và các đợt trả | |

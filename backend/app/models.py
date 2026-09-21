@@ -155,7 +155,6 @@ class Driver(Base):
     address = Column(String)
     role = Column(String, default="main")         # main (lái chính) · co (phụ xe)
     hire_date = Column(Date)
-    shift = Column(String)                        # ca quen chạy: sang · chieu · dem · linh_hoat (chỉ để điều xe tham khảo)
     # Bằng lái HIỆN HÀNH (bản mới nhất); lịch sử đầy đủ ở driver_licenses
     license_no = Column(String)
     license_type = Column(String)                 # hạng: B2 · C · D · E · FC …

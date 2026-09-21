@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1261 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1256 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4398,9 +4398,9 @@ window.EPL_TU_DIEN = {
   "en": "No licence recorded — open profile › Licence tab."
  },
  "tx_quick_hint": {
-  "vi": "Thẻ xem nhanh — bấm “Mở hồ sơ” hoặc bấm đúp dòng để sửa hồ sơ, ghi bằng lái mới / gia hạn, gán xe và ca.",
+  "vi": "Thẻ xem nhanh — bấm “Mở hồ sơ” hoặc bấm đúp dòng để sửa hồ sơ, ghi bằng lái mới / gia hạn, gán xe thường lái.",
   "lo": "ບັດເບິ່ງດ່ວນ — ກົດ “ເປີດຂໍ້ມູນ” ເພື່ອແກ້ໄຂ, ບັນທຶກໃບຂັບຂີ່, ກຳນົດລົດ.",
-  "en": "Quick view — click “Open profile” or double-click a row to edit, record a licence / renewal, assign truck and shift."
+  "en": "Quick view — click “Open profile” or double-click a row to edit, record a licence / renewal, assign the usual truck."
  },
  "tx_profile": {
   "vi": "Hồ sơ tài xế",
@@ -4408,9 +4408,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver profile"
  },
  "tx_edit_sub": {
-  "vi": "Nhân sự, bằng lái & gia hạn, xe thường lái, ca làm việc",
-  "lo": "ບຸກຄະລາກອນ, ໃບຂັບຂີ່ & ຕໍ່ອາຍຸ, ລົດປະຈຳ, ກະວຽກ",
-  "en": "Personnel, licence & renewals, usual truck, shift"
+  "vi": "Nhân sự, bằng lái & gia hạn, xe thường lái",
+  "lo": "ບຸກຄະລາກອນ, ໃບຂັບຂີ່ & ຕໍ່ອາຍຸ, ລົດປະຈຳ",
+  "en": "Personnel, licence & renewals, usual truck"
  },
  "tx_photo": {
   "vi": "Ảnh tài xế",
@@ -4427,10 +4427,10 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບຂັບຂີ່ & ຕໍ່ອາຍຸ",
   "en": "Licence & renewals"
  },
- "tx_tab_vehicle_shift": {
-  "vi": "Xe & ca làm",
-  "lo": "ລົດ & ກະວຽກ",
-  "en": "Truck & shift"
+ "tx_tab_vehicle": {
+  "vi": "Xe thường lái",
+  "lo": "ລົດປະຈຳ",
+  "en": "Usual truck"
  },
  "tx_tab_schedule": {
   "vi": "Lịch tuần",
@@ -4551,31 +4551,6 @@ window.EPL_TU_DIEN = {
   "vi": "Lưu = sửa bằng hiện tại tại chỗ. Gia hạn dùng nút “Ghi bằng mới”.",
   "lo": "ບັນທຶກ = ແກ້ໃບປັດຈຸບັນ. ຕໍ່ອາຍຸໃຊ້ປຸ່ມ “ບັນທຶກໃບໃໝ່”.",
   "en": "Save = edit current licence in place. Use “Record new” to renew."
- },
- "tx_shift": {
-  "vi": "Ca làm việc",
-  "lo": "ກະວຽກ",
-  "en": "Shift"
- },
- "tx_ca_sang": {
-  "vi": "Ca sáng (06:00 – 14:00)",
-  "lo": "ກະເຊົ້າ (06:00 – 14:00)",
-  "en": "Morning (06:00 – 14:00)"
- },
- "tx_ca_chieu": {
-  "vi": "Ca chiều (14:00 – 22:00)",
-  "lo": "ກະບ່າຍ (14:00 – 22:00)",
-  "en": "Afternoon (14:00 – 22:00)"
- },
- "tx_ca_dem": {
-  "vi": "Ca đêm (22:00 – 06:00)",
-  "lo": "ກະກາງຄືນ (22:00 – 06:00)",
-  "en": "Night (22:00 – 06:00)"
- },
- "tx_ca_linh_hoat": {
-  "vi": "Linh hoạt theo chuyến",
-  "lo": "ຕາມຖ້ຽວ",
-  "en": "Flexible per trip"
  },
  "tx_no_vehicle": {
   "vi": "— Chưa gán xe —",
