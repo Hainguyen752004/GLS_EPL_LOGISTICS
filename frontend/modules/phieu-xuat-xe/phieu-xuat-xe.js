@@ -112,8 +112,11 @@
    * DO gom: hàng bốc ở mỏ. DO giao: hàng lấy từ kho bãi, phải chỉ rõ lấy của lô nào (chính là DO gom
    * đã mang lô đó về) — đây là dây nối hai phiếu. Dòng "hao hụt" do máy ghi, người không sửa. */
   const laGom = () => (P.kind || 'giao') === 'gom';
+  // Phiếu GOM đã về bãi là hàng đã vào kho: dòng hàng và hai ô cân đóng lại — cùng luật với máy chủ
+  // (HANG_DA_NHAP_KHO). Sổ kho đã ghi theo số đó, sửa phiếu mà không sửa sổ là hai bên nói hai số.
+  const daNhapKho = () => laGom() && !moi && P.transport_status === 'arrived';
   function veHang() {
-    const tb = q('#px-hang tbody'), khoaDuoc = suaDuoc('trans');
+    const tb = q('#px-hang tbody'), khoaDuoc = suaDuoc('trans') && !daNhapKho();
     const dong = (P.goods || []);
     tb.innerHTML = dong.length ? dong.map((g, i) => {
       if (g.loai === 'hao_hut') return `<tr class="hao"><td>${esc(g.goods_name)}</td><td class="px-tu-lo"></td>
@@ -128,7 +131,7 @@
         <td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa-hang="${i}">×</button>` : ''}</td></tr>`;
     }).join('') : `<tr><td colspan="5" class="empty">${NN.h('no_goods_line')}</td></tr>`;
     q('#px-hang-them').hidden = !khoaDuoc;
-    q('#px-hang-nhac').innerHTML = NN.h(laGom() ? 'goods_hint_gom' : 'goods_hint_giao');
+    q('#px-hang-nhac').innerHTML = NN.h(daNhapKho() ? 'goods_locked_gom' : laGom() ? 'goods_hint_gom' : 'goods_hint_giao');
     tb.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => {
       const g = P.goods[+el.dataset.i]; if (!g) return;
       g[el.dataset.f] = el.dataset.f === 'qty_t' ? EPL.doc(el.value) : el.value;
@@ -199,7 +202,7 @@
       const sec = q(`.px-muc[data-muc="${m}"]`), st = moi ? 'wait' : (P.sections[m] || 'wait'), tuyChon = (m === 'repair' || m === 'other') && !P.expenses.some(d => d.section === m);
       const khoa = !suaDuoc(m); sec.classList.toggle('locked', khoa);
       const cot = m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : [];
-      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m)); });
+      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = (khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m))) || (daNhapKho() && (c === 'weight_origin' || c === 'weight_dest')); });
       if (m === 'trans' && khoa && suaTienDuoc(m)) sec.classList.remove('locked');   // kế toán còn sửa được ô tiền thì mục chưa "khoá" với họ
       const e = sec.querySelector('.px-stt'); const k = tuyChon ? 'na' : st;
       e.className = 'px-stt ' + k; e.innerHTML = NN.h(k === 'wait' ? 'stt_wait2' : 'stt_' + k);

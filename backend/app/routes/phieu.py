@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+from models import (GoodsMove, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
@@ -162,10 +162,10 @@ def xuat_phieu(db, phieu, day_du=True):
                "created_by": phieu.created_by,
                "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
                "tinh": tinh_phieu(phieu, dong),
-               "goods": KH.dong_hang(db, phieu.id),
-               "ton_lo": KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None,
                "sections": {s.section: s.status for s in _muc_cua(db, phieu).values()}})
     if day_du:
+        ra["goods"] = KH.dong_hang(db, phieu.id)
+        ra["ton_lo"] = KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None
         ra["expenses"] = [_xuat_dong(d) for d in dong]
         ra["logs"] = [{"ts": l.ts.isoformat() if l.ts else None, "user": l.user_name, "role": l.role,
                        "action": l.action}
@@ -424,6 +424,22 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     _chan_khoa(p, user)
     muc_tt = {m: s.status for m, s in _muc_cua(db, p).items()}
+    # ---- Luật hàng và kho (hai DO):
+    #  · Loại phiếu không đổi được nữa khi đã có dòng hàng hay dòng sổ kho — đổi là phiếu gom mang dòng xuất kho.
+    #  · Phiếu GOM đã nhập kho thì dòng hàng và hai ô cân ĐÓNG: sổ kho đã ghi theo số đó, sửa phiếu mà không
+    #    sửa sổ thì hai bên nói hai số. Muốn khác thì xoá phiếu giao đã lấy hàng rồi làm lại, hoặc lập phiếu
+    #    điều chỉnh — không âm thầm sửa lịch sử kho.
+    #  · Phiếu GIAO đã tới nơi vẫn sửa được (cân cuối gõ nhầm là chuyện thường), nhưng sửa xong máy tính lại
+    #    dòng hao hụt ngay bên dưới.
+    co_so_kho = db.query(GoodsMove).filter(GoodsMove.trip_id == p.id).count() > 0
+    co_dong_hang = db.query(TripGoods).filter(TripGoods.trip_id == p.id).count() > 0
+    if "kind" in data and (data["kind"] or p.kind) != p.kind and (co_so_kho or co_dong_hang):
+        raise HTTPException(409, {"ma": "KHONG_DOI_LOAI",
+                                  "loi": "Phiếu đã có dòng hàng hoặc đã ghi sổ kho, không đổi loại gom/giao được nữa."})
+    da_nhap_kho = p.kind == "gom" and db.query(GoodsMove).filter(GoodsMove.trip_id == p.id, GoodsMove.kind == "in").count() > 0
+    if da_nhap_kho and ("goods" in data or any(k in data for k in ("weight_origin", "weight_dest"))):
+        raise HTTPException(409, {"ma": "HANG_DA_NHAP_KHO",
+                                  "loi": "Hàng của phiếu gom này đã vào kho bãi; dòng hàng và cân không sửa được nữa."})
     if "doc_no" in data and str(data["doc_no"]).strip() != p.doc_no:
         if db.query(Trip).filter(Trip.doc_no == str(data["doc_no"]).strip()).first():
             raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu đã có."})
@@ -434,6 +450,9 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
         if not duoc_sua_muc(user.role, "trans", muc_tt["trans"]) and user.role != "admin":
             raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã khoá; phải trả lại mới sửa được dòng hàng."})
         KH.dat_dong_hang(db, p, data["goods"], user)
+    # Phiếu giao đã tới nơi: dòng hàng hay cân cuối vừa đổi thì dòng hao hụt phải tính lại theo số mới.
+    if p.kind == "giao" and p.transport_status == "arrived" and ("goods" in data or "weight_dest" in data or "weight_origin" in data):
+        KH.ghi_hao_hut_giao(db, p)
     _ghi_log(db, p, user, "a_save")
     db.commit()
     return xuat_phieu(db, p)

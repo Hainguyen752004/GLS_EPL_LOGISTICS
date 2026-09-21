@@ -274,12 +274,19 @@ def gieo(db):
     db.add(TripGoods(trip_id=pg.id, loai="hao_hut", goods_name="ແຮ່ເຫຼັກ (quặng sắt)", qty_t=0.20,
                      note="Cân mỏ 42.5 t − cân bãi 42.3 t"))
     db.flush()
-    phieu(doc_no="T4-0433-09/EPL", kind="giao", doc_date=D(2026, 9, 16), out_date=D(2026, 9, 16),
+    CT.ghi(db, "PNK_HH", nguon_bang="trips", nguon_id=pg.id, trip=pg, ngay=D(2026, 9, 15), doi_tuong_loai="kho",
+           doi_tuong_ten="Thà Bốc", by_user="ສົມໄຊ (Somchai)", mo_ta="Nhập kho hàng từ %s · 42.3 tấn" % pg.doc_no,
+           payload={"tan": 42.3, "boc_len": 42.5, "hao_hut": 0.2})
+    pv = phieu(doc_no="T4-0433-09/EPL", kind="giao", doc_date=D(2026, 9, 16), out_date=D(2026, 9, 16),
           truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6300, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
           customer_name="ຄຳຕຸ້ຍ", origin="ທ່າບົກ (ສະໜາມ EPL)", destination="ທ່າເຮືອກະລໍ",
           price_usd=43, weight_origin=30.00, transport_status="transit", finance_status="unpaid",
           lay_tu=[("G4-0101-09/EPL", 30.00)],
           chi=[dong("fuel", "diesel", 90, 30000, "LAK", "fp_yard"), dong("travel", "x_toll", 1, 1833500)])
+    db.flush()
+    CT.ghi(db, "PXK_HH", nguon_bang="trips", nguon_id=pv.id, trip=pv, ngay=D(2026, 9, 16), doi_tuong_loai="kho",
+           doi_tuong_ten="Thà Bốc", by_user="ສົມໄຊ (Somchai)", mo_ta="Xuất kho hàng đi giao %s · 30.0 tấn" % pv.doc_no,
+           payload={"tan": 30.0, "dong": [{"hang": "ແຮ່ເຫຼັກ (quặng sắt)", "tan": 30.0, "lo": pg.id}]})
 
     # ---- phiếu lĩnh (tờ giấy tài xế cầm đi, có mã QR)
     # Phiếu vừa xuất bến còn ĐANG CHỜ CẤP để màn Cấp phát có việc; các phiếu cũ thì tiền đã trao

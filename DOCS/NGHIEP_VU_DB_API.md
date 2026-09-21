@@ -37,6 +37,10 @@ Từ 21/09/2026, một chuyến quặng từ mỏ ra cảng đi qua **hai phiế
 - **Hao hụt ghi thành một dòng** trên phiếu (`trip_goods.loai = 'hao_hut'`) chứ không bắt người đọc trừ
   nhẩm: chặng gom là *cân mỏ − cân bãi*, chặng giao là *tấn xuất kho − cân nơi giao*.
 - **Chỉ DO giao mới có cước và hoá đơn.** Xuất hoá đơn cho DO gom bị máy chủ từ chối.
+- **Phiếu gom đã nhập kho thì dòng hàng và hai ô cân đóng lại** (mã lỗi `HANG_DA_NHAP_KHO`): sổ kho đã ghi
+  theo số đó, sửa phiếu mà không sửa sổ là hai bên nói hai số. Phiếu giao đã tới vẫn sửa được cân cuối,
+  sửa xong máy tính lại dòng hao hụt. Loại phiếu không đổi được khi đã có dòng hàng hay sổ kho
+  (`KHONG_DOI_LOAI`).
 - Vẫn cho phép **chạy thẳng mỏ → cảng** không qua kho: lập một DO giao và không chọn lô nào, nhập cân
   tay như cũ.
 
@@ -277,6 +281,8 @@ Mọi lỗi trả JSON `{"detail": {"ma": "MA_LOI", "loi": "câu tiếng Việt 
 | `DA_KHOA` (409) | Phiếu đã khoá |
 | `KHONG_DU_HANG` (409) | Lấy quá tồn của lô |
 | `LO_DA_XUAT` (409) | Xoá DO gom mà hàng đã có người lấy |
+| `HANG_DA_NHAP_KHO` (409) | Sửa dòng hàng hoặc cân của DO gom đã nhập kho |
+| `KHONG_DOI_LOAI` (409) | Đổi loại gom/giao khi phiếu đã có dòng hàng hay sổ kho |
 | `PHIEU_GOM` (409) | Xuất hoá đơn cho phiếu gom |
 | `THANG_SAI`, `TUAN_SAI`, `SO_SAI`… (422) | Dữ liệu gửi lên sai dạng |
 

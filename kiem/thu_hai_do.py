@@ -139,7 +139,22 @@ def main():
     assert hao and abs(hao[0]["qty_t"] - 0.3) < 0.01, "phải ghi dòng hao hụt 0,3 t trên phiếu giao: %s" % g["goods"]
     print("  ✓ dòng hao hụt chặng giao: %s t" % hao[0]["qty_t"])
 
+    # ================================================================ 3b. sửa sau khi đã tới: hao hụt phải tính lại
+    s, g = goi("/api/trips/%s" % giao["id"], {"weight_dest": 24.0}, vai="admin", method="PUT")
+    phai(s, 200, "Sửa cân cuối phiếu giao (24,7 → 24,0)", g)
+    hao = [x for x in g["goods"] if x["loai"] == "hao_hut"]
+    assert hao and abs(hao[0]["qty_t"] - 1.0) < 0.01, "sửa cân cuối thì dòng hao hụt phải tính lại thành 1,0 t: %s" % g["goods"]
+    print("  ✓ sửa cân cuối → dòng hao hụt tính lại: %s t" % hao[0]["qty_t"])
+
     # ================================================================ 4. những chỗ phải bị chặn
+    s, g = goi("/api/trips/%s" % gom["id"], {"goods": [{"goods_name": "x", "qty_t": 50}]}, vai="admin", method="PUT")
+    phai(s, 409, "Sửa dòng hàng phiếu gom ĐÃ nhập kho → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % gom["id"], {"weight_dest": 30}, vai="admin", method="PUT")
+    phai(s, 409, "Sửa cân bãi phiếu gom ĐÃ nhập kho → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % giao["id"], {"kind": "gom"}, vai="admin", method="PUT")
+    phai(s, 409, "Đổi loại phiếu khi đã có sổ kho → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % gom["id"], vai="admin")
+    assert any(x["loai"] == "hao_hut" for x in g["goods"]), "dòng hao hụt của phiếu gom phải còn nguyên sau các lần bị từ chối"
     s, g = goi("/api/trips/%s/invoice" % gom["id"], {}, vai="doanhthu")
     phai(s, 409, "Xuất hoá đơn cho phiếu GOM → bị từ chối", g)
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin", method="DELETE")
@@ -155,7 +170,7 @@ def main():
     assert round(ton_kho() - ton0, 2) == 0, "xoá phiếu gom thì lô cũng mất khỏi kho"
     print("  ✓ xoá phiếu gom: tồn kho về đúng lúc đầu")
 
-    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · 3 chỗ từ chối đúng")
+    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · sửa sau khi tới tính lại · 6 chỗ từ chối đúng")
 
 
 if __name__ == "__main__":

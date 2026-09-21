@@ -702,6 +702,9 @@ KHOA_MOI = {
  'w_dest_gom':     ('Cân tại bãi khi về (t)', 'ຊັ່ງທີ່ສາງຕອນກັບ (ໂຕນ)', 'Weight at the yard on return (t)'),
  'w_origin_giao':  ('Cân lấy khỏi kho (t)', 'ຊັ່ງທີ່ເບີກອອກຈາກສາງ (ໂຕນ)', 'Weight drawn from the store (t)'),
  'w_dest_giao':    ('Cân tại nơi giao (t)', 'ຊັ່ງທີ່ບ່ອນສົ່ງ (ໂຕນ)', 'Weight at the delivery point (t)'),
+ 'goods_locked_gom': ('Hàng đã vào kho bãi — dòng hàng và cân của phiếu này không sửa nữa. Sai số thì xử lý ở phiếu giao hoặc lập phiếu điều chỉnh.',
+                      'ສິນຄ້າເຂົ້າສາງແລ້ວ — ແຖວສິນຄ້າ ແລະ ນ້ຳໜັກຊັ່ງຂອງໃບນີ້ບໍ່ແກ້ອີກ. ຜິດພາດໃຫ້ແກ້ຢູ່ໃບສົ່ງ ຫຼື ອອກໃບປັບປຸງ.',
+                      'Goods are already in the yard store — the goods lines and weights of this order are closed. Fix mistakes on the delivery order or with an adjustment order.'),
  # ---- v18: hai DO — phiếu gom hàng và phiếu giao hàng, nối nhau qua kho bãi
  'do_kind':        ('Loại phiếu', 'ປະເພດໃບ', 'Order type'),
  'do_gom':         ('Đi gom hàng (mỏ → bãi)', 'ໄປເກັບສິນຄ້າ (ບໍ່ແຮ່ → ສາງ)', 'Collection (mine → yard)'),
