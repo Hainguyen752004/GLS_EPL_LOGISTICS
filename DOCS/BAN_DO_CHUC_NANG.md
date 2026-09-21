@@ -260,7 +260,7 @@ chuyến không thành vài chục lượt gọi.
 - **Không migration**: bảng dựng từ model bằng `create_all`. Đổi cột thì `python backend/app/seed.py --dung-lai` trên máy dev.
 - **Backend** FastAPI: một tệp route cho mỗi module (`routes/phieu.py`, `routes/kho.py`, …), luật phân quyền tập trung ở `services/phan_quyen.py`, phép tính ở `services/tinh_toan.py`.
 - **Frontend**: khung `index.html` + `js/chung.js` nạp từng module từ `modules/<tên>/<tên>.html · .css · .js` — **một module một bộ ba tệp**, sai đâu mở đúng thư mục đó.
-- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển 741 khoá trong `js/ngon_ngu.js`. Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
+- **Ngôn ngữ**: Việt · Lào · Anh · Việt+Lào, từ điển hơn 1.100 khoá trong `js/ngon_ngu.js` (sinh tự động bởi `tools/sinh_ngon_ngu.py`). Chữ Lào chép nguyên từ bản mẫu bên Lào đã duyệt.
 - **Đăng nhập** tên + mật khẩu, phiên ký HMAC 12 giờ. Mật khẩu băm PBKDF2, không lưu chữ thường.
 - **Màn đăng nhập** dựng theo bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án): nửa trái là thương hiệu
   kèm sơ đồ tuyến, nửa phải là biểu mẫu và khung chọn nhanh tài khoản gom theo năm nhóm vai

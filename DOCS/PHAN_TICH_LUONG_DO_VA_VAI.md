@@ -1,5 +1,12 @@
 # Phân tích luồng phiếu xuất xe (DO) và vai — tài liệu nội bộ
 
+> **ĐÃ LỖI THỜI Ở CHỖ QUAN TRỌNG NHẤT — đọc kèm `CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md`.**
+> Ngày 21/09/2026 sếp chốt: một chuyến đi qua **HAI DO** (một phiếu đi gom hàng mỏ → bãi, một phiếu đi
+> giao hàng bãi → khách, nối nhau qua kho hàng ở bãi Thà Bốc). Mục 3 (câu V1) và dòng K1 trong bảng
+> dưới đây viết theo phương án cũ "một phiếu cả vòng" nên **không còn đúng**. Giữ tệp này vì phần đối
+> chiếu Excel, bảng Nhiệm Vụ và các câu hỏi khác vẫn dùng được; hệ thống hiện tại mô tả ở
+> `NGHIEP_VU_DB_API.md`.
+
 Tài liệu này là **ghi chép làm việc giữa anh và em**: phần anh nêu, phần em đối chiếu với bộ Excel và
 quy trình chữ của bên Lào, chỗ nào chốt được thì chốt, chỗ nào phải hỏi thì đánh dấu để đưa sang tài
 liệu gửi bên EPL (`CAU_HOI_NGHIEP_VU_EPL.md`, bản Lào `ຄຳຖາມວິຊາການ_EPL.md`, bản Anh `EPL_BUSINESS_QUESTIONS.md`).
@@ -9,7 +16,7 @@ Nguồn đối chiếu:
 - `D:\Demo_Lao\LaoReports\Bao_cao_Van_tai_EPL_Tieng_Viet1.xlsx` — 5 sheet: Báo Cáo, BC Vận Tải, Hóa Đơn
   Vận Tải, Phiếu Xuất Xe, **Nhiệm Vụ** (bảng ai làm gì).
 - `D:\Demo_Lao\EPL_System\luonghoatdongEPL\EPL_Quy_trinh_Logistics_VN.docx` — 9 bước quy trình chữ.
-- Web đang chạy: `backend/app/services/phan_quyen.py` (chuỗi duyệt), `DOCS/CHUNG_TU_VA_DIEM_NOI.md`
+- Web đang chạy: `backend/app/services/phan_quyen.py` (chuỗi duyệt), `DOCS/NGHIEP_VU_DB_API.md`
   (chứng từ từng bước), màn Quy trình trong ứng dụng.
 
 ---
@@ -219,7 +226,7 @@ rồi mới xuất hoá đơn `HD` và thu `PT` → khoá rồi mới trả ch�
 
 | # | Điều | Web hiện tại | Đề nghị |
 |---|---|---|---|
-| K1 | Phiếu = một vòng hay một chặng | Một phiếu một tuyến nhiều chặng (phương án A) | Hỏi V1 trước; nếu B thì thêm loại phiếu *gom hàng* không có mục II tiền |
+| K1 | Phiếu = một vòng hay một chặng | ~~Một phiếu một tuyến nhiều chặng~~ → **ĐÃ ĐỔI 21/09: hai DO** (gom + giao), xem `NGHIEP_VU_DB_API.md` | Hỏi V1 trước; nếu B thì thêm loại phiếu *gom hàng* không có mục II tiền |
 | K2 | Vai kế toán | ~~Một vai `acct` gộp~~ → **đã tách** `acct` (KT Thu/Chi, I–II) và `expacct` (KT Chi phí, IV–VI) | Xong 18/09 theo lời anh |
 | K3 | Giá cước | **ĐÃ LÀM (18/09)**: bảng giá khách × tuyến (× loại hàng, có ngày hiệu lực) trong Danh mục khách hàng; Bãi lập phiếu không gửi giá, máy tự điền đơn giá và giá thuê xe ngoài; KT Thu/Chi VC (người kiểm mục II) sửa được ô tiền trên phiếu khi chuyến khác hợp đồng | Bãi không thấy bảng giá; C3.5 chỉ còn hỏi giá lấy từ đâu để nhập vào bảng |
 | K4 | Thẻ cao tốc | Chi như tiền mặt | Nếu V10 xác nhận: thêm "ví thẻ cao tốc", phiếu nạp thẻ, mỗi phiếu trừ thẻ |
