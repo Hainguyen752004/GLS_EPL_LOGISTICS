@@ -117,5 +117,7 @@ hoá đơn và thu tiền, nằm ở mức phiếu. Họ đã có chip *Chờ ho
 | Việc | Chờ ai | Hiện đang làm gì |
 |---|---|---|
 | Khoá Google Routes / Geocoding | Anh cấp khoá | Tuyến và km nhập tay; bản đồ vẽ từ toạ độ trong CSDL |
-| API công nợ và sổ kế toán | Anh Khang | Sổ chứng từ đã ghi đủ mọi tờ kèm định khoản gợi ý; nút "đã đẩy" mới đánh dấu, chưa gọi API thật |
+| **Đường nhận chứng từ** | Anh Khang | **Bên mình đã làm xong lớp đẩy** (21/09): nút Đẩy, thử lại khi lỗi, chống gửi trùng, Sếp đặt địa chỉ và token trong màn hình. Hợp đồng JSON đề nghị ở `HOP_DONG_API_ANH_KHANG.md`. Chỉ chờ anh Khang cho địa chỉ + token, và chốt tên đường nếu muốn khác `/api/v1/epl-lao/vouchers` |
+| Mã tài khoản còn thiếu (tiền mặt, ngân hàng, hàng khách gửi, giá vốn) | Anh Khang | Đang để tên không mã; sửa một bảng `services/chung_tu.py` khi có |
+| API công nợ phải thu / phải trả | Anh Khang | Chưa làm; chỉ đọc và hiện nếu anh có đường sẵn |
 | Danh mục Acc code | Anh Khang | Ô chọn định khoản đang dùng danh mục dự phòng, mã lạ thì ghi rõ "không có trong danh mục" |

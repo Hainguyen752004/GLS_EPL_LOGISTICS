@@ -28,7 +28,7 @@ backend/app/
   models.py          bảng — theo đúng Excel, có gì khai đó
   seed.py            gieo dữ liệu mẫu (5 phiếu chép từ Excel + một cặp DO gom/giao của luồng mới)
   services/          tinh_toan.py (phép tính phiếu) · phan_quyen.py (ai làm gì) · bao_mat.py (đăng nhập)
-                     kho_hang.py (kho hàng ở bãi, dây nối hai DO) · chung_tu.py (sổ chứng từ)
+                     kho_hang.py (kho hàng ở bãi, dây nối hai DO) · chung_tu.py (sổ chứng từ) · day_ke_toan.py (đẩy sang kế toán)
   routes/            dang_nhap · danh_muc · phieu · phieu_linh · tat_toan · theo_doi · vi_tri
                      tuyen · acc_code · bao_cao · kho · kho_hang · nha_cung_cap · quy_trinh · ban_hang
 frontend/
@@ -49,6 +49,7 @@ kiem/
   thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
   thu_hai_do.py      LUỒNG HAI DO: gom → nhập kho → giao lấy lô → xuất kho → hao hụt
   thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
+  thu_day_ke_toan.py đẩy chứng từ sang kế toán anh Khang, máy nhận giả ở :8099
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
 
@@ -62,7 +63,7 @@ Một chuyến quặng đi qua **hai phiếu**: *DO gom hàng* (mỏ → bãi, c
 
 Xe về thì kế toán bấm **Khoá phiếu** (máy rà km, hao hụt, phiếu quặng đính kèm, mục chưa kiểm rồi mới cho khoá); khoá xong mới xuất hoá đơn và mới trả được chủ xe liên kết. Bán phụ tùng, xăng dầu cho bên ngoài ở màn **Bán hàng**. Nghiệp vụ còn vài chỗ chờ bên EPL xác nhận (mã tài khoản, tên người giữ từng tài khoản kế toán): phân tích nội bộ ở [DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md](DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md), danh sách việc đang treo ở [DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md](DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md), bộ câu hỏi gửi bên EPL ở [DOCS/CAU_HOI_NGHIEP_VU_EPL.md](DOCS/CAU_HOI_NGHIEP_VU_EPL.md), bản tiếng Lào `DOCS/ຄຳຖາມວິຊາການ_EPL.md` và tiếng Anh `DOCS/EPL_BUSINESS_QUESTIONS.md` cùng nội dung (tất cả có bản Word cạnh đó).
 
-Mỗi bước sinh ra tiền hoặc hàng để lại một tờ trong **Sổ chứng từ** (`GET /api/chung-tu`, màn Chứng từ → tab Sổ chứng từ) cho module kế toán kéo về: ai nhập ô nào, tờ nào sinh ở bước nào, định khoản gợi ý, mã còn thiếu — xem [DOCS/CHUNG_TU_VA_DIEM_NOI.md](DOCS/CHUNG_TU_VA_DIEM_NOI.md) (có bản Word cạnh đó).
+Mỗi bước sinh ra tiền hoặc hàng để lại một tờ trong **Sổ chứng từ** (màn Chứng từ → tab Sổ chứng từ), và **đẩy được sang module kế toán của anh Khang** bằng một nút (Sếp đặt địa chỉ API + token ngay trong màn; hợp đồng JSON ở [DOCS/HOP_DONG_API_ANH_KHANG.md](DOCS/HOP_DONG_API_ANH_KHANG.md)): ai nhập ô nào, tờ nào sinh ở bước nào, định khoản gợi ý, mã còn thiếu — xem [DOCS/CHUNG_TU_VA_DIEM_NOI.md](DOCS/CHUNG_TU_VA_DIEM_NOI.md) (có bản Word cạnh đó).
 
 Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາວ** (nút ở góc trên phải và trên màn đăng nhập).
 
@@ -72,6 +73,7 @@ Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາ
 python kiem\test_tinh_toan.py                    # đơn vị, không cần máy chủ
 python kiem\thu_hai_do.py                        # luồng hai DO: gom → nhập kho → giao → xuất kho
 python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
+python kiem\thu_day_ke_toan.py                   # đẩy chứng từ sang kế toán, có máy nhận giả đóng vai anh Khang
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện
 node kiem\ra_tong_quan.js                        # BÁO CÁO rà riêng màn Tổng quan

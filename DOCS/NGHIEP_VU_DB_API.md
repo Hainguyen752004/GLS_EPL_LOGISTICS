@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (31 bảng) · **C. API**
-(113 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (32 bảng) · **C. API**
+(118 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -128,6 +128,10 @@ Mỗi bước sinh tiền hoặc hàng để lại **một tờ có số** cho k
 | `TT_CHI` / `TT_THU` | Tất toán tài xế | Chốt tháng |
 | `PXK_BAN` / `HD_BAN` / `PT_BAN` | Bán phụ tùng, xăng dầu ra ngoài | Màn Bán hàng |
 
+**Đẩy sang kế toán**: mỗi tờ là một `POST {api}/api/v1/epl-lao/vouchers` với `ref` = số chứng từ làm khoá chống
+trùng; bên kia trả `id` thì tờ đánh đã đẩy và giữ mã đó; trả lỗi thì tờ giữ nguyên, ghi câu lỗi lên dòng để bấm lại.
+Hợp đồng JSON đầy đủ gửi anh Khang ở `HOP_DONG_API_ANH_KHANG.md`; lớp đẩy ở `services/day_ke_toan.py`.
+
 Định khoản là **gợi ý** theo quy trình của họ, không phải sổ kế toán: bên mình không ghi bút toán,
 không cộng sổ. Mã tài khoản đang dùng: kho `371`, nhà cung cấp `402`, phải thu `1211`, doanh thu `70`,
 chi phí `625` (xe nhà) / `614` (sửa chữa) / `4022` (xe liên kết). **Mã tiền mặt và ngân hàng chưa có** —
@@ -141,7 +145,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-31 bảng, nhóm theo việc:
+32 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -184,7 +188,8 @@ trừ tấn các DO giao đã lấy (`services/kho_hang.ton_lo`).
 | `parts`, `part_moves` | Kho phụ tùng và sổ nhập xuất |
 | `vouchers` | Phiếu lĩnh nhiên liệu và phiếu tạm ứng, có `token` cho mã QR, `status` chờ/đã cấp/huỷ |
 | `driver_settlements` | Tất toán tài xế theo tháng |
-| `chung_tu` | **Sổ chứng từ**: `loai`, `so`, `ngay`, `trip_id`, `tien_lak`, hai vế `no`/`co` gợi ý, `da_day` (bên kế toán đã nhận chưa), `payload` JSON chi tiết |
+| `chung_tu` | **Sổ chứng từ**: `loai`, `so`, `ngay`, `trip_id`, `tien_lak`, hai vế `no`/`co` gợi ý, `da_day`, `ma_ben_ke_toan` (mã phiếu bên anh Khang trả về), `loi_day` và `lan_thu` (đẩy hỏng vì sao, mấy lần), `payload` JSON chi tiết |
+| `cau_hinh` | Cấu hình đặt trong màn hình: `ke_toan_api`, `ke_toan_token`; không có thì rơi về biến môi trường `EPL_<KHOA>` |
 | `sales`, `sale_lines` | Bán phụ tùng, xăng dầu ra ngoài |
 
 ---
@@ -267,7 +272,10 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `GET /api/bao-cao/xu-huong?thang=` | Sáu tháng, theo ngày, hao hụt, hiệu suất xe, vận hành, xem nhanh, dòng thời gian |
 | `GET /api/bao-cao/theo-doi`, `/xe-lien-ket`, `/tien-tai-xe` | Ba bảng báo cáo trong Excel của họ |
 | `GET /api/dem-viec` | Số việc đang chờ của từng màn, theo vai đang đăng nhập |
-| `GET /api/chung-tu`, `/loai`, `/{id}`, `POST /{id}/da-day` | **Sổ chứng từ** cho bên kế toán kéo về |
+| `GET /api/chung-tu`, `/loai`, `/{id}`, `POST /{id}/da-day` | **Sổ chứng từ** cho bên kế toán kéo về hoặc đánh dấu tay |
+| `POST /api/chung-tu/day`, `POST /api/chung-tu/{id}/day` | **Đẩy chứng từ sang kế toán anh Khang** (hết tờ chưa đẩy · một tờ). KT Thu/Chi VC và Sếp. Chưa cấu hình → `CHUA_CAU_HINH`; bên kia hỏng → `DAY_HONG`, tờ giữ nguyên kèm câu lỗi |
+| `GET /api/ke-toan/trang-thai` | Đã nối chưa, bao nhiêu tờ đã/chưa/lỗi, lần đẩy gần nhất |
+| `GET PUT /api/ke-toan/cau-hinh` | Sếp đặt địa chỉ API và token kế toán ngay trong màn hình, không cần khởi động lại; token không trả về trình duyệt |
 | `GET /api/acc-codes` | Danh mục mã tài khoản (gọi API bên anh Khang, có danh mục dự phòng) |
 | `GET POST DELETE /api/tat-toan` | Tất toán tài xế theo tháng |
 | `GET POST /api/suppliers`, `/api/suppliers/{id}/payments` | Nhà cung cấp và các đợt trả |
@@ -313,6 +321,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_phieu_linh.py` | Phiếu lĩnh QR, thủ kho cấp dầu, khai đổ dọc đường, tất toán |
 | `python kiem\thu_ban_hang.py` | Bán phụ tùng, xăng dầu ra ngoài |
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
+| `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |
 | `node kiem\thu_giao_dien.js` | Toàn giao diện trên jsdom, nối máy chủ thật |
 | `node kiem\thu_ngoai_tuyen.js` | Màn Cấp phát khi mất mạng |
 | `node kiem\ra_vai.js` · `ra_tong_quan.js` · `ra_xe.js` | Báo cáo rà từng vai và từng màn (không phải đạt/hỏng) |
