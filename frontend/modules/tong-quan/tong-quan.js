@@ -1,6 +1,7 @@
 /* Tổng quan — mọi số lấy từ /api/bao-cao/tong-quan, tính lại từ phiếu lúc gọi. */
 (function () {
-  const { API, NN, esc, so, tien } = EPL;
+  const { API, NN, esc, so, tien, AUTH } = EPL;
+  const laBai = () => AUTH.role === 'yard';   // Bãi không thấy TIỀN BÁN → thay hai ô doanh thu bằng việc của họ
   let root, thang, du_lieu, ty_gia;
 
   async function tai() {
@@ -11,12 +12,21 @@
 
   function ve() {
     const d = du_lieu, r_usd = ty_gia.USD || 22000;
-    root.querySelector('#tq-kpi').innerHTML = [
+    const dangChay = (d.dem.dispatched || 0) + (d.dem.transit || 0);
+    // Bãi nhập phiếu, cân, dầu — bốn con số của họ là việc, không phải tiền. Vai tiền giữ nguyên bốn con số cũ.
+    const chiKPI = ['k_exp', so(d.chi_lak / 1e6, 1), 'M LAK', `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`];
+    const KPI = laBai() ? [
+      ['k_month_trips', so(d.so_phieu, 0), NN.t('trips'), `${d.dem.arrived} ${NN.t('s_arrived')}`],
+      chiKPI,
+      ['k_tons', so(d.tan_giao, 2), NN.t('ton'), `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`],
+      ['k_running', so(dangChay, 0), NN.t('trips'), `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`],
+    ] : [
       ['k_rev', so(d.doanh_thu_usd, 2), 'USD', `${d.so_phieu} ${NN.t('trips')} · ≈ ${so(d.doanh_thu_usd * r_usd)} LAK`],
       ['k_exp', so(d.chi_lak / 1e6, 1), 'M LAK', `≈ ${so(d.chi_lak / r_usd)} USD · ${d.doanh_thu_usd ? so(d.chi_lak / r_usd / d.doanh_thu_usd * 100) : 0}% ${NN.t('revenue').replace(/\s*\(.*\)/, '')}`],
       ['k_tons', so(d.tan_giao, 2), NN.t('ton'), `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`],
       ['k_unpaid', so(d.chua_thu_usd, 2), 'USD', `${d.chua_thu_so} ${NN.t('trips')} · ${NN.t('s_unpaid')}`],
-    ].map(k => `<div class="kpi"><div class="l">${NN.h(k[0])}</div><div class="v">${k[1]}<small>${esc(k[2])}</small></div><div class="s">${esc(k[3])}</div></div>`).join('');
+    ];
+    root.querySelector('#tq-kpi').innerHTML = KPI.map(k => `<div class="kpi"><div class="l">${NN.h(k[0])}</div><div class="v">${k[1]}<small>${esc(k[2])}</small></div><div class="s">${esc(k[3])}</div></div>`).join('');
 
     const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'],
                ['s_arrived', d.dem.arrived, 'arrived'], ['p_invoiced', d.dem.invoiced, ''], ['s_paid', d.dem.paid, '']];

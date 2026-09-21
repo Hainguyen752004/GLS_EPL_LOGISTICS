@@ -38,10 +38,19 @@ Locking rule: the person who enters data can only edit while the section is stil
 
 ### A2. What the Thabok warehouse cannot see
 
-The warehouse enters weights, litres, refuelling place, road expenses and approves repairs, but it
-**does not see money**: freight rate, amount, currency conversion, fuel price, account codes,
-deductions for hired trucks, profit table. These fields are visible only to accounting, the cashiers
-and the Boss.
+The Thabok warehouse **sees every EXPENSE**, because they are the ones spending and entering it: litres
+and the price of fuel bought on the road, expressway fees, travel money, repair costs, the purchase price
+of fuel and spare parts entering the store, weights, dates.
+
+The Thabok warehouse **does not see SELLING money**: the freight rate the customer pays, the amount of a
+trip, invoices and money collected from customers, the hire rate for sub-contracted trucks and the
+deductions from truck owners, the profit per trip, and account codes. Those fields are visible only to
+accounting, the cashiers and the Boss.
+
+Our reason for drawing the line there: expenses are the warehouse's daily work and hiding them would stop
+them working, while **the difference between what the customer pays and what the hired truck costs is the
+company's margin** and is not needed at the warehouse. If you want it differently (the warehouse also
+sees the freight rate, or on the contrary sees no money at all), please write it here: ......................
 
 ### A3. Fuel — two paths
 

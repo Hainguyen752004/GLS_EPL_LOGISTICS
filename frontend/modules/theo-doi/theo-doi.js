@@ -22,11 +22,11 @@
         <td class="num">${so(p.weight_origin, 2)}</td><td class="num">${p.weight_dest != null ? so(p.weight_dest, 2) : d}${hao}</td>
         <td class="num tien">${so(p.price_usd, 2)}</td><td class="num tien"><b>${so(c.doanh_thu_usd, 2)}</b></td>
         <td class="num tien">${c.lien_ket ? so(c.tien_thue_usd, 2) : d}</td><td class="num tien">${c.lien_ket ? so(c.phi_usd, 2) + ' $' : d}</td><td class="num tien">${c.lien_ket ? so(c.tru_vuot_usd, 2) + ' $' : d}</td>
-        <td class="num tien">${so(c.chi.fuel)}</td><td class="num tien">${so(c.chi.travel)}</td><td class="num tien">${c.chi.repair ? so(c.chi.repair) : d}</td><td class="num tien">${c.chi.other ? so(c.chi.other) : d}</td><td class="num tien"><b>${so(c.tong_chi_lak)}</b></td>
+        <td class="num">${so(c.chi.fuel)}</td><td class="num">${so(c.chi.travel)}</td><td class="num">${c.chi.repair ? so(c.chi.repair) : d}</td><td class="num">${c.chi.other ? so(c.chi.other) : d}</td><td class="num"><b>${so(c.tong_chi_lak)}</b></td>
         <td class="num tien ${c.lai_usd < 0 ? 'neg' : 'pos'}"><b>${so(c.lai_usd, 2)}</b></td>
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="28" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + rows.length + ' ', { k: 'trips' }])}</td><td class="num tien">${so(sVal, 2)}</td><td colspan="7" class="tien"></td><td class="num tien">${so(sExp)}</td><td class="num tien ${sNet < 0 ? 'neg' : 'pos'}">${so(sNet, 2)}</td><td colspan="2"></td></tr>`;
+    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + rows.length + ' ', { k: 'trips' }])}</td><td class="num tien">${so(sVal, 2)}</td><td class="tien"></td><td class="tien"></td><td class="tien"></td><td></td><td></td><td></td><td></td><td class="num">${so(sExp)}</td><td class="num tien ${sNet < 0 ? 'neg' : 'pos'}">${so(sNet, 2)}</td><td colspan="2"></td></tr>`;
     root.querySelector('#td-dem').textContent = `${rows.length} / ${ds.length} ${NN.t('rows')}`;
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
   }

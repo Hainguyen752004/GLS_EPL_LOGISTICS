@@ -22,6 +22,9 @@
   let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot', VET = null, mocSang = 0;
   const q = (s) => root.querySelector(s);
   const laBai = () => AUTH.la('yard');
+  // `laBai` ở trên tính cả Sếp (AUTH.la luôn đúng với admin) — đúng cho quyền thao tác, nhưng
+  // KHÔNG dùng để giấu tiền: Sếp phải thấy hết. Chỗ giấu tiền dùng đúng vai yard.
+  const chiBai = () => AUTH.role === 'yard';
 
   /* ---------------------------------------------------------------- dải ô số */
   // Mỗi ô: khoá từ điển · lấy số ở đâu · lọc danh sách thế nào khi bấm vào.
@@ -31,15 +34,16 @@
     { id: 'di_lau', khoa: 'td_long', mau: 'do', loc: (c) => c.di_lau },
     { id: 'gps_thieu', khoa: 'gps_missing', mau: 'vang',
       loc: (c) => ['dispatched', 'transit'].includes(c.transport_status) && (!c.gps || c.gps.cu) },
-    { id: 'cho_hoa_don', khoa: 'td_await_inv', loc: (c) => c.transport_status === 'arrived' && !c.invoiced },
+    { id: 'cho_hoa_don', khoa: 'td_await_inv', tien: true, loc: (c) => c.transport_status === 'arrived' && !c.invoiced },
     { id: 'su_co_mo', khoa: 'td_open_inc', mau: 'do', loc: (c) => c.su_co_mo > 0 },
     { id: 'cho_cap_phat', khoa: 'td_await_iss', mau: 'vang', loc: (c) => c.cho_cap_phat > 0 },
-    { id: 'chua_thu_tien', khoa: 'td_unpaid', loc: (c) => c.finance_status !== 'paid' },
+    // Hai ô `tien: true` là việc của kế toán, không phải của Bãi — hoá đơn và thu tiền khách.
+    { id: 'chua_thu_tien', khoa: 'td_unpaid', tien: true, loc: (c) => c.finance_status !== 'paid' },
   ];
 
   function veOSo() {
     const k = (BANG && BANG.kpi) || {};
-    q('#tdt-o-so').innerHTML = O_SO.map(o => {
+    q('#tdt-o-so').innerHTML = O_SO.filter(o => !(o.tien && chiBai())).map(o => {
       const n = k[o.id] || 0;
       return `<button type="button" class="tdt2-tile ${o.mau || ''} ${locO === o.id ? 'chon' : ''}" data-o="${o.id}" title="${esc(NN.t('td_tile_hint'))}">
         <span class="l">${NN.h(o.khoa)}</span><span class="v ${n ? 'khac0' : ''}">${so(n)}</span></button>`;
@@ -348,11 +352,11 @@
     const than = sua.length ? `<table><thead><tr>
         <th>${NN.h('item')}</th><th style="width:96px">${NN.h('source')}</th><th class="num" style="width:60px">${NN.h('qty')}</th>
         <th class="num" style="width:110px">${NN.h('unit_price')}</th><th class="num" style="width:120px">${NN.h('amount_lak')}</th>
-        <th style="width:96px">${NN.h('acct_code')}</th></tr></thead>
+        <th style="width:96px" class="tien">${NN.h('acct_code')}</th></tr></thead>
       <tbody>${sua.map(d => { const t = (d.qty || 0) * (d.unit_price || 0) * rate(d.currency); tong += t;
         return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td>
           <td class="num">${so(d.qty)}</td><td class="num">${so(d.unit_price)}${d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
-          <td class="num"><b>${so(t)}</b></td><td><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
+          <td class="num"><b>${so(t)}</b></td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
       : `<div class="trong">${NN.h('no_expense')}</div>`;
     const tt = (P.sections || {}).repair || 'wait';
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
@@ -455,7 +459,7 @@
           return `<button type="button" class="tdt2-ap ${m[ma] || 'wait'}" data-muc="${ma}" title="${esc(NN.t(MUC_KHOA[i]) + ' — ' + tt)}">
           <b>${MUC_SO[i]}</b><span class="vong"></span></button>`; }).join('')}</div>
       </div>
-      <div class="tdt2-tien">
+      <div class="tdt2-tien tien">
         <div><small>${NN.h('td_fare_est')}</small><b>${so(cuoc)} LAK</b></div>
         <div class="${P.finance_status === 'unpaid' ? 'no' : ''}"><small>${NN.h(nhanThu)}</small><b>${soThu}</b></div>
       </div>

@@ -176,3 +176,7 @@
   .tdt2-card{min-height:380px}
   .tdt2-tile{flex:1 1 30%}
 }
+
+/* Bãi không thấy TIỀN BÁN. Quy tắc chung ở chung.css đã có `!important`, nhưng tệp kiểu của module
+   nạp SAU và cũng đặt display cho khối này, nên ghi rõ lại đây cho khỏi phụ thuộc thứ tự nạp. */
+body.vai-yard .tdt2-tien{display:none}

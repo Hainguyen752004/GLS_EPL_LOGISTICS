@@ -413,7 +413,9 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 }
 /* Hẹp quá thì thanh bên nằm ngang thành một dải cuộn được, thay vì xếp dọc 21 nút đẩy nội dung
    xuống tận đáy. Nhãn nhóm và chân trang bỏ đi cho gọn. */
-/* Bãi (Admin Thà Bốc) không thấy tiền: ô/cột nào là tiền thì module đánh lớp `tien`, thân trang mang vai-<vai>. */
+/* Lớp `tien` = TIỀN BÁN: giá cước khách trả, doanh thu, hoá đơn, giá thuê xe liên kết, khấu trừ chủ xe,
+   lãi chuyến, mã tài khoản. Bãi (Admin Thà Bốc) không được thấy vì đó là biên lợi nhuận của công ty
+   (khách thuê giá 2, thuê lại xe ngoài giá 1). Tiền CHI thì Bãi vẫn thấy — chính họ chi và nhập. */
 body.vai-yard .tien{display:none!important}
 
 @media (max-width:900px){

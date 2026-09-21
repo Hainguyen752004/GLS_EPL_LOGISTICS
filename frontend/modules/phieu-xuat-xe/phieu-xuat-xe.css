@@ -52,12 +52,10 @@
 @media print{.px-phieu{border:0;padding:0}.px-muc{break-inside:avoid}.px-chi input,.px-chi select{border:0;padding:0}}
 @media (max-width:900px){.px-flow,.px-tong,.px-ky{grid-template-columns:repeat(2,1fr)}.px-tt{grid-template-columns:1fr}}
 
-/* Vai Bãi Thà Bốc: ẩn số kế toán. Bãi nhập cân, lít, nơi đổ, khoản đi đường; đơn giá, thành tiền,
-   quy đổi, khấu trừ, mã TK là việc của kế toán Viêng Chăn. Mục III ẩn theo cột (4 đơn giá · 5 tiền tệ · 6 thành tiền · 9 mã TK). */
+/* Vai Bãi Thà Bốc: ẩn TIỀN BÁN — đơn giá cước, thành tiền, quy đổi, giá thuê xe liên kết, khấu trừ,
+   lãi chuyến (`.px-tien`) và mã tài khoản (cột 9 mục III). Tiền CHI thì Bãi vẫn nhập và vẫn thấy:
+   chính họ mua dầu dọc đường, trả tiền cầu đường, ứng tiền cho tài xế. */
 .px-an-tien .px-tien{display:none!important}
-.px-an-tien table[data-bang="fuel"] th:nth-child(4),.px-an-tien table[data-bang="fuel"] td:nth-child(4),
-.px-an-tien table[data-bang="fuel"] th:nth-child(5),.px-an-tien table[data-bang="fuel"] td:nth-child(5),
-.px-an-tien table[data-bang="fuel"] th:nth-child(6),.px-an-tien table[data-bang="fuel"] td:nth-child(6),
 .px-an-tien table[data-bang="fuel"] th:nth-child(9),.px-an-tien table[data-bang="fuel"] td:nth-child(9){display:none}
 
 /* ---- tệp đính kèm (phiếu quặng của khách) ---- */

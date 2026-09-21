@@ -37,9 +37,17 @@ Quy tắc khoá: người nhập chỉ sửa được khi mục còn *chờ* ho�
 
 ### A2. Những gì Kho Thabok không nhìn thấy
 
-Bãi nhập cân, số lít, nơi đổ, các khoản đi đường, duyệt sửa xe — nhưng **không nhìn thấy tiền**: đơn
-giá cước, thành tiền, quy đổi, đơn giá dầu, mã tài khoản, khấu trừ xe thuê ngoài, bảng lãi. Các ô
-này chỉ kế toán, quỹ và Sếp thấy.
+Kho Thabok **thấy mọi khoản CHI** vì chính họ chi và chính họ nhập: số lít và giá dầu mua dọc đường,
+tiền cầu đường, tiền đi lại, tiền sửa xe, giá nhập kho dầu và phụ tùng, cân, ngày giờ.
+
+Kho Thabok **không thấy tiền BÁN**: đơn giá cước khách trả, thành tiền của chuyến, hoá đơn và tiền thu
+của khách, giá thuê xe liên kết cùng các khoản khấu trừ chủ xe, lãi từng chuyến, và mã tài khoản. Những
+ô đó chỉ kế toán, quỹ và Sếp thấy.
+
+Lý do bên em chia như vậy: phần chi là việc hằng ngày của kho, giấu đi thì họ không làm việc được; còn
+**chênh lệch giữa giá khách trả và giá thuê xe ngoài là phần lãi của công ty**, không cần cho người ở
+kho. Nếu bên anh muốn khác (kho được thấy cả giá cước, hoặc ngược lại không thấy cả tiền chi), xin anh
+ghi rõ ở đây: ......................
 
 ### A3. Nhiên liệu — hai đường
 

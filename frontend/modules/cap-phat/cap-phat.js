@@ -99,10 +99,10 @@
         ${P.place_name ? o('fp_place', P.place_name, true) : ''}
       </div>
       <div class="tbl-wrap"><table class="tbl tbl-compact"><thead><tr><th>${NN.h('item')}</th><th class="num">${NN.h('qty')}</th>
-        <th class="num">${NN.h('unit_price')}</th><th class="num">${NN.h('amount_lak')}</th><th>${NN.h('acct_code')}</th></tr></thead>
+        <th class="num">${NN.h('unit_price')}</th><th class="num">${NN.h('amount_lak')}</th><th class="tien">${NN.h('acct_code')}</th></tr></thead>
         <tbody>${(P.dong || []).map(d => `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td class="num">${so(d.qty, 1)}</td>
           <td class="num">${so(d.unit_price)}${d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
-          <td class="num">${so(d.tien_lak)}</td><td><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`).join('')
+          <td class="num">${so(d.tien_lak)}</td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`).join('')
         || `<tr><td colspan="5" class="empty">${NN.h('no_data')}</td></tr>`}</tbody></table></div>
       ${P.status === 'da_cap' ? `<div class="cp-xong">${NN.h('v_granted_by')}: <b lang="lo">${esc(P.granted_by || '')}</b> · ${EPL.ngayGio(P.granted_at)}
         ${P.granted_qty != null ? ' · ' + NN.h('v_qty_real') + ': <b>' + so(P.granted_qty, 1) + ' L</b>' : ''}

@@ -12,7 +12,10 @@ const path = require('path');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const TU_TIEN = /USD|LAK|VND|THB|đơn giá|thành tiền|quy đổi|ລາຄາ|ຈຳນວນເງິນ|unit price|amount/i;
+// Bãi không thấy TIỀN BÁN (cước, doanh thu, giá thuê xe ngoài, lãi) — tiền CHI thì họ vẫn thấy vì
+// chính họ chi. Không soi mã tiền tệ suông: chi phí cũng quy ra USD, bắt cả thế thì toàn báo nhầm.
+const TU_BAN = /cước|doanh thu|lợi nhuận|\blãi\b|giá thuê|tiền thuê|chưa thu|đã thu|khấu trừ|USD\s*\/\s*(t\b|tấn)|ຄ່າຂົນສົ່ງ|freight|revenue|profit/i;
+const gonChu = (s) => String(s).replace(/\s+/g, ' ').trim();
 
 class ChiNoiBo extends ResourceLoader {
   fetch(url, options) { if (!url.startsWith(GOC)) return Promise.resolve(Buffer.from('')); return super.fetch(url, options); }
@@ -35,17 +38,49 @@ async function main() {
   let loiJS = []; w.addEventListener('error', e => loiJS.push(String(e.message || e.error)));
   w.console.error = (...a) => loiJS.push(a.join(' ').slice(0, 200));
   const d = w.document;
+  /** Đợi tới khi màn VẼ XONG, không đợi một khoảng cố định: nhiều module còn gọi API trong init nên
+   *  đo ngay sau sanSang là đo lúc màn còn trống (đã có lần báo nhầm "Tổng quan 139 ký tự"). */
   async function di(hash) {
     const cu = w.EPL.sanSang;
     if (w.location.hash === hash) w.dispatchEvent(new w.HashChangeEvent('hashchange')); else w.location.hash = hash;
-    await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash); await w.EPL.sanSang; await cho(120);
+    await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash); await w.EPL.sanSang;
+    let truoc = -1, yen = 0;
+    for (let i = 0; i < 60 && yen < 3; i++) {          // ba lượt liền chữ không đổi thì coi là xong
+      await cho(80);
+      const n = goc().textContent.length;
+      yen = n === truoc ? yen + 1 : 0; truoc = n;
+    }
   }
   const goc = () => d.getElementById('noi-dung');
   const hienThi = (el) => { for (let e = el; e && e.nodeType === 1; e = e.parentElement) { if (e.hidden || w.getComputedStyle(e).display === 'none') return false; } return true; };
 
+  /** Khối cha nhỏ nhất còn đọc được như một cụm (dưới 120 ký tự): "Doanh thu vận chuyển 8,501.36 USD"
+   *  là một cụm, còn cả thanh công cụ thì không. Con số chỉ có nghĩa khi đi cùng nhãn của nó. */
+  function khoiNho(el) {
+    let t = gonChu(el.textContent);
+    for (let e = el.parentElement, i = 0; e && i < 4; e = e.parentElement, i++) {
+      const s = gonChu(e.textContent);
+      if (s.length > 120) break;
+      t = s;
+    }
+    return t;
+  }
+  /** Nhãn các cột ĐANG HIỆN của bảng chứa ô này. Cột bị ẩn với vai đó thì nhãn của nó cũng không tính —
+   *  nhờ vậy một bảng đã giấu cột "Cước" thì các ô số còn lại không bị báo nhầm. */
+  function nhanBang(el) {
+    const b = el.closest && el.closest('table');
+    if (!b) return '';
+    return [...b.querySelectorAll('thead th')].filter(hienThi).map(th => th.textContent).join(' ');
+  }
+  function laTienBan(el) {
+    if (!/\d/.test(el.textContent)) return false;
+    return TU_BAN.test(khoiNho(el) + ' ' + gonChu(nhanBang(el)));
+  }
+
   await choDen(() => w.EPL && d.getElementById('acctList').children.length > 0, 'màn đăng nhập');
   const tk = await (await fetch(GOC + '/api/tai-khoan-mau')).json();
   const baoCao = [];
+  let doDuocTienBan = 0;                 // đếm cho phép tự kiểm ở vai kế toán
   const ghi = (vai, u, mod, loai, chi_tiet) => baoCao.push({ vai, u, mod, loai, chi_tiet });
 
   for (const t of tk) {
@@ -70,11 +105,19 @@ async function main() {
       if (!goc().querySelector('table, .kpis, .px-phieu, .pct-ds, .card, .tdt2')) ghi(vai, u, m, 'KHONG_BANG', 'không có bảng/thẻ');
       const nut = [...goc().querySelectorAll('button')].filter(hienThi).map(b => b.textContent.replace(/\s+/g, ' ').trim()).filter(Boolean);
       const nutKhac = [...new Set(nut)];
-      if (vai === 'yard') {
-        // Bãi không thấy tiền: soát nhãn cột/ô còn hiển thị có chữ tiền (trừ các module danh mục thuần)
-        const nhan = [...goc().querySelectorAll('th, label, .kpi-label, .k, h4, .px-muc-dau')].filter(hienThi).map(e => e.textContent.replace(/\s+/g, ' ').trim());
-        const lo = [...new Set(nhan.filter(x => TU_TIEN.test(x)))];
-        if (lo.length) ghi(vai, u, m, 'BAI_THAY_TIEN', lo.slice(0, 6).join(' · '));
+      if (vai === 'acct' && m === 'theo-doi') {
+        // Tự kiểm phép dò: vai kế toán ĐƯỢC thấy tiền bán, nên ở đây nó phải bắt ra khối. Không bắt
+        // được gì tức là phép dò đã hỏng và mọi báo cáo "sạch" ở trên đều vô nghĩa.
+        const la = [...goc().querySelectorAll('*')].filter(e => !e.children.length && e.textContent.trim() && hienThi(e));
+        doDuocTienBan += la.filter(laTienBan).length;
+      }
+      // Bỏ qua 'quy-trinh': đó là sơ đồ giải thích quy trình (ai làm bước nào, sinh chứng từ gì),
+      // không có số liệu chuyến nào — Bãi nên đọc được cả sơ đồ.
+      if (vai === 'yard' && m !== 'quy-trinh') {
+        // Bãi không thấy tiền bán: soi mọi phần tử lá đang hiện, không chỉ nhãn cột
+        const la = [...goc().querySelectorAll('*')].filter(e => !e.children.length && e.textContent.trim() && hienThi(e));
+        const lo = [...new Set(la.filter(laTienBan).map(e => e.textContent.replace(/\s+/g, ' ').trim()))];
+        if (lo.length) ghi(vai, u, m, 'BAI_THAY_TIEN_BAN', lo.slice(0, 8).join(' · '));
       }
       console.log(`  ${m.padEnd(16)} ${String(chu.length).padStart(5)} ký tự · nút: ${nutKhac.slice(0, 8).join(' | ') || '(không)'}${nutKhac.length > 8 ? ' …' : ''}`);
     }
@@ -96,6 +139,9 @@ async function main() {
   if (!baoCao.length) console.log('Không thấy gì bất thường.');
   for (const r of baoCao) console.log(`[${r.loai}] ${r.u} (${r.vai}) · ${r.mod}: ${r.chi_tiet}`);
   console.log(`\nTổng: ${baoCao.length} ghi nhận · ${tk.length} tài khoản`);
+  console.log(doDuocTienBan
+    ? `Phép dò tiền bán còn tốt: bắt được ${doDuocTienBan} chỗ ở màn Theo dõi của kế toán (vai này ĐƯỢC thấy).`
+    : 'CẢNH BÁO: phép dò tiền bán không bắt được gì ngay cả ở vai kế toán — nó đã hỏng, sửa rồi rà lại.');
   try { w.close(); } catch (e) { /* bỏ */ }
 }
 

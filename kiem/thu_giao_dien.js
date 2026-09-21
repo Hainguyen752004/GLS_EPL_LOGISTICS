@@ -246,13 +246,19 @@ async function main() {
   assert.ok(![...d.querySelectorAll('#nav [data-mod]')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
   {
     const modBai = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
-    ['hoa-don', 'xe-lien-ket', 'tien-tai-xe', 'nha-cung-cap'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module tiền ' + m));
+    // Bãi không thấy TIỀN BÁN: hoá đơn khách và bảng lãi xe liên kết. Tiền chi thì thấy — chính họ chi.
+    ['hoa-don', 'xe-lien-ket'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module tiền bán ' + m));
+    ['tien-tai-xe', 'nha-cung-cap', 'kho-nhien-lieu'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi phải thấy module chi phí ' + m));
     assert.ok(d.body.classList.contains('vai-yard'), 'thân trang phải mang lớp vai-yard');
     await di('#/theo-doi');
     const thTien = [...goc().querySelectorAll('th.tien')];
-    assert.ok(thTien.length >= 10, 'bảng theo dõi phải đánh dấu các cột tiền: ' + thTien.length);
-    assert.ok(thTien.every(th => w.getComputedStyle(th).display === 'none'), 'với Bãi mọi cột tiền của bảng theo dõi phải ẩn');
-    console.log('✓ vai Bãi: không có 4 module tiền · %d cột tiền của bảng theo dõi đã ẩn', thTien.length);
+    assert.ok(thTien.length >= 6, 'bảng theo dõi phải đánh dấu các cột tiền bán: ' + thTien.length);
+    assert.ok(thTien.every(th => w.getComputedStyle(th).display === 'none'), 'với Bãi mọi cột tiền bán của bảng theo dõi phải ẩn');
+    // ... nhưng cột chi phí thì PHẢI còn, vì Bãi là người chi và người nhập các khoản đó
+    const thChi = [...goc().querySelectorAll('th')].filter(th => /c_fuel|c_travel|c_totexp/.test(th.dataset.i18n || ''));
+    assert.strictEqual(thChi.length, 3, 'phải tìm thấy ba cột chi phí trong bảng theo dõi');
+    assert.ok(thChi.every(th => w.getComputedStyle(th).display !== 'none'), 'vai Bãi vẫn phải thấy cột chi phí (họ nhập và họ chi)');
+    console.log('✓ vai Bãi: ẩn %d cột tiền bán, vẫn thấy 3 cột chi phí', thTien.length);
   }
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);

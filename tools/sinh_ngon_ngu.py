@@ -673,6 +673,12 @@ KHOA_MOI = {
  'valid_from':     ('Áp dụng từ', 'ນຳໃຊ້ຕັ້ງແຕ່', 'Valid from'),
  'px_gia_tu_bang': ('Đã điền đơn giá theo bảng giá khách × tuyến', 'ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ', 'Rate filled from the customer × route price list'),
  'close':          ('Đóng', 'ປິດ', 'Close'),
+ # ---- v14: Tổng quan cho vai Bãi (không có tiền)
+ 'k_month_trips':  ('Phiếu tháng này', 'ໃບເບີກລົດເດືອນນີ້', 'Slips this month'),
+ 'k_running':      ('Xe đang trên đường', 'ລົດກຳລັງເດີນທາງ', 'Trucks on the road'),
+ 'k_todo':         ('Việc cần xử lý', 'ວຽກທີ່ຕ້ອງເຮັດ', 'Things to handle'),
+ 'k_todo_u':       ('việc', 'ວຽກ', 'items'),
+ 'k_todo_s':       ('Xem cột bên phải', 'ເບິ່ງຖັນຂວາ', 'See the list on the right'),
  'td_hide_profile': ('Thu thanh xem nhanh', 'ຫຍໍ້ແຖບເບິ່ງດ່ວນ', 'Hide the quick view'),
  'td_paid_part':   ('Thu một phần', 'ຮັບບາງສ່ວນ', 'Partly collected'),
 }
