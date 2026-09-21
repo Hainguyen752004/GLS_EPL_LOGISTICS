@@ -30,6 +30,7 @@ Bộ câu hỏi gửi bên EPL: `CAU_HOI_NGHIEP_VU_EPL.md` (bản Lào `ຄຳ�
 | Dòng hao hụt | Máy tự ghi một dòng `loai = 'hao_hut'`: chặng gom là *cân mỏ − cân bãi*, chặng giao là *tấn xuất kho − cân nơi giao* |
 | Chạy thẳng mỏ → cảng | Vẫn được: lập DO giao và không chọn lô nào, nhập cân tay như trước |
 | Màn Kho hàng | Mới: tồn theo từng lô, sổ nhập xuất, bấm một dòng là mở đúng phiếu |
+| Sai số sau khi nhập kho | **Phiếu điều chỉnh kho** (chốt 21/09, thay cho việc xoá phiếu giao rồi làm lại): kế toán ghi một dòng +/− tấn có lý do vào lô, sinh chứng từ `DC_HH`, tồn không được âm, lịch sử nhập/xuất giữ nguyên. Phiếu gom đã nhập kho thì dòng hàng và cân đóng lại |
 
 Máy chủ chặn ba chỗ: lấy quá tồn của lô, xuất hoá đơn cho DO gom, xoá DO gom mà hàng đã có người lấy.
 Bộ kiểm `kiem/thu_hai_do.py` đi trọn luồng này.

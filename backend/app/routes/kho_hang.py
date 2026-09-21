@@ -8,11 +8,11 @@ Không có bảng tồn riêng: tồn luôn cộng dồn từ sổ, để không
 """
 import datetime as dt
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from services.bao_mat import nguoi_hien_tai
+from services.bao_mat import can_vai, nguoi_hien_tai
 from services import kho_hang as KH
 
 router = APIRouter()
@@ -44,3 +44,12 @@ def lo_con_hang(tru_phieu: str = None, db: Session = Depends(get_db), _=Depends(
     thấy lô hết hàng dù chính nó là người đang giữ.
     """
     return KH.danh_sach_lo(db, con_hang=True, tru_phieu_id=tru_phieu)
+
+
+@router.post("/api/kho-hang/dieu-chinh")
+def dieu_chinh(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("acct", "admin"))):
+    """Kế toán (KT Thu/Chi VC, người kiểm mục II) hoặc Sếp điều chỉnh tồn một lô: {lo_trip_id, qty_t, ly_do}.
+    Bãi không tự điều chỉnh — họ báo, kế toán ghi; đó cũng là cách Excel của họ đang chạy."""
+    m = KH.dieu_chinh(db, data.get("lo_trip_id"), data.get("qty_t"), data.get("ly_do"), user)
+    db.commit()
+    return {"ok": True, "id": m.id, "qty_t": m.qty_t, "con_t": KH.ton_lo(db, m.lo_trip_id)}

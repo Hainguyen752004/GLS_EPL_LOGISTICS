@@ -146,6 +146,20 @@ def main():
     assert hao and abs(hao[0]["qty_t"] - 1.0) < 0.01, "sửa cân cuối thì dòng hao hụt phải tính lại thành 1,0 t: %s" % g["goods"]
     print("  ✓ sửa cân cuối → dòng hao hụt tính lại: %s t" % hao[0]["qty_t"])
 
+    # ================================================================ 3c. điều chỉnh kho: sửa số bằng một dòng có lý do
+    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư"}, vai="thabok")
+    phai(s, 403, "Bãi tự điều chỉnh kho → bị từ chối (kế toán ghi)", g)
+    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "x"}, vai="ketoan")
+    phai(s, 422, "Điều chỉnh không ghi lý do → bị từ chối", g)
+    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư 0,6 t"}, vai="ketoan")
+    phai(s, 200, "Kế toán điều chỉnh lô −0,6 t có lý do", g)
+    assert abs(g["con_t"] - 14.0) < 0.01, "lô còn 14,6 giảm 0,6 phải còn 14,0: %s" % g["con_t"]
+    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -20, "ly_do": "thử giảm quá tồn"}, vai="ketoan")
+    phai(s, 409, "Giảm quá tồn (hàng đã xuất cho phiếu giao) → bị từ chối", g)
+    s, ct = goi("/api/chung-tu?loai=DC_HH", vai="ketoan")
+    assert any(c["trip_doc_no"] == SO_GOM for c in ct["ds"]), "phải sinh phiếu điều chỉnh kho DC_HH"
+    print("  ✓ điều chỉnh kho: một dòng −0,6 t có lý do · tồn 14,0 t · chứng từ DC_HH · lịch sử nhập/xuất không đổi")
+
     # ================================================================ 4. những chỗ phải bị chặn
     s, g = goi("/api/trips/%s" % gom["id"], {"goods": [{"goods_name": "x", "qty_t": 50}]}, vai="admin", method="PUT")
     phai(s, 409, "Sửa dòng hàng phiếu gom ĐÃ nhập kho → bị từ chối", g)
@@ -163,14 +177,14 @@ def main():
     # ================================================================ 5. dọn
     s, g = goi("/api/trips/%s" % giao["id"], vai="admin", method="DELETE")
     phai(s, 200, "Xoá phiếu giao thử", g)
-    assert round(ton_kho() - ton0, 2) == 39.6, "xoá phiếu giao thì hàng phải trả lại kho"
-    print("  ✓ xoá phiếu giao: hàng trả lại kho, tồn về %s t" % round(ton_kho() - ton0, 2))
+    assert round(ton_kho() - ton0, 2) == 39.0, "xoá phiếu giao thì hàng phải trả lại kho (39,6 nhập − 0,6 điều chỉnh): %s" % round(ton_kho() - ton0, 2)
+    print("  ✓ xoá phiếu giao: hàng trả lại kho, tồn về %s t (đã trừ điều chỉnh)" % round(ton_kho() - ton0, 2))
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin", method="DELETE")
     phai(s, 200, "Xoá phiếu gom thử", g)
     assert round(ton_kho() - ton0, 2) == 0, "xoá phiếu gom thì lô cũng mất khỏi kho"
     print("  ✓ xoá phiếu gom: tồn kho về đúng lúc đầu")
 
-    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · sửa sau khi tới tính lại · 6 chỗ từ chối đúng")
+    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · sửa sau khi tới tính lại · điều chỉnh kho · 9 chỗ từ chối đúng")
 
 
 if __name__ == "__main__":

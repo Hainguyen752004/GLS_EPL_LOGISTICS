@@ -320,7 +320,7 @@ class GoodsMove(Base):
     __tablename__ = "goods_moves"
     id = Column(String, primary_key=True, default=ma_moi)
     move_date = Column(Date, nullable=False)
-    kind = Column(String, nullable=False)                       # in (DO gom về bãi) · out (DO giao lấy đi)
+    kind = Column(String, nullable=False)                       # in (DO gom về bãi) · out (DO giao lấy đi) · adj (điều chỉnh, qty_t có dấu)
     goods_name = Column(String, nullable=False)
     qty_t = Column(Float, nullable=False)
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), index=True)

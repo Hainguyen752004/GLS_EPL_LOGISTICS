@@ -4,7 +4,7 @@ Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì ti
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
 Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (31 bảng) · **C. API**
-(112 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+(113 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -41,6 +41,10 @@ Từ 21/09/2026, một chuyến quặng từ mỏ ra cảng đi qua **hai phiế
   theo số đó, sửa phiếu mà không sửa sổ là hai bên nói hai số. Phiếu giao đã tới vẫn sửa được cân cuối,
   sửa xong máy tính lại dòng hao hụt. Loại phiếu không đổi được khi đã có dòng hàng hay sổ kho
   (`KHONG_DOI_LOAI`).
+- **Sai số sau khi đã nhập kho thì lập phiếu điều chỉnh kho**, không xoá phiếu giao để làm lại. Kế toán (KT
+  Thu/Chi VC hoặc Sếp) ghi một dòng `adj` có dấu (+ tăng, − giảm) kèm lý do bắt buộc vào lô, sinh chứng từ
+  `DC_HH`. Tồn lô không được âm sau điều chỉnh (`TON_AM`) — hàng đã xuất cho phiếu giao thì không thể
+  "chưa từng có". Lịch sử nhập/xuất giữ nguyên, ai xem sổ cũng thấy đã sửa gì, vì sao, lúc nào.
 - Vẫn cho phép **chạy thẳng mỏ → cảng** không qua kho: lập một DO giao và không chọn lô nào, nhập cân
   tay như cũ.
 
@@ -112,6 +116,7 @@ Mỗi bước sinh tiền hoặc hàng để lại **một tờ có số** cho k
 | `DO` | Phiếu xuất xe | Lập phiếu |
 | `PNK_HH` | **Phiếu nhập kho hàng** | DO gom về tới bãi |
 | `PXK_HH` | **Phiếu xuất kho hàng** | DO giao lấy hàng khỏi lô |
+| `DC_HH` | **Phiếu điều chỉnh kho hàng** | Kế toán sửa tồn một lô có lý do |
 | `PLNL` | Phiếu lĩnh nhiên liệu | Bãi cấp phiếu QR cho tài xế |
 | `PXK_NL` / `PNK_NL` | Xuất / nhập kho nhiên liệu | Thủ kho cấp dầu · nhập dầu |
 | `PXK_PT` / `PNK_PT` | Xuất / nhập kho phụ tùng | Khai sửa chữa lấy kho · nhập phụ tùng |
@@ -160,7 +165,7 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 |---|---|
 | `trips` | Một phiếu. **`kind`** = `gom`/`giao`; số phiếu, ngày, xe và tài xế (chép giá trị vào phiếu, không chỉ khoá ngoại), khách, tuyến, cân đầu/cuối, giá cước, phần xe liên kết, tỷ giá khoá trên phiếu, `locked`, `owner_paid` |
 | `trip_goods` | **Dòng hàng**: `loai` = `hang`/`hao_hut`, `goods_name`, `qty_t`, **`tu_phieu_id`** = lô lấy từ DO gom nào |
-| `goods_moves` | **Sổ kho hàng ở bãi**: `kind` = `in`/`out`, `qty_t`, `lo_trip_id` (lô = DO gom), `trip_id` (phiếu sinh ra dòng này) |
+| `goods_moves` | **Sổ kho hàng ở bãi**: `kind` = `in`/`out`/`adj` (điều chỉnh, `qty_t` có dấu), `qty_t`, `lo_trip_id` (lô = DO gom), `trip_id` (phiếu sinh ra dòng này), `note` (lý do điều chỉnh) |
 | `trip_expenses` | Dòng chi của bốn mục III–VI: `section`, `item_key`, `qty`, `unit_price`, `currency`, `source` (kho/mua), `acct_code`, `paid_by_epl`, `stock_move_id` |
 | `trip_sections` | Trạng thái duyệt từng mục I–VI |
 | `trip_logs` | Nhật ký thao tác trên phiếu |
@@ -225,6 +230,7 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 |---|---|
 | `GET /api/kho-hang` | Tồn theo lô + sổ nhập xuất + tổng tồn |
 | `GET /api/kho-hang/lo?tru_phieu=` | Các lô còn hàng, để DO giao chọn lấy từ đâu. `tru_phieu` = phiếu đang sửa, để nó không tự trừ mình |
+| `POST /api/kho-hang/dieu-chinh` | Điều chỉnh tồn một lô `{lo_trip_id, qty_t (có dấu), ly_do}`. Chỉ KT Thu/Chi VC và Sếp |
 
 ## C4. Kho nhiên liệu, phụ tùng, phiếu lĩnh — `routes/kho.py`, `routes/phieu_linh.py`
 
@@ -283,6 +289,8 @@ Mọi lỗi trả JSON `{"detail": {"ma": "MA_LOI", "loi": "câu tiếng Việt 
 | `LO_DA_XUAT` (409) | Xoá DO gom mà hàng đã có người lấy |
 | `HANG_DA_NHAP_KHO` (409) | Sửa dòng hàng hoặc cân của DO gom đã nhập kho |
 | `KHONG_DOI_LOAI` (409) | Đổi loại gom/giao khi phiếu đã có dòng hàng hay sổ kho |
+| `TON_AM` (409) | Điều chỉnh giảm quá tồn của lô |
+| `THIEU_LY_DO` (422) | Điều chỉnh kho không ghi lý do |
 | `PHIEU_GOM` (409) | Xuất hoá đơn cho phiếu gom |
 | `THANG_SAI`, `TUAN_SAI`, `SO_SAI`… (422) | Dữ liệu gửi lên sai dạng |
 

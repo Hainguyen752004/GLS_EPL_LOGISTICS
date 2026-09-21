@@ -33,6 +33,7 @@ LOAI = {
     # Hàng (quặng) nằm bãi giữa hai chặng: DO gom về thì nhập kho, DO giao lấy đi thì xuất kho.
     "PNK_HH": ("Phiếu nhập kho hàng", "ໃບຮັບສິນຄ້າເຂົ້າສາງ", True),
     "PXK_HH": ("Phiếu xuất kho hàng", "ໃບເບີກສິນຄ້າອອກສາງ", True),
+    "DC_HH":  ("Phiếu điều chỉnh kho hàng", "ໃບປັບປຸງສາງສິນຄ້າ", True),
     "PC_TU":  ("Phiếu chi tạm ứng", "ໃບຈ່າຍເງິນລ່ວງໜ້າ", True),
     "PC_SC":  ("Phiếu chi sửa chữa · chi khác", "ໃບຈ່າຍສ້ອມແປງ · ອື່ນໆ", True),
     "PC_NCC": ("Phiếu chi trả nhà cung cấp", "ໃບຈ່າຍຜູ້ສະໜອງ", True),
@@ -66,6 +67,8 @@ def dinh_khoan(loai, company="EPL", section=None):
         # (bên kế toán chưa cấp mã); xuất kho thì ngược lại. Không phải mua bán nên không đụng 402.
         "PNK_HH": (KHO, (None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)")),
         "PXK_HH": ((None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)"), KHO),
+        # Điều chỉnh tăng ghi như nhập, giảm ghi như xuất — chiều nào thì payload nói rõ.
+        "DC_HH":  (KHO, (None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)")),
         "PC_TU":  (chi_phi, TIEN),
         "PC_SC":  (chi_phi, TIEN),
         "PC_NCC": (NCC, TIEN),
