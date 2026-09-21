@@ -148,15 +148,21 @@ class Driver(Base):
     id = Column(String, primary_key=True, default=ma_moi)
     driver_code = Column(String)                  # mã nội bộ
     name = Column(String, nullable=False)
+    name_latin = Column(String)                   # tên viết Latin, để người không đọc chữ Lào gọi tên được
     phone = Column(String)
     dob = Column(Date)
     id_card = Column(String)                      # số CMND / căn cước
     address = Column(String)
     role = Column(String, default="main")         # main (lái chính) · co (phụ xe)
     hire_date = Column(Date)
+    shift = Column(String)                        # ca quen chạy: sang · chieu · dem · linh_hoat (chỉ để điều xe tham khảo)
     # Bằng lái HIỆN HÀNH (bản mới nhất); lịch sử đầy đủ ở driver_licenses
     license_no = Column(String)
     license_type = Column(String)                 # hạng: B2 · C · D · E · FC …
+    # Hạng ghi trong HỒ SƠ NHÂN SỰ. Khác hạng trên bằng lái là dấu hiệu hồ sơ sai hoặc bằng chưa nâng —
+    # màn Tài xế bắt chỗ lệch này và chặn điều xe cho tới khi người ta sửa.
+    license_class_hr = Column(String)
+    license_status = Column(String, default="active")   # active · suspended · revoked (bằng bị treo thì không được lái)
     license_valid_from = Column(Date)
     license_valid_to = Column(Date)
     default_vehicle_id = Column(String, ForeignKey("vehicles.id"))   # xe thường lái

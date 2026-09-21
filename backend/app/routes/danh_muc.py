@@ -10,6 +10,7 @@ Mỗi danh mục: xem · thêm · sửa · ngưng dùng (không xoá cứng — 
 import datetime as dt
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -423,20 +424,48 @@ def lap_ro_mooc(vid: str, data: dict = Body(...), db: Session = Depends(get_db),
 
 
 # ================================================================ tài xế & bằng lái
-COT_TX = ("driver_code", "name", "phone", "dob", "id_card", "address", "role", "hire_date", "license_no", "license_type",
+COT_TX = ("driver_code", "name", "name_latin", "phone", "dob", "id_card", "address", "role", "hire_date", "shift",
+          "license_no", "license_type", "license_class_hr", "license_status",
           "license_valid_from", "license_valid_to", "default_vehicle_id", "status", "note")
 NGAY_TX = ("dob", "hire_date", "license_valid_from", "license_valid_to")
+CA_TX = ("sang", "chieu", "dem", "linh_hoat")
+TRANG_THAI_BANG = ("active", "suspended", "revoked")
 
 
-def xuat_tai_xe(db, d, chi_tiet=False):
+def _phu_tai_xe(db, ds):
+    """Số phiếu đã chạy và phiếu ĐANG chạy của nhiều tài xế — hai truy vấn cho cả danh sách, không hỏi
+    lại từng người. Màn Tài xế cần hai số này ngay ở bảng để biết ai đang bận."""
+    ids = [d.id for d in ds if d.id]
+    if not ids:
+        return {}, {}
+    dem = dict(db.query(Trip.driver_id, func.count(Trip.id)).filter(Trip.driver_id.in_(ids)).group_by(Trip.driver_id).all())
+    dang = {}
+    for p in (db.query(Trip).filter(Trip.driver_id.in_(ids), Trip.transport_status != "arrived")
+              .order_by(Trip.doc_date.desc()).all()):
+        dang.setdefault(p.driver_id, p.doc_no)
+    return dem, dang
+
+
+def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None):
     r = _dict(d)
     r["bang_lai"] = _han(d.license_valid_to)
     if d.default_vehicle_id:
         x = db.get(Vehicle, d.default_vehicle_id); r["default_vehicle"] = x.truck_no if x else None
+    # Nơi cấp của bằng HIỆN HÀNH nằm ở dòng lịch sử cùng số bằng — hồ sơ tài xế không giữ riêng.
+    if d.license_no:
+        l = (db.query(DriverLicense).filter(DriverLicense.driver_id == d.id, DriverLicense.license_no == d.license_no)
+             .order_by(DriverLicense.verified_at.desc()).first())
+        r["license_issued_by"] = l.issued_by if l else None
+    r["so_phieu"] = dem.get(d.id, 0) if dem is not None else db.query(Trip).filter(Trip.driver_id == d.id).count()
+    if dang is not None:
+        r["phieu_hien_tai"] = dang.get(d.id)
+    else:
+        p = (db.query(Trip).filter(Trip.driver_id == d.id, Trip.transport_status != "arrived")
+             .order_by(Trip.doc_date.desc()).first())
+        r["phieu_hien_tai"] = p.doc_no if p else None
     if chi_tiet:
         r["licenses"] = [_dict(l) for l in db.query(DriverLicense).filter(DriverLicense.driver_id == d.id)
                          .order_by(DriverLicense.valid_to.desc().nullslast()).all()]
-        r["so_phieu"] = db.query(Trip).filter(Trip.driver_id == d.id).count()
         r["phieu_gan_day"] = [{"id": p.id, "doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
                                "truck_no": p.truck_no, "origin": p.origin, "destination": p.destination, "transport_status": p.transport_status}
                               for p in db.query(Trip).filter(Trip.driver_id == d.id).order_by(Trip.doc_date.desc()).limit(10).all()]
@@ -445,7 +474,40 @@ def xuat_tai_xe(db, d, chi_tiet=False):
 
 @router.get("/api/drivers")
 def ds_tai_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return [xuat_tai_xe(db, d) for d in db.query(Driver).order_by(Driver.active.desc(), Driver.name).all()]
+    ds = db.query(Driver).order_by(Driver.active.desc(), Driver.name).all()
+    dem, dang = _phu_tai_xe(db, ds)
+    return [xuat_tai_xe(db, d, dem=dem, dang=dang) for d in ds]
+
+
+@router.get("/api/drivers/{did}/lich")
+def lich_tai_xe(did: str, tuan: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Lịch một tuần của tài xế — cùng cách nghĩ với lịch xe: không có bảng lịch riêng, lịch chính là
+    các phiếu người này cầm, trải từ ngày xuất tới ngày về. Ngày không có phiếu thì rảnh."""
+    d = db.get(Driver, did)
+    if not d:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
+    try:
+        d0 = dt.date.fromisoformat(tuan) if tuan else dt.date.today()
+    except ValueError:
+        raise HTTPException(422, {"ma": "TUAN_SAI", "loi": "Tuần phải ghi dạng YYYY-MM-DD."})
+    d0 = d0 - dt.timedelta(days=d0.weekday())
+    d7 = d0 + dt.timedelta(days=6)
+    theo_ngay = {}
+    ten_tuyen = {r.id: r.name for r in db.query(Route).all()}
+    for p in db.query(Trip).filter(Trip.driver_id == d.id).all():
+        di = p.out_date or p.doc_date
+        if not di:
+            continue
+        ve = p.back_date or (d7 if p.transport_status != "arrived" else di)
+        duong = ("%s → %s" % (p.origin, p.destination)) if (p.origin and p.destination) else (ten_tuyen.get(p.route_id) or "")
+        chu = ("%s · %s" % (p.doc_no.replace("/EPL", ""), duong)).strip(" ·")
+        n = di
+        while n <= min(ve, d7):
+            if d0 <= n <= d7:
+                theo_ngay.setdefault(n, []).append({"loai": "trip", "text": chu})
+            n += dt.timedelta(days=1)
+    return {"tu": d0.isoformat(), "den": d7.isoformat(),
+            "ngay": [{"ngay": k.isoformat(), "su_kien": x} for k, x in sorted(theo_ngay.items())]}
 
 
 @router.get("/api/drivers/{did}")
@@ -461,6 +523,10 @@ def _kiem_tx(d):
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Tài xế phải có tên."})
     if d.role not in ("main", "co"):
         raise HTTPException(422, {"ma": "VAI_SAI", "loi": "role phải là main (lái chính) hoặc co (phụ xe)."})
+    if d.shift and d.shift not in CA_TX:
+        raise HTTPException(422, {"ma": "CA_SAI", "loi": "Ca phải là %s." % ", ".join(CA_TX)})
+    if d.license_status and d.license_status not in TRANG_THAI_BANG:
+        raise HTTPException(422, {"ma": "TRANG_THAI_BANG_SAI", "loi": "Trạng thái bằng lái phải là %s." % ", ".join(TRANG_THAI_BANG)})
     if d.status not in TRANG_THAI_TAI_XE:
         raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái phải là %s." % ", ".join(TRANG_THAI_TAI_XE)})
     if d.license_valid_from and d.license_valid_to and d.license_valid_to < d.license_valid_from:
@@ -506,6 +572,8 @@ def them_bang_lai(did: str, data: dict = Body(...), db: Session = Depends(get_db
         raise HTTPException(422, {"ma": "HAN_SAI", "loi": "Hạn bằng lái phải sau ngày cấp."})
     db.add(l)
     d.license_no, d.license_type, d.license_valid_from, d.license_valid_to = l.license_no, l.license_type, l.valid_from, l.valid_to
+    # Cấp bằng mới thì bằng cũ bị treo cũng hết chuyện: bằng hiện hành là bằng vừa ghi.
+    d.license_status = "active"
     db.commit(); db.refresh(d)
     return xuat_tai_xe(db, d, chi_tiet=True)
 

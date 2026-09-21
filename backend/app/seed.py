@@ -118,13 +118,16 @@ def gieo(db):
                              detached_at=dt.datetime(2026, 1, 5), reason="Nứt sàn — đưa đi hàn", by_user="ສົມໄຊ (Somchai)"))
 
     tx = {
-        "ທ້າວ ທັດສະດາພອນ": Driver(driver_code="DRV-01", name="ທ້າວ ທັດສະດາພອນ", phone="020 9876 1111", dob=D(1988, 4, 12), role="main", hire_date=D(2021, 3, 1),
+        "ທ້າວ ທັດສະດາພອນ": Driver(driver_code="DRV-01", name="ທ້າວ ທັດສະດາພອນ", name_latin="Thatsadaphone", phone="020 9876 1111", dob=D(1988, 4, 12), role="main", hire_date=D(2021, 3, 1),
+                                shift="sang", license_class_hr="C", license_status="active",
                                 license_no="LA-2201345", license_type="C", license_valid_from=D(2022, 5, 10), license_valid_to=D(2027, 5, 10),
                                 default_vehicle_id=xe["341"].id, status="on_trip"),
-        "ທ້າວ ບຸນມີ": Driver(driver_code="DRV-02", name="ທ້າວ ບຸນມີ", phone="020 9876 2222", dob=D(1991, 9, 3), role="main", hire_date=D(2022, 8, 15),
+        "ທ້າວ ບຸນມີ": Driver(driver_code="DRV-02", name="ທ້າວ ບຸນມີ", name_latin="Bounmi", phone="020 9876 2222", dob=D(1991, 9, 3), role="main", hire_date=D(2022, 8, 15),
+                          shift="linh_hoat", license_class_hr="C", license_status="active",
                           license_no="LA-2318877", license_type="C", license_valid_from=D(2023, 2, 1), license_valid_to=D(2026, 10, 1),   # sắp hết hạn → cờ vàng
                           default_vehicle_id=xe["342"].id, status="on_trip"),
-        "ທ້າວ ສົມພອນ": Driver(driver_code="DRV-LK-01", name="ທ້າວ ສົມພອນ", phone="020 5555 7777", role="main",
+        "ທ້າວ ສົມພອນ": Driver(driver_code="DRV-LK-01", name="ທ້າວ ສົມພອນ", name_latin="Somphone", phone="020 5555 7777", role="main",
+                           shift="linh_hoat", license_class_hr="C", license_status="active",
                            license_no="LA-1907720", license_type="C", license_valid_from=D(2019, 7, 1), license_valid_to=D(2026, 7, 1),   # đã hết hạn → cờ đỏ
                            status="available", note="Tài xế của chủ xe liên kết ທ້າວ ຄຳຫລ້າ"),
     }

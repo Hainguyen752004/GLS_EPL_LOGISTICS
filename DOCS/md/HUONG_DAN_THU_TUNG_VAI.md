@@ -208,6 +208,26 @@ xem ngay, không phải nhập gì.
 
 ---
 
+## 4c. Thử màn Xe và màn Tài xế
+
+Hai màn danh mục này dựng theo bản thiết kế anh gửi: danh sách bên dưới, bấm một dòng thì **thẻ xem
+nhanh trượt ra từ mép phải**, bấm đúp (hoặc bấm *Mở hồ sơ*) thì mở hộp hồ sơ đầy đủ có tab.
+
+| ☐ | Đăng nhập | Việc | Phải thấy |
+|---|---|---|---|
+| ☐ | `ketoan` | **Xe** → bấm một dòng | Thẻ trượt ra từ mép phải, nền sau mờ đi |
+| ☐ | `ketoan` | Bấm nút **×**, rồi bấm nền mờ, rồi bấm phím **Esc** | Cả ba cách đều đóng được thẻ |
+| ☐ | `ketoan` | Bấm đúp một dòng | Hộp hồ sơ bảy tab; thẻ trượt tự thu lại, không chồng hai lớp |
+| ☐ | `ketoan` | **Tài xế** → nhìn cột **Kết luận** | Ba mức khác nhau trên ba tài xế mẫu: *Đủ điều kiện* · *Sắp hết hạn* · *Hết hạn* |
+| ☐ | `ketoan` | Bấm chip **Hết hạn / không hiệu lực** | Danh sách lọc còn đúng người bằng lái đã hết hạn |
+| ☐ | `ketoan` | Mở thẻ người bằng hết hạn | Khối *cửa chặn* màu đỏ ghi rõ "Điều phối sẽ chặn"; nút **Tạo phiếu xuất** bị khoá |
+| ☐ | `ketoan` | Mở hồ sơ → tab **Bằng lái & gia hạn** → **+ Gia hạn** | Ghi bằng mới xong: cột Kết luận đổi sang xanh, bảng lịch sử có thêm dòng, bằng cũ đánh *Bằng cũ* |
+| ☐ | `ketoan` | Tab **Lịch tuần** | Bảy ô ngày, ngày nào có chuyến hiện số phiếu và tuyến |
+| ☐ | `khonl` | Mở **Tài xế**, mở hồ sơ một người | Xem được nhưng **không có** nút Lưu, các ô đều khoá |
+| ☐ | `tx01` | Tìm màn **Tài xế** | Không có — tài xế chỉ thấy *Phiếu của tôi* |
+
+---
+
 ## 5. Thử nối kế toán (chưa có API anh Khang vẫn thử được)
 
 | ☐ | Việc | Phải thấy |
@@ -247,7 +267,7 @@ Muốn chắc chắn máy vẫn đúng sau khi nghịch, chạy bộ kiểm (c�
 ```
 python kiem\thu_hai_do.py          python kiem\thu_luong_api.py
 python kiem\thu_tien_te.py        python kiem\thu_ban_hang.py
-python kiem\thu_ty_gia.py
+python kiem\thu_ty_gia.py         node   kiem\ra_tai_xe.js
 python kiem\thu_phieu_linh.py      python kiem\thu_day_ke_toan.py
 node   kiem\thu_giao_dien.js       node kiem\ra_vai.js
 ```

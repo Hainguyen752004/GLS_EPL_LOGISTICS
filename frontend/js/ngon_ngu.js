@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1172 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1261 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4176,6 +4176,451 @@ window.EPL_TU_DIEN = {
   "vi": "Tài xế và bằng lái",
   "lo": "ໂຊເຟີ ແລະ ໃບຂັບຂີ່",
   "en": "Drivers and licences"
+ },
+ "tx_search_ph": {
+  "vi": "Tìm tên, mã, điện thoại, số bằng, số xe…",
+  "lo": "ຊອກຊື່, ລະຫັດ, ໂທ, ເລກໃບຂັບຂີ່, ເລກລົດ…",
+  "en": "Search name, code, phone, licence no., truck…"
+ },
+ "tx_all_role": {
+  "vi": "Tất cả vai trò",
+  "lo": "ທຸກຕຳແໜ່ງ",
+  "en": "All roles"
+ },
+ "tx_role_main": {
+  "vi": "Lái chính",
+  "lo": "ຄົນຂັບຫຼັກ",
+  "en": "Driver"
+ },
+ "tx_role_assist": {
+  "vi": "Phụ xe",
+  "lo": "ຜູ້ຊ່ວຍ",
+  "en": "Assistant"
+ },
+ "tx_all_class": {
+  "vi": "Tất cả hạng bằng",
+  "lo": "ທຸກຊັ້ນໃບຂັບຂີ່",
+  "en": "All classes"
+ },
+ "tx_st_off": {
+  "vi": "Nghỉ",
+  "lo": "ພັກ",
+  "en": "Off duty"
+ },
+ "tx_add": {
+  "vi": "Thêm tài xế",
+  "lo": "ເພີ່ມຄົນຂັບ",
+  "en": "Add driver"
+ },
+ "tx_q_missing": {
+  "vi": "Thiếu bằng lái",
+  "lo": "ບໍ່ມີໃບຂັບຂີ່",
+  "en": "No licence"
+ },
+ "tx_q_expired": {
+  "vi": "Hết hạn / không hiệu lực",
+  "lo": "ໝົດອາຍຸ / ບໍ່ມີຜົນ",
+  "en": "Expired / inactive"
+ },
+ "tx_q_soon": {
+  "vi": "Sắp hết hạn (≤ 60 ngày)",
+  "lo": "ໃກ້ໝົດອາຍຸ (≤ 60 ວັນ)",
+  "en": "Expiring (≤ 60 days)"
+ },
+ "tx_q_mismatch": {
+  "vi": "Lệch hạng với hồ sơ",
+  "lo": "ຊັ້ນບໍ່ຕົງກັບຂໍ້ມູນ",
+  "en": "Class mismatch"
+ },
+ "tx_q_no_vehicle": {
+  "vi": "Chưa gán xe",
+  "lo": "ຍັງບໍ່ກຳນົດລົດ",
+  "en": "No truck assigned"
+ },
+ "tx_gate_note": {
+  "vi": "4 chip bên phải là cửa chặn điều phối",
+  "lo": "4 ປຸ່ມຂວາແມ່ນເງື່ອນໄຂກັນການຈັດຖ້ຽວ",
+  "en": "The 4 right chips are the dispatch gate"
+ },
+ "tx_list": {
+  "vi": "Danh sách tài xế",
+  "lo": "ລາຍຊື່ຄົນຂັບ",
+  "en": "Driver list"
+ },
+ "tx_none": {
+  "vi": "Không có tài xế nào khớp bộ lọc.",
+  "lo": "ບໍ່ມີຄົນຂັບຕາມຕົວກອງ.",
+  "en": "No drivers match the filter."
+ },
+ "tx_driver": {
+  "vi": "Tài xế",
+  "lo": "ຄົນຂັບ",
+  "en": "Driver"
+ },
+ "tx_phone": {
+  "vi": "Điện thoại",
+  "lo": "ໂທລະສັບ",
+  "en": "Phone"
+ },
+ "tx_class_profile": {
+  "vi": "Hạng hồ sơ",
+  "lo": "ຊັ້ນໃນຂໍ້ມູນ",
+  "en": "Profile class"
+ },
+ "tx_class_license": {
+  "vi": "hạng bằng",
+  "lo": "ຊັ້ນໃບຂັບຂີ່",
+  "en": "licence class"
+ },
+ "tx_class": {
+  "vi": "Hạng",
+  "lo": "ຊັ້ນ",
+  "en": "Class"
+ },
+ "tx_license": {
+  "vi": "Bằng lái",
+  "lo": "ໃບຂັບຂີ່",
+  "en": "Licence"
+ },
+ "tx_validity": {
+  "vi": "Hiệu lực",
+  "lo": "ອາຍຸໃຊ້ງານ",
+  "en": "Validity"
+ },
+ "tx_vehicle": {
+  "vi": "Xe thường lái",
+  "lo": "ລົດປະຈຳ",
+  "en": "Usual truck"
+ },
+ "tx_conclusion": {
+  "vi": "Kết luận",
+  "lo": "ສະຫຼຸບ",
+  "en": "Verdict"
+ },
+ "tx_kl_ok": {
+  "vi": "Đủ điều kiện",
+  "lo": "ຄົບເງື່ອນໄຂ",
+  "en": "Eligible"
+ },
+ "tx_kl_soon": {
+  "vi": "Sắp hết hạn",
+  "lo": "ໃກ້ໝົດອາຍຸ",
+  "en": "Expiring soon"
+ },
+ "tx_kl_expired": {
+  "vi": "Hết hạn",
+  "lo": "ໝົດອາຍຸ",
+  "en": "Expired"
+ },
+ "tx_kl_inactive": {
+  "vi": "Không hiệu lực",
+  "lo": "ບໍ່ມີຜົນ",
+  "en": "Inactive"
+ },
+ "tx_kl_mismatch": {
+  "vi": "Lệch hạng",
+  "lo": "ຊັ້ນບໍ່ຕົງ",
+  "en": "Class mismatch"
+ },
+ "tx_kl_missing": {
+  "vi": "Thiếu bằng lái",
+  "lo": "ບໍ່ມີໃບຂັບຂີ່",
+  "en": "No licence"
+ },
+ "tx_valid_until": {
+  "vi": "Còn hiệu lực tới",
+  "lo": "ໃຊ້ໄດ້ຖືງ",
+  "en": "Valid until"
+ },
+ "tx_expires_in": {
+  "vi": "Còn",
+  "lo": "ເຫຼືອ",
+  "en": "Expires in"
+ },
+ "tx_expired_on": {
+  "vi": "Đã hết hạn",
+  "lo": "ໝົດອາຍຸແລ້ວ",
+  "en": "Expired on"
+ },
+ "tx_gate_block": {
+  "vi": "Điều phối sẽ chặn",
+  "lo": "ຈະຖືກກັນຈັດຖ້ຽວ",
+  "en": "Dispatch will block"
+ },
+ "tx_gate_far": {
+  "vi": "Chuyến xếp xa sẽ bị chặn",
+  "lo": "ຖ້ຽວໄກຈະຖືກກັນ",
+  "en": "Long trips will be blocked"
+ },
+ "tx_blocked": {
+  "vi": "Bị chặn",
+  "lo": "ຖືກກັນ",
+  "en": "Blocked"
+ },
+ "tx_legend": {
+  "vi": "● Xanh còn hạn · vàng ≤ 60 ngày · đỏ hết hạn / lệch hạng",
+  "lo": "● ຂຽວຍັງມີອາຍຸ · ເຫຼືອງ ≤ 60 ວັນ · ແດງໝົດອາຍຸ / ຊັ້ນບໍ່ຕົງ",
+  "en": "● Green valid · amber ≤ 60 days · red expired / mismatch"
+ },
+ "tx_pick": {
+  "vi": "Chọn một tài xế để xem hồ sơ.",
+  "lo": "ເລືອກຄົນຂັບເພື່ອເບິ່ງຂໍ້ມູນ.",
+  "en": "Select a driver to view the profile."
+ },
+ "tx_call": {
+  "vi": "Gọi",
+  "lo": "ໂທ",
+  "en": "Call"
+ },
+ "tx_dob": {
+  "vi": "Ngày sinh",
+  "lo": "ວັນເກີດ",
+  "en": "Date of birth"
+ },
+ "tx_id_card": {
+  "vi": "Số CMND / căn cước",
+  "lo": "ເລກບັດປະຈຳຕົວ",
+  "en": "ID card no."
+ },
+ "tx_joined": {
+  "vi": "Ngày vào làm",
+  "lo": "ວັນເຂົ້າວຽກ",
+  "en": "Joined"
+ },
+ "tx_address": {
+  "vi": "Địa chỉ",
+  "lo": "ທີ່ຢູ່",
+  "en": "Address"
+ },
+ "tx_no_license": {
+  "vi": "Chưa ghi bằng lái — mở hồ sơ, tab Bằng lái để ghi.",
+  "lo": "ຍັງບໍ່ບັນທຶກໃບຂັບຂີ່.",
+  "en": "No licence recorded — open profile › Licence tab."
+ },
+ "tx_quick_hint": {
+  "vi": "Thẻ xem nhanh — bấm “Mở hồ sơ” hoặc bấm đúp dòng để sửa hồ sơ, ghi bằng lái mới / gia hạn, gán xe và ca.",
+  "lo": "ບັດເບິ່ງດ່ວນ — ກົດ “ເປີດຂໍ້ມູນ” ເພື່ອແກ້ໄຂ, ບັນທຶກໃບຂັບຂີ່, ກຳນົດລົດ.",
+  "en": "Quick view — click “Open profile” or double-click a row to edit, record a licence / renewal, assign truck and shift."
+ },
+ "tx_profile": {
+  "vi": "Hồ sơ tài xế",
+  "lo": "ຂໍ້ມູນຄົນຂັບ",
+  "en": "Driver profile"
+ },
+ "tx_edit_sub": {
+  "vi": "Nhân sự, bằng lái & gia hạn, xe thường lái, ca làm việc",
+  "lo": "ບຸກຄະລາກອນ, ໃບຂັບຂີ່ & ຕໍ່ອາຍຸ, ລົດປະຈຳ, ກະວຽກ",
+  "en": "Personnel, licence & renewals, usual truck, shift"
+ },
+ "tx_photo": {
+  "vi": "Ảnh tài xế",
+  "lo": "ຮູບຄົນຂັບ",
+  "en": "Photo"
+ },
+ "tx_save": {
+  "vi": "Lưu hồ sơ tài xế",
+  "lo": "ບັນທຶກ",
+  "en": "Save driver"
+ },
+ "tx_tab_license": {
+  "vi": "Bằng lái & gia hạn",
+  "lo": "ໃບຂັບຂີ່ & ຕໍ່ອາຍຸ",
+  "en": "Licence & renewals"
+ },
+ "tx_tab_vehicle_shift": {
+  "vi": "Xe & ca làm",
+  "lo": "ລົດ & ກະວຽກ",
+  "en": "Truck & shift"
+ },
+ "tx_tab_schedule": {
+  "vi": "Lịch tuần",
+  "lo": "ຕາຕະລາງອາທິດ",
+  "en": "Weekly schedule"
+ },
+ "tx_code": {
+  "vi": "Mã tài xế",
+  "lo": "ລະຫັດ",
+  "en": "Driver code"
+ },
+ "tx_name_lo": {
+  "vi": "Họ tên (chữ Lào)",
+  "lo": "ຊື່ (ພາສາລາວ)",
+  "en": "Name (Lao)"
+ },
+ "tx_name_latin": {
+  "vi": "Tên gọi (Latin)",
+  "lo": "ຊື່ (ລາຕິນ)",
+  "en": "Name (Latin)"
+ },
+ "tx_role": {
+  "vi": "Vai trên xe",
+  "lo": "ຕຳແໜ່ງ",
+  "en": "Role"
+ },
+ "tx_current_license": {
+  "vi": "Bằng lái hiện tại",
+  "lo": "ໃບຂັບຂີ່ປັດຈຸບັນ",
+  "en": "Current licence"
+ },
+ "tx_lic_no": {
+  "vi": "Số bằng lái",
+  "lo": "ເລກໃບຂັບຂີ່",
+  "en": "Licence no."
+ },
+ "tx_issued": {
+  "vi": "Ngày cấp",
+  "lo": "ວັນອອກ",
+  "en": "Issued"
+ },
+ "tx_expiry": {
+  "vi": "Hết hạn",
+  "lo": "ໝົດອາຍຸ",
+  "en": "Expiry"
+ },
+ "tx_issuer": {
+  "vi": "Nơi cấp",
+  "lo": "ອອກໂດຍ",
+  "en": "Issuer"
+ },
+ "tx_lic_active": {
+  "vi": "Đang hiệu lực",
+  "lo": "ໃຊ້ໄດ້ຢູ່",
+  "en": "Valid"
+ },
+ "tx_lic_suspended": {
+  "vi": "Tạm đình chỉ",
+  "lo": "ໂຈະຊົ່ວຄາວ",
+  "en": "Suspended"
+ },
+ "tx_lic_revoked": {
+  "vi": "Thu hồi",
+  "lo": "ຖອນ",
+  "en": "Revoked"
+ },
+ "tx_lic_hint": {
+  "vi": "Chỉ bằng ở trạng thái active, còn hạn và đúng hạng hồ sơ mới qua được cửa điều phối. Sửa số / hạn ở đây là sửa tại chỗ; muốn giữ lịch sử thì dùng “Ghi bằng mới / gia hạn” bên dưới.",
+  "lo": "ສະເພາະໃບ active, ຍັງມີອາຍຸ ແລະ ຊັ້ນຕົງກັນ ຈຶ່ງຜ່ານການຈັດຖ້ຽວ.",
+  "en": "Only an active, unexpired licence whose class matches the profile passes the dispatch gate. Editing here changes the current licence in place; use “Record new / renew” to keep history."
+ },
+ "tx_renewals": {
+  "vi": "Lịch sử bằng lái & gia hạn",
+  "lo": "ປະຫວັດໃບຂັບຂີ່ & ຕໍ່ອາຍຸ",
+  "en": "Licence history & renewals"
+ },
+ "tx_renew": {
+  "vi": "Ghi bằng mới / gia hạn",
+  "lo": "ບັນທຶກໃບໃໝ່ / ຕໍ່ອາຍຸ",
+  "en": "Record new / renew"
+ },
+ "tx_renew_save": {
+  "vi": "Ghi & đặt làm bằng hiện tại",
+  "lo": "ບັນທຶກ & ຕັ້ງເປັນປັດຈຸບັນ",
+  "en": "Record & set as current"
+ },
+ "tx_renew_hint": {
+  "vi": "Bằng hiện tại sẽ chuyển xuống lịch sử; kết luận điều phối tính lại ngay.",
+  "lo": "ໃບປັດຈຸບັນຈະຍ້າຍລົງປະຫວັດ.",
+  "en": "The current licence moves to history; the verdict recalculates immediately."
+ },
+ "tx_renewed": {
+  "vi": "Đã ghi bằng lái",
+  "lo": "ບັນທຶກໃບຂັບຂີ່ແລ້ວ",
+  "en": "Licence recorded"
+ },
+ "tx_checked_by": {
+  "vi": "Người kiểm",
+  "lo": "ຜູ້ກວດ",
+  "en": "Checked by"
+ },
+ "tx_current": {
+  "vi": "Hiện tại",
+  "lo": "ປັດຈຸບັນ",
+  "en": "Current"
+ },
+ "tx_old": {
+  "vi": "Cũ",
+  "lo": "ເກົ່າ",
+  "en": "Old"
+ },
+ "tx_no_history": {
+  "vi": "Chưa có lịch sử bằng lái.",
+  "lo": "ຍັງບໍ່ມີປະຫວັດ.",
+  "en": "No licence history."
+ },
+ "tx_bang_note": {
+  "vi": "Lưu = sửa bằng hiện tại tại chỗ. Gia hạn dùng nút “Ghi bằng mới”.",
+  "lo": "ບັນທຶກ = ແກ້ໃບປັດຈຸບັນ. ຕໍ່ອາຍຸໃຊ້ປຸ່ມ “ບັນທຶກໃບໃໝ່”.",
+  "en": "Save = edit current licence in place. Use “Record new” to renew."
+ },
+ "tx_shift": {
+  "vi": "Ca làm việc",
+  "lo": "ກະວຽກ",
+  "en": "Shift"
+ },
+ "tx_ca_sang": {
+  "vi": "Ca sáng (06:00 – 14:00)",
+  "lo": "ກະເຊົ້າ (06:00 – 14:00)",
+  "en": "Morning (06:00 – 14:00)"
+ },
+ "tx_ca_chieu": {
+  "vi": "Ca chiều (14:00 – 22:00)",
+  "lo": "ກະບ່າຍ (14:00 – 22:00)",
+  "en": "Afternoon (14:00 – 22:00)"
+ },
+ "tx_ca_dem": {
+  "vi": "Ca đêm (22:00 – 06:00)",
+  "lo": "ກະກາງຄືນ (22:00 – 06:00)",
+  "en": "Night (22:00 – 06:00)"
+ },
+ "tx_ca_linh_hoat": {
+  "vi": "Linh hoạt theo chuyến",
+  "lo": "ຕາມຖ້ຽວ",
+  "en": "Flexible per trip"
+ },
+ "tx_no_vehicle": {
+  "vi": "— Chưa gán xe —",
+  "lo": "— ຍັງບໍ່ກຳນົດ —",
+  "en": "— Not assigned —"
+ },
+ "tx_vehicle_hint": {
+  "vi": "Xe thường lái được điền sẵn khi lập phiếu; không khoá — điều độ vẫn đổi xe được từng chuyến.",
+  "lo": "ລົດປະຈຳຈະຖືກຕື່ມອັດຕະໂນມັດເມື່ອສ້າງໃບ.",
+  "en": "Usual truck is pre-filled on new dispatch docs; not locked — dispatch can change it per trip."
+ },
+ "tx_days_off": {
+  "vi": "ngày nghỉ",
+  "lo": "ວັນພັກ",
+  "en": "days off"
+ },
+ "tx_free_day": {
+  "vi": "Rảnh",
+  "lo": "ຫວ່າງ",
+  "en": "Free"
+ },
+ "tx_schedule_hint": {
+  "vi": "Xanh dương = có chuyến · xám = nghỉ · xanh lá = rảnh. Lịch lấy từ phiếu và đăng ký nghỉ.",
+  "lo": "ຟ້າ = ມີຖ້ຽວ · ເທົາ = ພັກ · ຂຽວ = ຫວ່າງ.",
+  "en": "Blue = trip · grey = off · green = free."
+ },
+ "tx_need_code": {
+  "vi": "Nhập mã tài xế trước khi lưu",
+  "lo": "ກະລຸນາໃສ່ລະຫັດ",
+  "en": "Enter a driver code before saving"
+ },
+ "tx_need_name": {
+  "vi": "Nhập họ tên trước khi lưu",
+  "lo": "ກະລຸນາໃສ່ຊື່",
+  "en": "Enter a name before saving"
+ },
+ "tx_click_hint2": {
+  "vi": "Bấm dòng để mở thẻ xem nhanh · bấm đúp để mở hồ sơ",
+  "lo": "ກົດແຖວເພື່ອເບິ່ງດ່ວນ · ກົດສອງເທື່ອເປີດຂໍ້ມູນ",
+  "en": "Click a row for quick view · double-click to open profile"
+ },
+ "xe_click_hint2": {
+  "vi": "Bấm dòng để mở thẻ xem nhanh · bấm đúp để mở hồ sơ",
+  "lo": "ກົດແຖວເພື່ອເບິ່ງດ່ວນ · ກົດສອງເທື່ອເປີດຂໍ້ມູນ",
+  "en": "Click a row for quick view · double-click to open profile"
  },
  "d_ty_gia": {
   "vi": "Quy đổi về Kíp cho phiếu mới",

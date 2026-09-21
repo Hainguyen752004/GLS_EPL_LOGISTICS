@@ -100,6 +100,11 @@
   const stPill = (k) => { const s = ST[k] || ST.idle; return pill(s[0], NN.t(s[1])); };
   const truck = `<svg class="xe-i" viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>`;
   const toast = (m) => EPL.toast(m, 'ok');     // dùng hộp báo chung của khung, không dựng cái thứ hai
+
+  /* Thẻ hồ sơ trượt ra từ mép phải; đóng bằng nút X, bấm nền mờ, hoặc phím Esc. */
+  const CLOSE_BTN = `<button type="button" class="xe-close" data-close-detail aria-label="${esc(NN.t('close'))}"><svg class="xe-i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+  function openDetail() { root.querySelector('#xe-detail').classList.add('open'); root.querySelector('#xe-scrim').classList.add('open'); }
+  function closeDetail() { root.querySelector('#xe-detail').classList.remove('open'); root.querySelector('#xe-scrim').classList.remove('open'); }
   const trailerOf = (x) => rm.find(r => r.bien === x.ro_mooc);
 
   /* ---------- tải ---------- */
@@ -174,7 +179,7 @@
         list.map((r, i) => `<tr class="${r.bien === ui.sel ? 'on' : ''}" data-id="${esc(r.bien)}"><td class="muted">${i + 1}</td><td><span class="code lo">${esc(r.bien)}</span><span class="sub">${r.nam_sx || ''}</span></td><td class="lo">${esc(r.loai)}</td><td class="num">${r.tai_trong} t</td><td>${r.lap_vao ? `<span class="mono">${esc(r.lap_vao)}</span>` : `<span class="muted">—</span>`}</td><td>${dots(r.han, ['dang_kiem', 'luu_hanh'])}</td><td>${r.trang_thai === 'repair' ? stPill('repair') : stPill(r.lap_vao ? 'lap' : 'roi')}</td></tr>`).join('') + '</tbody>';
       root.querySelector('#xe-foot').innerHTML = `<span>${rm.filter(r => r.lap_vao).length} ${NN.t('xe_rm_attached').toLowerCase()} · ${rm.filter(r => !r.lap_vao).length} ${NN.t('xe_rm_free').toLowerCase()}</span><span>${NN.h('xe_legend_dots')}</span>`;
     }
-    tb.querySelectorAll('tbody tr').forEach(tr => { tr.addEventListener('click', () => { ui.sel = tr.dataset.id; veList(); veDetail(); chonXong(); }); tr.addEventListener('dblclick', () => { const o = ui.mode === 'dau-keo' ? xe.find(v => v.so_xe === tr.dataset.id) : rm.find(v => v.bien === tr.dataset.id); if (o) openHoSo(o, ui.mode !== 'dau-keo'); }); });
+    tb.querySelectorAll('tbody tr').forEach(tr => { tr.addEventListener('click', () => { ui.sel = tr.dataset.id; veList(); veDetail(); openDetail(); chonXong(); }); tr.addEventListener('dblclick', () => { const o = ui.mode === 'dau-keo' ? xe.find(v => v.so_xe === tr.dataset.id) : rm.find(v => v.bien === tr.dataset.id); if (o) openHoSo(o, ui.mode !== 'dau-keo'); }); });
   }
 
   /* ---------- thẻ xem nhanh (cột phải, chỉ đọc) ---------- */
@@ -193,7 +198,7 @@
     const box = root.querySelector('#xe-detail');
     if (ui.mode === 'ro-mooc') return veDetailRM(box);
     const x = xe.find(v => v.so_xe === ui.sel); if (!x) { box.innerHTML = `<div class="xe-empty">${NN.h('xe_pick')}</div>`; return; }
-    box.innerHTML = `
+    box.innerHTML = CLOSE_BTN + `
       <div class="xe-head"><div class="xe-photo">${x.anh ? `<img src="${esc(x.anh)}" alt="">` : truck}</div>
         <div class="t"><b class="mono lo">${esc(x.so_xe)}</b> · <span class="lo">${esc(x.bien)}</span> ${stPill(x.trang_thai)}<small>${esc(x.hang)} · ${x.nam_sx || '—'} · ${NN.t(x.so_huu === 'thue-ngoai' ? 'xe_rented' : 'xe_company')}${x.chu_xe ? ' · ' + esc(x.chu_xe) : ''}</small>
           <div class="acts"><button class="xe-btn-sm dark" data-act="open"><svg class="xe-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button><button class="xe-btn-sm" data-act="dispatch" ${x.trang_thai !== 'idle' ? 'disabled' : ''}>${NN.h('new_dispatch')}</button></div></div></div>
@@ -217,7 +222,7 @@
   function veDetailRM(box) {
     const r = rm.find(v => v.bien === ui.sel); if (!r) { box.innerHTML = `<div class="xe-empty">${NN.h('xe_pick')}</div>`; return; }
     const host = xe.find(x => x.so_xe === r.lap_vao);
-    box.innerHTML = `
+    box.innerHTML = CLOSE_BTN + `
       <div class="xe-head"><div class="xe-photo">${truck}</div><div class="t"><b class="lo">${esc(r.bien)}</b> ${r.trang_thai === 'repair' ? stPill('repair') : stPill(r.lap_vao ? 'lap' : 'roi')}<small class="lo">${esc(r.loai)} · ${r.tai_trong} t · ${r.nam_sx || '—'}</small>
         <div class="acts"><button class="xe-btn-sm dark" data-act="open">${NN.h('xe_open_profile')}</button></div></div></div>
       <div class="xe-kv"><div><span>${NN.h('xe_chassis')}</span><b class="mono">${esc(r.so_khung || '—')}</b></div><div><span>${NN.h('xe_rm_on')}</span><b class="mono">${r.lap_vao ? esc(r.lap_vao) : '—'}</b></div><div><span>${NN.h('xe_owner')}</span><b>${NN.h(r.so_huu === 'thue-ngoai' ? 'xe_rented' : 'xe_company')}</b></div><div><span>${NN.h('xe_depot')}</span><b class="lo">${esc(r.bai || (host && host.bai) || '—')}</b></div></div>
@@ -235,6 +240,7 @@
   function startOfWeek(d) { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setDate(x.getDate() - day); x.setHours(0, 0, 0, 0); return x; }
 
   function openHoSo(o, isRM, tab) {
+    closeDetail();     // mở hộp hồ sơ đầy đủ thì thu ngăn trượt lại, không chồng hai lớp
     const isNew = isRM ? !o.bien : !o.so_xe;
     const TABS = isRM ? [['chung', 'xe_tab_general'], ['phaply', 'xe_tab_legal'], ['romooc', 'xe_tab_rm_history']]
       : [['chung', 'xe_tab_general'], ['phaply', 'xe_tab_legal'], ['kythuat', 'xe_tab_tech'], ['romooc', 'xe_trailer'], ['lich', 'xe_tab_schedule_full'], ['sua', 'xe_tab_repair_full'], ['phieu', 'xe_tab_trips_full']];
@@ -383,8 +389,12 @@
       r.querySelector('#xe-refresh').addEventListener('click', () => tai().then(() => toast(NN.t('xe_refreshed'))).catch(EPL.baoLoi));
       const them = r.querySelector('#xe-them'); them.hidden = !suaDuoc();
       them.addEventListener('click', () => { if (ui.mode === 'dau-keo') openHoSo({ so_xe: '', bien: '', hang: '', so_huu: 'cong-ty', han: {}, trang_thai: 'idle', lich_su_rm: [], chi_phi: [], phieu_gan_day: [] }, false); else openHoSo({ bien: '', loai: '', tai_trong: 40, so_huu: 'cong-ty', han: {}, trang_thai: 'roi' }, true); });
+      // Đóng ngăn hồ sơ: bấm nền mờ, hoặc nút X trong chính thẻ (gắn một lần, bắt theo nổi bọt).
+      r.querySelector('#xe-scrim').addEventListener('click', closeDetail);
+      r.querySelector('#xe-detail').addEventListener('click', e => { if (e.target.closest('[data-close-detail]')) closeDetail(); });
       // Gỡ phím Esc khi rời màn — trước đây mỗi lần mở màn lại gắn thêm một cái, không bao giờ tháo.
-      thoat = (e) => { if (e.key === 'Escape') close(); };
+      // Esc đóng hộp hồ sơ trước; hộp đã đóng thì mới thu ngăn trượt.
+      thoat = (e) => { if (e.key !== 'Escape') return; if (r.querySelector('#xe-modal-root').innerHTML) close(); else closeDetail(); };
       document.addEventListener('keydown', thoat);
       await tai();
     },

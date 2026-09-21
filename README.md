@@ -39,13 +39,14 @@ frontend/
   vendor/leaflet/    thư viện bản đồ để sẵn trong dự án, KHÔNG gọi CDN
   vendor/chartjs/    thư viện biểu đồ (Tổng quan) để sẵn trong dự án, KHÔNG gọi CDN
   js/chung.js        gọi API, ngôn ngữ, đăng nhập, nạp module theo #/ten-module
-  js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.172 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
+  js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.261 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
   ra_vai.js          RÀ TỪNG VAI: đăng nhập 13 tài khoản, mở mọi module vai đó thấy, báo lỗi JS · màn trống · khoá chưa dịch · Bãi lộ tiền
   ra_tong_quan.js    RÀ RIÊNG MÀN TỔNG QUAN: từng vai thấy ô số nào, bấm thử từng chip, tháng rỗng, bốn ngôn ngữ
   ra_xe.js           RÀ RIÊNG MÀN XE: từng vai, bấm thử bảy tab hồ sơ, đổi sang rơ-moóc, bốn ngôn ngữ
+  ra_tai_xe.js       RÀ RIÊNG MÀN TÀI XẾ: cột Kết luận, ngăn trượt, năm tab hồ sơ, bốn ngôn ngữ
   thu_ngoai_tuyen.js màn Cấp phát khi MẤT MẠNG: lưu đệm · hàng đợi · tự gửi khi có mạng lại
   thu_phieu_linh.py  luồng phiếu lĩnh: QR · thủ kho cấp dầu · khai đổ dọc đường · tất toán
   thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
@@ -57,7 +58,7 @@ kiem/
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
 
-24 module: **Tổng quan** (bốn ô số kèm xu hướng 6 tháng, thanh xem nhanh, dòng thời gian từng chuyến, doanh thu và chi phí theo ngày, cơ cấu chi, hao hụt cân, hiệu suất xe) · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (trung tâm điều hành: dải ô số, danh sách chuyến, **bản đồ tuyến**, tiến độ từng chặng, sổ sự cố, duyệt báo hỏng) · Phiếu xuất xe · Hoá đơn vận chuyển · **Chứng từ** (phiếu tạm ứng · **phiếu lĩnh nhiên liệu có mã QR** · phiếu thu) · **Phiếu của tôi** (màn tài xế: tiền tạm ứng, xuất phát, báo hỏng, khai đổ dầu dọc đường, **chia sẻ vị trí GPS**) · **Cấp phát** (thủ kho cấp dầu, quỹ chi tạm ứng, quét mã QR) · Xe liên kết · Tiền chuyến & tiền nước tài xế · **Tất toán tài xế** (theo tháng) · Theo dõi nhà cung cấp · **Kho hàng** (tồn quặng ở bãi theo từng lô, sổ nhập xuất, kế toán **điều chỉnh tồn** có lý do) · Kho nhiên liệu · **Điểm đổ nhiên liệu** · Kho phụ tùng · Khách hàng (kèm **bảng giá khách × tuyến**, phiếu tự điền đơn giá) · **Xe** (hai tab đầu kéo / rơ-moóc, chip lọc, thẻ hồ sơ, hộp hồ sơ bảy tab: chung · pháp lý · kỹ thuật · rơ-moóc lắp/tháo có lịch sử · **lịch xe theo tuần** · chi phí sửa chữa từ mục V · phiếu gần đây) · **Tài xế & bằng lái** · **Tỷ giá** (đặt tỷ giá quy về Kíp cho phiếu mới, có lịch sử và máy tính quy đổi) · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
+24 module: **Tổng quan** (bốn ô số kèm xu hướng 6 tháng, thanh xem nhanh, dòng thời gian từng chuyến, doanh thu và chi phí theo ngày, cơ cấu chi, hao hụt cân, hiệu suất xe) · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (trung tâm điều hành: dải ô số, danh sách chuyến, **bản đồ tuyến**, tiến độ từng chặng, sổ sự cố, duyệt báo hỏng) · Phiếu xuất xe · Hoá đơn vận chuyển · **Chứng từ** (phiếu tạm ứng · **phiếu lĩnh nhiên liệu có mã QR** · phiếu thu) · **Phiếu của tôi** (màn tài xế: tiền tạm ứng, xuất phát, báo hỏng, khai đổ dầu dọc đường, **chia sẻ vị trí GPS**) · **Cấp phát** (thủ kho cấp dầu, quỹ chi tạm ứng, quét mã QR) · Xe liên kết · Tiền chuyến & tiền nước tài xế · **Tất toán tài xế** (theo tháng) · Theo dõi nhà cung cấp · **Kho hàng** (tồn quặng ở bãi theo từng lô, sổ nhập xuất, kế toán **điều chỉnh tồn** có lý do) · Kho nhiên liệu · **Điểm đổ nhiên liệu** · Kho phụ tùng · Khách hàng (kèm **bảng giá khách × tuyến**, phiếu tự điền đơn giá) · **Xe** (hai tab đầu kéo / rơ-moóc, chip lọc, thẻ hồ sơ, hộp hồ sơ bảy tab: chung · pháp lý · kỹ thuật · rơ-moóc lắp/tháo có lịch sử · **lịch xe theo tuần** · chi phí sửa chữa từ mục V · phiếu gần đây) · **Tài xế & bằng lái** (hồ sơ, bằng lái và lịch sử gia hạn, xe thường lái, lịch tuần, và cột **Kết luận** tự nói ai đủ điều kiện điều xe) · **Tỷ giá** (đặt tỷ giá quy về Kíp cho phiếu mới, có lịch sử và máy tính quy đổi) · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
 
 Quy tắc kho: nhiên liệu đổ ở kho Thà Bốc → khi kế toán kho ghi sổ mục III thì tự sinh dòng xuất kho; sửa xe lấy phụ tùng từ kho → trừ tồn ngay lúc khai; mua ngoài → công nợ. Xe nhà định khoản `625/…`, `614/…`; xe liên kết `4022/…`. Chi tiết trong [DOCS/md/BAN_DO_CHUC_NANG.md](DOCS/md/BAN_DO_CHUC_NANG.md) mục 4b.
 
@@ -86,6 +87,7 @@ node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdo
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện
 node kiem\ra_tong_quan.js                        # BÁO CÁO rà riêng màn Tổng quan
 node kiem\ra_xe.js                               # BÁO CÁO rà riêng màn Xe
+node kiem\ra_tai_xe.js                           # BÁO CÁO rà riêng màn Tài xế
 ```
 
 ## Thêm một module mới

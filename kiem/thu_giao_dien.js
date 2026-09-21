@@ -351,6 +351,23 @@ async function main() {
   assert.ok(!goc().querySelector('#kh-gia-them').hidden, 'kế toán phải có nút thêm giá');
   console.log('✓ bảng giá khách × tuyến: Bãi không thấy · kế toán thấy %d dòng', dongGia.length);
 
+  // 4a2. màn TÀI XẾ: cột Kết luận là điểm chính — phần mềm tự nói ai được điều xe và vì sao.
+  // Dữ liệu mẫu cố ý có một bằng ĐÃ hết hạn và một bằng SẮP hết hạn, nên ba mức phải hiện đủ.
+  await di('#/tai-xe');
+  const dongTX = [...goc().querySelectorAll('#tx-tbl tbody tr')];
+  assert.ok(dongTX.length >= 3, 'phải có ít nhất 3 tài xế mẫu: ' + dongTX.length);
+  const ketLuan = dongTX.map(tr => w.EPL.esc ? tr.children[5].textContent.replace(/\s+/g, ' ').trim() : '');
+  assert.ok(ketLuan.some(t => /Hết hạn/i.test(t)), 'phải bắt được bằng lái đã hết hạn: ' + ketLuan.join(' | '));
+  assert.ok(ketLuan.some(t => /Sắp hết hạn/i.test(t)), 'phải bắt được bằng lái sắp hết hạn: ' + ketLuan.join(' | '));
+  assert.ok(ketLuan.some(t => /Đủ điều kiện/i.test(t)), 'phải có ít nhất một người đủ điều kiện: ' + ketLuan.join(' | '));
+  assert.ok(typeof w.EPL.taiXe?.ketLuan === 'function', 'luật chặn phải mở ra ngoài qua EPL.taiXe để màn khác dùng chung');
+  // ngăn trượt: bấm dòng thì mở, bấm nền mờ thì đóng
+  dongTX[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await cho(400);
+  assert.ok(goc().querySelector('#tx-detail').classList.contains('open'), 'bấm dòng phải mở ngăn hồ sơ');
+  goc().querySelector('#tx-scrim').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await cho(300);
+  assert.ok(!goc().querySelector('#tx-detail').classList.contains('open'), 'bấm nền mờ phải đóng ngăn hồ sơ');
+  console.log('✓ màn Tài xế: %d người · kết luận điều phối bắt đủ ba mức · ngăn trượt mở/đóng', dongTX.length);
+
   // 4b. màn TỶ GIÁ: bốn thẻ, gốc là Kíp, máy tính quy đổi chạy theo số ĐANG GÕ (chưa lưu)
   await di('#/ty-gia');
   const theTien = goc().querySelectorAll('#tg-the .tg-o');

@@ -4,7 +4,7 @@ Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì ti
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
 Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (34 bảng) · **C. API**
-(123 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+(124 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -214,7 +214,8 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 | `vehicles` | Đầu kéo | `truck_no`, `plate_head`, `owner_type` (EPL/joint), `trailer_id`, ba hạn giấy tờ, `odometer_km`, `next_service_km`, `fuel_norm`, `engine_cap`, `box_size`, `tyre` |
 | `trailers` | Rơ-moóc (thực thể riêng) | `plate`, `trailer_type`, `capacity_t`, `status` |
 | `trailer_assignments` | Lịch sử lắp/tháo | `attached_at`, `detached_at`, `reason` |
-| `drivers`, `driver_licenses` | Tài xế và bằng lái | `license_no`, `expiry` |
+| `drivers` | Tài xế | `driver_code`, `name` + `name_latin`, `role`, `shift` (ca quen chạy), bằng lái hiện hành (`license_no`, `license_type`, `license_status`, hai mốc hạn), **`license_class_hr`** (hạng ghi trong hồ sơ nhân sự — lệch với hạng trên bằng là dấu hiệu hồ sơ sai), `default_vehicle_id`, `status` |
+| `driver_licenses` | Từng bằng lái và lần gia hạn | `license_no`, `valid_from`, `valid_to`, `issued_by`, `verified_by` |
 | `routes`, `route_stops` | Tuyến và các chặng | `total_km`, `toll_lak`; mỗi chặng có `km_from_prev`, `lat`, `lng` |
 | `suppliers`, `supplier_payments` | Nhà cung cấp và các đợt trả | |
 | `exchange_rates` | Tỷ giá về LAK | USD, THB, VND, **CNY** — dùng làm mặc định cho phiếu mới; `by_user` ai đặt lần gần nhất |
@@ -322,6 +323,22 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `GET PUT /api/rates` | Tỷ giá |
 | `GET POST PUT /api/routes` | Tuyến đường và các chặng |
 
+## C5a. Tài xế & bằng lái — `routes/danh_muc.py`
+
+| Đường | Việc |
+|---|---|
+| `GET /api/drivers` | Danh sách, kèm **số phiếu đã chạy** và **phiếu đang cầm** (hai truy vấn gộp cho cả danh sách, không hỏi lại từng người) |
+| `GET /api/drivers/{id}` | Hồ sơ đầy đủ: lịch sử bằng lái, mười phiếu gần đây |
+| `POST PUT /api/drivers[/{id}]` | Thêm · sửa. Chỉ Bãi và Kế toán |
+| `POST /api/drivers/{id}/licenses` | Ghi bằng mới / gia hạn: thêm một dòng lịch sử **và** cập nhật bằng hiện hành, đưa trạng thái bằng về `active` |
+| `GET /api/drivers/{id}/lich?tuan=YYYY-MM-DD` | Lịch tuần, dựng từ chính các phiếu người này cầm — không có bảng lịch riêng |
+
+**Cửa chặn điều phối.** Màn Tài xế tự trả lời "người này có được điều xe không, vì sao", sáu mức xếp
+nặng dần: `missing` chưa có bằng · `inactive` bằng bị đình chỉ hoặc thu hồi · `expired` bằng hết hạn ·
+`mismatch` hạng trên bằng khác hạng ghi trong hồ sơ · `soon` còn dưới 60 ngày · `ok`. Bốn mức đầu là
+**chặn hẳn**, `soon` là cảnh báo cho chuyến xếp xa. Luật viết MỘT chỗ ở `frontend/modules/tai-xe/tai-xe.js`
+và mở ra ngoài qua `EPL.taiXe.ketLuan` để màn Phiếu xuất xe dùng chung, không ai chép lại lần thứ hai.
+
 ## C5b. Tỷ giá — `routes/danh_muc.py`
 
 | Đường | Việc |
@@ -392,6 +409,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_phieu_linh.py` | Phiếu lĩnh QR, thủ kho cấp dầu, khai đổ dọc đường, tất toán |
 | `python kiem\thu_ban_hang.py` | Bán phụ tùng, xăng dầu ra ngoài |
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
+| `node kiem\ra_tai_xe.js` | **Rà màn Tài xế**: từng vai, cột Kết luận, ngăn trượt hồ sơ, năm tab, bốn ngôn ngữ (báo cáo, không phải đạt/hỏng) |
 | `python kiem\thu_ty_gia.py` | **Màn Tỷ giá**: ai xem ai sửa, lịch sử giữ số cũ, gõ lại số cũ không đẻ dòng rác, chặn số sai, phiếu cũ giữ tỷ giá của nó, phiếu mới lấy số mới |
 | `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |

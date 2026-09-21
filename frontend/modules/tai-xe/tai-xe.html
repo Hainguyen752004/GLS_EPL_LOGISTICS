@@ -1,20 +1,26 @@
-<!-- Tài xế & bằng lái — ໂຊເຟີ ແລະ ໃບຂັບຂີ່. Mang từ module tài xế của EPL_System, bỏ ca/tổ/lịch. -->
-<div class="toolbar">
-  <div class="field tx-tim"><label data-i18n="search"></label><input id="tx-q"></div>
-  <div class="field"><label data-i18n="status"></label>
-    <select id="tx-tt"><option value="" data-i18n="all"></option><option value="available" data-i18n="d_available"></option><option value="on_trip" data-i18n="d_on_trip"></option><option value="leave" data-i18n="d_leave"></option></select></div>
+<!-- Tài xế & bằng lái — ຄົນຂັບ & ໃບຂັບຂີ່. Hồ sơ nhân sự lái xe, bằng lái + gia hạn, xe thường lái, ca làm, lịch tuần, phiếu gần đây.
+     Kết luận "đủ điều kiện điều phối" tính ở đây; màn Điều phối / Phiếu xuất xe đọc từ đây để chặn.
+     Dữ liệu THẬT: GET/POST/PUT /api/drivers · GET /api/drivers/{id}/lich?tuan= · POST /api/drivers/{id}/licenses. -->
+<div class="tx-toolbar">
+  <label class="tx-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="tx-q" type="search" autocomplete="off" data-i18n-ph="tx_search_ph"></label>
+  <div class="tx-field"><select id="tx-f-vai"><option value="" data-i18n="tx_all_role"></option><option value="chinh" data-i18n="tx_role_main"></option><option value="phu" data-i18n="tx_role_assist"></option></select></div>
+  <div class="tx-field"><select id="tx-f-hang"><option value="" data-i18n="tx_all_class"></option><option>C</option><option>D</option><option>E</option><option>FC</option></select></div>
+  <div class="tx-field"><select id="tx-f-tt"><option value="" data-i18n="xe_all_status"></option><option value="running" data-i18n="xe_st_running"></option><option value="idle" data-i18n="xe_st_idle"></option><option value="off" data-i18n="tx_st_off"></option></select></div>
   <div class="grow"></div>
-  <button class="btn primary" id="tx-them"><span data-i18n="add"></span></button>
+  <button class="btn" id="tx-refresh" type="button"><svg class="tx-i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span data-i18n="refresh"></span></button>
+  <button class="btn primary" id="tx-them" type="button">+ <span data-i18n="tx_add"></span></button>
 </div>
-<div class="tx-hai">
-  <div class="card"><div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="name"></th><th data-i18n="phone"></th><th data-i18n="driver_role"></th><th data-i18n="license_type"></th><th data-i18n="license_no"></th><th data-i18n="license_valid_to"></th><th data-i18n="default_vehicle"></th><th data-i18n="status"></th></tr></thead>
-      <tbody id="tx-than"></tbody>
-    </table>
-  </div></div>
-  <div class="card tx-ho-so" id="tx-ho-so" hidden>
-    <div class="hd"><h3 id="tx-hs-ten" lang="lo"></h3><div class="grow"></div><span id="tx-hs-tt"></span><button class="btn sm" id="tx-hs-sua" data-i18n="edit"></button></div>
-    <div class="bd" id="tx-hs-than"></div>
+
+<!-- Thanh xem nhanh: mỗi chip = một bộ lọc; 4 chip cuối là "cửa chặn điều phối" -->
+<div class="tx-quick" id="tx-quick"></div>
+
+<div class="tx-cols">
+  <div class="tx-card">
+    <div class="hd"><b data-i18n="tx_list"></b><span class="small muted" id="tx-count"></span><div class="grow"></div><span class="small muted" data-i18n="tx_click_hint2"></span></div>
+    <div style="overflow-x:auto"><table class="tx-tbl" id="tx-tbl"></table></div>
+    <div class="tx-foot" id="tx-foot"></div>
   </div>
+  <div class="tx-scrim" id="tx-scrim"></div>
+  <div class="tx-card tx-detail" id="tx-detail" role="dialog" aria-modal="false"></div>
 </div>
+<div id="tx-modal-root"></div>
