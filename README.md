@@ -39,6 +39,7 @@ frontend/
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
   ra_vai.js          RÀ TỪNG VAI: đăng nhập 13 tài khoản, mở mọi module vai đó thấy, báo lỗi JS · màn trống · khoá chưa dịch · Bãi lộ tiền
+  ra_tong_quan.js    RÀ RIÊNG MÀN TỔNG QUAN: từng vai thấy ô số nào, bấm thử từng chip, tháng rỗng, bốn ngôn ngữ
   thu_ngoai_tuyen.js màn Cấp phát khi MẤT MẠNG: lưu đệm · hàng đợi · tự gửi khi có mạng lại
   thu_phieu_linh.py  luồng phiếu lĩnh: QR · thủ kho cấp dầu · khai đổ dọc đường · tất toán
   thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
@@ -64,6 +65,8 @@ Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາ
 python kiem\test_tinh_toan.py                    # đơn vị, không cần máy chủ
 python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
+node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện
+node kiem\ra_tong_quan.js                        # BÁO CÁO rà riêng màn Tổng quan
 ```
 
 ## Thêm một module mới
