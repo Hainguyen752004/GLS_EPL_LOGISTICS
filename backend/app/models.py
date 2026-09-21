@@ -624,9 +624,22 @@ class ChungTu(Base):
     by_user = Column(String)
     ts = Column(DateTime, nullable=False, default=bay_gio)
     da_day = Column(Boolean, nullable=False, default=False)    # bên kế toán đã nhận chưa
-    day_luc = Column(DateTime)
+    day_luc = Column(DateTime)                                 # lần đẩy (hoặc thử đẩy) gần nhất
+    ma_ben_ke_toan = Column(String)                            # mã phiếu bên kế toán trả về khi nhận
+    loi_day = Column(String)                                   # lần đẩy gần nhất hỏng vì sao (None = không lỗi)
+    lan_thu = Column(Integer, default=0)
     payload = Column(Text)                                     # JSON chi tiết dòng, để bên kia khỏi gọi lại
     __table_args__ = (UniqueConstraint("loai", "nguon_bang", "nguon_id", name="uq_chung_tu_nguon"),)
+
+
+class CauHinh(Base):
+    """Cấu hình đặt được trong màn hình (Sếp), không cần khởi động lại: địa chỉ và token API kế toán…
+    Có giá trị ở đây thì dùng, không có thì rơi về biến môi trường cùng tên (EPL_<KHOA>)."""
+    __tablename__ = "cau_hinh"
+    khoa = Column(String, primary_key=True)                    # ke_toan_api · ke_toan_token
+    gia_tri = Column(Text)
+    by_user = Column(String)
+    cap_nhat = Column(DateTime, default=bay_gio)
 
 
 # ---------------------------------------------------------------- tệp đính kèm phiếu (phiếu quặng của khách…)

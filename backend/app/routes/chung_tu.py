@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import ChungTu
 from services import chung_tu as CT
+from services import day_ke_toan as DK
 from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
@@ -84,3 +85,57 @@ def danh_dau_da_day(cid: str, d: dict = Body(default={}), db: Session = Depends(
     c.day_luc = dt.datetime.utcnow() if c.da_day else None
     db.commit()
     return CT.xuat(c)
+
+
+# ================================================================ đẩy sang kế toán anh Khang
+DAY = ("acct", "admin")     # KT Thu/Chi VC và Sếp bấm đẩy; các vai khác xem
+
+
+@router.get("/api/ke-toan/trang-thai")
+def ke_toan_trang_thai(db: Session = Depends(get_db), user=Depends(can_vai(*XEM))):
+    """Đã nối API kế toán chưa, bao nhiêu tờ đã đẩy / chưa / lỗi, lần đẩy gần nhất."""
+    return DK.trang_thai(db)
+
+
+@router.post("/api/chung-tu/day")
+def day_tat_ca(d: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
+    """Đẩy mọi tờ chưa đẩy sang kế toán. Chưa cấu hình thì báo 409 chứ không đứng im."""
+    if not DK.cau_hinh(db, "ke_toan_api"):
+        raise HTTPException(409, {"ma": "CHUA_CAU_HINH", "loi": "Chưa có địa chỉ API kế toán. Sếp vào Sổ chứng từ → Kết nối kế toán để đặt."})
+    ket = DK.day_hang_loat(db, user, loai=(d.get("loai") or None))
+    db.commit()
+    return ket
+
+
+@router.post("/api/chung-tu/{cid}/day")
+def day_mot_to(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
+    c = db.get(ChungTu, cid)
+    if not c:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chứng từ này."})
+    if not DK.cau_hinh(db, "ke_toan_api"):
+        raise HTTPException(409, {"ma": "CHUA_CAU_HINH", "loi": "Chưa có địa chỉ API kế toán."})
+    ok, tb = DK.day_mot(db, c, user)
+    db.commit()
+    if not ok:
+        raise HTTPException(502, {"ma": "DAY_HONG", "loi": tb})
+    return CT.xuat(c)
+
+
+@router.get("/api/ke-toan/cau-hinh")
+def xem_cau_hinh(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
+    """Sếp xem cấu hình. Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
+    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token"))}
+
+
+@router.put("/api/ke-toan/cau-hinh")
+def dat_cau_hinh(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
+    """Sếp đặt địa chỉ API và token (gửi token rỗng = giữ token cũ; gửi "-" = xoá)."""
+    if "ke_toan_api" in d:
+        DK.dat_cau_hinh(db, "ke_toan_api", d.get("ke_toan_api") or "", user)
+    tk = d.get("ke_toan_token")
+    if tk == "-":
+        DK.dat_cau_hinh(db, "ke_toan_token", "", user)
+    elif tk:
+        DK.dat_cau_hinh(db, "ke_toan_token", tk, user)
+    db.commit()
+    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token"))}

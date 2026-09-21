@@ -38,3 +38,9 @@
 #ct-so-bang tr.da-day td{color:var(--ink-3)}
 #ct-so-bang .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 @media print{#ct-so-ct .hd .field,#ct-so-ct .ct-check,#ct-so-bang th:last-child,#ct-so-bang td:last-child{display:none}}
+/* kết nối kế toán */
+.ct-ket-noi{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;margin:0 14px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:12.5px}
+.ct-ket-noi .cham{width:9px;height:9px;border-radius:50%;background:var(--line-2)} .ct-ket-noi .cham.on{background:var(--green)} .ct-ket-noi .cham.loi{background:var(--red)}
+.ct-ket-noi .grow{flex:1}
+.ct-ma-kt{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--green)}
+.ct-loi-day{color:var(--red);font-size:11.5px;max-width:220px;white-space:normal}

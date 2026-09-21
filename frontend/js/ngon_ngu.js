@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1098 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1111 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4491,6 +4491,71 @@ window.EPL_TU_DIEN = {
   "vi": "Hàng đã vào kho bãi — dòng hàng và cân của phiếu này không sửa nữa. Sai số thì xử lý ở phiếu giao hoặc lập phiếu điều chỉnh.",
   "lo": "ສິນຄ້າເຂົ້າສາງແລ້ວ — ແຖວສິນຄ້າ ແລະ ນ້ຳໜັກຊັ່ງຂອງໃບນີ້ບໍ່ແກ້ອີກ. ຜິດພາດໃຫ້ແກ້ຢູ່ໃບສົ່ງ ຫຼື ອອກໃບປັບປຸງ.",
   "en": "Goods are already in the yard store — the goods lines and weights of this order are closed. Fix mistakes on the delivery order or with an adjustment order."
+ },
+ "ct_day_tt": {
+  "vi": "Đẩy kế toán",
+  "lo": "ສົ່ງບັນຊີ",
+  "en": "Sent to accounting"
+ },
+ "ct_day": {
+  "vi": "Đẩy",
+  "lo": "ສົ່ງ",
+  "en": "Send"
+ },
+ "ct_day_het": {
+  "vi": "Đẩy hết tờ chưa đẩy",
+  "lo": "ສົ່ງທຸກໃບທີ່ຍັງບໍ່ສົ່ງ",
+  "en": "Send all unsent"
+ },
+ "ct_day_xong": {
+  "vi": "Đã đẩy sang kế toán",
+  "lo": "ສົ່ງໃຫ້ບັນຊີແລ້ວ",
+  "en": "Sent to accounting"
+ },
+ "ct_day_ket_qua": {
+  "vi": "Đẩy xong {xong} tờ · lỗi {loi} tờ",
+  "lo": "ສົ່ງສຳເລັດ {xong} ໃບ · ຜິດພາດ {loi} ໃບ",
+  "en": "Sent {xong} · failed {loi}"
+ },
+ "ct_ket_noi": {
+  "vi": "Kết nối kế toán",
+  "lo": "ເຊື່ອມຕໍ່ບັນຊີ",
+  "en": "Accounting link"
+ },
+ "ct_chua_ket_noi": {
+  "vi": "chưa đặt địa chỉ API — Sếp bấm Cấu hình",
+  "lo": "ຍັງບໍ່ຕັ້ງທີ່ຢູ່ API — ຫົວໜ້າກົດ ຕັ້ງຄ່າ",
+  "en": "API address not set — the Boss can configure it"
+ },
+ "ct_loi_day_n": {
+  "vi": "{n} tờ đẩy lỗi",
+  "lo": "{n} ໃບສົ່ງຜິດພາດ",
+  "en": "{n} failed"
+ },
+ "ct_day_gan_nhat": {
+  "vi": "lần đẩy gần nhất",
+  "lo": "ສົ່ງຄັ້ງຫຼ້າສຸດ",
+  "en": "last push"
+ },
+ "ct_cau_hinh": {
+  "vi": "Cấu hình",
+  "lo": "ຕັ້ງຄ່າ",
+  "en": "Configure"
+ },
+ "ct_api_dia_chi": {
+  "vi": "Địa chỉ API kế toán (gốc, ví dụ https://ketoan.goldensme.la)",
+  "lo": "ທີ່ຢູ່ API ບັນຊີ",
+  "en": "Accounting API base URL"
+ },
+ "ct_api_token": {
+  "vi": "Token (để trống = giữ cũ, gõ - = xoá)",
+  "lo": "Token (ວ່າງ = ຄົງເກົ່າ, - = ລຶບ)",
+  "en": "Token (blank keeps, - clears)"
+ },
+ "ct_ma_kt": {
+  "vi": "Mã phiếu bên kế toán",
+  "lo": "ເລກໃບຝັ່ງບັນຊີ",
+  "en": "Voucher id in accounting"
  },
  "do_kind": {
   "vi": "Loại phiếu",

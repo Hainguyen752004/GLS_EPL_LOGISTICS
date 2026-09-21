@@ -170,4 +170,5 @@ def xuat(c):
             "mo_ta": c.mo_ta, "nguon_bang": c.nguon_bang, "nguon_id": c.nguon_id,
             "by_user": c.by_user, "ts": c.ts.isoformat() if c.ts else None,
             "da_day": bool(c.da_day), "day_luc": c.day_luc.isoformat() if c.day_luc else None,
+            "ma_ben_ke_toan": c.ma_ben_ke_toan, "loi_day": c.loi_day, "lan_thu": c.lan_thu or 0,
             "payload": pl}

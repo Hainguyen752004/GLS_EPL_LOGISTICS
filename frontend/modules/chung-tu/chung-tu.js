@@ -101,6 +101,38 @@
     }).join('') : '';
     q('#ct-so-tong').querySelectorAll('[data-loai]').forEach(b => b.addEventListener('click', () => { soLoaiChon = soLoaiChon === b.dataset.loai ? '' : b.dataset.loai; q('#ct-so-loai').value = soLoaiChon; veSo(); }));
   }
+  /* ---------------------------------------------------------------- kết nối kế toán anh Khang */
+  let KET_NOI = { cau_hinh: false };
+  async function taiKetNoi() { try { KET_NOI = await API.get('/api/ke-toan/trang-thai'); } catch (e) { KET_NOI = { cau_hinh: false }; } }
+  function veKetNoi() {
+    const o = q('#ct-ket-noi'); if (!o) return;
+    const k = KET_NOI, dayDuoc = AUTH.la('acct'), sep = AUTH.role === 'admin';
+    o.innerHTML = `<span class="cham ${k.cau_hinh ? (k.loi ? 'loi' : 'on') : ''}"></span>
+      <b>${NN.h('ct_ket_noi')}</b>
+      <span class="muted">${k.cau_hinh ? esc(k.api) : NN.h('ct_chua_ket_noi')}</span>
+      <span class="grow"></span>
+      <span>${NN.h('ct_chua_day')}: <b>${k.chua_day ?? '—'}</b>${k.loi ? ` · <span class="neg">${NN.h('ct_loi_day_n', { n: k.loi })}</span>` : ''}${k.day_gan_nhat ? ` · ${NN.h('ct_day_gan_nhat')} ${EPL.ngayGio ? EPL.ngayGio(k.day_gan_nhat) : esc(k.day_gan_nhat)}` : ''}</span>
+      ${dayDuoc && k.cau_hinh && k.chua_day ? `<button type="button" class="btn sm primary" id="ct-day-het">${NN.h('ct_day_het')} (${k.chua_day})</button>` : ''}
+      ${sep ? `<button type="button" class="btn sm" id="ct-cau-hinh">${NN.h('ct_cau_hinh')}</button>` : ''}`;
+    const het = q('#ct-day-het'); if (het) het.addEventListener('click', async () => {
+      het.disabled = true;
+      try { const r = await API.post('/api/chung-tu/day', {}); EPL.toast(NN.t('ct_day_ket_qua', { xong: r.xong, loi: r.loi }), r.loi ? 'loi' : 'ok'); }
+      catch (e) { EPL.baoLoi(e); }
+      await taiKetNoi(); await veSo();
+    });
+    const ch = q('#ct-cau-hinh'); if (ch) ch.addEventListener('click', async () => {
+      let hien = {}; try { hien = await API.get('/api/ke-toan/cau-hinh'); } catch (e) { hien = {}; }
+      const v = await EPL.hopNhap(NN.t('ct_cau_hinh'), [
+        { id: 'api', label: 'ct_api_dia_chi', value: hien.ke_toan_api || '' },
+        { id: 'token', label: 'ct_api_token', type: 'password', value: '' },
+      ], NN.t('save'));
+      if (!v) return;
+      try { await API.put('/api/ke-toan/cau-hinh', { ke_toan_api: v.api, ke_toan_token: v.token }); EPL.toast(NN.t('saved'), 'ok'); }
+      catch (e) { EPL.baoLoi(e); }
+      await taiKetNoi(); await veSo();
+    });
+  }
+
   async function veSo() {
     const th = new URLSearchParams();
     if (soLoaiChon) th.set('loai', soLoaiChon);
@@ -110,8 +142,10 @@
     let r;
     try { r = await API.get('/api/chung-tu?' + th.toString()); } catch (e) { q('#ct-so-than').innerHTML = `<tr><td colspan="10" class="empty neg">${esc(e.message)}</td></tr>`; return; }
     veSoTong(r.tong);
+    veKetNoi();
     const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
     const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');
+    const dayDuoc = AUTH.la('acct');   // KT Thu/Chi VC và Sếp
     q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day ? 'da-day' : ''}" data-id="${c.id}">
       <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
       <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
@@ -121,8 +155,14 @@
       <td class="num">${c.tien_lak == null ? '—' : so(c.tien_lak)}</td>
       <td>${c.no || c.co || c.no_ten ? `${tk(c.no, c.no_ten)} / ${tk(c.co, c.co_ten)}` : '<span class="muted">—</span>'}</td>
       <td class="small">${esc(c.mo_ta || '')}<div class="muted">${esc(c.by_user || '')}</div></td>
-      <td class="no-print">${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
-    </tr>`).join('') : `<tr><td colspan="10" class="empty small">${NN.h('ct_khong_co')}</td></tr>`;
+      <td class="small">${c.da_day ? `✓ ${c.ma_ben_ke_toan ? `<span class="ct-ma-kt" title="${esc(NN.t('ct_ma_kt'))}">${esc(c.ma_ben_ke_toan)}</span>` : NN.h('ct_da_day')}` : c.loi_day ? `<div class="ct-loi-day" title="${esc(c.loi_day)}">⚠ ${esc(c.loi_day.slice(0, 60))}</div>` : `<span class="muted">${NN.h('ct_chua_day')}</span>`}</td>
+      <td class="no-print">${dayDuoc && !c.da_day && KET_NOI.cau_hinh ? `<button type="button" class="btn sm primary" data-day-api="${c.id}">${NN.h('ct_day')}</button> ` : ''}${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
+    </tr>`).join('') : `<tr><td colspan="11" class="empty small">${NN.h('ct_khong_co')}</td></tr>`;
+    q('#ct-so-than').querySelectorAll('[data-day-api]').forEach(b => b.addEventListener('click', async () => {
+      b.disabled = true;
+      try { await API.post(`/api/chung-tu/${b.dataset.dayApi}/day`, {}); EPL.toast(NN.t('ct_day_xong'), 'ok'); } catch (e) { EPL.baoLoi(e); }
+      await veSo();
+    }));
     q('#ct-so-than').querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', async () => {
       try { await API.post(`/api/chung-tu/${b.dataset.day}/da-day`, { da_day: b.dataset.giaTri === '1' }); await veSo(); } catch (e) { EPL.baoLoi(e); }
     }));
@@ -130,6 +170,7 @@
   function doiTab() {
     const la = tab === 'so';
     q('#ct-so-ct').hidden = !la; q('#ct-giay').hidden = la;
+    if (la) taiKetNoi().then(veKetNoi);
     root.querySelectorAll('.ct-khi-in').forEach(el => { el.hidden = la; });
     q('#ct-o-linh').hidden = la || tab !== 'linh' || LINH.filter(v => v.kind === 'fuel').length < 2;
   }
