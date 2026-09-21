@@ -3,8 +3,11 @@
 
 Tài liệu giao cho người dùng phải là Word, Markdown chỉ là bản nguồn. Chạy lại mỗi khi sửa .md:
 
-    python tools/sinh_word.py                     # DOCS/BAN_DO_CHUC_NANG.md
-    python tools/sinh_word.py DOCS/<tệp>.md       # tệp bất kỳ, .docx đặt cạnh nó
+    python tools/sinh_word.py                     # DOCS/md/BAN_DO_CHUC_NANG.md
+    python tools/sinh_word.py DOCS/md/<tệp>.md    # tệp bất kỳ
+
+Nguồn Markdown nằm ở DOCS/md, bản Word sinh ra nằm ở DOCS/word (cùng tên tệp). Tệp .md ngoài
+thư mục DOCS/md thì .docx vẫn đặt cạnh nó như cũ.
 """
 import io
 import os
@@ -15,7 +18,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, RGBColor
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MAC_DINH = os.path.join(GOC, 'DOCS', 'BAN_DO_CHUC_NANG.md')
+MAC_DINH = os.path.join(GOC, 'DOCS', 'md', 'BAN_DO_CHUC_NANG.md')
+THU_MUC_MD = os.path.join(GOC, 'DOCS', 'md')
+THU_MUC_WORD = os.path.join(GOC, 'DOCS', 'word')
 
 XANH = RGBColor(0x14, 0x5C, 0x4A)
 
@@ -40,7 +45,12 @@ def main():
     nguon = sys.argv[1] if len(sys.argv) > 1 else MAC_DINH
     if not os.path.isabs(nguon):
         nguon = os.path.join(GOC, nguon)
-    dich = os.path.splitext(nguon)[0] + '.docx'
+    ten = os.path.splitext(os.path.basename(nguon))[0] + '.docx'
+    if os.path.dirname(os.path.abspath(nguon)) == THU_MUC_MD:
+        os.makedirs(THU_MUC_WORD, exist_ok=True)
+        dich = os.path.join(THU_MUC_WORD, ten)
+    else:
+        dich = os.path.splitext(nguon)[0] + '.docx'
     dong = io.open(nguon, encoding='utf-8').read().split(chr(10))
     d = Document()
     d.styles['Normal'].font.name = 'Segoe UI'

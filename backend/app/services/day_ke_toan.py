@@ -2,7 +2,7 @@
 """ĐẨY CHỨNG TỪ sang module kế toán của anh Khang (Golden SME) — phiếu thu, phiếu chi, nhập kho, xuất
 kho, hoá đơn… để bên đó vào sổ. Bên mình KHÔNG có sổ kế toán: đây chỉ là bưu tá.
 
-Hợp đồng JSON đề nghị với anh Khang ở `DOCS/HOP_DONG_API_ANH_KHANG.md`. Tóm tắt:
+Hợp đồng JSON đề nghị với anh Khang ở `DOCS/md/HOP_DONG_API_ANH_KHANG.md`. Tóm tắt:
 
     POST {EPL_KE_TOAN_API}/api/v1/epl-lao/vouchers      Authorization: Bearer <token>
     { "source": "EPL_LAO", "ref": "<số chứng từ bên mình>", "type": "PC_TU", "date": "2026-09-21", … }
