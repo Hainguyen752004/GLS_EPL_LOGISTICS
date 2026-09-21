@@ -1,139 +1,120 @@
 # Việc đang chờ chốt — EPL Lào
 
-Tệp này là **danh sách việc treo**, cập nhật ngày 21/09/2026. Mỗi việc ghi ba thứ: phần mềm **hiện
-đang làm gì**, **chờ ai chốt cái gì**, và **nếu chốt thế này thì phải làm gì**. Chốt xong tới đâu thì
-gạch tới đó và ghi ngày.
+Cập nhật **21/09/2026**. Ngày này sếp đã chốt câu quan trọng nhất (một chuyến đi qua **hai DO**) và
+giao cho bên mình tự quyết phần còn lại theo logic vận tải chuyên nghiệp. Tệp này ghi lại **đã chốt gì,
+làm gì rồi, và còn chờ ai cái gì**.
 
-Bộ câu hỏi đã gửi bên EPL nằm ở `CAU_HOI_NGHIEP_VU_EPL.md` (bản Lào `ຄຳຖາມວິຊາການ_EPL.md`, bản Anh
-`EPL_BUSINESS_QUESTIONS.md`). Phân tích nội bộ ở `PHAN_TICH_LUONG_DO_VA_VAI.md`.
-
----
-
-## Phần A. Chờ anh Khampla và anh Ped trả lời
-
-### A1. Một phiếu xuất xe là chặng nào — câu quan trọng nhất (câu B1–B4)
-
-- **Hiện đang làm:** một phiếu là **cả vòng** mỏ → bãi → cảng, một số phiếu cho cả chuyến.
-- **Nếu họ trả lời "hai phiếu"** (một phiếu gom hàng mỏ → bãi, một phiếu giao hàng bãi → cảng):
-  phải thêm loại phiếu *gom hàng* không có phần cước, nối hai phiếu với nhau, và sửa lại cách tính
-  hao hụt (cân đầu ở phiếu này, cân cuối ở phiếu kia). Đây là việc **nặng nhất trong danh sách**,
-  khoảng một đến hai ngày, và đụng vào cả màn phiếu, Theo dõi, hoá đơn, Tổng quan.
-- **Nếu trả lời "cả vòng"**: không phải sửa gì, chỉ ghi nhận.
-
-### A2. Bãi được thấy những khoản tiền nào (mục A2 trong tài liệu gửi họ)
-
-- **Hiện đang làm:** Bãi thấy **mọi khoản chi** (dầu, đi đường, sửa chữa, giá nhập kho) vì chính họ
-  chi và họ nhập; **không thấy tiền bán** (đơn giá cước, doanh thu, hoá đơn, tiền thu khách, giá thuê
-  xe liên kết, khấu trừ chủ xe, lãi chuyến, mã tài khoản).
-- **Chờ họ xác nhận** hoặc ghi lại cho khác. Câu này chặn hai việc kỹ thuật ở mục B1 bên dưới.
-- **Nếu họ muốn Bãi không thấy tiền nào cả**: phải ẩn thêm cột chi ở nhiều màn và tính lại xem Bãi
-  còn nhập được không (họ vẫn phải khai số tiền chi dọc đường).
-
-### A3. Cân đầu, cân cuối, hao hụt (câu C3.1–C3.4)
-
-- **Hiện đang làm:** cân đầu và cân cuối do Bãi nhập trên phiếu; hao hụt quá **1,5 %** thì gắn cờ đỏ,
-  chỉ để theo dõi, **không trừ tiền ai**.
-- **Nếu khách có trừ tiền theo hao hụt**: thêm công thức trừ vào hoá đơn và một ô "mức cho phép" theo
-  hợp đồng từng khách. Khoảng nửa ngày.
-
-### A4. Giá cước lấy từ đâu (câu C3.5–C3.6)
-
-- **Hiện đang làm (đã dựng xong 18/09):** bảng giá **khách × tuyến × loại hàng** có ngày hiệu lực,
-  nằm trong Danh mục khách hàng. Bãi lập phiếu không gửi giá, máy tự điền; KT Thu/Chi VC sửa được
-  trên phiếu khi chuyến đó khác hợp đồng.
-- **Chờ họ xác nhận** giá là cố định theo hợp đồng hay thoả thuận từng chuyến, và tính trên tấn ở
-  điểm đến hay điểm đi. Trả lời khác thì chỉ sửa mặc định, không phải làm lại.
-
-### A5. Thẻ cao tốc (câu C6.1)
-
-- **Hiện đang làm:** ghi như một khoản chi thường trong mục IV.
-- **Nếu họ cần theo dõi số dư thẻ:** thêm "ví thẻ cao tốc" — phiếu nạp thẻ, mỗi phiếu trừ thẻ, báo
-  sắp hết tiền. Khoảng nửa ngày đến một ngày.
-
-### A6. Ai nhận báo hỏng, ai quyết định sửa (câu C1.2, C7.1–C7.3)
-
-- **Hiện đang làm:** Bãi duyệt báo hỏng của tài xế; sửa bằng phụ tùng kho thì trừ tồn ngay, gara
-  ngoài thì thành công nợ.
-- **Nếu *Tổ sửa chữa Thabok* là người riêng:** thêm một vai người dùng, báo hỏng chuyển cho họ duyệt
-  trước. Khoảng nửa ngày.
-- **Nếu sửa xe tại bãi lúc xe không chạy cần lệnh riêng:** thêm một loại phiếu sửa chữa không gắn
-  chuyến. Khoảng một ngày.
-
-### A7. Trả tiền chủ xe liên kết theo phiếu hay theo tháng (câu C4.3)
-
-- **Hiện đang làm:** trả theo **từng phiếu**, sau khi phiếu khoá.
-- **Nếu họ gom cuối tháng:** thêm màn tất toán chủ xe giống màn tất toán tài xế. Khoảng một ngày.
-
-### A8. Hoá đơn từng phiếu hay gom theo tháng (câu C8.2)
-
-- **Hiện đang làm:** **mỗi phiếu một hoá đơn**.
-- **Nếu gom theo tháng:** phải cho chọn nhiều phiếu rồi xuất một hoá đơn, và sửa lại phiếu thu. Khoảng
-  một ngày.
-
-### A9. Mã tài khoản còn vênh giữa hai tài liệu của họ (câu C5.4–C5.6)
-
-- **Hiện đang làm:** kho **371**, nhà cung cấp **402**, phải thu **1211**, doanh thu **70** — lấy theo
-  sheet Phiếu Xuất Xe. Quy trình bằng chữ của họ lại ghi **37** và **4021**, danh mục kế toán có **137**.
-- **Chờ họ chốt một bộ mã.** Sửa rất nhanh (một bảng trong `services/chung_tu.py`), nhưng **phải chốt
-  trước khi bên kế toán kéo dữ liệu về**, không thì sổ sai mã.
-- Còn thiếu hẳn: **mã tiền mặt / ngân hàng** cho vế Có của phiếu chi và phiếu thu — hiện để trống tên,
-  chưa có mã.
-
-### A10. Tài xế có dùng điện thoại được không (câu C1.3)
-
-- **Hiện đang làm:** có màn cho tài xế (nhận phiếu, xuất phát, khai đổ dầu, báo hỏng, chia sẻ vị trí).
-- **Nếu họ nói tài xế không dùng:** phải cho Bãi nhập thay ở mọi chỗ, và bỏ phần chia sẻ vị trí GPS.
+Bộ câu hỏi gửi bên EPL: `CAU_HOI_NGHIEP_VU_EPL.md` (bản Lào `ຄຳຖາມວິຊາການ_EPL.md`, bản Anh
+`EPL_BUSINESS_QUESTIONS.md`). Mô tả hệ thống đầy đủ: `NGHIEP_VU_DB_API.md`.
 
 ---
 
-## Phần B. Việc kỹ thuật bên mình tự biết, chờ chốt A2 rồi làm một lượt
+## Phần 1. Đã chốt và đã làm xong (21/09)
 
-### B1. Máy chủ vẫn trả giá bán cho mọi vai ở các API khác
+### 1.1 Một chuyến đi qua HAI DO — sếp chốt
 
-Ngày 21/09 bên mình đã chặn ở hai báo cáo của màn Tổng quan: `/api/bao-cao/tong-quan` và
-`/api/bao-cao/xu-huong` **bỏ hẳn** các khoá doanh thu với vai Bãi, tài xế và thủ kho.
+> *"Mình phải làm 2 phiếu. Một phiếu là DO đi gom hàng… một phiếu đi giao hàng là như hiện tại. Hai cái
+> phiếu này tuy 2 mà 1 — cái Thabok là như gọi là cái bưu cục. DO lấy hàng mang về sẽ lên chứng từ nhập
+> kho, và khi DO giao lấy thì phải có chứng từ xuất kho. Xe đi lấy hàng và xe đi giao hàng có thể khác
+> nhau. Trong DO phải biết có mặt hàng gì, bao nhiêu kg, để insert thêm một dòng hao hụt cho rõ ràng."*
 
-**Nhưng các API khác thì chưa**: `/api/trips` (phiếu xuất xe) và `/api/bao-cao/theo-doi` vẫn trả đơn
-giá cước, thành tiền và lãi cho mọi vai. Giao diện có che các cột đó, nhưng **mở công cụ trình duyệt
-ra là thấy** — nghĩa là đang giấu hờ chứ chưa giấu thật.
+Đã làm đúng như vậy:
 
-Bên mình cố ý chưa dọn ngay vì hai lẽ: chỗ này đụng vào đường dữ liệu chung của màn phiếu (`xuat_phieu`
-dùng cho cả màn nhập liệu lẫn báo cáo), nên sửa vội dễ làm hỏng phép tính; và ranh giới "Bãi được thấy
-tiền nào" chính là **câu A2 đang chờ họ trả lời**. Chốt xong A2 thì dọn một lượt cho đúng, khoảng nửa
-ngày, và viết bộ kiểm chặn ở mức API chứ không chỉ ở giao diện.
+| Việc | Cách làm |
+|---|---|
+| Hai loại phiếu | `trips.kind` = `gom` (mỏ → bãi) hoặc `giao` (bãi → khách). Chọn ngay ở mục I khi lập phiếu |
+| Dòng hàng | Bảng `trip_goods`: mặt hàng, số tấn. DO gom ghi hàng bốc ở mỏ; DO giao ghi hàng lấy khỏi kho |
+| Bưu cục Thà Bốc | Bảng `goods_moves` = sổ kho hàng. DO gom về bãi → **nhập kho** (chứng từ `PNK_HH`); DO giao lấy đi → **xuất kho** (chứng từ `PXK_HH`) |
+| Dây nối hai DO | Mỗi dòng hàng của DO giao ghi `tu_phieu_id` = DO gom mang lô đó về. Nhìn phiếu nào cũng tra ngược được |
+| Xe khác nhau | Không ràng buộc gì giữa xe hai chặng |
+| Dòng hao hụt | Máy tự ghi một dòng `loai = 'hao_hut'`: chặng gom là *cân mỏ − cân bãi*, chặng giao là *tấn xuất kho − cân nơi giao* |
+| Chạy thẳng mỏ → cảng | Vẫn được: lập DO giao và không chọn lô nào, nhập cân tay như trước |
+| Màn Kho hàng | Mới: tồn theo từng lô, sổ nhập xuất, bấm một dòng là mở đúng phiếu |
 
-### B2. Ảnh xe chưa lưu được
+Máy chủ chặn ba chỗ: lấy quá tồn của lô, xuất hoá đơn cho DO gom, xoá DO gom mà hàng đã có người lấy.
+Bộ kiểm `kiem/thu_hai_do.py` đi trọn luồng này.
 
-Bản thiết kế màn Xe có khung ảnh xe. Máy chủ chưa có chỗ chứa tệp cho ảnh xe (phần đính kèm hiện chỉ
-làm cho phiếu quặng của phiếu xuất xe), nên khung ảnh để trống kèm một dòng ghi rõ là chưa lưu được —
-không để nút bấm chết. Làm sau khoảng nửa ngày, dùng lại đúng chỗ chứa tệp của phiếu.
+### 1.2 Những câu sếp giao bên mình tự quyết
 
-### B3. Ô "Việc của tôi" của KT Doanh thu luôn là 0
-
-Ô này đếm các mục I–VI đang chờ chính vai đó làm. KT Doanh thu **không phụ trách mục nào** trong sáu
-mục — việc của họ là lập hoá đơn và thu tiền khách, nằm ở mức phiếu chứ không nằm trong mục. Nên với
-vai này con số luôn bằng 0.
-
-Không phải lỗi, nhưng nhìn thì cụt. Họ đã có chip **"Chờ hoá đơn"** riêng bên cạnh, nên tạm để vậy.
-Khi nào chốt A8 (hoá đơn từng phiếu hay gom tháng) thì làm luôn một thể: cho ô "Việc của tôi" của vai
-doanh thu đếm số phiếu đã khoá mà chưa xuất hoá đơn, cộng số hoá đơn đã xuất mà chưa thu tiền.
+| Mã | Quyết định | Lý do |
+|---|---|---|
+| **B3, C8.2** | **Mỗi DO giao một hoá đơn**, tính trên tấn cân ở nơi giao × đơn giá | Hoá đơn khớp một lần giao, đối chiếu phiếu cân dễ; gom theo tháng làm sau cũng không phá cấu trúc |
+| **B4** | DO gom **không có cước**, chỉ có chi phí | Khách trả cho việc đưa hàng tới cảng; chặng gom là việc nội bộ giữa hai chân của cùng một dịch vụ |
+| **A2** | Bãi thấy mọi khoản **chi**; không thấy **tiền bán** (cước, doanh thu, hoá đơn, giá thuê xe ngoài, lãi, mã TK) | Bãi là người chi nên phải thấy chi; chênh lệch giá bán và giá thuê là biên lợi nhuận |
+| **C3.1** | Cân đầu = **cân của mỏ**, nhập trên DO gom | Đó là số trên phiếu quặng khách giao |
+| **C3.2** | Cân cuối = **cân ở nơi giao**, nhập trên DO giao | Hoá đơn tính trên số này |
+| **C3.3** | Tài xế chụp ảnh phiếu cân, **đính kèm vào phiếu**; máy nhắc khi khoá nếu còn thiếu | Giấy dễ mất, ảnh vào phiếu thì kế toán ở Viêng Chăn xem được ngay |
+| **C3.4** | Hao hụt **chỉ theo dõi**, không tự trừ tiền khách; quá 1,5 % thì cờ đỏ và cảnh báo khi khoá | Hợp đồng chưa nói trừ; nhưng hao hụt đã có **dòng riêng** nên bật trừ tiền sau rất nhanh |
+| **C3.5, C3.6** | Giá lấy từ **bảng giá khách × tuyến** (có ngày hiệu lực), tính trên **tấn ở điểm đến** | Giá hợp đồng nhập một lần, phiếu tự điền, kế toán chỉ sửa khi chuyến đó khác hợp đồng |
+| **C3.7** | Số và ngày phiếu quặng do **Bãi nhập lúc bốc hàng**, kèm ảnh | Người cầm giấy là người nhập |
+| **C4.1** | Giá thuê xe ngoài do **kế toán Viêng Chăn** nhập | Người ký với chủ xe; và Bãi không được thấy giá thuê |
+| **C4.2** | 2 %/phiếu và 1 USD/tấn vượt 40 t là **mặc định**, sửa được trên từng phiếu | Đủ cho hợp đồng khác nhau mà không phải dựng danh mục chủ xe |
+| **C4.3** | Trả chủ xe **theo từng phiếu**, sau khi phiếu khoá | Khớp với chứng từ `PC_CX` từng phiếu; gom tháng làm sau nếu họ cần |
+| **C4.4** | Các khoản EPL ứng **trừ hết** vào tiền trả chủ xe | Đúng bảng tính trong Excel của họ |
+| **C5.1** | Tài xế nhập **lít + đơn giá + trạm**, kế toán kho xăng dầu duyệt | Tài xế trả tiền mặt tại trạm nên chỉ họ biết giá |
+| **C5.2** | Hai kho dầu: **Thà Bốc** và **Viêng Chăn** | Theo dữ liệu họ gửi |
+| **C5.3** | Giá dầu xuất kho **bình quân** | Tránh nhảy giá theo từng lần nhập |
+| **C6.1** | Thẻ cao tốc ghi **như khoản chi thường**, chưa theo dõi số dư | Thêm "ví thẻ" là một tầng nữa mà Excel của họ không có; làm khi họ thấy cần |
+| **C6.2** | Tiền chuyến, tiền nước tính **theo chuyến** | Theo ghi chú trong Excel |
+| **C1.2, C7.1, C7.2** | Kho phụ tùng và tổ sửa chữa coi là **người của Bãi**; Bãi duyệt báo hỏng và quyết định sửa kho hay gara | Không đẻ thêm vai khi chưa chắc có người thật |
+| **C7.3** | Sửa xe tại bãi vẫn **gắn phiếu gần nhất** | Lệnh sửa chữa riêng là một luồng mới; xem mục 3.3 |
+| **C1.3** | Tài xế **có** dùng điện thoại: nhận phiếu, khai đổ dầu, báo hỏng, chia sẻ GPS | Đã làm xong màn tài xế |
+| **C2.1, C2.2** | Ngày về và km về do **Bãi** ghi khi xe về; kiểm mục I xong Bãi không sửa gì thêm | |
+| **C8.3** | Khách trả chuyển khoản hoặc tiền mặt, **có trả một phần** | Đã có trạng thái *thu một phần* |
+| **C9.1** | Màn phiếu chia **tab theo mục**, mỗi vai mở đúng tab của mình | Đã làm xong |
+| **C9.2** | Ngôn ngữ mặc định ở máy bãi: **tiếng Lào** | Người dùng ở bãi là người Lào; đổi một nút là xong và máy nào nhớ theo máy đó |
 
 ---
 
-## Phần C. Chờ bên khác, không phải anh Khampla
+## Phần 2. Vẫn phải chờ bên EPL trả lời
+
+| Mã | Câu hỏi | Vì sao không tự quyết được |
+|---|---|---|
+| **C5.4** | Mã tài khoản **kho**: `37`, `371` hay `137`? | Ba tài liệu của họ ghi ba số khác nhau. Đang dùng `371` |
+| **C5.5** | Mã **nhà cung cấp**: `402` hay `4021`? | Đang dùng `402` |
+| **C5.6** | Mã **tiền mặt** và **ngân hàng** | Chưa có trong tài liệu nào; đang để trống tên, chưa có mã. **Phải có trước khi bàn giao dữ liệu cho bên anh Khang**, không thì sổ sai mã |
+| **C1.1** | Tên người giữ tài khoản *KT Thu/Chi VC* và *KT Chi phí VC* | Chỉ họ biết |
+| **C8.1** | Những khoản hay rơi vào mục VI | Cần họ liệt kê để đặt sẵn danh mục |
+
+Ba câu mã tài khoản sửa rất nhanh (một bảng trong `services/chung_tu.py`), nhưng sai thì sổ kế toán sai.
+
+---
+
+## Phần 3. Nợ kỹ thuật bên mình tự biết
+
+### 3.1 Máy chủ vẫn trả giá bán cho mọi vai ở các API khác
+
+Hai báo cáo của màn Tổng quan đã **bỏ hẳn** các khoá tiền bán với Bãi, tài xế, thủ kho. Nhưng
+`/api/trips` và `/api/bao-cao/theo-doi` vẫn trả đơn giá, thành tiền, lãi cho mọi vai — giao diện có che
+nhưng mở công cụ trình duyệt là thấy.
+
+Chưa dọn ngay vì chỗ này đụng đường dữ liệu chung của màn phiếu (`xuat_phieu` dùng cho cả nhập liệu lẫn
+báo cáo), sửa vội dễ hỏng phép tính. Nay A2 đã chốt nên **làm được rồi**: khoảng nửa ngày, kèm bộ kiểm
+chặn ở mức API chứ không chỉ ở giao diện.
+
+### 3.2 Ảnh xe chưa lưu được
+
+Bản thiết kế màn Xe có khung ảnh. Máy chủ chưa có chỗ chứa tệp cho ảnh xe (phần đính kèm hiện chỉ làm
+cho phiếu quặng), nên khung ảnh để trống kèm dòng ghi rõ là chưa lưu được — không để nút bấm chết.
+Khoảng nửa ngày, dùng lại đúng chỗ chứa tệp của phiếu.
+
+### 3.3 Lệnh sửa chữa không gắn chuyến
+
+Sửa xe tại bãi lúc xe không chạy hiện phải gắn vào phiếu gần nhất, hơi gượng. Một lệnh sửa chữa riêng
+theo xe sẽ sạch hơn (khoảng một ngày). Chờ xem họ có làm bảo dưỡng định kỳ thật không đã.
+
+### 3.4 Ô "Việc của tôi" của KT Doanh thu luôn là 0
+
+Ô này đếm mục I–VI đang chờ chính vai đó làm. KT Doanh thu không phụ trách mục nào — việc của họ là
+hoá đơn và thu tiền, nằm ở mức phiếu. Họ đã có chip *Chờ hoá đơn* riêng. Làm gọn khi có dịp: cho ô này
+đếm phiếu đã khoá chưa xuất hoá đơn cộng hoá đơn chưa thu tiền.
+
+---
+
+## Phần 4. Chờ bên khác
 
 | Việc | Chờ ai | Hiện đang làm gì |
 |---|---|---|
-| Khoá Google Routes / Geocoding | Anh cấp khoá | Tuyến đường và km nhập tay; bản đồ vẽ từ toạ độ trong CSDL, nền bản đồ lấy của Esri |
-| API công nợ và sổ kế toán của anh Khang | Anh Khang | Sổ chứng từ đã ghi đủ mọi tờ kèm định khoản gợi ý, nút "đã đẩy" hiện chỉ đánh dấu, chưa gọi API thật |
-| Danh mục Acc code từ API bên công nợ | Anh Khang | Ô chọn định khoản đang lấy danh mục dự phòng trong mã, có ghi rõ "không có trong danh mục" khi mã lạ |
-
----
-
-## Nhắc khi trả lời về
-
-1. Trả lời tới đâu, sửa tệp này tới đó: gạch việc đã chốt, ghi ngày và ghi rõ họ chọn phương án nào.
-2. Câu **A1** chốt trước, vì nó quyết định hình dạng của phiếu — các việc khác đều nhỏ hơn và không
-   chặn nhau.
-3. Câu **A9** (mã tài khoản) chốt trước khi bàn giao dữ liệu cho bên anh Khang.
-4. Chốt **A2** thì làm luôn **B1** trong cùng một đợt.
+| Khoá Google Routes / Geocoding | Anh cấp khoá | Tuyến và km nhập tay; bản đồ vẽ từ toạ độ trong CSDL |
+| API công nợ và sổ kế toán | Anh Khang | Sổ chứng từ đã ghi đủ mọi tờ kèm định khoản gợi ý; nút "đã đẩy" mới đánh dấu, chưa gọi API thật |
+| Danh mục Acc code | Anh Khang | Ô chọn định khoản đang dùng danh mục dự phòng, mã lạ thì ghi rõ "không có trong danh mục" |

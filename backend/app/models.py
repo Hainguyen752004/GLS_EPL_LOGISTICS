@@ -226,11 +226,19 @@ CHUOI = {
 }
 
 
+LOAI_DO = ("gom", "giao")
+#   gom   DO đi GOM HÀNG:  mỏ → bãi Thà Bốc. Không có cước, không hoá đơn. Xe về bãi thì hàng NHẬP KHO.
+#   giao  DO đi GIAO HÀNG: bãi → cảng/khách. Lấy hàng từ kho (XUẤT KHO) rồi giao, có cước và hoá đơn.
+# Hai DO "tuy hai mà một": bãi Thà Bốc đứng giữa như một bưu cục, dây nối chính là lô hàng trong kho —
+# mỗi dòng hàng của DO giao ghi rõ nó lấy từ DO gom nào. Xe chặng gom và chặng giao có thể khác nhau.
+
+
 class Trip(Base):
     """Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Đơn vị làm việc duy nhất của họ."""
     __tablename__ = "trips"
     id = Column(String, primary_key=True, default=ma_moi)
     doc_no = Column(String, unique=True, nullable=False)      # T4-0428-08/EPL
+    kind = Column(String, nullable=False, default="giao")     # LOAI_DO: gom (đi lấy hàng) · giao (đi giao hàng)
     doc_date = Column(Date)                                    # ວັນທີອອກບິນ
     out_date = Column(Date)                                    # ວັນທີອອກລົດ
     back_date = Column(Date)                                   # ວັນທີລົດກັບ
@@ -286,6 +294,42 @@ class Trip(Base):
     created_by = Column(String)
     created_at = Column(DateTime, default=bay_gio)
     updated_at = Column(DateTime, default=bay_gio, onupdate=bay_gio)
+
+
+class TripGoods(Base):
+    """Dòng HÀNG trên một DO — mặt hàng gì, bao nhiêu tấn.
+
+    · Trên DO gom: hàng bốc ở mỏ (cân tại mỏ).
+    · Trên DO giao: hàng lấy ra khỏi kho bãi, `tu_phieu_id` trỏ về DO gom đã mang lô hàng đó về —
+      đây chính là dây nối hai DO.
+    · Dòng `loai = "hao_hut"`: chênh lệch cân, ghi thành MỘT DÒNG cho rõ ràng thay vì để người đọc tự trừ.
+    """
+    __tablename__ = "trip_goods"
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    loai = Column(String, nullable=False, default="hang")      # hang · hao_hut
+    goods_name = Column(String, nullable=False)                # ແຮ່ເຫຼັກ · quặng sắt…
+    qty_t = Column(Float, nullable=False, default=0)           # tấn
+    tu_phieu_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"))   # DO giao: lấy từ DO gom nào
+    note = Column(Text)
+
+
+class GoodsMove(Base):
+    """SỔ KHO HÀNG tại bãi — quặng nằm bãi giữa hai chặng. Tồn = nhập trừ xuất, tính cộng dồn,
+    không có bảng tồn riêng để khỏi lệch. Mỗi dòng đều dẫn ngược về DO sinh ra nó."""
+    __tablename__ = "goods_moves"
+    id = Column(String, primary_key=True, default=ma_moi)
+    move_date = Column(Date, nullable=False)
+    kind = Column(String, nullable=False)                       # in (DO gom về bãi) · out (DO giao lấy đi)
+    goods_name = Column(String, nullable=False)
+    qty_t = Column(Float, nullable=False)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    trip_doc_no = Column(String)
+    lo_trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)   # lô = DO gom
+    depot = Column(String, default="Thà Bốc")
+    note = Column(Text)
+    by_user = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
 
 
 class TripExpense(Base):

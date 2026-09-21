@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1054 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1093 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4137,6 +4137,11 @@ window.EPL_TU_DIEN = {
   "lo": "ໜີ້ຜູ້ສະໜອງ, ຈ່າຍເປັນງວດ",
   "en": "Supplier debt, paid in instalments"
  },
+ "d_kho_hang": {
+  "vi": "Tồn quặng ở bãi giữa hai chặng, theo từng lô",
+  "lo": "ຍອດແຮ່ຢູ່ສາງລະຫວ່າງສອງຕອນ, ຕາມແຕ່ລະລ໊ອດ",
+  "en": "Ore resting at the yard between the two legs, lot by lot"
+ },
  "d_kho_nhien_lieu": {
   "vi": "Nhập, xuất, tồn dầu ở kho",
   "lo": "ຮັບ, ເບີກ, ຍອດນ້ຳມັນໃນສາງ",
@@ -4326,6 +4331,196 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa lưu được ảnh xe — sẽ làm khi có chỗ chứa tệp",
   "lo": "ຍັງເກັບຮູບລົດບໍ່ໄດ້ — ຈະເຮັດເມື່ອມີບ່ອນເກັບໄຟລ໌",
   "en": "Photos are not stored yet — pending a file store"
+ },
+ "nav_goods": {
+  "vi": "Kho hàng",
+  "lo": "ສາງສິນຄ້າ",
+  "en": "Goods store"
+ },
+ "title_kho_hang": {
+  "vi": "Kho hàng<span class=\"sub\">Quặng nằm bãi Thà Bốc giữa hai chặng</span>",
+  "lo": "ສາງສິນຄ້າ<span class=\"sub\">ແຮ່ທີ່ພັກຢູ່ສາງທ່າບົກ ລະຫວ່າງສອງຕອນ</span>",
+  "en": "Goods store<span class=\"sub\">Ore resting at Thabok between the two legs</span>"
+ },
+ "kh_lo_title": {
+  "vi": "Lô hàng trong kho",
+  "lo": "ລ໊ອດສິນຄ້າໃນສາງ",
+  "en": "Lots in the store"
+ },
+ "kh_lo_hint": {
+  "vi": "Mỗi lô là một phiếu gom hàng đã về bãi · bấm một dòng để mở phiếu",
+  "lo": "ແຕ່ລະລ໊ອດຄືໜຶ່ງໃບເກັບສິນຄ້າທີ່ຮອດສາງແລ້ວ · ກົດແຖວເພື່ອເປີດໃບ",
+  "en": "Each lot is one collection order that reached the yard · click a row to open it"
+ },
+ "kh_so_title": {
+  "vi": "Sổ nhập xuất",
+  "lo": "ປຶ້ມຮັບ-ເບີກ",
+  "en": "Stock ledger"
+ },
+ "kh_so_hint": {
+  "vi": "Mới nhất trên cùng · tồn cộng dồn từ sổ",
+  "lo": "ໃໝ່ສຸດຢູ່ເທິງ · ຍອດຄົງເຫຼືອລວມຈາກປຶ້ມ",
+  "en": "Newest first · balance accumulated from the ledger"
+ },
+ "kh_lo": {
+  "vi": "Lô (phiếu gom)",
+  "lo": "ລ໊ອດ (ໃບເກັບ)",
+  "en": "Lot (collection order)"
+ },
+ "kh_nhap": {
+  "vi": "Nhập",
+  "lo": "ຮັບເຂົ້າ",
+  "en": "In"
+ },
+ "kh_xuat": {
+  "vi": "Xuất",
+  "lo": "ເບີກອອກ",
+  "en": "Out"
+ },
+ "kh_con": {
+  "vi": "Còn lại",
+  "lo": "ຍັງເຫຼືອ",
+  "en": "Remaining"
+ },
+ "kh_vao": {
+  "vi": "Vào (t)",
+  "lo": "ເຂົ້າ (ໂຕນ)",
+  "en": "In (t)"
+ },
+ "kh_ra": {
+  "vi": "Ra (t)",
+  "lo": "ອອກ (ໂຕນ)",
+  "en": "Out (t)"
+ },
+ "kh_ton": {
+  "vi": "Tồn (t)",
+  "lo": "ຄົງເຫຼືອ (ໂຕນ)",
+  "en": "Balance (t)"
+ },
+ "kh_ton_tong": {
+  "vi": "Tồn kho hàng",
+  "lo": "ສິນຄ້າຄົງເຫຼືອ",
+  "en": "Goods in store"
+ },
+ "kh_ton_sub": {
+  "vi": "Quặng đang nằm bãi",
+  "lo": "ແຮ່ທີ່ພັກຢູ່ສາງ",
+  "en": "Ore resting at the yard"
+ },
+ "kh_con_lo": {
+  "vi": "Lô còn hàng",
+  "lo": "ລ໊ອດທີ່ຍັງມີສິນຄ້າ",
+  "en": "Lots with stock"
+ },
+ "kh_con_lo_sub": {
+  "vi": "Sẵn sàng cho phiếu giao hàng lấy",
+  "lo": "ພ້ອມໃຫ້ໃບສົ່ງສິນຄ້າມາເອົາ",
+  "en": "Ready for a delivery order to draw"
+ },
+ "kh_lo_dv": {
+  "vi": "lô",
+  "lo": "ລ໊ອດ",
+  "en": "lots"
+ },
+ "kh_dong_dv": {
+  "vi": "dòng",
+  "lo": "ແຖວ",
+  "en": "rows"
+ },
+ "kh_so_dong": {
+  "vi": "Dòng trong sổ",
+  "lo": "ແຖວໃນປຶ້ມ",
+  "en": "Ledger rows"
+ },
+ "kh_con_hang": {
+  "vi": "Còn hàng",
+  "lo": "ຍັງມີສິນຄ້າ",
+  "en": "Has stock"
+ },
+ "kh_het_hang": {
+  "vi": "Đã lấy hết",
+  "lo": "ເອົາໝົດແລ້ວ",
+  "en": "Fully drawn"
+ },
+ "kh_chua_co": {
+  "vi": "Chưa có lô hàng nào trong kho",
+  "lo": "ຍັງບໍ່ມີລ໊ອດສິນຄ້າໃນສາງ",
+  "en": "No lots in the store yet"
+ },
+ "w_origin_gom": {
+  "vi": "Cân tại mỏ (t)",
+  "lo": "ຊັ່ງທີ່ບໍ່ແຮ່ (ໂຕນ)",
+  "en": "Weight at the mine (t)"
+ },
+ "w_dest_gom": {
+  "vi": "Cân tại bãi khi về (t)",
+  "lo": "ຊັ່ງທີ່ສາງຕອນກັບ (ໂຕນ)",
+  "en": "Weight at the yard on return (t)"
+ },
+ "w_origin_giao": {
+  "vi": "Cân lấy khỏi kho (t)",
+  "lo": "ຊັ່ງທີ່ເບີກອອກຈາກສາງ (ໂຕນ)",
+  "en": "Weight drawn from the store (t)"
+ },
+ "w_dest_giao": {
+  "vi": "Cân tại nơi giao (t)",
+  "lo": "ຊັ່ງທີ່ບ່ອນສົ່ງ (ໂຕນ)",
+  "en": "Weight at the delivery point (t)"
+ },
+ "do_kind": {
+  "vi": "Loại phiếu",
+  "lo": "ປະເພດໃບ",
+  "en": "Order type"
+ },
+ "do_gom": {
+  "vi": "Đi gom hàng (mỏ → bãi)",
+  "lo": "ໄປເກັບສິນຄ້າ (ບໍ່ແຮ່ → ສາງ)",
+  "en": "Collection (mine → yard)"
+ },
+ "do_giao": {
+  "vi": "Đi giao hàng (bãi → khách)",
+  "lo": "ໄປສົ່ງສິນຄ້າ (ສາງ → ລູກຄ້າ)",
+  "en": "Delivery (yard → customer)"
+ },
+ "goods_lines": {
+  "vi": "Hàng trên phiếu",
+  "lo": "ສິນຄ້າໃນໃບ",
+  "en": "Goods on this order"
+ },
+ "goods_name": {
+  "vi": "Mặt hàng",
+  "lo": "ລາຍການສິນຄ້າ",
+  "en": "Goods"
+ },
+ "qty_t": {
+  "vi": "Số tấn",
+  "lo": "ຈຳນວນໂຕນ",
+  "en": "Tonnes"
+ },
+ "from_lot": {
+  "vi": "Lấy từ lô (phiếu gom)",
+  "lo": "ເອົາຈາກລ໊ອດ (ໃບເກັບ)",
+  "en": "From lot (collection order)"
+ },
+ "add_line": {
+  "vi": "Thêm dòng",
+  "lo": "ເພີ່ມແຖວ",
+  "en": "Add line"
+ },
+ "no_goods_line": {
+  "vi": "Chưa có dòng hàng nào",
+  "lo": "ຍັງບໍ່ມີແຖວສິນຄ້າ",
+  "en": "No goods lines yet"
+ },
+ "goods_hint_gom": {
+  "vi": "Ghi hàng bốc ở mỏ và số tấn cân tại mỏ. Xe về tới bãi, nhập cân tại bãi thì hàng vào kho và máy tự ghi dòng hao hụt.",
+  "lo": "ບັນທຶກສິນຄ້າທີ່ຂຶ້ນຢູ່ບໍ່ແຮ່ ແລະ ນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່. ລົດຮອດສາງ, ປ້ອນນ້ຳໜັກຊັ່ງທີ່ສາງ ແລ້ວສິນຄ້າເຂົ້າສາງ ແລະ ເຄື່ອງຈະບັນທຶກແຖວສູນເສຍເອງ.",
+  "en": "Enter what was loaded at the mine and the mine weight. When the truck reaches the yard, enter the yard weight: the goods enter the store and the loss line is written automatically."
+ },
+ "goods_hint_giao": {
+  "vi": "Chọn lấy hàng từ lô nào trong kho bãi — đó chính là phiếu gom đã mang lô đó về, và là dây nối hai phiếu. Giao xong nhập cân nơi giao, máy tự ghi dòng hao hụt.",
+  "lo": "ເລືອກເອົາສິນຄ້າຈາກລ໊ອດໃດໃນສາງ — ນັ້ນຄືໃບເກັບທີ່ນຳລ໊ອດນັ້ນມາ ແລະ ເປັນສາຍເຊື່ອມສອງໃບ. ສົ່ງແລ້ວປ້ອນນ້ຳໜັກທີ່ບ່ອນສົ່ງ, ເຄື່ອງຈະບັນທຶກແຖວສູນເສຍເອງ.",
+  "en": "Pick which lot in the yard store the goods come from — that lot is the collection order that brought it in, and it is the link between the two orders. After delivery enter the destination weight and the loss line is written automatically."
  },
  "xe_tractor": {
   "vi": "Đầu kéo",

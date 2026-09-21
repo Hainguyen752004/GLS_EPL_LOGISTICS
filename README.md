@@ -2,6 +2,8 @@
 
 Bản làm lại của EPL_System cho khách Lào, **đúng theo tệp Excel họ đang dùng** (`DOCS/ຂົນສົ່ງ EPL.xlsx`) và bản giao diện họ đã duyệt (`EPL-Transport-UI.html`). Không Trip, không báo giá, không công thức giá thành — một tờ **phiếu xuất xe** là đơn vị làm việc duy nhất. Xem [DOCS/BAN_DO_CHUC_NANG.md](DOCS/BAN_DO_CHUC_NANG.md) (có bản Word cạnh đó) để biết từng chức năng của EPL_System đi đâu.
 
+**Mô tả đầy đủ nghiệp vụ, cơ sở dữ liệu và API: [DOCS/NGHIEP_VU_DB_API.md](DOCS/NGHIEP_VU_DB_API.md)** (có bản Word cạnh đó).
+
 ## Chạy
 
 ```
@@ -24,17 +26,18 @@ backend/app/
   main.py            FastAPI, phục vụ frontend ở / và API ở /api
   database.py        kết nối PostgreSQL, create_all (không migration)
   models.py          bảng — theo đúng Excel, có gì khai đó
-  seed.py            gieo dữ liệu mẫu (5 phiếu chép từ Excel + bản mẫu)
+  seed.py            gieo dữ liệu mẫu (5 phiếu chép từ Excel + một cặp DO gom/giao của luồng mới)
   services/          tinh_toan.py (phép tính phiếu) · phan_quyen.py (ai làm gì) · bao_mat.py (đăng nhập)
+                     kho_hang.py (kho hàng ở bãi, dây nối hai DO) · chung_tu.py (sổ chứng từ)
   routes/            dang_nhap · danh_muc · phieu · phieu_linh · tat_toan · theo_doi · vi_tri
-                     tuyen · acc_code · bao_cao · kho · nha_cung_cap · quy_trinh
+                     tuyen · acc_code · bao_cao · kho · kho_hang · nha_cung_cap · quy_trinh · ban_hang
 frontend/
   index.html         khung: đăng nhập, thanh điều hướng, nút ngôn ngữ, chỗ nạp module
   css/chung.css      bảng màu bên Lào đã duyệt, nút, bảng, ô nhập
   vendor/leaflet/    thư viện bản đồ để sẵn trong dự án, KHÔNG gọi CDN
   vendor/chartjs/    thư viện biểu đồ (Tổng quan) để sẵn trong dự án, KHÔNG gọi CDN
   js/chung.js        gọi API, ngôn ngữ, đăng nhập, nạp module theo #/ten-module
-  js/ngon_ngu.js     từ điển Việt · Lào · Anh (876 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
+  js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.093 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
@@ -44,17 +47,20 @@ kiem/
   thu_ngoai_tuyen.js màn Cấp phát khi MẤT MẠNG: lưu đệm · hàng đợi · tự gửi khi có mạng lại
   thu_phieu_linh.py  luồng phiếu lĩnh: QR · thủ kho cấp dầu · khai đổ dọc đường · tất toán
   thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
+  thu_hai_do.py      LUỒNG HAI DO: gom → nhập kho → giao lấy lô → xuất kho → hao hụt
   thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
 
-21 module: **Tổng quan** (bốn ô số kèm xu hướng 6 tháng, thanh xem nhanh, dòng thời gian từng chuyến, doanh thu và chi phí theo ngày, cơ cấu chi, hao hụt cân, hiệu suất xe) · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (trung tâm điều hành: dải ô số, danh sách chuyến, **bản đồ tuyến**, tiến độ từng chặng, sổ sự cố, duyệt báo hỏng) · Phiếu xuất xe · Hoá đơn vận chuyển · **Chứng từ** (phiếu tạm ứng · **phiếu lĩnh nhiên liệu có mã QR** · phiếu thu) · **Phiếu của tôi** (màn tài xế: tiền tạm ứng, xuất phát, báo hỏng, khai đổ dầu dọc đường, **chia sẻ vị trí GPS**) · **Cấp phát** (thủ kho cấp dầu, quỹ chi tạm ứng, quét mã QR) · Xe liên kết · Tiền chuyến & tiền nước tài xế · **Tất toán tài xế** (theo tháng) · Theo dõi nhà cung cấp · Kho nhiên liệu · **Điểm đổ nhiên liệu** · Kho phụ tùng · Khách hàng (kèm **bảng giá khách × tuyến**, phiếu tự điền đơn giá) · **Xe** (hai tab đầu kéo / rơ-moóc, chip lọc, thẻ hồ sơ, hộp hồ sơ bảy tab: chung · pháp lý · kỹ thuật · rơ-moóc lắp/tháo có lịch sử · **lịch xe theo tuần** · chi phí sửa chữa từ mục V · phiếu gần đây) · **Tài xế & bằng lái** · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
+23 module: **Tổng quan** (bốn ô số kèm xu hướng 6 tháng, thanh xem nhanh, dòng thời gian từng chuyến, doanh thu và chi phí theo ngày, cơ cấu chi, hao hụt cân, hiệu suất xe) · Theo dõi phiếu vận chuyển · **Theo dõi tuyến** (trung tâm điều hành: dải ô số, danh sách chuyến, **bản đồ tuyến**, tiến độ từng chặng, sổ sự cố, duyệt báo hỏng) · Phiếu xuất xe · Hoá đơn vận chuyển · **Chứng từ** (phiếu tạm ứng · **phiếu lĩnh nhiên liệu có mã QR** · phiếu thu) · **Phiếu của tôi** (màn tài xế: tiền tạm ứng, xuất phát, báo hỏng, khai đổ dầu dọc đường, **chia sẻ vị trí GPS**) · **Cấp phát** (thủ kho cấp dầu, quỹ chi tạm ứng, quét mã QR) · Xe liên kết · Tiền chuyến & tiền nước tài xế · **Tất toán tài xế** (theo tháng) · Theo dõi nhà cung cấp · **Kho hàng** (tồn quặng ở bãi theo từng lô, sổ nhập xuất) · Kho nhiên liệu · **Điểm đổ nhiên liệu** · Kho phụ tùng · Khách hàng (kèm **bảng giá khách × tuyến**, phiếu tự điền đơn giá) · **Xe** (hai tab đầu kéo / rơ-moóc, chip lọc, thẻ hồ sơ, hộp hồ sơ bảy tab: chung · pháp lý · kỹ thuật · rơ-moóc lắp/tháo có lịch sử · **lịch xe theo tuần** · chi phí sửa chữa từ mục V · phiếu gần đây) · **Tài xế & bằng lái** · **Tuyến đường** (chặng, km, BOT) · Quy trình & trách nhiệm · Tài khoản.
 
 Quy tắc kho: nhiên liệu đổ ở kho Thà Bốc → khi kế toán kho ghi sổ mục III thì tự sinh dòng xuất kho; sửa xe lấy phụ tùng từ kho → trừ tồn ngay lúc khai; mua ngoài → công nợ. Xe nhà định khoản `625/…`, `614/…`; xe liên kết `4022/…`. Chi tiết trong [DOCS/BAN_DO_CHUC_NANG.md](DOCS/BAN_DO_CHUC_NANG.md) mục 4b.
 
 Điều hướng có **hai kiểu xem**, đổi ở nút tên người dùng → Cài đặt giao diện: *thanh bên* (thấy hết chức năng, có số việc đang chờ cạnh từng mục, thu gọn còn biểu tượng được) và *thanh trên* hai tầng (nhường trọn chiều ngang cho bảng). Máy nào nhớ theo máy đó.
 
-Xe về thì kế toán bấm **Khoá phiếu** (máy rà km, hao hụt, phiếu quặng đính kèm, mục chưa kiểm rồi mới cho khoá); khoá xong mới xuất hoá đơn và mới trả được chủ xe liên kết. Bán phụ tùng, xăng dầu cho bên ngoài ở màn **Bán hàng**. Nghiệp vụ còn chỗ chưa chốt (một phiếu là một chặng hay cả vòng, cân đầu ở đâu, ai nhập giá thuê xe ngoài…): phân tích nội bộ ở [DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md](DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md), danh sách việc đang treo ở [DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md](DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md), bộ câu hỏi gửi bên EPL ở [DOCS/CAU_HOI_NGHIEP_VU_EPL.md](DOCS/CAU_HOI_NGHIEP_VU_EPL.md), bản tiếng Lào `DOCS/ຄຳຖາມວິຊາການ_EPL.md` và tiếng Anh `DOCS/EPL_BUSINESS_QUESTIONS.md` cùng nội dung (tất cả có bản Word cạnh đó).
+Một chuyến quặng đi qua **hai phiếu**: *DO gom hàng* (mỏ → bãi, có dòng hàng và cân tại mỏ, không có cước) rồi *DO giao hàng* (bãi → cảng, chọn lấy từ lô nào trong kho bãi, có cước và hoá đơn). Bãi Thà Bốc đứng giữa như một bưu cục: DO gom về thì **nhập kho hàng**, DO giao lấy đi thì **xuất kho hàng**, và dây nối hai phiếu chính là lô hàng đó. Xe hai chặng có thể khác nhau; hao hụt ghi thành một dòng ngay trên phiếu.
+
+Xe về thì kế toán bấm **Khoá phiếu** (máy rà km, hao hụt, phiếu quặng đính kèm, mục chưa kiểm rồi mới cho khoá); khoá xong mới xuất hoá đơn và mới trả được chủ xe liên kết. Bán phụ tùng, xăng dầu cho bên ngoài ở màn **Bán hàng**. Nghiệp vụ còn vài chỗ chờ bên EPL xác nhận (mã tài khoản, tên người giữ từng tài khoản kế toán): phân tích nội bộ ở [DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md](DOCS/PHAN_TICH_LUONG_DO_VA_VAI.md), danh sách việc đang treo ở [DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md](DOCS/CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md), bộ câu hỏi gửi bên EPL ở [DOCS/CAU_HOI_NGHIEP_VU_EPL.md](DOCS/CAU_HOI_NGHIEP_VU_EPL.md), bản tiếng Lào `DOCS/ຄຳຖາມວິຊາການ_EPL.md` và tiếng Anh `DOCS/EPL_BUSINESS_QUESTIONS.md` cùng nội dung (tất cả có bản Word cạnh đó).
 
 Mỗi bước sinh ra tiền hoặc hàng để lại một tờ trong **Sổ chứng từ** (`GET /api/chung-tu`, màn Chứng từ → tab Sổ chứng từ) cho module kế toán kéo về: ai nhập ô nào, tờ nào sinh ở bước nào, định khoản gợi ý, mã còn thiếu — xem [DOCS/CHUNG_TU_VA_DIEM_NOI.md](DOCS/CHUNG_TU_VA_DIEM_NOI.md) (có bản Word cạnh đó).
 
@@ -64,6 +70,7 @@ Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາ
 
 ```
 python kiem\test_tinh_toan.py                    # đơn vị, không cần máy chủ
+python kiem\thu_hai_do.py                        # luồng hai DO: gom → nhập kho → giao → xuất kho
 python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện

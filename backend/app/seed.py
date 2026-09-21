@@ -17,8 +17,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
-from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, Part, Route,  # noqa: E402
-                    RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripLog,
+from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Part, Route,  # noqa: E402
+                    RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
                     TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
@@ -175,6 +175,8 @@ def gieo(db):
     # ---- năm phiếu
     def phieu(**k):
         chi = k.pop("chi", [])
+        hang = k.pop("hang", None)          # dòng hàng: [(tên, tấn)] — DO gom là hàng bốc ở mỏ
+        lay_tu = k.pop("lay_tu", None)      # DO giao lấy hàng từ phiếu gom nào: [(doc_no gom, tấn)]
         tt_muc = k.pop("tt_muc", None)
         ten_tuyen = k.pop("tuyen", None)
         su_kien = k.pop("su_kien", [])
@@ -200,6 +202,15 @@ def gieo(db):
             elif p.transport_status == "dispatched": st = "entered"
             else: st = "verified" if m == "fuel" else "entered"
             db.add(TripSection(trip_id=p.id, section=m, status=st))
+        for ten, tan in (hang or []):
+            db.add(TripGoods(trip_id=p.id, loai="hang", goods_name=ten, qty_t=tan))
+        for so_gom, tan in (lay_tu or []):
+            g = db.query(Trip).filter(Trip.doc_no == so_gom).first()
+            db.add(TripGoods(trip_id=p.id, loai="hang", goods_name="ແຮ່ເຫຼັກ (quặng sắt)", qty_t=tan,
+                             tu_phieu_id=g.id if g else None))
+            db.add(GoodsMove(move_date=p.out_date or p.doc_date, kind="out", goods_name="ແຮ່ເຫຼັກ (quặng sắt)",
+                             qty_t=tan, trip_id=p.id, trip_doc_no=p.doc_no,
+                             lo_trip_id=g.id if g else None, depot="Thà Bốc", by_user="ສົມໄຊ (Somchai)"))
         db.add(TripLog(trip_id=p.id, user_name="ສົມໄຊ (Somchai)", role="yard", action="a_create"))
         for gio, kind, seq, ghi in su_kien:
             db.add(TripEvent(trip_id=p.id, ts=gio, kind=kind, stop_seq=seq, note=ghi, by_user="ສົມໄຊ (Somchai)",
@@ -246,6 +257,29 @@ def gieo(db):
           weight_origin=41.90, weight_dest=None, price_usd=41, transport_status="dispatched", finance_status="unpaid",
           chi=[dong("fuel", "diesel", 150, 30000, "LAK", "fp_yard"),
                dong("travel", "x_water", 1, 60000), dong("travel", "x_vn", 1, 430000), dong("travel", "x_phone", 1, 150000)])
+
+    # ---- LUỒNG HAI DO (chốt 21/09): một phiếu đi GOM hàng ở mỏ về bãi, rồi một phiếu đi GIAO hàng
+    # đó từ bãi ra cảng. Hai phiếu nối nhau qua lô hàng trong kho bãi, và xe hai chặng khác nhau.
+    pg = phieu(doc_no="G4-0101-09/EPL", kind="gom", doc_date=D(2026, 9, 14), out_date=D(2026, 9, 14), back_date=D(2026, 9, 15),
+               truck_no="341", driver_name="ທ້າວ ທັດສະດາພອນ", odo_out=7900, odo_back=8045, tuyen="ກາສີ → ກາລໍ",
+               customer_name="ຄຳຕຸ້ຍ", ore_bill_no="HR-2301", ore_bill_date=D(2026, 9, 14),
+               origin="ກາສີ (ບ່ອນຂຸດແຮ່)", destination="ທ່າບົກ (ສະໜາມ EPL)",
+               weight_origin=42.50, weight_dest=42.30,     # cân mỏ 42,50 · cân bãi 42,30 → hao 0,20
+               transport_status="arrived", finance_status="unpaid",
+               hang=[("ແຮ່ເຫຼັກ (quặng sắt)", 42.50)],
+               chi=[dong("fuel", "diesel", 60, 30000, "LAK", "fp_yard"), dong("travel", "x_water", 1, 60000)])
+    db.flush()
+    db.add(GoodsMove(move_date=D(2026, 9, 15), kind="in", goods_name="ແຮ່ເຫຼັກ (quặng sắt)", qty_t=42.30,
+                     trip_id=pg.id, trip_doc_no=pg.doc_no, lo_trip_id=pg.id, depot="Thà Bốc", by_user="ສົມໄຊ (Somchai)"))
+    db.add(TripGoods(trip_id=pg.id, loai="hao_hut", goods_name="ແຮ່ເຫຼັກ (quặng sắt)", qty_t=0.20,
+                     note="Cân mỏ 42.5 t − cân bãi 42.3 t"))
+    db.flush()
+    phieu(doc_no="T4-0433-09/EPL", kind="giao", doc_date=D(2026, 9, 16), out_date=D(2026, 9, 16),
+          truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6300, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
+          customer_name="ຄຳຕຸ້ຍ", origin="ທ່າບົກ (ສະໜາມ EPL)", destination="ທ່າເຮືອກະລໍ",
+          price_usd=43, weight_origin=30.00, transport_status="transit", finance_status="unpaid",
+          lay_tu=[("G4-0101-09/EPL", 30.00)],
+          chi=[dong("fuel", "diesel", 90, 30000, "LAK", "fp_yard"), dong("travel", "x_toll", 1, 1833500)])
 
     # ---- phiếu lĩnh (tờ giấy tài xế cầm đi, có mã QR)
     # Phiếu vừa xuất bến còn ĐANG CHỜ CẤP để màn Cấp phát có việc; các phiếu cũ thì tiền đã trao

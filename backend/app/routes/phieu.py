@@ -20,13 +20,14 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (TripAttachment, ma_moi, CHUOI, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+from models import (TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien
 from routes.danh_muc import tim_gia
 from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
+from services import kho_hang as KH
 from services import chung_tu as CT
 
 router = APIRouter()
@@ -40,7 +41,7 @@ KHOAN_MUC = {
     "other":  ["x_misc"],
 }
 MA_TK = ["625/371", "625/402", "614/371", "614/402", "4022/371", "4022/402", "1211/70", "1211/402"]
-COT_PHIEU = ("doc_no", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
+COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
              "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
              "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price_usd",
@@ -53,7 +54,7 @@ COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price_usd", "h
           "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb", "rate_vnd")
 # Trường nào thuộc mục nào — để khoá theo trạng thái duyệt của mục
 MUC_CUA_COT = {
-    "info":  {"doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id", "truck_no",
+    "info":  {"doc_date", "out_date", "back_date", "kind", "company", "owner_name", "vehicle_id", "truck_no",
               "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name", "odo_out", "odo_back"},
     "trans": {"customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no", "ore_bill_date", "origin",
               "destination", "weight_origin", "weight_dest", "price_usd", "hire_price_usd", "fee_pct",
@@ -161,6 +162,8 @@ def xuat_phieu(db, phieu, day_du=True):
                "created_by": phieu.created_by,
                "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
                "tinh": tinh_phieu(phieu, dong),
+               "goods": KH.dong_hang(db, phieu.id),
+               "ton_lo": KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None,
                "sections": {s.section: s.status for s in _muc_cua(db, phieu).values()}})
     if day_du:
         ra["expenses"] = [_xuat_dong(d) for d in dong]
@@ -274,6 +277,9 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             raise HTTPException(422, {"ma": "TUYEN_SAI", "loi": "Không có tuyến này."})
         if not p.origin: p.origin = r.origin
         if not p.destination: p.destination = r.destination
+    # Không gửi loại xe thì mặc định xe nhà — cột có default ở CSDL nhưng phép kiểm chạy TRƯỚC khi ghi.
+    if not p.company:
+        p.company = "EPL"
     if p.company not in ("EPL", "joint"):
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "company phải là EPL hoặc joint."})
     # K3: Bãi không thấy tiền nên không gửi giá; có khách + tuyến trong bảng giá thì máy điền đơn giá hợp đồng.
@@ -374,7 +380,10 @@ def _ghi_do(db, p, user):
 def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role not in ("yard", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc lập phiếu xuất xe."})
-    p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db)).strip(), created_by=user.full_name)
+    loai_do = (data.get("kind") or "giao").strip()
+    if loai_do not in LOAI_DO:
+        raise HTTPException(422, {"ma": "LOAI_DO_SAI", "loi": "Loại phiếu phải là 'gom' (đi lấy hàng) hoặc 'giao' (đi giao hàng)."})
+    p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db)).strip(), kind=loai_do, created_by=user.full_name)
     if db.query(Trip).filter(Trip.doc_no == p.doc_no).first():
         raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s đã có." % p.doc_no})
     # Tỷ giá mặc định lấy từ bảng tỷ giá, rồi khoá vào phiếu
@@ -392,6 +401,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
         if r and (r.toll_lak or 0) > 0 and not any(d.get("item_key") == "x_toll" for d in dong):
             dong.append({"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": r.toll_lak, "currency": "LAK"})
     _ap_dong_chi(db, p, dong, user, muc_tt)
+    KH.dat_dong_hang(db, p, data.get("goods"), user)
     _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     _ghi_log(db, p, user, "a_create")
     db.flush(); _ghi_do(db, p, user); db.commit()
@@ -420,6 +430,10 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     _ap_truong(db, p, data, user, muc_tt)
     if "expenses" in data:
         _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
+    if "goods" in data:
+        if not duoc_sua_muc(user.role, "trans", muc_tt["trans"]) and user.role != "admin":
+            raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã khoá; phải trả lại mới sửa được dòng hàng."})
+        KH.dat_dong_hang(db, p, data["goods"], user)
     _ghi_log(db, p, user, "a_save")
     db.commit()
     return xuat_phieu(db, p)
@@ -592,6 +606,11 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         if data.get("back_date"): p.back_date = _ngay(data["back_date"])
         if data.get("odo_back") not in (None, ""): p.odo_back = _so(data["odo_back"], "odo_back")
         _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
+        # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sinh phiếu nhập kho), DO giao thì chốt dòng hao hụt.
+        if p.kind == "gom":
+            KH.nhap_kho(db, p, user)
+        else:
+            KH.ghi_hao_hut_giao(db, p)
         if p.vehicle_id and p.odo_back:
             x = db.get(Vehicle, p.vehicle_id)
             if x and (x.odometer_km or 0) < p.odo_back: x.odometer_km = p.odo_back
@@ -619,7 +638,9 @@ def _canh_bao_khoa(db, p):
         if hao > 1.5:
             cb.append({"ma": "HAO_HUT", "loi": "Hao hụt %.2f%% vượt mức 1,5%%." % hao})
     if p.weight_dest is None:
-        cb.append({"ma": "THIEU_CAN_CUOI", "loi": "Chưa có cân cuối."})
+        cb.append({"ma": "THIEU_CAN_CUOI", "loi": "Chưa có cân cuối." if p.kind == "giao" else "Chưa có cân tại bãi khi xe về."})
+    if not db.query(TripGoods).filter(TripGoods.trip_id == p.id, TripGoods.loai == "hang").count():
+        cb.append({"ma": "THIEU_DONG_HANG", "loi": "Phiếu chưa ghi dòng hàng (mặt hàng, số tấn)."})
     if not p.odo_back:
         cb.append({"ma": "THIEU_KM_VE", "loi": "Chưa có km về thật."})
     if not db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "ore_bill").count():
@@ -810,6 +831,8 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("rev", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu xuất hoá đơn."})
+    if p.kind != "giao":
+        raise HTTPException(409, {"ma": "PHIEU_GOM", "loi": "Phiếu đi gom hàng không có cước nên không xuất hoá đơn; hoá đơn nằm ở phiếu giao hàng."})
     if _muc_cua(db, p)["trans"].status != "verified":
         raise HTTPException(409, {"ma": "CHUA_KIEM", "loi": "Mục II (vận chuyển) phải được kiểm xong trước khi xuất hoá đơn."})
     if not p.locked:
@@ -1071,6 +1094,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if any(e.stock_move_id for e in _dong_chi(db, p)) and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_XUAT_KHO", "loi": "Phiếu đã có dòng xuất kho, không xoá được."})
     _chan_khoa(p, user)
+    KH.kiem_xoa(db, p)
     _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
     db.query(TripEvent).filter(TripEvent.trip_id == p.id).delete()
     for a in db.query(TripAttachment).filter(TripAttachment.trip_id == p.id).all():

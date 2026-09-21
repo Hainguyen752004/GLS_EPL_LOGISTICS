@@ -10,7 +10,7 @@
 (function () {
   const { API, NN, esc, so, AUTH, tag } = EPL;
   const MUC = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'], MUC_CHI = ['fuel', 'travel', 'repair', 'other'];
-  const COT_INFO = ['company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
+  const COT_INFO = ['kind', 'company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
   const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd'];
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price_usd', 'hire_price_usd', 'fee_pct', 'over_limit_t', 'over_price_usd']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
@@ -25,6 +25,7 @@
   };
   let tab = 'all', tabTay = false;            // tab đang mở · người dùng đã tự chọn tab chưa
   const SO_LA_MA = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+  let LO = [];        // các lô hàng còn trong kho bãi, để phiếu giao chọn lấy từ đâu
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [] }, moi = false, ty_gia = {};
   /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402. */
   function tkMacDinh(m, d) {
@@ -107,6 +108,36 @@
         <p class="small muted">${NN.h('settle_ex')}</p>`;
     }
   }
+  /* ---------------------------------------------------------------- dòng hàng (hai DO)
+   * DO gom: hàng bốc ở mỏ. DO giao: hàng lấy từ kho bãi, phải chỉ rõ lấy của lô nào (chính là DO gom
+   * đã mang lô đó về) — đây là dây nối hai phiếu. Dòng "hao hụt" do máy ghi, người không sửa. */
+  const laGom = () => (P.kind || 'giao') === 'gom';
+  function veHang() {
+    const tb = q('#px-hang tbody'), khoaDuoc = suaDuoc('trans');
+    const dong = (P.goods || []);
+    tb.innerHTML = dong.length ? dong.map((g, i) => {
+      if (g.loai === 'hao_hut') return `<tr class="hao"><td>${esc(g.goods_name)}</td><td class="px-tu-lo"></td>
+        <td class="num">${so(g.qty_t, 2)}</td><td class="small muted">${esc(g.note || NN.t('w_loss'))}</td><td class="no-print"></td></tr>`;
+      const lo = LO.filter(x => x.con_t > 0 || x.lo_trip_id === g.tu_phieu_id);
+      return `<tr data-i="${i}">
+        <td><input data-i="${i}" data-f="goods_name" value="${esc(g.goods_name || '')}" lang="lo" ${khoaDuoc ? '' : 'disabled'}></td>
+        <td class="px-tu-lo"><select data-i="${i}" data-f="tu_phieu_id" ${khoaDuoc ? '' : 'disabled'}>
+          <option value="">—</option>${lo.map(x => `<option value="${x.lo_trip_id}" ${x.lo_trip_id === g.tu_phieu_id ? 'selected' : ''}>${esc(x.doc_no)} · ${so(x.con_t, 2)} t</option>`).join('')}</select></td>
+        <td><input class="num" data-i="${i}" data-f="qty_t" value="${esc(g.qty_t ?? '')}" inputmode="decimal" ${khoaDuoc ? '' : 'disabled'}></td>
+        <td><input data-i="${i}" data-f="note" value="${esc(g.note || '')}" ${khoaDuoc ? '' : 'disabled'}></td>
+        <td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa-hang="${i}">×</button>` : ''}</td></tr>`;
+    }).join('') : `<tr><td colspan="5" class="empty">${NN.h('no_goods_line')}</td></tr>`;
+    q('#px-hang-them').hidden = !khoaDuoc;
+    q('#px-hang-nhac').innerHTML = NN.h(laGom() ? 'goods_hint_gom' : 'goods_hint_giao');
+    tb.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => {
+      const g = P.goods[+el.dataset.i]; if (!g) return;
+      g[el.dataset.f] = el.dataset.f === 'qty_t' ? EPL.doc(el.value) : el.value;
+      if (el.dataset.f === 'qty_t') { const t = (P.goods || []).filter(x => x.loai !== 'hao_hut').reduce((a, x) => a + EPL.doc(x.qty_t), 0); P.weight_origin = t; g0('f-weight_origin', t); veSo(); }
+    }));
+    tb.querySelectorAll('[data-xoa-hang]').forEach(b => b.addEventListener('click', () => { P.goods.splice(+b.dataset.xoaHang, 1); veHang(); }));
+  }
+  const g0 = (id, v) => { const el = g(id); if (el) el.value = v; };
+
   function veChi() {
     const lk = P.company === 'joint', tk = KM.acct_codes;
     MUC_CHI.forEach(m => {
@@ -262,19 +293,34 @@
 
   function veHet() {
     q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard');
-    veChon(); veDanhMuc(); doTruong(); veChi(); veVaiVaTrangThai();
+    q('#px-phieu').classList.toggle('is-gom', laGom());
+    q('#px-phieu').classList.toggle('is-giao', !laGom());
+    veChon(); veDanhMuc(); doTruong(); veChi(); veHang(); veVaiVaTrangThai();
     if (!tabTay) tab = tabMacDinh();
-    veTabs(); datTab(tab, false); NN.apDung(root);
+    veTabs(); datTab(tab, false); NN.apDung(root); nhanCan();
+  }
+  /** Hai ô cân mang nghĩa khác nhau tuỳ loại DO, nên nhãn phải nói đúng chỗ cân — chạy SAU NN.apDung
+   *  vì apDung ghi lại nhãn theo data-i18n. */
+  function nhanCan() {
+    const dat = (id, khoa) => { const el = q(`label[for="${id}"], #${id}`); const lb = el && el.closest('.field') && el.closest('.field').querySelector('label'); if (lb) lb.textContent = NN.t(khoa); };
+    dat('f-weight_origin', laGom() ? 'w_origin_gom' : 'w_origin_giao');
+    dat('f-weight_dest', laGom() ? 'w_dest_gom' : 'w_dest_giao');
   }
 
   /* ---------------------------------------------------------------- dữ liệu */
   function phieuTrong() {
-    return { id: null, doc_no: '', company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price_usd: 1,
+    return { id: null, doc_no: '', kind: 'giao', goods: [], company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price_usd: 1,
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); veHet(); }
-  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); veHet(); }
+  /** Lô còn hàng trong kho bãi. Khi đang sửa một phiếu giao thì trừ phần chính nó đang giữ ra,
+   *  không thì mở lại phiếu cũ sẽ thấy lô hết hàng dù chính nó là người giữ. */
+  async function napLo(truPhieu) {
+    try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
+    catch (e) { LO = []; }
+  }
+  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; veHet(); }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
     [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
@@ -290,6 +336,8 @@
     if (suaDuoc('trans') && P.customer_name !== undefined) body.customer_name = P.customer_name;
     [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (P[c] !== undefined && (!el || !el.disabled)) body[c] = P[c]; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
+    if (suaDuoc('trans')) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
+      .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
     body.expenses = P.expenses.filter(e => suaDuoc(e.section)).map(e => ({ ...e, qty: EPL.doc(e.qty), unit_price: EPL.doc(e.unit_price), acct_code: e.acct_code || tkMacDinh(e.section, e) }));
     if (!moi) { MUC_CHI.forEach(m => { if (!suaDuoc(m)) body.expenses = body.expenses.filter(e => e.section !== m); }); }
     try {
@@ -414,12 +462,14 @@
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
       root.querySelectorAll('.px-them').forEach(b => b.addEventListener('click', () => themDong(b.dataset.them)));
+      g('px-hang-them').addEventListener('click', () => { (P.goods = P.goods || []).push({ loai: 'hang', goods_name: NN.t('iron_ore'), qty_t: 0, tu_phieu_id: '' }); veHang(); });
       // đầu vào mục I–II → cập nhật số ngay
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
         if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price_usd == null || P.hire_price_usd === '')) { P.hire_price_usd = P.price_usd; g('f-hire_price_usd').value = P.price_usd ?? ''; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
         if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; } }
         if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
+        if (c === 'kind') { napLo().then(veHet); }
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();
       }); });

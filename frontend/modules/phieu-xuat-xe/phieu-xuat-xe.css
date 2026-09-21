@@ -98,3 +98,12 @@
 .px-phieu[data-tab="all"] .px-acct{pointer-events:none}
 @media print{.px-phieu .px-muc{display:block!important}.px-phieu #px-tong-ket,.px-phieu .px-ky{display:block!important}}
 @media (max-width:900px){.px-tab span{display:none}.px-tab.tat-ca span{display:inline}}
+
+/* ---- dòng hàng trên phiếu (hai DO) ---- */
+.px-hang-o{grid-column:1/-1}
+.px-hang td,.px-hang th{vertical-align:middle}
+.px-hang input,.px-hang select{width:100%;min-width:80px}
+.px-hang tr.hao td{background:var(--amber-soft,#FBF3E2);font-style:italic}
+/* Phiếu GOM: không có cước, không hoá đơn — ẩn mọi ô tiền bán và cột chọn lô. */
+.px-phieu.is-gom .px-tien,.px-phieu.is-gom .px-tu-lo,.px-phieu.is-gom td.px-tu-lo{display:none}
+.px-phieu:not(.is-giao) .px-tu-lo{display:none}

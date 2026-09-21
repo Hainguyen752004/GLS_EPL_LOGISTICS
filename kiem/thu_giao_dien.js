@@ -13,7 +13,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu',
-  'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-nhien-lieu',
+  'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-hang', 'kho-nhien-lieu',
   'diem-do', 'kho-phu-tung', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */

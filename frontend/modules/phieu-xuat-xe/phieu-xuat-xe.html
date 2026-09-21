@@ -37,6 +37,7 @@
   <section class="px-muc" data-muc="info">
     <div class="px-muc-dau"><span class="rn">I</span><h4 data-i18n="sec1"></h4><span class="px-stt" data-stt="info"></span><div class="grow"></div><div class="px-act no-print" data-act="info"></div><div class="px-who small muted"><span data-i18n="resp"></span> <span data-i18n="r_yard"></span></div></div>
     <div class="px-muc-than f-grid">
+      <div class="field"><label data-i18n="do_kind"></label><select id="f-kind"><option value="giao" data-i18n="do_giao"></option><option value="gom" data-i18n="do_gom"></option></select></div>
       <div class="field"><label data-i18n="truck_type"></label><select id="f-company"><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
       <div class="field px-lk"><label data-i18n="owner"></label><input id="f-owner_name" lang="lo"></div>
       <div class="field"><label data-i18n="truck_no"></label><select id="f-vehicle_id"></select></div>
@@ -67,6 +68,15 @@
         <div class="field px-tep-o"><label data-i18n="attach_ore"></label><div class="px-tep" id="px-tep"></div></div>
         <div class="field"><label data-i18n="origin"></label><input id="f-origin" lang="lo"></div>
         <div class="field"><label data-i18n="dest"></label><input id="f-destination" lang="lo"></div>
+        <div class="field px-hang-o">
+          <label data-i18n="goods_lines"></label>
+          <div class="tbl-wrap"><table class="tbl tbl-compact px-hang" id="px-hang"><thead><tr>
+            <th data-i18n="goods_name"></th><th class="px-tu-lo" data-i18n="from_lot"></th>
+            <th class="num" data-i18n="qty_t"></th><th data-i18n="note"></th><th class="no-print"></th></tr></thead>
+            <tbody></tbody></table></div>
+          <button type="button" class="btn sm no-print" id="px-hang-them">+ <span data-i18n="add_line"></span></button>
+          <p class="small muted" id="px-hang-nhac"></p>
+        </div>
         <div class="field"><label data-i18n="w_origin"></label><input class="num" id="f-weight_origin" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
