@@ -105,6 +105,12 @@ def _so_moi(db, loai, ngay):
     return "%s%04d" % (tien_to, n + 1)
 
 
+def tim(db, loai, nguon_bang, nguon_id):
+    """Tờ chứng từ đã ghi cho một nguồn, hoặc None."""
+    return (db.query(ChungTu).filter(ChungTu.loai == loai, ChungTu.nguon_bang == nguon_bang,
+                                     ChungTu.nguon_id == str(nguon_id)).first())
+
+
 def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=None, doi_tuong_ten=None,
         tien=None, tien_te="LAK", tien_lak=None, section=None, mo_ta=None, by_user=None, payload=None,
         company=None):

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1111 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1139 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -428,9 +428,9 @@ window.EPL_TU_DIEN = {
   "en": "2% fee/slip"
  },
  "c_over": {
-  "vi": "Quá tải 1$/t",
-  "lo": "ແກ່ເກີນ 1$/ໂຕນ",
-  "en": "Overload 1$/t"
+  "vi": "Quá tải /t",
+  "lo": "ແກ່ເກີນ/ໂຕນ",
+  "en": "Overload /t"
  },
  "c_fuel": {
   "vi": "Nhiên liệu",
@@ -473,9 +473,9 @@ window.EPL_TU_DIEN = {
   "en": "Finance"
  },
  "track_note": {
-  "vi": "Thu – Chi quy đổi theo tỷ giá ngày lập phiếu (USD 22.000 · THB 700 · VND 1,2). Bấm vào dòng để mở phiếu xuất xe.",
-  "lo": "ຮັບ – ຈ່າຍ ແປງຕາມອັດຕາວັນອອກບິນ (USD 22.000 · THB 700 · VND 1,2). ກົດແຖວເພື່ອເປີດໃບເບີກລົດ.",
-  "en": "Net converted at the rate on the slip date (USD 22,000 · THB 700 · VND 1.2). Click a row to open the dispatch slip."
+  "vi": "Mỗi phiếu tính theo tiền tệ của hợp đồng phiếu đó — cột <b>Tiền</b> cho biết là tiền gì. Chi phí luôn quy về Kíp theo tỷ giá khoá trên phiếu. Bấm vào dòng để mở phiếu xuất xe.",
+  "lo": "ແຕ່ລະບິນຄິດຕາມສະກຸນເງິນຂອງສັນຍາບິນນັ້ນ — ຖັນ <b>ເງິນ</b> ບອກວ່າເປັນເງິນຫຍັງ. ລາຍຈ່າຍປ່ຽນເປັນກີບຕາມອັດຕາທີ່ລັອກໄວ້ໃນບິນ. ກົດແຖວເພື່ອເປີດໃບເບີກລົດ.",
+  "en": "Each slip is priced in its own contract currency; the <b>Ccy</b> column says which. Expenses are always converted to LAK at the rate locked on the slip. Click a row to open the dispatch slip."
  },
  "back_list": {
   "vi": "Danh sách phiếu",
@@ -808,14 +808,14 @@ window.EPL_TU_DIEN = {
   "en": "t"
  },
  "price_usd": {
-  "vi": "Đơn giá (USD/tấn)",
-  "lo": "ລາຄາ (USD/ໂຕນ)",
-  "en": "Unit price (USD/t)"
+  "vi": "Đơn giá mỗi tấn",
+  "lo": "ລາຄາ/ໂຕນ",
+  "en": "Unit price per tonne"
  },
  "value_usd": {
-  "vi": "Thành tiền (USD)",
-  "lo": "ມູນຄ່າ (USD)",
-  "en": "Amount (USD)"
+  "vi": "Thành tiền",
+  "lo": "ມູນຄ່າ",
+  "en": "Amount"
  },
  "value_lak": {
   "vi": "Quy đổi (LAK)",
@@ -868,9 +868,9 @@ window.EPL_TU_DIEN = {
   "en": "Filled at"
  },
  "pay_method": {
-  "vi": "Hình thức chi",
-  "lo": "ວິທີຈ່າຍ",
-  "en": "Payment method"
+  "vi": "Cách thu",
+  "lo": "ວິທີຮັບເງິນ",
+  "en": "Method"
  },
  "note": {
   "vi": "Ghi chú",
@@ -1023,9 +1023,9 @@ window.EPL_TU_DIEN = {
   "en": "Air-brake chamber part"
  },
  "sum_rev": {
-  "vi": "Doanh thu chuyến (quy đổi)",
-  "lo": "ລາຍຮັບຖ້ຽວ (ແປງເປັນກີບ)",
-  "en": "Trip revenue (converted)"
+  "vi": "Doanh thu chuyến",
+  "lo": "ລາຍຮັບຖ້ຽວ",
+  "en": "Trip revenue"
  },
  "sum_exp": {
   "vi": "Tổng chi phí chuyến",
@@ -1548,9 +1548,9 @@ window.EPL_TU_DIEN = {
   "en": "Overload (t)"
  },
  "over_p": {
-  "vi": "Phạt quá tải (USD/tấn)",
-  "lo": "ຫັກແກ່ເກີນ (USD/ໂຕນ)",
-  "en": "Overload penalty (USD/t)"
+  "vi": "Phạt quá tải mỗi tấn",
+  "lo": "ຫັກແກ່ເກີນ/ໂຕນ",
+  "en": "Overload charge per tonne"
  },
  "over_amt": {
   "vi": "Cắt quá tải (USD)",
@@ -1833,9 +1833,9 @@ window.EPL_TU_DIEN = {
   "en": "Outside transport charge"
  },
  "hire_pt": {
-  "vi": "Giá thuê họ (USD/tấn)",
-  "lo": "ລາຄາເຊົ່າເຂົາ (USD/ໂຕນ)",
-  "en": "Their hire price (USD/t)"
+  "vi": "Giá thuê họ mỗi tấn",
+  "lo": "ລາຄາເຊົ່າເຂົາ/ໂຕນ",
+  "en": "Their hire price per tonne"
  },
  "do_title": {
   "vi": "Lãi trong DO này",
@@ -2893,8 +2893,8 @@ window.EPL_TU_DIEN = {
   "en": "Pay supplier"
  },
  "pay_date": {
-  "vi": "Ngày trả",
-  "lo": "ວັນທີຈ່າຽ",
+  "vi": "Ngày thu",
+  "lo": "ວັນທີຮັບເງິນ",
   "en": "Payment date"
  },
  "payments": {
@@ -5506,6 +5506,146 @@ window.EPL_TU_DIEN = {
   "vi": "Thu một phần",
   "lo": "ຮັບບາງສ່ວນ",
   "en": "Partly collected"
+ },
+ "ccy": {
+  "vi": "Tiền tệ",
+  "lo": "ສະກຸນເງິນ",
+  "en": "Currency"
+ },
+ "c_ccy": {
+  "vi": "Tiền",
+  "lo": "ເງິນ",
+  "en": "Ccy"
+ },
+ "ccy_price": {
+  "vi": "Tiền tệ cước",
+  "lo": "ສະກຸນເງິນຄ່າຂົນສົ່ງ",
+  "en": "Freight currency"
+ },
+ "ccy_hire": {
+  "vi": "Tiền tệ thuê xe",
+  "lo": "ສະກຸນເງິນຄ່າເຊົ່າລົດ",
+  "en": "Hire currency"
+ },
+ "price_t": {
+  "vi": "Đơn giá mỗi tấn",
+  "lo": "ລາຄາຕໍ່ໂຕນ",
+  "en": "Unit price per tonne"
+ },
+ "value_amt": {
+  "vi": "Thành tiền",
+  "lo": "ມູນຄ່າ",
+  "en": "Amount"
+ },
+ "rate_on_slip": {
+  "vi": "Tỷ giá khoá trên phiếu",
+  "lo": "ອັດຕາແລກປ່ຽນລັອກໄວ້ໃນບິນ",
+  "en": "Rate locked on the slip"
+ },
+ "rate_day": {
+  "vi": "Tỷ giá ngày thu",
+  "lo": "ອັດຕາແລກປ່ຽນວັນຮັບເງິນ",
+  "en": "Rate on the receipt date"
+ },
+ "in_lak": {
+  "vi": "Quy về Kíp",
+  "lo": "ປ່ຽນເປັນກີບ",
+  "en": "In LAK"
+ },
+ "by_ccy": {
+  "vi": "Theo từng loại tiền",
+  "lo": "ຕາມແຕ່ລະສະກຸນເງິນ",
+  "en": "By currency"
+ },
+ "ccy_note": {
+  "vi": "Mỗi phiếu tính theo tiền tệ của hợp đồng phiếu đó; tổng cộng quy về Kíp theo tỷ giá khoá trên từng phiếu.",
+  "lo": "ແຕ່ລະບິນຄິດຕາມສະກຸນເງິນຂອງສັນຍາບິນນັ້ນ; ຍອດລວມປ່ຽນເປັນກີບຕາມອັດຕາທີ່ລັອກໄວ້ໃນແຕ່ລະບິນ.",
+  "en": "Each slip is priced in its own contract currency; totals are converted to LAK at the rate locked on each slip."
+ },
+ "collect": {
+  "vi": "Thu tiền",
+  "lo": "ຮັບເງິນ",
+  "en": "Collect payment"
+ },
+ "collect_new": {
+  "vi": "Ghi một lần thu",
+  "lo": "ບັນທຶກການຮັບເງິນ",
+  "en": "Record a payment"
+ },
+ "collect_log": {
+  "vi": "Sổ thu tiền",
+  "lo": "ບັນຊີຮັບເງິນ",
+  "en": "Payment log"
+ },
+ "collected": {
+  "vi": "Đã thu",
+  "lo": "ຮັບແລ້ວ",
+  "en": "Collected"
+ },
+ "remaining": {
+  "vi": "Còn lại",
+  "lo": "ຍັງເຫຼືອ",
+  "en": "Remaining"
+ },
+ "pay_amount": {
+  "vi": "Số tiền khách trả",
+  "lo": "ຈຳນວນເງິນລູກຄ້າຈ່າຍ",
+  "en": "Amount paid"
+ },
+ "pm_cash": {
+  "vi": "Tiền mặt",
+  "lo": "ເງິນສົດ",
+  "en": "Cash"
+ },
+ "pm_bank": {
+  "vi": "Chuyển khoản",
+  "lo": "ໂອນທະນາຄານ",
+  "en": "Bank transfer"
+ },
+ "pm_offset": {
+  "vi": "Cấn trừ công nợ",
+  "lo": "ຫັກໜີ້",
+  "en": "Offset"
+ },
+ "pm_other": {
+  "vi": "Khác",
+  "lo": "ອື່ນໆ",
+  "en": "Other"
+ },
+ "pay_ref": {
+  "vi": "Số uỷ nhiệm chi · biên lai",
+  "lo": "ເລກທີໃບໂອນ · ໃບຮັບເງິນ",
+  "en": "Transfer / receipt no."
+ },
+ "pay_none": {
+  "vi": "Chưa có lần thu nào",
+  "lo": "ຍັງບໍ່ມີການຮັບເງິນ",
+  "en": "No payments yet"
+ },
+ "pay_over": {
+  "vi": "Thu nhiều hơn số còn lại của hoá đơn",
+  "lo": "ຮັບເກີນຈຳນວນທີ່ຍັງເຫຼືອຂອງໃບເກັບເງິນ",
+  "en": "More than the invoice balance"
+ },
+ "pay_over_ok": {
+  "vi": "Vẫn ghi (thu dư)",
+  "lo": "ຍັງບັນທຶກ (ຮັບເກີນ)",
+  "en": "Record anyway (overpaid)"
+ },
+ "pay_del": {
+  "vi": "Xoá lần thu này",
+  "lo": "ລຶບການຮັບເງິນນີ້",
+  "en": "Delete this payment"
+ },
+ "pay_diff_ccy": {
+  "vi": "Khách trả bằng tiền khác hoá đơn — quy về Kíp theo tỷ giá ghi ở dòng này.",
+  "lo": "ລູກຄ້າຈ່າຍດ້ວຍສະກຸນເງິນອື່ນ — ປ່ຽນເປັນກີບຕາມອັດຕາໃນແຖວນີ້.",
+  "en": "Paid in a currency other than the invoice; converted to LAK at the rate on this row."
+ },
+ "fin_auto": {
+  "vi": "Trạng thái thu do tổng các lần thu quyết định, không bấm tay.",
+  "lo": "ສະຖານະການຮັບເງິນມາຈາກຍອດລວມການຮັບ, ບໍ່ແມ່ນກົດເອງ.",
+  "en": "The payment status comes from the payments recorded, not a manual switch."
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

@@ -80,7 +80,9 @@
         <div class="field"><label data-i18n="w_origin"></label><input class="num" id="f-weight_origin" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_dest"></label><input class="num" id="f-weight_dest" inputmode="decimal"></div>
         <div class="field"><label data-i18n="w_loss"></label><div class="ro num" id="v-hao">—</div></div>
-        <div class="field px-tien"><label data-i18n="price_usd"></label><input class="num" id="f-price_usd" inputmode="decimal"></div>
+        <div class="field px-tien"><label data-i18n="ccy_price"></label>
+          <select id="f-price_ccy"><option value="USD">USD</option><option value="LAK">LAK</option><option value="CNY">CNY</option><option value="THB">THB</option><option value="VND">VND</option></select></div>
+        <div class="field px-tien"><label data-i18n="price_usd"></label><input class="num" id="f-price" inputmode="decimal"></div>
         <div class="field px-tien"><label data-i18n="value_usd"></label><div class="ro hi num" id="v-val-usd">—</div></div>
         <div class="field px-tien"><label data-i18n="value_lak"></label><div class="ro num" id="v-val-lak">—</div></div>
       </div>
@@ -88,13 +90,15 @@
       <div class="px-lk px-khau-tru px-tien">
         <h5 data-i18n="ded_title"></h5>
         <div class="f-grid">
-          <div class="field"><label data-i18n="hire_pt"></label><input class="num" id="f-hire_price_usd" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="ccy_hire"></label>
+            <select id="f-hire_ccy"><option value="">—</option><option value="USD">USD</option><option value="LAK">LAK</option><option value="CNY">CNY</option><option value="THB">THB</option><option value="VND">VND</option></select></div>
+          <div class="field"><label data-i18n="hire_pt"></label><input class="num" id="f-hire_price" inputmode="decimal"></div>
           <div class="field"><label data-i18n="hire_usd"></label><div class="ro num" id="v-hire">—</div></div>
           <div class="field"><label data-i18n="fee_pct"></label><input class="num" id="f-fee_pct" inputmode="decimal"></div>
           <div class="field"><label data-i18n="fee_amt"></label><div class="ro num neg" id="v-fee">—</div></div>
           <div class="field"><label data-i18n="limit_t"></label><input class="num" id="f-over_limit_t" inputmode="decimal"></div>
           <div class="field"><label data-i18n="over_t"></label><div class="ro num" id="v-over-t">—</div></div>
-          <div class="field"><label data-i18n="over_p"></label><input class="num" id="f-over_price_usd" inputmode="decimal"></div>
+          <div class="field"><label data-i18n="over_p"></label><input class="num" id="f-over_price" inputmode="decimal"></div>
           <div class="field"><label data-i18n="over_amt"></label><div class="ro num neg" id="v-over">—</div></div>
         </div>
         <p class="small muted" data-i18n="ded_note"></p>
@@ -121,6 +125,7 @@
   </section>
 
   <div id="px-tong-ket" class="px-tien"></div>
+  <div id="px-thu-tien" class="px-tien no-print"></div>
   <div class="px-hanh-dong no-print" id="px-hanh-dong"></div>
   <div class="px-log no-print" id="px-log"></div>
   <div class="px-ky">

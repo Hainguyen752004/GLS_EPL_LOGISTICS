@@ -174,7 +174,16 @@
   // Số kiểu 1,724.46 — đúng như Excel và bản mẫu họ đã duyệt (họ dùng dấu phẩy ngăn nghìn).
   EPL.so = (n, d = 0) => (n === null || n === undefined || n === '' || isNaN(Number(n))) ? '—'
     : Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-  EPL.tien = (n, ma, d) => n === null || n === undefined ? '—' : EPL.so(n, d === undefined ? (ma === 'USD' ? 2 : 0) : d) + (ma ? ' ' + ma : '');
+  /* Tiền: Kíp và Đồng ghi tròn đơn vị, các tiền khác hai số lẻ. Đơn vị LUÔN đi kèm con số —
+     phiếu này cước USD, phiếu kia Nhân dân tệ, con số trần không nói được nó là tiền gì. */
+  EPL.TIEN_TE = ['LAK', 'USD', 'THB', 'VND', 'CNY'];
+  EPL.leTien = (ma) => (String(ma || 'LAK').toUpperCase() === 'LAK' || String(ma).toUpperCase() === 'VND') ? 0 : 2;
+  EPL.tien = (n, ma, d) => n === null || n === undefined ? '—' : EPL.so(n, d === undefined ? EPL.leTien(ma) : d) + (ma ? ' ' + ma : '');
+  /** Gộp nhiều loại tiền thành một chuỗi: {USD: 8101.36, CNY: 12000} → "8,101.36 USD · 12,000 CNY" */
+  EPL.tienGop = (d, phanCach = ' · ') => {
+    const ds = Object.entries(d || {}).filter(([, v]) => v);
+    return ds.length ? ds.map(([m, v]) => EPL.tien(v, m)).join(phanCach) : '—';
+  };
   EPL.ngay = (s) => { if (!s) return '—'; const d = new Date(String(s).slice(0, 10) + 'T00:00:00'); return isNaN(d) ? s : d.toLocaleDateString('en-GB'); };
   EPL.ngayGio = (s) => { if (!s) return '—'; const d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('en-GB') + ' ' + d.toTimeString().slice(0, 5); };
   EPL.homNay = () => new Date().toISOString().slice(0, 10);

@@ -263,7 +263,7 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
                       "plate_trailer": p.plate_trailer, "driver_name": p.driver_name, "company": p.company,
                       "owner_name": p.owner_name, "origin": p.origin, "destination": p.destination,
                       "customer_name": p.customer_name, "goods_type": p.goods_type,
-                      "weight_origin": p.weight_origin, "price_usd": p.price_usd,
+                      "weight_origin": p.weight_origin, "price": p.price, "price_ccy": p.price_ccy,
                       "out_date": p.out_date.isoformat() if p.out_date else None,
                       "transport_status": p.transport_status}
         if v.kind == "fuel":

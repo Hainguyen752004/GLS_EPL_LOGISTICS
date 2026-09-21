@@ -113,7 +113,7 @@ def main():
     s, giao = goi("/api/trips", {
         "doc_no": SO_GIAO, "kind": "giao", "vehicle_id": xe2["id"], "driver_id": tx[0]["id"],
         "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"], "doc_date": "2026-09-22", "out_date": "2026-09-22",
-        "price_usd": 43,
+        "price": 43, "price_ccy": "USD",
         "goods": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 25, "tu_phieu_id": gom["id"]}],
     }, vai="thabok")
     phai(s, 200, "Bãi lập DO GIAO lấy 25 t từ lô", giao)

@@ -39,7 +39,7 @@ frontend/
   vendor/leaflet/    thư viện bản đồ để sẵn trong dự án, KHÔNG gọi CDN
   vendor/chartjs/    thư viện biểu đồ (Tổng quan) để sẵn trong dự án, KHÔNG gọi CDN
   js/chung.js        gọi API, ngôn ngữ, đăng nhập, nạp module theo #/ten-module
-  js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.093 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
+  js/ngon_ngu.js     từ điển Việt · Lào · Anh (1.139 khoá) — SINH TỰ ĐỘNG, đừng sửa tay
   modules/<tên>/     <tên>.html · <tên>.css · <tên>.js — sai đâu mở đúng thư mục đó
 kiem/
   thu_giao_dien.js   thử toàn giao diện trên jsdom, nối máy chủ thật
@@ -51,6 +51,7 @@ kiem/
   thu_vi_tri.py      GPS thật: ai được gửi · lọc điểm dày · GPS cũ thì lùi về mốc
   thu_hai_do.py      LUỒNG HAI DO: gom → nhập kho → giao lấy lô → xuất kho → hao hụt
   thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
+  thu_tien_te.py     nhiều tiền tệ: cước Nhân dân tệ, khách trả Kíp, thu nhiều lần
   thu_day_ke_toan.py đẩy chứng từ sang kế toán anh Khang, máy nhận giả ở :8099
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
@@ -67,6 +68,8 @@ Xe về thì kế toán bấm **Khoá phiếu** (máy rà km, hao hụt, phiếu
 
 Mỗi bước sinh ra tiền hoặc hàng để lại một tờ trong **Sổ chứng từ** (màn Chứng từ → tab Sổ chứng từ), và **đẩy được sang module kế toán của anh Khang** bằng một nút (Sếp đặt địa chỉ API + token ngay trong màn; hợp đồng JSON ở [DOCS/md/HOP_DONG_API_ANH_KHANG.md](DOCS/md/HOP_DONG_API_ANH_KHANG.md)): ai nhập ô nào, tờ nào sinh ở bước nào, định khoản gợi ý, mã còn thiếu — xem [DOCS/md/NGHIEP_VU_DB_API.md](DOCS/md/NGHIEP_VU_DB_API.md) mục A6, và hợp đồng nối kế toán ở [DOCS/md/HOP_DONG_API_ANH_KHANG.md](DOCS/md/HOP_DONG_API_ANH_KHANG.md).
 
+**Tiền tệ.** Cước ký bằng tiền nào thì phiếu ghi tiền đó — USD · Kíp · Nhân dân tệ · Bath — và xe liên kết có thể thuê bằng tiền khác với tiền bán. Kíp là tiền gốc: tỷ giá khoá vào phiếu lúc lập, mọi con số tổng trong báo cáo quy về Kíp kèm dòng chia theo từng loại tiền. Khách trả tiền thì **mỗi lần thu là một dòng** có ngày, số tiền, tiền tệ và tỷ giá ngày thu (hoá đơn USD mà chuyển Kíp là chuyện thường); trạng thái *chưa thu · một phần · đủ* do tổng các dòng đó quyết định, không bấm tay. Chi tiết ở [DOCS/md/NGHIEP_VU_DB_API.md](DOCS/md/NGHIEP_VU_DB_API.md) mục A7.
+
 Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາວ** (nút ở góc trên phải và trên màn đăng nhập).
 
 ## Kiểm
@@ -75,6 +78,7 @@ Ngôn ngữ: **Tiếng Việt · ພາສາລາວ · English · VI + ລາ
 python kiem\test_tinh_toan.py                    # đơn vị, không cần máy chủ
 python kiem\thu_hai_do.py                        # luồng hai DO: gom → nhập kho → giao → xuất kho
 python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
+python kiem\thu_tien_te.py                       # tiền tệ và sổ thu tiền: USD · LAK · CNY · THB
 python kiem\thu_day_ke_toan.py                   # đẩy chứng từ sang kế toán, có máy nhận giả đóng vai anh Khang
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện

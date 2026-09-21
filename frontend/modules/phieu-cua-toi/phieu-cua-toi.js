@@ -8,7 +8,7 @@
   function tamUng(p) {
     // Khoản tiền mặt tài xế cầm đi: EPL ứng, không phải từ kho. Trạng thái = mục IV.
     const dong = (p.expenses || []).filter(d => d.paid_by_epl && d.source !== 'kho' && ['fuel', 'travel', 'other'].includes(d.section));
-    const r = { USD: p.rate_usd, THB: p.rate_thb, VND: p.rate_vnd, LAK: 1 };
+    const r = { USD: p.rate_usd, THB: p.rate_thb, VND: p.rate_vnd, CNY: p.rate_cny || 3000, LAK: 1 };
     const tong = dong.reduce((a, d) => a + d.qty * d.unit_price * (r[d.currency] || 1), 0);
     return { co: dong.length > 0, tong, tt: (p.sections || {}).travel || 'wait' };
   }

@@ -17,16 +17,18 @@ import re
 
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (GoodsMove, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI, SU_KIEN, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+from models import (GoodsMove, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+                    PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien
 from routes.danh_muc import tim_gia
-from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
+from services.tinh_toan import chuan_tien, doi as doi_tien, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
 
@@ -44,21 +46,22 @@ MA_TK = ["625/371", "625/402", "614/371", "614/402", "4022/371", "4022/402", "12
 COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
              "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
-             "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price_usd",
-             "hire_price_usd", "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb",
-             "rate_vnd", "note")
+             "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price", "price_ccy",
+             "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb",
+             "rate_vnd", "rate_cny", "note")
 COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
 # Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
-COT_TIEN = ("price_usd", "hire_price_usd", "fee_pct", "over_limit_t", "over_price_usd")
-COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price_usd", "hire_price_usd",
-          "fee_pct", "over_limit_t", "over_price_usd", "rate_usd", "rate_thb", "rate_vnd")
+COT_TIEN = ("price", "price_ccy", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price")
+COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price", "hire_price",
+          "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb", "rate_vnd", "rate_cny")
+COT_TIEN_TE = ("price_ccy", "hire_ccy")          # ô CHỌN tiền tệ, không phải số
 # Trường nào thuộc mục nào — để khoá theo trạng thái duyệt của mục
 MUC_CUA_COT = {
     "info":  {"doc_date", "out_date", "back_date", "kind", "company", "owner_name", "vehicle_id", "truck_no",
               "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name", "odo_out", "odo_back"},
     "trans": {"customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no", "ore_bill_date", "origin",
-              "destination", "weight_origin", "weight_dest", "price_usd", "hire_price_usd", "fee_pct",
-              "over_limit_t", "over_price_usd"},
+              "destination", "weight_origin", "weight_dest", "price", "price_ccy", "hire_price", "hire_ccy",
+              "fee_pct", "over_limit_t", "over_price"},
 }
 
 
@@ -90,6 +93,16 @@ def _so(v, ten):
         return float(str(v).replace(",", ""))
     except ValueError:
         raise HTTPException(422, {"ma": "SO_SAI", "loi": "Ô %s phải là số, nhận '%s'." % (ten, v)})
+
+
+def _tien_te(v, ten, bat_buoc=False):
+    """Ô chọn tiền tệ. Gõ bậy thì báo rõ chứ không lặng lẽ đổi thành LAK — nhầm tiền là nhầm tiền thật."""
+    if v in (None, ""):
+        return "USD" if bat_buoc else None
+    m = str(v).strip().upper()
+    if m not in TIEN_TE:
+        raise HTTPException(422, {"ma": "TIEN_TE_SAI", "loi": "Ô %s phải là một trong %s, nhận '%s'." % (ten, ", ".join(TIEN_TE), v)})
+    return m
 
 
 def _ghi_log(db, phieu, user, hanh_dong):
@@ -137,6 +150,21 @@ def _dong_tam_ung(p, cac_dong):
     return [d for d in cac_dong if d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")]
 
 
+def da_thu_theo_phieu(db, trip_ids):
+    """Tổng đã thu (LAK) của nhiều phiếu trong MỘT truy vấn — danh sách 200 phiếu thì đừng hỏi 200 lần."""
+    ids = [i for i in (trip_ids or []) if i]
+    if not ids:
+        return {}
+    q = (db.query(TripPayment.trip_id, func.coalesce(func.sum(TripPayment.amount_lak), 0))
+         .filter(TripPayment.trip_id.in_(ids)).group_by(TripPayment.trip_id))
+    return {t: float(v or 0) for t, v in q.all()}
+
+
+def _da_thu(db, phieu):
+    return float(db.query(func.coalesce(func.sum(TripPayment.amount_lak), 0))
+                 .filter(TripPayment.trip_id == phieu.id).scalar() or 0)
+
+
 def _diem_tuyen(db, phieu):
     if not phieu.route_id:
         return []
@@ -144,8 +172,10 @@ def _diem_tuyen(db, phieu):
             for s in db.query(RouteStop).filter(RouteStop.route_id == phieu.route_id).order_by(RouteStop.seq).all()]
 
 
-def xuat_phieu(db, phieu, day_du=True):
+def xuat_phieu(db, phieu, day_du=True, da_thu=None):
     dong = _dong_chi(db, phieu)
+    if da_thu is None:
+        da_thu = _da_thu(db, phieu)
     ra = {c: getattr(phieu, c) for c in COT_PHIEU}
     for c in COT_NGAY:
         ra[c] = ra[c].isoformat() if ra[c] else None
@@ -161,9 +191,12 @@ def xuat_phieu(db, phieu, day_du=True):
                "attachments": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
                "created_by": phieu.created_by,
                "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
-               "tinh": tinh_phieu(phieu, dong),
+               "tinh": tinh_phieu(phieu, dong, da_thu),
                "sections": {s.section: s.status for s in _muc_cua(db, phieu).values()}})
     if day_du:
+        ra["thu_tien"] = [_xuat_thu(x) for x in db.query(TripPayment)
+                          .filter(TripPayment.trip_id == phieu.id)
+                          .order_by(TripPayment.pay_date, TripPayment.created_at).all()]
         ra["goods"] = KH.dong_hang(db, phieu.id)
         ra["ton_lo"] = KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None
         ra["expenses"] = [_xuat_dong(d) for d in dong]
@@ -211,7 +244,8 @@ def ds_phieu(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai),
         ds = [p for p in ds if t in " ".join(str(x or "") for x in (
             p.doc_no, p.driver_name, p.truck_no, p.customer_name, p.plate_head, p.plate_trailer,
             p.origin, p.destination, p.ore_bill_no)).lower()]
-    return [xuat_phieu(db, p, day_du=False) for p in ds]
+    thu = da_thu_theo_phieu(db, [p.id for p in ds])
+    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0)) for p in ds]
 
 
 @router.get("/api/trips/{tid}")
@@ -256,6 +290,7 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         v = data[c]
         if c in COT_NGAY: v = _ngay(v)
         elif c in COT_SO: v = _so(v, c)
+        elif c in COT_TIEN_TE: v = _tien_te(v, c, bat_buoc=(c == "price_ccy"))
         elif isinstance(v, str): v = v.strip() or None
         setattr(p, c, v)
     # Chép tên/biển từ danh mục nếu chỉ gửi mã
@@ -284,14 +319,18 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "company phải là EPL hoặc joint."})
     # K3: Bãi không thấy tiền nên không gửi giá; có khách + tuyến trong bảng giá thì máy điền đơn giá hợp đồng.
     # Chỉ điền khi phiếu CHƯA có giá — kế toán đã gõ giá khác hợp đồng thì giữ của kế toán.
-    if p.customer_id and p.route_id and not p.price_usd:
+    if p.customer_id and p.route_id and not p.price:
         g = tim_gia(db, p.customer_id, p.route_id, p.goods_type, p.doc_date)
         if g:
-            p.price_usd = g.price_usd
-            if p.hire_price_usd is None and g.hire_price_usd:
-                p.hire_price_usd = g.hire_price_usd
-    if p.company == "joint" and p.hire_price_usd is None:
-        p.hire_price_usd = p.price_usd     # mặc định bằng giá nhận — người lập sửa sau
+            # Giá hợp đồng mang theo TIỀN TỆ của hợp đồng đó: khách Trung Quốc ký bằng Nhân dân tệ
+            # thì phiếu phải là Nhân dân tệ, không được rơi về USD.
+            p.price, p.price_ccy = g.price, chuan_tien(g.price_ccy, "USD")
+            if p.hire_price is None and g.hire_price:
+                p.hire_price, p.hire_ccy = g.hire_price, chuan_tien(g.hire_ccy or g.price_ccy, "USD")
+    if not p.price_ccy:
+        p.price_ccy = "USD"
+    if p.company == "joint" and p.hire_price is None:
+        p.hire_price, p.hire_ccy = p.price, p.price_ccy   # mặc định bằng giá nhận — người lập sửa sau
 
 
 def _nguon_theo_diem(db, d):
@@ -388,7 +427,8 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
         raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s đã có." % p.doc_no})
     # Tỷ giá mặc định lấy từ bảng tỷ giá, rồi khoá vào phiếu
     tg = {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
-    p.rate_usd, p.rate_thb, p.rate_vnd = tg.get("USD", 22000), tg.get("THB", 700), tg.get("VND", 1.2)
+    p.rate_usd, p.rate_thb = tg.get("USD", 22000), tg.get("THB", 700)
+    p.rate_vnd, p.rate_cny = tg.get("VND", 1.2), tg.get("CNY", 3000)
     _ap_truong(db, p, data, user)
     db.add(p); db.flush()
     muc_tt = {m: "wait" for m in MUC}
@@ -734,17 +774,17 @@ def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     if p.owner_paid:
         raise HTTPException(409, {"ma": "DA_TRA", "loi": "Đã trả chủ xe phiếu này rồi (%s)." % (p.owner_paid_by or "")})
     k = tinh_phieu(p, _dong_chi(db, p))
-    tien = k.get("tra_chu_xe_usd") or 0
+    tien, h_ccy = k.get("tra_chu_xe") or 0, k.get("hire_ccy") or tien_cuoc(p)
     if tien <= 0:
-        raise HTTPException(422, {"ma": "KHONG_CO_TIEN", "loi": "Số phải trả chủ xe là %s USD, không có gì để chi." % tien})
-    r = ty_gia(p, "USD")
+        raise HTTPException(422, {"ma": "KHONG_CO_TIEN", "loi": "Số phải trả chủ xe là %s %s, không có gì để chi." % (tien, h_ccy)})
+    r = ty_gia(p, h_ccy)
     p.owner_paid, p.owner_paid_usd, p.owner_paid_lak = True, tien, round(tien * r)
     p.owner_paid_by, p.owner_paid_at = user.full_name, dt.datetime.utcnow()
     CT.ghi(db, "PC_CX", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="chu_xe",
-           doi_tuong_ten=p.owner_name, tien=tien, tien_te="USD", tien_lak=round(tien * r), by_user=user.full_name,
+           doi_tuong_ten=p.owner_name, tien=tien, tien_te=h_ccy, tien_lak=round(tien * r), by_user=user.full_name,
            mo_ta="Trả chủ xe %s phiếu %s" % (p.owner_name or "", p.doc_no),
-           payload={"tien_thue_usd": k["tien_thue_usd"], "phi_usd": k["phi_usd"], "tru_vuot_usd": k["tru_vuot_usd"],
-                    "ung_truoc_usd": k["ung_truoc_usd"], "rate_usd": r, "note": data.get("note")})
+           payload={"tien_thue": k["tien_thue"], "phi": k["phi"], "tru_vuot": k["tru_vuot"],
+                    "ung_truoc": k["ung_truoc"], "currency": h_ccy, "rate_to_lak": r, "note": data.get("note")})
     _ghi_log(db, p, user, "a_pay_owner")
     db.commit()
     return xuat_phieu(db, p)
@@ -859,34 +899,131 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
     p.invoiced = True
     k = tinh_phieu(p, _dong_chi(db, p))
     CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
-           doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
-           by_user=user.full_name, mo_ta="Hoá đơn vận chuyển %s · %s t × %s USD" % (p.doc_no, k["tan_tinh"], p.price_usd),
-           payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
+           doi_tuong_ten=p.customer_name, tien=k["doanh_thu"], tien_te=k["ccy"], tien_lak=k["doanh_thu_lak"],
+           by_user=user.full_name,
+           mo_ta="Hoá đơn vận chuyển %s · %s t × %s %s" % (p.doc_no, k["tan_tinh"], p.price, k["ccy"]),
+           payload={"tan_tinh": k["tan_tinh"], "don_gia": p.price, "currency": k["ccy"],
+                    "rate_to_lak": ty_gia(p, k["ccy"])})
     _ghi_log(db, p, user, "a_invoice")
     db.commit()
     return xuat_phieu(db, p)
 
 
-@router.post("/api/trips/{tid}/finance-status")
-def doi_trang_thai_tai_chinh(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+# ---------------------------------------------------------------- khách trả tiền: sổ thu từng lần
+#
+# Trước đây chỗ này là một cái nút "đã thu" bật `finance_status` sang `paid`. Nó không ghi khách trả
+# bao nhiêu, bằng tiền gì, ngày nào — trong khi thực tế bên Lào hoá đơn ghi USD mà khách chuyển LAK
+# hoặc Nhân dân tệ, và trả làm nhiều lần. Giờ mỗi lần tiền về là MỘT DÒNG, trạng thái phiếu do tổng
+# các dòng đó quyết định, không ai bấm tay nữa.
+LECH_COI_LA_DU = 1.0          # lệch dưới 1 LAK thì coi là trả đủ — làm tròn tỷ giá thôi, không phải nợ
+
+
+def _xuat_thu(x):
+    return {"id": x.id, "trip_id": x.trip_id, "pay_date": x.pay_date.isoformat() if x.pay_date else None,
+            "amount": x.amount, "currency": x.currency, "rate_to_lak": x.rate_to_lak,
+            "amount_lak": x.amount_lak, "method": x.method, "ref": x.ref, "note": x.note,
+            "by_user": x.by_user, "created_at": x.created_at.isoformat() if x.created_at else None}
+
+
+def _tinh_lai_trang_thai_thu(db, p):
+    """Trạng thái tài chính = so TỔNG ĐÃ THU với tiền hoá đơn, cả hai quy về LAK."""
+    da = _da_thu(db, p)
+    tong = tinh_phieu(p, _dong_chi(db, p))["doanh_thu_lak"]
+    if da <= LECH_COI_LA_DU:
+        p.finance_status = "unpaid"
+    elif tong - da <= LECH_COI_LA_DU:
+        p.finance_status = "paid"
+    else:
+        p.finance_status = "partial"
+    return da, tong
+
+
+@router.get("/api/trips/{tid}/thu-tien")
+def ds_thu_tien(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    _cua_tai_xe(db, p, user)
+    k = tinh_phieu(p, _dong_chi(db, p), _da_thu(db, p))
+    ds = (db.query(TripPayment).filter(TripPayment.trip_id == p.id)
+          .order_by(TripPayment.pay_date, TripPayment.created_at).all())
+    return {"ds": [_xuat_thu(x) for x in ds], "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"],
+            "ccy": k["ccy"], "da_thu": k["da_thu"], "da_thu_lak": k["da_thu_lak"],
+            "con_lai": k["con_lai"], "con_lai_lak": k["con_lai_lak"],
+            "finance_status": p.finance_status, "invoiced": bool(p.invoiced)}
+
+
+@router.post("/api/trips/{tid}/thu-tien")
+def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Kế toán doanh thu ghi MỘT lần khách trả tiền.
+
+    Tiền trả có thể khác tiền ghi trên hoá đơn — hoá đơn USD, khách chuyển LAK là chuyện thường ở
+    đây. Nên dòng thu mang tiền tệ và tỷ giá NGÀY THU của chính nó; không gửi tỷ giá thì lấy tỷ giá
+    khoá trên phiếu làm mặc định (và màn hình ghi rõ là đang dùng tỷ giá của phiếu).
+    """
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("rev", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi thu tiền."})
-    moi = data.get("status")
-    if moi not in TRANG_THAI_TAI_CHINH:
-        raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái phải là %s." % ", ".join(TRANG_THAI_TAI_CHINH)})
-    if moi != "unpaid" and not p.invoiced:
-        raise HTTPException(409, {"ma": "CHUA_HOA_DON", "loi": "Chưa xuất hoá đơn thì chưa ghi thu."})
-    p.finance_status = moi
-    if moi == "paid":
-        k = tinh_phieu(p, _dong_chi(db, p))
-        CT.ghi(db, "PT", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
-               doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
-               by_user=user.full_name, mo_ta="Thu tiền khách theo hoá đơn phiếu %s" % p.doc_no,
-               payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
-    _ghi_log(db, p, user, "fin_%s" % moi)
+    if not p.invoiced:
+        raise HTTPException(409, {"ma": "CHUA_HOA_DON", "loi": "Chưa xuất hoá đơn thì chưa ghi thu tiền."})
+    tien = _so(data.get("amount"), "amount")
+    if not tien or tien <= 0:
+        raise HTTPException(422, {"ma": "SO_TIEN_SAI", "loi": "Số tiền thu phải lớn hơn 0."})
+    ma = _tien_te(data.get("currency"), "currency", bat_buoc=True)
+    tg = _so(data.get("rate_to_lak"), "rate_to_lak")
+    if tg is None:
+        tg = ty_gia(p, ma)                       # không gửi thì dùng tỷ giá khoá trên phiếu
+    if tg <= 0:
+        raise HTTPException(422, {"ma": "TY_GIA_SAI", "loi": "Tỷ giá phải lớn hơn 0."})
+    if ma == "LAK":
+        tg = 1.0
+    pt = (data.get("method") or "bank").strip()
+    if pt not in PHUONG_THUC_THU:
+        raise HTTPException(422, {"ma": "PHUONG_THUC_SAI", "loi": "Cách thu phải là %s." % ", ".join(PHUONG_THUC_THU)})
+    tien_lak = round(tien * tg)
+    k = tinh_phieu(p, _dong_chi(db, p), _da_thu(db, p))
+    if tien_lak > k["con_lai_lak"] + LECH_COI_LA_DU and not data.get("cho_thu_du"):
+        raise HTTPException(409, {"ma": "THU_QUA_HOA_DON",
+                                  "loi": "Hoá đơn còn %s %s (%s LAK) mà lần thu này %s LAK. Thu dư thì phải xác nhận."
+                                         % (k["con_lai"], k["ccy"], round(k["con_lai_lak"]), tien_lak),
+                                  "con_lai_lak": k["con_lai_lak"]})
+    x = TripPayment(trip_id=p.id, pay_date=_ngay(data.get("pay_date")) or dt.date.today(),
+                    amount=tien, currency=ma, rate_to_lak=tg, amount_lak=tien_lak, method=pt,
+                    ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None,
+                    by_user=user.full_name)
+    db.add(x); db.flush()
+    CT.ghi(db, "PT", nguon_bang="trip_payments", nguon_id=x.id, trip=p, ngay=x.pay_date, doi_tuong_loai="khach",
+           doi_tuong_ten=p.customer_name, tien=tien, tien_te=ma, tien_lak=tien_lak, by_user=user.full_name,
+           mo_ta="Thu tiền khách phiếu %s · %s %s" % (p.doc_no, tien, ma),
+           payload={"rate_to_lak": tg, "method": pt, "ref": x.ref, "hoa_don_ccy": k["ccy"],
+                    "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"]})
+    _tinh_lai_trang_thai_thu(db, p)
+    _ghi_log(db, p, user, "fin_%s" % p.finance_status)
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+@router.delete("/api/thu-tien/{pid}")
+def xoa_thu_tien(pid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Ghi nhầm thì xoá — nhưng chỉ khi tờ phiếu thu CHƯA đẩy sang kế toán. Đẩy rồi thì bên kia đã
+    vào sổ, xoá lặng lẽ bên này là hai bên nói hai số."""
+    x = db.get(TripPayment, pid)
+    if not x:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có lần thu này."})
+    if user.role not in ("rev", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu sửa sổ thu tiền."})
+    p = db.get(Trip, x.trip_id)
+    c = CT.tim(db, "PT", "trip_payments", x.id)
+    if c is not None and c.da_day:
+        raise HTTPException(409, {"ma": "DA_DAY_KE_TOAN",
+                                  "loi": "Phiếu thu %s đã đẩy sang kế toán, không xoá được. Nhờ bên kế toán ghi bút toán đảo." % c.so})
+    if c is not None:
+        db.delete(c)
+    db.delete(x); db.flush()
+    _tinh_lai_trang_thai_thu(db, p)
+    _ghi_log(db, p, user, "fin_undo")
     db.commit()
     return xuat_phieu(db, p)
 
@@ -1092,12 +1229,16 @@ def phieu_thu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role == "driver":
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế không xem phiếu thu."})
-    k = tinh_phieu(p, _dong_chi(db, p))
+    k = tinh_phieu(p, _dong_chi(db, p), _da_thu(db, p))
     return {"doc_no": p.doc_no, "so_phieu_thu": "PT-" + p.doc_no.replace("/", "-"), "doc_date": p.doc_date.isoformat() if p.doc_date else None,
             "customer_name": p.customer_name, "origin": p.origin, "destination": p.destination, "truck_no": p.truck_no,
-            "tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "doanh_thu_usd": k["doanh_thu_usd"], "doanh_thu_lak": k["doanh_thu_lak"],
-            "rate_usd": p.rate_usd, "acct_code": "1211/70", "invoiced": p.invoiced, "finance_status": p.finance_status,
-            "trans_status": _muc_cua(db, p)["trans"].status}
+            "tan_tinh": k["tan_tinh"], "don_gia": p.price, "ccy": k["ccy"],
+            "doanh_thu": k["doanh_thu"], "doanh_thu_lak": k["doanh_thu_lak"],
+            "da_thu": k["da_thu"], "da_thu_lak": k["da_thu_lak"], "con_lai": k["con_lai"], "con_lai_lak": k["con_lai_lak"],
+            "rate_to_lak": ty_gia(p, k["ccy"]), "acct_code": "1211/70", "invoiced": p.invoiced,
+            "finance_status": p.finance_status, "trans_status": _muc_cua(db, p)["trans"].status,
+            "thu_tien": [_xuat_thu(x) for x in db.query(TripPayment).filter(TripPayment.trip_id == p.id)
+                         .order_by(TripPayment.pay_date, TripPayment.created_at).all()]}
 
 
 @router.delete("/api/trips/{tid}")

@@ -61,7 +61,8 @@ Bộ kiểm `kiem/thu_hai_do.py` đi trọn luồng này.
 | **C7.3** | Sửa xe tại bãi vẫn **gắn phiếu gần nhất** | Lệnh sửa chữa riêng là một luồng mới; xem mục 3.3 |
 | **C1.3** | Tài xế **có** dùng điện thoại: nhận phiếu, khai đổ dầu, báo hỏng, chia sẻ GPS | Đã làm xong màn tài xế |
 | **C2.1, C2.2** | Ngày về và km về do **Bãi** ghi khi xe về; kiểm mục I xong Bãi không sửa gì thêm | |
-| **C8.3** | Khách trả chuyển khoản hoặc tiền mặt, **có trả một phần** | Đã có trạng thái *thu một phần* |
+| **C8.3** | Khách trả chuyển khoản hoặc tiền mặt, **có trả một phần** | Làm xong 21/09: **sổ thu tiền từng lần** — mỗi lần tiền về ghi ngày, số tiền, tiền tệ, tỷ giá, cách thu; trạng thái *chưa thu · một phần · đủ* tự suy từ tổng |
+| **Tiền tệ cước** | EPL nhận cước bằng **USD · Kíp · Nhân dân tệ · Bath**, và khách trả bằng tiền khác tiền ghi trên hoá đơn vẫn được | Anh chủ dự án chốt 21/09. Đã làm: phiếu có ô *Tiền tệ cước*, bảng giá mang tiền tệ riêng, xe liên kết thuê được bằng tiền khác tiền bán, báo cáo cộng về Kíp kèm chia theo từng loại tiền |
 | **C9.1** | Màn phiếu chia **tab theo mục**, mỗi vai mở đúng tab của mình | Đã làm xong |
 | **C9.2** | Ngôn ngữ mặc định ở máy bãi: **tiếng Lào** | Người dùng ở bãi là người Lào; đổi một nút là xong và máy nào nhớ theo máy đó |
 
@@ -74,6 +75,8 @@ Bộ kiểm `kiem/thu_hai_do.py` đi trọn luồng này.
 | **C5.4** | Mã tài khoản **kho**: `37`, `371` hay `137`? | Ba tài liệu của họ ghi ba số khác nhau. Đang dùng `371` |
 | **C5.5** | Mã **nhà cung cấp**: `402` hay `4021`? | Đang dùng `402` |
 | **C5.6** | Mã **tiền mặt** và **ngân hàng** | Chưa có trong tài liệu nào; đang để trống tên, chưa có mã. **Phải có trước khi bàn giao dữ liệu cho bên anh Khang**, không thì sổ sai mã |
+| **C5.7** | Hoá đơn ghi USD mà khách chuyển Kíp: **chênh lệch tỷ giá hạch toán thế nào** | Bên mình chỉ hiện ra hai con số (hoá đơn và số tiền thật về), không tự hạch toán chênh lệch — đó là sổ kế toán, việc của anh Khang. Cần anh Khang cho mã tài khoản chênh lệch tỷ giá nếu muốn tờ phiếu thu mang sẵn |
+| **C5.8** | Tỷ giá dùng lúc thu: **tỷ giá ngày thu** hay tỷ giá đã khoá trên phiếu | Hiện để mặc định là tỷ giá khoá trên phiếu, người ghi sửa được ngay trên hộp nhập. Cần bên EPL nói cách họ đang làm trên giấy |
 | **C1.1** | Tên người giữ tài khoản *KT Thu/Chi VC* và *KT Chi phí VC* | Chỉ họ biết |
 | **C8.1** | Những khoản hay rơi vào mục VI | Cần họ liệt kê để đặt sẵn danh mục |
 
@@ -92,6 +95,9 @@ nhưng mở công cụ trình duyệt là thấy.
 Chưa dọn ngay vì chỗ này đụng đường dữ liệu chung của màn phiếu (`xuat_phieu` dùng cho cả nhập liệu lẫn
 báo cáo), sửa vội dễ hỏng phép tính. Nay A2 đã chốt nên **làm được rồi**: khoảng nửa ngày, kèm bộ kiểm
 chặn ở mức API chứ không chỉ ở giao diện.
+
+Cập nhật 21/09: đợt sửa tiền tệ vừa rồi **không đụng tới việc này** — các khoá tiền bán đổi tên
+(`doanh_thu_usd` → `doanh_thu` + `ccy`) nhưng vẫn trả cho mọi vai ở hai đường trên. Việc vẫn còn nguyên.
 
 ### 3.2 Ảnh xe chưa lưu được
 

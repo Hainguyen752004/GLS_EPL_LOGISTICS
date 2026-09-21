@@ -60,7 +60,7 @@ Mỗi lần gọi là **một tờ**. Ví dụ một phiếu chi tạm ứng đi
 | `date` | Ngày chứng từ, `YYYY-MM-DD` |
 | `trip_no` | Số phiếu xuất xe liên quan, có thể `null` (bán hàng ngoài, tất toán) |
 | `party.kind` | `khach` · `ncc` (nhà cung cấp) · `tai_xe` · `kho` · `chu_xe` (chủ xe liên kết) |
-| `amount.value` · `currency` | Số tiền theo **tiền tệ gốc** trên tờ (USD, LAK, THB, VND) |
+| `amount.value` · `currency` | Số tiền theo **tiền tệ gốc** trên tờ: `USD` · `LAK` · `CNY` · `THB` · `VND`. Cước bên Lào ký bằng tiền nào thì hoá đơn và phiếu thu mang tiền đó — đừng giả định USD |
 | `amount.lak` | Đã quy về LAK theo tỷ giá khoá trên phiếu lúc lập — để anh khỏi tra tỷ giá |
 | `entry.debit` · `credit` | Hai vế định khoản **gợi ý** theo quy trình bên Lào. Vế nào bên em chưa có mã thì `null` kèm tên; anh là người quyết mã cuối |
 | `lines` | Chi tiết dòng (JSON), tuỳ loại tờ; anh không cần đọc nếu chỉ vào sổ tổng |
@@ -88,6 +88,13 @@ câu người đọc hiểu.
 | `TT_CHI` · `TT_THU` | Tất toán tài xế cuối tháng: chi bù · thu hoàn | payment · receipt | 625 / *tiền* · *tiền* / 625 |
 | `HD` | Hoá đơn vận chuyển cho khách | invoice | 1211 / 70 |
 | `PT` | Thu tiền khách | receipt | *tiền* / 1211 |
+
+**Một hoá đơn có thể có NHIỀU tờ `PT`.** Khách trả làm mấy lần thì bấy nhiêu tờ, mỗi tờ một `ref` riêng,
+và tiền của tờ `PT` **có thể khác tiền của tờ `HD`** — hoá đơn ghi USD mà khách chuyển Kíp là chuyện
+thường ở đây. `payload` của tờ `PT` mang thêm `hoa_don_ccy`, `hoa_don`, `hoa_don_lak` để anh đối chiếu
+về đúng hoá đơn, và `rate_to_lak` là tỷ giá ngày thu. Phần chênh lệch tỷ giá bên em **không hạch toán** —
+để anh quyết.
+
 | `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 371 · 371 / 402 |
 | `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng | stock_out · stock_in | 614 / 371 · 371 / 402 |
 | `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 371 / *hàng khách gửi* |

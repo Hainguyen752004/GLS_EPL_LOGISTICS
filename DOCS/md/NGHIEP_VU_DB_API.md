@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (32 bảng) · **C. API**
-(118 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (33 bảng) · **C. API**
+(122 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -103,8 +103,59 @@ hai báo cáo của màn Tổng quan (`thay_tien_ban()` trong `services/phan_quy
 - Kế toán bấm **Khoá phiếu**: máy rà km lệch quá 10 %, hao hụt quá 1,5 %, thiếu cân, thiếu phiếu quặng,
   thiếu dòng hàng, mục có chi mà chưa kiểm. Chỉ cảnh báo, kế toán xác nhận thì vẫn khoá được.
 - **Chỉ phiếu đã khoá mới xuất hoá đơn** (`1211/70`) và mới ghi thu tiền.
-- **Xe liên kết**: EPL trả chủ xe = giá thuê × tấn − 2 %/phiếu − 1 USD mỗi tấn vượt 40 t − các khoản EPL
-  đã ứng. Lãi = tiền khách trả − tiền thuê. Quỹ bấm *Trả chủ xe* sau khi phiếu khoá.
+- **Xe liên kết**: EPL trả chủ xe = giá thuê × tấn − 2 %/phiếu − một đơn vị tiền mỗi tấn vượt 40 t − các
+  khoản EPL đã ứng (quy về tiền thuê). Lãi = tiền khách trả − tiền thuê, so với nhau sau khi cùng quy
+  về Kíp. Quỹ bấm *Trả chủ xe* sau khi phiếu khoá. Xem A7 về tiền tệ.
+
+## A7. Tiền tệ và thu tiền
+
+EPL Lào **nhận cước bằng nhiều loại tiền**: USD, Kíp Lào (LAK), Nhân dân tệ (CNY), Bath Thái (THB) —
+tuỳ hợp đồng từng khách. Chi phí dọc đường thì trộn LAK, VND, THB ngay trong cùng một phiếu. Nên
+phần mềm đặt ba quy tắc:
+
+**1. Kíp là tiền gốc.** Mọi tỷ giá ghi dạng *bao nhiêu Kíp cho một đơn vị tiền đó*, và được **khoá
+vào phiếu lúc lập** (`rate_usd`, `rate_thb`, `rate_vnd`, `rate_cny`). Tỷ giá thị trường đổi về sau
+không làm đổi con số trên phiếu đã lập — tờ giấy đã in phải đứng yên.
+
+**2. Cước theo tiền của hợp đồng, không mặc định USD.** Phiếu có ô **Tiền tệ cước** (`price_ccy`) và
+đơn giá `price` hiểu theo tiền đó. Bảng giá khách × tuyến cũng mang tiền tệ riêng, nên mở phiếu cho
+khách Trung Quốc là máy tự điền Nhân dân tệ, không rơi về USD. Xe liên kết có thêm **tiền tệ thuê**
+(`hire_ccy`) vì bán bằng USD mà thuê xe Lào trả bằng Kíp là chuyện bình thường; bỏ trống thì hiểu là
+cùng tiền với cước.
+
+**3. Mọi TỔNG quy về Kíp, kèm chia theo từng loại tiền.** Cộng thẳng USD với Nhân dân tệ là cộng táo
+với cam, nên báo cáo trả `doanh_thu_lak` (một con số cộng được) và `doanh_thu_tien`
+(`{"USD": 5059, "CNY": 12618, "LAK": 37710000}`) để người đọc thấy con số đó gồm những gì. Bảng
+*Theo dõi phiếu vận chuyển* có thêm cột **Tiền** nói rõ từng dòng tính bằng tiền gì, dòng tổng cộng
+riêng từng loại tiền, và ô **Quy đổi** để gom cả bảng về một tiền khi cần một con số duy nhất.
+
+### Khách trả tiền — sổ thu từng lần
+
+Trước 21/09/2026 chỗ này chỉ là một cái nút *đã thu* bật trạng thái phiếu sang `paid`. Nó không ghi
+được khách trả bao nhiêu, bằng tiền gì, ngày nào — trong khi thực tế **hoá đơn ghi USD mà khách
+chuyển Kíp**, và trả làm nhiều lần. Giờ mỗi lần tiền về là **một dòng** trong bảng `trip_payments`:
+
+| Ô | Nghĩa |
+|---|---|
+| `pay_date` | Ngày tiền về |
+| `amount` · `currency` | Số tiền và **tiền khách thật sự trả** — không bắt buộc trùng tiền hoá đơn |
+| `rate_to_lak` | Tỷ giá **ngày thu**; không gửi thì lấy tỷ giá khoá trên phiếu làm mặc định |
+| `amount_lak` | `amount × rate_to_lak`, tính sẵn để khỏi tính lại |
+| `method` | `cash` tiền mặt · `bank` chuyển khoản · `offset` cấn trừ · `other` |
+| `ref` | Số uỷ nhiệm chi hoặc biên lai bên khách |
+
+Từ đó: **trạng thái tài chính của phiếu do tổng các dòng này quyết định**, không ai bấm tay nữa —
+chưa có dòng nào là *chưa thu*, tổng bằng tiền hoá đơn (lệch dưới 1 Kíp) là *đã thu*, ở giữa là *thu
+một phần*. Mỗi dòng thu để lại một chứng từ `PT` mang đúng số tiền và tiền tệ khách trả, nên khi đẩy
+sang kế toán anh Khang thì con số khớp với tiền thật vào tài khoản.
+
+Hai chỗ chặn: thu **nhiều hơn phần còn lại** của hoá đơn thì máy hỏi lại (`THU_QUA_HOA_DON`) rồi mới
+ghi; xoá một lần thu mà tờ `PT` của nó **đã đẩy sang kế toán** thì từ chối (`DA_DAY_KE_TOAN`) — bên
+kia đã vào sổ, xoá lặng lẽ bên này là hai bên nói hai số.
+
+Phần chênh lệch tỷ giá (hoá đơn 1.693,30 USD quy 37.252.600 Kíp mà khách chuyển 37.000.000 Kíp) thì
+phần mềm **chỉ hiện ra**, hạch toán chênh lệch tỷ giá là việc của bên kế toán — bên mình không dựng
+sổ thứ hai.
 
 ## A6. Sổ chứng từ
 
@@ -145,7 +196,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-32 bảng, nhóm theo việc:
+33 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -153,27 +204,28 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 |---|---|---|
 | `users` | Tài khoản và vai | `role` (10 vai), `driver_id`, `place_id` (thủ kho gắn điểm đổ) |
 | `customers` | Khách nhận quặng | `name`, `phone`, `active` |
-| `customer_rates` | **Bảng giá khách × tuyến** | `price_usd`, `hire_price_usd`, `valid_from`, `goods_type` |
+| `customer_rates` | **Bảng giá khách × tuyến** | `price` + **`price_ccy`**, `hire_price` + `hire_ccy`, `valid_from`, `goods_type` |
 | `vehicles` | Đầu kéo | `truck_no`, `plate_head`, `owner_type` (EPL/joint), `trailer_id`, ba hạn giấy tờ, `odometer_km`, `next_service_km`, `fuel_norm`, `engine_cap`, `box_size`, `tyre` |
 | `trailers` | Rơ-moóc (thực thể riêng) | `plate`, `trailer_type`, `capacity_t`, `status` |
 | `trailer_assignments` | Lịch sử lắp/tháo | `attached_at`, `detached_at`, `reason` |
 | `drivers`, `driver_licenses` | Tài xế và bằng lái | `license_no`, `expiry` |
 | `routes`, `route_stops` | Tuyến và các chặng | `total_km`, `toll_lak`; mỗi chặng có `km_from_prev`, `lat`, `lng` |
 | `suppliers`, `supplier_payments` | Nhà cung cấp và các đợt trả | |
-| `exchange_rates` | Tỷ giá về LAK | USD, THB, VND |
+| `exchange_rates` | Tỷ giá về LAK | USD, THB, VND, **CNY** — dùng làm mặc định cho phiếu mới |
 | `fuel_places` | Điểm đổ dầu | `owner_type` (epl = kho mình, ngoài = mua) |
 
 ## B2. Phiếu xuất xe (DO) — trung tâm của hệ
 
 | Bảng | Giữ gì |
 |---|---|
-| `trips` | Một phiếu. **`kind`** = `gom`/`giao`; số phiếu, ngày, xe và tài xế (chép giá trị vào phiếu, không chỉ khoá ngoại), khách, tuyến, cân đầu/cuối, giá cước, phần xe liên kết, tỷ giá khoá trên phiếu, `locked`, `owner_paid` |
+| `trips` | Một phiếu. **`kind`** = `gom`/`giao`; số phiếu, ngày, xe và tài xế (chép giá trị vào phiếu, không chỉ khoá ngoại), khách, tuyến, cân đầu/cuối, **`price` + `price_ccy`** (cước và tiền tệ của nó), phần xe liên kết (`hire_price` + `hire_ccy`, `fee_pct`, `over_limit_t`, `over_price`), **bốn tỷ giá khoá trên phiếu** (`rate_usd`, `rate_thb`, `rate_vnd`, `rate_cny`), `locked`, `owner_paid` |
 | `trip_goods` | **Dòng hàng**: `loai` = `hang`/`hao_hut`, `goods_name`, `qty_t`, **`tu_phieu_id`** = lô lấy từ DO gom nào |
 | `goods_moves` | **Sổ kho hàng ở bãi**: `kind` = `in`/`out`/`adj` (điều chỉnh, `qty_t` có dấu), `qty_t`, `lo_trip_id` (lô = DO gom), `trip_id` (phiếu sinh ra dòng này), `note` (lý do điều chỉnh) |
 | `trip_expenses` | Dòng chi của bốn mục III–VI: `section`, `item_key`, `qty`, `unit_price`, `currency`, `source` (kho/mua), `acct_code`, `paid_by_epl`, `stock_move_id` |
 | `trip_sections` | Trạng thái duyệt từng mục I–VI |
 | `trip_logs` | Nhật ký thao tác trên phiếu |
 | `trip_events` | Diễn biến trên đường: tới điểm, sự cố, sửa xe, đổ dầu dọc đường (có `status` chờ duyệt) |
+| `trip_payments` | **Sổ thu tiền**: mỗi lần khách trả một dòng — `pay_date`, `amount` + `currency`, `rate_to_lak`, `amount_lak`, `method`, `ref`. Trạng thái tài chính của phiếu suy ra từ tổng các dòng này |
 | `trip_attachments` | Tệp đính kèm (phiếu quặng), tệp nằm trên đĩa `backend/tep`, bảng chỉ giữ tên |
 | `vehicle_positions` | Vệt GPS do app tài xế gửi |
 
@@ -222,7 +274,7 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `POST /api/trips/{id}/transport-status` | Xuất phát / tới nơi. Tới nơi: DO gom **nhập kho**, DO giao **ghi hao hụt** |
 | `POST /api/trips/{id}/khoa`, `/mo-khoa`, `GET /kiem-lai` | Khoá phiếu sau khi xe về; Sếp mở khoá |
 | `POST /api/trips/{id}/invoice` | Xuất hoá đơn. **Từ chối nếu là DO gom** |
-| `POST /api/trips/{id}/finance-status` | Ghi thu tiền khách |
+| `GET POST /api/trips/{id}/thu-tien` · `DELETE /api/thu-tien/{id}` | **Sổ thu tiền**: xem, ghi một lần khách trả (tiền nào cũng được, có tỷ giá ngày thu), xoá dòng ghi nhầm. Thu dư phải xác nhận; tờ `PT` đã đẩy kế toán thì không xoá được |
 | `POST /api/trips/{id}/tra-chu-xe` | Quỹ trả chủ xe liên kết → `PC_CX` |
 | `GET POST DELETE /api/trips/{id}/tep`, `/api/tep/{aid}` | Tệp đính kèm (phiếu quặng) |
 | `POST /api/trips/{id}/events`, `/bao-hong`, `/bao-nhien-lieu`, `/events/{eid}/duyet` | Diễn biến, báo hỏng, khai đổ dầu, duyệt |
@@ -321,6 +373,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_phieu_linh.py` | Phiếu lĩnh QR, thủ kho cấp dầu, khai đổ dọc đường, tất toán |
 | `python kiem\thu_ban_hang.py` | Bán phụ tùng, xăng dầu ra ngoài |
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
+| `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |
 | `node kiem\thu_giao_dien.js` | Toàn giao diện trên jsdom, nối máy chủ thật |
 | `node kiem\thu_ngoai_tuyen.js` | Màn Cấp phát khi mất mạng |

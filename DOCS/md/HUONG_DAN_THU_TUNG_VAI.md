@@ -98,10 +98,20 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
 
 ### Bước 8 ☐ Hoá đơn và thu tiền — `doanhthu`
 
-1. Vào phiếu → bấm **Lập hóa đơn thu** → rồi **Xác nhận đã thu tiền**.
-   - *Phải thấy:* Sổ chứng từ có *Hoá đơn vận chuyển* và *Phiếu thu tiền khách*; trạng thái phiếu đổi
-     thành **Đã thu đủ**.
-2. Thử sai: mở **phiếu gom** rồi tìm nút hoá đơn → **không có**; gọi thẳng API cũng bị từ chối
+1. Vào phiếu → bấm **Lập hóa đơn thu**.
+2. Bấm **Ghi một lần thu**. Hộp hiện ra có: ngày thu, **tiền tệ**, số tiền (điền sẵn phần còn thiếu),
+   tỷ giá ngày thu, cách thu, số uỷ nhiệm chi.
+   - **Thử đúng chỗ hay gặp ngoài đời:** hoá đơn ghi USD thì đổi ô tiền tệ sang **LAK** và gõ một số
+     nhỏ hơn phần còn lại, ví dụ 20.000.000.
+   - *Phải thấy:* dưới phiếu hiện **Sổ thu tiền** với một dòng; trạng thái phiếu là **Thu một phần**;
+     dòng tiêu đề ghi rõ *Thành tiền · Đã thu · Còn lại*.
+3. Bấm **Ghi một lần thu** lần nữa, để nguyên số còn lại.
+   - *Phải thấy:* trạng thái tự đổi thành **Đã thu đủ** — không có nút "đánh dấu đã thu" nào cả, số
+     tiền quyết định trạng thái.
+   - *Phải thấy:* Sổ chứng từ có *Hoá đơn vận chuyển* và **hai** tờ *Phiếu thu tiền khách*, mỗi tờ
+     mang đúng số tiền và tiền tệ khách trả.
+4. Thử sai: ghi thu một số lớn hơn phần còn lại → **phải bị hỏi lại** rồi mới ghi.
+5. Thử sai: mở **phiếu gom** rồi tìm nút hoá đơn → **không có**; gọi thẳng API cũng bị từ chối
    (*"Phiếu đi gom hàng không có cước"*).
 
 ### Bước 9 ☐ Xe liên kết: trả tiền chủ xe — `quytb` hoặc `quyvc`
@@ -165,6 +175,25 @@ Thấy hết 23 màn. Hai việc riêng của Sếp:
 
 ---
 
+## 4b. Thử nhiều tiền tệ
+
+Bên Lào nhận cước bằng USD, Kíp, Nhân dân tệ và Bath Thái. Dữ liệu mẫu đã có sẵn ba loại tiền để anh
+xem ngay, không phải nhập gì.
+
+| ☐ | Đăng nhập | Việc | Phải thấy |
+|---|---|---|---|
+| ☐ | `ketoan` | Mở **Theo dõi phiếu vận chuyển** | Có cột **Tiền**: `T4-0428` là USD · `T4-0429` là **CNY** · `T4-0432` là **LAK** |
+| ☐ | `ketoan` | Nhìn dòng tổng cuối bảng | Cộng **riêng từng loại tiền**, mỗi loại một dòng — không dồn thành một con số |
+| ☐ | `ketoan` | Đổi ô **Quy đổi** sang `LAK` rồi `USD` | Cả bảng về một tiền, dòng tổng còn một con số |
+| ☐ | `ketoan` | Mở phiếu `T4-0429`, mục II | Ô **Tiền tệ cước** là CNY; *Thành tiền* ghi kèm `CNY`; ô dưới ghi số đã quy ra Kíp |
+| ☐ | `ketoan` | Mở phiếu `T4-0430` (xe liên kết) | Bán bằng **USD** mà thuê xe trả bằng **LAK**: bảng thanh toán chủ xe ghi Kíp, bảng lãi ghi USD |
+| ☐ | `doanhthu` | Mở phiếu `T4-0431` (đã thu đủ) | **Sổ thu tiền** có một dòng: hoá đơn USD nhưng khách chuyển bằng Kíp |
+| ☐ | `admin` | Mở **Tổng quan** | Bốn ô số là **M LAK**; dòng nhỏ dưới ô Doanh thu chia ra `USD … · CNY … · LAK …` |
+| ☐ | `ketoan` | Vào **Khách hàng → Bảng giá** | Mỗi dòng giá có cột **Tiền**; thêm dòng mới thì chọn được tiền tệ |
+| ☐ | `thabok` | Mở **Tổng quan** và **Theo dõi phiếu** | Vẫn **không** thấy cột Tiền của phần bán, không thấy doanh thu — quy tắc ẩn tiền bán không đổi |
+
+---
+
 ## 5. Thử nối kế toán (chưa có API anh Khang vẫn thử được)
 
 | ☐ | Việc | Phải thấy |
@@ -203,6 +232,7 @@ Muốn chắc chắn máy vẫn đúng sau khi nghịch, chạy bộ kiểm (c�
 
 ```
 python kiem\thu_hai_do.py          python kiem\thu_luong_api.py
+python kiem\thu_tien_te.py        python kiem\thu_ban_hang.py
 python kiem\thu_phieu_linh.py      python kiem\thu_day_ke_toan.py
 node   kiem\thu_giao_dien.js       node kiem\ra_vai.js
 ```

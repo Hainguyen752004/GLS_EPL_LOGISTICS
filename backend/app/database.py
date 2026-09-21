@@ -35,16 +35,44 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
+# Cột ĐỔI TÊN theo thời gian. Chạy TRƯỚC create_all, nên dữ liệu cũ đi theo tên mới thay vì nằm lại
+# trong một cột mồ côi. Chỉ đổi khi cột cũ còn và cột mới chưa có, nên chạy lại bao nhiêu lần cũng được.
+#   21/09/2026: cước không còn mặc định USD (khách trả USD · LAK · CNY · THB), nên bỏ hậu tố "_usd"
+#   khỏi tên cột tiền — cột tên `price_usd` mà chứa Nhân dân tệ là cột nói dối.
+DOI_TEN_COT = [
+    ("trips", "price_usd", "price"),
+    ("trips", "hire_price_usd", "hire_price"),
+    ("trips", "over_price_usd", "over_price"),
+    ("customer_rates", "price_usd", "price"),
+    ("customer_rates", "hire_price_usd", "hire_price"),
+]
+
+
+def _doi_ten_cot(c, insp):
+    co_bang = set(insp.get_table_names())
+    for bang, cu, moi in DOI_TEN_COT:
+        if bang not in co_bang:
+            continue
+        cot = {x["name"] for x in insp.get_columns(bang)}
+        if cu in cot and moi not in cot:
+            from sqlalchemy import text
+            c.execute(text('ALTER TABLE %s RENAME COLUMN "%s" TO "%s"' % (bang, cu, moi)))
+            print("  đổi tên cột %s.%s → %s" % (bang, cu, moi))
+
+
 def tao_bang():
-    """Dựng bảng còn thiếu, và THÊM CỘT còn thiếu vào bảng đã có.
+    """Dựng bảng còn thiếu, ĐỔI TÊN cột đã đổi tên, và THÊM CỘT còn thiếu vào bảng đã có.
 
     create_all không thêm cột vào bảng đã tồn tại. Không có tầng migration nên khi model có thêm
     cột (ví dụ trips.route_id), ta so cột trong model với cột thật trong DB rồi ALTER TABLE ADD
-    COLUMN cho phần thiếu. Chỉ THÊM, không đổi kiểu, không xoá — đủ cho hệ này, và không bao giờ
-    làm mất dữ liệu.
+    COLUMN cho phần thiếu. Chỉ THÊM, ĐỔI TÊN theo danh sách trên, không đổi kiểu, không xoá — đủ
+    cho hệ này, và không bao giờ làm mất dữ liệu.
     """
     import models  # noqa: F401 — nạp để Base biết hết bảng
     from sqlalchemy import inspect, text
+    insp = inspect(engine)
+    with engine.begin() as c:          # đổi tên trước, không create_all sẽ dựng thêm cột mới rỗng
+        _doi_ten_cot(c, insp)
     Base.metadata.create_all(bind=engine)
     insp = inspect(engine)
     with engine.begin() as c:

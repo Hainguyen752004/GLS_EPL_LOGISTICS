@@ -1,8 +1,12 @@
 /* Tổng quan — bản thiết kế lại anh gửi, đã nối vào máy chủ thật.
    Nguồn số liệu:
-     GET /api/bao-cao/tong-quan?thang=YYYY-MM  → doanh_thu_usd, so_phieu, chi_lak, tan_giao, chua_thu_usd, chua_thu_so, dem{}, chi_theo_muc{}, chu_y[]
+     GET /api/bao-cao/tong-quan?thang=YYYY-MM  → doanh_thu_lak + doanh_thu_tien{}, so_phieu, chi_lak, tan_giao,
+                                                 chua_thu_lak + chua_thu_tien{}, chua_thu_so, dem{}, chi_theo_muc{}, chu_y[]
      GET /api/bao-cao/xu-huong?thang=YYYY-MM   → thang_truoc, sau_thang, theo_ngay, hao_hut, xe, van_hanh, xem_nhanh, dong_thoi_gian
-     GET /api/rates                            → USD, THB, VND
+     GET /api/rates                            → USD, THB, VND, CNY
+ *
+ * TIỀN TỆ: mỗi phiếu bán bằng tiền của hợp đồng phiếu đó, nên mọi ô số ở đây quy về KÍP (tiền gốc)
+ * và ghi chú bên dưới chia ra từng loại tiền — cộng thẳng USD với Nhân dân tệ là cộng táo với cam.
    Biểu đồ: Chart.js 4.5.1 trong frontend/vendor/chartjs, module tự nạp — không gọi CDN.
    Mỗi lần vẽ lại destroy chart cũ để không rò bộ nhớ. */
 (function () {
@@ -83,19 +87,21 @@
   /* ---------- Vẽ ---------- */
   function ve() {
     const c = C(), r_usd = ty_gia.USD || 22000, tt = xh && xh.thang_truoc, st = xh && xh.sau_thang;
+    const trieu = (v) => so((v || 0) / 1e6, 1);        // Kíp đọc theo triệu cho dễ nhìn
+    const chia = (o) => EPL.tienGop(o || {});           // "8,101.36 USD · 12,000 CNY"
     root.querySelector('#tq-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
 
     /* 1. KPI — Bãi thay hai ô tiền bán bằng hai ô việc của họ */
     const K = laBai() ? [
       { k: 'k_month_trips', v: so(d.so_phieu, 0), u: NN.t('trips'), s: `${d.dem.arrived} ${NN.t('s_arrived')}`, dl: '', sp: null, col: c.brand },
-      { k: 'k_exp', v: so(d.chi_lak / 1e6, 1), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
+      { k: 'k_exp', v: trieu(d.chi_lak), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
       { k: 'k_running', v: so((d.dem.dispatched || 0) + (d.dem.transit || 0), 0), u: NN.t('trips'), s: `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`, dl: '', sp: null, col: c.warn },
     ] : [
-      { k: 'k_rev', v: so(d.doanh_thu_usd, 2), u: 'USD', s: `${d.so_phieu} ${NN.t('trips')} · ≈ ${so(d.doanh_thu_usd * r_usd)} LAK`, dl: delta(d.doanh_thu_usd, tt && tt.doanh_thu_usd, false), sp: st && st.doanh_thu_usd, col: c.brand },
-      { k: 'k_exp', v: so(d.chi_lak / 1e6, 1), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.doanh_thu_usd ? so(d.chi_lak / r_usd / d.doanh_thu_usd * 100) : 0}% ${NN.t('tq_of_revenue')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
+      { k: 'k_rev', v: trieu(d.doanh_thu_lak), u: 'M LAK', s: `${d.so_phieu} ${NN.t('trips')} · ${chia(d.doanh_thu_tien)}`, dl: delta(d.doanh_thu_lak, tt && tt.doanh_thu_lak, false), sp: st && st.doanh_thu_lak, col: c.brand },
+      { k: 'k_exp', v: trieu(d.chi_lak), u: 'M LAK', s: `${d.doanh_thu_lak ? so(d.chi_lak / d.doanh_thu_lak * 100) : 0}% ${NN.t('tq_of_revenue')} · ≈ ${so(d.chi_lak / r_usd)} USD`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
-      { k: 'k_unpaid', v: so(d.chua_thu_usd, 2), u: 'USD', s: `${d.chua_thu_so} ${NN.t('trips')} · ${NN.t('s_unpaid')}`, dl: delta(d.chua_thu_usd, tt && tt.chua_thu_usd, true), sp: st && st.chua_thu_usd, col: c.warn },
+      { k: 'k_unpaid', v: trieu(d.chua_thu_lak), u: 'M LAK', s: `${d.chua_thu_so} ${NN.t('trips')} · ${chia(d.chua_thu_tien)}`, dl: delta(d.chua_thu_lak, tt && tt.chua_thu_lak, true), sp: st && st.chua_thu_lak, col: c.warn },
     ];
     root.querySelector('#tq-kpi').innerHTML = K.map((k, i) => `<div class="tq-kpi">
         <div class="l"><i style="background:${k.col}"></i>${NN.h(k.k)}</div>
@@ -128,19 +134,20 @@
       <div class="tq-op">${ring(vh.ngay_tb != null && vh.nguong_ngay ? 100 - Math.min(100, vh.ngay_tb / vh.nguong_ngay * 100) : null, c.info)}<div><b>${vh.ngay_tb != null ? so(vh.ngay_tb, 1) : '—'} ${NN.t('tq_days')}</b><br>${NN.h('tq_avg_days')}</div></div>
       <div class="tq-op">${ring(vh.hao_hut_tb_pct != null ? 100 - Math.min(100, vh.hao_hut_tb_pct / HAO_HUT_MUC * 100) : null, vh.hao_hut_tb_pct > HAO_HUT_MUC ? c.bad : c.good)}<div><b>${vh.hao_hut_tb_pct != null ? so(vh.hao_hut_tb_pct, 2) + '%' : '—'}</b><br>${NN.h('tq_avg_loss')} <span class="muted">(≤ ${HAO_HUT_MUC}%)</span></div></div>`;
 
-    /* 3a. Doanh thu & chi phí theo ngày — MỘT trục USD, cột doanh thu + cột chi phí */
+    /* 3a. Doanh thu & chi phí theo ngày — MỘT trục KÍP, cột doanh thu + cột chi phí.
+       Kíp vì mỗi phiếu bán bằng tiền riêng; quy hết về một tiền mới xếp cạnh nhau được. */
     const ngay = (xh && xh.theo_ngay) || [];
     const cotNgay = [
-      { label: NN.t('tq_revenue'), data: ngay.map(x => x.doanh_thu_usd), backgroundColor: c.brand, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
-      { label: NN.t('tq_cost'), data: ngay.map(x => x.chi_usd), backgroundColor: c.fuel, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
+      { label: NN.t('tq_revenue'), data: ngay.map(x => x.doanh_thu_lak), backgroundColor: c.brand, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
+      { label: NN.t('tq_cost'), data: ngay.map(x => x.chi_lak), backgroundColor: c.fuel, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
     ].slice(laBai() ? 1 : 0);          // Bãi: chỉ cột chi phí
-    root.querySelector('#tq-legend-ngay').innerHTML = cotNgay.map(x => `<span><i style="background:${x.backgroundColor}"></i>${esc(x.label)} (USD)</span>`).join('');
+    root.querySelector('#tq-legend-ngay').innerHTML = cotNgay.map(x => `<span><i style="background:${x.backgroundColor}"></i>${esc(x.label)} (LAK)</span>`).join('');
     chart('tq-c-ngay', {
       type: 'bar',
       data: { labels: ngay.map(x => x.ngay.slice(8, 10) + '/' + x.ngay.slice(5, 7)), datasets: cotNgay },
       options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${t.dataset.label}: ${so(t.parsed.y, 2)} USD` } }) },
-        scales: { x: { grid: { display: false }, ticks: tickBase(c), border: { color: c.line } }, y: { beginAtZero: true, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => so(v) }) } } },
+        plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${t.dataset.label}: ${so(t.parsed.y)} LAK` } }) },
+        scales: { x: { grid: { display: false }, ticks: tickBase(c), border: { color: c.line } }, y: { beginAtZero: true, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => so(v / 1e6, 1) + 'M' }) } } },
     });
     if (!ngay.length) root.querySelector('#tq-c-ngay').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
 
@@ -165,19 +172,19 @@
     if (!hh.length) root.querySelector('#tq-c-haohut').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
 
     /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
-    const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_usd - a.doanh_thu_usd), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_usd));
+    const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_lak - a.doanh_thu_lak), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_lak));
     // Bãi: xếp theo TẤN và bỏ cột doanh thu — doanh thu là tiền bán.
     const maxTan = Math.max(1, ...xe.map(x => x.tan));
     if (laBai()) xe.sort((a, b) => b.tan - a.tan);
-    root.querySelector('#tq-xe').innerHTML = xe.length ? `<div class="tq-fleet-head"><span>${NN.h('tq_vehicle')}</span><span>${NN.h('tq_trips_tons_km')}</span><span>${laBai() ? NN.h('ton') : 'USD'}</span></div>` +
-      xe.map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_usd / maxDT) * 100}%"></b></div></div>${laBai()
+    root.querySelector('#tq-xe').innerHTML = xe.length ? `<div class="tq-fleet-head"><span>${NN.h('tq_vehicle')}</span><span>${NN.h('tq_trips_tons_km')}</span><span>${laBai() ? NN.h('ton') : 'M LAK'}</span></div>` +
+      xe.map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_lak / maxDT) * 100}%"></b></div></div>${laBai()
         ? `<div class="v">${so(x.tan, 1)}<small>${so(x.km / Math.max(1, x.so_chuyen))} km/${NN.t('trips').toLowerCase()}</small></div>`
-        : `<div class="v">${so(x.doanh_thu_usd)}<small>${so(x.doanh_thu_usd / Math.max(1, x.tan), 1)} USD/t</small></div>`}</div>`).join('')
+        : `<div class="v">${so(x.doanh_thu_lak / 1e6, 1)}<small>${so(x.doanh_thu_lak / Math.max(1, x.tan) / 1e3)} k LAK/t</small></div>`}</div>`).join('')
       : `<div class="tq-empty">${chuaCo()}</div>`;
     root.querySelectorAll('.tq-veh').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.xe })));
 
     /* Tỷ giá */
-    root.querySelector('#tq-ty-gia').innerHTML = `<div class="tq-ty-gia">${['USD', 'THB', 'VND'].map(m => `<div><span class="small muted">1 ${m} =</span><b>${so(ty_gia[m], m === 'VND' ? 2 : 0)} LAK</b></div>`).join('')}</div>`;
+    root.querySelector('#tq-ty-gia').innerHTML = `<div class="tq-ty-gia">${['USD', 'CNY', 'THB', 'VND'].map(m => `<div><span class="small muted">1 ${m} =</span><b>${so(ty_gia[m], m === 'VND' ? 2 : 0)} LAK</b></div>`).join('')}</div>`;
     root.querySelector('#tq-rate-date').textContent = ty_gia.ngay ? EPL.ngay ? EPL.ngay(ty_gia.ngay) : ty_gia.ngay : '';
 
     /* Cần xử lý — mức độ theo loại: hao hụt / quá hạn = xấu, chưa hóa đơn = cảnh báo, chờ kiểm = thông tin */
@@ -202,7 +209,7 @@
       ['tq_q_uninvoiced', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
       ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
       ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'cap-phat', {}],
-      ['tq_q_unpaid', q.chua_thu != null ? so(q.chua_thu) + ' USD' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
+      ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_uninvoiced'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
       chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +

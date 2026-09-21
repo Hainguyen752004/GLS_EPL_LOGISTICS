@@ -72,34 +72,34 @@ def main():
     s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"],
                               "customer_id": kh[0]["id"], "doc_date": "2026-09-14", "out_date": "2026-09-14", "origin": "ກາສີ", "destination": "ກາລໍ",
-                              "weight_origin": 42, "price_usd": 41, "hire_price_usd": 40.5,
+                              "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5,
                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 100, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"},
                                            {"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": 1833500},
                                            {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 430000, "paid_by_epl": False}]}, vai="thabok")
     phai(s, 200, "Bãi lập phiếu xe liên kết", g); P = g["id"]
     assert g["plate_head"] == lk["plate_head"] and g["owner_name"] == lk["owner_name"], "phải chép biển số và chủ xe từ danh mục"
-    assert g["tinh"]["lien_ket"] and g["tinh"]["tien_thue_usd"] == round(42 * 40.5, 2)
+    assert g["tinh"]["lien_ket"] and g["tinh"]["tien_thue"] == round(42 * 40.5, 2)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="ketoan"); phai(s, 403, "Kế toán lập phiếu → bị từ chối", g)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="thabok"); phai(s, 409, "Trùng số phiếu → bị từ chối", g)
 
     # ---- 1b. K3: bảng giá khách × tuyến — kế toán đặt giá, Bãi lập phiếu KHÔNG gửi giá, máy tự điền
     s, tuyen = goi("/api/routes", vai="ketoan"); T = tuyen[0]["id"]
     s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], vai="thabok"); phai(s, 403, "Bãi xem bảng giá → bị từ chối (Bãi không thấy tiền)", g)
-    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 39, "hire_price_usd": 38.5, "valid_from": "2026-01-01"}, vai="thabok")
+    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price": 39, "hire_price": 38.5, "valid_from": "2026-01-01"}, vai="thabok")
     phai(s, 403, "Bãi đặt giá → bị từ chối", g)
-    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 0}, vai="ketoan"); phai(s, 422, "Giá 0 → bị từ chối", g)
-    s, gia = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price_usd": 39, "hire_price_usd": 38.5, "valid_from": "2026-01-01", "note": "thử K3"}, vai="ketoan")
+    s, g = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price": 0}, vai="ketoan"); phai(s, 422, "Giá 0 → bị từ chối", g)
+    s, gia = goi("/api/customers/%s/bang-gia" % kh[0]["id"], {"route_id": T, "price": 39, "hire_price": 38.5, "valid_from": "2026-01-01", "note": "thử K3"}, vai="ketoan")
     phai(s, 200, "Kế toán đặt giá 39 USD/t cho khách × tuyến", gia)
     s, g = goi("/api/bang-gia/tra?customer_id=%s&route_id=%s&ngay=2026-09-14" % (kh[0]["id"], T), vai="ketoan"); phai(s, 200, "Hỏi giá", g)
-    assert g.get("price_usd") == 39, "hỏi giá phải trả dòng mới nhất còn hiệu lực (39): %s" % g
+    assert g.get("price") == 39, "hỏi giá phải trả dòng mới nhất còn hiệu lực (39): %s" % g
     s, g = goi("/api/bang-gia/tra?customer_id=%s&route_id=%s&ngay=2025-12-31" % (kh[0]["id"], T), vai="ketoan"); phai(s, 200, "Hỏi giá trước ngày hiệu lực", g)
-    assert not g.get("price_usd") or g.get("id") != gia["id"], "trước ngày hiệu lực không được lấy dòng giá này"
+    assert not g.get("price") or g.get("id") != gia["id"], "trước ngày hiệu lực không được lấy dòng giá này"
     s, p2 = goi("/api/trips", {"doc_no": "THU-LUONG-02/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
                                "route_id": T, "doc_date": "2026-09-14", "out_date": "2026-09-14", "weight_origin": 40}, vai="thabok")
     phai(s, 200, "Bãi lập phiếu có khách + tuyến, không gửi giá", p2)
-    assert p2["price_usd"] == 39 and p2["hire_price_usd"] == 38.5, "máy phải tự điền giá 39 và giá thuê 38.5 từ bảng giá: %s / %s" % (p2["price_usd"], p2["hire_price_usd"])
-    s, g = goi("/api/trips/%s" % p2["id"], {"price_usd": 45}, vai="ketoan", method="PUT"); phai(s, 200, "Kế toán sửa giá khác hợp đồng", g)
-    assert g["price_usd"] == 45, "giá kế toán gõ phải được giữ, không bị bảng giá ghi đè"
+    assert p2["price"] == 39 and p2["hire_price"] == 38.5, "máy phải tự điền giá 39 và giá thuê 38.5 từ bảng giá: %s / %s" % (p2["price"], p2["hire_price"])
+    s, g = goi("/api/trips/%s" % p2["id"], {"price": 45}, vai="ketoan", method="PUT"); phai(s, 200, "Kế toán sửa giá khác hợp đồng", g)
+    assert g["price"] == 45, "giá kế toán gõ phải được giữ, không bị bảng giá ghi đè"
     s, g = goi("/api/trips/%s" % p2["id"], vai="admin", method="DELETE"); phai(s, 200, "Dọn phiếu thử 02", g)
     s, g = goi("/api/bang-gia/%s" % gia["id"], vai="ketoan", method="DELETE"); phai(s, 200, "Dọn dòng giá thử", g)
     print("  ✓ K3 bảng giá: Bãi không thấy · kế toán đặt giá · phiếu tự điền 39/38.5 · kế toán sửa được · ngày hiệu lực đúng")
@@ -190,8 +190,8 @@ def main():
     assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])
     ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]
-    assert g["tinh"]["tra_chu_xe_usd"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe_usd"], thue, phi, vuot, ung)
-    s, g = goi("/api/trips/%s/finance-status" % P, {"status": "paid"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
+    assert g["tinh"]["tra_chu_xe"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe"], thue, phi, vuot, ung)
+    s, g = goi("/api/trips/%s/thu-tien" % P, {"amount": 100, "currency": "USD"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
     # ---- 4b. Bước 14: kế toán rà lại rồi KHOÁ. Chưa khoá thì chưa có hoá đơn; khoá rồi Bãi hết sửa.
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 409, "Lập hoá đơn khi phiếu chưa khoá → sai bước", g)
     s, g = goi("/api/trips/%s/khoa" % P, {}, vai="thabok"); phai(s, 403, "Bãi khoá phiếu → bị từ chối", g)
@@ -204,11 +204,12 @@ def main():
     s, g = goi("/api/trips/%s" % P, {"odo_back": 9999}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa phiếu đã khoá → bị chặn", g)
     s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="thabok"); phai(s, 403, "Bãi trả chủ xe → bị từ chối", g)
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu lập hoá đơn", g)
-    s, g = goi("/api/trips/%s/finance-status" % P, {"status": "paid"}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu ghi đã thu tiền", g)
+    s, g = goi("/api/trips/%s/thu-tien" % P, {"amount": g["tinh"]["con_lai"], "currency": g["tinh"]["ccy"]}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu ghi đã thu tiền", g)
+    assert g["finance_status"] == "paid", "thu đủ thì trạng thái phải tự sang đã thu: %s" % g["finance_status"]
     assert g["invoiced"] and g["finance_status"] == "paid"
     # ---- 4c. Xe liên kết: quỹ trả chủ xe một lần → chứng từ PC_CX
     s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="quytb"); phai(s, 200, "Quỹ trả chủ xe liên kết", g)
-    assert g["owner_paid"] and g["owner_paid_usd"] == g["tinh"]["tra_chu_xe_usd"], (g["owner_paid_usd"], g["tinh"]["tra_chu_xe_usd"])
+    assert g["owner_paid"] and g["owner_paid_usd"] == g["tinh"]["tra_chu_xe"], (g["owner_paid_usd"], g["tinh"]["tra_chu_xe"])
     s, g2 = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="quytb"); phai(s, 409, "Trả chủ xe lần hai → từ chối", g2)
     s, so = goi("/api/chung-tu?trip_id=%s&loai=PC_CX" % P, vai="ketoan"); phai(s, 200, "Sổ chứng từ có tờ PC_CX", so)
     assert len(so["ds"]) == 1 and so["ds"][0]["tien_te"] == "USD" and so["ds"][0]["no"] == "4022", so["ds"]

@@ -213,6 +213,8 @@ class ExchangeRate(Base):
 # ---------------------------------------------------------------- phiếu xuất xe
 TRANG_THAI_VAN_CHUYEN = ("dispatched", "transit", "arrived")    # ອອກລົດ · ກຳລັງຈັດສົ່ງ · ຮອດແລ້ວ
 TRANG_THAI_TAI_CHINH = ("unpaid", "partial", "paid")            # ຄ້າງຊໍາລະ · ຊໍາລະບາງສ່ວນ · ຊໍາລະແລ້ວ
+# Các loại tiền EPL Lào thật sự nhận và chi. LAK là gốc: mọi tỷ giá là "bao nhiêu LAK cho 1 đơn vị".
+TIEN_TE = ("LAK", "USD", "THB", "VND", "CNY")
 MUC = ("info", "trans", "fuel", "travel", "repair", "other")    # I..VI trên phiếu
 MUC_CHI = ("fuel", "travel", "repair", "other")
 # Chuỗi duyệt của từng mục: hai mục thông tin chỉ tới "đã kiểm", bốn mục chi đi tới "đã chi".
@@ -266,12 +268,17 @@ class Trip(Base):
     destination = Column(String)
     weight_origin = Column(Float)                              # ນ້ຳໜັກຕົ້ນທາງ (tấn)
     weight_dest = Column(Float)                                # ນ້ຳໜັກປາຍທາງ (tấn) — cân nơi giao
-    price_usd = Column(Float, default=0)                       # ລາຄາ USD/tấn — bên A trả
-    # Xe liên kết
-    hire_price_usd = Column(Float)                             # giá thuê lại USD/tấn — trả chủ xe
+    # ---- TIỀN BÁN. Đơn giá ghi theo TIỀN TỆ CỦA PHIẾU (`price_ccy`), không mặc định USD:
+    # bên Lào nhận cước bằng USD, LAK, Nhân dân tệ, Bath Thái tuỳ hợp đồng từng khách.
+    price = Column(Float, default=0)                           # ລາຄາ/tấn theo price_ccy — bên A trả
+    price_ccy = Column(String, nullable=False, default="USD")  # tiền tệ của cước: USD · LAK · CNY · THB · VND
+    # Xe liên kết. Giá thuê có thể khác tiền với giá bán (bán USD, thuê xe Lào trả LAK là chuyện thường),
+    # nên nó mang tiền tệ riêng; trống thì hiểu là cùng tiền với cước.
+    hire_price = Column(Float)                                 # giá thuê lại /tấn theo hire_ccy — trả chủ xe
+    hire_ccy = Column(String)                                  # trống = theo price_ccy
     fee_pct = Column(Float, default=2)                         # ຫັກຄ່າທຳນຽມ 2%/ບິນ
     over_limit_t = Column(Float, default=40)                   # ngưỡng tấn
-    over_price_usd = Column(Float, default=1)                  # ຫັກແກ່ເກີນ 1$/ໂຕນ
+    over_price = Column(Float, default=1)                      # ຫັກແກ່ເກີນ 1$/ໂຕນ — theo hire_ccy
     # Trạng thái
     transport_status = Column(String, nullable=False, default="dispatched")
     finance_status = Column(String, nullable=False, default="unpaid")
@@ -286,10 +293,11 @@ class Trip(Base):
     owner_paid_lak = Column(Float)
     owner_paid_by = Column(String)
     owner_paid_at = Column(DateTime)
-    # Tỷ giá KHOÁ trên phiếu lúc lập
+    # Tỷ giá KHOÁ trên phiếu lúc lập — bao nhiêu LAK cho một đơn vị tiền đó
     rate_usd = Column(Float, default=22000)
     rate_thb = Column(Float, default=700)
     rate_vnd = Column(Float, default=1.2)
+    rate_cny = Column(Float, default=3000)
     note = Column(Text)
     created_by = Column(String)
     created_at = Column(DateTime, default=bay_gio)
@@ -642,6 +650,37 @@ class CauHinh(Base):
     cap_nhat = Column(DateTime, default=bay_gio)
 
 
+# ---------------------------------------------------------------- khách trả tiền hoá đơn vận chuyển
+PHUONG_THUC_THU = ("cash", "bank", "offset", "other")     # tiền mặt · chuyển khoản · cấn trừ · khác
+
+
+class TripPayment(Base):
+    """MỘT LẦN khách trả tiền cho một phiếu xuất xe.
+
+    Trước đây phần mềm chỉ có cái nút "đã thu" bật trạng thái phiếu sang `paid` — không biết khách
+    trả bao nhiêu, bằng tiền gì, ngày nào. Thực tế bên Lào: hoá đơn ghi USD nhưng khách chuyển LAK
+    hoặc Nhân dân tệ, và trả làm nhiều lần. Nên mỗi lần tiền về là một dòng ở đây.
+
+    `amount` theo `currency` của LẦN THU đó; `rate_to_lak` là tỷ giá NGÀY THU (mặc định lấy tỷ giá
+    khoá trên phiếu, người ghi sửa được); `amount_lak` là tích của hai số, đã tính sẵn để khỏi tính
+    lại. Trạng thái tài chính của phiếu (chưa thu · một phần · đủ) do TỔNG các dòng này quyết định,
+    không ai bấm tay nữa. Mỗi dòng sinh một chứng từ PT trong Sổ chứng từ.
+    """
+    __tablename__ = "trip_payments"
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    pay_date = Column(Date, nullable=False)
+    amount = Column(Float, nullable=False, default=0)          # theo currency
+    currency = Column(String, nullable=False, default="LAK")
+    rate_to_lak = Column(Float, nullable=False, default=1)     # LAK cho 1 đơn vị currency, tỷ giá ngày thu
+    amount_lak = Column(Float, nullable=False, default=0)      # = amount × rate_to_lak
+    method = Column(String, nullable=False, default="bank")    # PHUONG_THUC_THU
+    ref = Column(String)                                       # số uỷ nhiệm chi · biên lai bên khách
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+
+
 # ---------------------------------------------------------------- tệp đính kèm phiếu (phiếu quặng của khách…)
 class TripAttachment(Base):
     """Ảnh hoặc PDF kèm phiếu xuất xe. Tệp nằm trên đĩa (thư mục EPL_LAO_TEP, mặc định backend/tep), bảng chỉ giữ tên."""
@@ -669,8 +708,10 @@ class CustomerRate(Base):
     customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
     route_id = Column(String, ForeignKey("routes.id"), nullable=False)
     goods_type = Column(String, nullable=False, default="iron_ore")
-    price_usd = Column(Float, nullable=False)                  # USD/tấn bên A trả
-    hire_price_usd = Column(Float)                             # USD/tấn trả chủ xe ngoài (nếu có thoả thuận sẵn)
+    price = Column(Float, nullable=False)                      # đơn giá/tấn bên A trả, theo price_ccy
+    price_ccy = Column(String, nullable=False, default="USD")  # tiền của hợp đồng này: USD · LAK · CNY · THB · VND
+    hire_price = Column(Float)                                 # /tấn trả chủ xe ngoài (nếu có thoả thuận sẵn)
+    hire_ccy = Column(String)                                  # trống = cùng tiền với cước
     valid_from = Column(Date)                                  # trống = áp dụng từ đầu
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)

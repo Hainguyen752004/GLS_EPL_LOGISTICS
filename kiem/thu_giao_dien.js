@@ -224,7 +224,7 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + p0.id);
   assert.strictEqual(d.getElementById('px-doc-no').value, 'T4-0428-08/EPL', 'phải mở đúng phiếu T4-0428');
   const val = d.getElementById('v-val-usd').textContent;
-  assert.ok(val.startsWith(w.EPL.so(p0.tinh.doanh_thu_usd, 2)), 'thành tiền trên màn (' + val + ') phải khớp máy chủ ' + p0.tinh.doanh_thu_usd);
+  assert.ok(val.startsWith(w.EPL.so(p0.tinh.doanh_thu, w.EPL.leTien(p0.tinh.ccy))), 'thành tiền trên màn (' + val + ') phải khớp máy chủ ' + p0.tinh.doanh_thu + ' ' + p0.tinh.ccy);
   const tongChi = d.querySelector('.px-tong .o:nth-child(2) .v').textContent;
   assert.ok(tongChi.includes(w.EPL.so(p0.tinh.tong_chi_lak)), 'tổng chi trên màn (' + tongChi + ') phải khớp máy chủ ' + p0.tinh.tong_chi_lak);
   const soDongChi = goc().querySelectorAll('.px-chi tbody tr[data-i]').length;
@@ -236,8 +236,8 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + pj.id);
   assert.ok(goc().querySelector('.px-phieu').classList.contains('is-joint'), 'phiếu xe liên kết phải bật lớp is-joint');
   const tt = goc().querySelector('.px-tt'); assert.ok(tt, 'phiếu xe liên kết phải có bảng thanh toán chủ xe');
-  assert.ok(tt.textContent.includes(w.EPL.so(pj.tinh.tra_chu_xe_usd, 2)), 'tiền trả chủ xe trên màn phải khớp máy chủ ' + pj.tinh.tra_chu_xe_usd);
-  console.log('✓ phiếu xe liên kết %s: trả chủ xe %s USD khớp máy chủ', pj.doc_no, w.EPL.so(pj.tinh.tra_chu_xe_usd, 2));
+  assert.ok(tt.textContent.includes(w.EPL.so(pj.tinh.tra_chu_xe, w.EPL.leTien(pj.tinh.hire_ccy || pj.tinh.ccy))), 'tiền trả chủ xe trên màn phải khớp máy chủ ' + pj.tinh.tra_chu_xe);
+  console.log('✓ phiếu xe liên kết %s: trả chủ xe %s %s khớp máy chủ', pj.doc_no, w.EPL.so(pj.tinh.tra_chu_xe, 2), pj.tinh.hire_ccy || pj.tinh.ccy);
 
   // Phiếu còn đang chạy (chưa tới nơi) — dùng cho hai bước phân vai bên dưới.
   const pDang = dsPhieu.find(p => p.transport_status !== 'arrived') || dsPhieu[0];

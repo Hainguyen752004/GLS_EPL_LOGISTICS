@@ -13,7 +13,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
+from models import (TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import tien_dong
@@ -121,18 +121,32 @@ def _xuat_gia(db, r):
     return d
 
 
+def _tien_te(v, ten, mac_dinh=None):
+    """Ô chọn tiền tệ của hợp đồng. Gõ mã lạ thì báo rõ — nhầm tiền là nhầm tiền thật."""
+    if v in (None, ""):
+        return mac_dinh
+    m = str(v).strip().upper()
+    if m not in TIEN_TE:
+        raise HTTPException(422, {"ma": "TIEN_TE_SAI", "loi": "Ô %s phải là một trong %s, nhận '%s'." % (ten, ", ".join(TIEN_TE), v)})
+    return m
+
+
 def _ap_gia(db, r, data):
     if "route_id" in data:
         if not db.get(Route, data["route_id"] or ""):
             raise HTTPException(422, {"ma": "TUYEN_SAI", "loi": "Không có tuyến này."})
         r.route_id = data["route_id"]
     if "goods_type" in data: r.goods_type = (data["goods_type"] or "iron_ore").strip()
-    if "price_usd" in data:
-        gia = _so(data["price_usd"], "price_usd")
+    # Hợp đồng ký bằng tiền gì thì bảng giá ghi tiền đó: khách Trung Quốc trả Nhân dân tệ, khách
+    # trong nước trả Kíp. Không quy đổi sẵn về USD — quy đổi sẵn là mất con số hai bên đã ký.
+    if "price_ccy" in data: r.price_ccy = _tien_te(data["price_ccy"], "price_ccy", "USD")
+    if "hire_ccy" in data: r.hire_ccy = _tien_te(data["hire_ccy"], "hire_ccy")
+    if "price" in data:
+        gia = _so(data["price"], "price")
         if gia is None or gia <= 0:
-            raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Đơn giá USD/tấn phải lớn hơn 0."})
-        r.price_usd = gia
-    if "hire_price_usd" in data: r.hire_price_usd = _so(data["hire_price_usd"], "hire_price_usd")
+            raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Đơn giá mỗi tấn phải lớn hơn 0."})
+        r.price = gia
+    if "hire_price" in data: r.hire_price = _so(data["hire_price"], "hire_price")
     if "valid_from" in data: r.valid_from = _ngay(data["valid_from"], "valid_from")
     if "note" in data: r.note = (data["note"] or "").strip() or None
     if "active" in data: r.active = bool(data["active"])
@@ -153,8 +167,8 @@ def them_gia(cid: str, data: dict = Body(...), db: Session = Depends(get_db), us
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
     if not data.get("route_id"):
         raise HTTPException(422, {"ma": "THIEU_TUYEN", "loi": "Phải chọn tuyến."})
-    if "price_usd" not in data:
-        raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Phải có đơn giá USD/tấn."})
+    if "price" not in data:
+        raise HTTPException(422, {"ma": "GIA_SAI", "loi": "Phải có đơn giá mỗi tấn."})
     r = CustomerRate(customer_id=cid, created_by=user.full_name); _ap_gia(db, r, data)
     db.add(r); db.commit(); db.refresh(r)
     return _xuat_gia(db, r)
@@ -506,7 +520,7 @@ def ds_ty_gia(db: Session = Depends(get_db)):
 @router.put("/api/rates")
 def sua_ty_gia(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("acct", "rev"))):
     """Tỷ giá dùng làm MẶC ĐỊNH cho phiếu mới. Phiếu đã lập giữ tỷ giá riêng của nó."""
-    for ma in ("USD", "THB", "VND"):
+    for ma in [m for m in TIEN_TE if m != "LAK"]:
         if ma in data:
             gt = _so(data[ma], ma)
             if not gt or gt <= 0:

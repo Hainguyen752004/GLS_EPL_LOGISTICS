@@ -51,11 +51,14 @@
       <div class="ct-phu">ໃບຮັບເງິນ · Receipt voucher</div>
       <div class="ct-meta">
         <div><span>${NN.h('payer_name')}</span><span lang="lo"><b>${esc(d.customer_name || '—')}</b></span></div><div><span>${NN.h('doc_no')}</span><span class="mono"><b>${esc(d.doc_no)}</b></span></div>
-        <div><span>${NN.h('c_w_dest')}</span><span>${so(d.tan_tinh, 2)} ${NN.h('ton')}<span class="tien"> × ${so(d.price_usd, 2)} USD</span></span></div><div class="tien"><span>${NN.h('acct_pair')}</span><span>${tenTK(d.acct_code)}</span></div>
+        <div><span>${NN.h('c_w_dest')}</span><span>${so(d.tan_tinh, 2)} ${NN.h('ton')}<span class="tien"> × ${EPL.tien(d.don_gia, d.ccy)}</span></span></div><div class="tien"><span>${NN.h('acct_pair')}</span><span>${tenTK(d.acct_code)}</span></div>
         <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_receipt', { doc_no: d.doc_no, tuyen: (d.origin || '') + ' → ' + (d.destination || '') })}</span></div>
       </div>
-      <div class="ct-tong tien"><div><span>${NN.h('amount')}</span><span>${so(d.doanh_thu_usd, 2)} USD</span></div></div>
-      <div class="ct-chu">≈ ${so(d.doanh_thu_lak)} LAK (1 USD = ${so(d.rate_usd)} LAK)</div>
+      <div class="ct-tong tien"><div><span>${NN.h('amount')}</span><span>${EPL.tien(d.doanh_thu, d.ccy)}</span></div>
+        <div><span>${NN.h('collected')}</span><span>${EPL.tien(d.da_thu, d.ccy)}</span></div>
+        <div><span>${NN.h('remaining')}</span><span>${EPL.tien(d.con_lai, d.ccy)}</span></div></div>
+      <div class="ct-chu">${d.ccy === 'LAK' ? '' : `≈ ${so(d.doanh_thu_lak)} LAK (1 ${esc(d.ccy)} = ${so(d.rate_to_lak)} LAK)`}</div>
+      ${(d.thu_tien || []).length ? `<table class="tbl tbl-compact"><thead><tr><th>${NN.h('pay_date')}</th><th class="num">${NN.h('pay_amount')}</th><th class="num">${NN.h('in_lak')}</th><th>${NN.h('pay_method')}</th><th>${NN.h('pay_ref')}</th></tr></thead><tbody>${d.thu_tien.map(x => `<tr><td>${EPL.ngay(x.pay_date)}</td><td class="num">${EPL.tien(x.amount, x.currency)}</td><td class="num">${so(x.amount_lak)}</td><td>${NN.h('pm_' + x.method)}</td><td class="mono small">${esc(x.ref || '')}</td></tr>`).join('')}</tbody></table>` : ''}
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.finance_status, 'fin_' + d.finance_status)}</div>
       <div class="ct-ky"><div><div class="line"></div>${NN.h('payer_name')}</div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
@@ -151,7 +154,7 @@
       <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
       <td>${c.trip_id ? `<a href="#/phieu-xuat-xe?id=${esc(c.trip_id)}" class="mono">${esc(c.trip_doc_no || '')}</a>` : '<span class="muted">—</span>'}</td>
       <td lang="lo">${esc(c.doi_tuong_ten || '')}<div class="small muted">${esc(c.doi_tuong_loai || '')}</div></td>
-      <td class="num">${c.tien == null ? '—' : so(c.tien, c.tien_te === 'USD' ? 2 : 0) + ' ' + esc(c.tien_te)}</td>
+      <td class="num">${c.tien == null ? '—' : EPL.tien(c.tien, c.tien_te)}</td>
       <td class="num">${c.tien_lak == null ? '—' : so(c.tien_lak)}</td>
       <td>${c.no || c.co || c.no_ten ? `${tk(c.no, c.no_ten)} / ${tk(c.co, c.co_ten)}` : '<span class="muted">—</span>'}</td>
       <td class="small">${esc(c.mo_ta || '')}<div class="muted">${esc(c.by_user || '')}</div></td>

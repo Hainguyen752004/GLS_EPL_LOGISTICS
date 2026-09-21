@@ -259,7 +259,7 @@
   }
 
   /* ---------------------------------------------------------------- cột giữa: mốc chặng */
-  function rate(ma) { return { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, LAK: 1 }[ma] || 1; }
+  function rate(ma) { return { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, CNY: P.rate_cny || 3000, LAK: 1 }[ma] || 1; }
 
   function veMoc() {
     if (!P) { q('#tdt-moc').innerHTML = ''; q('#tdt-moc-chan').innerHTML = ''; return; }
@@ -376,7 +376,7 @@
         <th class="num" style="width:120px">${NN.h('amount')}</th><th style="width:110px">${NN.h('status')}</th></tr></thead>
       <tbody>${CHUNG_TU.map(c => `<tr>
         <td class="mono">${esc(c.so)}</td><td>${esc(c.ten)}</td><td>${EPL.ngay(c.ngay)}</td>
-        <td class="num">${c.tien == null ? '—' : so(c.tien, c.tien_te === 'USD' ? 2 : 0) + ' ' + esc(c.tien_te || '')}</td>
+        <td class="num">${c.tien == null ? '—' : EPL.tien(c.tien, c.tien_te)}</td>
         <td>${tag(c.mau, c.tt_khoa)}</td></tr>`).join('')}</tbody></table>`
       : `<div class="trong">${NN.h('td_no_docs')}</div>`;
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
@@ -543,7 +543,7 @@
       { id: 'item_name', label: 'item', value: e.note || '', lo: true },
       { id: 'qty', label: 'qty', type: 'number', value: '1' },
       { id: 'unit_price', label: 'unit_price', type: 'number', value: e.reported_cost != null ? e.reported_cost : '' },
-      { id: 'currency', label: 'cur', type: 'select', value: e.currency || 'LAK', options: [['LAK', 'LAK'], ['VND', 'VND'], ['THB', 'THB'], ['USD', 'USD']] },
+      { id: 'currency', label: 'cur', type: 'select', value: e.currency || 'LAK', options: EPL.TIEN_TE.map(m => [m, m]) },
     ], NN.t('approve'));
     if (!v) return;
     if (v.source !== 'kho') delete v.part_id;

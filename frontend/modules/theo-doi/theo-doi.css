@@ -1,8 +1,12 @@
 /* Theo dõi phiếu vận chuyển — bảng rộng 29 cột, cuộn ngang, đầu bảng dính */
 .td-tim{min-width:260px}
 .td-cuon{max-height:calc(100vh - 300px);overflow:auto}
-.td-bang{min-width:2600px;font-size:12.5px}
+.td-bang{min-width:2960px;font-size:12.5px}
 .td-bang thead tr:nth-child(2) th{top:37px}
 .td-bang td.num{font-variant-numeric:tabular-nums}
 .td-bang tr{cursor:pointer}
 .td-hao{color:var(--red);font-size:11px;margin-left:4px}
+/* Cột "Tiền": mã tiền tệ của chính phiếu đó, để con số bên cạnh không phải đoán đơn vị. */
+.td-bang td.td-ccy{font-size:11.5px;letter-spacing:.3px;color:var(--muted);text-align:center}
+/* Dòng tổng: mỗi loại tiền một dòng, không cộng táo với cam. */
+.td-gop{display:inline-block;line-height:1.5;text-align:right;font-variant-numeric:tabular-nums}

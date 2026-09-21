@@ -32,7 +32,7 @@
     root.querySelector('#kh-gia-them').hidden = !suaGia();
     root.querySelector('#kh-gia-than').innerHTML = dsGia.length ? dsGia.map(r => `<tr class="${r.active ? '' : 'kh-tat'}">
       <td lang="lo"><b>${esc(r.route_name || '')}</b></td><td>${NN.h(r.goods_type === 'iron_ore' ? 'iron_ore' : 'other_goods')}</td>
-      <td class="num"><b>${so(r.price_usd)}</b></td><td class="num">${so(r.hire_price_usd)}</td>
+      <td class="mono small">${esc(r.price_ccy || 'USD')}</td><td class="num"><b>${so(r.price, EPL.leTien(r.price_ccy))}</b></td><td class="num">${r.hire_price == null ? '—' : EPL.tien(r.hire_price, r.hire_ccy || r.price_ccy)}</td>
       <td>${r.valid_from ? EPL.ngay(r.valid_from) : '—'}</td><td class="small muted">${esc(r.note) || ''}</td>
       <td>${EPL.tag(r.active ? 'ok' : 'plain', r.active ? 'active' : 'inactive')}</td>
       <td class="no-print">${suaGia() ? `<button class="btn sm" data-sua-gia="${r.id}">${NN.h('edit')}</button> <button class="btn sm danger" data-xoa-gia="${r.id}">${NN.h('delete')}</button>` : ''}</td></tr>`).join('')
@@ -44,23 +44,26 @@
     const v = await EPL.hopNhap(NN.t('kh_bang_gia') + ' · ' + khGia.name, [
       { id: 'route_id', label: 'route', type: 'select', value: r ? r.route_id : (tuyen[0] || {}).id, options: tuyen.filter(t => t.active || (r && t.id === r.route_id)).map(t => [t.id, t.name]) },
       { id: 'goods_type', label: 'goods_type', type: 'select', value: r ? r.goods_type : 'iron_ore', options: [['iron_ore', NN.t('iron_ore')], ['other_goods', NN.t('other_goods')]] },
-      { id: 'price_usd', label: 'price_usd', type: 'number', value: r ? r.price_usd : '' },
-      { id: 'hire_price_usd', label: 'hire_pt', type: 'number', value: r ? (r.hire_price_usd ?? '') : '' },
+      { id: 'price_ccy', label: 'ccy_price', type: 'select', value: r ? (r.price_ccy || 'USD') : 'USD', options: EPL.TIEN_TE.map(m => [m, m]) },
+      { id: 'price', label: 'price_usd', type: 'number', value: r ? r.price : '' },
+      { id: 'hire_ccy', label: 'ccy_hire', type: 'select', value: r ? (r.hire_ccy || '') : '', options: [['', '—']].concat(EPL.TIEN_TE.map(m => [m, m])) },
+      { id: 'hire_price', label: 'hire_pt', type: 'number', value: r ? (r.hire_price ?? '') : '' },
       { id: 'valid_from', label: 'valid_from', type: 'date', value: r ? (r.valid_from || '') : EPL.homNay() },
       { id: 'note', label: 'note', type: 'textarea', value: r ? r.note : '' },
       ...(r ? [{ id: 'active', label: 'status', type: 'select', value: r.active ? '1' : '0', options: [['1', NN.t('active')], ['0', NN.t('inactive')]] }] : []),
     ], NN.t('save'));
     if (!v) return;
-    if (!(EPL.doc(v.price_usd) > 0)) return EPL.toast(NN.t('price_usd') + '?', 'loi');
+    if (!(EPL.doc(v.price) > 0)) return EPL.toast(NN.t('price_usd') + '?', 'loi');
     try {
-      const body = { route_id: v.route_id, goods_type: v.goods_type, price_usd: v.price_usd, hire_price_usd: v.hire_price_usd === '' ? null : v.hire_price_usd, valid_from: v.valid_from || null, note: v.note };
+      const body = { route_id: v.route_id, goods_type: v.goods_type, price: v.price, price_ccy: v.price_ccy,
+        hire_price: v.hire_price === '' ? null : v.hire_price, hire_ccy: v.hire_ccy || null, valid_from: v.valid_from || null, note: v.note };
       if (r) body.active = v.active === '1';
       await (r ? API.put('/api/bang-gia/' + r.id, body) : API.post(`/api/customers/${khGia.id}/bang-gia`, body));
       EPL.toast(NN.t('saved'), 'ok'); dsGia = await API.get(`/api/customers/${khGia.id}/bang-gia`); veGia();
     } catch (e) { EPL.baoLoi(e); }
   }
   async function xoaGia(r) {
-    if (!await EPL.hoi(NN.t('delete'), `<p>${esc(r.route_name || '')} · ${so(r.price_usd)} USD/t</p>`, NN.t('delete'))) return;
+    if (!await EPL.hoi(NN.t('delete'), `<p>${esc(r.route_name || '')} · ${EPL.tien(r.price, r.price_ccy)}/t</p>`, NN.t('delete'))) return;
     try { await API.del('/api/bang-gia/' + r.id); dsGia = dsGia.filter(x => x.id !== r.id); veGia(); EPL.toast(NN.t('saved'), 'ok'); } catch (e) { EPL.baoLoi(e); }
   }
   async function sua(c) {

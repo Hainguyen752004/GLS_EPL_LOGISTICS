@@ -107,3 +107,11 @@
 /* Phiếu GOM: không có cước, không hoá đơn — ẩn mọi ô tiền bán và cột chọn lô. */
 .px-phieu.is-gom .px-tien,.px-phieu.is-gom .px-tu-lo,.px-phieu.is-gom td.px-tu-lo{display:none}
 .px-phieu:not(.is-giao) .px-tu-lo{display:none}
+
+/* Sổ thu tiền — hoá đơn một tờ, tiền về nhiều lần và có thể bằng tiền khác. */
+.px-thu{margin-top:14px}
+.px-thu .hd{gap:10px;flex-wrap:wrap}
+.px-thu .hd .small{color:var(--muted)}
+.px-thu .hd .small b{color:var(--text)}
+.px-thu table{width:100%}
+.px-thu td.num{font-variant-numeric:tabular-nums}

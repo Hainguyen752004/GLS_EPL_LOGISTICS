@@ -19,10 +19,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
 from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Part, Route,  # noqa: E402
                     RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
-                    TripSection, User, Vehicle, Voucher)
+                    TripPayment, TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
-from services.tinh_toan import tinh_phieu  # noqa: E402
+from services.tinh_toan import tinh_phieu, ty_gia  # noqa: E402
 
 D = dt.date
 MAT_KHAU_DEMO = "1234"     # bản demo — đổi ngay khi lên máy thật (qua màn Tài khoản)
@@ -81,7 +81,7 @@ def gieo(db):
         db.add(User(username=u, password_hash=bam_mat_khau(MAT_KHAU_DEMO), full_name=ten, role=vai, avatar=av,
                     place_id=diem_do[kho].id if kho else None))
 
-    for ma, gt in (("USD", 22000), ("THB", 700), ("VND", 1.2), ("LAK", 1)):
+    for ma, gt in (("USD", 22000), ("THB", 700), ("VND", 1.2), ("CNY", 3000), ("LAK", 1)):
         db.add(ExchangeRate(code=ma, rate_to_lak=gt))
 
     # ---- danh mục
@@ -168,8 +168,8 @@ def gieo(db):
 
     # ---- bảng giá khách × tuyến (K3): 41 USD/t như hoá đơn trong Excel; tuyến cảng xa hơn 43 USD/t
     for k in kh.values():
-        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ກາລໍ"].id, price_usd=41, hire_price_usd=40.5, valid_from=D(2026, 1, 1), created_by="seed"))
-        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ທ່າເຮືອກະລໍ"].id, price_usd=43, valid_from=D(2026, 1, 1), created_by="seed"))
+        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ກາລໍ"].id, price=41, price_ccy="USD", hire_price=40.5, hire_ccy="USD", valid_from=D(2026, 1, 1), created_by="seed"))
+        db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ທ່າເຮືອກະລໍ"].id, price=43, price_ccy="USD", valid_from=D(2026, 1, 1), created_by="seed"))
     db.flush()
 
     # ---- năm phiếu
@@ -221,7 +221,7 @@ def gieo(db):
     phieu(doc_no="T4-0428-08/EPL", doc_date=D(2026, 8, 19), out_date=D(2026, 8, 19), back_date=D(2026, 8, 22),
           truck_no="341", driver_name="ທ້າວ ທັດສະດາພອນ", odo_out=7891, odo_back=6921, tuyen="ກາສີ → ກາລໍ",
           customer_name="ຄຳຕຸ້ຍ", ore_bill_date=D(2026, 8, 19),
-          weight_origin=42.06, weight_dest=41.30, price_usd=41,
+          weight_origin=42.06, weight_dest=41.30, price=41, price_ccy="USD",
           transport_status="transit", finance_status="unpaid",
           chi=[dong("fuel", "diesel", 100, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 750, 28000, "VND", "fp_vn")]
               + di_duong_chuan(),
@@ -231,7 +231,8 @@ def gieo(db):
     phieu(doc_no="T4-0429-08/EPL", doc_date=D(2026, 8, 19), out_date=D(2026, 8, 19), back_date=D(2026, 8, 22),
           truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=5120, odo_back=6090, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
           customer_name="ຄຳຕຸ້ຍ", ore_bill_no="HR-2231",
-          weight_origin=42.30, weight_dest=42.06, price_usd=41, transport_status="arrived", finance_status="unpaid",
+          # Khách Trung Quốc ký hợp đồng bằng NHÂN DÂN TỆ — 300 CNY/tấn, không phải USD.
+          weight_origin=42.30, weight_dest=42.06, price=300, price_ccy="CNY", transport_status="arrived", finance_status="unpaid",
           chi=[dong("fuel", "diesel", 120, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 700, 28000, "VND", "fp_vn")]
               + di_duong_chuan()
               + [dong("repair", "x_tire", 1, 150000, source="mua"), dong("repair", None, 1, 500000, source="kho", name="ເຕົ້າລົມ (bầu hơi)"),
@@ -239,22 +240,26 @@ def gieo(db):
     phieu(doc_no="T4-0430-08/EPL", doc_date=D(2026, 8, 20), out_date=D(2026, 8, 20), back_date=D(2026, 8, 23),
           truck_no="ຮ່ວມ-07", driver_name="ທ້າວ ສົມພອນ", tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
           customer_name="ຄຳຕຸ້ຍ", ore_bill_no="HR-2235",
-          weight_origin=41.00, weight_dest=40.50, price_usd=41, hire_price_usd=40.5, fee_pct=2, over_limit_t=40, over_price_usd=1,
-          transport_status="arrived", finance_status="partial",
+          # Xe liên kết: bán bằng USD nhưng thuê xe Lào trả bằng KÍP — hai tiền khác nhau trên một phiếu.
+          weight_origin=41.00, weight_dest=40.50, price=41, price_ccy="USD",
+          hire_price=890000, hire_ccy="LAK", fee_pct=2, over_limit_t=40, over_price=22000,
+          transport_status="arrived", finance_status="partial", invoiced=True,
+          locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 8, 26, 9, 0),
           chi=[dong("fuel", "diesel", 150, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 600, 28000, "VND", "fp_vn", paid_by_epl=False),
                dong("travel", "x_toll", 1, 1833500), dong("travel", "x_chip_lao", 1, 620000),
                dong("travel", "x_vn", 1, 430000, paid_by_epl=False)])
     phieu(doc_no="T4-0431-08/EPL", doc_date=D(2026, 8, 21), out_date=D(2026, 8, 21), back_date=D(2026, 8, 24),
           truck_no="341", driver_name="ທ້າວ ທັດສະດາພອນ", odo_out=6921, odo_back=7900, tuyen="ກາສີ → ກາລໍ",
           customer_name="ນາງ ວັນນາ", ore_bill_no="HR-2240",
-          weight_origin=40.80, weight_dest=40.60, price_usd=42, transport_status="arrived", finance_status="paid", invoiced=True,
+          weight_origin=40.80, weight_dest=40.60, price=42, price_ccy="USD", transport_status="arrived", finance_status="paid", invoiced=True,
           locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 8, 25, 9, 0),
           chi=[dong("fuel", "diesel", 110, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 720, 28000, "VND", "fp_vn")]
               + di_duong_chuan())
     phieu(doc_no="T4-0432-08/EPL", doc_date=D(2026, 8, 23), out_date=D(2026, 8, 23),
           truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6090, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
           customer_name="ຄຳຕຸ້ຍ",
-          weight_origin=41.90, weight_dest=None, price_usd=41, transport_status="dispatched", finance_status="unpaid",
+          # Khách trong nước trả thẳng bằng KÍP: 900.000 LAK/tấn.
+          weight_origin=41.90, weight_dest=None, price=900000, price_ccy="LAK", transport_status="dispatched", finance_status="unpaid",
           chi=[dong("fuel", "diesel", 150, 30000, "LAK", "fp_yard"),
                dong("travel", "x_water", 1, 60000), dong("travel", "x_vn", 1, 430000), dong("travel", "x_phone", 1, 150000)])
 
@@ -280,7 +285,7 @@ def gieo(db):
     pv = phieu(doc_no="T4-0433-09/EPL", kind="giao", doc_date=D(2026, 9, 16), out_date=D(2026, 9, 16),
           truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6300, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
           customer_name="ຄຳຕຸ້ຍ", origin="ທ່າບົກ (ສະໜາມ EPL)", destination="ທ່າເຮືອກະລໍ",
-          price_usd=43, weight_origin=30.00, transport_status="transit", finance_status="unpaid",
+          price=43, price_ccy="USD", weight_origin=30.00, transport_status="transit", finance_status="unpaid",
           lay_tu=[("G4-0101-09/EPL", 30.00)],
           chi=[dong("fuel", "diesel", 90, 30000, "LAK", "fp_yard"), dong("travel", "x_toll", 1, 1833500)])
     db.flush()
@@ -295,7 +300,8 @@ def gieo(db):
     db.flush()          # phiên này autoflush=False: dòng chi của phiếu cuối chưa xuống DB thì query không thấy
     for pp in db.query(Trip).order_by(Trip.doc_no).all():
         dong_p = db.query(TripExpense).filter(TripExpense.trip_id == pp.id).all()
-        tg = {"USD": pp.rate_usd or 22000, "THB": pp.rate_thb or 700, "VND": pp.rate_vnd or 1.2, "LAK": 1.0}
+        tg = {"USD": pp.rate_usd or 22000, "THB": pp.rate_thb or 700, "VND": pp.rate_vnd or 1.2,
+              "CNY": pp.rate_cny or 3000, "LAK": 1.0}
         ung = sum((e.qty or 0) * (e.unit_price or 0) * tg.get(e.currency or "LAK", 1)
                   for e in dong_p if e.paid_by_epl and e.source != "kho" and e.section in ("fuel", "travel", "other"))
         moi_chay = pp.transport_status == "dispatched"
@@ -370,14 +376,26 @@ def gieo_chung_tu(db):
         if p.invoiced:
             dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id).all()
             k = tinh_phieu(p, dong)
-            CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.back_date or p.doc_date, doi_tuong_loai="khach",
-                   doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
+            ngay_hd = p.back_date or p.doc_date
+            CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=ngay_hd, doi_tuong_loai="khach",
+                   doi_tuong_ten=p.customer_name, tien=k["doanh_thu"], tien_te=k["ccy"], tien_lak=k["doanh_thu_lak"],
                    by_user="ນາງ ຄຳ (Kham)", mo_ta="Hoá đơn vận chuyển %s" % p.doc_no,
-                   payload={"tan_tinh": k["tan_tinh"], "price_usd": p.price_usd, "rate_usd": p.rate_usd})
-            if p.finance_status == "paid":
-                CT.ghi(db, "PT", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=p.back_date or p.doc_date, doi_tuong_loai="khach",
-                       doi_tuong_ten=p.customer_name, tien=k["doanh_thu_usd"], tien_te="USD", tien_lak=k["doanh_thu_lak"],
-                       by_user="ນາງ ຄຳ (Kham)", mo_ta="Thu tiền khách theo hoá đơn phiếu %s" % p.doc_no, payload={})
+                   payload={"tan_tinh": k["tan_tinh"], "don_gia": p.price, "currency": k["ccy"],
+                            "rate_to_lak": ty_gia(p, k["ccy"])})
+            # Khách trả tiền: mỗi lần là MỘT DÒNG có ngày, số tiền, tiền tệ và tỷ giá ngày thu.
+            # Hoá đơn ghi USD nhưng khách chuyển Kíp — đúng như bên Lào vẫn làm.
+            if p.finance_status in ("paid", "partial"):
+                du = k["doanh_thu_lak"] if p.finance_status == "paid" else round(k["doanh_thu_lak"] * 0.55)
+                x = TripPayment(trip_id=p.id, pay_date=ngay_hd, amount=du, currency="LAK", rate_to_lak=1,
+                                amount_lak=du, method="bank", ref="UNC-%s" % p.doc_no.split("-")[1],
+                                note="Khách chuyển khoản bằng Kíp cho hoá đơn %s %s" % (k["doanh_thu"], k["ccy"]),
+                                by_user="ນາງ ຄຳ (Kham)")
+                db.add(x); db.flush()
+                CT.ghi(db, "PT", nguon_bang="trip_payments", nguon_id=x.id, trip=p, ngay=ngay_hd, doi_tuong_loai="khach",
+                       doi_tuong_ten=p.customer_name, tien=du, tien_te="LAK", tien_lak=du,
+                       by_user="ນາງ ຄຳ (Kham)", mo_ta="Thu tiền khách phiếu %s · %s LAK" % (p.doc_no, du),
+                       payload={"rate_to_lak": 1, "method": "bank", "hoa_don_ccy": k["ccy"],
+                                "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"]})
     phieu_theo_so = {p.doc_no: p for p in db.query(Trip).all()}
     for m in db.query(FuelMove).order_by(FuelMove.move_date).all():
         p = phieu_theo_so.get(m.doc_no)

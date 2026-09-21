@@ -5,7 +5,7 @@
 
   function bang(sec, tieuDe, nhanSL) {
     const dong = (P.expenses || []).filter(d => d.section === sec); if (!dong.length) return '';
-    const lk = P.tinh.lien_ket; const rate = { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, LAK: 1 };
+    const lk = P.tinh.lien_ket; const rate = { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, CNY: P.rate_cny || 3000, LAK: 1 };
     let tongSL = 0, tong = 0;
     const rows = dong.map((d, i) => { const t = d.qty * d.unit_price * (rate[d.currency] || 1); tongSL += d.qty; if (!lk || d.paid_by_epl) tong += t;
       return `<tr class="${lk && !d.paid_by_epl ? 'hd-mo' : ''}"><td>${i + 1}</td><td>${esc(EPL.khoanMuc(d))}${sec === 'fuel' && d.place ? ` <span class="muted small">(${NN.h(d.place)})</span>` : ''}</td><td class="num">${so(d.qty)}</td><td class="num">${so(d.unit_price)}${d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td><td class="num">${so(t)}</td>${lk ? `<td>${NN.h(d.paid_by_epl ? 'pay_epl' : 'pay_own')}</td>` : ''}</tr>`; }).join('');
@@ -14,16 +14,17 @@
   }
   function thanhToan(c) {
     const r = (l, d, v, cls = '') => `<div class="r ${cls}"><span>${l}${d ? `<small>${d}</small>` : ''}</span><span>${v}</span></div>`;
+    const ma = c.ccy, mh = c.hire_ccy || ma, t = EPL.tien;
     return `<div class="hd-tt"><div class="o"><b>${NN.h('settle_title')}</b>
-      ${r(NN.h('st_hire'), `${so(c.gia_thue_usd, 2)} $/t × ${so(c.tan_tinh, 2)} t`, so(c.tien_thue_usd, 2) + ' USD')}
-      ${r(NN.h('st_fee'), `${P.fee_pct}%`, '− ' + so(c.phi_usd, 2) + ' USD')}
-      ${r(NN.h('st_over'), `${so(c.vuot_tan, 2)} t × ${P.over_price_usd} $`, '− ' + so(c.tru_vuot_usd, 2) + ' USD')}
-      ${r(NN.h('st_adv'), `${so(c.tong_chi_lak)} LAK ÷ ${so(P.rate_usd)}`, '− ' + so(c.ung_truoc_usd, 2) + ' USD')}
-      ${r(NN.h('st_net_owner'), `≈ ${so(c.tra_chu_xe_usd * P.rate_usd)} LAK`, so(c.tra_chu_xe_usd, 2) + ' USD', 'tot')}</div>
+      ${r(NN.h('st_hire'), `${t(c.gia_thue, mh)}/t × ${so(c.tan_tinh, 2)} t`, t(c.tien_thue, mh))}
+      ${r(NN.h('st_fee'), `${P.fee_pct}%`, '− ' + t(c.phi, mh))}
+      ${r(NN.h('st_over'), `${so(c.vuot_tan, 2)} t × ${t(P.over_price, mh)}`, '− ' + t(c.tru_vuot, mh))}
+      ${r(NN.h('st_adv'), `${so(c.tong_chi_lak)} LAK`, '− ' + t(c.ung_truoc, mh))}
+      ${r(NN.h('st_net_owner'), mh === 'LAK' ? '' : `≈ ${so(c.tra_chu_xe_lak)} LAK`, t(c.tra_chu_xe, mh), 'tot')}</div>
       <div class="o"><b>${NN.h('trip_profit')}</b>
-      ${r(NN.h('do_money'), `${so(P.price_usd, 2)} $/t × ${so(c.tan_tinh, 2)} t`, so(c.doanh_thu_usd, 2) + ' USD')}
-      ${r(NN.h('st_hire'), '', '− ' + so(c.tien_thue_usd, 2) + ' USD')}
-      ${r(NN.h('trip_profit'), `≈ ${so(c.lai_lak)} LAK`, so(c.lai_usd, 2) + ' USD', 'tot')}</div></div>`;
+      ${r(NN.h('do_money'), `${t(P.price, ma)}/t × ${so(c.tan_tinh, 2)} t`, t(c.doanh_thu, ma))}
+      ${r(NN.h('st_hire'), mh === ma ? '' : t(c.tien_thue, mh), '− ' + t(c.tien_thue_theo_cuoc, ma))}
+      ${r(NN.h('trip_profit'), `≈ ${so(c.lai_lak)} LAK`, t(c.lai, ma), 'tot')}</div></div>`;
   }
   function ve() {
     if (!P) { root.querySelector('#hd-than').innerHTML = `<div class="empty muted">${NN.h('no_data')}</div>`; return; }
@@ -35,8 +36,8 @@
         ${m('truck_type', c.lien_ket ? NN.h('co_joint') + (P.owner_name ? ' · ' + esc(P.owner_name) : '') : 'EPL', true)}${m('goods_type', NN.h(P.goods_type || 'iron_ore'))}
         ${m('brand_model', esc(P.brand_model) || '—')}${m('w_origin', so(P.weight_origin, 2) + ' ' + NN.t('ton'))}
         ${m('truck_no', esc(P.truck_no))}${m('w_dest', (P.weight_dest != null ? so(P.weight_dest, 2) : '—') + ' ' + NN.t('ton'))}
-        ${m('plate_head', esc(P.plate_head), true)}${m('price_usd', so(P.price_usd, 2) + ' USD')}
-        ${m('plate_trailer', esc(P.plate_trailer), true)}${m('value_usd', '<b>' + so(c.doanh_thu_usd, 2) + ' USD</b>')}
+        ${m('plate_head', esc(P.plate_head), true)}${m('price_usd', EPL.tien(P.price, c.ccy))}
+        ${m('plate_trailer', esc(P.plate_trailer), true)}${m('value_usd', '<b>' + EPL.tien(c.doanh_thu, c.ccy) + '</b>')}
         ${m('driver', esc(P.driver_name), true)}${m('customer', esc(P.customer_name), true)}
         ${m('route', esc(P.origin) + ' → ' + esc(P.destination), true)}${m('ore_bill_no', esc(P.ore_bill_no) || '—')}
       </div>
