@@ -4,6 +4,8 @@ Bản làm lại của EPL_System cho khách Lào, **đúng theo tệp Excel h�
 
 **Mô tả đầy đủ nghiệp vụ, cơ sở dữ liệu và API: [DOCS/NGHIEP_VU_DB_API.md](DOCS/NGHIEP_VU_DB_API.md)** (có bản Word cạnh đó).
 
+**Tự thử phần mềm theo từng vai: [DOCS/HUONG_DAN_THU_TUNG_VAI.md](DOCS/HUONG_DAN_THU_TUNG_VAI.md)** — kịch bản một chuyến hàng đi qua 8 vai, kèm danh sách chỗ phải bị chặn.
+
 ## Chạy
 
 ```
