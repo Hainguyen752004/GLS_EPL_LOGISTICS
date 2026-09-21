@@ -1,0 +1,36 @@
+/* Tỷ giá — mỗi loại tiền một thẻ, màu viền khác nhau để mắt bắt được ngay đang sửa tiền nào. */
+.tg-nhac{border-left:3px solid var(--brand)}
+.tg-nhac .bd{color:var(--muted)}
+
+.tg-the{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px}
+.tg-o{margin:0}
+.tg-o .hd h4{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
+.tg-ma{font-size:11px;letter-spacing:.5px;padding:2px 7px;border-radius:99px;background:var(--line);color:var(--muted);font-weight:600}
+.tg-o .bd{display:flex;flex-direction:column;gap:7px}
+
+.tg-nhap{display:flex;align-items:stretch;gap:0}
+.tg-nhap input{flex:1;text-align:right;font-size:17px;font-weight:600;border-top-right-radius:0;border-bottom-right-radius:0}
+.tg-nhap select{border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;min-width:74px}
+.tg-goc{display:flex;align-items:center;padding:0 11px;border:1px solid var(--line);border-left:0;
+  border-radius:0 6px 6px 0;background:var(--bg);color:var(--muted);font-size:12.5px;font-weight:600}
+
+.tg-dong{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
+.tg-dong b{color:var(--text);font-variant-numeric:tabular-nums}
+.tg-doi{margin-top:2px;padding-top:7px;border-top:1px dashed var(--line);font-size:12px;font-weight:600}
+.tg-doi.len{color:var(--green,#15803d)}
+.tg-doi.xuong{color:var(--red)}
+.tg-doi.im{color:var(--muted);font-weight:400}
+
+/* Viền màu theo loại tiền — cùng bộ màu với thẻ ở màn Tổng quan */
+.tg-usd{border-top:3px solid #2563eb}
+.tg-thb{border-top:3px solid #d97706}
+.tg-lak{border-top:3px solid #15803d}
+.tg-vnd{border-top:3px solid #dc2626}
+.tg-cny{border-top:3px solid #7c3aed}
+
+.tg-may-o{display:grid;grid-template-columns:minmax(200px,280px) 1fr;gap:16px;align-items:end}
+.tg-ket{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tg-ket-o{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--bg);text-align:center}
+.tg-ket-o b{display:block;margin-top:3px;font-size:16px;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){ .tg-may-o{grid-template-columns:1fr} }

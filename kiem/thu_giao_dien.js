@@ -14,7 +14,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu',
   'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-hang', 'kho-nhien-lieu',
-  'diem-do', 'kho-phu-tung', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+  'diem-do', 'kho-phu-tung', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {
@@ -350,6 +350,27 @@ async function main() {
   assert.ok(dongGia.length >= 2, 'khách gieo sẵn phải có ít nhất 2 dòng giá: ' + dongGia.length);
   assert.ok(!goc().querySelector('#kh-gia-them').hidden, 'kế toán phải có nút thêm giá');
   console.log('✓ bảng giá khách × tuyến: Bãi không thấy · kế toán thấy %d dòng', dongGia.length);
+
+  // 4b. màn TỶ GIÁ: bốn thẻ, gốc là Kíp, máy tính quy đổi chạy theo số ĐANG GÕ (chưa lưu)
+  await di('#/ty-gia');
+  const theTien = goc().querySelectorAll('#tg-the .tg-o');
+  assert.strictEqual(theTien.length, 4, 'phải có bốn thẻ tiền tệ (USD, THB, VND, CNY): ' + theTien.length);
+  assert.ok([...goc().querySelectorAll('.tg-goc')].every(x => x.textContent.trim() === 'LAK'),
+    'mỗi thẻ phải ghi rõ quy về LAK — Kíp là tiền gốc của bản Lào');
+  const oUsd = goc().querySelector('#tg-the input[data-ma="USD"]');
+  assert.ok(oUsd && !oUsd.disabled, 'kế toán phải sửa được ô USD');
+  goc().querySelector('#tg-so').value = '1000';
+  goc().querySelector('#tg-ma').value = 'USD';
+  goc().querySelector('#tg-ma').dispatchEvent(new w.Event('change'));
+  const truocKhiGo = goc().querySelector('#tg-ket').textContent;
+  oUsd.value = '30000';
+  oUsd.dispatchEvent(new w.Event('input'));
+  const sauKhiGo = goc().querySelector('#tg-ket').textContent;
+  assert.notStrictEqual(truocKhiGo, sauKhiGo, 'máy tính quy đổi phải chạy theo số đang gõ, không chờ bấm Lưu');
+  assert.ok(sauKhiGo.includes('30,000,000'), 'gõ 1 USD = 30.000 Kíp thì 1.000 USD phải ra 30.000.000 LAK: ' + sauKhiGo);
+  assert.ok(goc().textContent.includes('Sửa ở đây chỉ áp dụng cho phiếu lập MỚI')
+    || goc().querySelector('.tg-nhac'), 'màn phải nói rõ sửa tỷ giá không đụng phiếu đã lập');
+  console.log('✓ màn Tỷ giá: 4 thẻ quy về LAK · máy tính chạy theo số đang gõ · có câu nhắc phiếu cũ không đổi');
 
   // 5. vai kho nhiên liệu: chỉ mục III có nút
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khonl', '1234');

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1139 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1172 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4177,6 +4177,11 @@ window.EPL_TU_DIEN = {
   "lo": "ໂຊເຟີ ແລະ ໃບຂັບຂີ່",
   "en": "Drivers and licences"
  },
+ "d_ty_gia": {
+  "vi": "Quy đổi về Kíp cho phiếu mới",
+  "lo": "ແປງເປັນກີບສຳລັບບິນໃໝ່",
+  "en": "Rates to LAK for new slips"
+ },
  "d_tuyen_duong": {
   "vi": "Chặng, số km, phí cao tốc",
   "lo": "ຈຸດຜ່ານ, ກິໂລແມັດ, ຄ່າທາງດ່ວນ",
@@ -5646,6 +5651,166 @@ window.EPL_TU_DIEN = {
   "vi": "Trạng thái thu do tổng các lần thu quyết định, không bấm tay.",
   "lo": "ສະຖານະການຮັບເງິນມາຈາກຍອດລວມການຮັບ, ບໍ່ແມ່ນກົດເອງ.",
   "en": "The payment status comes from the payments recorded, not a manual switch."
+ },
+ "nav_rates": {
+  "vi": "Tỷ giá",
+  "lo": "ອັດຕາແລກປ່ຽນ",
+  "en": "Exchange rates"
+ },
+ "title_ty_gia": {
+  "vi": "Tỷ giá<span class=\"sub\">Quy đổi về Kíp · dùng cho phiếu lập mới</span>",
+  "lo": "ອັດຕາແລກປ່ຽນ<span class=\"sub\">ແປງເປັນກີບ · ໃຊ້ສຳລັບບິນອອກໃໝ່</span>",
+  "en": "Exchange rates<span class=\"sub\">Converted to LAK · used for new slips</span>"
+ },
+ "rate_page_note": {
+  "vi": "Kíp là tiền gốc: mỗi ô đọc là \"1 đơn vị tiền đó ăn bao nhiêu Kíp\".",
+  "lo": "ກີບເປັນເງິນຫຼັກ: ແຕ່ລະຊ່ອງອ່ານວ່າ \"1 ໜ່ວຍເງິນນັ້ນເທົ່າກັບຈັກກີບ\".",
+  "en": "LAK is the base: each box reads \"one unit of that currency equals how many LAK\"."
+ },
+ "rate_lock_note": {
+  "vi": "<b>Sửa ở đây chỉ áp dụng cho phiếu lập MỚI.</b> Phiếu đã lập khoá tỷ giá riêng của nó, nên con số trên tờ phiếu cũ và trên hoá đơn đã xuất không đổi theo.",
+  "lo": "<b>ການແກ້ຢູ່ນີ້ໃຊ້ກັບບິນທີ່ອອກໃໝ່ເທົ່ານັ້ນ.</b> ບິນທີ່ອອກແລ້ວລັອກອັດຕາຂອງມັນເອງ, ຕົວເລກໃນບິນເກົ່າ ແລະ ໃບເກັບເງິນທີ່ອອກແລ້ວຈຶ່ງບໍ່ປ່ຽນຕາມ.",
+  "en": "<b>Changes here apply to NEW slips only.</b> An existing slip keeps the rate locked on it, so figures on old slips and issued invoices do not move."
+ },
+ "rate_input": {
+  "vi": "Tỷ giá nhập mới · 1 {m} sang Kíp",
+  "lo": "ອັດຕາໃໝ່ · 1 {m} ເປັນກີບ",
+  "en": "New rate · 1 {m} to LAK"
+ },
+ "rate_now": {
+  "vi": "Đang áp dụng",
+  "lo": "ກຳລັງໃຊ້",
+  "en": "In use"
+ },
+ "rate_prev": {
+  "vi": "Lần trước",
+  "lo": "ຄັ້ງກ່ອນ",
+  "en": "Previous"
+ },
+ "rate_by": {
+  "vi": "Người đặt",
+  "lo": "ຜູ້ຕັ້ງ",
+  "en": "Set by"
+ },
+ "rate_none": {
+  "vi": "Chưa có",
+  "lo": "ຍັງບໍ່ມີ",
+  "en": "None yet"
+ },
+ "rate_vs_prev": {
+  "vi": "so với lần trước",
+  "lo": "ທຽບກັບຄັ້ງກ່ອນ",
+  "en": "vs previous"
+ },
+ "rate_no_change": {
+  "vi": "Chưa có biến động",
+  "lo": "ຍັງບໍ່ມີການປ່ຽນແປງ",
+  "en": "No change yet"
+ },
+ "rate_save": {
+  "vi": "Lưu tỷ giá mới",
+  "lo": "ບັນທຶກອັດຕາໃໝ່",
+  "en": "Save new rates"
+ },
+ "rate_nothing": {
+  "vi": "Chưa đổi ô nào",
+  "lo": "ຍັງບໍ່ໄດ້ແກ້ຊ່ອງໃດ",
+  "en": "Nothing changed"
+ },
+ "rate_from": {
+  "vi": "Ngày áp dụng",
+  "lo": "ວັນທີເລີ່ມໃຊ້",
+  "en": "Effective date"
+ },
+ "rate_to_lak": {
+  "vi": "Tỷ giá sang Kíp",
+  "lo": "ອັດຕາເປັນກີບ",
+  "en": "Rate to LAK"
+ },
+ "rate_change": {
+  "vi": "Thay đổi",
+  "lo": "ການປ່ຽນແປງ",
+  "en": "Change"
+ },
+ "rate_source": {
+  "vi": "Nguồn",
+  "lo": "ແຫຼ່ງ",
+  "en": "Source"
+ },
+ "rate_src_hand": {
+  "vi": "Người nhập",
+  "lo": "ຜູ້ປ້ອນ",
+  "en": "Entered by hand"
+ },
+ "rate_src_api": {
+  "vi": "Lấy từ API",
+  "lo": "ດຶງຈາກ API",
+  "en": "From API"
+ },
+ "rate_history": {
+  "vi": "Lịch sử tỷ giá đã áp dụng",
+  "lo": "ປະຫວັດອັດຕາທີ່ໃຊ້ແລ້ວ",
+  "en": "Applied rate history"
+ },
+ "rate_history_note": {
+  "vi": "Mỗi lần đổi ghi một dòng, giữ luôn số cũ — để trả lời được \"tháng trước mình để 1 USD bao nhiêu Kíp\".",
+  "lo": "ທຸກຄັ້ງທີ່ປ່ຽນຈະບັນທຶກໜຶ່ງແຖວ ພ້ອມເກັບຕົວເລກເກົ່າ — ເພື່ອຕອບໄດ້ວ່າ \"ເດືອນກ່ອນ 1 USD ເທົ່າກັບຈັກກີບ\".",
+  "en": "Every change writes a row and keeps the old figure, so \"what was 1 USD last month\" is answerable from data."
+ },
+ "rate_no_history": {
+  "vi": "Chưa có lần đổi tỷ giá nào",
+  "lo": "ຍັງບໍ່ມີການປ່ຽນອັດຕາ",
+  "en": "No rate changes yet"
+ },
+ "rate_calc": {
+  "vi": "Máy tính quy đổi theo tỷ giá đang nhập",
+  "lo": "ເຄື່ອງຄິດໄລ່ຕາມອັດຕາທີ່ກຳລັງປ້ອນ",
+  "en": "Converter using the rates entered above"
+ },
+ "rate_calc_from": {
+  "vi": "Số tiền gốc",
+  "lo": "ຈຳນວນເງິນຕັ້ງຕົ້ນ",
+  "en": "Amount"
+ },
+ "rate_calc_note": {
+  "vi": "Máy tính dùng con số anh đang gõ ở các thẻ trên, kể cả khi chưa bấm Lưu — để thử trước rồi mới chốt.",
+  "lo": "ເຄື່ອງຄິດໄລ່ໃຊ້ຕົວເລກທີ່ກຳລັງພິມຢູ່ບັດຂ້າງເທິງ ເຖິງວ່າຍັງບໍ່ໄດ້ກົດບັນທຶກ — ລອງເບິ່ງກ່ອນຈຶ່ງຕົກລົງ.",
+  "en": "The converter uses the figures being typed above, even before saving, so you can try before committing."
+ },
+ "rate_to": {
+  "vi": "Quy đổi sang {m}",
+  "lo": "ແປງເປັນ {m}",
+  "en": "To {m}"
+ },
+ "ccy_usd": {
+  "vi": "Đô La Mỹ",
+  "lo": "ໂດລາ ອາເມລິກາ",
+  "en": "US Dollar"
+ },
+ "ccy_thb": {
+  "vi": "Bath Thái",
+  "lo": "ບາດ ໄທ",
+  "en": "Thai Baht"
+ },
+ "ccy_vnd": {
+  "vi": "Đồng Việt Nam",
+  "lo": "ດົ່ງ ຫວຽດນາມ",
+  "en": "Vietnamese Dong"
+ },
+ "ccy_cny": {
+  "vi": "Nhân Dân Tệ",
+  "lo": "ຢວນ ຈີນ",
+  "en": "Chinese Yuan"
+ },
+ "ccy_lak": {
+  "vi": "Kíp Lào",
+  "lo": "ກີບ ລາວ",
+  "en": "Lao Kip"
+ },
+ "reset": {
+  "vi": "Bỏ thay đổi",
+  "lo": "ຍົກເລີກການແກ້",
+  "en": "Discard changes"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

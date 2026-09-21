@@ -203,11 +203,34 @@ class SupplierPayment(Base):
 
 
 class ExchangeRate(Base):
-    """Tỷ giá quy về LAK — ghi trên đầu phiếu xuất xe: USD 22.000 · THB 700 · VND 1,2."""
+    """Tỷ giá quy về LAK — ghi trên đầu phiếu xuất xe: USD 22.000 · THB 700 · VND 1,2 · CNY 3.000.
+
+    Đây chỉ là tỷ giá MẶC ĐỊNH cho phiếu lập mới. Phiếu đã lập giữ tỷ giá riêng của nó
+    (`trips.rate_usd`…), nên sửa ở đây KHÔNG làm đổi con số trên phiếu cũ.
+    """
     __tablename__ = "exchange_rates"
     code = Column(String, primary_key=True)
     rate_to_lak = Column(Float, nullable=False)
+    by_user = Column(String)                                   # ai đặt lần gần nhất
     updated_at = Column(DateTime, default=bay_gio, onupdate=bay_gio)
+
+
+class ExchangeRateLog(Base):
+    """Lịch sử tỷ giá đã áp dụng — mỗi lần đổi ghi một dòng, giữ luôn số cũ.
+
+    Cần lịch sử vì tỷ giá là con số đi vào tiền: khi kế toán hỏi "tháng trước mình để 1 USD bao
+    nhiêu Kíp", phải trả lời được bằng dữ liệu chứ không phải trí nhớ.
+    """
+    __tablename__ = "exchange_rate_logs"
+    id = Column(String, primary_key=True, default=ma_moi)
+    code = Column(String, nullable=False, index=True)
+    rate_to_lak = Column(Float, nullable=False)                # số MỚI đặt
+    rate_cu = Column(Float)                                    # số trước đó, None nếu lần đầu
+    ap_dung_tu = Column(Date, nullable=False)                  # ngày bắt đầu áp dụng
+    nguon = Column(String, nullable=False, default="tay")      # tay (người gõ) · api (sau này nối)
+    by_user = Column(String)
+    ghi_chu = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
 
 
 # ---------------------------------------------------------------- phiếu xuất xe

@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (33 bảng) · **C. API**
-(122 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (34 bảng) · **C. API**
+(123 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -123,6 +123,12 @@ khách Trung Quốc là máy tự điền Nhân dân tệ, không rơi về USD.
 (`hire_ccy`) vì bán bằng USD mà thuê xe Lào trả bằng Kíp là chuyện bình thường; bỏ trống thì hiểu là
 cùng tiền với cước.
 
+**Đặt tỷ giá ở đâu**: màn **Tỷ giá** (`#/ty-gia`, nhóm Danh mục) — mỗi loại tiền một thẻ đọc là
+*"1 đơn vị tiền đó ăn bao nhiêu Kíp"*, kèm số lần trước, mức thay đổi, người đặt, một máy tính quy
+đổi chạy theo con số **đang gõ** (chưa lưu cũng thử được), và bảng lịch sử mọi lần đổi. Kế toán
+Thu/Chi VC và Kế toán Doanh thu VC sửa được; các vai tiền khác chỉ xem; Bãi và tài xế không thấy màn
+này nhưng vẫn **đọc** được tỷ giá qua `/api/rates` vì chi phí của họ có VND và THB.
+
 **3. Mọi TỔNG quy về Kíp, kèm chia theo từng loại tiền.** Cộng thẳng USD với Nhân dân tệ là cộng táo
 với cam, nên báo cáo trả `doanh_thu_lak` (một con số cộng được) và `doanh_thu_tien`
 (`{"USD": 5059, "CNY": 12618, "LAK": 37710000}`) để người đọc thấy con số đó gồm những gì. Bảng
@@ -196,7 +202,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-33 bảng, nhóm theo việc:
+34 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -211,7 +217,8 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 | `drivers`, `driver_licenses` | Tài xế và bằng lái | `license_no`, `expiry` |
 | `routes`, `route_stops` | Tuyến và các chặng | `total_km`, `toll_lak`; mỗi chặng có `km_from_prev`, `lat`, `lng` |
 | `suppliers`, `supplier_payments` | Nhà cung cấp và các đợt trả | |
-| `exchange_rates` | Tỷ giá về LAK | USD, THB, VND, **CNY** — dùng làm mặc định cho phiếu mới |
+| `exchange_rates` | Tỷ giá về LAK | USD, THB, VND, **CNY** — dùng làm mặc định cho phiếu mới; `by_user` ai đặt lần gần nhất |
+| `exchange_rate_logs` | **Lịch sử tỷ giá** | Mỗi lần đổi một dòng: `rate_to_lak` số mới, `rate_cu` số cũ, `ap_dung_tu`, `nguon` (`tay`/`api`), `by_user`, `ghi_chu` |
 | `fuel_places` | Điểm đổ dầu | `owner_type` (epl = kho mình, ngoài = mua) |
 
 ## B2. Phiếu xuất xe (DO) — trung tâm của hệ
@@ -315,6 +322,18 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `GET PUT /api/rates` | Tỷ giá |
 | `GET POST PUT /api/routes` | Tuyến đường và các chặng |
 
+## C5b. Tỷ giá — `routes/danh_muc.py`
+
+| Đường | Việc |
+|---|---|
+| `GET /api/rates` | Dạng phẳng `{mã: tỷ giá}`, mọi màn đang gọi đường này. Phải đăng nhập; **mọi vai đều xem được** vì dòng chi có VND, THB |
+| `GET /api/rates/chi-tiet` | Cho màn Tỷ giá: số đang áp dụng · số lần trước · mức đổi · ai đặt · lịch sử 200 dòng gần nhất |
+| `PUT /api/rates` | Đặt tỷ giá mặc định cho phiếu **lập mới**. Chỉ KT Thu/Chi VC, KT Doanh thu VC và Sếp. Gõ lại đúng số cũ thì **không** ghi một dòng lịch sử rỗng; số ≤ 0 hoặc không phải số thì 422 |
+
+Sửa tỷ giá **không bao giờ** làm đổi con số trên phiếu đã lập: phiếu khoá bốn tỷ giá của riêng nó
+(`trips.rate_usd`…) ngay lúc lập. Màn hình nói thẳng câu đó ở đầu trang, vì hiểu nhầm chỗ này là
+hiểu nhầm về tiền.
+
 ## C6. Theo dõi, báo cáo, chứng từ
 
 | Đường | Việc |
@@ -373,6 +392,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_phieu_linh.py` | Phiếu lĩnh QR, thủ kho cấp dầu, khai đổ dọc đường, tất toán |
 | `python kiem\thu_ban_hang.py` | Bán phụ tùng, xăng dầu ra ngoài |
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
+| `python kiem\thu_ty_gia.py` | **Màn Tỷ giá**: ai xem ai sửa, lịch sử giữ số cũ, gõ lại số cũ không đẻ dòng rác, chặn số sai, phiếu cũ giữ tỷ giá của nó, phiếu mới lấy số mới |
 | `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |
 | `node kiem\thu_giao_dien.js` | Toàn giao diện trên jsdom, nối máy chủ thật |

@@ -192,6 +192,20 @@ xem ngay, không phải nhập gì.
 | ☐ | `ketoan` | Vào **Khách hàng → Bảng giá** | Mỗi dòng giá có cột **Tiền**; thêm dòng mới thì chọn được tiền tệ |
 | ☐ | `thabok` | Mở **Tổng quan** và **Theo dõi phiếu** | Vẫn **không** thấy cột Tiền của phần bán, không thấy doanh thu — quy tắc ẩn tiền bán không đổi |
 
+### Màn Tỷ giá — `#/ty-gia`, nhóm Danh mục
+
+| ☐ | Đăng nhập | Việc | Phải thấy |
+|---|---|---|---|
+| ☐ | `ketoan` | Mở **Tỷ giá** | Bốn thẻ USD · THB · VND · CNY, mỗi thẻ ghi *1 … sang Kíp*, kèm số đang áp dụng và người đặt |
+| ☐ | `ketoan` | Gõ 1 USD = **30.000** nhưng **chưa bấm Lưu**, nhìn máy tính quy đổi bên dưới | Con số đổi theo ngay — thử trước rồi mới chốt |
+| ☐ | `ketoan` | Bấm **Bỏ thay đổi** | Ô quay về số cũ |
+| ☐ | `ketoan` | Gõ số mới rồi **Lưu tỷ giá mới**, điền ngày áp dụng và ghi chú | Thẻ hiện *Lần trước* và mức thay đổi; bảng **Lịch sử** có thêm một dòng giữ cả số cũ |
+| ☐ | `ketoan` | Bấm Lưu lần nữa mà **không đổi gì** | Báo "Chưa đổi ô nào" — không đẻ dòng lịch sử rỗng |
+| ☐ | `ketoan` | Mở lại một **phiếu cũ** (ví dụ `T4-0428`) | Số tiền **không đổi** theo tỷ giá mới — phiếu khoá tỷ giá riêng của nó |
+| ☐ | `thabok` | Tìm màn **Tỷ giá** trong thanh điều hướng | **Không có** — Bãi không đặt tỷ giá |
+| ☐ | `quytb` | Mở **Tỷ giá** | Xem được nhưng **không có** nút Lưu |
+| ☐ | `ketoan` | Nhớ trả tỷ giá về số cũ sau khi thử | |
+
 ---
 
 ## 5. Thử nối kế toán (chưa có API anh Khang vẫn thử được)
@@ -233,6 +247,7 @@ Muốn chắc chắn máy vẫn đúng sau khi nghịch, chạy bộ kiểm (c�
 ```
 python kiem\thu_hai_do.py          python kiem\thu_luong_api.py
 python kiem\thu_tien_te.py        python kiem\thu_ban_hang.py
+python kiem\thu_ty_gia.py
 python kiem\thu_phieu_linh.py      python kiem\thu_day_ke_toan.py
 node   kiem\thu_giao_dien.js       node kiem\ra_vai.js
 ```

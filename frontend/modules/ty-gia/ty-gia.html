@@ -1,0 +1,45 @@
+<!-- Tỷ giá — ອັດຕາແລກປ່ຽນ. Đặt tỷ giá MẶC ĐỊNH cho phiếu lập mới.
+     Kíp là tiền gốc: mỗi thẻ đọc là "1 <tiền đó> ăn bao nhiêu Kíp". -->
+<div class="toolbar">
+  <span class="small muted" data-i18n="rate_page_note"></span>
+  <div class="grow"></div>
+  <button class="btn" id="tg-lam-lai"><span data-i18n="reset"></span></button>
+  <button class="btn primary" id="tg-luu"><span data-i18n="rate_save"></span></button>
+</div>
+
+<div class="card tg-nhac">
+  <div class="bd small" data-i18n="rate_lock_note"></div>
+</div>
+
+<div class="tg-the" id="tg-the"></div>
+
+<div class="card tg-may">
+  <div class="hd"><h3 data-i18n="rate_calc"></h3></div>
+  <div class="bd">
+    <div class="tg-may-o">
+      <div class="field"><label data-i18n="rate_calc_from"></label>
+        <div class="tg-nhap">
+          <input class="num" id="tg-so" inputmode="decimal" value="1000000">
+          <select id="tg-ma"></select>
+        </div>
+      </div>
+      <div class="tg-ket" id="tg-ket"></div>
+    </div>
+    <p class="small muted" data-i18n="rate_calc_note"></p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="rate_history"></h3><div class="grow"></div><span class="small muted" id="tg-dem"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="ccy"></th><th class="num" data-i18n="rate_to_lak"></th><th class="num" data-i18n="rate_prev"></th>
+        <th class="num" data-i18n="rate_change"></th><th data-i18n="rate_from"></th><th data-i18n="rate_source"></th>
+        <th data-i18n="by_user"></th><th data-i18n="note"></th>
+      </tr></thead>
+      <tbody id="tg-than"></tbody>
+    </table>
+  </div>
+  <div class="bd small muted" data-i18n="rate_history_note"></div>
+</div>

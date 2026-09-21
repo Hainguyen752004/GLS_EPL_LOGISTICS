@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
+                    ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import tien_dong
@@ -510,23 +511,69 @@ def them_bang_lai(did: str, data: dict = Body(...), db: Session = Depends(get_db
 
 
 # ================================================================ tỷ giá
+#
+# LAK là tiền gốc của hệ này: mọi tỷ giá đọc là "một đơn vị tiền đó ăn bao nhiêu Kíp". Bảng này chỉ
+# là tỷ giá MẶC ĐỊNH cho phiếu lập mới — phiếu đã lập khoá tỷ giá riêng của nó (`trips.rate_usd`…),
+# nên sửa ở đây không bao giờ làm đổi con số trên tờ phiếu đã in. Mỗi lần đổi ghi một dòng lịch sử.
+SUA_TY_GIA = can_vai("acct", "rev")          # kế toán thu/chi và kế toán doanh thu Viêng Chăn
+
+
 @router.get("/api/rates")
-def ds_ty_gia(db: Session = Depends(get_db)):
+def ds_ty_gia(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Dạng phẳng {mã: tỷ giá} — mọi màn đang gọi đường này, giữ nguyên hình dạng."""
     ra = {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
     ra.setdefault("LAK", 1.0)
     return ra
 
 
+@router.get("/api/rates/chi-tiet")
+def chi_tiet_ty_gia(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Cho màn Tỷ giá: số đang áp dụng, số lần trước, mức thay đổi, ai đặt, đặt lúc nào."""
+    cu = {r.code: r for r in db.query(ExchangeRate).all()}
+    log = (db.query(ExchangeRateLog).order_by(ExchangeRateLog.ts.desc()).limit(200).all())
+    ds = []
+    for ma in TIEN_TE:
+        if ma == "LAK":
+            continue
+        r = cu.get(ma)
+        truoc = next((x.rate_cu for x in log if x.code == ma and x.rate_cu), None)
+        gt = r.rate_to_lak if r else None
+        doi = (gt - truoc) if (gt is not None and truoc) else None
+        ds.append({"code": ma, "rate_to_lak": gt, "truoc": truoc, "doi": doi,
+                   "doi_pct": round(doi / truoc * 100, 3) if (doi is not None and truoc) else None,
+                   "by_user": r.by_user if r else None,
+                   "cap_nhat": r.updated_at.isoformat() if (r and r.updated_at) else None})
+    return {"ds": ds, "goc": "LAK",
+            "lich_su": [{"id": x.id, "code": x.code, "rate_to_lak": x.rate_to_lak, "rate_cu": x.rate_cu,
+                         "ap_dung_tu": x.ap_dung_tu.isoformat() if x.ap_dung_tu else None,
+                         "nguon": x.nguon, "by_user": x.by_user, "ghi_chu": x.ghi_chu,
+                         "ts": x.ts.isoformat() if x.ts else None} for x in log]}
+
+
 @router.put("/api/rates")
-def sua_ty_gia(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_vai("acct", "rev"))):
-    """Tỷ giá dùng làm MẶC ĐỊNH cho phiếu mới. Phiếu đã lập giữ tỷ giá riêng của nó."""
+def sua_ty_gia(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_TY_GIA)):
+    """Đặt tỷ giá mặc định cho phiếu lập mới. Chỉ ghi lịch sử khi con số THẬT SỰ đổi."""
+    ngay = _ngay(data.get("ap_dung_tu"), "ap_dung_tu") or dt.date.today()
+    ghi_chu = (data.get("ghi_chu") or "").strip() or None
+    doi = []
     for ma in [m for m in TIEN_TE if m != "LAK"]:
-        if ma in data:
-            gt = _so(data[ma], ma)
-            if not gt or gt <= 0:
-                raise HTTPException(422, {"ma": "SO_SAI", "loi": "Tỷ giá %s phải lớn hơn 0." % ma})
-            r = db.get(ExchangeRate, ma) or ExchangeRate(code=ma, rate_to_lak=gt)
-            r.rate_to_lak = gt; r.updated_at = dt.datetime.utcnow()
-            db.add(r)
+        if ma not in data or data[ma] in (None, ""):
+            continue
+        gt = _so(data[ma], ma)
+        if not gt or gt <= 0:
+            raise HTTPException(422, {"ma": "SO_SAI", "loi": "Tỷ giá %s phải lớn hơn 0." % ma})
+        r = db.get(ExchangeRate, ma)
+        truoc = r.rate_to_lak if r else None
+        if r is not None and abs((truoc or 0) - gt) < 1e-9:
+            continue                              # gõ lại đúng số cũ thì không ghi một dòng lịch sử rỗng
+        if r is None:
+            r = ExchangeRate(code=ma)
+        r.rate_to_lak, r.by_user, r.updated_at = gt, user.full_name, dt.datetime.utcnow()
+        db.add(r)
+        db.add(ExchangeRateLog(code=ma, rate_to_lak=gt, rate_cu=truoc, ap_dung_tu=ngay,
+                               nguon="tay", by_user=user.full_name, ghi_chu=ghi_chu))
+        doi.append(ma)
     db.commit()
-    return ds_ty_gia(db)
+    ra = ds_ty_gia(db, user)
+    ra["_da_doi"] = doi
+    return ra
