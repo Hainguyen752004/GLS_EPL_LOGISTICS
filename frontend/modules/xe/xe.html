@@ -1,21 +1,26 @@
-<!-- Xe — ພາຫະນະ. Hai thẻ: ĐẦU KÉO (hồ sơ như module Xe của EPL_System) và RƠ-MOÓC (thực thể riêng, lắp/tháo được).
-     Bên trái danh sách, bên phải hồ sơ chiếc đang chọn: giấy tờ & hạn, rơ-moóc đang lắp, chi phí sửa chữa từ mục V. -->
-<div class="toolbar">
-  <div class="xe-tab" role="tablist">
-    <button class="active" data-tab="tractor" data-i18n="tractors"></button>
-    <button data-tab="trailer" data-i18n="trailers"></button>
-  </div>
-  <div class="field xe-tim"><label data-i18n="search"></label><input id="xe-q"></div>
-  <div class="field"><label data-i18n="owner_type"></label>
-    <select id="xe-loai"><option value="" data-i18n="all"></option><option value="EPL" data-i18n="co_epl"></option><option value="joint" data-i18n="co_joint"></option></select></div>
+<!-- Xe & rơ-moóc — ລົດ & ຫາງລາກ. Quản lý đầu kéo + rơ-moóc, lắp/tháo, giấy tờ, lịch xe, sửa chữa, chi phí.
+     Dữ liệu: GET /api/xe (đầu kéo), GET /api/ro-mooc, GET /api/xe/{so_xe}/lich?tuan=YYYY-MM-DD, GET /api/xe/{so_xe}/chi-phi (mục V các phiếu).
+     Hợp đồng JSON ở cuối xe.js. -->
+<div class="xe-toolbar">
+  <div class="xe-seg" id="xe-loai"><button data-v="dau-keo" class="active" type="button"><span data-i18n="xe_tractor"></span><span class="n" id="xe-n-dk">0</span></button><button data-v="ro-mooc" type="button"><span data-i18n="xe_trailer"></span><span class="n" id="xe-n-rm">0</span></button></div>
+  <label class="xe-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="xe-q" type="search" autocomplete="off" data-i18n-ph="xe_search_ph"></label>
+  <div class="xe-field"><select id="xe-f-so-huu"><option value="" data-i18n="xe_all_owner"></option><option value="cong-ty" data-i18n="xe_company"></option><option value="thue-ngoai" data-i18n="xe_rented"></option></select></div>
+  <div class="xe-field"><select id="xe-f-bai"><option value="" data-i18n="xe_all_depot"></option></select></div>
+  <div class="xe-field"><select id="xe-f-tt"><option value="" data-i18n="xe_all_status"></option><option value="running" data-i18n="xe_st_running"></option><option value="idle" data-i18n="xe_st_idle"></option><option value="repair" data-i18n="xe_st_repair"></option></select></div>
   <div class="grow"></div>
-  <button class="btn primary" id="xe-them"><span data-i18n="add"></span></button>
+  <button class="btn" id="xe-refresh" type="button"><svg class="xe-i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span data-i18n="refresh"></span></button>
+  <button class="btn primary" id="xe-them" type="button">+ <span data-i18n="xe_add"></span></button>
 </div>
 
-<div class="xe-hai">
-  <div class="card"><div class="tbl-wrap"><table class="tbl" id="xe-bang"><thead id="xe-dau"></thead><tbody id="xe-than"></tbody></table></div></div>
-  <div class="card xe-ho-so" id="xe-ho-so" hidden>
-    <div class="hd"><h3 id="xe-hs-ten"></h3><div class="grow"></div><span id="xe-hs-tt"></span><button class="btn sm" id="xe-hs-sua" data-i18n="edit"></button></div>
-    <div class="bd" id="xe-hs-than"></div>
+<!-- Thanh xem nhanh: mỗi chip là một bộ lọc trên danh sách -->
+<div class="xe-quick" id="xe-quick"></div>
+
+<div class="xe-cols">
+  <div class="xe-card">
+    <div class="hd"><b id="xe-list-title"></b><span class="small muted" id="xe-count"></span><div class="grow"></div><span class="small muted" data-i18n="xe_click_hint"></span></div>
+    <div style="overflow-x:auto"><table class="xe-tbl" id="xe-tbl"></table></div>
+    <div class="xe-foot" id="xe-foot"></div>
   </div>
+  <div class="xe-card xe-detail" id="xe-detail"></div>
 </div>
+<div id="xe-modal-root"></div>

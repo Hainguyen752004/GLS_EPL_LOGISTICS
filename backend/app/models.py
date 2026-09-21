@@ -91,13 +91,22 @@ class Vehicle(Base):
     inspection_exp = Column(Date)                 # hạn đăng kiểm
     road_permit_exp = Column(Date)                # hạn giấy phép lưu hành / phù hiệu
     odometer_km = Column(Float)                   # công-tơ-mét hiện tại — cập nhật từ phiếu xe về
-    next_service_km = Column(Float)               # mốc bảo dưỡng kế tiếp
+    next_service_km = Column(Float)
+    service_date = Column(Date)                                # ngày bảo dưỡng gần nhất / kế tiếp
+    fuel_norm = Column(Float)                                  # định mức dầu L/100km
+    capacity_t = Column(Float)                                 # tải trọng (t)
+    inspection_place = Column(String)                          # nơi đăng kiểm
+    engine_cap = Column(String)                                # dung tích máy, ví dụ "9,7 L / 430 HP"
+    box_size = Column(String)                                  # cỡ thùng, ví dụ "12,1 × 2,4 × 2,6 m"
+    tyre = Column(String)                                      # cỡ lốp, ví dụ "11R22.5"               # mốc bảo dưỡng kế tiếp
     status = Column(String, nullable=False, default="available")   # TRANG_THAI_XE
     depot = Column(String, default="ທ່າບົກ")       # bãi đậu
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
 
 
+# Các ô hồ sơ xe thêm theo bản thiết kế màn Xe (21/09): định mức dầu, nơi đăng kiểm, ngày bảo dưỡng,
+# dung tích máy, cỡ thùng, cỡ lốp. Trước chỉ có trong Excel của họ chứ phần mềm không giữ chỗ để nhập.
 class Trailer(Base):
     """RƠ-MOÓC (ຫາງ) — quản lý riêng, lắp/tháo được giữa các đầu kéo."""
     __tablename__ = "trailers"
@@ -111,6 +120,9 @@ class Trailer(Base):
     insurance_exp = Column(Date)
     inspection_exp = Column(Date)
     status = Column(String, nullable=False, default="available")   # available · attached · maintenance · inactive
+    depot = Column(String)                                     # bãi đậu
+    chassis_no = Column(String)
+    inspection_place = Column(String)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
 

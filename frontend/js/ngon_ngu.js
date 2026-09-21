@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 921 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1054 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4321,6 +4321,671 @@ window.EPL_TU_DIEN = {
   "vi": "Đã điền đơn giá theo bảng giá khách × tuyến",
   "lo": "ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ",
   "en": "Rate filled from the customer × route price list"
+ },
+ "xe_photo_todo": {
+  "vi": "Chưa lưu được ảnh xe — sẽ làm khi có chỗ chứa tệp",
+  "lo": "ຍັງເກັບຮູບລົດບໍ່ໄດ້ — ຈະເຮັດເມື່ອມີບ່ອນເກັບໄຟລ໌",
+  "en": "Photos are not stored yet — pending a file store"
+ },
+ "xe_tractor": {
+  "vi": "Đầu kéo",
+  "lo": "ຫົວລາກ",
+  "en": "Tractors"
+ },
+ "xe_trailer": {
+  "vi": "Rơ-moóc",
+  "lo": "ຫາງລາກ",
+  "en": "Trailers"
+ },
+ "xe_search_ph": {
+  "vi": "Tìm số xe, biển số, hãng, bãi, phiếu…",
+  "lo": "ຊອກເລກລົດ, ປ້າຍ, ຍີ່ຫໍ້, ສະໜາມ…",
+  "en": "Search truck no., plate, brand, depot, doc…"
+ },
+ "xe_all_owner": {
+  "vi": "Tất cả sở hữu",
+  "lo": "ທຸກເຈົ້າຂອງ",
+  "en": "All ownership"
+ },
+ "xe_company": {
+  "vi": "Xe công ty (EPL)",
+  "lo": "ລົດບໍລິສັດ (EPL)",
+  "en": "Company (EPL)"
+ },
+ "xe_rented": {
+  "vi": "Xe thuê ngoài",
+  "lo": "ລົດເຊົ່ານອກ",
+  "en": "Rented"
+ },
+ "xe_all_depot": {
+  "vi": "Tất cả bãi",
+  "lo": "ທຸກສະໜາມ",
+  "en": "All depots"
+ },
+ "xe_all_status": {
+  "vi": "Tất cả trạng thái",
+  "lo": "ທຸກສະຖານະ",
+  "en": "All statuses"
+ },
+ "xe_st_running": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "Running"
+ },
+ "xe_st_idle": {
+  "vi": "Rảnh",
+  "lo": "ຫວ່າງ",
+  "en": "Idle"
+ },
+ "xe_st_repair": {
+  "vi": "Sửa chữa",
+  "lo": "ສ້ອມແປງ",
+  "en": "In repair"
+ },
+ "xe_rm_attached": {
+  "vi": "Đang lắp",
+  "lo": "ຕິດຢູ່",
+  "en": "Attached"
+ },
+ "xe_rm_free": {
+  "vi": "Rời",
+  "lo": "ຫວ່າງ",
+  "en": "Free"
+ },
+ "xe_add": {
+  "vi": "Thêm",
+  "lo": "ເພີ່ມ",
+  "en": "Add"
+ },
+ "xe_q_total": {
+  "vi": "Tổng",
+  "lo": "ທັງໝົດ",
+  "en": "Total"
+ },
+ "xe_q_maint": {
+  "vi": "Đến kỳ bảo dưỡng",
+  "lo": "ຖືງກຳນົດບຳລຸງ",
+  "en": "Maintenance due"
+ },
+ "xe_q_legal": {
+  "vi": "Giấy tờ sắp hết hạn",
+  "lo": "ເອກະສານໃກ້ໝົດອາຍຸ",
+  "en": "Docs expiring"
+ },
+ "xe_q_no_trailer": {
+  "vi": "Chưa có rơ-moóc",
+  "lo": "ຍັງບໍ່ມີຫາງ",
+  "en": "No trailer"
+ },
+ "xe_list_tractor": {
+  "vi": "Danh sách đầu kéo",
+  "lo": "ລາຍຊື່ຫົວລາກ",
+  "en": "Tractor list"
+ },
+ "xe_list_trailer": {
+  "vi": "Danh sách rơ-moóc",
+  "lo": "ລາຍຊື່ຫາງລາກ",
+  "en": "Trailer list"
+ },
+ "xe_click_hint": {
+  "vi": "Bấm dòng để xem hồ sơ",
+  "lo": "ກົດແຖວເພື່ອເບິ່ງລາຍລະອຽດ",
+  "en": "Click a row to open the profile"
+ },
+ "xe_none": {
+  "vi": "Không có xe nào khớp bộ lọc.",
+  "lo": "ບໍ່ມີລົດຕາມຕົວກອງ.",
+  "en": "No vehicles match the filter."
+ },
+ "xe_no": {
+  "vi": "Số xe",
+  "lo": "ເລກລົດ",
+  "en": "Truck no."
+ },
+ "xe_brand": {
+  "vi": "Hãng / đời xe",
+  "lo": "ຍີ່ຫໍ້ / ລຸ້ນ",
+  "en": "Brand / model"
+ },
+ "xe_plate": {
+  "vi": "Biển số",
+  "lo": "ປ້າຍ",
+  "en": "Plate"
+ },
+ "xe_plate_tractor": {
+  "vi": "Biển đầu kéo",
+  "lo": "ປ້າຍຫົວລາກ",
+  "en": "Tractor plate"
+ },
+ "xe_plate_trailer": {
+  "vi": "Biển rơ-moóc",
+  "lo": "ປ້າຍຫາງ",
+  "en": "Trailer plate"
+ },
+ "xe_owner": {
+  "vi": "Sở hữu",
+  "lo": "ເຈົ້າຂອງ",
+  "en": "Ownership"
+ },
+ "xe_owner_name": {
+  "vi": "Chủ xe (nếu thuê)",
+  "lo": "ຊື່ເຈົ້າຂອງ (ຖ້າເຊົ່າ)",
+  "en": "Owner (if rented)"
+ },
+ "xe_odo": {
+  "vi": "Công-tơ-mét",
+  "lo": "ໄລຍະທາງ",
+  "en": "Odometer"
+ },
+ "xe_docs": {
+  "vi": "Giấy tờ",
+  "lo": "ເອກະສານ",
+  "en": "Docs"
+ },
+ "xe_status": {
+  "vi": "Trạng thái",
+  "lo": "ສະຖານະ",
+  "en": "Status"
+ },
+ "xe_rm_type": {
+  "vi": "Loại thùng",
+  "lo": "ປະເພດຕູ້",
+  "en": "Body type"
+ },
+ "xe_rm_load": {
+  "vi": "Tải trọng",
+  "lo": "ນ້ຳໜັກບັນທຸກ",
+  "en": "Payload"
+ },
+ "xe_rm_on": {
+  "vi": "Lắp vào xe",
+  "lo": "ຕິດກັບລົດ",
+  "en": "Attached to"
+ },
+ "xe_legend_dots": {
+  "vi": "● Bảo hiểm · Đăng kiểm · Lưu hành — xanh ổn, vàng ≤ 30 ngày, đỏ hết hạn",
+  "lo": "● ປະກັນ · ກວດກາ · ໃບອະນຸຍາດ — ຂຽວປົກກະຕິ, ເຫຼືອງ ≤ 30 ວັນ, ແດງໝົດອາຍຸ",
+  "en": "● Insurance · Inspection · Permit — green ok, amber ≤ 30 days, red expired"
+ },
+ "xe_pick": {
+  "vi": "Chọn một xe để xem hồ sơ.",
+  "lo": "ເລືອກລົດເພື່ອເບິ່ງລາຍລະອຽດ.",
+  "en": "Select a vehicle to view its profile."
+ },
+ "xe_edit": {
+  "vi": "Sửa",
+  "lo": "ແກ້ໄຂ",
+  "en": "Edit"
+ },
+ "xe_incident": {
+  "vi": "Báo sự cố",
+  "lo": "ແຈ້ງເຫດ",
+  "en": "Report incident"
+ },
+ "xe_engine": {
+  "vi": "Số máy",
+  "lo": "ເລກຈັກ",
+  "en": "Engine no."
+ },
+ "xe_chassis": {
+  "vi": "Số khung",
+  "lo": "ເລກຖັງ",
+  "en": "Chassis no."
+ },
+ "xe_depot": {
+  "vi": "Bãi đậu",
+  "lo": "ສະໜາມຈອດ",
+  "en": "Depot"
+ },
+ "xe_trips_done": {
+  "vi": "Số phiếu đã chạy",
+  "lo": "ຈຳນວນຖ້ຽວ",
+  "en": "Trips run"
+ },
+ "xe_next_maint": {
+  "vi": "Mốc bảo dưỡng kế tiếp",
+  "lo": "ກຳນົດບຳລຸງຕໍ່ໄປ",
+  "en": "Next service"
+ },
+ "xe_fuel_norm": {
+  "vi": "Định mức nhiên liệu",
+  "lo": "ມາດຕະຖານນ້ຳມັນ",
+  "en": "Fuel norm"
+ },
+ "xe_current_trip": {
+  "vi": "Phiếu hiện tại",
+  "lo": "ໃບປັດຈຸບັນ",
+  "en": "Current doc"
+ },
+ "xe_year": {
+  "vi": "Năm SX",
+  "lo": "ປີຜະລິດ",
+  "en": "Year"
+ },
+ "xe_note": {
+  "vi": "Ghi chú",
+  "lo": "ໝາຍເຫດ",
+  "en": "Note"
+ },
+ "xe_legal": {
+  "vi": "Giấy tờ pháp lý",
+  "lo": "ເອກະສານກົດໝາຍ",
+  "en": "Legal documents"
+ },
+ "xe_legal_ok": {
+  "vi": "Đủ hạn",
+  "lo": "ຄົບອາຍຸ",
+  "en": "Valid"
+ },
+ "xe_legal_soon": {
+  "vi": "Sắp hết hạn",
+  "lo": "ໃກ້ໝົດອາຍຸ",
+  "en": "Expiring soon"
+ },
+ "xe_legal_expired": {
+  "vi": "Hết hạn",
+  "lo": "ໝົດອາຍຸ",
+  "en": "Expired"
+ },
+ "xe_h_bao_hiem": {
+  "vi": "Hạn bảo hiểm",
+  "lo": "ໝົດປະກັນ",
+  "en": "Insurance"
+ },
+ "xe_h_dang_kiem": {
+  "vi": "Hạn đăng kiểm",
+  "lo": "ໝົດກວດກາ",
+  "en": "Inspection"
+ },
+ "xe_h_luu_hanh": {
+  "vi": "Hạn giấy lưu hành",
+  "lo": "ໝົດໃບອະນຸຍາດ",
+  "en": "Permit"
+ },
+ "xe_expired": {
+  "vi": "quá",
+  "lo": "ເກີນ",
+  "en": "over"
+ },
+ "xe_left": {
+  "vi": "còn",
+  "lo": "ເຫຼືອ",
+  "en": "left"
+ },
+ "xe_insp_place": {
+  "vi": "Nơi đăng kiểm",
+  "lo": "ສະຖານທີ່ກວດກາ",
+  "en": "Inspection center"
+ },
+ "xe_ids": {
+  "vi": "Số máy / số khung",
+  "lo": "ເລກຈັກ / ເລກຖັງ",
+  "en": "Engine / chassis"
+ },
+ "xe_attach": {
+  "vi": "Lắp rơ-moóc",
+  "lo": "ຕິດຫາງ",
+  "en": "Attach trailer"
+ },
+ "xe_detach": {
+  "vi": "Tháo rơ-moóc",
+  "lo": "ຖອດຫາງ",
+  "en": "Detach trailer"
+ },
+ "xe_attach_to": {
+  "vi": "Lắp vào xe",
+  "lo": "ຕິດກັບລົດ",
+  "en": "Attach to truck"
+ },
+ "xe_since": {
+  "vi": "lắp từ",
+  "lo": "ຕິດຕັ້ງແຕ່",
+  "en": "since"
+ },
+ "xe_no_trailer": {
+  "vi": "Chưa lắp rơ-moóc — bấm \"Lắp rơ-moóc\" để chọn từ danh sách rời.",
+  "lo": "ຍັງບໍ່ຕິດຫາງ — ກົດ \"ຕິດຫາງ\" ເພື່ອເລືອກ.",
+  "en": "No trailer attached — click \"Attach trailer\" to pick a free one."
+ },
+ "xe_attach_replace": {
+  "vi": "Sẽ tháo rơ-moóc hiện tại:",
+  "lo": "ຈະຖອດຫາງປັດຈຸບັນ:",
+  "en": "Will detach current trailer:"
+ },
+ "xe_no_free_trailer": {
+  "vi": "Không còn rơ-moóc rời. Tháo rơ-moóc khỏi xe khác trước.",
+  "lo": "ບໍ່ມີຫາງຫວ່າງ. ຖອດຈາກລົດອື່ນກ່ອນ.",
+  "en": "No free trailer. Detach one from another truck first."
+ },
+ "xe_currently": {
+  "vi": "đang lắp",
+  "lo": "ກຳລັງຕິດ",
+  "en": "currently"
+ },
+ "xe_replace_reason": {
+  "vi": "Đổi rơ-moóc",
+  "lo": "ປ່ຽນຫາງ",
+  "en": "Trailer swap"
+ },
+ "xe_attached_toast": {
+  "vi": "Đã lắp",
+  "lo": "ຕິດແລ້ວ",
+  "en": "Attached"
+ },
+ "xe_detached_toast": {
+  "vi": "Đã tháo rơ-moóc",
+  "lo": "ຖອດຫາງແລ້ວ",
+  "en": "Trailer detached"
+ },
+ "xe_tab_schedule": {
+  "vi": "Lịch xe",
+  "lo": "ຕາຕະລາງລົດ",
+  "en": "Schedule"
+ },
+ "xe_tab_rm_history": {
+  "vi": "Rơ-moóc",
+  "lo": "ຫາງລາກ",
+  "en": "Trailers"
+ },
+ "xe_tab_repair": {
+  "vi": "Sửa chữa",
+  "lo": "ສ້ອມແປງ",
+  "en": "Repairs"
+ },
+ "xe_tab_trips": {
+  "vi": "Phiếu",
+  "lo": "ໃບ",
+  "en": "Docs"
+ },
+ "xe_tab_general": {
+  "vi": "Thông tin chung",
+  "lo": "ຂໍ້ມູນທົ່ວໄປ",
+  "en": "General"
+ },
+ "xe_tab_legal": {
+  "vi": "Pháp lý & đăng kiểm",
+  "lo": "ກົດໝາຍ & ກວດກາ",
+  "en": "Legal & inspection"
+ },
+ "xe_tab_tech": {
+  "vi": "Kỹ thuật & bảo dưỡng",
+  "lo": "ເຕັກນິກ & ບຳລຸງ",
+  "en": "Technical & service"
+ },
+ "xe_days_trip": {
+  "vi": "ngày có chuyến",
+  "lo": "ວັນມີຖ້ຽວ",
+  "en": "trip days"
+ },
+ "xe_days_repair": {
+  "vi": "ngày sửa",
+  "lo": "ວັນສ້ອມ",
+  "en": "repair days"
+ },
+ "xe_days_free": {
+  "vi": "ngày rảnh",
+  "lo": "ວັນຫວ່າງ",
+  "en": "free days"
+ },
+ "xe_free_all_day": {
+  "vi": "Rảnh cả ngày",
+  "lo": "ຫວ່າງທັງວັນ",
+  "en": "Free all day"
+ },
+ "xe_dow_0": {
+  "vi": "CN",
+  "lo": "ອາ",
+  "en": "Sun"
+ },
+ "xe_dow_1": {
+  "vi": "T2",
+  "lo": "ຈ",
+  "en": "Mon"
+ },
+ "xe_dow_2": {
+  "vi": "T3",
+  "lo": "ອ",
+  "en": "Tue"
+ },
+ "xe_dow_3": {
+  "vi": "T4",
+  "lo": "ພ",
+  "en": "Wed"
+ },
+ "xe_dow_4": {
+  "vi": "T5",
+  "lo": "ພຫ",
+  "en": "Thu"
+ },
+ "xe_dow_5": {
+  "vi": "T6",
+  "lo": "ສຸ",
+  "en": "Fri"
+ },
+ "xe_dow_6": {
+  "vi": "T7",
+  "lo": "ສ",
+  "en": "Sat"
+ },
+ "xe_attached_on": {
+  "vi": "Lắp ngày",
+  "lo": "ວັນຕິດ",
+  "en": "Attached"
+ },
+ "xe_detached_on": {
+  "vi": "Tháo ngày",
+  "lo": "ວັນຖອດ",
+  "en": "Detached"
+ },
+ "xe_reason": {
+  "vi": "Lý do",
+  "lo": "ເຫດຜົນ",
+  "en": "Reason"
+ },
+ "xe_no_history": {
+  "vi": "Chưa có lịch sử lắp / tháo.",
+  "lo": "ຍັງບໍ່ມີປະຫວັດ.",
+  "en": "No attach / detach history."
+ },
+ "xe_date": {
+  "vi": "Ngày",
+  "lo": "ວັນທີ",
+  "en": "Date"
+ },
+ "xe_doc": {
+  "vi": "Số phiếu",
+  "lo": "ເລກໃບ",
+  "en": "Doc no."
+ },
+ "xe_item": {
+  "vi": "Khoản mục",
+  "lo": "ລາຍການ",
+  "en": "Item"
+ },
+ "xe_source": {
+  "vi": "Nguồn",
+  "lo": "ແຫຼ່ງ",
+  "en": "Source"
+ },
+ "xe_acc_code": {
+  "vi": "Mã kế toán",
+  "lo": "ລະຫັດບັນຊີ",
+  "en": "Acc. code"
+ },
+ "xe_no_cost": {
+  "vi": "Chưa có chi phí sửa chữa ghi cho xe này.",
+  "lo": "ຍັງບໍ່ມີຄ່າສ້ອມແປງ.",
+  "en": "No repair costs recorded for this truck."
+ },
+ "xe_total_repair": {
+  "vi": "Tổng sửa chữa",
+  "lo": "ລວມສ້ອມແປງ",
+  "en": "Total repairs"
+ },
+ "xe_cost_source": {
+  "vi": "Tổng hợp từ mục V của các phiếu — không ghi trùng vào chi phí chuyến",
+  "lo": "ສັງລວມຈາກໝວດ V ຂອງໃບ — ບໍ່ບັນທຶກຊ້ຳ",
+  "en": "From section V of trip docs — not double-counted in trip costs"
+ },
+ "xe_customer": {
+  "vi": "Khách hàng",
+  "lo": "ລູກຄ້າ",
+  "en": "Customer"
+ },
+ "xe_no_trips": {
+  "vi": "Chưa có phiếu nào.",
+  "lo": "ຍັງບໍ່ມີໃບ.",
+  "en": "No docs yet."
+ },
+ "xe_tt_transit": {
+  "vi": "Đang vận chuyển",
+  "lo": "ກຳລັງຂົນສົ່ງ",
+  "en": "In transit"
+ },
+ "xe_tt_arrived": {
+  "vi": "Đã giao",
+  "lo": "ສົ່ງແລ້ວ",
+  "en": "Delivered"
+ },
+ "xe_tt_paid": {
+  "vi": "Đã thu tiền",
+  "lo": "ເກັບເງິນແລ້ວ",
+  "en": "Paid"
+ },
+ "xe_tt_planned": {
+  "vi": "Chưa đi",
+  "lo": "ຍັງບໍ່ໄປ",
+  "en": "Planned"
+ },
+ "xe_photo": {
+  "vi": "Ảnh xe",
+  "lo": "ຮູບລົດ",
+  "en": "Photo"
+ },
+ "xe_upload": {
+  "vi": "Tải ảnh",
+  "lo": "ອັບໂຫລດ",
+  "en": "Upload"
+ },
+ "xe_remove_photo": {
+  "vi": "Xoá ảnh",
+  "lo": "ລຶບຮູບ",
+  "en": "Remove"
+ },
+ "xe_status_auto": {
+  "vi": "Hệ thống tự tính từ phiếu, điều độ và sổ sửa chữa.",
+  "lo": "ລະບົບຄິດໄລ່ອັດຕະໂນມັດ.",
+  "en": "Computed from docs, dispatch and the repair log."
+ },
+ "xe_edit_sub": {
+  "vi": "Hồ sơ, giấy tờ, thông số kỹ thuật và mốc bảo dưỡng",
+  "lo": "ຂໍ້ມູນ, ເອກະສານ, ເຕັກນິກ ແລະ ກຳນົດບຳລຸງ",
+  "en": "Profile, documents, technical specs and service milestones"
+ },
+ "xe_save": {
+  "vi": "Lưu hồ sơ xe",
+  "lo": "ບັນທຶກ",
+  "en": "Save vehicle"
+ },
+ "xe_saved": {
+  "vi": "Đã lưu hồ sơ",
+  "lo": "ບັນທຶກແລ້ວ",
+  "en": "Saved"
+ },
+ "xe_refreshed": {
+  "vi": "Đã cập nhật dữ liệu",
+  "lo": "ອັບເດດແລ້ວ",
+  "en": "Data refreshed"
+ },
+ "xe_maint_date": {
+  "vi": "Ngày bảo dưỡng định kỳ",
+  "lo": "ວັນບຳລຸງຕາມກຳນົດ",
+  "en": "Scheduled service date"
+ },
+ "xe_engine_cap": {
+  "vi": "Dung tích / công suất",
+  "lo": "ຄວາມຈຸ / ກຳລັງ",
+  "en": "Displacement / power"
+ },
+ "xe_box_size": {
+  "vi": "Kích thước thùng",
+  "lo": "ຂະໜາດຕູ້",
+  "en": "Body dimensions"
+ },
+ "xe_tyre": {
+  "vi": "Cỡ lốp",
+  "lo": "ຂະໜາດຢາງ",
+  "en": "Tyre size"
+ },
+ "xe_open_profile": {
+  "vi": "Mở hồ sơ",
+  "lo": "ເປີດຂໍ້ມູນ",
+  "en": "Open profile"
+ },
+ "xe_profile": {
+  "vi": "Hồ sơ xe",
+  "lo": "ຂໍ້ມູນລົດ",
+  "en": "Vehicle profile"
+ },
+ "xe_quick_hint": {
+  "vi": "Thẻ xem nhanh — bấm “Mở hồ sơ” hoặc bấm đúp dòng để sửa, lắp / tháo rơ-moóc, xem lịch và chi phí.",
+  "lo": "ບັດເບິ່ງດ່ວນ — ກົດ “ເປີດຂໍ້ມູນ” ເພື່ອແກ້ໄຂ, ຕິດ/ຖອດຫາງ, ເບິ່ງຕາຕະລາງ.",
+  "en": "Quick view — click “Open profile” or double-click a row to edit, attach/detach trailer, view schedule and costs."
+ },
+ "xe_no_trailer_short": {
+  "vi": "Chưa lắp rơ-moóc",
+  "lo": "ຍັງບໍ່ຕິດຫາງ",
+  "en": "No trailer attached"
+ },
+ "xe_swap": {
+  "vi": "Đổi rơ-moóc",
+  "lo": "ປ່ຽນຫາງ",
+  "en": "Swap trailer"
+ },
+ "xe_tab_schedule_full": {
+  "vi": "Lịch xe",
+  "lo": "ຕາຕະລາງລົດ",
+  "en": "Schedule"
+ },
+ "xe_tab_repair_full": {
+  "vi": "Sửa chữa & chi phí",
+  "lo": "ສ້ອມແປງ & ຄ່າໃຊ້ຈ່າຍ",
+  "en": "Repairs & costs"
+ },
+ "xe_tab_trips_full": {
+  "vi": "Phiếu gần đây",
+  "lo": "ໃບຫຼ້າສຸດ",
+  "en": "Recent docs"
+ },
+ "xe_tab_autosave": {
+  "vi": "Thao tác trong tab này lưu ngay, không cần bấm Lưu.",
+  "lo": "ການປ່ຽນແປງໃນແທັບນີ້ບັນທຶກທັນທີ.",
+  "en": "Actions in this tab save immediately."
+ },
+ "xe_schedule_hint": {
+  "vi": "Xanh dương = có chuyến · vàng = sửa chữa · xanh lá = rảnh. Lịch lấy từ phiếu và sổ sửa chữa.",
+  "lo": "ຟ້າ = ມີຖ້ຽວ · ເຫຼືອງ = ສ້ອມ · ຂຽວ = ຫວ່າງ.",
+  "en": "Blue = trip · amber = repair · green = free."
+ },
+ "xe_need_plate": {
+  "vi": "Nhập biển số trước khi lưu",
+  "lo": "ກະລຸນາໃສ່ປ້າຍ",
+  "en": "Enter a plate before saving"
+ },
+ "xe_need_no": {
+  "vi": "Nhập số xe trước khi lưu",
+  "lo": "ກະລຸນາໃສ່ເລກລົດ",
+  "en": "Enter a truck number before saving"
+ },
+ "xe_rm_log": {
+  "vi": "Lịch sử lắp / tháo",
+  "lo": "ປະຫວັດຕິດ / ຖອດ",
+  "en": "Attach / detach log"
+ },
+ "xe_detached": {
+  "vi": "Đã tháo",
+  "lo": "ຖອດແລ້ວ",
+  "en": "Detached"
  },
  "tq_thang_trong": {
   "vi": "Tháng này chưa có chuyến nào",

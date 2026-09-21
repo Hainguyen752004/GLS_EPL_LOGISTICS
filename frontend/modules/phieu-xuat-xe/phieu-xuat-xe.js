@@ -425,6 +425,10 @@
       }); });
       const t = ctx.tham || {};
       if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (DS.length) await moPhieu(DS[0].id); else await phieuMoi();
+      // Mở từ màn Xe (nút "Tạo phiếu xuất xe" ở hồ sơ một chiếc): chọn sẵn chiếc đó.
+      if (t.moi && t.xe && DM.vehicles.some(v => v.id === t.xe)) {
+        const el = g('f-vehicle_id'); if (el) { el.value = t.xe; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
       if (t.tab && (MUC.includes(t.tab) || t.tab === 'all')) datTab(t.tab, true);
     },
     onLang() { if (P) veHet(); },

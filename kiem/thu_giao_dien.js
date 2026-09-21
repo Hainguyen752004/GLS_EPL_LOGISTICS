@@ -147,6 +147,28 @@ async function main() {
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
 
+  // Màn Xe bản thiết kế lại: hai tab đầu kéo / rơ-moóc, thanh chip lọc, bảng, thẻ hồ sơ bên phải,
+  // và hộp hồ sơ bảy tab. Số liệu lấy từ /api/vehicles và /api/trailers, không có gì viết cứng.
+  {
+    await di('#/xe');
+    const gx = goc();
+    const dsXe = await (await fetch(GOC + '/api/vehicles', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
+    assert.strictEqual(gx.querySelectorAll('#xe-tbl tbody tr').length, dsXe.length, 'bảng xe phải đủ số xe của máy chủ');
+    assert.ok(gx.querySelectorAll('.xe-chip').length >= 6, 'phải có thanh chip lọc');
+    assert.ok(gx.querySelector('.xe-head'), 'phải có thẻ hồ sơ xe bên phải');
+    gx.querySelector('[data-act="open"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await choDen(() => !!goc().querySelector('.xe-modal'), 'mở hộp hồ sơ xe');
+    const tabs = [...goc().querySelectorAll('.xe-modal [data-mt]')].map(b => b.dataset.mt);
+    assert.deepStrictEqual(tabs, ['chung', 'phaply', 'kythuat', 'romooc', 'lich', 'sua', 'phieu'], 'hộp hồ sơ xe phải đủ bảy tab: ' + tabs);
+    goc().querySelector('.xe-modal [data-mt="lich"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await choDen(() => goc().querySelectorAll('.xe-modal .xe-day').length === 7, 'tab Lịch xe phải vẽ đủ 7 ngày');
+    goc().querySelector('.xe-modal [data-close]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    gx.querySelector('#xe-loai button[data-v="ro-mooc"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    const dsRM = await (await fetch(GOC + '/api/trailers', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
+    await choDen(() => goc().querySelectorAll('#xe-tbl tbody tr').length === dsRM.length, 'bảng rơ-moóc phải đủ số rơ-moóc của máy chủ');
+    console.log('✓ màn Xe: %d đầu kéo · %d rơ-moóc · hộp hồ sơ 7 tab · lịch tuần 7 ngày', dsXe.length, dsRM.length);
+  }
+
   // Tổng quan bản thiết kế lại: bốn ô số, thanh xem nhanh, dòng thời gian, hiệu suất xe, cơ cấu chi
   // — tất cả lấy từ /api/bao-cao/tong-quan và /api/bao-cao/xu-huong, không có số viết cứng.
   {
@@ -335,6 +357,9 @@ async function main() {
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const mucCoNut = [...new Set([...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.mucAct))];
   assert.deepStrictEqual(mucCoNut, ['fuel'], 'vai kho nhiên liệu chỉ được có nút ở mục III: ' + mucCoNut);
+  await di('#/xe');
+  assert.ok(goc().querySelector('#xe-them').hidden, 'vai không sửa danh mục thì màn Xe không được có nút Thêm');
+  await di('#/phieu-xuat-xe?id=' + pDang.id);
   assert.strictEqual(goc().querySelector('#px-phieu').dataset.tab, 'fuel', 'KT kho xăng dầu vào phải mở sẵn tab III');
   assert.ok(!goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai khác Bãi phải thấy ô tiền');
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');

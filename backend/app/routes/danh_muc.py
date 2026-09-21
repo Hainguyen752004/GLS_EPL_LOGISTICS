@@ -188,9 +188,10 @@ def tra_gia(customer_id: str, route_id: str, goods_type: str = None, ngay: str =
 
 # ================================================================ xe (đầu kéo)
 COT_XE = ("truck_no", "brand_model", "year", "plate_head", "owner_type", "owner_name", "engine_no", "chassis_no",
-          "insurance_exp", "inspection_exp", "road_permit_exp", "odometer_km", "next_service_km", "status", "depot", "note")
-NGAY_XE = ("insurance_exp", "inspection_exp", "road_permit_exp")
-SO_XE = ("year", "odometer_km", "next_service_km")
+          "insurance_exp", "inspection_exp", "road_permit_exp", "odometer_km", "next_service_km", "status", "depot", "note",
+          "service_date", "fuel_norm", "capacity_t", "inspection_place", "engine_cap", "box_size", "tyre")
+NGAY_XE = ("insurance_exp", "inspection_exp", "road_permit_exp", "service_date")
+SO_XE = ("year", "odometer_km", "next_service_km", "fuel_norm", "capacity_t")
 
 
 def xuat_xe(db, v, chi_tiet=False):
@@ -210,6 +211,15 @@ def xuat_xe(db, v, chi_tiet=False):
                         "source": e.source, "acct_code": e.acct_code, "tien_lak": round(tien_dong(p, e))})
         r["sua_chua"] = sua
         r["so_phieu"] = db.query(Trip).filter(Trip.vehicle_id == v.id).count()
+        # Phiếu gần đây của xe này — màn Xe cần để bấm sang phiếu, và để biết xe đang chạy phiếu nào.
+        ds_phieu = (db.query(Trip).filter(Trip.vehicle_id == v.id).order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).limit(12).all())
+        r["phieu_gan_day"] = [{"doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
+                               "customer_name": p.customer_name, "origin": p.origin, "destination": p.destination,
+                               "weight": p.weight_dest if p.weight_dest is not None else p.weight_origin,
+                               "transport_status": p.transport_status, "finance_status": p.finance_status}
+                              for p in ds_phieu]
+        dang = next((p for p in ds_phieu if p.transport_status != "arrived"), None)
+        r["phieu_hien_tai"] = dang.doc_no if dang else None
         r["lich_su_ro_mooc"] = [{"trailer_id": a.trailer_id, "plate": (db.get(Trailer, a.trailer_id) or Trailer()).plate,
                                  "attached_at": a.attached_at.isoformat() if a.attached_at else None,
                                  "detached_at": a.detached_at.isoformat() if a.detached_at else None, "reason": a.reason, "by_user": a.by_user}
@@ -262,7 +272,8 @@ def sua_xe(vid: str, data: dict = Body(...), db: Session = Depends(get_db), _=De
 
 
 # ================================================================ rơ-moóc
-COT_RM = ("plate", "trailer_type", "capacity_t", "year", "owner_type", "owner_name", "insurance_exp", "inspection_exp", "status", "note")
+COT_RM = ("plate", "trailer_type", "capacity_t", "year", "owner_type", "owner_name", "insurance_exp", "inspection_exp",
+          "status", "note", "depot", "chassis_no", "inspection_place")
 
 
 def xuat_rm(db, t):
@@ -276,6 +287,23 @@ def xuat_rm(db, t):
 @router.get("/api/trailers")
 def ds_rm(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     return [xuat_rm(db, t) for t in db.query(Trailer).order_by(Trailer.active.desc(), Trailer.plate).all()]
+
+
+@router.get("/api/trailers/{tid}")
+def xem_rm(tid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Một rơ-moóc kèm LỊCH SỬ lắp/tháo của chính nó — màn Xe cần để xem một cái rơ-moóc đã đi qua
+    những đầu kéo nào, chứ không phải dò ngược từ từng xe."""
+    t = db.get(Trailer, tid)
+    if not t:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có rơ-moóc này."})
+    r = xuat_rm(db, t)
+    r["lich_su_lap"] = [{"vehicle_id": a.vehicle_id, "truck_no": (db.get(Vehicle, a.vehicle_id) or Vehicle()).truck_no,
+                         "attached_at": a.attached_at.isoformat() if a.attached_at else None,
+                         "detached_at": a.detached_at.isoformat() if a.detached_at else None,
+                         "reason": a.reason, "by_user": a.by_user}
+                        for a in db.query(TrailerAssignment).filter(TrailerAssignment.trailer_id == t.id)
+                        .order_by(TrailerAssignment.attached_at.desc()).limit(20).all()]
+    return r
 
 
 @router.post("/api/trailers")
@@ -299,6 +327,48 @@ def sua_rm(tid: str, data: dict = Body(...), db: Session = Depends(get_db), _=De
     if x: x.plate_trailer = t.plate
     db.commit(); db.refresh(t)
     return xuat_rm(db, t)
+
+
+@router.get("/api/vehicles/{vid}/lich")
+def lich_xe(vid: str, tuan: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Lịch một tuần của xe: ngày nào chạy phiếu nào, ngày nào nằm sửa.
+
+    Không có bảng lịch riêng — lịch chính là dữ liệu đã có: phiếu xuất xe trải từ ngày xuất tới ngày
+    về, và các ngày có dòng chi sửa chữa (mục V) hoặc sự cố đã ghi. Ngày không có gì thì xe rảnh.
+    """
+    v = db.get(Vehicle, vid)
+    if not v:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
+    try:
+        d0 = dt.date.fromisoformat(tuan) if tuan else dt.date.today()
+    except ValueError:
+        raise HTTPException(422, {"ma": "TUAN_SAI", "loi": "Tuần phải ghi dạng YYYY-MM-DD."})
+    d0 = d0 - dt.timedelta(days=d0.weekday())          # về thứ Hai
+    d7 = d0 + dt.timedelta(days=6)
+    theo_ngay = {}
+
+    def them(ngay, loai, chu):
+        if ngay and d0 <= ngay <= d7:
+            theo_ngay.setdefault(ngay, []).append({"loai": loai, "text": chu})
+
+    ten_tuyen = {r.id: r.name for r in db.query(Route).all()}
+    for p in db.query(Trip).filter(Trip.vehicle_id == v.id).all():
+        di = p.out_date or p.doc_date
+        if not di:
+            continue
+        ve = p.back_date or (d7 if p.transport_status != "arrived" else di)
+        # Phiếu cũ nhiều khi để trống điểm đi/đến vì đã chọn tuyến — lấy tên tuyến cho khỏi ra "· →"
+        duong = ("%s → %s" % (p.origin, p.destination)) if (p.origin and p.destination) else (ten_tuyen.get(p.route_id) or "")
+        chu = ("%s · %s" % (p.doc_no.replace("/EPL", ""), duong)).strip(" ·")
+        n = di
+        while n <= min(ve, d7):
+            them(n, "trip", chu)
+            n += dt.timedelta(days=1)
+    for e, p in (db.query(TripExpense, Trip).join(Trip, Trip.id == TripExpense.trip_id)
+                 .filter(Trip.vehicle_id == v.id, TripExpense.section == "repair").all()):
+        them(p.doc_date, "rep", (e.item_name or e.item_key or "").strip() or "sửa chữa")
+    return {"tu": d0.isoformat(), "den": d7.isoformat(),
+            "ngay": [{"ngay": k.isoformat(), "su_kien": x} for k, x in sorted(theo_ngay.items())]}
 
 
 @router.post("/api/vehicles/{vid}/trailer")

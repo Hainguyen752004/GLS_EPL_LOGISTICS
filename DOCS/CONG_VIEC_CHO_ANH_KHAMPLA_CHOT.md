@@ -102,7 +102,13 @@ dùng cho cả màn nhập liệu lẫn báo cáo), nên sửa vội dễ làm h
 tiền nào" chính là **câu A2 đang chờ họ trả lời**. Chốt xong A2 thì dọn một lượt cho đúng, khoảng nửa
 ngày, và viết bộ kiểm chặn ở mức API chứ không chỉ ở giao diện.
 
-### B2. Ô "Việc của tôi" của KT Doanh thu luôn là 0
+### B2. Ảnh xe chưa lưu được
+
+Bản thiết kế màn Xe có khung ảnh xe. Máy chủ chưa có chỗ chứa tệp cho ảnh xe (phần đính kèm hiện chỉ
+làm cho phiếu quặng của phiếu xuất xe), nên khung ảnh để trống kèm một dòng ghi rõ là chưa lưu được —
+không để nút bấm chết. Làm sau khoảng nửa ngày, dùng lại đúng chỗ chứa tệp của phiếu.
+
+### B3. Ô "Việc của tôi" của KT Doanh thu luôn là 0
 
 Ô này đếm các mục I–VI đang chờ chính vai đó làm. KT Doanh thu **không phụ trách mục nào** trong sáu
 mục — việc của họ là lập hoá đơn và thu tiền khách, nằm ở mức phiếu chứ không nằm trong mục. Nên với
