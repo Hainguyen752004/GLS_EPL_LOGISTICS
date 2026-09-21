@@ -134,8 +134,27 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .px-phieu, .pct-ds'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
+  }
+
+  // Tổng quan bản thiết kế lại: bốn ô số, thanh xem nhanh, dòng thời gian, hiệu suất xe, cơ cấu chi
+  // — tất cả lấy từ /api/bao-cao/tong-quan và /api/bao-cao/xu-huong, không có số viết cứng.
+  {
+    await di('#/tong-quan');
+    const g = goc();
+    assert.strictEqual(g.querySelectorAll('.tq-kpi').length, 4, 'Tổng quan phải có đúng 4 ô số');
+    assert.ok(g.querySelectorAll('.tq-chip').length >= 6, 'thanh xem nhanh phải có ít nhất 6 chip');
+    assert.ok(g.querySelectorAll('#tq-gantt .row').length > 0, 'dòng thời gian phải có chuyến');
+    assert.ok(g.querySelectorAll('.tq-veh').length > 0, 'hiệu suất xe phải có xe');
+    assert.ok(g.querySelectorAll('#tq-co-cau .row').length === 4, 'cơ cấu chi phải đủ 4 mục');
+    const xh = await (await fetch(GOC + '/api/bao-cao/xu-huong?thang=' + g.querySelector('#tq-thang').value,
+      { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
+    assert.strictEqual(g.querySelectorAll('#tq-gantt .row').length, xh.dong_thoi_gian.length, 'số dòng thời gian phải khớp máy chủ');
+    assert.ok(g.querySelector('#tq-ops').textContent.includes(String(xh.van_hanh.nguong_ngay)),
+      'nhãn "đúng hạn" phải lấy ngưỡng ngày từ máy chủ, không viết cứng');
+    console.log('✓ tổng quan: 4 ô số · %d chip · %d dòng thời gian · %d xe · ngưỡng đúng hạn %d ngày',
+      g.querySelectorAll('.tq-chip').length, xh.dong_thoi_gian.length, g.querySelectorAll('.tq-veh').length, xh.van_hanh.nguong_ngay);
   }
   // Co giãn theo zoom: đổi bề rộng cửa sổ (đúng thứ trình duyệt làm khi zoom) thì --ty-le phải đổi theo
   const tyLe = () => Number(d.documentElement.style.getPropertyValue('--ty-le'));
@@ -250,6 +269,11 @@ async function main() {
     ['hoa-don', 'xe-lien-ket'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module tiền bán ' + m));
     ['tien-tai-xe', 'nha-cung-cap', 'kho-nhien-lieu'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi phải thấy module chi phí ' + m));
     assert.ok(d.body.classList.contains('vai-yard'), 'thân trang phải mang lớp vai-yard');
+    await di('#/tong-quan');
+    const nhanKPI = [...goc().querySelectorAll('.tq-kpi .l')].map(e => e.textContent.trim()).join(' | ');
+    assert.ok(!/doanh thu|chưa thanh toán/i.test(nhanKPI), 'Tổng quan của Bãi không được có ô doanh thu / khách chưa trả: ' + nhanKPI);
+    assert.ok(![...goc().querySelectorAll('.tq-chip')].some(b => /chưa thu/i.test(b.textContent)), 'Bãi không được thấy chip Chưa thu');
+    console.log('✓ tổng quan vai Bãi: %s', nhanKPI);
     await di('#/theo-doi');
     const thTien = [...goc().querySelectorAll('th.tien')];
     assert.ok(thTien.length >= 6, 'bảng theo dõi phải đánh dấu các cột tiền bán: ' + thTien.length);

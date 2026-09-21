@@ -48,13 +48,18 @@
     async init(r, ctx) {
       root = r;
       const t = ctx.tham || {};
+      // Mở từ Tổng quan: mang sẵn bộ lọc và tháng đang xem sang đây.
       if (t.transport_status) r.querySelector('#td-vc').value = t.transport_status;
+      if (t.finance_status) r.querySelector('#td-tc').value = t.finance_status;
+      if (t.cty) r.querySelector('#td-cty').value = t.cty;
+      if (t.thang) r.querySelector('#td-thang').value = t.thang;
       if (t.q) r.querySelector('#td-q').value = t.q;
       ['td-q', 'td-vc', 'td-tc', 'td-cty'].forEach(id => r.querySelector('#' + id).addEventListener('input', locVaVe));
       r.querySelector('#td-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
       r.querySelector('#td-xuat').addEventListener('click', xuatCSV);
       r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       await tai();
+      if (t.xuat) xuatCSV();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
     onLang() { if (ds.length) locVaVe(); },
   };

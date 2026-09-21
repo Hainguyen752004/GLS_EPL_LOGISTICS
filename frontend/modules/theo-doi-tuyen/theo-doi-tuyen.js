@@ -616,6 +616,8 @@
       window.addEventListener('resize', khiDoiCo);
       await tai();
       const t = ctx.tham || {};
+      // Mở từ thanh xem nhanh bên Tổng quan: ?o=<mã ô số> thì lọc sẵn đúng ô đó.
+      if (t.o && O_SO.some(x => x.id === t.o)) locO = t.o;
       const dau = t.id || (loc()[0] || {}).id;
       if (dau) await mo(dau); else ve();
       // Mở màn bằng đường dẫn có ?hs=0 thì thu sẵn thanh xem nhanh, nhường cả chỗ cho bản đồ.

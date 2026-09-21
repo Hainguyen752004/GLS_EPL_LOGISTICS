@@ -1,65 +1,259 @@
-/* Tổng quan — mọi số lấy từ /api/bao-cao/tong-quan, tính lại từ phiếu lúc gọi. */
+/* Tổng quan — bản thiết kế lại anh gửi, đã nối vào máy chủ thật.
+   Nguồn số liệu:
+     GET /api/bao-cao/tong-quan?thang=YYYY-MM  → doanh_thu_usd, so_phieu, chi_lak, tan_giao, chua_thu_usd, chua_thu_so, dem{}, chi_theo_muc{}, chu_y[]
+     GET /api/bao-cao/xu-huong?thang=YYYY-MM   → thang_truoc, sau_thang, theo_ngay, hao_hut, xe, van_hanh, xem_nhanh, dong_thoi_gian
+     GET /api/rates                            → USD, THB, VND
+   Biểu đồ: Chart.js 4.5.1 trong frontend/vendor/chartjs, module tự nạp — không gọi CDN.
+   Mỗi lần vẽ lại destroy chart cũ để không rò bộ nhớ. */
 (function () {
-  const { API, NN, esc, so, tien, AUTH } = EPL;
-  const laBai = () => AUTH.role === 'yard';   // Bãi không thấy TIỀN BÁN → thay hai ô doanh thu bằng việc của họ
-  let root, thang, du_lieu, ty_gia;
+  const { API, NN, esc, so, AUTH } = EPL;
+  const HAO_HUT_MUC = 1.5;              // % hao hụt cân cho phép — cùng ngưỡng với màn Theo dõi phiếu
+  // Bãi không thấy TIỀN BÁN (doanh thu, khách chưa trả, doanh thu theo xe) — đó là biên lợi nhuận.
+  // Tiền CHI thì thấy hết, vì chính họ chi. Sếp thấy tất cả nên so vai thẳng, không dùng AUTH.la.
+  const laBai = () => AUTH.role === 'yard';
+  let root, thang, d, xh, ty_gia, charts = {};
 
-  async function tai() {
-    thang = root.querySelector('#tq-thang').value || EPL.thangNay();
-    [du_lieu, ty_gia] = await Promise.all([API.get('/api/bao-cao/tong-quan?thang=' + thang), API.get('/api/rates')]);
-    ve();
+  /** Chart.js để sẵn trong dự án, nạp một lần khi mở màn. Không có thư viện thì các khối biểu đồ
+   *  báo "chưa vẽ được", phần số vẫn chạy — mất mạng hay thiếu tệp cũng không làm sập màn. */
+  function napChart() {
+    if (window.Chart) return Promise.resolve(window.Chart);
+    return new Promise((res) => {
+      const sc = document.createElement('script');
+      sc.src = 'vendor/chartjs/chart.umd.min.js';
+      sc.onload = () => res(window.Chart);
+      sc.onerror = () => res(null);
+      document.head.appendChild(sc);
+    });
   }
 
+  /* ---------- Màu lấy từ CSS để đổi token là đổi biểu đồ ---------- */
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const C = () => ({
+    ink: css('--tq-ink'), muted: css('--tq-muted'), line: css('--tq-line2') || '#eceeec', card: css('--tq-card') || '#fff',
+    brand: css('--tq-brand'), navy: css('--tq-navy'), info: css('--tq-info'), good: css('--tq-good'), bad: css('--tq-bad'), warn: css('--tq-warn'),
+    fuel: css('--tq-c-fuel'), travel: css('--tq-c-travel'), repair: css('--tq-c-repair'), other: css('--tq-c-other'),
+    steps: ['--tq-s1', '--tq-s2', '--tq-s3', '--tq-s4', '--tq-s5'].map(css),
+  });
+  const FONT = () => ({ family: getComputedStyle(document.body).fontFamily, size: 11 });
+
+  /** Vẽ một biểu đồ. Không có Chart.js hoặc trình duyệt không cho vẽ canvas thì BỎ QUA im lặng:
+   *  phần số của màn vẫn đọc được, và màn không phun lỗi ra bảng điều khiển. */
+  function chart(id, cfg) {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    const el = root.querySelector('#' + id);
+    if (!el || !window.Chart) return null;
+    // Không hỏi getContext khi trình duyệt không có canvas 2D (jsdom của bộ kiểm): hỏi là nó kêu ầm lên.
+    if (typeof window.CanvasRenderingContext2D === 'undefined') return null;
+    try { charts[id] = new Chart(el, cfg); } catch (e) { return null; }
+    return charts[id];
+  }
+  const tooltipBase = (c) => ({ backgroundColor: c.navy, titleFont: { weight: '600' }, bodyFont: FONT(), padding: 8, cornerRadius: 8, displayColors: true, boxPadding: 4 });
+  const gridBase = (c) => ({ color: c.line, drawTicks: false });
+  const tickBase = (c) => ({ color: c.muted, font: FONT(), padding: 6 });
+
+  /* ---------- Tải ---------- */
+  async function tai() {
+    thang = root.querySelector('#tq-thang').value || EPL.thangNay();
+    const [a, b, c] = await Promise.all([
+      API.get('/api/bao-cao/tong-quan?thang=' + thang),
+      API.get('/api/bao-cao/xu-huong?thang=' + thang).catch(() => null),   // endpoint mới; thiếu thì vẫn vẽ phần cũ
+      API.get('/api/rates'),
+    ]);
+    d = a; xh = b; ty_gia = c; ve();
+  }
+
+  /* ---------- Tiện ích ---------- */
+  const pct = (a, b) => (b ? (a - b) / b * 100 : null);
+  function delta(cur, prev, inv) {                 // inv = true khi tăng là xấu (chi phí, nợ)
+    const soSanh = root.querySelector('#tq-so-sanh').checked;
+    if (!soSanh || prev == null) return '';
+    const p = pct(cur, prev); if (p == null) return `<span class="tq-delta flat">—</span>`;
+    const k = Math.abs(p) < 0.5 ? 'flat' : p > 0 ? 'up' : 'down';
+    return `<span class="tq-delta ${k} ${inv ? 'inv' : ''}" title="${esc(NN.t('tq_vs_prev'))}">${k === 'up' ? '▲' : k === 'down' ? '▼' : '•'} ${so(Math.abs(p), 1)}%</span>`;
+  }
+  function spark(id, data, color) {
+    const c = C();
+    chart(id, { type: 'line', data: { labels: data.map((_, i) => i), datasets: [{ data, borderColor: color, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: color, pointHoverBorderColor: c.card, pointHoverBorderWidth: 2, fill: true, backgroundColor: color + '1a', tension: .35 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false, beginAtZero: true } }, layout: { padding: 2 } } });
+  }
+
+  /* ---------- Vẽ ---------- */
   function ve() {
-    const d = du_lieu, r_usd = ty_gia.USD || 22000;
-    const dangChay = (d.dem.dispatched || 0) + (d.dem.transit || 0);
-    // Bãi nhập phiếu, cân, dầu — bốn con số của họ là việc, không phải tiền. Vai tiền giữ nguyên bốn con số cũ.
-    const chiKPI = ['k_exp', so(d.chi_lak / 1e6, 1), 'M LAK', `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`];
-    const KPI = laBai() ? [
-      ['k_month_trips', so(d.so_phieu, 0), NN.t('trips'), `${d.dem.arrived} ${NN.t('s_arrived')}`],
-      chiKPI,
-      ['k_tons', so(d.tan_giao, 2), NN.t('ton'), `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`],
-      ['k_running', so(dangChay, 0), NN.t('trips'), `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`],
+    const c = C(), r_usd = ty_gia.USD || 22000, tt = xh && xh.thang_truoc, st = xh && xh.sau_thang;
+    root.querySelector('#tq-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+
+    /* 1. KPI — Bãi thay hai ô tiền bán bằng hai ô việc của họ */
+    const K = laBai() ? [
+      { k: 'k_month_trips', v: so(d.so_phieu, 0), u: NN.t('trips'), s: `${d.dem.arrived} ${NN.t('s_arrived')}`, dl: '', sp: null, col: c.brand },
+      { k: 'k_exp', v: so(d.chi_lak / 1e6, 1), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
+      { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
+      { k: 'k_running', v: so((d.dem.dispatched || 0) + (d.dem.transit || 0), 0), u: NN.t('trips'), s: `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`, dl: '', sp: null, col: c.warn },
     ] : [
-      ['k_rev', so(d.doanh_thu_usd, 2), 'USD', `${d.so_phieu} ${NN.t('trips')} · ≈ ${so(d.doanh_thu_usd * r_usd)} LAK`],
-      ['k_exp', so(d.chi_lak / 1e6, 1), 'M LAK', `≈ ${so(d.chi_lak / r_usd)} USD · ${d.doanh_thu_usd ? so(d.chi_lak / r_usd / d.doanh_thu_usd * 100) : 0}% ${NN.t('revenue').replace(/\s*\(.*\)/, '')}`],
-      ['k_tons', so(d.tan_giao, 2), NN.t('ton'), `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`],
-      ['k_unpaid', so(d.chua_thu_usd, 2), 'USD', `${d.chua_thu_so} ${NN.t('trips')} · ${NN.t('s_unpaid')}`],
+      { k: 'k_rev', v: so(d.doanh_thu_usd, 2), u: 'USD', s: `${d.so_phieu} ${NN.t('trips')} · ≈ ${so(d.doanh_thu_usd * r_usd)} LAK`, dl: delta(d.doanh_thu_usd, tt && tt.doanh_thu_usd, false), sp: st && st.doanh_thu_usd, col: c.brand },
+      { k: 'k_exp', v: so(d.chi_lak / 1e6, 1), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.doanh_thu_usd ? so(d.chi_lak / r_usd / d.doanh_thu_usd * 100) : 0}% ${NN.t('tq_of_revenue')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
+      { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
+      { k: 'k_unpaid', v: so(d.chua_thu_usd, 2), u: 'USD', s: `${d.chua_thu_so} ${NN.t('trips')} · ${NN.t('s_unpaid')}`, dl: delta(d.chua_thu_usd, tt && tt.chua_thu_usd, true), sp: st && st.chua_thu_usd, col: c.warn },
     ];
-    root.querySelector('#tq-kpi').innerHTML = KPI.map(k => `<div class="kpi"><div class="l">${NN.h(k[0])}</div><div class="v">${k[1]}<small>${esc(k[2])}</small></div><div class="s">${esc(k[3])}</div></div>`).join('');
+    root.querySelector('#tq-kpi').innerHTML = K.map((k, i) => `<div class="tq-kpi">
+        <div class="l"><i style="background:${k.col}"></i>${NN.h(k.k)}</div>
+        <div class="v">${k.v}<small>${esc(k.u)}</small></div>
+        <div class="spark">${k.sp ? `<canvas id="tq-sp-${i}"></canvas>` : ''}</div>
+        <div class="s">${k.dl}<span>${esc(k.s)}</span></div>
+      </div>`).join('');
+    K.forEach((k, i) => k.sp && spark('tq-sp-' + i, k.sp, k.col));
 
-    const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'],
-               ['s_arrived', d.dem.arrived, 'arrived'], ['p_invoiced', d.dem.invoiced, ''], ['s_paid', d.dem.paid, '']];
-    root.querySelector('#tq-tien-do').innerHTML = P.map(p => `<div class="pipe" role="button" tabindex="0" data-st="${p[2]}"><div class="n">${p[1]}</div><div class="l">${NN.h(p[0])}</div></div>`).join('');
-    root.querySelectorAll('.pipe').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', el.dataset.st ? { transport_status: el.dataset.st } : {})));
+    veXemNhanh(c);
+    veGantt(c);
 
-    const cm = d.chi_theo_muc, tong = Object.values(cm).reduce((a, b) => a + b, 0) || 1;
-    root.querySelector('#tq-co-cau').innerHTML = [['e_fuel', 'fuel', 'fuel'], ['e_travel', 'travel', ''], ['e_repair', 'repair', 'rep'], ['e_other', 'other', 'oth']]
-      .map(b => `<div class="bar"><span>${NN.h(b[0])}</span><div class="track"><div class="fill ${b[2]}" style="width:${cm[b[1]] / tong * 100}%"></div></div><span class="v">${so(cm[b[1]])} <span class="muted small">${so(cm[b[1]] / tong * 100)}%</span></span></div>`).join('');
+    /* 2. Tiến trình 5 bước */
+    const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'], ['s_arrived', d.dem.arrived, 'arrived'], ['p_invoiced', d.dem.invoiced, 'invoiced'], ['s_paid', d.dem.paid, 'paid']];
+    const tongP = P.reduce((a, p) => a + (p[1] || 0), 0) || 1;
+    root.querySelector('#tq-tien-do').innerHTML = P.map((p, i) => `<div class="tq-step" role="button" tabindex="0" data-i="${i}" data-st="${p[2]}">
+        <div class="n">${p[1]}<small>${so(p[1] / tongP * 100)}%</small></div>
+        <div class="l"><i></i>${NN.h(p[0])}</div>
+        <div class="m"><b style="width:${p[1] / tongP * 100}%"></b></div>
+      </div>`).join('');
+    root.querySelector('#tq-phan-bo').innerHTML = P.map((p, i) => `<span style="width:${p[1] / tongP * 100}%;background:${c.steps[i]}" title="${esc(NN.t(p[0]))}: ${p[1]}"></span>`).join('');
+    root.querySelectorAll('.tq-step').forEach(el => {
+      const go = () => EPL.di('theo-doi', { transport_status: el.dataset.st, thang });
+      el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+    const vh = (xh && xh.van_hanh) || {};
+    const ring = (p, col) => `<span class="ring" style="--p:${Math.max(0, Math.min(100, p || 0))};--c:${col}" data-v="${p != null ? Math.round(p) + '%' : '—'}"></span>`;
+    root.querySelector('#tq-ops').innerHTML = `
+      <div class="tq-op">${ring(vh.dung_han_pct, c.good)}<div><b>${vh.dung_han_pct != null ? so(vh.dung_han_pct) + '%' : '—'}</b><br>${NN.h('tq_ontime', { n: vh.nguong_ngay != null ? vh.nguong_ngay : '—' })}</div></div>
+      <div class="tq-op">${ring(vh.ngay_tb != null && vh.nguong_ngay ? 100 - Math.min(100, vh.ngay_tb / vh.nguong_ngay * 100) : null, c.info)}<div><b>${vh.ngay_tb != null ? so(vh.ngay_tb, 1) : '—'} ${NN.t('tq_days')}</b><br>${NN.h('tq_avg_days')}</div></div>
+      <div class="tq-op">${ring(vh.hao_hut_tb_pct != null ? 100 - Math.min(100, vh.hao_hut_tb_pct / HAO_HUT_MUC * 100) : null, vh.hao_hut_tb_pct > HAO_HUT_MUC ? c.bad : c.good)}<div><b>${vh.hao_hut_tb_pct != null ? so(vh.hao_hut_tb_pct, 2) + '%' : '—'}</b><br>${NN.h('tq_avg_loss')} <span class="muted">(≤ ${HAO_HUT_MUC}%)</span></div></div>`;
 
+    /* 3a. Doanh thu & chi phí theo ngày — MỘT trục USD, cột doanh thu + cột chi phí */
+    const ngay = (xh && xh.theo_ngay) || [];
+    const cotNgay = [
+      { label: NN.t('tq_revenue'), data: ngay.map(x => x.doanh_thu_usd), backgroundColor: c.brand, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
+      { label: NN.t('tq_cost'), data: ngay.map(x => x.chi_usd), backgroundColor: c.fuel, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 22, categoryPercentage: .6, barPercentage: .9 },
+    ].slice(laBai() ? 1 : 0);          // Bãi: chỉ cột chi phí
+    root.querySelector('#tq-legend-ngay').innerHTML = cotNgay.map(x => `<span><i style="background:${x.backgroundColor}"></i>${esc(x.label)} (USD)</span>`).join('');
+    chart('tq-c-ngay', {
+      type: 'bar',
+      data: { labels: ngay.map(x => x.ngay.slice(8, 10) + '/' + x.ngay.slice(5, 7)), datasets: cotNgay },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${t.dataset.label}: ${so(t.parsed.y, 2)} USD` } }) },
+        scales: { x: { grid: { display: false }, ticks: tickBase(c), border: { color: c.line } }, y: { beginAtZero: true, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => so(v) }) } } },
+    });
+    if (!ngay.length) root.querySelector('#tq-c-ngay').parentElement.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+
+    /* 3b. Cơ cấu chi phí — donut ≤ 4 phần, số ở giữa, danh sách có giá trị + % */
+    const cm = d.chi_theo_muc || {}, tong = Object.values(cm).reduce((a, b) => a + b, 0) || 1;
+    const M = [['e_fuel', 'fuel', c.fuel], ['e_travel', 'travel', c.travel], ['e_repair', 'repair', c.repair], ['e_other', 'other', c.other]];
+    chart('tq-c-cocau', { type: 'doughnut', data: { labels: M.map(m => NN.t(m[0])), datasets: [{ data: M.map(m => cm[m[1]] || 0), backgroundColor: M.map(m => m[2]), borderColor: c.card, borderWidth: 2, hoverOffset: 4 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${so(t.parsed)} LAK · ${so(t.parsed / tong * 100)}%` } }) } } });
+    root.querySelector('#tq-donut-center').innerHTML = `<b>${so(tong / 1e6, 1)}</b><small>M LAK</small>`;
+    root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<div class="row" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></div>`).join('');
+    root.querySelectorAll('#tq-co-cau .row').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { thang })));
+
+    /* 4a. Hao hụt cân theo chuyến — cột %, vạch ngưỡng 1,5 %, cột vượt ngưỡng đổi màu xấu */
+    const hh = ((xh && xh.hao_hut) || []).map(x => Object.assign({ pct: x.can_dau ? (x.can_dau - (x.can_cuoi ?? x.can_dau)) / x.can_dau * 100 : 0 }, x)).filter(x => x.can_cuoi != null);
+    root.querySelector('#tq-loss-sub').textContent = hh.length ? `${hh.filter(x => x.pct > HAO_HUT_MUC).length}/${hh.length} ${NN.t('tq_over_limit')}` : '';
+    const nguong = { id: 'nguong', afterDatasetsDraw(ch) { const { ctx, chartArea: a, scales: { y } } = ch; const yy = y.getPixelForValue(HAO_HUT_MUC); ctx.save(); ctx.strokeStyle = c.bad; ctx.lineWidth = 1; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(a.left, yy); ctx.lineTo(a.right, yy); ctx.stroke(); ctx.fillStyle = c.bad; ctx.font = `600 10.5px ${FONT().family}`; ctx.textAlign = 'right'; ctx.fillText(`${NN.t('tq_loss_limit')} ${HAO_HUT_MUC}%`, a.right, yy - 4); ctx.restore(); } };
+    chart('tq-c-haohut', { type: 'bar', plugins: [nguong],
+      data: { labels: hh.map(x => x.doc_no.replace(/\/EPL$/, '')), datasets: [{ data: hh.map(x => +x.pct.toFixed(2)), backgroundColor: hh.map(x => x.pct > HAO_HUT_MUC ? c.bad : c.info), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 24, categoryPercentage: .55 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { title: (t) => hh[t[0].dataIndex].doc_no, label: (t) => { const x = hh[t.dataIndex]; return [` ${so(x.can_dau, 2)} → ${so(x.can_cuoi, 2)} t`, ` ${NN.t('tq_loss')}: ${so(x.pct, 2)}%`]; } } }) },
+        scales: { x: { grid: { display: false }, ticks: Object.assign(tickBase(c), { font: { family: 'ui-monospace, JetBrains Mono, monospace', size: 10.5 } }), border: { color: c.line } }, y: { beginAtZero: true, suggestedMax: Math.max(2, ...hh.map(x => x.pct)) * 1.15, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => v + '%' }) } },
+        onClick: (_, els) => { if (els.length) EPL.di('theo-doi', { q: hh[els[0].index].doc_no }); } } });
+    if (!hh.length) root.querySelector('#tq-c-haohut').parentElement.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+
+    /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
+    const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_usd - a.doanh_thu_usd), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_usd));
+    // Bãi: xếp theo TẤN và bỏ cột doanh thu — doanh thu là tiền bán.
+    const maxTan = Math.max(1, ...xe.map(x => x.tan));
+    if (laBai()) xe.sort((a, b) => b.tan - a.tan);
+    root.querySelector('#tq-xe').innerHTML = xe.length ? `<div class="tq-fleet-head"><span>${NN.h('tq_vehicle')}</span><span>${NN.h('tq_trips_tons_km')}</span><span>${laBai() ? NN.h('ton') : 'USD'}</span></div>` +
+      xe.map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_usd / maxDT) * 100}%"></b></div></div>${laBai()
+        ? `<div class="v">${so(x.tan, 1)}<small>${so(x.km / Math.max(1, x.so_chuyen))} km/${NN.t('trips').toLowerCase()}</small></div>`
+        : `<div class="v">${so(x.doanh_thu_usd)}<small>${so(x.doanh_thu_usd / Math.max(1, x.tan), 1)} USD/t</small></div>`}</div>`).join('')
+      : `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+    root.querySelectorAll('.tq-veh').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.xe })));
+
+    /* Tỷ giá */
     root.querySelector('#tq-ty-gia').innerHTML = `<div class="tq-ty-gia">${['USD', 'THB', 'VND'].map(m => `<div><span class="small muted">1 ${m} =</span><b>${so(ty_gia[m], m === 'VND' ? 2 : 0)} LAK</b></div>`).join('')}</div>`;
+    root.querySelector('#tq-rate-date').textContent = ty_gia.ngay ? EPL.ngay ? EPL.ngay(ty_gia.ngay) : ty_gia.ngay : '';
 
+    /* Cần xử lý — mức độ theo loại: hao hụt / quá hạn = xấu, chưa hóa đơn = cảnh báo, chờ kiểm = thông tin */
+    const MUC = { loss: 'bad', overdue: 'bad', late: 'bad', uninvoiced: 'warn', unpaid: 'warn', pending_check: 'info' };
     const cy = d.chu_y || [];
+    root.querySelector('#tq-chu-y-n').textContent = cy.length || '';
     root.querySelector('#tq-chu-y').innerHTML = cy.length
-      ? `<div class="tq-chu-y">${cy.map(c => `<div data-doc="${esc(c.doc_no || '')}">${NN.h('attention_' + c.loai, c)}</div>`).join('')}</div>`
-      : `<div class="muted small">${NN.h('none_attention')}</div>`;
-    root.querySelectorAll('.tq-chu-y div[data-doc]').forEach(el => el.addEventListener('click', () => {
-      if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe');
-    }));
+      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${x.doc_no ? `<b>${esc(x.doc_no)}</b>` : ''}${NN.h('attention_' + x.loai, x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
+      : `<div class="tq-empty ok">✓ ${NN.h('none_attention')}</div>`;
+    root.querySelectorAll('.tq-chu-y .it').forEach(el => el.addEventListener('click', () => { if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe'); }));
+  }
+
+  /* ---------- B1. Thanh xem nhanh: 7 chip = 7 bộ lọc của màn Theo dõi phiếu ---------- */
+  function veXemNhanh(c) {
+    const q = (xh && xh.xem_nhanh) || {};
+    // Mỗi chip dẫn sang MÀN CÓ THẬT với đúng bộ lọc của màn đó: [khoá, số, màu, màn, tham số]
+    const chips = [
+      ['tq_q_running', q.dang_chay, 'info', 'theo-doi-tuyen', { o: 'dang_chay' }],
+      ['tq_q_late', q.di_lau, 'bad', 'theo-doi-tuyen', { o: 'di_lau' }],
+      ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
+      ['tq_q_uninvoiced', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
+      ['tq_q_pending_check', q.cho_kiem, 'info', 'phieu-xuat-xe', {}],
+      ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'cap-phat', {}],
+      ['tq_q_unpaid', q.chua_thu != null ? so(q.chua_thu) + ' USD' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
+    ].filter(ch => !(laBai() && ch[0] === 'tq_q_unpaid'));
+    root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
+      chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
+      `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
+    root.querySelector('#tq-quick-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+    root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i]; el.addEventListener('click', () => EPL.di(ch[3], ch[4])); });
+    const auto = root.querySelector('#tq-auto'); auto.checked = !!autoTimer;
+    auto.addEventListener('change', () => { clearInterval(autoTimer); autoTimer = auto.checked ? setInterval(() => tai().catch(EPL.baoLoi), 60000) : null; });
+  }
+  let autoTimer = null;
+
+  /* ---------- B2. Dòng thời gian chuyến: Gantt theo ngày, 5 giai đoạn nối tiếp ---------- */
+  const GD = [['s_dispatched', 'xuat_xe'], ['s_transit', 'toi_bai'], ['tq_g_border', 'cua_khau'], ['s_arrived', 'cang'], ['p_invoiced', 'hoa_don']];   // mốc kết thúc mỗi đoạn; 'thanh_toan' là chấm cuối
+  function veGantt(c) {
+    const rows = (xh && xh.dong_thoi_gian) || [];
+    const box = root.querySelector('#tq-gantt');
+    const [y, m] = thang.split('-').map(Number), n = new Date(y, m, 0).getDate();
+    const today = new Date(), isCur = today.getFullYear() === y && today.getMonth() + 1 === m, td = isCur ? today.getDate() : (today > new Date(y, m, 0) ? n : 0);
+    const dayOf = (iso) => { if (!iso) return null; const [yy, mm, dd] = iso.split('-').map(Number); if (yy < y || (yy === y && mm < m)) return 1; if (yy > y || (yy === y && mm > m)) return n + 1; return dd; };
+    const pos = (day) => ((day - 1) / n * 100), wid = (a, b) => Math.max(0.6, (b - a) / n * 100);
+    root.querySelector('#tq-gantt-sub').textContent = rows.length ? `${rows.length} ${NN.t('trips')} · ${NN.t('tq_gantt_sub')}` : '';
+    root.querySelector('#tq-gantt-legend').innerHTML = GD.map((g, i) => `<span><i style="background:${c.steps[i]}"></i>${NN.h(g[0])}</span>`).join('') + `<span><i style="background:${c.navy};width:10px;border-radius:50%"></i>${NN.h('s_paid')}</span>`;
+    if (!rows.length) { box.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`; return; }
+    box.style.setProperty('--n', n);
+    const hdr = `<div class="hdr"><div></div><div class="days">${Array.from({ length: n }, (_, i) => { const d = new Date(y, m - 1, i + 1).getDay(); return `<span class="${i + 1 === td ? 'today' : (d === 0 || d === 6) ? 'we' : ''}">${i + 1}</span>`; }).join('')}</div></div>`;
+    const body = rows.map(r => {
+      const mo = r.moc || {}, start = dayOf(mo.xuat_xe) || dayOf(mo.lap_phieu) || 1;
+      let cur = start, segs = '', lastDone = start;
+      GD.forEach((g, i) => { const e = dayOf(mo[g[1]]); if (e != null) { segs += `<span class="seg s${i}" style="left:${pos(cur)}%;width:${wid(cur, e + 1)}%" title="${esc(NN.t(g[0]))}: ${esc(mo[g[1]])}"></span>`; cur = e + 1; lastDone = e + 1; } });
+      const done = mo.thanh_toan != null, open = !done && r.trang_thai !== 'planned';
+      if (open && td >= cur) segs += `<span class="seg open ${r.late ? 'late' : ''}" style="left:${pos(cur)}%;width:${wid(cur, Math.min(n + 1, td + 1))}%" title="${esc(NN.t(r.late ? 'tq_q_late' : 'tq_g_inprogress'))}"></span>`;
+      if (done) segs += `<span class="dot paid" style="left:${pos(dayOf(mo.thanh_toan)) + 100 / n / 2}%" title="${esc(NN.t('s_paid'))}: ${esc(mo.thanh_toan)}"></span>`;
+      const pill = r.late ? ['st-late', NN.t('tq_q_late')] : done ? ['st-paid', NN.t('s_paid')] : r.trang_thai === 'arrived' ? ['st-arrived', NN.t('s_arrived')] : r.trang_thai === 'planned' ? ['st-planned', NN.t('tq_g_planned')] : ['st-running', NN.t('s_transit')];
+      return `<div class="row"><div class="lab" data-doc="${esc(r.doc_no)}"><div><span class="code">${esc(r.doc_no.replace(/\/EPL$/, ''))}</span><small>${esc(r.so_xe)} · <span class="lo">${esc(r.khach || '')}</span></small></div><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="track">${segs}${td ? `<span class="now" style="left:${pos(td) + 100 / n / 2}%"></span>` : ''}</div></div>`;
+    }).join('');
+    box.innerHTML = hdr + body + `<div class="cap"><span><i style="background:repeating-linear-gradient(135deg,${c.steps[2]} 0 3px,transparent 3px 6px)"></i>${NN.h('tq_g_inprogress')}</span><span><i style="background:${c.bad};width:2px"></i>${NN.h('tq_g_today')}</span><span>${NN.h('tq_g_hint')}</span></div>`;
+    box.querySelectorAll('.lab').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.doc })));
   }
 
   EPL.modules['tong-quan'] = {
     async init(r) {
       root = r;
-      // Mặc định là THÁNG CÓ PHIẾU GẦN NHẤT, không phải tháng hiện tại: mở màn mà thấy toàn số 0
-      // chỉ vì tháng này chưa lập phiếu nào thì người xem tưởng hệ thống trống.
+      // Mặc định là THÁNG CÓ PHIẾU GẦN NHẤT, không phải tháng hiện tại (giữ nguyên lý do của bản cũ).
       let thangMacDinh = EPL.thangNay();
       try { const ds = await API.get('/api/trips'); if (ds.length && ds[0].doc_date) thangMacDinh = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }
       r.querySelector('#tq-thang').value = thangMacDinh;
       r.querySelector('#tq-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
+      r.querySelector('#tq-so-sanh').addEventListener('change', () => d && ve());
       r.querySelector('#tq-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
+      r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { thang, xuat: 1 }));
+      r.querySelector('#tq-chu-y-all').addEventListener('click', () => EPL.di('theo-doi', { thang }));
+      await napChart();
       await tai();
     },
-    onLang() { if (du_lieu) ve(); },
+    onLang() { if (d) ve(); },
+    destroy() { Object.values(charts).forEach(c => c.destroy()); charts = {}; clearInterval(autoTimer); autoTimer = null; },
   };
 })();

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 881 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 919 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4321,6 +4321,196 @@ window.EPL_TU_DIEN = {
   "vi": "Đã điền đơn giá theo bảng giá khách × tuyến",
   "lo": "ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ",
   "en": "Rate filled from the customer × route price list"
+ },
+ "tq_compare": {
+  "vi": "So với tháng trước",
+  "lo": "ທຽບກັບເດືອນກ່ອນ",
+  "en": "vs. previous month"
+ },
+ "tq_updated": {
+  "vi": "Cập nhật",
+  "lo": "ອັບເດດ",
+  "en": "Updated"
+ },
+ "tq_vs_prev": {
+  "vi": "So với tháng trước",
+  "lo": "ທຽບກັບເດືອນກ່ອນ",
+  "en": "vs. previous month"
+ },
+ "tq_of_revenue": {
+  "vi": "doanh thu",
+  "lo": "ຂອງລາຍຮັບ",
+  "en": "of revenue"
+ },
+ "tq_ontime": {
+  "vi": "Chuyến đúng hạn (≤ {n} ngày)",
+  "lo": "ຖ້ຽວຕົງເວລາ (≤ {n} ວັນ)",
+  "en": "On-time trips (≤ {n} days)"
+ },
+ "tq_avg_days": {
+  "vi": "Số ngày trung bình / chuyến",
+  "lo": "ຈຳນວນວັນສະເລ່ຍ / ຖ້ຽວ",
+  "en": "Average days / trip"
+ },
+ "tq_avg_loss": {
+  "vi": "Hao hụt cân trung bình",
+  "lo": "ນ້ຳໜັກສູນເສຍສະເລ່ຍ",
+  "en": "Average weight loss"
+ },
+ "tq_days": {
+  "vi": "ngày",
+  "lo": "ວັນ",
+  "en": "days"
+ },
+ "tq_daily_title": {
+  "vi": "Doanh thu & chi phí theo ngày",
+  "lo": "ລາຍຮັບ & ລາຍຈ່າຍຕາມວັນ",
+  "en": "Revenue & cost by day"
+ },
+ "tq_revenue": {
+  "vi": "Doanh thu",
+  "lo": "ລາຍຮັບ",
+  "en": "Revenue"
+ },
+ "tq_cost": {
+  "vi": "Chi phí",
+  "lo": "ລາຍຈ່າຍ",
+  "en": "Cost"
+ },
+ "tq_loss_title": {
+  "vi": "Hao hụt cân theo chuyến",
+  "lo": "ນ້ຳໜັກສູນເສຍຕາມຖ້ຽວ",
+  "en": "Weight loss by trip"
+ },
+ "tq_loss": {
+  "vi": "Hao hụt",
+  "lo": "ສູນເສຍ",
+  "en": "Loss"
+ },
+ "tq_loss_limit": {
+  "vi": "Mức cho phép",
+  "lo": "ລະດັບອະນຸຍາດ",
+  "en": "Limit"
+ },
+ "tq_over_limit": {
+  "vi": "chuyến vượt mức",
+  "lo": "ຖ້ຽວເກີນລະດັບ",
+  "en": "trips over limit"
+ },
+ "tq_fleet_title": {
+  "vi": "Hiệu suất xe",
+  "lo": "ປະສິດທິພາບລົດ",
+  "en": "Fleet performance"
+ },
+ "tq_fleet_sub": {
+  "vi": "Sắp theo doanh thu",
+  "lo": "ຈັດຕາມລາຍຮັບ",
+  "en": "Sorted by revenue"
+ },
+ "tq_vehicle": {
+  "vi": "Xe",
+  "lo": "ລົດ",
+  "en": "Truck"
+ },
+ "tq_trips_tons_km": {
+  "vi": "Chuyến · tấn · km",
+  "lo": "ຖ້ຽວ · ໂຕນ · ກມ",
+  "en": "Trips · tons · km"
+ },
+ "tq_view_all": {
+  "vi": "Xem tất cả",
+  "lo": "ເບິ່ງທັງໝົດ",
+  "en": "View all"
+ },
+ "tq_open": {
+  "vi": "Mở",
+  "lo": "ເປີດ",
+  "en": "Open"
+ },
+ "tq_need_endpoint": {
+  "vi": "Chưa có dữ liệu xu hướng — cần endpoint /api/bao-cao/xu-huong.",
+  "lo": "ຍັງບໍ່ມີຂໍ້ມູນແນວໂນ້ມ — ຕ້ອງການ endpoint /api/bao-cao/xu-huong.",
+  "en": "No trend data yet — requires endpoint /api/bao-cao/xu-huong."
+ },
+ "tq_quick": {
+  "vi": "Xem nhanh",
+  "lo": "ເບິ່ງດ່ວນ",
+  "en": "Quick view"
+ },
+ "tq_auto": {
+  "vi": "Tự cập nhật 60 s",
+  "lo": "ອັບເດດອັດຕະໂນມັດ 60 ວິ",
+  "en": "Auto-refresh 60 s"
+ },
+ "tq_q_running": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "In transit"
+ },
+ "tq_q_late": {
+  "vi": "Đi lâu",
+  "lo": "ໄປດົນ",
+  "en": "Overdue"
+ },
+ "tq_q_incident": {
+  "vi": "Sự cố",
+  "lo": "ເຫດການ",
+  "en": "Incidents"
+ },
+ "tq_q_uninvoiced": {
+  "vi": "Chờ hóa đơn",
+  "lo": "ລໍຖ້າໃບເກັບເງິນ",
+  "en": "Awaiting invoice"
+ },
+ "tq_q_pending_check": {
+  "vi": "Chờ kiểm",
+  "lo": "ລໍຖ້າກວດ",
+  "en": "Pending check"
+ },
+ "tq_q_fuel": {
+  "vi": "Phiếu lĩnh chờ cấp",
+  "lo": "ໃບເບິກນ້ຳມັນລໍຖ້າ",
+  "en": "Fuel slips pending"
+ },
+ "tq_q_unpaid": {
+  "vi": "Chưa thu",
+  "lo": "ຍັງບໍ່ເກັບ",
+  "en": "Unpaid"
+ },
+ "tq_gantt_title": {
+  "vi": "Dòng thời gian chuyến trong tháng",
+  "lo": "ເສັ້ນເວລາຖ້ຽວໃນເດືອນ",
+  "en": "Trip timeline this month"
+ },
+ "tq_gantt_sub": {
+  "vi": "mỗi ô là một ngày, bấm mã phiếu để mở",
+  "lo": "ແຕ່ລະຊ່ອງແທນໜຶ່ງວັນ, ກົດເລກໃບເພື່ອເປີດ",
+  "en": "one cell per day, click a doc no. to open"
+ },
+ "tq_g_border": {
+  "vi": "Qua cửa khẩu",
+  "lo": "ຜ່ານດ່ານ",
+  "en": "Border crossed"
+ },
+ "tq_g_inprogress": {
+  "vi": "Đang diễn ra",
+  "lo": "ກຳລັງດຳເນີນ",
+  "en": "In progress"
+ },
+ "tq_g_planned": {
+  "vi": "Chưa xuất bến",
+  "lo": "ຍັງບໍ່ອອກ",
+  "en": "Not dispatched"
+ },
+ "tq_g_today": {
+  "vi": "Hôm nay",
+  "lo": "ມື້ນີ້",
+  "en": "Today"
+ },
+ "tq_g_hint": {
+  "vi": "Sọc chéo = giai đoạn chưa kết thúc; đỏ = đã quá 25 ngày.",
+  "lo": "ລາຍຂວາງ = ໄລຍະຍັງບໍ່ສິ້ນສຸດ; ສີແດງ = ເກີນ 25 ວັນ.",
+  "en": "Hatched = stage not finished; red = over 25 days."
  },
  "k_month_trips": {
   "vi": "Phiếu tháng này",

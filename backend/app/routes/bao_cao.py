@@ -11,8 +11,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import ChungTu, Part, Trip, TripExpense, TripSection, Voucher
+from models import ChungTu, Part, Route, RouteStop, Trip, TripEvent, TripExpense, TripSection, Voucher
 from routes.phieu import xuat_phieu
+from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
 from services.tinh_toan import tien_dong, tinh_phieu
 
@@ -76,6 +77,170 @@ def tong_quan(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_
             "doanh_thu_usd": round(doanh_thu, 2), "chi_lak": round(chi_lak), "tan_giao": round(tan, 2),
             "chua_thu_usd": round(chua_thu_usd, 2), "chua_thu_so": chua_thu_so,
             "dem": dem, "chi_theo_muc": {k: round(v) for k, v in theo_muc.items()}, "chu_y": chu_y[:12]}
+
+
+# ================================================================ xu hướng (màn Tổng quan)
+def _dong_theo_phieu(db, ds):
+    """Tất cả dòng chi của một nhóm phiếu, gom sẵn theo phiếu — tránh gọi lại từng phiếu một."""
+    dong = defaultdict(list)
+    if ds:
+        for d in db.query(TripExpense).filter(TripExpense.trip_id.in_([p.id for p in ds])).all():
+            dong[d.trip_id].append(d)
+    return dong
+
+
+def _gom_thang(db, dau, cuoi):
+    """Bốn con số của một tháng — cùng công thức với /api/bao-cao/tong-quan để hai màn không lệch nhau."""
+    ds = (db.query(Trip).filter(Trip.doc_date >= dau, Trip.doc_date <= cuoi).all())
+    dong = _dong_theo_phieu(db, ds)
+    r = {"doanh_thu_usd": 0.0, "chi_lak": 0.0, "tan_giao": 0.0, "chua_thu_usd": 0.0}
+    for p in ds:
+        c = tinh_phieu(p, dong[p.id])
+        r["doanh_thu_usd"] += c["doanh_thu_usd"]
+        r["chi_lak"] += (c["tien_thue_usd"] - c["giu_lai_usd"]) * (p.rate_usd or 22000) if c["lien_ket"] else c["tong_chi_lak"]
+        if p.weight_dest: r["tan_giao"] += p.weight_dest
+        if p.transport_status == "arrived" and p.finance_status != "paid":
+            r["chua_thu_usd"] += c["doanh_thu_usd"]
+    return {"doanh_thu_usd": round(r["doanh_thu_usd"], 2), "chi_lak": round(r["chi_lak"]),
+            "tan_giao": round(r["tan_giao"], 2), "chua_thu_usd": round(r["chua_thu_usd"], 2)}
+
+
+def _lui_thang(y, m, n):
+    """Lùi n tháng từ (y, m)."""
+    t = (y * 12 + (m - 1)) - n
+    return t // 12, t % 12 + 1
+
+
+@router.get("/api/bao-cao/xu-huong")
+def xu_huong(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    """Số liệu xu hướng cho màn Tổng quan: so tháng trước, sáu tháng gần nhất, theo ngày, hao hụt,
+    hiệu suất xe, vận hành, xem nhanh, và dòng thời gian từng chuyến.
+
+    Mốc dòng thời gian lấy từ dữ liệu THẬT, không suy diễn: ngày lập phiếu · ngày xuất xe · các mốc
+    "tới điểm" Bãi đã bấm trên tuyến (điểm 2 = về bãi, điểm 3 = cửa khẩu, điểm cuối = nơi giao) ·
+    ngày hoá đơn và ngày thu lấy từ Sổ chứng từ (HD, PT). Mốc nào chưa có thì để trống, màn hình vẽ
+    đoạn đó là "đang diễn ra".
+    """
+    ds, dau, cuoi = _phieu_thang(db, thang)
+    dong = _dong_theo_phieu(db, ds)
+    hom_nay = dt.date.today()
+
+    # ---- tháng trước và sáu tháng gần nhất (cũ → mới, kể cả tháng đang xem)
+    y, m = dau.year, dau.month
+    sau_thang = {"nhan": [], "doanh_thu_usd": [], "chi_lak": [], "tan_giao": [], "chua_thu_usd": []}
+    thang_truoc = None
+    for i in range(5, -1, -1):
+        yy, mm = _lui_thang(y, m, i)
+        d1 = dt.date(yy, mm, 1)
+        d2 = dt.date(yy + (mm == 12), (mm % 12) + 1, 1) - dt.timedelta(days=1)
+        g = _gom_thang(db, d1, d2)
+        sau_thang["nhan"].append("%02d/%02d" % (mm, yy % 100))
+        for k in ("doanh_thu_usd", "chi_lak", "tan_giao", "chua_thu_usd"):
+            sau_thang[k].append(g[k])
+        if i == 1:
+            thang_truoc = g
+
+    # ---- theo ngày · hao hụt · hiệu suất xe · vận hành
+    theo_ngay, hao_hut, xe = defaultdict(lambda: {"doanh_thu_usd": 0.0, "chi_usd": 0.0}), [], {}
+    ngay_di_ds, hao_ds, dung_han = [], [], 0
+    for p in ds:
+        c = tinh_phieu(p, dong[p.id])
+        if p.doc_date:
+            o = theo_ngay[p.doc_date.isoformat()]
+            o["doanh_thu_usd"] += c["doanh_thu_usd"]
+            o["chi_usd"] += c["tong_chi_usd"]
+        if p.weight_origin and p.weight_dest is not None:
+            hao_hut.append({"doc_no": p.doc_no, "so_xe": p.truck_no, "can_dau": p.weight_origin, "can_cuoi": p.weight_dest})
+            if c["hao_hut_pct"] is not None: hao_ds.append(c["hao_hut_pct"])
+        if p.truck_no:
+            x = xe.setdefault(p.truck_no, {"so_xe": p.truck_no, "so_chuyen": 0, "tan": 0.0, "km": 0.0, "doanh_thu_usd": 0.0})
+            x["so_chuyen"] += 1
+            x["tan"] += p.weight_dest or p.weight_origin or 0
+            if p.odo_back is not None and p.odo_out is not None and p.odo_back >= p.odo_out:
+                x["km"] += p.odo_back - p.odo_out
+            x["doanh_thu_usd"] += c["doanh_thu_usd"]
+        # Số ngày trung bình chỉ tính chuyến ĐÃ VỀ: chuyến đang chạy thì "số ngày" còn tăng từng ngày,
+        # trộn vào sẽ kéo trung bình lên và làm con số vô nghĩa. Chuyến đang chạy đã có ô "Đi lâu" lo.
+        ngay_di = p.out_date or p.doc_date
+        if ngay_di and p.transport_status == "arrived" and p.back_date:
+            n_ngay = (p.back_date - ngay_di).days
+            ngay_di_ds.append(n_ngay)
+            if n_ngay <= NGAY_COI_LA_LAU: dung_han += 1
+
+    van_hanh = {
+        "nguong_ngay": NGAY_COI_LA_LAU,
+        "dung_han_pct": round(dung_han / len(ngay_di_ds) * 100, 1) if ngay_di_ds else None,
+        "so_chuyen_tinh": len(ngay_di_ds),
+        "ngay_tb": round(sum(ngay_di_ds) / len(ngay_di_ds), 1) if ngay_di_ds else None,
+        "hao_hut_tb_pct": round(sum(hao_ds) / len(hao_ds), 2) if hao_ds else None,
+    }
+
+    # ---- xem nhanh: đúng những con số màn Theo dõi tuyến đang đếm, để hai màn không nói khác nhau
+    su_co = {e.trip_id for e in db.query(TripEvent).filter(TripEvent.status == "reported").all()}
+    linh_cho = db.query(Voucher).filter(Voucher.status == "cho").count()
+    cho_kiem = (db.query(TripSection).filter(TripSection.trip_id.in_([p.id for p in ds] or [""]),
+                                             TripSection.status == "entered").count())
+    xem_nhanh = {
+        "dang_chay": len([p for p in ds if p.transport_status in ("dispatched", "transit")]),
+        "di_lau": len([p for p in ds if p.transport_status != "arrived" and (p.out_date or p.doc_date)
+                       and (hom_nay - (p.out_date or p.doc_date)).days > NGAY_COI_LA_LAU]),
+        "su_co": len([p for p in ds if p.id in su_co]),
+        "cho_hoa_don": len([p for p in ds if p.transport_status == "arrived" and not p.invoiced]),
+        "cho_kiem": cho_kiem,
+        "phieu_linh_cho": linh_cho,
+        "chua_thu": round(sum(tinh_phieu(p, dong[p.id])["doanh_thu_usd"] for p in ds
+                              if p.transport_status == "arrived" and p.finance_status != "paid"), 2),
+    }
+
+    # ---- dòng thời gian: mốc từ sự kiện "tới điểm" và từ Sổ chứng từ
+    ma_diem = {}                      # trip_id → {seq: ngày}
+    for e in db.query(TripEvent).filter(TripEvent.trip_id.in_([p.id for p in ds] or [""]),
+                                        TripEvent.kind == "arrive_stop").all():
+        if e.stop_seq and e.ts:
+            d0 = e.ts.date()
+            cu = ma_diem.setdefault(e.trip_id, {})
+            if e.stop_seq not in cu or d0 < cu[e.stop_seq]: cu[e.stop_seq] = d0
+    so_diem = {}                      # route_id → số điểm trên tuyến
+    for r_id, n in db.query(RouteStop.route_id, RouteStop.seq).all():
+        so_diem[r_id] = max(so_diem.get(r_id, 0), n or 0)
+    ct = defaultdict(dict)            # trip_id → {loai: ngày}
+    for c in db.query(ChungTu).filter(ChungTu.trip_id.in_([p.id for p in ds] or [""]),
+                                      ChungTu.loai.in_(("HD", "PT"))).all():
+        ct[c.trip_id][c.loai] = c.ngay
+
+    dong_thoi_gian = []
+    for p in ds:
+        diem = ma_diem.get(p.id, {})
+        n_diem = so_diem.get(p.route_id, 0)
+        ngay_di = p.out_date or p.doc_date
+        lau = (p.transport_status != "arrived" and ngay_di is not None
+               and (hom_nay - ngay_di).days > NGAY_COI_LA_LAU)
+        cang = diem.get(n_diem) if n_diem else None
+        if cang is None and p.transport_status == "arrived": cang = p.back_date
+        moc = {
+            "lap_phieu": p.doc_date.isoformat() if p.doc_date else None,
+            "xuat_xe": p.out_date.isoformat() if p.out_date else None,
+            "toi_bai": diem[2].isoformat() if 2 in diem else None,
+            "cua_khau": diem[3].isoformat() if (n_diem >= 4 and 3 in diem) else None,
+            "cang": cang.isoformat() if cang else None,
+            "hoa_don": ct[p.id]["HD"].isoformat() if ct[p.id].get("HD") else None,
+            "thanh_toan": ct[p.id]["PT"].isoformat() if ct[p.id].get("PT") else None,
+        }
+        dong_thoi_gian.append({
+            "doc_no": p.doc_no, "so_xe": p.truck_no, "khach": p.customer_name,
+            "trang_thai": "planned" if p.transport_status == "dispatched" else p.transport_status,
+            "late": bool(lau), "moc": moc,
+        })
+
+    for x in xe.values():
+        x["tan"] = round(x["tan"], 2); x["km"] = round(x["km"]); x["doanh_thu_usd"] = round(x["doanh_thu_usd"], 2)
+    return {
+        "thang": dau.strftime("%Y-%m"), "thang_truoc": thang_truoc, "sau_thang": sau_thang,
+        "theo_ngay": [{"ngay": k, "doanh_thu_usd": round(v["doanh_thu_usd"], 2), "chi_usd": round(v["chi_usd"], 2)}
+                      for k, v in sorted(theo_ngay.items())],
+        "hao_hut": hao_hut, "xe": sorted(xe.values(), key=lambda x: -x["doanh_thu_usd"]),
+        "van_hanh": van_hanh, "xem_nhanh": xem_nhanh, "dong_thoi_gian": dong_thoi_gian,
+    }
 
 
 @router.get("/api/bao-cao/theo-doi")
