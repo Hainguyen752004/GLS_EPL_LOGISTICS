@@ -64,6 +64,28 @@ def duoc_sua_tien(vai, muc, trang_thai):
     return muc in QUYEN.get(vai, QUYEN["yard"])["verify"] and trang_thai in ("wait", "entered")
 
 
+def thay_tien_ban(vai):
+    """Vai này có được thấy TIỀN BÁN không: đơn giá cước, doanh thu, khách chưa trả, giá thuê xe
+    liên kết, lãi chuyến. Bãi, tài xế và thủ kho thì KHÔNG — đó là biên lợi nhuận của công ty
+    (khách trả giá 2, thuê lại xe ngoài giá 1). Tiền CHI thì họ vẫn thấy vì chính họ chi."""
+    return vai not in ("yard", "driver", "depot")
+
+
+def viec_dang_cho(vai, muc, trang_thai):
+    """Mục này có đang chờ CHÍNH vai này làm không — để đếm việc cho đúng người.
+
+    Bãi: mục còn "chờ" là chưa nhập. Kế toán: mục "đã nhập" chờ kiểm, "đã kiểm" chờ ghi sổ.
+    Quỹ: mục "đã ghi sổ" chờ chi. Đếm chung tất cả rồi gắn cho mọi vai thì con số không nói lên
+    việc của ai cả.
+    """
+    q = QUYEN.get(vai, QUYEN["yard"])
+    if trang_thai == "wait":     return muc in q["edit"]
+    if trang_thai == "entered":  return muc in q["verify"]
+    if trang_thai == "verified": return muc in q["book"]
+    if trang_thai == "booked":   return muc in q["pay"]
+    return False
+
+
 def chuyen_muc(vai, muc, trang_thai_hien_tai, hanh_dong):
     """Trả trạng thái mới, hoặc bật lỗi 403/409 nói rõ vì sao."""
     if muc not in MUC:

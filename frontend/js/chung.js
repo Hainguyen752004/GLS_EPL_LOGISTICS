@@ -271,7 +271,12 @@
     },
     dangXuat(xoaHash = true) {
       try { localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
-      USER = null; apLopVai(); document.getElementById('app').hidden = true; document.getElementById('login').hidden = false;
+      USER = null; apLopVai();
+      // Xoá nội dung màn đang mở: máy ở bãi dùng chung, người sau đăng nhập không được thấy
+      // loáng qua số liệu của người trước trong lúc màn mới còn đang tải.
+      const nd = document.getElementById('noi-dung'); if (nd) nd.replaceChildren();
+      moduleHienTai = '';
+      document.getElementById('app').hidden = true; document.getElementById('login').hidden = false;
       document.getElementById('lgU').value = ''; document.getElementById('lgP').value = '';
       document.getElementById('lgP').type = 'password';
       const nm = document.getElementById('lgMat'); if (nm) nm.classList.remove('mo');
@@ -644,7 +649,10 @@
     }, 60);
   });
 
-  EPL.di = (id, tham) => { location.hash = '#/' + id + (tham ? '?' + new URLSearchParams(tham).toString() : ''); };
+  EPL.di = (id, tham) => {
+    const q = tham ? new URLSearchParams(tham).toString() : '';   // không tham số thì đừng để dấu '?' trơ ra trên thanh địa chỉ
+    location.hash = '#/' + id + (q ? '?' + q : '');
+  };
   EPL.thamSo = () => { const q = location.hash.split('?')[1] || ''; return Object.fromEntries(new URLSearchParams(q)); };
 
   /** Lấy HTML của module, có NHỚ ĐỆM để còn dùng được khi mất mạng.
@@ -705,11 +713,16 @@
       root.innerHTML = `<div class="card"><div class="bd"><b class="neg">${esc(NN.t('err_generic'))}</b><div class="small muted">${esc(e.message)}</div></div></div>`;
     }
   }
+  // Các lượt nạp chạy NỐI TIẾP nhau, không chồng lên nhau. Hai lượt nạp CÙNG một module mà chạy song
+  // song thì cùng gán biến `root` bên trong module, lượt xong sau vẽ vào gốc của lượt kia (đã tháo
+  // khỏi trang) và màn đang hiện trắng trơn. Gặp thật: đăng nhập khi địa chỉ còn hash của module vai
+  // này không có quyền → khung tự chuyển sang màn đầu, lượt chuyển đó chồng lên lượt người dùng bấm.
+  let hangCho = Promise.resolve();
   function dieuHuong() {
     if (!USER) return;
     const id = (location.hash.replace(/^#\/?/, '').split('?')[0]) || moduleDau();
     // Lời hứa của lượt nạp hiện tại — bộ kiểm chờ nó thay vì đoán bằng setTimeout.
-    EPL.sanSang = napModule(id);
+    EPL.sanSang = hangCho = hangCho.then(() => napModule(id), () => napModule(id));
   }
   window.addEventListener('hashchange', dieuHuong);
 

@@ -4,7 +4,7 @@
      Chart.js 4.5.1 để SẴN trong dự án (frontend/vendor/chartjs), module tự nạp khi mở — không gọi
      CDN vì máy bên Lào có lúc không ra được Internet.
      Vai Bãi không thấy phần tiền bán (doanh thu, khách chưa trả, doanh thu theo xe): xem tong-quan.js. -->
-<div class="toolbar tq-toolbar">
+<div class="toolbar tq-toolbar no-print">
   <div class="field"><label data-i18n="month"></label><input type="month" id="tq-thang"></div>
   <label class="tq-chk"><input type="checkbox" id="tq-so-sanh" checked><span data-i18n="tq_compare"></span></label>
   <span class="small muted" id="tq-stamp"></span>
@@ -14,7 +14,7 @@
 </div>
 
 <!-- B1. Thanh xem nhanh — dính dưới toolbar khi cuộn; mỗi chip là một bộ lọc dẫn sang Theo dõi phiếu -->
-<div class="tq-quick" id="tq-xem-nhanh"></div>
+<div class="tq-quick no-print" id="tq-xem-nhanh"></div>
 
 <!-- 1. Bốn con số + delta so tháng trước + sparkline 6 tháng -->
 <div class="tq-kpis" id="tq-kpi"></div>

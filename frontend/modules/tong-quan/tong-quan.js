@@ -12,6 +12,9 @@
   // Tiền CHI thì thấy hết, vì chính họ chi. Sếp thấy tất cả nên so vai thẳng, không dùng AUTH.la.
   const laBai = () => AUTH.role === 'yard';
   let root, thang, d, xh, ty_gia, charts = {};
+  /** Không có dữ liệu thì phải nói ĐÚNG lý do: máy chủ chưa trả được (hỏng/mất mạng) khác hẳn với
+   *  tháng này chưa có chuyến nào. Câu sau mà viết như câu trước thì người dùng tưởng phần mềm hỏng. */
+  const chuaCo = () => NN.h(xh ? 'tq_thang_trong' : 'tq_need_endpoint');
 
   /** Chart.js để sẵn trong dự án, nạp một lần khi mở màn. Không có thư viện thì các khối biểu đồ
    *  báo "chưa vẽ được", phần số vẫn chạy — mất mạng hay thiếu tệp cũng không làm sập màn. */
@@ -139,7 +142,7 @@
         plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${t.dataset.label}: ${so(t.parsed.y, 2)} USD` } }) },
         scales: { x: { grid: { display: false }, ticks: tickBase(c), border: { color: c.line } }, y: { beginAtZero: true, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => so(v) }) } } },
     });
-    if (!ngay.length) root.querySelector('#tq-c-ngay').parentElement.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+    if (!ngay.length) root.querySelector('#tq-c-ngay').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
 
     /* 3b. Cơ cấu chi phí — donut ≤ 4 phần, số ở giữa, danh sách có giá trị + % */
     const cm = d.chi_theo_muc || {}, tong = Object.values(cm).reduce((a, b) => a + b, 0) || 1;
@@ -159,7 +162,7 @@
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { title: (t) => hh[t[0].dataIndex].doc_no, label: (t) => { const x = hh[t.dataIndex]; return [` ${so(x.can_dau, 2)} → ${so(x.can_cuoi, 2)} t`, ` ${NN.t('tq_loss')}: ${so(x.pct, 2)}%`]; } } }) },
         scales: { x: { grid: { display: false }, ticks: Object.assign(tickBase(c), { font: { family: 'ui-monospace, JetBrains Mono, monospace', size: 10.5 } }), border: { color: c.line } }, y: { beginAtZero: true, suggestedMax: Math.max(2, ...hh.map(x => x.pct)) * 1.15, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => v + '%' }) } },
         onClick: (_, els) => { if (els.length) EPL.di('theo-doi', { q: hh[els[0].index].doc_no }); } } });
-    if (!hh.length) root.querySelector('#tq-c-haohut').parentElement.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+    if (!hh.length) root.querySelector('#tq-c-haohut').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
 
     /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
     const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_usd - a.doanh_thu_usd), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_usd));
@@ -170,7 +173,7 @@
       xe.map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_usd / maxDT) * 100}%"></b></div></div>${laBai()
         ? `<div class="v">${so(x.tan, 1)}<small>${so(x.km / Math.max(1, x.so_chuyen))} km/${NN.t('trips').toLowerCase()}</small></div>`
         : `<div class="v">${so(x.doanh_thu_usd)}<small>${so(x.doanh_thu_usd / Math.max(1, x.tan), 1)} USD/t</small></div>`}</div>`).join('')
-      : `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`;
+      : `<div class="tq-empty">${chuaCo()}</div>`;
     root.querySelectorAll('.tq-veh').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { q: el.dataset.xe })));
 
     /* Tỷ giá */
@@ -178,7 +181,8 @@
     root.querySelector('#tq-rate-date').textContent = ty_gia.ngay ? EPL.ngay ? EPL.ngay(ty_gia.ngay) : ty_gia.ngay : '';
 
     /* Cần xử lý — mức độ theo loại: hao hụt / quá hạn = xấu, chưa hóa đơn = cảnh báo, chờ kiểm = thông tin */
-    const MUC = { loss: 'bad', overdue: 'bad', late: 'bad', uninvoiced: 'warn', unpaid: 'warn', pending_check: 'info' };
+    // Mã loại do máy chủ đặt (routes/bao_cao.py): hao_hut · chua_hoa_don · chua_can · cho_kiem.
+    const MUC = { hao_hut: 'bad', chua_hoa_don: 'warn', chua_can: 'warn', cho_kiem: 'info' };
     const cy = d.chu_y || [];
     root.querySelector('#tq-chu-y-n').textContent = cy.length || '';
     root.querySelector('#tq-chu-y').innerHTML = cy.length
@@ -196,10 +200,10 @@
       ['tq_q_late', q.di_lau, 'bad', 'theo-doi-tuyen', { o: 'di_lau' }],
       ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
       ['tq_q_uninvoiced', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
-      ['tq_q_pending_check', q.cho_kiem, 'info', 'phieu-xuat-xe', {}],
+      ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
       ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'cap-phat', {}],
       ['tq_q_unpaid', q.chua_thu != null ? so(q.chua_thu) + ' USD' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
-    ].filter(ch => !(laBai() && ch[0] === 'tq_q_unpaid'));
+    ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_uninvoiced'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
       chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
@@ -221,7 +225,7 @@
     const pos = (day) => ((day - 1) / n * 100), wid = (a, b) => Math.max(0.6, (b - a) / n * 100);
     root.querySelector('#tq-gantt-sub').textContent = rows.length ? `${rows.length} ${NN.t('trips')} · ${NN.t('tq_gantt_sub')}` : '';
     root.querySelector('#tq-gantt-legend').innerHTML = GD.map((g, i) => `<span><i style="background:${c.steps[i]}"></i>${NN.h(g[0])}</span>`).join('') + `<span><i style="background:${c.navy};width:10px;border-radius:50%"></i>${NN.h('s_paid')}</span>`;
-    if (!rows.length) { box.innerHTML = `<div class="tq-empty">${NN.h('tq_need_endpoint')}</div>`; return; }
+    if (!rows.length) { box.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`; return; }
     box.style.setProperty('--n', n);
     const hdr = `<div class="hdr"><div></div><div class="days">${Array.from({ length: n }, (_, i) => { const d = new Date(y, m - 1, i + 1).getDay(); return `<span class="${i + 1 === td ? 'today' : (d === 0 || d === 6) ? 'we' : ''}">${i + 1}</span>`; }).join('')}</div></div>`;
     const body = rows.map(r => {

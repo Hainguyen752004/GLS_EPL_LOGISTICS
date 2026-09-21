@@ -43,12 +43,24 @@ async function main() {
   async function di(hash) {
     const cu = w.EPL.sanSang;
     if (w.location.hash === hash) w.dispatchEvent(new w.HashChangeEvent('hashchange')); else w.location.hash = hash;
-    await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash); await w.EPL.sanSang;
+    await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash);
+    // Khung nạp nối tiếp nhau: có thể còn lượt nữa đang xếp hàng (đăng nhập với hash của module
+    // không có quyền thì khung tự chuyển màn). Chờ tới khi không còn lượt mới nào.
+    await xongHet();
     let truoc = -1, yen = 0;
     for (let i = 0; i < 60 && yen < 3; i++) {          // ba lượt liền chữ không đổi thì coi là xong
       await cho(80);
       const n = goc().textContent.length;
       yen = n === truoc ? yen + 1 : 0; truoc = n;
+    }
+  }
+  /** Chờ tới khi khung KHÔNG còn lượt nạp nào nữa. Đổi location.hash chỉ bắn hashchange ở lượt sau,
+   *  nên phải để trống một nhịp rồi mới kết luận là đã xong, không thì đo đúng lúc màn còn trắng. */
+  async function xongHet() {
+    for (let i = 0; i < 60; i++) {
+      const pr = w.EPL.sanSang;
+      await pr; await cho(70);
+      if (pr === w.EPL.sanSang) return;
     }
   }
   const goc = () => d.getElementById('noi-dung');

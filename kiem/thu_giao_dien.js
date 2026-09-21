@@ -49,6 +49,15 @@ async function main() {
     else w.location.hash = hash;
     await choDen(() => w.EPL.sanSang && w.EPL.sanSang !== cu, 'bắt đầu nạp ' + hash); await w.EPL.sanSang; await cho(80);
   }
+  /** Chờ tới khi khung KHÔNG còn lượt nạp nào nữa. Đổi location.hash chỉ bắn hashchange ở lượt sau,
+   *  nên phải để trống một nhịp rồi mới kết luận là đã xong, không thì đo đúng lúc màn còn trắng. */
+  async function xongHet() {
+    for (let i = 0; i < 60; i++) {
+      const pr = w.EPL.sanSang;
+      await pr; await cho(70);
+      if (pr === w.EPL.sanSang) return;
+    }
+  }
   const goc = () => d.getElementById('noi-dung');
 
   // Một ký tự lạc trong CSS (có lần là một dấu nháy thừa) làm trình duyệt bỏ luôn cả khối quy tắc
@@ -330,9 +339,24 @@ async function main() {
   assert.ok(!goc().querySelector('#px-phieu').classList.contains('px-an-tien'), 'vai khác Bãi phải thấy ô tiền');
   console.log('✓ vai kho nhiên liệu: chỉ mục III có nút hành động');
 
+  // 5b. Đăng nhập khi địa chỉ còn hash của module vai này KHÔNG có quyền: khung tự chuyển sang màn
+  // đầu, và lượt chuyển đó từng chồng lên lượt nạp đang chạy làm màn trắng trơn. Kiểm để không tái diễn.
+  {
+    w.EPL.AUTH.dangXuat(false);
+    assert.strictEqual(d.getElementById('noi-dung').children.length, 0, 'đăng xuất phải xoá nội dung màn, không để người sau thấy số của người trước');
+    w.location.hash = '#/tai-khoan';                 // màn chỉ Sếp mới có
+    await w.EPL.AUTH.dangNhap('thabok', '1234');
+    await choDen(() => !d.getElementById('app').hidden, 'vào lại với vai Bãi');
+    await xongHet();
+    await choDen(() => goc().textContent.trim().length > 60, 'màn phải có nội dung sau khi khung tự chuyển');
+    assert.notStrictEqual(w.location.hash, '#/tai-khoan', 'phải tự chuyển khỏi màn không có quyền');
+    console.log('✓ vào bằng địa chỉ không có quyền: tự chuyển màn, màn mới có nội dung (%d ký tự)', goc().textContent.trim().length);
+  }
+
   // 6. vai tài xế: chỉ thấy "Phiếu của tôi", có nút xuất phát / báo hỏng
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('tx01', '1234');
-  await choDen(() => !d.getElementById('app').hidden, 'vào với vai tài xế'); await w.EPL.sanSang;
+  await choDen(() => !d.getElementById('app').hidden, 'vào với vai tài xế');
+  await xongHet();
   const navTx = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
   assert.deepStrictEqual(navTx, ['phieu-cua-toi'], 'tài xế chỉ được thấy Phiếu của tôi: ' + navTx);
   const chuTx = goc().textContent;

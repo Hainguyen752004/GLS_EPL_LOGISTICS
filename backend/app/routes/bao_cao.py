@@ -7,7 +7,7 @@ Mọi con số ở đây đều TÍNH LẠI từ phiếu lúc gọi — không c
 import datetime as dt
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -15,15 +15,20 @@ from models import ChungTu, Part, Route, RouteStop, Trip, TripEvent, TripExpense
 from routes.phieu import xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
+from services.phan_quyen import QUYEN, thay_tien_ban, viec_dang_cho
 from services.tinh_toan import tien_dong, tinh_phieu
 
 router = APIRouter()
 
 
 def _thang(thang):
-    """'2026-08' → (đầu, cuối); trống → tháng hiện tại."""
+    """'2026-08' → (đầu, cuối); trống → tháng hiện tại. Gõ sai thì báo 422, không để máy chủ nổ 500."""
     if thang:
-        y, m = int(thang[:4]), int(thang[5:7])
+        try:
+            y, m = int(thang[:4]), int(thang[5:7])
+            dt.date(y, m, 1)
+        except (ValueError, TypeError):
+            raise HTTPException(422, {"ma": "THANG_SAI", "loi": "Tháng phải ghi dạng YYYY-MM, ví dụ 2026-08."})
     else:
         h = dt.date.today(); y, m = h.year, h.month
     dau = dt.date(y, m, 1)
@@ -38,7 +43,7 @@ def _phieu_thang(db, thang):
 
 
 @router.get("/api/bao-cao/tong-quan")
-def tong_quan(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     ds, dau, cuoi = _phieu_thang(db, thang)
     dong = defaultdict(list)
     for d in db.query(TripExpense).filter(TripExpense.trip_id.in_([p.id for p in ds] or [""])).all():
@@ -73,10 +78,15 @@ def tong_quan(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_
                                              TripSection.status == "entered").count())
     if cho_kiem:
         chu_y.append({"loai": "cho_kiem", "so": cho_kiem})
-    return {"tu": dau.isoformat(), "den": cuoi.isoformat(), "so_phieu": len(ds),
-            "doanh_thu_usd": round(doanh_thu, 2), "chi_lak": round(chi_lak), "tan_giao": round(tan, 2),
-            "chua_thu_usd": round(chua_thu_usd, 2), "chua_thu_so": chua_thu_so,
-            "dem": dem, "chi_theo_muc": {k: round(v) for k, v in theo_muc.items()}, "chu_y": chu_y[:12]}
+    ra = {"tu": dau.isoformat(), "den": cuoi.isoformat(), "so_phieu": len(ds),
+          "doanh_thu_usd": round(doanh_thu, 2), "chi_lak": round(chi_lak), "tan_giao": round(tan, 2),
+          "chua_thu_usd": round(chua_thu_usd, 2), "chua_thu_so": chua_thu_so,
+          "dem": dem, "chi_theo_muc": {k: round(v) for k, v in theo_muc.items()}, "chu_y": chu_y[:12]}
+    # Vai không được thấy tiền bán thì máy chủ BỎ HẲN các khoá đó, không chỉ giấu ở giao diện.
+    if not thay_tien_ban(user.role):
+        for k in ("doanh_thu_usd", "chua_thu_usd", "chua_thu_so"):
+            ra.pop(k, None)
+    return ra
 
 
 # ================================================================ xu hướng (màn Tổng quan)
@@ -112,7 +122,7 @@ def _lui_thang(y, m, n):
 
 
 @router.get("/api/bao-cao/xu-huong")
-def xu_huong(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Số liệu xu hướng cho màn Tổng quan: so tháng trước, sáu tháng gần nhất, theo ngày, hao hụt,
     hiệu suất xe, vận hành, xem nhanh, và dòng thời gian từng chuyến.
 
@@ -178,15 +188,22 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_h
     # ---- xem nhanh: đúng những con số màn Theo dõi tuyến đang đếm, để hai màn không nói khác nhau
     su_co = {e.trip_id for e in db.query(TripEvent).filter(TripEvent.status == "reported").all()}
     linh_cho = db.query(Voucher).filter(Voucher.status == "cho").count()
-    cho_kiem = (db.query(TripSection).filter(TripSection.trip_id.in_([p.id for p in ds] or [""]),
-                                             TripSection.status == "entered").count())
+    # "Việc của tôi": mục đang chờ CHÍNH vai này làm (Bãi nhập · kế toán kiểm/ghi sổ · quỹ chi),
+    # kèm phiếu đầu tiên để bấm vào chip là mở thẳng chỗ phải làm. Đếm chung tất cả rồi gắn cho mọi
+    # vai thì con số không nói lên việc của ai cả.
+    viec_toi, viec_phieu = 0, None
+    co_phieu = {p.id for p in ds}
+    for sec in db.query(TripSection).filter(TripSection.trip_id.in_([p.id for p in ds] or [""])).all():
+        if viec_dang_cho(user.role, sec.section, sec.status):
+            viec_toi += 1
+            if viec_phieu is None and sec.trip_id in co_phieu: viec_phieu = sec.trip_id
     xem_nhanh = {
         "dang_chay": len([p for p in ds if p.transport_status in ("dispatched", "transit")]),
         "di_lau": len([p for p in ds if p.transport_status != "arrived" and (p.out_date or p.doc_date)
                        and (hom_nay - (p.out_date or p.doc_date)).days > NGAY_COI_LA_LAU]),
         "su_co": len([p for p in ds if p.id in su_co]),
         "cho_hoa_don": len([p for p in ds if p.transport_status == "arrived" and not p.invoiced]),
-        "cho_kiem": cho_kiem,
+        "viec_toi": viec_toi, "viec_phieu": viec_phieu,
         "phieu_linh_cho": linh_cho,
         "chua_thu": round(sum(tinh_phieu(p, dong[p.id])["doanh_thu_usd"] for p in ds
                               if p.transport_status == "arrived" and p.finance_status != "paid"), 2),
@@ -234,11 +251,21 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_h
 
     for x in xe.values():
         x["tan"] = round(x["tan"], 2); x["km"] = round(x["km"]); x["doanh_thu_usd"] = round(x["doanh_thu_usd"], 2)
+    # Vai không được thấy tiền bán: bỏ hẳn mọi khoá doanh thu, kể cả trong dãy sáu tháng và theo xe.
+    if not thay_tien_ban(user.role):
+        xem_nhanh.pop("chua_thu", None)
+        sau_thang.pop("doanh_thu_usd", None); sau_thang.pop("chua_thu_usd", None)
+        if thang_truoc:
+            thang_truoc.pop("doanh_thu_usd", None); thang_truoc.pop("chua_thu_usd", None)
+        for x in xe.values(): x.pop("doanh_thu_usd", None)
+        theo_ngay_ra = [{"ngay": k, "chi_usd": round(v["chi_usd"], 2)} for k, v in sorted(theo_ngay.items())]
+    else:
+        theo_ngay_ra = [{"ngay": k, "doanh_thu_usd": round(v["doanh_thu_usd"], 2), "chi_usd": round(v["chi_usd"], 2)}
+                        for k, v in sorted(theo_ngay.items())]
     return {
         "thang": dau.strftime("%Y-%m"), "thang_truoc": thang_truoc, "sau_thang": sau_thang,
-        "theo_ngay": [{"ngay": k, "doanh_thu_usd": round(v["doanh_thu_usd"], 2), "chi_usd": round(v["chi_usd"], 2)}
-                      for k, v in sorted(theo_ngay.items())],
-        "hao_hut": hao_hut, "xe": sorted(xe.values(), key=lambda x: -x["doanh_thu_usd"]),
+        "theo_ngay": theo_ngay_ra,
+        "hao_hut": hao_hut, "xe": sorted(xe.values(), key=lambda x: -(x.get("doanh_thu_usd") or x["tan"])),
         "van_hanh": van_hanh, "xem_nhanh": xem_nhanh, "dong_thoi_gian": dong_thoi_gian,
     }
 

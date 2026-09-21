@@ -673,6 +673,9 @@ KHOA_MOI = {
  'valid_from':     ('Áp dụng từ', 'ນຳໃຊ້ຕັ້ງແຕ່', 'Valid from'),
  'px_gia_tu_bang': ('Đã điền đơn giá theo bảng giá khách × tuyến', 'ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ', 'Rate filled from the customer × route price list'),
  'close':          ('Đóng', 'ປິດ', 'Close'),
+ # ---- v16: vá sau khi rà màn Tổng quan
+ 'tq_thang_trong': ('Tháng này chưa có chuyến nào', 'ເດືອນນີ້ຍັງບໍ່ມີຖ້ຽວໃດ', 'No trips in this month yet'),
+ 'tq_q_my_work':   ('Việc của tôi', 'ວຽກຂອງຂ້ອຍ', 'My pending work'),
  # ---- v15: màn Tổng quan bản thiết kế lại (khoá lấy từ i18n-tong-quan.json anh gửi kèm mẫu)
  'tq_compare':      ('So với tháng trước', 'ທຽບກັບເດືອນກ່ອນ', 'vs. previous month'),
  'tq_updated':      ('Cập nhật', 'ອັບເດດ', 'Updated'),
