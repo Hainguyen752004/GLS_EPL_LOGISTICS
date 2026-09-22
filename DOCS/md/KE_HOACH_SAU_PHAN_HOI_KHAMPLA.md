@@ -66,13 +66,14 @@ cùng (to nhất, đụng sổ thu tiền vừa làm). **Đợt 2 xong ngày 22/
 
 ---
 
-## Bốn câu họ để trống — giữ như đang chạy, hỏi lại khi gặp
+## Ba câu họ để trống — giữ như đang chạy, hỏi lại khi gặp
 
 | Câu | Đang làm |
 |---|---|
 | C1.1 tên hai người giữ tài khoản kế toán | Tài khoản mẫu `ketoan`, `ketoancp`; đổi tên trong màn Tài khoản khi có |
-| C3.4 hao hụt khách có phạt không | Chỉ theo dõi và cảnh báo trên 1,5 %, không trừ tiền |
 | C8.1 khoản nào hay vào mục VI | Ô gõ tự do như hiện tại |
+
+**C3.4 đã có trả lời** (anh Khampla nói lại qua anh chủ dự án, 22/09): *hao hụt cân **chỉ theo dõi**, không trừ tiền*. Đúng như máy đang chạy — `hao_hut_pct` chỉ để hiện và cảnh báo khi khoá (trên 1,5 %), cước vẫn tính theo tấn cân nơi giao như hợp đồng, không có phép trừ nào theo hao hụt. Không phải sửa gì.
 | C9.1 màn phiếu chia tab có hợp lý không | Giữ tab; họ dùng thử rồi góp ý |
 
 ---

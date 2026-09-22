@@ -89,7 +89,7 @@ mã con thì đổi ở đó.
 | **C5.8** | Tỷ giá dùng lúc thu: **tỷ giá ngày thu** hay tỷ giá đã khoá trên phiếu | Hiện để mặc định là tỷ giá khoá trên phiếu, người ghi sửa được ngay trên hộp nhập. Cần bên EPL nói cách họ đang làm trên giấy |
 | **C1.1** | Tên người giữ tài khoản *KT Thu/Chi VC* và *KT Chi phí VC* | Bỏ trống trong tệp trả lời 22/09 |
 | **C8.1** | Những khoản hay rơi vào mục VI | Bỏ trống |
-| **C3.4** | Hao hụt khách có phạt / trừ tiền không | Bỏ trống; đang chỉ theo dõi và cảnh báo trên 1,5 % |
+| **C3.4** | Hao hụt khách có phạt / trừ tiền không | **Đã trả lời 22/09 (nói miệng qua anh chủ dự án): chỉ theo dõi, không trừ.** Đúng như đang chạy — không phải sửa |
 | **C9.1** | Màn phiếu chia tab theo mục có hợp lý không | Bỏ trống; giữ tab, họ dùng thử rồi góp ý |
 
 ---

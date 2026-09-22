@@ -45,6 +45,19 @@
 
   /** Vẽ một biểu đồ. Không có Chart.js hoặc trình duyệt không cho vẽ canvas thì BỎ QUA im lặng:
    *  phần số của màn vẫn đọc được, và màn không phun lỗi ra bảng điều khiển. */
+  /** Khung biểu đồ rỗng: ĐẶT một dòng chữ trống cạnh canvas rồi giấu canvas, KHÔNG xoá canvas.
+   *  Trước đây xoá cả khung bằng innerHTML, nên đổi sang tháng có số liệu (hay đổi ngôn ngữ) thì
+   *  lượt vẽ sau không tìm lại được canvas và màn đổ lỗi giữa chừng — bản rà đã bắt được. */
+  function khungTrong(id, trong) {
+    const el = root.querySelector('#' + id); if (!el) return;
+    const khung = el.parentElement;
+    let chu = khung.querySelector('.tq-empty');
+    if (trong) {
+      if (!chu) { chu = document.createElement('div'); chu.className = 'tq-empty'; khung.appendChild(chu); }
+      chu.innerHTML = chuaCo(); el.hidden = true;
+    } else { if (chu) chu.remove(); el.hidden = false; }
+  }
+
   function chart(id, cfg) {
     if (charts[id]) { charts[id].destroy(); delete charts[id]; }
     const el = root.querySelector('#' + id);
@@ -149,7 +162,7 @@
         plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${t.dataset.label}: ${so(t.parsed.y)} LAK` } }) },
         scales: { x: { grid: { display: false }, ticks: tickBase(c), border: { color: c.line } }, y: { beginAtZero: true, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => so(v / 1e6, 1) + 'M' }) } } },
     });
-    if (!ngay.length) root.querySelector('#tq-c-ngay').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
+    khungTrong('tq-c-ngay', !ngay.length);
 
     /* 3b. Cơ cấu chi phí — donut ≤ 4 phần, số ở giữa, danh sách có giá trị + % */
     const cm = d.chi_theo_muc || {}, tong = Object.values(cm).reduce((a, b) => a + b, 0) || 1;
@@ -169,7 +182,7 @@
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { title: (t) => hh[t[0].dataIndex].doc_no, label: (t) => { const x = hh[t.dataIndex]; return [` ${so(x.can_dau, 2)} → ${so(x.can_cuoi, 2)} t`, ` ${NN.t('tq_loss')}: ${so(x.pct, 2)}%`]; } } }) },
         scales: { x: { grid: { display: false }, ticks: Object.assign(tickBase(c), { font: { family: 'ui-monospace, JetBrains Mono, monospace', size: 10.5 } }), border: { color: c.line } }, y: { beginAtZero: true, suggestedMax: Math.max(2, ...hh.map(x => x.pct)) * 1.15, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => v + '%' }) } },
         onClick: (_, els) => { if (els.length) EPL.di('theo-doi', { q: hh[els[0].index].doc_no }); } } });
-    if (!hh.length) root.querySelector('#tq-c-haohut').parentElement.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`;
+    khungTrong('tq-c-haohut', !hh.length);
 
     /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
     const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_lak - a.doanh_thu_lak), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_lak));

@@ -127,6 +127,8 @@ liên kết thì chặn hẳn 403. Giao diện vẫn giữ lớp CSS `tien` như
   này; **DO giao** thì máy ghi dòng hao hụt.
 - Kế toán bấm **Khoá phiếu**: máy rà km lệch quá 10 %, hao hụt quá 1,5 %, thiếu cân, thiếu phiếu quặng,
   thiếu dòng hàng, mục có chi mà chưa kiểm. Chỉ cảnh báo, kế toán xác nhận thì vẫn khoá được.
+- **Hao hụt cân chỉ theo dõi, không trừ tiền** (anh Khampla C3.4, 22/09). Cước tính theo tấn cân nơi giao là
+  quy tắc hợp đồng, không phải phạt; `hao_hut_pct` chỉ để hiện và cảnh báo.
 - **Chỉ phiếu đã khoá mới xuất hoá đơn** (`1211/70`) và mới ghi thu tiền.
 - **Hai kiểu hoá đơn** (anh Khampla C8.2): khách vãng lai thì **mỗi phiếu một tờ** — bấm *Xuất hoá đơn*
   ngay trên phiếu như cũ; khách **có hợp đồng** thì cuối tháng gộp **một tờ cho cả tháng** ở màn
