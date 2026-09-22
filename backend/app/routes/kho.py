@@ -154,7 +154,7 @@ def nhap_xuat_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(g
         p.last_date, p.last_truck = ngay, m.truck_no
     db.add(m); db.flush()
     CT.ghi(db, "PNK_PT" if kind == "in" else "PXK_PT", nguon_bang="part_moves", nguon_id=m.id, ngay=ngay,
-           doi_tuong_loai="ncc" if kind == "in" else "kho", doi_tuong_ten=p.name,
+           doi_tuong_loai="ncc" if kind == "in" else "kho", doi_tuong_ten=None if kind == "in" else p.name,  # nhập: NCC chưa có ô, đừng lấy tên phụ tùng làm đối tượng
            tien=qty * (p.unit_price or 0), tien_te="LAK", section="repair", by_user=user.full_name,
            mo_ta="%s %s %s%s" % ("Nhập" if kind == "in" else "Xuất", qty, p.name, (" · xe " + m.truck_no) if m.truck_no else ""),
            payload={"part_id": p.id, "qty": qty, "unit_price": p.unit_price, "truck_no": m.truck_no, "trip_doc_no": m.trip_doc_no})
