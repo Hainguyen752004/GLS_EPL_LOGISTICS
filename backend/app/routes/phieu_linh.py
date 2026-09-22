@@ -213,7 +213,9 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
         for v in ra:
             diem = db.get(FuelPlace, v.place_id) if v.place_id else None
             CT.ghi(db, "PLNL", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="kho",
-                   doi_tuong_ten=diem.name if diem else None, tien=v.qty_l, tien_te="L", by_user=user.full_name,
+                   # Tờ phiếu lĩnh KHÔNG có tiền — số lít nằm trong payload. Trước đây ghi lít vào ô tiền với "tiền tệ" = L,
+                   # bên nhận (sổ kế toán) từ chối đúng: L không phải tiền tệ. Bắt được khi đẩy thật sang EPL_KETOAN 22/09.
+                   doi_tuong_ten=diem.name if diem else None, tien=None, tien_te="LAK", by_user=user.full_name,
                    mo_ta="Lĩnh %s lít tại %s" % (v.qty_l, diem.name if diem else "?"),
                    payload={"voucher_id": v.id, "doc_no": v.doc_no, "qty_l": v.qty_l})
         db.commit()
