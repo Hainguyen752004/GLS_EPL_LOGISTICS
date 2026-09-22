@@ -25,37 +25,43 @@ Bên Lào phản hồi: module quá cao, họ không hiểu. Thực tế vận h
 | Kiểm xe rảnh / tài xế rảnh / trùng lịch | — | **Bỏ** | Excel của họ không kiểm; thêm vào là thêm một thứ họ không hiểu |
 | Tracking / tháp kiểm soát | **Theo dõi phiếu vận chuyển** | **Giữ, làm gọn** | Bảng họ thích nhất: một dòng một phiếu, đủ 29 cột như sheet ໜ້າລາຍງານຂົນສົ່ງ |
 | Trạng thái DO (pending → in_transit → arrived → delivered) | Trạng thái vận chuyển: **xuất bến → đang chạy → đã tới** + trạng thái tài chính: **chưa thu → thu một phần → đã thu** | **Thay** | Đúng hai cột ສະຖານະ trong Excel |
-| Hoàn tất giao hàng · POD · chốt giá | **Hoá đơn vận chuyển** (bản in) + nút *Lập hoá đơn* / *Đã thu tiền* của kế toán doanh thu | **Thay** | Họ không ký POD điện tử; hoá đơn giấy in ra và ký tay |
+| Hoàn tất giao hàng · POD · chốt giá | **Hoá đơn vận chuyển** (bản in) + **sổ thu tiền** từng lần (tiền nào cũng được, có tỷ giá ngày thu) của kế toán doanh thu; khách hợp đồng thì **hoá đơn gộp tháng** một tờ nhiều phiếu | **Thay** | Họ không ký POD điện tử; hoá đơn giấy in ra và ký tay. Anh Khampla C8.2: khách hợp đồng nhận một tờ cuối tháng |
 | Master data: Khách hàng | **Khách hàng** | **Giữ** | Danh mục duy nhất họ còn dùng — anh đã nói *"chỉ giữ lại được khách hàng"*. Thêm **bảng giá khách × tuyến** (USD/tấn, ngày hiệu lực): mở phiếu chọn khách và tuyến là tự điền đơn giá; Bãi không thấy |
 | Master data: Xe · Loại xe · giấy tờ xe | **Xe — đầu kéo** (hồ sơ như EPL_System: số máy, số khung, hạn bảo hiểm / đăng kiểm / giấy lưu hành, công-tơ-mét, mốc bảo dưỡng, trạng thái) + **Rơ-moóc** là thực thể riêng | **Giữ, làm gọn + Mới** | Anh yêu cầu mang cả module xe sang; rơ-moóc tách riêng vì "hư cái này thì lấy cái kia lắp vào" — có lịch sử lắp/tháo |
 | Tuyến đường (chặng A→B→C, km, BOT) | **Tuyến đường** | **Giữ, làm gọn** | Bỏ hình đường bộ, toạ độ, ETA; giữ chặng, km từng chặng, BOT. Chọn tuyến trên phiếu → tự điền điểm đi/đến và dòng phí cao tốc |
 | Tracking / GPS / tiến độ chặng / sự cố | **Theo dõi tuyến** | **Thay** | Không GPS: Bãi bấm "xe đã tới điểm X" khi tài xế gọi về. Sự cố / sửa xe khai ở đây → dòng chi rơi vào mục V của phiếu |
 | Master data: Tài xế · bằng lái · lịch ca | **Tài xế & bằng lái** (hồ sơ, hạng bằng, ngày cấp, hạn, lịch sử gia hạn, xe thường lái) | **Giữ, làm gọn** | Anh yêu cầu mang module tài xế + bằng lái sang; bỏ ca, tổ, lịch trực |
-| Bảo dưỡng / phiếu sửa chữa xe | **Mục V của phiếu** + báo cáo sửa chữa theo xe (gom từ mục V) | **Thay** | Quy trình của họ: sửa xe gắn vào số phiếu xuất xe, không có phiếu bảo dưỡng riêng |
+| Bảo dưỡng / phiếu sửa chữa xe | **Mục V của phiếu** (sửa trong chuyến) + **Lệnh sửa chữa riêng** (xe nằm bãi đại tu, bảo dưỡng định kỳ — không gắn phiếu) · màn Xe tab Sửa chữa gom cả hai | **Thay + Mới** | Anh Khampla C7.3 xác nhận có bảo dưỡng định kỳ; lệnh riêng đi đúng chuỗi duyệt của mục V |
 | Công thức giá thành theo loại xe | — | **Bỏ** | Họ ghi từng khoản chi thật vào phiếu, không tính giá thành theo công thức |
 | Tỷ giá tiền tệ | **Tỷ giá** (USD · THB · VND → LAK), khoá vào từng phiếu lúc lập | **Giữ, làm gọn** | Đúng ba dòng Rate trên đầu phiếu của họ |
 | Sổ thu – chi · Acc code từ hệ công nợ | **Mã tài khoản kép** trên từng dòng chi (625/371 · 625/402 · 614/402 · 614/371 · 1211/70 · 1211/402) | **Thay** | Chép nguyên cột ເດິນບັນຊີ trong Excel |
 | Sự cố · GPS · mốc tài xế | **Diễn biến trên đường** trong Theo dõi tuyến (tới điểm · sự cố · sửa xe · ghi chú) — Bãi ghi tay | **Thay** | Không GPS, không ứng dụng tài xế: tài xế gọi điện, Bãi bấm. Đúng cách họ đang làm |
 | Bãi xe · Packing list · QR | — | **Bỏ** | Hàng quặng nguyên khối, không có kiện |
-| Xe liên kết (chưa có) | **Xe liên kết** — báo cáo riêng + bảng thanh toán chủ xe trên phiếu | **Mới** | Trọng tâm mô hình môi giới của họ |
+| Xe liên kết (chưa có) | **Xe liên kết** — báo cáo riêng + danh mục **chủ xe** (phí %, ngưỡng tấn, cách trả riêng từng chủ) + quỹ **trả gộp** nhiều phiếu một đợt | **Mới** | Trọng tâm mô hình môi giới của họ; anh Khampla C4.2 · C4.3 |
+| Thẻ cao tốc (chưa có) | **Thẻ cao tốc** — số dư từng thẻ, nạp tiền, trừ khi ghi sổ mục IV, cấn trừ cước cuối tháng cho thẻ khách cấp | **Mới** | Anh Khampla C6.1 |
+| Nợ trạm dầu Việt Nam (chưa có) | Ô **Ghi nợ tại trạm** trên dòng dầu mua ngoài · công nợ trạm · bảng **Cấn trừ cuối tháng** (thẻ + nợ trạm cạnh cước phải thu) | **Mới** | Anh Khampla C5.1 |
+| Đổi xe giữa đường (chưa có) | Nút **Đổi xe** trên phiếu đang chạy — giữ nguyên chuyến, kéo mục I về kiểm lại | **Mới** | Anh Khampla C2.2 |
 | Tiền chuyến tài xế (chưa có) | **Tiền chuyến & tiền nước tài xế** — gom từ mục IV theo tháng | **Mới** | Sheet báo cáo số 5 của họ |
 | Công nợ nhà cung cấp (chưa có) | **Theo dõi nhà cung cấp** — phát sinh từ phiếu, đã trả, còn nợ | **Mới** | Sheet báo cáo số 6 |
 | Kho nhiên liệu (chưa có) | **Kho nhiên liệu** — sổ nhập / xuất cho xe / tồn | **Mới** | Sheet báo cáo số 3 · TK 625/371 |
 | Kho phụ tùng (chưa có) | **Kho phụ tùng** — tồn, tồn tối thiểu, xuất theo xe | **Mới** | Sheet báo cáo số 4 · TK 614/371 |
-| Phân quyền (hệ cha lo) | **Tài khoản & vai** — 7 vai, mỗi vai được làm một bước trên phiếu | **Mới** | Sheet ໜ້າວຽກ: ai nhập, ai kiểm, ai ghi sổ, ai chi |
+| Phân quyền (hệ cha lo) | **Tài khoản & vai** — 11 vai, mỗi vai được làm một bước trên phiếu; **máy chủ bỏ hẳn tiền bán** khỏi gói trả về với vai không được xem | **Mới** | Sheet ໜ້າວຽກ: ai nhập, ai kiểm, ai ghi sổ, ai chi; anh Khampla C1.2 tách thêm kho phụ tùng và tổ sửa chữa |
 | Trợ lý AI (EPL_TroLy) | — | **Không mang sang** | Ngoài phạm vi "năm 2016" |
 | Trang tài xế (EPL_TaiXe) | — | **Không mang sang** | Tài xế không thao tác trên hệ |
 
-## 3. Chín vai và việc của từng vai
+## 3. Mười một vai và việc của từng vai
 
 | Vai | Tên trong Excel | Trên phiếu xuất xe |
 |---|---|---|
-| `yard` | ສະໜາມທ່າບົກ — Admin Thà Bốc | **Nhập** mục I–VI, lập phiếu, cập nhật xe đã chạy / đã tới |
-| `acct` | ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ — Kế toán thu/chi Viêng Chăn | **Kiểm** I, II, IV, V, VI · **ghi sổ** IV, V, VI · trả lại cho Bãi sửa |
+| `yard` | ສະໜາມທ່າບົກ — Admin Thà Bốc | **Nhập** mục I–IV và VI, lập phiếu, cập nhật xe đã chạy / đã tới, **đổi xe** giữa đường. Mục V và kho phụ tùng đã rút sang hai vai dưới (C1.2) |
+| `acct` | ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ — KT Thu/Chi Viêng Chăn | **Kiểm** I, II · khoá phiếu · bảng giá khách · danh mục chủ xe · thẻ cao tốc · tỷ giá |
+| `expacct` | ບັນຊີລາຍຈ່າຍ ວຽງຈັນ — KT Chi phí VC | **Kiểm** và **ghi sổ** IV, V, VI · lệnh sửa chữa · nhà cung cấp · tất toán tài xế |
+| `parts` | ຜູ້ຮັກສາສາງອະໄຫຼ່ ທ່າບົກ — Thủ kho phụ tùng | **Nhập · xuất kho phụ tùng**; không duyệt mục nào |
+| `repair` | ໜ່ວຍສ້ອມແປງ ທ່າບົກ — Tổ sửa chữa | **Nhập mục V**, duyệt báo hỏng của tài xế, quyết lấy kho hay ra gara, lập **lệnh sửa chữa riêng** |
 | `fuel` | ບັນຊີສາງນໍ້າມັນ — Kế toán kho nhiên liệu | **Kiểm** và **ghi sổ** mục III |
 | `treasury` | ຄັງເງິນ ວຽງຈັນ — Quỹ Viêng Chăn | **Chi** mục III |
 | `cash` | ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ — Tiền mặt lẻ Thà Bốc | **Chi** mục IV, V, VI |
-| `rev` | ບັນຊີລາຍຮັບ — Kế toán doanh thu | **Lập hoá đơn**, **ghi thu tiền** khách (mức phiếu) |
+| `rev` | ບັນຊີລາຍຮັບ — Kế toán doanh thu | **Lập hoá đơn** (từng phiếu hoặc **gộp tháng**), **ghi thu tiền** khách, xem cấn trừ cuối tháng |
 | `driver` | ໂຊເຟີ — Tài xế | Chỉ thấy **phiếu của mình**: xem tiền tạm ứng đã chi chưa, bấm **Xuất phát**, **Báo hỏng** trên đường |
 | `depot` | ຜູ້ຮັກສາສາງນໍ້າມັນ — Thủ kho nhiên liệu | Giữ **một** điểm đổ. Chỉ thấy phiếu lĩnh của kho mình; cấp dầu là sinh luôn phiếu xuất kho |
 | `admin` | — | Mọi việc, kể cả mở khoá mục đã duyệt và quản lý tài khoản |
@@ -92,7 +98,7 @@ Quy tắc anh chốt sau khi đọc quy trình của họ (*EPL flow of Logistic
 |---|---|---|---|---|
 | Nhiên liệu đổ ở **kho Thà Bốc** | kho | Kế toán kho **ghi sổ** mục III → tự sinh dòng **xuất kho nhiên liệu** theo số phiếu | `625/371` | `4022/371` |
 | Nhiên liệu đổ **trạm ngoài / Việt Nam** | mua | Chi tiền / công nợ | `625/402` | `4022/402` |
-| Sửa xe **lấy phụ tùng từ kho** | kho | Trừ tồn kho phụ tùng **ngay lúc khai** trên màn Theo dõi tuyến | `614/371` | `4022/371` |
+| Sửa xe **lấy phụ tùng từ kho** | kho | **Tổ sửa chữa** khai (màn Theo dõi tuyến hoặc lệnh sửa chữa) → trừ tồn kho phụ tùng **ngay lúc khai** | `614/1371` | `4022/1371` |
 | Sửa xe **mua ngoài / garage** | mua | Công nợ nhà cung cấp / tiền mặt | `614/402` | `4022/402` |
 | Đi đường, khác | mua | Chi tiền | `625/402` | `4022/402` |
 

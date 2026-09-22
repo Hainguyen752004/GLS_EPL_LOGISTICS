@@ -82,7 +82,7 @@ câu người đọc hiểu.
 | `type` | Tờ | `group` | Nợ / Có gợi ý |
 |---|---|---|---|
 | `PC_TU` | Chi tạm ứng đi đường cho tài xế | payment | 625 / 1011·1012 |
-| `PC_SC` | Chi sửa chữa, chi khác | payment | 614 hoặc 625 / 1011·1012 |
+| `PC_SC` | Chi sửa chữa, chi khác — từ mục V/VI của phiếu (`trip_no` có) **hoặc từ lệnh sửa chữa riêng** (`trip_no` = null, `lines.doc_no` = số lệnh `LSC-…`) | payment | 614 hoặc 625 / 1011·1012 |
 | `PC_NCC` | Chi trả nhà cung cấp | payment | 4021 / 1011·1012 |
 | `PC_CX` | Chi trả chủ xe liên kết | payment | 4022 / 1011·1012 |
 | `TT_CHI` · `TT_THU` | Tất toán tài xế cuối tháng: chi bù · thu hoàn | payment · receipt | 625 / 1011 · 1011 / 625 |
@@ -104,7 +104,7 @@ Tờ `PT` của hoá đơn gộp cũng có `trip_no = null`, `lines` thêm `inv_
 tờ `HD` cho một phiếu, `trip_no` là số phiếu đó.
 
 | `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 1371 · 1371 / 4021 |
-| `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng | stock_out · stock_in | 614 / 1371 · 1371 / 4021 |
+| `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng. Xuất cho lệnh sửa chữa riêng thì `trip_no` = null và `lines.repair_order` = số lệnh | stock_out · stock_in | 614 / 1371 · 1371 / 4021 |
 | `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 1371 / *hàng khách gửi* |
 | `DC_HH` | Điều chỉnh kho hàng (có lý do) | stock_adjust | 1371 / *hàng khách gửi* |
 | `PXK_BAN` · `HD_BAN` · `PT_BAN` | Bán phụ tùng, xăng dầu ra ngoài | stock_out · invoice · receipt | *giá vốn* / 1371 · 1211 / 70 · 1011·1012 / 1211 |

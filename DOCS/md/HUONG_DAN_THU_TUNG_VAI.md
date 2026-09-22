@@ -1,6 +1,6 @@
 # Hướng dẫn tự thử EPL Lào theo từng vai
 
-Viết cho người thử phần mềm (anh chủ dự án, hoặc người demo cho khách). Cập nhật 21/09/2026.
+Viết cho người thử phần mềm (anh chủ dự án, hoặc người demo cho khách). Cập nhật 22/09/2026 — sau ba đợt sửa theo trả lời của anh Khampla và đợt dọn nợ kỹ thuật.
 
 Phần mềm chia việc theo vai, và **việc của vai này mở khoá cho vai sau**. Nên cách thử đúng không phải
 là mở từng màn xem cho vui, mà là **đi trọn một chuyến hàng**, đổi vai theo đúng thứ tự ngoài đời. Tài
@@ -18,12 +18,20 @@ chay.bat                                    # hoặc: python -m uvicorn backend.
 
 Mở **http://localhost:8010**. Mật khẩu mọi tài khoản demo là `1234`.
 
-**Đổi vai nhanh:** bấm tên người dùng ở góc trên phải → *Đăng xuất* → màn đăng nhập hiện sẵn 13 thẻ tài
-khoản, **bấm một thẻ là vào thẳng**, khỏi gõ. Cả ngày thử chỉ làm động tác này.
+**Đổi vai nhanh:** bấm tên người dùng ở góc trên phải → *Đăng xuất* → màn đăng nhập hiện sẵn **15 thẻ tài
+khoản** (có thêm `khopt` thủ kho phụ tùng và `totsua` tổ sửa chữa), **bấm một thẻ là vào thẳng**, khỏi gõ.
+Cả ngày thử chỉ làm động tác này.
 
 Dữ liệu gieo sẵn có: 5 phiếu cũ (T4-0428 → T4-0432) và **một cặp phiếu của luồng mới**:
 `G4-0101-09/EPL` (đi gom hàng, đã về bãi, hàng đã vào kho) và `T4-0433-09/EPL` (đi giao hàng, đã lấy
 30 t của lô đó). Cặp này để anh xem ngay hình dạng luồng mới mà không phải nhập gì.
+
+Gieo sẵn thêm cho các phần mới (22/09): khách hợp đồng `ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ` với hai phiếu tháng 9
+đã gộp vào **hoá đơn `HDT-202609-01`** (đã thu 60 %) · chủ xe liên kết `ທ້າວ ຄຳຫລ້າ` trả gộp tháng · lệnh
+sửa chữa `LSC-2609-01` của xe 342 đang chờ kiểm · hai **thẻ cao tốc** `ETC-8801` (khách cấp) và `ETC-9902`
+(EPL) đã nạp tiền · trạm dầu Việt Nam có dòng **ghi nợ** trên phiếu `T4-0428`.
+
+**Thứ tự thử gọn nhất:** bước 1 → 9 (luồng cũ, đã có 8b) rồi **9b → 9f** là toàn bộ phần mới.
 
 ---
 
@@ -251,7 +259,7 @@ Thấy hết 23 màn. Hai việc riêng của Sếp:
 
 ---
 
-## 3. Thử phân quyền — 8 chỗ phải bị chặn
+## 3. Thử phân quyền — 16 chỗ phải bị chặn
 
 Đây là phần khách hay hỏi nhất. Đăng nhập đúng vai rồi thử làm việc của người khác:
 
@@ -268,6 +276,14 @@ Thấy hết 23 màn. Hai việc riêng của Sếp:
 | ☐ | `quytb` | Bấm **Xác nhận đã chi** ở mục chưa ghi sổ | Bị từ chối: *"sai bước"* |
 | ☐ | `ketoan` | Vào **Chứng từ → Sổ chứng từ**, tìm nút **Cấu hình** | Không có (chỉ Sếp) |
 | ☐ | `tx01` | Gõ thẳng địa chỉ `#/tai-khoan` | Tự chuyển về màn của tài xế, không vào được |
+| ☐ | `thabok` | Mở phiếu → mục **V. Sửa chữa** | Không có nút nhập hay gửi kiểm — mục V là của tổ sửa chữa (C1.2) |
+| ☐ | `thabok` | Mở **Kho phụ tùng** | Không có nút Thêm / Nhập kho / Xuất cho xe |
+| ☐ | `thabok` | Mở **Theo dõi tuyến** → chọn chuyến → tab Chi phí | Không có nút *Báo sự cố / sửa xe*; ở hộp báo sự cố không có ô *có khoản sửa chữa* |
+| ☐ | `totsua` | Nhìn thanh điều hướng | Chỉ có Theo dõi tuyến · Phiếu xuất xe · Lệnh sửa chữa · Kho phụ tùng · Xe |
+| ☐ | `totsua` | Mở **Lệnh sửa chữa** → một tờ *đã kiểm* → tìm nút Kiểm / Ghi sổ / Đã chi | Không có — tổ sửa không tự kiểm, không tự chi |
+| ☐ | `khopt` | Nhìn thanh điều hướng | Chỉ có Kho phụ tùng · Xe |
+| ☐ | `thabok` | Mở **Theo dõi nhà cung cấp** | Không có cột *Cấn trừ vào cước khách* và không có bảng *Cấn trừ cuối tháng* |
+| ☐ | `thabok` | Mở **Thẻ cao tốc** | Thấy số dư thẻ (để biết thẻ nào còn tiền), **không** có nút Thêm thẻ / Nạp tiền, **không** có bảng cấn trừ |
 
 ---
 
