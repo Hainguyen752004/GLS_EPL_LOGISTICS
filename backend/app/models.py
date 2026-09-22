@@ -952,6 +952,26 @@ class TripAttachment(Base):
     ts = Column(DateTime, nullable=False, default=bay_gio)
 
 
+class VehiclePhoto(Base):
+    """ẢNH XE — ຮູບລົດ. Bản thiết kế màn Xe có khung ảnh; trước 22/09 khung đó để trống vì máy chủ
+    chưa có chỗ chứa tệp cho xe (nợ kỹ thuật 3.2).
+
+    Dùng lại **đúng chỗ chứa tệp của phiếu** (thư mục `EPL_LAO_TEP`), chỉ khác thư mục con: ảnh xe
+    nằm ở `xe/<vehicle_id>/`. Không dựng kho tệp thứ hai — một chỗ chứa thì một chỗ sao lưu.
+    """
+    __tablename__ = "vehicle_photos"
+    id = Column(String, primary_key=True, default=ma_moi)
+    vehicle_id = Column(String, ForeignKey("vehicles.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String, nullable=False)                   # tên gốc người dùng đưa lên
+    stored = Column(String, nullable=False)                     # tên trên đĩa: <id>.<ext>
+    content_type = Column(String)
+    size = Column(Integer, default=0)
+    chinh = Column(Boolean, nullable=False, default=False)      # ảnh đại diện của xe
+    note = Column(String)
+    by_user = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
+
+
 # ---------------------------------------------------------------- bán phụ tùng · xăng dầu cho bên ngoài
 class CustomerRate(Base):
     """Bảng giá hợp đồng: khách × tuyến × loại hàng → đơn giá USD/tấn (và giá thuê xe ngoài nếu tuyến đó

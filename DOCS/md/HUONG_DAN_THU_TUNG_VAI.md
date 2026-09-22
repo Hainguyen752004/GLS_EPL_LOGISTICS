@@ -213,6 +213,18 @@ Anh Khampla nói kho phụ tùng và tổ sửa chữa là **người riêng** (
    *Nợ trạm dầu Việt Nam* · **Còn phải thu**.
 5. `thabok` mở cùng màn: **không thấy** cột cấn trừ và không thấy bảng cấn trừ (đó là tiền bán).
 
+### Bước 9f ☐ Ảnh xe và hai chỗ đã dọn — `thabok`, `doanhthu`
+
+1. `thabok` mở **Xe** → bấm đúp một xe để mở hộp hồ sơ → góc trên trái có khung ảnh và nút **+ Thêm ảnh**.
+   - Chọn một ảnh từ máy. *Phải thấy:* khung ảnh hiện ngay ảnh vừa chọn, dòng dưới đổi thành *1 ảnh đã lưu*,
+     và khi đóng hộp thì danh sách xe cũng hiện ảnh đó ở thẻ hồ sơ bên phải.
+   - Ảnh đầu tiên tự thành **ảnh đại diện**, không phải bấm thêm nút nào.
+2. `doanhthu` mở **Tổng quan**: ô **Việc của tôi** không còn là 0 — nó đếm *phiếu đã khoá chưa xuất hoá
+   đơn* cộng *hoá đơn chưa thu đủ*; bấm vào mở thẳng phiếu đầu tiên đang chờ.
+3. Thử chỗ đã dọn về tiền bán (không cần công cụ nào, chỉ cần nhìn): `thabok` mở **Theo dõi phiếu vận
+   chuyển** — các cột cước, thành tiền, lãi không có; nay **máy chủ cũng không gửi** những con số đó nữa,
+   nên mở công cụ trình duyệt cũng không đọc được. `ketoan` mở cùng màn thì vẫn thấy đủ.
+
 ---
 
 ## 2. Các vai còn lại

@@ -60,8 +60,10 @@ def don():
         goi("/api/trips/%s/mo-khoa" % p["id"], {}, vai="admin")
         goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
     s, the = goi("/api/the-cao-toc", vai="ketoan")
-    for i, t in enumerate([x for x in the if x["card_no"].startswith(SO_THE)], 1):
-        goi("/api/the-cao-toc/%s" % t["id"], {"card_no": "%s-CU%d" % (SO_THE, i), "active": False},
+    for t in [x for x in the if x["card_no"] == SO_THE]:
+        # Đổi số cũ sang một số DUY NHẤT (kèm mã thẻ) rồi ngưng — số thẻ là khoá duy nhất, đặt
+        # "-CU1" cho mọi lần chạy thì lần thứ hai đụng chính cái đã đổi lần trước.
+        goi("/api/the-cao-toc/%s" % t["id"], {"card_no": "%s-CU-%s" % (SO_THE, t["id"][:6]), "active": False},
             vai="ketoan", method="PUT")
 
 

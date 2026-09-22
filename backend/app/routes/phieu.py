@@ -26,11 +26,12 @@ from models import (GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPa
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien
+from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, thay_tien_ban
 from routes.danh_muc import tim_gia
 from services.tinh_toan import chuan_tien, doi as doi_tien, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
+from services.tep import TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import the_cao_toc as THE
 
 router = APIRouter()
@@ -179,7 +180,34 @@ def _diem_tuyen(db, phieu):
             for s in db.query(RouteStop).filter(RouteStop.route_id == phieu.route_id).order_by(RouteStop.seq).all()]
 
 
-def xuat_phieu(db, phieu, day_du=True, da_thu=None):
+# Khoá TIỀN BÁN trên một tờ phiếu: giá khách trả, giá thuê xe ngoài, phần trừ của chủ xe, lãi chuyến.
+# Bãi, tài xế, thủ kho và hai tổ ở Thà Bốc không được thấy — đó là biên lợi nhuận của công ty.
+COT_TIEN_BAN = ("price", "price_ccy", "price_mode", "hire_price", "hire_ccy",
+                "fee_pct", "over_limit_t", "over_price", "owner_paid_usd", "owner_paid_lak")
+# Trong khối `tinh`: mọi thứ dính doanh thu, tiền thuê, lãi và công nợ khách. Phần CHI phí thì giữ —
+# chính họ nhập và chi, giấu đi là họ không kiểm được việc của mình.
+TINH_TIEN_BAN = ("don_gia", "doanh_thu", "doanh_thu_lak", "gia_thue", "tien_thue", "tien_thue_lak",
+                 "tien_thue_theo_cuoc", "phi", "tru_vuot", "ung_truoc", "tra_chu_xe", "tra_chu_xe_lak",
+                 "chu_xe_tu_tra_lak", "lai", "lai_lak", "giu_lai", "da_thu", "da_thu_lak",
+                 "con_lai", "con_lai_lak", "tong_chi_ccy")
+
+
+def _bo_tien_ban(ra):
+    """Bỏ HẲN các khoá tiền bán khỏi gói dữ liệu trả về (không phải để rỗng, mà không có khoá)."""
+    for c in COT_TIEN_BAN:
+        ra.pop(c, None)
+    t = ra.get("tinh")
+    if isinstance(t, dict):
+        for c in TINH_TIEN_BAN:
+            t.pop(c, None)
+    for x in (ra.get("thu_tien") or []):
+        x.pop("amount", None); x.pop("amount_lak", None); x.pop("rate_to_lak", None)
+    return ra
+
+
+def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
+    """Gói dữ liệu một tờ phiếu. `vai` là vai người gọi: vai không được thấy tiền bán thì các khoá đó
+    bị BỎ HẲN ở đây — trước 22/09 chỉ giao diện che, mở công cụ trình duyệt là đọc được hết."""
     dong = _dong_chi(db, phieu)
     if da_thu is None:
         da_thu = _da_thu(db, phieu)
@@ -229,6 +257,8 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None):
         if phieu.transport_status == "arrived" and ra["route_stops"]:
             toi = max(toi, len(ra["route_stops"]))
         ra["stop_reached"] = toi
+    if vai is not None and not thay_tien_ban(vai):
+        return _bo_tien_ban(ra)
     return ra
 
 
@@ -244,11 +274,11 @@ def khoan_muc():
 
 
 @router.get("/api/trips")
-def ds_phieu(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai),
+def ds_phieu(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai),
              transport_status: str = None, finance_status: str = None, company: str = None, q: str = None):
     qs = db.query(Trip)
-    if _.role == "driver":                       # tài xế chỉ thấy phiếu của mình
-        qs = qs.filter(Trip.driver_id == (_.driver_id or "__khong_co__"))
+    if user.role == "driver":                    # tài xế chỉ thấy phiếu của mình
+        qs = qs.filter(Trip.driver_id == (user.driver_id or "__khong_co__"))
     if transport_status: qs = qs.filter(Trip.transport_status == transport_status)
     if finance_status: qs = qs.filter(Trip.finance_status == finance_status)
     if company: qs = qs.filter(Trip.company == company)
@@ -259,16 +289,16 @@ def ds_phieu(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai),
             p.doc_no, p.driver_name, p.truck_no, p.customer_name, p.plate_head, p.plate_trailer,
             p.origin, p.destination, p.ore_bill_no)).lower()]
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
-    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0)) for p in ds]
+    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role) for p in ds]
 
 
 @router.get("/api/trips/{tid}")
-def xem_phieu(tid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def xem_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
-    _cua_tai_xe(db, p, _)
-    return xuat_phieu(db, p)
+    _cua_tai_xe(db, p, user)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- lập & sửa
@@ -503,7 +533,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     _ghi_log(db, p, user, "a_create")
     db.flush(); _ghi_do(db, p, user); db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 VAI_SAU_KHOA = ("acct", "expacct", "rev", "treasury", "cash", "fuel", "admin")   # vai còn được thao tác khi phiếu đã khoá
@@ -553,7 +583,7 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
         KH.ghi_hao_hut_giao(db, p)
     _ghi_log(db, p, user, "a_save")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- duyệt từng mục
@@ -607,7 +637,7 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
                                        "currency": d.currency, "acct_code": d.acct_code} for d in dong]})
     _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- diễn biến trên đường
@@ -706,7 +736,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             if x: x.status = "maintenance"
     _ghi_log(db, p, user, "ev_%s" % kind)
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- đổi xe giữa đường (C2.2, anh Khampla 22/09)
@@ -792,7 +822,7 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     s.status = "entered"
     _ghi_log(db, p, user, "a_change_truck")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- tài xế báo đã về (C2.1, anh Khampla 22/09)
@@ -828,7 +858,7 @@ def bao_ve(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
                              note="Tài xế báo đã về · km %s" % (round(km) if km is not None else "—")))
     _ghi_log(db, p, user, "drv_back")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- mức phiếu
@@ -870,7 +900,7 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
     p.transport_status = moi
     _ghi_log(db, p, user, "st_%s" % moi)
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- bước 14: kiểm lại toàn phiếu rồi khoá
@@ -931,7 +961,7 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     p.locked, p.locked_by, p.locked_at = True, user.full_name, dt.datetime.utcnow()
     _ghi_log(db, p, user, "a_lock" if not cb else "a_lock_warn")
     db.commit()
-    ra = xuat_phieu(db, p); ra["canh_bao"] = cb
+    ra = xuat_phieu(db, p, vai=user.role); ra["canh_bao"] = cb
     return ra
 
 
@@ -947,7 +977,7 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
     p.locked, p.locked_by, p.locked_at = False, None, None
     _ghi_log(db, p, user, "a_unlock_slip")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- xe liên kết: chi trả chủ xe → PC_CX
@@ -971,13 +1001,11 @@ def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     tra_nhieu_phieu(db, user, [p], method=(data.get("method") or "cash"), note=data.get("note"), owner=o)
     _ghi_log(db, p, user, "a_pay_owner")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- tệp đính kèm (phiếu quặng của khách)
-TEP_DIR = os.getenv("EPL_LAO_TEP") or os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "tep"))
-TEP_TOI_DA = 8 * 1024 * 1024
-TEP_KIEU = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/heic": ".heic", "application/pdf": ".pdf"}
+# Chỗ chứa tệp dùng chung với ảnh xe — xem services/tep.py.
 
 
 def _xoa_tep_dia(a):
@@ -1093,7 +1121,7 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
                     "rate_to_lak": ty_gia(p, k["ccy"])})
     _ghi_log(db, p, user, "a_invoice")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- khách trả tiền: sổ thu từng lần
@@ -1195,7 +1223,7 @@ def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db)
     _tinh_lai_trang_thai_thu(db, p)
     _ghi_log(db, p, user, "fin_%s" % p.finance_status)
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 @router.delete("/api/thu-tien/{pid}")
@@ -1220,7 +1248,7 @@ def xoa_thu_tien(pid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
     _tinh_lai_trang_thai_thu(db, p)
     _ghi_log(db, p, user, "fin_undo")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- tài xế báo hỏng → admin duyệt → vào mục V
@@ -1250,7 +1278,7 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
     db.add(e)
     _ghi_log(db, p, user, "ev_reported")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 def _duyet_do_dau(db, p, e, data, user):
@@ -1281,7 +1309,7 @@ def _duyet_do_dau(db, p, e, data, user):
     muc.status = "entered"
     _ghi_log(db, p, user, "ev_refuel_approved")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 @router.post("/api/trips/{tid}/bao-nhien-lieu")
@@ -1317,7 +1345,7 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
     db.add(e)
     _ghi_log(db, p, user, "ev_refuel_reported")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 @router.post("/api/trips/{tid}/events/{eid}/duyet")
@@ -1344,7 +1372,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
     if data.get("reject"):
         e.status = "rejected"; e.note = (e.note or "") + (" — " + data["reason"] if data.get("reason") else "")
         _ghi_log(db, p, user, "ev_rejected"); db.commit()
-        return xuat_phieu(db, p)
+        return xuat_phieu(db, p, vai=user.role)
     if e.kind == "refuel":
         return _duyet_do_dau(db, p, e, data, user)
     source = data.get("source") or "mua"
@@ -1390,7 +1418,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         if x: x.status = "maintenance"
     _ghi_log(db, p, user, "ev_approved")
     db.commit()
-    return xuat_phieu(db, p)
+    return xuat_phieu(db, p, vai=user.role)
 
 
 # ---------------------------------------------------------------- chứng từ: phiếu chi tạm ứng & phiếu thu

@@ -242,7 +242,7 @@
     const rt = root.querySelector('#tx-modal-root');
     rt.innerHTML = `<div class="tx-backdrop"><div class="tx-modal tx-modal--lg">
       <div class="mh"><div><h3>${isNew ? NN.h('tx_add') : NN.h('tx_profile')}: <span class="lo">${esc(o.ten) || '—'}</span></h3><small>${NN.h('tx_edit_sub')}</small></div><button class="x" type="button" data-close><svg class="tx-i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="mtop"><div class="photo">${avatar(o).replace('class="tx-avatar', 'style="width:78px;height:78px;font-size:18px" class="tx-avatar')}<div><b>${NN.h('tx_photo')}</b><small>${NN.h('xe_photo_todo')}</small></div></div>
+      <div class="mtop"><div class="photo">${avatar(o).replace('class="tx-avatar', 'style="width:78px;height:78px;font-size:18px" class="tx-avatar')}<div><b>${NN.h('tx_photo')}</b><small>${NN.h('tx_photo_todo')}</small></div></div>
         <div class="st" style="border-left-color:var(--tx-${ketLuan(o).lv === 'ok' ? 'good' : ketLuan(o).lv === 'warn' ? 'warn' : 'bad'})"><small>${NN.h('tx_conclusion')}</small><b>${esc(klText(o).title)}</b><p>${esc(klText(o).sub)}</p></div></div>
       <div class="mtabs" id="m-tabs"></div><div class="mb" id="m-body"></div>
       <div class="mf"><span class="small muted" id="m-note" style="margin-right:auto"></span><button class="btn" type="button" data-close>${NN.h('cancel')}</button><button class="btn primary" type="button" id="m-save">${NN.h('tx_save')}</button></div></div></div>`;

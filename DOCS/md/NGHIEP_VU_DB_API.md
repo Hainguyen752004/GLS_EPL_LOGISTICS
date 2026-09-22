@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (42 bảng) · **C. API**
-(153 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (43 bảng) · **C. API**
+(158 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -94,11 +94,15 @@ phí của chủ xe đó.
 
 **Kho Thabok không thấy TIỀN BÁN**: đơn giá cước, doanh thu, hoá đơn và tiền thu khách, giá thuê xe
 liên kết, khấu trừ chủ xe, lãi chuyến, mã tài khoản. Đó là biên lợi nhuận của công ty (khách trả giá 2,
-thuê lại xe ngoài giá 1).
+thuê lại xe ngoài giá 1). Cùng nhóm này còn có **tài xế**, **thủ kho nhiên liệu**, và từ 22/09 là **thủ
+kho phụ tùng** và **tổ sửa chữa** (`thay_tien_ban()` trong `services/phan_quyen.py`).
 
-Giao diện giấu bằng lớp CSS `tien` trên thân trang `vai-<vai>`; **máy chủ cũng bỏ hẳn các khoá đó** ở
-hai báo cáo của màn Tổng quan (`thay_tien_ban()` trong `services/phan_quyen.py`). Các API khác còn trả
-đủ — xem mục B1 trong `CONG_VIEC_CHO_ANH_KHAMPLA_CHOT.md`.
+**Máy chủ BỎ HẲN các khoá đó, không phải giao diện che** (dọn 22/09, nợ kỹ thuật 3.1). Trước đây
+`/api/trips` và `/api/bao-cao/theo-doi` vẫn trả đơn giá, doanh thu, lãi cho mọi vai — mở công cụ trình
+duyệt là đọc được. Nay `xuat_phieu()` nhận vai người gọi và cắt: `price`, `price_ccy`, `hire_price`,
+`hire_ccy`, `fee_pct`, `over_limit_t`, `over_price`, cùng doanh thu · tiền thuê · phần trừ · lãi · đã
+thu · còn lại trong khối `tinh`. **Phần chi phí giữ nguyên** — chính họ nhập và chi. Báo cáo lãi xe
+liên kết thì chặn hẳn 403. Giao diện vẫn giữ lớp CSS `tien` như lớp thứ hai.
 
 ## A3. Nhiên liệu — hai đường
 
@@ -312,7 +316,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-42 bảng, nhóm theo việc:
+43 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -366,13 +370,14 @@ trừ tấn các DO giao đã lấy (`services/kho_hang.ton_lo`).
 | `invoice_payments` | **Một lần khách trả cho tờ gộp** — `pay_date`, `amount` + `currency` + `rate_to_lak` + `amount_lak`, `method`, `ref`. Phần rải xuống phiếu nằm ở `trip_payments.invoice_payment_id` |
 | `repair_orders`, `repair_lines` | **Lệnh sửa chữa riêng** (C7.3): `doc_no` (`LSC-2609-01`), `vehicle_id`, `order_date`, `kind` (`sua_chua`/`bao_duong`), `odo_km`, `garage`, `status` (`entered`→`verified`→`booked`→`paid`); dòng chi có `source` (`kho`/`mua`), `part_id`, `stock_move_id`, `acct_code` |
 | `toll_cards`, `toll_card_moves` | **Thẻ cao tốc** (C6.1): `card_no`, `kind` (`khach`/`epl`), `customer_id`, `driver_id`, `currency`, `balance`; mỗi dòng có `kind` (`nap`/`chi`/`dieu_chinh`), `amount`, `balance_after`, `trip_id` |
+| `vehicle_photos` | **Ảnh xe**: `vehicle_id`, `filename`, `stored`, `chinh` (ảnh đại diện). Tệp nằm ở `EPL_LAO_TEP/xe/<vehicle_id>/` — chung chỗ chứa với tệp đính kèm phiếu |
 | `sales`, `sale_lines` | Bán phụ tùng, xăng dầu ra ngoài |
 
 ---
 
 # C. API
 
-153 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
+158 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
 gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi ngay dưới đây.
 
 ## C1. Đăng nhập và tài khoản — `routes/dang_nhap.py`
@@ -436,7 +441,8 @@ Thà Bốc** và Sếp làm được (C1.2) — Bãi và kế toán chỉ xem.
 | `GET POST PUT /api/customers` | Khách hàng. Có **`invoice_mode`**: `phieu` mỗi phiếu một hoá đơn · `thang` gộp một tờ cuối tháng (C8.2) |
 | `GET POST /api/customers/{id}/bang-gia`, `PUT DELETE /api/bang-gia/{id}` | **Bảng giá khách × tuyến**. Chỉ KT Thu/Chi VC và Sếp sửa; Bãi không xem được |
 | `GET /api/bang-gia/tra?customer_id=&route_id=` | Hỏi giá hợp đồng — màn phiếu dùng để tự điền |
-| `GET POST PUT /api/vehicles`, `GET /api/vehicles/{id}` | Xe đầu kéo, chi tiết kèm lịch sử rơ-moóc, chi phí sửa chữa, phiếu gần đây |
+| `GET POST PUT /api/vehicles`, `GET /api/vehicles/{id}` | Xe đầu kéo, chi tiết kèm lịch sử rơ-moóc, chi phí sửa chữa (gộp cả **lệnh sửa chữa riêng**), phiếu gần đây, ảnh |
+| `GET POST /api/vehicles/{id}/anh` · `GET PUT DELETE /api/anh-xe/{id}` | **Ảnh xe**: xem · đưa lên (Bãi, kế toán) · đặt ảnh đại diện · xoá. Ảnh nằm cùng chỗ chứa tệp của phiếu (`EPL_LAO_TEP/xe/<id>`); thẻ `<img>` nhận phiên qua `?tk=…` |
 | `GET /api/vehicles/{id}/lich?tuan=` | **Lịch xe theo tuần** dựng từ phiếu và dòng sửa chữa |
 | `POST /api/vehicles/{id}/trailer` | Lắp rơ-moóc; `trailer_id` rỗng là tháo. Máy chủ tự tháo khỏi xe cũ và ghi lịch sử |
 | `GET POST PUT /api/trailers`, `GET /api/trailers/{id}` | Rơ-moóc, chi tiết kèm lịch sử lắp |
@@ -587,6 +593,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_sua_chua.py` | **Lệnh sửa chữa riêng** (C7.3): chuỗi duyệt như mục V, lấy kho trừ tồn ngay kèm `PXK_PT`, chi chỉ phần mua ngoài, màn Xe gom cả hai nguồn |
 | `python kiem\thu_the_cao_toc.py` | **Thẻ cao tốc** (C6.1): số dư, trừ ĐÚNG MỘT LẦN lúc ghi sổ mục IV, chặn xoá dòng đã trừ, điều chỉnh phải có lý do, cấn trừ cuối tháng |
 | `python kiem\thu_no_tram_dau.py` | **Nợ trạm dầu Việt Nam** (C5.1): cờ ghi nợ tách khỏi dòng tài xế trả tiền mặt, công nợ trạm chỉ gồm phần ghi nợ, bảng cấn trừ cuối tháng |
+| `python kiem\thu_no_ky_thuat.py` | **Ba món nợ kỹ thuật** dọn 22/09: máy chủ không trả giá bán cho Bãi · tài xế · thủ kho (kế toán vẫn thấy đủ), ảnh xe lưu và mở được đúng phiên, ô *Việc của tôi* của KT Doanh thu đếm đúng việc |
 | `python kiem\thu_ty_gia.py` | **Màn Tỷ giá**: ai xem ai sửa, lịch sử giữ số cũ, gõ lại số cũ không đẻ dòng rác, chặn số sai, phiếu cũ giữ tỷ giá của nó, phiếu mới lấy số mới |
 | `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |

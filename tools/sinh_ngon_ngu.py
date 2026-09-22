@@ -139,6 +139,10 @@ KHOA_MOI = {
  # ---- v4: phiếu lĩnh có mã QR · điểm đổ nhiên liệu · cấp phát · tất toán tài xế
  'r_depot':      ('Thủ kho nhiên liệu (một kho)', 'ຜູ້ຮັກສາສາງນໍ້າມັນ (ໜຶ່ງສາງ)', 'Fuel depot keeper (one depot)'),
  # ---- v9 (đợt 3.1): hai vai riêng ở Thà Bốc (anh Khampla C1.2)
+ # ---- v9 (nợ kỹ thuật 3.2): ảnh xe đã lưu được
+ 'xe_photo_n':    ('{n} ảnh đã lưu', '{n} ຮູບ', '{n} photos'),
+ 'xe_photo_add':  ('+ Thêm ảnh', '+ ເພີ່ມຮູບ', '+ Add photo'),
+ 'xe_photo_rm':   ('Rơ-moóc chưa lưu ảnh riêng', 'ຫາງລົດຍັງບໍ່ເກັບຮູບຕ່າງຫາກ', 'No separate photos for trailers'),
  # ---- v9 (đợt 3.3): nợ trạm dầu Việt Nam, cấn trừ cước tháng (anh Khampla C5.1)
  'ncc_ghi_no':    ('Ghi nợ tại trạm', 'ຂຽນໜີ້ໄວ້ປໍ້າ', 'On account at the station'),
  'ncc_can_tru_kh': ('Cấn trừ vào cước khách', 'ຫັກຈາກຄ່າຂົນສົ່ງລູກຄ້າ', 'Offset against customer freight'),
@@ -902,7 +906,7 @@ KHOA_MOI = {
  'valid_from':     ('Áp dụng từ', 'ນຳໃຊ້ຕັ້ງແຕ່', 'Valid from'),
  'px_gia_tu_bang': ('Đã điền đơn giá theo bảng giá khách × tuyến', 'ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ', 'Rate filled from the customer × route price list'),
  'close':          ('Đóng', 'ປິດ', 'Close'),
- 'xe_photo_todo': ('Chưa lưu được ảnh xe — sẽ làm khi có chỗ chứa tệp', 'ຍັງເກັບຮູບລົດບໍ່ໄດ້ — ຈະເຮັດເມື່ອມີບ່ອນເກັບໄຟລ໌', 'Photos are not stored yet — pending a file store'),
+ 'tx_photo_todo': ('Chưa lưu được ảnh tài xế — ảnh xe thì đã lưu được', 'ຍັງເກັບຮູບໂຊເຟີບໍ່ໄດ້ — ຮູບລົດເກັບໄດ້ແລ້ວ', 'Driver photos are not stored yet — vehicle photos are'),
  'nav_goods':      ('Kho hàng', 'ສາງສິນຄ້າ', 'Goods store'),
  'title_kho_hang': ('Kho hàng<span class="sub">Quặng nằm bãi Thà Bốc giữa hai chặng</span>', 'ສາງສິນຄ້າ<span class="sub">ແຮ່ທີ່ພັກຢູ່ສາງທ່າບົກ ລະຫວ່າງສອງຕອນ</span>', 'Goods store<span class="sub">Ore resting at Thabok between the two legs</span>'),
  'kh_lo_title':    ('Lô hàng trong kho', 'ລ໊ອດສິນຄ້າໃນສາງ', 'Lots in the store'),

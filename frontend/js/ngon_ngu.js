@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1393 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1396 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1971,6 +1971,21 @@ window.EPL_TU_DIEN = {
   "vi": "Thủ kho nhiên liệu (một kho)",
   "lo": "ຜູ້ຮັກສາສາງນໍ້າມັນ (ໜຶ່ງສາງ)",
   "en": "Fuel depot keeper (one depot)"
+ },
+ "xe_photo_n": {
+  "vi": "{n} ảnh đã lưu",
+  "lo": "{n} ຮູບ",
+  "en": "{n} photos"
+ },
+ "xe_photo_add": {
+  "vi": "+ Thêm ảnh",
+  "lo": "+ ເພີ່ມຮູບ",
+  "en": "+ Add photo"
+ },
+ "xe_photo_rm": {
+  "vi": "Rơ-moóc chưa lưu ảnh riêng",
+  "lo": "ຫາງລົດຍັງບໍ່ເກັບຮູບຕ່າງຫາກ",
+  "en": "No separate photos for trailers"
  },
  "ncc_ghi_no": {
   "vi": "Ghi nợ tại trạm",
@@ -5297,10 +5312,10 @@ window.EPL_TU_DIEN = {
   "lo": "ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ",
   "en": "Rate filled from the customer × route price list"
  },
- "xe_photo_todo": {
-  "vi": "Chưa lưu được ảnh xe — sẽ làm khi có chỗ chứa tệp",
-  "lo": "ຍັງເກັບຮູບລົດບໍ່ໄດ້ — ຈະເຮັດເມື່ອມີບ່ອນເກັບໄຟລ໌",
-  "en": "Photos are not stored yet — pending a file store"
+ "tx_photo_todo": {
+  "vi": "Chưa lưu được ảnh tài xế — ảnh xe thì đã lưu được",
+  "lo": "ຍັງເກັບຮູບໂຊເຟີບໍ່ໄດ້ — ຮູບລົດເກັບໄດ້ແລ້ວ",
+  "en": "Driver photos are not stored yet — vehicle photos are"
  },
  "nav_goods": {
   "vi": "Kho hàng",

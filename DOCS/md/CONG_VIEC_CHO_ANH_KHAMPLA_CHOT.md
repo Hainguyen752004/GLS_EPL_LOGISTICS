@@ -94,37 +94,40 @@ mã con thì đổi ở đó.
 
 ---
 
-## Phần 3. Nợ kỹ thuật bên mình tự biết
+## Phần 3. Nợ kỹ thuật bên mình tự biết — **đã dọn hết 22/09**
 
-### 3.1 Máy chủ vẫn trả giá bán cho mọi vai ở các API khác
+### 3.1 Máy chủ vẫn trả giá bán cho mọi vai ở các API khác — ☑ **XONG 22/09**
 
-Hai báo cáo của màn Tổng quan đã **bỏ hẳn** các khoá tiền bán với Bãi, tài xế, thủ kho. Nhưng
-`/api/trips` và `/api/bao-cao/theo-doi` vẫn trả đơn giá, thành tiền, lãi cho mọi vai — giao diện có che
-nhưng mở công cụ trình duyệt là thấy.
+Trước đây `/api/trips` và `/api/bao-cao/theo-doi` vẫn trả đơn giá, thành tiền, lãi cho mọi vai; giao
+diện có che nhưng mở công cụ trình duyệt là đọc được hết.
 
-Chưa dọn ngay vì chỗ này đụng đường dữ liệu chung của màn phiếu (`xuat_phieu` dùng cho cả nhập liệu lẫn
-báo cáo), sửa vội dễ hỏng phép tính. Nay A2 đã chốt nên **làm được rồi**: khoảng nửa ngày, kèm bộ kiểm
-chặn ở mức API chứ không chỉ ở giao diện.
+Đã sửa ở **một chỗ duy nhất**: `xuat_phieu()` nhận thêm vai người gọi, và vai không được thấy tiền bán
+thì các khoá đó bị **bỏ hẳn** khỏi gói trả về (`price`, `price_ccy`, `hire_price`, `fee_pct`,
+`over_limit_t`, `over_price`, và trong khối `tinh` là doanh thu, tiền thuê, phần trừ, lãi, đã thu, còn
+lại). Phần **chi phí giữ nguyên** — chính họ nhập và chi, giấu đi là họ không kiểm được việc của mình.
+Mọi đường gọi hàm đó đều truyền vai, kể cả báo cáo Theo dõi. Bộ kiểm `kiem/thu_no_ky_thuat.py` chặn ở
+mức API: ba vai không được xem thì không có khoá nào, còn kế toán thì phải thấy đủ — nếu kế toán cũng
+mất thì phép lọc đã cắt nhầm.
 
-Cập nhật 21/09: đợt sửa tiền tệ vừa rồi **không đụng tới việc này** — các khoá tiền bán đổi tên
-(`doanh_thu_usd` → `doanh_thu` + `ccy`) nhưng vẫn trả cho mọi vai ở hai đường trên. Việc vẫn còn nguyên.
+### 3.2 Ảnh xe chưa lưu được — ☑ **XONG 22/09**
 
-### 3.2 Ảnh xe chưa lưu được
+Đã dùng lại **đúng chỗ chứa tệp của phiếu** (`EPL_LAO_TEP`), chỉ khác thư mục con `xe/<id>` — một chỗ
+chứa thì một chỗ sao lưu. Bảng `vehicle_photos`; ảnh đầu tiên của xe tự thành ảnh đại diện; xoá ảnh đại
+diện thì ảnh còn lại mới nhất lên thay. Danh sách xe mang sẵn ảnh đại diện (lấy một lượt cho cả danh
+sách, 500 xe không thành 500 lượt hỏi). Ảnh chỉ mở được khi có phiên, y như tệp phiếu.
 
-Bản thiết kế màn Xe có khung ảnh. Máy chủ chưa có chỗ chứa tệp cho ảnh xe (phần đính kèm hiện chỉ làm
-cho phiếu quặng), nên khung ảnh để trống kèm dòng ghi rõ là chưa lưu được — không để nút bấm chết.
-Khoảng nửa ngày, dùng lại đúng chỗ chứa tệp của phiếu.
+Ảnh **tài xế** thì vẫn chưa lưu — màn Tài xế nói rõ điều đó, không để nút bấm chết.
 
-### 3.3 Lệnh sửa chữa không gắn chuyến
+### 3.3 Lệnh sửa chữa không gắn chuyến — ☑ **XONG 22/09** (đợt 3.5)
 
-Sửa xe tại bãi lúc xe không chạy hiện phải gắn vào phiếu gần nhất, hơi gượng. Một lệnh sửa chữa riêng
-theo xe sẽ sạch hơn (khoảng một ngày). Chờ xem họ có làm bảo dưỡng định kỳ thật không đã.
+Anh Khampla xác nhận có bảo dưỡng định kỳ (C7.3), nên đã làm: bảng `repair_orders` + `repair_lines`,
+màn **Lệnh sửa chữa**, đi qua đúng chuỗi duyệt của mục V. Xem mục A9 trong `NGHIEP_VU_DB_API`.
 
-### 3.4 Ô "Việc của tôi" của KT Doanh thu luôn là 0
+### 3.4 Ô "Việc của tôi" của KT Doanh thu luôn là 0 — ☑ **XONG 22/09**
 
-Ô này đếm mục I–VI đang chờ chính vai đó làm. KT Doanh thu không phụ trách mục nào — việc của họ là
-hoá đơn và thu tiền, nằm ở mức phiếu. Họ đã có chip *Chờ hoá đơn* riêng. Làm gọn khi có dịp: cho ô này
-đếm phiếu đã khoá chưa xuất hoá đơn cộng hoá đơn chưa thu tiền.
+Ô này đếm mục I–VI đang chờ chính vai đó làm, mà KT Doanh thu không phụ trách mục nào — việc của họ
+nằm ở **mức phiếu**. Nay với vai đó ô này đếm *phiếu đã khoá chưa xuất hoá đơn* cộng *hoá đơn chưa thu
+đủ tiền*, và bấm vào mở thẳng phiếu đầu tiên đang chờ.
 
 ---
 

@@ -90,6 +90,8 @@ def main():
                                   "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 50, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"}]}, vai="thabok")
         phai(s, 200, "Bãi lập phiếu gom %s bằng xe của chủ thử" % so, P)
         assert P["company"] == "joint" and P["owner_id"] == chu["id"], "phiếu phải nhận chủ xe từ xe: %s" % P.get("owner_id")
+        assert "fee_pct" not in P, "Bãi không được thấy phí chủ xe (nợ kỹ thuật 3.1)"
+        s, P = goi("/api/trips/%s" % P["id"], vai="ketoan")
         assert P["fee_pct"] == 3 and P["over_limit_t"] == 38 and P["over_price"] == 1.5, \
             "phí/ngưỡng/mức trừ phải tự điền theo CHỦ XE (3 · 38 · 1.5): %s %s %s" % (P["fee_pct"], P["over_limit_t"], P["over_price"])
         phieu.append(P)

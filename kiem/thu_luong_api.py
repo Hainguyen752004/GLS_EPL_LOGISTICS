@@ -78,7 +78,12 @@ def main():
                                            {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 430000, "paid_by_epl": False}]}, vai="thabok")
     phai(s, 200, "Bãi lập phiếu xe liên kết", g); P = g["id"]
     assert g["plate_head"] == lk["plate_head"] and g["owner_name"] == lk["owner_name"], "phải chép biển số và chủ xe từ danh mục"
-    assert g["tinh"]["lien_ket"] and g["tinh"]["tien_thue"] == round(42 * 40.5, 2)
+    # Bãi KHÔNG nhận tiền bán: máy chủ bỏ hẳn khoá, không phải giao diện che (nợ kỹ thuật 3.1).
+    assert "price" not in g and "hire_price" not in g, "Bãi không được nhận đơn giá cước / giá thuê"
+    assert "tien_thue" not in g["tinh"] and "lai" not in g["tinh"], "Bãi không được nhận tiền thuê / lãi"
+    print("  \u2713 %-58s" % "Bãi gọi /api/trips: gói trả về không có khoá tiền bán nào")
+    s, gk = goi("/api/trips/%s" % P, vai="ketoan")
+    assert gk["tinh"]["lien_ket"] and gk["tinh"]["tien_thue"] == round(42 * 40.5, 2)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="ketoan"); phai(s, 403, "Kế toán lập phiếu → bị từ chối", g)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="thabok"); phai(s, 409, "Trùng số phiếu → bị từ chối", g)
     # C3.7 (anh Khampla): số phiếu quặng do KẾ TOÁN nhập khi nhận giấy; Bãi chỉ đính kèm ảnh.
@@ -102,7 +107,9 @@ def main():
     s, p2 = goi("/api/trips", {"doc_no": "THU-LUONG-02/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
                                "route_id": T, "doc_date": "2026-09-14", "out_date": "2026-09-14", "weight_origin": 40}, vai="thabok")
     phai(s, 200, "Bãi lập phiếu có khách + tuyến, không gửi giá", p2)
-    assert p2["price"] == 39 and p2["hire_price"] == 38.5, "máy phải tự điền giá 39 và giá thuê 38.5 từ bảng giá: %s / %s" % (p2["price"], p2["hire_price"])
+    assert "price" not in p2, "gói trả cho Bãi không được có đơn giá, dù máy đã tự điền vào phiếu"
+    s, p2k = goi("/api/trips/%s" % p2["id"], vai="ketoan")
+    assert p2k["price"] == 39 and p2k["hire_price"] == 38.5, "máy phải tự điền giá 39 và giá thuê 38.5 từ bảng giá: %s / %s" % (p2k["price"], p2k["hire_price"])
     s, g = goi("/api/trips/%s" % p2["id"], {"price": 45}, vai="ketoan", method="PUT"); phai(s, 200, "Kế toán sửa giá khác hợp đồng", g)
     assert g["price"] == 45, "giá kế toán gõ phải được giữ, không bị bảng giá ghi đè"
     s, g = goi("/api/trips/%s" % p2["id"], vai="admin", method="DELETE"); phai(s, 200, "Dọn phiếu thử 02", g)
@@ -199,6 +206,10 @@ def main():
     thue = round(40.5 * 40.5, 2); phi = round(thue * 0.02, 2); vuot = 0.5
     # EPL đã ứng = dầu kho 100 L + cao tốc + mục VI 150.000 + hai khoản sửa xe vừa khai (phụ tùng kho + vá lốp) ÷ tỷ giá.
     # Dòng x_vn "chủ xe tự trả" không tính. Lấy tổng chi từ máy chủ rồi kiểm lại từng phần.
+    # Từ đây kiểm TIỀN BÁN (tiền thuê, phần trừ, trả chủ xe) nên phải đọc bằng vai kế toán —
+    # gói trả cho Bãi không còn các khoá đó nữa (nợ kỹ thuật 3.1).
+    assert "tra_chu_xe" not in g["tinh"], "Bãi không được nhận số phải trả chủ xe"
+    s, g = goi("/api/trips/%s" % P, vai="ketoan")
     chi = g["tinh"]["chi"]
     assert chi["fuel"] == 100 * 30000 and chi["travel"] == 1833500 and chi["other"] == 150000, chi
     assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])

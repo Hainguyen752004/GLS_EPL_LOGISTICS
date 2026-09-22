@@ -217,6 +217,15 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
         if viec_dang_cho(user.role, sec.section, sec.status):
             viec_toi += 1
             if viec_phieu is None and sec.trip_id in co_phieu: viec_phieu = sec.trip_id
+    # KT Doanh thu KHÔNG phụ trách mục nào — việc của họ nằm ở MỨC PHIẾU: phiếu đã khoá chưa xuất
+    # hoá đơn, và hoá đơn chưa thu đủ tiền. Trước đây ô "Việc của tôi" của họ luôn là 0, đọc như thể
+    # họ không có việc gì (nợ kỹ thuật 3.4).
+    if user.role == "rev":
+        cho_hd = [p for p in ds if p.locked and not p.invoiced]
+        cho_thu = [p for p in ds if p.invoiced and p.finance_status != "paid"]
+        viec_toi = len(cho_hd) + len(cho_thu)
+        viec_phieu = (cho_hd or cho_thu or [None])[0]
+        viec_phieu = viec_phieu.id if viec_phieu is not None else None
     xem_nhanh = {
         "dang_chay": len([p for p in ds if p.transport_status in ("dispatched", "transit")]),
         "di_lau": len([p for p in ds if p.transport_status != "arrived" and (p.out_date or p.doc_date)
@@ -291,11 +300,14 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
 
 
 @router.get("/api/bao-cao/theo-doi")
-def theo_doi(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel."""
+def theo_doi(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Bảng "ລາຍງານ ຕິດຕາມໃບຂົນສົ່ງສິນຄ້າ" — một dòng một phiếu, đủ 29 cột như Excel.
+
+    Vai không được thấy tiền bán thì các cột cước, doanh thu, lãi **không có trong gói trả về** —
+    không phải chỉ ẩn cột ở giao diện."""
     ds, dau, cuoi = _phieu_thang(db, thang) if thang else (db.query(Trip).order_by(Trip.doc_date, Trip.doc_no).all(), None, None)
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
-    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0)) for p in ds]
+    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role) for p in ds]
 
 
 @router.get("/api/bao-cao/can-tru")

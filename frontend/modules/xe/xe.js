@@ -12,6 +12,8 @@
   const NGUONG_GIAY_TO = 30;      // ngày — giấy tờ "sắp hết hạn"
   const NGUONG_BAO_DUONG = 500;   // km — còn ≤ 500 km tới mốc bảo dưỡng thì "đến kỳ"
   const suaDuoc = () => AUTH.la('yard', 'acct');     // chỉ Bãi và Kế toán sửa danh mục (như các màn danh mục khác)
+  // Thẻ <img> không gửi header Authorization nên ảnh nhận phiên qua ?tk=… — y như tệp đính kèm phiếu.
+  const urlAnh = (u) => u ? `${u}?tk=${encodeURIComponent(EPL.API.token())}` : null;
   const thayMaKT = () => AUTH.role !== 'yard';       // mã tài khoản là việc kế toán; Bãi thấy tiền chi nhưng không thấy mã
   let root, thoat = null, xe = [], rm = [], chuXe = [], ui = { mode: 'dau-keo', sel: null, tab: 'lich', chip: null, q: '', soHuu: '', bai: '', tt: '', tuan: null };
 
@@ -32,7 +34,8 @@
       noi_dang_kiem: v.inspection_place, dung_tich: v.engine_cap, kich_thuoc_thung: v.box_size, lop: v.tyre,
       han: { bao_hiem: ngay(v.insurance_exp), dang_kiem: ngay(v.inspection_exp), luu_hanh: ngay(v.road_permit_exp) },
       trang_thai: TT_XE[v.status] || 'idle', ro_mooc: v.trailer ? v.trailer.plate : (v.plate_trailer || null),
-      ghi_chu: v.note, so_phieu: v.so_phieu, phieu_hien_tai: v.phieu_hien_tai, anh: null,
+      ghi_chu: v.note, so_phieu: v.so_phieu, phieu_hien_tai: v.phieu_hien_tai,
+      anh: v.anh_chinh ? urlAnh(v.anh_chinh) : null, anh_ds: (v.anh || []).map(a => ({ ...a, src: urlAnh(a.url) })),
       lich_su_rm: (v.lich_su_ro_mooc || []).map(h => ({ bien: h.plate, lap: ngay(h.attached_at), thao: ngay(h.detached_at), ly_do: h.reason })),
       chi_phi: (v.sua_chua || []).map(c => ({
         phieu: c.doc_no, ngay: ngay(c.doc_date), nguon: NN.t(c.source === 'kho' ? 'src_kho' : 'src_mua'),
@@ -249,7 +252,10 @@
     const rt = root.querySelector('#xe-modal-root');
     rt.innerHTML = `<div class="xe-backdrop"><div class="xe-modal xe-modal--lg">
       <div class="mh"><div><h3>${isNew ? NN.h('xe_add') : NN.h('xe_profile')}: <span class="mono lo">${esc(isRM ? o.bien : o.so_xe) || '—'}</span></h3><small>${NN.h('xe_edit_sub')}</small></div><button class="x" type="button" data-close><svg class="xe-i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="mtop"><div class="photo"><div class="xe-photo">${truck}</div><div><b>${NN.h('xe_photo')}</b><small>${NN.h('xe_photo_todo')}</small></div></div>
+      <div class="mtop"><div class="photo"><div class="xe-photo">${!isRM && o.anh ? `<img src="${esc(o.anh)}" alt="">` : truck}</div>
+        <div><b>${NN.h('xe_photo')}</b>${isRM ? `<small>${NN.h('xe_photo_rm')}</small>`
+          : `<small id="m-anh-dem">${NN.h('xe_photo_n', { n: (o.anh_ds || []).length })}</small>
+             ${suaDuoc() && o.id ? `<label class="xe-btn-sm" style="margin-top:4px">${NN.h('xe_photo_add')}<input type="file" id="m-anh-them" accept="image/*" hidden></label>` : ''}`}</div></div>
         <div class="st"><small>${NN.h('xe_status')}</small><b>${isRM ? NN.t(o.trang_thai === 'repair' ? 'xe_st_repair' : o.lap_vao ? 'xe_rm_attached' : 'xe_rm_free') : NN.t((ST[o.trang_thai] || ST.idle)[1])}</b><p>${NN.h('xe_status_auto')}</p></div></div>
       <div class="mtabs" id="m-tabs"></div>
       <div class="mb" id="m-body"></div>
@@ -257,6 +263,23 @@
     </div></div>`;
     rt.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
     rt.querySelector('.xe-backdrop').addEventListener('click', e => { if (e.target.classList.contains('xe-backdrop')) close(); });
+    // Ảnh xe: đưa lên đúng chỗ chứa tệp của phiếu; ảnh đầu tiên tự thành ảnh đại diện.
+    const oAnh = rt.querySelector('#m-anh-them');
+    if (oAnh) oAnh.addEventListener('change', async () => {
+      const f = oAnh.files && oAnh.files[0]; if (!f) return;
+      const fd = new FormData(); fd.append('tep', f, f.name);
+      try {
+        const ds = await EPL.API.tep(`/api/vehicles/${o.id}/anh`, fd);
+        o.anh_ds = ds.map(a => ({ ...a, src: urlAnh(a.url) }));
+        const c = ds.find(a => a.chinh); o.anh = c ? urlAnh(c.url) : null;
+        const khung = rt.querySelector('.mtop .xe-photo');
+        if (khung && o.anh) khung.innerHTML = `<img src="${esc(o.anh)}" alt="">`;
+        const dem = rt.querySelector('#m-anh-dem'); if (dem) dem.textContent = NN.t('xe_photo_n').replace('{n}', ds.length);
+        EPL.toast(NN.t('saved'), 'ok');
+        await tai();                       // danh sách lấy lại ảnh đại diện mới
+      } catch (e) { EPL.baoLoi(e); }
+      oAnh.value = '';
+    });
     const body = rt.querySelector('#m-body');
     const grab = () => body.querySelectorAll('[id^="f-"]').forEach(el => { vals[el.id] = el.value; });
     const g = (k) => vals[k];
