@@ -27,7 +27,7 @@
   const SO_LA_MA = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   let LO = [];        // các lô hàng còn trong kho bãi, để phiếu giao chọn lấy từ đâu
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [] }, moi = false, ty_gia = {};
-  /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402. */
+  /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/1371, mua ngoài …/4021. */
   function tkMacDinh(m, d) {
     const cty = P && P.company === 'joint' ? 'joint' : 'EPL', rule = KM.acct_rule[cty];
     let src = d && d.source;
@@ -204,6 +204,9 @@
   function suaDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
   // Ô tiền của mục II (đơn giá, giá thuê, phí, ngưỡng): Bãi không thấy → người KIỂM mục II sửa được khi khác hợp đồng (chép luật máy chủ)
   const COT_TIEN = ['price', 'price_ccy', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
+  // Số và ngày phiếu quặng: kế toán nhập KHI NHẬN GIẤY (anh Khampla, C3.7). Bãi thấy nhưng chỉ đọc, kể cả lúc lập phiếu.
+  const COT_KE_TOAN = ['ore_bill_no', 'ore_bill_date'];
+  function suaKeToanDuoc(m) { if (biKhoa()) return false; const st = moi ? 'wait' : ((P.sections || {})[m] || 'wait'); return vai() === 'admin' || (perm().verify.includes(m) && (st === 'wait' || st === 'entered')); }
   function suaTienDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().verify.includes(m) && (st === 'wait' || st === 'entered')); }
   function veVaiVaTrangThai() {
     g('px-goi-y').innerHTML = NN.h('hint_' + (vai() === 'treasury' ? 'treasury' : vai()));
@@ -213,7 +216,7 @@
       const sec = q(`.px-muc[data-muc="${m}"]`), st = moi ? 'wait' : (P.sections[m] || 'wait'), tuyChon = (m === 'repair' || m === 'other') && !P.expenses.some(d => d.section === m);
       const khoa = !suaDuoc(m); sec.classList.toggle('locked', khoa);
       const cot = m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : [];
-      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = (khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m))) || (daNhapKho() && (c === 'weight_origin' || c === 'weight_dest')); });
+      cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = COT_KE_TOAN.includes(c) ? !suaKeToanDuoc(m) : ((khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m))) || (daNhapKho() && (c === 'weight_origin' || c === 'weight_dest'))); });
       if (m === 'trans' && khoa && suaTienDuoc(m)) sec.classList.remove('locked');   // kế toán còn sửa được ô tiền thì mục chưa "khoá" với họ
       const e = sec.querySelector('.px-stt'); const k = tuyChon ? 'na' : st;
       e.className = 'px-stt ' + k; e.innerHTML = NN.h(k === 'wait' ? 'stt_wait2' : 'stt_' + k);
@@ -374,8 +377,13 @@
   async function doiTrangThai(tt) {
     const body = { status: tt };
     if (tt === 'arrived') {
-      const v = await EPL.hopNhap(NN.t('mark_arrived'), [{ id: 'weight_dest', label: 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' }, { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() }], NN.t('ok'));
-      if (!v) return; body.weight_dest = v.weight_dest; body.back_date = v.back_date;
+      // Ngày về và km về điền sẵn theo số TÀI XẾ đã báo (nút "Báo đã về" trên điện thoại) — Bãi chỉ thêm cân.
+      const v = await EPL.hopNhap(NN.t('mark_arrived'), [
+        { id: 'weight_dest', label: 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
+        { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() },
+        { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: P.odo_back ?? '' },
+      ], NN.t('ok'));
+      if (!v) return; body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
     }
     try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
   }

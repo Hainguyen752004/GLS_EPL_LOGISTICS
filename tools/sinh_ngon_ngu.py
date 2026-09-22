@@ -725,6 +725,14 @@ KHOA_MOI = {
  'xe_click_hint2':   ('Bấm dòng để mở thẻ xem nhanh · bấm đúp để mở hồ sơ', 'ກົດແຖວເພື່ອເບິ່ງດ່ວນ · ກົດສອງເທື່ອເປີດຂໍ້ມູນ', 'Click a row for quick view · double-click to open profile'),
  # Bản thiết kế ghi 'active — đang hiệu lực': lọt chữ mã vào câu tiếng Việt. Dịch trọn lại.
  'tx_lic_active':   ('Đang hiệu lực', 'ໃຊ້ໄດ້ຢູ່', 'Valid'),
+ # ---- đợt 1 theo phản hồi anh Khampla (22/09/2026)
+ 'report_back':     ('Báo đã về', 'ແຈ້ງກັບຮອດ', 'Report return'),
+ 'odo_back_prompt': ('Km về (công-tơ-mét)', 'ກມ ກັບ (ເລກກົງເຕີ)', 'Return odometer (km)'),
+ 'report_back_ok':  ('Đã báo ngày về và km về. Bãi sẽ cân và xác nhận xe tới.', 'ແຈ້ງວັນກັບ ແລະ ກມ ແລ້ວ. ສາງຈະຊັ່ງ ແລະ ຢືນຢັນ.', 'Return date and odometer reported. The yard will weigh and confirm.'),
+ 'ore_bill_by_acct': ('Kế toán nhập khi nhận giấy · Bãi đính kèm ảnh', 'ບັນຊີປ້ອນຕອນຮັບເຈ້ຍ · ສາງຄັດຮູບ', 'Accountant enters on receipt of the paper · yard attaches the photo'),
+ # nhãn cũ ghi mã 371/402 — nay 1371/4021 theo sá-la-ban kế toán Lào
+ 'src_rule':        ('Có trong kho thì xuất kho (TK …/1371); không có thì chi mua ngoài (TK …/4021).', 'ມີໃນສາງ → ເບີກສາງ (…/1371); ບໍ່ມີ → ຈ່າຍຊື້ນອກ (…/4021).', 'In stock → stock issue (acct …/1371); otherwise → purchase (acct …/4021).'),
+ 'sup_hint':        ('Công nợ theo 625/4021 và 614/4021', 'ໜີ້ຕາມ 625/4021 ແລະ 614/4021', 'Payables under 625/4021 and 614/4021'),
  'd_ty_gia':         ('Quy đổi về Kíp cho phiếu mới', 'ແປງເປັນກີບສຳລັບບິນໃໝ່', 'Rates to LAK for new slips'),
  'd_tuyen_duong':    ('Chặng, số km, phí cao tốc', 'ຈຸດຜ່ານ, ກິໂລແມັດ, ຄ່າທາງດ່ວນ', 'Stops, kilometres, toll'),
  'd_quy_trinh':      ('Ai làm bước nào, sinh chứng từ gì', 'ໃຜເຮັດຂັ້ນໃດ, ອອກເອກະສານໃດ', 'Who does what, which document each step makes'),

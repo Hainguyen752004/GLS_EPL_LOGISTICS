@@ -61,6 +61,17 @@ def gieo(db):
                            owner_type="ngoai", note="Đổ chiều về để chạy ngược sang Lào"),
         "fp_other": FuelPlace(code="LA-02", name="ປໍ້ານໍ້າມັນ ຂ້າງທາງ (Trạm dầu dọc đường)", country="LA",
                               owner_type="ngoai"),
+        # Năm kho dầu anh Khampla kể thêm (C5.2, 22/09) — đủ bảy kho của EPL
+        "fp_km28_vc": FuelPlace(code="KHO-KM28-VC", name="ສາງນໍ້າມັນ ຫຼັກ 28 ວຽງຈັນ (Kho dầu Km 28 Viêng Chăn)", country="LA",
+                                owner_type="epl", address="ຫຼັກ 28, ວຽງຈັນ"),
+        "fp_huaylek": FuelPlace(code="KHO-TB-HL", name="ສາງນໍ້າມັນ ສະໜາມທ່າບົກ ຫ້ວຍເລິກ (Kho dầu sân Thà Bốc Huay Lek)", country="LA",
+                                owner_type="epl", address="ຫ້ວຍເລິກ"),
+        "fp_thavai": FuelPlace(code="KHO-THAVAI", name="ສາງນໍ້າມັນ ບ້ານທວາຍ (Kho dầu bản Thavai)", country="LA",
+                               owner_type="epl", address="ບ້ານທວາຍ"),
+        "fp_thakhek": FuelPlace(code="KHO-TK", name="ສາງນໍ້າມັນ ສະໜາມທ່າແຂກ (Kho dầu sân Thakhek)", country="LA",
+                                owner_type="epl", address="ທ່າແຂກ"),
+        "fp_km28_tk": FuelPlace(code="KHO-KM28-TK", name="ສາງນໍ້າມັນ ເສັ້ນທາງຫຼັກ 28 ທ່າແຂກ, ທາງເລກ 8 (Kho dầu Km 28 Thakhek, đường 8)", country="LA",
+                                owner_type="epl", address="ທາງເລກ 8, ທ່າແຂກ"),
     }
     for x in diem_do.values():
         db.add(x)
@@ -273,6 +284,7 @@ def gieo(db):
                customer_name="ຄຳຕຸ້ຍ", ore_bill_no="HR-2301", ore_bill_date=D(2026, 9, 14),
                origin="ກາສີ (ບ່ອນຂຸດແຮ່)", destination="ທ່າບົກ (ສະໜາມ EPL)",
                weight_origin=42.50, weight_dest=42.30,     # cân mỏ 42,50 · cân bãi 42,30 → hao 0,20
+               price=6, price_ccy="USD",                   # B4: khách trả cước riêng cho chặng gom (6 USD/t)
                transport_status="arrived", finance_status="unpaid",
                hang=[("ແຮ່ເຫຼັກ (quặng sắt)", 42.50)],
                chi=[dong("fuel", "diesel", 60, 30000, "LAK", "fp_yard"), dong("travel", "x_water", 1, 60000)])

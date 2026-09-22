@@ -20,7 +20,7 @@ Từ 21/09/2026, một chuyến quặng từ mỏ ra cảng đi qua **hai phiế
       │                              │                                │
       │ ── DO GOM (kind = gom) ────► │                                │
       │    cân tại mỏ                │  NHẬP KHO (PNK_HH)             │
-      │    không có cước             │  lô hàng nằm bãi               │
+      │    cước riêng cho chặng gom  │  lô hàng nằm bãi               │
       │                              │                                │
       │                              │ ── DO GIAO (kind = giao) ────► │
       │                              │  XUẤT KHO (PXK_HH)   cân tại cảng
@@ -82,8 +82,8 @@ hai báo cáo của màn Tổng quan (`thay_tien_ban()` trong `services/phan_quy
 ## A3. Nhiên liệu — hai đường
 
 1. **Đổ ở kho dầu EPL**: Bãi khai số lít và nơi đổ → in **phiếu lĩnh có mã QR** → thủ kho quét mã, cấp
-   dầu, nhập số lít thật → tồn kho trừ ngay, sinh **PXK_NL**, định khoản `625/371` (xe nhà) hoặc
-   `4022/371` (xe liên kết).
+   dầu, nhập số lít thật → tồn kho trừ ngay, sinh **PXK_NL**, định khoản `625/1371` (xe nhà) hoặc
+   `4022/1371` (xe liên kết).
 2. **Đổ dọc đường bên Việt Nam**: tài xế khai trên điện thoại (lít, trạm, đơn giá VND) → KT kho xăng dầu
    duyệt → thành một dòng mua ngoài ở mục III, tự quy đổi LAK theo tỷ giá ghi trên phiếu.
 
@@ -190,9 +190,12 @@ trùng; bên kia trả `id` thì tờ đánh đã đẩy và giữ mã đó; tr�
 Hợp đồng JSON đầy đủ gửi anh Khang ở `HOP_DONG_API_ANH_KHANG.md`; lớp đẩy ở `services/day_ke_toan.py`.
 
 Định khoản là **gợi ý** theo quy trình của họ, không phải sổ kế toán: bên mình không ghi bút toán,
-không cộng sổ. Mã tài khoản đang dùng: kho `371`, nhà cung cấp `402`, phải thu `1211`, doanh thu `70`,
+không cộng sổ. Mã tài khoản (anh Khampla trả lời 22/09, theo sá-la-ban kế toán doanh nghiệp Lào): kho
+`1371` (con của 137), nhà cung cấp `4021` (con của 402, tách theo NCC), tiền mặt Kíp `1011`, tiền mặt
+ngoại tệ `1012`, ngân hàng Kíp `1021`, ngân hàng ngoại tệ `1022` — vế tiền chọn tự động theo cách thu/chi
+và tiền tệ của tờ; phải thu `1211`, doanh thu `70`,
 chi phí `625` (xe nhà) / `614` (sửa chữa) / `4022` (xe liên kết). **Mã tiền mặt và ngân hàng chưa có** —
-để trống tên, chờ bên kế toán cấp (`TIEN` trong `services/chung_tu.py`).
+để trống tên, chờ bên kế toán cấp (hàng khách gửi, giá vốn). Tất cả nằm ở `services/chung_tu.py`.
 
 ---
 
@@ -276,12 +279,13 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `GET /api/trips/{id}` | Một phiếu đầy đủ: dòng chi, **dòng hàng**, mục, nhật ký, diễn biến, chặng tuyến |
 | `GET /api/trips-so-moi` | Cấp số phiếu kế tiếp |
 | `POST /api/trips` | Lập phiếu. Nhận `kind` (`gom`/`giao`), `expenses[]`, **`goods[]`**. Chỉ Bãi và Sếp |
-| `PUT /api/trips/{id}` | Sửa phiếu; chỉ ghi được ô của mục còn mở. Ô tiền của mục II do **người kiểm** mục đó sửa |
+| `PUT /api/trips/{id}` | Sửa phiếu; chỉ ghi được ô của mục còn mở. Ô tiền của mục II do **người kiểm** mục đó sửa; **số và ngày phiếu quặng** cũng vậy (C3.7: kế toán nhập khi nhận giấy, Bãi chỉ đính kèm ảnh) |
 | `DELETE /api/trips/{id}` | Xoá phiếu; chặn nếu đã có mục được kiểm, đã xuất kho, hoặc **lô đã có người lấy hàng** |
 | `POST /api/trips/{id}/sections/{muc}/{hanh_dong}` | Chuyển bước một mục: `send`, `verify`, `return`, `book`, `pay`, `unlock` |
+| `POST /api/trips/{id}/bao-ve` | **Tài xế báo đã về** (C2.1): ngày về, km về. Chỉ ghi hai số và đánh mốc tới điểm cuối, không tự chuyển "đã tới" — Bãi cân rồi mới xác nhận |
 | `POST /api/trips/{id}/transport-status` | Xuất phát / tới nơi. Tới nơi: DO gom **nhập kho**, DO giao **ghi hao hụt** |
 | `POST /api/trips/{id}/khoa`, `/mo-khoa`, `GET /kiem-lai` | Khoá phiếu sau khi xe về; Sếp mở khoá |
-| `POST /api/trips/{id}/invoice` | Xuất hoá đơn. **Từ chối nếu là DO gom** |
+| `POST /api/trips/{id}/invoice` | Xuất hoá đơn — phiếu gom cũng xuất được (B4: khách trả cước riêng cho chặng gom) |
 | `GET POST /api/trips/{id}/thu-tien` · `DELETE /api/thu-tien/{id}` | **Sổ thu tiền**: xem, ghi một lần khách trả (tiền nào cũng được, có tỷ giá ngày thu), xoá dòng ghi nhầm. Thu dư phải xác nhận; tờ `PT` đã đẩy kế toán thì không xoá được |
 | `POST /api/trips/{id}/tra-chu-xe` | Quỹ trả chủ xe liên kết → `PC_CX` |
 | `GET POST DELETE /api/trips/{id}/tep`, `/api/tep/{aid}` | Tệp đính kèm (phiếu quặng) |
@@ -387,7 +391,6 @@ Mọi lỗi trả JSON `{"detail": {"ma": "MA_LOI", "loi": "câu tiếng Việt 
 | `KHONG_DOI_LOAI` (409) | Đổi loại gom/giao khi phiếu đã có dòng hàng hay sổ kho |
 | `TON_AM` (409) | Điều chỉnh giảm quá tồn của lô |
 | `THIEU_LY_DO` (422) | Điều chỉnh kho không ghi lý do |
-| `PHIEU_GOM` (409) | Xuất hoá đơn cho phiếu gom |
 | `THANG_SAI`, `TUAN_SAI`, `SO_SAI`… (422) | Dữ liệu gửi lên sai dạng |
 
 ---

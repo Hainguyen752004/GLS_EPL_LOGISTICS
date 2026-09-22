@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1256 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1260 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1198,9 +1198,9 @@ window.EPL_TU_DIEN = {
   "en": "Terms"
  },
  "sup_hint": {
-  "vi": "Công nợ theo mã 625/402 và 614/402",
-  "lo": "ໜີ້ຕາມເລກ 625/402 ແລະ 614/402",
-  "en": "Payables under 625/402 and 614/402"
+  "vi": "Công nợ theo 625/4021 và 614/4021",
+  "lo": "ໜີ້ຕາມ 625/4021 ແລະ 614/4021",
+  "en": "Payables under 625/4021 and 614/4021"
  },
  "sup_chip_lao": {
   "vi": "Kho hải quan (chipping Lào)",
@@ -3108,9 +3108,9 @@ window.EPL_TU_DIEN = {
   "en": "Bought outside / garage (payment)"
  },
  "src_rule": {
-  "vi": "Có trong kho thì xuất kho (TK …/371); không có thì chi mua ngoài (TK …/402).",
-  "lo": "ມີໃນສາງ → ເບີກສາງ (…/371); ບໍ່ມີ → ຈ່າຍຊື້ນອກ (…/402).",
-  "en": "In stock → stock issue (acct …/371); otherwise → purchase (acct …/402)."
+  "vi": "Có trong kho thì xuất kho (TK …/1371); không có thì chi mua ngoài (TK …/4021).",
+  "lo": "ມີໃນສາງ → ເບີກສາງ (…/1371); ບໍ່ມີ → ຈ່າຍຊື້ນອກ (…/4021).",
+  "en": "In stock → stock issue (acct …/1371); otherwise → purchase (acct …/4021)."
  },
  "pick_part": {
   "vi": "Phụ tùng trong kho",
@@ -4596,6 +4596,26 @@ window.EPL_TU_DIEN = {
   "vi": "Bấm dòng để mở thẻ xem nhanh · bấm đúp để mở hồ sơ",
   "lo": "ກົດແຖວເພື່ອເບິ່ງດ່ວນ · ກົດສອງເທື່ອເປີດຂໍ້ມູນ",
   "en": "Click a row for quick view · double-click to open profile"
+ },
+ "report_back": {
+  "vi": "Báo đã về",
+  "lo": "ແຈ້ງກັບຮອດ",
+  "en": "Report return"
+ },
+ "odo_back_prompt": {
+  "vi": "Km về (công-tơ-mét)",
+  "lo": "ກມ ກັບ (ເລກກົງເຕີ)",
+  "en": "Return odometer (km)"
+ },
+ "report_back_ok": {
+  "vi": "Đã báo ngày về và km về. Bãi sẽ cân và xác nhận xe tới.",
+  "lo": "ແຈ້ງວັນກັບ ແລະ ກມ ແລ້ວ. ສາງຈະຊັ່ງ ແລະ ຢືນຢັນ.",
+  "en": "Return date and odometer reported. The yard will weigh and confirm."
+ },
+ "ore_bill_by_acct": {
+  "vi": "Kế toán nhập khi nhận giấy · Bãi đính kèm ảnh",
+  "lo": "ບັນຊີປ້ອນຕອນຮັບເຈ້ຍ · ສາງຄັດຮູບ",
+  "en": "Accountant enters on receipt of the paper · yard attaches the photo"
  },
  "d_ty_gia": {
   "vi": "Quy đổi về Kíp cho phiếu mới",

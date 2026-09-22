@@ -3,7 +3,7 @@
   const { API, NN, esc, so, AUTH } = EPL;
   let root, ds = [];
   const KHOAN = ['x_chip_lao', 'x_chip_vn', 'x_tire', 'x_toll', 'x_bridge', 'x_border', 'x_parking', 'x_oil', 'x_brake', 'x_tow', 'x_air', 'x_misc'];
-  const TK = ['625/402', '614/402', '614/371', '625/371'];
+  const TK = ['625/4021', '614/4021', '614/1371', '625/1371'];
   const HAN = ['t_monthly', 't_prepaid', 'pm_on_dispatch'];
 
   function ve() {
@@ -40,7 +40,7 @@
     const v = await EPL.hopNhap(s ? NN.t('edit') : NN.t('add'), [
       { id: 'name', label: 'supplier', value: s ? s.name : '', lo: true },
       { id: 'item_key', label: 'service', type: 'select', value: s ? s.item_key : 'x_chip_lao', options: KHOAN.map(k => [k, NN.t(k)]) },
-      { id: 'acct_code', label: 'acct_code', type: 'select', value: s ? s.acct_code : '625/402', options: TK.map(k => [k, k]) },
+      { id: 'acct_code', label: 'acct_code', type: 'select', value: s ? s.acct_code : '625/4021', options: TK.map(k => [k, k]) },
       { id: 'payment_term', label: 'terms', type: 'select', value: s ? s.payment_term : 't_monthly', options: HAN.map(k => [k, NN.t(k)]) },
       { id: 'note', label: 'note', value: s ? s.note : '' },
     ], NN.t('save'));

@@ -1,5 +1,5 @@
 /* Điểm đổ nhiên liệu — danh mục quyết định hai việc: phiếu lĩnh chạy tới kho nào, và khoản dầu
-   đó là LĨNH KHO hay MUA NGOÀI (kéo theo định khoản …/371 hay …/402). */
+   đó là LĨNH KHO hay MUA NGOÀI (kéo theo định khoản …/1371 hay …/4021). */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
   let root, ds = [], ncc = [];

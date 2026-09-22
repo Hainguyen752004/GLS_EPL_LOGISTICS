@@ -35,7 +35,7 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
 
 1. Vào **Phiếu xuất xe** → bấm **+ Phiếu mới**.
 2. Mục **I**: ô **Loại phiếu** chọn **Đi gom hàng (mỏ → bãi)**. Chọn xe, tài xế, ngày.
-   - *Phải thấy:* toàn bộ phần **đơn giá cước, thành tiền, quy đổi biến mất** (phiếu gom không có cước),
+   - *Phải thấy:* ô **đơn giá, tiền tệ, thành tiền vẫn có** (anh Khampla 22/09: khách trả cước riêng cho chặng gom),
      và cột *Lấy từ lô* trong bảng hàng cũng ẩn.
 3. Mục **II**: chọn khách, tuyến; ở **Hàng trên phiếu** bấm **+ Thêm dòng**, gõ mặt hàng và **số tấn cân
    tại mỏ** (ví dụ 40).
@@ -47,7 +47,8 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
 
 ### Bước 2 ☐ Xe về bãi — hàng vào kho — `thabok`
 
-1. Vẫn ở phiếu đó, dưới cùng bấm **Xe đã tới · nhập cân cuối**, nhập **cân tại bãi** (ví dụ 39,6), km về, ngày về.
+1. *(Tuỳ chọn, đúng cách ngoài đời)* đăng nhập tài xế của phiếu → **Phiếu của tôi** → **Báo đã về**, gõ ngày về và km về.
+   Quay lại `thabok`: bấm **Xe đã tới · nhập cân cuối** → hai ô ngày về, km về **đã điền sẵn** số tài xế báo; chỉ còn gõ **cân tại bãi** (ví dụ 39,6).
 2. *Phải thấy:*
    - Bảng hàng có thêm **một dòng hao hụt 0,4 t** (máy tự ghi, chữ nghiêng nền vàng).
    - Dòng hàng và hai ô cân **khoá lại**, kèm câu: *"Hàng đã vào kho bãi — dòng hàng và cân của phiếu này không sửa nữa."*
@@ -111,8 +112,7 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
    - *Phải thấy:* Sổ chứng từ có *Hoá đơn vận chuyển* và **hai** tờ *Phiếu thu tiền khách*, mỗi tờ
      mang đúng số tiền và tiền tệ khách trả.
 4. Thử sai: ghi thu một số lớn hơn phần còn lại → **phải bị hỏi lại** rồi mới ghi.
-5. Thử sai: mở **phiếu gom** rồi tìm nút hoá đơn → **không có**; gọi thẳng API cũng bị từ chối
-   (*"Phiếu đi gom hàng không có cước"*).
+5. Mở **phiếu gom** `G4-0101`: phiếu này cũng **có cước và lập được hoá đơn** (6 USD/t cho chặng gom) — theo trả lời của anh Khampla 22/09.
 
 ### Bước 9 ☐ Xe liên kết: trả tiền chủ xe — `quytb` hoặc `quyvc`
 
@@ -154,6 +154,9 @@ Thấy hết 23 màn. Hai việc riêng của Sếp:
 |---|---|---|---|
 | ☐ | `thabok` | Tìm màn **Tài khoản**, **Hoá đơn**, **Xe liên kết** | Không có trong thanh điều hướng |
 | ☐ | `thabok` | Vào **Khách hàng** tìm nút **Bảng giá** | Không có (giá là tiền bán) |
+| ☐ | `thabok` | Mở phiếu, mục II, gõ vào **Số phiếu quặng** | Ô khoá, dưới có dòng *Kế toán nhập khi nhận giấy · Bãi đính kèm ảnh* |
+| ☐ | `ketoan` | Cùng phiếu, gõ **Số phiếu quặng** rồi Lưu | Lưu được |
+| ☐ | *(máy chưa chọn ngôn ngữ)* | Đăng nhập `thabok` lần đầu | Giao diện tự sang **tiếng Lào**; đăng nhập `ketoan` thì vẫn tiếng Việt |
 | ☐ | `thabok` | Mở **Tổng quan** | Bốn ô là *Phiếu tháng này · Tổng chi phí · Khối lượng · Xe đang trên đường* — **không có doanh thu** |
 | ☐ | `thabok` | Mở **Theo dõi phiếu** | Không có cột Cước, Thành tiền, Lãi; **vẫn có** các cột chi phí |
 | ☐ | `khonl` | Mở phiếu, tìm nút ở mục IV | Chỉ mục III có nút; mục khác chỉ đọc |

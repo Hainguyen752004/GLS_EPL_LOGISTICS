@@ -42,7 +42,8 @@ KHOAN_MUC = {
     "repair": ["x_tire", "x_air", "x_oil", "x_brake", "x_tow"],
     "other":  ["x_misc"],
 }
-MA_TK = ["625/371", "625/402", "614/371", "614/402", "4022/371", "4022/402", "1211/70", "1211/402"]
+# Mã kho 1371 và nhà cung cấp 4021 theo anh Khampla (22/09): cấp con của 137 và 402.
+MA_TK = ["625/1371", "625/4021", "614/1371", "614/4021", "4022/1371", "4022/4021", "1211/70", "1211/4021"]
 COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
              "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
@@ -51,7 +52,10 @@ COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "
              "rate_vnd", "rate_cny", "note")
 COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
 # Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
-COT_TIEN = ("price", "price_ccy", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price")
+COT_TIEN = ("price", "price_ccy", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price",
+            "ore_bill_no", "ore_bill_date")
+# Số và ngày phiếu quặng: kế toán nhập KHI NHẬN GIẤY (anh Khampla, C3.7). Bãi chỉ đính kèm ảnh.
+COT_KE_TOAN = ("ore_bill_no", "ore_bill_date")
 COT_SO = ("odo_out", "odo_back", "weight_origin", "weight_dest", "price", "hire_price",
           "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb", "rate_vnd", "rate_cny")
 COT_TIEN_TE = ("price_ccy", "hire_ccy")          # ô CHỌN tiền tệ, không phải số
@@ -66,10 +70,10 @@ MUC_CUA_COT = {
 
 
 def ma_tk_mac_dinh(company, section, source=None, place=None):
-    """Định khoản theo quy trình của họ: xe nhà 625/614, xe liên kết 4022; kho …/371, mua ngoài …/402."""
+    """Định khoản theo quy trình của họ: xe nhà 625/614, xe liên kết 4022; kho …/1371, mua ngoài …/4021."""
     if section == "fuel" and source is None:
         source = "kho" if (place or "fp_yard") == "fp_yard" else "mua"
-    duoi = "371" if source == "kho" else "402"
+    duoi = "1371" if source == "kho" else "4021"
     if company == "joint":
         return "4022/" + duoi
     return ("614/" if section == "repair" else "625/") + duoi
@@ -224,8 +228,8 @@ def khoan_muc():
     return {"items": KHOAN_MUC, "acct_codes": MA_TK, "chain": {k: list(v) for k, v in CHUOI.items()},
             "acct_default": {"EPL": {m: ma_tk_mac_dinh("EPL", m, "kho" if m in ("fuel", "repair") else None) for m in MUC_CHI},
                              "joint": {m: ma_tk_mac_dinh("joint", m, "kho" if m in ("fuel", "repair") else None) for m in MUC_CHI}},
-            "acct_rule": {"EPL": {"kho": {"fuel": "625/371", "repair": "614/371"}, "mua": {"fuel": "625/402", "repair": "614/402", "travel": "625/402", "other": "625/402"}},
-                          "joint": {"kho": {"fuel": "4022/371", "repair": "4022/371"}, "mua": {"fuel": "4022/402", "repair": "4022/402", "travel": "4022/402", "other": "4022/402"}}},
+            "acct_rule": {"EPL": {"kho": {"fuel": "625/1371", "repair": "614/1371"}, "mua": {"fuel": "625/4021", "repair": "614/4021", "travel": "625/4021", "other": "625/4021"}},
+                          "joint": {"kho": {"fuel": "4022/1371", "repair": "4022/1371"}, "mua": {"fuel": "4022/4021", "repair": "4022/4021", "travel": "4022/4021", "other": "4022/4021"}}},
             "event_kinds": list(SU_KIEN), "incident_types": list(LOAI_SU_CO)}
 
 
@@ -281,6 +285,12 @@ def _ap_truong(db, p, data, user, muc_tt=None):
     """Ghi các trường vào phiếu. Khi sửa, chỉ ghi trường của mục còn được sửa."""
     for c in COT_PHIEU:
         if c not in data:
+            continue
+        if c in COT_KE_TOAN and user.role not in ("acct", "admin"):
+            # Bãi gửi cả bản phiếu lên khi lưu; ô không đổi thì bỏ qua, ô đổi thì từ chối rõ.
+            moi_gt = _ngay(data[c]) if c in COT_NGAY else ((str(data[c]).strip() or None) if data[c] is not None else None)
+            if moi_gt != getattr(p, c):
+                raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Số và ngày phiếu quặng do kế toán nhập khi nhận giấy; Bãi chỉ đính kèm ảnh."})
             continue
         if muc_tt is not None:
             muc = next((m for m, cot in MUC_CUA_COT.items() if c in cot), None)
@@ -536,7 +546,7 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         dong = [d for d in _dong_chi(db, p) if d.section == muc and d.paid_by_epl and d.source != "kho"]
         tong = sum(tien_dong(p, d) for d in dong)
         if tong > 0:
-            CT.ghi(db, "PC_SC", nguon_bang="trip_sections", nguon_id="%s:%s" % (p.id, muc), trip=p, ngay=dt.date.today(),
+            CT.ghi(db, "PC_SC", nguon_bang="trip_sections", nguon_id="%s:%s" % (p.id, muc), trip=p, ngay=dt.date.today(), phuong_thuc="cash",
                    doi_tuong_loai="tai_xe", doi_tuong_ten=p.driver_name, tien=tong, tien_te="LAK", section=muc,
                    by_user=user.full_name, mo_ta="Chi mục %s phiếu %s" % ({"repair": "V sửa chữa", "other": "VI khác"}[muc], p.doc_no),
                    payload={"lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
@@ -635,6 +645,42 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             x = db.get(Vehicle, p.vehicle_id)
             if x: x.status = "maintenance"
     _ghi_log(db, p, user, "ev_%s" % kind)
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+# ---------------------------------------------------------------- tài xế báo đã về (C2.1, anh Khampla 22/09)
+@router.post("/api/trips/{tid}/bao-ve")
+def bao_ve(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Tài xế báo NGÀY VỀ và KM VỀ qua điện thoại — đúng người biết hai con số đó.
+
+    Chỉ ghi hai số và đánh mốc "tới điểm cuối"; KHÔNG tự chuyển phiếu sang "đã tới": cân tại bãi
+    hoặc tại cảng là việc của Bãi, Bãi bấm *Xe đã tới* thì hai ô ngày về, km về đã được điền sẵn."""
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("driver", "yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ tài xế của phiếu (hoặc Bãi) báo xe về."})
+    _cua_tai_xe(db, p, user)
+    _chan_khoa(p, user)
+    if p.transport_status == "arrived":
+        raise HTTPException(409, {"ma": "PHIEU_DA_TOI", "loi": "Phiếu đã ghi xe tới nơi rồi."})
+    ngay = _ngay(data.get("back_date")) or dt.date.today()
+    km = _so(data.get("odo_back"), "odo_back")
+    if km is not None and p.odo_out is not None and km < p.odo_out:
+        raise HTTPException(422, {"ma": "KM_SAI", "loi": "Km về (%s) không thể nhỏ hơn km lúc đi (%s)." % (round(km), round(p.odo_out))})
+    p.back_date = ngay
+    if km is not None:
+        p.odo_back = km
+    if p.transport_status == "dispatched":
+        p.transport_status = "transit"
+    diem = _diem_tuyen(db, p)
+    if diem:
+        cuoi = max(d["seq"] for d in diem)
+        if not db.query(TripEvent).filter(TripEvent.trip_id == p.id, TripEvent.kind == "arrive_stop", TripEvent.stop_seq == cuoi).count():
+            db.add(TripEvent(trip_id=p.id, kind="arrive_stop", stop_seq=cuoi, by_user=user.full_name,
+                             note="Tài xế báo đã về · km %s" % (round(km) if km is not None else "—")))
+    _ghi_log(db, p, user, "drv_back")
     db.commit()
     return xuat_phieu(db, p)
 
@@ -780,7 +826,7 @@ def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     r = ty_gia(p, h_ccy)
     p.owner_paid, p.owner_paid_usd, p.owner_paid_lak = True, tien, round(tien * r)
     p.owner_paid_by, p.owner_paid_at = user.full_name, dt.datetime.utcnow()
-    CT.ghi(db, "PC_CX", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="chu_xe",
+    CT.ghi(db, "PC_CX", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="chu_xe", phuong_thuc="cash",
            doi_tuong_ten=p.owner_name, tien=tien, tien_te=h_ccy, tien_lak=round(tien * r), by_user=user.full_name,
            mo_ta="Trả chủ xe %s phiếu %s" % (p.owner_name or "", p.doc_no),
            payload={"tien_thue": k["tien_thue"], "phi": k["phi"], "tru_vuot": k["tru_vuot"],
@@ -890,8 +936,7 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("rev", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu xuất hoá đơn."})
-    if p.kind != "giao":
-        raise HTTPException(409, {"ma": "PHIEU_GOM", "loi": "Phiếu đi gom hàng không có cước nên không xuất hoá đơn; hoá đơn nằm ở phiếu giao hàng."})
+    # B4 (anh Khampla 22/09): khách trả cước RIÊNG cho chặng gom, nên phiếu gom cũng xuất hoá đơn như phiếu giao.
     if _muc_cua(db, p)["trans"].status != "verified":
         raise HTTPException(409, {"ma": "CHUA_KIEM", "loi": "Mục II (vận chuyển) phải được kiểm xong trước khi xuất hoá đơn."})
     if not p.locked:
@@ -996,7 +1041,7 @@ def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db)
     db.add(x); db.flush()
     CT.ghi(db, "PT", nguon_bang="trip_payments", nguon_id=x.id, trip=p, ngay=x.pay_date, doi_tuong_loai="khach",
            doi_tuong_ten=p.customer_name, tien=tien, tien_te=ma, tien_lak=tien_lak, by_user=user.full_name,
-           mo_ta="Thu tiền khách phiếu %s · %s %s" % (p.doc_no, tien, ma),
+           phuong_thuc=pt, mo_ta="Thu tiền khách phiếu %s · %s %s" % (p.doc_no, tien, ma),
            payload={"rate_to_lak": tg, "method": pt, "ref": x.ref, "hoa_don_ccy": k["ccy"],
                     "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"]})
     _tinh_lai_trang_thai_thu(db, p)

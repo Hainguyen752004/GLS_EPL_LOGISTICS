@@ -188,7 +188,7 @@ def thu_tien_ban(sid: str, d: dict = Body(default={}), db: Session = Depends(get
     if s.status == "paid":
         raise HTTPException(409, {"ma": "DA_THU", "loi": "Phiếu %s đã thu tiền rồi." % s.doc_no})
     s.status, s.paid_at, s.paid_by = "paid", dt.datetime.utcnow(), user.full_name
-    CT.ghi(db, "PT_BAN", nguon_bang="sales", nguon_id=s.id, ngay=_ngay(d.get("pay_date")), doi_tuong_loai="khach",
+    CT.ghi(db, "PT_BAN", nguon_bang="sales", nguon_id=s.id, ngay=_ngay(d.get("pay_date")), doi_tuong_loai="khach", phuong_thuc="cash",
            doi_tuong_ten=s.customer_name, tien=s.total, tien_te=s.currency, tien_lak=s.total_lak, by_user=user.full_name,
            mo_ta="Thu tiền bán hàng %s · %s" % (s.doc_no, s.customer_name), payload={"doc_no": s.doc_no})
     db.commit()

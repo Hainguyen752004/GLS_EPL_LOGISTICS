@@ -269,6 +269,11 @@
         kho.setItem(KHOA_PHIEN, g.token);
       } catch (e) { /* bỏ qua */ }
       USER = g.user;
+      // C9.2 (anh Khampla): máy ở bãi mặc định tiếng Lào. Chỉ áp khi máy này CHƯA từng chọn ngôn ngữ và
+      // người vào là người ở hiện trường (Bãi · thủ kho · tài xế); ai đã chọn rồi thì giữ nguyên chọn của họ.
+      try {
+        if (!localStorage.getItem('epl_lao_lang') && ['yard', 'depot', 'driver'].includes(USER.role)) NN.dat('lo');
+      } catch (e) { /* bỏ qua */ }
       // Mờ màn đăng nhập rồi mới đổi sang ứng dụng — chuyển cảnh mềm thay vì cụp một cái.
       const lg = document.getElementById('login');
       if (lg && !lg.hidden && typeof lg.getAnimations === 'function') {

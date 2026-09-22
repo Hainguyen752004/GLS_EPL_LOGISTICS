@@ -26,6 +26,7 @@
         ${bao.length ? `<div class="pct-bao">${bao.slice(-3).map(e => `<div>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'ok' : 'unpaid', 'st_' + (e.status || 'approved'))}<span lang="lo">${esc(e.note || NN.t('inc_' + (e.incident_type || 'other')))}</span>${e.reported_cost ? `<b>${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</b>` : ''}</div>`).join('')}</div>` : ''}
         <div class="pct-nut">
           ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
+          ${p.transport_status === 'transit' ? `<button class="btn ok" data-ve="${p.id}">${NN.h('report_back')}</button>` : ''}
           ${!xong ? `<button class="btn warn" data-bao="${p.id}">${NN.h('report_breakdown')}</button>` : ''}
           ${!xong ? `<button class="btn" data-dau="${p.id}">${NN.h('df_declare')}</button>` : ''}
           ${p.transport_status === 'transit'
@@ -34,6 +35,7 @@
         </div></div>`;
     }).join('');
     root.querySelectorAll('[data-di]').forEach(b => b.addEventListener('click', () => xuatPhat(b.dataset.di)));
+    root.querySelectorAll('[data-ve]').forEach(b => b.addEventListener('click', () => baoVe(b.dataset.ve)));
     root.querySelectorAll('[data-bao]').forEach(b => b.addEventListener('click', () => moBao(b.dataset.bao)));
     root.querySelectorAll('[data-pc]').forEach(b => b.addEventListener('click', () => EPL.di('chung-tu', { id: b.dataset.pc })));
     root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
@@ -44,6 +46,18 @@
     const ds = await API.get('/api/trips');
     DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events; tài xế chỉ có vài phiếu
     ve();
+  }
+  /** Tài xế báo đã về: ngày về + km về (C2.1). Máy chủ chỉ ghi hai số và đánh mốc tới điểm cuối;
+   *  Bãi cân rồi bấm "Xe đã tới" mới là xong — nên nút này KHÔNG làm phiếu chuyển trạng thái. */
+  async function baoVe(id) {
+    const p = DS.find(x => x.id === id);
+    const v = await EPL.hopNhap(NN.t('report_back'), [
+      { id: 'back_date', label: 'd_back', type: 'date', value: p.back_date || EPL.homNay() },
+      { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: p.odo_back ?? '' },
+    ], NN.t('save'));
+    if (!v) return;
+    const body = { back_date: v.back_date }; if (v.odo_back !== '') body.odo_back = v.odo_back;
+    try { await API.post(`/api/trips/${id}/bao-ve`, body); EPL.toast(NN.t('report_back_ok'), 'ok'); await tai(); } catch (e) { EPL.baoLoi(e); }
   }
   async function xuatPhat(id) {
     if (!await EPL.hoi(NN.t('depart'), NN.t('confirm_action'))) return;

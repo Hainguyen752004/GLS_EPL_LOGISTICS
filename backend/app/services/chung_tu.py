@@ -48,16 +48,35 @@ LOAI = {
     "PT_BAN":  ("Phiếu thu bán hàng", "ໃບຮັບເງິນຂາຍສິນຄ້າ", True),
 }
 
-# Vế Có "tiền mặt / ngân hàng": quy trình của họ không ghi mã. Để tên, không bịa mã.
-TIEN = (None, "Tiền mặt · ngân hàng (mã do bên kế toán cấp)")
+# Mã tài khoản anh Khampla trả lời 22/09/2026, theo sá-la-ban kế toán doanh nghiệp Lào:
+#   kho 137 (mẹ) / 1371 (con) · nhà cung cấp 402 (mẹ) / 4021 (con, tách theo từng NCC)
+#   tiền mặt Kíp 1011 · tiền mặt ngoại tệ 1012 · ngân hàng Kíp 1021 · ngân hàng ngoại tệ 1022
+# Ghi sổ theo MÃ CON vì đó là cấp hạch toán; mã mẹ chỉ để cộng dồn. Anh Khang muốn khác thì đổi ở đây.
+KHO = ("1371", "Kho hàng, vật tư (137 · 1371)")
+NCC = ("4021", "Phải trả nhà cung cấp (402 · 4021, tách theo nhà cung cấp)")
+MA_TIEN = {
+    ("cash", True): ("1011", "Tiền mặt bằng Kíp"),
+    ("cash", False): ("1012", "Tiền mặt ngoại tệ"),
+    ("bank", True): ("1021", "Tiền gửi ngân hàng bằng Kíp"),
+    ("bank", False): ("1022", "Tiền gửi ngân hàng ngoại tệ"),
+}
 
 
-def dinh_khoan(loai, company="EPL", section=None):
+def ma_tien(phuong_thuc=None, tien_te=None):
+    """Vế tiền chọn theo CÁCH thu/chi (mặt · ngân hàng) và TIỀN TỆ (Kíp · khác).
+
+    Quỹ tiền mặt Thà Bốc và Thủ quỹ Viêng Chăn đều là quỹ tiền mặt đúng tên vai của họ, nên không
+    ghi cách chi thì hiểu là tiền mặt. `offset` (cấn trừ) và `other` không phải tiền vào tay nên xếp
+    vào ngân hàng — bên kế toán đối chiếu lại nếu cần."""
+    pt = "bank" if (phuong_thuc or "cash") in ("bank", "offset", "other") else "cash"
+    return MA_TIEN[(pt, (tien_te or "LAK").upper() == "LAK")]
+
+
+def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None):
     """Hai vế gợi ý theo đúng bảng định khoản trong quy trình của họ. Trả (no, no_ten, co, co_ten)."""
     chi_phi = ("4022", "Chi hộ xe liên kết") if company == "joint" else (
         ("614", "Chi phí sửa chữa") if section == "repair" else ("625", "Chi phí vận chuyển"))
-    KHO = ("371", "Kho (theo quy trình của họ; danh mục anh Khang chưa có mã này)")
-    NCC = ("402", "Phải trả nhà cung cấp")
+    TIEN = ma_tien(phuong_thuc, tien_te)
     b = {
         "PXK_NL": (chi_phi, KHO),
         "PXK_PT": (chi_phi, KHO),
@@ -113,7 +132,7 @@ def tim(db, loai, nguon_bang, nguon_id):
 
 def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=None, doi_tuong_ten=None,
         tien=None, tien_te="LAK", tien_lak=None, section=None, mo_ta=None, by_user=None, payload=None,
-        company=None):
+        company=None, phuong_thuc=None):
     """Ghi MỘT chứng từ. Gọi lại với cùng (nguon_bang, nguon_id, loai) thì trả bản đã có, không sinh trùng."""
     if loai not in LOAI:
         raise ValueError("Không có loại chứng từ %s" % loai)
@@ -123,7 +142,8 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
         return cu
     ngay = ngay or dt.date.today()
     cty = company or (trip.company if trip is not None else "EPL")
-    no, no_ten, co, co_ten = dinh_khoan(loai, cty, section) if LOAI[loai][2] else (None, None, None, None)
+    no, no_ten, co, co_ten = (dinh_khoan(loai, cty, section, tien_te, phuong_thuc) if LOAI[loai][2]
+                              else (None, None, None, None))
     thuoc_tinh = dict(loai=loai, ngay=ngay,
                       trip_id=trip.id if trip is not None else None,
                       trip_doc_no=trip.doc_no if trip is not None else None,

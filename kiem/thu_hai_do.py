@@ -169,8 +169,13 @@ def main():
     phai(s, 409, "Đổi loại phiếu khi đã có sổ kho → bị từ chối", g)
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin")
     assert any(x["loai"] == "hao_hut" for x in g["goods"]), "dòng hao hụt của phiếu gom phải còn nguyên sau các lần bị từ chối"
+    # B4 (anh Khampla 22/09): phiếu gom CÓ cước riêng, nên không còn bị chặn vì LOẠI phiếu —
+    # chỉ còn chặn theo bước như mọi phiếu (mục II chưa kiểm, phiếu chưa khoá).
     s, g = goi("/api/trips/%s/invoice" % gom["id"], {}, vai="doanhthu")
-    phai(s, 409, "Xuất hoá đơn cho phiếu GOM → bị từ chối", g)
+    ma = (g.get("detail") or {}).get("ma") if isinstance(g, dict) else None
+    assert s == 409 and ma in ("CHUA_KIEM", "CHUA_KHOA"), "phiếu gom chưa kiểm/khoá phải bị chặn theo BƯỚC, không phải theo loại: %s %s" % (s, ma)
+    assert ma != "PHIEU_GOM", "không được chặn hoá đơn chỉ vì là phiếu gom nữa"
+    print("  ✓ %-58s %s %s" % ("Hoá đơn phiếu GOM: chặn theo bước, không chặn theo loại", s, ma))
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin", method="DELETE")
     phai(s, 409, "Xoá phiếu gom đã có người lấy hàng → bị từ chối", g)
 

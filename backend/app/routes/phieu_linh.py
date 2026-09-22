@@ -325,7 +325,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
         # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
         tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
-        CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="tai_xe",
+        CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
                doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
                mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,
                payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})

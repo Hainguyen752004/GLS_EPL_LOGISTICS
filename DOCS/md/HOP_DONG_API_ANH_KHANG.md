@@ -43,7 +43,7 @@ Mỗi lần gọi là **một tờ**. Ví dụ một phiếu chi tạm ứng đi
   "trip_no": "T4-0433-09/EPL",
   "party": { "kind": "tai_xe", "name": "ທ້າວ ບຸນມີ" },
   "amount": { "value": 640000, "currency": "LAK", "lak": 640000 },
-  "entry": { "debit": "625", "debit_name": "Chi phí vận chuyển", "credit": null, "credit_name": "Tiền mặt · ngân hàng (mã do bên kế toán cấp)" },
+  "entry": { "debit": "625", "debit_name": "Chi phí vận chuyển", "credit": "1011", "credit_name": "Tiền mặt bằng Kíp" },
   "memo": "Tạm ứng chi phí chuyến T4-0433-09/EPL",
   "lines": { "dong": [ { "item_key": "x_vn", "qty": 1, "unit_price": 430000, "currency": "LAK" }, { "item_key": "x_phone", "qty": 1, "unit_price": 150000, "currency": "LAK" } ] },
   "created_by": "ສົມໄຊ (Somchai)",
@@ -62,7 +62,7 @@ Mỗi lần gọi là **một tờ**. Ví dụ một phiếu chi tạm ứng đi
 | `party.kind` | `khach` · `ncc` (nhà cung cấp) · `tai_xe` · `kho` · `chu_xe` (chủ xe liên kết) |
 | `amount.value` · `currency` | Số tiền theo **tiền tệ gốc** trên tờ: `USD` · `LAK` · `CNY` · `THB` · `VND`. Cước bên Lào ký bằng tiền nào thì hoá đơn và phiếu thu mang tiền đó — đừng giả định USD |
 | `amount.lak` | Đã quy về LAK theo tỷ giá khoá trên phiếu lúc lập — để anh khỏi tra tỷ giá |
-| `entry.debit` · `credit` | Hai vế định khoản **gợi ý** theo quy trình bên Lào. Vế nào bên em chưa có mã thì `null` kèm tên; anh là người quyết mã cuối |
+| `entry.debit` · `credit` | Hai vế định khoản **gợi ý** theo quy trình bên Lào và mã anh Khampla cấp 22/09 (kho `1371`, NCC `4021`, tiền `1011/1012/1021/1022` chọn theo cách thu/chi × tiền tệ). Vế nào chưa có mã thì `null` kèm tên; anh là người quyết mã cuối |
 | `lines` | Chi tiết dòng (JSON), tuỳ loại tờ; anh không cần đọc nếu chỉ vào sổ tổng |
 
 ### 1.3 Anh trả về thế nào
@@ -81,13 +81,13 @@ câu người đọc hiểu.
 
 | `type` | Tờ | `group` | Nợ / Có gợi ý |
 |---|---|---|---|
-| `PC_TU` | Chi tạm ứng đi đường cho tài xế | payment | 625 / *tiền* |
-| `PC_SC` | Chi sửa chữa, chi khác | payment | 614 hoặc 625 / *tiền* |
-| `PC_NCC` | Chi trả nhà cung cấp | payment | 402 / *tiền* |
-| `PC_CX` | Chi trả chủ xe liên kết | payment | 4022 / *tiền* |
-| `TT_CHI` · `TT_THU` | Tất toán tài xế cuối tháng: chi bù · thu hoàn | payment · receipt | 625 / *tiền* · *tiền* / 625 |
+| `PC_TU` | Chi tạm ứng đi đường cho tài xế | payment | 625 / 1011·1012 |
+| `PC_SC` | Chi sửa chữa, chi khác | payment | 614 hoặc 625 / 1011·1012 |
+| `PC_NCC` | Chi trả nhà cung cấp | payment | 4021 / 1011·1012 |
+| `PC_CX` | Chi trả chủ xe liên kết | payment | 4022 / 1011·1012 |
+| `TT_CHI` · `TT_THU` | Tất toán tài xế cuối tháng: chi bù · thu hoàn | payment · receipt | 625 / 1011 · 1011 / 625 |
 | `HD` | Hoá đơn vận chuyển cho khách | invoice | 1211 / 70 |
-| `PT` | Thu tiền khách | receipt | *tiền* / 1211 |
+| `PT` | Thu tiền khách | receipt | 1011·1012·1021·1022 / 1211 — chọn theo *cách thu* (mặt · ngân hàng) và *tiền tệ* (Kíp · khác) trên từng lần thu |
 
 **Một hoá đơn có thể có NHIỀU tờ `PT`.** Khách trả làm mấy lần thì bấy nhiêu tờ, mỗi tờ một `ref` riêng,
 và tiền của tờ `PT` **có thể khác tiền của tờ `HD`** — hoá đơn ghi USD mà khách chuyển Kíp là chuyện
@@ -95,14 +95,15 @@ thường ở đây. `payload` của tờ `PT` mang thêm `hoa_don_ccy`, `hoa_do
 về đúng hoá đơn, và `rate_to_lak` là tỷ giá ngày thu. Phần chênh lệch tỷ giá bên em **không hạch toán** —
 để anh quyết.
 
-| `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 371 · 371 / 402 |
-| `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng | stock_out · stock_in | 614 / 371 · 371 / 402 |
-| `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 371 / *hàng khách gửi* |
-| `DC_HH` | Điều chỉnh kho hàng (có lý do) | stock_adjust | 371 / *hàng khách gửi* |
-| `PXK_BAN` · `HD_BAN` · `PT_BAN` | Bán phụ tùng, xăng dầu ra ngoài | stock_out · invoice · receipt | *giá vốn* / 371 · 1211 / 70 · *tiền* / 1211 |
+| `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 1371 · 1371 / 4021 |
+| `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng | stock_out · stock_in | 614 / 1371 · 1371 / 4021 |
+| `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 1371 / *hàng khách gửi* |
+| `DC_HH` | Điều chỉnh kho hàng (có lý do) | stock_adjust | 1371 / *hàng khách gửi* |
+| `PXK_BAN` · `HD_BAN` · `PT_BAN` | Bán phụ tùng, xăng dầu ra ngoài | stock_out · invoice · receipt | *giá vốn* / 1371 · 1211 / 70 · 1011·1012 / 1211 |
 | `DO` · `PLNL` · `PTU` | Phiếu xuất xe · phiếu lĩnh dầu · phiếu tạm ứng | other | không định khoản — gửi để anh có ngữ cảnh, anh bỏ qua được |
 
-*Tiền*, *hàng khách gửi*, *giá vốn* là những chỗ **bên em chưa có mã** — xem mục 4.
+*Hàng khách gửi* và *giá vốn* là hai chỗ **bên em chưa có mã** — xem mục 4. Mã kho, nhà cung cấp và bốn mã tiền
+do anh Khampla (EPL) cấp ngày 22/09 theo sá-la-ban kế toán doanh nghiệp Lào; bên em ghi theo **mã con** (1371, 4021).
 
 ---
 
@@ -136,11 +137,12 @@ thì bên em nối; chưa có thì thôi, không chặn gì.
 
 | Chỗ | Bên em đang ghi | Cần |
 |---|---|---|
-| Vế Có của phiếu chi, vế Nợ của phiếu thu | tên "Tiền mặt · ngân hàng", **chưa có mã** | Mã tiền mặt và mã ngân hàng của EPL Lào |
-| Hàng của khách gửi ở kho bãi (đối ứng với 371 khi nhập/xuất kho hàng) | tên, chưa có mã | Mã anh dùng cho hàng giữ hộ |
+| Hàng của khách gửi ở kho bãi (đối ứng với 1371 khi nhập/xuất kho hàng) | tên, chưa có mã | Mã anh dùng cho hàng giữ hộ |
 | Giá vốn hàng bán (bán phụ tùng, dầu ra ngoài) | tên, chưa có mã | Mã giá vốn |
-| Kho | `371` (theo sheet Phiếu Xuất Xe của họ); quy trình chữ ghi `37`, danh mục có `137` | Anh chốt một mã |
-| Nhà cung cấp | `402`; quy trình chữ ghi `4021` | Anh chốt một mã |
+
+Đã có từ anh Khampla (22/09), anh xem có khớp danh mục bên anh không: kho **1371** (mẹ 137) · nhà cung
+cấp **4021** (mẹ 402, tách theo NCC) · tiền mặt Kíp **1011** · tiền mặt ngoại tệ **1012** · ngân hàng Kíp
+**1021** · ngân hàng ngoại tệ **1022**. Anh muốn ghi theo mã mẹ thay mã con thì báo, bên em đổi một bảng.
 
 Có mã rồi bên em sửa **một bảng** (`services/chung_tu.py`), không đụng gì khác.
 

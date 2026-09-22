@@ -82,7 +82,7 @@ def tra(sid: str, data: dict = Body(...), db: Session = Depends(get_db), user=De
         raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD."})
     tra_ncc = SupplierPayment(supplier_id=s.id, pay_date=ngay, amount_lak=tien, note=data.get("note"), by_user=user.full_name)
     db.add(tra_ncc); db.flush()
-    CT.ghi(db, "PC_NCC", nguon_bang="supplier_payments", nguon_id=tra_ncc.id, ngay=ngay, doi_tuong_loai="ncc",
+    CT.ghi(db, "PC_NCC", nguon_bang="supplier_payments", nguon_id=tra_ncc.id, ngay=ngay, doi_tuong_loai="ncc", phuong_thuc="cash",
            doi_tuong_ten=s.name, tien=tien, tien_te="LAK", by_user=user.full_name,
            mo_ta="Trả nhà cung cấp %s%s" % (s.name, (" · " + data["note"]) if data.get("note") else ""),
            payload={"supplier_id": s.id, "item_key": s.item_key, "acct_code": s.acct_code})

@@ -105,7 +105,8 @@
 .px-hang input,.px-hang select{width:100%;min-width:80px}
 .px-hang tr.hao td{background:var(--amber-soft,#FBF3E2);font-style:italic}
 /* Phiếu GOM: không có cước, không hoá đơn — ẩn mọi ô tiền bán và cột chọn lô. */
-.px-phieu.is-gom .px-tien,.px-phieu.is-gom .px-tu-lo,.px-phieu.is-gom td.px-tu-lo{display:none}
+/* B4 (anh Khampla): phiếu gom CÓ cước riêng nên ô tiền hiện như phiếu giao; chỉ ô 'lấy từ lô' là riêng của phiếu giao. */
+.px-phieu.is-gom .px-tu-lo,.px-phieu.is-gom td.px-tu-lo{display:none}
 .px-phieu:not(.is-giao) .px-tu-lo{display:none}
 
 /* Sổ thu tiền — hoá đơn một tờ, tiền về nhiều lần và có thể bằng tiền khác. */

@@ -143,7 +143,7 @@ def chot_ky(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(CHO
     db.add(x); db.flush()
     ch = k["chenh_lech_lak"]
     if abs(ch) >= 1:
-        CT.ghi(db, "TT_CHI" if ch > 0 else "TT_THU", nguon_bang="driver_settlements", nguon_id=x.id,
+        CT.ghi(db, "TT_CHI" if ch > 0 else "TT_THU", nguon_bang="driver_settlements", nguon_id=x.id, phuong_thuc="cash",
                ngay=dt.date.today(), doi_tuong_loai="tai_xe", doi_tuong_ten=t.name, tien=abs(ch), tien_te="LAK",
                section="travel", by_user=user.full_name,
                mo_ta="Tất toán kỳ %s · %s" % (ky, "công ty chi bù" if ch > 0 else "tài xế nộp lại"),

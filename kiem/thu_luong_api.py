@@ -72,7 +72,7 @@ def main():
     s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"],
                               "customer_id": kh[0]["id"], "doc_date": "2026-09-14", "out_date": "2026-09-14", "origin": "ກາສີ", "destination": "ກາລໍ",
-                              "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5,
+                              "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5, "odo_out": 1000,
                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 100, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"},
                                            {"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": 1833500},
                                            {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 430000, "paid_by_epl": False}]}, vai="thabok")
@@ -81,6 +81,11 @@ def main():
     assert g["tinh"]["lien_ket"] and g["tinh"]["tien_thue"] == round(42 * 40.5, 2)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="ketoan"); phai(s, 403, "Kế toán lập phiếu → bị từ chối", g)
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL"}, vai="thabok"); phai(s, 409, "Trùng số phiếu → bị từ chối", g)
+    # C3.7 (anh Khampla): số phiếu quặng do KẾ TOÁN nhập khi nhận giấy; Bãi chỉ đính kèm ảnh.
+    s, g = goi("/api/trips/%s" % P, {"ore_bill_no": "HR-9999"}, vai="thabok", method="PUT"); phai(s, 403, "Bãi gõ số phiếu quặng → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % P, {"ore_bill_no": "HR-9999", "ore_bill_date": "2026-09-14"}, vai="ketoan", method="PUT"); phai(s, 200, "Kế toán nhập số phiếu quặng", g)
+    assert g["ore_bill_no"] == "HR-9999", g["ore_bill_no"]
+    s, g = goi("/api/trips/%s" % P, {"ore_bill_no": "HR-9999", "weight_origin": 42}, vai="thabok", method="PUT"); phai(s, 200, "Bãi lưu lại phiếu (số quặng không đổi) → vẫn lưu được", g)
 
     # ---- 1b. K3: bảng giá khách × tuyến — kế toán đặt giá, Bãi lập phiếu KHÔNG gửi giá, máy tự điền
     s, tuyen = goi("/api/routes", vai="ketoan"); T = tuyen[0]["id"]
@@ -150,12 +155,12 @@ def main():
                                               "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="thabok")
     phai(s, 200, "Sửa xe lấy phụ tùng từ KHO → dòng mục V, trừ tồn", g)
     d_kho = [e for e in g["expenses"] if e["section"] == "repair" and e["source"] == "kho"][-1]
-    assert d_kho["acct_code"] == "4022/371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /371
+    assert d_kho["acct_code"] == "4022/1371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /1371
     assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập' để kiểm lại"
     s, parts2 = goi("/api/parts", vai="thabok"); assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="thabok")
-    phai(s, 200, "Sửa xe MUA NGOÀI → dòng mục V, định khoản …/402", g)
-    assert [e for e in g["expenses"] if e["section"] == "repair"][-1]["acct_code"] == "4022/402"
+    phai(s, 200, "Sửa xe MUA NGOÀI → dòng mục V, định khoản …/4021", g)
+    assert [e for e in g["expenses"] if e["section"] == "repair"][-1]["acct_code"] == "4022/4021"
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "kho", "part_id": pt["id"], "qty": 10 ** 6}}, vai="thabok"); phai(s, 409, "Xuất quá tồn kho → bị từ chối", g)
     s, g = goi("/api/trips/%s/events" % P, {"kind": "note", "note": "x"}, vai="ketoan"); phai(s, 403, "Kế toán ghi diễn biến → bị từ chối", g)
     s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "repair", "item_name": "xoá hết"}]}, vai="thabok", method="PUT")
@@ -169,6 +174,11 @@ def main():
     print("  ✓ ghi sổ mục III đã sinh dòng xuất kho nhiên liệu THU-LUONG-01/EPL")
 
     # ---- 4. Xe về, cân cuối, hoá đơn, thu tiền
+    # C2.1 (anh Khampla): tài xế báo ngày về và km về qua điện thoại; Bãi cân rồi mới xác nhận tới.
+    s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 900}, vai="thabok"); phai(s, 422, "Km về nhỏ hơn km đi → bị từ chối", g)
+    s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="ketoan"); phai(s, 403, "Kế toán báo xe về → bị từ chối", g)
+    s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="thabok"); phai(s, 200, "Báo đã về: ngày 16/09, km 1500", g)
+    assert g["transport_status"] != "arrived" and g["back_date"] == "2026-09-16" and g["odo_back"] == 1500, "báo về chỉ ghi số, không tự chuyển sang đã tới: %s" % g["transport_status"]
     s, g = goi("/api/trips/%s/invoice" % P, {}, vai="thabok"); phai(s, 403, "Bãi lập hoá đơn → bị từ chối", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 40.5, "back_date": "2026-09-16"}, vai="thabok")
     phai(s, 200, "Bãi báo xe đã tới, cân cuối 40,5 t", g)
@@ -197,7 +207,8 @@ def main():
     s, g = goi("/api/trips/%s/khoa" % P, {}, vai="thabok"); phai(s, 403, "Bãi khoá phiếu → bị từ chối", g)
     s, g = goi("/api/trips/%s/kiem-lai" % P, vai="ketoan"); phai(s, 200, "Kế toán bấm Kiểm lại → bảng cảnh báo", g)
     ma_cb = [x["ma"] for x in g["canh_bao"]]
-    assert "THIEU_PHIEU_QUANG" in ma_cb and "THIEU_KM_VE" in ma_cb, "phải cảnh báo thiếu phiếu quặng và thiếu km về: %s" % ma_cb
+    # Tài xế đã báo km về ở bước trên nên KHÔNG còn cảnh báo thiếu km — đúng là nhờ tài xế báo mà kế toán đỡ một việc.
+    assert "THIEU_PHIEU_QUANG" in ma_cb and "THIEU_KM_VE" not in ma_cb, "phải cảnh báo thiếu phiếu quặng, và không còn thiếu km về: %s" % ma_cb
     s, g = goi("/api/trips/%s/khoa" % P, {}, vai="ketoan"); phai(s, 409, "Khoá khi còn cảnh báo mà chưa xác nhận → chặn", g)
     s, g = goi("/api/trips/%s/khoa" % P, {"xac_nhan": True}, vai="ketoan"); phai(s, 200, "Kế toán xác nhận khoá phiếu", g)
     assert g["locked"] and g["locked_by"], g.get("locked")
