@@ -1,0 +1,48 @@
+<!-- Thẻ cao tốc — ບັດທາງດ່ວນ. Số dư từng thẻ, sổ nạp/trừ, và bảng cấn trừ cước cuối tháng
+     cho khách tự cấp thẻ (anh Khampla C6.1). -->
+<div class="toolbar">
+  <div class="field tct-tim"><label data-i18n="search"></label><input id="tct-q"></div>
+  <div class="grow"></div>
+  <button class="btn primary" id="tct-them" hidden>+ <span data-i18n="tct_them"></span></button>
+</div>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="tct_ds"></h3><div class="grow"></div><span class="small muted" id="tct-dem"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="tct_so"></th><th data-i18n="name"></th><th data-i18n="tct_loai"></th>
+        <th data-i18n="customer"></th><th data-i18n="tct_giu"></th><th data-i18n="ccy"></th>
+        <th class="num" data-i18n="tct_du"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th>
+      </tr></thead>
+      <tbody id="tct-than"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card tct-ct" id="tct-ct" hidden>
+  <div class="hd"><h3 id="tct-ct-ten"></h3><div class="grow"></div>
+    <button class="btn sm ok" id="tct-nap" hidden><span data-i18n="tct_nap"></span></button>
+    <button class="btn sm" id="tct-dc" hidden><span data-i18n="tct_dieu_chinh"></span></button>
+    <button class="btn sm" id="tct-ct-dong"><span data-i18n="close"></span></button>
+  </div>
+  <div class="bd" id="tct-ct-than"></div>
+</div>
+
+<!-- Cuối tháng: khách tự cấp thẻ thì phần EPL đã tiêu trên thẻ được trừ vào cước phải thu. -->
+<div class="card" id="tct-can-tru-card" hidden>
+  <div class="hd"><h3 data-i18n="tct_can_tru"></h3><div class="grow"></div>
+    <div class="field"><label data-i18n="month"></label><input type="month" id="tct-thang"></div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="customer"></th><th data-i18n="tct_so_the"></th><th data-i18n="ccy"></th>
+        <th class="num" data-i18n="tct_nap_thang"></th><th class="num" data-i18n="tct_chi_thang"></th>
+        <th class="num" data-i18n="tct_luot"></th><th class="num" data-i18n="tct_tru_cuoc"></th>
+      </tr></thead>
+      <tbody id="tct-can-tru"></tbody>
+    </table>
+  </div>
+  <div class="bd small muted" data-i18n="tct_can_tru_nhac"></div>
+</div>

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Supplier, SupplierPayment, Trip, TripExpense
+from models import Customer, Supplier, SupplierPayment, Trip, TripExpense
 from services import chung_tu as CT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import tien_dong
@@ -18,17 +18,48 @@ from services.tinh_toan import tien_dong
 router = APIRouter()
 
 
+def _dong_cua(db, s, dau=None, sau=None):
+    """Các dòng chi thuộc về nhà cung cấp này.
+
+    Hai đường vào, cố ý khác nhau:
+      · dòng **ghi rõ nhà cung cấp** (`supplier_id`) — chỉ tính khi **GHI NỢ tại trạm** (C5.1): tài xế
+        đổ dầu ở Việt Nam mà chưa trả tiền. Tài xế đã trả tiền mặt tại trạm thì EPL không nợ ai cả.
+      · dòng chỉ có **khoản mục** trùng (`item_key`, ví dụ phí chip) — cách cũ, giữ nguyên.
+    """
+    q = (db.query(TripExpense, Trip).join(Trip, Trip.id == TripExpense.trip_id)
+         .filter(TripExpense.paid_by_epl.is_(True)))
+    ra = []
+    for d, p in q.all():
+        if dau is not None and (not p.doc_date or not (dau <= p.doc_date < sau)):
+            continue
+        if d.supplier_id == s.id:
+            if d.ghi_no:
+                ra.append((d, p))
+        elif d.supplier_id is None and s.item_key and d.item_key == s.item_key:
+            ra.append((d, p))
+    return ra
+
+
 def _xuat(db, s):
-    phat_sinh = 0.0; so_dong = 0
-    if s.item_key:
-        for d, p in (db.query(TripExpense, Trip).join(Trip, Trip.id == TripExpense.trip_id)
-                     .filter(TripExpense.item_key == s.item_key, TripExpense.paid_by_epl.is_(True)).all()):
-            phat_sinh += tien_dong(p, d); so_dong += 1
+    dong = _dong_cua(db, s)
+    phat_sinh = sum(tien_dong(p, d) for d, p in dong)
+    ghi_no = sum(tien_dong(p, d) for d, p in dong if d.ghi_no)
     da_tra = sum(x.amount_lak or 0 for x in db.query(SupplierPayment).filter(SupplierPayment.supplier_id == s.id).all())
     return {"id": s.id, "name": s.name, "item_key": s.item_key, "acct_code": s.acct_code,
             "payment_term": s.payment_term, "note": s.note, "active": s.active,
-            "so_dong": so_dong, "phat_sinh_lak": round(phat_sinh), "da_tra_lak": round(da_tra),
-            "con_no_lak": round(phat_sinh - da_tra)}
+            "customer_id": s.customer_id, "customer_name": s.customer_name,
+            "so_dong": len(dong), "phat_sinh_lak": round(phat_sinh), "ghi_no_lak": round(ghi_no),
+            "da_tra_lak": round(da_tra), "con_no_lak": round(phat_sinh - da_tra)}
+
+
+def _ap_khach(db, s, data):
+    """Trạm dầu Việt Nam cuối tháng cấn trừ vào cước của khách nào (C5.1)."""
+    if "customer_id" not in data:
+        return
+    kh = db.get(Customer, str(data["customer_id"])) if data["customer_id"] else None
+    if data["customer_id"] and not kh:
+        raise HTTPException(422, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    s.customer_id, s.customer_name = (kh.id, kh.name) if kh else (None, None)
 
 
 @router.get("/api/suppliers")
@@ -42,6 +73,7 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(can_va
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Nhà cung cấp phải có tên."})
     s = Supplier(name=data["name"].strip(), item_key=data.get("item_key"), acct_code=data.get("acct_code"),
                  payment_term=data.get("payment_term") or "t_monthly", note=data.get("note"))
+    _ap_khach(db, s, data)
     db.add(s); db.commit(); db.refresh(s)
     return _xuat(db, s)
 
@@ -54,6 +86,7 @@ def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
     for k in ("name", "item_key", "acct_code", "payment_term", "note", "active"):
         if k in data:
             setattr(s, k, data[k].strip() if isinstance(data[k], str) else data[k])
+    _ap_khach(db, s, data)
     db.commit(); db.refresh(s)
     return _xuat(db, s)
 

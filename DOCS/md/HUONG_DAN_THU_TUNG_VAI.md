@@ -185,6 +185,34 @@ Anh Khampla nói kho phụ tùng và tổ sửa chữa là **người riêng** (
    - *Phải thấy:* các dòng chi đã khai của chuyến **còn nguyên** — không phải lập phiếu mới.
 3. Thử sai: bấm **Đổi xe** trên phiếu đã tới nơi → không có nút; gọi thẳng API thì bị từ chối.
 
+### Bước 9d ☐ Thẻ cao tốc — `ketoan`, `quytb`, `thabok`
+
+1. `ketoan` mở **Thẻ cao tốc** (nhóm Danh mục): thấy sẵn hai thẻ — `ETC-8801` của khách ຄຳຕຸ້ຍ (khách
+   cấp thẻ) và `ETC-9902` của EPL gắn xe 342, mỗi thẻ đã nạp sẵn tiền.
+2. `quytb` bấm **Xem** một thẻ → **Nạp tiền**: ghi ngày, số tiền, số biên lai. *Phải thấy:* số dư tăng
+   và có một dòng *Nạp tiền* kèm **số dư sau**.
+3. `thabok` mở một phiếu chưa kiểm → mục **IV**: dòng *Phí cầu đường* (hoặc *Phí cầu*) có thêm ô chọn
+   **thẻ** ngay dưới tên khoản; chọn thẻ rồi lưu.
+   - *Phải thấy:* số dư thẻ **chưa đổi** — thẻ chỉ bị trừ khi kế toán ghi sổ.
+4. `ketoancp` kiểm rồi **Ghi sổ** mục IV. *Phải thấy:* số dư thẻ giảm đúng số tiền dòng đó, và trong sổ
+   thẻ có dòng *Qua trạm* nhắc đúng số phiếu. Ghi sổ mục khác không trừ thêm lần nữa.
+5. Thử sai: `ketoan` bấm **Điều chỉnh số dư** mà bỏ trống lý do → bị từ chối.
+6. `ketoan` xem bảng **Cấn trừ cuối tháng** ở cuối màn: khách cấp thẻ hiện số đã tiêu trong tháng —
+   đó là số trừ vào cước của khách.
+
+### Bước 9e ☐ Nợ trạm dầu Việt Nam — `thabok`, `ketoancp`
+
+1. `thabok` mở phiếu → mục **III**, thêm một dòng dầu, chọn **Nơi đổ** là trạm bên Việt Nam.
+   - *Phải thấy:* dưới ô Nơi đổ hiện ô tích **Ghi nợ tại trạm** (chỉ hiện với trạm ngoài, không hiện
+     với kho của mình).
+   - Tích ô đó = trạm ghi sổ, EPL trả sau. Không tích = tài xế trả tiền mặt ngay tại trạm.
+2. `ketoancp` mở **Theo dõi nhà cung cấp**: trạm dầu Việt Nam có cột **Ghi nợ tại trạm** — chỉ cộng
+   những dòng đã tích, không cộng dòng tài xế trả tiền mặt.
+3. `ketoancp` bấm **Sửa** trạm dầu → ô **Cấn trừ vào cước khách**: chọn khách đứng ra với trạm.
+4. Xem bảng **Cấn trừ cuối tháng** ở màn đó: từng khách có *Cước phải thu* · *Khách trả hộ qua thẻ* ·
+   *Nợ trạm dầu Việt Nam* · **Còn phải thu**.
+5. `thabok` mở cùng màn: **không thấy** cột cấn trừ và không thấy bảng cấn trừ (đó là tiền bán).
+
 ---
 
 ## 2. Các vai còn lại

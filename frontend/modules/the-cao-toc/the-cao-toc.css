@@ -1,0 +1,12 @@
+/* Thẻ cao tốc */
+.tct-tim input{min-width:220px}
+.tct-ct .bd{padding-top:4px}
+.tct-dau{display:flex;flex-wrap:wrap;gap:10px 22px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:12px;background:var(--bg-2)}
+.tct-dau>div{display:flex;flex-direction:column;gap:2px;min-width:130px}
+.tct-dau span{color:var(--ink-2);font-size:12px}
+.tct-dau b{font-size:15px}
+.tct-dau b.thap{color:var(--red)}
+.tct-nap{color:var(--green)}
+.tct-chi{color:var(--red)}
+.tct-tat{opacity:.55}
+@media (max-width:760px){.tct-dau>div{min-width:calc(50% - 22px)}}

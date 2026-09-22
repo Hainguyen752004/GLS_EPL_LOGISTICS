@@ -416,7 +416,12 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 /* Lớp `tien` = TIỀN BÁN: giá cước khách trả, doanh thu, hoá đơn, giá thuê xe liên kết, khấu trừ chủ xe,
    lãi chuyến, mã tài khoản. Bãi (Admin Thà Bốc) không được thấy vì đó là biên lợi nhuận của công ty
    (khách thuê giá 2, thuê lại xe ngoài giá 1). Tiền CHI thì Bãi vẫn thấy — chính họ chi và nhập. */
-body.vai-yard .tien{display:none!important}
+/* Hai vai mới ở Thà Bốc (C1.2) và tài xế · thủ kho cũng xếp cùng nhóm không thấy tiền bán. */
+body.vai-yard .tien,
+body.vai-driver .tien,
+body.vai-depot .tien,
+body.vai-parts .tien,
+body.vai-repair .tien{display:none!important}
 
 @media (max-width:900px){
   .app,.app[data-hep="1"],.app[data-view="top"]{grid-template-columns:1fr}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1350 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1393 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1971,6 +1971,221 @@ window.EPL_TU_DIEN = {
   "vi": "Thủ kho nhiên liệu (một kho)",
   "lo": "ຜູ້ຮັກສາສາງນໍ້າມັນ (ໜຶ່ງສາງ)",
   "en": "Fuel depot keeper (one depot)"
+ },
+ "ncc_ghi_no": {
+  "vi": "Ghi nợ tại trạm",
+  "lo": "ຂຽນໜີ້ໄວ້ປໍ້າ",
+  "en": "On account at the station"
+ },
+ "ncc_can_tru_kh": {
+  "vi": "Cấn trừ vào cước khách",
+  "lo": "ຫັກຈາກຄ່າຂົນສົ່ງລູກຄ້າ",
+  "en": "Offset against customer freight"
+ },
+ "ncc_can_tru": {
+  "vi": "Cấn trừ cuối tháng",
+  "lo": "ຫັກລົບທ້າຍເດືອນ",
+  "en": "Month-end offset"
+ },
+ "ncc_cuoc": {
+  "vi": "Cước phải thu",
+  "lo": "ຄ່າຂົນສົ່ງຕ້ອງເກັບ",
+  "en": "Freight receivable"
+ },
+ "ncc_the": {
+  "vi": "Khách trả hộ qua thẻ",
+  "lo": "ລູກຄ້າຈ່າຍແທນຜ່ານບັດ",
+  "en": "Paid via customer card"
+ },
+ "ncc_dau_vn": {
+  "vi": "Nợ trạm dầu Việt Nam",
+  "lo": "ໜີ້ປໍ້ານໍ້າມັນຫວຽດນາມ",
+  "en": "Vietnam fuel station debt"
+ },
+ "ncc_tong_tru": {
+  "vi": "Tổng cấn trừ",
+  "lo": "ລວມຫັກລົບ",
+  "en": "Total offset"
+ },
+ "ncc_con_thu": {
+  "vi": "Còn phải thu",
+  "lo": "ຍັງຕ້ອງເກັບ",
+  "en": "Still receivable"
+ },
+ "ncc_can_tru_trong": {
+  "vi": "Tháng này không có gì cấn trừ",
+  "lo": "ເດືອນນີ້ບໍ່ມີການຫັກລົບ",
+  "en": "Nothing to offset this month"
+ },
+ "ncc_can_tru_nhac": {
+  "vi": "Hai thứ khách đã trả hộ EPL — thẻ cao tốc khách nạp tiền, và trạm dầu bên Việt Nam ghi nợ — được đặt cạnh cước phải thu để ra số còn phải thu. Bên mình chỉ ghi và hiện; bút toán cấn trừ là việc của bên kế toán.",
+  "lo": "ສອງຢ່າງທີ່ລູກຄ້າຈ່າຍແທນ EPL — ບັດທາງດ່ວນທີ່ລູກຄ້າຕື່ມເງິນ ແລະ ໜີ້ປໍ້ານໍ້າມັນຫວຽດນາມ — ວາງຄຽງກັບຄ່າຂົນສົ່ງທີ່ຕ້ອງເກັບ ເພື່ອໃຫ້ຮູ້ຍອດຍັງຕ້ອງເກັບ. ພວກເຮົາພຽງບັນທຶກ ແລະ ສະແດງ.",
+  "en": "Two things the customer paid on EPL behalf — a customer-funded toll card and fuel bought on account in Vietnam — shown against freight receivable to give the net. We only record and show it."
+ },
+ "nav_toll": {
+  "vi": "Thẻ cao tốc",
+  "lo": "ບັດທາງດ່ວນ",
+  "en": "Toll cards"
+ },
+ "nav_toll_s": {
+  "vi": "Thẻ",
+  "lo": "ບັດ",
+  "en": "Cards"
+ },
+ "d_the_cao_toc": {
+  "vi": "Số dư thẻ, nạp tiền, cấn trừ cước",
+  "lo": "ຍອດເຫຼືອບັດ, ຕື່ມເງິນ, ຫັກຄ່າຂົນສົ່ງ",
+  "en": "Card balance, top-ups, offsets"
+ },
+ "title_the_cao_toc": {
+  "vi": "Thẻ cao tốc<span class=\"sub\">Số dư từng thẻ · nạp tiền · cấn trừ cước cuối tháng</span>",
+  "lo": "ບັດທາງດ່ວນ<span class=\"sub\">ຍອດເຫຼືອແຕ່ລະບັດ · ຕື່ມເງິນ · ຫັກຄ່າຂົນສົ່ງທ້າຍເດືອນ</span>",
+  "en": "Toll cards<span class=\"sub\">Balances · top-ups · monthly offset against freight</span>"
+ },
+ "tct_ds": {
+  "vi": "Danh mục thẻ",
+  "lo": "ບັນຊີບັດ",
+  "en": "Cards"
+ },
+ "tct_them": {
+  "vi": "Thêm thẻ",
+  "lo": "ເພີ່ມບັດ",
+  "en": "Add card"
+ },
+ "tct_so": {
+  "vi": "Số thẻ",
+  "lo": "ເລກບັດ",
+  "en": "Card no."
+ },
+ "tct_loai": {
+  "vi": "Loại thẻ",
+  "lo": "ປະເພດບັດ",
+  "en": "Card type"
+ },
+ "tct_k_khach": {
+  "vi": "Khách cấp thẻ",
+  "lo": "ລູກຄ້າອອກບັດ",
+  "en": "Customer-issued"
+ },
+ "tct_k_epl": {
+  "vi": "Thẻ của EPL",
+  "lo": "ບັດຂອງ EPL",
+  "en": "EPL card"
+ },
+ "tct_giu": {
+  "vi": "Người giữ thẻ",
+  "lo": "ຜູ້ຖືບັດ",
+  "en": "Card holder"
+ },
+ "tct_du": {
+  "vi": "Số dư",
+  "lo": "ຍອດເຫຼືອ",
+  "en": "Balance"
+ },
+ "tct_du_dau": {
+  "vi": "Số dư ban đầu",
+  "lo": "ຍອດເລີ່ມຕົ້ນ",
+  "en": "Opening balance"
+ },
+ "tct_du_sau": {
+  "vi": "Số dư sau",
+  "lo": "ຍອດຫຼັງ",
+  "en": "Balance after"
+ },
+ "tct_nap": {
+  "vi": "Nạp tiền",
+  "lo": "ຕື່ມເງິນ",
+  "en": "Top up"
+ },
+ "tct_dieu_chinh": {
+  "vi": "Điều chỉnh số dư",
+  "lo": "ປັບຍອດ",
+  "en": "Adjust balance"
+ },
+ "tct_chenh": {
+  "vi": "Chênh lệch (+ tăng · − giảm)",
+  "lo": "ສ່ວນຕ່າງ (+ ເພີ່ມ · − ຫຼຸດ)",
+  "en": "Difference (+ up · − down)"
+ },
+ "tct_ly_do": {
+  "vi": "Lý do",
+  "lo": "ເຫດຜົນ",
+  "en": "Reason"
+ },
+ "tct_d_nap": {
+  "vi": "Nạp tiền",
+  "lo": "ຕື່ມເງິນ",
+  "en": "Top-up"
+ },
+ "tct_d_chi": {
+  "vi": "Qua trạm",
+  "lo": "ຜ່ານດ່ານ",
+  "en": "Toll charge"
+ },
+ "tct_d_dc": {
+  "vi": "Điều chỉnh",
+  "lo": "ປັບຍອດ",
+  "en": "Adjustment"
+ },
+ "tct_chua_co": {
+  "vi": "Thẻ này chưa có dòng nào",
+  "lo": "ບັດນີ້ຍັງບໍ່ມີລາຍການ",
+  "en": "No movements yet"
+ },
+ "tct_tien_mat": {
+  "vi": "Trả tiền mặt (không dùng thẻ)",
+  "lo": "ຈ່າຍເງິນສົດ (ບໍ່ໃຊ້ບັດ)",
+  "en": "Paid in cash (no card)"
+ },
+ "tct_da_tru": {
+  "vi": "Đã trừ thẻ",
+  "lo": "ຫັກບັດແລ້ວ",
+  "en": "Charged to card"
+ },
+ "tct_tru_nhac": {
+  "vi": "Thẻ bị trừ khi kế toán ghi sổ mục IV, không phải lúc Bãi gõ dòng chi — trước đó dòng còn sửa được.",
+  "lo": "ບັດຈະຫັກເມື່ອບັນຊີບັນທຶກໜ້າ IV, ບໍ່ແມ່ນຕອນທ່າບົກພິມລາຍການ — ກ່ອນນັ້ນຍັງແກ້ໄດ້.",
+  "en": "The card is charged when accounting books section IV, not when the yard types the line."
+ },
+ "tct_can_tru": {
+  "vi": "Cấn trừ cước cuối tháng",
+  "lo": "ຫັກຄ່າຂົນສົ່ງທ້າຍເດືອນ",
+  "en": "Monthly offset against freight"
+ },
+ "tct_can_tru_nhac": {
+  "vi": "Khách tự cấp thẻ và nạp tiền: phần EPL đã tiêu trên thẻ trong tháng được trừ vào cước phải thu của chính khách đó. Bên mình chỉ ghi và hiện, hạch toán cấn trừ là việc của bên kế toán.",
+  "lo": "ລູກຄ້າອອກບັດ ແລະ ຕື່ມເງິນເອງ: ສ່ວນທີ່ EPL ໃຊ້ໃນເດືອນຈະຫັກອອກຈາກຄ່າຂົນສົ່ງທີ່ຕ້ອງເກັບຈາກລູກຄ້ານັ້ນ. ພວກເຮົາພຽງບັນທຶກ ແລະ ສະແດງ.",
+  "en": "When the customer issues and funds the card, what EPL spent on it this month is deducted from that customer freight. We only record and show it."
+ },
+ "tct_can_tru_trong": {
+  "vi": "Tháng này không có thẻ khách nào phát sinh",
+  "lo": "ເດືອນນີ້ບໍ່ມີບັດລູກຄ້າເຄື່ອນໄຫວ",
+  "en": "No customer-card activity this month"
+ },
+ "tct_so_the": {
+  "vi": "Thẻ",
+  "lo": "ບັດ",
+  "en": "Cards"
+ },
+ "tct_nap_thang": {
+  "vi": "Nạp trong tháng",
+  "lo": "ຕື່ມໃນເດືອນ",
+  "en": "Topped up"
+ },
+ "tct_chi_thang": {
+  "vi": "Tiêu trong tháng",
+  "lo": "ໃຊ້ໃນເດືອນ",
+  "en": "Spent"
+ },
+ "tct_luot": {
+  "vi": "Lượt qua trạm",
+  "lo": "ຈຳນວນຜ່ານດ່ານ",
+  "en": "Toll passes"
+ },
+ "tct_tru_cuoc": {
+  "vi": "Trừ vào cước",
+  "lo": "ຫັກຄ່າຂົນສົ່ງ",
+  "en": "Offset freight"
  },
  "nav_repair": {
   "vi": "Lệnh sửa chữa",

@@ -16,7 +16,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import ChungTu, Part, Route, RouteStop, Trip, TripEvent, TripExpense, TripSection, Voucher
+from models import (ChungTu, Customer, Part, Route, RouteStop, Supplier, TollCard, TollCardMove, Trip,
+                    TripEvent, TripExpense, TripSection, Voucher)
 from routes.phieu import da_thu_theo_phieu, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
@@ -295,6 +296,80 @@ def theo_doi(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_h
     ds, dau, cuoi = _phieu_thang(db, thang) if thang else (db.query(Trip).order_by(Trip.doc_date, Trip.doc_no).all(), None, None)
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0)) for p in ds]
+
+
+@router.get("/api/bao-cao/can-tru")
+def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """CẤN TRỪ CUỐI THÁNG với khách — gộp hai thứ khách đã trả hộ EPL (anh Khampla C5.1 · C6.1).
+
+    Bên Lào có hai chỗ tiền chạy ngược chiều với cước:
+      · **Thẻ cao tốc** khách cấp và nạp tiền — EPL quẹt bao nhiêu thì khách đã trả hộ bấy nhiêu.
+      · **Trạm dầu bên Việt Nam** ghi nợ — cuối tháng không trả tiền mặt mà trừ vào cước của khách
+        đứng ra với trạm.
+
+    Cả hai đều là "khách trả hộ", nên bảng này đặt chúng cạnh **cước phải thu trong tháng** để ra
+    một con số: còn phải thu bao nhiêu sau khi cấn trừ. Bên mình CHỈ GHI VÀ HIỆN — bút toán cấn trừ
+    là việc của bên kế toán anh Khang, đúng như mọi chỗ khác.
+    """
+    if not thay_tien_ban(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % user.role})
+    ds, dau, cuoi = _phieu_thang(db, thang)
+    sau = cuoi + dt.timedelta(days=1)
+    theo_khach = {}
+
+    def o_cua(kid, ten):
+        return theo_khach.setdefault(kid or "", {"customer_id": kid, "customer_name": ten or "—",
+                                                 "cuoc_lak": 0.0, "the_lak": 0.0, "dau_vn_lak": 0.0,
+                                                 "the": [], "tram": []})
+
+    # 1. cước phải thu trong tháng (theo phiếu đã xuất hoá đơn hoặc đã khoá — tức là đã chốt tiền)
+    dong = defaultdict(list)
+    for d in db.query(TripExpense).filter(TripExpense.trip_id.in_([p.id for p in ds] or [""])).all():
+        dong[d.trip_id].append(d)
+    for p in ds:
+        if not p.customer_id:
+            continue
+        k = tinh_phieu(p, dong.get(p.id, []))
+        o_cua(p.customer_id, p.customer_name)["cuoc_lak"] += k["doanh_thu_lak"]
+
+    # 2. thẻ cao tốc do khách cấp — phần EPL đã quẹt trong tháng
+    for t in db.query(TollCard).filter(TollCard.kind == "khach").all():
+        chi = sum(m.amount for m in db.query(TollCardMove)
+                  .filter(TollCardMove.card_id == t.id, TollCardMove.kind == "chi",
+                          TollCardMove.move_date >= dau, TollCardMove.move_date < sau).all())
+        if not chi:
+            continue
+        o = o_cua(t.customer_id, t.customer_name)
+        o["the_lak"] += chi          # thẻ nạp bằng Kíp; thẻ tiền khác thì bảng ghi rõ ở dòng chi tiết
+        o["the"].append({"card_no": t.card_no, "currency": t.currency, "chi": round(chi, 2)})
+
+    # 3. trạm dầu Việt Nam ghi nợ — cấn trừ vào cước của khách đứng ra với trạm
+    for s_ in db.query(Supplier).filter(Supplier.customer_id.isnot(None)).all():
+        no = 0.0; so_dong = 0
+        for d, p in (db.query(TripExpense, Trip).join(Trip, Trip.id == TripExpense.trip_id)
+                     .filter(TripExpense.supplier_id == s_.id, TripExpense.ghi_no.is_(True),
+                             TripExpense.paid_by_epl.is_(True)).all()):
+            if not p.doc_date or not (dau <= p.doc_date <= cuoi):
+                continue
+            no += tien_dong(p, d); so_dong += 1
+        if not no:
+            continue
+        o = o_cua(s_.customer_id, s_.customer_name)
+        o["dau_vn_lak"] += no
+        o["tram"].append({"name": s_.name, "so_dong": so_dong, "no_lak": round(no)})
+
+    ra = []
+    for o in theo_khach.values():
+        o["cuoc_lak"] = round(o["cuoc_lak"]); o["the_lak"] = round(o["the_lak"]); o["dau_vn_lak"] = round(o["dau_vn_lak"])
+        o["can_tru_lak"] = o["the_lak"] + o["dau_vn_lak"]
+        o["con_thu_lak"] = o["cuoc_lak"] - o["can_tru_lak"]
+        if o["can_tru_lak"] or o["cuoc_lak"]:
+            ra.append(o)
+    ra.sort(key=lambda x: -x["can_tru_lak"])
+    return {"thang": (thang or dt.date.today().strftime("%Y-%m"))[:7], "ds": ra,
+            "tong_cuoc_lak": sum(o["cuoc_lak"] for o in ra),
+            "tong_can_tru_lak": sum(o["can_tru_lak"] for o in ra),
+            "tong_con_thu_lak": sum(o["con_thu_lak"] for o in ra)}
 
 
 @router.get("/api/bao-cao/xe-lien-ket")

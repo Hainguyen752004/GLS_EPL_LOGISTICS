@@ -31,6 +31,7 @@ from routes.danh_muc import tim_gia
 from services.tinh_toan import chuan_tien, doi as doi_tien, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
+from routes import the_cao_toc as THE
 
 router = APIRouter()
 
@@ -130,7 +131,9 @@ def _xuat_dong(d):
     return {"id": d.id, "section": d.section, "line_no": d.line_no, "item_key": d.item_key,
             "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price, "currency": d.currency,
             "place": d.place, "place_id": d.place_id, "supplier_id": d.supplier_id, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "source": d.source,
-            "part_id": d.part_id, "stock_move_id": d.stock_move_id, "note": d.note}
+            "part_id": d.part_id, "stock_move_id": d.stock_move_id,
+            "toll_card_id": d.toll_card_id, "card_move_id": d.card_move_id,
+            "ghi_no": bool(d.ghi_no), "note": d.note}
 
 
 def _xuat_su_kien(e):
@@ -371,6 +374,14 @@ def _nguon_theo_diem(db, d):
     return "kho" if (d.get("place") or "fp_yard") == "fp_yard" else "mua"
 
 
+def _ncc_theo_diem(db, d):
+    """Nhà cung cấp của điểm đổ (trạm ngoài). Kho của mình thì không có ai để nợ."""
+    if db is None or not d.get("place_id"):
+        return None
+    dd = db.get(FuelPlace, str(d["place_id"]))
+    return dd.supplier_id if (dd is not None and dd.owner_type != "epl") else None
+
+
 def _dong_tu_du_lieu(p, m, i, d, db=None):
     """Dựng một dòng chi từ dữ liệu gửi lên; áp định khoản mặc định theo xe nhà/liên kết và nguồn kho/mua."""
     source = d.get("source")
@@ -386,10 +397,17 @@ def _dong_tu_du_lieu(p, m, i, d, db=None):
         item_key=(d.get("item_key") or None), item_name=(d.get("item_name") or None),
         qty=_so(d.get("qty"), "qty") or 0, unit_price=_so(d.get("unit_price"), "unit_price") or 0,
         currency=str(d.get("currency") or "LAK").upper(), place=d.get("place"),
-        place_id=d.get("place_id") or None, supplier_id=d.get("supplier_id") or None,
+        place_id=d.get("place_id") or None,
+        # Đổ ở TRẠM NGOÀI thì dòng chi mang luôn nhà cung cấp của trạm đó — công nợ trạm dầu (C5.1)
+        # phải tra được từ dòng chi, chứ không bắt người đọc lần từ điểm đổ sang nhà cung cấp.
+        supplier_id=(d.get("supplier_id") or _ncc_theo_diem(db, d) or None),
         paid_by_epl=bool(d.get("paid_by_epl", True)),
         acct_code=d.get("acct_code") or ma_tk_mac_dinh(p.company, m, source, d.get("place")),
-        source=source, part_id=d.get("part_id") or None, stock_move_id=d.get("stock_move_id") or None, note=d.get("note"))
+        source=source, part_id=d.get("part_id") or None, stock_move_id=d.get("stock_move_id") or None,
+        # Phí cầu đường trả bằng thẻ (C6.1): dòng nhớ thẻ nào, thẻ bị trừ lúc kế toán ghi sổ mục IV.
+        toll_card_id=(d.get("toll_card_id") or None) if m == "travel" else None,
+        # Ghi nợ tại trạm (C5.1): chỉ có nghĩa với khoản MUA NGOÀI — hàng lấy từ kho mình thì nợ ai.
+        ghi_no=bool(d.get("ghi_no")) and source != "kho", note=d.get("note"))
 
 
 def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
@@ -408,11 +426,14 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
         cu = {e.id: e for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == m).all()}
         # Dòng đã sinh phiếu xuất kho là CHỨNG TỪ KHO — không xoá, không đổi số trên phiếu. Người
         # dùng bỏ nó khỏi danh sách gửi lên thì từ chối cả lần lưu và nói rõ dòng nào.
-        giu = {e.id: e for e in cu.values() if e.stock_move_id}
+        # Dòng đã TRỪ THẺ cao tốc cũng vậy: số dư thẻ đã giảm thật, không xoá lặng lẽ trên phiếu.
+        giu = {e.id: e for e in cu.values() if e.stock_move_id or e.card_move_id}
         da_gui = {d.get("id") for d in theo_muc[m]}
         for e in giu.values():
             if e.id not in da_gui:
-                raise HTTPException(409, {"ma": "DA_XUAT_KHO", "loi": "Dòng '%s' đã xuất kho, không xoá được trên phiếu." % (e.item_name or e.item_key)})
+                raise HTTPException(409, {"ma": "DA_XUAT_KHO" if e.stock_move_id else "DA_TRU_THE",
+                                          "loi": "Dòng '%s' đã %s, không xoá được trên phiếu."
+                                                 % (e.item_name or e.item_key, "xuất kho" if e.stock_move_id else "trừ vào thẻ cao tốc")})
         for e in cu.values():
             if e.id in giu: continue
             db.delete(e)
@@ -571,6 +592,9 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     s.status = moi_trang_thai
     if muc == "fuel" and hanh_dong == "book":
         _xuat_kho_nhien_lieu(db, p, user)
+    if muc == "travel" and hanh_dong == "book":
+        # Phí cầu đường trả bằng thẻ: ghi sổ là lúc trừ thẻ, đúng như dòng xuất kho nhiên liệu ở trên.
+        THE.tru_the_theo_phieu(db, p, user)
     if hanh_dong == "pay" and muc in ("repair", "other"):
         # Quỹ chi các khoản của mục này: khoản mua ngoài / chi khác. Dòng lấy kho đã có PXK_PT riêng.
         dong = [d for d in _dong_chi(db, p) if d.section == muc and d.paid_by_epl and d.source != "kho"]

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
 from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Invoice, InvoicePayment, Owner, Part, Route,  # noqa: E402
-                    RepairLine, RepairOrder, RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
+                    RepairLine, RepairOrder, RouteStop, TollCard, TollCardMove, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
                     TripPayment, TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
@@ -35,11 +35,13 @@ def ma_tk(company, section, source=None, place=None):
     return ("4022/" if company == "joint" else ("614/" if section == "repair" else "625/")) + duoi
 
 
-def dong(section, item_key, qty, unit_price, currency="LAK", place=None, paid_by_epl=True, source=None, name=None):
+def dong(section, item_key, qty, unit_price, currency="LAK", place=None, paid_by_epl=True, source=None, name=None,
+         ghi_no=False):
     if section == "fuel": source = "kho" if (place or "fp_yard") == "fp_yard" else "mua"
     if section == "repair" and source is None: source = "mua"
+    # ghi_no: đổ ở trạm ngoài mà TRẠM GHI SỔ, cuối tháng EPL trả hoặc cấn trừ với khách (C5.1)
     return dict(section=section, item_key=item_key, item_name=name, qty=qty, unit_price=unit_price,
-                currency=currency, place=place, paid_by_epl=paid_by_epl, source=source)
+                currency=currency, place=place, paid_by_epl=paid_by_epl, source=source, ghi_no=ghi_no)
 
 
 # Bộ chi phí đi đường chuẩn — đúng 7 dòng trong sheet "ໃບບິນອອກລົດ" mục IV
@@ -169,6 +171,13 @@ def gieo(db):
                                ("ຮ້ານຢາງ", "x_tire", "614/402", "t_monthly"),
                                ("ທາງດ່ວນ (ບັດ)", "x_toll", "625/402", "t_prepaid")):
         db.add(Supplier(name=ten, item_key=khoa, acct_code=tk, payment_term=han))
+    # TRẠM DẦU BÊN VIỆT NAM (C5.1): tài xế đổ dầu ghi nợ tại trạm, cuối tháng EPL không trả tiền mặt
+    # mà CẤN TRỪ vào cước của khách đứng ra với trạm.
+    tram_vn = Supplier(name="ປໍ້ານໍ້າມັນ ຫວຽດນາມ (Trạm dầu Việt Nam)", item_key="diesel", acct_code="625/4021",
+                       payment_term="t_monthly", customer_id=kh["ຄຳຕຸ້ຍ"].id, customer_name="ຄຳຕຸ້ຍ",
+                       note="Tài xế đổ ghi nợ; cuối tháng cấn trừ vào cước ຄຳຕຸ້ຍ")
+    db.add(tram_vn); db.flush()
+    diem_do["fp_vn"].supplier_id = tram_vn.id
 
     # ---- tuyến đường (chặng, km, BOT)
     # Toạ độ ĐẠI KHÁI của các điểm trên hai tuyến, đủ để bản đồ vẽ đúng hình. Người dùng sửa lại
@@ -223,7 +232,10 @@ def gieo(db):
         for i, d in enumerate(chi, 1):
             d = dict(d); d["acct_code"] = ma_tk(p.company, d["section"], d.get("source"), d.get("place"))
             if d.get("place") in diem_do:                   # nơi đổ cũ (chuỗi) → điểm đổ thật (bản ghi)
-                d["place_id"] = diem_do[d["place"]].id
+                dd = diem_do[d["place"]]
+                d["place_id"] = dd.id
+                if dd.owner_type != "epl" and dd.supplier_id:
+                    d["supplier_id"] = dd.supplier_id       # trạm ngoài → công nợ của trạm đó (C5.1)
             db.add(TripExpense(trip_id=p.id, line_no=i, **d))
         # trạng thái duyệt mặc định: xe vừa xuất bến = đã nhập; đã tới = nhiên liệu đã kiểm; đã thu = xong hết
         for m in MUC:
@@ -253,7 +265,8 @@ def gieo(db):
           customer_name="ຄຳຕຸ້ຍ", ore_bill_date=D(2026, 8, 19),
           weight_origin=42.06, weight_dest=41.30, price=41, price_ccy="USD",
           transport_status="transit", finance_status="unpaid",
-          chi=[dong("fuel", "diesel", 100, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 750, 28000, "VND", "fp_vn")]
+          chi=[dong("fuel", "diesel", 100, 30000, "LAK", "fp_yard"),
+               dong("fuel", "diesel", 750, 28000, "VND", "fp_vn", ghi_no=True)]
               + di_duong_chuan(),
           su_kien=[(dt.datetime(2026, 8, 19, 6, 30), "arrive_stop", 1, "Xe vào mỏ, bắt đầu lên hàng"),
                    (dt.datetime(2026, 8, 19, 13, 10), "arrive_stop", 2, "Về bãi Thà Bốk, cân 42,06 t"),
@@ -334,7 +347,8 @@ def gieo(db):
               weight_origin=41.50, weight_dest=41.20, price=44, price_ccy="USD",
               transport_status="arrived", finance_status="unpaid", tt_muc=muc_xong,
               locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 9, 8, 9, 0),
-              chi=[dong("fuel", "diesel", 115, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 700, 28000, "VND", "fp_vn")]
+              chi=[dong("fuel", "diesel", 115, 30000, "LAK", "fp_yard"),
+                   dong("fuel", "diesel", 700, 28000, "VND", "fp_vn", ghi_no=True)]
                   + di_duong_chuan()),
         phieu(doc_no="T4-0441-09/EPL", doc_date=D(2026, 9, 11), out_date=D(2026, 9, 11), back_date=D(2026, 9, 14),
               truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6200, odo_back=7150, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
@@ -345,6 +359,23 @@ def gieo(db):
               chi=[dong("fuel", "diesel", 120, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 690, 28000, "VND", "fp_vn")]
                   + di_duong_chuan()),
     ]
+
+    # ---- THẺ CAO TỐC (C6.1): một thẻ do khách cấp (cuối tháng cấn trừ vào cước) và một thẻ của EPL.
+    the = [
+        TollCard(card_no="ETC-8801", name="Thẻ khách ຄຳຕຸ້ຍ", kind="khach", customer_id=kh["ຄຳຕຸ້ຍ"].id,
+                 customer_name="ຄຳຕຸ້ຍ", driver_id=tx["ທ້າວ ທັດສະດາພອນ"].id, driver_name="ທ້າວ ທັດສະດາພອນ",
+                 currency="LAK", balance=0, note="Khách cấp thẻ và nạp tiền; cuối tháng trừ vào cước"),
+        TollCard(card_no="ETC-9902", name="Thẻ EPL xe 342", kind="epl", vehicle_id=xe["342"].id, truck_no="342",
+                 currency="LAK", balance=0, note="Quỹ Thà Bốc nạp"),
+    ]
+    for t in the:
+        db.add(t)
+    db.flush()
+    for t, so_nap, ngay_nap in ((the[0], 5000000, D(2026, 9, 1)), (the[1], 3000000, D(2026, 9, 5))):
+        t.balance = so_nap
+        db.add(TollCardMove(card_id=t.id, move_date=ngay_nap, kind="nap", amount=so_nap, balance_after=so_nap,
+                            ref="NAP-%s" % t.card_no, note="Nạp tiền vào thẻ", by_user="ນາງ ດາວ (Dao)"))
+    db.flush()
 
     # ---- LỆNH SỬA CHỮA RIÊNG (C7.3): xe nằm bãi bảo dưỡng định kỳ, không gắn phiếu nào.
     # Một tờ đã đi hết chuỗi duyệt (để thấy tờ chi), một tờ tổ sửa chữa vừa nhập (để có việc chờ).

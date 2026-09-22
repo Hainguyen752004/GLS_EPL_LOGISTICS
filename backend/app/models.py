@@ -215,13 +215,18 @@ class DriverLicense(Base):
 
 
 class Supplier(Base):
-    """Nhà cung cấp theo dõi công nợ: phí chip Lào/Việt, lốp, cầu đường…"""
+    """Nhà cung cấp theo dõi công nợ: phí chip Lào/Việt, lốp, cầu đường, TRẠM DẦU bên Việt Nam…"""
     __tablename__ = "suppliers"
     id = Column(String, primary_key=True, default=ma_moi)
     name = Column(String, nullable=False)
     item_key = Column(String)                     # khoản mục chi tương ứng (x_chip_lao…)
     acct_code = Column(String)                    # 625/402, 614/402…
     payment_term = Column(String, default="t_monthly")  # t_monthly | t_prepaid | t_per_trip
+    # Cấn trừ hai chiều (C5.1): có trạm dầu bên Việt Nam mà cuối tháng EPL không trả tiền mặt, mà
+    # TRỪ VÀO CƯỚC của một khách — tiền EPL nợ trạm và tiền khách nợ EPL bù nhau. Ghi khách đó ở đây
+    # thì báo cáo cuối tháng ra được số bù; hạch toán cấn trừ vẫn là việc của bên kế toán.
+    customer_id = Column(String, ForeignKey("customers.id"))
+    customer_name = Column(String)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
 
@@ -427,6 +432,13 @@ class TripExpense(Base):
     source = Column(String)                                    # kho | mua | None (khoản đi đường)
     part_id = Column(String, ForeignKey("parts.id"))           # phụ tùng lấy từ kho (source=kho, mục V)
     stock_move_id = Column(String)                             # đã sinh phiếu xuất kho nào (chống xuất hai lần)
+    # Phí cầu đường trả bằng THẺ (C6.1): trừ vào thẻ nào, và đã trừ chưa (chống trừ hai lần).
+    toll_card_id = Column(String, ForeignKey("toll_cards.id"))
+    card_move_id = Column(String)
+    # GHI NỢ TẠI TRẠM (C5.1, anh Khampla 22/09): tài xế đổ dầu ở Việt Nam mà KHÔNG trả tiền ngay —
+    # trạm ghi sổ, cuối tháng EPL trả (hoặc cấn trừ với cước khách). Khác hẳn "tài xế trả tiền mặt
+    # từ tiền tạm ứng": tiền chưa ra khỏi túi ai cả, nó là công nợ với trạm.
+    ghi_no = Column(Boolean, nullable=False, default=False)
     note = Column(String)
 
 
@@ -557,6 +569,60 @@ class PartMove(Base):
     note = Column(String)
     by_user = Column(String)
     expense_id = Column(String)                                # dòng chi mục V sinh ra phiếu xuất này
+
+
+# ---------------------------------------------------------------- thẻ cao tốc (C6.1)
+LOAI_THE = ("khach", "epl")                 # khách cấp thẻ và nạp tiền · thẻ của EPL tự nạp
+DONG_THE = ("nap", "chi", "dieu_chinh")     # nạp tiền · trừ khi qua trạm · điều chỉnh có lý do
+
+
+class TollCard(Base):
+    """THẺ CAO TỐC — ບັດທາງດ່ວນ (anh Khampla C6.1, 22/09).
+
+    Họ muốn biết **thẻ còn bao nhiêu tiền**, và mỗi chuyến qua trạm thì trừ từ thẻ nào. Có hai kiểu,
+    khác nhau ở chỗ ai bỏ tiền chứ không phải ở cách ghi:
+
+      · `khach` — **khách cấp thẻ và nạp tiền**. Tiền thẻ là tiền của khách, nên cuối tháng phần EPL
+        đã tiêu trên thẻ đó được **cấn trừ vào cước** phải thu của chính khách ấy.
+      · `epl`   — khách không cấp thẻ; quỹ Thà Bốc nạp tiền (hoặc đưa tiền mặt cho tài xế). Đây là
+        chi phí của EPL như mọi khoản đi đường khác.
+
+    Số dư ở đây là số dư SỔ của bên mình, cộng dồn từ các dòng `toll_card_moves`; nó có thể lệch với
+    số dư thật trên trạm nếu ai đó quẹt mà không khai — nên có dòng *điều chỉnh* kèm lý do.
+    """
+    __tablename__ = "toll_cards"
+    id = Column(String, primary_key=True, default=ma_moi)
+    card_no = Column(String, unique=True, nullable=False)      # số in trên thẻ
+    name = Column(String)                                      # tên gọi trong nội bộ
+    kind = Column(String, nullable=False, default="epl")       # LOAI_THE
+    customer_id = Column(String, ForeignKey("customers.id"))   # thẻ của khách nào (kind = khach)
+    customer_name = Column(String)
+    driver_id = Column(String, ForeignKey("drivers.id"))       # ai đang cầm thẻ
+    driver_name = Column(String)
+    vehicle_id = Column(String, ForeignKey("vehicles.id"))     # gắn theo xe (nếu để trên xe)
+    truck_no = Column(String)
+    currency = Column(String, nullable=False, default="LAK")   # thẻ Lào nạp Kíp, thẻ VN nạp VND
+    balance = Column(Float, nullable=False, default=0)         # số dư sổ, cộng dồn từ các dòng
+    active = Column(Boolean, nullable=False, default=True)
+    note = Column(String)
+
+
+class TollCardMove(Base):
+    """Một lần nạp tiền vào thẻ, một lần trừ khi qua trạm, hay một lần điều chỉnh có lý do."""
+    __tablename__ = "toll_card_moves"
+    id = Column(String, primary_key=True, default=ma_moi)
+    card_id = Column(String, ForeignKey("toll_cards.id", ondelete="CASCADE"), nullable=False, index=True)
+    move_date = Column(Date, nullable=False)
+    kind = Column(String, nullable=False)                      # DONG_THE
+    amount = Column(Float, nullable=False, default=0)          # theo currency của thẻ; chi là số dương
+    balance_after = Column(Float, nullable=False, default=0)   # số dư sau dòng này — để tra lại khỏi cộng tay
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"))
+    trip_doc_no = Column(String)
+    expense_id = Column(String)                                # dòng chi mục IV đã trừ thẻ
+    ref = Column(String)                                       # số biên lai nạp
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
 
 
 # ---------------------------------------------------------------- lệnh sửa chữa riêng (C7.3)
