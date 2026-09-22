@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1260 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1266 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4616,6 +4616,36 @@ window.EPL_TU_DIEN = {
   "vi": "Kế toán nhập khi nhận giấy · Bãi đính kèm ảnh",
   "lo": "ບັນຊີປ້ອນຕອນຮັບເຈ້ຍ · ສາງຄັດຮູບ",
   "en": "Accountant enters on receipt of the paper · yard attaches the photo"
+ },
+ "price_mode": {
+  "vi": "Cách tính cước",
+  "lo": "ວິທີຄິດຄ່າຂົນສົ່ງ",
+  "en": "Freight basis"
+ },
+ "pm_ton": {
+  "vi": "Theo tấn cân nơi giao",
+  "lo": "ຕາມໂຕນຊັ່ງທີ່ຈຸດຮອດ",
+  "en": "Per tonne at destination"
+ },
+ "pm_chuyen": {
+  "vi": "Khoán trọn chuyến (không theo tấn)",
+  "lo": "ໝົດຖ້ຽວ (ບໍ່ຕາມໂຕນ)",
+  "en": "Flat per trip (not by tonne)"
+ },
+ "pm_ton_s": {
+  "vi": "/t",
+  "lo": "/ໂຕນ",
+  "en": "/t"
+ },
+ "pm_chuyen_s": {
+  "vi": "/chuyến",
+  "lo": "/ຖ້ຽວ",
+  "en": "/trip"
+ },
+ "price_trip": {
+  "vi": "Giá trọn chuyến",
+  "lo": "ລາຄາໝົດຖ້ຽວ",
+  "en": "Flat trip price"
  },
  "d_ty_gia": {
   "vi": "Quy đổi về Kíp cho phiếu mới",

@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (GoodsMove, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
-                    PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+                    CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
@@ -47,12 +47,12 @@ MA_TK = ["625/1371", "625/4021", "614/1371", "614/4021", "4022/1371", "4022/4021
 COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "owner_name", "vehicle_id",
              "truck_no", "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name",
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
-             "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price", "price_ccy",
+             "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price", "price_ccy", "price_mode",
              "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb",
              "rate_vnd", "rate_cny", "note")
 COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
 # Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
-COT_TIEN = ("price", "price_ccy", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price",
+COT_TIEN = ("price", "price_ccy", "price_mode", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price",
             "ore_bill_no", "ore_bill_date")
 # Số và ngày phiếu quặng: kế toán nhập KHI NHẬN GIẤY (anh Khampla, C3.7). Bãi chỉ đính kèm ảnh.
 COT_KE_TOAN = ("ore_bill_no", "ore_bill_date")
@@ -64,7 +64,7 @@ MUC_CUA_COT = {
     "info":  {"doc_date", "out_date", "back_date", "kind", "company", "owner_name", "vehicle_id", "truck_no",
               "brand_model", "plate_head", "plate_trailer", "driver_id", "driver_name", "odo_out", "odo_back"},
     "trans": {"customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no", "ore_bill_date", "origin",
-              "destination", "weight_origin", "weight_dest", "price", "price_ccy", "hire_price", "hire_ccy",
+              "destination", "weight_origin", "weight_dest", "price", "price_ccy", "price_mode", "hire_price", "hire_ccy",
               "fee_pct", "over_limit_t", "over_price"},
 }
 
@@ -301,6 +301,10 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         if c in COT_NGAY: v = _ngay(v)
         elif c in COT_SO: v = _so(v, c)
         elif c in COT_TIEN_TE: v = _tien_te(v, c, bat_buoc=(c == "price_ccy"))
+        elif c == "price_mode":
+            v = (str(v or "ton").strip().lower() or "ton")
+            if v not in CACH_TINH_CUOC:
+                raise HTTPException(422, {"ma": "CACH_TINH_SAI", "loi": "Cách tính cước phải là 'ton' (theo tấn) hoặc 'chuyen' (trọn chuyến)."})
         elif isinstance(v, str): v = v.strip() or None
         setattr(p, c, v)
     # Chép tên/biển từ danh mục nếu chỉ gửi mã
@@ -335,10 +339,13 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             # Giá hợp đồng mang theo TIỀN TỆ của hợp đồng đó: khách Trung Quốc ký bằng Nhân dân tệ
             # thì phiếu phải là Nhân dân tệ, không được rơi về USD.
             p.price, p.price_ccy = g.price, chuan_tien(g.price_ccy, "USD")
+            p.price_mode = g.price_mode or "ton"
             if p.hire_price is None and g.hire_price:
                 p.hire_price, p.hire_ccy = g.hire_price, chuan_tien(g.hire_ccy or g.price_ccy, "USD")
     if not p.price_ccy:
         p.price_ccy = "USD"
+    if not p.price_mode:
+        p.price_mode = "ton"
     if p.company == "joint" and p.hire_price is None:
         p.hire_price, p.hire_ccy = p.price, p.price_ccy   # mặc định bằng giá nhận — người lập sửa sau
 
@@ -946,8 +953,9 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
     CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
            doi_tuong_ten=p.customer_name, tien=k["doanh_thu"], tien_te=k["ccy"], tien_lak=k["doanh_thu_lak"],
            by_user=user.full_name,
-           mo_ta="Hoá đơn vận chuyển %s · %s t × %s %s" % (p.doc_no, k["tan_tinh"], p.price, k["ccy"]),
-           payload={"tan_tinh": k["tan_tinh"], "don_gia": p.price, "currency": k["ccy"],
+           mo_ta=("Hoá đơn vận chuyển %s · trọn chuyến %s %s" % (p.doc_no, p.price, k["ccy"]) if k["cach_tinh"] == "chuyen"
+                  else "Hoá đơn vận chuyển %s · %s t × %s %s" % (p.doc_no, k["tan_tinh"], p.price, k["ccy"])),
+           payload={"tan_tinh": k["tan_tinh"], "don_gia": p.price, "currency": k["ccy"], "cach_tinh": k["cach_tinh"],
                     "rate_to_lak": ty_gia(p, k["ccy"])})
     _ghi_log(db, p, user, "a_invoice")
     db.commit()

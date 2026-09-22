@@ -184,6 +184,9 @@ def gieo(db):
     for k in kh.values():
         db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ກາລໍ"].id, price=41, price_ccy="USD", hire_price=40.5, hire_ccy="USD", valid_from=D(2026, 1, 1), created_by="seed"))
         db.add(CustomerRate(customer_id=k.id, route_id=tuyen["ກາສີ → ທ່າເຮືອກະລໍ"].id, price=43, price_ccy="USD", valid_from=D(2026, 1, 1), created_by="seed"))
+    # Khách vãng lai không hợp đồng: giá KHOÁN TRỌN CHUYẾN (anh Khampla C3.6) — 1.800 USD một chuyến, không nhân tấn
+    db.add(CustomerRate(customer_id=kh["ນາງ ວັນນາ"].id, route_id=tuyen["ກາສີ → ທ່າເຮືອກະລໍ"].id, price=1800, price_ccy="USD",
+                        price_mode="chuyen", valid_from=D(2026, 1, 1), note="Khoán trọn chuyến, không theo tấn", created_by="seed"))
     db.flush()
 
     # ---- năm phiếu

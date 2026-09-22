@@ -98,6 +98,16 @@ def main():
     s, g = goi("/api/trips/%s" % pid, {"price_ccy": "XYZ"}, vai="ketoan", method="PUT")
     phai(s, 422, "Tiền tệ lạ → bị từ chối, không lặng lẽ đổi thành Kíp", g)
 
+    # 2.1 (anh Khampla C3.6): cước KHOÁN TRỌN CHUYẾN — thành tiền = đơn giá, không nhân tấn
+    s, g = goi("/api/trips/%s" % pid, {"price_mode": "chuyen", "price": 5000}, vai="ketoan", method="PUT")
+    phai(s, 200, "Kế toán đổi sang khoán trọn chuyến 5.000 CNY", g)
+    assert g["tinh"]["cach_tinh"] == "chuyen" and abs(g["tinh"]["doanh_thu"] - 5000) < 0.01, "trọn chuyến thì doanh thu = đơn giá: %s" % g["tinh"]["doanh_thu"]
+    s, g = goi("/api/trips/%s" % pid, {"price_mode": "gi_do"}, vai="ketoan", method="PUT")
+    phai(s, 422, "Cách tính lạ → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % pid, {"price_mode": "ton", "price": 300}, vai="ketoan", method="PUT")
+    phai(s, 200, "Trả về theo tấn 300 CNY/t", g)
+    bang(g["tinh"]["doanh_thu"], 300 * TAN, "theo tấn lại đúng tấn × giá", 0.01)
+
     # ---------------------------------------------------------------- 2. đi tới hoá đơn
     s, g = goi("/api/dang-nhap", {"username": "khonl", "password": "1234"}); TOKEN["khonl"] = g["token"]
     for muc in ("info", "trans", "fuel", "travel"):

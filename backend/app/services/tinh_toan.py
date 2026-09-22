@@ -23,6 +23,8 @@ Hai loại phiếu:
               Lãi của EPL = doanh thu − tiền thuê (quy LAK rồi trừ).
 
 Tấn dùng để tính tiền là TẤN CÂN NƠI GIAO (weight_dest); chưa cân thì tạm dùng tấn đầu đi.
+Phiếu `price_mode = "chuyen"` (khoán trọn chuyến — xe ngoài không hợp đồng, anh Khampla C3.6) thì
+doanh thu = đơn giá, KHÔNG nhân tấn; giá thuê chủ xe cũng vậy. Phần trừ quá tải vẫn tính theo tấn.
 Số LAK làm tròn đơn vị; tiền khác làm tròn hai số lẻ — đúng cách họ ghi trên giấy.
 """
 
@@ -95,7 +97,8 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
     w = phieu.weight_dest if phieu.weight_dest is not None else (phieu.weight_origin or 0)
     ccy = tien_cuoc(phieu)
     gia = phieu.price or 0
-    doanh_thu = lam_tron(w * gia, ccy)
+    khoan = (getattr(phieu, "price_mode", None) or "ton") == "chuyen"
+    doanh_thu = lam_tron(gia if khoan else w * gia, ccy)
     r_ccy = ty_gia(phieu, ccy)
     muc = {m: round(tong_muc(phieu, cac_dong, m)) for m in ("fuel", "travel", "repair", "other")}
     tong_chi = sum(muc.values())
@@ -106,7 +109,7 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
     doanh_thu_lak = round(doanh_thu * r_ccy)
     da_thu_lak = round(da_thu_lak or 0)
     ket = {
-        "ccy": ccy, "don_gia": gia, "tan_tinh": w,
+        "ccy": ccy, "don_gia": gia, "tan_tinh": w, "cach_tinh": "chuyen" if khoan else "ton",
         "doanh_thu": doanh_thu, "doanh_thu_lak": doanh_thu_lak,
         "chi": muc, "tong_chi_lak": tong_chi, "tong_chi_ccy": lam_tron(tong_chi / r_ccy, ccy),
         "hao_hut_pct": hao_hut, "lien_ket": phieu.company == "joint",
@@ -123,7 +126,7 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
     h_ccy = tien_thue_xe(phieu)
     r_h = ty_gia(phieu, h_ccy)
     gia_thue = phieu.hire_price if phieu.hire_price is not None else doi(phieu, gia, ccy, h_ccy)
-    tien_thue = lam_tron(w * gia_thue, h_ccy)
+    tien_thue = lam_tron(gia_thue if khoan else w * gia_thue, h_ccy)
     phi = lam_tron(tien_thue * (phieu.fee_pct if phieu.fee_pct is not None else 2) / 100, h_ccy)
     vuot_t = max(0.0, w - (phieu.over_limit_t if phieu.over_limit_t is not None else 40))
     tru_vuot = lam_tron(vuot_t * (phieu.over_price if phieu.over_price is not None else 1), h_ccy)

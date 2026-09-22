@@ -243,6 +243,7 @@ TRANG_THAI_VAN_CHUYEN = ("dispatched", "transit", "arrived")    # ອອກລ�
 TRANG_THAI_TAI_CHINH = ("unpaid", "partial", "paid")            # ຄ້າງຊໍາລະ · ຊໍາລະບາງສ່ວນ · ຊໍາລະແລ້ວ
 # Các loại tiền EPL Lào thật sự nhận và chi. LAK là gốc: mọi tỷ giá là "bao nhiêu LAK cho 1 đơn vị".
 TIEN_TE = ("LAK", "USD", "THB", "VND", "CNY")
+CACH_TINH_CUOC = ("ton", "chuyen")   # theo tấn cân nơi giao · trọn chuyến
 MUC = ("info", "trans", "fuel", "travel", "repair", "other")    # I..VI trên phiếu
 MUC_CHI = ("fuel", "travel", "repair", "other")
 # Chuỗi duyệt của từng mục: hai mục thông tin chỉ tới "đã kiểm", bốn mục chi đi tới "đã chi".
@@ -298,8 +299,11 @@ class Trip(Base):
     weight_dest = Column(Float)                                # ນ້ຳໜັກປາຍທາງ (tấn) — cân nơi giao
     # ---- TIỀN BÁN. Đơn giá ghi theo TIỀN TỆ CỦA PHIẾU (`price_ccy`), không mặc định USD:
     # bên Lào nhận cước bằng USD, LAK, Nhân dân tệ, Bath Thái tuỳ hợp đồng từng khách.
-    price = Column(Float, default=0)                           # ລາຄາ/tấn theo price_ccy — bên A trả
+    price = Column(Float, default=0)                           # ລາຄາ/tấn (hoặc trọn chuyến) theo price_ccy — bên A trả
     price_ccy = Column(String, nullable=False, default="USD")  # tiền tệ của cước: USD · LAK · CNY · THB · VND
+    # Cách tính cước (anh Khampla C3.6, 22/09): `ton` = đơn giá × tấn cân nơi giao (hợp đồng) ·
+    # `chuyen` = giá trọn chuyến, không nhân tấn (xe ngoài không hợp đồng). Giá thuê xe ngoài đi theo cùng cách.
+    price_mode = Column(String, nullable=False, default="ton")
     # Xe liên kết. Giá thuê có thể khác tiền với giá bán (bán USD, thuê xe Lào trả LAK là chuyện thường),
     # nên nó mang tiền tệ riêng; trống thì hiểu là cùng tiền với cước.
     hire_price = Column(Float)                                 # giá thuê lại /tấn theo hire_ccy — trả chủ xe
@@ -736,8 +740,9 @@ class CustomerRate(Base):
     customer_id = Column(String, ForeignKey("customers.id"), nullable=False)
     route_id = Column(String, ForeignKey("routes.id"), nullable=False)
     goods_type = Column(String, nullable=False, default="iron_ore")
-    price = Column(Float, nullable=False)                      # đơn giá/tấn bên A trả, theo price_ccy
+    price = Column(Float, nullable=False)                      # đơn giá/tấn (hoặc trọn chuyến) bên A trả, theo price_ccy
     price_ccy = Column(String, nullable=False, default="USD")  # tiền của hợp đồng này: USD · LAK · CNY · THB · VND
+    price_mode = Column(String, nullable=False, default="ton") # ton · chuyen — cách tính, phiếu tự điền theo
     hire_price = Column(Float)                                 # /tấn trả chủ xe ngoài (nếu có thoả thuận sẵn)
     hire_ccy = Column(String)                                  # trống = cùng tiền với cước
     valid_from = Column(Date)                                  # trống = áp dụng từ đầu

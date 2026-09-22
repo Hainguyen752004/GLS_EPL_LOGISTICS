@@ -733,6 +733,13 @@ KHOA_MOI = {
  # nhãn cũ ghi mã 371/402 — nay 1371/4021 theo sá-la-ban kế toán Lào
  'src_rule':        ('Có trong kho thì xuất kho (TK …/1371); không có thì chi mua ngoài (TK …/4021).', 'ມີໃນສາງ → ເບີກສາງ (…/1371); ບໍ່ມີ → ຈ່າຍຊື້ນອກ (…/4021).', 'In stock → stock issue (acct …/1371); otherwise → purchase (acct …/4021).'),
  'sup_hint':        ('Công nợ theo 625/4021 và 614/4021', 'ໜີ້ຕາມ 625/4021 ແລະ 614/4021', 'Payables under 625/4021 and 614/4021'),
+ # ---- đợt 2.1: cước khoán theo chuyến (anh Khampla C3.6)
+ 'price_mode':      ('Cách tính cước', 'ວິທີຄິດຄ່າຂົນສົ່ງ', 'Freight basis'),
+ 'pm_ton':          ('Theo tấn cân nơi giao', 'ຕາມໂຕນຊັ່ງທີ່ຈຸດຮອດ', 'Per tonne at destination'),
+ 'pm_chuyen':       ('Khoán trọn chuyến (không theo tấn)', 'ໝົດຖ້ຽວ (ບໍ່ຕາມໂຕນ)', 'Flat per trip (not by tonne)'),
+ 'pm_ton_s':        ('/t', '/ໂຕນ', '/t'),
+ 'pm_chuyen_s':     ('/chuyến', '/ຖ້ຽວ', '/trip'),
+ 'price_trip':      ('Giá trọn chuyến', 'ລາຄາໝົດຖ້ຽວ', 'Flat trip price'),
  'd_ty_gia':         ('Quy đổi về Kíp cho phiếu mới', 'ແປງເປັນກີບສຳລັບບິນໃໝ່', 'Rates to LAK for new slips'),
  'd_tuyen_duong':    ('Chặng, số km, phí cao tốc', 'ຈຸດຜ່ານ, ກິໂລແມັດ, ຄ່າທາງດ່ວນ', 'Stops, kilometres, toll'),
  'd_quy_trinh':      ('Ai làm bước nào, sinh chứng từ gì', 'ໃຜເຮັດຂັ້ນໃດ, ອອກເອກະສານໃດ', 'Who does what, which document each step makes'),

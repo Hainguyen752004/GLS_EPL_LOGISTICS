@@ -11,7 +11,7 @@
   const { API, NN, esc, so, AUTH, tag } = EPL;
   const MUC = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'], MUC_CHI = ['fuel', 'travel', 'repair', 'other'];
   const COT_INFO = ['kind', 'company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
-  const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price', 'price_ccy', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
+  const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price', 'price_ccy', 'price_mode', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price', 'hire_price', 'fee_pct', 'over_limit_t', 'over_price']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
     yard: { edit: MUC, verify: [], book: [], pay: [] },
@@ -45,6 +45,7 @@
   function rate(ma) { return { USD: P.rate_usd || 22000, THB: P.rate_thb || 700, VND: P.rate_vnd || 1.2, CNY: P.rate_cny || 3000, LAK: 1 }[(ma || 'LAK').toUpperCase()] || 1; }
   const maCuoc = () => (P.price_ccy || 'USD').toUpperCase();
   const maThue = () => (P.hire_ccy || maCuoc()).toUpperCase();
+  const khoan = () => (P.price_mode || 'ton') === 'chuyen';    // trọn chuyến: không nhân tấn
   const tronTien = (v, ma) => { const d = EPL.leTien(ma); return +(+v).toFixed(d); };
   const t2 = (v, ma) => EPL.tien(v, ma);
   const tienDong = (d) => (EPL.doc(d.qty)) * (EPL.doc(d.unit_price)) * rate(d.currency);
@@ -52,7 +53,7 @@
   function tinh() {
     const w = P.weight_dest != null && P.weight_dest !== '' ? EPL.doc(P.weight_dest) : EPL.doc(P.weight_origin);
     const ma = maCuoc(), rC = rate(ma);
-    const gia = EPL.doc(P.price), dt = tronTien(w * gia, ma);
+    const gia = EPL.doc(P.price), dt = tronTien(khoan() ? gia : w * gia, ma);
     const chi = {}; MUC_CHI.forEach(m => { chi[m] = Math.round(tongMuc(m)); }); const tongChi = Object.values(chi).reduce((a, b) => a + b, 0);
     const hao = P.weight_origin && P.weight_dest != null && P.weight_dest !== '' ? (EPL.doc(P.weight_origin) - EPL.doc(P.weight_dest)) / EPL.doc(P.weight_origin) * 100 : null;
     const dtLak = Math.round(dt * rC);
@@ -62,7 +63,7 @@
     const mh = maThue(), rH = rate(mh);
     k.mh = mh; k.rH = rH;
     const gt = P.hire_price != null && P.hire_price !== '' ? EPL.doc(P.hire_price) : gia * rC / rH;
-    k.thue = tronTien(w * gt, mh); k.phi = tronTien(k.thue * EPL.doc(P.fee_pct ?? 2) / 100, mh);
+    k.thue = tronTien(khoan() ? gt : w * gt, mh); k.phi = tronTien(k.thue * EPL.doc(P.fee_pct ?? 2) / 100, mh);
     k.vuot = Math.max(0, w - EPL.doc(P.over_limit_t ?? 40)); k.truVuot = tronTien(k.vuot * EPL.doc(P.over_price ?? 1), mh);
     k.ung = tronTien(tongChi / rH, mh); k.traChu = tronTien(k.thue - k.phi - k.truVuot - k.ung, mh);
     k.laiLak = dtLak - Math.round(k.thue * rH); k.lai = tronTien(k.laiLak / rC, ma); k.gt = gt;
@@ -107,13 +108,13 @@
     } else {
       const r = (l, d, v, cls = '') => `<div class="r ${cls}"><span>${l}${d ? `<small>${d}</small>` : ''}</span><span>${v}</span></div>`;
       box.innerHTML = `<div class="px-tt"><div class="o"><b>${NN.h('settle_title')}</b>
-        ${r(NN.h('st_hire'), `${t2(k.gt, k.mh)}/t × ${so(k.w, 2)} t`, t2(k.thue, k.mh))}
+        ${r(NN.h('st_hire'), khoan() ? NN.t('pm_chuyen') : `${t2(k.gt, k.mh)}/t × ${so(k.w, 2)} t`, t2(k.thue, k.mh))}
         ${r(NN.h('st_fee'), `${EPL.doc(P.fee_pct ?? 2)}% × ${so(k.thue, EPL.leTien(k.mh))}`, '− ' + t2(k.phi, k.mh), 'neg')}
         ${r(NN.h('st_over'), `${so(k.vuot, 2)} t × ${t2(EPL.doc(P.over_price ?? 1), k.mh)}`, '− ' + t2(k.truVuot, k.mh), 'neg')}
         ${r(NN.h('st_adv'), `${so(k.tongChi)} LAK ÷ ${so(k.rH)}`, '− ' + t2(k.ung, k.mh), 'neg')}
         ${r(NN.h('st_net_owner'), k.mh === 'LAK' ? '' : `≈ ${so(k.traChu * k.rH)} LAK`, t2(k.traChu, k.mh), 'tot')}</div>
         <div class="o"><b>${NN.h('trip_profit')}</b>
-        ${r(NN.h('do_money'), `${t2(EPL.doc(P.price), k.ma)}/t × ${so(k.w, 2)} t`, t2(k.dt, k.ma))}
+        ${r(NN.h('do_money'), khoan() ? NN.t('pm_chuyen') : `${t2(EPL.doc(P.price), k.ma)}/t × ${so(k.w, 2)} t`, t2(k.dt, k.ma))}
         ${r(NN.h('st_hire'), k.mh === k.ma ? '' : t2(k.thue, k.mh), '− ' + t2(tronTien(k.thue * k.rH / k.rC, k.ma), k.ma), 'neg')}
         ${r(NN.h('trip_profit'), `≈ ${so(k.laiLak)} LAK · ${k.dt ? so(k.lai / k.dt * 100, 1) : 0}%`, t2(k.lai, k.ma), 'tot')}</div></div>
         <p class="small muted">${NN.h('settle_ex')}</p>`;
@@ -203,7 +204,7 @@
   const biKhoa = () => !moi && P.locked && !VAI_SAU_KHOA.includes(vai());
   function suaDuoc(m) { if (moi) return true; if (biKhoa()) return false; const st = (P.sections || {})[m] || 'wait'; return vai() === 'admin' || (perm().edit.includes(m) && (st === 'wait' || st === 'entered')); }
   // Ô tiền của mục II (đơn giá, giá thuê, phí, ngưỡng): Bãi không thấy → người KIỂM mục II sửa được khi khác hợp đồng (chép luật máy chủ)
-  const COT_TIEN = ['price', 'price_ccy', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
+  const COT_TIEN = ['price', 'price_ccy', 'price_mode', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
   // Số và ngày phiếu quặng: kế toán nhập KHI NHẬN GIẤY (anh Khampla, C3.7). Bãi thấy nhưng chỉ đọc, kể cả lúc lập phiếu.
   const COT_KE_TOAN = ['ore_bill_no', 'ore_bill_date'];
   function suaKeToanDuoc(m) { if (biKhoa()) return false; const st = moi ? 'wait' : ((P.sections || {})[m] || 'wait'); return vai() === 'admin' || (perm().verify.includes(m) && (st === 'wait' || st === 'entered')); }
@@ -305,6 +306,7 @@
       if (!gia || !gia.price) return;
       P.price = gia.price; g('f-price').value = gia.price;
       P.price_ccy = (gia.price_ccy || 'USD').toUpperCase(); g('f-price_ccy').value = P.price_ccy;
+      P.price_mode = gia.price_mode || 'ton'; g('f-price_mode').value = P.price_mode;
       if (gia.hire_price && (P.hire_price == null || P.hire_price === '')) {
         P.hire_price = gia.hire_price; g('f-hire_price').value = gia.hire_price;
         P.hire_ccy = (gia.hire_ccy || gia.price_ccy || 'USD').toUpperCase(); g('f-hire_ccy').value = P.hire_ccy;
@@ -315,6 +317,7 @@
 
   function veHet() {
     q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard');
+    const lp = g('lbl-price'); if (lp) lp.innerHTML = NN.h(khoan() ? 'price_trip' : 'price_usd');
     q('#px-phieu').classList.toggle('is-gom', laGom());
     q('#px-phieu').classList.toggle('is-giao', !laGom());
     veChon(); veDanhMuc(); doTruong(); veChi(); veHang(); veVaiVaTrangThai();
@@ -331,7 +334,7 @@
 
   /* ---------------------------------------------------------------- dữ liệu */
   function phieuTrong() {
-    return { id: null, doc_no: '', kind: 'giao', goods: [], company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price: 1, price_ccy: 'USD',
+    return { id: null, doc_no: '', kind: 'giao', goods: [], company: 'EPL', goods_type: 'iron_ore', doc_date: EPL.homNay(), out_date: EPL.homNay(), fee_pct: 2, over_limit_t: 40, over_price: 1, price_ccy: 'USD', price_mode: 'ton',
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }

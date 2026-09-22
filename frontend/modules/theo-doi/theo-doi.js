@@ -56,7 +56,7 @@
         <td lang="lo">${esc(p.customer_name) || d}</td><td>${tag('ore', p.goods_type || 'iron_ore')}</td>
         <td class="num">${so(p.weight_origin, 2)}</td><td class="num">${p.weight_dest != null ? so(p.weight_dest, 2) : d}${hao}</td>
         <td class="mono tien td-ccy">${esc(quy() || ma)}</td>
-        <td class="num tien">${oTien(p, p.price, ma)}</td><td class="num tien">${oTien(p, c.doanh_thu, ma, true)}</td>
+        <td class="num tien">${oTien(p, p.price, ma)}${c.cach_tinh === 'chuyen' ? `<span class="td-hao" style="color:var(--muted)" title="${esc(NN.t('pm_chuyen'))}">${NN.h('pm_chuyen_s')}</span>` : ''}</td><td class="num tien">${oTien(p, c.doanh_thu, ma, true)}</td>
         <td class="num tien">${c.da_thu ? oTien(p, c.da_thu, ma) : d}</td><td class="num tien ${c.con_lai ? 'neg' : ''}">${c.con_lai ? oTien(p, c.con_lai, ma) : d}</td>
         <td class="num tien">${c.lien_ket ? oTien(p, c.tien_thue, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.phi, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.tru_vuot, mh) : d}</td>
         <td class="num">${so(c.chi.fuel)}</td><td class="num">${so(c.chi.travel)}</td><td class="num">${c.chi.repair ? so(c.chi.repair) : d}</td><td class="num">${c.chi.other ? so(c.chi.other) : d}</td><td class="num"><b>${so(c.tong_chi_lak)}</b></td>

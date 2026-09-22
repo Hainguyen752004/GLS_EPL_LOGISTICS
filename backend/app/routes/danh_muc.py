@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
+from models import (CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
                     ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
@@ -142,6 +142,11 @@ def _ap_gia(db, r, data):
     # Hợp đồng ký bằng tiền gì thì bảng giá ghi tiền đó: khách Trung Quốc trả Nhân dân tệ, khách
     # trong nước trả Kíp. Không quy đổi sẵn về USD — quy đổi sẵn là mất con số hai bên đã ký.
     if "price_ccy" in data: r.price_ccy = _tien_te(data["price_ccy"], "price_ccy", "USD")
+    if "price_mode" in data:
+        m = (str(data["price_mode"] or "ton").strip().lower() or "ton")
+        if m not in CACH_TINH_CUOC:
+            raise HTTPException(422, {"ma": "CACH_TINH_SAI", "loi": "Cách tính phải là 'ton' hoặc 'chuyen'."})
+        r.price_mode = m
     if "hire_ccy" in data: r.hire_ccy = _tien_te(data["hire_ccy"], "hire_ccy")
     if "price" in data:
         gia = _so(data["price"], "price")
