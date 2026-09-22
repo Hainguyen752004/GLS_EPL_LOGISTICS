@@ -684,7 +684,11 @@
 
   EPL.di = (id, tham) => {
     const q = tham ? new URLSearchParams(tham).toString() : '';   // không tham số thì đừng để dấu '?' trơ ra trên thanh địa chỉ
-    location.hash = '#/' + id + (q ? '?' + q : '');
+    const moi = '#/' + id + (q ? '?' + q : '');
+    // Đang đứng đúng địa chỉ đó rồi (ví dụ vừa lưu phiếu mới ở #/phieu-xuat-xe?moi=1 rồi bấm "Tạo phiếu"
+    // lần nữa): trình duyệt không bắn hashchange, khung phải tự nạp lại — không thì nút bấm như chết.
+    if (location.hash === moi) { dieuHuong(); return; }
+    location.hash = moi;
   };
   EPL.thamSo = () => { const q = location.hash.split('?')[1] || ''; return Object.fromEntries(new URLSearchParams(q)); };
 

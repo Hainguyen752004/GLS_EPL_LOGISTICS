@@ -33,6 +33,10 @@ sửa chữa `LSC-2609-01` của xe 342 đang chờ kiểm · hai **thẻ cao t�
 
 **Thứ tự thử gọn nhất:** bước 1 → 9 (luồng cũ, đã có 8b) rồi **9b → 9g** là toàn bộ phần mới.
 
+**Sửa 22/09 (lỗi anh bắt được):** bấm vào **Phiếu xuất xe** trên menu **không còn tự mở phiếu cũ mới nhất**.
+`thabok` vào là thấy **phiếu mới trắng** với số mới; kế toán / quỹ vào thì ô chọn trống kèm câu nhắc, tự chọn
+tờ cần xem — không ai gõ đè lên tờ của người khác nữa.
+
 ---
 
 ## 1. Kịch bản chính — một chuyến hàng trọn vẹn qua 8 vai

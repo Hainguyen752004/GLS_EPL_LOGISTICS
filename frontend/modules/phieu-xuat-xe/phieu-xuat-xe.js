@@ -365,14 +365,30 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
+  /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
+  function chuaChon() {
+    P = null; moi = false;
+    g('px-chon').innerHTML = `<option value="" selected>— ${NN.t('px_chon_phieu')} —</option>` + DS.map(p => `<option value="${p.id}">${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
+    g('px-moi').hidden = !AUTH.la('yard');
+    anPhieu(true);
+  }
+  function anPhieu(an) {
+    q('#px-phieu').hidden = an; const b = q('.px-buoc'); if (b) b.hidden = an;
+    ['px-luu', 'px-chung-tu', 'px-phieu-linh', 'px-hoa-don'].forEach(id => { const el = g(id); if (el) el.disabled = an; });
+    let nhac = g('px-chua-chon');
+    if (an) {
+      if (!nhac) { nhac = document.createElement('div'); nhac.id = 'px-chua-chon'; nhac.className = 'card'; q('#px-phieu').before(nhac); }
+      nhac.innerHTML = `<div class="bd empty">${NN.h('px_chua_chon')}</div>`; nhac.hidden = false;
+    } else if (nhac) nhac.hidden = true;
+  }
   /** Lô còn hàng trong kho bãi. Khi đang sửa một phiếu giao thì trừ phần chính nó đang giữ ra,
    *  không thì mở lại phiếu cũ sẽ thấy lô hết hàng dù chính nó là người giữ. */
   async function napLo(truPhieu) {
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; veHet(); }
+  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
     [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
@@ -619,13 +635,16 @@
         veSo();
       }); });
       const t = ctx.tham || {};
-      if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (DS.length) await moPhieu(DS[0].id); else await phieuMoi();
+      // KHÔNG tự mở phiếu cũ khi vào màn không kèm tham số (lỗi anh chủ dự án bắt 22/09: Bãi vào là
+      // thấy phiếu mới nhất đang mở sẵn, gõ là gõ đè lên phiếu đó). Bãi và Sếp — người lập phiếu — vào
+      // là PHIẾU MỚI trắng; vai khác không lập phiếu thì để ô chọn trống kèm câu nhắc, tự chọn tờ cần xem.
+      if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (AUTH.la('yard')) await phieuMoi(); else chuaChon();
       // Mở từ màn Xe (nút "Tạo phiếu xuất xe" ở hồ sơ một chiếc): chọn sẵn chiếc đó.
       if (t.moi && t.xe && DM.vehicles.some(v => v.id === t.xe)) {
         const el = g('f-vehicle_id'); if (el) { el.value = t.xe; el.dispatchEvent(new Event('input', { bubbles: true })); }
       }
       if (t.tab && (MUC.includes(t.tab) || t.tab === 'all')) datTab(t.tab, true);
     },
-    onLang() { if (P) veHet(); },
+    onLang() { if (P) veHet(); else if (root) chuaChon(); },
   };
 })();

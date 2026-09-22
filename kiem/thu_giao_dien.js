@@ -336,11 +336,38 @@ async function main() {
   }
   assert.ok(goc().querySelector('#v-odo_est'), 'phiếu phải có ô Km về ước tính');
   console.log('✓ vai Bãi: không thấy Tài khoản; nút thấy được: %s', nut.join(',') || '(không có)');
+  // Lỗi anh chủ dự án bắt 22/09: vào màn phiếu KHÔNG kèm tham số thì không được tự mở phiếu cũ mới nhất.
+  // Bãi (người lập phiếu) phải thấy PHIẾU MỚI trắng, số phiếu mới, không phải số của tờ nào đang có.
+  await di('#/phieu-xuat-xe');
+  {
+    const chon = goc().querySelector('#px-chon');
+    assert.strictEqual(chon.value, '', 'Bãi vào màn phiếu không tham số: ô chọn phải ở dòng "Phiếu mới", đang chọn ' + chon.value);
+    const soMoi = goc().querySelector('#px-doc-no').value;
+    const daCo = [...chon.options].map(o => o.textContent.split(' · ')[0].trim()).filter(Boolean);
+    assert.ok(soMoi && !daCo.includes(soMoi), 'số phiếu phải là số MỚI, không trùng tờ đang có: ' + soMoi);
+    assert.ok(!goc().querySelector('#px-phieu').hidden, 'Bãi thấy thân phiếu trắng để nhập');
+    console.log('✓ Bãi vào Phiếu xuất xe → phiếu MỚI trắng %s, không mở đè phiếu cũ', soMoi);
+  }
   // K3: Bãi mở Khách hàng không thấy nút Bảng giá (tiền); kế toán thì thấy, bấm ra bảng có dòng giá gieo sẵn
   await di('#/khach-hang');
   assert.strictEqual(goc().querySelectorAll('[data-gia]').length, 0, 'vai Bãi không được thấy nút Bảng giá');
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('ketoan', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai KT Thu/Chi'); await w.EPL.sanSang;
+  // Vai không lập phiếu vào màn phiếu không tham số: KHÔNG nạp sẵn tờ nào, chỉ ô chọn trống + câu nhắc.
+  await di('#/phieu-xuat-xe');
+  {
+    assert.strictEqual(goc().querySelector('#px-chon').value, '', 'kế toán vào màn phiếu: ô chọn phải trống');
+    assert.ok(goc().querySelector('#px-phieu').hidden, 'kế toán chưa chọn tờ nào thì thân phiếu phải giấu');
+    const nhac = goc().querySelector('#px-chua-chon');
+    assert.ok(nhac && !nhac.hidden && nhac.textContent.trim(), 'phải có câu nhắc chọn phiếu');
+    assert.ok(goc().querySelector('#px-moi').hidden, 'kế toán không có nút Phiếu mới');
+    // chọn một tờ → thân phiếu hiện lại đúng tờ đó
+    const chon = goc().querySelector('#px-chon'); const op = [...chon.options].find(o => o.value);
+    chon.value = op.value; chon.dispatchEvent(new w.Event('change', { bubbles: true }));
+    await choDen(() => !goc().querySelector('#px-phieu').hidden && goc().querySelector('#px-doc-no').value, 'mở tờ đã chọn');
+    assert.ok(op.textContent.startsWith(goc().querySelector('#px-doc-no').value), 'phải mở đúng tờ vừa chọn');
+    console.log('✓ kế toán vào Phiếu xuất xe → không mở sẵn tờ nào; chọn một tờ thì mở đúng tờ đó');
+  }
   await di('#/khach-hang');
   const nutGia = goc().querySelectorAll('[data-gia]');
   assert.ok(nutGia.length >= 2, 'kế toán phải thấy nút Bảng giá ở từng khách');

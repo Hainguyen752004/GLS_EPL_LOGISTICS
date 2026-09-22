@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1410 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1412 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -3331,6 +3331,16 @@ window.EPL_TU_DIEN = {
   "vi": "Phiếu mới",
   "lo": "ບິນໃໝ່",
   "en": "New slip"
+ },
+ "px_chon_phieu": {
+  "vi": "chọn phiếu",
+  "lo": "ເລືອກບິນ",
+  "en": "choose a slip"
+ },
+ "px_chua_chon": {
+  "vi": "Chưa chọn phiếu nào. Chọn số phiếu ở ô trên để xem — vai của bạn không lập phiếu mới.",
+  "lo": "ຍັງບໍ່ໄດ້ເລືອກບິນ. ເລືອກເລກບິນຢູ່ຊ່ອງເທິງເພື່ອເບິ່ງ — ໜ້າທີ່ຂອງທ່ານບໍ່ໄດ້ສ້າງບິນໃໝ່.",
+  "en": "No slip selected. Pick a slip number above to view — your role does not create slips."
  },
  "open_slip": {
   "vi": "Mở phiếu",
