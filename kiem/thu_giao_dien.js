@@ -12,7 +12,7 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'chung-tu',
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'hoa-don-gop', 'chung-tu',
   'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-hang', 'kho-nhien-lieu',
   'diem-do', 'kho-phu-tung', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 

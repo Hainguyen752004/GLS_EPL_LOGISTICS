@@ -1,0 +1,45 @@
+<!-- Hoá đơn gộp tháng — ໃບເກັບເງິນລວມເດືອນ.
+     Khách có hợp đồng: cuối tháng gộp mọi phiếu đã khoá thành MỘT tờ, thu tiền ở tờ đó,
+     tiền tự phân bổ về từng phiếu. Khách vãng lai vẫn mỗi phiếu một hoá đơn như cũ. -->
+<div class="toolbar">
+  <div class="field"><label data-i18n="month"></label><input type="month" id="hg-thang"></div>
+  <div class="grow"></div>
+  <span class="small muted" data-i18n="hg_note"></span>
+</div>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="hg_cho_gop"></h3><div class="grow"></div><span class="small muted" data-i18n="hg_cho_gop_hint"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="customer"></th><th data-i18n="ccy"></th><th class="num" data-i18n="hg_so_phieu"></th>
+        <th class="num" data-i18n="hg_tong"></th><th class="num" data-i18n="in_lak"></th><th data-i18n="hg_phieu_list"></th>
+        <th class="no-print" data-i18n="actions"></th>
+      </tr></thead>
+      <tbody id="hg-cho"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="hd"><h3 data-i18n="hg_ds"></h3><div class="grow"></div><span class="small muted" id="hg-dem"></span></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="hg_inv_no"></th><th data-i18n="customer"></th><th data-i18n="hg_period"></th><th data-i18n="c_date"></th>
+        <th class="num" data-i18n="hg_so_phieu"></th><th class="num" data-i18n="hg_tong"></th>
+        <th class="num" data-i18n="collected"></th><th class="num" data-i18n="remaining"></th>
+        <th data-i18n="c_st_f"></th><th class="no-print" data-i18n="actions"></th>
+      </tr></thead>
+      <tbody id="hg-than"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card hg-chi-tiet" id="hg-chi-tiet" hidden>
+  <div class="hd"><h3 id="hg-ct-ten"></h3><div class="grow"></div>
+    <button class="btn sm" id="hg-ct-in"><span data-i18n="print"></span></button>
+    <button class="btn sm" id="hg-ct-dong"><span data-i18n="close"></span></button>
+  </div>
+  <div class="bd" id="hg-ct-than"></div>
+</div>

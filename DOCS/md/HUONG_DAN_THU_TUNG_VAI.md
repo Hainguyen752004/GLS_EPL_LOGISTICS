@@ -114,6 +114,28 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
 4. Thử sai: ghi thu một số lớn hơn phần còn lại → **phải bị hỏi lại** rồi mới ghi.
 5. Mở **phiếu gom** `G4-0101`: phiếu này cũng **có cước và lập được hoá đơn** (6 USD/t cho chặng gom) — theo trả lời của anh Khampla 22/09.
 
+### Bước 8b ☐ Hoá đơn **gộp tháng** cho khách hợp đồng — `doanhthu`
+
+Khách mẫu `ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ` để **gộp một tờ cuối tháng** (anh Khampla C8.2), nên hai phiếu tháng 9
+của khách này **không có nút Lập hoá đơn** trên phiếu.
+
+1. Mở một phiếu của khách đó (`T4-0440-09` hoặc `T4-0441-09`) bằng `doanhthu`.
+   - *Phải thấy:* chỗ nút hoá đơn là nút **Gộp hoá đơn tháng** (nếu chưa gộp) hoặc nút **Thuộc hoá đơn
+     HDT-202609-01** (đã gộp) — bấm là sang màn hoá đơn gộp.
+2. Vào **Hoá đơn gộp tháng** (nhóm Vận chuyển), chọn tháng **2026-09**.
+   - *Phải thấy:* tờ `HDT-202609-01` với **2 phiếu**, tiền bằng tổng doanh thu hai phiếu, đã thu 60 %.
+3. Bấm **Xem** → khối chi tiết hiện *từng dòng phiếu* (tấn, đơn giá, thành tiền, đã thu, trạng thái) và
+   *sổ thu tiền của tờ*.
+   - *Phải thấy:* phiếu **cũ hơn** đã thu đủ, phiếu sau mới một phần — tiền được rải theo thứ tự ngày.
+4. Bấm **Ghi một lần thu**, để nguyên số còn lại → cả hai phiếu đổi sang **Đã thu đủ**.
+   - *Phải thấy:* Sổ chứng từ chỉ thêm **một** tờ *Phiếu thu tiền khách* cho cả tờ hoá đơn, không phải
+     mỗi phiếu một tờ.
+5. Thử sai: mở lại phiếu lẻ, bấm ghi thu ở đó → **phải bị chặn**, câu nhắc chỉ sang tờ hoá đơn gộp.
+6. Muốn xem cách bật/tắt: `ketoan` vào **Khách hàng** → **Sửa** → ô **Cách xuất hoá đơn** có hai lựa chọn
+   *Mỗi phiếu một hoá đơn* · *Gộp một tờ cuối tháng*; cột mới trên bảng cũng hiện cờ đó.
+7. Tháng nào chưa gộp thì bảng **Chờ gộp** ở đầu màn liệt kê khách × loại tiền còn phiếu chờ — bấm
+   **Gộp hoá đơn tháng** là ra một tờ mới.
+
 ### Bước 9 ☐ Xe liên kết: trả tiền chủ xe — `quytb` hoặc `quyvc`
 
 Chủ xe mẫu `ທ້າວ ຄຳຫລ້າ` ký **trả gộp cuối tháng bằng Kíp**, nên trên dòng phiếu không có nút trả từng

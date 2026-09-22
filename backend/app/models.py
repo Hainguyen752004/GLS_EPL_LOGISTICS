@@ -64,8 +64,12 @@ class Customer(Base):
     address = Column(String)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
+    # Cách xuất hoá đơn (anh Khampla C8.2, 22/09): `phieu` = mỗi phiếu một tờ (khách vãng lai) ·
+    # `thang` = cuối tháng kế toán doanh thu GỘP mọi phiếu đã khoá của khách thành MỘT tờ.
+    invoice_mode = Column(String, nullable=False, default="phieu")
 
 
+CACH_XUAT_HOA_DON = ("phieu", "thang")           # mỗi phiếu một hoá đơn · gộp một tờ cuối tháng
 CACH_TRA_CHU_XE = ("phieu", "thang", "dot")      # trả từng phiếu · gộp cuối tháng · theo đợt thoả thuận
 
 
@@ -342,6 +346,7 @@ class Trip(Base):
     transport_status = Column(String, nullable=False, default="dispatched")
     finance_status = Column(String, nullable=False, default="unpaid")
     invoiced = Column(Boolean, nullable=False, default=False)
+    invoice_id = Column(String, ForeignKey("invoices.id"))    # nằm trong tờ hoá đơn gộp tháng nào (trống = hoá đơn riêng)
     # Bước 14: xe về, kế toán rà cả phiếu rồi KHOÁ. Khoá rồi Bãi không sửa gì nữa; chỉ phiếu đã khoá mới xuất hoá đơn.
     locked = Column(Boolean, nullable=False, default=False)
     locked_by = Column(String)
@@ -728,6 +733,9 @@ class TripPayment(Base):
     __tablename__ = "trip_payments"
     id = Column(String, primary_key=True, default=ma_moi)
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    # Dòng này do một lần thu THEO HOÁ ĐƠN GỘP phân bổ xuống (trống = khách trả thẳng cho phiếu).
+    # Phân bổ để trạng thái từng phiếu vẫn tự suy ra được; tờ PT thì ghi ở lần thu gộp, không ghi ở đây.
+    invoice_payment_id = Column(String, ForeignKey("invoice_payments.id", ondelete="CASCADE"), index=True)
     pay_date = Column(Date, nullable=False)
     amount = Column(Float, nullable=False, default=0)          # theo currency
     currency = Column(String, nullable=False, default="LAK")
@@ -735,6 +743,50 @@ class TripPayment(Base):
     amount_lak = Column(Float, nullable=False, default=0)      # = amount × rate_to_lak
     method = Column(String, nullable=False, default="bank")    # PHUONG_THUC_THU
     ref = Column(String)                                       # số uỷ nhiệm chi · biên lai bên khách
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+
+
+# ---------------------------------------------------------------- hoá đơn gộp tháng (một tờ nhiều phiếu)
+class Invoice(Base):
+    """MỘT TỜ HOÁ ĐƠN gộp nhiều phiếu của cùng một khách trong một tháng (anh Khampla C8.2 · B3).
+
+    Khách vãng lai vẫn mỗi phiếu một hoá đơn như cũ — không có dòng ở đây. Khách có cờ
+    `invoice_mode = thang` thì cuối tháng kế toán doanh thu bấm "Gộp hoá đơn tháng": mọi phiếu đã
+    khoá, đã kiểm mục II, cùng tiền cước của khách trong tháng đó gom về một tờ; từng phiếu trỏ về
+    tờ qua trips.invoice_id. Tổng tiền = cộng doanh thu từng phiếu, không gõ tay. Sổ thu tiền của
+    khách gắn vào TỜ này (invoice_payments), mỗi lần thu phân bổ xuống phiếu theo thứ tự ngày.
+    """
+    __tablename__ = "invoices"
+    id = Column(String, primary_key=True, default=ma_moi)
+    inv_no = Column(String, unique=True, nullable=False)       # HDT-202609-01
+    customer_id = Column(String, ForeignKey("customers.id"), index=True)
+    customer_name = Column(String)
+    period = Column(String, nullable=False, index=True)        # YYYY-MM — tháng gộp
+    inv_date = Column(Date, nullable=False)
+    currency = Column(String, nullable=False, default="USD")   # tiền cước chung của các phiếu trong tờ
+    amount = Column(Float, nullable=False, default=0)          # Σ doanh thu theo currency
+    amount_lak = Column(Float, nullable=False, default=0)      # Σ doanh thu quy Kíp theo tỷ giá từng phiếu
+    so_phieu = Column(Integer, nullable=False, default=0)
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+
+
+class InvoicePayment(Base):
+    """MỘT LẦN khách trả tiền cho một tờ hoá đơn gộp. Sinh một tờ PT; phần phân bổ xuống từng
+    phiếu nằm ở trip_payments.invoice_payment_id."""
+    __tablename__ = "invoice_payments"
+    id = Column(String, primary_key=True, default=ma_moi)
+    invoice_id = Column(String, ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False, index=True)
+    pay_date = Column(Date, nullable=False)
+    amount = Column(Float, nullable=False, default=0)          # theo currency của LẦN THU
+    currency = Column(String, nullable=False, default="LAK")
+    rate_to_lak = Column(Float, nullable=False, default=1)
+    amount_lak = Column(Float, nullable=False, default=0)
+    method = Column(String, nullable=False, default="bank")    # PHUONG_THUC_THU
+    ref = Column(String)
     note = Column(String)
     by_user = Column(String)
     created_at = Column(DateTime, nullable=False, default=bay_gio)

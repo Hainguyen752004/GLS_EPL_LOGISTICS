@@ -95,6 +95,14 @@ thường ở đây. `payload` của tờ `PT` mang thêm `hoa_don_ccy`, `hoa_do
 về đúng hoá đơn, và `rate_to_lak` là tỷ giá ngày thu. Phần chênh lệch tỷ giá bên em **không hạch toán** —
 để anh quyết.
 
+**Một tờ `HD` có thể gồm NHIỀU phiếu xuất xe.** Khách có hợp đồng nhận **một hoá đơn gộp cả tháng**
+(anh Khampla C8.2). Tờ `HD` khi đó **không gắn phiếu nào**, nên `trip_no` là `null`, còn `lines` mang
+`inv_no` (`"HDT-202609-01"`), `period` (`"2026-09"`), `so_phieu`, và mảng `phieu[]` — mỗi phần tử có
+`doc_no`, `doc_date`, `tan_tinh`, `don_gia`, `cach_tinh`, `thanh_tien`, `thanh_tien_lak`, `rate_to_lak`.
+Tờ `PT` của hoá đơn gộp cũng có `trip_no = null`, `lines` thêm `inv_no`, `period` và `phan_bo[]`
+(`doc_no` + `phan_bo_lak`) để anh thấy tiền được rải về phiếu nào. Khách vãng lai thì vẫn như cũ: một
+tờ `HD` cho một phiếu, `trip_no` là số phiếu đó.
+
 | `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 1371 · 1371 / 4021 |
 | `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng | stock_out · stock_in | 614 / 1371 · 1371 / 4021 |
 | `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 1371 / *hàng khách gửi* |

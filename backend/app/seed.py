@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
-from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Owner, Part, Route,  # noqa: E402
+from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Invoice, InvoicePayment, Owner, Part, Route,  # noqa: E402
                     RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
                     TripPayment, TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
@@ -101,8 +101,13 @@ def gieo(db):
     db.add(chu); db.flush()
 
     # ---- danh mục
-    kh = {t: Customer(name=t) for t in ("ຄຳຕຸ້ຍ", "ນາງ ວັນນາ")}
+    kh = {t: Customer(name=t) for t in ("ຄຳຕຸ້ຍ", "ນາງ ວັນນາ", "ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ")}
     kh["ຄຳຕຸ້ຍ"].phone = "020 5555 1234"
+    # Khách HỢP ĐỒNG: chạy nhiều chuyến trong tháng, cuối tháng nhận MỘT tờ hoá đơn gộp (C8.2).
+    kh["ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ"].phone = "021 264 900"
+    kh["ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ"].address = "ນະຄອນຫຼວງວຽງຈັນ"
+    kh["ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ"].invoice_mode = "thang"
+    kh["ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ"].note = "Hợp đồng tháng — cuối tháng gộp một hoá đơn cho mọi phiếu"
     for c in kh.values(): db.add(c)
 
     # Rơ-moóc là thực thể riêng; lắp vào đầu kéo qua trailer_id
@@ -316,6 +321,28 @@ def gieo(db):
            doi_tuong_ten="Thà Bốc", by_user="ສົມໄຊ (Somchai)", mo_ta="Xuất kho hàng đi giao %s · 30.0 tấn" % pv.doc_no,
            payload={"tan": 30.0, "dong": [{"hang": "ແຮ່ເຫຼັກ (quặng sắt)", "tan": 30.0, "lo": pg.id}]})
 
+    # ---- hai phiếu của KHÁCH HỢP ĐỒNG trong tháng 9: đã khoá, chờ gộp một hoá đơn cuối tháng.
+    # Đây là dữ liệu để thấy màn Hoá đơn gộp có việc: khách này không xuất hoá đơn từng phiếu.
+    muc_xong = {"info": "verified", "trans": "verified", "fuel": "paid", "travel": "paid"}
+    hd_phieu = [
+        phieu(doc_no="T4-0440-09/EPL", doc_date=D(2026, 9, 3), out_date=D(2026, 9, 3), back_date=D(2026, 9, 6),
+              truck_no="341", driver_name="ທ້າວ ທັດສະດາພອນ", odo_out=8045, odo_back=9010, tuyen="ກາສີ → ກາລໍ",
+              customer_name="ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ", ore_bill_no="HR-2310", ore_bill_date=D(2026, 9, 3),
+              weight_origin=41.50, weight_dest=41.20, price=44, price_ccy="USD",
+              transport_status="arrived", finance_status="unpaid", tt_muc=muc_xong,
+              locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 9, 8, 9, 0),
+              chi=[dong("fuel", "diesel", 115, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 700, 28000, "VND", "fp_vn")]
+                  + di_duong_chuan()),
+        phieu(doc_no="T4-0441-09/EPL", doc_date=D(2026, 9, 11), out_date=D(2026, 9, 11), back_date=D(2026, 9, 14),
+              truck_no="342", driver_name="ທ້າວ ບຸນມີ", odo_out=6200, odo_back=7150, tuyen="ກາສີ → ທ່າເຮືອກະລໍ",
+              customer_name="ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ", ore_bill_no="HR-2318", ore_bill_date=D(2026, 9, 11),
+              weight_origin=40.90, weight_dest=40.70, price=44, price_ccy="USD",
+              transport_status="arrived", finance_status="unpaid", tt_muc=muc_xong,
+              locked=True, locked_by="ນາງ ຄຳ (Kham)", locked_at=dt.datetime(2026, 9, 16, 9, 0),
+              chi=[dong("fuel", "diesel", 120, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 690, 28000, "VND", "fp_vn")]
+                  + di_duong_chuan()),
+    ]
+
     # ---- phiếu lĩnh (tờ giấy tài xế cầm đi, có mã QR)
     # Phiếu vừa xuất bến còn ĐANG CHỜ CẤP để màn Cấp phát có việc; các phiếu cũ thì tiền đã trao
     # tay rồi, đánh dấu "đã cấp" để bảng Tất toán có cả cột đã ứng lẫn cột đã chi.
@@ -419,6 +446,56 @@ def gieo_chung_tu(db):
                        by_user="ນາງ ຄຳ (Kham)", mo_ta="Thu tiền khách phiếu %s · %s LAK" % (p.doc_no, du),
                        payload={"rate_to_lak": 1, "method": "bank", "hoa_don_ccy": k["ccy"],
                                 "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"]})
+    # ---- TỜ HOÁ ĐƠN GỘP THÁNG 9 cho khách hợp đồng: một tờ, hai dòng phiếu (C8.2).
+    # Tiền của tờ = cộng doanh thu từng phiếu; khách chuyển trước 60 % bằng Kíp, phần tiền đó
+    # được PHÂN BỔ xuống từng phiếu theo thứ tự ngày để trạng thái từng phiếu vẫn đúng.
+    hd_phieu = (db.query(Trip).filter(Trip.doc_no.in_(("T4-0440-09/EPL", "T4-0441-09/EPL")))
+                .order_by(Trip.doc_date, Trip.doc_no).all())
+    kh_gop = db.query(Customer).filter(Customer.invoice_mode == "thang").first()
+    tong_hd, tong_lak_hd, dong_hd = 0.0, 0.0, []
+    for p in hd_phieu:
+        k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).all())
+        tong_hd += k["doanh_thu"]; tong_lak_hd += k["doanh_thu_lak"]
+        dong_hd.append({"doc_no": p.doc_no, "doc_date": p.doc_date.isoformat(), "tan_tinh": k["tan_tinh"],
+                        "don_gia": p.price, "cach_tinh": k["cach_tinh"], "thanh_tien": k["doanh_thu"],
+                        "thanh_tien_lak": k["doanh_thu_lak"], "rate_to_lak": ty_gia(p, k["ccy"])})
+    hd_gop = Invoice(inv_no="HDT-202609-01", customer_id=kh_gop.id,
+                     customer_name=kh_gop.name, period="2026-09", inv_date=D(2026, 9, 30),
+                     currency="USD", amount=round(tong_hd, 2), amount_lak=round(tong_lak_hd), so_phieu=len(hd_phieu),
+                     note="Hoá đơn gộp tháng 9 theo hợp đồng", by_user="ນາງ ຄຳ (Kham)")
+    db.add(hd_gop); db.flush()
+    for p in hd_phieu:
+        p.invoice_id, p.invoiced = hd_gop.id, True
+    CT.ghi(db, "HD", nguon_bang="invoices", nguon_id=hd_gop.id, ngay=hd_gop.inv_date, doi_tuong_loai="khach",
+           doi_tuong_ten=hd_gop.customer_name, tien=hd_gop.amount, tien_te="USD", tien_lak=hd_gop.amount_lak,
+           by_user="ນາງ ຄຳ (Kham)", mo_ta="Hoá đơn gộp tháng 2026-09 · %s · %d phiếu" % (hd_gop.customer_name, len(hd_phieu)),
+           payload={"inv_no": hd_gop.inv_no, "period": "2026-09", "currency": "USD", "so_phieu": len(hd_phieu), "phieu": dong_hd})
+    tra_lak = round(hd_gop.amount_lak * 0.6)
+    ip = InvoicePayment(invoice_id=hd_gop.id, pay_date=D(2026, 10, 2), amount=tra_lak, currency="LAK",
+                        rate_to_lak=1, amount_lak=tra_lak, method="bank", ref="UNC-2609",
+                        note="Khách chuyển 60 % hoá đơn gộp tháng 9 bằng Kíp", by_user="ນາງ ຄຳ (Kham)")
+    db.add(ip); db.flush()
+    con_lai_hd, chia_hd = tra_lak, []
+    for i, p in enumerate(hd_phieu):
+        if con_lai_hd <= 0:
+            break
+        k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).all())
+        phan = con_lai_hd if i == len(hd_phieu) - 1 else min(con_lai_hd, round(k["doanh_thu_lak"]))
+        db.add(TripPayment(trip_id=p.id, pay_date=ip.pay_date, amount=phan, currency="LAK", rate_to_lak=1,
+                           amount_lak=phan, method="bank", ref=ip.ref, invoice_payment_id=ip.id,
+                           note="Phân bổ từ hoá đơn gộp %s" % hd_gop.inv_no, by_user="ນາງ ຄຳ (Kham)"))
+        p.finance_status = "paid" if phan >= round(k["doanh_thu_lak"]) else "partial"
+        chia_hd.append({"doc_no": p.doc_no, "phan_bo_lak": phan})
+        con_lai_hd -= phan
+    CT.ghi(db, "PT", nguon_bang="invoice_payments", nguon_id=ip.id, ngay=ip.pay_date, doi_tuong_loai="khach",
+           doi_tuong_ten=hd_gop.customer_name, tien=tra_lak, tien_te="LAK", tien_lak=tra_lak,
+           by_user="ນາງ ຄຳ (Kham)", phuong_thuc="bank",
+           mo_ta="Thu tiền khách hoá đơn gộp %s · %s LAK" % (hd_gop.inv_no, tra_lak),
+           payload={"inv_no": hd_gop.inv_no, "period": "2026-09", "rate_to_lak": 1, "method": "bank",
+                    "ref": ip.ref, "hoa_don_ccy": "USD", "hoa_don": hd_gop.amount,
+                    "hoa_don_lak": hd_gop.amount_lak, "phan_bo": chia_hd})
+    db.flush()
+
     phieu_theo_so = {p.doc_no: p for p in db.query(Trip).all()}
     for m in db.query(FuelMove).order_by(FuelMove.move_date).all():
         p = phieu_theo_so.get(m.doc_no)

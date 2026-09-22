@@ -396,6 +396,7 @@
     // Hai module dưới là TIỀN BÁN: hoá đơn cho khách và bảng lãi xe liên kết. Bãi không thấy — đó là
     // biên lợi nhuận. Còn tiền tài xế và công nợ nhà cung cấp là chi phí, Bãi xem được.
     { id: 'hoa-don',        nhom: 'mod_transport', nav: 'nav_bill', nav_s: 'nav_bill_s', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],     ic: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8' },
+    { id: 'hoa-don-gop',    nhom: 'mod_transport', nav: 'nav_bill_m', nav_s: 'nav_bill_m_s', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash'], ic: 'M3 4h14v16l-3.5-2-3.5 2-3.5-2L3 20zM6 9h8M6 13h8M18 7h3v11a2 2 0 0 1-2 2' },
     { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },
     { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true },
     { id: 'cap-phat',       nhom: 'mod_transport', nav: 'nav_issue',    ic: 'M3 6h13v9H3zM16 9h3l2 3v3h-5M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4', vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash'] },

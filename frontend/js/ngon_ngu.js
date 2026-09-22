@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1282 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1310 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -6206,6 +6206,146 @@ window.EPL_TU_DIEN = {
   "vi": "Tỷ giá",
   "lo": "ອັດຕາແລກປ່ຽນ",
   "en": "Exchange rates"
+ },
+ "nav_bill_m": {
+  "vi": "Hoá đơn gộp tháng",
+  "lo": "ໃບເກັບເງິນລວມເດືອນ",
+  "en": "Monthly invoices"
+ },
+ "nav_bill_m_s": {
+  "vi": "HĐ gộp",
+  "lo": "ໃບລວມ",
+  "en": "Monthly inv."
+ },
+ "d_hoa_don_gop": {
+  "vi": "Một tờ cho nhiều phiếu trong tháng",
+  "lo": "ໜຶ່ງໃບສຳລັບຫຼາຍບິນໃນເດືອນ",
+  "en": "One invoice for many slips"
+ },
+ "title_hoa_don_gop": {
+  "vi": "Hoá đơn gộp tháng<span class=\"sub\">Khách hợp đồng · một tờ cho nhiều phiếu trong tháng</span>",
+  "lo": "ໃບເກັບເງິນລວມເດືອນ<span class=\"sub\">ລູກຄ້າສັນຍາ · ໜຶ່ງໃບສຳລັບຫຼາຍບິນໃນເດືອນ</span>",
+  "en": "Monthly invoices<span class=\"sub\">Contract customers · one invoice for many slips</span>"
+ },
+ "hg_note": {
+  "vi": "Chỉ khách để \"gộp tháng\" mới hiện ở đây",
+  "lo": "ສະເພາະລູກຄ້າທີ່ຕັ້ງ \"ລວມເດືອນ\" ຈຶ່ງມີຢູ່ນີ້",
+  "en": "Only customers set to monthly billing appear here"
+ },
+ "hg_cho_gop": {
+  "vi": "Chờ gộp",
+  "lo": "ລໍຖ້າລວມ",
+  "en": "Waiting to be grouped"
+ },
+ "hg_cho_gop_hint": {
+  "vi": "Phiếu đã khoá, chưa lên hoá đơn — tách theo tiền cước",
+  "lo": "ບິນທີ່ລັອກແລ້ວ ຍັງບໍ່ອອກໃບເກັບເງິນ — ແຍກຕາມສະກຸນເງິນ",
+  "en": "Locked slips not yet invoiced — split by currency"
+ },
+ "hg_cho_trong": {
+  "vi": "Tháng này không có phiếu nào chờ gộp",
+  "lo": "ເດືອນນີ້ບໍ່ມີບິນລໍຖ້າລວມ",
+  "en": "No slips waiting this month"
+ },
+ "hg_ds": {
+  "vi": "Các tờ hoá đơn gộp",
+  "lo": "ໃບເກັບເງິນລວມ",
+  "en": "Monthly invoices"
+ },
+ "hg_inv_no": {
+  "vi": "Số hoá đơn",
+  "lo": "ເລກໃບເກັບເງິນ",
+  "en": "Invoice no."
+ },
+ "hg_period": {
+  "vi": "Kỳ",
+  "lo": "ງວດ",
+  "en": "Period"
+ },
+ "hg_inv_date": {
+  "vi": "Ngày hoá đơn",
+  "lo": "ວັນທີໃບເກັບເງິນ",
+  "en": "Invoice date"
+ },
+ "hg_so_phieu": {
+  "vi": "Số phiếu",
+  "lo": "ຈຳນວນບິນ",
+  "en": "Slips"
+ },
+ "hg_tong": {
+  "vi": "Tổng tiền",
+  "lo": "ລວມເງິນ",
+  "en": "Total"
+ },
+ "hg_phieu_list": {
+  "vi": "Các phiếu",
+  "lo": "ບັນດາບິນ",
+  "en": "Slips"
+ },
+ "hg_gop": {
+  "vi": "Gộp hoá đơn tháng",
+  "lo": "ລວມໃບເກັບເງິນເດືອນ",
+  "en": "Group monthly invoice"
+ },
+ "hg_dong_phieu": {
+  "vi": "Dòng phiếu trong hoá đơn",
+  "lo": "ລາຍການບິນໃນໃບເກັບເງິນ",
+  "en": "Slips on this invoice"
+ },
+ "hg_phan_bo": {
+  "vi": "Tiền thu ở tờ này được phân bổ về từng phiếu theo thứ tự ngày, nên trạng thái từng phiếu vẫn đúng.",
+  "lo": "ເງິນທີ່ຮັບໃນໃບນີ້ຈະແບ່ງໃສ່ແຕ່ລະບິນຕາມລຳດັບວັນທີ ສະນັ້ນສະຖານະຂອງແຕ່ລະບິນຍັງຖືກຕ້ອງ.",
+  "en": "Payments here are allocated to each slip oldest first, so per-slip status stays correct."
+ },
+ "hg_huy": {
+  "vi": "Huỷ tờ hoá đơn",
+  "lo": "ຍົກເລີກໃບເກັບເງິນ",
+  "en": "Cancel invoice"
+ },
+ "hg_huy_hoi": {
+  "vi": "Huỷ tờ này thì các phiếu quay lại \"chưa xuất hoá đơn\". Chỉ huỷ được khi chưa thu đồng nào.",
+  "lo": "ຍົກເລີກໃບນີ້ແລ້ວ ບິນຕ່າງໆຈະກັບເປັນ \"ຍັງບໍ່ອອກໃບເກັບເງິນ\". ຍົກເລີກໄດ້ເມື່ອຍັງບໍ່ໄດ້ຮັບເງິນ.",
+  "en": "Cancelling returns its slips to \"not invoiced\". Only possible before any payment."
+ },
+ "hg_xem": {
+  "vi": "Xem",
+  "lo": "ເບິ່ງ",
+  "en": "View"
+ },
+ "hg_thuoc": {
+  "vi": "Thuộc hoá đơn",
+  "lo": "ຢູ່ໃນໃບເກັບເງິນ",
+  "en": "On invoice"
+ },
+ "hg_thu_o_to": {
+  "vi": "Tiền thu ghi ở tờ hoá đơn gộp",
+  "lo": "ບັນທຶກການຮັບເງິນຢູ່ໃບເກັບເງິນລວມ",
+  "en": "Payments are recorded on the monthly invoice"
+ },
+ "inv_mode": {
+  "vi": "Cách xuất hoá đơn",
+  "lo": "ວິທີອອກໃບເກັບເງິນ",
+  "en": "Invoicing"
+ },
+ "inv_phieu": {
+  "vi": "Mỗi phiếu một hoá đơn",
+  "lo": "ໜຶ່ງບິນໜຶ່ງໃບເກັບເງິນ",
+  "en": "One invoice per slip"
+ },
+ "inv_thang": {
+  "vi": "Gộp một tờ cuối tháng",
+  "lo": "ລວມໜຶ່ງໃບທ້າຍເດືອນ",
+  "en": "One invoice per month"
+ },
+ "inv_phieu_s": {
+  "vi": "Từng phiếu",
+  "lo": "ແຕ່ລະບິນ",
+  "en": "Per slip"
+ },
+ "inv_thang_s": {
+  "vi": "Gộp tháng",
+  "lo": "ລວມເດືອນ",
+  "en": "Monthly"
  },
  "title_ty_gia": {
   "vi": "Tỷ giá<span class=\"sub\">Quy đổi về Kíp · dùng cho phiếu lập mới</span>",

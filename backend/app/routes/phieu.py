@@ -21,7 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (GoodsMove, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+from models import (GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
@@ -184,8 +184,14 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None):
     for c in COT_NGAY:
         ra[c] = ra[c].isoformat() if ra[c] else None
     tuyen = db.get(Route, phieu.route_id) if phieu.route_id else None
+    hd_gop = db.get(Invoice, phieu.invoice_id) if phieu.invoice_id else None
+    kh = db.get(Customer, phieu.customer_id) if phieu.customer_id else None
     ra.update({"id": phieu.id, "transport_status": phieu.transport_status,
                "finance_status": phieu.finance_status, "invoiced": phieu.invoiced,
+               # Hoá đơn gộp tháng (C8.2): phiếu nằm trong tờ nào, và khách này có gộp không —
+               # để màn phiếu ẩn nút "xuất hoá đơn"/"ghi thu" và chỉ sang tờ gộp.
+               "invoice_id": phieu.invoice_id, "inv_no": hd_gop.inv_no if hd_gop else None,
+               "inv_mode": (kh.invoice_mode if kh else None) or "phieu",
                "locked": bool(phieu.locked), "locked_by": phieu.locked_by,
                "locked_at": phieu.locked_at.isoformat() if phieu.locked_at else None,
                "owner_id": phieu.owner_id, "owner_payment_id": phieu.owner_payment_id,
@@ -954,6 +960,9 @@ def xuat_hoa_don(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
         raise HTTPException(409, {"ma": "CHUA_KIEM", "loi": "Mục II (vận chuyển) phải được kiểm xong trước khi xuất hoá đơn."})
     if not p.locked:
         raise HTTPException(409, {"ma": "CHUA_KHOA", "loi": "Kế toán phải kiểm lại và KHOÁ phiếu (bước 14) rồi mới xuất hoá đơn."})
+    kh = db.get(Customer, p.customer_id) if p.customer_id else None
+    if kh is not None and kh.invoice_mode == "thang":
+        raise HTTPException(409, {"ma": "GOP_THANG", "loi": "Khách %s xuất hoá đơn GỘP THÁNG — cuối tháng dùng \"Gộp hoá đơn tháng\", không xuất riêng từng phiếu." % kh.name})
     p.invoiced = True
     k = tinh_phieu(p, _dong_chi(db, p))
     CT.ghi(db, "HD", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="khach",
@@ -981,6 +990,8 @@ def _xuat_thu(x):
     return {"id": x.id, "trip_id": x.trip_id, "pay_date": x.pay_date.isoformat() if x.pay_date else None,
             "amount": x.amount, "currency": x.currency, "rate_to_lak": x.rate_to_lak,
             "amount_lak": x.amount_lak, "method": x.method, "ref": x.ref, "note": x.note,
+            # Dòng do một lần thu của hoá đơn gộp rải xuống — màn phiếu không cho xoá lẻ dòng này.
+            "invoice_payment_id": x.invoice_payment_id,
             "by_user": x.by_user, "created_at": x.created_at.isoformat() if x.created_at else None}
 
 
@@ -1027,6 +1038,10 @@ def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db)
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi thu tiền."})
     if not p.invoiced:
         raise HTTPException(409, {"ma": "CHUA_HOA_DON", "loi": "Chưa xuất hoá đơn thì chưa ghi thu tiền."})
+    if p.invoice_id:
+        hd = db.get(Invoice, p.invoice_id)
+        raise HTTPException(409, {"ma": "THU_QUA_HD_GOP", "loi": "Phiếu này nằm trong hoá đơn gộp %s — ghi thu tiền ở tờ hoá đơn gộp, tiền sẽ tự phân bổ về phiếu."
+                                  % (hd.inv_no if hd else ""), "invoice_id": p.invoice_id})
     tien = _so(data.get("amount"), "amount")
     if not tien or tien <= 0:
         raise HTTPException(422, {"ma": "SO_TIEN_SAI", "loi": "Số tiền thu phải lớn hơn 0."})
@@ -1073,6 +1088,8 @@ def xoa_thu_tien(pid: str, db: Session = Depends(get_db), user=Depends(nguoi_hie
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có lần thu này."})
     if user.role not in ("rev", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu sửa sổ thu tiền."})
+    if x.invoice_payment_id:
+        raise HTTPException(409, {"ma": "THUOC_HD_GOP", "loi": "Dòng này do lần thu của hoá đơn gộp phân bổ xuống — xoá lần thu ở tờ hoá đơn gộp, không xoá lẻ từng phiếu."})
     p = db.get(Trip, x.trip_id)
     c = CT.tim(db, "PT", "trip_payments", x.id)
     if c is not None and c.da_day:

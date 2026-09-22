@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (36 bảng) · **C. API**
-(129 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (38 bảng) · **C. API**
+(136 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -103,6 +103,9 @@ hai báo cáo của màn Tổng quan (`thay_tien_ban()` trong `services/phan_quy
 - Kế toán bấm **Khoá phiếu**: máy rà km lệch quá 10 %, hao hụt quá 1,5 %, thiếu cân, thiếu phiếu quặng,
   thiếu dòng hàng, mục có chi mà chưa kiểm. Chỉ cảnh báo, kế toán xác nhận thì vẫn khoá được.
 - **Chỉ phiếu đã khoá mới xuất hoá đơn** (`1211/70`) và mới ghi thu tiền.
+- **Hai kiểu hoá đơn** (anh Khampla C8.2): khách vãng lai thì **mỗi phiếu một tờ** — bấm *Xuất hoá đơn*
+  ngay trên phiếu như cũ; khách **có hợp đồng** thì cuối tháng gộp **một tờ cho cả tháng** ở màn
+  *Hoá đơn gộp tháng*. Xem A8.
 - **Xe liên kết**: EPL trả chủ xe = giá thuê × tấn (hoặc giá trọn chuyến) − phí %/phiếu − mức trừ mỗi tấn vượt
   ngưỡng − các khoản EPL đã ứng (quy về tiền thuê). **Phí, ngưỡng tấn, mức trừ là điều khoản của từng chủ xe**
   (danh mục *Chủ xe liên kết* trên màn Xe liên kết): lập phiếu cho xe của chủ nào thì tự điền theo chủ đó, kế
@@ -171,6 +174,35 @@ Phần chênh lệch tỷ giá (hoá đơn 1.693,30 USD quy 37.252.600 Kíp mà 
 phần mềm **chỉ hiện ra**, hạch toán chênh lệch tỷ giá là việc của bên kế toán — bên mình không dựng
 sổ thứ hai.
 
+## A8. Hoá đơn gộp tháng — một tờ nhiều phiếu
+
+Anh Khampla trả lời 22/09 (C8.2, B3): **cả hai kiểu đều có**. Khách chạy lẻ vài chuyến thì lấy hoá đơn
+từng phiếu; khách có hợp đồng chạy vài chục chuyến một tháng thì **cuối tháng nhận một tờ**, không ai
+muốn cầm ba mươi tờ hoá đơn. Nên danh mục khách có ô **Cách xuất hoá đơn**:
+
+| Giá trị | Nghĩa |
+|---|---|
+| `phieu` (mặc định) | Mỗi phiếu một hoá đơn — kế toán doanh thu bấm *Xuất hoá đơn* trên từng phiếu |
+| `thang` | Gộp một tờ cuối tháng — nút trên phiếu bị chặn (`GOP_THANG`), làm ở màn *Hoá đơn gộp tháng* |
+
+**Cách làm cuối tháng**: vào `#/hoa-don-gop`, chọn tháng. Bảng *Chờ gộp* liệt kê từng khách × từng loại
+tiền cước còn phiếu **đã khoá, đã kiểm mục II, chưa lên hoá đơn**. Bấm *Gộp hoá đơn tháng* → một tờ
+`HDT-YYYYMM-NN` mang nhiều dòng phiếu, và **một** chứng từ `HD` cho cả tờ (không phải mỗi phiếu một tờ).
+
+Hai quy tắc giữ cho con số không bao giờ lệch:
+
+1. **Tiền của tờ = cộng doanh thu từng phiếu**, máy tính, không gõ tay. Một tờ chỉ mang **một loại tiền**:
+   khách ký tuyến này USD, tuyến kia Kíp thì cuối tháng là hai tờ, chứ không cộng hai thứ tiền vào nhau.
+2. **Thu tiền ghi ở TỜ, nhưng phân bổ xuống từng phiếu.** Khách chuyển một cục cho cả tháng; nếu chỉ ghi
+   ở tờ thì mọi phiếu trong tháng vẫn treo *chưa thu* và báo cáo theo phiếu sai hết. Nên mỗi lần thu sinh
+   một dòng `invoice_payments` (một tờ `PT`) rồi **rải xuống `trip_payments` theo thứ tự ngày phiếu** —
+   phiếu cũ trả trước, đúng cách họ đối chiếu công nợ. Trạng thái từng phiếu vẫn do tổng `trip_payments`
+   quyết định như mọi phiếu khác, không có đường tính thứ hai.
+
+Chặn đúng chỗ: ghi thu ở phiếu nằm trong tờ gộp → `THU_QUA_HD_GOP` (thu ở tờ); xoá lẻ dòng phân bổ ở
+phiếu → `THUOC_HD_GOP` (xoá lần thu ở tờ); huỷ tờ khi đã thu → `DA_THU`; huỷ tờ mà chứng từ `HD` đã đẩy
+sang kế toán → `DA_DAY_KE_TOAN`. Huỷ được thì các phiếu quay lại *chưa xuất hoá đơn*, gộp lại tháng khác.
+
 ## A6. Sổ chứng từ
 
 Mỗi bước sinh tiền hoặc hàng để lại **một tờ có số** cho kế toán kéo về (`GET /api/chung-tu`), số dạng
@@ -213,7 +245,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-36 bảng, nhóm theo việc:
+38 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -263,13 +295,15 @@ trừ tấn các DO giao đã lấy (`services/kho_hang.ton_lo`).
 | `driver_settlements` | Tất toán tài xế theo tháng |
 | `chung_tu` | **Sổ chứng từ**: `loai`, `so`, `ngay`, `trip_id`, `tien_lak`, hai vế `no`/`co` gợi ý, `da_day`, `ma_ben_ke_toan` (mã phiếu bên anh Khang trả về), `loi_day` và `lan_thu` (đẩy hỏng vì sao, mấy lần), `payload` JSON chi tiết |
 | `cau_hinh` | Cấu hình đặt trong màn hình: `ke_toan_api`, `ke_toan_token`; không có thì rơi về biến môi trường `EPL_<KHOA>` |
+| `invoices` | **Hoá đơn gộp tháng** — một tờ nhiều phiếu: `inv_no` (`HDT-202609-01`), `customer_id`, `period` (`YYYY-MM`), `inv_date`, `currency`, `amount` + `amount_lak`, `so_phieu`. Phiếu trỏ về tờ qua `trips.invoice_id` |
+| `invoice_payments` | **Một lần khách trả cho tờ gộp** — `pay_date`, `amount` + `currency` + `rate_to_lak` + `amount_lak`, `method`, `ref`. Phần rải xuống phiếu nằm ở `trip_payments.invoice_payment_id` |
 | `sales`, `sale_lines` | Bán phụ tùng, xăng dầu ra ngoài |
 
 ---
 
 # C. API
 
-112 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
+136 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
 gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi ngay dưới đây.
 
 ## C1. Đăng nhập và tài khoản — `routes/dang_nhap.py`
@@ -295,8 +329,8 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `POST /api/trips/{id}/bao-ve` | **Tài xế báo đã về** (C2.1): ngày về, km về. Chỉ ghi hai số và đánh mốc tới điểm cuối, không tự chuyển "đã tới" — Bãi cân rồi mới xác nhận |
 | `POST /api/trips/{id}/transport-status` | Xuất phát / tới nơi. Tới nơi: DO gom **nhập kho**, DO giao **ghi hao hụt** |
 | `POST /api/trips/{id}/khoa`, `/mo-khoa`, `GET /kiem-lai` | Khoá phiếu sau khi xe về; Sếp mở khoá |
-| `POST /api/trips/{id}/invoice` | Xuất hoá đơn — phiếu gom cũng xuất được (B4: khách trả cước riêng cho chặng gom) |
-| `GET POST /api/trips/{id}/thu-tien` · `DELETE /api/thu-tien/{id}` | **Sổ thu tiền**: xem, ghi một lần khách trả (tiền nào cũng được, có tỷ giá ngày thu), xoá dòng ghi nhầm. Thu dư phải xác nhận; tờ `PT` đã đẩy kế toán thì không xoá được |
+| `POST /api/trips/{id}/invoice` | Xuất hoá đơn **từng phiếu** — phiếu gom cũng xuất được (B4: khách trả cước riêng cho chặng gom). Khách để *gộp tháng* thì từ chối `GOP_THANG`, làm ở C8 |
+| `GET POST /api/trips/{id}/thu-tien` · `DELETE /api/thu-tien/{id}` | **Sổ thu tiền**: xem, ghi một lần khách trả (tiền nào cũng được, có tỷ giá ngày thu), xoá dòng ghi nhầm. Thu dư phải xác nhận; tờ `PT` đã đẩy kế toán thì không xoá được. Phiếu nằm trong hoá đơn gộp thì ghi và xoá ở tờ gộp (`THU_QUA_HD_GOP`, `THUOC_HD_GOP`) |
 | `POST /api/trips/{id}/tra-chu-xe` | Quỹ trả chủ xe **từng phiếu** → một đợt một phiếu, tờ `PC_CX`. Chủ xe trả gộp thì dùng `/api/owners/{id}/tra` |
 | `GET POST DELETE /api/trips/{id}/tep`, `/api/tep/{aid}` | Tệp đính kèm (phiếu quặng) |
 | `POST /api/trips/{id}/events`, `/bao-hong`, `/bao-nhien-lieu`, `/events/{eid}/duyet` | Diễn biến, báo hỏng, khai đổ dầu, duyệt |
@@ -326,7 +360,7 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 
 | Đường | Việc |
 |---|---|
-| `GET POST PUT /api/customers` | Khách hàng |
+| `GET POST PUT /api/customers` | Khách hàng. Có **`invoice_mode`**: `phieu` mỗi phiếu một hoá đơn · `thang` gộp một tờ cuối tháng (C8.2) |
 | `GET POST /api/customers/{id}/bang-gia`, `PUT DELETE /api/bang-gia/{id}` | **Bảng giá khách × tuyến**. Chỉ KT Thu/Chi VC và Sếp sửa; Bãi không xem được |
 | `GET /api/bang-gia/tra?customer_id=&route_id=` | Hỏi giá hợp đồng — màn phiếu dùng để tự điền |
 | `GET POST PUT /api/vehicles`, `GET /api/vehicles/{id}` | Xe đầu kéo, chi tiết kèm lịch sử rơ-moóc, chi phí sửa chữa, phiếu gần đây |
@@ -373,6 +407,21 @@ và mở ra ngoài qua `EPL.taiXe.ketLuan` để màn Phiếu xuất xe dùng ch
 Sửa tỷ giá **không bao giờ** làm đổi con số trên phiếu đã lập: phiếu khoá bốn tỷ giá của riêng nó
 (`trips.rate_usd`…) ngay lúc lập. Màn hình nói thẳng câu đó ở đầu trang, vì hiểu nhầm chỗ này là
 hiểu nhầm về tiền.
+
+## C8. Hoá đơn gộp tháng — `routes/hoa_don.py`
+
+Xem hoá đơn là **tiền bán**: Bãi, tài xế, thủ kho không gọi được (403). Lập tờ và thu tiền chỉ
+**KT Doanh thu VC** và Sếp.
+
+| Đường | Việc |
+|---|---|
+| `GET /api/hoa-don-gop/cho-gop?period=YYYY-MM` | Khách nào đang có phiếu chờ gộp trong tháng, **tách theo tiền cước**; kèm danh sách phiếu và tổng |
+| `GET /api/hoa-don-gop?period=&customer_id=` | Các tờ đã gộp: tiền, số phiếu, đã thu, còn lại, trạng thái |
+| `GET /api/hoa-don-gop/{id}` | Một tờ: từng dòng phiếu (tấn, đơn giá, thành tiền, đã thu, trạng thái) + sổ thu tiền + số chứng từ `HD` |
+| `POST /api/hoa-don-gop` | **Gộp hoá đơn tháng**: `customer_id`, `period`, `currency` (bỏ trống = tiền của phiếu đầu), `inv_date`, `note`. Khách không để *gộp tháng* → `KHONG_GOP_THANG`; tháng không có phiếu nào đủ điều kiện → `KHONG_CO_PHIEU` |
+| `DELETE /api/hoa-don-gop/{id}` | Huỷ tờ, các phiếu quay lại *chưa xuất hoá đơn*. Đã thu tiền → `DA_THU`; chứng từ đã đẩy kế toán → `DA_DAY_KE_TOAN` |
+| `POST /api/hoa-don-gop/{id}/thu-tien` | Ghi một lần khách trả cho cả tờ (tiền nào cũng được, có tỷ giá ngày thu) → một tờ `PT`, **tự phân bổ xuống từng phiếu theo thứ tự ngày**. Thu dư phải xác nhận `cho_thu_du` |
+| `DELETE /api/hoa-don-thu/{id}` | Xoá một lần thu — xoá luôn phần đã rải xuống các phiếu, trạng thái từng phiếu tính lại |
 
 ## C6. Theo dõi, báo cáo, chứng từ
 
@@ -433,6 +482,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
 | `node kiem\ra_tai_xe.js` | **Rà màn Tài xế**: từng vai, cột Kết luận, ngăn trượt hồ sơ, năm tab, bốn ngôn ngữ (báo cáo, không phải đạt/hỏng) |
 | `python kiem\thu_chu_xe.py` | **Chủ xe liên kết**: danh mục, phí riêng từng chủ tự điền vào phiếu, trả gộp hai phiếu một tờ PC_CX, chặn trả trùng, phân quyền xem/sửa/trả |
+| `python kiem\thu_hoa_don_gop.py` | **Hoá đơn gộp tháng**: cờ khách, chặn hoá đơn lẻ, gộp một tờ nhiều phiếu, thu ở tờ **phân bổ đúng về từng phiếu theo ngày**, chặn thu/xoá lẻ, huỷ tờ lùi lại sạch |
 | `python kiem\thu_ty_gia.py` | **Màn Tỷ giá**: ai xem ai sửa, lịch sử giữ số cũ, gõ lại số cũ không đẻ dòng rác, chặn số sai, phiếu cũ giữ tỷ giá của nó, phiếu mới lấy số mới |
 | `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |

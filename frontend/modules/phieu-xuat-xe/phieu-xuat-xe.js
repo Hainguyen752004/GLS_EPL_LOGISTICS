@@ -247,13 +247,18 @@
       if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe > 0) ta.push(`<button class="btn sm ok" data-hd-phieu="tra-chu-xe">${NN.h('pay_owner')} · ${t2(P.tinh.tra_chu_xe, P.tinh.hire_ccy || maCuoc())}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
-      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced) ta.push(`<button class="btn sm ok" data-hd-phieu="invoice">${NN.h('a_invoice')}</button>`);
+      // Khách gộp hoá đơn tháng (C8.2) thì KHÔNG xuất hoá đơn lẻ từng phiếu — sang màn Hoá đơn gộp.
+      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode !== 'thang') ta.push(`<button class="btn sm ok" data-hd-phieu="invoice">${NN.h('a_invoice')}</button>`);
+      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode === 'thang') ta.push(`<button class="btn sm" data-di-gop="">${NN.h('hg_gop')}</button>`);
+      if (P.invoice_id) ta.push(`<button class="btn sm" data-di-gop="${esc(P.invoice_id)}">${NN.h('hg_thuoc')} ${esc(P.inv_no || '')}</button>`);
       // Không còn nút "đánh dấu đã thu": tiền về bao nhiêu thì ghi bấy nhiêu, trạng thái tự suy ra.
-      if (AUTH.la('rev') && P.invoiced && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>`);
+      if (AUTH.la('rev') && P.invoiced && !P.invoice_id && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>`);
       if (AUTH.la('yard') && !P.locked && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
     }
     g('px-hanh-dong').innerHTML = ta.length ? `<span class="small muted">${NN.h('trip_status')}:</span> ${ta.join(' ')}` : `<span class="small muted">${NN.h('trip_status')}: ${moi ? NN.h('new_slip') : tag(P.transport_status) + ' ' + tag(P.finance_status)}</span>`;
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
+    root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.di('hoa-don-gop',
+      Object.assign({ thang: String(P.doc_date || '').slice(0, 7) }, b.dataset.diGop ? { id: b.dataset.diGop } : {}))));
     root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'thu-tien' ? ghiThuTien() : hanhDongPhieu(b.dataset.hdPhieu)));
     veThuTien();
     veTep();
@@ -414,15 +419,15 @@
       <td>${NN.h(PT_CACH.find(c => c[0] === x.method) ? PT_CACH.find(c => c[0] === x.method)[1] : 'pm_other')}</td>
       <td class="mono small">${esc(x.ref || '')}</td>
       <td class="small muted">${esc(x.by_user || '')}</td>
-      <td class="no-print">${AUTH.la('rev') ? `<button class="btn xs danger" data-xoa-thu="${x.id}" title="${esc(NN.t('pay_del'))}">×</button>` : ''}</td></tr>`).join('');
+      <td class="no-print">${AUTH.la('rev') && !x.invoice_payment_id ? `<button class="btn xs danger" data-xoa-thu="${x.id}" title="${esc(NN.t('pay_del'))}">×</button>` : ''}</td></tr>`).join('');
     o.innerHTML = `<div class="card px-thu"><div class="hd"><h4>${NN.h('collect_log')}</h4><div class="grow"></div>
         <span class="small">${NN.h('c_value')}: <b>${EPL.tien(k.doanh_thu, k.ccy)}</b> · ${NN.h('collected')}: <b>${EPL.tien(k.da_thu, k.ccy)}</b> · ${NN.h('remaining')}: <b class="${k.con_lai ? 'neg' : 'pos'}">${EPL.tien(k.con_lai, k.ccy)}</b></span>
-        ${AUTH.la('rev') && k.con_lai > 0 ? `<button class="btn sm ok no-print" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>` : ''}</div>
+        ${AUTH.la('rev') && k.con_lai > 0 && !P.invoice_id ? `<button class="btn sm ok no-print" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>` : ''}</div>
       <div class="bd">${ds.length ? `<table class="tbl tbl-compact"><thead><tr>
           <th>${NN.h('pay_date')}</th><th class="num">${NN.h('pay_amount')}</th><th class="num">${NN.h('rate_day')}</th>
           <th class="num">${NN.h('in_lak')}</th><th>${NN.h('pay_method')}</th><th>${NN.h('pay_ref')}</th><th>${NN.h('by_user')}</th><th class="no-print"></th>
         </tr></thead><tbody>${dong}</tbody></table>` : `<p class="small muted">${NN.h('pay_none')}</p>`}
-        <p class="small muted">${NN.h('fin_auto')}</p></div></div>`;
+        <p class="small muted">${P.invoice_id ? NN.h('hg_thu_o_to') + ' ' + esc(P.inv_no || '') : NN.h('fin_auto')}</p></div></div>`;
     o.querySelectorAll('[data-hd-phieu="thu-tien"]').forEach(b => b.addEventListener('click', ghiThuTien));
     o.querySelectorAll('[data-xoa-thu]').forEach(b => b.addEventListener('click', () => xoaThuTien(b.dataset.xoaThu)));
   }

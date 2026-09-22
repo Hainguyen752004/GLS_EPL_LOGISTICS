@@ -13,9 +13,10 @@
     const rows = ds.filter(c => !q || [c.name, c.phone, c.address].join(' ').toLowerCase().includes(q));
     root.querySelector('#kh-than').innerHTML = rows.length ? rows.map((c, i) => `<tr class="${c.active ? '' : 'kh-tat'}">
       <td>${i + 1}</td><td lang="lo"><b>${esc(c.name)}</b></td><td>${esc(c.phone) || '—'}</td><td lang="lo">${esc(c.address) || '—'}</td><td class="small muted">${esc(c.note) || ''}</td>
+      <td>${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')}</td>
       <td>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}</td>
       <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button>` : ''}</td></tr>`).join('')
-      : `<tr><td colspan="7" class="empty">${NN.h('no_data')}</td></tr>`;
+      : `<tr><td colspan="8" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
     root.querySelectorAll('[data-gia]').forEach(b => b.addEventListener('click', () => moGia(ds.find(x => x.id === b.dataset.gia))));
   }
@@ -72,13 +73,16 @@
       { id: 'name', label: 'name', value: c ? c.name : '', lo: true },
       { id: 'phone', label: 'phone', value: c ? c.phone : '' },
       { id: 'address', label: 'address', value: c ? c.address : '', lo: true },
+      // Cách xuất hoá đơn (C8.2): khách hợp đồng nhận MỘT tờ cuối tháng; khách vãng lai mỗi phiếu một tờ.
+      { id: 'invoice_mode', label: 'inv_mode', type: 'select', value: c ? (c.invoice_mode || 'phieu') : 'phieu',
+        options: [['phieu', NN.t('inv_phieu')], ['thang', NN.t('inv_thang')]] },
       { id: 'note', label: 'note', type: 'textarea', value: c ? c.note : '' },
       ...(c ? [{ id: 'active', label: 'status', type: 'select', value: c.active ? '1' : '0', options: [['1', NN.t('active')], ['0', NN.t('inactive')]] }] : []),
     ], NN.t('save'));
     if (!v) return;
     if (!v.name.trim()) return EPL.toast(NN.t('name') + '?', 'loi');
     try {
-      const body = { name: v.name, phone: v.phone, address: v.address, note: v.note };
+      const body = { name: v.name, phone: v.phone, address: v.address, note: v.note, invoice_mode: v.invoice_mode };
       if (c) body.active = v.active === '1';
       await (c ? API.put('/api/customers/' + c.id, body) : API.post('/api/customers', body));
       EPL.toast(NN.t('saved'), 'ok'); await tai();

@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, Owner,
+from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, Owner,
                     ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
@@ -83,8 +83,19 @@ def them_khach(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Khách hàng phải có tên."})
     c = Customer(); _ap(c, data, ("name", "phone", "address", "note"))
+    _ap_cach_hoa_don(c, data)
     db.add(c); db.commit(); db.refresh(c)
     return _dict(c)
+
+
+def _ap_cach_hoa_don(c, data):
+    """Cờ `invoice_mode` (C8.2): phieu = mỗi phiếu một hoá đơn · thang = gộp một tờ cuối tháng."""
+    if "invoice_mode" not in data:
+        return
+    v = (data.get("invoice_mode") or "phieu").strip().lower()
+    if v not in CACH_XUAT_HOA_DON:
+        raise HTTPException(422, {"ma": "CACH_HOA_DON_SAI", "loi": "Cách xuất hoá đơn phải là %s." % " · ".join(CACH_XUAT_HOA_DON)})
+    c.invoice_mode = v
 
 
 @router.put("/api/customers/{cid}")
@@ -93,6 +104,7 @@ def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), _
     if not c:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
     _ap(c, data, ("name", "phone", "address", "note", "active"))
+    _ap_cach_hoa_don(c, data)
     db.commit(); db.refresh(c)
     return _dict(c)
 
