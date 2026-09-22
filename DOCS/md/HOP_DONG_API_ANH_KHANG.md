@@ -198,4 +198,11 @@ qua, thử cả trường hợp anh trả 500 và 409. Khi anh có đường th�
 đặt địa chỉ và token trong màn Sổ chứng từ → bấm *Đẩy hết* → anh kiểm phiếu bên anh, bên em kiểm cột
 "Mã phiếu bên kế toán" bên này. Tờ nào anh từ chối sẽ hiện câu lỗi của anh ngay trên dòng đó.
 
+**Cập nhật 22/09/2026 — đã có bên nhận chạy thật.** Dự án `EPL_KETOAN` (cổng 8030, DB `epl_ketoan`) nhận đúng
+gói tin ở mục 1, chống trùng theo `ref`, sinh một bút toán cho một tờ với hai vế lấy nguyên trên tờ, dựng Nhật ký
+chung · Sổ cái · Cân đối phát sinh. Đã đẩy thật 57/57 tờ mẫu từ EPL_LAO_REAL sang, sổ cân (Nợ = Có). Anh có thể
+lấy nó làm mẫu bên nhận, hoặc đối chiếu: cùng một gói JSON, bên anh trả gì thì bên em hiện đúng như vậy.
+Một điểm hợp đồng rút ra khi thử thật: lỗi 4xx bên nhận nên trả thân **phẳng** `{ma, loi, message}` (không bọc
+trong `detail`) thì màn kế toán bên em mới hiện được câu lỗi thay vì chỉ "HTTP 422".
+
 Liên hệ kỹ thuật bên em: [tên · điện thoại].
