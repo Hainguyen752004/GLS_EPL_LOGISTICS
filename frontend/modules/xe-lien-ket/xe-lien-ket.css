@@ -1,2 +1,9 @@
 /* Xe liên kết */
 .xlk-bang tr{cursor:pointer}
+
+/* Bảng chủ xe liên kết và hộp trả gộp */
+.xlk-chu-card{margin-bottom:14px}
+.xlk-tat{opacity:.55}
+.xlk-chon{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+.xlk-chon label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.xlk-tong{margin:4px 0 10px;font-size:13.5px}

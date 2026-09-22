@@ -72,7 +72,7 @@ def main():
     s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
     s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"],
                               "customer_id": kh[0]["id"], "doc_date": "2026-09-14", "out_date": "2026-09-14", "origin": "ກາສີ", "destination": "ກາລໍ",
-                              "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5, "odo_out": 1000,
+                              "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5, "hire_ccy": "USD", "odo_out": 1000,   # chủ xe mẫu ký thuê bằng Kíp; phiếu thử này thoả thuận USD nên ghi rõ
                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 100, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"},
                                            {"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": 1833500},
                                            {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 430000, "paid_by_epl": False}]}, vai="thabok")

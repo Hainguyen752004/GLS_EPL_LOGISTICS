@@ -13,7 +13,7 @@
   const NGUONG_BAO_DUONG = 500;   // km — còn ≤ 500 km tới mốc bảo dưỡng thì "đến kỳ"
   const suaDuoc = () => AUTH.la('yard', 'acct');     // chỉ Bãi và Kế toán sửa danh mục (như các màn danh mục khác)
   const thayMaKT = () => AUTH.role !== 'yard';       // mã tài khoản là việc kế toán; Bãi thấy tiền chi nhưng không thấy mã
-  let root, thoat = null, xe = [], rm = [], ui = { mode: 'dau-keo', sel: null, tab: 'lich', chip: null, q: '', soHuu: '', bai: '', tt: '', tuan: null };
+  let root, thoat = null, xe = [], rm = [], chuXe = [], ui = { mode: 'dau-keo', sel: null, tab: 'lich', chip: null, q: '', soHuu: '', bai: '', tt: '', tuan: null };
 
   /* ---------- đổi tên trường giữa máy chủ và bản thiết kế ----------
    * Máy chủ nói: truck_no/plate_head/owner_type/status/insurance_exp…
@@ -26,7 +26,7 @@
   function xemXe(v) {
     return {
       _id: v.id, so_xe: v.truck_no, bien: v.plate_head, hang: v.brand_model, nam_sx: v.year,
-      so_huu: v.owner_type === 'joint' ? 'thue-ngoai' : 'cong-ty', chu_xe: v.owner_name, bai: v.depot,
+      so_huu: v.owner_type === 'joint' ? 'thue-ngoai' : 'cong-ty', chu_xe: v.owner_name, chu_xe_id: v.owner_id, bai: v.depot,
       so_may: v.engine_no, so_khung: v.chassis_no, km: v.odometer_km, km_bao_duong: v.next_service_km,
       ngay_bao_duong: ngay(v.service_date), dinh_muc: v.fuel_norm, tai_trong: v.capacity_t,
       noi_dang_kiem: v.inspection_place, dung_tich: v.engine_cap, kich_thuoc_thung: v.box_size, lop: v.tyre,
@@ -48,7 +48,7 @@
   function guiXe(o) {
     return {
       truck_no: o.so_xe, plate_head: o.bien, brand_model: o.hang, year: o.nam_sx,
-      owner_type: o.so_huu === 'thue-ngoai' ? 'joint' : 'EPL', owner_name: o.chu_xe, depot: o.bai,
+      owner_type: o.so_huu === 'thue-ngoai' ? 'joint' : 'EPL', owner_id: o.chu_xe_id || null, owner_name: o.chu_xe, depot: o.bai,
       engine_no: o.so_may, chassis_no: o.so_khung, odometer_km: o.km, next_service_km: o.km_bao_duong,
       service_date: o.ngay_bao_duong || null, fuel_norm: o.dinh_muc, capacity_t: o.tai_trong,
       inspection_place: o.noi_dang_kiem, engine_cap: o.dung_tich, box_size: o.kich_thuoc_thung, tyre: o.lop,
@@ -109,7 +109,8 @@
 
   /* ---------- tải ---------- */
   async function tai() {
-    const [dsXe, dsRM] = await Promise.all([API.get('/api/vehicles'), API.get('/api/trailers')]);
+    const [dsXe, dsRM, dsChu] = await Promise.all([API.get('/api/vehicles'), API.get('/api/trailers'), API.get('/api/owners').catch(() => [])]);
+    chuXe = dsChu;
     xe = dsXe.map(xemXe); rm = dsRM.map(xemRM);
     const bai = [...new Set(xe.map(x => x.bai).filter(Boolean))];
     const sel = root.querySelector('#xe-f-bai'); sel.innerHTML = `<option value="">${NN.h('xe_all_depot')}</option>` + bai.map(b => `<option value="${esc(b)}" class="lo">${esc(b)}</option>`).join('');
@@ -264,7 +265,7 @@
     const formTab = () => {
       if (cur === 'chung') return isRM
         ? F('f-bien', NN.h('xe_plate'), I('f-bien', o.bien)) + F('f-loai', NN.h('xe_rm_type'), I('f-loai', o.loai)) + F('f-tai', NN.h('xe_rm_load') + ' (t)', I('f-tai', o.tai_trong, 'number')) + F('f-nam', NN.h('xe_year'), I('f-nam', o.nam_sx, 'number')) + F('f-sohuu', NN.h('xe_owner'), `<select id="f-sohuu"><option value="cong-ty" ${o.so_huu !== 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_company')}</option><option value="thue-ngoai" ${o.so_huu === 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_rented')}</option></select>`) + F('f-bai', NN.h('xe_depot'), I('f-bai', o.bai)) + F('f-ghichu', NN.h('xe_note'), `<textarea id="f-ghichu" rows="2">${esc(o.ghi_chu || '')}</textarea>`, 3)
-        : F('f-soxe', NN.h('xe_no'), I('f-soxe', o.so_xe)) + F('f-bien', NN.h('xe_plate_tractor'), I('f-bien', o.bien)) + F('f-hang', NN.h('xe_brand'), I('f-hang', o.hang, 'text', 'VD: HOWO-430')) + F('f-nam', NN.h('xe_year'), I('f-nam', o.nam_sx, 'number')) + F('f-sohuu', NN.h('xe_owner'), `<select id="f-sohuu"><option value="cong-ty" ${o.so_huu !== 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_company')}</option><option value="thue-ngoai" ${o.so_huu === 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_rented')}</option></select>`) + F('f-chuxe', NN.h('xe_owner_name'), I('f-chuxe', o.chu_xe)) + F('f-bai', NN.h('xe_depot'), I('f-bai', o.bai)) + F('f-dinhmuc', NN.h('xe_fuel_norm') + ' (L/100km)', I('f-dinhmuc', o.dinh_muc, 'number')) + F('f-taitrong', NN.h('xe_rm_load') + ' (t)', I('f-taitrong', o.tai_trong, 'number')) + F('f-ghichu', NN.h('xe_note'), `<textarea id="f-ghichu" rows="2">${esc(o.ghi_chu || '')}</textarea>`, 3);
+        : F('f-soxe', NN.h('xe_no'), I('f-soxe', o.so_xe)) + F('f-bien', NN.h('xe_plate_tractor'), I('f-bien', o.bien)) + F('f-hang', NN.h('xe_brand'), I('f-hang', o.hang, 'text', 'VD: HOWO-430')) + F('f-nam', NN.h('xe_year'), I('f-nam', o.nam_sx, 'number')) + F('f-sohuu', NN.h('xe_owner'), `<select id="f-sohuu"><option value="cong-ty" ${o.so_huu !== 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_company')}</option><option value="thue-ngoai" ${o.so_huu === 'thue-ngoai' ? 'selected' : ''}>${NN.h('xe_rented')}</option></select>`) + F('f-chuxe', NN.h('xe_owner_name'), chuXe.length ? `<select id="f-chuxe"><option value="">—</option>${chuXe.filter(c => c.active || c.id === o.chu_xe_id).map(c => `<option value="${esc(c.id)}" ${c.id === o.chu_xe_id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>` : I('f-chuxe', o.chu_xe)) + F('f-bai', NN.h('xe_depot'), I('f-bai', o.bai)) + F('f-dinhmuc', NN.h('xe_fuel_norm') + ' (L/100km)', I('f-dinhmuc', o.dinh_muc, 'number')) + F('f-taitrong', NN.h('xe_rm_load') + ' (t)', I('f-taitrong', o.tai_trong, 'number')) + F('f-ghichu', NN.h('xe_note'), `<textarea id="f-ghichu" rows="2">${esc(o.ghi_chu || '')}</textarea>`, 3);
       if (cur === 'phaply') return `<div class="sech">${NN.h('xe_legal')}</div>` + (isRM ? '' : F('f-h-bh', NN.h('xe_h_bao_hiem'), I('f-h-bh', o.han.bao_hiem, 'date'))) + F('f-h-dk', NN.h('xe_h_dang_kiem'), I('f-h-dk', o.han.dang_kiem, 'date')) + F('f-h-lh', NN.h('xe_h_luu_hanh'), I('f-h-lh', o.han.luu_hanh, 'date')) + F('f-noidk', NN.h('xe_insp_place'), I('f-noidk', o.noi_dang_kiem, 'text', 'VD: ສູນກວດກາ ວຽງຈັນ')) + `<div class="sech">${NN.h('xe_ids')}</div>` + (isRM ? '' : F('f-somay', NN.h('xe_engine'), I('f-somay', o.so_may))) + F('f-sokhung', NN.h('xe_chassis'), I('f-sokhung', o.so_khung));
       return `<div class="sech">${NN.h('xe_tab_tech')}</div>` + F('f-km', NN.h('xe_odo') + ' (km)', I('f-km', o.km, 'number')) + F('f-kmbd', NN.h('xe_next_maint') + ' (km)', I('f-kmbd', o.km_bao_duong, 'number')) + F('f-ngaybd', NN.h('xe_maint_date'), I('f-ngaybd', o.ngay_bao_duong, 'date')) + F('f-dungtich', NN.h('xe_engine_cap'), I('f-dungtich', o.dung_tich, 'text', 'VD: 9,7 L / 430 HP')) + F('f-kt', NN.h('xe_box_size'), I('f-kt', o.kich_thuoc_thung, 'text', 'VD: 12,1 × 2,4 × 2,6 m')) + F('f-lop', NN.h('xe_tyre'), I('f-lop', o.lop, 'text', 'VD: 11R22.5'));
     };
@@ -341,8 +342,12 @@
         if (g('f-h-dk')) o.han.dang_kiem = g('f-h-dk'); if (g('f-h-lh')) o.han.luu_hanh = g('f-h-lh');
         if (isNew && !o.bien) return EPL.toast(NN.t('xe_need_plate'), 'loi');
       } else {
-        Object.assign(o, { so_xe: g('f-soxe') || o.so_xe, bien: g('f-bien') || o.bien, hang: g('f-hang') ?? o.hang, nam_sx: +g('f-nam') || o.nam_sx, so_huu: g('f-sohuu') || o.so_huu, chu_xe: g('f-chuxe') ?? o.chu_xe, bai: g('f-bai') ?? o.bai, dinh_muc: g('f-dinhmuc') ? +g('f-dinhmuc') : o.dinh_muc, tai_trong: g('f-taitrong') ? +g('f-taitrong') : o.tai_trong, ghi_chu: g('f-ghichu') ?? o.ghi_chu, so_may: g('f-somay') ?? o.so_may, so_khung: g('f-sokhung') ?? o.so_khung, noi_dang_kiem: g('f-noidk') ?? o.noi_dang_kiem, km: g('f-km') ? +g('f-km') : o.km, km_bao_duong: g('f-kmbd') ? +g('f-kmbd') : o.km_bao_duong, ngay_bao_duong: g('f-ngaybd') ?? o.ngay_bao_duong, dung_tich: g('f-dungtich') ?? o.dung_tich, kich_thuoc_thung: g('f-kt') ?? o.kich_thuoc_thung, lop: g('f-lop') ?? o.lop });
+        Object.assign(o, { so_xe: g('f-soxe') || o.so_xe, bien: g('f-bien') || o.bien, hang: g('f-hang') ?? o.hang, nam_sx: +g('f-nam') || o.nam_sx, so_huu: g('f-sohuu') || o.so_huu, bai: g('f-bai') ?? o.bai, dinh_muc: g('f-dinhmuc') ? +g('f-dinhmuc') : o.dinh_muc, tai_trong: g('f-taitrong') ? +g('f-taitrong') : o.tai_trong, ghi_chu: g('f-ghichu') ?? o.ghi_chu, so_may: g('f-somay') ?? o.so_may, so_khung: g('f-sokhung') ?? o.so_khung, noi_dang_kiem: g('f-noidk') ?? o.noi_dang_kiem, km: g('f-km') ? +g('f-km') : o.km, km_bao_duong: g('f-kmbd') ? +g('f-kmbd') : o.km_bao_duong, ngay_bao_duong: g('f-ngaybd') ?? o.ngay_bao_duong, dung_tich: g('f-dungtich') ?? o.dung_tich, kich_thuoc_thung: g('f-kt') ?? o.kich_thuoc_thung, lop: g('f-lop') ?? o.lop });
         [['bh', 'bao_hiem'], ['dk', 'dang_kiem'], ['lh', 'luu_hanh']].forEach(([k, key]) => { if (g('f-h-' + k)) o.han[key] = g('f-h-' + k); });
+        if (g('f-chuxe') !== undefined) {
+          if (chuXe.length) { o.chu_xe_id = g('f-chuxe') || null; const c = chuXe.find(x => x.id === o.chu_xe_id); o.chu_xe = c ? c.name : null; }
+          else o.chu_xe = g('f-chuxe');
+        }
         if (isNew && !o.so_xe) return EPL.toast(NN.t('xe_need_no'), 'loi');
       }
       const than = isRM ? guiRM(o) : guiXe(o);

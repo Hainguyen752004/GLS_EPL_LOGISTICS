@@ -4,6 +4,21 @@
   <div class="grow"></div>
   <span class="small muted" data-i18n="joint_rule"></span>
 </div>
+<!-- Chủ xe liên kết: phí, ngưỡng tấn, cách trả riêng từng chủ (anh Khampla C4.2 · C4.3). Quỹ trả gộp nhiều phiếu ở đây. -->
+<div class="card xlk-chu-card">
+  <div class="hd"><h3 data-i18n="owners"></h3><div class="grow"></div><span class="small muted" data-i18n="owners_hint"></span><button class="btn sm primary" id="xlk-them-chu" hidden>+ <span data-i18n="owner_add"></span></button></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr>
+        <th data-i18n="owner"></th><th data-i18n="phone"></th><th data-i18n="c_truck"></th><th data-i18n="owner_pay_mode"></th>
+        <th class="num tien" data-i18n="owner_fee"></th><th class="num tien" data-i18n="owner_over"></th><th class="tien" data-i18n="ccy_hire"></th>
+        <th class="num tien" data-i18n="owner_pending"></th><th class="no-print" data-i18n="actions"></th>
+      </tr></thead>
+      <tbody id="xlk-chu"></tbody>
+    </table>
+  </div>
+</div>
+
 <div class="card">
   <div class="hd"><h3 data-i18n="nav_joint"></h3><div class="grow"></div><span class="small muted" id="xlk-dem"></span></div>
   <div class="tbl-wrap">

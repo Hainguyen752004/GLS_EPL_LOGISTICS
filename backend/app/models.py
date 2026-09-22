@@ -66,6 +66,30 @@ class Customer(Base):
     active = Column(Boolean, nullable=False, default=True)
 
 
+CACH_TRA_CHU_XE = ("phieu", "thang", "dot")      # trả từng phiếu · gộp cuối tháng · theo đợt thoả thuận
+
+
+class Owner(Base):
+    """CHỦ XE LIÊN KẾT (ເຈົ້າຂອງລົດຮ່ວມ) — danh mục riêng (anh Khampla 22/09, C4.2 · C4.3).
+
+    Phí 2 %/phiếu, ngưỡng tấn và mức trừ quá tải là ĐIỀU KHOẢN HỢP ĐỒNG với từng chủ xe, không phải
+    hằng số chung; lập phiếu cho xe của chủ nào thì ba ô đó tự điền theo chủ đó, kế toán vẫn sửa được
+    trên phiếu. `pay_mode` là cách hai bên đã thoả thuận trả tiền — chỉ để quỹ biết gom hay không gom.
+    """
+    __tablename__ = "owners"
+    id = Column(String, primary_key=True, default=ma_moi)
+    name = Column(String, nullable=False)
+    phone = Column(String)
+    address = Column(String)
+    fee_pct = Column(Float, nullable=False, default=2)          # ຫັກຄ່າທຳນຽມ %/phiếu
+    over_limit_t = Column(Float, nullable=False, default=40)    # ngưỡng tấn
+    over_price = Column(Float, nullable=False, default=1)       # trừ mỗi tấn vượt, theo hire_ccy
+    hire_ccy = Column(String, nullable=False, default="USD")    # tiền trả chủ xe
+    pay_mode = Column(String, nullable=False, default="phieu")  # CACH_TRA_CHU_XE
+    note = Column(Text)
+    active = Column(Boolean, nullable=False, default=True)
+
+
 TRANG_THAI_XE = ("available", "on_trip", "maintenance", "inactive")   # rảnh · đang chạy · đang sửa · ngưng dùng
 
 
@@ -84,7 +108,8 @@ class Vehicle(Base):
     trailer_id = Column(String, ForeignKey("trailers.id"))   # rơ-moóc ĐANG lắp
     plate_trailer = Column(String)                # biển rơ-moóc đang lắp (chép lại)
     owner_type = Column(String, nullable=False, default="EPL")  # EPL | joint
-    owner_name = Column(String)                   # chủ xe liên kết
+    owner_id = Column(String, ForeignKey("owners.id"))          # chủ xe liên kết (danh mục)
+    owner_name = Column(String)                   # tên chủ xe chép lại — phiếu cũ không đổi khi đổi tên
     engine_no = Column(String)                    # số máy
     chassis_no = Column(String)                   # số khung
     insurance_exp = Column(Date)                  # hạn bảo hiểm
@@ -274,7 +299,9 @@ class Trip(Base):
     out_date = Column(Date)                                    # ວັນທີອອກລົດ
     back_date = Column(Date)                                   # ວັນທີລົດກັບ
     company = Column(String, nullable=False, default="EPL")    # EPL | joint (ລົດຮ່ວມ)
-    owner_name = Column(String)                                # chủ xe liên kết
+    owner_id = Column(String, ForeignKey("owners.id"))         # chủ xe liên kết (danh mục) — chép từ xe lúc lập
+    owner_name = Column(String)                                # tên chủ xe chép lại
+    owner_payment_id = Column(String, ForeignKey("owner_payments.id"))   # nằm trong đợt trả nào = đã trả chủ xe
     # Xe & tài xế: chép giá trị vào phiếu lúc lập, KHÔNG chỉ giữ khoá ngoại — đổi biển số
     # trong danh mục sau này không được làm phiếu cũ đổi theo.
     vehicle_id = Column(String, ForeignKey("vehicles.id"))
@@ -708,6 +735,28 @@ class TripPayment(Base):
     amount_lak = Column(Float, nullable=False, default=0)      # = amount × rate_to_lak
     method = Column(String, nullable=False, default="bank")    # PHUONG_THUC_THU
     ref = Column(String)                                       # số uỷ nhiệm chi · biên lai bên khách
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+
+
+# ---------------------------------------------------------------- trả tiền chủ xe liên kết theo đợt
+class OwnerPayment(Base):
+    """MỘT ĐỢT trả chủ xe: một hay nhiều phiếu đã khoá của cùng chủ xe, cùng tiền thuê.
+
+    Trước chỉ có nút trả từng phiếu. Anh Khampla (C4.3): trả từng phiếu, gộp cuối tháng, hay theo đợt
+    đều có. Số tiền = tổng "trả chủ xe" của các phiếu trong đợt, không gõ tay — để khớp với chứng từ
+    từng phiếu và với bảng tính trong Excel của họ. Phiếu trỏ về đợt qua trips.owner_payment_id."""
+    __tablename__ = "owner_payments"
+    id = Column(String, primary_key=True, default=ma_moi)
+    owner_id = Column(String, ForeignKey("owners.id"), index=True)
+    pay_date = Column(Date, nullable=False)
+    amount = Column(Float, nullable=False, default=0)          # theo currency (= tiền thuê)
+    currency = Column(String, nullable=False, default="USD")
+    rate_to_lak = Column(Float, nullable=False, default=1)
+    amount_lak = Column(Float, nullable=False, default=0)
+    method = Column(String, nullable=False, default="cash")    # PHUONG_THUC_THU
+    ref = Column(String)
     note = Column(String)
     by_user = Column(String)
     created_at = Column(DateTime, nullable=False, default=bay_gio)

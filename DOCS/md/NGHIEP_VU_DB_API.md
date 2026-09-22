@@ -3,8 +3,8 @@
 Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì tiếp, và kế toán bên anh Khang cần biết lấy
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
-Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (34 bảng) · **C. API**
-(124 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (36 bảng) · **C. API**
+(129 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -103,9 +103,13 @@ hai báo cáo của màn Tổng quan (`thay_tien_ban()` trong `services/phan_quy
 - Kế toán bấm **Khoá phiếu**: máy rà km lệch quá 10 %, hao hụt quá 1,5 %, thiếu cân, thiếu phiếu quặng,
   thiếu dòng hàng, mục có chi mà chưa kiểm. Chỉ cảnh báo, kế toán xác nhận thì vẫn khoá được.
 - **Chỉ phiếu đã khoá mới xuất hoá đơn** (`1211/70`) và mới ghi thu tiền.
-- **Xe liên kết**: EPL trả chủ xe = giá thuê × tấn − 2 %/phiếu − một đơn vị tiền mỗi tấn vượt 40 t − các
-  khoản EPL đã ứng (quy về tiền thuê). Lãi = tiền khách trả − tiền thuê, so với nhau sau khi cùng quy
-  về Kíp. Quỹ bấm *Trả chủ xe* sau khi phiếu khoá. Xem A7 về tiền tệ.
+- **Xe liên kết**: EPL trả chủ xe = giá thuê × tấn (hoặc giá trọn chuyến) − phí %/phiếu − mức trừ mỗi tấn vượt
+  ngưỡng − các khoản EPL đã ứng (quy về tiền thuê). **Phí, ngưỡng tấn, mức trừ là điều khoản của từng chủ xe**
+  (danh mục *Chủ xe liên kết* trên màn Xe liên kết): lập phiếu cho xe của chủ nào thì tự điền theo chủ đó, kế
+  toán vẫn sửa được trên phiếu. Lãi = tiền khách trả − tiền thuê, cùng quy về Kíp rồi trừ. **Trả chủ xe theo
+  cách đã thoả thuận với từng chủ**: từng phiếu ngay sau khoá, gộp cuối tháng, hay theo đợt — quỹ tích các
+  phiếu đã khoá chưa trả rồi bấm *Trả gộp*, một đợt sinh một tờ `PC_CX` và các phiếu trong đợt đánh *đã trả*.
+  Các phiếu trong một đợt phải cùng tiền thuê. Xem A7 về tiền tệ.
 
 ## A7. Tiền tệ và thu tiền
 
@@ -116,6 +120,10 @@ phần mềm đặt ba quy tắc:
 **1. Kíp là tiền gốc.** Mọi tỷ giá ghi dạng *bao nhiêu Kíp cho một đơn vị tiền đó*, và được **khoá
 vào phiếu lúc lập** (`rate_usd`, `rate_thb`, `rate_vnd`, `rate_cny`). Tỷ giá thị trường đổi về sau
 không làm đổi con số trên phiếu đã lập — tờ giấy đã in phải đứng yên.
+
+**Cách tính cước** (anh Khampla C3.6): `price_mode = ton` là đơn giá × tấn cân nơi giao (khách có hợp đồng);
+`chuyen` là **giá trọn chuyến**, không nhân tấn (xe ngoài không hợp đồng). Bảng giá mang cách tính, phiếu tự
+điền theo; giá thuê chủ xe đi theo cùng cách. Phần trừ quá tải vẫn theo tấn.
 
 **2. Cước theo tiền của hợp đồng, không mặc định USD.** Phiếu có ô **Tiền tệ cước** (`price_ccy`) và
 đơn giá `price` hiểu theo tiền đó. Bảng giá khách × tuyến cũng mang tiền tệ riêng, nên mở phiếu cho
@@ -205,7 +213,7 @@ PostgreSQL, DB riêng **`epl_lao`**, khai trong `.env` (`DATABASE_URL`, không c
 migration: `tao_bang()` trong `database.py` chạy `create_all` rồi **so cột model với cột thật và ALTER
 TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, không xoá, nên không bao giờ mất dữ liệu.
 
-34 bảng, nhóm theo việc:
+36 bảng, nhóm theo việc:
 
 ## B1. Người dùng và danh mục
 
@@ -213,8 +221,10 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 |---|---|---|
 | `users` | Tài khoản và vai | `role` (10 vai), `driver_id`, `place_id` (thủ kho gắn điểm đổ) |
 | `customers` | Khách nhận quặng | `name`, `phone`, `active` |
-| `customer_rates` | **Bảng giá khách × tuyến** | `price` + **`price_ccy`**, `hire_price` + `hire_ccy`, `valid_from`, `goods_type` |
-| `vehicles` | Đầu kéo | `truck_no`, `plate_head`, `owner_type` (EPL/joint), `trailer_id`, ba hạn giấy tờ, `odometer_km`, `next_service_km`, `fuel_norm`, `engine_cap`, `box_size`, `tyre` |
+| `customer_rates` | **Bảng giá khách × tuyến** | `price` + **`price_ccy`** + **`price_mode`** (`ton` theo tấn · `chuyen` trọn chuyến), `hire_price` + `hire_ccy`, `valid_from`, `goods_type` |
+| `owners` | **Chủ xe liên kết** (anh Khampla C4.2 · C4.3) | `name`, `phone`, **`fee_pct`**, **`over_limit_t`**, **`over_price`**, `hire_ccy`, **`pay_mode`** (`phieu` từng phiếu · `thang` gộp tháng · `dot` theo đợt), `active`. Lập phiếu cho xe của chủ nào thì phí tự điền theo chủ đó |
+| `owner_payments` | **Một đợt trả chủ xe** — một hay nhiều phiếu đã khoá, cùng tiền thuê | `owner_id`, `pay_date`, `amount` + `currency`, `amount_lak`, `method`, `ref`. Số tiền = tổng "trả chủ xe" của các phiếu trong đợt, máy tính; phiếu trỏ về đợt qua `trips.owner_payment_id` |
+| `vehicles` | Đầu kéo | `truck_no`, `plate_head`, `owner_type` (EPL/joint), **`owner_id`** (chủ xe trong danh mục, tên chép sang `owner_name`), `trailer_id`, ba hạn giấy tờ, `odometer_km`, `next_service_km`, `fuel_norm`, `engine_cap`, `box_size`, `tyre` |
 | `trailers` | Rơ-moóc (thực thể riêng) | `plate`, `trailer_type`, `capacity_t`, `status` |
 | `trailer_assignments` | Lịch sử lắp/tháo | `attached_at`, `detached_at`, `reason` |
 | `drivers` | Tài xế | `driver_code`, `name` + `name_latin`, `role`, bằng lái hiện hành (`license_no`, `license_type`, `license_status`, hai mốc hạn), **`license_class_hr`** (hạng ghi trong hồ sơ nhân sự — lệch với hạng trên bằng là dấu hiệu hồ sơ sai), `default_vehicle_id`, `status` |
@@ -229,7 +239,7 @@ TABLE ADD COLUMN** cho phần thiếu — chỉ thêm, không đổi kiểu, kh�
 
 | Bảng | Giữ gì |
 |---|---|
-| `trips` | Một phiếu. **`kind`** = `gom`/`giao`; số phiếu, ngày, xe và tài xế (chép giá trị vào phiếu, không chỉ khoá ngoại), khách, tuyến, cân đầu/cuối, **`price` + `price_ccy`** (cước và tiền tệ của nó), phần xe liên kết (`hire_price` + `hire_ccy`, `fee_pct`, `over_limit_t`, `over_price`), **bốn tỷ giá khoá trên phiếu** (`rate_usd`, `rate_thb`, `rate_vnd`, `rate_cny`), `locked`, `owner_paid` |
+| `trips` | Một phiếu. **`kind`** = `gom`/`giao`; số phiếu, ngày, xe và tài xế (chép giá trị vào phiếu, không chỉ khoá ngoại), khách, tuyến, cân đầu/cuối, **`price` + `price_ccy` + `price_mode`** (cước, tiền tệ, theo tấn hay trọn chuyến), phần xe liên kết (**`owner_id`**, `hire_price` + `hire_ccy`, `fee_pct`, `over_limit_t`, `over_price` — ba ô sau tự điền theo chủ xe, **`owner_payment_id`** = đã trả trong đợt nào), **bốn tỷ giá khoá trên phiếu** (`rate_usd`, `rate_thb`, `rate_vnd`, `rate_cny`), `locked`, `owner_paid` |
 | `trip_goods` | **Dòng hàng**: `loai` = `hang`/`hao_hut`, `goods_name`, `qty_t`, **`tu_phieu_id`** = lô lấy từ DO gom nào |
 | `goods_moves` | **Sổ kho hàng ở bãi**: `kind` = `in`/`out`/`adj` (điều chỉnh, `qty_t` có dấu), `qty_t`, `lo_trip_id` (lô = DO gom), `trip_id` (phiếu sinh ra dòng này), `note` (lý do điều chỉnh) |
 | `trip_expenses` | Dòng chi của bốn mục III–VI: `section`, `item_key`, `qty`, `unit_price`, `currency`, `source` (kho/mua), `acct_code`, `paid_by_epl`, `stock_move_id` |
@@ -287,7 +297,7 @@ gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi
 | `POST /api/trips/{id}/khoa`, `/mo-khoa`, `GET /kiem-lai` | Khoá phiếu sau khi xe về; Sếp mở khoá |
 | `POST /api/trips/{id}/invoice` | Xuất hoá đơn — phiếu gom cũng xuất được (B4: khách trả cước riêng cho chặng gom) |
 | `GET POST /api/trips/{id}/thu-tien` · `DELETE /api/thu-tien/{id}` | **Sổ thu tiền**: xem, ghi một lần khách trả (tiền nào cũng được, có tỷ giá ngày thu), xoá dòng ghi nhầm. Thu dư phải xác nhận; tờ `PT` đã đẩy kế toán thì không xoá được |
-| `POST /api/trips/{id}/tra-chu-xe` | Quỹ trả chủ xe liên kết → `PC_CX` |
+| `POST /api/trips/{id}/tra-chu-xe` | Quỹ trả chủ xe **từng phiếu** → một đợt một phiếu, tờ `PC_CX`. Chủ xe trả gộp thì dùng `/api/owners/{id}/tra` |
 | `GET POST DELETE /api/trips/{id}/tep`, `/api/tep/{aid}` | Tệp đính kèm (phiếu quặng) |
 | `POST /api/trips/{id}/events`, `/bao-hong`, `/bao-nhien-lieu`, `/events/{eid}/duyet` | Diễn biến, báo hỏng, khai đổ dầu, duyệt |
 | `GET /api/trips/{id}/phieu-chi`, `/phieu-thu` | Dữ liệu in phiếu chi, phiếu thu |
@@ -342,6 +352,15 @@ nặng dần: `missing` chưa có bằng · `inactive` bằng bị đình chỉ 
 `mismatch` hạng trên bằng khác hạng ghi trong hồ sơ · `soon` còn dưới 60 ngày · `ok`. Bốn mức đầu là
 **chặn hẳn**, `soon` là cảnh báo cho chuyến xếp xa. Luật viết MỘT chỗ ở `frontend/modules/tai-xe/tai-xe.js`
 và mở ra ngoài qua `EPL.taiXe.ketLuan` để màn Phiếu xuất xe dùng chung, không ai chép lại lần thứ hai.
+
+## C5c. Chủ xe liên kết — `routes/chu_xe.py`
+
+| Đường | Việc |
+|---|---|
+| `GET /api/owners` | Danh mục kèm xe của từng chủ; vai thấy tiền bán có thêm phí, mức trừ, và *chờ trả* (số phiếu đã khoá chưa trả, tổng theo tiền thuê). Bãi chỉ thấy tên và xe |
+| `POST PUT /api/owners[/{id}]` | Thêm · sửa. Chỉ **KT Thu/Chi VC** và Sếp — phí, mức trừ, cách trả là điều khoản hợp đồng |
+| `GET /api/owners/{id}/cong-no` | Phiếu đã khoá chưa trả (để tích vào một đợt) và các đợt đã trả |
+| `POST /api/owners/{id}/tra` | **Quỹ trả một đợt**: `trip_ids[]`, `pay_date`, `method`, `ref`, `note`. Số tiền = tổng trả chủ xe của các phiếu, máy tính; các phiếu phải cùng chủ, đã khoá, chưa trả, cùng tiền thuê. Sinh một tờ `PC_CX` cho cả đợt |
 
 ## C5b. Tỷ giá — `routes/danh_muc.py`
 
@@ -413,6 +432,7 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 | `python kiem\thu_ban_hang.py` | Bán phụ tùng, xăng dầu ra ngoài |
 | `python kiem\thu_vi_tri.py` | GPS: ai được gửi, lọc điểm dày, GPS cũ |
 | `node kiem\ra_tai_xe.js` | **Rà màn Tài xế**: từng vai, cột Kết luận, ngăn trượt hồ sơ, năm tab, bốn ngôn ngữ (báo cáo, không phải đạt/hỏng) |
+| `python kiem\thu_chu_xe.py` | **Chủ xe liên kết**: danh mục, phí riêng từng chủ tự điền vào phiếu, trả gộp hai phiếu một tờ PC_CX, chặn trả trùng, phân quyền xem/sửa/trả |
 | `python kiem\thu_ty_gia.py` | **Màn Tỷ giá**: ai xem ai sửa, lịch sử giữ số cũ, gõ lại số cũ không đẻ dòng rác, chặn số sai, phiếu cũ giữ tỷ giá của nó, phiếu mới lấy số mới |
 | `python kiem\thu_tien_te.py` | **Nhiều tiền tệ và sổ thu tiền**: cước Nhân dân tệ, quy Kíp đúng tỷ giá khoá, thu nhiều lần bằng nhiều tiền, trạng thái tự suy, chặn thu dư, chặn xoá tờ đã đẩy |
 | `python kiem\thu_day_ke_toan.py` | **Đẩy chứng từ sang kế toán** với máy nhận giả đóng vai API anh Khang: cấu hình, gói tin, bên kia hỏng, 409, đẩy hết, không gửi trùng |

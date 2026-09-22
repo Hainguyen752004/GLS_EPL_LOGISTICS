@@ -14,7 +14,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate,
+from models import (CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, Owner,
                     ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services.bao_mat import can_vai, nguoi_hien_tai
@@ -208,7 +208,7 @@ def tra_gia(customer_id: str, route_id: str, goods_type: str = None, ngay: str =
 
 
 # ================================================================ xe (đầu kéo)
-COT_XE = ("truck_no", "brand_model", "year", "plate_head", "owner_type", "owner_name", "engine_no", "chassis_no",
+COT_XE = ("truck_no", "brand_model", "year", "plate_head", "owner_type", "owner_id", "owner_name", "engine_no", "chassis_no",
           "insurance_exp", "inspection_exp", "road_permit_exp", "odometer_km", "next_service_km", "status", "depot", "note",
           "service_date", "fuel_norm", "capacity_t", "inspection_place", "engine_cap", "box_size", "tyre")
 NGAY_XE = ("insurance_exp", "inspection_exp", "road_permit_exp", "service_date")
@@ -267,15 +267,27 @@ def _kiem_xe(data, v):
         raise HTTPException(422, {"ma": "THIEU_SO_XE", "loi": "Xe phải có số hiệu (ເບີລົດ)."})
     if v.owner_type not in ("EPL", "joint"):
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "owner_type phải là EPL hoặc joint."})
-    if v.owner_type == "joint" and not (v.owner_name or "").strip():
-        raise HTTPException(422, {"ma": "THIEU_CHU_XE", "loi": "Xe liên kết phải ghi tên chủ xe."})
+    if v.owner_type == "joint" and not (v.owner_name or "").strip() and not v.owner_id:
+        raise HTTPException(422, {"ma": "THIEU_CHU_XE", "loi": "Xe liên kết phải chọn chủ xe (hoặc ghi tên)."})
+    if v.owner_type != "joint":
+        v.owner_id = None
     if v.status not in TRANG_THAI_XE:
         raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái xe phải là %s." % ", ".join(TRANG_THAI_XE)})
+
+
+def _chep_ten_chu(db, v):
+    """Chọn chủ xe từ danh mục thì tên chép theo danh mục — một nguồn, không gõ lệch."""
+    if v.owner_id:
+        o = db.get(Owner, v.owner_id)
+        if not o:
+            raise HTTPException(422, {"ma": "CHU_XE_SAI", "loi": "Không có chủ xe này trong danh mục."})
+        v.owner_name = o.name
 
 
 @router.post("/api/vehicles")
 def them_xe(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
     v = Vehicle(); _ap(v, data, COT_XE, NGAY_XE, SO_XE); v.status = v.status or "available"; v.owner_type = v.owner_type or "EPL"
+    _chep_ten_chu(db, v)
     _kiem_xe(data, v)
     db.add(v); db.commit(); db.refresh(v)
     return xuat_xe(db, v)
@@ -287,6 +299,7 @@ def sua_xe(vid: str, data: dict = Body(...), db: Session = Depends(get_db), _=De
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
     _ap(v, data, COT_XE + ("active",), NGAY_XE, SO_XE)
+    _chep_ten_chu(db, v)
     _kiem_xe(data, v)
     db.commit(); db.refresh(v)
     return xuat_xe(db, v)

@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
-from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Part, Route,  # noqa: E402
+from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Owner, Part, Route,  # noqa: E402
                     RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
                     TripPayment, TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
@@ -95,6 +95,11 @@ def gieo(db):
     for ma, gt in (("USD", 22000), ("THB", 700), ("VND", 1.2), ("CNY", 3000), ("LAK", 1)):
         db.add(ExchangeRate(code=ma, rate_to_lak=gt))
 
+    # ---- chủ xe liên kết (anh Khampla C4.2 · C4.3): phí và cách trả riêng từng chủ
+    chu = Owner(name="ທ້າວ ຄຳຫລ້າ", phone="020 5555 7777", fee_pct=2, over_limit_t=40, over_price=1, hire_ccy="LAK",
+                pay_mode="thang", note="Hợp đồng thuê xe SHACMAN ຮ່ວມ-07, trả gộp cuối tháng bằng Kíp")
+    db.add(chu); db.flush()
+
     # ---- danh mục
     kh = {t: Customer(name=t) for t in ("ຄຳຕຸ້ຍ", "ນາງ ວັນນາ")}
     kh["ຄຳຕຸ້ຍ"].phone = "020 5555 1234"
@@ -118,7 +123,7 @@ def gieo(db):
                        engine_no="WD615.47-1903587", chassis_no="LZZ5EXSB3KN123789", insurance_exp=D(2027, 3, 1), inspection_exp=D(2026, 10, 2),
                        road_permit_exp=D(2027, 1, 31), odometer_km=6090, next_service_km=6000, status="on_trip"),
         "ຮ່ວມ-07": Vehicle(truck_no="ຮ່ວມ-07", brand_model="SHACMAN", year=2018, plate_head="ກຂ 8812", trailer_id=rm["ກຂ 8813"].id, plate_trailer="ກຂ 8813",
-                          owner_type="joint", owner_name="ທ້າວ ຄຳຫລ້າ", status="available"),
+                          owner_type="joint", owner_id=chu.id, owner_name=chu.name, status="available"),
     }
     for v in xe.values(): db.add(v)
     db.flush()
@@ -201,7 +206,7 @@ def gieo(db):
         x = xe.get(p.truck_no)
         if x:
             p.vehicle_id, p.brand_model, p.plate_head, p.plate_trailer = x.id, x.brand_model, x.plate_head, x.plate_trailer
-            if x.owner_type == "joint": p.company, p.owner_name = "joint", x.owner_name
+            if x.owner_type == "joint": p.company, p.owner_name, p.owner_id = "joint", x.owner_name, x.owner_id
         if p.driver_name in tx: p.driver_id = tx[p.driver_name].id
         if p.customer_name in kh: p.customer_id = kh[p.customer_name].id
         if ten_tuyen: p.route_id = tuyen[ten_tuyen].id

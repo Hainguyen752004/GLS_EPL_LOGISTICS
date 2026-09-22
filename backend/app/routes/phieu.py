@@ -21,7 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (GoodsMove, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+from models import (GoodsMove, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
@@ -188,7 +188,8 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None):
                "finance_status": phieu.finance_status, "invoiced": phieu.invoiced,
                "locked": bool(phieu.locked), "locked_by": phieu.locked_by,
                "locked_at": phieu.locked_at.isoformat() if phieu.locked_at else None,
-               "owner_paid": bool(phieu.owner_paid), "owner_paid_usd": phieu.owner_paid_usd,
+               "owner_id": phieu.owner_id, "owner_payment_id": phieu.owner_payment_id,
+               "owner_paid": bool(phieu.owner_paid or phieu.owner_payment_id), "owner_paid_usd": phieu.owner_paid_usd,
                "owner_paid_lak": phieu.owner_paid_lak, "owner_paid_by": phieu.owner_paid_by,
                "owner_paid_at": phieu.owner_paid_at.isoformat() if phieu.owner_paid_at else None,
                "odo_est": (phieu.odo_out + tuyen.total_km) if (phieu.odo_out and tuyen and tuyen.total_km) else None,
@@ -312,7 +313,11 @@ def _ap_truong(db, p, data, user, muc_tt=None):
         x = db.get(Vehicle, p.vehicle_id)
         if x:
             p.truck_no, p.brand_model, p.plate_head, p.plate_trailer = x.truck_no, x.brand_model, x.plate_head, x.plate_trailer
-            if x.owner_type == "joint" and not p.owner_name: p.owner_name = x.owner_name
+            if x.owner_type == "joint":
+                # Xe của chủ xe liên kết thì phiếu là phiếu xe liên kết — không bắt người lập chọn lại.
+                if "company" not in data: p.company = "joint"
+                if not p.owner_name: p.owner_name = x.owner_name
+                if x.owner_id: p.owner_id = x.owner_id
     if p.driver_id and not data.get("driver_name"):
         d = db.get(Driver, p.driver_id)
         if d: p.driver_name = d.name
@@ -447,6 +452,15 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     p.rate_usd, p.rate_thb = tg.get("USD", 22000), tg.get("THB", 700)
     p.rate_vnd, p.rate_cny = tg.get("VND", 1.2), tg.get("CNY", 3000)
     _ap_truong(db, p, data, user)
+    # C4.2 (anh Khampla): phí, ngưỡng tấn, mức trừ quá tải, tiền thuê là ĐIỀU KHOẢN của từng chủ xe —
+    # ô nào người lập không gửi thì lấy theo hồ sơ chủ xe, không lấy hằng số chung.
+    if p.company == "joint" and p.owner_id:
+        o = db.get(Owner, p.owner_id)
+        if o:
+            if "fee_pct" not in data: p.fee_pct = o.fee_pct
+            if "over_limit_t" not in data: p.over_limit_t = o.over_limit_t
+            if "over_price" not in data: p.over_price = o.over_price
+            if not p.hire_ccy: p.hire_ccy = o.hire_ccy
     db.add(p); db.flush()
     muc_tt = {m: "wait" for m in MUC}
     for m in MUC:
@@ -824,20 +838,12 @@ def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
         raise HTTPException(422, {"ma": "KHONG_PHAI_LIEN_KET", "loi": "Phiếu này là xe nhà, không có chủ xe để trả."})
     if not p.locked:
         raise HTTPException(409, {"ma": "CHUA_KHOA", "loi": "Kế toán phải khoá phiếu rồi quỹ mới trả chủ xe."})
-    if p.owner_paid:
+    if p.owner_paid or p.owner_payment_id:
         raise HTTPException(409, {"ma": "DA_TRA", "loi": "Đã trả chủ xe phiếu này rồi (%s)." % (p.owner_paid_by or "")})
-    k = tinh_phieu(p, _dong_chi(db, p))
-    tien, h_ccy = k.get("tra_chu_xe") or 0, k.get("hire_ccy") or tien_cuoc(p)
-    if tien <= 0:
-        raise HTTPException(422, {"ma": "KHONG_CO_TIEN", "loi": "Số phải trả chủ xe là %s %s, không có gì để chi." % (tien, h_ccy)})
-    r = ty_gia(p, h_ccy)
-    p.owner_paid, p.owner_paid_usd, p.owner_paid_lak = True, tien, round(tien * r)
-    p.owner_paid_by, p.owner_paid_at = user.full_name, dt.datetime.utcnow()
-    CT.ghi(db, "PC_CX", nguon_bang="trips", nguon_id=p.id, trip=p, ngay=dt.date.today(), doi_tuong_loai="chu_xe", phuong_thuc="cash",
-           doi_tuong_ten=p.owner_name, tien=tien, tien_te=h_ccy, tien_lak=round(tien * r), by_user=user.full_name,
-           mo_ta="Trả chủ xe %s phiếu %s" % (p.owner_name or "", p.doc_no),
-           payload={"tien_thue": k["tien_thue"], "phi": k["phi"], "tru_vuot": k["tru_vuot"],
-                    "ung_truoc": k["ung_truoc"], "currency": h_ccy, "rate_to_lak": r, "note": data.get("note")})
+    # Trả từng phiếu = một đợt gồm đúng một phiếu; cùng hàm với trả gộp để chứng từ và sổ trả giống nhau.
+    from routes.chu_xe import tra_nhieu_phieu
+    o = db.get(Owner, p.owner_id) if p.owner_id else None
+    tra_nhieu_phieu(db, user, [p], method=(data.get("method") or "cash"), note=data.get("note"), owner=o)
     _ghi_log(db, p, user, "a_pay_owner")
     db.commit()
     return xuat_phieu(db, p)

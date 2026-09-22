@@ -47,11 +47,11 @@ Bộ kiểm `kiem/thu_hai_do.py` đi trọn luồng này.
 | **C3.2** | Cân cuối = **cân ở nơi giao**, nhập trên DO giao | Hoá đơn tính trên số này |
 | **C3.3** | Tài xế chụp ảnh phiếu cân, **đính kèm vào phiếu**; máy nhắc khi khoá nếu còn thiếu | Giấy dễ mất, ảnh vào phiếu thì kế toán ở Viêng Chăn xem được ngay |
 | **C3.4** | Hao hụt **chỉ theo dõi**, không tự trừ tiền khách; quá 1,5 % thì cờ đỏ và cảnh báo khi khoá | Hợp đồng chưa nói trừ; nhưng hao hụt đã có **dòng riêng** nên bật trừ tiền sau rất nhanh |
-| **C3.5, C3.6** | Giá lấy từ **bảng giá khách × tuyến** (có ngày hiệu lực), tính trên **tấn ở điểm đến** | **Anh Khampla 22/09** xác nhận, và thêm: có cả giá **khoán trọn chuyến** (xe ngoài không hợp đồng) và giá đổi theo mùa/giá dầu → đợt 2, mục 2.1 |
+| **C3.5, C3.6** | Giá lấy từ **bảng giá khách × tuyến** (có ngày hiệu lực), tính trên **tấn ở điểm đến** | **Anh Khampla 22/09** xác nhận, thêm giá **khoán trọn chuyến** → đã làm 22/09 (`price_mode`: theo tấn · trọn chuyến, trên phiếu và bảng giá). Giá đổi theo mùa dùng `valid_from` có sẵn |
 | **C3.7** | ~~Bãi nhập~~ → **Kế toán nhập khi nhận giấy**, Bãi chỉ đính kèm ảnh | **Anh Khampla 22/09.** Đã sửa đợt 1: hai ô này Bãi chỉ đọc, kế toán Thu/Chi VC gõ |
 | **C4.1** | Giá thuê xe ngoài do **kế toán Viêng Chăn** nhập | Người ký với chủ xe; và Bãi không được thấy giá thuê |
-| **C4.2** | 2 %/phiếu và 1 USD/tấn vượt 40 t là **mặc định**, sửa được trên từng phiếu | **Anh Khampla 22/09:** khác nhau theo **từng chủ xe / hợp đồng** → đợt 2, mục 2.4 (mặc định theo hồ sơ chủ xe) |
-| **C4.3** | Trả chủ xe **theo từng phiếu**, sau khi phiếu khoá | **Anh Khampla 22/09:** cả ba kiểu — từng phiếu (không hợp đồng), gộp cuối tháng, theo đợt → đợt 2, mục 2.3 |
+| **C4.2** | ~~mặc định chung~~ → **theo từng chủ xe** | **Anh Khampla 22/09.** Đã làm 22/09: danh mục *Chủ xe liên kết* giữ phí %, ngưỡng tấn, mức trừ, tiền thuê; phiếu tự điền theo chủ xe, kế toán vẫn sửa được |
+| **C4.3** | ~~chỉ từng phiếu~~ → **từng phiếu · gộp tháng · theo đợt** | **Anh Khampla 22/09.** Đã làm 22/09: mỗi chủ xe ghi cách trả; quỹ tích nhiều phiếu đã khoá rồi *Trả gộp*, một đợt một tờ `PC_CX`. Số tiền đợt = tổng các phiếu, không gõ tay — trả lẻ một phần cho một phiếu thì chưa có, chờ họ có nhu cầu thật |
 | **C4.4** | Các khoản EPL ứng **trừ hết** vào tiền trả chủ xe | Đúng bảng tính trong Excel của họ |
 | **C5.1** | Tài xế nhập **lít**, kế toán nhập giá | **Anh Khampla 22/09** xác nhận, ghi chú thêm: đổ ở Việt Nam là **ghi nợ tại trạm**, cuối tháng cấn trừ với cước khách → đợt 3, mục 3.3 |
 | **C5.2** | ~~Hai kho~~ → **Bảy kho dầu** | **Anh Khampla 22/09** kể thêm năm: Km 28 Viêng Chăn · sân Thà Bốc Huay Lek · bản Thavai · sân Thakhek · Km 28 Thakhek (đường 8). Đã thêm đợt 1 |

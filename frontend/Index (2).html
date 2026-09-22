@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meridian Freight Group — We move freight. We own the outcome.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#ffffff; --black:#000000; --ink:#111111; --grey:#9c9c9c; --grey-2:#d9d9d9;
+  --blue:#2626e6; --sea:#0b3a7a; --sea-deep:#05183c;
+  --display:'Chakra Petch','Arial Narrow',Impact,sans-serif;
+  --body:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --white:#ffffff; } }
+:root[data-theme="dark"]{ --white:#ffffff; }
+*,*::before,*::after{box-sizing:inherit;margin:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:auto}
+body{background:var(--white);color:var(--ink);font-family:var(--body);overflow-x:hidden;line-height:1.5;-webkit-font-smoothing:antialiased}
+img,svg{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+/* ---------- Display type ---------- */
+.h-display{font-family:var(--display);font-weight:700;text-transform:uppercase;line-height:.92;letter-spacing:-.01em}
+.h-display .dim{color:var(--grey)}
+.h-xl{font-size:clamp(2.6rem,6.2vw,5.6rem)}
+.h-l{font-size:clamp(2rem,4.4vw,3.8rem)}
+.h-m{font-size:clamp(1.15rem,1.55vw,1.5rem);line-height:1}
+.on-dark .h-display .dim{color:#5a5a5a}
+
+/* ---------- Fixed chrome ---------- */
+.nav{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:22px clamp(18px,3vw,40px);mix-blend-mode:difference;color:#fff;pointer-events:none}
+.nav>*{pointer-events:auto}
+.brand{font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.02em;display:flex;align-items:center;gap:10px}
+.brand i{display:inline-block;width:16px;height:16px;background:#fff}
+.nav ul{display:flex;gap:28px;list-style:none;font-size:.85rem;font-weight:500}
+.nav ul a{opacity:.85}
+.nav ul a:hover{opacity:1}
+.nav .cta{border:1px solid #fff;padding:9px 16px;border-radius:999px;font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:transparent;color:#fff}
+@media (max-width:760px){ .nav ul{display:none} }
+
+.speed{position:fixed;left:clamp(18px,3vw,40px);top:calc(env(safe-area-inset-top,0px) + 96px);z-index:40;font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;mix-blend-mode:difference;color:#fff}
+
+.scroll-ring{position:fixed;right:clamp(18px,3vw,40px);bottom:calc(env(safe-area-inset-bottom,0px) + 28px);z-index:40;width:48px;height:48px;mix-blend-mode:difference;color:#fff}
+.scroll-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.scroll-ring circle{fill:none;stroke:#fff;stroke-width:1.5}
+.scroll-ring .track{opacity:.25}
+.scroll-ring .prog{stroke-dasharray:138.2;stroke-dashoffset:138.2}
+.scroll-ring span{position:absolute;inset:0;display:grid;place-items:center;font-size:.9rem;line-height:1}
+
+/* ---------- Scene 1: hero + loading yard ---------- */
+.scene-yard{position:relative;height:100vh;height:100svh;overflow:hidden;background:var(--white)}
+.yard-inner{position:absolute;inset:0}
+.hero-copy{user-select:none;position:absolute;left:clamp(18px,3vw,40px);top:calc(env(safe-area-inset-top,0px) + 14vh);max-width:min(52vw,720px)}
+.hero-copy img,.hero-copy .thumb{width:clamp(120px,15vw,220px);aspect-ratio:1.6;border-radius:2px;margin-bottom:clamp(20px,4vh,56px);background:
+  linear-gradient(160deg,#5f7a55 0%,#2f3f2c 40%,#6f6a5c 41%,#cfc7b6 60%,#3b4838 61%,#233020 100%)}
+.hero-copy .thumb{position:relative;overflow:hidden}
+.hero-copy .thumb::after{content:"";position:absolute;inset:0;background:
+  repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.25) 22px 24px,transparent 24px 60px)}
+.hero-stats{position:absolute;right:clamp(18px,3vw,40px);top:calc(env(safe-area-inset-top,0px) + 8vh);width:min(34vw,440px)}
+.stat{padding:clamp(14px,2.6vh,34px) 0;border-bottom:1px solid var(--grey-2)}
+.stat b{display:block;font-family:var(--display);font-weight:700;font-size:clamp(2.4rem,6vw,5.4rem);line-height:1;letter-spacing:-.02em}
+.stat span{display:block;margin-top:8px;font-size:.95rem;color:#3a3a3a}
+@media (max-width:760px){
+  .hero-copy{max-width:88vw;top:calc(env(safe-area-inset-top,0px) + 12vh)}
+  .hero-stats{display:none}
+}
+
+.ground{position:absolute;left:0;right:0;bottom:0;height:0;background:var(--black);overflow:hidden;color:#fff}
+.ground::before{content:"";position:absolute;left:0;right:0;top:10px;height:2px;background:repeating-linear-gradient(to right,#3a3a3a 0 60px,transparent 60px 140px);background-position:var(--dash,0) 0;opacity:.9}
+.services-inner{position:absolute;left:0;right:0;top:0;height:var(--road-h);display:flex;flex-direction:column;justify-content:center}
+.ground-line{position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--black);opacity:0}
+
+.big-word{position:absolute;right:100%;bottom:calc(var(--road-h) - .02em);white-space:nowrap;font-family:var(--display);font-weight:700;text-transform:uppercase;font-size:clamp(9rem,26vw,26rem);line-height:.8;color:#e9e9e9;letter-spacing:-.02em;will-change:transform;user-select:none}
+
+.stacker{position:absolute;left:0;bottom:0;width:55vw;will-change:transform}
+.stacker svg{transform:scaleX(-1);overflow:visible}
+.truck{position:absolute;bottom:0;left:100vw;width:46vw;will-change:transform}
+.stack{position:absolute;bottom:0;right:-12vw;width:calc(500vw * 55 / 900);will-change:transform}
+
+/* ---------- Services (inside the black band) ---------- */
+.services-track{display:flex;align-items:center;gap:clamp(48px,7vw,140px);padding:0 clamp(18px,3vw,40px);width:max-content;will-change:transform}
+.svc-intro{flex:0 0 auto;width:min(80vw,820px);display:grid;grid-template-columns:1.4fr 1fr;gap:clamp(24px,4vw,72px);align-items:start}
+.svc-intro p{color:#b7b7b7;font-size:.95rem;max-width:36ch}
+.svc-intro p+p{margin-top:1.1em}
+.svc{flex:0 0 auto;width:clamp(240px,26vw,330px);border-left:1px solid #2a2a2a;padding-left:clamp(20px,2.4vw,36px);min-height:200px}
+.svc .ico{margin-bottom:18px}
+.svc .ico{width:38px;height:38px;margin-bottom:26px;color:#fff}
+.svc .h-m{margin-bottom:16px}
+.svc p{color:#b7b7b7;font-size:.86rem;max-width:32ch}
+.svc-end{flex:0 0 auto;width:20vw}
+.reveal .w{color:var(--blue);transition:none}
+.reveal .w.on{color:currentColor}
+.svc .reveal.h-m .w{color:#5656ff}
+.svc .reveal.h-m .w.on{color:#fff}
+.svc p.reveal .w{color:#5656ff}
+.svc p.reveal .w.on{color:#b7b7b7}
+.svc-intro p.reveal .w{color:#5656ff}
+.svc-intro p.reveal .w.on{color:#b7b7b7}
+.svc-intro .h-display.reveal .w{color:#5656ff}
+.svc-intro .h-display.reveal .w.on{color:#fff}
+.svc-intro .h-display.reveal .w.on.dim{color:#5a5a5a}
+.pill{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);border:1px solid #444;background:transparent;color:#fff;border-radius:999px;padding:12px 22px;font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+.pill:hover{background:#fff;color:#000;border-color:#fff}
+@media (max-width:760px){ .svc-intro{grid-template-columns:1fr;width:82vw} .services-track{gap:36px} .svc{width:70vw} }
+
+/* ---------- Scene 3: reliability (top-down road) ---------- */
+.scene-road{position:relative;height:100vh;height:100svh;overflow:hidden;background:var(--white)}
+.roadsvg{position:absolute;inset:0;width:100%;height:100%}
+.road-copy{position:absolute;left:clamp(18px,3vw,40px);top:calc(env(safe-area-inset-top,0px) + 17vh);max-width:min(40vw,560px)}
+.lede.road-copy{top:auto;position:absolute;left:clamp(18px,3vw,40px);bottom:calc(env(safe-area-inset-bottom,0px) + 9vh);max-width:min(36vw,380px);font-size:.9rem;color:#3a3a3a}
+.road-feats{position:absolute;right:clamp(18px,3vw,40px);top:0;bottom:0;width:min(30vw,380px);display:flex;flex-direction:column;justify-content:center;gap:0}
+.feat{padding:clamp(14px,3vh,34px) 0;border-bottom:1px solid var(--grey-2);position:absolute;right:0;width:100%;opacity:0}
+.feat .ico{width:34px;height:34px;margin-bottom:22px;filter:invert(1)}
+.feat .h-m{margin-bottom:12px}
+.feat p{font-size:.86rem;color:#3a3a3a;max-width:36ch}
+@media (max-width:760px){
+  .road-copy{max-width:60vw}
+  .lede.road-copy{display:none}
+  .road-feats{right:12px;width:34vw}
+  .feat p{font-size:.72rem}
+  .feat .h-m{font-size:.9rem}
+}
+
+/* ---------- Scene 3b: port ---------- */
+.scene-port{position:relative;height:100vh;height:100svh;overflow:hidden;background:var(--white)}
+.portsvg{position:absolute;inset:0;width:100%;height:100%}
+.port-copy{position:absolute;left:clamp(18px,3vw,40px);top:calc(env(safe-area-inset-top,0px) + 15vh);max-width:min(44vw,640px);z-index:2}
+.port-copy p{margin-top:22px;max-width:44ch;font-size:.95rem;color:#3a3a3a}
+@media (max-width:760px){ .port-copy{max-width:86vw} .port-copy p{font-size:.85rem} }
+
+/* ---------- Scene 4: ocean ---------- */
+.scene-sea{position:relative;height:100vh;height:100svh;overflow:hidden;color:#fff;background:
+  radial-gradient(120% 90% at 50% 110%,#0c3f86 0%,var(--sea) 35%,var(--sea-deep) 100%)}
+.waves{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.sea-tex{position:absolute;inset:-10%;opacity:.35;mix-blend-mode:soft-light;background-image:
+  repeating-radial-gradient(ellipse 60% 120% at 20% 40%,rgba(255,255,255,.14) 0 2px,transparent 2px 48px),
+  repeating-radial-gradient(ellipse 80% 100% at 80% 70%,rgba(255,255,255,.1) 0 1px,transparent 1px 32px),
+  repeating-linear-gradient(97deg,rgba(255,255,255,.05) 0 3px,transparent 3px 27px);
+  filter:blur(1.5px);will-change:transform}
+.ship{position:absolute;left:50%;top:22%;width:clamp(56px,5.4vw,78px);transform:translateX(-50%);will-change:transform;z-index:2;filter:drop-shadow(0 12px 18px rgba(0,0,0,.45))}
+.wake{position:absolute;left:50%;top:0;width:clamp(220px,30vw,460px);height:95vh;transform:translateX(-50%);pointer-events:none;z-index:1;filter:blur(1.2px);opacity:.85}
+.sea-grid{position:absolute;inset:0;display:grid;grid-template-columns:1fr clamp(120px,16vw,240px) 1fr;grid-template-rows:1fr 1fr;gap:6vh 0;padding:calc(env(safe-area-inset-top,0px) + 14vh) clamp(18px,4vw,60px) 16vh;z-index:3;pointer-events:none}
+.sea-feat{max-width:340px;opacity:0;transform:translateY(24px)}
+.sea-feat.left{justify-self:end;text-align:right;grid-column:1}
+.sea-feat.right{justify-self:start;text-align:left;grid-column:3}
+.sea-feat .ico{width:34px;height:34px;margin-bottom:20px;color:#fff}
+.sea-feat.left .ico{margin-left:auto}
+.sea-feat .h-m{margin-bottom:12px}
+.sea-feat p{font-size:.86rem;color:#cfd8ea;max-width:34ch}
+.sea-feat.left p{margin-left:auto}
+.sea-final{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10vh);transform:translateX(-50%);text-align:center;width:min(92vw,720px);z-index:4;opacity:0}
+.sea-final .h-display{color:#fff;text-shadow:0 8px 40px rgba(0,0,0,.5)}
+.sea-final .actions{display:flex;justify-content:center;gap:12px;margin-top:28px;flex-wrap:wrap}
+.btn{border:1px solid #fff;color:#fff;background:transparent;border-radius:999px;padding:13px 24px;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase}
+.btn.solid{background:#fff;color:#04173a}
+.btn:hover{background:#fff;color:#04173a}
+.chev{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);color:#fff;opacity:.7;z-index:4;width:22px}
+@media (max-width:760px){
+  .sea-grid{grid-template-columns:1fr clamp(60px,14vw,80px) 1fr;padding-inline:12px}
+  .sea-feat .h-m{font-size:.9rem}
+  .sea-feat p{font-size:.72rem}
+  .sea-feat .ico{width:26px;height:26px}
+}
+
+/* ---------- Footer ---------- */
+footer{background:var(--black);color:#9a9a9a;padding:56px clamp(18px,3vw,40px) calc(40px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;gap:32px;font-size:.84rem}
+footer .brand{color:#fff;font-size:1.4rem;margin-bottom:12px}
+footer .brand i{background:#fff}
+footer h4{color:#fff;font-family:var(--display);text-transform:uppercase;font-weight:600;font-size:.9rem;margin-bottom:14px}
+footer ul{list-style:none;display:grid;gap:8px}
+footer a:hover{color:#fff}
+footer .legal{grid-column:1/-1;border-top:1px solid #222;padding-top:22px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:.68rem;letter-spacing:.06em}
+@media (max-width:760px){ footer{grid-template-columns:1fr 1fr} }
+
+@media (prefers-reduced-motion:reduce){
+  .reveal .w{color:inherit!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Fixed chrome -->
+<header class="nav">
+  <a class="brand" href="#top" aria-label="Meridian Freight Group"><i></i>Meridian</a>
+  <nav><ul>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#reliability">Reliability</a></li>
+    <li><a href="#network">Network</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul></nav>
+  <a class="cta" href="#contact">Get a quote</a>
+</header>
+<div class="speed" aria-live="off"><span id="speed">0</span> KM/H</div>
+<div class="scroll-ring" aria-hidden="true">
+  <svg viewBox="0 0 48 48"><circle class="track" cx="24" cy="24" r="22"/><circle class="prog" id="ring" cx="24" cy="24" r="22"/></svg>
+  <span>↓</span>
+</div>
+
+<!-- SVG symbols -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="ribs" width="8" height="10" patternUnits="userSpaceOnUse"><rect width="8" height="10" fill="#d4d4d4"/><rect x="0" width="2.5" height="10" fill="#b9b9b9"/><rect x="5" width="1.2" height="10" fill="#f0f0f0"/></pattern>
+    <pattern id="ribsV" width="10" height="8" patternUnits="userSpaceOnUse"><rect width="10" height="8" fill="#d4d4d4"/><rect y="0" width="10" height="2.5" fill="#b9b9b9"/><rect y="5" width="10" height="1.2" fill="#f0f0f0"/></pattern>
+    <pattern id="ribsBlue" width="8" height="10" patternUnits="userSpaceOnUse"><rect width="8" height="10" fill="#1f3f7a"/><rect width="2.5" height="10" fill="#183262"/></pattern>
+    <pattern id="ribsRed" width="8" height="10" patternUnits="userSpaceOnUse"><rect width="8" height="10" fill="#b8402b"/><rect width="2.5" height="10" fill="#93321f"/></pattern>
+    <pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><rect x="1" y="1" width="3.2" height="3.2" fill="#ffffff"/></pattern>
+    <symbol id="wheel" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#141414"/><circle cx="20" cy="20" r="11" fill="#5a5a5a"/><circle cx="20" cy="20" r="6" fill="#262626"/><circle cx="20" cy="20" r="2" fill="#8a8a8a"/></symbol>
+    <symbol id="i-plane" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mp)"/><mask id="mp"><path d="M2 18l12-3 8-13h3l-4 13 12 3v3l-12-1-2 8 4 3v3l-6-2-6 2v-3l4-3-2-8-12 1z" fill="#fff"/></mask></symbol>
+    <symbol id="i-ship" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#ms)"/><mask id="ms"><path d="M3 24h30l-4 8H7zM9 22V12h6v10zm8 0V8h6v14zm8 0V14h6v8z" fill="#fff"/></mask></symbol>
+    <symbol id="i-stamp" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mt)"/><mask id="mt"><circle cx="18" cy="18" r="15" fill="#fff"/><circle cx="18" cy="18" r="8" fill="#000"/><path d="M16 12h4v12h-4z" fill="#fff"/></mask></symbol>
+    <symbol id="i-house" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mh)"/><mask id="mh"><path d="M18 3l15 12v18H3V15z" fill="#fff"/><path d="M14 20h8v13h-8z" fill="#000"/></mask></symbol>
+    <symbol id="i-crane" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mc)"/><mask id="mc"><path d="M6 33V6h4v4h20v4H10v19zM26 14h4v6h4v6h-12v-6h4z" fill="#fff"/></mask></symbol>
+    <symbol id="i-pin" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mpin)"/><mask id="mpin"><path d="M18 2a11 11 0 0 1 11 11c0 8-11 21-11 21S7 21 7 13A11 11 0 0 1 18 2z" fill="#fff"/><circle cx="18" cy="13" r="4" fill="#000"/></mask></symbol>
+    <symbol id="i-globe" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mg)"/><mask id="mg"><circle cx="18" cy="18" r="15" fill="#fff"/><path d="M18 3v30M3 18h30M8 8c6 4 14 4 20 0M8 28c6-4 14-4 20 0" stroke="#000" stroke-width="2.5" fill="none"/></mask></symbol>
+    <symbol id="i-shield" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#msh)"/><mask id="msh"><path d="M18 2l14 5v10c0 9-6 15-14 18C10 32 4 26 4 17V7z" fill="#fff"/><path d="M11 18l5 5 9-10" stroke="#000" stroke-width="3" fill="none"/></mask></symbol>
+    <symbol id="i-one" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mo)"/><mask id="mo"><circle cx="18" cy="18" r="15" fill="#fff"/><circle cx="18" cy="18" r="9" fill="#000"/><circle cx="18" cy="18" r="4" fill="#fff"/></mask></symbol>
+    <symbol id="i-eye" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#me)"/><mask id="me"><path d="M2 18c5-8 11-12 16-12s11 4 16 12c-5 8-11 12-16 12S7 26 2 18z" fill="#fff"/><circle cx="18" cy="18" r="6" fill="#000"/><circle cx="18" cy="18" r="2.5" fill="#fff"/></mask></symbol>
+    <symbol id="i-check" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mk)"/><mask id="mk"><rect x="3" y="3" width="30" height="30" rx="4" fill="#fff"/><path d="M10 18l6 6 11-12" stroke="#000" stroke-width="3.5" fill="none"/></mask></symbol>
+    <symbol id="i-tag" viewBox="0 0 36 36"><rect width="36" height="36" fill="url(#dots)" mask="url(#mtag)"/><mask id="mtag"><path d="M3 3h15l15 15-15 15L3 18z" fill="#fff"/><circle cx="11" cy="11" r="3" fill="#000"/></mask></symbol>
+  </defs>
+</svg>
+
+<main id="top">
+
+<!-- ================= SCENE 1: YARD ================= -->
+<section class="scene-yard" id="yard" aria-label="Intro">
+  <div class="yard-inner">
+    <div class="hero-copy">
+      <div class="thumb" role="img" aria-label="Aerial view of a highway interchange"></div>
+      <h1 class="h-display h-xl"><span class="dim">We move<br>freight.</span><br>We own<br>the outcome.</h1>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><b>98.2%</b><span>On-time delivery rate</span></div>
+      <div class="stat"><b>8+</b><span>Years in operation</span></div>
+      <div class="stat"><b>42</b><span>Ports and airports served across APAC</span></div>
+    </div>
+
+    <div class="big-word" id="bigword">Our services</div>
+    <div class="ground-line" id="groundline"></div>
+    <div class="ground on-dark" id="ground"><div class="services-inner" id="services">
+    <div class="services-track" id="svc-track">
+      <div class="svc-intro">
+        <h2 class="h-display h-l reveal">Everything your freight needs.<br><span class="dim">Under one group.</span></h2>
+        <div>
+          <p class="reveal">From air to sea, from customs clearance to final delivery, we bring five logistics disciplines under one team and one contract.</p>
+          <p class="reveal">One partner means one point of accountability and total visibility of your cargo from origin to door.</p>
+        </div>
+      </div>
+
+      <article class="svc">
+        <svg class="ico"><use href="#i-plane"/></svg>
+        <h3 class="h-display h-m reveal">Air<br>freight</h3>
+        <p class="reveal">Express, priority and deferred options across global trade lanes, managed end to end for speed and schedule integrity.</p>
+      </article>
+      <article class="svc">
+        <svg class="ico"><use href="#i-ship"/></svg>
+        <h3 class="h-display h-m reveal">Ocean<br>freight</h3>
+        <p class="reveal">FCL, LCL and reefer services with carrier-neutral booking, port handling and door-to-door coordination.</p>
+      </article>
+      <article class="svc">
+        <svg class="ico"><use href="#i-stamp"/></svg>
+        <h3 class="h-display h-m reveal">Customs<br>brokerage</h3>
+        <p class="reveal">Licensed brokers who classify, file and clear your goods, keeping shipments compliant in every market you trade with.</p>
+      </article>
+      <article class="svc">
+        <svg class="ico"><use href="#i-house"/></svg>
+        <h3 class="h-display h-m reveal">Warehousing<br>and 3PL</h3>
+        <p class="reveal">Bonded storage, pick and pack, distribution and inventory management with live stock visibility.</p>
+      </article>
+      <article class="svc">
+        <svg class="ico"><use href="#i-crane"/></svg>
+        <h3 class="h-display h-m reveal">Project<br>cargo</h3>
+        <p class="reveal">Oversized, heavy-lift and out-of-gauge freight engineered move by move, from route survey to final placement.</p>
+      </article>
+      <div class="svc-end"></div>
+    </div>
+    <button class="pill" type="button">View all services</button>
+    </div></div>
+
+    <!-- Reach stacker (mirrored: body on the right, boom reaches left) -->
+    <div class="stacker" id="stacker"><svg viewBox="0 0 900 300" style="overflow:visible" aria-hidden="true">
+      <ellipse cx="160" cy="297" rx="150" ry="5" fill="#000" opacity=".15"/>
+      <line id="cyl" x1="150" y1="225" x2="400" y2="180" stroke="#3a3a3a" stroke-width="12" stroke-linecap="round"/>
+      <line id="cylrod" x1="150" y1="225" x2="400" y2="180" stroke="#8a8a8a" stroke-width="5" stroke-linecap="round"/>
+      <g id="boom">
+        <rect x="280" y="205" width="300" height="20" rx="4" fill="#1c1c1c"/>
+        <rect x="290" y="209" width="280" height="4" fill="#3b3b3b"/>
+        <rect x="560" y="200" width="24" height="30" rx="3" fill="#2a2a2a"/>
+      </g>
+      <g id="load">
+          <rect x="575" y="215" width="10" height="6" fill="#222"/>
+          <rect x="330" y="220" width="500" height="14" fill="#111"/>
+          <rect x="332" y="228" width="496" height="6" fill="#f0a800"/>
+          <g id="held" opacity="0">
+            <rect x="330" y="234" width="500" height="130" fill="url(#ribs)"/>
+            <rect x="330" y="234" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+            <rect x="330" y="350" width="500" height="14" fill="#9c9c9c"/>
+          </g>
+      </g>
+      <rect x="40" y="210" width="260" height="50" rx="6" fill="#1a1a1a"/>
+      <rect x="80" y="160" width="90" height="52" rx="4" fill="#2aa0b8"/>
+      <rect x="88" y="166" width="74" height="30" rx="2" fill="#0c1a1f"/>
+      <rect x="180" y="200" width="100" height="12" rx="2" fill="#2aa0b8"/>
+      <rect x="20" y="238" width="60" height="18" rx="4" fill="#111"/>
+      <use class="wh3" href="#wheel" x="46" y="240" width="60" height="60"/>
+      <use class="wh3" href="#wheel" x="214" y="240" width="60" height="60"/>
+    </svg></div>
+
+    <!-- Truck side view (drives left) -->
+    <svg class="truck" id="truck" viewBox="0 0 760 240" style="overflow:visible" aria-hidden="true">
+      <ellipse id="truckshadow" cx="380" cy="236" rx="360" ry="6" fill="#000" opacity=".18"/>
+      <g id="exhaust" opacity="0">
+        <circle class="puff" cx="164" cy="60" r="6" fill="#9a9a9a"/>
+        <circle class="puff" cx="164" cy="60" r="8" fill="#b5b5b5"/>
+        <circle class="puff" cx="164" cy="60" r="10" fill="#cfcfcf"/>
+        <circle class="puff" cx="164" cy="60" r="7" fill="#a8a8a8"/>
+      </g>
+      <g id="truckbody">
+        <g id="cargo" opacity="0">
+          <rect x="200" y="44" width="500" height="130" fill="url(#ribs)"/>
+          <rect x="200" y="44" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+          <rect x="200" y="160" width="500" height="14" fill="#9c9c9c"/>
+          <rect x="204" y="48" width="60" height="10" fill="#7a7a7a" opacity=".5"/>
+          <text x="620" y="70" font-family="var(--mono)" font-size="14" fill="#666">MFG 482108 3</text>
+        </g>
+        <rect x="180" y="174" width="540" height="12" fill="#161616"/>
+        <rect x="196" y="186" width="90" height="8" fill="#2c2c2c"/>
+        <rect x="600" y="186" width="90" height="8" fill="#2c2c2c"/>
+        <rect x="130" y="180" width="60" height="6" fill="#222"/>
+        <path d="M30 186V120q0-16 16-16h32l14-44h68q10 0 10 10v116z" fill="#161616"/>
+        <path d="M92 66l-14 40h80V66z" fill="#0d1a24"/>
+        <path d="M96 70l-9 30h20l9-30z" fill="#fff" opacity=".08"/>
+        <rect x="150" y="60" width="20" height="126" fill="#1c1c1c"/>
+        <rect x="160" y="52" width="6" height="14" fill="#333"/>
+        <rect x="20" y="150" width="60" height="26" rx="3" fill="#0f0f0f"/>
+        <rect x="30" y="132" width="44" height="8" fill="#2a2a2a"/>
+        <rect x="26" y="180" width="16" height="6" fill="#f0c245"/>
+        <rect x="24" y="158" width="10" height="8" rx="1" fill="#ffe9a8"/>
+        <rect x="24" y="166" width="10" height="6" rx="1" fill="#e6432b"/>
+      </g>
+      <use class="wh" href="#wheel" x="64" y="176" width="64" height="64"/>
+      <use class="wh" href="#wheel" x="270" y="176" width="64" height="64"/>
+      <use class="wh" href="#wheel" x="336" y="176" width="64" height="64"/>
+      <use class="wh" href="#wheel" x="402" y="176" width="64" height="64"/>
+      <use class="wh" href="#wheel" x="612" y="176" width="64" height="64"/>
+    </svg>
+
+    <!-- Container stack (same unit scale as the stacker) -->
+    <svg class="stack" id="stackc" viewBox="0 0 500 300" aria-hidden="true">
+      <rect x="0" y="170" width="250" height="130" fill="url(#ribsBlue)"/>
+      <rect x="250" y="170" width="250" height="130" fill="url(#ribsRed)"/>
+      <rect x="0" y="170" width="500" height="130" fill="none" stroke="#000" stroke-width="1" opacity=".5"/>
+      <g id="stacktop">
+        <rect x="0" y="40" width="500" height="130" fill="url(#ribs)"/>
+        <rect x="0" y="40" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+        <rect x="0" y="156" width="500" height="14" fill="#9c9c9c"/>
+        <text x="420" y="66" font-family="var(--mono)" font-size="14" fill="#666">MFG 482108 3</text>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<!-- ================= SCENE 3: ROAD ================= -->
+<section class="scene-road" id="reliability" aria-label="Reliability">
+  <svg class="roadsvg" id="roadsvg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <path id="roadpath" d="M500 80 L500 130 C500 190 565 200 565 260 L565 320 C565 380 445 380 445 440 L445 480 C445 530 500 540 500 590 L500 768"/>
+      <path id="branch" d="M500 40 C560 40 640 55 760 65 C900 75 1000 80 1150 85"/>
+      <path id="roadtail" d="M500 -400 L500 100"/>
+    </defs>
+    <g id="roadworld">
+    <!-- port terminal at the end of the road (top-down) -->
+    <g id="terminal" transform="matrix(1 0 0 -1 0 700)">
+      <rect x="-400" y="-700" width="1800" height="470" fill="#0b3a7a"/>
+      <rect x="-400" y="-700" width="1800" height="470" fill="url(#ribsBlue)" opacity=".15"/>
+      <g fill="#fff" opacity=".18"><rect x="-300" y="-560" width="120" height="3"/><rect x="200" y="-620" width="160" height="3"/><rect x="900" y="-520" width="140" height="3"/><rect x="1150" y="-650" width="110" height="3"/></g>
+      <!-- vessel alongside, top-down -->
+      <g id="quayship">
+        <path d="M140 -270 L980 -270 L1080 -350 L980 -430 L140 -430 Z" fill="#dfe5ee"/>
+        <path d="M150 -282 L975 -282 L1060 -350 L975 -418 L150 -418 Z" fill="#1c2f4a"/>
+        <g><rect x="200" y="-405" width="60" height="26" fill="#c8102e"/><rect x="200" y="-375" width="60" height="26" fill="#1a56db"/><rect x="200" y="-345" width="60" height="26" fill="#2e8b57"/><rect x="200" y="-315" width="60" height="26" fill="#f2a900"/>
+           <rect x="270" y="-405" width="60" height="26" fill="#e8e8e8"/><rect x="270" y="-375" width="60" height="26" fill="#c8102e"/><rect x="270" y="-345" width="60" height="26" fill="#1a56db"/><rect x="270" y="-315" width="60" height="26" fill="#e7315f"/>
+           <rect x="340" y="-405" width="60" height="26" fill="#1a56db"/><rect x="340" y="-375" width="60" height="26" fill="#f2a900"/><rect x="340" y="-345" width="60" height="26" fill="#e8e8e8"/><rect x="340" y="-315" width="60" height="26" fill="#2e8b57"/>
+           <rect x="410" y="-405" width="60" height="26" fill="#2e8b57"/><rect x="410" y="-375" width="60" height="26" fill="#e8e8e8"/><rect x="410" y="-345" width="60" height="26" fill="#c8102e"/><rect x="410" y="-315" width="60" height="26" fill="#1a56db"/>
+           <rect x="480" y="-405" width="60" height="26" fill="#f2a900"/><rect x="480" y="-375" width="60" height="26" fill="#1a56db"/><rect x="480" y="-345" width="60" height="26" fill="#e7315f"/><rect x="480" y="-315" width="60" height="26" fill="#e8e8e8"/>
+           <rect x="560" y="-405" width="60" height="116" fill="#1c2f4a" opacity=".6"/>
+           <rect x="640" y="-405" width="60" height="26" fill="#c8102e"/><rect x="640" y="-375" width="60" height="26" fill="#e8e8e8"/><rect x="640" y="-345" width="60" height="26" fill="#1a56db"/><rect x="640" y="-315" width="60" height="26" fill="#2e8b57"/>
+           <rect x="710" y="-405" width="60" height="26" fill="#e8e8e8"/><rect x="710" y="-375" width="60" height="26" fill="#2e8b57"/><rect x="710" y="-345" width="60" height="26" fill="#f2a900"/><rect x="710" y="-315" width="60" height="26" fill="#c8102e"/></g>
+        <rect x="820" y="-400" width="90" height="100" rx="4" fill="#e6ebf2"/><rect x="835" y="-385" width="60" height="14" fill="#1c2f4a"/>
+      </g>
+      <!-- quay -->
+      <rect x="-400" y="-230" width="1800" height="300" fill="#000"/>
+      <rect x="-400" y="-230" width="1800" height="6" fill="#2b2b2b"/>
+      <!-- gantry crane rails and crane, top-down -->
+      <rect x="-400" y="-215" width="1800" height="3" fill="#3a3a3a"/><rect x="-400" y="-120" width="1800" height="3" fill="#3a3a3a"/>
+      <g id="quaycrane"><rect x="300" y="-260" width="34" height="150" fill="#1c1c1c"/><rect x="300" y="-460" width="34" height="200" fill="#1c1c1c" opacity=".9"/><rect x="290" y="-222" width="54" height="18" fill="#2a2a2a"/><rect x="290" y="-130" width="54" height="18" fill="#2a2a2a"/><rect x="312" y="-320" width="10" height="70" fill="#f0c245"/></g>
+      <!-- container yard rows -->
+      <g id="yardrows">
+        <rect x="-300" y="-90" width="24" height="60" fill="#c8102e"/><rect x="-270" y="-90" width="24" height="60" fill="#1a56db"/><rect x="-240" y="-90" width="24" height="60" fill="#e8e8e8"/><rect x="-210" y="-90" width="24" height="60" fill="#2e8b57"/><rect x="-180" y="-90" width="24" height="60" fill="#f2a900"/>
+        <rect x="-60" y="-90" width="24" height="60" fill="#e8e8e8"/><rect x="-30" y="-90" width="24" height="60" fill="#c8102e"/><rect x="0" y="-90" width="24" height="60" fill="#1a56db"/><rect x="30" y="-90" width="24" height="60" fill="#e7315f"/><rect x="60" y="-90" width="24" height="60" fill="#2e8b57"/><rect x="90" y="-90" width="24" height="60" fill="#e8e8e8"/>
+        <rect x="120" y="-90" width="24" height="60" fill="#f2a900"/><rect x="150" y="-90" width="24" height="60" fill="#1a56db"/><rect x="180" y="-90" width="24" height="60" fill="#c8102e"/>
+        <rect x="660" y="-90" width="24" height="60" fill="#2e8b57"/><rect x="690" y="-90" width="24" height="60" fill="#e8e8e8"/><rect x="720" y="-90" width="24" height="60" fill="#1a56db"/><rect x="750" y="-90" width="24" height="60" fill="#c8102e"/><rect x="780" y="-90" width="24" height="60" fill="#f2a900"/><rect x="810" y="-90" width="24" height="60" fill="#e8e8e8"/>
+        <rect x="900" y="-90" width="24" height="60" fill="#c8102e"/><rect x="930" y="-90" width="24" height="60" fill="#1a56db"/><rect x="960" y="-90" width="24" height="60" fill="#2e8b57"/><rect x="990" y="-90" width="24" height="60" fill="#e8e8e8"/><rect x="1020" y="-90" width="24" height="60" fill="#e7315f"/>
+      </g>
+    </g>
+    <path id="roadguide" opacity="0" fill="none" stroke="#000" stroke-width="1" d="M500 80 L500 130 C500 190 565 200 565 260 L565 320 C565 380 445 380 445 440 L445 480 C445 530 500 540 500 590 L500 768"/>
+    <use href="#roadtail" stroke="#2b2b2b" stroke-width="116" fill="none"/>
+    <use href="#roadtail" stroke="#000" stroke-width="110" fill="none"/>
+    <use href="#roadtail" stroke="#3a3a3a" stroke-width="2.5" fill="none" stroke-dasharray="18 26" class="dashline"/>
+    <use href="#branch" stroke="#2b2b2b" stroke-width="100" fill="none" stroke-linecap="round"/>
+    <use href="#branch" stroke="#000" stroke-width="94" fill="none" stroke-linecap="round"/>
+    <use href="#branch" stroke="#3a3a3a" stroke-width="2.5" fill="none" stroke-dasharray="18 26" class="dashline"/>
+    <use href="#roadpath" stroke="#2b2b2b" stroke-width="116" fill="none"/>
+    <use href="#roadpath" stroke="#000" stroke-width="110" fill="none"/>
+    <use href="#roadpath" stroke="#3a3a3a" stroke-width="2.5" fill="none" stroke-dasharray="18 26" class="dashline"/>
+    <!-- gate, drawn over the road -->
+    <g id="gate" transform="translate(0 100)">
+      <rect x="380" y="514" width="14" height="40" fill="#1c1c1c"/><rect x="606" y="514" width="14" height="40" fill="#1c1c1c"/>
+      <rect x="380" y="548" width="240" height="10" fill="#1c1c1c"/>
+      <rect x="380" y="554" width="240" height="4" fill="#f0c245"/>
+      <rect x="440" y="500" width="120" height="16" rx="2" fill="#f0c245"/>
+      <text x="500" y="586" text-anchor="middle" font-family="var(--mono)" font-size="13" fill="#fff" letter-spacing="3" opacity=".8">PORT TERMINAL 4</text>
+    </g>
+    <g id="trucktopG">
+      <g id="trucktopbody" transform="translate(-15.4 -105) scale(.7)">
+        <rect x="4" y="8" width="36" height="290" fill="#000" opacity=".35" transform="translate(6 6)"/>
+        <rect x="2" y="60" width="5" height="40" rx="1" fill="#101010"/><rect x="37" y="60" width="5" height="40" rx="1" fill="#101010"/>
+        <rect x="2" y="190" width="5" height="44" rx="1" fill="#101010"/><rect x="37" y="190" width="5" height="44" rx="1" fill="#101010"/>
+        <rect x="2" y="252" width="5" height="32" rx="1" fill="#101010"/><rect x="37" y="252" width="5" height="32" rx="1" fill="#101010"/>
+        <rect x="6" y="6" width="32" height="232" fill="url(#ribsV)"/>
+        <rect x="6" y="6" width="32" height="232" fill="none" stroke="#8d8d8d" stroke-width="1.2"/>
+        <text transform="translate(27 30) rotate(90)" font-family="var(--mono)" font-size="7" fill="#666">MFG 482108 3</text>
+        <rect x="6" y="242" width="32" height="52" rx="4" fill="#1a1a1a"/>
+        <rect x="9" y="272" width="26" height="10" rx="2" fill="#0d1a24"/>
+        <rect x="9" y="246" width="26" height="4" fill="#2a2a2a"/>
+        <rect x="8" y="288" width="8" height="4" fill="#f0c245"/><rect x="28" y="288" width="8" height="4" fill="#f0c245"/>
+        <ellipse cx="12" cy="300" rx="7" ry="22" fill="#ffe9a8" opacity=".25"/><ellipse cx="32" cy="300" rx="7" ry="22" fill="#ffe9a8" opacity=".25"/>
+      </g>
+    </g>
+    </g>
+  </svg>
+
+  <div class="road-copy">
+    <h2 class="h-display h-xl"><span class="dim">Reliability</span><br>at every<br>milestone</h2>
+  </div>
+  <p class="lede road-copy" id="lede">With every service under one roof and one accountable team, your cargo moves the way your business demands: predictably, transparently and without excuses.</p>
+
+  <div class="road-feats" id="roadfeats">
+    <div class="feat">
+      <svg class="ico"><use href="#i-pin"/></svg>
+      <h3 class="h-display h-m">Real-time<br>freight tracking</h3>
+      <p>Know exactly where your cargo is at every milestone. Live visibility means faster decisions and zero guesswork.</p>
+    </div>
+    <div class="feat">
+      <svg class="ico"><use href="#i-globe"/></svg>
+      <h3 class="h-display h-m">Global network<br>coverage</h3>
+      <p>Partner agents in 60 countries and our own teams in 12 APAC gateways, so every leg is handled by people we trust.</p>
+    </div>
+    <div class="feat">
+      <svg class="ico"><use href="#i-shield"/></svg>
+      <h3 class="h-display h-m">Insured and<br>audited</h3>
+      <p>Full cargo cover on every move and ISO-audited processes, documented from pickup to proof of delivery.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SCENE 3b: PORT ================= -->
+<section class="scene-port" id="port" aria-label="Port handover">
+  <div class="port-copy">
+    <h2 class="h-display h-l"><span class="dim">Quay to deck.</span><br>Same container,<br>same team.</h2>
+    <p>Your box never changes hands between vendors: our trucking, terminal and ocean teams work one booking, so the lift from trailer to vessel is a scheduled step, not a handover.</p>
+  </div>
+  <svg class="portsvg" id="portsvg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="waterg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b5aa8"/><stop offset="1" stop-color="#083061"/></linearGradient>
+      <linearGradient id="hullg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26405f"/><stop offset="1" stop-color="#132538"/></linearGradient>
+    </defs>
+    <!-- water + quay -->
+    <rect x="980" y="720" width="900" height="200" fill="url(#waterg)"/>
+    <g id="portwaves" opacity=".35" stroke="#fff" fill="none" stroke-width="2">
+      <path d="M980 750 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0"/>
+      <path d="M950 790 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0" opacity=".6"/>
+      <path d="M1000 830 q30 -8 60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0 t60 0" opacity=".4"/>
+    </g>
+    <!-- vessel, side view -->
+    <g id="vessel">
+      <path d="M1020 560 H1720 L1690 700 Q1680 760 1620 760 H1060 Q1000 760 1000 700 Z" fill="url(#hullg)"/>
+      <rect x="1020" y="560" width="700" height="14" fill="#c9d3e0"/>
+      <rect x="1000" y="700" width="720" height="8" fill="#b8312e" opacity=".8"/>
+      <text x="1080" y="640" font-family="var(--display)" font-weight="700" font-size="26" fill="#fff" opacity=".8" letter-spacing="2">MERIDIAN ATLAS</text>
+      <!-- bridge -->
+      <rect x="1560" y="400" width="120" height="160" fill="#e6ebf2"/>
+      <rect x="1572" y="414" width="96" height="26" fill="#1c2f4a"/>
+      <rect x="1600" y="360" width="40" height="40" fill="#1c2f4a"/>
+      <rect x="1614" y="330" width="12" height="30" fill="#9c9c9c"/>
+      <!-- deck stacks -->
+      <g id="deckstack">
+        <rect x="1050" y="500" width="500" height="60" fill="#1a56db"/><rect x="1050" y="500" width="500" height="60" fill="url(#ribs)" opacity=".2"/>
+        <rect x="1050" y="440" width="500" height="60" fill="#c8102e"/><rect x="1050" y="440" width="500" height="60" fill="url(#ribs)" opacity=".2"/>
+        <path d="M1150 440v120M1250 440v120M1350 440v120M1450 440v120" stroke="#0c1a2e" stroke-width="2" opacity=".6"/>
+      </g>
+      <g id="shipslot" opacity="0">
+        <rect x="1050" y="310" width="500" height="130" fill="url(#ribs)"/>
+        <rect x="1050" y="310" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+        <rect x="1050" y="426" width="500" height="14" fill="#9c9c9c"/>
+        <text x="1470" y="336" font-family="var(--mono)" font-size="14" fill="#666">MFG 482108 3</text>
+      </g>
+    </g>
+    <rect x="-200" y="700" width="1200" height="220" fill="#000"/>
+    <rect x="960" y="700" width="40" height="30" fill="#222"/>
+    <!-- gantry crane -->
+    <g id="crane">
+      <rect x="560" y="190" width="900" height="26" fill="#1c1c1c"/>
+      <rect x="560" y="216" width="900" height="6" fill="#3b3b3b"/>
+      <rect x="600" y="190" width="26" height="510" fill="#1c1c1c"/>
+      <rect x="780" y="190" width="26" height="510" fill="#1c1c1c"/>
+      <rect x="580" y="640" width="70" height="60" fill="#111"/>
+      <rect x="760" y="640" width="70" height="60" fill="#111"/>
+      <path d="M613 216 L793 420 M793 216 L613 420 M613 420 L793 620 M793 420 L613 620" stroke="#2e2e2e" stroke-width="8"/>
+      <rect x="560" y="120" width="80" height="70" fill="#1c1c1c"/>
+      <rect x="570" y="130" width="60" height="26" fill="#0d1a24"/>
+      <rect x="640" y="150" width="120" height="14" fill="#2a2a2a"/>
+      <rect x="1420" y="170" width="60" height="46" fill="#1c1c1c"/>
+      <rect x="1440" y="230" width="6" height="40" fill="#f0c245"/>
+      <rect x="1442" y="270" width="2" height="6" fill="#e6432b" id="cranelamp"/>
+      <!-- trolley + cables -->
+      <rect id="trolley" x="700" y="222" width="100" height="22" rx="3" fill="#2a2a2a"/>
+      <line id="cab1" x1="720" y1="244" x2="720" y2="490" stroke="#555" stroke-width="3"/>
+      <line id="cab2" x1="780" y1="244" x2="780" y2="490" stroke="#555" stroke-width="3"/>
+      <g id="spr">
+        <rect x="500" y="490" width="500" height="14" fill="#111"/>
+        <rect x="502" y="498" width="496" height="6" fill="#f0a800"/>
+        <rect x="700" y="474" width="100" height="16" rx="2" fill="#333"/>
+        <g id="held2" opacity="0">
+          <rect x="500" y="504" width="500" height="130" fill="url(#ribs)"/>
+          <rect x="500" y="504" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+          <rect x="500" y="620" width="500" height="14" fill="#9c9c9c"/>
+          <text x="920" y="530" font-family="var(--mono)" font-size="14" fill="#666">MFG 482108 3</text>
+        </g>
+      </g>
+    </g>
+    <!-- the same truck, side view -->
+    <g id="truck2" transform="translate(-900 460)">
+      <ellipse cx="380" cy="238" rx="360" ry="5" fill="#fff" opacity=".08"/>
+      <g id="exhaust2" opacity="0">
+        <circle class="puff" cx="164" cy="60" r="6" fill="#9a9a9a"/><circle class="puff" cx="164" cy="60" r="8" fill="#b5b5b5"/><circle class="puff" cx="164" cy="60" r="10" fill="#cfcfcf"/>
+      </g>
+      <g id="truckbody2">
+        <g id="cargo2">
+          <rect x="200" y="44" width="500" height="130" fill="url(#ribs)"/>
+          <rect x="200" y="44" width="500" height="130" fill="none" stroke="#8d8d8d" stroke-width="1.5"/>
+          <rect x="200" y="160" width="500" height="14" fill="#9c9c9c"/>
+          <text x="620" y="70" font-family="var(--mono)" font-size="14" fill="#666">MFG 482108 3</text>
+        </g>
+        <rect x="180" y="174" width="540" height="12" fill="#161616"/>
+        <rect x="196" y="186" width="90" height="8" fill="#2c2c2c"/><rect x="600" y="186" width="90" height="8" fill="#2c2c2c"/>
+        <rect x="130" y="180" width="60" height="6" fill="#222"/>
+        <path d="M30 186V120q0-16 16-16h32l14-44h68q10 0 10 10v116z" fill="#161616"/>
+        <path d="M92 66l-14 40h80V66z" fill="#0d1a24"/>
+        <path d="M96 70l-9 30h20l9-30z" fill="#fff" opacity=".08"/>
+        <rect x="150" y="60" width="20" height="126" fill="#1c1c1c"/><rect x="160" y="52" width="6" height="14" fill="#333"/>
+        <rect x="20" y="150" width="60" height="26" rx="3" fill="#0f0f0f"/><rect x="30" y="132" width="44" height="8" fill="#2a2a2a"/>
+        <rect x="26" y="180" width="16" height="6" fill="#f0c245"/><rect x="24" y="158" width="10" height="8" rx="1" fill="#ffe9a8"/><rect x="24" y="166" width="10" height="6" rx="1" fill="#e6432b"/>
+      </g>
+      <use class="wh2" href="#wheel" x="64" y="176" width="64" height="64"/><use class="wh2" href="#wheel" x="270" y="176" width="64" height="64"/><use class="wh2" href="#wheel" x="336" y="176" width="64" height="64"/><use class="wh2" href="#wheel" x="402" y="176" width="64" height="64"/><use class="wh2" href="#wheel" x="612" y="176" width="64" height="64"/>
+    </g>
+  </svg>
+</section>
+
+<!-- ================= SCENE 4: OCEAN ================= -->
+<section class="scene-sea" id="network" aria-label="Why us">
+  <div class="sea-tex" id="seatex"></div>
+  <svg class="waves" id="waves" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <filter id="soft"><feGaussianBlur stdDeviation="1.6"/></filter>
+      <radialGradient id="swell" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".6" stop-color="#fff" stop-opacity=".03"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <g id="swells">
+      <ellipse cx="300" cy="200" rx="420" ry="120" fill="url(#swell)"/>
+      <ellipse cx="1300" cy="520" rx="480" ry="140" fill="url(#swell)"/>
+      <ellipse cx="700" cy="800" rx="520" ry="150" fill="url(#swell)"/>
+    </g>
+    <g id="wavelines" filter="url(#soft)"></g>
+    <g id="caps"></g>
+  </svg>
+
+  <svg class="wake" id="wake" viewBox="0 0 280 700" preserveAspectRatio="none" aria-hidden="true">
+    <defs><linearGradient id="wakefade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".55" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    <path d="M140 0 C120 120 60 380 -20 700 L300 700 C220 380 160 120 140 0Z" fill="url(#wakefade)" opacity=".5"/>
+    <path d="M140 0 C130 140 100 380 60 700 L220 700 C180 380 150 140 140 0Z" fill="#fff" opacity=".22"/>
+    <path class="wk" d="M124 30 C100 180 40 420 -10 690" stroke="#fff" stroke-width="3" fill="none" opacity=".45" stroke-dasharray="26 30"/>
+    <path class="wk" d="M156 30 C180 180 240 420 290 690" stroke="#fff" stroke-width="3" fill="none" opacity=".45" stroke-dasharray="26 30"/>
+    <path class="wk" d="M132 20 C120 160 80 400 40 690" stroke="#fff" stroke-width="2" fill="none" opacity=".55" stroke-dasharray="18 22"/>
+    <path class="wk" d="M148 20 C160 160 200 400 240 690" stroke="#fff" stroke-width="2" fill="none" opacity=".55" stroke-dasharray="18 22"/>
+    <path class="wk2" d="M138 40 C126 200 105 420 75 690" stroke="#fff" stroke-width="1" fill="none" opacity=".4" stroke-dasharray="8 30"/>
+    <path class="wk2" d="M142 40 C154 200 175 420 205 690" stroke="#fff" stroke-width="1" fill="none" opacity=".4" stroke-dasharray="8 30"/>
+  </svg>
+  <svg class="ship" id="ship" viewBox="0 0 78 400" style="overflow:visible" aria-hidden="true">
+    <g id="shipbody">
+    <path d="M39 0 L74 68 L76 384 Q76 400 60 400 L18 400 Q2 400 2 384 L4 68 Z" fill="#fff" opacity=".35" id="foam"/>
+    <path d="M39 4 L70 70 L70 380 Q70 396 54 396 L24 396 Q8 396 8 380 L8 70 Z" fill="#dfe5ee"/>
+    <path d="M39 12 L64 72 L64 376 Q64 388 54 388 L24 388 Q14 388 14 376 L14 72 Z" fill="#1c2f4a"/>
+    <path d="M39 20 L60 74 L18 74 Z" fill="#e6ebf2"/>
+    <circle cx="39" cy="54" r="5" fill="#1c2f4a"/>
+    <g id="boxes">
+      <rect x="18" y="82" width="12" height="58" fill="#c8102e"/><rect x="31" y="82" width="10" height="58" fill="#1a56db"/><rect x="42" y="82" width="8" height="58" fill="#e8e8e8"/><rect x="51" y="82" width="9" height="58" fill="#2e8b57"/>
+      <rect x="18" y="146" width="9" height="58" fill="#f2a900"/><rect x="28" y="146" width="12" height="58" fill="#e8e8e8"/><rect x="41" y="146" width="9" height="58" fill="#c8102e"/><rect x="51" y="146" width="9" height="58" fill="#1a56db"/>
+      <rect x="18" y="210" width="10" height="58" fill="#1a56db"/><rect x="29" y="210" width="9" height="58" fill="#e7315f"/><rect x="39" y="210" width="12" height="58" fill="#e8e8e8"/><rect x="52" y="210" width="8" height="58" fill="#f2a900"/>
+      <rect x="18" y="274" width="12" height="58" fill="#2e8b57"/><rect x="31" y="274" width="8" height="58" fill="#c8102e"/><rect x="40" y="274" width="11" height="58" fill="#1a56db"/><rect x="52" y="274" width="8" height="58" fill="#e8e8e8"/>
+      <rect x="18" y="82" width="42" height="250" fill="none" stroke="#0c1a2e" stroke-width="1" opacity=".6"/>
+      <path d="M18 140h42M18 204h42M18 268h42" stroke="#0c1a2e" stroke-width="2"/>
+      <path d="M18 82h42v250h-42z" fill="url(#shine)"/>
+    </g>
+    <rect x="18" y="340" width="42" height="34" rx="3" fill="#e6ebf2"/>
+    <rect x="24" y="346" width="30" height="12" rx="2" fill="#1c2f4a"/>
+    <rect x="32" y="360" width="14" height="10" rx="2" fill="#c9d3e0"/>
+    <circle cx="39" cy="366" r="2" fill="#ff5a3c" id="beacon"/>
+    </g>
+    <defs><linearGradient id="shine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient></defs>
+  </svg>
+
+  <div class="sea-grid" id="seagrid">
+    <div class="sea-feat left">
+      <svg class="ico"><use href="#i-one"/></svg>
+      <h3 class="h-display h-m">One point<br>of contact</h3>
+      <p>No more chasing multiple vendors. One team manages your entire shipment from origin to destination.</p>
+    </div>
+    <div class="sea-feat right">
+      <svg class="ico"><use href="#i-eye"/></svg>
+      <h3 class="h-display h-m">Full supply chain<br>visibility</h3>
+      <p>Track your freight in real time and get proactive updates before issues become delays.</p>
+    </div>
+    <div class="sea-feat left">
+      <svg class="ico"><use href="#i-check"/></svg>
+      <h3 class="h-display h-m">Compliance you<br>can trust</h3>
+      <p>Our licensed customs brokers keep your shipments moving within every regulatory requirement across APAC.</p>
+    </div>
+    <div class="sea-feat right">
+      <svg class="ico"><use href="#i-tag"/></svg>
+      <h3 class="h-display h-m">Competitive,<br>transparent pricing</h3>
+      <p>No hidden fees. Clear, competitive pricing backed by responsive sales support throughout the shipment.</p>
+    </div>
+  </div>
+
+  <div class="sea-final" id="seafinal">
+    <h2 class="h-display h-xl">Logistics that works as hard as you do.</h2>
+    <div class="actions">
+      <a class="btn solid" href="#contact">Get a quote</a>
+      <a class="btn" href="#services">Talk to an expert</a>
+    </div>
+  </div>
+  <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l8 8-8 8M12 4l8 8-8 8" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+</section>
+
+<footer id="contact">
+  <div>
+    <div class="brand"><i></i>Meridian</div>
+    <p>Meridian Freight Group<br>Level 18, 101 Harbour Road<br>Singapore 038900</p>
+    <p style="margin-top:12px"><a href="mailto:hello@meridianfreight.example">hello@meridianfreight.example</a><br>+65 6000 0000</p>
+  </div>
+  <div><h4>Services</h4><ul><li><a href="#services">Air freight</a></li><li><a href="#services">Ocean freight</a></li><li><a href="#services">Customs brokerage</a></li><li><a href="#services">Warehousing and 3PL</a></li><li><a href="#services">Project cargo</a></li></ul></div>
+  <div><h4>Company</h4><ul><li><a href="#reliability">About</a></li><li><a href="#network">Network</a></li><li><a href="#">Careers</a></li><li><a href="#">News</a></li></ul></div>
+  <div><h4>Contact</h4><ul><li><a href="#">Request a quote</a></li><li><a href="#">Track a shipment</a></li><li><a href="#">Partner with us</a></li></ul></div>
+  <div class="legal"><span>© 2026 Meridian Freight Group</span><span>Privacy · Terms · Cookies</span></div>
+</footer>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
+<script>
+(function(){
+  if(!window.gsap||!window.ScrollTrigger){ document.querySelectorAll('.feat,.sea-feat,.sea-final').forEach(function(el){el.style.opacity=1;el.style.transform='none'}); return; }
+  gsap.registerPlugin(ScrollTrigger);
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- Split words for blue→ink reveal ---- */
+  document.querySelectorAll('.reveal').forEach(function(el){
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    var nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(function(n){
+      var parts = n.nodeValue.split(/(\s+)/), frag=document.createDocumentFragment();
+      var parentDim = n.parentElement.classList.contains('dim');
+      parts.forEach(function(p){
+        if(!p) return;
+        if(/^\s+$/.test(p)) { frag.appendChild(document.createTextNode(p)); return; }
+        var s=document.createElement('span'); s.className='w'+(parentDim?' dim':''); s.textContent=p; frag.appendChild(s);
+      });
+      n.parentNode.replaceChild(frag,n);
+    });
+  });
+
+  /* ---- Scroll ring + speed ---- */
+  var ring=document.getElementById('ring'), speedEl=document.getElementById('speed'), lastY=window.scrollY, lastT=performance.now(), vel=0;
+  ScrollTrigger.create({ start:0, end:'max', onUpdate:function(s){ ring.style.strokeDashoffset = 138.2*(1-s.progress); } });
+  function tick(){
+    var now=performance.now(), y=window.scrollY, dt=Math.max(16,now-lastT);
+    var v=Math.abs(y-lastY)/dt*1000; // px/s
+    vel += (v-vel)*0.12; lastY=y; lastT=now;
+    speedEl.textContent = Math.round(Math.min(120, vel/40));
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  var isMobile = window.matchMedia('(max-width:760px)').matches;
+
+  /* ---- SCENE 1: yard → truck drives left, ground rises, big word ---- */
+  var yard=document.getElementById('yard');
+  var roadH = isMobile ? 0.42 : 0.5; // black band height as fraction of viewport
+  yard.style.setProperty('--road-h', (roadH*100)+'vh');
+
+  var track=document.getElementById('svc-track');
+  function trackDist(){ return Math.max(0, track.scrollWidth - window.innerWidth + 40); }
+  var words = Array.from(track.querySelectorAll('.reveal .w'));
+  function updateWords(){
+    var limit = window.innerWidth*0.72;
+    words.forEach(function(w){ var r=w.getBoundingClientRect(); w.classList.toggle('on', r.left < limit); });
+  }
+  ScrollTrigger.addEventListener('refresh', updateWords);
+  if(reduce) words.forEach(function(w){w.classList.add('on')});
+
+  var tl1 = gsap.timeline({
+    scrollTrigger:{ trigger:yard, start:'top top', end:'+=1050%', pin:true, scrub:0.6, anticipatePin:1, invalidateOnRefresh:true }
+  });
+  // boom pivot (280,215), length 300; the load hangs from the tip and stays level
+  var arm={a:-55};
+  function armUpdate(){
+    var r=arm.a*Math.PI/180, tx=280+300*Math.cos(r), ty=215+300*Math.sin(r);
+    gsap.set('#boom',{ rotation:arm.a, svgOrigin:'280 215' });
+    gsap.set('#load',{ x:tx-580, y:ty-215 });
+  }
+  armUpdate();
+  var vw=function(n){ return function(){ return n/100*window.innerWidth; }; };
+  var vh=function(n){ return function(){ return n/100*window.innerHeight; }; };
+  // yard positions (in vw): truck parks at 4, stacker home 9.7 (boom over the trailer), stacker at the stack 58.3
+  var S_HOME=25.7, S_STACK=72.4, L_TRUCK=20; var world={x:0};
+  gsap.set('#truck',{ x:vw(0) });
+  gsap.set('#stacker',{ x:vw(S_HOME) });
+  var yardMobile = isMobile;
+  tl1
+    // truck reverses in from the right and parks on the left
+    .to('#truck', { x:vw(L_TRUCK-100), duration:1.4, ease:'power2.out' }, 0)
+    // stacker drives right to the container stack
+    .to('#stacker', { x:vw(S_STACK), duration:1.6, ease:'power1.inOut' }, 0.2)
+    // boom reaches down and grabs the top container
+    .to(arm, { a:-40.3, duration:0.8, ease:'power2.inOut', onUpdate:armUpdate }, 1.8)
+    .set('#stacktop',{ opacity:0 }, 2.6).set('#held',{ opacity:1 }, 2.6)
+    .to(arm, { a:-48, duration:0.6, ease:'power2.inOut', onUpdate:armUpdate }, 2.65)
+    // drives back to the truck with the box in the air
+    .to('#stacker', { x:vw(S_HOME), duration:1.7, ease:'power1.inOut' }, 3.2)
+    // lowers it onto the trailer
+    .to(arm, { a:-27.8, duration:0.9, ease:'power2.inOut', onUpdate:armUpdate }, 4.9)
+    .set('#held', { opacity:0 }, 5.8).set('#cargo', { opacity:1 }, 5.8)
+    .to(arm, { a:-50, duration:0.7, ease:'power2.inOut', onUpdate:armUpdate }, 5.85)
+    // ground rises to a black band and the yard rides up on top of it
+    .to('#ground', { height:(roadH*100)+'vh', duration:1.2, ease:'power2.inOut' }, 6.4)
+    .to('#stacker, #stackc, #truck', { y:vh(-roadH*100), duration:1.2, ease:'power2.inOut' }, 6.4)
+    .to('.hero-copy, .hero-stats', { opacity:0, y:-40, duration:0.8, ease:'power2.in' }, 6.4)
+    // the truck sets off: camera follows it, so the yard slides away to the right
+    .to(world, { x:150, duration:6.4, ease:'none', onUpdate:function(){ gsap.set('#stacker',{ x:vw(S_HOME+world.x)() }); gsap.set('#stackc',{ x:vw(world.x)() }); } }, 7.4)
+    .to('#bigword', { x:vw(215), duration:6.4, ease:'none' }, 7.4)
+    .to('#ground', { '--dash':'1400px', duration:6.4, ease:'none' }, 7.4)
+    // services roll past underneath while it drives
+    .to('#svc-track', { x:function(){ return -trackDist(); }, duration:5.6, ease:'none', onUpdate:updateWords }, 7.8)
+    // then it pulls ahead out of frame and the road takes over
+    .to('#truck', { x:vw(-165), duration:1.2, ease:'power1.in' }, 13.0)
+    .to('#bigword', { x:vw(330), duration:1.2, ease:'none' }, 13.0)
+    .to('#ground', { height:'100vh', duration:0.9, ease:'power2.in' }, 13.4);
+
+
+  /* ---- SCENE 3: top-down road ---- */
+  var roadSec=document.getElementById('reliability'), feats=Array.from(document.querySelectorAll('#roadfeats .feat'));
+  gsap.set(feats, { opacity:0, y:40 });
+  var tl3 = gsap.timeline({ scrollTrigger:{ trigger:roadSec, start:'top top', end:'+=320%', pin:true, scrub:0.6, anticipatePin:1 } });
+  if(window.MotionPathPlugin){
+    gsap.registerPlugin(MotionPathPlugin);
+    gsap.set('#trucktopG', { motionPath:{ path:'#roadguide', align:'#roadguide', alignOrigin:[0.5,0.5], autoRotate:-90, start:0, end:0.001 } });
+    tl3.to('#trucktopG', { motionPath:{ path:'#roadguide', align:'#roadguide', alignOrigin:[0.5,0.5], autoRotate:-90 }, duration:5, ease:'none' }, 0);
+  } else {
+    tl3.fromTo('#trucktopG', { y:-100 }, { y:600, duration:5, ease:'none' }, 0);
+  }
+  tl3.to('#roadsvg .dashline', { strokeDashoffset:600, duration:5, ease:'none' }, 0);
+  // arriving: camera pans up to the terminal, headline and features clear the frame
+  tl3.to('#roadworld', { y:-400, duration:1.6, ease:'power1.inOut' }, 3.4);
+  tl3.to('.road-copy, #roadfeats', { opacity:0, duration:0.5, ease:'power1.in' }, 3.5);
+  tl3.to('#quayship', { x:-30, duration:2, ease:'sine.inOut' }, 3.4);
+  var each = 5/feats.length;
+  feats.forEach(function(f,i){
+    var t = i*each;
+    tl3.fromTo(f, { opacity:0, y:60 }, { opacity:1, y:0, duration:each*0.35, ease:'power2.out' }, t+each*0.1)
+       .to(f, { opacity:0, y:-60, duration:each*0.3, ease:'power2.in' }, t+each*0.75);
+  });
+  tl3.fromTo('#lede', { opacity:0 }, { opacity:1, duration:.8 }, 2.3).to('#lede', { opacity:0, duration:.4 }, 3.5);
+
+  /* ---- SCENE 3b: port handover ---- */
+  var portSec=document.getElementById('port');
+  var tl3b = gsap.timeline({ scrollTrigger:{ trigger:portSec, start:'top top', end:'+=420%', pin:true, scrub:0.6, anticipatePin:1 } });
+  var spr={x:0,y:0};
+  function sprUpdate(){
+    gsap.set('#spr',{ x:spr.x, y:spr.y });
+    gsap.set('#trolley',{ x:spr.x });
+    gsap.set('#cab1',{ attr:{ x1:720+spr.x, x2:720+spr.x, y2:490+spr.y } });
+    gsap.set('#cab2',{ attr:{ x1:780+spr.x, x2:780+spr.x, y2:490+spr.y } });
+  }
+  gsap.set('#spr',{ y:-240 }); spr.y=-240; sprUpdate();
+  var t2={x:-560};
+  tl3b
+    // truck arrives from the road and stops under the crane
+    .to(t2, { x:300, duration:1.6, ease:'power2.out', onUpdate:function(){ gsap.set('#truck2',{ x:t2.x, y:460 }); } }, 0)
+    .to('.port-copy', { opacity:1, duration:0.6 }, 0.2)
+    // spreader lowers onto the container
+    .to(spr, { y:0, duration:1.0, ease:'power2.inOut', onUpdate:sprUpdate }, 1.7)
+    .set('#cargo2',{ opacity:0 }, 2.7).set('#held2',{ opacity:1 }, 2.7)
+    // lift, traverse over the vessel, lower onto the stack
+    .to(spr, { y:-240, duration:0.9, ease:'power2.inOut', onUpdate:sprUpdate }, 2.8)
+    .to(spr, { x:550, duration:1.4, ease:'power1.inOut', onUpdate:sprUpdate }, 3.7)
+    .to(spr, { y:-194, duration:0.8, ease:'power2.inOut', onUpdate:sprUpdate }, 5.1)
+    .set('#held2',{ opacity:0 }, 5.9).set('#shipslot',{ opacity:1 }, 5.9)
+    .to(spr, { y:-300, duration:0.7, ease:'power2.inOut', onUpdate:sprUpdate }, 6.0)
+    // empty truck leaves, vessel casts off
+    .to(t2, { x:-1100, duration:1.6, ease:'power2.in', onUpdate:function(){ gsap.set('#truck2',{ x:t2.x, y:460 }); } }, 6.2)
+    .to('#vessel', { x:260, y:-6, duration:1.8, ease:'power1.in' }, 6.6);
+  gsap.set('#truck2',{ x:-560, y:460 });
+  gsap.set('.port-copy',{ opacity:0 });
+
+  /* ---- SCENE 4: ocean ---- */
+  var sea=document.getElementById('network'), seaFeats=Array.from(document.querySelectorAll('.sea-feat'));
+  var tl4 = gsap.timeline({ scrollTrigger:{ trigger:sea, start:'top top', end:'+=380%', pin:true, scrub:0.7, anticipatePin:1 } });
+  tl4.fromTo('#ship', { y:'70vh' }, { y:'-10vh', duration:6, ease:'none' }, 0)
+     .fromTo('#wake', { y:'75vh', opacity:0 }, { y:'-5vh', opacity:.85, duration:6, ease:'none' }, 0)
+     .fromTo('#waves', { y:'-8%' }, { y:'8%', duration:6, ease:'none' }, 0);
+  seaFeats.forEach(function(f,i){
+    tl4.to(f, { opacity:1, y:0, duration:0.7, ease:'power2.out' }, 1.2 + i*0.6);
+  });
+  tl4.to(seaFeats, { opacity:0, y:-30, duration:0.8, stagger:0.06, ease:'power2.in' }, 4.4)
+     .to('#seafinal', { opacity:1, duration:1, ease:'power2.out' }, 4.9)
+     .to('#ship', { scale:1.35, transformOrigin:'50% 50%', duration:1.2, ease:'power2.inOut' }, 4.9);
+
+  /* idle drift of the sea texture when not scrolling */
+
+
+  /* ================= LIVING MOTION ================= */
+  if(!reduce){
+    // --- side truck: wheels spin with distance travelled, body bobs, exhaust puffs while moving
+    var wheels = gsap.utils.toArray('#truck .wh'), lastTX = 0, moving=0;
+    gsap.set(wheels, { transformOrigin:'50% 50%' });
+    gsap.ticker.add(function(){
+      var tx = (gsap.getProperty('#truck','x') || 0) - world.x/100*window.innerWidth, d = tx-lastTX; lastTX = tx;
+      var w = document.getElementById('truck').getBoundingClientRect().width/760; // px per unit
+      var deg = -(d/(w||1))/(Math.PI*64)*360;      // wheel circumference 64 units
+      if(Math.abs(d)>0.01){ wheels.forEach(function(el){ gsap.set(el,{ rotation:'+='+deg }); }); }
+      moving += ((Math.abs(d)>0.2?1:0)-moving)*0.1;
+      gsap.set('#exhaust',{ opacity: moving });
+      gsap.set('#truckbody',{ y: Math.sin(performance.now()/90)*0.9*moving, rotation:(Math.sin(performance.now()/130)*0.25)*moving, transformOrigin:'50% 100%' });
+      gsap.set('#truckshadow',{ scaleX: 1-0.02*moving, transformOrigin:'50% 50%' });
+    });
+    gsap.utils.toArray('#exhaust .puff').forEach(function(pf,i){
+      gsap.fromTo(pf,{ x:0,y:0,scale:.3,opacity:.8 },{ x:'+=70', y:'-=48', scale:2.2, opacity:0, duration:1.4, repeat:-1, delay:i*0.35, ease:'power1.out' });
+    });
+
+    // --- stacker: wheels spin as it drives, hydraulic cylinder follows the boom, container sways while airborne
+    var wheels3=gsap.utils.toArray('#stacker .wh3'), lastSX=0;
+    gsap.set(wheels3,{ transformOrigin:'50% 50%' });
+    var swayT=0;
+    gsap.ticker.add(function(dt){
+      var sx=gsap.getProperty('#stacker','x')||0, sd=sx-lastSX; lastSX=sx;
+      if(Math.abs(sd)>0.01){ var wpx=document.getElementById('stacker').getBoundingClientRect().width/900; wheels3.forEach(function(el){ gsap.set(el,{ rotation:'+='+((sd/(wpx||1))/(Math.PI*60)*360) }); }); }
+      var r=arm.a*Math.PI/180, mx=280+150*Math.cos(r), my=215+150*Math.sin(r);
+      ['#cyl','#cylrod'].forEach(function(id){ gsap.set(id,{ attr:{ x2:mx, y2:my } }); });
+      swayT += dt;
+      var held = document.getElementById('held');
+      var vis = parseFloat(held.getAttribute('opacity')||gsap.getProperty(held,'opacity'));
+      gsap.set('#load',{ rotation: Math.sin(swayT*1.6)*1.2*(vis>0.5?1:0), svgOrigin:(580+(gsap.getProperty('#load','x')||0))+' '+(215+(gsap.getProperty('#load','y')||0)) });
+    });
+
+    // --- top-down truck: gentle lane drift, road markings always rolling
+    gsap.to('#trucktopbody',{ x:'+=1.2', rotation:.6, duration:2.4, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'50% 80%' });
+    gsap.to('#roadsvg .dashline',{ strokeDashoffset:'+=44', duration:.5, repeat:-1, ease:'none' });
+
+    // --- ship: slow roll and heave, foam pulses, beacon blinks, wake lines stream aft
+    gsap.to('#shipbody',{ rotation:1.1, x:1.5, duration:5.5, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'50% 50%' });
+    gsap.to('#shipbody',{ scale:1.015, duration:3.2, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'50% 50%' });
+    gsap.fromTo('#foam',{ scale:1, opacity:.35 },{ scale:1.08, opacity:0, duration:2.6, repeat:-1, ease:'power1.out', transformOrigin:'50% 15%' });
+    gsap.to('#beacon',{ opacity:.15, duration:.6, yoyo:true, repeat:-1, ease:'steps(1)' });
+    gsap.to('#wake .wk',{ strokeDashoffset:-80, duration:1.6, repeat:-1, ease:'none' });
+    gsap.to('#wake .wk2',{ strokeDashoffset:-76, duration:2.6, repeat:-1, ease:'none' });
+    gsap.to('#wake',{ scaleX:1.06, duration:2.2, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'50% 0%' });
+    gsap.to('#seatex',{ x:'+=40', y:'+=25', duration:9, yoyo:true, repeat:-1, ease:'sine.inOut' });
+    // --- port: second truck's wheels + exhaust, vessel heave, water, lamp
+    var wheels2=gsap.utils.toArray('#portsvg .wh2'), lastT2=t2.x, mv2=0;
+    gsap.set(wheels2,{ transformOrigin:'50% 50%' });
+    gsap.ticker.add(function(){
+      var d=t2.x-lastT2; lastT2=t2.x;
+      if(Math.abs(d)>0.01){ wheels2.forEach(function(el){ gsap.set(el,{ rotation:'+='+(-(d)/(Math.PI*64)*360) }); }); }
+      mv2 += ((Math.abs(d)>0.2?1:0)-mv2)*0.1;
+      gsap.set('#exhaust2',{ opacity:mv2 });
+      gsap.set('#truckbody2',{ y:Math.sin(performance.now()/90)*0.9*mv2 });
+    });
+    gsap.utils.toArray('#exhaust2 .puff').forEach(function(pf,i){
+      gsap.fromTo(pf,{ x:0,y:0,scale:.3,opacity:.8 },{ x:'+=70', y:'-=48', scale:2.2, opacity:0, duration:1.4, repeat:-1, delay:i*0.4, ease:'power1.out' });
+    });
+    gsap.to('#vessel',{ y:'+=5', rotation:.25, duration:3.4, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'50% 100%' });
+    gsap.to('#portwaves path',{ x:-60, duration:4, repeat:-1, ease:'none', stagger:{ each:.6 } });
+    gsap.to('#cranelamp',{ opacity:.2, duration:.7, yoyo:true, repeat:-1, ease:'steps(1)' });
+    gsap.to('#spr',{ rotation:.4, duration:2.2, yoyo:true, repeat:-1, ease:'sine.inOut', transformOrigin:'750px 490px' });
+
+    // --- open sea: rolling wave lines and drifting whitecaps
+    (function(){
+      var g=document.getElementById('wavelines'), caps=document.getElementById('caps'), NS='http://www.w3.org/2000/svg';
+      function wave(y,amp,len,phase){ var d='M-400 '+y; for(var x=-400;x<=2000;x+=20){ d+=' L'+x+' '+(y+Math.sin((x/len)*Math.PI*2+phase)*amp).toFixed(1); } return d; }
+      for(var i=0;i<14;i++){
+        var y=i*70-30, amp=6+(i%3)*3, len=260+(i%4)*60;
+        var pth=document.createElementNS(NS,'path');
+        pth.setAttribute('d',wave(y,amp,len,i*1.3)); pth.setAttribute('fill','none'); pth.setAttribute('stroke','#fff');
+        pth.setAttribute('stroke-width',(1+(i%2)*0.6)); pth.setAttribute('opacity',0.08+(i%3)*0.05); g.appendChild(pth);
+        gsap.to(pth,{ x:(i%2?1:-1)*len, duration:14+(i%5)*3, repeat:-1, ease:'none' });
+        gsap.to(pth,{ y:'+=10', duration:3+(i%3), yoyo:true, repeat:-1, ease:'sine.inOut' });
+      }
+      for(var k=0;k<22;k++){
+        var c=document.createElementNS(NS,'path');
+        var cx=Math.random()*1600, cy=Math.random()*900, w=20+Math.random()*40;
+        c.setAttribute('d','M'+cx+' '+cy+' q'+(w/2)+' -6 '+w+' 0'); c.setAttribute('stroke','#fff'); c.setAttribute('stroke-width','2'); c.setAttribute('fill','none'); c.setAttribute('stroke-linecap','round');
+        caps.appendChild(c);
+        gsap.fromTo(c,{ opacity:0, x:0 },{ opacity:.55, x:60, duration:2.5+Math.random()*3, repeat:-1, yoyo:true, delay:Math.random()*4, ease:'sine.inOut' });
+      }
+      gsap.to('#swells ellipse',{ x:'+=120', y:'+=40', duration:12, yoyo:true, repeat:-1, ease:'sine.inOut', stagger:2 });
+    })();
+
+  }
+
+  window.addEventListener('load', function(){ ScrollTrigger.refresh(); });
+})();
+</script>
+</body>
+</html>

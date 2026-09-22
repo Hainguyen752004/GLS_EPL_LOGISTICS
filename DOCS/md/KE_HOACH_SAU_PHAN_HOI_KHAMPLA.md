@@ -44,10 +44,10 @@ trống thì giữ như đang chạy và ghi rõ là đang chờ.
 
 | ☐ | Mục | Họ nói | Đang có | Sửa | Commit |
 |---|---|---|---|---|---|
-| ☐ | **2.1 Cước khoán theo chuyến** (C3.6, C3.5) | Ngoài tấn × đơn giá còn có **giá trọn chuyến**, dùng cho xe ngoài không hợp đồng; giá hợp đồng có thể **đổi theo mùa/giá dầu** | Chỉ tấn × đơn giá; bảng giá đã có `valid_from` | Phiếu thêm ô *Cách tính cước*: theo tấn · trọn chuyến. Trọn chuyến thì thành tiền = đơn giá, không nhân tấn. Bảng giá khách × tuyến thêm cột cách tính. Lịch sử giá theo `valid_from` giữ nguyên, đủ cho "đổi theo mùa" | |
+| ☑ | **2.1 Cước khoán theo chuyến** (C3.6, C3.5) | Ngoài tấn × đơn giá còn có **giá trọn chuyến**, dùng cho xe ngoài không hợp đồng; giá hợp đồng có thể **đổi theo mùa/giá dầu** | Chỉ tấn × đơn giá; bảng giá đã có `valid_from` | Phiếu thêm ô *Cách tính cước*: theo tấn · trọn chuyến. Trọn chuyến thì thành tiền = đơn giá, không nhân tấn. Bảng giá khách × tuyến thêm cột cách tính. Lịch sử giá theo `valid_from` giữ nguyên, đủ cho "đổi theo mùa" | 22/09 |
 | ☐ | **2.2 Hoá đơn gộp tháng** (C8.2, B3) | Khách **có hợp đồng**: một hoá đơn gộp cả tháng · khách vãng lai: mỗi phiếu một hoá đơn | Mỗi phiếu một hoá đơn, tờ `HD` gắn một phiếu | Thêm bảng `invoices` (một hoá đơn nhiều phiếu). Khách hàng có cờ *xuất hoá đơn gộp tháng*. Cuối tháng kế toán doanh thu bấm *Gộp hoá đơn tháng* cho khách → một tờ `HD` nhiều dòng phiếu. Sổ thu tiền gắn vào hoá đơn thay vì phiếu. Phiếu vãng lai vẫn như cũ | |
-| ☐ | **2.3 Trả chủ xe gộp** (C4.3) | Ba kiểu: từng phiếu (xe ngoài không hợp đồng) · gộp cuối tháng · theo đợt thoả thuận | Chỉ trả từng phiếu ngay sau khoá | Chủ xe liên kết thành danh mục riêng (`owners`) có *cách trả* và *phí 2 % / mức quá tải riêng* (C4.2). Bảng `owner_payments` một lần trả nhiều phiếu; phiếu đánh *đã trả* khi nằm trong một lần trả | |
-| ☐ | **2.4 Phí 2 % và mức quá tải theo từng chủ xe** (C4.2) | Khác nhau theo chủ xe / hợp đồng | Ba ô trên từng phiếu, mặc định 2 % · 40 t · 1 | Lấy mặc định từ hồ sơ chủ xe (2.3), phiếu vẫn sửa được | |
+| ☑ | **2.3 Trả chủ xe gộp** (C4.3) | Ba kiểu: từng phiếu (xe ngoài không hợp đồng) · gộp cuối tháng · theo đợt thoả thuận | Chỉ trả từng phiếu ngay sau khoá | Chủ xe liên kết thành danh mục riêng (`owners`) có *cách trả* và *phí 2 % / mức quá tải riêng* (C4.2). Bảng `owner_payments` một lần trả nhiều phiếu; phiếu đánh *đã trả* khi nằm trong một lần trả | 22/09 |
+| ☑ | **2.4 Phí 2 % và mức quá tải theo từng chủ xe** (C4.2) | Khác nhau theo chủ xe / hợp đồng | Ba ô trên từng phiếu, mặc định 2 % · 40 t · 1 | Lấy mặc định từ hồ sơ chủ xe (2.3), phiếu vẫn sửa được | 22/09 |
 
 Thứ tự trong đợt: 2.1 trước (nhỏ, độc lập) → 2.3 và 2.4 cùng lúc (chung danh mục chủ xe) → 2.2 sau
 cùng (to nhất, đụng sổ thu tiền vừa làm).

@@ -116,9 +116,18 @@ Làm hết mất khoảng 20 phút. Mỗi bước có ô ☐ để anh tick.
 
 ### Bước 9 ☐ Xe liên kết: trả tiền chủ xe — `quytb` hoặc `quyvc`
 
-Mở một phiếu **xe thuê ngoài đã khoá** (ví dụ `T4-0430-08/EPL`) → bấm **Trả chủ xe · … USD**.
-*Phải thấy:* hộp tính rõ *tiền thuê − phí 2 % − quá tải − các khoản EPL đã ứng*; xong sinh tờ
-*Phiếu chi trả chủ xe liên kết*.
+Chủ xe mẫu `ທ້າວ ຄຳຫລ້າ` ký **trả gộp cuối tháng bằng Kíp**, nên trên dòng phiếu không có nút trả từng
+phiếu — thay vào đó:
+
+1. Vào **Xe liên kết** → bảng **Chủ xe liên kết** phía trên: thấy cột *Chờ trả* ghi số phiếu và tổng.
+2. Bấm **Trả gộp** → hộp liệt kê các phiếu đã khoá chưa trả, tích sẵn; tổng tự cộng theo ô đang tích;
+   chọn cách chi (tiền mặt / chuyển khoản), số uỷ nhiệm chi → **Trả chủ xe**.
+3. *Phải thấy:* Sổ chứng từ có **một** tờ *Phiếu chi trả chủ xe liên kết* cho cả đợt; các phiếu trong đợt
+   đổi sang *Đã trả chủ xe*; cột *Chờ trả* về 0.
+4. `ketoan`: bấm **Sửa** trên chủ xe → đổi được **phí %/phiếu, ngưỡng tấn, mức trừ quá tải, cách trả**.
+   Lập phiếu mới bằng xe của chủ đó thì ba ô phí trên phiếu tự điền theo — anh Khampla nói mỗi chủ xe
+   một hợp đồng khác nhau (C4.2).
+5. `thabok`: mở **Xe liên kết** → bảng Chủ xe **không có** cột phí và cột chờ trả (là tiền).
 
 ---
 
@@ -190,6 +199,7 @@ xem ngay, không phải nhập gì.
 | ☐ | `ketoan` | Đổi ô **Quy đổi** sang `LAK` rồi `USD` | Cả bảng về một tiền, dòng tổng còn một con số |
 | ☐ | `ketoan` | Mở phiếu `T4-0429`, mục II | Ô **Tiền tệ cước** là CNY; *Thành tiền* ghi kèm `CNY`; ô dưới ghi số đã quy ra Kíp |
 | ☐ | `ketoan` | Mở phiếu `T4-0430` (xe liên kết) | Bán bằng **USD** mà thuê xe trả bằng **LAK**: bảng thanh toán chủ xe ghi Kíp, bảng lãi ghi USD |
+| ☐ | `ketoan` | Mở phiếu mới, chọn khách `ນາງ ວັນນາ` tuyến `ກາສີ → ທ່າເຮືອກະລໍ` | Ô **Cách tính cước** tự thành *Khoán trọn chuyến*, giá 1.800 USD; thành tiền = 1.800 dù cân bao nhiêu tấn |
 | ☐ | `doanhthu` | Mở phiếu `T4-0431` (đã thu đủ) | **Sổ thu tiền** có một dòng: hoá đơn USD nhưng khách chuyển bằng Kíp |
 | ☐ | `admin` | Mở **Tổng quan** | Bốn ô số là **M LAK**; dòng nhỏ dưới ô Doanh thu chia ra `USD … · CNY … · LAK …` |
 | ☐ | `ketoan` | Vào **Khách hàng → Bảng giá** | Mỗi dòng giá có cột **Tiền**; thêm dòng mới thì chọn được tiền tệ |

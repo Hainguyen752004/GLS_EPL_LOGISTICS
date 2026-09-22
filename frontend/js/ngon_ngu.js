@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1266 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1282 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -4646,6 +4646,86 @@ window.EPL_TU_DIEN = {
   "vi": "Giá trọn chuyến",
   "lo": "ລາຄາໝົດຖ້ຽວ",
   "en": "Flat trip price"
+ },
+ "owners": {
+  "vi": "Chủ xe liên kết",
+  "lo": "ເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "Truck owners"
+ },
+ "owners_hint": {
+  "vi": "Phí, ngưỡng tấn và cách trả riêng từng chủ xe; lập phiếu tự điền theo",
+  "lo": "ຄ່າທຳນຽມ, ເກນໂຕນ ແລະ ວິທີຈ່າຍ ຕ່າງກັນຕາມແຕ່ລະເຈົ້າຂອງ; ບິນຕື່ມເອງ",
+  "en": "Fee, tonnage limit and pay mode per owner; slips prefill from here"
+ },
+ "owner_add": {
+  "vi": "Thêm chủ xe",
+  "lo": "ເພີ່ມເຈົ້າຂອງລົດ",
+  "en": "Add owner"
+ },
+ "owner_pay_mode": {
+  "vi": "Cách trả",
+  "lo": "ວິທີຈ່າຍ",
+  "en": "Pay mode"
+ },
+ "opm_phieu": {
+  "vi": "Từng phiếu, sau khi khoá",
+  "lo": "ແຕ່ລະບິນ ຫຼັງລັອກ",
+  "en": "Per slip, after lock"
+ },
+ "opm_thang": {
+  "vi": "Gộp cuối tháng",
+  "lo": "ລວມທ້າຍເດືອນ",
+  "en": "Monthly batch"
+ },
+ "opm_dot": {
+  "vi": "Theo đợt thoả thuận",
+  "lo": "ເປັນງວດຕາມຕົກລົງ",
+  "en": "Agreed instalments"
+ },
+ "owner_fee": {
+  "vi": "Phí /phiếu",
+  "lo": "ຄ່າທຳນຽມ/ບິນ",
+  "en": "Fee /slip"
+ },
+ "owner_over": {
+  "vi": "Quá tải",
+  "lo": "ແກ່ເກີນ",
+  "en": "Overload"
+ },
+ "owner_pending": {
+  "vi": "Chờ trả",
+  "lo": "ລໍຖ້າຈ່າຍ",
+  "en": "Pending payout"
+ },
+ "owner_no_pending": {
+  "vi": "Không có phiếu chờ trả",
+  "lo": "ບໍ່ມີບິນລໍຖ້າຈ່າຍ",
+  "en": "Nothing pending"
+ },
+ "owner_pay_batch": {
+  "vi": "Trả gộp",
+  "lo": "ຈ່າຍລວມ",
+  "en": "Pay batch"
+ },
+ "owner_pay_in_batch": {
+  "vi": "Trả gộp ở bảng Chủ xe",
+  "lo": "ຈ່າຽລວມທີ່ຕາຕະລາງເຈົ້າຂອງ",
+  "en": "Paid in a batch from the Owners table"
+ },
+ "owner_pick_trips": {
+  "vi": "Tích các phiếu trả trong đợt này. Số tiền là tổng \"trả chủ xe\" của các phiếu đã tích — máy tính, không gõ tay. Các phiếu phải cùng tiền thuê.",
+  "lo": "ໝາຍບິນທີ່ຈ່າຍງວດນີ້. ຈຳນວນເງິນແມ່ນຍອດລວມ \"ຈ່າຍເຈົ້າຂອງ\" ຂອງບິນທີ່ໝາຍ — ເຄື່ອງຄິດ, ບໍ່ພິມເອງ. ບິນຕ້ອງເປັນສະກຸນເງິນເຊົ່າດຽວກັນ.",
+  "en": "Tick the slips paid in this batch. The amount is the sum of \"owner payout\" of the ticked slips, computed, not typed. Slips must share the hire currency."
+ },
+ "owner_mixed_ccy": {
+  "vi": "khác tiền thuê, hãy tách hai đợt",
+  "lo": "ຕ່າງສະກຸນເງິນ, ແຍກສອງງວດ",
+  "en": "mixed currencies, split into two batches"
+ },
+ "owner_paid_batch": {
+  "vi": "Đã trả chủ xe một đợt",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດແລ້ວໜຶ່ງງວດ",
+  "en": "Owner batch paid"
  },
  "d_ty_gia": {
   "vi": "Quy đổi về Kíp cho phiếu mới",
