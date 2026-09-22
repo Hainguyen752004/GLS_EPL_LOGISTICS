@@ -1,7 +1,7 @@
 /* Khách hàng — xem · thêm · sửa · ngưng dùng. Không xoá cứng: phiếu cũ còn trỏ tới. */
 (function () {
   const { API, NN, esc, AUTH } = EPL;
-  let root, ds = [], tuyen = [], khGia = null, dsGia = [];
+  let root, ds = [], tuyen = [], khGia = null, dsGia = [], khNo = null, NO = null;
   const suaDuoc = () => AUTH.la('yard', 'acct');
   // Giá là tiền: Bãi không thấy; KT Thu/Chi VC (kiểm mục II) và Sếp được sửa; các vai tiền khác xem
   const xemGia = () => AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'admin');
@@ -15,10 +15,38 @@
       <td>${i + 1}</td><td lang="lo"><b>${esc(c.name)}</b></td><td>${esc(c.phone) || '—'}</td><td lang="lo">${esc(c.address) || '—'}</td><td class="small muted">${esc(c.note) || ''}</td>
       <td>${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')}</td>
       <td>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}</td>
-      <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button>` : ''}</td></tr>`).join('')
+      <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button> <button class="btn sm ${khNo && khNo.id === c.id ? 'primary' : ''}" data-no="${c.id}">${NN.h('kh_cong_no')}</button>` : ''}</td></tr>`).join('')
       : `<tr><td colspan="8" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
     root.querySelectorAll('[data-gia]').forEach(b => b.addEventListener('click', () => moGia(ds.find(x => x.id === b.dataset.gia))));
+    root.querySelectorAll('[data-no]').forEach(b => b.addEventListener('click', () => moNo(ds.find(x => x.id === b.dataset.no))));
+  }
+
+  /* ---------------------------------------------------------------- công nợ khách: còn nợ EPL bao nhiêu */
+  async function moNo(c) {
+    khNo = c;
+    try { NO = await API.get(`/api/customers/${c.id}/cong-no`); } catch (e) { NO = null; return EPL.baoLoi(e); }
+    veNo(); ve();
+    const k = root.querySelector('#kh-no'); if (k.scrollIntoView) k.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  function veNo() {
+    const kh = root.querySelector('#kh-no'); kh.hidden = !khNo || !NO; if (!khNo || !NO) return;
+    root.querySelector('#kh-no-ten').textContent = NN.t('kh_no_cua').replace('{n}', khNo.name);
+    const conTien = Object.entries(NO.con_no_tien || {}).map(([m, v]) => EPL.tien(v, m)).join(' · ') || '0';
+    root.querySelector('#kh-no-tong').innerHTML = `<div class="kh-no-tong">
+      <div><span>${NN.h('kh_no_so_to')}</span><b>${NO.so_to} · ${NO.so_to_no} ${NN.t('kh_no_con')}</b></div>
+      <div><span>${NN.h('kh_no_tong')}</span><b>${EPL.tienGop(NO.tong_tien)}</b></div>
+      <div><span>${NN.h('collected')}</span><b>${so(NO.da_thu_lak, 0)} LAK</b></div>
+      <div><span>${NN.h('kh_no_con_no')}</span><b class="${NO.con_no_lak > 0 ? 'neg' : 'pos'}">${conTien}<small> ≈ ${so(NO.con_no_lak, 0)} LAK</small></b></div>
+    </div>`;
+    root.querySelector('#kh-no-than').innerHTML = (NO.dong || []).length ? NO.dong.map(x => `<tr class="${x.con_lai_lak > 0 ? '' : 'kh-tat'}">
+      <td>${NN.h(x.loai === 'gop' ? 'kh_no_gop' : 'kh_no_phieu')}${x.loai === 'gop' ? ` <span class="small muted">· ${x.so_phieu} ${NN.t('hg_so_phieu').toLowerCase()}</span>` : ''}</td>
+      <td class="mono"><a href="#/${x.loai === 'gop' ? 'hoa-don-gop?id=' : 'phieu-xuat-xe?id='}${esc(x.id)}">${esc(x.so)}</a></td>
+      <td>${EPL.ngay(x.ngay)}</td><td class="mono">${esc(x.ccy)}</td>
+      <td class="num"><b>${EPL.tien(x.tien, x.ccy)}</b></td><td class="num">${so(x.tien_lak, 0)}</td>
+      <td class="num">${so(x.da_thu_lak, 0)}</td><td class="num ${x.con_lai_lak > 0 ? 'neg' : ''}">${so(x.con_lai_lak, 0)}</td>
+      <td>${EPL.tag(x.finance_status)}</td></tr>`).join('')
+      : `<tr><td colspan="9" class="empty">${NN.h('kh_no_trong')}</td></tr>`;
   }
 
   /* ---------------------------------------------------------------- bảng giá khách × tuyến */
@@ -95,8 +123,9 @@
       const them = r.querySelector('#kh-them'); them.hidden = !suaDuoc(); them.addEventListener('click', () => sua(null));
       r.querySelector('#kh-gia-them').addEventListener('click', () => suaGiaDong(null));
       r.querySelector('#kh-gia-dong').addEventListener('click', () => { khGia = null; veGia(); ve(); });
+      r.querySelector('#kh-no-dong').addEventListener('click', () => { khNo = null; NO = null; veNo(); ve(); });
       await tai();
     },
-    onLang() { if (root) { ve(); veGia(); } },
+    onLang() { if (root) { ve(); veGia(); veNo(); } },
   };
 })();

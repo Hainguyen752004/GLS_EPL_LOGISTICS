@@ -4,7 +4,7 @@ Viết cho người tiếp nhận hệ thống: lập trình viên bảo trì ti
 dữ liệu ở đâu. Cập nhật 21/09/2026.
 
 Ba phần: **A. Nghiệp vụ** (việc chạy thế nào ngoài đời) · **B. Cơ sở dữ liệu** (44 bảng) · **C. API**
-(168 đường). Cuối cùng là phần **D. Chạy và kiểm**.
+(169 đường). Cuối cùng là phần **D. Chạy và kiểm**.
 
 ---
 
@@ -394,7 +394,7 @@ trừ tấn các DO giao đã lấy (`services/kho_hang.ton_lo`).
 
 # C. API
 
-168 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
+169 đường, tất cả dưới `/api`, cùng cổng với giao diện. Xác thực: `POST /api/dang-nhap` trả token,
 gửi lại ở `Authorization: Bearer <token>`. Vai nào gọi được gì ghi ngay dưới đây.
 
 ## C1. Đăng nhập và tài khoản — `routes/dang_nhap.py`
@@ -456,6 +456,7 @@ Thà Bốc** và Sếp làm được (C1.2) — Bãi và kế toán chỉ xem.
 | Đường | Việc |
 |---|---|
 | `GET POST PUT /api/customers` | Khách hàng. Có **`invoice_mode`**: `phieu` mỗi phiếu một hoá đơn · `thang` gộp một tờ cuối tháng (C8.2) |
+| `GET /api/customers/{id}/cong-no` | **Công nợ khách** — khách còn nợ EPL bao nhiêu, gom mọi tháng: từng tờ hoá đơn lẻ + hoá đơn gộp, đã thu, còn lại; tổng theo tiền của từng tờ và quy Kíp. Vai thấy tiền bán mới xem |
 | `GET POST /api/customers/{id}/bang-gia`, `PUT DELETE /api/bang-gia/{id}` | **Bảng giá khách × tuyến**. Chỉ KT Thu/Chi VC và Sếp sửa; Bãi không xem được |
 | `GET /api/bang-gia/tra?customer_id=&route_id=` | Hỏi giá hợp đồng — màn phiếu dùng để tự điền |
 | `GET POST PUT /api/vehicles`, `GET /api/vehicles/{id}` | Xe đầu kéo, chi tiết kèm lịch sử rơ-moóc, chi phí sửa chữa (gộp cả **lệnh sửa chữa riêng**), phiếu gần đây, ảnh |

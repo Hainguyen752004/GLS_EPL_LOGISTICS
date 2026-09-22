@@ -246,6 +246,9 @@ Anh Khampla nói kho phụ tùng và tổ sửa chữa là **người riêng** (
    - *Phải thấy:* bị từ chối, câu nhắc nói rõ *không đổi chéo xe nhà và xe liên kết trên cùng phiếu*.
 3. `thabok` mở **Tài xế** → bấm đúp một tài xế → khung ảnh có **+ Thêm ảnh** → chọn ảnh.
    - *Phải thấy:* ảnh hiện ngay ở khung, và ở danh sách tài xế thay cho hai chữ cái đầu.
+5. `doanhthu` mở **Khách hàng** → nút **Công nợ** ở một khách: khối *Công nợ · tên khách* hiện số tờ hoá đơn,
+   tổng đã xuất theo từng tiền, đã thu, **còn nợ EPL** (theo tiền hợp đồng, kèm quy Kíp) và từng tờ (hoá đơn
+   phiếu lẫn hoá đơn gộp, bấm số tờ là mở). `thabok` mở cùng màn: **không có** nút Công nợ.
 4. `admin` mở **Chứng từ → Sổ chứng từ → Cấu hình**: có thêm hai ô **Mã TK hàng khách gửi** và **Mã TK giá
    vốn**. Gõ thử `002` và `632` → lưu. `ketoan` bán một món phụ tùng ở **Bán hàng** → Sổ chứng từ: tờ *Xuất
    kho bán* mang **Nợ 632 / Có 1371**. Các tờ *Nhập/Xuất kho hàng* không có 1371 ở vế nào (hàng khách gửi

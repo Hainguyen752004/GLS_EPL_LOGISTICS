@@ -181,6 +181,56 @@ def _ap_gia(db, r, data):
     if "active" in data: r.active = bool(data["active"])
 
 
+@router.get("/api/customers/{cid}/cong-no")
+def cong_no_khach(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """KHÁCH NÀY CÒN NỢ EPL BAO NHIÊU — gom mọi tháng, mọi hoá đơn.
+
+    Trước 22/09 câu này không có chỗ nào trả lời trọn: bảng Theo dõi nói từng phiếu, màn Hoá đơn gộp nói
+    từng tờ, bảng Cấn trừ nói từng tháng. Đây là chỗ gom lại: hoá đơn lẻ (phiếu đã xuất hoá đơn, không
+    nằm tờ gộp) + hoá đơn gộp, mỗi dòng một tờ, cộng theo TIỀN CỦA TỪNG TỜ rồi quy Kíp. Không phải sổ kế
+    toán — chỉ là câu trả lời từ đúng dữ liệu bên mình đã ghi; bút toán công nợ vẫn là bên anh Khang.
+    """
+    from routes.phieu import da_thu_theo_phieu
+    from routes.hoa_don import xuat_hd
+    from models import Invoice, Trip, TripExpense
+    from services.phan_quyen import thay_tien_ban
+    from services.tinh_toan import tinh_phieu
+    if not thay_tien_ban(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem công nợ khách." % user.role})
+    kh = db.get(Customer, cid)
+    if not kh:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    dong = []
+    for hd in db.query(Invoice).filter(Invoice.customer_id == kh.id).order_by(Invoice.inv_date, Invoice.inv_no).all():
+        r = xuat_hd(db, hd)
+        dong.append({"loai": "gop", "id": hd.id, "so": hd.inv_no, "ngay": r["inv_date"], "ccy": hd.currency,
+                     "tien": hd.amount, "tien_lak": hd.amount_lak, "da_thu_lak": r["da_thu_lak"],
+                     "con_lai_lak": r["con_lai_lak"], "finance_status": r["finance_status"], "so_phieu": hd.so_phieu})
+    ds_p = (db.query(Trip).filter(Trip.customer_id == kh.id, Trip.invoiced.is_(True), Trip.invoice_id.is_(None))
+            .order_by(Trip.doc_date, Trip.doc_no).all())
+    thu = da_thu_theo_phieu(db, [p.id for p in ds_p])
+    for p in ds_p:
+        k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).all(), thu.get(p.id, 0))
+        dong.append({"loai": "phieu", "id": p.id, "so": p.doc_no, "ngay": p.doc_date.isoformat() if p.doc_date else None,
+                     "ccy": k["ccy"], "tien": k["doanh_thu"], "tien_lak": k["doanh_thu_lak"],
+                     "da_thu_lak": round(k["da_thu_lak"]), "con_lai_lak": round(k["con_lai_lak"]),
+                     "finance_status": p.finance_status, "so_phieu": 1})
+    dong.sort(key=lambda x: x["ngay"] or "")
+    tong, con = {}, {}
+    for x in dong:
+        tong[x["ccy"]] = round(tong.get(x["ccy"], 0) + (x["tien"] or 0), 2)
+        if x["con_lai_lak"] > 0:
+            # còn nợ theo tiền của tờ = phần còn lại (LAK) ÷ tỷ giá của tờ — để người đọc thấy đúng tiền hợp đồng
+            tg = (x["tien_lak"] / x["tien"]) if x["tien"] else 1
+            con[x["ccy"]] = round(con.get(x["ccy"], 0) + x["con_lai_lak"] / (tg or 1), 2)
+    return {"customer": {"id": kh.id, "name": kh.name, "invoice_mode": kh.invoice_mode},
+            "dong": dong, "so_to": len(dong), "so_to_no": len([x for x in dong if x["con_lai_lak"] > 0]),
+            "tong_tien": tong, "con_no_tien": con,
+            "tong_lak": round(sum(x["tien_lak"] or 0 for x in dong)),
+            "da_thu_lak": round(sum(x["da_thu_lak"] for x in dong)),
+            "con_no_lak": round(sum(x["con_lai_lak"] for x in dong if x["con_lai_lak"] > 0))}
+
+
 @router.get("/api/customers/{cid}/bang-gia")
 def ds_gia(cid: str, db: Session = Depends(get_db), _=Depends(XEM_BANG_GIA)):
     if not db.get(Customer, cid):

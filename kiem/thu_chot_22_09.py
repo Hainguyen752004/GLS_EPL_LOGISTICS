@@ -93,7 +93,13 @@ def main():
         s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="thabok")
         phai(s, 403, "Bãi ghi cấn trừ → bị chặn", g)
         s, r = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
-        phai(s, 200, "KT Doanh thu ghi cấn trừ tháng 8 cho %s" % o["customer_name"], r)
+        if s == 409 and r.get("detail", {}).get("ma") == "KHONG_CON_NO":
+            # Lần chạy trước đã bù hết hoá đơn còn nợ; phần trả hộ dư đang chờ tháng sau — đúng luật, không ghi thu dư.
+            print("  ✓ %-62s %s" % ("Còn %s LAK trả hộ nhưng không còn hoá đơn để bù → để lại, không ghi thu dư" % o["chua_ghi_lak"], "409 KHONG_CON_NO"))
+            r = None
+        else:
+            phai(s, 200, "KT Doanh thu ghi cấn trừ tháng 8 cho %s" % o["customer_name"], r)
+    if o is not None and r is not None:
         assert r["phieu_thu"] and r["ghi_lak"] > 0, "phải sinh ít nhất một phiếu thu cấn trừ: %s" % r
         assert r["ghi_lak"] + r["de_lai_lak"] == truoc, "ghi + để lại phải bằng phần chưa ghi: %s" % r
         print("  ✓ %-62s %s LAK vào %s · để lại %s" % ("Ghi cấn trừ: bù đúng vào hoá đơn còn nợ", r["ghi_lak"], r["phieu_thu"][0]["so"], r["de_lai_lak"]))
@@ -176,6 +182,22 @@ def main():
     if b.get("id"):
         goi("/api/ban-hang/%s" % b["id"], vai="ketoan", method="DELETE")
     s, g = goi("/api/ke-toan/cau-hinh", cu, vai="admin", method="PUT"); phai(s, 200, "Trả cấu hình về như cũ (dọn)", g)
+
+    # ================================================================ 5. công nợ khách gom mọi tháng
+    s, kh = goi("/api/customers", vai="ketoan")
+    s, g = goi("/api/customers/%s/cong-no" % kh[0]["id"], vai="thabok")
+    phai(s, 403, "Bãi xem công nợ khách → bị chặn (tiền bán)", g)
+    s, cn = goi("/api/customers/%s/cong-no" % kh[0]["id"], vai="doanhthu")
+    phai(s, 200, "KT Doanh thu xem công nợ khách %s" % kh[0]["name"], cn)
+    assert cn["so_to"] >= 1 and cn["tong_lak"] >= cn["da_thu_lak"] and cn["con_no_lak"] >= 0, cn
+    assert abs(sum(x["con_lai_lak"] for x in cn["dong"] if x["con_lai_lak"] > 0) - cn["con_no_lak"]) < 1, "tổng còn nợ phải bằng cộng các tờ còn nợ"
+    print("  ✓ %-62s %s tờ · còn nợ %s LAK" % ("Công nợ khách gom hoá đơn lẻ + gộp, cộng đúng", cn["so_to"], cn["con_no_lak"]))
+    s, kh_gop = goi("/api/customers", vai="ketoan")
+    kg = next((k for k in kh_gop if k.get("invoice_mode") == "thang"), None)
+    if kg:
+        s, cn2 = goi("/api/customers/%s/cong-no" % kg["id"], vai="doanhthu")
+        assert any(x["loai"] == "gop" for x in cn2["dong"]), "khách gộp tháng phải thấy tờ hoá đơn gộp trong công nợ: %s" % cn2["dong"]
+        print("  ✓ %-62s" % "Khách hợp đồng: tờ hoá đơn gộp có trong công nợ")
 
     print("\n✅ BỐN QUYẾT ĐỊNH 22/09: ghi cấn trừ không trùng · không đổi chéo loại xe · ảnh tài xế ·")
     print("   hai mã kế toán là ô cấu hình, hàng khách gửi ngoài bảng.")

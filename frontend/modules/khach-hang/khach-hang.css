@@ -6,3 +6,10 @@
 .kh-gia-dau h3{margin:0;font-size:15px}
 .kh-gia .tbl td.num,.kh-gia .tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
 .kh-gia tr.kh-tat{opacity:.55}
+
+/* Công nợ khách */
+.kh-no-tong{display:flex;flex-wrap:wrap;gap:10px 22px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;background:var(--bg-2)}
+.kh-no-tong>div{display:flex;flex-direction:column;gap:2px;min-width:140px}
+.kh-no-tong span{color:var(--ink-2);font-size:12px}
+.kh-no-tong b{font-size:15px}
+.kh-no-tong b small{color:var(--ink-3);font-weight:400;font-size:12px;margin-left:4px}
