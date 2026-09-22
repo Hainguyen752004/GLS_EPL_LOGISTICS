@@ -10,6 +10,8 @@ Mỗi mục I–VI của phiếu đi qua một chuỗi trạng thái, mỗi bư�
   · Mục I–II   : KT Thu/Chi Viêng Chăn (acct) xác nhận — chỉ tới "đã kiểm", không có tiền để chi.
   · Mục III    : KT kho xăng dầu VC (fuel) xác nhận + ghi sổ; Thủ quỹ VC (treasury) chi.
   · Mục IV–VI  : KT Chi phí VC (expacct) xác nhận + ghi sổ; Quỹ tiền mặt cảng cạn (cash) chi.
+  · Mục V      : người NHẬP là TỔ SỬA CHỮA Thà Bốc (repair), không phải Admin Bãi — anh Khampla C1.2:
+    kho phụ tùng và tổ sửa là người riêng. Bãi nhập I–IV và VI, không đụng mục V nữa.
   · Kế toán doanh thu (rev) xuất hoá đơn và ghi thu tiền ở mức PHIẾU, không đụng từng mục.
   · Admin làm được mọi việc, kể cả mở khoá mục đã duyệt.
 
@@ -20,8 +22,11 @@ from fastapi import HTTPException
 
 from models import CHUOI, MUC
 
+# Mục V (sửa chữa) đã rút khỏi Bãi — tổ sửa chữa nhập (anh Khampla C1.2, 22/09).
+MUC_CUA_BAI = {m for m in MUC if m != "repair"}
+
 QUYEN = {
-    "yard":     {"edit": set(MUC), "verify": set(), "book": set(), "pay": set()},
+    "yard":     {"edit": set(MUC_CUA_BAI), "verify": set(), "book": set(), "pay": set()},
     # Bảng "Nhiệm Vụ" của khách tách hai người: KT Thu/Chi VC xác nhận mục I–II (không có tiền để
     # ghi sổ); KT Chi phí VC xác nhận và ghi sổ mục IV–VI. Người kiểm I–II không được đụng IV–VI.
     "acct":     {"edit": set(), "verify": {"info", "trans"}, "book": set(), "pay": set()},
@@ -30,6 +35,11 @@ QUYEN = {
     "fuel":     {"edit": set(), "verify": {"fuel"}, "book": {"fuel"}, "pay": set()},
     # Thủ kho tại điểm đổ: không duyệt mục nào, việc của họ là CẤP DẦU theo phiếu lĩnh.
     "depot":    {"edit": set(), "verify": set(), "book": set(), "pay": set()},
+    # Thủ kho PHỤ TÙNG Thà Bốc: không duyệt mục nào; việc của họ là kho phụ tùng (nhập · xuất).
+    "parts":    {"edit": set(), "verify": set(), "book": set(), "pay": set()},
+    # TỔ SỬA CHỮA Thà Bốc: nhập mục V, duyệt báo hỏng của tài xế và quyết lấy phụ tùng từ kho hay
+    # mua ngoài. Vẫn phải qua KT Chi phí kiểm và ghi sổ, Quỹ tiền mặt chi — không tự chi tiền.
+    "repair":   {"edit": {"repair"}, "verify": set(), "book": set(), "pay": set()},
     "treasury": {"edit": set(), "verify": set(), "book": set(), "pay": {"fuel"}},
     "cash":     {"edit": set(), "verify": set(), "book": set(), "pay": {"travel", "repair", "other"}},
     "rev":      {"edit": set(), "verify": set(), "book": set(), "pay": set()},
@@ -66,9 +76,9 @@ def duoc_sua_tien(vai, muc, trang_thai):
 
 def thay_tien_ban(vai):
     """Vai này có được thấy TIỀN BÁN không: đơn giá cước, doanh thu, khách chưa trả, giá thuê xe
-    liên kết, lãi chuyến. Bãi, tài xế và thủ kho thì KHÔNG — đó là biên lợi nhuận của công ty
-    (khách trả giá 2, thuê lại xe ngoài giá 1). Tiền CHI thì họ vẫn thấy vì chính họ chi."""
-    return vai not in ("yard", "driver", "depot")
+    liên kết, lãi chuyến. Bãi, tài xế, thủ kho và hai tổ ở Thà Bốc thì KHÔNG — đó là biên lợi nhuận
+    của công ty (khách trả giá 2, thuê lại xe ngoài giá 1). Tiền CHI thì họ vẫn thấy vì chính họ chi."""
+    return vai not in ("yard", "driver", "depot", "parts", "repair")
 
 
 def viec_dang_cho(vai, muc, trang_thai):

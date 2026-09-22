@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1310 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1350 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1971,6 +1971,206 @@ window.EPL_TU_DIEN = {
   "vi": "Thủ kho nhiên liệu (một kho)",
   "lo": "ຜູ້ຮັກສາສາງນໍ້າມັນ (ໜຶ່ງສາງ)",
   "en": "Fuel depot keeper (one depot)"
+ },
+ "nav_repair": {
+  "vi": "Lệnh sửa chữa",
+  "lo": "ໃບສັ່ງສ້ອມແປງ",
+  "en": "Repair orders"
+ },
+ "nav_repair_s": {
+  "vi": "Sửa chữa",
+  "lo": "ສ້ອມແປງ",
+  "en": "Repairs"
+ },
+ "d_sua_chua": {
+  "vi": "Xe nằm bãi sửa, bảo dưỡng định kỳ",
+  "lo": "ລົດຈອດສ້ອມ, ບຳລຸງຮັກສາຕາມກຳນົດ",
+  "en": "Workshop and scheduled service"
+ },
+ "title_sua_chua": {
+  "vi": "Lệnh sửa chữa<span class=\"sub\">Xe nằm bãi sửa hoặc bảo dưỡng định kỳ — không gắn phiếu xuất xe</span>",
+  "lo": "ໃບສັ່ງສ້ອມແປງ<span class=\"sub\">ລົດຈອດສ້ອມ ຫຼື ບຳລຸງຮັກສາ — ບໍ່ຕິດກັບບິນເບີກລົດ</span>",
+  "en": "Repair orders<span class=\"sub\">Workshop or scheduled service — not tied to a dispatch slip</span>"
+ },
+ "sc_ds": {
+  "vi": "Các lệnh sửa chữa",
+  "lo": "ບັນດາໃບສັ່ງສ້ອມແປງ",
+  "en": "Repair orders"
+ },
+ "sc_them": {
+  "vi": "Lệnh sửa chữa",
+  "lo": "ໃບສັ່ງສ້ອມແປງ",
+  "en": "Repair order"
+ },
+ "sc_them_dong": {
+  "vi": "Thêm dòng chi",
+  "lo": "ເພີ່ມລາຍການ",
+  "en": "Add a line"
+ },
+ "sc_doc_no": {
+  "vi": "Số lệnh",
+  "lo": "ເລກໃບສັ່ງ",
+  "en": "Order no."
+ },
+ "sc_loai": {
+  "vi": "Loại",
+  "lo": "ປະເພດ",
+  "en": "Type"
+ },
+ "sc_sua_chua": {
+  "vi": "Sửa hỏng",
+  "lo": "ສ້ອມແປງ",
+  "en": "Repair"
+ },
+ "sc_bao_duong": {
+  "vi": "Bảo dưỡng định kỳ",
+  "lo": "ບຳລຸງຮັກສາຕາມກຳນົດ",
+  "en": "Scheduled service"
+ },
+ "sc_gara": {
+  "vi": "Gara ngoài",
+  "lo": "ອູ່ນອກ",
+  "en": "Outside garage"
+ },
+ "sc_tai_bai": {
+  "vi": "Làm tại Thà Bốc",
+  "lo": "ເຮັດຢູ່ທ່າບົກ",
+  "en": "Done at Thabok"
+ },
+ "sc_so_dong": {
+  "vi": "Số dòng",
+  "lo": "ຈຳນວນລາຍການ",
+  "en": "Lines"
+ },
+ "sc_dong": {
+  "vi": "Dòng chi của lệnh",
+  "lo": "ລາຍການໃນໃບສັ່ງ",
+  "en": "Lines on this order"
+ },
+ "sc_tong_kho": {
+  "vi": "Lấy từ kho",
+  "lo": "ເອົາຈາກສາງ",
+  "en": "From store"
+ },
+ "sc_tong_mua": {
+  "vi": "Mua ngoài",
+  "lo": "ຊື້ນອກ",
+  "en": "Bought outside"
+ },
+ "sc_kho_nhac": {
+  "vi": "Phụ tùng lấy từ kho bị trừ tồn ngay lúc khai và có phiếu xuất kho riêng; chỉ khoản mua ngoài mới chờ quỹ chi tiền.",
+  "lo": "ອະໄຫຼ່ທີ່ເອົາຈາກສາງຈະຫັກສາງທັນທີ ແລະ ມີໃບເບີກອອກສາງຕ່າງຫາກ; ສະເພາະລາຍການຊື້ນອກຈຶ່ງລໍຄັງເງິນຈ່າຍ.",
+  "en": "Parts taken from the store are deducted immediately with their own issue note; only outside purchases wait for the cash desk."
+ },
+ "sc_st_entered": {
+  "vi": "Tổ sửa đã nhập",
+  "lo": "ໜ່ວຍສ້ອມປ້ອນແລ້ວ",
+  "en": "Entered by repair team"
+ },
+ "sc_st_verified": {
+  "vi": "Đã kiểm",
+  "lo": "ກວດແລ້ວ",
+  "en": "Verified"
+ },
+ "sc_st_booked": {
+  "vi": "Đã ghi sổ",
+  "lo": "ບັນທຶກແລ້ວ",
+  "en": "Booked"
+ },
+ "sc_st_paid": {
+  "vi": "Đã chi",
+  "lo": "ຈ່າຍແລ້ວ",
+  "en": "Paid"
+ },
+ "sc_b_nhap": {
+  "vi": "Tổ sửa nhập",
+  "lo": "ໜ່ວຍສ້ອມປ້ອນ",
+  "en": "Repair team enters"
+ },
+ "sc_b_kiem": {
+  "vi": "KT Chi phí kiểm",
+  "lo": "ບັນຊີລາຍຈ່າຍກວດ",
+  "en": "Cost accountant verifies"
+ },
+ "sc_b_ghiso": {
+  "vi": "Ghi sổ",
+  "lo": "ບັນທຶກບັນຊີ",
+  "en": "Booked"
+ },
+ "sc_b_chi": {
+  "vi": "Quỹ chi",
+  "lo": "ຄັງເງິນຈ່າຍ",
+  "en": "Cash desk pays"
+ },
+ "sc_nguon_phieu": {
+  "vi": "Từ phiếu xuất xe",
+  "lo": "ຈາກບິນເບີກລົດ",
+  "en": "From a dispatch slip"
+ },
+ "sc_nguon_lenh": {
+  "vi": "Lệnh sửa chữa riêng",
+  "lo": "ໃບສັ່ງສ້ອມແປງຕ່າງຫາກ",
+  "en": "Standalone repair order"
+ },
+ "change_truck": {
+  "vi": "Đổi xe",
+  "lo": "ປ່ຽນລົດ",
+  "en": "Change truck"
+ },
+ "ev_change_truck": {
+  "vi": "Đổi xe giữa đường",
+  "lo": "ປ່ຽນລົດກາງທາງ",
+  "en": "Truck changed en route"
+ },
+ "a_change_truck": {
+  "vi": "Đổi xe giữa đường",
+  "lo": "ປ່ຽນລົດກາງທາງ",
+  "en": "Truck changed en route"
+ },
+ "ct_ly_do": {
+  "vi": "Lý do đổi xe",
+  "lo": "ເຫດຜົນປ່ຽນລົດ",
+  "en": "Reason for the change"
+ },
+ "ct_giu_tai_xe": {
+  "vi": "Giữ nguyên tài xế",
+  "lo": "ໃຊ້ໂຊເຟີເກົ່າ",
+  "en": "Keep the same driver"
+ },
+ "ct_xe_cu": {
+  "vi": "Xe cũ sau khi đổi",
+  "lo": "ລົດເກົ່າຫຼັງປ່ຽນ",
+  "en": "Old truck afterwards"
+ },
+ "ct_xe_cu_hong": {
+  "vi": "Vào xưởng sửa",
+  "lo": "ເຂົ້າສ້ອມແປງ",
+  "en": "Into the workshop"
+ },
+ "ct_xe_cu_ranh": {
+  "vi": "Về rảnh",
+  "lo": "ຫວ່າງ",
+  "en": "Back to idle"
+ },
+ "r_parts": {
+  "vi": "Thủ kho phụ tùng Thà Bốc",
+  "lo": "ຜູ້ຮັກສາສາງອະໄຫຼ່ ທ່າບົກ",
+  "en": "Thabok parts store keeper"
+ },
+ "hint_parts": {
+  "vi": "Vai trò <b>Thủ kho phụ tùng Thà Bốc</b>: nhập và xuất kho phụ tùng. Không duyệt mục nào trên phiếu.",
+  "lo": "<b>ຜູ້ຮັກສາສາງອະໄຫຼ່ ທ່າບົກ</b>: ຮັບເຂົ້າ ແລະ ເບີກອອກອະໄຫຼ່. ບໍ່ອະນຸມັດໜ້າໃດໃນບິນ.",
+  "en": "Parts store keeper: receive and issue spare parts. No slip section approvals."
+ },
+ "hint_repair": {
+  "vi": "Vai trò <b>Tổ sửa chữa Thà Bốc</b>: duyệt báo hỏng của tài xế, quyết lấy phụ tùng từ kho hay mua ngoài, nhập mục V. Kế toán Chi phí kiểm và ghi sổ, Quỹ chi tiền.",
+  "lo": "<b>ໜ່ວຍສ້ອມແປງ ທ່າບົກ</b>: ອະນຸມັດການແຈ້ງລົດເສຍ, ຕັດສິນເອົາອະໄຫຼ່ຈາກສາງ ຫຼື ຊື້ນອກ, ປ້ອນໜ້າ V. ບັນຊີລາຍຈ່າຍກວດ ແລະ ບັນທຶກ, ຄັງເງິນຈ່າຍ.",
+  "en": "Repair team: approve driver breakdown reports, decide store or outside purchase, enter section V. Cost accountant verifies and books; treasury pays."
+ },
+ "r_repair": {
+  "vi": "Tổ sửa chữa Thà Bốc",
+  "lo": "ໜ່ວຍສ້ອມແປງ ທ່າບົກ",
+  "en": "Thabok repair team"
  },
  "nav_issue": {
   "vi": "Cấp phát",

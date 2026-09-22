@@ -47,7 +47,7 @@ def phai(s, mong, buoc, g=None):
 
 
 def main():
-    for u in ("thabok", "ketoan", "ketoancp", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
+    for u in ("totsua", "khopt", "thabok", "ketoan", "ketoancp", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
         dang_nhap(u)
     print("✓ đăng nhập 7 vai")
 
@@ -112,7 +112,8 @@ def main():
     # ---- 2. Gửi kiểm & kiểm
     for m in ("info", "trans", "fuel", "travel"):
         s, g = goi("/api/trips/%s/sections/%s/send" % (P, m), {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục %s" % m, g)
-    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 409, "Gửi kiểm mục V rỗng → bị từ chối", g)
+    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 403, "Bãi gửi kiểm mục V → bị từ chối (việc tổ sửa chữa, C1.2)", g)
+    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="totsua"); phai(s, 409, "Tổ sửa chữa gửi kiểm mục V rỗng → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="ketoan"); phai(s, 403, "Kế toán thu/chi kiểm nhiên liệu → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="thabok"); phai(s, 403, "Bãi tự kiểm → bị từ chối", g)
     # Bảng Nhiệm Vụ của khách: KT Thu/Chi VC xác nhận I–II; KT Chi phí VC xác nhận IV–VI. Không chéo.
@@ -153,20 +154,23 @@ def main():
     s, parts = goi("/api/parts", vai="thabok"); pt = next(x for x in parts if x["qty"] >= 1); ton = pt["qty"]
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "incident_type": "breakdown", "stop_seq": 3, "note": "thử: hỏng bầu hơi",
                                               "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="thabok")
-    phai(s, 200, "Sửa xe lấy phụ tùng từ KHO → dòng mục V, trừ tồn", g)
+    phai(s, 403, "Bãi khai khoản sửa chữa → bị từ chối (C1.2)", g)
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "incident_type": "breakdown", "stop_seq": 3, "note": "thử: hỏng bầu hơi",
+                                              "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="totsua")
+    phai(s, 200, "Tổ sửa chữa khai lấy phụ tùng từ KHO → dòng mục V, trừ tồn", g)
     d_kho = [e for e in g["expenses"] if e["section"] == "repair" and e["source"] == "kho"][-1]
     assert d_kho["acct_code"] == "4022/1371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /1371
     assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập' để kiểm lại"
     s, parts2 = goi("/api/parts", vai="thabok"); assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
-    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="thabok")
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="totsua")
     phai(s, 200, "Sửa xe MUA NGOÀI → dòng mục V, định khoản …/4021", g)
     assert [e for e in g["expenses"] if e["section"] == "repair"][-1]["acct_code"] == "4022/4021"
-    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "kho", "part_id": pt["id"], "qty": 10 ** 6}}, vai="thabok"); phai(s, 409, "Xuất quá tồn kho → bị từ chối", g)
+    s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "kho", "part_id": pt["id"], "qty": 10 ** 6}}, vai="totsua"); phai(s, 409, "Xuất quá tồn kho → bị từ chối", g)
     s, g = goi("/api/trips/%s/events" % P, {"kind": "note", "note": "x"}, vai="ketoan"); phai(s, 403, "Kế toán ghi diễn biến → bị từ chối", g)
-    s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "repair", "item_name": "xoá hết"}]}, vai="thabok", method="PUT")
-    phai(s, 409, "Bãi xoá dòng đã xuất kho khỏi phiếu → bị từ chối", g)
+    s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "repair", "item_name": "xoá hết"}]}, vai="totsua", method="PUT")
+    phai(s, 409, "Tổ sửa chữa xoá dòng đã xuất kho khỏi phiếu → bị từ chối", g)
     # Sửa xe khai từ màn theo dõi đã đặt mục V ở "đã nhập" — kế toán kiểm thẳng, không cần Bãi gửi nữa
-    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="thabok"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
+    s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="totsua"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
     for hd, v in (("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
     s, kho = goi("/api/fuel-moves", vai="khonl")
@@ -236,14 +240,16 @@ def main():
 
     # ---- 6. Dọn — trả lại kho đúng những gì phiếu thử đã lấy, rồi xoá phiếu
     s, g = goi("/api/trips/%s" % P, vai="thabok", method="DELETE"); phai(s, 409, "Bãi xoá phiếu đã duyệt → bị từ chối", g)
-    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok"); phai(s, 200, "Trả lại 1 phụ tùng vào kho", g)
+    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok")
+    phai(s, 403, "Bãi nhập kho phụ tùng → bị từ chối (việc thủ kho phụ tùng, C1.2)", g)
+    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="khopt"); phai(s, 200, "Thủ kho phụ tùng trả lại 1 phụ tùng vào kho", g)
     s, kho = goi("/api/fuel-moves", vai="khonl")
     for r in kho["rows"]:
         if r["doc_no"] == "THU-LUONG-01/EPL":
             goi("/api/fuel-moves/%s" % r["id"], vai="khonl", method="DELETE")
     print("  ✓ đã xoá dòng xuất kho nhiên liệu của phiếu thử")
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
-    print("\nTHỬ LUỒNG API: ĐẠT — 7 vai · 6 mục · 5 bước duyệt · bảng giá khách × tuyến · 13 chỗ từ chối đúng")
+    print("\nTHỬ LUỒNG API: ĐẠT — 9 vai · 6 mục · 5 bước duyệt · bảng giá khách × tuyến · 13 chỗ từ chối đúng")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 /* Tài khoản — chỉ admin. Tạo người dùng, đổi vai, đặt lại mật khẩu, khoá. */
 (function () {
   const { API, NN, esc } = EPL;
-  const VAI = ['yard', 'acct', 'expacct', 'fuel', 'treasury', 'cash', 'rev', 'admin'];
+  const VAI = ['yard', 'acct', 'expacct', 'fuel', 'parts', 'repair', 'treasury', 'cash', 'rev', 'admin'];
   let root, ds = [];
 
   function ve() {

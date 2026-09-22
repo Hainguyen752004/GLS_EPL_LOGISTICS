@@ -2,7 +2,7 @@
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
   let root, ds = [];
-  const suaDuoc = () => AUTH.la('yard', 'fuel', 'acct');
+  const suaDuoc = () => AUTH.la('parts');   // kho phụ tùng là của thủ kho phụ tùng Thà Bốc (C1.2)
 
   function ve() {
     root.querySelector('#kpt-than').innerHTML = ds.length ? ds.map(p => `<tr class="${p.status === 'st_low' ? 'kpt-thap' : ''}">

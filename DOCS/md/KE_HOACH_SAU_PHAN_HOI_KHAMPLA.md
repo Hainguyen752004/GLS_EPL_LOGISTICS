@@ -58,11 +58,11 @@ cùng (to nhất, đụng sổ thu tiền vừa làm). **Đợt 2 xong ngày 22/
 
 | ☐ | Mục | Họ nói | Sửa | Commit |
 |---|---|---|---|---|
-| ☐ | **3.1 Hai vai mới** (C1.2) | Kho phụ tùng Thà Bốc và tổ sửa chữa Thà Bốc là **người riêng**, cần tài khoản riêng | Vai `parts` (thủ kho phụ tùng: nhập/xuất phụ tùng) và `repair` (tổ sửa: duyệt báo hỏng, quyết kho hay gara, ghi mục V). Rút hai việc đó khỏi Bãi. Sửa bảng Nhiệm Vụ trong màn Quy trình | |
+| ☑ | **3.1 Hai vai mới** (C1.2) | Kho phụ tùng Thà Bốc và tổ sửa chữa Thà Bốc là **người riêng**, cần tài khoản riêng | Vai `parts` (thủ kho phụ tùng: nhập/xuất phụ tùng) và `repair` (tổ sửa: duyệt báo hỏng, quyết kho hay gara, ghi mục V). Rút hai việc đó khỏi Bãi. Sửa bảng Nhiệm Vụ trong màn Quy trình | 22/09 |
 | ☐ | **3.2 Thẻ cao tốc** (C6.1) | Muốn theo dõi **số dư thẻ**, mỗi phiếu trừ từ thẻ. Hai kiểu: khách cấp thẻ và nạp tiền, cuối tháng **cấn trừ vào cước** · khách không cấp thì quỹ Thà Bốc đưa tiền mặt cho tài xế | Danh mục thẻ (số thẻ, của khách nào, tài xế nào cầm, số dư); nạp tiền vào thẻ = một dòng; dòng chi BOT trên phiếu chọn *trừ thẻ nào* thì số dư giảm; cuối tháng ra được số cấn trừ với khách | |
 | ☐ | **3.3 Nợ trạm dầu Việt Nam, cấn trừ cước tháng** (C5.1 ghi chú) | Tài xế đổ dầu ở VN **ghi nợ tại trạm**, cuối tháng EPL cấn trừ với cước khách | Dòng dầu mua ở VN đánh *nợ trạm* thay vì *tài xế ứng tiền mặt*; nhà cung cấp trạm dầu có công nợ; báo cáo cuối tháng: nợ trạm × cước khách. Đây là công nợ hai chiều — chỉ ghi và hiện, hạch toán để anh Khang | |
-| ☐ | **3.4 Đổi xe giữa đường** (C2.2) | Xe hỏng nặng, đổi xe khác chở tiếp, dù mục I đã kiểm | Nút *Đổi xe* trên phiếu đã kiểm mục I: ghi xe mới, giữ xe cũ trong lịch sử, mục I quay về *đã nhập* để kiểm lại | |
-| ☐ | **3.5 Lệnh sửa chữa riêng** (C7.3) | Xe nằm lâu, bảo dưỡng định kỳ → **lệnh sửa riêng**, không gắn phiếu | Bảng `repair_orders`: xe, ngày, dòng chi, kho hay gara, chuỗi duyệt như mục V. Màn Xe tab Sửa chữa gom cả hai nguồn. Đã nằm trong nợ kỹ thuật, nay có xác nhận | |
+| ☑ | **3.4 Đổi xe giữa đường** (C2.2) | Xe hỏng nặng, đổi xe khác chở tiếp, dù mục I đã kiểm | Nút *Đổi xe* trên phiếu đã kiểm mục I: ghi xe mới, giữ xe cũ trong lịch sử, mục I quay về *đã nhập* để kiểm lại. Đổi sang xe liên kết thì phiếu tự chuyển sang xe liên kết | 22/09 |
+| ☑ | **3.5 Lệnh sửa chữa riêng** (C7.3) | Xe nằm lâu, bảo dưỡng định kỳ → **lệnh sửa riêng**, không gắn phiếu | Bảng `repair_orders`: xe, ngày, dòng chi, kho hay gara, chuỗi duyệt như mục V. Màn **Lệnh sửa chữa** riêng + màn Xe tab Sửa chữa gom cả hai nguồn. Lấy kho trừ tồn ngay (`PXK_PT`), chi chỉ phần mua ngoài (`PC_SC`) | 22/09 |
 
 ---
 

@@ -563,9 +563,12 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     s = ds[muc] if muc in ds else None
     if s is None:
         raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Không có mục %s." % muc})
+    # Hỏi QUYỀN trước, hỏi nội dung sau: vai không được đụng mục này thì phải nghe "không có quyền",
+    # chứ nghe "mục còn trống" là câu trả lời của người khác — họ sẽ đi nhập cho đầy rồi vẫn bị chặn.
+    moi_trang_thai = chuyen_muc(user.role, muc, s.status, hanh_dong)
     if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
         raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
-    s.status = chuyen_muc(user.role, muc, s.status, hanh_dong)
+    s.status = moi_trang_thai
     if muc == "fuel" and hanh_dong == "book":
         _xuat_kho_nhien_lieu(db, p, user)
     if hanh_dong == "pay" and muc in ("repair", "other"):
@@ -601,7 +604,13 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
-    if user.role not in ("yard", "admin"):
+    # Diễn biến (tới điểm · sự cố · ghi chú) là việc của Bãi; nhưng DÒNG CHI SỬA CHỮA kèm theo là tiền
+    # của mục V, nên phải do TỔ SỬA CHỮA khai (anh Khampla C1.2) — họ mới biết lấy kho hay ra gara.
+    if data.get("repair"):
+        if user.role not in ("repair", "admin"):
+            raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
+                                      "loi": "Khoản sửa chữa do tổ sửa chữa Thà Bốc khai, không phải vai %s." % user.role})
+    elif user.role not in ("yard", "repair", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc ghi diễn biến trên đường."})
     if p.finance_status == "paid":
         raise HTTPException(409, {"ma": "PHIEU_DA_XONG", "loi": "Phiếu đã thu tiền xong, không ghi thêm diễn biến."})
@@ -672,6 +681,92 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             x = db.get(Vehicle, p.vehicle_id)
             if x: x.status = "maintenance"
     _ghi_log(db, p, user, "ev_%s" % kind)
+    db.commit()
+    return xuat_phieu(db, p)
+
+
+# ---------------------------------------------------------------- đổi xe giữa đường (C2.2, anh Khampla 22/09)
+@router.post("/api/trips/{tid}/doi-xe")
+def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Xe hỏng nặng giữa đường → đổi xe khác chở tiếp, TRÊN CÙNG MỘT PHIẾU.
+
+    Anh Khampla C2.2: chuyện này có thật và xảy ra khi mục I đã kiểm xong. Không thể bắt họ lập
+    phiếu mới — hàng, khách, tuyến, tiền đã chi vẫn là của chuyến này; lập phiếu mới là tách đôi
+    một chuyến trong mọi báo cáo.
+
+    Nên: ghi xe mới vào phiếu, để lại MỘT dòng diễn biến nói rõ đổi từ xe nào sang xe nào và vì sao
+    (xe cũ vẫn tra được), rồi kéo **mục I về "đã nhập"** để kế toán kiểm lại — thông tin xe đã khác
+    thì chữ ký kiểm cũ không còn đúng. Xe cũ chuyển sang *đang sửa* nếu lý do là hỏng; xe mới sang
+    *đang chạy*.
+    """
+    p = db.get(Trip, tid)
+    if not p:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
+    if user.role not in ("yard", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc đổi xe — họ là người điều xe."})
+    _chan_khoa(p, user)
+    if p.transport_status == "arrived":
+        raise HTTPException(409, {"ma": "PHIEU_DA_TOI", "loi": "Xe đã tới nơi rồi, không đổi xe nữa."})
+    xe_moi = db.get(Vehicle, str(data.get("vehicle_id") or ""))
+    if not xe_moi:
+        raise HTTPException(422, {"ma": "THIEU_XE", "loi": "Đổi sang xe nào? Cần vehicle_id."})
+    if xe_moi.id == p.vehicle_id:
+        raise HTTPException(409, {"ma": "CUNG_XE", "loi": "Xe mới trùng xe đang chạy (%s)." % (p.truck_no or "")})
+    if not xe_moi.active:
+        raise HTTPException(409, {"ma": "XE_NGUNG", "loi": "Xe %s đã ngưng dùng." % xe_moi.truck_no})
+    ly_do = (data.get("ly_do") or data.get("reason") or "").strip()
+    if not ly_do:
+        raise HTTPException(422, {"ma": "THIEU_LY_DO", "loi": "Đổi xe phải ghi lý do — kế toán kiểm lại mục I sẽ đọc câu này."})
+    xe_cu = db.get(Vehicle, p.vehicle_id) if p.vehicle_id else None
+    cu_ten = p.truck_no or (xe_cu.truck_no if xe_cu else "")
+    cu_bien = p.plate_head or ""
+    # Xe cũ nghỉ: hỏng thì vào xưởng, lý do khác (điều xe) thì về rảnh.
+    if xe_cu is not None and xe_cu.status != "inactive":
+        xe_cu.status = "maintenance" if data.get("xe_cu_hong", True) else "idle"
+    p.vehicle_id = xe_moi.id
+    p.truck_no, p.brand_model = xe_moi.truck_no, xe_moi.brand_model
+    p.plate_head, p.plate_trailer = xe_moi.plate_head, xe_moi.plate_trailer
+    # Xe liên kết và xe nhà tính tiền khác nhau, nên đổi xe là đổi luôn bên chủ xe của phiếu.
+    if xe_moi.owner_type == "joint":
+        p.company, p.owner_id, p.owner_name = "joint", xe_moi.owner_id, xe_moi.owner_name
+        chu = db.get(Owner, xe_moi.owner_id) if xe_moi.owner_id else None
+        if chu is not None:
+            if p.fee_pct is None: p.fee_pct = chu.fee_pct
+            if p.over_limit_t is None: p.over_limit_t = chu.over_limit_t
+            if p.over_price is None: p.over_price = chu.over_price
+            if not p.hire_ccy: p.hire_ccy = chu.hire_ccy
+    else:
+        p.company, p.owner_id, p.owner_name = "EPL", None, None
+    if data.get("odo_out") not in (None, ""):
+        p.odo_out = _so(data.get("odo_out"), "odo_out")
+    elif xe_moi.odometer_km is not None:
+        p.odo_out = xe_moi.odometer_km
+    if xe_moi.status != "inactive":
+        xe_moi.status = "on_trip"
+    tx = None
+    if data.get("driver_id"):
+        tx = db.get(Driver, str(data["driver_id"]))
+        if not tx:
+            raise HTTPException(422, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
+        cu_tx = db.get(Driver, p.driver_id) if p.driver_id else None
+        if cu_tx is not None and cu_tx.id != tx.id and cu_tx.status != "inactive":
+            cu_tx.status = "idle"
+        p.driver_id, p.driver_name = tx.id, tx.name
+        if tx.status != "inactive":
+            tx.status = "on_trip"
+    ghi_chu = "Đổi xe %s%s → %s%s · %s%s" % (
+        cu_ten, (" (%s)" % cu_bien) if cu_bien else "", xe_moi.truck_no,
+        (" (%s)" % xe_moi.plate_head) if xe_moi.plate_head else "", ly_do,
+        (" · đổi tài xế sang %s" % tx.name) if tx is not None else "")
+    e = TripEvent(trip_id=p.id, kind="change_truck", note=ghi_chu, by_user=user.full_name,
+                  stop_seq=int(data["stop_seq"]) if str(data.get("stop_seq") or "").isdigit() else None)
+    db.add(e)
+    # Mục I nói về xe: đổi xe thì chữ ký kiểm cũ không còn đúng, kéo về "đã nhập" để kiểm lại.
+    s = _muc_cua(db, p)["info"]
+    if s.status not in ("wait", "entered"):
+        _ghi_log(db, p, user, "sec_info:reopen")
+    s.status = "entered"
+    _ghi_log(db, p, user, "a_change_truck")
     db.commit()
     return xuat_phieu(db, p)
 
@@ -1203,15 +1298,19 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
 
 @router.post("/api/trips/{tid}/events/{eid}/duyet")
 def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Admin / Bãi DUYỆT báo hỏng của tài xế → mở phiếu, thêm dòng sửa chữa vào mục V với số tiền duyệt
+    """TỔ SỬA CHỮA duyệt báo hỏng của tài xế → mở phiếu, thêm dòng sửa chữa vào mục V với số tiền duyệt
     (mặc định = số tài xế báo). Nguồn: kho (chọn phụ tùng, trừ tồn ngay) hoặc mua ngoài. Hoặc TỪ CHỐI.
 
-    Khai đổ dầu dọc đường (kind='refuel') cũng duyệt ở đây, nhưng rơi vào MỤC III nguồn mua."""
+    Người duyệt là **tổ sửa chữa Thà Bốc** (`repair`), không phải Admin Bãi: anh Khampla C1.2 nói tổ sửa
+    là người riêng, và chính họ mới biết hỏng gì, lấy phụ tùng kho hay mang ra gara.
+
+    Khai đổ dầu dọc đường (kind='refuel') cũng duyệt ở đây, nhưng rơi vào MỤC III nguồn mua nên vẫn do
+    Bãi hoặc KT kho xăng dầu duyệt."""
     p = db.get(Trip, tid)
     e = db.get(TripEvent, eid)
     if not p or not e or e.trip_id != p.id:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có báo hỏng này."})
-    duoc = ("yard", "fuel", "admin") if e.kind == "refuel" else ("yard", "admin")
+    duoc = ("yard", "fuel", "admin") if e.kind == "refuel" else ("repair", "admin")
     if user.role not in duoc:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                   "loi": "Vai %s không được duyệt khai báo này." % user.role})

@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Base, SessionLocal, engine, tao_bang  # noqa: E402
 from models import (MUC, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, FuelMove, FuelPlace, GoodsMove, Invoice, InvoicePayment, Owner, Part, Route,  # noqa: E402
-                    RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
+                    RepairLine, RepairOrder, RouteStop, Sale, SaleLine, Supplier, Trailer, TrailerAssignment, Trip, TripEvent, TripExpense, TripGoods, TripLog,
                     TripPayment, TripSection, User, Vehicle, Voucher)
 from services import chung_tu as CT  # noqa: E402
 from services.bao_mat import bam_mat_khau  # noqa: E402
@@ -86,6 +86,9 @@ def gieo(db):
         # Thủ kho tại điểm đổ: mỗi người giữ MỘT kho, chỉ thấy phiếu lĩnh của kho mình.
         ("khotb", "ທ້າວ ບຸນມາ (Bounma)", "depot", "KT", "fp_yard"),
         ("khovc", "ນາງ ສີດາ (Sida)", "depot", "KV", "fp_vc"),
+        # Hai người ở Thà Bốc anh Khampla nói là người RIÊNG, không phải Admin Bãi (C1.2):
+        ("khopt", "ທ້າວ ແກ້ວ (Keo)", "parts", "PT", None),        # thủ kho phụ tùng
+        ("totsua", "ທ້າວ ສຸກ (Souk)", "repair", "SC", None),      # tổ sửa chữa
         ("admin", "Admin", "admin", "AD", None),
     ]
     for u, ten, vai, av, kho in users:
@@ -342,6 +345,19 @@ def gieo(db):
               chi=[dong("fuel", "diesel", 120, 30000, "LAK", "fp_yard"), dong("fuel", "diesel", 690, 28000, "VND", "fp_vn")]
                   + di_duong_chuan()),
     ]
+
+    # ---- LỆNH SỬA CHỮA RIÊNG (C7.3): xe nằm bãi bảo dưỡng định kỳ, không gắn phiếu nào.
+    # Một tờ đã đi hết chuỗi duyệt (để thấy tờ chi), một tờ tổ sửa chữa vừa nhập (để có việc chờ).
+    xe_bd = xe["342"]
+    lsc = RepairOrder(doc_no="LSC-2609-01", vehicle_id=xe_bd.id, truck_no=xe_bd.truck_no, plate_head=xe_bd.plate_head,
+                      order_date=D(2026, 9, 12), kind="bao_duong", odo_km=6090, status="entered",
+                      note="Bảo dưỡng 10.000 km: thay dầu máy, lọc gió, kiểm phanh", by_user="ທ້າວ ສຸກ (Souk)")
+    db.add(lsc); db.flush()
+    db.add(RepairLine(order_id=lsc.id, line_no=1, item_key="x_oil", qty=1, unit_price=850000, currency="LAK",
+                      source="mua", acct_code="614/4021", note="Dầu máy + công thay tại gara Thà Bốc"))
+    db.add(RepairLine(order_id=lsc.id, line_no=2, item_name="ໄສ້ຕອງລົມ (lọc gió)", qty=1, unit_price=180000,
+                      currency="LAK", source="mua", acct_code="614/4021"))
+    db.flush()
 
     # ---- phiếu lĩnh (tờ giấy tài xế cầm đi, có mã QR)
     # Phiếu vừa xuất bến còn ĐANG CHỜ CẤP để màn Cấp phát có việc; các phiếu cũ thì tiền đã trao

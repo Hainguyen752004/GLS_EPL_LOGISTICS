@@ -306,11 +306,14 @@
       `<button type="button" class="tdt2-tab ${tab === id ? 'active' : ''}" data-tab="${id}">${NN.h(khoa)}<span class="n">${demTab(id)}</span></button>`).join('');
     q('#tdt-tabs').querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; veTabs(); }));
 
-    const suaDuoc = laBai() && P.finance_status !== 'paid';
+    const dangMo = P.finance_status !== 'paid';
+    const suaDuoc = laBai() && dangMo;
+    // Khai khoản sửa chữa (mục V) là việc của tổ sửa chữa Thà Bốc, không phải Bãi (C1.2).
+    const khaiSuaDuoc = AUTH.la('repair') && dangMo;
     q('#tdt-tab-nut').innerHTML = tab === 'dien-bien'
       ? (suaDuoc ? `<button type="button" class="tdt2-btn sm" id="tdt-ghi-chu">+ ${NN.h('add_note')}</button>` : '')
       : tab === 'chi-phi'
-        ? (suaDuoc ? `<button type="button" class="tdt2-btn sm tan" id="tdt-khai-sua">+ ${NN.h('report_incident')}</button>` : '')
+        ? (khaiSuaDuoc ? `<button type="button" class="tdt2-btn sm tan" id="tdt-khai-sua">+ ${NN.h('report_incident')}</button>` : '')
         : `<button type="button" class="tdt2-btn sm" id="tdt-mo-so-ct">${NN.h('ct_so')}</button>`;
     const ghi = q('#tdt-ghi-chu'); if (ghi) ghi.addEventListener('click', ghiChu);
     const khai = q('#tdt-khai-sua'); if (khai) khai.addEventListener('click', moSuCo);
@@ -324,7 +327,8 @@
   function veTabDienBien() {
     const diem = P.route_stops || [];
     const ev = (P.events || []).slice().reverse();
-    const duyetDuoc = laBai() || AUTH.la('fuel');   // dầu dọc đường là mục III → KT kho xăng dầu
+    // Báo hỏng do TỔ SỬA CHỮA duyệt (C1.2); khai đổ dầu dọc đường là mục III → Bãi hoặc KT kho xăng dầu.
+    const duyetDuoc = AUTH.la('repair') || laBai() || AUTH.la('fuel');
     const than = ev.length ? `<table><thead><tr>
         <th style="width:112px">${NN.h('c_date')}</th><th style="width:132px">${NN.h('type')}</th>
         <th>${NN.h('note')}</th><th style="width:120px">${NN.h('resp')}</th><th class="no-print" style="width:118px"></th></tr></thead>
@@ -519,6 +523,8 @@
     const dlg = q('#tdt-hop');
     q('#tdt-f-diem').innerHTML = `<option value="">—</option>` + (P.route_stops || []).map(s => `<option value="${s.seq}" ${s.seq === (P.stop_reached || 0) + 1 ? 'selected' : ''}>${s.seq}. ${esc(s.name)}</option>`).join('');
     q('#tdt-f-ghi').value = ''; q('#tdt-f-co-sua').checked = false; q('#tdt-f-sua').hidden = true; q('#tdt-f-sl').value = '1'; q('#tdt-f-gia').value = '';
+    // Ô "có khoản sửa chữa" chỉ hiện với tổ sửa chữa: Bãi báo sự cố thì báo, tiền mục V do tổ sửa khai.
+    q('#tdt-f-co-sua').closest('label').hidden = !AUTH.la('repair');
     q('#tdt-f-part').innerHTML = PARTS.filter(p => p.qty > 0).map(p => `<option value="${p.id}" data-gia="${p.unit_price || 0}">${esc(p.name)} · ${NN.t('stock_left')} ${so(p.qty)} ${NN.t(p.unit)}</option>`).join('') || `<option value="">${esc(NN.t('no_data'))}</option>`;
     datNguon('kho'); NN.apDung(dlg); dlg.returnValue = '';
     dlg.addEventListener('close', async function xong() {

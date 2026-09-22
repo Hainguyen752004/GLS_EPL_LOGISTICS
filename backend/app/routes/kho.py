@@ -16,6 +16,9 @@ from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
 SUA_KHO = can_vai("yard", "fuel", "acct")
+# Kho phụ tùng là của THỦ KHO PHỤ TÙNG Thà Bốc (anh Khampla C1.2) — trước đây Bãi và kế toán làm
+# thay. Tổ sửa chữa xem được tồn nhưng không tự nhập xuất; họ lấy phụ tùng qua dòng mục V trên phiếu.
+SUA_PHU_TUNG = can_vai("parts")
 
 
 def _ngay(v):
@@ -100,7 +103,7 @@ def ds_phu_tung(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.post("/api/parts")
-def them_phu_tung(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_KHO)):
+def them_phu_tung(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_PHU_TUNG)):
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Phụ tùng phải có tên."})
     p = Part(name=data["name"].strip(), unit=data.get("unit") or "u_pc", qty=_so(data.get("qty"), "tồn"),
@@ -110,7 +113,7 @@ def them_phu_tung(data: dict = Body(...), db: Session = Depends(get_db), _=Depen
 
 
 @router.put("/api/parts/{pid}")
-def sua_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_KHO)):
+def sua_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_PHU_TUNG)):
     p = db.get(Part, pid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phụ tùng này."})
@@ -131,7 +134,7 @@ def so_phu_tung(pid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_ta
 
 
 @router.post("/api/parts/{pid}/moves")
-def nhap_xuat_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_KHO)):
+def nhap_xuat_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_PHU_TUNG)):
     p = db.get(Part, pid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phụ tùng này."})

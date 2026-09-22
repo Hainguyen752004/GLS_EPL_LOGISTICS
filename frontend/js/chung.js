@@ -304,7 +304,7 @@
   const NHOM_VAI = [
     { id: 'admin', khoa: 'lg_g_admin', vai: ['admin'] },
     { id: 'acct', khoa: 'lg_g_acct', vai: ['acct', 'expacct', 'rev'] },
-    { id: 'wh', khoa: 'lg_g_wh', vai: ['yard', 'fuel', 'depot'] },
+    { id: 'wh', khoa: 'lg_g_wh', vai: ['yard', 'fuel', 'depot', 'parts', 'repair'] },
     { id: 'cash', khoa: 'lg_g_cash', vai: ['treasury', 'cash'] },
     { id: 'drv', khoa: 'lg_g_drv', vai: ['driver'] },
   ];
@@ -409,6 +409,9 @@
       vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
     { id: 'diem-do',        nhom: 'mod_warehouse', nav: 'nav_place', nav_s: 'nav_place_s',    ic: 'M12 22s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12M12 7v6M9.5 9.5h5', vai: ['yard', 'acct', 'fuel'] },
     { id: 'kho-phu-tung',   nhom: 'mod_warehouse', nav: 'nav_parts',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19 12l2 1-1 3-2-.5a7 7 0 0 1-2 2l.5 2-3 1-1-2a7 7 0 0 1-3 0l-1 2-3-1 .5-2a7 7 0 0 1-2-2L2 16l-1-3 2-1a7 7 0 0 1 0-3L1 8l1-3 2 .5a7 7 0 0 1 2-2L5.5 1.5l3-1 1 2a7 7 0 0 1 3 0l1-2 3 1-.5 2a7 7 0 0 1 2 2l2-.5 1 3-2 1a7 7 0 0 1 0 3z' },
+    { id: 'sua-chua',       nhom: 'mod_warehouse', nav: 'nav_repair', nav_s: 'nav_repair_s',
+      vai: ['repair', 'expacct', 'cash', 'acct', 'treasury', 'fuel', 'rev'],
+      ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M3 12h3M18 12h3M12 3v3M12 18v3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1' },
     { id: 'ban-hang',       nhom: 'mod_warehouse', nav: 'nav_sales',    ic: 'M3 3h2l2 12h11l2-8H6M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
       vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'] },
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
@@ -432,12 +435,21 @@
   ];
 
   // Tài xế chỉ thấy module ghi rõ vai driver; các vai khác thấy mọi module trừ module "chỉ vai".
+  // Thủ kho phụ tùng giữ kho phụ tùng; tổ sửa chữa duyệt báo hỏng, ghi mục V trên phiếu, xem tồn kho.
+  const MAN_CUA_VAI = {
+    parts:  ['kho-phu-tung', 'xe'],
+    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'sua-chua', 'kho-phu-tung', 'xe'],
+  };
+
   function thayDuoc(m) {
     // Hai vai làm MỘT việc duy nhất nên màn của họ phải sạch: tài xế chỉ có phiếu của mình,
     // thủ kho chỉ có hàng chờ cấp dầu và tồn kho nhiên liệu. Module nào muốn cho họ thấy thì
     // phải ghi tên vai đó trong `vai` — không có là không hiện.
     if (AUTH.role === 'driver') return !!(m.vai && m.vai.includes('driver'));
     if (AUTH.role === 'depot') return !!(m.vai && m.vai.includes('depot'));
+    // Hai vai ở Thà Bốc (anh Khampla C1.2) cũng làm một việc: liệt kê thẳng màn của họ cho dễ đọc,
+    // khỏi phải ghi tên hai vai này vào `vai` của từng module.
+    if (MAN_CUA_VAI[AUTH.role]) return MAN_CUA_VAI[AUTH.role].includes(m.id);
     if (m.vai) return AUTH.la(...m.vai);
     return true;
   }

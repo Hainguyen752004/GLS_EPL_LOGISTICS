@@ -298,7 +298,11 @@ def theo_doi(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_h
 
 
 @router.get("/api/bao-cao/xe-lien-ket")
-def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    # Bảng này CHỈ là biên lợi nhuận: nhận giá 2, thuê lại giá 1, lời 1. Vai không được thấy tiền bán
+    # thì chặn hẳn ở máy chủ, không chỉ giấu mục trên thanh điều hướng.
+    if not thay_tien_ban(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem bảng lãi xe liên kết." % user.role})
     ds = db.query(Trip).filter(Trip.company == "joint").order_by(Trip.doc_date.desc()).all()
     if thang:
         dau, cuoi = _thang(thang)

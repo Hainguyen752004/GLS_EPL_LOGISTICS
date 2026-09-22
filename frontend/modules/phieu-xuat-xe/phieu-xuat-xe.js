@@ -14,7 +14,10 @@
   const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price', 'price_ccy', 'price_mode', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price', 'hire_price', 'fee_pct', 'over_limit_t', 'over_price']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
-    yard: { edit: MUC, verify: [], book: [], pay: [] },
+    yard: { edit: MUC.filter(m => m !== 'repair'), verify: [], book: [], pay: [] },
+    // Hai vai ở Thà Bốc (anh Khampla C1.2): thủ kho phụ tùng giữ kho, tổ sửa chữa nhập mục V.
+    parts: { edit: [], verify: [], book: [], pay: [] },
+    repair: { edit: ['repair'], verify: [], book: [], pay: [] },
     acct: { edit: [], verify: ['info', 'trans'], book: [], pay: [] },
     expacct: { edit: [], verify: ['travel', 'repair', 'other'], book: ['travel', 'repair', 'other'], pay: [] },
     fuel: { edit: [], verify: ['fuel'], book: ['fuel'], pay: [] },
@@ -246,6 +249,9 @@
       if (AUTH.la('acct') && P.locked && !P.invoiced) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
       if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe > 0) ta.push(`<button class="btn sm ok" data-hd-phieu="tra-chu-xe">${NN.h('pay_owner')} · ${t2(P.tinh.tra_chu_xe, P.tinh.hire_ccy || maCuoc())}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
+      // Xe hỏng nặng giữa đường thì đổi xe NGAY TRÊN PHIẾU NÀY (C2.2) — không lập phiếu mới, vì hàng,
+      // khách, tuyến và tiền đã chi vẫn là của chuyến này.
+      if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm" data-hd-phieu="doi-xe">${NN.h('change_truck')}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
       // Khách gộp hoá đơn tháng (C8.2) thì KHÔNG xuất hoá đơn lẻ từng phiếu — sang màn Hoá đơn gộp.
       if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode !== 'thang') ta.push(`<button class="btn sm ok" data-hd-phieu="invoice">${NN.h('a_invoice')}</button>`);
@@ -259,7 +265,7 @@
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
     root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.di('hoa-don-gop',
       Object.assign({ thang: String(P.doc_date || '').slice(0, 7) }, b.dataset.diGop ? { id: b.dataset.diGop } : {}))));
-    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'thu-tien' ? ghiThuTien() : hanhDongPhieu(b.dataset.hdPhieu)));
+    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'thu-tien' ? ghiThuTien() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
     veThuTien();
     veTep();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
@@ -461,6 +467,30 @@
   async function xoaThuTien(id) {
     if (!await EPL.hoi(NN.t('pay_del'), `<p>${NN.h('confirm_delete')}</p>`, NN.t('delete'))) return;
     try { P = await API.goi('/api/thu-tien/' + id, { method: 'DELETE' }); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
+  }
+
+  /** Đổi xe giữa đường (C2.2): chọn xe mới, ghi lý do. Máy chủ để lại dòng diễn biến và kéo mục I
+   *  về "đã nhập" để kế toán kiểm lại — thông tin xe trên phiếu đã khác. */
+  async function doiXe() {
+    const con = (DM.vehicles || []).filter(x => x.active !== false && x.id !== P.vehicle_id);
+    if (!con.length) return EPL.toast(NN.t('no_data'), 'loi');
+    const v = await EPL.hopNhap(NN.t('change_truck'), [
+      { id: 'vehicle_id', label: 'truck_no', type: 'select', value: con[0].id,
+        options: con.map(x => [x.id, `${x.truck_no}${x.plate_head ? ' · ' + x.plate_head : ''}${x.status === 'on_trip' ? ' · ' + NN.t('v_on_trip') : ''}`]) },
+      { id: 'driver_id', label: 'driver', type: 'select', value: '',
+        options: [['', NN.t('ct_giu_tai_xe')]].concat((DM.drivers || []).filter(d => d.active !== false).map(d => [d.id, d.name])) },
+      { id: 'ly_do', label: 'ct_ly_do', value: '', lo: true },
+      { id: 'xe_cu_hong', label: 'ct_xe_cu', type: 'select', value: '1',
+        options: [['1', NN.t('ct_xe_cu_hong')], ['0', NN.t('ct_xe_cu_ranh')]] },
+    ], NN.t('change_truck'));
+    if (!v) return;
+    if (!String(v.ly_do || '').trim()) return EPL.toast(NN.t('ct_ly_do') + '?', 'loi');
+    try {
+      P = await API.post(`/api/trips/${P.id}/doi-xe`, {
+        vehicle_id: v.vehicle_id, driver_id: v.driver_id || null, ly_do: v.ly_do, xe_cu_hong: v.xe_cu_hong === '1' });
+      DS = await API.get('/api/trips'); DM.vehicles = await API.get('/api/vehicles');
+      EPL.toast(NN.t('saved'), 'ok'); veHet();
+    } catch (e) { EPL.baoLoi(e); }
   }
 
   /** Bước 14: kế toán rà lại rồi khoá. Máy chủ trả các điểm lệch; có lệch thì hiện ra cho kế toán đọc rồi mới xác nhận khoá. */

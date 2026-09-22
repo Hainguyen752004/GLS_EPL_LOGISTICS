@@ -28,7 +28,7 @@ def bay_gio():
 
 
 # ---------------------------------------------------------------- người dùng & vai
-VAI = ("yard", "acct", "expacct", "fuel", "depot", "treasury", "cash", "rev", "admin", "driver")
+VAI = ("yard", "acct", "expacct", "fuel", "depot", "parts", "repair", "treasury", "cash", "rev", "admin", "driver")
 #   driver    Tài xế — chỉ thấy phiếu của mình: bấm "Xuất phát" sau khi nhận tiền tạm ứng, "Báo hỏng" trên đường
 #   yard      Admin Thà Bốc — nhập liệu (ແອັດມິນ ທ່າບົກ)
 #   acct      KT Thu/Chi Viêng Chăn — xác nhận mục I (xe) và II (khách hàng, vận chuyển)
@@ -481,7 +481,8 @@ class RouteStop(Base):
     note = Column(String)
 
 
-SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note")   # tới điểm · sự cố · sửa xe · đổ dầu · ghi chú
+SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note", "change_truck")
+# tới điểm · sự cố · sửa xe · đổ dầu · ghi chú · ĐỔI XE giữa đường (C2.2)
 #   refuel  Tài xế đổ dầu DỌC ĐƯỜNG (thường là mua ở Việt Nam để chạy về). Khai xong ở trạng thái
 #           "reported"; kế toán duyệt mới thành dòng chi mục III nguồn "mua".
 LOAI_SU_CO = ("breakdown", "accident", "delay", "other")       # hỏng xe · tai nạn · chậm · khác
@@ -556,6 +557,61 @@ class PartMove(Base):
     note = Column(String)
     by_user = Column(String)
     expense_id = Column(String)                                # dòng chi mục V sinh ra phiếu xuất này
+
+
+# ---------------------------------------------------------------- lệnh sửa chữa riêng (C7.3)
+CHUOI_SUA_CHUA = ("entered", "verified", "booked", "paid")   # tổ sửa nhập → KT chi phí kiểm → ghi sổ → quỹ chi
+LOAI_SUA_CHUA = ("bao_duong", "sua_chua")                    # bảo dưỡng định kỳ · sửa hỏng
+
+
+class RepairOrder(Base):
+    """LỆNH SỬA CHỮA của một chiếc xe, KHÔNG gắn phiếu xuất xe (anh Khampla C7.3, 22/09).
+
+    Mục V trên phiếu chỉ ghi được cái sửa TRONG một chuyến. Còn xe nằm bãi cả tuần để đại tu, hay
+    bảo dưỡng định kỳ theo số km, thì không có chuyến nào để gắn vào — trước đây họ không khai được
+    ở đâu cả. Lệnh sửa chữa là tờ riêng cho đúng việc đó, đi qua cùng chuỗi duyệt như mục V:
+
+        Tổ sửa chữa NHẬP → KT Chi phí KIỂM → KT Chi phí GHI SỔ → Quỹ tiền mặt CHI
+
+    Phụ tùng lấy từ kho thì trừ tồn NGAY LÚC KHAI (như mục V) và sinh tờ `PXK_PT`; khoản mua ngoài
+    thì tới bước chi mới sinh tờ `PC_SC`.
+    """
+    __tablename__ = "repair_orders"
+    id = Column(String, primary_key=True, default=ma_moi)
+    doc_no = Column(String, unique=True, nullable=False)       # LSC-2609-01
+    vehicle_id = Column(String, ForeignKey("vehicles.id"), index=True)
+    truck_no = Column(String)                                  # chép lại, phiếu cũ không đổi theo danh mục
+    plate_head = Column(String)
+    order_date = Column(Date, nullable=False)
+    kind = Column(String, nullable=False, default="sua_chua")  # LOAI_SUA_CHUA
+    odo_km = Column(Float)                                     # số công-tơ-mét lúc vào xưởng
+    garage = Column(String)                                    # tên gara ngoài, để trống là làm tại Thà Bốc
+    status = Column(String, nullable=False, default="entered")
+    note = Column(String)
+    by_user = Column(String)
+    created_at = Column(DateTime, nullable=False, default=bay_gio)
+    verified_by = Column(String); verified_at = Column(DateTime)
+    booked_by = Column(String);   booked_at = Column(DateTime)
+    paid_by = Column(String);     paid_at = Column(DateTime)
+
+
+class RepairLine(Base):
+    """Một dòng chi của lệnh sửa chữa — cùng hình dạng với dòng mục V trên phiếu."""
+    __tablename__ = "repair_lines"
+    id = Column(String, primary_key=True, default=ma_moi)
+    order_id = Column(String, ForeignKey("repair_orders.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_no = Column(Integer, nullable=False, default=1)
+    item_key = Column(String)
+    item_name = Column(String)
+    qty = Column(Float, nullable=False, default=1)
+    unit_price = Column(Float, nullable=False, default=0)
+    currency = Column(String, nullable=False, default="LAK")
+    source = Column(String, nullable=False, default="mua")     # kho (xuất kho phụ tùng) · mua (gara, mua ngoài)
+    part_id = Column(String, ForeignKey("parts.id"))
+    stock_move_id = Column(String)                             # tờ xuất kho đã sinh (chống xuất hai lần)
+    supplier_id = Column(String, ForeignKey("suppliers.id"))
+    acct_code = Column(String)
+    note = Column(String)
 
 
 # ---------------------------------------------------------------- điểm đổ nhiên liệu

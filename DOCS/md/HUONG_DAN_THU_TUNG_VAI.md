@@ -153,6 +153,40 @@ phiếu — thay vào đó:
 
 ---
 
+### Bước 9b ☐ Hai vai mới ở Thà Bốc và lệnh sửa chữa — `totsua`, `khopt`
+
+Anh Khampla nói kho phụ tùng và tổ sửa chữa là **người riêng** (C1.2), nên hai việc đó đã rút khỏi Bãi.
+
+1. `thabok`: mở một phiếu đang chạy → mục **V. Sửa chữa** không còn nút nhập; màn **Theo dõi tuyến** →
+   tab Chi phí không còn nút *Báo sự cố / sửa xe*.
+   - *Phải thấy:* Bãi vẫn ghi được diễn biến và báo sự cố (không kèm tiền).
+2. `totsua` (tổ sửa chữa): đăng nhập → menu chỉ có Theo dõi tuyến · Phiếu xuất xe · Lệnh sửa chữa ·
+   Kho phụ tùng · Xe.
+   - Mở **Theo dõi tuyến** → chọn một chuyến → tab Chi phí → **Báo sự cố / sửa xe**, tích *có khoản sửa
+     chữa*, chọn phụ tùng trong kho → lưu. *Phải thấy:* dòng vào mục V của phiếu, tồn kho giảm ngay.
+   - Tài xế báo hỏng (`tx01` bấm **Báo hỏng**) thì nút **Duyệt** nằm ở `totsua`, không phải ở Bãi.
+3. `khopt` (thủ kho phụ tùng): menu chỉ có Kho phụ tùng và Xe; chỉ người này nhập/xuất kho phụ tùng.
+   *Thử sai:* `thabok` mở Kho phụ tùng → không còn nút Thêm / Nhập kho / Xuất cho xe.
+4. **Lệnh sửa chữa riêng** (C7.3) — `totsua` mở **Lệnh sửa chữa** (nhóm Kho):
+   - Thấy sẵn `LSC-2609-01` của xe 342 (bảo dưỡng 10.000 km) đang chờ kiểm.
+   - Bấm **+ Lệnh sửa chữa** → chọn xe, loại *Bảo dưỡng định kỳ*, số km → lưu → hộp **Thêm dòng chi**
+     hiện ra ngay: chọn *Lấy từ kho* hoặc *Mua ngoài*.
+   - *Phải thấy:* dòng lấy kho trừ tồn ngay và có phiếu xuất kho riêng; dòng mua ngoài chờ quỹ chi.
+   - `ketoancp` bấm **Kiểm** rồi **Ghi sổ**; `quytb` bấm **Đã chi**. *Phải thấy:* Sổ chứng từ có **một**
+     tờ *Phiếu chi sửa chữa* chỉ gồm phần **mua ngoài**, và xe quay về *Rảnh*.
+5. Mở **Xe** → chọn xe đó → tab **Sửa chữa**: thấy cả dòng từ phiếu lẫn dòng từ lệnh sửa chữa.
+
+### Bước 9c ☐ Đổi xe giữa đường — `thabok`
+
+1. Mở một phiếu **chưa tới nơi** → bấm **Đổi xe**.
+2. Chọn xe mới, có thể đổi luôn tài xế, **ghi lý do** (bắt buộc), chọn xe cũ *Vào xưởng sửa*.
+   - *Phải thấy:* phiếu mang biển số xe mới; tab Diễn biến có dòng *Đổi xe 341 → 342 · lý do*;
+     **mục I quay về "đã nhập"** để kế toán kiểm lại; danh mục Xe: xe cũ *Sửa chữa*, xe mới *Đang chạy*.
+   - *Phải thấy:* các dòng chi đã khai của chuyến **còn nguyên** — không phải lập phiếu mới.
+3. Thử sai: bấm **Đổi xe** trên phiếu đã tới nơi → không có nút; gọi thẳng API thì bị từ chối.
+
+---
+
 ## 2. Các vai còn lại
 
 ### ☐ Tài xế — `tx01`, `tx02`, `tx03` (thử bằng điện thoại càng tốt)
