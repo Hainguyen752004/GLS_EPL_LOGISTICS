@@ -124,7 +124,9 @@ def day_mot_to(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*DA
 @router.get("/api/ke-toan/cau-hinh")
 def xem_cau_hinh(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
     """Sếp xem cấu hình. Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
-    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token"))}
+    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token")),
+            # Hai mã bên kế toán cấp sau: hàng khách gửi (ngoài bảng) và giá vốn hàng bán
+            "ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui"), "ma_gia_von": DK.cau_hinh(db, "ma_gia_von")}
 
 
 @router.put("/api/ke-toan/cau-hinh")
@@ -137,5 +139,8 @@ def dat_cau_hinh(d: dict = Body(...), db: Session = Depends(get_db), user=Depend
         DK.dat_cau_hinh(db, "ke_toan_token", "", user)
     elif tk:
         DK.dat_cau_hinh(db, "ke_toan_token", tk, user)
+    for k in ("ma_hang_khach_gui", "ma_gia_von"):
+        if k in d:
+            DK.dat_cau_hinh(db, k, str(d.get(k) or "").strip(), user)
     db.commit()
-    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token"))}
+    return xem_cau_hinh(db, user)

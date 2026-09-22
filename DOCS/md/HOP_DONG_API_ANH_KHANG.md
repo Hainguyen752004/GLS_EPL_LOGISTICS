@@ -105,8 +105,8 @@ tờ `HD` cho một phiếu, `trip_no` là số phiếu đó.
 
 | `PXK_NL` · `PNK_NL` | Xuất · nhập kho nhiên liệu | stock_out · stock_in | 625 hoặc 4022 / 1371 · 1371 / 4021 |
 | `PXK_PT` · `PNK_PT` | Xuất · nhập kho phụ tùng. Xuất cho lệnh sửa chữa riêng thì `trip_no` = null và `lines.repair_order` = số lệnh | stock_out · stock_in | 614 / 1371 · 1371 / 4021 |
-| `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) | stock_in · stock_out | 1371 / *hàng khách gửi* |
-| `DC_HH` | Điều chỉnh kho hàng (có lý do) | stock_adjust | 1371 / *hàng khách gửi* |
+| `PNK_HH` · `PXK_HH` | Nhập · xuất kho **hàng của khách** nằm bãi (quặng chờ đi cảng) — **ngoài bảng, ghi đơn**: nhập Nợ *hàng khách gửi*, xuất Có *hàng khách gửi*; **không đụng 1371** | stock_in · stock_out | *hàng khách gửi* / — · — / *hàng khách gửi* |
+| `DC_HH` | Điều chỉnh kho hàng (có lý do) — chiều tăng/giảm ghi trong `lines` | stock_adjust | *hàng khách gửi* (ghi đơn) |
 | `PXK_BAN` · `HD_BAN` · `PT_BAN` | Bán phụ tùng, xăng dầu ra ngoài | stock_out · invoice · receipt | *giá vốn* / 1371 · 1211 / 70 · 1011·1012 / 1211 |
 | `DO` · `PLNL` · `PTU` | Phiếu xuất xe · phiếu lĩnh dầu · phiếu tạm ứng | other | không định khoản — gửi để anh có ngữ cảnh, anh bỏ qua được |
 
@@ -141,18 +141,53 @@ thì bên em nối; chưa có thì thôi, không chặn gì.
 
 ---
 
-## 4. Bên em đang thiếu mã, cần anh cấp
+## 4. Hai mã bên em còn thiếu — đã chốt logic, chỉ chờ anh cho MÃ
 
-| Chỗ | Bên em đang ghi | Cần |
+Bên em đã phân tích lại (22/09) và **chốt cách ghi**; anh chỉ cần cho hai con mã. Có mã thì **Sếp gõ
+vào màn Chứng từ → Cấu hình**, mọi tờ sinh sau đó mang mã ngay — không phải sửa mã nguồn, không phải
+chờ bên em.
+
+### 4.1 Quặng của khách nằm bãi — NGOÀI BẢNG, không phải tồn kho EPL
+
+Quặng đi hai chặng: xe gom từ mỏ về bãi Thà Bốc, nằm đó vài ngày, rồi xe khác chở ra cảng. Trong lúc
+nằm bãi nó là **hàng của khách gửi giữ hộ**, EPL không mua, không bán, không sở hữu. Trước đây bên em
+ghi Nợ kho **1371** khi nhập — thế là tồn kho của EPL phình lên bằng hàng của người khác, và bảng cân
+đối kế toán nói sai về tài sản công ty. Nay bên em **bỏ 1371 khỏi ba tờ này**.
+
+Cách ghi đề nghị (giống tài khoản ngoài bảng *"vật tư, hàng hoá nhận giữ hộ"* trong hệ Việt Nam, TK 002):
+
+| Tờ | Ghi đơn | `lines` mang gì |
 |---|---|---|
-| Hàng của khách gửi ở kho bãi (đối ứng với 1371 khi nhập/xuất kho hàng) | tên, chưa có mã | Mã anh dùng cho hàng giữ hộ |
-| Giá vốn hàng bán (bán phụ tùng, dầu ra ngoài) | tên, chưa có mã | Mã giá vốn |
+| `PNK_HH` nhập kho hàng | **Nợ** *mã anh cấp* | `tan`, `boc_len`, `hao_hut`, lô, số phiếu gom |
+| `PXK_HH` xuất kho hàng đi giao | **Có** *mã anh cấp* | `tan`, từng lô lấy ra, số phiếu giao |
+| `DC_HH` điều chỉnh kho | Nợ hoặc Có theo chiều trong `lines` | `chieu`, `tan`, lý do |
 
-Đã có từ anh Khampla (22/09), anh xem có khớp danh mục bên anh không: kho **1371** (mẹ 137) · nhà cung
-cấp **4021** (mẹ 402, tách theo NCC) · tiền mặt Kíp **1011** · tiền mặt ngoại tệ **1012** · ngân hàng Kíp
-**1021** · ngân hàng ngoại tệ **1022**. Anh muốn ghi theo mã mẹ thay mã con thì báo, bên em đổi một bảng.
+Số lượng tấn luôn đi đủ trong `lines` — nếu bên anh chỉ theo dõi ngoài bảng theo tấn (không tiền) thì
+`amount` của ba tờ này anh bỏ qua được. Nếu bên anh **không** theo dõi hàng giữ hộ trên sổ, anh nói một
+câu, bên em vẫn gửi để anh có ngữ cảnh, anh bỏ qua như tờ `DO`.
 
-Có mã rồi bên em sửa **một bảng** (`services/chung_tu.py`), không đụng gì khác.
+**Anh cần cho:** một mã tài khoản ngoài bảng cho *hàng khách gửi giữ hộ* (ô cấu hình `ma_hang_khach_gui`).
+
+### 4.2 Giá vốn hàng bán — chỉ khi bán phụ tùng, dầu ra ngoài
+
+EPL thỉnh thoảng bán phụ tùng hoặc dầu cho bên ngoài. Tờ `PXK_BAN` là xuất kho bán: **Có 1371** (kho
+giảm — đúng, đây là hàng của EPL) và **Nợ *giá vốn***. Bên em không tự đặt mã lớp 6 theo Lào vì không
+chắc bên anh dùng mã nào cho *giá vốn / biến động tồn kho*.
+
+**Anh cần cho:** mã tài khoản *giá vốn hàng bán* (ô cấu hình `ma_gia_von`).
+
+### 4.3 Đã có từ anh Khampla (22/09), anh xem có khớp danh mục bên anh không
+
+Kho **1371** (mẹ 137) · nhà cung cấp **4021** (mẹ 402, tách theo NCC) · tiền mặt Kíp **1011** · tiền mặt
+ngoại tệ **1012** · ngân hàng Kíp **1021** · ngân hàng ngoại tệ **1022**. Anh muốn ghi theo mã mẹ thay mã
+con thì báo, bên em đổi một bảng.
+
+### 4.4 Một loại tờ `PT` mới về nội dung, không mới về hình dạng: cấn trừ
+
+Khách trả hộ EPL hai thứ — quẹt **thẻ cao tốc** khách tự nạp, và **trạm dầu bên Việt Nam ghi nợ** rồi
+khách trả — cuối tháng bên em bù vào cước phải thu của chính khách đó. Trên gói tin đó là tờ `PT`
+bình thường, chỉ khác `lines.method = "offset"` và `lines.ref = "CT-YYYYMM"`; vế Có vẫn `1211`, vế Nợ
+theo cách thu *offset* (bên em để `1011`; anh muốn tài khoản trung gian khác thì cho mã, bên em đổi).
 
 ---
 

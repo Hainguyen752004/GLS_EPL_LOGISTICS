@@ -8,20 +8,17 @@ tháo ra lắp cái khác vào đầu kéo, có lịch sử lắp/tháo.
 Mỗi danh mục: xem · thêm · sửa · ngưng dùng (không xoá cứng — phiếu cũ còn trỏ tới).
 """
 import datetime as dt
-import mimetypes
-import os
-import re
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, Owner,
-                    ExchangeRateLog, RepairLine, RepairOrder, VehiclePhoto, ma_moi,
+                    ExchangeRateLog, RepairLine, RepairOrder,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
-from services.bao_mat import can_vai, doc_phien, nguoi_hien_tai
+from services.bao_mat import can_vai, nguoi_hien_tai
+from routes import anh as ANH
 from services.tinh_toan import tien_dong
 
 router = APIRouter()
@@ -266,13 +263,8 @@ def xuat_xe(db, v, chi_tiet=False):
                         "lenh": True, "kind": o.kind, "status": o.status})
         sua.sort(key=lambda x: x["doc_date"] or "", reverse=True)
         r["sua_chua"] = sua
-        r["anh_chinh"] = next((("/api/anh-xe/%s" % a.id) for a in
-                               db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id,
-                                                             VehiclePhoto.chinh.is_(True)).all()), None)
-        r["anh"] = [{"id": a.id, "filename": a.filename, "chinh": bool(a.chinh), "note": a.note,
-                     "url": "/api/anh-xe/%s" % a.id}
-                    for a in db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id)
-                    .order_by(VehiclePhoto.chinh.desc(), VehiclePhoto.ts.desc()).all()]
+        r["anh_chinh"] = ANH.anh_chinh(ANH.XE, db, v.id)
+        r["anh"] = ANH.ds_anh(ANH.XE, db, v.id)
         r["so_phieu"] = db.query(Trip).filter(Trip.vehicle_id == v.id).count()
         # Phiếu gần đây của xe này — màn Xe cần để bấm sang phiếu, và để biết xe đang chạy phiếu nào.
         ds_phieu = (db.query(Trip).filter(Trip.vehicle_id == v.id).order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).limit(12).all())
@@ -294,9 +286,7 @@ def xuat_xe(db, v, chi_tiet=False):
 @router.get("/api/vehicles")
 def ds_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     ds = db.query(Vehicle).order_by(Vehicle.active.desc(), Vehicle.owner_type, Vehicle.truck_no).all()
-    # Ảnh đại diện lấy MỘT lượt cho cả danh sách — 500 xe thì đừng hỏi 500 lần.
-    anh = {a.vehicle_id: "/api/anh-xe/%s" % a.id
-           for a in db.query(VehiclePhoto).filter(VehiclePhoto.chinh.is_(True)).all()}
+    anh = ANH.anh_chinh_map(ANH.XE, db)      # ảnh đại diện lấy MỘT lượt cho cả danh sách
     ra = []
     for v in ds:
         r = xuat_xe(db, v)
@@ -311,110 +301,6 @@ def xem_xe(vid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
     return xuat_xe(db, v, chi_tiet=True)
-
-
-# ================================================================ ảnh xe (nợ kỹ thuật 3.2)
-# Dùng lại ĐÚNG chỗ chứa tệp của phiếu — `EPL_LAO_TEP`, thư mục con `xe/<id>` — để chỉ có một kho
-# tệp cần sao lưu. Giới hạn và danh sách kiểu tệp cũng lấy từ đó, không đặt lại một bộ thứ hai.
-from services.tep import ANH_KIEU, TEP_TOI_DA, THU_MUC_ANH_XE
-
-
-def _xuat_anh(a):
-    return {"id": a.id, "vehicle_id": a.vehicle_id, "filename": a.filename, "content_type": a.content_type,
-            "size": a.size, "chinh": bool(a.chinh), "note": a.note, "by_user": a.by_user,
-            "ts": a.ts.isoformat() if a.ts else None, "url": "/api/anh-xe/%s" % a.id}
-
-
-def _anh_cua_xe(db, vid):
-    return [_xuat_anh(a) for a in db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == vid)
-            .order_by(VehiclePhoto.chinh.desc(), VehiclePhoto.ts.desc()).all()]
-
-
-@router.get("/api/vehicles/{vid}/anh")
-def ds_anh_xe(vid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    if not db.get(Vehicle, vid):
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
-    return _anh_cua_xe(db, vid)
-
-
-@router.post("/api/vehicles/{vid}/anh")
-async def them_anh_xe(vid: str, tep: UploadFile = File(...), note: str = Form(""), chinh: str = Form(""),
-                      db: Session = Depends(get_db), user=Depends(SUA_DANH_MUC)):
-    """Bãi hoặc kế toán đưa ảnh xe lên. Chỉ ảnh, tối đa như tệp phiếu (8 MB)."""
-    v = db.get(Vehicle, vid)
-    if not v:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
-    kieu = (tep.content_type or mimetypes.guess_type(tep.filename or "")[0] or "").lower()
-    if kieu not in ANH_KIEU:
-        raise HTTPException(422, {"ma": "KIEU_TEP", "loi": "Ảnh xe chỉ nhận JPG, PNG, WEBP hoặc HEIC."})
-    du = await tep.read()
-    if not du:
-        raise HTTPException(422, {"ma": "TEP_RONG", "loi": "Tệp rỗng."})
-    if len(du) > TEP_TOI_DA:
-        raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": "Tệp %.1f MB, tối đa 8 MB." % (len(du) / 1048576)})
-    a = VehiclePhoto(vehicle_id=v.id, filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "anh")[:120],
-                     content_type=kieu, size=len(du), note=(note or None), by_user=user.full_name)
-    a.id = ma_moi()
-    a.stored = a.id + ANH_KIEU[kieu]
-    # Ảnh đầu tiên của xe tự làm ảnh đại diện — khỏi bắt người dùng bấm thêm một nút cho việc hiển nhiên.
-    da_co = db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).count()
-    a.chinh = bool(chinh) or da_co == 0
-    if a.chinh:
-        for cu in db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == v.id).all():
-            cu.chinh = False
-    os.makedirs(os.path.join(THU_MUC_ANH_XE, v.id), exist_ok=True)
-    with open(os.path.join(THU_MUC_ANH_XE, v.id, a.stored), "wb") as f:
-        f.write(du)
-    db.add(a); db.commit()
-    return _anh_cua_xe(db, v.id)
-
-
-@router.get("/api/anh-xe/{aid}")
-def mo_anh_xe(aid: str, request: Request, tk: str = "", db: Session = Depends(get_db)):
-    """Trả ảnh. Thẻ <img> không gửi header nên nhận phiên qua ?tk=… — y như tệp của phiếu."""
-    a = db.get(VehiclePhoto, aid)
-    if not a:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có ảnh này."})
-    dau = request.headers.get("Authorization", "")
-    token = tk or (dau[7:].strip() if dau.lower().startswith("bearer ") else "")
-    if not token or not doc_phien(token):
-        raise HTTPException(401, {"ma": "CHUA_DANG_NHAP", "loi": "Vui lòng đăng nhập."})
-    duong = os.path.join(THU_MUC_ANH_XE, a.vehicle_id, a.stored)
-    if not os.path.exists(duong):
-        raise HTTPException(404, {"ma": "MAT_TEP", "loi": "Ảnh không còn trên máy chủ."})
-    return FileResponse(duong, media_type=a.content_type, filename=a.filename, content_disposition_type="inline")
-
-
-@router.put("/api/anh-xe/{aid}")
-def dat_anh_chinh(aid: str, db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
-    """Đặt ảnh này làm ảnh đại diện của xe."""
-    a = db.get(VehiclePhoto, aid)
-    if not a:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có ảnh này."})
-    for x in db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == a.vehicle_id).all():
-        x.chinh = (x.id == a.id)
-    db.commit()
-    return _anh_cua_xe(db, a.vehicle_id)
-
-
-@router.delete("/api/anh-xe/{aid}")
-def xoa_anh_xe(aid: str, db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
-    a = db.get(VehiclePhoto, aid)
-    if not a:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có ảnh này."})
-    vid, la_chinh = a.vehicle_id, bool(a.chinh)
-    try:
-        os.remove(os.path.join(THU_MUC_ANH_XE, vid, a.stored))
-    except OSError:
-        pass                      # tệp đã mất thì vẫn xoá dòng, không để bảng treo bản ghi chết
-    db.delete(a); db.flush()
-    if la_chinh:                  # xoá ảnh đại diện thì ảnh còn lại mới nhất lên thay
-        con = (db.query(VehiclePhoto).filter(VehiclePhoto.vehicle_id == vid)
-               .order_by(VehiclePhoto.ts.desc()).first())
-        if con is not None:
-            con.chinh = True
-    db.commit()
-    return _anh_cua_xe(db, vid)
 
 
 def _kiem_xe(data, v):
@@ -641,6 +527,8 @@ def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None):
         r["phieu_gan_day"] = [{"id": p.id, "doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
                                "truck_no": p.truck_no, "origin": p.origin, "destination": p.destination, "transport_status": p.transport_status}
                               for p in db.query(Trip).filter(Trip.driver_id == d.id).order_by(Trip.doc_date.desc()).limit(10).all()]
+        r["anh_chinh"] = ANH.anh_chinh(ANH.TAI_XE, db, d.id)
+        r["anh"] = ANH.ds_anh(ANH.TAI_XE, db, d.id)
     return r
 
 
@@ -648,7 +536,13 @@ def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None):
 def ds_tai_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     ds = db.query(Driver).order_by(Driver.active.desc(), Driver.name).all()
     dem, dang = _phu_tai_xe(db, ds)
-    return [xuat_tai_xe(db, d, dem=dem, dang=dang) for d in ds]
+    anh = ANH.anh_chinh_map(ANH.TAI_XE, db)
+    ra = []
+    for d in ds:
+        r = xuat_tai_xe(db, d, dem=dem, dang=dang)
+        r["anh_chinh"] = anh.get(d.id)
+        ra.append(r)
+    return ra
 
 
 @router.get("/api/drivers/{did}/lich")

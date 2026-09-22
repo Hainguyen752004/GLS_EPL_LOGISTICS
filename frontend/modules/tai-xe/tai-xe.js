@@ -28,7 +28,9 @@
   const ST = { running: ['amber', 'xe_st_running'], idle: ['green', 'xe_st_idle'], off: ['muted', 'tx_st_off'] };
   const stPill = (k) => { const s = ST[k] || ST.idle; return pill(s[0], NN.t(s[1])); };
   const initials = (d) => (d.ten_latin || d.ten || '?').split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  const avatar = (d, sm) => `<span class="tx-avatar ${sm ? 'sm' : ''}">${esc(initials(d))}</span>`;
+  // Có ảnh thì hiện ảnh, không thì hai chữ cái đầu như cũ. Thẻ <img> nhận phiên qua ?tk=… như tệp phiếu.
+  const urlAnh = (u) => u ? `${u}?tk=${encodeURIComponent(EPL.API.token())}` : null;
+  const avatar = (d, sm) => `<span class="tx-avatar ${sm ? 'sm' : ''}">${d.anh ? `<img src="${esc(d.anh)}" alt="">` : esc(initials(d))}</span>`;
   const toast = (m) => EPL.toast(m, 'ok');          // hộp báo chung của khung, không dựng cái thứ hai
 
   /* ---------- đổi tên trường giữa máy chủ và bản thiết kế ----------
@@ -47,7 +49,8 @@
       xe_thuong_lai: d.default_vehicle, xe_thuong_lai_id: d.default_vehicle_id,
       trang_thai: d.active === false ? 'off' : (TT_TX[d.status] || 'idle'),
       _status: d.status, _active: d.active !== false,
-      phieu_hien_tai: d.phieu_hien_tai, so_phieu: d.so_phieu, ghi_chu: d.note, anh: null,
+      phieu_hien_tai: d.phieu_hien_tai, so_phieu: d.so_phieu, ghi_chu: d.note,
+      anh: d.anh_chinh ? urlAnh(d.anh_chinh) : null, anh_ds: (d.anh || []).map(a => ({ ...a, src: urlAnh(a.url) })),
       bang_lai: d.license_no ? {
         so: d.license_no, hang: d.license_type, cap: ngay(d.license_valid_from), han: ngay(d.license_valid_to),
         noi_cap: d.license_issued_by, trang_thai: d.license_status || 'active',
@@ -242,11 +245,30 @@
     const rt = root.querySelector('#tx-modal-root');
     rt.innerHTML = `<div class="tx-backdrop"><div class="tx-modal tx-modal--lg">
       <div class="mh"><div><h3>${isNew ? NN.h('tx_add') : NN.h('tx_profile')}: <span class="lo">${esc(o.ten) || '—'}</span></h3><small>${NN.h('tx_edit_sub')}</small></div><button class="x" type="button" data-close><svg class="tx-i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-      <div class="mtop"><div class="photo">${avatar(o).replace('class="tx-avatar', 'style="width:78px;height:78px;font-size:18px" class="tx-avatar')}<div><b>${NN.h('tx_photo')}</b><small>${NN.h('tx_photo_todo')}</small></div></div>
+      <div class="mtop"><div class="photo">${avatar(o).replace('class="tx-avatar', 'style="width:78px;height:78px;font-size:18px" class="tx-avatar')}
+        <div><b>${NN.h('tx_photo')}</b><small id="m-anh-dem">${NN.h('xe_photo_n', { n: (o.anh_ds || []).length })}</small>
+          ${suaDuoc() && o._id ? `<label class="tx-btn-sm" style="margin-top:4px;display:inline-block">${NN.h('xe_photo_add')}<input type="file" id="m-anh-them" accept="image/*" hidden></label>` : ''}</div></div>
         <div class="st" style="border-left-color:var(--tx-${ketLuan(o).lv === 'ok' ? 'good' : ketLuan(o).lv === 'warn' ? 'warn' : 'bad'})"><small>${NN.h('tx_conclusion')}</small><b>${esc(klText(o).title)}</b><p>${esc(klText(o).sub)}</p></div></div>
       <div class="mtabs" id="m-tabs"></div><div class="mb" id="m-body"></div>
       <div class="mf"><span class="small muted" id="m-note" style="margin-right:auto"></span><button class="btn" type="button" data-close>${NN.h('cancel')}</button><button class="btn primary" type="button" id="m-save">${NN.h('tx_save')}</button></div></div></div>`;
     rt.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
+    // Ảnh tài xế: đưa lên cùng chỗ chứa tệp với ảnh xe; ảnh đầu tiên tự thành ảnh đại diện.
+    const oAnh = rt.querySelector('#m-anh-them');
+    if (oAnh) oAnh.addEventListener('change', async () => {
+      const f = oAnh.files && oAnh.files[0]; if (!f) return;
+      const fd = new FormData(); fd.append('tep', f, f.name);
+      try {
+        const ds = await EPL.API.tep(`/api/drivers/${o._id}/anh`, fd);
+        o.anh_ds = ds.map(a => ({ ...a, src: urlAnh(a.url) }));
+        const c = ds.find(a => a.chinh); o.anh = c ? urlAnh(c.url) : null;
+        const khung = rt.querySelector('.mtop .tx-avatar');
+        if (khung && o.anh) khung.innerHTML = `<img src="${esc(o.anh)}" alt="">`;
+        const dem = rt.querySelector('#m-anh-dem'); if (dem) dem.textContent = NN.t('xe_photo_n').replace('{n}', ds.length);
+        toast(NN.t('saved'));
+        await tai();
+      } catch (e) { EPL.baoLoi(e); }
+      oAnh.value = '';
+    });
     rt.querySelector('.tx-backdrop').addEventListener('click', e => { if (e.target.classList.contains('tx-backdrop')) close(); });
     const body = rt.querySelector('#m-body');
     const grab = () => body.querySelectorAll('[id^="f-"]').forEach(el => { vals[el.id] = el.value; });

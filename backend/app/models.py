@@ -972,6 +972,21 @@ class VehiclePhoto(Base):
     ts = Column(DateTime, nullable=False, default=bay_gio)
 
 
+class DriverPhoto(Base):
+    """ẢNH TÀI XẾ — ຮູບໂຊເຟີ. Cùng bộ máy với ảnh xe (routes/anh.py), thư mục con `tai-xe/<driver_id>/`."""
+    __tablename__ = "driver_photos"
+    id = Column(String, primary_key=True, default=ma_moi)
+    driver_id = Column(String, ForeignKey("drivers.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String, nullable=False)
+    stored = Column(String, nullable=False)
+    content_type = Column(String)
+    size = Column(Integer, default=0)
+    chinh = Column(Boolean, nullable=False, default=False)
+    note = Column(String)
+    by_user = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
+
+
 # ---------------------------------------------------------------- bán phụ tùng · xăng dầu cho bên ngoài
 class CustomerRate(Base):
     """Bảng giá hợp đồng: khách × tuyến × loại hàng → đơn giá USD/tấn (và giá thuê xe ngoài nếu tuyến đó

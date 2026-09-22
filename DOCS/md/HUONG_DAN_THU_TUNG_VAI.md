@@ -31,7 +31,7 @@ Gieo sẵn thêm cho các phần mới (22/09): khách hợp đồng `ບໍລ�
 sửa chữa `LSC-2609-01` của xe 342 đang chờ kiểm · hai **thẻ cao tốc** `ETC-8801` (khách cấp) và `ETC-9902`
 (EPL) đã nạp tiền · trạm dầu Việt Nam có dòng **ghi nợ** trên phiếu `T4-0428`.
 
-**Thứ tự thử gọn nhất:** bước 1 → 9 (luồng cũ, đã có 8b) rồi **9b → 9f** là toàn bộ phần mới.
+**Thứ tự thử gọn nhất:** bước 1 → 9 (luồng cũ, đã có 8b) rồi **9b → 9g** là toàn bộ phần mới.
 
 ---
 
@@ -232,6 +232,24 @@ Anh Khampla nói kho phụ tùng và tổ sửa chữa là **người riêng** (
 3. Thử chỗ đã dọn về tiền bán (không cần công cụ nào, chỉ cần nhìn): `thabok` mở **Theo dõi phiếu vận
    chuyển** — các cột cước, thành tiền, lãi không có; nay **máy chủ cũng không gửi** những con số đó nữa,
    nên mở công cụ trình duyệt cũng không đọc được. `ketoan` mở cùng màn thì vẫn thấy đủ.
+
+### Bước 9g ☐ Bốn việc chốt chiều 22/09 — `doanhthu`, `thabok`, `admin`
+
+1. `doanhthu` mở **Theo dõi nhà cung cấp** → bảng **Cấn trừ cuối tháng**, chọn tháng **2026-08**: dòng khách
+   ຄຳຕຸ້ຍ có nút **Ghi cấn trừ tháng · 25.200.000**. Bấm → xác nhận.
+   - *Phải thấy:* thông báo *Đã ghi 1 phiếu thu cấn trừ · 16.438.950 LAK*; dòng khách đổi thành *đã ghi
+     phiếu thu 16.438.950*, nút còn *8.761.050* (phần chưa có hoá đơn để bù — để tháng sau).
+   - Mở phiếu `T4-0430-08` → **Sổ thu tiền** có dòng cách thu *Cấn trừ*, số tham chiếu `CT-202608`; phiếu
+     thành **Đã thu đủ**. Sổ chứng từ có thêm một tờ *Phiếu thu tiền khách*.
+   - Bấm nút lần nữa → báo *không còn hoá đơn nào chưa thu* — không ghi trùng.
+2. `thabok` mở một phiếu **xe nhà** đang chạy → **Đổi xe** → chọn xe `ຮ່ວມ-07` (xe liên kết).
+   - *Phải thấy:* bị từ chối, câu nhắc nói rõ *không đổi chéo xe nhà và xe liên kết trên cùng phiếu*.
+3. `thabok` mở **Tài xế** → bấm đúp một tài xế → khung ảnh có **+ Thêm ảnh** → chọn ảnh.
+   - *Phải thấy:* ảnh hiện ngay ở khung, và ở danh sách tài xế thay cho hai chữ cái đầu.
+4. `admin` mở **Chứng từ → Sổ chứng từ → Cấu hình**: có thêm hai ô **Mã TK hàng khách gửi** và **Mã TK giá
+   vốn**. Gõ thử `002` và `632` → lưu. `ketoan` bán một món phụ tùng ở **Bán hàng** → Sổ chứng từ: tờ *Xuất
+   kho bán* mang **Nợ 632 / Có 1371**. Các tờ *Nhập/Xuất kho hàng* không có 1371 ở vế nào (hàng khách gửi
+   là ngoài bảng). Xoá hai mã thử đi sau khi xem.
 
 ---
 

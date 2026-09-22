@@ -16,8 +16,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, Customer, Part, Route, RouteStop, Supplier, TollCard, TollCardMove, Trip,
-                    TripEvent, TripExpense, TripSection, Voucher)
+from models import (ChungTu, Customer, Invoice, InvoicePayment, Part, Route, RouteStop, Supplier, TollCard,
+                    TollCardMove, Trip, TripEvent, TripExpense, TripPayment, TripSection, Voucher)
+from fastapi import Body
 from routes.phieu import da_thu_theo_phieu, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
@@ -332,7 +333,7 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
     def o_cua(kid, ten):
         return theo_khach.setdefault(kid or "", {"customer_id": kid, "customer_name": ten or "—",
                                                  "cuoc_lak": 0.0, "the_lak": 0.0, "dau_vn_lak": 0.0,
-                                                 "the": [], "tram": []})
+                                                 "da_ghi_lak": 0.0, "the": [], "tram": []})
 
     # 1. cước phải thu trong tháng (theo phiếu đã xuất hoá đơn hoặc đã khoá — tức là đã chốt tiền)
     dong = defaultdict(list)
@@ -346,9 +347,9 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
 
     # 2. thẻ cao tốc do khách cấp — phần EPL đã quẹt trong tháng
     for t in db.query(TollCard).filter(TollCard.kind == "khach").all():
-        chi = sum(m.amount for m in db.query(TollCardMove)
-                  .filter(TollCardMove.card_id == t.id, TollCardMove.kind == "chi",
-                          TollCardMove.move_date >= dau, TollCardMove.move_date < sau).all())
+        ds_m = (db.query(TollCardMove).filter(TollCardMove.card_id == t.id, TollCardMove.kind == "chi",
+                                              TollCardMove.move_date >= dau, TollCardMove.move_date < sau).all())
+        chi = sum(m.amount for m in ds_m)
         if not chi:
             continue
         o = o_cua(t.customer_id, t.customer_name)
@@ -370,10 +371,15 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
         o["dau_vn_lak"] += no
         o["tram"].append({"name": s_.name, "so_dong": so_dong, "no_lak": round(no)})
 
+    # 4. phần đã GHI thành phiếu thu "cấn trừ" của tháng này (ref CT-YYYYMM) — đọc từ chính sổ thu tiền
+    ref = "CT-%s" % dau.strftime("%Y%m")
+    da_ghi = _da_ghi_can_tru(db, ref)
     ra = []
     for o in theo_khach.values():
         o["cuoc_lak"] = round(o["cuoc_lak"]); o["the_lak"] = round(o["the_lak"]); o["dau_vn_lak"] = round(o["dau_vn_lak"])
         o["can_tru_lak"] = o["the_lak"] + o["dau_vn_lak"]
+        o["da_ghi_lak"] = round(da_ghi.get(o["customer_id"], 0.0))
+        o["chua_ghi_lak"] = o["can_tru_lak"] - o["da_ghi_lak"]   # phần chưa ghi thành phiếu thu
         o["con_thu_lak"] = o["cuoc_lak"] - o["can_tru_lak"]
         if o["can_tru_lak"] or o["cuoc_lak"]:
             ra.append(o)
@@ -382,6 +388,98 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
             "tong_cuoc_lak": sum(o["cuoc_lak"] for o in ra),
             "tong_can_tru_lak": sum(o["can_tru_lak"] for o in ra),
             "tong_con_thu_lak": sum(o["con_thu_lak"] for o in ra)}
+
+
+def _da_ghi_can_tru(db, ref):
+    """{customer_id: LAK đã ghi} của các phiếu thu cách thu `offset` mang ref này. Thu ở tờ gộp thì
+    chỉ đếm dòng invoice_payments (dòng rải xuống phiếu là con của nó, đếm nữa là gấp đôi)."""
+    ra = {}
+    for x, hd in (db.query(InvoicePayment, Invoice).join(Invoice, Invoice.id == InvoicePayment.invoice_id)
+                  .filter(InvoicePayment.method == "offset", InvoicePayment.ref == ref).all()):
+        ra[hd.customer_id] = ra.get(hd.customer_id, 0.0) + (x.amount_lak or 0)
+    for x, p in (db.query(TripPayment, Trip).join(Trip, Trip.id == TripPayment.trip_id)
+                 .filter(TripPayment.method == "offset", TripPayment.ref == ref,
+                         TripPayment.invoice_payment_id.is_(None)).all()):
+        ra[p.customer_id] = ra.get(p.customer_id, 0.0) + (x.amount_lak or 0)
+    return ra
+
+
+@router.post("/api/bao-cao/can-tru/ghi")
+def ghi_can_tru(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """GHI CẤN TRỪ THÁNG cho một khách: những gì khách đã trả hộ (thẻ cao tốc · nợ trạm dầu VN) trong
+    tháng mà chưa ghi, biến thành **phiếu thu cách thu "cấn trừ"** trên chính hoá đơn của khách đó.
+
+    Cách ghi không có gì mới: gọi đúng hai hàm ghi thu đang dùng cho nút "Ghi một lần thu" — thu ở tờ
+    gộp thì rải về phiếu, thu ở phiếu lẻ thì ghi thẳng — chỉ khác `method = offset`. Nên sổ thu tiền
+    vẫn một kiểu dòng, tờ PT vẫn một kiểu tờ, và trạng thái từng phiếu tự đổi như mọi lần thu khác.
+
+    Thứ tự bù: hoá đơn gộp cũ trước, rồi phiếu lẻ cũ trước. "Đã ghi" không cần cột đánh dấu: nó là
+    tổng các phiếu thu `offset` mang ref `CT-YYYYMM` của khách — đọc từ chính sổ thu tiền, nên gọi lại
+    bao nhiêu lần cũng chỉ ghi phần còn thiếu. Khách trả hộ nhiều hơn cước còn phải thu thì phần dư để
+    lại tháng sau — không ghi thu dư.
+    """
+    from routes.phieu import ghi_thu_phieu
+    from routes.hoa_don import ghi_thu_hoa_don, xuat_hd
+    if user.role not in ("rev", "admin"):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi cấn trừ."})
+    kh = db.get(Customer, str(data.get("customer_id") or ""))
+    if not kh:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    thang = data.get("thang")
+    bang = can_tru(thang, db, user)
+    o = next((x for x in bang["ds"] if x["customer_id"] == kh.id), None)
+    chua_ghi = float(o["chua_ghi_lak"]) if o else 0.0
+    if chua_ghi <= 0:
+        raise HTTPException(409, {"ma": "KHONG_CO_GI", "loi": "Tháng này khách %s không còn khoản trả hộ nào chưa ghi." % kh.name})
+    _ds, dau, cuoi = _phieu_thang(db, thang)
+    ref = "CT-%s" % dau.strftime("%Y%m")
+    ngay = _ngay_ct(data.get("pay_date")) or dt.date.today()
+
+    # ---- chỗ để bù: hoá đơn gộp còn nợ (cũ trước), rồi phiếu lẻ đã xuất hoá đơn còn nợ (cũ trước)
+    dich = []        # (loại, đối tượng, còn lại LAK)
+    for hd in (db.query(Invoice).filter(Invoice.customer_id == kh.id).order_by(Invoice.inv_date, Invoice.inv_no).all()):
+        r = xuat_hd(db, hd)
+        if r["con_lai_lak"] > 0:
+            dich.append(("hd", hd, float(r["con_lai_lak"])))
+    ds_p = db.query(Trip).filter(Trip.customer_id == kh.id, Trip.invoiced.is_(True), Trip.invoice_id.is_(None),
+                                 Trip.finance_status != "paid").order_by(Trip.doc_date, Trip.doc_no).all()
+    thu = da_thu_theo_phieu(db, [p.id for p in ds_p])
+    for p in ds_p:
+        k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).all(), thu.get(p.id, 0))
+        if k["con_lai_lak"] > 0:
+            dich.append(("phieu", p, float(k["con_lai_lak"])))
+    if not dich:
+        raise HTTPException(409, {"ma": "KHONG_CON_NO", "loi": "Khách %s không còn hoá đơn nào chưa thu để cấn trừ vào." % kh.name})
+
+    # ---- bù dần: mỗi đích một tờ PT cách thu "cấn trừ"; hết chỗ bù thì phần còn lại để tháng sau
+    con = chua_ghi
+    phieu_thu = []
+    ghi_chu = "Cấn trừ tháng %s: khách trả hộ qua thẻ cao tốc / trạm dầu Việt Nam" % dau.strftime("%m/%Y")
+    for loai, dt_, con_lai in dich:
+        if con <= 0.5:
+            break
+        tien_lak = round(min(con, con_lai))
+        if tien_lak <= 0:
+            continue
+        if loai == "hd":
+            ghi_thu_hoa_don(db, dt_, user, tien_lak, "LAK", 1.0, "offset", ngay=ngay, ref=ref, note=ghi_chu)
+            phieu_thu.append({"loai": "hoa_don_gop", "so": dt_.inv_no, "tien_lak": tien_lak})
+        else:
+            ghi_thu_phieu(db, dt_, user, tien_lak, "LAK", 1.0, "offset", ngay=ngay, ref=ref, note=ghi_chu)
+            phieu_thu.append({"loai": "phieu", "so": dt_.doc_no, "tien_lak": tien_lak})
+        con -= tien_lak
+    db.commit()
+    return {"customer_id": kh.id, "customer_name": kh.name, "thang": dau.strftime("%Y-%m"), "ref": ref,
+            "ghi_lak": round(chua_ghi - con), "de_lai_lak": round(con), "phieu_thu": phieu_thu}
+
+
+def _ngay_ct(v):
+    if v in (None, ""):
+        return None
+    try:
+        return dt.date.fromisoformat(str(v)[:10])
+    except ValueError:
+        raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD, nhận '%s'." % v})
 
 
 @router.get("/api/bao-cao/xe-lien-ket")

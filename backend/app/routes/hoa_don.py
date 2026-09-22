@@ -327,10 +327,20 @@ def thu_tien(hid: str, data: dict = Body(...), db: Session = Depends(get_db), us
                                   "loi": "Hoá đơn %s còn %s LAK mà lần thu này %s LAK. Thu dư thì phải xác nhận."
                                          % (hd.inv_no, con_lai_lak, tien_lak),
                                   "con_lai_lak": con_lai_lak})
-    ngay = _ngay(data.get("pay_date")) or dt.date.today()
+    ghi_thu_hoa_don(db, hd, user, tien, ma, tg, pt, ngay=_ngay(data.get("pay_date")),
+                    ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None)
+    db.commit()
+    return xuat_hd(db, hd, day_du=True)
+
+
+def ghi_thu_hoa_don(db, hd, user, tien, ma, tg, pt, ngay=None, ref=None, note=None):
+    """Ghi MỘT lần khách trả cho tờ gộp và RẢI xuống từng phiếu theo ngày. Dùng chung cho nút thu tiền
+    và nút cấn trừ tháng (cách thu `offset`)."""
+    ngay = ngay or dt.date.today()
+    tien_lak = round(tien * tg)
+    con = _con_lai_tung_phieu(db, hd)
     x = InvoicePayment(invoice_id=hd.id, pay_date=ngay, amount=tien, currency=ma, rate_to_lak=tg,
-                       amount_lak=tien_lak, method=pt, ref=(data.get("ref") or "").strip() or None,
-                       note=(data.get("note") or "").strip() or None, by_user=user.full_name)
+                       amount_lak=tien_lak, method=pt, ref=ref, note=note, by_user=user.full_name)
     db.add(x); db.flush()
 
     # ---- rải xuống từng phiếu: phiếu cũ trả trước; thừa thì dồn vào phiếu cuối
@@ -358,8 +368,7 @@ def thu_tien(hid: str, data: dict = Body(...), db: Session = Depends(get_db), us
            payload={"inv_no": hd.inv_no, "period": hd.period, "rate_to_lak": tg, "method": pt, "ref": x.ref,
                     "hoa_don_ccy": hd.currency, "hoa_don": hd.amount, "hoa_don_lak": hd.amount_lak,
                     "phan_bo": chia})
-    db.commit()
-    return xuat_hd(db, hd, day_du=True)
+    return x
 
 
 @router.delete("/api/hoa-don-thu/{pid}")

@@ -131,12 +131,23 @@ nằm ở **mức phiếu**. Nay với vai đó ô này đếm *phiếu đã kho
 
 ---
 
+## Phần 3b. Bốn việc anh chủ dự án chốt chiều 22/09 — đã làm
+
+| Việc | Anh chốt | Đã làm |
+|---|---|---|
+| Ảnh tài xế | Làm | Cùng bộ máy với ảnh xe (`routes/anh.py`), thư mục `tai-xe/<id>`; nút *+ Thêm ảnh* trong hộ sơ tài xế; ảnh đầu tự thành ảnh đại diện |
+| Cấn trừ có ghi thành phiếu thu không | Em tự quyết nếu hợp lý | **Có nút "Ghi cấn trừ tháng"** (KT Doanh thu) ở bảng Cấn trừ: khoản khách trả hộ → phiếu thu cách thu *cấn trừ* trên hoá đơn còn nợ của khách (hoá đơn gộp cũ trước, phiếu lẻ cũ trước). Gọi đúng hàm ghi thu đang dùng, chỉ khác `method = offset`, nên sổ thu một kiểu dòng. "Đã ghi" đọc từ chính sổ thu (ref `CT-YYYYMM`), gọi lại không ghi trùng; khách trả hộ nhiều hơn cước còn phải thu thì phần dư để tháng sau, **không ghi thu dư** |
+| Đổi xe nhà ↔ xe liên kết giữa đường | Theo em: chặn | Chặn `KHAC_LOAI_XE` — chứng từ đã sinh trước lúc đổi mang mã của loại xe cũ (625/614 với 4022), không ghi lại được; chuyện đổi chéo hiếm, lập phiếu mới |
+| Tên demo cho hai tài khoản mới | Em đặt | `khopt` — ທ້າວ ແກ້ວ (Keo), thủ kho phụ tùng · `totsua` — ທ້າວ ສຸກ (Souk), tổ sửa chữa. Hai kế toán (C1.1) vẫn tên mẫu ນາງ ພອນ (Phone) · ນາງ ວິໄລວັນ (Vilayvanh) cho tới khi anh Khampla cho tên thật |
+
+---
+
 ## Phần 4. Chờ bên khác
 
 | Việc | Chờ ai | Hiện đang làm gì |
 |---|---|---|
 | Khoá Google Routes / Geocoding | Anh cấp khoá | Tuyến và km nhập tay; bản đồ vẽ từ toạ độ trong CSDL |
 | **Đường nhận chứng từ** | Anh Khang | **Bên mình đã làm xong lớp đẩy** (21/09): nút Đẩy, thử lại khi lỗi, chống gửi trùng, Sếp đặt địa chỉ và token trong màn hình. Hợp đồng JSON đề nghị ở `HOP_DONG_API_ANH_KHANG.md`. Chỉ chờ anh Khang cho địa chỉ + token, và chốt tên đường nếu muốn khác `/api/v1/epl-lao/vouchers` |
-| Mã tài khoản còn thiếu: **hàng khách gửi**, **giá vốn** | Anh Khang | Kho, NCC, bốn mã tiền đã có (anh Khampla 22/09); còn hai mã này để tên không mã |
+| Mã tài khoản còn thiếu: **hàng khách gửi**, **giá vốn** | Anh Khang — **chỉ còn chờ con mã** | Đã chốt logic 22/09 (mục 4 `HOP_DONG_API_ANH_KHANG`): hàng khách gửi là **ngoài bảng**, bỏ hẳn kho 1371 khỏi ba tờ PNK_HH/PXK_HH/DC_HH; giá vốn Nợ *mã anh cấp* / Có 1371. Hai mã là **ô cấu hình** ở màn Chứng từ → Cấu hình (Sếp gõ), tờ sinh sau đó mang mã ngay |
 | API công nợ phải thu / phải trả | Anh Khang | Chưa làm; chỉ đọc và hiện nếu anh có đường sẵn |
 | Danh mục Acc code | Anh Khang | Ô chọn định khoản đang dùng danh mục dự phòng, mã lạ thì ghi rõ "không có trong danh mục" |

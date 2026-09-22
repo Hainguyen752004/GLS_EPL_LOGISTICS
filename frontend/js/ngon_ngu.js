@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1396 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1401 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2031,6 +2031,36 @@ window.EPL_TU_DIEN = {
   "vi": "Tháng này không có gì cấn trừ",
   "lo": "ເດືອນນີ້ບໍ່ມີການຫັກລົບ",
   "en": "Nothing to offset this month"
+ },
+ "ncc_da_ghi": {
+  "vi": "đã ghi phiếu thu",
+  "lo": "ອອກໃບຮັບເງິນແລ້ວ",
+  "en": "already receipted"
+ },
+ "ct_ma_hang_gui": {
+  "vi": "Mã TK hàng khách gửi (ngoài bảng) — bên kế toán cấp",
+  "lo": "ເລກບັນຊີສິນຄ້າຝາກ (ນອກຕາຕະລາງ) — ຝ່ายບັນຊີໃຫ້",
+  "en": "Account code for customer goods in custody (off-balance) — from accounting"
+ },
+ "ct_ma_gia_von": {
+  "vi": "Mã TK giá vốn hàng bán — bên kế toán cấp",
+  "lo": "ເລກບັນຊີຕົ້ນທຶນສິນຄ້າຂາຍ — ຝ່າຍບັນຊີໃຫ້",
+  "en": "Account code for cost of goods sold — from accounting"
+ },
+ "ncc_ghi_ct": {
+  "vi": "Ghi cấn trừ tháng",
+  "lo": "ບັນທຶກຫັກລົບເດືອນ",
+  "en": "Record month offset"
+ },
+ "ncc_ghi_ct_hoi": {
+  "vi": "Ghi {tien} LAK khách <b>{kh}</b> đã trả hộ thành phiếu thu <i>cấn trừ</i> trên hoá đơn của khách này? Khoản không còn chỗ bù sẽ để lại tháng sau.",
+  "lo": "ບັນທຶກ {tien} ກີບ ທີ່ລູກຄ້າ <b>{kh}</b> ຈ່າຍແທນ ເປັນໃບຮັບເງິນ <i>ຫັກລົບ</i> ໃສ່ໃບເກັບເງິນຂອງລູກຄ້ານີ້? ສ່ວນທີ່ບໍ່ມີບ່ອນຫັກຈະຍົກໄປເດືອນໜ້າ.",
+  "en": "Record {tien} LAK paid on behalf by <b>{kh}</b> as <i>offset</i> receipts on this customer invoices? Amounts with nowhere to offset are carried to next month."
+ },
+ "ncc_ghi_ct_xong": {
+  "vi": "Đã ghi {n} phiếu thu cấn trừ · {tien} LAK",
+  "lo": "ບັນທຶກແລ້ວ {n} ໃບຮັບເງິນຫັກລົບ · {tien} ກີບ",
+  "en": "Recorded {n} offset receipts · {tien} LAK"
  },
  "ncc_can_tru_nhac": {
   "vi": "Hai thứ khách đã trả hộ EPL — thẻ cao tốc khách nạp tiền, và trạm dầu bên Việt Nam ghi nợ — được đặt cạnh cước phải thu để ra số còn phải thu. Bên mình chỉ ghi và hiện; bút toán cấn trừ là việc của bên kế toán.",
@@ -5311,11 +5341,6 @@ window.EPL_TU_DIEN = {
   "vi": "Đã điền đơn giá theo bảng giá khách × tuyến",
   "lo": "ຕື່ມລາຄາຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ ແລ້ວ",
   "en": "Rate filled from the customer × route price list"
- },
- "tx_photo_todo": {
-  "vi": "Chưa lưu được ảnh tài xế — ảnh xe thì đã lưu được",
-  "lo": "ຍັງເກັບຮູບໂຊເຟີບໍ່ໄດ້ — ຮູບລົດເກັບໄດ້ແລ້ວ",
-  "en": "Driver photos are not stored yet — vehicle photos are"
  },
  "nav_goods": {
   "vi": "Kho hàng",

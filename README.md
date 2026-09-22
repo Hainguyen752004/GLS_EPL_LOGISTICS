@@ -61,6 +61,7 @@ kiem/
   thu_the_cao_toc.py thẻ cao tốc: số dư, trừ khi ghi sổ mục IV, cấn trừ cước cuối tháng
   thu_no_tram_dau.py nợ trạm dầu Việt Nam: ghi nợ tách khỏi tiền mặt, cấn trừ cước tháng
   thu_no_ky_thuat.py máy chủ không trả giá bán cho vai không được xem · ảnh xe · việc của KT Doanh thu
+  thu_chot_22_09.py  ghi cấn trừ tháng · chặn đổi chéo loại xe · ảnh tài xế · hai mã kế toán là ô cấu hình
   thu_day_ke_toan.py đẩy chứng từ sang kế toán anh Khang, máy nhận giả ở :8099
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
@@ -96,6 +97,7 @@ python kiem\thu_sua_chua.py                      # lệnh sửa chữa riêng, k
 python kiem\thu_the_cao_toc.py                   # thẻ cao tốc: số dư, trừ khi ghi sổ, cấn trừ
 python kiem\thu_no_tram_dau.py                   # nợ trạm dầu VN và cấn trừ cước tháng
 python kiem\thu_no_ky_thuat.py                   # giá bán không ra khỏi máy chủ · ảnh xe · việc của tôi
+python kiem\thu_chot_22_09.py                    # ghi cấn trừ · chặn đổi chéo xe · ảnh tài xế · mã cấu hình
 python kiem\thu_day_ke_toan.py                   # đẩy chứng từ sang kế toán, có máy nhận giả đóng vai anh Khang
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện

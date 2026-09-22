@@ -128,9 +128,12 @@
       const v = await EPL.hopNhap(NN.t('ct_cau_hinh'), [
         { id: 'api', label: 'ct_api_dia_chi', value: hien.ke_toan_api || '' },
         { id: 'token', label: 'ct_api_token', type: 'password', value: '' },
+        // Hai mã bên kế toán anh Khang cấp sau — gõ ở đây là mọi tờ sinh từ đó mang mã, không phải sửa mã nguồn.
+        { id: 'ma_hang_khach_gui', label: 'ct_ma_hang_gui', value: hien.ma_hang_khach_gui || '' },
+        { id: 'ma_gia_von', label: 'ct_ma_gia_von', value: hien.ma_gia_von || '' },
       ], NN.t('save'));
       if (!v) return;
-      try { await API.put('/api/ke-toan/cau-hinh', { ke_toan_api: v.api, ke_toan_token: v.token }); EPL.toast(NN.t('saved'), 'ok'); }
+      try { await API.put('/api/ke-toan/cau-hinh', { ke_toan_api: v.api, ke_toan_token: v.token, ma_hang_khach_gui: v.ma_hang_khach_gui, ma_gia_von: v.ma_gia_von }); EPL.toast(NN.t('saved'), 'ok'); }
       catch (e) { EPL.baoLoi(e); }
       await taiKetNoi(); await veSo();
     });

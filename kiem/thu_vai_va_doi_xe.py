@@ -150,6 +150,10 @@ def main():
     phai(s, 422, "Đổi xe không ghi lý do → bị từ chối", g)
     s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[0]["id"], "ly_do": "thử"}, vai="thabok")
     phai(s, 409, "Đổi sang chính xe đang chạy → bị từ chối", g)
+    xe_lk = next((x for x in xe if x.get("owner_type") == "joint" and x.get("active") is not False), None)
+    if xe_lk:
+        s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_lk["id"], "ly_do": "thử chéo"}, vai="thabok")
+        phai(s, 409, "Đổi chéo xe nhà → xe liên kết → bị từ chối (chứng từ mang mã loại cũ)", g)
 
     s, g = goi("/api/trips/%s/doi-xe" % pid,
                {"vehicle_id": xe_nha[1]["id"], "driver_id": tx[1]["id"], "ly_do": "thử: gãy nhíp giữa đường",

@@ -66,14 +66,28 @@
       <td class="num">${so(o.cuoc_lak)}</td>
       <td class="num">${o.the_lak ? so(o.the_lak) : '—'}</td>
       <td class="num">${o.dau_vn_lak ? so(o.dau_vn_lak) : '—'}</td>
-      <td class="num"><b>${so(o.can_tru_lak)}</b></td>
+      <td class="num"><b>${so(o.can_tru_lak)}</b>${o.da_ghi_lak ? `<div class="small muted">${NN.h('ncc_da_ghi')}: ${so(o.da_ghi_lak)}</div>` : ''}</td>
       <td class="num ${o.con_thu_lak > 0 ? 'ncc-no' : ''}">${so(o.con_thu_lak)}</td>
-      <td class="small muted">${[...o.the.map(t => t.card_no), ...o.tram.map(t => t.name)].map(esc).join(' · ')}</td></tr>`).join('')
+      <td class="small muted">${[...o.the.map(t => t.card_no), ...o.tram.map(t => t.name)].map(esc).join(' · ')}
+        ${AUTH.la('rev') && o.chua_ghi_lak > 0 ? `<div><button class="btn sm ok no-print" data-ghi-ct="${esc(o.customer_id)}">${NN.h('ncc_ghi_ct')} · ${so(o.chua_ghi_lak)}</button></div>` : ''}</td></tr>`).join('')
       : `<tr><td colspan="7" class="empty">${NN.h('ncc_can_tru_trong')}</td></tr>`;
+    root.querySelectorAll('[data-ghi-ct]').forEach(b => b.addEventListener('click', () => ghiCanTru(b.dataset.ghiCt)));
     root.querySelector('#ncc-can-tru-chan').innerHTML = rows.length ? `<tr><td>${NN.h('total')}</td>
       <td class="num">${so(canTru.tong_cuoc_lak)}</td><td colspan="2"></td>
       <td class="num"><b>${so(canTru.tong_can_tru_lak)}</b></td>
       <td class="num">${so(canTru.tong_con_thu_lak)}</td><td></td></tr>` : '';
+  }
+
+  /** Ghi cấn trừ tháng: khoản khách trả hộ → phiếu thu cách thu "cấn trừ" trên hoá đơn của khách. */
+  async function ghiCanTru(customerId) {
+    const o = (canTru.ds || []).find(x => x.customer_id === customerId); if (!o) return;
+    const ok = await EPL.hoi(NN.t('ncc_ghi_ct'), `<p>${NN.h('ncc_ghi_ct_hoi', { kh: esc(o.customer_name), tien: so(o.chua_ghi_lak) })}</p>`, NN.t('ncc_ghi_ct'));
+    if (!ok) return;
+    try {
+      const r = await API.post('/api/bao-cao/can-tru/ghi', { customer_id: customerId, thang: root.querySelector('#ncc-thang').value });
+      EPL.toast(NN.t('ncc_ghi_ct_xong').replace('{n}', r.phieu_thu.length).replace('{tien}', so(r.ghi_lak)), 'ok');
+      await tai();
+    } catch (e) { EPL.baoLoi(e); }
   }
 
   async function tai() {

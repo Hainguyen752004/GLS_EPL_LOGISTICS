@@ -768,6 +768,15 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
         raise HTTPException(409, {"ma": "CUNG_XE", "loi": "Xe mới trùng xe đang chạy (%s)." % (p.truck_no or "")})
     if not xe_moi.active:
         raise HTTPException(409, {"ma": "XE_NGUNG", "loi": "Xe %s đã ngưng dùng." % xe_moi.truck_no})
+    # KHÔNG đổi chéo xe nhà ↔ xe liên kết (anh chủ dự án chốt 22/09). Hai loại xe định khoản khác nhau
+    # (625/614 với 4022): chứng từ đã sinh trước lúc đổi — xuất kho dầu, tạm ứng — mang mã của loại cũ và
+    # không ghi lại được. Chuyện đổi chéo hiếm, mà chứng từ lệch là thứ kế toán ghét nhất → lập phiếu mới.
+    loai_moi = "joint" if xe_moi.owner_type == "joint" else "EPL"
+    if loai_moi != (p.company or "EPL"):
+        raise HTTPException(409, {"ma": "KHAC_LOAI_XE",
+                                  "loi": "Phiếu đang là %s, xe %s là %s — không đổi chéo xe nhà và xe liên kết trên cùng phiếu, vì chứng từ đã sinh mang mã của loại xe cũ. Lập phiếu mới cho xe này."
+                                         % ("xe liên kết" if p.company == "joint" else "xe nhà", xe_moi.truck_no,
+                                            "xe liên kết" if loai_moi == "joint" else "xe nhà")})
     ly_do = (data.get("ly_do") or data.get("reason") or "").strip()
     if not ly_do:
         raise HTTPException(422, {"ma": "THIEU_LY_DO", "loi": "Đổi xe phải ghi lý do — kế toán kiểm lại mục I sẽ đọc câu này."})
@@ -780,17 +789,9 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     p.vehicle_id = xe_moi.id
     p.truck_no, p.brand_model = xe_moi.truck_no, xe_moi.brand_model
     p.plate_head, p.plate_trailer = xe_moi.plate_head, xe_moi.plate_trailer
-    # Xe liên kết và xe nhà tính tiền khác nhau, nên đổi xe là đổi luôn bên chủ xe của phiếu.
+    # Cùng loại xe (đã chặn chéo ở trên): xe liên kết sang xe liên kết thì chủ xe có thể khác → chép chủ mới.
     if xe_moi.owner_type == "joint":
-        p.company, p.owner_id, p.owner_name = "joint", xe_moi.owner_id, xe_moi.owner_name
-        chu = db.get(Owner, xe_moi.owner_id) if xe_moi.owner_id else None
-        if chu is not None:
-            if p.fee_pct is None: p.fee_pct = chu.fee_pct
-            if p.over_limit_t is None: p.over_limit_t = chu.over_limit_t
-            if p.over_price is None: p.over_price = chu.over_price
-            if not p.hire_ccy: p.hire_ccy = chu.hire_ccy
-    else:
-        p.company, p.owner_id, p.owner_name = "EPL", None, None
+        p.owner_id, p.owner_name = xe_moi.owner_id, xe_moi.owner_name
     if data.get("odo_out") not in (None, ""):
         p.odo_out = _so(data.get("odo_out"), "odo_out")
     elif xe_moi.odometer_km is not None:
@@ -1210,10 +1211,21 @@ def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db)
                                   "loi": "Hoá đơn còn %s %s (%s LAK) mà lần thu này %s LAK. Thu dư thì phải xác nhận."
                                          % (k["con_lai"], k["ccy"], round(k["con_lai_lak"]), tien_lak),
                                   "con_lai_lak": k["con_lai_lak"]})
-    x = TripPayment(trip_id=p.id, pay_date=_ngay(data.get("pay_date")) or dt.date.today(),
-                    amount=tien, currency=ma, rate_to_lak=tg, amount_lak=tien_lak, method=pt,
-                    ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None,
-                    by_user=user.full_name)
+    ghi_thu_phieu(db, p, user, tien, ma, tg, pt, ngay=_ngay(data.get("pay_date")),
+                  ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None)
+    db.commit()
+    return xuat_phieu(db, p, vai=user.role)
+
+
+def ghi_thu_phieu(db, p, user, tien, ma, tg, pt, ngay=None, ref=None, note=None):
+    """Ghi MỘT lần khách trả cho MỘT phiếu: dòng trip_payments + tờ PT + tính lại trạng thái.
+
+    Dùng chung cho nút "Ghi một lần thu" và cho nút "Ghi cấn trừ tháng" (cách thu `offset`) — hai
+    đường vào, một cách ghi, để sổ thu tiền không bao giờ có hai kiểu dòng."""
+    tien_lak = round(tien * tg)
+    k = tinh_phieu(p, _dong_chi(db, p), _da_thu(db, p))
+    x = TripPayment(trip_id=p.id, pay_date=ngay or dt.date.today(), amount=tien, currency=ma, rate_to_lak=tg,
+                    amount_lak=tien_lak, method=pt, ref=ref, note=note, by_user=user.full_name)
     db.add(x); db.flush()
     CT.ghi(db, "PT", nguon_bang="trip_payments", nguon_id=x.id, trip=p, ngay=x.pay_date, doi_tuong_loai="khach",
            doi_tuong_ten=p.customer_name, tien=tien, tien_te=ma, tien_lak=tien_lak, by_user=user.full_name,
@@ -1222,8 +1234,7 @@ def ghi_thu_tien(tid: str, data: dict = Body(...), db: Session = Depends(get_db)
                     "hoa_don": k["doanh_thu"], "hoa_don_lak": k["doanh_thu_lak"]})
     _tinh_lai_trang_thai_thu(db, p)
     _ghi_log(db, p, user, "fin_%s" % p.finance_status)
-    db.commit()
-    return xuat_phieu(db, p, vai=user.role)
+    return x
 
 
 @router.delete("/api/thu-tien/{pid}")

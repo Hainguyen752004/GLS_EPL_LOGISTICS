@@ -53,6 +53,9 @@ LOAI = {
 #   tiền mặt Kíp 1011 · tiền mặt ngoại tệ 1012 · ngân hàng Kíp 1021 · ngân hàng ngoại tệ 1022
 # Ghi sổ theo MÃ CON vì đó là cấp hạch toán; mã mẹ chỉ để cộng dồn. Anh Khang muốn khác thì đổi ở đây.
 KHO = ("1371", "Kho hàng, vật tư (137 · 1371)")
+# Hai mã bên kế toán anh Khang CHƯA cấp — vế mang tên nhưng mã None cho tới khi Sếp điền ở cấu hình.
+HANG_GUI = (None, "Hàng khách gửi giữ hộ — ngoài bảng (mã do bên kế toán cấp)")
+GIA_VON = (None, "Giá vốn hàng bán (mã do bên kế toán cấp)")
 NCC = ("4021", "Phải trả nhà cung cấp (402 · 4021, tách theo nhà cung cấp)")
 MA_TIEN = {
     ("cash", True): ("1011", "Tiền mặt bằng Kíp"),
@@ -82,12 +85,15 @@ def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None
         "PXK_PT": (chi_phi, KHO),
         "PNK_NL": (KHO, NCC),
         "PNK_PT": (KHO, NCC),
-        # Hàng của khách nằm kho mình giữ hộ: nhập kho ghi Nợ kho, vế Có là "hàng gửi của khách"
-        # (bên kế toán chưa cấp mã); xuất kho thì ngược lại. Không phải mua bán nên không đụng 402.
-        "PNK_HH": (KHO, (None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)")),
-        "PXK_HH": ((None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)"), KHO),
-        # Điều chỉnh tăng ghi như nhập, giảm ghi như xuất — chiều nào thì payload nói rõ.
-        "DC_HH":  (KHO, (None, "Hàng khách gửi ở kho (mã do bên kế toán cấp)")),
+        # QUẶNG CỦA KHÁCH nằm bãi mình giữ hộ (chốt 22/09): KHÔNG phải tài sản của EPL nên không ghi
+        # vào kho 1371 — ghi thế là tồn kho EPL phình lên bằng hàng của người khác. Nó là khoản
+        # NGOÀI BẢNG (ghi đơn, một vế): nhập thì Nợ, xuất thì Có, cùng một mã do bên kế toán cấp
+        # (đặt ở màn Chứng từ → Cấu hình, khoá `ma_hang_khach_gui`); chưa có mã thì để trống, tấn
+        # vẫn đi đủ trong payload để bên kia đối chiếu.
+        "PNK_HH": (HANG_GUI, (None, None)),
+        "PXK_HH": ((None, None), HANG_GUI),
+        # Điều chỉnh: tăng ghi như nhập, giảm ghi như xuất — chiều nào thì payload nói rõ.
+        "DC_HH":  (HANG_GUI, HANG_GUI),
         "PC_TU":  (chi_phi, TIEN),
         "PC_SC":  (chi_phi, TIEN),
         "PC_NCC": (NCC, TIEN),
@@ -96,7 +102,7 @@ def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None
         "PT":     (TIEN, ("1211", "Phải thu khách hàng")),
         "TT_CHI": (chi_phi, TIEN),
         "TT_THU": (TIEN, chi_phi),
-        "PXK_BAN": ((None, "Giá vốn hàng bán (mã do bên kế toán cấp)"), KHO),
+        "PXK_BAN": (GIA_VON, KHO),
         "HD_BAN":  (("1211", "Phải thu khách hàng"), ("70", "Doanh thu bán hàng và dịch vụ")),
         "PT_BAN":  (TIEN, ("1211", "Phải thu khách hàng")),
     }.get(loai)
@@ -104,6 +110,22 @@ def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None
         return (None, None, None, None)
     (no, no_ten), (co, co_ten) = b
     return (no, no_ten, co, co_ten)
+
+
+def _dien_ma_cau_hinh(db, loai, no, co):
+    """Điền hai mã bên kế toán cấp SAU (Sếp gõ ở màn Chứng từ → Cấu hình) vào đúng vế còn trống.
+    Không có cấu hình thì vế đó vẫn None kèm tên — bên kia đọc tên mà biết."""
+    from services.day_ke_toan import cau_hinh
+    if loai in ("PNK_HH", "PXK_HH", "DC_HH"):
+        ma = cau_hinh(db, "ma_hang_khach_gui")
+        if ma:
+            if loai != "PXK_HH" and no is None: no = ma
+            if loai != "PNK_HH" and co is None: co = ma
+    elif loai == "PXK_BAN":
+        ma = cau_hinh(db, "ma_gia_von")
+        if ma and no is None:
+            no = ma
+    return no, co
 
 
 def _so_moi(db, loai, ngay):
@@ -144,6 +166,7 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
     cty = company or (trip.company if trip is not None else "EPL")
     no, no_ten, co, co_ten = (dinh_khoan(loai, cty, section, tien_te, phuong_thuc) if LOAI[loai][2]
                               else (None, None, None, None))
+    no, co = _dien_ma_cau_hinh(db, loai, no, co)
     thuoc_tinh = dict(loai=loai, ngay=ngay,
                       trip_id=trip.id if trip is not None else None,
                       trip_doc_no=trip.doc_no if trip is not None else None,
