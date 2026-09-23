@@ -335,10 +335,12 @@ def xem_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
 
 
 # ---------------------------------------------------------------- lập & sửa
-def _so_phieu_moi(db):
-    """T4-0428-08/EPL → số kế tiếp trong tháng hiện tại. Chỉ là gợi ý, người lập sửa được."""
+def _so_phieu_moi(db, loai="giao"):
+    """T4-0428-08/EPL → số kế tiếp trong tháng hiện tại. Chỉ là gợi ý, người lập sửa được.
+    Phiếu GOM (mỏ → bãi) đánh dãy riêng G4-…, giống bộ mẫu (G4-0101-09) — trước đây mọi loại đều ra T4-."""
+    dau = "G4" if loai == "gom" else "T4"
     thang = dt.date.today().strftime("%m")
-    cuoi = (db.query(Trip).filter(Trip.doc_no.like("T4-%%-%s/EPL" % thang))
+    cuoi = (db.query(Trip).filter(Trip.doc_no.like("%s-%%-%s/EPL" % (dau, thang)))
             .order_by(Trip.doc_no.desc()).first())
     so = 1
     if cuoi:
@@ -346,12 +348,12 @@ def _so_phieu_moi(db):
             so = int(cuoi.doc_no.split("-")[1]) + 1
         except (IndexError, ValueError):
             so = 1
-    return "T4-%04d-%s/EPL" % (so, thang)
+    return "%s-%04d-%s/EPL" % (dau, so, thang)
 
 
 @router.get("/api/trips-so-moi")
-def so_moi(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return {"doc_no": _so_phieu_moi(db)}
+def so_moi(kind: str = "giao", db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+    return {"doc_no": _so_phieu_moi(db, kind)}
 
 
 def _ap_truong(db, p, data, user, muc_tt=None):
@@ -602,7 +604,7 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     loai_do = (data.get("kind") or "giao").strip()
     if loai_do not in LOAI_DO:
         raise HTTPException(422, {"ma": "LOAI_DO_SAI", "loi": "Loại phiếu phải là 'gom' (đi lấy hàng) hoặc 'giao' (đi giao hàng)."})
-    p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db)).strip(), kind=loai_do, created_by=user.full_name)
+    p = Trip(doc_no=str(data.get("doc_no") or _so_phieu_moi(db, loai_do)).strip(), kind=loai_do, created_by=user.full_name)
     if db.query(Trip).filter(Trip.doc_no == p.doc_no).first():
         raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s đã có." % p.doc_no})
     # Tỷ giá mặc định lấy từ bảng tỷ giá, rồi khoá vào phiếu

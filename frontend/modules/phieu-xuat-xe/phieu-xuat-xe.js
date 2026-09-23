@@ -652,7 +652,11 @@
         if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price == null || P.hire_price === '')) { P.hire_price = P.price; g('f-hire_price').value = P.price ?? ''; P.hire_ccy = maCuoc(); g('f-hire_ccy').value = P.hire_ccy; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
         if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; } }
         if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
-        if (c === 'kind') { napLo().then(veHet); }
+        if (c === 'kind') {
+          // phiếu mới: số gợi ý theo loại — gom ra G4-…, giao ra T4-… (chỉ khi người lập chưa tự gõ số khác)
+          if (moi) API.get('/api/trips-so-moi?kind=' + encodeURIComponent(P.kind || 'giao')).then(s => { if (s && s.doc_no) { P.doc_no = s.doc_no; const o = g('px-doc-no'); if (o) o.value = s.doc_no; } }).catch(() => {});
+          napLo().then(veHet);
+        }
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();
       }); });
