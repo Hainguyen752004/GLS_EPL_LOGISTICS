@@ -2038,9 +2038,9 @@ window.EPL_TU_DIEN = {
   "en": "already receipted"
  },
  "ct_ma_hang_gui": {
-  "vi": "Mã TK hàng khách gửi (ngoài bảng) — bên kế toán cấp",
-  "lo": "ເລກບັນຊີສິນຄ້າຝາກ (ນອກຕາຕະລາງ) — ຝ່ายບັນຊີໃຫ້",
-  "en": "Account code for customer goods in custody (off-balance) — from accounting"
+  "vi": "Mã TK hàng khách gửi — để trống: hàng của khách không ghi sổ, chỉ theo dõi số tấn",
+  "lo": "ເລກບັນຊີສິນຄ້າຝາກ — ປະຫວ່າງໄວ້: ສິນຄ້າຂອງລູກຄ້າບໍ່ລົງບັນຊີ, ຕິດຕາມແຕ່ຈຳນວນໂຕນ",
+  "en": "Customer goods account — leave empty: customer goods are not booked, only tonnage is tracked"
  },
  "ct_ma_gia_von": {
   "vi": "Mã TK giá vốn hàng bán — bên kế toán cấp",
