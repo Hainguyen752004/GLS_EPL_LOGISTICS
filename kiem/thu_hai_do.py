@@ -47,13 +47,23 @@ def phai(s, mong, buoc, g=None):
         raise SystemExit("DỪNG: %s trả %s, mong %s — %s" % (buoc, s, mong, g))
 
 
+def chi_tam_ung(pid, phai):
+    """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
+    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới"."""
+    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
+        if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
+            return          # mục IV trống, hoặc đã đi qua bước này rồi
+        phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
+
+
 def ton_kho(vai="admin"):
     s, g = goi("/api/kho-hang", vai=vai)
     return g["ton_t"]
 
 
 def main():
-    for u in ("thabok", "ketoan", "doanhthu", "admin"):
+    for u in ("thabok", "ketoan", "ketoancp", "quytb", "doanhthu", "admin"):
         dang_nhap(u)
     print("✓ đăng nhập 4 vai")
 
@@ -84,7 +94,8 @@ def main():
     assert ton_kho() == ton0, "chưa về tới bãi thì tồn kho KHÔNG được đổi"
     print("  ✓ chưa về bãi: tồn kho giữ nguyên %s t" % ton0)
 
-    # xe về tới bãi, cân bãi 39,6 t (hao 0,4 so với cân mỏ)
+    # xe về tới bãi, cân bãi 39,6 t (hao 0,4 so với cân mỏ) — tài xế đã cầm tạm ứng mục IV từ trước
+    chi_tam_ung(gom["id"], phai)
     s, g = goi("/api/trips/%s/transport-status" % gom["id"],
                {"status": "arrived", "weight_dest": 39.6, "back_date": "2026-09-21", "odo_back": 200},
                vai="thabok")
@@ -130,6 +141,7 @@ def main():
     print("  ✓ hai DO nối nhau: %s lấy hàng của %s" % (SO_GIAO, giao["goods"][0]["tu_phieu_doc_no"]))
 
     # ================================================================ 3. giao xong → hao hụt chặng giao
+    chi_tam_ung(giao["id"], phai)
     s, g = goi("/api/trips/%s/transport-status" % giao["id"],
                {"status": "arrived", "weight_dest": 24.7, "back_date": "2026-09-24", "odo_back": 300},
                vai="thabok")

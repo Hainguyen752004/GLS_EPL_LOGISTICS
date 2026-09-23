@@ -21,6 +21,7 @@ import urllib.request
 
 from fastapi import APIRouter, Depends
 
+from services import mang as MANG
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
@@ -89,7 +90,7 @@ def lay_danh_muc(refresh=False):
         token = (os.getenv("EPL_ACC_CODE_TOKEN") or "").strip()
         if token:
             dau["Authorization"] = "Bearer " + token
-        with urllib.request.urlopen(urllib.request.Request(url, headers=dau), timeout=20) as tra:
+        with MANG.mo(urllib.request.Request(url, headers=dau), timeout=20) as tra:
             goi = json.loads(tra.read().decode("utf-8", "replace"))
     except Exception as loi:  # noqa: BLE001 — mọi lỗi mạng/định dạng đều là "không đọc được"
         if bo["goi"] is not None:

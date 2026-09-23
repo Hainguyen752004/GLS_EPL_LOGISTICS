@@ -41,6 +41,16 @@ def phai(s, mong, buoc, g=None):
         raise SystemExit("DỪNG: %s trả %s, mong %s — %s" % (buoc, s, mong, g))
 
 
+def chi_tam_ung(pid, phai):
+    """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
+    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới"."""
+    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
+        if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
+            return          # mục IV trống, hoặc đã đi qua bước này rồi
+        phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
+
+
 def main():
     for u in ("thabok", "ketoan", "ketoancp", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
@@ -107,6 +117,7 @@ def main():
             s, g = goi("/api/trips/%s/sections/%s/verify" % (P["id"], muc), {}, vai=v); phai(s, 200, "kiểm %s" % muc, g)
         s, g = goi("/api/trips/%s/sections/fuel/book" % P["id"], {}, vai="khonl"); phai(s, 200, "ghi sổ III", g)
         s, g = goi("/api/trips/%s/sections/fuel/pay" % P["id"], {}, vai="quyvc"); phai(s, 200, "chi III", g)
+        chi_tam_ung(P["id"], phai)
         s, g = goi("/api/trips/%s/transport-status" % P["id"], {"status": "arrived", "weight_dest": P["weight_origin"], "odo_back": 300, "back_date": "2026-09-18"}, vai="thabok")
         phai(s, 200, "xe về, cân bãi", g)
         s, g = goi("/api/trips/%s/khoa" % P["id"], {"xac_nhan": True}, vai="ketoan"); phai(s, 200, "khoá %s" % P["doc_no"], g)

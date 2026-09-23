@@ -223,7 +223,10 @@ def main():
     s, g = goi("/api/trips/%s/kiem-lai" % P, vai="ketoan"); phai(s, 200, "Kế toán bấm Kiểm lại → bảng cảnh báo", g)
     ma_cb = [x["ma"] for x in g["canh_bao"]]
     # Tài xế đã báo km về ở bước trên nên KHÔNG còn cảnh báo thiếu km — đúng là nhờ tài xế báo mà kế toán đỡ một việc.
-    assert "THIEU_PHIEU_QUANG" in ma_cb and "THIEU_KM_VE" not in ma_cb, "phải cảnh báo thiếu phiếu quặng, và không còn thiếu km về: %s" % ma_cb
+    # Phiếu quặng của khách: kế toán đã NHẬP TAY số HR-9999 ở bước 1 — từ 23/09 nhập tay là đủ (anh chủ dự án:
+    # "phiếu khách hàng thì mình nhập tay được"), không bắt đính kèm ảnh nên KHÔNG còn cảnh báo thiếu phiếu quặng.
+    assert "THIEU_PHIEU_QUANG" not in ma_cb and "THIEU_KM_VE" not in ma_cb, "đã nhập tay số phiếu quặng và tài xế đã báo km — không được còn hai cảnh báo này: %s" % ma_cb
+    assert ma_cb, "phiếu thử vẫn phải còn cảnh báo khác (hao hụt, dòng hàng) để thử bước xác nhận khoá: %s" % ma_cb
     s, g = goi("/api/trips/%s/khoa" % P, {}, vai="ketoan"); phai(s, 409, "Khoá khi còn cảnh báo mà chưa xác nhận → chặn", g)
     s, g = goi("/api/trips/%s/khoa" % P, {"xac_nhan": True}, vai="ketoan"); phai(s, 200, "Kế toán xác nhận khoá phiếu", g)
     assert g["locked"] and g["locked_by"], g.get("locked")

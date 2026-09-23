@@ -153,6 +153,14 @@ def _cua_tai_xe(db, p, user):
         raise HTTPException(403, {"ma": "KHONG_PHAI_PHIEU_CUA_BAN", "loi": "Đây không phải phiếu của bạn."})
 
 
+_TEN_MUC = {"fuel": "III (nhiên liệu)", "travel": "IV (đi đường)", "repair": "V (sửa chữa)", "other": "VI (chi khác)"}
+
+
+def _gon(x):
+    x = float(x or 0)
+    return ("%d" % x) if x == int(x) else ("%g" % x)
+
+
 def _dong_tam_ung(p, cac_dong):
     """Các dòng TIỀN MẶT tài xế cầm đi: mọi khoản EPL ứng trừ những gì xuất từ kho (dầu kho, phụ tùng kho)."""
     return [d for d in cac_dong if d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")]
@@ -619,12 +627,35 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     moi_trang_thai = chuyen_muc(user.role, muc, s.status, hanh_dong)
     if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
         raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
+    if muc in MUC_CHI and hanh_dong == "send":
+        # Dòng EPL trả mà đơn giá 0 (bấm tay 23/09: 100 lít dầu kho giá 0) đi hết chuỗi duyệt, tới ghi sổ sinh tờ
+        # 0 LAK có định khoản — sổ kế toán từ chối, còn 100 lít thì rời kho không mang tiền. Chặn ngay lúc GỬI
+        # KIỂM: người nhập giá là Bãi, sửa lúc này dễ nhất; qua bước này thì kế toán không sửa được đơn giá nữa.
+        dong_muc = [d for d in _dong_chi(db, p) if d.section == muc]
+        thieu = [(i, d) for i, d in enumerate(dong_muc, 1) if d.paid_by_epl and (d.qty or 0) > 0 and (d.unit_price or 0) <= 0]
+        if thieu:
+            raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi gửi kiểm lại." % (
+                _TEN_MUC.get(muc, muc), ", ".join("dòng %d (số lượng %s)" % (i, _gon(d.qty)) for i, d in thieu))})
     s.status = moi_trang_thai
     if muc == "fuel" and hanh_dong == "book":
         _xuat_kho_nhien_lieu(db, p, user)
     if muc == "travel" and hanh_dong == "book":
         # Phí cầu đường trả bằng thẻ: ghi sổ là lúc trừ thẻ, đúng như dòng xuất kho nhiên liệu ở trên.
         THE.tru_the_theo_phieu(db, p, user)
+    if hanh_dong == "pay" and muc == "travel":
+        # Mục IV có HAI đường thành "đã chi": quỹ quét QR phiếu tạm ứng (sinh PC_TU ở phieu_linh.py), hoặc quỹ bấm
+        # thẳng "Chi tiền" ở đây. Đường thứ hai trước đây không sinh tờ nào — bấm tay 23/09 chi 2.183.500 LAK mà sổ
+        # kế toán không hề biết. Nay sinh PC_TU như đường QR. Hai đường tự loại nhau: đã chi rồi thì đường kia là
+        # sai bước (chuyen_muc), nên không thể ra hai tờ. Dòng trả bằng THẺ cao tốc không phải tiền mặt → không tính.
+        dong = [d for d in _dong_chi(db, p) if d.section == "travel" and d.paid_by_epl and d.source != "kho" and not d.toll_card_id]
+        tong = sum(tien_dong(p, d) for d in dong)
+        if tong > 0:
+            CT.ghi(db, "PC_TU", nguon_bang="trip_sections", nguon_id="%s:travel" % p.id, trip=p, ngay=dt.date.today(),
+                   phuong_thuc="cash", doi_tuong_loai="tai_xe", doi_tuong_ten=p.driver_name, tien=tong, tien_te="LAK",
+                   section="travel", by_user=user.full_name, mo_ta="Chi mục IV đi đường phiếu %s" % p.doc_no,
+                   payload={"truck_no": p.truck_no, "driver_id": p.driver_id,
+                            "lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
+                                       "currency": d.currency, "acct_code": d.acct_code} for d in dong]})
     if hanh_dong == "pay" and muc in ("repair", "other"):
         # Quỹ chi các khoản của mục này: khoản mua ngoài / chi khác. Dòng lấy kho đã có PXK_PT riêng.
         dong = [d for d in _dong_chi(db, p) if d.section == muc and d.paid_by_epl and d.source != "kho"]
@@ -883,6 +914,12 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         if _dong_tam_ung(p, _dong_chi(db, p)) and _muc_cua(db, p)["travel"].status != "paid":
             raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG",
                                       "loi": "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — tài xế chưa nhận tiền thì chưa xuất phát."})
+    if moi == "arrived" and user.role != "admin":
+        # Trước đây bấm thẳng "Xe đã tới" (bỏ qua "Xuất phát") là lách được quy tắc tạm ứng ở trên: cả chuyến đi
+        # xong mà tài xế chưa cầm đồng nào, tiền đi đường không có tờ. Cửa này giờ giống cửa Xuất phát.
+        if [d for d in _dong_tam_ung(p, _dong_chi(db, p)) if d.section == "travel"] and _muc_cua(db, p)["travel"].status != "paid":
+            raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG",
+                                      "loi": "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — chưa báo xe tới được. Quỹ chi tạm ứng trước."})
     if moi == "arrived":
         if data.get("weight_dest") not in (None, ""): p.weight_dest = _so(data["weight_dest"], "weight_dest")
         if data.get("back_date"): p.back_date = _ngay(data["back_date"])
@@ -925,8 +962,12 @@ def _canh_bao_khoa(db, p):
         cb.append({"ma": "THIEU_DONG_HANG", "loi": "Phiếu chưa ghi dòng hàng (mặt hàng, số tấn)."})
     if not p.odo_back:
         cb.append({"ma": "THIEU_KM_VE", "loi": "Chưa có km về thật."})
-    if not db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "ore_bill").count():
-        cb.append({"ma": "THIEU_PHIEU_QUANG", "loi": "Chưa đính kèm phiếu quặng của khách."})
+    # Phiếu quặng của khách: đính kèm ẢNH hoặc NHẬP TAY đều được (anh chủ dự án 23/09: "phiếu khách hàng thì mình
+    # nhập tay được" — mặt hàng, số lượng, chi tiết nằm ở dòng hàng; số và ngày phiếu kế toán gõ). Chỉ cảnh báo khi
+    # không có cả hai.
+    co_anh = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "ore_bill").count()
+    if not co_anh and not (p.ore_bill_no or "").strip():
+        cb.append({"ma": "THIEU_PHIEU_QUANG", "loi": "Chưa có phiếu quặng của khách — đính kèm ảnh, hoặc nhập tay số phiếu quặng."})
     tt = {m: s.status for m, s in _muc_cua(db, p).items()}
     dong = _dong_chi(db, p)
     for m in MUC_CHI:

@@ -56,6 +56,16 @@ def don():
         goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
 
 
+def chi_tam_ung(pid, phai):
+    """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
+    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới"."""
+    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
+        if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
+            return          # mục IV trống, hoặc đã đi qua bước này rồi
+        phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
+
+
 def main():
     for u in ("thabok", "ketoan", "ketoancp", "khonl", "quytb", "totsua", "khopt", "tx01", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
@@ -179,6 +189,7 @@ def main():
     s, g = goi("/api/trips/%s/sections/info/verify" % pid, {}, vai="ketoan")
     phai(s, 200, "Kế toán kiểm lại mục I sau khi đổi xe", g)
 
+    chi_tam_ung(pid, phai)
     s, g = goi("/api/trips/%s/transport-status" % pid, {"status": "arrived", "weight_dest": 35, "odo_back": 100}, vai="thabok")
     phai(s, 200, "Xe (mới) báo tới nơi", g)
     s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[0]["id"], "ly_do": "thử"}, vai="thabok")

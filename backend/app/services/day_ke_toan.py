@@ -21,6 +21,8 @@ import os
 import urllib.error
 import urllib.request
 
+from services import mang as MANG
+
 from models import CauHinh, ChungTu
 from services import chung_tu as CT
 
@@ -101,7 +103,7 @@ def _goi_http(url, token, than):
         dau["Authorization"] = "Bearer " + token
     r = urllib.request.Request(url, data=d, headers=dau, method="POST")
     try:
-        with urllib.request.urlopen(r, timeout=HET_GIO) as t:
+        with MANG.mo(r, timeout=HET_GIO) as t:
             return t.status, _doc_json(t.read())
     except urllib.error.HTTPError as e:
         return e.code, _doc_json(e.read())

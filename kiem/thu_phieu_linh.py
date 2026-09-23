@@ -56,6 +56,8 @@ for x in ds:
     if x["finance_status"] == "paid":
         continue
     _, ct0 = goi("/api/trips/" + x["id"], tk=tk["admin"])
+    if ct0.get("locked"):
+        continue        # phiếu đã khoá thì không lập thêm phiếu lĩnh được — đừng chọn làm phiếu thử
     if any(d["section"] == "fuel" and d["source"] == "kho" and not d["stock_move_id"] and d["paid_by_epl"]
            for d in ct0["expenses"]):
         p = x

@@ -623,3 +623,30 @@ Chín bộ kiểm, chạy khi máy chủ đang bật:
 
 Từ điển ba thứ tiếng sinh tự động: sửa `tools/sinh_ngon_ngu.py` rồi chạy nó, **đừng sửa tay**
 `frontend/js/ngon_ngu.js`.
+
+---
+
+## Cập nhật 23/09/2026 — sau đợt bấm tay bằng trình duyệt thật
+
+**Ba quy tắc mới trên phiếu xuất xe** (anh chủ dự án: "code vào luôn"):
+
+| Quy tắc | Chỗ chặn | Vì sao |
+|---|---|---|
+| Dòng chi EPL trả mà **đơn giá 0** không gửi kiểm được (`THIEU_DON_GIA`, câu lỗi chỉ đúng dòng) | Bãi bấm *Gửi kiểm* mục III–VI | Trước đây 100 lít dầu kho giá 0 đi hết chuỗi duyệt, ghi sổ sinh tờ PXK_NL 0 LAK có định khoản — sổ kế toán từ chối, còn 100 lít rời kho không mang tiền. Bãi là người nhập giá; qua bước này kế toán không sửa được đơn giá |
+| **"Xe đã tới"** phải qua cửa tạm ứng như **"Xuất phát"** (`CHUA_NHAN_TAM_UNG`) | Bãi / tài xế báo xe tới | Bấm thẳng "Xe đã tới" từng lách được quy tắc "chưa nhận tiền thì chưa xuất phát" |
+| **Chi thẳng mục IV** (không qua QR phiếu tạm ứng) sinh **PC_TU** | Quỹ bấm *Chi tiền* mục IV | Đường này trước đây không sinh tờ nào — tiền đi đường rời quỹ mà sổ kế toán không biết. Hai đường chi tự loại nhau (đã chi thì đường kia là sai bước), không ra hai tờ. Dòng trả bằng thẻ cao tốc không tính |
+
+**Phiếu quặng của khách nhập tay được** (anh chủ dự án 23/09): có **số phiếu quặng** (kế toán gõ) là đủ,
+không bắt đính kèm ảnh. Hộp *Kiểm lại trước khoá* chỉ nhắc khi không có cả ảnh lẫn số phiếu.
+
+**Danh mục Acc code thật đã nối** (`GET /api/acc-codes` → `source: remote`, 494 mã). Trước đây báo "chưa
+nối được" không phải vì cấu hình: Python trên Windows đọc hỏng kho chứng chỉ của máy
+(`ASN1: NOT_ENOUGH_DATA`) nên mọi lời gọi HTTPS chết từ trước khi tới máy chủ anh Khang. Nay mọi lời gọi
+ra ngoài đi qua `services/mang.py` dùng bộ chứng chỉ `certifi` (thêm vào `requirements.txt`) — kể cả
+đường đẩy chứng từ sau này sang máy anh Khang. Ô chọn định khoản khoá **mã tổng** (danh mục ghi "không ghi
+sổ", 89 mã như 10, 70) để không chọn nhầm.
+
+**Việc phải chốt với anh Khampla / anh Khang:** 3 mã đang in trên phiếu **không có trong danh mục thật** —
+`1371` (kho), `4021` (phải trả NCC), `4022` (chủ xe liên kết); còn `70` là mã tổng không ghi sổ được.
+Danh mục thật có `137` (hàng hoá tồn kho), `401` / `402` (phải trả NCC hàng hoá / dịch vụ), `717`
+(doanh thu vận chuyển). Máy **không tự đổi** mã — chờ bên kế toán chốt.

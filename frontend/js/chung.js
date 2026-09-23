@@ -212,7 +212,7 @@
   /** Hộp nhập một/nhiều ô: fields = [{id,label(khoa),type,value,options}] → object hoặc null. */
   EPL.hopNhap = async (tieuDe, fields, nhanOk) => {
     const html = fields.map(f => `<div class="field"><label>${NN.h(f.label)}</label>${
-      f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`
+      f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''} ${o[2] ? 'disabled' : ''}>${esc(o[1])}</option>`).join('')}</select>`
       : f.type === 'textarea' ? `<textarea id="hn-${f.id}" rows="3">${esc(f.value || '')}</textarea>`
       // Ô số PHẢI nhận số lẻ: cân 40,6 tấn, tiền 1.812,80 USD, tỷ giá, lít dầu. Thiếu step="any" thì trình duyệt
       // chỉ nhận số nguyên và chặn nút Đồng ý bằng câu tiếng Anh — Bãi không báo xe tới được, KT không ghi thu được.
@@ -239,7 +239,10 @@
     const [no, co] = String(hienTai || '/').split('/');
     const ds = (acc.data || []).slice().sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
     const opts = (chon) => {
-      const o = ds.map(x => [x.code, x.code + ' — ' + (x.description || x.name || '')]);
+      // Mã TỔNG (danh mục anh Khang ghi "không ghi sổ", ví dụ 10, 70) không định khoản được — hiện mờ để thấy
+      // cây tài khoản nhưng không chọn nhầm. Phiếu đang mang sẵn mã tổng thì vẫn giữ để thấy, kèm chữ cảnh báo.
+      const o = ds.map(x => [x.code, x.code + ' — ' + (x.description || x.name || '') + (x.postable === false ? ' · ' + NN.t('acct_header') : ''),
+        x.postable === false && x.code !== chon]);
       if (chon && !ds.some(x => x.code === chon)) o.unshift([chon, chon + ' — ' + NN.t('acct_not_in_catalogue')]);
       return o;
     };

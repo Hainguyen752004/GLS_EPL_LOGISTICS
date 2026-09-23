@@ -6607,6 +6607,11 @@ window.EPL_TU_DIEN = {
   "lo": "ອັດຕາແລກປ່ຽນລັອກໄວ້ໃນບິນ",
   "en": "Rate locked on the slip"
  },
+ "acct_header": {
+  "vi": "mã tổng, không ghi sổ",
+  "lo": "ບັນຊີລວມ, ບໍ່ລົງບັນຊີ",
+  "en": "summary account, not postable"
+ },
  "rate_day": {
   "vi": "Tỷ giá ngày thu",
   "lo": "ອັດຕາແລກປ່ຽນວັນຮັບເງິນ",
