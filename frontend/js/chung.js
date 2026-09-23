@@ -214,7 +214,9 @@
     const html = fields.map(f => `<div class="field"><label>${NN.h(f.label)}</label>${
       f.type === 'select' ? `<select id="hn-${f.id}">${(f.options || []).map(o => `<option value="${esc(o[0])}" ${o[0] === f.value ? 'selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`
       : f.type === 'textarea' ? `<textarea id="hn-${f.id}" rows="3">${esc(f.value || '')}</textarea>`
-      : `<input id="hn-${f.id}" type="${f.type || 'text'}" value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}>`}</div>`).join('');
+      // Ô số PHẢI nhận số lẻ: cân 40,6 tấn, tiền 1.812,80 USD, tỷ giá, lít dầu. Thiếu step="any" thì trình duyệt
+      // chỉ nhận số nguyên và chặn nút Đồng ý bằng câu tiếng Anh — Bãi không báo xe tới được, KT không ghi thu được.
+      : `<input id="hn-${f.id}" type="${f.type || 'text'}" ${f.type === 'number' ? 'step="any" inputmode="decimal"' : ''} ${f.placeholder ? `placeholder="${esc(f.placeholder)}"` : ''} value="${esc(f.value == null ? '' : f.value)}" ${f.lo ? 'lang="lo"' : ''}>`}</div>`).join('');
     const ok = await EPL.hoi(tieuDe, html, nhanOk);
     if (!ok) return null;
     const ra = {}; fields.forEach(f => { const el = document.getElementById('hn-' + f.id); ra[f.id] = el ? el.value : undefined; });

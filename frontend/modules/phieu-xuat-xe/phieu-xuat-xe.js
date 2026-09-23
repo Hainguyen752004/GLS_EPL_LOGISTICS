@@ -476,7 +476,8 @@
       { id: 'pay_date', label: 'pay_date', type: 'date', value: EPL.homNay() },
       { id: 'currency', label: 'ccy', type: 'select', value: ma, options: EPL.TIEN_TE.map(m => [m, m]) },
       { id: 'amount', label: 'pay_amount', type: 'number', value: k.con_lai },
-      { id: 'rate_to_lak', label: 'rate_day', type: 'number', value: '' },
+      // Trống = máy dùng tỷ giá khoá trên phiếu (C5.8). Nói ra con số đó để người ghi biết đang quy theo tỷ giá nào.
+      { id: 'rate_to_lak', label: 'rate_day', type: 'number', value: '', placeholder: ma === 'LAK' ? '' : `${NN.t('rate_on_slip')}: 1 ${ma} = ${so(rate(ma), 0)}` },
       { id: 'method', label: 'pay_method', type: 'select', value: 'bank', options: PT_CACH.map(([x, t]) => [x, NN.t(t)]) },
       { id: 'ref', label: 'pay_ref', value: '' },
       { id: 'note', label: 'note', value: '' },
@@ -572,7 +573,10 @@
   }
   async function xoaPhieu() {
     if (!await EPL.hoi(NN.t('delete') + ' ' + P.doc_no, NN.t('confirm_delete'), NN.t('delete'))) return;
-    try { await API.del('/api/trips/' + P.id); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); if (DS.length) await moPhieu(DS[0].id); else await phieuMoi(); } catch (e) { EPL.baoLoi(e); }
+    try { await API.del('/api/trips/' + P.id); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok');
+      // Xoá xong KHÔNG tự mở phiếu mới nhất — đó là phiếu của người khác, gõ tiếp là gõ đè (cùng lỗi anh bắt 22/09).
+      // Người lập phiếu (Bãi, Sếp) thì ra phiếu mới trắng; vai khác để ô chọn trống.
+      if (AUTH.la('yard')) await phieuMoi(); else chuaChon(); } catch (e) { EPL.baoLoi(e); }
   }
   /** Ô chọn nơi đổ — lấy từ danh mục Điểm đổ. Kho EPL xếp trước, trạm ngoài xếp sau. */
   function diemChon(d) {
