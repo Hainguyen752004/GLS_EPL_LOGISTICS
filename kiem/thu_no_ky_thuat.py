@@ -96,8 +96,14 @@ def main():
         lo_t = sorted({k for p in ds for k in TINH_BAN if k in (p.get("tinh") or {})})
         assert not lo and not lo_t, "%s vẫn nhận khoá tiền bán: %s %s" % (ten, lo, lo_t)
         con = sorted({k for k in TINH_CHI if k in (ds[0].get("tinh") or {})})
-        assert len(con) == len(TINH_CHI), "phần CHI PHÍ phải giữ nguyên cho %s: %s" % (ten, con)
-    print("  ✓ %-60s" % "Ba vai không thấy tiền bán: gói trả về không có khoá nào")
+        if vai == "thabok":
+            # anh Khampla A2 (23/09): Bãi không thấy cả tiền CHI (tổng chi, đơn giá, tỷ giá); tài xế vẫn thấy tạm ứng của mình
+            lo_chi = sorted({k for k in ("tong_chi_lak", "chi") if k in (ds[0].get("tinh") or {})})
+            lo_dg = [d for p in ds for d in (p.get("expenses") or []) if "unit_price" in d]
+            assert not lo_chi and not lo_dg and not any("rate_usd" in p for p in ds), "%s vẫn nhận tiền chi: %s" % (ten, lo_chi)
+        else:
+            assert len(con) == len(TINH_CHI), "phần CHI PHÍ phải giữ nguyên cho %s: %s" % (ten, con)
+    print("  ✓ %-60s" % "Ba vai không thấy tiền bán; Bãi không thấy cả tiền chi")
 
     s, ds = goi("/api/bao-cao/theo-doi", vai="thabok")
     lo = sorted({k for p in ds for k in KHOA_BAN if k in p})

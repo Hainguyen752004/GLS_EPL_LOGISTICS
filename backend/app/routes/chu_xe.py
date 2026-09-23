@@ -21,7 +21,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (CACH_TRA_CHU_XE, PHUONG_THUC_THU, TIEN_TE, Owner, OwnerPayment, Trip, TripExpense, Vehicle)
+from models import (CACH_TRA_CHU_XE, PHUONG_THUC_THU, TIEN_TE, Owner, OwnerPayment, Sale, Trip, TripExpense, Vehicle)
 from services import chung_tu as CT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban
@@ -90,7 +90,20 @@ def _cho_tra(db, o):
     for d in ds:
         if d["tra_chu_xe"] and d["tra_chu_xe"] > 0:
             tong[d["hire_ccy"]] = round(tong.get(d["hire_ccy"], 0) + d["tra_chu_xe"], 2)
-    return {"so_phieu": len(ds), "tong": tong, "tong_lak": sum(d["tra_chu_xe_lak"] or 0 for d in ds)}
+    ban = _ban_cho_tru(db, o.id)
+    return {"so_phieu": len(ds), "tong": tong, "tong_lak": sum(d["tra_chu_xe_lak"] or 0 for d in ds),
+            "ban_cho_tru_lak": round(sum(b.total_lak or 0 for b in ban)), "so_phieu_ban": len(ban)}
+
+
+def _ban_cho_tru(db, owner_id):
+    """Phiếu bán hàng (xăng, phụ tùng) chủ xe mua ở quầy, CHƯA trừ vào đợt trả nào — cũ trước."""
+    return (db.query(Sale).filter(Sale.owner_id == owner_id, Sale.owner_payment_id.is_(None), Sale.status != "paid")
+            .order_by(Sale.sale_date, Sale.doc_no).all())
+
+
+def _xuat_ban(b):
+    return {"id": b.id, "doc_no": b.doc_no, "sale_date": b.sale_date.isoformat() if b.sale_date else None,
+            "total": b.total, "currency": b.currency, "total_lak": b.total_lak, "owner_payment_id": b.owner_payment_id}
 
 
 # ================================================================ danh mục
@@ -161,10 +174,14 @@ def cong_no_chu_xe(oid: str, db: Session = Depends(get_db), user=Depends(nguoi_h
     ds_dot = []
     for x in dot:
         phieu = db.query(Trip).filter(Trip.owner_payment_id == x.id).order_by(Trip.doc_date).all()
+        ban = db.query(Sale).filter(Sale.owner_payment_id == x.id).order_by(Sale.sale_date).all()
         ds_dot.append({"id": x.id, "pay_date": x.pay_date.isoformat() if x.pay_date else None, "amount": x.amount,
+                       "gross": x.gross if x.gross is not None else x.amount, "sales_deducted": x.sales_deducted or 0,
+                       "ban": [b.doc_no for b in ban],
                        "currency": x.currency, "amount_lak": x.amount_lak, "method": x.method, "ref": x.ref, "note": x.note,
                        "by_user": x.by_user, "phieu": [p.doc_no for p in phieu]})
     return {"chu_xe": xuat_chu_xe(db, o, user), "cho_tra": [_dong_phieu(db, p) for p in _phieu_cho_tra(db, o)],
+            "ban_cho_tru": [_xuat_ban(b) for b in _ban_cho_tru(db, o.id)],
             "tong": _cho_tra(db, o), "da_tra": ds_dot}
 
 
@@ -198,10 +215,25 @@ def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, not
         chi_tiet.append({"doc_no": p.doc_no, "tien_thue": k["tien_thue"], "phi": k["phi"], "tru_vuot": k["tru_vuot"],
                          "ung_truoc": k["ung_truoc"], "tra_chu_xe": k["tra_chu_xe"]})
     tong = round(tong, 2) if ccy not in ("LAK", "VND") else round(tong)
-    x = OwnerPayment(owner_id=owner.id if owner else phieu[0].owner_id, pay_date=pay_date or dt.date.today(),
-                     amount=tong, currency=ccy, rate_to_lak=(tong_lak / tong) if tong else 1, amount_lak=round(tong_lak),
+    ty = (tong_lak / tong) if tong else 1
+    # Chủ xe mua xăng/phụ tùng ở quầy "trừ vào tiền trả" (chủ dự án 23/09: deal 1tr6, mua 3 trăm → trả 1tr3).
+    # Trừ từng phiếu bán, cũ trước, tới chừng nào còn tiền để trừ; phiếu không vừa thì để đợt sau — không trừ
+    # dở một phiếu, để mỗi phiếu bán hoặc đã trừ hẳn, hoặc chưa.
+    chu_id = owner.id if owner else phieu[0].owner_id
+    con_lak, tru_lak, ban_tru = tong_lak, 0, []
+    for b in _ban_cho_tru(db, chu_id):
+        if (b.total_lak or 0) <= con_lak + 0.5:
+            con_lak -= b.total_lak or 0; tru_lak += b.total_lak or 0; ban_tru.append(b)
+    tru = (tru_lak / ty) if ty else 0
+    tru = round(tru, 2) if ccy not in ("LAK", "VND") else round(tru)
+    thuc_chi = round(tong - tru, 2) if ccy not in ("LAK", "VND") else round(tong - tru)
+    x = OwnerPayment(owner_id=chu_id, pay_date=pay_date or dt.date.today(),
+                     amount=thuc_chi, currency=ccy, rate_to_lak=ty, amount_lak=round(tong_lak - tru_lak),
+                     gross=tong, sales_deducted=tru,
                      method=method, ref=ref, note=note, by_user=user.full_name)
     db.add(x); db.flush()
+    for b in ban_tru:
+        b.owner_payment_id, b.status = x.id, "offset"
     bay_gio = dt.datetime.utcnow()
     for p in phieu:
         k = tinh_phieu(p, _dong_chi(db, p))
@@ -209,11 +241,16 @@ def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, not
         p.owner_paid, p.owner_paid_usd, p.owner_paid_lak = True, k["tra_chu_xe"], k["tra_chu_xe_lak"]
         p.owner_paid_by, p.owner_paid_at = user.full_name, bay_gio
     ten_chu = (owner.name if owner else phieu[0].owner_name) or ""
-    CT.ghi(db, "PC_CX", nguon_bang="owner_payments", nguon_id=x.id, trip=phieu[0] if len(phieu) == 1 else None,
-           ngay=x.pay_date, doi_tuong_loai="chu_xe", doi_tuong_ten=ten_chu, tien=tong, tien_te=ccy, tien_lak=round(tong_lak),
-           by_user=user.full_name, phuong_thuc=method, company="joint",
-           mo_ta="Trả chủ xe %s · %d phiếu: %s" % (ten_chu, len(phieu), ", ".join(p.doc_no for p in phieu)),
-           payload={"phieu": chi_tiet, "currency": ccy, "method": method, "ref": ref, "note": note})
+    if thuc_chi > 0:
+        # Phiếu chi = số THỰC CHI sau khi trừ hàng mua ở quầy. Phần đã trừ không đi qua quỹ: nó đã nằm ở tờ
+        # HD_BAN của từng phiếu bán (Nợ 4022 / Có 70), nên khoản phải trả chủ xe giảm đúng bằng chừng đó.
+        CT.ghi(db, "PC_CX", nguon_bang="owner_payments", nguon_id=x.id, trip=phieu[0] if len(phieu) == 1 else None,
+               ngay=x.pay_date, doi_tuong_loai="chu_xe", doi_tuong_ten=ten_chu, tien=thuc_chi, tien_te=ccy,
+               tien_lak=round(tong_lak - tru_lak), by_user=user.full_name, phuong_thuc=method, company="joint",
+               mo_ta="Trả chủ xe %s · %d phiếu: %s%s" % (ten_chu, len(phieu), ", ".join(p.doc_no for p in phieu),
+                                                          (" · trừ %d phiếu bán hàng" % len(ban_tru)) if ban_tru else ""),
+               payload={"phieu": chi_tiet, "currency": ccy, "method": method, "ref": ref, "note": note,
+                        "gross": tong, "sales_deducted": tru, "ban_tru": [b.doc_no for b in ban_tru]})
     return x
 
 

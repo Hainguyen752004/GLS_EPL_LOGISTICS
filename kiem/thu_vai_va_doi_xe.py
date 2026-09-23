@@ -18,6 +18,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -87,7 +90,7 @@ def main():
         raise SystemExit("DỪNG: cần ít nhất hai xe nhà để thử đổi xe — chạy lại seed.py --dung-lai")
 
     # ---------------------------------------------------------------- 1. lập phiếu, kiểm mục I
-    s, P = goi("/api/trips", {
+    s, P = Q.lap_phieu(goi, {
         "doc_no": SO_PHIEU, "kind": "gom", "doc_date": "2026-09-21", "out_date": "2026-09-21",
         "vehicle_id": xe_nha[0]["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
         "route_id": tuyen[0]["id"], "goods_type": "iron_ore", "weight_origin": 35,

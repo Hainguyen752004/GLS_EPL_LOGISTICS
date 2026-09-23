@@ -1,2 +1,7 @@
 /* Kho nhiên liệu */
 .knl-in{color:var(--green)} .knl-out{color:var(--red)}
+/* tồn theo kho ở TRÊN (tên kho tiếng Lào dài — đặt cột hẹp bên trái thì gãy 6–7 dòng), sổ kho ở dưới */
+.knl-luoi{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
+.knl-kho td:first-child{min-width:280px}
+.knl-kho tbody tr{cursor:pointer}
+.knl-kho tbody tr.knl-chon td{background:var(--accent-bg,#eef4ff);font-weight:600}

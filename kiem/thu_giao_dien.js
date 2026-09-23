@@ -309,11 +309,12 @@ async function main() {
     const thTien = [...goc().querySelectorAll('th.tien')];
     assert.ok(thTien.length >= 6, 'bảng theo dõi phải đánh dấu các cột tiền bán: ' + thTien.length);
     assert.ok(thTien.every(th => w.getComputedStyle(th).display === 'none'), 'với Bãi mọi cột tiền bán của bảng theo dõi phải ẩn');
-    // ... nhưng cột chi phí thì PHẢI còn, vì Bãi là người chi và người nhập các khoản đó
+    // ... và từ 23/09 (anh Khampla A2) cả cột TIỀN CHI cũng ẩn: Bãi nhập số lượng, không thấy tiền
     const thChi = [...goc().querySelectorAll('th')].filter(th => /c_fuel|c_travel|c_totexp/.test(th.dataset.i18n || ''));
     assert.strictEqual(thChi.length, 3, 'phải tìm thấy ba cột chi phí trong bảng theo dõi');
-    assert.ok(thChi.every(th => w.getComputedStyle(th).display !== 'none'), 'vai Bãi vẫn phải thấy cột chi phí (họ nhập và họ chi)');
-    console.log('✓ vai Bãi: ẩn %d cột tiền bán, vẫn thấy 3 cột chi phí', thTien.length);
+    assert.ok(thChi.every(th => w.getComputedStyle(th).display === 'none'), 'vai Bãi không được thấy cột tiền chi (A2)');
+    assert.ok(!/tổng chi phí/i.test(nhanKPI), 'Tổng quan của Bãi không được có ô Tổng chi phí (A2): ' + nhanKPI);
+    console.log('✓ vai Bãi: ẩn %d cột tiền bán và 3 cột tiền chi', thTien.length);
   }
   await di('#/phieu-xuat-xe?id=' + pDang.id);
   const nut = [...goc().querySelectorAll('[data-muc-act]')].map(b => b.dataset.hd);

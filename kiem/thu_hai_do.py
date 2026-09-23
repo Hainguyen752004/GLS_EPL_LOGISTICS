@@ -11,6 +11,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -63,7 +66,7 @@ def ton_kho(vai="admin"):
 
 
 def main():
-    for u in ("thabok", "ketoan", "ketoancp", "quytb", "doanhthu", "admin"):
+    for u in ("thabok", "ketoan", "ketoancp", "khonl", "quytb", "doanhthu", "admin"):
         dang_nhap(u)
     print("✓ đăng nhập 4 vai")
 
@@ -83,7 +86,7 @@ def main():
 
     # ================================================================ 1. DO GOM
     ton0 = ton_kho()
-    s, gom = goi("/api/trips", {
+    s, gom = Q.lap_phieu(goi, {
         "doc_no": SO_GOM, "kind": "gom", "vehicle_id": xe1["id"], "driver_id": tx[0]["id"],
         "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"], "doc_date": "2026-09-20", "out_date": "2026-09-20",
         "origin": "ກາສີ", "destination": "ທ່າບົກ", "weight_origin": 40,
@@ -114,14 +117,14 @@ def main():
     lo_moi = next(x for x in lo if x["doc_no"] == SO_GOM)
     assert abs(lo_moi["con_t"] - 39.6) < 0.01, "lô mới phải còn 39,6 t"
 
-    s, g = goi("/api/trips", {
+    s, g = Q.lap_phieu(goi, {
         "doc_no": SO_GIAO, "kind": "giao", "vehicle_id": xe2["id"], "driver_id": tx[0]["id"],
         "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"], "doc_date": "2026-09-22", "out_date": "2026-09-22",
         "goods": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 100, "tu_phieu_id": gom["id"]}],
     }, vai="thabok")
     phai(s, 409, "Lấy 100 t từ lô chỉ còn 39,6 t → bị từ chối", g)
 
-    s, giao = goi("/api/trips", {
+    s, giao = Q.lap_phieu(goi, {
         "doc_no": SO_GIAO, "kind": "giao", "vehicle_id": xe2["id"], "driver_id": tx[0]["id"],
         "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"], "doc_date": "2026-09-22", "out_date": "2026-09-22",
         "price": 43, "price_ccy": "USD",

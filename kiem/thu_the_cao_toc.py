@@ -15,6 +15,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -104,7 +107,7 @@ def main():
     assert THE["moves"][0]["balance_after"] == 4000000, "dòng nạp phải ghi số dư sau"
 
     # ---------------------------------------------------------------- 3. phiếu có dòng phí cầu đường trả bằng thẻ
-    s, P = goi("/api/trips", {
+    s, P = Q.lap_phieu(goi, {
         "doc_no": SO_PHIEU, "kind": "gom", "doc_date": "2026-09-20", "out_date": "2026-09-20",
         "vehicle_id": xe[0]["id"], "driver_id": tx[0]["id"], "customer_id": khach["id"],
         "route_id": tuyen[0]["id"], "goods_type": "iron_ore", "weight_origin": 30,

@@ -355,16 +355,16 @@
     let tong = 0;
     const than = sua.length ? `<table><thead><tr>
         <th>${NN.h('item')}</th><th style="width:96px">${NN.h('source')}</th><th class="num" style="width:60px">${NN.h('qty')}</th>
-        <th class="num" style="width:110px">${NN.h('unit_price')}</th><th class="num" style="width:120px">${NN.h('amount_lak')}</th>
+        <th class="num tien-chi" style="width:110px">${NN.h('unit_price')}</th><th class="num tien-chi" style="width:120px">${NN.h('amount_lak')}</th>
         <th style="width:96px" class="tien">${NN.h('acct_code')}</th></tr></thead>
       <tbody>${sua.map(d => { const t = (d.qty || 0) * (d.unit_price || 0) * rate(d.currency); tong += t;
         return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td>
-          <td class="num">${so(d.qty)}</td><td class="num">${so(d.unit_price)}${d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
-          <td class="num"><b>${so(t)}</b></td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
+          <td class="num">${so(d.qty)}</td><td class="num tien-chi">${so(d.unit_price)}${d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
+          <td class="num tien-chi"><b>${so(t)}</b></td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
       : `<div class="trong">${NN.h('no_expense')}</div>`;
     const tt = (P.sections || {}).repair || 'wait';
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
-      <span>${NN.h('total')}: <b style="color:var(--ink)">${so(tong)} LAK</b></span>
+      <span class="tien-chi">${NN.h('total')}: <b style="color:var(--ink)">${so(tong)} LAK</b></span>
       <span>${NN.h('td_cost_note')} · ${NN.h(tt === 'wait' ? 'stt_wait2' : 'stt_' + tt)}</span></div>`;
   }
 

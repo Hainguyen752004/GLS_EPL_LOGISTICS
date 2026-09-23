@@ -542,6 +542,11 @@ class FuelMove(Base):
     expense_id = Column(String)                                # dòng chi mục III sinh ra phiếu xuất này
     place_id = Column(String, ForeignKey("fuel_places.id"))    # xuất từ kho nào
     voucher_id = Column(String, ForeignKey("vouchers.id"))     # do phiếu lĩnh nào sinh ra
+    # Giá vốn BÌNH QUÂN (C5.3): nhập → giá nhập quy LAK theo tỷ giá lúc nhập; xuất → bình quân của kho lúc xuất.
+    unit_cost_lak = Column(Float)
+    supplier_id = Column(String, ForeignKey("suppliers.id"))   # nhập: mua của ai
+    transfer_no = Column(String, index=True)                   # phiếu chuyển kho: hai dòng (ra · vào) cùng một số
+    created_at = Column(DateTime, default=bay_gio)             # thứ tự trong cùng một ngày — để tính bình quân đúng
 
 
 class Part(Base):
@@ -569,6 +574,7 @@ class PartMove(Base):
     note = Column(String)
     by_user = Column(String)
     expense_id = Column(String)                                # dòng chi mục V sinh ra phiếu xuất này
+    unit_price = Column(Float)                                 # nhập: giá nhập (tính lại bình quân) · xuất: giá bình quân lúc xuất
 
 
 # ---------------------------------------------------------------- thẻ cao tốc (C6.1)
@@ -930,6 +936,9 @@ class OwnerPayment(Base):
     rate_to_lak = Column(Float, nullable=False, default=1)
     amount_lak = Column(Float, nullable=False, default=0)
     method = Column(String, nullable=False, default="cash")    # PHUONG_THUC_THU
+    # Tiền hàng chủ xe mua ở quầy đã TRỪ trong đợt này (theo currency). amount là số thực chi sau khi trừ.
+    gross = Column(Float)
+    sales_deducted = Column(Float, default=0)
     ref = Column(String)
     note = Column(String)
     by_user = Column(String)
@@ -1023,6 +1032,10 @@ class Sale(Base):
     total = Column(Float, default=0)                            # theo tiền tệ của phiếu
     total_lak = Column(Float, default=0)
     cost_lak = Column(Float, default=0)                         # giá vốn hàng xuất, LAK
+    # Người mua là CHỦ XE LIÊN KẾT và "trừ vào tiền trả chủ xe" (chủ dự án 23/09): không thu tiền mặt;
+    # đợt trả chủ xe kế tiếp tự trừ phiếu này, rồi ghi đợt đó vào owner_payment_id.
+    owner_id = Column(String, ForeignKey("owners.id"), index=True)
+    owner_payment_id = Column(String, ForeignKey("owner_payments.id"))
     note = Column(String)
     by_user = Column(String)
     created_at = Column(DateTime, nullable=False, default=bay_gio)

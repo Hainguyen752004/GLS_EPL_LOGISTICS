@@ -16,6 +16,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -53,7 +56,7 @@ def bang(a, b, ten, sai_so=1.0):
 
 
 def main():
-    for u in ("thabok", "ketoan", "ketoancp", "quyvc", "quytb", "doanhthu", "admin"):
+    for u in ("thabok", "ketoan", "ketoancp", "khonl", "quyvc", "quytb", "doanhthu", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
         if s != 200:
             raise SystemExit("Không đăng nhập được %s: %s" % (u, g))
@@ -71,13 +74,18 @@ def main():
 
     # ---------------------------------------------------------------- 1. tiền tệ trên phiếu
     # Phiếu GIAO phải lấy hàng từ một lô trong kho bãi (luồng hai DO), nên chọn lô còn hàng.
+    # lần chạy trước hỏng giữa đường thì phiếu thử còn giữ hàng của lô — dọn trước
+    s, cu = goi("/api/trips?q=THU-TIEN-01", vai="admin")
+    for x in [x for x in (cu or []) if x["doc_no"] == "THU-TIEN-01/EPL"]:
+        goi("/api/trips/%s/mo-khoa" % x["id"], {}, vai="admin"); goi("/api/trips/%s" % x["id"], vai="admin", method="DELETE")
+        print("  · đã dọn phiếu thử THU-TIEN-01/EPL sót lại")
     s, lo = goi("/api/kho-hang/lo", vai="thabok")
     con = [x for x in lo if (x.get("con_t") or 0) >= 5]
     if not con:
         raise SystemExit("DỪNG: kho bãi không còn lô nào đủ 5 tấn để thử — chạy lại seed.py --dung-lai")
     lo0 = con[0]
     TAN = 10.0 if (lo0["con_t"] or 0) >= 10 else round(lo0["con_t"], 2)
-    s, P = goi("/api/trips", {
+    s, P = Q.lap_phieu(goi, {
         "doc_no": "THU-TIEN-01/EPL", "kind": "giao", "doc_date": "2026-09-20", "out_date": "2026-09-20",
         "vehicle_id": xe[0]["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
         "route_id": tuyen[0]["id"], "goods_type": "iron_ore",

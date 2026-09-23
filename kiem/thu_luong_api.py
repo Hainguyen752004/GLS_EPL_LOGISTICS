@@ -16,6 +16,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q
 
 GOC = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010"
 TOKEN = {}
@@ -70,13 +73,15 @@ def main():
     # ---- 1. Bãi lập phiếu xe liên kết
     s, xe = goi("/api/vehicles", vai="thabok"); lk = next(x for x in xe if x["owner_type"] == "joint")
     s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
-    s, g = goi("/api/trips", {"doc_no": "THU-LUONG-01/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"],
+    # Bãi lập (số lượng) → KT VC nhập giá cước/giá thuê → người kiểm mục nhập đơn giá (kiem/_quy_trinh.py)
+    s, g = Q.lap_phieu(goi, {"doc_no": "THU-LUONG-01/EPL", "company": "joint", "vehicle_id": lk["id"], "driver_id": tx[0]["id"],
                               "customer_id": kh[0]["id"], "doc_date": "2026-09-14", "out_date": "2026-09-14", "origin": "ກາສີ", "destination": "ກາລໍ",
                               "weight_origin": 42, "price": 41, "price_ccy": "USD", "hire_price": 40.5, "hire_ccy": "USD", "odo_out": 1000,   # chủ xe mẫu ký thuê bằng Kíp; phiếu thử này thoả thuận USD nên ghi rõ
                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 100, "unit_price": 30000, "currency": "LAK", "place": "fp_yard"},
                                            {"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": 1833500},
                                            {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 430000, "paid_by_epl": False}]}, vai="thabok")
     phai(s, 200, "Bãi lập phiếu xe liên kết", g); P = g["id"]
+    s, g = goi("/api/trips/%s" % P, vai="thabok")
     assert g["plate_head"] == lk["plate_head"] and g["owner_name"] == lk["owner_name"], "phải chép biển số và chủ xe từ danh mục"
     # Bãi KHÔNG nhận tiền bán: máy chủ bỏ hẳn khoá, không phải giao diện che (nợ kỹ thuật 3.1).
     assert "price" not in g and "hire_price" not in g, "Bãi không được nhận đơn giá cước / giá thuê"
@@ -133,7 +138,7 @@ def main():
     s, g = goi("/api/trips/%s" % P, {"weight_origin": 43}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa mục II đã kiểm → bị khoá", g)
     s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "travel", "item_key": "x_food", "qty": 1, "unit_price": 1}]}, vai="thabok", method="PUT")
     phai(s, 409, "Bãi sửa dòng chi mục IV đã kiểm → bị khoá", g)
-    s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "other", "item_key": "x_misc", "qty": 1, "unit_price": 150000}]}, vai="thabok", method="PUT")
+    s, g = Q.sua_phieu(goi, P, {"expenses": [{"section": "other", "item_key": "x_misc", "qty": 1, "unit_price": 150000}]})
     phai(s, 200, "Bãi thêm dòng mục VI (chưa khoá) → được", g)
 
     # ---- 3. Ghi sổ & chi
@@ -211,7 +216,13 @@ def main():
     assert "tra_chu_xe" not in g["tinh"], "Bãi không được nhận số phải trả chủ xe"
     s, g = goi("/api/trips/%s" % P, vai="ketoan")
     chi = g["tinh"]["chi"]
-    assert chi["fuel"] == 100 * 30000 and chi["travel"] == 1833500 and chi["other"] == 150000, chi
+    # Dầu lấy từ KHO mang giá BÌNH QUÂN của kho lúc xuất (anh Khampla C5.3), không phải giá Bãi gõ.
+    dau = [e for e in g["expenses"] if e["section"] == "fuel"][0]
+    s, mv = goi("/api/fuel-moves", vai="khonl")
+    xuat = next(r for r in mv["rows"] if r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out")
+    assert dau["currency"] == "LAK" and abs(dau["unit_price"] - xuat["unit_cost_lak"]) < 0.01, (dau, xuat)
+    assert chi["fuel"] == round(100 * dau["unit_price"]) and chi["travel"] == 1833500 and chi["other"] == 150000, chi
+    print("  ✓ %-58s %s LAK/L" % ("dầu kho mang giá bình quân của kho lúc xuất", format(round(dau["unit_price"]), ",")))
     assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])
     ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]

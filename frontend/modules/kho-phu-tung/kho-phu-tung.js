@@ -20,6 +20,8 @@
       { id: 'move_date', label: 'c_date', type: 'date', value: EPL.homNay() },
       { id: 'qty', label: 'qty', type: 'number', value: '1' },
       ...(kind === 'out' ? [{ id: 'truck_no', label: 'truck_no', value: '' }, { id: 'trip_doc_no', label: 'trip_doc_no', value: '' }] : []),
+      // nhập có giá thì máy chủ tính lại giá bình quân (anh Khampla C5.3); để trống là giữ giá cũ
+      ...(kind === 'in' ? [{ id: 'unit_price', label: 'part_in_price', type: 'number', value: '', placeholder: `${NN.t('fuel_avg')}: ${so(p.unit_price || 0)} LAK` }] : []),
       { id: 'note', label: 'note', value: '' },
     ], NN.t(kind === 'in' ? 'fs_in' : 'fuel_out'));
     if (!v) return;

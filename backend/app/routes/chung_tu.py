@@ -144,3 +144,23 @@ def dat_cau_hinh(d: dict = Body(...), db: Session = Depends(get_db), user=Depend
             DK.dat_cau_hinh(db, k, str(d.get(k) or "").strip(), user)
     db.commit()
     return xem_cau_hinh(db, user)
+
+
+@router.post("/api/ke-toan/bo-sung-gia-von")
+def bo_sung_gia_von(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
+    """Tờ xuất kho bán (PXK_BAN) ghi TRƯỚC khi chốt mã giá vốn 607 (23/09) thiếu vế Nợ → sổ kế toán giữ nó
+    thành bút toán một vế. Điền mã giá vốn hiện hành vào các tờ đó rồi đẩy lại: sổ nhận ra cùng số tờ, cùng
+    số tiền, chỉ điền nốt vế còn thiếu vào bút toán cũ (không sinh bút toán thứ hai)."""
+    ma = DK.cau_hinh(db, "ma_gia_von") or CT.GIA_VON[0]
+    ds = db.query(ChungTu).filter(ChungTu.loai == "PXK_BAN", ChungTu.no.is_(None)).order_by(ChungTu.ngay).all()
+    ket = {"ma_gia_von": ma, "so_to": len(ds), "da_day": 0, "loi": []}
+    for c in ds:
+        c.no, c.no_ten = ma, CT.GIA_VON[1]
+        c.da_day = False
+        ok, tb = DK.day_mot(db, c, user)
+        if ok:
+            ket["da_day"] += 1
+        else:
+            ket["loi"].append({"so": c.so, "loi": tb})
+    db.commit()
+    return ket

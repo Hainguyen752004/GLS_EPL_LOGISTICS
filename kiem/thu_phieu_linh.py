@@ -63,7 +63,24 @@ for x in ds:
         p = x
         break
 if p is None:
-    raise SystemExit("Không còn phiếu nào có dòng dầu kho chưa xuất — gieo lại: python backend/app/seed.py --dung-lai")
+    # Không còn phiếu mẫu nào chưa xuất dầu: KHÔNG gieo lại (DB dùng chung với máy chủ của chủ dự án) —
+    # Bãi lập một phiếu thử của tài xế tx01: 60 lít lĩnh ở kho Thà Bốc + tiền ăn đi đường.
+    import time
+    _, dang = goi("/api/dang-nhap", {"username": "tx01", "password": "1234"})
+    _, xe = goi("/api/vehicles", tk=tk["thabok"]); _, kh = goi("/api/customers", tk=tk["thabok"])
+    _, dd0 = goi("/api/fuel-places", tk=tk["thabok"])
+    tb = next(x for x in dd0 if x.get("code") == "KHO-TB")
+    nha = next(x for x in xe if x["owner_type"] != "joint" and x.get("status") != "on_trip") if any(x["owner_type"] != "joint" and x.get("status") != "on_trip" for x in xe) else next(x for x in xe if x["owner_type"] != "joint")
+    ma, p = goi("/api/trips", {"doc_no": "THU-PL-%s/EPL" % time.strftime("%d%H%M%S"), "company": "EPL", "vehicle_id": nha["id"],
+                               "driver_id": dang["user"]["driver_id"], "customer_id": kh[0]["id"], "weight_origin": 40, "odo_out": 1000,
+                               "doc_date": time.strftime("%Y-%m-%d"), "out_date": time.strftime("%Y-%m-%d"),
+                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 60, "place_id": tb["id"], "paid_by_epl": True},
+                                            {"section": "travel", "item_key": "x_food", "qty": 2, "paid_by_epl": True}]}, tk["thabok"])
+    bao("Bãi lập phiếu thử (không có phiếu mẫu chưa xuất dầu)", ma, 200, p.get("doc_no", ""))
+    _, ctk = goi("/api/trips/" + p["id"], tk=tk["admin"])
+    d_an = [{"id": d["id"], "section": "travel", "unit_price": 100000, "currency": "LAK"} for d in ctk["expenses"] if d["section"] == "travel"]
+    ma, r = goi("/api/trips/" + p["id"], {"expenses": d_an}, tk["ketoancp"], "PUT")
+    bao("KT Chi phí nhập đơn giá tiền ăn", ma, 200)
 print("Phiếu thử: %s · %s · %s" % (p["doc_no"], p["truck_no"], p["driver_name"]))
 
 # 1. lập phiếu lĩnh nhiên liệu
@@ -106,10 +123,14 @@ bao("Thủ kho đúng kho cấp dầu", ma, 200, "trạng thái %s" % r["status"
 ma, r = goi("/api/vouchers/%s/cap" % pl["id"], {"qty": 1}, tk["khotb"])
 bao("Cấp lần hai → từ chối", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
 
-# 8. dòng chi đã mang số phiếu xuất kho
+# 8. dòng chi đã mang số phiếu xuất kho, và GIÁ BÌNH QUÂN của kho lúc cấp (anh Khampla C5.3)
 _, ct = goi("/api/trips/" + p["id"], tk=tk["admin"])
 dong_kho = [d for d in ct["expenses"] if d["section"] == "fuel" and d["source"] == "kho"]
 print("  OK  dòng dầu kho đã gắn phiếu xuất kho: %s" % all(d["stock_move_id"] for d in dong_kho))
+_, so_kho = goi("/api/fuel-moves", tk=tk["khonl"])
+mv = next(r for r in so_kho["rows"] if r["id"] == dong_kho[0]["stock_move_id"])
+assert mv["unit_cost_lak"] and all(abs(d["unit_price"] - mv["unit_cost_lak"]) < 0.01 and d["currency"] == "LAK" for d in dong_kho), (mv, dong_kho)
+print("  OK  dòng dầu mang giá bình quân kho lúc cấp: %s LAK/L" % format(round(mv["unit_cost_lak"]), ","))
 
 # 9. phiếu tạm ứng
 ma, v2 = goi("/api/trips/%s/vouchers" % p["id"], {"kind": "advance"}, tk["thabok"])
@@ -132,7 +153,7 @@ else:
 
 # 13. tài xế khai đổ dầu dọc đường ở Việt Nam
 _, dd = goi("/api/fuel-places", tk=tk["tx01"])
-vn = [x for x in dd if x["country"] == "VN"][0]
+vn = [x for x in dd if x["country"] == "VN" and x["owner_type"] != "epl"][0]   # trạm bán dầu, không phải "kho xe" của EPL
 _, ds_tx = goi("/api/trips", tk=tk["tx01"])
 px = next((x for x in ds_tx if x['finance_status'] != 'paid'), None)   # phiếu đã thu tiền xong thì không khai thêm
 if px:

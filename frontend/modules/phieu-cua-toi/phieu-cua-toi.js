@@ -93,7 +93,7 @@
       const lit = EPL.doc(q('#pct-d-lit').value);
       if (lit <= 0) return EPL.toast(NN.t('df_litres') + '?', 'loi');
       const body = { qty_l: lit, place_id: q('#pct-d-diem').value, currency: q('#pct-d-tt').value, note: q('#pct-d-ghi').value };
-      if (q('#pct-d-gia').value !== '') body.unit_price = EPL.doc(q('#pct-d-gia').value);
+      // C5.1 (anh Khampla 23/09): tài xế chỉ báo số lít và trạm; giá do KT kho xăng dầu nhập — không gửi giá
       try { await API.post(`/api/trips/${CHON.id}/bao-nhien-lieu`, body); EPL.toast(NN.t('saved'), 'ok'); await tai(); }
       catch (e) { EPL.baoLoi(e); }
     });

@@ -34,7 +34,7 @@ NHOM = {
     "PC_TU": "payment", "PC_SC": "payment", "PC_NCC": "payment", "PC_CX": "payment", "TT_CHI": "payment",
     "PNK_NL": "stock_in", "PNK_PT": "stock_in", "PNK_HH": "stock_in",
     "PXK_NL": "stock_out", "PXK_PT": "stock_out", "PXK_HH": "stock_out", "PXK_BAN": "stock_out",
-    "DC_HH": "stock_adjust",
+    "DC_HH": "stock_adjust", "CK_NL": "stock_transfer",
     "HD": "invoice", "HD_BAN": "invoice",
 }
 

@@ -30,6 +30,9 @@ LOAI = {
     "PXK_PT": ("Phiếu xuất kho phụ tùng", "ໃບເບີກອະໄຫຼ່ອອກສາງ", True),
     "PNK_NL": ("Phiếu nhập kho nhiên liệu", "ໃບຮັບນໍ້າມັນເຂົ້າສາງ", True),
     "PNK_PT": ("Phiếu nhập kho phụ tùng", "ໃບຮັບອະໄຫຼ່ເຂົ້າສາງ", True),
+    # Chuyển dầu giữa hai kho của EPL (anh Khampla A3): tài sản vẫn nằm trong 1371 nên KHÔNG có định khoản —
+    # tờ này để bên kế toán biết dầu đã đổi chỗ, không sinh bút toán.
+    "CK_NL":  ("Phiếu chuyển kho nhiên liệu", "ໃບໂອນນໍ້າມັນລະຫວ່າງສາງ", False),
     # Hàng (quặng) nằm bãi giữa hai chặng: DO gom về thì nhập kho, DO giao lấy đi thì xuất kho.
     "PNK_HH": ("Phiếu nhập kho hàng", "ໃບຮັບສິນຄ້າເຂົ້າສາງ", True),
     "PXK_HH": ("Phiếu xuất kho hàng", "ໃບເບີກສິນຄ້າອອກສາງ", True),
@@ -53,9 +56,11 @@ LOAI = {
 #   tiền mặt Kíp 1011 · tiền mặt ngoại tệ 1012 · ngân hàng Kíp 1021 · ngân hàng ngoại tệ 1022
 # Ghi sổ theo MÃ CON vì đó là cấp hạch toán; mã mẹ chỉ để cộng dồn. Anh Khang muốn khác thì đổi ở đây.
 KHO = ("1371", "Kho hàng, vật tư (137 · 1371)")
-# Hai mã bên kế toán anh Khang CHƯA cấp — vế mang tên nhưng mã None cho tới khi Sếp điền ở cấu hình.
+# Mã hàng khách gửi: bên kế toán CHƯA cấp — vế mang tên nhưng mã None cho tới khi Sếp điền ở cấu hình.
 HANG_GUI = (None, "Hàng khách gửi giữ hộ — ngoài bảng (mã do bên kế toán cấp)")
-GIA_VON = (None, "Giá vốn hàng bán (mã do bên kế toán cấp)")
+# Giá vốn hàng bán: chủ dự án chốt 607 ngày 23/09 (sá-la-ban Lào: 607 giá vốn hàng bán). Cấu hình `ma_gia_von`
+# vẫn đổi được nếu anh Khang cấp mã khác.
+GIA_VON = ("607", "Giá vốn hàng bán")
 NCC = ("4021", "Phải trả nhà cung cấp (402 · 4021, tách theo nhà cung cấp)")
 MA_TIEN = {
     ("cash", True): ("1011", "Tiền mặt bằng Kíp"),
@@ -123,7 +128,7 @@ def _dien_ma_cau_hinh(db, loai, no, co):
             if loai != "PNK_HH" and co is None: co = ma
     elif loai == "PXK_BAN":
         ma = cau_hinh(db, "ma_gia_von")
-        if ma and no is None:
+        if ma:
             no = ma
     return no, co
 
@@ -167,6 +172,9 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
     no, no_ten, co, co_ten = (dinh_khoan(loai, cty, section, tien_te, phuong_thuc) if LOAI[loai][2]
                               else (None, None, None, None))
     no, co = _dien_ma_cau_hinh(db, loai, no, co)
+    if loai == "HD_BAN" and doi_tuong_loai == "chu_xe":
+        # chủ xe mua ở quầy, trừ vào tiền trả: không phải khách nợ 1211 mà là GIẢM khoản phải trả chủ xe
+        no, no_ten = "4022", "Phải trả chủ xe liên kết (trừ vào tiền trả)"
     thuoc_tinh = dict(loai=loai, ngay=ngay,
                       trip_id=trip.id if trip is not None else None,
                       trip_doc_no=trip.doc_no if trip is not None else None,

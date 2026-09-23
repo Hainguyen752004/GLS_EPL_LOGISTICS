@@ -650,3 +650,49 @@ sổ", 89 mã như 10, 70) để không chọn nhầm.
 `1371` (kho), `4021` (phải trả NCC), `4022` (chủ xe liên kết); còn `70` là mã tổng không ghi sổ được.
 Danh mục thật có `137` (hàng hoá tồn kho), `401` / `402` (phải trả NCC hàng hoá / dịch vụ), `717`
 (doanh thu vận chuyển). Máy **không tự đổi** mã — chờ bên kế toán chốt.
+
+---
+
+## Cập nhật 23/09/2026 (chiều) — theo câu trả lời của anh Khampla (`DOCS/word/ຄຳຖາມວິຊາການ_EPL.docx`)
+
+Kế hoạch và bảng "cái gì đã có sẵn": `DOCS/md/KE_HOACH_24_09_KHAMPLA.md`.
+
+**1. Bãi không thấy tiền, không nhập giá (A2 · C4.1 · C5.1).**
+
+| | Bãi (`yard`) | Tài xế (`driver`) | Người kiểm mục (`fuel` III · `expacct` IV–VI) |
+|---|---|---|---|
+| Thấy đơn giá, thành tiền, tổng chi, tỷ giá, mã TK dòng chi | Không (máy chủ bỏ hẳn khoá — `_bo_tien_chi`) | Có (biết mình cầm bao nhiêu tạm ứng) | Có |
+| Nhập đơn giá dòng chi | Không — giá gửi lên bị bỏ qua, dòng cũ giữ giá kế toán | Không — khai đổ dầu chỉ số lít (C5.1) | **Có**, khi mục còn "chờ / đã nhập", bằng `PUT /api/trips/{id}` gửi `expenses:[{id, unit_price, currency}]` — chỉ giá, không thêm / xoá dòng (`CHI_SUA_GIA`) |
+| Giá cước, giá thuê xe, phí, ngưỡng tấn | Không gửi được (`403`) — KT Viêng Chăn nhập | — | KT Thu/Chi VC (`acct`) |
+
+Chặn **dòng giá 0** (`THIEU_DON_GIA`) chuyển từ lúc Bãi *gửi kiểm* sang lúc kế toán **kiểm**. Phí cầu đường
+theo tuyến vẫn tự điền giá. Màn Theo dõi, Theo dõi tuyến, Tổng quan của Bãi ẩn các cột / ô tiền chi (lớp CSS
+`tien-chi`), và máy chủ không gửi số đó.
+
+**2. Giá vốn BÌNH QUÂN (C5.3) + mã giá vốn 607.** `services/gia_von.py`: dầu bình quân gia quyền **theo từng
+kho**, tính theo thứ tự sổ kho; giá nhập VND/THB/USD quy LAK theo tỷ giá **lúc nhập** (`fuel_moves.unit_cost_lak`);
+xuất lấy ra theo bình quân hiện hành. Phụ tùng: `parts.unit_price` tính lại mỗi lần nhập có giá. Áp cho: xuất
+dầu theo phiếu, phiếu lĩnh, bán hàng, sổ kho. Dòng dầu lấy từ kho **không ai gõ giá** — máy đặt. PXK_BAN ghi
+**Nợ 607 / Có 1371** (cấu hình `ma_gia_von` vẫn đổi được). Tờ PXK_BAN cũ thiếu vế: `POST /api/ke-toan/bo-sung-gia-von`
+(Sếp) điền 607 và đẩy lại; EPL_KETOAN điền nốt vế vào **chính** bút toán cũ.
+
+**3. Sổ kho dầu theo từng kho + phiếu chuyển kho (C5.2 · A3).** `GET /api/fuel-moves?place_id=` trả `kho[]`
+(tồn + bình quân từng kho). `POST /api/fuel-transfers {from_place_id, to_place_id, qty_l}` → hai dòng sổ kho
+cùng số `CK-YYMM-###`, tờ `CK_NL` không định khoản (tài sản vẫn ở 1371). Xoá một dòng là xoá cả phiếu chuyển.
+Thêm **kho xe `KHO-XE-VN`**: dầu mua Việt Nam nhập vào đây (NCC, số đơn mua, VND, tỷ giá) → phiếu xuất xe
+lấy từ kho này → phần dư chuyển về Thà Bốc. Nhập / xuất tay / chuyển kho: `fuel`, `acct` (Bãi chỉ xem số lít).
+Xuất quá tồn của đúng kho bị chặn (`KHONG_DU`) — trước đây kho âm mà không ai biết.
+
+**4. Chủ xe mua ở quầy → trừ vào tiền trả chủ xe.** `POST /api/ban-hang` nhận `owner_id`: không thu tiền mặt
+(`TRU_CHU_XE`), HD_BAN ghi **Nợ 4022 / Có 70**. Mỗi đợt trả chủ xe (`tra_nhieu_phieu`, dùng cho cả trả lẻ lẫn gộp)
+tự trừ các phiếu bán chờ trừ của chủ đó (cũ trước, phiếu không vừa thì để đợt sau); `owner_payments.gross`,
+`sales_deducted`, `amount` = thực chi; PC_CX = số thực chi. Ví dụ bộ kiểm: 2.777,10 − 13,64 (300.000 LAK) = 2.763,46 USD.
+
+**Không phải làm (đã có):** mã tiền 1011/1012/1021/1022, 7 kho dầu, lệnh sửa chữa riêng (C7.3), phí theo từng
+chủ xe (C4.2), trả từng phiếu / gộp / theo đợt (C4.3), tách chặng gom → kho → giao (`thu_hai_do.py`).
+
+**Còn phải hỏi anh Khampla:** Bãi nhập "chi phí dọc đường" có được thấy **số tiền** không (A2 vừa nói nhập,
+vừa nói không thấy số tiền) — tạm thời làm theo "không thấy". **Anh Khang** cần thêm hai mã con `1371`, `4021`
+vào danh mục (anh Khampla xác nhận đó là mã con của 137 / 402).
+
+Bộ kiểm mới: `kiem/thu_kho_xe_23_09.py`; `kiem/_quy_trinh.py` (Bãi lập không tiền → kế toán nhập giá) dùng chung.

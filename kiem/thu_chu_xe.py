@@ -134,6 +134,21 @@ def main():
     tong_usd = round(sum(p["tra_chu_xe"] for p in cn["cho_tra"]), 2)
     print("  ✓ %-60s %s USD" % ("2 phiếu chờ trả, tổng", tong_usd))
 
+    # ---------------------------------------------------------------- 3b. chủ xe mua ở QUẦY → trừ vào tiền trả (chủ dự án 23/09)
+    # "deal 1tr6, mua xăng 3 trăm → trả 1tr3": chủ xe mua 10 lít dầu 30.000 LAK/L = 300.000 LAK, không trả tiền mặt.
+    s, dd = goi("/api/fuel-places", vai="ketoan"); kho_tb = next(x for x in dd if x.get("code") == "KHO-TB")
+    s, ban = goi("/api/ban-hang", {"sale_date": "2026-09-19", "owner_id": chu["id"], "currency": "LAK", "note": "thử: chủ xe mua dầu ở quầy",
+                                   "lines": [{"item_type": "fuel", "place_id": kho_tb["id"], "qty": 10, "unit_price": 30000}]}, vai="ketoan")
+    phai(s, 200, "Chủ xe mua 10 lít dầu ở quầy (300.000 LAK, trừ vào tiền trả)", ban)
+    assert ban["owner_id"] == chu["id"] and ban["customer_id"] is None and ban["total_lak"] == 300000, ban
+    s, g = goi("/api/ban-hang/%s/thu" % ban["id"], {}, vai="quytb"); phai(s, 409, "Thu tiền mặt phiếu trừ chủ xe → bị từ chối", g)
+    s, ct = goi("/api/chung-tu?loai=HD_BAN", vai="ketoan")
+    hd = [c for c in ct["ds"] if (c["payload"] or {}).get("doc_no") == ban["doc_no"]]
+    assert hd and hd[0]["no"] == "4022" and hd[0]["co"] == "70", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 70: %s" % hd
+    print("  ✓ %-60s Nợ %s / Có %s" % ("hoá đơn bán cho chủ xe không thành nợ khách", hd[0]["no"], hd[0]["co"]))
+    s, cn = goi("/api/owners/%s/cong-no" % chu["id"], vai="quytb")
+    assert [b["doc_no"] for b in cn["ban_cho_tru"]] == [ban["doc_no"]] and cn["tong"]["ban_cho_tru_lak"] == 300000, cn["tong"]
+    print("  ✓ %-60s %s LAK" % ("công nợ chủ xe hiện phiếu bán chờ trừ", format(cn["tong"]["ban_cho_tru_lak"], ",")))
     ids = [p["id"] for p in cn["cho_tra"]]
     s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": ids}, vai="ketoan"); phai(s, 403, "Kế toán trả tiền → bị từ chối (quỹ chi)", g)
     s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": []}, vai="quytb"); phai(s, 422, "Trả mà không chọn phiếu → bị từ chối", g)
@@ -141,13 +156,19 @@ def main():
     phai(s, 200, "Quỹ trả GỘP hai phiếu một lần (chuyển khoản)", g)
     assert g["tong"]["so_phieu"] == 0 and len(g["da_tra"]) == 1, "sau trả gộp: 0 phiếu chờ, 1 đợt đã trả: %s" % g["tong"]
     dot = g["da_tra"][0]
-    assert abs(dot["amount"] - tong_usd) < 0.01 and dot["currency"] == "USD" and sorted(dot["phieu"]) == sorted(p["doc_no"] for p in phieu), \
-        "đợt trả phải đúng tổng và đủ hai phiếu: %s" % dot
-    print("  ✓ %-60s %s %s · %d phiếu" % ("đợt trả ghi đúng", dot["amount"], dot["currency"], len(dot["phieu"])))
+    tru = round(300000 / 22000, 2)                    # 300.000 LAK quy về USD theo tỷ giá trên phiếu
+    assert abs(dot["gross"] - tong_usd) < 0.01 and abs(dot["sales_deducted"] - tru) < 0.01 and abs(dot["amount"] - (tong_usd - tru)) < 0.02 \
+        and dot["currency"] == "USD" and sorted(dot["phieu"]) == sorted(p["doc_no"] for p in phieu) and dot["ban"] == [ban["doc_no"]], \
+        "đợt trả = tổng phiếu − hàng mua ở quầy, đủ hai phiếu và phiếu bán: %s" % dot
+    print("  ✓ %-60s %s − %s = %s %s" % ("đợt trả TRỪ hàng mua ở quầy", dot["gross"], dot["sales_deducted"], dot["amount"], dot["currency"]))
+    s, b2 = goi("/api/ban-hang/%s" % ban["id"], vai="ketoan")
+    assert b2["status"] == "offset" and b2["owner_payment_id"] == dot["id"], "phiếu bán phải đánh đã trừ, trỏ về đợt: %s" % b2
+    s, g = goi("/api/ban-hang/%s" % ban["id"], vai="ketoan", method="DELETE"); phai(s, 409, "Bỏ phiếu bán đã trừ → bị từ chối", g)
 
     s, ct = goi("/api/chung-tu?loai=PC_CX&limit=20", vai="ketoan")
     to = [c for c in ct["ds"] if c["nguon_bang"] == "owner_payments" and c["nguon_id"] == dot["id"]]
     assert len(to) == 1 and to[0]["co"] == "1022", "một đợt → MỘT tờ PC_CX, vế Có ngân hàng ngoại tệ 1022: %s" % to
+    assert abs(to[0]["tien"] - dot["amount"]) < 0.01, "PC_CX là số THỰC CHI sau khi trừ: %s ≠ %s" % (to[0]["tien"], dot["amount"])
     print("  ✓ %-60s %s · Nợ %s / Có %s" % ("một tờ PC_CX cho cả đợt", to[0]["so"], to[0]["no"], to[0]["co"]))
 
     for P in phieu:

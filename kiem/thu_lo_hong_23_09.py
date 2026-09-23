@@ -3,7 +3,8 @@
 
     python kiem/thu_lo_hong_23_09.py [http://127.0.0.1:8011]
 
-  1. Bãi gửi kiểm mục có dòng EPL trả mà ĐƠN GIÁ 0 → bị chặn (THIEU_DON_GIA), câu lỗi chỉ đúng dòng.
+  1. Mục có dòng EPL trả mà ĐƠN GIÁ 0: Bãi GỬI được (Bãi không nhập giá — anh Khampla A2, 23/09), nhưng
+     KT Chi phí KIỂM thì bị chặn (THIEU_DON_GIA) tới khi chính KT Chi phí nhập đơn giá.
   2. Bãi bấm "Xe đã tới" khi mục IV chưa chi tạm ứng → bị chặn (CHUA_NHAN_TAM_UNG), giống cửa Xuất phát.
   3. Quỹ chi THẲNG mục IV → sinh đúng MỘT tờ PC_TU bằng tiền mặt đi đường (không tính dòng trả bằng thẻ).
   4. Danh mục Acc code đọc được từ API bên công nợ (không còn "bản tạm từ Excel").
@@ -55,17 +56,27 @@ def main():
     phai(s, 200, "Bãi lập phiếu thử có dòng đi đường giá 0", p)
     P = p["id"]
 
-    # ---- 1. dòng giá 0 → chặn gửi kiểm
-    s, g = goi("/api/trips/%s/sections/travel/send" % P, {}, vai="thabok"); phai(s, 409, "Gửi kiểm mục IV có dòng giá 0 → bị chặn", g)
+    # ---- 1. dòng giá 0: Bãi gửi được, KT Chi phí kiểm thì bị chặn tới khi nhập giá
+    s, g = goi("/api/trips/%s" % P, vai="thabok")
+    assert all("unit_price" not in d for d in g["expenses"]) and "rate_usd" not in g and "chi" not in g["tinh"],         "gói trả cho Bãi không được có đơn giá, tỷ giá, tổng chi"
+    print("  ✓ %-62s" % "Bãi mở phiếu: không có đơn giá, tỷ giá, tổng chi")
+    s, g = goi("/api/trips/%s/sections/travel/send" % P, {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục IV (chưa có giá) → được", g)
+    s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 409, "KT Chi phí kiểm mục IV có dòng giá 0 → bị chặn", g)
     assert g["detail"]["ma"] == "THIEU_DON_GIA" and "dòng" in g["detail"]["loi"], g
-    print("     câu lỗi Bãi thấy: «%s»" % g["detail"]["loi"])
-    s, full = goi("/api/trips/%s" % P, vai="thabok")
-    dong = [d for d in full["expenses"] if d["section"] == "travel"]
-    for d in dong:
-        if not d.get("unit_price"):
-            d["unit_price"] = 150000
-    s, g = goi("/api/trips/%s" % P, {"expenses": full["expenses"]}, vai="thabok", method="PUT"); phai(s, 200, "Bãi điền đơn giá 150.000", g)
-    s, g = goi("/api/trips/%s/sections/travel/send" % P, {}, vai="thabok"); phai(s, 200, "Gửi kiểm lại mục IV → được", g)
+    print("     câu lỗi KT Chi phí thấy: «%s»" % g["detail"]["loi"])
+    s, full = goi("/api/trips/%s" % P, vai="ketoancp")
+    dong = [{"id": d["id"], "section": "travel", "unit_price": 150000, "currency": "LAK"} for d in full["expenses"] if d["section"] == "travel" and not d.get("unit_price")]
+    s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "travel", "item_key": "x_food", "qty": 1}]}, vai="ketoancp", method="PUT")
+    phai(s, 409, "KT Chi phí thêm dòng mới → bị từ chối (chỉ nhập giá)", g)
+    s, g = goi("/api/trips/%s" % P, {"expenses": dong}, vai="ketoancp", method="PUT"); phai(s, 200, "KT Chi phí nhập đơn giá 150.000", g)
+    # Bãi lưu lại phiếu như màn hình thật: gửi đủ dòng của mình (không có giá) — kèm thử một giá 999 gõ lén
+    s, cua_bai = goi("/api/trips/%s" % P, vai="thabok")
+    gui = [dict(d, unit_price=999) for d in cua_bai["expenses"] if d["section"] == "travel"]
+    s, g = goi("/api/trips/%s" % P, {"expenses": gui}, vai="thabok", method="PUT"); phai(s, 200, "Bãi lưu lại mục IV (đã nhập)", g)
+    s, g2 = goi("/api/trips/%s" % P, vai="ketoancp")
+    an = [d for d in g2["expenses"] if d["section"] == "travel" and d["item_key"] == "x_food"]
+    assert an and all(d["unit_price"] == 150000 and d["qty"] == 2 for d in an),         "Bãi gửi giá 999 → máy chủ phải bỏ qua, giữ giá kế toán và số lượng: %s" % an
+    print("  ✓ %-62s" % "Bãi gửi giá 999 khi mục đã nhập → bị bỏ qua, giữ 150.000")
 
     # ---- 2. "Xe đã tới" khi chưa chi tạm ứng → chặn
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 39.8}, vai="thabok")
@@ -75,7 +86,7 @@ def main():
     phai(s, 409, "Xuất phát khi chưa chi → vẫn bị chặn như trước", g)
 
     # ---- 3. chi thẳng mục IV → sinh đúng một PC_TU
-    s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí kiểm mục IV", g)
+    s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí kiểm mục IV (đã có giá)", g)
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí ghi sổ mục IV", g)
     s, truoc = goi("/api/chung-tu?trip_id=%s&loai=PC_TU" % P, vai="ketoan"); n0 = len(truoc["ds"])
     s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 200, "Tiền mặt lẻ chi thẳng mục IV", g)
@@ -107,7 +118,7 @@ def main():
     thieu = [m for m in ("1371", "4021", "4022") if m not in ma]
     print("  ✓ %-62s %s mã · nguồn %s" % ("Danh mục đọc từ API bên công nợ", g["count"], g["source"]))
     print("     mã đang in trên phiếu mà danh mục thật không có: %s" % (thieu or "không"))
-    print("\n✅ LỖ HỔNG 23/09: dòng giá 0 bị chặn lúc gửi kiểm · Xe đã tới qua cửa tạm ứng · chi thẳng mục IV có phiếu chi ·"
+    print("\n✅ LỖ HỔNG 23/09: dòng giá 0 bị chặn lúc kế toán kiểm (Bãi không nhập giá) · Xe đã tới qua cửa tạm ứng · chi thẳng mục IV có phiếu chi ·"
           " danh mục mã kế toán thật (%d mã)." % g["count"])
 
 

@@ -13,8 +13,11 @@
   <div class="bd">
     <div class="f-grid">
       <div class="field"><label data-i18n="c_date"></label><input type="date" id="bh-ngay"></div>
-      <div class="field"><label data-i18n="customer"></label><select id="bh-khach"><option value=""></option></select></div>
-      <div class="field"><label data-i18n="sale_customer_free"></label><input id="bh-khach-ten" lang="lo"></div>
+      <div class="field"><label data-i18n="sale_buyer"></label><select id="bh-loai-mua"><option value="kh" data-i18n="sale_buyer_kh"></option><option value="cx" data-i18n="sale_buyer_cx"></option></select></div>
+      <div class="field bh-o-cx" hidden><label data-i18n="owner"></label><select id="bh-chu-xe"><option value=""></option></select></div>
+      <div class="field bh-o-kh"><label data-i18n="customer"></label><select id="bh-khach"><option value=""></option></select></div>
+      <div class="field bh-o-kh"><label data-i18n="sale_customer_free"></label><input id="bh-khach-ten" lang="lo"></div>
+      <p class="small muted bh-o-cx" hidden style="grid-column:1/-1" data-i18n="sale_cx_hint"></p>
       <div class="field"><label data-i18n="cur"></label><select id="bh-tien-te"><option>LAK</option><option>USD</option><option>THB</option><option>VND</option></select></div>
       <div class="field" style="grid-column:span 2"><label data-i18n="note"></label><input id="bh-ghi-chu" lang="lo"></div>
     </div>

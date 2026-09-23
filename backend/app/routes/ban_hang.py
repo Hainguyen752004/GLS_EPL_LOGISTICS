@@ -14,8 +14,9 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Sale, SaleLine
+from models import Customer, ExchangeRate, FuelMove, FuelPlace, Owner, Part, PartMove, Sale, SaleLine
 from services import chung_tu as CT
+from services import gia_von as GV
 from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
@@ -70,16 +71,15 @@ def _ty_gia(db, ma):
 
 
 def _gia_von_dau(db, place_id=None):
-    """Giá vốn dầu = đơn giá lần nhập gần nhất (họ không tính bình quân)."""
-    q = db.query(FuelMove).filter(FuelMove.kind == "in", FuelMove.unit_price.isnot(None))
-    m = q.order_by(FuelMove.move_date.desc(), FuelMove.id.desc()).first()
-    return m.unit_price if m else 0
+    """Giá vốn dầu = giá BÌNH QUÂN của đúng kho xuất (anh Khampla C5.3, 23/09)."""
+    return GV.gia_bq_dau(db, place_id)
 
 
 def xuat(db, s):
     dong = db.query(SaleLine).filter(SaleLine.sale_id == s.id).order_by(SaleLine.line_no).all()
     return {"id": s.id, "doc_no": s.doc_no, "sale_date": s.sale_date.isoformat() if s.sale_date else None,
             "customer_id": s.customer_id, "customer_name": s.customer_name, "currency": s.currency,
+            "owner_id": s.owner_id, "owner_payment_id": s.owner_payment_id,
             "rate_to_lak": s.rate_to_lak, "status": s.status, "total": s.total, "total_lak": s.total_lak,
             "cost_lak": s.cost_lak, "note": s.note, "by_user": s.by_user,
             "created_at": s.created_at.isoformat() if s.created_at else None,
@@ -102,7 +102,8 @@ def ds_ban_hang(thang: str = "", db: Session = Depends(get_db), user=Depends(can
         q = q.filter(Sale.sale_date >= dau, Sale.sale_date < cuoi)
     ds = [xuat(db, s) for s in q.order_by(Sale.sale_date.desc(), Sale.doc_no.desc()).all()]
     return {"ds": ds, "tong_lak": round(sum(s["total_lak"] or 0 for s in ds)),
-            "chua_thu_lak": round(sum(s["total_lak"] or 0 for s in ds if s["status"] != "paid"))}
+            "chua_thu_lak": round(sum(s["total_lak"] or 0 for s in ds if s["status"] == "issued" and not s["owner_id"])),
+            "cho_tru_chu_xe_lak": round(sum(s["total_lak"] or 0 for s in ds if s["status"] == "issued" and s["owner_id"]))}
 
 
 @router.get("/api/ban-hang/{sid}")
@@ -120,7 +121,12 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
     if tien_te not in TIEN_TE:
         raise HTTPException(422, {"ma": "TIEN_TE_SAI", "loi": "Tiền tệ phải là %s." % ", ".join(TIEN_TE)})
     kh = db.get(Customer, d.get("customer_id") or "") if d.get("customer_id") else None
-    ten_kh = (kh.name if kh else str(d.get("customer_name") or "").strip())
+    chu = db.get(Owner, d.get("owner_id") or "") if d.get("owner_id") else None
+    if d.get("owner_id") and not chu:
+        raise HTTPException(422, {"ma": "CHU_XE_SAI", "loi": "Không có chủ xe này."})
+    if chu:
+        kh = None                                  # người mua là chủ xe: trừ vào tiền trả, không thành nợ khách
+    ten_kh = (chu.name if chu else kh.name if kh else str(d.get("customer_name") or "").strip())
     if not ten_kh:
         raise HTTPException(422, {"ma": "THIEU_KHACH", "loi": "Phải chọn khách hoặc ghi tên người mua."})
     dong_vao = [x for x in (d.get("lines") or []) if x]
@@ -129,6 +135,7 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
 
     ty_gia = _ty_gia(db, tien_te)
     s = Sale(doc_no=_so_phieu_moi(db, ngay), sale_date=ngay, customer_id=kh.id if kh else None, customer_name=ten_kh,
+             owner_id=chu.id if chu else None,
              currency=tien_te, rate_to_lak=ty_gia, status="issued", note=(d.get("note") or None), by_user=user.full_name)
     db.add(s); db.flush()
 
@@ -147,7 +154,7 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
             if (pt.qty or 0) < qty:
                 raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Kho chỉ còn %s %s, không đủ bán %s." % (pt.qty, pt.name, qty)})
             mv = PartMove(part_id=pt.id, move_date=ngay, kind="out", qty=qty, note="Bán · %s · %s" % (s.doc_no, ten_kh),
-                          by_user=user.full_name)
+                          by_user=user.full_name, unit_price=pt.unit_price)
             pt.qty = (pt.qty or 0) - qty; pt.last_date = ngay
             db.add(mv); db.flush()
             dong.part_id, dong.name, dong.unit, dong.stock_move_id = pt.id, pt.name, pt.unit, mv.id
@@ -156,12 +163,17 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
             diem = db.get(FuelPlace, x.get("place_id") or "") if x.get("place_id") else None
             if diem and diem.owner_type != "epl":
                 raise HTTPException(422, {"ma": "KHONG_PHAI_KHO", "loi": "Dòng %d: chỉ bán dầu từ kho của EPL." % i})
+            kho = diem.id if diem else GV.kho_goc(db)
+            lit, von_bq = GV.ton_dau(db, kho)
+            if qty > lit + 0.001:
+                raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Dòng %d: kho chỉ còn %s lít, không đủ bán %s lít." % (i, lit, qty)})
+            # sổ kho ghi GIÁ VỐN (bình quân của kho), không ghi giá bán — giá bán nằm trên dòng phiếu bán
             mv = FuelMove(move_date=ngay, doc_no=s.doc_no, kind="out", truck_no=None, qty_l=qty,
-                          unit_price=gia, currency=tien_te, place_id=diem.id if diem else None,
+                          unit_price=von_bq, currency="LAK", unit_cost_lak=von_bq, place_id=kho,
                           note="Bán dầu · %s" % ten_kh, by_user=user.full_name)
             db.add(mv); db.flush()
-            dong.place_id, dong.name, dong.unit, dong.stock_move_id = (diem.id if diem else None), "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", mv.id
-            dong.cost_lak = round(qty * _gia_von_dau(db))
+            dong.place_id, dong.name, dong.unit, dong.stock_move_id = kho, "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", mv.id
+            dong.cost_lak = round(qty * von_bq)
         else:
             raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Dòng %d: loại hàng phải là part hoặc fuel." % i})
         db.add(dong)
@@ -170,12 +182,14 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
                          "part_id": dong.part_id, "place_id": dong.place_id, "cost_lak": dong.cost_lak})
     s.total, s.total_lak, s.cost_lak = round(tong, 2), round(tong * ty_gia), round(von)
     db.flush()
-    CT.ghi(db, "PXK_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai="khach", doi_tuong_ten=ten_kh,
+    dt_loai = "chu_xe" if chu else "khach"
+    CT.ghi(db, "PXK_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
            tien=s.cost_lak, tien_te="LAK", by_user=user.full_name, mo_ta="Xuất kho bán hàng %s (giá vốn)" % s.doc_no,
            payload={"doc_no": s.doc_no, "lines": chi_tiet})
-    CT.ghi(db, "HD_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai="khach", doi_tuong_ten=ten_kh,
+    CT.ghi(db, "HD_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
            tien=s.total, tien_te=tien_te, tien_lak=s.total_lak, by_user=user.full_name,
-           mo_ta="Hoá đơn bán hàng %s · %s" % (s.doc_no, ten_kh), payload={"doc_no": s.doc_no, "rate_to_lak": ty_gia, "lines": chi_tiet})
+           mo_ta="Hoá đơn bán hàng %s · %s%s" % (s.doc_no, ten_kh, " (trừ vào tiền trả chủ xe)" if chu else ""),
+           payload={"doc_no": s.doc_no, "rate_to_lak": ty_gia, "lines": chi_tiet, "owner_id": chu.id if chu else None})
     db.commit()
     return xuat(db, s)
 
@@ -187,6 +201,8 @@ def thu_tien_ban(sid: str, d: dict = Body(default={}), db: Session = Depends(get
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu bán này."})
     if s.status == "paid":
         raise HTTPException(409, {"ma": "DA_THU", "loi": "Phiếu %s đã thu tiền rồi." % s.doc_no})
+    if s.owner_id:
+        raise HTTPException(409, {"ma": "TRU_CHU_XE", "loi": "Phiếu %s trừ vào tiền trả chủ xe, không thu tiền mặt." % s.doc_no})
     s.status, s.paid_at, s.paid_by = "paid", dt.datetime.utcnow(), user.full_name
     CT.ghi(db, "PT_BAN", nguon_bang="sales", nguon_id=s.id, ngay=_ngay(d.get("pay_date")), doi_tuong_loai="khach", phuong_thuc="cash",
            doi_tuong_ten=s.customer_name, tien=s.total, tien_te=s.currency, tien_lak=s.total_lak, by_user=user.full_name,
@@ -203,6 +219,8 @@ def bo_phieu_ban(sid: str, db: Session = Depends(get_db), user=Depends(can_vai(*
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu bán này."})
     if s.status == "paid":
         raise HTTPException(409, {"ma": "DA_THU", "loi": "Đã thu tiền thì không bỏ phiếu được."})
+    if s.owner_payment_id:
+        raise HTTPException(409, {"ma": "DA_TRU", "loi": "Phiếu đã trừ vào một đợt trả chủ xe, không bỏ được."})
     for dong in db.query(SaleLine).filter(SaleLine.sale_id == s.id).all():
         if dong.item_type == "part" and dong.stock_move_id:
             mv = db.get(PartMove, dong.stock_move_id)

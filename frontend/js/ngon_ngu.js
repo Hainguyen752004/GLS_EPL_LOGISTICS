@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1412 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1434 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -113,9 +113,9 @@ window.EPL_TU_DIEN = {
   "en": "Supplier tracking<span class=\"sub\">Payables settled in instalments</span>"
  },
  "title_fuel": {
-  "vi": "Kho nhiên liệu<span class=\"sub\">Kho Thà Bốc · Nhập – xuất – tồn</span>",
-  "lo": "ສາງນໍ້າມັນ<span class=\"sub\">ສາງທ່າບົກ · ຮັບ – ເບີກ – ຄົງເຫຼືອ</span>",
-  "en": "Fuel store<span class=\"sub\">Thabok store · In – Out – Balance</span>"
+  "vi": "Kho nhiên liệu<span class=\"sub\">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>",
+  "lo": "ສາງນໍ້າມັນ<span class=\"sub\">ຕາມແຕ່ລະສາງ · ນຳເຂົ້າ – ເບີກອອກ – ໂອນສາງ – ຄົງເຫຼືອ</span>",
+  "en": "Fuel store<span class=\"sub\">By store · In – Out – Transfer – Balance</span>"
  },
  "title_parts": {
   "vi": "Kho phụ tùng<span class=\"sub\">Tồn kho & xuất theo xe</span>",
@@ -1473,9 +1473,9 @@ window.EPL_TU_DIEN = {
   "en": "View only"
  },
  "hint_yard": {
-  "vi": "Anh/chị đang nhập với vai trò <b>Admin Thà Bốc</b>: được nhập mục I–VI. Kế toán và quỹ chỉ xem.",
-  "lo": "ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ແອັດມິນ ທ່າບົກ</b>: ລົງໄດ້ໜ້າ I–VI. ບັນຊີ ແລະ ຄັງເງິນ ເບິ່ງຢ່າງດຽວ.",
-  "en": "You are entering as Thabok admin: sections I–VI editable. Accounting and treasury view only."
+  "vi": "Anh/chị đang nhập với vai trò <b>Admin Thà Bốc</b>: nhập mục I–IV và VI — số lượng, nơi đổ, ai trả. Đơn giá và số tiền do kế toán kiểm mục nhập.",
+  "lo": "ທ່ານກຳລັງລົງຂໍ້ມູນໃນນາມ <b>ແອັດມິນ ທ່າບົກ</b>: ລົງໜ້າ I–IV ແລະ VI — ຈຳນວນ, ບ່ອນຕື່ມ, ຜູ້ຈ່າຍ. ລາຄາ ແລະ ຈຳນວນເງິນ ບັນຊີເປັນຜູ້ປ້ອນ.",
+  "en": "You are entering as Thabok admin: sections I–IV and VI — quantities, fill place, who pays. Prices and amounts are entered by the verifying accountant."
  },
  "hint_acct": {
   "vi": "Vai trò <b>KT Thu/Chi Viêng Chăn</b>: xác nhận mục I và II. Không sửa số Bãi đã nhập; mục IV–VI thuộc KT Chi phí VC.",
@@ -1483,9 +1483,9 @@ window.EPL_TU_DIEN = {
   "en": "Receipts & payments accountant: verify sections I and II. Yard figures cannot be edited; IV–VI belong to the cost accountant."
  },
  "hint_fuel": {
-  "vi": "Vai trò <b>KT kho xăng dầu VC</b>: kiểm và ghi sổ mục III, duyệt dầu tài xế đổ dọc đường.",
-  "lo": "<b>ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ III, ອະນຸມັດນໍ້າມັນທີ່ໂຊເຟີເຕີມລະຫວ່າງທາງ.",
-  "en": "Fuel store accountant: verify and book section III, approve roadside refuels."
+  "vi": "Vai trò <b>KT kho xăng dầu VC</b>: nhập đơn giá dầu mua ngoài rồi kiểm và ghi sổ mục III; dầu lấy từ kho tự mang giá bình quân của kho.",
+  "lo": "<b>ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ</b>: ປ້ອນລາຄານໍ້າມັນຊື້ນອກ ແລ້ວກວດ ແລະ ບັນທຶກໜ້າ III; ນໍ້າມັນຈາກສາງໃຊ້ລາຄາສະເລ່ຍຂອງສາງ.",
+  "en": "Fuel store accountant: enter prices of fuel bought outside, then verify and book section III; fuel from a store takes the store average cost."
  },
  "hint_cash": {
   "vi": "Vai trò <b>Quỹ tiền mặt cảng cạn</b>: thanh toán mục IV, V, VI đã ghi sổ; đánh dấu \"Đã chi\".",
@@ -2043,9 +2043,124 @@ window.EPL_TU_DIEN = {
   "en": "Customer goods account — leave empty: customer goods are not booked, only tonnage is tracked"
  },
  "ct_ma_gia_von": {
-  "vi": "Mã TK giá vốn hàng bán — bên kế toán cấp",
-  "lo": "ເລກບັນຊີຕົ້ນທຶນສິນຄ້າຂາຍ — ຝ່າຍບັນຊີໃຫ້",
-  "en": "Account code for cost of goods sold — from accounting"
+  "vi": "Mã TK giá vốn hàng bán — mặc định 607, đổi được nếu bên kế toán cấp mã khác",
+  "lo": "ເລກບັນຊີຕົ້ນທຶນສິນຄ້າຂາຍ — ຄ່າເລີ່ມຕົ້ນ 607",
+  "en": "Cost of goods sold account — default 607, change if accounting issues another"
+ },
+ "acct_header": {
+  "vi": "mã tổng, không ghi sổ",
+  "lo": "ບັນຊີລວມ, ບໍ່ລົງບັນຊີ",
+  "en": "summary account, not postable"
+ },
+ "hint_expacct": {
+  "vi": "Vai trò <b>KT Chi phí VC</b>: nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; theo dõi nhà cung cấp; chốt tất toán tài xế.",
+  "lo": "<b>ບັນຊີລາຍຈ່າຍ ວຽງຈັນ</b>: ປ້ອນລາຄາ ແລ້ວກວດ ແລະ ບັນທຶກໜ້າ IV, V, VI; ຕິດຕາມຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.",
+  "en": "Cost accountant: enter prices, then verify and book sections IV, V, VI; suppliers; driver settlement."
+ },
+ "price_avg_kho": {
+  "vi": "Giá bình quân của kho — tự tính, không gõ tay",
+  "lo": "ລາຄາສະເລ່ຍຂອງສາງ — ຄິດໄລ່ອັດຕະໂນມັດ",
+  "en": "Store average cost — calculated automatically"
+ },
+ "code": {
+  "vi": "Mã",
+  "lo": "ລະຫັດ",
+  "en": "Code"
+ },
+ "fuel_kho": {
+  "vi": "Kho",
+  "lo": "ສາງ",
+  "en": "Store"
+ },
+ "fuel_all_kho": {
+  "vi": "Tất cả kho",
+  "lo": "ທຸກສາງ",
+  "en": "All stores"
+ },
+ "fuel_by_kho": {
+  "vi": "Tồn theo kho",
+  "lo": "ຍອດຄົງເຫຼືອຕາມສາງ",
+  "en": "Stock by store"
+ },
+ "fuel_transfer": {
+  "vi": "Chuyển kho",
+  "lo": "ໂອນສາງ",
+  "en": "Transfer"
+ },
+ "fuel_transfer_done": {
+  "vi": "Đã chuyển kho",
+  "lo": "ໂອນສາງແລ້ວ",
+  "en": "Transferred"
+ },
+ "fuel_from": {
+  "vi": "Từ kho",
+  "lo": "ຈາກສາງ",
+  "en": "From store"
+ },
+ "fuel_to": {
+  "vi": "Đến kho",
+  "lo": "ໄປສາງ",
+  "en": "To store"
+ },
+ "po_no": {
+  "vi": "Số đơn mua",
+  "lo": "ເລກທີໃບສັ່ງຊື້",
+  "en": "Purchase order no."
+ },
+ "fuel_rate_in": {
+  "vi": "Tỷ giá lúc nhập (để trống = tỷ giá hôm nay)",
+  "lo": "ອັດຕາແລກປ່ຽນຕອນນຳເຂົ້າ (ປະຫວ່າງ = ອັດຕາມື້ນີ້)",
+  "en": "Rate at receipt (empty = today’s rate)"
+ },
+ "part_in_price": {
+  "vi": "Đơn giá nhập (tính lại giá bình quân)",
+  "lo": "ລາຄານຳເຂົ້າ (ຄິດລາຄາສະເລ່ຍໃໝ່)",
+  "en": "Receipt price (recalculates the average)"
+ },
+ "sale_buyer": {
+  "vi": "Người mua",
+  "lo": "ຜູ້ຊື້",
+  "en": "Buyer"
+ },
+ "sale_buyer_kh": {
+  "vi": "Khách hàng",
+  "lo": "ລູກຄ້າ",
+  "en": "Customer"
+ },
+ "sale_buyer_cx": {
+  "vi": "Chủ xe liên kết — trừ vào tiền trả",
+  "lo": "ເຈົ້າຂອງລົດຮ່ວມ — ຫັກຈາກເງິນຈ່າຍ",
+  "en": "Joint truck owner — deduct from payout"
+ },
+ "sale_cx_hint": {
+  "vi": "Không thu tiền mặt: đợt trả chủ xe kế tiếp tự trừ số tiền phiếu này.",
+  "lo": "ບໍ່ຮັບເງິນສົດ: ຮອບຈ່າຍເຈົ້າຂອງລົດຄັ້ງຕໍ່ໄປ ຈະຫັກຈຳນວນເງິນໃບນີ້ອັດຕະໂນມັດ.",
+  "en": "No cash collected: the next owner payout deducts this slip automatically."
+ },
+ "sale_tru_cx": {
+  "vi": "Trừ vào tiền trả chủ xe",
+  "lo": "ຫັກຈາກເງິນຈ່າຍເຈົ້າຂອງລົດ",
+  "en": "Deducted from owner payout"
+ },
+ "sale_cho_tru": {
+  "vi": "Chờ trừ",
+  "lo": "ລໍຖ້າຫັກ",
+  "en": "Pending deduction"
+ },
+ "sale_da_tru": {
+  "vi": "Đã trừ",
+  "lo": "ຫັກແລ້ວ",
+  "en": "Deducted"
+ },
+ "owner_sales_pending": {
+  "vi": "Hàng mua ở quầy chờ trừ",
+  "lo": "ສິນຄ້າຊື້ຢູ່ຮ້ານ ລໍຖ້າຫັກ",
+  "en": "Counter purchases to deduct"
+ },
+ "owner_sales_hint": {
+  "vi": "đợt trả này tự trừ các phiếu dưới đây (vừa tiền thì trừ, phiếu cũ trước)",
+  "lo": "ຮອບຈ່າຍນີ້ ຫັກໃບລຸ່ມນີ້ອັດຕະໂນມັດ (ໃບເກົ່າກ່ອນ)",
+  "en": "this payout deducts the slips below automatically (oldest first)"
  },
  "ncc_ghi_ct": {
   "vi": "Ghi cấn trừ tháng",
@@ -4437,11 +4552,6 @@ window.EPL_TU_DIEN = {
   "lo": "ບັນຊີລາຍຮັບ ວຽງຈັນ",
   "en": "Vientiane revenue accountant"
  },
- "hint_expacct": {
-  "vi": "Vai trò <b>KT Chi phí VC</b>: kiểm tra và ghi sổ mục IV, V, VI; theo dõi nhà cung cấp; chốt tất toán tài xế.",
-  "lo": "<b>ບັນຊີລາຍຈ່າຍ ວຽງຈັນ</b>: ກວດ ແລະ ບັນທຶກໜ້າ IV, V, VI; ຕິດຕາມຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.",
-  "en": "Cost accountant: verify and book sections IV, V, VI; suppliers; driver settlement."
- },
  "brand_short": {
   "vi": "Quản lý vận tải EPL",
   "lo": "ຈັດການຂົນສົ່ງ EPL",
@@ -6607,11 +6717,6 @@ window.EPL_TU_DIEN = {
   "lo": "ອັດຕາແລກປ່ຽນລັອກໄວ້ໃນບິນ",
   "en": "Rate locked on the slip"
  },
- "acct_header": {
-  "vi": "mã tổng, không ghi sổ",
-  "lo": "ບັນຊີລວມ, ບໍ່ລົງບັນຊີ",
-  "en": "summary account, not postable"
- },
  "rate_day": {
   "vi": "Tỷ giá ngày thu",
   "lo": "ອັດຕາແລກປ່ຽນວັນຮັບເງິນ",
@@ -7053,9 +7158,9 @@ window.EPL_TU_DIEN = {
   "en": "Supplier tracking<span class=\"sub\">Payables settled in instalments</span>"
  },
  "title_kho_nhien_lieu": {
-  "vi": "Kho nhiên liệu<span class=\"sub\">Kho Thà Bốc · Nhập – xuất – tồn</span>",
-  "lo": "ສາງນໍ້າມັນ<span class=\"sub\">ສາງທ່າບົກ · ຮັບ – ເບີກ – ຄົງເຫຼືອ</span>",
-  "en": "Fuel store<span class=\"sub\">Thabok store · In – Out – Balance</span>"
+  "vi": "Kho nhiên liệu<span class=\"sub\">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>",
+  "lo": "ສາງນໍ້າມັນ<span class=\"sub\">ຕາມແຕ່ລະສາງ · ນຳເຂົ້າ – ເບີກອອກ – ໂອນສາງ – ຄົງເຫຼືອ</span>",
+  "en": "Fuel store<span class=\"sub\">By store · In – Out – Transfer – Balance</span>"
  },
  "title_kho_phu_tung": {
   "vi": "Kho phụ tùng<span class=\"sub\">Tồn kho & xuất theo xe</span>",

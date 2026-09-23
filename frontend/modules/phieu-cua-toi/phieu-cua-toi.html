@@ -28,7 +28,8 @@
     <div class="f-grid">
       <div class="field w2"><label data-i18n="df_where"></label><select id="pct-d-diem"></select></div>
       <div class="field"><label data-i18n="df_litres"></label><input class="num" id="pct-d-lit" inputmode="decimal"></div>
-      <div class="field"><label data-i18n="unit_price"></label><input class="num" id="pct-d-gia" inputmode="decimal"></div>
+      <!-- đơn giá: tài xế không nhập (C5.1) — KT kho xăng dầu nhập khi kiểm mục III -->
+      <input type="hidden" id="pct-d-gia">
       <div class="field"><label data-i18n="cur"></label><select id="pct-d-tt"><option>VND</option><option>LAK</option><option>THB</option><option>USD</option></select></div>
       <div class="field w2"><label data-i18n="note"></label><input id="pct-d-ghi" lang="lo"></div>
     </div>

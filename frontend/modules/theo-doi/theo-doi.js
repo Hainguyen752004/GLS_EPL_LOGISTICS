@@ -46,7 +46,8 @@
     root.querySelector('#td-than').innerHTML = rows.length ? rows.map((p, i) => {
       const c = p.tinh, ma = c.ccy, mh = c.hire_ccy || ma;
       cong(sVal, p, c.doanh_thu, ma); cong(sThu, p, c.da_thu, ma); cong(sCon, p, c.con_lai, ma);
-      cong(sNet, p, c.lai, ma); sExp += c.tong_chi_lak;
+      cong(sNet, p, c.lai, ma); sExp += c.tong_chi_lak || 0;
+      const chi = c.chi || {};                 // Bãi không nhận tiền chi (anh Khampla A2) — cột đó ẩn với Bãi
       const hao = c.hao_hut_pct !== null && c.hao_hut_pct > 1.5 ? `<span class="td-hao" title="${esc(NN.t('w_loss'))}">${so(c.hao_hut_pct, 1)}%</span>` : '';
       return `<tr data-id="${p.id}">
         <td>${i + 1}</td><td class="nowrap">${EPL.ngay(p.doc_date)}</td><td class="nowrap mono"><b>${esc(p.doc_no)}</b></td>
@@ -59,15 +60,15 @@
         <td class="num tien">${oTien(p, p.price, ma)}${c.cach_tinh === 'chuyen' ? `<span class="td-hao" style="color:var(--muted)" title="${esc(NN.t('pm_chuyen'))}">${NN.h('pm_chuyen_s')}</span>` : ''}</td><td class="num tien">${oTien(p, c.doanh_thu, ma, true)}</td>
         <td class="num tien">${c.da_thu ? oTien(p, c.da_thu, ma) : d}</td><td class="num tien ${c.con_lai ? 'neg' : ''}">${c.con_lai ? oTien(p, c.con_lai, ma) : d}</td>
         <td class="num tien">${c.lien_ket ? oTien(p, c.tien_thue, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.phi, mh) : d}</td><td class="num tien">${c.lien_ket ? oTien(p, c.tru_vuot, mh) : d}</td>
-        <td class="num">${so(c.chi.fuel)}</td><td class="num">${so(c.chi.travel)}</td><td class="num">${c.chi.repair ? so(c.chi.repair) : d}</td><td class="num">${c.chi.other ? so(c.chi.other) : d}</td><td class="num"><b>${so(c.tong_chi_lak)}</b></td>
+        <td class="num tien-chi">${so(chi.fuel)}</td><td class="num tien-chi">${so(chi.travel)}</td><td class="num tien-chi">${chi.repair ? so(chi.repair) : d}</td><td class="num tien-chi">${chi.other ? so(chi.other) : d}</td><td class="num tien-chi"><b>${so(c.tong_chi_lak)}</b></td>
         <td class="num tien ${c.lai < 0 ? 'neg' : 'pos'}"><b>${oTien(p, c.lai, ma)}</b></td>
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="31" class="empty">${NN.h('no_data')}</td></tr>`;
     const gop = (t) => `<span class="td-gop">${EPL.tienGop(t, '<br>')}</span>`;
     root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + rows.length + ' ', { k: 'trips' }])}</td>
       <td class="tien"></td><td class="num tien">${gop(sVal)}</td><td class="num tien">${gop(sThu)}</td><td class="num tien">${gop(sCon)}</td>
-      <td class="tien"></td><td class="tien"></td><td class="tien"></td><td></td><td></td><td></td><td></td>
-      <td class="num">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>`;
+      <td class="tien"></td><td class="tien"></td><td class="tien"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td>
+      <td class="num tien-chi">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>`;
     root.querySelector('#td-dem').textContent = `${rows.length} / ${ds.length} ${NN.t('rows')}`;
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
   }

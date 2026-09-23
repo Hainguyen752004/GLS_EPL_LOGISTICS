@@ -63,6 +63,7 @@ def main():
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TOKEN[u] = g["token"]
     print("✓ đăng nhập 3 vai")
 
+    goc_cau_hinh = _cat_cau_hinh()
     may = HTTPServer(("127.0.0.1", CONG_GIA), MayNhanGia)
     threading.Thread(target=may.serve_forever, daemon=True).start()
     print("✓ máy nhận giả (đóng vai API anh Khang) nghe ở :%d" % CONG_GIA)
@@ -135,8 +136,10 @@ def main():
         phai(s, 200, "Đẩy lại tờ đã đẩy → không gửi trùng", g)
         assert len(NHAN) == truoc, "tờ đã đẩy không được gửi lại"
     finally:
-        # trả cấu hình về rỗng và mở lại cờ đã đẩy để lần chạy sau còn tờ để thử
+        # trả cấu hình về ĐÚNG NHƯ TRƯỚC (23/09: trước đây trả về rỗng → mất nối 8011 → sổ 8030 mà không ai biết)
+        # và mở lại cờ đã đẩy để lần chạy sau còn tờ để thử
         goi("/api/ke-toan/cau-hinh", {"ke_toan_api": "", "ke_toan_token": "-"}, vai="admin", method="PUT")
+        _tra_cau_hinh(goc_cau_hinh)
         s, ds = goi("/api/chung-tu?limit=2000", vai="ketoan")
         for c in ds["ds"]:
             if c["da_day"] and (c.get("ma_ben_ke_toan") or "").startswith("KT-"):
@@ -145,6 +148,39 @@ def main():
         print("  · đã xoá cấu hình thử và mở lại các tờ đã đẩy vào máy giả")
 
     print("\nTHỬ ĐẨY KẾ TOÁN: ĐẠT — cấu hình · gói tin đúng hợp đồng · hỏng thì giữ tờ · 409 coi là xong · đẩy hết · không gửi trùng")
+
+
+def _cat_cau_hinh():
+    """Cất địa chỉ + token đang dùng. Token không bao giờ ra API (đúng thiết kế) nên đọc thẳng DB — bộ kiểm
+    chạy trên cùng máy với máy chủ thử. Không in token ra màn hình."""
+    try:
+        import os
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", "app"))
+        from database import SessionLocal
+        from services import day_ke_toan as DK
+        db = SessionLocal()
+        try:
+            return {k: DK.cau_hinh(db, k) for k in ("ke_toan_api", "ke_toan_token")}
+        finally:
+            db.close()
+    except Exception as e:  # noqa: BLE001
+        print("  · không cất được cấu hình gốc (%s) — sẽ để trống sau bài" % e)
+        return None
+
+
+def _tra_cau_hinh(goc):
+    if not goc or not goc.get("ke_toan_api"):
+        return
+    from database import SessionLocal
+    from services import day_ke_toan as DK
+    db = SessionLocal()
+    try:
+        for k, v in goc.items():
+            DK.dat_cau_hinh(db, k, v or "", None)
+        db.commit()
+        print("  · đã trả cấu hình kế toán về như trước: %s (token giữ nguyên)" % goc["ke_toan_api"])
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

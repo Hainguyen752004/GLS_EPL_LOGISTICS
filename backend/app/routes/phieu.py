@@ -26,7 +26,8 @@ from models import (GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPa
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, thay_tien_ban
+from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_tien_ban, thay_tien_chi
+from services import gia_von as GV
 from routes.danh_muc import tim_gia
 from services.tinh_toan import chuan_tien, doi as doi_tien, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
@@ -265,8 +266,32 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
         if phieu.transport_status == "arrived" and ra["route_stops"]:
             toi = max(toi, len(ra["route_stops"]))
         ra["stop_reached"] = toi
+    if vai is not None and not thay_tien_chi(vai):
+        _bo_tien_chi(ra)
     if vai is not None and not thay_tien_ban(vai):
         return _bo_tien_ban(ra)
+    return ra
+
+
+# Tiền CHI bỏ khỏi gói của Bãi và tài xế (anh Khampla A2): đơn giá, tiền tệ, mã tài khoản từng dòng; tổng chi;
+# tỷ giá trên phiếu; số tiền báo trong khai báo dọc đường. Số lượng, nơi đổ, ai trả thì giữ — việc của họ.
+COT_TY_GIA = ("rate_usd", "rate_thb", "rate_vnd", "rate_cny")
+DONG_TIEN_CHI = ("unit_price", "currency", "acct_code")
+TINH_TIEN_CHI = ("chi", "tong_chi_lak", "tong_chi_ccy")
+
+
+def _bo_tien_chi(ra):
+    for c in COT_TY_GIA:
+        ra.pop(c, None)
+    for d in (ra.get("expenses") or []):
+        for c in DONG_TIEN_CHI:
+            d.pop(c, None)
+    t = ra.get("tinh")
+    if isinstance(t, dict):
+        for c in TINH_TIEN_CHI:
+            t.pop(c, None)
+    for e in (ra.get("events") or []):
+        e.pop("reported_cost", None); e.pop("currency", None)
     return ra
 
 
@@ -339,6 +364,17 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             moi_gt = _ngay(data[c]) if c in COT_NGAY else ((str(data[c]).strip() or None) if data[c] is not None else None)
             if moi_gt != getattr(p, c):
                 raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Số và ngày phiếu quặng do kế toán nhập khi nhận giấy; Bãi chỉ đính kèm ảnh."})
+            continue
+        if c in COT_TIEN and c not in COT_KE_TOAN and not thay_tien_ban(user.role):
+            # Giá cước, giá thuê xe liên kết, phí, ngưỡng tấn: Bãi không thấy nên không nhập (anh Khampla A2);
+            # giá thuê xe do KT Viêng Chăn nhập theo hợp đồng (C4.1). Ô không đổi thì bỏ qua, đổi thì từ chối rõ.
+            cu_gt = getattr(p, c)
+            moi_gt = data[c]
+            if c in COT_SO: moi_gt = _so(moi_gt, c) if moi_gt not in (None, "") else None
+            elif isinstance(moi_gt, str): moi_gt = moi_gt.strip().upper() or None
+            if moi_gt not in (None, "") and moi_gt != cu_gt and not (isinstance(cu_gt, str) and str(moi_gt).upper() == cu_gt.upper()):
+                raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
+                                          "loi": "Giá cước, giá thuê xe và phí do kế toán Viêng Chăn nhập; Bãi không nhập ô này."})
             continue
         if muc_tt is not None:
             muc = next((m for m, cot in MUC_CUA_COT.items() if c in cot), None)
@@ -420,8 +456,26 @@ def _ncc_theo_diem(db, d):
     return dd.supplier_id if (dd is not None and dd.owner_type != "epl") else None
 
 
-def _dong_tu_du_lieu(p, m, i, d, db=None):
-    """Dựng một dòng chi từ dữ liệu gửi lên; áp định khoản mặc định theo xe nhà/liên kết và nguồn kho/mua."""
+def _gia_mac_dinh(db, p, m, source, d):
+    """Giá của dòng khi người nhập KHÔNG được đặt giá (Bãi): kho → bình quân kho; phí cầu đường → theo tuyến; còn lại 0
+    để kế toán kiểm mục nhập. Trả (đơn giá, tiền tệ)."""
+    if db is None:
+        return 0, "LAK"
+    if m == "fuel" and source == "kho":
+        return GV.gia_bq_dau(db, d.get("place_id")), "LAK"
+    if m == "repair" and source == "kho" and d.get("part_id"):
+        pt = db.get(Part, d["part_id"])
+        return (pt.unit_price or 0) if pt else 0, "LAK"
+    if m == "travel" and d.get("item_key") == "x_toll" and p.route_id:
+        r = db.get(Route, p.route_id)
+        if r and (r.toll_lak or 0) > 0:
+            return r.toll_lak, "LAK"
+    return 0, str(d.get("currency") or "LAK").upper()
+
+
+def _dong_tu_du_lieu(p, m, i, d, db=None, dat_gia=True):
+    """Dựng một dòng chi từ dữ liệu gửi lên; áp định khoản mặc định theo xe nhà/liên kết và nguồn kho/mua.
+    `dat_gia=False` (Bãi, tài xế): đơn giá gửi lên bị bỏ qua, lấy giá mặc định."""
     source = d.get("source")
     if m == "fuel":
         source = _nguon_theo_diem(db, d) if db is not None else ("kho" if (d.get("place") or "fp_yard") == "fp_yard" else "mua")
@@ -430,11 +484,18 @@ def _dong_tu_du_lieu(p, m, i, d, db=None):
             source = "kho" if d.get("part_id") else "mua"
     else:
         source = None
+    if source == "kho" and m == "fuel":
+        # dầu lấy từ kho: giá là giá bình quân của kho, không ai gõ tay (C5.3)
+        gia, tien_te = _gia_mac_dinh(db, p, m, source, d)
+    elif not dat_gia:
+        gia, tien_te = _gia_mac_dinh(db, p, m, source, d)
+    else:
+        gia, tien_te = (_so(d.get("unit_price"), "unit_price") or 0), str(d.get("currency") or "LAK").upper()
     return TripExpense(
         trip_id=p.id, section=m, line_no=i,
         item_key=(d.get("item_key") or None), item_name=(d.get("item_name") or None),
-        qty=_so(d.get("qty"), "qty") or 0, unit_price=_so(d.get("unit_price"), "unit_price") or 0,
-        currency=str(d.get("currency") or "LAK").upper(), place=d.get("place"),
+        qty=_so(d.get("qty"), "qty") or 0, unit_price=gia,
+        currency=tien_te, place=d.get("place"),
         place_id=d.get("place_id") or None,
         # Đổ ở TRẠM NGOÀI thì dòng chi mang luôn nhà cung cấp của trạm đó — công nợ trạm dầu (C5.1)
         # phải tra được từ dòng chi, chứ không bắt người đọc lần từ điểm đổ sang nhà cung cấp.
@@ -457,11 +518,17 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
         if m not in MUC_CHI:
             raise HTTPException(422, {"ma": "MUC_SAI", "loi": "Dòng %d: mục %s không hợp lệ." % (i + 1, m)})
         theo_muc.setdefault(m, []).append(d)
+    dat_gia = nhap_gia_chi(user.role)
     for m in theo_muc:
         if not duoc_sua_muc(user.role, m, muc_tt[m]):
+            if duoc_sua_tien(user.role, m, muc_tt[m]):
+                _ap_gia(db, p, m, theo_muc[m], user)
+                continue
             raise HTTPException(409, {"ma": "MUC_DA_KHOA",
                                       "loi": "Mục %s đã khoá (%s), không sửa được dòng chi." % (m, muc_tt[m])})
         cu = {e.id: e for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == m).all()}
+        # Bãi không thấy giá nên không gửi giá: dòng cũ giữ đúng giá kế toán đã nhập (khớp theo id).
+        gia_cu = {e.id: (e.unit_price, e.currency) for e in cu.values()}
         # Dòng đã sinh phiếu xuất kho là CHỨNG TỪ KHO — không xoá, không đổi số trên phiếu. Người
         # dùng bỏ nó khỏi danh sách gửi lên thì từ chối cả lần lưu và nói rõ dòng nào.
         # Dòng đã TRỪ THẺ cao tốc cũng vậy: số dư thẻ đã giảm thật, không xoá lặng lẽ trên phiếu.
@@ -483,7 +550,33 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             if e:
                 e.line_no = i; e.note = d.get("note"); e.acct_code = d.get("acct_code") or e.acct_code
                 continue
-            db.add(_dong_tu_du_lieu(p, m, i, d, db))
+            moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
+            if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
+                moi.unit_price, moi.currency = gia_cu[d["id"]]
+            db.add(moi)
+
+
+def _ap_gia(db, p, m, cac_dong, user):
+    """Người KIỂM mục (KT kho xăng dầu mục III, KT Chi phí mục IV–VI) nhập ĐƠN GIÁ và TIỀN TỆ cho các dòng Bãi
+    đã khai, khi mục còn "đã nhập". Không thêm, không xoá, không đổi số lượng — muốn thế thì trả lại cho Bãi.
+    Dòng lấy từ kho giữ giá bình quân của kho."""
+    cu = {e.id: e for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == m).all()}
+    for d in cac_dong:
+        e = cu.get(d.get("id"))
+        if e is None:
+            raise HTTPException(409, {"ma": "CHI_SUA_GIA",
+                                      "loi": "Kế toán chỉ nhập đơn giá cho dòng Bãi đã khai; thêm dòng thì trả lại cho Bãi."})
+        if e.source == "kho":
+            continue
+        if "unit_price" in d:
+            gia = _so(d.get("unit_price"), "unit_price") or 0
+            if gia < 0:
+                raise HTTPException(422, {"ma": "SO_SAI", "loi": "Đơn giá không âm."})
+            e.unit_price = gia
+        if d.get("currency"):
+            e.currency = _tien_te(d["currency"], "currency")
+        if d.get("acct_code"):
+            e.acct_code = d["acct_code"]
 
 
 def _doi_trang_thai_xe_tai_xe(db, p, trang_thai_xe, trang_thai_tai_xe):
@@ -601,9 +694,12 @@ def _xuat_kho_nhien_lieu(db, p, user):
     for e in _dong_chi(db, p):
         if e.section != "fuel" or e.source != "kho" or e.stock_move_id or not e.paid_by_epl:
             continue
+        kho = e.place_id or GV.kho_goc(db)
+        gia = GV.gia_bq_dau(db, kho) or (e.unit_price or 0) * ty_gia(p, e.currency or "LAK")
+        e.unit_price, e.currency = gia, "LAK"          # xuất lúc nào thì mang giá bình quân lúc đó (C5.3)
         m = FuelMove(move_date=p.out_date or p.doc_date or dt.date.today(), doc_no=p.doc_no, kind="out",
-                     truck_no=p.truck_no, qty_l=e.qty or 0, unit_price=e.unit_price or 0, currency=e.currency or "LAK",
-                     note="Xuất theo phiếu %s" % p.doc_no, by_user=user.full_name, expense_id=e.id)
+                     truck_no=p.truck_no, qty_l=e.qty or 0, unit_price=gia, currency="LAK", unit_cost_lak=gia,
+                     place_id=kho, note="Xuất theo phiếu %s" % p.doc_no, by_user=user.full_name, expense_id=e.id)
         db.add(m); db.flush()
         e.stock_move_id = m.id
         CT.ghi(db, "PXK_NL", nguon_bang="fuel_moves", nguon_id=m.id, trip=p, ngay=m.move_date, doi_tuong_loai="kho",
@@ -627,15 +723,17 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     moi_trang_thai = chuyen_muc(user.role, muc, s.status, hanh_dong)
     if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
         raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
-    if muc in MUC_CHI and hanh_dong == "send":
+    if muc in MUC_CHI and hanh_dong == "verify":
         # Dòng EPL trả mà đơn giá 0 (bấm tay 23/09: 100 lít dầu kho giá 0) đi hết chuỗi duyệt, tới ghi sổ sinh tờ
-        # 0 LAK có định khoản — sổ kế toán từ chối, còn 100 lít thì rời kho không mang tiền. Chặn ngay lúc GỬI
-        # KIỂM: người nhập giá là Bãi, sửa lúc này dễ nhất; qua bước này thì kế toán không sửa được đơn giá nữa.
+        # 0 LAK có định khoản — sổ kế toán từ chối, còn 100 lít thì rời kho không mang tiền. Người nhập GIÁ là
+        # người KIỂM (anh Khampla A2, C5.1: Bãi không thấy tiền), nên chặn lúc KIỂM, không chặn Bãi lúc gửi.
         dong_muc = [d for d in _dong_chi(db, p) if d.section == muc]
         thieu = [(i, d) for i, d in enumerate(dong_muc, 1) if d.paid_by_epl and (d.qty or 0) > 0 and (d.unit_price or 0) <= 0]
         if thieu:
-            raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi gửi kiểm lại." % (
-                _TEN_MUC.get(muc, muc), ", ".join("dòng %d (số lượng %s)" % (i, _gon(d.qty)) for i, d in thieu))})
+            kho = [i for i, d in thieu if d.source == "kho"]
+            raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi kiểm lại.%s" % (
+                _TEN_MUC.get(muc, muc), ", ".join("dòng %d (số lượng %s)" % (i, _gon(d.qty)) for i, d in thieu),
+                " Dòng lấy từ kho chưa có giá vì kho đó chưa có phiếu nhập nào có giá." if kho else "")})
     s.status = moi_trang_thai
     if muc == "fuel" and hanh_dong == "book":
         _xuat_kho_nhien_lieu(db, p, user)
@@ -1340,11 +1438,12 @@ def _duyet_do_dau(db, p, e, data, user):
     mua bên Việt Nam; quy đổi về LAK dùng tỷ giá ghi trên chính phiếu này.
     """
     lit = _so(data.get("qty_l"), "qty_l") or e.qty_l or 0
-    gia = _so(data.get("unit_price"), "unit_price")
+    gia = _so(data.get("unit_price"), "unit_price") if nhap_gia_chi(user.role) else None
     if gia is None:
         gia = e.reported_cost or 0
-    if lit <= 0 or gia <= 0:
-        raise HTTPException(422, {"ma": "THIEU_SO", "loi": "Phải có số lít và đơn giá lớn hơn 0."})
+    if lit <= 0 or gia < 0:
+        raise HTTPException(422, {"ma": "THIEU_SO", "loi": "Phải có số lít lớn hơn 0."})
+    # giá 0 được: Bãi duyệt số lít, KT kho xăng dầu nhập giá lúc kiểm mục III (chặn giá 0 ở bước kiểm)
     diem = db.get(FuelPlace, e.place_id) if e.place_id else None
     so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "fuel").count()
     dong = TripExpense(trip_id=p.id, section="fuel", line_no=so_dong + 1, item_key="diesel",
@@ -1391,7 +1490,8 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
                                   "loi": "%s là kho của công ty, lĩnh dầu ở kho thì dùng phiếu lĩnh." % diem.name})
     e = TripEvent(trip_id=p.id, kind="refuel", note=(data.get("note") or "").strip() or None,
                   by_user=user.full_name, status="reported", qty_l=lit,
-                  reported_cost=_so(data.get("unit_price"), "unit_price") or 0,
+                  # C5.1: tài xế chỉ báo số lít (trạm ghi nợ, cuối tháng cấn trừ) — giá do kế toán kho xăng dầu nhập
+                  reported_cost=(_so(data.get("unit_price"), "unit_price") or 0) if nhap_gia_chi(user.role) else 0,
                   currency=str(data.get("currency") or "VND").upper(), place_id=diem.id,
                   supplier_id=(data.get("supplier_id") or diem.supplier_id or None))
     db.add(e)

@@ -422,6 +422,9 @@ body.vai-driver .tien,
 body.vai-depot .tien,
 body.vai-parts .tien,
 body.vai-repair .tien{display:none!important}
+/* Lớp `tien-chi` = TIỀN CHI (đơn giá, thành tiền, tổng chi). Anh Khampla A2 (23/09): Bãi nhập số lượng, nơi đổ,
+   khoản dọc đường — nhưng không thấy tiền; máy chủ cũng không gửi các số này cho Bãi. */
+body.vai-yard .tien-chi{display:none!important}
 
 @media (max-width:900px){
   .app,.app[data-hep="1"],.app[data-view="top"]{grid-template-columns:1fr}

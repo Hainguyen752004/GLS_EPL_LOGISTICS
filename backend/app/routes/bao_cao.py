@@ -22,7 +22,7 @@ from fastapi import Body
 from routes.phieu import da_thu_theo_phieu, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
-from services.phan_quyen import QUYEN, thay_tien_ban, viec_dang_cho
+from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
 
 router = APIRouter()
@@ -105,6 +105,9 @@ def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(ngu
     if not thay_tien_ban(user.role):
         for k in ("doanh_thu_lak", "doanh_thu_tien", "chua_thu_lak", "chua_thu_tien", "chua_thu_so"):
             ra.pop(k, None)
+    if not thay_tien_chi(user.role):
+        # anh Khampla A2 (23/09): Bãi không thấy cả tiền CHI — tổng chi và cơ cấu chi
+        ra.pop("chi_lak", None); ra.pop("chi_theo_muc", None)
     return ra
 
 
@@ -292,6 +295,12 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
     else:
         theo_ngay_ra = [{"ngay": k, "doanh_thu_lak": round(v["doanh_thu_lak"]), "chi_lak": round(v["chi_lak"])}
                         for k, v in sorted(theo_ngay.items())]
+    if not thay_tien_chi(user.role):
+        # A2: Bãi không thấy tiền chi — bỏ dãy chi theo tháng, theo ngày
+        sau_thang.pop("chi_lak", None)
+        if thang_truoc:
+            thang_truoc.pop("chi_lak", None)
+        theo_ngay_ra = []
     return {
         "thang": dau.strftime("%Y-%m"), "thang_truoc": thang_truoc, "sau_thang": sau_thang,
         "theo_ngay": theo_ngay_ra,

@@ -19,7 +19,8 @@
         <td class="num tien">${c.fee_pct != null ? so(c.fee_pct, 1) + ' %' : '—'}</td>
         <td class="num tien">${c.over_limit_t != null ? `${so(c.over_limit_t, 1)} t · ${EPL.tien(c.over_price, c.hire_ccy)}/t` : '—'}</td>
         <td class="mono tien">${esc(c.hire_ccy || '')}</td>
-        <td class="num tien">${ct.so_phieu ? `<b>${ct.so_phieu}</b> ${NN.t('trips')} · ${EPL.tienGop(ct.tong)}` : `<span class="muted">${NN.h('owner_no_pending')}</span>`}</td>
+        <td class="num tien">${ct.so_phieu ? `<b>${ct.so_phieu}</b> ${NN.t('trips')} · ${EPL.tienGop(ct.tong)}` : `<span class="muted">${NN.h('owner_no_pending')}</span>`}${
+          ct.so_phieu_ban ? `<div class="small neg">− ${NN.h('owner_sales_pending')}: ${so(ct.ban_cho_tru_lak)} LAK (${ct.so_phieu_ban})</div>` : ''}</td>
         <td class="no-print">${themDuoc ? `<button class="btn sm" data-sua-chu="${c.id}">${NN.h('edit')}</button> ` : ''}${AUTH.la('cash', 'treasury') && ct.so_phieu ? `<button class="btn sm ok" data-tra-chu="${c.id}">${NN.h('owner_pay_batch')}</button>` : ''}</td></tr>`;
     }).join('') : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
     o.querySelectorAll('[data-sua-chu]').forEach(b => b.addEventListener('click', () => suaChu(chu.find(x => x.id === b.dataset.suaChu))));
@@ -55,6 +56,8 @@
       <div class="xlk-chon">${ds_.map(p => `<label><input type="checkbox" name="xlk-p" value="${esc(p.id)}" data-ccy="${esc(p.hire_ccy)}" data-tien="${p.tra_chu_xe}" checked>
         <span class="mono">${esc(p.doc_no)}</span> · ${EPL.ngay(p.doc_date)} · ${esc(p.truck_no || '')} · <b>${EPL.tien(p.tra_chu_xe, p.hire_ccy)}</b></label>`).join('')}</div>
       <div class="xlk-tong" id="xlk-tong"></div>
+      ${(cn.ban_cho_tru || []).length ? `<div class="xlk-ban small"><b>${NN.h('owner_sales_pending')}</b> — ${NN.h('owner_sales_hint')}
+        <ul>${cn.ban_cho_tru.map(b => `<li><span class="mono">${esc(b.doc_no)}</span> · ${EPL.ngay(b.sale_date)} · ${EPL.tien(b.total, b.currency)} (${so(b.total_lak)} LAK)</li>`).join('')}</ul></div>` : ''}
       <div class="field"><label>${NN.h('pay_date')}</label><input type="date" id="xlk-ngay" value="${EPL.homNay()}"></div>
       <div class="field"><label>${NN.h('pay_method')}</label><select id="xlk-cach">${CACH.map(([k, t]) => `<option value="${k}">${NN.t(t)}</option>`).join('')}</select></div>
       <div class="field"><label>${NN.h('pay_ref')}</label><input id="xlk-ref"></div>

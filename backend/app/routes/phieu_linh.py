@@ -32,6 +32,7 @@ from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc
 from services.tinh_toan import ty_gia
 from services import chung_tu as CT
+from services import gia_von as GV
 
 router = APIRouter()
 SUA_DIEM = can_vai("yard", "acct", "fuel")
@@ -304,9 +305,12 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
         dong = _dong_kho_theo_diem(db, p).get(v.place_id, [])
         if not dong:
             raise HTTPException(409, {"ma": "KHONG_CON_DONG", "loi": "Các dòng dầu của kho này đã xuất rồi."})
-        don_gia = dong[0].unit_price or 0
+        # giá BÌNH QUÂN của đúng kho cấp, lúc cấp (anh Khampla C5.3) — dòng trên phiếu mang theo giá đó
+        don_gia = GV.gia_bq_dau(db, v.place_id) or (dong[0].unit_price or 0) * ty_gia(p, dong[0].currency or "LAK")
+        for e in dong:
+            e.unit_price, e.currency = don_gia, "LAK"
         m = FuelMove(move_date=dt.date.today(), doc_no=v.doc_no, kind="out", truck_no=p.truck_no, qty_l=lit,
-                     unit_price=don_gia, currency=dong[0].currency or "LAK", place_id=v.place_id, voucher_id=v.id,
+                     unit_price=don_gia, currency="LAK", unit_cost_lak=don_gia, place_id=v.place_id, voucher_id=v.id,
                      note="Cấp theo phiếu lĩnh %s" % v.doc_no, by_user=user.full_name, expense_id=dong[0].id)
         db.add(m); db.flush()
         for e in dong:

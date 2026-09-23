@@ -20,6 +20,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -113,7 +116,7 @@ def main():
     P = []
     for i, (so_p, ngay, tan, gia) in enumerate(((SO_PHIEU[0], "2026-07-05", 40.0, 50),
                                                 (SO_PHIEU[1], "2026-07-19", 30.0, 50))):
-        s, p = goi("/api/trips", {
+        s, p = Q.lap_phieu(goi, {
             "doc_no": so_p, "kind": "gom", "doc_date": ngay, "out_date": ngay,
             "vehicle_id": xe[0]["id"], "driver_id": tx[0]["id"], "customer_id": khach["id"],
             "route_id": tuyen[0]["id"], "goods_type": "iron_ore", "weight_origin": tan,

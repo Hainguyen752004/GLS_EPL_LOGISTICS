@@ -107,7 +107,7 @@
     /* 1. KPI — Bãi thay hai ô tiền bán bằng hai ô việc của họ */
     const K = laBai() ? [
       { k: 'k_month_trips', v: so(d.so_phieu, 0), u: NN.t('trips'), s: `${d.dem.arrived} ${NN.t('s_arrived')}`, dl: '', sp: null, col: c.brand },
-      { k: 'k_exp', v: trieu(d.chi_lak), u: 'M LAK', s: `≈ ${so(d.chi_lak / r_usd)} USD · ${d.so_phieu} ${NN.t('trips')}`, dl: delta(d.chi_lak, tt && tt.chi_lak, true), sp: st && st.chi_lak, col: c.fuel },
+      // Bãi không thấy tiền chi (anh Khampla A2, 23/09) — ô Tổng chi phí bỏ khỏi vai Bãi
       { k: 'k_tons', v: so(d.tan_giao, 2), u: NN.t('ton'), s: `${d.dem.arrived} ${NN.t('trips')} · ${NN.t('s_arrived')}`, dl: delta(d.tan_giao, tt && tt.tan_giao, false), sp: st && st.tan_giao, col: c.info },
       { k: 'k_running', v: so((d.dem.dispatched || 0) + (d.dem.transit || 0), 0), u: NN.t('trips'), s: `${d.dem.dispatched} ${NN.t('s_dispatched')} · ${d.dem.transit} ${NN.t('s_transit')}`, dl: '', sp: null, col: c.warn },
     ] : [

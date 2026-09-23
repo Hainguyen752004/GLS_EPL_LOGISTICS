@@ -91,7 +91,10 @@ _, pt = goi("/api/parts", tk=tk["ketoan"])
 mon = next(x for x in pt if (x["qty"] or 0) >= 2)
 _, kh = goi("/api/customers", tk=tk["ketoan"])
 _, diem = goi("/api/fuel-places", tk=tk["ketoan"])
-kho = next(x for x in diem if x["owner_type"] == "epl")
+# bán từ kho CÓ DẦU (Thà Bốc): từ 23/09 bán quá tồn của đúng kho đó là bị chặn, không để kho âm
+kho = next(x for x in diem if x["owner_type"] == "epl" and x.get("code") == "KHO-TB")
+_, so_kho = goi("/api/fuel-moves?place_id=%s" % kho["id"], tk=tk["khonl"])
+gia_bq = so_kho["gia_bq"]
 ton_truoc = mon["qty"]
 than = {"sale_date": "2026-09-17", "customer_id": kh[0]["id"], "currency": "LAK", "note": "thử bán",
         "lines": [{"item_type": "part", "part_id": mon["id"], "qty": 2, "unit_price": (mon["unit_price"] or 0) * 1.2 or 100000},
@@ -107,11 +110,17 @@ print("  OK  tồn %s: %s → %s" % (mon["name"][:20], ton_truoc, ton_truoc - 2)
 _, kho_nl = goi("/api/fuel-moves", tk=tk["khonl"])
 assert any(x["doc_no"] == bh["doc_no"] and x["kind"] == "out" and x["qty_out"] == 50 for x in kho_nl["rows"]), "sổ kho dầu phải có dòng xuất bán"
 print("  OK  sổ kho nhiên liệu có dòng xuất %s · 50 lít" % bh["doc_no"])
+dau = next(d for d in bh["lines"] if d["item_type"] == "fuel")
+assert dau["cost_lak"] == round(50 * gia_bq), "giá vốn dầu bán = 50 lít × giá BÌNH QUÂN kho (C5.3): %s ≠ %s" % (dau["cost_lak"], round(50 * gia_bq))
+print("  OK  giá vốn 50 lít dầu = bình quân kho %s LAK/L" % format(round(gia_bq), ","))
 ma, r = goi("/api/ban-hang", {**than, "lines": [{"item_type": "part", "part_id": mon["id"], "qty": 10 ** 6, "unit_price": 1}]}, tk["ketoan"])
 bao("Bán quá tồn → từ chối", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
 ma, so = goi("/api/chung-tu?loai=PXK_BAN,HD_BAN,PT_BAN", tk=tk["ketoan"])
 loai = {c["loai"] for c in so["ds"] if (c["payload"] or {}).get("doc_no") == bh["doc_no"]}
 bao("Sổ chứng từ có PXK_BAN + HD_BAN của phiếu bán", 200 if loai == {"PXK_BAN", "HD_BAN"} else 500, 200, ", ".join(sorted(loai)))
+pxk = next(c for c in so["ds"] if c["loai"] == "PXK_BAN" and (c["payload"] or {}).get("doc_no") == bh["doc_no"])
+assert pxk["no"] and pxk["co"] == "1371", "xuất kho bán phải đủ hai vế giá vốn / 1371: %s / %s" % (pxk["no"], pxk["co"])
+print("  OK  PXK_BAN đủ hai vế: Nợ %s / Có %s" % (pxk["no"], pxk["co"]))
 ma, r = goi("/api/ban-hang/%s/thu" % bh["id"], {}, tk["thabok"])
 bao("Bãi ghi thu → từ chối", ma, 403)
 ma, r = goi("/api/ban-hang/%s/thu" % bh["id"], {}, tk["doanhthu"])

@@ -52,11 +52,13 @@
 @media print{.px-phieu{border:0;padding:0}.px-muc{break-inside:avoid}.px-chi input,.px-chi select{border:0;padding:0}}
 @media (max-width:900px){.px-flow,.px-tong,.px-ky{grid-template-columns:repeat(2,1fr)}.px-tt{grid-template-columns:1fr}}
 
-/* Vai Bãi Thà Bốc: ẩn TIỀN BÁN — đơn giá cước, thành tiền, quy đổi, giá thuê xe liên kết, khấu trừ,
-   lãi chuyến (`.px-tien`) và mã tài khoản (cột 9 mục III). Tiền CHI thì Bãi vẫn nhập và vẫn thấy:
-   chính họ mua dầu dọc đường, trả tiền cầu đường, ứng tiền cho tài xế. */
-.px-an-tien .px-tien{display:none!important}
-.px-an-tien table[data-bang="fuel"] th:nth-child(9),.px-an-tien table[data-bang="fuel"] td:nth-child(9){display:none}
+/* Vai Bãi Thà Bốc: KHÔNG thấy tiền (anh Khampla A2, 23/09) — đơn giá cước, giá thuê xe, khấu trừ, lãi chuyến
+   (`.px-tien`), và cả tiền CHI: đơn giá, tiền tệ, thành tiền, mã tài khoản từng dòng (`.px-gia`). Bãi khai
+   số lượng, nơi đổ, ai trả; giá do kế toán kiểm mục nhập, dầu/phụ tùng kho lấy giá bình quân của kho.
+   Máy chủ cũng không gửi các số đó cho Bãi — đây chỉ là để bảng không còn cột trống. */
+.px-an-tien .px-tien,.px-an-tien .px-gia{display:none!important}
+/* ô đơn giá kế toán còn phải nhập (mục đã nhập, dòng giá 0) */
+.px-chi input.px-can-gia{border-color:var(--warn,#c77700);background:var(--warn-bg,#fff7e6)}
 
 /* ---- tệp đính kèm (phiếu quặng của khách) ---- */
 .px-tep-o{grid-column:1/-1}

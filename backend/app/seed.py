@@ -74,6 +74,10 @@ def gieo(db):
                                 owner_type="epl", address="ທ່າແຂກ"),
         "fp_km28_tk": FuelPlace(code="KHO-KM28-TK", name="ສາງນໍ້າມັນ ເສັ້ນທາງຫຼັກ 28 ທ່າແຂກ, ທາງເລກ 8 (Kho dầu Km 28 Thakhek, đường 8)", country="LA",
                                 owner_type="epl", address="ທາງເລກ 8, ທ່າແຂກ"),
+        # KHO XE (A3, 23/09): dầu mua bên Việt Nam nhập vào đây trước, xuất cho chuyến bao nhiêu thì xuất,
+        # phần còn lại chuyển về Thà Bốc hay một kho hiện trường bằng phiếu chuyển kho.
+        "fp_kho_xe": FuelPlace(code="KHO-XE-VN", name="ສາງລົດ · ນໍ້າມັນຊື້ຢູ່ຫວຽດນາມ (Kho xe · dầu mua Việt Nam)", country="VN",
+                               owner_type="epl", note="Dầu mua ở Việt Nam: nhập vào đây, xuất cho xe, còn dư thì chuyển kho"),
     }
     for x in diem_do.values():
         db.add(x)

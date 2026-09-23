@@ -81,6 +81,25 @@ def thay_tien_ban(vai):
     return vai not in ("yard", "driver", "depot", "parts", "repair")
 
 
+def thay_tien_chi(vai):
+    """Vai này có được thấy TIỀN CHI không: đơn giá, thành tiền từng dòng chi, tổng chi, tỷ giá trên phiếu.
+
+    Anh Khampla A2 (23/09): Bãi nhập cân, số lít, nơi đổ, khoản chi dọc đường — nhưng KHÔNG thấy tiền
+    (giá cước, số tiền, tỷ giá, giá dầu, số tài khoản…). C5.1: tài xế chỉ báo số lít, kế toán nhập giá.
+    Nên Bãi nhập SỐ LƯỢNG; đơn giá do người KIỂM mục nhập (KT kho xăng dầu mục III, KT Chi phí mục IV–VI),
+    còn dầu/phụ tùng lấy từ kho thì giá tự lấy theo bình quân của kho.
+
+    A2 nói về BÃI. Tài xế vẫn thấy tiền chi của phiếu mình — họ phải biết cầm bao nhiêu tiền tạm ứng — nhưng
+    không NHẬP giá (xem `nhap_gia_chi`)."""
+    return vai != "yard"
+
+
+def nhap_gia_chi(vai):
+    """Vai này có được đặt ĐƠN GIÁ dòng chi không. C5.1 (anh Khampla 23/09): tài xế đổ dầu bên Việt Nam chỉ
+    báo số lít, kế toán nhập giá. A2: Bãi không nhập tiền. Giá mọi vai khác gửi lên thì giữ như cũ."""
+    return vai not in ("yard", "driver")
+
+
 def viec_dang_cho(vai, muc, trang_thai):
     """Mục này có đang chờ CHÍNH vai này làm không — để đếm việc cho đúng người.
 
