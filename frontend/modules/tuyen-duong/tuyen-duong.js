@@ -9,7 +9,7 @@
     const rows = ds.filter(r => !q || [r.name, r.origin, r.destination].join(' ').toLowerCase().includes(q));
     root.querySelector('#tuy-than').innerHTML = rows.length ? rows.map((r, i) => `<tr data-id="${r.id}" class="${chon && chon.id === r.id ? 'sel' : ''} ${r.active ? '' : 'kh-tat'}">
       <td>${i + 1}</td><td lang="lo"><b>${esc(r.name)}</b></td><td lang="lo">${esc(r.origin)}</td><td lang="lo">${esc(r.destination)}</td>
-      <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${so(r.toll_lak)}</td>
+      <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${so(r.toll_lak)} LAK</td>
       <td>${EPL.tag(r.active ? 'ok' : 'plain', r.active ? 'active' : 'inactive')}</td></tr>`).join('')
       : `<tr><td colspan="8" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('#tuy-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => moChiTiet(tr.dataset.id)));
@@ -21,7 +21,7 @@
     root.querySelector('#tuy-sua').hidden = !suaDuoc();
     root.querySelector('#tuy-chang').innerHTML = chon.stops.map((s, i) => `${i ? '<div class="tuy-noi"></div>' : ''}
       <div class="tuy-diem"><span class="n">${s.seq}</span><span class="ten" lang="lo">${esc(s.name)}</span><span class="km">${i ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</span></div>`).join('');
-    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)}</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
+    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)} LAK</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
     veDanhSach();
   }
 

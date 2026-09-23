@@ -11,15 +11,15 @@
     let tPS = 0, tDT = 0, tCN = 0;
     root.querySelector('#ncc-than').innerHTML = ds.length ? ds.map(s => { tPS += s.phat_sinh_lak; tDT += s.da_tra_lak; tCN += s.con_no_lak; return `<tr>
       <td lang="lo"><b>${esc(s.name)}</b></td><td>${s.item_key ? NN.h(s.item_key) : '—'}</td><td><span class="acct">${esc(s.acct_code) || '—'}</span></td>
-      <td class="num">${s.so_dong}</td><td class="num">${so(s.phat_sinh_lak)}</td>
-      <td class="num">${s.ghi_no_lak ? so(s.ghi_no_lak) : '—'}</td>
-      <td class="tien" lang="lo">${esc(s.customer_name || '') || '—'}</td><td class="num">${so(s.da_tra_lak)}</td><td class="num ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${so(s.con_no_lak)}</td>
+      <td class="num">${s.so_dong}</td><td class="num">${so(s.phat_sinh_lak)} LAK</td>
+      <td class="num">${s.ghi_no_lak ? so(s.ghi_no_lak) + ' LAK' : '—'}</td>
+      <td class="tien" lang="lo">${esc(s.customer_name || '') || '—'}</td><td class="num">${so(s.da_tra_lak)} LAK</td><td class="num ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${so(s.con_no_lak)} LAK</td>
       <td>${NN.h(s.payment_term || 't_monthly')}</td>
       <td class="no-print"><div class="ncc-nut"><button class="btn sm" data-ls="${s.id}">${NN.h('payments')}</button>
         ${AUTH.la('expacct', 'cash', 'treasury') ? `<button class="btn sm ok" data-tra="${s.id}">${NN.h('pay_supplier')}</button>` : ''}
         ${AUTH.la('expacct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</div></td></tr>`; }).join('')
       : `<tr><td colspan="11" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${so(tPS)}</td><td colspan="2"></td><td class="num">${so(tDT)}</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${so(tCN)}</td><td colspan="2"></td></tr>`;
+    root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${so(tPS)} LAK</td><td colspan="2"></td><td class="num">${so(tDT)} LAK</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${so(tCN)} LAK</td><td colspan="2"></td></tr>`;
     root.querySelectorAll('[data-ls]').forEach(b => b.addEventListener('click', () => lichSu(ds.find(x => x.id === b.dataset.ls))));
     root.querySelectorAll('[data-tra]').forEach(b => b.addEventListener('click', () => tra(ds.find(x => x.id === b.dataset.tra))));
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
@@ -27,7 +27,7 @@
   async function lichSu(s) {
     const ls = await API.get(`/api/suppliers/${s.id}/payments`);
     root.querySelector('#ncc-ls-ten').textContent = s.name;
-    root.querySelector('#ncc-ls-than').innerHTML = ls.length ? ls.map(x => `<tr><td>${EPL.ngay(x.pay_date)}</td><td class="num">${so(x.amount_lak)}</td><td>${esc(x.note) || ''}</td><td lang="lo">${esc(x.by_user) || ''}</td></tr>`).join('') : `<tr><td colspan="4" class="empty">${NN.h('no_data')}</td></tr>`;
+    root.querySelector('#ncc-ls-than').innerHTML = ls.length ? ls.map(x => `<tr><td>${EPL.ngay(x.pay_date)}</td><td class="num">${so(x.amount_lak)} LAK</td><td>${esc(x.note) || ''}</td><td lang="lo">${esc(x.by_user) || ''}</td></tr>`).join('') : `<tr><td colspan="4" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelector('#ncc-lich-su').hidden = false;
   }
   async function tra(s) {
@@ -63,19 +63,19 @@
     const rows = canTru.ds || [];
     root.querySelector('#ncc-can-tru').innerHTML = rows.length ? rows.map(o => `<tr>
       <td lang="lo"><b>${esc(o.customer_name)}</b></td>
-      <td class="num">${so(o.cuoc_lak)}</td>
-      <td class="num">${o.the_lak ? so(o.the_lak) : '—'}</td>
-      <td class="num">${o.dau_vn_lak ? so(o.dau_vn_lak) : '—'}</td>
-      <td class="num"><b>${so(o.can_tru_lak)}</b>${o.da_ghi_lak ? `<div class="small muted">${NN.h('ncc_da_ghi')}: ${so(o.da_ghi_lak)}</div>` : ''}</td>
-      <td class="num ${o.con_thu_lak > 0 ? 'ncc-no' : ''}">${so(o.con_thu_lak)}</td>
+      <td class="num">${so(o.cuoc_lak)} LAK</td>
+      <td class="num">${o.the_lak ? so(o.the_lak) + ' LAK' : '—'}</td>
+      <td class="num">${o.dau_vn_lak ? so(o.dau_vn_lak) + ' LAK' : '—'}</td>
+      <td class="num"><b>${so(o.can_tru_lak)} LAK</b>${o.da_ghi_lak ? `<div class="small muted">${NN.h('ncc_da_ghi')}: ${so(o.da_ghi_lak)} LAK</div>` : ''}</td>
+      <td class="num ${o.con_thu_lak > 0 ? 'ncc-no' : ''}">${so(o.con_thu_lak)} LAK</td>
       <td class="small muted">${[...o.the.map(t => t.card_no), ...o.tram.map(t => t.name)].map(esc).join(' · ')}
-        ${AUTH.la('rev') && o.chua_ghi_lak > 0 ? `<div><button class="btn sm ok no-print" data-ghi-ct="${esc(o.customer_id)}">${NN.h('ncc_ghi_ct')} · ${so(o.chua_ghi_lak)}</button></div>` : ''}</td></tr>`).join('')
+        ${AUTH.la('rev') && o.chua_ghi_lak > 0 ? `<div><button class="btn sm ok no-print" data-ghi-ct="${esc(o.customer_id)}">${NN.h('ncc_ghi_ct')} · ${so(o.chua_ghi_lak)} LAK</button></div>` : ''}</td></tr>`).join('')
       : `<tr><td colspan="7" class="empty">${NN.h('ncc_can_tru_trong')}</td></tr>`;
     root.querySelectorAll('[data-ghi-ct]').forEach(b => b.addEventListener('click', () => ghiCanTru(b.dataset.ghiCt)));
     root.querySelector('#ncc-can-tru-chan').innerHTML = rows.length ? `<tr><td>${NN.h('total')}</td>
-      <td class="num">${so(canTru.tong_cuoc_lak)}</td><td colspan="2"></td>
-      <td class="num"><b>${so(canTru.tong_can_tru_lak)}</b></td>
-      <td class="num">${so(canTru.tong_con_thu_lak)}</td><td></td></tr>` : '';
+      <td class="num">${so(canTru.tong_cuoc_lak)} LAK</td><td colspan="2"></td>
+      <td class="num"><b>${so(canTru.tong_can_tru_lak)} LAK</b></td>
+      <td class="num">${so(canTru.tong_con_thu_lak)} LAK</td><td></td></tr>` : '';
   }
 
   /** Ghi cấn trừ tháng: khoản khách trả hộ → phiếu thu cách thu "cấn trừ" trên hoá đơn của khách. */

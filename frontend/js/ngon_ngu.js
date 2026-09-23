@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1440 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1453 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -7151,6 +7151,71 @@ window.EPL_TU_DIEN = {
   "vi": "Bỏ thay đổi",
   "lo": "ຍົກເລີກການແກ້",
   "en": "Discard changes"
+ },
+ "xuat_excel": {
+  "vi": "Excel",
+  "lo": "Excel",
+  "en": "Excel"
+ },
+ "xuat_pdf": {
+  "vi": "PDF",
+  "lo": "PDF",
+  "en": "PDF"
+ },
+ "xuat_excel_goi_y": {
+  "vi": "Tải bảng đang xem về tệp Excel (.xlsx)",
+  "lo": "ສົ່ງອອກຕາຕະລາງເປັນ Excel (.xlsx)",
+  "en": "Download the table on screen as Excel (.xlsx)"
+ },
+ "xuat_pdf_goi_y": {
+  "vi": "In hoặc lưu thành PDF (chọn \"Lưu thành PDF\" trong hộp in)",
+  "lo": "ພິມ ຫຼື ສົ່ງອອກເປັນ PDF",
+  "en": "Print or save as PDF (choose \"Save as PDF\" in the print dialog)"
+ },
+ "xuat_nguoi": {
+  "vi": "Người xuất",
+  "lo": "ຜູ້ສົ່ງອອກ",
+  "en": "Exported by"
+ },
+ "xuat_luc": {
+  "vi": "Lúc",
+  "lo": "ເວລາ",
+  "en": "At"
+ },
+ "xuat_loc": {
+  "vi": "Bộ lọc",
+  "lo": "ເງື່ອນໄຂ",
+  "en": "Filter"
+ },
+ "xuat_chi_tieu": {
+  "vi": "Chỉ tiêu",
+  "lo": "ລາຍການ",
+  "en": "Indicator"
+ },
+ "xuat_gia_tri": {
+  "vi": "Giá trị",
+  "lo": "ມູນຄ່າ",
+  "en": "Value"
+ },
+ "xuat_khong_co": {
+  "vi": "Màn này chưa có bảng số liệu nào để xuất.",
+  "lo": "ໜ້ານີ້ບໍ່ມີຕາຕະລາງໃຫ້ສົ່ງອອກ.",
+  "en": "There is no table on this screen to export."
+ },
+ "xuat_da_tai": {
+  "vi": "Đã tải tệp Excel",
+  "lo": "ສົ່ງອອກ Excel ແລ້ວ",
+  "en": "Excel file downloaded"
+ },
+ "td_legs_col": {
+  "vi": "Chặng đã tới",
+  "lo": "ຈຸດທີ່ຮອດແລ້ວ",
+  "en": "Stops reached"
+ },
+ "td_warn_col": {
+  "vi": "Ghi chú",
+  "lo": "ໝາຍເຫດ",
+  "en": "Notes"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

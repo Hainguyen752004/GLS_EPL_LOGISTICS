@@ -1334,6 +1334,20 @@ KHOA_MOI = {
  'ccy_cny':      ('Nhân Dân Tệ', 'ຢວນ ຈີນ', 'Chinese Yuan'),
  'ccy_lak':      ('Kíp Lào', 'ກີບ ລາວ', 'Lao Kip'),
  'reset':        ('Bỏ thay đổi', 'ຍົກເລີກການແກ້', 'Discard changes'),
+ # ---- xuất báo cáo Excel / PDF (js/xuat.js, 23/09) — Lào ráp từ ສົ່ງອອກ (export), ຜູ້ (người), ລາຍການ, ມູນຄ່າ
+ 'xuat_excel':        ('Excel', 'Excel', 'Excel'),
+ 'xuat_pdf':          ('PDF', 'PDF', 'PDF'),
+ 'xuat_excel_goi_y':  ('Tải bảng đang xem về tệp Excel (.xlsx)', 'ສົ່ງອອກຕາຕະລາງເປັນ Excel (.xlsx)', 'Download the table on screen as Excel (.xlsx)'),
+ 'xuat_pdf_goi_y':    ('In hoặc lưu thành PDF (chọn "Lưu thành PDF" trong hộp in)', 'ພິມ ຫຼື ສົ່ງອອກເປັນ PDF', 'Print or save as PDF (choose "Save as PDF" in the print dialog)'),
+ 'xuat_nguoi':        ('Người xuất', 'ຜູ້ສົ່ງອອກ', 'Exported by'),
+ 'xuat_luc':          ('Lúc', 'ເວລາ', 'At'),
+ 'xuat_loc':          ('Bộ lọc', 'ເງື່ອນໄຂ', 'Filter'),
+ 'xuat_chi_tieu':     ('Chỉ tiêu', 'ລາຍການ', 'Indicator'),
+ 'xuat_gia_tri':      ('Giá trị', 'ມູນຄ່າ', 'Value'),
+ 'xuat_khong_co':     ('Màn này chưa có bảng số liệu nào để xuất.', 'ໜ້ານີ້ບໍ່ມີຕາຕະລາງໃຫ້ສົ່ງອອກ.', 'There is no table on this screen to export.'),
+ 'xuat_da_tai':       ('Đã tải tệp Excel', 'ສົ່ງອອກ Excel ແລ້ວ', 'Excel file downloaded'),
+ 'td_legs_col':       ('Chặng đã tới', 'ຈຸດທີ່ຮອດແລ້ວ', 'Stops reached'),
+ 'td_warn_col':       ('Ghi chú', 'ໝາຍເຫດ', 'Notes'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {}   # nhãn vai nay ghi thẳng trong KHOA_MOI theo đúng chữ bảng Nhiệm Vụ của khách

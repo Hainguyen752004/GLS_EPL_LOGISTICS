@@ -25,7 +25,7 @@
       <td>${r.transfer_no ? EPL.tag('plain', 'fuel_transfer') : EPL.tag('plain', r.kind === 'in' ? 'fs_in' : 'fs_out')}</td>
       <td lang="lo" class="small knl-ten-kho" title="${esc(r.place_name || '')}">${esc(r.place_name || '')}</td><td>${esc(r.truck_no) || '—'}</td>
       <td class="num knl-in">${r.qty_in ? so(r.qty_in) : ''}</td><td class="num knl-out">${r.qty_out ? so(r.qty_out) : ''}</td><td class="num"><b>${so(r.balance, 1)}</b></td>
-      <td class="num">${r.unit_price ? so(r.unit_price) + ' ' + esc(r.currency) : '—'}</td><td lang="lo">${esc(r.by_user) || '—'}</td></tr>`).join('')
+      <td class="num tien-chi">${r.unit_price ? so(r.unit_price) + ' ' + esc(r.currency) : '—'}</td><td lang="lo">${esc(r.by_user) || '—'}</td></tr>`).join('')
       : `<tr><td colspan="10" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('[data-kho]').forEach(tr => tr.addEventListener('click', () => { chon = tr.dataset.kho === chon ? '' : tr.dataset.kho; q('#knl-kho').value = chon; tai().catch(EPL.baoLoi); }));
   }

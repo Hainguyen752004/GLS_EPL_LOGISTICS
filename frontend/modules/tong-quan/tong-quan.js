@@ -279,5 +279,32 @@
     },
     onLang() { if (d) ve(); },
     destroy() { Object.values(charts).forEach(c => c.destroy()); charts = {}; clearInterval(autoTimer); autoTimer = null; },
+    /* Nút Excel trên thanh đầu trang: màn này vẽ bằng thẻ và biểu đồ, không có bảng — dựng sheet từ chính số liệu.
+       Tiền để NGUYÊN Kíp (thẻ trên màn đọc theo triệu cho dễ nhìn). Bãi: không có ô tiền bán, không có tiền chi (A2). */
+    xuatExcel() {
+      if (!d) return [];
+      const T = NN.t, L = (v) => EPL.oTien(v, 'LAK'), bai = laBai();
+      const chiTieu = [
+        [T('k_month_trips'), EPL.oSo(d.so_phieu, 0, T('trips'))],
+        ...(bai ? [] : [[T('k_rev'), L(d.doanh_thu_lak)], [T('k_exp'), L(d.chi_lak)], [T('k_unpaid'), L(d.chua_thu_lak)]]),
+        [T('k_tons'), EPL.oSo(d.tan_giao, 2, 't')],
+        [T('s_dispatched'), d.dem.dispatched], [T('s_transit'), d.dem.transit], [T('s_arrived'), d.dem.arrived],
+        ...(bai ? [] : [[T('p_invoiced'), d.dem.invoiced], [T('s_paid'), d.dem.paid]]),
+        ...(bai ? [] : Object.entries(d.chi_theo_muc || {}).map(([m, v]) => [`${T('k_exp')} · ${T('e_' + m)}`, L(v)])),
+      ];
+      const ds = [EPL.xuatSheet(T('xuat_chi_tieu'), [T('xuat_chi_tieu'), T('xuat_gia_tri')], chiTieu)];
+      const ngay = (xh && xh.theo_ngay) || [];
+      if (ngay.length && !bai) ds.push(EPL.xuatSheet(T('c_date'), [T('c_date'), T('tq_revenue') + ' (LAK)', T('tq_cost') + ' (LAK)'],
+        ngay.map(x => [EPL.oNgay(x.ngay), L(x.doanh_thu_lak), L(x.chi_lak)]),
+        { tong: [T('total'), L(ngay.reduce((a, x) => a + (x.doanh_thu_lak || 0), 0)), L(ngay.reduce((a, x) => a + (x.chi_lak || 0), 0))] }));
+      const xe = (xh && xh.xe) || [];
+      if (xe.length) ds.push(EPL.xuatSheet(T('tq_vehicle'), [T('tq_vehicle'), T('trips'), T('ton'), 'km', ...(bai ? [] : [T('tq_revenue') + ' (LAK)'])],
+        xe.map(x => [x.so_xe, x.so_chuyen, EPL.oSo(x.tan, 2, 't'), EPL.oSo(x.km, 0, 'km'), ...(bai ? [] : [L(x.doanh_thu_lak)])])));
+      const hh = ((xh && xh.hao_hut) || []).filter(x => x.can_cuoi != null);
+      if (hh.length) ds.push(EPL.xuatSheet(T('tq_loss'), [T('doc_no'), T('w_origin'), T('w_dest'), T('tq_loss') + ' %'],
+        hh.map(x => [x.doc_no, EPL.oSo(x.can_dau, 2, 't'), EPL.oSo(x.can_cuoi, 2, 't'),
+          x.can_dau ? { v: (x.can_dau - x.can_cuoi) / x.can_dau, f: '0.00%' } : null])));
+      return ds;
+    },
   };
 })();

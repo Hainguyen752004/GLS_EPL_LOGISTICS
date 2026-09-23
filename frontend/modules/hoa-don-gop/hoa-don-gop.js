@@ -22,7 +22,7 @@
       <td class="mono">${esc(o.ccy)}</td>
       <td class="num">${o.so_phieu}</td>
       <td class="num"><b>${EPL.tien(o.tong, o.ccy)}</b></td>
-      <td class="num">${so(o.tong_lak)}</td>
+      <td class="num">${so(o.tong_lak)} LAK</td>
       <td class="hg-phieu">${o.phieu.map(p => esc(p.doc_no)).join(' · ')}</td>
       <td class="no-print">${lapDuoc() ? `<button class="btn sm ok" data-gop="${esc(o.customer_id)}" data-ccy="${esc(o.ccy)}">${NN.h('hg_gop')}</button>` : ''}</td></tr>`).join('')
       : `<tr><td colspan="7" class="empty">${NN.h('hg_cho_trong')}</td></tr>`;
@@ -39,8 +39,8 @@
       <td>${EPL.ngay(h.inv_date)}</td>
       <td class="num">${h.so_phieu}</td>
       <td class="num"><b>${EPL.tien(h.amount, h.currency)}</b><div class="hg-cach">${so(h.amount_lak)} LAK</div></td>
-      <td class="num">${so(h.da_thu_lak)}</td>
-      <td class="num ${h.con_lai_lak > 0 ? 'neg' : 'pos'}">${so(h.con_lai_lak)}</td>
+      <td class="num">${so(h.da_thu_lak)} LAK</td>
+      <td class="num ${h.con_lai_lak > 0 ? 'neg' : 'pos'}">${so(h.con_lai_lak)} LAK</td>
       <td>${tag(h.finance_status)}</td>
       <td class="no-print"><button class="btn sm" data-xem="${esc(h.id)}">${NN.h('view')}</button></td></tr>`).join('')
       : `<tr><td colspan="10" class="empty">${NN.h('no_data')}</td></tr>`;
@@ -63,13 +63,13 @@
       <td class="num">${so(p.tan_tinh, 2)}</td>
       <td class="num">${EPL.tien(p.price, p.ccy)}<div class="hg-cach">${NN.h(p.cach_tinh === 'chuyen' ? 'pm_chuyen_s' : 'pm_ton_s')}</div></td>
       <td class="num"><b>${EPL.tien(p.doanh_thu, p.ccy)}</b></td>
-      <td class="num">${so(p.da_thu_lak)}</td>
+      <td class="num">${so(p.da_thu_lak)} LAK</td>
       <td>${tag(p.finance_status)}</td></tr>`).join('');
     const dongThu = (HD.thu_tien || []).map(x => `<tr>
       <td class="nowrap">${EPL.ngay(x.pay_date)}</td>
       <td class="num"><b>${EPL.tien(x.amount, x.currency)}</b></td>
       <td class="num">${x.currency === 'LAK' ? '—' : so(x.rate_to_lak, x.currency === 'VND' ? 2 : 0)}</td>
-      <td class="num">${so(x.amount_lak)}</td>
+      <td class="num">${so(x.amount_lak)} LAK</td>
       <td>${tenCach(x.method)}</td>
       <td class="mono small">${esc(x.ref || '')}</td>
       <td class="small muted">${esc(x.by_user || '')}</td>
@@ -77,7 +77,7 @@
     root.querySelector('#hg-ct-than').innerHTML = `
       <div class="hg-tong">
         <div><span>${NN.h('c_value')}</span><b>${EPL.tien(HD.amount, HD.currency)}</b></div>
-        <div><span>${NN.h('in_lak')}</span><b>${so(HD.amount_lak)}</b></div>
+        <div><span>${NN.h('in_lak')}</span><b>${so(HD.amount_lak)} LAK</b></div>
         <div><span>${NN.h('collected')}</span><b>${so(HD.da_thu_lak)} LAK</b></div>
         <div><span>${NN.h('remaining')}</span><b class="${HD.con_lai_lak > 0 ? 'neg' : 'pos'}">${so(HD.con_lai_lak)} LAK</b></div>
         <div><span>${NN.h('hg_so_phieu')}</span><b>${HD.so_phieu}</b></div>

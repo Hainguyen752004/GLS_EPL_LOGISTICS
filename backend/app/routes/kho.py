@@ -198,8 +198,11 @@ def _xuat_pt(p):
 
 
 @router.get("/api/parts")
-def ds_phu_tung(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return [_xuat_pt(p) for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
+def ds_phu_tung(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    ds = [_xuat_pt(p) for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
+    if not thay_tien_chi(user.role):            # Bãi không thấy giá (anh Khampla A2) — rà xuất Excel 23/09 thấy còn lọt
+        for r in ds: r.pop("unit_price", None)
+    return ds
 
 
 @router.post("/api/parts")

@@ -596,6 +596,16 @@
   function khiDoiCo() { clearTimeout(choCao); choCao = setTimeout(caoCot, 80); }
 
   EPL.modules['theo-doi-tuyen'] = {
+    /* Excel: danh sách chuyến đang lọc ở cột trái (màn vẽ bằng thẻ, không có bảng) */
+    xuatExcel() {
+      const T = NN.t;
+      return [EPL.xuatSheet(T('nav_track_route'),
+        [T('doc_no'), T('status'), T('customer'), T('route'), T('truck_no'), T('plate_head'), T('driver'), T('c_date'), T('td_legs_col'), T('td_warn_col')],
+        loc().map(c => [c.doc_no, T('s_' + c.transport_status), c.customer_name || '', `${c.origin || ''} → ${c.destination || ''}`, c.truck_no || '',
+          c.plate_head || '', c.driver_name || '', EPL.oNgay(c.out_date), c.so_diem ? `${c.stop_reached}/${c.so_diem}` : T('no_route'),
+          [c.su_co_mo ? T('td_inc_open', { n: c.su_co_mo }) : '', c.di_lau ? T('td_days_out', { n: c.so_ngay_di }) : '',
+            c.cho_cap_phat ? T('td_iss_wait', { n: c.cho_cap_phat }) : ''].filter(Boolean).join(' · ')]))];
+    },
     async init(r, ctx) {
       root = r;
       PARTS = await API.get('/api/parts').catch(() => []);

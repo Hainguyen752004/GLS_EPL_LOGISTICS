@@ -164,6 +164,10 @@ def main():
     assert g["stop_reached"] == 2 and g["transport_status"] == "transit", g["transport_status"]
     s, g = goi("/api/trips/%s/events" % P, {"kind": "arrive_stop", "stop_seq": 99}, vai="thabok"); phai(s, 422, "Tới điểm không có trên tuyến → bị từ chối", g)
     s, parts = goi("/api/parts", vai="thabok"); pt = next(x for x in parts if x["qty"] >= 1); ton = pt["qty"]
+    # Bãi không thấy giá phụ tùng (anh Khampla A2) — máy chủ không gửi; giá đọc bằng vai được xem (KT Chi phí)
+    assert "unit_price" not in pt, "Bãi không được nhận giá phụ tùng: %s" % pt
+    s, parts_kt = goi("/api/parts", vai="ketoancp"); pt["unit_price"] = next(x for x in parts_kt if x["id"] == pt["id"])["unit_price"]
+    print("  ✓ %-58s" % "Bãi đọc kho phụ tùng: có tồn, KHÔNG có giá")
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "incident_type": "breakdown", "stop_seq": 3, "note": "thử: hỏng bầu hơi",
                                               "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="thabok")
     phai(s, 403, "Bãi khai khoản sửa chữa → bị từ chối (C1.2)", g)

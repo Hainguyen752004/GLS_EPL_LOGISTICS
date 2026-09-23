@@ -118,5 +118,13 @@
       await tai();
     },
     onLang() { if (root) veHet(); },
+    /* Excel: bảng tỷ giá đang dùng + lịch sử đổi — màn vẽ bằng thẻ nên dựng sheet từ dữ liệu */
+    xuatExcel() {
+      const T = NN.t, L = (v, ma) => EPL.oSo(v, le(ma), 'LAK');
+      const ds = [EPL.xuatSheet(T('nav_rates'), [T('cur'), T('rate_now'), T('rate_prev'), T('rate_by'), T('c_date')],
+        D.ds.map(r => [r.code, L(r.rate_to_lak, r.code), L(r.truoc, r.code), r.by_user || '', EPL.oNgay(r.cap_nhat)]))];
+      if ((D.lich_su || []).length) ds.push(...EPL._xlsx.sheetMacDinh(root));    // bảng lịch sử đang hiện, đầu cột như trên màn
+      return ds;
+    },
   };
 })();

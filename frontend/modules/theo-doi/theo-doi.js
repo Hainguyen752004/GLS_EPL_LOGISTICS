@@ -86,12 +86,8 @@
     locVaVe();
   }
 
-  function xuatCSV() {
-    const th = [...root.querySelectorAll('.td-bang thead tr:first-child th, .td-bang thead tr:nth-child(2) th')].map(t => t.textContent.trim());
-    const dong = [...root.querySelectorAll('#td-than tr[data-id]')].map(tr => [...tr.children].map(td => '"' + td.textContent.trim().replace(/"/g, '""') + '"').join(','));
-    const blob = new Blob(['﻿' + th.join(',') + '\n' + dong.join('\n')], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'theo-doi-phieu-van-chuyen.csv'; a.click();
-  }
+  // "Xuất báo cáo" (và nút cùng tên ở Tổng quan) giờ ra Excel thật .xlsx — trước đây là CSV (rà 23/09)
+  const xuatBaoCao = () => EPL.xuatExcel();
 
   EPL.modules['theo-doi'] = {
     async init(r, ctx) {
@@ -106,12 +102,12 @@
       ['td-q', 'td-vc', 'td-tc', 'td-cty'].forEach(id => r.querySelector('#' + id).addEventListener('input', locVaVe));
       r.querySelector('#td-quy').addEventListener('change', locVaVe);
       r.querySelector('#td-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
-      r.querySelector('#td-xuat').addEventListener('click', xuatCSV);
+      r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);
       r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       try { tyGia = await API.get('/api/rates'); } catch (e) { tyGia = {}; }
       veChuThich();
       await tai();
-      if (t.xuat) xuatCSV();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
+      if (t.xuat) xuatBaoCao();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
     onLang() { veChuThich(); if (ds.length) locVaVe(); },
   };

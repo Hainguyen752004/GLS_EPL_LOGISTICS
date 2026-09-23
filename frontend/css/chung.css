@@ -401,10 +401,28 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .toast.loi{background:var(--red)} .toast.ok{background:var(--green)}
 
 /* ---------- In ---------- */
+/* Hai nút xuất báo cáo trên thanh đầu trang (js/xuat.js) */
+.xuat-nut{display:flex;gap:6px;align-items:center}
+.xuat-nut[hidden]{display:none}
+.xuat-nut .btn{display:inline-flex;align-items:center;gap:6px}
+.xuat-nut svg{width:15px;height:15px;flex:none}
+.in-dau{display:none}
 @media print{
-  .side,.topbar,.toolbar,.no-print{display:none!important}
-  .app{grid-template-columns:1fr} .page{padding:0;max-width:none} body{background:#fff}
+  .side,.topbar,.toolbar,.no-print,.tbar,.toast{display:none!important}
+  .app{grid-template-columns:1fr;zoom:1!important;min-height:0} .page{padding:0;max-width:none} body{background:#fff}
   .card{border:0}
+  * {-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* In BÁO CÁO (nút PDF, không phải tờ phiếu): đầu trang có tên · bộ lọc · người xuất; bỏ nút, ô lọc; bảng gọn */
+  .in-dau{display:flex;flex-direction:column;gap:2px;margin:0 0 10px;padding-bottom:8px;border-bottom:1.5px solid #1f5c45;font-size:11px;color:#333}
+  .in-dau b{font-size:15px;color:#111}
+  body.in-bao-cao .btn,body.in-bao-cao button,body.in-bao-cao select:not(table *),body.in-bao-cao input:not(table *),
+  body.in-bao-cao label:has(> select,> input),body.in-bao-cao .field:has(select,input),body.in-bao-cao .mod-dang-tai::before{display:none!important}
+  body.in-bao-cao .card{break-inside:auto;margin-bottom:10px}
+  body.in-bao-cao table{font-size:10px;width:100%}
+  body.in-bao-cao th,body.in-bao-cao td{padding:3px 5px!important;white-space:normal!important}
+  body.in-bao-cao thead{display:table-header-group}
+  body.in-bao-cao tr{break-inside:avoid}
+  body.in-bao-cao .tbl-wrap,body.in-bao-cao .bang-cuon,body.in-bao-cao [style*="overflow"]{overflow:visible!important;max-height:none!important}
 }
 @media (max-width:1280px){
   .side{padding:16px 10px}

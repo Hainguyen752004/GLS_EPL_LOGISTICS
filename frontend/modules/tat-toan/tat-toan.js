@@ -30,8 +30,8 @@
       return `<tr data-tx="${d.driver_id}" class="${CHON === d.driver_id ? 'chon' : ''}">
         <td lang="lo"><b>${esc(d.driver_name)}</b><div class="small muted">${esc(d.driver_code || '')}</div></td>
         <td class="num">${d.so_phieu}</td>
-        <td class="num">${so(d.tong_ung_lak)}</td>
-        <td class="num">${so(d.tong_chi_lak)}</td>
+        <td class="num">${so(d.tong_ung_lak)} LAK</td>
+        <td class="num">${so(d.tong_chi_lak)} LAK</td>
         <td class="num ${ch > 0 ? 'pos' : ch < 0 ? 'neg' : ''}"><b>${so(Math.abs(ch))}</b><div class="small muted">${nhan}</div></td>
         <td>${d.da_tat_toan ? EPL.tag('paid', 'tt_done') : EPL.tag('plain', 'v_cho')}</td>
         <td class="no-print">${chotDuoc() ? (d.da_tat_toan
@@ -56,7 +56,7 @@
     q('#tt-phieu').innerHTML = d.phieu.length ? d.phieu.map(p => `<tr>
       <td class="mono">${esc(p.doc_no)}</td><td>${EPL.ngay(p.out_date)}</td><td>${esc(p.truck_no || '')}</td>
       <td lang="lo">${esc((p.origin || '') + ' → ' + (p.destination || ''))}</td>
-      <td class="num">${so(p.chi_lak)}</td></tr>`).join('')
+      <td class="num">${so(p.chi_lak)} LAK</td></tr>`).join('')
       : `<tr><td colspan="5" class="empty">${NN.h('no_data')}</td></tr>`;
   }
 
