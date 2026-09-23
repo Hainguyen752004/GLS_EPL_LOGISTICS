@@ -15,9 +15,9 @@
       <td class="num">${s.ghi_no_lak ? so(s.ghi_no_lak) : '—'}</td>
       <td class="tien" lang="lo">${esc(s.customer_name || '') || '—'}</td><td class="num">${so(s.da_tra_lak)}</td><td class="num ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${so(s.con_no_lak)}</td>
       <td>${NN.h(s.payment_term || 't_monthly')}</td>
-      <td class="no-print"><button class="btn sm" data-ls="${s.id}">${NN.h('payments')}</button>
+      <td class="no-print"><div class="ncc-nut"><button class="btn sm" data-ls="${s.id}">${NN.h('payments')}</button>
         ${AUTH.la('expacct', 'cash', 'treasury') ? `<button class="btn sm ok" data-tra="${s.id}">${NN.h('pay_supplier')}</button>` : ''}
-        ${AUTH.la('expacct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</td></tr>`; }).join('')
+        ${AUTH.la('expacct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</div></td></tr>`; }).join('')
       : `<tr><td colspan="11" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${so(tPS)}</td><td colspan="2"></td><td class="num">${so(tDT)}</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${so(tCN)}</td><td colspan="2"></td></tr>`;
     root.querySelectorAll('[data-ls]').forEach(b => b.addEventListener('click', () => lichSu(ds.find(x => x.id === b.dataset.ls))));

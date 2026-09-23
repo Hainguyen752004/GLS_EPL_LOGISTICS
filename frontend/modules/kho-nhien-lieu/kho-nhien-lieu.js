@@ -13,16 +13,17 @@
     const xuatThang = rows.filter(r => r.kind === 'out' && !r.transfer_no && r.move_date.startsWith(thang)).reduce((a, r) => a + r.qty_out, 0);
     q('#knl-ton').textContent = so(d.ton_lit, 1);
     q('#knl-xuat').textContent = so(xuatThang, 1);
-    q('#knl-gia').textContent = coGia ? (chon ? so(d.gia_bq) + ' LAK/L' : '—') : '—';
+    // mỗi kho một giá bình quân — gộp mọi kho thì không có một con số đúng, nói rõ thay vì hiện "—" (rà 23/09)
+    q('#knl-gia').innerHTML = coGia ? (chon ? so(d.gia_bq) + ' LAK/L' : `<span class="knl-chon-kho">${NN.h('fuel_pick_kho')}</span>`) : '—';
     q('#knl-gia-o').hidden = !coGia;
     q('#knl-ds-kho').innerHTML = d.kho.filter(k => k.active || k.ton_lit).map(k => `<tr class="${k.id === chon ? 'knl-chon' : ''}" data-kho="${k.id}">
       <td lang="lo">${esc(k.name)}</td><td class="mono small">${esc(k.code || '')}</td><td class="num"><b>${so(k.ton_lit, 1)}</b></td>
       ${coGia ? `<td class="num">${k.gia_bq ? so(k.gia_bq) : '—'}</td>` : ''}</tr>`).join('');
     q('#knl-cot-gia').hidden = !coGia;
     q('#knl-than').innerHTML = rows.length ? rows.map(r => `<tr>
-      <td>${EPL.ngay(r.move_date)}</td><td class="mono">${esc(r.doc_no) || '—'}</td>
+      <td>${EPL.ngay(r.move_date)}</td><td class="mono">${esc(r.doc_no) || '—'}${r.note ? `<div class="knl-ghi" lang="lo" title="${esc(r.note)}">${esc(r.note)}</div>` : ''}</td>
       <td>${r.transfer_no ? EPL.tag('plain', 'fuel_transfer') : EPL.tag('plain', r.kind === 'in' ? 'fs_in' : 'fs_out')}</td>
-      <td lang="lo" class="small">${esc(r.place_name || '')}</td><td>${esc(r.truck_no) || (r.note ? `<span class="small muted" lang="lo">${esc(r.note)}</span>` : '—')}</td>
+      <td lang="lo" class="small knl-ten-kho" title="${esc(r.place_name || '')}">${esc(r.place_name || '')}</td><td>${esc(r.truck_no) || '—'}</td>
       <td class="num knl-in">${r.qty_in ? so(r.qty_in) : ''}</td><td class="num knl-out">${r.qty_out ? so(r.qty_out) : ''}</td><td class="num"><b>${so(r.balance, 1)}</b></td>
       <td class="num">${r.unit_price ? so(r.unit_price) + ' ' + esc(r.currency) : '—'}</td><td lang="lo">${esc(r.by_user) || '—'}</td></tr>`).join('')
       : `<tr><td colspan="10" class="empty">${NN.h('no_data')}</td></tr>`;

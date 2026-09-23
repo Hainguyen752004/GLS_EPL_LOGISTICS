@@ -1,9 +1,11 @@
 /* Cấp phát — trái là hàng chờ, phải là khối đối chiếu trước khi cấp */
 .cp-hai{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;align-items:start}
+/* chưa chọn phiếu nào thì khung chi tiết ẩn — bảng trải hết chiều ngang (rà giao diện 23/09: bảng chỉ chiếm nửa màn) */
+.cp-hai:has(>.cp-xem[hidden]){grid-template-columns:1fr}
 .cp-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
 .cp-tab button{border:0;background:none;padding:6px 14px;border-radius:999px;color:var(--ink-2);font-weight:500}
 .cp-tab button.active{background:var(--ink);color:#fff}
-.cp-ma{min-width:230px}
+.cp-ma{min-width:320px}
 .cp-ma input{font-family:ui-monospace,Consolas,monospace}
 #cp-than tr[data-v]{cursor:pointer}
 #cp-than tr.chon{background:var(--green-soft)}

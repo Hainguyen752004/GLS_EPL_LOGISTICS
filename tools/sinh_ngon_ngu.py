@@ -163,6 +163,9 @@ KHOA_MOI = {
  # rà giao diện 23/09: ba khoá dùng mà chưa có trong từ điển — màn hiện nguyên chữ tiếng Anh thô
  'refresh':        ('Làm mới', 'ໂຫຼດໃໝ່', 'Refresh'),
  'view':           ('Xem', 'ເບິ່ງ', 'View'),
+ 'all_months':     ('Tất cả các tháng', 'ທຸກເດືອນ', 'All months'),
+ 'fuel_pick_kho':  ('Chọn một kho để xem', 'ເລືອກສາງເພື່ອເບິ່ງ', 'Pick a store to see'),
+ 'v_scan_ph':      ('Quét mã QR hoặc gõ mã trên phiếu', 'ສະແກນ QR ຫຼື ພິມລະຫັດໃນໃບ', 'Scan the QR or type the code on the slip'),
  'avatar':         ('Chữ viết tắt (ảnh đại diện)', 'ຕົວຫຍໍ້ (ຮູບໂປຣໄຟລ໌)', 'Initials (avatar)'),
  'title_fuel':     ('Kho nhiên liệu<span class="sub">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>', 'ສາງນໍ້າມັນ<span class="sub">ຕາມແຕ່ລະສາງ · ນຳເຂົ້າ – ເບີກອອກ – ໂອນສາງ – ຄົງເຫຼືອ</span>', 'Fuel store<span class="sub">By store · In – Out – Transfer – Balance</span>'),
  'fuel_kho':       ('Kho', 'ສາງ', 'Store'),
@@ -1003,8 +1006,8 @@ KHOA_MOI = {
  'ct_ma_kt':       ('Mã phiếu bên kế toán', 'ເລກໃບຝັ່ງບັນຊີ', 'Voucher id in accounting'),
  # ---- v18: hai DO — phiếu gom hàng và phiếu giao hàng, nối nhau qua kho bãi
  'do_kind':        ('Loại phiếu', 'ປະເພດໃບ', 'Order type'),
- 'do_gom':         ('Đi gom hàng (mỏ → bãi)', 'ໄປເກັບສິນຄ້າ (ບໍ່ແຮ່ → ສາງ)', 'Collection (mine → yard)'),
- 'do_giao':        ('Đi giao hàng (bãi → khách)', 'ໄປສົ່ງສິນຄ້າ (ສາງ → ລູກຄ້າ)', 'Delivery (yard → customer)'),
+ 'do_gom':         ('Gom (mỏ → bãi)', 'ເກັບ (ບໍ່ແຮ່ → ສາງ)', 'Collect (mine → yard)'),   # rút gọn: ô chọn bị cắt chữ (rà 23/09)
+ 'do_giao':        ('Giao (bãi → khách)', 'ສົ່ງ (ສາງ → ລູກຄ້າ)', 'Deliver (yard → client)'),
  'goods_lines':    ('Hàng trên phiếu', 'ສິນຄ້າໃນໃບ', 'Goods on this order'),
  'goods_name':     ('Mặt hàng', 'ລາຍການສິນຄ້າ', 'Goods'),
  'qty_t':          ('Số tấn', 'ຈຳນວນໂຕນ', 'Tonnes'),

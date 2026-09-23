@@ -8,8 +8,12 @@
 .pct-tu{margin-top:12px;border-radius:var(--r);padding:10px 12px;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .pct-tu.ok{background:var(--green-soft);color:var(--green)} .pct-tu.cho{background:var(--amber-soft);color:var(--amber)} .pct-tu.khong{background:var(--bg-2);color:var(--ink-2)}
 .pct-tu b{font-size:16px;font-variant-numeric:tabular-nums}
-.pct-nut{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.pct-nut .btn{flex:1;justify-content:center;padding:12px 14px;font-size:15px;font-weight:600}
+/* Nút của tài xế: lưới 2 cột, nút chính (Xuất phát / Báo đã về) trải hết hàng. Trước đây 4–5 nút ép một hàng nên
+   chữ gãy 3–4 dòng ("Phiếu chi tạm ứng", "Khai đổ nhiên liệu") — rà giao diện 23/09. */
+.pct-nut{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pct-nut .btn{justify-content:center;text-align:center;padding:12px 10px;font-size:14.5px;font-weight:600;line-height:1.25;min-height:48px}
+.pct-nut .btn[data-di],.pct-nut .btn[data-ve]{grid-column:1/-1;font-size:16px;min-height:54px}
+.pct-nut .btn:last-child:nth-child(even){grid-column:auto}
 .pct-bao{margin-top:10px;font-size:12.5px}
 .pct-bao div{padding:4px 0;border-top:1px dotted var(--line);display:flex;gap:8px;align-items:center}
 @media (max-width:600px){.pct-ds{grid-template-columns:1fr}}

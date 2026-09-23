@@ -462,6 +462,33 @@
     return true;
   }
   const moduleDau = () => (MODULES.find(thayDuoc) || MODULES[0]).id;
+  /** Ô chọn THÁNG thống nhất: mọi <input type="month"> trong màn đổi thành <select> "09/2026". Rà giao diện 23/09:
+   *  ô tháng của trình duyệt hiện "---------- ----" khi trống và "September 2026" kiểu Mỹ khi có giá trị. Giữ nguyên
+   *  id, `.value` = 'YYYY-MM' và sự kiện change nên mã từng màn không phải đổi. Ô có data-tat-ca thì có dòng
+   *  "Tất cả các tháng" (value '') — màn danh sách xem cả kỳ. Gán .value tháng ngoài danh sách thì tự thêm dòng đó. */
+  EPL.doiOThang = (goc) => {
+    goc.querySelectorAll('input[type="month"]').forEach(o => {
+      const s = document.createElement('select');
+      s.id = o.id; s.className = (o.className + ' o-thang').trim();
+      const nay = new Date(); const ds = [];
+      for (let i = 3; i >= -24; i--) { const d = new Date(nay.getFullYear(), nay.getMonth() + i, 1); ds.push(d); }
+      const ma = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const nhan = (v) => v.slice(5, 7) + '/' + v.slice(0, 4);
+      s.innerHTML = (o.hasAttribute('data-tat-ca') ? '<option value="" data-i18n="all_months"></option>' : '')
+        + ds.map(d => `<option value="${ma(d)}">${nhan(ma(d))}</option>`).join('');
+      const dat = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+      Object.defineProperty(s, 'value', {
+        get() { return dat.get.call(this); },
+        set(v) {
+          v = v ? String(v).slice(0, 7) : '';
+          if (v && ![...this.options].some(x => x.value === v)) { const x = document.createElement('option'); x.value = v; x.textContent = nhan(v); this.prepend(x); }
+          dat.set.call(this, v);
+        },
+      });
+      s.value = o.value || (o.hasAttribute('data-tat-ca') ? '' : ma(nay));
+      o.replaceWith(s);
+    });
+  };
   /** Các màn một vai BẤT KỲ vào được — cùng luật với thayDuoc (dùng cho màn Tài khoản · vai trò). */
   EPL.manCuaVai = (vai) => MODULES.filter(m => {
     if (vai === 'driver' || vai === 'depot') return !!(m.vai && m.vai.includes(vai));
@@ -752,6 +779,7 @@
       }
       if (!conHienTai()) return;          // người dùng đã bấm sang module khác trong lúc chờ
       root.innerHTML = html;
+      EPL.doiOThang(root);
       NN.apDung(root);
       const mod = EPL.modules[m.id];
       if (!mod || !mod.init) throw new Error('Module ' + m.id + ' chưa đăng ký EPL.modules["' + m.id + '"]');

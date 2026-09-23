@@ -10,3 +10,7 @@
 .td-bang td.td-ccy{font-size:11.5px;letter-spacing:.3px;color:var(--muted);text-align:center}
 /* Dòng tổng: mỗi loại tiền một dòng, không cộng táo với cam. */
 .td-gop{display:inline-block;line-height:1.5;text-align:right;font-variant-numeric:tabular-nums}
+/* rà giao diện 23/09: tiêu đề một dòng (hàng 2 dính ở top:37px — hàng 1 gãy chữ là đè lên nhau); Bãi đã ẩn 14 cột
+   tiền nên bảng không cần rộng 2.960px — để khoảng trống lớn bên phải */
+.td-bang thead th{white-space:nowrap}
+body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai-parts .td-bang,body.vai-repair .td-bang{min-width:1700px}

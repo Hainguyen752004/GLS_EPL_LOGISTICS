@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1437 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1440 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2076,6 +2076,21 @@ window.EPL_TU_DIEN = {
   "vi": "Xem",
   "lo": "ເບິ່ງ",
   "en": "View"
+ },
+ "all_months": {
+  "vi": "Tất cả các tháng",
+  "lo": "ທຸກເດືອນ",
+  "en": "All months"
+ },
+ "fuel_pick_kho": {
+  "vi": "Chọn một kho để xem",
+  "lo": "ເລືອກສາງເພື່ອເບິ່ງ",
+  "en": "Pick a store to see"
+ },
+ "v_scan_ph": {
+  "vi": "Quét mã QR hoặc gõ mã trên phiếu",
+  "lo": "ສະແກນ QR ຫຼື ພິມລະຫັດໃນໃບ",
+  "en": "Scan the QR or type the code on the slip"
  },
  "avatar": {
   "vi": "Chữ viết tắt (ảnh đại diện)",
@@ -5753,14 +5768,14 @@ window.EPL_TU_DIEN = {
   "en": "Order type"
  },
  "do_gom": {
-  "vi": "Đi gom hàng (mỏ → bãi)",
-  "lo": "ໄປເກັບສິນຄ້າ (ບໍ່ແຮ່ → ສາງ)",
-  "en": "Collection (mine → yard)"
+  "vi": "Gom (mỏ → bãi)",
+  "lo": "ເກັບ (ບໍ່ແຮ່ → ສາງ)",
+  "en": "Collect (mine → yard)"
  },
  "do_giao": {
-  "vi": "Đi giao hàng (bãi → khách)",
-  "lo": "ໄປສົ່ງສິນຄ້າ (ສາງ → ລູກຄ້າ)",
-  "en": "Delivery (yard → customer)"
+  "vi": "Giao (bãi → khách)",
+  "lo": "ສົ່ງ (ສາງ → ລູກຄ້າ)",
+  "en": "Deliver (yard → client)"
  },
  "goods_lines": {
   "vi": "Hàng trên phiếu",

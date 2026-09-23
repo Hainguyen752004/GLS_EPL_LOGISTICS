@@ -56,7 +56,9 @@
       r.querySelector('#hd-chon').addEventListener('change', e => chon(e.target.value).catch(EPL.baoLoi));
       r.querySelector('#hd-ve').addEventListener('click', () => EPL.di('theo-doi'));
       r.querySelector('#hd-mo').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
-      const id = (ctx.tham && ctx.tham.id) || (ds[0] && ds[0].id);
+      // mở sẵn phiếu mới nhất ĐÃ KHOÁ (lên hoá đơn được) — mở phiếu còn chờ kế toán thì hoá đơn toàn số 0 (rà 23/09)
+      const macDinh = ds.find(p => p.locked) || ds[0];
+      const id = (ctx.tham && ctx.tham.id) || (macDinh && macDinh.id);
       if (id) await chon(id); else ve();
     },
     onLang() { if (root) ve(); },

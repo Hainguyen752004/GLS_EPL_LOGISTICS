@@ -124,7 +124,7 @@
 
 /* ===== B2. Dòng thời gian chuyến (Gantt theo ngày) ===== */
 .tq-gantt-bd { padding: 8px 16px 14px; overflow-x: auto; }
-.tq-gantt { --lab: 190px; --day: 26px; min-width: calc(var(--lab) + 31 * var(--day)); display: grid; grid-template-columns: var(--lab) 1fr; }
+.tq-gantt { --lab: 250px; --day: 26px; min-width: calc(var(--lab) + 31 * var(--day)); display: grid; grid-template-columns: var(--lab) 1fr; }
 .tq-gantt .hdr, .tq-gantt .row { display: contents; }
 .tq-gantt .days { position: relative; display: grid; grid-template-columns: repeat(var(--n), 1fr); height: 26px; border-bottom: 1px solid var(--tq-line); }
 .tq-gantt .days span { font-size: 10.5px; color: var(--tq-muted); text-align: center; line-height: 26px; font-variant-numeric: tabular-nums; }
