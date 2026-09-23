@@ -13,6 +13,7 @@ from database import get_db
 from models import Customer, Supplier, SupplierPayment, Trip, TripExpense
 from services import chung_tu as CT
 from services.bao_mat import can_vai, nguoi_hien_tai
+from services.phan_quyen import thay_tien_chi
 from services.tinh_toan import tien_dong
 
 router = APIRouter()
@@ -63,8 +64,15 @@ def _ap_khach(db, s, data):
 
 
 @router.get("/api/suppliers")
-def ds(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return [_xuat(db, s) for s in db.query(Supplier).order_by(Supplier.active.desc(), Supplier.name).all()]
+def ds(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    ra = [_xuat(db, s) for s in db.query(Supplier).order_by(Supplier.active.desc(), Supplier.name).all()]
+    if not thay_tien_chi(user.role):
+        # Bãi không thấy tiền, không thấy mã tài khoản (anh Khampla A2); chủ dự án chốt 23/09: màn Theo dõi NCC
+        # của Bãi giữ danh sách · số dòng · kỳ trả, bỏ cột tiền. Trả NCC là việc kế toán và quỹ.
+        for r in ra:
+            for k in ("phat_sinh_lak", "ghi_no_lak", "da_tra_lak", "con_no_lak", "acct_code"):
+                r.pop(k, None)
+    return ra
 
 
 @router.post("/api/suppliers")
@@ -92,7 +100,9 @@ def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
 
 
 @router.get("/api/suppliers/{sid}/payments")
-def cac_lan_tra(sid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def cac_lan_tra(sid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    if not thay_tien_chi(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Bãi không xem các lần trả nhà cung cấp."})
     return [{"id": x.id, "pay_date": x.pay_date.isoformat(), "amount_lak": x.amount_lak, "note": x.note, "by_user": x.by_user}
             for x in db.query(SupplierPayment).filter(SupplierPayment.supplier_id == sid)
             .order_by(SupplierPayment.pay_date.desc()).all()]

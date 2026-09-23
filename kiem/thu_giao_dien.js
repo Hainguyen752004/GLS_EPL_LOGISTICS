@@ -296,9 +296,14 @@ async function main() {
   assert.ok(![...d.querySelectorAll('#nav [data-mod]')].some(b => b.dataset.mod === 'tai-khoan'), 'vai Bãi không được thấy module Tài khoản');
   {
     const modBai = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
-    // Bãi không thấy TIỀN BÁN: hoá đơn khách và bảng lãi xe liên kết. Tiền chi thì thấy — chính họ chi.
-    ['hoa-don', 'xe-lien-ket'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module tiền bán ' + m));
-    ['tien-tai-xe', 'nha-cung-cap', 'kho-nhien-lieu'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi phải thấy module chi phí ' + m));
+    // Bãi không thấy TIỀN BÁN (hoá đơn khách, lãi xe liên kết) và từ A2 (23/09) cũng không thấy tiền chi: màn Tiền chuyến
+    // & nước (cộng lại tiền mục IV mà phiếu đã giấu) bỏ khỏi menu Bãi; Theo dõi NCC và Kho dầu vẫn có nhưng không có tiền.
+    ['hoa-don', 'xe-lien-ket', 'tien-tai-xe'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module ' + m));
+    ['nha-cung-cap', 'kho-nhien-lieu'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi vẫn phải có module ' + m));
+    await di('#/nha-cung-cap');
+    const chuNcc = goc().querySelector('#ncc-than').textContent;
+    assert.ok(!/LAK/.test(chuNcc), 'Theo dõi NCC của Bãi không được còn số tiền: ' + chuNcc.slice(0, 200));
+    console.log('✓ vai Bãi: không có Tiền chuyến & nước; Theo dõi NCC không còn số tiền');
     assert.ok(d.body.classList.contains('vai-yard'), 'thân trang phải mang lớp vai-yard');
     await di('#/tong-quan');
     const nhanKPI = [...goc().querySelectorAll('.tq-kpi .l')].map(e => e.textContent.trim()).join(' | ');

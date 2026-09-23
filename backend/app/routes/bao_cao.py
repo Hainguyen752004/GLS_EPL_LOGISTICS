@@ -506,12 +506,16 @@ def xe_lien_ket(thang: str = None, db: Session = Depends(get_db), user=Depends(n
 
 
 @router.get("/api/bao-cao/tien-tai-xe")
-def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """ເງິນຖ້ຽວໂຊເຟີ ແລະ ເງິນເຕີມນ້ຳ — tiền chuyến và tiền nước theo TÀI XẾ, gom từ mục IV.
+
+    Bãi KHÔNG xem (chủ dự án chốt 23/09): phiếu đã giấu tiền mục IV với Bãi, màn này cộng lại đúng số đó.
 
     Khoản nào là "của tài xế": x_trip (tiền chuyến), x_water (tiền nước), x_vn (tiền đi VN),
     x_phone (điện thoại), x_food (ăn). Trạng thái chi lấy từ mục IV của phiếu.
     """
+    if not thay_tien_chi(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Bãi không xem tiền chuyến & nước của tài xế."})
     ds, dau, cuoi = _phieu_thang(db, thang)
     KHOAN_TAI_XE = {"x_trip", "x_water", "x_vn", "x_phone", "x_food"}
     tong = {}

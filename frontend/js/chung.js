@@ -406,7 +406,8 @@
     { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true, khong_xuat: true },
     { id: 'cap-phat',       nhom: 'mod_transport', nav: 'nav_issue',    ic: 'M3 6h13v9H3zM16 9h3l2 3v3h-5M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4', vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash'] },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
-    { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver', nav_s: 'nav_driver_s',   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
+    // Bãi không xem (chốt 23/09): màn này cộng lại đúng tiền mục IV mà phiếu đã giấu với Bãi
+    { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver', nav_s: 'nav_driver_s', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tat-toan',       nhom: 'mod_transport', nav: 'nav_settle',   ic: 'M9 3h6l1 4H8zM5 7h14l1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM12 11v6M9.5 13h5M9.5 16h5', vai: ['expacct', 'cash', 'treasury'] },
     { id: 'nha-cung-cap',   nhom: 'mod_transport', nav: 'nav_supplier', nav_s: 'nav_supplier_s', ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21V12h6v9' },
     { id: 'kho-hang',       nhom: 'mod_warehouse', nav: 'nav_goods',    ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h18M9 13v8' },

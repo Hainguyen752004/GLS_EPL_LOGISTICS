@@ -8,18 +8,18 @@
   const HAN = ['t_monthly', 't_prepaid', 'pm_on_dispatch'];
 
   function ve() {
-    let tPS = 0, tDT = 0, tCN = 0;
-    root.querySelector('#ncc-than').innerHTML = ds.length ? ds.map(s => { tPS += s.phat_sinh_lak; tDT += s.da_tra_lak; tCN += s.con_no_lak; return `<tr>
-      <td lang="lo"><b>${esc(s.name)}</b></td><td>${s.item_key ? NN.h(s.item_key) : '—'}</td><td><span class="acct">${esc(s.acct_code) || '—'}</span></td>
-      <td class="num">${s.so_dong}</td><td class="num">${so(s.phat_sinh_lak)} LAK</td>
-      <td class="num">${s.ghi_no_lak ? so(s.ghi_no_lak) + ' LAK' : '—'}</td>
-      <td class="tien" lang="lo">${esc(s.customer_name || '') || '—'}</td><td class="num">${so(s.da_tra_lak)} LAK</td><td class="num ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${so(s.con_no_lak)} LAK</td>
+    let tPS = 0, tDT = 0, tCN = 0;   // Bãi: máy chủ không gửi tiền, cột tiền và dòng tổng ẩn (.tien-chi) — chốt 23/09
+    root.querySelector('#ncc-than').innerHTML = ds.length ? ds.map(s => { tPS += s.phat_sinh_lak || 0; tDT += s.da_tra_lak || 0; tCN += s.con_no_lak || 0; return `<tr>
+      <td lang="lo"><b>${esc(s.name)}</b></td><td>${s.item_key ? NN.h(s.item_key) : '—'}</td><td class="tien-chi"><span class="acct">${esc(s.acct_code) || '—'}</span></td>
+      <td class="num">${s.so_dong}</td><td class="num tien-chi">${EPL.tien(s.phat_sinh_lak, 'LAK')}</td>
+      <td class="num tien-chi">${s.ghi_no_lak ? EPL.tien(s.ghi_no_lak, 'LAK') : '—'}</td>
+      <td class="tien" lang="lo">${esc(s.customer_name || '') || '—'}</td><td class="num tien-chi">${EPL.tien(s.da_tra_lak, 'LAK')}</td><td class="num tien-chi ${s.con_no_lak > 0 ? 'ncc-no' : ''}">${EPL.tien(s.con_no_lak, 'LAK')}</td>
       <td>${NN.h(s.payment_term || 't_monthly')}</td>
-      <td class="no-print"><div class="ncc-nut"><button class="btn sm" data-ls="${s.id}">${NN.h('payments')}</button>
+      <td class="no-print"><div class="ncc-nut"><button class="btn sm tien-chi" data-ls="${s.id}">${NN.h('payments')}</button>
         ${AUTH.la('expacct', 'cash', 'treasury') ? `<button class="btn sm ok" data-tra="${s.id}">${NN.h('pay_supplier')}</button>` : ''}
         ${AUTH.la('expacct') ? `<button class="btn sm" data-sua="${s.id}">${NN.h('edit')}</button>` : ''}</div></td></tr>`; }).join('')
       : `<tr><td colspan="11" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${so(tPS)} LAK</td><td colspan="2"></td><td class="num">${so(tDT)} LAK</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${so(tCN)} LAK</td><td colspan="2"></td></tr>`;
+    root.querySelector('#ncc-chan').innerHTML = `<tr><td colspan="4">${NN.h('total')}</td><td class="num">${EPL.tien(tPS, 'LAK')}</td><td colspan="2"></td><td class="num">${EPL.tien(tDT, 'LAK')}</td><td class="num ${tCN > 0 ? 'ncc-no' : ''}">${EPL.tien(tCN, 'LAK')}</td><td colspan="2"></td></tr>`;
     root.querySelectorAll('[data-ls]').forEach(b => b.addEventListener('click', () => lichSu(ds.find(x => x.id === b.dataset.ls))));
     root.querySelectorAll('[data-tra]').forEach(b => b.addEventListener('click', () => tra(ds.find(x => x.id === b.dataset.tra))));
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
