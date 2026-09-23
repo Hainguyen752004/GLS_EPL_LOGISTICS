@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (CHUOI_SUA_CHUA, LOAI_SUA_CHUA, TIEN_TE, ExchangeRate, Part, PartMove, RepairLine,
-                    RepairOrder, Supplier, Vehicle)
+                    RepairOrder, Supplier, Trip, Vehicle)
 from services import chung_tu as CT
 from services.bao_mat import nguoi_hien_tai
 
@@ -321,6 +321,7 @@ def duyet(oid: str, hanh_dong: str, db: Session = Depends(get_db), user=Depends(
         # Sửa xong, xe về rảnh — trừ khi đang chạy chuyến khác hoặc đã ngưng dùng.
         x = db.get(Vehicle, o.vehicle_id) if o.vehicle_id else None
         if x is not None and x.status == "maintenance":
-            x.status = "available"
+            dang_chay = db.query(Trip.id).filter(Trip.vehicle_id == x.id, Trip.transport_status != "arrived").first()
+            x.status = "on_trip" if dang_chay else "available"
     db.commit()
     return xuat(db, o)

@@ -90,6 +90,11 @@ def main():
         phai(s, 409, "Ghi lại khi đã ghi hết → bị từ chối, không ghi trùng", g)
     else:
         truoc = o["chua_ghi_lak"]
+        co_san = {}
+        s, ds0 = goi("/api/trips", vai="doanhthu")
+        for p in [x for x in ds0 if x.get("customer_id") == o["customer_id"] and x.get("invoiced")]:
+            s2, tt = goi("/api/trips/%s/thu-tien" % p["id"], vai="doanhthu")
+            co_san[p["id"]] = {x["id"] for x in (tt.get("ds") or [])}
         s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="thabok")
         phai(s, 403, "Bãi ghi cấn trừ → bị chặn", g)
         s, r = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
@@ -105,7 +110,8 @@ def main():
         print("  ✓ %-62s %s LAK vào %s · để lại %s" % ("Ghi cấn trừ: bù đúng vào hoá đơn còn nợ", r["ghi_lak"], r["phieu_thu"][0]["so"], r["de_lai_lak"]))
         s, ct2 = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
         o2 = next(x for x in ct2["ds"] if x["customer_id"] == o["customer_id"])
-        assert o2["da_ghi_lak"] == r["ghi_lak"] and o2["chua_ghi_lak"] == r["de_lai_lak"], \
+        # so PHẦN TĂNG: tháng 8 có thể đã ghi dở từ trước (bộ gieo), "đã ghi" là tổng cả hai lần
+        assert round(o2["da_ghi_lak"] - o["da_ghi_lak"]) == r["ghi_lak"] and o2["chua_ghi_lak"] == r["de_lai_lak"], \
             "bảng cấn trừ phải phản ánh phần đã ghi: %s" % o2
         print("  ✓ %-62s" % "Bảng cấn trừ đọc lại đúng phần đã ghi / chưa ghi")
         s, ds = goi("/api/trips", vai="doanhthu")
@@ -119,6 +125,19 @@ def main():
         if s == 200:
             assert g["ghi_lak"] == 0 or g["de_lai_lak"] >= 0, g
         print("  ✓ %-62s %s" % ("Ghi lại lần hai không ghi trùng phần đã ghi", "409 " + g["detail"]["ma"] if s == 409 else "ghi thêm %s" % g["ghi_lak"]))
+        # dọn: xoá đúng các lần thu cấn trừ bài này vừa ghi — dữ liệu mẫu giữ nguyên phần chờ cấn trừ để người dùng tự bấm
+        moi = list(r["phieu_thu"]) + (list(g.get("phieu_thu") or []) if s == 200 else [])
+        so_moi = {x["so"] for x in moi if x["loai"] == "phieu"}
+        n = 0
+        for p in [x for x in ds if x["doc_no"] in so_moi]:
+            s2, tt = goi("/api/trips/%s/thu-tien" % p["id"], vai="doanhthu")
+            for x in [x for x in tt["ds"] if x["method"] == "offset" and x["ref"] == r["ref"] and x["id"] not in co_san.get(p["id"], set())]:
+                s3, g3 = goi("/api/thu-tien/%s" % x["id"], vai="doanhthu", method="DELETE")
+                phai(s3, 200, "Xoá lần thu cấn trừ bài thử vừa ghi (dọn)", g3); n += 1
+        s, ct3 = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
+        o3 = next(x for x in ct3["ds"] if x["customer_id"] == o["customer_id"])
+        assert round(o3["chua_ghi_lak"]) == round(truoc), "dọn xong phải trả phần chờ cấn trừ về như cũ: %s" % o3
+        print("  ✓ %-62s %s dòng · chờ cấn trừ lại %s LAK" % ("Dọn phần cấn trừ bài thử đã ghi", n, round(truoc)))
 
     # ================================================================ 2. không đổi chéo xe nhà ↔ xe liên kết
     s, xe = goi("/api/vehicles", vai="thabok")

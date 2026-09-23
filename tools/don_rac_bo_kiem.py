@@ -209,10 +209,14 @@ if THAT:
     db.flush()
     con_chay = db.query(M.Trip).filter(M.Trip.transport_status != "arrived").all()
     xe_chay = {p.vehicle_id for p in con_chay}; tx_chay = {p.driver_id for p in con_chay}
-    for v in db.query(M.Vehicle).filter(M.Vehicle.status == "on_trip").all():
-        if v.id not in xe_chay: v.status = "available"; dem["xe về rảnh"] += 1
-    for d in db.query(M.Driver).filter(M.Driver.status == "on_trip").all():
-        if d.id not in tx_chay: d.status = "available"; dem["tài xế về rảnh"] += 1
+    # tính lại từ dữ liệu còn lại — rà 23/09: lệnh sửa thử bị xoá mà xe ຮ່ວມ-07 vẫn kẹt "đang sửa"
+    xe_sua = {o.vehicle_id for o in db.query(M.RepairOrder).filter(M.RepairOrder.status != "paid").all()}
+    for v in db.query(M.Vehicle).filter(M.Vehicle.status.in_(("available", "on_trip", "maintenance", "idle"))).all():
+        moi = "on_trip" if v.id in xe_chay else "maintenance" if v.id in xe_sua else "available"
+        if moi != v.status: v.status = moi; dem["trạng thái xe tính lại"] += 1
+    for d in db.query(M.Driver).filter(M.Driver.status.in_(("available", "on_trip", "idle"))).all():
+        moi = "on_trip" if d.id in tx_chay else "available"
+        if moi != d.status: d.status = moi; dem["trạng thái tài xế tính lại"] += 1
 
 print("\n%s" % ("ĐÃ XOÁ:" if THAT else "SẼ XOÁ (chạy thử):"))
 for k, n in sorted(dem.items(), key=lambda x: -x[1]):

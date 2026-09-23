@@ -581,13 +581,29 @@ def _ap_gia(db, p, m, cac_dong, user):
             e.acct_code = d["acct_code"]
 
 
+def _con_chay_phieu_khac(db, p, cot, gia_tri):
+    """Xe / tài xế còn phiếu nào KHÁC chưa về không (rà 23/09: xe còn chuyến thứ hai mà bị trả về "rảnh")."""
+    return db.query(Trip.id).filter(getattr(Trip, cot) == gia_tri, Trip.id != p.id,
+                                    Trip.transport_status != "arrived").first() is not None
+
+
 def _doi_trang_thai_xe_tai_xe(db, p, trang_thai_xe, trang_thai_tai_xe):
+    """Nhả xe / tài xế ("available") chỉ khi họ không còn phiếu nào khác đang chạy; xe đang sửa thì
+    vẫn là "đang sửa" — lệnh sửa chữa xong mới trả xe về rảnh."""
     if p.vehicle_id:
         x = db.get(Vehicle, p.vehicle_id)
-        if x and x.status != "inactive": x.status = trang_thai_xe
+        if x and x.status != "inactive":
+            if trang_thai_xe != "available":
+                x.status = trang_thai_xe
+            elif x.status != "maintenance":
+                x.status = "on_trip" if _con_chay_phieu_khac(db, p, "vehicle_id", x.id) else "available"
     if p.driver_id:
         d = db.get(Driver, p.driver_id)
-        if d and d.status != "inactive": d.status = trang_thai_tai_xe
+        if d and d.status != "inactive":
+            if trang_thai_tai_xe != "available":
+                d.status = trang_thai_tai_xe
+            else:
+                d.status = "on_trip" if _con_chay_phieu_khac(db, p, "driver_id", d.id) else "available"
 
 
 def _ghi_do(db, p, user):
@@ -916,7 +932,8 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     cu_bien = p.plate_head or ""
     # Xe cũ nghỉ: hỏng thì vào xưởng, lý do khác (điều xe) thì về rảnh.
     if xe_cu is not None and xe_cu.status != "inactive":
-        xe_cu.status = "maintenance" if data.get("xe_cu_hong", True) else "idle"
+        xe_cu.status = "maintenance" if data.get("xe_cu_hong", True) else (
+            "on_trip" if _con_chay_phieu_khac(db, p, "vehicle_id", xe_cu.id) else "available")
     p.vehicle_id = xe_moi.id
     p.truck_no, p.brand_model = xe_moi.truck_no, xe_moi.brand_model
     p.plate_head, p.plate_trailer = xe_moi.plate_head, xe_moi.plate_trailer
@@ -936,7 +953,7 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
             raise HTTPException(422, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
         cu_tx = db.get(Driver, p.driver_id) if p.driver_id else None
         if cu_tx is not None and cu_tx.id != tx.id and cu_tx.status != "inactive":
-            cu_tx.status = "idle"
+            cu_tx.status = "on_trip" if _con_chay_phieu_khac(db, p, "driver_id", cu_tx.id) else "available"
         p.driver_id, p.driver_name = tx.id, tx.name
         if tx.status != "inactive":
             tx.status = "on_trip"
@@ -1642,6 +1659,19 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if any(e.stock_move_id for e in _dong_chi(db, p)) and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_XUAT_KHO", "loi": "Phiếu đã có dòng xuất kho, không xoá được."})
     _chan_khoa(p, user)
+    # Phiếu lĩnh / phiếu tạm ứng ĐÃ CẤP: dầu đã ra khỏi kho, tiền đã tới tay tài xế. Trước đây xoá phiếu thì máy chủ
+    # vấp khoá ngoại fuel_moves → vouchers và trả 500 (rà 23/09). Bãi: chặn rõ ràng. Sếp: trả dầu về kho rồi xoá.
+    from models import Voucher
+    da_cap = db.query(Voucher).filter(Voucher.trip_id == p.id, Voucher.status == "da_cap").all()
+    if da_cap and user.role != "admin":
+        raise HTTPException(409, {"ma": "DA_CAP_PHAT", "loi": "Phiếu đã có %s được cấp (%s), không xoá được."
+                                  % ("phiếu lĩnh / tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
+    id_v = [v.id for v in db.query(Voucher.id).filter(Voucher.trip_id == p.id).all()]
+    if id_v:
+        for m in db.query(FuelMove).filter(FuelMove.voucher_id.in_(id_v)).all():
+            CT.rut(db, nguon_bang="fuel_moves", nguon_id=m.id)
+            db.delete(m)
+        db.flush()
     KH.kiem_xoa(db, p)
     _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
     db.query(TripEvent).filter(TripEvent.trip_id == p.id).delete()
