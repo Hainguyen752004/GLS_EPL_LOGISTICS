@@ -197,22 +197,51 @@ def main():
             ok("/api/trips/%s/sections/%s/send" % (E["id"], m), {}, "thabok")
         bao("%s gom 39,5 t → bãi nhận 39,3 t · %s giao 25 t từ lô đó — Bãi đã gửi kiểm, CHỜ KT nhập giá" % (D["doc_no"], E["doc_no"]))
 
+    # ------------------------------------------------------------ phiếu F: phí cao tốc trừ vào THẺ của khách (C6.1)
+    if da_gieo("MAU-F"):
+        print("  · phiếu F đã gieo — bỏ qua")
+    else:
+        print("PHIẾU F — phí cao tốc trả bằng thẻ khách cấp, cuối tháng cấn trừ vào cước")
+        the = next(t for t in ok("/api/the-cao-toc", vai="ketoan") if t["card_no"] == "ETC-8801")
+        giu_the = next((d for d in TX if d["name"] == the.get("driver_name")), TX[1])
+        Fp = ok("/api/trips", {"company": "EPL", "vehicle_id": X341["id"], "driver_id": giu_the["id"], "customer_id": KHAMTUI["id"], "route_id": R1["id"],
+                               "doc_date": "2026-09-17", "out_date": "2026-09-17", "note": "MAU-F", "weight_origin": 41.5,
+                               "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 170, "place_id": kho["KHO-TB"]["id"]},
+                                            {"section": "travel", "item_key": "x_toll", "qty": 1, "toll_card_id": the["id"]},
+                                            {"section": "travel", "item_key": "x_food", "qty": 2}]}, "thabok", buoc="Bãi lập phiếu F")
+        nhap_gia(Fp["id"], {"x_food": (120000, "LAK")})
+        ok("/api/trips/%s" % Fp["id"], {"ore_bill_no": "HR-2609-120", "ore_bill_date": "2026-09-17"}, "ketoan", "PUT")
+        for m in ("info", "trans"):
+            ok("/api/trips/%s/sections/%s/send" % (Fp["id"], m), {}, "thabok"); ok("/api/trips/%s/sections/%s/verify" % (Fp["id"], m), {}, "ketoan")
+        dong_muc(Fp["id"], "fuel"); dong_muc(Fp["id"], "travel")          # ghi sổ mục IV → thẻ bị trừ đúng một lần
+        ok("/api/trips/%s/transport-status" % Fp["id"], {"status": "transit"}, "thabok")
+        ok("/api/trips/%s/transport-status" % Fp["id"], {"status": "arrived", "weight_dest": 41.2, "back_date": "2026-09-19"}, "thabok")
+        ok("/api/trips/%s/khoa" % Fp["id"], {"xac_nhan": True}, "ketoan")
+        ok("/api/trips/%s/invoice" % Fp["id"], {}, "doanhthu")
+        the2 = next(t for t in ok("/api/the-cao-toc", vai="ketoan") if t["card_no"] == "ETC-8801")
+        bao("%s · cao tốc trừ thẻ ETC-8801: %s → %s LAK · đã khoá, đã lập hoá đơn (chưa thu — chờ cấn trừ cuối tháng)"
+            % (Fp["doc_no"], format(round(the["balance"]), ","), format(round(the2["balance"]), ",")))
+
     # ------------------------------------------------------------ bán hàng · sửa chữa · đẩy sổ
-    print("BÁN HÀNG · SỬA CHỮA · SỔ")
-    bh = ok("/api/ban-hang", {"sale_date": "2026-09-22", "customer_id": KHAMTUI["id"], "currency": "LAK", "note": "Khách mua ở quầy bãi Thà Bốc",
-                              "lines": [{"item_type": "part", "part_id": loc["id"], "qty": 2, "unit_price": 230000},
-                                        {"item_type": "fuel", "place_id": kho["KHO-TB"]["id"], "qty": 40, "unit_price": 31500}]}, "ketoan")
-    ok("/api/ban-hang/%s/thu" % bh["id"], {"pay_date": "2026-09-22"}, "quytb")
-    bao("%s · 2 lọc dầu + 40 L dầu · đã thu tiền mặt (PXK_BAN Nợ 607 · HD_BAN · PT_BAN)" % bh["doc_no"])
-    lsc = ok("/api/lenh-sua-chua", {"vehicle_id": X342["id"], "kind": "bao_duong", "order_date": "2026-09-23", "odo_km": 153520,
-                                    "note": "Bảo dưỡng 10.000 km: thay lọc dầu, kiểm phanh",
-                                    "lines": [{"source": "kho", "part_id": loc["id"], "qty": 1, "item_name": loc["name"]},
-                                              {"source": "mua", "item_name": "Công thợ bảo dưỡng", "qty": 1, "unit_price": 350000, "currency": "LAK",
-                                               "supplier_id": YANG["id"]}]}, "totsua")
-    ok("/api/lenh-sua-chua/%s/verify" % lsc["id"], {}, "ketoancp")
-    bao("%s · xe 342 bảo dưỡng · lọc dầu lấy kho (PXK_PT) + công thợ · KT Chi phí đã kiểm, chờ ghi sổ" % lsc["doc_no"])
-    d = ok("/api/chung-tu/day", {}, "ketoan")
-    bao("đẩy chứng từ sang sổ kế toán: %d tờ, %d lỗi" % (d["xong"], d["loi"]))
+    if any((x.get("note") or "") == "Khách mua ở quầy bãi Thà Bốc" for x in ok("/api/ban-hang", vai="ketoan")["ds"]):
+        print("  · bán hàng, sửa chữa đã gieo — chỉ đẩy chứng từ mới")
+        d = ok("/api/chung-tu/day", {}, "ketoan"); bao("đẩy chứng từ sang sổ kế toán: %d tờ, %d lỗi" % (d["xong"], d["loi"]))
+    else:
+        print("BÁN HÀNG · SỬA CHỮA · SỔ")
+        bh = ok("/api/ban-hang", {"sale_date": "2026-09-22", "customer_id": KHAMTUI["id"], "currency": "LAK", "note": "Khách mua ở quầy bãi Thà Bốc",
+                                  "lines": [{"item_type": "part", "part_id": loc["id"], "qty": 2, "unit_price": 230000},
+                                            {"item_type": "fuel", "place_id": kho["KHO-TB"]["id"], "qty": 40, "unit_price": 31500}]}, "ketoan")
+        ok("/api/ban-hang/%s/thu" % bh["id"], {"pay_date": "2026-09-22"}, "quytb")
+        bao("%s · 2 lọc dầu + 40 L dầu · đã thu tiền mặt (PXK_BAN Nợ 607 · HD_BAN · PT_BAN)" % bh["doc_no"])
+        lsc = ok("/api/lenh-sua-chua", {"vehicle_id": X342["id"], "kind": "bao_duong", "order_date": "2026-09-23", "odo_km": 153520,
+                                        "note": "Bảo dưỡng 10.000 km: thay lọc dầu, kiểm phanh",
+                                        "lines": [{"source": "kho", "part_id": loc["id"], "qty": 1, "item_name": loc["name"]},
+                                                  {"source": "mua", "item_name": "Công thợ bảo dưỡng", "qty": 1, "unit_price": 350000, "currency": "LAK",
+                                                   "supplier_id": YANG["id"]}]}, "totsua")
+        ok("/api/lenh-sua-chua/%s/verify" % lsc["id"], {}, "ketoancp")
+        bao("%s · xe 342 bảo dưỡng · lọc dầu lấy kho (PXK_PT) + công thợ · KT Chi phí đã kiểm, chờ ghi sổ" % lsc["doc_no"])
+        d = ok("/api/chung-tu/day", {}, "ketoan")
+        bao("đẩy chứng từ sang sổ kế toán: %d tờ, %d lỗi" % (d["xong"], d["loi"]))
     print("\nXONG — bộ mẫu tháng 9: 5 phiếu mới ở 5 trạng thái khác nhau, kho, bán hàng, chủ xe, sửa chữa, sổ.")
 
 

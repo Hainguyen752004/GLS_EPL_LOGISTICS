@@ -1,0 +1,253 @@
+# -*- coding: utf-8 -*-
+"""Dọn RÁC BỘ KIỂM khỏi DB epl_lao (dùng chung với máy chủ của chủ dự án) — giữ nguyên dữ liệu mẫu.
+
+    python tools/don_rac_bo_kiem.py          chạy thử: in ra sẽ xoá gì, KHÔNG ghi
+    python tools/don_rac_bo_kiem.py that     xoá thật — NHỚ sao lưu pg_dump hai DB trước
+
+GIỮ: 9 phiếu gieo ban đầu (lập 22/09) và phiếu bộ mẫu tháng 9 (ghi chú "MAU-…", tools/gieo_demo_2609.py), cùng mọi
+thứ gắn với chúng; phiếu bán / lệnh sửa / dòng kho của bộ mẫu. XOÁ: mọi thứ bộ kiểm để lại (phiếu thử, phiếu lĩnh bộ kiểm
+cấp lên phiếu mẫu, dòng kho mồ côi, phiếu bán thử, chủ xe · xe · thẻ thử, lịch sử tỷ giá thử, chứng từ mồ côi). Tồn phụ
+tùng đảo ngược đúng dòng bị xoá. Xong thì dọn luôn bên sổ EPL_KETOAN: tờ nào bên nguồn không còn thì xoá cùng bút toán.
+"""
+import json
+import os
+import sys
+from collections import Counter
+
+GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(GOC, "backend", "app"))
+from database import SessionLocal  # noqa: E402
+import models as M  # noqa: E402
+
+THAT = len(sys.argv) > 1 and sys.argv[1] == "that"
+db = SessionLocal()
+dem = Counter()
+
+
+def xoa(obj, loai):
+    dem[loai] += 1
+    if THAT:
+        db.delete(obj)
+
+
+# ---------------------------------------------------------------- 1. phiếu thử (lập 23/09 — mẫu gieo lúc 22/09)
+MAU = {p.id for p in db.query(M.Trip).all()
+       if (p.created_at and p.created_at.strftime("%Y-%m-%d") == "2026-09-22") or (p.note or "").startswith("MAU-")}
+thu = [p for p in db.query(M.Trip).all() if p.id not in MAU]
+print("Phiếu mẫu giữ: %d · phiếu thử xoá: %s" % (len(MAU), ", ".join(p.doc_no for p in thu)))
+id_thu = {p.id for p in thu}
+dong_thu = {e.id for e in db.query(M.TripExpense).filter(M.TripExpense.trip_id.in_(id_thu)).all()} if id_thu else set()
+
+# sổ dầu trỏ khoá ngoại vào phiếu lĩnh → xoá dòng dầu của phiếu thử TRƯỚC
+pl_thu = {v.id for v in db.query(M.Voucher).filter(M.Voucher.trip_id.in_(id_thu)).all()} if id_thu else set()
+for m in db.query(M.FuelMove).all():
+    if (m.voucher_id in pl_thu) or (m.expense_id and m.expense_id in dong_thu):
+        xoa(m, "dòng dầu")
+if THAT:
+    db.flush()
+
+# thẻ cao tốc: dòng trừ thẻ của phiếu thử → trả lại số dư
+for m in db.query(M.TollCardMove).filter(M.TollCardMove.trip_id.in_(id_thu)).all() if id_thu else []:
+    the = db.get(M.TollCard, m.card_id)
+    if THAT and the and m.kind == "chi":
+        the.balance = (the.balance or 0) + (m.amount or 0)
+    xoa(m, "dòng thẻ của phiếu thử")
+for bang, ten in ((M.Voucher, "phiếu lĩnh"), (M.TripPayment, "lần thu"), (M.VehiclePosition, "vị trí"), (M.TripAttachment, "tệp"),
+                  (M.GoodsMove, "sổ kho hàng"), (M.TripGoods, "dòng hàng"), (M.TripEvent, "sự kiện"), (M.TripLog, "nhật ký"),
+                  (M.TripSection, "mục"), (M.TripExpense, "dòng chi")):
+    for x in db.query(bang).filter(bang.trip_id.in_(id_thu)).all() if id_thu else []:
+        xoa(x, ten)
+for p in thu:
+    xoa(p, "phiếu")
+if THAT:
+    db.flush()
+
+# ---- 1b. bộ kiểm đã đụng vào PHIẾU MẪU: bộ mẫu chỉ gieo phiếu tạm ứng; mọi phiếu LĨNH DẦU trên phiếu mẫu là của bộ
+#          kiểm (dầu bị xuất hai lần: dòng xuất tháng 8 của bộ mẫu + dòng cấp theo phiếu lĩnh). Gỡ ra, dòng dầu về
+#          "chưa xuất" với giá 30.000 LAK như bộ mẫu. Và 3 dòng "tài xế đổ dọc đường" bộ kiểm thêm vào G4-0101.
+pl_xoa = set()
+for v in db.query(M.Voucher).filter(M.Voucher.kind == "fuel", M.Voucher.trip_id.in_(MAU)).all():
+    pl_xoa.add(v.id)
+    for m in db.query(M.FuelMove).filter(M.FuelMove.voucher_id == v.id).all():
+        for e in db.query(M.TripExpense).filter(M.TripExpense.stock_move_id == m.id).all():
+            dem["dòng dầu phiếu mẫu về chưa xuất"] += 1
+            if THAT:
+                e.stock_move_id = None
+                if e.currency == "LAK": e.unit_price = 30000
+        xoa(m, "dòng dầu của phiếu lĩnh thử trên phiếu mẫu")
+    xoa(v, "phiếu lĩnh thử trên phiếu mẫu")
+for e in db.query(M.TripExpense).filter(M.TripExpense.trip_id.in_(MAU), M.TripExpense.note.like("Tài xế đổ dọc đường%")).all():
+    for ev in db.query(M.TripEvent).filter(M.TripEvent.expense_id == e.id).all():
+        xoa(ev, "sự kiện khai đổ dầu thử")
+    dong_thu.add(e.id)
+    xoa(e, "dòng khai đổ dầu thử trên phiếu mẫu")
+for ev in db.query(M.TripEvent).filter(M.TripEvent.trip_id.in_(MAU), M.TripEvent.kind == "refuel").all():
+    xoa(ev, "sự kiện khai đổ dầu thử")
+if THAT:
+    db.flush()
+
+# ---------------------------------------------------------------- 2. bán hàng thử (giữ BH-2608-0001 của bộ mẫu)
+BAN_MAU = ("Chủ xe đổ thêm dầu ở bãi", "Khách mua ở quầy bãi Thà Bốc")   # phiếu bán của tools/gieo_demo_2609.py
+ban_thu = [s for s in db.query(M.Sale).all() if s.doc_no != "BH-2608-0001" and (s.note or "") not in BAN_MAU]
+so_ban_con = {s.doc_no for s in db.query(M.Sale).all()} - {s.doc_no for s in ban_thu}
+so_ban_thu = {s.doc_no for s in ban_thu}
+for s in ban_thu:
+    for d in db.query(M.SaleLine).filter(M.SaleLine.sale_id == s.id).all():
+        xoa(d, "dòng bán")
+    xoa(s, "phiếu bán")
+
+# ---------------------------------------------------------------- 3. lệnh sửa thử (giữ LSC-2609-01)
+lenh_thu = [o for o in db.query(M.RepairOrder).all() if (o.note or "").startswith("thử")]
+so_lenh_thu = {o.doc_no for o in lenh_thu}
+for o in lenh_thu:
+    for d in db.query(M.RepairLine).filter(M.RepairLine.order_id == o.id).all():
+        xoa(d, "dòng lệnh sửa")
+    xoa(o, "lệnh sửa")
+if THAT:
+    db.flush()
+
+# ---------------------------------------------------------------- 4. sổ phụ tùng: xoá dòng thử, TỒN đảo ngược đúng dòng đó
+con_dong = {e.id for e in db.query(M.TripExpense).all()} - (dong_thu if not THAT else set())
+TRA_THU = ("hoàn trả sau", "thử trả kho", "trả lại sau")
+dao = Counter()
+for m in db.query(M.PartMove).all():
+    la_thu = ((m.expense_id and m.expense_id not in con_dong)
+              or (m.trip_doc_no in so_lenh_thu)
+              or any(m.note and m.note.startswith("Bán · %s" % s) for s in so_ban_thu)
+              or (m.note and any(t in m.note for t in TRA_THU)))
+    if la_thu:
+        dao[m.part_id] += (m.qty if m.kind == "out" else -m.qty)
+        xoa(m, "dòng phụ tùng")
+for pid, n in dao.items():
+    pt = db.get(M.Part, pid)
+    print("  tồn %-26s %s → %s" % (pt.name[:26], pt.qty, pt.qty + n))
+    if THAT:
+        pt.qty = pt.qty + n
+
+# ---------------------------------------------------------------- 5. sổ dầu: dòng của phiếu / phiếu bán không còn
+so_phieu_con = {p.doc_no for p in db.query(M.Trip).all() if p.id not in id_thu}
+phieu_linh_con = {v.id for v in db.query(M.Voucher).all() if v.trip_id not in id_thu and v.id not in pl_xoa}
+for m in db.query(M.FuelMove).all():
+    la_thu = ((m.expense_id and m.expense_id not in con_dong)
+              or (m.voucher_id and m.voucher_id not in phieu_linh_con)
+              or (m.doc_no in so_ban_thu)
+              or (m.kind == "out" and not m.expense_id and not m.voucher_id and not m.transfer_no and m.doc_no
+                  and m.doc_no not in so_phieu_con and m.doc_no not in so_ban_con and m.doc_no != "PN-0815"))
+    if la_thu:
+        xoa(m, "dòng dầu")
+
+# ---------------------------------------------------------------- 6. chủ xe · xe · thẻ · đợt trả thử
+cx_thu = [o for o in db.query(M.Owner).all() if "(Chủ thử)" in (o.name or "")]
+id_cx = {o.id for o in cx_thu}
+for x in db.query(M.OwnerPayment).filter(M.OwnerPayment.owner_id.in_(id_cx)).all() if id_cx else []:
+    for p in db.query(M.Trip).filter(M.Trip.owner_payment_id == x.id).all():
+        if THAT: p.owner_payment_id = None
+    xoa(x, "đợt trả chủ xe")
+xe_thu = [v for v in db.query(M.Vehicle).all() if (v.truck_no or "").startswith("THU-")]
+for v in xe_thu:
+    for a in db.query(M.TrailerAssignment).filter(M.TrailerAssignment.vehicle_id == v.id).all():
+        xoa(a, "gắn rơ-moóc")
+    xoa(v, "xe thử")
+if THAT:
+    db.flush()
+for o in cx_thu:
+    xoa(o, "chủ xe thử")
+for t in db.query(M.TollCard).filter(M.TollCard.card_no.like("THU-%")).all():
+    for m in db.query(M.TollCardMove).filter(M.TollCardMove.card_id == t.id).all():
+        xoa(m, "dòng thẻ thử")
+    xoa(t, "thẻ thử")
+
+# ---------------------------------------------------------------- 7. lịch sử tỷ giá của bộ kiểm · dòng giá khách trùng
+for l in db.query(M.ExchangeRateLog).all():
+    if l.ghi_chu and ("bộ kiểm" in l.ghi_chu or "trả lại 22.000" in l.ghi_chu):
+        xoa(l, "lịch sử tỷ giá thử")
+thay = set()
+for r in db.query(M.CustomerRate).order_by(M.CustomerRate.id).all():
+    k = (r.customer_id, r.route_id, r.goods_type, r.price, r.hire_price, r.valid_from, r.price_ccy, r.price_mode, r.note)
+    if k in thay:
+        xoa(r, "dòng giá khách trùng")
+    thay.add(k)
+if THAT:
+    db.flush()
+
+# ---------------------------------------------------------------- 8. chứng từ mồ côi (nguồn đã không còn)
+BANG = {"part_moves": M.PartMove, "vouchers": M.Voucher, "sales": M.Sale, "trips": M.Trip, "fuel_moves": M.FuelMove,
+        "owner_payments": M.OwnerPayment, "repair_orders": M.RepairOrder, "trip_payments": M.TripPayment,
+        "invoice_payments": M.InvoicePayment, "invoices": M.Invoice}
+con_trip = {p.id for p in db.query(M.Trip).all()} - (id_thu if not THAT else set())
+
+
+def con_nguon(c):
+    if c.trip_id and c.trip_id not in con_trip:
+        return False
+    if c.nguon_bang == "trip_sections":
+        return c.nguon_id.split(":")[0] in con_trip
+    if c.nguon_bang == "fuel_transfers":
+        return db.query(M.FuelMove).filter(M.FuelMove.transfer_no == c.nguon_id).count() > 0
+    b = BANG.get(c.nguon_bang)
+    if b is None:
+        return True
+    x = db.get(b, c.nguon_id)
+    if x is None:
+        return False
+    if not THAT:          # chạy thử: nguồn còn trong DB nhưng sắp bị xoá ở trên
+        if b is M.Sale and x.doc_no in so_ban_thu: return False
+        if b is M.RepairOrder and x.doc_no in so_lenh_thu: return False
+        if b is M.OwnerPayment and x.owner_id in id_cx: return False
+        if b is M.Trip and x.id in id_thu: return False
+    return True
+
+
+da_xoa_ref = []
+for c in db.query(M.ChungTu).all():
+    if not con_nguon(c):
+        da_xoa_ref.append(c.so)
+        xoa(c, "chứng từ mồ côi" + (" (đã đẩy sổ)" if c.da_day else ""))
+
+# ---------------------------------------------------------------- 9. trạng thái xe / tài xế do phiếu thử để lại
+if THAT:
+    db.flush()
+    con_chay = db.query(M.Trip).filter(M.Trip.transport_status != "arrived").all()
+    xe_chay = {p.vehicle_id for p in con_chay}; tx_chay = {p.driver_id for p in con_chay}
+    for v in db.query(M.Vehicle).filter(M.Vehicle.status == "on_trip").all():
+        if v.id not in xe_chay: v.status = "available"; dem["xe về rảnh"] += 1
+    for d in db.query(M.Driver).filter(M.Driver.status == "on_trip").all():
+        if d.id not in tx_chay: d.status = "available"; dem["tài xế về rảnh"] += 1
+
+print("\n%s" % ("ĐÃ XOÁ:" if THAT else "SẼ XOÁ (chạy thử):"))
+for k, n in sorted(dem.items(), key=lambda x: -x[1]):
+    print("  %4d  %s" % (n, k))
+print("  số chứng từ bị xoá: %d" % len(da_xoa_ref))
+if not THAT:
+    db.rollback(); print("(chạy thử — chưa ghi gì; thêm tham số 'that' để xoá thật)"); sys.exit(0)
+db.commit(); print("ĐÃ GHI epl_lao.")
+
+# ---------------------------------------------------------------- 10. sổ EPL_KETOAN: xoá tờ mà nguồn không còn
+import subprocess
+con = sorted(c.so for c in db.query(M.ChungTu).all())
+SO = os.path.join(os.path.dirname(GOC), "EPL_KETOAN", "backend", "app")
+MA = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from database import SessionLocal
+import models as M
+con = set(json.load(sys.stdin)); db = SessionLocal(); n = b = 0
+for v in db.query(M.Voucher).all():
+    if v.ref in con: continue
+    if v.entry_id:
+        e = db.get(M.Entry, v.entry_id); v.entry_id = None; db.flush()
+        if e: db.query(M.EntryLine).filter(M.EntryLine.entry_id == e.id).delete(); db.delete(e); b += 1
+    db.delete(v); n += 1
+db.flush()
+dung = {e.party_id for e in db.query(M.Entry).all() if e.party_id}
+for p in db.query(M.Partner).all():
+    if p.id not in dung: db.delete(p)
+db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d tờ, %d bút toán; còn %d tờ" % (n, b, db.query(M.Voucher).count()))
+"""
+if os.path.isdir(SO):
+    # tiến trình con KHÔNG mang DATABASE_URL của epl_lao (database.py bên này đã nạp vào môi trường) — sổ tự đọc .env
+    # của nó; mang sang thì sổ từ chối chạy (chốt an toàn "không dùng chung DB") — đúng như vậy.
+    moi_truong = {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}
+    r = subprocess.run([sys.executable, "-X", "utf8", "-c", MA, SO], input=json.dumps(con), capture_output=True, text=True,
+                       encoding="utf-8", env=moi_truong, cwd=os.path.dirname(os.path.dirname(SO)))
+    print(r.stdout.strip() or r.stderr.strip()[-400:])

@@ -50,18 +50,9 @@ tk = {u: vao(u) for u in ("admin", "thabok", "ketoan", "ketoancp", "khonl", "kho
 print("Đăng nhập %d vai OK" % len(tk))
 
 _, ds = goi("/api/trips", tk=tk["admin"])
-# Phiếu dùng để thử: còn dòng dầu LĨNH KHO chưa xuất (chạy lại nhiều lần thì phiếu cũ đã xuất rồi).
+# Bộ kiểm LUÔN tự lập phiếu thử của mình — không bao giờ lấy phiếu mẫu (rà giao diện 23/09: bộ kiểm cũ chọn phiếu
+# mẫu còn dầu kho chưa xuất rồi cấp dầu lên đó, dầu của phiếu mẫu bị tính xuất hai lần, dữ liệu demo bẩn dần mỗi lần chạy).
 p = None
-for x in ds:
-    if x["finance_status"] == "paid":
-        continue
-    _, ct0 = goi("/api/trips/" + x["id"], tk=tk["admin"])
-    if ct0.get("locked"):
-        continue        # phiếu đã khoá thì không lập thêm phiếu lĩnh được — đừng chọn làm phiếu thử
-    if any(d["section"] == "fuel" and d["source"] == "kho" and not d["stock_move_id"] and d["paid_by_epl"]
-           for d in ct0["expenses"]):
-        p = x
-        break
 if p is None:
     # Không còn phiếu mẫu nào chưa xuất dầu: KHÔNG gieo lại (DB dùng chung với máy chủ của chủ dự án) —
     # Bãi lập một phiếu thử của tài xế tx01: 60 lít lĩnh ở kho Thà Bốc + tiền ăn đi đường.
@@ -156,8 +147,7 @@ else:
 # 13. tài xế khai đổ dầu dọc đường ở Việt Nam
 _, dd = goi("/api/fuel-places", tk=tk["tx01"])
 vn = [x for x in dd if x["country"] == "VN" and x["owner_type"] != "epl"][0]   # trạm bán dầu, không phải "kho xe" của EPL
-_, ds_tx = goi("/api/trips", tk=tk["tx01"])
-px = next((x for x in ds_tx if x['finance_status'] != 'paid'), None)   # phiếu đã thu tiền xong thì không khai thêm
+px = p   # khai đổ dầu trên chính phiếu thử (tài xế tx01) — không đụng phiếu mẫu
 if px:
     ma, r = goi("/api/trips/%s/bao-nhien-lieu" % px["id"],
                 {"qty_l": 300, "place_id": vn["id"], "unit_price": 26000, "currency": "VND",
