@@ -21,7 +21,7 @@
     root.querySelector('#tuy-sua').hidden = !suaDuoc();
     root.querySelector('#tuy-chang').innerHTML = chon.stops.map((s, i) => `${i ? '<div class="tuy-noi"></div>' : ''}
       <div class="tuy-diem"><span class="n">${s.seq}</span><span class="ten" lang="lo">${esc(s.name)}</span><span class="km">${i ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</span></div>`).join('');
-    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)} LAK</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
+    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)}</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
     veDanhSach();
   }
 
