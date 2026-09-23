@@ -1,13 +1,26 @@
-<!-- Tài khoản — chỉ quản trị. Tên đăng nhập, họ tên, vai, đổi mật khẩu, khoá. -->
+<!-- Tài khoản — chỉ quản trị. Hai tab:
+     · Người dùng: tên đăng nhập, họ tên, vai, đổi mật khẩu, khoá.
+     · Vai trò & trách nhiệm: mỗi vai ai đang giữ, làm công đoạn nào, vào màn nào, được nhập / kiểm / ghi sổ / chi mục
+       nào, thấy tiền không, và SINH RA những chứng từ nào. Quyền và định khoản lấy từ máy chủ (/api/quy-trinh);
+       công đoạn lấy từ màn Quy trình — một nguồn, không chép hai nơi. -->
 <div class="toolbar">
+  <div class="qt-tab tk-tab" role="tablist">
+    <button class="active" data-tk="nguoi">Người dùng</button>
+    <button data-tk="vai">Vai trò &amp; trách nhiệm</button>
+  </div>
   <div class="grow"></div>
   <button class="btn primary" id="tk-them"><span data-i18n="add"></span></button>
 </div>
-<div class="card">
+<div class="card" id="tk-nguoi">
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="username"></th><th data-i18n="full_name"></th><th data-i18n="role"></th><th data-i18n="status"></th><th data-i18n="actions"></th></tr></thead>
+      <thead><tr><th>#</th><th data-i18n="username"></th><th data-i18n="full_name"></th><th data-i18n="role"></th><th>Làm gì</th><th data-i18n="status"></th><th data-i18n="actions"></th></tr></thead>
       <tbody id="tk-than"></tbody>
     </table>
   </div>
+</div>
+<div id="tk-vai" hidden>
+  <p class="small muted tk-dan">Mỗi vai theo đúng bảng "Nhiệm Vụ" trong Excel của khách. Quyền trên phiếu, quyền thấy tiền và định khoản
+    in ra từ luật đang chạy của máy chủ. Bấm tên chứng từ để mở màn Quy trình ở đúng dòng đó.</p>
+  <div class="tk-luoi" id="tk-vai-ds"></div>
 </div>

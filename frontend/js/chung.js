@@ -462,6 +462,13 @@
     return true;
   }
   const moduleDau = () => (MODULES.find(thayDuoc) || MODULES[0]).id;
+  /** Các màn một vai BẤT KỲ vào được — cùng luật với thayDuoc (dùng cho màn Tài khoản · vai trò). */
+  EPL.manCuaVai = (vai) => MODULES.filter(m => {
+    if (vai === 'driver' || vai === 'depot') return !!(m.vai && m.vai.includes(vai));
+    if (MAN_CUA_VAI[vai]) return MAN_CUA_VAI[vai].includes(m.id);
+    if (m.vai) return vai === 'admin' || m.vai.includes(vai);
+    return true;
+  });
 
   /* ---------------------------------------------------------------- kiểu xem
    * Hai kiểu đều có cái lợi riêng nên giữ cả hai, người dùng tự chọn ở nút bánh răng:

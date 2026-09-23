@@ -1,3 +1,34 @@
 /* Tài khoản */
 .tk-tat{opacity:.55}
 .tk-av{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:11px;font-weight:600;margin-right:8px}
+.tk-tab{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;padding:3px;background:var(--bg)}
+.tk-tab button{border:0;background:none;padding:6px 14px;border-radius:999px;color:var(--ink-2);font-weight:500}
+.tk-tab button.active{background:var(--ink);color:#fff;font-weight:600}
+.tk-vai-nut{border:0;background:var(--green-soft);color:var(--green);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;cursor:pointer}
+.tk-lam{max-width:52ch;line-height:1.4}
+.tk-dan{margin:0 0 12px;max-width:110ch}
+
+/* thẻ vai: hai cột trên màn rộng, một cột trên màn hẹp */
+.tk-luoi{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:14px;align-items:start}
+.tk-the{transition:box-shadow .3s}
+.tk-the.soi{box-shadow:0 0 0 3px var(--amber)}
+.tk-the .l{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);margin:10px 0 4px;font-weight:600}
+.tk-mo{margin:0 0 8px;font-size:13px;line-height:1.5}
+.tk-nguoi{display:flex;flex-wrap:wrap;gap:6px}
+.tk-chip{display:inline-block;padding:3px 9px;border-radius:6px;background:var(--bg-2);font-size:12px}
+.tk-chip.tat{opacity:.5;text-decoration:line-through}
+.tk-hai{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tk-q{border-collapse:collapse;font-size:12.5px}
+.tk-q td{padding:2px 10px 2px 0}
+.tk-q td:first-child{color:var(--ink-3)}
+.tk-tien{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.tk-tien span{padding:2px 8px;border-radius:6px}
+.tk-tien .co{background:var(--green-soft);color:var(--green)}
+.tk-tien .khong{background:var(--bg-2);color:var(--ink-3)}
+.tk-man{font-size:12.5px;line-height:1.6}
+.tk-the ul,.tk-buoc{margin:0;padding-left:18px;font-size:12.5px;line-height:1.5}
+.tk-buoc{list-style:none;padding-left:0}
+.tk-ct{display:flex;flex-wrap:wrap;gap:6px}
+@media (max-width:700px){.tk-luoi{grid-template-columns:1fr}.tk-hai{grid-template-columns:1fr}}
+.tk-ctb{border:1px solid #B7D8CB;background:var(--green-soft);color:var(--ink);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
+.tk-ctb b{font-family:var(--mono,monospace);color:var(--green);margin-right:4px}
