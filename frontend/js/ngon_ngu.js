@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1434 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1437 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2066,6 +2066,21 @@ window.EPL_TU_DIEN = {
   "vi": "Mã",
   "lo": "ລະຫັດ",
   "en": "Code"
+ },
+ "refresh": {
+  "vi": "Làm mới",
+  "lo": "ໂຫຼດໃໝ່",
+  "en": "Refresh"
+ },
+ "view": {
+  "vi": "Xem",
+  "lo": "ເບິ່ງ",
+  "en": "View"
+ },
+ "avatar": {
+  "vi": "Chữ viết tắt (ảnh đại diện)",
+  "lo": "ຕົວຫຍໍ້ (ຮູບໂປຣໄຟລ໌)",
+  "en": "Initials (avatar)"
  },
  "fuel_kho": {
   "vi": "Kho",

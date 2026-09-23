@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Driver, DriverSettlement, Supplier, Trip, TripExpense, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
-from services.tinh_toan import ty_gia
+from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
 
 router = APIRouter()
@@ -81,7 +81,7 @@ def tinh_ky(db, tai_xe, ky):
     for p in ds:
         tien_p = 0.0
         for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id).all():
-            if not e.paid_by_epl or e.source == "kho" or e.section not in ("fuel", "travel", "other"):
+            if not la_tien_mat_tai_xe(e):           # cùng luật với phiếu tạm ứng (services/tinh_toan)
                 continue
             if e.item_key in bo_qua:                 # công ty trả nhà cung cấp theo đợt, không phải tiền tài xế
                 continue

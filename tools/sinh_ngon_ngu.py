@@ -160,6 +160,10 @@ KHOA_MOI = {
  'hint_expacct':   ('Vai trò <b>KT Chi phí VC</b>: nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; theo dõi nhà cung cấp; chốt tất toán tài xế.', '<b>ບັນຊີລາຍຈ່າຍ ວຽງຈັນ</b>: ປ້ອນລາຄາ ແລ້ວກວດ ແລະ ບັນທຶກໜ້າ IV, V, VI; ຕິດຕາມຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.', 'Cost accountant: enter prices, then verify and book sections IV, V, VI; suppliers; driver settlement.'),
  'price_avg_kho':  ('Giá bình quân của kho — tự tính, không gõ tay', 'ລາຄາສະເລ່ຍຂອງສາງ — ຄິດໄລ່ອັດຕະໂນມັດ', 'Store average cost — calculated automatically'),
  'code':           ('Mã', 'ລະຫັດ', 'Code'),
+ # rà giao diện 23/09: ba khoá dùng mà chưa có trong từ điển — màn hiện nguyên chữ tiếng Anh thô
+ 'refresh':        ('Làm mới', 'ໂຫຼດໃໝ່', 'Refresh'),
+ 'view':           ('Xem', 'ເບິ່ງ', 'View'),
+ 'avatar':         ('Chữ viết tắt (ảnh đại diện)', 'ຕົວຫຍໍ້ (ຮູບໂປຣໄຟລ໌)', 'Initials (avatar)'),
  'title_fuel':     ('Kho nhiên liệu<span class="sub">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>', 'ສາງນໍ້າມັນ<span class="sub">ຕາມແຕ່ລະສາງ · ນຳເຂົ້າ – ເບີກອອກ – ໂອນສາງ – ຄົງເຫຼືອ</span>', 'Fuel store<span class="sub">By store · In – Out – Transfer – Balance</span>'),
  'fuel_kho':       ('Kho', 'ສາງ', 'Store'),
  'fuel_all_kho':   ('Tất cả kho', 'ທຸກສາງ', 'All stores'),

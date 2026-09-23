@@ -755,7 +755,10 @@
       NN.apDung(root);
       const mod = EPL.modules[m.id];
       if (!mod || !mod.init) throw new Error('Module ' + m.id + ' chưa đăng ký EPL.modules["' + m.id + '"]');
-      await mod.init(root, { tham: EPL.thamSo(), user: USER });
+      // Đang chờ dữ liệu: dải "Đang tải…" trên đầu màn. Rà giao diện 23/09: khung trống 1–3 giây (tải tệp + 2–3 API
+      // tới DB ở xa) trông như màn hỏng — Theo dõi phiếu, Phiếu chi của Bãi. Tắt khi init xong, kể cả khi lỗi.
+      root.classList.add('mod-dang-tai'); root.dataset.tai = NN.t('loading');
+      try { await mod.init(root, { tham: EPL.thamSo(), user: USER }); } finally { root.classList.remove('mod-dang-tai'); }
       if (conHienTai()) NN.apDung(root);
     } catch (e) {
       if (!conHienTai()) return;          // lỗi của module đã bị rời — không được đè lên màn hiện tại

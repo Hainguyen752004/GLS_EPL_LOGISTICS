@@ -147,3 +147,15 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
         "giu_lai": lam_tron(phi + tru_vuot, h_ccy),
     })
     return ket
+
+
+def la_tien_mat_tai_xe(d):
+    """Dòng chi này có phải TIỀN MẶT tài xế cầm đi (tạm ứng) không — MỘT luật cho phiếu tạm ứng, cửa xuất phát,
+    màn Tất toán và màn Phiếu của tôi.
+
+    Có: khoản EPL ứng ở mục III (dầu mua dọc đường), IV (đi đường), VI (khác).
+    Không: dầu / phụ tùng lấy từ KHO (phiếu xuất kho) · dầu trạm GHI NỢ (trạm tính nợ EPL, tài xế không trả tiền —
+    anh Khampla C5.1) · phí cao tốc trừ vào THẺ (C6.1). Rà giao diện 23/09: 500 lít dầu ghi nợ bị tính vào tạm ứng."""
+    return bool(d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")
+                and not getattr(d, "ghi_no", False) and not getattr(d, "toll_card_id", None))
+

@@ -439,3 +439,14 @@ body.vai-yard .tien-chi{display:none!important}
   .page{padding:14px}
   .pipeline{grid-template-columns:repeat(2,1fr)}
 }
+
+/* Màn đang chờ dữ liệu (chung.js napModule): dải báo trên đầu + làm mờ khung, để khung trống không trông như hỏng */
+.mod-root.mod-dang-tai{position:relative}
+.mod-root.mod-dang-tai::before{content:attr(data-tai);position:sticky;top:0;z-index:30;display:block;margin:0 0 10px;padding:7px 14px;
+  border-radius:8px;background:var(--blue-soft,#e8f0fb);color:var(--blue,#1d4ed8);font-size:13px;font-weight:600;
+  background-image:linear-gradient(90deg,transparent 0,rgba(255,255,255,.55) 50%,transparent 100%);background-size:200% 100%;
+  animation:mod-tai 1.2s linear infinite}
+.mod-root.mod-dang-tai>*{opacity:.55;transition:opacity .2s}
+@keyframes mod-tai{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.mod-root.mod-dang-tai::before{animation:none}}
+

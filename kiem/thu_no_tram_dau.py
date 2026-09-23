@@ -121,6 +121,12 @@ def main():
         "dòng đổ ở trạm ngoài phải mang nhà cung cấp của trạm: %s" % [d["supplier_id"] for d in dong]
     print("  ✓ %-60s" % "Dòng đổ trạm ngoài tự mang nhà cung cấp của trạm")
 
+    # ---------------------------------------------------------------- 2b. tạm ứng KHÔNG gồm dầu trạm ghi nợ (rà giao diện 23/09)
+    s, pc = goi("/api/trips/%s/phieu-chi" % pid, vai="admin")
+    dau = [d for d in pc["dong"] if d["section"] == "fuel"]
+    assert len(dau) == 1 and dau[0]["qty"] == 100, "phiếu tạm ứng chỉ được có 100 lít trả tiền mặt, không có 200 lít ghi nợ: %s" % dau
+    print("  ✓ %-60s" % "Phiếu tạm ứng chỉ gồm dầu trả tiền mặt (200 L ghi nợ không tính)")
+
     # ---------------------------------------------------------------- 3. công nợ trạm chỉ tính dòng ghi nợ
     s, ncc2 = goi("/api/suppliers", vai="ketoancp")
     t2 = next(x for x in ncc2 if x["id"] == tram["id"])

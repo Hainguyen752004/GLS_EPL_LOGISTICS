@@ -110,6 +110,18 @@ def main():
     assert not lo, "báo cáo Theo dõi vẫn trả tiền bán cho Bãi: %s" % lo
     print("  ✓ %-60s" % "Báo cáo Theo dõi cũng không trả tiền bán cho Bãi")
 
+    # rà giao diện 23/09: phiếu in (tạm ứng, phiếu thu, phiếu lĩnh) từng là đường lộ tiền cho Bãi
+    s, ds_b = goi("/api/trips", vai="thabok")
+    pb = ds_b[0]["id"]
+    s, pc = goi("/api/trips/%s/phieu-chi" % pb, vai="thabok"); phai(s, 200, "Bãi mở phiếu chi tạm ứng để in", pc)
+    assert pc["tong_lak"] is None and all("unit_price" not in d and "tien_lak" not in d for d in pc["dong"]),         "phiếu tạm ứng gửi cho Bãi không được có đơn giá / thành tiền / tổng: %s" % pc
+    s, g = goi("/api/trips/%s/phieu-thu" % pb, vai="thabok"); phai(s, 403, "Bãi mở phiếu thu tiền khách → bị chặn", g)
+    s, vs = goi("/api/trips/%s/vouchers" % pb, vai="thabok")
+    assert all(v.get("amount_lak") is None for v in (vs or [])), "phiếu lĩnh / tạm ứng gửi cho Bãi không được có số tiền"
+    s, pc2 = goi("/api/trips/%s/phieu-chi" % pb, vai="ketoan")
+    assert pc2["tong_lak"] is not None, "kế toán vẫn phải thấy tổng tạm ứng"
+    print("  ✓ %-60s" % "Phiếu in: Bãi không nhận tiền (tạm ứng · phiếu thu · phiếu lĩnh), kế toán vẫn đủ")
+
     s, ds = goi("/api/trips", vai="ketoan")
     p0 = next((p for p in ds if p.get("price")), None)
     assert p0 and p0.get("price_ccy") and p0["tinh"].get("doanh_thu") is not None, \

@@ -134,7 +134,9 @@ print("  OK  dòng dầu mang giá bình quân kho lúc cấp: %s LAK/L" % forma
 
 # 9. phiếu tạm ứng
 ma, v2 = goi("/api/trips/%s/vouchers" % p["id"], {"kind": "advance"}, tk["thabok"])
-bao("Bãi lập phiếu tạm ứng đi đường", ma, 200, "%s · %s LAK" % (v2[0]["doc_no"], round(v2[0]["amount_lak"])))
+assert v2[0]["amount_lak"] is None, "Bãi lập phiếu tạm ứng nhưng không nhận số tiền (anh Khampla A2)"
+_, v2k = goi("/api/trips/%s/vouchers" % p["id"], tk=tk["ketoan"])
+bao("Bãi lập phiếu tạm ứng đi đường (Bãi không thấy số tiền)", ma, 200, "%s · %s LAK (kế toán thấy)" % (v2[0]["doc_no"], round(next(v for v in v2k if v["kind"] == "advance")["amount_lak"])))
 ptu = v2[0]
 
 # 10-11. hai chỗ phải chặn quanh phiếu tạm ứng — chỉ thử khi phiếu còn ĐANG CHỜ cấp

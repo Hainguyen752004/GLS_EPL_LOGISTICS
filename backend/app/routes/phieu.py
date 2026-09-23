@@ -29,7 +29,7 @@ from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_tien_ban, thay_tien_chi
 from services import gia_von as GV
 from routes.danh_muc import tim_gia
-from services.tinh_toan import chuan_tien, doi as doi_tien, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
+from services.tinh_toan import chuan_tien, doi as doi_tien, la_tien_mat_tai_xe, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -164,7 +164,7 @@ def _gon(x):
 
 def _dong_tam_ung(p, cac_dong):
     """Các dòng TIỀN MẶT tài xế cầm đi: mọi khoản EPL ứng trừ những gì xuất từ kho (dầu kho, phụ tùng kho)."""
-    return [d for d in cac_dong if d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")]
+    return [d for d in cac_dong if la_tien_mat_tai_xe(d)]
 
 
 def da_thu_theo_phieu(db, trip_ids):
@@ -1595,10 +1595,16 @@ def phieu_chi(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
         ds.append({"section": d.section, "item_key": d.item_key, "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price,
                    "currency": d.currency, "acct_code": d.acct_code, "tien_lak": round(lak)})
     tt = {s.section: s.status for s in _muc_cua(db, p).values()}
+    if not thay_tien_chi(user.role):
+        # Bãi in phiếu tạm ứng cho tài xế nhưng không thấy tiền (anh Khampla A2): chỉ khoản mục và số lượng —
+        # số tiền quỹ thấy khi quét mã. Rà giao diện 23/09: phiếu này từng gửi đủ đơn giá, thành tiền cho Bãi.
+        for x in ds:
+            for c in ("unit_price", "currency", "acct_code", "tien_lak"): x.pop(c, None)
+        tong = None
     return {"doc_no": p.doc_no, "so_phieu_chi": "PC-" + p.doc_no.replace("/", "-"), "doc_date": p.doc_date.isoformat() if p.doc_date else None,
             "driver_name": p.driver_name, "truck_no": p.truck_no, "plate_head": p.plate_head, "plate_trailer": p.plate_trailer,
             "origin": p.origin, "destination": p.destination, "company": p.company, "owner_name": p.owner_name,
-            "dong": ds, "tong_lak": round(tong), "trang_thai": tt.get("travel", "wait"),
+            "dong": ds, "tong_lak": round(tong) if tong is not None else None, "trang_thai": tt.get("travel", "wait"),
             "tra_tien_xong": tt.get("travel") == "paid", "created_by": p.created_by}
 
 
@@ -1608,8 +1614,9 @@ def phieu_thu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
-    if user.role == "driver":
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế không xem phiếu thu."})
+    if not thay_tien_ban(user.role):
+        # phiếu thu là TIỀN KHÁCH TRẢ — Bãi, tài xế, thủ kho, hai tổ ở Thà Bốc không thấy (anh Khampla A2)
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai này không xem phiếu thu tiền khách."})
     k = tinh_phieu(p, _dong_chi(db, p), _da_thu(db, p))
     return {"doc_no": p.doc_no, "so_phieu_thu": "PT-" + p.doc_no.replace("/", "-"), "doc_date": p.doc_date.isoformat() if p.doc_date else None,
             "customer_name": p.customer_name, "origin": p.origin, "destination": p.destination, "truck_no": p.truck_no,

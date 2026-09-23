@@ -29,8 +29,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import FuelMove, FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc
-from services.tinh_toan import ty_gia
+from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
+from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
 from services import gia_von as GV
 
@@ -99,7 +99,8 @@ def _lak(p, d):
     return (d.qty or 0) * (d.unit_price or 0) * ty_gia(p, d.currency)
 
 
-def xuat_phieu_linh(db, v, goc=""):
+def xuat_phieu_linh(db, v, goc="", vai=None):
+    """`vai` là vai người gọi — vai không thấy tiền chi (Bãi, anh Khampla A2) thì không nhận số tiền tạm ứng."""
     diem = db.get(FuelPlace, v.place_id) if v.place_id else None
     return {"id": v.id, "trip_id": v.trip_id, "kind": v.kind, "doc_no": v.doc_no,
             "doc_date": v.doc_date.isoformat() if v.doc_date else None,
@@ -110,7 +111,8 @@ def xuat_phieu_linh(db, v, goc=""):
             "qr": "/api/vouchers/%s/qr.png" % v.id, "tra_cuu": (goc or "") + "/#/cap-phat?ma=" + v.token,
             "issued_by": v.issued_by, "issued_at": v.issued_at.isoformat() if v.issued_at else None,
             "granted_by": v.granted_by, "granted_at": v.granted_at.isoformat() if v.granted_at else None,
-            "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note}
+            "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note,
+            **({} if vai is None or thay_tien_chi(vai) else {"amount_lak": None})}
 
 
 def _phieu(db, tid):
@@ -141,8 +143,7 @@ def _tien_tam_ung(db, p):
     """Tiền mặt tài xế cầm đi: khoản EPL ứng, KHÔNG lấy từ kho, thuộc mục III (dầu mua dọc đường),
     IV (đi đường) và VI (khác). Phải trùng đúng bộ khoản mà màn Tất toán coi là "tài xế đã chi",
     nếu không thì hai màn nói hai con số khác nhau về cùng một chuyến."""
-    return sum(_lak(p, d) for d in _dong(db, p)
-               if d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other"))
+    return sum(_lak(p, d) for d in _dong(db, p) if la_tien_mat_tai_xe(d))
 
 
 @router.get("/api/trips/{tid}/vouchers")
@@ -150,7 +151,7 @@ def ds_phieu_linh_cua_phieu(tid: str, request: Request, db: Session = Depends(ge
     p = _phieu(db, tid)
     goc = str(request.base_url).rstrip("/")
     ds = db.query(Voucher).filter(Voucher.trip_id == p.id).order_by(Voucher.kind, Voucher.doc_no).all()
-    return [xuat_phieu_linh(db, v, goc) for v in ds]
+    return [xuat_phieu_linh(db, v, goc, user.role) for v in ds]
 
 
 @router.post("/api/trips/{tid}/vouchers")
@@ -220,7 +221,7 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
                    mo_ta="Lĩnh %s lít tại %s" % (v.qty_l, diem.name if diem else "?"),
                    payload={"voucher_id": v.id, "doc_no": v.doc_no, "qty_l": v.qty_l})
         db.commit()
-    return [xuat_phieu_linh(db, v, goc) for v in ra]
+    return [xuat_phieu_linh(db, v, goc, user.role) for v in ra]
 
 
 @router.get("/api/vouchers")
@@ -241,7 +242,7 @@ def ds_cho_cap(request: Request, trang_thai: str = "cho", loai: str = "", db: Se
     goc = str(request.base_url).rstrip("/")
     ra = []
     for v in q.order_by(Voucher.doc_date.desc(), Voucher.doc_no).all():
-        x = xuat_phieu_linh(db, v, goc)
+        x = xuat_phieu_linh(db, v, goc, user.role)
         p = db.get(Trip, v.trip_id)
         if p:
             x.update({"origin": p.origin, "destination": p.destination, "plate_head": p.plate_head,
@@ -260,7 +261,7 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Mã này không có trong hệ thống."})
     p = db.get(Trip, v.trip_id)
-    x = xuat_phieu_linh(db, v, str(request.base_url).rstrip("/"))
+    x = xuat_phieu_linh(db, v, str(request.base_url).rstrip("/"), user.role)
     if p:
         x["phieu"] = {"doc_no": p.doc_no, "truck_no": p.truck_no, "plate_head": p.plate_head,
                       "plate_trailer": p.plate_trailer, "driver_name": p.driver_name, "company": p.company,
@@ -272,10 +273,15 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
         if v.kind == "fuel":
             dong = [e for e in _dong(db, p) if e.section == "fuel" and e.place_id == v.place_id]
         else:
-            dong = [e for e in _dong(db, p)
-                    if e.paid_by_epl and e.source != "kho" and e.section in ("travel", "other")]
+            dong = [e for e in _dong(db, p) if la_tien_mat_tai_xe(e) and e.section in ("travel", "other")]
         x["dong"] = [{"item_key": e.item_key, "item_name": e.item_name, "qty": e.qty, "unit_price": e.unit_price,
                       "currency": e.currency, "tien_lak": _lak(p, e), "acct_code": e.acct_code} for e in dong]
+        # người quét QR không thấy tiền bán thì không nhận giá cước; không thấy tiền chi thì không nhận đơn giá
+        if not thay_tien_ban(user.role):
+            x["phieu"].pop("price", None); x["phieu"].pop("price_ccy", None)
+        if not thay_tien_chi(user.role):
+            for d in x["dong"]:
+                for c in ("unit_price", "currency", "tien_lak", "acct_code"): d.pop(c, None)
     return x
 
 
@@ -338,7 +344,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
 
     v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
     db.commit()
-    return xuat_phieu_linh(db, v)
+    return xuat_phieu_linh(db, v, "", user.role)
 
 
 @router.post("/api/vouchers/{vid}/huy")
@@ -349,7 +355,7 @@ def huy_phieu(vid: str, db: Session = Depends(get_db), user=Depends(can_vai("yar
     if v.status == "da_cap":
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu đã cấp thì không huỷ được."})
     v.status = "huy"; db.commit()
-    return xuat_phieu_linh(db, v)
+    return xuat_phieu_linh(db, v, "", user.role)
 
 
 # ================================================================ mã QR
