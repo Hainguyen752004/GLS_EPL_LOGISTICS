@@ -19,24 +19,11 @@
   const sangBlob = (url) => { const [dau, b64] = url.split(','); const kieu = (dau.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
     const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Blob([u8], { type: kieu }); };
 
-  /** Ảnh chụp bằng điện thoại 3–6 MB → nén còn ~200 KB (cạnh dài 1600 px, JPEG 0,75) cho mạng yếu ngoài hiện trường. */
-  function nenAnh(f) {
-    return new Promise((res) => {
-      const doc_ = new FileReader();
-      doc_.onload = () => {
-        if (!/^image\//.test(f.type)) return res({ name: f.name, type: f.type, url: doc_.result });
-        const img = new Image();
-        img.onload = () => {
-          const tl = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
-          c.width = Math.round(img.width * tl); c.height = Math.round(img.height * tl);
-          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-          res({ name: (f.name || 'anh').replace(/\.[^.]+$/, '') + '.jpg', type: 'image/jpeg', url: c.toDataURL('image/jpeg', 0.75) });
-        };
-        img.onerror = () => res({ name: f.name, type: f.type, url: doc_.result });
-        img.src = doc_.result;
-      };
-      doc_.readAsDataURL(f);
-    });
+  /** Ảnh nén bằng hàm chung (js/nen_anh.js, ≤ 200 KB) rồi đổi sang dataURL — để nằm được trong hàng đợi khi mất mạng. */
+  async function nenAnh(f) {
+    const nen = await EPL.nenTep(f);
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(nen); });
+    return { name: nen.name, type: nen.type, url };
   }
 
   /** Ô ký: vẽ bằng ngón tay / chuột (Pointer Events), nét mịn theo mật độ điểm ảnh của màn. */
@@ -289,7 +276,9 @@
       q('#pct-gh-huy').addEventListener('click', () => q('#pct-gh').close());
       q('#pct-gh-gui').addEventListener('click', guiGiaoHang);
       q('#pct-gh-anh').addEventListener('change', async (e) => {
-        for (const f of [...e.target.files].slice(0, 5 - ANH.length)) ANH.push(await nenAnh(f));
+        for (const f of [...e.target.files].slice(0, 5 - ANH.length)) {
+          try { ANH.push(await nenAnh(f)); } catch (loi) { EPL.baoLoi(loi); }
+        }
         e.target.value = ''; veAnh();
       });
       boNghe = () => guiHangDoi().catch(() => {});

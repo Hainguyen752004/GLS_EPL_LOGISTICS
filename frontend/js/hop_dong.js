@@ -57,7 +57,8 @@
       }));
       khung.querySelectorAll('[data-hd-tep]').forEach(inp => inp.addEventListener('change', async () => {
         const f = inp.files && inp.files[0]; if (!f) return;
-        const fd = new FormData(); fd.append('tep', f, f.name);
+        let nen; try { nen = await EPL.nenTep(f); } catch (e) { return EPL.baoLoi(e); }
+        const fd = new FormData(); fd.append('tep', nen, nen.name);
         try { await API.tep(`/api/hop-dong/${inp.dataset.hdTep}/tep`, fd); EPL.toast(NN.t('saved'), 'ok'); await ve(); } catch (e) { EPL.baoLoi(e); }
       }));
       khung.querySelectorAll('[data-hd-xoa-tep]').forEach(b => b.addEventListener('click', async () => {

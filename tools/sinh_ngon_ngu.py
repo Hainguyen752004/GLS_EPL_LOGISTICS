@@ -1416,6 +1416,7 @@ KHOA_MOI = {
  'gh_chan':           ('Ghi nhận bởi', 'ບັນທຶກໂດຍ', 'Recorded by'),
  'gh_mo_cua_so':      ('Trình duyệt chặn cửa sổ in — cho phép cửa sổ bật lên rồi bấm lại', 'ເບິ່ງ ໃບເຊັນຮັບສິນຄ້າ ບໍ່ໄດ້ — ລອງໃໝ່', 'The browser blocked the print window — allow pop-ups and try again'),
  'a_pod_sign':        ('Ký nhận giao hàng', 'ເຊັນຮັບສິນຄ້າ', 'Delivery signed'),
+ 'nen_pdf_lon':       ('PDF {mb} MB, tối đa 2 MB — nên chụp ảnh thay vì PDF', 'PDF {mb} MB · 2 MB — ເພີ່ມຮູບ', 'PDF is {mb} MB, the limit is 2 MB — take a photo instead'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {}   # nhãn vai nay ghi thẳng trong KHOA_MOI theo đúng chữ bảng Nhiệm Vụ của khách

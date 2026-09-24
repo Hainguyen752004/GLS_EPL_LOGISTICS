@@ -256,7 +256,8 @@
     const oAnh = rt.querySelector('#m-anh-them');
     if (oAnh) oAnh.addEventListener('change', async () => {
       const f = oAnh.files && oAnh.files[0]; if (!f) return;
-      const fd = new FormData(); fd.append('tep', f, f.name);
+      let nen; try { nen = await EPL.nenTep(f); } catch (e) { return EPL.baoLoi(e); }
+      const fd = new FormData(); fd.append('tep', nen, nen.name);
       try {
         const ds = await EPL.API.tep(`/api/drivers/${o._id}/anh`, fd);
         o.anh_ds = ds.map(a => ({ ...a, src: urlAnh(a.url) }));

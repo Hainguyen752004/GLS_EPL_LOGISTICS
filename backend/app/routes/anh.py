@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import Driver, DriverPhoto, Vehicle, VehiclePhoto, ma_moi
 from services.bao_mat import can_vai, doc_phien, nguoi_hien_tai
-from services.tep import ANH_KIEU, TEP_DIR, TEP_TOI_DA
+from services.tep import loi_co_tep, ANH_KIEU, TEP_DIR, TEP_TOI_DA
 
 router = APIRouter()
 SUA = can_vai("yard", "acct")        # cùng người sửa danh mục xe · tài xế
@@ -76,8 +76,8 @@ async def _them(loai, chu_id, tep, note, chinh, db, user):
     du = await tep.read()
     if not du:
         raise HTTPException(422, {"ma": "TEP_RONG", "loi": "Tệp rỗng."})
-    if len(du) > TEP_TOI_DA:
-        raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": "Tệp %.1f MB, tối đa 8 MB." % (len(du) / 1048576)})
+    if len(du) > TEP_TOI_DA or loi_co_tep(kieu, len(du)):
+        raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": loi_co_tep(kieu, len(du)) or "Ảnh quá lớn."})
     a = loai.model(filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "anh")[:120],
                    content_type=kieu, size=len(du), note=(note or None), by_user=user.full_name)
     setattr(a, loai.cot, chu.id)

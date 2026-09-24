@@ -32,7 +32,7 @@ from routes.danh_muc import tim_gia
 from services.tinh_toan import chuan_tien, doi as doi_tien, la_tien_mat_tai_xe, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
-from services.tep import TEP_DIR, TEP_KIEU, TEP_TOI_DA
+from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
 from routes import the_cao_toc as THE
 
@@ -1274,8 +1274,8 @@ async def them_tep(tid: str, tep: UploadFile = File(...), kind: str = Form("ore_
     if kieu not in TEP_KIEU:
         raise HTTPException(422, {"ma": "KIEU_TEP", "loi": "Chỉ nhận ảnh (JPG, PNG, WEBP, HEIC) hoặc PDF."})
     du = await tep.read()
-    if len(du) > TEP_TOI_DA:
-        raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": "Tệp %.1f MB, tối đa 8 MB." % (len(du) / 1048576)})
+    if len(du) > TEP_TOI_DA or loi_co_tep(kieu, len(du)):
+        raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": loi_co_tep(kieu, len(du)) or "Tệp %.1f MB, tối đa 10 MB." % (len(du) / 1048576)})
     if not du:
         raise HTTPException(422, {"ma": "TEP_RONG", "loi": "Tệp rỗng."})
     a = TripAttachment(trip_id=p.id, kind=kind if kind in ("ore_bill", "pod", "other") else "ore_bill",

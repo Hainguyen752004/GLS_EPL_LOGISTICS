@@ -25,7 +25,7 @@ from database import get_db
 from models import Trip, TripAttachment, ma_moi
 from routes.phieu import _chan_khoa, _cua_tai_xe, _ghi_log, xuat_phieu
 from services.bao_mat import nguoi_hien_tai
-from services.tep import TEP_DIR, TEP_KIEU, TEP_TOI_DA
+from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 
 router = APIRouter()
 TINH_TRANG = ("du", "thieu", "hong")
@@ -46,8 +46,8 @@ async def _luu_tep(p, tep, kind, user, chi_png=False):
     du = await tep.read()
     if not du:
         _loi("TEP_RONG", "Tệp rỗng.")
-    if len(du) > (KY_TOI_DA if chi_png else TEP_TOI_DA):
-        _loi("TEP_QUA_LON", "Tệp %.1f MB, quá lớn." % (len(du) / 1048576))
+    if len(du) > (KY_TOI_DA if chi_png else TEP_TOI_DA) or (not chi_png and loi_co_tep(kieu, len(du))):
+        _loi("TEP_QUA_LON", (not chi_png and loi_co_tep(kieu, len(du))) or "Tệp %.1f MB, quá lớn." % (len(du) / 1048576))
     a = TripAttachment(trip_id=p.id, kind=kind, content_type=kieu, size=len(du), by_user=user.full_name,
                        filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or kind)[:120])
     a.id = ma_moi()
@@ -108,6 +108,9 @@ async def giao_nhan(tid: str, nguoi_nhan: str = Form(""), sdt: str = Form(""), t
         vi_do = kinh_do = None
 
     moi = []
+    tong = sum((a.size or 0) for a in ds_anh) + ((chu_ky.size or 0) if chu_ky else 0)
+    if tong > TEP_TOI_DA:
+        _loi("TEP_QUA_LON", "Một lần gửi %.1f MB, tối đa 10 MB — bớt ảnh." % (tong / 1048576))
     if chu_ky:
         moi.append(await _luu_tep(p, chu_ky, "pod_sign", user, chi_png=True))
     for a in ds_anh:

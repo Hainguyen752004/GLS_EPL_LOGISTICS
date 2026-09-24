@@ -632,7 +632,8 @@
       + (!ds.length && !themDuoc ? `<span class="small muted">${NN.h('attach_none')}</span>` : '');
     o.querySelectorAll('[data-them-tep]').forEach(inp => inp.addEventListener('change', async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const fd = new FormData(); fd.append('tep', f, f.name); fd.append('kind', kind);
+      let nen; try { nen = await EPL.nenTep(f); } catch (e) { return EPL.baoLoi(e); }
+      const fd = new FormData(); fd.append('tep', nen, nen.name); fd.append('kind', kind);
       try { await API.tep(`/api/trips/${P.id}/tep`, fd); EPL.toast(NN.t('saved'), 'ok'); await veTep(); } catch (e) { EPL.baoLoi(e); }
     }));
     o.querySelectorAll('[data-xoa-tep]').forEach(b => b.addEventListener('click', async () => {

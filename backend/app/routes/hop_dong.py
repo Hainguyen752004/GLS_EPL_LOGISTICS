@@ -31,7 +31,7 @@ from database import get_db
 from models import LOAI_HOP_DONG, Contract, ContractFile, Customer, Owner, Trip, User, ma_moi
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban
-from services.tep import TEP_KIEU, TEP_TOI_DA, THU_MUC_HOP_DONG
+from services.tep import loi_co_tep, TEP_KIEU, TEP_TOI_DA, THU_MUC_HOP_DONG
 
 router = APIRouter()
 SAP_HET_NGAY = 30                     # còn ≤ 30 ngày thì báo "sắp hết hạn" (bằng lái dùng 60, hợp đồng ký lại nhanh hơn)
@@ -221,8 +221,8 @@ async def them_tep(cid: str, tep: UploadFile = File(...), db: Session = Depends(
     if kieu not in TEP_KIEU:
         _loi("KIEU_TEP", "Chỉ nhận ảnh (JPG, PNG, WEBP, HEIC) hoặc PDF.")
     du = await tep.read()
-    if len(du) > TEP_TOI_DA:
-        _loi("TEP_QUA_LON", "Tệp %.1f MB, tối đa 8 MB." % (len(du) / 1048576))
+    if len(du) > TEP_TOI_DA or loi_co_tep(kieu, len(du)):
+        _loi("TEP_QUA_LON", loi_co_tep(kieu, len(du)) or "Tệp %.1f MB, tối đa 10 MB." % (len(du) / 1048576))
     if not du:
         _loi("TEP_RONG", "Tệp rỗng.")
     f = ContractFile(contract_id=c.id, filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "hop_dong")[:120],
