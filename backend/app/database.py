@@ -128,6 +128,10 @@ CHI_MUC = [
     # tập "phiếu còn việc" của màn Theo dõi — chỉ mục MỘT PHẦN: cả năm 365.000 phiếu mà chỉ vài nghìn còn việc
     ("ix_trips_con_viec", "trips", "(doc_date DESC, doc_no DESC) WHERE (transport_status <> 'arrived' OR finance_status <> 'paid')"),
     ("ix_trips_tuyen", "trips", "(route_id)"),
+    ("ix_trips_hop_dong", "trips", "(contract_id)"),                         # đếm số phiếu theo hợp đồng
+    ("ix_trips_hop_dong_thue", "trips", "(hire_contract_id)"),
+    # phiếu liên kết đã khoá, chưa nằm đợt trả nào — tiền chờ trả chủ xe (4 năm: 1,46 triệu phiếu, chờ trả chỉ vài nghìn)
+    ("ix_trips_cho_tra_chu", "trips", "(owner_id, doc_date, doc_no) WHERE company = 'joint' AND owner_payment_id IS NULL AND locked IS TRUE"),
     ("ix_vp_phieu_luc", "vehicle_positions", "(trip_id, ts DESC)"),          # điểm mới nhất của phiếu
     ("ix_vp_xe_luc", "vehicle_positions", "(vehicle_id, ts DESC)"),
     ("ix_fuel_moves_phieu_linh", "fuel_moves", "(voucher_id)"),
@@ -138,6 +142,8 @@ CHI_MUC = [
     ("ix_trip_expenses_ncc", "trip_expenses", "(supplier_id)"),
     ("ix_trip_payments_ngay", "trip_payments", "(pay_date)"),
     ("ix_chung_tu_ngay", "chung_tu", "(ngay DESC)"),
+    ("ix_chung_tu_chua_day", "chung_tu", "(loai) WHERE da_day IS false"),        # tờ chưa đẩy sang kế toán
+    ("ix_chung_tu_day_luc", "chung_tu", "(day_luc DESC) WHERE day_luc IS NOT NULL"),
     ("ix_trip_events_luc", "trip_events", "(ts DESC)"),
 ]
 

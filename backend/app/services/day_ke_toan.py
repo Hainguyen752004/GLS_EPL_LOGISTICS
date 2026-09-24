@@ -60,9 +60,10 @@ def dat_cau_hinh(db, khoa, gia_tri, user=None):
 def trang_thai(db):
     """Đã cấu hình chưa, và lần đẩy gần nhất ra sao — để màn Sổ chứng từ nói thật với người dùng."""
     goc = cau_hinh(db, "ke_toan_api")
-    tong = db.query(ChungTu).count()
-    da = db.query(ChungTu).filter(ChungTu.da_day.is_(True)).count()
-    loi = db.query(ChungTu).filter(ChungTu.loi_day.isnot(None), ChungTu.da_day.is_(False)).count()
+    # MỘT lượt đếm cho ba số (4 năm ~6 triệu tờ: ba câu COUNT riêng là ba lần quét bảng)
+    from sqlalchemy import func
+    tong, da, loi = db.query(func.count(ChungTu.id), func.count(ChungTu.id).filter(ChungTu.da_day.is_(True)),
+                             func.count(ChungTu.id).filter(ChungTu.loi_day.isnot(None), ChungTu.da_day.is_(False))).one()
     cuoi = db.query(ChungTu).filter(ChungTu.day_luc.isnot(None)).order_by(ChungTu.day_luc.desc()).first()
     return {"cau_hinh": bool(goc), "api": goc, "co_token": bool(cau_hinh(db, "ke_toan_token")),
             "tong": tong, "da_day": da, "chua_day": tong - da, "loi": loi,

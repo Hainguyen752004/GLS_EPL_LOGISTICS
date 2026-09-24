@@ -5,8 +5,11 @@
     python tools/gieo_tai_thu.py nhan trips     nhân bản MỘT bảng (chạy lần lượt: trips, trip_sections, trip_expenses,
                                                 trip_goods, trip_payments, trip_events, vouchers, chung_tu) — mỗi lệnh
                                                 dưới 10 phút, in tiến độ từng đợt 2.000 bản
-    python tools/gieo_tai_thu.py xe             3 xe mẫu → 500 xe · 500 tài xế, chia phiếu đều cho các xe
+    python tools/gieo_tai_thu.py them <bang> [tu] [den]   thêm 3 NĂM trước năm đầu (4 năm vận hành); tu–den = chỉ số bản
+                                                trong phần thêm (0 … 73.002) — chia lượt cho mỗi lệnh dưới 10 phút
+    python tools/gieo_tai_thu.py xe [YYYY-MM]   3 xe mẫu → 500 xe · 500 tài xế, chia phiếu đều cho các xe
     python tools/gieo_tai_thu.py gps            GPS 30 ngày gần nhất (150 điểm / phiếu, 25 giây một điểm)
+    python tools/gieo_tai_thu.py gps_cu YYYY-MM YYYY-MM   GPS các tháng cũ ĐÃ THƯA (13 điểm / phiếu) như luật thật
     python tools/gieo_tai_thu.py cu             phiếu lĩnh của phiếu cũ hơn 7 ngày → đã cấp; gỡ phiếu nhân bản khỏi hoá đơn gộp mẫu;
                                                 phiếu liên kết cũ hơn 35 ngày → đã trả chủ xe
     python tools/gieo_tai_thu.py xong           ANALYZE + in dung lượng
@@ -72,7 +75,23 @@ def tao_lai():
     print("✓ chép epl_lao → %s (15 phiếu mẫu + danh mục)" % DB_THU, flush=True)
 
 
-def nhan_ban(cac_bang):
+def nhan_ban(cac_bang, doan=None):
+    """Nhân bản năm đầu (25/09/2025 → 24/09/2026). `doan=(tu, den)` chỉ làm các bản từ tu tới den-1 (chia lượt)."""
+    _nhan(cac_bang, 0, None, NGAY_DAU, 365, doan)
+
+
+# 24/09 · thêm 3 NĂM trước năm đầu — DB thử thành 4 năm vận hành (25/09/2022 → 24/09/2026), vẫn 1.000 chuyến / ngày.
+# Bản số g nối tiếp năm đầu (g từ SO_BAN tới 4·SO_BAN − 1) nên mã phiếu, số chứng từ, token không trùng năm đầu.
+NAM_THEM, DAU_THEM = 3, "2022-09-25"
+
+
+def them_nam(cac_bang, doan=None):
+    """Thêm 3 năm (bản g ∈ [SO_BAN, 4·SO_BAN)) rải đều 1.095 ngày từ 25/09/2022. `doan=(tu, den)`: chỉ số bản TRONG
+    phần thêm (0 … 3·SO_BAN) — mỗi lượt vừa dưới 10 phút."""
+    _nhan(cac_bang, None, NAM_THEM, DAU_THEM, 365 * NAM_THEM, doan)
+
+
+def _nhan(cac_bang, g_goc, so_nam, dau, so_ngay, doan):
     from sqlalchemy import create_engine, text
     e = create_engine(url_db(DB_THU))
     with e.begin() as c:
@@ -81,16 +100,24 @@ def nhan_ban(cac_bang):
         if not c.execute(text("SELECT count(*) FROM _mau")).scalar():
             c.execute(text("INSERT INTO _mau SELECT id FROM trips"))
         mau = [r[0] for r in c.execute(text("SELECT id FROM _mau")).fetchall()]
-    ban = -(-SO_PHIEU // len(mau))
-    print("✓ %d phiếu mẫu × %d bản = %d phiếu" % (len(mau), ban, len(mau) * ban), flush=True)
+    so_ban = -(-SO_PHIEU // len(mau))                 # bản / năm
+    if g_goc is None:                                  # phần thêm năm: nối tiếp sau năm đầu
+        g_goc, ban = so_ban, so_ban * so_nam
+    else:
+        ban = so_ban
+    tu0, den0 = doan if doan else (0, ban)
+    den0 = min(den0, ban)
+    print("✓ %d phiếu mẫu × bản %d–%d (trong %d) = %d phiếu · từ %s, rải %d ngày"
+          % (len(mau), tu0, den0 - 1, ban, len(mau) * (den0 - tu0), dau, so_ngay), flush=True)
+    NGAY = "(DATE '%s' + ((g - %d) %% %d))" % (dau, g_goc, so_ngay)     # ngày của bản g
 
     def cot(c, bang):
         return c.execute(text("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = :b ORDER BY ordinal_position"),
                          {"b": bang}).fetchall()
 
     DUY_NHAT = {("chung_tu", "so"): "x.so || '~' || g", ("vouchers", "token"): "md5(x.token || ':' || g)",
-                ("trips", "doc_no"): "'L' || to_char(DATE '%s' + (g %% 365), 'YYMMDD') || '-' || g || '-' || substr(x.id, 1, 4)" % NGAY_DAU}
-    XONG = "(DATE '%s' + (g %% 365)) < CURRENT_DATE - 7" % NGAY_DAU      # phiếu cũ hơn 7 ngày: đã xong
+                ("trips", "doc_no"): "'L' || to_char(%s, 'YYMMDD') || '-' || g || '-' || substr(x.id, 1, 4)" % NGAY}
+    XONG = "%s < CURRENT_DATE - 7" % NGAY      # phiếu cũ hơn 7 ngày: đã xong
     GHI_DE_PHIEU = {"transport_status": "CASE WHEN %s THEN 'arrived' ELSE x.transport_status END" % XONG,
                     "finance_status": "CASE WHEN %s THEN 'paid' ELSE x.finance_status END" % XONG,
                     "locked": "CASE WHEN %s THEN true ELSE x.locked END" % XONG,
@@ -111,18 +138,19 @@ def nhan_ban(cac_bang):
             elif bang == "trips" and ten in GHI_DE_PHIEU:
                 chon.append(GHI_DE_PHIEU[ten])
             elif kieu == "date":
-                chon.append("x.%s + ((DATE '%s' + (g %% 365)) - t.doc_date)" % (ten, NGAY_DAU))
+                chon.append("x.%s + (%s - t.doc_date)" % (ten, NGAY))
             elif kieu.startswith("timestamp"):
-                chon.append("x.%s + (((DATE '%s' + (g %% 365)) - t.doc_date) * INTERVAL '1 day')" % (ten, NGAY_DAU))
+                chon.append("x.%s + ((%s - t.doc_date) * INTERVAL '1 day')" % (ten, NGAY))
             else:
                 chon.append("x.%s" % ten)
         noi = "trips x JOIN trips t ON t.id = x.id" if bang == "trips" else "%s x JOIN trips t ON t.id = x.trip_id" % bang
         t0 = time.time(); tong = 0
         buoc = 2000
-        for tu in range(0, ban, buoc):
-            den = min(ban, tu + buoc) - 1
+        for tu in range(tu0, den0, buoc):
+            den = min(den0, tu + buoc) - 1
             sql = ("INSERT INTO %s (%s) SELECT %s FROM %s JOIN _mau m ON m.id = t.id CROSS JOIN generate_series(%d, %d) g WHERE %s"
-                   % (bang, ", ".join(c for c, _ in cs), ", ".join(chon), noi, tu, den, dieu_kien if bang != "trips" else "true"))
+                   % (bang, ", ".join(c for c, _ in cs), ", ".join(chon), noi, g_goc + tu, g_goc + den,
+                      dieu_kien if bang != "trips" else "true"))
             with e.begin() as c:
                 tong += c.execute(text(sql)).rowcount
             print("  %-15s bản %6d–%6d · +%d dòng · %.0f s" % (bang, tu, den, tong, time.time() - t0), flush=True)
@@ -169,15 +197,21 @@ def xe_tai_xe():
         c.execute(text("INSERT INTO driver_licenses (%s) SELECT %s FROM _xe m JOIN driver_licenses x ON x.driver_id = m.d_goc WHERE m.d_id <> m.d_goc ON CONFLICT DO NOTHING"
                        % (", ".join(cl), ", ".join(doi_l.get(k, "x." + k) for k in cl))))
     print("✓ +%d xe · +%d tài xế (tổng %d) · %.0f s" % (n, n2, SO_XE, time.time() - t0), flush=True)
-    for thang in range(13):          # chia phiếu theo từng tháng một cho mỗi lệnh UPDATE vừa phải
+    with e.connect() as c:
+        lo, hi = c.execute(text("SELECT min(doc_date), max(doc_date) FROM trips")).one()
+    t_lo, t_hi = lo.year * 12 + lo.month - 1, hi.year * 12 + hi.month - 1
+    for thang in range(t_hi - t_lo + 1):  # chia phiếu theo từng tháng một cho mỗi lệnh UPDATE vừa phải
+        tt = t_lo + thang
+        if len(sys.argv) > 2 and sys.argv[2] and "%04d-%02d" % (tt // 12, tt % 12 + 1) < sys.argv[2]:
+            continue                      # `xe YYYY-MM`: chỉ chia từ tháng đó trở đi (chia lượt)
         with e.begin() as c:
             k = c.execute(text("""UPDATE trips t SET vehicle_id = m.v_id, driver_id = m.d_id, truck_no = v.truck_no,
                     plate_head = v.plate_head, plate_trailer = v.plate_trailer, driver_name = d.name
                 FROM _xe m JOIN vehicles v ON v.id = m.v_id JOIN drivers d ON d.id = m.d_id
                 WHERE m.n = abs(hashtext(t.id)) % :sx AND t.doc_date >= CAST(:tu AS date) AND t.doc_date < CAST(:tu AS date) + INTERVAL '1 month'
                   AND t.id NOT IN (SELECT id FROM _mau)"""),
-                {"sx": SO_XE, "tu": "%04d-%02d-01" % (2025 + (8 + thang) // 12, (8 + thang) % 12 + 1)}).rowcount
-        print("  chia phiếu cho xe · tháng %d/13 · %d phiếu · %.0f s" % (thang + 1, k, time.time() - t0), flush=True)
+                {"sx": SO_XE, "tu": "%04d-%02d-01" % (tt // 12, tt % 12 + 1)}).rowcount
+        print("  chia phiếu cho xe · %04d-%02d · %d phiếu · %.0f s" % (tt // 12, tt % 12 + 1, k, time.time() - t0), flush=True)
     with e.begin() as c:
         c.execute(text("UPDATE vouchers x SET driver_id = t.driver_id, truck_no = t.truck_no FROM trips t WHERE t.id = x.trip_id AND x.trip_id NOT IN (SELECT id FROM _mau)"))
     print("✓ phiếu lĩnh theo xe mới · %.0f s" % (time.time() - t0), flush=True)
@@ -200,6 +234,35 @@ def gps():
                 {"nd": GPS_DIEM, "lui": lui}).rowcount
         print("  GPS ngày -%2d · tổng %d điểm · %.0f s" % (lui, tong, time.time() - t0), flush=True)
     print("✓ vehicle_positions +%d điểm" % tong, flush=True)
+
+
+def gps_cu(tu, den):
+    """GPS của các tháng CŨ đúng như sau khi luật thật đã chạy (tools/gps_thang.py thua · xoa): chỉ giữ 24 tháng, và điểm
+    cũ hơn 30 ngày đã thưa còn 1 điểm / 5 phút / chuyến — tức mỗi chuyến ~13 điểm thay vì 150. `tu`, `den` là 'YYYY-MM'
+    (gồm cả hai đầu) — mỗi lượt vài tháng cho dưới 10 phút. Tự dựng bảng con của từng tháng."""
+    from sqlalchemy import create_engine, text
+    import datetime as dt
+    e = create_engine(url_db(DB_THU))
+    t0, tong = time.time(), 0
+    y, m = int(tu[:4]), int(tu[5:7])
+    while "%04d-%02d" % (y, m) <= den:
+        a = dt.date(y, m, 1)
+        b = dt.date(y + (m == 12), m % 12 + 1, 1)
+        with e.begin() as c:
+            c.execute(text("CREATE TABLE IF NOT EXISTS vehicle_positions_%04d_%02d PARTITION OF vehicle_positions "
+                           "FOR VALUES FROM ('%s') TO ('%s')" % (y, m, a.isoformat(), b.isoformat())))
+            n = c.execute(text("""INSERT INTO vehicle_positions (id, trip_id, vehicle_id, driver_id, ts, lat, lng, accuracy_m, speed_kmh, heading, source, by_user)
+                SELECT substr(md5(t.id || '#gpc' || i), 1, 12), t.id, t.vehicle_id, t.driver_id,
+                       t.doc_date + TIME '06:00' + (abs(hashtext(t.id)) % 43200) * INTERVAL '1 second' + i * INTERVAL '5 minute',
+                       18.44 - i * 0.0144 + (random() - 0.5) * 0.0004, 103.15 - i * 0.0240 + (random() - 0.5) * 0.0004,
+                       5 + random() * 10, 40 + random() * 30, NULL, 'driver_app', t.driver_name
+                FROM trips t CROSS JOIN generate_series(0, 12) i
+                WHERE t.doc_date >= :a AND t.doc_date < :b AND t.id NOT IN (SELECT id FROM _mau)
+                ON CONFLICT DO NOTHING"""), {"a": a, "b": b}).rowcount
+        tong += n
+        print("  GPS đã thưa · %04d-%02d · +%d điểm · tổng %d · %.0f s" % (y, m, n, tong, time.time() - t0), flush=True)
+        y, m = (y + (m == 12), m % 12 + 1)
+    print("✓ GPS cũ +%d điểm" % tong, flush=True)
 
 
 def cu():
@@ -252,12 +315,16 @@ if __name__ == "__main__":
         tao_lai()
     elif lenh == "nhan":
         nhan_ban(sys.argv[2:])
+    elif lenh == "them":                 # them <bang> [tu] [den]
+        them_nam([sys.argv[2]], (int(sys.argv[3]), int(sys.argv[4])) if len(sys.argv) > 4 else None)
     elif lenh == "xe":
         xe_tai_xe()
     elif lenh == "gps":
         gps()
     elif lenh == "cu":
         cu()
+    elif lenh == "gps_cu":               # gps_cu YYYY-MM YYYY-MM
+        gps_cu(sys.argv[2], sys.argv[3])
     elif lenh == "xong":
         xong()
     elif lenh == "xoa":

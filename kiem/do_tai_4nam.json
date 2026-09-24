@@ -1,0 +1,282 @@
+{
+ "admin /api/trips": {
+  "ms": 956.8512000000009,
+  "kb": 111.4306640625,
+  "dong": 50,
+  "tong": "1460055",
+  "man": "Phiếu xuất xe · danh sách",
+  "ms_dau": 1399.6528
+ },
+ "admin /api/trips?q=341": {
+  "ms": 407.5033999999995,
+  "kb": 112.6435546875,
+  "dong": 50,
+  "tong": "10283",
+  "man": "Phiếu xuất xe · tìm",
+  "ms_dau": 660.1104000000007
+ },
+ "admin /api/trips?transport_status=transit": {
+  "ms": 161.3927000000004,
+  "kb": 107.251953125,
+  "dong": 50,
+  "tong": "1587",
+  "man": "Phiếu xuất xe · đang chạy",
+  "ms_dau": 194.58979999999926
+ },
+ "thabok /api/trips": {
+  "ms": 729.2142000000013,
+  "kb": 84.900390625,
+  "dong": 50,
+  "tong": "1460055",
+  "man": "Bãi · danh sách phiếu",
+  "ms_dau": 870.6309999999995
+ },
+ "ketoan /api/trips?finance_status=unpaid": {
+  "ms": 144.07250000000005,
+  "kb": 107.7802734375,
+  "dong": 50,
+  "tong": "4761",
+  "man": "Kế toán · chưa thu",
+  "ms_dau": 171.53509999999983
+ },
+ "tx01 /api/trips": {
+  "ms": 138.79619999999983,
+  "kb": 93.10546875,
+  "dong": 50,
+  "tong": "2910",
+  "man": "Tài xế · phiếu của tôi",
+  "ms_dau": 186.86009999999874
+ },
+ "admin /api/theo-doi": {
+  "ms": 1273.5477999999994,
+  "kb": 445.080078125,
+  "dong": 0,
+  "tong": null,
+  "man": "Theo dõi (tracking)",
+  "ms_dau": 1924.2360999999999
+ },
+ "admin /api/theo-doi/su-co": {
+  "ms": 71.01169999999968,
+  "kb": 81.2900390625,
+  "dong": 200,
+  "tong": null,
+  "man": "Theo dõi · sự cố",
+  "ms_dau": 98.23009999999854
+ },
+ "admin /api/bao-cao/tong-quan": {
+  "ms": 29.224200000001588,
+  "kb": 1.109375,
+  "dong": 0,
+  "tong": null,
+  "man": "Báo cáo tổng quan",
+  "ms_dau": 7101.054000000001
+ },
+ "admin /api/bao-cao/xu-huong": {
+  "ms": 146.7403000000047,
+  "kb": 62.173828125,
+  "dong": 0,
+  "tong": null,
+  "man": "Báo cáo xu hướng",
+  "ms_dau": 52102.8972
+ },
+ "admin /api/bao-cao/theo-doi?trang=1&co=100": {
+  "ms": 167.25260000001185,
+  "kb": 223.513671875,
+  "dong": 100,
+  "tong": "23770",
+  "man": "Báo cáo theo dõi · 1 trang",
+  "ms_dau": 195.48050000000217
+ },
+ "admin /api/bao-cao/theo-doi/tong": {
+  "ms": 57.396499999995854,
+  "kb": 0.3193359375,
+  "dong": 0,
+  "tong": null,
+  "man": "Báo cáo theo dõi · dòng tổng",
+  "ms_dau": 5521.636399999991
+ },
+ "admin /api/bao-cao/can-tru": {
+  "ms": 42.29009999998823,
+  "kb": 1.0087890625,
+  "dong": 3,
+  "tong": null,
+  "man": "Cấn trừ",
+  "ms_dau": 7898.570300000003
+ },
+ "admin /api/bao-cao/xe-lien-ket": {
+  "ms": 3083.341999999988,
+  "kb": 8197.4638671875,
+  "dong": 3169,
+  "tong": null,
+  "man": "Báo cáo xe liên kết",
+  "ms_dau": 3654.522400000005
+ },
+ "admin /api/bao-cao/tien-tai-xe": {
+  "ms": 78.94859999999682,
+  "kb": 112.3125,
+  "dong": 0,
+  "tong": null,
+  "man": "Tiền chuyến tài xế",
+  "ms_dau": 13544.934899999998
+ },
+ "admin /api/dem-viec": {
+  "ms": 1359.3349000000076,
+  "kb": 0.0322265625,
+  "dong": 0,
+  "tong": null,
+  "man": "Đếm việc (thanh menu)",
+  "ms_dau": 1860.1774999999918
+ },
+ "ketoan /api/chung-tu": {
+  "ms": 104.47599999999113,
+  "kb": 436.8564453125,
+  "dong": 500,
+  "tong": null,
+  "man": "Chứng từ",
+  "ms_dau": 137.02969999999937
+ },
+ "ketoan /api/ke-toan/trang-thai": {
+  "ms": 1528.4458,
+  "kb": 0.15625,
+  "dong": 0,
+  "tong": null,
+  "man": "Kế toán · trạng thái đẩy",
+  "ms_dau": 1840.6577000000004
+ },
+ "ketoan /api/hoa-don-gop": {
+  "ms": 75.18759999999958,
+  "kb": 0.46484375,
+  "dong": 1,
+  "tong": null,
+  "man": "Hoá đơn gộp",
+  "ms_dau": 98.23190000000181
+ },
+ "ketoan /api/hoa-don-gop/cho-gop": {
+  "ms": 77.89000000000001,
+  "kb": 0.02734375,
+  "dong": 0,
+  "tong": null,
+  "man": "Hoá đơn · chờ gộp",
+  "ms_dau": 95.73759999999965
+ },
+ "ketoan /api/tat-toan?chi_tiet=0": {
+  "ms": 57.17830000000035,
+  "kb": 126.439453125,
+  "dong": 0,
+  "tong": null,
+  "man": "Tất toán",
+  "ms_dau": 5656.686600000001
+ },
+ "admin /api/vouchers": {
+  "ms": 175.92859999999888,
+  "kb": 424.5712890625,
+  "dong": 500,
+  "tong": "1057",
+  "man": "Phiếu lĩnh",
+  "ms_dau": 262.8537999999985
+ },
+ "admin /api/fuel-moves": {
+  "ms": 180.88900000000052,
+  "kb": 10.3994140625,
+  "dong": 0,
+  "tong": null,
+  "man": "Kho nhiên liệu · nhập xuất",
+  "ms_dau": 187.0282000000003
+ },
+ "admin /api/kho-hang": {
+  "ms": 102.97860000000014,
+  "kb": 1.6357421875,
+  "dong": 0,
+  "tong": null,
+  "man": "Kho hàng",
+  "ms_dau": 160.97319999999726
+ },
+ "admin /api/vehicles": {
+  "ms": 128.75079999999883,
+  "kb": 344.296875,
+  "dong": 500,
+  "tong": null,
+  "man": "Xe",
+  "ms_dau": 155.37510000000054
+ },
+ "admin /api/drivers": {
+  "ms": 1101.5322000000012,
+  "kb": 326.0400390625,
+  "dong": 500,
+  "tong": null,
+  "man": "Tài xế",
+  "ms_dau": 1308.5985999999998
+ },
+ "admin /api/trailers": {
+  "ms": 77.60749999999916,
+  "kb": 1.7919921875,
+  "dong": 4,
+  "tong": null,
+  "man": "Rơ-moóc",
+  "ms_dau": 104.62300000000013
+ },
+ "admin /api/customers": {
+  "ms": 27.745100000000633,
+  "kb": 0.560546875,
+  "dong": 3,
+  "tong": null,
+  "man": "Khách hàng",
+  "ms_dau": 43.38160000000002
+ },
+ "admin /api/owners": {
+  "ms": 1381.2274000000002,
+  "kb": 1.404296875,
+  "dong": 1,
+  "tong": null,
+  "man": "Chủ xe liên kết",
+  "ms_dau": 2948.7961999999984
+ },
+ "admin /api/suppliers": {
+  "ms": 111.33519999999919,
+  "kb": 1.66015625,
+  "dong": 5,
+  "tong": null,
+  "man": "Nhà cung cấp",
+  "ms_dau": 15507.0594
+ },
+ "admin /api/hop-dong": {
+  "ms": 529.8840000000027,
+  "kb": 1.28515625,
+  "dong": 3,
+  "tong": null,
+  "man": "Hợp đồng",
+  "ms_dau": 751.2099000000063
+ },
+ "admin /api/lenh-sua-chua": {
+  "ms": 60.06440000000168,
+  "kb": 0.9990234375,
+  "dong": 2,
+  "tong": null,
+  "man": "Lệnh sửa chữa",
+  "ms_dau": 96.35860000000207
+ },
+ "admin /api/the-cao-toc": {
+  "ms": 42.3688999999996,
+  "kb": 0.6865234375,
+  "dong": 2,
+  "tong": null,
+  "man": "Thẻ cao tốc",
+  "ms_dau": 48.58009999999524
+ },
+ "admin /api/ban-hang": {
+  "ms": 73.85460000000421,
+  "kb": 2.5390625,
+  "dong": 3,
+  "tong": null,
+  "man": "Bán hàng",
+  "ms_dau": 108.92169999999624
+ },
+ "admin /api/routes": {
+  "ms": 72.56549999999606,
+  "kb": 1.533203125,
+  "dong": 2,
+  "tong": null,
+  "man": "Tuyến đường",
+  "ms_dau": 72.63829999999416
+ }
+}

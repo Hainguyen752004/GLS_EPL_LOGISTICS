@@ -76,6 +76,44 @@ def _tong_thang(db, dau, sau):
     return {"ma": ma, "khoan": khoan}
 
 
+def _tong_thang_lo(db, cac_thang):
+    """_tong_thang cho NHIỀU tháng trong một lượt SQL (gom theo tháng) — trả danh sách cùng thứ tự `cac_thang`."""
+    tien = _tien_lak_sql()
+    thg = func.date_trunc("month", Trip.doc_date)
+    goc = (db.query(TripExpense).join(Trip, Trip.id == TripExpense.trip_id)
+           .filter(TripExpense.paid_by_epl.is_(True), Trip.doc_date >= min(cac_thang),
+                   Trip.doc_date < dt.date(max(cac_thang).year + (max(cac_thang).month == 12), max(cac_thang).month % 12 + 1, 1)))
+    ra = {d: {"ma": {}, "khoan": {}} for d in cac_thang}
+    for t, sid, n, x in (goc.filter(TripExpense.supplier_id.isnot(None), TripExpense.ghi_no.is_(True))
+                         .with_entities(thg, TripExpense.supplier_id, func.count(TripExpense.id), func.sum(tien))
+                         .group_by(thg, TripExpense.supplier_id)):
+        if t.date() in ra:
+            ra[t.date()]["ma"][sid] = [n, float(x or 0)]
+    for t, k, n, x, g in (goc.filter(TripExpense.supplier_id.is_(None), TripExpense.item_key.isnot(None))
+                          .with_entities(thg, TripExpense.item_key, func.count(TripExpense.id), func.sum(tien),
+                                         func.sum(case((TripExpense.ghi_no.is_(True), tien), else_=0.0)))
+                          .group_by(thg, TripExpense.item_key)):
+        if t.date() in ra:
+            ra[t.date()]["khoan"][k] = [n, float(x or 0), float(g or 0)]
+    return [ra[d] for d in cac_thang]
+
+
+def _tong_khong_ngay(db):
+    """Như _tong_thang, cho các phiếu CHƯA CÓ ngày lập (doc_date trống)."""
+    tien = _tien_lak_sql()
+    goc = (db.query(TripExpense).join(Trip, Trip.id == TripExpense.trip_id)
+           .filter(TripExpense.paid_by_epl.is_(True), Trip.doc_date.is_(None)))
+    ma = {sid: [n, float(t or 0)] for sid, n, t in (
+        goc.filter(TripExpense.supplier_id.isnot(None), TripExpense.ghi_no.is_(True))
+        .with_entities(TripExpense.supplier_id, func.count(TripExpense.id), func.sum(tien)).group_by(TripExpense.supplier_id))}
+    khoan = {k: [n, float(t or 0), float(g or 0)] for k, n, t, g in (
+        goc.filter(TripExpense.supplier_id.is_(None), TripExpense.item_key.isnot(None))
+        .with_entities(TripExpense.item_key, func.count(TripExpense.id), func.sum(tien),
+                       func.sum(case((TripExpense.ghi_no.is_(True), tien), else_=0.0)))
+        .group_by(TripExpense.item_key))}
+    return {"ma": ma, "khoan": khoan}
+
+
 def _tong_lo(db, cac_ncc):
     """Số dòng · phát sinh · ghi nợ · đã trả của CẢ danh sách. Nợ nhà cung cấp là số CỘNG DỒN từ trước tới nay, nên
     càng dùng lâu càng nhiều dòng: cộng theo từng tháng (mỗi tháng đệm riêng) rồi gộp — mỗi lần mở chỉ phải cộng lại
@@ -83,17 +121,21 @@ def _tong_lo(db, cac_ncc):
     from services import dem_bao_cao as DEM
     theo_ma, theo_khoan = defaultdict(lambda: [0, 0.0]), defaultdict(lambda: [0, 0.0, 0.0])
     lo, hi = db.query(func.min(Trip.doc_date), func.max(Trip.doc_date)).one()
+    thang = []
     if lo:
-        t, t_cuoi = lo.year * 12 + lo.month - 1, hi.year * 12 + hi.month - 1
-        while t <= t_cuoi:
-            dau, sau = dt.date(t // 12, t % 12 + 1, 1), dt.date((t + 1) // 12, (t + 1) % 12 + 1, 1)
-            g = DEM.lay(db, ("ncc-thang", dau.isoformat()), [dau.strftime("%Y-%m")],
-                        lambda: _tong_thang(db, dau, sau), theo_ngay=False)
-            for sid, (n, x) in g["ma"].items():
-                theo_ma[sid][0] += n; theo_ma[sid][1] += x
-            for k, (n, x, y) in g["khoan"].items():
-                o = theo_khoan[k]; o[0] += n; o[1] += x; o[2] += y
-            t += 1
+        for t in range(lo.year * 12 + lo.month - 1, hi.year * 12 + hi.month):
+            thang.append(dt.date(t // 12, t % 12 + 1, 1))
+    # Mọi tháng một lượt đệm; tháng nào còn thiếu thì tính MỘT LƯỢT cho cả nhóm (4 năm = 49 tháng — tính từng tháng một
+    # là quá 60 giây lần đầu), chứ không từng tháng một.
+    viec = [(("ncc-thang", d.isoformat()), [d.strftime("%Y-%m")], None) for d in thang]
+    # phiếu KHÔNG CÓ NGÀY không thuộc tháng nào nhưng nợ nhà cung cấp là số cộng dồn — vẫn phải tính (luôn tính mới,
+    # thường không có dòng nào nên câu này rất nhẹ)
+    khong_ngay = _tong_khong_ngay(db)
+    for g in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tong_thang_lo(db, [thang[i] for i in thieu])) + [khong_ngay]:
+        for sid, (n, x) in g["ma"].items():
+            theo_ma[sid][0] += n; theo_ma[sid][1] += x
+        for k, (n, x, y) in g["khoan"].items():
+            o = theo_khoan[k]; o[0] += n; o[1] += x; o[2] += y
     tra = {sid: float(t or 0) for sid, t in (db.query(SupplierPayment.supplier_id, func.sum(SupplierPayment.amount_lak))
                                              .group_by(SupplierPayment.supplier_id))}
     ra = {}

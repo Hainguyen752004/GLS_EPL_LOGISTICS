@@ -107,17 +107,18 @@ def main():
         # 4. máy bên kia hỏng → tờ giữ nguyên, ghi lỗi, đếm lần thử
         CHE_DO["tra"] = 500
         s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan"); to2 = ds["ds"][0]
+        lan_truoc = to2.get("lan_thu") or 0          # tờ có thể đã được các lượt chạy trước thử — so mức TĂNG, không so số tuyệt đối
         s, g = goi("/api/chung-tu/%s/day" % to2["id"], {}, vai="ketoan")
         phai(s, 502, "Bên kia trả 500 → báo DAY_HONG, tờ không bị đánh đã đẩy", g)
         s, g = goi("/api/chung-tu/%s" % to2["id"], vai="ketoan")
-        assert g["da_day"] is False and g["loi_day"] and "500" in g["loi_day"] and g["lan_thu"] == 1, "tờ phải giữ chưa đẩy và ghi lỗi: %s" % g
+        assert g["da_day"] is False and g["loi_day"] and "500" in g["loi_day"] and g["lan_thu"] == lan_truoc + 1, "tờ phải giữ chưa đẩy và ghi lỗi: %s" % g
         print("  ✓ tờ %s giữ chưa đẩy, lỗi ghi lại: %s" % (to2["so"], g["loi_day"][:50]))
 
         # 5. bên kia nói 'đã có rồi' (409) → coi là đã đẩy
         CHE_DO["tra"] = 409
         s, g = goi("/api/chung-tu/%s/day" % to2["id"], {}, vai="ketoan")
         phai(s, 200, "Bên kia trả 409 (đã có) → coi là đã đẩy", g)
-        assert g["da_day"] is True and g["loi_day"] is None and g["lan_thu"] == 2, "phải xoá lỗi cũ và tính lần thử thứ 2"
+        assert g["da_day"] is True and g["loi_day"] is None and g["lan_thu"] == lan_truoc + 2, "phải xoá lỗi cũ và tính thêm một lần thử nữa"
 
         # 6. đẩy hết
         CHE_DO["tra"] = 201
