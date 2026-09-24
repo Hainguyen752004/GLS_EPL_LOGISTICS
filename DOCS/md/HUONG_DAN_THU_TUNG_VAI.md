@@ -1,5 +1,8 @@
 # Hướng dẫn tự thử EPL Lào theo từng vai
 
+> **ĐÃ THAY bằng `KICH_BAN_TEST_TAY_THEO_VAI.md` (24/09/2026).** Bản này dừng ở 22/09: còn ghi Bãi thấy tiền chi và thiếu
+> các phần mới. Giữ lại để tra cứu, đừng test theo bản này.
+
 Viết cho người thử phần mềm (anh chủ dự án, hoặc người demo cho khách). Cập nhật 22/09/2026 — sau ba đợt sửa theo trả lời của anh Khampla và đợt dọn nợ kỹ thuật.
 
 Phần mềm chia việc theo vai, và **việc của vai này mở khoá cho vai sau**. Nên cách thử đúng không phải
@@ -12,7 +15,6 @@ liệu này là kịch bản đó, mỗi bước ghi rõ: *đăng nhập ai · v
 
 ```
 cd D:\Demo_Lao\EPL_LAO_REAL
-python backend\app\seed.py --dung-lai      # gieo lại dữ liệu mẫu cho sạch (xoá hết, gieo lại)
 chay.bat                                    # hoặc: python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8010 --no-access-log
 ```
 
@@ -406,11 +408,8 @@ Khi anh Khang cho địa chỉ thật: `admin` → **Cấu hình** → dán đ�
 
 ## 7. Nếu muốn làm lại từ đầu
 
-```
-python backend\app\seed.py --dung-lai
-```
-
-Xoá sạch và gieo lại đúng bộ dữ liệu mẫu ban đầu. Chạy bất cứ lúc nào, không sợ hỏng gì.
+**Không** chạy `seed.py --dung-lai` trên DB `epl_lao`, nó xoá sạch cả dữ liệu mẫu tháng 9. Dọn dữ liệu thử bằng
+`python tools/don_rac_bo_kiem.py` (xem trước) rồi `python tools/don_rac_bo_kiem.py that`, nhớ sao lưu trước.
 
 Muốn chắc chắn máy vẫn đúng sau khi nghịch, chạy bộ kiểm (cần máy chủ đang bật):
 
