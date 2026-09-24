@@ -20,3 +20,4 @@ TEP_KIEU = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
 # Ảnh thì không nhận PDF — khung ảnh xe hiển thị bằng thẻ <img>.
 ANH_KIEU = {k: v for k, v in TEP_KIEU.items() if k != "application/pdf"}
 THU_MUC_ANH_XE = os.path.join(TEP_DIR, "xe")
+THU_MUC_HOP_DONG = os.path.join(TEP_DIR, "hop_dong")      # bản scan hợp đồng (routes/hop_dong.py)

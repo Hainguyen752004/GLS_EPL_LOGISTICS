@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1453 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1486 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -7216,6 +7216,171 @@ window.EPL_TU_DIEN = {
   "vi": "Ghi chú",
   "lo": "ໝາຍເຫດ",
   "en": "Notes"
+ },
+ "hd_nut": {
+  "vi": "Hợp đồng",
+  "lo": "ສັນຍາ",
+  "en": "Contracts"
+ },
+ "hd_van_chuyen": {
+  "vi": "Hợp đồng vận chuyển",
+  "lo": "ສັນຍາຂົນສົ່ງ",
+  "en": "Transport contract"
+ },
+ "hd_thue_xe": {
+  "vi": "Hợp đồng thuê xe",
+  "lo": "ສັນຍາເຊົ່າລົດ",
+  "en": "Truck hire contract"
+ },
+ "hd_cua_khach": {
+  "vi": "Hợp đồng vận chuyển · {n}",
+  "lo": "ສັນຍາຂົນສົ່ງ · {n}",
+  "en": "Transport contracts · {n}"
+ },
+ "hd_cua_chu_xe": {
+  "vi": "Hợp đồng thuê xe · {n}",
+  "lo": "ສັນຍາເຊົ່າລົດ · {n}",
+  "en": "Truck hire contracts · {n}"
+ },
+ "hd_mota_khach": {
+  "vi": "Hợp đồng với khách · lập phiếu chọn khách thì số hợp đồng tự điền",
+  "lo": "ສັນຍາກັບລູກຄ້າ · ເປີດໃບເລືອກລູກຄ້າ ເລກສັນຍາຈະຕື່ມເອງ",
+  "en": "Contracts with the customer · the contract number fills in when a slip picks the customer"
+ },
+ "hd_mota_thue": {
+  "vi": "Hợp đồng với chủ xe liên kết · lập phiếu chọn xe thì số hợp đồng tự điền",
+  "lo": "ສັນຍາກັບເຈົ້າຂອງລົດຮ່ວມ · ເປີດໃບເລືອກລົດ ເລກສັນຍາຈະຕື່ມເອງ",
+  "en": "Contracts with the joint-truck owner · the contract number fills in when a slip picks the truck"
+ },
+ "hd_so": {
+  "vi": "Số hợp đồng",
+  "lo": "ເລກສັນຍາ",
+  "en": "Contract no."
+ },
+ "hd_ngay_ky": {
+  "vi": "Ngày ký",
+  "lo": "ວັນທີເຊັນ",
+  "en": "Signed on"
+ },
+ "hd_tu": {
+  "vi": "Áp dụng từ",
+  "lo": "ນຳໃຊ້ຕັ້ງແຕ່",
+  "en": "Valid from"
+ },
+ "hd_den": {
+  "vi": "Ngày hết hạn",
+  "lo": "ວັນທີໝົດອາຍຸ",
+  "en": "Expiry date"
+ },
+ "hd_vo_han": {
+  "vi": "Không hết hạn",
+  "lo": "ບໍ່ໝົດອາຍຸ",
+  "en": "No expiry"
+ },
+ "hd_so_phieu": {
+  "vi": "Số chuyến",
+  "lo": "ຈຳນວນຖ້ຽວ",
+  "en": "Trips"
+ },
+ "hd_scan": {
+  "vi": "Ảnh · PDF",
+  "lo": "ຮູບ · PDF",
+  "en": "Photo · PDF"
+ },
+ "hd_scan_an": {
+  "vi": "—",
+  "lo": "—",
+  "en": "—"
+ },
+ "hd_trong": {
+  "vi": "Chưa có hợp đồng nào",
+  "lo": "ຍັງບໍ່ມີສັນຍາ",
+  "en": "No contracts yet"
+ },
+ "hd_chua_co": {
+  "vi": "Chưa có hợp đồng",
+  "lo": "ຍັງບໍ່ມີສັນຍາ",
+  "en": "No contract"
+ },
+ "hd_chon_doi_tac": {
+  "vi": "—",
+  "lo": "—",
+  "en": "—"
+ },
+ "hd_khong_dung": {
+  "vi": "Không có hợp đồng",
+  "lo": "ບໍ່ມີສັນຍາ",
+  "en": "No contract"
+ },
+ "hd_them": {
+  "vi": "Thêm hợp đồng",
+  "lo": "ເພີ່ມສັນຍາ",
+  "en": "Add contract"
+ },
+ "hd_sua": {
+  "vi": "Sửa hợp đồng",
+  "lo": "ແກ້ໄຂສັນຍາ",
+  "en": "Edit contract"
+ },
+ "hd_con_han": {
+  "vi": "Còn hạn",
+  "lo": "ຍັງບໍ່ໝົດອາຍຸ",
+  "en": "Valid"
+ },
+ "hd_sap_het": {
+  "vi": "Sắp hết hạn",
+  "lo": "ໃກ້ໝົດອາຍຸ",
+  "en": "Expiring soon"
+ },
+ "hd_het_han": {
+  "vi": "Hết hạn",
+  "lo": "ໝົດອາຍຸແລ້ວ",
+  "en": "Expired"
+ },
+ "hd_chua_hieu_luc": {
+  "vi": "Chưa áp dụng",
+  "lo": "ຍັງບໍ່ນຳໃຊ້",
+  "en": "Not yet in force"
+ },
+ "hd_ngung": {
+  "vi": "Ngưng dùng",
+  "lo": "ຢຸດໃຊ້",
+  "en": "Inactive"
+ },
+ "hd_con_n_ngay": {
+  "vi": "còn {n} ngày",
+  "lo": "ເຫຼືອ {n} ວັນ",
+  "en": "{n} days left"
+ },
+ "pod_title": {
+  "vi": "Biên bản giao nhận hàng (POD)",
+  "lo": "ໃບເຊັນຮັບສິນຄ້າ (POD)",
+  "en": "Proof of delivery (POD)"
+ },
+ "pod_no": {
+  "vi": "Số POD",
+  "lo": "ເລກທີ POD",
+  "en": "POD no."
+ },
+ "pod_date": {
+  "vi": "Ngày ký nhận",
+  "lo": "ວັນທີເຊັນຮັບ",
+  "en": "Received on"
+ },
+ "pod_receiver": {
+  "vi": "Người ký nhận",
+  "lo": "ຜູ້ເຊັນຮັບ",
+  "en": "Received by"
+ },
+ "pod_anh": {
+  "vi": "Ảnh · PDF",
+  "lo": "ຮູບ · PDF",
+  "en": "Photo · PDF"
+ },
+ "pod_goi_y": {
+  "vi": "Nhập số POD hoặc thêm ảnh · PDF",
+  "lo": "ລົງເລກທີ POD ຫຼື ເພີ່ມຮູບ · PDF",
+  "en": "Enter the POD number or add a photo · PDF"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

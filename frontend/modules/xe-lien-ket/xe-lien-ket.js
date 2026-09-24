@@ -1,7 +1,7 @@
 /* Xe liên kết — mỗi dòng một phiếu xe ngoài, đủ phép tính trả chủ xe và lãi EPL. */
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
-  let root, ds = [], chu = [];
+  let root, ds = [], chu = [], HD = [], chuHd = null;
   const OPM = { phieu: 'opm_phieu', thang: 'opm_thang', dot: 'opm_dot' };
   const CACH = [['cash', 'pm_cash'], ['bank', 'pm_bank'], ['offset', 'pm_offset'], ['other', 'pm_other']];
 
@@ -15,14 +15,16 @@
       return `<tr class="${c.active ? '' : 'xlk-tat'}">
         <td lang="lo"><b>${esc(c.name)}</b>${c.note ? `<div class="small muted">${esc(c.note)}</div>` : ''}</td>
         <td class="mono">${esc(c.phone || '—')}</td><td class="mono">${(c.so_xe || []).map(esc).join(', ') || '—'}</td>
+        <td>${EPL.hopDong.nhan(EPL.hopDong.hienHanh(HD, c.id))}</td>
         <td>${NN.h(OPM[c.pay_mode] || 'opm_phieu')}</td>
         <td class="num tien">${c.fee_pct != null ? so(c.fee_pct, 1) + ' %' : '—'}</td>
         <td class="num tien">${c.over_limit_t != null ? `${so(c.over_limit_t, 1)} t · ${EPL.tien(c.over_price, c.hire_ccy)}/t` : '—'}</td>
         <td class="mono tien">${esc(c.hire_ccy || '')}</td>
         <td class="num tien">${ct.so_phieu ? `<b>${ct.so_phieu}</b> ${NN.t('trips')} · ${EPL.tienGop(ct.tong)}` : `<span class="muted">${NN.h('owner_no_pending')}</span>`}${
           ct.so_phieu_ban ? `<div class="small neg">− ${NN.h('owner_sales_pending')}: ${so(ct.ban_cho_tru_lak)} LAK (${ct.so_phieu_ban})</div>` : ''}</td>
-        <td class="no-print">${themDuoc ? `<button class="btn sm" data-sua-chu="${c.id}">${NN.h('edit')}</button> ` : ''}${AUTH.la('cash', 'treasury') && ct.so_phieu ? `<button class="btn sm ok" data-tra-chu="${c.id}">${NN.h('owner_pay_batch')}</button>` : ''}</td></tr>`;
-    }).join('') : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
+        <td class="no-print">${themDuoc ? `<button class="btn sm" data-sua-chu="${c.id}">${NN.h('edit')}</button> ` : ''}<button class="btn sm ${chuHd && chuHd.id === c.id ? 'primary' : ''}" data-hd-chu="${c.id}">${NN.h('hd_nut')}</button> ${AUTH.la('cash', 'treasury') && ct.so_phieu ? `<button class="btn sm ok" data-tra-chu="${c.id}">${NN.h('owner_pay_batch')}</button>` : ''}</td></tr>`;
+    }).join('') : `<tr><td colspan="10" class="empty">${NN.h('no_data')}</td></tr>`;
+    o.querySelectorAll('[data-hd-chu]').forEach(b => b.addEventListener('click', () => moHd(chu.find(x => x.id === b.dataset.hdChu))));
     o.querySelectorAll('[data-sua-chu]').forEach(b => b.addEventListener('click', () => suaChu(chu.find(x => x.id === b.dataset.suaChu))));
     o.querySelectorAll('[data-tra-chu]').forEach(b => b.addEventListener('click', () => traGop(chu.find(x => x.id === b.dataset.traChu))));
   }
@@ -103,7 +105,14 @@
   /** Chủ xe trả theo từng phiếu (hay phiếu chưa gắn chủ xe trong danh mục) thì nút trả nằm ngay trên dòng;
    *  trả gộp tháng / theo đợt thì bấm ở bảng Chủ xe phía trên để chọn nhiều phiếu một lần. */
   const tungPhieu = (p) => { const c = chu.find(x => x.id === p.owner_id); return !c || (c.pay_mode || 'phieu') === 'phieu'; };
+  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=thue_xe'); } catch (e) { HD = []; } }
+  async function moHd(c) {
+    chuHd = c; veChu();
+    await EPL.hopDong.mo(root.querySelector('#xlk-hd'), { kind: 'thue_xe', doiTacId: c.id, ten: c.name, suaDuoc: AUTH.la('acct'),
+      onDoi: async () => { await taiHd(); if (root.querySelector('#xlk-hd').hidden) chuHd = null; veChu(); } });
+  }
   async function tai() {
+    await taiHd();
     const th = root.querySelector('#xlk-thang').value;
     [ds, chu] = await Promise.all([API.get('/api/bao-cao/xe-lien-ket' + (th ? '?thang=' + th : '')), API.get('/api/owners').catch(() => [])]);
     veChu(); ve();

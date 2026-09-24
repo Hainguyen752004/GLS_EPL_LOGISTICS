@@ -376,6 +376,17 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tag.partial{background:var(--ore-soft);color:var(--ore)}
 .tag.ore{background:var(--ore-soft);color:var(--ore)}
 .tag.plain{background:var(--bg-2)}
+/* trạng thái hợp đồng (js/hop_dong.js) */
+.tag.hd_con_han{background:var(--green-soft);color:var(--green)}
+.tag.hd_sap_het{background:var(--amber-soft);color:var(--amber)}
+.tag.hd_het_han{background:var(--red-soft);color:var(--red)}
+.tag.hd_chua_hieu_luc{background:var(--blue-soft);color:var(--blue)}
+.tag.hd_ngung{background:var(--bg-2);color:var(--ink-3)}
+.hd-khung{margin-top:14px}
+.hd-dau{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.hd-dau h3{margin:0;font-size:14.5px}
+.hd-tep{font-size:12.5px;display:inline-block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.hd-khung .x{border:0;background:none;color:var(--ink-3);cursor:pointer}
 .acct{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--bg-2);border-radius:4px;padding:1px 6px;color:var(--ink-2)}
 
 /* ---------- KPI, tiến độ ---------- */

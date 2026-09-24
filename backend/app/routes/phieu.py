@@ -21,7 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+from models import (Contract, GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
@@ -33,6 +33,7 @@ from services.tinh_toan import chuan_tien, doi as doi_tien, la_tien_mat_tai_xe, 
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import TEP_DIR, TEP_KIEU, TEP_TOI_DA
+from routes import hop_dong as HD
 from routes import the_cao_toc as THE
 
 router = APIRouter()
@@ -52,8 +53,8 @@ COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
              "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price", "price_ccy", "price_mode",
              "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb",
-             "rate_vnd", "rate_cny", "note")
-COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date")
+             "rate_vnd", "rate_cny", "note", "pod_no", "pod_date", "pod_receiver")
+COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date", "pod_date")
 # Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
 COT_TIEN = ("price", "price_ccy", "price_mode", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price",
             "ore_bill_no", "ore_bill_date")
@@ -240,6 +241,11 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
                "owner_paid_at": phieu.owner_paid_at.isoformat() if phieu.owner_paid_at else None,
                "odo_est": (phieu.odo_out + tuyen.total_km) if (phieu.odo_out and tuyen and tuyen.total_km) else None,
                "attachments": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
+               "pod_files": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod").count(),
+               "contract_id": phieu.contract_id, "contract_no": phieu.contract_no,
+               "hire_contract_id": phieu.hire_contract_id, "hire_contract_no": phieu.hire_contract_no,
+               "contract_state": _tt_hop_dong(db, phieu.contract_id, phieu),
+               "hire_contract_state": _tt_hop_dong(db, phieu.hire_contract_id, phieu),
                "created_by": phieu.created_by,
                "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
                "tinh": tinh_phieu(phieu, dong, da_thu),
@@ -271,6 +277,14 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
     if vai is not None and not thay_tien_ban(vai):
         return _bo_tien_ban(ra)
     return ra
+
+
+def _tt_hop_dong(db, cid, p):
+    """Trạng thái hợp đồng TẠI NGÀY PHIẾU (con_han · sap_het · het_han · chua_hieu_luc · ngung) — None nếu không có."""
+    if not cid:
+        return None
+    hd = db.get(Contract, cid)
+    return HD.trang_thai(hd, p.doc_date or dt.date.today()) if hd else None
 
 
 # Tiền CHI bỏ khỏi gói của Bãi và tài xế (anh Khampla A2): đơn giá, tiền tệ, mã tài khoản từng dòng; tổng chi;
@@ -358,6 +372,7 @@ def so_moi(kind: str = "giao", db: Session = Depends(get_db), _=Depends(nguoi_hi
 
 def _ap_truong(db, p, data, user, muc_tt=None):
     """Ghi các trường vào phiếu. Khi sửa, chỉ ghi trường của mục còn được sửa."""
+    kh_cu, chu_cu = p.customer_id, p.owner_id
     for c in COT_PHIEU:
         if c not in data:
             continue
@@ -432,6 +447,36 @@ def _ap_truong(db, p, data, user, muc_tt=None):
             p.price_mode = g.price_mode or "ton"
             if p.hire_price is None and g.hire_price:
                 p.hire_price, p.hire_ccy = g.hire_price, chuan_tien(g.hire_ccy or g.price_ccy, "USD")
+    _ap_hop_dong(db, p, data, user, kh_cu, chu_cu)
+
+
+def _ap_hop_dong(db, p, data, user, kh_cu, chu_cu):
+    """HỢP ĐỒNG trên phiếu (chốt 24/09): tự điền số hợp đồng còn hiệu lực của khách — và của chủ xe nếu là xe liên
+    kết — như đơn giá đang tự điền. Chỉ điền lúc lập phiếu và khi đổi khách / chủ xe; kế toán chọn tay một hợp đồng
+    khác, hay chọn "không có hợp đồng" (`contract_id` / `hire_contract_id`), thì các lần lưu sau giữ của kế toán."""
+    ngay = p.doc_date or dt.date.today()
+    for cot_id, cot_so, loai, doi_tac, cu in (("contract_id", "contract_no", "khach", p.customer_id, kh_cu),
+                                              ("hire_contract_id", "hire_contract_no", "thue_xe",
+                                               p.owner_id if p.company == "joint" else None, chu_cu)):
+        if cot_id in data:
+            if user.role not in ("acct", "rev", "admin"):
+                if (data[cot_id] or None) != getattr(p, cot_id):
+                    raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Hợp đồng trên phiếu do kế toán Viêng Chăn chọn."})
+                continue
+            if data[cot_id]:
+                hd = db.get(Contract, str(data[cot_id]))
+                if not hd or hd.kind != loai or (hd.customer_id if loai == "khach" else hd.owner_id) != doi_tac:
+                    raise HTTPException(422, {"ma": "HOP_DONG_SAI", "loi": "Hợp đồng này không phải của %s trên phiếu."
+                                              % ("khách" if loai == "khach" else "chủ xe")})
+                setattr(p, cot_id, hd.id); setattr(p, cot_so, hd.contract_no)
+            else:
+                setattr(p, cot_id, None); setattr(p, cot_so, None)
+            continue
+        if not doi_tac:
+            setattr(p, cot_id, None); setattr(p, cot_so, None)
+        elif doi_tac != cu:                       # lập phiếu (cu = None) hoặc đổi khách / chủ xe
+            hd = HD.tim(db, loai, doi_tac, ngay)
+            setattr(p, cot_id, hd.id if hd else None); setattr(p, cot_so, hd.contract_no if hd else None)
     if not p.price_ccy:
         p.price_ccy = "USD"
     if not p.price_mode:
@@ -1041,6 +1086,10 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         if data.get("weight_dest") not in (None, ""): p.weight_dest = _so(data["weight_dest"], "weight_dest")
         if data.get("back_date"): p.back_date = _ngay(data["back_date"])
         if data.get("odo_back") not in (None, ""): p.odo_back = _so(data["odo_back"], "odo_back")
+        # POD — biên bản giao nhận hàng (chốt 24/09): nhập ngay lúc xe tới nếu có giấy; không có thì để trống, ghi sau.
+        if (data.get("pod_no") or "").strip(): p.pod_no = data["pod_no"].strip()
+        if (data.get("pod_receiver") or "").strip(): p.pod_receiver = data["pod_receiver"].strip()
+        if p.pod_no and not p.pod_date: p.pod_date = _ngay(data.get("pod_date")) or p.back_date or dt.date.today()
         _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
         # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sinh phiếu nhập kho), DO giao thì chốt dòng hao hụt.
         if p.kind == "gom":
@@ -1085,6 +1134,22 @@ def _canh_bao_khoa(db, p):
     co_anh = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "ore_bill").count()
     if not co_anh and not (p.ore_bill_no or "").strip():
         cb.append({"ma": "THIEU_PHIEU_QUANG", "loi": "Chưa có phiếu quặng của khách — đính kèm ảnh, hoặc nhập tay số phiếu quặng."})
+    # POD — biên bản giao nhận hàng: căn cứ đòi tiền khách. Nhập tay số POD hoặc đính kèm ảnh đều được (như phiếu quặng).
+    co_pod = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "pod").count()
+    if p.kind == "giao" and not co_pod and not (p.pod_no or "").strip():
+        cb.append({"ma": "THIEU_POD", "loi": "Chưa có biên bản giao nhận hàng (POD) — đính kèm ảnh, hoặc nhập tay số POD."})
+    ngay = p.doc_date or dt.date.today()
+    for cot, loai, doi_tac, ten in (("contract_id", "khach", p.customer_id, "khách"),
+                                    ("hire_contract_id", "thue_xe", p.owner_id if p.company == "joint" else None, "chủ xe")):
+        hd = db.get(Contract, getattr(p, cot)) if getattr(p, cot) else None
+        if hd and HD.trang_thai(hd, ngay) == "het_han":
+            cb.append({"ma": "HOP_DONG_HET_HAN", "loi": "Hợp đồng %s của %s đã hết hạn ngày %s — trước ngày phiếu."
+                       % (hd.contract_no, ten, hd.valid_to.strftime("%d/%m/%Y"))})
+        elif not hd and doi_tac:
+            cu = HD.het_han_gan_nhat(db, loai, doi_tac, ngay)
+            if cu:
+                cb.append({"ma": "HOP_DONG_HET_HAN", "loi": "Hợp đồng %s của %s đã hết hạn ngày %s; chưa có hợp đồng mới."
+                           % (cu.contract_no, ten, cu.valid_to.strftime("%d/%m/%Y"))})
     tt = {m: s.status for m, s in _muc_cua(db, p).items()}
     dong = _dong_chi(db, p)
     for m in MUC_CHI:
@@ -1207,7 +1272,7 @@ async def them_tep(tid: str, tep: UploadFile = File(...), kind: str = Form("ore_
         raise HTTPException(422, {"ma": "TEP_QUA_LON", "loi": "Tệp %.1f MB, tối đa 8 MB." % (len(du) / 1048576)})
     if not du:
         raise HTTPException(422, {"ma": "TEP_RONG", "loi": "Tệp rỗng."})
-    a = TripAttachment(trip_id=p.id, kind=kind if kind in ("ore_bill", "other") else "ore_bill",
+    a = TripAttachment(trip_id=p.id, kind=kind if kind in ("ore_bill", "pod", "other") else "ore_bill",
                        filename=re.sub(r"[^\w.\-() ]+", "_", tep.filename or "tep")[:120], content_type=kieu,
                        size=len(du), note=(note or None), by_user=user.full_name)
     a.id = ma_moi()

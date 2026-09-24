@@ -329,6 +329,17 @@ class Trip(Base):
     goods_type = Column(String, default="iron_ore")            # ແຮ່ເຫຼັກ
     ore_bill_no = Column(String)                               # ເລກທີບິນແຮ່
     ore_bill_date = Column(Date)
+    # HỢP ĐỒNG (chốt 24/09): phiếu MANG số hợp đồng mà nó chạy theo — tự điền theo khách (và theo chủ xe nếu là xe
+    # liên kết) lúc lập; kế toán đổi được. Giữ cả số để phiếu in đúng số dù hợp đồng sau này có sửa.
+    contract_id = Column(String)                               # hợp đồng vận chuyển với khách — ສັນຍາຂົນສົ່ງ
+    contract_no = Column(String)
+    hire_contract_id = Column(String)                          # hợp đồng thuê xe với chủ xe liên kết — ສັນຍາເຊົ່າລົດ
+    hire_contract_no = Column(String)
+    # POD — Biên bản giao nhận hàng · ໃບເຊັນຮັບສິນຄ້າ: bằng chứng chuyến này ĐÃ GIAO, căn cứ đòi tiền khách. Nhập tay
+    # được, ảnh đính kèm (TripAttachment kind='pod') không bắt buộc — như phiếu quặng.
+    pod_no = Column(String)
+    pod_date = Column(Date)
+    pod_receiver = Column(String)                              # người bên nhận ký
     origin = Column(String)
     destination = Column(String)
     weight_origin = Column(Float)                              # ນ້ຳໜັກຕົ້ນທາງ (tấn)
@@ -951,7 +962,7 @@ class TripAttachment(Base):
     __tablename__ = "trip_attachments"
     id = Column(String, primary_key=True, default=ma_moi)
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
-    kind = Column(String, nullable=False, default="ore_bill")   # ore_bill · other
+    kind = Column(String, nullable=False, default="ore_bill")   # ore_bill · pod (biên bản giao nhận) · other
     filename = Column(String, nullable=False)                   # tên gốc người dùng đưa lên
     stored = Column(String, nullable=False)                     # tên trên đĩa: <id>.<ext>
     content_type = Column(String)
@@ -997,6 +1008,41 @@ class DriverPhoto(Base):
 
 
 # ---------------------------------------------------------------- bán phụ tùng · xăng dầu cho bên ngoài
+LOAI_HOP_DONG = ("khach", "thue_xe")        # hợp đồng vận chuyển với khách · hợp đồng thuê xe với chủ xe liên kết
+
+
+class Contract(Base):
+    """HỢP ĐỒNG — ສັນຍາ (chủ dự án chốt 24/09). Giấy KHUNG ký một lần, dùng cho nhiều chuyến: số, ngày ký, hiệu
+    lực từ–đến, bản scan. Điều khoản TÍNH TIỀN không nằm ở đây mà ở chỗ đã có: bảng giá khách × tuyến (CustomerRate),
+    điều khoản chủ xe (Owner) — không dựng lại một bộ giá thứ hai. Phiếu mang số hợp đồng theo khách / chủ xe."""
+    __tablename__ = "contracts"
+    id = Column(String, primary_key=True, default=ma_moi)
+    contract_no = Column(String, unique=True, nullable=False)  # số hợp đồng trên giấy
+    kind = Column(String, nullable=False, default="khach")     # LOAI_HOP_DONG
+    customer_id = Column(String, ForeignKey("customers.id"), index=True)
+    owner_id = Column(String, ForeignKey("owners.id"), index=True)
+    sign_date = Column(Date)
+    valid_from = Column(Date)                                  # trống = từ ngày ký
+    valid_to = Column(Date)                                    # trống = không thời hạn
+    note = Column(Text)
+    active = Column(Boolean, nullable=False, default=True)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+
+
+class ContractFile(Base):
+    """Bản scan / ảnh hợp đồng. Tệp nằm ở <EPL_LAO_TEP>/hop_dong/<contract_id>/ (services/tep.py)."""
+    __tablename__ = "contract_files"
+    id = Column(String, primary_key=True, default=ma_moi)
+    contract_id = Column(String, ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename = Column(String, nullable=False)
+    stored = Column(String, nullable=False)
+    content_type = Column(String)
+    size = Column(Integer, default=0)
+    by_user = Column(String)
+    ts = Column(DateTime, nullable=False, default=bay_gio)
+
+
 class CustomerRate(Base):
     """Bảng giá hợp đồng: khách × tuyến × loại hàng → đơn giá USD/tấn (và giá thuê xe ngoài nếu tuyến đó
     hay đi xe liên kết). Bước 7 quy trình chữ của họ: "theo đơn giá quy định trong hợp đồng" — nên giá

@@ -122,3 +122,14 @@
 /* Ghi nợ tại trạm (C5.1): ô tích nhỏ dưới ô Nơi đổ, chỉ hiện với trạm ngoài */
 .px-ghino{display:inline-flex;align-items:center;gap:5px;margin-top:4px;color:var(--ore);cursor:pointer}
 .px-ghino input{margin:0}
+
+/* ---- hợp đồng trên phiếu + POD (chốt 24/09) ---- */
+.px-chi-lk{display:none} .px-phieu.is-joint .px-chi-lk{display:revert}
+.px-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:34px}
+.px-hd .so{font-family:ui-monospace,Consolas,monospace;font-weight:600}
+.px-hd select{min-width:180px}
+.px-pod-o{grid-column:1/-1;border:1px dashed var(--line-2);border-radius:var(--r);padding:10px 12px;background:var(--bg)}
+.px-pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.px-pod .px-pod-tep{grid-column:1/-1}
+.px-phieu.is-gom .px-pod-o{display:none}
+@media (max-width:900px){.px-pod{grid-template-columns:1fr}}

@@ -242,6 +242,7 @@ def main():
         bao("%s · xe 342 bảo dưỡng · lọc dầu lấy kho (PXK_PT) + công thợ · KT Chi phí đã kiểm, chờ ghi sổ" % lsc["doc_no"])
         d = ok("/api/chung-tu/day", {}, "ketoan")
         bao("đẩy chứng từ sang sổ kế toán: %d tờ, %d lỗi" % (d["xong"], d["loi"]))
+    gieo_hop_dong_pod(KHAMTUI, LAOCHIN, chu)
     print("\nXONG — bộ mẫu tháng 9: 5 phiếu mới ở 5 trạng thái khác nhau, kho, bán hàng, chủ xe, sửa chữa, sổ.")
 
 
@@ -259,6 +260,46 @@ def gieo_kho(kho, SIPHING_LA, TRAM_VN, lop, loc):
     ok("/api/parts/%s/moves" % lop["id"], {"kind": "in", "qty": 4, "unit_price": 3300000, "move_date": "2026-09-18", "note": "Nhập 4 lốp · ຮ້ານຢາງ"}, "khopt")
     ok("/api/parts/%s/moves" % loc["id"], {"kind": "in", "qty": 10, "unit_price": 175000, "move_date": "2026-09-18", "note": "Nhập 10 lọc dầu"}, "khopt")
     bao("Thủ kho phụ tùng nhập 4 lốp · 10 lọc dầu (giá bình quân tính lại, PNK_PT)")
+
+
+
+# ------------------------------------------------------------ hợp đồng + POD (chốt 24/09)
+HD_MAU = [  # số · loại · đối tác · ngày ký · áp dụng từ · hết hạn · ghi chú
+    ("HDVC-2026-001", "khach", "KHAMTUI", "2026-01-02", "2026-01-02", "2026-12-31", "Vận chuyển quặng sắt Kasi → Kalo · giá theo Bảng giá"),
+    ("HDVC-2026-002", "khach", "LAOCHIN", "2026-03-01", "2026-03-01", "2026-10-15", "Gộp hoá đơn cuối tháng · sắp hết hạn, nhắc ký lại"),
+    ("HDTX-2026-001", "thue_xe", "CHU", "2026-02-01", "2026-02-01", "2027-01-31", "Thuê xe ຮ່ວມ-07 · trả gộp cuối tháng bằng Kíp"),
+]
+NGUOI_NHAN = {"ຄຳຕຸ້ຍ": "ທ້າວ ບຸນທັນ", "ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ": "ນາງ ແສງເດືອນ", "ນາງ ວັນນາ": "ທ້າວ ວົງສະຫວັນ"}
+
+
+def gieo_hop_dong_pod(KHAMTUI, LAOCHIN, chu):
+    print("HỢP ĐỒNG · POD")
+    doi_tac = {"KHAMTUI": KHAMTUI["id"], "LAOCHIN": LAOCHIN["id"], "CHU": chu["id"]}
+    co = {h["contract_no"]: h for h in ok("/api/hop-dong", vai="ketoan")}
+    for so, loai, dt_, ky, tu, den, ghi in HD_MAU:
+        if so in co:
+            continue
+        co[so] = ok("/api/hop-dong", {"contract_no": so, "kind": loai, ("customer_id" if loai == "khach" else "owner_id"): doi_tac[dt_],
+                                      "sign_date": ky, "valid_from": tu, "valid_to": den, "note": ghi}, "ketoan", buoc="hợp đồng " + so)
+        bao("hợp đồng %s · %s · hết hạn %s" % (so, co[so]["doi_tac"], den))
+    theo_khach = {h["customer_id"]: h for h in co.values() if h["kind"] == "khach"}
+    theo_chu = {h["owner_id"]: h for h in co.values() if h["kind"] == "thue_xe"}
+    n_hd = n_pod = 0
+    for p in ok("/api/trips", vai="admin"):
+        doi = {}
+        if not p.get("contract_no") and p.get("customer_id") in theo_khach:
+            doi["contract_id"] = theo_khach[p["customer_id"]]["id"]
+        if p.get("company") == "joint" and not p.get("hire_contract_no") and p.get("owner_id") in theo_chu:
+            doi["hire_contract_id"] = theo_chu[p["owner_id"]]["id"]
+        # POD cho phiếu giao đã tới và đã khoá. T4-0429-08 (đã tới, chưa khoá) cố ý để trống — thử cảnh báo lúc khoá.
+        if p.get("kind") == "giao" and p.get("transport_status") == "arrived" and p.get("locked") and not p.get("pod_no"):
+            doi.update({"pod_no": "POD-" + p["doc_no"].split("/")[0], "pod_date": p.get("back_date") or p.get("doc_date"),
+                        "pod_receiver": NGUOI_NHAN.get(p.get("customer_name") or "", "ທ້າວ ບຸນທັນ")})
+            n_pod += 1
+        if doi:
+            ok("/api/trips/%s" % p["id"], doi, "ketoan", "PUT", buoc="hợp đồng / POD " + p["doc_no"])
+            n_hd += 1 if ("contract_id" in doi or "hire_contract_id" in doi) else 0
+    bao("gắn hợp đồng cho %d phiếu · ghi POD cho %d phiếu đã giao (T4-0429-08 để trống — thử cảnh báo khoá)" % (n_hd, n_pod))
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 /* Khách hàng — xem · thêm · sửa · ngưng dùng. Không xoá cứng: phiếu cũ còn trỏ tới. */
 (function () {
   const { API, NN, esc, AUTH } = EPL;
-  let root, ds = [], tuyen = [], khGia = null, dsGia = [], khNo = null, NO = null;
+  let root, ds = [], tuyen = [], khGia = null, dsGia = [], khNo = null, NO = null, HD = [], khHd = null;
+  const suaHd = () => AUTH.la('acct', 'rev');         // hợp đồng vận chuyển: KT Thu/Chi, KT Doanh thu (Sếp luôn được)
   const suaDuoc = () => AUTH.la('yard', 'acct');
   // Giá là tiền: Bãi không thấy; KT Thu/Chi VC (kiểm mục II) và Sếp được sửa; các vai tiền khác xem
   const xemGia = () => AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'admin');
@@ -14,9 +15,11 @@
     root.querySelector('#kh-than').innerHTML = rows.length ? rows.map((c, i) => `<tr class="${c.active ? '' : 'kh-tat'}">
       <td>${i + 1}</td><td lang="lo"><b>${esc(c.name)}</b></td><td>${esc(c.phone) || '—'}</td><td lang="lo">${esc(c.address) || '—'}</td><td class="small muted">${esc(c.note) || ''}</td>
       <td>${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')}</td>
+      <td>${EPL.hopDong.nhan(EPL.hopDong.hienHanh(HD, c.id))}</td>
       <td>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}</td>
-      <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button> <button class="btn sm ${khNo && khNo.id === c.id ? 'primary' : ''}" data-no="${c.id}">${NN.h('kh_cong_no')}</button>` : ''}</td></tr>`).join('')
-      : `<tr><td colspan="8" class="empty">${NN.h('no_data')}</td></tr>`;
+      <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} <button class="btn sm ${khHd && khHd.id === c.id ? 'primary' : ''}" data-hd="${c.id}">${NN.h('hd_nut')}</button> ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button> <button class="btn sm ${khNo && khNo.id === c.id ? 'primary' : ''}" data-no="${c.id}">${NN.h('kh_cong_no')}</button>` : ''}</td></tr>`).join('')
+      : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
+    root.querySelectorAll('[data-hd]').forEach(b => b.addEventListener('click', () => moHd(ds.find(x => x.id === b.dataset.hd))));
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
     root.querySelectorAll('[data-gia]').forEach(b => b.addEventListener('click', () => moGia(ds.find(x => x.id === b.dataset.gia))));
     root.querySelectorAll('[data-no]').forEach(b => b.addEventListener('click', () => moNo(ds.find(x => x.id === b.dataset.no))));
@@ -116,7 +119,13 @@
       EPL.toast(NN.t('saved'), 'ok'); await tai();
     } catch (e) { EPL.baoLoi(e); }
   }
-  async function tai() { ds = await API.get('/api/customers'); ve(); }
+  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=khach'); } catch (e) { HD = []; } }
+  async function moHd(c) {
+    khHd = c; ve();
+    await EPL.hopDong.mo(root.querySelector('#kh-hd'), { kind: 'khach', doiTacId: c.id, ten: c.name, suaDuoc: suaHd(),
+      onDoi: async () => { await taiHd(); if (root.querySelector('#kh-hd').hidden) khHd = null; ve(); } });
+  }
+  async function tai() { ds = await API.get('/api/customers'); await taiHd(); ve(); }
   EPL.modules['khach-hang'] = {
     async init(r) {
       root = r; r.querySelector('#kh-q').addEventListener('input', ve);

@@ -37,7 +37,7 @@ Không cần làm một mạch. Mỗi vai, mỗi luồng là một khối riêng
   - C10 Tổ sửa chữa
   - C11 Tài xế
   - C12 Sếp
-- **D.** Luồng xuyên vai (12 kịch bản ngoài đời)
+- **D.** Luồng xuyên vai (13 kịch bản ngoài đời, D13 là hợp đồng và POD)
 - **E.** Những chỗ PHẢI bị chặn (phân quyền)
 - **F.** Kiểm chung giao diện: ngôn ngữ, zoom, in, Excel/PDF, điện thoại, mất mạng
 - **G.** Sổ kế toán EPL_KETOAN (cổng 8030)
@@ -118,6 +118,13 @@ ví dụ Bãi bên trái, kế toán bên phải, để thấy việc bên này 
 - **Phiếu bán:** `BH-2609-0001` (chủ xe mua, đã trừ khi trả chủ xe); `BH-2609-0002` (khách mua ở quầy, đã thu).
 - **Tỷ giá:** 1 USD = 22.000 · 1 THB = 700 · 1 VND = 1,2 · 1 CNY = 3.000 LAK.
 - **Cấn trừ tháng 8** của ຄຳຕຸ້ຍ còn **8.761.050 LAK chờ ghi**, dùng cho luồng D5.
+- **Hợp đồng** (thêm 24/09):
+  - `HDVC-2026-001`: hợp đồng vận chuyển với ຄຳຕຸ້ຍ, còn hạn tới 31/12/2026.
+  - `HDVC-2026-002`: với ລາວ-ຈີນ ມີເນີໂຣ, **sắp hết hạn** 15/10/2026.
+  - `HDTX-2026-001`: hợp đồng thuê xe với chủ xe ທ້າວ ຄຳຫລ້າ.
+  - 13 phiếu đã mang số hợp đồng. ນາງ ວັນນາ đi khoán chuyến nên **không có** hợp đồng.
+- **POD (biên bản giao nhận hàng)**: 7 phiếu đã giao và đã khoá có sẵn số POD. `T4-0429-08` cố ý **để trống POD**, dùng để thử
+  cảnh báo lúc khoá.
 
 ---
 
@@ -154,6 +161,8 @@ Mỗi vai làm theo cùng một nếp:
 | ☐ | Chọn xe 342, tài xế, ngày | Biển đầu kéo và biển rơ-moóc tự điền |
 | ☐ | Chọn một tài xế **bằng lái đã hết hạn** (ທ້າວ ສົມພອນ) | Bị cảnh báo hoặc chặn điều xe |
 | ☐ | Mục II: chọn khách ຄຳຕຸ້ຍ, tuyến `ກາສີ → ກາລໍ`, cân tại mỏ 40 | Nơi đi, nơi đến tự điền theo tuyến. **Không có** ô đơn giá cước, thành tiền |
+| ☐ | Mục II: ô **Hợp đồng vận chuyển** sau khi Lưu | Tự điền số hợp đồng còn hạn của khách (ຄຳຕຸ້ຍ → `HDVC-2026-001`) kèm nhãn *Còn hạn*. Bãi **không đổi được** |
+| ☐ | Lập phiếu với xe **ຮ່ວມ-07** | Hiện thêm ô **Hợp đồng thuê xe** = `HDTX-2026-001` |
 | ☐ | Mục II: ô **Số phiếu quặng** | Ô khoá, có dòng nhắc: *kế toán nhập khi nhận giấy · Bãi đính kèm ảnh*. Không bắt buộc ảnh |
 | ☐ | Mục II: **đính kèm ảnh** phiếu quặng (tệp .jpg / .png / .pdf) | Tải lên được. Thử tệp `.exe` thì bị từ chối |
 | ☐ | Mục III: thêm dòng dầu 150 L, **Nơi đổ** = Kho dầu Thà Bốc | **Không có** ô đơn giá, tiền tệ, thành tiền |
@@ -178,6 +187,9 @@ Mỗi vai làm theo cùng một nếp:
 | ☐ | Bấm **Báo sự cố** (không kèm tiền) | Ghi được sự cố. **Không có** ô "có khoản sửa chữa" hay số tiền |
 | ☐ | Mở phiếu E `T4-0445-09` → **Xuất phát** | **Bị chặn** vì chưa chi tạm ứng: *tài xế chưa nhận tiền thì chưa xuất phát* |
 | ☐ | Mở phiếu đang đi → **Xe đã tới · nhập cân cuối** (cân cuối, ngày về, km về) | Nhập km về nhỏ hơn km đi thì bị chặn. Nhập đúng thì có **dòng hao hụt** tự tính |
+| ☐ | Trong hộp **Xe đã tới**: gõ **Số POD** và **Người ký nhận** | Khối **Biên bản giao nhận hàng (POD)** ở mục II hiện đúng số, ngày ký nhận = ngày về |
+| ☐ | Khối POD → **+ Thêm ảnh · PDF** (chụp biên bản) | Ảnh hiện trong khối POD, **tách riêng** với ảnh phiếu quặng |
+| ☐ | Phiếu **đã khoá** → sửa ô POD | Ô khoá (chỉ kế toán bổ sung được) |
 | ☐ | Mở phiếu **chưa tới nơi** → **Đổi xe** (xem D10) | Phải ghi lý do. Không đổi chéo xe nhà ↔ xe liên kết |
 
 **Các màn khác của Bãi**
@@ -192,6 +204,7 @@ Mỗi vai làm theo cùng một nếp:
 | ☐ | **Điểm đổ nhiên liệu** → **Thêm điểm đổ** / **Sửa** | Thêm, sửa được. Thêm xong có mã QR của điểm |
 | ☐ | **Kho phụ tùng** | Thấy tồn. **Không có** đơn giá, không có nút Nhập / Xuất |
 | ☐ | **Khách hàng** → Thêm / Sửa | Được. **Không có** nút Bảng giá, Công nợ |
+| ☐ | **Khách hàng** → cột **Hợp đồng vận chuyển** · nút **Hợp đồng** | Thấy số hợp đồng, ngày, trạng thái. **Không có** nút Thêm / Sửa, **không thấy** bản scan (giấy có giá) |
 | ☐ | **Xe** → **+ Thêm** một xe thử, bấm đúp mở hồ sơ | Hộp hồ sơ 7 tab. Tab Rơ-moóc: **Thay rơ-moóc** được. Thêm được ảnh xe |
 | ☐ | **Tài xế** → **+ Thêm tài xế**, mở hồ sơ → tab Bằng lái → **+ Gia hạn** | Gia hạn xong cột Kết luận đổi màu; có lịch sử bằng |
 | ☐ | **Thẻ cao tốc** | Thấy số dư thẻ. **Không có** Thêm thẻ, Nạp tiền, bảng cấn trừ |
@@ -214,6 +227,13 @@ Mỗi vai làm theo cùng một nếp:
 | ☐ | Lập một phiếu mới đúng khách × tuyến đó (bằng `thabok`), mở lại bằng `ketoan` | Đơn giá tự điền 39 USD |
 | ☐ | Khách ນາງ ວັນນາ tuyến `ກາສີ → ທ່າເຮືອກະລໍ` | Cước **khoán trọn chuyến** (ví dụ 1.800 USD), không nhân tấn |
 | ☐ | Khách hàng → **Sửa** → ô **Cách xuất hoá đơn** | Có hai lựa chọn: *Mỗi phiếu một hoá đơn* · *Gộp một tờ cuối tháng* |
+| ☐ | Khách hàng → nút **Hợp đồng** ở ຄຳຕຸ້ຍ → **+ Thêm**: số, ngày ký, áp dụng từ, ngày hết hạn | Thêm được. Trùng số, hoặc hết hạn trước ngày áp dụng → bị chặn |
+| ☐ | Trên dòng hợp đồng → **+ Thêm ảnh · PDF** (bản scan) → bấm tên tệp | Mở được bản scan |
+| ☐ | Hợp đồng còn ≤ 30 ngày (`HDVC-2026-002`) | Nhãn vàng **Sắp hết hạn · còn n ngày** |
+| ☐ | Mở một phiếu của ຄຳຕຸ້ຍ → mục II → ô chọn **Hợp đồng vận chuyển** | Đổi được sang hợp đồng khác của **cùng khách**, hoặc *Không có hợp đồng*; Lưu xong Bãi lưu lại **không điền đè** |
+| ☐ | Xoá hợp đồng **đã có phiếu** chạy theo | Bị chặn, nhắc *Ngưng dùng* thay vì xoá |
+| ☐ | **Xe liên kết** → bảng Chủ xe → nút **Hợp đồng** | Quản lý hợp đồng thuê xe (chỉ KT Thu/Chi và Sếp sửa) |
+| ☐ | Phiếu `T4-0429-08` → **Khoá phiếu** | Bảng cảnh báo có dòng **Chưa có biên bản giao nhận hàng (POD)**; vẫn khoá được sau khi xác nhận |
 | ☐ | Phiếu `T4-0429-08` (đã tới, chưa khoá) → **Khoá phiếu** | Hiện **bảng cảnh báo**: hao hụt, km lệch, thiếu phiếu quặng… Phải tích xác nhận mới khoá được |
 | ☐ | Sau khi khoá, đăng nhập `thabok` mở phiếu đó | Bãi không sửa được gì |
 | ☐ | **Kho hàng** → **Điều chỉnh tồn** một lô: −0,5 t kèm lý do | Tồn giảm; sổ có dòng *Điều chỉnh*; chứng từ có tờ **DC_HH** |
@@ -499,6 +519,18 @@ Làm theo C7 (các dòng HĐ gộp). Thêm một bước: lập phiếu mới th
 | ☐ | 4 | Quét mã → **Cấp** | Dòng hiện *chờ gửi* |
 | ☐ | 5 | Bật mạng lại | Tự gửi; phiếu thành *đã cấp* trên máy chủ |
 
+### D13. Hợp đồng và POD (thêm 24/09)
+
+| ☐ | Bước | Vai | Làm | Phải thấy |
+|---|---|---|---|---|
+| ☐ | 1 | `ketoan` | Khách hàng → ນາງ ວັນນາ → **Hợp đồng** → thêm `HD-THU-01`, **đã hết hạn** (hết hạn 31/01/2026) | Nhãn đỏ **Hết hạn** |
+| ☐ | 2 | `thabok` | Lập phiếu giao cho ນາງ ວັນນາ → Lưu | Ô hợp đồng: **Chưa có hợp đồng** (hết hạn thì không tự điền) |
+| ☐ | 3 | `thabok` | Đi luồng tới **Xe đã tới**, **không** gõ POD | Khối POD trống |
+| ☐ | 4 | `ketoan` | **Khoá phiếu** | Cảnh báo **thiếu POD** và **hợp đồng HD-THU-01 đã hết hạn**, chỉ cảnh báo, xác nhận vẫn khoá được |
+| ☐ | 5 | `ketoan` | Phiếu đã khoá → gõ số POD → Lưu | Kế toán bổ sung được; Bãi thì không |
+| ☐ | 6 | `ketoan` | In phiếu | Bản in có **số hợp đồng** và **khối POD** |
+| ☐ | 7 | `ketoan` | Xoá hợp đồng thử `HD-THU-01` | Bị chặn vì đã có phiếu, **Ngưng dùng** thay vì xoá |
+
 ---
 
 ## E. Những chỗ PHẢI bị chặn (phân quyền)
@@ -517,6 +549,8 @@ Khách hay hỏi nhất phần này. Mỗi dòng: đăng nhập đúng vai rồi
 | ☐ | `ketoan` | Kiểm mục IV–VI, chi tiền | Không có nút |
 | ☐ | `ketoan` | Lập phiếu xuất xe mới | Bị chặn (việc của Bãi) |
 | ☐ | `ketoan` | Mở Cấu hình sổ chứng từ | Không có (chỉ Sếp) |
+| ☐ | `thabok` | Thêm / sửa hợp đồng; mở bản scan hợp đồng; đổi hợp đồng trên phiếu | Không có nút / bị chặn |
+| ☐ | `doanhthu` | Thêm hợp đồng **thuê xe** | Bị chặn (chỉ KT Thu/Chi) |
 | ☐ | `ketoancp` | Kiểm mục I–II, mục III | Không có nút |
 | ☐ | `khonl` | Nút ở mục khác mục III | Không có |
 | ☐ | `quyvc` | Chi mục IV–VI | Không có nút |
@@ -554,7 +588,8 @@ Khách hay hỏi nhất phần này. Mỗi dòng: đăng nhập đúng vai rồi
 
 ## G. Sổ kế toán EPL_KETOAN — cổng 8030
 
-Đăng nhập `admin` / `1234` (hoặc `ketoan`, `xem`).
+Đăng nhập `admin` / `1234` (hoặc `ketoantruong`, `ketoan`, `xem`). **Kế toán trưởng** (`ketoantruong`, thêm 24/09): duyệt / trả lại
+bút toán ghi tay, xem hết sổ, **không** thấy token, không sửa cấu hình, không quản người dùng.
 
 | ☐ | Việc | Phải thấy |
 |---|---|---|
@@ -563,7 +598,8 @@ Khách hay hỏi nhất phần này. Mỗi dòng: đăng nhập đúng vai rồi
 | ☐ | **Cân đối phát sinh** | **Nợ = Có** |
 | ☐ | **Công nợ** phải thu | Còn phải thu từng khách = màn Công nợ khách bên EPL_LAO |
 | ☐ | **Kho** | Số dư 1371 khớp sổ cái |
-| ☐ | **Ghi tay** → lập một bút toán → Sếp duyệt | Vào sổ; bút toán sinh từ EPL_LAO thì không sửa được |
+| ☐ | **Ghi tay** → `ketoan` lập một bút toán → `ketoantruong` duyệt | Vào sổ; `ketoan` tự duyệt thì bị chặn; bút toán sinh từ EPL_LAO thì không sửa được |
+| ☐ | `ketoantruong` mở **Cài đặt** | Không thấy token, không sửa được thông tin công ty, không có danh sách người dùng |
 | ☐ | Mỗi trang có nút **Xuất Excel** và **PDF** | Tệp `.xlsx` mở được; PDF khổ ngang |
 
 ---

@@ -12,6 +12,8 @@
   const MUC = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'], MUC_CHI = ['fuel', 'travel', 'repair', 'other'];
   const COT_INFO = ['kind', 'company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
   const COT_TRANS = ['customer_id', 'route_id', 'goods_type', 'ore_bill_no', 'ore_bill_date', 'origin', 'destination', 'weight_origin', 'weight_dest', 'price', 'price_ccy', 'price_mode', 'hire_price', 'hire_ccy', 'fee_pct', 'over_limit_t', 'over_price'];
+  // POD — biên bản giao nhận hàng (chốt 24/09): không thuộc mục nào, ghi được tới khi khoá phiếu
+  const COT_POD = ['pod_no', 'pod_date', 'pod_receiver'];
   const SO = new Set(['odo_out', 'odo_back', 'weight_origin', 'weight_dest', 'price', 'hire_price', 'fee_pct', 'over_limit_t', 'over_price']);
   const QUYEN = {   // chép từ services/phan_quyen.py — chỉ để ẩn/hiện nút
     yard: { edit: MUC.filter(m => m !== 'repair'), verify: [], book: [], pay: [] },
@@ -86,7 +88,7 @@
   }
   function doTruong() {
     g('px-doc-no').value = P.doc_no || '';
-    [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.value = P[c] == null ? '' : P[c]; });
+    [...COT_INFO, ...COT_TRANS, ...COT_POD].forEach(c => { const el = g('f-' + c); if (!el) return; el.value = P[c] == null ? '' : P[c]; });
     q('#px-phieu').classList.toggle('is-joint', P.company === 'joint');
   }
   function veSo() {
@@ -240,7 +242,10 @@
     if (moi) return true;
     return suaDuoc(m) || (MUC_CHI.includes(m) && !biKhoa() && perm().verify.includes(m) && ['wait', 'entered'].includes((P.sections || {})[m] || 'wait'));
   }
+  const suaPodDuoc = () => !moi && AUTH.la('yard', 'acct', 'rev') && !biKhoa();
   function veVaiVaTrangThai() {
+    COT_POD.forEach(c => { const el = g('f-' + c); if (el) el.disabled = !suaPodDuoc(); });
+    veHopDong();
     g('px-goi-y').innerHTML = NN.h('hint_' + (vai() === 'treasury' ? 'treasury' : vai()));
     g('px-doc-no').disabled = !suaDuoc('info');
     g('px-trang-thai').innerHTML = moi ? '' : `${tag(P.transport_status)} ${tag(P.finance_status)}${P.invoiced ? ' ' + tag('paid', 'inv_done') : ''}${P.locked ? ` <span class="px-khoa" title="${esc(P.locked_by || '')}">🔒 ${NN.h('s_locked')}</span>` : ''}${P.owner_paid ? ' ' + tag('paid', 'owner_paid') : ''}`;
@@ -377,7 +382,7 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
@@ -400,10 +405,10 @@
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
+  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
-    [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
+    [...COT_INFO, ...COT_TRANS, ...COT_POD].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
   }
   async function luu() {
     docForm();
@@ -415,6 +420,9 @@
     if (suaDuoc('info')) ['doc_no', 'truck_no', 'driver_name'].forEach(c => { if (P[c] !== undefined) body[c] = P[c]; });
     if (suaDuoc('trans') && P.customer_name !== undefined) body.customer_name = P.customer_name;
     [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (P[c] !== undefined && (!el || !el.disabled)) body[c] = P[c]; });
+    COT_POD.forEach(c => { const el = g('f-' + c); if (el && !el.disabled && P[c] !== undefined) body[c] = P[c]; });
+    // hợp đồng: chỉ gửi khi kế toán TỰ ĐỔI ô chọn — không thì máy chủ tự điền theo khách / chủ xe
+    Object.entries(HD_DOI).forEach(([k, v]) => { body[k] = v || null; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
     if (suaDuoc('trans')) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
       .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
@@ -426,7 +434,7 @@
     });
     try {
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
-      moi = false; DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
+      moi = false; HD_DOI = {}; DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
     } catch (e) { EPL.baoLoi(e); }
   }
@@ -446,8 +454,11 @@
         { id: 'weight_dest', label: 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
         { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() },
         { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: P.odo_back ?? '' },
+        ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: P.pod_no || '' },
+          { id: 'pod_receiver', label: 'pod_receiver', value: P.pod_receiver || '' }]),
       ], NN.t('ok'));
       if (!v) return; body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
+      if (v.pod_no) body.pod_no = v.pod_no; if (v.pod_receiver) body.pod_receiver = v.pod_receiver;
     }
     try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
@@ -564,24 +575,50 @@
     if (!ok) return;
     try { P = await API.post(`/api/trips/${P.id}/tra-chu-xe`, {}); EPL.toast(NN.t('saved'), 'ok'); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
-  /* ---- tệp đính kèm: phiếu quặng của khách. Bãi chụp đưa lên lúc bốc; kế toán xem khi kiểm mục II. ---- */
+  /* ---- hợp đồng trên phiếu (chốt 24/09): máy chủ tự điền theo khách / chủ xe; kế toán đổi được bằng ô chọn ---- */
+  let HD_DOI = {};                      // { contract_id: … } — chỉ những ô kế toán tự đổi
+  const tagHd = (st) => st ? EPL.tag('hd_' + st, 'hd_' + st) : '';
+  async function veHopDong() {
+    const ve = async (o, loai, cot, doiTac, duocDoi) => {
+      if (!o) return;
+      const so = P[cot === 'contract_id' ? 'contract_no' : 'hire_contract_no'];
+      const st = P[cot === 'contract_id' ? 'contract_state' : 'hire_contract_state'];
+      const chu = so ? `<span class="so">${esc(so)}</span> ${tagHd(st)}` : `<span class="muted small">${NN.h(doiTac ? 'hd_chua_co' : 'hd_chon_doi_tac')}</span>`;
+      if (!duocDoi || moi || !doiTac || biKhoa()) { o.innerHTML = chu; return; }
+      let ds = [];
+      try { ds = await API.get(`/api/hop-dong?kind=${loai}&${loai === 'khach' ? 'customer_id' : 'owner_id'}=${encodeURIComponent(doiTac)}`); } catch (e) { ds = []; }
+      if (!ds.length) { o.innerHTML = chu; return; }
+      const chon = cot in HD_DOI ? HD_DOI[cot] : (P[cot] || '');
+      o.innerHTML = `<select data-hd="${cot}"><option value="">— ${NN.h('hd_khong_dung')} —</option>${ds.map(h =>
+        `<option value="${h.id}" ${h.id === chon ? 'selected' : ''} title="${esc(NN.t('hd_' + h.trang_thai))}">${esc(h.contract_no)}${h.trang_thai === 'con_han' ? '' : ' (' + esc(NN.t('hd_' + h.trang_thai)) + ')'}</option>`).join('')}</select> ${tagHd(st)}`;
+      o.querySelector('select').addEventListener('change', (e) => { HD_DOI[cot] = e.target.value; });
+    };
+    await ve(g('px-hd'), 'khach', 'contract_id', P.customer_id, AUTH.la('acct', 'rev'));
+    await ve(g('px-hd-thue'), 'thue_xe', 'hire_contract_id', P.company === 'joint' ? P.owner_id : null, AUTH.la('acct'));
+  }
+  /* ---- tệp đính kèm: phiếu quặng của khách (Bãi chụp lúc bốc; kế toán xem khi kiểm mục II) và POD — biên bản
+     giao nhận hàng (chụp khi xe tới). Cùng một chỗ chứa, khác `kind`. ---- */
   let TEP = [];
   async function veTep() {
-    const o = g('px-tep'); if (!o) return;
-    if (moi || !P.id) { o.innerHTML = `<span class="small muted">${NN.h('attach_after_save')}</span>`; return; }
+    const o = g('px-tep'), op = g('px-tep-pod'); if (!o) return;
+    if (moi || !P.id) { o.innerHTML = op.innerHTML = `<span class="small muted">${NN.h('attach_after_save')}</span>`; return; }
     try { TEP = await API.get(`/api/trips/${P.id}/tep`); } catch (e) { TEP = []; }
+    veTepVao(o, TEP.filter(t => t.kind !== 'pod'), 'ore_bill');
+    if (op) veTepVao(op, TEP.filter(t => t.kind === 'pod'), 'pod');
+  }
+  function veTepVao(o, ds, kind) {
     const tk = API.token();
     const themDuoc = AUTH.la('yard', 'acct', 'rev') && !biKhoa();
-    o.innerHTML = TEP.map(t => `<div class="tep">
+    o.innerHTML = ds.map(t => `<div class="tep">
         ${t.la_anh ? `<img src="${esc(t.url)}?tk=${encodeURIComponent(tk)}" alt="">` : `<span class="pdf">PDF</span>`}
         <div><a href="${esc(t.url)}?tk=${encodeURIComponent(tk)}" target="_blank" rel="noopener" title="${esc(t.filename)}">${esc(t.filename)}</a>
           <small lang="lo">${esc(t.by_user || '')} · ${EPL.ngayGio ? EPL.ngayGio(t.ts) : EPL.ngay(t.ts)}</small></div>
         ${(AUTH.la('acct') || t.by_user === AUTH.user?.full_name) && !biKhoa() ? `<button type="button" class="x" data-xoa-tep="${t.id}" title="${esc(NN.t('delete'))}">×</button>` : ''}
       </div>`).join('') + (themDuoc ? `<label class="btn sm quiet them">+ ${NN.h('attach_add')}<input type="file" accept="image/*,application/pdf" data-them-tep></label>` : '')
-      + (!TEP.length && !themDuoc ? `<span class="small muted">${NN.h('attach_none')}</span>` : '');
+      + (!ds.length && !themDuoc ? `<span class="small muted">${NN.h('attach_none')}</span>` : '');
     o.querySelectorAll('[data-them-tep]').forEach(inp => inp.addEventListener('change', async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const fd = new FormData(); fd.append('tep', f, f.name); fd.append('kind', 'ore_bill');
+      const fd = new FormData(); fd.append('tep', f, f.name); fd.append('kind', kind);
       try { await API.tep(`/api/trips/${P.id}/tep`, fd); EPL.toast(NN.t('saved'), 'ok'); await veTep(); } catch (e) { EPL.baoLoi(e); }
     }));
     o.querySelectorAll('[data-xoa-tep]').forEach(b => b.addEventListener('click', async () => {

@@ -7,11 +7,14 @@
 <div class="card">
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="name"></th><th data-i18n="phone"></th><th data-i18n="address"></th><th data-i18n="note"></th><th data-i18n="inv_mode"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
+      <thead><tr><th>#</th><th data-i18n="name"></th><th data-i18n="phone"></th><th data-i18n="address"></th><th data-i18n="note"></th><th data-i18n="inv_mode"></th><th data-i18n="hd_van_chuyen"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
       <tbody id="kh-than"></tbody>
     </table>
   </div>
 </div>
+
+<!-- Hợp đồng vận chuyển của khách (chốt 24/09) — js/hop_dong.js vẽ vào đây -->
+<div class="card hd-khung" id="kh-hd" hidden></div>
 
 <!-- Bảng giá khách × tuyến (K3): bấm "Bảng giá" ở một khách thì khối này hiện ra. Bãi không thấy (tiền). -->
 <div class="card kh-gia" id="kh-gia" hidden>
