@@ -370,6 +370,16 @@ Mỗi vai làm theo cùng một nếp:
 | ☐ | **Báo hỏng / sự cố** kèm số tiền dự kiến | Chờ tổ sửa chữa duyệt |
 | ☐ | **Chia sẻ vị trí** (cho phép GPS) | Theo dõi tuyến (bằng `thabok`) thấy chấm xe mới, *GPS mới vài phút* |
 | ☐ | **Báo đã về**: ngày về, km về | `thabok` bấm *Xe đã tới* thì hai ô đó điền sẵn |
+| ☐ | Tới nơi giao → nút **Giao hàng hoàn tất · ký nhận** | Hộp ký hiện ra; dòng dưới báo *Đã có vị trí* (GPS) |
+| ☐ | Người nhận **ký bằng ngón tay** vào ô; gõ tên, điện thoại; chụp ảnh biên bản / phiếu cân → **Gửi** | Thẻ phiếu hiện *✓ Đã ký nhận · tên · giờ*; có nút **Xem biên bản** |
+| ☐ | Ký xong bấm **Ký lại** | Ô ký xoá trắng, ký lại được trước khi gửi |
+| ☐ | Chọn tình trạng **Thiếu** / **Hư hỏng** mà để trống Ghi chú | Không gửi được, nhắc ghi rõ thiếu / hỏng gì |
+| ☐ | Không ký, **chỉ chụp ảnh** biên bản giấy → Gửi | Vẫn gửi được (khách dùng giấy) |
+| ☐ | **Tắt mạng** (chế độ máy bay) → ký một phiếu → Gửi | Thẻ hiện *Chờ gửi — tự gửi khi có mạng lại* |
+| ☐ | Bật mạng lại | Tự gửi; báo *Đã gửi xong 1 biên bản*; thẻ đổi sang *Đã ký nhận* |
+| ☐ | **Xem biên bản** | Mở tờ in: thông tin chuyến, hàng, người nhận, **chữ ký**, ảnh, giờ ký, vị trí. Lưu PDF được |
+| ☐ | `thabok` / `ketoan` mở phiếu đó → mục II khối POD | Thấy **chữ ký**, người nhận, giờ, link vị trí, tình trạng; nút **In biên bản giao nhận** |
+| ☐ | `ketoan` khoá phiếu người nhận ghi **Thiếu** | Bảng cảnh báo có dòng *Người nhận … ghi hàng THIẾU* |
 | ☐ | Gõ thẳng địa chỉ `#/tai-khoan` hoặc `#/theo-doi` | Tự chuyển về Phiếu của tôi |
 | ☐ | `tx01` mở phiếu của `tx02` | Không thấy phiếu của người khác |
 

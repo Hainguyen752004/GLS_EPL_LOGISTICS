@@ -24,3 +24,21 @@
 .pct-gps .cham{width:10px;height:10px;border-radius:50%;background:var(--green);flex:none;animation:pct-nhay 1.6s infinite}
 @keyframes pct-nhay{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){.pct-gps .cham{animation:none}}
+
+/* ---- Giao hàng hoàn tất: ký trên điện thoại (chốt 24/09) ---- */
+.pct-gh{width:min(560px,calc(96vw / var(--ty-le)))}
+.pct-gh-than{padding:16px;display:flex;flex-direction:column;gap:10px;max-height:calc(92vh / var(--ty-le));overflow:auto}
+.pct-gh-than h3{margin:0}
+.pct-gh-ky{border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;background:#fff}
+.pct-gh-ky-dau{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-bottom:1px solid var(--line)}
+#pct-gh-canvas{display:block;width:100%;height:190px;touch-action:none;background:#fff;cursor:crosshair}
+.pct-gh-chup{justify-content:center;min-height:48px;font-weight:600}
+.pct-gh-anh{display:flex;flex-wrap:wrap;gap:8px}
+.pct-gh-anh .a{position:relative} .pct-gh-anh img{width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
+.pct-gh-anh .pdf{width:72px;height:72px;display:grid;place-items:center;border-radius:6px;background:var(--ore-soft);color:var(--ore);font-weight:700}
+.pct-gh-anh .x{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;border:0;background:var(--ink);color:#fff;font-size:13px}
+.pct-gh-gps{color:var(--ink-3)} .pct-gh-gps.co{color:var(--green)}
+.pct-nut .btn[data-gh]{grid-column:1/-1;font-size:16px;min-height:54px}
+.pct-ky-xong{margin-top:10px;padding:8px 12px;border-radius:var(--r);background:var(--green-soft);color:var(--green);font-size:13px}
+.pct-ky-xong.cho{background:var(--amber-soft);color:var(--amber)}
+.pct-mat-mang{margin-bottom:12px;padding:10px 14px;border-radius:var(--r);background:var(--amber-soft);color:var(--amber);font-size:13px}

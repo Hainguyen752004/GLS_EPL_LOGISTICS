@@ -2,8 +2,130 @@
 (function () {
   const { API, NN, esc, so, tag } = EPL;
   let root, DS = [], CHON = null, DIEM = [];
-  let theoDoiId = null, phieuChiaSe = null, lanGuiCuoi = 0;
+  let theoDoiId = null, phieuChiaSe = null, lanGuiCuoi = 0, boNghe = null;
   const q = (s) => root.querySelector(s);
+
+  /* ---------------------------------------------------------------- giao hàng hoàn tất (chốt 24/09)
+   * Người nhận ký ngay trên điện thoại tài xế. Mất mạng vẫn ký được: lần gửi nằm trong hàng đợi của máy (localStorage,
+   * ảnh đã nén), có mạng lại thì tự gửi; `ma_gui` giúp máy chủ không ghi hai lần khi gửi lại. */
+  const uid = () => (EPL.AUTH.user ? EPL.AUTH.user.id : 'x');
+  const K_HANG = () => 'epl_lao_giao_nhan_' + uid(), K_DS = () => 'epl_lao_pct_ds_' + uid();
+  const doc = (k, md) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : md; } catch (e) { return md; } };
+  const ghi = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+  const hangDoi = () => doc(K_HANG(), []);
+  const choGui = (id) => hangDoi().some(x => x.trip_id === id);
+  const laMatMang = (e) => !(e instanceof EPL.LoiAPI) || !e.status;
+  const maMoi = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  const sangBlob = (url) => { const [dau, b64] = url.split(','); const kieu = (dau.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+    const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i); return new Blob([u8], { type: kieu }); };
+
+  /** Ảnh chụp bằng điện thoại 3–6 MB → nén còn ~200 KB (cạnh dài 1600 px, JPEG 0,75) cho mạng yếu ngoài hiện trường. */
+  function nenAnh(f) {
+    return new Promise((res) => {
+      const doc_ = new FileReader();
+      doc_.onload = () => {
+        if (!/^image\//.test(f.type)) return res({ name: f.name, type: f.type, url: doc_.result });
+        const img = new Image();
+        img.onload = () => {
+          const tl = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+          c.width = Math.round(img.width * tl); c.height = Math.round(img.height * tl);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          res({ name: (f.name || 'anh').replace(/\.[^.]+$/, '') + '.jpg', type: 'image/jpeg', url: c.toDataURL('image/jpeg', 0.75) });
+        };
+        img.onerror = () => res({ name: f.name, type: f.type, url: doc_.result });
+        img.src = doc_.result;
+      };
+      doc_.readAsDataURL(f);
+    });
+  }
+
+  /** Ô ký: vẽ bằng ngón tay / chuột (Pointer Events), nét mịn theo mật độ điểm ảnh của màn. */
+  function oKy(cv) {
+    let ve_ = false, co = false, truoc = null;
+    const ctx = cv.getContext('2d');
+    const dung = () => {
+      const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+      cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.max(1, Math.round(r.height * d));
+      ctx.setTransform(d, 0, 0, d, 0, 0); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, r.width, r.height);
+      ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#11161b'; co = false;
+    };
+    const diem = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    cv.onpointerdown = (e) => { ve_ = true; truoc = diem(e); cv.setPointerCapture(e.pointerId); e.preventDefault(); };
+    cv.onpointermove = (e) => { if (!ve_) return; const p = diem(e); ctx.beginPath(); ctx.moveTo(...truoc); ctx.lineTo(...p); ctx.stroke(); truoc = p; co = true; e.preventDefault(); };
+    cv.onpointerup = cv.onpointercancel = () => { ve_ = false; };
+    return { dung, coNet: () => co, anh: () => (co ? cv.toDataURL('image/png') : null) };
+  }
+
+  let KY = null, ANH = [], VT = null, GH = null;
+  function moGiaoHang(id) {
+    GH = DS.find(p => p.id === id); if (!GH) return;
+    const dlg = q('#pct-gh'); ANH = []; VT = null;
+    q('#pct-gh-phieu').innerHTML = `${esc(GH.doc_no)} · <span lang="lo">${esc(GH.customer_name || '')}</span> · <span lang="lo">${esc(GH.destination || '')}</span>`;
+    q('#pct-gh-ten').value = GH.pod_receiver || ''; q('#pct-gh-sdt').value = GH.pod_phone || '';
+    q('#pct-gh-tt').value = 'du'; q('#pct-gh-ghi').value = '';
+    veAnh();
+    dlg.showModal();
+    KY = oKy(q('#pct-gh-canvas')); requestAnimationFrame(() => KY.dung());
+    const gps = q('#pct-gh-gps'); gps.className = 'small pct-gh-gps'; gps.textContent = NN.t('gh_gps_dang');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((vt) => {
+        VT = { lat: vt.coords.latitude, lng: vt.coords.longitude };
+        gps.className = 'small pct-gh-gps co'; gps.textContent = `${NN.t('gh_gps_co')} · ${VT.lat.toFixed(5)}, ${VT.lng.toFixed(5)}`;
+      }, () => { gps.textContent = NN.t('gh_gps_khong'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+    } else gps.textContent = NN.t('gh_gps_khong');
+  }
+  function veAnh() {
+    q('#pct-gh-xem-anh').innerHTML = ANH.map((a, i) => `<div class="a">${a.type.startsWith('image/') ? `<img src="${a.url}" alt="">` : '<span class="pdf">PDF</span>'}<button type="button" class="x" data-bo-anh="${i}">×</button></div>`).join('');
+    root.querySelectorAll('[data-bo-anh]').forEach(b => b.addEventListener('click', () => { ANH.splice(+b.dataset.boAnh, 1); veAnh(); }));
+  }
+  async function guiMot(x) {
+    const fd = new FormData();
+    Object.entries(x.truong).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, v); });
+    if (x.chu_ky) fd.append('chu_ky', sangBlob(x.chu_ky), 'chu-ky-' + x.ma_gui + '.png');
+    (x.anh || []).forEach(a => fd.append('anh', sangBlob(a.url), a.name));
+    return API.tep(`/api/trips/${x.trip_id}/giao-nhan`, fd);
+  }
+  async function guiGiaoHang() {
+    const ten = q('#pct-gh-ten').value.trim(), chuKy = KY && KY.anh(), tt = q('#pct-gh-tt').value, ghiChu = q('#pct-gh-ghi').value.trim();
+    if (!chuKy && !ANH.length) return EPL.toast(NN.t('gh_thieu'), 'loi');
+    if (chuKy && !ten) return EPL.toast(NN.t('gh_thieu_ten'), 'loi');
+    if (tt !== 'du' && !ghiChu) return EPL.toast(NN.t('gh_thieu_ghi'), 'loi');
+    const x = { trip_id: GH.id, doc_no: GH.doc_no, ma_gui: maMoi(), chu_ky: chuKy, anh: ANH.slice(),
+      truong: { nguoi_nhan: ten, sdt: q('#pct-gh-sdt').value.trim(), tinh_trang: tt, ghi_chu: ghiChu, luc: new Date().toISOString(),
+        lat: VT ? String(VT.lat) : '', lng: VT ? String(VT.lng) : '', ma_gui: '' } };
+    x.truong.ma_gui = x.ma_gui;
+    const nut = q('#pct-gh-gui'); nut.disabled = true;
+    try {
+      await guiMot(x);
+      q('#pct-gh').close(); EPL.toast(NN.t('gh_da_gui'), 'ok'); await tai();
+    } catch (e) {
+      if (laMatMang(e)) {
+        const hd = hangDoi(); hd.push(x);
+        if (!ghi(K_HANG(), hd)) EPL.toast(NN.t('gh_day_bo_nho'), 'loi');
+        else { q('#pct-gh').close(); EPL.toast(NN.t('gh_cho_gui'), 'ok'); ve(); }
+      } else EPL.baoLoi(e);
+    } finally { nut.disabled = false; }
+  }
+  /** Có mạng lại (hoặc mở màn) → gửi hết hàng đợi. Lỗi nghiệp vụ (phiếu đã khoá, đã ký…) thì bỏ khỏi hàng và báo. */
+  async function guiHangDoi() {
+    let hd = hangDoi(); if (!hd.length) return;
+    let xong = 0;
+    for (const x of hd.slice()) {
+      try { await guiMot(x); xong++; hd = hd.filter(y => y.ma_gui !== x.ma_gui); }
+      catch (e) {
+        if (laMatMang(e)) break;
+        hd = hd.filter(y => y.ma_gui !== x.ma_gui); EPL.toast(`${x.doc_no}: ${e.message}`, 'loi');
+      }
+    }
+    ghi(K_HANG(), hd);
+    if (xong) { EPL.toast(NN.t('gh_da_gui_hang', { n: xong }), 'ok'); await tai().catch(() => {}); }
+  }
+  async function xemBienBan(id) {
+    const p = DS.find(x => x.id === id); if (!p) return;
+    let tep = [];
+    try { tep = await API.get(`/api/trips/${id}/tep`); } catch (e) { return EPL.baoLoi(e); }
+    EPL.bienBan.in(p, tep);
+  }
 
   function tamUng(p) {
     // Khoản tiền mặt tài xế cầm đi: EPL ứng, không phải từ kho. Trạng thái = mục IV.
@@ -25,7 +147,11 @@
           <span>${NN.h('d_out')}: <b>${EPL.ngay(p.out_date)}</b></span><span>${NN.h('w_origin')}: <b>${so(p.weight_origin, 2)} t</b></span></div>
         <div class="pct-tu ${!tu.co ? 'khong' : daTra ? 'ok' : 'cho'}"><span>${NN.h('advance')}${tu.co ? '' : ' · ' + NN.h('no_expense')}</span><b>${tu.co ? so(tu.tong) + ' LAK · ' + NN.t(daTra ? 'advance_received' : 'stt_' + (tu.tt === 'wait' ? 'wait2' : tu.tt)) : '—'}</b></div>
         ${bao.length ? `<div class="pct-bao">${bao.slice(-3).map(e => `<div>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'ok' : 'unpaid', 'st_' + (e.status || 'approved'))}<span lang="lo">${esc(e.note || NN.t('inc_' + (e.incident_type || 'other')))}</span>${e.reported_cost ? `<b>${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</b>` : ''}</div>`).join('')}</div>` : ''}
+        ${p.pod_signed || p.pod_no ? `<div class="pct-ky-xong">✓ ${NN.h('gh_da_ky')}: <b lang="lo">${esc(p.pod_receiver || '')}</b>${p.pod_at ? ' · ' + EPL.ngayGio(p.pod_at) : ''}</div>`
+          : choGui(p.id) ? `<div class="pct-ky-xong cho">${NN.h('gh_cho_gui')}</div>` : ''}
         <div class="pct-nut">
+          ${p.kind === 'giao' && ['transit', 'arrived'].includes(p.transport_status) && !p.locked && !p.pod_signed && !choGui(p.id)
+            ? `<button class="btn ok" data-gh="${p.id}">${NN.h('gh_nut')}</button>` : ''}
           ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
           ${p.transport_status === 'transit' ? `<button class="btn ok" data-ve="${p.id}">${NN.h('report_back')}</button>` : ''}
           ${!xong ? `<button class="btn warn" data-bao="${p.id}">${NN.h('report_breakdown')}</button>` : ''}
@@ -33,6 +159,7 @@
           ${p.transport_status === 'transit'
             ? `<button class="btn ${phieuChiaSe === p.id ? 'ok' : ''}" data-gps="${p.id}">${NN.h(phieuChiaSe === p.id ? 'gps_stop' : 'gps_share')}</button>` : ''}
           <button class="btn" data-pc="${p.id}">${NN.h('voucher_payment')}</button>
+          ${p.pod_signed || p.pod_no ? `<button class="btn" data-bb="${p.id}">${NN.h('gh_xem')}</button>` : ''}
         </div></div>`;
     }).join('');
     root.querySelectorAll('[data-di]').forEach(b => b.addEventListener('click', () => xuatPhat(b.dataset.di)));
@@ -41,11 +168,20 @@
     root.querySelectorAll('[data-pc]').forEach(b => b.addEventListener('click', () => EPL.di('chung-tu', { id: b.dataset.pc })));
     root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
     root.querySelectorAll('[data-gps]').forEach(b => b.addEventListener('click', () => batTatGPS(b.dataset.gps)));
+    root.querySelectorAll('[data-gh]').forEach(b => b.addEventListener('click', () => moGiaoHang(b.dataset.gh)));
+    root.querySelectorAll('[data-bb]').forEach(b => b.addEventListener('click', () => xemBienBan(b.dataset.bb)));
     q('#pct-gps').hidden = !phieuChiaSe;
   }
   async function tai() {
-    const ds = await API.get('/api/trips');
-    DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events; tài xế chỉ có vài phiếu
+    const mm = q('#pct-mat-mang');
+    try {
+      const ds = await API.get('/api/trips');
+      DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events; tài xế chỉ có vài phiếu
+      ghi(K_DS(), DS); mm.hidden = true;
+    } catch (e) {
+      if (!laMatMang(e)) throw e;
+      DS = doc(K_DS(), []); mm.hidden = false; mm.textContent = NN.t('gh_mat_mang');
+    }
     ve();
   }
   /** Tài xế báo đã về: ngày về + km về (C2.1). Máy chủ chỉ ghi hai số và đánh mốc tới điểm cuối;
@@ -149,9 +285,19 @@
     async init(r) {
       root = r;
       DIEM = await API.get('/api/fuel-places').catch(() => []);
+      q('#pct-gh-xoa-ky').addEventListener('click', () => KY && KY.dung());
+      q('#pct-gh-huy').addEventListener('click', () => q('#pct-gh').close());
+      q('#pct-gh-gui').addEventListener('click', guiGiaoHang);
+      q('#pct-gh-anh').addEventListener('change', async (e) => {
+        for (const f of [...e.target.files].slice(0, 5 - ANH.length)) ANH.push(await nenAnh(f));
+        e.target.value = ''; veAnh();
+      });
+      boNghe = () => guiHangDoi().catch(() => {});
+      window.addEventListener('online', boNghe);
       await tai();
+      await guiHangDoi().catch(() => {});
     },
-    destroy() { ngungGPS(); },
+    destroy() { ngungGPS(); if (boNghe) window.removeEventListener('online', boNghe); boNghe = null; },
     onLang() { if (root) ve(); },
   };
 })();

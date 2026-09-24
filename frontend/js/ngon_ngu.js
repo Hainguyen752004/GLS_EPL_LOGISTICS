@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1486 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1517 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -7381,6 +7381,161 @@ window.EPL_TU_DIEN = {
   "vi": "Nhập số POD hoặc thêm ảnh · PDF",
   "lo": "ລົງເລກທີ POD ຫຼື ເພີ່ມຮູບ · PDF",
   "en": "Enter the POD number or add a photo · PDF"
+ },
+ "gh_nut": {
+  "vi": "Giao hàng hoàn tất · ký nhận",
+  "lo": "ສົ່ງແລ້ວ · ເຊັນຮັບ",
+  "en": "Delivered · get signature"
+ },
+ "gh_sdt": {
+  "vi": "Điện thoại người nhận",
+  "lo": "ເບີໂທຜູ້ເຊັນຮັບ",
+  "en": "Receiver phone"
+ },
+ "gh_tinh_trang": {
+  "vi": "Tình trạng hàng",
+  "lo": "ສະຖານະສິນຄ້າ",
+  "en": "Goods condition"
+ },
+ "gh_tt_du": {
+  "vi": "Đủ",
+  "lo": "ຄົບ",
+  "en": "Complete"
+ },
+ "gh_tt_thieu": {
+  "vi": "Thiếu",
+  "lo": "ຂາດ",
+  "en": "Short"
+ },
+ "gh_tt_hong": {
+  "vi": "Hư hỏng",
+  "lo": "ເສຍ",
+  "en": "Damaged"
+ },
+ "gh_chu_ky_nhan": {
+  "vi": "Người nhận ký",
+  "lo": "ຜູ້ເຊັນຮັບ",
+  "en": "Receiver signature"
+ },
+ "gh_ky_lai": {
+  "vi": "Ký lại",
+  "lo": "ເຊັນໃໝ່",
+  "en": "Clear"
+ },
+ "gh_chup": {
+  "vi": "Thêm ảnh biên bản · phiếu cân",
+  "lo": "ເພີ່ມຮູບ · PDF",
+  "en": "Add photo of the receipt / weigh slip"
+ },
+ "gh_gps_dang": {
+  "vi": "Đang lấy vị trí…",
+  "lo": "ກຳລັງໂຫຼດຕຳແໜ່ງ…",
+  "en": "Getting location…"
+ },
+ "gh_gps_co": {
+  "vi": "Đã có vị trí",
+  "lo": "ມີຕຳແໜ່ງແລ້ວ",
+  "en": "Location found"
+ },
+ "gh_gps_khong": {
+  "vi": "Chưa có vị trí — vẫn gửi được",
+  "lo": "ຍັງບໍ່ມີຕຳແໜ່ງ",
+  "en": "No location — you can still send"
+ },
+ "gh_gui": {
+  "vi": "Gửi",
+  "lo": "ສົ່ງ",
+  "en": "Send"
+ },
+ "gh_thieu": {
+  "vi": "Cần chữ ký người nhận hoặc ít nhất một ảnh",
+  "lo": "ຕ້ອງມີຜູ້ເຊັນຮັບ ຫຼື ຮູບ",
+  "en": "A signature or at least one photo is needed"
+ },
+ "gh_thieu_ten": {
+  "vi": "Có chữ ký thì phải ghi tên người nhận",
+  "lo": "ຕ້ອງລົງຊື່ຜູ້ເຊັນຮັບ",
+  "en": "Enter the receiver name"
+ },
+ "gh_thieu_ghi": {
+  "vi": "Hàng thiếu hoặc hư hỏng thì ghi rõ vào ô Ghi chú",
+  "lo": "ສິນຄ້າຂາດ ຫຼື ເສຍ — ລົງໝາຍເຫດ",
+  "en": "Short or damaged goods: describe it in Note"
+ },
+ "gh_da_gui": {
+  "vi": "Đã gửi biên bản giao nhận",
+  "lo": "ສົ່ງແລ້ວ",
+  "en": "Delivery receipt sent"
+ },
+ "gh_cho_gui": {
+  "vi": "Chờ gửi — tự gửi khi có mạng lại",
+  "lo": "ລໍຖ້າສົ່ງ — ຈະສົ່ງເມື່ອມີເນັດຄືນ",
+  "en": "Waiting — will send when the network returns"
+ },
+ "gh_da_gui_hang": {
+  "vi": "Đã gửi xong {n} biên bản chờ gửi",
+  "lo": "ສົ່ງສຳເລັດ {n} ລາຍການ",
+  "en": "Sent {n} waiting receipt(s)"
+ },
+ "gh_day_bo_nho": {
+  "vi": "Máy hết chỗ lưu — bớt ảnh rồi gửi lại",
+  "lo": "ເຄື່ອງເຕັມ — ລົບຮູບ ແລ້ວລອງໃໝ່",
+  "en": "Device storage full — remove a photo and try again"
+ },
+ "gh_da_ky": {
+  "vi": "Đã ký nhận",
+  "lo": "ເຊັນຮັບແລ້ວ",
+  "en": "Signed"
+ },
+ "gh_xem": {
+  "vi": "Xem biên bản",
+  "lo": "ເບິ່ງ ໃບເຊັນຮັບສິນຄ້າ",
+  "en": "View receipt"
+ },
+ "gh_in": {
+  "vi": "In biên bản giao nhận",
+  "lo": "ພິມ ໃບເຊັນຮັບສິນຄ້າ",
+  "en": "Print delivery receipt"
+ },
+ "gh_mat_mang": {
+  "vi": "Mất mạng — đang dùng bản lưu trong máy; ký nhận vẫn làm được, có mạng lại sẽ tự gửi.",
+  "lo": "ຕິດຕໍ່ເຊີບເວີບໍ່ໄດ້. ກຳລັງໃຊ້ຂໍ້ມູນທີ່ເກັບໄວ້ໃນເຄື່ອງ; ຈະສົ່ງເມື່ອມີເນັດຄືນ.",
+  "en": "Offline — using the copy on this device; signing still works and will be sent when the network returns."
+ },
+ "gh_vi_tri": {
+  "vi": "Vị trí",
+  "lo": "ຕຳແໜ່ງ",
+  "en": "Location"
+ },
+ "gh_luc": {
+  "vi": "Giờ ký nhận",
+  "lo": "ເວລາເຊັນຮັບ",
+  "en": "Signed at"
+ },
+ "gh_nhan_hang": {
+  "vi": "Bên nhận hàng",
+  "lo": "ຜູ້ເຊັນຮັບ",
+  "en": "Receiver"
+ },
+ "gh_tai_xe_giao": {
+  "vi": "Tài xế giao hàng",
+  "lo": "ໂຊເຟີ",
+  "en": "Delivering driver"
+ },
+ "gh_chan": {
+  "vi": "Ghi nhận bởi",
+  "lo": "ບັນທຶກໂດຍ",
+  "en": "Recorded by"
+ },
+ "gh_mo_cua_so": {
+  "vi": "Trình duyệt chặn cửa sổ in — cho phép cửa sổ bật lên rồi bấm lại",
+  "lo": "ເບິ່ງ ໃບເຊັນຮັບສິນຄ້າ ບໍ່ໄດ້ — ລອງໃໝ່",
+  "en": "The browser blocked the print window — allow pop-ups and try again"
+ },
+ "a_pod_sign": {
+  "vi": "Ký nhận giao hàng",
+  "lo": "ເຊັນຮັບສິນຄ້າ",
+  "en": "Delivery signed"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

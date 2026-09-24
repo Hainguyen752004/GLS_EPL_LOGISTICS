@@ -603,8 +603,22 @@
     const o = g('px-tep'), op = g('px-tep-pod'); if (!o) return;
     if (moi || !P.id) { o.innerHTML = op.innerHTML = `<span class="small muted">${NN.h('attach_after_save')}</span>`; return; }
     try { TEP = await API.get(`/api/trips/${P.id}/tep`); } catch (e) { TEP = []; }
-    veTepVao(o, TEP.filter(t => t.kind !== 'pod'), 'ore_bill');
+    veTepVao(o, TEP.filter(t => !['pod', 'pod_sign'].includes(t.kind)), 'ore_bill');
     if (op) veTepVao(op, TEP.filter(t => t.kind === 'pod'), 'pod');
+    veKyNhan();
+  }
+  /** Ký nhận trên điện thoại tài xế (giao hàng hoàn tất): chữ ký · người nhận · giờ · vị trí · tình trạng. */
+  function veKyNhan() {
+    const o = g('px-pod-ky'), nut = g('px-in-bb'); if (!o) return;
+    const ky = TEP.filter(t => t.kind === 'pod_sign').pop(), tk = encodeURIComponent(API.token());
+    const co = !!(ky || P.pod_at);
+    o.hidden = !co;
+    if (co) o.innerHTML = `${ky ? `<img src="${esc(ky.url)}?tk=${tk}" alt="">` : ''}
+      <div><div><b lang="lo">${esc(P.pod_receiver || '')}</b>${P.pod_phone ? ' · ' + esc(P.pod_phone) : ''}</div>
+        <div class="small muted">${P.pod_at ? EPL.ngayGio(P.pod_at) : ''}${P.pod_by ? ' · ' + esc(P.pod_by) : ''}${P.pod_lat != null ? ` · <a href="https://maps.google.com/?q=${P.pod_lat},${P.pod_lng}" target="_blank" rel="noopener">${NN.h('gh_vi_tri')}</a>` : ''}</div>
+        ${P.pod_condition ? `<div class="tt ${esc(P.pod_condition)}">${NN.h('gh_tt_' + P.pod_condition)}${P.pod_note ? ' · <span lang="lo">' + esc(P.pod_note) + '</span>' : ''}</div>` : ''}</div>`;
+    nut.hidden = moi || !(co || P.pod_no);
+    nut.onclick = () => EPL.bienBan.in(P, TEP);
   }
   function veTepVao(o, ds, kind) {
     const tk = API.token();

@@ -53,7 +53,7 @@ COT_PHIEU = ("doc_no", "kind", "doc_date", "out_date", "back_date", "company", "
              "odo_out", "odo_back", "customer_id", "customer_name", "route_id", "goods_type", "ore_bill_no",
              "ore_bill_date", "origin", "destination", "weight_origin", "weight_dest", "price", "price_ccy", "price_mode",
              "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price", "rate_usd", "rate_thb",
-             "rate_vnd", "rate_cny", "note", "pod_no", "pod_date", "pod_receiver")
+             "rate_vnd", "rate_cny", "note", "pod_no", "pod_date", "pod_receiver", "pod_phone", "pod_condition", "pod_note")
 COT_NGAY = ("doc_date", "out_date", "back_date", "ore_bill_date", "pod_date")
 # Ô tiền của mục II: Bãi không thấy, người kiểm mục II (KT Thu/Chi VC) sửa được khi khác hợp đồng
 COT_TIEN = ("price", "price_ccy", "price_mode", "hire_price", "hire_ccy", "fee_pct", "over_limit_t", "over_price",
@@ -242,6 +242,9 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
                "odo_est": (phieu.odo_out + tuyen.total_km) if (phieu.odo_out and tuyen and tuyen.total_km) else None,
                "attachments": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
                "pod_files": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod").count(),
+               "pod_signed": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod_sign").count() > 0,
+               "pod_at": phieu.pod_at.isoformat(timespec="minutes") if phieu.pod_at else None,
+               "pod_lat": phieu.pod_lat, "pod_lng": phieu.pod_lng, "pod_by": phieu.pod_by,
                "contract_id": phieu.contract_id, "contract_no": phieu.contract_no,
                "hire_contract_id": phieu.hire_contract_id, "hire_contract_no": phieu.hire_contract_no,
                "contract_state": _tt_hop_dong(db, phieu.contract_id, phieu),
@@ -1135,9 +1138,12 @@ def _canh_bao_khoa(db, p):
     if not co_anh and not (p.ore_bill_no or "").strip():
         cb.append({"ma": "THIEU_PHIEU_QUANG", "loi": "Chưa có phiếu quặng của khách — đính kèm ảnh, hoặc nhập tay số phiếu quặng."})
     # POD — biên bản giao nhận hàng: căn cứ đòi tiền khách. Nhập tay số POD hoặc đính kèm ảnh đều được (như phiếu quặng).
-    co_pod = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "pod").count()
+    co_pod = db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind.in_(("pod", "pod_sign"))).count()
     if p.kind == "giao" and not co_pod and not (p.pod_no or "").strip():
         cb.append({"ma": "THIEU_POD", "loi": "Chưa có biên bản giao nhận hàng (POD) — đính kèm ảnh, hoặc nhập tay số POD."})
+    if p.pod_condition in ("thieu", "hong"):
+        cb.append({"ma": "HANG_THIEU_HONG", "loi": "Người nhận %s ghi hàng %s khi ký nhận: %s" % (
+            p.pod_receiver or "", "THIẾU" if p.pod_condition == "thieu" else "HƯ HỎNG", p.pod_note or "")})
     ngay = p.doc_date or dt.date.today()
     for cot, loai, doi_tac, ten in (("contract_id", "khach", p.customer_id, "khách"),
                                     ("hire_contract_id", "thue_xe", p.owner_id if p.company == "joint" else None, "chủ xe")):

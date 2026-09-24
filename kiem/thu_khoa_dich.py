@@ -31,7 +31,8 @@ def main():
             if k.endswith("_") or k in TIEN_TO:
                 continue
             dung.setdefault(k, set()).add(os.path.relpath(f, GOC))
-    thieu = {k: v for k, v in dung.items() if k not in tu}
+    # khoá có trong từ điển mà chữ RỖNG thì giao diện in nguyên tên khoá (rà 24/09: "gh_ky_vao" lộ trên hộp ký nhận)
+    thieu = {k: v for k, v in dung.items() if k not in tu or not all((tu[k].get(n) or "").strip() for n in ("vi", "lo", "en"))}
     for k, v in sorted(thieu.items()):
         print("  THIẾU %-24s ← %s" % (k, ", ".join(sorted(v))))
     if thieu:

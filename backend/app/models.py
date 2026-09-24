@@ -340,6 +340,15 @@ class Trip(Base):
     pod_no = Column(String)
     pod_date = Column(Date)
     pod_receiver = Column(String)                              # người bên nhận ký
+    # Ký nhận trên điện thoại tài xế ("Giao hàng hoàn tất", chốt 24/09) — chữ ký là TripAttachment kind='pod_sign'
+    pod_phone = Column(String)                                 # điện thoại người nhận
+    pod_condition = Column(String)                             # du (đủ, nguyên) · thieu (thiếu) · hong (hư hỏng)
+    pod_note = Column(Text)
+    pod_at = Column(DateTime)                                  # giờ ký trên máy tài xế (giờ thật, kể cả khi gửi sau vì mất mạng)
+    pod_lat = Column(Float)                                    # vị trí lúc ký — không có GPS thì trống
+    pod_lng = Column(Float)
+    pod_by = Column(String)                                    # ai bấm gửi (tài xế / Bãi)
+    pod_ref = Column(String)                                   # mã lần gửi — máy gửi lại khi có mạng không ghi hai lần
     origin = Column(String)
     destination = Column(String)
     weight_origin = Column(Float)                              # ນ້ຳໜັກຕົ້ນທາງ (tấn)
@@ -962,7 +971,7 @@ class TripAttachment(Base):
     __tablename__ = "trip_attachments"
     id = Column(String, primary_key=True, default=ma_moi)
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
-    kind = Column(String, nullable=False, default="ore_bill")   # ore_bill · pod (biên bản giao nhận) · other
+    kind = Column(String, nullable=False, default="ore_bill")   # ore_bill · pod (ảnh biên bản) · pod_sign (chữ ký người nhận) · other
     filename = Column(String, nullable=False)                   # tên gốc người dùng đưa lên
     stored = Column(String, nullable=False)                     # tên trên đĩa: <id>.<ext>
     content_type = Column(String)

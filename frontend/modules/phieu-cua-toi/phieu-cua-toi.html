@@ -4,6 +4,7 @@
   <span class="cham"></span>
   <div><b data-i18n="gps_sharing"></b><div class="small" id="pct-gps-tin"></div></div>
 </div>
+<div class="pct-mat-mang" id="pct-mat-mang" hidden></div>
 <div id="pct-ds" class="pct-ds"></div>
 
 <dialog id="pct-hop" class="hop-thoai">
@@ -36,4 +37,30 @@
     <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button>
       <button class="btn primary" value="ok" data-i18n="df_declare"></button></div>
   </form>
+</dialog>
+
+<!-- Giao hàng hoàn tất (chốt 24/09): người nhận ký ngay trên điện thoại tài xế. Mất mạng vẫn ký được — máy giữ lại, có mạng tự gửi. -->
+<dialog id="pct-gh" class="hop-thoai pct-gh">
+  <div class="pct-gh-than">
+    <h3 data-i18n="gh_nut"></h3>
+    <div class="small muted" id="pct-gh-phieu"></div>
+    <div class="f-grid">
+      <div class="field w2"><label data-i18n="pod_receiver"></label><input id="pct-gh-ten" lang="lo" autocomplete="off"></div>
+      <div class="field"><label data-i18n="gh_sdt"></label><input id="pct-gh-sdt" type="tel" inputmode="tel" autocomplete="off"></div>
+      <div class="field"><label data-i18n="gh_tinh_trang"></label>
+        <select id="pct-gh-tt"><option value="du" data-i18n="gh_tt_du"></option><option value="thieu" data-i18n="gh_tt_thieu"></option><option value="hong" data-i18n="gh_tt_hong"></option></select></div>
+      <div class="field w2"><label data-i18n="note"></label><textarea id="pct-gh-ghi" rows="2" lang="lo"></textarea></div>
+    </div>
+    <div class="pct-gh-ky">
+      <div class="pct-gh-ky-dau"><b data-i18n="gh_chu_ky_nhan"></b><div class="grow"></div>
+        <button type="button" class="btn sm" id="pct-gh-xoa-ky" data-i18n="gh_ky_lai"></button></div>
+      <canvas id="pct-gh-canvas"></canvas>
+    </div>
+    <label class="btn pct-gh-chup"><span data-i18n="gh_chup"></span>
+      <input type="file" id="pct-gh-anh" accept="image/*,application/pdf" capture="environment" multiple hidden></label>
+    <div class="pct-gh-anh" id="pct-gh-xem-anh"></div>
+    <div class="small pct-gh-gps" id="pct-gh-gps"></div>
+    <div class="ht-nut"><button type="button" class="btn" id="pct-gh-huy" data-i18n="cancel"></button>
+      <button type="button" class="btn primary" id="pct-gh-gui" data-i18n="gh_gui"></button></div>
+  </div>
 </dialog>
