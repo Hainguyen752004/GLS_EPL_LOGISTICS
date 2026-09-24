@@ -53,6 +53,13 @@
     if (!d) return;
     q('#tt-ten').textContent = d.driver_name;
     q('#tt-ky-hien').textContent = d.period;
+    // bảng tháng tải bản gọn (chi_tiet=0): danh sách phiếu của người đang chọn thì lấy riêng, một lần
+    if (!d.phieu) {
+      q('#tt-phieu').innerHTML = '';
+      API.get('/api/tat-toan/' + encodeURIComponent(d.driver_id) + '?ky=' + encodeURIComponent(d.period))
+        .then(x => { d.phieu = x.phieu || []; if (CHON === d.driver_id) veChiTiet(); }).catch(EPL.baoLoi);
+      return;
+    }
     q('#tt-phieu').innerHTML = d.phieu.length ? d.phieu.map(p => `<tr>
       <td class="mono">${esc(p.doc_no)}</td><td>${EPL.ngay(p.out_date)}</td><td>${esc(p.truck_no || '')}</td>
       <td lang="lo">${esc((p.origin || '') + ' → ' + (p.destination || ''))}</td>
@@ -79,7 +86,7 @@
   }
 
   async function tai() {
-    BANG = await API.get('/api/tat-toan?ky=' + q('#tt-ky').value);
+    BANG = await API.get('/api/tat-toan?chi_tiet=0&ky=' + q('#tt-ky').value);
     veTom(); veBang(); veChiTiet();
   }
 
@@ -90,7 +97,7 @@
       // mở ra thấy bảng trống thì người dùng tưởng hỏng.
       let ky = EPL.thangNay();
       try {
-        const ds = await API.get('/api/trips');
+        const ds = await API.get('/api/trips?co=1');     // chỉ cần phiếu mới nhất — đừng tải cả năm
         const ngay = ds.map(p => p.out_date || p.doc_date).filter(Boolean).sort();
         if (ngay.length) ky = ngay[ngay.length - 1].slice(0, 7);
       } catch (e) { /* không lấy được thì cứ tháng này */ }

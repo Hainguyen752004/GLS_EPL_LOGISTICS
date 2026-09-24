@@ -50,7 +50,7 @@
     }).join('');
     q('#tdt-o-so').querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => {
       locO = locO === b.dataset.o ? '' : b.dataset.o;      // bấm lại chính ô đó là bỏ lọc
-      veOSo(); veDanhSach();
+      veOSo(); tai(true).catch(EPL.baoLoi);
     }));
   }
 
@@ -76,7 +76,8 @@
 
   function veDanhSach() {
     const ds = loc();
-    q('#tdt-dem').textContent = BANG ? `${ds.length} / ${BANG.chuyen.length}` : '';
+    // "hiện / khớp": vượt 300 phiếu thì danh sách chỉ giữ phần mới nhất — số sau dấu / vẫn là số thật
+    q('#tdt-dem').textContent = BANG ? `${ds.length} / ${so(BANG.so_khop ?? BANG.chuyen.length)}` : '';
     q('#tdt-the-ds').innerHTML = ds.length ? ds.map(c => {
       const canh = [];
       if (c.su_co_mo) canh.push(`<span class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);
@@ -488,8 +489,14 @@
   }
 
   /* ---------------------------------------------------------------- tải & thao tác */
+  /* Dữ liệu cả năm (24/09): máy chủ lọc theo ô số đang bấm, chữ tìm và "chỉ phiếu còn việc" — trình duyệt không
+   * tải 365.000 phiếu về để tự lọc nữa. Ô số vẫn đếm trên TOÀN BỘ phiếu còn việc. */
   async function tai(giuChon) {
-    BANG = await API.get('/api/theo-doi?tat_ca=1');
+    const tham = new URLSearchParams();
+    if (!q('#tdt-chi-chay').checked) tham.set('tat_ca', '1');
+    if (locO) tham.set('o', locO);
+    const tim = q('#tdt-q').value.trim(); if (tim) tham.set('q', tim);
+    BANG = await API.get('/api/theo-doi' + (String(tham) ? '?' + tham : ''));
     q('#tdt-luc').innerHTML = NN.h('td_asof', { luc: EPL.ngayGio(BANG.luc) });
     veOSo(); veDanhSach();
     if (giuChon && P) { const con = BANG.chuyen.find(c => c.id === P.id); if (!con) { P = null; ve(); } }
@@ -609,8 +616,9 @@
     async init(r, ctx) {
       root = r;
       PARTS = await API.get('/api/parts').catch(() => []);
-      q('#tdt-q').addEventListener('input', veDanhSach);
-      q('#tdt-chi-chay').addEventListener('change', veDanhSach);
+      let hen = null;
+      q('#tdt-q').addEventListener('input', () => { veDanhSach(); clearTimeout(hen); hen = setTimeout(() => tai(true).catch(EPL.baoLoi), 350); });
+      q('#tdt-chi-chay').addEventListener('change', () => tai(true).catch(EPL.baoLoi));
       q('#tdt-tu-dong').addEventListener('change', e => datTuDong(e.target.checked));
       q('#tdt-lam-moi').addEventListener('click', () => tai(true).catch(EPL.baoLoi));
       q('#tdt-so-su-co').addEventListener('click', moSo);
@@ -630,10 +638,10 @@
       root.querySelectorAll('.tdt-nguon button').forEach(b => b.addEventListener('click', () => datNguon(b.dataset.src)));
       q('#tdt-f-part').addEventListener('change', () => datNguon('kho'));
       window.addEventListener('resize', khiDoiCo);
-      await tai();
       const t = ctx.tham || {};
-      // Mở từ thanh xem nhanh bên Tổng quan: ?o=<mã ô số> thì lọc sẵn đúng ô đó.
+      // Mở từ thanh xem nhanh bên Tổng quan: ?o=<mã ô số> thì lọc sẵn đúng ô đó (đặt TRƯỚC khi tải — máy chủ lọc).
       if (t.o && O_SO.some(x => x.id === t.o)) locO = t.o;
+      await tai();
       const dau = t.id || (loc()[0] || {}).id;
       if (dau) await mo(dau); else ve();
       // Mở màn bằng đường dẫn có ?hs=0 thì thu sẵn thanh xem nhanh, nhường cả chỗ cho bản đồ.

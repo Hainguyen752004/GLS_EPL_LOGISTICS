@@ -263,13 +263,16 @@ async function main() {
   await cho(120);
   // bấm ô "chưa xuất bến" thì danh sách chỉ còn phiếu chưa xuất bến
   const soTruoc = the.length;
+  // bấm ô số là MÁY CHỦ lọc (24/09, dữ liệu cả năm) — chờ danh sách đổi thay vì chờ một khoảng cố định
+  const demThe = () => goc().querySelectorAll('#tdt-the-ds .tdt2-the').length;
+  const doiDen = async (dk, ms = 6000) => { const t0 = Date.now(); while (Date.now() - t0 < ms && !dk()) await cho(100); };
   goc().querySelector('.tdt2-tile[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
-  await cho(120);
-  const soSau = goc().querySelectorAll('#tdt-the-ds .tdt2-the').length;
+  await doiDen(() => demThe() !== soTruoc, 3000);
+  const soSau = demThe();
   assert.ok(soSau <= soTruoc, 'bấm ô số phải lọc bớt danh sách: ' + soTruoc + ' → ' + soSau);
   goc().querySelector('.tdt2-tile[data-o="chua_xuat_ben"]').dispatchEvent(new w.Event('click'));
-  await cho(120);
-  assert.strictEqual(goc().querySelectorAll('#tdt-the-ds .tdt2-the').length, soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
+  await doiDen(() => demThe() === soTruoc);
+  assert.strictEqual(demThe(), soTruoc, 'bấm lại chính ô đó phải bỏ lọc');
   // Thanh xem nhanh: bấm một phiếu thì trượt ra, bấm × thì thu lại (bản đồ ăn hết chỗ trống).
   const cols = goc().querySelector('#tdt-cols');
   assert.ok(cols.classList.contains('mo-ho-so'), 'bấm một phiếu phải mở thanh xem nhanh');

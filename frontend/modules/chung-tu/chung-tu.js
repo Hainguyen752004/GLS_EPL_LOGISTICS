@@ -203,11 +203,13 @@
   EPL.modules['chung-tu'] = {
     async init(r, ctx) {
       root = r;
-      const [ds, acc] = await Promise.all([API.get('/api/trips'), API.get('/api/acc-codes').catch(() => ({ data: [], source: 'error' }))]);
+      // 50 phiếu mới nhất + ô tìm trên toàn bộ phiếu (dữ liệu cả năm) — không tải mọi phiếu về ô chọn nữa
+      const oc = EPL.oChonPhieu({ tim: q('#ct-tim'), chon: q('#ct-chon'), nhan: p => `${esc(p.doc_no)} · ${esc(p.driver_name || '')}`,
+        khiTim: (ds) => { DS = ds; oc.ve(P); } });
+      const [ds, acc] = await Promise.all([oc.nap(), API.get('/api/acc-codes').catch(() => ({ data: [], source: 'error' }))]);
       DS = ds; ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
       q('#ct-acc-nguon').innerHTML = NN.h(acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback');
-      q('#ct-chon').innerHTML = DS.map(p => `<option value="${p.id}">${esc(p.doc_no)} · ${esc(p.driver_name || '')}</option>`).join('');
-      q('#ct-chon').addEventListener('change', e => { P = DS.find(p => p.id === e.target.value); ve(); });
+      q('#ct-chon').addEventListener('change', e => { if (!e.target.value) return; P = DS.find(p => p.id === e.target.value) || P; ve(); });
       q('#ct-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       root.querySelectorAll('.ct-tab button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x === b)); ve(); }));
       // phiếu thu là tiền khách trả: vai không thấy tiền bán thì không có tab này (máy chủ cũng trả 403)
@@ -226,8 +228,9 @@
         root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
       }
       if (t.v) vChon = t.v;
-      P = DS.find(p => p.id === t.id) || DS[0] || null;
-      if (P) q('#ct-chon').value = P.id;
+      // mở bằng mã phiếu mà phiếu đó không nằm trong 50 phiếu mới nhất → nạp riêng tờ đó, KHÔNG rơi về tờ đầu danh sách
+      P = DS.find(p => p.id === t.id) || (t.id ? await API.get('/api/trips/' + t.id).catch(() => null) : null) || DS[0] || null;
+      oc.ve(P);
       if (t.loai) soLoaiChon = String(t.loai).toUpperCase();
       await ve();
     },

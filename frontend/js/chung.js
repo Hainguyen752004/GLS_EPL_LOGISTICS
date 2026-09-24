@@ -38,6 +38,10 @@
         }
         throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || (typeof ct === 'string' ? ct : NN.t('err_generic')));
       }
+      // Danh sách phân trang (24/09, dữ liệu cả năm): máy chủ gửi tổng số dòng khớp ở header X-Tong — gắn vào mảng
+      // thành `ds.tong` (không liệt kê được, nên không lẫn vào dữ liệu hay vào tệp Excel xuất ra).
+      const tong = r.headers && r.headers.get('X-Tong');
+      if (Array.isArray(d) && tong != null && tong !== '') Object.defineProperty(d, 'tong', { value: +tong, enumerable: false });
       return d;
     },
     /** Gửi tệp (multipart) — không đặt Content-Type để trình duyệt tự ghi boundary. */
@@ -226,6 +230,31 @@
   /* ================================================================ Định khoản (Acc code từ API bên công nợ) */
   let ACC_CACHE = null;
   /** Danh mục Acc code — tải một lần, dùng chung mọi module. Trả {data, source}. */
+  /** Ô CHỌN PHIẾU cho dữ liệu cả năm (24/09): một năm ~365.000 phiếu thì ô chọn không liệt kê hết được nữa.
+   *  Nạp 50 phiếu mới nhất (lọc thêm bằng `loc`, ví dụ 'locked=true'); gõ vào ô tìm thì máy chủ tìm trên TOÀN BỘ phiếu.
+   *  Phiếu đang mở luôn có mặt trong ô chọn, kể cả khi nó không nằm trong trang vừa nạp.
+   *    const oc = EPL.oChonPhieu({ tim, chon, nhan: p => '…', loc, khiTim })   →  await oc.nap(); oc.ve(phieuDangMo)  */
+  EPL.oChonPhieu = (o) => {
+    let ds = [];
+    const nap = async () => {
+      const t = o.tim ? o.tim.value.trim() : '';
+      ds = await API.get('/api/trips?co=50' + (o.loc ? '&' + o.loc : '') + (t ? '&q=' + encodeURIComponent(t) : ''));
+      return ds;
+    };
+    const ve = (hien) => {
+      const cac = hien && hien.id && !ds.some(p => p.id === hien.id) ? [hien, ...ds] : ds;
+      o.chon.innerHTML = cac.map(p => `<option value="${esc(p.id)}">${o.nhan(p)}</option>`).join('')
+        + (ds.tong > ds.length ? `<option value="" disabled>… ${EPL.so(ds.length)} / ${EPL.so(ds.tong)}</option>` : '')
+        || `<option value="">${NN.h('no_data')}</option>`;
+      o.chon.value = hien && hien.id ? hien.id : (cac[0] ? cac[0].id : '');
+    };
+    if (o.tim) {
+      let hen = null;
+      o.tim.addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => nap().then(() => o.khiTim && o.khiTim(ds)).catch(EPL.baoLoi), 350); });
+    }
+    return { nap, ve, get ds() { return ds; } };
+  };
+
   EPL.accCodes = async (refresh) => {
     if (ACC_CACHE && !refresh) return ACC_CACHE;
     try { ACC_CACHE = await API.get('/api/acc-codes' + (refresh ? '?refresh=true' : '')); }

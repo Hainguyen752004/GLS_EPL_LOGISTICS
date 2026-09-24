@@ -137,3 +137,8 @@
 .px-pod-ky .tt{font-weight:700} .px-pod-ky .tt.thieu{color:var(--amber)} .px-pod-ky .tt.hong{color:var(--red)}
 .px-pod-chan{display:flex;align-items:center;gap:10px;margin-top:6px}
 @media (max-width:900px){.px-pod{grid-template-columns:1fr}}
+
+/* ô tìm + ô chọn phiếu đứng cạnh nhau (một năm ~365.000 phiếu: chọn trong 50 mới nhất, hoặc gõ để tìm) */
+.px-chon-hang{display:flex;gap:6px;min-width:0}
+.px-chon-hang input{flex:0 1 15em;min-width:6em}
+.px-chon-hang select{flex:1 1 auto;min-width:0}

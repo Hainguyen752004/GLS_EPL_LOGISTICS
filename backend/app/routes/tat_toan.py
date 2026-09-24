@@ -23,7 +23,10 @@ Tất toán xong là khoá kỳ: phiếu trong kỳ không sửa ngược đư�
 """
 import datetime as dt
 
+from collections import defaultdict
+
 from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import and_, func, not_, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -31,6 +34,7 @@ from models import Driver, DriverSettlement, Supplier, Trip, TripExpense, Vouche
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
+from services import dem_bao_cao as DEM
 
 router = APIRouter()
 CHOT = can_vai("expacct", "cash", "treasury")
@@ -53,8 +57,24 @@ def _khoang(ky):
 def _phieu_cua(db, driver_id, ky):
     """Phiếu xuất xe của tài xế trong kỳ, tính theo NGÀY XE ĐI (không có thì lấy ngày lập)."""
     dau, cuoi = _khoang(ky)
-    ds = db.query(Trip).filter(Trip.driver_id == driver_id).all()
-    return [p for p in ds if (p.out_date or p.doc_date) and dau <= (p.out_date or p.doc_date) <= cuoi]
+    # lọc kỳ NGAY TRONG SQL — trước đây nạp mọi phiếu từ trước tới nay của người đó (~700 phiếu / năm) rồi mới lọc
+    return db.query(Trip).filter(Trip.driver_id == driver_id, *_trong_ky(dau, cuoi)).all()
+
+
+def _trong_ky(dau, cuoi):
+    ngay = func.coalesce(Trip.out_date, Trip.doc_date)
+    return (ngay >= dau, ngay <= cuoi)
+
+
+def _la_tien_mat_sql(bo_qua):
+    """la_tien_mat_tai_xe (services/tinh_toan) viết bằng SQL, cộng thêm luật bỏ khoản trả nhà cung cấp theo đợt.
+    HAI BẢN PHẢI ĐI CÙNG NHAU: đổi luật ở bên kia thì đổi cả ở đây (kiem/thu_tat_toan_lo.py so hai bản)."""
+    dk = [TripExpense.paid_by_epl.is_(True), TripExpense.source.is_distinct_from("kho"),
+          TripExpense.section.in_(("fuel", "travel", "other")), TripExpense.ghi_no.isnot(True),
+          or_(TripExpense.toll_card_id.is_(None), TripExpense.toll_card_id == "")]
+    if bo_qua:
+        dk.append(or_(TripExpense.item_key.is_(None), not_(TripExpense.item_key.in_(sorted(bo_qua)))))
+    return and_(*dk)
 
 
 # Kỳ thanh toán nào KHÔNG phải tiền mặt tài xế đưa ngay tại chỗ.
@@ -101,14 +121,68 @@ def tinh_ky(db, tai_xe, ky):
                           "chenh_lech_lak": da_chot.chenh_lech_lak, "note": da_chot.note} if da_chot else None)}
 
 
+def tinh_ky_lo(db, cac_tai_xe, ky):
+    """tinh_ky cho CẢ danh sách tài xế một lần (24/09, dữ liệu cả năm): năm câu SQL thay cho (1 + số phiếu) câu MỖI
+    tài xế — 500 tài xế là ~30.000 câu. Cùng luật, cùng cách làm tròn; kiem/thu_tat_toan_lo.py so với tinh_ky."""
+    from routes.nha_cung_cap import _tien_lak_sql
+    dau, cuoi = _khoang(ky)
+    bo_qua = _khoan_khong_phai_tien_tai_xe(db)
+    ids = [t.id for t in cac_tai_xe]
+    phieu = defaultdict(list)
+    for p in (db.query(Trip.id, Trip.driver_id, Trip.doc_no, Trip.truck_no, Trip.out_date, Trip.doc_date, Trip.origin,
+                       Trip.destination).filter(Trip.driver_id.in_(ids or [""]), *_trong_ky(dau, cuoi))
+              .order_by(func.coalesce(Trip.out_date, Trip.doc_date), Trip.doc_no)):
+        phieu[p.driver_id].append(p)
+    trong = (Trip.driver_id.in_(ids or [""]), *_trong_ky(dau, cuoi))
+    chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
+                                             .join(Trip, Trip.id == TripExpense.trip_id)
+                                             .filter(*trong, _la_tien_mat_sql(bo_qua)).group_by(TripExpense.trip_id))}
+    ung = {did: float(v or 0) for did, v in (db.query(Trip.driver_id, func.sum(Voucher.amount_lak))
+                                             .join(Trip, Trip.id == Voucher.trip_id)
+                                             .filter(*trong, Voucher.kind == "advance", Voucher.status == "da_cap")
+                                             .group_by(Trip.driver_id))}
+    chot = {c.driver_id: c for c in db.query(DriverSettlement).filter(DriverSettlement.driver_id.in_(ids or [""]),
+                                                                      DriverSettlement.period == ky)}
+    ra = []
+    for t in cac_tai_xe:
+        ds, u, da_chot = phieu.get(t.id, []), ung.get(t.id, 0.0), chot.get(t.id)
+        c = sum(chi.get(p.id, 0.0) for p in ds)
+        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "period": ky,
+                   "so_phieu": len(ds), "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2),
+                   "chenh_lech_lak": round(c - u, 2),
+                   "phieu": [{"trip_id": p.id, "doc_no": p.doc_no, "truck_no": p.truck_no,
+                              "out_date": (p.out_date or p.doc_date).isoformat() if (p.out_date or p.doc_date) else None,
+                              "origin": p.origin, "destination": p.destination, "chi_lak": round(chi.get(p.id, 0.0), 2)}
+                             for p in ds],
+                   "da_tat_toan": bool(da_chot),
+                   "tat_toan": ({"settled_by": da_chot.settled_by,
+                                 "settled_at": da_chot.settled_at.isoformat() if da_chot.settled_at else None,
+                                 "chenh_lech_lak": da_chot.chenh_lech_lak, "note": da_chot.note} if da_chot else None)})
+    return ra
+
+
 @router.get("/api/tat-toan")
-def bang_ky(ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Bảng tất toán cả tháng: mỗi tài xế một dòng. Tài xế chỉ thấy dòng của chính mình."""
+def bang_ky(ky: str = "", chi_tiet: int = 1, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Bảng tất toán cả tháng: mỗi tài xế một dòng. Tài xế chỉ thấy dòng của chính mình.
+    `chi_tiet=0`: không kèm danh sách phiếu của từng người (500 tài xế × cả tháng phiếu là vài MB) — màn hình lấy
+    chi tiết của người đang chọn qua /api/tat-toan/{driver_id}."""
     ky = _ky_hop_le(ky or dt.date.today().strftime("%Y-%m"))
     q = db.query(Driver).filter(Driver.active.is_(True))
     if user.role == "driver":
         q = q.filter(Driver.id == (user.driver_id or "~"))
-    ds = [tinh_ky(db, t, ky) for t in q.order_by(Driver.driver_code, Driver.name).all()]
+    if user.role == "driver":
+        ds = tinh_ky_lo(db, q.order_by(Driver.driver_code, Driver.name).all(), ky)
+    else:
+        # đệm theo kỳ: kỳ tính theo NGÀY XE ĐI nên phiếu lập cuối tháng trước cũng có thể thuộc kỳ này → phụ thuộc cả
+        # tháng trước lẫn tháng này, cộng các khoá riêng: chốt tất toán ('tt'), danh mục tài xế ('tx'), NCC ('ncc')
+        dau, _ = _khoang(ky)
+        truoc = (dau - dt.timedelta(days=1)).strftime("%Y-%m")
+        ds = DEM.lay(db, ("tat-toan", ky), [truoc, ky, "tt", "tx", "ncc"],
+                     lambda: tinh_ky_lo(db, q.order_by(Driver.driver_code, Driver.name).all(), ky), theo_ngay=False)
+    ds = [dict(d) for d in ds]                  # bản chép — bản đệm dùng chung, không sửa tại chỗ
+    if not chi_tiet:
+        for d in ds:
+            d.pop("phieu", None)
     return {"ky": ky, "dong": [d for d in ds if d["so_phieu"] or d["tong_ung_lak"] or d["da_tat_toan"]],
             "tong_ung_lak": round(sum(d["tong_ung_lak"] for d in ds), 2),
             "tong_chi_lak": round(sum(d["tong_chi_lak"] for d in ds), 2)}
@@ -121,7 +195,7 @@ def mot_tai_xe(driver_id: str, ky: str = "", db: Session = Depends(get_db), user
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
     if user.role == "driver" and user.driver_id != driver_id:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế chỉ xem tất toán của mình."})
-    return tinh_ky(db, t, _ky_hop_le(ky or dt.date.today().strftime("%Y-%m")))
+    return tinh_ky_lo(db, [t], _ky_hop_le(ky or dt.date.today().strftime("%Y-%m")))[0]   # nạp theo lô, không mỗi phiếu một câu
 
 
 @router.post("/api/tat-toan")

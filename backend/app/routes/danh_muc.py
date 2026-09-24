@@ -10,7 +10,7 @@ Mỗi danh mục: xem · thêm · sửa · ngưng dùng (không xoá cứng — 
 import datetime as dt
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -548,22 +548,45 @@ def _phu_tai_xe(db, ds):
         return {}, {}
     dem = dict(db.query(Trip.driver_id, func.count(Trip.id)).filter(Trip.driver_id.in_(ids)).group_by(Trip.driver_id).all())
     dang = {}
-    for p in (db.query(Trip).filter(Trip.driver_id.in_(ids), Trip.transport_status != "arrived")
-              .order_by(Trip.doc_date.desc()).all()):
-        dang.setdefault(p.driver_id, p.doc_no)
+    # chỉ hai cột cần dùng — không nạp nguyên phiếu (hơn 100 cột) của mọi chuyến đang chạy
+    for tid, so in (db.query(Trip.driver_id, Trip.doc_no).filter(Trip.driver_id.in_(ids), Trip.transport_status != "arrived")
+                    .order_by(Trip.doc_date.desc())):
+        dang.setdefault(tid, so)
     return dem, dang
 
 
-def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None):
+def _phu_bang_xe(db, ds):
+    """Số xe mặc định và NƠI CẤP của bằng hiện hành cho cả danh sách — hai câu thay cho hai câu MỖI tài xế
+    (500 tài xế là 1.000 câu, 24 giây). Chọn dòng bằng đúng thứ tự cũ: verified_at giảm dần, lấy dòng đầu."""
+    xe = {}
+    ma_xe = {d.default_vehicle_id for d in ds if d.default_vehicle_id}
+    if ma_xe:
+        xe = dict(db.query(Vehicle.id, Vehicle.truck_no).filter(Vehicle.id.in_(ma_xe)).all())
+    bang = {}
+    ids = [d.id for d in ds if d.license_no]
+    if ids:
+        for did, so, noi in (db.query(DriverLicense.driver_id, DriverLicense.license_no, DriverLicense.issued_by)
+                             .filter(DriverLicense.driver_id.in_(ids)).order_by(DriverLicense.verified_at.desc())):
+            bang.setdefault((did, so), noi)
+    return xe, bang
+
+
+def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None, xe=None, bang=None):
     r = _dict(d)
     r["bang_lai"] = _han(d.license_valid_to)
     if d.default_vehicle_id:
-        x = db.get(Vehicle, d.default_vehicle_id); r["default_vehicle"] = x.truck_no if x else None
+        if xe is not None:
+            r["default_vehicle"] = xe.get(d.default_vehicle_id)
+        else:
+            x = db.get(Vehicle, d.default_vehicle_id); r["default_vehicle"] = x.truck_no if x else None
     # Nơi cấp của bằng HIỆN HÀNH nằm ở dòng lịch sử cùng số bằng — hồ sơ tài xế không giữ riêng.
     if d.license_no:
-        l = (db.query(DriverLicense).filter(DriverLicense.driver_id == d.id, DriverLicense.license_no == d.license_no)
-             .order_by(DriverLicense.verified_at.desc()).first())
-        r["license_issued_by"] = l.issued_by if l else None
+        if bang is not None:
+            r["license_issued_by"] = bang.get((d.id, d.license_no))
+        else:
+            l = (db.query(DriverLicense).filter(DriverLicense.driver_id == d.id, DriverLicense.license_no == d.license_no)
+                 .order_by(DriverLicense.verified_at.desc()).first())
+            r["license_issued_by"] = l.issued_by if l else None
     r["so_phieu"] = dem.get(d.id, 0) if dem is not None else db.query(Trip).filter(Trip.driver_id == d.id).count()
     if dang is not None:
         r["phieu_hien_tai"] = dang.get(d.id)
@@ -586,10 +609,11 @@ def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None):
 def ds_tai_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     ds = db.query(Driver).order_by(Driver.active.desc(), Driver.name).all()
     dem, dang = _phu_tai_xe(db, ds)
+    xe, bang = _phu_bang_xe(db, ds)
     anh = ANH.anh_chinh_map(ANH.TAI_XE, db)
     ra = []
     for d in ds:
-        r = xuat_tai_xe(db, d, dem=dem, dang=dang)
+        r = xuat_tai_xe(db, d, dem=dem, dang=dang, xe=xe, bang=bang)
         r["anh_chinh"] = anh.get(d.id)
         ra.append(r)
     return ra
@@ -610,7 +634,9 @@ def lich_tai_xe(did: str, tuan: str = None, db: Session = Depends(get_db), _=Dep
     d7 = d0 + dt.timedelta(days=6)
     theo_ngay = {}
     ten_tuyen = {r.id: r.name for r in db.query(Route).all()}
-    for p in db.query(Trip).filter(Trip.driver_id == d.id).all():
+    # chỉ những phiếu có thể chạm tuần này: lập trong 60 ngày trước tuần, hoặc chưa về — không nạp cả năm của người đó
+    for p in (db.query(Trip).filter(Trip.driver_id == d.id, Trip.doc_date <= d7,
+                                    or_(Trip.doc_date >= d0 - dt.timedelta(days=60), Trip.transport_status != "arrived"))):
         di = p.out_date or p.doc_date
         if not di:
             continue

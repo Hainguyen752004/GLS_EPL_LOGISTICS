@@ -76,8 +76,20 @@
   }
 
   /* ---------------------------------------------------------------- vẽ */
+  /** 50 phiếu mới nhất, hoặc kết quả tìm trên toàn bộ phiếu nếu ô tìm có chữ. DS.tong = tổng số khớp (header X-Tong). */
+  async function napDs() {
+    const t = (g('px-tim') && g('px-tim').value.trim()) || '';
+    DS = await API.get('/api/trips?co=50' + (t ? '&q=' + encodeURIComponent(t) : ''));
+    return DS;
+  }
+  /** Các dòng của ô chọn — phiếu đang mở luôn có mặt, kể cả khi nó không nằm trong 50 phiếu vừa nạp. */
+  function dongChon() {
+    const ds = P && P.id && !DS.some(p => p.id === P.id) ? [P, ...DS] : DS;
+    return ds.map(p => `<option value="${p.id}" ${P && p.id === P.id ? 'selected' : ''}>${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('')
+      + (DS.tong > DS.length ? `<option value="" disabled>… ${so(DS.length)} / ${so(DS.tong)}</option>` : '');
+  }
   function veChon() {
-    g('px-chon').innerHTML = (moi ? `<option value="">— ${NN.t('new_slip')} —</option>` : '') + DS.map(p => `<option value="${p.id}" ${P && p.id === P.id ? 'selected' : ''}>${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
+    g('px-chon').innerHTML = (moi ? `<option value="">— ${NN.t('new_slip')} —</option>` : '') + dongChon();
     if (moi) g('px-chon').value = '';
   }
   function veDanhMuc() {
@@ -386,7 +398,7 @@
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
-    g('px-chon').innerHTML = `<option value="" selected>— ${NN.t('px_chon_phieu')} —</option>` + DS.map(p => `<option value="${p.id}">${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
+    g('px-chon').innerHTML = `<option value="" selected>— ${NN.t('px_chon_phieu')} —</option>` + dongChon();
     g('px-moi').hidden = !AUTH.la('yard');
     anPhieu(true);
   }
@@ -434,7 +446,7 @@
     });
     try {
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
-      moi = false; HD_DOI = {}; DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
+      moi = false; HD_DOI = {}; DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
     } catch (e) { EPL.baoLoi(e); }
   }
@@ -460,11 +472,11 @@
       if (!v) return; body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
       if (v.pod_no) body.pod_no = v.pod_no; if (v.pod_receiver) body.pod_receiver = v.pod_receiver;
     }
-    try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
+    try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
   async function hanhDongPhieu(hd, body) {
     if (!await EPL.hoi(NN.t(hd === 'invoice' ? 'a_invoice' : 'a_collect'), NN.t('confirm_action'))) return;
-    try { P = await API.post(`/api/trips/${P.id}/${hd}`, body || {}); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
+    try { P = await API.post(`/api/trips/${P.id}/${hd}`, body || {}); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
 
   /* ---------------------------------------------------------------- sổ thu tiền
@@ -523,12 +535,12 @@
       than.cho_thu_du = true;
       try { P = await API.post(`/api/trips/${P.id}/thu-tien`, than); } catch (e2) { return EPL.baoLoi(e2); }
     }
-    DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
+    DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
   }
 
   async function xoaThuTien(id) {
     if (!await EPL.hoi(NN.t('pay_del'), `<p>${NN.h('confirm_delete')}</p>`, NN.t('delete'))) return;
-    try { P = await API.goi('/api/thu-tien/' + id, { method: 'DELETE' }); DS = await API.get('/api/trips'); veHet(); } catch (e) { EPL.baoLoi(e); }
+    try { P = await API.goi('/api/thu-tien/' + id, { method: 'DELETE' }); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
 
   /** Đổi xe giữa đường (C2.2): chọn xe mới, ghi lý do. Máy chủ để lại dòng diễn biến và kéo mục I
@@ -550,7 +562,7 @@
     try {
       P = await API.post(`/api/trips/${P.id}/doi-xe`, {
         vehicle_id: v.vehicle_id, driver_id: v.driver_id || null, ly_do: v.ly_do, xe_cu_hong: v.xe_cu_hong === '1' });
-      DS = await API.get('/api/trips'); DM.vehicles = await API.get('/api/vehicles');
+      DS = await napDs(); DM.vehicles = await API.get('/api/vehicles');
       EPL.toast(NN.t('saved'), 'ok'); veHet();
     } catch (e) { EPL.baoLoi(e); }
   }
@@ -564,7 +576,7 @@
         ? `<p class="small muted">${NN.h('lock_warn')}</p><ul class="px-cb">${cb.map(x => `<li>${esc(x.loi)}</li>`).join('')}</ul>`
         : `<p>${NN.h('lock_ok')}</p>`, NN.t('a_lock'));
       if (!ok) return;
-      P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok'); veHet();
+      P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
     } catch (e) { EPL.baoLoi(e); }
   }
   async function traChuXe() {
@@ -643,7 +655,7 @@
   }
   async function xoaPhieu() {
     if (!await EPL.hoi(NN.t('delete') + ' ' + P.doc_no, NN.t('confirm_delete'), NN.t('delete'))) return;
-    try { await API.del('/api/trips/' + P.id); DS = await API.get('/api/trips'); EPL.toast(NN.t('saved'), 'ok');
+    try { await API.del('/api/trips/' + P.id); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok');
       // Xoá xong KHÔNG tự mở phiếu mới nhất — đó là phiếu của người khác, gõ tiếp là gõ đè (cùng lỗi anh bắt 22/09).
       // Người lập phiếu (Bãi, Sếp) thì ra phiếu mới trắng; vai khác để ô chọn trống.
       if (AUTH.la('yard')) await phieuMoi(); else chuaChon(); } catch (e) { EPL.baoLoi(e); }
@@ -686,7 +698,7 @@
     async init(r, ctx) {
       root = r;
       [KM, DS, ty_gia, DM.customers, DM.vehicles, DM.drivers, DM.routes, DM.parts, DM.places, DM.the] = await Promise.all([
-        API.get('/api/khoan-muc'), API.get('/api/trips'), API.get('/api/rates'), API.get('/api/customers'),
+        API.get('/api/khoan-muc'), napDs(), API.get('/api/rates'), API.get('/api/customers'),
         API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
         API.get('/api/fuel-places'), API.get('/api/the-cao-toc')]);
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
@@ -696,6 +708,11 @@
       g('px-chung-tu').addEventListener('click', () => P && P.id && EPL.di('chung-tu', { id: P.id }));
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
+      let hen = null;
+      g('px-tim').addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => napDs().then(() => {
+        // chỉ nạp lại ô chọn — KHÔNG tự mở phiếu tìm được: người dùng có thể đang sửa dở phiếu khác
+        if (P || moi) veChon(); else chuaChon();
+      }).catch(EPL.baoLoi), 350); });
       root.querySelectorAll('.px-them').forEach(b => b.addEventListener('click', () => themDong(b.dataset.them)));
       g('px-hang-them').addEventListener('click', () => { (P.goods = P.goods || []).push({ loai: 'hang', goods_name: NN.t('iron_ore'), qty_t: 0, tu_phieu_id: '' }); veHang(); });
       // đầu vào mục I–II → cập nhật số ngay

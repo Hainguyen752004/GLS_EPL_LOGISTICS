@@ -862,6 +862,27 @@ class CauHinh(Base):
     cap_nhat = Column(DateTime, default=bay_gio)
 
 
+class PhienBanThang(Base):
+    """SỐ PHIÊN BẢN dữ liệu từng tháng — để báo cáo tháng tính một lần rồi dùng lại (services/dem_bao_cao.py).
+
+    Mỗi lần ghi phiếu (hay dòng chi, lần thu… của phiếu) thì số của THÁNG CỦA PHIẾU đó tăng 1, trong cùng giao
+    dịch; khoá '*' tăng khi ghi thứ ảnh hưởng mọi tháng (tuyến, xoá hàng loạt). Báo cáo đã tính giữ lại kèm số
+    phiên bản lúc tính; số còn y nguyên thì dữ liệu tháng đó chưa đổi — dùng lại được, không phải đoán."""
+    __tablename__ = "phien_ban_thang"
+    khoa = Column(String(16), primary_key=True)                # 'YYYY-MM' · '*' · 'thu' · 'the' · 'hd' · 'ncc'
+    so = Column(Integer, nullable=False, default=0)
+
+
+class BaoCaoDem(Base):
+    """Báo cáo tháng ĐÃ TÍNH, kèm số phiên bản lúc tính (services/dem_bao_cao.py) — giữ trong DB để khởi động lại máy chủ
+    hay chạy nhiều tiến trình vẫn dùng lại được. Chỉ là bản sao tính sẵn: xoá cả bảng cũng không mất gì, lần sau tính lại."""
+    __tablename__ = "bao_cao_dem"
+    khoa = Column(String, primary_key=True)                    # JSON của khoá báo cáo, ví dụ ["gom-thang","2026-08-01",…]
+    pb = Column(String, nullable=False)                        # JSON các số phiên bản lúc tính
+    du_lieu = Column(Text, nullable=False)                     # JSON kết quả
+    luc = Column(DateTime, nullable=False, default=bay_gio)
+
+
 # ---------------------------------------------------------------- khách trả tiền hoá đơn vận chuyển
 PHUONG_THUC_THU = ("cash", "bank", "offset", "other")     # tiền mặt · chuyển khoản · cấn trừ · khác
 

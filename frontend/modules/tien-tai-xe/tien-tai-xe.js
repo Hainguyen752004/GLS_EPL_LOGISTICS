@@ -17,7 +17,7 @@
       root = r;
       // Mặc định tháng có phiếu gần nhất — cùng lý do với màn Tổng quan.
       let thang = EPL.thangNay();
-      try { const ds = await API.get('/api/trips'); if (ds.length && ds[0].doc_date) thang = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }
+      try { const ds = await API.get('/api/trips?co=1'); if (ds.length && ds[0].doc_date) thang = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }   // chỉ cần phiếu mới nhất
       r.querySelector('#ttx-thang').value = thang;
       r.querySelector('#ttx-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
       await tai();

@@ -338,6 +338,10 @@ th .lo-sub,button .lo-sub,.nav .lo-sub{font-size:.8em}
 .card .hd h3{margin:0;font-size:14.5px;font-weight:600}
 .card .bd{padding:16px}
 .toolbar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:16px}
+/* ô tìm + ô chọn phiếu (EPL.oChonPhieu) — một năm ~365.000 phiếu: chọn trong 50 mới nhất, hoặc gõ để tìm */
+.o-chon-phieu{display:flex;gap:6px;min-width:0}
+.o-chon-phieu input{flex:0 1 15em;min-width:6em}
+.o-chon-phieu select{flex:1 1 auto;min-width:0}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}
 .field label{font-size:12px;color:var(--ink-2);font-weight:500}
 .field input,.field select,.field textarea{border:1px solid var(--line-2);border-radius:var(--r);padding:8px 10px;background:var(--paper);min-width:0;width:100%}

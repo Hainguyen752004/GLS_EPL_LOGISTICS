@@ -162,8 +162,11 @@
   async function tai() {
     const mm = q('#pct-mat-mang');
     try {
-      const ds = await API.get('/api/trips');
-      DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events; tài xế chỉ có vài phiếu
+      // Một năm mỗi tài xế ~700 phiếu: chỉ nạp MỌI phiếu còn chạy + 15 phiếu gần nhất (không phải cả năm, rồi mỗi
+      // phiếu một lượt gọi nữa — trên điện thoại ngoài đường là đứng hình). Phiếu cũ hơn xem ở màn phiếu của Bãi.
+      const [chay, gan] = await Promise.all([API.get('/api/trips?transport_status=dispatched,transit&co=50'), API.get('/api/trips?co=15')]);
+      const ds = [...chay, ...gan.filter(p => !chay.some(x => x.id === p.id))];
+      DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events
       ghi(K_DS(), DS); mm.hidden = true;
     } catch (e) {
       if (!laMatMang(e)) throw e;

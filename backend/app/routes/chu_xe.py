@@ -16,8 +16,10 @@ Mô hình ở đây cố ý đơn giản:
   · Phiếu nằm trong đợt nào thì `trips.owner_payment_id` trỏ tới đó — đó chính là "đã trả chủ xe".
 """
 import datetime as dt
+from collections import defaultdict
 
 from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import func, literal
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -58,15 +60,48 @@ def _dong_chi(db, p):
     return db.query(TripExpense).filter(TripExpense.trip_id == p.id).order_by(TripExpense.section, TripExpense.line_no).all()
 
 
-def xuat_chu_xe(db, o, user=None, kem_cong_no=False):
+def xuat_chu_xe(db, o, user=None, kem_cong_no=False, xe=None, cho=None):
+    """`xe` / `cho` (từ ds_chu_xe) là phần đã nạp sẵn cho cả danh sách — có thì không hỏi DB từng chủ xe."""
     r = {"id": o.id, "name": o.name, "phone": o.phone, "address": o.address, "pay_mode": o.pay_mode or "phieu",
          "note": o.note, "active": bool(o.active),
-         "so_xe": [v.truck_no for v in db.query(Vehicle).filter(Vehicle.owner_id == o.id, Vehicle.active.is_(True)).all()]}
+         "so_xe": xe.get(o.id, []) if xe is not None else
+                  [v.truck_no for v in db.query(Vehicle).filter(Vehicle.owner_id == o.id, Vehicle.active.is_(True)).all()]}
     if user is None or thay_tien_ban(user.role):
         r.update({"fee_pct": o.fee_pct, "over_limit_t": o.over_limit_t, "over_price": o.over_price, "hire_ccy": o.hire_ccy or "USD"})
         if kem_cong_no:
-            r["cho_tra"] = _cho_tra(db, o)
+            r["cho_tra"] = cho[o.id] if cho is not None else _cho_tra(db, o)
     return r
+
+
+def _cho_tra_lo(db, cac_chu):
+    """_cho_tra cho CẢ danh sách chủ xe — bốn câu thay cho (2 + số phiếu) câu MỖI chủ xe. Cùng công thức (tinh_phieu),
+    cùng thứ tự cộng (ngày, số phiếu) nên từng con số — kể cả phần làm tròn tích luỹ — y như tính riêng từng người."""
+    from routes.bao_cao import COT_TINH           # nạp lúc gọi: bao_cao cũng nạp các route khác, tránh vòng import
+    ids = [o.id for o in cac_chu]
+    ra = {i: {"so_phieu": 0, "tong": {}, "tong_lak": 0, "ban_cho_tru_lak": 0, "so_phieu_ban": 0} for i in ids}
+    if not ids:
+        return ra
+    loc = (Trip.owner_id.in_(ids), Trip.company == "joint", Trip.locked.is_(True), Trip.owner_payment_id.is_(None))
+    ds = db.query(Trip.owner_id, *COT_TINH).filter(*loc).order_by(Trip.doc_date, Trip.doc_no).all()
+    dong = defaultdict(list)
+    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.unit_price, 0))
+    for r in (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl,
+                       literal(1.0).label("qty"), tien.label("unit_price"))
+              .join(Trip, Trip.id == TripExpense.trip_id).filter(*loc)
+              .group_by(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl)):
+        dong[r.trip_id].append(r)
+    for p in ds:
+        k = tinh_phieu(p, dong.get(p.id, []))
+        o = ra[p.owner_id]
+        o["so_phieu"] += 1
+        if k.get("tra_chu_xe") and k["tra_chu_xe"] > 0:
+            o["tong"][k["hire_ccy"]] = round(o["tong"].get(k["hire_ccy"], 0) + k["tra_chu_xe"], 2)
+        o["tong_lak"] += k.get("tra_chu_xe_lak") or 0
+    for oid, n, t in (db.query(Sale.owner_id, func.count(Sale.id), func.coalesce(func.sum(Sale.total_lak), 0))
+                      .filter(Sale.owner_id.in_(ids), Sale.owner_payment_id.is_(None), Sale.status != "paid")
+                      .group_by(Sale.owner_id)):
+        ra[oid]["ban_cho_tru_lak"] = round(float(t or 0)); ra[oid]["so_phieu_ban"] = int(n)
+    return ra
 
 
 def _phieu_cho_tra(db, o):
@@ -110,8 +145,13 @@ def _xuat_ban(b):
 @router.get("/api/owners")
 def ds_chu_xe(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Mọi vai xem được tên và xe (Bãi cần chọn chủ xe khi thêm xe); phí và số tiền chờ trả chỉ vai thấy tiền bán."""
-    return [xuat_chu_xe(db, o, user, kem_cong_no=True)
-            for o in db.query(Owner).order_by(Owner.active.desc(), Owner.name).all()]
+    ds = db.query(Owner).order_by(Owner.active.desc(), Owner.name).all()
+    xe = defaultdict(list)
+    for oid, so in db.query(Vehicle.owner_id, Vehicle.truck_no).filter(Vehicle.owner_id.in_([o.id for o in ds] or [""]),
+                                                                       Vehicle.active.is_(True)):
+        xe[oid].append(so)
+    cho = _cho_tra_lo(db, ds) if thay_tien_ban(user.role) else None
+    return [xuat_chu_xe(db, o, user, kem_cong_no=True, xe=xe, cho=cho) for o in ds]
 
 
 def _ap(o, data):

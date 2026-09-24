@@ -175,7 +175,9 @@
 
     /* 4a. Hao hụt cân theo chuyến — cột %, vạch ngưỡng 1,5 %, cột vượt ngưỡng đổi màu xấu */
     const hh = ((xh && xh.hao_hut) || []).map(x => Object.assign({ pct: x.can_dau ? (x.can_dau - (x.can_cuoi ?? x.can_dau)) / x.can_dau * 100 : 0 }, x)).filter(x => x.can_cuoi != null);
-    root.querySelector('#tq-loss-sub').textContent = hh.length ? `${hh.filter(x => x.pct > HAO_HUT_MUC).length}/${hh.length} ${NN.t('tq_over_limit')}` : '';
+    // máy chủ chỉ gửi 50 chuyến hao hụt nặng nhất (một tháng ~30.000 chuyến) — số đếm lấy từ hao_hut_dem của cả tháng
+    const hd = (xh && xh.hao_hut_dem) || { vuot: hh.filter(x => x.pct > HAO_HUT_MUC).length, tong: hh.length };
+    root.querySelector('#tq-loss-sub').textContent = hd.tong ? `${so(hd.vuot)}/${so(hd.tong)} ${NN.t('tq_over_limit')}` : '';
     const nguong = { id: 'nguong', afterDatasetsDraw(ch) { const { ctx, chartArea: a, scales: { y } } = ch; const yy = y.getPixelForValue(HAO_HUT_MUC); ctx.save(); ctx.strokeStyle = c.bad; ctx.lineWidth = 1; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(a.left, yy); ctx.lineTo(a.right, yy); ctx.stroke(); ctx.fillStyle = c.bad; ctx.font = `600 10.5px ${FONT().family}`; ctx.textAlign = 'right'; ctx.fillText(`${NN.t('tq_loss_limit')} ${HAO_HUT_MUC}%`, a.right, yy - 4); ctx.restore(); } };
     chart('tq-c-haohut', { type: 'bar', plugins: [nguong],
       data: { labels: hh.map(x => x.doc_no.replace(/\/EPL$/, '')), datasets: [{ data: hh.map(x => +x.pct.toFixed(2)), backgroundColor: hh.map(x => x.pct > HAO_HUT_MUC ? c.bad : c.info), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 24, categoryPercentage: .55 }] },
@@ -189,8 +191,10 @@
     // Bãi: xếp theo TẤN và bỏ cột doanh thu — doanh thu là tiền bán.
     const maxTan = Math.max(1, ...xe.map(x => x.tan));
     if (laBai()) xe.sort((a, b) => b.tan - a.tan);
+    // 500 xe thì vẽ 20 xe đứng đầu (Excel vẫn xuất đủ) — thanh đo cho cả đội xe dài vài màn hình là không đọc được
+    const XE_HIEN = 20;
     root.querySelector('#tq-xe').innerHTML = xe.length ? `<div class="tq-fleet-head"><span>${NN.h('tq_vehicle')}</span><span>${NN.h('tq_trips_tons_km')}</span><span>${laBai() ? NN.h('ton') : 'M LAK'}</span></div>` +
-      xe.map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_lak / maxDT) * 100}%"></b></div></div>${laBai()
+      xe.slice(0, XE_HIEN).map(x => `<div class="tq-veh" data-xe="${esc(x.so_xe)}"><span class="code">${esc(x.so_xe)}</span><div><div class="meta">${x.so_chuyen} ${NN.t('trips')} · ${so(x.tan, 1)} t · ${so(x.km)} km</div><div class="track"><b style="width:${(laBai() ? x.tan / maxTan : x.doanh_thu_lak / maxDT) * 100}%"></b></div></div>${laBai()
         ? `<div class="v">${so(x.tan, 1)}<small>${so(x.km / Math.max(1, x.so_chuyen))} km/${NN.t('trips').toLowerCase()}</small></div>`
         : `<div class="v">${so(x.doanh_thu_lak / 1e6, 1)}<small>${so(x.doanh_thu_lak / Math.max(1, x.tan) / 1e3)} k LAK/t</small></div>`}</div>`).join('')
       : `<div class="tq-empty">${chuaCo()}</div>`;
@@ -243,7 +247,9 @@
     const today = new Date(), isCur = today.getFullYear() === y && today.getMonth() + 1 === m, td = isCur ? today.getDate() : (today > new Date(y, m, 0) ? n : 0);
     const dayOf = (iso) => { if (!iso) return null; const [yy, mm, dd] = iso.split('-').map(Number); if (yy < y || (yy === y && mm < m)) return 1; if (yy > y || (yy === y && mm > m)) return n + 1; return dd; };
     const pos = (day) => ((day - 1) / n * 100), wid = (a, b) => Math.max(0.6, (b - a) / n * 100);
-    root.querySelector('#tq-gantt-sub').textContent = rows.length ? `${rows.length} ${NN.t('trips')} · ${NN.t('tq_gantt_sub')}` : '';
+    // 60 dòng cần nhìn nhất (đi lâu → đang chạy → mới nhất) trong tổng số chuyến của tháng
+    const tongGantt = (xh && xh.dong_thoi_gian_tong) || rows.length;
+    root.querySelector('#tq-gantt-sub').textContent = rows.length ? `${rows.length < tongGantt ? so(rows.length) + ' / ' : ''}${so(tongGantt)} ${NN.t('trips')} · ${NN.t('tq_gantt_sub')}` : '';
     root.querySelector('#tq-gantt-legend').innerHTML = GD.map((g, i) => `<span><i style="background:${c.steps[i]}"></i>${NN.h(g[0])}</span>`).join('') + `<span><i style="background:${c.navy};width:10px;border-radius:50%"></i>${NN.h('s_paid')}</span>`;
     if (!rows.length) { box.innerHTML = `<div class="tq-empty">${chuaCo()}</div>`; return; }
     box.style.setProperty('--n', n);
@@ -267,7 +273,7 @@
       root = r;
       // Mặc định là THÁNG CÓ PHIẾU GẦN NHẤT, không phải tháng hiện tại (giữ nguyên lý do của bản cũ).
       let thangMacDinh = EPL.thangNay();
-      try { const ds = await API.get('/api/trips'); if (ds.length && ds[0].doc_date) thangMacDinh = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }
+      try { const ds = await API.get('/api/trips?co=1'); if (ds.length && ds[0].doc_date) thangMacDinh = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }   // chỉ cần phiếu mới nhất — đừng tải cả năm
       r.querySelector('#tq-thang').value = thangMacDinh;
       r.querySelector('#tq-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
       r.querySelector('#tq-so-sanh').addEventListener('change', () => d && ve());

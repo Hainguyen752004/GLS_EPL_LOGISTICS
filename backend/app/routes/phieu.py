@@ -15,12 +15,14 @@ import mimetypes
 import os
 import re
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, UploadFile
+from collections import defaultdict
+
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
-from sqlalchemy import func
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
-from database import get_db
+from database import BIEU_THUC_TIM_PHIEU, get_db
 from models import (Contract, GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
@@ -125,6 +127,14 @@ def _muc_cua(db, phieu):
     return ds
 
 
+def _trang_thai_muc(ds):
+    """Như _muc_cua nhưng CHỈ ĐỌC (danh sách là GET, không được ghi thêm dòng "wait" vào DB)."""
+    ra = {k: v.status for k, v in ds.items()}
+    for m in MUC:
+        ra.setdefault(m, "wait")
+    return ra
+
+
 def _dong_chi(db, phieu):
     return (db.query(TripExpense).filter(TripExpense.trip_id == phieu.id)
             .order_by(TripExpense.section, TripExpense.line_no).all())
@@ -215,10 +225,39 @@ def _bo_tien_ban(ra):
     return ra
 
 
-def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
+def nap_lo(db, ds):
+    """Nạp MỘT lần cho cả trang danh sách những gì xuat_phieu cần hỏi DB: dòng chi, mục duyệt, số tệp đính kèm,
+    và tuyến · hoá đơn gộp · khách · hợp đồng (nạp vào phiên để db.get() sau đó lấy ngay, không hỏi lại).
+    Trước 24/09 mỗi phiếu hỏi DB ~9 lần: trang 50 phiếu là 450 câu SQL; nay là 8 câu cho cả trang."""
+    ids = [p.id for p in ds]
+    nap = {"dong": defaultdict(list), "muc": defaultdict(dict), "tep": defaultdict(lambda: [0, 0, 0]), "giu": []}
+    if not ids:
+        return nap
+    for d in (db.query(TripExpense).filter(TripExpense.trip_id.in_(ids))
+              .order_by(TripExpense.trip_id, TripExpense.section, TripExpense.line_no)):
+        nap["dong"][d.trip_id].append(d)
+    for m in db.query(TripSection).filter(TripSection.trip_id.in_(ids)):
+        nap["muc"][m.trip_id][m.section] = m
+    for tid, kind, n in (db.query(TripAttachment.trip_id, TripAttachment.kind, func.count())
+                         .filter(TripAttachment.trip_id.in_(ids)).group_by(TripAttachment.trip_id, TripAttachment.kind)):
+        t = nap["tep"][tid]
+        t[0] += n
+        t[1] += n if kind == "pod" else 0
+        t[2] += n if kind == "pod_sign" else 0
+    for M, cot in ((Route, ("route_id",)), (Invoice, ("invoice_id",)), (Customer, ("customer_id",)),
+                   (Contract, ("contract_id", "hire_contract_id"))):
+        k = {getattr(p, c) for p in ds for c in cot if getattr(p, c)}
+        if k:
+            nap["giu"] += db.query(M).filter(M.id.in_(k)).all()     # giữ tham chiếu: phiên chỉ nhớ yếu
+    return nap
+
+
+def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
     """Gói dữ liệu một tờ phiếu. `vai` là vai người gọi: vai không được thấy tiền bán thì các khoá đó
-    bị BỎ HẲN ở đây — trước 22/09 chỉ giao diện che, mở công cụ trình duyệt là đọc được hết."""
-    dong = _dong_chi(db, phieu)
+    bị BỎ HẲN ở đây — trước 22/09 chỉ giao diện che, mở công cụ trình duyệt là đọc được hết.
+    `nap` (từ nap_lo) là phần đã nạp sẵn cho cả danh sách — có thì không hỏi DB từng phiếu."""
+    dong = nap["dong"].get(phieu.id, []) if nap else _dong_chi(db, phieu)
+    tep = nap["tep"].get(phieu.id, (0, 0, 0)) if nap else None
     if da_thu is None:
         da_thu = _da_thu(db, phieu)
     ra = {c: getattr(phieu, c) for c in COT_PHIEU}
@@ -240,9 +279,9 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
                "owner_paid_lak": phieu.owner_paid_lak, "owner_paid_by": phieu.owner_paid_by,
                "owner_paid_at": phieu.owner_paid_at.isoformat() if phieu.owner_paid_at else None,
                "odo_est": (phieu.odo_out + tuyen.total_km) if (phieu.odo_out and tuyen and tuyen.total_km) else None,
-               "attachments": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
-               "pod_files": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod").count(),
-               "pod_signed": db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod_sign").count() > 0,
+               "attachments": tep[0] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
+               "pod_files": tep[1] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod").count(),
+               "pod_signed": (tep[2] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod_sign").count()) > 0,
                "pod_at": phieu.pod_at.isoformat(timespec="minutes") if phieu.pod_at else None,
                "pod_lat": phieu.pod_lat, "pod_lng": phieu.pod_lng, "pod_by": phieu.pod_by,
                "contract_id": phieu.contract_id, "contract_no": phieu.contract_no,
@@ -252,7 +291,7 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None):
                "created_by": phieu.created_by,
                "created_at": phieu.created_at.isoformat() if phieu.created_at else None,
                "tinh": tinh_phieu(phieu, dong, da_thu),
-               "sections": {s.section: s.status for s in _muc_cua(db, phieu).values()}})
+               "sections": _trang_thai_muc(nap["muc"].get(phieu.id, {})) if nap else {s.section: s.status for s in _muc_cua(db, phieu).values()}})
     if day_du:
         ra["thu_tien"] = [_xuat_thu(x) for x in db.query(TripPayment)
                           .filter(TripPayment.trip_id == phieu.id)
@@ -323,23 +362,64 @@ def khoan_muc():
             "event_kinds": list(SU_KIEN), "incident_types": list(LOAI_SU_CO)}
 
 
+CO_TOI_DA = 500          # một trang không quá 500 phiếu — muốn nhiều hơn thì lọc tháng / tìm
+
+
+def _dau_thang(thang):
+    try:
+        y, m = (int(x) for x in str(thang).split("-")[:2])
+        return dt.date(y, m, 1), (dt.date(y + (m == 12), m % 12 + 1, 1))
+    except (TypeError, ValueError):
+        raise HTTPException(422, {"ma": "THANG_SAI", "loi": "Tháng phải có dạng YYYY-MM."})
+
+
+def loc_phieu(qs, q=None, thang=None, tu=None, den=None):
+    """Lọc tháng / khoảng ngày / chữ tìm — dùng chung cho danh sách phiếu và các màn tra phiếu khác."""
+    if thang:
+        a, b = _dau_thang(thang)
+        qs = qs.filter(Trip.doc_date >= a, Trip.doc_date < b)
+    if tu:
+        qs = qs.filter(Trip.doc_date >= _ngay(tu))
+    if den:
+        qs = qs.filter(Trip.doc_date <= _ngay(den))
+    if q and q.strip():
+        t = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        # đúng biểu thức của chỉ mục trigram ix_trips_tim (database.py) — viết khác đi là PostgreSQL quét cả bảng
+        qs = qs.filter(text("(%s) ILIKE :tim ESCAPE '\\'" % BIEU_THUC_TIM_PHIEU).bindparams(tim=t))
+    return qs
+
+
 @router.get("/api/trips")
-def ds_phieu(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai),
-             transport_status: str = None, finance_status: str = None, company: str = None, q: str = None):
+def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai),
+             transport_status: str = None, finance_status: str = None, company: str = None, q: str = None,
+             thang: str = None, tu: str = None, den: str = None, kind: str = None, customer_id: str = None,
+             vehicle_id: str = None, owner_id: str = None, invoiced: bool = None, locked: bool = None,
+             trang: int = 1, co: int = 50):
+    """Danh sách phiếu — LỌC · TÌM · PHÂN TRANG ngay trong SQL (chủ dự án chốt 24/09: nghìn chuyến / ngày).
+
+    Trước đây trả MỌI phiếu rồi tìm bằng Python: một năm 365.000 phiếu là quá 60 giây. Nay mặc định 50 phiếu mới
+    nhất (`co` tối đa 500, `trang` từ 1); header X-Tong là tổng số phiếu khớp bộ lọc để giao diện vẽ phân trang.
+    `transport_status` / `finance_status` nhận nhiều giá trị cách nhau dấu phẩy."""
     qs = db.query(Trip)
     if user.role == "driver":                    # tài xế chỉ thấy phiếu của mình
         qs = qs.filter(Trip.driver_id == (user.driver_id or "__khong_co__"))
-    if transport_status: qs = qs.filter(Trip.transport_status == transport_status)
-    if finance_status: qs = qs.filter(Trip.finance_status == finance_status)
+    if transport_status: qs = qs.filter(Trip.transport_status.in_(transport_status.split(",")))
+    if finance_status: qs = qs.filter(Trip.finance_status.in_(finance_status.split(",")))
     if company: qs = qs.filter(Trip.company == company)
-    ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).all()
-    if q:
-        t = q.strip().lower()
-        ds = [p for p in ds if t in " ".join(str(x or "") for x in (
-            p.doc_no, p.driver_name, p.truck_no, p.customer_name, p.plate_head, p.plate_trailer,
-            p.origin, p.destination, p.ore_bill_no)).lower()]
+    if kind: qs = qs.filter(Trip.kind == kind)
+    if customer_id: qs = qs.filter(Trip.customer_id == customer_id)
+    if vehicle_id: qs = qs.filter(Trip.vehicle_id == vehicle_id)
+    if owner_id: qs = qs.filter(Trip.owner_id == owner_id)
+    if invoiced is not None: qs = qs.filter(Trip.invoiced.is_(True) if invoiced else or_(Trip.invoiced.is_(False), Trip.invoiced.is_(None)))
+    if locked is not None: qs = qs.filter(Trip.locked.is_(True) if locked else or_(Trip.locked.is_(False), Trip.locked.is_(None)))
+    qs = loc_phieu(qs, q, thang, tu, den)
+    co = max(1, min(int(co or 50), CO_TOI_DA))
+    trang = max(1, int(trang or 1))
+    response.headers["X-Tong"] = str(qs.order_by(None).count())
+    ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).offset((trang - 1) * co).limit(co).all()
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
-    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role) for p in ds]
+    nap = nap_lo(db, ds)
+    return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap) for p in ds]
 
 
 @router.get("/api/trips/{tid}")

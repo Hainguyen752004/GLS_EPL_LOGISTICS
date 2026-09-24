@@ -26,7 +26,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (PHUONG_THUC_THU, TIEN_TE, Customer, Invoice, InvoicePayment, Trip, TripPayment)
+from models import (PHUONG_THUC_THU, TIEN_TE, Customer, Invoice, InvoicePayment, Trip, TripExpense, TripPayment, TripSection)
 from routes.phieu import (LECH_COI_LA_DU, _dong_chi, _muc_cua, _tinh_lai_trang_thai_thu, da_thu_theo_phieu)
 from services import chung_tu as CT
 from services.bao_mat import nguoi_hien_tai
@@ -104,8 +104,9 @@ def _du_dieu_kien(db, p):
     return _muc_cua(db, p)["trans"].status == "verified"
 
 
-def _dong_phieu(db, p, da_thu=0.0):
-    k = tinh_phieu(p, _dong_chi(db, p), da_thu)
+def _dong_phieu(db, p, da_thu=0.0, dong=None):
+    """`dong` = dòng chi đã nạp sẵn (danh sách chờ gộp nạp cả tháng một lần) — không có thì hỏi DB."""
+    k = tinh_phieu(p, _dong_chi(db, p) if dong is None else dong, da_thu)
     return {"id": p.id, "doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None,
             "truck_no": p.truck_no, "driver_name": p.driver_name, "origin": p.origin, "destination": p.destination,
             "ore_bill_no": p.ore_bill_no, "weight_dest": p.weight_dest, "weight_origin": p.weight_origin,
@@ -131,14 +132,24 @@ def cho_gop(period: str = "", customer_id: str = "", db: Session = Depends(get_d
     if customer_id:
         q = q.filter(Trip.customer_id == customer_id)
     nhom = {}
-    for p in q.order_by(Trip.doc_date, Trip.doc_no).all():
-        if not _du_dieu_kien(db, p):
+    ds_p = q.order_by(Trip.doc_date, Trip.doc_no).all()
+    # nạp MỘT lần cho cả tháng: trạng thái mục II và dòng chi (trước đây 3 câu cho mỗi phiếu)
+    ma = [p.id for p in ds_p]
+    muc_ii = {t: st for t, st in (db.query(TripSection.trip_id, TripSection.status)
+                                  .filter(TripSection.trip_id.in_(ma or [""]), TripSection.section == "trans"))}
+    dong = {}
+    for d in (db.query(TripExpense).filter(TripExpense.trip_id.in_(ma or [""]))
+              .order_by(TripExpense.trip_id, TripExpense.section, TripExpense.line_no)):
+        dong.setdefault(d.trip_id, []).append(d)
+    for p in ds_p:
+        # như _du_dieu_kien: đã khoá, chưa nằm tờ nào (đã lọc ở câu trên), mục II đã kiểm
+        if p.invoice_id or p.invoiced or not p.locked or muc_ii.get(p.id) != "verified":
             continue
-        k = tinh_phieu(p, _dong_chi(db, p))
+        k = tinh_phieu(p, dong.get(p.id, []))
         khoa = (p.customer_id, k["ccy"])
         o = nhom.setdefault(khoa, {"customer_id": p.customer_id, "customer_name": p.customer_name,
                                    "ccy": k["ccy"], "period": period, "phieu": [], "tong": 0.0, "tong_lak": 0.0})
-        o["phieu"].append(_dong_phieu(db, p))
+        o["phieu"].append(_dong_phieu(db, p, dong=dong.get(p.id, [])))
         o["tong"] += k["doanh_thu"]; o["tong_lak"] += k["doanh_thu_lak"]
     ds = []
     for o in nhom.values():
@@ -150,15 +161,29 @@ def cho_gop(period: str = "", customer_id: str = "", db: Session = Depends(get_d
 
 
 # ---------------------------------------------------------------- xuất một tờ
-def xuat_hd(db, hd, day_du=False):
+def _da_thu_hd(db, ma_hd):
+    """{invoice_id: tổng đã thu LAK} của nhiều tờ trong MỘT câu — cộng trip_payments của các phiếu thuộc tờ đó."""
+    if not ma_hd:
+        return {}
+    return {i: float(v or 0) for i, v in (db.query(Trip.invoice_id, func.coalesce(func.sum(TripPayment.amount_lak), 0))
+                                          .join(TripPayment, TripPayment.trip_id == Trip.id)
+                                          .filter(Trip.invoice_id.in_(ma_hd)).group_by(Trip.invoice_id))}
+
+
+def xuat_hd(db, hd, day_du=False, da_thu_hd=None):
     r = {"id": hd.id, "inv_no": hd.inv_no, "customer_id": hd.customer_id, "customer_name": hd.customer_name,
          "period": hd.period, "inv_date": hd.inv_date.isoformat() if hd.inv_date else None,
          "currency": hd.currency, "amount": hd.amount, "amount_lak": hd.amount_lak, "so_phieu": hd.so_phieu,
          "note": hd.note, "by_user": hd.by_user,
          "created_at": hd.created_at.isoformat() if hd.created_at else None}
-    phieu = db.query(Trip).filter(Trip.invoice_id == hd.id).order_by(Trip.doc_date, Trip.doc_no).all()
-    da = da_thu_theo_phieu(db, [p.id for p in phieu])
-    r["da_thu_lak"] = round(sum(da.get(p.id, 0) for p in phieu))
+    if day_du:
+        phieu = db.query(Trip).filter(Trip.invoice_id == hd.id).order_by(Trip.doc_date, Trip.doc_no).all()
+        da = da_thu_theo_phieu(db, [p.id for p in phieu])
+        r["da_thu_lak"] = round(sum(da.get(p.id, 0) for p in phieu))
+    else:
+        # danh sách: chỉ cần TỔNG đã thu — cộng trong SQL, không nạp nguyên các phiếu của tờ (24/09, dữ liệu cả năm)
+        tong = (da_thu_hd if da_thu_hd is not None else _da_thu_hd(db, [hd.id])).get(hd.id, 0.0)
+        r["da_thu_lak"] = round(tong)
     r["con_lai_lak"] = round(hd.amount_lak - r["da_thu_lak"])
     r["finance_status"] = ("unpaid" if r["da_thu_lak"] <= LECH_COI_LA_DU
                            else ("paid" if r["con_lai_lak"] <= LECH_COI_LA_DU else "partial"))
@@ -187,7 +212,9 @@ def ds_hoa_don(period: str = "", customer_id: str = "", db: Session = Depends(ge
         q = q.filter(Invoice.period == _thang(period))
     if customer_id:
         q = q.filter(Invoice.customer_id == customer_id)
-    return [xuat_hd(db, h) for h in q.order_by(Invoice.period.desc(), Invoice.inv_no.desc()).all()]
+    ds = q.order_by(Invoice.period.desc(), Invoice.inv_no.desc()).all()
+    da = _da_thu_hd(db, [h.id for h in ds])
+    return [xuat_hd(db, h, da_thu_hd=da) for h in ds]
 
 
 @router.get("/api/hoa-don-gop/{hid}")

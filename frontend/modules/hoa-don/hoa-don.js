@@ -48,16 +48,26 @@
       ${c.lien_ket ? thanhToan(c) : `<div class="hd-tong"><div><span>${NN.h('grand_total')}</span><span>${so(c.tong_chi_lak)} LAK</span></div></div>`}
       <div class="hd-ky"><div><div class="line"></div>${NN.h(c.lien_ket ? 'owner' : 'sg_driver')}</div><div><div class="line"></div>${NN.h('sg_printer')}</div><div><div class="line"></div>${NN.h('sg_payer')}</div></div>`;
   }
-  async function chon(id) { P = await API.get('/api/trips/' + id); root.querySelector('#hd-chon').value = id; ve(); }
+  async function chon(id) {
+    P = await API.get('/api/trips/' + id);
+    const o = root.querySelector('#hd-chon');
+    if (![...o.options].some(x => x.value === id)) o.insertAdjacentHTML('afterbegin', `<option value="${esc(P.id)}">${esc(P.doc_no)} · ${esc(P.truck_no || '')}</option>`);
+    o.value = id; ve();
+  }
   EPL.modules['hoa-don'] = {
     async init(r, ctx) {
-      root = r; ds = await API.get('/api/trips');
-      r.querySelector('#hd-chon').innerHTML = ds.map(p => `<option value="${p.id}">${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
-      r.querySelector('#hd-chon').addEventListener('change', e => chon(e.target.value).catch(EPL.baoLoi));
+      root = r;
+      // 50 phiếu mới nhất + ô tìm trên toàn bộ phiếu (dữ liệu cả năm) — không tải mọi phiếu về ô chọn nữa
+      const oc = EPL.oChonPhieu({ tim: r.querySelector('#hd-tim'), chon: r.querySelector('#hd-chon'),
+        nhan: p => `${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}`,
+        khiTim: () => oc.ve(P) });
+      ds = await oc.nap(); oc.ve(null);
+      r.querySelector('#hd-chon').addEventListener('change', e => e.target.value && chon(e.target.value).catch(EPL.baoLoi));
       r.querySelector('#hd-ve').addEventListener('click', () => EPL.di('theo-doi'));
       r.querySelector('#hd-mo').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       // mở sẵn phiếu mới nhất ĐÃ KHOÁ (lên hoá đơn được) — mở phiếu còn chờ kế toán thì hoá đơn toàn số 0 (rà 23/09)
-      const macDinh = ds.find(p => p.locked) || ds[0];
+      // (50 phiếu mới nhất thường là phiếu hôm nay, chưa khoá — nên hỏi riêng máy chủ phiếu ĐÃ KHOÁ mới nhất)
+      const macDinh = ds.find(p => p.locked) || (await API.get('/api/trips?co=1&locked=true').catch(() => []))[0] || ds[0];
       const id = (ctx.tham && ctx.tham.id) || (macDinh && macDinh.id);
       if (id) await chon(id); else ve();
     },

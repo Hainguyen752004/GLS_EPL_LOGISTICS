@@ -8,7 +8,8 @@
  */
 (function () {
   const { API, NN, esc, so, tien, tag } = EPL;
-  let root, ds = [], tyGia = {};
+  let root, ds = [], tyGia = {}, TRANG = 1, TONG = {};
+  const CO = 100;              // một trang 100 phiếu — một tháng có thể ~30.000 phiếu (nghìn chuyến / ngày)
 
   /** Tỷ giá quy đổi của MỘT phiếu — lấy ngay trên phiếu, không lấy tỷ giá hôm nay. */
   function rate(p, ma) {
@@ -29,28 +30,34 @@
     const chu = so(t.v, EPL.leTien(t.ma));
     return dam ? `<b>${chu}</b>` : chu;
   };
-  /** Cộng dồn theo từng loại tiền; khi đang quy đổi thì tất cả rơi vào một khoá. */
-  function cong(tong, p, v, tu) {
-    const t = ve_tien(p, v, tu);
-    if (t.v == null) return;
-    tong[t.ma] = (tong[t.ma] || 0) + t.v;
+  /* Dữ liệu cả năm (24/09): lọc · tìm · chia trang ở MÁY CHỦ; dòng tổng lấy từ /api/bao-cao/theo-doi/tong — cộng trên
+   * TOÀN BỘ phiếu khớp bộ lọc, riêng từng loại tiền (hoặc quy về một tiền theo tỷ giá khoá trên từng phiếu). */
+  function thamLoc() {
+    const p = new URLSearchParams();
+    const th = root.querySelector('#td-thang').value; if (th) p.set('thang', th);
+    const tim = root.querySelector('#td-q').value.trim(); if (tim) p.set('q', tim);
+    [['td-vc', 'transport_status'], ['td-tc', 'finance_status'], ['td-cty', 'company']].forEach(([id, k]) => {
+      const v = root.querySelector('#' + id).value; if (v) p.set(k, v); });
+    return p;
+  }
+  async function tai(trang = 1) {
+    TRANG = trang;
+    const pt = thamLoc(); pt.set('trang', TRANG); pt.set('co', CO);
+    const pq = thamLoc(); if (quy()) pq.set('quy', quy());
+    [ds, TONG] = await Promise.all([API.get('/api/bao-cao/theo-doi?' + pt), API.get('/api/bao-cao/theo-doi/tong?' + pq)]);
+    locVaVe();
   }
 
   function locVaVe() {
-    const q = root.querySelector('#td-q').value.trim().toLowerCase();
-    const vc = root.querySelector('#td-vc').value, tc = root.querySelector('#td-tc').value, cty = root.querySelector('#td-cty').value;
-    const rows = ds.filter(p => (!vc || p.transport_status === vc) && (!tc || p.finance_status === tc) && (!cty || p.company === cty)
-      && (!q || [p.doc_no, p.driver_name, p.truck_no, p.customer_name, p.plate_head, p.plate_trailer, p.origin, p.destination, p.ore_bill_no]
-        .join(' ').toLowerCase().includes(q)));
-    const sVal = {}, sThu = {}, sCon = {}, sNet = {}; let sExp = 0; const d = '<span class="muted">—</span>';
+    const rows = ds, dau = (TRANG - 1) * CO;
+    const sVal = TONG.doanh_thu || {}, sThu = TONG.da_thu || {}, sCon = TONG.con_lai || {}, sNet = TONG.lai || {};
+    const sExp = TONG.tong_chi_lak || 0, soPhieu = TONG.so_phieu ?? rows.length; const d = '<span class="muted">—</span>';
     root.querySelector('#td-than').innerHTML = rows.length ? rows.map((p, i) => {
       const c = p.tinh, ma = c.ccy, mh = c.hire_ccy || ma;
-      cong(sVal, p, c.doanh_thu, ma); cong(sThu, p, c.da_thu, ma); cong(sCon, p, c.con_lai, ma);
-      cong(sNet, p, c.lai, ma); sExp += c.tong_chi_lak || 0;
       const chi = c.chi || {};                 // Bãi không nhận tiền chi (anh Khampla A2) — cột đó ẩn với Bãi
       const hao = c.hao_hut_pct !== null && c.hao_hut_pct > 1.5 ? `<span class="td-hao" title="${esc(NN.t('w_loss'))}">${so(c.hao_hut_pct, 1)}%</span>` : '';
       return `<tr data-id="${p.id}">
-        <td>${i + 1}</td><td class="nowrap">${EPL.ngay(p.doc_date)}</td><td class="nowrap mono"><b>${esc(p.doc_no)}</b></td>
+        <td>${dau + i + 1}</td><td class="nowrap">${EPL.ngay(p.doc_date)}</td><td class="nowrap mono"><b>${esc(p.doc_no)}</b></td>
         <td class="mono">${esc(p.ore_bill_no) || d}</td><td class="nowrap" lang="lo">${esc(p.origin)} → ${esc(p.destination)}</td>
         <td>${p.company === 'joint' ? tag('plain', 'co_joint') : 'EPL'}</td><td lang="lo" class="nowrap">${esc(p.driver_name) || d}</td>
         <td lang="lo" class="nowrap">${esc(p.plate_head) || d}</td><td lang="lo" class="nowrap">${esc(p.plate_trailer) || d}</td><td>${esc(p.truck_no) || d}</td>
@@ -65,11 +72,17 @@
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="31" class="empty">${NN.h('no_data')}</td></tr>`;
     const gop = (t) => `<span class="td-gop">${EPL.tienGop(t, '<br>')}</span>`;
-    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + rows.length + ' ', { k: 'trips' }])}</td>
+    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + so(soPhieu) + ' ', { k: 'trips' }])}</td>
       <td class="tien"></td><td class="num tien">${gop(sVal)}</td><td class="num tien">${gop(sThu)}</td><td class="num tien">${gop(sCon)}</td>
       <td class="tien"></td><td class="tien"></td><td class="tien"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td>
       <td class="num tien-chi">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>`;
-    root.querySelector('#td-dem').textContent = `${rows.length} / ${ds.length} ${NN.t('rows')}`;
+    const tong = ds.tong ?? rows.length, soTrang = Math.max(1, Math.ceil(tong / CO));
+    root.querySelector('#td-dem').textContent = rows.length ? `${so(dau + 1)}–${so(dau + rows.length)} / ${so(tong)} ${NN.t('rows')}` : '';
+    const tr = root.querySelector('#td-trang');
+    tr.innerHTML = soTrang > 1 ? `<button class="btn sm" data-trang="${TRANG - 1}" ${TRANG <= 1 ? 'disabled' : ''}>${NN.h('trang_truoc')}</button>
+      <span class="small muted">${NN.h('trang_n', { n: so(TRANG), tong: so(soTrang) })}</span>
+      <button class="btn sm" data-trang="${TRANG + 1}" ${TRANG >= soTrang ? 'disabled' : ''}>${NN.h('trang_sau')}</button>` : '';
+    tr.querySelectorAll('[data-trang]').forEach(b => b.addEventListener('click', () => tai(+b.dataset.trang).catch(EPL.baoLoi)));
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
   }
 
@@ -80,14 +93,21 @@
     o.innerHTML = ds_.length ? `<span class="small muted">${NN.h('rate_on_slip')}: ${esc(ds_.join(' · '))}</span>` : '';
   }
 
-  async function tai() {
-    const thang = root.querySelector('#td-thang').value;
-    ds = await API.get('/api/bao-cao/theo-doi' + (thang ? '?thang=' + thang : ''));
-    locVaVe();
-  }
-
   // "Xuất báo cáo" (và nút cùng tên ở Tổng quan) giờ ra Excel thật .xlsx — trước đây là CSV (rà 23/09)
   const xuatBaoCao = () => EPL.xuatExcel();
+
+  /** Excel ra ĐỦ mọi phiếu khớp bộ lọc, không chỉ trang đang xem: tải từng đợt 500 dòng, vẽ tạm cả bảng, đọc bảng
+   *  bằng đúng cách xuất mặc định (cùng cột, cùng định dạng tiền), rồi vẽ lại trang đang xem. */
+  async function xuatHet(r) {
+    const tong = ds.tong ?? ds.length, tat = [];
+    for (let t = 1; (t - 1) * 500 < tong; t++) {
+      const p = thamLoc(); p.set('trang', t); p.set('co', 500);
+      tat.push(...await API.get('/api/bao-cao/theo-doi?' + p));
+    }
+    const giu = ds, giuTrang = TRANG;
+    ds = tat; TRANG = 1; locVaVe();
+    try { return EPL._xlsx.sheetMacDinh(r); } finally { ds = giu; TRANG = giuTrang; locVaVe(); }
+  }
 
   EPL.modules['theo-doi'] = {
     async init(r, ctx) {
@@ -99,9 +119,10 @@
       if (t.cty) r.querySelector('#td-cty').value = t.cty;
       if (t.thang) r.querySelector('#td-thang').value = t.thang;
       if (t.q) r.querySelector('#td-q').value = t.q;
-      ['td-q', 'td-vc', 'td-tc', 'td-cty'].forEach(id => r.querySelector('#' + id).addEventListener('input', locVaVe));
-      r.querySelector('#td-quy').addEventListener('change', locVaVe);
-      r.querySelector('#td-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
+      let hen = null;
+      r.querySelector('#td-q').addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => tai(1).catch(EPL.baoLoi), 350); });
+      ['td-vc', 'td-tc', 'td-cty', 'td-thang'].forEach(id => r.querySelector('#' + id).addEventListener('change', () => tai(1).catch(EPL.baoLoi)));
+      r.querySelector('#td-quy').addEventListener('change', () => tai(TRANG).catch(EPL.baoLoi));   // dòng tổng quy đổi ở máy chủ
       r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);
       r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       try { tyGia = await API.get('/api/rates'); } catch (e) { tyGia = {}; }
@@ -109,6 +130,7 @@
       await tai();
       if (t.xuat) xuatBaoCao();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
+    xuatExcel: (r) => xuatHet(r),
     onLang() { veChuThich(); if (ds.length) locVaVe(); },
   };
 })();

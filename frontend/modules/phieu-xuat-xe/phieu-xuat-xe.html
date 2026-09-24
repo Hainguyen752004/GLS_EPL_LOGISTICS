@@ -1,7 +1,8 @@
 <!-- Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Tờ giấy duy nhất họ làm việc: 6 mục, mỗi mục một trạng thái duyệt. -->
 <div class="toolbar no-print">
   <button class="btn quiet" id="px-ve">← <span data-i18n="back_list"></span></button>
-  <div class="field"><label data-i18n="doc_no"></label><select id="px-chon"></select></div>
+  <!-- Một năm ~365.000 phiếu: ô chọn chỉ nạp 50 phiếu mới nhất; gõ vào ô tìm thì máy chủ tìm trên TOÀN BỘ phiếu -->
+  <div class="field"><label data-i18n="doc_no"></label><div class="px-chon-hang"><input id="px-tim" type="search" autocomplete="off" data-i18n-ph="td_search"><select id="px-chon"></select></div></div>
   <button class="btn" id="px-moi">+ <span data-i18n="new_slip"></span></button>
   <div class="grow"></div>
   <button class="btn" id="px-chung-tu"><span data-i18n="voucher_payment"></span></button>

@@ -16,25 +16,70 @@ mỗi dòng cần số chặng, số sự cố đang mở và trạng thái sáu
 import datetime as dt
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import and_, exists, func, not_, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Route, RouteStop, Trip, TripEvent, TripSection, Voucher
-from routes.vi_tri import vi_tri_moi_nhat, xuat_vi_tri
+from models import Route, RouteStop, Trip, TripEvent, TripSection, VehiclePosition, Voucher
+from routes.phieu import loc_phieu
+from routes.vi_tri import NGUONG_CU_PHUT, vi_tri_moi_nhat, xuat_vi_tri
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
 
 NGAY_COI_LA_LAU = 5          # rời bãi quá ngần này ngày mà chưa báo tới nơi thì gắn cờ
+CO_MAC_DINH, CO_TOI_DA = 300, 1000
+CHAY = ("dispatched", "transit")
+
+
+def _dieu_kien_o(o, hom_nay, gps_moi):
+    """Điều kiện SQL của từng ô số — bấm ô là máy chủ lọc đúng tập đó (trước đây lọc trên trình duyệt, cần tải hết)."""
+    su_co = exists().where(and_(TripEvent.trip_id == Trip.id, TripEvent.status == "reported"))
+    cho_linh = exists().where(and_(Voucher.trip_id == Trip.id, Voucher.status == "cho"))
+    co_gps = exists().where(and_(VehiclePosition.trip_id == Trip.id, VehiclePosition.ts >= gps_moi))
+    ngay_di = func.coalesce(Trip.out_date, Trip.doc_date)
+    return {
+        "dang_chay": Trip.transport_status.in_(CHAY),
+        "chua_xuat_ben": Trip.transport_status == "dispatched",
+        "di_lau": and_(Trip.transport_status != "arrived", ngay_di < hom_nay - dt.timedelta(days=NGAY_COI_LA_LAU)),
+        "cho_hoa_don": and_(Trip.transport_status == "arrived", or_(Trip.invoiced.is_(False), Trip.invoiced.is_(None))),
+        "su_co_mo": su_co,
+        "chua_thu_tien": Trip.finance_status != "paid",
+        "cho_cap_phat": cho_linh,
+        "gps_thieu": and_(Trip.transport_status.in_(CHAY), not_(co_gps)),
+    }.get(o)
 
 
 @router.get("/api/theo-doi")
-def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    q = db.query(Trip)
+def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MAC_DINH,
+                  db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Dữ liệu cả năm (chủ dự án chốt 24/09): ô số đếm bằng SQL trên TOÀN BỘ phiếu còn việc; danh sách lọc theo ô
+    đang bấm (`o`), chữ tìm (`q`), "chỉ phiếu còn việc" (mặc định) hay tất cả (`tat_ca=1`), tối đa `co` phiếu mới nhất.
+    `so_khop` là số phiếu khớp bộ lọc — danh sách có thể ngắn hơn khi vượt `co`."""
+    goc = db.query(Trip)
     if user.role == "driver":
-        q = q.filter(Trip.driver_id == (user.driver_id or "__khong_co__"))
-    tat = q.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).all()
-    ds = tat if tat_ca else [p for p in tat if p.transport_status != "arrived" or p.finance_status != "paid"]
+        goc = goc.filter(Trip.driver_id == (user.driver_id or "__khong_co__"))
+    con_viec = or_(Trip.transport_status != "arrived", Trip.finance_status != "paid")
+    hom_nay = dt.date.today()
+    gps_moi = dt.datetime.utcnow() - dt.timedelta(minutes=NGUONG_CU_PHUT)
+
+    # ---- ô số: MỘT câu COUNT(*) FILTER cho cả 7 ô, trên tập phiếu còn việc (chỉ mục một phần ix_trips_con_viec)
+    O = ("dang_chay", "chua_xuat_ben", "di_lau", "cho_hoa_don", "su_co_mo", "chua_thu_tien", "gps_thieu")
+    dem = (goc.filter(con_viec).order_by(None)
+           .with_entities(*[func.count().filter(_dieu_kien_o(k, hom_nay, gps_moi)).label(k) for k in O]).one())
+    kpi = {k: int(getattr(dem, k) or 0) for k in O}
+    kpi["cho_cap_phat"] = int(db.query(func.count(Voucher.id)).join(Trip, Trip.id == Voucher.trip_id)
+                              .filter(Voucher.status == "cho", con_viec, *( [Trip.driver_id == (user.driver_id or "__khong_co__")] if user.role == "driver" else []))
+                              .scalar() or 0)
+
+    loc = goc if tat_ca else goc.filter(con_viec)
+    dk = _dieu_kien_o(o, hom_nay, gps_moi) if o else None
+    if dk is not None:
+        loc = loc.filter(dk)
+    loc = loc_phieu(loc, q)
+    co = max(1, min(int(co or CO_MAC_DINH), CO_TOI_DA))
+    so_khop = loc.order_by(None).count()
+    ds = loc.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).limit(co).all()
     ma = [p.id for p in ds]
 
     # ---- gom dữ liệu phụ trong vài truy vấn, không lặp từng phiếu
@@ -59,9 +104,7 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
     for v in phieu_linh:
         linh_cua[v.trip_id] = linh_cua.get(v.trip_id, 0) + 1
 
-    hom_nay = dt.date.today()
-    ra, kpi = [], {"dang_chay": 0, "chua_xuat_ben": 0, "di_lau": 0, "cho_hoa_don": 0,
-                   "su_co_mo": 0, "chua_thu_tien": 0, "cho_cap_phat": 0, "gps_thieu": 0}
+    ra = []
     gio_utc = dt.datetime.utcnow()
     for p in ds:
         ev = theo_phieu.get(p.id, [])
@@ -78,18 +121,8 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
                and (hom_nay - ngay_di).days > NGAY_COI_LA_LAU)
         cho_linh = linh_cua.get(p.id, 0)
 
-        if p.transport_status in ("dispatched", "transit"): kpi["dang_chay"] += 1
-        if p.transport_status == "dispatched": kpi["chua_xuat_ben"] += 1
-        if lau: kpi["di_lau"] += 1
-        if p.transport_status == "arrived" and not p.invoiced: kpi["cho_hoa_don"] += 1
-        if mo: kpi["su_co_mo"] += 1
-        if p.finance_status != "paid": kpi["chua_thu_tien"] += 1
-        if cho_linh: kpi["cho_cap_phat"] += cho_linh
-        # GPS thiếu / cũ: chỉ tính trên xe ĐANG CHẠY — xe đã về thì không cần GPS nữa.
         g = gps.get(p.id)
         gps_ra = xuat_vi_tri(g, gio_utc) if g else None
-        dang_chay = p.transport_status in ("dispatched", "transit")
-        if dang_chay and (gps_ra is None or gps_ra["cu"]): kpi["gps_thieu"] += 1
 
         # Điểm đi / điểm đến: phiếu nào bỏ trống thì lấy theo tuyến, đừng để màn hiện hai gạch ngang.
         diem_dau = diem[0].name if diem else None
@@ -132,7 +165,7 @@ def bang_theo_doi(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(n
         })
 
     return {"luc": dt.datetime.now().isoformat(timespec="seconds"), "kpi": kpi,
-            "so_tat_ca": len(tat), "chuyen": ra}
+            "so_tat_ca": goc.order_by(None).count(), "so_khop": so_khop, "co": co, "chuyen": ra}
 
 
 @router.get("/api/theo-doi/su-co")

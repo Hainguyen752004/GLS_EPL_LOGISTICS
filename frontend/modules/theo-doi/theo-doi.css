@@ -14,3 +14,7 @@
    tiền nên bảng không cần rộng 2.960px — để khoảng trống lớn bên phải */
 .td-bang thead th{white-space:nowrap}
 body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai-parts .td-bang,body.vai-repair .td-bang{min-width:1700px}
+
+/* phân trang (24/09, dữ liệu cả năm) */
+.td-trang{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:8px 14px;font-variant-numeric:tabular-nums}
+.td-trang:empty{display:none}

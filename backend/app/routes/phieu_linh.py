@@ -22,7 +22,7 @@ import datetime as dt
 import io
 import secrets
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -225,9 +225,11 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
 
 
 @router.get("/api/vouchers")
-def ds_cho_cap(request: Request, trang_thai: str = "cho", loai: str = "", db: Session = Depends(get_db),
-               user=Depends(nguoi_hien_tai)):
-    """Danh sách phiếu lĩnh đang chờ. Thủ kho CHỈ thấy phiếu của kho mình phụ trách."""
+def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", loai: str = "", co: int = 500,
+               db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Danh sách phiếu lĩnh đang chờ. Thủ kho CHỈ thấy phiếu của kho mình phụ trách.
+    Dữ liệu cả năm (24/09): tối đa `co` tờ mới nhất (mặc định 500) — header X-Tong là tổng số khớp; phiếu xe và
+    mục IV nạp MỘT lần cho cả danh sách (trước đây hai câu cho mỗi tờ)."""
     q = db.query(Voucher)
     if trang_thai:
         q = q.filter(Voucher.status == trang_thai)
@@ -240,16 +242,24 @@ def ds_cho_cap(request: Request, trang_thai: str = "cho", loai: str = "", db: Se
     elif user.role == "driver":
         q = q.filter(Voucher.driver_id == (user.driver_id or "~"))
     goc = str(request.base_url).rstrip("/")
+    response.headers["X-Tong"] = str(q.order_by(None).count())
+    ds = q.order_by(Voucher.doc_date.desc(), Voucher.doc_no).limit(max(1, min(int(co or 500), 2000))).all()
+    ma = list({v.trip_id for v in ds if v.trip_id})
+    phieu = {t.id: t for t in (db.query(Trip.id, Trip.origin, Trip.destination, Trip.plate_head, Trip.plate_trailer,
+                                        Trip.customer_name).filter(Trip.id.in_(ma)))} if ma else {}
+    iv = {}
+    if ma:
+        for tid, st in (db.query(TripSection.trip_id, TripSection.status)
+                        .filter(TripSection.trip_id.in_(ma), TripSection.section == "travel")):
+            iv.setdefault(tid, st)
     ra = []
-    for v in q.order_by(Voucher.doc_date.desc(), Voucher.doc_no).all():
+    for v in ds:
         x = xuat_phieu_linh(db, v, goc, user.role)
-        p = db.get(Trip, v.trip_id)
+        p = phieu.get(v.trip_id)
         if p:
             x.update({"origin": p.origin, "destination": p.destination, "plate_head": p.plate_head,
                       "plate_trailer": p.plate_trailer, "customer_name": p.customer_name,
-                      "muc_travel": (db.query(TripSection)
-                                     .filter(TripSection.trip_id == p.id, TripSection.section == "travel")
-                                     .first() or TripSection(status="wait")).status})
+                      "muc_travel": iv.get(p.id, "wait")})
         ra.append(x)
     return ra
 
