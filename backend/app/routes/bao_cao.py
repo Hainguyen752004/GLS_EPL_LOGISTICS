@@ -507,11 +507,17 @@ def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None
     tiền; `quy` (LAK · USD · …) thì mọi phiếu quy theo tỷ giá đã khoá trên chính phiếu đó, còn một con số. Cùng cách
     cộng với giao diện trước đây (modules/theo-doi: cong / ve_tien)."""
     dau, cuoi = _thang(thang)
-    # đệm theo tháng + đúng bộ lọc (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
-    ra = dict(DEM.lay(db, ("td-tong", dau.isoformat(), q or "", transport_status or "", finance_status or "", company or "",
-                           (quy or "").strip().upper()), [dau.strftime("%Y-%m")],
-                      lambda: _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, company, quy),
-                      theo_ngay=False))
+    # ghép từ phần tính sẵn của từng NGÀY cho đúng bộ lọc này (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
+    loc = (q or "", transport_status or "", finance_status or "", company or "", (quy or "").strip().upper())
+    cac = _cac_ngay(dau, cuoi)
+    viec = [(("tdt", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
+    tong = {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {}}
+    for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tdt_lo(db, [cac[i] for i in thieu], *loc)):
+        tong["so_phieu"] += phan["so_phieu"]; tong["tong_chi_lak"] += phan["tong_chi_lak"]
+        for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
+            _cong(tong[k], phan[k])
+    ra = {"so_phieu": tong["so_phieu"], "tong_chi_lak": round(tong["tong_chi_lak"]),
+          **{k: _tron_tien(tong[k]) for k in ("doanh_thu", "da_thu", "con_lai", "lai")}}
     if not thay_tien_ban(user.role):
         for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
             ra.pop(k, None)
@@ -520,7 +526,34 @@ def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None
     return ra
 
 
+def _tdt_lo(db, cac_ngay, q, transport_status, finance_status, company, quy):
+    """Phần DÒNG TỔNG của từng ngày cho một bộ lọc: số phiếu · tổng chi LAK · bốn khoản theo từng loại tiền."""
+    loc = _loc_td(db.query(Trip.id).filter(Trip.doc_date.in_(cac_ngay)), q or None, transport_status or None,
+                  finance_status or None, company or None).subquery()
+    ds = db.query(*COT_TINH).filter(Trip.id.in_(db.query(loc.c.id))).all()
+    dong = _dong_loc(db, Trip.id.in_(db.query(loc.c.id)))
+    thu = _da_thu_loc(db, Trip.id.in_(db.query(loc.c.id)))
+    dich = (quy or "").strip().upper() or None
+    ra = {d.isoformat(): {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {}}
+          for d in cac_ngay}
+    for p in ds:
+        o = ra[p.doc_date.isoformat()]
+        c = tinh_phieu(p, dong.get(p.id, []), thu.get(p.id, 0))
+        o["so_phieu"] += 1
+        o["tong_chi_lak"] += c.get("tong_chi_lak") or 0
+        for k in ("doanh_thu", "da_thu", "con_lai", "lai"):
+            v = c.get(k)
+            if v is None:
+                continue
+            ma = c["ccy"]
+            if dich and dich != ma:
+                v, ma = v * ty_gia(p, ma) / ty_gia(p, dich), dich
+            o[k][ma] = o[k].get(ma, 0.0) + v
+    return [ra[d.isoformat()] for d in cac_ngay]
+
+
 def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, company, quy):
+    """Cách tính cả tháng một lượt (trước 24/09) — GIỮ làm thước đo: kiem/thu_bao_cao_cu_moi.py so với bản theo ngày."""
     loc = _loc_td(db.query(Trip.id).filter(*_trong(dau, cuoi)), q, transport_status, finance_status, company)
     con = loc.subquery()
     ds = db.query(*COT_TINH).filter(Trip.id.in_(db.query(con.c.id))).all()
@@ -549,8 +582,13 @@ def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, comp
         chi += c.get("tong_chi_lak") or 0
     ra = {"so_phieu": len(ds), "tong_chi_lak": round(chi)}
     for k, v in tong.items():
-        ra[k] = {m: x for m, x in v.items()}
+        ra[k] = _tron_tien(v)
     return ra
+
+
+def _tron_tien(theo_tien):
+    """{mã tiền: số} làm tròn đúng loại tiền: LAK · VND số chẵn, tiền khác 2 chữ số lẻ (giữ cả loại tiền bằng 0)."""
+    return {m: (round(x) if m in ("LAK", "VND") else round(x, 2)) for m, x in theo_tien.items()}
 
 
 @router.get("/api/bao-cao/theo-doi")
@@ -586,14 +624,35 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
     if not thay_tien_ban(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % user.role})
     dau, cuoi = _thang(thang)
-    # đệm theo tháng + các khoá riêng của những bảng cấn trừ đọc: lần thu (kể cả "cấn trừ" đã ghi), thẻ cao tốc,
-    # hoá đơn gộp, nhà cung cấp — đổi bất cứ thứ nào trong đó là tính lại (ghi_can_tru dùng chính bảng này)
-    return DEM.lay(db, ("can-tru", dau.isoformat(), thang or ""), [dau.strftime("%Y-%m")],
-                   lambda: _can_tru_tinh(db, thang, dau, cuoi), theo_ngay=not thang, them=("thu", "the", "hd", "ncc"))
+    return _can_tru_tinh(db, thang, dau, cuoi)
+
+
+def _ct_lo(db, cac_ngay):
+    """Hai phần NẶNG của cấn trừ, cho từng ngày lập phiếu:
+       "kh":   {customer_id: [tên, cước LAK]}                       — cước phải thu theo khách
+       "tram": {supplier_id: [số dòng, nợ LAK]}                      — dòng dầu GHI NỢ tại trạm (EPL ứng)
+    Trạm nào cấn trừ cho khách nào thì đọc MỚI từ danh mục lúc ghép — đổi khách của trạm là đúng ngay, không chờ đệm."""
+    from routes.nha_cung_cap import _tien_lak_sql
+    loc = (Trip.doc_date.in_(cac_ngay), Trip.customer_id.isnot(None))
+    ds = db.query(*COT_TINH).filter(*loc).order_by(Trip.doc_date, Trip.doc_no).all()
+    dong = _dong_loc(db, *loc)
+    ra = {d.isoformat(): {"kh": {}, "tram": {}} for d in cac_ngay}
+    for p in ds:
+        k = tinh_phieu(p, dong.get(p.id, []))
+        o = ra[p.doc_date.isoformat()]["kh"].setdefault(p.customer_id, [p.customer_name, 0.0])
+        o[1] += k["doanh_thu_lak"]
+    for d, sid, n, x in (db.query(Trip.doc_date, TripExpense.supplier_id, func.count(TripExpense.id), func.sum(_tien_lak_sql()))
+                         .join(Trip, Trip.id == TripExpense.trip_id)
+                         .filter(Trip.doc_date.in_(cac_ngay), TripExpense.supplier_id.isnot(None),
+                                 TripExpense.ghi_no.is_(True), TripExpense.paid_by_epl.is_(True))
+                         .group_by(Trip.doc_date, TripExpense.supplier_id)):
+        ra[d.isoformat()]["tram"][sid] = [int(n), float(x or 0)]
+    return ra
 
 
 def _can_tru_tinh(db, thang, dau, cuoi):
-    ds = _phieu_gon(db, dau, cuoi, Trip.customer_id.isnot(None))
+    """Cước phải thu theo khách ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại); thẻ
+    cao tốc, trạm dầu Việt Nam và phần đã ghi cấn trừ là bảng nhỏ — luôn đọc MỚI, không đệm (ghi_can_tru dùng bảng này)."""
     sau = cuoi + dt.timedelta(days=1)
     theo_khach = {}
 
@@ -602,11 +661,15 @@ def _can_tru_tinh(db, thang, dau, cuoi):
                                                  "cuoc_lak": 0.0, "the_lak": 0.0, "dau_vn_lak": 0.0,
                                                  "da_ghi_lak": 0.0, "the": [], "tram": []})
 
-    # 1. cước phải thu trong tháng (theo phiếu đã xuất hoá đơn hoặc đã khoá — tức là đã chốt tiền)
-    dong = _dong_gon(db, dau, cuoi, Trip.customer_id.isnot(None))
-    for p in ds:
-        k = tinh_phieu(p, dong.get(p.id, []))
-        o_cua(p.customer_id, p.customer_name)["cuoc_lak"] += k["doanh_thu_lak"]
+    # 1. cước phải thu trong tháng — ghép từ các ngày, theo thứ tự ngày (giữ đúng thứ tự khách xuất hiện như trước)
+    phan_ngay = list(_theo_ngay(db, "ct2", _cac_ngay(dau, cuoi), _ct_lo).values())
+    for phan in phan_ngay:
+        for kid, (ten, lak) in phan["kh"].items():
+            o_cua(kid, ten)["cuoc_lak"] += lak
+    tram_thang = {}
+    for phan in phan_ngay:
+        for sid, (n, x) in phan["tram"].items():
+            o = tram_thang.setdefault(sid, [0, 0.0]); o[0] += n; o[1] += x
 
     # 2. thẻ cao tốc do khách cấp — phần EPL đã quẹt trong tháng
     for t in db.query(TollCard).filter(TollCard.kind == "khach").all():
@@ -621,15 +684,8 @@ def _can_tru_tinh(db, thang, dau, cuoi):
 
     # 3. trạm dầu Việt Nam ghi nợ — cấn trừ vào cước của khách đứng ra với trạm
     for s_ in db.query(Supplier).filter(Supplier.customer_id.isnot(None)).all():
-        no = 0.0; so_dong = 0
-        # lọc tháng NGAY TRONG SQL — trước đây kéo mọi dòng ghi nợ của trạm từ trước tới nay rồi mới bỏ bớt
-        # một dòng kết quả mang cả tỷ giá của phiếu lẫn số tiền của dòng chi → tien_dong(r, r)
-        for r in (db.query(TripExpense.qty, TripExpense.unit_price, TripExpense.currency,
-                           Trip.rate_usd, Trip.rate_thb, Trip.rate_vnd, Trip.rate_cny)
-                  .join(Trip, Trip.id == TripExpense.trip_id)
-                  .filter(TripExpense.supplier_id == s_.id, TripExpense.ghi_no.is_(True),
-                          TripExpense.paid_by_epl.is_(True), *_trong(dau, cuoi))):
-            no += tien_dong(r, r); so_dong += 1
+        # nợ ghi tại trạm trong tháng — ghép từ phần tính sẵn của từng ngày (4 năm: quét thẳng mất 1–2 s mỗi trạm)
+        so_dong, no = tram_thang.get(s_.id, [0, 0.0])
         if not no:
             continue
         o = o_cua(s_.customer_id, s_.customer_name)

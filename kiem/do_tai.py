@@ -82,7 +82,7 @@ def bat_may():
     tat_may()
     env_goc = open(os.path.join(THU_MUC, ".env"), encoding="utf-8").read()
     u = re.search(r"^DATABASE_URL\s*=\s*(\S+)", env_goc, re.M).group(1).strip("\"'")
-    env = dict(os.environ, DATABASE_URL=u.rsplit("/", 1)[0] + "/epl_lao_tai", PYTHONUNBUFFERED="1")
+    env = dict(os.environ, DATABASE_URL=u.rsplit("/", 1)[0] + "/epl_lao_tai", PYTHONUNBUFFERED="1", EPL_LAO_LAM_NONG="0")   # đo "lần đầu" thật: tắt tính sẵn
     log = open(os.path.join(os.environ.get("TEMP", "."), "epl_lao_8012.log"), "a", encoding="utf-8")
     MAY["p"] = subprocess.Popen([PY, "-X", "utf8", "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8012"],
                                 cwd=os.path.join(THU_MUC, "backend"), env=env, stdout=log, stderr=log)

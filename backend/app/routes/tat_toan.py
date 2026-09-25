@@ -161,6 +161,56 @@ def tinh_ky_lo(db, cac_tai_xe, ky):
     return ra
 
 
+def _tt_lo(db, cac_ngay):
+    """Phần TẤT TOÁN của từng ngày lập phiếu: {ngày: {driver_id: {"YYYY-MM" kỳ xe đi: [số phiếu, đã chi LAK, đã ứng LAK]}}}.
+    Kỳ tính theo NGÀY XE ĐI (không có thì ngày lập) — cùng luật với tinh_ky_lo."""
+    from routes.nha_cung_cap import _tien_lak_sql
+    bo_qua = _khoan_khong_phai_tien_tai_xe(db)
+    loc = (Trip.doc_date.in_(cac_ngay), Trip.driver_id.isnot(None))
+    chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
+                                             .join(Trip, Trip.id == TripExpense.trip_id)
+                                             .filter(*loc, _la_tien_mat_sql(bo_qua)).group_by(TripExpense.trip_id))}
+    ung = {tid: float(v or 0) for tid, v in (db.query(Voucher.trip_id, func.sum(Voucher.amount_lak))
+                                             .join(Trip, Trip.id == Voucher.trip_id)
+                                             .filter(*loc, Voucher.kind == "advance", Voucher.status == "da_cap")
+                                             .group_by(Voucher.trip_id))}
+    ra = {d.isoformat(): {} for d in cac_ngay}
+    for p in db.query(Trip.id, Trip.driver_id, Trip.doc_date, Trip.out_date).filter(*loc):
+        ky = (p.out_date or p.doc_date).strftime("%Y-%m")
+        o = ra[p.doc_date.isoformat()].setdefault(p.driver_id, {}).setdefault(ky, [0, 0.0, 0.0])
+        o[0] += 1; o[1] += chi.get(p.id, 0.0); o[2] += ung.get(p.id, 0.0)
+    return ra
+
+
+def _bang_ky_ngay(db, cac_tai_xe, ky):
+    """Như tinh_ky_lo (không kèm danh sách phiếu) nhưng ghép từ các NGÀY: xe đi trong kỳ M thì phiếu lập trong M hoặc
+    tháng trước (xe đi sau ngày lập) — nên ghép phần của các ngày từ đầu tháng trước tới cuối tháng M."""
+    dau, cuoi = _khoang(ky)
+    truoc = dt.date(dau.year - (dau.month == 1), (dau.month - 2) % 12 + 1, 1)
+    ngay = [truoc + dt.timedelta(days=i) for i in range((cuoi - truoc).days + 1)]
+    viec = [(("tt", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]
+    tong = {}
+    for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: (lambda kq: [kq[ngay[i].isoformat()] for i in thieu])(
+            _tt_lo(db, [ngay[i] for i in thieu]))):
+        for did, theo_ky in phan.items():
+            x = theo_ky.get(ky)
+            if x:
+                o = tong.setdefault(did, [0, 0.0, 0.0])
+                o[0] += x[0]; o[1] += x[1]; o[2] += x[2]
+    chot = {c.driver_id: c for c in db.query(DriverSettlement).filter(DriverSettlement.period == ky)}
+    ra = []
+    for t in cac_tai_xe:
+        n, c, u = tong.get(t.id, [0, 0.0, 0.0])
+        da_chot = chot.get(t.id)
+        ra.append({"driver_id": t.id, "driver_code": t.driver_code, "driver_name": t.name, "period": ky,
+                   "so_phieu": n, "tong_ung_lak": round(u, 2), "tong_chi_lak": round(c, 2), "chenh_lech_lak": round(c - u, 2),
+                   "da_tat_toan": bool(da_chot),
+                   "tat_toan": ({"settled_by": da_chot.settled_by,
+                                 "settled_at": da_chot.settled_at.isoformat() if da_chot.settled_at else None,
+                                 "chenh_lech_lak": da_chot.chenh_lech_lak, "note": da_chot.note} if da_chot else None)})
+    return ra
+
+
 @router.get("/api/tat-toan")
 def bang_ky(ky: str = "", chi_tiet: int = 1, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Bảng tất toán cả tháng: mỗi tài xế một dòng. Tài xế chỉ thấy dòng của chính mình.
@@ -170,7 +220,10 @@ def bang_ky(ky: str = "", chi_tiet: int = 1, db: Session = Depends(get_db), user
     q = db.query(Driver).filter(Driver.active.is_(True))
     if user.role == "driver":
         q = q.filter(Driver.id == (user.driver_id or "~"))
-    if user.role == "driver":
+    if not chi_tiet:
+        # bảng tháng (màn Tất toán): ghép từ phần tính sẵn của từng NGÀY lập phiếu — chỉ ngày vừa đổi mới tính lại
+        ds = _bang_ky_ngay(db, q.order_by(Driver.driver_code, Driver.name).all(), ky)
+    elif user.role == "driver":
         ds = tinh_ky_lo(db, q.order_by(Driver.driver_code, Driver.name).all(), ky)
     else:
         # đệm theo kỳ: kỳ tính theo NGÀY XE ĐI nên phiếu lập cuối tháng trước cũng có thể thuộc kỳ này → phụ thuộc cả

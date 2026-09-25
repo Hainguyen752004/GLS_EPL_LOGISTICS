@@ -119,6 +119,16 @@ def main():
         db.rollback()
         sap = lambda d: [dict(x, phieu=sorted(x["phieu"], key=lambda p: p["trip_id"])) for x in d]
         loi += not so("tất toán %s (%d tài xế)" % (ky, len(tx)), a, b, ta, tb, sap=sap)
+    # bảng tất toán tháng (màn Tất toán gọi chi_tiet=0): bản ghép theo NGÀY so với tinh_ky của từng tài xế (như cũ)
+    for ky in KY:
+        cu_ = [dict(TT.tinh_ky(db, t, ky)) for t in tx]
+        for x in cu_:
+            x.pop("phieu", None)
+        cu_ = {"ky": ky, "dong": [d for d in cu_ if d["so_phieu"] or d["tong_ung_lak"] or d["da_tat_toan"]],
+               "tong_ung_lak": round(sum(d["tong_ung_lak"] for d in cu_), 2), "tong_chi_lak": round(sum(d["tong_chi_lak"] for d in cu_), 2)}
+        (b, tb) = do(lambda: TT.bang_ky(ky=ky, chi_tiet=0, db=db, user=Vai("admin")))
+        db.rollback()
+        loi += not so("bảng tất toán %s (theo ngày)" % ky, cu_, b, 0, tb)
     print("\n%s" % ("✅ KHỚP HẾT — nạp theo lô cho ra đúng từng con số như cũ" if not loi else "❌ %d mục lệch" % loi))
     sys.exit(1 if loi else 0)
 

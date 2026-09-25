@@ -149,6 +149,20 @@ def main():
                 for x in d[:8]:
                     print("      " + x, flush=True)
                 loi += bool(d)
+    # dòng tổng Theo dõi: bản ghép theo NGÀY so với cách tính cả tháng một lượt (giữ làm thước đo), vài bộ lọc
+    u_ = Vai("admin")
+    for thang in THANG:
+        for loc in ({}, {"quy": "LAK"}, {"quy": "USD"}, {"company": "joint"}, {"transport_status": "arrived"}, {"q": "T4"}):
+            dau, cuoi = MOI._thang(thang)
+            a = chuan(json.loads(json.dumps(MOI._theo_doi_tong_tinh(db, dau, cuoi, loc.get("q"), loc.get("transport_status"),
+                                                                    None, loc.get("company"), loc.get("quy")), default=str)))
+            b = chuan(json.loads(json.dumps(MOI.theo_doi_tong(thang=thang, q=loc.get("q"), transport_status=loc.get("transport_status"),
+                                                              finance_status=None, company=loc.get("company"), quy=loc.get("quy"),
+                                                              db=db, user=u_), default=str)))
+            db.rollback()
+            d = khac(a, b)
+            print("%s %s · dòng tổng theo dõi %-28s%s" % ("✓" if not d else "✗", thang, json.dumps(loc), "" if not d else "  · " + "; ".join(d[:3])), flush=True)
+            loi += bool(d)
     print("\n%s" % ("✅ KHỚP HẾT — cách nạp mới cho ra đúng từng con số như cũ" if not loi else "❌ %d báo cáo lệch" % loi))
     sys.exit(1 if loi else 0)
 

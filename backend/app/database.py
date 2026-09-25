@@ -141,6 +141,9 @@ CHI_MUC = [
     ("ix_vouchers_cho", "vouchers", "(trip_id) WHERE status = 'cho'"),
     ("ix_trip_expenses_ncc", "trip_expenses", "(supplier_id)"),
     ("ix_trip_payments_ngay", "trip_payments", "(pay_date)"),
+    # phiếu thu "cấn trừ" đã ghi của một tháng (ref CT-YYYYMM) — 4 năm ~1,4 triệu lần thu, lần cấn trừ chỉ vài chục
+    ("ix_trip_payments_can_tru", "trip_payments", "(ref) WHERE method = 'offset'"),
+    ("ix_invoice_payments_can_tru", "invoice_payments", "(ref) WHERE method = 'offset'"),
     ("ix_chung_tu_ngay", "chung_tu", "(ngay DESC)"),
     ("ix_chung_tu_chua_day", "chung_tu", "(loai) WHERE da_day IS false"),        # tờ chưa đẩy sang kế toán
     ("ix_chung_tu_day_luc", "chung_tu", "(day_luc DESC) WHERE day_luc IS NOT NULL"),

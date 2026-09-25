@@ -33,6 +33,9 @@ app = FastAPI(title="EPL Lào — Quản lý vận tải", version="1.0", docs_u
 @app.on_event("startup")
 def khoi_dong():
     tao_bang()
+    # tính sẵn báo cáo tháng này / tháng trước trong luồng riêng — người mở báo cáo đầu tiên không phải chờ (24/09)
+    from services import lam_nong
+    lam_nong.bat_dau()
 
 
 @app.exception_handler(Exception)

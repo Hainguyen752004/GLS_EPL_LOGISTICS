@@ -290,6 +290,10 @@ def cu():
             WHERE company = 'joint' AND owner_id IS NOT NULL AND owner_payment_id IS NULL
               AND doc_date < CURRENT_DATE - 35 AND id NOT IN (SELECT id FROM _mau)""")).rowcount
     print("✓ %d phiếu liên kết cũ → đã trả chủ xe (đợt theo tháng)" % n, flush=True)
+    with e.begin() as c:     # ngoài đời mỗi khách một lần cấn trừ / tháng — bản nhân không được mang chung ref CT-YYYYMM của mẫu
+        n = c.execute(text("""UPDATE trip_payments SET ref = 'THU-' || substr(id, 1, 8)
+            WHERE method = 'offset' AND ref LIKE 'CT-%' AND trip_id NOT IN (SELECT id FROM _mau)""")).rowcount
+    print("✓ %d lần thu cấn trừ nhân bản → ref riêng (không dồn vào CT-YYYYMM của mẫu)" % n, flush=True)
 
 
 def xong():
