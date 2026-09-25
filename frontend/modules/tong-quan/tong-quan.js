@@ -72,7 +72,11 @@
   const tickBase = (c) => ({ color: c.muted, font: FONT(), padding: 6 });
 
   /* ---------- Tải ---------- */
-  async function tai() {
+  // Lần tải đang chạy — nút Excel bấm ngay lúc vừa mở màn (UAT 25/09: bấm trước khi số liệu về thì "không có gì để
+  // xuất") thì CHỜ lần tải này xong rồi mới dựng sheet.
+  let dangTai = null;
+  function tai() { dangTai = taiThat(); return dangTai; }
+  async function taiThat() {
     thang = root.querySelector('#tq-thang').value || EPL.thangNay();
     const [a, b, c] = await Promise.all([
       API.get('/api/bao-cao/tong-quan?thang=' + thang),
@@ -280,14 +284,15 @@
       r.querySelector('#tq-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { thang, xuat: 1 }));
       r.querySelector('#tq-chu-y-all').addEventListener('click', () => EPL.di('theo-doi', { thang }));
-      await napChart();
-      await tai();
+      dangTai = (async () => { await napChart(); await taiThat(); })();
+      await dangTai;
     },
     onLang() { if (d) ve(); },
     destroy() { Object.values(charts).forEach(c => c.destroy()); charts = {}; clearInterval(autoTimer); autoTimer = null; },
     /* Nút Excel trên thanh đầu trang: màn này vẽ bằng thẻ và biểu đồ, không có bảng — dựng sheet từ chính số liệu.
        Tiền để NGUYÊN Kíp (thẻ trên màn đọc theo triệu cho dễ nhìn). Bãi: không có ô tiền bán, không có tiền chi (A2). */
-    xuatExcel() {
+    async xuatExcel() {
+      if (dangTai) { try { await dangTai; } catch (e) { /* tải hỏng thì xuất phần đang có */ } }
       if (!d) return [];
       const T = NN.t, L = (v) => EPL.oTien(v, 'LAK'), bai = laBai();
       const chiTieu = [
