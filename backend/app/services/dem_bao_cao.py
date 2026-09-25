@@ -222,6 +222,36 @@ def lay_nhieu(db, viec, theo_ngay=False, tinh_lo=None):
     return [m[3][0] for m in muc]
 
 
+def dem_phieu_theo(db, loai, cot):
+    """{giá trị `cot` (cột của bảng trips, ví dụ driver_id): số phiếu} trên MỌI phiếu từ trước tới nay — cộng từ số đếm
+    của TỪNG THÁNG (đệm theo tháng: tháng cũ không đổi thì không đếm lại, mỗi lần mở chỉ đếm lại tháng vừa có ghi).
+    Đếm thẳng cả bảng thì thời gian tăng theo dữ liệu: 4 năm 0,8 s, 500 GB khoảng nửa phút."""
+    from sqlalchemy import func
+    from models import Trip
+    lo, hi = db.query(func.min(Trip.doc_date), func.max(Trip.doc_date)).one()
+    ra = {}
+    if lo:
+        thang = [dt.date(t // 12, t % 12 + 1, 1) for t in range(lo.year * 12 + lo.month - 1, hi.year * 12 + hi.month)]
+
+        def tinh(idx):
+            ds = [thang[i] for i in idx]
+            cuoi = max(ds)
+            sau = dt.date(cuoi.year + (cuoi.month == 12), cuoi.month % 12 + 1, 1)
+            thg = func.date_trunc("month", Trip.doc_date)
+            kq = {d: {} for d in ds}
+            for t, k, n in (db.query(thg, cot, func.count(Trip.id))
+                            .filter(Trip.doc_date >= min(ds), Trip.doc_date < sau, cot.isnot(None)).group_by(thg, cot)):
+                if t.date() in kq:
+                    kq[t.date()][k] = int(n)
+            return [kq[d] for d in ds]
+        for phan in lay_nhieu(db, [((loai, d.isoformat()), [d.strftime("%Y-%m")], None) for d in thang], tinh_lo=tinh):
+            for k, n in phan.items():
+                ra[k] = ra.get(k, 0) + n
+    for k, n in db.query(cot, func.count(Trip.id)).filter(Trip.doc_date.is_(None), cot.isnot(None)).group_by(cot):
+        ra[k] = ra.get(k, 0) + int(n)           # phiếu chưa có ngày: không thuộc tháng nào, đếm thẳng (thường không có)
+    return ra
+
+
 def xoa_het(db=None):
     """Bỏ mọi bản đã tính (trong bộ nhớ; có `db` thì cả trong DB) — dùng cho bộ kiểm."""
     with _KHOA:

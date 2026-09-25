@@ -41,6 +41,11 @@ def _viec():
                                                                           finance_status=None, company=None, quy=None, db=db, user=v)),
                ("tất toán " + th, lambda db, th=th: TT.bang_ky(ky=th, chi_tiet=0, db=db, user=v))]
     ra.append(("nợ nhà cung cấp (mọi ngày)", lambda db: N.ds(db=db, user=v)))
+    # số phiếu từ trước tới nay của từng tài xế / từng hợp đồng — đếm theo tháng, đệm (lần đầu đếm cả mấy năm)
+    import routes.danh_muc as DM
+    import routes.hop_dong as HD
+    ra.append(("số phiếu từng tài xế", lambda db: DM.ds_tai_xe(db=db, _=v)))
+    ra.append(("số phiếu từng hợp đồng", lambda db: HD.ds(kind=None, customer_id=None, owner_id=None, db=db, user=v)))
     return ra
 
 
@@ -74,6 +79,6 @@ def bat_dau():
 
 if __name__ == "__main__":        # chạy tay: python -m services.lam_nong  (trong backend/app)
     lam_nong()
-    for dong in open(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs", "lam_nong.log"),
-                     encoding="utf-8").read().splitlines()[-15:]:
+    from database import GOC_DU_AN
+    for dong in open(os.path.join(GOC_DU_AN, "logs", "lam_nong.log"), encoding="utf-8").read().splitlines()[-17:]:
         print(dong)

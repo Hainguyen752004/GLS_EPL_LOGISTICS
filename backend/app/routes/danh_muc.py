@@ -546,7 +546,10 @@ def _phu_tai_xe(db, ds):
     ids = [d.id for d in ds if d.id]
     if not ids:
         return {}, {}
-    dem = dict(db.query(Trip.driver_id, func.count(Trip.id)).filter(Trip.driver_id.in_(ids)).group_by(Trip.driver_id).all())
+    # số phiếu từ trước tới nay: cộng từ số đếm từng tháng (đệm theo tháng) — đếm thẳng cả bảng thì tăng theo dữ liệu
+    from services import dem_bao_cao as DEM
+    tat = DEM.dem_phieu_theo(db, "sp-tai-xe", Trip.driver_id)
+    dem = {i: tat[i] for i in ids if i in tat}
     dang = {}
     # chỉ hai cột cần dùng — không nạp nguyên phiếu (hơn 100 cột) của mọi chuyến đang chạy
     for tid, so in (db.query(Trip.driver_id, Trip.doc_no).filter(Trip.driver_id.in_(ids), Trip.transport_status != "arrived")

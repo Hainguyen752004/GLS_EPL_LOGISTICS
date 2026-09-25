@@ -60,13 +60,14 @@ def dat_cau_hinh(db, khoa, gia_tri, user=None):
 def trang_thai(db):
     """Đã cấu hình chưa, và lần đẩy gần nhất ra sao — để màn Sổ chứng từ nói thật với người dùng."""
     goc = cau_hinh(db, "ke_toan_api")
-    # MỘT lượt đếm cho ba số (4 năm ~6 triệu tờ: ba câu COUNT riêng là ba lần quét bảng)
+    # Chỉ các số CÓ GIỚI HẠN (tờ chưa đẩy · tờ lỗi — chỉ mục một phần ix_chung_tu_chua_day): màn Sổ chứng từ chỉ cần
+    # chừng đó. Đếm MỌI tờ từ trước tới nay thì tăng theo dữ liệu (4 năm 6 triệu tờ: 1,8 s; 500 GB: cả phút).
     from sqlalchemy import func
-    tong, da, loi = db.query(func.count(ChungTu.id), func.count(ChungTu.id).filter(ChungTu.da_day.is_(True)),
-                             func.count(ChungTu.id).filter(ChungTu.loi_day.isnot(None), ChungTu.da_day.is_(False))).one()
+    chua, loi = db.query(func.count(ChungTu.id), func.count(ChungTu.id).filter(ChungTu.loi_day.isnot(None))) \
+        .filter(ChungTu.da_day.is_(False)).one()
     cuoi = db.query(ChungTu).filter(ChungTu.day_luc.isnot(None)).order_by(ChungTu.day_luc.desc()).first()
     return {"cau_hinh": bool(goc), "api": goc, "co_token": bool(cau_hinh(db, "ke_toan_token")),
-            "tong": tong, "da_day": da, "chua_day": tong - da, "loi": loi,
+            "chua_day": chua, "loi": loi,
             "day_gan_nhat": cuoi.day_luc.isoformat() if cuoi and cuoi.day_luc else None}
 
 

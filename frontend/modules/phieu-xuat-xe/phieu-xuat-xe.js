@@ -86,7 +86,7 @@
   function dongChon() {
     const ds = P && P.id && !DS.some(p => p.id === P.id) ? [P, ...DS] : DS;
     return ds.map(p => `<option value="${p.id}" ${P && p.id === P.id ? 'selected' : ''}>${esc(p.doc_no)} · ${esc(p.truck_no || '')}${p.company === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('')
-      + (DS.tong > DS.length ? `<option value="" disabled>… ${so(DS.length)} / ${so(DS.tong)}</option>` : '');
+      + (DS.tong > DS.length ? `<option value="" disabled>… ${so(DS.length)} / ${so(DS.tong)}${DS.tongTran ? '+' : ''}</option>` : '');
   }
   function veChon() {
     g('px-chon').innerHTML = (moi ? `<option value="">— ${NN.t('new_slip')} —</option>` : '') + dongChon();

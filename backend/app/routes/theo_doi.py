@@ -78,7 +78,9 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
         loc = loc.filter(dk)
     loc = loc_phieu(loc, q)
     co = max(1, min(int(co or CO_MAC_DINH), CO_TOI_DA))
-    so_khop = loc.order_by(None).count()
+    from routes.phieu import TRAN_DEM
+    n_khop = loc.order_by(None).limit(TRAN_DEM + 1).count()        # đếm có trần — tất cả phiếu cả năm là tăng theo dữ liệu
+    so_khop, khop_tran = min(n_khop, TRAN_DEM), n_khop > TRAN_DEM
     ds = loc.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).limit(co).all()
     ma = [p.id for p in ds]
 
@@ -165,7 +167,7 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
         })
 
     return {"luc": dt.datetime.now().isoformat(timespec="seconds"), "kpi": kpi,
-            "so_tat_ca": goc.order_by(None).count(), "so_khop": so_khop, "co": co, "chuyen": ra}
+            "so_khop": so_khop, "so_khop_tran": khop_tran, "co": co, "chuyen": ra}
 
 
 @router.get("/api/theo-doi/su-co")

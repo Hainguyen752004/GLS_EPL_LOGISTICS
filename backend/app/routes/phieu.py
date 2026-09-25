@@ -363,6 +363,17 @@ def khoan_muc():
 
 
 CO_TOI_DA = 500          # một trang không quá 500 phiếu — muốn nhiều hơn thì lọc tháng / tìm
+TRAN_DEM = 10000         # tổng số khớp chỉ đếm tới đây — quá thì báo "10.000+" (đếm đủ cả năm / cả bảng thì tăng theo dữ liệu)
+
+
+def dem_tran(qs, response, tran=TRAN_DEM):
+    """Đếm số dòng khớp bộ lọc nhưng DỪNG ở `tran`: header X-Tong = min(số khớp, tran), X-Tong-Tran = 1 khi còn nhiều hơn.
+    Một trang 50 phiếu không phụ thuộc tổng dữ liệu — chỉ câu đếm là tăng theo (4 năm 0,23 s; 500 GB ~8 s) — nên đếm có trần."""
+    n = qs.order_by(None).limit(tran + 1).count()
+    response.headers["X-Tong"] = str(min(n, tran))
+    if n > tran:
+        response.headers["X-Tong-Tran"] = "1"
+    return min(n, tran), n > tran
 
 
 def _dau_thang(thang):
@@ -415,7 +426,7 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
     qs = loc_phieu(qs, q, thang, tu, den)
     co = max(1, min(int(co or 50), CO_TOI_DA))
     trang = max(1, int(trang or 1))
-    response.headers["X-Tong"] = str(qs.order_by(None).count())
+    dem_tran(qs, response)
     ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).offset((trang - 1) * co).limit(co).all()
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     nap = nap_lo(db, ds)

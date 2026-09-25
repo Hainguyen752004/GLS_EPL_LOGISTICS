@@ -77,7 +77,7 @@
   function veDanhSach() {
     const ds = loc();
     // "hiện / khớp": vượt 300 phiếu thì danh sách chỉ giữ phần mới nhất — số sau dấu / vẫn là số thật
-    q('#tdt-dem').textContent = BANG ? `${ds.length} / ${so(BANG.so_khop ?? BANG.chuyen.length)}` : '';
+    q('#tdt-dem').textContent = BANG ? `${ds.length} / ${so(BANG.so_khop ?? BANG.chuyen.length)}${BANG.so_khop_tran ? '+' : ''}` : '';
     q('#tdt-the-ds').innerHTML = ds.length ? ds.map(c => {
       const canh = [];
       if (c.su_co_mo) canh.push(`<span class="canh do">${NN.h('td_inc_open', { n: c.su_co_mo })}</span>`);

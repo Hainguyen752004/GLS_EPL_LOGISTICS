@@ -42,6 +42,8 @@
       // thành `ds.tong` (không liệt kê được, nên không lẫn vào dữ liệu hay vào tệp Excel xuất ra).
       const tong = r.headers && r.headers.get('X-Tong');
       if (Array.isArray(d) && tong != null && tong !== '') Object.defineProperty(d, 'tong', { value: +tong, enumerable: false });
+      // máy chủ chỉ đếm tới 10.000 (đếm cả năm là tăng theo dữ liệu) — còn nhiều hơn thì hiện "10.000+"
+      if (Array.isArray(d) && r.headers.get('X-Tong-Tran') === '1') Object.defineProperty(d, 'tongTran', { value: true, enumerable: false });
       return d;
     },
     /** Gửi tệp (multipart) — không đặt Content-Type để trình duyệt tự ghi boundary. */
@@ -244,7 +246,7 @@
     const ve = (hien) => {
       const cac = hien && hien.id && !ds.some(p => p.id === hien.id) ? [hien, ...ds] : ds;
       o.chon.innerHTML = cac.map(p => `<option value="${esc(p.id)}">${o.nhan(p)}</option>`).join('')
-        + (ds.tong > ds.length ? `<option value="" disabled>… ${EPL.so(ds.length)} / ${EPL.so(ds.tong)}</option>` : '')
+        + (ds.tong > ds.length ? `<option value="" disabled>… ${EPL.so(ds.length)} / ${EPL.so(ds.tong)}${ds.tongTran ? '+' : ''}</option>` : '')
         || `<option value="">${NN.h('no_data')}</option>`;
       o.chon.value = hien && hien.id ? hien.id : (cac[0] ? cac[0].id : '');
     };

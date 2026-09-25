@@ -94,7 +94,8 @@ def _xuat_tep(f):
             "la_anh": (f.content_type or "").startswith("image/")}
 
 
-def xuat(db, c, vai):
+def xuat(db, c, vai, dem=None):
+    """`dem` = {(kind, id hợp đồng): số phiếu} đã đếm sẵn cho cả danh sách (đếm theo tháng, đệm) — không có thì đếm thẳng."""
     kh = db.get(Customer, c.customer_id) if c.customer_id else None
     chu = db.get(Owner, c.owner_id) if c.owner_id else None
     ngay_con = (c.valid_to - dt.date.today()).days if c.valid_to else None
@@ -105,7 +106,8 @@ def xuat(db, c, vai):
           "valid_from": c.valid_from.isoformat() if c.valid_from else None,
           "valid_to": c.valid_to.isoformat() if c.valid_to else None,
           "note": c.note, "active": bool(c.active), "trang_thai": trang_thai(c), "ngay_con": ngay_con,
-          "so_phieu": db.query(Trip.id).filter(cot == c.id).count(), "created_by": c.created_by}
+          "so_phieu": (dem.get(c.id, 0) if dem is not None else db.query(Trip.id).filter(cot == c.id).count()),
+          "created_by": c.created_by}
     # Bản scan có giá cước / giá thuê → chỉ vai được thấy tiền bán mới thấy tệp (Bãi thấy số, hạn — không thấy giấy).
     if thay_tien_ban(vai):
         ra["files"] = [_xuat_tep(f) for f in db.query(ContractFile).filter(ContractFile.contract_id == c.id).order_by(ContractFile.ts).all()]
@@ -163,7 +165,10 @@ def ds(kind: str = None, customer_id: str = None, owner_id: str = None, db: Sess
     if owner_id: q = q.filter(Contract.owner_id == owner_id)
     ds_ = q.all()
     ds_.sort(key=lambda c: (not c.active, -(c.valid_from or c.sign_date or dt.date.min).toordinal(), c.contract_no))
-    return [xuat(db, c, user.role) for c in ds_]
+    from services import dem_bao_cao as DEM
+    dem_kh = DEM.dem_phieu_theo(db, "sp-hop-dong", Trip.contract_id) if any(c.kind == "khach" for c in ds_) else {}
+    dem_th = DEM.dem_phieu_theo(db, "sp-hop-dong-thue", Trip.hire_contract_id) if any(c.kind != "khach" for c in ds_) else {}
+    return [xuat(db, c, user.role, dem_kh if c.kind == "khach" else dem_th) for c in ds_]
 
 
 @router.post("/api/hop-dong")
