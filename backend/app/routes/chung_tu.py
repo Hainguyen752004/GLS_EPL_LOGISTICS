@@ -124,7 +124,9 @@ def day_mot_to(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*DA
 @router.get("/api/ke-toan/cau-hinh")
 def xem_cau_hinh(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
     """Sếp xem cấu hình. Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
+    from services.bao_mat import token_nhan_ke_toan
     return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token")),
+            "co_token_nhan_ke_toan": bool(token_nhan_ke_toan(db)),
             # Hai mã bên kế toán cấp sau: hàng khách gửi (ngoài bảng) và giá vốn hàng bán
             "ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui"), "ma_gia_von": DK.cau_hinh(db, "ma_gia_von")}
 

@@ -1421,6 +1421,23 @@ KHOA_MOI = {
  'trang_truoc':       ('‹ Trang trước', '‹ ໜ້າກ່ອນ', '‹ Previous'),
  'trang_sau':         ('Trang sau ›', 'ໜ້າຕໍ່ໄປ ›', 'Next ›'),
  'trang_n':           ('Trang {n}/{tong}', 'ໜ້າ {n}/{tong}', 'Page {n}/{tong}'),
+ # ---- 28/09: liên thông trang kế toán (kho và tiền vận chuyển dời sang EPL_KETOAN)
+ 'tk_lt_tab':     ('Liên thông trang kế toán', 'ເຊື່ອມຕໍ່ ປຶ້ມບັນຊີ EPL', 'Link to the ledger site'),
+ 'tk_lt_api':     ('Địa chỉ trang kế toán', 'ທີ່ຢູ່ ປຶ້ມບັນຊີ EPL', 'Ledger site address'),
+ 'tk_lt_day':     ('Khoá đẩy chứng từ (trang kế toán cấp)', 'Khoá đẩy chứng từ (trang kế toán cấp)', 'Voucher push key (issued by the ledger site)'),
+ 'tk_lt_day_hint': ('Chép ô "Token nhận chứng từ" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.',
+                    'Chép ô "Token nhận chứng từ" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.',
+                    'Copy the "Voucher push token" from Settings on the ledger site. Leave empty to keep the current key.'),
+ 'tk_lt_nhan':    ('Khoá cho trang kế toán gọi sang', 'Khoá cho trang kế toán gọi sang', 'Key for the ledger site to call us'),
+ 'tk_lt_tao':     ('Tạo khoá cho trang kế toán', 'Tạo khoá cho trang kế toán', 'Create key for the ledger site'),
+ 'tk_lt_tao_hint': ('Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.',
+                    'Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.',
+                    'A new key replaces the old one at once. Copy it into Settings → Link to the transport site on the ledger site — it is shown only once.'),
+ 'tk_lt_co':      ('Đã có khoá', 'Đã có khoá', 'Key set'),
+ 'tk_lt_chua':    ('Chưa có khoá', 'Chưa có khoá', 'No key'),
+ 'tk_lt_thu':     ('Kiểm kết nối', 'ກວດ ການເຊື່ອມຕໍ່', 'Test connection'),
+ 'tk_lt_ok':      ('Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó', 'Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó', 'Ledger site reached · {ms} ms · account {u} there'),
+ 'tk_lt_hong':    ('Chưa nối được: {loi}', 'Chưa nối được: {loi}', 'Not connected: {loi}'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {}   # nhãn vai nay ghi thẳng trong KHOA_MOI theo đúng chữ bảng Nhiệm Vụ của khách

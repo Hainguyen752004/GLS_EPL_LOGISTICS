@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1521 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1533 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -7556,6 +7556,66 @@ window.EPL_TU_DIEN = {
   "vi": "Trang {n}/{tong}",
   "lo": "ໜ້າ {n}/{tong}",
   "en": "Page {n}/{tong}"
+ },
+ "tk_lt_tab": {
+  "vi": "Liên thông trang kế toán",
+  "lo": "ເຊື່ອມຕໍ່ ປຶ້ມບັນຊີ EPL",
+  "en": "Link to the ledger site"
+ },
+ "tk_lt_api": {
+  "vi": "Địa chỉ trang kế toán",
+  "lo": "ທີ່ຢູ່ ປຶ້ມບັນຊີ EPL",
+  "en": "Ledger site address"
+ },
+ "tk_lt_day": {
+  "vi": "Khoá đẩy chứng từ (trang kế toán cấp)",
+  "lo": "Khoá đẩy chứng từ (trang kế toán cấp)",
+  "en": "Voucher push key (issued by the ledger site)"
+ },
+ "tk_lt_day_hint": {
+  "vi": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.",
+  "lo": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.",
+  "en": "Copy the \"Voucher push token\" from Settings on the ledger site. Leave empty to keep the current key."
+ },
+ "tk_lt_nhan": {
+  "vi": "Khoá cho trang kế toán gọi sang",
+  "lo": "Khoá cho trang kế toán gọi sang",
+  "en": "Key for the ledger site to call us"
+ },
+ "tk_lt_tao": {
+  "vi": "Tạo khoá cho trang kế toán",
+  "lo": "Tạo khoá cho trang kế toán",
+  "en": "Create key for the ledger site"
+ },
+ "tk_lt_tao_hint": {
+  "vi": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.",
+  "lo": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.",
+  "en": "A new key replaces the old one at once. Copy it into Settings → Link to the transport site on the ledger site — it is shown only once."
+ },
+ "tk_lt_co": {
+  "vi": "Đã có khoá",
+  "lo": "Đã có khoá",
+  "en": "Key set"
+ },
+ "tk_lt_chua": {
+  "vi": "Chưa có khoá",
+  "lo": "Chưa có khoá",
+  "en": "No key"
+ },
+ "tk_lt_thu": {
+  "vi": "Kiểm kết nối",
+  "lo": "ກວດ ການເຊື່ອມຕໍ່",
+  "en": "Test connection"
+ },
+ "tk_lt_ok": {
+  "vi": "Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó",
+  "lo": "Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó",
+  "en": "Ledger site reached · {ms} ms · account {u} there"
+ },
+ "tk_lt_hong": {
+  "vi": "Chưa nối được: {loi}",
+  "lo": "Chưa nối được: {loi}",
+  "en": "Not connected: {loi}"
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

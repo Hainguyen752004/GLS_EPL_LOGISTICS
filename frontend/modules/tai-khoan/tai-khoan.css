@@ -32,3 +32,11 @@
 @media (max-width:700px){.tk-luoi{grid-template-columns:1fr}.tk-hai{grid-template-columns:1fr}}
 .tk-ctb{border:1px solid #B7D8CB;background:var(--green-soft);color:var(--ink);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer}
 .tk-ctb b{font-family:var(--mono,monospace);color:var(--green);margin-right:4px}
+
+/* Liên thông trang kế toán (28/09) */
+.tk-lt .bd { display: grid; gap: 14px; max-width: 760px; }
+.tk-lt-o { display: grid; gap: 4px; }
+.tk-lt-o > span { font-weight: 600; }
+.tk-lt-khoa { display: block; padding: 8px 10px; background: var(--nen-phu, #f3f5f4); border-radius: 6px; word-break: break-all; user-select: all; }
+.tk-lt-nut { display: flex; gap: 8px; flex-wrap: wrap; }
+.tk-lt-kq:empty { display: none; }

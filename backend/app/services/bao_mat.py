@@ -82,3 +82,33 @@ def can_vai(*vai):
                                       "loi": "Vai %s không được làm việc này." % user.role})
         return user
     return kiem
+
+
+# ---------------------------------------------------------------- trang kế toán gọi sang (28/09)
+def token_nhan_ke_toan(db):
+    """Khoá trang kế toán (EPL_KETOAN) phải mang khi gọi sang đây. Sếp tạo ở màn cấu hình rồi chép sang Cài đặt
+    bên kế toán; hoặc đặt EPL_LAO_TOKEN_NHAN_KE_TOAN trong .env."""
+    from models import CauHinh
+    r = db.get(CauHinh, "token_nhan_ke_toan")
+    return (r.gia_tri.strip() if r and r.gia_tri else "") or (os.getenv("EPL_LAO_TOKEN_NHAN_KE_TOAN") or "").strip()
+
+
+def may_ke_toan_goi(request: Request, db: Session = Depends(get_db)):
+    """Kho và tiền vận chuyển đã dời sang trang kế toán (28/09); màn bên đó cần đọc / ghi vào phiếu thì gọi sang
+    đây bằng khoá máy, kèm `X-Nguoi-Dung: <tên đăng nhập>` của người đang bấm. Hai trang dùng CÙNG tên đăng nhập,
+    nên người đó phải có tài khoản còn hiệu lực ở đây — trả về chính tài khoản đó, và quyền là quyền của vai
+    người đó bên này (không có vai nào "máy" làm được hơn người)."""
+    from models import User
+    mong = token_nhan_ke_toan(db)
+    dau = request.headers.get("Authorization", "")
+    tk = dau[7:].strip() if dau.lower().startswith("bearer ") else ""
+    if not mong:
+        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "Trang điều xe chưa tạo khoá cho trang kế toán gọi sang."})
+    if not tk or not hmac.compare_digest(tk, mong):
+        raise HTTPException(401, {"ma": "SAI_TOKEN", "loi": "Khoá nối trang điều xe không đúng — kiểm lại Cài đặt bên trang kế toán."})
+    ten = (request.headers.get("X-Nguoi-Dung") or "").strip()
+    u = db.query(User).filter(User.username == ten, User.active.is_(True)).first() if ten else None
+    if not u:
+        raise HTTPException(403, {"ma": "KHONG_CO_TAI_KHOAN",
+                                  "loi": "Tài khoản \"%s\" không có ở trang điều xe." % (ten or "?")})
+    return u

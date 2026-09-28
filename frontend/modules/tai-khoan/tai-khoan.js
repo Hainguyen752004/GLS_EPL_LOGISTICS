@@ -80,6 +80,36 @@
   function doiTab(t) {
     root.querySelectorAll('.tk-tab button').forEach(b => b.classList.toggle('active', b.dataset.tk === t));
     q('#tk-nguoi').hidden = t !== 'nguoi'; q('#tk-vai').hidden = t !== 'vai'; q('#tk-them').hidden = t !== 'nguoi';
+    q('#tk-lt').hidden = t !== 'lt';
+    if (t === 'lt') napLienThong().catch(EPL.baoLoi);
+  }
+
+  /* ---------------------------------------------------------------- liên thông trang kế toán (28/09) */
+  async function napLienThong() {
+    const c = await API.get('/api/ke-toan/cau-hinh');
+    q('#tk-lt-api').value = c.ke_toan_api || '';
+    q('#tk-lt-day').placeholder = NN.t(c.co_token ? 'tk_lt_co' : 'tk_lt_chua');
+    q('#tk-lt-nhan').innerHTML = EPL.tag(c.co_token_nhan_ke_toan ? 'ok' : 'plain', c.co_token_nhan_ke_toan ? 'tk_lt_co' : 'tk_lt_chua');
+  }
+  function ganLienThong() {
+    q('#tk-lt-luu').addEventListener('click', async () => {
+      const body = { ke_toan_api: q('#tk-lt-api').value.trim() };
+      const k = q('#tk-lt-day').value.trim(); if (k) body.ke_toan_token = k;
+      try { await API.put('/api/ke-toan/cau-hinh', body); q('#tk-lt-day').value = ''; EPL.toast(NN.t('saved'), 'ok'); await napLienThong(); }
+      catch (e) { EPL.baoLoi(e); }
+    });
+    q('#tk-lt-tao').addEventListener('click', async () => {
+      if (!await EPL.hoi(NN.t('tk_lt_tao'), esc(NN.t('tk_lt_tao_hint')), NN.t('tk_lt_tao'))) return;
+      try { const g = await API.post('/api/lien-thong/tao-khoa', {}); const o = q('#tk-lt-khoa'); o.textContent = g.token_nhan_ke_toan; o.hidden = false; await napLienThong(); }
+      catch (e) { EPL.baoLoi(e); }
+    });
+    q('#tk-lt-thu').addEventListener('click', async () => {
+      const o = q('#tk-lt-kq'); o.textContent = '…';
+      try { const g = await API.get('/api/lien-thong/thu');
+        o.innerHTML = g.ok ? `<span class="tag ok">${esc(NN.t('tk_lt_ok').replace('{ms}', g.ms).replace('{u}', (g.ben_kia || {}).nguoi || '?'))}</span>`
+          : `<span class="tag loi">${esc(NN.t('tk_lt_hong').replace('{loi}', g.loi || g.ma || ''))}</span>`;
+      } catch (e) { o.textContent = NN.t('tk_lt_hong').replace('{loi}', e.message || ''); }
+    });
   }
 
   async function sua(u) {
@@ -106,6 +136,7 @@
     async init(r) {
       root = r;
       q('#tk-them').addEventListener('click', () => sua(null));
+      ganLienThong();
       root.querySelectorAll('.tk-tab button').forEach(b => b.addEventListener('click', () => doiTab(b.dataset.tk)));
       await napQuyTrinh().catch(() => {});
       await tai(); doiTab('nguoi');
