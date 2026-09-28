@@ -10,9 +10,10 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import FuelMove, FuelPlace, Part, PartMove, Supplier
+from models import FuelMove, FuelPlace, Part, Supplier
 from services import chung_tu as CT
 from services import gia_von as GV
+from services import kho_ke_toan as KK
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_chi
 
@@ -22,7 +23,6 @@ router = APIRouter()
 SUA_KHO = can_vai("fuel", "acct")
 # Kho phụ tùng là của THỦ KHO PHỤ TÙNG Thà Bốc (anh Khampla C1.2) — trước đây Bãi và kế toán làm
 # thay. Tổ sửa chữa xem được tồn nhưng không tự nhập xuất; họ lấy phụ tùng qua dòng mục V trên phiếu.
-SUA_PHU_TUNG = can_vai("parts")
 
 
 def _ngay(v):
@@ -189,81 +189,44 @@ def xoa_nhien_lieu(mid: str, db: Session = Depends(get_db), user=Depends(can_vai
     return so_nhien_lieu(None, db, user)
 
 
-# ---------------------------------------------------------------- kho phụ tùng
-def _xuat_pt(p):
-    return {"id": p.id, "name": p.name, "unit": p.unit, "qty": p.qty, "min_qty": p.min_qty,
-            "unit_price": p.unit_price, "last_date": p.last_date.isoformat() if p.last_date else None,
-            "last_truck": p.last_truck, "active": p.active,
-            "status": "st_low" if (p.min_qty or 0) > 0 and p.qty <= p.min_qty else "st_ok"}
+# ---------------------------------------------------------------- kho phụ tùng — ở trang kế toán từ 28/09
+# Danh mục, tồn, giá bình quân và sổ nhập xuất phụ tùng dời sang trang kế toán. Bảng parts bên này chỉ còn là bản chép
+# danh mục (khoá ngoại của dòng chi mục V, dòng lệnh sửa, dòng bán). Ô chọn phụ tùng trên phiếu hỏi tồn / giá thẳng
+# bên đó; nhập / xuất / sửa danh mục làm ở trang kế toán (Kho → Kho phụ tùng).
+DA_DOI_PT = {"ma": "DA_DOI_SANG_KE_TOAN",
+             "loi": "Kho phụ tùng nay quản lý ở trang kế toán (Kho → Kho phụ tùng). Ở đây chỉ còn danh mục để chọn trên phiếu."}
 
 
 @router.get("/api/parts")
 def ds_phu_tung(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    ds = [_xuat_pt(p) for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
-    if not thay_tien_chi(user.role):            # Bãi không thấy giá (anh Khampla A2) — rà xuất Excel 23/09 thấy còn lọt
+    """Phụ tùng đang dùng kèm tồn và giá bình quân HIỆN TẠI của trang kế toán. Trang kế toán tắt thì vẫn trả danh mục
+    bản chép (không tồn, không giá, `khong_noi`) để phiếu mở được; xuất kho lúc đó sẽ bị chặn và báo rõ."""
+    try:
+        ds = [x for x in KK.ds_phu_tung(db) if x.get("active")]
+    except HTTPException:
+        ds = [{"id": p.id, "name": p.name, "unit": p.unit, "qty": None, "min_qty": p.min_qty, "unit_price": None,
+               "active": p.active, "status": None, "khong_noi": True}
+              for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
+    if not thay_tien_chi(user.role):            # Bãi không thấy giá (anh Khampla A2)
         for r in ds: r.pop("unit_price", None)
     return ds
 
 
 @router.post("/api/parts")
-def them_phu_tung(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_PHU_TUNG)):
-    if not str(data.get("name") or "").strip():
-        raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Phụ tùng phải có tên."})
-    p = Part(name=data["name"].strip(), unit=data.get("unit") or "u_pc", qty=_so(data.get("qty"), "tồn"),
-             min_qty=_so(data.get("min_qty"), "tồn tối thiểu"), unit_price=_so(data.get("unit_price"), "đơn giá"))
-    db.add(p); db.commit(); db.refresh(p)
-    return _xuat_pt(p)
+def them_phu_tung(user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI_PT)
 
 
 @router.put("/api/parts/{pid}")
-def sua_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_PHU_TUNG)):
-    p = db.get(Part, pid)
-    if not p:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phụ tùng này."})
-    if "name" in data: p.name = str(data["name"]).strip()
-    if "unit" in data: p.unit = data["unit"]
-    if "min_qty" in data: p.min_qty = _so(data["min_qty"], "tồn tối thiểu")
-    if "unit_price" in data: p.unit_price = _so(data["unit_price"], "đơn giá")
-    if "active" in data: p.active = bool(data["active"])
-    db.commit(); db.refresh(p)
-    return _xuat_pt(p)
+def sua_phu_tung(pid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI_PT)
 
 
 @router.get("/api/parts/{pid}/moves")
-def so_phu_tung(pid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
-    return [{"id": m.id, "move_date": m.move_date.isoformat(), "kind": m.kind, "qty": m.qty, "unit_price": m.unit_price,
-             "truck_no": m.truck_no, "trip_doc_no": m.trip_doc_no, "note": m.note, "by_user": m.by_user}
-            for m in db.query(PartMove).filter(PartMove.part_id == pid).order_by(PartMove.move_date.desc()).all()]
+def so_phu_tung(pid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI_PT)
 
 
 @router.post("/api/parts/{pid}/moves")
-def nhap_xuat_phu_tung(pid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_PHU_TUNG)):
-    p = db.get(Part, pid)
-    if not p:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phụ tùng này."})
-    kind = data.get("kind")
-    if kind not in ("in", "out"):
-        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "kind phải là in hoặc out."})
-    qty = _so(data.get("qty"), "số lượng", bat_buoc=True)
-    if qty <= 0:
-        raise HTTPException(422, {"ma": "SO_SAI", "loi": "Số lượng phải lớn hơn 0."})
-    if kind == "out" and qty > (p.qty or 0):
-        raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Tồn %s không đủ để xuất %s." % (p.qty, qty)})
-    ngay = _ngay(data.get("move_date"))
-    gia_nhap = _so(data.get("unit_price"), "đơn giá") if kind == "in" and data.get("unit_price") not in (None, "") else None
-    if kind == "in":
-        GV.nhap_phu_tung(p, qty, gia_nhap)          # giá bình quân (C5.3); nhập không ghi giá thì giữ giá cũ
-    m = PartMove(part_id=p.id, move_date=ngay, kind=kind, qty=qty, truck_no=(data.get("truck_no") or "").strip() or None,
-                 trip_doc_no=data.get("trip_doc_no"), note=data.get("note"), by_user=user.full_name,
-                 unit_price=gia_nhap if gia_nhap else p.unit_price)
-    p.qty = (p.qty or 0) + (qty if kind == "in" else -qty)
-    if kind == "out":
-        p.last_date, p.last_truck = ngay, m.truck_no
-    db.add(m); db.flush()
-    CT.ghi(db, "PNK_PT" if kind == "in" else "PXK_PT", nguon_bang="part_moves", nguon_id=m.id, ngay=ngay,
-           doi_tuong_loai="ncc" if kind == "in" else "kho", doi_tuong_ten=None if kind == "in" else p.name,  # nhập: NCC chưa có ô, đừng lấy tên phụ tùng làm đối tượng
-           tien=qty * (m.unit_price or 0), tien_te="LAK", section="repair", by_user=user.full_name,
-           mo_ta="%s %s %s%s" % ("Nhập" if kind == "in" else "Xuất", qty, p.name, (" · xe " + m.truck_no) if m.truck_no else ""),
-           payload={"part_id": p.id, "qty": qty, "unit_price": p.unit_price, "truck_no": m.truck_no, "trip_doc_no": m.trip_doc_no})
-    db.commit(); db.refresh(p)
-    return _xuat_pt(p)
+def nhap_xuat_phu_tung(pid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI_PT)

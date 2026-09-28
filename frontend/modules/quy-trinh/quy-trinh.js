@@ -136,7 +136,7 @@
         lam: ['Chọn kho, số xe, số lít'], may: ['Giá = bình quân kho'], chan: ['Xuất quá tồn của đúng kho → chặn'] },
     ] },
     { gd: 'Kho phụ tùng và sửa xe khi không chạy', buoc: [
-      { so: 'P1', vai: ['parts'], man: 'kho-phu-tung', ten: 'Thủ kho phụ tùng nhập · xuất',
+      { so: 'P1', vai: ['parts'], man: 'kho-phu-tung', o_ke_toan: true, ten: 'Thủ kho phụ tùng nhập · xuất',
         lam: ['Nhập: số lượng + đơn giá (giá bình quân tính lại)', 'Xuất tay cho xe'], chan: ['Bãi, kế toán không nhập xuất phụ tùng (C1.2)', 'Xuất quá tồn → chặn'],
         ct: ['PNK_PT', 'PXK_PT'] },
       { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
@@ -217,7 +217,8 @@
       <div class="qt-b-dau"><span class="so">${esc(String(b.so))}</span>
         <div class="grow"><h4>${esc(b.ten)}</h4>
           <div class="qt-b-vai">${b.vai.map(v => `<span class="qt-vai">${tenVai(v)}</span>`).join('')}
-            <button class="qt-man" data-man="${b.man}">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} ↗</button></div></div>
+            ${b.o_ke_toan ? '<span class="qt-man qt-man-kt">ở trang kế toán</span>'   // màn đã dời sang EPL_KETOAN (28/09)
+              : `<button class="qt-man" data-man="${b.man}">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} ↗</button>`}</div></div>
         ${b.sau ? `<span class="qt-sau">${esc(b.sau)}</span>` : ''}</div>
       <div class="qt-b-than">
         <div class="qt-b-cot"><div class="l">Làm gì</div>${ds(b.lam)}

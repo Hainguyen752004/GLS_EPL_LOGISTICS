@@ -445,7 +445,7 @@
     { id: 'kho-nhien-lieu', nhom: 'mod_warehouse', nav: 'nav_fuel',     ic: 'M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M6 6h6v5H6z',
       vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
     // 'diem-do' (Điểm đổ nhiên liệu) dời sang trang kế toán 28/09 — bản gốc ở đó, bên này chỉ còn bản chép để đọc
-    { id: 'kho-phu-tung',   nhom: 'mod_warehouse', nav: 'nav_parts',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19 12l2 1-1 3-2-.5a7 7 0 0 1-2 2l.5 2-3 1-1-2a7 7 0 0 1-3 0l-1 2-3-1 .5-2a7 7 0 0 1-2-2L2 16l-1-3 2-1a7 7 0 0 1 0-3L1 8l1-3 2 .5a7 7 0 0 1 2-2L5.5 1.5l3-1 1 2a7 7 0 0 1 3 0l1-2 3 1-.5 2a7 7 0 0 1 2 2l2-.5 1 3-2 1a7 7 0 0 1 0 3z' },
+    // 'kho-phu-tung' (Kho phụ tùng) dời sang trang kế toán 28/09 — tồn, giá, sổ ở đó; bên này còn danh mục để chọn trên phiếu
     { id: 'sua-chua',       nhom: 'mod_warehouse', nav: 'nav_repair', nav_s: 'nav_repair_s',
       vai: ['repair', 'expacct', 'cash', 'acct', 'treasury', 'fuel', 'rev'],
       ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M3 12h3M18 12h3M12 3v3M12 18v3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1' },
@@ -477,8 +477,8 @@
   // Tài xế chỉ thấy module ghi rõ vai driver; các vai khác thấy mọi module trừ module "chỉ vai".
   // Thủ kho phụ tùng giữ kho phụ tùng; tổ sửa chữa duyệt báo hỏng, ghi mục V trên phiếu, xem tồn kho.
   const MAN_CUA_VAI = {
-    parts:  ['kho-phu-tung', 'xe'],
-    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'sua-chua', 'kho-phu-tung', 'xe'],
+    parts:  ['xe'],                       // kho phụ tùng: ở trang kế toán (28/09)
+    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'sua-chua', 'xe'],
   };
 
   function thayDuoc(m) {

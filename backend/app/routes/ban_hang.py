@@ -14,7 +14,8 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, ExchangeRate, FuelMove, FuelPlace, Owner, Part, PartMove, Sale, SaleLine
+from models import Customer, ExchangeRate, FuelMove, FuelPlace, Owner, Part, Sale, SaleLine
+from services import kho_ke_toan as KK
 from services import chung_tu as CT
 from services import gia_von as GV
 from services.bao_mat import can_vai, nguoi_hien_tai
@@ -134,63 +135,64 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
         raise HTTPException(422, {"ma": "KHONG_CO_DONG", "loi": "Phiếu bán phải có ít nhất một dòng."})
 
     ty_gia = _ty_gia(db, tien_te)
-    s = Sale(doc_no=_so_phieu_moi(db, ngay), sale_date=ngay, customer_id=kh.id if kh else None, customer_name=ten_kh,
-             owner_id=chu.id if chu else None,
-             currency=tien_te, rate_to_lak=ty_gia, status="issued", note=(d.get("note") or None), by_user=user.full_name)
-    db.add(s); db.flush()
+    # phụ tùng xuất ở trang kế toán (28/09): cả lần lập phiếu đi trong GiaoDichKho — dòng nào hỏng thì mọi lần xuất
+    # của các dòng trước bên kia được huỷ, hai bên không lệch
+    with KK.GiaoDichKho(db, user) as gd:
+        s = Sale(doc_no=_so_phieu_moi(db, ngay), sale_date=ngay, customer_id=kh.id if kh else None, customer_name=ten_kh,
+                 owner_id=chu.id if chu else None,
+                 currency=tien_te, rate_to_lak=ty_gia, status="issued", note=(d.get("note") or None), by_user=user.full_name)
+        db.add(s); db.flush()
 
-    tong = 0.0; von = 0.0; chi_tiet = []
-    for i, x in enumerate(dong_vao, 1):
-        loai = x.get("item_type")
-        qty = _so(x.get("qty"), "số lượng", bat_buoc=True)
-        gia = _so(x.get("unit_price"), "đơn giá", bat_buoc=True)
-        if qty <= 0 or gia < 0:
-            raise HTTPException(422, {"ma": "SO_SAI", "loi": "Dòng %d: số lượng phải > 0, đơn giá không âm." % i})
-        dong = SaleLine(sale_id=s.id, line_no=i, item_type=loai, qty=qty, unit_price=gia, amount=round(qty * gia, 2))
-        if loai == "part":
-            pt = db.get(Part, x.get("part_id") or "")
-            if not pt:
-                raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Dòng %d: phải chọn phụ tùng." % i})
-            if (pt.qty or 0) < qty:
-                raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Kho chỉ còn %s %s, không đủ bán %s." % (pt.qty, pt.name, qty)})
-            mv = PartMove(part_id=pt.id, move_date=ngay, kind="out", qty=qty, note="Bán · %s · %s" % (s.doc_no, ten_kh),
-                          by_user=user.full_name, unit_price=pt.unit_price)
-            pt.qty = (pt.qty or 0) - qty; pt.last_date = ngay
-            db.add(mv); db.flush()
-            dong.part_id, dong.name, dong.unit, dong.stock_move_id = pt.id, pt.name, pt.unit, mv.id
-            dong.cost_lak = round(qty * (pt.unit_price or 0))
-        elif loai == "fuel":
-            diem = db.get(FuelPlace, x.get("place_id") or "") if x.get("place_id") else None
-            if diem and diem.owner_type != "epl":
-                raise HTTPException(422, {"ma": "KHONG_PHAI_KHO", "loi": "Dòng %d: chỉ bán dầu từ kho của EPL." % i})
-            kho = diem.id if diem else GV.kho_goc(db)
-            lit, von_bq = GV.ton_dau(db, kho)
-            if qty > lit + 0.001:
-                raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Dòng %d: kho chỉ còn %s lít, không đủ bán %s lít." % (i, lit, qty)})
-            # sổ kho ghi GIÁ VỐN (bình quân của kho), không ghi giá bán — giá bán nằm trên dòng phiếu bán
-            mv = FuelMove(move_date=ngay, doc_no=s.doc_no, kind="out", truck_no=None, qty_l=qty,
-                          unit_price=von_bq, currency="LAK", unit_cost_lak=von_bq, place_id=kho,
-                          note="Bán dầu · %s" % ten_kh, by_user=user.full_name)
-            db.add(mv); db.flush()
-            dong.place_id, dong.name, dong.unit, dong.stock_move_id = kho, "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", mv.id
-            dong.cost_lak = round(qty * von_bq)
-        else:
-            raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Dòng %d: loại hàng phải là part hoặc fuel." % i})
-        db.add(dong)
-        tong += dong.amount; von += dong.cost_lak or 0
-        chi_tiet.append({"line_no": i, "item_type": loai, "name": dong.name, "qty": qty, "unit_price": gia, "amount": dong.amount,
-                         "part_id": dong.part_id, "place_id": dong.place_id, "cost_lak": dong.cost_lak})
-    s.total, s.total_lak, s.cost_lak = round(tong, 2), round(tong * ty_gia), round(von)
-    db.flush()
-    dt_loai = "chu_xe" if chu else "khach"
-    CT.ghi(db, "PXK_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
-           tien=s.cost_lak, tien_te="LAK", by_user=user.full_name, mo_ta="Xuất kho bán hàng %s (giá vốn)" % s.doc_no,
-           payload={"doc_no": s.doc_no, "lines": chi_tiet})
-    CT.ghi(db, "HD_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
-           tien=s.total, tien_te=tien_te, tien_lak=s.total_lak, by_user=user.full_name,
-           mo_ta="Hoá đơn bán hàng %s · %s%s" % (s.doc_no, ten_kh, " (trừ vào tiền trả chủ xe)" if chu else ""),
-           payload={"doc_no": s.doc_no, "rate_to_lak": ty_gia, "lines": chi_tiet, "owner_id": chu.id if chu else None})
-    db.commit()
+        tong = 0.0; von = 0.0; chi_tiet = []
+        for i, x in enumerate(dong_vao, 1):
+            loai = x.get("item_type")
+            qty = _so(x.get("qty"), "số lượng", bat_buoc=True)
+            gia = _so(x.get("unit_price"), "đơn giá", bat_buoc=True)
+            if qty <= 0 or gia < 0:
+                raise HTTPException(422, {"ma": "SO_SAI", "loi": "Dòng %d: số lượng phải > 0, đơn giá không âm." % i})
+            dong = SaleLine(sale_id=s.id, line_no=i, item_type=loai, qty=qty, unit_price=gia, amount=round(qty * gia, 2))
+            if loai == "part":
+                pt = db.get(Part, x.get("part_id") or "")            # bản chép danh mục — tồn, giá ở trang kế toán
+                if not pt:
+                    raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Dòng %d: phải chọn phụ tùng." % i})
+                db.add(dong); db.flush()
+                # trang kế toán kiểm tồn (không đủ → 409), trừ tồn, ghi sổ kho theo GIÁ BÌNH QUÂN; không sinh PXK_PT —
+                # phiếu bán có tờ xuất kho bán (PXK_BAN) riêng, giá vốn lấy đúng giá bình quân bên đó trả về
+                r = gd.xuat_phu_tung(khoa="sale_line:" + dong.id, part_id=pt.id, qty=qty, ngay=ngay, ghi_chung_tu=False,
+                                     note="Bán · %s · %s" % (s.doc_no, ten_kh))
+                dong.part_id, dong.name, dong.unit, dong.stock_move_id = pt.id, pt.name, pt.unit, r["move_id"]
+                dong.cost_lak = round(qty * (r["unit_price"] or 0))
+            elif loai == "fuel":
+                diem = db.get(FuelPlace, x.get("place_id") or "") if x.get("place_id") else None
+                if diem and diem.owner_type != "epl":
+                    raise HTTPException(422, {"ma": "KHONG_PHAI_KHO", "loi": "Dòng %d: chỉ bán dầu từ kho của EPL." % i})
+                kho = diem.id if diem else GV.kho_goc(db)
+                lit, von_bq = GV.ton_dau(db, kho)
+                if qty > lit + 0.001:
+                    raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Dòng %d: kho chỉ còn %s lít, không đủ bán %s lít." % (i, lit, qty)})
+                # sổ kho ghi GIÁ VỐN (bình quân của kho), không ghi giá bán — giá bán nằm trên dòng phiếu bán
+                mv = FuelMove(move_date=ngay, doc_no=s.doc_no, kind="out", truck_no=None, qty_l=qty,
+                              unit_price=von_bq, currency="LAK", unit_cost_lak=von_bq, place_id=kho,
+                              note="Bán dầu · %s" % ten_kh, by_user=user.full_name)
+                db.add(mv); db.flush()
+                dong.place_id, dong.name, dong.unit, dong.stock_move_id = kho, "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", mv.id
+                dong.cost_lak = round(qty * von_bq)
+            else:
+                raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Dòng %d: loại hàng phải là part hoặc fuel." % i})
+            db.add(dong)
+            tong += dong.amount; von += dong.cost_lak or 0
+            chi_tiet.append({"line_no": i, "item_type": loai, "name": dong.name, "qty": qty, "unit_price": gia, "amount": dong.amount,
+                             "part_id": dong.part_id, "place_id": dong.place_id, "cost_lak": dong.cost_lak})
+        s.total, s.total_lak, s.cost_lak = round(tong, 2), round(tong * ty_gia), round(von)
+        db.flush()
+        dt_loai = "chu_xe" if chu else "khach"
+        CT.ghi(db, "PXK_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
+               tien=s.cost_lak, tien_te="LAK", by_user=user.full_name, mo_ta="Xuất kho bán hàng %s (giá vốn)" % s.doc_no,
+               payload={"doc_no": s.doc_no, "lines": chi_tiet})
+        CT.ghi(db, "HD_BAN", nguon_bang="sales", nguon_id=s.id, ngay=ngay, doi_tuong_loai=dt_loai, doi_tuong_ten=ten_kh,
+               tien=s.total, tien_te=tien_te, tien_lak=s.total_lak, by_user=user.full_name,
+               mo_ta="Hoá đơn bán hàng %s · %s%s" % (s.doc_no, ten_kh, " (trừ vào tiền trả chủ xe)" if chu else ""),
+               payload={"doc_no": s.doc_no, "rate_to_lak": ty_gia, "lines": chi_tiet, "owner_id": chu.id if chu else None})
     return xuat(db, s)
 
 
@@ -223,10 +225,8 @@ def bo_phieu_ban(sid: str, db: Session = Depends(get_db), user=Depends(can_vai(*
         raise HTTPException(409, {"ma": "DA_TRU", "loi": "Phiếu đã trừ vào một đợt trả chủ xe, không bỏ được."})
     for dong in db.query(SaleLine).filter(SaleLine.sale_id == s.id).all():
         if dong.item_type == "part" and dong.stock_move_id:
-            mv = db.get(PartMove, dong.stock_move_id)
-            pt = db.get(Part, dong.part_id)
-            if pt: pt.qty = (pt.qty or 0) + dong.qty
-            if mv: db.delete(mv)
+            # phụ tùng về kho bên trang kế toán (trả tồn, xoá dòng sổ); trang kế toán tắt thì chưa bỏ phiếu được
+            KK.huy_xuat(db, user, move_id=dong.stock_move_id)
         elif dong.item_type == "fuel" and dong.stock_move_id:
             mv = db.get(FuelMove, dong.stock_move_id)
             if mv: db.delete(mv)

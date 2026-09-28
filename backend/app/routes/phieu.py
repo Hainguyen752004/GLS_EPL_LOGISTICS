@@ -25,11 +25,12 @@ from sqlalchemy.orm import Session
 from database import BIEU_THUC_TIM_PHIEU, get_db
 from models import (Contract, GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
-                    Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, PartMove, Route, RouteStop, Trip,
+                    Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_tien_ban, thay_tien_chi
 from services import gia_von as GV
+from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
 from services.tinh_toan import chuan_tien, doi as doi_tien, la_tien_mat_tai_xe, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
 from services import kho_hang as KH
@@ -605,8 +606,7 @@ def _gia_mac_dinh(db, p, m, source, d):
     if m == "fuel" and source == "kho":
         return GV.gia_bq_dau(db, d.get("place_id")), "LAK"
     if m == "repair" and source == "kho" and d.get("part_id"):
-        pt = db.get(Part, d["part_id"])
-        return (pt.unit_price or 0) if pt else 0, "LAK"
+        return KK.gia_phu_tung(db, d["part_id"]), "LAK"         # kho phụ tùng ở trang kế toán (28/09)
     if m == "travel" and d.get("item_key") == "x_toll" and p.route_id:
         r = db.get(Route, p.route_id)
         if r and (r.toll_lak or 0) > 0:
@@ -976,52 +976,51 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
         e.incident_type = lt
     db.add(e); db.flush()
 
-    sua = data.get("repair")
-    if sua:
-        source = sua.get("source")
-        if source not in ("kho", "mua"):
-            raise HTTPException(422, {"ma": "NGUON_SAI", "loi": "Sửa xe phải ghi nguồn: kho (xuất kho) hay mua (mua ngoài)."})
-        qty = _so(sua.get("qty"), "qty") or 1
-        gia = _so(sua.get("unit_price"), "unit_price")
-        part = None
-        if source == "kho":
-            part = db.get(Part, sua.get("part_id") or "")
-            if not part:
-                raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
-            if (part.qty or 0) < qty:
-                raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Kho chỉ còn %s %s, không đủ xuất %s." % (part.qty, part.name, qty)})
-            if gia is None: gia = part.unit_price or 0
-        if gia is None:
-            raise HTTPException(422, {"ma": "THIEU_GIA", "loi": "Mua ngoài thì phải ghi đơn giá."})
-        so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
-        dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1,
-                           item_key=(sua.get("item_key") or None) if not part else None,
-                           item_name=(sua.get("item_name") or (part.name if part else None)),
-                           qty=qty, unit_price=gia, currency=str(sua.get("currency") or "LAK").upper(),
-                           paid_by_epl=bool(sua.get("paid_by_epl", True)), source=source, part_id=part.id if part else None,
-                           acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
-        db.add(dong); db.flush()
-        if part:
-            mv = PartMove(part_id=part.id, move_date=dt.date.today(), kind="out", qty=qty, truck_no=p.truck_no,
-                          trip_doc_no=p.doc_no, note="Sửa xe trên đường — %s" % (e.note or ""), by_user=user.full_name, expense_id=dong.id)
-            part.qty = (part.qty or 0) - qty; part.last_date = dt.date.today(); part.last_truck = p.truck_no
-            db.add(mv); db.flush(); dong.stock_move_id = mv.id
-            CT.ghi(db, "PXK_PT", nguon_bang="part_moves", nguon_id=mv.id, trip=p, ngay=mv.move_date, doi_tuong_loai="kho",
-                   doi_tuong_ten=part.name, tien=qty * (dong.unit_price or 0), tien_te=dong.currency, tien_lak=tien_dong(p, dong),
-                   section="repair", by_user=user.full_name, mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
-                   payload={"part_id": part.id, "qty": qty, "unit_price": dong.unit_price, "currency": dong.currency, "truck_no": p.truck_no})
-        e.expense_id = dong.id
-        # Khoản sửa xe khai từ màn theo dõi là dữ liệu ĐÃ NHẬP: mục V vào thẳng hàng chờ kế toán kiểm.
-        # Mục đã qua bước kiểm/ghi sổ/chi thì kéo về "đã nhập" và ghi rõ là mở lại vì có chi mới.
-        s = _muc_cua(db, p)["repair"]
-        if s.status not in ("wait", "entered"):
-            _ghi_log(db, p, user, "sec_repair:reopen")
-        s.status = "entered"
-        if p.vehicle_id and e.incident_type == "breakdown":
-            x = db.get(Vehicle, p.vehicle_id)
-            if x: x.status = "maintenance"
-    _ghi_log(db, p, user, "ev_%s" % kind)
-    db.commit()
+    # Lấy phụ tùng từ kho = trừ tồn bên trang kế toán; cả lần lưu này đi trong GiaoDichKho: bên này hỏng ở đâu thì lần
+    # xuất bên kia được huỷ, hai bên không lệch. Trang kế toán tắt → 503, không lưu được (chặn và báo rõ, 28/09).
+    with KK.GiaoDichKho(db, user) as gd:
+        sua = data.get("repair")
+        if sua:
+            source = sua.get("source")
+            if source not in ("kho", "mua"):
+                raise HTTPException(422, {"ma": "NGUON_SAI", "loi": "Sửa xe phải ghi nguồn: kho (xuất kho) hay mua (mua ngoài)."})
+            qty = _so(sua.get("qty"), "qty") or 1
+            gia = _so(sua.get("unit_price"), "unit_price")
+            part = None
+            if source == "kho":
+                part = db.get(Part, sua.get("part_id") or "")     # bản chép danh mục — tồn và giá ở trang kế toán
+                if not part:
+                    raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
+                if gia is None: gia = KK.gia_phu_tung(db, part.id)
+            if gia is None:
+                raise HTTPException(422, {"ma": "THIEU_GIA", "loi": "Mua ngoài thì phải ghi đơn giá."})
+            so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
+            dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1,
+                               item_key=(sua.get("item_key") or None) if not part else None,
+                               item_name=(sua.get("item_name") or (part.name if part else None)),
+                               qty=qty, unit_price=gia, currency=str(sua.get("currency") or "LAK").upper(),
+                               paid_by_epl=bool(sua.get("paid_by_epl", True)), source=source, part_id=part.id if part else None,
+                               acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
+            db.add(dong); db.flush()
+            if part:
+                # trang kế toán kiểm tồn (không đủ → 409), trừ tồn, ghi sổ kho và sinh PXK_PT ngay bên đó
+                r = gd.xuat_phu_tung(khoa="trip_expense:" + dong.id, part_id=part.id, qty=qty, ngay=dt.date.today(),
+                                     gia=dong.unit_price, tien_te=dong.currency, ty_gia=ty_gia(p, dong.currency),
+                                     truck_no=p.truck_no, trip_doc_no=p.doc_no, expense_id=dong.id, company=p.company,
+                                     section="repair", mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
+                                     note="Sửa xe trên đường — %s" % (e.note or ""))
+                dong.stock_move_id = r["move_id"]
+            e.expense_id = dong.id
+            # Khoản sửa xe khai từ màn theo dõi là dữ liệu ĐÃ NHẬP: mục V vào thẳng hàng chờ kế toán kiểm.
+            # Mục đã qua bước kiểm/ghi sổ/chi thì kéo về "đã nhập" và ghi rõ là mở lại vì có chi mới.
+            s = _muc_cua(db, p)["repair"]
+            if s.status not in ("wait", "entered"):
+                _ghi_log(db, p, user, "sec_repair:reopen")
+            s.status = "entered"
+            if p.vehicle_id and e.incident_type == "breakdown":
+                x = db.get(Vehicle, p.vehicle_id)
+                if x: x.status = "maintenance"
+        _ghi_log(db, p, user, "ev_%s" % kind)
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1716,41 +1715,37 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
     tien_te = str(data.get("currency") or e.currency or "LAK").upper()
     part = None
     if source == "kho":
-        part = db.get(Part, data.get("part_id") or "")
+        part = db.get(Part, data.get("part_id") or "")         # bản chép danh mục — tồn và giá ở trang kế toán
         if not part:
             raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
-        if (part.qty or 0) < qty:
-            raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Kho chỉ còn %s %s." % (part.qty, part.name)})
-        if gia is None: gia = part.unit_price or 0
+        if gia is None: gia = KK.gia_phu_tung(db, part.id)
     if gia is None:
         gia = e.reported_cost if e.reported_cost is not None else None
     if gia is None:
         raise HTTPException(422, {"ma": "THIEU_GIA", "loi": "Chưa có số tiền: tài xế không báo và người duyệt chưa nhập."})
-    so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
-    dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1, item_key=None,
-                       item_name=(data.get("item_name") or (part.name if part else e.note))[:120],
-                       qty=qty, unit_price=gia, currency=tien_te, paid_by_epl=True, source=source,
-                       part_id=part.id if part else None, acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
-    db.add(dong); db.flush()
-    if part:
-        mv = PartMove(part_id=part.id, move_date=dt.date.today(), kind="out", qty=qty, truck_no=p.truck_no, trip_doc_no=p.doc_no,
-                      note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""), by_user=user.full_name, expense_id=dong.id)
-        part.qty = (part.qty or 0) - qty; part.last_date = dt.date.today(); part.last_truck = p.truck_no
-        db.add(mv); db.flush(); dong.stock_move_id = mv.id
-        CT.ghi(db, "PXK_PT", nguon_bang="part_moves", nguon_id=mv.id, trip=p, ngay=mv.move_date, doi_tuong_loai="kho",
-               doi_tuong_ten=part.name, tien=qty * (dong.unit_price or 0), tien_te=dong.currency, tien_lak=tien_dong(p, dong),
-               section="repair", by_user=user.full_name, mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
-               payload={"part_id": part.id, "qty": qty, "unit_price": dong.unit_price, "currency": dong.currency, "truck_no": p.truck_no})
-    e.status = "approved"; e.kind = "repair"; e.expense_id = dong.id
-    s = _muc_cua(db, p)["repair"]
-    if s.status not in ("wait", "entered"):
-        _ghi_log(db, p, user, "sec_repair:reopen")
-    s.status = "entered"
-    if p.vehicle_id and e.incident_type == "breakdown":
-        x = db.get(Vehicle, p.vehicle_id)
-        if x: x.status = "maintenance"
-    _ghi_log(db, p, user, "ev_approved")
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
+        dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1, item_key=None,
+                           item_name=(data.get("item_name") or (part.name if part else e.note))[:120],
+                           qty=qty, unit_price=gia, currency=tien_te, paid_by_epl=True, source=source,
+                           part_id=part.id if part else None, acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
+        db.add(dong); db.flush()
+        if part:
+            r = gd.xuat_phu_tung(khoa="trip_expense:" + dong.id, part_id=part.id, qty=qty, ngay=dt.date.today(),
+                                 gia=dong.unit_price, tien_te=dong.currency, ty_gia=ty_gia(p, dong.currency),
+                                 truck_no=p.truck_no, trip_doc_no=p.doc_no, expense_id=dong.id, company=p.company,
+                                 section="repair", mo_ta="Xuất %s %s sửa xe %s" % (qty, part.name, p.truck_no),
+                                 note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""))
+            dong.stock_move_id = r["move_id"]
+        e.status = "approved"; e.kind = "repair"; e.expense_id = dong.id
+        s = _muc_cua(db, p)["repair"]
+        if s.status not in ("wait", "entered"):
+            _ghi_log(db, p, user, "sec_repair:reopen")
+        s.status = "entered"
+        if p.vehicle_id and e.incident_type == "breakdown":
+            x = db.get(Vehicle, p.vehicle_id)
+            if x: x.status = "maintenance"
+        _ghi_log(db, p, user, "ev_approved")
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1835,6 +1830,12 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
             db.delete(m)
         db.flush()
     KH.kiem_xoa(db, p)
+    # Phụ tùng mục V lấy từ kho (kho ở trang kế toán từ 28/09): trả về kho bên đó — trả tồn, rút tờ PXK_PT — như dầu
+    # đã cấp được trả về kho ở trên. Trang kế toán tắt thì chưa xoá được phiếu (chặn và báo rõ): không để sổ bên kia
+    # giữ tờ xuất kho cho một phiếu không còn.
+    for e in _dong_chi(db, p):
+        if e.section == "repair" and e.source == "kho" and e.stock_move_id:
+            KK.huy_xuat(db, user, move_id=e.stock_move_id)
     _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
     db.query(TripEvent).filter(TripEvent.trip_id == p.id).delete()
     for a in db.query(TripAttachment).filter(TripAttachment.trip_id == p.id).all():

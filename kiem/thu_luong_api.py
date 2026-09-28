@@ -19,6 +19,7 @@ import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q
+import _ke_toan as K       # kho phụ tùng ở trang kế toán (28/09)
 
 GOC = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010"
 TOKEN = {}
@@ -178,6 +179,9 @@ def main():
     assert d_kho["acct_code"] == "4022/1371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /1371
     assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập' để kiểm lại"
     s, parts2 = goi("/api/parts", vai="thabok"); assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
+    to = [v for v in K.to_kho(g["doc_no"]) if v["trip_no"] == g["doc_no"]]
+    assert len(to) == 1 and to[0]["debit"] == "4022" and to[0]["credit"] == "1371", "PXK_PT bên kế toán: %s" % to
+    print("  ✓ %-58s %s" % ("Trang kế toán sinh PXK_PT Nợ 4022 / Có 1371 (xe liên kết)", to[0]["ref"]))
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="totsua")
     phai(s, 200, "Sửa xe MUA NGOÀI → dòng mục V, định khoản …/4021", g)
     assert [e for e in g["expenses"] if e["section"] == "repair"][-1]["acct_code"] == "4022/4021"
@@ -269,15 +273,21 @@ def main():
 
     # ---- 6. Dọn — trả lại kho đúng những gì phiếu thử đã lấy, rồi xoá phiếu
     s, g = goi("/api/trips/%s" % P, vai="thabok", method="DELETE"); phai(s, 409, "Bãi xoá phiếu đã duyệt → bị từ chối", g)
-    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok")
-    phai(s, 403, "Bãi nhập kho phụ tùng → bị từ chối (việc thủ kho phụ tùng, C1.2)", g)
-    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="khopt"); phai(s, 200, "Thủ kho phụ tùng trả lại 1 phụ tùng vào kho", g)
+    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="khopt")
+    phai(s, 409, "Trang điều xe không còn nhập / xuất phụ tùng (đã dời sang kế toán)", g)
+    s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok")
+    phai(s, 403, "Bãi nhập kho phụ tùng ở trang kế toán → bị từ chối (C1.2)", g)
     s, kho = goi("/api/fuel-moves", vai="khonl")
     for r in kho["rows"]:
         if r["doc_no"] == "THU-LUONG-01/EPL":
             goi("/api/fuel-moves/%s" % r["id"], vai="khonl", method="DELETE")
     print("  ✓ đã xoá dòng xuất kho nhiên liệu của phiếu thử")
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
+    # xoá phiếu → phụ tùng mục V về kho bên trang kế toán, tờ PXK_PT của phiếu rút theo
+    s, parts3 = goi("/api/parts", vai="thabok")
+    assert next(x for x in parts3 if x["id"] == pt["id"])["qty"] == ton, "xoá phiếu phải trả phụ tùng về kho: %s" % ton
+    assert not [v for v in K.to_kho("THU-LUONG-01/EPL") if v["trip_no"] == "THU-LUONG-01/EPL"], "tờ PXK_PT của phiếu đã xoá phải rút"
+    print("  ✓ %-58s %s" % ("Xoá phiếu → phụ tùng về kho kế toán, PXK_PT rút theo", ton))
     print("\nTHỬ LUỒNG API: ĐẠT — 9 vai · 6 mục · 5 bước duyệt · bảng giá khách × tuyến · 13 chỗ từ chối đúng")
 
 

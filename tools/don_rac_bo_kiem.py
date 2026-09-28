@@ -106,23 +106,11 @@ for o in lenh_thu:
 if THAT:
     db.flush()
 
-# ---------------------------------------------------------------- 4. sổ phụ tùng: xoá dòng thử, TỒN đảo ngược đúng dòng đó
+# ---------------------------------------------------------------- 4. sổ phụ tùng — ở trang kế toán từ 28/09
+# Tồn, giá, sổ nhập xuất phụ tùng nằm ở epl_ketoan. Ở đây chỉ gom dấu hiệu nhận ra lần xuất của bộ kiểm (dòng chi mục V
+# đã bị xoá, lệnh sửa thử, phiếu bán thử, ghi chú "trả kho" thử); bước 10 dọn bên đó và ĐẢO TỒN đúng những lần xuất ấy.
 con_dong = {e.id for e in db.query(M.TripExpense).all()} - (dong_thu if not THAT else set())
 TRA_THU = ("hoàn trả sau", "thử trả kho", "trả lại sau")
-dao = Counter()
-for m in db.query(M.PartMove).all():
-    la_thu = ((m.expense_id and m.expense_id not in con_dong)
-              or (m.trip_doc_no in so_lenh_thu)
-              or any(m.note and m.note.startswith("Bán · %s" % s) for s in so_ban_thu)
-              or (m.note and any(t in m.note for t in TRA_THU)))
-    if la_thu:
-        dao[m.part_id] += (m.qty if m.kind == "out" else -m.qty)
-        xoa(m, "dòng phụ tùng")
-for pid, n in dao.items():
-    pt = db.get(M.Part, pid)
-    print("  tồn %-26s %s → %s" % (pt.name[:26], pt.qty, pt.qty + n))
-    if THAT:
-        pt.qty = pt.qty + n
 
 # ---------------------------------------------------------------- 5. sổ dầu: dòng của phiếu / phiếu bán không còn
 so_phieu_con = {p.doc_no for p in db.query(M.Trip).all() if p.id not in id_thu}
@@ -222,36 +210,75 @@ print("\n%s" % ("ĐÃ XOÁ:" if THAT else "SẼ XOÁ (chạy thử):"))
 for k, n in sorted(dem.items(), key=lambda x: -x[1]):
     print("  %4d  %s" % (n, k))
 print("  số chứng từ bị xoá: %d" % len(da_xoa_ref))
-if not THAT:
-    db.rollback(); print("(chạy thử — chưa ghi gì; thêm tham số 'that' để xoá thật)"); sys.exit(0)
-db.commit(); print("ĐÃ GHI epl_lao.")
+if THAT:
+    db.commit(); print("ĐÃ GHI epl_lao.")
 
-# ---------------------------------------------------------------- 10. sổ EPL_KETOAN: xoá tờ mà nguồn không còn
+# ---------------------------------------------------------------- 10. sổ EPL_KETOAN
+#   a) sổ phụ tùng (ở đó từ 28/09): xoá lần xuất / nhập của bộ kiểm, ĐẢO TỒN đúng dòng đó, rút tờ kho nó sinh ra;
+#   b) tờ ĐẨY TỪ EPL_LAO mà nguồn bên này không còn → xoá cùng bút toán. Tờ kho SINH Ở SỔ (source EPL_KETOAN) thì không
+#      bao giờ xoá theo cách này — nó không có bản bên này để so.
 import subprocess
-con = sorted(c.so for c in db.query(M.ChungTu).all())
 SO = os.path.join(os.path.dirname(GOC), "EPL_KETOAN", "backend", "app")
 MA = """
 import json, sys
 sys.path.insert(0, sys.argv[1])
 from database import SessionLocal
 import models as M
-con = set(json.load(sys.stdin)); db = SessionLocal(); n = b = 0
-for v in db.query(M.Voucher).all():
-    if v.ref in con: continue
+THAT = sys.argv[2] == "that"
+g = json.load(sys.stdin); con = set(g["con"]); con_dong = set(g["con_dong"]); lenh = set(g["lenh"]); ban = g["ban"]; tra = g["tra"]
+db = SessionLocal(); n = b = 0
+def xoa_to(v):
+    global n, b
     if v.entry_id:
         e = db.get(M.Entry, v.entry_id); v.entry_id = None; db.flush()
         if e: db.query(M.EntryLine).filter(M.EntryLine.entry_id == e.id).delete(); db.delete(e); b += 1
     db.delete(v); n += 1
+# a) sổ phụ tùng
+dao = {}; so_mv = 0
+for m in db.query(M.PartMove).all():
+    thu = ((m.expense_id and m.expense_id not in con_dong)
+           or (m.khoa and m.khoa.startswith("trip_expense:") and m.khoa.split(":", 1)[1] not in con_dong)
+           or (m.trip_doc_no in lenh)
+           or any(m.note and m.note.startswith("Bán · %s" % x) for x in ban)
+           or (m.note and any(t in m.note for t in tra)))
+    if not thu: continue
+    so_mv += 1; dao[m.part_id] = dao.get(m.part_id, 0) + (m.qty if m.kind == "out" else -m.qty)
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == "part_moves", M.Voucher.nguon_id == m.id).all():
+        xoa_to(v)
+    db.delete(m)
+for pid, k in dao.items():
+    pt = db.get(M.Part, pid)
+    if pt:
+        print("  tồn %-26s %s → %s (sổ kế toán)" % (pt.name[:26], pt.qty, pt.qty + k))
+        pt.qty = pt.qty + k
+db.flush()
+# b) tờ đẩy từ EPL_LAO mà nguồn không còn
+for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
+    if v.ref not in con: xoa_to(v)
 db.flush()
 dung = {e.party_id for e in db.query(M.Entry).all() if e.party_id}
 for p in db.query(M.Partner).all():
     if p.id not in dung: db.delete(p)
-db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d tờ, %d bút toán; còn %d tờ" % (n, b, db.query(M.Voucher).count()))
+if THAT:
+    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d dòng sổ phụ tùng, %d tờ, %d bút toán; còn %d tờ" % (so_mv, n, b, db.query(M.Voucher).count()))
+else:
+    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d dòng sổ phụ tùng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (so_mv, n, b))
 """
-if os.path.isdir(SO):
+
+
+def chay_so(that):
+    if not os.path.isdir(SO):
+        return
     # tiến trình con KHÔNG mang DATABASE_URL của epl_lao (database.py bên này đã nạp vào môi trường) — sổ tự đọc .env
     # của nó; mang sang thì sổ từ chối chạy (chốt an toàn "không dùng chung DB") — đúng như vậy.
+    con = sorted(c.so for c in db.query(M.ChungTu).all() if c.so not in da_xoa_ref)
+    goi = {"con": con, "con_dong": sorted(con_dong), "lenh": sorted(so_lenh_thu), "ban": sorted(so_ban_thu), "tra": list(TRA_THU)}
     moi_truong = {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}
-    r = subprocess.run([sys.executable, "-X", "utf8", "-c", MA, SO], input=json.dumps(con), capture_output=True, text=True,
-                       encoding="utf-8", env=moi_truong, cwd=os.path.dirname(os.path.dirname(SO)))
-    print(r.stdout.strip() or r.stderr.strip()[-400:])
+    r = subprocess.run([sys.executable, "-X", "utf8", "-c", MA, SO, "that" if that else "thu"], input=json.dumps(goi),
+                       capture_output=True, text=True, encoding="utf-8", env=moi_truong, cwd=os.path.dirname(os.path.dirname(SO)))
+    print(r.stdout.strip() or r.stderr.strip()[-600:])
+
+
+chay_so(THAT)
+if not THAT:
+    db.rollback(); print("(chạy thử — chưa ghi gì; thêm tham số 'that' để xoá thật)")

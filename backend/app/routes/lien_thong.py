@@ -13,7 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import FuelMove, FuelPlace, SaleLine, Supplier, TripEvent, TripExpense, User, Voucher
+from models import FuelMove, FuelPlace, Part, SaleLine, Supplier, TripEvent, TripExpense, User, Voucher
 from services import day_ke_toan as DK
 from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, may_ke_toan_goi, token_nhan_ke_toan
@@ -100,4 +100,21 @@ def xoa_ban_sao_diem(pid: str, db: Session = Depends(get_db), u=Depends(may_ke_t
         raise HTTPException(409, {"ma": "DANG_DUNG",
                                   "loi": "Điểm đổ đã có trên %s — chỉ được ngưng dùng, không xoá." % ", ".join(dung)})
     db.delete(x); db.commit()
+    return {"ok": True, "id": pid}
+
+
+# Phụ tùng: bản GỐC (tồn, giá, sổ) ở trang kế toán. Ở đây là bản chép DANH MỤC — tên, đơn vị, tồn tối thiểu, đang dùng —
+# để dòng chi mục V, dòng lệnh sửa, dòng bán vẫn trỏ đúng. Không nhận tồn, không nhận giá (số đó chỉ bên kia giữ).
+@router.put("/api/lien-thong/ban-sao/phu-tung/{pid}")
+def ghi_ban_sao_phu_tung(pid: str, d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    if not str(d.get("name") or "").strip():
+        raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Phụ tùng phải có tên."})
+    x = db.get(Part, pid)
+    if not x:
+        x = Part(id=pid, qty=0, unit_price=0); db.add(x)
+    x.name = str(d["name"]).strip()
+    x.unit = d.get("unit") or "u_pc"
+    x.min_qty = d.get("min_qty") or 0
+    x.active = bool(d.get("active", True))
+    db.commit()
     return {"ok": True, "id": pid}

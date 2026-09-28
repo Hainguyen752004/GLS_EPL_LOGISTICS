@@ -20,9 +20,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (CHUOI_SUA_CHUA, LOAI_SUA_CHUA, TIEN_TE, ExchangeRate, Part, PartMove, RepairLine,
+from models import (CHUOI_SUA_CHUA, LOAI_SUA_CHUA, TIEN_TE, ExchangeRate, Part, RepairLine,
                     RepairOrder, Supplier, Trip, Vehicle)
 from services import chung_tu as CT
+from services import kho_ke_toan as KK
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
@@ -117,8 +118,10 @@ def _sua_duoc(user, o):
 
 
 # ---------------------------------------------------------------- dòng chi
-def _ap_dong(db, o, cac_dong, user):
-    """Ghi lại toàn bộ dòng chi của lệnh. Dòng đã XUẤT KHO thì không cho xoá — tồn kho đã giảm thật."""
+def _ap_dong(db, o, cac_dong, user, gd):
+    """Ghi lại toàn bộ dòng chi của lệnh. Dòng đã XUẤT KHO thì không cho xoá — tồn kho đã giảm thật.
+    Kho phụ tùng ở trang kế toán (28/09): dòng lấy kho xuất qua `gd` (KK.GiaoDichKho) — bên kia kiểm tồn, trừ tồn và
+    sinh PXK_PT; lần lưu bên này hỏng thì lần xuất bên kia được huỷ."""
     cu = {d.id: d for d in _dong(db, o)}
     giu = set()
     for i, x in enumerate([d for d in (cac_dong or []) if d], 1):
@@ -145,16 +148,14 @@ def _ap_dong(db, o, cac_dong, user):
                 raise HTTPException(422, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
             d.supplier_id = str(x["supplier_id"])
         if d.source == "kho":
-            pt = db.get(Part, str(x.get("part_id") or ""))
+            pt = db.get(Part, str(x.get("part_id") or ""))           # bản chép danh mục — tồn, giá ở trang kế toán
             if not pt:
                 raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
-            if (pt.qty or 0) < d.qty:
-                raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Kho chỉ còn %s %s, không đủ xuất %s." % (pt.qty, pt.name, d.qty)})
             d.part_id = pt.id
             if not d.item_name:
                 d.item_name = pt.name
             if not d.unit_price:
-                d.unit_price = pt.unit_price or 0
+                d.unit_price = KK.gia_phu_tung(db, pt.id)
         else:
             d.part_id = None
             if not (d.item_key or d.item_name):
@@ -176,19 +177,13 @@ def _ap_dong(db, o, cac_dong, user):
         if d.source != "kho" or d.stock_move_id:
             continue
         pt = db.get(Part, d.part_id)
-        mv = PartMove(part_id=pt.id, move_date=o.order_date or dt.date.today(), kind="out", qty=d.qty,
-                      truck_no=o.truck_no, trip_doc_no=o.doc_no, by_user=user.full_name,
-                      note="Lệnh sửa chữa %s" % o.doc_no)
-        pt.qty = (pt.qty or 0) - d.qty
-        pt.last_date, pt.last_truck = mv.move_date, o.truck_no
-        db.add(mv); db.flush()
-        d.stock_move_id = mv.id
-        CT.ghi(db, "PXK_PT", nguon_bang="part_moves", nguon_id=mv.id, ngay=mv.move_date, doi_tuong_loai="kho",
-               doi_tuong_ten=pt.name, tien=(d.qty or 0) * (d.unit_price or 0), tien_te=d.currency,
-               tien_lak=round(_tien_dong(db, d)), section="repair", by_user=user.full_name,
-               mo_ta="Xuất %s %s cho lệnh sửa chữa %s (xe %s)" % (d.qty, pt.name, o.doc_no, o.truck_no or ""),
-               payload={"part_id": pt.id, "qty": d.qty, "unit_price": d.unit_price, "currency": d.currency,
-                        "truck_no": o.truck_no, "repair_order": o.doc_no})
+        # trang kế toán kiểm tồn (không đủ → 409 nguyên câu), trừ tồn, ghi sổ kho, sinh PXK_PT (Nợ 614 / Có 1371)
+        r = gd.xuat_phu_tung(khoa="repair_line:" + d.id, part_id=pt.id, qty=d.qty, ngay=o.order_date or dt.date.today(),
+                             gia=d.unit_price, tien_te=d.currency, ty_gia=_ty_gia(db, d.currency), truck_no=o.truck_no,
+                             trip_doc_no=o.doc_no, company="EPL", section="repair", repair_order=o.doc_no,
+                             mo_ta="Xuất %s %s cho lệnh sửa chữa %s (xe %s)" % (d.qty, pt.name, o.doc_no, o.truck_no or ""),
+                             note="Lệnh sửa chữa %s" % o.doc_no)
+        d.stock_move_id = r["move_id"]
 
 
 # ---------------------------------------------------------------- danh sách & xem
@@ -228,12 +223,12 @@ def lap_lenh(data: dict = Body(...), db: Session = Depends(get_db), user=Depends
                     order_date=ngay, kind=loai, odo_km=_so(data.get("odo_km"), "odo_km", x.odometer_km),
                     garage=(data.get("garage") or "").strip() or None,
                     note=(data.get("note") or "").strip() or None, by_user=user.full_name)
-    db.add(o); db.flush()
-    _ap_dong(db, o, data.get("lines"), user)
-    # Xe vào xưởng thì danh mục xe phải nói đúng như vậy — điều xe nhìn vào đó mà xếp chuyến.
-    if x.status not in ("inactive", "on_trip"):
-        x.status = "maintenance"
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        db.add(o); db.flush()
+        _ap_dong(db, o, data.get("lines"), user, gd)
+        # Xe vào xưởng thì danh mục xe phải nói đúng như vậy — điều xe nhìn vào đó mà xếp chuyến.
+        if x.status not in ("inactive", "on_trip"):
+            x.status = "maintenance"
     return xuat(db, o)
 
 
@@ -254,9 +249,9 @@ def sua_lenh(oid: str, data: dict = Body(...), db: Session = Depends(get_db), us
             setattr(o, c, (data[c] or "").strip() or None)
     if "odo_km" in data:
         o.odo_km = _so(data.get("odo_km"), "odo_km")
-    if "lines" in data:
-        _ap_dong(db, o, data.get("lines"), user)
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        if "lines" in data:
+            _ap_dong(db, o, data.get("lines"), user, gd)
     return xuat(db, o)
 
 

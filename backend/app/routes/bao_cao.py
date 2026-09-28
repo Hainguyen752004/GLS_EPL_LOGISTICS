@@ -907,9 +907,7 @@ def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
         r["cap-phat"] = cho.count()
         r["kho-nhien-lieu"] = cho.filter(Voucher.kind == "fuel").count()
 
-    # Phụ tùng dưới tồn tối thiểu
-    if admin or vai in ("yard", "fuel", "expacct"):
-        r["kho-phu-tung"] = db.query(Part).filter(Part.qty < Part.min_qty).count()
+    # "Phụ tùng dưới tồn tối thiểu" đi theo màn Kho phụ tùng sang trang kế toán (28/09) — tồn không còn ở đây
 
     # Chứng từ bên kế toán chưa đối chiếu
     if admin or vai in ("acct", "expacct", "rev", "cash", "treasury"):

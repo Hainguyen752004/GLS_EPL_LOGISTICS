@@ -14,11 +14,14 @@ sai bước bị chặn, sai vai bị chặn → kiểm → ghi sổ → trả l
 khoản mua ngoài) → xe về rảnh → lịch sử sửa chữa của xe gom cả lệnh lẫn phiếu → dọn.
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — kho phụ tùng ở trang kế toán (28/09)
 TOKEN = {}
 
 
@@ -98,9 +101,9 @@ def main():
     s, parts2 = goi("/api/parts", vai="khopt")
     assert next(p for p in parts2 if p["id"] == pt["id"])["qty"] == ton - 2, "tồn kho phải giảm 2"
     print("  ✓ %-60s %s → %s" % ("Lấy kho trừ tồn NGAY lúc khai", ton, ton - 2))
-    s, ct = goi("/api/chung-tu?loai=PXK_PT&limit=5", vai="ketoan")
-    assert any(O["doc_no"] in (c.get("mo_ta") or "") for c in ct["ds"]), "phải có tờ PXK_PT nhắc số lệnh"
-    print("  ✓ %-60s" % "Có phiếu xuất kho phụ tùng mang số lệnh")
+    to = K.to_kho(O["doc_no"])
+    assert len(to) == 1 and to[0]["debit"] == "614" and to[0]["credit"] == "1371", "PXK_PT bên kế toán: %s" % to
+    print("  ✓ %-60s %s" % ("Trang kế toán sinh PXK_PT mang số lệnh, Nợ 614 / Có 1371", to[0]["ref"]))
 
     s, g = goi("/api/lenh-sua-chua/%s" % oid, {"lines": [lines[1]]}, vai="totsua", method="PUT")
     phai(s, 409, "Xoá dòng đã xuất kho khỏi lệnh → bị từ chối", g)
@@ -143,8 +146,8 @@ def main():
     print("  ✓ %-60s %d dòng" % ("Lịch sử sửa chữa của xe gom cả lệnh lẫn phiếu", len(sua)))
 
     # ---------------------------------------------------------------- 5. dọn
-    s, g = goi("/api/parts/%s/moves" % pt["id"], {"kind": "in", "qty": 2, "note": "hoàn trả sau bộ kiểm"}, vai="khopt")
-    phai(s, 200, "Trả lại phụ tùng đã xuất (dọn)", g)
+    s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 2, "note": "hoàn trả sau bộ kiểm"}, vai="khopt")
+    phai(s, 200, "Trả lại phụ tùng đã xuất ở trang kế toán (dọn)", g)
     print("\n✅ LỆNH SỬA CHỮA RIÊNG: đúng chuỗi duyệt mục V, lấy kho trừ tồn ngay, chi chỉ khoản mua ngoài,")
     print("   màn Xe thấy cả hai nguồn. (Tờ thử giữ lại vì đã sinh chứng từ — xoá tay nếu cần.)")
 

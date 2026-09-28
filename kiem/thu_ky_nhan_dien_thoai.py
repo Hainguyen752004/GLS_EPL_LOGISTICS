@@ -80,6 +80,8 @@ def main():
             p1 = goi("/api/trips/%s" % ids[0]["id"], vai="admin")
             assert p1["pod_signed"] and p1["pod_files"] == 1 and p1["pod_lat"], (p1["pod_signed"], p1["pod_files"], p1["pod_lat"])
             print("✓ còn mạng: ký bằng tay + 1 ảnh + GPS → máy chủ có chữ ký · %s · %s" % (p1["pod_no"], p1["pod_at"]))
+            # chờ thẻ vẽ lại sau khi gửi (máy chủ bận thì lâu hơn 1,8 giây chờ cứng ở trên) — tối đa 10 giây
+            pg.wait_for_selector('[data-bb="%s"]' % ids[0]["id"], state="visible", timeout=10000)
             assert pg.is_visible('[data-bb="%s"]' % ids[0]["id"]), "thẻ phải có nút Xem biên bản"
             # 2. mất mạng
             ctx.set_offline(True)
