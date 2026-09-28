@@ -17,6 +17,10 @@ Xuất kho cho một dòng bên này (sự cố mục V, duyệt báo hỏng, l�
 
 `khoa` chống trùng: gọi lại cùng khoá thì trang kế toán trả lần xuất cũ, không trừ hai lần. Trang kế toán tắt → 503
 "chưa nối được trang kế toán" và việc đó không làm được (chủ dự án chốt 28/09: chặn và báo rõ).
+
+Kho HÀNG (đợt 5): sổ `goods_moves` cũng ở trang kế toán; dòng hàng trên phiếu (`trip_goods`) vẫn ở đây. Phiếu gom về
+tới bãi → `gd.nhap_hang` (gọi lại không nhập trùng); lưu phiếu giao → `gd.xuat_hang` (thay phần xuất của phiếu, bên kia
+kiểm tồn lô). Bên này lưu hỏng → gỡ phần vừa nhập / trả lại phần xuất cũ.
 """
 import logging
 
@@ -62,6 +66,31 @@ def huy_xuat_dau(db, nguoi, move_id=None, khoa=None):
     return KT.goi(db, "POST", "/api/lien-thong/nhien-lieu/huy-xuat", {"move_id": move_id, "khoa": khoa}, nguoi=nguoi)
 
 
+# ---------------------------------------------------------------- kho hàng (đợt 5, 28/09)
+def lo_hang(db, tru_phieu=None):
+    """Lô còn hàng ở bãi — ô chọn lô trên phiếu giao."""
+    return KT.goi(db, "GET", "/api/lien-thong/kho-hang/lo" + ("?tru_phieu=" + tru_phieu if tru_phieu else "")) or []
+
+
+def hang_cua_phieu(db, trip_id):
+    """{da_nhap, ton_lo, lay_boi, xuat} của một phiếu trong sổ kho hàng bên trang kế toán — một yêu cầu hỏi một lần."""
+    bang = db.info.setdefault("_hh_ke_toan", {})
+    if trip_id not in bang:
+        bang[trip_id] = KT.goi(db, "GET", "/api/lien-thong/kho-hang/phieu/" + trip_id) or {}
+    return bang[trip_id]
+
+
+def huy_hang(db, nguoi, trip_id):
+    """Xoá phiếu → xoá dòng sổ kho hàng của phiếu bên trang kế toán, rút tờ. Lô đã có phiếu giao khác lấy → 409."""
+    db.info.pop("_hh_ke_toan", None)
+    return KT.goi(db, "POST", "/api/lien-thong/kho-hang/huy", {"trip_id": trip_id}, nguoi=nguoi)
+
+
+def _ma_hang_gui(db):
+    from services import day_ke_toan as DK
+    return DK.cau_hinh(db, "ma_hang_khach_gui") or None
+
+
 def web_ke_toan(db):
     """Địa chỉ trang kế toán để MỞ bằng trình duyệt / in vào mã QR phiếu lĩnh (màn Cấp phát ở đó).
     Cấu hình `ke_toan_web`; không đặt thì dùng địa chỉ API kế toán (cùng máy chủ phục vụ cả giao diện)."""
@@ -98,14 +127,42 @@ class GiaoDichKho:
         self.da_xuat.append(("dau", r["move_id"]))
         return r
 
+    def nhap_hang(self, trip, dong, *, ngay, tan, boc_len, hao_hut):
+        """Phiếu gom về tới bãi → nhập kho hàng bên trang kế toán. Trả {da_co}: đã nhập từ trước thì không làm gì."""
+        r = KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/nhap", {
+            "trip_id": trip.id, "trip_doc_no": trip.doc_no, "ngay": ngay.isoformat() if ngay else None, "dong": dong,
+            "customer_name": trip.customer_name, "origin": trip.origin, "truck_no": trip.truck_no, "company": trip.company,
+            "tan": tan, "boc_len": boc_len, "hao_hut": hao_hut, "ma_hang_gui": _ma_hang_gui(self.db)}, nguoi=self.nguoi)
+        if not r.get("da_co") and r.get("so_dong"):
+            self.da_xuat.append(("hh_nhap", trip.id))
+        self.db.info.pop("_hh_ke_toan", None)
+        return r
+
+    def xuat_hang(self, trip, dong, *, ngay):
+        """Lưu phiếu giao → thay phần xuất kho hàng của phiếu bên trang kế toán (bên đó kiểm tồn lô)."""
+        r = KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/xuat", {
+            "trip_id": trip.id, "trip_doc_no": trip.doc_no, "ngay": ngay.isoformat() if ngay else None, "dong": dong,
+            "company": trip.company, "ma_hang_gui": _ma_hang_gui(self.db)}, nguoi=self.nguoi)
+        self.da_xuat.append(("hh_xuat", (trip.id, trip.doc_no, trip.company, ngay, r.get("cu") or [])))
+        self.db.info.pop("_hh_ke_toan", None)
+        return r
+
     def huy_xuat(self, move_id):
         """Trả lại một lần xuất cũ (bỏ phiếu bán…) — làm ngay; bên này hỏng sau đó thì không xuất lại được, báo rõ."""
         return huy_xuat(self.db, self.nguoi, move_id=move_id)
 
     def _huy_het(self):
-        for loai, mv in self.da_xuat:
+        for loai, mv in reversed(self.da_xuat):
             try:
-                (huy_xuat_dau if loai == "dau" else huy_xuat)(self.db, self.nguoi, move_id=mv)
+                if loai == "hh_nhap":
+                    KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/huy-nhap", {"trip_id": mv}, nguoi=self.nguoi)
+                elif loai == "hh_xuat":
+                    tid, so, cty, ngay, cu = mv
+                    KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/xuat", {
+                        "trip_id": tid, "trip_doc_no": so, "company": cty, "ngay": ngay.isoformat() if ngay else None,
+                        "dong": cu, "khoi_phuc": True}, nguoi=self.nguoi)
+                else:
+                    (huy_xuat_dau if loai == "dau" else huy_xuat)(self.db, self.nguoi, move_id=mv)
             except Exception as e:  # noqa: BLE001 — không huỷ được thì ghi lại để đối chiếu, vẫn báo lỗi gốc
                 _nk.error("KHÔNG huỷ được lần xuất %s bên trang kế toán sau khi bên này lưu hỏng: %s", mv, e)
 

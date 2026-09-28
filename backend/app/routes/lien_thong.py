@@ -155,3 +155,10 @@ def dia_chi(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Địa chỉ trang kế toán để giao diện bên này mở sang (nút Cấp phát, Kho nhiên liệu…)."""
     from services import kho_ke_toan as KK
     return {"ke_toan_web": KK.web_ke_toan(db)}
+
+
+@router.get("/api/lien-thong/ma-ke-toan")
+def lt_ma_ke_toan(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Hai mã bên kế toán cấp sau, đang đặt ở màn Chứng từ → Cấu hình bên này — trang kế toán ghi lên tờ kho nó sinh
+    (DC_HH điều chỉnh kho hàng…). Trống = chưa đặt; tờ vẫn mang tên vế, như trước."""
+    return {"ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui") or None, "ma_gia_von": DK.cau_hinh(db, "ma_gia_von") or None}

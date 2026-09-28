@@ -51,8 +51,6 @@ DS = [
     ("ketoan", "/api/hoa-don-gop/cho-gop", "Hoá đơn · chờ gộp"),
     ("ketoan", "/api/tat-toan?chi_tiet=0", "Tất toán"),
     ("admin", "/api/vouchers", "Phiếu lĩnh"),
-    ("admin", "/api/fuel-moves", "Kho nhiên liệu · nhập xuất"),
-    ("admin", "/api/kho-hang", "Kho hàng"),
     ("admin", "/api/vehicles", "Xe"),
     ("admin", "/api/drivers", "Tài xế"),
     ("admin", "/api/trailers", "Rơ-moóc"),

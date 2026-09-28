@@ -6,6 +6,10 @@
 Đi đúng đường người dùng đi: Bãi lập DO gom kèm dòng hàng → xe về bãi thì hàng vào kho và sinh phiếu
 nhập kho → Bãi lập DO giao lấy hàng từ lô đó → sinh phiếu xuất kho, tồn giảm → giao xong có dòng hao
 hụt → và kiểm những chỗ PHẢI bị từ chối (lấy quá tồn, xuất hoá đơn cho phiếu gom, xoá lô đã xuất).
+
+Từ 28/09 (đợt 5) SỔ KHO HÀNG ở trang kế toán (EPL_KT, mặc định 8031 — máy điều xe đang kiểm phải trỏ vào đó): tồn,
+tờ PNK_HH / PXK_HH / DC_HH và điều chỉnh kho kiểm ở bên đó; dòng hàng vẫn trên phiếu bên này. Thêm bước mất nối: trang
+kế toán tắt thì lưu phiếu giao lấy lô và báo xe gom tới bãi bị chặn 503, không ghi gì nửa vời.
 """
 import json
 import sys
@@ -14,6 +18,7 @@ import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
+import _ke_toan as K       # sổ kho hàng ở trang kế toán (28/09, đợt 5)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -60,9 +65,20 @@ def chi_tam_ung(pid, phai):
         phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
 
 
-def ton_kho(vai="admin"):
-    s, g = goi("/api/kho-hang", vai=vai)
+def ton_kho(vai="ketoan"):
+    s, g = K.kt("/api/kho-hang", vai=vai)
+    assert s == 200, ("sổ kho hàng bên trang kế toán", s, g)
     return g["ton_t"]
+
+
+CAU_HINH = {}
+
+
+def tat_ke_toan(tat):
+    """Trỏ trang điều xe sang một cổng không ai nghe (trang kế toán 'tắt'), hoặc trả về như cũ."""
+    if tat:
+        CAU_HINH["cu"] = goi("/api/ke-toan/cau-hinh", vai="admin")[1]["ke_toan_api"]
+    goi("/api/ke-toan/cau-hinh", {"ke_toan_api": "http://127.0.0.1:8097" if tat else CAU_HINH["cu"]}, vai="admin", method="PUT")
 
 
 def main():
@@ -72,7 +88,7 @@ def main():
 
     # ---- dọn phiếu thử của lần chạy trước (giao trước, gom sau — không xoá được lô đã xuất)
     s, ds = goi("/api/trips", vai="admin")
-    for so in (SO_GIAO, SO_GOM):
+    for so in ("THU-GIAO-02/EPL", SO_GIAO, "THU-GOM-02/EPL", SO_GOM):
         for p in ds:
             if p["doc_no"] == so:
                 goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
@@ -108,9 +124,12 @@ def main():
     hao = [x for x in g["goods"] if x["loai"] == "hao_hut"]
     assert hao and abs(hao[0]["qty_t"] - 0.4) < 0.01, "phải tự ghi MỘT DÒNG hao hụt 0,4 t: %s" % g["goods"]
     print("  ✓ vào kho 39,6 t · dòng hao hụt %s t ghi sẵn trên phiếu" % hao[0]["qty_t"])
-    s, ct = goi("/api/chung-tu?loai=PNK_HH", vai="ketoan")
-    assert any(c["trip_doc_no"] == SO_GOM for c in ct["ds"]), "phải sinh phiếu nhập kho hàng PNK_HH"
-    print("  ✓ sổ chứng từ có phiếu nhập kho hàng")
+    pnk = [v for v in K.to_kho(SO_GOM, "PNK_HH") if v["trip_no"] == SO_GOM]
+    assert len(pnk) == 1 and abs(pnk[0]["lines"]["tan"] - 39.6) < 0.01 and not pnk[0].get("entry_id"), \
+        "phải sinh MỘT tờ PNK_HH 39,6 t ở sổ kế toán (ngoài bảng, không bút toán): %s" % pnk
+    print("  ✓ sổ kế toán có phiếu nhập kho hàng %s (39,6 t, ngoài bảng)" % pnk[0]["ref"])
+    s, g = goi("/api/kho-hang", vai="admin")
+    phai(s, 409, "Màn Kho hàng bên trang điều xe → đã dời sang trang kế toán", g)
 
     # ================================================================ 2. DO GIAO lấy hàng của lô đó
     s, lo = goi("/api/kho-hang/lo", vai="thabok")
@@ -135,9 +154,9 @@ def main():
     assert round(ton_kho() - ton0, 2) == 14.6, "tồn phải còn 14,6 t sau khi xuất 25 t"
     print("  ✓ xuất kho 25 t · tồn lô còn %s t · xe chặng giao khác xe chặng gom: %s ≠ %s"
           % (round(ton_kho() - ton0, 2), giao["truck_no"], gom["truck_no"]))
-    s, ct = goi("/api/chung-tu?loai=PXK_HH", vai="ketoan")
-    assert any(c["trip_doc_no"] == SO_GIAO for c in ct["ds"]), "phải sinh phiếu xuất kho hàng PXK_HH"
-    print("  ✓ sổ chứng từ có phiếu xuất kho hàng")
+    pxk = [v for v in K.to_kho(SO_GIAO, "PXK_HH") if v["trip_no"] == SO_GIAO]
+    assert len(pxk) == 1 and abs(pxk[0]["lines"]["tan"] - 25) < 0.01, "phải sinh MỘT tờ PXK_HH 25 t ở sổ kế toán: %s" % pxk
+    print("  ✓ sổ kế toán có phiếu xuất kho hàng %s (25 t)" % pxk[0]["ref"])
 
     # nối hai phiếu: dòng hàng của phiếu giao chỉ đúng số phiếu gom
     assert giao["goods"][0]["tu_phieu_doc_no"] == SO_GOM, "dòng hàng phải chỉ rõ lấy từ phiếu gom nào"
@@ -162,18 +181,23 @@ def main():
     print("  ✓ sửa cân cuối → dòng hao hụt tính lại: %s t" % hao[0]["qty_t"])
 
     # ================================================================ 3c. điều chỉnh kho: sửa số bằng một dòng có lý do
-    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư"}, vai="thabok")
-    phai(s, 403, "Bãi tự điều chỉnh kho → bị từ chối (kế toán ghi)", g)
-    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "x"}, vai="ketoan")
+    # (màn Kho hàng ở trang kế toán — cùng tên đăng nhập, đăng nhập riêng)
+    s, g = K.kt("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư"}, vai="thabok")
+    phai(s, 403, "Bãi tự điều chỉnh kho (trang kế toán) → bị từ chối (kế toán ghi)", g)
+    s, g = K.kt("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "x"}, vai="ketoan")
     phai(s, 422, "Điều chỉnh không ghi lý do → bị từ chối", g)
-    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư 0,6 t"}, vai="ketoan")
-    phai(s, 200, "Kế toán điều chỉnh lô −0,6 t có lý do", g)
+    s, g = K.kt("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư 0,6 t"}, vai="ketoan")
+    phai(s, 200, "Kế toán điều chỉnh lô −0,6 t có lý do (trang kế toán)", g)
     assert abs(g["con_t"] - 14.0) < 0.01, "lô còn 14,6 giảm 0,6 phải còn 14,0: %s" % g["con_t"]
-    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -20, "ly_do": "thử giảm quá tồn"}, vai="ketoan")
+    s, g = K.kt("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -20, "ly_do": "thử giảm quá tồn"}, vai="ketoan")
     phai(s, 409, "Giảm quá tồn (hàng đã xuất cho phiếu giao) → bị từ chối", g)
-    s, ct = goi("/api/chung-tu?loai=DC_HH", vai="ketoan")
-    assert any(c["trip_doc_no"] == SO_GOM for c in ct["ds"]), "phải sinh phiếu điều chỉnh kho DC_HH"
-    print("  ✓ điều chỉnh kho: một dòng −0,6 t có lý do · tồn 14,0 t · chứng từ DC_HH · lịch sử nhập/xuất không đổi")
+    dc = [v for v in K.to_kho(SO_GOM, "DC_HH") if v["trip_no"] == SO_GOM]
+    assert len(dc) == 1 and dc[0]["lines"]["chieu"] == "giam", "phải sinh MỘT tờ DC_HH (giảm) ở sổ kế toán: %s" % dc
+    s, g = goi("/api/kho-hang/dieu-chinh", {"lo_trip_id": gom["id"], "qty_t": -0.6, "ly_do": "cân bãi ghi dư"}, vai="ketoan")
+    phai(s, 409, "Điều chỉnh ở trang điều xe → đã dời sang trang kế toán", g)
+    s, g = goi("/api/trips/%s" % gom["id"], vai="admin")
+    assert abs((g.get("ton_lo") or 0) - 14.0) < 0.01, "mở phiếu gom phải thấy tồn lô 14,0 t (hỏi trang kế toán): %s" % g.get("ton_lo")
+    print("  ✓ điều chỉnh kho: một dòng −0,6 t có lý do · tồn 14,0 t · tờ %s · phiếu gom thấy tồn lô 14,0 t" % dc[0]["ref"])
 
     # ================================================================ 4. những chỗ phải bị chặn
     s, g = goi("/api/trips/%s" % gom["id"], {"goods": [{"goods_name": "x", "qty_t": 50}]}, vai="admin", method="PUT")
@@ -194,6 +218,41 @@ def main():
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin", method="DELETE")
     phai(s, 409, "Xoá phiếu gom đã có người lấy hàng → bị từ chối", g)
 
+    # ================================================================ 4b. trang kế toán tắt → chặn và báo rõ
+    SO_GIAO2, SO_GOM2 = "THU-GIAO-02/EPL", "THU-GOM-02/EPL"
+    ton_truoc = ton_kho()
+    s, gom2 = Q.lap_phieu(goi, {
+        "doc_no": SO_GOM2, "kind": "gom", "vehicle_id": xe1["id"], "driver_id": tx[0]["id"], "customer_id": kh[0]["id"],
+        "route_id": tuyen[0]["id"], "doc_date": "2026-09-25", "out_date": "2026-09-25", "weight_origin": 10,
+        "goods": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 10}]}, vai="thabok")
+    phai(s, 200, "Lập DO GOM thứ hai (chưa đụng kho)", gom2)
+    chi_tam_ung(gom2["id"], phai)
+    tat_ke_toan(True)
+    try:
+        s, g = goi("/api/trips", {"doc_no": SO_GIAO2, "kind": "giao", "vehicle_id": xe2["id"], "driver_id": tx[0]["id"],
+                                  "customer_id": kh[0]["id"], "route_id": tuyen[0]["id"], "doc_date": "2026-09-25",
+                                  "goods": [{"goods_name": "ແຮ່ເຫຼັກ (quặng sắt)", "qty_t": 5, "tu_phieu_id": gom["id"]}]}, vai="thabok")
+        phai(s, 503, "Trang kế toán tắt → lập DO GIAO lấy lô bị chặn", g)
+        assert g["detail"]["ma"] == "CHUA_NOI_KE_TOAN", g
+        s, ds2 = goi("/api/trips", vai="admin")
+        assert not [p for p in ds2 if p["doc_no"] == SO_GIAO2], "bị chặn thì KHÔNG được có phiếu giao nửa vời"
+        s, g = goi("/api/trips/%s/transport-status" % gom2["id"], {"status": "arrived", "weight_dest": 10, "back_date": "2026-09-26"}, vai="thabok")
+        phai(s, 503, "Trang kế toán tắt → báo xe gom tới bãi bị chặn", g)
+        s, g = goi("/api/trips/%s" % gom2["id"], vai="admin")
+        assert g["transport_status"] != "arrived" and not [x for x in g["goods"] if x["loai"] == "hao_hut"], "bị chặn thì phiếu gom chưa được ghi là đã tới"
+        s, g = goi("/api/trips/%s" % gom2["id"], {"note": "sửa ghi chú khi kế toán tắt"}, vai="thabok", method="PUT")
+        phai(s, 200, "Trang kế toán tắt → sửa việc không đụng kho vẫn được", g)
+    finally:
+        tat_ke_toan(False)
+    assert abs(ton_kho() - ton_truoc) < 0.001, "bị chặn thì sổ kho hàng không đổi"
+    s, g = goi("/api/trips/%s/transport-status" % gom2["id"], {"status": "arrived", "weight_dest": 10, "back_date": "2026-09-26"}, vai="thabok")
+    phai(s, 200, "Nối lại → báo xe gom tới được, hàng vào kho", g)
+    assert abs(ton_kho() - ton_truoc - 10) < 0.001, "nối lại thì 10 t phải vào kho"
+    s, g = goi("/api/trips/%s" % gom2["id"], vai="admin", method="DELETE")
+    phai(s, 200, "Xoá DO GOM thứ hai (chưa ai lấy) → lô rời kho", g)
+    assert abs(ton_kho() - ton_truoc) < 0.001 and not K.to_kho(SO_GOM2, "PNK_HH"), "xoá phiếu gom thì lô và tờ PNK_HH của nó phải đi theo"
+    print("  ✓ mất nối: chặn rõ, không ghi nửa vời · việc không đụng kho vẫn chạy · nối lại làm được · xoá phiếu thì rút tờ")
+
     # ================================================================ 5. dọn
     s, g = goi("/api/trips/%s" % giao["id"], vai="admin", method="DELETE")
     phai(s, 200, "Xoá phiếu giao thử", g)
@@ -204,7 +263,11 @@ def main():
     assert round(ton_kho() - ton0, 2) == 0, "xoá phiếu gom thì lô cũng mất khỏi kho"
     print("  ✓ xoá phiếu gom: tồn kho về đúng lúc đầu")
 
-    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · sửa sau khi tới tính lại · điều chỉnh kho · 9 chỗ từ chối đúng")
+    assert not K.to_kho(SO_GOM, "PNK_HH") and not K.to_kho(SO_GIAO, "PXK_HH") and not K.to_kho(SO_GOM, "DC_HH"), \
+        "xoá phiếu thì tờ kho hàng ở sổ kế toán phải rút theo"
+    print("  ✓ tờ PNK_HH / PXK_HH / DC_HH của hai phiếu thử đã rút khỏi sổ kế toán")
+
+    print("\nTHỬ HAI DO: ĐẠT — gom → nhập kho → giao lấy lô → xuất kho → hao hụt · sửa sau khi tới tính lại · điều chỉnh kho (trang kế toán) · mất nối chặn rõ · 9 chỗ từ chối đúng")
 
 
 if __name__ == "__main__":

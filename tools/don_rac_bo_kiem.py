@@ -259,6 +259,8 @@ if THAT:
 #   a) sổ phụ tùng (ở đó từ 28/09): xoá lần xuất / nhập của bộ kiểm, ĐẢO TỒN đúng dòng đó, rút tờ kho nó sinh ra;
 #   a2) sổ dầu (ở đó từ 28/09): dòng xuất theo dòng chi / phiếu lĩnh / dòng bán không còn bên này, dòng nhập · chuyển kho
 #      thử của bộ kiểm → xoá (tồn dầu tính cộng dồn từ sổ nên tự về đúng), rút tờ kho nó sinh ra;
+#   a3) sổ kho hàng (ở đó từ 28/09, đợt 5): dòng của phiếu / lô (phiếu gom) không còn bên này → xoá, rút PNK_HH / PXK_HH /
+#      DC_HH nó sinh ra;
 #   b) tờ ĐẨY TỪ EPL_LAO mà nguồn bên này không còn → xoá cùng bút toán. Tờ kho SINH Ở SỔ (source EPL_KETOAN) thì không
 #      bao giờ xoá theo cách này — nó không có bản bên này để so.
 MA = """
@@ -269,6 +271,7 @@ import models as M
 THAT = sys.argv[2] == "that"
 g = json.load(sys.stdin); con = set(g["con"]); con_dong = set(g["con_dong"]); lenh = set(g["lenh"]); ban = g["ban"]; tra = g["tra"]
 con_pl = set(g["con_pl"]); con_ban = set(g["con_ban"]); con_sua = set(g["con_sua"]); phieu_con = set(g["phieu_con"]); ban_con = set(g["ban_con"])
+con_trip = set(g["con_trip"])
 db = SessionLocal(); n = b = 0
 def xoa_to(v):
     global n, b
@@ -325,6 +328,21 @@ for m in xoa_dau.values():
 if xoa_dau:
     print("  sổ dầu (sổ kế toán): %d dòng · xuất %s L · nhập %s L · %d lần chuyển kho" % (len(xoa_dau), round(lit.get("out", 0), 1), round(lit.get("in", 0), 1), len(ck_thu)))
 db.flush()
+# a3) sổ kho hàng
+xoa_hh = [m for m in db.query(M.GoodsMove).all()
+          if (m.trip_id and m.trip_id not in con_trip) or (m.lo_trip_id and m.lo_trip_id not in con_trip)]
+phieu_hh = set()
+for m in xoa_hh:
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == "goods_moves", M.Voucher.nguon_id == m.id).all():
+        xoa_to(v)
+    phieu_hh.add(m.trip_id)
+    db.delete(m)
+for tid in phieu_hh - con_trip:
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == "trips", M.Voucher.nguon_id == tid).all():
+        xoa_to(v)
+if xoa_hh:
+    print("  sổ kho hàng (sổ kế toán): %d dòng của %d phiếu thử" % (len(xoa_hh), len(phieu_hh)))
+db.flush()
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
     if v.ref not in con: xoa_to(v)
@@ -333,9 +351,9 @@ dung = {e.party_id for e in db.query(M.Entry).all() if e.party_id}
 for p in db.query(M.Partner).all():
     if p.id not in dung: db.delete(p)
 if THAT:
-    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d dòng sổ phụ tùng, %d dòng sổ dầu, %d tờ, %d bút toán; còn %d tờ" % (so_mv, len(xoa_dau), n, b, db.query(M.Voucher).count()))
+    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán; còn %d tờ" % (so_mv, len(xoa_dau), len(xoa_hh), n, b, db.query(M.Voucher).count()))
 else:
-    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d dòng sổ phụ tùng, %d dòng sổ dầu, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (so_mv, len(xoa_dau), n, b))
+    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (so_mv, len(xoa_dau), len(xoa_hh), n, b))
 """
 
 
@@ -345,7 +363,7 @@ def chay_so(that):
     con = sorted(c.so for c in db.query(M.ChungTu).all() if c.so not in da_xoa_ref)
     goi = {"con": con, "con_dong": sorted(con_dong), "lenh": sorted(so_lenh_thu), "ban": sorted(so_ban_thu), "tra": list(TRA_THU),
            "con_pl": sorted(phieu_linh_con), "con_ban": sorted(con_dong_ban), "con_sua": sorted(con_dong_sua),
-           "phieu_con": sorted(so_phieu_con), "ban_con": sorted(so_ban_con)}
+           "phieu_con": sorted(so_phieu_con), "ban_con": sorted(so_ban_con), "con_trip": sorted(con_trip)}
     r = goi_so(MA, "that" if that else "thu", dau_vao=json.dumps(goi))
     print(r.stdout.strip() or r.stderr.strip()[-600:])
     if r.returncode and r.stdout.strip():

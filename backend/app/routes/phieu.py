@@ -23,7 +23,7 @@ from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 from database import BIEU_THUC_TIM_PHIEU, get_db
-from models import (Contract, GoodsMove, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+from models import (Contract, Invoice, Owner, TripAttachment, TripGoods, TripPayment, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, PHUONG_THUC_THU, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
@@ -787,10 +787,13 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
         if r and (r.toll_lak or 0) > 0 and not any(d.get("item_key") == "x_toll" for d in dong):
             dong.append({"section": "travel", "item_key": "x_toll", "qty": 1, "unit_price": r.toll_lak, "currency": "LAK"})
     _ap_dong_chi(db, p, dong, user, muc_tt)
-    KH.dat_dong_hang(db, p, data.get("goods"), user)
-    _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
-    _ghi_log(db, p, user, "a_create")
-    db.flush(); _ghi_do(db, p, user); db.commit()
+    # Phiếu giao lấy hàng của lô: sổ kho hàng ở trang kế toán (đợt 5) — xuất ở bên đó trong cùng lần lưu; bên này
+    # lưu hỏng thì phần xuất bên đó được trả lại.
+    with KK.GiaoDichKho(db, user) as gd:
+        KH.dat_dong_hang(db, p, data.get("goods"), user, gd)
+        _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
+        _ghi_log(db, p, user, "a_create")
+        db.flush(); _ghi_do(db, p, user)
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -817,13 +820,14 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     #    điều chỉnh — không âm thầm sửa lịch sử kho.
     #  · Phiếu GIAO đã tới nơi vẫn sửa được (cân cuối gõ nhầm là chuyện thường), nhưng sửa xong máy tính lại
     #    dòng hao hụt ngay bên dưới.
-    co_so_kho = db.query(GoodsMove).filter(GoodsMove.trip_id == p.id).count() > 0
+    #  (Sổ kho hàng ở trang kế toán từ đợt 5. Dòng sổ của một phiếu luôn sinh từ dòng hàng của chính nó, nên "có dòng
+    #  hàng" đã bao "có dòng sổ"; còn "đã nhập kho" thì hỏi bên đó — chỉ khi phiếu gom đụng tới hàng / cân.)
     co_dong_hang = db.query(TripGoods).filter(TripGoods.trip_id == p.id).count() > 0
-    if "kind" in data and (data["kind"] or p.kind) != p.kind and (co_so_kho or co_dong_hang):
+    if "kind" in data and (data["kind"] or p.kind) != p.kind and co_dong_hang:
         raise HTTPException(409, {"ma": "KHONG_DOI_LOAI",
                                   "loi": "Phiếu đã có dòng hàng hoặc đã ghi sổ kho, không đổi loại gom/giao được nữa."})
-    da_nhap_kho = p.kind == "gom" and db.query(GoodsMove).filter(GoodsMove.trip_id == p.id, GoodsMove.kind == "in").count() > 0
-    if da_nhap_kho and ("goods" in data or any(k in data for k in ("weight_origin", "weight_dest"))):
+    dung_can = "goods" in data or any(k in data for k in ("weight_origin", "weight_dest"))
+    if dung_can and KH.da_nhap_kho(db, p):
         raise HTTPException(409, {"ma": "HANG_DA_NHAP_KHO",
                                   "loi": "Hàng của phiếu gom này đã vào kho bãi; dòng hàng và cân không sửa được nữa."})
     if "doc_no" in data and str(data["doc_no"]).strip() != p.doc_no:
@@ -832,15 +836,15 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     _ap_truong(db, p, data, user, muc_tt)
     if "expenses" in data:
         _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
-    if "goods" in data:
-        if not duoc_sua_muc(user.role, "trans", muc_tt["trans"]) and user.role != "admin":
-            raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã khoá; phải trả lại mới sửa được dòng hàng."})
-        KH.dat_dong_hang(db, p, data["goods"], user)
-    # Phiếu giao đã tới nơi: dòng hàng hay cân cuối vừa đổi thì dòng hao hụt phải tính lại theo số mới.
-    if p.kind == "giao" and p.transport_status == "arrived" and ("goods" in data or "weight_dest" in data or "weight_origin" in data):
-        KH.ghi_hao_hut_giao(db, p)
-    _ghi_log(db, p, user, "a_save")
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        if "goods" in data:
+            if not duoc_sua_muc(user.role, "trans", muc_tt["trans"]) and user.role != "admin":
+                raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã khoá; phải trả lại mới sửa được dòng hàng."})
+            KH.dat_dong_hang(db, p, data["goods"], user, gd)
+        # Phiếu giao đã tới nơi: dòng hàng hay cân cuối vừa đổi thì dòng hao hụt phải tính lại theo số mới.
+        if p.kind == "giao" and p.transport_status == "arrived" and ("goods" in data or "weight_dest" in data or "weight_origin" in data):
+            KH.ghi_hao_hut_giao(db, p)
+        _ghi_log(db, p, user, "a_save")
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1181,11 +1185,6 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         if (data.get("pod_receiver") or "").strip(): p.pod_receiver = data["pod_receiver"].strip()
         if p.pod_no and not p.pod_date: p.pod_date = _ngay(data.get("pod_date")) or p.back_date or dt.date.today()
         _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
-        # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sinh phiếu nhập kho), DO giao thì chốt dòng hao hụt.
-        if p.kind == "gom":
-            KH.nhap_kho(db, p, user)
-        else:
-            KH.ghi_hao_hut_giao(db, p)
         if p.vehicle_id and p.odo_back:
             x = db.get(Vehicle, p.vehicle_id)
             if x and (x.odometer_km or 0) < p.odo_back: x.odometer_km = p.odo_back
@@ -1193,7 +1192,14 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     p.transport_status = moi
     _ghi_log(db, p, user, "st_%s" % moi)
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sổ và phiếu nhập kho ở trang kế toán — tắt thì chưa báo tới được),
+        # DO giao thì chốt dòng hao hụt.
+        if moi == "arrived":
+            if p.kind == "gom":
+                KH.nhap_kho(db, p, user, gd)
+            else:
+                KH.ghi_hao_hut_giao(db, p)
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1837,6 +1843,8 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     # dòng cùng một kho dùng chung một lần cấp → trả MỘT lần cho mỗi lần xuất.
     for mv in sorted({e.stock_move_id for e in _dong_chi(db, p) if e.section == "fuel" and e.source == "kho" and e.stock_move_id}):
         KK.huy_xuat_dau(db, user, move_id=mv)
+    # Sổ kho hàng (trang kế toán, đợt 5): xoá dòng nhập / xuất / điều chỉnh của phiếu này, rút tờ PNK_HH / PXK_HH / DC_HH.
+    KH.xoa_so(db, p, user)
     _doi_trang_thai_xe_tai_xe(db, p, "available", "available")
     db.query(TripEvent).filter(TripEvent.trip_id == p.id).delete()
     for a in db.query(TripAttachment).filter(TripAttachment.trip_id == p.id).all():

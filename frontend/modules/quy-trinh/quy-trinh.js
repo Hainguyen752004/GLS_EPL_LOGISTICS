@@ -155,7 +155,7 @@
     { gd: 'Tách chặng: mỏ → bãi → cảng (B1–B4)', buoc: [
       { so: 'T1', vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Phiếu GOM (xe A) mỏ → bãi', lam: ['Lập phiếu loại GOM, số G4-…'],
         may: ['Xe về: hàng vào kho bãi thành một lô'], ct: ['DO', 'PNK_HH'] },
-      { so: 'T2', vai: ['yard'], man: 'kho-hang', ten: 'Hàng nằm bãi nhiều ngày', lam: ['Xem tồn từng lô ở màn Kho hàng', 'Kế toán điều chỉnh có lý do (cân lại, hao)'], ct: ['DC_HH'] },
+      { so: 'T2', vai: ['yard'], man: 'kho-hang', o_ke_toan: true, ten: 'Hàng nằm bãi nhiều ngày', lam: ['Xem tồn từng lô ở màn Kho hàng', 'Kế toán điều chỉnh có lý do (cân lại, hao)'], ct: ['DC_HH'] },
       { so: 'T3', vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Phiếu GIAO (xe B) bãi → cảng lấy từ lô', lam: ['Chọn lô và số tấn'],
         may: ['Xe tới: hàng xuất khỏi kho bãi, hao hụt tính theo phiếu'], chan: ['Lấy quá tồn lô → chặn', 'Xoá phiếu gom đã có người lấy hàng → chặn'], ct: ['DO', 'PXK_HH'] },
       { so: 'T4', vai: ['rev'], man: 'hoa-don-gop', ten: 'Cước riêng từng chặng · hoá đơn gộp tháng', lam: ['Phiếu gom có cước riêng thì lập hoá đơn như phiếu giao', 'Khách hợp đồng: gộp tháng'], ct: ['HD', 'PT'] },

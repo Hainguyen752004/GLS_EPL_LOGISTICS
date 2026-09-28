@@ -1,78 +1,35 @@
 # -*- coding: utf-8 -*-
-"""KHO HÀNG ở bãi Thà Bốc — chỗ quặng nằm giữa hai chặng.
+"""KHO HÀNG ở bãi Thà Bốc — chỗ quặng nằm giữa hai chặng. SỔ KHO ở trang kế toán từ 28/09 (đợt 5).
 
 Bãi Thà Bốc đứng giữa như một bưu cục: xe đi mỏ chở hàng về **nhập kho** (DO gom), rồi xe khác lấy
 hàng trong kho **xuất kho** đi giao cho khách (DO giao). Hai DO nối nhau qua chính lô hàng đó:
 
     DO gom (mỏ → bãi) ──nhập kho──► LÔ HÀNG ở bãi ──xuất kho──► DO giao (bãi → cảng)
 
-Quy ước trong mã:
-  · **lô** = một DO gom. Tồn của lô = tấn đã nhập trừ tấn các DO giao đã lấy.
-  · Không có bảng tồn riêng: tồn luôn tính cộng dồn từ `goods_moves`, để không bao giờ lệch với sổ.
-  · Dòng hàng của DO giao ghi `tu_phieu_id` = DO gom lấy ra — đó là dây nối, và cũng là cách tra ngược
-    "lô này đã đi những chuyến nào".
-  · Chênh lệch cân ghi thành MỘT DÒNG `hao_hut` trên phiếu cho người đọc thấy ngay, thay vì bắt họ trừ nhẩm.
+Chia hai nơi (chủ dự án chốt 28/09: trang điều xe không xem được kho):
+  · Ở ĐÂY: dòng hàng trên phiếu (`trip_goods`) — giấy của chuyến: hàng gì, bao nhiêu tấn, DO giao lấy từ DO gom nào
+    (`tu_phieu_id` — dây nối hai DO), dòng `hao_hut` chênh cân.
+  · Ở TRANG KẾ TOÁN: sổ kho hàng (`goods_moves`), tồn từng lô, tờ PNK_HH / PXK_HH / DC_HH, màn Kho hàng, điều chỉnh.
+    Bảng `goods_moves` bên này đứng yên từ ngày dời (tools/doi_kho_hang.py bên đó đã chép sang), không đọc nữa.
+Phiếu đụng tới sổ (xe gom về bãi, lưu phiếu giao có lấy lô, xoá phiếu) thì gọi sang qua `GiaoDichKho`; trang kế
+toán tắt → 503, việc đó chưa làm được (chặn và báo rõ). Việc không đụng sổ vẫn chạy như thường.
 """
 import datetime as dt
 
 from fastapi import HTTPException
 
-from models import GoodsMove, Trip, TripGoods
-from services import chung_tu as CT
-
-DEPOT = "Thà Bốc"
+from models import Trip, TripGoods
+from services import kho_ke_toan as KK
 
 
 # ---------------------------------------------------------------- đọc
-def ton_lo(db, lo_trip_id, tru_phieu_id=None):
-    """Còn bao nhiêu tấn trong lô (một DO gom). `tru_phieu_id`: bỏ qua phần DO giao này đang giữ,
-    dùng khi sửa chính phiếu đó để nó không tự trừ mình hai lần."""
-    vao = sum(m.qty_t for m in db.query(GoodsMove).filter(GoodsMove.lo_trip_id == lo_trip_id,
-                                                          GoodsMove.kind.in_(("in", "adj"))).all())   # adj mang dấu
-    q = db.query(GoodsMove).filter(GoodsMove.lo_trip_id == lo_trip_id, GoodsMove.kind == "out")
-    if tru_phieu_id:
-        q = q.filter(GoodsMove.trip_id != tru_phieu_id)
-    ra = sum(m.qty_t for m in q.all())
-    return round(vao - ra, 3)
-
-
-def danh_sach_lo(db, con_hang=True, tru_phieu_id=None):
-    """Các lô trong kho: lô nào, của DO gom nào, hàng gì, nhập bao nhiêu, còn bao nhiêu."""
-    lo = {}
-    for m in db.query(GoodsMove).filter(GoodsMove.kind == "in").order_by(GoodsMove.move_date).all():
-        o = lo.setdefault(m.lo_trip_id, {"lo_trip_id": m.lo_trip_id, "doc_no": m.trip_doc_no,
-                                         "goods_name": m.goods_name, "ngay": m.move_date, "nhap_t": 0.0})
-        o["nhap_t"] += m.qty_t
-    ra = []
-    for k, o in lo.items():
-        p = db.get(Trip, k) if k else None
-        o["nhap_t"] = round(o["nhap_t"], 3)
-        o["dieu_chinh_t"] = round(sum(m.qty_t for m in db.query(GoodsMove).filter(
-            GoodsMove.lo_trip_id == k, GoodsMove.kind == "adj").all()), 3)
-        o["con_t"] = ton_lo(db, k, tru_phieu_id)
-        o["ngay"] = o["ngay"].isoformat() if o["ngay"] else None
-        o["customer_name"] = p.customer_name if p else None
-        o["origin"] = p.origin if p else None
-        o["truck_no"] = p.truck_no if p else None
-        if not con_hang or o["con_t"] > 0.0005:
-            ra.append(o)
-    return sorted(ra, key=lambda x: (x["ngay"] or "", x["doc_no"] or ""))
-
-
-def so_kho(db, tu=None, den=None):
-    """Sổ nhập xuất, cũ trước mới sau, kèm tồn cộng dồn."""
-    q = db.query(GoodsMove)
-    if tu: q = q.filter(GoodsMove.move_date >= tu)
-    if den: q = q.filter(GoodsMove.move_date <= den)
-    ds = sorted(q.all(), key=lambda m: (m.move_date, m.created_at or dt.datetime.min))
-    ton, ra = 0.0, []
-    for m in ds:
-        ton += -m.qty_t if m.kind == "out" else m.qty_t     # in cộng · out trừ · adj mang dấu sẵn
-        ra.append({"id": m.id, "ngay": m.move_date.isoformat() if m.move_date else None, "kind": m.kind,
-                   "goods_name": m.goods_name, "qty_t": m.qty_t, "doc_no": m.trip_doc_no,
-                   "trip_id": m.trip_id, "lo_trip_id": m.lo_trip_id, "ton_t": round(ton, 3),
-                   "note": m.note, "by_user": m.by_user})
-    return ra, round(ton, 3)
+def ton_lo(db, lo_trip_id):
+    """Còn bao nhiêu tấn trong lô (một DO gom) — hỏi trang kế toán. Chưa nhập kho, hay trang kế toán tắt → None
+    (mở phiếu không bị chặn vì chuyện này)."""
+    try:
+        return KK.hang_cua_phieu(db, lo_trip_id).get("ton_lo")
+    except HTTPException:
+        return None
 
 
 def dong_hang(db, trip_id):
@@ -85,25 +42,36 @@ def dong_hang(db, trip_id):
     return ra
 
 
+def co_hang(db, trip_id):
+    return db.query(TripGoods.id).filter(TripGoods.trip_id == trip_id, TripGoods.loai == "hang").first() is not None
+
+
+def da_nhap_kho(db, trip):
+    """DO gom đã vào kho bãi chưa. Hàng chỉ vào kho lúc xe VỀ TỚI BÃI (`nhap_kho`), nên phiếu chưa tới nơi thì chưa;
+    đã tới thì hỏi trang kế toán — tắt thì chặn (503): không biết sổ đã ghi hay chưa thì không cho sửa cân."""
+    if trip.kind != "gom" or not co_hang(db, trip.id):
+        return False
+    try:
+        return bool(KK.hang_cua_phieu(db, trip.id).get("da_nhap"))
+    except HTTPException:
+        if trip.transport_status != "arrived":
+            return False
+        raise
+
+
 # ---------------------------------------------------------------- ghi
-def _xoa_dong_xuat(db, trip):
-    for m in db.query(GoodsMove).filter(GoodsMove.trip_id == trip.id, GoodsMove.kind == "out").all():
-        db.delete(m)
-
-
-def dat_dong_hang(db, trip, dong, user):
+def dat_dong_hang(db, trip, dong, user, gd):
     """Ghi lại toàn bộ dòng hàng của một phiếu (thay thế, không cộng dồn).
 
-    DO giao: mỗi dòng phải chỉ rõ lấy từ lô nào và không được lấy quá tồn của lô; ghi xong thì sổ kho
-    có ngay dòng XUẤT tương ứng. DO gom: chỉ ghi hàng bốc ở mỏ, hàng chỉ vào kho khi xe VỀ TỚI BÃI.
+    DO giao: mỗi dòng phải chỉ rõ lấy từ lô nào; sổ kho bên trang kế toán thay phần XUẤT của phiếu theo dòng mới và
+    không cho lấy quá tồn của lô. DO gom: chỉ ghi hàng bốc ở mỏ, hàng chỉ vào kho khi xe VỀ TỚI BÃI.
     """
     if dong is None:
         return
-    cu = {g.id: g for g in db.query(TripGoods).filter(TripGoods.trip_id == trip.id).all()}
-    for g in cu.values():
+    cu = db.query(TripGoods).filter(TripGoods.trip_id == trip.id).all()
+    co_xuat_cu = trip.kind == "giao" and any(g.loai == "hang" and (g.qty_t or 0) > 0 for g in cu)
+    for g in cu:
         db.delete(g)
-    db.flush()
-    _xoa_dong_xuat(db, trip)
     db.flush()
 
     moi = []
@@ -127,50 +95,29 @@ def dat_dong_hang(db, trip, dong, user):
             g = db.get(Trip, lo)
             if not g or g.kind != "gom":
                 raise HTTPException(422, {"ma": "LO_SAI", "loi": "Lô hàng phải là một phiếu gom hàng đã nhập kho."})
-            con = ton_lo(db, lo, tru_phieu_id=trip.id)
-            if sl - con > 0.0005:
-                raise HTTPException(409, {"ma": "KHONG_DU_HANG",
-                                          "loi": "Lô %s chỉ còn %s tấn, không lấy được %s tấn." % (g.doc_no, round(con, 2), round(sl, 2))})
         g = TripGoods(trip_id=trip.id, loai=loai, goods_name=ten, qty_t=sl,
                       tu_phieu_id=lo if loai == "hang" else None, note=(d.get("note") or "").strip() or None)
         db.add(g); moi.append(g)
-        if trip.kind == "giao" and loai == "hang" and sl > 0:
-            db.add(GoodsMove(move_date=trip.out_date or trip.doc_date or dt.date.today(), kind="out",
-                             goods_name=ten, qty_t=sl, trip_id=trip.id, trip_doc_no=trip.doc_no,
-                             lo_trip_id=lo, depot=DEPOT, by_user=getattr(user, "full_name", None)))
     db.flush()
+    # Sổ kho bên trang kế toán: thay phần xuất của phiếu giao (kiểm tồn từng lô ở bên đó). Phiếu giao chưa từng lấy
+    # hàng và nay cũng không lấy thì khỏi gọi — lưu phiếu không đụng kho vẫn chạy khi trang kế toán tắt.
+    xuat = [{"goods_name": g.goods_name, "qty_t": g.qty_t, "lo_trip_id": g.tu_phieu_id}
+            for g in moi if g.loai == "hang" and g.qty_t > 0]
+    if trip.kind == "giao" and (xuat or co_xuat_cu):
+        gd.xuat_hang(trip, xuat, ngay=trip.out_date or trip.doc_date or dt.date.today())
     # Cân đầu của DO giao chính là tổng tấn lấy ra khỏi kho; DO gom thì là tổng tấn bốc ở mỏ.
     tong = round(sum(g.qty_t for g in moi if g.loai == "hang"), 3)
     if tong:
         trip.weight_origin = tong
-    _ghi_chung_tu_xuat(db, trip, user)
 
 
-def _ghi_chung_tu_xuat(db, trip, user):
-    if trip.kind != "giao":
-        return
-    tong = round(sum(g.qty_t for g in db.query(TripGoods).filter(TripGoods.trip_id == trip.id,
-                                                                 TripGoods.loai == "hang").all()), 3)
-    if tong <= 0:
-        return
-    CT.ghi(db, "PXK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip,
-           ngay=trip.out_date or trip.doc_date, doi_tuong_loai="kho", doi_tuong_ten=DEPOT,
-           tien=None, tien_lak=None, by_user=getattr(user, "full_name", None),
-           mo_ta="Xuất kho hàng đi giao %s · %s tấn" % (trip.doc_no, tong),
-           payload={"tan": tong, "dong": [{"hang": g.goods_name, "tan": g.qty_t, "lo": g.tu_phieu_id}
-                                          for g in db.query(TripGoods).filter(TripGoods.trip_id == trip.id,
-                                                                              TripGoods.loai == "hang").all()]})
-
-
-def nhap_kho(db, trip, user):
-    """DO gom về tới bãi → hàng vào kho. Gọi lại lần nữa không nhập trùng.
+def nhap_kho(db, trip, user, gd):
+    """DO gom về tới bãi → hàng vào kho (sổ bên trang kế toán). Gọi lại lần nữa không nhập trùng.
 
     Nhập theo **cân tại bãi** nếu có (đó mới là số thật vào kho); chênh với cân ở mỏ ghi thành một
     dòng hao hụt trên chính DO gom để hai bên cân đối.
     """
     if trip.kind != "gom":
-        return
-    if db.query(GoodsMove).filter(GoodsMove.trip_id == trip.id, GoodsMove.kind == "in").count():
         return
     hang = db.query(TripGoods).filter(TripGoods.trip_id == trip.id, TripGoods.loai == "hang").all()
     if not hang:
@@ -179,22 +126,15 @@ def nhap_kho(db, trip, user):
     thucNhap = trip.weight_dest if trip.weight_dest is not None else bocLen
     ngay = trip.back_date or trip.doc_date or dt.date.today()
     # Chia số thực nhập theo tỷ lệ các dòng hàng (thường chỉ có một dòng).
-    for g in hang:
-        phan = round(thucNhap * (g.qty_t / bocLen), 3) if bocLen else 0
-        if phan <= 0:
-            continue
-        db.add(GoodsMove(move_date=ngay, kind="in", goods_name=g.goods_name, qty_t=phan,
-                         trip_id=trip.id, trip_doc_no=trip.doc_no, lo_trip_id=trip.id, depot=DEPOT,
-                         by_user=getattr(user, "full_name", None)))
+    dong = [{"goods_name": g.goods_name, "qty_t": round(thucNhap * (g.qty_t / bocLen), 3) if bocLen else 0} for g in hang]
     hao = round(bocLen - thucNhap, 3)
+    r = gd.nhap_hang(trip, dong, ngay=ngay, tan=round(thucNhap, 3), boc_len=bocLen, hao_hut=hao)
+    if r.get("da_co"):
+        return
     if abs(hao) > 0.0005:
         db.add(TripGoods(trip_id=trip.id, loai="hao_hut", goods_name=hang[0].goods_name, qty_t=hao,
                          note="Cân mỏ %s t − cân bãi %s t" % (bocLen, thucNhap)))
     db.flush()
-    CT.ghi(db, "PNK_HH", nguon_bang="trips", nguon_id=trip.id, trip=trip, ngay=ngay,
-           doi_tuong_loai="kho", doi_tuong_ten=DEPOT, by_user=getattr(user, "full_name", None),
-           mo_ta="Nhập kho hàng từ %s · %s tấn" % (trip.doc_no, round(thucNhap, 3)),
-           payload={"tan": round(thucNhap, 3), "boc_len": bocLen, "hao_hut": hao})
 
 
 def ghi_hao_hut_giao(db, trip):
@@ -216,49 +156,17 @@ def ghi_hao_hut_giao(db, trip):
 
 
 def kiem_xoa(db, trip):
-    """Không cho xoá một DO gom mà hàng của nó đã có người lấy đi giao."""
-    if trip.kind != "gom":
+    """Không cho xoá một DO gom mà hàng của nó đã có người lấy đi giao (hỏi sổ bên trang kế toán)."""
+    if trip.kind != "gom" or not co_hang(db, trip.id):
         return
-    lay = db.query(GoodsMove).filter(GoodsMove.lo_trip_id == trip.id, GoodsMove.kind == "out").all()
+    lay = KK.hang_cua_phieu(db, trip.id).get("lay_boi") or []
     if lay:
-        so = ", ".join(sorted({m.trip_doc_no or "?" for m in lay}))
         raise HTTPException(409, {"ma": "LO_DA_XUAT",
-                                  "loi": "Lô hàng của phiếu này đã xuất cho phiếu giao %s — xoá phiếu giao trước." % so})
+                                  "loi": "Lô hàng của phiếu này đã xuất cho phiếu giao %s — xoá phiếu giao trước." % ", ".join(lay)})
 
 
-# ---------------------------------------------------------------- điều chỉnh
-def dieu_chinh(db, lo_trip_id, qty_t, ly_do, user):
-    """Sửa tồn của một lô bằng MỘT DÒNG có dấu và có lý do, không đụng lịch sử nhập/xuất.
-
-    Phiếu gom đã nhập kho thì không sửa cân được nữa (sổ kho đã ghi theo số đó). Phát hiện cân bãi ghi
-    sai, hàng ẩm hụt, rơi vãi… thì kế toán lập điều chỉnh: +2,5 t hay −0,6 t, ghi rõ vì sao. Tồn lô sau
-    điều chỉnh không được âm — hàng đã xuất cho phiếu giao thì không thể "chưa từng có".
-    """
-    lo = db.get(Trip, lo_trip_id) if lo_trip_id else None
-    if not lo or lo.kind != "gom":
-        raise HTTPException(422, {"ma": "LO_SAI", "loi": "Lô điều chỉnh phải là một phiếu gom hàng đã nhập kho."})
-    if not db.query(GoodsMove).filter(GoodsMove.lo_trip_id == lo.id, GoodsMove.kind == "in").count():
-        raise HTTPException(409, {"ma": "LO_CHUA_NHAP", "loi": "Phiếu gom %s chưa nhập kho, không có gì để điều chỉnh." % lo.doc_no})
-    try:
-        sl = float(str(qty_t).replace(",", ""))
-    except (TypeError, ValueError):
-        raise HTTPException(422, {"ma": "SO_SAI", "loi": "Số tấn điều chỉnh phải là số, dương là tăng, âm là giảm."})
-    if abs(sl) < 0.0005:
-        raise HTTPException(422, {"ma": "SO_KHONG", "loi": "Số tấn điều chỉnh không được bằng 0."})
-    ly_do = (ly_do or "").strip()
-    if len(ly_do) < 3:
-        raise HTTPException(422, {"ma": "THIEU_LY_DO", "loi": "Điều chỉnh kho phải ghi lý do."})
-    con = ton_lo(db, lo.id)
-    if con + sl < -0.0005:
-        raise HTTPException(409, {"ma": "TON_AM", "loi": "Lô %s còn %s tấn, giảm %s tấn thì tồn âm — hàng đã xuất cho phiếu giao rồi."
-                                  % (lo.doc_no, round(con, 2), round(-sl, 2))})
-    hang = db.query(GoodsMove).filter(GoodsMove.lo_trip_id == lo.id, GoodsMove.kind == "in").first()
-    m = GoodsMove(move_date=dt.date.today(), kind="adj", goods_name=hang.goods_name, qty_t=round(sl, 3),
-                  trip_id=lo.id, trip_doc_no=lo.doc_no, lo_trip_id=lo.id, depot=DEPOT, note=ly_do,
-                  by_user=getattr(user, "full_name", None))
-    db.add(m); db.flush()
-    CT.ghi(db, "DC_HH", nguon_bang="goods_moves", nguon_id=m.id, trip=lo, ngay=m.move_date,
-           doi_tuong_loai="kho", doi_tuong_ten=DEPOT, by_user=getattr(user, "full_name", None),
-           mo_ta="Điều chỉnh kho lô %s: %s%s tấn — %s" % (lo.doc_no, "+" if sl > 0 else "", round(sl, 3), ly_do),
-           payload={"chieu": "tang" if sl > 0 else "giam", "tan": round(abs(sl), 3), "lo": lo.id, "ly_do": ly_do})
-    return m
+def xoa_so(db, trip, user):
+    """Xoá phiếu → xoá dòng sổ kho hàng của nó bên trang kế toán (nhập / xuất / điều chỉnh lô), rút tờ kho."""
+    if not db.query(TripGoods.id).filter(TripGoods.trip_id == trip.id).first():
+        return
+    KK.huy_hang(db, user, trip.id)
