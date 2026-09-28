@@ -113,7 +113,16 @@ def main():
             loi += not so("chờ trả chủ xe · %s (đường máy)" % vai,
                           {k: {f: v[f] for f in ("so_phieu", "tong", "tong_lak")} for k, v in cho_cu.items()}, c, ta, tc)
         (a, ta), (b, tb) = do(lambda: NCCc.ds(db=db, user=u_)), do(lambda: NCC.ds(db=db, user=u_))
+        # từ 28/09 (đợt 7d) phần tiền ở trang kế toán: danh mục bên này so khi bỏ cột tiền; phát sinh / ghi nợ của bản cũ so
+        # với hàm trang kế toán gọi sang (ds_tien) — đã trả / còn nợ tính ở bên đó từ các lần trả của nó
+        tien_cu = {x["id"]: {k: x.pop(k) for k in ("phat_sinh_lak", "ghi_no_lak", "da_tra_lak", "con_no_lak") if k in x} for x in a}
         db.rollback(); loi += not so("nhà cung cấp · %s" % vai, a, b, ta, tb)
+        if any(tien_cu.values()):
+            (c, tc) = do(lambda: NCC.ds_tien(db))
+            db.rollback()
+            loi += not so("phát sinh nhà cung cấp · %s (đường máy)" % vai,
+                          {k: {f: v[f] for f in ("phat_sinh_lak", "ghi_no_lak")} for k, v in tien_cu.items()},
+                          {x["id"]: {f: x[f] for f in ("phat_sinh_lak", "ghi_no_lak")} for x in c}, ta, tc)
         (a, ta), (b, tb) = do(lambda: PLc.ds_cho_cap(request=Yeu(), db=db, user=u_)), do(lambda: PL.ds_cho_cap(request=Yeu(), response=Response(), db=db, user=u_))
         db.rollback(); loi += not so("phiếu lĩnh chờ · %s" % vai, a, b, ta, tb, sap=bo_may_qr)
     (a, ta), (b, tb) = do(lambda: DMc.ds_tai_xe(db=db, _=None)), do(lambda: DM.ds_tai_xe(db=db, _=None))
