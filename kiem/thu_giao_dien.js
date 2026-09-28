@@ -14,7 +14,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'hoa-don-gop', 'chung-tu',
   'phieu-cua-toi', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap',
-  'sua-chua', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
+  'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
 class ChiNoiBo extends ResourceLoader {

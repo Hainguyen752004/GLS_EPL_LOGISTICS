@@ -444,9 +444,7 @@
     // 'cap-phat' (Cấp phát) và 'kho-nhien-lieu' (Kho nhiên liệu) dời sang trang kế toán 28/09 (đợt 4)
     // 'diem-do' (Điểm đổ nhiên liệu) dời sang trang kế toán 28/09 — bản gốc ở đó, bên này chỉ còn bản chép để đọc
     // 'kho-phu-tung' (Kho phụ tùng) dời sang trang kế toán 28/09 — tồn, giá, sổ ở đó; bên này còn danh mục để chọn trên phiếu
-    { id: 'sua-chua',       nhom: 'mod_warehouse', nav: 'nav_repair', nav_s: 'nav_repair_s',
-      vai: ['repair', 'expacct', 'cash', 'acct', 'treasury', 'fuel', 'rev'],
-      ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M3 12h3M18 12h3M12 3v3M12 18v3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1' },
+    // 'sua-chua' (Lệnh sửa chữa) dời sang trang kế toán 28/09 (đợt 6) — lệnh, chuỗi duyệt, xuất kho, PC_SC ở đó; mục V vẫn trên phiếu
     { id: 'ban-hang',       nhom: 'mod_warehouse', nav: 'nav_sales',    ic: 'M3 3h2l2 12h11l2-8H6M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
       vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'] },
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
@@ -476,7 +474,7 @@
   // Thủ kho phụ tùng giữ kho phụ tùng; tổ sửa chữa duyệt báo hỏng, ghi mục V trên phiếu, xem tồn kho.
   const MAN_CUA_VAI = {
     parts:  ['xe'],                       // kho phụ tùng: ở trang kế toán (28/09)
-    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'sua-chua', 'xe'],
+    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'xe'],   // lệnh sửa chữa: ở trang kế toán (đợt 6)
   };
 
   function thayDuoc(m) {

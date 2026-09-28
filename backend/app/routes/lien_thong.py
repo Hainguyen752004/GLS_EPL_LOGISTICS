@@ -162,3 +162,31 @@ def lt_ma_ke_toan(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
     """Hai mã bên kế toán cấp sau, đang đặt ở màn Chứng từ → Cấu hình bên này — trang kế toán ghi lên tờ kho nó sinh
     (DC_HH điều chỉnh kho hàng…). Trống = chưa đặt; tờ vẫn mang tên vế, như trước."""
     return {"ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui") or None, "ma_gia_von": DK.cau_hinh(db, "ma_gia_von") or None}
+
+
+# ---------------------------------------------------------------- lệnh sửa chữa ở trang kế toán (đợt 6)
+@router.get("/api/lien-thong/xe")
+def lt_xe(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Danh mục xe (ở đây) — ô chọn xe của lệnh sửa chữa bên trang kế toán."""
+    from models import Vehicle
+    return [{"id": x.id, "truck_no": x.truck_no, "plate_head": x.plate_head, "owner_type": x.owner_type,
+             "odometer_km": x.odometer_km, "status": x.status, "active": x.status != "inactive"}
+            for x in db.query(Vehicle).order_by(Vehicle.truck_no).all()]
+
+
+@router.post("/api/lien-thong/xe/{vid}/sua-chua")
+def lt_xe_sua_chua(vid: str, d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Lệnh sửa chữa bên trang kế toán báo xe VÀO xưởng (`vao`: true) hay sửa xong (false). Danh mục xe phải nói đúng —
+    điều xe nhìn vào đó mà xếp chuyến. Sửa xong thì xe về rảnh, trừ khi đang chạy một chuyến hoặc đã ngưng dùng."""
+    from models import Trip, Vehicle
+    x = db.get(Vehicle, vid)
+    if not x:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này bên trang điều xe."})
+    if d.get("vao"):
+        if x.status not in ("inactive", "on_trip"):
+            x.status = "maintenance"
+    elif x.status == "maintenance":
+        dang_chay = db.query(Trip.id).filter(Trip.vehicle_id == x.id, Trip.transport_status != "arrived").first()
+        x.status = "on_trip" if dang_chay else "available"
+    db.commit()
+    return {"id": x.id, "status": x.status}

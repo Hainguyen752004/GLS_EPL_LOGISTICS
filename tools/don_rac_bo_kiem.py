@@ -43,14 +43,17 @@ sys.path.insert(0, sys.argv[1])
 from database import SessionLocal
 import models as M
 db = SessionLocal()
-print(json.dumps([{"id": m.id, "voucher_id": m.voucher_id} for m in db.query(M.FuelMove).filter(M.FuelMove.voucher_id.isnot(None)).all()]))
+print(json.dumps({"dau": [{"id": m.id, "voucher_id": m.voucher_id} for m in db.query(M.FuelMove).filter(M.FuelMove.voucher_id.isnot(None)).all()],
+                  "xe_sua": sorted({o.vehicle_id for o in db.query(M.RepairOrder).filter(M.RepairOrder.status != "paid").all()
+                                    if o.vehicle_id and not (o.note or "").startswith("thử")})}))
 """
-DAU_KT = []
+DAU_KT, XE_SUA_KT = [], set()
 if os.path.isdir(SO):
     _r = goi_so(DOC_DAU)
     if _r.returncode:
         sys.exit("Không đọc được sổ dầu bên trang kế toán:\n" + _r.stderr.strip()[-600:])
-    DAU_KT = json.loads(_r.stdout.strip().splitlines()[-1])
+    _g = json.loads(_r.stdout.strip().splitlines()[-1])
+    DAU_KT, XE_SUA_KT = _g["dau"], set(_g["xe_sua"])
 
 
 def xoa(obj, loai):
@@ -239,8 +242,9 @@ if THAT:
     db.flush()
     con_chay = db.query(M.Trip).filter(M.Trip.transport_status != "arrived").all()
     xe_chay = {p.vehicle_id for p in con_chay}; tx_chay = {p.driver_id for p in con_chay}
-    # tính lại từ dữ liệu còn lại — rà 23/09: lệnh sửa thử bị xoá mà xe ຮ່ວມ-07 vẫn kẹt "đang sửa"
-    xe_sua = {o.vehicle_id for o in db.query(M.RepairOrder).filter(M.RepairOrder.status != "paid").all()}
+    # tính lại từ dữ liệu còn lại — rà 23/09: lệnh sửa thử bị xoá mà xe ຮ່ວມ-07 vẫn kẹt "đang sửa". Lệnh sửa chữa ở trang
+    # kế toán từ đợt 6: lấy xe có lệnh mở (không kể lệnh thử) bên đó, cộng lệnh cũ còn mở bên này.
+    xe_sua = {o.vehicle_id for o in db.query(M.RepairOrder).filter(M.RepairOrder.status != "paid").all()} | XE_SUA_KT
     for v in db.query(M.Vehicle).filter(M.Vehicle.status.in_(("available", "on_trip", "maintenance", "idle"))).all():
         moi = "on_trip" if v.id in xe_chay else "maintenance" if v.id in xe_sua else "available"
         if moi != v.status: v.status = moi; dem["trạng thái xe tính lại"] += 1
@@ -273,6 +277,9 @@ g = json.load(sys.stdin); con = set(g["con"]); con_dong = set(g["con_dong"]); le
 con_pl = set(g["con_pl"]); con_ban = set(g["con_ban"]); con_sua = set(g["con_sua"]); phieu_con = set(g["phieu_con"]); ban_con = set(g["ban_con"])
 con_trip = set(g["con_trip"])
 db = SessionLocal(); n = b = 0
+# a0) lệnh sửa chữa thử (ở đây từ đợt 6): ghi chú "thử…" — gỡ dòng, lệnh, tờ PC_SC; số lệnh cho bước sổ phụ tùng
+lenh_kt = [o for o in db.query(M.RepairOrder).all() if (o.note or "").startswith("thử")]
+lenh |= {o.doc_no for o in lenh_kt}
 def xoa_to(v):
     global n, b
     if v.entry_id:
@@ -343,6 +350,14 @@ for tid in phieu_hh - con_trip:
 if xoa_hh:
     print("  sổ kho hàng (sổ kế toán): %d dòng của %d phiếu thử" % (len(xoa_hh), len(phieu_hh)))
 db.flush()
+for o in lenh_kt:
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == "repair_orders", M.Voucher.nguon_id == o.id).all():
+        xoa_to(v)
+    db.query(M.RepairLine).filter(M.RepairLine.order_id == o.id).delete(synchronize_session=False)
+    db.delete(o)
+if lenh_kt:
+    print("  lệnh sửa chữa thử (sổ kế toán): %s" % ", ".join(sorted(o.doc_no for o in lenh_kt)))
+db.flush()
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
     if v.ref not in con: xoa_to(v)
@@ -351,9 +366,9 @@ dung = {e.party_id for e in db.query(M.Entry).all() if e.party_id}
 for p in db.query(M.Partner).all():
     if p.id not in dung: db.delete(p)
 if THAT:
-    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán; còn %d tờ" % (so_mv, len(xoa_dau), len(xoa_hh), n, b, db.query(M.Voucher).count()))
+    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán; còn %d tờ" % (len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b, db.query(M.Voucher).count()))
 else:
-    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (so_mv, len(xoa_dau), len(xoa_hh), n, b))
+    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b))
 """
 
 

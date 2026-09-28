@@ -139,7 +139,7 @@
       { so: 'P1', vai: ['parts'], man: 'kho-phu-tung', o_ke_toan: true, ten: 'Thủ kho phụ tùng nhập · xuất',
         lam: ['Nhập: số lượng + đơn giá (giá bình quân tính lại)', 'Xuất tay cho xe'], chan: ['Bãi, kế toán không nhập xuất phụ tùng (C1.2)', 'Xuất quá tồn → chặn'],
         ct: ['PNK_PT', 'PXK_PT'] },
-      { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
+      { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', o_ke_toan: true, ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
         lam: ['Tổ sửa chữa lập lệnh: xe, km, gara; dòng lấy KHO hoặc MUA', 'KT Chi phí kiểm → ghi sổ', 'Quỹ tiền mặt cảng cạn chi phần mua ngoài'],
         may: ['Dòng lấy kho trừ tồn NGAY LÚC KHAI'], chan: ['Không gắn phiếu xuất xe nào'], ct: ['PXK_PT', 'PC_SC'] },
     ] },

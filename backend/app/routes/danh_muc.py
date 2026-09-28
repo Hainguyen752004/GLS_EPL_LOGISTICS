@@ -15,8 +15,9 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_XE, TRANG_THAI_XE, Customer, CustomerRate, Driver, DriverLicense, ExchangeRate, Owner,
-                    ExchangeRateLog, RepairLine, RepairOrder,
+                    ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
+from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, nguoi_hien_tai
 from routes import anh as ANH
 from services.tinh_toan import tien_dong
@@ -304,13 +305,14 @@ def xuat_xe(db, v, chi_tiet=False):
                         "source": e.source, "acct_code": e.acct_code, "tien_lak": round(tien_dong(p, e))})
         # Gộp thêm LỆNH SỬA CHỮA RIÊNG (C7.3): xe nằm bãi đại tu hay bảo dưỡng định kỳ không gắn
         # phiếu nào, nhưng vẫn là tiền sửa của chính chiếc xe này — tab Sửa chữa phải thấy cả hai nguồn.
-        for o, e in (db.query(RepairOrder, RepairLine).join(RepairLine, RepairLine.order_id == RepairOrder.id)
-                     .filter(RepairOrder.vehicle_id == v.id).order_by(RepairOrder.order_date.desc()).limit(80).all()):
-            sua.append({"doc_no": o.doc_no, "doc_date": o.order_date.isoformat() if o.order_date else None,
-                        "item_key": e.item_key, "item_name": e.item_name, "qty": e.qty, "unit_price": e.unit_price,
-                        "currency": e.currency, "source": e.source, "acct_code": e.acct_code,
-                        "tien_lak": round((e.qty or 0) * (e.unit_price or 0) * _ty_gia_sc(db, e.currency)),
-                        "lenh": True, "kind": o.kind, "status": o.status})
+        # Lệnh ở trang kế toán từ 28/09 (đợt 6): hỏi bên đó; bên đó tắt thì màn Xe vẫn mở, báo rõ phần thiếu.
+        r["sua_chua_lenh_loi"] = None
+        try:
+            for e in KT.goi(db, "GET", "/api/lien-thong/sua-chua/xe/" + v.id) or []:
+                e["tien_lak"] = round((e.get("qty") or 0) * (e.get("unit_price") or 0) * _ty_gia_sc(db, e.get("currency")))
+                sua.append(e)
+        except HTTPException as loi:
+            r["sua_chua_lenh_loi"] = (loi.detail or {}).get("loi") if isinstance(loi.detail, dict) else str(loi.detail)
         sua.sort(key=lambda x: x["doc_date"] or "", reverse=True)
         r["sua_chua"] = sua
         r["anh_chinh"] = ANH.anh_chinh(ANH.XE, db, v.id)
