@@ -270,6 +270,7 @@ if THAT:
 #   a4) sổ doanh thu (ở đó từ 28/09, đợt 7a): hoá đơn / lần thu SINH Ở SỔ (tờ của nó là EPL_KETOAN) là của bộ kiểm — bộ
 #      mẫu chỉ có hoá đơn, lần thu dời từ trang điều xe (tờ EPL_LAO); của phiếu không còn bên này cũng gỡ. Rút tờ theo.
 #      Đợt trả chủ xe (đợt 7b) cũng vậy: đợt có tờ PC_CX sinh ở sổ, hay có phiếu không còn bên này, là của bộ kiểm.
+#      Lần trả nhà cung cấp thử (đợt 7d, ghi chú "thử…") cũng gỡ cùng tờ PC_NCC.
 #      Bước 11 dưới điền lại bản chép trên phiếu bên này theo đúng sổ đó;
 #   b) tờ ĐẨY TỪ EPL_LAO mà nguồn bên này không còn → xoá cùng bút toán. Tờ kho SINH Ở SỔ (source EPL_KETOAN) thì không
 #      bao giờ xoá theo cách này — nó không có bản bên này để so.
@@ -281,7 +282,7 @@ import models as M
 THAT = sys.argv[2] == "that"
 g = json.load(sys.stdin); con = set(g["con"]); con_dong = set(g["con_dong"]); lenh = set(g["lenh"]); ban = g["ban"]; tra = g["tra"]
 con_pl = set(g["con_pl"]); con_ban = set(g["con_ban"]); con_sua = set(g["con_sua"]); phieu_con = set(g["phieu_con"]); ban_con = set(g["ban_con"])
-con_trip = set(g["con_trip"])
+con_trip = set(g["con_trip"]); con_ncc = set(g["con_ncc"])
 db = SessionLocal(); n = b = 0
 # a0) lệnh sửa chữa thử (ở đây từ đợt 6): ghi chú "thử…" — gỡ dòng, lệnh, tờ PC_SC; số lệnh cho bước sổ phụ tùng
 lenh_kt = [o for o in db.query(M.RepairOrder).all() if (o.note or "").startswith("thử")]
@@ -433,6 +434,14 @@ for x in dot_thu:
 db.flush()
 if dot_thu:
     print("  đợt trả chủ xe (sổ kế toán): %d đợt của bộ kiểm" % len(dot_thu))
+# a6) lần trả nhà cung cấp thử (đợt 7d; không có nút xoá — như bên trang điều xe trước khi dời): ghi chú "thử…", hoặc của
+#     nhà cung cấp không còn bên này → gỡ cùng tờ PC_NCC
+tra_ncc_thu = [x for x in db.query(M.SupplierPayment).all() if (x.note or "").startswith("thử") or x.supplier_id not in con_ncc]
+for x in tra_ncc_thu:
+    rut_nguon("supplier_payments", x.id); db.delete(x)
+db.flush()
+if tra_ncc_thu:
+    print("  lần trả nhà cung cấp thử (sổ kế toán): %d lần · %s LAK" % (len(tra_ncc_thu), round(sum(x.amount_lak or 0 for x in tra_ncc_thu))))
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
     if v.ref not in con: xoa_to(v)
@@ -454,7 +463,7 @@ def chay_so(that):
     goi = {"con": con, "con_dong": sorted(con_dong), "lenh": sorted(so_lenh_thu), "ban": sorted(so_ban_thu), "tra": list(TRA_THU),
            "con_pl": sorted(phieu_linh_con), "con_ban": sorted(con_dong_ban), "con_sua": sorted(con_dong_sua),
            "phieu_con": sorted(so_phieu_con), "ban_con": sorted(so_ban_con), "con_trip": sorted(con_trip),
-           "ban_mau": list(BAN_MAU)}
+           "ban_mau": list(BAN_MAU), "con_ncc": sorted(x.id for x in db.query(M.Supplier).all())}
     r = goi_so(MA, "that" if that else "thu", dau_vao=json.dumps(goi))
     print(r.stdout.strip() or r.stderr.strip()[-600:])
     if r.returncode and r.stdout.strip():

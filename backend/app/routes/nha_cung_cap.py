@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Theo dõi nhà cung cấp — ຕິດຕາມຜູ້ສະໜອງ. Phí chip Lào/Việt, lốp, cầu đường… trả theo tháng.
+"""Nhà cung cấp — ຕິດຕາມຜູ້ສະໜອງ. Phí chip Lào/Việt, lốp, cầu đường, trạm dầu Việt Nam ghi nợ…
 
-Nợ phải trả = tổng các dòng chi trên phiếu có khoản mục của nhà cung cấp đó (và EPL ứng)
-− các lần đã thanh toán. Tính lại mỗi lần gọi từ phiếu, không giữ số dư riêng.
+DANH MỤC nhà cung cấp (tên, khoản mục, mã tài khoản, kỳ trả, khách được cấn trừ) ở đây — phiếu (dòng dầu ghi nợ tại
+trạm), tất toán tài xế (khoản trả nhà cung cấp theo đợt không phải tiền tài xế) và Bãi cần nó.
+
+Từ 28/09 (đợt 7d) PHẦN TIỀN ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp): các lần trả (supplier_payments),
+tờ PC_NCC, còn nợ. Bên này vẫn TÍNH phần phát sinh từ phiếu (tổng các dòng chi EPL ứng có khoản mục / trạm của nhà cung
+cấp đó) cho trang kế toán hỏi qua đường máy (/api/lien-thong/ncc); nợ phải trả = phát sinh − đã trả tính ở bên đó.
+Các đường /api/suppliers/{id}/payments trả 409 "đã dời".
 """
 import datetime as dt
 from collections import defaultdict
@@ -12,13 +17,13 @@ from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, Supplier, SupplierPayment, Trip, TripExpense
-from services import chung_tu as CT
+from models import Customer, Supplier, Trip, TripExpense
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_chi
 from services.tinh_toan import MAC_DINH, tien_dong
 
 router = APIRouter()
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả nhà cung cấp, công nợ nhà cung cấp nay làm ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp)."}
 
 
 def _dong_cua(db, s, dau=None, sau=None):
@@ -135,7 +140,7 @@ def _tong_khong_ngay(db):
 
 
 def _tong_lo(db, cac_ncc):
-    """Số dòng · phát sinh · ghi nợ · đã trả của CẢ danh sách. Nợ nhà cung cấp là số CỘNG DỒN từ trước tới nay, nên
+    """Số dòng · phát sinh · ghi nợ của CẢ danh sách (đã trả ở trang kế toán từ đợt 7d). Nợ nhà cung cấp là số CỘNG DỒN từ trước tới nay, nên
     càng dùng lâu càng nhiều dòng: cộng theo từng tháng (mỗi tháng đệm riêng) rồi gộp — mỗi lần mở chỉ phải cộng lại
     tháng nào có dòng chi vừa đổi (thường là tháng này), không phải cả mấy năm."""
     from services import dem_bao_cao as DEM
@@ -153,31 +158,37 @@ def _tong_lo(db, cac_ncc):
             theo_ma[sid][0] += n; theo_ma[sid][1] += x
         for k, (n, x, y) in g["khoan"].items():
             o = theo_khoan[k]; o[0] += n; o[1] += x; o[2] += y
-    tra = {sid: float(t or 0) for sid, t in (db.query(SupplierPayment.supplier_id, func.sum(SupplierPayment.amount_lak))
-                                             .group_by(SupplierPayment.supplier_id))}
     ra = {}
     for x in cac_ncc:
         n1, t1 = theo_ma.get(x.id, (0, 0.0)) if x.id in theo_ma else (0, 0.0)
         n2, t2, g2 = theo_khoan[x.item_key] if (x.item_key and x.item_key in theo_khoan) else (0, 0.0, 0.0)
-        ra[x.id] = {"so_dong": n1 + n2, "phat_sinh": t1 + t2, "ghi_no": t1 + g2, "da_tra": tra.get(x.id, 0.0)}
+        ra[x.id] = {"so_dong": n1 + n2, "phat_sinh": t1 + t2, "ghi_no": t1 + g2}
     return ra
 
 
-def _xuat(db, s, tong=None):
-    """`tong` (từ _tong_lo) là số đã cộng sẵn cho cả danh sách — có thì không hỏi DB từng nhà cung cấp."""
+def _xuat(db, s, tong=None, kem_tien=False):
+    """`tong` (từ _tong_lo) là số đã cộng sẵn cho cả danh sách — có thì không hỏi DB từng nhà cung cấp. `kem_tien`: phát
+    sinh và ghi nợ (LAK) — chỉ đường máy của trang kế toán dùng; màn danh mục bên này không có cột tiền."""
     if tong is not None:
-        n, phat_sinh, ghi_no, da_tra = tong["so_dong"], tong["phat_sinh"], tong["ghi_no"], tong["da_tra"]
+        n, phat_sinh, ghi_no = tong["so_dong"], tong["phat_sinh"], tong["ghi_no"]
     else:
         dong = _dong_cua(db, s)
         n = len(dong)
         phat_sinh = sum(tien_dong(p, d) for d, p in dong)
         ghi_no = sum(tien_dong(p, d) for d, p in dong if d.ghi_no)
-        da_tra = sum(x.amount_lak or 0 for x in db.query(SupplierPayment).filter(SupplierPayment.supplier_id == s.id).all())
-    return {"id": s.id, "name": s.name, "item_key": s.item_key, "acct_code": s.acct_code,
-            "payment_term": s.payment_term, "note": s.note, "active": s.active,
-            "customer_id": s.customer_id, "customer_name": s.customer_name,
-            "so_dong": n, "phat_sinh_lak": round(phat_sinh), "ghi_no_lak": round(ghi_no),
-            "da_tra_lak": round(da_tra), "con_no_lak": round(phat_sinh - da_tra)}
+    r = {"id": s.id, "name": s.name, "item_key": s.item_key, "acct_code": s.acct_code,
+         "payment_term": s.payment_term, "note": s.note, "active": s.active,
+         "customer_id": s.customer_id, "customer_name": s.customer_name, "so_dong": n}
+    if kem_tien:
+        r.update({"phat_sinh_lak": round(phat_sinh), "ghi_no_lak": round(ghi_no)})
+    return r
+
+
+def ds_tien(db):
+    """Danh mục + phát sinh / ghi nợ từ phiếu, cho màn Theo dõi nhà cung cấp bên trang kế toán (đường máy)."""
+    cac = db.query(Supplier).order_by(Supplier.active.desc(), Supplier.name).all()
+    tong = _tong_lo(db, cac)
+    return [_xuat(db, s, tong[s.id], kem_tien=True) for s in cac]
 
 
 def _ap_khach(db, s, data):
@@ -196,11 +207,10 @@ def ds(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     tong = _tong_lo(db, cac)
     ra = [_xuat(db, s, tong[s.id]) for s in cac]
     if not thay_tien_chi(user.role):
-        # Bãi không thấy tiền, không thấy mã tài khoản (anh Khampla A2); chủ dự án chốt 23/09: màn Theo dõi NCC
-        # của Bãi giữ danh sách · số dòng · kỳ trả, bỏ cột tiền. Trả NCC là việc kế toán và quỹ.
+        # Bãi không thấy mã tài khoản (anh Khampla A2); chủ dự án chốt 23/09: màn Theo dõi NCC của Bãi giữ danh sách ·
+        # số dòng · kỳ trả. Tiền (phát sinh, đã trả, còn nợ) ở trang kế toán từ đợt 7d — màn này không còn cột tiền.
         for r in ra:
-            for k in ("phat_sinh_lak", "ghi_no_lak", "da_tra_lak", "con_no_lak", "acct_code"):
-                r.pop(k, None)
+            r.pop("acct_code", None)
     return ra
 
 
@@ -228,35 +238,12 @@ def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
     return _xuat(db, s)
 
 
+# ---------------------------------------------------------------- các lần trả: đã dời (đợt 7d)
 @router.get("/api/suppliers/{sid}/payments")
-def cac_lan_tra(sid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    if not thay_tien_chi(user.role):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Bãi không xem các lần trả nhà cung cấp."})
-    return [{"id": x.id, "pay_date": x.pay_date.isoformat(), "amount_lak": x.amount_lak, "note": x.note, "by_user": x.by_user}
-            for x in db.query(SupplierPayment).filter(SupplierPayment.supplier_id == sid)
-            .order_by(SupplierPayment.pay_date.desc()).all()]
+def cac_lan_tra(sid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI)
 
 
 @router.post("/api/suppliers/{sid}/payments")
-def tra(sid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("expacct", "cash", "treasury"))):
-    s = db.get(Supplier, sid)
-    if not s:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
-    try:
-        tien = float(str(data.get("amount_lak")).replace(",", ""))
-    except (TypeError, ValueError):
-        raise HTTPException(422, {"ma": "SO_SAI", "loi": "Số tiền phải là số."})
-    if tien <= 0:
-        raise HTTPException(422, {"ma": "SO_SAI", "loi": "Số tiền phải lớn hơn 0."})
-    try:
-        ngay = dt.date.fromisoformat(str(data.get("pay_date") or dt.date.today())[:10])
-    except ValueError:
-        raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD."})
-    tra_ncc = SupplierPayment(supplier_id=s.id, pay_date=ngay, amount_lak=tien, note=data.get("note"), by_user=user.full_name)
-    db.add(tra_ncc); db.flush()
-    CT.ghi(db, "PC_NCC", nguon_bang="supplier_payments", nguon_id=tra_ncc.id, ngay=ngay, doi_tuong_loai="ncc", phuong_thuc="cash",
-           doi_tuong_ten=s.name, tien=tien, tien_te="LAK", by_user=user.full_name,
-           mo_ta="Trả nhà cung cấp %s%s" % (s.name, (" · " + data["note"]) if data.get("note") else ""),
-           payload={"supplier_id": s.id, "item_key": s.item_key, "acct_code": s.acct_code})
-    db.commit()
-    return _xuat(db, s)
+def tra(sid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI)

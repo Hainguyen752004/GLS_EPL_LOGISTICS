@@ -17,9 +17,8 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, Customer, Part, Route, RouteStop, Supplier, TollCard,
+from models import (ChungTu, Part, Route, RouteStop, Supplier, TollCard,
                     TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
-from fastapi import Body
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
@@ -647,9 +646,11 @@ def _ct_lo(db, cac_ngay):
     return ra
 
 
-def _can_tru_tinh(db, thang, dau, cuoi):
+def _can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=True):
     """Cước phải thu theo khách ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại); thẻ
-    cao tốc, trạm dầu Việt Nam và phần đã ghi cấn trừ là bảng nhỏ — luôn đọc MỚI, không đệm (ghi_can_tru dùng bảng này)."""
+    cao tốc, trạm dầu Việt Nam và phần đã ghi cấn trừ là bảng nhỏ — luôn đọc MỚI, không đệm.
+    `hoi_ke_toan=False` (đường máy cho màn Theo dõi nhà cung cấp bên trang kế toán, đợt 7d): không hỏi ngược sang bên đó
+    phần đã ghi — bên đó tự ghép từ sổ thu tiền của nó; "đã ghi / chưa ghi" để None."""
     sau = cuoi + dt.timedelta(days=1)
     theo_khach = {}
 
@@ -691,7 +692,7 @@ def _can_tru_tinh(db, thang, dau, cuoi):
 
     # 4. phần đã GHI thành phiếu thu "cấn trừ" của tháng này (ref CT-YYYYMM) — đọc từ chính sổ thu tiền
     ref = "CT-%s" % dau.strftime("%Y%m")
-    da_ghi = _da_ghi_can_tru(db, ref)
+    da_ghi = _da_ghi_can_tru(db, ref) if hoi_ke_toan else None
     ra = []
     biet = da_ghi is not None
     da_ghi = da_ghi or {}
@@ -725,46 +726,10 @@ def _da_ghi_can_tru(db, ref):
 
 
 @router.post("/api/bao-cao/can-tru/ghi")
-def ghi_can_tru(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """GHI CẤN TRỪ THÁNG cho một khách: những gì khách đã trả hộ (thẻ cao tốc · nợ trạm dầu VN) trong
-    tháng mà chưa ghi, biến thành **phiếu thu cách thu "cấn trừ"** trên chính hoá đơn của khách đó.
-
-    Bảng cấn trừ tính ở đây (thẻ cao tốc, trạm dầu là dữ liệu bên này); sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a)
-    nên phần GHI do bên đó làm, đúng cách cũ: hoá đơn gộp cũ trước, rồi phiếu lẻ cũ trước, mỗi đích một tờ PT cách thu
-    "cấn trừ" mang ref CT-YYYYMM; khách trả hộ nhiều hơn cước còn phải thu thì phần dư để lại tháng sau. Trang kế toán
-    tắt thì chặn và báo rõ — không ghi nửa chừng.
-    """
-    if user.role not in ("rev", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi cấn trừ."})
-    kh = db.get(Customer, str(data.get("customer_id") or ""))
-    if not kh:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
-    thang = data.get("thang")
-    bang = can_tru(thang, db, user)
-    o = next((x for x in bang["ds"] if x["customer_id"] == kh.id), None)
-    if o is not None and o["chua_ghi_lak"] is None:
-        raise HTTPException(503, {"ma": "CHUA_NOI_KE_TOAN", "loi": "Chưa nối được trang kế toán — sổ thu tiền ở bên đó, chưa ghi cấn trừ được."})
-    chua_ghi = float(o["chua_ghi_lak"]) if o else 0.0
-    if chua_ghi <= 0:
-        raise HTTPException(409, {"ma": "KHONG_CO_GI", "loi": "Tháng này khách %s không còn khoản trả hộ nào chưa ghi." % kh.name})
-    _ds, dau, cuoi = _phieu_thang(db, thang)
-    ngay = _ngay_ct(data.get("pay_date")) or dt.date.today()
-    # Trả kết nối DB trước khi gọi sang: bên kia ghi xong sẽ gọi NGƯỢC lại đây để ghi bản chép vào phiếu — giao dịch
-    # này còn giữ khoá (bảng đệm báo cáo vừa ghi) thì lời gọi ngược phải đứng chờ.
-    db.commit()
-    return KT.goi(db, "POST", "/api/lien-thong/doanh-thu/can-tru", {
-        "customer_id": kh.id, "customer_name": kh.name, "thang": dau.strftime("%Y-%m"), "ref": "CT-%s" % dau.strftime("%Y%m"),
-        "pay_date": ngay.isoformat(), "tien_lak": round(chua_ghi),
-        "note": "Cấn trừ tháng %s: khách trả hộ qua thẻ cao tốc / trạm dầu Việt Nam" % dau.strftime("%m/%Y")}, nguoi=user)
-
-
-def _ngay_ct(v):
-    if v in (None, ""):
-        return None
-    try:
-        return dt.date.fromisoformat(str(v)[:10])
-    except ValueError:
-        raise HTTPException(422, {"ma": "NGAY_SAI", "loi": "Ngày phải dạng YYYY-MM-DD, nhận '%s'." % v})
+def ghi_can_tru(user=Depends(nguoi_hien_tai)):
+    """Ghi cấn trừ tháng dời sang trang kế toán 28/09 (đợt 7d) — màn Theo dõi nhà cung cấp bên đó, cùng sổ thu tiền."""
+    raise HTTPException(409, {"ma": "DA_DOI_SANG_KE_TOAN",
+                              "loi": "Ghi cấn trừ tháng nay làm ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp)."})
 
 
 @router.get("/api/bao-cao/xe-lien-ket")

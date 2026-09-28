@@ -166,7 +166,7 @@
         chan: ['Điều chỉnh số dư phải có lý do'] },
       { so: 'C2', vai: ['expacct'], man: 'nha-cung-cap', ten: 'Trạm dầu Việt Nam ghi nợ (C5.1)',
         lam: ['Gắn trạm với khách được cấn trừ', 'Cuối tháng: trả trạm, hoặc cấn trừ vào cước khách (công đoạn 17)'] },
-      { so: 'C3', vai: ['expacct', 'cash', 'treasury'], man: 'nha-cung-cap', ten: 'Trả nhà cung cấp theo đợt', lam: ['Chọn nhà cung cấp, số tiền, cách chi'], ct: ['PC_NCC'] },
+      { so: 'C3', vai: ['expacct', 'cash', 'treasury'], man: 'nha-cung-cap', o_ke_toan: true, ten: 'Trả nhà cung cấp theo đợt', lam: ['Chọn nhà cung cấp, số tiền, cách chi'], ct: ['PC_NCC'] },
     ] },
   ];
 

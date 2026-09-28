@@ -84,13 +84,16 @@ def main():
 
     # ================================================================ 1. ghi cấn trừ tháng
     # Dữ liệu gieo: khách ຄຳຕຸ້ຍ tháng 8 có dòng dầu VN ghi nợ 25.200.000 và một phiếu đã xuất hoá đơn còn nợ.
-    s, ct = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
+    # bảng cấn trừ và nút Ghi cấn trừ tháng ở TRANG KẾ TOÁN từ 28/09 (đợt 7d) — màn Theo dõi nhà cung cấp bên đó
+    s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": "x", "thang": "2026-08"}, vai="doanhthu")
+    phai(s, 409, "Ghi cấn trừ bên trang điều xe → đã dời sang trang kế toán", g)
+    s, ct = K.kt("/api/can-tru?thang=2026-08", vai="doanhthu")
     o = next((x for x in ct["ds"] if x["chua_ghi_lak"] > 0), None)
     if o is None:
         print("  · tháng 8 đã ghi hết cấn trừ (lần chạy trước) — bỏ qua phần 1, kiểm phần chống trùng")
         o = next((x for x in ct["ds"] if x["can_tru_lak"] > 0), None)
         assert o, "phải có khách có khoản trả hộ tháng 8: %s" % ct
-        s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
+        s, g = K.kt("/api/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
         phai(s, 409, "Ghi lại khi đã ghi hết → bị từ chối, không ghi trùng", g)
     else:
         truoc = o["chua_ghi_lak"]
@@ -99,9 +102,9 @@ def main():
         for p in [x for x in ds0 if x.get("customer_id") == o["customer_id"] and x.get("invoiced")]:
             s2, tt = K.kt("/api/hoa-don/phieu/%s" % p["id"], vai="doanhthu")      # sổ thu tiền ở trang kế toán (đợt 7a)
             co_san[p["id"]] = {x["id"] for x in (tt.get("thu_tien") or [])}
-        s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="thabok")
+        s, g = K.kt("/api/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="thabok")
         phai(s, 403, "Bãi ghi cấn trừ → bị chặn", g)
-        s, r = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
+        s, r = K.kt("/api/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
         if s == 409 and r.get("detail", {}).get("ma") == "KHONG_CON_NO":
             # Lần chạy trước đã bù hết hoá đơn còn nợ; phần trả hộ dư đang chờ tháng sau — đúng luật, không ghi thu dư.
             print("  ✓ %-62s %s" % ("Còn %s LAK trả hộ nhưng không còn hoá đơn để bù → để lại, không ghi thu dư" % o["chua_ghi_lak"], "409 KHONG_CON_NO"))
@@ -112,7 +115,7 @@ def main():
         assert r["phieu_thu"] and r["ghi_lak"] > 0, "phải sinh ít nhất một phiếu thu cấn trừ: %s" % r
         assert r["ghi_lak"] + r["de_lai_lak"] == truoc, "ghi + để lại phải bằng phần chưa ghi: %s" % r
         print("  ✓ %-62s %s LAK vào %s · để lại %s" % ("Ghi cấn trừ: bù đúng vào hoá đơn còn nợ", r["ghi_lak"], r["phieu_thu"][0]["so"], r["de_lai_lak"]))
-        s, ct2 = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
+        s, ct2 = K.kt("/api/can-tru?thang=2026-08", vai="doanhthu")
         o2 = next(x for x in ct2["ds"] if x["customer_id"] == o["customer_id"])
         # so PHẦN TĂNG: tháng 8 có thể đã ghi dở từ trước (bộ gieo), "đã ghi" là tổng cả hai lần
         assert round(o2["da_ghi_lak"] - o["da_ghi_lak"]) == r["ghi_lak"] and o2["chua_ghi_lak"] == r["de_lai_lak"], \
@@ -124,7 +127,7 @@ def main():
         dong = [x for x in tt["thu_tien"] if x["method"] == "offset" and x["ref"] == r["ref"]]
         assert dong, "sổ thu của phiếu phải có dòng cách thu 'cấn trừ' mang ref %s" % r["ref"]
         print("  ✓ %-62s %s" % ("Sổ thu tiền của phiếu có dòng cách thu cấn trừ", dong[0]["ref"]))
-        s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
+        s, g = K.kt("/api/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
         assert s in (200, 409), g
         if s == 200:
             assert g["ghi_lak"] == 0 or g["de_lai_lak"] >= 0, g
@@ -138,7 +141,7 @@ def main():
             for x in [x for x in tt["thu_tien"] if x["method"] == "offset" and x["ref"] == r["ref"] and x["id"] not in co_san.get(p["id"], set())]:
                 s3, g3 = K.kt("/api/hoa-don/thu/%s" % x["id"], vai="doanhthu", method="DELETE")
                 phai(s3, 200, "Xoá lần thu cấn trừ bài thử vừa ghi (dọn)", g3); n += 1
-        s, ct3 = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
+        s, ct3 = K.kt("/api/can-tru?thang=2026-08", vai="doanhthu")
         o3 = next(x for x in ct3["ds"] if x["customer_id"] == o["customer_id"])
         assert round(o3["chua_ghi_lak"]) == round(truoc), "dọn xong phải trả phần chờ cấn trừ về như cũ: %s" % o3
         print("  ✓ %-62s %s dòng · chờ cấn trừ lại %s LAK" % ("Dọn phần cấn trừ bài thử đã ghi", n, round(truoc)))

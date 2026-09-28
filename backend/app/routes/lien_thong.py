@@ -329,6 +329,35 @@ def lt_tat_toan_mot(driver_id: str, ky: str = "", db: Session = Depends(get_db),
     return TT.mot(db, driver_id, TT._ky_hop_le(ky))
 
 
+# ---------------------------------------------------------------- nhà cung cấp · cấn trừ (đợt 7d, 28/09)
+# Màn Theo dõi nhà cung cấp dời sang trang kế toán; danh mục và phần PHÁT SINH (từ phiếu) ở đây. Các lần trả, tờ PC_NCC,
+# phần đã ghi cấn trừ ở bên đó — bên này không ghi gì.
+@router.get("/api/lien-thong/ncc")
+def lt_ncc(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import nha_cung_cap as NCC
+    return NCC.ds_tien(db)
+
+
+@router.get("/api/lien-thong/ncc/{sid}")
+def lt_ncc_mot(sid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import nha_cung_cap as NCC
+    s = db.get(Supplier, sid)
+    if not s:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
+    return NCC._xuat(db, s, kem_tien=True)
+
+
+@router.get("/api/lien-thong/can-tru")
+def lt_can_tru(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Bảng cấn trừ cuối tháng (cước · thẻ cao tốc · trạm dầu VN theo khách) — không kèm phần đã ghi (ở bên đó)."""
+    from routes import bao_cao as B
+    from services.phan_quyen import thay_tien_ban
+    if not thay_tien_ban(u.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % u.role})
+    dau, cuoi = B._thang(thang)
+    return B._can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=False)
+
+
 @router.get("/api/lien-thong/thang-moi-nhat")
 def lt_thang_moi_nhat(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
     """Tháng của phiếu mới nhất — hai màn mở ra ở tháng có dữ liệu chứ không phải tháng này (như bên đây trước khi dời:

@@ -7678,9 +7678,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver trip & water money<span class=\"sub\">Monthly summary paid with salary</span>"
  },
  "title_nha_cung_cap": {
-  "vi": "Theo dõi nhà cung cấp<span class=\"sub\">Công nợ trả theo đợt</span>",
-  "lo": "ຕິດຕາມຜູ້ສະໜອງ<span class=\"sub\">ໜີ້ຊໍາລະເປັນງວດ</span>",
-  "en": "Supplier tracking<span class=\"sub\">Payables settled in instalments</span>"
+  "vi": "Nhà cung cấp<span class=\"sub\">Danh mục · công nợ, trả tiền ở trang kế toán</span>",
+  "lo": "ຜູ້ສະໜອງ<span class=\"sub\">ລາຍຊື່ · ໜີ້, ການຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL</span>",
+  "en": "Suppliers<span class=\"sub\">List · payables and payments on the ledger site</span>"
  },
  "title_kho_nhien_lieu": {
   "vi": "Kho nhiên liệu<span class=\"sub\">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>",
@@ -7706,5 +7706,10 @@ window.EPL_TU_DIEN = {
   "vi": "Trả chủ xe · bảng xe liên kết",
   "lo": "ຈ່າຍເຈົ້າຂອງລົດ · ຕາຕະລາງລົດຮ່ວມ",
   "en": "Owner payouts · joint truck table"
+ },
+ "ncc_o_ke_toan": {
+  "vi": "Công nợ · trả nhà cung cấp · cấn trừ cuối tháng",
+  "lo": "ໜີ້ · ຈ່າຍຜູ້ສະໜອງ · ຫັກລົບທ້າຍເດືອນ",
+  "en": "Payables · pay supplier · month-end offset"
  }
 };

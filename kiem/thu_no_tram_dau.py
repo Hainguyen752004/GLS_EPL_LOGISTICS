@@ -12,7 +12,8 @@ Phân biệt phải giữ cho đúng:
 
 Kịch bản: gắn khách cấn trừ cho trạm dầu → lập phiếu có hai dòng dầu VN (một trả tiền mặt, một ghi
 nợ) → công nợ trạm CHỈ tính dòng ghi nợ → báo cáo cấn trừ cuối tháng đặt số đó cạnh cước phải thu
-của khách → Bãi không xem được bảng cấn trừ → dọn.
+của khách → Bãi không xem được bảng cấn trừ → dọn. Công nợ nhà cung cấp và bảng cấn trừ ở TRANG KẾ TOÁN từ 28/09 (đợt 7d);
+danh mục nhà cung cấp (gắn trạm với khách) vẫn ở đây.
 """
 import json
 import sys
@@ -21,6 +22,7 @@ import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
+import _ke_toan as K       # noqa: E402 — công nợ nhà cung cấp, cấn trừ ở trang kế toán (28/09, đợt 7d)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -97,7 +99,12 @@ def main():
     s, tram = goi("/api/suppliers/%s" % tram["id"], {"customer_id": khach["id"]}, vai="ketoancp", method="PUT")
     phai(s, 200, "KT Chi phí gắn trạm dầu cấn trừ vào cước %s" % khach["name"], tram)
     assert tram["customer_name"] == khach["name"], tram
-    no_truoc = tram["ghi_no_lak"]
+    assert "ghi_no_lak" not in tram and "con_no_lak" not in tram, "danh mục bên này không còn cột tiền: %s" % sorted(tram)
+    s, g = goi("/api/suppliers/%s/payments" % tram["id"], vai="ketoancp")
+    phai(s, 409, "Các lần trả nhà cung cấp bên này → đã dời sang trang kế toán", g)
+    s, ncc_kt = K.kt("/api/nha-cung-cap", vai="ketoancp")
+    phai(s, 200, "Công nợ nhà cung cấp ở trang kế toán", ncc_kt)
+    no_truoc = next(x for x in ncc_kt if x["id"] == tram["id"])["ghi_no_lak"]
 
     # ---------------------------------------------------------------- 2. phiếu: một dòng trả tiền mặt, một dòng ghi nợ
     s, P = Q.lap_phieu(goi, {
@@ -128,14 +135,14 @@ def main():
     print("  ✓ %-60s" % "Phiếu tạm ứng chỉ gồm dầu trả tiền mặt (200 L ghi nợ không tính)")
 
     # ---------------------------------------------------------------- 3. công nợ trạm chỉ tính dòng ghi nợ
-    s, ncc2 = goi("/api/suppliers", vai="ketoancp")
+    s, ncc2 = K.kt("/api/nha-cung-cap", vai="ketoancp")
     t2 = next(x for x in ncc2 if x["id"] == tram["id"])
     bang(t2["ghi_no_lak"] - no_truoc, 200 * 20000, "Nợ trạm tăng đúng phần GHI NỢ (dòng tiền mặt không tính)")
 
     # ---------------------------------------------------------------- 4. bảng cấn trừ cuối tháng
-    s, g = goi("/api/bao-cao/can-tru?thang=%s" % THANG, vai="thabok")
-    phai(s, 403, "Bãi xem bảng cấn trừ → bị chặn (tiền bán)", g)
-    s, ct = goi("/api/bao-cao/can-tru?thang=%s" % THANG, vai="doanhthu")
+    s, g = K.kt("/api/can-tru?thang=%s" % THANG, vai="thabok")
+    phai(s, 403, "Bãi xem bảng cấn trừ (trang kế toán) → bị chặn (tiền bán)", g)
+    s, ct = K.kt("/api/can-tru?thang=%s" % THANG, vai="doanhthu")
     o = next((x for x in ct["ds"] if x["customer_id"] == khach["id"]), None)
     assert o, "bảng cấn trừ phải có khách %s: %s" % (khach["name"], ct)
     bang(o["dau_vn_lak"], 200 * 20000, "Bảng cấn trừ: nợ trạm dầu VN của khách trong tháng")

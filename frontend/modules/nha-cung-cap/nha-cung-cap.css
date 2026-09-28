@@ -1,5 +1,1 @@
-/* Nhà cung cấp */
-.ncc-lich-su{margin-top:16px}
-.ncc-no{color:var(--red);font-weight:600}
-/* ba nút một hàng ngang, không xếp chồng (rà giao diện 23/09) */
-.ncc-nut{display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap}
+/* Nhà cung cấp — danh mục (phần tiền ở trang kế toán từ đợt 7d) */
