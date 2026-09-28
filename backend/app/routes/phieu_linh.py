@@ -35,7 +35,6 @@ from services import chung_tu as CT
 from services import gia_von as GV
 
 router = APIRouter()
-SUA_DIEM = can_vai("yard", "acct", "fuel")
 TIEN_TO = {"fuel": "PLNL", "advance": "PTU"}
 
 
@@ -59,39 +58,24 @@ def ds_diem(tat_ca: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_h
     return [xuat_diem(db, x, True) for x in q.order_by(FuelPlace.country, FuelPlace.name).all()]
 
 
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN",
+          "loi": "Điểm đổ nhiên liệu nay quản lý ở trang kế toán (Kho → Điểm đổ nhiên liệu). Ở đây chỉ còn bản chép để đọc."}
+
+
+# Thêm / sửa / xoá điểm đổ dời sang trang kế toán (28/09): bản gốc ở đó, bên này là bản chép chỉ đọc (routes/lien_thong.py).
 @router.post("/api/fuel-places")
-def them_diem(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
-    if not str(d.get("name") or "").strip():
-        raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Điểm đổ phải có tên."})
-    x = FuelPlace(code=d.get("code"), name=d["name"].strip(), country=(d.get("country") or "LA").upper(),
-                  owner_type=d.get("owner_type") or "epl", supplier_id=d.get("supplier_id") or None,
-                  address=d.get("address"), note=d.get("note"), active=bool(d.get("active", True)))
-    db.add(x); db.commit()
-    return xuat_diem(db, x)
+def them_diem(user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI)
 
 
 @router.put("/api/fuel-places/{pid}")
-def sua_diem(pid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
-    x = db.get(FuelPlace, pid)
-    if not x:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có điểm đổ này."})
-    for c in ("code", "name", "country", "owner_type", "supplier_id", "address", "note", "active"):
-        if c in d:
-            setattr(x, c, d[c] if d[c] != "" else None)
-    x.active = bool(x.active)
-    db.commit()
-    return xuat_diem(db, x)
+def sua_diem(pid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI)
 
 
 @router.delete("/api/fuel-places/{pid}")
-def xoa_diem(pid: str, db: Session = Depends(get_db), user=Depends(SUA_DIEM)):
-    x = db.get(FuelPlace, pid)
-    if not x:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có điểm đổ này."})
-    if db.query(TripExpense).filter(TripExpense.place_id == pid).count():
-        raise HTTPException(409, {"ma": "DANG_DUNG", "loi": "Điểm đổ đã có trên phiếu, chỉ được ngưng dùng."})
-    db.delete(x); db.commit()
-    return {"ok": True}
+def xoa_diem(pid: str, user=Depends(nguoi_hien_tai)):
+    raise HTTPException(409, DA_DOI)
 
 
 # ================================================================ phiếu lĩnh

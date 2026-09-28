@@ -444,7 +444,7 @@
     { id: 'kho-hang',       nhom: 'mod_warehouse', nav: 'nav_goods',    ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h18M9 13v8' },
     { id: 'kho-nhien-lieu', nhom: 'mod_warehouse', nav: 'nav_fuel',     ic: 'M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M6 6h6v5H6z',
       vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
-    { id: 'diem-do',        nhom: 'mod_warehouse', nav: 'nav_place', nav_s: 'nav_place_s',    ic: 'M12 22s7-6.1 7-12a7 7 0 1 0-14 0c0 5.9 7 12 7 12M12 7v6M9.5 9.5h5', vai: ['yard', 'acct', 'fuel'] },
+    // 'diem-do' (Điểm đổ nhiên liệu) dời sang trang kế toán 28/09 — bản gốc ở đó, bên này chỉ còn bản chép để đọc
     { id: 'kho-phu-tung',   nhom: 'mod_warehouse', nav: 'nav_parts',    ic: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M19 12l2 1-1 3-2-.5a7 7 0 0 1-2 2l.5 2-3 1-1-2a7 7 0 0 1-3 0l-1 2-3-1 .5-2a7 7 0 0 1-2-2L2 16l-1-3 2-1a7 7 0 0 1 0-3L1 8l1-3 2 .5a7 7 0 0 1 2-2L5.5 1.5l3-1 1 2a7 7 0 0 1 3 0l1-2 3 1-.5 2a7 7 0 0 1 2 2l2-.5 1 3-2 1a7 7 0 0 1 0 3z' },
     { id: 'sua-chua',       nhom: 'mod_warehouse', nav: 'nav_repair', nav_s: 'nav_repair_s',
       vai: ['repair', 'expacct', 'cash', 'acct', 'treasury', 'fuel', 'rev'],

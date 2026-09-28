@@ -8,10 +8,12 @@
 import secrets
 import time
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
+from models import FuelMove, FuelPlace, SaleLine, Supplier, TripEvent, TripExpense, User, Voucher
 from services import day_ke_toan as DK
 from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, may_ke_toan_goi, token_nhan_ke_toan
@@ -45,3 +47,57 @@ def tao_khoa(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
     DK.dat_cau_hinh(db, "token_nhan_ke_toan", k, user)
     db.commit()
     return {"token_nhan_ke_toan": k}
+
+
+# ================================================================ bản chép danh mục kho (28/09)
+# Điểm đổ nhiên liệu: bản GỐC ở trang kế toán. Ở đây là bản chép chỉ đọc, cùng mã — phiếu, phiếu lĩnh, tài khoản
+# thủ kho vẫn trỏ vào bảng fuel_places như cũ. Chỉ trang kế toán ghi vào đây, qua các đường máy dưới đây.
+COT_DIEM = ("code", "name", "country", "owner_type", "supplier_id", "address", "note", "active")
+
+
+@router.get("/api/lien-thong/diem-do/thong-tin")
+def diem_do_thong_tin(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Hai thứ màn Điểm đổ bên kế toán cần mà còn ở đây: danh sách nhà cung cấp (để gắn trạm bán dầu) và số phiếu
+    lĩnh đang chờ cấp ở từng điểm."""
+    ncc = [{"id": s.id, "name": s.name} for s in db.query(Supplier).order_by(Supplier.name).all()]
+    cho = dict(db.query(Voucher.place_id, func.count(Voucher.id))
+               .filter(Voucher.status == "cho", Voucher.place_id.isnot(None)).group_by(Voucher.place_id).all())
+    return {"nha_cung_cap": ncc, "cho_cap": cho}
+
+
+@router.put("/api/lien-thong/ban-sao/diem-do/{pid}")
+def ghi_ban_sao_diem(pid: str, d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    if not str(d.get("name") or "").strip():
+        raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Điểm đổ phải có tên."})
+    if d.get("owner_type") not in ("epl", "ngoai"):
+        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Loại điểm đổ không hợp lệ."})
+    if d.get("supplier_id") and not db.get(Supplier, d["supplier_id"]):
+        raise HTTPException(422, {"ma": "KHONG_THAY_NCC", "loi": "Không có nhà cung cấp này ở trang điều xe."})
+    x = db.get(FuelPlace, pid)
+    if not x:
+        x = FuelPlace(id=pid); db.add(x)
+    for c in COT_DIEM:
+        if c in d:
+            setattr(x, c, d[c] if d[c] != "" else None)
+    x.active = bool(x.active)
+    db.commit()
+    return {"ok": True, "id": pid}
+
+
+@router.delete("/api/lien-thong/ban-sao/diem-do/{pid}")
+def xoa_ban_sao_diem(pid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    x = db.get(FuelPlace, pid)
+    if not x:
+        return {"ok": True, "id": pid}          # bên này chưa có thì coi như đã xoá
+    dung = [ten for ten, bang, cot in (("phiếu xuất xe", TripExpense, TripExpense.place_id),
+                                       ("khai đổ dầu", TripEvent, TripEvent.place_id),
+                                       ("phiếu lĩnh", Voucher, Voucher.place_id),
+                                       ("sổ kho dầu", FuelMove, FuelMove.place_id),
+                                       ("phiếu bán hàng", SaleLine, SaleLine.place_id),
+                                       ("tài khoản thủ kho", User, User.place_id))
+            if db.query(bang).filter(cot == pid).first()]
+    if dung:
+        raise HTTPException(409, {"ma": "DANG_DUNG",
+                                  "loi": "Điểm đổ đã có trên %s — chỉ được ngưng dùng, không xoá." % ", ".join(dung)})
+    db.delete(x); db.commit()
+    return {"ok": True, "id": pid}
