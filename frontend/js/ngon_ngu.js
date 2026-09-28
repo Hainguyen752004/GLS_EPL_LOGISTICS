@@ -7668,9 +7668,9 @@ window.EPL_TU_DIEN = {
   "en": "Transport bill<span class=\"sub\">Print version · pick a slip in the toolbar</span>"
  },
  "title_xe_lien_ket": {
-  "vi": "Báo cáo vận chuyển xe liên kết<span class=\"sub\">Xe ngoài công ty chạy hàng EPL</span>",
-  "lo": "ລາຍງານການຂົນສົ່ງລົດຮ່ວມ<span class=\"sub\">ລົດນອກບໍລິສັດຂົນສິນຄ້າ EPL</span>",
-  "en": "Joint truck transport report<span class=\"sub\">Outside trucks hauling EPL cargo</span>"
+  "vi": "Chủ xe liên kết<span class=\"sub\">Điều khoản, hợp đồng thuê xe · trả tiền ở trang kế toán</span>",
+  "lo": "ເຈົ້າຂອງລົດຮ່ວມ<span class=\"sub\">ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL</span>",
+  "en": "Joint truck owners<span class=\"sub\">Terms, hire contracts · payouts on the ledger site</span>"
  },
  "title_tien_tai_xe": {
   "vi": "Tiền chuyến & tiền nước tài xế<span class=\"sub\">Tổng hợp theo tháng để trả cùng lương</span>",
@@ -7701,5 +7701,10 @@ window.EPL_TU_DIEN = {
   "vi": "Sổ thu tiền và hoá đơn ở trang kế toán — bấm nút để mở đúng phiếu này bên đó.",
   "lo": "ບັນຊີຮັບເງິນ ແລະ ໃບເກັບເງິນ ຢູ່ ປຶ້ມບັນຊີ EPL — ກົດປຸ່ມເພື່ອເປີດໃບນີ້ຢູ່ທີ່ນັ້ນ.",
   "en": "The payment log and invoices are on the ledger site — press the button to open this slip there."
+ },
+ "xlk_o_ke_toan": {
+  "vi": "Trả chủ xe · bảng xe liên kết",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດ · ຕາຕະລາງລົດຮ່ວມ",
+  "en": "Owner payouts · joint truck table"
  }
 };

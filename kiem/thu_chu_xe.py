@@ -6,6 +6,10 @@
 Kịch bản: kế toán lập chủ xe mới với phí 3 %, ngưỡng 38 t, trả gộp tháng → Bãi thêm xe liên kết gắn
 chủ đó → Bãi lập hai phiếu gom bằng xe đó (phí trên phiếu tự điền 3 % / 38 t) → đi tới khoá → quỹ
 trả GỘP hai phiếu một lần → một tờ PC_CX, hai phiếu đánh đã trả → trả lại thì bị chặn → dọn.
+
+Từ 28/09 (đợt 7b) công nợ và trả chủ xe ở TRANG KẾ TOÁN (Tiền vận chuyển → Xe liên kết; EPL_KT, mặc định 8031 — máy
+điều xe đang kiểm phải trỏ vào đó): bài đi qua bên đó, đọc bản chép "đã trả" trên phiếu bên này. Phiếu đã trả không xoá
+được; dọn thì Sếp huỷ đợt trả bên kế toán trước.
 """
 import json
 import os
@@ -39,6 +43,8 @@ def goi(duong, du_lieu=None, vai=None, method=None):
 
 def phai(s, mong, buoc, g=None):
     dt_ = (g or {}).get("detail") if isinstance(g, dict) else None
+    if dt_ is None and isinstance(g, dict) and "ma" in g:
+        dt_ = g
     ma = dt_.get("ma", "") if isinstance(dt_, dict) else ""
     print("%s %-60s %s %s" % ("  ✓" if s == mong else "  SAI", buoc, s, ma))
     if s != mong:
@@ -66,7 +72,12 @@ def main():
     # ---------------------------------------------------------------- 0. dọn dấu vết lần chạy trước bị đứt
     s, ds = goi("/api/trips", vai="admin")
     for p in [x for x in ds if x["doc_no"] in ("THU-CX-A/EPL", "THU-CX-B/EPL")]:
+        if p.get("owner_payment_id"):                  # đợt trả ở trang kế toán: Sếp huỷ trước thì phiếu mới xoá được
+            K.kt("/api/xe-lien-ket/dot/%s" % p["owner_payment_id"], vai="admin", method="DELETE")
         goi("/api/trips/%s/mo-khoa" % p["id"], {}, vai="admin"); goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
+    s, bh = K.kt("/api/ban-hang", vai="ketoan")
+    for b in [x for x in (bh.get("ds") or []) if x.get("note") == "thử: chủ xe mua dầu ở quầy" and x.get("status") == "issued"]:
+        K.kt("/api/ban-hang/%s" % b["id"], vai="ketoan", method="DELETE")
     s, ds = goi("/api/vehicles", vai="admin")
     for x in [x for x in ds if x["truck_no"] in ("THU-CX-01", "THU-CX-02") and x["active"]]:
         goi("/api/vehicles/%s" % x["id"], {"active": False}, vai="admin", method="PUT")
@@ -131,10 +142,13 @@ def main():
         assert abs(k["tru_vuot"] - round(max(0, P["weight_origin"] - 38) * 1.5, 2)) < 0.01, "quá tải phải theo ngưỡng 38 t × 1,5: %s" % k["tru_vuot"]
     print("  ✓ %-60s" % "hai phiếu đã khoá; phí và quá tải tính theo điều khoản chủ xe")
 
-    # ---------------------------------------------------------------- 4. công nợ và trả gộp
-    s, g = goi("/api/owners/%s/cong-no" % chu["id"], vai="thabok"); phai(s, 403, "Bãi xem công nợ chủ xe → bị từ chối", g)
-    s, cn = goi("/api/owners/%s/cong-no" % chu["id"], vai="quytb"); phai(s, 200, "Quỹ xem công nợ chủ xe", cn)
-    assert cn["tong"]["so_phieu"] == 2, "phải có 2 phiếu chờ trả: %s" % cn["tong"]
+    # ---------------------------------------------------------------- 4. công nợ và trả gộp — TRANG KẾ TOÁN từ 28/09 (đợt 7b)
+    s, g = goi("/api/owners/%s/cong-no" % chu["id"], vai="quytb"); phai(s, 409, "Đường cũ bên điều xe → 409 'đã dời sang trang kế toán'", g)
+    s, g = K.kt("/api/xe-lien-ket/chu-xe/%s/cho-tra" % chu["id"], vai="thabok"); phai(s, 403, "Bãi xem công nợ chủ xe → bị từ chối", g)
+    s, cn = K.kt("/api/xe-lien-ket/chu-xe/%s/cho-tra" % chu["id"], vai="quytb"); phai(s, 200, "Quỹ xem phiếu chờ trả (trang kế toán)", cn)
+    s, dsc = K.kt("/api/xe-lien-ket/chu-xe", vai="quytb")
+    c1 = next(c for c in dsc if c["id"] == chu["id"])
+    assert len(cn["cho_tra"]) == 2 and c1["cho_tra"]["so_phieu"] == 2, "phải có 2 phiếu chờ trả: %s" % c1["cho_tra"]
     tong_usd = round(sum(p["tra_chu_xe"] for p in cn["cho_tra"]), 2)
     print("  ✓ %-60s %s USD" % ("2 phiếu chờ trả, tổng", tong_usd))
 
@@ -150,39 +164,62 @@ def main():
     hd = [v for v in K.to_kho(ban["doc_no"], "HD_BAN") if (v.get("lines") or {}).get("doc_no") == ban["doc_no"]]
     assert hd and hd[0]["debit"] == "4022" and hd[0]["credit"] == "70", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 70: %s" % hd
     print("  ✓ %-60s Nợ %s / Có %s" % ("hoá đơn bán cho chủ xe không thành nợ khách", hd[0]["debit"], hd[0]["credit"]))
-    s, cn = goi("/api/owners/%s/cong-no" % chu["id"], vai="quytb")
-    assert [b["doc_no"] for b in cn["ban_cho_tru"]] == [ban["doc_no"]] and cn["tong"]["ban_cho_tru_lak"] == 300000, cn["tong"]
-    print("  ✓ %-60s %s LAK" % ("công nợ chủ xe hiện phiếu bán chờ trừ", format(cn["tong"]["ban_cho_tru_lak"], ",")))
+    s, cn = K.kt("/api/xe-lien-ket/chu-xe/%s/cho-tra" % chu["id"], vai="quytb")
+    s, dsc = K.kt("/api/xe-lien-ket/chu-xe", vai="quytb")
+    c1 = next(c for c in dsc if c["id"] == chu["id"])
+    assert [b_["doc_no"] for b_ in cn["ban_cho_tru"]] == [ban["doc_no"]] and c1["cho_tra"]["ban_cho_tru_lak"] == 300000, c1["cho_tra"]
+    print("  ✓ %-60s %s LAK" % ("công nợ chủ xe hiện phiếu bán chờ trừ", format(c1["cho_tra"]["ban_cho_tru_lak"], ",")))
     ids = [p["id"] for p in cn["cho_tra"]]
-    s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": ids}, vai="ketoan"); phai(s, 403, "Kế toán trả tiền → bị từ chối (quỹ chi)", g)
-    s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": []}, vai="quytb"); phai(s, 422, "Trả mà không chọn phiếu → bị từ chối", g)
-    s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": ids, "pay_date": "2026-09-30", "method": "bank", "ref": "UNC-CX-01"}, vai="quytb")
-    phai(s, 200, "Quỹ trả GỘP hai phiếu một lần (chuyển khoản)", g)
-    assert g["tong"]["so_phieu"] == 0 and len(g["da_tra"]) == 1, "sau trả gộp: 0 phiếu chờ, 1 đợt đã trả: %s" % g["tong"]
-    dot = g["da_tra"][0]
+    s, g = K.kt("/api/xe-lien-ket/chu-xe/%s/tra" % chu["id"], {"trip_ids": ids}, vai="ketoan"); phai(s, 403, "Kế toán trả tiền → bị từ chối (quỹ chi)", g)
+    s, g = K.kt("/api/xe-lien-ket/chu-xe/%s/tra" % chu["id"], {"trip_ids": []}, vai="quytb"); phai(s, 422, "Trả mà không chọn phiếu → bị từ chối", g)
+    # trang điều xe tắt → chặn, không lập đợt nào
+    s, ch = K.kt("/api/cau-hinh", vai="admin"); dx_cu = ch["dieu_xe_api"]
+    K.kt("/api/cau-hinh", {"dieu_xe_api": "http://127.0.0.1:8097"}, vai="admin", method="PUT")
+    try:
+        s, g = K.kt("/api/xe-lien-ket/chu-xe/%s/tra" % chu["id"], {"trip_ids": ids, "method": "bank"}, vai="quytb")
+        phai(s, 503, "Trang điều xe tắt → trả chủ xe bị chặn, báo rõ", g)
+    finally:
+        K.kt("/api/cau-hinh", {"dieu_xe_api": dx_cu}, vai="admin", method="PUT")
+    s, dot = K.kt("/api/xe-lien-ket/chu-xe/%s/tra" % chu["id"], {"trip_ids": ids, "pay_date": "2026-09-30", "method": "bank", "ref": "UNC-CX-01"}, vai="quytb")
+    phai(s, 200, "Quỹ trả GỘP hai phiếu một lần (chuyển khoản, trang kế toán)", dot)
+    s, cn = K.kt("/api/xe-lien-ket/chu-xe/%s/cho-tra" % chu["id"], vai="quytb")
+    assert not cn["cho_tra"] and not cn["ban_cho_tru"], "sau trả gộp: 0 phiếu chờ, 0 phiếu bán chờ trừ: %s" % cn
     tru = round(300000 / 22000, 2)                    # 300.000 LAK quy về USD theo tỷ giá trên phiếu
     assert abs(dot["gross"] - tong_usd) < 0.01 and abs(dot["sales_deducted"] - tru) < 0.01 and abs(dot["amount"] - (tong_usd - tru)) < 0.02 \
         and dot["currency"] == "USD" and sorted(dot["phieu"]) == sorted(p["doc_no"] for p in phieu) and dot["ban"] == [ban["doc_no"]], \
         "đợt trả = tổng phiếu − hàng mua ở quầy, đủ hai phiếu và phiếu bán: %s" % dot
     print("  ✓ %-60s %s − %s = %s %s" % ("đợt trả TRỪ hàng mua ở quầy", dot["gross"], dot["sales_deducted"], dot["amount"], dot["currency"]))
     s, b2 = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan")
-    assert b2["status"] == "offset" and b2["owner_payment_id"] == dot["id"], "phiếu bán (trang kế toán) phải đánh đã trừ, trỏ về đợt: %s" % b2
-    print("  ✓ %-60s %s" % ("phiếu bán bên trang kế toán đánh 'đã trừ', trỏ về đợt", b2["status"]))
+    assert b2["status"] == "offset" and b2["owner_payment_id"] == dot["id"], "phiếu bán phải đánh đã trừ, trỏ về đợt: %s" % b2
+    print("  ✓ %-60s %s" % ("phiếu bán đánh 'đã trừ', trỏ về đợt", b2["status"]))
     s, g = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan", method="DELETE"); phai(s, 409, "Bỏ phiếu bán đã trừ → bị từ chối", g)
 
-    s, ct = goi("/api/chung-tu?loai=PC_CX&limit=20", vai="ketoan")
-    to = [c for c in ct["ds"] if c["nguon_bang"] == "owner_payments" and c["nguon_id"] == dot["id"]]
-    assert len(to) == 1 and to[0]["co"] == "1022", "một đợt → MỘT tờ PC_CX, vế Có ngân hàng ngoại tệ 1022: %s" % to
-    assert abs(to[0]["tien"] - dot["amount"]) < 0.01, "PC_CX là số THỰC CHI sau khi trừ: %s ≠ %s" % (to[0]["tien"], dot["amount"])
-    print("  ✓ %-60s %s · Nợ %s / Có %s" % ("một tờ PC_CX cho cả đợt", to[0]["so"], to[0]["no"], to[0]["co"]))
+    s, ct = K.kt("/api/chung-tu?loai=PC_CX&limit=1000", vai="ketoan")
+    to = [v for v in ct if v["source"] == "EPL_KETOAN" and all(p["doc_no"] in (v.get("memo") or "") for p in phieu)]
+    assert len(to) == 1 and to[0]["credit"] == "1022" and to[0]["debit"] == "4022" and to[0]["entry_id"], \
+        "một đợt → MỘT tờ PC_CX sinh ở sổ, Nợ 4022 / Có ngân hàng ngoại tệ 1022, vào sổ ngay: %s" % to
+    assert abs(to[0]["amount"] - dot["amount"]) < 0.01, "PC_CX là số THỰC CHI sau khi trừ: %s ≠ %s" % (to[0]["amount"], dot["amount"])
+    print("  ✓ %-60s %s · Nợ %s / Có %s" % ("một tờ PC_CX cho cả đợt", to[0]["ref"], to[0]["debit"], to[0]["credit"]))
 
     for P in phieu:
         s, g = goi("/api/trips/%s" % P["id"], vai="quytb")
-        assert g["owner_paid"] and g["owner_payment_id"] == dot["id"], "phiếu %s phải đánh đã trả và trỏ về đợt" % P["doc_no"]
-    s, g = goi("/api/trips/%s/tra-chu-xe" % phieu[0]["id"], {}, vai="quytb"); phai(s, 409, "Trả lại từng phiếu đã nằm trong đợt → từ chối", g)
-    s, g = goi("/api/owners/%s/tra" % chu["id"], {"trip_ids": ids}, vai="quytb"); phai(s, 409, "Trả gộp lần hai cùng phiếu → từ chối", g)
+        assert g["owner_paid"] and g["owner_payment_id"] == dot["id"], "phiếu %s phải đánh đã trả và trỏ về đợt (bản chép)" % P["doc_no"]
+    print("  ✓ %-60s" % "bản chép trên phiếu (điều xe): đã trả, trỏ về đợt")
+    s, g = goi("/api/trips/%s/tra-chu-xe" % phieu[0]["id"], {}, vai="quytb"); phai(s, 409, "Nút cũ bên điều xe → 409 'đã dời'", g)
+    s, g = K.kt("/api/xe-lien-ket/phieu/%s/tra" % phieu[0]["id"], {}, vai="quytb"); phai(s, 409, "Trả lại từng phiếu đã nằm trong đợt → từ chối", g)
+    s, g = K.kt("/api/xe-lien-ket/chu-xe/%s/tra" % chu["id"], {"trip_ids": ids}, vai="quytb"); phai(s, 409, "Trả gộp lần hai cùng phiếu → từ chối", g)
 
     # ---------------------------------------------------------------- 5. dọn
+    s, g = goi("/api/trips/%s" % phieu[0]["id"], vai="admin", method="DELETE"); phai(s, 409, "Phiếu đã trả chủ xe → không xoá được (kể cả Sếp)", g)
+    s, g = K.kt("/api/xe-lien-ket/dot/%s" % dot["id"], vai="quytb", method="DELETE"); phai(s, 403, "Quỹ huỷ đợt trả → bị từ chối (chỉ Sếp)", g)
+    s, g = K.kt("/api/xe-lien-ket/dot/%s" % dot["id"], vai="admin", method="DELETE"); phai(s, 200, "Sếp huỷ đợt trả thử (trang kế toán)", g)
+    s, b3 = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan")
+    assert b3["status"] == "issued" and not b3["owner_payment_id"], "huỷ đợt → phiếu bán về lại chờ trừ: %s" % b3
+    assert not [v for v in K.kt("/api/chung-tu?loai=PC_CX&limit=1000", vai="ketoan")[1] if v["ref"] == to[0]["ref"]], "huỷ đợt → tờ PC_CX rút khỏi sổ"
+    s, g = goi("/api/trips/%s" % phieu[0]["id"], vai="quytb")
+    assert not g["owner_paid"] and not g["owner_payment_id"], "huỷ đợt → phiếu về 'chưa trả' (bản chép)"
+    print("  ✓ %-60s" % "huỷ đợt: phiếu bán về chờ trừ, PC_CX rút, phiếu về chưa trả")
+    s, g = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan", method="DELETE"); phai(s, 200, "Bỏ phiếu bán thử (hàng về kho)", g)
     for P in phieu:
         s, g = goi("/api/trips/%s/mo-khoa" % P["id"], {}, vai="admin")
         s, g = goi("/api/trips/%s" % P["id"], vai="admin", method="DELETE"); phai(s, 200, "Xoá phiếu thử %s" % P["doc_no"], g)

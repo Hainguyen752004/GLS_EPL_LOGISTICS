@@ -103,7 +103,15 @@ def main():
     for vai in ("admin", "yard"):
         u_ = Vai(vai)
         (a, ta), (b, tb) = do(lambda: CXc.ds_chu_xe(db=db, user=u_)), do(lambda: CX.ds_chu_xe(db=db, user=u_))
+        # từ 28/09 (đợt 7b) số chờ trả ở trang kế toán: danh mục bên này so khi bỏ phần đó; phần chờ trả của bản cũ so với
+        # hàm trang kế toán gọi sang (_cho_tra_lo) — phần hàng mua ở quầy trang kế toán tự cộng nên không so ở đây
+        cho_cu = {x["id"]: x.pop("cho_tra") for x in a if "cho_tra" in x}
         db.rollback(); loi += not so("chủ xe · %s" % vai, a, b, ta, tb, sap=lambda d: [dict(x, so_xe=sorted(x["so_xe"])) for x in d])
+        if cho_cu:
+            (c, tc) = do(lambda: CX._cho_tra_lo(db, db.query(CX.Owner).filter(CX.Owner.id.in_(list(cho_cu))).all()))
+            db.rollback()
+            loi += not so("chờ trả chủ xe · %s (đường máy)" % vai,
+                          {k: {f: v[f] for f in ("so_phieu", "tong", "tong_lak")} for k, v in cho_cu.items()}, c, ta, tc)
         (a, ta), (b, tb) = do(lambda: NCCc.ds(db=db, user=u_)), do(lambda: NCC.ds(db=db, user=u_))
         db.rollback(); loi += not so("nhà cung cấp · %s" % vai, a, b, ta, tb)
         (a, ta), (b, tb) = do(lambda: PLc.ds_cho_cap(request=Yeu(), db=db, user=u_)), do(lambda: PL.ds_cho_cap(request=Yeu(), response=Response(), db=db, user=u_))

@@ -91,8 +91,10 @@ def _doi_ten_cot(c, insp):
 # Khoá ngoại BỎ theo thời gian — cột vẫn giữ, dữ liệu vẫn giữ, chỉ bỏ ràng buộc trỏ vào bảng đã dời đi nơi khác:
 #   28/09/2026 (đợt 7a): hoá đơn gộp tháng ở trang kế toán — trips.invoice_id nay mang mã tờ BÊN ĐÓ, bảng invoices
 #   bên này đứng yên từ ngày dời nên tờ mới không có ở đây; giữ khoá ngoại là không ghi được bản chép.
+#   28/09/2026 (đợt 7b): đợt trả chủ xe ở trang kế toán — trips.owner_payment_id mang mã đợt BÊN ĐÓ.
 BO_KHOA_NGOAI = [
     ("trips", "invoice_id"),
+    ("trips", "owner_payment_id"),
 ]
 
 

@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 
 from database import BIEU_THUC_TIM_PHIEU, get_db
 from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
-                    CACH_TINH_CUOC, SU_KIEN, TIEN_TE, TRANG_THAI_TAI_CHINH, TRANG_THAI_VAN_CHUYEN,
+                    CACH_TINH_CUOC, SU_KIEN, TIEN_TE, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
@@ -32,7 +32,7 @@ from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gi
 from services import gia_von as GV
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
-from services.tinh_toan import chuan_tien, doi as doi_tien, la_tien_mat_tai_xe, lam_tron, tien_cuoc, tien_dong, tien_thue_xe, tinh_phieu, ty_gia
+from services.tinh_toan import chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -1308,27 +1308,9 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
 
 # ---------------------------------------------------------------- xe liên kết: chi trả chủ xe → PC_CX
 @router.post("/api/trips/{tid}/tra-chu-xe")
-def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Quỹ chi tiền cho chủ xe liên kết một lần cho cả phiếu: giá thuê × tấn − 2% − vượt tấn − EPL đã ứng."""
-    p = db.get(Trip, tid)
-    if not p:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
-    if user.role not in ("cash", "treasury", "admin"):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ quỹ chi trả chủ xe."})
-    if p.company != "joint":
-        raise HTTPException(422, {"ma": "KHONG_PHAI_LIEN_KET", "loi": "Phiếu này là xe nhà, không có chủ xe để trả."})
-    if not p.locked:
-        raise HTTPException(409, {"ma": "CHUA_KHOA", "loi": "Kế toán phải khoá phiếu rồi quỹ mới trả chủ xe."})
-    if p.owner_paid or p.owner_payment_id:
-        raise HTTPException(409, {"ma": "DA_TRA", "loi": "Đã trả chủ xe phiếu này rồi (%s)." % (p.owner_paid_by or "")})
-    # Trả từng phiếu = một đợt gồm đúng một phiếu; cùng hàm với trả gộp để chứng từ và sổ trả giống nhau.
-    from routes.chu_xe import tra_nhieu_phieu
-    o = db.get(Owner, p.owner_id) if p.owner_id else None
-    # phiếu bán chủ xe mua ở quầy (trang kế toán) được trừ trong cùng đợt — bên này lưu hỏng thì bên đó về lại chờ trừ
-    with KK.GiaoDichKho(db, user) as gd:
-        tra_nhieu_phieu(db, user, [p], method=(data.get("method") or "cash"), note=data.get("note"), owner=o, gd=gd)
-        _ghi_log(db, p, user, "a_pay_owner")
-    return xuat_phieu(db, p, vai=user.role)
+def tra_chu_xe(tid: str, user=Depends(nguoi_hien_tai)):
+    """Trả chủ xe ở trang kế toán từ 28/09 (đợt 7b) — Tiền vận chuyển → Xe liên kết; phiếu nhận bản chép 'đã trả'."""
+    raise HTTPException(409, {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả chủ xe nay làm ở trang kế toán (Tiền vận chuyển → Xe liên kết)."})
 
 
 # ---------------------------------------------------------------- tệp đính kèm (phiếu quặng của khách)
@@ -1693,6 +1675,8 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     _chan_khoa(p, user)
     if p.invoiced or (p.collected_lak or 0) > 0:
         raise HTTPException(409, {"ma": "DA_HOA_DON", "loi": "Phiếu %s đã xuất hoá đơn ở trang kế toán — huỷ hoá đơn và các lần thu bên đó trước." % p.doc_no})
+    if p.owner_payment_id or p.owner_paid:
+        raise HTTPException(409, {"ma": "DA_TRA_CHU_XE", "loi": "Phiếu %s đã trả chủ xe ở trang kế toán — Sếp huỷ đợt trả bên đó trước." % p.doc_no})
     # Phiếu lĩnh / phiếu tạm ứng ĐÃ CẤP: dầu đã ra khỏi kho, tiền đã tới tay tài xế. Trước đây xoá phiếu thì máy chủ
     # vấp khoá ngoại fuel_moves → vouchers và trả 500 (rà 23/09). Bãi: chặn rõ ràng. Sếp: trả dầu về kho rồi xoá.
     from models import Voucher

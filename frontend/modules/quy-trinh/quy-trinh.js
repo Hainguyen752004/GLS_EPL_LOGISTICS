@@ -104,7 +104,7 @@
         giay: ['Biên nhận thu tiền'], ct: ['PT'], ct_khi: { PT: 'mỗi lần thu; cấn trừ ghi PT cách thu "cấn trừ"' }, sau: 'Đã thanh toán' },
     ] },
     { gd: 'Xe liên kết và cuối kỳ', buoc: [
-      { so: 18, vai: ['cash', 'treasury'], man: 'xe-lien-ket', ten: 'Trả chủ xe liên kết (lẻ · gộp tháng · theo đợt)',
+      { so: 18, vai: ['cash', 'treasury'], man: 'xe-lien-ket', o_ke_toan: true, ten: 'Trả chủ xe liên kết (lẻ · gộp tháng · theo đợt)',
         lam: ['Chọn các phiếu đã khoá của một chủ xe → Trả'],
         may: ['Phải trả = tiền thuê − phí % − trừ vượt tấn − mọi khoản EPL đã ứng (dầu kho, đi đường…) — chủ xe tự trả thì không trừ',
           'TỰ TRỪ tiếp hàng chủ xe mua ở quầy (xăng, phụ tùng) chưa trừ — ví dụ deal 1tr6, mua 3 trăm → trả 1tr3', 'Phiếu chi ghi số THỰC CHI sau khi trừ'],

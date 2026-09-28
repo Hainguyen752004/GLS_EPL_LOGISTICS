@@ -26,8 +26,8 @@ EPL Lào chạy trên **hai trang web riêng**, hai cơ sở dữ liệu riêng,
 
 | Trang | Tên trong mã | Máy của anh | Giữ những gì |
 |---|---|---|---|
-| **Trang điều xe** | EPL_LAO_REAL · DB `epl_lao` | cổng **8020** | Việc của **chuyến xe**: Tổng quan, Theo dõi phiếu vận chuyển, Theo dõi tuyến, **Phiếu xuất xe**, Phiếu của tôi (tài xế), danh mục Xe · Tài xế · Tuyến đường · Khách hàng · Thẻ cao tốc · Tỷ giá, Quy trình, Tài khoản. Màn **Phiếu chi · Phiếu thu** còn in phiếu chi tạm ứng, phiếu lĩnh và giữ sổ chứng từ của phiếu. **Tạm thời vẫn giữ các màn tiền** Xe liên kết, Tiền chuyến & tiền nước tài xế, Tất toán tài xế, Theo dõi nhà cung cấp cho tới các phần sau của đợt 7 |
-| **Trang kế toán** | EPL_KETOAN · DB `epl_ketoan` | cổng **8030** | Nhóm **Kho** (Kho hàng, Cấp phát, Kho nhiên liệu, Điểm đổ nhiên liệu, Kho phụ tùng, Lệnh sửa chữa, Bán hàng), nhóm **Tiền vận chuyển** (Hóa đơn vận chuyển, Hoá đơn gộp tháng — từ đợt 7a) và **Sổ kế toán** (nhận chứng từ, Kế toán, Ghi tay, Thu chi, Công nợ, Quỹ & TK, Chuyến xe, Kho, Báo cáo, Cài đặt) |
+| **Trang điều xe** | EPL_LAO_REAL · DB `epl_lao` | cổng **8020** | Việc của **chuyến xe**: Tổng quan, Theo dõi phiếu vận chuyển, Theo dõi tuyến, **Phiếu xuất xe**, Phiếu của tôi (tài xế), danh mục Xe · Tài xế · Tuyến đường · Khách hàng · Thẻ cao tốc · Tỷ giá, Quy trình, Tài khoản. Màn **Phiếu chi · Phiếu thu** còn in phiếu chi tạm ứng, phiếu lĩnh và giữ sổ chứng từ của phiếu. Màn **Xe liên kết** chỉ còn danh mục chủ xe (điều khoản) và hợp đồng thuê xe. **Tạm thời vẫn giữ các màn tiền** Tiền chuyến & tiền nước tài xế, Tất toán tài xế, Theo dõi nhà cung cấp cho tới các phần sau của đợt 7 |
+| **Trang kế toán** | EPL_KETOAN · DB `epl_ketoan` | cổng **8030** | Nhóm **Kho** (Kho hàng, Cấp phát, Kho nhiên liệu, Điểm đổ nhiên liệu, Kho phụ tùng, Lệnh sửa chữa, Bán hàng), nhóm **Tiền vận chuyển** (Hóa đơn vận chuyển, Hoá đơn gộp tháng — từ đợt 7a; Xe liên kết — trả chủ xe, từ đợt 7b) và **Sổ kế toán** (nhận chứng từ, Kế toán, Ghi tay, Thu chi, Công nợ, Quỹ & TK, Chuyến xe, Kho, Báo cáo, Cài đặt) |
 
 Nguyên tắc anh chốt ngày 28/09: **trang điều xe không xem được kho**. Kho và (từ đợt 7) tiền nằm ở trang kế toán. Riêng việc **kiểm và duyệt từng mục trên phiếu xuất xe vẫn làm ngay trên phiếu** ở trang điều xe, vì phiếu là DO đang mở của chuyến.
 
@@ -41,13 +41,13 @@ Tóm tắt một chuyến trọn luồng (chi tiết từng bước ở Phần 4
 4. **Tài xế** xuất phát, báo mốc, đổ dầu dọc đường, báo hỏng, giao hàng và ký nhận trên điện thoại.
 5. **Admin Thà Bốc** báo xe tới, nhập cân cuối. Phiếu gom thì hàng vào **kho bãi**; phiếu giao thì hàng ra khỏi kho bãi.
 6. **KT Thu/Chi** kiểm lại toàn phiếu rồi **khoá**.
-7. **KT Doanh thu** lập hoá đơn, ghi thu tiền khách (ở **trang kế toán**). **Quỹ** trả chủ xe liên kết. **KT Chi phí** tất toán tài xế.
+7. **KT Doanh thu** lập hoá đơn, ghi thu tiền khách (ở **trang kế toán**). **Quỹ** trả chủ xe liên kết (cũng ở **trang kế toán**). **KT Chi phí** tất toán tài xế.
 8. **KT Thu/Chi** đẩy chứng từ sang sổ; **trang kế toán** nhận tờ và tự ghi bút toán. **Kế toán trưởng** duyệt bút toán ghi tay nếu có.
 
 ### 1.3. Tờ chứng từ về sổ bằng hai đường
 
-- **Đường 1 — tờ sinh ở trang điều xe** (DO, phiếu lĩnh, tạm ứng, phiếu chi mục IV–VI, trả chủ xe, tất toán…): nằm ở màn **Phiếu chi · Phiếu thu** với trạng thái *chưa đẩy*, tới khi KT Thu/Chi bấm **Đẩy hết tờ chưa đẩy**. Sổ nhận tờ nào thì tự sinh bút toán tờ đó.
-- **Đường 2 — tờ sinh ngay ở trang kế toán** (mọi tờ kho: nhập / xuất / chuyển dầu, phụ tùng, kho hàng; tờ của lệnh sửa chữa và bán hàng; từ đợt 7a cả **hoá đơn HD** và **phiếu thu tiền khách PT**): vào sổ **ngay lúc làm việc**, không cần đẩy. Trong sổ, các bút toán này mang nguồn *Sinh ở kho (trang kế toán)* hoặc *Sinh ở tiền vận chuyển (trang kế toán)*.
+- **Đường 1 — tờ sinh ở trang điều xe** (DO, phiếu lĩnh, tạm ứng, phiếu chi mục IV–VI, tất toán…): nằm ở màn **Phiếu chi · Phiếu thu** với trạng thái *chưa đẩy*, tới khi KT Thu/Chi bấm **Đẩy hết tờ chưa đẩy**. Sổ nhận tờ nào thì tự sinh bút toán tờ đó.
+- **Đường 2 — tờ sinh ngay ở trang kế toán** (mọi tờ kho: nhập / xuất / chuyển dầu, phụ tùng, kho hàng; tờ của lệnh sửa chữa và bán hàng; từ đợt 7a cả **hoá đơn HD** và **phiếu thu tiền khách PT**, từ đợt 7b **phiếu chi trả chủ xe PC_CX**): vào sổ **ngay lúc làm việc**, không cần đẩy. Trong sổ, các bút toán này mang nguồn *Sinh ở kho (trang kế toán)* hoặc *Sinh ở tiền vận chuyển (trang kế toán)*.
 
 ## 2. Tài khoản và đăng nhập
 
@@ -63,8 +63,8 @@ Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đ
 | `khotb` · `khovc` | Thủ kho nhiên liệu (một kho: Thà Bốc · Viêng Chăn) | Không có màn nào — vào sẽ thấy nút **Mở trang kế toán** | Cấp phát (chỉ phiếu lĩnh của kho mình), Kho nhiên liệu (xem) |
 | `khopt` | Thủ kho phụ tùng Thà Bốc | Màn Xe | Kho phụ tùng (thêm, nhập, xuất, sửa) |
 | `totsua` | Tổ sửa chữa Thà Bốc | Theo dõi tuyến (duyệt báo hỏng), Phiếu xuất xe (mục V), Xe | Lệnh sửa chữa (lập, thêm dòng), Kho phụ tùng (xem) |
-| `quytb` | Quỹ tiền mặt cảng cạn | Chi mục IV, V, VI; trả chủ xe; tất toán | Xem sổ; Cấp phát (chi tạm ứng), Lệnh sửa chữa (chi), Bán hàng (ghi thu) |
-| `quyvc` | Thủ quỹ VC | Chi mục III (dầu mua ngoài); trả chủ xe; tất toán | Xem sổ; Cấp phát (chi tạm ứng), Bán hàng (ghi thu) |
+| `quytb` | Quỹ tiền mặt cảng cạn | Chi mục IV, V, VI; tất toán | Xem sổ; Cấp phát (chi tạm ứng), Lệnh sửa chữa (chi), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe) |
+| `quyvc` | Thủ quỹ VC | Chi mục III (dầu mua ngoài); tất toán | Xem sổ; Cấp phát (chi tạm ứng), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe) |
 | `doanhthu` | KT Doanh thu VC | Ghi cấn trừ tháng (Theo dõi nhà cung cấp); xem phiếu, công nợ khách | Xem sổ; **Hóa đơn vận chuyển**, **Hoá đơn gộp tháng** (lập hoá đơn, ghi thu, xoá lần thu); Bán hàng (lập, ghi thu) |
 | `tx01` · `tx02` · `tx03` | Tài xế | Chỉ màn **Phiếu của tôi** trên điện thoại | Không có tài khoản |
 | `ketoantruong` | Kế toán trưởng | — | Duyệt bút toán ghi tay |
@@ -93,6 +93,9 @@ Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đ
 | Trang điều xe → **Phiếu xuất xe** → thanh nút trên cùng | **Hóa đơn vận chuyển** | Bản in hoá đơn của phiếu ở trang kế toán |
 | Trang điều xe → **Danh mục → Khách hàng** → Công nợ khách | Số tờ gộp (có dấu ↗) | Tờ gộp đó ở trang kế toán |
 | Trang kế toán → **Tiền vận chuyển → Hoá đơn gộp tháng** → một tờ | Số phiếu trong bảng *Dòng phiếu trong hoá đơn* | Màn **Hóa đơn vận chuyển** của phiếu đó |
+| Trang điều xe → **Phiếu xuất xe** (phiếu xe liên kết đã khoá, vai quỹ) | **Trả chủ xe · <số tiền> ↗** | Màn **Xe liên kết** ở trang kế toán, đúng tháng của phiếu, dòng phiếu tô sáng |
+| Trang điều xe → **Vận tải → Xe liên kết** | **Trả chủ xe · bảng xe liên kết ↗** | Màn **Xe liên kết** ở trang kế toán |
+| Trang kế toán → **Tiền vận chuyển → Xe liên kết** → bảng *Xe liên kết* | Bấm một dòng phiếu | Màn **Hóa đơn vận chuyển** của phiếu đó |
 
 Mở sang trang kia thì **đăng nhập bên đó** nếu chưa đăng nhập (cùng tên, cùng mật khẩu).
 
@@ -107,7 +110,6 @@ Mở sang trang kia thì **đăng nhập bên đó** nếu chưa đăng nhập (
 | Xe gom tới bãi | Điều xe | Nhập hàng vào kho bãi, sinh PNK_HH | Chưa báo tới được |
 | Xoá phiếu (Sếp) | Điều xe | Trả dầu, phụ tùng, hàng về kho; rút tờ kho | Chưa xoá được |
 | Mở màn Xe → tab Sửa chữa | Điều xe | Lấy lịch sử lệnh sửa chữa của xe | Vẫn mở, ghi rõ phần thiếu |
-| Trả chủ xe, xem công nợ chủ xe | Điều xe | Lấy phiếu bán chủ xe mua ở quầy chờ trừ, báo "đã trừ" | Chặn, báo rõ |
 | Cấp dầu / chi tạm ứng ở **Cấp phát** | Kế toán | Đọc phiếu lĩnh, ghi "đã cấp" lên phiếu bên điều xe | Việc vào **hàng đợi trong máy**, tự gửi khi nối lại |
 | Thêm / sửa **Điểm đổ**, **phụ tùng** | Kế toán | Ghi bản chép danh mục bên điều xe | Không lưu, báo rõ |
 | Lập **lệnh sửa chữa**, chi lệnh | Kế toán | Lấy danh mục xe, báo xe vào / ra xưởng | Không lập được lệnh mới |
@@ -116,6 +118,8 @@ Mở sang trang kia thì **đăng nhập bên đó** nếu chưa đăng nhập (
 | Mở **Hóa đơn vận chuyển**, bảng *Chờ gộp* | Kế toán | Đọc phiếu (bản in, số cước) từ trang điều xe | Không mở được phiếu, báo rõ |
 | **Lập hóa đơn thu**, **Gộp hoá đơn tháng**, **Huỷ tờ hoá đơn** | Kế toán | Kiểm lại phiếu (đã khoá, mục II đã kiểm) và ghi bản chép *đã xuất hoá đơn* lên phiếu | Chặn, báo rõ; không có hoá đơn nửa vời |
 | **Ghi một lần thu**, xoá lần thu | Kế toán | Ghi bản chép *đã thu bao nhiêu*, trạng thái thu lên phiếu | Chặn, báo rõ |
+| Mở **Xe liên kết** (bảng chủ xe, bảng tháng, hộp **Trả gộp**) | Kế toán | Đọc danh mục chủ xe, phiếu xe liên kết và số trả chủ xe của từng phiếu (tính ở trang điều xe) | Chặn, báo rõ; không hiện nửa số |
+| **Trả gộp**, **Trả chủ xe**, **Huỷ đợt trả** | Kế toán | Kiểm lại phiếu (xe liên kết, đã khoá, chưa trả) và ghi bản chép *đã trả chủ xe* lên phiếu | Chặn, báo rõ; không có đợt trả nửa vời |
 | Xem **Công nợ khách** (Danh mục → Khách hàng) | Điều xe | Lấy các tờ hoá đơn và số đã thu | Chặn, báo rõ |
 | **Ghi cấn trừ tháng** (Theo dõi nhà cung cấp) | Điều xe | Trang kế toán ghi phiếu thu cấn trừ vào hoá đơn của khách | Chặn, báo rõ |
 | Bảng Cấn trừ cuối tháng | Điều xe | Lấy phần đã ghi cấn trừ | Vẫn mở; ô *đã ghi* để trống, nút ghi ẩn |
@@ -428,15 +432,24 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Sếp gỡ hoá đơn lập nhầm:** trên màn Hóa đơn vận chuyển, Sếp (`admin`) có nút **Huỷ tờ hoá đơn** khi phiếu chưa thu đồng nào. Phiếu còn hoá đơn thì trang điều xe **không cho xoá phiếu**, kể cả Sếp.
 
-### Bước 19. Trả chủ xe liên kết (chỉ phiếu xe thuê ngoài)
+### Bước 19. Trả chủ xe liên kết — trang kế toán (chỉ phiếu xe thuê ngoài)
 
-**Ai:** Quỹ tiền mặt cảng cạn hoặc Thủ quỹ VC. **Trang:** điều xe.
+**Ai:** Quỹ tiền mặt cảng cạn (`quytb`) hoặc Thủ quỹ VC (`quyvc`); Sếp cũng trả được. **Trang:** **kế toán** (từ đợt 7b). **Màn:** nhóm **Tiền vận chuyển** → **Xe liên kết**.
 
-**Thao tác:** từng phiếu: mở Phiếu xuất xe đã khoá → **Trả chủ xe · <số tiền>** → đọc cách tính → xác nhận. Nhiều phiếu một lần: Vận tải → **Xe liên kết** → bảng **Chủ xe liên kết** → **Trả gộp** ở dòng chủ xe → chọn các phiếu → ngày, cách chi → trả.
+**Đi từ phiếu:** trên trang điều xe, phiếu xe liên kết đã khoá hiện nút **Trả chủ xe · <số tiền> ↗** (chỉ vai quỹ thấy). Bấm là mở trang kế toán ở màn Xe liên kết, đúng tháng của phiếu, dòng phiếu tô sáng. Ở màn **Vận tải → Xe liên kết** bên điều xe (danh mục chủ xe) có nút **Trả chủ xe · bảng xe liên kết ↗**.
 
-**Máy tự làm:** phải trả = tiền thuê − phí quản lý % − cắt quá tải − mọi khoản EPL đã ứng (dầu kho, đi đường…); **tự trừ tiếp** phiếu bán hàng chủ xe mua ở quầy chưa trừ (hỏi trang kế toán, rồi báo sang *đã trừ*); phiếu chi ghi số **thực chi** sau khi trừ. Một tờ **PC_CX** cho cả đợt.
+**Thao tác:**
 
-**Máy chặn:** phiếu chưa khoá; trả hai lần; các phiếu khác tiền thuê phải tách đợt; **trang kế toán tắt** thì chưa lập đợt trả được.
+1. Trang kế toán → **Tiền vận chuyển → Xe liên kết** → ô **Tháng** chọn tháng của phiếu. Màn có hai bảng: **Chủ xe liên kết** (điều khoản từng chủ xe, cột **Chờ trả**) và **Xe liên kết** (mỗi dòng một phiếu xe ngoài: tiền thuê, cắt phí, cắt quá tải, trừ EPL đã ứng, còn phải trả chủ xe, lãi EPL).
+2. **Trả từng phiếu** (chủ xe có cách trả *Từng phiếu, sau khi khoá*): bảng **Xe liên kết** → dòng phiếu → cột **Trả chủ xe** → bấm **Trả chủ xe**. Hộp hiện tên chủ xe, số phiếu, số tiền và cách tính (tiền thuê − phí − quá tải − EPL đã ứng) → bấm **Trả chủ xe**.
+3. **Trả nhiều phiếu một lần** (chủ xe *Gộp cuối tháng* hay *Theo đợt thoả thuận* — dòng phiếu ghi *Trả gộp ở bảng Chủ xe*): bảng **Chủ xe liên kết** → **Trả gộp** ở dòng chủ xe → tích các phiếu trả trong đợt (dòng **Tổng** tự tính lại) → xem khung **Hàng mua ở quầy chờ trừ** nếu có → điền **Ngày thu**, **Cách thu** (Tiền mặt, Chuyển khoản, Cấn trừ công nợ, Khác), **Số uỷ nhiệm chi · biên lai**, **Ghi chú** → bấm **Trả chủ xe**.
+4. Trả xong: dòng phiếu hiện *Đã trả chủ xe*; bên trang điều xe phiếu tự hiện đã trả, nút trả biến mất.
+
+**Máy tự làm:** phải trả = tiền thuê − phí quản lý % − cắt quá tải − mọi khoản EPL đã ứng (dầu kho, đi đường…) — số tính ở trang điều xe, không gõ tay; **tự trừ tiếp** phiếu bán hàng chủ xe mua ở quầy chưa trừ (phiếu cũ trước, vừa tiền thì trừ), phiếu bán thành *Đã trừ*; phiếu chi ghi số **thực chi** sau khi trừ. Một tờ **PC_CX** (Nợ 4022 / Có tiền) cho cả đợt, **vào sổ ngay** — không còn nằm chờ đẩy ở trang điều xe.
+
+**Máy chặn:** phiếu chưa khoá; phiếu xe nhà; trả hai lần; các phiếu khác tiền thuê phải tách đợt; **trang điều xe tắt** thì màn không hiện số, không trả được. Kế toán khác (KT Thu/Chi, KT Chi phí, KT Doanh thu, KT kho xăng dầu) xem được hai bảng nhưng không có nút trả; Bãi không có màn này.
+
+**Sếp gỡ đợt trả lập nhầm:** bảng Xe liên kết, phiếu đã trả có nút **Huỷ đợt trả** (chỉ `admin`) → xác nhận. Tờ PC_CX rút khỏi sổ, hàng mua ở quầy về lại chờ trừ, mọi phiếu của đợt quay lại *chưa trả*. Đợt trả có tờ PC_CX đã đẩy từ trang điều xe **trước ngày dời (28/09)** thì không huỷ được — ghi bút toán đảo ở **Ghi tay**. Phiếu đã trả chủ xe thì trang điều xe **không cho xoá phiếu**, kể cả Sếp.
 
 ### Bước 20. Tất toán tài xế theo tháng
 
@@ -456,7 +469,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Máy chặn:** chưa cấu hình địa chỉ sổ kế toán thì báo rõ (Phần 3.3).
 
-**Lưu ý:** tờ kho, tờ lệnh sửa chữa, tờ bán hàng, và từ đợt 7a **hoá đơn HD, phiếu thu PT** **không nằm ở đây** — chúng sinh ngay ở trang kế toán (Phần 1.3).
+**Lưu ý:** tờ kho, tờ lệnh sửa chữa, tờ bán hàng, từ đợt 7a **hoá đơn HD, phiếu thu PT** và từ đợt 7b **phiếu chi trả chủ xe PC_CX** **không nằm ở đây** — chúng sinh ngay ở trang kế toán (Phần 1.3).
 
 ### Bước 22. Bên sổ: nhận tờ, ghi bút toán, xem số
 
@@ -499,8 +512,8 @@ Người nhận việc kế tiếp thấy việc ở **Tổng quan → Việc c�
 | Tổ sửa chữa duyệt báo hỏng | Mục V *Đã nhập* | KT Chi phí kiểm, ghi sổ; rồi Quỹ chi | Điều xe · Phiếu xuất xe |
 | Xe gom tới bãi | Lô trong kho bãi | Bãi lập phiếu giao lấy lô; kế toán điều chỉnh nếu cần | Điều xe · Phiếu xuất xe; Kế toán · Kho hàng |
 | Xe tới nơi, các mục xong | *Đã giao hàng* | KT Thu/Chi khoá phiếu | Điều xe · Phiếu xuất xe |
-| Phiếu khoá | *Đã khoá 🔒* | KT Doanh thu (hoá đơn, thu); Quỹ (trả chủ xe); KT Chi phí (tất toán) | Hoá đơn, thu: Kế toán · Tiền vận chuyển. Trả chủ xe, tất toán: Điều xe |
-| Trả chủ xe, tất toán xong | Tờ *chưa đẩy* | KT Thu/Chi đẩy chứng từ | Điều xe · Phiếu chi · Phiếu thu |
+| Phiếu khoá | *Đã khoá 🔒* | KT Doanh thu (hoá đơn, thu); Quỹ (trả chủ xe); KT Chi phí (tất toán) | Hoá đơn, thu, trả chủ xe: Kế toán · Tiền vận chuyển. Tất toán: Điều xe |
+| Tất toán xong | Tờ *chưa đẩy* | KT Thu/Chi đẩy chứng từ | Điều xe · Phiếu chi · Phiếu thu |
 | Đẩy xong | Bút toán *đã ghi sổ* | Kế toán, kế toán trưởng xem sổ, duyệt ghi tay | Kế toán · Kế toán, Công nợ, Chuyến xe |
 
 ## 6. Việc ngoài chuyến
@@ -546,7 +559,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 
 - **Thẻ cao tốc** (Danh mục → Thẻ cao tốc): KT Thu/Chi lập thẻ (của khách hay của EPL), quỹ / kế toán nạp tiền; thẻ trừ đúng một lần lúc ghi sổ mục IV; thẻ của khách cuối tháng cấn trừ vào cước khách đó. Điều chỉnh số dư phải có lý do.
 - **Trạm dầu Việt Nam ghi nợ, trả nhà cung cấp** (Vận tải → Theo dõi nhà cung cấp): gắn trạm với khách được cấn trừ; cuối tháng trả trạm (**PC_NCC**) hoặc cấn trừ vào cước khách.
-- **Tỷ giá** (Danh mục → Tỷ giá), **bảng giá khách × tuyến** (Danh mục → Khách hàng), **điều khoản chủ xe** (Vận tải → Xe liên kết).
+- **Tỷ giá** (Danh mục → Tỷ giá), **bảng giá khách × tuyến** (Danh mục → Khách hàng), **điều khoản chủ xe** và **hợp đồng thuê xe** (Vận tải → Xe liên kết — tiền trả chủ xe ở trang kế toán, bước 19).
 
 ## 7. Danh mục chứng từ
 
@@ -568,7 +581,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 | DC_HH | Điều chỉnh kho hàng | Kế toán điều chỉnh lô | Kế toán | Ngay | Ngoài bảng |
 | HD | Hoá đơn vận chuyển | Lập hoá đơn (lẻ, gộp tháng) | Kế toán (từ đợt 7a) | Ngay | Nợ 1211 / Có 70 |
 | PT | Phiếu thu | Mỗi lần thu, cấn trừ | Kế toán (từ đợt 7a) | Ngay | Nợ tiền / Có 1211 |
-| PC_CX | Trả chủ xe liên kết | Quỹ trả (một tờ mỗi đợt) | Điều xe | Đẩy | Nợ 4022 / Có tiền |
+| PC_CX | Trả chủ xe liên kết | Quỹ trả (một tờ mỗi đợt) | Kế toán (từ đợt 7b) | Ngay | Nợ 4022 / Có tiền |
 | TT_CHI · TT_THU | Tất toán tài xế | Chốt tất toán | Điều xe | Đẩy | Chi bù / thu lại |
 | PC_NCC | Trả nhà cung cấp | Trả nhà cung cấp | Điều xe | Đẩy | Nợ 4021 / Có tiền |
 | PXK_BAN | Xuất kho bán hàng | Lập phiếu bán | Kế toán | Ngay | Nợ 607 / Có 1371 |
@@ -589,13 +602,13 @@ Mã tiền: tiền mặt Kíp 1011, tiền mặt ngoại tệ 1012, ngân hàng 
 | Xoá phiếu có dầu, phụ tùng, hàng đã xuất | Chưa xoá được |
 | Mở phiếu gom | Vẫn mở, chỉ thiếu số tồn lô |
 | Màn Xe → tab Sửa chữa | Vẫn mở, ghi rõ phần lệnh sửa chữa chưa lấy được |
-| Công nợ chủ xe, lập đợt trả chủ xe | Chặn, báo rõ |
-| Danh sách chủ xe | Vẫn mở, phần hàng mua ở quầy chờ trừ để trống |
+| Màn Xe liên kết, trả chủ xe, huỷ đợt trả (trang kế toán) | Chặn, báo rõ; không lưu gì |
+| Danh mục chủ xe, hợp đồng thuê xe (trang điều xe) | Vẫn mở — không cần trang kế toán |
 | Thêm / sửa điểm đổ, phụ tùng (trang kế toán) | Không lưu, báo rõ |
 | Lập lệnh sửa chữa, lập phiếu bán (trang kế toán) | Không lập được phiếu mới; vẫn xem được danh sách |
 | Lập hoá đơn, gộp tháng, ghi thu, xoá lần thu (trang kế toán) | Chặn, báo rõ; không lưu gì |
 | Công nợ khách, ghi cấn trừ tháng (trang điều xe) | Chặn, báo rõ |
-| Bảng cấn trừ, phiếu, báo cáo bên điều xe | Vẫn mở — đọc bản chép *đã xuất hoá đơn · đã thu* trên phiếu |
+| Bảng cấn trừ, phiếu, báo cáo bên điều xe | Vẫn mở — đọc bản chép *đã xuất hoá đơn · đã thu · đã trả chủ xe* trên phiếu |
 | Đẩy chứng từ | Tờ giữ nguyên *chưa đẩy*, ghi câu lỗi; đẩy lại sau |
 
 ## 9. Đã dời những gì, và đợt 7 sẽ dời gì
@@ -610,7 +623,8 @@ Mã tiền: tiền mặt Kíp 1011, tiền mặt ngoại tệ 1012, ngân hàng 
 | 6a | Lệnh sửa chữa | Lệnh ở kế toán; mục V vẫn trên phiếu |
 | 6b | Bán hàng | Phiếu bán ở kế toán; đợt trả chủ xe hỏi sang |
 | 7a | Hóa đơn vận chuyển, Hoá đơn gộp tháng, sổ thu tiền, in phiếu thu | Hoá đơn, lần thu ở kế toán; phiếu bên điều xe giữ bản chép (đã xuất hoá đơn, số tờ gộp, đã thu, ngày thu) |
+| 7b | Xe liên kết: chờ trả theo chủ xe, Trả gộp, Trả chủ xe từng phiếu, bảng xe liên kết theo tháng; Sếp huỷ đợt trả | Đợt trả ở kế toán (cùng mã); phiếu bên điều xe giữ bản chép *đã trả chủ xe*; danh mục chủ xe, hợp đồng thuê xe ở lại điều xe |
 
-**Phần còn lại của đợt 7:** 7b Xe liên kết (đợt trả chủ xe, nút Trả chủ xe trên phiếu), 7c Tiền chuyến & tiền nước tài xế và Tất toán tài xế, 7d Theo dõi nhà cung cấp — dời sang trang kế toán, dữ liệu dời hẳn. Khi đó bước 19–21 của Phần 4 cũng làm ở trang kế toán; tài liệu này sẽ cập nhật lại.
+**Phần còn lại của đợt 7:** 7c Tiền chuyến & tiền nước tài xế và Tất toán tài xế, 7d Theo dõi nhà cung cấp — dời sang trang kế toán, dữ liệu dời hẳn. Khi đó bước 20–21 của Phần 4 cũng làm ở trang kế toán; tài liệu này sẽ cập nhật lại.
 
 **Một chỗ khác trước (7a):** trên dòng thời gian của báo cáo xu hướng, phiếu nằm trong **hoá đơn gộp tháng** nay có đủ mốc *Hoá đơn* và *Thanh toán* (trước đây để trống vì tờ gộp không gắn với phiếu nào).

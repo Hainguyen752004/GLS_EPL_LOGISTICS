@@ -310,7 +310,9 @@ class Trip(Base):
     company = Column(String, nullable=False, default="EPL")    # EPL | joint (ລົດຮ່ວມ)
     owner_id = Column(String, ForeignKey("owners.id"))         # chủ xe liên kết (danh mục) — chép từ xe lúc lập
     owner_name = Column(String)                                # tên chủ xe chép lại
-    owner_payment_id = Column(String, ForeignKey("owner_payments.id"))   # nằm trong đợt trả nào = đã trả chủ xe
+    # nằm trong đợt trả nào = đã trả chủ xe. Đợt trả ở TRANG KẾ TOÁN từ 28/09 (đợt 7b): mã đợt bên đó; cùng owner_paid,
+    # owner_paid_usd / _lak / _by / _at dưới đây là BẢN CHÉP bên đó ghi sang (/api/lien-thong/chu-xe/tra)
+    owner_payment_id = Column(String)
     # Xe & tài xế: chép giá trị vào phiếu lúc lập, KHÔNG chỉ giữ khoá ngoại — đổi biển số
     # trong danh mục sau này không được làm phiếu cũ đổi theo.
     vehicle_id = Column(String, ForeignKey("vehicles.id"))

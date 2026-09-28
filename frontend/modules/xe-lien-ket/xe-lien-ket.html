@@ -1,8 +1,10 @@
-<!-- Xe liên kết — ລາຍງານການຂົນສົ່ງລົດຮ່ວມ. Nhận giá 2, thuê lại giá 1, lời 1; trừ 2% và 1 USD/tấn vượt. -->
+<!-- Xe liên kết — danh mục CHỦ XE liên kết (điều khoản, hợp đồng thuê xe). Nhận giá 2, thuê lại giá 1, lời 1; trừ 2% và
+     1 USD/tấn vượt. Chờ trả, trả gộp, trả từng phiếu và bảng xe liên kết theo tháng (lãi chuyến) ở TRANG KẾ TOÁN từ 28/09
+     (đợt 7b): Tiền vận chuyển → Xe liên kết. -->
 <div class="toolbar">
-  <div class="field"><label data-i18n="month"></label><input type="month" id="xlk-thang"></div>
-  <div class="grow"></div>
   <span class="small muted" data-i18n="joint_rule"></span>
+  <div class="grow"></div>
+  <button class="btn" id="xlk-ke-toan"><span data-i18n="xlk_o_ke_toan"></span> ↗</button>
 </div>
 <!-- Chủ xe liên kết: phí, ngưỡng tấn, cách trả riêng từng chủ (anh Khampla C4.2 · C4.3). Quỹ trả gộp nhiều phiếu ở đây. -->
 <div class="card xlk-chu-card">
@@ -12,7 +14,7 @@
       <thead><tr>
         <th data-i18n="owner"></th><th data-i18n="phone"></th><th data-i18n="c_truck"></th><th data-i18n="hd_thue_xe"></th><th data-i18n="owner_pay_mode"></th>
         <th class="num tien" data-i18n="owner_fee"></th><th class="num tien" data-i18n="owner_over"></th><th class="tien" data-i18n="ccy_hire"></th>
-        <th class="num tien" data-i18n="owner_pending"></th><th class="no-print" data-i18n="actions"></th>
+        <th class="no-print" data-i18n="actions"></th>
       </tr></thead>
       <tbody id="xlk-chu"></tbody>
     </table>
@@ -20,19 +22,3 @@
 </div>
 <!-- Hợp đồng thuê xe của chủ xe (chốt 24/09) — js/hop_dong.js vẽ vào đây -->
 <div class="card hd-khung" id="xlk-hd" hidden></div>
-
-<div class="card">
-  <div class="hd"><h3 data-i18n="nav_joint"></h3><div class="grow"></div><span class="small muted" id="xlk-dem"></span></div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr>
-        <th>#</th><th data-i18n="c_date"></th><th data-i18n="doc_no"></th><th data-i18n="owner"></th><th data-i18n="c_truck"></th><th data-i18n="c_plates"></th><th data-i18n="c_driver"></th>
-        <th class="num" data-i18n="c_w_dest"></th><th class="num" data-i18n="c_price"></th><th class="num" data-i18n="hire_pt"></th>
-        <th class="num" data-i18n="c_value"></th><th class="num" data-i18n="st_hire"></th><th class="num" data-i18n="st_fee"></th><th class="num" data-i18n="st_over"></th><th class="num" data-i18n="st_adv"></th>
-        <th class="num" data-i18n="st_net_owner"></th><th class="num" data-i18n="st_profit"></th><th data-i18n="c_st_t"></th><th data-i18n="c_st_f"></th><th class="no-print" data-i18n="pay_owner"></th>
-      </tr></thead>
-      <tbody id="xlk-than"></tbody>
-      <tfoot id="xlk-chan"></tfoot>
-    </table>
-  </div>
-</div>

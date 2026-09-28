@@ -265,3 +265,44 @@ def lt_dt_da_thu(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(m
     """Bản chép tổng đã thu từng phiếu: {dong: [{trip_id, collected_lak, last_paid_date}], nhat_ky: thu|xoa|null}."""
     from services import doanh_thu as DT
     return DT.ghi_da_thu(db, u, d.get("dong"), d.get("nhat_ky"))
+
+
+# ---------------------------------------------------------------- trả chủ xe liên kết ở trang kế toán (đợt 7b)
+# Bên đó giữ đợt trả, tờ PC_CX; bên này giữ danh mục chủ xe, số "trả chủ xe" của phiếu, bản chép "đã trả" —
+# services/tra_chu_xe.py.
+@router.get("/api/lien-thong/chu-xe")
+def lt_cx_ds(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from services import tra_chu_xe as TC
+    return TC.ds_chu_xe(db)
+
+
+@router.get("/api/lien-thong/chu-xe/{oid}/cho-tra")
+def lt_cx_cho_tra(oid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from services import tra_chu_xe as TC
+    return TC.cho_tra(db, oid)
+
+
+@router.get("/api/lien-thong/chu-xe/phieu")
+def lt_cx_phieu(ids: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from services import tra_chu_xe as TC
+    return TC.so_lieu(db, ids.split(","))
+
+
+@router.post("/api/lien-thong/chu-xe/tra")
+def lt_cx_tra(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Ghi bản chép "đã trả": {owner_payment_id, dong: [{trip_id, tra_chu_xe, tra_chu_xe_lak}]}. Kiểm lại điều kiện."""
+    from services import tra_chu_xe as TC
+    return TC.danh_dau_tra(db, u, d.get("owner_payment_id"), d.get("dong"))
+
+
+@router.post("/api/lien-thong/chu-xe/bo-tra")
+def lt_cx_bo_tra(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from services import tra_chu_xe as TC
+    return TC.bo_tra(db, u, d.get("owner_payment_id"), d.get("trip_ids"))
+
+
+@router.get("/api/lien-thong/xe-lien-ket")
+def lt_xe_lien_ket(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Bảng xe liên kết theo tháng (lãi chuyến, trả chủ xe) cho màn Xe liên kết bên trang kế toán — theo vai người bấm."""
+    from routes.bao_cao import xe_lien_ket
+    return xe_lien_ket(thang, db, u)

@@ -1,13 +1,3 @@
-/* Xe liên kết */
-.xlk-bang tr{cursor:pointer}
-
-/* Bảng chủ xe liên kết và hộp trả gộp */
+/* Xe liên kết — bảng chủ xe liên kết (danh mục). Hộp trả gộp và bảng chuyến xe liên kết ở trang kế toán từ 28/09 (đợt 7b). */
 .xlk-chu-card{margin-bottom:14px}
 .xlk-tat{opacity:.55}
-.xlk-chon{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
-.xlk-chon label{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
-.xlk-tong{margin:4px 0 10px;font-size:13.5px}
-/* Bảng chuyến xe liên kết nhiều cột: KHÔNG gãy chữ (số phiếu từng gãy 3 dòng, tên tài xế gãy dòng) — bảng cuộn
-   ngang trong khung của nó; cột số phiếu dính bên trái để cuộn vẫn biết đang xem phiếu nào (rà giao diện 23/09) */
-table:has(#xlk-than) th,table:has(#xlk-than) td{white-space:nowrap}
-#xlk-than td:nth-child(3){position:sticky;left:0;background:var(--paper);z-index:1}

@@ -292,7 +292,8 @@
     if (!moi) {
       if (AUTH.la('acct') && P.transport_status === 'arrived' && !P.locked) ta.push(`<button class="btn sm ok" data-hd-phieu="khoa">🔒 ${NN.h('a_lock')}</button>`);
       if (AUTH.la('acct') && P.locked && !P.invoiced) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
-      if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe > 0) ta.push(`<button class="btn sm ok" data-hd-phieu="tra-chu-xe">${NN.h('pay_owner')} · ${t2(P.tinh.tra_chu_xe, P.tinh.hire_ccy || maCuoc())}</button>`);
+      // Trả chủ xe ở TRANG KẾ TOÁN từ 28/09 (đợt 7b): nút mở màn Xe liên kết bên đó ở đúng tháng của phiếu
+      if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe > 0) ta.push(`<button class="btn sm ok" data-kt-tra="">${NN.h('pay_owner')} · ${t2(P.tinh.tra_chu_xe, P.tinh.hire_ccy || maCuoc())} ↗</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
       // Xe hỏng nặng giữa đường thì đổi xe NGAY TRÊN PHIẾU NÀY (C2.2) — không lập phiếu mới, vì hàng,
       // khách, tuyến và tiền đã chi vẫn là của chuyến này.
@@ -312,7 +313,8 @@
     root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don-gop',
       Object.assign({ thang: String(P.doc_date || '').slice(0, 7) }, b.dataset.diGop ? { id: b.dataset.diGop } : {}))));
     root.querySelectorAll('[data-kt-hd]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don', { id: P.id })));
-    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
+    root.querySelectorAll('[data-kt-tra]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('xe-lien-ket', { thang: String(P.doc_date || '').slice(0, 7), id: P.id })));
+    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
     veThuTien();
     veTep();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
@@ -537,14 +539,6 @@
       if (!ok) return;
       P = await API.post(`/api/trips/${P.id}/khoa`, { xac_nhan: true }); DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
     } catch (e) { EPL.baoLoi(e); }
-  }
-  async function traChuXe() {
-    const k = P.tinh || {}, mh = k.hire_ccy || maCuoc();
-    const ok = await EPL.hoi(NN.t('pay_owner'), `<p><b lang="lo">${esc(P.owner_name || '')}</b> · <span class="mono">${esc(P.doc_no)}</span></p>
-      <p class="hi">${t2(k.tra_chu_xe, mh)}${mh === 'LAK' ? '' : ` <small class="muted">≈ ${so(k.tra_chu_xe_lak)} LAK</small>`}</p>
-      <p class="small muted">${t2(k.tien_thue, mh)} − ${so(k.phi, EPL.leTien(mh))} − ${so(k.tru_vuot, EPL.leTien(mh))} − ${so(k.ung_truoc, EPL.leTien(mh))}</p>`, NN.t('pay_owner'));
-    if (!ok) return;
-    try { P = await API.post(`/api/trips/${P.id}/tra-chu-xe`, {}); EPL.toast(NN.t('saved'), 'ok'); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
   /* ---- hợp đồng trên phiếu (chốt 24/09): máy chủ tự điền theo khách / chủ xe; kế toán đổi được bằng ô chọn ---- */
   let HD_DOI = {};                      // { contract_id: … } — chỉ những ô kế toán tự đổi

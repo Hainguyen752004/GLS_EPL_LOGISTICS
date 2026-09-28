@@ -269,6 +269,7 @@ if THAT:
 #      DC_HH nó sinh ra;
 #   a4) sổ doanh thu (ở đó từ 28/09, đợt 7a): hoá đơn / lần thu SINH Ở SỔ (tờ của nó là EPL_KETOAN) là của bộ kiểm — bộ
 #      mẫu chỉ có hoá đơn, lần thu dời từ trang điều xe (tờ EPL_LAO); của phiếu không còn bên này cũng gỡ. Rút tờ theo.
+#      Đợt trả chủ xe (đợt 7b) cũng vậy: đợt có tờ PC_CX sinh ở sổ, hay có phiếu không còn bên này, là của bộ kiểm.
 #      Bước 11 dưới điền lại bản chép trên phiếu bên này theo đúng sổ đó;
 #   b) tờ ĐẨY TỪ EPL_LAO mà nguồn bên này không còn → xoá cùng bút toán. Tờ kho SINH Ở SỔ (source EPL_KETOAN) thì không
 #      bao giờ xoá theo cách này — nó không có bản bên này để so.
@@ -414,6 +415,24 @@ for h in hd_thu.values():
 db.flush()
 if tp_thu or ip_thu or ti_thu or hd_thu:
     print("  sổ doanh thu (sổ kế toán): %d hoá đơn phiếu · %d tờ gộp · %d lần thu tờ gộp · %d dòng thu của bộ kiểm" % (len(ti_thu), len(hd_thu), len(ip_thu), len(tp_thu)))
+# a5) đợt trả chủ xe (đợt 7b): tờ PC_CX sinh ở sổ, hoặc có phiếu không còn bên này → của bộ kiểm; phiếu bán trừ vào đợt
+#     đó về lại chờ trừ (phiếu bán thử đã gỡ ở bước a0')
+dong_dot = {}
+for d in db.query(M.OwnerPaymentTrip).all():
+    dong_dot.setdefault(d.owner_payment_id, []).append(d)
+dot_thu = [x for x in db.query(M.OwnerPayment).all()
+           if (to_nguon("owner_payments", x.id) is not None and not la_mau("owner_payments", x.id))
+           or any(d.trip_id not in con_trip for d in dong_dot.get(x.id, []))]
+for x in dot_thu:
+    for b_ in db.query(M.Sale).filter(M.Sale.owner_payment_id == x.id).all():
+        b_.owner_payment_id, b_.status = None, "issued"
+    rut_nguon("owner_payments", x.id)
+    for d in dong_dot.get(x.id, []):
+        db.delete(d)
+    db.delete(x)
+db.flush()
+if dot_thu:
+    print("  đợt trả chủ xe (sổ kế toán): %d đợt của bộ kiểm" % len(dot_thu))
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
     if v.ref not in con: xoa_to(v)
@@ -457,7 +476,8 @@ db = SessionLocal()
 thu = {t: [float(v or 0), d.isoformat() if d else None] for t, v, d in db.query(M.TripPayment.trip_id, func.sum(M.TripPayment.amount_lak), func.max(M.TripPayment.pay_date)).group_by(M.TripPayment.trip_id)}
 so = {h.id: h.inv_no for h in db.query(M.Invoice).all()}
 hd = {t.trip_id: [t.invoice_id, so.get(t.invoice_id), t.inv_date.isoformat() if t.inv_date else None] for t in db.query(M.TripInvoice).all()}
-print(json.dumps({"thu": thu, "hd": hd}))
+tra = {d.trip_id: [d.owner_payment_id, d.tra_chu_xe, d.tra_chu_xe_lak] for d in db.query(M.OwnerPaymentTrip).all()}
+print(json.dumps({"thu": thu, "hd": hd, "tra": tra}))
 """
 
 
@@ -477,12 +497,21 @@ def ban_chep_dt(that):
         h = g["hd"].get(p.id)
         moi = (bool(h), h[0] if h else None, h[1] if h else None, d(h[2]) if h else None, round(tong), d(cuoi))
         cu = (bool(p.invoiced), p.invoice_id, p.inv_no, p.invoiced_date, round(p.collected_lak or 0), p.last_paid_date)
-        if moi != cu:
+        tr = g["tra"].get(p.id)
+        r2 = lambda v: round(v, 2) if v is not None else None
+        cu_tra = (p.owner_payment_id, bool(p.owner_paid), r2(p.owner_paid_usd), r2(p.owner_paid_lak))
+        # phiếu "đã trả" mà không có mã đợt (dữ liệu rất cũ) thì để yên — chỉ điền lại bản chép của đợt bên sổ
+        moi_tra = (tr[0], True, r2(tr[1]), r2(tr[2])) if tr else ((None, False, None, None) if p.owner_payment_id else cu_tra)
+        if moi != cu or moi_tra != cu_tra:
             doi.append(p.doc_no)
             if that:
                 p.invoiced, p.invoice_id, p.inv_no, p.invoiced_date, p.collected_lak, p.last_paid_date = moi
                 _tinh_lai_trang_thai_thu(db, p)
-    print("  bản chép doanh thu trên phiếu: %s %d phiếu%s" % ("điền lại" if that else "sẽ điền lại", len(doi), (": " + ", ".join(doi[:12])) if doi else ""))
+                if moi_tra != cu_tra:
+                    p.owner_payment_id, p.owner_paid, p.owner_paid_usd, p.owner_paid_lak = moi_tra
+                    if not tr:
+                        p.owner_paid_by = p.owner_paid_at = None
+    print("  bản chép doanh thu · trả chủ xe trên phiếu: %s %d phiếu%s" % ("điền lại" if that else "sẽ điền lại", len(doi), (": " + ", ".join(doi[:12])) if doi else ""))
     if that:
         db.commit()
 

@@ -91,18 +91,8 @@ def _ma_hang_gui(db):
     return DK.cau_hinh(db, "ma_hang_khach_gui") or None
 
 
-# ---------------------------------------------------------------- bán hàng (đợt 6, 28/09): phiếu chủ xe mua ở quầy
-def ban_cho_tru_tong(db):
-    """{owner_id: {n, total_lak}} phiếu bán chưa trừ vào đợt trả nào — danh sách chủ xe."""
-    return KT.goi(db, "GET", "/api/lien-thong/ban-hang/chu-xe") or {}
-
-
-def ban_cua_chu_xe(db, owner_id):
-    """{cho_tru: [...] (cũ trước), da_tru: {owner_payment_id: [số phiếu]}} của một chủ xe — một yêu cầu hỏi một lần."""
-    bang = db.info.setdefault("_ban_ke_toan", {})
-    if owner_id not in bang:
-        bang[owner_id] = KT.goi(db, "GET", "/api/lien-thong/ban-hang/chu-xe/" + owner_id) or {"cho_tru": [], "da_tru": {}}
-    return bang[owner_id]
+# Bán hàng cho chủ xe mua ở quầy (đợt 6): từ đợt 7b đợt trả chủ xe ở chính trang kế toán, nên việc trừ phiếu bán
+# làm luôn bên đó — bên này không còn hỏi / báo trừ nữa.
 
 
 def web_ke_toan(db):
@@ -161,16 +151,6 @@ class GiaoDichKho:
         self.db.info.pop("_hh_ke_toan", None)
         return r
 
-    def tru_ban(self, owner_id, owner_payment_id, sale_ids):
-        """Đợt trả chủ xe vừa lập trừ các phiếu bán này — bên kia ghi đợt vào phiếu (offset). Lưu hỏng → về chờ trừ."""
-        if not sale_ids:
-            return None
-        r = KT.goi(self.db, "POST", "/api/lien-thong/ban-hang/tru", {"owner_id": owner_id, "owner_payment_id": owner_payment_id,
-                                                                    "sale_ids": list(sale_ids)}, nguoi=self.nguoi)
-        self.da_xuat.append(("ban_tru", owner_payment_id))
-        self.db.info.pop("_ban_ke_toan", None)
-        return r
-
     def huy_xuat(self, move_id):
         """Trả lại một lần xuất cũ (bỏ phiếu bán…) — làm ngay; bên này hỏng sau đó thì không xuất lại được, báo rõ."""
         return huy_xuat(self.db, self.nguoi, move_id=move_id)
@@ -178,9 +158,7 @@ class GiaoDichKho:
     def _huy_het(self):
         for loai, mv in reversed(self.da_xuat):
             try:
-                if loai == "ban_tru":
-                    KT.goi(self.db, "POST", "/api/lien-thong/ban-hang/bo-tru", {"owner_payment_id": mv}, nguoi=self.nguoi)
-                elif loai == "hh_nhap":
+                if loai == "hh_nhap":
                     KT.goi(self.db, "POST", "/api/lien-thong/kho-hang/huy-nhap", {"trip_id": mv}, nguoi=self.nguoi)
                 elif loai == "hh_xuat":
                     tid, so, cty, ngay, cu = mv
