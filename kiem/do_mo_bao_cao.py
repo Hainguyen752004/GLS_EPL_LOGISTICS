@@ -18,7 +18,7 @@ truoc = "%04d-%02d" % (y - (m == 1), (m - 2) % 12 + 1)
 DS = [("Tổng quan", "/api/bao-cao/tong-quan?thang=%s"), ("Xu hướng", "/api/bao-cao/xu-huong?thang=%s"),
       ("Tiền chuyến tài xế", "/api/bao-cao/tien-tai-xe?thang=%s"), ("Cấn trừ", "/api/bao-cao/can-tru?thang=%s"),
       ("Theo dõi · dòng tổng", "/api/bao-cao/theo-doi/tong?thang=%s"), ("Theo dõi · 1 trang", "/api/bao-cao/theo-doi?thang=%s&trang=1&co=100"),
-      ("Tất toán", "/api/tat-toan?chi_tiet=0&ky=%s"), ("Nhà cung cấp", "/api/suppliers")]
+      ("Nhà cung cấp", "/api/suppliers")]           # Tất toán dời sang trang kế toán (đợt 7c)
 print("%-24s %12s %12s" % ("Báo cáo", nay, truoc))
 for ten, d in DS:
     kq = []

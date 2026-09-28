@@ -110,7 +110,7 @@
           'TỰ TRỪ tiếp hàng chủ xe mua ở quầy (xăng, phụ tùng) chưa trừ — ví dụ deal 1tr6, mua 3 trăm → trả 1tr3', 'Phiếu chi ghi số THỰC CHI sau khi trừ'],
         chan: ['Phiếu chưa khoá → chưa trả', 'Trả hai lần → chặn', 'Các phiếu khác tiền thuê → tách đợt'],
         giay: ['Chủ xe ký nhận trên phiếu chi'], ct: ['PC_CX'], ct_khi: { PC_CX: 'lúc quỹ trả (một tờ cho cả đợt)' }, sau: 'Chủ xe: Đã trả' },
-      { so: 19, vai: ['expacct', 'cash', 'treasury'], man: 'tat-toan', ten: 'Tất toán tài xế theo tháng',
+      { so: 19, vai: ['expacct', 'cash', 'treasury'], man: 'tat-toan', o_ke_toan: true, ten: 'Tất toán tài xế theo tháng',
         lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
         chan: ['Chốt hai lần một kỳ → chặn'], ct: ['TT_CHI', 'TT_THU'], ct_khi: { TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
       { so: 20, vai: ['acct', 'admin'], man: 'chung-tu', ten: 'Đẩy chứng từ sang sổ kế toán',

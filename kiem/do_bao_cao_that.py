@@ -38,7 +38,7 @@ BAO_CAO = [("Tổng quan", lambda db: B.tong_quan(thang=None, db=db, user=Vai())
            ("Tiền chuyến tài xế", lambda db: B.tien_tai_xe(thang=None, db=db, user=Vai())),
            ("Cấn trừ", lambda db: B.can_tru(thang=None, db=db, user=Vai())),
            ("Theo dõi · dòng tổng", lambda db: B.theo_doi_tong(thang=None, db=db, user=Vai())),
-           ("Tất toán", lambda db: TT.bang_ky(ky="", chi_tiet=0, db=db, user=Vai())),
+           ("Tất toán", lambda db: TT.bang_thang(db, __import__("datetime").date.today().strftime("%Y-%m"))),
            ("Nhà cung cấp (cả 4 năm)", lambda db: N.ds(db=db, user=Vai()))]
 
 

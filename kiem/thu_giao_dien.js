@@ -12,9 +12,9 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-// 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a)
+// 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a); 'tien-tai-xe', 'tat-toan' (đợt 7c)
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'chung-tu',
-  'phieu-cua-toi', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap',
+  'phieu-cua-toi', 'xe-lien-ket', 'nha-cung-cap',
   'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
@@ -302,10 +302,10 @@ async function main() {
     const modBai = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
     // Bãi không thấy TIỀN BÁN (hoá đơn khách, lãi xe liên kết) và từ A2 (23/09) cũng không thấy tiền chi: màn Tiền chuyến
     // & nước (cộng lại tiền mục IV mà phiếu đã giấu) bỏ khỏi menu Bãi; Theo dõi NCC và Kho dầu vẫn có nhưng không có tiền.
-    ['hoa-don', 'xe-lien-ket', 'tien-tai-xe'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module ' + m));
+    ['xe-lien-ket'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module ' + m));
     ['nha-cung-cap'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi vẫn phải có module ' + m));
     // Kho nhiên liệu, Cấp phát dời sang trang kế toán (28/09)
-    ['kho-nhien-lieu', 'cap-phat'].forEach(m => assert.ok(!modBai.includes(m), 'màn ' + m + ' đã sang trang kế toán, không còn ở đây'));
+    ['kho-nhien-lieu', 'cap-phat', 'hoa-don', 'tien-tai-xe', 'tat-toan'].forEach(m => assert.ok(!modBai.includes(m), 'màn ' + m + ' đã sang trang kế toán, không còn ở đây'));
     await di('#/nha-cung-cap');
     const chuNcc = goc().querySelector('#ncc-than').textContent;
     assert.ok(!/LAK/.test(chuNcc), 'Theo dõi NCC của Bãi không được còn số tiền: ' + chuNcc.slice(0, 200));

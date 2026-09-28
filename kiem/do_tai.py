@@ -48,7 +48,6 @@ DS = [
     ("ketoan", "/api/chung-tu", "Chứng từ"),
     ("ketoan", "/api/ke-toan/trang-thai", "Kế toán · trạng thái đẩy"),
     # hoá đơn gộp dời sang trang kế toán 28/09 (đợt 7a) — không đo ở đây nữa
-    ("ketoan", "/api/tat-toan?chi_tiet=0", "Tất toán"),
     ("admin", "/api/vouchers", "Phiếu lĩnh"),
     ("admin", "/api/vehicles", "Xe"),
     ("admin", "/api/drivers", "Tài xế"),

@@ -306,3 +306,35 @@ def lt_xe_lien_ket(thang: str = None, db: Session = Depends(get_db), u=Depends(m
     """Bảng xe liên kết theo tháng (lãi chuyến, trả chủ xe) cho màn Xe liên kết bên trang kế toán — theo vai người bấm."""
     from routes.bao_cao import xe_lien_ket
     return xe_lien_ket(thang, db, u)
+
+
+# ---------------------------------------------------------------- tiền tài xế · tất toán (đợt 7c, 28/09)
+# Hai màn dời sang trang kế toán; số tính từ phiếu nên vẫn tính ở đây. Bản chốt tất toán ở bên đó — bên này không ghi gì.
+@router.get("/api/lien-thong/tien-tai-xe")
+def lt_tien_tai_xe(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Tiền chuyến & tiền nước tài xế theo tháng — cùng hàm, cùng chặn vai (Bãi không xem) như màn cũ bên này."""
+    from routes.bao_cao import tien_tai_xe
+    return tien_tai_xe(thang, db, u)
+
+
+@router.get("/api/lien-thong/tat-toan")
+def lt_tat_toan(ky: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import tat_toan as TT
+    return TT.bang_thang(db, TT._ky_hop_le(ky))
+
+
+@router.get("/api/lien-thong/tat-toan/{driver_id}")
+def lt_tat_toan_mot(driver_id: str, ky: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import tat_toan as TT
+    return TT.mot(db, driver_id, TT._ky_hop_le(ky))
+
+
+@router.get("/api/lien-thong/thang-moi-nhat")
+def lt_thang_moi_nhat(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Tháng của phiếu mới nhất — hai màn mở ra ở tháng có dữ liệu chứ không phải tháng này (như bên đây trước khi dời:
+    `lap` theo ngày lập, `xe_di` theo ngày xe đi, không có thì ngày lập)."""
+    from models import Trip
+    p = (db.query(Trip.doc_date, Trip.out_date).filter(Trip.doc_date.isnot(None))         # DESC xếp NULL lên đầu
+         .order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).first())
+    thang = lambda d: d.strftime("%Y-%m") if d else None
+    return {"lap": thang(p.doc_date) if p else None, "xe_di": thang(p.out_date or p.doc_date) if p else None}
