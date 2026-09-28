@@ -11,11 +11,15 @@ tài xế khai đổ dầu dọc đường và bảng tất toán theo tháng.
 Cần dữ liệu mẫu còn nguyên: python backend/app/seed.py --dung-lai
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 
 GOC = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — kho nhiên liệu ở trang kế toán (28/09)
+
 
 
 def goi(duong, than=None, tk=None, cach=None):
@@ -118,7 +122,7 @@ bao("Cấp lần hai → từ chối", ma, 409, (r or {}).get("detail", {}).get(
 _, ct = goi("/api/trips/" + p["id"], tk=tk["admin"])
 dong_kho = [d for d in ct["expenses"] if d["section"] == "fuel" and d["source"] == "kho"]
 print("  OK  dòng dầu kho đã gắn phiếu xuất kho: %s" % all(d["stock_move_id"] for d in dong_kho))
-_, so_kho = goi("/api/fuel-moves", tk=tk["khonl"])
+_, so_kho = K.kt("/api/nhien-lieu", vai="khonl")                    # sổ dầu ở trang kế toán (28/09)
 mv = next(r for r in so_kho["rows"] if r["id"] == dong_kho[0]["stock_move_id"])
 assert mv["unit_cost_lak"] and all(abs(d["unit_price"] - mv["unit_cost_lak"]) < 0.01 and d["currency"] == "LAK" for d in dong_kho), (mv, dong_kho)
 print("  OK  dòng dầu mang giá bình quân kho lúc cấp: %s LAK/L" % format(round(mv["unit_cost_lak"]), ","))
@@ -191,12 +195,13 @@ loai_co = {c["loai"] for c in so["ds"]}
 for c in so["ds"]:
     print("      %-18s %-10s %-24s %12s %s  %s / %s" % (c["so"], c["ngay"], (c["mo_ta"] or "")[:24], round(c["tien_lak"] or 0),
                                                     c["tien_te"], c["no"] or (c["no_ten"] or "-")[:10], c["co"] or (c["co_ten"] or "-")[:10]))
-for can in ("DO", "PLNL", "PXK_NL", "PTU"):
+for can in ("DO", "PLNL", "PTU"):
     if can not in loai_co:
         raise SystemExit("DUNG: sổ chứng từ thiếu %s (có: %s)" % (can, sorted(loai_co)))
-so_pxk = [c["so"] for c in so["ds"] if c["loai"] == "PXK_NL"]
-assert all(x.startswith("PXK_NL/") for x in so_pxk), so_pxk
-print("  OK  có đủ DO · PLNL · PXK_NL · PTU, số chứng từ dạng LOAI/YYMM/000n")
+# tờ xuất kho dầu (PXK_NL) sinh ở sổ trang kế toán từ 28/09 — bên này không còn giữ
+so_pxk = [v["ref"] for v in K.to_kho(p["doc_no"], "PXK_NL") if v["trip_no"] == p["doc_no"]]
+assert so_pxk and all(x.startswith("PXK_NL/") for x in so_pxk), "sổ kế toán thiếu PXK_NL của phiếu: %s" % so_pxk
+print("  OK  có đủ DO · PLNL · PTU bên này, PXK_NL %s ở sổ kế toán; số chứng từ dạng LOAI/YYMM/000n" % ", ".join(so_pxk))
 ma, r = goi("/api/chung-tu?trip_id=" + p["id"], tk=tk["thabok"])
 bao("Bãi xem sổ chứng từ → từ chối (số kế toán)", ma, 403, (r or {}).get("detail", {}).get("ma", ""))
 mot = so["ds"][0]

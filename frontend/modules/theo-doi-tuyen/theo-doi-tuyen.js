@@ -476,7 +476,7 @@
 
     q('#tdt-xe').querySelectorAll('[data-muc]').forEach(b => b.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: P.id })));
     const nutToi = q('#tdt-xe [data-toi]'); if (nutToi) nutToi.addEventListener('click', () => toiDiem(+nutToi.dataset.toi, diem.length));
-    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', () => EPL.di('cap-phat'));
+    const nutCap = q('#tdt-xe [data-cap]'); if (nutCap) nutCap.addEventListener('click', () => EPL.moKeToan('cap-phat'));   // màn Cấp phát ở trang kế toán (28/09)
     const nutSC = q('#tdt-xe [data-su-co]'); if (nutSC) nutSC.addEventListener('click', moSuCo);
   }
 

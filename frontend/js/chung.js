@@ -435,15 +435,13 @@
     { id: 'hoa-don-gop',    nhom: 'mod_transport', nav: 'nav_bill_m', nav_s: 'nav_bill_m_s', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash'], ic: 'M3 4h14v16l-3.5-2-3.5 2-3.5-2L3 20zM6 9h8M6 13h8M18 7h3v11a2 2 0 0 1-2 2' },
     { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },
     { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true, khong_xuat: true },
-    { id: 'cap-phat',       nhom: 'mod_transport', nav: 'nav_issue',    ic: 'M3 6h13v9H3zM16 9h3l2 3v3h-5M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4', vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash'] },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     // Bãi không xem (chốt 23/09): màn này cộng lại đúng tiền mục IV mà phiếu đã giấu với Bãi
     { id: 'tien-tai-xe',    nhom: 'mod_transport', nav: 'nav_driver', nav_s: 'nav_driver_s', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],   ic: 'M2 6h20v12H2zM12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tat-toan',       nhom: 'mod_transport', nav: 'nav_settle',   ic: 'M9 3h6l1 4H8zM5 7h14l1 13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM12 11v6M9.5 13h5M9.5 16h5', vai: ['expacct', 'cash', 'treasury'] },
     { id: 'nha-cung-cap',   nhom: 'mod_transport', nav: 'nav_supplier', nav_s: 'nav_supplier_s', ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21V12h6v9' },
     { id: 'kho-hang',       nhom: 'mod_warehouse', nav: 'nav_goods',    ic: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h18M9 13v8' },
-    { id: 'kho-nhien-lieu', nhom: 'mod_warehouse', nav: 'nav_fuel',     ic: 'M3 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18M3 22h12M6 6h6v5H6z',
-      vai: ['yard', 'acct', 'expacct', 'fuel', 'depot', 'treasury', 'cash', 'rev'] },
+    // 'cap-phat' (Cấp phát) và 'kho-nhien-lieu' (Kho nhiên liệu) dời sang trang kế toán 28/09 (đợt 4)
     // 'diem-do' (Điểm đổ nhiên liệu) dời sang trang kế toán 28/09 — bản gốc ở đó, bên này chỉ còn bản chép để đọc
     // 'kho-phu-tung' (Kho phụ tùng) dời sang trang kế toán 28/09 — tồn, giá, sổ ở đó; bên này còn danh mục để chọn trên phiếu
     { id: 'sua-chua',       nhom: 'mod_warehouse', nav: 'nav_repair', nav_s: 'nav_repair_s',
@@ -493,7 +491,24 @@
     if (m.vai) return AUTH.la(...m.vai);
     return true;
   }
-  const moduleDau = () => (MODULES.find(thayDuoc) || MODULES[0]).id;
+  // null = tài khoản không còn màn nào ở trang điều xe (thủ kho dầu từ 28/09: việc của họ ở trang kế toán)
+  const moduleDau = () => { const m = MODULES.find(thayDuoc); return m ? m.id : null; };
+  /** Mở một màn ở TRANG KẾ TOÁN (kho, cấp phát… dời sang đó 28/09) trong thẻ mới. Địa chỉ hỏi máy chủ một lần. */
+  let _diaChiKT = null;
+  EPL.moKeToan = async (man, thamSo) => {
+    try {
+      if (_diaChiKT === null) _diaChiKT = ((await API.get('/api/lien-thong/dia-chi')) || {}).ke_toan_web || '';
+      if (!_diaChiKT) return EPL.toast(NN.t('mo_ke_toan_loi'), 'loi');
+      const q = thamSo ? '?' + new URLSearchParams(thamSo) : '';
+      window.open(_diaChiKT + '/#/' + (man || '') + q, '_blank', 'noopener');
+    } catch (e) { EPL.baoLoi(e); }
+  };
+  function veKhongCoMan() {
+    const nd = document.getElementById('noi-dung');
+    nd.innerHTML = `<div class="card" style="max-width:640px"><div class="bd"><h3>${NN.h('khong_co_man')}</h3>
+      <p class="muted">${NN.h('khong_co_man_goi_y')}</p><button class="btn primary" id="mo-ke-toan">${NN.h('mo_ke_toan')}</button></div></div>`;
+    nd.querySelector('#mo-ke-toan').addEventListener('click', () => EPL.moKeToan(''));
+  }
   /** Ô chọn THÁNG thống nhất: mọi <input type="month"> trong màn đổi thành <select> "09/2026". Rà giao diện 23/09:
    *  ô tháng của trình duyệt hiện "---------- ----" khi trống và "September 2026" kiểu Mỹ khi có giá trị. Giữ nguyên
    *  id, `.value` = 'YYYY-MM' và sự kiện change nên mã từng màn không phải đổi. Ô có data-tat-ca thì có dòng
@@ -789,7 +804,11 @@
 
   async function napModule(id) {
     const m = MODULES.find(x => x.id === id) || MODULES[0];
-    if (!thayDuoc(m)) { EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di(moduleDau()); }
+    if (!thayDuoc(m)) {
+      const dau = moduleDau();
+      if (!dau) return veKhongCoMan();          // không còn màn nào ở đây — chỉ sang trang kế toán, không chuyển vòng
+      EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di(dau);
+    }
     const noiDung = document.getElementById('noi-dung');
     const truoc = EPL.modules[moduleHienTai]; if (truoc && truoc.destroy) { try { truoc.destroy(); } catch (e) { /* bỏ qua */ } }
     moduleHienTai = m.id; veNav(); datTieuDe(); if (EPL.veNutXuat) EPL.veNutXuat(m.id);

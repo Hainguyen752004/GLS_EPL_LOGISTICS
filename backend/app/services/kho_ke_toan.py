@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """KHO Ở TRANG KẾ TOÁN — trang điều xe hỏi tồn / giá và xuất kho qua đây (28/09).
 
-Kho phụ tùng (danh mục, tồn, giá bình quân, sổ nhập xuất) dời sang trang kế toán. Bảng `parts` bên này chỉ còn là
+Kho phụ tùng (đợt 3) và kho nhiên liệu (đợt 4) — danh mục, tồn, giá bình quân, sổ nhập xuất — dời sang trang kế toán.
+Sổ dầu `fuel_moves` bên này đứng yên từ ngày dời (chỉ còn để khoá ngoại của phiếu cũ), không đọc nữa. Bảng `parts` bên này chỉ còn là
 bản chép DANH MỤC (tên, đơn vị, tồn tối thiểu, đang dùng) để khoá ngoại của dòng chi mục V, dòng lệnh sửa, dòng bán
 vẫn đúng. **Không đọc `Part.qty` / `Part.unit_price` bên này nữa** — số đó đứng yên từ ngày dời, đọc là đọc số cũ.
 
@@ -42,6 +43,32 @@ def huy_xuat(db, nguoi, move_id=None, khoa=None):
     return KT.goi(db, "POST", "/api/lien-thong/phu-tung/huy-xuat", {"move_id": move_id, "khoa": khoa}, nguoi=nguoi)
 
 
+# ---------------------------------------------------------------- kho nhiên liệu (đợt 4, 28/09)
+def kho_dau(db):
+    """{place_id: {ton_lit, gia_bq}} của mọi kho dầu EPL — hỏi trang kế toán một lần mỗi yêu cầu."""
+    bang = db.info.get("_dau_ke_toan")
+    if bang is None:
+        bang = db.info["_dau_ke_toan"] = KT.goi(db, "GET", "/api/lien-thong/nhien-lieu/kho") or {}
+    return bang
+
+
+def gia_dau(db, place_id):
+    """Giá bình quân hiện tại (LAK/lít) của một kho dầu; trống = kho Thà Bốc."""
+    from services.gia_von import kho_goc
+    return ((kho_dau(db).get(place_id or kho_goc(db)) or {}).get("gia_bq")) or 0
+
+
+def huy_xuat_dau(db, nguoi, move_id=None, khoa=None):
+    return KT.goi(db, "POST", "/api/lien-thong/nhien-lieu/huy-xuat", {"move_id": move_id, "khoa": khoa}, nguoi=nguoi)
+
+
+def web_ke_toan(db):
+    """Địa chỉ trang kế toán để MỞ bằng trình duyệt / in vào mã QR phiếu lĩnh (màn Cấp phát ở đó).
+    Cấu hình `ke_toan_web`; không đặt thì dùng địa chỉ API kế toán (cùng máy chủ phục vụ cả giao diện)."""
+    from services import day_ke_toan as DK
+    return (DK.cau_hinh(db, "ke_toan_web") or DK.cau_hinh(db, "ke_toan_api") or "").rstrip("/")
+
+
 class GiaoDichKho:
     """Một lần lưu bên này có đụng kho bên kế toán. Xem ghi chú đầu tệp."""
 
@@ -56,7 +83,19 @@ class GiaoDichKho:
             "tien_te": tien_te, "ty_gia": ty_gia, "truck_no": truck_no, "trip_doc_no": trip_doc_no,
             "expense_id": expense_id, "company": company, "section": section, "mo_ta": mo_ta, "note": note,
             "ghi_chung_tu": ghi_chung_tu, "repair_order": repair_order}, nguoi=self.nguoi)
-        self.da_xuat.append(r["move_id"])
+        self.da_xuat.append(("pt", r["move_id"]))
+        return r
+
+    def xuat_dau(self, *, khoa, place_id, qty_l, ngay=None, doc_no=None, truck_no=None, expense_id=None, voucher_id=None,
+                 voucher_doc_no=None, trip_no=None, company="EPL", gia_du_phong=None, kiem_ton=False, ghi_chung_tu=True,
+                 mo_ta=None, note=None):
+        """Xuất dầu ở kho bên trang kế toán — giá bình quân của đúng kho lúc xuất; trả {move_id, unit_price…}."""
+        r = KT.goi(self.db, "POST", "/api/lien-thong/nhien-lieu/xuat", {
+            "khoa": khoa, "place_id": place_id, "qty_l": qty_l, "ngay": ngay.isoformat() if ngay else None, "doc_no": doc_no,
+            "truck_no": truck_no, "expense_id": expense_id, "voucher_id": voucher_id, "voucher_doc_no": voucher_doc_no,
+            "trip_no": trip_no, "company": company, "gia_du_phong": gia_du_phong, "kiem_ton": kiem_ton,
+            "ghi_chung_tu": ghi_chung_tu, "mo_ta": mo_ta, "note": note}, nguoi=self.nguoi)
+        self.da_xuat.append(("dau", r["move_id"]))
         return r
 
     def huy_xuat(self, move_id):
@@ -64,9 +103,9 @@ class GiaoDichKho:
         return huy_xuat(self.db, self.nguoi, move_id=move_id)
 
     def _huy_het(self):
-        for mv in self.da_xuat:
+        for loai, mv in self.da_xuat:
             try:
-                huy_xuat(self.db, self.nguoi, move_id=mv)
+                (huy_xuat_dau if loai == "dau" else huy_xuat)(self.db, self.nguoi, move_id=mv)
             except Exception as e:  # noqa: BLE001 — không huỷ được thì ghi lại để đối chiếu, vẫn báo lỗi gốc
                 _nk.error("KHÔNG huỷ được lần xuất %s bên trang kế toán sau khi bên này lưu hỏng: %s", mv, e)
 

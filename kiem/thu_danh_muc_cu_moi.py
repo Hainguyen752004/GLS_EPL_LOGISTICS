@@ -64,6 +64,11 @@ def chuan(x):
     return x
 
 
+def bo_may_qr(ds):
+    """Đường dẫn trong mã QR phiếu lĩnh đổi máy CÓ CHỦ ĐÍCH từ 28/09 (màn Cấp phát sang trang kế toán) — so phần sau máy."""
+    return [dict(x, tra_cuu=(x.get("tra_cuu") or "").split("/#/", 1)[-1]) for x in ds]
+
+
 def so(ten, a, b, ta, tb, sap=None):
     a, b = chuan(json.loads(json.dumps(a, default=str))), chuan(json.loads(json.dumps(b, default=str)))
     if sap:
@@ -103,7 +108,7 @@ def main():
         (a, ta), (b, tb) = do(lambda: NCCc.ds(db=db, user=u_)), do(lambda: NCC.ds(db=db, user=u_))
         db.rollback(); loi += not so("nhà cung cấp · %s" % vai, a, b, ta, tb)
         (a, ta), (b, tb) = do(lambda: PLc.ds_cho_cap(request=Yeu(), db=db, user=u_)), do(lambda: PL.ds_cho_cap(request=Yeu(), response=Response(), db=db, user=u_))
-        db.rollback(); loi += not so("phiếu lĩnh chờ · %s" % vai, a, b, ta, tb)
+        db.rollback(); loi += not so("phiếu lĩnh chờ · %s" % vai, a, b, ta, tb, sap=bo_may_qr)
     (a, ta), (b, tb) = do(lambda: DMc.ds_tai_xe(db=db, _=None)), do(lambda: DM.ds_tai_xe(db=db, _=None))
     db.rollback(); loi += not so("tài xế", a, b, ta, tb)
     ke = Vai("rev")

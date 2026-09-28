@@ -1438,6 +1438,19 @@ KHOA_MOI = {
  'tk_lt_thu':     ('Kiểm kết nối', 'ກວດ ການເຊື່ອມຕໍ່', 'Test connection'),
  'tk_lt_ok':      ('Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó', 'Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó', 'Ledger site reached · {ms} ms · account {u} there'),
  'tk_lt_hong':    ('Chưa nối được: {loi}', 'Chưa nối được: {loi}', 'Not connected: {loi}'),
+ 'tk_lt_web':     ('Địa chỉ mở trang kế toán (trình duyệt · mã QR)', 'Địa chỉ mở trang kế toán (trình duyệt · mã QR)', 'Ledger site address for browsers · QR codes'),
+ 'tk_lt_web_hint': ('Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.',
+                    'Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.',
+                    'The Issuing / Fuel store buttons and the QR code on fuel slips open this address. Empty = use the ledger address above.'),
+ # ---- 28/09 đợt 4: vai không còn màn nào ở trang điều xe (thủ kho dầu) · mở sang trang kế toán
+ 'khong_co_man':  ('Việc của tài khoản này ở trang kế toán', 'Việc của tài khoản này ở trang kế toán', 'This account works on the ledger site'),
+ 'khong_co_man_goi_y': ('Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.',
+                        'Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.',
+                        'Issuing fuel slips, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password.'),
+ 'mo_ke_toan':    ('Mở trang kế toán', 'ເປີດ ປຶ້ມບັນຊີ EPL', 'Open the ledger site'),
+ 'mo_ke_toan_loi': ('Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.',
+                    'Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.',
+                    'No ledger site address yet — the owner sets it in Accounts → Link to the ledger site.'),
 }
 # alias vai — cùng chữ với khoá đã có
 ALIAS = {}   # nhãn vai nay ghi thẳng trong KHOA_MOI theo đúng chữ bảng Nhiệm Vụ của khách

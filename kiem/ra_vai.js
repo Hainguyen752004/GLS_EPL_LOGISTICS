@@ -103,7 +103,9 @@ async function main() {
     await choDen(() => !d.getElementById('app').hidden, 'vào với ' + u, 15000); await w.EPL.sanSang;
     const mods = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
     console.log(`\n== ${u} (${vai}) · ${mods.length} module: ${mods.join(', ')}`);
-    if (!mods.length) ghi(vai, u, '-', 'KHONG_CO_MODULE', 'thanh điều hướng trống');
+    // Từ 28/09 thủ kho dầu làm việc ở trang kế toán: trang này không có màn nào cho họ, chỉ báo và nút mở trang kế toán — đúng thiết kế.
+    if (!mods.length && d.getElementById('mo-ke-toan')) console.log('  (không có màn ở đây — có nút mở trang kế toán)');
+    else if (!mods.length) ghi(vai, u, '-', 'KHONG_CO_MODULE', 'thanh điều hướng trống');
     for (const m of mods) {
       loiJS = [];
       try { await di('#/' + m); } catch (e) { ghi(vai, u, m, 'KHONG_NAP', e.message); continue; }

@@ -8,6 +8,7 @@ lại chuyển về kho Thà Bốc. Kèm: Bãi không ghi sổ kho, không thấ
 Phiếu thử và các dòng sổ kho thử được xoá khi xong; tờ chứng từ đã đẩy thì giữ.
 """
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -16,6 +17,9 @@ import urllib.request
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011").rstrip("/")
 TK = {}
 SO = "KHOXE-%s/EPL" % time.strftime("%d%H%M%S")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — kho nhiên liệu ở trang kế toán (28/09)
+
 
 
 def goi(duong, body=None, vai="admin", method=None):
@@ -36,7 +40,8 @@ def phai(s, mong, buoc, g=None):
 
 
 def kho(vai="khonl"):
-    s, g = goi("/api/fuel-moves", vai=vai)
+    s, g = K.kt("/api/nhien-lieu", vai=vai)          # sổ dầu ở trang kế toán (28/09)
+    assert s == 200, (s, g)
     return {k["code"]: k for k in g["kho"]}, g
 
 
@@ -51,15 +56,17 @@ def main():
     tram_vn = next((x for x in ncc if "VN" in (x.get("name") or "") or "ຫວຽດນາມ" in (x.get("name") or "")), ncc[0] if ncc else None)
 
     # ---- 1. Bãi không ghi sổ kho dầu, không thấy giá dầu (A2)
-    s, g = goi("/api/fuel-moves", {"kind": "in", "place_id": XE["id"], "qty_l": 10, "unit_price": 1}, vai="thabok")
-    phai(s, 403, "Bãi nhập kho dầu → bị từ chối (việc KT kho xăng dầu)", g)
-    s, g = goi("/api/fuel-moves", vai="thabok")
+    s, g = goi("/api/fuel-moves", {"kind": "in", "place_id": XE["id"], "qty_l": 10, "unit_price": 1}, vai="khonl")
+    phai(s, 409, "Trang điều xe không còn ghi sổ kho dầu (đã dời sang kế toán)", g)
+    s, g = K.kt("/api/nhien-lieu", {"kind": "in", "place_id": XE["id"], "qty_l": 10, "unit_price": 1}, vai="thabok")
+    phai(s, 403, "Bãi nhập kho dầu ở trang kế toán → bị từ chối (việc KT kho xăng dầu)", g)
+    s, g = K.kt("/api/nhien-lieu", vai="thabok")
     assert "gia_bq" not in g and all("gia_bq" not in k for k in g["kho"]) and all("unit_price" not in r for r in g["rows"]), \
         "Bãi xem sổ kho: có số lít, không có giá"
     print("  ✓ %-64s" % "Bãi xem sổ kho dầu: thấy số lít, không thấy giá")
 
     # ---- 2. mua 1.000 lít ở Việt Nam, nhập vào KHO XE (VND, tỷ giá lúc nhập)
-    s, g = goi("/api/fuel-moves", {"kind": "in", "place_id": XE["id"], "qty_l": 1000, "unit_price": 26000, "currency": "VND",
+    s, g = K.kt("/api/nhien-lieu", {"kind": "in", "place_id": XE["id"], "qty_l": 1000, "unit_price": 26000, "currency": "VND",
                                     "rate_to_lak": 1.2, "doc_no": "PO-" + SO, "supplier_id": tram_vn["id"] if tram_vn else None,
                                     "note": "thử A3: mua dầu Việt Nam"}, vai="khonl")
     phai(s, 200, "KT kho xăng dầu nhập 1.000 L mua ở Việt Nam vào kho xe (26.000 VND)", g)
@@ -68,10 +75,9 @@ def main():
     mong = (XE["ton_lit"] * XE["gia_bq"] + 1000 * gia_nhap) / (XE["ton_lit"] + 1000) if XE["ton_lit"] > 0 else gia_nhap
     assert abs(k1["KHO-XE-VN"]["ton_lit"] - (XE["ton_lit"] + 1000)) < 0.01 and abs(k1["KHO-XE-VN"]["gia_bq"] - mong) < 0.02, (k1["KHO-XE-VN"], mong)
     nhap = next(r for r in so1["rows"] if r["doc_no"] == "PO-" + SO)
-    s, ct = goi("/api/chung-tu?loai=PNK_NL", vai="ketoan")
-    pnk = next(c for c in ct["ds"] if c["nguon_id"] == nhap["id"])
-    assert pnk["tien_te"] == "VND" and round(pnk["tien_lak"]) == round(1000 * gia_nhap) and pnk["no"] == "1371" and pnk["co"] == "4021", pnk
-    print("  ✓ %-64s %s LAK · Nợ %s / Có %s" % ("phiếu nhập kho quy LAK theo tỷ giá lúc nhập", format(round(pnk["tien_lak"]), ","), pnk["no"], pnk["co"]))
+    pnk = next(c for c in K.to_kho("PO-" + SO, "PNK_NL"))                 # tờ nhập kho sinh ngay ở trang kế toán
+    assert pnk["currency"] == "VND" and round(pnk["amount_lak"]) == round(1000 * gia_nhap) and pnk["debit"] == "1371" and pnk["credit"] == "4021", pnk
+    print("  ✓ %-64s %s LAK · Nợ %s / Có %s" % ("phiếu nhập kho quy LAK theo tỷ giá lúc nhập", format(round(pnk["amount_lak"]), ","), pnk["debit"], pnk["credit"]))
     gia_xe = k1["KHO-XE-VN"]["gia_bq"]
 
     # ---- 3. phiếu xuất xe lấy 600 lít từ kho xe — giá tự là bình quân của kho xe
@@ -99,20 +105,19 @@ def main():
     ra = next(r for r in so2["rows"] if r["doc_no"] == SO and r["kind"] == "out")
     assert ra["place_id"] == XE["id"] and ra["qty_out"] == 600 and abs(ra["unit_cost_lak"] - gia_xe) < 0.02, ra
     assert abs(k2["KHO-XE-VN"]["ton_lit"] - (XE["ton_lit"] + 400)) < 0.01, k2["KHO-XE-VN"]
-    s, ct = goi("/api/chung-tu?loai=PXK_NL", vai="ketoan")
-    pxk = next(c for c in ct["ds"] if c["nguon_id"] == ra["id"])
-    assert round(pxk["tien_lak"]) == round(600 * gia_xe) and pxk["no"] == "625" and pxk["co"] == "1371", pxk
-    print("  ✓ %-64s %s LAK · Nợ %s / Có %s" % ("xuất 600 L đúng kho xe, đúng giá bình quân", format(round(pxk["tien_lak"]), ","), pxk["no"], pxk["co"]))
+    pxk = next(c for c in K.to_kho(SO, "PXK_NL") if c["trip_no"] == SO)
+    assert round(pxk["amount_lak"]) == round(600 * gia_xe) and pxk["debit"] == "625" and pxk["credit"] == "1371", pxk
+    print("  ✓ %-64s %s LAK · Nợ %s / Có %s" % ("xuất 600 L đúng kho xe, đúng giá bình quân", format(round(pxk["amount_lak"]), ","), pxk["debit"], pxk["credit"]))
 
     # ---- 4. chuyển 400 lít còn lại về kho Thà Bốc
-    s, g = goi("/api/fuel-transfers", {"from_place_id": XE["id"], "to_place_id": XE["id"], "qty_l": 1}, vai="khonl")
+    s, g = K.kt("/api/nhien-lieu/chuyen-kho", {"from_place_id": XE["id"], "to_place_id": XE["id"], "qty_l": 1}, vai="khonl")
     phai(s, 422, "Chuyển kho vào chính nó → bị từ chối", g)
-    s, g = goi("/api/fuel-transfers", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 10 ** 6}, vai="khonl")
+    s, g = K.kt("/api/nhien-lieu/chuyen-kho", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 10 ** 6}, vai="khonl")
     phai(s, 409, "Chuyển quá tồn → bị từ chối", g)
-    s, g = goi("/api/fuel-transfers", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 400}, vai="thabok")
+    s, g = K.kt("/api/nhien-lieu/chuyen-kho", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 400}, vai="thabok")
     phai(s, 403, "Bãi chuyển kho → bị từ chối", g)
     tb_truoc = kho()[0]["KHO-TB"]
-    s, ck = goi("/api/fuel-transfers", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 400, "note": "thử A3"}, vai="khonl")
+    s, ck = K.kt("/api/nhien-lieu/chuyen-kho", {"from_place_id": XE["id"], "to_place_id": TB["id"], "qty_l": 400, "note": "thử A3"}, vai="khonl")
     phai(s, 200, "KT kho xăng dầu chuyển 400 L kho xe → Thà Bốc (%s)" % ck.get("transfer_no"), ck)
     k3, so3 = kho()
     assert abs(k3["KHO-XE-VN"]["ton_lit"] - XE["ton_lit"]) < 0.01, "kho xe về đúng số trước khi mua: %s" % k3["KHO-XE-VN"]
@@ -121,19 +126,21 @@ def main():
     assert abs(k3["KHO-TB"]["gia_bq"] - mong_tb) < 0.05, (k3["KHO-TB"]["gia_bq"], mong_tb)
     print("  ✓ %-64s TB %s L · bình quân %s → %s" % ("tồn và giá bình quân hai kho đúng sau chuyển", k3["KHO-TB"]["ton_lit"],
                                                         format(round(tb_truoc["gia_bq"]), ","), format(round(k3["KHO-TB"]["gia_bq"]), ",")))
-    s, ct = goi("/api/chung-tu?loai=CK_NL", vai="ketoan")
-    to = [c for c in ct["ds"] if c["nguon_id"] == ck["transfer_no"]]
-    assert len(to) == 1 and not to[0]["no"] and not to[0]["co"], "chuyển kho: MỘT tờ CK_NL, không định khoản (vẫn là 1371): %s" % to
-    print("  ✓ %-64s %s" % ("một tờ chuyển kho, không sinh bút toán", to[0]["so"]))
+    to = [c for c in K.to_kho("", "CK_NL") if (c.get("lines") or {}).get("transfer_no") == ck["transfer_no"]]
+    assert len(to) == 1 and not to[0]["debit"] and not to[0]["credit"] and not to[0]["entry_id"], "chuyển kho: MỘT tờ CK_NL, không định khoản (vẫn là 1371): %s" % to
+    print("  ✓ %-64s %s" % ("một tờ chuyển kho, không sinh bút toán", to[0]["ref"]))
 
     # ---- 5. dọn: xoá phiếu chuyển (cả hai dòng), dòng xuất theo phiếu, phiếu thử, dòng nhập
     dong_ck = [r for r in so3["rows"] if r.get("transfer_no") == ck["transfer_no"]]
     assert len(dong_ck) == 2, dong_ck
-    s, g = goi("/api/fuel-moves/%s" % dong_ck[0]["id"], vai="khonl", method="DELETE"); phai(s, 200, "Xoá phiếu chuyển kho → xoá cả hai dòng", g)
+    s, g = K.kt("/api/nhien-lieu/%s" % dong_ck[0]["id"], vai="khonl", method="DELETE"); phai(s, 200, "Xoá phiếu chuyển kho → xoá cả hai dòng", g)
     assert not [r for r in g["rows"] if r.get("transfer_no") == ck["transfer_no"]], "còn dòng của phiếu chuyển"
-    s, g = goi("/api/fuel-moves/%s" % ra["id"], vai="khonl", method="DELETE"); phai(s, 200, "Xoá dòng xuất thử", g)
-    s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Xoá phiếu thử", g)
-    s, g = goi("/api/fuel-moves/%s" % nhap["id"], vai="khonl", method="DELETE"); phai(s, 200, "Xoá dòng nhập thử", g)
+    s, g = K.kt("/api/nhien-lieu/%s" % ra["id"], vai="khonl", method="DELETE")
+    phai(s, 409, "Xoá tay dòng xuất của phiếu ở kho → chặn (thuộc phiếu bên điều xe)", g)
+    s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Xoá phiếu thử → dầu mục III tự về kho", g)
+    assert not [r for r in kho()[1]["rows"] if r["id"] == ra["id"]], "xoá phiếu phải trả dầu về kho (dòng xuất rút đi)"
+    assert not [c for c in K.to_kho(SO, "PXK_NL") if c["trip_no"] == SO], "xoá phiếu phải rút tờ PXK_NL"
+    s, g = K.kt("/api/nhien-lieu/%s" % nhap["id"], vai="khonl", method="DELETE"); phai(s, 200, "Xoá dòng nhập thử", g)
     k9, _ = kho()
     assert abs(k9["KHO-XE-VN"]["ton_lit"] - XE["ton_lit"]) < 0.01 and abs(k9["KHO-TB"]["ton_lit"] - TB["ton_lit"]) < 0.01, (k9["KHO-XE-VN"], k9["KHO-TB"])
     print("\n✅ KHO XE & CHUYỂN KHO (A3 · C5.2 · C5.3): nhập VND quy LAK lúc nhập · xuất cho xe theo bình quân kho ·"

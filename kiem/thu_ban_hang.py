@@ -6,12 +6,15 @@
 Khoá phiếu và trả chủ xe liên kết đã nằm trong kiem/thu_luong_api.py (đi cùng luồng một phiếu).
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 import uuid
 
 GOC = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — kho nhiên liệu ở trang kế toán (28/09)
 
 
 def goi(duong, than=None, tk=None, cach=None, tho=None, kieu=None):
@@ -93,7 +96,7 @@ _, kh = goi("/api/customers", tk=tk["ketoan"])
 _, diem = goi("/api/fuel-places", tk=tk["ketoan"])
 # bán từ kho CÓ DẦU (Thà Bốc): từ 23/09 bán quá tồn của đúng kho đó là bị chặn, không để kho âm
 kho = next(x for x in diem if x["owner_type"] == "epl" and x.get("code") == "KHO-TB")
-_, so_kho = goi("/api/fuel-moves?place_id=%s" % kho["id"], tk=tk["khonl"])
+_, so_kho = K.kt("/api/nhien-lieu?place_id=%s" % kho["id"], vai="khonl")    # sổ dầu ở trang kế toán (28/09)
 gia_bq = so_kho["gia_bq"]
 ton_truoc = mon["qty"]
 than = {"sale_date": "2026-09-17", "customer_id": kh[0]["id"], "currency": "LAK", "note": "thử bán",
@@ -107,7 +110,7 @@ assert bh["status"] == "issued" and len(bh["lines"]) == 2 and all(d["stock_move_
 _, pt2 = goi("/api/parts", tk=tk["ketoan"])
 assert next(x for x in pt2 if x["id"] == mon["id"])["qty"] == ton_truoc - 2, "tồn phụ tùng phải trừ 2"
 print("  OK  tồn %s: %s → %s" % (mon["name"][:20], ton_truoc, ton_truoc - 2))
-_, kho_nl = goi("/api/fuel-moves", tk=tk["khonl"])
+_, kho_nl = K.kt("/api/nhien-lieu", vai="khonl")
 assert any(x["doc_no"] == bh["doc_no"] and x["kind"] == "out" and x["qty_out"] == 50 for x in kho_nl["rows"]), "sổ kho dầu phải có dòng xuất bán"
 print("  OK  sổ kho nhiên liệu có dòng xuất %s · 50 lít" % bh["doc_no"])
 dau = next(d for d in bh["lines"] if d["item_type"] == "fuel")

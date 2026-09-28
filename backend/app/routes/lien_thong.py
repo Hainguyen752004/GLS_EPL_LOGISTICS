@@ -8,7 +8,7 @@
 import secrets
 import time
 
-from fastapi import APIRouter, Body, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,7 @@ from database import get_db
 from models import FuelMove, FuelPlace, Part, SaleLine, Supplier, TripEvent, TripExpense, User, Voucher
 from services import day_ke_toan as DK
 from services import goi_ke_toan as KT
-from services.bao_mat import can_vai, may_ke_toan_goi, token_nhan_ke_toan
+from services.bao_mat import can_vai, may_ke_toan_goi, nguoi_hien_tai, token_nhan_ke_toan
 
 router = APIRouter()
 
@@ -118,3 +118,40 @@ def ghi_ban_sao_phu_tung(pid: str, d: dict = Body(...), db: Session = Depends(ge
     x.active = bool(d.get("active", True))
     db.commit()
     return {"ok": True, "id": pid}
+
+
+
+# ================================================================ màn Cấp phát ở trang kế toán (đợt 4, 28/09)
+# Phiếu lĩnh / tạm ứng vẫn ở đây (giấy của chuyến). Màn Cấp phát bên kế toán gọi sang, dưới tên người đang bấm — quyền
+# và mọi quy tắc là của chính routes/phieu_linh.py, không viết lại. Cấp dầu thì phieu_linh gọi ngược sang kho dầu bên đó.
+@router.get("/api/lien-thong/cap-phat")
+def lt_cap_phat(request: Request, response: Response, trang_thai: str = "cho", db: Session = Depends(get_db),
+                u=Depends(may_ke_toan_goi)):
+    from routes import phieu_linh as PL
+    return PL.ds_cho_cap(request, response, trang_thai=trang_thai, loai="", co=500, db=db, user=u)
+
+
+@router.get("/api/lien-thong/cap-phat/tra-cuu/{token}")
+def lt_tra_cuu(token: str, request: Request, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import phieu_linh as PL
+    return PL.tra_cuu(token, request, db=db, user=u)
+
+
+@router.post("/api/lien-thong/cap-phat/{vid}/cap")
+def lt_cap(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    from routes import phieu_linh as PL
+    return PL.cap_phat(vid, d, db=db, user=u)
+
+
+@router.get("/api/lien-thong/ty-gia")
+def lt_ty_gia(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Tỷ giá quy Kíp hiện hành (màn Tỷ giá ở đây) — gợi ý khi nhập kho dầu bằng ngoại tệ ở trang kế toán."""
+    from models import ExchangeRate
+    return {r.code: r.rate_to_lak for r in db.query(ExchangeRate).all()}
+
+
+@router.get("/api/lien-thong/dia-chi")
+def dia_chi(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Địa chỉ trang kế toán để giao diện bên này mở sang (nút Cấp phát, Kho nhiên liệu…)."""
+    from services import kho_ke_toan as KK
+    return {"ke_toan_web": KK.web_ke_toan(db)}

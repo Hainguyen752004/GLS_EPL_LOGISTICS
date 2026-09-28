@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1533 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1539 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -7616,6 +7616,36 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa nối được: {loi}",
   "lo": "Chưa nối được: {loi}",
   "en": "Not connected: {loi}"
+ },
+ "tk_lt_web": {
+  "vi": "Địa chỉ mở trang kế toán (trình duyệt · mã QR)",
+  "lo": "Địa chỉ mở trang kế toán (trình duyệt · mã QR)",
+  "en": "Ledger site address for browsers · QR codes"
+ },
+ "tk_lt_web_hint": {
+  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "en": "The Issuing / Fuel store buttons and the QR code on fuel slips open this address. Empty = use the ledger address above."
+ },
+ "khong_co_man": {
+  "vi": "Việc của tài khoản này ở trang kế toán",
+  "lo": "Việc của tài khoản này ở trang kế toán",
+  "en": "This account works on the ledger site"
+ },
+ "khong_co_man_goi_y": {
+  "vi": "Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "lo": "Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "en": "Issuing fuel slips, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
+ },
+ "mo_ke_toan": {
+  "vi": "Mở trang kế toán",
+  "lo": "ເປີດ ປຶ້ມບັນຊີ EPL",
+  "en": "Open the ledger site"
+ },
+ "mo_ke_toan_loi": {
+  "vi": "Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.",
+  "lo": "Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.",
+  "en": "No ledger site address yet — the owner sets it in Accounts → Link to the ledger site."
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",

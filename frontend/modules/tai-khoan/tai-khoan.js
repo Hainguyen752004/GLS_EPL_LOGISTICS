@@ -8,8 +8,8 @@
     yard: 'Lập phiếu xuất xe tại bãi: xe, tài xế, khách, tuyến, cân, số lít, khoản đi đường. Không thấy và không nhập tiền.',
     acct: 'Kiểm mục I, II; nhập số phiếu quặng, giá cước, giá thuê xe liên kết; khoá phiếu; điều khoản chủ xe; đẩy chứng từ.',
     expacct: 'Nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; lệnh sửa chữa; nhà cung cấp; tất toán tài xế.',
-    fuel: 'Nhập đơn giá dầu mua ngoài; kiểm và ghi sổ mục III; nhập, xuất, chuyển kho dầu; duyệt khai đổ dầu.',
-    depot: 'Quét QR phiếu lĩnh, cấp dầu tại một kho.',
+    fuel: 'Nhập đơn giá dầu mua ngoài; kiểm và ghi sổ mục III; duyệt khai đổ dầu. Nhập, xuất, chuyển kho dầu — ở trang kế toán (Kho → Kho nhiên liệu).',
+    depot: 'Quét QR phiếu lĩnh, cấp dầu tại một kho — làm ở trang kế toán (Kho → Cấp phát).',
     parts: 'Nhập, xuất kho phụ tùng Thà Bốc — làm ở trang kế toán (Kho → Kho phụ tùng).',
     repair: 'Duyệt báo hỏng của tài xế, lập lệnh sửa chữa; quyết lấy phụ tùng kho hay mua ngoài.',
     treasury: 'Thủ quỹ Viêng Chăn: chi mục III, trả chủ xe, trả nhà cung cấp, thu bán hàng.',
@@ -88,12 +88,13 @@
   async function napLienThong() {
     const c = await API.get('/api/ke-toan/cau-hinh');
     q('#tk-lt-api').value = c.ke_toan_api || '';
+    q('#tk-lt-web').value = c.ke_toan_web || '';
     q('#tk-lt-day').placeholder = NN.t(c.co_token ? 'tk_lt_co' : 'tk_lt_chua');
     q('#tk-lt-nhan').innerHTML = EPL.tag(c.co_token_nhan_ke_toan ? 'ok' : 'plain', c.co_token_nhan_ke_toan ? 'tk_lt_co' : 'tk_lt_chua');
   }
   function ganLienThong() {
     q('#tk-lt-luu').addEventListener('click', async () => {
-      const body = { ke_toan_api: q('#tk-lt-api').value.trim() };
+      const body = { ke_toan_api: q('#tk-lt-api').value.trim(), ke_toan_web: q('#tk-lt-web').value.trim() };
       const k = q('#tk-lt-day').value.trim(); if (k) body.ke_toan_token = k;
       try { await API.put('/api/ke-toan/cau-hinh', body); q('#tk-lt-day').value = ''; EPL.toast(NN.t('saved'), 'ok'); await napLienThong(); }
       catch (e) { EPL.baoLoi(e); }

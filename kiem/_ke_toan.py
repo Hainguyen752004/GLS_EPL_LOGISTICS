@@ -39,6 +39,6 @@ def vao(u):
 
 def to_kho(q, loai="PXK_PT"):
     """Tờ kho sinh ở trang kế toán (source EPL_KETOAN) có `q` trong số phiếu / diễn giải."""
-    s, ds = kt("/api/chung-tu?loai=%s&limit=50&q=%s" % (loai, urllib.request.quote(q)), vai="ketoan")
+    s, ds = kt("/api/chung-tu?loai=%s&limit=1000&q=%s" % (loai, urllib.request.quote(q)), vai="ketoan")
     assert s == 200, (s, ds)
     return [v for v in ds if v["source"] == "EPL_KETOAN"]

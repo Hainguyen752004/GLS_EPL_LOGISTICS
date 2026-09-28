@@ -27,12 +27,13 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import FuelMove, FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
+from models import FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
 from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
 from services import gia_von as GV
+from services import kho_ke_toan as KK
 
 router = APIRouter()
 TIEN_TO = {"fuel": "PLNL", "advance": "PTU"}
@@ -92,7 +93,8 @@ def xuat_phieu_linh(db, v, goc="", vai=None):
             "place_country": diem.country if diem else None,
             "driver_id": v.driver_id, "driver_name": v.driver_name, "truck_no": v.truck_no,
             "qty_l": v.qty_l, "amount_lak": v.amount_lak, "status": v.status, "token": v.token,
-            "qr": "/api/vouchers/%s/qr.png" % v.id, "tra_cuu": (goc or "") + "/#/cap-phat?ma=" + v.token,
+            # màn Cấp phát ở trang kế toán (28/09): đường tra cứu / mã QR mở thẳng bên đó
+            "qr": "/api/vouchers/%s/qr.png" % v.id, "tra_cuu": (KK.web_ke_toan(db) or goc or "") + "/#/cap-phat?ma=" + v.token,
             "issued_by": v.issued_by, "issued_at": v.issued_at.isoformat() if v.issued_at else None,
             "granted_by": v.granted_by, "granted_at": v.granted_at.isoformat() if v.granted_at else None,
             "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note,
@@ -289,55 +291,47 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu này đã cấp hoặc đã huỷ."})
     p = _phieu(db, v.trip_id)
 
-    if v.kind == "fuel":
-        if user.role not in ("depot", "fuel", "admin"):
-            raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ thủ kho nhiên liệu mới cấp dầu."})
-        if user.role == "depot" and user.place_id != v.place_id:
-            raise HTTPException(403, {"ma": "KHAC_KHO", "loi": "Phiếu này lĩnh ở kho khác, không phải kho của bạn."})
-        lit = d.get("qty")
-        lit = float(str(lit).replace(",", "")) if lit not in (None, "") else (v.qty_l or 0)
-        if lit <= 0:
-            raise HTTPException(422, {"ma": "SO_LIT_SAI", "loi": "Số lít cấp phải lớn hơn 0."})
-        ly_do = str(d.get("note") or "").strip()
-        if abs(lit - (v.qty_l or 0)) > 0.001 and not ly_do:
-            raise HTTPException(422, {"ma": "THIEU_LY_DO",
-                                      "loi": "Cấp %s lít khác số duyệt %s lít thì phải ghi lý do." % (lit, v.qty_l)})
-        dong = _dong_kho_theo_diem(db, p).get(v.place_id, [])
-        if not dong:
-            raise HTTPException(409, {"ma": "KHONG_CON_DONG", "loi": "Các dòng dầu của kho này đã xuất rồi."})
-        # giá BÌNH QUÂN của đúng kho cấp, lúc cấp (anh Khampla C5.3) — dòng trên phiếu mang theo giá đó
-        don_gia = GV.gia_bq_dau(db, v.place_id) or (dong[0].unit_price or 0) * ty_gia(p, dong[0].currency or "LAK")
-        for e in dong:
-            e.unit_price, e.currency = don_gia, "LAK"
-        m = FuelMove(move_date=dt.date.today(), doc_no=v.doc_no, kind="out", truck_no=p.truck_no, qty_l=lit,
-                     unit_price=don_gia, currency="LAK", unit_cost_lak=don_gia, place_id=v.place_id, voucher_id=v.id,
-                     note="Cấp theo phiếu lĩnh %s" % v.doc_no, by_user=user.full_name, expense_id=dong[0].id)
-        db.add(m); db.flush()
-        for e in dong:
-            e.stock_move_id = m.id
-        diem = db.get(FuelPlace, v.place_id) if v.place_id else None
-        CT.ghi(db, "PXK_NL", nguon_bang="fuel_moves", nguon_id=m.id, trip=p, ngay=m.move_date, doi_tuong_loai="kho",
-               doi_tuong_ten=diem.name if diem else None, tien=lit * don_gia, tien_te=m.currency,
-               tien_lak=lit * don_gia * ty_gia(p, m.currency), section="fuel", by_user=user.full_name,
-               mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no),
-               payload={"voucher_doc_no": v.doc_no, "qty_l": lit, "unit_price": don_gia, "currency": m.currency,
-                        "place_id": v.place_id, "truck_no": p.truck_no, "driver_name": p.driver_name})
-        if abs(lit - (v.qty_l or 0)) > 0.001 and len(dong) == 1:
-            dong[0].qty = lit                        # cấp lệch thì phiếu xuất xe ghi theo số thật
-        v.granted_qty, v.granted_note = lit, ly_do or None
-    else:
-        tt = (db.query(TripSection).filter(TripSection.trip_id == p.id, TripSection.section == "travel").first())
-        if tt is None:
-            tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
-        # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
-        tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
-        CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
-               doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
-               mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,
-               payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})
-
-    v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
-    db.commit()
+    # Cấp dầu = xuất ở kho nhiên liệu bên trang kế toán (28/09). Cả lần cấp đi trong GiaoDichKho: bên này hỏng thì lần
+    # xuất bên kia được huỷ; trang kế toán tắt → 503, chưa cấp được (màn Cấp phát giữ việc trong hàng đợi, nối lại tự gửi).
+    with KK.GiaoDichKho(db, user) as gd:
+        if v.kind == "fuel":
+            if user.role not in ("depot", "fuel", "admin"):
+                raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ thủ kho nhiên liệu mới cấp dầu."})
+            if user.role == "depot" and user.place_id != v.place_id:
+                raise HTTPException(403, {"ma": "KHAC_KHO", "loi": "Phiếu này lĩnh ở kho khác, không phải kho của bạn."})
+            lit = d.get("qty")
+            lit = float(str(lit).replace(",", "")) if lit not in (None, "") else (v.qty_l or 0)
+            if lit <= 0:
+                raise HTTPException(422, {"ma": "SO_LIT_SAI", "loi": "Số lít cấp phải lớn hơn 0."})
+            ly_do = str(d.get("note") or "").strip()
+            if abs(lit - (v.qty_l or 0)) > 0.001 and not ly_do:
+                raise HTTPException(422, {"ma": "THIEU_LY_DO",
+                                          "loi": "Cấp %s lít khác số duyệt %s lít thì phải ghi lý do." % (lit, v.qty_l)})
+            dong = _dong_kho_theo_diem(db, p).get(v.place_id, [])
+            if not dong:
+                raise HTTPException(409, {"ma": "KHONG_CON_DONG", "loi": "Các dòng dầu của kho này đã xuất rồi."})
+            # giá BÌNH QUÂN của đúng kho cấp, lúc cấp (anh Khampla C5.3) — trang kế toán tính; dòng trên phiếu mang theo giá đó
+            r = gd.xuat_dau(khoa="voucher:" + v.id, place_id=v.place_id, qty_l=lit, ngay=dt.date.today(), doc_no=v.doc_no,
+                            truck_no=p.truck_no, expense_id=dong[0].id, voucher_id=v.id, voucher_doc_no=v.doc_no, trip_no=p.doc_no,
+                            company=p.company, gia_du_phong=(dong[0].unit_price or 0) * ty_gia(p, dong[0].currency or "LAK"),
+                            mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no), note="Cấp theo phiếu lĩnh %s" % v.doc_no)
+            for e in dong:
+                e.unit_price, e.currency = r["unit_price"], "LAK"
+                e.stock_move_id = r["move_id"]
+            if abs(lit - (v.qty_l or 0)) > 0.001 and len(dong) == 1:
+                dong[0].qty = lit                        # cấp lệch thì phiếu xuất xe ghi theo số thật
+            v.granted_qty, v.granted_note = lit, ly_do or None
+        else:
+            tt = (db.query(TripSection).filter(TripSection.trip_id == p.id, TripSection.section == "travel").first())
+            if tt is None:
+                tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
+            # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
+            tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
+            CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
+                   doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
+                   mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,
+                   payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})
+        v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
     return xuat_phieu_linh(db, v, "", user.role)
 
 
@@ -360,7 +354,7 @@ def anh_qr(vid: str, request: Request, db: Session = Depends(get_db)):
     v = db.get(Voucher, vid)
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu lĩnh này."})
-    noi_dung = str(request.base_url).rstrip("/") + "/#/cap-phat?ma=" + v.token
+    noi_dung = (KK.web_ke_toan(db) or str(request.base_url).rstrip("/")) + "/#/cap-phat?ma=" + v.token
     try:
         import qrcode
     except ImportError:

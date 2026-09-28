@@ -895,17 +895,9 @@ def dem_viec(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
         r["theo-doi"] = db.query(Trip).filter(
             (Trip.transport_status != "arrived") | (Trip.finance_status != "paid")).count()
 
-    # Phiếu lĩnh · tạm ứng đang chờ cấp
-    cho = db.query(Voucher).filter(Voucher.status == "cho")
+    # "Phiếu lĩnh · tạm ứng đang chờ cấp" đi theo màn Cấp phát, Kho nhiên liệu sang trang kế toán (28/09)
     if vai == "depot":
-        n = cho.filter(Voucher.kind == "fuel", Voucher.place_id == user.place_id).count()
-        if n:
-            r["cap-phat"] = n
-            r["kho-nhien-lieu"] = n
-        return {k: v for k, v in r.items() if v}
-    if admin or vai in ("yard", "fuel", "cash", "treasury", "acct", "expacct"):
-        r["cap-phat"] = cho.count()
-        r["kho-nhien-lieu"] = cho.filter(Voucher.kind == "fuel").count()
+        return {}
 
     # "Phụ tùng dưới tồn tối thiểu" đi theo màn Kho phụ tùng sang trang kế toán (28/09) — tồn không còn ở đây
 

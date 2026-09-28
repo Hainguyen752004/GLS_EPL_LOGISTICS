@@ -229,14 +229,15 @@
       ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
       ['tq_q_uninvoiced', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
       ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
-      ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'cap-phat', {}],
+      ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kt:cap-phat', {}],        // màn Cấp phát ở trang kế toán (28/09)
       ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
     ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_uninvoiced'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
       chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
     root.querySelector('#tq-quick-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
-    root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i]; el.addEventListener('click', () => EPL.di(ch[3], ch[4])); });
+    root.querySelectorAll('.tq-chip').forEach(el => { const ch = chips[+el.dataset.i];
+      el.addEventListener('click', () => (ch[3].startsWith('kt:') ? EPL.moKeToan(ch[3].slice(3), ch[4]) : EPL.di(ch[3], ch[4]))); });
     const auto = root.querySelector('#tq-auto'); auto.checked = !!autoTimer;
     auto.addEventListener('change', () => { clearInterval(autoTimer); autoTimer = auto.checked ? setInterval(() => tai().catch(EPL.baoLoi), 60000) : null; });
   }

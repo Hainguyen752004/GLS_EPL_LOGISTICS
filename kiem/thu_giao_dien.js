@@ -13,7 +13,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'hoa-don-gop', 'chung-tu',
-  'phieu-cua-toi', 'cap-phat', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-hang', 'kho-nhien-lieu',
+  'phieu-cua-toi', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap', 'kho-hang',
   'sua-chua', 'ban-hang', 'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
@@ -302,7 +302,9 @@ async function main() {
     // Bãi không thấy TIỀN BÁN (hoá đơn khách, lãi xe liên kết) và từ A2 (23/09) cũng không thấy tiền chi: màn Tiền chuyến
     // & nước (cộng lại tiền mục IV mà phiếu đã giấu) bỏ khỏi menu Bãi; Theo dõi NCC và Kho dầu vẫn có nhưng không có tiền.
     ['hoa-don', 'xe-lien-ket', 'tien-tai-xe'].forEach(m => assert.ok(!modBai.includes(m), 'vai Bãi không được thấy module ' + m));
-    ['nha-cung-cap', 'kho-nhien-lieu'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi vẫn phải có module ' + m));
+    ['nha-cung-cap'].forEach(m => assert.ok(modBai.includes(m), 'vai Bãi vẫn phải có module ' + m));
+    // Kho nhiên liệu, Cấp phát dời sang trang kế toán (28/09)
+    ['kho-nhien-lieu', 'cap-phat'].forEach(m => assert.ok(!modBai.includes(m), 'màn ' + m + ' đã sang trang kế toán, không còn ở đây'));
     await di('#/nha-cung-cap');
     const chuNcc = goc().querySelector('#ncc-than').textContent;
     assert.ok(!/LAK/.test(chuNcc), 'Theo dõi NCC của Bãi không được còn số tiền: ' + chuNcc.slice(0, 200));
@@ -463,14 +465,18 @@ async function main() {
   assert.ok(!/\bundefined\b|\bNaN\b/.test(chuTx), 'màn tài xế có chữ undefined/NaN');
   console.log('✓ vai tài xế: chỉ thấy Phiếu của tôi · %d ký tự', chuTx.length);
 
-  // 7. vai thủ kho nhiên liệu: chỉ thấy hàng chờ cấp và tồn kho dầu
+  // 7. vai thủ kho nhiên liệu: Cấp phát và Kho nhiên liệu dời sang trang kế toán (28/09) — ở đây KHÔNG còn màn nào.
+  //    Phải hiện lời chỉ sang trang kế toán (có nút mở), không chuyển vòng, không lỗi.
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khotb', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai thủ kho'); await w.EPL.sanSang;
+  await choDen(() => d.querySelector('#noi-dung #mo-ke-toan'), 'lời chỉ sang trang kế toán');
   const navKho = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
-  assert.deepStrictEqual(navKho, ['cap-phat', 'kho-nhien-lieu'], 'thủ kho chỉ được thấy Cấp phát và Kho nhiên liệu: ' + navKho);
-  const chuKho = goc().textContent;
-  assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')), 'màn thủ kho báo lỗi: ' + chuKho.slice(0, 200));
-  console.log('✓ vai thủ kho: chỉ thấy %s', navKho.join(', '));
+  assert.deepStrictEqual(navKho, [], 'thủ kho không còn màn nào ở trang điều xe: ' + navKho);
+  const hash0 = w.location.hash; await cho(600);
+  assert.strictEqual(w.location.hash, hash0, 'không chuyển vòng: ' + hash0 + ' → ' + w.location.hash);
+  const chuKho = d.querySelector('#noi-dung').textContent;
+  assert.ok(chuKho.includes(w.EPL.NN.t('khong_co_man')) && !chuKho.includes(w.EPL.NN.t('err_generic')), 'màn thủ kho: ' + chuKho.slice(0, 200));
+  console.log('✓ vai thủ kho: không còn màn ở trang điều xe → lời chỉ sang trang kế toán, có nút mở, không chuyển vòng');
 
   // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN
   // CHỖ chứ không nhân đôi — nhân đôi là hai nút cùng id, bấm cái nào cũng sai.

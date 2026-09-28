@@ -53,12 +53,12 @@
         ct: ['PXK_NL'], ct_khi: { PXK_NL: 'lúc ghi sổ mục III — với dòng dầu kho chưa cấp theo phiếu lĩnh' }, sau: 'Mục III, IV, VI: Đã ghi sổ · chờ chi' },
     ] },
     { gd: 'Cấp dầu và tạm ứng', buoc: [
-      { so: 7, vai: ['depot'], man: 'cap-phat', ten: 'Thủ kho quét QR phiếu lĩnh, cấp dầu',
+      { so: 7, vai: ['depot'], man: 'cap-phat', o_ke_toan: true, ten: 'Thủ kho quét QR phiếu lĩnh, cấp dầu',
         lam: ['Quét mã, đối chiếu đúng xe, đúng tài xế', 'Nhập số lít cấp thật → Cấp'],
         may: ['Trừ tồn đúng kho ngay; dòng dầu trên phiếu mang giá bình quân của kho lúc cấp', 'Mất mạng vẫn cấp được, máy gửi lại khi có mạng'],
         chan: ['Thủ kho kho khác không cấp được', 'Cấp lệch số duyệt mà không ghi lý do → chặn', 'Cấp hai lần → chặn'],
         ct: ['PXK_NL'], ct_khi: { PXK_NL: 'lúc cấp — mỗi dòng dầu kho chỉ xuất một lần (hoặc ở đây, hoặc lúc ghi sổ mục III)' }, sau: 'Phiếu lĩnh: Đã cấp' },
-      { so: 8, vai: ['cash'], man: 'cap-phat', ten: 'Quỹ tiền mặt cảng cạn chi tạm ứng',
+      { so: 8, vai: ['cash'], man: 'cap-phat', o_ke_toan: true, ten: 'Quỹ tiền mặt cảng cạn chi tạm ứng',
         lam: ['Quét QR phiếu tạm ứng rồi Chi tiền — hoặc bấm Chi mục IV trên phiếu'],
         may: ['Hai đường chi tự loại nhau: đã chi đường này thì đường kia là sai bước, không ra hai tờ', 'Dòng trả bằng thẻ cao tốc không tính vào tiền mặt'],
         chan: ['Mục IV chưa ghi sổ → không chi được', 'Tài xế tự chi cho mình → chặn'],
@@ -122,17 +122,17 @@
   /* ================================================================ ngoài chuyến */
   const NGOAI = [
     { gd: 'Kho nhiên liệu (7 kho + kho xe) — giá vốn bình quân', buoc: [
-      { so: 'K1', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', ten: 'Nhập dầu vào một kho',
+      { so: 'K1', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Nhập dầu vào một kho',
         lam: ['Chọn kho, nhà cung cấp, số đơn mua, số lít, đơn giá, tiền tệ, tỷ giá lúc nhập'],
         may: ['Giá nhập quy LAK theo tỷ giá LÚC NHẬP; giá bình quân của kho tính lại'], chan: ['Bãi chỉ xem số lít, không ghi sổ kho, không thấy giá (A2)'],
         giay: ['Phiếu nhập kho'], ct: ['PNK_NL'] },
-      { so: 'K2', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', ten: 'Mua dầu ở Việt Nam qua KHO XE (A3)',
+      { so: 'K2', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Mua dầu ở Việt Nam qua KHO XE (A3)',
         lam: ['Nhập 1.000 L vào "Kho xe · dầu mua Việt Nam" (VND)', 'Phiếu xuất xe lấy 600 L với nơi đổ = kho xe', 'Chuyển 400 L còn lại về Thà Bốc hay một kho hiện trường'],
         may: ['Dầu ra khỏi kho xe mang giá bình quân của kho xe'], ct: ['PNK_NL', 'PXK_NL', 'CK_NL'] },
-      { so: 'K3', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', ten: 'Chuyển kho',
+      { so: 'K3', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Chuyển kho',
         lam: ['Chọn kho đi, kho nhận, số lít'], may: ['Hai dòng sổ kho cùng một số CK-YYMM-###; mang giá bình quân của kho đi'],
         chan: ['Chuyển quá tồn → chặn', 'Kho đi = kho nhận → chặn'], giay: ['Phiếu chuyển kho'], ct: ['CK_NL'] },
-      { so: 'K4', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', ten: 'Xuất tay cho xe (ngoài phiếu)',
+      { so: 'K4', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Xuất tay cho xe (ngoài phiếu)',
         lam: ['Chọn kho, số xe, số lít'], may: ['Giá = bình quân kho'], chan: ['Xuất quá tồn của đúng kho → chặn'] },
     ] },
     { gd: 'Kho phụ tùng và sửa xe khi không chạy', buoc: [

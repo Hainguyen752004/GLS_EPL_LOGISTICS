@@ -14,7 +14,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Customer, ExchangeRate, FuelMove, FuelPlace, Owner, Part, Sale, SaleLine
+from models import Customer, ExchangeRate, FuelPlace, Owner, Part, Sale, SaleLine
 from services import kho_ke_toan as KK
 from services import chung_tu as CT
 from services import gia_von as GV
@@ -69,11 +69,6 @@ def _ty_gia(db, ma):
         return 1.0
     r = db.get(ExchangeRate, ma)
     return r.rate_to_lak if r else {"USD": 22000, "THB": 700, "VND": 1.2}[ma]
-
-
-def _gia_von_dau(db, place_id=None):
-    """Giá vốn dầu = giá BÌNH QUÂN của đúng kho xuất (anh Khampla C5.3, 23/09)."""
-    return GV.gia_bq_dau(db, place_id)
 
 
 def xuat(db, s):
@@ -167,16 +162,13 @@ def lap_phieu_ban(d: dict = Body(...), db: Session = Depends(get_db), user=Depen
                 if diem and diem.owner_type != "epl":
                     raise HTTPException(422, {"ma": "KHONG_PHAI_KHO", "loi": "Dòng %d: chỉ bán dầu từ kho của EPL." % i})
                 kho = diem.id if diem else GV.kho_goc(db)
-                lit, von_bq = GV.ton_dau(db, kho)
-                if qty > lit + 0.001:
-                    raise HTTPException(409, {"ma": "KHONG_DU", "loi": "Dòng %d: kho chỉ còn %s lít, không đủ bán %s lít." % (i, lit, qty)})
-                # sổ kho ghi GIÁ VỐN (bình quân của kho), không ghi giá bán — giá bán nằm trên dòng phiếu bán
-                mv = FuelMove(move_date=ngay, doc_no=s.doc_no, kind="out", truck_no=None, qty_l=qty,
-                              unit_price=von_bq, currency="LAK", unit_cost_lak=von_bq, place_id=kho,
-                              note="Bán dầu · %s" % ten_kh, by_user=user.full_name)
-                db.add(mv); db.flush()
-                dong.place_id, dong.name, dong.unit, dong.stock_move_id = kho, "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", mv.id
-                dong.cost_lak = round(qty * von_bq)
+                db.add(dong); db.flush()
+                # kho nhiên liệu ở trang kế toán (28/09): kiểm tồn (không đủ → 409), xuất theo GIÁ VỐN bình quân của kho —
+                # không ghi giá bán; không sinh PXK_NL (phiếu bán có tờ xuất kho bán riêng)
+                r = gd.xuat_dau(khoa="sale_line:" + dong.id, place_id=kho, qty_l=qty, ngay=ngay, doc_no=s.doc_no, kiem_ton=True,
+                                ghi_chung_tu=False, note="Bán dầu · %s" % ten_kh)
+                dong.place_id, dong.name, dong.unit, dong.stock_move_id = kho, "ນໍ້າມັນກາຊວນ (dầu diesel)", "u_l", r["move_id"]
+                dong.cost_lak = round(qty * (r["unit_price"] or 0))
             else:
                 raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Dòng %d: loại hàng phải là part hoặc fuel." % i})
             db.add(dong)
@@ -228,8 +220,7 @@ def bo_phieu_ban(sid: str, db: Session = Depends(get_db), user=Depends(can_vai(*
             # phụ tùng về kho bên trang kế toán (trả tồn, xoá dòng sổ); trang kế toán tắt thì chưa bỏ phiếu được
             KK.huy_xuat(db, user, move_id=dong.stock_move_id)
         elif dong.item_type == "fuel" and dong.stock_move_id:
-            mv = db.get(FuelMove, dong.stock_move_id)
-            if mv: db.delete(mv)
+            KK.huy_xuat_dau(db, user, move_id=dong.stock_move_id)      # dầu về kho bên trang kế toán
         db.delete(dong)
     CT.rut(db, nguon_bang="sales", nguon_id=s.id)
     db.delete(s); db.commit()

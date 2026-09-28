@@ -193,7 +193,7 @@ def main():
     s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="totsua"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
     for hd, v in (("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
-    s, kho = goi("/api/fuel-moves", vai="khonl")
+    s, kho = K.kt("/api/nhien-lieu", vai="khonl")             # sổ dầu ở trang kế toán (28/09)
     assert any(r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out" for r in kho["rows"]), "ghi sổ mục III phải sinh dòng xuất kho nhiên liệu theo phiếu"
     print("  ✓ ghi sổ mục III đã sinh dòng xuất kho nhiên liệu THU-LUONG-01/EPL")
 
@@ -226,7 +226,7 @@ def main():
     chi = g["tinh"]["chi"]
     # Dầu lấy từ KHO mang giá BÌNH QUÂN của kho lúc xuất (anh Khampla C5.3), không phải giá Bãi gõ.
     dau = [e for e in g["expenses"] if e["section"] == "fuel"][0]
-    s, mv = goi("/api/fuel-moves", vai="khonl")
+    s, mv = K.kt("/api/nhien-lieu", vai="khonl")
     xuat = next(r for r in mv["rows"] if r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out")
     assert dau["currency"] == "LAK" and abs(dau["unit_price"] - xuat["unit_cost_lak"]) < 0.01, (dau, xuat)
     assert chi["fuel"] == round(100 * dau["unit_price"]) and chi["travel"] == 1833500 and chi["other"] == 150000, chi
@@ -277,17 +277,15 @@ def main():
     phai(s, 409, "Trang điều xe không còn nhập / xuất phụ tùng (đã dời sang kế toán)", g)
     s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok")
     phai(s, 403, "Bãi nhập kho phụ tùng ở trang kế toán → bị từ chối (C1.2)", g)
-    s, kho = goi("/api/fuel-moves", vai="khonl")
-    for r in kho["rows"]:
-        if r["doc_no"] == "THU-LUONG-01/EPL":
-            goi("/api/fuel-moves/%s" % r["id"], vai="khonl", method="DELETE")
-    print("  ✓ đã xoá dòng xuất kho nhiên liệu của phiếu thử")
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
     # xoá phiếu → phụ tùng mục V về kho bên trang kế toán, tờ PXK_PT của phiếu rút theo
     s, parts3 = goi("/api/parts", vai="thabok")
     assert next(x for x in parts3 if x["id"] == pt["id"])["qty"] == ton, "xoá phiếu phải trả phụ tùng về kho: %s" % ton
     assert not [v for v in K.to_kho("THU-LUONG-01/EPL") if v["trip_no"] == "THU-LUONG-01/EPL"], "tờ PXK_PT của phiếu đã xoá phải rút"
     print("  ✓ %-58s %s" % ("Xoá phiếu → phụ tùng về kho kế toán, PXK_PT rút theo", ton))
+    s, kho = K.kt("/api/nhien-lieu", vai="khonl")
+    assert not [r for r in kho["rows"] if r["doc_no"] == "THU-LUONG-01/EPL"], "xoá phiếu phải trả dầu mục III về kho"
+    print("  ✓ %-58s" % "Xoá phiếu → dầu mục III về kho kế toán")
     print("\nTHỬ LUỒNG API: ĐẠT — 9 vai · 6 mục · 5 bước duyệt · bảng giá khách × tuyến · 13 chỗ từ chối đúng")
 
 

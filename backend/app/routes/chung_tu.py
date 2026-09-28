@@ -126,7 +126,7 @@ def xem_cau_hinh(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
     """Sếp xem cấu hình. Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
     from services.bao_mat import token_nhan_ke_toan
     return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token")),
-            "co_token_nhan_ke_toan": bool(token_nhan_ke_toan(db)),
+            "co_token_nhan_ke_toan": bool(token_nhan_ke_toan(db)), "ke_toan_web": DK.cau_hinh(db, "ke_toan_web"),
             # Hai mã bên kế toán cấp sau: hàng khách gửi (ngoài bảng) và giá vốn hàng bán
             "ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui"), "ma_gia_von": DK.cau_hinh(db, "ma_gia_von")}
 
@@ -136,6 +136,8 @@ def dat_cau_hinh(d: dict = Body(...), db: Session = Depends(get_db), user=Depend
     """Sếp đặt địa chỉ API và token (gửi token rỗng = giữ token cũ; gửi "-" = xoá)."""
     if "ke_toan_api" in d:
         DK.dat_cau_hinh(db, "ke_toan_api", d.get("ke_toan_api") or "", user)
+    if "ke_toan_web" in d:
+        DK.dat_cau_hinh(db, "ke_toan_web", d.get("ke_toan_web") or "", user)
     tk = d.get("ke_toan_token")
     if tk == "-":
         DK.dat_cau_hinh(db, "ke_toan_token", "", user)
