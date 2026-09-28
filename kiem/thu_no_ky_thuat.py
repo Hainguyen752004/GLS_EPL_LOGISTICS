@@ -16,6 +16,9 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — phiếu thu tiền khách in ở trang kế toán (28/09, đợt 7a)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -115,7 +118,7 @@ def main():
     pb = ds_b[0]["id"]
     s, pc = goi("/api/trips/%s/phieu-chi" % pb, vai="thabok"); phai(s, 200, "Bãi mở phiếu chi tạm ứng để in", pc)
     assert pc["tong_lak"] is None and all("unit_price" not in d and "tien_lak" not in d for d in pc["dong"]),         "phiếu tạm ứng gửi cho Bãi không được có đơn giá / thành tiền / tổng: %s" % pc
-    s, g = goi("/api/trips/%s/phieu-thu" % pb, vai="thabok"); phai(s, 403, "Bãi mở phiếu thu tiền khách → bị chặn", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s/phieu-thu" % pb, vai="thabok"); phai(s, 403, "Bãi mở phiếu thu tiền khách (trang kế toán) → bị chặn", g)
     s, vs = goi("/api/trips/%s/vouchers" % pb, vai="thabok")
     assert all(v.get("amount_lak") is None for v in (vs or [])), "phiếu lĩnh / tạm ứng gửi cho Bãi không được có số tiền"
     s, pc2 = goi("/api/trips/%s/phieu-chi" % pb, vai="ketoan")

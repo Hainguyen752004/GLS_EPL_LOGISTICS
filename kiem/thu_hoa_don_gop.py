@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """Thử HOÁ ĐƠN GỘP THÁNG — ໃບເກັບເງິນລວມເດືອນ.
 
-    python kiem/thu_hoa_don_gop.py [http://127.0.0.1:8010]
+    python kiem/thu_hoa_don_gop.py [điều xe=http://127.0.0.1:8010] [kế toán=http://127.0.0.1:8030]
+
+Từ 28/09 (đợt 7a) hoá đơn gộp và sổ thu tiền ở TRANG KẾ TOÁN; phiếu vẫn đi luồng ở trang điều xe. Bài này chạy trên CẢ
+HAI máy: lập / khoá phiếu bên điều xe, gộp / thu / huỷ bên kế toán, rồi đọc BẢN CHÉP trên phiếu bên điều xe.
 
 Nghiệp vụ (anh Khampla trả lời 22/09, C8.2 · B3): khách có hợp đồng thì **cuối tháng gộp mọi phiếu
 thành MỘT tờ hoá đơn**; khách vãng lai vẫn mỗi phiếu một tờ như cũ. Chỗ dễ sai nhất không phải là
@@ -14,7 +17,8 @@ lẻ (phải bị chặn) → gộp một tờ → kiểm tiền tờ = cộng h
 phiếu cũ đủ, phiếu sau còn thiếu → thử thu ở phiếu lẻ (phải bị chặn) → thử xoá dòng phân bổ ở
 phiếu (phải bị chặn) → thử huỷ tờ khi đã thu (phải bị chặn) → thu nốt, cả hai phiếu thành "đã thu
 đủ" → xoá lần thu, hai phiếu quay lại "chưa thu" → huỷ tờ, hai phiếu quay lại "chưa xuất hoá
-đơn" → dọn sạch.
+đơn" → dọn sạch. Thêm (đợt 7a): đường cũ bên điều xe trả 409 "đã dời"; trang điều xe tắt thì thu tiền bị chặn, không
+ghi gì; tờ HD / PT sinh ở sổ và vào sổ ngay, huỷ tờ thì rút theo.
 """
 import json
 import sys
@@ -25,17 +29,19 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
+KT = (sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8030").rstrip("/")
 TOKEN = {}
+TOKEN_KT = {}
 SO_PHIEU = ("HDGOP-01/EPL", "HDGOP-02/EPL")
 THANG = "2026-07"
 
 
-def goi(duong, du_lieu=None, vai=None, method=None):
+def goi(duong, du_lieu=None, vai=None, method=None, goc=None):
     dau = {"Content-Type": "application/json"}
     if vai:
-        dau["Authorization"] = "Bearer " + TOKEN[vai]
+        dau["Authorization"] = "Bearer " + (TOKEN_KT if goc == KT else TOKEN)[vai]
     than = json.dumps(du_lieu).encode() if du_lieu is not None else None
-    r = urllib.request.Request(GOC + duong, data=than, headers=dau,
+    r = urllib.request.Request((goc or GOC) + duong, data=than, headers=dau,
                                method=method or ("POST" if than is not None else "GET"))
     try:
         with urllib.request.urlopen(r, timeout=60) as t:
@@ -47,8 +53,19 @@ def goi(duong, du_lieu=None, vai=None, method=None):
             return e.code, {}
 
 
+def kt(duong, du_lieu=None, vai=None, method=None):
+    """Gọi TRANG KẾ TOÁN (hoá đơn, sổ thu tiền ở đó từ 28/09)."""
+    return goi(duong, du_lieu, vai=vai, method=method, goc=KT)
+
+
+def ds_to(g):
+    return g if isinstance(g, list) else ((g or {}).get("ds") or [])
+
+
 def phai(s, mong, buoc, g=None):
     dt_ = (g or {}).get("detail") if isinstance(g, dict) else None
+    if dt_ is None and isinstance(g, dict) and "ma" in g:
+        dt_ = g
     ma = dt_.get("ma", "") if isinstance(dt_, dict) else ""
     print("%s %-62s %s %s" % ("  ✓" if s == mong else "  SAI", buoc, s, ma))
     if s != mong:
@@ -66,10 +83,10 @@ def don():
     s, ds = goi("/api/trips", vai="admin")
     for p in [x for x in ds if x["doc_no"] in SO_PHIEU]:
         if p.get("invoice_id"):
-            s, hd = goi("/api/hoa-don-gop/%s" % p["invoice_id"], vai="doanhthu")
+            s, hd = kt("/api/hoa-don-gop/%s" % p["invoice_id"], vai="doanhthu")
             for x in (hd.get("thu_tien") or []):
-                goi("/api/hoa-don-thu/%s" % x["id"], vai="doanhthu", method="DELETE")
-            goi("/api/hoa-don-gop/%s" % p["invoice_id"], vai="doanhthu", method="DELETE")
+                kt("/api/hoa-don-thu/%s" % x["id"], vai="doanhthu", method="DELETE")
+            kt("/api/hoa-don-gop/%s" % p["invoice_id"], vai="doanhthu", method="DELETE")
         goi("/api/trips/%s/mo-khoa" % p["id"], {}, vai="admin")
         goi("/api/trips/%s" % p["id"], vai="admin", method="DELETE")
 
@@ -96,7 +113,14 @@ def main():
         if s != 200:
             raise SystemExit("Không đăng nhập được %s: %s" % (u, g))
         TOKEN[u] = g["token"]
-    print("✓ đăng nhập 8 vai")
+    for u in ("thabok", "ketoan", "doanhthu", "admin"):
+        s, g = kt("/api/dang-nhap", {"username": u, "password": "1234"})
+        if s != 200:
+            raise SystemExit("Không đăng nhập được %s ở trang kế toán: %s" % (u, g))
+        TOKEN_KT[u] = g["token"]
+    print("✓ đăng nhập 8 vai (điều xe) · 4 vai (kế toán)")
+    s, ch = kt("/api/cau-hinh", vai="admin")
+    dx_cu = ch["dieu_xe_api"]
     don()
 
     s, kh = goi("/api/customers", vai="ketoan")
@@ -130,52 +154,69 @@ def main():
         P.append(p)
 
     # ---------------------------------------------------------------- 3. chưa khoá thì chưa gộp được
-    s, g = goi("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG}, vai="doanhthu")
+    s, g = kt("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG}, vai="doanhthu")
     phai(s, 409, "Chưa phiếu nào khoá → không có gì để gộp", g)
+    s, g = goi("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG}, vai="doanhthu")
+    phai(s, 409, "Đường cũ bên điều xe → 409 'đã dời sang trang kế toán'", g)
 
     g1 = den_khoa(P[0]["id"], 40.0)
     g2 = den_khoa(P[1]["id"], 30.0)
     hd1, hd2 = g1["tinh"]["doanh_thu_lak"], g2["tinh"]["doanh_thu_lak"]
 
     # ---------------------------------------------------------------- 4. khách gộp tháng: không xuất hoá đơn lẻ
-    s, g = goi("/api/trips/%s/invoice" % P[0]["id"], {}, vai="doanhthu")
+    s, g = kt("/api/hoa-don/phieu/%s/xuat" % P[0]["id"], {}, vai="doanhthu")
     phai(s, 409, "Khách gộp tháng → chặn xuất hoá đơn lẻ từng phiếu", g)
 
-    s, g = goi("/api/hoa-don-gop/cho-gop?period=%s" % THANG, vai="doanhthu")
+    s, g = kt("/api/hoa-don-gop/cho-gop?period=%s" % THANG, vai="doanhthu")
     nhom = next((o for o in g["ds"] if o["customer_id"] == khach["id"] and o["ccy"] == "USD"), None)
     assert nhom and nhom["so_phieu"] == 2, "bảng chờ gộp phải thấy 2 phiếu: %s" % g
     print("  ✓ %-62s %s phiếu · %s USD" % ("Bảng chờ gộp thấy đúng khách và tiền", nhom["so_phieu"], nhom["tong"]))
 
-    s, g = goi("/api/hoa-don-gop/cho-gop?period=%s" % THANG, vai="thabok")
+    s, g = kt("/api/hoa-don-gop/cho-gop?period=%s" % THANG, vai="thabok")
     phai(s, 403, "Bãi xem hoá đơn (tiền bán) → bị từ chối", g)
 
     # ---------------------------------------------------------------- 5. gộp một tờ
-    s, g = goi("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG, "inv_date": "2026-07-31"}, vai="ketoan")
+    s, g = kt("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG, "inv_date": "2026-07-31"}, vai="ketoan")
     phai(s, 403, "Kế toán VC gộp hoá đơn → bị từ chối (việc của KT doanh thu)", g)
-    s, HD = goi("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG, "inv_date": "2026-07-31",
-                                     "note": "Hoá đơn gộp thử"}, vai="doanhthu")
+    s, HD = kt("/api/hoa-don-gop", {"customer_id": khach["id"], "period": THANG, "inv_date": "2026-07-31",
+                                    "note": "Hoá đơn gộp thử"}, vai="doanhthu")
     phai(s, 200, "KT doanh thu gộp hoá đơn tháng %s" % THANG, HD)
     assert HD["so_phieu"] == 2, "tờ phải có 2 phiếu: %s" % HD
     bang(HD["amount_lak"], hd1 + hd2, "Tiền tờ gộp = cộng doanh thu hai phiếu (LAK)")
     assert HD["currency"] == "USD", "tờ phải mang tiền cước USD: %s" % HD["currency"]
     print("  ✓ %-62s %s" % ("Số hoá đơn gộp", HD["inv_no"]))
 
-    s, g = goi("/api/chung-tu?loai=HD&limit=10", vai="ketoan")
-    to = next((c for c in g["ds"] if (c.get("mo_ta") or "").find(HD["inv_no"]) >= 0 or c["so"] == HD.get("chung_tu")), None)
-    assert to and abs(to["tien_lak"] - HD["amount_lak"]) < 1, "phải có MỘT chứng từ HD cho cả tờ: %s" % to
-    print("  ✓ %-62s %s · %s %s" % ("Một chứng từ HD cho cả tờ gộp", to["so"], to["tien"], to["tien_te"]))
+    s, g = kt("/api/chung-tu?loai=HD&tu=2026-07-31&den=2026-07-31&limit=1000", vai="admin")
+    to = [c for c in ds_to(g) if c["ref"] == HD.get("chung_tu")]
+    assert len(to) == 1 and abs(to[0]["amount_lak"] - HD["amount_lak"]) < 1 and to[0]["source"] == "EPL_KETOAN" and to[0]["entry_id"], \
+        "phải có MỘT tờ HD sinh ở sổ cho cả tờ, vào sổ ngay: %s" % to
+    print("  ✓ %-62s %s" % ("Một tờ HD cho cả tờ gộp, sinh ngay ở sổ", to[0]["ref"]))
+    hd_ref = HD["chung_tu"]
 
     s, g = goi("/api/trips/%s" % P[0]["id"], vai="doanhthu")
     assert g["invoiced"] and g["invoice_id"] == HD["id"] and g["inv_no"] == HD["inv_no"], "phiếu phải trỏ về tờ gộp: %s" % g
-    print("  ✓ %-62s %s" % ("Phiếu trỏ về tờ gộp", g["inv_no"]))
+    print("  ✓ %-62s %s" % ("Bản chép trên phiếu (điều xe) trỏ về tờ gộp", g["inv_no"]))
+    s, g = goi("/api/trips/%s/mo-khoa" % P[0]["id"], {}, vai="ketoan")
+    phai(s, 409, "Phiếu đã lên hoá đơn → kế toán không mở khoá được", g)
 
     # ---------------------------------------------------------------- 6. thu tiền ở tờ, phân bổ về phiếu
-    s, g = goi("/api/trips/%s/thu-tien" % P[0]["id"], {"amount": 100, "currency": "USD"}, vai="doanhthu")
+    s, g = kt("/api/hoa-don/phieu/%s/thu" % P[0]["id"], {"amount": 100, "currency": "USD"}, vai="doanhthu")
     phai(s, 409, "Ghi thu ở phiếu lẻ của tờ gộp → bị chặn, phải thu ở tờ", g)
 
+    # trang điều xe tắt → không ghi được bản chép → chặn, KHÔNG ghi gì bên sổ
+    kt("/api/cau-hinh", {"dieu_xe_api": "http://127.0.0.1:8097"}, vai="admin", method="PUT")
+    try:
+        s, g = kt("/api/hoa-don-gop/%s/thu-tien" % HD["id"], {"amount": 1000, "currency": "LAK"}, vai="doanhthu")
+        phai(s, 503, "Trang điều xe tắt → thu tiền bị chặn, báo rõ", g)
+    finally:
+        kt("/api/cau-hinh", {"dieu_xe_api": dx_cu}, vai="admin", method="PUT")
+    s, g = kt("/api/hoa-don-gop/%s" % HD["id"], vai="doanhthu")
+    assert not g["thu_tien"] and g["da_thu_lak"] == 0, "trang điều xe tắt mà sổ vẫn ghi lần thu: %s" % g["thu_tien"]
+    print("  ✓ %-62s" % "…và sổ không có lần thu nào (không ghi nửa chừng)")
+
     thu1 = hd1 + round(hd2 * 0.5)            # đủ phiếu 1, một nửa phiếu 2
-    s, HD = goi("/api/hoa-don-gop/%s/thu-tien" % HD["id"],
-                {"pay_date": "2026-08-05", "amount": thu1, "currency": "LAK", "method": "bank", "ref": "UNC-HDG-1"}, vai="doanhthu")
+    s, HD = kt("/api/hoa-don-gop/%s/thu-tien" % HD["id"],
+               {"pay_date": "2026-08-05", "amount": thu1, "currency": "LAK", "method": "bank", "ref": "UNC-HDG-1"}, vai="doanhthu")
     phai(s, 200, "Thu lần một bằng Kíp (đủ phiếu cũ + nửa phiếu sau)", HD)
     bang(HD["da_thu_lak"], thu1, "Tờ gộp ghi nhận đã thu")
     bang(HD["con_lai_lak"], hd1 + hd2 - thu1, "Tờ gộp còn lại")
@@ -189,20 +230,21 @@ def main():
     bang(a["tinh"]["da_thu_lak"], hd1, "Phiếu cũ đã thu = đúng doanh thu của nó")
     bang(b["tinh"]["da_thu_lak"], round(hd2 * 0.5), "Phiếu sau đã thu = nửa doanh thu")
 
-    dong_pb = [x for x in (a.get("thu_tien") or []) if x.get("invoice_payment_id")]
+    s, ak = kt("/api/hoa-don/phieu/%s" % P[0]["id"], vai="doanhthu")
+    dong_pb = [x for x in (ak.get("thu_tien") or []) if x.get("invoice_payment_id")]
     assert dong_pb, "dòng thu ở phiếu phải ghi rõ do tờ gộp phân bổ xuống"
-    s, g = goi("/api/thu-tien/%s" % dong_pb[0]["id"], vai="doanhthu", method="DELETE")
+    s, g = kt("/api/hoa-don/thu/%s" % dong_pb[0]["id"], vai="doanhthu", method="DELETE")
     phai(s, 409, "Xoá lẻ dòng phân bổ ở phiếu → bị chặn", g)
 
-    s, g = goi("/api/hoa-don-gop/%s" % HD["id"], vai="doanhthu", method="DELETE")
+    s, g = kt("/api/hoa-don-gop/%s" % HD["id"], vai="doanhthu", method="DELETE")
     phai(s, 409, "Huỷ tờ khi đã thu tiền → bị chặn", g)
 
     # ---------------------------------------------------------------- 7. thu nốt · thu dư
     con = HD["con_lai_lak"]
-    s, g = goi("/api/hoa-don-gop/%s/thu-tien" % HD["id"], {"amount": con + 500000, "currency": "LAK"}, vai="doanhthu")
+    s, g = kt("/api/hoa-don-gop/%s/thu-tien" % HD["id"], {"amount": con + 500000, "currency": "LAK"}, vai="doanhthu")
     phai(s, 409, "Thu quá số còn lại → phải xác nhận mới ghi", g)
-    s, HD = goi("/api/hoa-don-gop/%s/thu-tien" % HD["id"],
-                {"pay_date": "2026-08-20", "amount": con, "currency": "LAK", "method": "cash"}, vai="doanhthu")
+    s, HD = kt("/api/hoa-don-gop/%s/thu-tien" % HD["id"],
+               {"pay_date": "2026-08-20", "amount": con, "currency": "LAK", "method": "cash"}, vai="doanhthu")
     phai(s, 200, "Thu nốt phần còn lại", HD)
     assert HD["finance_status"] == "paid", "tờ phải thành 'đã thu đủ': %s" % HD["finance_status"]
     s, a = goi("/api/trips/%s" % P[0]["id"], vai="doanhthu")
@@ -211,14 +253,14 @@ def main():
         "cả hai phiếu phải 'đã thu đủ': %s · %s" % (a["finance_status"], b["finance_status"])
     print("  ✓ %-62s" % "Thu đủ tờ gộp → cả hai phiếu đều 'đã thu đủ'")
 
-    s, g = goi("/api/chung-tu?loai=PT&limit=10", vai="ketoan")
-    to_pt = [c for c in g["ds"] if (c.get("mo_ta") or "").find(HD["inv_no"]) >= 0]
-    assert len(to_pt) == 2, "mỗi lần thu ở tờ gộp sinh đúng MỘT phiếu thu: %s" % len(to_pt)
-    print("  ✓ %-62s %s" % ("Hai lần thu → hai tờ PT (không phải mỗi phiếu một tờ)", ", ".join(c["so"] for c in to_pt)))
+    s, g = kt("/api/chung-tu?loai=PT&tu=2026-08-05&den=2026-08-20&limit=1000", vai="admin")
+    to_pt = [c for c in ds_to(g) if (c.get("memo") or "").find(HD["inv_no"]) >= 0]
+    assert len(to_pt) == 2 and all(c["entry_id"] for c in to_pt), "mỗi lần thu ở tờ gộp sinh đúng MỘT phiếu thu, vào sổ ngay: %s" % to_pt
+    print("  ✓ %-62s %s" % ("Hai lần thu → hai tờ PT (không phải mỗi phiếu một tờ)", ", ".join(c["ref"] for c in to_pt)))
 
     # ---------------------------------------------------------------- 8. xoá lần thu → trạng thái lùi lại
     for x in (HD.get("thu_tien") or []):
-        s, HD = goi("/api/hoa-don-thu/%s" % x["id"], vai="doanhthu", method="DELETE")
+        s, HD = kt("/api/hoa-don-thu/%s" % x["id"], vai="doanhthu", method="DELETE")
         phai(s, 200, "Xoá lần thu %s" % x["pay_date"], HD)
     bang(HD["da_thu_lak"], 0, "Tờ gộp về lại chưa thu đồng nào")
     s, a = goi("/api/trips/%s" % P[0]["id"], vai="doanhthu")
@@ -228,8 +270,12 @@ def main():
     print("  ✓ %-62s" % "Xoá hết lần thu → hai phiếu quay về 'chưa thu'")
 
     # ---------------------------------------------------------------- 9. huỷ tờ → phiếu về chưa xuất hoá đơn
-    s, g = goi("/api/hoa-don-gop/%s" % HD["id"], vai="doanhthu", method="DELETE")
+    s, g = kt("/api/hoa-don-gop/%s" % HD["id"], vai="doanhthu", method="DELETE")
     phai(s, 200, "Huỷ tờ hoá đơn gộp", g)
+    s, g = kt("/api/chung-tu?tu=2026-07-31&den=2026-08-20&limit=1000", vai="admin")
+    con = [c["ref"] for c in ds_to(g) if c["ref"] == hd_ref or (c.get("memo") or "").find(HD["inv_no"]) >= 0]
+    assert not con, "huỷ tờ gộp mà sổ còn tờ HD / PT của nó: %s" % con
+    print("  ✓ %-62s" % "Huỷ tờ → tờ HD, PT của nó rút khỏi sổ")
     s, a = goi("/api/trips/%s" % P[0]["id"], vai="doanhthu")
     assert not a["invoiced"] and not a["invoice_id"], "phiếu phải quay về 'chưa xuất hoá đơn': %s" % a
     print("  ✓ %-62s" % "Huỷ tờ → hai phiếu quay về 'chưa xuất hoá đơn'")

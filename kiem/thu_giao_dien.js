@@ -12,7 +12,8 @@ const assert = require('assert');
 const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_System', 'frontend', 'node_modules', 'jsdom'));
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'hoa-don', 'hoa-don-gop', 'chung-tu',
+// 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a)
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'chung-tu',
   'phieu-cua-toi', 'xe-lien-ket', 'tien-tai-xe', 'tat-toan', 'nha-cung-cap',
   'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 

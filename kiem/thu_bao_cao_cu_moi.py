@@ -89,6 +89,13 @@ def xu_huong_cat(cu, moi):
     pct = [x["pct"] for x in moi["hao_hut"]]
     if pct != sorted(pct, reverse=True):
         loi.append("hao_hut không xếp nặng nhất trước")
+    # Mốc "hoá đơn" · "thanh toán" (đợt 7a): bản cũ đọc ngày tờ HD / PT trong sổ chứng từ bên này — tờ của hoá đơn GỘP
+    # không gắn phiếu nên phiếu gộp tháng không có hai mốc đó; bản mới đọc bản chép trang kế toán ghi lên phiếu nên có đủ.
+    # Hai mốc ấy vì vậy không so với bản cũ nữa; mọi mốc khác vẫn phải khớp y hệt.
+    def _bo_moc(x):
+        return dict(x, moc={k: v for k, v in (x.get("moc") or {}).items() if k not in ("hoa_don", "thanh_toan")})
+    cu = dict(cu, dong_thoi_gian=[_bo_moc(x) for x in cu["dong_thoi_gian"]])
+    moi = dict(moi, dong_thoi_gian=[_bo_moc(x) for x in moi["dong_thoi_gian"]])
     dt_cu = {x["doc_no"]: x for x in cu["dong_thoi_gian"]}
     if moi["dong_thoi_gian_tong"] != len(cu["dong_thoi_gian"]):
         loi.append("dong_thoi_gian_tong %s ≠ %d dòng cũ" % (moi["dong_thoi_gian_tong"], len(cu["dong_thoi_gian"])))

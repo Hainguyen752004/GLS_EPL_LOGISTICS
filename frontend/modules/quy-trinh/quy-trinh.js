@@ -94,13 +94,13 @@
         chan: ['Còn cảnh báo mà chưa xác nhận → không khoá', 'Khoá rồi Bãi, tài xế không ghi thêm; đã có hoá đơn thì không mở khoá'], sau: 'Phiếu: Đã khoá 🔒' },
     ] },
     { gd: 'Doanh thu', buoc: [
-      { so: 16, vai: ['rev'], man: 'hoa-don', ten: 'KT Doanh thu lập hoá đơn vận chuyển',
+      { so: 16, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'KT Doanh thu lập hoá đơn vận chuyển',
         lam: ['Khách theo phiếu (không hợp đồng): mỗi phiếu một hoá đơn', 'Khách hợp đồng: gộp các phiếu trong tháng thành một hoá đơn (màn HĐ gộp)'],
         may: ['Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng'], chan: ['Phiếu chưa khoá → chưa lập hoá đơn'],
         giay: ['Hoá đơn vận chuyển (in)'], ct: ['HD'], ct_khi: { HD: 'lúc lập hoá đơn (lẻ hoặc gộp tháng)' }, sau: 'Đã xuất hoá đơn · Chưa thanh toán' },
-      { so: 17, vai: ['rev'], man: 'hoa-don', ten: 'Ghi thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng',
+      { so: 17, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'Ghi thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng',
         lam: ['Ghi từng lần thu: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản', 'Cuối tháng: ghi cấn trừ phần khách đã trả hộ (thẻ cao tốc của khách, trạm dầu Việt Nam ghi nợ)'],
-        may: ['Trạng thái tự suy: chưa thu · thu một phần · đã thu'], chan: ['Thu dư → chặn', 'Lần thu đã đẩy sang sổ kế toán → không xoá được'],
+        may: ['Trạng thái tự suy: chưa thu · thu một phần · đã thu'], chan: ['Thu dư → chặn', 'Trang điều xe tắt → chặn (không ghi được bản chép vào phiếu)', 'Lần thu đẩy sang sổ trước ngày dời (28/09) → không xoá được'],
         giay: ['Biên nhận thu tiền'], ct: ['PT'], ct_khi: { PT: 'mỗi lần thu; cấn trừ ghi PT cách thu "cấn trừ"' }, sau: 'Đã thanh toán' },
     ] },
     { gd: 'Xe liên kết và cuối kỳ', buoc: [
@@ -158,7 +158,7 @@
       { so: 'T2', vai: ['yard'], man: 'kho-hang', o_ke_toan: true, ten: 'Hàng nằm bãi nhiều ngày', lam: ['Xem tồn từng lô ở màn Kho hàng', 'Kế toán điều chỉnh có lý do (cân lại, hao)'], ct: ['DC_HH'] },
       { so: 'T3', vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Phiếu GIAO (xe B) bãi → cảng lấy từ lô', lam: ['Chọn lô và số tấn'],
         may: ['Xe tới: hàng xuất khỏi kho bãi, hao hụt tính theo phiếu'], chan: ['Lấy quá tồn lô → chặn', 'Xoá phiếu gom đã có người lấy hàng → chặn'], ct: ['DO', 'PXK_HH'] },
-      { so: 'T4', vai: ['rev'], man: 'hoa-don-gop', ten: 'Cước riêng từng chặng · hoá đơn gộp tháng', lam: ['Phiếu gom có cước riêng thì lập hoá đơn như phiếu giao', 'Khách hợp đồng: gộp tháng'], ct: ['HD', 'PT'] },
+      { so: 'T4', vai: ['rev'], man: 'hoa-don-gop', o_ke_toan: true, ten: 'Cước riêng từng chặng · hoá đơn gộp tháng', lam: ['Phiếu gom có cước riêng thì lập hoá đơn như phiếu giao', 'Khách hợp đồng: gộp tháng'], ct: ['HD', 'PT'] },
     ] },
     { gd: 'Thẻ cao tốc · trạm dầu Việt Nam · nhà cung cấp', buoc: [
       { so: 'C1', vai: ['acct', 'cash', 'treasury'], man: 'the-cao-toc', ten: 'Thẻ cao tốc (C6.1)',

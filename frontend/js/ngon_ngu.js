@@ -7696,5 +7696,10 @@ window.EPL_TU_DIEN = {
   "vi": "Quy trình & trách nhiệm<span class=\"sub\">Ai nhập – ai kiểm – ai ghi sổ – ai chi tiền</span>",
   "lo": "ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ<span class=\"sub\">ໃຜລົງຂໍ້ມູນ – ໃຜກວດ – ໃຜບັນທຶກ – ໃຜຈ່າຍ</span>",
   "en": "Workflow & responsibility<span class=\"sub\">Who enters – who verifies – who books – who pays</span>"
+ },
+ "thu_o_ke_toan": {
+  "vi": "Sổ thu tiền và hoá đơn ở trang kế toán — bấm nút để mở đúng phiếu này bên đó.",
+  "lo": "ບັນຊີຮັບເງິນ ແລະ ໃບເກັບເງິນ ຢູ່ ປຶ້ມບັນຊີ EPL — ກົດປຸ່ມເພື່ອເປີດໃບນີ້ຢູ່ທີ່ນັ້ນ.",
+  "en": "The payment log and invoices are on the ledger site — press the button to open this slip there."
  }
 };

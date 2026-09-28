@@ -88,13 +88,33 @@ def _doi_ten_cot(c, insp):
             print("  đổi tên cột %s.%s → %s" % (bang, cu, moi))
 
 
+# Khoá ngoại BỎ theo thời gian — cột vẫn giữ, dữ liệu vẫn giữ, chỉ bỏ ràng buộc trỏ vào bảng đã dời đi nơi khác:
+#   28/09/2026 (đợt 7a): hoá đơn gộp tháng ở trang kế toán — trips.invoice_id nay mang mã tờ BÊN ĐÓ, bảng invoices
+#   bên này đứng yên từ ngày dời nên tờ mới không có ở đây; giữ khoá ngoại là không ghi được bản chép.
+BO_KHOA_NGOAI = [
+    ("trips", "invoice_id"),
+]
+
+
+def _bo_khoa_ngoai(c, insp):
+    from sqlalchemy import text
+    co_bang = set(insp.get_table_names())
+    for bang, cot in BO_KHOA_NGOAI:
+        if bang not in co_bang:
+            continue
+        for k in insp.get_foreign_keys(bang):
+            if k.get("name") and k.get("constrained_columns") == [cot]:
+                c.execute(text('ALTER TABLE %s DROP CONSTRAINT IF EXISTS "%s"' % (bang, k["name"])))
+                print("  bỏ khoá ngoại %s.%s → %s" % (bang, cot, k.get("referred_table")))
+
+
 def tao_bang():
     """Dựng bảng còn thiếu, ĐỔI TÊN cột đã đổi tên, và THÊM CỘT còn thiếu vào bảng đã có.
 
     create_all không thêm cột vào bảng đã tồn tại. Không có tầng migration nên khi model có thêm
     cột (ví dụ trips.route_id), ta so cột trong model với cột thật trong DB rồi ALTER TABLE ADD
-    COLUMN cho phần thiếu. Chỉ THÊM, ĐỔI TÊN theo danh sách trên, không đổi kiểu, không xoá — đủ
-    cho hệ này, và không bao giờ làm mất dữ liệu.
+    COLUMN cho phần thiếu. Chỉ THÊM, ĐỔI TÊN và BỎ KHOÁ NGOẠI theo hai danh sách trên, không đổi kiểu, không
+    xoá cột — đủ cho hệ này, và không bao giờ làm mất dữ liệu.
     """
     import models  # noqa: F401 — nạp để Base biết hết bảng
     from sqlalchemy import inspect, text
@@ -111,6 +131,8 @@ def tao_bang():
                     continue
                 kieu = col.type.compile(dialect=engine.dialect)
                 c.execute(text('ALTER TABLE %s ADD COLUMN IF NOT EXISTS "%s" %s' % (bang.name, col.name, kieu)))
+    with engine.begin() as c:
+        _bo_khoa_ngoai(c, inspect(engine))
     tao_chi_muc()
 
 

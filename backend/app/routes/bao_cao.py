@@ -17,8 +17,8 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, Customer, Invoice, InvoicePayment, Part, Route, RouteStop, Supplier, TollCard,
-                    TollCardMove, Trip, TripEvent, TripExpense, TripPayment, TripSection, Voucher)
+from models import (ChungTu, Customer, Part, Route, RouteStop, Supplier, TollCard,
+                    TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
 from fastapi import Body
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
@@ -26,6 +26,7 @@ from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
+from services import goi_ke_toan as KT
 
 router = APIRouter()
 
@@ -65,7 +66,8 @@ COT_TINH = (Trip.id, Trip.doc_no, Trip.doc_date, Trip.out_date, Trip.back_date, 
             Trip.customer_name, Trip.driver_name, Trip.truck_no, Trip.route_id, Trip.transport_status,
             Trip.finance_status, Trip.invoiced, Trip.locked, Trip.weight_origin, Trip.weight_dest, Trip.price,
             Trip.price_ccy, Trip.price_mode, Trip.hire_price, Trip.hire_ccy, Trip.fee_pct, Trip.over_limit_t,
-            Trip.over_price, Trip.rate_usd, Trip.rate_thb, Trip.rate_vnd, Trip.rate_cny, Trip.odo_out, Trip.odo_back)
+            Trip.over_price, Trip.rate_usd, Trip.rate_thb, Trip.rate_vnd, Trip.rate_cny, Trip.odo_out, Trip.odo_back,
+            Trip.invoiced_date, Trip.last_paid_date)
 
 
 def _trong(dau, cuoi):
@@ -90,8 +92,8 @@ def _dong_gon(db, dau, cuoi, *loc):
 
 
 def _da_thu_gon(db, dau, cuoi, *loc):
-    q = (db.query(TripPayment.trip_id, func.coalesce(func.sum(TripPayment.amount_lak), 0))
-         .join(Trip, Trip.id == TripPayment.trip_id).filter(*_trong(dau, cuoi), *loc).group_by(TripPayment.trip_id))
+    # sổ thu tiền ở trang kế toán từ 28/09 (đợt 7a): tổng đã thu là bản chép trips.collected_lak bên đó ghi sang
+    q = db.query(Trip.id, Trip.collected_lak).filter(*_trong(dau, cuoi), *loc, Trip.collected_lak > 0)
     return {t: float(v or 0) for t, v in q}
 
 
@@ -144,8 +146,7 @@ def _dong_loc(db, *loc):
 
 
 def _da_thu_loc(db, *loc):
-    q = (db.query(TripPayment.trip_id, func.coalesce(func.sum(TripPayment.amount_lak), 0))
-         .join(Trip, Trip.id == TripPayment.trip_id).filter(*loc).group_by(TripPayment.trip_id))
+    q = db.query(Trip.id, Trip.collected_lak).filter(*loc, Trip.collected_lak > 0)
     return {t: float(v or 0) for t, v in q}
 
 
@@ -249,10 +250,6 @@ def _xh_lo(db, cac_ngay):
     so_diem = {}                             # route_id → số điểm trên tuyến
     for r_id, n in db.query(RouteStop.route_id, RouteStop.seq).all():
         so_diem[r_id] = max(so_diem.get(r_id, 0), n or 0)
-    ct = defaultdict(dict)                   # trip_id → {loai: ngày}
-    for c in (db.query(ChungTu.trip_id, ChungTu.loai, ChungTu.ngay).join(Trip, Trip.id == ChungTu.trip_id)
-              .filter(*loc, ChungTu.loai.in_(("HD", "PT")))):
-        ct[c.trip_id][c.loai] = c.ngay
     xong_ra = defaultdict(list)              # dòng thời gian đã thanh toán & đã về: mỗi ngày chỉ cần 60 dòng mới nhất
     for i, p in enumerate(ds):
         k = p.doc_date.isoformat()
@@ -289,7 +286,7 @@ def _xh_lo(db, cac_ngay):
         if p.transport_status == "arrived": o["chua_thu_ve"] += c["con_lai_lak"]
         if p.transport_status != "arrived" and ngay_di is not None:           # "đi lâu" tính lúc ghép (theo hôm nay)
             o["khong_ve"][ngay_di.isoformat()] = o["khong_ve"].get(ngay_di.isoformat(), 0) + 1
-        # dòng thời gian: mốc từ sự kiện "tới điểm" và từ Sổ chứng từ
+        # dòng thời gian: mốc từ sự kiện "tới điểm"; hoá đơn · thanh toán từ bản chép trang kế toán ghi sang
         diem = ma_diem.get(p.id, {})
         n_diem = so_diem.get(p.route_id, 0)
         cang = diem.get(n_diem) if n_diem else None
@@ -300,8 +297,8 @@ def _xh_lo(db, cac_ngay):
             "toi_bai": diem[2].isoformat() if 2 in diem else None,
             "cua_khau": diem[3].isoformat() if (n_diem >= 4 and 3 in diem) else None,
             "cang": cang.isoformat() if cang else None,
-            "hoa_don": ct[p.id]["HD"].isoformat() if ct[p.id].get("HD") else None,
-            "thanh_toan": ct[p.id]["PT"].isoformat() if ct[p.id].get("PT") else None,
+            "hoa_don": p.invoiced_date.isoformat() if p.invoiced_date else None,
+            "thanh_toan": p.last_paid_date.isoformat() if p.last_paid_date else None,
         }
         dong_tg = {"doc_no": p.doc_no, "so_xe": p.truck_no, "khach": p.customer_name,
                    "trang_thai": "planned" if p.transport_status == "dispatched" else p.transport_status,
@@ -564,8 +561,8 @@ def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, comp
               .filter(TripExpense.trip_id.in_(db.query(con.c.id)))
               .group_by(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl)):
         dong[r.trip_id].append(r)
-    thu = {t: float(v or 0) for t, v in (db.query(TripPayment.trip_id, func.coalesce(func.sum(TripPayment.amount_lak), 0))
-                                         .filter(TripPayment.trip_id.in_(db.query(con.c.id))).group_by(TripPayment.trip_id))}
+    thu = {t: float(v or 0) for t, v in (db.query(Trip.id, Trip.collected_lak)
+                                         .filter(Trip.id.in_(db.query(con.c.id)), Trip.collected_lak > 0))}
     dich = (quy or "").strip().upper() or None
     tong = {"doanh_thu": defaultdict(float), "da_thu": defaultdict(float), "con_lai": defaultdict(float), "lai": defaultdict(float)}
     chi = 0.0
@@ -696,11 +693,15 @@ def _can_tru_tinh(db, thang, dau, cuoi):
     ref = "CT-%s" % dau.strftime("%Y%m")
     da_ghi = _da_ghi_can_tru(db, ref)
     ra = []
+    biet = da_ghi is not None
+    da_ghi = da_ghi or {}
     for o in theo_khach.values():
         o["cuoc_lak"] = round(o["cuoc_lak"]); o["the_lak"] = round(o["the_lak"]); o["dau_vn_lak"] = round(o["dau_vn_lak"])
         o["can_tru_lak"] = o["the_lak"] + o["dau_vn_lak"]
         o["da_ghi_lak"] = round(da_ghi.get(o["customer_id"], 0.0))
         o["chua_ghi_lak"] = o["can_tru_lak"] - o["da_ghi_lak"]   # phần chưa ghi thành phiếu thu
+        if not biet:                                             # trang kế toán tắt: không biết đã ghi bao nhiêu
+            o["da_ghi_lak"] = o["chua_ghi_lak"] = None
         o["con_thu_lak"] = o["cuoc_lak"] - o["can_tru_lak"]
         if o["can_tru_lak"] or o["cuoc_lak"]:
             ra.append(o)
@@ -712,17 +713,15 @@ def _can_tru_tinh(db, thang, dau, cuoi):
 
 
 def _da_ghi_can_tru(db, ref):
-    """{customer_id: LAK đã ghi} của các phiếu thu cách thu `offset` mang ref này. Thu ở tờ gộp thì
-    chỉ đếm dòng invoice_payments (dòng rải xuống phiếu là con của nó, đếm nữa là gấp đôi)."""
-    ra = {}
-    for x, hd in (db.query(InvoicePayment, Invoice).join(Invoice, Invoice.id == InvoicePayment.invoice_id)
-                  .filter(InvoicePayment.method == "offset", InvoicePayment.ref == ref).all()):
-        ra[hd.customer_id] = ra.get(hd.customer_id, 0.0) + (x.amount_lak or 0)
-    for x, p in (db.query(TripPayment, Trip).join(Trip, Trip.id == TripPayment.trip_id)
-                 .filter(TripPayment.method == "offset", TripPayment.ref == ref,
-                         TripPayment.invoice_payment_id.is_(None)).all()):
-        ra[p.customer_id] = ra.get(p.customer_id, 0.0) + (x.amount_lak or 0)
-    return ra
+    """{customer_id: LAK đã ghi} của các lần thu cách thu `offset` mang ref này — sổ thu tiền ở TRANG KẾ TOÁN từ 28/09
+    (đợt 7a), nên hỏi sang. Trang đó tắt thì trả None: bảng cấn trừ vẫn mở, phần "đã ghi / chưa ghi" để trống (không
+    phải 0 — 0 là nói "chưa ghi gì", sai khi thật ra không biết)."""
+    try:
+        return {k: float(v or 0) for k, v in (KT.goi(db, "GET", "/api/lien-thong/doanh-thu/can-tru?ref=%s" % ref) or {}).items()}
+    except HTTPException as e:
+        if e.status_code == 503:
+            return None
+        raise
 
 
 @router.post("/api/bao-cao/can-tru/ghi")
@@ -730,17 +729,11 @@ def ghi_can_tru(data: dict = Body(...), db: Session = Depends(get_db), user=Depe
     """GHI CẤN TRỪ THÁNG cho một khách: những gì khách đã trả hộ (thẻ cao tốc · nợ trạm dầu VN) trong
     tháng mà chưa ghi, biến thành **phiếu thu cách thu "cấn trừ"** trên chính hoá đơn của khách đó.
 
-    Cách ghi không có gì mới: gọi đúng hai hàm ghi thu đang dùng cho nút "Ghi một lần thu" — thu ở tờ
-    gộp thì rải về phiếu, thu ở phiếu lẻ thì ghi thẳng — chỉ khác `method = offset`. Nên sổ thu tiền
-    vẫn một kiểu dòng, tờ PT vẫn một kiểu tờ, và trạng thái từng phiếu tự đổi như mọi lần thu khác.
-
-    Thứ tự bù: hoá đơn gộp cũ trước, rồi phiếu lẻ cũ trước. "Đã ghi" không cần cột đánh dấu: nó là
-    tổng các phiếu thu `offset` mang ref `CT-YYYYMM` của khách — đọc từ chính sổ thu tiền, nên gọi lại
-    bao nhiêu lần cũng chỉ ghi phần còn thiếu. Khách trả hộ nhiều hơn cước còn phải thu thì phần dư để
-    lại tháng sau — không ghi thu dư.
+    Bảng cấn trừ tính ở đây (thẻ cao tốc, trạm dầu là dữ liệu bên này); sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a)
+    nên phần GHI do bên đó làm, đúng cách cũ: hoá đơn gộp cũ trước, rồi phiếu lẻ cũ trước, mỗi đích một tờ PT cách thu
+    "cấn trừ" mang ref CT-YYYYMM; khách trả hộ nhiều hơn cước còn phải thu thì phần dư để lại tháng sau. Trang kế toán
+    tắt thì chặn và báo rõ — không ghi nửa chừng.
     """
-    from routes.phieu import ghi_thu_phieu
-    from routes.hoa_don import ghi_thu_hoa_don, xuat_hd
     if user.role not in ("rev", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán doanh thu ghi cấn trừ."})
     kh = db.get(Customer, str(data.get("customer_id") or ""))
@@ -749,49 +742,20 @@ def ghi_can_tru(data: dict = Body(...), db: Session = Depends(get_db), user=Depe
     thang = data.get("thang")
     bang = can_tru(thang, db, user)
     o = next((x for x in bang["ds"] if x["customer_id"] == kh.id), None)
+    if o is not None and o["chua_ghi_lak"] is None:
+        raise HTTPException(503, {"ma": "CHUA_NOI_KE_TOAN", "loi": "Chưa nối được trang kế toán — sổ thu tiền ở bên đó, chưa ghi cấn trừ được."})
     chua_ghi = float(o["chua_ghi_lak"]) if o else 0.0
     if chua_ghi <= 0:
         raise HTTPException(409, {"ma": "KHONG_CO_GI", "loi": "Tháng này khách %s không còn khoản trả hộ nào chưa ghi." % kh.name})
     _ds, dau, cuoi = _phieu_thang(db, thang)
-    ref = "CT-%s" % dau.strftime("%Y%m")
     ngay = _ngay_ct(data.get("pay_date")) or dt.date.today()
-
-    # ---- chỗ để bù: hoá đơn gộp còn nợ (cũ trước), rồi phiếu lẻ đã xuất hoá đơn còn nợ (cũ trước)
-    dich = []        # (loại, đối tượng, còn lại LAK)
-    for hd in (db.query(Invoice).filter(Invoice.customer_id == kh.id).order_by(Invoice.inv_date, Invoice.inv_no).all()):
-        r = xuat_hd(db, hd)
-        if r["con_lai_lak"] > 0:
-            dich.append(("hd", hd, float(r["con_lai_lak"])))
-    ds_p = db.query(Trip).filter(Trip.customer_id == kh.id, Trip.invoiced.is_(True), Trip.invoice_id.is_(None),
-                                 Trip.finance_status != "paid").order_by(Trip.doc_date, Trip.doc_no).all()
-    thu = da_thu_theo_phieu(db, [p.id for p in ds_p])
-    for p in ds_p:
-        k = tinh_phieu(p, db.query(TripExpense).filter(TripExpense.trip_id == p.id).all(), thu.get(p.id, 0))
-        if k["con_lai_lak"] > 0:
-            dich.append(("phieu", p, float(k["con_lai_lak"])))
-    if not dich:
-        raise HTTPException(409, {"ma": "KHONG_CON_NO", "loi": "Khách %s không còn hoá đơn nào chưa thu để cấn trừ vào." % kh.name})
-
-    # ---- bù dần: mỗi đích một tờ PT cách thu "cấn trừ"; hết chỗ bù thì phần còn lại để tháng sau
-    con = chua_ghi
-    phieu_thu = []
-    ghi_chu = "Cấn trừ tháng %s: khách trả hộ qua thẻ cao tốc / trạm dầu Việt Nam" % dau.strftime("%m/%Y")
-    for loai, dt_, con_lai in dich:
-        if con <= 0.5:
-            break
-        tien_lak = round(min(con, con_lai))
-        if tien_lak <= 0:
-            continue
-        if loai == "hd":
-            ghi_thu_hoa_don(db, dt_, user, tien_lak, "LAK", 1.0, "offset", ngay=ngay, ref=ref, note=ghi_chu)
-            phieu_thu.append({"loai": "hoa_don_gop", "so": dt_.inv_no, "tien_lak": tien_lak})
-        else:
-            ghi_thu_phieu(db, dt_, user, tien_lak, "LAK", 1.0, "offset", ngay=ngay, ref=ref, note=ghi_chu)
-            phieu_thu.append({"loai": "phieu", "so": dt_.doc_no, "tien_lak": tien_lak})
-        con -= tien_lak
+    # Trả kết nối DB trước khi gọi sang: bên kia ghi xong sẽ gọi NGƯỢC lại đây để ghi bản chép vào phiếu — giao dịch
+    # này còn giữ khoá (bảng đệm báo cáo vừa ghi) thì lời gọi ngược phải đứng chờ.
     db.commit()
-    return {"customer_id": kh.id, "customer_name": kh.name, "thang": dau.strftime("%Y-%m"), "ref": ref,
-            "ghi_lak": round(chua_ghi - con), "de_lai_lak": round(con), "phieu_thu": phieu_thu}
+    return KT.goi(db, "POST", "/api/lien-thong/doanh-thu/can-tru", {
+        "customer_id": kh.id, "customer_name": kh.name, "thang": dau.strftime("%Y-%m"), "ref": "CT-%s" % dau.strftime("%Y%m"),
+        "pay_date": ngay.isoformat(), "tien_lak": round(chua_ghi),
+        "note": "Cấn trừ tháng %s: khách trả hộ qua thẻ cao tốc / trạm dầu Việt Nam" % dau.strftime("%m/%Y")}, nguoi=user)
 
 
 def _ngay_ct(v):

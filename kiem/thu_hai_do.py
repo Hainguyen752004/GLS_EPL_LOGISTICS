@@ -210,7 +210,7 @@ def main():
     assert any(x["loai"] == "hao_hut" for x in g["goods"]), "dòng hao hụt của phiếu gom phải còn nguyên sau các lần bị từ chối"
     # B4 (anh Khampla 22/09): phiếu gom CÓ cước riêng, nên không còn bị chặn vì LOẠI phiếu —
     # chỉ còn chặn theo bước như mọi phiếu (mục II chưa kiểm, phiếu chưa khoá).
-    s, g = goi("/api/trips/%s/invoice" % gom["id"], {}, vai="doanhthu")
+    s, g = K.kt("/api/hoa-don/phieu/%s/xuat" % gom["id"], {}, vai="doanhthu")      # hoá đơn ở trang kế toán (đợt 7a)
     ma = (g.get("detail") or {}).get("ma") if isinstance(g, dict) else None
     assert s == 409 and ma in ("CHUA_KIEM", "CHUA_KHOA"), "phiếu gom chưa kiểm/khoá phải bị chặn theo BƯỚC, không phải theo loại: %s %s" % (s, ma)
     assert ma != "PHIEU_GOM", "không được chặn hoá đơn chỉ vì là phiếu gom nữa"

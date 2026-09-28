@@ -370,8 +370,15 @@ class Trip(Base):
     # Trạng thái
     transport_status = Column(String, nullable=False, default="dispatched")
     finance_status = Column(String, nullable=False, default="unpaid")
+    # Hoá đơn và thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a). Bốn cột dưới là BẢN CHÉP trạng thái bên đó ghi sang mỗi
+    # lần xuất hoá đơn / thu tiền (đường /api/lien-thong/doanh-thu/…) — để khoá phiếu, chặn mở khoá và báo cáo bên
+    # này chạy như cũ mà không phải hỏi sang. Bên đó không nối được thì bên đó chặn, nên bản chép không bao giờ lệch.
     invoiced = Column(Boolean, nullable=False, default=False)
-    invoice_id = Column(String, ForeignKey("invoices.id"))    # nằm trong tờ hoá đơn gộp tháng nào (trống = hoá đơn riêng)
+    invoice_id = Column(String)                                # mã tờ hoá đơn gộp tháng bên trang kế toán (trống = hoá đơn riêng)
+    inv_no = Column(String)                                    # số tờ gộp (HDT-202609-01)
+    invoiced_date = Column(Date)                               # ngày xuất hoá đơn
+    collected_lak = Column(Float, default=0)                   # tổng đã thu quy Kíp (Σ các lần thu bên trang kế toán)
+    last_paid_date = Column(Date)                              # ngày lần thu gần nhất
     # Bước 14: xe về, kế toán rà cả phiếu rồi KHOÁ. Khoá rồi Bãi không sửa gì nữa; chỉ phiếu đã khoá mới xuất hoá đơn.
     locked = Column(Boolean, nullable=False, default=False)
     locked_by = Column(String)

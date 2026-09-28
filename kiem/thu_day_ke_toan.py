@@ -64,6 +64,7 @@ def main():
     print("✓ đăng nhập 3 vai")
 
     goc_cau_hinh = _cat_cau_hinh()
+    tao = []                  # phiếu thử bài này tự lập (xoá ở cuối)
     may = HTTPServer(("127.0.0.1", CONG_GIA), MayNhanGia)
     threading.Thread(target=may.serve_forever, daemon=True).start()
     print("✓ máy nhận giả (đóng vai API anh Khang) nghe ở :%d" % CONG_GIA)
@@ -88,8 +89,22 @@ def main():
         s, g = goi("/api/chung-tu/day", {}, vai="thabok")
         phai(s, 403, "Bãi bấm đẩy → bị từ chối", g)
 
-        # 3. đẩy một tờ chưa đẩy
+        # 3. đẩy một tờ chưa đẩy. Từ 28/09 (đợt 7a) tờ HD / PT sinh thẳng ở trang kế toán, hộp thư đi có thể không còn đủ
+        #    hai tờ chưa đẩy → tự lập phiếu thử (mỗi phiếu một tờ DO), xoá ở cuối bài
         s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan")
+        if len(ds["ds"]) < 2:
+            import datetime as _dt
+            s, xe = goi("/api/vehicles", vai="thabok"); s, tx = goi("/api/drivers", vai="thabok")
+            # xe, tài xế RẢNH trước: xoá phiếu thử trả xe / tài xế về "rảnh" — đừng lấy xe đang chạy chuyến khác
+            xe = sorted([x for x in xe if x.get("owner_type") != "joint" and x.get("active") is not False] or xe, key=lambda x: x.get("status") != "available")
+            tx = sorted(tx, key=lambda x: x.get("status") != "available")
+            hom = _dt.date.today().isoformat()
+            for i in range(2 - len(ds["ds"])):
+                s, p = goi("/api/trips", {"kind": "gom", "company": "EPL", "vehicle_id": xe[i % len(xe)]["id"], "driver_id": tx[i % len(tx)]["id"],
+                                          "doc_date": hom, "out_date": hom, "goods_type": "iron_ore", "expenses": []}, vai="thabok")
+                phai(s, 200, "Hộp thư đi thiếu tờ chưa đẩy → lập phiếu thử %d (sinh tờ DO)" % (i + 1), p)
+                tao.append(p["id"])
+            s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan")
         assert ds["ds"], "phải còn tờ chưa đẩy để thử (gieo lại DB nếu hết)"
         to = ds["ds"][0]
         s, g = goi("/api/chung-tu/%s/day" % to["id"], {}, vai="ketoan")
@@ -145,6 +160,9 @@ def main():
         for c in ds["ds"]:
             if c["da_day"] and (c.get("ma_ben_ke_toan") or "").startswith("KT-"):
                 goi("/api/chung-tu/%s/da-day" % c["id"], {"da_day": False}, vai="ketoan")
+        for pid in tao:                          # phiếu thử tự lập: xoá hẳn, tờ DO chưa đẩy của nó rút theo
+            s, g = goi("/api/trips/%s" % pid, vai="thabok", method="DELETE")
+            print("  · xoá phiếu thử tự lập: %s" % s)
         may.shutdown()
         print("  · đã xoá cấu hình thử và mở lại các tờ đã đẩy vào máy giả")
 

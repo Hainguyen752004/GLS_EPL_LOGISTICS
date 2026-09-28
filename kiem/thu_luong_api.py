@@ -203,7 +203,7 @@ def main():
     s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="ketoan"); phai(s, 403, "Kế toán báo xe về → bị từ chối", g)
     s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="thabok"); phai(s, 200, "Báo đã về: ngày 16/09, km 1500", g)
     assert g["transport_status"] != "arrived" and g["back_date"] == "2026-09-16" and g["odo_back"] == 1500, "báo về chỉ ghi số, không tự chuyển sang đã tới: %s" % g["transport_status"]
-    s, g = goi("/api/trips/%s/invoice" % P, {}, vai="thabok"); phai(s, 403, "Bãi lập hoá đơn → bị từ chối", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s/xuat" % P, {}, vai="thabok"); phai(s, 403, "Bãi lập hoá đơn (trang kế toán) → bị từ chối", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 40.5, "back_date": "2026-09-16"}, vai="thabok")
     phai(s, 200, "Bãi báo xe đã tới, cân cuối 40,5 t", g)
     # Trạng thái phải nhất quán: đã giao hàng thì coi như qua hết chặng, và số ngày đi dừng ở ngày về.
@@ -235,9 +235,9 @@ def main():
     ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]
     assert g["tinh"]["tra_chu_xe"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe"], thue, phi, vuot, ung)
-    s, g = goi("/api/trips/%s/thu-tien" % P, {"amount": 100, "currency": "USD"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s/thu" % P, {"amount": 100, "currency": "USD"}, vai="doanhthu"); phai(s, 409, "Ghi thu trước khi có hoá đơn → sai bước", g)
     # ---- 4b. Bước 14: kế toán rà lại rồi KHOÁ. Chưa khoá thì chưa có hoá đơn; khoá rồi Bãi hết sửa.
-    s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 409, "Lập hoá đơn khi phiếu chưa khoá → sai bước", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s/xuat" % P, {}, vai="doanhthu"); phai(s, 409, "Lập hoá đơn khi phiếu chưa khoá → sai bước", g)
     s, g = goi("/api/trips/%s/khoa" % P, {}, vai="thabok"); phai(s, 403, "Bãi khoá phiếu → bị từ chối", g)
     s, g = goi("/api/trips/%s/kiem-lai" % P, vai="ketoan"); phai(s, 200, "Kế toán bấm Kiểm lại → bảng cảnh báo", g)
     ma_cb = [x["ma"] for x in g["canh_bao"]]
@@ -251,10 +251,12 @@ def main():
     assert g["locked"] and g["locked_by"], g.get("locked")
     s, g = goi("/api/trips/%s" % P, {"odo_back": 9999}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa phiếu đã khoá → bị chặn", g)
     s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="thabok"); phai(s, 403, "Bãi trả chủ xe → bị từ chối", g)
-    s, g = goi("/api/trips/%s/invoice" % P, {}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu lập hoá đơn", g)
-    s, g = goi("/api/trips/%s/thu-tien" % P, {"amount": g["tinh"]["con_lai"], "currency": g["tinh"]["ccy"]}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu ghi đã thu tiền", g)
-    assert g["finance_status"] == "paid", "thu đủ thì trạng thái phải tự sang đã thu: %s" % g["finance_status"]
-    assert g["invoiced"] and g["finance_status"] == "paid"
+    s, g = K.kt("/api/hoa-don/phieu/%s/xuat" % P, {}, vai="doanhthu"); phai(s, 200, "Kế toán doanh thu lập hoá đơn (trang kế toán)", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s/thu" % P, {"amount": g["hoa_don"]["con_lai"], "currency": g["hoa_don"]["ccy"]}, vai="doanhthu")
+    phai(s, 200, "Kế toán doanh thu ghi đã thu tiền (trang kế toán)", g)
+    assert g["hoa_don"]["finance_status"] == "paid", "thu đủ thì trạng thái phải tự sang đã thu: %s" % g["hoa_don"]["finance_status"]
+    s, g = goi("/api/trips/%s" % P, vai="doanhthu")
+    assert g["invoiced"] and g["finance_status"] == "paid", "bản chép trên phiếu phải là đã xuất hoá đơn · đã thu: %s %s" % (g["invoiced"], g["finance_status"])
     # ---- 4c. Xe liên kết: quỹ trả chủ xe một lần → chứng từ PC_CX
     s, g = goi("/api/trips/%s/tra-chu-xe" % P, {}, vai="quytb"); phai(s, 200, "Quỹ trả chủ xe liên kết", g)
     assert g["owner_paid"] and g["owner_paid_usd"] == g["tinh"]["tra_chu_xe"], (g["owner_paid_usd"], g["tinh"]["tra_chu_xe"])
@@ -277,6 +279,11 @@ def main():
     phai(s, 409, "Trang điều xe không còn nhập / xuất phụ tùng (đã dời sang kế toán)", g)
     s, g = K.kt("/api/phu-tung/%s/nhap-xuat" % pt["id"], {"kind": "in", "qty": 1, "note": "hoàn trả sau thử luồng"}, vai="thabok")
     phai(s, 403, "Bãi nhập kho phụ tùng ở trang kế toán → bị từ chối (C1.2)", g)
+    s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 409, "Phiếu còn hoá đơn bên kế toán → chưa xoá được", g)
+    s, h = K.kt("/api/hoa-don/phieu/%s" % P, vai="admin")
+    for x in h.get("thu_tien") or []:
+        s, g = K.kt("/api/hoa-don/thu/%s" % x["id"], vai="admin", method="DELETE"); phai(s, 200, "Sếp xoá lần thu của phiếu thử (trang kế toán)", g)
+    s, g = K.kt("/api/hoa-don/phieu/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Sếp huỷ hoá đơn phiếu thử (trang kế toán)", g)
     s, g = goi("/api/trips/%s" % P, vai="admin", method="DELETE"); phai(s, 200, "Admin xoá phiếu thử (dọn)", g)
     # xoá phiếu → phụ tùng mục V về kho bên trang kế toán, tờ PXK_PT của phiếu rút theo
     s, parts3 = goi("/api/parts", vai="thabok")

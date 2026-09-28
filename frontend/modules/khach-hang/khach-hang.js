@@ -44,12 +44,15 @@
     </div>`;
     root.querySelector('#kh-no-than').innerHTML = (NO.dong || []).length ? NO.dong.map(x => `<tr class="${x.con_lai_lak > 0 ? '' : 'kh-tat'}">
       <td>${NN.h(x.loai === 'gop' ? 'kh_no_gop' : 'kh_no_phieu')}${x.loai === 'gop' ? ` <span class="small muted">· ${x.so_phieu} ${NN.t('hg_so_phieu').toLowerCase()}</span>` : ''}</td>
-      <td class="mono"><a href="#/${x.loai === 'gop' ? 'hoa-don-gop?id=' : 'phieu-xuat-xe?id='}${esc(x.id)}">${esc(x.so)}</a></td>
+      <td class="mono">${x.loai === 'gop' ? `<a href="" data-kt-gop="${esc(x.id)}" data-thang="${esc(String(x.ngay || '').slice(0, 7))}">${esc(x.so)} ↗</a>` : `<a href="#/phieu-xuat-xe?id=${esc(x.id)}">${esc(x.so)}</a>`}</td>
       <td>${EPL.ngay(x.ngay)}</td><td class="mono">${esc(x.ccy)}</td>
       <td class="num"><b>${EPL.tien(x.tien, x.ccy)}</b></td><td class="num">${so(x.tien_lak, 0)}</td>
       <td class="num">${so(x.da_thu_lak, 0)}</td><td class="num ${x.con_lai_lak > 0 ? 'neg' : ''}">${so(x.con_lai_lak, 0)}</td>
       <td>${EPL.tag(x.finance_status)}</td></tr>`).join('')
       : `<tr><td colspan="9" class="empty">${NN.h('kh_no_trong')}</td></tr>`;
+    // tờ gộp tháng ở trang kế toán từ 28/09 (đợt 7a) — mở bên đó
+    root.querySelectorAll('#kh-no-than [data-kt-gop]').forEach(a => a.addEventListener('click', (e) => {
+      e.preventDefault(); EPL.moKeToan('hoa-don-gop', { thang: a.dataset.thang, id: a.dataset.ktGop }); }));
   }
 
   /* ---------------------------------------------------------------- bảng giá khách × tuyến */

@@ -28,6 +28,8 @@ SO = os.path.join(os.path.dirname(GOC), "EPL_KETOAN", "backend", "app")
 # tiến trình con KHÔNG mang DATABASE_URL của epl_lao (database.py bên này đã nạp vào môi trường) — sổ tự đọc .env
 # của nó; mang sang thì sổ từ chối chạy (chốt an toàn "không dùng chung DB") — đúng như vậy.
 MOI_TRUONG = {k: v for k, v in os.environ.items() if k != "DATABASE_URL"}
+if os.getenv("EPL_KETOAN_DATABASE_URL"):          # máy thử trên bản sao epl_ketoan_<hậu tố>
+    MOI_TRUONG["DATABASE_URL"] = os.environ["EPL_KETOAN_DATABASE_URL"]
 
 
 def goi_so(ma, *tham, dau_vao=""):
@@ -265,6 +267,9 @@ if THAT:
 #      thử của bộ kiểm → xoá (tồn dầu tính cộng dồn từ sổ nên tự về đúng), rút tờ kho nó sinh ra;
 #   a3) sổ kho hàng (ở đó từ 28/09, đợt 5): dòng của phiếu / lô (phiếu gom) không còn bên này → xoá, rút PNK_HH / PXK_HH /
 #      DC_HH nó sinh ra;
+#   a4) sổ doanh thu (ở đó từ 28/09, đợt 7a): hoá đơn / lần thu SINH Ở SỔ (tờ của nó là EPL_KETOAN) là của bộ kiểm — bộ
+#      mẫu chỉ có hoá đơn, lần thu dời từ trang điều xe (tờ EPL_LAO); của phiếu không còn bên này cũng gỡ. Rút tờ theo.
+#      Bước 11 dưới điền lại bản chép trên phiếu bên này theo đúng sổ đó;
 #   b) tờ ĐẨY TỪ EPL_LAO mà nguồn bên này không còn → xoá cùng bút toán. Tờ kho SINH Ở SỔ (source EPL_KETOAN) thì không
 #      bao giờ xoá theo cách này — nó không có bản bên này để so.
 MA = """
@@ -373,6 +378,42 @@ for x in ban_kt:                                   # dòng xuất kho của chú
 if ban_kt:
     print("  phiếu bán thử (sổ kế toán): %s" % ", ".join(sorted(x.doc_no for x in ban_kt)))
 db.flush()
+# a4) sổ doanh thu
+def to_nguon(bang, i):
+    return db.query(M.Voucher).filter(M.Voucher.nguon_bang == bang, M.Voucher.nguon_id == str(i)).first()
+def la_mau(bang, i):
+    v = to_nguon(bang, i)
+    return v is not None and v.source != "EPL_KETOAN"
+def rut_nguon(bang, i):
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == bang, M.Voucher.nguon_id == str(i)).all():
+        xoa_to(v)
+hd_thu = {h.id: h for h in db.query(M.Invoice).all() if not la_mau("invoices", h.id)}
+ti_all = db.query(M.TripInvoice).all()
+for h in db.query(M.Invoice).all():                # tờ gộp có phiếu không còn bên này → cả tờ là của bộ kiểm
+    if any(t.invoice_id == h.id and t.trip_id not in con_trip for t in ti_all):
+        hd_thu[h.id] = h
+ip_thu = [x for x in db.query(M.InvoicePayment).all() if x.invoice_id in hd_thu or not la_mau("invoice_payments", x.id)]
+tp_thu = [x for x in db.query(M.TripPayment).all()
+          if x.trip_id not in con_trip or (not x.invoice_payment_id and not la_mau("trip_payments", x.id))
+          or (x.invoice_payment_id and x.invoice_payment_id in {i.id for i in ip_thu})]
+ti_thu = [t for t in ti_all if t.trip_id not in con_trip or t.invoice_id in hd_thu
+          or (not t.invoice_id and not la_mau("trip_invoices", t.id))]
+for x in tp_thu:
+    if not x.invoice_payment_id: rut_nguon("trip_payments", x.id)
+    db.delete(x)
+db.flush()
+for x in ip_thu:
+    rut_nguon("invoice_payments", x.id); db.delete(x)
+db.flush()
+for t in ti_thu:
+    if not t.invoice_id: rut_nguon("trip_invoices", t.id)
+    db.delete(t)
+db.flush()
+for h in hd_thu.values():
+    rut_nguon("invoices", h.id); db.delete(h)
+db.flush()
+if tp_thu or ip_thu or ti_thu or hd_thu:
+    print("  sổ doanh thu (sổ kế toán): %d hoá đơn phiếu · %d tờ gộp · %d lần thu tờ gộp · %d dòng thu của bộ kiểm" % (len(ti_thu), len(hd_thu), len(ip_thu), len(tp_thu)))
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
     if v.ref not in con: xoa_to(v)
@@ -402,5 +443,50 @@ def chay_so(that):
 
 
 chay_so(THAT)
+
+# ---------------------------------------------------------------- 11. bản chép doanh thu trên phiếu (đợt 7a)
+# Hoá đơn, lần thu ở trang kế toán từ 28/09; phiếu bên này giữ bản chép (đã xuất hoá đơn, tờ gộp, đã thu, ngày thu, trạng
+# thái thu). Bước 10 vừa gỡ phần của bộ kiểm bên đó → điền lại bản chép của MỌI phiếu theo đúng sổ bên đó.
+DOC_DT = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from database import SessionLocal
+import models as M
+from sqlalchemy import func
+db = SessionLocal()
+thu = {t: [float(v or 0), d.isoformat() if d else None] for t, v, d in db.query(M.TripPayment.trip_id, func.sum(M.TripPayment.amount_lak), func.max(M.TripPayment.pay_date)).group_by(M.TripPayment.trip_id)}
+so = {h.id: h.inv_no for h in db.query(M.Invoice).all()}
+hd = {t.trip_id: [t.invoice_id, so.get(t.invoice_id), t.inv_date.isoformat() if t.inv_date else None] for t in db.query(M.TripInvoice).all()}
+print(json.dumps({"thu": thu, "hd": hd}))
+"""
+
+
+def ban_chep_dt(that):
+    if not os.path.isdir(SO):
+        return
+    r = goi_so(DOC_DT)
+    if r.returncode:
+        sys.exit("Không đọc được sổ doanh thu bên trang kế toán:\n" + r.stderr.strip()[-600:])
+    g = json.loads(r.stdout.strip().splitlines()[-1])
+    import datetime as _dt
+    from routes.phieu import _tinh_lai_trang_thai_thu
+    d = lambda v: _dt.date.fromisoformat(v) if v else None
+    doi = []
+    for p in db.query(M.Trip).all():
+        tong, cuoi = g["thu"].get(p.id, [0.0, None])
+        h = g["hd"].get(p.id)
+        moi = (bool(h), h[0] if h else None, h[1] if h else None, d(h[2]) if h else None, round(tong), d(cuoi))
+        cu = (bool(p.invoiced), p.invoice_id, p.inv_no, p.invoiced_date, round(p.collected_lak or 0), p.last_paid_date)
+        if moi != cu:
+            doi.append(p.doc_no)
+            if that:
+                p.invoiced, p.invoice_id, p.inv_no, p.invoiced_date, p.collected_lak, p.last_paid_date = moi
+                _tinh_lai_trang_thai_thu(db, p)
+    print("  bản chép doanh thu trên phiếu: %s %d phiếu%s" % ("điền lại" if that else "sẽ điền lại", len(doi), (": " + ", ".join(doi[:12])) if doi else ""))
+    if that:
+        db.commit()
+
+
+ban_chep_dt(THAT)
 if not THAT:
     db.rollback(); print("(chạy thử — chưa ghi gì; thêm tham số 'that' để xoá thật)")

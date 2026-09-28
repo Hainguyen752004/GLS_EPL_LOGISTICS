@@ -1,4 +1,5 @@
-/* Chứng từ — Phiếu chi tạm ứng (in cho tài xế) và Phiếu thu (thu tiền khách). Số liệu từ /api/trips/{id}/phieu-chi|phieu-thu. */
+/* Chứng từ — Phiếu chi tạm ứng (in cho tài xế), Phiếu lĩnh nhiên liệu và Sổ chứng từ. Số liệu từ /api/trips/{id}/phieu-chi.
+ * Phiếu thu (tiền khách) in ở trang kế toán từ 28/09 (đợt 7a) — sổ thu tiền ở bên đó. */
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
   let root, tab = 'chi', DS = [], P = null, ACC = {}, LINH = [], vChon = null;
@@ -45,25 +46,7 @@
       ${khoiQR(LINH.find(v => v.kind === 'advance'))}
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
-  function veThu(d) {
-    q('#ct-so').innerHTML = `${NN.h('voucher_no')}<b>${esc(d.so_phieu_thu)}</b>${EPL.ngay(d.doc_date)}`;
-    if (!d.invoiced) { q('#ct-than').innerHTML = `<div class="ct-tieu-de">${NN.h('voucher_receipt')}</div><div class="ct-trong">${NN.h('not_invoiced_yet')}<br><span class="small">${NN.h('sec2')}: ${NN.h(d.trans_status === 'wait' ? 'stt_wait2' : 'stt_' + d.trans_status)}</span></div>`; return; }
-    q('#ct-than').innerHTML = `
-      <div class="ct-tieu-de">${NN.h('voucher_receipt')}</div>
-      <div class="ct-phu">ໃບຮັບເງິນ · Receipt voucher</div>
-      <div class="ct-meta">
-        <div><span>${NN.h('payer_name')}</span><span lang="lo"><b>${esc(d.customer_name || '—')}</b></span></div><div><span>${NN.h('doc_no')}</span><span class="mono"><b>${esc(d.doc_no)}</b></span></div>
-        <div><span>${NN.h('c_w_dest')}</span><span>${so(d.tan_tinh, 2)} ${NN.h('ton')}<span class="tien"> × ${EPL.tien(d.don_gia, d.ccy)}</span></span></div><div class="tien"><span>${NN.h('acct_pair')}</span><span>${tenTK(d.acct_code)}</span></div>
-        <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_receipt', { doc_no: d.doc_no, tuyen: (d.origin || '') + ' → ' + (d.destination || '') })}</span></div>
-      </div>
-      <div class="ct-tong tien"><div><span>${NN.h('amount')}</span><span>${EPL.tien(d.doanh_thu, d.ccy)}</span></div>
-        <div><span>${NN.h('collected')}</span><span>${EPL.tien(d.da_thu, d.ccy)}</span></div>
-        <div><span>${NN.h('remaining')}</span><span>${EPL.tien(d.con_lai, d.ccy)}</span></div></div>
-      <div class="ct-chu">${d.ccy === 'LAK' ? '' : `≈ ${so(d.doanh_thu_lak)} LAK (1 ${esc(d.ccy)} = ${so(d.rate_to_lak)} LAK)`}</div>
-      ${(d.thu_tien || []).length ? `<table class="tbl tbl-compact"><thead><tr><th>${NN.h('pay_date')}</th><th class="num">${NN.h('pay_amount')}</th><th class="num">${NN.h('in_lak')}</th><th>${NN.h('pay_method')}</th><th>${NN.h('pay_ref')}</th></tr></thead><tbody>${d.thu_tien.map(x => `<tr><td>${EPL.ngay(x.pay_date)}</td><td class="num">${EPL.tien(x.amount, x.currency)}</td><td class="num">${so(x.amount_lak)}</td><td>${NN.h('pm_' + x.method)}</td><td class="mono small">${esc(x.ref || '')}</td></tr>`).join('')}</tbody></table>` : ''}
-      <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.finance_status, 'fin_' + d.finance_status)}</div>
-      <div class="ct-ky"><div><div class="line"></div>${NN.h('payer_name')}</div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
-  }
+  // Phiếu thu (tiền khách theo hoá đơn) in ở trang kế toán từ 28/09 (đợt 7a): Hoá đơn vận chuyển → In phiếu thu.
   /** PHIẾU LĨNH NHIÊN LIỆU — tài xế cầm đến đúng kho ghi ở ô Nơi đổ.
    *  Là phiếu lập LÚC XE CHƯA ĐI nên cố ý KHÔNG in: ngày về, lúc về, km chạy, cân cuối, hao hụt,
    *  thành tiền và quy đổi — những ô đó lúc này chưa ai biết, in ô trống chỉ tổ rối. */
@@ -197,7 +180,6 @@
       } else { vChon = null; q('#ct-linh').innerHTML = ''; }
       if (tab === 'chi') veChi(await API.get(`/api/trips/${P.id}/phieu-chi`));
       else if (tab === 'linh') veLinh(lo.find(v => v.id === vChon), P);
-      else veThu(await API.get(`/api/trips/${P.id}/phieu-thu`));
     } catch (e) { q('#ct-than').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
   }
   EPL.modules['chung-tu'] = {
@@ -212,8 +194,6 @@
       q('#ct-chon').addEventListener('change', e => { if (!e.target.value) return; P = DS.find(p => p.id === e.target.value) || P; ve(); });
       q('#ct-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       root.querySelectorAll('.ct-tab button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.tab; root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x === b)); ve(); }));
-      // phiếu thu là tiền khách trả: vai không thấy tiền bán thì không có tab này (máy chủ cũng trả 403)
-      if (['driver', 'yard', 'depot', 'parts', 'repair'].includes(AUTH.role)) root.querySelector('.ct-tab button[data-tab="thu"]').hidden = true;
       if (!XEM_SO.includes(AUTH.role)) root.querySelector('.ct-tab button[data-tab="so"]').hidden = true;
       else {
         SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
@@ -223,7 +203,7 @@
       }
       q('#ct-linh').addEventListener('change', e => { vChon = e.target.value; ve(); });
       const t = ctx.tham || {};
-      if (t.tab && ['chi', 'linh', 'thu', 'so'].includes(t.tab) && !root.querySelector(`.ct-tab button[data-tab="${t.tab}"]`).hidden) {
+      if (t.tab && ['chi', 'linh', 'so'].includes(t.tab) && !root.querySelector(`.ct-tab button[data-tab="${t.tab}"]`).hidden) {
         tab = t.tab;
         root.querySelectorAll('.ct-tab button').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
       }

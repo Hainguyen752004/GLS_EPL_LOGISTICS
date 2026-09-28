@@ -298,19 +298,21 @@
       // khách, tuyến và tiền đã chi vẫn là của chuyến này.
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm" data-hd-phieu="doi-xe">${NN.h('change_truck')}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
+      // Hoá đơn và thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a): các nút dưới mở màn bên đó, đúng phiếu này / đúng tờ gộp.
       // Khách gộp hoá đơn tháng (C8.2) thì KHÔNG xuất hoá đơn lẻ từng phiếu — sang màn Hoá đơn gộp.
-      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode !== 'thang') ta.push(`<button class="btn sm ok" data-hd-phieu="invoice">${NN.h('a_invoice')}</button>`);
-      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode === 'thang') ta.push(`<button class="btn sm" data-di-gop="">${NN.h('hg_gop')}</button>`);
-      if (P.invoice_id) ta.push(`<button class="btn sm" data-di-gop="${esc(P.invoice_id)}">${NN.h('hg_thuoc')} ${esc(P.inv_no || '')}</button>`);
-      // Không còn nút "đánh dấu đã thu": tiền về bao nhiêu thì ghi bấy nhiêu, trạng thái tự suy ra.
-      if (AUTH.la('rev') && P.invoiced && !P.invoice_id && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>`);
+      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode !== 'thang') ta.push(`<button class="btn sm ok" data-kt-hd="">${NN.h('a_invoice')} ↗</button>`);
+      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode === 'thang') ta.push(`<button class="btn sm" data-di-gop="">${NN.h('hg_gop')} ↗</button>`);
+      if (P.invoice_id) ta.push(`<button class="btn sm" data-di-gop="${esc(P.invoice_id)}">${NN.h('hg_thuoc')} ${esc(P.inv_no || '')} ↗</button>`);
+      // Không còn nút "đánh dấu đã thu": tiền về bao nhiêu thì ghi bấy nhiêu (ở trang kế toán), trạng thái tự suy ra.
+      if (AUTH.la('rev') && P.invoiced && !P.invoice_id && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-kt-hd="">${NN.h('collect_new')} ↗</button>`);
       if (AUTH.la('yard') && !P.locked && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
     }
     g('px-hanh-dong').innerHTML = ta.length ? `<span class="small muted">${NN.h('trip_status')}:</span> ${ta.join(' ')}` : `<span class="small muted">${NN.h('trip_status')}: ${moi ? NN.h('new_slip') : tag(P.transport_status) + ' ' + tag(P.finance_status)}</span>`;
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
-    root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.di('hoa-don-gop',
+    root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don-gop',
       Object.assign({ thang: String(P.doc_date || '').slice(0, 7) }, b.dataset.diGop ? { id: b.dataset.diGop } : {}))));
-    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'thu-tien' ? ghiThuTien() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
+    root.querySelectorAll('[data-kt-hd]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don', { id: P.id })));
+    root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'tra-chu-xe' ? traChuXe() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
     veThuTien();
     veTep();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
@@ -431,7 +433,9 @@
     const body = {};
     if (suaDuoc('info')) ['doc_no', 'truck_no', 'driver_name'].forEach(c => { if (P[c] !== undefined) body[c] = P[c]; });
     if (suaDuoc('trans') && P.customer_name !== undefined) body.customer_name = P.customer_name;
-    [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (P[c] !== undefined && (!el || !el.disabled)) body[c] = P[c]; });
+    // Bãi không thấy, không nhập tiền bán (anh Khampla A2): ô giá cước, thuê xe, phí bị giấu nhưng tờ phiếu trắng vẫn mang
+    // mặc định (USD, theo tấn, phí 2 %…) — không gửi, máy chủ tự điền mặc định / theo hồ sơ chủ xe (lỗi Bãi lưu 28/09)
+    [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (vai() === 'yard' && COT_TIEN.includes(c)) return; if (P[c] !== undefined && (!el || !el.disabled)) body[c] = P[c]; });
     COT_POD.forEach(c => { const el = g('f-' + c); if (el && !el.disabled && P[c] !== undefined) body[c] = P[c]; });
     // hợp đồng: chỉ gửi khi kế toán TỰ ĐỔI ô chọn — không thì máy chủ tự điền theo khách / chủ xe
     Object.entries(HD_DOI).forEach(([k, v]) => { body[k] = v || null; });
@@ -481,66 +485,21 @@
 
   /* ---------------------------------------------------------------- sổ thu tiền
    * Hoá đơn một tờ, tiền có thể về làm nhiều lần và bằng tiền khác với tiền ghi trên hoá đơn —
-   * hoá đơn USD mà khách chuyển Kíp là chuyện bình thường ở đây. Nên mỗi lần thu là một dòng có
-   * ngày, số tiền, tiền tệ và tỷ giá của chính ngày đó; trạng thái "đã thu đủ" do tổng quyết định.
+   * hoá đơn USD mà khách chuyển Kíp là chuyện bình thường ở đây. Mỗi lần thu là một dòng ở trang kế toán;
+   * trạng thái "đã thu đủ" do tổng quyết định.
    */
-  const PT_CACH = [['bank', 'pm_bank'], ['cash', 'pm_cash'], ['offset', 'pm_offset'], ['other', 'pm_other']];
-
+  /** Sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a). Phiếu bên này chỉ còn bản chép: tiền hoá đơn, đã thu, còn lại —
+   *  bấm nút để mở đúng phiếu này bên đó (ghi thu, xoá lần thu, in phiếu thu). */
   function veThuTien() {
     const o = g('px-thu-tien'); if (!o) return;
     if (moi || !P.id || !P.invoiced) { o.innerHTML = ''; return; }
-    const k = P.tinh || {}, ds = P.thu_tien || [];
-    const dong = ds.map(x => `<tr>
-      <td class="nowrap">${EPL.ngay(x.pay_date)}</td>
-      <td class="num"><b>${EPL.tien(x.amount, x.currency)}</b></td>
-      <td class="num">${x.currency === 'LAK' ? '—' : so(x.rate_to_lak, x.currency === 'VND' ? 2 : 0)}</td>
-      <td class="num">${so(x.amount_lak)}</td>
-      <td>${NN.h(PT_CACH.find(c => c[0] === x.method) ? PT_CACH.find(c => c[0] === x.method)[1] : 'pm_other')}</td>
-      <td class="mono small">${esc(x.ref || '')}</td>
-      <td class="small muted">${esc(x.by_user || '')}</td>
-      <td class="no-print">${AUTH.la('rev') && !x.invoice_payment_id ? `<button class="btn xs danger" data-xoa-thu="${x.id}" title="${esc(NN.t('pay_del'))}">×</button>` : ''}</td></tr>`).join('');
+    const k = P.tinh || {};
     o.innerHTML = `<div class="card px-thu"><div class="hd"><h4>${NN.h('collect_log')}</h4><div class="grow"></div>
         <span class="small">${NN.h('c_value')}: <b>${EPL.tien(k.doanh_thu, k.ccy)}</b> · ${NN.h('collected')}: <b>${EPL.tien(k.da_thu, k.ccy)}</b> · ${NN.h('remaining')}: <b class="${k.con_lai ? 'neg' : 'pos'}">${EPL.tien(k.con_lai, k.ccy)}</b></span>
-        ${AUTH.la('rev') && k.con_lai > 0 && !P.invoice_id ? `<button class="btn sm ok no-print" data-hd-phieu="thu-tien">${NN.h('collect_new')}</button>` : ''}</div>
-      <div class="bd">${ds.length ? `<table class="tbl tbl-compact"><thead><tr>
-          <th>${NN.h('pay_date')}</th><th class="num">${NN.h('pay_amount')}</th><th class="num">${NN.h('rate_day')}</th>
-          <th class="num">${NN.h('in_lak')}</th><th>${NN.h('pay_method')}</th><th>${NN.h('pay_ref')}</th><th>${NN.h('by_user')}</th><th class="no-print"></th>
-        </tr></thead><tbody>${dong}</tbody></table>` : `<p class="small muted">${NN.h('pay_none')}</p>`}
-        <p class="small muted">${P.invoice_id ? NN.h('hg_thu_o_to') + ' ' + esc(P.inv_no || '') : NN.h('fin_auto')}</p></div></div>`;
-    o.querySelectorAll('[data-hd-phieu="thu-tien"]').forEach(b => b.addEventListener('click', ghiThuTien));
-    o.querySelectorAll('[data-xoa-thu]').forEach(b => b.addEventListener('click', () => xoaThuTien(b.dataset.xoaThu)));
-  }
-
-  async function ghiThuTien() {
-    const k = P.tinh || {}, ma = k.ccy || 'USD';
-    const v = await EPL.hopNhap(NN.t('collect_new'), [
-      { id: 'pay_date', label: 'pay_date', type: 'date', value: EPL.homNay() },
-      { id: 'currency', label: 'ccy', type: 'select', value: ma, options: EPL.TIEN_TE.map(m => [m, m]) },
-      { id: 'amount', label: 'pay_amount', type: 'number', value: k.con_lai },
-      // Trống = máy dùng tỷ giá khoá trên phiếu (C5.8). Nói ra con số đó để người ghi biết đang quy theo tỷ giá nào.
-      { id: 'rate_to_lak', label: 'rate_day', type: 'number', value: '', placeholder: ma === 'LAK' ? '' : `${NN.t('rate_on_slip')}: 1 ${ma} = ${so(rate(ma), 0)}` },
-      { id: 'method', label: 'pay_method', type: 'select', value: 'bank', options: PT_CACH.map(([x, t]) => [x, NN.t(t)]) },
-      { id: 'ref', label: 'pay_ref', value: '' },
-      { id: 'note', label: 'note', value: '' },
-    ], NN.t('save'));
-    if (!v) return;
-    const than = { pay_date: v.pay_date, amount: v.amount, currency: v.currency, method: v.method, ref: v.ref, note: v.note };
-    if (v.rate_to_lak !== '' && v.rate_to_lak != null) than.rate_to_lak = v.rate_to_lak;
-    try {
-      P = await API.post(`/api/trips/${P.id}/thu-tien`, than);
-    } catch (e) {
-      // Thu nhiều hơn phần còn lại: hỏi lại rồi mới ghi, không âm thầm chặn cũng không âm thầm nhận.
-      if (!/THU_QUA_HOA_DON/.test(e.ma || '') && !/THU_QUA_HOA_DON/.test(String(e.message))) return EPL.baoLoi(e);
-      if (!await EPL.hoi(NN.t('pay_over'), `<p>${esc(e.message)}</p>`, NN.t('pay_over_ok'))) return;
-      than.cho_thu_du = true;
-      try { P = await API.post(`/api/trips/${P.id}/thu-tien`, than); } catch (e2) { return EPL.baoLoi(e2); }
-    }
-    DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
-  }
-
-  async function xoaThuTien(id) {
-    if (!await EPL.hoi(NN.t('pay_del'), `<p>${NN.h('confirm_delete')}</p>`, NN.t('delete'))) return;
-    try { P = await API.goi('/api/thu-tien/' + id, { method: 'DELETE' }); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
+        <button class="btn sm no-print" data-kt-thu="">${NN.h('mo_ke_toan')} ↗</button></div>
+      <div class="bd"><p class="small muted">${P.invoice_id ? NN.h('hg_thu_o_to') + ' ' + esc(P.inv_no || '') + ' · ' : ''}${NN.h('thu_o_ke_toan')}</p></div></div>`;
+    o.querySelectorAll('[data-kt-thu]').forEach(b => b.addEventListener('click', () => (P.invoice_id
+      ? EPL.moKeToan('hoa-don-gop', { thang: String(P.doc_date || '').slice(0, 7), id: P.invoice_id }) : EPL.moKeToan('hoa-don', { id: P.id }))));
   }
 
   /** Đổi xe giữa đường (C2.2): chọn xe mới, ghi lý do. Máy chủ để lại dòng diễn biến và kéo mục I
@@ -704,7 +663,7 @@
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
-      g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('hoa-don', { id: P.id }));
+      g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.moKeToan('hoa-don', { id: P.id }));   // bản in ở trang kế toán (đợt 7a)
       g('px-chung-tu').addEventListener('click', () => P && P.id && EPL.di('chung-tu', { id: P.id }));
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });

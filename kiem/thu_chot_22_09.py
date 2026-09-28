@@ -97,8 +97,8 @@ def main():
         co_san = {}
         s, ds0 = goi("/api/trips", vai="doanhthu")
         for p in [x for x in ds0 if x.get("customer_id") == o["customer_id"] and x.get("invoiced")]:
-            s2, tt = goi("/api/trips/%s/thu-tien" % p["id"], vai="doanhthu")
-            co_san[p["id"]] = {x["id"] for x in (tt.get("ds") or [])}
+            s2, tt = K.kt("/api/hoa-don/phieu/%s" % p["id"], vai="doanhthu")      # sổ thu tiền ở trang kế toán (đợt 7a)
+            co_san[p["id"]] = {x["id"] for x in (tt.get("thu_tien") or [])}
         s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="thabok")
         phai(s, 403, "Bãi ghi cấn trừ → bị chặn", g)
         s, r = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
@@ -120,8 +120,8 @@ def main():
         print("  ✓ %-62s" % "Bảng cấn trừ đọc lại đúng phần đã ghi / chưa ghi")
         s, ds = goi("/api/trips", vai="doanhthu")
         p = next(x for x in ds if x["doc_no"] == r["phieu_thu"][0]["so"])
-        s, tt = goi("/api/trips/%s/thu-tien" % p["id"], vai="doanhthu")
-        dong = [x for x in tt["ds"] if x["method"] == "offset" and x["ref"] == r["ref"]]
+        s, tt = K.kt("/api/hoa-don/phieu/%s" % p["id"], vai="doanhthu")
+        dong = [x for x in tt["thu_tien"] if x["method"] == "offset" and x["ref"] == r["ref"]]
         assert dong, "sổ thu của phiếu phải có dòng cách thu 'cấn trừ' mang ref %s" % r["ref"]
         print("  ✓ %-62s %s" % ("Sổ thu tiền của phiếu có dòng cách thu cấn trừ", dong[0]["ref"]))
         s, g = goi("/api/bao-cao/can-tru/ghi", {"customer_id": o["customer_id"], "thang": "2026-08"}, vai="doanhthu")
@@ -134,9 +134,9 @@ def main():
         so_moi = {x["so"] for x in moi if x["loai"] == "phieu"}
         n = 0
         for p in [x for x in ds if x["doc_no"] in so_moi]:
-            s2, tt = goi("/api/trips/%s/thu-tien" % p["id"], vai="doanhthu")
-            for x in [x for x in tt["ds"] if x["method"] == "offset" and x["ref"] == r["ref"] and x["id"] not in co_san.get(p["id"], set())]:
-                s3, g3 = goi("/api/thu-tien/%s" % x["id"], vai="doanhthu", method="DELETE")
+            s2, tt = K.kt("/api/hoa-don/phieu/%s" % p["id"], vai="doanhthu")
+            for x in [x for x in tt["thu_tien"] if x["method"] == "offset" and x["ref"] == r["ref"] and x["id"] not in co_san.get(p["id"], set())]:
+                s3, g3 = K.kt("/api/hoa-don/thu/%s" % x["id"], vai="doanhthu", method="DELETE")
                 phai(s3, 200, "Xoá lần thu cấn trừ bài thử vừa ghi (dọn)", g3); n += 1
         s, ct3 = goi("/api/bao-cao/can-tru?thang=2026-08", vai="doanhthu")
         o3 = next(x for x in ct3["ds"] if x["customer_id"] == o["customer_id"])

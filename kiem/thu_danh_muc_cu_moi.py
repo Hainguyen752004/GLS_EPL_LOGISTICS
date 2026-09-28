@@ -32,7 +32,7 @@ import routes.danh_muc as DM  # noqa: E402
 import routes.nha_cung_cap as NCC  # noqa: E402
 import routes.phieu_linh as PL  # noqa: E402
 import routes.tat_toan as TT  # noqa: E402
-import routes.hoa_don as HD  # noqa: E402
+# routes.hoa_don: hoá đơn gộp dời sang trang kế toán 28/09 (đợt 7a) — không còn gì để so ở đây
 
 
 def ban_cu(duong, ten):
@@ -97,7 +97,6 @@ def do(f):
 
 def main():
     db = SessionLocal()
-    HDc = ban_cu("backend/app/routes/hoa_don.py", "hoa_don")
     CXc, DMc, NCCc, PLc = (ban_cu("backend/app/routes/chu_xe.py", "chu_xe"), ban_cu("backend/app/routes/danh_muc.py", "danh_muc"),
                            ban_cu("backend/app/routes/nha_cung_cap.py", "nha_cung_cap"), ban_cu("backend/app/routes/phieu_linh.py", "phieu_linh"))
     loi = 0
@@ -111,12 +110,6 @@ def main():
         db.rollback(); loi += not so("phiếu lĩnh chờ · %s" % vai, a, b, ta, tb, sap=bo_may_qr)
     (a, ta), (b, tb) = do(lambda: DMc.ds_tai_xe(db=db, _=None)), do(lambda: DM.ds_tai_xe(db=db, _=None))
     db.rollback(); loi += not so("tài xế", a, b, ta, tb)
-    ke = Vai("rev")
-    (a, ta), (b, tb) = do(lambda: HDc.ds_hoa_don(period="", customer_id="", db=db, user=ke)), do(lambda: HD.ds_hoa_don(period="", customer_id="", db=db, user=ke))
-    db.rollback(); loi += not so("hoá đơn gộp · mọi tháng", a, b, ta, tb)
-    for ky in KY:
-        (a, ta), (b, tb) = do(lambda: HDc.cho_gop(period=ky, customer_id="", db=db, user=ke)), do(lambda: HD.cho_gop(period=ky, customer_id="", db=db, user=ke))
-        db.rollback(); loi += not so("hoá đơn · chờ gộp %s" % ky, a, b, ta, tb)
     tx = db.query(Driver).filter(Driver.active.is_(True)).order_by(Driver.driver_code, Driver.name).all()
     for ky in KY:
         (a, ta) = do(lambda: [TT.tinh_ky(db, t, ky) for t in tx])
