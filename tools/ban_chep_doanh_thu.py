@@ -14,14 +14,14 @@ sang phiếu. Công cụ này điền bản chép cho dữ liệu CŨ, lấy t�
     trips.inv_no          = số tờ gộp
 
 Chỉ điền ô đang trống hoặc đang khác; không đụng invoiced / invoice_id / finance_status (đã đúng từ trước). Cột mới do máy
-chủ tự thêm lúc khởi động bằng mã đợt 7a — công cụ gọi đúng hàm đó trước khi đọc.
+chủ tự thêm lúc khởi động bằng mã đợt 7a — ghi thật thì công cụ gọi đúng hàm đó trước; chạy thử chỉ đọc, không thêm cột.
 """
 import os
 import sys
 
 GOC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(GOC, "backend", "app"))
-from sqlalchemy import text  # noqa: E402
+from sqlalchemy import inspect, text  # noqa: E402
 
 from database import SessionLocal, engine, tao_bang  # noqa: E402
 
@@ -29,11 +29,16 @@ THAT = len(sys.argv) > 1 and sys.argv[1] == "that"
 
 
 def main():
-    tao_bang()
-    print("DB:", engine.url.database)
+    # chạy thử là CHỈ ĐỌC: không thêm cột trên DB thật — cột chưa có thì coi như bản chép đang trống
+    co_cot = "collected_lak" in {c["name"] for c in inspect(engine).get_columns("trips")}
+    if THAT:
+        tao_bang(); co_cot = True
+    print("DB:", engine.url.database, "" if co_cot else "(chưa có cột bản chép — máy chủ mã đợt 7a sẽ thêm)")
     db = SessionLocal()
+    cot = ("t.collected_lak, t.last_paid_date, t.invoiced_date, t.inv_no" if co_cot
+           else "NULL AS collected_lak, NULL AS last_paid_date, NULL AS invoiced_date, NULL AS inv_no")
     cau = text("""
-        SELECT t.id, t.doc_no, t.collected_lak, t.last_paid_date, t.invoiced_date, t.inv_no,
+        SELECT t.id, t.doc_no, """ + cot + """,
                COALESCE(p.tong, 0) AS tong, p.cuoi,
                COALESCE(i.inv_date, h.ngay) AS ngay_hd, i.inv_no AS so_gop
         FROM trips t
