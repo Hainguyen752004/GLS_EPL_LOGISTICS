@@ -23,8 +23,9 @@ from sqlalchemy import func, literal
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (CACH_TRA_CHU_XE, PHUONG_THUC_THU, TIEN_TE, Owner, OwnerPayment, Sale, Trip, TripExpense, Vehicle)
+from models import (CACH_TRA_CHU_XE, PHUONG_THUC_THU, TIEN_TE, Owner, OwnerPayment, Trip, TripExpense, Vehicle)
 from services import chung_tu as CT
+from services import kho_ke_toan as KK        # phiếu bán hàng ở trang kế toán từ 28/09 (đợt 6)
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban
 from services.tinh_toan import tinh_phieu
@@ -97,10 +98,17 @@ def _cho_tra_lo(db, cac_chu):
         if k.get("tra_chu_xe") and k["tra_chu_xe"] > 0:
             o["tong"][k["hire_ccy"]] = round(o["tong"].get(k["hire_ccy"], 0) + k["tra_chu_xe"], 2)
         o["tong_lak"] += k.get("tra_chu_xe_lak") or 0
-    for oid, n, t in (db.query(Sale.owner_id, func.count(Sale.id), func.coalesce(func.sum(Sale.total_lak), 0))
-                      .filter(Sale.owner_id.in_(ids), Sale.owner_payment_id.is_(None), Sale.status != "paid")
-                      .group_by(Sale.owner_id)):
-        ra[oid]["ban_cho_tru_lak"] = round(float(t or 0)); ra[oid]["so_phieu_ban"] = int(n)
+    # Phiếu bán chủ xe mua ở quầy chờ trừ: ở trang kế toán (đợt 6). Bên đó tắt thì danh sách vẫn hiện, phần này để trống
+    # (None — không phải 0: "không biết" khác "không có").
+    try:
+        ban = KK.ban_cho_tru_tong(db)
+    except HTTPException:
+        ban = None
+    for oid in ids:
+        if ban is None:
+            ra[oid]["ban_cho_tru_lak"] = ra[oid]["so_phieu_ban"] = None
+        elif oid in ban:
+            ra[oid]["ban_cho_tru_lak"] = ban[oid]["total_lak"]; ra[oid]["so_phieu_ban"] = ban[oid]["n"]
     return ra
 
 
@@ -125,20 +133,19 @@ def _cho_tra(db, o):
     for d in ds:
         if d["tra_chu_xe"] and d["tra_chu_xe"] > 0:
             tong[d["hire_ccy"]] = round(tong.get(d["hire_ccy"], 0) + d["tra_chu_xe"], 2)
-    ban = _ban_cho_tru(db, o.id)
+    try:
+        ban = _ban_cho_tru(db, o.id)
+    except HTTPException:
+        ban = None                                   # trang kế toán tắt: không biết phần trừ, không phải "không có"
     return {"so_phieu": len(ds), "tong": tong, "tong_lak": sum(d["tra_chu_xe_lak"] or 0 for d in ds),
-            "ban_cho_tru_lak": round(sum(b.total_lak or 0 for b in ban)), "so_phieu_ban": len(ban)}
+            "ban_cho_tru_lak": None if ban is None else round(sum(b["total_lak"] or 0 for b in ban)),
+            "so_phieu_ban": None if ban is None else len(ban)}
 
 
 def _ban_cho_tru(db, owner_id):
-    """Phiếu bán hàng (xăng, phụ tùng) chủ xe mua ở quầy, CHƯA trừ vào đợt trả nào — cũ trước."""
-    return (db.query(Sale).filter(Sale.owner_id == owner_id, Sale.owner_payment_id.is_(None), Sale.status != "paid")
-            .order_by(Sale.sale_date, Sale.doc_no).all())
-
-
-def _xuat_ban(b):
-    return {"id": b.id, "doc_no": b.doc_no, "sale_date": b.sale_date.isoformat() if b.sale_date else None,
-            "total": b.total, "currency": b.currency, "total_lak": b.total_lak, "owner_payment_id": b.owner_payment_id}
+    """Phiếu bán hàng (xăng, phụ tùng) chủ xe mua ở quầy, CHƯA trừ vào đợt trả nào — cũ trước. Ở trang kế toán (đợt 6);
+    bên đó tắt → 503."""
+    return KK.ban_cua_chu_xe(db, owner_id)["cho_tru"]
 
 
 # ================================================================ danh mục
@@ -212,20 +219,21 @@ def cong_no_chu_xe(oid: str, db: Session = Depends(get_db), user=Depends(nguoi_h
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chủ xe này."})
     dot = (db.query(OwnerPayment).filter(OwnerPayment.owner_id == o.id).order_by(OwnerPayment.pay_date.desc(), OwnerPayment.created_at.desc()).all())
     ds_dot = []
+    ban_kt = KK.ban_cua_chu_xe(db, o.id)            # trang kế toán tắt → 503: màn tiền không hiện nửa số
     for x in dot:
         phieu = db.query(Trip).filter(Trip.owner_payment_id == x.id).order_by(Trip.doc_date).all()
-        ban = db.query(Sale).filter(Sale.owner_payment_id == x.id).order_by(Sale.sale_date).all()
+        ban = ban_kt["da_tru"].get(x.id, [])
         ds_dot.append({"id": x.id, "pay_date": x.pay_date.isoformat() if x.pay_date else None, "amount": x.amount,
                        "gross": x.gross if x.gross is not None else x.amount, "sales_deducted": x.sales_deducted or 0,
-                       "ban": [b.doc_no for b in ban],
+                       "ban": list(ban),
                        "currency": x.currency, "amount_lak": x.amount_lak, "method": x.method, "ref": x.ref, "note": x.note,
                        "by_user": x.by_user, "phieu": [p.doc_no for p in phieu]})
     return {"chu_xe": xuat_chu_xe(db, o, user), "cho_tra": [_dong_phieu(db, p) for p in _phieu_cho_tra(db, o)],
-            "ban_cho_tru": [_xuat_ban(b) for b in _ban_cho_tru(db, o.id)],
+            "ban_cho_tru": ban_kt["cho_tru"],
             "tong": _cho_tra(db, o), "da_tra": ds_dot}
 
 
-def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, note=None, owner=None):
+def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, note=None, owner=None, gd=None):
     """Lập MỘT đợt trả gồm các phiếu đã cho. Dùng chung cho nút trả từng phiếu và trả gộp.
 
     Tiền = tổng "trả chủ xe" của các phiếu — không gõ tay. Các phiếu phải cùng chủ xe, cùng tiền thuê,
@@ -261,9 +269,9 @@ def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, not
     # dở một phiếu, để mỗi phiếu bán hoặc đã trừ hẳn, hoặc chưa.
     chu_id = owner.id if owner else phieu[0].owner_id
     con_lak, tru_lak, ban_tru = tong_lak, 0, []
-    for b in _ban_cho_tru(db, chu_id):
-        if (b.total_lak or 0) <= con_lak + 0.5:
-            con_lak -= b.total_lak or 0; tru_lak += b.total_lak or 0; ban_tru.append(b)
+    for b in _ban_cho_tru(db, chu_id):               # phiếu bán ở trang kế toán — tắt thì chưa lập đợt được (503)
+        if (b["total_lak"] or 0) <= con_lak + 0.5:
+            con_lak -= b["total_lak"] or 0; tru_lak += b["total_lak"] or 0; ban_tru.append(b)
     tru = (tru_lak / ty) if ty else 0
     tru = round(tru, 2) if ccy not in ("LAK", "VND") else round(tru)
     thuc_chi = round(tong - tru, 2) if ccy not in ("LAK", "VND") else round(tong - tru)
@@ -272,8 +280,12 @@ def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, not
                      gross=tong, sales_deducted=tru,
                      method=method, ref=ref, note=note, by_user=user.full_name)
     db.add(x); db.flush()
-    for b in ban_tru:
-        b.owner_payment_id, b.status = x.id, "offset"
+    # bên kế toán ghi đợt này vào các phiếu bán đã trừ; `gd` (KK.GiaoDichKho của người gọi): bên này lưu hỏng thì các
+    # phiếu đó về lại chờ trừ
+    if ban_tru:
+        if gd is None:
+            raise RuntimeError("tra_nhieu_phieu cần GiaoDichKho khi có phiếu bán chờ trừ")
+        gd.tru_ban(chu_id, x.id, [b["id"] for b in ban_tru])
     bay_gio = dt.datetime.utcnow()
     for p in phieu:
         k = tinh_phieu(p, _dong_chi(db, p))
@@ -290,7 +302,7 @@ def tra_nhieu_phieu(db, user, phieu, pay_date=None, method="cash", ref=None, not
                mo_ta="Trả chủ xe %s · %d phiếu: %s%s" % (ten_chu, len(phieu), ", ".join(p.doc_no for p in phieu),
                                                           (" · trừ %d phiếu bán hàng" % len(ban_tru)) if ban_tru else ""),
                payload={"phieu": chi_tiet, "currency": ccy, "method": method, "ref": ref, "note": note,
-                        "gross": tong, "sales_deducted": tru, "ban_tru": [b.doc_no for b in ban_tru]})
+                        "gross": tong, "sales_deducted": tru, "ban_tru": [b["doc_no"] for b in ban_tru]})
     return x
 
 
@@ -304,7 +316,7 @@ def tra_chu_xe_gop(oid: str, data: dict = Body(...), db: Session = Depends(get_d
     phieu = [db.get(Trip, i) for i in ids]
     if any(p is None for p in phieu):
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Có phiếu không tồn tại trong danh sách gửi lên."})
-    tra_nhieu_phieu(db, user, phieu, pay_date=_ngay(data.get("pay_date")), method=(data.get("method") or "cash").strip(),
-                    ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None, owner=o)
-    db.commit()
+    with KK.GiaoDichKho(db, user) as gd:
+        tra_nhieu_phieu(db, user, phieu, pay_date=_ngay(data.get("pay_date")), method=(data.get("method") or "cash").strip(),
+                        ref=(data.get("ref") or "").strip() or None, note=(data.get("note") or "").strip() or None, owner=o, gd=gd)
     return cong_no_chu_xe(oid, db, user)

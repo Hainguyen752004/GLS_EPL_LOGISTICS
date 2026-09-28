@@ -59,7 +59,6 @@ DS = [
     ("admin", "/api/suppliers", "Nhà cung cấp"),
     ("admin", "/api/hop-dong", "Hợp đồng"),
     ("admin", "/api/the-cao-toc", "Thẻ cao tốc"),
-    ("admin", "/api/ban-hang", "Bán hàng"),
     ("admin", "/api/routes", "Tuyến đường"),
 ]
 

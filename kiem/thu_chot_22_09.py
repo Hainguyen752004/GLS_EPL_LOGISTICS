@@ -17,6 +17,10 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — bán hàng ở trang kế toán (28/09, đợt 6)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -186,20 +190,20 @@ def main():
         assert c["no"] != "1371" and c["co"] != "1371", "hàng khách gửi không được ghi vào kho 1371: %s" % c
     print("  ✓ %-62s %d tờ" % ("Hàng khách gửi không đụng kho 1371 (ngoài bảng)", len(ct["ds"])))
 
-    # tờ mới sinh sau khi đặt mã: bán một món phụ tùng → PXK_BAN mang Nợ 632
-    s, parts = goi("/api/parts", vai="ketoan")
+    # tờ mới sinh sau khi đặt mã: bán một món phụ tùng → PXK_BAN mang Nợ 632. Bán hàng ở trang kế toán từ đợt 6: bên
+    # đó hỏi sang đây mã giá vốn đang đặt ở cấu hình này.
+    s, parts = K.kt("/api/phu-tung", vai="ketoan")
     pt = next(x for x in parts if x["qty"] >= 1)
     s, kh = goi("/api/customers", vai="ketoan")
-    s, b = goi("/api/ban-hang", {"customer_id": kh[0]["id"], "sale_date": "2026-09-22", "currency": "LAK",
-                                 "lines": [{"item_type": "part", "part_id": pt["id"], "qty": 1, "unit_price": pt["unit_price"] or 1000}],
-                                 "note": "thử mã giá vốn"}, vai="ketoan")
-    phai(s, 200, "Bán một phụ tùng sau khi đặt mã", b)
-    s, ct = goi("/api/chung-tu?loai=PXK_BAN&limit=5", vai="ketoan")
-    to = next((c for c in ct["ds"] if b.get("doc_no") and b["doc_no"] in (c.get("mo_ta") or "")), ct["ds"][0] if ct["ds"] else None)
-    assert to and to["no"] == "632" and to["co"] == "1371", "tờ xuất kho bán phải mang Nợ 632 / Có 1371: %s" % to
-    print("  ✓ %-62s %s / %s" % ("Tờ PXK_BAN sinh sau khi đặt mã mang đúng mã", to["no"], to["co"]))
+    s, b = K.kt("/api/ban-hang", {"customer_id": kh[0]["id"], "sale_date": "2026-09-22", "currency": "LAK",
+                                  "lines": [{"item_type": "part", "part_id": pt["id"], "qty": 1, "unit_price": pt["unit_price"] or 1000}],
+                                  "note": "thử mã giá vốn"}, vai="ketoan")
+    phai(s, 200, "Bán một phụ tùng sau khi đặt mã (trang kế toán)", b)
+    to = next((v for v in K.to_kho(b.get("doc_no") or "?", "PXK_BAN") if (v.get("lines") or {}).get("doc_no") == b.get("doc_no")), None)
+    assert to and to["debit"] == "632" and to["credit"] == "1371", "tờ xuất kho bán phải mang Nợ 632 / Có 1371: %s" % to
+    print("  ✓ %-62s %s / %s" % ("Tờ PXK_BAN sinh sau khi đặt mã mang đúng mã", to["debit"], to["credit"]))
     if b.get("id"):
-        goi("/api/ban-hang/%s" % b["id"], vai="ketoan", method="DELETE")
+        K.kt("/api/ban-hang/%s" % b["id"], vai="ketoan", method="DELETE")
     s, g = goi("/api/ke-toan/cau-hinh", cu, vai="admin", method="PUT"); phai(s, 200, "Trả cấu hình về như cũ (dọn)", g)
 
     # ================================================================ 5. công nợ khách gom mọi tháng

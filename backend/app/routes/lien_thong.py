@@ -170,7 +170,7 @@ def lt_xe(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
     """Danh mục xe (ở đây) — ô chọn xe của lệnh sửa chữa bên trang kế toán."""
     from models import Vehicle
     return [{"id": x.id, "truck_no": x.truck_no, "plate_head": x.plate_head, "owner_type": x.owner_type,
-             "odometer_km": x.odometer_km, "status": x.status, "active": x.status != "inactive"}
+             "odometer_km": x.odometer_km, "status": x.status, "active": bool(x.active)}
             for x in db.query(Vehicle).order_by(Vehicle.truck_no).all()]
 
 
@@ -190,3 +190,17 @@ def lt_xe_sua_chua(vid: str, d: dict = Body(...), db: Session = Depends(get_db),
         x.status = "on_trip" if dang_chay else "available"
     db.commit()
     return {"id": x.id, "status": x.status}
+
+
+# ---------------------------------------------------------------- bán hàng ở trang kế toán (đợt 6)
+@router.get("/api/lien-thong/nguoi-mua")
+def lt_nguoi_mua(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
+    """Danh mục khách hàng và chủ xe liên kết (ở đây) — ô chọn người mua của phiếu bán hàng bên trang kế toán."""
+    from collections import defaultdict
+    from models import Customer, Owner, Vehicle
+    xe = defaultdict(list)
+    for oid, so in db.query(Vehicle.owner_id, Vehicle.truck_no).filter(Vehicle.owner_id.isnot(None), Vehicle.active.is_(True)):
+        xe[oid].append(so)
+    return {"khach": [{"id": k.id, "name": k.name, "active": bool(k.active)} for k in db.query(Customer).order_by(Customer.name).all()],
+            "chu_xe": [{"id": o.id, "name": o.name, "active": bool(o.active), "so_xe": xe.get(o.id, [])}
+                       for o in db.query(Owner).order_by(Owner.name).all()]}

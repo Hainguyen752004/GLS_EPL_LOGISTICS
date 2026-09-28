@@ -445,8 +445,7 @@
     // 'diem-do' (Điểm đổ nhiên liệu) dời sang trang kế toán 28/09 — bản gốc ở đó, bên này chỉ còn bản chép để đọc
     // 'kho-phu-tung' (Kho phụ tùng) dời sang trang kế toán 28/09 — tồn, giá, sổ ở đó; bên này còn danh mục để chọn trên phiếu
     // 'sua-chua' (Lệnh sửa chữa) dời sang trang kế toán 28/09 (đợt 6) — lệnh, chuỗi duyệt, xuất kho, PC_SC ở đó; mục V vẫn trên phiếu
-    { id: 'ban-hang',       nhom: 'mod_warehouse', nav: 'nav_sales',    ic: 'M3 3h2l2 12h11l2-8H6M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
-      vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'] },
+    // 'ban-hang' (Bán hàng) dời sang trang kế toán 28/09 (đợt 6) — phiếu bán, xuất kho, hoá đơn, thu ở đó
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     { id: 'xe',             nhom: 'mod_master',    nav: 'nav_vehicles', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tai-xe',         nhom: 'mod_master',    nav: 'nav_drivers',  ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0' },

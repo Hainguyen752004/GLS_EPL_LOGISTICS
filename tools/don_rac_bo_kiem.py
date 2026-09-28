@@ -280,6 +280,14 @@ db = SessionLocal(); n = b = 0
 # a0) lệnh sửa chữa thử (ở đây từ đợt 6): ghi chú "thử…" — gỡ dòng, lệnh, tờ PC_SC; số lệnh cho bước sổ phụ tùng
 lenh_kt = [o for o in db.query(M.RepairOrder).all() if (o.note or "").startswith("thử")]
 lenh |= {o.doc_no for o in lenh_kt}
+# a0') phiếu bán thử (ở đây từ đợt 6): như bước 2 bên trang điều xe — giữ BH-2608-0001 và phiếu của bộ mẫu. Số phiếu và
+#      dòng bán thử cộng vào tập bên kia gửi sang, để bước sổ phụ tùng / sổ dầu nhận ra đúng lần xuất kho của chúng.
+ban_kt = [x for x in db.query(M.Sale).all() if x.doc_no != "BH-2608-0001" and (x.note or "") not in tuple(g["ban_mau"])]
+id_ban_kt = {x.id for x in ban_kt}
+dong_ban_kt = db.query(M.SaleLine).all()
+ban = sorted(set(ban) | {x.doc_no for x in ban_kt})
+con_ban = (con_ban | {d.id for d in dong_ban_kt if d.sale_id not in id_ban_kt}) - {d.id for d in dong_ban_kt if d.sale_id in id_ban_kt}
+ban_con = (ban_con | {x.doc_no for x in db.query(M.Sale).all() if x.id not in id_ban_kt}) - {x.doc_no for x in ban_kt}
 def xoa_to(v):
     global n, b
     if v.entry_id:
@@ -357,6 +365,13 @@ for o in lenh_kt:
     db.delete(o)
 if lenh_kt:
     print("  lệnh sửa chữa thử (sổ kế toán): %s" % ", ".join(sorted(o.doc_no for o in lenh_kt)))
+for x in ban_kt:                                   # dòng xuất kho của chúng đã gỡ ở bước a / a2 (khoá sale_line:…)
+    for v in db.query(M.Voucher).filter(M.Voucher.nguon_bang == "sales", M.Voucher.nguon_id == x.id).all():
+        xoa_to(v)
+    db.query(M.SaleLine).filter(M.SaleLine.sale_id == x.id).delete(synchronize_session=False)
+    db.delete(x)
+if ban_kt:
+    print("  phiếu bán thử (sổ kế toán): %s" % ", ".join(sorted(x.doc_no for x in ban_kt)))
 db.flush()
 # b) tờ đẩy từ EPL_LAO mà nguồn không còn
 for v in db.query(M.Voucher).filter(M.Voucher.source == "EPL_LAO").all():
@@ -366,9 +381,9 @@ dung = {e.party_id for e in db.query(M.Entry).all() if e.party_id}
 for p in db.query(M.Partner).all():
     if p.id not in dung: db.delete(p)
 if THAT:
-    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán; còn %d tờ" % (len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b, db.query(M.Voucher).count()))
+    db.commit(); print("ĐÃ GHI epl_ketoan: xoá %d phiếu bán thử, %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán; còn %d tờ" % (len(ban_kt), len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b, db.query(M.Voucher).count()))
 else:
-    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b))
+    db.rollback(); print("SẼ XOÁ bên epl_ketoan: %d phiếu bán thử, %d lệnh sửa thử, %d dòng sổ phụ tùng, %d dòng sổ dầu, %d dòng sổ kho hàng, %d tờ, %d bút toán (chạy thử — chưa ghi)" % (len(ban_kt), len(lenh_kt), so_mv, len(xoa_dau), len(xoa_hh), n, b))
 """
 
 
@@ -378,7 +393,8 @@ def chay_so(that):
     con = sorted(c.so for c in db.query(M.ChungTu).all() if c.so not in da_xoa_ref)
     goi = {"con": con, "con_dong": sorted(con_dong), "lenh": sorted(so_lenh_thu), "ban": sorted(so_ban_thu), "tra": list(TRA_THU),
            "con_pl": sorted(phieu_linh_con), "con_ban": sorted(con_dong_ban), "con_sua": sorted(con_dong_sua),
-           "phieu_con": sorted(so_phieu_con), "ban_con": sorted(so_ban_con), "con_trip": sorted(con_trip)}
+           "phieu_con": sorted(so_phieu_con), "ban_con": sorted(so_ban_con), "con_trip": sorted(con_trip),
+           "ban_mau": list(BAN_MAU)}
     r = goi_so(MA, "that" if that else "thu", dau_vao=json.dumps(goi))
     print(r.stdout.strip() or r.stderr.strip()[-600:])
     if r.returncode and r.stdout.strip():

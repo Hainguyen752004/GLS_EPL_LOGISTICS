@@ -1321,9 +1321,10 @@ def tra_chu_xe(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     # Trả từng phiếu = một đợt gồm đúng một phiếu; cùng hàm với trả gộp để chứng từ và sổ trả giống nhau.
     from routes.chu_xe import tra_nhieu_phieu
     o = db.get(Owner, p.owner_id) if p.owner_id else None
-    tra_nhieu_phieu(db, user, [p], method=(data.get("method") or "cash"), note=data.get("note"), owner=o)
-    _ghi_log(db, p, user, "a_pay_owner")
-    db.commit()
+    # phiếu bán chủ xe mua ở quầy (trang kế toán) được trừ trong cùng đợt — bên này lưu hỏng thì bên đó về lại chờ trừ
+    with KK.GiaoDichKho(db, user) as gd:
+        tra_nhieu_phieu(db, user, [p], method=(data.get("method") or "cash"), note=data.get("note"), owner=o, gd=gd)
+        _ghi_log(db, p, user, "a_pay_owner")
     return xuat_phieu(db, p, vai=user.role)
 
 

@@ -8,9 +8,13 @@ chủ đó → Bãi lập hai phiếu gom bằng xe đó (phí trên phiếu t�
 trả GỘP hai phiếu một lần → một tờ PC_CX, hai phiếu đánh đã trả → trả lại thì bị chặn → dọn.
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — bán hàng ở trang kế toán (28/09, đợt 6)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -137,15 +141,15 @@ def main():
     # ---------------------------------------------------------------- 3b. chủ xe mua ở QUẦY → trừ vào tiền trả (chủ dự án 23/09)
     # "deal 1tr6, mua xăng 3 trăm → trả 1tr3": chủ xe mua 10 lít dầu 30.000 LAK/L = 300.000 LAK, không trả tiền mặt.
     s, dd = goi("/api/fuel-places", vai="ketoan"); kho_tb = next(x for x in dd if x.get("code") == "KHO-TB")
-    s, ban = goi("/api/ban-hang", {"sale_date": "2026-09-19", "owner_id": chu["id"], "currency": "LAK", "note": "thử: chủ xe mua dầu ở quầy",
-                                   "lines": [{"item_type": "fuel", "place_id": kho_tb["id"], "qty": 10, "unit_price": 30000}]}, vai="ketoan")
-    phai(s, 200, "Chủ xe mua 10 lít dầu ở quầy (300.000 LAK, trừ vào tiền trả)", ban)
+    # (phiếu bán ở TRANG KẾ TOÁN từ đợt 6 — chủ xe lấy từ danh mục bên này)
+    s, ban = K.kt("/api/ban-hang", {"sale_date": "2026-09-19", "owner_id": chu["id"], "currency": "LAK", "note": "thử: chủ xe mua dầu ở quầy",
+                                    "lines": [{"item_type": "fuel", "place_id": kho_tb["id"], "qty": 10, "unit_price": 30000}]}, vai="ketoan")
+    phai(s, 200, "Chủ xe mua 10 lít dầu ở quầy (trang kế toán, 300.000 LAK, trừ vào tiền trả)", ban)
     assert ban["owner_id"] == chu["id"] and ban["customer_id"] is None and ban["total_lak"] == 300000, ban
-    s, g = goi("/api/ban-hang/%s/thu" % ban["id"], {}, vai="quytb"); phai(s, 409, "Thu tiền mặt phiếu trừ chủ xe → bị từ chối", g)
-    s, ct = goi("/api/chung-tu?loai=HD_BAN", vai="ketoan")
-    hd = [c for c in ct["ds"] if (c["payload"] or {}).get("doc_no") == ban["doc_no"]]
-    assert hd and hd[0]["no"] == "4022" and hd[0]["co"] == "70", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 70: %s" % hd
-    print("  ✓ %-60s Nợ %s / Có %s" % ("hoá đơn bán cho chủ xe không thành nợ khách", hd[0]["no"], hd[0]["co"]))
+    s, g = K.kt("/api/ban-hang/%s/thu" % ban["id"], {}, vai="quytb"); phai(s, 409, "Thu tiền mặt phiếu trừ chủ xe → bị từ chối", g)
+    hd = [v for v in K.to_kho(ban["doc_no"], "HD_BAN") if (v.get("lines") or {}).get("doc_no") == ban["doc_no"]]
+    assert hd and hd[0]["debit"] == "4022" and hd[0]["credit"] == "70", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 70: %s" % hd
+    print("  ✓ %-60s Nợ %s / Có %s" % ("hoá đơn bán cho chủ xe không thành nợ khách", hd[0]["debit"], hd[0]["credit"]))
     s, cn = goi("/api/owners/%s/cong-no" % chu["id"], vai="quytb")
     assert [b["doc_no"] for b in cn["ban_cho_tru"]] == [ban["doc_no"]] and cn["tong"]["ban_cho_tru_lak"] == 300000, cn["tong"]
     print("  ✓ %-60s %s LAK" % ("công nợ chủ xe hiện phiếu bán chờ trừ", format(cn["tong"]["ban_cho_tru_lak"], ",")))
@@ -161,9 +165,10 @@ def main():
         and dot["currency"] == "USD" and sorted(dot["phieu"]) == sorted(p["doc_no"] for p in phieu) and dot["ban"] == [ban["doc_no"]], \
         "đợt trả = tổng phiếu − hàng mua ở quầy, đủ hai phiếu và phiếu bán: %s" % dot
     print("  ✓ %-60s %s − %s = %s %s" % ("đợt trả TRỪ hàng mua ở quầy", dot["gross"], dot["sales_deducted"], dot["amount"], dot["currency"]))
-    s, b2 = goi("/api/ban-hang/%s" % ban["id"], vai="ketoan")
-    assert b2["status"] == "offset" and b2["owner_payment_id"] == dot["id"], "phiếu bán phải đánh đã trừ, trỏ về đợt: %s" % b2
-    s, g = goi("/api/ban-hang/%s" % ban["id"], vai="ketoan", method="DELETE"); phai(s, 409, "Bỏ phiếu bán đã trừ → bị từ chối", g)
+    s, b2 = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan")
+    assert b2["status"] == "offset" and b2["owner_payment_id"] == dot["id"], "phiếu bán (trang kế toán) phải đánh đã trừ, trỏ về đợt: %s" % b2
+    print("  ✓ %-60s %s" % ("phiếu bán bên trang kế toán đánh 'đã trừ', trỏ về đợt", b2["status"]))
+    s, g = K.kt("/api/ban-hang/%s" % ban["id"], vai="ketoan", method="DELETE"); phai(s, 409, "Bỏ phiếu bán đã trừ → bị từ chối", g)
 
     s, ct = goi("/api/chung-tu?loai=PC_CX&limit=20", vai="ketoan")
     to = [c for c in ct["ds"] if c["nguon_bang"] == "owner_payments" and c["nguon_id"] == dot["id"]]
