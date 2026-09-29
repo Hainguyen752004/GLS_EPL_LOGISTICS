@@ -9,7 +9,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 ## Mục lục
 
 - **1.** Bức tranh chung: hai trang, mỗi trang giữ gì
-- **2.** Tài khoản và đăng nhập
+- **2.** Tài khoản và đăng nhập; **2.1** mở nhiều tab, mỗi tab một tài khoản
 - **3.** Đi lại giữa hai trang: nút bấm, máy tự gọi, cài đặt nối, khi một trang tắt
 - **4.** Luồng chính A → Z: phiếu GOM mỏ → bãi, phiếu GIAO bãi → cảng, rồi tới sổ kế toán
 - **5.** Bảng "ai làm tiếp"
@@ -52,7 +52,7 @@ Tóm tắt một chuyến trọn luồng (chi tiết từng bước ở Phần 4
 
 ## 2. Tài khoản và đăng nhập
 
-Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đăng nhập riêng từng trang**: vào trang điều xe không tự đăng nhập trang kế toán. Mẹo khi làm: mở trang điều xe ở một tab, trang kế toán ở tab bên cạnh. Muốn làm hai vai cùng lúc thì mở thêm một **cửa sổ ẩn danh** (Ctrl+Shift+N), mỗi cửa sổ một người.
+Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đăng nhập riêng từng trang**: vào trang điều xe không tự đăng nhập trang kế toán. Muốn mở nhiều người cùng lúc, mỗi tab một tài khoản: xem **2.1** ngay dưới bảng.
 
 | Tên đăng nhập | Vai | Ở trang điều xe làm gì | Ở trang kế toán làm gì |
 |---|---|---|---|
@@ -74,6 +74,18 @@ Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đ
 **Đăng nhập trang điều xe:** mở `http://<máy chủ>:8020`, bấm vào tên người ở danh sách hoặc gõ tên đăng nhập, mật khẩu `1234`, bấm **Đăng nhập**. Người thường vào thẳng màn đầu tiên của mình; tài xế vào **Phiếu của tôi**.
 
 **Đăng nhập trang kế toán:** mở `http://<máy chủ>:8030`, gõ tên và mật khẩu, bấm đăng nhập. Người có vai sổ vào thẳng **Kế toán** (Sổ kế toán, Nhật ký chung); người vận hành (thủ kho, tổ sửa chữa, Admin Thà Bốc) vào thẳng màn đầu tiên của mình trong nhóm **Kho**, không thấy sổ.
+
+### 2.1. Mở nhiều tab, mỗi tab một tài khoản
+
+**Mỗi lần đăng nhập, BỎ TICK ô *Ghi nhớ đăng nhập*** (ô này mặc định có tick, ở cả hai trang). Có tick thì phiên lưu chung cho cả trình duyệt: một tab đăng nhập tài khoản khác là **mọi tab của trang đó** chạy theo tài khoản mới — tab ghi tên "Bãi" bấm nút lại chạy bằng quyền kế toán. Bỏ tick thì mỗi tab giữ tài khoản của riêng nó.
+
+- Mở tab mới bằng **Ctrl+T** rồi gõ địa chỉ; **đừng dùng *Nhân đôi thẻ*** (nhân đôi chép luôn phiên của tab cũ).
+- Đổi người trong một tab: bấm tên người ở góc trên phải → **Đổi tài khoản** → đăng nhập lại, **bỏ tick lại**.
+- Trang điều xe (8020) và trang kế toán (8030) là hai trang riêng: `ketoan` ở 8020 và `ketoan` ở 8030 là hai tab, không đụng nhau.
+- Tài xế: dùng điện thoại là gọn nhất; không có điện thoại thì một tab như trên.
+- Cách khác: mỗi người một **cửa sổ ẩn danh** (Ctrl+Shift+N) hoặc một trình duyệt khác.
+
+**Tab này bấm, tab kia có thấy ngay không?** Dữ liệu vào máy chủ **ngay lúc bấm** — ví dụ thủ kho bấm **Cấp dầu** ở 8030 thì phiếu ở 8020 đã có dầu đã cấp. Nhưng tab đang mở **không tự vẽ lại**: sang tab kia bấm **F5** (hoặc bấm lại màn đó trên menu). Hai màn tự tải lại: **Tổng quan** (tick **Tự cập nhật 60 s**) và **Theo dõi tuyến** (tick **Tự cập nhật 30 giây**). Tờ chứng từ vào sổ lúc nào: xem hai đường ở **1.3**.
 
 ## 3. Đi lại giữa hai trang
 
@@ -728,17 +740,17 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
    | Trang kế toán, màn | Phải thấy |
    |---|---|
-   | **Tiền vận chuyển → Hóa đơn vận chuyển** (`doanhthu`) | 7 phiếu đã lập hoá đơn. Đã thu đủ: T4-0430-08, T4-0431-08, T4-0440-09, T4-0442-09, T4-0443-09. Thu một phần: **T4-0441-09** (đã thu 349,36 USD, còn 1.441,44 USD). Chưa thu đồng nào: **T4-0446-09** (1.689,20 USD) — dùng hai phiếu này để thử ghi thu |
+   | **Tiền vận chuyển → Hóa đơn vận chuyển** (`doanhthu`) | 7 phiếu đã lập hoá đơn (cộng hai phiếu mẫu 10.0c lập sau, đã thu đủ). Đã thu đủ: T4-0430-08, T4-0431-08, T4-0440-09, T4-0442-09, T4-0443-09. Thu một phần: **T4-0441-09** (đã thu 349,36 USD, còn 1.441,44 USD). Chưa thu đồng nào: **T4-0446-09** (1.689,20 USD) — dùng hai phiếu này để thử ghi thu |
    | **Tiền vận chuyển → Hoá đơn gộp tháng** | Tờ **HDT-202609-01**, 2 phiếu, 79.279.200 LAK; đã thu 47.567.520, còn 31.711.680 LAK |
    | **Tiền vận chuyển → Xe liên kết** (`ketoan`) | Một đợt trả ngày 23/09 cho ທ້າວ ຄຳຫລ້າ: 1.269,47 USD (tổng 1.297,65, 1 phiếu) |
    | **Tất toán tài xế**, **Theo dõi nhà cung cấp** | Chưa có kỳ chốt, chưa có lần trả — DB thật trước đây chưa ai chốt hay trả |
 
    Trên trang điều xe, các phiếu đó vẫn hiện *đã thu · còn lại* đúng như trên (bản chép). Bản sao lưu ngay trước khi dời: `D:\Demo_Lao\saoluu\saoluu_epl_lao_20260929_1046.dump` và `saoluu_epl_ketoan_20260929_1046.dump`.
 
-2. **Khởi động lại máy 8020** (trang điều xe) để nhận bản có **Báo cân ở mỏ** (bước 10b), **Km chiều về** của tuyến, ô **Lúc đi** tự điền (bước 1) và ô **cách trả** mục IV (bước 3), rồi **Ctrl+F5** trên trình duyệt. Năm tuyến mẫu ở mục 5 dưới đây em thêm sau khi máy 8020 chạy bản mới. Máy **8030** không cần khởi động lại.
+2. **Máy chủ đã chạy bản mới nhất:** 8020 và 8030 khởi động lại lúc 13:59 ngày 29/09 — có **Báo cân ở mỏ** (bước 10b), **Km chiều về** của tuyến, ô **Lúc đi** tự điền (bước 1), ô **cách trả** mục IV (bước 3), tờ tạm ứng có mã QR và tờ chứng từ PTU theo đúng số quỹ chi. Chỉ cần **Ctrl+F5** trên trình duyệt. Sau này em sửa mã máy chủ thì em báo khởi động lại.
 3. **Kiểm kết nối hai chiều** (Phần 3.3 bước 8): trang kế toán, `admin` → **Cài đặt** → thẻ **Liên thông trang điều xe** → **Kiểm kết nối** phải hiện *Nối được trang điều xe*; trang điều xe, `admin` → **Hệ thống → Tài khoản** → tab **Liên thông trang kế toán** → **Kiểm kết nối** phải hiện *Nối được trang kế toán*.
-4. Mở **trang điều xe ở một tab, trang kế toán ở tab bên cạnh**. Cần hai người cùng lúc (ví dụ Bãi lập phiếu, kế toán kiểm) thì mở thêm **cửa sổ ẩn danh** (Ctrl+Shift+N). Mật khẩu mọi tài khoản `1234`.
-5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** (đang có phiếu mẫu cũ chưa về — test dùng xe **343**, **344**) và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết).
+4. Mở tab theo **2.1**: mỗi tab một tài khoản, mỗi lần đăng nhập **bỏ tick *Ghi nhớ đăng nhập***. Mật khẩu mọi tài khoản `1234`.
+5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** (đang có phiếu mẫu cũ chưa về — test dùng xe **343**, **344**; **345**, **346** đã chạy cặp phiếu mẫu 10.0c) và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết ở T27; cặp phiếu mẫu 10.0c cũng dùng tài xế này).
    **Tuyến** (Danh mục → Tuyến đường) — năm tuyến mẫu có **chiều về** thêm ngày 29/09, mỗi tuyến đã có giá cước cho cả 3 khách (theo tấn, USD, tỷ lệ theo km; giá thuê xe liên kết kém 0,5 USD/t):
 
    | Tuyến | Dùng cho | Chiều hàng | Chiều về | Cả chuyến | BOT | Giá · thuê (USD/t) |
@@ -760,7 +772,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 Một chuyến trọn vẹn làm từ đầu: phiếu **GOM** mỏ → bãi, rồi phiếu **GIAO** lấy hàng từ lô đó ra cảng, tới hoá đơn và sổ. Mỗi bước ghi **ai** (đăng nhập tài khoản nào), **trang** nào, **bấm gì** (đúng chữ trên nút), và **thấy gì là đúng** — số đã tính sẵn theo đúng số em cho ở đây. Mã ca ở cuối mỗi bước (T…) là dòng tương ứng trong bảng 10.1–10.6 để đánh dấu **Đạt**.
 
-**Chuẩn bị (một lần):** Ctrl+F5 cả hai trang. Tab 1: trang điều xe `http://<máy chủ>:8020`. Tab 2: trang kế toán `http://<máy chủ>:8030`. Tài xế dùng **điện thoại** hoặc một **cửa sổ ẩn danh** (Ctrl+Shift+N) đăng nhập `tx01`, sau này `tx02`. Mật khẩu mọi tài khoản `1234`. Đổi người: bấm tên người ở góc trên phải → **Đổi tài khoản** → đăng nhập tài khoản mới.
+**Chuẩn bị (một lần):** Ctrl+F5 cả hai trang. Mở tab theo **2.1** (mỗi tab một tài khoản, bỏ tick *Ghi nhớ đăng nhập*): trang điều xe `http://<máy chủ>:8020`, trang kế toán `http://<máy chủ>:8030`. Tài xế `tx01` (sau này `tx02`) dùng điện thoại hoặc một tab riêng.
 
 #### A. Phiếu GOM — Bãi lập (trang điều xe, `thabok`)
 
@@ -864,8 +876,6 @@ Trên máy thật (8020 · 8030) đã có **một cặp phiếu đi trọn A →
 | Tạm ứng phiếu gom (580.000) | `mX0zV9urgYXJ` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
 | Tạm ứng phiếu giao (2.413.500) | `y_gjm-_Yy2TM` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
 
-Thủ kho xem dầu đã ra khỏi kho ở **Kho → Kho nhiên liệu**: kho Thà Bốc còn **2.720 L**.
-
 **2. Lãi một chuyến có hai con số — sếp dễ hỏi.** Lấy phiếu giao T4-0447-09:
 
 | Xem ở đâu | Lãi | Vì sao |
@@ -873,7 +883,7 @@ Thủ kho xem dầu đã ra khỏi kho ở **Kho → Kho nhiên liệu**: kho Th
 | Trên **phiếu** (trang điều xe, cuối trang) | **7.105.200** | trừ **mọi** khoản chi của chuyến: dầu, tạm ứng, **và cả** tiền nước + tiền chuyến |
 | Màn **Chuyến xe** (trang kế toán) | **8.965.200** | chỉ trừ khoản **đã vào sổ**: dầu và tạm ứng |
 
-Chênh **1.860.000** = tiền nước 60.000 + tiền chuyến 1.800.000. Hai khoản này **trả cùng lương cuối tháng, gộp theo tài xế**, không gắn vào từng phiếu, nên sổ không trừ vào chuyến. (Phiếu gom chênh 2.480.000 — thêm chipping 620.000 nợ nhà cung cấp, trả theo đợt.) **Nói với sếp: lãi thật của một chuyến xem ở phiếu.**
+Chênh **1.860.000** = tiền nước + tiền chuyến *trả cùng lương* — khoản này chưa có tờ vào sổ (xem **Khoản chưa vào sổ** ở cuối 10.0c). **Nói với sếp: lãi thật của một chuyến xem ở phiếu.**
 
 **3. Ảnh trong phiếu mẫu là ảnh trống.** Ảnh phiếu cân (phiếu gom), chữ ký người nhận và ảnh biên bản (phiếu giao) có trong phiếu, nhưng mở ra không có hình — công cụ lập phiếu không chụp ảnh, không ký tay được. Muốn cho sếp xem **chữ ký thật, ảnh thật** thì dùng phiếu anh tự bấm theo 10.0b (ký bằng tay trên điện thoại).
 
@@ -881,7 +891,7 @@ Chênh **1.860.000** = tiền nước 60.000 + tiền chuyến 1.800.000. Hai kh
 
 #### Mở bao nhiêu tab, mỗi tab một tài khoản
 
-**Điều bắt buộc: mỗi lần đăng nhập, BỎ TICK ô *Ghi nhớ đăng nhập*** (ô này mặc định có tick, ở cả hai trang). Có tick thì phiên lưu chung cho cả trình duyệt: một tab đăng nhập tài khoản khác là **mọi tab của trang đó** chạy theo tài khoản mới — tab ghi tên "Bãi" bấm nút lại chạy bằng quyền kế toán. Bỏ tick thì mỗi tab giữ tài khoản của riêng nó. Mở tab mới bằng **Ctrl+T** rồi gõ địa chỉ, **đừng dùng *Nhân đôi thẻ*** (nhân đôi chép luôn phiên của tab cũ). Bấm **Đổi tài khoản** trong một tab thì cũng bỏ tick lại. Trang điều xe (8020) và trang kế toán (8030) là hai trang riêng: `ketoan` ở 8020 và `ketoan` ở 8030 là hai tab, không đụng nhau.
+Cách mở tab ở **2.1** — quan trọng nhất: mỗi lần đăng nhập **bỏ tick *Ghi nhớ đăng nhập***, không thì các tab dùng chung một tài khoản. Tab này bấm thì tab kia bấm **F5** mới thấy.
 
 **Đủ bộ là 10 tab**, mở theo thứ tự này (tab 1–6 ở `http://<máy chủ>:8020`, tab 7–10 ở `http://<máy chủ>:8030`):
 
@@ -949,13 +959,13 @@ Mở được mọi phiếu, thấy như tab 2 cộng các nút của mọi vai.
 
 **Tab 7 · `khotb` — thủ kho Thà Bốc (trang kế toán)**
 
-1. Đăng nhập là vào **Kho → Cấp phát**: bảng **Chờ cấp** không còn tờ nào của hai phiếu mẫu (đã cấp hết). Muốn xem lại một tờ đã cấp: ô **Nhập mã QR** gõ mã in trên tờ rồi Enter — `W13LRwYrS0ft` (PLNL-G4-0104-09/EPL-1, 200 L) hoặc `F5b6KJrQkqsg` (PLNL-T4-0447-09/EPL-1, 300 L) → khung **Đối chiếu trước khi cấp** hiện đúng xe, biển đầu kéo, rơ-moóc, tài xế, trạng thái *Đã cấp*, **Người cấp** ທ້າວ ບຸນມາ; không có nút cấp lần hai.
+1. Đăng nhập là vào **Kho → Cấp phát**: bảng **Chờ cấp** không còn tờ nào của hai phiếu mẫu (đã cấp hết). Muốn xem lại một tờ đã cấp: ô **Nhập mã QR** gõ mã phiếu lĩnh ở bảng **điều 1** rồi Enter → khung **Đối chiếu trước khi cấp** hiện đúng xe, biển đầu kéo, rơ-moóc, tài xế, trạng thái *Đã cấp*, **Người cấp** ທ້າວ ບຸນມາ; không có nút cấp lần hai.
 2. **Kho → Kho nhiên liệu** → ô **Kho** chọn kho Thà Bốc: **Tồn kho hiện tại** **2.720 L**; sổ dầu hai dòng mới nhất *Xuất theo phiếu* `PLNL-T4-0447-09/EPL-1` xe 346 (tồn còn 2.720) và `PLNL-G4-0104-09/EPL-1` xe 345 (tồn còn 3.020), trước đó 3.220.
 
 **Tab 8 · `quytb` — quỹ Thà Bốc (trang kế toán)**
 
 1. **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường**: không còn tờ chờ của hai phiếu mẫu.
-2. Ô **Nhập mã QR** gõ `mX0zV9urgYXJ` (PTU-G4-0104-09/EPL) hoặc `y_gjm-_Yy2TM` (PTU-T4-0447-09/EPL) → **Số tiền** **580.000** / **2.413.500**, *Đã cấp*, **Người cấp** ນາງ ດາວ; không chi lần hai được.
+2. Ô **Nhập mã QR** gõ mã tạm ứng ở bảng **điều 1** → **Số tiền** **580.000** / **2.413.500**, *Đã cấp*, **Người cấp** ນາງ ດາວ; không chi lần hai được.
 
 **Tab 9 · `doanhthu` — KT Doanh thu (trang kế toán)**
 
@@ -968,10 +978,8 @@ Mở được mọi phiếu, thấy như tab 2 cộng các nút của mọi vai.
 
 1. **Sổ sách → Kế toán** → **Nhật ký chung** → ô **Tìm kiếm…** gõ `T4-0447` → 5 bút toán: xuất dầu kho (Nợ 625 / Có 1371), hoá đơn (Nợ 1211 / Có 70), hai lần thu (Nợ 1022 / Có 1211), chi tạm ứng (Nợ 625 / Có 1011). Gõ `G4-0104` → 4 bút toán. Bảng đủ số ở mục *Ghi sổ như thế nào* ngay dưới.
 2. Cùng màn → **Cân đối phát sinh** → dòng cuối **Nợ = Có, cân đối**.
-3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (dầu 8.550.000 + tạm ứng 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Lãi ở đây khác lãi trên phiếu — xem điều 2 ở mục *Bốn điều cần biết trước khi demo* (đầu 10.0c). Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
+3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (dầu 8.550.000 + tạm ứng 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Lãi ở đây khác lãi trên phiếu — xem **điều 2**. Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
 4. **Kho → Kho hàng** → bảng **Lô hàng trong kho**: lô **G4-0104-09/EPL** nhập 41,5 t, còn **11,5 t** (30 t đã đi theo T4-0447-09).
-
-**Có cập nhật ngay sang tab khác không?** Dữ liệu dùng chung **ngay trên máy chủ** — bấm xong ở tab này là hai trang đã ghi (ví dụ thủ kho bấm **Cấp dầu** ở 8030 thì phiếu ở 8020 đã có dầu đã cấp). Nhưng tab đang mở **không tự vẽ lại**: sang tab kia bấm **F5** (hoặc bấm lại màn đó trên menu) là thấy. Hai màn tự tải lại: **Tổng quan** (tick **Tự cập nhật 60 s**) và **Theo dõi tuyến** (tick **Tự cập nhật 30 giây**). Riêng **sổ kế toán**: tờ sinh ở trang kế toán (cấp dầu, hoá đơn, thu tiền, nhập / xuất kho hàng) vào sổ ngay lúc bấm; tờ sinh ở trang điều xe (phiếu chi tạm ứng, phiếu xuất xe, phiếu lĩnh) vào sổ khi `ketoan` bấm **Đẩy** (**Vận tải → Phiếu chi · Phiếu thu** → tab **Sổ chứng từ** → **Đẩy hết tờ chưa đẩy**). Tờ của cặp phiếu mẫu đã đẩy rồi.
 
 #### Ghi sổ như thế nào — chứng từ và bút toán của cặp phiếu mẫu
 
@@ -988,11 +996,18 @@ Mỗi việc trên phiếu sinh một **tờ chứng từ**; tờ nào có tiề
 | Lập hoá đơn (`doanhthu`) | HD/2609/0005 — 518,75 USD = 11.412.500 LAK | HD/2609/0006 — 905,85 USD = 19.928.700 LAK | **Nợ 1211 / Có 70** (khách nợ tiền cước) |
 | Ghi thu tiền (`doanhthu`) | PT/2609/0004 — 518,75 USD | PT/2609/0005 — 400 USD · PT/2609/0006 — 505,85 USD | **Nợ 1022 / Có 1211** (tiền về ngân hàng, xoá nợ khách) |
 
-Trong **Sổ sách → Kế toán → Nhật ký chung** là 9 bút toán **BT-000053 … BT-000061** (4 của phiếu gom, 5 của phiếu giao); **Cân đối phát sinh** vẫn *Nợ = Có*.
+Trong **Sổ sách → Kế toán → Nhật ký chung** là 9 bút toán **BT-000053 … BT-000061** (4 của phiếu gom, 5 của phiếu giao); **Cân đối phát sinh** vẫn *Nợ = Có*. Tờ sinh ở trang kế toán vào sổ ngay; tờ sinh ở trang điều xe phải **đẩy** (1.3) — tờ của cặp phiếu mẫu đã đẩy rồi.
 
-**Chưa vào sổ, đúng luật cách trả** (bước 3): trong mục IV, chỉ dòng *Chi ngay khi xe đi* đi qua quỹ lúc xe đi. **Tiền nước + tiền chuyến** (1.860.000 mỗi phiếu) là *Trả theo chuyến cùng lương*: hiện ở **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** tháng 09 của ທ້າວ ສົມພອນ, ghi sổ khi trả lương. **Chipping Lào** 620.000 (phiếu gom) là *Nợ NCC / trả theo đợt*: vào công nợ nhà cung cấp, ghi sổ khi kế toán trả đợt (6.6). Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 = **3.060.000**; phiếu giao 2.413.500 + 1.860.000 = **4.273.500**.
+**Khoản chưa vào sổ.** Mục IV chia theo cách trả (bước 3); chỉ dòng *Chi ngay khi xe đi* qua quỹ lúc xe đi nên có tờ PC_TU. Hai loại còn lại:
 
-**Lưu ý khi mở Tất toán tài xế** cho ທ້າວ ສົມພອນ: dòng của hai phiếu mẫu *đã chi thật = tạm ứng*, **chênh 0**; nhưng dòng tổng của tài xế còn gộp phiếu mẫu cũ tháng 8–9 (chi tạm ứng theo luật cũ) nên có thể hiện *Tài xế nộp lại* — xem lưu ý ở ca T34.
+| Khoản | Phiếu gom | Phiếu giao | Đi đâu | Vào sổ lúc nào |
+|---|---|---|---|---|
+| Tiền nước + tiền chuyến (*Trả theo chuyến cùng lương*) | 1.860.000 | 1.860.000 | cộng lên **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế**, tháng 09, dòng ທ້າວ ສົມພອນ | **chưa có tờ nào** — màn đó chỉ cộng số để trả lương, không sinh bút toán |
+| Chipping Lào (*Nợ NCC / trả theo đợt*) | 620.000 | — | cộng vào phát sinh ở **Tiền vận chuyển → Theo dõi nhà cung cấp** (6.6) | chỉ khi kế toán bấm **Trả nhà cung cấp**: tờ PC_NCC (Nợ 4021 / Có 1011) |
+
+Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 = **3.060.000**; phiếu giao 2.413.500 + 1.860.000 = **4.273.500**. Đây cũng là lý do lãi ở màn **Chuyến xe** cao hơn lãi trên phiếu (**điều 2**).
+
+**Tất toán tài xế** của ທ້າວ ສົມພອນ: hai phiếu mẫu *đã chi thật = tạm ứng*, **chênh 0**; dòng tổng của tài xế có thể còn *Tài xế nộp lại* vì phiếu mẫu cũ — lý do ở ca **T34**.
 
 **Lập lại cặp phiếu mẫu khác** (ví dụ hôm sau): `python tools/phieu_mau_a_z.py` chạy thử (không ghi, chỉ kể sẽ làm gì), thêm `http://127.0.0.1:8020 http://127.0.0.1:8030 that` là làm thật. Cùng ngày đã có phiếu mẫu thì công cụ dừng, không lập trùng. Công cụ chỉ đẩy tờ của hai phiếu mẫu, không bấm *Đẩy hết* (không cuốn tờ của phiếu anh đang test tay).
 
