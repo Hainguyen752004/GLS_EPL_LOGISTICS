@@ -17,7 +17,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, rồi 59 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, rồi 60 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -213,10 +213,33 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Thao tác:**
 
-1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. **SL là số lượng, không phải tiền — và theo Excel của họ, SL 1 là 1 chuyến** (không phải ngày hay buổi): tờ *ໃບເບີກລົດອອກໄປຂົນສົ່ງ* mục IV ghi mọi khoản SL 1, đơn giá là **số tiền trọn chuyến** — tiền nước 60.000, chi phí sang Việt Nam 430.000, chipping Lào 620.000, chipping Việt 1.500.000, phí cao tốc 1.833.500, tiền chuyến 1.800.000, điện thoại 150.000 LAK — cột ghi chú nói trả thế nào: *trả theo chuyến cùng lương* (tiền nước, tiền chuyến), *trả ngay khi tài xế xuất xe* (chi phí sang Việt Nam, điện thoại), *ghi nợ nhà cung cấp, trả theo đợt* (chipping), *trả theo chuyến qua thẻ* (phí cao tốc). Khoản nào một chuyến tính hai lần thật (ví dụ qua cầu hai lượt) thì mới ghi SL 2. Tiền = SL × **Đơn giá**; Bãi không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá ở bước 7. Mục III cũng vậy: SL là **lít**.
+1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. SL đếm theo gì: xem bảng ngay dưới.
 2. Phí cao tốc: tuyến có BOT thì máy tự thêm dòng. Chọn **Trả tiền mặt (không dùng thẻ)** hoặc chọn thẻ cao tốc để trừ thẻ.
 3. Mục VI (nếu có) → **Thêm dòng** tương tự. Bấm **Lưu**.
 4. Bấm **Phiếu chi tạm ứng**: mở màn **Phiếu chi · Phiếu thu** ở tờ tạm ứng của phiếu này, có mã QR. Bấm **In**, tài xế cầm tới quỹ.
+
+**SL đếm theo gì** — SL là **số lượng, không phải tiền**. Trên màn phiếu, cột mục IV, VI ghi **SL (lần / chuyến)**, dưới bảng mục IV, V, VI có một dòng nhắc nói đúng như bảng này:
+
+| Mục | SL là | SL 1 nghĩa là | Đơn giá là |
+|---|---|---|---|
+| III · Nhiên liệu | **Lít** (cột ghi *Lít*) | 1 lít | giá một lít — dầu kho: bình quân của kho; dầu mua: KT kho xăng dầu nhập |
+| IV · Đi đường | **Số lần trong chuyến** | cả chuyến có khoản đó **một lần** — không phải một ngày, không phải một buổi | **tiền trọn khoản cho cả chuyến** |
+| V · Sửa chữa | **Số phụ tùng**, hoặc **số lần sửa** | 1 cái phụ tùng · sửa 1 lần | giá một cái / một lần — phụ tùng kho: bình quân của kho |
+| VI · Chi khác | **Số lần trong chuyến** | như mục IV | như mục IV |
+
+Đúng như tờ Excel của họ (*ໃບເບີກລົດອອກໄປຂົນສົ່ງ*, mục IV): mỗi khoản một dòng, **SL 1**, đơn giá là tiền trọn chuyến, cột ghi chú nói trả thế nào:
+
+| Khoản (Excel) | SL | Đơn giá (LAK) | Ghi chú trong Excel |
+|---|---|---|---|
+| Tiền nước · ເງີນເຕີມນ້ຳ | 1 | 60.000 | trả theo chuyến cùng lương |
+| Chi phí sang Việt Nam · ເງິນໃຊ້ຈ່າຍໄປຫວຽດນາມ | 1 | 430.000 | trả ngay khi tài xế xuất xe |
+| Chipping Lào · ຄ່າຊີບປີງລາວ | 1 | 620.000 | ghi nợ nhà cung cấp, trả theo đợt |
+| Chipping Việt · ຄ່າຊີບປີງຫວຽດ | 1 | 1.500.000 | ghi nợ nhà cung cấp, trả theo đợt |
+| Phí cao tốc · ເງີນຄ່າທາງດ່ວນ | 1 | 1.833.500 | trả theo chuyến, qua thẻ (nạp 15 triệu kíp mỗi lần) |
+| Tiền chuyến · ເງີນຖ້ຽວແກ່ແຮ່ | 1 | 1.800.000 | trả theo chuyến cùng lương |
+| Điện thoại · ຄ່າເບີໂທ | 1 | 150.000 | trả ngay khi tài xế xuất xe |
+
+Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một chuyến (ví dụ qua cầu hai lượt). Chuyến dài hơn thì **đơn giá** lớn hơn, SL vẫn là 1. Bãi chỉ ghi khoản mục và SL; không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá khi kiểm (bước 7). Phần cách trả máy đang theo: tiền nước, tiền chuyến gom lên màn **Tiền chuyến & tiền nước tài xế** để trả cùng lương (bước 20); phí cao tốc chọn thẻ thì trừ thẻ, không vào tạm ứng; dầu **ghi nợ tại trạm** không vào tạm ứng.
 
 **Máy tự làm:** gom mọi khoản tiền mặt EPL ứng (mục IV, VI, dầu mua ngoài) thành số tạm ứng. Tờ **PTU** sinh ở bước này.
 
@@ -731,6 +754,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 | T01b | `thabok` · điều xe | Trên phiếu T01 (chưa lưu cũng được): nhìn ô **Lúc đi**, rồi gõ đè một số khác, rồi đổi **Số xe** sang xe khác và chọn lại 341 | Chọn xe là ô **Lúc đi** có ngay số **Công-tơ-mét (km)** của xe 341 (như ở màn **Xe**), dưới ô ghi *Điền sẵn theo công-tơ-mét của xe — sửa được*; đã gõ tay thì đổi xe **không** đè số anh gõ. **Km về ước tính** = lúc đi + 290 (145 đi + 145 về) | 1 | |
 | T02 | `thabok` · điều xe | Mục III → **Thêm dòng**: 200 lít, nơi đổ **kho Thà Bốc** → **Lưu** → **Phiếu lĩnh nhiên liệu** → **In** | Mở màn Phiếu chi · Phiếu thu ở tờ phiếu lĩnh có mã QR; không có cột tiền | 2 | |
 | T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** tiền chuyến, tiền nước (chỉ số lượng) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
+| T03b | `thabok` rồi `ketoancp` · điều xe | Bãi nhìn bảng mục IV: tiêu đề cột và dòng nhắc dưới bảng. Rồi `ketoancp` mở cùng phiếu | Bãi: cột **SL (lần / chuyến)**, dưới bảng ghi *SL 1 = một lần trong chuyến này, theo Excel…*; không có cột đơn giá, dòng **Tổng** trống. `ketoancp`: thấy thêm **Đơn giá**, **Thành tiền (LAK)**, dòng **Tổng** có số. Mục V dưới bảng ghi *SL: số phụ tùng, hoặc số lần sửa…* | 3 | |
 | T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, III, IV (mục II chưa — chờ cân mỏ, ca T10b) | Ba mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
 | T05 | `ketoan` · điều xe | Mở phiếu (từ **Tổng quan → Việc của tôi** hoặc ô **Số phiếu**) → **Xác nhận kiểm tra** mục I | Mục I *Đã kiểm* (mục II kiểm ở ca T10b) | 5 | |
 | T06 | `khotb` · kế toán | **Kho → Cấp phát** → quét / gõ mã QR phiếu lĩnh T02 (hoặc bấm dòng ở bảng **Chờ cấp**) → đối chiếu → **Cấp dầu** → **Cấp dầu** | Tồn kho Thà Bốc giảm 200 L; bên điều xe phiếu lĩnh *Đã cấp*, dòng dầu mang **giá bình quân kho lúc cấp**; sổ có **PXK_NL**. Cấp lần hai bị chặn | 8 | |

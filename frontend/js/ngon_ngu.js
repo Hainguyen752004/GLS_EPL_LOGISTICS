@@ -7781,5 +7781,20 @@ window.EPL_TU_DIEN = {
   "vi": "Điền sẵn theo công-tơ-mét của xe — sửa được",
   "lo": "ຕື່ມເອງຕາມເລກກົງເຕີຂອງລົດ — ແກ້ໄດ້",
   "en": "Pre-filled from the truck's odometer — editable"
+ },
+ "qty_lan": {
+  "vi": "SL (lần / chuyến)",
+  "lo": "ຈຳນວນ (ເທື່ອ / ຖ້ຽວ)",
+  "en": "Qty (times per trip)"
+ },
+ "sl_nhac_iv": {
+  "vi": "SL 1 = một lần trong chuyến này, theo Excel: mỗi khoản một dòng, đơn giá = tiền trọn chuyến (tiền nước 60.000 × 1, phí cao tốc 1.833.500 × 1). Khoản nào xảy ra hai lần trong chuyến mới ghi 2. Admin Thà Bốc chỉ ghi SL; đơn giá kế toán nhập lúc kiểm.",
+  "lo": "ຈຳນວນ 1 = ເທື່ອໜຶ່ງໃນຖ້ຽວນີ້, ຕາມ Excel: ແຕ່ລະລາຍການໜຶ່ງແຖວ, ລາຄາ = ມູນຄ່າທັງຖ້ຽວ (ເງິນເຕີມນໍ້າ 60.000 × 1, ເງິນຄ່າທາງດ່ວນ 1.833.500 × 1). ລາຍການທີ່ເກີດສອງເທື່ອໃນຖ້ຽວ ຈຶ່ງໃສ່ 2. ແອັດມິນ ທ່າບົກ ໃສ່ແຕ່ຈຳນວນ; ລາຄາ ບັນຊີປ້ອນຕອນກວດ.",
+  "en": "Qty 1 = once in this trip, as in the Excel sheet: one line per item, unit price = the amount for the whole trip (water money 60,000 × 1, expressway toll 1,833,500 × 1). Enter 2 only if it really happens twice in the trip. The Thabok admin enters only the quantity; the accountant enters the price when verifying."
+ },
+ "sl_nhac_v": {
+  "vi": "SL: số phụ tùng, hoặc số lần sửa (vá / thay lốp × 1). Đơn giá kế toán nhập lúc kiểm; phụ tùng lấy từ kho mang giá bình quân của kho.",
+  "lo": "ຈຳນວນ: ຈຳນວນອາໄຫຼ່, ຫຼື ຈຳນວນເທື່ອສ້ອມແປງ (ຄ່າຈອດຢາງ × 1). ລາຄາ ບັນຊີປ້ອນຕອນກວດ; ອາໄຫຼ່ຈາກສາງ ໃຊ້ລາຄາສະເລ່ຍຂອງສາງ.",
+  "en": "Qty: number of parts, or number of repairs (tyre repair / replacement × 1). The accountant enters the price when verifying; parts from the store carry the store's average cost."
  }
 };

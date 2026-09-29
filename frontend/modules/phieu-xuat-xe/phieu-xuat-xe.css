@@ -104,6 +104,8 @@
 /* ---- dòng hàng trên phiếu (hai DO) ---- */
 .px-hang-o{grid-column:1/-1}
 .px-hang-o[hidden]{display:none}
+/* SL đếm theo gì — dòng nhắc dưới bảng mục IV, V, VI (29/09) */
+.px-sl-nhac{margin:6px 0 0;line-height:1.4;max-width:90ch}
 .px-hang td,.px-hang th{vertical-align:middle}
 .px-hang input,.px-hang select{width:100%;min-width:80px}
 .px-hang tr.hao td{background:var(--amber-soft,#FBF3E2);font-style:italic}
