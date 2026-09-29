@@ -27,7 +27,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
+from models import ChungTu, FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
 from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
@@ -104,7 +104,16 @@ def dam_bao_tam_ung(db, p, user):
     CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
            doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
            mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+    _khop_ct_tam_ung(db, v)
     return v
+
+
+def _khop_ct_tam_ung(db, v):
+    """Tờ chứng từ PTU ghi số LÚC BÃI IN tờ tạm ứng — kế toán chưa nhập giá nên có khi còn 0 (phiếu mẫu 29/09: PTU 0 LAK
+    mà PC_TU 580.000). Chưa đẩy sang kế toán thì theo số tạm ứng hiện tại: tờ PTU phải bằng số quỹ chi (PC_TU)."""
+    c = db.query(ChungTu).filter(ChungTu.loai == "PTU", ChungTu.nguon_bang == "vouchers", ChungTu.nguon_id == v.id).first()
+    if c is not None and not c.da_day and abs((c.tien or 0) - (v.amount_lak or 0)) > 0.5:
+        c.tien = c.tien_lak = v.amount_lak
 
 
 def xuat_phieu_linh(db, v, goc="", vai=None):
@@ -115,6 +124,7 @@ def xuat_phieu_linh(db, v, goc="", vai=None):
         p_ = db.get(Trip, v.trip_id)
         if p_ is not None:
             v.amount_lak = _tien_tam_ung(db, p_)
+            _khop_ct_tam_ung(db, v)
     return {"id": v.id, "trip_id": v.trip_id, "kind": v.kind, "doc_no": v.doc_no,
             "doc_date": v.doc_date.isoformat() if v.doc_date else None,
             "place_id": v.place_id, "place_name": diem.name if diem else None,
@@ -347,6 +357,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
             tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
             v.amount_lak = _tien_tam_ung(db, p)    # chi đúng số tiền mặt lúc chi — kế toán nhập giá sau khi Bãi in tờ
+            _khop_ct_tam_ung(db, v)
             CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
                    doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
                    mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,

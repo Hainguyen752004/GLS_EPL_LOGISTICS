@@ -17,7 +17,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, **10.0b đi thử một chuyến mới A → Z từng cú bấm**, rồi 61 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, **10.0b đi thử một chuyến mới A → Z từng cú bấm**, **10.0c hai phiếu mẫu đã đi trọn để xem bằng nhiều vai và xem sổ**, rồi 61 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -833,6 +833,71 @@ Một chuyến trọn vẹn làm từ đầu: phiếu **GOM** mỏ → bãi, r�
 33. `ketoan` (trang kế toán): **Sổ sách → Kế toán → Nhật ký chung** → thấy HD, PT vừa làm; **Cân đối phát sinh** *Nợ = Có*. **Chuyến & kho → Chuyến xe** → phiếu T4-…: doanh thu 753,35 USD, còn phải thu 0. *(T42, T43)*
 
 Xong bước 33 là đi trọn một chuyến. Các ca còn lại (xe liên kết T27–T32, nhà cung cấp T37–T40, vai và chặn T44–T49, việc ngoài chuyến T50–T53) làm thêm theo bảng dưới.
+
+### 10.0c. Phiếu mẫu đã đi trọn — mở cho sếp xem bằng nhiều vai và xem ghi sổ
+
+Trên máy thật (8020 · 8030) đã có **một cặp phiếu đi trọn A → Z**, lập ngày 29/09/2026 bằng công cụ `tools/phieu_mau_a_z.py`. Công cụ bấm qua đúng các nút như người dùng, **mỗi bước bằng đúng tài khoản của vai đó**, máy chủ kiểm và chặn như khi bấm tay. Phiếu mẫu dùng **xe 345, 346** và tài xế **`tx03`** — không đụng xe 343/344, `tx01`/`tx02` của bài bấm tay 10.0b, nên số km trong 10.0b vẫn đúng. Hai phiếu có ghi chú *Phiếu mẫu A→Z*, số phiếu quặng `MAU-2909-01`, `MAU-2909-02`. Giá cước là giá mẫu tự đặt trong bảng giá (ຄຳຕຸ້ຍ: tuyến gom 12,5 USD/t, tuyến ra cảng 30,5 USD/t), tỷ giá trên phiếu 22.000 LAK/USD.
+
+| | **G4-0104-09/EPL** — phiếu GOM | **T4-0447-09/EPL** — phiếu GIAO |
+|---|---|---|
+| Xe · tài xế | 345 · ທ້າວ ສົມພອນ (`tx03`) | 346 · ທ້າວ ສົມພອນ (`tx03`) |
+| Tuyến | ກາສີ → ທ່າບົກ (145 km + 145 km về) | ທ່າບົກ → ທ່າເຮືອກະລໍ (360 km + 360 km về, BOT 1.833.500) |
+| Km lúc đi → km về | 132.500 → 132.790 (đúng ước tính, không cảnh báo) | 128.900 → 129.620 (đúng ước tính) |
+| Hàng | cân mỏ **42 t** (tài xế báo từ mỏ, 1 ảnh phiếu cân) → cân bãi **41,5 t**, hao hụt 0,5 t; lô vào kho bãi | lấy **30 t** từ lô G4-0104-09 (lô còn **11,5 t**) → cân cảng **29,7 t**, hao hụt 0,3 t; người nhận ນາງ ມະນີ ký trên màn |
+| Dầu (mục III) | lĩnh 200 L kho Thà Bốc × 28.500 = 5.700.000 LAK | lĩnh 300 L kho Thà Bốc = 8.550.000 LAK |
+| Mục IV (tổng) | 3.060.000 LAK: nước 60.000 · sang VN 430.000 · chipping Lào 620.000 · tiền chuyến 1.800.000 · điện thoại 150.000 | 4.273.500 LAK: nước 60.000 · sang VN 430.000 · tiền chuyến 1.800.000 · điện thoại 150.000 · phí cao tốc 1.833.500 (trả tiền mặt) |
+| Tạm ứng (quỹ chi) | **580.000** (sang VN + điện thoại) | **2.413.500** (sang VN + điện thoại + phí cao tốc) |
+| Hoá đơn | 41,5 t × 12,5 USD = **518,75 USD** (11.412.500 LAK) | 29,7 t × 30,5 USD = **905,85 USD** (19.928.700 LAK) |
+| Thu tiền | một lần 518,75 USD → *Đã thu đủ* | hai lần 400 + 505,85 USD → *Đã thu đủ* |
+| Trạng thái | 🔒 đã khoá · mọi mục đã xong · đã thu đủ | 🔒 đã khoá · mọi mục đã xong · đã thu đủ |
+
+**Kho sau cặp phiếu:** kho dầu Thà Bốc 3.220 → **2.720 L**; kho hàng bãi có lô **G4-0104-09/EPL còn 11,5 t**.
+
+#### Mở bao nhiêu tab, mỗi tab một tài khoản
+
+**Điều bắt buộc: mỗi lần đăng nhập, BỎ TICK ô *Ghi nhớ đăng nhập*** (ô này mặc định có tick, ở cả hai trang). Có tick thì phiên lưu chung cho cả trình duyệt: một tab đăng nhập tài khoản khác là **mọi tab của trang đó** chạy theo tài khoản mới — tab ghi tên "Bãi" bấm nút lại chạy bằng quyền kế toán. Bỏ tick thì mỗi tab giữ tài khoản của riêng nó. Mở tab mới bằng **Ctrl+T** rồi gõ địa chỉ, **đừng dùng *Nhân đôi thẻ*** (nhân đôi chép luôn phiên của tab cũ). Bấm **Đổi tài khoản** trong một tab thì cũng bỏ tick lại. Trang điều xe (8020) và trang kế toán (8030) là hai trang riêng: `ketoan` ở 8020 và `ketoan` ở 8030 là hai tab, không đụng nhau.
+
+Đủ bộ để xem cặp phiếu mẫu (và để đi lại 10.0b) — **10 tab**:
+
+| Tab | Trang | Tài khoản | Mở màn nào, thấy gì ở phiếu mẫu |
+|---|---|---|---|
+| 1 | điều xe 8020 | `thabok` — Admin Thà Bốc | **Vận tải → Phiếu xuất xe** → ô **Số phiếu** gõ `T4-0447` → mở phiếu: có xe, tài xế, hàng, số lít, khoản mục IV; **không có** giá cước, doanh thu, cột đơn giá mục IV (dòng **Tổng** trống) — Bãi không thấy tiền |
+| 2 | điều xe 8020 | `ketoan` — KT Thu/Chi VC | cùng phiếu: **Giá cước 30,5 USD/t**, doanh thu 905,85 USD, số phiếu quặng `MAU-2909-02`, mục I–II *Đã kiểm*, 🔒 đã khoá, *Đã thu đủ*. **Vận tải → Phiếu chi · Phiếu thu** → tab **Sổ chứng từ**: các tờ của hai phiếu đều *đã đẩy* |
+| 3 | điều xe 8020 | `ketoancp` — KT Chi phí | thẻ **IV**: đơn giá từng dòng, ô cách trả từng dòng, tổng 4.273.500; mục IV *Đã chi* |
+| 4 | điều xe 8020 | `khonl` — KT kho xăng dầu | thẻ **III**: 300 L × 28.500 = 8.550.000, mục III *Đã ghi sổ* |
+| 5 | điều xe 8020 (điện thoại được) | `tx03` — tài xế | **Phiếu của tôi**: hai thẻ G4-0104-09 và T4-0447-09, ô **Tiền tạm ứng** 580.000 / 2.413.500 LAK · *Đã nhận tiền*; không thấy giá cước. Có thêm vài phiếu mẫu cũ của tài xế này — chọn đúng số |
+| 6 | điều xe 8020 | `admin` — Sếp | thấy hết; **Tổng quan** tick **Tự cập nhật 60 s** để màn tự tải lại |
+| 7 | kế toán 8030 | `khotb` — thủ kho Thà Bốc | **Kho → Cấp phát**: hai tờ `PLNL-G4-0104-09/EPL-1` (200 L), `PLNL-T4-0447-09/EPL-1` (300 L) đã cấp. **Kho → Kho nhiên liệu**: kho Thà Bốc còn 2.720 L |
+| 8 | kế toán 8030 | `quytb` — quỹ Thà Bốc | **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường**: `PTU-G4-0104-09/EPL` 580.000, `PTU-T4-0447-09/EPL` 2.413.500 đã chi |
+| 9 | kế toán 8030 | `doanhthu` — KT Doanh thu | **Tiền vận chuyển → Hóa đơn vận chuyển**: hai phiếu đã lập hoá đơn, khung **Sổ thu tiền** của T4-0447-09 có hai lần thu 400 + 505,85 USD |
+| 10 | kế toán 8030 | `ketoan` — sổ | **Sổ sách → Kế toán → Nhật ký chung** → ô tìm gõ `G4-0104` rồi `T4-0447`: các bút toán ở bảng dưới; **Cân đối phát sinh** *Nợ = Có*. **Chuyến & kho → Chuyến xe** → phiếu T4-0447-09: doanh thu 905,85 USD, còn phải thu 0. **Kho → Kho hàng**: lô G4-0104-09 còn 11,5 t |
+
+Muốn ngắn cho sếp thì **5 tab** là đủ thấy mỗi vai một khác: 1 (`thabok`), 2 (`ketoan` 8020), 5 (`tx03`), 9 (`doanhthu`), 10 (`ketoan` 8030).
+
+**Có cập nhật ngay sang tab khác không?** Dữ liệu dùng chung **ngay trên máy chủ** — bấm xong ở tab này là hai trang đã ghi (ví dụ thủ kho bấm **Cấp dầu** ở 8030 thì phiếu ở 8020 đã có dầu đã cấp). Nhưng tab đang mở **không tự vẽ lại**: sang tab kia bấm **F5** (hoặc bấm lại màn đó trên menu) là thấy. Hai màn tự tải lại: **Tổng quan** (tick **Tự cập nhật 60 s**) và **Theo dõi tuyến** (tick **Tự cập nhật 30 giây**). Riêng **sổ kế toán**: tờ sinh ở trang kế toán (cấp dầu, hoá đơn, thu tiền, nhập / xuất kho hàng) vào sổ ngay lúc bấm; tờ sinh ở trang điều xe (phiếu chi tạm ứng, phiếu xuất xe, phiếu lĩnh) vào sổ khi `ketoan` bấm **Đẩy** (**Vận tải → Phiếu chi · Phiếu thu** → tab **Sổ chứng từ** → **Đẩy hết tờ chưa đẩy**). Tờ của cặp phiếu mẫu đã đẩy rồi.
+
+#### Ghi sổ như thế nào — chứng từ và bút toán của cặp phiếu mẫu
+
+Mỗi việc trên phiếu sinh một **tờ chứng từ**; tờ nào có tiền thì thành **một bút toán Nợ / Có** trong Nhật ký chung. Tài khoản theo hệ thống tài khoản đang có ở trang kế toán: **625** Chi phí vận chuyển · **1371** Kho hàng, vật tư · **1011** Tiền mặt bằng Kíp · **1211** Phải thu khách hàng · **70** Doanh thu bán hàng và dịch vụ · **1022** Ngân hàng ngoại tệ.
+
+| Việc (ai bấm) | Tờ chứng từ — G4-0104-09 (gom) | Tờ chứng từ — T4-0447-09 (giao) | Bút toán |
+|---|---|---|---|
+| Bãi lập phiếu (`thabok`) | DO/2609/0012 phiếu xuất xe | DO/2609/0013 | — (tờ gốc, không có tiền) |
+| Bãi in phiếu lĩnh (`thabok`) | PLNL/2609/0001 — 200 L | PLNL/2609/0002 — 300 L | — (chỉ số lít) |
+| Thủ kho cấp dầu (`khotb`) | PXK_NL/2609/0006 — 5.700.000 | PXK_NL/2609/0007 — 8.550.000 | **Nợ 625 / Có 1371** (dầu kho thành chi phí chuyến, theo giá vốn bình quân kho) |
+| Bãi in tờ tạm ứng (`thabok`) | PTU/2609/0006 — 580.000 | PTU/2609/0007 — 2.413.500 | — (tờ đưa tiền, có mã QR) |
+| Quỹ chi tạm ứng (`quytb`) | PC_TU/2609/0010 — 580.000 | PC_TU/2609/0011 — 2.413.500 | **Nợ 625 / Có 1011** (tiền mặt ra khỏi quỹ) |
+| Xe gom về bãi · xe giao lấy hàng (`thabok`) | PNK_HH/2609/0003 — nhập 41,5 t | PXK_HH/2609/0003 — xuất 30 t | — (hàng của khách gửi bãi: sổ kho hàng theo tấn, không có tiền) |
+| Lập hoá đơn (`doanhthu`) | HD/2609/0005 — 518,75 USD = 11.412.500 LAK | HD/2609/0006 — 905,85 USD = 19.928.700 LAK | **Nợ 1211 / Có 70** (khách nợ tiền cước) |
+| Ghi thu tiền (`doanhthu`) | PT/2609/0004 — 518,75 USD | PT/2609/0005 — 400 USD · PT/2609/0006 — 505,85 USD | **Nợ 1022 / Có 1211** (tiền về ngân hàng, xoá nợ khách) |
+
+Trong **Sổ sách → Kế toán → Nhật ký chung** là 9 bút toán **BT-000053 … BT-000061** (4 của phiếu gom, 5 của phiếu giao); **Cân đối phát sinh** vẫn *Nợ = Có*.
+
+**Chưa vào sổ, đúng luật cách trả** (bước 3): trong mục IV, chỉ dòng *Chi ngay khi xe đi* đi qua quỹ lúc xe đi. **Tiền nước + tiền chuyến** (1.860.000 mỗi phiếu) là *Trả theo chuyến cùng lương*: hiện ở **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** tháng 09 của ທ້າວ ສົມພອນ, ghi sổ khi trả lương. **Chipping Lào** 620.000 (phiếu gom) là *Nợ NCC / trả theo đợt*: vào công nợ nhà cung cấp, ghi sổ khi kế toán trả đợt (6.6). Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 = **3.060.000**; phiếu giao 2.413.500 + 1.860.000 = **4.273.500**.
+
+**Lưu ý khi mở Tất toán tài xế** cho ທ້າວ ສົມພອນ: dòng của hai phiếu mẫu *đã chi thật = tạm ứng*, **chênh 0**; nhưng dòng tổng của tài xế còn gộp phiếu mẫu cũ tháng 8–9 (chi tạm ứng theo luật cũ) nên có thể hiện *Tài xế nộp lại* — xem lưu ý ở ca T34.
+
+**Lập lại cặp phiếu mẫu khác** (ví dụ hôm sau): `python tools/phieu_mau_a_z.py` chạy thử (không ghi, chỉ kể sẽ làm gì), thêm `http://127.0.0.1:8020 http://127.0.0.1:8030 that` là làm thật. Cùng ngày đã có phiếu mẫu thì công cụ dừng, không lập trùng. Công cụ chỉ đẩy tờ của hai phiếu mẫu, không bấm *Đẩy hết* (không cuốn tờ của phiếu anh đang test tay).
 
 ### 10.1. Chặng GOM: lập phiếu, dầu, tạm ứng, kiểm, cấp, chi
 

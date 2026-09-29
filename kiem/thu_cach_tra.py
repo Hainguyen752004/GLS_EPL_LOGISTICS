@@ -105,6 +105,11 @@ def main():
         tu = next(x for x in ds if x["kind"] == "advance")
         assert tu["status"] == "da_cap" and round(tu["amount_lak"]) == 580000, tu
         print("  ✓ %-72s" % "Quỹ chi thẳng ở mục IV → tờ tạm ứng thành Đã cấp 580.000 (Tất toán đếm được là đã ứng)")
+        # Bãi in tờ tạm ứng lúc chưa có giá (0 LAK) — tờ chứng từ PTU gửi sang sổ phải theo số quỹ chi, không kẹt ở 0
+        s, ct = goi("/api/chung-tu?trip_id=%s" % pid, vai="admin")
+        tien = {c["loai"]: round(c["tien"] or 0) for c in ct["ds"] if c["loai"] in ("PTU", "PC_TU")}
+        assert tien == {"PTU": 580000, "PC_TU": 580000}, tien
+        print("  ✓ %-72s" % "Tờ chứng từ PTU = PC_TU = 580.000 (không kẹt ở số lúc Bãi in tờ)")
         s, g = goi("/api/vouchers/%s/cap" % tu["id"], {}, "quytb")
         phai(s, 409, "Quét QR chi lần hai → bị chặn", g)
 
