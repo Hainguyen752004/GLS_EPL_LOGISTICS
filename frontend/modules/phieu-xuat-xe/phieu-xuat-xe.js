@@ -691,7 +691,14 @@
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
       g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.moKeToan('hoa-don', { id: P.id }));   // bản in ở trang kế toán (đợt 7a)
-      g('px-chung-tu').addEventListener('click', () => P && P.id && EPL.di('chung-tu', { id: P.id }));
+      // Phiếu chi tạm ứng: lập (hoặc cập nhật) tờ tạm ứng có mã QR rồi mở màn in — không có khoản tiền mặt nào thì
+      // vẫn mở màn (màn tự ghi "không có khoản tạm ứng"). 29/09: trước đây không nút nào lập tờ QR cho phiếu mới.
+      g('px-chung-tu').addEventListener('click', async () => {
+        if (!P || !P.id) return;
+        try { await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'advance' }); }
+        catch (e) { if (!(e instanceof EPL.LoiAPI) || e.status !== 422) return EPL.baoLoi(e); }
+        EPL.di('chung-tu', { id: P.id });
+      });
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
       let hen = null;

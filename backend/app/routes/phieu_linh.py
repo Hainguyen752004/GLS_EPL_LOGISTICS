@@ -84,9 +84,37 @@ def _lak(p, d):
     return (d.qty or 0) * (d.unit_price or 0) * ty_gia(p, d.currency)
 
 
+def dam_bao_tam_ung(db, p, user):
+    """Tờ TẠM ỨNG (PTU, có mã QR) của chuyến: chưa có thì lập, còn "chờ" thì cập nhật số theo các dòng tiền mặt tài xế cầm
+    đi lúc này (la_tien_mat_tai_xe — cách trả "Chi ngay khi xe đi"). Bãi in tờ trước khi kế toán nhập giá nên số có thể còn
+    0; số đúng là số lúc quỹ chi. Không có dòng tiền mặt nào thì trả None."""
+    dong = [d for d in _dong(db, p) if la_tien_mat_tai_xe(d)]
+    if not dong:
+        return None
+    tien = sum(_lak(p, d) for d in dong)
+    ngay = p.out_date or p.doc_date or dt.date.today()
+    v = db.query(Voucher).filter(Voucher.trip_id == p.id, Voucher.kind == "advance").first()
+    if v is None:
+        v = Voucher(doc_no="PTU-" + p.doc_no, token=secrets.token_urlsafe(9), amount_lak=tien, trip_id=p.id, kind="advance",
+                    doc_date=ngay, driver_id=p.driver_id, driver_name=p.driver_name, truck_no=p.truck_no, issued_by=user.full_name)
+        db.add(v)
+    elif v.status == "cho":
+        v.amount_lak = tien                     # chưa ai lấy tiền thì theo số mới nhất
+    db.flush()
+    CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
+           doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
+           mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+    return v
+
+
 def xuat_phieu_linh(db, v, goc="", vai=None):
     """`vai` là vai người gọi — vai không thấy tiền chi (Bãi, anh Khampla A2) thì không nhận số tiền tạm ứng."""
     diem = db.get(FuelPlace, v.place_id) if v.place_id else None
+    if v.kind == "advance" and v.status == "cho":
+        # tờ còn chờ: số hiện theo dòng tiền mặt LÚC NÀY (kế toán nhập giá sau khi Bãi in) — đúng số quỹ sẽ chi
+        p_ = db.get(Trip, v.trip_id)
+        if p_ is not None:
+            v.amount_lak = _tien_tam_ung(db, p_)
     return {"id": v.id, "trip_id": v.trip_id, "kind": v.kind, "doc_no": v.doc_no,
             "doc_date": v.doc_date.isoformat() if v.doc_date else None,
             "place_id": v.place_id, "place_name": diem.name if diem else None,
@@ -162,19 +190,10 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
     ra = []
 
     if loai == "advance":
-        tien = _tien_tam_ung(db, p)
-        if tien <= 0:
-            raise HTTPException(422, {"ma": "KHONG_CO_TIEN", "loi": "Phiếu chưa có khoản nào EPL ứng cho tài xế."})
-        v = db.query(Voucher).filter(Voucher.trip_id == p.id, Voucher.kind == "advance").first()
+        v = dam_bao_tam_ung(db, p, user)
         if v is None:
-            v = Voucher(doc_no="PTU-" + p.doc_no, token=secrets.token_urlsafe(9), amount_lak=tien, **chung)
-            db.add(v)
-        elif v.status == "cho":
-            v.amount_lak = tien                     # chưa ai lấy tiền thì cập nhật theo số mới nhất
-        db.flush()
-        CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
-               doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
-               mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+            raise HTTPException(422, {"ma": "KHONG_CO_TIEN", "loi": "Phiếu chưa có khoản nào tài xế cầm tiền mặt đi "
+                                                                    "(cách trả «Chi ngay khi xe đi»)."})
         db.commit()
         ra = [v]
     else:
@@ -327,6 +346,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
                 tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
             # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
             tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
+            v.amount_lak = _tien_tam_ung(db, p)    # chi đúng số tiền mặt lúc chi — kế toán nhập giá sau khi Bãi in tờ
             CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
                    doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
                    mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,

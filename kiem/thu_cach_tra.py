@@ -51,9 +51,9 @@ def tam_ung(pid):
 
 
 def main():
-    for u in ("thabok", "ketoancp", "admin"):
+    for u in ("thabok", "ketoancp", "quytb", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TK[u] = g["token"]
-    print("✓ đăng nhập 3 vai")
+    print("✓ đăng nhập 4 vai")
     s, km = goi("/api/khoan-muc", vai="thabok")
     assert km["pay_channels"] == ["tien_mat", "luong", "ncc"] and km["pay_default"]["x_trip"] == "luong", km.get("pay_default")
     s, xe = goi("/api/vehicles", vai="thabok"); s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok")
@@ -93,6 +93,21 @@ def main():
         phai(s, 200, "Đổi lại đúng như Excel", g)
         assert tam_ung(pid) == 580000
 
+        # Bãi bấm Phiếu chi tạm ứng: tờ QR có sẵn, Bãi không thấy số tiền
+        s, v = goi("/api/trips/%s/vouchers" % pid, {"kind": "advance"}, "thabok")
+        phai(s, 200, "Bãi bấm Phiếu chi tạm ứng → có tờ tạm ứng mã QR (Bãi không thấy số tiền)", v)
+        assert v[0]["token"] and v[0]["amount_lak"] is None, v[0]
+        # quỹ chi THẲNG ở mục IV (trang điều xe) → tờ tạm ứng thành đã cấp: Tất toán đếm được, quét QR không chi lần hai
+        for hd, vai in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+            s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai)
+            phai(s, 200, "Mục IV: %s (%s)" % (hd, vai), g)
+        s, ds = goi("/api/trips/%s/vouchers" % pid, vai="ketoancp")
+        tu = next(x for x in ds if x["kind"] == "advance")
+        assert tu["status"] == "da_cap" and round(tu["amount_lak"]) == 580000, tu
+        print("  ✓ %-72s" % "Quỹ chi thẳng ở mục IV → tờ tạm ứng thành Đã cấp 580.000 (Tất toán đếm được là đã ứng)")
+        s, g = goi("/api/vouchers/%s/cap" % tu["id"], {}, "quytb")
+        phai(s, 409, "Quét QR chi lần hai → bị chặn", g)
+
         s, tt = goi("/api/bao-cao/tien-tai-xe?thang=%s" % time.strftime("%Y-%m"), vai="ketoancp")
         phai(s, 200, "Màn Tiền chuyến & tiền nước", tt)
         r = next((x for x in tt["rows"] if x["driver"] == p["driver_name"]), None)
@@ -100,8 +115,8 @@ def main():
         assert not r["khoan"].get("x_vn") and not r["khoan"].get("x_phone"), r["khoan"]
         print("  ✓ %-72s" % "Chỉ cộng dòng trả cùng lương (tiền chuyến, tiền nước), không cộng khoản đã đưa tiền mặt")
     finally:
-        goi("/api/trips/%s" % pid, vai="admin", method="DELETE")
-        print("  · đã xoá phiếu thử")
+        s, _ = goi("/api/trips/%s" % pid, vai="admin", method="DELETE")
+        print("  · phiếu thử %s" % ("đã xoá" if s == 200 else "ở lại bản sao DB thử (mục đã kiểm thì không xoá được)"))
     print("\nTHỬ CÁCH TRẢ: ĐẠT — theo cột ghi chú Excel · tạm ứng chỉ khoản chi ngay khi xe đi · màn tiền chuyến chỉ khoản cùng lương")
 
 

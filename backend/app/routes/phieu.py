@@ -973,6 +973,12 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             # nhà cung cấp, trừ thẻ không qua tay quỹ lúc xe đi. Cùng luật với phiếu tạm ứng (la_tien_mat_tai_xe).
             dong = [d for d in _dong_chi(db, p) if d.section == "travel" and la_tien_mat_tai_xe(d)]
             tong = sum(tien_dong(p, d) for d in dong)
+            # Tờ tạm ứng (PTU) của chuyến thành "đã cấp" luôn: Tất toán đếm "đã ứng" theo tờ này, và quét QR ở Cấp phát
+            # sau đó thì báo đã cấp — không ra hai lần chi (29/09: chi thẳng ở đây trước kia để tờ PTU "chờ" mãi).
+            from routes.phieu_linh import dam_bao_tam_ung
+            v = dam_bao_tam_ung(db, p, user)
+            if v is not None and v.status == "cho":
+                v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
             if tong > 0:
                 CT.ghi(db, "PC_TU", nguon_bang="trip_sections", nguon_id="%s:travel" % p.id, trip=p, ngay=dt.date.today(),
                        phuong_thuc="cash", doi_tuong_loai="tai_xe", doi_tuong_ten=p.driver_name, tien=tong, tien_te="LAK",
