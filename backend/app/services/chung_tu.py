@@ -37,7 +37,7 @@ LOAI = {
     "PNK_HH": ("Phiếu nhập kho hàng", "ໃບຮັບສິນຄ້າເຂົ້າສາງ", True),
     "PXK_HH": ("Phiếu xuất kho hàng", "ໃບເບີກສິນຄ້າອອກສາງ", True),
     "DC_HH":  ("Phiếu điều chỉnh kho hàng", "ໃບປັບປຸງສາງສິນຄ້າ", True),
-    "PC_TU":  ("Phiếu chi tạm ứng", "ໃບຈ່າຍເງິນລ່ວງໜ້າ", True),
+    "PC_TU":  ("Phiếu chi theo đề nghị tạm ứng", "ໃບຈ່າຍເງິນຕາມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ", True),   # chi thật đi ra từ phiếu đề nghị (29/09)
     "PC_SC":  ("Phiếu chi sửa chữa · chi khác", "ໃບຈ່າຍສ້ອມແປງ · ອື່ນໆ", True),
     "PC_NCC": ("Phiếu chi trả nhà cung cấp", "ໃບຈ່າຍຜູ້ສະໜອງ", True),
     "PC_CX":  ("Phiếu chi trả chủ xe liên kết", "ໃບຈ່າຍເຈົ້າຂອງລົດຮ່ວມ", True),

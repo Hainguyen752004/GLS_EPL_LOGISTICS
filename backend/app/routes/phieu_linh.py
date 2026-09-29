@@ -360,7 +360,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             _khop_ct_tam_ung(db, v)
             CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
                    doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
-                   mo_ta="Chi tạm ứng đi đường theo %s" % v.doc_no,
+                   mo_ta="Chi theo đề nghị tạm ứng %s" % v.doc_no,
                    payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})
         v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
     return xuat_phieu_linh(db, v, "", user.role)

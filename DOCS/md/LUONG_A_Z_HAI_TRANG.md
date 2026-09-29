@@ -6,7 +6,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 
 **Quy ước chữ trong tài liệu:** tên nút và ô viết **đậm** đúng như trên màn hình (bản tiếng Việt). Đường đi viết dạng Menu → Màn → Nút. Mật khẩu mọi tài khoản demo là `1234`.
 
-**Đổi tên hai phiếu (29/09/2026):** phiếu của trang điều xe chỉ là phiếu **đề nghị** — *Phiếu lĩnh nhiên liệu* nay là **Phiếu đề nghị xuất nhiên liệu** (ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request); nút *Phiếu chi tạm ứng* và tờ *Phiếu tạm ứng đi đường* nay là **Phiếu đề nghị tạm ứng** (ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · Advance request). Mã trên tờ giữ nguyên (`PLNL-…`, `PTU-…`). Trang kế toán đổi chữ theo (màn **Cấp phát**: tab **Phiếu đề nghị xuất nhiên liệu**, **Phiếu đề nghị tạm ứng**); tờ đã đẩy sang sổ trước ngày đổi vẫn mang tên cũ. Tờ **PC_TU** *Phiếu chi tạm ứng* là tờ quỹ chi tiền thật, giữ tên.
+**Đổi tên hai phiếu (29/09/2026):** phiếu của trang điều xe chỉ là phiếu **đề nghị** — *Phiếu lĩnh nhiên liệu* nay là **Phiếu đề nghị xuất nhiên liệu** (ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request); nút *Phiếu chi tạm ứng* và tờ *Phiếu tạm ứng đi đường* nay là **Phiếu đề nghị tạm ứng** (ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · Advance request). Mã trên tờ giữ nguyên (`PLNL-…`, `PTU-…`). Trang kế toán đổi chữ theo (màn **Cấp phát**: tab **Phiếu đề nghị xuất nhiên liệu**, **Phiếu đề nghị tạm ứng**); tờ đã đẩy sang sổ trước ngày đổi vẫn mang tên cũ. Tiền **chi thật** cũng gọi theo phiếu đề nghị của nó: tờ quỹ chi **PC_TU** là **Phiếu chi theo đề nghị tạm ứng**; ở màn **Chuyến xe** (trang kế toán) hai nhóm chi phí là **Chi theo đề nghị tạm ứng** và **Dầu cấp theo đề nghị xuất nhiên liệu**.
 
 ## Mục lục
 
@@ -348,7 +348,7 @@ Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK**
 - **Cách 1 — trang kế toán:** Kho → **Cấp phát** → tab **Phiếu đề nghị tạm ứng** → quét QR phiếu đề nghị tạm ứng (hoặc bấm dòng) → đối chiếu → **Chi tiền**.
 - **Cách 2 — trang điều xe:** mở Phiếu xuất xe → mục IV → **Xác nhận đã chi**.
 
-**Máy tự làm:** mục IV thành *Đã chi*; tờ đề nghị tạm ứng có mã QR thành *Đã cấp* (chi ở cách nào cũng vậy — Tất toán đếm "đã ứng" theo tờ này; chi rồi quét QR lần nữa thì bị chặn); sinh tờ **PC_TU** (phiếu chi tạm ứng, ở trang điều xe, chờ đẩy sổ) — chỉ gồm dòng cách trả **Chi ngay khi xe đi**, đúng số trên phiếu đề nghị tạm ứng; khoản cùng lương, nợ nhà cung cấp, trừ thẻ không qua tay quỹ lúc này. Tài xế ký nhận tiền trên tờ phiếu đề nghị tạm ứng.
+**Máy tự làm:** mục IV thành *Đã chi*; tờ đề nghị tạm ứng có mã QR thành *Đã cấp* (chi ở cách nào cũng vậy — Tất toán đếm "đã ứng" theo tờ này; chi rồi quét QR lần nữa thì bị chặn); sinh tờ **PC_TU** (phiếu chi theo đề nghị tạm ứng, ở trang điều xe, chờ đẩy sổ) — chỉ gồm dòng cách trả **Chi ngay khi xe đi**, đúng số trên phiếu đề nghị tạm ứng; khoản cùng lương, nợ nhà cung cấp, trừ thẻ không qua tay quỹ lúc này. Tài xế ký nhận tiền trên tờ phiếu đề nghị tạm ứng.
 
 **Máy chặn:** mục IV chưa *Đã ghi sổ* thì không chi được; tài xế không tự chi cho mình; chi rồi thì chỗ kia báo sai bước, không ra hai tờ.
 
@@ -665,7 +665,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 | DO | Phiếu xuất xe | Lập phiếu | Điều xe | Đẩy | Không (chỉ lưu) |
 | PLNL | Phiếu đề nghị xuất nhiên liệu | Bấm Phiếu đề nghị xuất nhiên liệu | Điều xe | Đẩy | Không |
 | PTU | Phiếu đề nghị tạm ứng | Bấm Phiếu đề nghị tạm ứng | Điều xe | Đẩy | Không |
-| PC_TU | Phiếu chi tạm ứng | Quỹ chi mục IV | Điều xe | Đẩy | Nợ chi phí 625 (xe liên kết 4022) / Có tiền |
+| PC_TU | Phiếu chi theo đề nghị tạm ứng | Quỹ chi mục IV | Điều xe | Đẩy | Nợ chi phí 625 (xe liên kết 4022) / Có tiền |
 | PC_SC | Phiếu chi sửa chữa · chi khác | Quỹ chi mục V, VI | Điều xe | Đẩy | Nợ 614 · 625 / Có tiền |
 | PC_SC | (của lệnh sửa chữa) | Quỹ chi lệnh sửa chữa | Kế toán | Ngay | Nợ 614 / Có tiền |
 | PXK_NL | Xuất kho nhiên liệu | Thủ kho cấp, hoặc ghi sổ mục III | Kế toán | Ngay | Nợ 625 (4022) / Có 1371 |
@@ -980,7 +980,7 @@ Mở được mọi phiếu, thấy như tab 2 cộng các nút của mọi vai.
 
 1. **Sổ sách → Kế toán** → **Nhật ký chung** → ô **Tìm kiếm…** gõ `T4-0447` → 5 bút toán: xuất dầu kho (Nợ 625 / Có 1371), hoá đơn (Nợ 1211 / Có 70), hai lần thu (Nợ 1022 / Có 1211), chi tạm ứng (Nợ 625 / Có 1011). Gõ `G4-0104` → 4 bút toán. Bảng đủ số ở mục *Ghi sổ như thế nào* ngay dưới.
 2. Cùng màn → **Cân đối phát sinh** → dòng cuối **Nợ = Có, cân đối**.
-3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (dầu 8.550.000 + tạm ứng 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Lãi ở đây khác lãi trên phiếu — xem **điều 2**. Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
+3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (**Dầu cấp theo đề nghị xuất nhiên liệu** 8.550.000 + **Chi theo đề nghị tạm ứng** 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Lãi ở đây khác lãi trên phiếu — xem **điều 2**. Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
 4. **Kho → Kho hàng** → bảng **Lô hàng trong kho**: lô **G4-0104-09/EPL** nhập 41,5 t, còn **11,5 t** (30 t đã đi theo T4-0447-09).
 
 #### Ghi sổ như thế nào — chứng từ và bút toán của cặp phiếu mẫu
