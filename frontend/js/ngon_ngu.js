@@ -53,9 +53,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver trip & water money"
  },
  "nav_supplier": {
-  "vi": "Theo dõi nhà cung cấp",
-  "lo": "ຕິດຕາມຜູ້ສະໜອງ",
-  "en": "Supplier tracking"
+  "vi": "Nhà cung cấp",
+  "lo": "ຜູ້ສະໜອງ",
+  "en": "Suppliers"
  },
  "nav_fuel": {
   "vi": "Kho nhiên liệu",
@@ -4643,8 +4643,8 @@ window.EPL_TU_DIEN = {
   "en": "Trip & water money"
  },
  "nav_supplier_s": {
-  "vi": "Theo dõi NCC",
-  "lo": "ຕິດຕາມຜູ້ສະໜອງ",
+  "vi": "Nhà cung cấp",
+  "lo": "ຜູ້ສະໜອງ",
   "en": "Suppliers"
  },
  "nav_place_s": {
@@ -4728,9 +4728,9 @@ window.EPL_TU_DIEN = {
   "en": "Scan QR, issue fuel and advances"
  },
  "d_xe_lien_ket": {
-  "vi": "Tính tiền trả chủ xe thuê ngoài",
-  "lo": "ຄິດໄລ່ເງິນຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
-  "en": "What to pay each joint-truck owner"
+  "vi": "Điều khoản, hợp đồng thuê xe · trả tiền ở trang kế toán",
+  "lo": "ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL",
+  "en": "Terms, hire contracts · payouts on the ledger site"
  },
  "d_tien_tai_xe": {
   "vi": "Tiền chuyến và tiền nước theo tháng",
@@ -4743,9 +4743,9 @@ window.EPL_TU_DIEN = {
   "en": "Advances against real spending, monthly"
  },
  "d_nha_cung_cap": {
-  "vi": "Công nợ nhà cung cấp, trả theo đợt",
-  "lo": "ໜີ້ຜູ້ສະໜອງ, ຈ່າຍເປັນງວດ",
-  "en": "Supplier debt, paid in instalments"
+  "vi": "Danh mục nhà cung cấp · công nợ, trả tiền ở trang kế toán",
+  "lo": "ລາຍຊື່ຜູ້ສະໜອງ · ໜີ້, ການຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL",
+  "en": "Supplier list · payables and payments on the ledger site"
  },
  "d_kho_hang": {
   "vi": "Tồn quặng ở bãi giữa hai chặng, theo từng lô",

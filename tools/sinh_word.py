@@ -26,12 +26,14 @@ XANH = RGBColor(0x14, 0x5C, 0x4A)
 
 
 def dam_va_ma(p, chu):
-    """Viết một đoạn có **đậm** và `mã` thành các run đúng kiểu."""
-    for phan in re.split(r'(\*\*[^*]+\*\*|`[^`]+`)', chu):
+    """Viết một đoạn có **đậm**, *nghiêng* và `mã` thành các run đúng kiểu."""
+    for phan in re.split(r'(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)', chu):
         if not phan:
             continue
         if phan.startswith('**') and phan.endswith('**'):
             p.add_run(phan[2:-2]).bold = True
+        elif len(phan) > 2 and phan.startswith('*') and phan.endswith('*'):
+            p.add_run(phan[1:-1]).italic = True
         elif phan.startswith('`') and phan.endswith('`'):
             r = p.add_run(phan[1:-1])
             r.font.name = 'Consolas'
@@ -82,6 +84,20 @@ def main():
             d.add_paragraph()
             continue
 
+        # khối lệnh ``` … ``` (có thể thụt vào dưới một ý đánh số): mỗi dòng một đoạn chữ Consolas, giữ nguyên
+        if l.strip().startswith('```'):
+            i += 1
+            while i < len(dong) and not dong[i].strip().startswith('```'):
+                p = d.add_paragraph()
+                p.paragraph_format.left_indent = Pt(18)
+                p.paragraph_format.space_after = Pt(0)
+                r = p.add_run(dong[i].strip())
+                r.font.name = 'Consolas'
+                r.font.size = Pt(9)
+                i += 1
+            i += 1
+            d.add_paragraph()
+            continue
         if not l.strip():
             i += 1
             continue
@@ -99,10 +115,12 @@ def main():
             dam_va_ma(d.add_paragraph(style='List Bullet'), l[2:])
         elif re.match(r'^\d+\. ', l):
             dam_va_ma(d.add_paragraph(style='List Number'), re.sub(r'^\d+\. ', '', l))
+        elif l.startswith('   ') and (l.strip().startswith('- ') or l.strip().startswith('* ')):
+            dam_va_ma(d.add_paragraph(style='List Bullet 2'), l.strip()[2:])     # ý con thụt dưới một ý đánh số
         else:
             p = d.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-            dam_va_ma(p, l)
+            dam_va_ma(p, l.strip())
         i += 1
 
     d.save(dich)
