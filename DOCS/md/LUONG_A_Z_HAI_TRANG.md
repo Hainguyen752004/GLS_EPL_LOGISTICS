@@ -39,7 +39,7 @@ Tóm tắt một chuyến trọn luồng (chi tiết từng bước ở Phần 4
 1. **Admin Thà Bốc** lập phiếu xuất xe (gom hoặc giao), ghi dầu, tiền đi đường, in phiếu lĩnh dầu và phiếu tạm ứng, gửi kiểm.
 2. **Kế toán Viêng Chăn** kiểm từng mục và nhập giá: KT Thu/Chi kiểm mục I–II, KT kho xăng dầu mục III, KT Chi phí mục IV–VI.
 3. **Thủ kho** cấp dầu theo phiếu lĩnh; **quỹ** chi tiền tạm ứng cho tài xế (cả hai ở màn **Cấp phát** trang kế toán).
-4. **Tài xế** xuất phát, báo mốc, đổ dầu dọc đường, báo hỏng, giao hàng và ký nhận trên điện thoại.
+4. **Tài xế** xuất phát, báo mốc, **báo cân ở mỏ** (phiếu gom), đổ dầu dọc đường, báo hỏng, giao hàng và ký nhận trên điện thoại.
 5. **Admin Thà Bốc** báo xe tới, nhập cân cuối. Phiếu gom thì hàng vào **kho bãi**; phiếu giao thì hàng ra khỏi kho bãi.
 6. **KT Thu/Chi** kiểm lại toàn phiếu rồi **khoá**.
 7. **KT Doanh thu** lập hoá đơn, ghi thu tiền khách (ở **trang kế toán**). **Quỹ** trả chủ xe liên kết, **KT Chi phí** tất toán tài xế và trả nhà cung cấp — cũng ở **trang kế toán**.
@@ -143,7 +143,7 @@ Trên máy chủ thật, Sếp làm theo thứ tự này, rồi bấm **Kiểm k
 
 ### 3.4. Khi một trang tắt
 
-Quy tắc anh chốt: việc nào **đụng kho hoặc tiền** mà trang kia tắt thì **chặn và báo rõ** (*Chưa nối được trang kế toán — thử lại sau* hoặc *Chưa nối được trang điều xe — thử lại sau*). Không ghi nửa vời, không xếp hàng gửi sau, để hai bên không bao giờ lệch số. Việc **không đụng kho, tiền** vẫn chạy bình thường. Hai ngoại lệ dùng ngoài hiện trường được giữ hàng đợi trong máy: **Cấp phát** ở kho dầu và **ký nhận giao hàng** trên điện thoại tài xế. Bảng đầy đủ ở Phần 8.
+Quy tắc anh chốt: việc nào **đụng kho hoặc tiền** mà trang kia tắt thì **chặn và báo rõ** (*Chưa nối được trang kế toán — thử lại sau* hoặc *Chưa nối được trang điều xe — thử lại sau*). Không ghi nửa vời, không xếp hàng gửi sau, để hai bên không bao giờ lệch số. Việc **không đụng kho, tiền** vẫn chạy bình thường. Ba việc ngoài hiện trường được giữ hàng đợi trong máy: **Cấp phát** ở kho dầu, **ký nhận giao hàng** và **báo cân ở mỏ** trên điện thoại tài xế. Bảng đầy đủ ở Phần 8.
 
 ## 4. Luồng chính A → Z
 
