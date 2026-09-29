@@ -7726,5 +7726,40 @@ window.EPL_TU_DIEN = {
   "vi": "Điền khi xe tới: Xe đã tới · nhập cân cuối",
   "lo": "ໃສ່ເມື່ອລົດຮອດ: ລົດຮອດແລ້ວ · ໃສ່ນ້ຳໜັກປາຍທາງ",
   "en": "Filled when the truck arrives: Truck arrived · enter destination weight"
+ },
+ "can_mo_nhac": {
+  "vi": "Bốc xong ở mỏ mới ghi: tài xế bấm Báo cân ở mỏ, hoặc Admin Thà Bốc ghi theo phiếu quặng. Ghi xong mới Gửi kiểm tra mục II.",
+  "lo": "ຂຶ້ນສິນຄ້າຢູ່ບໍ່ແຮ່ແລ້ວຈຶ່ງບັນທຶກ: ໂຊເຟີ ກົດ ແຈ້ງນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່ ຫຼື ແອັດມິນ ທ່າບົກ ບັນທຶກ ຕາມບິນແຮ່. ບັນທຶກແລ້ວຈຶ່ງສົ່ງກວດ ໜ້າ II.",
+  "en": "Filled once loading at the mine is done: the driver presses Report mine weight, or the Thabok admin enters it per the ore bill. Then Send for verification on section II."
+ },
+ "cm_nut": {
+  "vi": "Báo cân ở mỏ",
+  "lo": "ແຈ້ງນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່",
+  "en": "Report mine weight"
+ },
+ "cm_hint": {
+  "vi": "Ghi cân tại mỏ theo phiếu quặng. Mất mạng vẫn gửi được — sẽ tự gửi khi có mạng lại.",
+  "lo": "ບັນທຶກ ນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່ ຕາມບິນແຮ່. ຕິດຕໍ່ເຊີບເວີບໍ່ໄດ້ — ຈະສົ່ງເມື່ອມີເນັດຄືນ.",
+  "en": "Enter the mine weight per the ore bill. Works offline too — it sends itself when the network returns."
+ },
+ "cm_chup": {
+  "vi": "Thêm ảnh phiếu cân · phiếu quặng",
+  "lo": "ເພີ່ມຮູບ · PDF",
+  "en": "Add photo of the weigh slip / ore bill"
+ },
+ "cm_da_gui": {
+  "vi": "Đã báo cân tại mỏ. Bãi sẽ xác nhận.",
+  "lo": "ແຈ້ງນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່ແລ້ວ. ສາງຈະຢືນຢັນ.",
+  "en": "Mine weight reported. The yard will confirm."
+ },
+ "cm_da_gui_hang": {
+  "vi": "Đã gửi xong {n} lần báo cân chờ gửi",
+  "lo": "ສົ່ງສຳເລັດ {n} ລາຍການ",
+  "en": "Sent {n} waiting mine weight report(s)"
+ },
+ "a_can_mo": {
+  "vi": "Báo cân tại mỏ",
+  "lo": "ແຈ້ງນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່",
+  "en": "Mine weight reported"
  }
 };

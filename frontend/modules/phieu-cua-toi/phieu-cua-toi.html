@@ -39,6 +39,24 @@
   </form>
 </dialog>
 
+<!-- Báo cân ở mỏ (chốt 29/09): phiếu gom — tài xế ghi số tấn theo phiếu cân, chụp phiếu. Mất mạng vẫn báo được — máy giữ lại, có mạng tự gửi. -->
+<dialog id="pct-cm" class="hop-thoai pct-gh">
+  <div class="pct-gh-than">
+    <h3 data-i18n="cm_nut"></h3>
+    <div class="small muted" id="pct-cm-phieu"></div>
+    <p class="small muted" data-i18n="cm_hint"></p>
+    <div class="f-grid">
+      <div class="field"><label data-i18n="w_origin_gom"></label><input class="num pct-cm-tan" id="pct-cm-tan" type="number" step="any" inputmode="decimal" autocomplete="off"></div>
+      <div class="field w2"><label data-i18n="note"></label><input id="pct-cm-ghi" lang="lo" autocomplete="off"></div>
+    </div>
+    <label class="btn pct-gh-chup"><span data-i18n="cm_chup"></span>
+      <input type="file" id="pct-cm-anh" accept="image/*,application/pdf" capture="environment" multiple hidden></label>
+    <div class="pct-gh-anh" id="pct-cm-xem-anh"></div>
+    <div class="ht-nut"><button type="button" class="btn" id="pct-cm-huy" data-i18n="cancel"></button>
+      <button type="button" class="btn primary" id="pct-cm-gui" data-i18n="gh_gui"></button></div>
+  </div>
+</dialog>
+
 <!-- Giao hàng hoàn tất (chốt 24/09): người nhận ký ngay trên điện thoại tài xế. Mất mạng vẫn ký được — máy giữ lại, có mạng tự gửi. -->
 <dialog id="pct-gh" class="hop-thoai pct-gh">
   <div class="pct-gh-than">

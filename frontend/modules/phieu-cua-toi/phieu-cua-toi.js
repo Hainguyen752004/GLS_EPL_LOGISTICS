@@ -5,15 +5,17 @@
   let theoDoiId = null, phieuChiaSe = null, lanGuiCuoi = 0, boNghe = null;
   const q = (s) => root.querySelector(s);
 
-  /* ---------------------------------------------------------------- giao hàng hoàn tất (chốt 24/09)
-   * Người nhận ký ngay trên điện thoại tài xế. Mất mạng vẫn ký được: lần gửi nằm trong hàng đợi của máy (localStorage,
-   * ảnh đã nén), có mạng lại thì tự gửi; `ma_gui` giúp máy chủ không ghi hai lần khi gửi lại. */
+  /* ---------------------------------------------------------------- giao hàng hoàn tất (chốt 24/09) · báo cân ở mỏ (29/09)
+   * Người nhận ký ngay trên điện thoại tài xế; phiếu gom thì tài xế báo cân ở mỏ. Mất mạng vẫn làm được: lần gửi nằm
+   * trong hàng đợi của máy (localStorage, ảnh đã nén), có mạng lại thì tự gửi; `ma_gui` giúp máy chủ không ghi hai lần
+   * khi gửi lại. Mỗi lần gửi mang `loai` ('giao_nhan' · 'can_mo'); lần gửi cũ không có `loai` là giao nhận. */
   const uid = () => (EPL.AUTH.user ? EPL.AUTH.user.id : 'x');
   const K_HANG = () => 'epl_lao_giao_nhan_' + uid(), K_DS = () => 'epl_lao_pct_ds_' + uid();
   const doc = (k, md) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : md; } catch (e) { return md; } };
   const ghi = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
   const hangDoi = () => doc(K_HANG(), []);
-  const choGui = (id) => hangDoi().some(x => x.trip_id === id);
+  const loaiGui = (x) => x.loai || 'giao_nhan';
+  const choGui = (id, loai = 'giao_nhan') => hangDoi().some(x => x.trip_id === id && loaiGui(x) === loai);
   const laMatMang = (e) => !(e instanceof EPL.LoiAPI) || !e.status;
   const maMoi = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
   const sangBlob = (url) => { const [dau, b64] = url.split(','); const kieu = (dau.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
@@ -61,16 +63,53 @@
       }, () => { gps.textContent = NN.t('gh_gps_khong'); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
     } else gps.textContent = NN.t('gh_gps_khong');
   }
-  function veAnh() {
-    q('#pct-gh-xem-anh').innerHTML = ANH.map((a, i) => `<div class="a">${a.type.startsWith('image/') ? `<img src="${a.url}" alt="">` : '<span class="pdf">PDF</span>'}<button type="button" class="x" data-bo-anh="${i}">×</button></div>`).join('');
-    root.querySelectorAll('[data-bo-anh]').forEach(b => b.addEventListener('click', () => { ANH.splice(+b.dataset.boAnh, 1); veAnh(); }));
+  function veAnh(khung = '#pct-gh-xem-anh', ds = ANH) {
+    const o = q(khung);
+    o.innerHTML = ds.map((a, i) => `<div class="a">${a.type.startsWith('image/') ? `<img src="${a.url}" alt="">` : '<span class="pdf">PDF</span>'}<button type="button" class="x" data-bo-anh="${i}">×</button></div>`).join('');
+    o.querySelectorAll('[data-bo-anh]').forEach(b => b.addEventListener('click', () => { ds.splice(+b.dataset.boAnh, 1); veAnh(khung, ds); }));
   }
   async function guiMot(x) {
     const fd = new FormData();
     Object.entries(x.truong).forEach(([k, v]) => { if (v !== null && v !== undefined) fd.append(k, v); });
     if (x.chu_ky) fd.append('chu_ky', sangBlob(x.chu_ky), 'chu-ky-' + x.ma_gui + '.png');
     (x.anh || []).forEach(a => fd.append('anh', sangBlob(a.url), a.name));
-    return API.tep(`/api/trips/${x.trip_id}/giao-nhan`, fd);
+    return API.tep(`/api/trips/${x.trip_id}/${loaiGui(x) === 'can_mo' ? 'bao-can-mo' : 'giao-nhan'}`, fd);
+  }
+  /** Gửi ngay; mất mạng thì cất vào hàng đợi của máy. Trả true khi xong (đã gửi hoặc đã cất). */
+  async function guiHoacCat(x, hop, daGui) {
+    try {
+      await guiMot(x);
+      q(hop).close(); EPL.toast(NN.t(daGui), 'ok'); await tai();
+      return true;
+    } catch (e) {
+      if (!laMatMang(e)) { EPL.baoLoi(e); return false; }
+      const hd = hangDoi(); hd.push(x);
+      if (!ghi(K_HANG(), hd)) { EPL.toast(NN.t('gh_day_bo_nho'), 'loi'); return false; }
+      q(hop).close(); EPL.toast(NN.t('gh_cho_gui'), 'ok'); ve();
+      return true;
+    }
+  }
+
+  /** Báo cân ở mỏ (phiếu gom, 29/09): số tấn theo phiếu cân + ảnh phiếu (không bắt buộc — phiếu nhập tay được). Ô Cân
+   *  tại mỏ của phiếu tự đầy, ảnh vào "Phiếu quặng đính kèm"; Bãi xem lại rồi Gửi kiểm tra mục II. */
+  let CM = null, ANH_CM = [];
+  function moCanMo(id) {
+    CM = DS.find(p => p.id === id); if (!CM) return;
+    ANH_CM = [];
+    q('#pct-cm-phieu').innerHTML = `${esc(CM.doc_no)} · <span lang="lo">${esc(CM.origin || '')}</span> → <span lang="lo">${esc(CM.destination || '')}</span>`;
+    q('#pct-cm-tan').value = CM.weight_origin || ''; q('#pct-cm-ghi').value = '';
+    veAnh('#pct-cm-xem-anh', ANH_CM);
+    q('#pct-cm').showModal();
+    q('#pct-cm-tan').focus();
+  }
+  async function guiCanMo() {
+    const tan = EPL.doc(q('#pct-cm-tan').value);
+    if (!(tan > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
+    const x = { loai: 'can_mo', trip_id: CM.id, doc_no: CM.doc_no, ma_gui: maMoi(), anh: ANH_CM.slice(),
+      truong: { tan: String(tan), ghi_chu: q('#pct-cm-ghi').value.trim(), luc: new Date().toISOString(), ma_gui: '' } };
+    x.truong.ma_gui = x.ma_gui;
+    const nut = q('#pct-cm-gui'); nut.disabled = true;
+    try { await guiHoacCat(x, '#pct-cm', 'cm_da_gui'); } finally { nut.disabled = false; }
   }
   async function guiGiaoHang() {
     const ten = q('#pct-gh-ten').value.trim(), chuKy = KY && KY.anh(), tt = q('#pct-gh-tt').value, ghiChu = q('#pct-gh-ghi').value.trim();
@@ -82,30 +121,23 @@
         lat: VT ? String(VT.lat) : '', lng: VT ? String(VT.lng) : '', ma_gui: '' } };
     x.truong.ma_gui = x.ma_gui;
     const nut = q('#pct-gh-gui'); nut.disabled = true;
-    try {
-      await guiMot(x);
-      q('#pct-gh').close(); EPL.toast(NN.t('gh_da_gui'), 'ok'); await tai();
-    } catch (e) {
-      if (laMatMang(e)) {
-        const hd = hangDoi(); hd.push(x);
-        if (!ghi(K_HANG(), hd)) EPL.toast(NN.t('gh_day_bo_nho'), 'loi');
-        else { q('#pct-gh').close(); EPL.toast(NN.t('gh_cho_gui'), 'ok'); ve(); }
-      } else EPL.baoLoi(e);
-    } finally { nut.disabled = false; }
+    try { await guiHoacCat(x, '#pct-gh', 'gh_da_gui'); } finally { nut.disabled = false; }
   }
   /** Có mạng lại (hoặc mở màn) → gửi hết hàng đợi. Lỗi nghiệp vụ (phiếu đã khoá, đã ký…) thì bỏ khỏi hàng và báo. */
   async function guiHangDoi() {
     let hd = hangDoi(); if (!hd.length) return;
-    let xong = 0;
+    let xong = 0, xongCm = 0;
     for (const x of hd.slice()) {
-      try { await guiMot(x); xong++; hd = hd.filter(y => y.ma_gui !== x.ma_gui); }
+      try { await guiMot(x); if (loaiGui(x) === 'can_mo') xongCm++; else xong++; hd = hd.filter(y => y.ma_gui !== x.ma_gui); }
       catch (e) {
         if (laMatMang(e)) break;
         hd = hd.filter(y => y.ma_gui !== x.ma_gui); EPL.toast(`${x.doc_no}: ${e.message}`, 'loi');
       }
     }
     ghi(K_HANG(), hd);
-    if (xong) { EPL.toast(NN.t('gh_da_gui_hang', { n: xong }), 'ok'); await tai().catch(() => {}); }
+    if (xong) EPL.toast(NN.t('gh_da_gui_hang', { n: xong }), 'ok');
+    if (xongCm) EPL.toast(NN.t('cm_da_gui_hang', { n: xongCm }), 'ok');
+    if (xong || xongCm) await tai().catch(() => {});
   }
   async function xemBienBan(id) {
     const p = DS.find(x => x.id === id); if (!p) return;
@@ -131,12 +163,16 @@
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="so">${esc(p.doc_no)}</span>${tag(p.transport_status)}</div>
         <div class="tuyen" lang="lo">${esc(p.origin)} → ${esc(p.destination)}</div>
         <div class="meta"><span>${NN.h('truck_no')}: <b>${esc(p.truck_no)}</b></span><span>${NN.h('customer')}: <b lang="lo">${esc(p.customer_name || '—')}</b></span>
-          <span>${NN.h('d_out')}: <b>${EPL.ngay(p.out_date)}</b></span><span>${NN.h('w_origin')}: <b>${so(p.weight_origin, 2)} t</b></span></div>
+          <span>${NN.h('d_out')}: <b>${EPL.ngay(p.out_date)}</b></span><span>${NN.h(p.kind === 'gom' ? 'w_origin_gom' : 'w_origin')}: <b>${p.weight_origin ? so(p.weight_origin, 2) + ' t' : '—'}</b></span></div>
         <div class="pct-tu ${!tu.co ? 'khong' : daTra ? 'ok' : 'cho'}"><span>${NN.h('advance')}${tu.co ? '' : ' · ' + NN.h('no_expense')}</span><b>${tu.co ? so(tu.tong) + ' LAK · ' + NN.t(daTra ? 'advance_received' : 'stt_' + (tu.tt === 'wait' ? 'wait2' : tu.tt)) : '—'}</b></div>
         ${bao.length ? `<div class="pct-bao">${bao.slice(-3).map(e => `<div>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'ok' : 'unpaid', 'st_' + (e.status || 'approved'))}<span lang="lo">${esc(e.note || NN.t('inc_' + (e.incident_type || 'other')))}</span>${e.reported_cost ? `<b>${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</b>` : ''}</div>`).join('')}</div>` : ''}
         ${p.pod_signed || p.pod_no ? `<div class="pct-ky-xong">✓ ${NN.h('gh_da_ky')}: <b lang="lo">${esc(p.pod_receiver || '')}</b>${p.pod_at ? ' · ' + EPL.ngayGio(p.pod_at) : ''}</div>`
           : choGui(p.id) ? `<div class="pct-ky-xong cho">${NN.h('gh_cho_gui')}</div>` : ''}
+        ${choGui(p.id, 'can_mo') ? `<div class="pct-ky-xong cho">${NN.h('cm_nut')} · ${NN.h('gh_cho_gui')}</div>` : ''}
         <div class="pct-nut">
+          ${p.kind === 'gom' && ['dispatched', 'transit'].includes(p.transport_status) && !p.locked && !choGui(p.id, 'can_mo')
+            && ['wait', 'entered'].includes((p.sections || {}).trans || 'wait')
+            ? `<button class="btn ok" data-cm="${p.id}">${NN.h('cm_nut')}</button>` : ''}
           ${p.kind === 'giao' && ['transit', 'arrived'].includes(p.transport_status) && !p.locked && !p.pod_signed && !choGui(p.id)
             ? `<button class="btn ok" data-gh="${p.id}">${NN.h('gh_nut')}</button>` : ''}
           ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
@@ -156,6 +192,7 @@
     root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
     root.querySelectorAll('[data-gps]').forEach(b => b.addEventListener('click', () => batTatGPS(b.dataset.gps)));
     root.querySelectorAll('[data-gh]').forEach(b => b.addEventListener('click', () => moGiaoHang(b.dataset.gh)));
+    root.querySelectorAll('[data-cm]').forEach(b => b.addEventListener('click', () => moCanMo(b.dataset.cm)));
     root.querySelectorAll('[data-bb]').forEach(b => b.addEventListener('click', () => xemBienBan(b.dataset.bb)));
     q('#pct-gps').hidden = !phieuChiaSe;
   }
@@ -278,6 +315,14 @@
       q('#pct-gh-xoa-ky').addEventListener('click', () => KY && KY.dung());
       q('#pct-gh-huy').addEventListener('click', () => q('#pct-gh').close());
       q('#pct-gh-gui').addEventListener('click', guiGiaoHang);
+      q('#pct-cm-huy').addEventListener('click', () => q('#pct-cm').close());
+      q('#pct-cm-gui').addEventListener('click', guiCanMo);
+      q('#pct-cm-anh').addEventListener('change', async (e) => {
+        for (const f of [...e.target.files].slice(0, 5 - ANH_CM.length)) {
+          try { ANH_CM.push(await nenAnh(f)); } catch (loi) { EPL.baoLoi(loi); }
+        }
+        e.target.value = ''; veAnh('#pct-cm-xem-anh', ANH_CM);
+      });
       q('#pct-gh-anh').addEventListener('change', async (e) => {
         for (const f of [...e.target.files].slice(0, 5 - ANH.length)) {
           try { ANH.push(await nenAnh(f)); } catch (loi) { EPL.baoLoi(loi); }

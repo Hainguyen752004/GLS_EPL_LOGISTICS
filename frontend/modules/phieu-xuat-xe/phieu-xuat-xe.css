@@ -103,6 +103,7 @@
 
 /* ---- dòng hàng trên phiếu (hai DO) ---- */
 .px-hang-o{grid-column:1/-1}
+.px-hang-o[hidden]{display:none}
 .px-hang td,.px-hang th{vertical-align:middle}
 .px-hang input,.px-hang select{width:100%;min-width:80px}
 .px-hang tr.hao td{background:var(--amber-soft,#FBF3E2);font-style:italic}

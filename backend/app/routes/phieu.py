@@ -764,6 +764,32 @@ def _ghi_do(db, p, user):
            payload={"truck_no": p.truck_no, "driver_name": p.driver_name, "company": p.company})
 
 
+# Tên mặt hàng theo ô "Loại hàng" — dòng hàng phiếu gom máy tự ghi (29/09). Lô hàng trong sổ kho mang đúng tên này,
+# nên không dịch theo ngôn ngữ màn hình (cùng chữ với dòng hàng đang có).
+TEN_LOAI_HANG = {"iron_ore": "ແຮ່ເຫຼັກ (quặng sắt)", "other_goods": "ສິນຄ້າອື່ນ (hàng khác)"}
+
+
+def _dong_hang_gom(db, p, user, gd=None, loai_cu=None):
+    """Phiếu GOM một mặt hàng (chủ dự án 29/09): màn phiếu không còn bảng "Hàng trên phiếu" — Loại hàng + Cân tại mỏ là
+    đủ, máy ghi dòng hàng từ hai ô đó. Không có dòng hàng thì xe về tới bãi hàng không vào kho, phiếu giao không có lô
+    để lấy (bẫy cũ: chỉ gõ cân tại mỏ). Phiếu gom đã có từ hai dòng hàng trở lên thì giữ bảng, không đụng.
+    `loai_cu`: loại hàng trước lần sửa — đổi loại thì dòng đổi tên theo, không đổi thì giữ tên dòng đang có."""
+    if p.kind != "gom":
+        return
+    hang = db.query(TripGoods).filter(TripGoods.trip_id == p.id, TripGoods.loai == "hang").all()
+    if len(hang) > 1:
+        return
+    tan = round(p.weight_origin or 0, 3)
+    loai = p.goods_type or "iron_ore"
+    ten = hang[0].goods_name if hang and (loai_cu is None or loai_cu == loai) else TEN_LOAI_HANG.get(loai, loai)
+    if hang and abs((hang[0].qty_t or 0) - tan) < 0.0005 and hang[0].goods_name == ten:
+        return
+    if not hang and tan <= 0:
+        return
+    KH.dat_dong_hang(db, p, [{"loai": "hang", "goods_name": ten, "qty_t": tan, "note": hang[0].note if hang else None}]
+                     if tan > 0 else [], user, gd)
+
+
 @router.post("/api/trips")
 def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     if user.role not in ("yard", "admin"):
@@ -804,6 +830,8 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
     # lưu hỏng thì phần xuất bên đó được trả lại.
     with KK.GiaoDichKho(db, user) as gd:
         KH.dat_dong_hang(db, p, data.get("goods"), user, gd)
+        if not data.get("goods"):
+            _dong_hang_gom(db, p, user, gd)            # phiếu gom: dòng hàng từ Loại hàng + Cân tại mỏ (29/09)
         _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
         _ghi_log(db, p, user, "a_create")
         db.flush(); _ghi_do(db, p, user)
@@ -846,11 +874,19 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     if "doc_no" in data and str(data["doc_no"]).strip() != p.doc_no:
         if db.query(Trip).filter(Trip.doc_no == str(data["doc_no"]).strip()).first():
             raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu đã có."})
+    loai_cu = p.goods_type
     _ap_truong(db, p, data, user, muc_tt)
     if "expenses" in data:
         _ap_dong_chi(db, p, data["expenses"], user, muc_tt)
+    # Phiếu gom không gửi dòng hàng (màn phiếu bỏ bảng từ 29/09; bản màn cũ gửi bảng rỗng) → máy ghi dòng từ Loại hàng +
+    # Cân tại mỏ. Chỉ khi mục II còn sửa được và xe chưa về tới bãi (về rồi là hàng đã vào kho theo dòng cũ).
+    gom_tu_ghi = p.kind == "gom" and not data.get("goods")
     with KK.GiaoDichKho(db, user) as gd:
-        if "goods" in data:
+        if gom_tu_ghi:
+            if ({"weight_origin", "goods_type", "goods"} & data.keys()) and p.transport_status != "arrived" \
+                    and duoc_sua_muc(user.role, "trans", muc_tt["trans"]):
+                _dong_hang_gom(db, p, user, gd, loai_cu)
+        elif "goods" in data:
             if not duoc_sua_muc(user.role, "trans", muc_tt["trans"]) and user.role != "admin":
                 raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã khoá; phải trả lại mới sửa được dòng hàng."})
             KH.dat_dong_hang(db, p, data["goods"], user, gd)
@@ -1189,6 +1225,22 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         if [d for d in _dong_tam_ung(p, _dong_chi(db, p)) if d.section == "travel"] and _muc_cua(db, p)["travel"].status != "paid":
             raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG",
                                       "loi": "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — chưa báo xe tới được. Quỹ chi tạm ứng trước."})
+    if moi == "arrived" and p.kind == "gom":
+        # Phiếu gom: hàng vào kho theo DÒNG HÀNG, mà dòng hàng chỉ có khi đã có cân tại mỏ. Hộp "Xe đã tới" hỏi luôn ô đó
+        # (29/09): đã có (tài xế báo từ mỏ, hoặc Bãi đã ghi) thì điền sẵn; chưa có thì phải nhập mới báo tới được —
+        # trước đây xe về mà thiếu dòng hàng là hàng không vào kho, phiếu giao không có lô để lấy.
+        tan = _so(data.get("weight_origin"), "weight_origin")
+        if tan is not None and abs(tan - (p.weight_origin or 0)) > 0.0005:
+            if tan < 0:
+                raise HTTPException(422, {"ma": "SO_AM", "loi": "Cân tại mỏ không được âm."})
+            if not duoc_sua_muc(user.role, "trans", _muc_cua(db, p)["trans"].status):
+                raise HTTPException(409, {"ma": "MUC_DA_KHOA", "loi": "Mục II đã kiểm với cân tại mỏ %s t — muốn đổi thì kế toán "
+                                                                      "trả lại mục II trước." % _gon(p.weight_origin)})
+            p.weight_origin = tan
+        _dong_hang_gom(db, p, user)
+        if not db.query(TripGoods).filter(TripGoods.trip_id == p.id, TripGoods.loai == "hang").count():
+            raise HTTPException(422, {"ma": "THIEU_CAN_MO", "loi": "Chưa có cân tại mỏ — nhập số tấn theo phiếu cân ở mỏ rồi "
+                                                                  "mới báo xe tới: hàng vào kho theo số đó."})
     if moi == "arrived":
         if data.get("weight_dest") not in (None, ""): p.weight_dest = _so(data["weight_dest"], "weight_dest")
         if data.get("back_date"): p.back_date = _ngay(data["back_date"])

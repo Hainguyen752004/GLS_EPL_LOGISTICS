@@ -144,6 +144,9 @@
   // Phiếu GOM đã về bãi là hàng đã vào kho: dòng hàng và hai ô cân đóng lại — cùng luật với máy chủ
   // (HANG_DA_NHAP_KHO). Sổ kho đã ghi theo số đó, sửa phiếu mà không sửa sổ là hai bên nói hai số.
   const daNhapKho = () => laGom() && !moi && P.transport_status === 'arrived';
+  // Phiếu GOM một mặt hàng (chủ dự án 29/09): không còn bảng "Hàng trên phiếu" — Loại hàng + Cân tại mỏ là đủ, máy chủ tự
+  // ghi dòng hàng. Phiếu gom đã có từ hai dòng hàng trở lên (phiếu cũ) thì vẫn hiện bảng để sửa từng dòng.
+  const gomMotDong = () => laGom() && (P.goods || []).filter(x => x.loai !== 'hao_hut').length <= 1;
   function veHang() {
     const tb = q('#px-hang tbody'), khoaDuoc = suaDuoc('trans') && !daNhapKho();
     const dong = (P.goods || []);
@@ -160,6 +163,8 @@
         <td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa-hang="${i}">×</button>` : ''}</td></tr>`;
     }).join('') : `<tr><td colspan="5" class="empty">${NN.h('no_goods_line')}</td></tr>`;
     q('#px-hang-them').hidden = !khoaDuoc;
+    q('.px-hang-o').hidden = gomMotDong();
+    g('px-can-mo-nhac').hidden = !laGom() || daNhapKho();
     q('#px-hang-nhac').innerHTML = NN.h(daNhapKho() ? 'goods_locked_gom' : laGom() ? 'goods_hint_gom' : 'goods_hint_giao');
     tb.querySelectorAll('input, select').forEach(el => el.addEventListener('input', () => {
       const g = P.goods[+el.dataset.i]; if (!g) return;
@@ -452,7 +457,7 @@
     // hợp đồng: chỉ gửi khi kế toán TỰ ĐỔI ô chọn — không thì máy chủ tự điền theo khách / chủ xe
     Object.entries(HD_DOI).forEach(([k, v]) => { body[k] = v || null; });
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
-    if (suaDuoc('trans')) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
+    if (suaDuoc('trans') && !gomMotDong()) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
       .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
     const guiMuc = (m) => suaDuoc(m) || (!moi && P.expenses.some(e => e.section === m && giaDuoc(m, e)));
     body.expenses = P.expenses.filter(e => guiMuc(e.section)).map(e => {
@@ -478,14 +483,19 @@
     const body = { status: tt };
     if (tt === 'arrived') {
       // Ngày về và km về điền sẵn theo số TÀI XẾ đã báo (nút "Báo đã về" trên điện thoại) — Bãi chỉ thêm cân.
+      // Phiếu gom: hàng vào kho theo cân tại mỏ — hỏi luôn ô đó (29/09); tài xế đã báo từ mỏ thì điền sẵn.
+      const hoiMo = laGom() && gomMotDong();
       const v = await EPL.hopNhap(NN.t('mark_arrived'), [
-        { id: 'weight_dest', label: 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
+        ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: P.weight_origin ?? '' }] : []),
+        { id: 'weight_dest', label: laGom() ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
         { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() },
         { id: 'odo_back', label: 'odo_back_prompt', type: 'number', value: P.odo_back ?? '' },
         ...(laGom() ? [] : [{ id: 'pod_no', label: 'pod_no', value: P.pod_no || '' },
           { id: 'pod_receiver', label: 'pod_receiver', value: P.pod_receiver || '' }]),
       ], NN.t('ok'));
-      if (!v) return; body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
+      if (!v) return;
+      if (hoiMo) { if (!(EPL.doc(v.weight_origin) > 0)) return EPL.toast(NN.t('w_origin_gom') + '?', 'loi'); body.weight_origin = v.weight_origin; }
+      body.weight_dest = v.weight_dest; body.back_date = v.back_date; if (v.odo_back !== '') body.odo_back = v.odo_back;
       if (v.pod_no) body.pod_no = v.pod_no; if (v.pod_receiver) body.pod_receiver = v.pod_receiver;
     }
     try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }

@@ -513,9 +513,14 @@
     try {
       P = await API.post(`/api/trips/${P.id}/events`, { kind: 'arrive_stop', stop_seq: seq });
       if (seq === tong && P.transport_status !== 'arrived') {
-        const v = await EPL.hopNhap(NN.t('mark_arrived'), [{ id: 'weight_dest', label: 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
+        // Phiếu gom một mặt hàng: hàng vào kho theo cân tại mỏ — hỏi luôn ô đó như màn phiếu (29/09)
+        const gom = P.kind === 'gom', hoiMo = gom && (P.goods || []).filter(x => x.loai !== 'hao_hut').length <= 1;
+        const v = await EPL.hopNhap(NN.t('mark_arrived'), [
+          ...(hoiMo ? [{ id: 'weight_origin', label: 'w_origin_gom', type: 'number', value: P.weight_origin ?? '' }] : []),
+          { id: 'weight_dest', label: gom ? 'w_dest_gom' : 'weight_dest_prompt', type: 'number', value: P.weight_dest ?? '' },
           { id: 'odo_back', label: 'odo_back', type: 'number', value: P.odo_back ?? '' }, { id: 'back_date', label: 'd_back', type: 'date', value: P.back_date || EPL.homNay() }], NN.t('ok'));
-        if (v) P = await API.post(`/api/trips/${P.id}/transport-status`, { status: 'arrived', ...v });
+        if (v && hoiMo && !(EPL.doc(v.weight_origin) > 0)) EPL.toast(NN.t('w_origin_gom') + '?', 'loi');
+        else if (v) P = await API.post(`/api/trips/${P.id}/transport-status`, { status: 'arrived', ...v });
       }
       await tai(true); ve();
     } catch (e) { EPL.baoLoi(e); }

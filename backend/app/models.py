@@ -354,6 +354,7 @@ class Trip(Base):
     origin = Column(String)
     destination = Column(String)
     weight_origin = Column(Float)                              # ນ້ຳໜັກຕົ້ນທາງ (tấn)
+    mine_ref = Column(String)                                  # mã lần tài xế báo cân ở mỏ — gửi lại khi có mạng không ghi hai lần
     weight_dest = Column(Float)                                # ນ້ຳໜັກປາຍທາງ (tấn) — cân nơi giao
     # ---- TIỀN BÁN. Đơn giá ghi theo TIỀN TỆ CỦA PHIẾU (`price_ccy`), không mặc định USD:
     # bên Lào nhận cước bằng USD, LAK, Nhân dân tệ, Bath Thái tuỳ hợp đồng từng khách.
