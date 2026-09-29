@@ -6,7 +6,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 
 **Quy ước chữ trong tài liệu:** tên nút và ô viết **đậm** đúng như trên màn hình (bản tiếng Việt). Đường đi viết dạng Menu → Màn → Nút. Mật khẩu mọi tài khoản demo là `1234`.
 
-**Đổi tên hai phiếu (29/09/2026):** phiếu của trang điều xe chỉ là phiếu **đề nghị** — *Phiếu lĩnh nhiên liệu* nay là **Phiếu đề nghị xuất nhiên liệu** (ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request); nút *Phiếu chi tạm ứng* và tờ *Phiếu tạm ứng đi đường* nay là **Phiếu đề nghị tạm ứng** (ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · Advance request). Mã trên tờ giữ nguyên (`PLNL-…`, `PTU-…`). Trang kế toán (màn **Cấp phát**) **chưa đổi**, vẫn ghi tab *Phiếu lĩnh nhiên liệu*, *Phiếu tạm ứng đi đường* — phần kho, tiền là của anh Toàn, anh Tune. Tờ **PC_TU** *Phiếu chi tạm ứng* là tờ quỹ chi tiền thật, giữ tên.
+**Đổi tên hai phiếu (29/09/2026):** phiếu của trang điều xe chỉ là phiếu **đề nghị** — *Phiếu lĩnh nhiên liệu* nay là **Phiếu đề nghị xuất nhiên liệu** (ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request); nút *Phiếu chi tạm ứng* và tờ *Phiếu tạm ứng đi đường* nay là **Phiếu đề nghị tạm ứng** (ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · Advance request). Mã trên tờ giữ nguyên (`PLNL-…`, `PTU-…`). Trang kế toán đổi chữ theo (màn **Cấp phát**: tab **Phiếu đề nghị xuất nhiên liệu**, **Phiếu đề nghị tạm ứng**); tờ đã đẩy sang sổ trước ngày đổi vẫn mang tên cũ. Tờ **PC_TU** *Phiếu chi tạm ứng* là tờ quỹ chi tiền thật, giữ tên.
 
 ## Mục lục
 
@@ -345,7 +345,7 @@ Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK**
 
 **Ai:** Quỹ tiền mặt cảng cạn (`quytb`) hoặc Thủ quỹ VC (`quyvc`). Làm ở **một trong hai chỗ**, máy tự loại chỗ kia:
 
-- **Cách 1 — trang kế toán:** Kho → **Cấp phát** → tab **Phiếu tạm ứng đi đường** → quét QR phiếu đề nghị tạm ứng (hoặc bấm dòng) → đối chiếu → **Chi tiền**.
+- **Cách 1 — trang kế toán:** Kho → **Cấp phát** → tab **Phiếu đề nghị tạm ứng** → quét QR phiếu đề nghị tạm ứng (hoặc bấm dòng) → đối chiếu → **Chi tiền**.
 - **Cách 2 — trang điều xe:** mở Phiếu xuất xe → mục IV → **Xác nhận đã chi**.
 
 **Máy tự làm:** mục IV thành *Đã chi*; tờ đề nghị tạm ứng có mã QR thành *Đã cấp* (chi ở cách nào cũng vậy — Tất toán đếm "đã ứng" theo tờ này; chi rồi quét QR lần nữa thì bị chặn); sinh tờ **PC_TU** (phiếu chi tạm ứng, ở trang điều xe, chờ đẩy sổ) — chỉ gồm dòng cách trả **Chi ngay khi xe đi**, đúng số trên phiếu đề nghị tạm ứng; khoản cùng lương, nợ nhà cung cấp, trừ thẻ không qua tay quỹ lúc này. Tài xế ký nhận tiền trên tờ phiếu đề nghị tạm ứng.
@@ -807,7 +807,7 @@ Một chuyến trọn vẹn làm từ đầu: phiếu **GOM** mỏ → bãi, r�
 
 12. `khotb`: **Kho → Cấp phát** → bảng **Chờ cấp** có `PLNL-G4-…` → bấm dòng (hoặc gõ mã trên tờ vào ô **Nhập mã QR**) → khung **Đối chiếu trước khi cấp** đúng xe 343, đúng tài xế → **Cấp dầu** → hộp **Số lít cấp thật** 200 → **Cấp dầu**. Tồn kho Thà Bốc giảm 200 L. *(T06)*
 13. `khonl` (trang điều xe): mở phiếu G4-… → mục **III** → **Xác nhận kiểm tra** → **Ghi sổ kế toán**. *(T07)*
-14. `quytb` (trang kế toán): **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường** → dòng `PTU-G4-…` **Số tiền 580.000** → **Chi tiền** → xác nhận. Bên trang điều xe mục **IV** thành *Đã chi*. *(T09)* — Hoặc chi ở trang điều xe: mở phiếu → mục IV → **Xác nhận đã chi** (tờ QR tự thành *Đã cấp*, quét lại thì bị chặn).
+14. `quytb` (trang kế toán): **Kho → Cấp phát** → tab **Phiếu đề nghị tạm ứng** → dòng `PTU-G4-…` **Số tiền 580.000** → **Chi tiền** → xác nhận. Bên trang điều xe mục **IV** thành *Đã chi*. *(T09)* — Hoặc chi ở trang điều xe: mở phiếu → mục IV → **Xác nhận đã chi** (tờ QR tự thành *Đã cấp*, quét lại thì bị chặn).
 
 #### D. Tài xế trên đường (điện thoại / ẩn danh, `tx01`)
 
@@ -875,8 +875,8 @@ Trên máy thật (8020 · 8030) đã có **một cặp phiếu đi trọn A →
 |---|---|---|
 | Đề nghị xuất nhiên liệu — phiếu gom (200 L) | `W13LRwYrS0ft` | `khotb` |
 | Đề nghị xuất nhiên liệu — phiếu giao (300 L) | `F5b6KJrQkqsg` | `khotb` |
-| Đề nghị tạm ứng — phiếu gom (580.000) | `mX0zV9urgYXJ` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
-| Đề nghị tạm ứng — phiếu giao (2.413.500) | `y_gjm-_Yy2TM` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
+| Đề nghị tạm ứng — phiếu gom (580.000) | `mX0zV9urgYXJ` | `quytb` (tab **Phiếu đề nghị tạm ứng**) |
+| Đề nghị tạm ứng — phiếu giao (2.413.500) | `y_gjm-_Yy2TM` | `quytb` (tab **Phiếu đề nghị tạm ứng**) |
 
 **2. Lãi một chuyến có hai con số — sếp dễ hỏi.** Lấy phiếu giao T4-0447-09:
 
@@ -966,7 +966,7 @@ Mở được mọi phiếu, thấy như tab 2 cộng các nút của mọi vai.
 
 **Tab 8 · `quytb` — quỹ Thà Bốc (trang kế toán)**
 
-1. **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường**: không còn tờ chờ của hai phiếu mẫu.
+1. **Kho → Cấp phát** → tab **Phiếu đề nghị tạm ứng**: không còn tờ chờ của hai phiếu mẫu.
 2. Ô **Nhập mã QR** gõ mã tạm ứng ở bảng **điều 1** → **Số tiền** **580.000** / **2.413.500**, *Đã cấp*, **Người cấp** ນາງ ດາວ; không chi lần hai được.
 
 **Tab 9 · `doanhthu` — KT Doanh thu (trang kế toán)**
@@ -1029,7 +1029,7 @@ Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 =
 | T06 | `khotb` · kế toán | **Kho → Cấp phát** → quét / gõ mã QR phiếu đề nghị xuất nhiên liệu T02 (hoặc bấm dòng ở bảng **Chờ cấp**) → đối chiếu → **Cấp dầu** → **Cấp dầu** | Tồn kho Thà Bốc giảm 200 L; bên điều xe phiếu đề nghị xuất nhiên liệu *Đã cấp*, dòng dầu mang **giá bình quân kho lúc cấp**; sổ có **PXK_NL**. Cấp lần hai bị chặn | 8 | |
 | T07 | `khonl` · điều xe | Mục III → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Dòng dầu kho đã cấp **không xuất kho lần hai** (sổ vẫn một tờ PXK_NL cho dòng đó); giá dầu kho không gõ tay được | 6 | |
 | T08 | `ketoancp` · điều xe | Mục IV → nhập **Đơn giá** từng dòng → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Mục IV *Đã ghi sổ · chờ chi* | 7 | |
-| T09 | `quytb` · kế toán | **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường** → quét QR tờ đề nghị tạm ứng T03 → **Chi tiền** | Mục IV bên điều xe *Đã chi*; bên điều xe không bấm chi lần hai được | 9 | |
+| T09 | `quytb` · kế toán | **Kho → Cấp phát** → tab **Phiếu đề nghị tạm ứng** → quét QR tờ đề nghị tạm ứng T03 → **Chi tiền** | Mục IV bên điều xe *Đã chi*; bên điều xe không bấm chi lần hai được | 9 | |
 | T10 | `tx01` · điều xe (điện thoại) | **Phiếu của tôi** → phiếu T01 → **Xuất phát** (cho phép vị trí) | Phiếu *Đang vận chuyển*; xe hiện trên **Theo dõi tuyến** | 10 | |
 | T10b | `tx01` · điều xe (điện thoại) | (xe bốc xong ở mỏ) **Phiếu của tôi** → phiếu T01 → **Báo cân ở mỏ** → **Cân tại mỏ (t)** 39,8 → **Thêm ảnh phiếu cân · phiếu quặng** chụp một tờ → **Gửi** | Máy báo *Đã báo cân tại mỏ. Bãi sẽ xác nhận.*; thẻ phiếu dòng **Cân tại mỏ (t)** 39,80 t. Phiếu giao T14 (sau này) không có nút này | 10b | |
 | T10c | `tx01` · điều xe (điện thoại) | Bật **chế độ máy bay** (máy tính: F12 → **Network** → **Offline**) → **Báo cân ở mỏ** → sửa thành 40 → **Gửi** → tắt chế độ máy bay | Lúc mất mạng: *Chờ gửi — tự gửi khi có mạng lại*, thẻ có dòng vàng *Báo cân ở mỏ · Chờ gửi…*, nút tạm ẩn. Có mạng lại: *Đã gửi xong 1 lần báo cân chờ gửi*, **Cân tại mỏ** = 40 | 10b | |
