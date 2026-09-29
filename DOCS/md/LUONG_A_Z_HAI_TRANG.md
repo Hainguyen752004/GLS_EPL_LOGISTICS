@@ -176,7 +176,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 **Thao tác:**
 
 1. Bấm **Phiếu mới**. Máy gợi ý số phiếu, đổi theo loại phiếu.
-2. Mục I — **Thông tin xe vận chuyển**: ô **Loại phiếu** chọn **Gom (mỏ → bãi)**. Chọn **Số xe** 341; biển đầu kéo, biển rơ-moóc, hãng xe tự điền. Chọn **Tài xế** `tx01`. Ghi **Ngày lập phiếu**, **Ngày xe đi**, km **Lúc đi**; **Km về ước tính** tự tính theo tuyến.
+2. Mục I — **Thông tin xe vận chuyển**: ô **Loại phiếu** chọn **Gom (mỏ → bãi)**. Chọn **Số xe** 341; biển đầu kéo, biển rơ-moóc, hãng xe tự điền. Chọn **Tài xế** `tx01`. Ghi **Ngày lập phiếu**, **Ngày xe đi**, km **Lúc đi**; **Km về ước tính** tự tính theo tuyến. Hai ô **Ngày xe về** và **Lúc về** để xám, dưới ô ghi *Điền khi xe về: Báo đã về · Xe đã tới* — chúng có số ở bước 10–12, khi tài xế bấm **Báo đã về** hoặc Bãi bấm **Xe đã tới · nhập cân cuối**.
 3. Mục II — **Thông tin vận chuyển & doanh thu**: **Chọn tuyến** (điểm đi, điểm đến tự điền); chọn **Khách hàng**; **Loại hàng** Quặng sắt; **Cân đầu (tấn)** 40 theo phiếu cân ở mỏ.
 4. Khung **Hàng trên phiếu** → **Thêm dòng**: **Mặt hàng** ແຮ່ເຫຼັກ (quặng sắt), **Số tấn** 40.
 5. **Phiếu quặng đính kèm**: có ảnh phiếu quặng thì bấm **Thêm ảnh · PDF** (lưu phiếu rồi mới đính kèm được). Không có ảnh cũng được; kế toán gõ số phiếu quặng ở bước 5.
@@ -184,7 +184,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Máy tự làm:** cấp số `G4-xxxx-MM/EPL`; giá cước theo **bảng giá khách × tuyến** (Bãi không thấy); tỷ giá USD · THB · VND · CNY **khoá vào phiếu** lúc lập; xe chủ xe liên kết thì phiếu tự thành phiếu xe liên kết, điền phí và ngưỡng tấn theo hồ sơ chủ xe; sinh tờ **DO** (phiếu xuất xe).
 
-**Máy chặn:** Bãi không nhập được giá cước, giá thuê xe, phí, ngưỡng tấn, số phiếu quặng.
+**Máy chặn:** Bãi không nhập được giá cước, giá thuê xe, phí, ngưỡng tấn, số phiếu quặng; chưa ai nhập được ngày xe về, km về trước khi xe về.
 
 **Trạng thái sau bước:** phiếu *Đã xuất xe*; mục I, II *Chờ*. Phiếu gom **chưa đụng kho bãi** — hàng chỉ vào kho khi xe về tới bãi (bước 12).
 
@@ -348,7 +348,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Máy tự làm (phiếu GOM):** hàng vào **kho bãi** ở trang kế toán thành một **LÔ** (lô = phiếu gom này) theo **số cân tại bãi** 39,6 t; sinh tờ **PNK_HH** ở sổ (ngoài bảng, tính bằng tấn, không có tiền); trên phiếu tự ghi **một dòng hao hụt** 0,4 t (cân mỏ − cân bãi); xe và tài xế rảnh lại; công-tơ-mét của xe cập nhật.
 
-**Máy chặn:** chưa nhận tạm ứng thì không báo tới được; **trang kế toán tắt** thì chưa báo tới được (không biết hàng đã vào kho hay chưa); đã nhập kho rồi thì **không sửa dòng hàng và cân** của phiếu gom nữa — muốn khác thì kế toán lập điều chỉnh (bước 13).
+**Máy chặn:** trước bước này, ô **Ngày xe về**, **Lúc về** trên phiếu chỉ xem (nút **Lưu** không ghi được) — xe đã tới rồi thì Bãi sửa được như mọi ô mục I; chưa nhận tạm ứng thì không báo tới được; **trang kế toán tắt** thì chưa báo tới được (không biết hàng đã vào kho hay chưa); đã nhập kho rồi thì **không sửa dòng hàng và cân** của phiếu gom nữa — muốn khác thì kế toán lập điều chỉnh (bước 13).
 
 **Ai làm tiếp:** lô nằm bãi chờ phiếu giao lấy (bước 14); KT Thu/Chi khoá phiếu gom khi các mục xong (bước 17).
 
@@ -690,7 +690,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → Loại **Gom (mỏ → bãi)**, xe 341, tài xế `tx01`, tuyến ກາສີ → ກາລໍ, khách ຄຳຕຸ້ຍ, **Cân đầu (tấn)** 40; **Hàng trên phiếu** → **Thêm dòng** 40 t → **Lưu** | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá | 1 | |
+| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → Loại **Gom (mỏ → bãi)**, xe 341, tài xế `tx01`, tuyến ກາສີ → ກາລໍ, khách ຄຳຕຸ້ຍ, **Cân đầu (tấn)** 40; **Hàng trên phiếu** → **Thêm dòng** 40 t → **Lưu** | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; ô **Ngày xe về**, **Lúc về** xám, ghi *Điền khi xe về* | 1 | |
 | T02 | `thabok` · điều xe | Mục III → **Thêm dòng**: 200 lít, nơi đổ **kho Thà Bốc** → **Lưu** → **Phiếu lĩnh nhiên liệu** → **In** | Mở màn Phiếu chi · Phiếu thu ở tờ phiếu lĩnh có mã QR; không có cột tiền | 2 | |
 | T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** tiền chuyến, tiền nước (chỉ số lượng) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
 | T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, II, III, IV | Các mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
@@ -701,7 +701,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 | T09 | `quytb` · kế toán | **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường** → quét QR tờ tạm ứng T03 → **Chi tiền** | Mục IV bên điều xe *Đã chi*; bên điều xe không bấm chi lần hai được | 9 | |
 | T10 | `tx01` · điều xe (điện thoại) | **Phiếu của tôi** → phiếu T01 → **Xuất phát** (cho phép vị trí) | Phiếu *Đang vận chuyển*; xe hiện trên **Theo dõi tuyến** | 10 | |
 | T11 | `tx01` → `khonl` | Tài xế **Khai đổ nhiên liệu** (số lít, trạm VN) → `khonl` **Theo dõi tuyến** → sự cố → **Duyệt** | Thành dòng mục III nguồn mua, mục III mở lại *Đã nhập*; `khonl` nhập giá khi kiểm lại | 11 | |
-| T12 | `thabok` · điều xe | **Xe đã tới · nhập cân cuối** → **Cân cuối (tấn)** 39,6, ngày về, km về → **Đồng ý** | Tự có dòng hao hụt 0,4 t; trang kế toán **Kho → Kho hàng** có lô mới 39,6 t và tờ **PNK_HH** | 12 | |
+| T12 | `thabok` · điều xe | **Xe đã tới · nhập cân cuối** → **Cân cuối (tấn)** 39,6, ngày về, km về → **Đồng ý** | Tự có dòng hao hụt 0,4 t; ô **Ngày xe về**, **Lúc về**, **Km chạy** trên phiếu có số và từ giờ sửa được; trang kế toán **Kho → Kho hàng** có lô mới 39,6 t và tờ **PNK_HH** | 12 | |
 | T13 | `ketoan` · kế toán | **Kho → Kho hàng** → dòng lô T12 → **Điều chỉnh tồn** −0,6, **Lý do** → **Lưu** | Còn lại 39,0 t; tờ **DC_HH**; `thabok` không có nút điều chỉnh | 13 | |
 
 ### 10.2. Chặng GIAO: lấy hàng từ lô, giao, ký nhận

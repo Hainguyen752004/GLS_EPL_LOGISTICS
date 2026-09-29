@@ -7711,5 +7711,10 @@ window.EPL_TU_DIEN = {
   "vi": "Công nợ · trả nhà cung cấp · cấn trừ cuối tháng",
   "lo": "ໜີ້ · ຈ່າຍຜູ້ສະໜອງ · ຫັກລົບທ້າຍເດືອນ",
   "en": "Payables · pay supplier · month-end offset"
+ },
+ "khi_xe_ve": {
+  "vi": "Điền khi xe về: Báo đã về · Xe đã tới",
+  "lo": "ໃສ່ເມື່ອລົດກັບ: ແຈ້ງກັບຮອດ · ລົດຮອດແລ້ວ",
+  "en": "Filled when the truck returns: Report return · Truck arrived"
  }
 };

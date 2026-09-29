@@ -142,3 +142,6 @@
 .px-chon-hang{display:flex;gap:6px;min-width:0}
 .px-chon-hang input{flex:0 1 15em;min-width:6em}
 .px-chon-hang select{flex:1 1 auto;min-width:0}
+/* Ngày xe về, km về: chỉ điền khi xe về — dòng nhỏ dưới ô nói điền ở đâu (29/09) */
+.px-khi-ve{display:block;margin-top:3px;font-size:11.5px;color:var(--ink-3);line-height:1.3}
+.px-khi-ve[hidden]{display:none}
