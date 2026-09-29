@@ -9,9 +9,9 @@
     const rows = ds.filter(r => !q || [r.name, r.origin, r.destination].join(' ').toLowerCase().includes(q));
     root.querySelector('#tuy-than').innerHTML = rows.length ? rows.map((r, i) => `<tr data-id="${r.id}" class="${chon && chon.id === r.id ? 'sel' : ''} ${r.active ? '' : 'kh-tat'}">
       <td>${i + 1}</td><td lang="lo"><b>${esc(r.name)}</b></td><td lang="lo">${esc(r.origin)}</td><td lang="lo">${esc(r.destination)}</td>
-      <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${so(r.toll_lak)} LAK</td>
+      <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${r.return_km ? so(r.return_km, 1) : '—'}</td><td class="num">${so(r.toll_lak)} LAK</td>
       <td>${EPL.tag(r.active ? 'ok' : 'plain', r.active ? 'active' : 'inactive')}</td></tr>`).join('')
-      : `<tr><td colspan="8" class="empty">${NN.h('no_data')}</td></tr>`;
+      : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('#tuy-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => moChiTiet(tr.dataset.id)));
   }
   async function moChiTiet(id) {
@@ -20,8 +20,11 @@
     root.querySelector('#tuy-ten').textContent = chon.name;
     root.querySelector('#tuy-sua').hidden = !suaDuoc();
     root.querySelector('#tuy-chang').innerHTML = chon.stops.map((s, i) => `${i ? '<div class="tuy-noi"></div>' : ''}
-      <div class="tuy-diem"><span class="n">${s.seq}</span><span class="ten" lang="lo">${esc(s.name)}</span><span class="km">${i ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</span></div>`).join('');
-    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)}</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
+      <div class="tuy-diem"><span class="n">${s.seq}</span><span class="ten" lang="lo">${esc(s.name)}</span><span class="km">${i ? '+' + so(s.km_from_prev, 1) + ' km' : NN.t('origin')}</span></div>`).join('')
+      // chiều về: xe quay lại điểm đi
+      + (chon.return_km && chon.stops.length ? `<div class="tuy-noi ve"></div>
+      <div class="tuy-diem ve"><span class="n">↩</span><span class="ten" lang="lo">${esc(chon.stops[0].name)}</span><span class="km">${NN.h('km_ve')} +${so(chon.return_km, 1)} km</span></div>` : '');
+    root.querySelector('#tuy-tom').innerHTML = `${NN.h('total_km')}: <b>${so(chon.total_km, 1)}</b> km${chon.return_km ? ` · ${NN.h('km_ve')}: <b>${so(chon.return_km, 1)}</b> km · ${NN.h('km_ca_chuyen')}: <b>${so(chon.round_km, 1)}</b> km` : ''} · ${NN.h('toll_bot')}: <b>${so(chon.toll_lak)}</b> LAK · ${NN.h('trips_count')}: <b>${chon.so_phieu}</b>${chon.note ? ' · ' + esc(chon.note) : ''}`;
     veDanhSach();
   }
 
@@ -35,15 +38,20 @@
       <td><input class="num" data-i="${i}" data-f="lat" value="${esc(d.lat ?? '')}" placeholder="${esc(NN.t('st_lat'))}" inputmode="decimal"></td>
       <td><input class="num" data-i="${i}" data-f="lng" value="${esc(d.lng ?? '')}" placeholder="${esc(NN.t('st_lng'))}" inputmode="decimal"></td>
       <td>${diemTam.length > 2 ? `<button type="button" class="x" data-xoa="${i}">×</button>` : ''}</td></tr>`).join('');
-    tb.querySelectorAll('input[data-f]').forEach(el => el.addEventListener('input', () => { diemTam[+el.dataset.i][el.dataset.f] = el.value; }));
+    tb.querySelectorAll('input[data-f]').forEach(el => el.addEventListener('input', () => { diemTam[+el.dataset.i][el.dataset.f] = el.value; veNutVe(); }));
+    veNutVe();
     tb.querySelectorAll('[data-xoa]').forEach(b => b.addEventListener('click', () => { diemTam.splice(+b.dataset.xoa, 1); veDiemTam(); }));
   }
+  // Nút "= … km" cạnh ô Km chiều về: chép tổng chiều đi (xe về đúng đường cũ)
+  const kmDi = () => diemTam.slice(1).reduce((a, d) => a + EPL.doc(d.km_from_prev), 0);
+  function veNutVe() { const b = root.querySelector('#tuy-f-ve-bang'); if (b) b.textContent = '= ' + so(kmDi(), 1) + ' km'; }
   function moHop(r) {
     const dlg = root.querySelector('#tuy-hop');
     root.querySelector('#tuy-hop-tieu-de').textContent = r ? NN.t('edit') + ' — ' + r.name : NN.t('add');
     root.querySelector('#tuy-f-name').value = r ? r.name : '';
     root.querySelector('#tuy-f-toll').value = r ? r.toll_lak : '';
     root.querySelector('#tuy-f-note').value = r ? (r.note || '') : '';
+    root.querySelector('#tuy-f-ve').value = r && r.return_km ? r.return_km : '';
     root.querySelector('#tuy-f-active-o').hidden = !r; if (r) root.querySelector('#tuy-f-active').value = r.active ? '1' : '0';
     diemTam = r ? r.stops.map(s => ({ name: s.name, km_from_prev: s.km_from_prev, lat: s.lat, lng: s.lng }))
       : [{ name: '' }, { name: '', km_from_prev: '' }];
@@ -53,7 +61,7 @@
       dlg.removeEventListener('close', xong);
       if (dlg.returnValue !== 'ok') return;
       const body = { name: root.querySelector('#tuy-f-name').value, toll_lak: EPL.doc(root.querySelector('#tuy-f-toll').value),
-        note: root.querySelector('#tuy-f-note').value,
+        note: root.querySelector('#tuy-f-note').value, return_km: EPL.doc(root.querySelector('#tuy-f-ve').value),
         stops: diemTam.map(d => ({ name: d.name, km_from_prev: EPL.doc(d.km_from_prev),
           lat: d.lat === '' || d.lat == null ? null : EPL.doc(d.lat),
           lng: d.lng === '' || d.lng == null ? null : EPL.doc(d.lng) })) };
@@ -71,6 +79,7 @@
       const them = r.querySelector('#tuy-them'); them.hidden = !suaDuoc(); them.addEventListener('click', () => moHop(null));
       r.querySelector('#tuy-sua').addEventListener('click', () => chon && moHop(chon));
       r.querySelector('#tuy-f-them-diem').addEventListener('click', () => { diemTam.push({ name: '', km_from_prev: '' }); veDiemTam(); });
+      r.querySelector('#tuy-f-ve-bang').addEventListener('click', () => { r.querySelector('#tuy-f-ve').value = Math.round(kmDi() * 10) / 10; });
       veDanhSach(); if (ds.length) await moChiTiet(ds[0].id);
     },
     onLang() { if (root) { veDanhSach(); if (chon) moChiTiet(chon.id); } },

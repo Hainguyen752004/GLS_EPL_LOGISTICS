@@ -24,10 +24,22 @@ def _so(v, ten):
         raise HTTPException(422, {"ma": "SO_SAI", "loi": "Ô %s phải là số." % ten})
 
 
+def km_ca_chuyen(r):
+    """Km một chuyến xe chạy trên tuyến: chiều đi (tổng các chặng) + chiều về (xe quay lại điểm đi, nếu có)."""
+    return round((r.total_km or 0) + (r.return_km or 0), 1)
+
+
+def _km_ve(v):
+    km = _so(v, "km chiều về")
+    if km < 0:
+        raise HTTPException(422, {"ma": "SO_AM", "loi": "Km chiều về không được âm."})
+    return round(km, 1)
+
+
 def xuat_tuyen(db, r, chi_tiet=False):
     diem = db.query(RouteStop).filter(RouteStop.route_id == r.id).order_by(RouteStop.seq).all()
     ra = {"id": r.id, "name": r.name, "origin": r.origin, "destination": r.destination, "total_km": r.total_km,
-          "toll_lak": r.toll_lak, "note": r.note, "active": r.active, "so_diem": len(diem),
+          "return_km": r.return_km or 0, "round_km": km_ca_chuyen(r), "toll_lak": r.toll_lak, "note": r.note, "active": r.active, "so_diem": len(diem),
           "stops": [{"id": s.id, "seq": s.seq, "name": s.name, "km_from_prev": s.km_from_prev,
                      "lat": s.lat, "lng": s.lng, "note": s.note} for s in diem]}
     if chi_tiet:
@@ -84,7 +96,7 @@ def them(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA)):
     ten = str(data.get("name") or "").strip()
     if not ten:
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Tuyến phải có tên."})
-    r = Route(name=ten, toll_lak=_so(data.get("toll_lak"), "BOT"), note=data.get("note"))
+    r = Route(name=ten, toll_lak=_so(data.get("toll_lak"), "BOT"), return_km=_km_ve(data.get("return_km")), note=data.get("note"))
     db.add(r); db.flush()
     _ghi_diem(db, r, data.get("stops"))
     db.commit()
@@ -99,6 +111,7 @@ def sua(rid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
     if "name" in data:
         r.name = str(data["name"]).strip() or r.name
     if "toll_lak" in data: r.toll_lak = _so(data["toll_lak"], "BOT")
+    if "return_km" in data: r.return_km = _km_ve(data["return_km"])
     if "note" in data: r.note = data["note"]
     if "active" in data: r.active = bool(data["active"])
     if "stops" in data: _ghi_diem(db, r, data["stops"])

@@ -95,7 +95,7 @@
   function veDanhMuc() {
     g('f-vehicle_id').innerHTML = `<option value="">—</option>` + DM.vehicles.filter(x => x.active || x.id === P.vehicle_id).map(x => `<option value="${x.id}" ${x.id === P.vehicle_id ? 'selected' : ''}>${esc(x.truck_no)} · ${esc(x.plate_head || '')}${x.owner_type === 'joint' ? ' · ' + NN.t('co_joint') : ''}</option>`).join('');
     g('f-driver_id').innerHTML = `<option value="">—</option>` + DM.drivers.filter(x => x.active || x.id === P.driver_id).map(x => `<option value="${x.id}" ${x.id === P.driver_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
-    g('f-route_id').innerHTML = `<option value="">—</option>` + DM.routes.filter(x => x.active || x.id === P.route_id).map(x => `<option value="${x.id}" ${x.id === P.route_id ? 'selected' : ''}>${esc(x.name)} · ${so(x.total_km, 1)} km</option>`).join('');
+    g('f-route_id').innerHTML = `<option value="">—</option>` + DM.routes.filter(x => x.active || x.id === P.route_id).map(x => `<option value="${x.id}" ${x.id === P.route_id ? 'selected' : ''}>${esc(x.name)} · ${so(x.total_km, 1)} km${x.return_km ? ' · ↩ ' + so(x.return_km, 1) + ' km' : ''}</option>`).join('');
     g('f-customer_id').innerHTML = `<option value="">—</option>` + DM.customers.filter(x => x.active || x.id === P.customer_id).map(x => `<option value="${x.id}" ${x.id === P.customer_id ? 'selected' : ''}>${esc(x.name)}</option>`).join('');
   }
   function doTruong() {
@@ -108,7 +108,9 @@
     g('v-odo_km').textContent = P.odo_out && P.odo_back ? so(Math.abs(EPL.doc(P.odo_back) - EPL.doc(P.odo_out))) : '—';
     // Km về ước tính = km lúc đi + km tuyến — để kế toán đối với km về thật ở bước kiểm lại
     const tuyen = (DM.routes || []).find(x => x.id === P.route_id);
-    g('v-odo_est').textContent = P.odo_out && tuyen && tuyen.total_km ? so(EPL.doc(P.odo_out) + EPL.doc(tuyen.total_km)) : '—';
+    // km về ước tính = lúc đi + chiều đi + chiều về (tuyến có xe quay lại điểm đi — 29/09)
+    const kmCa = tuyen ? EPL.doc(tuyen.total_km) + EPL.doc(tuyen.return_km || 0) : 0;
+    g('v-odo_est').textContent = P.odo_out && kmCa ? so(EPL.doc(P.odo_out) + kmCa) : '—';
     g('v-hao').innerHTML = k.hao === null ? '—' : `${so(EPL.doc(P.weight_origin) - EPL.doc(P.weight_dest), 2)} t <span class="${k.hao > 1.5 ? 'neg' : 'muted'}">(${k.hao.toFixed(1)}%)</span>`;
     g('v-val-usd').textContent = t2(k.dt, k.ma); g('v-val-lak').textContent = k.ma === 'LAK' ? '—' : t2(k.dtLak, 'LAK');
     if (k.lk) { g('v-hire').textContent = t2(k.thue, k.mh); g('v-fee').textContent = '− ' + t2(k.phi, k.mh); g('v-over-t').textContent = so(k.vuot, 2) + ' t'; g('v-over').textContent = '− ' + t2(k.truVuot, k.mh); }
@@ -436,7 +438,10 @@
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; P = phieuTrong(); await napLo(); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
+  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; P = phieuTrong(); anNhacOdo(); await napLo();
+    // công-tơ-mét của xe đổi mỗi lần một chuyến về tới (Xe đã tới) — nạp lại để ô Lúc đi điền đúng số mới nhất
+    DM.vehicles = await API.get('/api/vehicles').catch(() => DM.vehicles); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
+  function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
     [...COT_INFO, ...COT_TRANS, ...COT_POD].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
@@ -700,6 +705,17 @@
           // phiếu mới: số gợi ý theo loại — gom ra G4-…, giao ra T4-… (chỉ khi người lập chưa tự gõ số khác)
           if (moi) API.get('/api/trips-so-moi?kind=' + encodeURIComponent(P.kind || 'giao')).then(s => { if (s && s.doc_no) { P.doc_no = s.doc_no; const o = g('px-doc-no'); if (o) o.value = s.doc_no; } }).catch(() => {});
           napLo().then(veHet);
+        }
+        if (c === 'odo_out') { delete el.dataset.tuDien; g('px-odo-nhac').hidden = true; }   // Bãi tự gõ thì thôi không đè nữa
+        if (c === 'vehicle_id' && moi) {
+          // Lúc đi (chủ dự án 29/09): phiếu mới chọn xe thì điền sẵn công-tơ-mét của xe — km về chuyến trước ("Xe đã tới"
+          // ghi vào xe). Vẫn sửa được: số thật là đồng hồ lúc lăn bánh. Bãi đã tự gõ thì không đè.
+          const x = DM.vehicles.find(v => v.id === el.value), o = g('f-odo_out');
+          if (o && (!o.value || o.dataset.tuDien === '1')) {
+            const km = x && x.odometer_km ? String(x.odometer_km) : '';
+            o.value = km; P.odo_out = km || null; o.dataset.tuDien = km ? '1' : '';
+            g('px-odo-nhac').hidden = !km;
+          }
         }
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();

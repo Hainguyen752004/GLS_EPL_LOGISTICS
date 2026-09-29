@@ -503,6 +503,9 @@ class Route(Base):
     destination = Column(String)
     total_km = Column(Float, default=0)
     toll_lak = Column(Float, default=0)                        # BOT cả tuyến, tự thành dòng x_toll khi lập phiếu
+    # Km CHIỀU VỀ (chủ dự án 29/09): xe quay lại điểm đi — phiếu gom chạy rỗng lên mỏ, phiếu giao chạy rỗng về bãi.
+    # Các điểm trên tuyến vẫn là đường HÀNG đi (mỏ → bãi, bãi → cảng); 0 = không tính chiều về.
+    return_km = Column(Float, default=0)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
 

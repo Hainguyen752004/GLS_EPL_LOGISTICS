@@ -7761,5 +7761,25 @@ window.EPL_TU_DIEN = {
   "vi": "Báo cân tại mỏ",
   "lo": "ແຈ້ງນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່",
   "en": "Mine weight reported"
+ },
+ "km_ve": {
+  "vi": "Km chiều về",
+  "lo": "ກິໂລແມັດ ກັບຄືນ",
+  "en": "Return km"
+ },
+ "km_ve_hint": {
+  "vi": "Xe quay lại điểm đi (gom: lên mỏ · giao: về bãi). Để trống = xe không quay về.",
+  "lo": "ລົດກັບຄືນຕົ້ນທາງ (ເກັບ: ໄປບໍ່ແຮ່ · ສົ່ງ: ກັບສາງ). ປະຫວ່າງ = ລົດບໍ່ກັບ.",
+  "en": "The truck returns to the origin (collect: to the mine · deliver: back to the yard). Empty = it does not return."
+ },
+ "km_ca_chuyen": {
+  "vi": "Cả đi và về",
+  "lo": "ລວມກິໂລແມັດ ໄປ ແລະ ກັບຄືນ",
+  "en": "Out and back"
+ },
+ "odo_tu_dien": {
+  "vi": "Điền sẵn theo công-tơ-mét của xe — sửa được",
+  "lo": "ຕື່ມເອງຕາມເລກກົງເຕີຂອງລົດ — ແກ້ໄດ້",
+  "en": "Pre-filled from the truck's odometer — editable"
  }
 };

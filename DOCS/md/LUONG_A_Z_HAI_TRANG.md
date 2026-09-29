@@ -17,7 +17,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, rồi 57 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, rồi 59 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -151,8 +151,8 @@ Quy tắc anh chốt: việc nào **đụng kho hoặc tiền** mà trang kia t�
 
 Khách **ຄຳຕຸ້ຍ** thuê chở quặng sắt từ mỏ về bãi Thà Bốc, rồi từ bãi ra cảng. Chuyến tách **hai chặng** (anh Khampla B1–B4):
 
-- **Phiếu GOM** `G4-xxxx-09/EPL`: xe **341** (xe nhà), tài xế `tx01`, chở **40 tấn** từ mỏ (ກາສີ) về bãi Thà Bốc (ທ່າບົກ).
-- **Phiếu GIAO** `T4-xxxx-09/EPL`: xe **342**, tài xế `tx02`, lấy **25 tấn** từ lô của phiếu gom, chở từ bãi ra cảng.
+- **Phiếu GOM** `G4-xxxx-09/EPL`: xe **341** (xe nhà), tài xế `tx01`, tuyến **ກາສີ → ທ່າບົກ**: xe chạy rỗng từ bãi lên mỏ, chở **40 tấn** từ mỏ (ກາສີ) về bãi Thà Bốc (ທ່າບົກ) — 145 km chiều hàng + 145 km chiều về.
+- **Phiếu GIAO** `T4-xxxx-09/EPL`: xe **342**, tài xế `tx02`, tuyến **ທ່າບົກ → ທ່າເຮືອກະລໍ**: lấy **25 tấn** từ lô của phiếu gom, chở từ bãi qua cửa khẩu ດ່ານ ນໍ້າພາວ ra cảng, rồi chạy rỗng về bãi — 360 km + 360 km.
 
 Mỗi phiếu đi qua cùng một chuỗi mục I–VI. Bước 1–13 làm cho **phiếu gom**. Bước 14–16 là phần riêng của **phiếu giao**; các bước dầu, tạm ứng, kiểm, trên đường (2–11) làm lại y như phiếu gom. Bước 17–23 là khoá, doanh thu, cuối kỳ, sổ kế toán, làm cho cả hai phiếu. Muốn thử chuyến **một chặng** (xe đi thẳng mỏ → cảng) thì lập một phiếu loại **Giao** không lấy từ lô và bỏ qua bước 12–14.
 
@@ -176,8 +176,8 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 **Thao tác:**
 
 1. Bấm **Phiếu mới**. Máy gợi ý số phiếu, đổi theo loại phiếu.
-2. Mục I — **Thông tin xe vận chuyển**: ô **Loại phiếu** chọn **Gom (mỏ → bãi)**. Chọn **Số xe** 341; biển đầu kéo, biển rơ-moóc, hãng xe tự điền. Chọn **Tài xế** `tx01`. Ghi **Ngày lập phiếu**, **Ngày xe đi**, km **Lúc đi**; **Km về ước tính** tự tính theo tuyến. Hai ô **Ngày xe về** và **Lúc về** để xám, dưới ô ghi *Điền khi xe về: Báo đã về · Xe đã tới* — chúng có số ở bước 10–12, khi tài xế bấm **Báo đã về** hoặc Bãi bấm **Xe đã tới · nhập cân cuối**.
-3. Bấm thẻ **II · Thông tin vận chuyển & doanh thu** trên thanh thẻ mục (mỗi mục một thẻ; **Toàn phiếu** ở cuối thanh thì hiện cả 6 mục một trang): **Chọn tuyến** (điểm đi, điểm đến tự điền); chọn **Khách hàng**; **Loại hàng** Quặng sắt. Phiếu **Gom** lúc lập **chưa có cân** — xe chưa đi thì chưa có số (tờ Excel của họ cũng để trống hai dòng cân lúc lập): ô **Cân tại mỏ (t)** để trống, dưới ô ghi *Bốc xong ở mỏ mới ghi: tài xế bấm Báo cân ở mỏ, hoặc Admin Thà Bốc ghi theo phiếu quặng…*; ô **Cân tại bãi khi về** xám, ghi *Điền khi xe tới: Xe đã tới · nhập cân cuối*. Ô **Hợp đồng vận chuyển** ghi *Lưu phiếu rồi số hợp đồng còn hạn tự điền* — lưu xong máy điền hợp đồng còn hạn của khách lấy ở **Danh mục → Khách hàng** (ví dụ ຄຳຕຸ້ຍ → HDVC-2026-001), khách chưa có thì ghi *Chưa có hợp đồng*; Bãi chỉ xem, kế toán đổi được khi kiểm mục II. Ô **Số phiếu quặng**, **Ngày phiếu quặng** xám — kế toán gõ ở bước 5.
+2. Mục I — **Thông tin xe vận chuyển**: ô **Loại phiếu** chọn **Gom (mỏ → bãi)**. Chọn **Số xe** 341; biển đầu kéo, biển rơ-moóc, hãng xe tự điền. Chọn **Tài xế** `tx01`. Ghi **Ngày lập phiếu**, **Ngày xe đi**. Ô **Lúc đi** (km) **tự điền** ngay khi chọn xe: đúng số **Công-tơ-mét (km)** của xe ở màn **Xe** — tức km về của chuyến trước, vì mỗi lần Bãi bấm **Xe đã tới** máy ghi km về vào xe. Dưới ô ghi *Điền sẵn theo công-tơ-mét của xe — sửa được*: Bãi nhìn đồng hồ xe lúc lăn bánh, khớp thì để nguyên, lệch (xe chạy ngoài chuyến, đi sửa…) thì gõ lại; đã gõ tay thì đổi xe cũng không bị đè. Xe chưa có công-tơ-mét thì ô để trống, gõ tay. **Km về ước tính** tự tính = lúc đi + km chiều đi + km chiều về của tuyến. Hai ô **Ngày xe về** và **Lúc về** để xám, dưới ô ghi *Điền khi xe về: Báo đã về · Xe đã tới* — chúng có số ở bước 10–12, khi tài xế bấm **Báo đã về** hoặc Bãi bấm **Xe đã tới · nhập cân cuối**.
+3. Bấm thẻ **II · Thông tin vận chuyển & doanh thu** trên thanh thẻ mục (mỗi mục một thẻ; **Toàn phiếu** ở cuối thanh thì hiện cả 6 mục một trang): **Chọn tuyến** **ກາສີ → ທ່າບົກ** — ô chọn ghi *ກາສີ → ທ່າບົກ · 145.0 km · ↩ 145.0 km* (km chiều hàng · km chiều về); điểm đi, điểm đến tự điền; chọn **Khách hàng**; **Loại hàng** Quặng sắt. Phiếu **Gom** lúc lập **chưa có cân** — xe chưa đi thì chưa có số (tờ Excel của họ cũng để trống hai dòng cân lúc lập): ô **Cân tại mỏ (t)** để trống, dưới ô ghi *Bốc xong ở mỏ mới ghi: tài xế bấm Báo cân ở mỏ, hoặc Admin Thà Bốc ghi theo phiếu quặng…*; ô **Cân tại bãi khi về** xám, ghi *Điền khi xe tới: Xe đã tới · nhập cân cuối*. Ô **Hợp đồng vận chuyển** ghi *Lưu phiếu rồi số hợp đồng còn hạn tự điền* — lưu xong máy điền hợp đồng còn hạn của khách lấy ở **Danh mục → Khách hàng** (ví dụ ຄຳຕຸ້ຍ → HDVC-2026-001), khách chưa có thì ghi *Chưa có hợp đồng*; Bãi chỉ xem, kế toán đổi được khi kiểm mục II. Ô **Số phiếu quặng**, **Ngày phiếu quặng** xám — kế toán gõ ở bước 5.
 4. Khung **Hàng trên phiếu** chỉ có ở phiếu **Giao** — hàng lấy từ lô nào trong bãi, bao nhiêu tấn (bước 14). Phiếu **Gom** **không có khung này** (từ 29/09): một phiếu gom chở một mặt hàng, như một dòng trong tờ Excel của họ, nên chỉ cần **Loại hàng** và **Cân tại mỏ (t)** — máy tự ghi dòng hàng từ hai ô đó (bước 10b).
 5. **Phiếu quặng đính kèm**: có ảnh phiếu quặng thì bấm **Thêm ảnh · PDF** (lưu phiếu rồi mới đính kèm được). Không có ảnh cũng được; kế toán gõ số phiếu quặng ở bước 5.
 6. Bấm **Lưu** (nút xanh góc trên bên phải). Máy báo *Đã lưu*; dòng *Trạng thái phiếu* dưới cùng không còn ghi *Phiếu mới*, đầu mỗi mục hiện nút **Gửi kiểm tra**.
@@ -429,7 +429,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 **Thao tác:**
 
 1. Bấm **🔒 Khoá phiếu**.
-2. Máy rà và hiện danh sách cảnh báo: km về lệch ước tính quá 10 %, hao hụt quá 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm. Đọc từng điểm; đúng thì bấm **Đồng ý** để khoá. Không có điểm lệch thì máy báo phiếu sạch.
+2. Máy rà và hiện danh sách cảnh báo: km về lệch ước tính quá 10 % (ước tính = lúc đi + chiều đi + chiều về của tuyến; câu cảnh báo ghi rõ *tuyến … km + … km chiều về*), hao hụt quá 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm. Đọc từng điểm; đúng thì bấm **Đồng ý** để khoá. Không có điểm lệch thì máy báo phiếu sạch.
 3. Cần sửa lại thì bấm **Mở khoá phiếu** (chỉ khi chưa xuất hoá đơn).
 
 **Sau bước:** phiếu *Đã khoá 🔒*. Bãi và tài xế không ghi thêm gì; kế toán, quỹ, kho vẫn kiểm và chi tiếp.
@@ -607,6 +607,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 
 - **Thẻ cao tốc** (Danh mục → Thẻ cao tốc): KT Thu/Chi lập thẻ (của khách hay của EPL), quỹ / kế toán nạp tiền; thẻ trừ đúng một lần lúc ghi sổ mục IV; thẻ của khách cuối tháng cấn trừ vào cước khách đó. Điều chỉnh số dư phải có lý do.
 - **Danh mục nhà cung cấp** (Vận tải → Nhà cung cấp): KT Chi phí thêm, sửa, gắn trạm dầu Việt Nam với khách được cấn trừ; Bãi xem danh sách, số dòng, kỳ trả (không có tiền). Trả trạm và cấn trừ vào cước khách làm ở trang kế toán (6.6, bước 18).
+- **Tuyến đường** (Danh mục → Tuyến đường; Bãi và KT Thu/Chi sửa): bảng tuyến có cột **Tổng km** (chiều hàng đi) và **Km chiều về**. Bấm một tuyến → khung bên phải vẽ các điểm, cuối cùng là dòng **↩** quay lại điểm đi kèm km chiều về, và dòng tóm tắt *Tổng km · Km chiều về · Cả đi và về*. **Thêm** / **Sửa**: **Tên tuyến**, **Phí cao tốc (BOT) cả tuyến**, bảng **Các điểm trên tuyến** (tên điểm, **Km từ điểm trước**, toạ độ nếu có), **Thêm điểm**, rồi ô **Km chiều về** — nút **= … km** bên cạnh chép đúng tổng chiều đi (xe về đường cũ); để trống = xe không quay về. Các điểm là đường **hàng** đi (mỏ → bãi, bãi → cảng); chiều về là đoạn xe chạy không hàng — phiếu gom chạy rỗng từ bãi lên mỏ trước, phiếu giao chạy rỗng về bãi sau. Tuyến có chiều về thì **BOT** nên ghi cả hai lượt qua trạm (phí cao tốc tự thành một dòng mục IV khi lập phiếu).
 - **Tỷ giá** (Danh mục → Tỷ giá), **bảng giá khách × tuyến** (Danh mục → Khách hàng), **điều khoản chủ xe** và **hợp đồng thuê xe** (Vận tải → Xe liên kết — tiền trả chủ xe ở trang kế toán, bước 19).
 
 ## 7. Danh mục chứng từ
@@ -703,7 +704,18 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 2. **Khởi động lại máy 8020** (trang điều xe) để nhận bản có **Báo cân ở mỏ** (bước 10b), rồi **Ctrl+F5** trên trình duyệt. Máy **8030** không cần khởi động lại.
 3. **Kiểm kết nối hai chiều** (Phần 3.3 bước 8): trang kế toán, `admin` → **Cài đặt** → thẻ **Liên thông trang điều xe** → **Kiểm kết nối** phải hiện *Nối được trang điều xe*; trang điều xe, `admin` → **Hệ thống → Tài khoản** → tab **Liên thông trang kế toán** → **Kiểm kết nối** phải hiện *Nối được trang kế toán*.
 4. Mở **trang điều xe ở một tab, trang kế toán ở tab bên cạnh**. Cần hai người cùng lúc (ví dụ Bãi lập phiếu, kế toán kiểm) thì mở thêm **cửa sổ ẩn danh** (Ctrl+Shift+N). Mật khẩu mọi tài khoản `1234`.
-5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết); tuyến ກາສີ → ກາລໍ, ກາສີ → ທ່າເຮືອກະລໍ.
+5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết).
+   **Tuyến** (Danh mục → Tuyến đường) — năm tuyến mẫu có **chiều về** thêm ngày 29/09, mỗi tuyến đã có giá cước cho cả 3 khách (theo tấn, USD, tỷ lệ theo km; giá thuê xe liên kết kém 0,5 USD/t):
+
+   | Tuyến | Dùng cho | Chiều hàng | Chiều về | Cả chuyến | BOT | Giá · thuê (USD/t) |
+   |---|---|---|---|---|---|---|
+   | **ກາສີ → ທ່າບົກ** | Gom: mỏ ກາສີ → bãi | 145 km | 145 km | 290 km | — | 12,5 · 12 |
+   | **ຊຽງຂວາງ → ທ່າບົກ** | Gom: mỏ ຊຽງຂວາງ → bãi | 260 km | 260 km | 520 km | — | 22 · 21,5 |
+   | **ທ່າບົກ → ທ່າເຮືອກະລໍ** | Giao: bãi → ດ່ານ ນໍ້າພາວ → cảng | 360 km | 360 km | 720 km | 3.667.000 LAK (hai lượt) | 30,5 · 30 |
+   | **ທ່າບົກ → ດ່ານ ນໍ້າພາວ** | Giao: bãi → cửa khẩu | 210 km | 210 km | 420 km | — | 18 · 17,5 |
+   | **ທ່າບົກ → ວຽງຈັນ** | Giao: bãi → khách ở Viêng Chăn | 95 km | 95 km | 190 km | — | 8 · 7,5 |
+
+   Hai tuyến cũ **ກາສີ → ກາລໍ**, **ກາສີ → ທ່າເຮືອກະລໍ** là tuyến **một chặng** mỏ → bãi → cửa khẩu → cảng (41 và 43 USD/t), chưa có chiều về — giữ như cũ để thử chuyến một chặng. Km, BOT, giá là **số mẫu**, anh sửa ở màn Tuyến đường và bảng giá.
 6. **Test trên DB thật thì những gì bấm sẽ ở lại.** Cách gỡ nếu cần:
    - Phiếu thử: nút **Xoá** trên Phiếu xuất xe chỉ có khi các mục còn *Chờ* / *Đã nhập* (chưa ai kiểm). Đã kiểm rồi thì phiếu ở lại như một chuyến mẫu.
    - Hoá đơn: Sếp **Huỷ tờ hoá đơn** khi phiếu chưa thu đồng nào. Lần thu: bấm **×** ở dòng thu.
@@ -714,7 +726,9 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → thẻ **I**: Loại **Gom (mỏ → bãi)**, xe 341, tài xế `tx01` → thẻ **II**: tuyến ກາສີ → ກາລໍ, khách ຄຳຕຸ້ຍ, loại hàng quặng sắt — ô **Cân tại mỏ (t)** để trống → **Lưu** (nút xanh góc trên phải) | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; phiếu gom **không có** khung **Hàng trên phiếu**; dưới ô **Cân tại mỏ (t)** ghi *Bốc xong ở mỏ mới ghi…*; ô **Ngày xe về**, **Lúc về**, **Cân tại bãi khi về** xám, ghi *Điền khi xe về / tới* | 1 | |
+| T00 | `thabok` · điều xe | **Danh mục → Tuyến đường** → bấm tuyến **ກາສີ → ທ່າບົກ** → **Sửa** → xem ô **Km chiều về** và nút **= 145 km** → **Huỷ** | Bảng có cột **Km chiều về** 145; khung chi tiết có dòng **↩ ກາສີ (ບ່ອນຂຸດແຮ່)** *Km chiều về +145 km* và *Cả đi và về: 290 km* | 6.7 | |
+| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → thẻ **I**: Loại **Gom (mỏ → bãi)**, xe 341 (ô **Lúc đi** tự điền, xem T01b), tài xế `tx01` → thẻ **II**: tuyến **ກາສີ → ທ່າບົກ**, khách ຄຳຕຸ້ຍ, loại hàng quặng sắt — ô **Cân tại mỏ (t)** để trống → **Lưu** (nút xanh góc trên phải) | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; phiếu gom **không có** khung **Hàng trên phiếu**; dưới ô **Cân tại mỏ (t)** ghi *Bốc xong ở mỏ mới ghi…*; ô **Ngày xe về**, **Lúc về**, **Cân tại bãi khi về** xám, ghi *Điền khi xe về / tới* | 1 | |
+| T01b | `thabok` · điều xe | Trên phiếu T01 (chưa lưu cũng được): nhìn ô **Lúc đi**, rồi gõ đè một số khác, rồi đổi **Số xe** sang xe khác và chọn lại 341 | Chọn xe là ô **Lúc đi** có ngay số **Công-tơ-mét (km)** của xe 341 (như ở màn **Xe**), dưới ô ghi *Điền sẵn theo công-tơ-mét của xe — sửa được*; đã gõ tay thì đổi xe **không** đè số anh gõ. **Km về ước tính** = lúc đi + 290 (145 đi + 145 về) | 1 | |
 | T02 | `thabok` · điều xe | Mục III → **Thêm dòng**: 200 lít, nơi đổ **kho Thà Bốc** → **Lưu** → **Phiếu lĩnh nhiên liệu** → **In** | Mở màn Phiếu chi · Phiếu thu ở tờ phiếu lĩnh có mã QR; không có cột tiền | 2 | |
 | T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** tiền chuyến, tiền nước (chỉ số lượng) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
 | T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, III, IV (mục II chưa — chờ cân mỏ, ca T10b) | Ba mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
@@ -735,7 +749,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T14 | `thabok` · điều xe | **Phiếu mới** → Loại **Giao (bãi → khách)**, xe 342, tài xế `tx02`, tuyến ra cảng, khách ຄຳຕຸ້ຍ → **Hàng trên phiếu** → **Thêm dòng** → **Lấy từ lô (phiếu gom)** chọn lô T12, **Số tấn** 25 → **Lưu** | **Cân đầu** tự = 25; lô còn 14 t ở **Kho hàng**; tờ **PXK_HH**. Thử gõ 50 t → máy chặn (quá tồn lô) | 14 | |
+| T14 | `thabok` · điều xe | **Phiếu mới** → Loại **Giao (bãi → khách)**, xe 342, tài xế `tx02`, tuyến **ທ່າບົກ → ທ່າເຮືອກະລໍ** (ra cảng, có chiều về), khách ຄຳຕຸ້ຍ → **Hàng trên phiếu** → **Thêm dòng** → **Lấy từ lô (phiếu gom)** chọn lô T12, **Số tấn** 25 → **Lưu** | **Cân đầu** tự = 25; lô còn 14 t ở **Kho hàng**; tờ **PXK_HH**. Thử gõ 50 t → máy chặn (quá tồn lô) | 14 | |
 | T15 | như T02–T11 | Dầu, tạm ứng, gửi kiểm, kiểm, cấp, chi, xuất phát cho phiếu giao | Như chặng gom | 2–11 | |
 | T16 | `tx02` · điều xe (điện thoại) | **Giao hàng hoàn tất · ký nhận** → ký lên màn, **Thêm ảnh biên bản · phiếu cân** → **Gửi** → **Báo đã về** | Khung **Biên bản giao nhận hàng (POD)** trên phiếu có chữ ký; tắt mạng thì bản ký vào hàng đợi, có mạng tự gửi | 15 | |
 | T17 | `thabok` · điều xe | **Xe đã tới · nhập cân cuối** → cân 24,7, **Số POD**, **Người ký nhận** → **Đồng ý** | Dòng hao hụt 0,3 t; **In biên bản giao nhận** in được | 15 | |

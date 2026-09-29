@@ -37,6 +37,7 @@ from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
+from routes.tuyen import km_ca_chuyen
 from routes import the_cao_toc as THE
 
 router = APIRouter()
@@ -278,7 +279,7 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
                "owner_paid": bool(phieu.owner_paid or phieu.owner_payment_id), "owner_paid_usd": phieu.owner_paid_usd,
                "owner_paid_lak": phieu.owner_paid_lak, "owner_paid_by": phieu.owner_paid_by,
                "owner_paid_at": phieu.owner_paid_at.isoformat() if phieu.owner_paid_at else None,
-               "odo_est": (phieu.odo_out + tuyen.total_km) if (phieu.odo_out and tuyen and tuyen.total_km) else None,
+               "odo_est": (phieu.odo_out + km_ca_chuyen(tuyen)) if (phieu.odo_out and tuyen and km_ca_chuyen(tuyen)) else None,
                "attachments": tep[0] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id).count(),
                "pod_files": tep[1] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod").count(),
                "pod_signed": (tep[2] if nap else db.query(TripAttachment).filter(TripAttachment.trip_id == phieu.id, TripAttachment.kind == "pod_sign").count()) > 0,
@@ -1273,12 +1274,15 @@ def _canh_bao_khoa(db, p):
     """Những chỗ kế toán phải nhìn trước khi khoá. Chỉ CẢNH BÁO, không chặn: số thật đôi khi lệch thật."""
     cb = []
     tuyen = db.get(Route, p.route_id) if p.route_id else None
-    if p.odo_out and p.odo_back and tuyen and tuyen.total_km:
-        uoc = p.odo_out + tuyen.total_km
-        lech = (p.odo_back - uoc) / tuyen.total_km * 100
+    if p.odo_out and p.odo_back and tuyen and km_ca_chuyen(tuyen):
+        # ước tính = km lúc đi + km cả chuyến (chiều đi + chiều về nếu tuyến có — chủ dự án 29/09)
+        ca = km_ca_chuyen(tuyen)
+        uoc = p.odo_out + ca
+        lech = (p.odo_back - uoc) / ca * 100
         if abs(lech) > 10:
-            cb.append({"ma": "KM_LECH", "loi": "Km về thật %s lệch %.0f%% so với ước tính %s (tuyến %s km)."
-                       % (round(p.odo_back), lech, round(uoc), round(tuyen.total_km))})
+            cb.append({"ma": "KM_LECH", "loi": "Km về thật %s lệch %.0f%% so với ước tính %s (tuyến %s km%s)."
+                       % (round(p.odo_back), lech, round(uoc), round(tuyen.total_km or 0),
+                          " + %s km chiều về" % round(tuyen.return_km) if tuyen.return_km else "")})
     if p.weight_origin and p.weight_dest is not None:
         hao = (p.weight_origin - p.weight_dest) / p.weight_origin * 100
         if hao > 1.5:
