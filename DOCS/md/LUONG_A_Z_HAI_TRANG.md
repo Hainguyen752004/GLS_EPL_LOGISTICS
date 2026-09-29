@@ -213,7 +213,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Thao tác:**
 
-1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. **SL là số lượng, không phải tiền** — bao nhiêu lượt, lần, ngày của khoản đó (phí cao tốc 1 lượt qua trạm, phí đỗ xe 1 lần, tiền ăn 3 ngày…). Tiền = SL × **Đơn giá**; Bãi không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá ở bước 7. Mục III cũng vậy: SL là **lít**.
+1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. **SL là số lượng, không phải tiền — và theo Excel của họ, SL 1 là 1 chuyến** (không phải ngày hay buổi): tờ *ໃບເບີກລົດອອກໄປຂົນສົ່ງ* mục IV ghi mọi khoản SL 1, đơn giá là **số tiền trọn chuyến** — tiền nước 60.000, chi phí sang Việt Nam 430.000, chipping Lào 620.000, chipping Việt 1.500.000, phí cao tốc 1.833.500, tiền chuyến 1.800.000, điện thoại 150.000 LAK — cột ghi chú nói trả thế nào: *trả theo chuyến cùng lương* (tiền nước, tiền chuyến), *trả ngay khi tài xế xuất xe* (chi phí sang Việt Nam, điện thoại), *ghi nợ nhà cung cấp, trả theo đợt* (chipping), *trả theo chuyến qua thẻ* (phí cao tốc). Khoản nào một chuyến tính hai lần thật (ví dụ qua cầu hai lượt) thì mới ghi SL 2. Tiền = SL × **Đơn giá**; Bãi không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá ở bước 7. Mục III cũng vậy: SL là **lít**.
 2. Phí cao tốc: tuyến có BOT thì máy tự thêm dòng. Chọn **Trả tiền mặt (không dùng thẻ)** hoặc chọn thẻ cao tốc để trừ thẻ.
 3. Mục VI (nếu có) → **Thêm dòng** tương tự. Bấm **Lưu**.
 4. Bấm **Phiếu chi tạm ứng**: mở màn **Phiếu chi · Phiếu thu** ở tờ tạm ứng của phiếu này, có mã QR. Bấm **In**, tài xế cầm tới quỹ.
@@ -607,7 +607,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 
 - **Thẻ cao tốc** (Danh mục → Thẻ cao tốc): KT Thu/Chi lập thẻ (của khách hay của EPL), quỹ / kế toán nạp tiền; thẻ trừ đúng một lần lúc ghi sổ mục IV; thẻ của khách cuối tháng cấn trừ vào cước khách đó. Điều chỉnh số dư phải có lý do.
 - **Danh mục nhà cung cấp** (Vận tải → Nhà cung cấp): KT Chi phí thêm, sửa, gắn trạm dầu Việt Nam với khách được cấn trừ; Bãi xem danh sách, số dòng, kỳ trả (không có tiền). Trả trạm và cấn trừ vào cước khách làm ở trang kế toán (6.6, bước 18).
-- **Tuyến đường** (Danh mục → Tuyến đường; Bãi và KT Thu/Chi sửa): bảng tuyến có cột **Tổng km** (chiều hàng đi) và **Km chiều về**. Bấm một tuyến → khung bên phải vẽ các điểm, cuối cùng là dòng **↩** quay lại điểm đi kèm km chiều về, và dòng tóm tắt *Tổng km · Km chiều về · Cả đi và về*. **Thêm** / **Sửa**: **Tên tuyến**, **Phí cao tốc (BOT) cả tuyến**, bảng **Các điểm trên tuyến** (tên điểm, **Km từ điểm trước**, toạ độ nếu có), **Thêm điểm**, rồi ô **Km chiều về** — nút **= … km** bên cạnh chép đúng tổng chiều đi (xe về đường cũ); để trống = xe không quay về. Các điểm là đường **hàng** đi (mỏ → bãi, bãi → cảng); chiều về là đoạn xe chạy không hàng — phiếu gom chạy rỗng từ bãi lên mỏ trước, phiếu giao chạy rỗng về bãi sau. Tuyến có chiều về thì **BOT** nên ghi cả hai lượt qua trạm (phí cao tốc tự thành một dòng mục IV khi lập phiếu).
+- **Tuyến đường** (Danh mục → Tuyến đường; Bãi và KT Thu/Chi sửa): bảng tuyến có cột **Tổng km** (chiều hàng đi) và **Km chiều về**. Bấm một tuyến → khung bên phải vẽ các điểm, cuối cùng là dòng **↩** quay lại điểm đi kèm km chiều về, và dòng tóm tắt *Tổng km · Km chiều về · Cả đi và về*. **Thêm** / **Sửa**: **Tên tuyến**, **Phí cao tốc (BOT) cả tuyến**, bảng **Các điểm trên tuyến** (tên điểm, **Km từ điểm trước**, toạ độ nếu có), **Thêm điểm**, rồi ô **Km chiều về** — nút **= … km** bên cạnh chép đúng tổng chiều đi (xe về đường cũ); để trống = xe không quay về. Các điểm là đường **hàng** đi (mỏ → bãi, bãi → cảng); chiều về là đoạn xe chạy không hàng — phiếu gom chạy rỗng từ bãi lên mỏ trước, phiếu giao chạy rỗng về bãi sau. **BOT** ghi số tiền **một chuyến** như Excel của họ (phí cao tốc 1 × 1.833.500, *trả theo chuyến*) — có chiều về cũng không nhân đôi; lập phiếu thì BOT tự thành một dòng phí cao tốc SL 1 ở mục IV.
 - **Tỷ giá** (Danh mục → Tỷ giá), **bảng giá khách × tuyến** (Danh mục → Khách hàng), **điều khoản chủ xe** và **hợp đồng thuê xe** (Vận tải → Xe liên kết — tiền trả chủ xe ở trang kế toán, bước 19).
 
 ## 7. Danh mục chứng từ
@@ -711,7 +711,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
    |---|---|---|---|---|---|---|
    | **ກາສີ → ທ່າບົກ** | Gom: mỏ ກາສີ → bãi | 145 km | 145 km | 290 km | — | 12,5 · 12 |
    | **ຊຽງຂວາງ → ທ່າບົກ** | Gom: mỏ ຊຽງຂວາງ → bãi | 260 km | 260 km | 520 km | — | 22 · 21,5 |
-   | **ທ່າບົກ → ທ່າເຮືອກະລໍ** | Giao: bãi → ດ່ານ ນໍ້າພາວ → cảng | 360 km | 360 km | 720 km | 3.667.000 LAK (hai lượt) | 30,5 · 30 |
+   | **ທ່າບົກ → ທ່າເຮືອກະລໍ** | Giao: bãi → ດ່ານ ນໍ້າພາວ → cảng | 360 km | 360 km | 720 km | 1.833.500 LAK (một chuyến, như Excel) | 30,5 · 30 |
    | **ທ່າບົກ → ດ່ານ ນໍ້າພາວ** | Giao: bãi → cửa khẩu | 210 km | 210 km | 420 km | — | 18 · 17,5 |
    | **ທ່າບົກ → ວຽງຈັນ** | Giao: bãi → khách ở Viêng Chăn | 95 km | 95 km | 190 km | — | 8 · 7,5 |
 

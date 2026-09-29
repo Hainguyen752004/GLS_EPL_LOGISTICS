@@ -27,11 +27,12 @@ KASI, THABOK = ("ກາສີ (ບ່ອນຂຸດແຮ່)", 19.15, 102.25),
 NAMPHAO, CANG = ("ດ່ານ ນໍ້າພາວ", 18.38, 105.11), ("ທ່າເຮືອກະລໍ", 18.07, 106.42)
 XIENG, VIENG = ("ຊຽງຂວາງ (ບ່ອນຂຸດແຮ່)", 19.45, 103.19), ("ນະຄອນຫຼວງວຽງຈັນ", 17.97, 102.63)
 GOM, GIAO = "ເກັບ (ບໍ່ແຮ່ → ສາງ)", "ສົ່ງ (ສາງ → ລູກຄ້າ)"      # đúng chữ ô Loại phiếu trên màn
-# tên tuyến, các điểm (điểm, km từ điểm trước), km chiều về, BOT (LAK, cả đi và về), ghi chú
+# tên tuyến, các điểm (điểm, km từ điểm trước), km chiều về, BOT (LAK, một chuyến — Excel của họ ghi phí cao tốc
+# 1 × 1.833.500 "ຈ່າຍຕາມຖ່ຽວ": trả theo chuyến, không nhân đôi vì có chiều về), ghi chú
 TUYEN = [
     ("ກາສີ → ທ່າບົກ", [(KASI, 0), (THABOK, 145)], 145, 0, GOM),
     ("ຊຽງຂວາງ → ທ່າບົກ", [(XIENG, 0), (THABOK, 260)], 260, 0, GOM),
-    ("ທ່າບົກ → ທ່າເຮືອກະລໍ", [(THABOK, 0), (NAMPHAO, 210), (CANG, 150)], 360, 3667000, GIAO),
+    ("ທ່າບົກ → ທ່າເຮືອກະລໍ", [(THABOK, 0), (NAMPHAO, 210), (CANG, 150)], 360, 1833500, GIAO),
     ("ທ່າບົກ → ດ່ານ ນໍ້າພາວ", [(THABOK, 0), (NAMPHAO, 210)], 210, 0, GIAO),
     ("ທ່າບົກ → ວຽງຈັນ", [(THABOK, 0), (VIENG, 95)], 95, 0, GIAO),
 ]
