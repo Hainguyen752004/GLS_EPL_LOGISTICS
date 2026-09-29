@@ -853,6 +853,32 @@ Trên máy thật (8020 · 8030) đã có **một cặp phiếu đi trọn A →
 
 **Kho sau cặp phiếu:** kho dầu Thà Bốc 3.220 → **2.720 L**; kho hàng bãi có lô **G4-0104-09/EPL còn 11,5 t**.
 
+#### Bốn điều cần biết trước khi demo
+
+**1. Màn Cấp phát chỉ hiện tờ đang chờ.** Hai phiếu mẫu đã cấp dầu, đã chi tạm ứng xong, nên bảng **Chờ cấp** trống — không phải lỗi. Muốn xem lại một tờ: gõ mã vào ô **Nhập mã QR** rồi Enter, máy hiện *Đã cấp* và tên người cấp. Mã của bốn tờ:
+
+| Tờ | Mã gõ vào ô Nhập mã QR | Ai mở |
+|---|---|---|
+| Phiếu lĩnh dầu phiếu gom (200 L) | `W13LRwYrS0ft` | `khotb` |
+| Phiếu lĩnh dầu phiếu giao (300 L) | `F5b6KJrQkqsg` | `khotb` |
+| Tạm ứng phiếu gom (580.000) | `mX0zV9urgYXJ` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
+| Tạm ứng phiếu giao (2.413.500) | `y_gjm-_Yy2TM` | `quytb` (tab **Phiếu tạm ứng đi đường**) |
+
+Thủ kho xem dầu đã ra khỏi kho ở **Kho → Kho nhiên liệu**: kho Thà Bốc còn **2.720 L**.
+
+**2. Lãi một chuyến có hai con số — sếp dễ hỏi.** Lấy phiếu giao T4-0447-09:
+
+| Xem ở đâu | Lãi | Vì sao |
+|---|---|---|
+| Trên **phiếu** (trang điều xe, cuối trang) | **7.105.200** | trừ **mọi** khoản chi của chuyến: dầu, tạm ứng, **và cả** tiền nước + tiền chuyến |
+| Màn **Chuyến xe** (trang kế toán) | **8.965.200** | chỉ trừ khoản **đã vào sổ**: dầu và tạm ứng |
+
+Chênh **1.860.000** = tiền nước 60.000 + tiền chuyến 1.800.000. Hai khoản này **trả cùng lương cuối tháng, gộp theo tài xế**, không gắn vào từng phiếu, nên sổ không trừ vào chuyến. (Phiếu gom chênh 2.480.000 — thêm chipping 620.000 nợ nhà cung cấp, trả theo đợt.) **Nói với sếp: lãi thật của một chuyến xem ở phiếu.**
+
+**3. Ảnh trong phiếu mẫu là ảnh trống.** Ảnh phiếu cân (phiếu gom), chữ ký người nhận và ảnh biên bản (phiếu giao) có trong phiếu, nhưng mở ra không có hình — công cụ lập phiếu không chụp ảnh, không ký tay được. Muốn cho sếp xem **chữ ký thật, ảnh thật** thì dùng phiếu anh tự bấm theo 10.0b (ký bằng tay trên điện thoại).
+
+**4. Ai thấy giá cước, ai không.** **Không thấy** giá cước, doanh thu, lãi: **Bãi** (`thabok`), **tài xế** (`tx01`…`tx03`), **thủ kho dầu** (`khotb`, `khovc`), **thủ kho phụ tùng** (`khopt`), **tổ sửa chữa** (`totsua`) — đó là phần lời của công ty (khách trả giá 2, thuê xe ngoài giá 1). **Mọi vai kế toán và quỹ đều thấy**: `ketoan`, `ketoancp`, `khonl`, `quytb`, `quyvc`, `doanhthu`, và `admin`. Muốn cho sếp thấy chỗ khác nhau thì mở cùng một phiếu ở tab `thabok` và tab `ketoan` đặt cạnh nhau.
+
 #### Mở bao nhiêu tab, mỗi tab một tài khoản
 
 **Điều bắt buộc: mỗi lần đăng nhập, BỎ TICK ô *Ghi nhớ đăng nhập*** (ô này mặc định có tick, ở cả hai trang). Có tick thì phiên lưu chung cho cả trình duyệt: một tab đăng nhập tài khoản khác là **mọi tab của trang đó** chạy theo tài khoản mới — tab ghi tên "Bãi" bấm nút lại chạy bằng quyền kế toán. Bỏ tick thì mỗi tab giữ tài khoản của riêng nó. Mở tab mới bằng **Ctrl+T** rồi gõ địa chỉ, **đừng dùng *Nhân đôi thẻ*** (nhân đôi chép luôn phiên của tab cũ). Bấm **Đổi tài khoản** trong một tab thì cũng bỏ tick lại. Trang điều xe (8020) và trang kế toán (8030) là hai trang riêng: `ketoan` ở 8020 và `ketoan` ở 8030 là hai tab, không đụng nhau.
@@ -942,12 +968,8 @@ Mở được mọi phiếu, thấy như tab 2 cộng các nút của mọi vai.
 
 1. **Sổ sách → Kế toán** → **Nhật ký chung** → ô **Tìm kiếm…** gõ `T4-0447` → 5 bút toán: xuất dầu kho (Nợ 625 / Có 1371), hoá đơn (Nợ 1211 / Có 70), hai lần thu (Nợ 1022 / Có 1211), chi tạm ứng (Nợ 625 / Có 1011). Gõ `G4-0104` → 4 bút toán. Bảng đủ số ở mục *Ghi sổ như thế nào* ngay dưới.
 2. Cùng màn → **Cân đối phát sinh** → dòng cuối **Nợ = Có, cân đối**.
-3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (dầu 8.550.000 + tạm ứng 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
+3. **Chuyến & kho → Chuyến xe** → ô **Tìm kiếm…** gõ `T4-0447` → phiếu: doanh thu 19.928.700, đã thu hết, còn phải thu 0, chi phí **đã vào sổ** 10.963.500 (dầu 8.550.000 + tạm ứng 2.413.500), 30 t hàng xuất kho bãi, 9 tờ chứng từ. Lãi ở đây khác lãi trên phiếu — xem điều 2 ở mục *Bốn điều cần biết trước khi demo* (đầu 10.0c). Phiếu `G4-0104`: doanh thu 11.412.500, chi phí đã vào sổ 6.280.000, 41,5 t hàng nhập kho bãi, 8 tờ.
 4. **Kho → Kho hàng** → bảng **Lô hàng trong kho**: lô **G4-0104-09/EPL** nhập 41,5 t, còn **11,5 t** (30 t đã đi theo T4-0447-09).
-
-**Lãi một chuyến có hai con số — nói trước với sếp.** Trên phiếu (tab 2) lãi phiếu giao là **7.105.200**, ở màn **Chuyến xe** (tab 10) là **8.965.200**. Chênh đúng **1.860.000** = tiền nước + tiền chuyến *trả cùng lương* (phiếu gom chênh 2.480.000 = 1.860.000 + chipping 620.000 *nợ nhà cung cấp*). Phiếu tính **mọi khoản chi của chuyến**; màn Chuyến xe của sổ chỉ tính khoản **đã vào sổ và gắn với phiếu** (dầu, tạm ứng). Tiền trả cùng lương và tiền trả nhà cung cấp theo đợt được trả **gộp theo tài xế, theo nhà cung cấp**, không gắn từng phiếu. Lãi thật của một chuyến: xem ở phiếu (trang điều xe).
-
-**Ảnh trong phiếu mẫu là ảnh trống.** Ảnh phiếu cân (phiếu gom), chữ ký và ảnh biên bản (phiếu giao) do công cụ gửi là ảnh trống một điểm ảnh — công cụ không chụp, không ký được. Muốn cho sếp xem chữ ký thật, ảnh thật thì dùng phiếu anh bấm tay theo 10.0b (ký bằng tay trên điện thoại).
 
 **Có cập nhật ngay sang tab khác không?** Dữ liệu dùng chung **ngay trên máy chủ** — bấm xong ở tab này là hai trang đã ghi (ví dụ thủ kho bấm **Cấp dầu** ở 8030 thì phiếu ở 8020 đã có dầu đã cấp). Nhưng tab đang mở **không tự vẽ lại**: sang tab kia bấm **F5** (hoặc bấm lại màn đó trên menu) là thấy. Hai màn tự tải lại: **Tổng quan** (tick **Tự cập nhật 60 s**) và **Theo dõi tuyến** (tick **Tự cập nhật 30 giây**). Riêng **sổ kế toán**: tờ sinh ở trang kế toán (cấp dầu, hoá đơn, thu tiền, nhập / xuất kho hàng) vào sổ ngay lúc bấm; tờ sinh ở trang điều xe (phiếu chi tạm ứng, phiếu xuất xe, phiếu lĩnh) vào sổ khi `ketoan` bấm **Đẩy** (**Vận tải → Phiếu chi · Phiếu thu** → tab **Sổ chứng từ** → **Đẩy hết tờ chưa đẩy**). Tờ của cặp phiếu mẫu đã đẩy rồi.
 
