@@ -689,19 +689,18 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 ### 10.0. Chuẩn bị trước khi test
 
-1. **Dời dữ liệu tiền sang trang kế toán** (chỉ làm một lần, **trước khi bật máy**): trong PowerShell chạy lần lượt năm lệnh dưới; lệnh nào báo lỗi thì dừng, gửi em xem.
+1. **Dữ liệu tiền đã dời sang trang kế toán — xong ngày 29/09/2026 lúc 10:47, không phải làm lại.** Em đã sao lưu hai DB ngay trước khi dời, chạy thử, rồi chạy thật cả năm bước (hoá đơn và thu tiền, bản chép trên phiếu, chủ xe, tất toán, nhà cung cấp). Chạy thử lại lần nữa thì mọi bước ra 0, tức là không còn gì chưa dời. Số đã sang, để anh đối chiếu khi test:
 
-   ```
-   cd D:\Demo_Lao\EPL_KETOAN;   C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 tools\doi_doanh_thu.py that
-   cd D:\Demo_Lao\EPL_LAO_REAL; C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 tools\ban_chep_doanh_thu.py that
-   cd D:\Demo_Lao\EPL_KETOAN;   C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 tools\doi_chu_xe.py that
-   cd D:\Demo_Lao\EPL_KETOAN;   C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 tools\doi_tat_toan.py that
-   cd D:\Demo_Lao\EPL_KETOAN;   C:\Users\zinnn\miniconda3\envs\Auto\python.exe -X utf8 tools\doi_nha_cung_cap.py that
-   ```
+   | Trang kế toán, màn | Phải thấy |
+   |---|---|
+   | **Tiền vận chuyển → Hóa đơn vận chuyển** (`doanhthu`) | 7 phiếu đã lập hoá đơn. Đã thu đủ: T4-0430-08, T4-0431-08, T4-0440-09, T4-0442-09, T4-0443-09. Thu một phần: **T4-0441-09** (đã thu 349,36 USD, còn 1.441,44 USD). Chưa thu đồng nào: **T4-0446-09** (1.689,20 USD) — dùng hai phiếu này để thử ghi thu |
+   | **Tiền vận chuyển → Hoá đơn gộp tháng** | Tờ **HDT-202609-01**, 2 phiếu, 79.279.200 LAK; đã thu 47.567.520, còn 31.711.680 LAK |
+   | **Tiền vận chuyển → Xe liên kết** (`ketoan`) | Một đợt trả ngày 23/09 cho ທ້າວ ຄຳຫລ້າ: 1.269,47 USD (tổng 1.297,65, 1 phiếu) |
+   | **Tất toán tài xế**, **Theo dõi nhà cung cấp** | Chưa có kỳ chốt, chưa có lần trả — DB thật trước đây chưa ai chốt hay trả |
 
-   Bản sao lưu hai DB trước khi dời: `D:\Demo_Lao\saoluu\saoluu_epl_lao_20260928_2208.dump` và `saoluu_epl_ketoan_20260928_2208.dump`.
+   Trên trang điều xe, các phiếu đó vẫn hiện *đã thu · còn lại* đúng như trên (bản chép). Bản sao lưu ngay trước khi dời: `D:\Demo_Lao\saoluu\saoluu_epl_lao_20260929_1046.dump` và `saoluu_epl_ketoan_20260929_1046.dump`.
 
-2. Bật máy **8020** (trang điều xe) và **8030** (trang kế toán) như thường lệ.
+2. **Khởi động lại máy 8020** (trang điều xe) để nhận bản có **Báo cân ở mỏ** (bước 10b), rồi **Ctrl+F5** trên trình duyệt. Máy **8030** không cần khởi động lại.
 3. **Kiểm kết nối hai chiều** (Phần 3.3 bước 8): trang kế toán, `admin` → **Cài đặt** → thẻ **Liên thông trang điều xe** → **Kiểm kết nối** phải hiện *Nối được trang điều xe*; trang điều xe, `admin` → **Hệ thống → Tài khoản** → tab **Liên thông trang kế toán** → **Kiểm kết nối** phải hiện *Nối được trang kế toán*.
 4. Mở **trang điều xe ở một tab, trang kế toán ở tab bên cạnh**. Cần hai người cùng lúc (ví dụ Bãi lập phiếu, kế toán kiểm) thì mở thêm **cửa sổ ẩn danh** (Ctrl+Shift+N). Mật khẩu mọi tài khoản `1234`.
 5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết); tuyến ກາສີ → ກາລໍ, ກາສີ → ທ່າເຮືອກະລໍ.
