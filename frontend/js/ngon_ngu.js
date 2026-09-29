@@ -7716,5 +7716,10 @@ window.EPL_TU_DIEN = {
   "vi": "Điền khi xe về: Báo đã về · Xe đã tới",
   "lo": "ໃສ່ເມື່ອລົດກັບ: ແຈ້ງກັບຮອດ · ລົດຮອດແລ້ວ",
   "en": "Filled when the truck returns: Report return · Truck arrived"
+ },
+ "hd_luu_roi": {
+  "vi": "Lưu phiếu rồi số hợp đồng còn hạn tự điền",
+  "lo": "ບັນທຶກໃບກ່ອນ ແລ້ວເລກສັນຍາທີ່ຍັງບໍ່ໝົດອາຍຸຈະຕື່ມເອງ",
+  "en": "Save the slip first, then the valid contract number fills in"
  }
 };

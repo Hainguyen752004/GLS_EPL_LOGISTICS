@@ -556,6 +556,8 @@
   async function veHopDong() {
     const ve = async (o, loai, cot, doiTac, duocDoi) => {
       if (!o) return;
+      // phiếu mới chưa lưu: máy chưa tìm hợp đồng (tự điền lúc lưu) — nói rõ thay cho một gạch trông như lỗi (29/09)
+      if (moi) { o.innerHTML = `<span class="muted small">${NN.h('hd_luu_roi')}</span>`; return; }
       const so = P[cot === 'contract_id' ? 'contract_no' : 'hire_contract_no'];
       const st = P[cot === 'contract_id' ? 'contract_state' : 'hire_contract_state'];
       const chu = so ? `<span class="so">${esc(so)}</span> ${tagHd(st)}` : `<span class="muted small">${NN.h(doiTac ? 'hd_chua_co' : 'hd_chon_doi_tac')}</span>`;
