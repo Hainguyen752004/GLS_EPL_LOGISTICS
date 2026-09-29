@@ -490,14 +490,15 @@ def _ap_truong(db, p, data, user, muc_tt=None):
                 raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                           "loi": "Giá cước, giá thuê xe và phí do kế toán Viêng Chăn nhập; Bãi không nhập ô này."})
             continue
-        if c in ("back_date", "odo_back") and p.transport_status != "arrived":
-            # Ngày xe về, km về điền KHI XE VỀ (chủ dự án 29/09): tài xế / Bãi "Báo đã về", hoặc Bãi "Xe đã tới · nhập
-            # cân cuối" — hai đường đó ghi thẳng, không qua đây. Trước lúc đó màn phiếu khoá hai ô; bản phiếu gửi lên
-            # mang giá trị cũ thì bỏ qua, giá trị mới thì từ chối rõ. Xe đã tới thì sửa được như mọi ô mục I.
+        if c in ("back_date", "odo_back", "weight_dest") and p.transport_status != "arrived":
+            # Ngày xe về, km về, cân cuối điền KHI XE VỀ (chủ dự án 29/09): tài xế / Bãi "Báo đã về" (ngày, km), hoặc Bãi
+            # "Xe đã tới · nhập cân cuối" — hai đường đó ghi thẳng, không qua đây. Trước lúc đó màn phiếu khoá các ô này;
+            # bản phiếu gửi lên mang giá trị cũ thì bỏ qua, giá trị mới thì từ chối rõ. Xe đã tới thì sửa được như cũ.
             moi_gt = _ngay(data[c]) if c in COT_NGAY else (_so(data[c], c) if data[c] not in (None, "") else None)
             if moi_gt is not None and moi_gt != getattr(p, c):
-                raise HTTPException(409, {"ma": "CHUA_VE", "loi": "Ngày xe về và km về điền khi xe về: tài xế bấm Báo đã về, "
-                                                                  "hoặc Bãi bấm Xe đã tới · nhập cân cuối."})
+                raise HTTPException(409, {"ma": "CHUA_VE", "loi": (
+                    "Cân cuối điền khi xe tới: Bãi bấm Xe đã tới · nhập cân cuối." if c == "weight_dest" else
+                    "Ngày xe về và km về điền khi xe về: tài xế bấm Báo đã về, hoặc Bãi bấm Xe đã tới · nhập cân cuối.")})
             continue
         if muc_tt is not None:
             muc = next((m for m, cot in MUC_CUA_COT.items() if c in cot), None)

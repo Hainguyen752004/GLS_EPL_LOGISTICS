@@ -267,11 +267,11 @@
       const cot = m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : [];
       cot.forEach(c => { const el = g('f-' + c); if (el) el.disabled = COT_KE_TOAN.includes(c) ? !suaKeToanDuoc(m) : ((khoa && !(COT_TIEN.includes(c) && suaTienDuoc(m))) || (daNhapKho() && (c === 'weight_origin' || c === 'weight_dest'))); });
       if (m === 'trans' && khoa && suaTienDuoc(m)) sec.classList.remove('locked');   // kế toán còn sửa được ô tiền thì mục chưa "khoá" với họ
-      if (m === 'info') {
-        // Ngày xe về, km về điền KHI XE VỀ (chủ dự án 29/09): "Báo đã về" hoặc "Xe đã tới · nhập cân cuối" — trước lúc đó
-        // chỉ xem, có dòng nhỏ nói khi nào điền; xe đã tới thì sửa được như mọi ô mục I
+      if (m === 'info' || m === 'trans') {
+        // Ngày xe về, km về (mục I) và cân cuối (mục II) điền KHI XE VỀ (chủ dự án 29/09): "Báo đã về" hoặc "Xe đã tới ·
+        // nhập cân cuối" — trước lúc đó chỉ xem, có dòng nhỏ nói khi nào điền; xe đã tới thì sửa được như cũ
         const chuaVe = moi || P.transport_status !== 'arrived';
-        ['back_date', 'odo_back'].forEach(c => {
+        (m === 'info' ? ['back_date', 'odo_back'] : ['weight_dest']).forEach(c => {
           const el = g('f-' + c); if (!el) return;
           if (chuaVe) el.disabled = true;
           const nhac = el.parentElement.querySelector('.px-khi-ve'); if (nhac) nhac.hidden = !chuaVe;

@@ -201,6 +201,8 @@ def main():
     # C2.1 (anh Khampla): tài xế báo ngày về và km về qua điện thoại; Bãi cân rồi mới xác nhận tới.
     s, g = goi("/api/trips/%s" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="thabok", method="PUT")
     phai(s, 409, "Bãi gõ ngày xe về, km về bằng nút Lưu khi xe chưa về → bị chặn (điền khi xe về)", g)
+    s, g = goi("/api/trips/%s" % P, {"weight_dest": 40.5}, vai="thabok", method="PUT")
+    phai(s, 409, "Bãi gõ cân cuối bằng nút Lưu khi xe chưa tới → bị chặn (điền khi xe tới)", g)
     s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 900}, vai="thabok"); phai(s, 422, "Km về nhỏ hơn km đi → bị từ chối", g)
     s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="ketoan"); phai(s, 403, "Kế toán báo xe về → bị từ chối", g)
     s, g = goi("/api/trips/%s/bao-ve" % P, {"back_date": "2026-09-16", "odo_back": 1500}, vai="thabok"); phai(s, 200, "Báo đã về: ngày 16/09, km 1500", g)

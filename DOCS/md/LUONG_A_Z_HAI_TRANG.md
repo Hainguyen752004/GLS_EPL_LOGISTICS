@@ -17,7 +17,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, rồi 53 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, rồi 54 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -177,14 +177,14 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 1. Bấm **Phiếu mới**. Máy gợi ý số phiếu, đổi theo loại phiếu.
 2. Mục I — **Thông tin xe vận chuyển**: ô **Loại phiếu** chọn **Gom (mỏ → bãi)**. Chọn **Số xe** 341; biển đầu kéo, biển rơ-moóc, hãng xe tự điền. Chọn **Tài xế** `tx01`. Ghi **Ngày lập phiếu**, **Ngày xe đi**, km **Lúc đi**; **Km về ước tính** tự tính theo tuyến. Hai ô **Ngày xe về** và **Lúc về** để xám, dưới ô ghi *Điền khi xe về: Báo đã về · Xe đã tới* — chúng có số ở bước 10–12, khi tài xế bấm **Báo đã về** hoặc Bãi bấm **Xe đã tới · nhập cân cuối**.
-3. Bấm thẻ **II · Thông tin vận chuyển & doanh thu** trên thanh thẻ mục (mỗi mục một thẻ; **Toàn phiếu** ở cuối thanh thì hiện cả 6 mục một trang): **Chọn tuyến** (điểm đi, điểm đến tự điền); chọn **Khách hàng**; **Loại hàng** Quặng sắt; **Cân đầu (tấn)** 40 theo phiếu cân ở mỏ. Ô **Hợp đồng vận chuyển** ghi *Lưu phiếu rồi số hợp đồng còn hạn tự điền* — lưu xong máy điền hợp đồng còn hạn của khách lấy ở **Danh mục → Khách hàng** (ví dụ ຄຳຕຸ້ຍ → HDVC-2026-001), khách chưa có thì ghi *Chưa có hợp đồng*; Bãi chỉ xem, kế toán đổi được khi kiểm mục II. Ô **Số phiếu quặng**, **Ngày phiếu quặng** xám — kế toán gõ ở bước 5.
-4. Khung **Hàng trên phiếu** → **Thêm dòng**: **Mặt hàng** ແຮ່ເຫຼັກ (quặng sắt), **Số tấn** 40.
+3. Bấm thẻ **II · Thông tin vận chuyển & doanh thu** trên thanh thẻ mục (mỗi mục một thẻ; **Toàn phiếu** ở cuối thanh thì hiện cả 6 mục một trang): **Chọn tuyến** (điểm đi, điểm đến tự điền); chọn **Khách hàng**; **Loại hàng** Quặng sắt. Phiếu **Gom** lúc lập **chưa ghi hàng và cân** — xe chưa đi thì chưa có số (tờ Excel của họ cũng để trống hai dòng cân lúc lập); ô **Cân tại bãi khi về** xám, ghi *Điền khi xe tới: Xe đã tới · nhập cân cuối*. Ô **Hợp đồng vận chuyển** ghi *Lưu phiếu rồi số hợp đồng còn hạn tự điền* — lưu xong máy điền hợp đồng còn hạn của khách lấy ở **Danh mục → Khách hàng** (ví dụ ຄຳຕຸ້ຍ → HDVC-2026-001), khách chưa có thì ghi *Chưa có hợp đồng*; Bãi chỉ xem, kế toán đổi được khi kiểm mục II. Ô **Số phiếu quặng**, **Ngày phiếu quặng** xám — kế toán gõ ở bước 5.
+4. Khung **Hàng trên phiếu**: phiếu **Gom** để trống lúc lập — **bốc xong ở mỏ** mới ghi (bước 10b), dòng nhắc dưới khung nói đúng vậy. Phiếu **Giao** thì ghi ngay, vì hàng lấy từ lô trong bãi đã biết số tấn (bước 14).
 5. **Phiếu quặng đính kèm**: có ảnh phiếu quặng thì bấm **Thêm ảnh · PDF** (lưu phiếu rồi mới đính kèm được). Không có ảnh cũng được; kế toán gõ số phiếu quặng ở bước 5.
 6. Bấm **Lưu** (nút xanh góc trên bên phải). Máy báo *Đã lưu*; dòng *Trạng thái phiếu* dưới cùng không còn ghi *Phiếu mới*, đầu mỗi mục hiện nút **Gửi kiểm tra**.
 
 **Máy tự làm:** cấp số `G4-xxxx-MM/EPL`; giá cước theo **bảng giá khách × tuyến** (Bãi không thấy); tỷ giá USD · THB · VND · CNY **khoá vào phiếu** lúc lập; xe chủ xe liên kết thì phiếu tự thành phiếu xe liên kết, điền phí và ngưỡng tấn theo hồ sơ chủ xe; sinh tờ **DO** (phiếu xuất xe).
 
-**Máy chặn:** Bãi không nhập được giá cước, giá thuê xe, phí, ngưỡng tấn, số phiếu quặng; chưa ai nhập được ngày xe về, km về trước khi xe về.
+**Máy chặn:** Bãi không nhập được giá cước, giá thuê xe, phí, ngưỡng tấn, số phiếu quặng; chưa ai nhập được ngày xe về, km về, cân cuối trước khi xe về.
 
 **Trạng thái sau bước:** phiếu *Đã xuất xe*; mục I, II *Chờ*. Phiếu gom **chưa đụng kho bãi** — hàng chỉ vào kho khi xe về tới bãi (bước 12).
 
@@ -228,7 +228,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Ai:** Admin Thà Bốc. **Trang:** điều xe. **Màn:** Phiếu xuất xe.
 
-**Thao tác:** ở đầu mỗi mục I, II, III, IV, VI bấm **Gửi kiểm tra**. Mục V là của tổ sửa chữa. Mục trống không có nút.
+**Thao tác:** trước khi xe đi, ở đầu mỗi mục **I, III, IV, VI** bấm **Gửi kiểm tra** — đủ để kế toán duyệt dầu và tạm ứng. **Mục II** của phiếu **Gom** gửi sau, khi đã ghi hàng và cân tại mỏ (bước 10b); phiếu **Giao** thì gửi luôn mục II vì hàng lấy từ lô đã có số tấn. Mục V là của tổ sửa chữa. Mục trống không có nút.
 
 **Lưu ý:** nút **Gửi kiểm tra** chỉ hiện khi phiếu đã **Lưu** ít nhất một lần — dòng *Trạng thái phiếu* dưới cùng không còn ghi *Phiếu mới*. Phiếu mới chưa lưu thì chưa có mục nào để gửi.
 
@@ -244,7 +244,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 1. Đối chiếu xe, tài xế, cân đầu với phiếu quặng (xem ảnh đính kèm nếu có).
 2. Mục II: gõ **Số phiếu quặng** và **Ngày phiếu quặng** (gõ tay được, không bắt ảnh). Sửa giá cước nếu chuyến này khác hợp đồng. Xe liên kết: nhập **Giá thuê họ mỗi tấn**, phí, **Tải cho phép (tấn)**.
-3. Bấm **Lưu**, rồi **Xác nhận kiểm tra** ở mục I và mục II. Sai thì bấm **Trả lại sửa** để trả về cho Bãi.
+3. Bấm **Lưu**, rồi **Xác nhận kiểm tra** ở mục I (trước khi xe đi) và mục II (khi Bãi đã gửi mục II — phiếu gom là sau bước 10b, thường lúc có tờ phiếu quặng). Sai thì bấm **Trả lại sửa** để trả về cho Bãi.
 
 **Máy chặn:** mục đã kiểm là khoá, muốn sửa phải trả lại; KT Thu/Chi không kiểm mục III–VI.
 
@@ -319,6 +319,22 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 **Máy chặn:** mục IV chưa *Đã chi* (tài xế chưa cầm tiền) thì không xuất phát được — nút hiện *Chưa nhận tiền tạm ứng thì chưa xuất phát*.
 
 **Sau bước:** *Đang vận chuyển*; vị trí xe hiện trên bản đồ Theo dõi tuyến.
+
+### Bước 10b. Xe bốc xong ở mỏ — ghi hàng, cân tại mỏ, gửi kiểm mục II (phiếu GOM)
+
+**Ai:** Admin Thà Bốc — tài xế gọi về báo số tấn theo phiếu cân ở mỏ, hoặc mang tờ phiếu quặng về. **Trang:** điều xe. **Màn:** Phiếu xuất xe → thẻ **II · Thông tin vận chuyển & doanh thu**.
+
+**Thao tác:**
+
+1. Khung **Hàng trên phiếu** → **Thêm dòng**: **Mặt hàng** ແຮ່ເຫຼັກ (quặng sắt), **Số tấn** 40 (theo phiếu cân ở mỏ). Ô **Cân tại mỏ (t)** tự bằng tổng các dòng hàng.
+2. Có ảnh phiếu quặng thì khung **Phiếu quặng đính kèm** → **Thêm ảnh · PDF**. Không có ảnh cũng được — kế toán gõ số phiếu quặng khi nhận giấy.
+3. Bấm **Lưu**, rồi **Gửi kiểm tra** ở đầu mục II.
+
+**Máy tự làm:** cân tại mỏ = tổng tấn các dòng hàng; hàng **chưa vào kho** — chỉ vào kho bãi khi xe về tới (bước 12).
+
+**Máy chặn:** mục II đã kiểm thì phải **Trả lại sửa** mới sửa được dòng hàng; ô **Cân tại bãi khi về** vẫn xám tới bước 12.
+
+**Ai làm tiếp:** KT Thu/Chi kiểm mục II (bước 5): gõ **Số phiếu quặng**, **Ngày phiếu quặng**, **Xác nhận kiểm tra**.
 
 ### Bước 11. Chuyện dọc đường: đổ dầu, xe hỏng, đổi xe
 
@@ -690,16 +706,17 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → thẻ **I**: Loại **Gom (mỏ → bãi)**, xe 341, tài xế `tx01` → thẻ **II**: tuyến ກາສີ → ກາລໍ, khách ຄຳຕຸ້ຍ, **Cân đầu (tấn)** 40; **Hàng trên phiếu** → **Thêm dòng** 40 t → **Lưu** (nút xanh góc trên phải) | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; ô **Ngày xe về**, **Lúc về** xám, ghi *Điền khi xe về* | 1 | |
+| T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → thẻ **I**: Loại **Gom (mỏ → bãi)**, xe 341, tài xế `tx01` → thẻ **II**: tuyến ກາສີ → ກາລໍ, khách ຄຳຕຸ້ຍ, loại hàng quặng sắt — **chưa** ghi hàng, cân → **Lưu** (nút xanh góc trên phải) | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; ô **Ngày xe về**, **Lúc về**, **Cân tại bãi khi về** xám, ghi *Điền khi xe về / tới*; dòng nhắc dưới **Hàng trên phiếu** nói *Bốc xong ở mỏ mới ghi* | 1 | |
 | T02 | `thabok` · điều xe | Mục III → **Thêm dòng**: 200 lít, nơi đổ **kho Thà Bốc** → **Lưu** → **Phiếu lĩnh nhiên liệu** → **In** | Mở màn Phiếu chi · Phiếu thu ở tờ phiếu lĩnh có mã QR; không có cột tiền | 2 | |
 | T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** tiền chuyến, tiền nước (chỉ số lượng) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
-| T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, II, III, IV | Các mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
-| T05 | `ketoan` · điều xe | Mở phiếu (từ **Tổng quan → Việc của tôi** hoặc ô **Số phiếu**) → mục II gõ **Số phiếu quặng**, **Ngày phiếu quặng** → **Lưu** → **Xác nhận kiểm tra** mục I, II | Mục I, II *Đã kiểm*; không cần ảnh phiếu quặng | 5 | |
+| T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, III, IV (mục II chưa — chờ cân mỏ, ca T10b) | Ba mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
+| T05 | `ketoan` · điều xe | Mở phiếu (từ **Tổng quan → Việc của tôi** hoặc ô **Số phiếu**) → **Xác nhận kiểm tra** mục I | Mục I *Đã kiểm* (mục II kiểm ở ca T10b) | 5 | |
 | T06 | `khotb` · kế toán | **Kho → Cấp phát** → quét / gõ mã QR phiếu lĩnh T02 (hoặc bấm dòng ở bảng **Chờ cấp**) → đối chiếu → **Cấp dầu** → **Cấp dầu** | Tồn kho Thà Bốc giảm 200 L; bên điều xe phiếu lĩnh *Đã cấp*, dòng dầu mang **giá bình quân kho lúc cấp**; sổ có **PXK_NL**. Cấp lần hai bị chặn | 8 | |
 | T07 | `khonl` · điều xe | Mục III → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Dòng dầu kho đã cấp **không xuất kho lần hai** (sổ vẫn một tờ PXK_NL cho dòng đó); giá dầu kho không gõ tay được | 6 | |
 | T08 | `ketoancp` · điều xe | Mục IV → nhập **Đơn giá** từng dòng → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Mục IV *Đã ghi sổ · chờ chi* | 7 | |
 | T09 | `quytb` · kế toán | **Kho → Cấp phát** → tab **Phiếu tạm ứng đi đường** → quét QR tờ tạm ứng T03 → **Chi tiền** | Mục IV bên điều xe *Đã chi*; bên điều xe không bấm chi lần hai được | 9 | |
 | T10 | `tx01` · điều xe (điện thoại) | **Phiếu của tôi** → phiếu T01 → **Xuất phát** (cho phép vị trí) | Phiếu *Đang vận chuyển*; xe hiện trên **Theo dõi tuyến** | 10 | |
+| T10b | `thabok` → `ketoan` · điều xe | (xe bốc xong ở mỏ) Bãi: thẻ **II** → **Hàng trên phiếu** → **Thêm dòng** ແຮ່ເຫຼັກ 40 t → **Lưu** → **Gửi kiểm tra** mục II. Kế toán: gõ **Số phiếu quặng**, **Ngày phiếu quặng** → **Lưu** → **Xác nhận kiểm tra** mục II | **Cân tại mỏ** tự = 40; mục II *Đã kiểm*; không cần ảnh phiếu quặng; ô **Cân tại bãi khi về** vẫn xám | 10b, 5 | |
 | T11 | `tx01` → `khonl` | Tài xế **Khai đổ nhiên liệu** (số lít, trạm VN) → `khonl` **Theo dõi tuyến** → sự cố → **Duyệt** | Thành dòng mục III nguồn mua, mục III mở lại *Đã nhập*; `khonl` nhập giá khi kiểm lại | 11 | |
 | T12 | `thabok` · điều xe | **Xe đã tới · nhập cân cuối** → **Cân cuối (tấn)** 39,6, ngày về, km về → **Đồng ý** | Tự có dòng hao hụt 0,4 t; ô **Ngày xe về**, **Lúc về**, **Km chạy** trên phiếu có số và từ giờ sửa được; trang kế toán **Kho → Kho hàng** có lô mới 39,6 t và tờ **PNK_HH** | 12 | |
 | T13 | `ketoan` · kế toán | **Kho → Kho hàng** → dòng lô T12 → **Điều chỉnh tồn** −0,6, **Lý do** → **Lưu** | Còn lại 39,0 t; tờ **DC_HH**; `thabok` không có nút điều chỉnh | 13 | |

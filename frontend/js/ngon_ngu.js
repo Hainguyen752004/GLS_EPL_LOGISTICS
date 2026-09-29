@@ -5808,9 +5808,9 @@ window.EPL_TU_DIEN = {
   "en": "No goods lines yet"
  },
  "goods_hint_gom": {
-  "vi": "Ghi hàng bốc ở mỏ và số tấn cân tại mỏ. Xe về tới bãi, nhập cân tại bãi thì hàng vào kho và máy tự ghi dòng hao hụt.",
-  "lo": "ບັນທຶກສິນຄ້າທີ່ຂຶ້ນຢູ່ບໍ່ແຮ່ ແລະ ນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່. ລົດຮອດສາງ, ປ້ອນນ້ຳໜັກຊັ່ງທີ່ສາງ ແລ້ວສິນຄ້າເຂົ້າສາງ ແລະ ເຄື່ອງຈະບັນທຶກແຖວສູນເສຍເອງ.",
-  "en": "Enter what was loaded at the mine and the mine weight. When the truck reaches the yard, enter the yard weight: the goods enter the store and the loss line is written automatically."
+  "vi": "Bốc xong ở mỏ mới ghi: hàng bốc và số tấn cân tại mỏ, theo phiếu quặng; ghi xong mới Gửi kiểm tra mục II. Xe về tới bãi, nhập cân tại bãi thì hàng vào kho và máy tự ghi dòng hao hụt.",
+  "lo": "ຂຶ້ນສິນຄ້າຢູ່ບໍ່ແຮ່ແລ້ວຈຶ່ງບັນທຶກ ສິນຄ້າ ແລະ ນ້ຳໜັກຊັ່ງທີ່ບໍ່ແຮ່ ຕາມບິນແຮ່; ບັນທຶກແລ້ວຈຶ່ງສົ່ງກວດ ໜ້າ II. ລົດຮອດສາງ, ປ້ອນນ້ຳໜັກຊັ່ງທີ່ສາງ ແລ້ວສິນຄ້າເຂົ້າສາງ ແລະ ເຄື່ອງຈະບັນທຶກແຖວສູນເສຍເອງ.",
+  "en": "Fill in once loading at the mine is done: the goods and the mine weight, per the ore bill; then Send for verification on section II. When the truck reaches the yard, enter the yard weight: the goods enter the store and the loss line is written automatically."
  },
  "goods_hint_giao": {
   "vi": "Chọn lấy hàng từ lô nào trong kho bãi — đó chính là phiếu gom đã mang lô đó về, và là dây nối hai phiếu. Giao xong nhập cân nơi giao, máy tự ghi dòng hao hụt.",
@@ -7721,5 +7721,10 @@ window.EPL_TU_DIEN = {
   "vi": "Lưu phiếu rồi số hợp đồng còn hạn tự điền",
   "lo": "ບັນທຶກໃບກ່ອນ ແລ້ວເລກສັນຍາທີ່ຍັງບໍ່ໝົດອາຍຸຈະຕື່ມເອງ",
   "en": "Save the slip first, then the valid contract number fills in"
+ },
+ "khi_xe_toi": {
+  "vi": "Điền khi xe tới: Xe đã tới · nhập cân cuối",
+  "lo": "ໃສ່ເມື່ອລົດຮອດ: ລົດຮອດແລ້ວ · ໃສ່ນ້ຳໜັກປາຍທາງ",
+  "en": "Filled when the truck arrives: Truck arrived · enter destination weight"
  }
 };
