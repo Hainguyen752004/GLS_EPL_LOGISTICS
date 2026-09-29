@@ -123,7 +123,8 @@ def main():
             u_ = Vai(vai)
             viec = [("tong-quan", lambda m: m.tong_quan(thang=thang, db=db, user=u_)),
                     ("xu-huong", lambda m: m.xu_huong(thang=thang, db=db, user=u_)),
-                    ("tien-tai-xe", lambda m: m.tien_tai_xe(thang=thang, db=db, user=u_)),
+                    # tien-tai-xe KHÔNG so với bản 24/09 nữa: 29/09 chủ dự án chốt CÁCH TRẢ từng dòng theo Excel anh Khampla —
+                    # màn này chỉ còn dòng "trả theo chuyến cùng lương", số đổi CÓ CHỦ ĐÍCH. Luật mới kiểm ở kiem/thu_cach_tra.py.
                     ("can-tru", lambda m: m.can_tru(thang=thang, db=db, user=u_)),
                     ("theo-doi", lambda m: (m.theo_doi(thang=thang, db=db, user=u_) if m is CU
                                             else m.theo_doi(response=Response(), thang=thang, trang=1, co=None, db=db, user=u_))),

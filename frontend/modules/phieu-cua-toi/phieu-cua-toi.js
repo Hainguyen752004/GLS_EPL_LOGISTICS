@@ -148,8 +148,10 @@
 
   function tamUng(p) {
     // Khoản tiền mặt tài xế cầm đi: EPL ứng, không phải từ kho. Trạng thái = mục IV.
-    // cùng luật máy chủ (la_tien_mat_tai_xe): không tính dầu kho, dầu trạm ghi nợ, phí trừ vào thẻ cao tốc
-    const dong = (p.expenses || []).filter(d => d.paid_by_epl && d.source !== 'kho' && !d.ghi_no && !d.toll_card_id && ['fuel', 'travel', 'other'].includes(d.section));
+    // máy chủ nói thẳng dòng nào là tiền mặt tài xế cầm đi (la_tien_mat_tai_xe, kể cả cách trả — Excel anh Khampla 29/09);
+    // bản lưu cũ trong máy chưa có cờ đó thì dùng luật cũ
+    const dong = (p.expenses || []).filter(d => d.tien_mat_tx !== undefined ? d.tien_mat_tx
+      : (d.paid_by_epl && d.source !== 'kho' && !d.ghi_no && !d.toll_card_id && ['fuel', 'travel', 'other'].includes(d.section)));
     const r = { USD: p.rate_usd, THB: p.rate_thb, VND: p.rate_vnd, CNY: p.rate_cny || 3000, LAK: 1 };
     const tong = dong.reduce((a, d) => a + d.qty * d.unit_price * (r[d.currency] || 1), 0);
     return { co: dong.length > 0, tong, tt: (p.sections || {}).travel || 'wait' };

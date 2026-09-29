@@ -32,7 +32,7 @@ from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gi
 from services import gia_von as GV
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
-from services.tinh_toan import chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia
+from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -148,7 +148,10 @@ def _xuat_dong(d):
             "place": d.place, "place_id": d.place_id, "supplier_id": d.supplier_id, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "source": d.source,
             "part_id": d.part_id, "stock_move_id": d.stock_move_id,
             "toll_card_id": d.toll_card_id, "card_move_id": d.card_move_id,
-            "ghi_no": bool(d.ghi_no), "note": d.note}
+            "ghi_no": bool(d.ghi_no), "note": d.note,
+            # cách trả (Excel anh Khampla, 29/09) và dòng này có vào tiền mặt tài xế cầm đi không — màn tài xế dùng thẳng
+            "pay_channel": d.pay_channel, "cach_tra": cach_tra(d) if d.section in ("travel", "other") else None,
+            "tien_mat_tx": la_tien_mat_tai_xe(d)}
 
 
 def _xuat_su_kien(e):
@@ -352,7 +355,7 @@ def _bo_tien_chi(ra):
 # ---------------------------------------------------------------- danh sách & xem
 @router.get("/api/khoan-muc")
 def khoan_muc():
-    return {"items": KHOAN_MUC, "acct_codes": MA_TK, "chain": {k: list(v) for k, v in CHUOI.items()},
+    return {"items": KHOAN_MUC, "acct_codes": MA_TK, "pay_channels": list(CACH_TRA), "pay_default": CACH_TRA_MAC_DINH, "chain": {k: list(v) for k, v in CHUOI.items()},
             "acct_default": {"EPL": {m: ma_tk_mac_dinh("EPL", m, "kho" if m in ("fuel", "repair") else None) for m in MUC_CHI},
                              "joint": {m: ma_tk_mac_dinh("joint", m, "kho" if m in ("fuel", "repair") else None) for m in MUC_CHI}},
             "acct_rule": {"EPL": {"kho": {"fuel": "625/1371", "repair": "614/1371"}, "mua": {"fuel": "625/4021", "repair": "614/4021", "travel": "625/4021", "other": "625/4021"}},
@@ -660,7 +663,18 @@ def _dong_tu_du_lieu(p, m, i, d, db=None, dat_gia=True):
         # Phí cầu đường trả bằng thẻ (C6.1): dòng nhớ thẻ nào, thẻ bị trừ lúc kế toán ghi sổ mục IV.
         toll_card_id=(d.get("toll_card_id") or None) if m == "travel" else None,
         # Ghi nợ tại trạm (C5.1): chỉ có nghĩa với khoản MUA NGOÀI — hàng lấy từ kho mình thì nợ ai.
-        ghi_no=bool(d.get("ghi_no")) and source != "kho", note=d.get("note"))
+        ghi_no=bool(d.get("ghi_no")) and source != "kho", note=d.get("note"),
+        pay_channel=_cach_tra_gui(m, d))
+
+
+def _cach_tra_gui(m, d):
+    """Cách trả gửi lên (mục IV, VI): một trong CACH_TRA; bỏ trống / trùng mặc định của khoản mục thì để trống."""
+    c = str(d.get("pay_channel") or "").strip()
+    if m not in ("travel", "other") or not c:
+        return None
+    if c not in CACH_TRA:
+        raise HTTPException(422, {"ma": "CACH_TRA_SAI", "loi": "Cách trả phải là tiền mặt khi xe đi, trả cùng lương hoặc ghi nợ nhà cung cấp."})
+    return None if c == CACH_TRA_MAC_DINH.get(d.get("item_key") or "", "tien_mat") else c
 
 
 def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
@@ -703,6 +717,7 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             e = giu.get(d.get("id"))
             if e:
                 e.line_no = i; e.note = d.get("note"); e.acct_code = d.get("acct_code") or e.acct_code
+                e.pay_channel = _cach_tra_gui(m, d)
                 continue
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
             if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
@@ -954,7 +969,9 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             # thẳng "Chi tiền" ở đây. Đường thứ hai trước đây không sinh tờ nào — bấm tay 23/09 chi 2.183.500 LAK mà sổ
             # kế toán không hề biết. Nay sinh PC_TU như đường QR. Hai đường tự loại nhau: đã chi rồi thì đường kia là
             # sai bước (chuyen_muc), nên không thể ra hai tờ. Dòng trả bằng THẺ cao tốc không phải tiền mặt → không tính.
-            dong = [d for d in _dong_chi(db, p) if d.section == "travel" and d.paid_by_epl and d.source != "kho" and not d.toll_card_id]
+            # chỉ phần TIỀN MẶT tài xế cầm đi (cách trả tiền mặt — Excel anh Khampla 29/09): khoản trả cùng lương, ghi nợ
+            # nhà cung cấp, trừ thẻ không qua tay quỹ lúc xe đi. Cùng luật với phiếu tạm ứng (la_tien_mat_tai_xe).
+            dong = [d for d in _dong_chi(db, p) if d.section == "travel" and la_tien_mat_tai_xe(d)]
             tong = sum(tien_dong(p, d) for d in dong)
             if tong > 0:
                 CT.ghi(db, "PC_TU", nguon_bang="trip_sections", nguon_id="%s:travel" % p.id, trip=p, ngay=dt.date.today(),

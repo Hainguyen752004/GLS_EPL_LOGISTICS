@@ -7796,5 +7796,10 @@ window.EPL_TU_DIEN = {
   "vi": "SL: số phụ tùng, hoặc số lần sửa (vá / thay lốp × 1). Đơn giá kế toán nhập lúc kiểm; phụ tùng lấy từ kho mang giá bình quân của kho.",
   "lo": "ຈຳນວນ: ຈຳນວນອາໄຫຼ່, ຫຼື ຈຳນວນເທື່ອສ້ອມແປງ (ຄ່າຈອດຢາງ × 1). ລາຄາ ບັນຊີປ້ອນຕອນກວດ; ອາໄຫຼ່ຈາກສາງ ໃຊ້ລາຄາສະເລ່ຍຂອງສາງ.",
   "en": "Qty: number of parts, or number of repairs (tyre repair / replacement × 1). The accountant enters the price when verifying; parts from the store carry the store's average cost."
+ },
+ "ca_nhac": {
+  "vi": "Cách trả theo cột ghi chú Excel. Dòng «Chi ngay khi xe đi» vào tiền tạm ứng.",
+  "lo": "ວິທີຈ່າຍ ຕາມໝາຍເຫດ Excel. ແຖວ «ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ» ເຂົ້າເງິນລ່ວງໜ້າ.",
+  "en": "Payment method as in the Excel note column. Lines marked «Paid at dispatch» go into the cash advance."
  }
 };

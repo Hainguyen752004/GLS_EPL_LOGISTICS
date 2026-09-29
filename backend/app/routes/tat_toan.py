@@ -31,9 +31,9 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import and_, func, not_, or_
 
-from models import Driver, Supplier, Trip, TripExpense, Voucher
+from models import Driver, Trip, TripExpense, Voucher
 from services.bao_mat import nguoi_hien_tai
-from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
+from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, la_tien_mat_tai_xe, ty_gia
 from services import dem_bao_cao as DEM
 
 router = APIRouter()
@@ -66,29 +66,23 @@ def _trong_ky(dau, cuoi):
     return (ngay >= dau, ngay <= cuoi)
 
 
-def _la_tien_mat_sql(bo_qua):
-    """la_tien_mat_tai_xe (services/tinh_toan) viết bằng SQL, cộng thêm luật bỏ khoản trả nhà cung cấp theo đợt.
-    HAI BẢN PHẢI ĐI CÙNG NHAU: đổi luật ở bên kia thì đổi cả ở đây (kiem/thu_tat_toan_lo.py so hai bản)."""
-    dk = [TripExpense.paid_by_epl.is_(True), TripExpense.source.is_distinct_from("kho"),
-          TripExpense.section.in_(("fuel", "travel", "other")), TripExpense.ghi_no.isnot(True),
-          or_(TripExpense.toll_card_id.is_(None), TripExpense.toll_card_id == "")]
-    if bo_qua:
-        dk.append(or_(TripExpense.item_key.is_(None), not_(TripExpense.item_key.in_(sorted(bo_qua)))))
-    return and_(*dk)
-
-
-# Kỳ thanh toán nào KHÔNG phải tiền mặt tài xế đưa ngay tại chỗ.
-KY_TRA_SAU = ("t_monthly", "t_prepaid")
-
-
-def _khoan_khong_phai_tien_tai_xe(db):
-    """Khoản mục do công ty trả thẳng cho nhà cung cấp, không đi qua tay tài xế."""
-    return {s.item_key for s in db.query(Supplier).filter(Supplier.payment_term.in_(KY_TRA_SAU)).all() if s.item_key}
+def _la_tien_mat_sql():
+    """la_tien_mat_tai_xe (services/tinh_toan) viết bằng SQL — CÙNG MỘT LUẬT với phiếu tạm ứng, kể cả cách trả từng dòng
+    (Excel anh Khampla, 29/09). HAI BẢN PHẢI ĐI CÙNG NHAU: đổi luật ở bên kia thì đổi cả ở đây (kiem/thu_tat_toan_lo.py so
+    hai bản). Trước 29/09 bản này bỏ thêm mọi khoản có nhà cung cấp trả theo đợt THEO TÊN KHOẢN — phí cao tốc trả tiền
+    mặt và dầu mua dọc đường cũng rơi mất khỏi "đã chi thật", 11 phiếu trên máy thật lệch với phiếu tạm ứng."""
+    khac = sorted(k for k, v in CACH_TRA_MAC_DINH.items() if v != "tien_mat")
+    tien_mat = or_(TripExpense.pay_channel == "tien_mat",
+                   and_(or_(TripExpense.pay_channel.is_(None), not_(TripExpense.pay_channel.in_(CACH_TRA))),
+                        or_(TripExpense.item_key.is_(None), not_(TripExpense.item_key.in_(khac)))))
+    return and_(TripExpense.paid_by_epl.is_(True), TripExpense.source.is_distinct_from("kho"),
+                TripExpense.section.in_(("fuel", "travel", "other")), TripExpense.ghi_no.isnot(True),
+                or_(TripExpense.toll_card_id.is_(None), TripExpense.toll_card_id == ""),
+                or_(TripExpense.section == "fuel", tien_mat))
 
 
 def tinh_ky(db, tai_xe, ky):
     """Tính một dòng tất toán. Không ghi gì vào DB — màn hình xem trước bằng chính hàm này."""
-    bo_qua = _khoan_khong_phai_tien_tai_xe(db)
     ds = _phieu_cua(db, tai_xe.id, ky)
     ma_phieu = [p.id for p in ds]
     ung = 0.0
@@ -101,9 +95,7 @@ def tinh_ky(db, tai_xe, ky):
     for p in ds:
         tien_p = 0.0
         for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id).all():
-            if not la_tien_mat_tai_xe(e):           # cùng luật với phiếu tạm ứng (services/tinh_toan)
-                continue
-            if e.item_key in bo_qua:                 # công ty trả nhà cung cấp theo đợt, không phải tiền tài xế
+            if not la_tien_mat_tai_xe(e):           # cùng luật với phiếu tạm ứng (services/tinh_toan), kể cả cách trả
                 continue
             tien_p += (e.qty or 0) * (e.unit_price or 0) * ty_gia(p, e.currency)
         chi += tien_p
@@ -121,7 +113,6 @@ def tinh_ky_lo(db, cac_tai_xe, ky):
     tài xế — 500 tài xế là ~30.000 câu. Cùng luật, cùng cách làm tròn; kiem/thu_tat_toan_lo.py so với tinh_ky."""
     from routes.nha_cung_cap import _tien_lak_sql
     dau, cuoi = _khoang(ky)
-    bo_qua = _khoan_khong_phai_tien_tai_xe(db)
     ids = [t.id for t in cac_tai_xe]
     phieu = defaultdict(list)
     for p in (db.query(Trip.id, Trip.driver_id, Trip.doc_no, Trip.truck_no, Trip.out_date, Trip.doc_date, Trip.origin,
@@ -131,7 +122,7 @@ def tinh_ky_lo(db, cac_tai_xe, ky):
     trong = (Trip.driver_id.in_(ids or [""]), *_trong_ky(dau, cuoi))
     chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
                                              .join(Trip, Trip.id == TripExpense.trip_id)
-                                             .filter(*trong, _la_tien_mat_sql(bo_qua)).group_by(TripExpense.trip_id))}
+                                             .filter(*trong, _la_tien_mat_sql()).group_by(TripExpense.trip_id))}
     ung = {did: float(v or 0) for did, v in (db.query(Trip.driver_id, func.sum(Voucher.amount_lak))
                                              .join(Trip, Trip.id == Voucher.trip_id)
                                              .filter(*trong, Voucher.kind == "advance", Voucher.status == "da_cap")
@@ -154,11 +145,10 @@ def _tt_lo(db, cac_ngay):
     """Phần TẤT TOÁN của từng ngày lập phiếu: {ngày: {driver_id: {"YYYY-MM" kỳ xe đi: [số phiếu, đã chi LAK, đã ứng LAK]}}}.
     Kỳ tính theo NGÀY XE ĐI (không có thì ngày lập) — cùng luật với tinh_ky_lo."""
     from routes.nha_cung_cap import _tien_lak_sql
-    bo_qua = _khoan_khong_phai_tien_tai_xe(db)
     loc = (Trip.doc_date.in_(cac_ngay), Trip.driver_id.isnot(None))
     chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
                                              .join(Trip, Trip.id == TripExpense.trip_id)
-                                             .filter(*loc, _la_tien_mat_sql(bo_qua)).group_by(TripExpense.trip_id))}
+                                             .filter(*loc, _la_tien_mat_sql()).group_by(TripExpense.trip_id))}
     ung = {tid: float(v or 0) for tid, v in (db.query(Voucher.trip_id, func.sum(Voucher.amount_lak))
                                              .join(Trip, Trip.id == Voucher.trip_id)
                                              .filter(*loc, Voucher.kind == "advance", Voucher.status == "da_cap")
@@ -177,7 +167,7 @@ def _bang_ky_ngay(db, cac_tai_xe, ky):
     dau, cuoi = _khoang(ky)
     truoc = dt.date(dau.year - (dau.month == 1), (dau.month - 2) % 12 + 1, 1)
     ngay = [truoc + dt.timedelta(days=i) for i in range((cuoi - truoc).days + 1)]
-    viec = [(("tt", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]
+    viec = [(("tt3", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]    # tt3: luật cách trả 29/09
     tong = {}
     for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: (lambda kq: [kq[ngay[i].isoformat()] for i in thieu])(
             _tt_lo(db, [ngay[i] for i in thieu]))):

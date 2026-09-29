@@ -23,7 +23,7 @@ from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_p
 from routes.theo_doi import NGAY_COI_LA_LAU
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
-from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
+from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
 from services import goi_ke_toan as KT
 
@@ -760,7 +760,7 @@ def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(n
     dau, cuoi = _thang(thang)
     # ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại)
     tong = {}
-    for o in _theo_ngay(db, "tx", _cac_ngay(dau, cuoi), _tx_lo).values():     # theo thứ tự ngày
+    for o in _theo_ngay(db, "tx3", _cac_ngay(dau, cuoi), _tx_lo).values():    # theo thứ tự ngày · tx3: cách trả 29/09
         for ten, x in o.items():
             r = tong.setdefault(ten, {"driver": ten, "so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "da_chi": 0, "cho_chi": 0})
             for f in ("so_phieu", "tong_lak", "da_chi", "cho_chi"):
@@ -786,11 +786,15 @@ def _tx_lo(db, cac_ngay):
     muc_iv = {t: st for t, st in (db.query(TripSection.trip_id, TripSection.status).join(Trip, Trip.id == TripSection.trip_id)
                                   .filter(*loc, TripSection.section == "travel"))}
     dong = defaultdict(list)
-    for d in (db.query(TripExpense.trip_id, TripExpense.item_key, TripExpense.qty, TripExpense.unit_price, TripExpense.currency)
+    # chỉ dòng CÁCH TRẢ "trả theo chuyến cùng lương" (Excel anh Khampla, 29/09) — khoản tiền mặt đã đưa lúc xe đi
+    # (tạm ứng) không trả lần nữa cùng lương
+    for d in (db.query(TripExpense.trip_id, TripExpense.item_key, TripExpense.qty, TripExpense.unit_price, TripExpense.currency,
+                       TripExpense.pay_channel)
               .join(Trip, Trip.id == TripExpense.trip_id)
               .filter(*loc, TripExpense.section == "travel", TripExpense.paid_by_epl.is_(True),
                       TripExpense.item_key.in_(KHOAN_TAI_XE))):
-        dong[d.trip_id].append(d)
+        if cach_tra(d) == "luong":
+            dong[d.trip_id].append(d)
     ra = {d.isoformat(): {} for d in cac_ngay}
     for p in ds:
         r = ra[p.doc_date.isoformat()].setdefault(p.driver_name, {"so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "da_chi": 0, "cho_chi": 0})

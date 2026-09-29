@@ -197,6 +197,12 @@
             <option value="">${esc(NN.t('tct_tien_mat'))}</option>${DM.the.filter(t => t.active || t.id === d.toll_card_id)
               .map(t => `<option value="${t.id}" ${t.id === d.toll_card_id ? 'selected' : ''}>${esc(t.card_no)} · ${so(t.balance, EPL.leTien(t.currency))} ${esc(t.currency)}</option>`).join('')}</select>${
             daTru ? `<div class="small muted">${esc(NN.t('tct_da_tru'))} ✓</div>` : ''}`;
+        // CÁCH TRẢ (Excel anh Khampla, 29/09): như cột ghi chú của tờ Excel — chi ngay khi xe đi (vào tạm ứng) · trả cùng
+        // lương · nợ nhà cung cấp. Dòng phí cao tốc / cầu đường đã có ô thẻ ở trên (tiền mặt hay thẻ) nên không hỏi thêm.
+        const caDuoc = (m === 'travel' || m === 'other') && !theDuoc;
+        const caEff = d.pay_channel || ((KM.pay_default || {})[d.item_key] || 'tien_mat');
+        const caSel = !caDuoc ? '' : `<select class="px-ca" data-i="${i}" data-f="pay_channel" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">${
+          [['tien_mat', 'pm_on_dispatch'], ['luong', 'pm_trip_salary'], ['ncc', 'pm_supplier']].map(([v, k]) => `<option value="${v}" ${v === caEff ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select>`;
         const pay = `<td class="px-lk"><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
         const acct = `<td class="px-gia"><button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'} title="${esc(NN.t('acct_pair'))}">${esc(d.acct_code || tkMacDinh(m, d))}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
@@ -217,12 +223,12 @@
             kho ? `<select data-i="${i}" data-f="part_id" ${khoaDuoc && !daXuat ? '' : 'disabled'} style="margin-top:4px"><option value="">—</option>${DM.parts.map(p => `<option value="${p.id}" ${p.id === d.part_id ? 'selected' : ''}>${esc(p.name)} · ${so(p.qty)}</option>`).join('')}</select>` : ''}${
             daXuat ? `<div class="small muted">${esc(NN.t('fs_out'))} ✓</div>` : ''}</td>`;
         }
-        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
+        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}${caSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
       }).join('') : `<tr><td colspan="10" class="empty small">${NN.h('no_data')}</td></tr>`;
     });
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value;
-      if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; veChi(); }
+      if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
       if (f === 'toll_card_id') { d.toll_card_id = el.value || null; }
       if (f === 'ghi_no') { d.ghi_no = el.checked; }
       if (f === 'place_id') {

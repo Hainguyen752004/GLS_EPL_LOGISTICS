@@ -149,13 +149,30 @@ def tinh_phieu(phieu, cac_dong, da_thu_lak=0.0):
     return ket
 
 
+# CÁCH TRẢ từng dòng mục IV, VI — đúng cột ghi chú tờ ໃບເບີກລົດອອກໄປຂົນສົ່ງ của anh Khampla (chủ dự án chốt 29/09):
+#   tien_mat  ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ      trả ngay khi tài xế xuất xe → tạm ứng
+#   luong     ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ    trả theo chuyến cùng lương → màn Tiền chuyến & tiền nước
+#   ncc       ຕິດໜີ້ຜູ້ສະໜອງ/ຊໍາລະເປັນງວດ  ghi nợ nhà cung cấp, trả theo đợt → công nợ nhà cung cấp
+# Người lập không chọn thì theo khoản mục như Excel; khoản Excel không ghi (ăn, cầu, đỗ xe…) là tiền mặt tài xế cầm đi.
+CACH_TRA = ("tien_mat", "luong", "ncc")
+CACH_TRA_MAC_DINH = {"x_water": "luong", "x_trip": "luong", "x_chip_lao": "ncc", "x_chip_vn": "ncc"}
+
+
+def cach_tra(d):
+    """Cách trả của một dòng chi mục IV / VI: người lập chọn; không chọn thì theo khoản mục như Excel."""
+    c = getattr(d, "pay_channel", None)
+    return c if c in CACH_TRA else CACH_TRA_MAC_DINH.get(getattr(d, "item_key", None) or "", "tien_mat")
+
+
 def la_tien_mat_tai_xe(d):
     """Dòng chi này có phải TIỀN MẶT tài xế cầm đi (tạm ứng) không — MỘT luật cho phiếu tạm ứng, cửa xuất phát,
     màn Tất toán và màn Phiếu của tôi.
 
     Có: khoản EPL ứng ở mục III (dầu mua dọc đường), IV (đi đường), VI (khác).
     Không: dầu / phụ tùng lấy từ KHO (phiếu xuất kho) · dầu trạm GHI NỢ (trạm tính nợ EPL, tài xế không trả tiền —
-    anh Khampla C5.1) · phí cao tốc trừ vào THẺ (C6.1). Rà giao diện 23/09: 500 lít dầu ghi nợ bị tính vào tạm ứng."""
+    anh Khampla C5.1) · phí cao tốc trừ vào THẺ (C6.1) · dòng mục IV, VI có CÁCH TRẢ không phải tiền mặt (trả cùng lương,
+    ghi nợ nhà cung cấp — Excel anh Khampla, 29/09). Rà giao diện 23/09: 500 lít dầu ghi nợ bị tính vào tạm ứng."""
     return bool(d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")
-                and not getattr(d, "ghi_no", False) and not getattr(d, "toll_card_id", None))
+                and not getattr(d, "ghi_no", False) and not getattr(d, "toll_card_id", None)
+                and (d.section == "fuel" or cach_tra(d) == "tien_mat"))
 

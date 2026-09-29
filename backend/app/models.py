@@ -469,6 +469,9 @@ class TripExpense(Base):
     # trạm ghi sổ, cuối tháng EPL trả (hoặc cấn trừ với cước khách). Khác hẳn "tài xế trả tiền mặt
     # từ tiền tạm ứng": tiền chưa ra khỏi túi ai cả, nó là công nợ với trạm.
     ghi_no = Column(Boolean, nullable=False, default=False)
+    # CÁCH TRẢ (chủ dự án 29/09, theo cột ghi chú Excel anh Khampla): tien_mat (trả ngay khi xe đi → tạm ứng) · luong
+    # (trả theo chuyến cùng lương) · ncc (ghi nợ nhà cung cấp, trả theo đợt). Trống = theo khoản mục (tinh_toan.cach_tra).
+    pay_channel = Column(String)
     note = Column(String)
 
 

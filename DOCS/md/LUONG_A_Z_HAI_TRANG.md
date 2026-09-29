@@ -17,7 +17,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, rồi 60 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, rồi 61 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -213,7 +213,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Thao tác:**
 
-1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. SL đếm theo gì: xem bảng ngay dưới.
+1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. SL đếm theo gì: xem bảng ngay dưới. Ngay dưới ô khoản mục là ô **cách trả** — đúng cột ghi chú trong Excel của anh Khampla: **Chi ngay khi xe đi** · **Trả theo chuyến cùng lương** · **Nợ NCC / trả theo đợt**. Máy chọn sẵn theo khoản mục như Excel (xem bảng *Cách trả* dưới); khác thì Bãi đổi.
 2. Phí cao tốc: tuyến có BOT thì máy tự thêm dòng. Chọn **Trả tiền mặt (không dùng thẻ)** hoặc chọn thẻ cao tốc để trừ thẻ.
 3. Mục VI (nếu có) → **Thêm dòng** tương tự. Bấm **Lưu**.
 4. Bấm **Phiếu chi tạm ứng**: mở màn **Phiếu chi · Phiếu thu** ở tờ tạm ứng của phiếu này, có mã QR. Bấm **In**, tài xế cầm tới quỹ.
@@ -239,9 +239,20 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 | Tiền chuyến · ເງີນຖ້ຽວແກ່ແຮ່ | 1 | 1.800.000 | trả theo chuyến cùng lương |
 | Điện thoại · ຄ່າເບີໂທ | 1 | 150.000 | trả ngay khi tài xế xuất xe |
 
-Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một chuyến (ví dụ qua cầu hai lượt). Chuyến dài hơn thì **đơn giá** lớn hơn, SL vẫn là 1. Bãi chỉ ghi khoản mục và SL; không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá khi kiểm (bước 7). Phần cách trả máy đang theo: tiền nước, tiền chuyến gom lên màn **Tiền chuyến & tiền nước tài xế** để trả cùng lương (bước 20); phí cao tốc chọn thẻ thì trừ thẻ, không vào tạm ứng; dầu **ghi nợ tại trạm** không vào tạm ứng.
+Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một chuyến (ví dụ qua cầu hai lượt). Chuyến dài hơn thì **đơn giá** lớn hơn, SL vẫn là 1. Bãi chỉ ghi khoản mục và SL; không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá khi kiểm (bước 7).
 
-**Máy tự làm:** gom mọi khoản tiền mặt EPL ứng (mục IV, VI, dầu mua ngoài) thành số tạm ứng. Tờ **PTU** sinh ở bước này.
+**Cách trả — mỗi dòng đi vào đúng một chỗ** (chủ dự án chốt 29/09: làm theo Excel anh Khampla). Ô cách trả dưới khoản mục, dưới bảng có dòng nhắc *Cách trả theo cột ghi chú Excel. Dòng «Chi ngay khi xe đi» vào tiền tạm ứng.*
+
+| Cách trả (ô trên phiếu) | Excel ghi | Máy chọn sẵn cho | Tiền đi đâu |
+|---|---|---|---|
+| **Chi ngay khi xe đi** | ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ | chi phí sang Việt Nam, điện thoại, tiền ăn, phí cầu / đỗ xe / cửa khẩu, khoản tự gõ | **Phiếu tạm ứng**: quỹ đưa tiền mặt lúc xe đi (bước 9); tất toán so với đúng những dòng này (bước 20) |
+| **Trả theo chuyến cùng lương** | ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ | tiền nước, tiền chuyến | **Không** vào tạm ứng; cộng lên màn **Tiền chuyến & tiền nước tài xế** để trả cùng lương (bước 20) |
+| **Nợ NCC / trả theo đợt** | ຕິດໜີ້ຜູ້ສະໜອງ/ຊໍາລະເປັນງວດ | chipping Lào, chipping Việt | **Không** vào tạm ứng; thành công nợ nhà cung cấp, kế toán trả theo đợt (6.6) |
+| (phí cao tốc, cầu đường) | ຈ່າຍຕາມຖ້ຽວ ຜ່ານບັດ | — ô thẻ thay cho ô cách trả | Chọn thẻ thì **trừ thẻ**, không vào tạm ứng; chọn *Trả tiền mặt* thì vào tạm ứng |
+
+Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK** tiền mặt (sang VN 430.000 + điện thoại 150.000); tiền nước + tiền chuyến 1.860.000 trả cùng lương; chipping 2.120.000 là nợ nhà cung cấp; phí cao tốc 1.833.500 trừ thẻ. Dầu mục III: dầu kho lĩnh theo phiếu lĩnh, dầu trạm **ghi nợ** không vào tạm ứng, dầu mua dọc đường trả tiền mặt thì vào tạm ứng.
+
+**Máy tự làm:** số tạm ứng = các dòng EPL ứng có cách trả **Chi ngay khi xe đi** (mục IV, VI) + dầu mua dọc đường trả tiền mặt — không gồm khoản cùng lương, nợ nhà cung cấp, trừ thẻ, dầu kho, dầu ghi nợ. Tờ **PTU** sinh ở bước này; đổi cách trả trước khi quỹ chi thì số tạm ứng tự cập nhật.
 
 **Máy chặn:** Bãi không nhập đơn giá; người kiểm mục nhập ở bước 6–7.
 
@@ -323,7 +334,7 @@ Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một 
 - **Cách 1 — trang kế toán:** Kho → **Cấp phát** → tab **Phiếu tạm ứng đi đường** → quét QR phiếu tạm ứng (hoặc bấm dòng) → đối chiếu → **Chi tiền**.
 - **Cách 2 — trang điều xe:** mở Phiếu xuất xe → mục IV → **Xác nhận đã chi**.
 
-**Máy tự làm:** mục IV thành *Đã chi*; sinh tờ **PC_TU** (phiếu chi tạm ứng, ở trang điều xe, chờ đẩy sổ); dòng trả bằng thẻ cao tốc không tính vào tiền mặt. Tài xế ký nhận tiền trên tờ phiếu tạm ứng.
+**Máy tự làm:** mục IV thành *Đã chi*; sinh tờ **PC_TU** (phiếu chi tạm ứng, ở trang điều xe, chờ đẩy sổ) — chỉ gồm dòng cách trả **Chi ngay khi xe đi**, đúng số trên phiếu tạm ứng; khoản cùng lương, nợ nhà cung cấp, trừ thẻ không qua tay quỹ lúc này. Tài xế ký nhận tiền trên tờ phiếu tạm ứng.
 
 **Máy chặn:** mục IV chưa *Đã ghi sổ* thì không chi được; tài xế không tự chi cho mình; chi rồi thì chỗ kia báo sai bước, không ra hai tờ.
 
@@ -514,9 +525,9 @@ Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một 
 4. Bấm **Tất toán** ở dòng tài xế → hộp *Tất toán kỳ … cho …?* nói số chênh → bấm **Tất toán**. Dòng chuyển *Đã tất toán*.
 5. Chốt nhầm: bấm **Bỏ chốt** ở dòng đó → xác nhận → chốt lại sau khi sửa phiếu.
 
-**Xem tiền chuyến trả cùng lương:** **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** → ô **Tháng** → bảng theo tài xế: **Chuyến**, **Tiền chuyến**, **Tiền nước**, **Điện thoại**, **Chi phí VN**, **Tiền ăn tài xế**, **Tổng (LAK)**, **Kênh chi** (*Trả theo chuyến cùng lương*), **Trạng thái** chi mục IV. Bấm **In** → bản in trong hộp → bấm **In** trong hộp. KT Thu/Chi, KT Doanh thu, KT kho xăng dầu, hai quỹ và KT Chi phí xem được; Bãi không có màn này.
+**Xem tiền chuyến trả cùng lương:** **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** → ô **Tháng** → bảng theo tài xế (chỉ cộng dòng cách trả **Trả theo chuyến cùng lương** — thường là tiền chuyến, tiền nước; khoản đã đưa tiền mặt lúc xe đi không cộng lần nữa): **Chuyến**, **Tiền chuyến**, **Tiền nước**, **Điện thoại**, **Chi phí VN**, **Tiền ăn tài xế**, **Tổng (LAK)**, **Kênh chi** (*Trả theo chuyến cùng lương*), **Trạng thái** chi mục IV. Bấm **In** → bản in trong hộp → bấm **In** trong hộp. KT Thu/Chi, KT Doanh thu, KT kho xăng dầu, hai quỹ và KT Chi phí xem được; Bãi không có màn này.
 
-**Máy tự làm:** chênh lệch = đã chi thật − đã ứng. *Đã ứng* là các phiếu tạm ứng **đã cấp** trong kỳ; *đã chi thật* là các dòng chi EPL ứng tài xế móc túi trả (dầu mua ngoài dọc đường, mục IV, mục VI) — **không** tính khoản công ty trả thẳng nhà cung cấp theo đợt (chipping, thẻ cao tốc…). Số tính từ phiếu bên trang điều xe, không gõ tay. Chênh dương → tờ **TT_CHI** (Nợ 625 / Có tiền mặt Kíp 1011); âm → **TT_THU** (Nợ 1011 / Có 625); dưới 1 Kíp là vừa đủ, không sinh tờ. Tờ **vào sổ ngay**. Bỏ chốt thì tờ rút khỏi sổ.
+**Máy tự làm:** chênh lệch = đã chi thật − đã ứng. *Đã ứng* là các phiếu tạm ứng **đã cấp** trong kỳ; *đã chi thật* là **đúng những dòng đã vào tạm ứng** — cách trả **Chi ngay khi xe đi** ở mục IV, VI và dầu mua dọc đường trả tiền mặt (một luật với phiếu tạm ứng, bước 3); khoản cùng lương, nợ nhà cung cấp, trừ thẻ không tính. Số tính từ phiếu bên trang điều xe, không gõ tay. (Trước 29/09 hai bên tính hai luật khác nhau: 11 phiếu trên máy thật lệch, có phiếu báo tài xế phải nộp lại ~27 triệu — nay hết.) Chênh dương → tờ **TT_CHI** (Nợ 625 / Có tiền mặt Kíp 1011); âm → **TT_THU** (Nợ 1011 / Có 625); dưới 1 Kíp là vừa đủ, không sinh tờ. Tờ **vào sổ ngay**. Bỏ chốt thì tờ rút khỏi sổ.
 
 **Máy chặn:** chốt hai lần một kỳ; kỳ tài xế không có phiếu; **trang điều xe tắt** thì màn không hiện số, không chốt được. Kỳ có tờ tất toán đã đẩy từ trang điều xe **trước ngày dời (28/09)** thì không bỏ chốt được — ghi bút toán đảo ở **Ghi tay**. KT Thu/Chi, KT Doanh thu, Bãi không có màn Tất toán.
 
@@ -724,7 +735,7 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
    Trên trang điều xe, các phiếu đó vẫn hiện *đã thu · còn lại* đúng như trên (bản chép). Bản sao lưu ngay trước khi dời: `D:\Demo_Lao\saoluu\saoluu_epl_lao_20260929_1046.dump` và `saoluu_epl_ketoan_20260929_1046.dump`.
 
-2. **Khởi động lại máy 8020** (trang điều xe) để nhận bản có **Báo cân ở mỏ** (bước 10b), **Km chiều về** của tuyến và ô **Lúc đi** tự điền (bước 1), rồi **Ctrl+F5** trên trình duyệt. Năm tuyến mẫu ở mục 5 dưới đây em thêm sau khi máy 8020 chạy bản mới. Máy **8030** không cần khởi động lại.
+2. **Khởi động lại máy 8020** (trang điều xe) để nhận bản có **Báo cân ở mỏ** (bước 10b), **Km chiều về** của tuyến, ô **Lúc đi** tự điền (bước 1) và ô **cách trả** mục IV (bước 3), rồi **Ctrl+F5** trên trình duyệt. Năm tuyến mẫu ở mục 5 dưới đây em thêm sau khi máy 8020 chạy bản mới. Máy **8030** không cần khởi động lại.
 3. **Kiểm kết nối hai chiều** (Phần 3.3 bước 8): trang kế toán, `admin` → **Cài đặt** → thẻ **Liên thông trang điều xe** → **Kiểm kết nối** phải hiện *Nối được trang điều xe*; trang điều xe, `admin` → **Hệ thống → Tài khoản** → tab **Liên thông trang kế toán** → **Kiểm kết nối** phải hiện *Nối được trang kế toán*.
 4. Mở **trang điều xe ở một tab, trang kế toán ở tab bên cạnh**. Cần hai người cùng lúc (ví dụ Bãi lập phiếu, kế toán kiểm) thì mở thêm **cửa sổ ẩn danh** (Ctrl+Shift+N). Mật khẩu mọi tài khoản `1234`.
 5. **Dữ liệu mẫu có sẵn:** xe nhà **341**, **342** và 12 đầu kéo thêm ngày 29/09 **343–354** (HOWO, SHACMAN, SITRAK, FAW — mỗi xe đã lắp một rơ-moóc, có tài xế thường lái DRV-03 … DRV-14); xe liên kết **ຮ່ວມ-07**, **ຮ່ວມ-08**, **ຮ່ວມ-09** (chủ xe **ທ້າວ ຄຳຫລ້າ**, cách trả *Gộp cuối tháng*, thuê bằng LAK; tài xế DRV-LK-01 … 03); 4 rơ-moóc để rời **ບອ 3501**, **ບອ 3502**, **ນວ 5620** và **ບອ 3503** (*đang sửa*) để thử tháo / lắp rơ-moóc ở màn **Xe**; vài giấy tờ cố ý sắp hết hạn hay đã hết hạn (bảo hiểm xe 346, đăng kiểm xe 344, bằng lái DRV-06 sắp hết, DRV-09 đã hết) để thử cờ cảnh báo; khách **ຄຳຕຸ້ຍ** và **ນາງ ວັນນາ** (hoá đơn từng phiếu), **ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ** (gộp tháng); tài xế `tx01` = ທ້າວ ທັດສະດາພອນ, `tx02` = ທ້າວ ບຸນມີ, `tx03` = ທ້າວ ສົມພອນ (tài xế xe liên kết).
@@ -753,7 +764,8 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 | T01 | `thabok` · điều xe | **Phiếu xuất xe** → **Phiếu mới** → thẻ **I**: Loại **Gom (mỏ → bãi)**, xe 341 (ô **Lúc đi** tự điền, xem T01b), tài xế `tx01` → thẻ **II**: tuyến **ກາສີ → ທ່າບົກ**, khách ຄຳຕຸ້ຍ, loại hàng quặng sắt — ô **Cân tại mỏ (t)** để trống → **Lưu** (nút xanh góc trên phải) | Máy cấp số `G4-…/EPL`, báo *Đã lưu*; Bãi **không thấy** ô giá cước, giá thuê, tỷ giá; phiếu gom **không có** khung **Hàng trên phiếu**; dưới ô **Cân tại mỏ (t)** ghi *Bốc xong ở mỏ mới ghi…*; ô **Ngày xe về**, **Lúc về**, **Cân tại bãi khi về** xám, ghi *Điền khi xe về / tới* | 1 | |
 | T01b | `thabok` · điều xe | Trên phiếu T01 (chưa lưu cũng được): nhìn ô **Lúc đi**, rồi gõ đè một số khác, rồi đổi **Số xe** sang xe khác và chọn lại 341 | Chọn xe là ô **Lúc đi** có ngay số **Công-tơ-mét (km)** của xe 341 (như ở màn **Xe**), dưới ô ghi *Điền sẵn theo công-tơ-mét của xe — sửa được*; đã gõ tay thì đổi xe **không** đè số anh gõ. **Km về ước tính** = lúc đi + 290 (145 đi + 145 về) | 1 | |
 | T02 | `thabok` · điều xe | Mục III → **Thêm dòng**: 200 lít, nơi đổ **kho Thà Bốc** → **Lưu** → **Phiếu lĩnh nhiên liệu** → **In** | Mở màn Phiếu chi · Phiếu thu ở tờ phiếu lĩnh có mã QR; không có cột tiền | 2 | |
-| T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** tiền chuyến, tiền nước (chỉ số lượng) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
+| T03 | `thabok` · điều xe | Mục IV → **Thêm dòng** như tờ Excel: tiền nước, chi phí sang Việt Nam, chipping Lào, tiền chuyến, điện thoại (mỗi dòng SL 1) → **Lưu** → **Phiếu chi tạm ứng** → **In** | Ô cách trả tự chọn: tiền nước, tiền chuyến *Trả theo chuyến cùng lương*; sang VN, điện thoại *Chi ngay khi xe đi*; chipping *Nợ NCC / trả theo đợt*. Tờ tạm ứng có mã QR; Bãi không nhập được đơn giá | 3 | |
+| T03c | `ketoancp` · điều xe | Nhập đơn giá như Excel (60.000 · 430.000 · 620.000 · 1.800.000 · 150.000) → **Lưu** → bấm lại **Phiếu chi tạm ứng** | Tờ tạm ứng **580.000 LAK** (chỉ sang VN + điện thoại). Đổi ô cách trả tiền chuyến thành *Chi ngay khi xe đi* → **Lưu** → tạm ứng 2.380.000; đổi lại thì về 580.000 | 3 | |
 | T03b | `thabok` rồi `ketoancp` · điều xe | Bãi nhìn bảng mục IV: tiêu đề cột và dòng nhắc dưới bảng. Rồi `ketoancp` mở cùng phiếu | Bãi: cột **SL (lần / chuyến)**, dưới bảng ghi *SL 1 = một lần trong chuyến này, theo Excel…*; không có cột đơn giá, dòng **Tổng** trống. `ketoancp`: thấy thêm **Đơn giá**, **Thành tiền (LAK)**, dòng **Tổng** có số. Mục V dưới bảng ghi *SL: số phụ tùng, hoặc số lần sửa…* | 3 | |
 | T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, III, IV (mục II chưa — chờ cân mỏ, ca T10b) | Ba mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
 | T05 | `ketoan` · điều xe | Mở phiếu (từ **Tổng quan → Việc của tôi** hoặc ô **Số phiếu**) → **Xác nhận kiểm tra** mục I | Mục I *Đã kiểm* (mục II kiểm ở ca T10b) | 5 | |
@@ -807,8 +819,8 @@ Phần này đi **đúng thứ tự luồng** ở Phần 4: mỗi dòng là mộ
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T33 | `ketoan` · kế toán | **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** | Mở sẵn tháng có phiếu mới nhất; bảng theo tài xế; **In** → bản in trong hộp | 20 | |
-| T34 | `ketoancp` · kế toán | **Tiền vận chuyển → Tất toán tài xế** → bấm một dòng | Bốn ô tổng; khung dưới liệt kê phiếu của tài xế đó trong kỳ | 20 | |
+| T33 | `ketoan` · kế toán | **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** | Mở sẵn tháng có phiếu mới nhất; bảng theo tài xế, chỉ cộng dòng *Trả theo chuyến cùng lương* (phiếu T03: tiền chuyến 1.800.000, tiền nước 60.000; cột **Điện thoại**, **Chi phí VN** không cộng vì đã đưa tiền mặt); **In** → bản in trong hộp | 20 | |
+| T34 | `ketoancp` · kế toán | **Tiền vận chuyển → Tất toán tài xế** → bấm một dòng | Bốn ô tổng; khung dưới liệt kê phiếu của tài xế đó trong kỳ. Phiếu lập từ 29/09 (như T03): tạm ứng đúng bằng đã chi, **chênh 0**. Lưu ý khi demo: 8 phiếu mẫu cũ tháng 8–9 (T4-0428 … T4-0441) đã **chi tạm ứng theo luật cũ** — số tiền mặt gồm cả tiền chuyến, chipping… — nên dòng của ທ້າວ ທັດສະດາພອນ, ທ້າວ ບຸນມີ, ທ້າວ ສົມພອນ hiện *Tài xế nộp lại* đúng phần đã đưa thừa; sổ cũ không sửa ngược. Muốn thấy dòng sạch thì chạy T01–T09 với một tài xế chưa có phiếu (ví dụ DRV-05) | 20 | |
 | T35 | `ketoancp` · kế toán | **Tất toán** ở một dòng → **Tất toán** | Dòng *Đã tất toán*; sổ có **TT_CHI** (chi bù, Nợ 625 / Có 1011) hoặc **TT_THU** (nộp lại, Nợ 1011 / Có 625); bấm lại lần hai bị chặn | 20 | |
 | T36 | `quytb` → `ketoancp` · kế toán | Quỹ bấm **Bỏ chốt** (bị từ chối) → KT Chi phí **Bỏ chốt** | Chỉ KT Chi phí bỏ được; tờ TT rút khỏi sổ | 20 | |
 | T37 | `ketoancp` · kế toán | **Tiền vận chuyển → Theo dõi nhà cung cấp** | Bảng công nợ: phát sinh, ghi nợ tại trạm, đã trả, còn nợ = phát sinh − đã trả; dòng **Tổng** | 6.6 | |
