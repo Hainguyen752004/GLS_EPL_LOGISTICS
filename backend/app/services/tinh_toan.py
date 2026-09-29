@@ -70,9 +70,27 @@ def lam_tron(so_tien, ma):
     return round(so_tien) if chuan_tien(ma) in ("LAK", "VND") else round(so_tien, 2)
 
 
+def gia_dong(phieu, dong):
+    """Đơn giá tính tiền của một dòng. Xe THUÊ: dầu lấy từ KHO là xuất BÁN cho chủ xe — tính theo giá bán KT kho xăng dầu
+    gõ trên phiếu (chủ dự án 29/09); chưa gõ thì tạm theo giá vốn. Mọi dòng khác: đơn giá của dòng."""
+    ban = getattr(dong, "sale_price", None)
+    if ban is not None and phieu is not None and phieu.company == "joint" and dong.section == "fuel" and dong.source == "kho":
+        return ban
+    return dong.unit_price or 0
+
+
 def tien_dong(phieu, dong):
     """Số tiền một dòng chi, quy về LAK."""
-    return (dong.qty or 0) * (dong.unit_price or 0) * ty_gia(phieu, dong.currency)
+    return (dong.qty or 0) * gia_dong(phieu, dong) * ty_gia(phieu, dong.currency)
+
+
+def hinh_thuc(phieu, loai):
+    """Bản chất đề nghị theo LOẠI XE của DO (chủ dự án 29/09). `loai`: "tam_ung" | "xuat".
+    Xe nhà → "noi_bo" (tạm ứng nội bộ · xuất nội bộ). Xe thuê, EPL ứng → tạm ứng "cong_no_chu_xe" (trừ vào tiền trả
+    chủ xe) · dầu "xuat_ban" (bán cho chủ xe theo giá bán riêng)."""
+    if (phieu.company or "EPL") != "joint":
+        return "noi_bo"
+    return "cong_no_chu_xe" if loai == "tam_ung" else "xuat_ban"
 
 
 def tong_muc(phieu, cac_dong, muc, chi_epl_ung=True):

@@ -450,6 +450,9 @@ class TripExpense(Base):
     item_name = Column(String)                                 # tên tự gõ khi không có khoá
     qty = Column(Float, nullable=False, default=1)
     unit_price = Column(Float, nullable=False, default=0)
+    # Xe THUÊ, dầu lấy từ KHO mà EPL ứng = XUẤT BÁN cho chủ xe (chủ dự án 29/09): giá bán riêng do KT kho xăng dầu gõ khi
+    # kiểm mục III; `unit_price` vẫn là giá vốn bình quân của kho. Tiền trừ chủ xe tính theo giá bán. Xe nhà: luôn trống.
+    sale_price = Column(Float)
     currency = Column(String, nullable=False, default="LAK")   # nhiên liệu đổ ở VN tính VND
     place = Column(String)                                     # fp_yard | fp_vn | fp_other — khoá cũ, giữ để đọc dữ liệu cũ
     place_id = Column(String, ForeignKey("fuel_places.id"))    # ĐIỂM ĐỔ thật: quyết định kho nào cấp, và kho hay mua

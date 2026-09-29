@@ -128,6 +128,11 @@ def main():
         phai(s, 200, "Kế toán đặt giá bán 41, giá thuê 40 USD/t cho %s" % P["doc_no"], g)
         for muc in ("info", "trans", "fuel"):
             s, g = goi("/api/trips/%s/sections/%s/send" % (P["id"], muc), {}, vai="thabok"); phai(s, 200, "gửi kiểm %s" % muc, g)
+        # xe thuê: dầu lấy từ kho là XUẤT BÁN cho chủ xe — KT kho gõ giá bán trước khi kiểm mục III (chủ dự án 29/09)
+        s, pk = goi("/api/trips/%s" % P["id"], vai="khonl")
+        s, g = goi("/api/trips/%s" % P["id"], {"expenses": [{"id": e["id"], "section": "fuel", "sale_price": 31000}
+                                                          for e in pk["expenses"] if e["section"] == "fuel"]}, vai="khonl", method="PUT")
+        phai(s, 200, "KT kho gõ giá bán dầu cho chủ xe", g)
         for muc, v in (("info", "ketoan"), ("trans", "ketoan"), ("fuel", "khonl")):
             s, g = goi("/api/trips/%s/sections/%s/verify" % (P["id"], muc), {}, vai=v); phai(s, 200, "kiểm %s" % muc, g)
         s, g = goi("/api/trips/%s/sections/fuel/book" % P["id"], {}, vai="khonl"); phai(s, 200, "ghi sổ III", g)

@@ -2612,6 +2612,31 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
  },
+ "ht_tam_ung_noi_bo": {
+  "vi": "Tạm ứng nội bộ — xe công ty (EPL)",
+  "lo": "ເງິນລ່ວງໜ້າ — ລົດບໍລິສັດ (EPL)",
+  "en": "Internal advance — company truck (EPL)"
+ },
+ "ht_tam_ung_cong_no_chu_xe": {
+  "vi": "Tạm ứng ghi công nợ chủ xe",
+  "lo": "ເງິນລ່ວງໜ້າ — ເຈົ້າຂອງລົດຕິດໜີ້ EPL",
+  "en": "Advance charged to the truck owner"
+ },
+ "ht_xuat_noi_bo": {
+  "vi": "Xuất nội bộ — xe công ty (EPL)",
+  "lo": "ເບີກນໍ້າມັນ — ລົດບໍລິສັດ (EPL)",
+  "en": "Internal fuel issue — company truck (EPL)"
+ },
+ "ht_xuat_xuat_ban": {
+  "vi": "Xuất bán cho chủ xe",
+  "lo": "ຂາຍນໍ້າມັນໃຫ້ເຈົ້າຂອງລົດ",
+  "en": "Fuel sold to the truck owner"
+ },
+ "sale_price": {
+  "vi": "Giá bán cho chủ xe",
+  "lo": "ລາຄາຂາຍໃຫ້ເຈົ້າຂອງລົດ",
+  "en": "Sale price to the owner"
+ },
  "v_advance": {
   "vi": "Phiếu đề nghị tạm ứng",
   "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",

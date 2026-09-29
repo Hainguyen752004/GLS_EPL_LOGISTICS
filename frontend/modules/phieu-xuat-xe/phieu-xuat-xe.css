@@ -149,3 +149,8 @@
 /* Ngày xe về, km về: chỉ điền khi xe về — dòng nhỏ dưới ô nói điền ở đâu (29/09) */
 .px-khi-ve{display:block;margin-top:3px;font-size:11.5px;color:var(--ink-3);line-height:1.3}
 .px-khi-ve[hidden]{display:none}
+
+/* bản chất đề nghị theo loại xe (29/09): nội bộ · ghi công nợ chủ xe · xuất bán cho chủ xe */
+.px-ht{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--ink-2)}
+.px-ht:empty{display:none}
+.px-ban{margin-top:6px;display:flex;flex-direction:column;gap:2px}

@@ -195,6 +195,14 @@
   EPL.homNay = () => new Date().toISOString().slice(0, 10);
   EPL.thangNay = () => new Date().toISOString().slice(0, 7);
   EPL.doc = (v) => parseFloat(String(v == null ? '' : v).replace(/,/g, '')) || 0;
+  // BẢN CHẤT đề nghị theo LOẠI XE (chủ dự án 29/09): xe nhà → tạm ứng nội bộ · xuất nội bộ; xe thuê, EPL ứng → tạm ứng ghi
+  // công nợ chủ xe · dầu kho là xuất bán cho chủ xe. `loai`: 'tam_ung' | 'xuat'; `ht`: mã máy chủ (noi_bo · cong_no_chu_xe · xuat_ban).
+  EPL.banChat = (loai, ht, chuXe) => {
+    if (!ht) return '';
+    const ten = NN.h('ht_' + loai + '_' + ht);
+    return ht === 'noi_bo' || !chuXe ? ten : `${ten} · <b lang="lo">${EPL.esc(chuXe)}</b>`;
+  };
+  EPL.maBanChat = (loai, company) => company === 'joint' ? (loai === 'tam_ung' ? 'cong_no_chu_xe' : 'xuat_ban') : 'noi_bo';
   EPL.tag = (ma, khoa) => `<span class="tag ${esc(ma)}">${NN.h(khoa || ('s_' + ma))}</span>`;
   EPL.khoanMuc = (d) => d.item_key ? NN.t(d.item_key) : (d.item_name || '—');
 

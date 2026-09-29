@@ -79,7 +79,7 @@ def _phieu_gon(db, dau, cuoi, *loc):
 
 def _dong_gon(db, dau, cuoi, *loc):
     """{trip_id: [nhóm dòng chi]} — mỗi nhóm có section · currency · paid_by_epl · qty=1 · unit_price=tổng tiền nhóm."""
-    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.unit_price, 0))
+    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.sale_price, TripExpense.unit_price, 0))
     q = (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl,
                   literal(1.0).label("qty"), tien.label("unit_price"))
          .join(Trip, Trip.id == TripExpense.trip_id).filter(*_trong(dau, cuoi), *loc)
@@ -133,7 +133,7 @@ def _theo_ngay(db, loai, cac_ngay, tinh_lo):
 
 def _dong_loc(db, *loc):
     """{trip_id: [nhóm dòng chi]} cộng sẵn trong SQL theo mục × tiền tệ × ai trả — như _dong_gon, lọc tuỳ ý."""
-    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.unit_price, 0))
+    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.sale_price, TripExpense.unit_price, 0))
     q = (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl,
                   literal(1.0).label("qty"), tien.label("unit_price"))
          .join(Trip, Trip.id == TripExpense.trip_id).filter(*loc)
@@ -556,7 +556,7 @@ def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, comp
     dong = defaultdict(list)
     for r in (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl,
                        literal(1.0).label("qty"),
-                       func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.unit_price, 0)).label("unit_price"))
+                       func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.sale_price, TripExpense.unit_price, 0)).label("unit_price"))
               .filter(TripExpense.trip_id.in_(db.query(con.c.id)))
               .group_by(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl)):
         dong[r.trip_id].append(r)

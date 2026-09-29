@@ -34,6 +34,7 @@
     q('#ct-than').innerHTML = `
       <div class="ct-tieu-de">${NN.h('voucher_payment')}</div>
       <div class="ct-phu">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · Advance request</div>
+      <div class="ct-ht">${EPL.banChat('tam_ung', d.hinh_thuc || EPL.maBanChat('tam_ung', d.company), d.owner_name)}</div>
       <div class="ct-meta">
         <div><span>${NN.h('payee')}</span><span lang="lo"><b>${esc(d.driver_name || '—')}</b></span></div><div><span>${NN.h('doc_no')}</span><span class="mono"><b>${esc(d.doc_no)}</b></span></div>
         <div><span>${NN.h('truck_no')}</span><span>${esc(d.truck_no)} · <span lang="lo">${esc(d.plate_head)} / ${esc(d.plate_trailer)}</span></span></div><div><span>${NN.h('truck_type')}</span><span>${d.company === 'joint' ? NN.h('co_joint') + ' · ' + esc(d.owner_name || '') : NN.h('co_epl')}</span></div>
@@ -62,6 +63,7 @@
     q('#ct-than').innerHTML = `
       <div class="ct-tieu-de">${NN.h('v_fuel')}</div>
       <div class="ct-phu">ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request</div>
+      <div class="ct-ht">${EPL.banChat('xuat', v.hinh_thuc, v.owner_name)}</div>
       <div class="ct-meta">
         ${o('doc_no', v.doc_no)}${o('fp_place', v.place_name, true)}
         ${o('truck_no', p.truck_no)}${o('driver', v.driver_name, true)}

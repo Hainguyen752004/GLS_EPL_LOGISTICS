@@ -87,7 +87,7 @@ def _cho_tra_lo(db, cac_chu):
     loc = (Trip.owner_id.in_(ids), Trip.company == "joint", Trip.locked.is_(True), Trip.owner_payment_id.is_(None))
     ds = db.query(Trip.owner_id, *COT_TINH).filter(*loc).order_by(Trip.doc_date, Trip.doc_no).all()
     dong = defaultdict(list)
-    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.unit_price, 0))
+    tien = func.sum(func.coalesce(TripExpense.qty, 0) * func.coalesce(TripExpense.sale_price, TripExpense.unit_price, 0))
     for r in (db.query(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl,
                        literal(1.0).label("qty"), tien.label("unit_price"))
               .join(Trip, Trip.id == TripExpense.trip_id).filter(*loc)

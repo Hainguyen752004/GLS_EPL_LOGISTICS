@@ -30,7 +30,7 @@ from database import get_db
 from models import ChungTu, FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
-from services.tinh_toan import la_tien_mat_tai_xe, ty_gia
+from services.tinh_toan import hinh_thuc, la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
 from services import gia_von as GV
 from services import kho_ke_toan as KK
@@ -103,7 +103,9 @@ def dam_bao_tam_ung(db, p, user):
     db.flush()
     CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
            doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
-           mo_ta="Đề nghị tạm ứng phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+           mo_ta="Đề nghị tạm ứng phiếu %s" % p.doc_no,
+           payload={"voucher_id": v.id, "doc_no": v.doc_no, "hinh_thuc": hinh_thuc(p, "tam_ung"),
+                    "owner_id": p.owner_id, "owner_name": p.owner_name})
     _khop_ct_tam_ung(db, v)
     return v
 
@@ -136,7 +138,17 @@ def xuat_phieu_linh(db, v, goc="", vai=None):
             "issued_by": v.issued_by, "issued_at": v.issued_at.isoformat() if v.issued_at else None,
             "granted_by": v.granted_by, "granted_at": v.granted_at.isoformat() if v.granted_at else None,
             "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note,
+            # bản chất đề nghị theo loại xe (29/09): nội bộ · ghi công nợ chủ xe · xuất bán cho chủ xe
+            **_ban_chat(db, v),
             **({} if vai is None or thay_tien_chi(vai) else {"amount_lak": None})}
+
+
+def _ban_chat(db, v):
+    p = db.get(Trip, v.trip_id) if v.trip_id else None
+    if p is None:
+        return {"hinh_thuc": None, "owner_name": None}
+    return {"hinh_thuc": hinh_thuc(p, "tam_ung" if v.kind == "advance" else "xuat"),
+            "owner_name": p.owner_name if p.company == "joint" else None}
 
 
 def _phieu(db, tid):
@@ -234,7 +246,8 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
                    # bên nhận (sổ kế toán) từ chối đúng: L không phải tiền tệ. Bắt được khi đẩy thật sang EPL_KETOAN 22/09.
                    doi_tuong_ten=diem.name if diem else None, tien=None, tien_te="LAK", by_user=user.full_name,
                    mo_ta="Lĩnh %s lít tại %s" % (v.qty_l, diem.name if diem else "?"),
-                   payload={"voucher_id": v.id, "doc_no": v.doc_no, "qty_l": v.qty_l})
+                   payload={"voucher_id": v.id, "doc_no": v.doc_no, "qty_l": v.qty_l, "hinh_thuc": hinh_thuc(p, "xuat"),
+                            "owner_id": p.owner_id, "owner_name": p.owner_name})
         db.commit()
     return [xuat_phieu_linh(db, v, goc, user.role) for v in ra]
 
@@ -361,7 +374,8 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
                    doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", section="travel", by_user=user.full_name,
                    mo_ta="Chi theo đề nghị tạm ứng %s" % v.doc_no,
-                   payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no})
+                   payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no,
+                            "hinh_thuc": hinh_thuc(p, "tam_ung"), "owner_id": p.owner_id, "owner_name": p.owner_name})
         v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
     return xuat_phieu_linh(db, v, "", user.role)
 

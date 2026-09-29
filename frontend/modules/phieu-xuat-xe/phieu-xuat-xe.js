@@ -53,7 +53,9 @@
   const khoan = () => (P.price_mode || 'ton') === 'chuyen';    // trọn chuyến: không nhân tấn
   const tronTien = (v, ma) => { const d = EPL.leTien(ma); return +(+v).toFixed(d); };
   const t2 = (v, ma) => EPL.tien(v, ma);
-  const tienDong = (d) => (EPL.doc(d.qty)) * (EPL.doc(d.unit_price)) * rate(d.currency);
+  // Xe thuê: dầu lấy từ kho là XUẤT BÁN cho chủ xe — thành tiền theo giá bán KT kho xăng dầu gõ (chép luật máy chủ, 29/09)
+  const giaDong = (d) => (P.company === 'joint' && d.section === 'fuel' && nguonCuaDiem(d) === 'kho' && d.sale_price != null && d.sale_price !== '') ? d.sale_price : d.unit_price;
+  const tienDong = (d) => (EPL.doc(d.qty)) * (EPL.doc(giaDong(d))) * rate(d.currency);
   function tongMuc(m, chiUng = true) { return (P.expenses || []).filter(d => d.section === m && !(P.company === 'joint' && chiUng && !d.paid_by_epl)).reduce((a, d) => a + tienDong(d), 0); }
   function tinh() {
     const w = P.weight_dest != null && P.weight_dest !== '' ? EPL.doc(P.weight_dest) : EPL.doc(P.weight_origin);
@@ -211,7 +213,12 @@
           // tháng EPL trả / cấn trừ với khách (C5.1). Chỉ hỏi khi nơi đổ là trạm ngoài.
           const muaNgoai = nguonCuaDiem(d) !== 'kho';
           const noSel = !muaNgoai ? '' : `<label class="px-ghino small"><input type="checkbox" data-i="${i}" data-f="ghi_no" ${d.ghi_no ? 'checked' : ''} ${khoaDuoc ? '' : 'disabled'}> ${esc(NN.t('ncc_ghi_no'))}</label>`;
-          return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}</td>
+          // Xe thuê, dầu KHO, EPL ứng = xuất bán cho chủ xe: ô GIÁ BÁN dưới giá vốn bình quân — KT kho xăng dầu gõ khi kiểm
+          // mục III (29/09). Vai không thấy tiền bán thì máy chủ không gửi ô này → không hiện.
+          const banDuoc = lk && !muaNgoai && d.paid_by_epl;
+          const giaBanMo = banDuoc && thayChi() && suaTienDuoc('fuel');
+          const ban = !(banDuoc && ('sale_price' in d || giaBanMo)) ? '' : `<div class="px-ban"><span class="small muted">${NN.h('sale_price')}</span><input class="num${giaBanMo && EPL.doc(d.qty) > 0 && !EPL.doc(d.sale_price) ? ' px-can-gia' : ''}" data-i="${i}" data-f="sale_price" value="${esc(d.sale_price == null ? '' : d.sale_price)}" ${giaBanMo ? '' : 'disabled'} inputmode="decimal"></div>`;
+          return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}</td><td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}${ban}</td>
           <td class="px-gia"><select data-i="${i}" data-f="currency" ${giaMo ? '' : 'disabled'}>${['LAK', 'VND', 'THB', 'USD'].map(c => `<option ${c === d.currency ? 'selected' : ''}>${c}</option>`).join('')}</select></td><td class="num amt px-gia"></td>
           <td><select data-i="${i}" data-f="place_id" ${khoaDuoc ? '' : 'disabled'}>${diemChon(d)}</select>
             <div class="small muted px-nguon">${NN.h(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')}</div>${noSel}</td>${pay}${acct}${xoa}</tr>`;
@@ -226,6 +233,8 @@
         return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}${caSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
       }).join('') : `<tr><td colspan="10" class="empty small">${NN.h('no_data')}</td></tr>`;
     });
+    // dòng bản chất ở đầu mục III, IV: nội bộ (xe nhà) · xuất bán / ghi công nợ chủ xe (xe thuê) — 29/09
+    root.querySelectorAll('.px-ht').forEach(el => { el.innerHTML = EPL.banChat(el.dataset.ht, EPL.maBanChat(el.dataset.ht, P.company), P.owner_name); });
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value;
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }

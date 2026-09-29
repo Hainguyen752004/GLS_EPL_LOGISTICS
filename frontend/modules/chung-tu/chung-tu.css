@@ -44,3 +44,7 @@
 .ct-ket-noi .grow{flex:1}
 .ct-ma-kt{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--green)}
 .ct-loi-day{color:var(--red);font-size:11.5px;max-width:220px;white-space:normal}
+
+/* bản chất đề nghị theo loại xe (29/09) — in ra để quỹ, thủ kho, kế toán biết tiền / dầu này đi vào đâu */
+.ct-ht{text-align:center;font-weight:600;font-size:13px;margin:-8px 0 14px}
+.ct-ht:empty{display:none}

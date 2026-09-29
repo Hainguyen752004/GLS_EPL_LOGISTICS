@@ -62,8 +62,13 @@ def _phieu_cua(db, driver_id, ky):
 
 
 def _trong_ky(dau, cuoi):
+    """Phiếu XE NHÀ trong kỳ. Xe thuê không tất toán với tài xế: tạm ứng xe thuê là công nợ chủ xe, đã trừ vào tiền trả
+    chủ xe (chủ dự án 29/09) — tất toán thêm là một khoản hai lần."""
     ngay = func.coalesce(Trip.out_date, Trip.doc_date)
-    return (ngay >= dau, ngay <= cuoi)
+    return (ngay >= dau, ngay <= cuoi, XE_NHA)
+
+
+XE_NHA = or_(Trip.company.is_(None), Trip.company != "joint")
 
 
 def _la_tien_mat_sql():
@@ -145,7 +150,7 @@ def _tt_lo(db, cac_ngay):
     """Phần TẤT TOÁN của từng ngày lập phiếu: {ngày: {driver_id: {"YYYY-MM" kỳ xe đi: [số phiếu, đã chi LAK, đã ứng LAK]}}}.
     Kỳ tính theo NGÀY XE ĐI (không có thì ngày lập) — cùng luật với tinh_ky_lo."""
     from routes.nha_cung_cap import _tien_lak_sql
-    loc = (Trip.doc_date.in_(cac_ngay), Trip.driver_id.isnot(None))
+    loc = (Trip.doc_date.in_(cac_ngay), Trip.driver_id.isnot(None), XE_NHA)
     chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
                                              .join(Trip, Trip.id == TripExpense.trip_id)
                                              .filter(*loc, _la_tien_mat_sql()).group_by(TripExpense.trip_id))}
@@ -167,7 +172,7 @@ def _bang_ky_ngay(db, cac_tai_xe, ky):
     dau, cuoi = _khoang(ky)
     truoc = dt.date(dau.year - (dau.month == 1), (dau.month - 2) % 12 + 1, 1)
     ngay = [truoc + dt.timedelta(days=i) for i in range((cuoi - truoc).days + 1)]
-    viec = [(("tt3", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]    # tt3: luật cách trả 29/09
+    viec = [(("tt4", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]    # tt4: chỉ xe nhà (29/09)
     tong = {}
     for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: (lambda kq: [kq[ngay[i].isoformat()] for i in thieu])(
             _tt_lo(db, [ngay[i] for i in thieu]))):
