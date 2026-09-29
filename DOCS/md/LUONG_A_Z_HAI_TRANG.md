@@ -213,7 +213,7 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 
 **Thao tác:**
 
-1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**.
+1. Mục IV → **Thêm dòng**: chọn **Khoản mục** (tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…) và **SL**. Không có trong danh sách thì chọn **Khác (tự gõ)…**. **SL là số lượng, không phải tiền** — bao nhiêu lượt, lần, ngày của khoản đó (phí cao tốc 1 lượt qua trạm, phí đỗ xe 1 lần, tiền ăn 3 ngày…). Tiền = SL × **Đơn giá**; Bãi không thấy cột đơn giá, thành tiền, nên dòng **Tổng** bên Bãi để trống — KT Chi phí nhập đơn giá ở bước 7. Mục III cũng vậy: SL là **lít**.
 2. Phí cao tốc: tuyến có BOT thì máy tự thêm dòng. Chọn **Trả tiền mặt (không dùng thẻ)** hoặc chọn thẻ cao tốc để trừ thẻ.
 3. Mục VI (nếu có) → **Thêm dòng** tương tự. Bấm **Lưu**.
 4. Bấm **Phiếu chi tạm ứng**: mở màn **Phiếu chi · Phiếu thu** ở tờ tạm ứng của phiếu này, có mã QR. Bấm **In**, tài xế cầm tới quỹ.
