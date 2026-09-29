@@ -24,8 +24,8 @@ from models import ChungTu
 # ma → (tên Việt, tên Lào, có định khoản không)
 LOAI = {
     "DO":     ("Phiếu xuất xe", "ໃບເບີກລົດ", False),
-    "PLNL":   ("Phiếu lĩnh nhiên liệu", "ໃບເບີກນໍ້າມັນ", False),
-    "PTU":    ("Phiếu tạm ứng đi đường", "ໃບເບີກເງິນລ່ວງໜ້າ", False),
+    "PLNL":   ("Phiếu đề nghị xuất nhiên liệu", "ໃບສະເໜີເບີກນໍ້າມັນ", False),
+    "PTU":    ("Phiếu đề nghị tạm ứng", "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ", False),
     "PXK_NL": ("Phiếu xuất kho nhiên liệu", "ໃບເບີກນໍ້າມັນອອກສາງ", True),
     "PXK_PT": ("Phiếu xuất kho phụ tùng", "ໃບເບີກອະໄຫຼ່ອອກສາງ", True),
     "PNK_NL": ("Phiếu nhập kho nhiên liệu", "ໃບຮັບນໍ້າມັນເຂົ້າສາງ", True),

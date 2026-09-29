@@ -91,7 +91,7 @@ def xoa_ban_sao_diem(pid: str, db: Session = Depends(get_db), u=Depends(may_ke_t
         return {"ok": True, "id": pid}          # bên này chưa có thì coi như đã xoá
     dung = [ten for ten, bang, cot in (("phiếu xuất xe", TripExpense, TripExpense.place_id),
                                        ("khai đổ dầu", TripEvent, TripEvent.place_id),
-                                       ("phiếu lĩnh", Voucher, Voucher.place_id),
+                                       ("phiếu đề nghị xuất nhiên liệu", Voucher, Voucher.place_id),
                                        ("sổ kho dầu", FuelMove, FuelMove.place_id),
                                        ("phiếu bán hàng", SaleLine, SaleLine.place_id),
                                        ("tài khoản thủ kho", User, User.place_id))

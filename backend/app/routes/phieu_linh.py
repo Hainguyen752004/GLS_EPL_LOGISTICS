@@ -103,7 +103,7 @@ def dam_bao_tam_ung(db, p, user):
     db.flush()
     CT.ghi(db, "PTU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=ngay, doi_tuong_loai="tai_xe",
            doi_tuong_ten=p.driver_name, tien=v.amount_lak, tien_te="LAK", by_user=user.full_name,
-           mo_ta="Tạm ứng đi đường phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
+           mo_ta="Đề nghị tạm ứng phiếu %s" % p.doc_no, payload={"voucher_id": v.id, "doc_no": v.doc_no})
     _khop_ct_tam_ung(db, v)
     return v
 
@@ -189,10 +189,10 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
     """
     p = _phieu(db, tid)
     if p.locked and user.role in ("yard", "driver"):
-        raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu %s đã khoá, không lập thêm phiếu lĩnh." % p.doc_no})
+        raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu %s đã khoá, không lập thêm phiếu đề nghị." % p.doc_no})
     loai = d.get("kind") or "fuel"
     if loai not in TIEN_TO:
-        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Chỉ có phiếu lĩnh nhiên liệu hoặc tạm ứng."})
+        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Chỉ có phiếu đề nghị xuất nhiên liệu hoặc phiếu đề nghị tạm ứng."})
     goc = str(request.base_url).rstrip("/")
     ngay = p.out_date or p.doc_date or dt.date.today()
     chung = dict(trip_id=p.id, kind=loai, doc_date=ngay, driver_id=p.driver_id,
@@ -315,7 +315,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
     """Cấp dầu (thủ kho) hoặc chi tiền tạm ứng (quỹ). Hai việc khác nhau nên hai nhánh rõ ràng."""
     v = db.get(Voucher, vid)
     if not v:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu lĩnh này."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu đề nghị này."})
     if v.status != "cho":
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu này đã cấp hoặc đã huỷ."})
     p = _phieu(db, v.trip_id)
@@ -343,7 +343,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
             r = gd.xuat_dau(khoa="voucher:" + v.id, place_id=v.place_id, qty_l=lit, ngay=dt.date.today(), doc_no=v.doc_no,
                             truck_no=p.truck_no, expense_id=dong[0].id, voucher_id=v.id, voucher_doc_no=v.doc_no, trip_no=p.doc_no,
                             company=p.company, gia_du_phong=(dong[0].unit_price or 0) * ty_gia(p, dong[0].currency or "LAK"),
-                            mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no), note="Cấp theo phiếu lĩnh %s" % v.doc_no)
+                            mo_ta="Cấp %s lít dầu theo %s" % (lit, v.doc_no), note="Cấp theo phiếu đề nghị %s" % v.doc_no)
             for e in dong:
                 e.unit_price, e.currency = r["unit_price"], "LAK"
                 e.stock_move_id = r["move_id"]
@@ -370,7 +370,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
 def huy_phieu(vid: str, db: Session = Depends(get_db), user=Depends(can_vai("yard", "acct", "fuel"))):
     v = db.get(Voucher, vid)
     if not v:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu lĩnh này."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu đề nghị này."})
     if v.status == "da_cap":
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu đã cấp thì không huỷ được."})
     v.status = "huy"; db.commit()
@@ -384,7 +384,7 @@ def anh_qr(vid: str, request: Request, db: Session = Depends(get_db)):
     nội dung QR chỉ là một đường dẫn tra cứu, mở ra vẫn phải đăng nhập mới xem được."""
     v = db.get(Voucher, vid)
     if not v:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu lĩnh này."})
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu đề nghị này."})
     noi_dung = (KK.web_ke_toan(db) or str(request.base_url).rstrip("/")) + "/#/cap-phat?ma=" + v.token
     try:
         import qrcode

@@ -1628,7 +1628,7 @@ def bao_nhien_lieu(tid: str, data: dict = Body(...), db: Session = Depends(get_d
         raise HTTPException(422, {"ma": "THIEU_NOI_DO", "loi": "Phải chọn nơi đổ."})
     if diem.owner_type == "epl":
         raise HTTPException(422, {"ma": "NOI_DO_LA_KHO",
-                                  "loi": "%s là kho của công ty, lĩnh dầu ở kho thì dùng phiếu lĩnh." % diem.name})
+                                  "loi": "%s là kho của công ty, lĩnh dầu ở kho thì dùng phiếu đề nghị xuất nhiên liệu." % diem.name})
     e = TripEvent(trip_id=p.id, kind="refuel", note=(data.get("note") or "").strip() or None,
                   by_user=user.full_name, status="reported", qty_l=lit,
                   # C5.1: tài xế chỉ báo số lít (trạm ghi nợ, cuối tháng cấn trừ) — giá do kế toán kho xăng dầu nhập
@@ -1772,7 +1772,7 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     da_cap = db.query(Voucher).filter(Voucher.trip_id == p.id, Voucher.status == "da_cap").all()
     if da_cap and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_CAP_PHAT", "loi": "Phiếu đã có %s được cấp (%s), không xoá được."
-                                  % ("phiếu lĩnh / tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
+                                  % ("phiếu đề nghị xuất nhiên liệu / đề nghị tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
     id_v = [v.id for v in db.query(Voucher.id).filter(Voucher.trip_id == p.id).all()]
     if id_v:
         for m in db.query(FuelMove).filter(FuelMove.voucher_id.in_(id_v)).all():

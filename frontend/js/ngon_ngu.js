@@ -2593,9 +2593,9 @@ window.EPL_TU_DIEN = {
   "en": "Fuel places"
  },
  "title_cap_phat": {
-  "vi": "Cấp phát<span class=\"sub\">Phiếu lĩnh đang chờ · quét mã QR của tài xế</span>",
-  "lo": "ການຈ່າຍອອກ<span class=\"sub\">ໃບເບີກລໍຖ້າ · ສະແກນ QR ຂອງໂຊເຟີ</span>",
-  "en": "Issuing<span class=\"sub\">Pending draw slips · scan the driver QR</span>"
+  "vi": "Cấp phát<span class=\"sub\">Phiếu đề nghị xuất nhiên liệu đang chờ · quét mã QR của tài xế</span>",
+  "lo": "ການຈ່າຍອອກ<span class=\"sub\">ໃບສະເໜີເບີກລໍຖ້າ · ສະແກນ QR ຂອງໂຊເຟີ</span>",
+  "en": "Issuing<span class=\"sub\">Pending fuel issue requests · scan the driver QR</span>"
  },
  "title_tat_toan": {
   "vi": "Tất toán tài xế<span class=\"sub\">Đối tiền ứng và tiền chi theo tháng</span>",
@@ -2608,14 +2608,14 @@ window.EPL_TU_DIEN = {
   "en": "Fuel places<span class=\"sub\">EPL depots and outside stations</span>"
  },
  "v_fuel": {
-  "vi": "Phiếu lĩnh nhiên liệu",
-  "lo": "ໃບເບີກນໍ້າມັນ",
-  "en": "Fuel draw slip"
+  "vi": "Phiếu đề nghị xuất nhiên liệu",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
+  "en": "Fuel issue request"
  },
  "v_advance": {
-  "vi": "Phiếu tạm ứng đi đường",
-  "lo": "ໃບເບີກເງິນລ່ວງໜ້າ",
-  "en": "Travel advance slip"
+  "vi": "Phiếu đề nghị tạm ứng",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Advance request"
  },
  "v_cho": {
   "vi": "Chờ cấp",
@@ -2633,19 +2633,19 @@ window.EPL_TU_DIEN = {
   "en": "Cancelled"
  },
  "v_make_fuel": {
-  "vi": "Lập phiếu lĩnh nhiên liệu",
-  "lo": "ສ້າງໃບເບີກນໍ້າມັນ",
-  "en": "Create fuel draw slip"
+  "vi": "Lập phiếu đề nghị xuất nhiên liệu",
+  "lo": "ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
+  "en": "Create fuel issue request"
  },
  "v_make_adv": {
-  "vi": "Lập phiếu tạm ứng",
-  "lo": "ສ້າງໃບເບີກເງິນລ່ວງໜ້າ",
-  "en": "Create advance slip"
+  "vi": "Lập phiếu đề nghị tạm ứng",
+  "lo": "ສ້າງໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Create advance request"
  },
  "v_none": {
-  "vi": "Chưa lập phiếu lĩnh nào",
-  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບເບີກ",
-  "en": "No draw slip yet"
+  "vi": "Chưa lập phiếu đề nghị xuất nhiên liệu nào",
+  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
+  "en": "No fuel issue request yet"
  },
  "v_qr_hint": {
   "vi": "Tài xế đưa mã này cho người cấp quét",
@@ -2693,9 +2693,9 @@ window.EPL_TU_DIEN = {
   "en": "Reason for the difference"
  },
  "v_cancel": {
-  "vi": "Huỷ phiếu lĩnh",
-  "lo": "ຍົກເລີກໃບເບີກ",
-  "en": "Cancel draw slip"
+  "vi": "Huỷ phiếu đề nghị",
+  "lo": "ຍົກເລີກໃບສະເໜີເບີກ",
+  "en": "Cancel request"
  },
  "v_empty": {
   "vi": "Không có phiếu nào đang chờ",
@@ -2963,9 +2963,9 @@ window.EPL_TU_DIEN = {
   "en": "Unpaid"
  },
  "td_await_iss": {
-  "vi": "Phiếu lĩnh chờ cấp",
-  "lo": "ໃບເບີກລໍຖ້າຈ່າຍ",
-  "en": "Draw slips pending"
+  "vi": "Phiếu đề nghị xuất nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
+  "en": "Fuel issue requests pending"
  },
  "td_watch": {
   "vi": "Chuyến đang theo dõi",
@@ -3003,9 +3003,9 @@ window.EPL_TU_DIEN = {
   "en": "{n} incident(s) unapproved"
  },
  "td_iss_wait": {
-  "vi": "{n} phiếu lĩnh chờ cấp",
-  "lo": "{n} ໃບເບີກລໍຖ້າຈ່າຍ",
-  "en": "{n} draw slip(s) pending"
+  "vi": "{n} phiếu đề nghị xuất nhiên liệu chờ cấp",
+  "lo": "{n} ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
+  "en": "{n} fuel issue request(s) pending"
  },
  "td_profile": {
   "vi": "Hồ sơ chuyến",
@@ -3258,14 +3258,14 @@ window.EPL_TU_DIEN = {
   "en": "slips to approve"
  },
  "lg_st4": {
-  "vi": "phiếu lĩnh chờ cấp",
-  "lo": "ໃບເບີກລໍຖ້າຈ່າຍ",
-  "en": "draw slips pending"
+  "vi": "phiếu đề nghị xuất nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
+  "en": "fuel issue requests pending"
  },
  "lg_c1_d": {
-  "vi": "Lập phiếu, gán xe và tài xế, in phiếu lĩnh có mã QR",
-  "lo": "ສ້າງໃບ, ກຳນົດລົດ ແລະ ໂຊເຟີ, ພິມໃບເບີກມີ QR",
-  "en": "Create the slip, assign truck and driver, print QR draw slips"
+  "vi": "Lập phiếu, gán xe và tài xế, in phiếu đề nghị xuất nhiên liệu có mã QR",
+  "lo": "ສ້າງໃບ, ກຳນົດລົດ ແລະ ໂຊເຟີ, ພິມໃບສະເໜີເບີກນໍ້າມັນມີ QR",
+  "en": "Create the slip, assign truck and driver, print QR fuel issue requests"
  },
  "lg_c2_d": {
   "vi": "Quét mã, đối chiếu đúng xe rồi cấp dầu, trừ tồn ngay",
@@ -4183,14 +4183,14 @@ window.EPL_TU_DIEN = {
   "en": "Payment · Receipt vouchers"
  },
  "title_chung_tu": {
-  "vi": "Phiếu chi tạm ứng & Phiếu thu<span class=\"sub\">Mỗi giai đoạn một chứng từ · in cho tài xế / kế toán</span>",
-  "lo": "ໃບຈ່າຍເງິນລ່ວງໜ້າ ແລະ ໃບຮັບເງິນ<span class=\"sub\">ແຕ່ລະຂັ້ນຕອນມີເອກະສານ · ພິມໃຫ້ໂຊເຟີ / ບັນຊີ</span>",
-  "en": "Advance payment & receipt vouchers<span class=\"sub\">One voucher per stage · print for driver / accounting</span>"
+  "vi": "Phiếu đề nghị tạm ứng & Phiếu thu<span class=\"sub\">Mỗi giai đoạn một chứng từ · in cho tài xế / kế toán</span>",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ແລະ ໃບຮັບເງິນ<span class=\"sub\">ແຕ່ລະຂັ້ນຕອນມີເອກະສານ · ພິມໃຫ້ໂຊເຟີ / ບັນຊີ</span>",
+  "en": "Advance requests & receipt vouchers<span class=\"sub\">One voucher per stage · print for driver / accounting</span>"
  },
  "voucher_payment": {
-  "vi": "Phiếu chi tạm ứng",
-  "lo": "ໃບຈ່າຍເງິນລ່ວງໜ້າ",
-  "en": "Advance payment voucher"
+  "vi": "Phiếu đề nghị tạm ứng",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Advance request"
  },
  "voucher_receipt": {
   "vi": "Phiếu thu",
@@ -5413,9 +5413,9 @@ window.EPL_TU_DIEN = {
   "en": "{n} documents"
  },
  "td_doc_note": {
-  "vi": "Phiếu lĩnh · tạm ứng · tệp đính kèm · sổ chứng từ",
-  "lo": "ໃບເບີກ · ເງິນລ່ວງໜ້າ · ໄຟລ໌ຄັດຕິດ · ປື້ມເອກະສານ",
-  "en": "Draw slips · advances · attachments · document register"
+  "vi": "Phiếu đề nghị xuất nhiên liệu · đề nghị tạm ứng · tệp đính kèm · sổ chứng từ",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນ · ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໄຟລ໌ຄັດຕິດ · ປື້ມເອກະສານ",
+  "en": "Fuel issue requests · advance requests · attachments · document register"
  },
  "td_fare_est": {
   "vi": "Cước dự kiến",
@@ -5438,9 +5438,9 @@ window.EPL_TU_DIEN = {
   "en": "Confirm arrival at stop {n}"
  },
  "td_issue_fuel": {
-  "vi": "Cấp phiếu lĩnh nhiên liệu",
-  "lo": "ຈ່າຍໃບເບີກນໍ້າມັນ",
-  "en": "Issue the fuel draw slip"
+  "vi": "Cấp dầu theo phiếu đề nghị",
+  "lo": "ຈ່າຍນໍ້າມັນຕາມໃບສະເໜີເບີກ",
+  "en": "Issue fuel per request"
  },
  "td_days": {
   "vi": "Số ngày đi",
@@ -6633,9 +6633,9 @@ window.EPL_TU_DIEN = {
   "en": "Pending check"
  },
  "tq_q_fuel": {
-  "vi": "Phiếu lĩnh chờ cấp",
-  "lo": "ໃບເບິກນ້ຳມັນລໍຖ້າ",
-  "en": "Fuel slips pending"
+  "vi": "Phiếu đề nghị xuất nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
+  "en": "Fuel issue requests pending"
  },
  "tq_q_unpaid": {
   "vi": "Chưa thu",
@@ -7623,9 +7623,9 @@ window.EPL_TU_DIEN = {
   "en": "Ledger site address for browsers · QR codes"
  },
  "tk_lt_web_hint": {
-  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "en": "The Issuing / Fuel store buttons and the QR code on fuel slips open this address. Empty = use the ledger address above."
+  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "en": "The Issuing / Fuel store buttons and the QR code on fuel issue requests open this address. Empty = use the ledger address above."
  },
  "khong_co_man": {
   "vi": "Việc của tài khoản này ở trang kế toán",
@@ -7633,9 +7633,9 @@ window.EPL_TU_DIEN = {
   "en": "This account works on the ledger site"
  },
  "khong_co_man_goi_y": {
-  "vi": "Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
-  "lo": "Cấp dầu theo phiếu lĩnh, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
-  "en": "Issuing fuel slips, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
+  "vi": "Cấp dầu theo phiếu đề nghị xuất nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "lo": "Cấp dầu theo phiếu đề nghị xuất nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "en": "Issuing fuel per request, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
  },
  "mo_ke_toan": {
   "vi": "Mở trang kế toán",
