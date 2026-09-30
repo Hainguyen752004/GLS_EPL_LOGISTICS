@@ -1,0 +1,157 @@
+/* Đăng nhập — giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (login_ne_theosep.zip): trái là thương hiệu và SƠ ĐỒ
+   BẢY BƯỚC của một chuyến hàng (bấm một bước để xem ai làm gì và lọc tài khoản của vai đó), phải là biểu mẫu và khung
+   chọn nhanh tài khoản. Mọi bộ chọn nằm trong #login: bản mẫu dùng tên chung (.field, .input, .lang, .hero…) trùng tên đã
+   dùng khắp ứng dụng. Khác bản mẫu có chủ ý: logo là ẢNH EPL thật; không có dải số "đang chạy" (chủ dự án chốt 30/09 — trang
+   này ai cũng mở được); bấm thẻ tài khoản là vào thẳng (lối tắt demo, chốt 16/09). vh chia cho --ty-le vì khung có zoom. */
+#login {
+  --lg-g1: #0F3A2F; --lg-g2: #16503F; --lg-g3: #1E6650; --lg-mint: #7FD3B0; --lg-mint2: #A9E6CB; --lg-gold: #E3B95A;
+  --lg-on: #FFFFFF; --lg-on2: rgba(255, 255, 255, .78); --lg-on3: rgba(255, 255, 255, .56); --lg-line-d: rgba(255, 255, 255, .14);
+  --lg-bg: #F3F5F2; --lg-surface: #FFFFFF; --lg-line: #E1E4DE; --lg-line2: #CFD4CC; --lg-ink: #1C2521; --lg-ink2: #3A4540;
+  --lg-muted: #6B736E; --lg-primary: #1F6B52; --lg-primary2: #2E8A6A; --lg-tint: #DDEBE4; --lg-soft: #EDF5F0;
+  --lg-danger: #B42318; --lg-danger-tint: #FBE9E7;
+  --lg-lao: 'Noto Sans Lao', 'Be Vietnam Pro', sans-serif; --lg-mono: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  position: fixed; inset: 0; zoom: var(--ty-le); z-index: 50; background: var(--lg-bg); color: var(--lg-ink);
+  font-size: 15px; line-height: 1.5; transition: opacity .28s ease; overflow: auto;
+}
+#login.di { opacity: 0 }
+#login :focus-visible { outline: 2px solid var(--lg-mint); outline-offset: 2px; border-radius: 4px }
+#login .lg-panel :focus-visible { outline-color: var(--lg-primary2) }
+#login .lg-shell { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(420px, 1fr); min-height: 100% }
+
+/* ---------- Bên trái ---------- */
+#login .hero {
+  position: relative; display: flex; flex-direction: column; gap: 16px; padding: 28px 44px 22px; color: var(--lg-on); overflow: hidden;
+  background: radial-gradient(120% 90% at 100% 0%, rgba(127, 211, 176, .12), transparent 55%), linear-gradient(160deg, var(--lg-g1), var(--lg-g2) 55%, var(--lg-g3));
+}
+#login .brand { display: flex; align-items: center; gap: 14px }
+#login .hero__logo { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background: #fff; flex: none }
+#login .brand b { display: block; font-size: 18px }
+#login .brand span { font-size: 13.5px; color: var(--lg-mint2) }
+#login .hero h1 { margin: 0; font-size: 40px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em }
+#login .intro { margin: -6px 0 0; max-width: 70ch; font-size: 15px; color: var(--lg-on2) }
+#login .hero .lo-sub { color: var(--lg-mint2) }
+
+/* sơ đồ bảy bước */
+#login .process { display: flex; flex-direction: column; gap: 8px }
+#login .process-title { margin: 0; font-size: 13px; color: var(--lg-mint2); font-weight: 500 }
+#login .map { position: relative; height: clamp(230px, calc(31vh / var(--ty-le)), 300px); border-top: 1px solid var(--lg-line-d); border-bottom: 1px solid var(--lg-line-d) }
+#login .map-svg { position: absolute; inset: 0; width: 100%; height: 100% }
+#login .map .route { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round }
+#login .route--done { stroke: var(--lg-mint) }
+#login .route--todo { stroke: rgba(255, 255, 255, .45); stroke-dasharray: 5 6 }
+#login .nodes { position: absolute; inset: 0 }
+#login .node { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; padding: 0; border: 0; background: transparent; color: var(--lg-on); cursor: pointer; overflow: visible; font: inherit }
+#login .node .dot { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: var(--lg-g1); border: 2.5px solid var(--lg-mint); font-size: 11px; font-weight: 700; color: var(--lg-mint); transition: transform .15s ease, box-shadow .15s ease }
+#login .node:hover .dot { transform: scale(1.15) }
+#login .node .txt { position: absolute; display: flex; flex-direction: column; line-height: 1.25; white-space: nowrap; padding: 4px 8px; border-radius: 8px }
+#login .node.is-up .txt { bottom: 25px; left: 2px; align-items: flex-start; text-align: left }
+#login .node.is-down .txt { top: 25px; right: 2px; align-items: flex-end; text-align: right }
+#login .node.is-left .txt { left: auto; right: -6px; align-items: flex-end; text-align: right }
+#login .node:hover .txt { background: rgba(255, 255, 255, .08) }
+#login .node .txt b { font-family: var(--lg-lao); font-size: 14px; font-weight: 700 }
+#login .node .txt small { font-size: 12px; color: var(--lg-mint2) }
+#login .node[aria-selected="true"] .dot { background: var(--lg-mint); color: var(--lg-g1); transform: scale(1.2); box-shadow: 0 0 0 6px rgba(127, 211, 176, .22) }
+#login .node[aria-selected="true"] .txt { background: rgba(255, 255, 255, .1) }
+#login .node.is-todo .dot { border-color: rgba(255, 255, 255, .6); color: rgba(255, 255, 255, .7) }
+#login .truck { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 6px; transform: translate(-50%, -7px); pointer-events: none }
+#login .truck-dot { width: 13px; height: 13px; border-radius: 50%; background: var(--lg-gold); box-shadow: 0 0 0 4px rgba(227, 185, 90, .3) }
+#login .truck-tag { padding: 2px 8px; border-radius: 6px; background: var(--lg-mint); color: var(--lg-g1); font-weight: 700; font-size: 12px; white-space: nowrap }
+#login .truck-tag .lo-sub { display: none }
+
+/* thẻ của bước đang chọn */
+#login .step-card { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2px 28px; padding: 12px 18px; border: 1px solid var(--lg-line-d); border-radius: 14px; background: rgba(255, 255, 255, .06) }
+#login .step-card .sc-head { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+#login .step-card .sc-num { font-size: 12px; font-weight: 700; color: var(--lg-mint2); letter-spacing: .06em; text-transform: uppercase }
+#login .step-card h3 { margin: 0; font-size: 20px; font-weight: 700 }
+#login .step-card .sc-place { font-size: 13px; color: var(--lg-on3); font-family: var(--lg-lao) }
+#login .step-card .sc-label { display: block; margin-top: 8px; font-size: 12px; color: var(--lg-mint2); font-weight: 600 }
+#login .step-card ul { margin: 2px 0 0; padding-left: 18px; color: var(--lg-on2); font-size: 14px }
+#login .step-card ul li + li { margin-top: 2px }
+#login .step-card .roles { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px }
+#login .role-tag { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 999px; background: rgba(127, 211, 176, .18); color: var(--lg-mint2); font-weight: 700; font-size: 12.5px }
+#login .step-card .hint { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--lg-line-d); font-size: 13px; color: var(--lg-on3); display: flex; align-items: center; gap: 8px }
+#login .step-card .hint svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--lg-mint); stroke-width: 2 }
+#login .hero-foot { margin-top: auto; font-size: 13px; letter-spacing: .12em; color: var(--lg-on3) }
+
+/* ---------- Bên phải ---------- */
+#login .lg-panel { display: flex; flex-direction: column; padding: 28px 40px 32px; background: var(--lg-bg); min-height: 100% }
+#login .lang { align-self: flex-end; display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: #E6E9E4 }
+#login .lang button { height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: var(--lg-ink2); font-weight: 500; cursor: pointer; font: inherit; font-size: 14px }
+#login .lang button.active { background: var(--lg-primary); color: #fff; font-weight: 600 }
+#login .login-body { max-width: 560px; width: 100%; margin: 16px auto 0; display: flex; flex-direction: column; flex: 1; min-height: 0 }
+#login .lg-panel h2 { margin: 0 0 4px; font-size: 30px; font-weight: 800; letter-spacing: -.01em }
+#login .demo-note { margin: 0 0 16px; display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--lg-primary) }
+#login .demo-note svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2 }
+#login .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px }
+#login .field label { font-weight: 600; font-size: 14px }
+#login .input-wrap { position: relative; display: flex; align-items: center }
+#login .input-wrap > svg { position: absolute; left: 16px; width: 20px; height: 20px; fill: none; stroke: var(--lg-muted); stroke-width: 1.7; pointer-events: none }
+#login .input { width: 100%; height: 50px; padding: 0 48px; border: 1px solid var(--lg-line2); border-radius: 12px; background: var(--lg-surface); font: inherit; font-size: 16px; color: var(--lg-ink) }
+#login .input:focus { outline: none; border-color: var(--lg-primary2); box-shadow: 0 0 0 3px var(--lg-soft) }
+#login .eye { position: absolute; right: 8px; width: 40px; height: 40px; border: 0; border-radius: 8px; background: transparent; color: var(--lg-muted); cursor: pointer; display: grid; place-items: center }
+#login .eye svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7 }
+#login .eye .gach { display: none }
+#login .eye.mo { color: var(--lg-primary) }
+#login .eye.mo .gach { display: inline }
+#login .remember { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px; cursor: pointer; align-self: flex-start }
+#login .remember input { width: 20px; height: 20px; accent-color: var(--lg-primary) }
+#login .error { margin: -4px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--lg-danger-tint); color: var(--lg-danger); font-size: 13.5px; font-weight: 500; animation: lg-rung .35s }
+@keyframes lg-rung { 20%, 60% { transform: translateX(-4px) } 40%, 80% { transform: translateX(4px) } }
+#login .role-chip { margin: -6px 0 14px; display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 6px 12px; border-radius: 999px; background: var(--lg-tint); color: var(--lg-primary); font-size: 13px }
+#login .role-chip b { font-weight: 700 }
+#login .btn-login { width: 100%; height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 12px; background: var(--lg-primary); color: #fff; font: inherit; font-size: 17px; font-weight: 700; cursor: pointer }
+#login .btn-login:hover { background: var(--lg-g3) }
+#login .btn-login.dang-vao { pointer-events: none; opacity: .75 }
+#login .btn-login svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
+#login .quick-head { display: flex; align-items: center; gap: 12px; margin: 20px 0 10px; color: var(--lg-muted); font-size: 13.5px }
+#login .quick-head .line { flex: 1; height: 1px; background: var(--lg-line2) }
+#login .quick-title { text-align: center }
+#login .quick-title b { color: var(--lg-ink) }
+#login .quick-title button { border: 0; padding: 0; margin-left: 8px; background: none; color: var(--lg-primary); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px }
+#login .accounts { flex: 1; min-height: 160px; overflow: auto; padding: 14px 16px; border: 1px solid var(--lg-line); border-radius: 14px; background: var(--lg-surface) }
+#login .acc-group { margin-bottom: 12px }
+#login .acc-group h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lg-muted) }
+#login .acc-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px }
+#login .acc { display: grid; grid-template-columns: 36px minmax(0, 1fr) 20px; gap: 12px; align-items: center; width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 12px; background: transparent; text-align: left; cursor: pointer; font: inherit; color: inherit }
+#login .acc:hover { background: var(--lg-soft) }
+#login .acc.is-picked { background: var(--lg-tint); border-color: var(--lg-primary2) }
+#login .acc .av { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--lg-tint); color: var(--lg-primary); font-weight: 700; font-size: 13px }
+#login .acc .tt { display: flex; flex-direction: column; min-width: 0 }
+#login .acc .nm { font-family: var(--lg-lao); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+#login .acc .ds { font-size: 12.5px; color: var(--lg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+#login .acc .ds .u { font-family: var(--lg-mono); font-size: 12px }
+#login .acc svg { width: 20px; height: 20px; fill: none; stroke: var(--lg-muted); stroke-width: 1.8 }
+#login .accounts .none { padding: 14px; color: var(--lg-muted); font-size: 13.5px }
+
+/* Máy tính: trang vừa một màn hình, chỉ danh sách tài khoản tự cuộn */
+@media (min-width: 1181px) and (min-height: 700px) {
+  #login { overflow: hidden }
+  #login .lg-shell { height: 100% }
+  #login .hero, #login .lg-panel { height: 100%; overflow: hidden auto }
+  #login .accounts { min-height: 120px }
+}
+/* Màn thấp (laptop 768px): thu gọn khoảng cách bên trái */
+@media (min-width: 1181px) and (max-height: 820px) {
+  #login .hero { gap: 11px; padding: 18px 40px 14px }
+  #login .hero h1 { font-size: 32px }
+  #login .intro { font-size: 14px; max-width: 78ch }
+  #login .map { height: 232px }
+  #login .step-card { padding: 9px 16px }
+  #login .step-card h3 { font-size: 17px }
+  #login .step-card ul { font-size: 13px }
+  #login .step-card .hint { display: none }
+  #login .hero__logo { width: 44px; height: 44px }
+}
+@media (max-width: 1180px) {
+  #login .lg-shell { grid-template-columns: 1fr }
+  #login .hero { padding: 28px 24px }
+  #login .hero h1 { font-size: 34px }
+  #login .map { height: 300px }
+  #login .lg-panel { padding: 24px }
+}
+@media (max-width: 720px) {
+  #login .map { height: 360px }
+  #login .step-card { grid-template-columns: 1fr }
+  #login .acc-group ul { grid-template-columns: 1fr }
+}
+@media (prefers-reduced-motion: reduce) { #login, #login * { transition: none !important; animation: none !important } }

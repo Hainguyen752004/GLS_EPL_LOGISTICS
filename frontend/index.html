@@ -8,116 +8,80 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/chung.css?v=__VER__">
+<link rel="stylesheet" href="css/dang_nhap.css?v=__VER__">
 </head>
 <body>
 
 <!-- ===== Đăng nhập ===== -->
-<!-- Bố cục và kiểu dáng lấy từ bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án): nửa trái thương hiệu kèm
-     sơ đồ tuyến, nửa phải biểu mẫu và khung chọn nhanh theo vai trò.
-     Khác bản mẫu hai chỗ, đúng như yêu cầu: logo là ẢNH EPL thật chứ không phải ô chữ, và sơ đồ
-     vẽ theo TUYẾN THẬT của họ (Kasi → Thà Bốc → Nậm Phao → cảng). -->
+<!-- Theo bản mẫu chủ dự án gửi chiều 30/09 (login_ne_theosep.zip): trái là thương hiệu và SƠ ĐỒ BẢY BƯỚC của một chuyến
+     hàng — bấm một bước để xem việc, ai làm, và lọc tài khoản của vai đó; phải là biểu mẫu và khung chọn nhanh.
+     Khác bản mẫu có chủ ý: logo là ẢNH EPL thật; không có dải số liệu "đang chạy" (chủ dự án chốt 30/09 — trang này ai
+     cũng mở được, không lộ số phiếu); bấm thẻ tài khoản là vào thẳng (lối tắt demo). Sơ đồ vẽ ở js/dang_nhap.js,
+     kiểu ở css/dang_nhap.css. Giữ nguyên các mã lgU · lgP · lgMat · lgNho · lgErr · lgBtn · acctList mà js/chung.js dùng. -->
 <div class="login" id="login">
-
-  <aside class="hero">
-    <div class="hero__brand">
+ <div class="lg-shell">
+  <section class="hero">
+    <header class="brand">
       <img class="hero__logo" src="img/logo-epl.jpg" alt="EPL">
-      <div><div class="hero__name">EPL Logistics</div>
-        <div class="hero__sub" data-i18n="lg_brand_sub"></div></div>
-    </div>
+      <div><b>EPL Logistics</b><span data-i18n="lg_brand_sub"></span></div>
+    </header>
 
-    <div class="hero__body">
-      <div>
-        <h1 data-i18n="login_title"></h1>
-        <p class="hero__desc" data-i18n="login_sub"></p>
-      </div>
+    <h1 data-i18n="login_title"></h1>
+    <p class="intro" data-i18n="login_sub"></p>
 
-      <svg class="route" viewBox="0 0 640 420" fill="none" aria-hidden="true">
-        <defs><pattern id="luoi" width="32" height="32" patternUnits="userSpaceOnUse">
-          <path d="M32 0H0V32" stroke="#fff" stroke-opacity=".06"/></pattern></defs>
-        <rect width="640" height="420" fill="url(#luoi)"/>
-        <path d="M80 80 C 150 110, 190 160, 250 185 S 360 225, 420 300 S 520 345, 570 360"
-              stroke="#7fc8ad" stroke-opacity=".35" stroke-width="2" stroke-dasharray="6 8"/>
-        <path class="route__done" d="M80 80 C 150 110, 190 160, 250 185 S 360 225, 420 300"
-              stroke="#7fc8ad" stroke-width="3"/>
-        <circle cx="80" cy="80" r="9" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
-        <text x="100" y="76" lang="lo">ກາສີ</text><text class="sm" x="100" y="96" data-i18n="lg_s1"></text>
-        <circle cx="250" cy="185" r="8" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
-        <text x="268" y="166" lang="lo">ທ່າບົກ</text><text class="sm" x="268" y="186" data-i18n="lg_s2"></text>
-        <circle cx="420" cy="300" r="8" fill="#0b2a22" stroke="#7fc8ad" stroke-width="3"/>
-        <text x="438" y="296" lang="lo">ດ່ານ ນໍ້າພາວ</text><text class="sm" x="438" y="316" data-i18n="lg_s3"></text>
-        <circle cx="570" cy="360" r="7" fill="#0b2a22" stroke="#7fc8ad" stroke-opacity=".5" stroke-width="3"/>
-        <text class="dim" x="470" y="394" lang="lo">ທ່າເຮືອ</text>
-        <!-- Bốn chấm XE trên đường (khác với chấm MỐC ở trên). Một chấm màu hổ phách là xe đi
-             lâu chưa về, khớp với con số ở dải số liệu ngay dưới bản đồ. -->
-        <g class="lg-xe" data-x="165" data-y="133" data-nhan="175,92"><circle cx="165" cy="133" r="6"/></g>
-        <g class="lg-xe" data-x="330" data-y="228" data-nhan="300,198"><circle cx="330" cy="228" r="6"/></g>
-        <g class="lg-xe lau" data-x="492" data-y="334" data-nhan="368,344"><circle cx="492" cy="334" r="6"/></g>
-        <g class="lg-xe" data-x="545" data-y="352" data-nhan="430,330"><circle cx="545" cy="352" r="6"/></g>
-        <g id="lg-nhan-xe" transform="translate(300,198)"><rect width="104" height="26" rx="6" fill="#1f8a6a"/>
-          <text x="52" y="17" fill="#fff" font-size="11" font-weight="600" text-anchor="middle" data-i18n="lg_badge"></text></g>
-      </svg>
-
-      <!-- Dải số liệu: mô tả đúng CẢNH đang vẽ trên bản đồ ở trên, không phải số liệu công ty. -->
-      <div class="hero__so">
-        <div><b>4</b><span data-i18n="lg_st1"></span></div>
-        <div><b class="lau">1</b><span data-i18n="lg_st2"></span></div>
-        <div><b>2</b><span data-i18n="lg_st3"></span></div>
-        <div><b>1</b><span data-i18n="lg_st4"></span></div>
-      </div>
-
-      <!-- Ba thẻ: mỗi thẻ một việc, một dòng mô tả và VAI nào làm. Câu mô tả phía trên nhấn vào
-           vai trò nên bên dưới phải minh hoạ được điều đó.
-           Cố ý KHÔNG lấy "Theo dõi tuyến" làm một thẻ: bản đồ ngay trên đầu đã là nó rồi. -->
-      <div class="feats">
-        <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
-          <div><b data-i18n="nav_dispatch"></b><span data-i18n="lg_c1_d"></span>
-            <i data-i18n="lg_r1"></i></div></div>
-        <div class="feat"><svg viewBox="0 0 24 24"><path d="M3 6h13v9H3z"/><path d="M16 9h3l2 3v3h-5"/><circle cx="7" cy="19" r="2"/><circle cx="17" cy="19" r="2"/></svg>
-          <div><b data-i18n="nav_issue"></b><span data-i18n="lg_c2_d"></span>
-            <i data-i18n="lg_r2"></i></div></div>
-        <div class="feat"><svg viewBox="0 0 24 24"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
-          <div><b data-i18n="nav_vouchers"></b><span data-i18n="lg_c3_d"></span>
-            <i data-i18n="lg_r3"></i></div></div>
+    <div class="process">
+      <p class="process-title" data-i18n="lg2_process"></p>
+      <div class="map" id="lgMap">
+        <svg class="map-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs><pattern id="lgLuoi" width="10" height="10" patternUnits="userSpaceOnUse">
+            <path d="M10 0H0v10" fill="none" stroke="rgba(255,255,255,.07)" stroke-width=".25" vector-effect="non-scaling-stroke"/></pattern></defs>
+          <rect width="100" height="100" fill="url(#lgLuoi)"/>
+          <path id="lgDuongXong" class="route route--done" d="" vector-effect="non-scaling-stroke"/>
+          <path id="lgDuongChua" class="route route--todo" d="" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <div class="nodes" id="lgBuoc" role="tablist"></div>
+        <div class="truck" id="lgXe"><span class="truck-dot"></span><span class="truck-tag" data-i18n="lg_badge"></span></div>
       </div>
     </div>
 
-    <div class="hero__foot">SAMKET VILLAGE, SIKHOTTABONG · VIENTIANE · 020 5889 9983</div>
-  </aside>
+    <div class="step-card" id="lgThe" role="tabpanel"></div>
 
-  <main class="panel">
-    <div class="panel__top"><div class="lang lang-login" role="group" aria-label="Language"></div></div>
+    <footer class="hero-foot">SAMKET VILLAGE, SIKHOTTABONG · VIENTIANE · 020 5889 9983</footer>
+  </section>
 
-    <div class="panel__head">
+  <section class="lg-panel">
+    <div class="lang lang-login" role="group" aria-label="Language"></div>
+
+    <div class="login-body">
       <h2 data-i18n="login_h"></h2>
-      <div class="demo"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg><span data-i18n="login_demo"></span></div>
-    </div>
+      <p class="demo-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg><span data-i18n="login_demo"></span></p>
 
-    <div class="form">
-      <label class="field"><span class="field__label"><b data-i18n="username"></b></span>
-        <span class="field__box"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-          <input id="lgU" autocomplete="username" spellcheck="false" data-i18n-ph="username"></span></label>
-
-      <label class="field"><span class="field__label"><b data-i18n="password"></b></span>
-        <span class="field__box"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-          <input id="lgP" type="password" autocomplete="current-password" data-i18n-ph="password">
-          <button type="button" class="eye" id="lgMat" data-i18n-title="show_pw">
-            <svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>
-              <path class="gach" d="M3 21 21 3"/></svg></button></span></label>
-
-      <div class="row">
-        <label class="remember"><input type="checkbox" id="lgNho" checked><span data-i18n="lg_remember"></span></label>
+      <div class="field">
+        <label for="lgU" data-i18n="username"></label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <input id="lgU" class="input" autocomplete="username" autocapitalize="off" spellcheck="false" data-i18n-ph="username">
+        </div>
       </div>
-
+      <div class="field">
+        <label for="lgP" data-i18n="password"></label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+          <input id="lgP" class="input" type="password" autocomplete="current-password" data-i18n-ph="password">
+          <button type="button" class="eye" id="lgMat" data-i18n-title="show_pw">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path class="gach" d="M3 21 21 3"/></svg></button>
+        </div>
+      </div>
+      <label class="remember"><input type="checkbox" id="lgNho" checked><span data-i18n="lg_remember"></span></label>
+      <div class="role-chip" id="lgVai" hidden></div>
       <div class="error" id="lgErr" role="alert" hidden></div>
+      <button type="button" class="btn-login" id="lgBtn"><span data-i18n="login_btn"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 
-      <button class="submit" id="lgBtn" type="button"><span data-i18n="login_btn"></span>
-        <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></button>
+      <div class="quick-head"><span class="line"></span><span class="quick-title" id="lgNhanh"></span><span class="line"></span></div>
+      <div class="accounts" id="acctList"></div>
     </div>
-
-    <div class="divider"><span data-i18n="quick_pick"></span></div>
-    <div class="roles" id="acctList"></div>
-  </main>
-
+  </section>
+ </div>
 </div>
 
 <!-- ===== Ứng dụng ===== -->
@@ -197,6 +161,7 @@
 <script>window.EPL_VER = "__VER__";</script>
 <script src="js/ngon_ngu.js?v=__VER__"></script>
 <script src="js/chung.js?v=__VER__"></script>
+<script src="js/dang_nhap.js?v=__VER__"></script>
 <script src="js/xuat.js?v=__VER__"></script>
 <script src="js/hop_dong.js?v=__VER__"></script>
 <script src="js/bien_ban.js?v=__VER__"></script>

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1890 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1927 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -9451,5 +9451,190 @@ window.EPL_TU_DIEN = {
   "vi": "Giao",
   "lo": "ສົ່ງ",
   "en": "Deliver"
+ },
+ "lg2_process": {
+  "vi": "Quy trình một chuyến hàng, bấm vào từng bước để xem ai làm gì",
+  "lo": "ຂັ້ນຕອນຂອງໜຶ່ງຖ້ຽວ, ກົດແຕ່ລະຈຸດເພື່ອເບິ່ງໃຜເຮັດຫຍັງ",
+  "en": "One shipment step by step — click a step to see who does what"
+ },
+ "lg2_buoc": {
+  "vi": "Bước {i}/{n}",
+  "lo": "ຂັ້ນ {i}/{n}",
+  "en": "Step {i}/{n}"
+ },
+ "lg2_viec": {
+  "vi": "Việc cần làm",
+  "lo": "ວຽກທີ່ຕ້ອງເຮັດ",
+  "en": "What to do"
+ },
+ "lg2_ai_lam": {
+  "vi": "Người làm",
+  "lo": "ຜູ້ເຮັດ",
+  "en": "Done by"
+ },
+ "lg2_chon_tk": {
+  "vi": "Chọn tài khoản của vai trò này ở bên phải để đăng nhập",
+  "lo": "ເລືອກບັນຊີຂອງບົດບາດນີ້ຢູ່ເບື້ອງຂວາເພື່ອເຂົ້າລະບົບ",
+  "en": "Pick an account for this role on the right to sign in"
+ },
+ "lg2_tk_cho_buoc": {
+  "vi": "Tài khoản cho bước {i}:",
+  "lo": "ບັນຊີສຳລັບຂັ້ນ {i}:",
+  "en": "Accounts for step {i}:"
+ },
+ "lg2_hien_het": {
+  "vi": "Hiện tất cả",
+  "lo": "ສະແດງທັງໝົດ",
+  "en": "Show all"
+ },
+ "lg2_khong_tk": {
+  "vi": "Chưa có tài khoản cho bước này",
+  "lo": "ຍັງບໍ່ມີບັນຊີສຳລັບຂັ້ນນີ້",
+  "en": "No account for this step yet"
+ },
+ "lg2_dang_vao_vai": {
+  "vi": "Đăng nhập với vai trò",
+  "lo": "ເຂົ້າລະບົບໃນບົດບາດ",
+  "en": "Signing in as"
+ },
+ "lg2_p_dispatch": {
+  "vi": "Mỏ quặng Kasi",
+  "lo": "ກາສີ",
+  "en": "Kasi mine"
+ },
+ "lg2_s_dispatch": {
+  "vi": "Lập phiếu xuất xe",
+  "lo": "ອອກໃບເບີກລົດ",
+  "en": "Dispatch slip"
+ },
+ "lg2_t_dispatch_1": {
+  "vi": "Chọn xe, tài xế, tuyến cho DO",
+  "lo": "ເລືອກລົດ, ໂຊເຟີ, ເສັ້ນທາງໃຫ້ DO",
+  "en": "Pick the truck, driver and route for the DO"
+ },
+ "lg2_t_dispatch_2": {
+  "vi": "In phiếu đề nghị xuất kho nhiên liệu có mã QR",
+  "lo": "ພິມໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ມີ QR",
+  "en": "Print the fuel stock-out request with its QR code"
+ },
+ "lg2_p_fuel": {
+  "vi": "Kho dầu Thà Bốc",
+  "lo": "ສາງນໍ້າມັນ ທ່າບົກ",
+  "en": "Thabok fuel depot"
+ },
+ "lg2_s_fuel": {
+  "vi": "Cấp dầu theo đề nghị",
+  "lo": "ຈ່າຍນໍ້າມັນຕາມໃບສະເໜີ",
+  "en": "Fuel issued on request"
+ },
+ "lg2_t_fuel_1": {
+  "vi": "Quét mã QR phiếu đề nghị, đối chiếu đúng xe",
+  "lo": "ສະແກນ QR ໃບສະເໜີ, ກວດລົດໃຫ້ຖືກ",
+  "en": "Scan the request QR, check it is the right truck"
+ },
+ "lg2_t_fuel_2": {
+  "vi": "Bên kho cấp dầu và trừ tồn",
+  "lo": "ຝ່າຍສາງຈ່າຍນໍ້າມັນ ແລະ ຫັກຍອດຄົງເຫຼືອ",
+  "en": "The warehouse issues the fuel and deducts stock"
+ },
+ "lg2_p_yard": {
+  "vi": "Bãi EPL Thà Bốc",
+  "lo": "ສະໜາມ EPL ທ່າບົກ",
+  "en": "EPL yard, Thabok"
+ },
+ "lg2_s_yard": {
+  "vi": "Nhập bãi, giao hàng",
+  "lo": "ເຂົ້າສະໜາມ, ສົ່ງສິນຄ້າ",
+  "en": "Yard in and delivery"
+ },
+ "lg2_t_yard_1": {
+  "vi": "Cân xe, nhập bãi theo lô",
+  "lo": "ຊັ່ງລົດ, ເຂົ້າສະໜາມຕາມລ໊ອດ",
+  "en": "Weigh the truck, take the lot into the yard"
+ },
+ "lg2_t_yard_2": {
+  "vi": "Xuất hàng giao cho khách, ký biên bản giao nhận",
+  "lo": "ເບີກສິນຄ້າສົ່ງລູກຄ້າ, ເຊັນໃບມອບຮັບ",
+  "en": "Release the cargo to the customer, sign the delivery note"
+ },
+ "lg2_p_cost": {
+  "vi": "Cửa khẩu Nậm Phao",
+  "lo": "ດ່ານ ນໍ້າພາວ",
+  "en": "Nam Phao border"
+ },
+ "lg2_s_cost": {
+  "vi": "Chi phí chuyến",
+  "lo": "ຄ່າໃຊ້ຈ່າຍຖ້ຽວ",
+  "en": "Trip costs"
+ },
+ "lg2_t_cost_1": {
+  "vi": "Kiểm cầu đường, cửa khẩu, ăn nghỉ",
+  "lo": "ກວດຄ່າທາງ, ດ່ານ, ກິນນອນ",
+  "en": "Check tolls, border fees and meals"
+ },
+ "lg2_t_cost_2": {
+  "vi": "Đối chiếu tạm ứng của tài xế",
+  "lo": "ກວດເງິນລ່ວງໜ້າຂອງໂຊເຟີ",
+  "en": "Reconcile the driver's advance"
+ },
+ "lg2_p_revenue": {
+  "vi": "Cảng, Việt Nam",
+  "lo": "ທ່າເຮືອ ຫວຽດນາມ",
+  "en": "Port, Vietnam"
+ },
+ "lg2_s_revenue": {
+  "vi": "Đề nghị theo DO",
+  "lo": "ສະເໜີຕາມ DO",
+  "en": "Requests by DO"
+ },
+ "lg2_t_revenue_1": {
+  "vi": "Kiểm sáu mục theo DO, khoá phiếu",
+  "lo": "ກວດ 6 ລາຍການຕາມ DO, ລັອກໃບ",
+  "en": "Check the six DO items, lock the slip"
+ },
+ "lg2_t_revenue_2": {
+  "vi": "Gửi phiếu đề nghị thu sang kế toán",
+  "lo": "ສົ່ງໃບສະເໜີຮັບເງິນໄປຝ່າຍບັນຊີ",
+  "en": "Send the payment request to accounting"
+ },
+ "lg2_p_cash": {
+  "vi": "Văn phòng Viêng Chăn",
+  "lo": "ຫ້ອງການ ວຽງຈັນ",
+  "en": "Vientiane office"
+ },
+ "lg2_s_cash": {
+  "vi": "Chi theo đề nghị",
+  "lo": "ຈ່າຍຕາມໃບສະເໜີ",
+  "en": "Pay on request"
+ },
+ "lg2_t_cash_1": {
+  "vi": "Chi tạm ứng cho tài xế theo phiếu đề nghị chi",
+  "lo": "ຈ່າຍເງິນລ່ວງໜ້າໃຫ້ໂຊເຟີຕາມໃບສະເໜີຈ່າຍ",
+  "en": "Pay the driver's advance on the payment request"
+ },
+ "lg2_t_cash_2": {
+  "vi": "Thu tiền khách, công nợ: bên kế toán ghi",
+  "lo": "ຮັບເງິນລູກຄ້າ, ໜີ້: ຝ່າຍບັນຊີບັນທຶກ",
+  "en": "Customer payments and receivables: recorded by accounting"
+ },
+ "lg2_p_boss": {
+  "vi": "Toàn hệ thống",
+  "lo": "ທັງລະບົບ",
+  "en": "All sites"
+ },
+ "lg2_s_boss": {
+  "vi": "Duyệt và xem tất cả",
+  "lo": "ອະນຸມັດ ແລະ ເບິ່ງທັງໝົດ",
+  "en": "Approve and see all"
+ },
+ "lg2_t_boss_1": {
+  "vi": "Duyệt phiếu, xem báo cáo",
+  "lo": "ອະນຸມັດໃບ, ເບິ່ງລາຍງານ",
+  "en": "Approve slips, view reports"
+ },
+ "lg2_t_boss_2": {
+  "vi": "Quản lý tài khoản và phân quyền",
+  "lo": "ຈັດການບັນຊີ ແລະ ສິດ",
+  "en": "Manage accounts and permissions"
  }
 };

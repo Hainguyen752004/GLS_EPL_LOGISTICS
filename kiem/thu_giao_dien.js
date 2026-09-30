@@ -78,36 +78,47 @@ async function main() {
   // Lối tắt demo phải hiện ĐỦ tài khoản, và Admin Thà Bốc (vai chính của nhóm kho) phải đứng đầu nhóm
   // của nó — trước đây máy chủ trả theo chữ cái nên thabok rơi xuống cuối, bị khuất trong ô cuộn.
   {
-    const ten = [...d.querySelectorAll('#acctList .person')].map(b => b.dataset.u);
+    const ten = [...d.querySelectorAll('#acctList .acc')].map(b => b.dataset.u);
     const may = await (await fetch(GOC + '/api/tai-khoan-mau')).json();
     assert.strictEqual(ten.length, may.length, `lối tắt phải có đủ ${may.length} tài khoản, đang có ${ten.length}`);
     assert.ok(ten.includes('thabok'), 'phải có tài khoản Admin Thà Bốc (thabok): ' + ten.join(','));
     const kho = ten.filter(u => ['thabok', 'khonl', 'khotb', 'khovc'].includes(u));
     assert.strictEqual(kho[0], 'thabok', 'Admin Thà Bốc phải đứng đầu nhóm Bãi và kho: ' + kho.join(','));
   }
-  console.log('✓ màn đăng nhập: %d tài khoản mẫu · Admin Thà Bốc đứng đầu nhóm kho', d.querySelectorAll('#acctList .person').length);
-  // Màn đăng nhập dựng theo bản mẫu đăng nhập anh gửi (đã bỏ khỏi dự án): nửa trái thương hiệu kèm sơ đồ tuyến, nửa phải
-  // biểu mẫu và khung chọn nhanh gom theo nhóm vai.
-  assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .panel'),
+  console.log('✓ màn đăng nhập: %d tài khoản mẫu · Admin Thà Bốc đứng đầu nhóm kho', d.querySelectorAll('#acctList .acc').length);
+  // 30/09 chiều: màn đăng nhập theo bản mẫu mới (login_ne_theosep): nửa trái thương hiệu kèm SƠ ĐỒ BẢY BƯỚC, nửa phải
+  // biểu mẫu và khung chọn nhanh gom theo nhóm vai. Không có dải số liệu (trang ai cũng mở được).
+  assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .lg-panel'),
     'màn đăng nhập phải có hai nửa: thương hiệu và biểu mẫu');
   assert.ok(d.querySelector('#login .hero__logo'), 'nửa trái phải có ảnh logo EPL');
-  assert.ok(d.querySelector('#login svg.route'), 'nửa trái phải có sơ đồ tuyến');
+  assert.ok(d.querySelector('#login .map-svg') && d.querySelectorAll('#lgBuoc .node').length === 7, 'nửa trái phải có sơ đồ bảy bước');
+  assert.ok(d.getElementById('lgThe').textContent.trim(), 'thẻ bước đang chọn phải có nội dung');
+  assert.ok(!/\d+\s*(xe đang chạy|phiếu chờ)/.test(d.querySelector('#login .hero').textContent), 'trang đăng nhập không được lộ số liệu đang chạy');
   assert.ok(d.getElementById('lgMat'), 'màn đăng nhập phải có nút hiện/ẩn mật khẩu');
   assert.strictEqual(d.getElementById('lgP').type, 'password', 'mật khẩu mặc định phải ẩn');
   d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
   assert.strictEqual(d.getElementById('lgP').type, 'text', 'bấm con mắt thì mật khẩu phải hiện');
   d.getElementById('lgMat').dispatchEvent(new w.Event('click'));
   assert.strictEqual(d.getElementById('lgP').type, 'password', 'bấm lần nữa thì mật khẩu phải ẩn lại');
-  const goiY = [...d.querySelectorAll('#acctList .person')];
+  const goiY = [...d.querySelectorAll('#acctList .acc')];
   assert.ok(goiY.length >= 10, 'phải gợi ý đủ tài khoản demo, đang có ' + goiY.length);
   assert.strictEqual(goiY[0].dataset.u, 'admin', 'gợi ý phải xếp quản trị lên đầu');
   assert.ok(goiY.some(b => b.dataset.u === 'tx01'), 'phải có tài khoản tài xế tx01');
-  const nhom = [...d.querySelectorAll('#acctList .role__head')];
+  const nhom = [...d.querySelectorAll('#acctList .acc-group h4')];
   assert.ok(nhom.length >= 4, 'tài khoản phải gom theo nhóm vai, đang có ' + nhom.length);
   assert.ok(nhom.every(x => x.textContent.trim() && !/^lg_g_/.test(x.textContent.trim())),
     'tên nhóm vai không được lộ khoá thô');
-  console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ tuyến · %d thẻ gợi ý trong %d nhóm vai',
+  console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ 7 bước · %d thẻ gợi ý trong %d nhóm vai',
     goiY.length, nhom.length);
+  // bấm bước "Cấp dầu" trên sơ đồ → khung tài khoản chỉ còn thủ kho / KT kho xăng dầu; "Hiện tất cả" → đủ lại
+  d.querySelector('#lgBuoc [data-buoc="fuel"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  {
+    const con = [...d.querySelectorAll('#acctList .acc')].map(b => b.dataset.u);
+    assert.ok(con.length >= 1 && con.length < goiY.length && con.every(u => /^kho/.test(u)), 'lọc theo bước cấp dầu: ' + con.join(','));
+    d.getElementById('lgHienHet').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    assert.strictEqual(d.querySelectorAll('#acctList .acc').length, goiY.length, 'Hiện tất cả phải trả đủ tài khoản');
+    console.log('✓ sơ đồ đăng nhập: bấm bước cấp dầu còn %d tài khoản kho · Hiện tất cả đủ lại %d', con.length, goiY.length);
+  }
 
   // 0b. Bấm thẻ tài khoản rồi bấm NÚT đăng nhập — đúng đường người dùng đi. Trước đây bộ kiểm gọi
   // thẳng AUTH.dangNhap nên một lỗi ở nút (thiếu biến `dangBan`) lọt qua mà không ai biết.
@@ -125,10 +136,10 @@ async function main() {
   await w.EPL.sanSang;
   console.log('✓ bấm nút với mật khẩu đúng: vào được ứng dụng');
   w.EPL.AUTH.dangXuat(false);
-  await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'về lại màn đăng nhập');
+  await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'về lại màn đăng nhập');
 
   // 0c. Bấm thẳng vào thẻ tài khoản là vào luôn, không phải bấm nút nữa
-  [...d.querySelectorAll('#acctList .person')].find(x => x.dataset.u === 'admin')
+  [...d.querySelectorAll('#acctList .acc')].find(x => x.dataset.u === 'admin')
     .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await choDen(() => !d.getElementById('app').hidden, 'bấm thẻ tài khoản phải vào thẳng', 15000);
   console.log('✓ bấm thẻ tài khoản: vào thẳng, không cần bấm nút');
