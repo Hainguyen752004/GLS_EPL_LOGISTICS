@@ -1,0 +1,29 @@
+<!-- Xem kho — theo MẶT HÀNG, CHỈ XEM (sếp 30/09: kho dời về trang logistics, bên mình chỉ xem).
+     Nhập, xuất, chuyển kho, điều chỉnh do bên kho làm (anh Toàn). Trái: mỗi mặt hàng một dòng; phải: chi tiết dòng đang chọn. -->
+<div class="kx">
+  <div class="kx-top">
+    <div class="kx-tabs" role="tablist">
+      <button class="kx-tab on" data-tab="dau" role="tab"><span data-i18n="e_fuel"></span><b id="kx-n-dau">·</b></button>
+      <button class="kx-tab" data-tab="pt" role="tab"><span data-i18n="part"></span><b id="kx-n-pt">·</b></button>
+      <button class="kx-tab" data-tab="hang" role="tab"><span data-i18n="nav_goods"></span><b id="kx-n-hang">·</b></button>
+    </div>
+    <label class="kx-tim">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="kx-tim" data-i18n-ph="kx_search" autocomplete="off">
+    </label>
+    <div class="grow"></div>
+    <div class="field kx-thang"><label data-i18n="month"></label><input type="month" id="kx-thang"></div>
+    <span class="kx-chi-xem" data-i18n="readonly"></span>
+  </div>
+
+  <div class="kx-kpis" id="kx-kpis"></div>
+
+  <div class="kx-than">
+    <section class="kx-trai">
+      <div class="tbl-wrap"><table class="tbl kx-bang" id="kx-bang"></table></div>
+    </section>
+    <aside class="kx-phai" id="kx-ct"></aside>
+  </div>
+
+  <p class="small muted kx-note" data-i18n="kx_note"></p>
+</div>

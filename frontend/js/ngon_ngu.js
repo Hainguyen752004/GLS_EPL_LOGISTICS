@@ -2612,6 +2612,166 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
  },
+ "nav_kho_xem": {
+  "vi": "Xem kho",
+  "lo": "ເບິ່ງສາງ",
+  "en": "Stock view"
+ },
+ "title_kho_xem": {
+  "vi": "Xem kho<span class=\"sub\">Theo mặt hàng · chỉ xem</span>",
+  "lo": "ເບິ່ງສາງ<span class=\"sub\">ຕາມລາຍການ · ເບິ່ງຢ່າງດຽວ</span>",
+  "en": "Stock view<span class=\"sub\">By item · view only</span>"
+ },
+ "kx_search": {
+  "vi": "Tìm mặt hàng, số phiếu, số xe…",
+  "lo": "ຄົ້ນຫາ ລາຍການ, ເລກທີ, ລົດ…",
+  "en": "Search item, slip no., truck…"
+ },
+ "kx_note": {
+  "vi": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
+  "lo": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
+  "en": "View only. Stock in, out, transfers and adjustments are done by the warehouse side; fuel requests are made on the dispatch slip and the warehouse issues against them."
+ },
+ "kx_ton_dau": {
+  "vi": "Tổng tồn nhiên liệu",
+  "lo": "ຍອດຄົງເຫຼືອ ນໍ້າມັນ",
+  "en": "Fuel in stock"
+ },
+ "kx_so_kho": {
+  "vi": "{n} kho",
+  "lo": "{n} ສາງ",
+  "en": "{n} stores"
+ },
+ "kx_so_phieu": {
+  "vi": "{n} phiếu",
+  "lo": "{n} ໃບ",
+  "en": "{n} slips"
+ },
+ "kx_so_lo": {
+  "vi": "{n} lô",
+  "lo": "{n} ລ໊ອດ",
+  "en": "{n} lots"
+ },
+ "kx_pt_duoi": {
+  "vi": "Phụ tùng dưới mức tối thiểu",
+  "lo": "ອາໄຫຼ່ ≤ ຂັ້ນຕໍ່າ",
+  "en": "Parts at or below minimum"
+ },
+ "kx_hang_bai": {
+  "vi": "Hàng khách gửi ở bãi",
+  "lo": "ສິນຄ້າລູກຄ້າຢູ່ສາງ",
+  "en": "Customer goods at the yard"
+ },
+ "kx_c_cho": {
+  "vi": "Chờ cấp theo đề nghị",
+  "lo": "ລໍຖ້າຈ່າຍ · ໃບສະເໜີ",
+  "en": "Awaiting issue (request)"
+ },
+ "kx_c_chua": {
+  "vi": "Đã khai, chưa có đề nghị",
+  "lo": "ໃນໃບ · ຍັງບໍ່ມີໃບສະເໜີ",
+  "en": "On slip, no request yet"
+ },
+ "kx_c_con": {
+  "vi": "Còn lại",
+  "lo": "ຍັງເຫຼືອ",
+  "en": "Remaining"
+ },
+ "kx_c_con_h": {
+  "vi": "Tồn trừ phần chờ cấp và phần đã khai trên phiếu",
+  "lo": "Tồn trừ phần chờ cấp và phần đã khai trên phiếu",
+  "en": "Stock minus what is awaiting issue and what is already on slips"
+ },
+ "kx_c_tren_phieu": {
+  "vi": "Trên phiếu, chờ xuất",
+  "lo": "ໃນໃບ · ລໍຖ້າເບີກ",
+  "en": "On slips, not yet issued"
+ },
+ "kx_in_month": {
+  "vi": "Nhập trong tháng",
+  "lo": "ຮັບໃນເດືອນ",
+  "en": "In this month"
+ },
+ "kx_out_month": {
+  "vi": "Xuất trong tháng",
+  "lo": "ເບີກໃນເດືອນ",
+  "en": "Out this month"
+ },
+ "kx_duoi_muc": {
+  "vi": "Dưới mức",
+  "lo": "≤ ຂັ້ນຕໍ່າ",
+  "en": "Below min."
+ },
+ "kx_ton_t": {
+  "vi": "Tồn (tấn)",
+  "lo": "ຄົງເຫຼືອ (ໂຕນ)",
+  "en": "Stock (t)"
+ },
+ "kx_k_lo": {
+  "vi": "Lô",
+  "lo": "ລ໊ອດ",
+  "en": "Lots"
+ },
+ "kx_gan_day": {
+  "vi": "Nhập / xuất gần đây",
+  "lo": "ນຳເຂົ້າ / ເບີກ ຫຼ້າສຸດ",
+  "en": "Recent in / out"
+ },
+ "kx_sl": {
+  "vi": "SL",
+  "lo": "ຈຳນວນ",
+  "en": "Qty"
+ },
+ "kx_gia": {
+  "vi": "Giá",
+  "lo": "ລາຄາ",
+  "en": "Price"
+ },
+ "kx_v_no": {
+  "vi": "Số phiếu đề nghị",
+  "lo": "ເລກທີ ໃບສະເໜີ",
+  "en": "Request no."
+ },
+ "kx_chua_de_nghi_h": {
+  "vi": "Dầu đã khai trên phiếu, chưa lập phiếu đề nghị",
+  "lo": "ນໍ້າມັນໃນໃບ · ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
+  "en": "Fuel on slips with no request yet"
+ },
+ "kx_tren_phieu_h": {
+  "vi": "Phụ tùng trên phiếu, chờ xuất kho",
+  "lo": "ອາໄຫຼ່ໃນໃບ · ລໍຖ້າເບີກສາງ",
+  "en": "Parts on slips, not yet issued"
+ },
+ "kx_lo_con": {
+  "vi": "Các lô còn hàng",
+  "lo": "ລ໊ອດສິນຄ້າໃນສາງ",
+  "en": "Lots in stock"
+ },
+ "kx_origin": {
+  "vi": "Nơi bốc",
+  "lo": "ຕົ້ນທາງ",
+  "en": "Origin"
+ },
+ "kx_nhap_t": {
+  "vi": "Nhập (tấn)",
+  "lo": "ຮັບ (ໂຕນ)",
+  "en": "In (t)"
+ },
+ "kx_con_t": {
+  "vi": "Còn (tấn)",
+  "lo": "ຍັງເຫຼືອ (ໂຕນ)",
+  "en": "Left (t)"
+ },
+ "kx_chon": {
+  "vi": "Chọn một dòng để xem chi tiết",
+  "lo": "ເລືອກແຖວເພື່ອເບິ່ງ",
+  "en": "Pick a row to see details"
+ },
+ "kx_loi": {
+  "vi": "Chưa lấy được số tồn từ bên kho: {loi}",
+  "lo": "Chưa lấy được số tồn từ bên kho: {loi}",
+  "en": "Could not get stock from the warehouse side: {loi}"
+ },
  "cp_goi_y": {
   "vi": "Chi phí gợi ý theo tuyến",
   "lo": "ລາຍຈ່າຍຕາມເສັ້ນທາງ",

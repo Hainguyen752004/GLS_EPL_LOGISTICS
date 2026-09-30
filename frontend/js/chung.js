@@ -453,6 +453,9 @@
     // 'kho-phu-tung' (Kho phụ tùng) dời sang trang kế toán 28/09 — tồn, giá, sổ ở đó; bên này còn danh mục để chọn trên phiếu
     // 'sua-chua' (Lệnh sửa chữa) dời sang trang kế toán 28/09 (đợt 6) — lệnh, chuỗi duyệt, xuất kho, PC_SC ở đó; mục V vẫn trên phiếu
     // 'ban-hang' (Bán hàng) dời sang trang kế toán 28/09 (đợt 6) — phiếu bán, xuất kho, hoá đơn, thu ở đó
+    // 'kho-xem' (Xem kho) — sếp 30/09: kho dời về trang logistics, CHỈ XEM theo mặt hàng; thao tác kho do bên kho (anh Toàn)
+    { id: 'kho-xem',        nhom: 'mod_warehouse', nav: 'nav_kho_xem', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'depot'],
+      ic: 'M3 21V9l9-6 9 6v12M3 21h18M8 21v-6h8v6M8 12h8' },
     { id: 'khach-hang',     nhom: 'mod_master',    nav: 'nav_customers', ic: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },
     { id: 'xe',             nhom: 'mod_master',    nav: 'nav_vehicles', ic: 'M1 3h15v13H1zM16 8h4l3 3v5h-7zM5.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M18.5 16a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5' },
     { id: 'tai-xe',         nhom: 'mod_master',    nav: 'nav_drivers',  ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0' },
@@ -479,8 +482,8 @@
   // Tài xế chỉ thấy module ghi rõ vai driver; các vai khác thấy mọi module trừ module "chỉ vai".
   // Thủ kho phụ tùng giữ kho phụ tùng; tổ sửa chữa duyệt báo hỏng, ghi mục V trên phiếu, xem tồn kho.
   const MAN_CUA_VAI = {
-    parts:  ['xe'],                       // kho phụ tùng: ở trang kế toán (28/09)
-    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'xe'],   // lệnh sửa chữa: ở trang kế toán (đợt 6)
+    parts:  ['xe', 'kho-xem'],            // thao tác kho phụ tùng: ở bên kho; bên này chỉ xem (30/09)
+    repair: ['theo-doi-tuyen', 'phieu-xuat-xe', 'xe', 'kho-xem'],   // lệnh sửa chữa: ở trang kế toán (đợt 6)
   };
 
   function thayDuoc(m) {
