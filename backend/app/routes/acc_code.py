@@ -11,7 +11,8 @@ nào không có trong danh mục (ví dụ 371, 4022 họ ghi trong Excel) thì 
 bịa mã thay thế — chủ dự án chốt: mã do bên kia cấp.
 
 `source` phân biệt: remote · cached · unconfigured · error · fallback. Không nối được thì trả
-danh sách rút gọn từ Excel của họ kèm source=fallback để màn hình nói thật là đang dùng bản tạm.
+BẢN CHỤP danh mục thật (services/danh_muc_tai_khoan_lao.json, chụp từ chính API này ngày 30/09) kèm ba mã con của khách
+đánh dấu "chưa mở" — trước đây là danh sách tự gõ 11 mã, tên sai (625 ghi "chi phí vận chuyển", 70 không ghi là mã nhóm).
 """
 import json
 import os
@@ -22,6 +23,7 @@ import urllib.request
 from fastapi import APIRouter, Depends
 
 from services import mang as MANG
+from services import tai_khoan as TK
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
@@ -29,20 +31,7 @@ DUONG_COUNTRY_ACCOUNTS = "/api/v1/common/country-accounts"
 _BO_NHO = {"khoa": None, "luc": 0.0, "goi": None}
 CACHE_GIAY = 600
 
-# Bản tạm khi chưa nối được — các tài khoản xuất hiện trong Excel và quy trình của họ.
-DU_PHONG = [
-    {"code": "625", "name": "ຄ່າເດີນທາງ", "description": "Chi phí đi đường, công tác phí"},
-    {"code": "614", "name": "ຄ່າບົວລະບັດ, ສ້ອມແປງ", "description": "Chi phí bảo trì và sửa chữa"},
-    {"code": "4021", "name": "ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ", "description": "Phải trả nhà cung cấp (con của 402, tách theo NCC) — anh Khampla 22/09"},
-    {"code": "1371", "name": "ສາງສິນຄ້າ, ວັດຖຸ", "description": "Kho hàng, vật tư (con của 137) — anh Khampla 22/09"},
-    {"code": "1011", "name": "ເງິນສົດ ເປັນເງິນກີບ", "description": "Tiền mặt bằng Kíp"},
-    {"code": "1012", "name": "ເງິນສົດ ເງິນຕາຕ່າງປະເທດ", "description": "Tiền mặt ngoại tệ"},
-    {"code": "1021", "name": "ເງິນຝາກທະນາຄານ ເປັນເງິນກີບ", "description": "Tiền gửi ngân hàng bằng Kíp"},
-    {"code": "1022", "name": "ເງິນຝາກທະນາຄານ ເງິນຕາຕ່າງປະເທດ", "description": "Tiền gửi ngân hàng ngoại tệ"},
-    {"code": "4022", "name": "ຈ່າຍແທນລົດຮ່ວມ (ຕາມ Excel)", "description": "Chi hộ nhà thầu phụ — theo quy trình, chưa có trong danh mục"},
-    {"code": "1211", "name": "ລູກຄ້າ-ຄ່າສິນຄ້າ", "description": "Khách hàng - Hàng hoá"},
-    {"code": "70", "name": "ຂາຍສິນຄ້າ, ບໍລິການ", "description": "Bán sản phẩm, hàng hoá, dịch vụ"},
-]
+DU_PHONG = TK.danh_muc_du_phong()
 
 
 def _url():
@@ -99,8 +88,11 @@ def lay_danh_muc(refresh=False):
     if isinstance(goi, dict) and goi.get("Success") is False:
         return DU_PHONG, "error", "API bên công nợ từ chối: %s" % str(goi.get("Message") or goi.get("Code"))[:120]
     ket = _chuan_hoa(goi)
+    co = {x["code"] for x in ket}
+    # Ba mã con của khách (1371, 4021, 4022) chưa có bên kế toán: vẫn cho chọn — phiếu đang dùng — nhưng ghi rõ là chưa mở.
+    ket += [x for x in TK.danh_muc_du_phong() if x.get("ma_con_khach") and x["code"] not in co]
     bo["khoa"], bo["luc"], bo["goi"] = url, time.time(), ket
-    return ket, "remote", "Đã tải %d mã từ API bên công nợ." % len(ket)
+    return ket, "remote", "Đã tải %d mã từ API bên công nợ." % len(co)
 
 
 @router.get("/api/acc-codes")

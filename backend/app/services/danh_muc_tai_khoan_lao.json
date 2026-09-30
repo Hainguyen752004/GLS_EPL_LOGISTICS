@@ -1,0 +1,3465 @@
+{
+"nguon": "API danh mục tài khoản bên kế toán (GET /api/v1/common/country-accounts?tryAutoId=11&onlyActive=true)",
+"chup_ngay": "2026-09-30",
+"so_ma": 494,
+"tai_khoan": [
+{
+"code": "10",
+"name_lo": "ເງິນສົດໃນ​ຄັງ, ເງິນ​ຍ່ອຍ, ເງິນຝາກທະນາຄານ, ສະ​ຖາ​ບັນ​ການ​ເງິນ, ເງິນ​ຝາກ​ຄັງ​ເງິນ​ແຫ່ງ​ຊາດ,",
+"name_vi": "Tiền mặt trong quỹ ,tiền chi vặt ,tiền gửi ngân hàng ,tổ chức tài chính và kho bạc nhà nước",
+"parent": null,
+"postable": false
+},
+{
+"code": "101",
+"name_lo": "​ເງິນສົດ​ໃນ​ຄັງ",
+"name_vi": "Tiền mặt trong quỹ",
+"parent": "10",
+"postable": false
+},
+{
+"code": "1011",
+"name_lo": "​ເງິນສົດເປັນເງິນກິບ",
+"name_vi": "Tiền mặt trong quỹ - LAK",
+"parent": "101",
+"postable": true
+},
+{
+"code": "1012",
+"name_lo": "ເງິນສົດເປັນເງິນຕາ​ຕ່າງປະເທດ",
+"name_vi": "Tiền mặt ngoại tệ",
+"parent": "101",
+"postable": true
+},
+{
+"code": "1013",
+"name_lo": "ເງິນສົດ​ຍ່ອຍ",
+"name_vi": "Tiền chi vặt",
+"parent": "101",
+"postable": true
+},
+{
+"code": "1014",
+"name_lo": "ເງິນສົດ ກຳລັງນຳຝາກ ທະນາຄານບໍ່ທັນໄດ້ຈົດເຂົ້າບັນຊີ",
+"name_vi": "Tiền mặt mang đi gửi -ngân hàng chưa hạch toán",
+"parent": "101",
+"postable": true
+},
+{
+"code": "1017",
+"name_lo": "ລ່ວງຫນ້າເງິນສົດ",
+"name_vi": "Tạm ứng tiền mặt",
+"parent": "101",
+"postable": true
+},
+{
+"code": "102",
+"name_lo": "ເງິນຝາກທະນາຄານ, ສະຖາບັນການເງິນ ແລະ ກົມກອງ ປະເພດດຽວກັນ",
+"name_vi": "Tạm ứng tiền mặt",
+"parent": "10",
+"postable": false
+},
+{
+"code": "1021",
+"name_lo": "ເງິນຝາກທະນາຄານເປັນເງິນກີບ",
+"name_vi": "Tiền gửi ngân hàng -LAK",
+"parent": "102",
+"postable": true
+},
+{
+"code": "1022",
+"name_lo": "ເງິນຝາກທະນາຄານເປັນເງິນຕາຕ່າງປະເທດ",
+"name_vi": "Tiền gửi ngân hàng ngoại tệ",
+"parent": "102",
+"postable": true
+},
+{
+"code": "1023",
+"name_lo": "ເງິນຝາກຄັງເງິນແຫ່ງຊາດ",
+"name_vi": "Tiền gửi kho bạc nhà nước",
+"parent": "102",
+"postable": true
+},
+{
+"code": "1024",
+"name_lo": "ເງິນຝາກສະຖາບັນການເງິນອື່ນໆ",
+"name_vi": "Tiền gửi các tổ chức tài chính khác",
+"parent": "102",
+"postable": true
+},
+{
+"code": "1028",
+"name_lo": "ດອກເບ້ຍ ຄິດໄລ່ - ຕ້ອງຮັບ",
+"name_vi": "Lãi phải thu",
+"parent": "102",
+"postable": true
+},
+{
+"code": "109",
+"name_lo": "ຄ່າສູນ​ເສຍ​ມູນ​ຄ່າ ເງິນ​ສົດ​ຍ່ອຍ, ເງິນ​​ກຳ​ລັງ​ນຳຝາກ​ທະ​ນາ​ຄານ",
+"name_vi": "Dự phòng giảm giá tiền chi vặt ,tiền mang đi gửi ngân hàng",
+"parent": "10",
+"postable": false
+},
+{
+"code": "1091",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ເງິນສົດຍ່ອຍ ເງິນລ່ວງໜ້າ",
+"name_vi": "Dự phòng giảm giá tiền chi vặt , tạm ứng tiền mặt",
+"parent": "109",
+"postable": true
+},
+{
+"code": "1092",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ເງິນກຳລັງນຳໄປຝາກທະນາຄານ",
+"name_vi": "Dự phòng giảm giá tiền mang đi gửi -ngân hàng chưa hạch toán",
+"parent": "109",
+"postable": true
+},
+{
+"code": "11",
+"name_lo": "ເຄື່ອງ​ມື​ການ​ເງິນ, ເຄື່ອງ​ມື​ການ​ເງິນ​ໃນ​ກຳ​ມື ແລະ ເພື່ອ​ຮຽກ​ເກັບ, ຫຼັກ​ຊັບ​ລົງ​ທຶນ ໄລ​ຍະ​ສັ້ນ",
+"name_vi": "Công cụ tài chính ,công cụ tài chính trong tay và để thu ,chứng khoán đầu tư ngắn hạn",
+"parent": null,
+"postable": false
+},
+{
+"code": "111",
+"name_lo": "ເຄື່ອງ​ມື​ການ​ເງິນ​ຂັ້ນ​ພື້ນ​ຖານ - ຊັບ​ສິນ​ໝູນ​ວຽນ",
+"name_vi": "Công cụ tài chính cơ bản ,tài sản ngắn hạn",
+"parent": "11",
+"postable": false
+},
+{
+"code": "1111",
+"name_lo": "​ໜີ້​ຕ້ອງ​ຮັບ ​ຈາກ​ການ​ໃຫ້​ເງິນ​ກູ້",
+"name_vi": "Các khoản cho vay phải thu",
+"parent": "111",
+"postable": true
+},
+{
+"code": "1112",
+"name_lo": "ໜີ້​ຕ້ອງ​ຮັບ ຈາກ​ໃບ​ຢັ້ງ​ຢືນ​ໜີ້",
+"name_vi": "Hối phiếu phải thu",
+"parent": "111",
+"postable": true
+},
+{
+"code": "1113",
+"name_lo": "ຣຸ້ນ",
+"name_vi": "Cổ phiếu",
+"parent": "111",
+"postable": true
+},
+{
+"code": "1114",
+"name_lo": "ພັນ​ທະ​ບັດ",
+"name_vi": "Trái phiếu",
+"parent": "111",
+"postable": true
+},
+{
+"code": "1116",
+"name_lo": "ເຄື່ອງມືການເງິນພື້ນຖານອື່ນໆ",
+"name_vi": "Các công cụ tài chính cơ bản khác",
+"parent": "111",
+"postable": true
+},
+{
+"code": "1118",
+"name_lo": "​ດອກ​ເບ້ຍ ຄິດ​ໄລ່ - ຕ້ອງ​ຮັບ",
+"name_vi": "Lãi phải thu",
+"parent": "111",
+"postable": true
+},
+{
+"code": "112",
+"name_lo": "ເຄື່ອງ​ມື​ການ​ເງິນ​ອື່ນໆ - ຊັບ​ສິນ​ໝູນ​ວຽນ",
+"name_vi": "Các công cụ tài chính khác -tài sản ngắn hạn",
+"parent": "11",
+"postable": true
+},
+{
+"code": "113",
+"name_lo": "ເຄື່ອງ​ມື​ການ​ເງິນ​ໃນ​ກຳ​ມື ແລະ ເພື່ອ​ຮຽກ​ເກັບ",
+"name_vi": "Công cụ tài chính trong tay và để thu",
+"parent": "11",
+"postable": false
+},
+{
+"code": "1131",
+"name_lo": "ໃບຢັ້ງຢືນການຄ້າຮອດກຳນົດ ແລະ ພວມຮຽກເກັບ",
+"name_vi": "Thương phiếu đến hạn và đang thu",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1132",
+"name_lo": "ໃບຢັ້ງຢືນການຄ້າມອບຂາຍຊຳລະຕາມອັດຕາຫຼຸດຜ່ອນ",
+"name_vi": "Hối phiếu có chiết khấu",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1133",
+"name_lo": "ແຊັກໃນຄັງ",
+"name_vi": "Séc trong quỹ",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1134",
+"name_lo": "ແຊັກພວມຮຽກເກັບ",
+"name_vi": "Séc đang huy động thu",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1135",
+"name_lo": "ບັດສິນເຊື່ອທະນາຄານພວມຮຽກເກັບ",
+"name_vi": "Thẻ tín dụng đang thu",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1136",
+"name_lo": "ເອກະສານຢັ້ງຢືນມີຄ່າອື່ນໆ ພວມຮຽກເກັບ",
+"name_vi": "Các hối phiếu nhờ thu khác",
+"parent": "113",
+"postable": true
+},
+{
+"code": "1139",
+"name_lo": "ແຊັກທີ່ໄດ້ສັ່ງຈ່າຍ ຜູ້ມີສິດຮັບເງິນບໍ່ທັນຮຽກເກັບນຳທະນາຄານ",
+"name_vi": "Séc đã phát hành -người thụ hưởng chưa được gửi để thu tiền",
+"parent": "113",
+"postable": true
+},
+{
+"code": "114",
+"name_lo": "ຫຼັກຊັບລົງທຶນ ໄລຍະສັ້ນ",
+"name_vi": "Chứng khoán đầu tư ngắn hạn",
+"parent": "11",
+"postable": false
+},
+{
+"code": "1141",
+"name_lo": "ຫຼັກຊັບລົງທຶນ ໃນຮຸ້ນຕົນເອງທີ່ໄດ້ຊື້ຄືນ",
+"name_vi": "Chứng khoán đầu tư vào cổ phiếu được mua lại",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1142",
+"name_lo": "ຫຼັກຊັບລົງທຶນ  ໃນຮຸ້ນຈົດທະບຽນຕະຫຼາດຫຼັກຊັບ",
+"name_vi": "Chứng khoán đầu tư trên thị trường chứng khoán",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1143",
+"name_lo": "ຫຼັກຊັບລົງທຶນ ໃນຮຸ້ນອື່ນໆ",
+"name_vi": "Chứng khoán đầu tư vào cổ phiếu khác",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1144",
+"name_lo": "ຫຼັກຊັບລົງທຶນ  ພັນທະບັດຄັງເງິນ",
+"name_vi": "Chứng khoán đầu tư vào trái phiếu kho bạc",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1145",
+"name_lo": "ຫຼັກຊັບລົງທຶນ  ພັນທະບັດຄັງເງິນຈົດທະບຽນໃນຕະຫຼາດຫຼັກຊັບ",
+"name_vi": "Trái phiếu kho bạc niêm yết trên thị trường chứng khoán",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1146",
+"name_lo": "ຫຼັກຊັບລົງທຶນ  ພັນທະບັດຄັງເງິນອື່ນໆ",
+"name_vi": "Trái phiếu kho bạc khác",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1147",
+"name_lo": "ດອກ​ເບ້ຽ​ຄິດ​ໄລ່​-ຕ້ອງ​ຮັບ",
+"name_vi": "Lãi phải thu",
+"parent": "114",
+"postable": true
+},
+{
+"code": "1148",
+"name_lo": "ຫຼັກຊັບ ໄລຍະສັ້ນອື່ນໆ",
+"name_vi": "Chứng khoán đầu tư ngắn hạn khác",
+"parent": "114",
+"postable": true
+},
+{
+"code": "119",
+"name_lo": "ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ເຄື່ອງມືການເງິນ",
+"name_vi": "Dự phòng giảm giá công cụ tài chính",
+"parent": "11",
+"postable": false
+},
+{
+"code": "1191",
+"name_lo": "ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ເຄື່ອງມືການເງິນຂັ້ນພື້ຍຖານ",
+"name_vi": "Dự phòng giảm giá - Công cụ tài chính cơ bản",
+"parent": "119",
+"postable": true
+},
+{
+"code": "1192",
+"name_lo": "ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ເຄື່ອງມືການເງິນອື່ນໆ",
+"name_vi": "Dự phòng giảm giá - Công cụ tài chính khác",
+"parent": "119",
+"postable": true
+},
+{
+"code": "1193",
+"name_lo": "ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ເຄື່ອງມືການເງິນໃນກຳມື ແລະ ເພື່ອຮຽກເກັບ",
+"name_vi": "Dự phòng giảm giá - Công cụ tài chính trong và để thu",
+"parent": "119",
+"postable": true
+},
+{
+"code": "1194",
+"name_lo": "ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ຫຼັກຊັບລົງທຶນໄລຍະສັ້ນ",
+"name_vi": "Dự phòng giảm giá - Chứng khoán đầu tư ngắn hạn",
+"parent": "119",
+"postable": true
+},
+{
+"code": "12",
+"name_lo": "ລູກ​ຄ້າ ຕິດ​ໜີ້",
+"name_vi": "Khách hàng - Nợ phải thu",
+"parent": null,
+"postable": false
+},
+{
+"code": "121",
+"name_lo": "ລູກຄ້າ ​- ຄ່າ​ສິນຄ້າ, ຜະລິດ​ຕະພັນ, ບໍລິການ",
+"name_vi": "Khách hàng - Hàng hóa ,sản phẩm ,dịch vụ",
+"parent": "12",
+"postable": false
+},
+{
+"code": "1211",
+"name_lo": "ລູກຄ້າ-ຄ່າສິນຄ້າ",
+"name_vi": "Khách hàng - Hàng hóa",
+"parent": "121",
+"postable": true
+},
+{
+"code": "1212",
+"name_lo": "ລູກຄ້າ-ຄ່າຜະລິດຕະພັນ",
+"name_vi": "Khách hàng - Sản phẩm",
+"parent": "121",
+"postable": true
+},
+{
+"code": "1213",
+"name_lo": "ລູກຄ້າ-ຄ່າບໍລິການ",
+"name_vi": "Khách hàng - Dịch vụ",
+"parent": "121",
+"postable": true
+},
+{
+"code": "122",
+"name_lo": "ລູກຄ້າ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຮັບ",
+"name_vi": "Khách hàng - Các hóa đơn phải thu",
+"parent": "12",
+"postable": false
+},
+{
+"code": "1221",
+"name_lo": "ລູກຄ້າ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຮັບ ຄ່າສິນຄ້່າ",
+"name_vi": "Khách hàng - Các hóa đơn phải thu hàng hóa",
+"parent": "122",
+"postable": true
+},
+{
+"code": "1222",
+"name_lo": "ລູກຄ້າ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຮັບ ຄ່າຜະລິດຕະພັນ",
+"name_vi": "Khách hàng - Các hóa đơn phải thu sản phẩm",
+"parent": "122",
+"postable": true
+},
+{
+"code": "1223",
+"name_lo": "ລູກຄ້າ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຮັບ ຄ່າບໍລິການ",
+"name_vi": "Khách hàng - Các hóa đơn phải thu dịch vụ",
+"parent": "122",
+"postable": true
+},
+{
+"code": "124",
+"name_lo": "ລູກຄ້າ ​​- ໜີ້ຕ້ອງຮັບທວງຍາກ",
+"name_vi": "Khách hàng - Phải thu khó đòi",
+"parent": "12",
+"postable": true
+},
+{
+"code": "125",
+"name_lo": "ໜີ້ຕ້ອງຮັບ - ບ້ວງວຽກ​ງານກໍ່ສ້າງ ຫຼື ບໍລິການທີ່ບໍ່ທັນໄດ້ ອອກໃບເກັບເງິນ",
+"name_vi": "Nợ phải thu - Phần công việc xây dựng hoặc dịch vụ chưa xuất hóa đơn",
+"parent": "12",
+"postable": true
+},
+{
+"code": "126",
+"name_lo": "ລູກ​ຄ້າ - ຂາຍຜະລິດ​ຕະພັນ, ​ສິນຄ້າ ທີ່​ບໍ່​ທັນ​ໄດ້​ອອກ​ໃບ​ເກັບ​ເງິນ",
+"name_vi": "Khách hàng - Bán sản phẩm ,hàng hóa chưa xuất hóa đơn",
+"parent": "12",
+"postable": true
+},
+{
+"code": "129",
+"name_lo": "ຄ່າສູນ​ເສຍມູນຄ່າ ຂອງບັນຊີລູູກຄ້າ",
+"name_vi": "Dự phòng giảm giá các khoản phải thu khách hàng",
+"parent": "12",
+"postable": true
+},
+{
+"code": "13",
+"name_lo": "ເຄື່ອງ​ໃນ​ສາງ",
+"name_vi": "Hàng tồn kho",
+"parent": null,
+"postable": false
+},
+{
+"code": "131",
+"name_lo": "ວັດ​ຖຸ​ດິບ ແລະ ວັດ​ຖຸ​ປະ​ກອບ",
+"name_vi": "Nguyên vật liệu",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1311",
+"name_lo": "ວັດຖຸ​ດິບ",
+"name_vi": "Nguyên liệu",
+"parent": "131",
+"postable": true
+},
+{
+"code": "1312",
+"name_lo": "ວັດຖຸ​ປະກອບ",
+"name_vi": "Vật liệu",
+"parent": "131",
+"postable": true
+},
+{
+"code": "132",
+"name_lo": "ວັດຖຸອື່ນໆ ຮັບໃຊ້ການຜະລິດ",
+"name_vi": "Vật liệu phục vụ sản xuất khác",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1321",
+"name_lo": "ວັດຖຸຊົມໃຊ້",
+"name_vi": "Công cụ",
+"parent": "132",
+"postable": true
+},
+{
+"code": "1322",
+"name_lo": "ວັດຖຸປະກອບ​ຊົມ​ໃຊ້",
+"name_vi": "Dụng cụ",
+"parent": "132",
+"postable": true
+},
+{
+"code": "1323",
+"name_lo": "ເຄື່ອງຫຸ້ມຫໍ່ຖິ້ມເລີຍ",
+"name_vi": "Bao bì dùng một lần",
+"parent": "132",
+"postable": true
+},
+{
+"code": "1324",
+"name_lo": "ເຄື່ອງຫຸ້ມຫໍ່ມັດຈຳ ຈຳແນກບໍ່ໄດ້",
+"name_vi": "Bao bì kèm theo hàng -không phân biệt được",
+"parent": "132",
+"postable": true
+},
+{
+"code": "133",
+"name_lo": "ຜົນຜະລິດ ພວມປຸງແຕ່ງ",
+"name_vi": "Chi phí sản xuất, kinh doanh dở dang",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1331",
+"name_lo": "ຜະລິດຕະພັນພວມຜະລິດ",
+"name_vi": "Sản phẩm dở dang",
+"parent": "133",
+"postable": true
+},
+{
+"code": "1332",
+"name_lo": "ວຽກງານກໍ່ສ້າງພວມດຳເນີນງານ",
+"name_vi": "Xây dựng cơ bản dở dang",
+"parent": "133",
+"postable": true
+},
+{
+"code": "134",
+"name_lo": "ການບໍລິການພວມດຳເນີນງານ",
+"name_vi": "Chi phí sản xuất, kinh doanh dở dang",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1341",
+"name_lo": "ການຄົ້ນຄວ້າ ພວມດຳເນີນງານ",
+"name_vi": "Công trình nghiên cứu dở dang",
+"parent": "134",
+"postable": true
+},
+{
+"code": "1342",
+"name_lo": "ການໃຫ້ບໍລິການ ພວມດຳເນີນງານ",
+"name_vi": "Cung cấp dịch vụ dở dang",
+"parent": "134",
+"postable": true
+},
+{
+"code": "135",
+"name_lo": "ຊັບ​ສິນ​ຊີ​ວະ​ພາບ-ໝູຍວຽນ",
+"name_vi": "Tài sản sinh học -ngắn hạn",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1351",
+"name_lo": "ສັດ",
+"name_vi": "Động vật",
+"parent": "135",
+"postable": true
+},
+{
+"code": "1352",
+"name_lo": "​ຕົ້ນ​ໄມ້",
+"name_vi": "Cây cối",
+"parent": "135",
+"postable": true
+},
+{
+"code": "1358",
+"name_lo": "ຊັບ​ສິນ​ຊີ​ວະ​ພາບ​ອື່ນໆ- ໝູນວຽນ",
+"name_vi": "Các tài sản sinh học ngắn hạn khác",
+"parent": "135",
+"postable": true
+},
+{
+"code": "136",
+"name_lo": "ຜະລິດຕະພັນໃນສາງ",
+"name_vi": "Sản phẩm tồn kho",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1361",
+"name_lo": "ຜະລິດຕະພັນ ລະຫວ່າງ​ກາງ",
+"name_vi": "Sản phẩm trung gian",
+"parent": "136",
+"postable": true
+},
+{
+"code": "1365",
+"name_lo": "ຜະລິດຕະພັນສຳເລັດຮູບ",
+"name_vi": "Thành phẩm",
+"parent": "136",
+"postable": true
+},
+{
+"code": "1368",
+"name_lo": "ຜະລິດຕະພັນ​ເສດ​ເຫຼື​ອ ຫຼື ຜະລິດຕະພັນເກັບຄືນໄດ້",
+"name_vi": "Phế phẩm hoặc sản phẩm có thể thu hồi",
+"parent": "136",
+"postable": true
+},
+{
+"code": "137",
+"name_lo": "ສິນຄ້າ ໃນສາງ",
+"name_vi": "Hàng hóa tồn kho",
+"parent": "13",
+"postable": true
+},
+{
+"code": "138",
+"name_lo": "ເຄື່ອງໃນສາງ ຢູ່ທາງນອກ ( ພວມ​ຢູ່​ລະຫວ່າງ​ທາງ ຫຼື ຝາກ ຫຼື ຄ້ຳປະກັນ )",
+"name_vi": "Hàng tồn  kho đang ở ngoài ( đang đi đường hoặc gửi hoặc ký gửi)",
+"parent": "13",
+"postable": true
+},
+{
+"code": "139",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າເຄື່ອງໃນສາງແລະ ພວມຢູ່ລະຫວ່າງທາງ",
+"name_vi": "Dự phòng giảm giá hàng tồn kho và đang đi đường",
+"parent": "13",
+"postable": false
+},
+{
+"code": "1391",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ວັດຖຸດິບ ແລະ ວັດຖຸປະກອບ",
+"name_vi": "Dự phòng giảm giá nguyên vật liệu",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1392",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ວັດຖຸຮັບໃຊ້ໃນການຜະລິດອື່ນໆ",
+"name_vi": "Dự phòng giảm giá vật liệu phục vụ sản xuất khác",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1393",
+"name_lo": "​​ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ຜົນ​ຜະ​ລິດ​ພວມ​ປຸງ​ແຕ່ງ",
+"name_vi": "Dự phòng giảm giá sản phẩm dở dang",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1394",
+"name_lo": "​​ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ການ​ບໍ​ລິ​ການ​ພວມ​ດໍາເນີນງານ",
+"name_vi": "Dự phòng giảm giá dịch vụ dở dang",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1395",
+"name_lo": "​​ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ ຊັບ​ສິນ​ຊີ​ວະ​ພາບ​",
+"name_vi": "Dự phòng giảm giá tài sản sinh học",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1396",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ຜະລິດຕະພັນໃນສາງ",
+"name_vi": "Dự phòng giảm giá sản phẩm tồn kho",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1397",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ສິນຄ້າໃນສາງ",
+"name_vi": "Dự phòng giảm giá hàng hóa tồn kho",
+"parent": "139",
+"postable": true
+},
+{
+"code": "1398",
+"name_lo": "ສ່ວນເສຍມູນຄ່າ ເຄື່ອງໃນສາງທາງນອກ",
+"name_vi": "Dự phòng giảm giá hàng đang đi đường",
+"parent": "139",
+"postable": true
+},
+{
+"code": "14",
+"name_lo": "ລູກ​ໜີ້​ອື່ນໆ",
+"name_vi": "Nợ phải thu khác",
+"parent": null,
+"postable": false
+},
+{
+"code": "141",
+"name_lo": "ໜີ້ຕ້ອງຮັບ ຈາກການຂາຍຊັບສົມບັດຄົງທີ່",
+"name_vi": "Nợ phải thu từ thanh lý tài sản cổ định",
+"parent": "14",
+"postable": true
+},
+{
+"code": "142",
+"name_lo": "ໜີ້ຕ້ອງ​ຮັບ ຈາກ​ການ​ຂາຍ​​ ອະສັງຫາລິມະຊັບ ເພື່ອການລົງທຶນ",
+"name_vi": "Nợ phải thu từ thanh lý bất động sản đầu tư",
+"parent": "14",
+"postable": true
+},
+{
+"code": "143",
+"name_lo": "ໜີ້ຕ້ອງ​ຮັບ ຈາກ​ການ​ຂາຍ​​ ຊັບສິນຊີວະພາບ",
+"name_vi": "Nợ phải thu từ thanh lý tài sản sinh học",
+"parent": "14",
+"postable": true
+},
+{
+"code": "145",
+"name_lo": "ໜີ້ຕ້ອງຮັບເຄື່ອງມືການເງິນ",
+"name_vi": "Nợ phải thu công cụ tài chính",
+"parent": "14",
+"postable": true
+},
+{
+"code": "146",
+"name_lo": "ລາຍຈ່າຍ ຈ່າຍ​ລ່ວງ​ໜ້າ",
+"name_vi": "Các khoản trả trước",
+"parent": "14",
+"postable": true
+},
+{
+"code": "148",
+"name_lo": "ລູກໜີ້​ອື່ນໆ",
+"name_vi": "Nợ phải thu khác",
+"parent": "14",
+"postable": true
+},
+{
+"code": "149",
+"name_lo": "ຄ່າສູນ​ເສຍມູນຄ່າ ລູກໜີ້ອື່ນໆ",
+"name_vi": "Nợ phòng giảm giá nợ phải thu khác",
+"parent": "14",
+"postable": true
+},
+{
+"code": "15",
+"name_lo": "ຜູ້​ຖື​ຮຸ້ນ ຫຼື ບໍ​ລິ​ສັດ​ໃນ​ກຸ່ມ ​ຕິດ​ໜີ້",
+"name_vi": "Phải thu các cổ đông hoặc công ty liên kết tập đoàn",
+"parent": null,
+"postable": false
+},
+{
+"code": "151",
+"name_lo": "ໜີ້​ຕ້ອງ​ຮັບ ບໍລິສັດ​ໃນ​ກຸ່ມ",
+"name_vi": "Nợ phải thu công ty liên doanh -liên kết tập đoàn",
+"parent": "15",
+"postable": true
+},
+{
+"code": "153",
+"name_lo": "​ຂາຮຸ້ນ ທຶນ​ກໍາ​ລັງ​ຈະປະ​ກອບ",
+"name_vi": "Cổ đông - Vốn đang góp",
+"parent": "15",
+"postable": true
+},
+{
+"code": "154",
+"name_lo": "​ຂາ​ຮຸ້ນ ລ່ວງ​ໜ້າ​ເງິນ​ປັນ​ຜົນ",
+"name_vi": "Cổ đông - Tạm ứng cổ tức",
+"parent": "15",
+"postable": true
+},
+{
+"code": "155",
+"name_lo": "ຂາ​ຮຸ້ນ ການ​ເຄື່ອນ​ໄຫວ​ຮ່ວມ​ກັນ ຫຼື ເປັນ​ກຸ່ມ",
+"name_vi": "Cổ đông - Công ty liên doanh liên kết ,giao dịch chung hoặc nhóm",
+"parent": "15",
+"postable": true
+},
+{
+"code": "159",
+"name_lo": "ຄ່າ​ສູນ​ເສຍມູນຄ່າ ຂ​ອງບັນຊີກຸ່ມບໍລິສັດ ແລະ ຂາຮຸ້ນ",
+"name_vi": "Dự phòng giảm giá các khoản phải thu công ty liên kết ,tập đoàn",
+"parent": "15",
+"postable": true
+},
+{
+"code": "16",
+"name_lo": "ພະ​ນັກ​ງານ, ຜູ້​ສະ​ໜອງ, ອົງ​ການ​ປະ​ກັນ​ສັງ​ຄົມ, ລັດ ຕິດ​ໜີ້",
+"name_vi": "Phải thu nhân viên ,nhà cung cấp ,bảo hiểm xã hội và nhà nước",
+"parent": null,
+"postable": false
+},
+{
+"code": "160",
+"name_lo": "ພະ​ນັກ​ງານ - ຕິດ​ໜີ້",
+"name_vi": "Phải thu nhân viên",
+"parent": "16",
+"postable": false
+},
+{
+"code": "1601",
+"name_lo": "ພະນັກງານ - ເງິນລ່ວງໜ້າ ແລະ ຈ່າຍກ່ອນສ່ວນໜຶ່ງທີ່ໄດ້ ອະນຸມັດ",
+"name_vi": "Nhân viên - Các khoản tạm ứng và trả trước một phần",
+"parent": "160",
+"postable": true
+},
+{
+"code": "1602",
+"name_lo": "ພະ​ນັກ​ງານ - ລ່ວງ​ໜ້າ​ເງິນ​ບຳ​ເນັດ",
+"name_vi": "Nhân viên - Tiền thưởng ứng trước",
+"parent": "160",
+"postable": true
+},
+{
+"code": "1608",
+"name_lo": "​ພະ​ນັກ​ງານ - ​ໜີ້​ຕ້ອງ​ຮັບອື່ນໆ",
+"name_vi": "Nhân viên - Nợ phải thu khác",
+"parent": "160",
+"postable": true
+},
+{
+"code": "161",
+"name_lo": "ຜູ້ສະໜອງ - ຕິດໜີ້",
+"name_vi": "Phải thu nhà cung cấp",
+"parent": "16",
+"postable": false
+},
+{
+"code": "1611",
+"name_lo": "ເງິນ​ຈ່າຍ​ລ່ວງ​ໜ້າ ໃຫ້​ຜູ້​ສະ​ໜອງ ແລະ ເງິນ​ຈ່າຍ​ກ່ອນ​ສ່ວນ​ໜຶ່ງ",
+"name_vi": "Tạm ứng cho nhà cung cấp và tiền trả trước một phần",
+"parent": "161",
+"postable": true
+},
+{
+"code": "1612",
+"name_lo": "ສ່ວນຫຼຸດ​ຕ້ອງ​ຮັບ​ ຈາກຜູ້​ສະ​ໜອງ",
+"name_vi": "Phải thu chiết khấu ,giảm giá từ nhà cung cấp",
+"parent": "161",
+"postable": true
+},
+{
+"code": "1613",
+"name_lo": "ຜູ້​ສະ​ໜອງ-ໜີ້​ຕ້ອງ​ຮັບ ບ້ວງ​ເຄື່ອງ​ຫຸ້ມ​ຫໍ່ ທີ່​ຕ້ອງ​ສົ່ງ​ຄືນ",
+"name_vi": "Phải thu nhà cung cấp phần bao bì phải trả lại",
+"parent": "161",
+"postable": true
+},
+{
+"code": "1618",
+"name_lo": "ໜີ້​ຕ້ອງ​ຮັບ​ອື່ນໆ ນຳ​ຜູ້​ສະ​ໜອງ",
+"name_vi": "Phải thu nhà cung cấp khác",
+"parent": "161",
+"postable": true
+},
+{
+"code": "162",
+"name_lo": "ອົງການປະກັນສັງຄົມ, ລາຍຈ່າຍ ຈ່າຍລ່ວງໜ້າ",
+"name_vi": "Bảo hiểm xã hội - Tạm ứng trước",
+"parent": "16",
+"postable": true
+},
+{
+"code": "163",
+"name_lo": "ລັດ - ເງິນຊ່ວຍຫນູນຕ້ອງຮັບ",
+"name_vi": "Nhà nước - Các khoản tài trợ phải thu",
+"parent": "16",
+"postable": true
+},
+{
+"code": "164",
+"name_lo": "ລັດ - ອາ​ກອນ​ກຳໄລ ຈ່າຍລ່ວງໜ້າ ຫລື ຈ່າຍເກີນ",
+"name_vi": "Nhà nước - Thuế thu nhập doanh nghiệp nộp trước hoặc nộp thừa",
+"parent": "16",
+"postable": true
+},
+{
+"code": "165",
+"name_lo": "ລັດ - ອມພ ທີ່ສາມາດຫັກໄດ້ ສຳ​ລັບ ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່",
+"name_vi": "Nhà nước -Thuế GTGT được khấu trừ của tài sản cổ định",
+"parent": "16",
+"postable": true
+},
+{
+"code": "166",
+"name_lo": "ລັດ - ອມ​ພ ທີ່​ສາ​ມາດ​ຫັກ​ໄດ້ ສຳ​ລັບ ​ສິນ​ຄ້າ, ການ​ບໍ​ລິ​ການ",
+"name_vi": "Nhà nước - Thuế GTGT được khấu trừ của hàng hóa ,dịch vụ",
+"parent": "16",
+"postable": true
+},
+{
+"code": "167",
+"name_lo": "ລັດ - ອມພ ຍົກໄປຫັກຕໍ່ ຫຼື ສິນເຊື່ອ ອມພ",
+"name_vi": "Nhà nước - Thuế GTGT được khấu trừ tiếp hoặc tín dụng thuế GTGT",
+"parent": "16",
+"postable": true
+},
+{
+"code": "168",
+"name_lo": "ລັດ - ອມພ ບ້ວງໃບເກັບເງິນບໍ່ທັນມາຮອດ",
+"name_vi": "Nhà nước - Thuế GTGT chưa được nhận hóa đơn",
+"parent": "16",
+"postable": true
+},
+{
+"code": "169",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ບັນຊິ ຜູ້ສະໜອງ,ພະນັກງານ ອົງການປະກັນສັງຄົມ ແລະ ລັດຕິດໜີ້",
+"name_vi": "Dự phòng giảm giá phải thu nhân viên , nhà cung cấp ,bảo hiểm xã hội và nhà nước",
+"parent": "16",
+"postable": false
+},
+{
+"code": "1690",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ພະນັກງານ ຕິດໜີ້",
+"name_vi": "Dự phòng giảm giá phải thu nhân viên",
+"parent": "169",
+"postable": true
+},
+{
+"code": "1691",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ຜູ້ສະໜອງ,ຕິດໜີ້",
+"name_vi": "Dự phòng giảm giá phải thu nhà cung cấp",
+"parent": "169",
+"postable": true
+},
+{
+"code": "1692",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ອົງການປະກັນສັງຄົມຕິດໜີ້",
+"name_vi": "Dự phòng giảm giá phải thu bảo hiểm xã hội",
+"parent": "169",
+"postable": true
+},
+{
+"code": "1693",
+"name_lo": "ຄ່າສູນເສຍມູນຄ່າ ລັດຕິດໜີ້",
+"name_vi": "Dự phòng giảm giá cphải thu nhà nước",
+"parent": "169",
+"postable": true
+},
+{
+"code": "20",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ການເງິນອື່ນໆ",
+"name_vi": "Tài sản cổ định tài chính khác",
+"parent": null,
+"postable": false
+},
+{
+"code": "201",
+"name_lo": "ເງິນລົງທຶນ ແນໃສ່ເພື່ອຂາຍອອກ",
+"name_vi": "Đầu tư được nắm giữ để bán",
+"parent": "20",
+"postable": true
+},
+{
+"code": "202",
+"name_lo": "ເງິນລົງທຶນ ຖືໄວ້ຈົນຄົບກຳນົດ",
+"name_vi": "Đầu tư nắm giữ đến ngày đáo hạn",
+"parent": "20",
+"postable": true
+},
+{
+"code": "203",
+"name_lo": "ເງິນລົງທຶນ ໃນພັນທະບັດລັດຖະບານ",
+"name_vi": "Đầu tư vào trái phiếu chính phủ",
+"parent": "20",
+"postable": true
+},
+{
+"code": "204",
+"name_lo": "ເງິນໃຫ້ກູ້ຢືມ",
+"name_vi": "Các khoản cho vay",
+"parent": "20",
+"postable": true
+},
+{
+"code": "205",
+"name_lo": "ເງິນວາງ ແລະ ຄ້ຳປະກັນ ທີ່ໄດ້ຈ່າຍ",
+"name_vi": "Tiền đặt cọc hoặc tiền bảo lãnh đã chi",
+"parent": "20",
+"postable": true
+},
+{
+"code": "206",
+"name_lo": "ເງິນລົງທຶນ ໃນອະສັງຫາລິມະຊັບ",
+"name_vi": "Đầu tư vào bất động sản đầu tư",
+"parent": "20",
+"postable": true
+},
+{
+"code": "207",
+"name_lo": "ດອກເບັ້ຍຄິດໄລ່ ຕ້ອງຮັບ",
+"name_vi": "Lãi phải thu",
+"parent": "20",
+"postable": true
+},
+{
+"code": "208",
+"name_lo": "ໜີ້ຕ້ອງຮັບຄົງທີ່ ການເງິນອື່ນໆ",
+"name_vi": "Phải thu tài chính cổ định khác",
+"parent": "20",
+"postable": true
+},
+{
+"code": "209",
+"name_lo": "ເງິນຕ້ອງຖອກຕື່ມບ້ວງໃບຢັ້ງຢືນຊັບຄົງທີ່ ທີ່ບໍ່ທັນຮຽກໃຫ້ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần giấy chứng nhận tài sản cổ định chưa huy động",
+"parent": "20",
+"postable": true
+},
+{
+"code": "21",
+"name_lo": "ເງິນລົງທຶນ ແລະ ໜີ້ຕ້ອງຮັບທີ່ຕິດພັນ",
+"name_vi": "Các khoản đầu tư và nợ phải thu liên quan",
+"parent": null,
+"postable": false
+},
+{
+"code": "210",
+"name_lo": "ເງິນລົງທຶນ ບໍລິສັດໃນເຄືອ",
+"name_vi": "Đầu tư vào các công ty con",
+"parent": "21",
+"postable": true
+},
+{
+"code": "211",
+"name_lo": "ເງິນລົງທຶນ ບໍລິສັດຮ່ວມທຶນ (ວິສາຫະກິດປະສົມ)",
+"name_vi": "Đầu tư vào công ty liên doanh liên kết (doanh nghiệp hỗn hợp)",
+"parent": "21",
+"postable": true
+},
+{
+"code": "212",
+"name_lo": "ເງິນລົງທຶນ ບໍລິສັດຄວບຄຸມຮ່ວມກັນ",
+"name_vi": "Đầu tư vào công ty đồng kiểm soát",
+"parent": "21",
+"postable": true
+},
+{
+"code": "213",
+"name_lo": "ເງິນໃຫ້ ບໍລິສັດ ໃນກຸ່ມ (ໃນເຄືອ) ກູ້ຢືມ",
+"name_vi": "Các khoản vay cho công ty con",
+"parent": "21",
+"postable": true
+},
+{
+"code": "214",
+"name_lo": "ພູດສ່ວນຮຸ້ນ ໃນວິສາຫະກິດທີ່ຊື້ຊັບສິນສຸດທິ",
+"name_vi": "Cổ phần trong các doanh nghiệp đã mua tài sản thuần",
+"parent": "21",
+"postable": true
+},
+{
+"code": "216",
+"name_lo": "ໜີ້ຕ້ອງຮັບທີ່ຕິດພັນກັບການຮ່ວມປະກອບທຶນ ບໍລິສັດໃນເຄືອ",
+"name_vi": "Các khoản phải thu khác liên quan đến góp vốn tham gia của các công ty con",
+"parent": "21",
+"postable": true
+},
+{
+"code": "217",
+"name_lo": "ໜີ້ຕ້ອງຮັບອື່ນໆ ທີ່ຕິດພັນກັບບໍລິສັດ ຫຸ້ນສ່ວນ",
+"name_vi": "Các khoản phải thu khác liên quan đến công ty liên kết",
+"parent": "21",
+"postable": true
+},
+{
+"code": "218",
+"name_lo": "ໜີ້ຕ້ອງຮັບອື່ນໆ ທີ່ຕິດພັນກັບເງິນລົງທຶນໃນ ຊັບສິນສຸດທິ ຕາມມູນຄ່າຍຸຕິທຳ",
+"name_vi": "Các khoản phải thu khác liên quan đến đầu tư vào tài sản thuần theo giá trị hợp lý",
+"parent": "21",
+"postable": true
+},
+{
+"code": "219",
+"name_lo": "ເງິນທີ່ຕ້ອງຖອກຕື່ມ ບ້ວງຮ່ວມປະກອບທຶນ ທີ່​ຍັງບໍ່​ທັນຮຽກໃຫ້ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần vồn góp tham gia chưa huy động",
+"parent": "21",
+"postable": false
+},
+{
+"code": "2190",
+"name_lo": "ເງິນ​ທີ່​ຕ້ອງ​ຖອກ​ຕື່ມ ບ້ວງ​ຮ່ວມ​ປະກອບ​ທຶນ ບໍ​ລິ​ສັດ​ໃນ​ເຄືອ ທີ່​ຍັງ​ບໍ່​ທັນ​ຮຽກ​ໃຫ້​ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần vồn góp tham gia công ty con chưa huy động",
+"parent": "219",
+"postable": true
+},
+{
+"code": "2191",
+"name_lo": "ເງິນ​ທີ່​ຕ້ອງ​ຖອກ​ຕື່ມ ບ້ວງ​ຮ່ວມ​ປະກອບ​ທຶນ ​ໃນ​ບໍ​ລິ​ສັດ​ຮ່ວມ ທີ່​ຍັງ​ບໍ່​ທັນ​ຮຽກ​ໃຫ້​ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần vồn góp tham gia công ty liên doanh liên kết chưa huy động",
+"parent": "219",
+"postable": true
+},
+{
+"code": "2192",
+"name_lo": "ເງິນ​ທີ່​ຕ້ອງ​ຖອກ​ຕື່ມ ບ້ວງ​ຮ່ວມ​ປະກອບ​ທຶນ ໃນ​ບໍ​ລິ​ສັດ​ຄວບ​ຄຸມ​ຮ່ວມ​ກັນ ທີ່​ຍັງ​ບໍ່​ທັນ​ຮຽກ​ໃຫ້​ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần vồn góp tham gia công ty đồng kiểm soát chưa huy động",
+"parent": "219",
+"postable": true
+},
+{
+"code": "2194",
+"name_lo": "ເງິນ​ທີ່​ຕ້ອງ​ຖອກ​ຕື່ມ ​ບ້ວງ​ເງິນ​ລົງ​ທຶນ​ໃນ​ຊັບ​ສິນ​ສຸດ​ທິ ທີ່​ຍັງ​ບໍ່​ທັນ​ຮຽກ​ໃຫ້​ປະກອບ",
+"name_vi": "Các khoản phải góp thêm phần đầu tư vào tào tài sản thuần chưa huy động",
+"parent": "219",
+"postable": true
+},
+{
+"code": "22",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ເຊົ່າສິນເຊື່ອ",
+"name_vi": "Tài sản cổ định cho thuê",
+"parent": null,
+"postable": false
+},
+{
+"code": "221",
+"name_lo": "ເຊົ່າສິນເຊື່ອ - ສິດນຳໃຊ້ທີ່ດິນ",
+"name_vi": "Cho thuê - quyền sử dụng đất",
+"parent": "22",
+"postable": true
+},
+{
+"code": "222",
+"name_lo": "ເຊົ່າສິນເຊື່ອ - ສິ່ງປຸກສ້າງ",
+"name_vi": "Cho thuê - Công trình xây dựng",
+"parent": "22",
+"postable": true
+},
+{
+"code": "223",
+"name_lo": "ເຊົ່າສິນເຊື່ອ - ເຄື່ອງ​ຈັກ ແລະ ອຸ​ປະ​ກອນ",
+"name_vi": "Cho thuê - Máy móc và thiết bị",
+"parent": "22",
+"postable": true
+},
+{
+"code": "224",
+"name_lo": "ເຊົ່າສິນເຊື່ອ - ພາຫະນະ",
+"name_vi": "Cho thuê - Phương tiện",
+"parent": "22",
+"postable": true
+},
+{
+"code": "225",
+"name_lo": "ເຊົ່າ​ສິນ​ເຊື່ອ - ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່​ອື່ນໆ",
+"name_vi": "Cho thuê tài sản cổ định khác",
+"parent": "22",
+"postable": true
+},
+{
+"code": "226",
+"name_lo": "ໜີ້ຕ້ອງຮັບຈາກການໃຫ້ເຊົ່າສິນເຊື່ອ",
+"name_vi": "Nợ phải thu từ cho thuê",
+"parent": "22",
+"postable": true
+},
+{
+"code": "23",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ພວມຊື້ ຫຼື ພວມຜະລິດ",
+"name_vi": "Tài sản cổ định dở dang",
+"parent": null,
+"postable": false
+},
+{
+"code": "231",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນພວມຊື້ ຫຼື ພວມຜະລິດ",
+"name_vi": "Tài sản cổ định hữu hình dở dang",
+"parent": "23",
+"postable": true
+},
+{
+"code": "232",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນພວມຊື້ ຫຼື ພວມຜະລິດ",
+"name_vi": "Tài sản cổ định vô hình dở dang",
+"parent": "23",
+"postable": true
+},
+{
+"code": "237",
+"name_lo": "ເງິນລ່ວງໜ້າ ແລະ ຈ່າຍສັ່ງຊື້ ຊັບສົມບັດຄົງທີ່ການເງິນ",
+"name_vi": "Tạm ứng mua tài sản cổ định tài chính",
+"parent": "23",
+"postable": true
+},
+{
+"code": "238",
+"name_lo": "ເງິນລ່ວງໜ້າ ແລະ ຈ່າຍສັ່ງຊື້ຊັບສົມບັດຄົງທີ່ບໍ່ມີຕົວຕົນ ແລະ ມີຕົວຕົນ",
+"name_vi": "Tạm ứng mua tài sản cổ định hữu hình và vô hình",
+"parent": "23",
+"postable": false
+},
+{
+"code": "2381",
+"name_lo": "ເງິນລ່ວງໜ້າ ແລະ ຈ່າຍສັ່ງຊື້ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ",
+"name_vi": "Tạm ứng mua tài sản cổ định hữu hình",
+"parent": "238",
+"postable": true
+},
+{
+"code": "2382",
+"name_lo": "ເງິນລ່ວງໜ້າ ແລະ ຈ່າຍສັ່ງຊື້ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນ",
+"name_vi": "Tạm ứng mua tài sản cổ định vô hình",
+"parent": "238",
+"postable": true
+},
+{
+"code": "24",
+"name_lo": "ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່ ມີ​ຕົວ​ຕົນ, ບໍ່​ມີ​ຕົວ​ຕົນ ແລະ  ສຳ​ປະ​ທານ",
+"name_vi": "Tài sản cổ định hữu hình ,vô hình và nhượng quyền",
+"parent": null,
+"postable": false
+},
+{
+"code": "241",
+"name_lo": "ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່ ມີ​ຕົວ​ຕົນ",
+"name_vi": "Tài sản cổ định hữu hình",
+"parent": "24",
+"postable": false
+},
+{
+"code": "2411",
+"name_lo": "ເຟີ​ນີ​ເຈີ ແລະ ອຸ​ປະ​ກອນ​ສຳ​ນັກ​ງານ",
+"name_vi": "Nội thất và thiết bị văn phòng",
+"parent": "241",
+"postable": true
+},
+{
+"code": "2412",
+"name_lo": "ສິ່ງປຸກສ້າງ",
+"name_vi": "Công trình xây dựng",
+"parent": "241",
+"postable": true
+},
+{
+"code": "2413",
+"name_lo": "ເຄື່ອງຈັກ ແລະ ອຸປະກອນ",
+"name_vi": "Máy móc và thiết bị",
+"parent": "241",
+"postable": true
+},
+{
+"code": "2414",
+"name_lo": "ພາຫະນະ",
+"name_vi": "Phương tiện",
+"parent": "241",
+"postable": true
+},
+{
+"code": "2417",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ປ່ຽນແທນກັນໄດ້",
+"name_vi": "Tài sản cổ định thay thế được",
+"parent": "241",
+"postable": true
+},
+{
+"code": "2418",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນອື່ນໆ",
+"name_vi": "Tài sản cổ định khác",
+"parent": "241",
+"postable": true
+},
+{
+"code": "242",
+"name_lo": "ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່ ບໍ່​ມີ​ຕົວ​ຕົນ",
+"name_vi": "Tài sản cổ định vô hình",
+"parent": "24",
+"postable": false
+},
+{
+"code": "2420",
+"name_lo": "ສິດນຳໃຊ້ທີ່ດິນ",
+"name_vi": "Quyền sử dụng đất",
+"parent": "242",
+"postable": true
+},
+{
+"code": "2421",
+"name_lo": "ຄ່າໃຊ້ຈ່າຍໃນການພັດທະນາ ທີ່ຈົດເປັນມູນຄ່າຄົງທີ່",
+"name_vi": "Chi phí phát triển được vốn hóa",
+"parent": "242",
+"postable": true
+},
+{
+"code": "2422",
+"name_lo": "ໂປ​ຣ​ແກ​ຣມ, ສິດ​ນຳ​ໃຊ້ ແລະ ຊັບ​ສິນ​ທີ່​ຄ້າຍ​ຄື​ກັນ",
+"name_vi": "Phần mềm ,quyền sử dụng và tài sản tương đương",
+"parent": "242",
+"postable": true
+},
+{
+"code": "2423",
+"name_lo": "ສິດທິສຳປະທານ ແລະ ສິດທິປະເພດດຽວກັນ",
+"name_vi": "Quyền tô nhượng và các quyền tương tự",
+"parent": "242",
+"postable": true
+},
+{
+"code": "2427",
+"name_lo": "ຊັບ​ສົມບັດ​ຮ້ານ​ຄ້າ (ຄ່ານິຍົມ)",
+"name_vi": "Lợi thế thương mại",
+"parent": "242",
+"postable": true
+},
+{
+"code": "2428",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນອື່ນໆ",
+"name_vi": "Tài sản cổ định vô hình khác",
+"parent": "242",
+"postable": true
+},
+{
+"code": "243",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ - ສຳປະທານ",
+"name_vi": "Tài sản cổ định - nhượng quyền",
+"parent": "24",
+"postable": false
+},
+{
+"code": "2430",
+"name_lo": "ສິດ​ນຳ​ໃຊ້​ທີ່​ດິນ - ສຳ​ປະທານ",
+"name_vi": "Quyền sử dụng đất - nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "2431",
+"name_lo": "ເຟີ​ນີ​ເຈີ ແລະ ອຸ​ປະ​ກອນ​ສຳ​ນັກ​ງານ - ສຳ​ປະທານ",
+"name_vi": "Nội thất và thiết bị văn phòng -nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "2432",
+"name_lo": "ສິ່ງປຸກສ້າງ - ສຳ​ປະທານ",
+"name_vi": "Công trình xây dựng - nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "2433",
+"name_lo": "ເຄື່ອງຈັກ ແລະ ອຸປະກອນ - ສຳ​ປະທານ",
+"name_vi": "Máy móc và thiết bị - nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "2434",
+"name_lo": "ພາຫະນະ - ສຳ​ປະທານ",
+"name_vi": "Phương tiện - nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "2438",
+"name_lo": "ຊັບສົມບັດຄົງທີ່ອື່ນໆ - ສຳປະທານ",
+"name_vi": "Tài sản cổ định khác - nhượng quyền",
+"parent": "243",
+"postable": true
+},
+{
+"code": "25",
+"name_lo": "​ຊັບ​ສິນ​ ຊີ​ວະ​ພາບ-ບໍ່​ໝູນ​ວຽນ",
+"name_vi": "Tài sản sinh học - ngắn hạn",
+"parent": null,
+"postable": false
+},
+{
+"code": "251",
+"name_lo": "ສັດ​ລ້ຽງ ( ພໍ່​ແມ່​ພັນ )",
+"name_vi": "Vật nuôi (con giống)",
+"parent": "25",
+"postable": true
+},
+{
+"code": "252",
+"name_lo": "ຕົ້ນໄມ້ ( ຕົ້ນໄມ້ກິນໝາກ ແລະ ສວນປູກຝັງ )",
+"name_vi": "Cây cối ( Cây ăn quả và đồn điền )",
+"parent": "25",
+"postable": true
+},
+{
+"code": "258",
+"name_lo": "ຊັບ​ສິນ​ຊີ​ວະ​ພາບ​ອື່ນໆ-ບໍ່​ໝູນ​ວຽນ",
+"name_vi": "Tài sản sinh học khác - dài hạn",
+"parent": "25",
+"postable": true
+},
+{
+"code": "27",
+"name_lo": "ເງິນ​ເຍື້ອນ​ຊຳ​ລະ ນອກ​ຮອບ​ວຽນ​ທຸ​ລະ​ກິດ - ຊັບ​ສິນ",
+"name_vi": "Tài khoản hoãn lại ngoài hoạt động kinh doanh - Tài sản",
+"parent": null,
+"postable": false
+},
+{
+"code": "271",
+"name_lo": "ອ​າກອນ​ເຍື້ອນຊຳລະ - ຊັບ​ສິນ",
+"name_vi": "Tài sản - Thuế thu nhập doanh nghiệp hoãn lại",
+"parent": "27",
+"postable": true
+},
+{
+"code": "28",
+"name_lo": "ຄ່າຫຼຸ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່",
+"name_vi": "Hao mòn tài sản cổ định",
+"parent": null,
+"postable": false
+},
+{
+"code": "282",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່ ​ເຊົ່າສິນເຊື່ອ",
+"name_vi": "Hao mòn tài sản cổ định cho thuê",
+"parent": "28",
+"postable": true
+},
+{
+"code": "284",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ,ບໍ່ມີຕົວຕົນ ແລະ ສຳປະທານ",
+"name_vi": "Hao mòn tài sản cổ định hữu hình ,vô hình và nhượng quyền",
+"parent": "28",
+"postable": false
+},
+{
+"code": "2841",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ",
+"name_vi": "Hao mòn tài sản cổ định hữu hình",
+"parent": "284",
+"postable": true
+},
+{
+"code": "2842",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນ",
+"name_vi": "Hao mòn tài sản cổ định vô hình",
+"parent": "284",
+"postable": true
+},
+{
+"code": "2843",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສົມບັດຄົງທີ່ ​​ສຳ​ປະ​ທານ",
+"name_vi": "Hao mòn tài sản cổ định vô hình - nhượng quyền",
+"parent": "284",
+"postable": true
+},
+{
+"code": "285",
+"name_lo": "ຄ່າຫຼູ້ຍຫ້ຽນ ຊັບສິນ​ຊີ​ວະ​ພາບ",
+"name_vi": "Hao mòn tài sản sinh học",
+"parent": "28",
+"postable": true
+},
+{
+"code": "29",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່",
+"name_vi": "Dự phòng giảm giá tài sản cổ định",
+"parent": null,
+"postable": false
+},
+{
+"code": "290",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບ​ສົມບັດ​ຄົງ​ທີ່ການເງິນອື່ນໆ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định tài chính khác",
+"parent": "29",
+"postable": true
+},
+{
+"code": "291",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ເງິນລົງທຶນ",
+"name_vi": "Dự phòng giảm giá các khoản đầu tư",
+"parent": "29",
+"postable": false
+},
+{
+"code": "2910",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ເງິນລົງທຶນ ບໍລິສັດໃນເຄື່ອ",
+"name_vi": "Dự phòng giảm giá đầu tư vào công ty con",
+"parent": "291",
+"postable": true
+},
+{
+"code": "2911",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ເງິນລົງທຶນ ບໍລິສັດຮ່ວມ",
+"name_vi": "Dự phòng giảm giá đầu tư vào công ty liên doanh - liên kết",
+"parent": "291",
+"postable": true
+},
+{
+"code": "2912",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ເງິນລົງທຶນ ບໍລິສັດຄວບຄຸມຮ່ວມກັນ",
+"name_vi": "Dự phòng giảm giá đầu tư vào công ty đồng kiểm soát",
+"parent": "291",
+"postable": true
+},
+{
+"code": "2914",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ເງິນລົງທຶນ ໃນຊັບສິນຕາມມູນຄ່າທຽບເທົ່າ",
+"name_vi": "Dự phòng giảm giá đầu tư vào tài sản theo phương pháp vốn chủ sở hữu",
+"parent": "291",
+"postable": true
+},
+{
+"code": "292",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່ ເຊົ່າສິນເຊື່ອ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định cho thuê",
+"parent": "29",
+"postable": true
+},
+{
+"code": "294",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ, ບໍ່ມີຕົວຕົນ ແລະ ສຳປະທານ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định hữu hình ,vô hình và nhượng quyền",
+"parent": "29",
+"postable": false
+},
+{
+"code": "2941",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định hữu hình",
+"parent": "294",
+"postable": true
+},
+{
+"code": "2942",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định vô hình",
+"parent": "294",
+"postable": true
+},
+{
+"code": "2943",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສົມບັດຄົງທີ່ ສຳປະທານ",
+"name_vi": "Dự phòng giảm giá tài sản cổ định nhượng quyền",
+"parent": "294",
+"postable": true
+},
+{
+"code": "295",
+"name_lo": "ຄ່າ​ສູນເສຍມູນຄ່າ ຊັບສິນ​ຊີ​ວະ​ພາບ",
+"name_vi": "Dự phòng giảm giá tài sản sinh học",
+"parent": "29",
+"postable": true
+},
+{
+"code": "30",
+"name_lo": "ທຶນ, ບັນ​ຊີ ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Vốn chủ sở hữu và các tài khoản tương tự",
+"parent": null,
+"postable": false
+},
+{
+"code": "301",
+"name_lo": "ທຶນຈົດທະບຽນ-ບໍ່ທັນຮຽກໃຫ້ປະກອບ",
+"name_vi": "Vốn đăng ky - Chưa huy động",
+"parent": "30",
+"postable": true
+},
+{
+"code": "302",
+"name_lo": "ທຶນຈົດທະບຽນຮຽກໃຫ້ປະກອບ-ບໍ່ທັນຖອກ",
+"name_vi": "Vốn đăng ký đã huy động - chưa thanh toán",
+"parent": "30",
+"postable": true
+},
+{
+"code": "303",
+"name_lo": "ທຶນຈົດທະບຽນ-ຖອກແລ້ວ",
+"name_vi": "Vốn đăng ký đã thanh toán",
+"parent": "30",
+"postable": true
+},
+{
+"code": "304",
+"name_lo": "ສ່ວນເພີ່ມມູນຄ່າຮຸ້ນ",
+"name_vi": "Thặng dư vốn cổ phần",
+"parent": "30",
+"postable": true
+},
+{
+"code": "308",
+"name_lo": "ບັນຊີທຶນຂອງເຈົ້າຂອງທຸລະກິດ",
+"name_vi": "Tài khoản vốn chủ doanh nghiệp",
+"parent": "30",
+"postable": true
+},
+{
+"code": "309",
+"name_lo": "ຜູ້ຖືຫຸ້ນ ທຶນຈົດທະບຽນບໍ່ທັນຮຽກໃຫ້ປະກອບ",
+"name_vi": "Cổ đông - Vốn đăng ký chưa huy động",
+"parent": "30",
+"postable": true
+},
+{
+"code": "31",
+"name_lo": "ຄັງສຳຮອງ",
+"name_vi": "Qũy dự phòng",
+"parent": null,
+"postable": false
+},
+{
+"code": "311",
+"name_lo": "ຄັງສຳຮອງຕາມລະບຽບການ",
+"name_vi": "Qũy dự phòng theo quy định",
+"parent": "31",
+"postable": true
+},
+{
+"code": "312",
+"name_lo": "ຄັງສຳຮອງອື່ນໆ",
+"name_vi": "Qũy dự phòng khác",
+"parent": "31",
+"postable": true
+},
+{
+"code": "32",
+"name_lo": "ຍອດ​ຍົກ​ມາ",
+"name_vi": "Lũy kế cuối kỳ trước",
+"parent": null,
+"postable": false
+},
+{
+"code": "321",
+"name_lo": "ກຳໄລຍົກ​ມາ (​ເຫຼືອມີ)",
+"name_vi": "Lãi lũy kế cuối kỳ trước (dư có)",
+"parent": "32",
+"postable": true
+},
+{
+"code": "329",
+"name_lo": "ຂາດທຶນຍົກ​ມາ (​ເຫຼືອໜີ້)",
+"name_vi": "Lỗ lũy kế cuối kỳ trước (dự nợ)",
+"parent": "32",
+"postable": true
+},
+{
+"code": "33",
+"name_lo": "ຜົນ​ໄດ້​ຮັບ​ໃນ​ປີ",
+"name_vi": "Lợi nhuận trong kỳ",
+"parent": null,
+"postable": false
+},
+{
+"code": "331",
+"name_lo": "ກຳ​ໄລພາຍໃນປີ",
+"name_vi": "Lãi trong kỳ",
+"parent": "33",
+"postable": true
+},
+{
+"code": "339",
+"name_lo": "ຂາດທຶນພາຍໃນປີ",
+"name_vi": "Lỗ trong kỳ",
+"parent": "33",
+"postable": true
+},
+{
+"code": "40",
+"name_lo": "ຜູ້ສະໜອງ ເປັນເຈົ້າໜີ້",
+"name_vi": "Phải trả nhà cung cấp",
+"parent": null,
+"postable": false
+},
+{
+"code": "401",
+"name_lo": "​ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ ສິນຄ້າ, ວັດ​ຖຸ",
+"name_vi": "Phải trả nhà cung cấp hàng hóa ,vật tư",
+"parent": "40",
+"postable": true
+},
+{
+"code": "402",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້​ສະໜອງ - ການ​ບໍລິການ",
+"name_vi": "Phải trả nhà cung cấp dịch vụ",
+"parent": "40",
+"postable": true
+},
+{
+"code": "403",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ ສິນ​ຄ້າ ແລະ ການ​ບໍລິການ ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Phải trả nhà cung cấp hàng hóa ,dịch vụ và các hóa đơn phải trả",
+"parent": "40",
+"postable": false
+},
+{
+"code": "4031",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ ສິນ​ຄ້າ, ວັດ​ຖຸ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Phải trả nhà cung cấp hàng hóa ,vật tư và các hóa đơn phải trả",
+"parent": "403",
+"postable": true
+},
+{
+"code": "4032",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ ການ​ບໍ​ລິ​ການ - ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Phải trả nhà cung cấp dịch vụ và các hóa đơn phải trả",
+"parent": "403",
+"postable": true
+},
+{
+"code": "404",
+"name_lo": "ຜູ້ສະໜອງ - ຊັບສົມບັດຄົງທີ່",
+"name_vi": "Phải trả nhà cung cấp tài sản cổ định",
+"parent": "40",
+"postable": false
+},
+{
+"code": "4041",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ - ຊັບສົມບັດຄົງທີ່ ການເງິນ",
+"name_vi": "Phải trả nhà cung cấp tài sản cổ định tài chính",
+"parent": "404",
+"postable": true
+},
+{
+"code": "4042",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ - ຊັບສົມບັດຄົງທີ່ ມີຕົວຕົນ",
+"name_vi": "Phải trả nhà cung cấp tài sản cổ định hữu hình",
+"parent": "404",
+"postable": true
+},
+{
+"code": "4043",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ - ຊັບສົມບັດຄົງທີ່ ບໍ່ມີຕົວຕົນ",
+"name_vi": "Phải trả nhà cung cấp tài sản cổ định vô hình",
+"parent": "404",
+"postable": true
+},
+{
+"code": "405",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ​​ ຊັບສົມບັດຄົງທີ່ ໃບຢັ້ງຢືນ​ການ​ຄ້າ​ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Phải trả nhà cung cấp tài sản cổ định - các hóa đơn phải trả",
+"parent": "40",
+"postable": true
+},
+{
+"code": "408",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ຜູ້ສະໜອງ​ ໃບເກັບເງິນບໍ່ທັນມາຮອດ",
+"name_vi": "Phải trả nhà cung cấp hóa đơn chưa nhận được",
+"parent": "40",
+"postable": true
+},
+{
+"code": "41",
+"name_lo": "ເຄື່ອງມືການເງິນ ໜີ້້ສິນໝູນວຽນ",
+"name_vi": "Công cụ tài chính - Nợ phải trả ngắn hạn",
+"parent": null,
+"postable": false
+},
+{
+"code": "411",
+"name_lo": "ເງິນເບີກເກີນບັນຊີ",
+"name_vi": "Vay thấu chi",
+"parent": "41",
+"postable": true
+},
+{
+"code": "412",
+"name_lo": "ເງິນກູ້ຢືມ ນຳສະຖາບັນສິນເຊື່ອໄລຍະສັ້ນ",
+"name_vi": "Vay tổ chức tài chính ngắn hạn",
+"parent": "41",
+"postable": true
+},
+{
+"code": "413",
+"name_lo": "ພັນທະຍັດກູ້ຢືມ ໄລຍະສັ້ນທີ່ໄດ້ອອກ",
+"name_vi": "Trái phiếu vay ngắn hạn",
+"parent": "41",
+"postable": true
+},
+{
+"code": "417",
+"name_lo": "ດອກເບ້ຍເຄຶ່ອງມືການເງິນ ຄິດໄລ່ແລ້ວຕ້ອງຈ່າຍ",
+"name_vi": "Lãi công cụ tài chính phải trả",
+"parent": "41",
+"postable": true
+},
+{
+"code": "418",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງເຄື່ອງມືການເງິນອື່ນໆ ໄລຍະສັ້ນ",
+"name_vi": "Phải trả công cụ tài chính ngắn hạn khác",
+"parent": "41",
+"postable": true
+},
+{
+"code": "42",
+"name_lo": "ພະ​ນັກ​ງານ, ລູກ​ຄ້າ, ອົງ​ການ​ປະ​ກັນ​ສັງ​ຄົມ ເປັນ​ເຈົ້າ​ໜີ້",
+"name_vi": "Phải trả nhân viên , khách hàng ,bảo hiểm xã hội",
+"parent": null,
+"postable": false
+},
+{
+"code": "420",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ພະ​ນັກ​ງານ",
+"name_vi": "Phải trả nhân viên",
+"parent": "42",
+"postable": false
+},
+{
+"code": "4201",
+"name_lo": "ພະນັກງານ - ຄ່າທົດແທນແຮງງານຕ້ອງສະ​ສາງ",
+"name_vi": "Nhân viên - tiền lương tiền công phải trả",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4202",
+"name_lo": "ພະນັກງານ - ​ເງິນ​ບໍາ​ເນັດ ​ແລະ ຍ້ອງ​ຍໍ",
+"name_vi": "Nhân viên - tiền thưởng và tiền thù lao phải trả",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4203",
+"name_lo": "ພະນັກງານ​ - ເງິນ​ນະ​ໂຍບາຍ​ພັກ​ຜ່ອນ ​ແລະ​ ນະ​ໂຍບາຍ​ອື່ນໆຕ້ອງ​ສະ​ສາງ",
+"name_vi": "Nhân viên - tiền chính sách nghỉ và phúc lợi xã hội khác",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4204",
+"name_lo": "ພະນັກງານ​​ - ເງິນນະໂຍບາຍພັກຜ່ອນ ທີ່ໄດ້ຫັກໄວ້",
+"name_vi": "Nhân viên - tiền chính sách nghỉ khấu trừ lại",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4205",
+"name_lo": "ພະນັກງານ - ບ້ວງເງິນສົມທົບ ຜົນປະໂຫຍດພະນັກງານ ຕາມກົດລະບຽບທີ່ກຳນົດໄວ້",
+"name_vi": "Nhân viên - quỹ đóng góp lợi ích nhân viên theo quy định",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4206",
+"name_lo": "ພະນັກງານ - ເງິນມັດຈໍາທີ່ໄດ້ຮັບ",
+"name_vi": "Nhân viên - số tiền ký quỹ đã nhận",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4207",
+"name_lo": "ພະນັກງານ - ເງິນຕັດໄວ້",
+"name_vi": "Nhân viên - Tiền giữ lại",
+"parent": "420",
+"postable": true
+},
+{
+"code": "4208",
+"name_lo": "ພະນັກງານ​​​ - ຄ່າ​ທົດ​ແທນ​ອື່ນໆ​ຕ້ອງ​ສະ​ສາງ",
+"name_vi": "Nhân viên - các khoản phải trả khác",
+"parent": "420",
+"postable": true
+},
+{
+"code": "421",
+"name_lo": "​ລູກ​ຄ້າ ເປັນ​ເຈົ້າ​ໜີ້",
+"name_vi": "Phải trả khách hàng",
+"parent": "42",
+"postable": false
+},
+{
+"code": "4211",
+"name_lo": "ລູກຄ້າ - ລາຍຮັບຮັບລ່ວງໜ້າ",
+"name_vi": "Khách hàng - doanh thu chưa thực hiện",
+"parent": "421",
+"postable": true
+},
+{
+"code": "4212",
+"name_lo": "ລູກ​ຄ້າ - ໜີ້​ຕ້ອງ​ສົ່ງ​ບ້ວງ​ເຄື່ອງ​ຫຸ້ມ​ຫໍ່ ທີ່​ໄດ້​ມັດ​ຈຳ",
+"name_vi": "Khách hàng  - phải trả phần bao bì kèm theo",
+"parent": "421",
+"postable": true
+},
+{
+"code": "4213",
+"name_lo": "ລູກຄ້າ - ສ່ວນ​ຫຼຸດຕ້ອງ​ຜ່ອນ, ​ເງິນ​ສົ່ງ​ຄືນ​ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Khách hàng - các khoản chiết khấu ,giảm giá , tiền hoàn lại phải trả",
+"parent": "421",
+"postable": true
+},
+{
+"code": "4218",
+"name_lo": "ລູກ​ຄ້າ - ເງິນ​ສົ່ງ​ຄືນ​ອື່ນໆ",
+"name_vi": "Khách hàng - Các khoản hoàn lại khác",
+"parent": "421",
+"postable": true
+},
+{
+"code": "422",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ອົງ​ການ​ປະ​ກັນ​ສັງ​ຄົມ ແລະ ບັນ​ຊີ​ພົວ​ພັນ",
+"name_vi": "Phải trả bảo hiểm xã hội và các tài khoản liên quan",
+"parent": "42",
+"postable": false
+},
+{
+"code": "4221",
+"name_lo": "ອົງການປະກັນສັງຄົມ - ( ບ້ວງລູກຈ້າງ)",
+"name_vi": "Bảo hiểm xã hội - (phần người lao động)",
+"parent": "422",
+"postable": true
+},
+{
+"code": "4222",
+"name_lo": "ອົງການປະກັນສັງຄົມ - (ບ້ວງ​ນາຍ​ຈ້າງ)",
+"name_vi": "Bảo hiểm xã hội - (Phần người sử dụng lao động)",
+"parent": "422",
+"postable": true
+},
+{
+"code": "4226",
+"name_lo": "ອົງການປະກັນສັງຄົມ, ລາຍຈ່າຍ ຕ້ອງຈ່າຍ",
+"name_vi": "Bảo hiểm xã hội phải trả",
+"parent": "422",
+"postable": true
+},
+{
+"code": "4228",
+"name_lo": "ອົງການຈັດຕັ້ງ ສາກົນ",
+"name_vi": "Tổ chức Quốc tế",
+"parent": "422",
+"postable": true
+},
+{
+"code": "43",
+"name_lo": "ໜີ້​ຕ້ອງ​ສົ່ງ ​ພາ​ສີ-ອາ​ກອນ ຕ່າງໆ",
+"name_vi": "Phải trả thuế ,phí, lệ phí",
+"parent": null,
+"postable": false
+},
+{
+"code": "430",
+"name_lo": "ລັດ - ອາກອນ ເກັບຈາກພາກສ່ວນອື່ນ",
+"name_vi": "Nhà nước - Thuế do đơn vị thu",
+"parent": "43",
+"postable": true
+},
+{
+"code": "431",
+"name_lo": "ລັັດ - ອາກອນ​ກຳໄລ ຕ້ອງມອບ",
+"name_vi": "Nhà nước - Thuế thu nhập doanh nghiệp phải nộp",
+"parent": "43",
+"postable": true
+},
+{
+"code": "432",
+"name_lo": "ອມພ ທີ່ເກັບໄດ້ ຫຼື ອມ​ພ ສົ້ນ​ອອກ",
+"name_vi": "Nhà nước - Thuế GTGT đầu ra",
+"parent": "43",
+"postable": true
+},
+{
+"code": "433",
+"name_lo": "ອມພ ທີ່ຕ້ອງມອບ",
+"name_vi": "Nhà nước - Thuế GTGT phải nộp",
+"parent": "43",
+"postable": true
+},
+{
+"code": "434",
+"name_lo": "ອມພ ບ້ວງໃບເກັບເງິນຕ້ອງອອກ",
+"name_vi": "Nhà nước - Thuế GTGT phải xuất hóa đơn",
+"parent": "43",
+"postable": true
+},
+{
+"code": "435",
+"name_lo": "ອມພ ບ້ວງອື່ນໆ ລໍຖ້າສະສາງ",
+"name_vi": "Nhà nước - Thuế GTGT chờ xử lý khác",
+"parent": "43",
+"postable": true
+},
+{
+"code": "436",
+"name_lo": "ລັດ - ລາຍການ​ເຄື່ອນ​ໄຫ​ວສະ​ເພາະ​ກັບ​ລັດ ​ແລະ ອົງການ​ອື່ນໆ​ຂອງ​ລັດ.",
+"name_vi": "Nhà nước - Các hoạt động liên quan đến nhà nước và các tổ chức khác của nhà nước",
+"parent": "43",
+"postable": true
+},
+{
+"code": "437",
+"name_lo": "​ລັດ - ອາກອນອື່ນໆ ແລະ ລາຍຈ່າຍປະເພດດຽວກັນ ຕ້ອງມອບ",
+"name_vi": "Nhà nước - Các loại thuế khác và các khoản phí tương tự",
+"parent": "43",
+"postable": true
+},
+{
+"code": "438",
+"name_lo": "ລັດ​ - ລາຍຈ່າຍອື່ນໆຕ້ອງຈ່າຍ",
+"name_vi": "Nhà nước - các khoản phí phải trả",
+"parent": "43",
+"postable": true
+},
+{
+"code": "44",
+"name_lo": "ເຈົ້າໜີ້ອື່ນໆ",
+"name_vi": "Phải trả khác",
+"parent": null,
+"postable": false
+},
+{
+"code": "441",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງຜູ້ສະໜອງ ການລົງທຶນໄລຍະສັ້ນ",
+"name_vi": "Phải trả nhà cung cấp đầu tư ngắn hạn",
+"parent": "44",
+"postable": true
+},
+{
+"code": "442",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງຜູ້ສະໜອງ ຊັບວິນຊີວະພາບ ໄລຍະສັ້ນ",
+"name_vi": "Phải trả nhà cung cấp tài sản sinh học ngắn hạn",
+"parent": "44",
+"postable": true
+},
+{
+"code": "443",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງຜູ້ສະໜອງ ສັນຍາເຊົ່າສິນເຊື່ອ ໄລຍະສັ້ນ",
+"name_vi": "Phải trả nhà cung cấp cho thuê ngắn hạn",
+"parent": "44",
+"postable": true
+},
+{
+"code": "447",
+"name_lo": "ລາຍຮັບ ຮັບ​ລ່ວງ​ໜ້າ",
+"name_vi": "Thu nhập ứng trước",
+"parent": "44",
+"postable": true
+},
+{
+"code": "448",
+"name_lo": "ເຈົ້າໜີ້ອື່ນໆ",
+"name_vi": "Phải trả khác",
+"parent": "44",
+"postable": true
+},
+{
+"code": "45",
+"name_lo": "ຜູ້ຖືຮຸ້ນ ແລະ ຄູ່ສັນຍາ ເປັນ​ເຈົ້າ​ໜີ້",
+"name_vi": "Phải trả các cổ đông và đối tác",
+"parent": null,
+"postable": false
+},
+{
+"code": "451",
+"name_lo": "ການເຄື່ອນໄຫວບໍລິສັດ​ໃນ​ກຸ່ມ",
+"name_vi": "Giao dịch nội bộ",
+"parent": "45",
+"postable": true
+},
+{
+"code": "452",
+"name_lo": "ຂາຮຸ້ນ-ບັນຊີເງິນຝາກກະແສລາຍວັນ",
+"name_vi": "Cổ động - Tài khoản tiền gửi vãng lai",
+"parent": "45",
+"postable": true
+},
+{
+"code": "453",
+"name_lo": "ຂາຮຸ້ນ-ການເຄື່ອນໄຫວ ກ່ຽວກັບທຶນ",
+"name_vi": "Cổ động - Vốn góp của công ty",
+"parent": "45",
+"postable": true
+},
+{
+"code": "454",
+"name_lo": "ຂາຮຸ້ນ-ເງິນປັນຜົນ ຕ້ອງ​ຈ່າຍ",
+"name_vi": "Cổ động - Cổ tức phải trả",
+"parent": "45",
+"postable": true
+},
+{
+"code": "455",
+"name_lo": "ຂາຮຸ້ນ-ການເຄື່ອນໄຫວຮ່ວມກັນ ຫຼື ເປັນກຸ່ມ",
+"name_vi": "Cổ động -  Giao dịch công ty liên doanh-liên kết hoặc tập đoàn",
+"parent": "45",
+"postable": true
+},
+{
+"code": "456",
+"name_lo": "ຂາຮຸ້ນ-ທຶນທີ່ຕ້ອງທົດແທນຄືນ ຫຼື ຊຳລະສະສາງ",
+"name_vi": "Cổ động - Vốn phải hoàn lại hoặc thanh toán",
+"parent": "45",
+"postable": true
+},
+{
+"code": "457",
+"name_lo": "ຂາຮຸ້ນ -​ ລາຍ​ຮັບ​ໆ​ລ່ວງ​ໜ້າ",
+"name_vi": "Cổ động - Thu nhập ứng trước",
+"parent": "45",
+"postable": true
+},
+{
+"code": "458",
+"name_lo": "ຜູ້​ຖື​ຮຸ້ນ ແລະ ຄູ່​ສັນ​ຍາ​ອື່ນໆ ເປັນ​ເຈົ້າ​ໜີ້",
+"name_vi": "Phải trả cổ đông và các đối tác khác",
+"parent": "45",
+"postable": true
+},
+{
+"code": "46",
+"name_lo": "ເງິນແຮ ໜີ້ສິນໝູນວຽນ",
+"name_vi": "Dự phòng phải trả ngắn hạn",
+"parent": null,
+"postable": false
+},
+{
+"code": "461",
+"name_lo": "ເງິນແຮ ສຳລັບການດຳເນີນຄະດີ",
+"name_vi": "Dự phòng tố tụng",
+"parent": "46",
+"postable": true
+},
+{
+"code": "462",
+"name_lo": "ເງິນແຮ ສຳລັບເບ້ຍບໍານານ",
+"name_vi": "Dự phòng lương hưu",
+"parent": "46",
+"postable": true
+},
+{
+"code": "463",
+"name_lo": "ເງິນແຮ ສຳລັບສຳລັບຕຳແໜ່ງງານ ຜົນປະໂຫຍດພະນັກງານ",
+"name_vi": "Dự phòng cho vị trí khác - lợi ích của nhân viên",
+"parent": "46",
+"postable": true
+},
+{
+"code": "464",
+"name_lo": "ເງິນແຮ ສຳລັບການປັບປຸງໂຄງສ້າງ ວິສາຫະກິດ",
+"name_vi": "Dự phóng tái cơ cấu doanh nghiệp",
+"parent": "46",
+"postable": true
+},
+{
+"code": "465",
+"name_lo": "ເງິນແຮ ສຳລັບການຄໍ້າປະກັນ",
+"name_vi": "Dự phòng bảo lãnh -bảo hành",
+"parent": "46",
+"postable": true
+},
+{
+"code": "466",
+"name_lo": "ເງິນແຮ ສຳລັບສັນຍາທີ່ສ້າງພາລະ",
+"name_vi": "Dự phòng cho các hợp đồng có rủi ro lớn",
+"parent": "46",
+"postable": true
+},
+{
+"code": "468",
+"name_lo": "ເງິນແຮ ໜີ້ສິນໝູນວຽນອື່ນໆ",
+"name_vi": "Dự phóng phải trả ngắn hạn khác",
+"parent": "46",
+"postable": true
+},
+{
+"code": "47",
+"name_lo": "ເຄື່ອງມືການເງິນ,ເງິນກູ້ຢືມ ​ແລະ ໜີ້ຕ້ອງ​ສົ່ງ​ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Công cụ tài chính ,các khoản cho vay và các khoản phải trả tương tự",
+"parent": null,
+"postable": false
+},
+{
+"code": "471",
+"name_lo": "ພັນທະບັດ ປ່ຽນເປັນຮຸ້ນໄດ້",
+"name_vi": "Trái phiếu chuyển đổi thành cổ phiếu",
+"parent": "47",
+"postable": true
+},
+{
+"code": "472",
+"name_lo": "ພັນທະບັດອື່ນໆ ທີ່ໄດ້ອອກ",
+"name_vi": "Trái phiếu khác",
+"parent": "47",
+"postable": true
+},
+{
+"code": "473",
+"name_lo": "ເງິນກູ້ຢືມ ນຳສະຖາບັນສິນເຊື່ອ",
+"name_vi": "VPy các tổ chức tín dụng",
+"parent": "47",
+"postable": true
+},
+{
+"code": "474",
+"name_lo": "ເງິນວາງ ແລະ ເງິນຄ້ຳປະກັນທີ່ໄດ້ຮັບ",
+"name_vi": "Tiền đặt cọc và tiền bảo lãnh",
+"parent": "47",
+"postable": true
+},
+{
+"code": "475",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ບ້ວງສັນຍາເຊົ່າສິນເຊື່ອ",
+"name_vi": "Các khoản phải trả cho thuê",
+"parent": "47",
+"postable": true
+},
+{
+"code": "477",
+"name_lo": "ດອກເບັ້ຍ ຄິດໄລ່ເຖິງກຳນົດ",
+"name_vi": "Lãi đáo hạn",
+"parent": "47",
+"postable": true
+},
+{
+"code": "478",
+"name_lo": "ເຄື່ອງມືການເງິນ ແລະ ໜີ້ຕ້ອງສົ່ງປະເພດດຽວກັນ",
+"name_vi": "Công cụ tài chính và các khoản phải trả tương tự",
+"parent": "47",
+"postable": true
+},
+{
+"code": "48",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງ ທີ່​ຕິດ​ພັນ​ກັບ​ການ​ຮ່ວມ​ປະກອບ​ທຶນ, ເງິນຊ່ວຍໜູນ ເງິນ​ເຍື້ອນຊຳລະ",
+"name_vi": "Các khoản phải trả liên quan đến góp vốn ,trợ cấp và các khoản hoãn lại",
+"parent": null,
+"postable": false
+},
+{
+"code": "481",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງ ທີ່​ຕິດ​ພັນ​ກັບ​ການ​ຮ່ວມ​ປະກອບ​ທຶນ",
+"name_vi": "Phải trả liên quan đến góp vốn",
+"parent": "48",
+"postable": false
+},
+{
+"code": "4811",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ - ​ການ​ຮ່ວມ​ປະກອບ​ທຶນ​ ໃນ​ກຸ່ມ​ບໍລິສັດ",
+"name_vi": "Phải trả - góp vốn vào công ty trong tập đoàn",
+"parent": "481",
+"postable": true
+},
+{
+"code": "4812",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ - ​ການ​ຮ່ວມ​ປະກອບ​ທຶນ​ ​ນອກກຸ່ມ​ບໍລິສັດ",
+"name_vi": "Phải trả - góp vốn ngoài tập đoàn công ty",
+"parent": "481",
+"postable": true
+},
+{
+"code": "4813",
+"name_lo": "ໜີ້​ຕ້ອງສົ່ງ ທີ່​ຕິດ​ພັນ​ກັບ ບໍລິສັດ​ຮ່ວມ​ປະ​ກອບທຶນ",
+"name_vi": "Phải trả - liên quan đến công ty liên doanh",
+"parent": "481",
+"postable": true
+},
+{
+"code": "4816",
+"name_lo": "ດອກເບັ້ຍຄິດໄລ່ຕ້ອງຈ່າຍ",
+"name_vi": "Lãi phải trả",
+"parent": "481",
+"postable": true
+},
+{
+"code": "4818",
+"name_lo": "ໜີ້ຕ້ອງ​ສົ່ງ​ອື່ນ​ໆ ທີ່​ຕິດ​ພັນ​ກັບ​ການ​ຮ່ວມ​ປະກອບ​ທຶນ",
+"name_vi": "Các khoản phải trả liên quan đến góp vốn khác",
+"parent": "481",
+"postable": true
+},
+{
+"code": "482",
+"name_lo": "ເງິນຊ່ວຍໜູນຂອງລັດ",
+"name_vi": "Trợ cấp chính phủ",
+"parent": "48",
+"postable": false
+},
+{
+"code": "4821",
+"name_lo": "​ເງິນ​ຊ່ວຍ​ໜູນ​ ​ປະກອບ​ພາຫະນະ",
+"name_vi": "Trợ cấp phương tiện -thiết bị",
+"parent": "482",
+"postable": true
+},
+{
+"code": "4822",
+"name_lo": "​ເງິນ​ຊ່ວຍ​ໜູນ ​ລົງ​ທຶນ​ອື່ນໆ",
+"name_vi": "Trợ cấp các khoản đầu tư khác",
+"parent": "482",
+"postable": true
+},
+{
+"code": "4829",
+"name_lo": "​ພູດ​ສ່ວນເງິນ​ຊ່ວຍ​ໜູນ​ຂອງ​ລັດ ​ຈົດ​ເຂົ້າບັນຊີ​ຜົນ​ໄດ້​ຮັບໃນ​ປີ",
+"name_vi": "Các khoản trợ cấp được ghi nhận vào lãi hoặc lỗ",
+"parent": "482",
+"postable": true
+},
+{
+"code": "483",
+"name_lo": "ອາກອນ​ເຍື້ອນຊຳລະ - ໜີ້ສິນ",
+"name_vi": "Thuế thu nhập doanh nghiệp hoãn lại phải trả",
+"parent": "48",
+"postable": true
+},
+{
+"code": "49",
+"name_lo": "​ເງິນ​ແຮ ເພື່ອໜີ້ສິນບໍ່ໝູນວຽນ",
+"name_vi": "Dự phòng nợ dài hạn",
+"parent": null,
+"postable": false
+},
+{
+"code": "491",
+"name_lo": "ເງິນແຮ ສຳລັບພະນັກງານໄລຍະຍາວ",
+"name_vi": "Dự phòng cho nhân viên dài hạn",
+"parent": "49",
+"postable": false
+},
+{
+"code": "4911",
+"name_lo": "​ເງິນ​ແຮ ເພື່ອ​ການ​ປິ່ນ​ປົວ",
+"name_vi": "Dự phòng khám chữa bệnh",
+"parent": "491",
+"postable": true
+},
+{
+"code": "4912",
+"name_lo": "ເງິນ​ແຮ ເພື່ອ​ການ​ພັກ​ຜ່ອນ​ປະ​ຈຳ​ປີ",
+"name_vi": "Dự phòng cho nghỉ lễ- tết",
+"parent": "491",
+"postable": true
+},
+{
+"code": "4913",
+"name_lo": "ເງິນ​ແຮ ເພື່ອ​ການ​ເຮັດ​ວຽກ​ງານ​ໄລ​ຍະ​ຍາວ",
+"name_vi": "Dự phòng làm việc lâu dài",
+"parent": "491",
+"postable": true
+},
+{
+"code": "4914",
+"name_lo": "ເງິນ​ແຮ ສຳ​ລັບ​ເບ້ຽບຳ​ນານ",
+"name_vi": "Dự phòng lương hưu",
+"parent": "491",
+"postable": true
+},
+{
+"code": "4915",
+"name_lo": "ເງິນ​ແຮ ສຳ​ລັບ​ຜົນ​ປະ​ໂຫຍດ​ຂອງ​ພະ​ນັກ​ງານ ໃນ​ເວ​ລາ​ສິ້ນ​ສຸດ​ການ​ຈ້າງ​ງານ",
+"name_vi": "Dự phòng phúc lợi sau khi nghỉ việc",
+"parent": "491",
+"postable": true
+},
+{
+"code": "492",
+"name_lo": "ເງິນແຮ ເພື່ອອາກອນ",
+"name_vi": "Dự phòng thuế",
+"parent": "49",
+"postable": true
+},
+{
+"code": "493",
+"name_lo": "ເງິນແຮ ເພື່ອການດຳເນີນຄະດີ",
+"name_vi": "Dự phòng tố tụng",
+"parent": "49",
+"postable": true
+},
+{
+"code": "494",
+"name_lo": "ເງິນແຮ ສຳລັບການປັບປຸງໂຄງສ້າງ ວິສາຫະກິດ",
+"name_vi": "Dự phóng tái cơ cấu doanh nghiệp",
+"parent": "49",
+"postable": true
+},
+{
+"code": "495",
+"name_lo": "ເງິນແຮ ສຳລັບການຄໍ້າປະກັນ",
+"name_vi": "Dự phòng bảo hành",
+"parent": "49",
+"postable": true
+},
+{
+"code": "496",
+"name_lo": "ເງິນແຮ ເພື່ອການຟື້ນຟູ,ຮື້ຖອນ ແລະ ປົວແປງຄືນໃໝ່",
+"name_vi": "Dự phòng khôi phục,tháo dỡ và cải tiến",
+"parent": "49",
+"postable": true
+},
+{
+"code": "497",
+"name_lo": "ເງິນແຮ ເພື່ອການຂາດທຶນຈາກລາຄາຮຸ້ນ",
+"name_vi": "Dự phòng giảm giá cổ phiếu",
+"parent": "49",
+"postable": true
+},
+{
+"code": "498",
+"name_lo": "ເງິນແຮ ໜີ້ສິນບໍ່ໝູນວຽນອື່ນໆ",
+"name_vi": "Dự phòng nợ dài hạn khác",
+"parent": "49",
+"postable": true
+},
+{
+"code": "50",
+"name_lo": "​ ບັນ​ຊີ ພົວ​ພັນ ລະ​ຫວ່າງ​ ກົມ​ກອງ​ພາຍ​ໃນ",
+"name_vi": "Tài khoản đơn vị đối ứng nội bộ",
+"parent": null,
+"postable": false
+},
+{
+"code": "501",
+"name_lo": "ບັນຊີພົວພັນ ລະຫ່ວາງ ກົມກອງ",
+"name_vi": "Tài khoản đơn vị đối ứng",
+"parent": "50",
+"postable": true
+},
+{
+"code": "506",
+"name_lo": "ສິນຄ້າ ແລະ ການບໍລິການ ແລກປ່ຽນລະຫວ່າງກົມກອງ ( ລາຍຈ່າຍ )",
+"name_vi": "Hàng hóa và dịch vụ trao đổi giữa các đơn vị ( chi phí )",
+"parent": "50",
+"postable": true
+},
+{
+"code": "507",
+"name_lo": "ສິນຄ້າ ແລະ ການບໍລິການ ແລກປ່ຽນລະຫວ່າງກົມກອງ ( ລາຍຮັບ )",
+"name_vi": "Hàng hóa và dịch vụ trao đổi giữa các đơn vị ( doanh thu )",
+"parent": "50",
+"postable": true
+},
+{
+"code": "51",
+"name_lo": "​ ບັນ​ຊີ ລໍ​ຖ້າ​ສະ​ສາງ",
+"name_vi": "Tài khoản ghi tạm",
+"parent": null,
+"postable": false
+},
+{
+"code": "511",
+"name_lo": "ບັນຊີຕັດແບ່ງລາຍຈ່າຍໃນປີ ເປັນໄລຍະ",
+"name_vi": "Tài khoản phân bổ chi phí định kỳ",
+"parent": "51",
+"postable": true
+},
+{
+"code": "512",
+"name_lo": "ບັນຊີຕັດແບ່ງລາຍຮັບໃນປີ ເປັນໄລຍະ",
+"name_vi": "Tài khoản phân bổ doanh thu định kỳ",
+"parent": "51",
+"postable": true
+},
+{
+"code": "518",
+"name_lo": "ບັນຊີ ຂ້າມຜ່ານ ຫຼື ລໍຖ້າ",
+"name_vi": "Tài khoản treo hoặc ghi tạm",
+"parent": "51",
+"postable": true
+},
+{
+"code": "58",
+"name_lo": "​ ບັນ​ຊີ ໂອນ​ເງິນ​ພາຍ​ໃນ",
+"name_vi": "Tài khoản chuyển khoản nội bộ",
+"parent": null,
+"postable": false
+},
+{
+"code": "581",
+"name_lo": "ມອບເງິນສົດເຂົ້າທະນາຄານ ຫຼື ຄັງເງິນແຫ່ງຊາດ",
+"name_vi": "Nộp tiền mặt vào ngân hàng hoặc kho bạc nhà nước",
+"parent": "58",
+"postable": true
+},
+{
+"code": "582",
+"name_lo": "ຖອນເງິນຝາກທະນາຄານ ຫຼື ຄັງເງິນແຫ່ງຊາດເຂົ້າຄັງເງິນຍ່ອຍ",
+"name_vi": "Rút tiền gửi ngân hàng hoặc kho bạc nhà nước vào quỹ tiền mặt",
+"parent": "58",
+"postable": true
+},
+{
+"code": "583",
+"name_lo": "ໂອນເງິນຝາກທະນາຄານ ຫາ ເງິນຝາກທະນາຄານ ຫຼື ຄັງເງິນແຫ່ງຊາດ",
+"name_vi": "Chuyển tiền gửi ngân hàng sang tiền gửi ngân hàng hoặc kho bạc nhà nước",
+"parent": "58",
+"postable": true
+},
+{
+"code": "60",
+"name_lo": "ຊື້ທີ່​ໄດ້​ຊົມ​ໃຊ້, ຕົ້ນ​ທຶນ​ທີ່​ໄດ້​ຂາຍ​ອອກ",
+"name_vi": "Mua hàng đã tiêu dùng , giá vốn hàng bán",
+"parent": null,
+"postable": false
+},
+{
+"code": "601",
+"name_lo": "ວັດຖຸ​ດິບ, ວັດ​ຖຸ​ປະ​ກອບ",
+"name_vi": "Nguyên vật liệu",
+"parent": "60",
+"postable": true
+},
+{
+"code": "602",
+"name_lo": "ວັດ​ຖຸຮັບ​ໃຊ້​ການ​ຜະ​ລິດ",
+"name_vi": "Vật liệu phục vụ sản xuất",
+"parent": "60",
+"postable": true
+},
+{
+"code": "603",
+"name_lo": "ຜະ​ລິດ​ຕະ​ພັນ",
+"name_vi": "Sản phẩm",
+"parent": "60",
+"postable": true
+},
+{
+"code": "604",
+"name_lo": "ການຄົ້ນຄວ້າ ​ແລະ ການ​ບໍລິການ",
+"name_vi": "Công trình nghiên cứu và dịch vụ",
+"parent": "60",
+"postable": true
+},
+{
+"code": "605",
+"name_lo": "ຊັບສິນ ຊີ​ວະ​ພາບ",
+"name_vi": "Tài sản sinh học",
+"parent": "60",
+"postable": true
+},
+{
+"code": "606",
+"name_lo": "ຊື້ວັດຖຸ ​ແລະ ​ເຄື່ອງ​ໃຊ້ຫ້ອງການ ທີ່ບໍ່ເອົາເຂົ້າສາງ",
+"name_vi": "Mua vật tư và văn phòng phẩm không nhập kho",
+"parent": "60",
+"postable": true
+},
+{
+"code": "607",
+"name_lo": "ສິນຄ້າ",
+"name_vi": "Hàng hóa",
+"parent": "60",
+"postable": true
+},
+{
+"code": "609",
+"name_lo": "ສ່ວນຫຼຸດທີ່ໄດ້ຮັບຈາກການຊື້",
+"name_vi": "Chiết khấu ,giảm giá ,hồi khấu nhận được trên giá mua",
+"parent": "60",
+"postable": true
+},
+{
+"code": "61",
+"name_lo": "ບໍລິການ​ຈາ​ກທາງ​ນອກ",
+"name_vi": "Chi phí dịch vụ mua ngoài",
+"parent": null,
+"postable": false
+},
+{
+"code": "611",
+"name_lo": "ຈ້າງ​ທາງ​ນອກ​",
+"name_vi": "Thuê ngoài",
+"parent": "61",
+"postable": true
+},
+{
+"code": "612",
+"name_lo": "ຄ່າ​ເຊົ່າ",
+"name_vi": "Chi phí thuê mướn",
+"parent": "61",
+"postable": true
+},
+{
+"code": "613",
+"name_lo": "ຄ່າ​ທຳ​ນຽມ",
+"name_vi": "Phí và lệ phí",
+"parent": "61",
+"postable": true
+},
+{
+"code": "614",
+"name_lo": "ຄ່າບົວລະບັດ, ບຳລຸງ​ຮັກສາ ​ແລະ ສ້ອມ​​ແປງ",
+"name_vi": "Chi phí bảo trì và sửa chữa",
+"parent": "61",
+"postable": true
+},
+{
+"code": "615",
+"name_lo": "ຄ່າ​ທຳ​ນຽມປະ​ກັນ​ໄພ",
+"name_vi": "Chi phí bảo hiểm",
+"parent": "61",
+"postable": true
+},
+{
+"code": "616",
+"name_lo": "ຄ່າ​ໃຊ້​ຈ່າຍ​ໃນ​ການ​ເຊົ່າ ແລະ ການ​ຮ່ວມ​ກຳ​ມະ​ສິດ",
+"name_vi": "Chi phí thuê và sở hữu chung",
+"parent": "61",
+"postable": true
+},
+{
+"code": "617",
+"name_lo": "ຄ່າ​ວິ​ໄຈ ແລະ ຄົ້ນ​ຄວ້າ",
+"name_vi": "Chi phí nghiên cứu và sưu tầm",
+"parent": "61",
+"postable": true
+},
+{
+"code": "618",
+"name_lo": "​ຄ່າ​ປະ​ກອບ​ເອ​ກະ​ສານ ແລະ ອື່ນໆ​ທີ່​ຕິດ​ພັນ",
+"name_vi": "Phí tài liệu và chi phí liên quan",
+"parent": "61",
+"postable": true
+},
+{
+"code": "619",
+"name_lo": "ສ່ວນ​ຫຼຸດຕ່າງໆ​ ທີ່​ໄດ້​ຮັບ​ຈາກ​ທາງ​ນອກ",
+"name_vi": "Giảm giá ,chiết khấu ,hồi khấu nhận được về mua ngoài",
+"parent": "61",
+"postable": true
+},
+{
+"code": "62",
+"name_lo": "ຄ່າບໍລິການ​ຈາກ​ທາງ​ນອກອື່ນໆ",
+"name_vi": "Chi phí dịch vụ mua ngoài khác",
+"parent": null,
+"postable": false
+},
+{
+"code": "621",
+"name_lo": "​ຄ່າຂົນ​ສົ່ງ​",
+"name_vi": "Chi phí vận chuyển",
+"parent": "62",
+"postable": true
+},
+{
+"code": "622",
+"name_lo": "ຄ່າ​ໂຄສະນາ​, ລົງ​ຂ່າວ, ໜັງສື​ພີ​ມ-ຈັດ​ພິມ, ​ປະຊາສຳພັນ",
+"name_vi": "Chi phí quảng cáo, xuất bản, báo trí,in ấn ,quan hệ công chúng",
+"parent": "62",
+"postable": true
+},
+{
+"code": "623",
+"name_lo": "ຄ່າ​ໄປສະ​ນີ ແລະ ​ໂທລະ​ຄົມມະນາຄົມ",
+"name_vi": "Chi phí bưu điện và viễn thông",
+"parent": "62",
+"postable": true
+},
+{
+"code": "624",
+"name_lo": "ຄ່າ​ນາຍ​ໜ້າ",
+"name_vi": "Chi phí hoa hồng môi giới",
+"parent": "62",
+"postable": true
+},
+{
+"code": "625",
+"name_lo": "ຄ່າ​ເດີນທາງ, ກອງ​ປະຊຸມ, ຮັບ​ແຂກ",
+"name_vi": "Chi phí dời chỗ , công tác phí ,hội họp , tiếp tân",
+"parent": "62",
+"postable": true
+},
+{
+"code": "626",
+"name_lo": "ວຽກງານ​ທາງ​ການ, ທັດສະນະ​ສຶກສາ, ​ຝຶກ​ອົບຮົມ ​ແລະ ອື່ນໆ",
+"name_vi": "Phí công tác chính thức ,tham quan học tập,đào tạo và chi phí khác",
+"parent": "62",
+"postable": true
+},
+{
+"code": "627",
+"name_lo": "ຄ່າ​ທຳ​ນຽມ​ທະ​ນາ​ຄານ ແລະ ຄ່າ​ໃຊ້​ຈ່າຍ​ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Lệ phí ngân hàng và phí dịch vụ tương tự",
+"parent": "62",
+"postable": true
+},
+{
+"code": "628",
+"name_lo": "​ຄ່າ​ບໍລິການອື່ນໆ",
+"name_vi": "Chi phí dịch vụ khác",
+"parent": "62",
+"postable": true
+},
+{
+"code": "629",
+"name_lo": "ສ່ວນ​ຫຼຸດ​ຕ່າງໆ ທີ່​ໄດ້​ຮັບ​ໃນ​ການ​ບໍລິການ ຈາ​ກທາງ​ນອກ​ອື່ນໆ",
+"name_vi": "Giảm giá ,chiết khấu ,hồi khấu nhận được về dịch vụ mua ngoài khác",
+"parent": "62",
+"postable": true
+},
+{
+"code": "63",
+"name_lo": "ລາຍ​ຈ່າຍ​ໃຫ້​ພະນັກງານ",
+"name_vi": "Chi phí nhân viên",
+"parent": null,
+"postable": false
+},
+{
+"code": "631",
+"name_lo": "ຄ່າ​ທົດ​ແທນ​ແຮງ​ງານ ໃຫ້​ພະນັກງານ",
+"name_vi": "Chi phí tiền lương tiền công",
+"parent": "63",
+"postable": true
+},
+{
+"code": "632",
+"name_lo": "​ເງິນບໍາ​ເນັດ​ ​ແລະ ຍ້ອງຍໍ",
+"name_vi": "Tiền thưởng và thù lao",
+"parent": "63",
+"postable": true
+},
+{
+"code": "633",
+"name_lo": "​ເງິນນະ​​ໂຍບາຍ​ພັກ​ຜ່ອນ ​ແລະ ສະຫວັດດີການ",
+"name_vi": "Chính sách nghỉ và phúc lợi",
+"parent": "63",
+"postable": true
+},
+{
+"code": "634",
+"name_lo": "ຜົນ​ປະ​ໂຫຍດດ້ານ​ວັດ​ຖຸ",
+"name_vi": "Lợi ích bằng vật chất",
+"parent": "63",
+"postable": true
+},
+{
+"code": "635",
+"name_lo": "​ເງິນ​ບໍາລຸງ​ໃຫ້​ອົງການ​ປະກັນ​ສັງຄົມ",
+"name_vi": "Bảo hiểm xã hội",
+"parent": "63",
+"postable": true
+},
+{
+"code": "636",
+"name_lo": "ເງິນ​ນະ​ໂຍ​ບາຍ​ຕ່າງໆ",
+"name_vi": "Phụ cấp khác",
+"parent": "63",
+"postable": true
+},
+{
+"code": "637",
+"name_lo": "ລາຍ​ຈ່າຍ​ສັງຄົມ​ອື່ນ​ໆ",
+"name_vi": "Chi phí phúc lợi khác",
+"parent": "63",
+"postable": true
+},
+{
+"code": "638",
+"name_lo": "ລາຍ​ຈ່າຍ​ອື່ນໆ ໃຫ້​ພະນັກງານ",
+"name_vi": "Chi phí nhân viên khác",
+"parent": "63",
+"postable": true
+},
+{
+"code": "64",
+"name_lo": "ອາກອນ, ຄ່າ​ທຳນຽມ ​ແລະ ອື່ນໆ ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Thuế ,phí ,lệ phí và chi phí tương tự",
+"parent": null,
+"postable": false
+},
+{
+"code": "641",
+"name_lo": "ພາສີຂາເຂົ້າ",
+"name_vi": "Thuế nhập khẩu",
+"parent": "64",
+"postable": true
+},
+{
+"code": "642",
+"name_lo": "ພາສີຂາອອກ",
+"name_vi": "Thuế xuất khẩu",
+"parent": "64",
+"postable": true
+},
+{
+"code": "643",
+"name_lo": "ອມພ ຫັກບໍ່ໄດ້",
+"name_vi": "Thuế GTGT không được khấu trừ",
+"parent": "64",
+"postable": true
+},
+{
+"code": "644",
+"name_lo": "ພາສີທີ່ດິນ ແລະ ປະເພດດຽວກັນ",
+"name_vi": "Thuế đất và các khoản tương tự",
+"parent": "64",
+"postable": true
+},
+{
+"code": "647",
+"name_lo": "ຄ່າທຳນຽມ ແລະ ອາກອນສະແຕມ",
+"name_vi": "Lệ phí và tem",
+"parent": "64",
+"postable": true
+},
+{
+"code": "648",
+"name_lo": "ອາກອນ ແລະ ຄ່າທຳນຽມອື່ນໆ",
+"name_vi": "Thuế và lệ phí khác",
+"parent": "64",
+"postable": true
+},
+{
+"code": "65",
+"name_lo": "ລາ​ຍຈ່າຍ​​ອື່ນໆ ໃນການ​ທຸ​ລະ​ກິດ",
+"name_vi": "Chi phí khác cho hoạt động kinh doanh",
+"parent": null,
+"postable": false
+},
+{
+"code": "651",
+"name_lo": "ຄ່າ​ທຳນຽມສຳ​ປະທານ ​ແລະ ລາຍ​ຈ່າຍ​ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Phí tô nhượng và chi phí tương tự",
+"parent": "65",
+"postable": true
+},
+{
+"code": "652",
+"name_lo": "ມູນຄ່າສ່ວນຫຼຸດ ຈາກການຂາຍ ຊັບສົມບັດຄົງທີ່",
+"name_vi": "Lỗ thanh lý tài sản cổ định",
+"parent": "65",
+"postable": true
+},
+{
+"code": "653",
+"name_lo": "​ເບ້ຍ​ປະຊຸມ",
+"name_vi": "Phí hội họp",
+"parent": "65",
+"postable": true
+},
+{
+"code": "654",
+"name_lo": "ຂາດທຶນ​ບ້ວງ​ໜີ້​ຮຽກ​ເກັບ​ບໍ່​ໄດ້",
+"name_vi": "Nợ khó đòi xóa sổ",
+"parent": "65",
+"postable": true
+},
+{
+"code": "655",
+"name_lo": "ພູດ​ສ່ວນ ຜົນ​ໄດ້​ຮັບ​ຈາກ​ກິດ​ຈະ​ການ​ຮ່ວມ​ກັນ - ຂາດທຶນ",
+"name_vi": "Cổ phần liên doanh -lỗ",
+"parent": "65",
+"postable": true
+},
+{
+"code": "656",
+"name_lo": "ຄ່າ​ປັບ​ໃໝ, ​ໂທດ, ​ເງິນ​ຊ່ວຍ​ໜູນ​ທີ່​ໄດ້​ໃຫ້, ຂອງຂວັນ, ລາງວັນ ​ແລະ ​ເງິນ​ຊ່ວຍ​ບໍລິຈາກ",
+"name_vi": "Tiền phạt, trợ cấp được trao, quà tặng và tiền quyên góp",
+"parent": "65",
+"postable": true
+},
+{
+"code": "657",
+"name_lo": "ຂາດທຶນ ຈາກການແລກປ່ຽນ ຊັບສິນຄົງທີ່",
+"name_vi": "Lỗ trao đổi tài sản cố định",
+"parent": "65",
+"postable": true
+},
+{
+"code": "658",
+"name_lo": "ລາຍ​ຈ່າຍ​ອື່ນໆໃນການທຸລະກິດ",
+"name_vi": "Chi phí khác cho hoạt động kinh doanh",
+"parent": "65",
+"postable": true
+},
+{
+"code": "66",
+"name_lo": "ລາຍ​ຈ່າຍການ​ເງິນ",
+"name_vi": "Chi phí tài chính",
+"parent": null,
+"postable": false
+},
+{
+"code": "661",
+"name_lo": "ລາຍ​ຈ່າຍ​ດອກເບັ້ຽ",
+"name_vi": "Chi phí lãi vay",
+"parent": "66",
+"postable": true
+},
+{
+"code": "662",
+"name_lo": "ສ່ວນຫຼຸດການ​ຊຳ​ລະ​ສະ​ສາງ",
+"name_vi": "Chiết khấu thanh toán",
+"parent": "66",
+"postable": true
+},
+{
+"code": "663",
+"name_lo": "ຂາດ​ທຶນ​ຈາກ​ອັດຕາ​ແລກປ່ຽນ​ເງິນຕາ",
+"name_vi": "Lỗ chênh lệch tỷ giá hối đoái",
+"parent": "66",
+"postable": true
+},
+{
+"code": "664",
+"name_lo": "ມູນຄ່າສ່ວນຫຼຸດ ຂອງມູນຄ່າຍຸຕິທໍາເງິນລົງທຶນໃນວິສາຫະກິດຂາຮຸ້ນ",
+"name_vi": "Thay đổi giá trị hợp lý của khoản đầu tư vào doanh nghiệp liên doanh liên kết",
+"parent": "66",
+"postable": true
+},
+{
+"code": "665",
+"name_lo": "ມູນ​ຄ່າ​ສ່ວນ​ຫຼູດ​ ​ບ້ວງຫຼັກຊັບລົງທຶນ",
+"name_vi": "Lỗ chứng khoán đầu tư",
+"parent": "66",
+"postable": true
+},
+{
+"code": "666",
+"name_lo": "ມູນ​ຄ່າ​ສ່ວນ​ຫຼຸດ ​ເຄ​ື່ອງມື​ການ​ເງິນ ແລະ ​ເຄື່ອງມື​ປະ​ເພດ​ດຽວກັນ",
+"name_vi": "Lỗ công cụ tài chính và các công cụ tương tự",
+"parent": "66",
+"postable": true
+},
+{
+"code": "667",
+"name_lo": "ລາຍ​ຈ່າຍ​ສຸດ​ທິ ຈາກ​ການ​ຂາຍຫຼັກ​ຊັບ​ໝູນ​ທຶນ",
+"name_vi": "Chi phí thuần thưc hiện chứng khoán đầu tư ngắn hạn",
+"parent": "66",
+"postable": true
+},
+{
+"code": "668",
+"name_lo": "ລາຍ​ຈ່າຍ​ ​ການເງິນອື່ນໆ​",
+"name_vi": "Chi phí tài chính khác",
+"parent": "66",
+"postable": true
+},
+{
+"code": "67",
+"name_lo": "ລາຍ​ຈ່າຍ​ສັງ​ລວມ ຫຼັງ​ອາ​ກອນ",
+"name_vi": "Chi phí toàn diện sau thuế",
+"parent": null,
+"postable": false
+},
+{
+"code": "671",
+"name_lo": "ຄ່າ​ເວນ​ຄືນ",
+"name_vi": "Phí trưng thu",
+"parent": "67",
+"postable": true
+},
+{
+"code": "672",
+"name_lo": "ລາຍ​ຈ່າຍ​ຈາກ​ໄພພິບັດ​ທຳ​ມະ​ຊາດ",
+"name_vi": "Chi phí thiên tai",
+"parent": "67",
+"postable": true
+},
+{
+"code": "673",
+"name_lo": "ຂາດ​ທຶນ​ຈາກ​ການ​ຕີ​ມູນ​ຄ່າ (ຊັບ​ສິນ-ໜີ້​ສິນ) ທີ່​ເປັນ​ເງິນ​ຕາ​ຕ່າງ​ປະ​ເທດ",
+"name_vi": "Lỗ đánh giá lại (tài sản - Nợ phải trả ) là tiền ngoại tệ",
+"parent": "67",
+"postable": true
+},
+{
+"code": "674",
+"name_lo": "ຜິດ​ດ່ຽງ​ຈາກ​ການ​ຕີ​ມູນ​ຄ່າ ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່ ຄືນ​ໃໝ່ຫຼຸດ​ລົງ",
+"name_vi": "Lỗ chênh lệch đánh giá lại tài sản cổ định",
+"parent": "67",
+"postable": true
+},
+{
+"code": "675",
+"name_lo": "ຂາດ​ທຶນ​ຈາກ​ການ​ຊຳ​ລະ​ສະ​ສາງ ຫຼື ການ​ຄວບ ບໍ​ລິ​ສັດ",
+"name_vi": "Lỗ thanh lý hoặc sáp nhập công ty",
+"parent": "67",
+"postable": true
+},
+{
+"code": "678",
+"name_lo": "ລາຍ​ຈ່າຍ​ສັງ​ລວມ​ອື່ນໆ ຫຼັງ​ອາ​ກອນ",
+"name_vi": "Chi phí toàn diện sau thuế khác",
+"parent": "67",
+"postable": false
+},
+{
+"code": "6781",
+"name_lo": "ສ່ວນຫຼຸດ ຈາກ​ລາຍ​ການ​ດັດ​ແກ້​ການ​ຮັບ​ຮອງ​ນຳ​ໃຊ້​ຄັງ​ທຳ​ອິດ",
+"name_vi": "Lỗ điều chỉnh áp dụng lần đầu",
+"parent": "678",
+"postable": true
+},
+{
+"code": "6782",
+"name_lo": "​ສ່ວນຫຼຸດ ຈາກ​ການ​ປ່ຽນ​ແປງ​ນະ​ໂຍ​ບາຍ​ດ້ານ​ບັນ​ຊີ",
+"name_vi": "Lỗ thay lỗi chính sách kế toán",
+"parent": "678",
+"postable": true
+},
+{
+"code": "6783",
+"name_lo": "ສ່ວນຫຼຸດ ຈາກ​ການ​ແກ້​ໄຂ​ຂໍ້​ຜິດ​ພາດ​ດ້ານ​ບັນ​ຊີ",
+"name_vi": "Lỗ điều chỉnh sai sót kế toán",
+"parent": "678",
+"postable": true
+},
+{
+"code": "6788",
+"name_lo": "​ລາຍ​ຈ່າຍ​ສັງ​ລວມ​ອື່ນໆ",
+"name_vi": "Chi phí toàn diện sau thuế khác",
+"parent": "678",
+"postable": true
+},
+{
+"code": "68",
+"name_lo": "ຫັກ​ຄ່າ​ຫຼຸ້ຍຫ້ຽນ, ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ, ​ເງິນ​ແຮ",
+"name_vi": "Trích lập khấu hao ,giảm giá và các khoản dự phòng",
+"parent": null,
+"postable": false
+},
+{
+"code": "681",
+"name_lo": "ຫັກ​ຄ່າ​ໃຊ້​ຈ່າຍ ບ້ວງ​ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່ ການ​ເງິນ",
+"name_vi": "Khấu hao tài sản cổ định tài chính",
+"parent": "68",
+"postable": true
+},
+{
+"code": "682",
+"name_lo": "ຫັກ​ຄ່າ​ຫຼຸ້ຍ​ຫ້ຽນ ຊັບ​ສົມບັດ​ຄົງ​ທີ່ ມີ​ຕົວ​ຕົນ",
+"name_vi": "Khấu hao tài sản cổ định hữu hình",
+"parent": "68",
+"postable": true
+},
+{
+"code": "683",
+"name_lo": "ຫັກ​ຄ່າ​ຫຼຸ້ຍ​ຫ້ຽນ ຊັບ​ສົມບັດ​ຄົງ​ທີ່​ ບໍ່​ມີ​ຕົວ​ຕົນ",
+"name_vi": "Khấu hao tài sản cổ định vô hình",
+"parent": "68",
+"postable": true
+},
+{
+"code": "684",
+"name_lo": "ຫັກ​ເງິນ​ແຮ ​ເພື່ອ​ລາຍ​ຈ່າຍ",
+"name_vi": "Trích dự phòng chi phí",
+"parent": "68",
+"postable": true
+},
+{
+"code": "685",
+"name_lo": "ຫັກ​ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ-ຊັບ​ສົມ​ບັດ​ຄົງ​ທີ່",
+"name_vi": "Trích dự phòng giảm giá - Tài sản cổ định",
+"parent": "68",
+"postable": true
+},
+{
+"code": "686",
+"name_lo": "ຫັກ​ຄ່າສູນ​ເສຍ​ມູນ​ຄ່າ​-​ເຄື່ອງ​ໃນ​ສາງ",
+"name_vi": "Trích dự phòng giảm giá - hàng tồn kho",
+"parent": "68",
+"postable": true
+},
+{
+"code": "687",
+"name_lo": "ຫັກຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ-ໜີ້​ຕ້ອງ​ຮັບ​ທວງ​ຍາກ",
+"name_vi": "Trích dự phòng giảm giá -phải thu khó đòi",
+"parent": "68",
+"postable": true
+},
+{
+"code": "688",
+"name_lo": "ຫັກຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ-ຊັບ​ສິນ​ການ​ເງິນ",
+"name_vi": "Trích dự phòng giảm giá -Tài sản tài chính",
+"parent": "68",
+"postable": true
+},
+{
+"code": "69",
+"name_lo": "ອາກອນ​ກຳ​ໄລ",
+"name_vi": "Thuế thu nhập doanh nghiệp và các loại thuế tương tự",
+"parent": null,
+"postable": false
+},
+{
+"code": "691",
+"name_lo": "ອາກອນ​ກຳ​ໄລ ທີ່​ອີງ​ໃສ່​ກິດຈະການ​ປົກກະຕິ",
+"name_vi": "Thuế thu nhập doanh nghiệp hiện hành",
+"parent": "69",
+"postable": true
+},
+{
+"code": "694",
+"name_lo": "ລາຍ​ຈ່າຍ - ອາກອນ​ເຍື້ອນຊຳລະ",
+"name_vi": "Chi phí - Thuế thu nhập doanh nghiệp hoãn lại",
+"parent": "69",
+"postable": true
+},
+{
+"code": "699",
+"name_lo": "ລາຍ​ຮັບ - ອາກອນ​ເຍື້ອນຊຳລະ",
+"name_vi": "Thu nhập - Thuế thu nhập doanh nghiệp hoãn lại",
+"parent": "69",
+"postable": true
+},
+{
+"code": "70",
+"name_lo": "ຂາ​ຍຜະລິດຕະພັນທີ່​ໄດ້​ຜະລິດ,ສິນຄ້າ,ການ​ໃຫ້ການ​ບໍ​ລິການ",
+"name_vi": "Bán sản phẩm ,hàng hóa và cung cấp dịch vụ",
+"parent": null,
+"postable": false
+},
+{
+"code": "701",
+"name_lo": "ຂາຍ​ຜະລິດ​ຕະພັນ​ສຳ​ເລັດ​ຮູບ",
+"name_vi": "Bán sản phẩm",
+"parent": "70",
+"postable": true
+},
+{
+"code": "702",
+"name_lo": "ຂາຍ​ຜະລິດ​ຕະພັນລະຫວ່າ​ງກາງ",
+"name_vi": "Bán sản phẩm trung gian",
+"parent": "70",
+"postable": true
+},
+{
+"code": "704",
+"name_lo": "ຂາຍ​​ການ​ບໍ​ລິ​ການກໍ່ສ້າງ",
+"name_vi": "Bán dịch vụ xây dựng",
+"parent": "70",
+"postable": true
+},
+{
+"code": "705",
+"name_lo": "ຂາຍ​ຜົນ​ການຄົ້ນຄວ້າ, ການ​ວິ​ໄຈ",
+"name_vi": "Bán công trình nghiên cứu",
+"parent": "70",
+"postable": true
+},
+{
+"code": "707",
+"name_lo": "ຂາ​ຍສິນຄ້າ",
+"name_vi": "Bán hàng hóa",
+"parent": "70",
+"postable": true
+},
+{
+"code": "708",
+"name_lo": "ຂາຍ​ການ​ບໍລິການອື່ນໆ",
+"name_vi": "Bán dịch vụ khác",
+"parent": "70",
+"postable": true
+},
+{
+"code": "709",
+"name_lo": "ສ່ວນ​ຫຼຸດຕ່າງໆ​ທີ່​ຫຼຸດ​ໃຫ້​ລູກ​ຄ້າ",
+"name_vi": "Hàng bán bị trả lại và chiết khấu ,giảm giá cho khách hàng",
+"parent": "70",
+"postable": false
+},
+{
+"code": "7091",
+"name_lo": "ການຂາຍ ສົ່ງຄືນ",
+"name_vi": "Hàng bán bị trả lại",
+"parent": "709",
+"postable": true
+},
+{
+"code": "7092",
+"name_lo": "ສ່ວນ​ຫຼຸດຕ່າງໆ​ທີ່​ຫຼຸດ​ໃຫ້​ລູກ​ຄ້າ",
+"name_vi": "Chiết khấu ,giảm giá cho khách hàng",
+"parent": "709",
+"postable": true
+},
+{
+"code": "71",
+"name_lo": "ລາຍ​ຮັບ​ຈາກ​ ກິດຈະການ​ສຳຮອງ",
+"name_vi": "Doanh thu từ hoạt động phụ trợ",
+"parent": null,
+"postable": false
+},
+{
+"code": "711",
+"name_lo": "ຂາຍ​ເສດ​​ເຫຼືອຜະລິດ​ຕະພັນ",
+"name_vi": "Bán phế phẩm",
+"parent": "71",
+"postable": true
+},
+{
+"code": "712",
+"name_lo": "ຮັບຄ່າ​ເຊົ່າ​ຕ່າງໆ",
+"name_vi": "Doanh thu tiền thuê",
+"parent": "71",
+"postable": true
+},
+{
+"code": "714",
+"name_lo": "ກຳ​ໄລ​ຈາກ​ເງິນ​ມັດ​ຈຳ​ເຄື່ອງຫຸ້ມຫໍ່",
+"name_vi": "Lãi đặt cọc bao bì",
+"parent": "71",
+"postable": true
+},
+{
+"code": "715",
+"name_lo": "ຮັບ​ຄ່າ​ນາຍ​ໜ້າ",
+"name_vi": "Doanh thu tiền hoa hồng",
+"parent": "71",
+"postable": true
+},
+{
+"code": "717",
+"name_lo": "ຄ່າ​ຕ່າງ ​ແລະ ຄ່າ​ໃຊ້​ຈ່າຍ​ສຳຮອງ​​ເອົາ​ນຳ​ລູກ​ຄ້າ",
+"name_vi": "Doanh thu vận chuyển và các phụ phí thu từ khách hàng",
+"parent": "71",
+"postable": true
+},
+{
+"code": "718",
+"name_lo": "ລາຍ​ຮັບ​ຈາກ ກິດ​ຈະ​ການ​ສຳ​ຮອງ​ອື່ນໆ",
+"name_vi": "Doanh thu từ hoạt động phụ trợ khác",
+"parent": "71",
+"postable": true
+},
+{
+"code": "719",
+"name_lo": "ສ່ວນ​ຫຼຸດລາຄາ​ ໄດ້​ຮັບ​",
+"name_vi": "Chiết khấu ,giảm giá",
+"parent": "71",
+"postable": true
+},
+{
+"code": "74",
+"name_lo": "​ເງິນ​ຊ່ວຍ​ໜູນ​ໃນ​ການ​ທຸລະ​ກິດ",
+"name_vi": "Doanh thu từ các khoản hỗ trợ kinh doanh",
+"parent": null,
+"postable": false
+},
+{
+"code": "741",
+"name_lo": "​ເງິນ​ຊ່ວຍ​ໜູນ ດຸ່ນດ່ຽງ",
+"name_vi": "Trợ cấp cân đối",
+"parent": "74",
+"postable": true
+},
+{
+"code": "748",
+"name_lo": "​ເງິນ​ຊ່ວຍ​ໜູນ​ ໃນ​ການ​ທຸລະ​ກິດ",
+"name_vi": "Hỗ trợ kinh doanh",
+"parent": "74",
+"postable": true
+},
+{
+"code": "75",
+"name_lo": "ລາຍ​ຮັບ​ອື່ນໆ​ໃນ​ການ​ທຸລະ​ກິດ",
+"name_vi": "Doanh thu từ các hoạt động thông thường khác",
+"parent": null,
+"postable": false
+},
+{
+"code": "751",
+"name_lo": "ຄ່າ​ທຳນຽມ ສຳ​ປະທານ ​ແລະ ຄ່າທຳນຽມ​ປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Phí tô nhượng và các phí tương tự",
+"parent": "75",
+"postable": true
+},
+{
+"code": "752",
+"name_lo": "ມູນ​ຄ່າ​ສ່ວນ​ໄດ້ ຈາກ​ການ​ຂາຍ ຊັບ​ສົມບັດ​ຄົງ​ທີ່ ທີ່​ບໍ່​ແມ່ນ​ການ​ເງິນ",
+"name_vi": "Lãi thanh lý tài sản cổ định phi tài chính",
+"parent": "75",
+"postable": true
+},
+{
+"code": "753",
+"name_lo": "​ເບ້ຍ​ປະຊຸມ ​ແລະ ຄ່າ​ທົດ​ແທນ​ຜູ້​ບໍລິ​ຫານ, ຜູ້​ຈັດການ",
+"name_vi": "Phí hội họp và thù lao của người điều hành ,người quản lý",
+"parent": "75",
+"postable": true
+},
+{
+"code": "754",
+"name_lo": "ພູດ​ສ່ວນ​ເງິນ​ຊ່ວຍ​ໜູນ​ກໍ່ສ້າງ​ພື້ນຖານ ທີ່​ໂອນ​ເຂົ້າ​ຜົນ​ໄດ້​ຮັບ​ໃນ​ປີ",
+"name_vi": "Cổ phần hỗ trợ đầu tư được chuyển vào lãi hoặc lỗ trong năm",
+"parent": "75",
+"postable": true
+},
+{
+"code": "755",
+"name_lo": "ພູດ​ສ່ວນ​ຜົນ​ໄດ້​ຮັບ ຈາກ​ກິດ​ຈະ​ການ​ຮ່ວມ - ກຳ​ໄລ",
+"name_vi": "Cổ phần liên doanh -lãi",
+"parent": "75",
+"postable": true
+},
+{
+"code": "756",
+"name_lo": "​ເງິນ​ບໍລິຈາກ​ທີ່​ໄດ້​ຮັບ, ໜີ້​ທີ່​ຕ້ອງ​ໄດ້​ທົດ​ແທນ​ຄືນ ຮັບ​ເຂົ້າ",
+"name_vi": "Các khoản quyên góp nhận được",
+"parent": "75",
+"postable": true
+},
+{
+"code": "757",
+"name_lo": "ສ່ວນໄດ້ຈາກການສະສາງຊັບສິນພຖດສ່ວນເງິນຊ່ວຍໜູນກໍ່ສ້າງພື້ນຖານ",
+"name_vi": "Lãi thanh lý tài sản phần hỗ trợ xây dựng cơ bản",
+"parent": "75",
+"postable": true
+},
+{
+"code": "758",
+"name_lo": "ລາຍ​ຮັບ​ອື່ນໆ ຈາກ​ການ​ຄຸ້ມ​ຄອງ - ບໍລິຫານ ປົກກະຕິ",
+"name_vi": "Thu nhập từ các hoạt động thông thường khác",
+"parent": "75",
+"postable": true
+},
+{
+"code": "76",
+"name_lo": "ລາຍ​ຮັບ​ການ​ເງິນ",
+"name_vi": "Doanh thu tài chính",
+"parent": null,
+"postable": false
+},
+{
+"code": "761",
+"name_lo": "ລາຍ​ຮັບ ​ເງິນ​ຮ່ວມລົງທຶນ",
+"name_vi": "Doanh thu từ cổ tức và tiền lãi",
+"parent": "76",
+"postable": false
+},
+{
+"code": "7611",
+"name_lo": "ລາຍຮັບ ເງິນປັນຜົນ",
+"name_vi": "Doanh thu cổ tức",
+"parent": "761",
+"postable": true
+},
+{
+"code": "7612",
+"name_lo": "ລາຍຮັບ ດອກເບ້ຍ",
+"name_vi": "Doanh thu tiền lãi",
+"parent": "761",
+"postable": true
+},
+{
+"code": "762",
+"name_lo": "ສ່ວນຫຼຸດ ຮັບຈາກການຊຳລະເງິນ",
+"name_vi": "Chiết khấu thanh toán",
+"parent": "76",
+"postable": true
+},
+{
+"code": "763",
+"name_lo": "ກຳ​ໄລ​ຈາກ​ອັດຕາ​ແລກປ່ຽນ​ເງິນຕາ",
+"name_vi": "Lãi chênh lệch tỷ giá hối đoái",
+"parent": "76",
+"postable": true
+},
+{
+"code": "764",
+"name_lo": "ລາຍ​ຮັບ ຈາກ​ຊັບ​ສົມບັດ​ຄົງ​ທີ່​ການ​ເງິນ​ອື່ນໆ",
+"name_vi": "Thu nhập từ tài sản cổ định tài chính khác",
+"parent": "76",
+"postable": true
+},
+{
+"code": "765",
+"name_lo": "ມູນ​ຄ່າ​ສ່ວນ​ເກີນ​ ​ບ້ວງຫຼັກຊັບລົງທຶນ",
+"name_vi": "Lãi chứng khoán đầu tư",
+"parent": "76",
+"postable": true
+},
+{
+"code": "766",
+"name_lo": "ມູນ​ຄ່າ​ສ່ວນ​ເກີນ​ ​​ເຄື່ອງ​ມື​ການ​ເງິນ ແລະ ​ເຄື່ອງມືປະ​ເພດ​ດຽວ​ກັນ",
+"name_vi": "Lãi công cụ tài chính và công cụ tương tự",
+"parent": "76",
+"postable": true
+},
+{
+"code": "767",
+"name_lo": "ລາຍຮັບ​ສຸດທິ ຈາກ​ການ​ຂາຍ​​ຫຼັກຊັບ​ໜູນທຶນ",
+"name_vi": "Thu nhập thuần từ đầu tư chứng khoán ngắn hạn",
+"parent": "76",
+"postable": true
+},
+{
+"code": "768",
+"name_lo": "ລາຍ​ຮັບ​ການ​ເງິນ​ອື່ນໆ",
+"name_vi": "Doanh thu tài chính khác",
+"parent": "76",
+"postable": true
+},
+{
+"code": "77",
+"name_lo": "ລາຍ​ຮັບ ພິ​ເສດ​, ບັງ​ເອີນ",
+"name_vi": "Thu nhập toàn diện sau thuế",
+"parent": null,
+"postable": false
+},
+{
+"code": "773",
+"name_lo": "ສ່ວນໄດ້ຈາກການຕີມູນຄ່າ ຊັບສິນ-ໜີ້ສິນ ເປັນເງິນຕາຕ່າງປິທດ",
+"name_vi": "Lãi đánh giá lại tài (tài sản -nợ phải trả ) là tiền ngoại tệ",
+"parent": "77",
+"postable": true
+},
+{
+"code": "774",
+"name_lo": "ສ່ວນໄດ້ຈາກການຕີມູນຄ່າ ຊັຍສົມບັດຄົງທີ່ຄືນໃໝ່",
+"name_vi": "Lãi đánh giá lại tài sản cổ định",
+"parent": "77",
+"postable": true
+},
+{
+"code": "775",
+"name_lo": "ສ່ວນໄດ້ຈາກການສະສາງ ຫລື ຄວບບໍລິສັດ",
+"name_vi": "Lãi thanh lý hoặc sáp nhập công ty",
+"parent": "77",
+"postable": true
+},
+{
+"code": "778",
+"name_lo": "ລາຍ​ຮັບ ພິ​ເສດ, ບັງ​ເອີນ​ອື່ນໆ",
+"name_vi": "Thu nhập toàn diện sau thuế khác",
+"parent": "77",
+"postable": false
+},
+{
+"code": "7781",
+"name_lo": "ສ່ວນໄດ້ ຈາກການດັດແກ້ການຮັບຮອງນຳໃຊ້ຄັ້ງທຳອິດ",
+"name_vi": "Lãi điều chỉnh áp dụng lần đầu",
+"parent": "778",
+"postable": true
+},
+{
+"code": "7782",
+"name_lo": "ສ່ວນໄດ້ ຈາກການປ່ຽນແປງນະໂຍບາຍດ້ານບັນຊີ",
+"name_vi": "Lãi thay lỗi chính sách kế toán",
+"parent": "778",
+"postable": true
+},
+{
+"code": "7783",
+"name_lo": "ສ່ວນໄດ້ ຈາກການແກ້ໄຂຂໍ້ຜິດພາດດ້ານບັນຊີ",
+"name_vi": "Lãi điều chỉnh sai sót kế toán",
+"parent": "778",
+"postable": true
+},
+{
+"code": "7788",
+"name_lo": "ລາຍ​ຮັບສັງລວມ​ອື່ນໆ",
+"name_vi": "Thu nhập toàn diện sau thuế khác",
+"parent": "778",
+"postable": true
+},
+{
+"code": "78",
+"name_lo": "​ເກັບ​ຄືນ ຄ່າ​ຫຼຸ້ຍຫ້ຽນ, ຄ່າ​ສູນ​ເສັຍ​ມູນ​ຄ່າ ​ແລະ ​ເງິນແຮ",
+"name_vi": "Hoàn nhập khấu hao,giảm giá và các khoản dự phòng",
+"parent": null,
+"postable": false
+},
+{
+"code": "782",
+"name_lo": "ເກັບ​ຄືນ​ ຄ່າ​ຫຼຸ້ຍຫ້ຽນ - ຊັບ​ສົມບັດ​ຄົງ​ທີ່​ ມີ​ຕົວ​ຕົນ",
+"name_vi": "Hoàn nhập khấu hao tài sản cổ định hữu hình",
+"parent": "78",
+"postable": true
+},
+{
+"code": "783",
+"name_lo": "​ເກັບ​ຄືນ​ ຄ່າ​ຫຼຸ້ຍຫ້ຽນ - ຊັບ​ສົມບັດ​ຄົງ​ທີ່​ ບໍ່​ມີ​ຕົວ​ຕົນ",
+"name_vi": "Hoàn nhập khấu hao tài sản cổ định vô hình",
+"parent": "78",
+"postable": true
+},
+{
+"code": "784",
+"name_lo": "​ເກັບ​ຄືນ​ເງິນ​ແຮ ​ເພື່ອ​ລາຍ​ຈ່າຍ",
+"name_vi": "Hoàn nhập dự phòng chi phí",
+"parent": "78",
+"postable": true
+},
+{
+"code": "785",
+"name_lo": "​ເກັບ​ຄືນ ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ - ຊັບສົມບັດຄົງທີ່",
+"name_vi": "Hoàn nhập dự phòng giảm giá - Tài sản cổ định",
+"parent": "78",
+"postable": true
+},
+{
+"code": "786",
+"name_lo": "​ເກັບ​ຄືນ ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ - ເຄື່ອງໃນສາງ",
+"name_vi": "Hoàn nhập dự phòng giảm giá -hàng tồn kho",
+"parent": "78",
+"postable": true
+},
+{
+"code": "787",
+"name_lo": "​ເກັບ​ຄືນ ຄ່າ​ສູນ​ເສຍ​ມູນ​ຄ່າ - ໜີ້ຕ້ອງ​ຮັບ​ທວງ​ຍາກ",
+"name_vi": "Hoàn nhập dự phòng giảm giá -phải thu khó đòi",
+"parent": "78",
+"postable": true
+},
+{
+"code": "788",
+"name_lo": "ເກັບ​ຄືນ​ ຄ່າ​ສູນເສຍມູນຄ່າ - ຊັບ​ສິນການເງິນ",
+"name_vi": "Hoàn nhập dự phòng giảm giá - tài sản tài chính",
+"parent": "78",
+"postable": true
+}
+]
+}

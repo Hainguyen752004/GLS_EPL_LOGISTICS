@@ -43,6 +43,12 @@ def _dong_cua(db, s, dau=None, sau=None):
     return q.all()
 
 
+def khoan_muc_ncc(db):
+    """Khoản mục (item_key) đã có nhà cung cấp theo dõi nợ — dòng chi mang khoản mục đó (không ghi rõ nhà cung cấp) là
+    nợ nhà cung cấp trả theo đợt, quỹ không chi tiền mặt theo chuyến (phieu.py → PC_SC, rà định khoản 30/09)."""
+    return {k for (k,) in db.query(Supplier.item_key).filter(Supplier.item_key.isnot(None), Supplier.active.isnot(False))}
+
+
 def _cua_ncc(s):
     """Điều kiện SQL "dòng chi này thuộc nhà cung cấp s" — đúng hai đường vào mô tả ở _dong_cua."""
     theo_ma = and_(TripExpense.supplier_id == s.id, TripExpense.ghi_no.is_(True))

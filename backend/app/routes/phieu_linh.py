@@ -33,6 +33,7 @@ from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
 from services.tinh_toan import hinh_thuc, la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
+from services import tai_khoan as TK
 from services import gia_von as GV
 from services import kho_ke_toan as KK
 
@@ -331,7 +332,7 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
         else:
             dong = [e for e in _dong(db, p) if la_tien_mat_tai_xe(e, p.company) and e.section in ("travel", "other")]
         x["dong"] = [{"item_key": e.item_key, "item_name": e.item_name, "qty": e.qty, "unit_price": e.unit_price,
-                      "currency": e.currency, "tien_lak": _lak(p, e), "acct_code": e.acct_code} for e in dong]
+                      "currency": e.currency, "tien_lak": _lak(p, e), "acct_code": TK.tk_dong(p.company, e)} for e in dong]
         # người quét QR không thấy tiền bán thì không nhận giá cước; không thấy tiền chi thì không nhận đơn giá
         if not thay_tien_ban(user.role):
             x["phieu"].pop("price", None); x["phieu"].pop("price_ccy", None)

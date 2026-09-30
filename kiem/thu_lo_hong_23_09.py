@@ -93,9 +93,11 @@ def main():
     s, sau = goi("/api/chung-tu?trip_id=%s&loai=PC_TU" % P, vai="ketoan")
     moi = [c for c in sau["ds"] if c["id"] not in {x["id"] for x in truoc["ds"]}]
     assert n0 == 0 and len(moi) == 1, "phải sinh đúng một PC_TU, có %d cũ, %d mới" % (n0, len(moi))
-    tien_mat = sum((d["qty"] or 0) * (d["unit_price"] or 0) for d in g["expenses"] if d["section"] == "travel" and d.get("paid_by_epl") and not d.get("toll_card_id") and d.get("source") != "kho")
+    # đúng số trên tờ tạm ứng: mọi dòng tiền mặt tài xế cầm đi (mục III, IV, VI — cờ tien_mat_tx), không chỉ mục IV (30/09)
+    tien_mat = sum((d["qty"] or 0) * (d["unit_price"] or 0) for d in g["expenses"] if d.get("tien_mat_tx"))
     assert round(moi[0]["tien_lak"]) == round(tien_mat), (moi[0]["tien_lak"], tien_mat)
-    assert moi[0]["no"] and moi[0]["co"], moi[0]
+    # xe nhà: tạm ứng là Nợ 1601 tạm ứng nhân viên, chưa phải chi phí (rà định khoản 30/09)
+    assert moi[0]["no"] == "1601" and moi[0]["co"] == "1011", moi[0]
     print("  ✓ %-62s %s · %s LAK · Nợ %s / Có %s" % ("Sinh đúng một tờ chi đi đường", moi[0]["so"], format(round(moi[0]["tien_lak"]), ","), moi[0]["no"], moi[0]["co"]))
     s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 409, "Chi lại mục IV lần hai → sai bước, không ra tờ thứ hai", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 39.8}, vai="thabok"); phai(s, 200, "Chi rồi → Bãi báo Xe đã tới được", g)

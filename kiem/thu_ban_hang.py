@@ -129,7 +129,7 @@ to = lambda loai, so: [v for v in K.to_kho(so, loai) if (v.get("lines") or {}).g
 pxk, hd = to("PXK_BAN", bh["doc_no"]), to("HD_BAN", bh["doc_no"])
 bao("Sổ kế toán có PXK_BAN + HD_BAN của phiếu bán", 200 if len(pxk) == 1 and len(hd) == 1 else 500, 200, "%s · %s" % ([v["ref"] for v in pxk], [v["ref"] for v in hd]))
 assert pxk[0]["debit"] == "607" and pxk[0]["credit"] == "1371" and pxk[0]["entry_id"] and abs(pxk[0]["amount_lak"] - bh["cost_lak"]) < 1, pxk
-assert hd[0]["debit"] == "1211" and hd[0]["credit"] == "70" and hd[0]["entry_id"] and abs(hd[0]["amount_lak"] - bh["total_lak"]) < 1, hd
+assert hd[0]["debit"] == "1211" and hd[0]["credit"] == "707" and hd[0]["entry_id"] and abs(hd[0]["amount_lak"] - bh["total_lak"]) < 1, hd
 print("  OK  PXK_BAN Nợ %s / Có %s (giá vốn) · HD_BAN Nợ %s / Có %s — vào sổ" % (pxk[0]["debit"], pxk[0]["credit"], hd[0]["debit"], hd[0]["credit"]))
 ma, r = kt("/api/ban-hang/%s/thu" % bh["id"], {}, "thabok")
 bao("Bãi ghi thu → từ chối", ma, 403)

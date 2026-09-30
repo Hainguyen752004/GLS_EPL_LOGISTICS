@@ -55,4 +55,13 @@
     <div class="bd small muted">Tờ không định khoản (phiếu xuất xe, phiếu đề nghị xuất kho nhiên liệu, phiếu đề nghị tạm ứng, chuyển kho) chỉ lưu để bên kế toán có ngữ cảnh,
       không sinh bút toán. Hàng khách gửi là khoản <b>ngoài bảng</b>: mã do bên kế toán cấp ở Chứng từ → Cấu hình; để trống thì chỉ theo dõi số tấn.</div>
   </div>
+  <!-- Rà định khoản 30/09: vế Có của một dòng chi đi theo CÁCH TRẢ (services/tai_khoan.dinh_khoan_dong) -->
+  <div class="card">
+    <div class="hd"><h3>Định khoản từng dòng chi trên phiếu xuất xe</h3><div class="grow"></div>
+      <span class="small muted">Vế Có đi theo cách trả · chủ xe tự chi thì không định khoản</span></div>
+    <div class="tbl-wrap"><table class="tbl tbl-compact qt-ctb">
+      <thead><tr><th>Dòng chi</th><th>Xe nhà · Nợ</th><th>Xe nhà · Có</th><th>Xe liên kết · Nợ</th><th>Xe liên kết · Có</th></tr></thead>
+      <tbody id="qt-dc-than"></tbody></table></div>
+    <div class="bd small muted" id="qt-dc-nguon"></div>
+  </div>
 </div>

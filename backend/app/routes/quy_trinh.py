@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from services import chung_tu as CT
+from services import tai_khoan as TK
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import thay_gia_kho, QUYEN, nhap_gia_chi, thay_tien_ban, thay_tien_chi
 
@@ -30,7 +31,7 @@ def _bien_the(loai):
         return [(x, c, "repair", None, None, None) for c, x in XE]
     if loai == "PC_TU":          # quỹ luôn chi tạm ứng bằng tiền mặt Kíp
         return [("%s · tiền mặt Kíp" % x, c, "travel", "LAK", "cash", None) for c, x in XE]
-    if loai in ("TT_CHI", "TT_THU"):   # tất toán tài xế: tiền mặt Kíp, không theo xe
+    if loai in ("QT_TU", "TT_CHI", "TT_THU"):   # tất toán tài xế (chỉ xe nhà): tiền mặt Kíp
         return [("tiền mặt Kíp", "EPL", "travel", "LAK", "cash", None)]
     if loai == "PC_SC":
         return [("%s · %s · tiền mặt Kíp" % (x, m), c, s, "LAK", "cash", None) for c, x in XE for s, m in (("repair", "sửa chữa"), ("other", "chi khác"))]
@@ -47,8 +48,29 @@ def _dinh_khoan(db, loai):
         no, no_ten, co, co_ten = CT.dinh_khoan(loai, cty, muc, tt, pt)
         no, co = CT._dien_ma_cau_hinh(db, loai, no, co)
         if loai == "HD_BAN" and dt_loai == "chu_xe":
-            no, no_ten = "4022", "Phải trả chủ xe liên kết (trừ vào tiền trả)"
-        ra.append({"khi": dieu_kien, "no": no, "no_ten": no_ten, "co": co, "co_ten": co_ten})
+            no, no_ten = TK.CHU_XE, "%s (trừ vào tiền trả)" % TK.ten(TK.CHU_XE)
+        ra.append({"khi": dieu_kien, "no": no, "no_ten": no_ten, "co": co, "co_ten": co_ten,
+                   "no_tt": TK.trang_thai(no) if no else None, "co_tt": TK.trang_thai(co) if co else None})
+    return ra
+
+
+# Định khoản từng DÒNG CHI trên phiếu xuất xe — đúng hàm tai_khoan.dinh_khoan_dong, cho mọi cách trả (rà 30/09).
+DONG_CHI = (("fuel", "kho", None, False, "dk_dau_kho"), ("fuel", "mua", None, True, "dk_dau_ghi_no"),
+            ("fuel", "mua", None, False, "dk_dau_tien_mat"), ("travel", None, "tien_mat", False, "dk_tien_mat"),
+            ("travel", None, "luong", False, "dk_luong"), ("travel", None, "ncc", False, "dk_ncc"),
+            ("repair", "kho", None, False, "dk_pt_kho"), ("repair", "mua", None, False, "dk_sua_ngoai"))
+
+
+def _dong_chi():
+    ra = []
+    for muc, nguon, cach, ghi_no, nhan in DONG_CHI:
+        o = {"nhan": nhan, "muc": muc}
+        for cty in ("EPL", "joint"):
+            cap = TK.dinh_khoan_dong(cty, muc, nguon, ghi_no=ghi_no, cach=cach)
+            no, co = cap.split("/")
+            o[cty] = {"cap": cap, "no": no, "no_ten": TK.ten(no), "no_tt": TK.trang_thai(no),
+                      "co": co, "co_ten": TK.ten(co), "co_tt": TK.trang_thai(co)}
+        ra.append(o)
     return ra
 
 
@@ -63,4 +85,7 @@ def quy_trinh(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
         "chung_tu": [{"ma": ma, "ten": ten, "ten_lo": lo, "dinh_khoan": co_dk,
                       "bien_the": _dinh_khoan(db, ma) if co_dk else []}
                      for ma, (ten, lo, co_dk) in CT.LOAI.items()],
+        "dong_chi": _dong_chi(),
+        "danh_muc": {"chup_ngay": TK.CHUP_NGAY, "so_ma": len(TK.DANH_MUC),
+                     "ma_con_khach": [{"ma": m, "cha": c, "ten": v} for m, (c, v, _l) in TK.MA_CON_KHACH.items()]},
     }

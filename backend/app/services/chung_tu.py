@@ -19,6 +19,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 
 from models import ChungTu
+from services import tai_khoan as TK
 
 # ------------------------------------------------------------------ danh mục loại chứng từ
 # ma → (tên Việt, tên Lào, có định khoản không)
@@ -46,6 +47,8 @@ LOAI = {
     "PC_CX":  ("Phiếu chi trả chủ xe liên kết", "ໃບຈ່າຍເຈົ້າຂອງລົດຮ່ວມ", True),
     "HD":     ("Hoá đơn vận chuyển", "ໃບເກັບເງິນຂົນສົ່ງ", True),
     "PT":     ("Phiếu thu tiền khách", "ໃບຮັບເງິນລູກຄ້າ", True),
+    # Quyết toán tạm ứng (30/09): lúc tất toán, số tài xế ĐÃ CHI THẬT chuyển từ tạm ứng 1601 sang chi phí — ghi ở trang kế toán.
+    "QT_TU":  ("Quyết toán tạm ứng tài xế", "ສະສາງໂຊເຟີ · ເງິນລ່ວງໜ້າ", True),
     "TT_CHI": ("Tất toán tài xế · chi bù", "ສະສາງໂຊເຟີ · ຈ່າຍເພີ່ມ", True),
     "TT_THU": ("Tất toán tài xế · thu hoàn", "ສະສາງໂຊເຟີ · ຮັບຄືນ", True),
     # bán phụ tùng · xăng dầu cho bên ngoài (không phải chi cho chuyến)
@@ -54,40 +57,32 @@ LOAI = {
     "PT_BAN":  ("Phiếu thu bán hàng", "ໃບຮັບເງິນຂາຍສິນຄ້າ", True),
 }
 
-# Mã tài khoản anh Khampla trả lời 22/09/2026, theo sá-la-ban kế toán doanh nghiệp Lào:
-#   kho 137 (mẹ) / 1371 (con) · nhà cung cấp 402 (mẹ) / 4021 (con, tách theo từng NCC)
-#   tiền mặt Kíp 1011 · tiền mặt ngoại tệ 1012 · ngân hàng Kíp 1021 · ngân hàng ngoại tệ 1022
-# Ghi sổ theo MÃ CON vì đó là cấp hạch toán; mã mẹ chỉ để cộng dồn. Anh Khang muốn khác thì đổi ở đây.
-KHO = ("1371", "Kho hàng, vật tư (137 · 1371)")
+# Mã tài khoản: một bảng duy nhất ở services/tai_khoan.py (rà 30/09 theo Excel, quy trình của khách và danh mục thật
+# của bên kế toán). Ở đây chỉ ghép hai vế cho từng loại tờ.
+KHO = TK.ve(TK.KHO)
 # Mã hàng khách gửi: bên kế toán CHƯA cấp — vế mang tên nhưng mã None cho tới khi Sếp điền ở cấu hình.
 HANG_GUI = (None, "Hàng khách gửi giữ hộ — ngoài bảng (mã do bên kế toán cấp)")
-# Giá vốn hàng bán: chủ dự án chốt 607 ngày 23/09 (sá-la-ban Lào: 607 giá vốn hàng bán). Cấu hình `ma_gia_von`
-# vẫn đổi được nếu anh Khang cấp mã khác.
-GIA_VON = ("607", "Giá vốn hàng bán")
-NCC = ("4021", "Phải trả nhà cung cấp (402 · 4021, tách theo nhà cung cấp)")
-MA_TIEN = {
-    ("cash", True): ("1011", "Tiền mặt bằng Kíp"),
-    ("cash", False): ("1012", "Tiền mặt ngoại tệ"),
-    ("bank", True): ("1021", "Tiền gửi ngân hàng bằng Kíp"),
-    ("bank", False): ("1022", "Tiền gửi ngân hàng ngoại tệ"),
-}
+# Giá vốn hàng bán: chủ dự án chốt 607 ngày 23/09. Cấu hình `ma_gia_von` vẫn đổi được nếu bên kế toán cấp mã khác.
+GIA_VON = TK.ve(TK.GIA_VON)
+NCC = TK.ve(TK.NCC)
+TAM_UNG = TK.ve(TK.TAM_UNG)
 
 
 def ma_tien(phuong_thuc=None, tien_te=None):
-    """Vế tiền chọn theo CÁCH thu/chi (mặt · ngân hàng) và TIỀN TỆ (Kíp · khác).
-
-    Quỹ tiền mặt Thà Bốc và Thủ quỹ Viêng Chăn đều là quỹ tiền mặt đúng tên vai của họ, nên không
-    ghi cách chi thì hiểu là tiền mặt. `offset` (cấn trừ) và `other` không phải tiền vào tay nên xếp
-    vào ngân hàng — bên kế toán đối chiếu lại nếu cần."""
-    pt = "bank" if (phuong_thuc or "cash") in ("bank", "offset", "other") else "cash"
-    return MA_TIEN[(pt, (tien_te or "LAK").upper() == "LAK")]
+    """Vế tiền (mã, tên) theo CÁCH thu/chi và TIỀN TỆ — luật ở services/tai_khoan.ma_tien."""
+    return TK.ve(TK.ma_tien(phuong_thuc, tien_te))
 
 
 def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None):
-    """Hai vế gợi ý theo đúng bảng định khoản trong quy trình của họ. Trả (no, no_ten, co, co_ten)."""
-    chi_phi = ("4022", "Chi hộ xe liên kết") if company == "joint" else (
-        ("614", "Chi phí sửa chữa") if section == "repair" else ("625", "Chi phí vận chuyển"))
+    """Hai vế gợi ý cho một loại tờ. Trả (no, no_ten, co, co_ten).
+
+    Tạm ứng (30/09, rà định khoản): tiền đưa tài xế xe nhà là TẠM ỨNG — Nợ 1601 tạm ứng nhân viên, chưa phải chi phí;
+    lúc tất toán, số tài xế đã chi thật mới sang chi phí (QT_TU: Nợ 625 / Có 1601), phần chênh chi bù (TT_CHI: Nợ 1601 /
+    Có tiền) hay nộp lại (TT_THU: Nợ tiền / Có 1601). Trước đây PC_TU ghi thẳng Nợ 625 — tiền chưa tiêu đã thành chi phí.
+    Xe thuê không tạm ứng qua tài xế: EPL ứng là trừ vào tiền trả chủ xe (Nợ 4022)."""
+    chi_phi = TK.ve(TK.chi_phi(company, section))
     TIEN = ma_tien(phuong_thuc, tien_te)
+    ung = chi_phi if company == "joint" else TAM_UNG
     b = {
         "PXK_NL": (chi_phi, KHO),
         "PXK_PT": (chi_phi, KHO),
@@ -102,17 +97,19 @@ def dinh_khoan(loai, company="EPL", section=None, tien_te=None, phuong_thuc=None
         "PXK_HH": ((None, None), HANG_GUI),
         # Điều chỉnh: tăng ghi như nhập, giảm ghi như xuất — chiều nào thì payload nói rõ.
         "DC_HH":  (HANG_GUI, HANG_GUI),
-        "PC_TU":  (chi_phi, TIEN),
+        "PC_TU":  (ung, TIEN),
         "PC_SC":  (chi_phi, TIEN),
         "PC_NCC": (NCC, TIEN),
-        "PC_CX":  (("4022", "Phải trả chủ xe liên kết"), TIEN),
-        "HD":     (("1211", "Phải thu khách hàng"), ("70", "Doanh thu bán hàng và dịch vụ")),
-        "PT":     (TIEN, ("1211", "Phải thu khách hàng")),
-        "TT_CHI": (chi_phi, TIEN),
-        "TT_THU": (TIEN, chi_phi),
+        "PC_CX":  (TK.ve(TK.CHU_XE), TIEN),
+        # "70" của khách là mã NHÓM — không ghi sổ được: cước là bán DỊCH VỤ (708), dầu / phụ tùng là bán HÀNG HOÁ (707)
+        "HD":     (TK.ve(TK.PHAI_THU), TK.ve(TK.DT_VAN_CHUYEN)),
+        "PT":     (TIEN, TK.ve(TK.PHAI_THU)),
+        "QT_TU":  (TK.ve(TK.CP_DI_LAI), TAM_UNG),
+        "TT_CHI": (TAM_UNG, TIEN),
+        "TT_THU": (TIEN, TAM_UNG),
         "PXK_BAN": (GIA_VON, KHO),
-        "HD_BAN":  (("1211", "Phải thu khách hàng"), ("70", "Doanh thu bán hàng và dịch vụ")),
-        "PT_BAN":  (TIEN, ("1211", "Phải thu khách hàng")),
+        "HD_BAN":  (TK.ve(TK.PHAI_THU), TK.ve(TK.DT_BAN_HANG)),
+        "PT_BAN":  (TIEN, TK.ve(TK.PHAI_THU)),
     }.get(loai)
     if not b:
         return (None, None, None, None)
@@ -177,7 +174,7 @@ def ghi(db, loai, *, nguon_bang, nguon_id, trip=None, ngay=None, doi_tuong_loai=
     no, co = _dien_ma_cau_hinh(db, loai, no, co)
     if loai == "HD_BAN" and doi_tuong_loai == "chu_xe":
         # chủ xe mua ở quầy, trừ vào tiền trả: không phải khách nợ 1211 mà là GIẢM khoản phải trả chủ xe
-        no, no_ten = "4022", "Phải trả chủ xe liên kết (trừ vào tiền trả)"
+        no, no_ten = TK.CHU_XE, "%s (trừ vào tiền trả)" % TK.ten(TK.CHU_XE)
     thuoc_tinh = dict(loai=loai, ngay=ngay,
                       trip_id=trip.id if trip is not None else None,
                       trip_doc_no=trip.doc_no if trip is not None else None,

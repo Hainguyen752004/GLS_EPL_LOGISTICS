@@ -32,14 +32,37 @@
   const SO_LA_MA = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   let LO = [];        // các lô hàng còn trong kho bãi, để phiếu giao chọn lấy từ đâu
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [], the: [] }, moi = false, ty_gia = {};
-  /** Định khoản mặc định — chép luật máy chủ: xe nhà 625/614, xe liên kết 4022; kho …/1371, mua ngoài …/4021. */
+  /** Định khoản mặc định của một dòng chi — SOI GƯƠNG services/tai_khoan.dinh_khoan_dong (rà 30/09). Mã lấy từ máy chủ
+   *  (KM.acct_rule), ở đây chỉ chọn vế: Nợ theo loại xe và mục; Có theo CÁCH TRẢ — lấy kho → kho · ghi nợ trạm / NCC / thẻ /
+   *  sửa ngoài → phải trả NCC · tiền mặt tài xế cầm đi → xe nhà 1601 tạm ứng nhân viên, xe thuê tiền mặt (ghi công nợ chủ
+   *  xe) · trả cùng lương → phải trả nhân viên. Chủ xe tự chi thì không định khoản (''). */
   function tkMacDinh(m, d) {
-    const cty = P && P.company === 'joint' ? 'joint' : 'EPL', rule = KM.acct_rule[cty];
-    let src = d && d.source;
-    if (m === 'fuel') src = nguonCuaDiem(d || {});
+    const R = KM.acct_rule, thue = P && P.company === 'joint';
+    d = d || {};
+    if (d.paid_by_epl === false) return '';
+    let src = d.source;
+    if (m === 'fuel') src = nguonCuaDiem(d);
     if (m === 'repair' && src !== 'kho') src = 'mua';
-    if (m === 'travel' || m === 'other') return rule.mua[m];
-    return rule[src][m];
+    const no = thue ? R.chu_xe : (m === 'repair' ? R.cp_sua : R.cp_di_lai);
+    let co;
+    if (src === 'kho') co = thue && m === 'fuel' ? R.ban_hang : R.kho;
+    else if (d.ghi_no || d.toll_card_id || m === 'repair') co = R.ncc;
+    else {
+      let c = m === 'fuel' ? 'tien_mat' : (d.pay_channel || (KM.pay_default || {})[d.item_key] || 'tien_mat');
+      if (thue && c === 'luong') c = 'tien_mat';
+      co = c === 'ncc' ? R.ncc : c === 'luong' ? R.luong : (thue ? R.tien_mat : R.tam_ung);
+    }
+    return no + '/' + co;
+  }
+  /** Mã đang có hiệu lực: người dùng tự chọn (ngoài bộ mã máy đặt) thì giữ, còn lại theo luật — như TK.tk_dong. */
+  const tkDong = (d) => (d.acct_code && !(KM.acct_rule.he_thong || []).includes(d.acct_code)) ? d.acct_code : tkMacDinh(d.section, d);
+  /** Chữ khi rê chuột lên ô định khoản: tên hai vế; mã con của khách chưa mở bên kế toán thì nói rõ. */
+  function tkTen(cap) {
+    const T = KM.acct_rule.ten || {};
+    return String(cap || '').split('/').map((ma, i) => {
+      const x = T[ma];
+      return NN.t(i ? 'acct_credit' : 'acct_debit') + ' ' + ma + (x ? ' · ' + (NN.lang === 'lo' ? x.lo : x.vi) + (x.trang_thai === 'ma_con_khach' ? ' (' + NN.t('acct_not_in_catalogue') + ')' : '') : '');
+    }).join('\n');
   }
   const q = (s) => root.querySelector(s), g = (id) => root.querySelector('#' + id);
   const vai = () => AUTH.role;
@@ -189,7 +212,7 @@
   const g0 = (id, v) => { const el = g(id); if (el) el.value = v; };
 
   function veChi() {
-    const lk = P.company === 'joint', tk = KM.acct_codes;
+    const lk = P.company === 'joint';
     MUC_CHI.forEach(m => {
       const tb = q(`table[data-bang="${m}"] tbody`), khoa = KM.items[m], khoaDuoc = suaDuoc(m);
       const dong = P.expenses.map((d, i) => ({ d, i })).filter(x => x.d.section === m);
@@ -218,7 +241,8 @@
         const caSel = !caDuoc ? '' : `<select class="px-ca" data-i="${i}" data-f="pay_channel" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">${
           [['tien_mat', 'pm_on_dispatch'], ['luong', 'pm_trip_salary'], ['ncc', 'pm_supplier']].filter(([v]) => !(lk && v === 'luong')).map(([v, k]) => `<option value="${v}" ${v === caEff ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select>`;
         const pay = `<td class="px-lk"><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
-        const acct = `<td class="px-gia"><button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') ? '' : 'disabled'} title="${esc(NN.t('acct_pair'))}">${esc(d.acct_code || tkMacDinh(m, d))}</button></td>`;
+        const tkd = tkDong(d);
+        const acct = `<td class="px-gia"><button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd ? '' : 'disabled'} title="${esc(tkd ? tkTen(tkd) : NN.t('pay_own'))}">${esc(tkd || '—')}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') {
           // Đổ dầu ở trạm ngoài (nhất là bên Việt Nam): tài xế trả tiền mặt, hay TRẠM GHI NỢ để cuối
@@ -250,22 +274,23 @@
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
       const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value; delete d._goiY;   // người lập đã sửa → không còn là dòng gợi ý
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
-      if (f === 'toll_card_id') { d.toll_card_id = el.value || null; }
-      if (f === 'ghi_no') { d.ghi_no = el.checked; }
+      if (f === 'toll_card_id') { d.toll_card_id = el.value || null; veChi(); }
+      if (f === 'ghi_no') { d.ghi_no = el.checked; veChi(); }
+      if (f === 'pay_channel') veChi();
       if (f === 'place_id') {
-        // Nơi đổ quyết định LĨNH hay MUA, kéo theo định khoản …/371 hay …/402.
+        // Nơi đổ quyết định LẤY KHO hay MUA NGOÀI, kéo theo vế Có của định khoản (kho · tạm ứng · nhà cung cấp).
         d.source = nguonCuaDiem(d);
         if (P.company === 'joint') d.paid_by_epl = d.source === 'kho';
-        d.acct_code = tkMacDinh('fuel', d); veChi();
+        d.acct_code = null; veChi();
       }
-      if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = tkMacDinh('repair', d); veChi(); }
+      if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = null; veChi(); }
       if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; if (thayGiaKho()) d.unit_price = p.unit_price || 0; else delete d.unit_price; } veChi(); }
       veSo();
     }));
     root.querySelectorAll('.px-chi [data-pay]').forEach(b => b.addEventListener('click', () => { P.expenses[+b.dataset.i].paid_by_epl = b.dataset.pay === '1'; veChi(); veSo(); }));
     root.querySelectorAll('.px-chi [data-xoa]').forEach(b => b.addEventListener('click', () => { P.expenses.splice(+b.dataset.xoa, 1); veChi(); veSo(); }));
     root.querySelectorAll('.px-chi [data-acct]').forEach(b => b.addEventListener('click', async () => {
-      const d = P.expenses[+b.dataset.acct]; const v = await EPL.chonDinhKhoan(d.acct_code || tkMacDinh(d.section, d));
+      const d = P.expenses[+b.dataset.acct]; const v = await EPL.chonDinhKhoan(tkDong(d));
       if (v) { d.acct_code = v; veChi(); }
     }));
     veSo();
@@ -521,7 +546,7 @@
       .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
     const guiMuc = (m) => suaDuoc(m) || (!moi && P.expenses.some(e => e.section === m && giaDuoc(m, e)));
     body.expenses = P.expenses.filter(e => guiMuc(e.section)).map(e => {
-      const x = { ...e, qty: EPL.doc(e.qty), acct_code: e.acct_code || tkMacDinh(e.section, e) };
+      const x = { ...e, qty: EPL.doc(e.qty), acct_code: tkDong(e) || null };
       if (thayChi()) x.unit_price = EPL.doc(e.unit_price); else { delete x.unit_price; delete x.currency; }
       return x;
     });
@@ -734,7 +759,7 @@
         const d = { section: m, item_key: x.item_key || null, item_name: x.item_name || null, qty: x.qty, unit_price: x.unit_price || 0,
           currency: x.currency || 'LAK', place_id: x.place_id || null, paid_by_epl: true, pay_channel: x.pay_channel || null, _goiY: true };
         if (m === 'fuel') { d.source = nguonCuaDiem(d); if (P.company === 'joint') d.paid_by_epl = d.source === 'kho'; }
-        d.acct_code = tkMacDinh(m, d);
+        d.acct_code = null;
         P.expenses.push(d); dien++;
       });
     });
@@ -748,7 +773,7 @@
     const khoDau = (DM.places || []).find(x => x.owner_type === 'epl');
     const d = m === 'fuel' ? { section: 'fuel', item_key: 'diesel', qty: 0, unit_price: 0, currency: 'LAK', place_id: khoDau ? khoDau.id : null, paid_by_epl: true, source: 'kho' }
       : { section: m, item_key: KM.items[m][0], qty: 1, unit_price: 0, currency: 'LAK', paid_by_epl: true, source: m === 'repair' ? 'mua' : null };
-    d.acct_code = tkMacDinh(m, d);
+    d.acct_code = null;
     P.expenses.push(d);
     veChi(); veVaiVaTrangThai();
   }
@@ -793,7 +818,7 @@
       // đầu vào mục I–II → cập nhật số ngay
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
-        if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price == null || P.hire_price === '')) { P.hire_price = P.price; g('f-hire_price').value = P.price ?? ''; P.hire_ccy = maCuoc(); g('f-hire_ccy').value = P.hire_ccy; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
+        if (c === 'company') { P.expenses.forEach(e => { e.acct_code = null; }); if (P.company === 'joint' && (P.hire_price == null || P.hire_price === '')) { P.hire_price = P.price; g('f-hire_price').value = P.price ?? ''; P.hire_ccy = maCuoc(); g('f-hire_ccy').value = P.hire_ccy; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
         if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; dienGoiY(r); } }
         if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
         if (c === 'kind') {

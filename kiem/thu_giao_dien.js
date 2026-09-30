@@ -222,7 +222,9 @@ async function main() {
 
   // 3. số trên màn phiếu khớp máy chủ
   const dsPhieu = await (await fetch(GOC + '/api/trips', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
-  const p0 = dsPhieu.find(p => p.doc_no === 'T4-0428-08/EPL');
+  // tìm đúng phiếu bằng ô tìm (DB thử có thêm phiếu thử các bài khác để lại — trang đầu 50 phiếu có thể không còn nó)
+  const p0 = (await (await fetch(GOC + '/api/trips?q=T4-0428-08', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json())
+    .find(p => p.doc_no === 'T4-0428-08/EPL');
   await di('#/phieu-xuat-xe?id=' + p0.id);
   assert.strictEqual(d.getElementById('px-doc-no').value, 'T4-0428-08/EPL', 'phải mở đúng phiếu T4-0428');
   const val = d.getElementById('v-val-usd').textContent;

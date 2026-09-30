@@ -28,7 +28,7 @@
       { so: 2, vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Mục III — nhiên liệu: số lít và nơi đổ',
         lam: ['Mỗi dòng: số lít + nơi đổ', 'Xe liên kết: chọn EPL ứng hay chủ xe tự trả', 'Đổ ở trạm Việt Nam mà trạm ghi nợ: đánh dấu "ghi nợ tại trạm"'],
         may: ['Nơi đổ là KHO của EPL → nguồn kho, giá = giá BÌNH QUÂN của đúng kho đó (C5.3), không ai gõ', 'Nơi đổ là trạm ngoài → nguồn mua, gắn nhà cung cấp của trạm',
-          'Định khoản gợi ý: 625/1371 (kho) · 625/4021 (mua) · 4022/… (xe liên kết)'],
+          'Định khoản theo cách trả: 625/1371 lấy kho · 625/4021 trạm ghi nợ · 625/1601 tài xế trả tiền mặt (tạm ứng) · xe liên kết 4022/… — bảng đủ ở tab Danh mục chứng từ'],
         chan: ['Bãi không thấy và không nhập đơn giá dầu, thành tiền, mã tài khoản'],
         giay: ['Phiếu đề nghị xuất kho nhiên liệu có mã QR — mỗi kho một tờ, tài xế cầm tới kho'], ct: ['PLNL'], ct_khi: { PLNL: 'khi bấm "Phiếu đề nghị xuất kho nhiên liệu"' }, sau: 'Phiếu đề nghị xuất kho nhiên liệu: Chờ cấp' },
       { so: 3, vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Mục IV — đi đường, mục VI — chi khác',
@@ -62,7 +62,8 @@
         ct: ['PXK_NL'], ct_khi: { PXK_NL: 'lúc cấp — đường duy nhất dầu kho rời kho: mọi lần xuất đều theo phiếu đề nghị đã cấp' }, sau: 'Phiếu đề nghị xuất kho nhiên liệu: Đã cấp' },
       { so: 8, vai: ['cash'], man: 'cap-phat', o_ke_toan: true, ten: 'Quỹ tiền mặt cảng cạn chi tạm ứng',
         lam: ['Quét QR phiếu đề nghị tạm ứng rồi Chi tiền — hoặc bấm Chi mục IV trên phiếu'],
-        may: ['Hai đường chi tự loại nhau: đã chi đường này thì đường kia là sai bước, không ra hai tờ', 'Dòng trả bằng thẻ cao tốc không tính vào tiền mặt'],
+        may: ['Hai đường chi tự loại nhau: đã chi đường này thì đường kia là sai bước, không ra hai tờ', 'Hai đường ghi CÙNG một số: đúng số trên phiếu đề nghị tạm ứng (tiền mặt mục III, IV, VI)',
+          'Dòng trả bằng thẻ cao tốc, trả cùng lương, ghi nợ nhà cung cấp không tính vào tiền mặt', 'Xe nhà: Nợ 1601 tạm ứng nhân viên — chưa phải chi phí, sang chi phí lúc tất toán'],
         chan: ['Mục IV chưa ghi sổ → không chi được', 'Tài xế tự chi cho mình → chặn'],
         giay: ['Tài xế ký nhận tiền trên phiếu tạm ứng'], ct: ['PC_TU'], ct_khi: { PC_TU: 'lúc quỹ chi' }, sau: 'Mục IV: Đã chi' },
     ] },
@@ -89,7 +90,8 @@
     { gd: 'Về tới và khoá phiếu', buoc: [
       { so: 14, vai: ['expacct', 'cash'], man: 'phieu-xuat-xe', ten: 'Mục V, VI: KT Chi phí kiểm · ghi sổ → quỹ chi',
         lam: ['KT Chi phí kiểm, ghi sổ sửa chữa và chi khác', 'Quỹ tiền mặt cảng cạn chi phần MUA ngoài'],
-        may: ['Một tờ chi cho cả mục; dòng lấy kho không tính (đã có phiếu xuất kho phụ tùng)'], ct: ['PC_SC'], ct_khi: { PC_SC: 'lúc quỹ chi mục V / VI' }, sau: 'Mục V, VI: Đã chi' },
+        may: ['Một tờ chi cho cả mục, chỉ phần quỹ trả ngay: dòng lấy kho (đã có phiếu xuất kho phụ tùng), dòng nợ nhà cung cấp theo đợt (lốp…) và dòng tiền mặt đã theo phiếu tạm ứng không tính',
+          'Mục VI không sinh tờ chi: mọi dòng hoặc đã theo phiếu tạm ứng, hoặc trả cùng lương, hoặc ghi nợ nhà cung cấp'], ct: ['PC_SC'], ct_khi: { PC_SC: 'lúc quỹ chi mục V / VI' }, sau: 'Mục V, VI: Đã chi' },
       { so: 15, vai: ['acct'], man: 'phieu-xuat-xe', ten: 'KT Thu/Chi VC: Kiểm lại toàn phiếu → Khoá',
         lam: ['Bấm "Kiểm lại", đọc bảng cảnh báo, xác nhận khoá', 'Mở khoá nếu cần sửa (khi chưa xuất hoá đơn)'],
         may: ['Rà: km về lệch ước tính > 10 %, hao hụt > 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm',
@@ -116,8 +118,8 @@
         chan: ['Phiếu chưa khoá → chưa trả', 'Trả hai lần → chặn', 'Các phiếu khác tiền thuê → tách đợt'],
         giay: ['Chủ xe ký nhận trên phiếu chi'], ct: ['PC_CX'], ct_khi: { PC_CX: 'lúc quỹ trả (một tờ cho cả đợt)' }, sau: 'Chủ xe: Đã trả' },
       { so: 19, vai: ['expacct', 'cash', 'treasury'], man: 'tat-toan', o_ke_toan: true, ten: 'Tất toán tài xế theo tháng',
-        lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
-        chan: ['Chốt hai lần một kỳ → chặn'], ct: ['TT_CHI', 'TT_THU'], ct_khi: { TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
+        lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Số chi thật chuyển từ tạm ứng 1601 sang chi phí 625 (quyết toán tạm ứng)', 'Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
+        chan: ['Chốt hai lần một kỳ → chặn'], ct: ['QT_TU', 'TT_CHI', 'TT_THU'], ct_khi: { QT_TU: 'lúc chốt, số tài xế đã chi thật', TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
       { so: 20, vai: ['acct', 'admin'], man: 'chung-tu', ten: 'Đẩy chứng từ sang sổ kế toán',
         lam: ['Màn Đề nghị theo DO → tab Hồ sơ gửi kế toán → bấm "Đẩy tất cả"', 'Phiếu đề nghị thu: gửi từng tờ ở màn Phiếu đề nghị thu'], may: ['Mỗi tờ đẩy đúng một lần; hỏng thì giữ tờ, ghi lỗi lên tờ để đẩy lại'],
         chan: ['Chưa cấu hình địa chỉ sổ kế toán → báo rõ'], sau: 'Tờ: Đã đẩy' },
@@ -210,6 +212,10 @@
     if (!no.length && !co.length) return 'ngoài bảng · mã do kế toán cấp';
     return `Nợ ${no.join(' · ') || '—'} / Có ${co.join(' · ') || '—'}`;
   }
+  // Mã con của khách (1371 · 4021 · 4022) chưa có trong danh mục bên kế toán — hiện rõ, đừng để người đọc tưởng là mã thật
+  const chuaMo = (tt) => tt === 'ma_con_khach' ? ' <span class="qt-chua-mo" title="Mã con theo anh Khampla — bên kế toán chưa mở trong danh mục">chưa mở</span>'
+    : tt === 'nhom' || tt === 'khong_co' ? ' <span class="qt-chua-mo">không ghi sổ được</span>' : '';
+  const oMa = (ma, ten, tt) => `<span class="acct">${esc(ma)}</span>${chuaMo(tt)} <span class="small muted">${esc(ten || '')}</span>`;
   const ds = (arr, cls) => arr && arr.length ? `<ul class="${cls || ''}">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 
   // Chứng từ của một bước là ĐỀ NGHỊ của trang điều xe, hay tờ bên kho / bên kế toán lập THEO đề nghị (chủ dự án 30/09:
@@ -263,9 +269,17 @@
         ${i ? '' : `<td rowspan="${bt.length}" class="mono"><b>${c.ma}</b></td><td rowspan="${bt.length}"><b>${esc(c.ten)}</b><div class="small muted" lang="lo">${esc(c.ten_lo)}</div></td>
           <td rowspan="${bt.length}" class="small">${sinh.length ? sinh.map(esc).join('<br>') : '<span class="muted">—</span>'}</td>`}
         <td class="small">${esc(b.khi || (c.dinh_khoan ? 'mọi trường hợp' : 'chỉ lưu, không bút toán'))}</td>
-        <td>${b.no ? `<span class="acct">${esc(b.no)}</span> <span class="small muted">${esc(b.no_ten || '')}</span>` : (c.dinh_khoan ? '<span class="muted small">ngoài bảng / kế toán cấp mã</span>' : '—')}</td>
-        <td>${b.co ? `<span class="acct">${esc(b.co)}</span> <span class="small muted">${esc(b.co_ten || '')}</span>` : '—'}</td></tr>`).join('');
+        <td>${b.no ? oMa(b.no, b.no_ten, b.no_tt) : (c.dinh_khoan ? '<span class="muted small">ngoài bảng / kế toán cấp mã</span>' : '—')}</td>
+        <td>${b.co ? oMa(b.co, b.co_ten, b.co_tt) : '—'}</td></tr>`).join('');
     }).join('');
+    const NHAN = { dk_dau_kho: 'III · dầu lấy KHO của EPL', dk_dau_ghi_no: 'III · dầu trạm ngoài, trạm GHI NỢ', dk_dau_tien_mat: 'III · dầu trạm ngoài, tài xế trả TIỀN MẶT',
+      dk_tien_mat: 'IV · VI · tài xế cầm TIỀN MẶT đi (tạm ứng)', dk_luong: 'IV · VI · trả CÙNG LƯƠNG', dk_ncc: 'IV · VI · ghi nợ NHÀ CUNG CẤP / trừ THẺ cao tốc',
+      dk_pt_kho: 'V · phụ tùng lấy KHO', dk_sua_ngoai: 'V · sửa ngoài, garage' };
+    const cap = (x) => `<td>${oMa(x.no, x.no_ten, x.no_tt)}</td><td>${oMa(x.co, x.co_ten, x.co_tt)}</td>`;
+    q('#qt-dc-than').innerHTML = (D.dong_chi || []).map(r => `<tr><td><b>${esc(NHAN[r.nhan] || r.nhan)}</b></td>${cap(r.EPL)}${cap(r.joint)}</tr>`).join('');
+    const dm = D.danh_muc || {};
+    q('#qt-dc-nguon').textContent = `Đối chiếu với danh mục tài khoản của bên kế toán: ${dm.so_ma || '?'} mã, chụp ngày ${dm.chup_ngay || '?'}. `
+      + `Mã con của khách chưa mở bên đó: ${(dm.ma_con_khach || []).map(x => x.ma + ' (con của ' + x.cha + ')').join(' · ')}.`;
   }
 
   // "Được nhập đơn giá" THẬT: luật cho phép (nhap_gia) VÀ vai đó nhập hoặc kiểm ít nhất một mục chi III–VI

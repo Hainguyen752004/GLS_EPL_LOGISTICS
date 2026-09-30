@@ -171,7 +171,7 @@ def main():
     assert ban["owner_id"] == chu["id"] and ban["customer_id"] is None and ban["total_lak"] == 300000, ban
     s, g = K.kt("/api/ban-hang/%s/thu" % ban["id"], {}, vai="quytb"); phai(s, 409, "Thu tiền mặt phiếu trừ chủ xe → bị từ chối", g)
     hd = [v for v in K.to_kho(ban["doc_no"], "HD_BAN") if (v.get("lines") or {}).get("doc_no") == ban["doc_no"]]
-    assert hd and hd[0]["debit"] == "4022" and hd[0]["credit"] == "70", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 70: %s" % hd
+    assert hd and hd[0]["debit"] == "4022" and hd[0]["credit"] == "707", "bán cho chủ xe: Nợ 4022 (giảm phải trả chủ xe) / Có 707 bán hàng hoá: %s" % hd
     print("  ✓ %-60s Nợ %s / Có %s" % ("hoá đơn bán cho chủ xe không thành nợ khách", hd[0]["debit"], hd[0]["credit"]))
     s, cn = K.kt("/api/xe-lien-ket/chu-xe/%s/cho-tra" % chu["id"], vai="quytb")
     s, dsc = K.kt("/api/xe-lien-ket/chu-xe", vai="quytb")

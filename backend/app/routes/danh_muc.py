@@ -18,6 +18,7 @@ from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_X
                     ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services import goi_ke_toan as KT
+from services import tai_khoan as TK
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_gia_kho, thay_tien_chi
 from routes import anh as ANH
@@ -288,7 +289,7 @@ def xuat_xe(db, v, chi_tiet=False, vai=None):
                      .filter(Trip.vehicle_id == v.id, TripExpense.section == "repair").order_by(Trip.doc_date.desc()).limit(50).all()):
             sua.append({"doc_no": p.doc_no, "doc_date": p.doc_date.isoformat() if p.doc_date else None, "item_key": e.item_key,
                         "item_name": e.item_name, "qty": e.qty, "unit_price": e.unit_price, "currency": e.currency,
-                        "source": e.source, "acct_code": e.acct_code, "tien_lak": round(tien_dong(p, e))})
+                        "source": e.source, "acct_code": TK.tk_dong(p.company, e), "tien_lak": round(tien_dong(p, e))})
         # Gộp thêm LỆNH SỬA CHỮA RIÊNG (C7.3): xe nằm bãi đại tu hay bảo dưỡng định kỳ không gắn
         # phiếu nào, nhưng vẫn là tiền sửa của chính chiếc xe này — tab Sửa chữa phải thấy cả hai nguồn.
         # Lệnh ở trang kế toán từ 28/09 (đợt 6): hỏi bên đó; bên đó tắt thì màn Xe vẫn mở, báo rõ phần thiếu.
