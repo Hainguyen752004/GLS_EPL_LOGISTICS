@@ -59,3 +59,8 @@
 
 @media (max-width:1000px){.qt-b-than{grid-template-columns:1fr}.qt-b-ra{border-left:0;padding-left:0}.qt-sau{display:none}}
 .qt-mt td:first-child,.qt-mt th:first-child{min-width:240px;text-align:left}
+
+/* 30/09 — chứng từ là phiếu đề nghị của trang điều xe, hay tờ bên kho / kế toán lập theo đề nghị; nút sang màn theo vai */
+.qt-ct-chip .qt-ben{font-style:normal;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--bg-2,#eef1ef);color:var(--ink-2)}
+.qt-ct-chip.qt-ben-de-nghi .qt-ben{background:var(--green-bg,#dcefe6);color:var(--green,#145c4a);font-weight:600}
+.qt-man-khoa{color:var(--ink-3);cursor:not-allowed}

@@ -23,7 +23,7 @@ from models import ChungTu
 # ------------------------------------------------------------------ danh mục loại chứng từ
 # ma → (tên Việt, tên Lào, có định khoản không)
 LOAI = {
-    "DO":     ("Phiếu xuất xe", "ໃບເບີກລົດ", False),
+    "DO":     ("Phiếu xuất xe · đề nghị xuất xe", "ໃບເບີກລົດ · ໃບສະເໜີເບີກລົດ", False),   # DO mang cả hai tên (30/09)
     "PLNL":   ("Phiếu đề nghị xuất nhiên liệu", "ໃບສະເໜີເບີກນໍ້າມັນ", False),
     "PTU":    ("Phiếu đề nghị tạm ứng", "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ", False),
     "PXK_NL": ("Phiếu xuất kho nhiên liệu", "ໃບເບີກນໍ້າມັນອອກສາງ", True),

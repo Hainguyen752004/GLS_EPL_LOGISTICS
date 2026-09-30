@@ -7,7 +7,7 @@
  *     tính bằng chính hàm ghi sổ — nên Nợ / Có trên màn không bao giờ lệch với cái máy thật sự ghi.
  */
 (function () {
-  const { API, NN, esc } = EPL;
+  const { API, NN, esc, AUTH } = EPL;
   let root, D = null, xem = 'chuyen';
   const q = (s) => root.querySelector(s);
 
@@ -209,18 +209,29 @@
   }
   const ds = (arr, cls) => arr && arr.length ? `<ul class="${cls || ''}">${arr.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '';
 
+  // Chứng từ của một bước là ĐỀ NGHỊ của trang điều xe, hay tờ bên kho / bên kế toán lập THEO đề nghị (chủ dự án 30/09:
+  // trang mình chỉ làm phiếu đề nghị — kho là của anh Toàn, tiền là của anh Tune).
+  const DE_NGHI = ['DO', 'PLNL', 'PTU'];
+  const BEN_KHO = ['PXK_NL', 'PXK_PT', 'PNK_NL', 'PNK_PT', 'CK_NL', 'PNK_HH', 'PXK_HH', 'DC_HH', 'PXK_BAN'];
+  const benLap = (ma) => DE_NGHI.includes(ma) ? ['de-nghi', 'phiếu đề nghị · trang điều xe lập']
+    : BEN_KHO.includes(ma) ? ['kho', 'bên kho lập theo đề nghị'] : ['ke-toan', 'bên kế toán lập theo đề nghị'];
+  // Nút sang màn khác chỉ cho vai VÀO ĐƯỢC màn đó (sếp 30/09): không thì người không có quyền bấm sang, thấy việc — và
+  // tiền — của vai khác. Máy chủ vẫn lọc tiền theo vai; đây là để không bày lối vào sai ngay trên màn.
+  const vaoDuoc = (man) => AUTH.role === 'admin' || (EPL.manCuaVai(AUTH.role) || []).some(m => m.id === man);
+
   function theBuoc(b) {
     const ct = (b.ct || []).map(ma => {
-      const c = ctCua(ma);
-      return `<button class="qt-ct-chip" data-ct="${ma}" title="Xem đủ các trường hợp định khoản">
-        <b>${ma}</b> <span>${esc(c ? c.ten : ma)}</span><small>${esc(dkGon(c))}</small>${b.ct_khi && b.ct_khi[ma] ? `<i>${esc(b.ct_khi[ma])}</i>` : ''}</button>`;
+      const c = ctCua(ma), [lop, ben] = benLap(ma);
+      return `<button class="qt-ct-chip qt-ben-${lop}" data-ct="${ma}" title="Xem đủ các trường hợp định khoản">
+        <b>${ma}</b> <span>${esc(c ? c.ten : ma)}</span><em class="qt-ben">${esc(ben)}</em><small>${esc(dkGon(c))}</small>${b.ct_khi && b.ct_khi[ma] ? `<i>${esc(b.ct_khi[ma])}</i>` : ''}</button>`;
     }).join('');
     return `<article class="qt-buoc">
       <div class="qt-b-dau"><span class="so">${esc(String(b.so))}</span>
         <div class="grow"><h4>${esc(b.ten)}</h4>
           <div class="qt-b-vai">${b.vai.map(v => `<span class="qt-vai">${tenVai(v)}</span>`).join('')}
             ${b.o_ke_toan ? '<span class="qt-man qt-man-kt">ở trang kế toán</span>'   // màn đã dời sang EPL_KETOAN (28/09)
-              : `<button class="qt-man" data-man="${b.man}">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} ↗</button>`}</div></div>
+              : vaoDuoc(b.man) ? `<button class="qt-man" data-man="${b.man}">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} ↗</button>`
+              : `<span class="qt-man qt-man-khoa" title="Vai của bạn không vào màn này">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} · không thuộc vai của bạn</span>`}</div></div>
         ${b.sau ? `<span class="qt-sau">${esc(b.sau)}</span>` : ''}</div>
       <div class="qt-b-than">
         <div class="qt-b-cot"><div class="l">Làm gì</div>${ds(b.lam)}

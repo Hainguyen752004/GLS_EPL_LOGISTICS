@@ -19,7 +19,7 @@ Viết cho anh (chủ dự án), cập nhật **29/09/2026**, sau khi làm xong 
 - **7.** Danh mục chứng từ: sinh lúc nào, ở trang nào, về sổ bằng đường nào
 - **8.** Khi mất mạng hoặc một trang tắt
 - **9.** Đã dời những gì sang trang kế toán, cái gì ở lại
-- **10.** Kịch bản test tay: chuẩn bị, **10.0b đi thử một chuyến mới A → Z từng cú bấm**, **10.0c hai phiếu mẫu đã đi trọn để xem bằng nhiều vai và xem sổ**, rồi 62 ca theo thứ tự luồng
+- **10.** Kịch bản test tay: chuẩn bị, **10.0b đi thử một chuyến mới A → Z từng cú bấm**, **10.0c hai phiếu mẫu đã đi trọn để xem bằng nhiều vai và xem sổ**, rồi 63 ca theo thứ tự luồng
 
 ## 1. Bức tranh chung
 
@@ -679,7 +679,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 
 | Mã | Tên | Sinh lúc | Sinh ở trang | Về sổ | Định khoản chính |
 |---|---|---|---|---|---|
-| DO | Phiếu xuất xe | Lập phiếu | Điều xe | Đẩy | Không (chỉ lưu) |
+| DO | Phiếu xuất xe · đề nghị xuất xe | Lập phiếu | Điều xe | Đẩy | Không (chỉ lưu) |
 | PLNL | Phiếu đề nghị xuất nhiên liệu | Bấm Phiếu đề nghị xuất nhiên liệu | Điều xe | Đẩy | Không |
 | PTU | Phiếu đề nghị tạm ứng | Bấm Phiếu đề nghị tạm ứng | Điều xe | Đẩy | Không |
 | PC_TU | Phiếu chi theo đề nghị tạm ứng | Quỹ chi mục IV | Điều xe | Đẩy | Xe nhà: tạm ứng nội bộ, Nợ chi phí 625 · xe thuê: ghi công nợ chủ xe, Nợ 4022 / Có tiền |
@@ -1119,6 +1119,7 @@ Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 =
 | T45 | `thabok` · điều xe | **Vận tải → Nhà cung cấp**, **Xe liên kết** | Nhà cung cấp: danh sách, số dòng, kỳ trả, **không có tiền**; không có menu Xe liên kết | |
 | T46 | `khovc` · kế toán | **Cấp phát** | Chỉ phiếu đề nghị xuất nhiên liệu của kho Viêng Chăn; quét phiếu đề nghị xuất nhiên liệu kho Thà Bốc → bị chặn | |
 | T47 | `tx01` · điều xe | Chưa nhận tạm ứng mà bấm **Xuất phát** | Nút ghi *Chưa nhận tiền tạm ứng thì chưa xuất phát* | |
+| T47c | `thabok` rồi `ketoan` · điều xe | **Hệ thống → Quy trình & trách nhiệm** → xem nút *màn … ↗* ở từng bước và các thẻ chứng từ | Vai không vào được màn nào thì chỗ đó là chữ xám *màn … · không thuộc vai của bạn*, không bấm được (sếp 30/09). Thẻ chứng từ ghi rõ *phiếu đề nghị · trang điều xe lập* (DO, PLNL, PTU) hay *bên kho / bên kế toán lập theo đề nghị*; DO tên **Phiếu xuất xe · đề nghị xuất xe** | |
 | T47b | `thabok` · điều xe | Lập một phiếu **Gom** thử, để trống **Cân tại mỏ** → **Lưu** → **Xe đã tới · nhập cân cuối** → để trống ô **Cân tại mỏ (t)** → **Đồng ý** (cần tạm ứng đã chi, hoặc làm bằng `admin`) | Máy nhắc *Cân tại mỏ (t)?*, phiếu **chưa** thành *Đã tới*; gõ cân tại mỏ rồi **Đồng ý** thì được và **Kho hàng** có lô mới. Xoá phiếu thử bằng `admin` | |
 | T48 | (tuỳ chọn) anh tắt máy 8030 | Trang điều xe: lưu phiếu giao có lấy lô, **Xe đã tới · nhập cân cuối** | Báo *Chưa nối được trang kế toán — thử lại sau*, không lưu nửa vời; bật lại thì làm tiếp được | |
 | T49 | (tuỳ chọn) anh tắt máy 8020 | Trang kế toán: mở **Tất toán tài xế**, **Theo dõi nhà cung cấp**, **Hóa đơn vận chuyển** | Báo *Chưa nối được trang điều xe — thử lại sau*, không hiện nửa số; **Cấp phát** vẫn làm được bằng bản lưu trong máy | |
