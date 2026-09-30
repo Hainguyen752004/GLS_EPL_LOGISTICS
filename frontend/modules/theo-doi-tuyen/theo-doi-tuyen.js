@@ -339,6 +339,7 @@
           <td><span class="tag ${e.kind === 'incident' ? 'tdt-tag-in' : e.kind === 'repair' ? 'tdt-tag-rp' : 'plain'}">${NN.h('ev_' + e.kind)}${e.incident_type ? ' · ' + NN.h('inc_' + e.incident_type) : ''}</span></td>
           <td lang="lo">${esc(e.note) || ''}${e.stop_seq ? ` <span class="muted">· ${esc((diem.find(s => s.seq === e.stop_seq) || {}).name || e.stop_seq)}</span>` : ''}
             ${e.reported_cost != null ? ` <span class="muted">· ${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</span>` : ''}
+            ${e.can_run === false ? ` <span class="tag unpaid">${NN.h('pct_phai_dung')}</span>` : ''}${e.paid_by_driver ? ` <span class="tag plain">${NN.h('pct_da_tu_tra')}</span>` : ''}
             ${cho ? ` <span class="tag partial">${NN.h('st_reported')}</span>` : ''}</td>
           <td lang="lo">${esc(e.by_user) || ''}</td>
           <td class="no-print">${cho && duyetDuoc ? `<button type="button" class="tdt2-btn sm" data-duyet="${e.id}">${NN.h('approve')}</button> <button type="button" class="tdt2-btn sm do" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`;

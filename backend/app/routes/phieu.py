@@ -165,6 +165,7 @@ def _xuat_su_kien(e):
             "incident_type": e.incident_type, "note": e.note, "expense_id": e.expense_id, "by_user": e.by_user,
             "status": e.status or "approved", "reported_cost": e.reported_cost, "currency": e.currency,
             "qty_l": e.qty_l, "place_id": e.place_id, "supplier_id": e.supplier_id,
+            "can_run": e.can_run, "paid_by_driver": e.paid_by_driver,
             "approved_by": e.approved_by, "approved_at": e.approved_at.isoformat() if e.approved_at else None}
 
 
@@ -427,7 +428,7 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
              transport_status: str = None, finance_status: str = None, company: str = None, q: str = None,
              thang: str = None, tu: str = None, den: str = None, kind: str = None, customer_id: str = None,
              vehicle_id: str = None, owner_id: str = None, invoiced: bool = None, locked: bool = None,
-             trang: int = 1, co: int = 50):
+             trang: int = 1, co: int = 50, sap: str = None):
     """Danh sách phiếu — LỌC · TÌM · PHÂN TRANG ngay trong SQL (chủ dự án chốt 24/09: nghìn chuyến / ngày).
 
     Trước đây trả MỌI phiếu rồi tìm bằng Python: một năm 365.000 phiếu là quá 60 giây. Nay mặc định 50 phiếu mới
@@ -449,7 +450,9 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
     co = max(1, min(int(co or 50), CO_TOI_DA))
     trang = max(1, int(trang or 1))
     dem_tran(qs, response)
-    ds = qs.order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).offset((trang - 1) * co).limit(co).all()
+    # `sap=cu`: cũ nhất trước (màn Lịch sử phiếu của tài xế, 30/09); mặc định mới nhất trước
+    thu_tu = (Trip.doc_date.asc(), Trip.doc_no.asc()) if sap == "cu" else (Trip.doc_date.desc(), Trip.doc_no.desc())
+    ds = qs.order_by(*thu_tu).offset((trang - 1) * co).limit(co).all()
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     nap = nap_lo(db, ds)
     return [xuat_phieu(db, p, day_du=False, da_thu=thu.get(p.id, 0), vai=user.role, nap=nap) for p in ds]
@@ -1642,8 +1645,15 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
     if not ghi:
         raise HTTPException(422, {"ma": "THIEU_MO_TA", "loi": "Báo hỏng phải ghi hỏng gì."})
     tien = _so(data.get("reported_cost"), "reported_cost")
+    if tien is not None and tien < 0:
+        raise HTTPException(422, {"ma": "SO_AM", "loi": "Số tiền không được âm."})
     e = TripEvent(trip_id=p.id, kind="incident", incident_type=lt, note=ghi, by_user=user.full_name,
                   status="reported", reported_cost=tien, currency=str(data.get("currency") or "LAK").upper())
+    # màn tài xế mới (30/09): còn chạy được không · khoản chi tài xế đã tự trả hay chưa (chỉ có nghĩa khi có số tiền)
+    if data.get("can_run") is not None:
+        e.can_run = bool(data["can_run"])
+    if tien and data.get("paid_by_driver") is not None:
+        e.paid_by_driver = bool(data["paid_by_driver"])
     if data.get("stop_seq") not in (None, ""):
         e.stop_seq = int(data["stop_seq"])
     db.add(e)
@@ -1769,7 +1779,8 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1, item_key=None,
                            item_name=(data.get("item_name") or (part.name if part else e.note))[:120],
                            qty=qty, unit_price=gia, currency="LAK" if part else tien_te, paid_by_epl=True, source=source,
-                           part_id=part.id if part else None, acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
+                           part_id=part.id if part else None, acct_code=ma_tk_mac_dinh(p.company, "repair", source),
+                           note=(e.note or "") + (" — tài xế đã tự trả" if e.paid_by_driver else ""))
         db.add(dong); db.flush()
         if part:
             r = gd.xuat_phu_tung(khoa="trip_expense:" + dong.id, part_id=part.id, qty=qty, ngay=dt.date.today(),

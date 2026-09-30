@@ -156,7 +156,7 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnx-ds, .dnt-ds, .k2 .k2-panel'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .tx2 .x2-card, .dnc-ds, .dnx-ds, .dnt-ds, .k2 .k2-panel'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
 
@@ -483,6 +483,33 @@ async function main() {
   assert.ok(!chuTx.includes(w.EPL.NN.t('err_generic')), 'màn tài xế báo lỗi: ' + chuTx.slice(0, 200));
   assert.ok(!/\bundefined\b|\bNaN\b/.test(chuTx), 'màn tài xế có chữ undefined/NaN');
   console.log('✓ vai tài xế: chỉ thấy Phiếu của tôi · %d ký tự', chuTx.length);
+  // 30/09 chiều: giao diện tài xế mới (bản mẫu phieucuatoi_new) — sáu tab, thẻ chuyến, lịch sử lọc ở máy chủ,
+  // báo sự cố có ô "Có chi tiền" giống màn Theo dõi, khai dầu không có ô giá (C5.1).
+  {
+    const g = goc();
+    await choDen(() => g.querySelectorAll('.tx2 #tx-tabs [role="tab"]').length === 6, 'màn tài xế phải có đủ sáu tab');
+    await choDen(() => g.querySelector('.tx2 #tx-p-trip .trip, .tx2 #tx-p-trip .x2-empty'), 'tab Chuyến đang chạy phải có thẻ chuyến');
+    const coChuyen = !!g.querySelector('.tx2 #tx-p-trip .trip');
+    const tongTx = +(await fetch(GOC + '/api/trips?co=1', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).headers.get('X-Tong');
+    g.querySelector('.tx2 [data-tab="history"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    await choDen(() => g.querySelector('.tx2 #tx-p-history .trow, .tx2 #tx-p-history .x2-empty-ico'), 'tab Lịch sử phiếu phải nạp xong');
+    const dongLs = g.querySelectorAll('.tx2 #tx-p-history .trow').length;
+    assert.ok(dongLs === Math.min(6, tongTx), 'Lịch sử phiếu trang 1 phải có ' + Math.min(6, tongTx) + ' dòng, thấy ' + dongLs);
+    const chipTat = g.querySelector('.tx2 [data-ls-tt="all"] .x2-n');
+    assert.ok(chipTat && chipTat.textContent.replace(/\D/g, '') === String(tongTx), 'chip Tất cả phải bằng tổng phiếu của tài xế (' + tongTx + ')');
+    if (coChuyen && g.querySelector('.tx2 [data-act="bao"]')) {
+      g.querySelector('.tx2 [data-tab="trip"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => g.querySelector('.tx2 #tx-p-trip [data-act="bao"]'), 'nút báo sự cố trên thẻ chuyến');
+      g.querySelector('.tx2 #tx-p-trip [data-act="bao"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      assert.strictEqual(g.querySelectorAll('#tx-bao-loai .tile').length, 6, 'hộp báo sự cố phải có sáu loại');
+      assert.ok(g.querySelector('#tx-bao-chi').hidden, 'khối số tiền ẩn khi chưa tích Có chi tiền');
+      const tich = g.querySelector('#tx-bao-co-chi'); tich.checked = true; tich.dispatchEvent(new w.Event('change', { bubbles: true }));
+      assert.ok(!g.querySelector('#tx-bao-chi').hidden, 'tích Có chi tiền phải hiện ô số tiền, tiền tệ, đã tự trả');
+      g.querySelector('#tx-d-bao').close();
+    }
+    assert.ok(!g.querySelector('#tx-d-dau input[id*="gia"], #tx-d-dau [data-field="gia"]'), 'hộp khai dầu của tài xế không được có ô giá');
+    console.log('✓ màn tài xế mới: 6 tab · lịch sử %d/%d phiếu · báo sự cố có ô Có chi tiền · khai dầu không có giá', dongLs, tongTx);
+  }
 
   // 7. vai thủ kho nhiên liệu: cấp phát ở bên kho (trang kế toán tạm); từ 30/09 trang điều xe có màn XEM KHO chỉ xem
   //    (sếp: kho dời về trang logistics) — thủ kho vào là màn đó, không chuyển vòng, không lỗi.

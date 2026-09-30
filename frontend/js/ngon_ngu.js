@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1927 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2051 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -9636,5 +9636,625 @@ window.EPL_TU_DIEN = {
   "vi": "Quản lý tài khoản và phân quyền",
   "lo": "ຈັດການບັນຊີ ແລະ ສິດ",
   "en": "Manage accounts and permissions"
+ },
+ "inc_tire": {
+  "vi": "Nổ / thủng lốp",
+  "lo": "ຢາງແຕກ / ຮົ່ວ",
+  "en": "Tyre burst / puncture"
+ },
+ "inc_held": {
+  "vi": "Bị giữ xe / kiểm tra",
+  "lo": "ຖືກກັກລົດ / ກວດ",
+  "en": "Held / inspected"
+ },
+ "pct_phai_dung": {
+  "vi": "Phải dừng xe",
+  "lo": "ຕ້ອງຈອດລົດ",
+  "en": "Must stop"
+ },
+ "pct_da_tu_tra": {
+  "vi": "Tài xế đã tự trả",
+  "lo": "ຄົນຂັບຈ່າຍເອງແລ້ວ",
+  "en": "Paid by the driver"
+ },
+ "tx_tab_chuyen": {
+  "vi": "Chuyến đang chạy",
+  "lo": "ຖ້ຽວທີ່ກຳລັງແລ່ນ",
+  "en": "Current trip"
+ },
+ "tx_tab_lich_su": {
+  "vi": "Lịch sử phiếu",
+  "lo": "ປະຫວັດໃບເບີກລົດ",
+  "en": "Slip history"
+ },
+ "tx_tab_chi_phi": {
+  "vi": "Tạm ứng và chi phí",
+  "lo": "ເງິນລ່ວງໜ້າ ແລະ ຄ່າໃຊ້ຈ່າຍ",
+  "en": "Advance & costs"
+ },
+ "tx_tab_su_co": {
+  "vi": "Sự cố",
+  "lo": "ເຫດການ",
+  "en": "Incidents"
+ },
+ "tx_tab_xe": {
+  "vi": "Hồ sơ xe",
+  "lo": "ຂໍ້ມູນລົດ",
+  "en": "Truck"
+ },
+ "tx_chao": {
+  "vi": "Xin chào, {ten}",
+  "lo": "ສະບາຍດີ, {ten}",
+  "en": "Hello, {ten}"
+ },
+ "tx_xe_so": {
+  "vi": "Xe số {xe}",
+  "lo": "ລົດເບີ {xe}",
+  "en": "Truck {xe}"
+ },
+ "tx_da_dong_bo": {
+  "vi": "Đã đồng bộ",
+  "lo": "ຊິງຂໍ້ມູນແລ້ວ",
+  "en": "Synced"
+ },
+ "tx_cho_gui_n": {
+  "vi": "{n} lần báo chờ gửi",
+  "lo": "{n} ລາຍການລໍຖ້າສົ່ງ",
+  "en": "{n} waiting to send"
+ },
+ "tx_dang_chia_vt": {
+  "vi": "Đang chia sẻ vị trí",
+  "lo": "ກຳລັງແບ່ງປັນຕຳແໜ່ງ",
+  "en": "Sharing location"
+ },
+ "tx_so_thang": {
+  "vi": "Chuyến tháng {thang}",
+  "lo": "ຖ້ຽວເດືອນ {thang}",
+  "en": "Trips in {thang}"
+ },
+ "tx_so_mo": {
+  "vi": "Phiếu đang mở",
+  "lo": "ໃບທີ່ຍັງເປີດ",
+  "en": "Open slips"
+ },
+ "tx_so_khoa": {
+  "vi": "Đã khoá trong tháng",
+  "lo": "ລັອກແລ້ວໃນເດືອນ",
+  "en": "Locked this month"
+ },
+ "tx_so_cho_chi": {
+  "vi": "Tạm ứng chờ chi",
+  "lo": "ເງິນລ່ວງໜ້າລໍຖ້າຈ່າຍ",
+  "en": "Advances awaiting payment"
+ },
+ "tx_chuyen_dang_chay": {
+  "vi": "Đang chạy",
+  "lo": "ກຳລັງແລ່ນ",
+  "en": "Running"
+ },
+ "tx_chuyen": {
+  "vi": "Chuyến",
+  "lo": "ຖ້ຽວ",
+  "en": "Trip"
+ },
+ "tx_phieu_dang_mo": {
+  "vi": "Phiếu đang mở:",
+  "lo": "ໃບທີ່ຍັງເປີດ:",
+  "en": "Open slips:"
+ },
+ "tx_dau_keo_ro_mooc": {
+  "vi": "Đầu kéo / rơ-moóc",
+  "lo": "ຫົວ / ຫາງ",
+  "en": "Tractor / trailer"
+ },
+ "tx_chua_bao": {
+  "vi": "Chưa báo",
+  "lo": "ຍັງບໍ່ແຈ້ງ",
+  "en": "Not reported"
+ },
+ "tx_bao_ngay": {
+  "vi": "Báo ngay",
+  "lo": "ແຈ້ງດຽວນີ້",
+  "en": "Report now"
+ },
+ "tx_hoan_tat": {
+  "vi": "Đã hoàn tất",
+  "lo": "ສຳເລັດແລ້ວ",
+  "en": "Done"
+ },
+ "tx_da_bao": {
+  "vi": "Đã báo",
+  "lo": "ແຈ້ງແລ້ວ",
+  "en": "Reported"
+ },
+ "tx_s_bao_tan": {
+  "vi": "Báo số tấn ở mỏ",
+  "lo": "ແຈ້ງນ້ຳໜັກທີ່ບໍ່ແຮ່",
+  "en": "Report tonnes at the mine"
+ },
+ "tx_s_ky_nhan": {
+  "vi": "Người nhận ký trên máy",
+  "lo": "ຜູ້ຮັບເຊັນໃນເຄື່ອງ",
+  "en": "Receiver signs on the phone"
+ },
+ "tx_s_da_nhan": {
+  "vi": "Đã nhận tiền",
+  "lo": "ຮັບເງິນແລ້ວ",
+  "en": "Received"
+ },
+ "tx_s_cho_chi": {
+  "vi": "Chờ quỹ chi",
+  "lo": "ລໍຖ້າຈ່າຍເງິນ",
+  "en": "Waiting for payment"
+ },
+ "tx_s_da_di": {
+  "vi": "Đã xuất phát",
+  "lo": "ອອກລົດແລ້ວ",
+  "en": "Departed"
+ },
+ "tx_s_san_sang": {
+  "vi": "Sẵn sàng",
+  "lo": "ພ້ອມແລ້ວ",
+  "en": "Ready"
+ },
+ "tx_s_da_toi": {
+  "vi": "Bãi đã xác nhận xe tới",
+  "lo": "ສະໜາມຢືນຢັນລົດຮອດແລ້ວ",
+  "en": "Yard confirmed arrival"
+ },
+ "tx_s_da_bao_ve": {
+  "vi": "Đã báo về · chờ Bãi cân",
+  "lo": "ແຈ້ງກັບແລ້ວ · ລໍຖ້າສະໜາມຊັ່ງ",
+  "en": "Return reported · waiting for yard weighing"
+ },
+ "tx_s_bao_ve": {
+  "vi": "Báo ngày về, km về",
+  "lo": "ແຈ້ງວັນກັບ, ກມ ກັບ",
+  "en": "Report return date and km"
+ },
+ "tx_n_di": {
+  "vi": "Bấm khi xe lăn bánh rời bãi. Văn phòng sẽ thấy chuyến chuyển sang Đang vận chuyển.",
+  "lo": "ກົດເມື່ອລົດອອກຈາກສະໜາມ. ຫ້ອງການຈະເຫັນຖ້ຽວປ່ຽນເປັນ ກຳລັງຈັດສົ່ງ.",
+  "en": "Tap when the truck leaves the yard. The office will see the trip switch to In transit."
+ },
+ "tx_n_can": {
+  "vi": "Cân xong ở mỏ thì báo số tấn theo phiếu cân. Mất mạng vẫn báo được, có mạng lại máy tự gửi.",
+  "lo": "ຊັ່ງແລ້ວທີ່ບໍ່ແຮ່ ໃຫ້ແຈ້ງນ້ຳໜັກຕາມໃບຊັ່ງ. ບໍ່ມີເນັດກໍແຈ້ງໄດ້, ມີເນັດຄືນຈະສົ່ງເອງ.",
+  "en": "Once weighed at the mine, report the tonnes on the weigh slip. Works offline; it sends itself when the network returns."
+ },
+ "tx_n_gh": {
+  "vi": "Tới nơi giao thì đưa máy cho người nhận ký. Mất mạng vẫn ký được.",
+  "lo": "ຮອດບ່ອນສົ່ງແລ້ວ ໃຫ້ຜູ້ຮັບເຊັນໃນເຄື່ອງ. ບໍ່ມີເນັດກໍເຊັນໄດ້.",
+  "en": "At the drop-off, hand the phone to the receiver to sign. Works offline."
+ },
+ "tx_n_ve": {
+  "vi": "Về tới bãi thì báo ngày về và km công-tơ-mét. Bãi cân xong sẽ xác nhận xe tới.",
+  "lo": "ກັບຮອດສະໜາມ ໃຫ້ແຈ້ງວັນກັບ ແລະ ເລກກົງເຕີ. ສະໜາມຊັ່ງແລ້ວຈະຢືນຢັນລົດຮອດ.",
+  "en": "Back at the yard, report the return date and odometer. The yard confirms arrival after weighing."
+ },
+ "tx_n_ve_lai": {
+  "vi": "Đã báo về. Bãi cân xong sẽ xác nhận; cần sửa số thì báo lại.",
+  "lo": "ແຈ້ງກັບແລ້ວ. ສະໜາມຊັ່ງແລ້ວຈະຢືນຢັນ; ຖ້າຕ້ອງແກ້ຕົວເລກໃຫ້ແຈ້ງໃໝ່.",
+  "en": "Return reported. The yard confirms after weighing; report again to correct the numbers."
+ },
+ "tx_o_can": {
+  "vi": "Số tấn theo phiếu cân",
+  "lo": "ນ້ຳໜັກຕາມໃບຊັ່ງ",
+  "en": "Tonnes on the weigh slip"
+ },
+ "tx_o_giao": {
+  "vi": "Chữ ký + ảnh biên bản",
+  "lo": "ລາຍເຊັນ + ຮູບໃບຮັບ",
+  "en": "Signature + photo of the receipt"
+ },
+ "tx_o_dau": {
+  "vi": "Dầu mua dọc đường",
+  "lo": "ນໍ້າມັນຊື້ຂ້າງທາງ",
+  "en": "Fuel bought on the road"
+ },
+ "tx_o_ve": {
+  "vi": "Ngày về, km về",
+  "lo": "ວັນກັບ, ກມ ກັບ",
+  "en": "Return date, km"
+ },
+ "tx_o_bao": {
+  "vi": "Hỏng xe, lốp, tai nạn, bị giữ",
+  "lo": "ລົດເສຍ, ຢາງ, ອຸບັດເຫດ, ຖືກກັກ",
+  "en": "Breakdown, tyre, accident, held"
+ },
+ "tx_o_qr": {
+  "vi": "Đưa quỹ / thủ kho quét",
+  "lo": "ໃຫ້ຝ່າຍເງິນ / ສາງ ສະແກນ",
+  "en": "Show to cashier / storekeeper"
+ },
+ "tx_o_gps": {
+  "vi": "Văn phòng thấy xe trên bản đồ",
+  "lo": "ຫ້ອງການເຫັນລົດໃນແຜນທີ່",
+  "en": "Office sees the truck on the map"
+ },
+ "tx_tam_ung_chuyen": {
+  "vi": "Tạm ứng chuyến này",
+  "lo": "ເງິນລ່ວງໜ້າຖ້ຽວນີ້",
+  "en": "Advance for this trip"
+ },
+ "tx_v_gui": {
+  "vi": "Gửi phiếu đề nghị",
+  "lo": "ສົ່ງໃບສະເໜີ",
+  "en": "Request sent"
+ },
+ "tx_v_duyet": {
+  "vi": "Kế toán kiểm",
+  "lo": "ບັນຊີກວດ",
+  "en": "Checked by accounting"
+ },
+ "tx_v_nhan": {
+  "vi": "Nhận tiền mặt",
+  "lo": "ຮັບເງິນສົດ",
+  "en": "Cash received"
+ },
+ "tx_xem_de_nghi": {
+  "vi": "Xem mã QR đề nghị",
+  "lo": "ເບິ່ງ QR ໃບສະເໜີ",
+  "en": "Show request QR"
+ },
+ "tx_khong_tam_ung": {
+  "vi": "Chuyến này không có tạm ứng tiền mặt.",
+  "lo": "ຖ້ຽວນີ້ບໍ່ມີເງິນລ່ວງໜ້າ.",
+  "en": "No cash advance on this trip."
+ },
+ "tx_da_khai": {
+  "vi": "Đã khai trên chuyến",
+  "lo": "ທີ່ແຈ້ງແລ້ວໃນຖ້ຽວ",
+  "en": "Reported on this trip"
+ },
+ "tx_bao_can": {
+  "vi": "Báo cân",
+  "lo": "ແຈ້ງນ້ຳໜັກ",
+  "en": "Report weight"
+ },
+ "tx_chua_ky": {
+  "vi": "Chưa ký nhận",
+  "lo": "ຍັງບໍ່ເຊັນຮັບ",
+  "en": "Not signed"
+ },
+ "tx_dau_n": {
+  "vi": "{n} lần · {l} L",
+  "lo": "{n} ຄັ້ງ · {l} L",
+  "en": "{n} times · {l} L"
+ },
+ "tx_chua_do": {
+  "vi": "Chưa khai",
+  "lo": "ຍັງບໍ່ແຈ້ງ",
+  "en": "None yet"
+ },
+ "tx_khai_dau": {
+  "vi": "Khai",
+  "lo": "ແຈ້ງ",
+  "en": "Declare"
+ },
+ "tx_bao_n": {
+  "vi": "{n} lần · gần nhất: {loai}",
+  "lo": "{n} ຄັ້ງ · ຫຼ້າສຸດ: {loai}",
+  "en": "{n} · latest: {loai}"
+ },
+ "tx_khong_co": {
+  "vi": "Không có",
+  "lo": "ບໍ່ມີ",
+  "en": "None"
+ },
+ "tx_mat_mang_van_bao": {
+  "vi": "Mất mạng vẫn báo được",
+  "lo": "ບໍ່ມີເນັດກໍແຈ້ງໄດ້",
+  "en": "Works without signal"
+ },
+ "tx_hang_doi_n": {
+  "vi": "{n} lần báo đang chờ trong máy, có mạng lại sẽ tự gửi.",
+  "lo": "{n} ລາຍການລໍຖ້າໃນເຄື່ອງ, ມີເນັດຄືນຈະສົ່ງເອງ.",
+  "en": "{n} reports waiting on this phone; they send themselves when the network returns."
+ },
+ "tx_hang_doi_trong": {
+  "vi": "Báo cân và ký giao nhận được lưu trong máy khi mất sóng, có mạng lại tự gửi.",
+  "lo": "ແຈ້ງນ້ຳໜັກ ແລະ ເຊັນຮັບ ຈະເກັບໄວ້ໃນເຄື່ອງເມື່ອບໍ່ມີສັນຍານ, ມີເນັດຄືນຈະສົ່ງເອງ.",
+  "en": "Weigh-ins and delivery signatures are kept on the phone when there is no signal and sent when it returns."
+ },
+ "tx_ls_mo_ta": {
+  "vi": "Mọi phiếu xuất xe của bạn — bấm một dòng để mở.",
+  "lo": "ໃບເບີກລົດທັງໝົດຂອງທ່ານ — ກົດແຖວເພື່ອເປີດ.",
+  "en": "All your dispatch slips — tap a row to open it."
+ },
+ "tx_tai_ds": {
+  "vi": "Tải danh sách",
+  "lo": "ດາວໂຫຼດລາຍການ",
+  "en": "Download list"
+ },
+ "tx_ls_tim": {
+  "vi": "Tìm số phiếu, điểm đi, điểm đến, số xe",
+  "lo": "ຄົ້ນຫາ ເລກໃບ, ຕົ້ນທາງ, ປາຍທາງ, ເບີລົດ",
+  "en": "Search slip no., origin, destination, truck"
+ },
+ "tx_moi_thang": {
+  "vi": "Mọi tháng",
+  "lo": "ທຸກເດືອນ",
+  "en": "All months"
+ },
+ "tx_moi_xe": {
+  "vi": "Mọi xe",
+  "lo": "ທຸກລົດ",
+  "en": "All trucks"
+ },
+ "tx_sap_xep": {
+  "vi": "Sắp xếp",
+  "lo": "ຮຽງລຳດັບ",
+  "en": "Sort"
+ },
+ "tx_moi_truoc": {
+  "vi": "Mới nhất trước",
+  "lo": "ໃໝ່ສຸດກ່ອນ",
+  "en": "Newest first"
+ },
+ "tx_cu_truoc": {
+  "vi": "Cũ nhất trước",
+  "lo": "ເກົ່າສຸດກ່ອນ",
+  "en": "Oldest first"
+ },
+ "tx_moi_loai": {
+  "vi": "Mọi loại",
+  "lo": "ທຸກປະເພດ",
+  "en": "All types"
+ },
+ "tx_ls_ngoai_mang": {
+  "vi": "Đang mất mạng: chỉ tìm trong các phiếu đã lưu trên máy.",
+  "lo": "ບໍ່ມີເນັດ: ຄົ້ນຫາໄດ້ສະເພາະໃບທີ່ເກັບໄວ້ໃນເຄື່ອງ.",
+  "en": "Offline: searching only the slips saved on this phone."
+ },
+ "tx_ls_trong": {
+  "vi": "Không có phiếu nào",
+  "lo": "ບໍ່ມີໃບ",
+  "en": "No slips"
+ },
+ "tx_ls_trong_goi_y": {
+  "vi": "Thử bỏ bớt bộ lọc hoặc tìm chữ khác.",
+  "lo": "ລອງຍົກເລີກຕົວກອງ ຫຼື ຄົ້ນຫາຄຳອື່ນ.",
+  "en": "Try removing a filter or searching for something else."
+ },
+ "tx_xoa_loc": {
+  "vi": "Bỏ bộ lọc",
+  "lo": "ຍົກເລີກຕົວກອງ",
+  "en": "Clear filters"
+ },
+ "tx_ls_dem": {
+  "vi": "Phiếu {tu}–{den} trên {n}",
+  "lo": "ໃບ {tu}–{den} ຈາກ {n}",
+  "en": "Slips {tu}–{den} of {n}"
+ },
+ "tx_chi_mo_ta": {
+  "vi": "Tiền EPL ứng và khoản chi đã báo trên phiếu {so}.",
+  "lo": "ເງິນ EPL ລ່ວງໜ້າ ແລະ ຄ່າໃຊ້ຈ່າຍທີ່ແຈ້ງໃນໃບ {so}.",
+  "en": "Cash EPL advanced and costs reported on slip {so}."
+ },
+ "tx_chi_trong": {
+  "vi": "Chưa có khoản nào",
+  "lo": "ຍັງບໍ່ມີລາຍການ",
+  "en": "Nothing yet"
+ },
+ "tx_dau_lan": {
+  "vi": "Đổ dầu lần {n}",
+  "lo": "ໃສ່ນໍ້າມັນຄັ້ງທີ {n}",
+  "en": "Refuel {n}"
+ },
+ "tx_gia_ke_toan": {
+  "vi": "giá do kế toán kho xăng dầu nhập",
+  "lo": "ລາຄາ ບັນຊີສາງນໍ້າມັນເປັນຜູ້ປ້ອນ",
+  "en": "price entered by fuel accounting"
+ },
+ "tx_dau_mo_ta": {
+  "vi": "Dầu lấy ở kho EPL đi theo phiếu đề nghị xuất kho (có mã QR). Dầu mua dọc đường thì khai ở đây, không ghi giá.",
+  "lo": "ນໍ້າມັນຈາກສາງ EPL ໄປຕາມໃບສະເໜີເບີກອອກສາງ (ມີ QR). ນໍ້າມັນຊື້ຂ້າງທາງ ໃຫ້ແຈ້ງຢູ່ນີ້, ບໍ່ຕ້ອງໃສ່ລາຄາ.",
+  "en": "Fuel from EPL depots goes by stock-out request (with QR). Declare fuel bought on the road here, without a price."
+ },
+ "tx_dau_trong": {
+  "vi": "Chưa có phiếu đề nghị hay lần đổ dầu nào",
+  "lo": "ຍັງບໍ່ມີໃບສະເໜີ ຫຼື ການໃສ່ນໍ້າມັນ",
+  "en": "No requests or refuels yet"
+ },
+ "tx_su_co_mo_ta": {
+  "vi": "Báo xong, tổ sửa chữa duyệt. Có khoản chi thì vào mục V của phiếu và đi tiếp thành phiếu chi.",
+  "lo": "ແຈ້ງແລ້ວ ທີມສ້ອມແປງອະນຸມັດ. ມີຄ່າໃຊ້ຈ່າຍ ຈະເຂົ້າພາກ V ຂອງໃບ ແລ້ວເປັນໃບຈ່າຍ.",
+  "en": "Once reported, the repair team approves it. Any cost goes into section V of the slip and on to a payment voucher."
+ },
+ "tx_su_co_trong": {
+  "vi": "Chưa có sự cố nào — chúc chuyến đi an toàn",
+  "lo": "ຍັງບໍ່ມີເຫດການ — ຂໍໃຫ້ເດີນທາງປອດໄພ",
+  "en": "No incidents — safe travels"
+ },
+ "tx_xe_mo_ta": {
+  "vi": "Xe của chuyến đang chọn.",
+  "lo": "ລົດຂອງຖ້ຽວທີ່ເລືອກ.",
+  "en": "The truck on the selected trip."
+ },
+ "tx_chuyen_xe_nay": {
+  "vi": "Chuyến gần đây trên xe này",
+  "lo": "ຖ້ຽວຫຼ້າສຸດດ້ວຍລົດນີ້",
+  "en": "Recent trips on this truck"
+ },
+ "tx_km_gan_nhat": {
+  "vi": "Km công-tơ-mét gần nhất",
+  "lo": "ເລກກົງເຕີຫຼ້າສຸດ",
+  "en": "Latest odometer"
+ },
+ "tx_chua_co": {
+  "vi": "Chưa có",
+  "lo": "ຍັງບໍ່ມີ",
+  "en": "Not yet"
+ },
+ "tx_mat_mang_gui_duoc": {
+  "vi": "Mất sóng vẫn gửi được — máy lưu lại và tự gửi khi có mạng.",
+  "lo": "ບໍ່ມີສັນຍານກໍສົ່ງໄດ້ — ເຄື່ອງຈະເກັບໄວ້ ແລະ ສົ່ງເອງເມື່ອມີເນັດ.",
+  "en": "Works without signal — saved on the phone and sent when the network returns."
+ },
+ "tx_can_goi_y": {
+  "vi": "Ghi đúng số trên phiếu cân của mỏ. Bấm − / + để chỉnh 0,1 tấn.",
+  "lo": "ໃສ່ຕາມໃບຊັ່ງຂອງບໍ່ແຮ່. ກົດ − / + ເພື່ອປັບ 0,1 ໂຕນ.",
+  "en": "Enter the figure on the mine's weigh slip. Use − / + to adjust by 0.1 t."
+ },
+ "tx_can_loi": {
+  "vi": "Nhập số tấn lớn hơn 0",
+  "lo": "ໃສ່ນ້ຳໜັກຫຼາຍກວ່າ 0",
+  "en": "Enter a weight above 0"
+ },
+ "tx_chup_phieu": {
+  "vi": "Chụp phiếu cân",
+  "lo": "ຖ່າຍຮູບໃບຊັ່ງ",
+  "en": "Photograph the weigh slip"
+ },
+ "tx_khong_bat_buoc": {
+  "vi": "Không bắt buộc — phiếu nhập tay cũng được",
+  "lo": "ບໍ່ບັງຄັບ — ປ້ອນດ້ວຍມືກໍໄດ້",
+  "en": "Optional — typed-in slips are fine"
+ },
+ "tx_gui_can": {
+  "vi": "Gửi số cân",
+  "lo": "ສົ່ງນ້ຳໜັກ",
+  "en": "Send weight"
+ },
+ "tx_dau_kho_goi_y": {
+  "vi": "Chỉ trạm bán dầu bên ngoài. Dầu kho EPL lấy theo phiếu đề nghị, không khai ở đây.",
+  "lo": "ສະເພາະປໍ້ານໍ້າມັນພາຍນອກ. ນໍ້າມັນສາງ EPL ເບີກຕາມໃບສະເໜີ, ບໍ່ແຈ້ງຢູ່ນີ້.",
+  "en": "Outside stations only. EPL depot fuel goes by request, not declared here."
+ },
+ "tx_dau_loi": {
+  "vi": "Nhập số lít lớn hơn 0",
+  "lo": "ໃສ່ຈຳນວນລິດຫຼາຍກວ່າ 0",
+  "en": "Enter litres above 0"
+ },
+ "tx_dau_khong_gia": {
+  "vi": "Không cần ghi giá: kế toán kho xăng dầu nhập khi kiểm mục III.",
+  "lo": "ບໍ່ຕ້ອງໃສ່ລາຄາ: ບັນຊີສາງນໍ້າມັນຈະປ້ອນເມື່ອກວດພາກ III.",
+  "en": "No price needed: fuel accounting enters it when checking section III."
+ },
+ "tx_gui_dau": {
+  "vi": "Gửi khai dầu",
+  "lo": "ສົ່ງການແຈ້ງນໍ້າມັນ",
+  "en": "Send refuel"
+ },
+ "tx_chua_co_tram": {
+  "vi": "Chưa có trạm dầu bên ngoài nào trong danh mục — báo văn phòng thêm trạm.",
+  "lo": "ຍັງບໍ່ມີປໍ້ານໍ້າມັນພາຍນອກ — ແຈ້ງຫ້ອງການເພີ່ມ.",
+  "en": "No outside stations in the list yet — ask the office to add one."
+ },
+ "tx_bao_goi_y": {
+  "vi": "Báo ngay khi có chuyện. Tổ sửa chữa xem và duyệt.",
+  "lo": "ແຈ້ງທັນທີເມື່ອມີເຫດ. ທີມສ້ອມແປງຈະກວດ ແລະ ອະນຸມັດ.",
+  "en": "Report as soon as something happens. The repair team reviews and approves."
+ },
+ "tx_chuyen_gi": {
+  "vi": "Chuyện gì xảy ra?",
+  "lo": "ເກີດຫຍັງຂຶ້ນ?",
+  "en": "What happened?"
+ },
+ "tx_con_chay": {
+  "vi": "Xe còn chạy được không?",
+  "lo": "ລົດຍັງແລ່ນໄດ້ບໍ?",
+  "en": "Can the truck still run?"
+ },
+ "tx_con_chay_duoc": {
+  "vi": "Còn chạy được",
+  "lo": "ຍັງແລ່ນໄດ້",
+  "en": "Still running"
+ },
+ "tx_o_diem": {
+  "vi": "Ở đoạn nào",
+  "lo": "ຢູ່ຈຸດໃດ",
+  "en": "Where on the route"
+ },
+ "tx_bao_ph": {
+  "vi": "Ví dụ: nổ lốp sau bên trái, đã thay lốp dự phòng",
+  "lo": "ຕົວຢ່າງ: ຢາງຫຼັງຊ້າຍແຕກ, ປ່ຽນຢາງສຳຮອງແລ້ວ",
+  "en": "e.g. rear left tyre burst, spare fitted"
+ },
+ "tx_bao_loi": {
+  "vi": "Ghi hỏng gì / việc gì",
+  "lo": "ໃສ່ວ່າເສຍຫຍັງ / ເກີດຫຍັງ",
+  "en": "Describe what happened"
+ },
+ "tx_co_chi": {
+  "vi": "Có chi tiền",
+  "lo": "ມີຈ່າຍເງິນ",
+  "en": "There is a cost"
+ },
+ "tx_co_chi_goi_y": {
+  "vi": "Tích nếu phải trả tiền (vá lốp, cứu hộ, phụ tùng…). Tổ sửa chữa duyệt xong, khoản này vào mục V và thành phiếu chi.",
+  "lo": "ໝາຍຖ້າຕ້ອງຈ່າຍເງິນ (ປະຢາງ, ກູ້ໄພ, ອາໄຫຼ່…). ທີມສ້ອມແປງອະນຸມັດແລ້ວ ຈະເຂົ້າພາກ V ແລະ ເປັນໃບຈ່າຍ.",
+  "en": "Tick if money was or must be paid (tyre patch, towing, parts…). Once the repair team approves, it goes into section V and becomes a payment voucher."
+ },
+ "tx_tien_loi": {
+  "vi": "Nhập số tiền lớn hơn 0",
+  "lo": "ໃສ່ຈຳນວນເງິນຫຼາຍກວ່າ 0",
+  "en": "Enter an amount above 0"
+ },
+ "tx_da_tra": {
+  "vi": "Tôi đã tự trả",
+  "lo": "ຂ້ອຍຈ່າຍເອງແລ້ວ",
+  "en": "I already paid"
+ },
+ "tx_chua_tra": {
+  "vi": "Chưa trả · cần EPL chi",
+  "lo": "ຍັງບໍ່ຈ່າຍ · EPL ຕ້ອງຈ່າຍ",
+  "en": "Not paid · EPL must pay"
+ },
+ "tx_gui_bao": {
+  "vi": "Gửi báo sự cố",
+  "lo": "ສົ່ງການແຈ້ງເຫດ",
+  "en": "Send report"
+ },
+ "tx_da_bao_chi": {
+  "vi": "Đã báo · khoản chi chờ tổ sửa chữa duyệt",
+  "lo": "ແຈ້ງແລ້ວ · ຄ່າໃຊ້ຈ່າຍລໍຖ້າທີມສ້ອມແປງອະນຸມັດ",
+  "en": "Reported · the cost awaits repair-team approval"
+ },
+ "tx_hom_nay": {
+  "vi": "Hôm nay",
+  "lo": "ມື້ນີ້",
+  "en": "Today"
+ },
+ "tx_hom_qua": {
+  "vi": "Hôm qua",
+  "lo": "ມື້ວານ",
+  "en": "Yesterday"
+ },
+ "tx_km_di": {
+  "vi": "Km lúc đi",
+  "lo": "ກມ ຕອນອອກ",
+  "en": "Odometer at departure"
+ },
+ "tx_quang_duong": {
+  "vi": "Quãng đường",
+  "lo": "ໄລຍະທາງ",
+  "en": "Distance"
+ },
+ "tx_km_nho_hon": {
+  "vi": "Km về không thể nhỏ hơn km lúc đi ({km})",
+  "lo": "ກມ ກັບ ບໍ່ສາມາດນ້ອຍກວ່າ ກມ ຕອນອອກ ({km})",
+  "en": "Return km cannot be below departure km ({km})"
+ },
+ "tx_ve_goi_y": {
+  "vi": "Bãi cân xong và bấm Xe đã tới thì chuyến mới xong.",
+  "lo": "ສະໜາມຊັ່ງແລ້ວ ແລະ ກົດ ລົດຮອດແລ້ວ ຖ້ຽວຈຶ່ງສຳເລັດ.",
+  "en": "The trip finishes once the yard weighs the truck and confirms arrival."
+ },
+ "tx_xac_nhan_ve": {
+  "vi": "Xác nhận đã về",
+  "lo": "ຢືນຢັນກັບຮອດ",
+  "en": "Confirm return"
+ },
+ "tx_hoi_xuat_phat": {
+  "vi": "Xác nhận xe chạy phiếu <b>{so}</b> đã lăn bánh?",
+  "lo": "ຢືນຢັນລົດຂອງໃບ <b>{so}</b> ອອກແລ້ວ?",
+  "en": "Confirm the truck on slip <b>{so}</b> has left?"
+ },
+ "tx_ky_ngay": {
+  "vi": "Ký nhận",
+  "lo": "ເຊັນຮັບ",
+  "en": "Get signature"
  }
 };

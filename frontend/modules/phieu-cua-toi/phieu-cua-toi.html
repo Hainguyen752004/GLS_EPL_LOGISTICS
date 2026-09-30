@@ -1,104 +1,207 @@
-<!-- Phiếu của tôi — ບິນຂອງຂ້ອຍ. Màn của TÀI XẾ, làm lại 30/09 (sếp: "phá cách, tôn trọng người Lào"): một VÉ CHUYẾN lớn cho
-     chuyến đang chạy — tuyến chữ to, thanh các bước, MỘT nút lớn cho việc tiếp theo, việc phụ thành ô bấm to, mã QR phiếu đề
-     nghị mở ngay tại đây. Chuyến khác nằm cột bên (điện thoại: dưới). Mọi hộp nhập giữ nguyên (ký nhận, cân mỏ, báo hỏng…). -->
-<div class="pct">
-  <div class="pct-dau">
-    <div><div class="pct-ten" id="pct-ten"></div><div class="pct-vai" id="pct-vai"></div></div>
-    <div class="pct-gps" id="pct-gps" hidden>
-      <span class="cham"></span>
-      <div><b data-i18n="gps_sharing"></b><div class="small" id="pct-gps-tin"></div></div>
+<!-- Phiếu của tôi — ບິນຂອງຂ້ອຍ. Màn của TÀI XẾ, giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (phieucuatoi_new.zip,
+     "Chuyến của tôi – Cổng tài xế"): lời chào + bốn ô số, sáu tab (Chuyến đang chạy · Lịch sử phiếu · Tạm ứng và chi phí ·
+     Nhiên liệu · Sự cố · Hồ sơ xe), thẻ chuyến có đường chạy và các bước, nút lớn cho bước tiếp theo, hộp nhập dạng tấm.
+     Giữ đủ những gì màn cũ có mà bản mẫu thiếu: ký giao nhận (POD) trên máy, mã QR phiếu đề nghị, chia sẻ vị trí, mất mạng
+     vẫn báo được (hàng đợi trong máy). Bỏ theo luật đã chốt: tài xế không nhập đơn giá dầu (C5.1), dầu kho EPL lấy theo phiếu
+     đề nghị (không tự khai), không có nút giả lập kế toán chi tiền. Khung, tiêu đề, ngôn ngữ, người dùng là của ứng dụng. -->
+<div class="tx2">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="tx-i-truck" viewBox="0 0 24 24"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62L18.3 9.38a1 1 0 0 0-.78-.38H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol>
+    <symbol id="tx-i-scale" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></symbol>
+    <symbol id="tx-i-fuel" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></symbol>
+    <symbol id="tx-i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></symbol>
+    <symbol id="tx-i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="tx-i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+    <symbol id="tx-i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="tx-i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="tx-i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="tx-i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="tx-i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="tx-i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+    <symbol id="tx-i-wifi" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M2 8.82a15 15 0 0 1 20 0"/><path d="M5 12.86a10 10 0 0 1 14 0"/><path d="M8.5 16.43a5 5 0 0 1 7 0"/></symbol>
+    <symbol id="tx-i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="tx-i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
+    <symbol id="tx-i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+    <symbol id="tx-i-tire" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></symbol>
+    <symbol id="tx-i-road" viewBox="0 0 24 24"><path d="M4 19 8 5"/><path d="m16 5 4 14"/><path d="M12 6v2"/><path d="M12 11v2"/><path d="M12 16v2"/></symbol>
+    <symbol id="tx-i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="tx-i-dots" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+    <symbol id="tx-i-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="tx-i-sign" viewBox="0 0 24 24"><path d="M4 19c2-2 4-3 6-3s3 2 5 2 3-1 5-3"/><path d="M4 5h16v8H4z"/></symbol>
+    <symbol id="tx-i-qr" viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM18 18h3v3h-3zM14 18h2"/></symbol>
+    <symbol id="tx-i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2"/></symbol>
+    <symbol id="tx-i-doc" viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></symbol>
+  </svg>
+
+  <section class="hello">
+    <div>
+      <h1 id="tx-chao"></h1>
+      <div class="chips" id="tx-chips"></div>
     </div>
-  </div>
-  <div class="pct-mat-mang" id="pct-mat-mang" hidden></div>
-  <div class="pct-than">
-    <section class="pct-chinh" id="pct-ve"></section>
-    <aside class="pct-ben"><h3 class="pct-h" data-i18n="recent_trips"></h3><div id="pct-ds" class="pct-ds"></div></aside>
-  </div>
+    <div class="stats" id="tx-so"></div>
+  </section>
+
+  <div class="tabs" role="tablist" id="tx-tabs"></div>
+
+  <section role="tabpanel" id="tx-p-trip"></section>
+  <section role="tabpanel" id="tx-p-history" hidden></section>
+  <section role="tabpanel" id="tx-p-costs" hidden></section>
+  <section role="tabpanel" id="tx-p-fuel" hidden></section>
+  <section role="tabpanel" id="tx-p-issues" hidden></section>
+  <section role="tabpanel" id="tx-p-truck" hidden></section>
+
+  <!-- ===== Báo cân ở mỏ (phiếu gom) — mất mạng vẫn gửi được ===== -->
+  <dialog class="sheet" id="tx-d-can">
+    <form method="dialog" novalidate>
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-scale"/></svg></span>
+          <div><h2 data-i18n="cm_nut"></h2><p id="tx-can-phieu"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="note"><svg class="icon icon-sm"><use href="#tx-i-wifi"/></svg><span data-i18n="tx_mat_mang_gui_duoc"></span></div>
+        <div class="x2-field" data-field="ton">
+          <label for="tx-can-tan" data-i18n="w_origin_gom"></label>
+          <div class="stepper">
+            <button type="button" data-buoc-tan="-0.1">−</button>
+            <div class="suffix"><input class="big-input" id="tx-can-tan" inputmode="decimal" placeholder="0.00" autocomplete="off"><span data-i18n="ton"></span></div>
+            <button type="button" data-buoc-tan="0.1">+</button>
+          </div>
+          <span class="x2-hint" data-i18n="tx_can_goi_y"></span>
+          <span class="x2-error" data-i18n="tx_can_loi"></span>
+        </div>
+        <div class="x2-field">
+          <span class="x2-field-label" data-i18n="cm_chup"></span>
+          <label class="photo x2-primary slim"><input type="file" id="tx-can-anh" accept="image/*,application/pdf" capture="environment" multiple><svg class="icon icon-lg"><use href="#tx-i-camera"/></svg><span class="photo-label" data-i18n="tx_chup_phieu"></span><small data-i18n="tx_khong_bat_buoc"></small></label>
+          <div class="tx-anh" id="tx-can-xem-anh"></div>
+        </div>
+        <div class="x2-field"><label for="tx-can-ghi" data-i18n="note"></label><textarea class="x2-input" id="tx-can-ghi" rows="2" lang="lo"></textarea></div>
+      </div>
+      <div class="sheet-foot"><button class="btn-outline" type="button" data-close data-i18n="cancel"></button><button class="btn-primary" type="submit" data-i18n="tx_gui_can"></button></div>
+    </form>
+  </dialog>
+
+  <!-- ===== Khai đổ nhiên liệu dọc đường (dầu MUA) — không có giá: KT kho xăng dầu nhập khi kiểm mục III ===== -->
+  <dialog class="sheet" id="tx-d-dau">
+    <form method="dialog" novalidate>
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-fuel"/></svg></span>
+          <div><h2 data-i18n="df_declare"></h2><p data-i18n="df_hint"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="x2-field"><label for="tx-dau-diem" data-i18n="df_where"></label><select class="x2-input" id="tx-dau-diem"></select>
+          <span class="x2-hint" data-i18n="tx_dau_kho_goi_y"></span></div>
+        <div class="row-2">
+          <div class="x2-field" data-field="lit"><label for="tx-dau-lit" data-i18n="df_litres"></label><div class="suffix"><input class="x2-input" id="tx-dau-lit" inputmode="decimal" placeholder="0" autocomplete="off"><span data-i18n="u_l"></span></div><span class="x2-error" data-i18n="tx_dau_loi"></span></div>
+          <div class="x2-field"><span class="x2-field-label" data-i18n="cur"></span>
+            <div class="x2-seg full" role="group" id="tx-dau-tt"><button type="button" data-tt="VND" aria-pressed="true">VND</button><button type="button" data-tt="LAK" aria-pressed="false">LAK</button><button type="button" data-tt="THB" aria-pressed="false">THB</button></div></div>
+        </div>
+        <div class="note"><svg class="icon icon-sm"><use href="#tx-i-info"/></svg><span data-i18n="tx_dau_khong_gia"></span></div>
+        <div class="x2-field"><label for="tx-dau-ghi" data-i18n="note"></label><textarea class="x2-input" id="tx-dau-ghi" rows="2" lang="lo"></textarea></div>
+      </div>
+      <div class="sheet-foot"><button class="btn-outline" type="button" data-close data-i18n="cancel"></button><button class="btn-primary" type="submit" data-i18n="tx_gui_dau"></button></div>
+    </form>
+  </dialog>
+
+  <!-- ===== Báo hỏng / sự cố — giống màn Theo dõi: có ô "Có chi tiền" để khoản chi đi tiếp thành phiếu chi ===== -->
+  <dialog class="sheet" id="tx-d-bao">
+    <form method="dialog" novalidate>
+      <div class="sheet-head x2-danger">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-alert"/></svg></span>
+          <div><h2 data-i18n="report_breakdown"></h2><p data-i18n="tx_bao_goi_y"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <fieldset class="x2-field"><legend data-i18n="tx_chuyen_gi"></legend>
+          <div class="choice-grid" id="tx-bao-loai"></div></fieldset>
+        <fieldset class="x2-field"><legend data-i18n="tx_con_chay"></legend>
+          <div class="row-2" id="tx-bao-chay">
+            <button class="opt-btn" type="button" data-chay="1" aria-pressed="true" data-i18n="tx_con_chay_duoc"></button>
+            <button class="opt-btn x2-danger" type="button" data-chay="0" aria-pressed="false" data-i18n="pct_phai_dung"></button>
+          </div></fieldset>
+        <div class="x2-field"><label for="tx-bao-diem" data-i18n="tx_o_diem"></label><select class="x2-input" id="tx-bao-diem"></select></div>
+        <div class="x2-field" data-field="mo_ta"><label for="tx-bao-ghi" data-i18n="what_broke"></label><textarea class="x2-input" id="tx-bao-ghi" rows="3" lang="lo" data-i18n-ph="tx_bao_ph"></textarea><span class="x2-error" data-i18n="tx_bao_loi"></span></div>
+        <label class="tx-tich"><input type="checkbox" id="tx-bao-co-chi"><b data-i18n="tx_co_chi"></b><small data-i18n="tx_co_chi_goi_y"></small></label>
+        <div class="tx-chi" id="tx-bao-chi" hidden>
+          <div class="row-2">
+            <div class="x2-field" data-field="tien"><label for="tx-bao-tien" data-i18n="reported_cost"></label><input class="x2-input" id="tx-bao-tien" inputmode="decimal" placeholder="0" style="font-size:18px;font-weight:700"><span class="x2-error" data-i18n="tx_tien_loi"></span></div>
+            <div class="x2-field"><span class="x2-field-label" data-i18n="cur"></span>
+              <div class="x2-seg full" role="group" id="tx-bao-tt"><button type="button" data-tt="LAK" aria-pressed="true">LAK</button><button type="button" data-tt="VND" aria-pressed="false">VND</button><button type="button" data-tt="THB" aria-pressed="false">THB</button></div></div>
+          </div>
+          <div class="row-2" id="tx-bao-tra">
+            <button class="opt-btn" type="button" data-tra="1" aria-pressed="false" data-i18n="tx_da_tra"></button>
+            <button class="opt-btn" type="button" data-tra="0" aria-pressed="true" data-i18n="tx_chua_tra"></button>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-foot"><button class="btn-outline" type="button" data-close data-i18n="cancel"></button><button class="btn-primary btn-danger" type="submit" data-i18n="tx_gui_bao"></button></div>
+    </form>
+  </dialog>
+
+  <!-- ===== Báo đã về: ngày về + km về. Bãi cân rồi bấm "Xe đã tới" mới là xong chuyến ===== -->
+  <dialog class="sheet" id="tx-d-ve">
+    <form method="dialog" novalidate>
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-flag"/></svg></span>
+          <div><h2 data-i18n="report_back"></h2><p id="tx-ve-phieu"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="x2-field"><label for="tx-ve-ngay" data-i18n="d_back"></label><input class="x2-input" id="tx-ve-ngay" type="date">
+          <div class="quick" id="tx-ve-nhanh"><button type="button" data-ngay="0" aria-pressed="true" data-i18n="tx_hom_nay"></button><button type="button" data-ngay="-1" aria-pressed="false" data-i18n="tx_hom_qua"></button></div></div>
+        <div class="x2-field" data-field="km"><label for="tx-ve-km" data-i18n="odo_back_prompt"></label>
+          <div class="suffix"><input class="big-input" id="tx-ve-km" inputmode="numeric" placeholder="0" autocomplete="off"><span>km</span></div>
+          <span class="x2-error" id="tx-ve-km-loi"></span></div>
+        <div class="km-compare"><div><span data-i18n="tx_km_di"></span><strong id="tx-ve-km-di"></strong></div><div><span data-i18n="tx_quang_duong"></span><strong id="tx-ve-km-qd"></strong></div></div>
+        <div class="note"><svg class="icon icon-sm"><use href="#tx-i-info"/></svg><span data-i18n="tx_ve_goi_y"></span></div>
+      </div>
+      <div class="sheet-foot"><button class="btn-outline" type="button" data-close data-i18n="cancel"></button><button class="btn-primary" type="submit" data-i18n="tx_xac_nhan_ve"></button></div>
+    </form>
+  </dialog>
+
+  <!-- ===== Giao hàng hoàn tất: người nhận ký ngay trên máy tài xế (chốt 24/09) — mất mạng vẫn ký được ===== -->
+  <dialog class="sheet" id="tx-d-gh">
+    <form method="dialog" novalidate>
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-sign"/></svg></span>
+          <div><h2 data-i18n="gh_nut"></h2><p id="tx-gh-phieu"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body">
+        <div class="row-2">
+          <div class="x2-field"><label for="tx-gh-ten" data-i18n="pod_receiver"></label><input class="x2-input" id="tx-gh-ten" lang="lo" autocomplete="off"></div>
+          <div class="x2-field"><label for="tx-gh-sdt" data-i18n="gh_sdt"></label><input class="x2-input" id="tx-gh-sdt" type="tel" inputmode="tel" autocomplete="off"></div>
+        </div>
+        <div class="x2-field"><span class="x2-field-label" data-i18n="gh_tinh_trang"></span>
+          <div class="x2-seg full" role="group" id="tx-gh-tt"><button type="button" data-tt="du" aria-pressed="true" data-i18n="gh_tt_du"></button><button type="button" data-tt="thieu" aria-pressed="false" data-i18n="gh_tt_thieu"></button><button type="button" data-tt="hong" aria-pressed="false" data-i18n="gh_tt_hong"></button></div></div>
+        <div class="x2-field"><label for="tx-gh-ghi" data-i18n="note"></label><textarea class="x2-input" id="tx-gh-ghi" rows="2" lang="lo"></textarea></div>
+        <div class="tx-ky">
+          <div class="tx-ky-dau"><b data-i18n="gh_chu_ky_nhan"></b><button type="button" class="btn-outline sm" id="tx-gh-xoa-ky" data-i18n="gh_ky_lai"></button></div>
+          <canvas id="tx-gh-canvas"></canvas>
+        </div>
+        <label class="photo slim"><input type="file" id="tx-gh-anh" accept="image/*,application/pdf" capture="environment" multiple><svg class="icon"><use href="#tx-i-camera"/></svg><span class="photo-label" data-i18n="gh_chup"></span></label>
+        <div class="tx-anh" id="tx-gh-xem-anh"></div>
+        <div class="tx-gps-dong" id="tx-gh-gps"></div>
+      </div>
+      <div class="sheet-foot"><button class="btn-outline" type="button" data-close data-i18n="cancel"></button><button class="btn-primary" type="submit" data-i18n="gh_gui"></button></div>
+    </form>
+  </dialog>
+
+  <!-- ===== Mã QR phiếu đề nghị (tạm ứng · nhiên liệu): tài xế đưa màn này cho quỹ / thủ kho quét ===== -->
+  <dialog class="sheet" id="tx-d-qr">
+    <form method="dialog" novalidate>
+      <div class="sheet-head">
+        <div class="sheet-title"><span class="action-ico"><svg class="icon icon-lg"><use href="#tx-i-qr"/></svg></span>
+          <div><h2 id="tx-qr-tieu"></h2><p data-i18n="v_qr_hint"></p></div></div>
+        <button class="icon-btn" type="button" data-close data-i18n-title="close"><svg class="icon icon-sm"><use href="#tx-i-x"/></svg></button>
+      </div>
+      <div class="sheet-body tx-qr">
+        <div class="quick" id="tx-qr-chon"></div>
+        <img id="tx-qr-anh" alt="QR" width="260" height="260">
+        <div class="tx-qr-ma" id="tx-qr-ma"></div>
+      </div>
+      <div class="sheet-foot"><button class="btn-primary" type="button" data-close data-i18n="close"></button></div>
+    </form>
+  </dialog>
 </div>
-
-<!-- Mã QR phiếu đề nghị (tạm ứng · nhiên liệu): tài xế đưa màn này cho quỹ / thủ kho quét -->
-<dialog id="pct-qr" class="hop-thoai pct-qr-hop">
-  <div class="pct-qr-than">
-    <div class="pct-qr-dau"><h3 id="pct-qr-tieu"></h3><button type="button" class="btn quiet" id="pct-qr-dong" data-i18n="cancel"></button></div>
-    <div class="pct-qr-chon" id="pct-qr-chon"></div>
-    <img id="pct-qr-anh" alt="QR" width="260" height="260">
-    <div class="pct-qr-ma" id="pct-qr-ma"></div>
-    <p class="small muted" data-i18n="v_qr_hint"></p>
-  </div>
-</dialog>
-
-<dialog id="pct-hop" class="hop-thoai">
-  <form method="dialog">
-    <h3 data-i18n="report_breakdown"></h3>
-    <div class="f-grid">
-      <div class="field"><label data-i18n="incident_type"></label><select id="pct-f-loai"><option value="breakdown" data-i18n="inc_breakdown"></option><option value="accident" data-i18n="inc_accident"></option><option value="delay" data-i18n="inc_delay"></option><option value="other" data-i18n="inc_other"></option></select></div>
-      <div class="field"><label data-i18n="stop"></label><select id="pct-f-diem"></select></div>
-      <div class="field w2"><label data-i18n="what_broke"></label><textarea id="pct-f-ghi" rows="3" lang="lo"></textarea></div>
-      <div class="field"><label data-i18n="reported_cost"></label><input class="num" id="pct-f-tien" inputmode="decimal"></div>
-      <div class="field"><label data-i18n="cur"></label><select id="pct-f-tt"><option>LAK</option><option>VND</option><option>THB</option><option>USD</option></select></div>
-    </div>
-    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="report_breakdown"></button></div>
-  </form>
-</dialog>
-
-<!-- Hộp khai đổ nhiên liệu dọc đường: dầu MUA, không phải lĩnh kho -->
-<dialog id="pct-dau" class="hop-thoai">
-  <form method="dialog">
-    <h3 data-i18n="df_declare"></h3>
-    <p class="small muted" data-i18n="df_hint"></p>
-    <div class="f-grid">
-      <div class="field w2"><label data-i18n="df_where"></label><select id="pct-d-diem"></select></div>
-      <div class="field"><label data-i18n="df_litres"></label><input class="num" id="pct-d-lit" inputmode="decimal"></div>
-      <!-- đơn giá: tài xế không nhập (C5.1) — KT kho xăng dầu nhập khi kiểm mục III -->
-      <input type="hidden" id="pct-d-gia">
-      <div class="field"><label data-i18n="cur"></label><select id="pct-d-tt"><option>VND</option><option>LAK</option><option>THB</option><option>USD</option></select></div>
-      <div class="field w2"><label data-i18n="note"></label><input id="pct-d-ghi" lang="lo"></div>
-    </div>
-    <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button>
-      <button class="btn primary" value="ok" data-i18n="df_declare"></button></div>
-  </form>
-</dialog>
-
-<!-- Báo cân ở mỏ (chốt 29/09): phiếu gom — tài xế ghi số tấn theo phiếu cân, chụp phiếu. Mất mạng vẫn báo được — máy giữ lại, có mạng tự gửi. -->
-<dialog id="pct-cm" class="hop-thoai pct-gh">
-  <div class="pct-gh-than">
-    <h3 data-i18n="cm_nut"></h3>
-    <div class="small muted" id="pct-cm-phieu"></div>
-    <p class="small muted" data-i18n="cm_hint"></p>
-    <div class="f-grid">
-      <div class="field"><label data-i18n="w_origin_gom"></label><input class="num pct-cm-tan" id="pct-cm-tan" type="number" step="any" inputmode="decimal" autocomplete="off"></div>
-      <div class="field w2"><label data-i18n="note"></label><input id="pct-cm-ghi" lang="lo" autocomplete="off"></div>
-    </div>
-    <label class="btn pct-gh-chup"><span data-i18n="cm_chup"></span>
-      <input type="file" id="pct-cm-anh" accept="image/*,application/pdf" capture="environment" multiple hidden></label>
-    <div class="pct-gh-anh" id="pct-cm-xem-anh"></div>
-    <div class="ht-nut"><button type="button" class="btn" id="pct-cm-huy" data-i18n="cancel"></button>
-      <button type="button" class="btn primary" id="pct-cm-gui" data-i18n="gh_gui"></button></div>
-  </div>
-</dialog>
-
-<!-- Giao hàng hoàn tất (chốt 24/09): người nhận ký ngay trên điện thoại tài xế. Mất mạng vẫn ký được — máy giữ lại, có mạng tự gửi. -->
-<dialog id="pct-gh" class="hop-thoai pct-gh">
-  <div class="pct-gh-than">
-    <h3 data-i18n="gh_nut"></h3>
-    <div class="small muted" id="pct-gh-phieu"></div>
-    <div class="f-grid">
-      <div class="field w2"><label data-i18n="pod_receiver"></label><input id="pct-gh-ten" lang="lo" autocomplete="off"></div>
-      <div class="field"><label data-i18n="gh_sdt"></label><input id="pct-gh-sdt" type="tel" inputmode="tel" autocomplete="off"></div>
-      <div class="field"><label data-i18n="gh_tinh_trang"></label>
-        <select id="pct-gh-tt"><option value="du" data-i18n="gh_tt_du"></option><option value="thieu" data-i18n="gh_tt_thieu"></option><option value="hong" data-i18n="gh_tt_hong"></option></select></div>
-      <div class="field w2"><label data-i18n="note"></label><textarea id="pct-gh-ghi" rows="2" lang="lo"></textarea></div>
-    </div>
-    <div class="pct-gh-ky">
-      <div class="pct-gh-ky-dau"><b data-i18n="gh_chu_ky_nhan"></b><div class="grow"></div>
-        <button type="button" class="btn sm" id="pct-gh-xoa-ky" data-i18n="gh_ky_lai"></button></div>
-      <canvas id="pct-gh-canvas"></canvas>
-    </div>
-    <label class="btn pct-gh-chup"><span data-i18n="gh_chup"></span>
-      <input type="file" id="pct-gh-anh" accept="image/*,application/pdf" capture="environment" multiple hidden></label>
-    <div class="pct-gh-anh" id="pct-gh-xem-anh"></div>
-    <div class="small pct-gh-gps" id="pct-gh-gps"></div>
-    <div class="ht-nut"><button type="button" class="btn" id="pct-gh-huy" data-i18n="cancel"></button>
-      <button type="button" class="btn primary" id="pct-gh-gui" data-i18n="gh_gui"></button></div>
-  </div>
-</dialog>

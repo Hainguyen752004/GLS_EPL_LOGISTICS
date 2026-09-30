@@ -543,7 +543,7 @@ SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note", "change_truck"
 # tới điểm · sự cố · sửa xe · đổ dầu · ghi chú · ĐỔI XE giữa đường (C2.2)
 #   refuel  Tài xế đổ dầu DỌC ĐƯỜNG (thường là mua ở Việt Nam để chạy về). Khai xong ở trạng thái
 #           "reported"; kế toán duyệt mới thành dòng chi mục III nguồn "mua".
-LOAI_SU_CO = ("breakdown", "accident", "delay", "other")       # hỏng xe · tai nạn · chậm · khác
+LOAI_SU_CO = ("breakdown", "tire", "accident", "delay", "held", "other")   # hỏng xe · lốp · tai nạn · kẹt đường · bị giữ xe · khác
 
 
 class TripEvent(Base):
@@ -567,6 +567,10 @@ class TripEvent(Base):
     place_id = Column(String, ForeignKey("fuel_places.id"))    # refuel: đổ ở trạm nào
     supplier_id = Column(String, ForeignKey("suppliers.id"))   # refuel: mua của nhà cung cấp nào                              # số tiền tài xế báo
     currency = Column(String)                                  # tiền của số tiền báo
+    # màn tài xế mới (30/09): xe còn chạy tiếp được không (False = phải dừng, cần hỗ trợ) · tài xế đã tự trả khoản chi
+    # (bằng tiền tạm ứng cầm theo) hay chưa trả, cần kế toán chi — người duyệt và kế toán thấy để lập phiếu chi cho đúng
+    can_run = Column(Boolean)
+    paid_by_driver = Column(Boolean)
     approved_by = Column(String)
     approved_at = Column(DateTime)
 
