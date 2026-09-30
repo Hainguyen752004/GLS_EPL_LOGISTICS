@@ -3,7 +3,7 @@
 
 Mỗi mặt hàng một dòng: tồn, đang chờ xuất theo phiếu đề nghị, đã khai trên phiếu mà chưa có đề nghị, nhập / xuất trong
 tháng, các lần xuất nhập gần nhất. Số tồn, giá, sổ nhập xuất hỏi bên kho (bây giờ là trang kế toán tạm, sau là API của
-anh Toàn — đổi ở `services/kho_ke_toan.py`); phần "chờ xuất" là của bên này: phiếu đề nghị xuất nhiên liệu chưa cấp và
+anh Toàn — đổi ở `services/kho_ke_toan.py`); phần "chờ xuất" là của bên này: phiếu đề nghị xuất nguyên liệu chưa cấp và
 dòng kho trên phiếu xuất xe chưa rời kho.
 
     GET /api/kho-xem?thang=YYYY-MM

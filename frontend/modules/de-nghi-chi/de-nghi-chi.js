@@ -2,7 +2,7 @@
  *
  * Hai loại tờ bên mình lập theo bước của chuyến:
  *   · Phiếu đề nghị tạm ứng (PTU) — tài xế cầm đến quỹ; quỹ quét QR, chi theo tờ (PC_TU là phiếu chi thật theo đề nghị).
- *   · Phiếu đề nghị xuất nhiên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
+ *   · Phiếu đề nghị xuất nguyên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
  * Việc cấp thật ở bên kho / bên quỹ (màn Cấp phát trang kế toán). Màn này tìm, xem, in — không cấp, không chi.
  *
  * API: GET /api/vouchers?trang_thai=&loai=&q= · GET /api/trips/{id}/phieu-chi · GET /api/trips/{id}/vouchers · GET /api/trips/{id}.
@@ -51,7 +51,7 @@
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
 
-  /* ---------------------------------------------------------------- tờ đề nghị xuất nhiên liệu
+  /* ---------------------------------------------------------------- tờ đề nghị xuất nguyên liệu
    * Lập LÚC XE CHƯA ĐI nên cố ý KHÔNG in ngày về, km chạy, cân cuối, thành tiền — lúc này chưa ai biết. */
   function veNhienLieu(v, p) {
     q('#dnc-so').innerHTML = `${NN.h('voucher_no')}<b>${esc(v.doc_no)}</b>${EPL.ngay(v.doc_date)}`;

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services import chung_tu as CT
 from services.bao_mat import nguoi_hien_tai
-from services.phan_quyen import QUYEN, nhap_gia_chi, thay_tien_ban, thay_tien_chi
+from services.phan_quyen import thay_gia_kho, QUYEN, nhap_gia_chi, thay_tien_ban, thay_tien_chi
 
 router = APIRouter()
 
@@ -58,7 +58,8 @@ def quy_trinh(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     return {
         "vai": vai,
         "quyen": {v: {k: sorted(s) for k, s in QUYEN[v].items()} for v in vai},
-        "tien": {v: {"thay_tien_ban": thay_tien_ban(v), "thay_tien_chi": thay_tien_chi(v), "nhap_gia": nhap_gia_chi(v)} for v in vai},
+        "tien": {v: {"thay_tien_ban": thay_tien_ban(v), "thay_tien_chi": thay_tien_chi(v), "thay_gia_kho": thay_gia_kho(v),
+                     "nhap_gia": nhap_gia_chi(v)} for v in vai},
         "chung_tu": [{"ma": ma, "ten": ten, "ten_lo": lo, "dinh_khoan": co_dk,
                       "bien_the": _dinh_khoan(db, ma) if co_dk else []}
                      for ma, (ten, lo, co_dk) in CT.LOAI.items()],

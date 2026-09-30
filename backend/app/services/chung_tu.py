@@ -24,7 +24,7 @@ from models import ChungTu
 # ma → (tên Việt, tên Lào, có định khoản không)
 LOAI = {
     "DO":     ("Phiếu xuất xe · đề nghị xuất xe", "ໃບເບີກລົດ · ໃບສະເໜີເບີກລົດ", False),   # DO mang cả hai tên (30/09)
-    "PLNL":   ("Phiếu đề nghị xuất nhiên liệu", "ໃບສະເໜີເບີກນໍ້າມັນ", False),
+    "PLNL":   ("Phiếu đề nghị xuất nguyên liệu", "ໃບສະເໜີເບີກນໍ້າມັນ", False),
     "PTU":    ("Phiếu đề nghị tạm ứng", "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ", False),
     # Đề nghị THU (sếp 30/09): DO xong (xe về, có POD, khoá phiếu) → gửi bên công nợ (anh Tune) lập SO, hoá đơn, thu tiền.
     # Không định khoản: bên mình không ghi công nợ.

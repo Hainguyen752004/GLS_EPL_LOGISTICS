@@ -2,6 +2,7 @@
 (function () {
   const { API, NN, esc, AUTH } = EPL;
   let root, ds = [], tuyen = [], khGia = null, dsGia = [], khNo = null, NO = null, HD = [], khHd = null;
+  let chonId = null, tab = 'hd';            // dàn ngang (30/09): khách đang chọn · tab Hợp đồng / Bảng giá / Công nợ
   const suaHd = () => AUTH.la('acct', 'rev');         // hợp đồng vận chuyển: KT Thu/Chi, KT Doanh thu (Sếp luôn được)
   const suaDuoc = () => AUTH.la('yard', 'acct');
   // Giá là tiền: Bãi không thấy; KT Thu/Chi VC (kiểm mục II) và Sếp được sửa; các vai tiền khác xem
@@ -9,28 +10,51 @@
   const suaGia = () => AUTH.la('acct', 'admin');
   const so = (v, d = 2) => v == null || v === '' ? '—' : EPL.doc(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
+  /* ---------------------------------------------------------------- danh sách trái · thẻ khách · tab */
   function ve() {
     const q = root.querySelector('#kh-q').value.trim().toLowerCase();
     const rows = ds.filter(c => !q || [c.name, c.phone, c.address].join(' ').toLowerCase().includes(q));
-    root.querySelector('#kh-than').innerHTML = rows.length ? rows.map((c, i) => `<tr class="${c.active ? '' : 'kh-tat'}">
-      <td>${i + 1}</td><td lang="lo"><b>${esc(c.name)}</b></td><td>${esc(c.phone) || '—'}</td><td lang="lo">${esc(c.address) || '—'}</td><td class="small muted">${esc(c.note) || ''}</td>
-      <td>${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')}</td>
-      <td>${EPL.hopDong.nhan(EPL.hopDong.hienHanh(HD, c.id))}</td>
-      <td>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}</td>
-      <td class="no-print">${suaDuoc() ? `<button class="btn sm" data-sua="${c.id}">${NN.h('edit')}</button>` : ''} <button class="btn sm ${khHd && khHd.id === c.id ? 'primary' : ''}" data-hd="${c.id}">${NN.h('hd_nut')}</button> ${xemGia() ? `<button class="btn sm ${khGia && khGia.id === c.id ? 'primary' : ''}" data-gia="${c.id}">${NN.h('kh_bang_gia')}</button> <button class="btn sm ${khNo && khNo.id === c.id ? 'primary' : ''}" data-no="${c.id}">${NN.h('kh_cong_no')}</button>` : ''}</td></tr>`).join('')
-      : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelectorAll('[data-hd]').forEach(b => b.addEventListener('click', () => moHd(ds.find(x => x.id === b.dataset.hd))));
-    root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
-    root.querySelectorAll('[data-gia]').forEach(b => b.addEventListener('click', () => moGia(ds.find(x => x.id === b.dataset.gia))));
-    root.querySelectorAll('[data-no]').forEach(b => b.addEventListener('click', () => moNo(ds.find(x => x.id === b.dataset.no))));
+    root.querySelector('#kh-than').innerHTML = rows.length ? rows.map(c => `<button type="button" class="kh2-o ${c.id === chonId ? 'chon' : ''} ${c.active ? '' : 'kh-tat'}" data-kh="${esc(c.id)}">
+      <span class="ten" lang="lo">${esc(c.name)}</span>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}
+      <span class="phu">${esc(c.phone) || '—'} · <span lang="lo">${esc(c.address) || '—'}</span></span>
+      <span class="nhan">${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')} ${EPL.hopDong.nhan(EPL.hopDong.hienHanh(HD, c.id))}</span>
+    </button>`).join('') : `<div class="kh2-trong">${NN.h('no_data')}</div>`;
+    root.querySelectorAll('[data-kh]').forEach(b => b.addEventListener('click', () => chon(b.dataset.kh)));
+    veThe();
   }
+  function veThe() {
+    const c = ds.find(x => x.id === chonId), the = root.querySelector('#kh-the'), t = root.querySelector('#kh-tab');
+    if (!c) { the.innerHTML = `<div class="kh2-trong">${NN.h('kx_chon')}</div>`; t.innerHTML = ''; return; }
+    the.innerHTML = `<div class="kh2-the-dau"><h3 lang="lo">${esc(c.name)}</h3>${EPL.tag(c.active ? 'ok' : 'plain', c.active ? 'active' : 'inactive')}
+        <div class="grow"></div>${suaDuoc() ? `<button class="btn sm" data-sua="${esc(c.id)}">${NN.h('edit')}</button>` : ''}</div>
+      <div class="kh2-kv">
+        <div><span>${NN.h('phone')}</span><b>${esc(c.phone) || '—'}</b></div>
+        <div><span>${NN.h('address')}</span><b lang="lo">${esc(c.address) || '—'}</b></div>
+        <div><span>${NN.h('inv_mode')}</span><b>${EPL.tag(c.invoice_mode === 'thang' ? 'dispatched' : 'plain', c.invoice_mode === 'thang' ? 'inv_thang_s' : 'inv_phieu_s')}</b></div>
+        <div><span>${NN.h('hd_van_chuyen')}</span><b>${EPL.hopDong.nhan(EPL.hopDong.hienHanh(HD, c.id))}</b></div>
+        <div class="rong"><span>${NN.h('note')}</span><b>${esc(c.note) || '—'}</b></div>
+      </div>`;
+    const b = the.querySelector('[data-sua]'); if (b) b.addEventListener('click', () => sua(c));
+    const tabs = [['hd', 'hd_nut'], ...(xemGia() ? [['gia', 'kh_bang_gia'], ['no', 'kh_cong_no']] : [])];
+    if (!tabs.some(x => x[0] === tab)) tab = 'hd';
+    t.innerHTML = tabs.map(([k, n]) => `<button type="button" class="${k === tab ? 'on' : ''}" data-kh-tab="${k}"><span>${NN.h(n)}</span></button>`).join('');
+    t.querySelectorAll('[data-kh-tab]').forEach(x => x.addEventListener('click', () => { tab = x.dataset.khTab; veThe(); moTab(); }));
+  }
+  /** Mở đúng tab của khách đang chọn; hai tab kia giấu. */
+  function moTab() {
+    const c = ds.find(x => x.id === chonId);
+    root.querySelector('#kh-hd').hidden = true; root.querySelector('#kh-gia').hidden = true; root.querySelector('#kh-no').hidden = true;
+    khHd = khGia = khNo = null;
+    if (!c) return;
+    if (tab === 'gia') moGia(c).catch(EPL.baoLoi); else if (tab === 'no') moNo(c); else moHd(c);
+  }
+  function chon(id) { chonId = id; ve(); moTab(); }
 
   /* ---------------------------------------------------------------- công nợ khách: còn nợ EPL bao nhiêu */
   async function moNo(c) {
     khNo = c;
     try { NO = await API.get(`/api/customers/${c.id}/cong-no`); } catch (e) { NO = null; return EPL.baoLoi(e); }
-    veNo(); ve();
-    const k = root.querySelector('#kh-no'); if (k.scrollIntoView) k.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    veNo();
   }
   function veNo() {
     const kh = root.querySelector('#kh-no'); kh.hidden = !khNo || !NO; if (!khNo || !NO) return;
@@ -58,8 +82,7 @@
   /* ---------------------------------------------------------------- bảng giá khách × tuyến */
   async function moGia(c) {
     khGia = c; if (!tuyen.length) tuyen = await API.get('/api/routes');
-    dsGia = await API.get(`/api/customers/${c.id}/bang-gia`); veGia(); ve();
-    const kg = root.querySelector('#kh-gia'); if (kg.scrollIntoView) kg.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    dsGia = await API.get(`/api/customers/${c.id}/bang-gia`); veGia();
   }
   function veGia() {
     const kh = root.querySelector('#kh-gia'); kh.hidden = !khGia; if (!khGia) return;
@@ -124,20 +147,24 @@
   }
   async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=khach'); } catch (e) { HD = []; } }
   async function moHd(c) {
-    khHd = c; ve();
+    khHd = c;
     await EPL.hopDong.mo(root.querySelector('#kh-hd'), { kind: 'khach', doiTacId: c.id, ten: c.name, suaDuoc: suaHd(),
-      onDoi: async () => { await taiHd(); if (root.querySelector('#kh-hd').hidden) khHd = null; ve(); } });
+      onDoi: async () => { await taiHd(); ve(); } });
   }
-  async function tai() { ds = await API.get('/api/customers'); await taiHd(); ve(); }
+  async function tai() {
+    ds = await API.get('/api/customers'); await taiHd();
+    if (!ds.some(c => c.id === chonId)) chonId = ds[0] ? ds[0].id : null;      // mở màn là thấy khách đầu tiên, không trống
+    ve(); moTab();
+  }
   EPL.modules['khach-hang'] = {
     async init(r) {
-      root = r; r.querySelector('#kh-q').addEventListener('input', ve);
+      root = r; chonId = null; tab = 'hd'; r.querySelector('#kh-q').addEventListener('input', ve);
       const them = r.querySelector('#kh-them'); them.hidden = !suaDuoc(); them.addEventListener('click', () => sua(null));
       r.querySelector('#kh-gia-them').addEventListener('click', () => suaGiaDong(null));
       r.querySelector('#kh-gia-dong').addEventListener('click', () => { khGia = null; veGia(); ve(); });
       r.querySelector('#kh-no-dong').addEventListener('click', () => { khNo = null; NO = null; veNo(); ve(); });
       await tai();
     },
-    onLang() { if (root) { ve(); veGia(); veNo(); } },
+    onLang() { if (root) { ve(); moTab(); } },
   };
 })();

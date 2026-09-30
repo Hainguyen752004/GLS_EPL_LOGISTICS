@@ -1,7 +1,31 @@
-/* Khách hàng */
-.kh-tim{min-width:260px}
+/* Khách hàng — dàn ngang (30/09): danh sách khách trái, thẻ khách + tab bên phải */
+.kh2{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:14px;align-items:start}
+.kh2-trai{position:sticky;top:0;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh / var(--ty-le, 1) - 150px)}
+.kh2-dau{display:flex;gap:8px}
+.kh2-dau .o-tim{flex:1;width:auto}
+.kh2-ds{display:flex;flex-direction:column;gap:6px;overflow:auto;padding-right:4px}
+.kh2-o{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;width:100%;padding:10px 12px;text-align:left;border:1px solid var(--line);
+  border-radius:10px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer}
+.kh2-o:hover{background:#FAFBF9} .kh2-o.chon{border-color:var(--green-2);background:var(--green-soft)}
+.kh2-o:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+.kh2-o .ten{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kh2-o .phu{grid-column:1 / -1;font-size:12px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kh2-o .nhan{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px}
+.kh2-trong{padding:24px 14px;text-align:center;color:var(--ink-3);font-size:13px;border:1px dashed var(--line-2);border-radius:10px}
+.kh2-phai{display:flex;flex-direction:column;gap:10px;min-width:0}
+.kh2-the{padding:14px 16px}
+.kh2-the-dau{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kh2-the-dau h3{margin:0;font-size:17px}
+.kh2-kv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 18px}
+.kh2-kv div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.kh2-kv span{font-size:11.5px;color:var(--ink-3)}
+.kh2-kv b{font-size:13.5px;font-weight:600;overflow-wrap:anywhere}
+.kh2-kv .rong{grid-column:1 / -1}
+.kh2-tab{align-self:flex-start}
+/* khối con nằm trong tab: bỏ nút Đóng (đổi tab là đủ) */
+.kh2 [data-hd-dong],.kh2 #kh-gia-dong,.kh2 #kh-no-dong{display:none}
+.kh2 .kh-gia,.kh2 .hd-khung{margin-top:0;padding:12px 14px}
 .kh-tat{opacity:.55}
-.kh-gia{margin-top:14px}
 .kh-gia-dau{display:flex;align-items:center;gap:10px;padding:0 0 10px}
 .kh-gia-dau h3{margin:0;font-size:15px}
 .kh-gia .tbl td.num,.kh-gia .tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -13,3 +37,4 @@
 .kh-no-tong span{color:var(--ink-2);font-size:12px}
 .kh-no-tong b{font-size:15px}
 .kh-no-tong b small{color:var(--ink-3);font-weight:400;font-size:12px;margin-left:4px}
+@media (max-width:1000px){.kh2{grid-template-columns:1fr}.kh2-trai{position:static;max-height:360px}.kh2-kv{grid-template-columns:1fr 1fr}}

@@ -131,3 +131,19 @@
 .xe-week--grid .xe-day .d { display: flex; justify-content: space-between; margin-bottom: 6px; } .xe-week--grid .xe-day .d b { display: inline; }
 .xe-week--grid .xe-day .evs { flex-direction: column; align-items: stretch; } .xe-week--grid .xe-day .ev { display: block; white-space: normal; line-height: 1.3; }
 @media (max-width: 900px) { .xe-week--grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* 30/09 — dàn ngang: màn rộng thì hồ sơ xe ĐỨNG CỐ ĐỊNH ở cột phải (luôn thấy chiếc đang chọn), danh sách cuộn trong khung
+   của nó thay vì kéo dài cả trang; màn hẹp (≤ 1100px) vẫn là ngăn trượt như cũ. Dòng thấp lại (hãng · đời một dòng). */
+.xe-tbl td { padding: 7px 12px; }
+@media (min-width: 1101px) {
+  .xe-cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 12px; align-items: start; }
+  .xe-cols > .xe-card:first-child { display: flex; flex-direction: column; max-height: calc(100vh / var(--ty-le, 1) - 215px); }
+  .xe-cols > .xe-card:first-child > div[style] { flex: 1; min-height: 0; overflow-y: auto; }
+  .xe-detail { position: sticky; top: 0; bottom: auto; width: auto; max-width: none; z-index: auto; transform: none; transition: none;
+    border: 1px solid var(--xe-line); border-radius: var(--xe-r); box-shadow: none; padding-top: 0;
+    max-height: calc(100vh / var(--ty-le, 1) - 215px); }
+  .xe-scrim { display: none; }
+  .xe-detail .xe-close { display: none; }
+  .xe-detail .xe-head { padding-right: 14px; }
+}
+.xe-tbl td:nth-child(3) { white-space: nowrap; }

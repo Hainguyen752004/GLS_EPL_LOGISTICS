@@ -4,7 +4,7 @@
     python kiem/thu_de_nghi.py [http://127.0.0.1:8011]
 
 Phải thấy:
-  · màn Đề nghị theo DO: DO mới có mục III, IV đang chờ; lập phiếu đề nghị xuất nhiên liệu → hiện ngay ở DO đó;
+  · màn Đề nghị theo DO: DO mới có mục III, IV đang chờ; lập phiếu đề nghị xuất nguyên liệu → hiện ngay ở DO đó;
   · màn Phiếu đề nghị chi tìm được tờ theo số DO;
   · khoá phiếu (xe về, có POD) → máy lập PHIẾU ĐỀ NGHỊ THU (PDT) đúng cước, đúng tiền tệ của phiếu (USD), vào hồ sơ gửi kế toán;
   · mở khoá → rút tờ chưa gửi; khoá lại → tờ mới; tờ đã gửi bên công nợ thì kế toán không mở khoá được (Sếp mở được);
@@ -86,7 +86,7 @@ def main():
              x["muc"])
         dung(not x["nhien_lieu"] and x["ho_so"]["tong"] >= 1, "Chưa có đề nghị nhiên liệu; hồ sơ có tờ DO", x["ho_so"])
 
-        s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, "thabok"); phai(s, 200, "Bãi lập phiếu đề nghị xuất nhiên liệu", vs)
+        s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, "thabok"); phai(s, 200, "Bãi lập phiếu đề nghị xuất nguyên liệu", vs)
         g, x = dong_do("ketoan", so)
         dung(len(x["nhien_lieu"]) == 1 and x["nhien_lieu"][0]["status"] == "cho" and x["nhien_lieu"][0]["qty_l"] == 100,
              "Đề nghị nhiên liệu hiện ngay ở DO: 100 L, chờ cấp")

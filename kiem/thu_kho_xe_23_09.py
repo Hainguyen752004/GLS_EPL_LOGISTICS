@@ -101,7 +101,7 @@ def main():
     s, g = goi("/api/trips/%s/sections/fuel/send" % P, {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục III", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="khonl"); phai(s, 200, "KT kho xăng dầu kiểm mục III", g)
     # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
-    s, v = goi("/api/trips/%s/vouchers" % P, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nhiên liệu", v)
+    s, v = goi("/api/trips/%s/vouchers" % P, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nguyên liệu", v)
     for x in v:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
     s, g = goi("/api/trips/%s/sections/fuel/book" % P, {}, vai="khonl"); phai(s, 200, "KT kho xăng dầu ghi sổ mục III (dầu đã xuất lúc cấp)", g)

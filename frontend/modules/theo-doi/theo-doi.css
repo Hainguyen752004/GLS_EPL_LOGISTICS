@@ -1,6 +1,6 @@
 /* Theo dõi phiếu vận chuyển — bảng rộng 29 cột, cuộn ngang, đầu bảng dính */
 .td-tim{min-width:260px}
-.td-cuon{max-height:calc(100vh - 300px);overflow:auto}
+.td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 235px);overflow:auto}
 .td-bang{min-width:2960px;font-size:12.5px}
 .td-bang thead tr:nth-child(2) th{top:37px}
 .td-bang td.num{font-variant-numeric:tabular-nums}
@@ -18,3 +18,15 @@ body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai
 /* phân trang (24/09, dữ liệu cả năm) */
 .td-trang{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:8px 14px;font-variant-numeric:tabular-nums}
 .td-trang:empty{display:none}
+
+/* 30/09 — cuộn ngang mà không mất dòng đang đọc: ba cột đầu (#, Ngày, Số phiếu) đứng yên */
+.td-bang thead tr:first-child th:first-child,.td-bang tbody td:first-child{position:sticky;left:0;width:40px;min-width:40px;max-width:40px}
+.td-bang thead tr:first-child th:nth-child(2){position:sticky;left:40px}
+.td-bang thead tr:nth-child(2) th:nth-child(1),.td-bang tbody td:nth-child(2){position:sticky;left:40px;width:100px;min-width:100px;max-width:100px}
+.td-bang thead tr:nth-child(2) th:nth-child(2),.td-bang tbody td:nth-child(3){position:sticky;left:140px;width:160px;min-width:160px;max-width:160px;
+  box-shadow:inset -1px 0 0 var(--line-2)}
+.td-bang tbody td:nth-child(-n+3){background:var(--paper);z-index:1}
+.td-bang thead tr:first-child th:nth-child(-n+2),.td-bang thead tr:nth-child(2) th:nth-child(-n+2){z-index:3}
+.td-bang tbody tr:hover td:nth-child(-n+3){background:#F6F8F5}
+.td-bang tbody tr.sel td:nth-child(-n+3){background:var(--green-soft)}
+.td-tim{min-width:220px}

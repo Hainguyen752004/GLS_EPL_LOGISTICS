@@ -363,7 +363,8 @@ async function main() {
   }
   // K3: Bãi mở Khách hàng không thấy nút Bảng giá (tiền); kế toán thì thấy, bấm ra bảng có dòng giá gieo sẵn
   await di('#/khach-hang');
-  assert.strictEqual(goc().querySelectorAll('[data-gia]').length, 0, 'vai Bãi không được thấy nút Bảng giá');
+  // 30/09: Khách hàng dàn ngang — Bảng giá, Công nợ là TAB trong khung chi tiết bên phải
+  assert.strictEqual(goc().querySelectorAll('[data-kh-tab="gia"], [data-kh-tab="no"]').length, 0, 'vai Bãi không được thấy tab Bảng giá / Công nợ');
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('ketoan', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai KT Thu/Chi'); await w.EPL.sanSang;
   // Vai không lập phiếu vào màn phiếu không tham số: KHÔNG nạp sẵn tờ nào, chỉ ô chọn trống + câu nhắc.
@@ -382,9 +383,10 @@ async function main() {
     console.log('✓ kế toán vào Phiếu xuất xe → không mở sẵn tờ nào; chọn một tờ thì mở đúng tờ đó');
   }
   await di('#/khach-hang');
-  const nutGia = goc().querySelectorAll('[data-gia]');
-  assert.ok(nutGia.length >= 2, 'kế toán phải thấy nút Bảng giá ở từng khách');
-  nutGia[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  assert.ok(goc().querySelectorAll('.kh2-o').length >= 2, 'danh sách khách bên trái phải có đủ khách');
+  const tabGia = goc().querySelector('[data-kh-tab="gia"]');
+  assert.ok(tabGia, 'kế toán phải thấy tab Bảng giá của khách đang chọn');
+  tabGia.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
   await choDen(() => !goc().querySelector('#kh-gia').hidden && goc().querySelectorAll('#kh-gia-than tr').length > 0, 'bảng giá hiện ra');
   const dongGia = [...goc().querySelectorAll('#kh-gia-than tr')].filter(tr => !tr.querySelector('.empty'));
   assert.ok(dongGia.length >= 2, 'khách gieo sẵn phải có ít nhất 2 dòng giá: ' + dongGia.length);

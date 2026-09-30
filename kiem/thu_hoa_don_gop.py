@@ -28,8 +28,13 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
-KT = (sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8030").rstrip("/")
+# BẮT BUỘC truyền đủ hai địa chỉ (30/09): trước đây thiếu địa chỉ thứ hai thì bài tự gọi sang trang kế toán 8030 của
+# chủ dự án trong khi trang điều xe là máy thử — chạy nhầm máy thật mà không hay.
+if len(sys.argv) < 3:
+    raise SystemExit("Cần hai địa chỉ: python %s <trang điều xe> <trang kế toán>   (ví dụ máy thử: http://127.0.0.1:8011 http://127.0.0.1:8031)"
+                     % sys.argv[0])
+GOC = sys.argv[1].rstrip("/")
+KT = sys.argv[2].rstrip("/")
 TOKEN = {}
 TOKEN_KT = {}
 SO_PHIEU = ("HDGOP-01/EPL", "HDGOP-02/EPL")

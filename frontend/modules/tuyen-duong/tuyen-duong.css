@@ -1,6 +1,10 @@
 /* Tuyến đường */
 .td2-tim{min-width:240px}
-.tuy-hai{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
+.tuy-hai{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(380px,1fr);gap:14px;align-items:start}
+.tuy-hai>*{min-width:0}
+/* khung chi tiết dính bên phải, cuộn trong khung của nó (30/09) — không kéo dài cả trang, không tràn ngang */
+.tuy-chi-tiet{position:sticky;top:0;max-height:calc(100vh / var(--ty-le, 1) - 150px);overflow:auto}
+.tuy-hai .tbl td{white-space:nowrap}
 .tuy-hai .tbl tbody tr{cursor:pointer}
 .tuy-chang{display:flex;flex-direction:column;gap:0;margin:4px 0 10px}
 .tuy-diem{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:8px 0}
@@ -23,3 +27,9 @@
 .tuy-cp-bang{overflow-x:auto;margin-top:4px}
 .tuy-cp-bang select,.tuy-cp-bang input{min-width:0;width:100%}
 .tuy-cp-nut{display:flex;gap:8px;margin-top:4px}
+
+/* chi phí gợi ý: nhóm theo mục, một dòng mỗi khoản */
+.tuy-cp-xem td,.tuy-cp-xem th{white-space:normal}
+.tuy-cp-xem tr.tuy-cp-nhom td{background:var(--bg);font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.02em;padding-top:6px;padding-bottom:6px}
+.tuy-cp-xem td.num{white-space:nowrap}
+.tuy-hai .tbl thead th{white-space:normal;vertical-align:bottom}

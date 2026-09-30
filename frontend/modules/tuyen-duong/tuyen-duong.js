@@ -14,12 +14,16 @@
   function veGoiY(r) {
     const o = root.querySelector('#tuy-cp'); if (!o) return;
     const coGia = (r.goi_y || []).some(x => 'unit_price' in x);
+    const ds = r.goi_y || [];
+    const dong = (x) => x.section === 'fuel'
+      ? `<tr><td lang="lo">${esc(tenDiem(x.place_id))}</td><td class="num">${so(x.qty)} L</td>${coGia ? '<td></td>' : ''}<td></td></tr>`
+      : `<tr><td lang="lo">${esc(tenKhoan(x))}</td><td class="num">${so(x.qty)}</td>${coGia ? `<td class="num">${x.unit_price != null ? so(x.unit_price) + ' ' + esc(x.currency || 'LAK') : '—'}</td>` : ''}
+        <td class="small">${x.pay_channel ? NN.h((CACH.find(c => c[0] === x.pay_channel) || [])[1] || x.pay_channel) : ''}</td></tr>`;
+    const nhom = MUC_CP.map(([m, k]) => [m, k, ds.filter(x => x.section === m)]).filter(g => g[2].length);
     o.innerHTML = `<div class="tuy-cp-dau"><b>${NN.h('cp_goi_y')}</b>${r.goi_y_nguon === 'chung' ? `<span class="small muted"> · ${NN.h('cp_nguon_chung')}</span>` : ''}</div>
-      <table class="tbl tbl-compact"><thead><tr><th>${NN.h('cp_muc')}</th><th>${NN.h('item')}</th><th class="num">${NN.h('cp_sl')}</th><th>${NN.h('fill_place')}</th>${coGia ? `<th class="num">${NN.h('gia_goi_y')}</th>` : ''}<th>${NN.h('owner_pay_mode')}</th></tr></thead>
-      <tbody>${(r.goi_y || []).map(x => `<tr><td>${NN.h((MUC_CP.find(m => m[0] === x.section) || [])[1] || x.section)}</td><td lang="lo">${esc(tenKhoan(x))}</td><td class="num">${so(x.qty)}</td>
-        <td lang="lo">${x.section === 'fuel' ? esc(tenDiem(x.place_id)) : ''}</td>${coGia ? `<td class="num">${x.unit_price != null ? so(x.unit_price) + ' ' + esc(x.currency || 'LAK') : '—'}</td>` : ''}
-        <td>${x.pay_channel ? NN.h((CACH.find(c => c[0] === x.pay_channel) || [])[1] || x.pay_channel) : ''}</td></tr>`).join('')
-        || `<tr><td colspan="6" class="empty small">${NN.h('no_data')}</td></tr>`}</tbody></table>`;
+      <table class="tbl tbl-compact tuy-cp-xem"><thead><tr><th>${NN.h('item')} · ${NN.h('fill_place')}</th><th class="num">${NN.h('cp_sl')}</th>${coGia ? `<th class="num">${NN.h('gia_goi_y')}</th>` : ''}<th>${NN.h('owner_pay_mode')}</th></tr></thead>
+      <tbody>${nhom.map(([m, k, xs]) => `<tr class="tuy-cp-nhom"><td colspan="${coGia ? 4 : 3}">${NN.h(k)}</td></tr>` + xs.map(dong).join('')).join('')
+        || `<tr><td colspan="4" class="empty small">${NN.h('no_data')}</td></tr>`}</tbody></table>`;
   }
 
   /** Bảng sửa chi phí gợi ý trong hộp sửa tuyến */
@@ -53,10 +57,10 @@
     const q = root.querySelector('#tuy-q').value.trim().toLowerCase();
     const rows = ds.filter(r => !q || [r.name, r.origin, r.destination].join(' ').toLowerCase().includes(q));
     root.querySelector('#tuy-than').innerHTML = rows.length ? rows.map((r, i) => `<tr data-id="${r.id}" class="${chon && chon.id === r.id ? 'sel' : ''} ${r.active ? '' : 'kh-tat'}">
-      <td>${i + 1}</td><td lang="lo"><b>${esc(r.name)}</b></td><td lang="lo">${esc(r.origin)}</td><td lang="lo">${esc(r.destination)}</td>
+      <td>${i + 1}</td><td lang="lo"><b>${esc(r.name)}</b></td>
       <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${r.return_km ? so(r.return_km, 1) : '—'}</td><td class="num">${so(r.toll_lak)} LAK</td>
       <td>${EPL.tag(r.active ? 'ok' : 'plain', r.active ? 'active' : 'inactive')}</td></tr>`).join('')
-      : `<tr><td colspan="9" class="empty">${NN.h('no_data')}</td></tr>`;
+      : `<tr><td colspan="7" class="empty">${NN.h('no_data')}</td></tr>`;
     root.querySelectorAll('#tuy-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => moChiTiet(tr.dataset.id)));
   }
   async function moChiTiet(id) {
