@@ -98,6 +98,11 @@ def main():
             i += 1
             d.add_paragraph()
             continue
+        # khối trích dẫn "> …" (hộp ghi chú đầu tài liệu): bỏ dấu ">", dựng như dòng thường rồi thụt lề — trước đây hiện
+        # nguyên dấu ">" trong Word
+        trich = l.lstrip().startswith('>')
+        if trich:
+            l = re.sub(r'^\s*>\s?', '', l)
         if not l.strip():
             i += 1
             continue
@@ -110,17 +115,27 @@ def main():
             for r in p.runs:
                 r.font.color.rgb = XANH
         elif l.startswith('### '):
-            d.add_heading(l[4:], level=2)
+            p = d.add_heading(l[4:], level=2)
+        elif l.startswith('#### '):
+            p = d.add_heading(l[5:], level=3)                                       # 3.2.1, 12.7.x…
         elif l.startswith('- ') or l.startswith('* '):
-            dam_va_ma(d.add_paragraph(style='List Bullet'), l[2:])
+            p = d.add_paragraph(style='List Bullet')
+            dam_va_ma(p, l[2:])
         elif re.match(r'^\d+\. ', l):
-            dam_va_ma(d.add_paragraph(style='List Number'), re.sub(r'^\d+\. ', '', l))
-        elif l.startswith('   ') and (l.strip().startswith('- ') or l.strip().startswith('* ')):
-            dam_va_ma(d.add_paragraph(style='List Bullet 2'), l.strip()[2:])     # ý con thụt dưới một ý đánh số
+            p = d.add_paragraph(style='List Number')
+            dam_va_ma(p, re.sub(r'^\d+\. ', '', l))
+        elif re.match(r'^\s+[-*] ', l):
+            p = d.add_paragraph(style='List Bullet 2')                              # ý con thụt (2 hay 3 dấu cách)
+            dam_va_ma(p, l.strip()[2:])
+        elif re.match(r'^\s+\d+\. ', l):
+            p = d.add_paragraph(style='List Number 2')
+            dam_va_ma(p, re.sub(r'^\s*\d+\. ', '', l))
         else:
             p = d.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
             dam_va_ma(p, l.strip())
+        if trich:
+            p.paragraph_format.left_indent = Pt(18)
         i += 1
 
     d.save(dich)

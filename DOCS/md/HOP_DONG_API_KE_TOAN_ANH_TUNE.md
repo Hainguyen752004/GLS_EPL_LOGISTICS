@@ -1,6 +1,15 @@
 # Hợp đồng API KẾ TOÁN — trang điều xe EPL Lào ↔ hệ kế toán của anh Tune
 
-Phiên bản đề nghị **v1 · 30/09/2026**. Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
+Phiên bản đề nghị **v2 · 01/10/2026** (v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
+
+> **Đổi từ v1 sang v2 (01/10/2026):**
+> - **3.2 / 3.2.1:** bên em **đã dựng** gửi đề nghị thu → SO của anh (nút *Tạo SO bên kế toán*) và **đã gửi thử một DO**: hệ anh trả 422 `LOGISTICS_52905` vì **chưa có khách EPL Lào** trong danh mục của anh. Không tạo gì.
+> - **3.1:** ghi rõ phong bì chứng từ hiện chỉ đi sang **KT tạm**; **chưa tờ nào** sang hệ anh bằng đường này.
+> - **6.4:** sửa cho đúng các điều kiện mã đang kiểm.
+> - **12.8.2:** mã khách bên em chỉ KT Thu/Chi Viêng Chăn và Sếp gán (theo Excel của khách).
+> - **12.8.4:** địa chỉ ra Internet — chủ dự án host khi làm xong hết rồi mới gửi anh.
+> - **10.12, 10.13:** hai câu hỏi mới. **§9** đánh dấu việc đã làm.
+> - Bản đồ gọn "mình gọi gì, anh gọi gì, chứng từ đi đâu" ở tài liệu riêng **`NOI_API_ANH_TUNE`** (cùng ngày).
 
 ## 0. Đọc tài liệu này thế nào
 
@@ -14,7 +23,7 @@ Phiên bản đề nghị **v1 · 30/09/2026**. Bên soạn: trang điều xe **
 
 Phần tiền hiện **đang chạy tạm** trong dự án `EPL_KETOAN` (cổng 8030, DB `epl_ketoan`). Hệ của anh sẽ **thay nửa tiền** của bản tạm đó.
 
-Mọi đường và trường trong tài liệu này **chép từ mã đang chạy** (đọc ngày 30/09/2026).
+Mọi đường và trường trong tài liệu này **chép từ mã đang chạy** (đọc ngày 30/09 và 01/10/2026).
 
 Hai API anh đã có được dùng ở đây:
 - `POST /api/v1/integrations/logistics/sales-orders` — tài liệu anh viết ngày 11/09;
@@ -112,6 +121,12 @@ Trên màn LAO, ba mã này đang mang nhãn vàng **"chưa mở"**. Anh mở xo
 
 **Danh mục tài khoản:** env `EPL_ACC_CODE_API`, `EPL_ACC_CODE_TOKEN`, `EPL_ACC_CODE_COUNTRY` (mặc định `11`). Chi tiết ở mục 3.3.
 
+**Tạo SO (mục 3.2, từ 01/10):**
+- Gốc: `QLSX_BASE_URL` nếu đặt; không thì giao thức + tên máy của `EPL_ACC_CODE_API` (hiện là `https://demo-lao-api.goldensme.com`).
+- Token: `QLSX_ACCESS_TOKEN` nếu đặt; không thì `EPL_ACC_CODE_TOKEN`.
+- Token hiện có là **tài khoản cá nhân `tune`, hết hạn 10/10/2026 09:05 giờ Lào**. Sau ngày đó danh mục tài khoản rơi về bản chụp, còn tạo SO thì không gửi được (câu hỏi 10.1).
+- Hết giờ 60 giây. Token chỉ nằm ở máy chủ bên em, không xuống trình duyệt.
+
 ### 2.2. Đề nghị
 
 1. **Tách địa chỉ theo việc.** Bên em thêm cấu hình riêng:
@@ -157,6 +172,7 @@ LAO tắt ở bước 2 thì bên kế toán báo 503 và **không lưu gì**.
   - `POST /api/chung-tu/day`: tối đa 200 tờ mỗi lượt, tờ cũ trước;
   - `POST /api/chung-tu/{cid}/day`: một tờ.
 - Mỗi lần gọi là **một tờ**.
+- **Đích hiện nay là KT tạm** (`ke_toan_api` trỏ vào EPL_KETOAN). **Hệ anh chưa có** `/api/v1/epl-lao/vouchers`, nên **chưa tờ nào đi sang hệ anh bằng phong bì này**. Riêng đề nghị thu đã đi thẳng sang SO của anh (mục 3.2). Anh chọn cách nhận các tờ còn lại ở câu hỏi 10.13.
 
 **Gói tin** (`services/day_ke_toan.py:goi_tin`):
 
@@ -245,19 +261,19 @@ Xe thuê thì khác ba chỗ: `entry.debit` = `"4022"` (phải trả chủ xe li
 
 | Trường SO | Luật của anh | Lấy từ bên em | Tình trạng |
 |---|---|---|---|
-| gốc | chỉ `schemaVersion`, `header`, `details` | bên em sẽ dựng gói riêng cho PDT (không dùng phong bì 3.1) | bên em làm |
+| gốc | chỉ `schemaVersion`, `header`, `details` | gói riêng cho PDT, dựng từ gói bàn giao DO (không dùng phong bì 3.1) | **đã làm 01/10** |
 | `header.do_id` | ≤ 100, ASCII, duy nhất toàn bảng | **`EPLLAO-<Trip.id>`** (Trip.id là 12 ký tự hex). Không dùng số phiếu `T4-0428-08/EPL`, vì có dấu `/` | đề nghị |
 | `header.status` | `delivered` | phiếu đã về (`arrived`) **và** đã khoá | ổn |
-| `header.customer_id` | = `PUBOBJECT.OBJ_OBJECTNO`, ≤ 50 | **chưa có**: danh mục khách bên em chỉ có mã nội bộ. Bên em thêm ô **"Mã khách bên kế toán"** vào danh mục khách, bắt buộc có trước khi gửi | bên em làm; anh cho danh sách mã |
-| `header.route.id` / `name` / `distance_km` | ≤ 50, ASCII | `Trip.route_id` (hex 12) / tên tuyến / `total_km`. Phiếu không có tuyến thì chặn gửi và báo rõ | bên em làm |
+| `header.customer_id` | = `PUBOBJECT.OBJ_OBJECTNO`, ≤ 50 | ô **"Mã khách (bên kế toán)"** trên danh mục khách (có từ 30/09; chỉ `acct` và Sếp gán). Thiếu thì chặn gửi và báo rõ | **đã làm**; **chờ anh tạo khách EPL Lào** (3.2.1) |
+| `header.route.id` / `name` / `distance_km` | ≤ 50, ASCII | `Trip.route_id` (hex 12) / tên tuyến / `total_km`. Phiếu không có tuyến thì chặn gửi và báo rõ | **đã làm** |
 | `header.currency` = `currency_thu` | `VND` · `LAK` · `USD` | tiền cước `price_ccy` ∈ `LAK USD THB VND CNY` | **cước THB, CNY chưa gửi được** — câu hỏi 10.3 |
-| `header.selling_price` = `final_selling_price` | > 0.01 | doanh thu (tấn × đơn giá, hoặc trọn chuyến) | bên em **chặn gửi khi doanh thu = 0** |
+| `header.selling_price` = `final_selling_price` | > 0.01 | doanh thu (tấn × đơn giá, hoặc trọn chuyến) | **đã làm**: chặn khi ≤ 0,01; tổng khớp bằng Decimal |
 | `header.customer_surcharge_total` | ≥ 0 | `0` (bên em không có phụ thu khách) | ổn |
 | `header.billed_qty` | snapshot | tấn tính cước | có |
 | `details[]` | có dòng `thu`, Σ thu = tổng | một dòng `{"line_no": 1, "kind": "thu", "name": "Cước vận chuyển <số phiếu> · <tấn> t × <đơn giá> <tiền>", "actual_amount": doanh thu, "currency": tiền cước}` | câu hỏi 10.4: anh có muốn nhận thêm dòng `chi` không |
 | `origin` · `destination` · `trip_id` · `vehicle_id` · `driver_id` · `weight_kg` · `pod_receiver` · `pod_signed_at` | nên có | có đủ (`weight_kg` = tấn × 1000; `pod_signed_at` thêm `+00:00`) | có |
-| `Idempotency-Key` | ổn định cho một DO | **`logistics:EPLLAO-<Trip.id>`**. Bên em **lưu nguyên gói đã gửi** để thử lại đúng gói | bên em làm |
-| `Authorization` | token QLSX, có làm mới | cần cơ chế lấy token (câu hỏi 10.1) | chờ anh |
+| `Idempotency-Key` | ổn định cho một DO | **`logistics:EPLLAO-<Trip.id>`**. Bên em **lưu nguyên gói đã gửi** (bảng `gui_so_tune`) để thử lại đúng gói | **đã làm** |
+| `Authorization` | token QLSX, có làm mới | tạm dùng `EPL_ACC_CODE_TOKEN` (tài khoản `tune`, hết hạn 10/10/2026) — đã qua cửa xác thực khi gửi thử | **chờ tài khoản dịch vụ** (câu hỏi 10.1) |
 
 Gói đề nghị:
 
@@ -557,7 +573,14 @@ Khi trả, bên tạm còn trừ thêm hàng chủ xe mua ở quầy.
 
 ### 6.4. Phiếu đề nghị thu
 
-Xem mục 3.2. Chỉ gửi khi đủ bốn điều kiện: phiếu đã khoá, mục II đã kiểm, doanh thu > 0, và khách đã có mã bên kế toán.
+Xem mục 3.2 và 3.2.1. Mã bên em (`services/gui_tune.py:dung_goi`) chỉ gửi khi đủ các điều kiện sau:
+
+- phiếu **đã về và đã khoá**;
+- khách **có mã bên kế toán**, mã hợp lệ;
+- phiếu **có tuyến**; mã ghép `khách_tuyến` ≤ 50 ký tự;
+- cước là **VND, LAK hoặc USD** và **> 0,01**.
+
+Khoá phiếu hiện chỉ **cảnh báo** (người khoá xem rồi xác nhận) chứ không bắt buộc mục II đã kiểm. Bên em **chưa chặn** gửi SO theo mục II. Anh cần chặn thì bên em thêm.
 
 ### 6.5. Hoá đơn gộp tháng
 
@@ -703,9 +726,12 @@ Cách `offset` và `other` hiện xếp vào ngân hàng — xem lỗ hổng 5.
 
 | Việc | Khi nào |
 |---|---|
-| Ô **"Mã khách bên kế toán"** trên danh mục khách; chặn gửi PDT khi thiếu | khi anh cho danh sách mã khách |
-| Bộ dựng gói SO cho PDT (3.2), lưu gói và khoá để thử lại đúng gói | khi anh cho địa chỉ và cách lấy token |
-| Chặn gửi PDT khi doanh thu = 0, mục II chưa kiểm, phiếu không tuyến, cước THB / CNY (nếu anh chưa nhận) | cùng lúc |
+| Ô **"Mã khách bên kế toán"** trên danh mục khách; chặn gửi PDT khi thiếu | **đã làm 30/09**; từ tối 30/09 chỉ KT Thu/Chi VC và Sếp gán |
+| Bộ dựng gói SO cho PDT (3.2), lưu gói và khoá để thử lại đúng gói | **đã làm 01/10**, đã gửi thử một DO (3.2.1) |
+| Chặn gửi PDT khi doanh thu = 0, phiếu không tuyến, cước THB / CNY (nếu anh chưa nhận) | **đã làm 01/10** (mục II chưa kiểm: xem 6.4) |
+| Ghi mã khách anh cấp, gửi SO thật một DO, đối chiếu `orderCode`, `totalAmount` với tờ đề nghị thu | khi anh tạo khách EPL Lào (câu hỏi 10.12) |
+| Phiếu chi tạm ứng CMP (12.3) | khi anh cấp mã số ở 12.7.5 và trả lời 10.6 |
+| Nút tạo **khoá bàn giao** cho hệ anh ở màn Tài khoản (hiện chỉ có đường `POST /api/handover/tao-khoa`) | khi có địa chỉ ra Internet |
 | Chống trùng (`source`, `ref`) + `Idempotency-Key`; phân biệt 409 thật với 409 cùng nội dung | khi anh xác nhận 3.1 |
 | Tài khoản dịch vụ `qlsx` có phạm vi đường cho chiều anh gọi sang | trước khi nối thật |
 | So số `tra_chu_xe` anh gửi với số bên em tính (B12) | trước khi nối thật |
@@ -714,7 +740,7 @@ Cách `offset` và `other` hiện xếp vào ngân hàng — xem lỗ hổng 5.
 
 ## 10. Câu hỏi cần anh trả lời
 
-1. **Xác thực QLSX:** cách lấy và làm mới access token cho tài khoản tích hợp; `UserId` nào đưa vào allowlist?
+1. **Xác thực QLSX:** cách lấy và làm mới access token cho tài khoản tích hợp; `UserId` nào đưa vào allowlist? Hiện bên em tạm dùng token cá nhân của anh (hết hạn 10/10/2026).
 2. **Ba mã con 1371, 4021, 4022** (mục 1.1): anh mở cho EPL được không, và mở ở danh mục quốc gia 11 hay danh mục riêng của công ty?
 3. **Tiền THB, CNY:** SO của anh chỉ nhận VND · LAK · USD, trong khi cước bên Lào có phiếu ký bằng THB. Anh thêm được không?
 4. **Dòng chi trong SO:** anh muốn nhận thêm các dòng `chi` (mục III–VI) trong `details` không? Nhận thì lộ biên lợi nhuận trên SO.
@@ -729,6 +755,10 @@ Cách `offset` và `other` hiện xếp vào ngân hàng — xem lỗ hổng 5.
 9. **Tờ bán cho chủ xe** (lỗ hổng 2): khuôn nào, gửi lúc ghi sổ mục III / V được không?
 10. **Tờ ghi nhận chi phí** (lỗ hổng 4) và **nợ thuê xe liên kết** (lỗ hổng 1): lúc khoá phiếu được không, tài khoản nào? (Hỏi thêm anh Khampla.)
 11. **Tờ kho có định khoản** do hệ anh Toàn sinh: đi vào sổ anh qua đường nào? Có dùng phong bì 3.1 không?
+12. **Khách EPL Lào** (mới, 01/10): anh tạo trong PUBOBJECT rồi gửi bên em `OBJ_OBJECTNO` từng khách, hay cho bên em tự tạo qua `POST /api/v1/master-data/customers/upsert`? Đây là việc **đang chặn** tạo SO (3.2.1).
+13. **Cách nhận các tờ còn lại** (mới, 01/10) — `PTU`, `PC_TU`, `PC_SC`…:
+    - (1) anh dựng một cửa `POST /api/v1/epl-lao/vouchers` nhận đúng phong bì 3.1, tự rẽ vào CMP / CMR theo `type`; bên em chỉ đổi địa chỉ; hay
+    - (2) mỗi loại đi đường riêng của anh (SO đã làm, CMP cho tạm ứng…); bên em gọi từng đường.
 
 ## 11. Thử với nhau
 
@@ -738,6 +768,9 @@ Bên em có các bộ kiểm tự động chạy trên máy thử (bản sao DB)
 - `kiem/thu_de_nghi.py` — khoá phiếu sinh đề nghị thu đúng tiền tệ; mở khoá rút tờ chưa gửi; tờ đã gửi thì chặn mở khoá.
 - `kiem/thu_cach_tra.py` — cách trả theo Excel, tạm ứng chỉ gồm khoản chi ngay khi xe đi.
 - `kiem/thu_day_ke_toan.py` — dựng máy nhận giả đóng vai hệ anh, đẩy tờ mẫu, thử cả trả 500 và 409.
+- `kiem/thu_tao_so.py` (01/10) — 22 chỗ kiểm cho tạo SO: quyền (Bãi, tài xế, KT doanh thu không gửi được), luật chặn (DO chưa khoá, thiếu mã khách, mã ghép quá 50 ký tự), khuôn gói (ba khoá gốc, `customer_id` = mã bên anh, một dòng thu, tổng khớp chính xác). **Không gọi sang hệ anh.**
+- `kiem/thu_ban_giao.py` — 31 chỗ kiểm cho hai đường bàn giao DO (12.8).
+- `kiem/thu_khach_hang_moi.py` — mã khách: chỉ `acct` và Sếp gán, không trùng, đúng dạng; `customer_code` trong gói bàn giao.
 - Bên bản tạm `EPL_KETOAN/kiem`: `thu_tat_toan.py` (có tờ quyết toán `QT_TU`), `thu_nhan_chung_tu.py`, `thu_dot2.py` (sổ đối chiếu quỹ, công nợ, kho, chuyến).
 
 Khi anh có môi trường thử:
@@ -925,8 +958,8 @@ Mỗi dòng có khuôn:
 3. **Thêm tiền USD, THB** (và CNY nếu bên Lào dùng), cho anh biết `CurrencyId`.
 4. **Tài khoản dịch vụ** cho trang điều xe, quyền trên đơn vị EPL Lào.
 5. **Chốt `DotyAutoId` cho phiếu chi tạm ứng** (59 hay 60).
-6. **Đối tượng** cho khách, tài xế, chủ xe, nhà cung cấp EPL Lào (hoặc cho bên em đồng bộ).
-7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào. Hai đường bàn giao **đã dựng xong** (mục 12.8); còn chờ địa chỉ ra Internet.
+6. **Đối tượng** cho khách, tài xế, chủ xe, nhà cung cấp EPL Lào (hoặc cho bên em đồng bộ). **Từ 01/10 phần khách đang chặn tạo SO** (3.2.1, câu hỏi 10.12).
+7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào. Hai đường bàn giao **đã dựng xong** (mục 12.8); còn chờ địa chỉ ra Internet (chủ dự án host khi làm xong hết, 12.8.4).
 8. Phương thức **"cấn trừ"**, nếu anh muốn ghi cấn trừ cuối tháng bằng phiếu thu chi.
 
 ### 12.8. Hai đường bàn giao DO đã dựng ở trang điều xe Lào (30/09)
@@ -1049,11 +1082,11 @@ Luật con số:
 #### 12.8.4. Thử với nhau
 
 - Bên em đã thử trên bản sao dữ liệu (`kiem/thu_ban_giao.py`): **13 DO đã khoá**, trong đó 2 phiếu xe thuê; **đạt cả 31 chỗ kiểm**.
-- Để hệ anh gọi được sang, trang điều xe Lào phải có **địa chỉ ra Internet**. Việc này chủ dự án chốt (câu hỏi 12.8 (1)).
+- Để hệ anh gọi được sang, trang điều xe Lào phải có **địa chỉ ra Internet**. **Chủ dự án chốt 01/10:** làm xong hết rồi mới host, lúc đó bên em gửi anh địa chỉ gốc và khoá bàn giao.
 - Khi có địa chỉ, bên em gửi anh: **địa chỉ gốc** và **khoá bàn giao**. Anh đổi cấu hình Logistics của đơn vị EPL Lào, rồi gọi thử `cash-voucher-references?type=DO`.
 
 **Câu hỏi 12.8:**
 
-1. (Chủ dự án) Trang điều xe Lào ra Internet ở địa chỉ nào?
+1. ~~(Chủ dự án) Trang điều xe Lào ra Internet ở địa chỉ nào?~~ — chủ dự án host khi làm xong hết (01/10), rồi gửi anh.
 2. (Anh Tune) Hệ anh **lưu khoá Logistics theo từng đơn vị** được không, để EPL Lào đọc trang điều xe Lào, còn đơn vị khác vẫn đọc EPL_System?
 3. ~~Lọc theo mã khách bên anh~~ — **đã làm 30/09:** danh mục khách bên em có ô "Mã khách" (= `OBJ_OBJECTNO` bên anh, ≤ 50 ký tự Latinh / số / `- _ . /`, không trùng). Mỗi dòng và header trả `customer_code`; tham số `customer_id` nhận cả mã đó. Xin anh gửi danh sách mã khách của EPL Lào để bên em ghi vào.
