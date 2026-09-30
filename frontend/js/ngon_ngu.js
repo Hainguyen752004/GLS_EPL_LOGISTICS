@@ -2612,6 +2612,51 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
  },
+ "pct_b_tam_ung": {
+  "vi": "Nhận tạm ứng",
+  "lo": "ຮັບເງິນລ່ວງໜ້າ",
+  "en": "Get advance"
+ },
+ "pct_b_can": {
+  "vi": "Báo cân",
+  "lo": "ແຈ້ງນ້ຳໜັກ",
+  "en": "Weigh-in"
+ },
+ "pct_b_giao": {
+  "vi": "Giao · ký nhận",
+  "lo": "ສົ່ງແລ້ວ · ເຊັນຮັບ",
+  "en": "Deliver · sign"
+ },
+ "pct_b_ve": {
+  "vi": "Về tới",
+  "lo": "ກັບຮອດ",
+  "en": "Back"
+ },
+ "pct_buoc_tiep": {
+  "vi": "Bước tiếp theo",
+  "lo": "ຂັ້ນຕອນຕໍ່ໄປ",
+  "en": "Next step"
+ },
+ "pct_xong": {
+  "vi": "Chuyến đã xong · chờ khoá phiếu",
+  "lo": "ຮອດແລ້ວ · ລໍຖ້າລັອກໃບ",
+  "en": "Trip done · waiting for the slip to be locked"
+ },
+ "pct_xong_khoa": {
+  "vi": "Chuyến đã xong · phiếu đã khoá",
+  "lo": "ຮອດແລ້ວ · ລັອກແລ້ວ",
+  "en": "Trip done · slip locked"
+ },
+ "pct_mo_qr": {
+  "vi": "Mã QR",
+  "lo": "ລະຫັດ QR",
+  "en": "QR code"
+ },
+ "pct_qr": {
+  "vi": "Mã QR phiếu đề nghị",
+  "lo": "ລະຫັດ QR · ໃບສະເໜີ",
+  "en": "Request QR code"
+ },
  "nav_de_nghi_chi": {
   "vi": "Phiếu đề nghị chi",
   "lo": "ໃບສະເໜີຈ່າຍ",

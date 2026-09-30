@@ -156,47 +156,159 @@
     const tong = dong.reduce((a, d) => a + d.qty * d.unit_price * (r[d.currency] || 1), 0);
     return { co: dong.length > 0, tong, tt: (p.sections || {}).travel || 'wait' };
   }
-  function ve() {
-    if (!DS.length) { q('#pct-ds').innerHTML = `<div class="card"><div class="bd muted">${NN.h('no_my_slips')}</div></div>`; return; }
-    q('#pct-ds').innerHTML = DS.map(p => {
-      const tu = tamUng(p), daTra = tu.tt === 'paid', xong = p.transport_status === 'arrived';
-      const bao = (p.events || []).filter(e => e.kind === 'incident' || e.kind === 'repair');
-      return `<div class="pct-the" data-id="${p.id}">
-        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span class="so">${esc(p.doc_no)}</span>${tag(p.transport_status)}</div>
-        <div class="tuyen" lang="lo">${esc(p.origin)} → ${esc(p.destination)}</div>
-        <div class="meta"><span>${NN.h('truck_no')}: <b>${esc(p.truck_no)}</b></span><span>${NN.h('customer')}: <b lang="lo">${esc(p.customer_name || '—')}</b></span>
-          <span>${NN.h('d_out')}: <b>${EPL.ngay(p.out_date)}</b></span><span>${NN.h(p.kind === 'gom' ? 'w_origin_gom' : 'w_origin')}: <b>${p.weight_origin ? so(p.weight_origin, 2) + ' t' : '—'}</b></span></div>
-        <div class="pct-tu ${!tu.co ? 'khong' : daTra ? 'ok' : 'cho'}"><span>${NN.h('advance')}${tu.co ? '' : ' · ' + NN.h('no_expense')}</span><b>${tu.co ? so(tu.tong) + ' LAK · ' + NN.t(daTra ? 'advance_received' : 'stt_' + (tu.tt === 'wait' ? 'wait2' : tu.tt)) : '—'}</b></div>
-        ${bao.length ? `<div class="pct-bao">${bao.slice(-3).map(e => `<div>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'ok' : 'unpaid', 'st_' + (e.status || 'approved'))}<span lang="lo">${esc(e.note || NN.t('inc_' + (e.incident_type || 'other')))}</span>${e.reported_cost ? `<b>${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</b>` : ''}</div>`).join('')}</div>` : ''}
+
+  /* ---------------------------------------------------------------- vé chuyến (30/09)
+   * Chuyến đang chạy là MỘT vé lớn: tuyến chữ to, các bước của chuyến, một nút lớn cho việc tiếp theo, việc phụ là ô bấm.
+   * Thứ tự việc: nhận tạm ứng → xuất phát → báo cân ở mỏ (gom) / giao hàng · ký nhận (giao) → báo đã về. */
+  const ICON = {
+    bao: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0',
+    dau: 'M3 22V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17M3 22h12M6 8h6M15 10h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-3-3',
+    gps: 'M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4',
+    qr: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM18 18h3v3h-3zM14 18h2',
+    bb: 'M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9',
+    ve: 'M3 12h13M11 6l6 6-6 6M21 4v16', can: 'M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z',
+    gh: 'M4 19c2-2 4-3 6-3s3 2 5 2 3-1 5-3M4 5h16v8H4z',
+  };
+  const ic = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[k]}"/></svg>`;
+  let CUR = null;
+  const dangChay = (p) => ['dispatched', 'transit'].includes(p.transport_status);
+  const coTheBaoCan = (p) => p.kind === 'gom' && dangChay(p) && !p.locked && !choGui(p.id, 'can_mo')
+    && ['wait', 'entered'].includes((p.sections || {}).trans || 'wait');
+  const coTheGiao = (p) => p.kind === 'giao' && ['transit', 'arrived'].includes(p.transport_status) && !p.locked && !p.pod_signed && !choGui(p.id);
+  function chonMacDinh() {
+    if (DS.some(p => p.id === CUR)) return;
+    const x = DS.find(dangChay) || DS.find(p => p.transport_status === 'arrived' && !p.locked) || DS[0];
+    CUR = x ? x.id : null;
+  }
+  function cacBuoc(p, tu) {
+    const di = p.transport_status !== 'dispatched';
+    const giua = p.kind === 'gom'
+      ? { k: 'pct_b_can', xong: (p.weight_origin || 0) > 0 || choGui(p.id, 'can_mo') }
+      : { k: 'pct_b_giao', xong: !!(p.pod_signed || p.pod_no) || choGui(p.id) };
+    const ds = [...(tu.co ? [{ k: 'pct_b_tam_ung', xong: tu.tt === 'paid' }] : []), { k: 'depart', xong: di }, giua,
+      { k: 'pct_b_ve', xong: p.transport_status === 'arrived' }];
+    const dang = ds.findIndex(b => !b.xong);
+    return `<div class="pct-buoc">${ds.map((b, i) => `<div class="pct-b ${b.xong ? 'xong' : i === dang ? 'dang' : ''}"><i>${b.xong ? '✓' : i + 1}</i><span>${NN.h(b.k)}</span></div>`).join('')}</div>`;
+  }
+  /** Việc tiếp theo của chuyến: {nut, act} · {nut, tat, ly} (chưa làm được, nói vì sao) · {xong}. */
+  function viecTiep(p, tu) {
+    if (p.locked || (p.transport_status === 'arrived' && !coTheGiao(p))) return { xong: true };
+    if (p.transport_status === 'dispatched') {
+      if (tu.co && tu.tt !== 'paid') return { nut: 'depart', tat: true, ly: 'depart_blocked' };
+      if (coTheBaoCan(p) && !((p.weight_origin || 0) > 0)) return { nut: 'cm_nut', act: 'cm' };
+      return { nut: 'depart', act: 'di' };
+    }
+    if (coTheBaoCan(p) && !((p.weight_origin || 0) > 0)) return { nut: 'cm_nut', act: 'cm' };
+    if (coTheGiao(p)) return { nut: 'gh_nut', act: 'gh' };
+    if (p.transport_status === 'transit') return { nut: 'report_back', act: 've' };
+    return { xong: true };
+  }
+  function deNghi(p, tu) {
+    const vs = (p._v || []).filter(v => v.status !== 'huy');
+    const tuV = vs.find(v => v.kind === 'advance');
+    const o = [];
+    if (tu.co) {
+      const ok = tu.tt === 'paid';
+      o.push(`<div class="pct-dn-o ${ok ? 'ok' : 'cho'}"><span class="l">${NN.h('voucher_payment')}</span>
+        <span class="v">${so(tu.tong)}<small>LAK</small></span>
+        <span class="s">${NN.h(ok ? 'advance_received' : 'advance_pending')}</span>
+        ${tuV && !ok ? `<button class="btn" data-qr="${esc(tuV.id)}">${NN.h('pct_mo_qr')}</button>` : ''}</div>`);
+    }
+    vs.filter(v => v.kind === 'fuel').forEach(v => {
+      const ok = v.status === 'da_cap';
+      o.push(`<div class="pct-dn-o ${ok ? 'ok' : 'cho'}"><span class="l">${NN.h('v_fuel')} · <span lang="lo">${esc(v.place_name || '')}</span></span>
+        <span class="v">${so(ok && v.granted_qty != null ? v.granted_qty : v.qty_l, 0)}<small>L</small></span>
+        <span class="s">${NN.h('v_' + v.status)}</span>
+        ${!ok ? `<button class="btn" data-qr="${esc(v.id)}">${NN.h('pct_mo_qr')}</button>` : ''}</div>`);
+    });
+    return o.length ? `<div class="pct-dn">${o.join('')}</div>` : '';
+  }
+  function veVe(p) {
+    const o = q('#pct-ve');
+    if (!p) { o.innerHTML = `<div class="pct-trong">${NN.h('no_my_slips')}</div>`; return; }
+    const tu = tamUng(p), tiep = viecTiep(p, tu), xong = p.transport_status === 'arrived';
+    const bao = (p.events || []).filter(e => e.kind === 'incident' || e.kind === 'repair');
+    const phu = [];
+    const nut = (act, ico, khoa, cls = '') => `<button type="button" class="${cls}" data-act="${act}">${ic(ico)}<span>${NN.h(khoa)}</span></button>`;
+    if (p.transport_status === 'transit' && tiep.act !== 've') phu.push(nut('ve', 've', 'report_back'));
+    if (coTheBaoCan(p) && tiep.act !== 'cm') phu.push(nut('cm', 'can', 'cm_nut'));
+    if (coTheGiao(p) && tiep.act !== 'gh') phu.push(nut('gh', 'gh', 'gh_nut'));
+    if (!xong) phu.push(nut('bao', 'bao', 'report_breakdown', 'canh'));
+    if (!xong) phu.push(nut('dau', 'dau', 'df_declare'));
+    if (p.transport_status === 'transit') phu.push(nut('gps', 'gps', phieuChiaSe === p.id ? 'gps_stop' : 'gps_share', phieuChiaSe === p.id ? 'bat' : ''));
+    if ((p._v || []).some(v => v.status === 'cho')) phu.push(nut('qr', 'qr', 'pct_qr'));
+    if (p.pod_signed || p.pod_no) phu.push(nut('bb', 'bb', 'gh_xem'));
+    o.innerHTML = `<div class="pct-ve">
+      <div class="pct-ve-dau">
+        <div class="pct-ve-so"><span>${esc(p.doc_no)}</span><span class="pct-loai ${esc(p.kind)}">${NN.h(p.kind === 'gom' ? 'do_gom' : 'do_giao')}</span>${tag(p.transport_status)}</div>
+        <div class="pct-tuyen">
+          <div class="d" lang="lo"><small>${NN.h('origin')}</small>${esc(p.origin || '—')}</div>
+          <svg viewBox="0 0 44 24"><path d="M2 12h34M30 6l6 6-6 6"/></svg>
+          <div class="d phai" lang="lo"><small>${NN.h('dest')}</small>${esc(p.destination || '—')}</div>
+        </div>
+      </div>
+      <div class="pct-ve-than">
+        ${cacBuoc(p, tu)}
+        <div class="pct-meta">
+          <div><span>${NN.h('truck_no')}</span><b>${esc(p.truck_no || '—')}</b></div>
+          <div><span>${NN.h('plate_head')} / ${NN.h('plate_trailer')}</span><b lang="lo">${esc(p.plate_head || '—')} / ${esc(p.plate_trailer || '—')}</b></div>
+          <div><span>${NN.h('customer')}</span><b lang="lo">${esc(p.customer_name || '—')}</b></div>
+          <div><span>${NN.h('d_out')}</span><b>${EPL.ngay(p.out_date)}</b></div>
+          <div><span>${NN.h(p.kind === 'gom' ? 'w_origin_gom' : 'w_origin')}</span><b>${p.weight_origin ? so(p.weight_origin, 2) + ' ' + NN.h('ton') : '—'}</b></div>
+          ${p.weight_dest != null ? `<div><span>${NN.h('w_dest')}</span><b>${so(p.weight_dest, 2)} ${NN.h('ton')}</b></div>` : ''}
+        </div>
+        ${deNghi(p, tu)}
+        ${tiep.xong
+          ? `<div class="pct-xong">✓ ${NN.h(p.locked ? 'pct_xong_khoa' : 'pct_xong')}</div>`
+          : `<div class="pct-tiep"><span class="l">${NN.h('pct_buoc_tiep')}</span>
+              <button class="btn primary" ${tiep.tat ? 'disabled' : `data-act="${tiep.act}"`}>${NN.h(tiep.nut)}</button>
+              ${tiep.ly ? `<span class="ly">${NN.h(tiep.ly)}</span>` : ''}</div>`}
         ${p.pod_signed || p.pod_no ? `<div class="pct-ky-xong">✓ ${NN.h('gh_da_ky')}: <b lang="lo">${esc(p.pod_receiver || '')}</b>${p.pod_at ? ' · ' + EPL.ngayGio(p.pod_at) : ''}</div>`
           : choGui(p.id) ? `<div class="pct-ky-xong cho">${NN.h('gh_cho_gui')}</div>` : ''}
         ${choGui(p.id, 'can_mo') ? `<div class="pct-ky-xong cho">${NN.h('cm_nut')} · ${NN.h('gh_cho_gui')}</div>` : ''}
-        <div class="pct-nut">
-          ${p.kind === 'gom' && ['dispatched', 'transit'].includes(p.transport_status) && !p.locked && !choGui(p.id, 'can_mo')
-            && ['wait', 'entered'].includes((p.sections || {}).trans || 'wait')
-            ? `<button class="btn ok" data-cm="${p.id}">${NN.h('cm_nut')}</button>` : ''}
-          ${p.kind === 'giao' && ['transit', 'arrived'].includes(p.transport_status) && !p.locked && !p.pod_signed && !choGui(p.id)
-            ? `<button class="btn ok" data-gh="${p.id}">${NN.h('gh_nut')}</button>` : ''}
-          ${!xong && p.transport_status === 'dispatched' ? `<button class="btn primary" data-di="${p.id}" ${tu.co && !daTra ? 'disabled title="' + esc(NN.t('depart_blocked')) + '"' : ''}>${NN.h('depart')}</button>` : ''}
-          ${p.transport_status === 'transit' ? `<button class="btn ok" data-ve="${p.id}">${NN.h('report_back')}</button>` : ''}
-          ${!xong ? `<button class="btn warn" data-bao="${p.id}">${NN.h('report_breakdown')}</button>` : ''}
-          ${!xong ? `<button class="btn" data-dau="${p.id}">${NN.h('df_declare')}</button>` : ''}
-          ${p.transport_status === 'transit'
-            ? `<button class="btn ${phieuChiaSe === p.id ? 'ok' : ''}" data-gps="${p.id}">${NN.h(phieuChiaSe === p.id ? 'gps_stop' : 'gps_share')}</button>` : ''}
-          <button class="btn" data-pc="${p.id}">${NN.h('voucher_payment')}</button>
-          ${p.pod_signed || p.pod_no ? `<button class="btn" data-bb="${p.id}">${NN.h('gh_xem')}</button>` : ''}
-        </div></div>`;
-    }).join('');
-    root.querySelectorAll('[data-di]').forEach(b => b.addEventListener('click', () => xuatPhat(b.dataset.di)));
-    root.querySelectorAll('[data-ve]').forEach(b => b.addEventListener('click', () => baoVe(b.dataset.ve)));
-    root.querySelectorAll('[data-bao]').forEach(b => b.addEventListener('click', () => moBao(b.dataset.bao)));
-    root.querySelectorAll('[data-pc]').forEach(b => b.addEventListener('click', () => EPL.di('chung-tu', { id: b.dataset.pc })));
-    root.querySelectorAll('[data-dau]').forEach(b => b.addEventListener('click', () => moDau(b.dataset.dau)));
-    root.querySelectorAll('[data-gps]').forEach(b => b.addEventListener('click', () => batTatGPS(b.dataset.gps)));
-    root.querySelectorAll('[data-gh]').forEach(b => b.addEventListener('click', () => moGiaoHang(b.dataset.gh)));
-    root.querySelectorAll('[data-cm]').forEach(b => b.addEventListener('click', () => moCanMo(b.dataset.cm)));
-    root.querySelectorAll('[data-bb]').forEach(b => b.addEventListener('click', () => xemBienBan(b.dataset.bb)));
+        ${phu.length ? `<div class="pct-o">${phu.join('')}</div>` : ''}
+        ${bao.length ? `<div class="pct-bao">${bao.slice(-3).map(e => `<div>${tag(e.status === 'reported' ? 'partial' : e.status === 'approved' ? 'ok' : 'unpaid', 'st_' + (e.status || 'approved'))}<span lang="lo">${esc(e.note || NN.t('inc_' + (e.incident_type || 'other')))}</span>${e.reported_cost ? `<b>${so(e.reported_cost)} ${esc(e.currency || 'LAK')}</b>` : ''}</div>`).join('')}</div>` : ''}
+      </div></div>`;
+    const lam = {
+      di: () => xuatPhat(p.id), ve: () => baoVe(p.id), cm: () => moCanMo(p.id), gh: () => moGiaoHang(p.id), bao: () => moBao(p.id),
+      dau: () => moDau(p.id), gps: () => batTatGPS(p.id), qr: () => moQR(p), bb: () => xemBienBan(p.id),
+    };
+    o.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => lam[b.dataset.act]()));
+    o.querySelectorAll('[data-qr]').forEach(b => b.addEventListener('click', () => moQR(p, b.dataset.qr)));
+  }
+  function veDs() {
+    const khac = DS.filter(p => p.id !== CUR), o = q('#pct-ds');
+    q('.pct-ben').hidden = !khac.length;
+    o.innerHTML = khac.map(p => `<button type="button" class="pct-the" data-id="${esc(p.id)}">
+      <span class="so">${esc(p.doc_no)}</span>${tag(p.transport_status)}
+      <span class="tuyen" lang="lo">${esc(p.origin || '')} → ${esc(p.destination || '')}</span>
+      <span class="phu">${NN.h(p.kind === 'gom' ? 'do_gom' : 'do_giao')} · ${esc(p.truck_no || '')} · ${EPL.ngay(p.out_date || p.doc_date)}${p.locked ? ' · ' + NN.h('s_locked') : ''}</span>
+    </button>`).join('');
+    o.querySelectorAll('.pct-the').forEach(b => b.addEventListener('click', () => { CUR = b.dataset.id; ve(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+  }
+  function ve() {
+    chonMacDinh();
+    const u = EPL.AUTH.user || {}, p = DS.find(x => x.id === CUR);
+    q('#pct-ten').innerHTML = `<span lang="lo">${esc(u.full_name || u.username || '')}</span>`;
+    q('#pct-vai').innerHTML = `${NN.h('tx_driver')}${p && p.truck_no ? ' · ' + NN.h('truck_no') + ' ' + esc(p.truck_no) : ''}`;
+    veVe(p); veDs();
     q('#pct-gps').hidden = !phieuChiaSe;
+  }
+
+  /** Mã QR phiếu đề nghị (tạm ứng · nhiên liệu) — tài xế đưa màn này cho quỹ / thủ kho quét. */
+  function moQR(p, vid) {
+    const vs = (p._v || []).filter(v => v.status !== 'huy');
+    if (!vs.length) return EPL.toast(NN.t('v_none'), 'loi');
+    const hien = (v) => {
+      q('#pct-qr-tieu').innerHTML = NN.h(v.kind === 'fuel' ? 'v_fuel' : 'voucher_payment');
+      q('#pct-qr-anh').src = v.qr;
+      q('#pct-qr-ma').innerHTML = `${esc(v.doc_no)}<br>${NN.h('v_code')}: <b>${esc(v.token)}</b>`;
+      q('#pct-qr-chon').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v.id));
+    };
+    q('#pct-qr-chon').innerHTML = vs.length > 1 ? vs.map(v => `<button type="button" data-v="${esc(v.id)}">${NN.h(v.kind === 'fuel' ? 'dn_nhien_lieu' : 'dn_tam_ung')}${v.kind === 'fuel' ? ' · ' + so(v.qty_l, 0) + ' L' : ''}</button>`).join('') : '';
+    q('#pct-qr-chon').querySelectorAll('button').forEach(b => b.addEventListener('click', () => hien(vs.find(v => v.id === b.dataset.v))));
+    hien(vs.find(v => v.id === vid) || vs.find(v => v.status === 'cho') || vs[0]);
+    q('#pct-qr').showModal();
   }
   async function tai() {
     const mm = q('#pct-mat-mang');
@@ -206,6 +318,9 @@
       const [chay, gan] = await Promise.all([API.get('/api/trips?transport_status=dispatched,transit&co=50'), API.get('/api/trips?co=15')]);
       const ds = [...chay, ...gan.filter(p => !chay.some(x => x.id === p.id))];
       DS = await Promise.all(ds.map(p => API.get('/api/trips/' + p.id)));   // cần expenses & events
+      // phiếu đề nghị (mã QR) của chuyến còn chạy — lưu cùng bản trong máy để mất mạng vẫn đưa QR cho người cấp quét
+      await Promise.all(DS.filter(p => dangChay(p) || (p.transport_status === 'arrived' && !p.locked))
+        .map(async p => { p._v = await API.get(`/api/trips/${p.id}/vouchers`).catch(() => []); }));
       ghi(K_DS(), DS); mm.hidden = true;
     } catch (e) {
       if (!laMatMang(e)) throw e;
@@ -312,8 +427,9 @@
 
   EPL.modules['phieu-cua-toi'] = {
     async init(r) {
-      root = r;
+      root = r; CUR = null;
       DIEM = await API.get('/api/fuel-places').catch(() => []);
+      q('#pct-qr-dong').addEventListener('click', () => q('#pct-qr').close());
       q('#pct-gh-xoa-ky').addEventListener('click', () => KY && KY.dung());
       q('#pct-gh-huy').addEventListener('click', () => q('#pct-gh').close());
       q('#pct-gh-gui').addEventListener('click', guiGiaoHang);

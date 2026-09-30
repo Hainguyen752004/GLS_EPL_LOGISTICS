@@ -1,11 +1,31 @@
-<!-- Phiếu của tôi — ບິນຂອງຂ້ອຍ. Màn của TÀI XẾ: thấy phiếu của mình, nhận tiền tạm ứng → Xuất phát → Báo hỏng. -->
-<div class="px-goi-y" data-i18n="hint_driver"></div>
-<div class="pct-gps" id="pct-gps" hidden>
-  <span class="cham"></span>
-  <div><b data-i18n="gps_sharing"></b><div class="small" id="pct-gps-tin"></div></div>
+<!-- Phiếu của tôi — ບິນຂອງຂ້ອຍ. Màn của TÀI XẾ, làm lại 30/09 (sếp: "phá cách, tôn trọng người Lào"): một VÉ CHUYẾN lớn cho
+     chuyến đang chạy — tuyến chữ to, thanh các bước, MỘT nút lớn cho việc tiếp theo, việc phụ thành ô bấm to, mã QR phiếu đề
+     nghị mở ngay tại đây. Chuyến khác nằm cột bên (điện thoại: dưới). Mọi hộp nhập giữ nguyên (ký nhận, cân mỏ, báo hỏng…). -->
+<div class="pct">
+  <div class="pct-dau">
+    <div><div class="pct-ten" id="pct-ten"></div><div class="pct-vai" id="pct-vai"></div></div>
+    <div class="pct-gps" id="pct-gps" hidden>
+      <span class="cham"></span>
+      <div><b data-i18n="gps_sharing"></b><div class="small" id="pct-gps-tin"></div></div>
+    </div>
+  </div>
+  <div class="pct-mat-mang" id="pct-mat-mang" hidden></div>
+  <div class="pct-than">
+    <section class="pct-chinh" id="pct-ve"></section>
+    <aside class="pct-ben"><h3 class="pct-h" data-i18n="recent_trips"></h3><div id="pct-ds" class="pct-ds"></div></aside>
+  </div>
 </div>
-<div class="pct-mat-mang" id="pct-mat-mang" hidden></div>
-<div id="pct-ds" class="pct-ds"></div>
+
+<!-- Mã QR phiếu đề nghị (tạm ứng · nhiên liệu): tài xế đưa màn này cho quỹ / thủ kho quét -->
+<dialog id="pct-qr" class="hop-thoai pct-qr-hop">
+  <div class="pct-qr-than">
+    <div class="pct-qr-dau"><h3 id="pct-qr-tieu"></h3><button type="button" class="btn quiet" id="pct-qr-dong" data-i18n="cancel"></button></div>
+    <div class="pct-qr-chon" id="pct-qr-chon"></div>
+    <img id="pct-qr-anh" alt="QR" width="260" height="260">
+    <div class="pct-qr-ma" id="pct-qr-ma"></div>
+    <p class="small muted" data-i18n="v_qr_hint"></p>
+  </div>
+</dialog>
 
 <dialog id="pct-hop" class="hop-thoai">
   <form method="dialog">
