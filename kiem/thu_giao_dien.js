@@ -13,8 +13,9 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 // 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a); 'tien-tai-xe', 'tat-toan' (đợt 7c)
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'chung-tu',
-  'phieu-cua-toi', 'xe-lien-ket', 'nha-cung-cap',
+// 30/09: 'de-nghi-chi', 'de-nghi-thu' tách từ màn chung-tu (nay là Đề nghị theo DO); 'kho-xem' — kho chỉ xem theo mặt hàng
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'de-nghi-chi', 'de-nghi-thu', 'chung-tu',
+  'phieu-cua-toi', 'xe-lien-ket', 'nha-cung-cap', 'kho-xem',
   'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */
@@ -144,7 +145,7 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnt-ds'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
 
@@ -466,18 +467,20 @@ async function main() {
   assert.ok(!/\bundefined\b|\bNaN\b/.test(chuTx), 'màn tài xế có chữ undefined/NaN');
   console.log('✓ vai tài xế: chỉ thấy Phiếu của tôi · %d ký tự', chuTx.length);
 
-  // 7. vai thủ kho nhiên liệu: Cấp phát và Kho nhiên liệu dời sang trang kế toán (28/09) — ở đây KHÔNG còn màn nào.
-  //    Phải hiện lời chỉ sang trang kế toán (có nút mở), không chuyển vòng, không lỗi.
+  // 7. vai thủ kho nhiên liệu: cấp phát ở bên kho (trang kế toán tạm); từ 30/09 trang điều xe có màn XEM KHO chỉ xem
+  //    (sếp: kho dời về trang logistics) — thủ kho vào là màn đó, không chuyển vòng, không lỗi.
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('khotb', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai thủ kho'); await w.EPL.sanSang;
-  await choDen(() => d.querySelector('#noi-dung #mo-ke-toan'), 'lời chỉ sang trang kế toán');
+  await xongHet();
   const navKho = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
-  assert.deepStrictEqual(navKho, [], 'thủ kho không còn màn nào ở trang điều xe: ' + navKho);
+  assert.deepStrictEqual(navKho, ['kho-xem'], 'thủ kho ở trang điều xe chỉ có màn Xem kho: ' + navKho);
+  await choDen(() => d.querySelector('#noi-dung .kx-bang tbody tr'), 'bảng mặt hàng của màn Xem kho');
   const hash0 = w.location.hash; await cho(600);
   assert.strictEqual(w.location.hash, hash0, 'không chuyển vòng: ' + hash0 + ' → ' + w.location.hash);
   const chuKho = d.querySelector('#noi-dung').textContent;
-  assert.ok(chuKho.includes(w.EPL.NN.t('khong_co_man')) && !chuKho.includes(w.EPL.NN.t('err_generic')), 'màn thủ kho: ' + chuKho.slice(0, 200));
-  console.log('✓ vai thủ kho: không còn màn ở trang điều xe → lời chỉ sang trang kế toán, có nút mở, không chuyển vòng');
+  assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')) && !/\bundefined\b|\bNaN\b/.test(chuKho), 'màn thủ kho: ' + chuKho.slice(0, 200));
+  assert.ok(!d.querySelector('#noi-dung .kx button.primary, #noi-dung .kx .btn.primary'), 'màn Xem kho không có nút thao tác kho');
+  console.log('✓ vai thủ kho: chỉ màn Xem kho (chỉ xem), không chuyển vòng, không lỗi');
 
   // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN
   // CHỖ chứ không nhân đôi — nhân đôi là hai nút cùng id, bấm cái nào cũng sai.

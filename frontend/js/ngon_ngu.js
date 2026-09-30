@@ -543,14 +543,14 @@ window.EPL_TU_DIEN = {
   "en": "Treasury / petty cash"
  },
  "wf5": {
-  "vi": "Lập hóa đơn thu",
-  "lo": "ອອກໃບເກັບເງິນ",
-  "en": "Invoice"
+  "vi": "Đề nghị thu",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "Collection request"
  },
  "wf5d": {
-  "vi": "Kế toán doanh thu",
-  "lo": "ບັນຊີລາຍຮັບ",
-  "en": "Revenue accountant"
+  "vi": "Khoá phiếu · gửi bên công nợ",
+  "lo": "ລັອກໃບ · ສົ່ງ",
+  "en": "Lock slip · send to receivables"
  },
  "doc_dispatch": {
   "vi": "PHIẾU XUẤT XE ĐI VẬN CHUYỂN",
@@ -2611,6 +2611,41 @@ window.EPL_TU_DIEN = {
   "vi": "Phiếu đề nghị xuất nhiên liệu",
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
+ },
+ "d_kho_xem": {
+  "vi": "Tồn từng mặt hàng, phần chờ xuất theo đề nghị — chỉ xem",
+  "lo": "ຍອດຄົງເຫຼືອ ຕາມລາຍການ · ເບິ່ງຢ່າງດຽວ",
+  "en": "Stock per item and what is awaiting issue — view only"
+ },
+ "d_de_nghi_chi": {
+  "vi": "Đề nghị tạm ứng, đề nghị xuất nhiên liệu — tìm, xem, in",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໃບສະເໜີເບີກນໍ້າມັນ",
+  "en": "Advance and fuel issue requests — find, view, print"
+ },
+ "d_de_nghi_thu": {
+  "vi": "DO xong → đề nghị thu gửi bên công nợ",
+  "lo": "ໃບສະເໜີຮັບເງິນ ຕາມ DO",
+  "en": "DO done → collection request to receivables"
+ },
+ "px_de_nghi": {
+  "vi": "Phiếu đề nghị",
+  "lo": "ໃບສະເໜີ",
+  "en": "Requests"
+ },
+ "px_luong": {
+  "vi": "Các bước duyệt của phiếu",
+  "lo": "ຂັ້ນຕອນ",
+  "en": "Approval steps"
+ },
+ "px_loai_gom_d": {
+  "vi": "Đi lấy quặng ở mỏ về bãi Thà Bốc — hàng vào kho bãi, chờ phiếu giao lấy đi.",
+  "lo": "Đi lấy quặng ở mỏ về bãi Thà Bốc — hàng vào kho bãi, chờ phiếu giao lấy đi.",
+  "en": "Collect ore at the mine and bring it to Thabok yard — goods go into the yard store until a delivery takes them."
+ },
+ "px_loai_giao_d": {
+  "vi": "Lấy hàng từ kho bãi (hoặc chở thẳng) đi giao cho khách — xong có biên bản giao nhận (POD).",
+  "lo": "Lấy hàng từ kho bãi (hoặc chở thẳng) đi giao cho khách — xong có biên bản giao nhận (POD).",
+  "en": "Take goods from the yard store (or haul direct) to the customer — ends with a delivery note (POD)."
  },
  "pct_b_tam_ung": {
   "vi": "Nhận tạm ứng",
@@ -5198,9 +5233,9 @@ window.EPL_TU_DIEN = {
   "en": "Printable transport invoice"
  },
  "d_chung_tu": {
-  "vi": "Phiếu chi, phiếu thu, sổ chứng từ",
-  "lo": "ໃບຈ່າຍ, ໃບຮັບ, ປື້ມເອກະສານ",
-  "en": "Payment, receipt and the document register"
+  "vi": "DO nào đề nghị chi gì, đề nghị thu gì · hồ sơ gửi kế toán",
+  "lo": "ໃບສະເໜີ ຕາມ DO · ເອກະສານສົ່ງບັນຊີ",
+  "en": "Requests per DO · records sent to accounting"
  },
  "d_phieu_cua_toi": {
   "vi": "Phiếu của tài xế, khai dầu, vị trí",

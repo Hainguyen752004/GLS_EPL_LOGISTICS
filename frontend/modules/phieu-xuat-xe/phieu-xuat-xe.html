@@ -1,37 +1,27 @@
 <!-- Phiếu xuất xe đi vận chuyển — ໃບເບີກລົດອອກໄປຂົນສົ່ງ. Tờ giấy duy nhất họ làm việc: 6 mục, mỗi mục một trạng thái duyệt. -->
-<div class="toolbar no-print">
+<div class="toolbar no-print px-thanh">
   <button class="btn quiet" id="px-ve">← <span data-i18n="back_list"></span></button>
   <!-- Một năm ~365.000 phiếu: ô chọn chỉ nạp 50 phiếu mới nhất; gõ vào ô tìm thì máy chủ tìm trên TOÀN BỘ phiếu -->
   <div class="field"><label data-i18n="doc_no"></label><div class="px-chon-hang"><input id="px-tim" type="search" autocomplete="off" data-i18n-ph="td_search"><select id="px-chon"></select></div></div>
   <button class="btn" id="px-moi">+ <span data-i18n="new_slip"></span></button>
   <div class="grow"></div>
-  <button class="btn" id="px-chung-tu"><span data-i18n="voucher_payment"></span></button>
-  <button class="btn" id="px-phieu-linh"><span data-i18n="v_fuel"></span></button>
-  <button class="btn" id="px-hoa-don"><span data-i18n="nav_bill"></span></button>
   <button class="btn" onclick="window.print()"><span data-i18n="print"></span></button>
   <button class="btn primary" id="px-luu"><span data-i18n="save"></span></button>
 </div>
 
-<div class="card px-buoc no-print"><div class="bd">
-  <div class="px-flow" id="px-flow">
-    <div class="step" data-b="0"><div class="t" data-i18n="wf1"></div><div class="d" data-i18n="wf1d"></div></div>
-    <div class="step" data-b="1"><div class="t" data-i18n="wf2"></div><div class="d" data-i18n="wf2d"></div></div>
-    <div class="step" data-b="2"><div class="t" data-i18n="wf3"></div><div class="d" data-i18n="wf3d"></div></div>
-    <div class="step" data-b="3"><div class="t" data-i18n="wf4"></div><div class="d" data-i18n="wf4d"></div></div>
-    <div class="step" data-b="4"><div class="t" data-i18n="wf5"></div><div class="d" data-i18n="wf5d"></div></div>
-  </div>
-</div></div>
-<div class="px-goi-y no-print" id="px-goi-y"></div>
-
-<!-- Tab theo mục: vai nào vào tự mở tab của vai đó, tab khác chỉ đọc; "Toàn phiếu" là bản in, không nhập.
-     Phiếu dài sáu mục cuộn một mạch là thứ anh chê: mỗi người chỉ cần thấy phần việc của mình. -->
-<div class="px-tabs no-print" id="px-tabs" role="tablist"></div>
-
+<!-- Dàn ngang (30/09): tờ phiếu bên trái, cột điều khiển dính bên phải. -->
+<div class="px-khung">
+<div class="px-trai">
 <div class="card px-phieu" id="px-phieu">
   <div class="px-dau">
     <div><h3 data-i18n="doc_dispatch"></h3><p class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO · Tel 020 5889 9983</p></div>
     <div class="grow"></div>
-    <div class="px-so"><div class="small muted" data-i18n="doc_no"></div><input id="px-doc-no" class="px-so-nhap"><div id="px-trang-thai"></div></div>
+    <div class="px-so"><div class="small muted" data-i18n="doc_no"></div><input id="px-doc-no" class="px-so-nhap"><div class="px-loai-in" id="px-loai-in"></div><div id="px-trang-thai"></div></div>
+  </div>
+  <!-- Phiếu mới: hai loại DO bằng hai thẻ lớn (sếp 30/09: "2 loại phiếu làm rõ") — bấm là đặt ô Loại phiếu ở mục I -->
+  <div class="px-chon-loai no-print" id="px-chon-loai" hidden>
+    <button type="button" data-loai="gom"><span class="px-cl-nhan gom" data-i18n="dn_gom"></span><b data-i18n="do_gom"></b><span class="d" data-i18n="px_loai_gom_d"></span></button>
+    <button type="button" data-loai="giao"><span class="px-cl-nhan giao" data-i18n="dn_giao"></span><b data-i18n="do_giao"></b><span class="d" data-i18n="px_loai_giao_d"></span></button>
   </div>
 
   <!-- I -->
@@ -146,7 +136,6 @@
 
   <div id="px-tong-ket" class="px-tien"></div>
   <div id="px-thu-tien" class="px-tien no-print"></div>
-  <div class="px-hanh-dong no-print" id="px-hanh-dong"></div>
   <div class="px-log no-print" id="px-log"></div>
   <div class="px-ky">
     <div><div class="line"></div><b data-i18n="sg_driver"></b><div class="small muted" data-i18n="sg_driver_d"></div></div>
@@ -154,4 +143,35 @@
     <div><div class="line"></div><b data-i18n="sg_verify"></b><div class="small muted" data-i18n="sg_verify_d"></div></div>
     <div><div class="line"></div><b data-i18n="sg_payer"></b><div class="small muted" data-i18n="sg_payer_d"></div></div>
   </div>
+</div>
+</div>
+<!-- Cột điều khiển: số DO + loại, sáu mục (vai nào vào tự mở mục của vai đó; "Toàn phiếu" là bản in), tiền tóm tắt,
+     phiếu đề nghị, việc mức phiếu, các bước duyệt, câu nhắc theo vai. -->
+<aside class="px-ben px-buoc no-print" id="px-ben">
+  <div class="px-ben-dau">
+    <div class="px-ben-loai" id="px-ben-loai"></div>
+    <div class="px-ben-so" id="px-ben-so"></div>
+    <div class="px-ben-tt" id="px-ben-tt"></div>
+  </div>
+  <div class="px-tabs" id="px-tabs" role="tablist"></div>
+  <div class="px-ben-tien px-tien" id="px-ben-tien"></div>
+  <div class="px-ben-khoi"><h5 data-i18n="px_de_nghi"></h5>
+    <div class="px-ben-nut">
+      <button class="btn" id="px-chung-tu"><span data-i18n="voucher_payment"></span></button>
+      <button class="btn" id="px-phieu-linh"><span data-i18n="v_fuel"></span></button>
+      <button class="btn" id="px-hoa-don"><span data-i18n="nav_de_nghi_thu"></span></button>
+    </div>
+  </div>
+  <div class="px-hanh-dong" id="px-hanh-dong"></div>
+  <details class="px-ben-khoi px-ben-luong"><summary data-i18n="px_luong"></summary>
+    <div class="px-flow" id="px-flow">
+      <div class="step" data-b="0"><div class="t" data-i18n="wf1"></div><div class="d" data-i18n="wf1d"></div></div>
+      <div class="step" data-b="1"><div class="t" data-i18n="wf2"></div><div class="d" data-i18n="wf2d"></div></div>
+      <div class="step" data-b="2"><div class="t" data-i18n="wf3"></div><div class="d" data-i18n="wf3d"></div></div>
+      <div class="step" data-b="3"><div class="t" data-i18n="wf4"></div><div class="d" data-i18n="wf4d"></div></div>
+      <div class="step" data-b="4"><div class="t" data-i18n="wf5"></div><div class="d" data-i18n="wf5d"></div></div>
+    </div>
+  </details>
+  <div class="px-goi-y" id="px-goi-y"></div>
+</aside>
 </div>

@@ -120,6 +120,7 @@
     MUC_CHI.forEach(m => { const tb = q(`table[data-bang="${m}"]`); tb.querySelectorAll('tbody tr[data-i]').forEach(tr => { const d = P.expenses[+tr.dataset.i]; if (d) tr.querySelector('.amt').textContent = so(tienDong(d)); });
       const lk = k.lk; const cols = m === 'fuel' ? 9 : (m === 'repair' ? 8 : 7);
       tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : (m === 'repair' ? '<td></td><td></td><td></td>' : '<td></td><td></td>')}<td class="num px-gia"><b>${so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
+    veBenTien(k);
     const box = g('px-tong-ket');
     if (!k.lk) {
       const net = k.laiLak, phu = (v) => k.ma === 'LAK' ? 'LAK' : `LAK · ${t2(tronTien(v / k.rC, k.ma), k.ma)}`;
@@ -320,7 +321,7 @@
     const s = P.sections || {}; const idx = (m) => ['wait', 'entered', 'verified', 'booked', 'paid'].indexOf(s[m] || 'wait');
     const coChi = (m) => P.expenses.some(d => d.section === m);
     const done = [!moi, !moi && MUC.every(m => idx(m) >= 2 || ((m === 'repair' || m === 'other') && !coChi(m))),
-      !moi && MUC_CHI.every(m => idx(m) >= 3 || !coChi(m)), !moi && MUC_CHI.every(m => idx(m) >= 4 || !coChi(m)), !moi && P.invoiced];
+      !moi && MUC_CHI.every(m => idx(m) >= 3 || !coChi(m)), !moi && MUC_CHI.every(m => idx(m) >= 4 || !coChi(m)), !moi && !!P.locked];
     let cur = done.findIndex(x => !x); root.querySelectorAll('#px-flow .step').forEach((el, i) => { el.classList.toggle('done', done[i]); el.classList.toggle('now', i === cur); });
     // hành động mức phiếu
     const ta = [];
@@ -352,6 +353,7 @@
     root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
     veThuTien();
     veTep();
+    veBen();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
   }
   function nhanLog(a) {
@@ -387,7 +389,8 @@
       const st = moi ? 'wait' : (s[m] || 'wait');
       const tuyChon = (m === 'repair' || m === 'other') && !moi && !P.expenses.some(d => d.section === m);
       return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(NN.t(tuyChon ? 'na' : (st === 'wait' ? 'stt_wait2' : 'stt_' + st)))}">
-        <b>${SO_LA_MA[i]}</b><span>${NN.h('sec' + (i + 1))}</span><i class="stt ${tuyChon ? 'na' : st}"></i></button>`;
+        <b>${SO_LA_MA[i]}</b><span>${NN.h('sec' + (i + 1))}</span><i class="stt ${tuyChon ? 'na' : st}"></i>
+        <em class="st-chu ${tuyChon ? 'na' : st}">${NN.h(tuyChon ? 'stt_na' : (st === 'wait' ? 'stt_wait2' : 'stt_' + st))}</em></button>`;
     }).join('') + `<button type="button" class="px-tab tat-ca ${tab === 'all' ? 'active' : ''}" data-tab="all"><span>${NN.h('px_tab_all')}</span></button>`;
     root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.addEventListener('click', () => datTab(b.dataset.tab, true)));
   }
@@ -410,12 +413,34 @@
     } catch (e) { /* không có quyền xem giá hoặc chưa có bảng giá — để trống cho kế toán gõ */ }
   }
 
+  /* ---------------------------------------------------------------- cột bên (30/09) */
+  function veBen() {
+    const gom = laGom();
+    const the = (cls, nhan, phu) => `<span class="px-loai-the ${cls}"><b>${nhan}</b><small>${phu}</small></span>`;
+    g('px-ben-loai').innerHTML = the(gom ? 'gom' : 'giao', NN.h(gom ? 'dn_gom' : 'dn_giao'), NN.h(gom ? 'do_gom' : 'do_giao'))
+      + (P.company === 'joint' ? the('thue', NN.h('dn_xe_thue'), `<span lang="lo">${esc(P.owner_name || '')}</span>`) : '');
+    g('px-loai-in').innerHTML = `<span class="px-loai-the nho ${gom ? 'gom' : 'giao'}"><b>${NN.h(gom ? 'do_gom' : 'do_giao')}</b></span>`;
+    g('px-ben-so').innerHTML = moi ? `<span class="muted">${NN.h('new_slip')}</span> <span class="mono">${esc(P.doc_no || '')}</span>`
+      : `<span class="mono">${esc(P.doc_no)}</span><small>${esc(P.truck_no || '')} · <span lang="lo">${esc(P.driver_name || '')}</span></small>`;
+    g('px-ben-tt').innerHTML = g('px-trang-thai').innerHTML;
+  }
+  function veBenTien(k) {
+    const o = g('px-ben-tien'); if (!o) return;
+    const dong = (l, v, cls = '') => `<div class="r ${cls}"><span>${l}</span><b>${v}</b></div>`;
+    o.innerHTML = k.lk
+      ? dong(NN.h('do_money'), t2(k.dt, k.ma)) + dong(NN.h('st_hire'), '− ' + t2(k.thue, k.mh)) + dong(NN.h('st_net_owner'), t2(k.traChu, k.mh), 'tot')
+      : dong(NN.h('sum_rev'), t2(k.dt, k.ma)) + dong(NN.h('sum_exp'), so(k.tongChi) + ' LAK') + dong(NN.h('sum_net'), (k.laiLak < 0 ? '−' : '') + so(Math.abs(k.laiLak)) + ' LAK', 'tot');
+  }
   function veHet() {
     q('#px-phieu').classList.toggle('px-an-tien', vai() === 'yard');
+    q('#px-ben').classList.toggle('px-an-tien', vai() === 'yard');
     const lp = g('lbl-price'); if (lp) lp.innerHTML = NN.h(khoan() ? 'price_trip' : 'price_usd');
     q('#px-phieu').classList.toggle('is-gom', laGom());
     q('#px-phieu').classList.toggle('is-giao', !laGom());
     veChon(); veDanhMuc(); doTruong(); veChi(); veHang(); veVaiVaTrangThai();
+    // phiếu mới: hai thẻ lớn chọn Gom / Giao
+    const cl = g('px-chon-loai'); cl.hidden = !moi;
+    cl.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.loai === (P.kind || 'giao')));
     if (!tabTay) tab = tabMacDinh();
     veTabs(); datTab(tab, false); NN.apDung(root); nhanCan();
   }
@@ -726,7 +751,13 @@
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
       g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
       g('px-luu').addEventListener('click', luu);
-      g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.moKeToan('hoa-don', { id: P.id }));   // bản in ở trang kế toán (đợt 7a)
+      // Phiếu đề nghị thu (30/09): khoá phiếu là máy lập — nút mở màn Phiếu đề nghị thu đúng phiếu này. Chỉ vai thấy tiền bán.
+      g('px-hoa-don').hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel');
+      g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }));
+      root.querySelectorAll('#px-chon-loai button').forEach(b => b.addEventListener('click', () => {
+        const el = g('f-kind'); if (!el || el.disabled) return;
+        el.value = b.dataset.loai; el.dispatchEvent(new Event('input', { bubbles: true }));
+      }));
       // Phiếu chi tạm ứng: lập (hoặc cập nhật) tờ tạm ứng có mã QR rồi mở màn in — không có khoản tiền mặt nào thì
       // vẫn mở màn (màn tự ghi "không có khoản tạm ứng"). 29/09: trước đây không nút nào lập tờ QR cho phiếu mới.
       g('px-chung-tu').addEventListener('click', async () => {
