@@ -21,10 +21,11 @@
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
 
   /* ---------------------------------------------------------------- lọc */
-  const conChi = (x) => x.tam_ung.some(v => v.status === 'cho') || x.nhien_lieu.some(v => v.status === 'cho')
+  const conXk = (x) => x.nhien_lieu.some(v => v.status === 'cho');
+  const conChi = (x) => x.tam_ung.some(v => v.status === 'cho')
     || Object.values(x.muc).some(m => m.status !== 'paid');
   const choThu = (x) => ['cho_gui', 'chua_lap', 'da_gui', 'da_hoa_don'].includes(x.thu.trang_thai);
-  function dsLoc() { return D.ds.filter(x => !loc || (loc === 'chi' ? conChi(x) : choThu(x))); }
+  function dsLoc() { return D.ds.filter(x => !loc || (loc === 'chi' ? conChi(x) : loc === 'xk' ? conXk(x) : choThu(x))); }
 
   /* ---------------------------------------------------------------- bảng DO */
   function chipDeNghi(x) {
@@ -38,27 +39,28 @@
       return m ? `<i class="${esc(m.status)}" title="${esc(NN.t(ten))} · ${esc(NN.t('stt_' + m.status))}">${la}</i>`
         : `<i class="khong" title="${esc(NN.t(ten))} · —">${la}</i>`;
     }).join('')}</span>`;
-    return (tu + nl) + muc;
+    return { chi: tu + muc, xk: nl || '<span class="muted">—</span>' };
   }
 
   function veBang() {
     const b = q('#ct2-bang'), ds = dsLoc();
     q('#ct2-n-all').textContent = D.ds.length;
     q('#ct2-n-chi').textContent = D.ds.filter(conChi).length;
+    q('#ct2-n-xk').textContent = D.ds.filter(conXk).length;
     q('#ct2-n-thu').textContent = D.ds.filter(choThu).length;
     root.querySelectorAll('#ct2-loc button').forEach(x => x.classList.toggle('on', x.dataset.loc === loc));
     const ban = D.thay_tien_ban;
     b.innerHTML = `<thead><tr><th>DO</th><th>${NN.h('truck_no')} · ${NN.h('driver')}</th><th>${NN.h('customer')} · ${NN.h('route')}</th>
-      <th>${NN.h('ct_c_chi')}</th><th>${NN.h('ct_c_thu')}</th><th>${NN.h('ct_c_ho_so')}</th></tr></thead>
+      <th>${NN.h('ct_c_chi')}</th><th>${NN.h('ct_c_xk')}</th><th>${NN.h('ct_c_thu')}</th><th>${NN.h('ct_c_ho_so')}</th></tr></thead>
       <tbody>${ds.length ? ds.map(x => `<tr data-id="${esc(x.trip_id)}" class="${x.trip_id === chonId ? 'sel' : ''}">
         <td><span class="so">${esc(x.doc_no)}</span><span class="ct2-k ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>${x.company === 'joint' ? `<span class="ct2-k joint">${NN.h('dn_xe_thue')}</span>` : ''}
           <span class="phu">${EPL.ngay(x.doc_date)}${x.locked ? ' · ' + NN.h('s_locked') : ''}</span></td>
         <td>${esc(x.truck_no || '—')}<span class="phu" lang="lo">${esc(x.driver_name || '')}</span></td>
         <td><span lang="lo">${esc(x.customer_name || '—')}</span><span class="phu" lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span></td>
-        <td>${chipDeNghi(x)}</td>
+        <td>${chipDeNghi(x).chi}</td><td>${chipDeNghi(x).xk}</td>
         <td>${tagTT(x.thu.trang_thai)}${ban && x.thu.doanh_thu ? `<span class="phu">${EPL.tien(x.thu.doanh_thu, x.thu.ccy)}</span>` : ''}</td>
         <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}${x.ho_so.loi ? ` · <span class="loi">⚠ ${x.ho_so.loi}</span>` : ''}</td></tr>`).join('')
-        : `<tr><td class="empty" colspan="6">${NN.h('no_data')}</td></tr>`}</tbody>`;
+        : `<tr><td class="empty" colspan="7">${NN.h('no_data')}</td></tr>`}</tbody>`;
     b.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => { chonId = tr.dataset.id; veBang(); veCt(); }));
     // chú thích màu bốn mục chi — nằm ngay dưới bảng, không chiếm hàng riêng trên đầu
     let chu = root.querySelector('.ct2-chu');
@@ -92,14 +94,18 @@
         <div class="phu">${esc(x.truck_no || '')} · <span lang="lo">${esc(x.driver_name || '')}</span>${x.company === 'joint' ? ' · ' + NN.h('co_joint') + ' <span lang="lo">' + esc(x.owner_name || '') + '</span>' : ''}</div></div>
       <div class="ct2-cuon">
         <div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_chi')}<a data-mo-chi="1">${NN.h('ct_mo_man')}</a></h4>
-          ${tu + nl || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_chi')}</div>`}</div>
+          ${tu || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_chi')}</div>`}</div>
+        <div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_xuat_kho')}<a data-mo-xk="1">${NN.h('ct_mo_man')}</a></h4>
+          ${nl || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_xk')}</div>`}</div>
         <div class="ct2-nhom"><h4>${NN.h('ct_chi_theo_muc')}</h4>${muc || `<div class="ct2-trong">${NN.h('no_data')}</div>`}</div>
         ${ban || t.pdt ? `<div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_thu')}${ban ? `<a data-thu="1">${NN.h('ct_mo_man')}</a>` : ''}</h4>${thu}</div>` : ''}
         <div class="ct2-nhom" id="ct2-ho-so"><h4>${NN.h('ct_so')}</h4><div class="ct2-trong">${NN.h('loading')}</div></div>
         <div class="ct2-nhom"><h4><a data-mo-phieu="1" style="margin-left:0">${NN.h('open_slip')} →</a></h4></div>
       </div>`;
-    ct.querySelectorAll('a[data-v]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-chi', { id: x.trip_id, loai: a.dataset.loai, v: a.dataset.v })));
+    ct.querySelectorAll('a[data-v]').forEach(a => a.addEventListener('click', () => a.dataset.loai === 'fuel'
+      ? EPL.di('de-nghi-xuat-kho', { id: x.trip_id, v: a.dataset.v }) : EPL.di('de-nghi-chi', { id: x.trip_id, v: a.dataset.v })));
     ct.querySelectorAll('a[data-mo-chi]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-chi', { id: x.trip_id })));
+    ct.querySelectorAll('a[data-mo-xk]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-xuat-kho', { id: x.trip_id })));
     ct.querySelectorAll('a[data-thu]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-thu', { id: x.trip_id, thang: (x.doc_date || '').slice(0, 7) })));
     ct.querySelectorAll('a[data-mo-phieu]').forEach(a => a.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: x.trip_id })));
     // hồ sơ gửi kế toán của DO này — vai không xem sổ (Bãi) thì bỏ khối
@@ -223,7 +229,8 @@
       root = r; D = { ds: [] }; tim = ''; loc = ''; chonId = null;
       const t = (ctx && ctx.tham) || {};
       // đường cũ ?tab=chi / ?tab=linh (tờ in) → màn Phiếu đề nghị chi
-      if (t.tab === 'chi' || t.tab === 'linh') return EPL.di('de-nghi-chi', { id: t.id || '', loai: t.tab === 'linh' ? 'fuel' : 'advance', v: t.v || '' });
+      if (t.tab === 'chi') return EPL.di('de-nghi-chi', { id: t.id || '', v: t.v || '' });
+      if (t.tab === 'linh') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });
       q('#ct2-thang').value = thangNay();
       if (t.id) chonId = t.id;
       if (!XEM_SO.includes(AUTH.role)) q('#ct2-tab button[data-tab="so"]').hidden = true;

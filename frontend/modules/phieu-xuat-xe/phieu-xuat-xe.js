@@ -715,7 +715,7 @@
     try {
       const v = await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'fuel' });
       EPL.toast(NN.t('saved'), 'ok');
-      EPL.di('de-nghi-chi', { id: P.id, loai: 'fuel', v: v[0] ? v[0].id : '' });
+      EPL.di('de-nghi-xuat-kho', { id: P.id, v: v[0] ? v[0].id : '' });
     } catch (e) { EPL.baoLoi(e); }
   }
 

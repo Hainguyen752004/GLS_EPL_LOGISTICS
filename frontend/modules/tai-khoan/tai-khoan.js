@@ -9,7 +9,7 @@
     acct: 'Kiểm mục I, II; nhập số phiếu quặng, giá cước, giá thuê xe liên kết; khoá phiếu; điều khoản chủ xe; đẩy chứng từ.',
     expacct: 'Nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; lệnh sửa chữa; nhà cung cấp; tất toán tài xế.',
     fuel: 'Nhập đơn giá dầu mua ngoài; kiểm và ghi sổ mục III; duyệt khai đổ dầu. Nhập, xuất, chuyển kho dầu — ở trang kế toán (Kho → Kho nhiên liệu).',
-    depot: 'Quét QR phiếu đề nghị xuất nguyên liệu, cấp dầu tại một kho — làm ở trang kế toán (Kho → Cấp phát).',
+    depot: 'Quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu tại một kho — làm ở trang kế toán (Kho → Cấp phát).',
     parts: 'Nhập, xuất kho phụ tùng Thà Bốc — làm ở trang kế toán (Kho → Kho phụ tùng).',
     repair: 'Duyệt báo hỏng của tài xế, lập lệnh sửa chữa; quyết lấy phụ tùng kho hay mua ngoài.',
     treasury: 'Thủ quỹ Viêng Chăn: chi mục III, trả chủ xe, trả nhà cung cấp, thu bán hàng.',

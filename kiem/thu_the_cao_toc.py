@@ -142,7 +142,7 @@ def main():
     print("  ✓ %-60s %s" % ("Dòng trừ thẻ nhắc đúng số phiếu", m["trip_doc_no"]))
 
     # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
-    s, v = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nguyên liệu", v)
+    s, v = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", v)
     for x in v:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
     s, g = goi("/api/trips/%s/sections/fuel/book" % pid, {}, vai="khonl"); phai(s, 200, "ghi sổ mục III", g)

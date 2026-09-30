@@ -2593,9 +2593,9 @@ window.EPL_TU_DIEN = {
   "en": "Fuel places"
  },
  "title_cap_phat": {
-  "vi": "Cấp phát<span class=\"sub\">Phiếu đề nghị xuất nguyên liệu đang chờ · quét mã QR của tài xế</span>",
+  "vi": "Cấp phát<span class=\"sub\">Phiếu đề nghị xuất kho nhiên liệu đang chờ · quét mã QR của tài xế</span>",
   "lo": "ການຈ່າຍອອກ<span class=\"sub\">ໃບສະເໜີເບີກລໍຖ້າ · ສະແກນ QR ຂອງໂຊເຟີ</span>",
-  "en": "Issuing<span class=\"sub\">Pending fuel issue requests · scan the driver QR</span>"
+  "en": "Issuing<span class=\"sub\">Pending fuel stock-out requests · scan the driver QR</span>"
  },
  "title_tat_toan": {
   "vi": "Tất toán tài xế<span class=\"sub\">Đối tiền ứng và tiền chi theo tháng</span>",
@@ -2608,9 +2608,49 @@ window.EPL_TU_DIEN = {
   "en": "Fuel places<span class=\"sub\">EPL depots and outside stations</span>"
  },
  "v_fuel": {
-  "vi": "Phiếu đề nghị xuất nguyên liệu",
-  "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
-  "en": "Fuel issue request"
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out request"
+ },
+ "nav_de_nghi_xuat_kho": {
+  "vi": "Phiếu đề nghị xuất kho",
+  "lo": "ໃບສະເໜີເບີກອອກສາງ",
+  "en": "Stock-out requests"
+ },
+ "title_de_nghi_xuat_kho": {
+  "vi": "Phiếu đề nghị xuất kho<span class=\"sub\">Nhiên liệu · xuất nội bộ / xuất bán — bên kho cấp theo tờ</span>",
+  "lo": "ໃບສະເໜີເບີກອອກສາງ<span class=\"sub\">ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ</span>",
+  "en": "Stock-out requests<span class=\"sub\">Fuel · internal / sale — the store issues against the slip</span>"
+ },
+ "d_de_nghi_xuat_kho": {
+  "vi": "Đề nghị xuất kho nhiên liệu — xuất nội bộ, xuất bán cho chủ xe",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out requests — internal, sale to truck owners"
+ },
+ "dnx_noi_bo": {
+  "vi": "Xuất nội bộ",
+  "lo": "ລົດບໍລິສັດ (EPL)",
+  "en": "Internal"
+ },
+ "dnx_xuat_ban": {
+  "vi": "Xuất bán",
+  "lo": "ຂາຍນໍ້າມັນ",
+  "en": "Sale"
+ },
+ "ct_c_xk": {
+  "vi": "Đề nghị xuất kho",
+  "lo": "ໃບສະເໜີເບີກອອກສາງ",
+  "en": "Stock-out requests"
+ },
+ "ct_loc_xk": {
+  "vi": "Xuất kho còn chờ",
+  "lo": "ລໍຖ້າເບີກສາງ",
+  "en": "Stock-out pending"
+ },
+ "ct_chua_de_nghi_xk": {
+  "vi": "Chưa có phiếu đề nghị xuất kho nào",
+  "lo": "ຍັງບໍ່ມີໃບສະເໜີເບີກອອກສາງ",
+  "en": "No stock-out request yet"
  },
  "d_kho_xem": {
   "vi": "Tồn từng mặt hàng, phần chờ xuất theo đề nghị — chỉ xem",
@@ -2618,9 +2658,9 @@ window.EPL_TU_DIEN = {
   "en": "Stock per item and what is awaiting issue — view only"
  },
  "d_de_nghi_chi": {
-  "vi": "Đề nghị tạm ứng, đề nghị xuất nguyên liệu — tìm, xem, in",
-  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໃບສະເໜີເບີກນໍ້າມັນ",
-  "en": "Advance and fuel issue requests — find, view, print"
+  "vi": "Đề nghị tạm ứng (tiền) — tìm, xem, in",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Advance requests (cash) — find, view, print"
  },
  "d_de_nghi_thu": {
   "vi": "DO xong → đề nghị thu gửi bên công nợ",
@@ -2698,9 +2738,9 @@ window.EPL_TU_DIEN = {
   "en": "Payment requests"
  },
  "title_de_nghi_chi": {
-  "vi": "Phiếu đề nghị chi<span class=\"sub\">Tạm ứng · xuất nhiên liệu — quỹ, kho cấp theo tờ</span>",
-  "lo": "ໃບສະເໜີຈ່າຍ<span class=\"sub\">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໃບສະເໜີເບີກນໍ້າມັນ</span>",
-  "en": "Payment requests<span class=\"sub\">Advance · fuel issue — cash desk and store issue against them</span>"
+  "vi": "Phiếu đề nghị chi<span class=\"sub\">Đề nghị tạm ứng — tiền, quỹ chi theo tờ</span>",
+  "lo": "ໃບສະເໜີຈ່າຍ<span class=\"sub\">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ</span>",
+  "en": "Payment requests<span class=\"sub\">Advance requests — cash, paid by the cash desk against the slip</span>"
  },
  "nav_de_nghi_thu": {
   "vi": "Phiếu đề nghị thu",
@@ -2718,7 +2758,7 @@ window.EPL_TU_DIEN = {
   "en": "Advance"
  },
  "dn_nhien_lieu": {
-  "vi": "Nguyên liệu",
+  "vi": "Nhiên liệu",
   "lo": "ນໍ້າມັນ",
   "en": "Fuel"
  },
@@ -2918,8 +2958,8 @@ window.EPL_TU_DIEN = {
   "en": "Search item, slip no., truck…"
  },
  "kx_note": {
-  "vi": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất nguyên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
-  "lo": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất nguyên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
+  "vi": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất kho nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
+  "lo": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất kho nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
   "en": "View only. Stock in, out, transfers and adjustments are done by the warehouse side; fuel requests are made on the dispatch slip and the warehouse issues against them."
  },
  "kx_ton_dau": {
@@ -3024,7 +3064,7 @@ window.EPL_TU_DIEN = {
  },
  "kx_chua_de_nghi_h": {
   "vi": "Dầu đã khai trên phiếu, chưa lập phiếu đề nghị",
-  "lo": "ນໍ້າມັນໃນໃບ · ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
+  "lo": "ນໍ້າມັນໃນໃບ · ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
   "en": "Fuel on slips with no request yet"
  },
  "kx_tren_phieu_h": {
@@ -3153,9 +3193,9 @@ window.EPL_TU_DIEN = {
   "en": "Cancelled"
  },
  "v_make_fuel": {
-  "vi": "Lập phiếu đề nghị xuất nguyên liệu",
-  "lo": "ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
-  "en": "Create fuel issue request"
+  "vi": "Lập phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ສ້າງໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Create fuel stock-out request"
  },
  "v_make_adv": {
   "vi": "Lập phiếu đề nghị tạm ứng",
@@ -3163,9 +3203,9 @@ window.EPL_TU_DIEN = {
   "en": "Create advance request"
  },
  "v_none": {
-  "vi": "Chưa lập phiếu đề nghị xuất nguyên liệu nào",
-  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນ",
-  "en": "No fuel issue request yet"
+  "vi": "Chưa lập phiếu đề nghị xuất kho nhiên liệu nào",
+  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "No fuel stock-out request yet"
  },
  "v_qr_hint": {
   "vi": "Tài xế đưa mã này cho người cấp quét",
@@ -3483,9 +3523,9 @@ window.EPL_TU_DIEN = {
   "en": "Unpaid"
  },
  "td_await_iss": {
-  "vi": "Phiếu đề nghị xuất nguyên liệu chờ cấp",
-  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
-  "en": "Fuel issue requests pending"
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງລໍຖ້າຈ່າຍ",
+  "en": "Fuel stock-out requests pending"
  },
  "td_watch": {
   "vi": "Chuyến đang theo dõi",
@@ -3523,9 +3563,9 @@ window.EPL_TU_DIEN = {
   "en": "{n} incident(s) unapproved"
  },
  "td_iss_wait": {
-  "vi": "{n} phiếu đề nghị xuất nguyên liệu chờ cấp",
-  "lo": "{n} ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
-  "en": "{n} fuel issue request(s) pending"
+  "vi": "{n} phiếu đề nghị xuất kho nhiên liệu chờ cấp",
+  "lo": "{n} ໃບສະເໜີເບີກນໍ້າມັນອອກສາງລໍຖ້າຈ່າຍ",
+  "en": "{n} fuel stock-out request(s) pending"
  },
  "td_profile": {
   "vi": "Hồ sơ chuyến",
@@ -3778,14 +3818,14 @@ window.EPL_TU_DIEN = {
   "en": "slips to approve"
  },
  "lg_st4": {
-  "vi": "phiếu đề nghị xuất nguyên liệu chờ cấp",
-  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
-  "en": "fuel issue requests pending"
+  "vi": "phiếu đề nghị xuất kho nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງລໍຖ້າຈ່າຍ",
+  "en": "fuel stock-out requests pending"
  },
  "lg_c1_d": {
-  "vi": "Lập phiếu, gán xe và tài xế, in phiếu đề nghị xuất nguyên liệu có mã QR",
-  "lo": "ສ້າງໃບ, ກຳນົດລົດ ແລະ ໂຊເຟີ, ພິມໃບສະເໜີເບີກນໍ້າມັນມີ QR",
-  "en": "Create the slip, assign truck and driver, print QR fuel issue requests"
+  "vi": "Lập phiếu, gán xe và tài xế, in phiếu đề nghị xuất kho nhiên liệu có mã QR",
+  "lo": "ສ້າງໃບ, ກຳນົດລົດ ແລະ ໂຊເຟີ, ພິມໃບສະເໜີເບີກນໍ້າມັນອອກສາງມີ QR",
+  "en": "Create the slip, assign truck and driver, print QR fuel stock-out requests"
  },
  "lg_c2_d": {
   "vi": "Quét mã, đối chiếu đúng xe rồi cấp dầu, trừ tồn ngay",
@@ -5933,9 +5973,9 @@ window.EPL_TU_DIEN = {
   "en": "{n} documents"
  },
  "td_doc_note": {
-  "vi": "Phiếu đề nghị xuất nguyên liệu · đề nghị tạm ứng · tệp đính kèm · sổ chứng từ",
-  "lo": "ໃບສະເໜີເບີກນໍ້າມັນ · ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໄຟລ໌ຄັດຕິດ · ປື້ມເອກະສານ",
-  "en": "Fuel issue requests · advance requests · attachments · document register"
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu · đề nghị tạm ứng · tệp đính kèm · sổ chứng từ",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ · ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໄຟລ໌ຄັດຕິດ · ປື້ມເອກະສານ",
+  "en": "Fuel stock-out requests · advance requests · attachments · document register"
  },
  "td_fare_est": {
   "vi": "Cước dự kiến",
@@ -7153,9 +7193,9 @@ window.EPL_TU_DIEN = {
   "en": "Pending check"
  },
  "tq_q_fuel": {
-  "vi": "Phiếu đề nghị xuất nguyên liệu chờ cấp",
-  "lo": "ໃບສະເໜີເບີກນໍ້າມັນລໍຖ້າຈ່າຍ",
-  "en": "Fuel issue requests pending"
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງລໍຖ້າຈ່າຍ",
+  "en": "Fuel stock-out requests pending"
  },
  "tq_q_unpaid": {
   "vi": "Chưa thu",
@@ -8143,9 +8183,9 @@ window.EPL_TU_DIEN = {
   "en": "Ledger site address for browsers · QR codes"
  },
  "tk_lt_web_hint": {
-  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất nguyên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất nguyên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "en": "The Issuing / Fuel store buttons and the QR code on fuel issue requests open this address. Empty = use the ledger address above."
+  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất kho nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất kho nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
+  "en": "The Issuing / Fuel store buttons and the QR code on fuel stock-out requests open this address. Empty = use the ledger address above."
  },
  "khong_co_man": {
   "vi": "Việc của tài khoản này ở trang kế toán",
@@ -8153,8 +8193,8 @@ window.EPL_TU_DIEN = {
   "en": "This account works on the ledger site"
  },
  "khong_co_man_goi_y": {
-  "vi": "Cấp dầu theo phiếu đề nghị xuất nguyên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
-  "lo": "Cấp dầu theo phiếu đề nghị xuất nguyên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "vi": "Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
+  "lo": "Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu, kho nhiên liệu, kho phụ tùng… nay làm ở trang kế toán — đăng nhập bên đó bằng cùng tên và mật khẩu.",
   "en": "Issuing fuel per request, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
  },
  "mo_ke_toan": {

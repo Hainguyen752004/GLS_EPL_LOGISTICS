@@ -5,7 +5,7 @@
 
 Phải thấy:
   · mỗi kho dầu EPL một dòng, mỗi phụ tùng một dòng, mỗi loại hàng khách gửi một dòng — số tồn hỏi bên kho;
-  · phiếu đề nghị xuất nguyên liệu CHỜ CẤP của một phiếu thử hiện đúng ở kho của nó (số lít, số phiếu DO); huỷ đề nghị
+  · phiếu đề nghị xuất kho nhiên liệu CHỜ CẤP của một phiếu thử hiện đúng ở kho của nó (số lít, số phiếu DO); huỷ đề nghị
     thì chuyển sang "đã khai, chưa có đề nghị"; còn lại = tồn − chờ cấp − đã khai;
   · Bãi xem được nhưng không nhận giá (giá bình quân, giá từng lần); tài xế bị chặn.
 Bài tự lập một phiếu thử và tự xoá.
@@ -75,7 +75,7 @@ def main():
         x = next((v for v in k1["chua_de_nghi"] if v["trip_id"] == pid), None)
         dung(x is not None and x["qty_l"] == 123, "Chưa lập đề nghị → nằm ở 'đã khai, chưa có đề nghị' 123 L")
         s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, "thabok")
-        dung(s == 200, "Bãi lập phiếu đề nghị xuất nguyên liệu", s)
+        dung(s == 200, "Bãi lập phiếu đề nghị xuất kho nhiên liệu", s)
         g, k2 = kho("ketoan", tb["id"])
         v = next((v for v in k2["de_nghi"] if v["trip_id"] == pid), None)
         dung(v is not None and v["qty_l"] == 123 and v["doc_no"] == so_phieu and v["voucher_no"].startswith("PLNL-"),

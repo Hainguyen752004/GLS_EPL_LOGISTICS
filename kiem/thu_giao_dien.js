@@ -14,7 +14,7 @@ const { JSDOM, ResourceLoader } = require(path.join(__dirname, '..', '..', 'EPL_
 const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 // 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a); 'tien-tai-xe', 'tat-toan' (đợt 7c)
 // 30/09: 'de-nghi-chi', 'de-nghi-thu' tách từ màn chung-tu (nay là Đề nghị theo DO); 'kho-xem' — kho chỉ xem theo mặt hàng
-const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'de-nghi-chi', 'de-nghi-thu', 'chung-tu',
+const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'de-nghi-chi', 'de-nghi-xuat-kho', 'de-nghi-thu', 'chung-tu',
   'phieu-cua-toi', 'xe-lien-ket', 'nha-cung-cap', 'kho-xem',
   'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
@@ -145,7 +145,7 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnt-ds'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnx-ds, .dnt-ds'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
 
@@ -475,7 +475,10 @@ async function main() {
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai thủ kho'); await w.EPL.sanSang;
   await xongHet();
   const navKho = [...d.querySelectorAll('#nav [data-mod]')].map(b => b.dataset.mod);
-  assert.deepStrictEqual(navKho, ['kho-xem'], 'thủ kho ở trang điều xe chỉ có màn Xem kho: ' + navKho);
+  assert.deepStrictEqual(navKho, ['de-nghi-xuat-kho', 'kho-xem'], 'thủ kho ở trang điều xe chỉ có Phiếu đề nghị xuất kho và Xem kho: ' + navKho);
+  // màn đầu của thủ kho là Phiếu đề nghị xuất kho (30/09 chiều) — có danh sách tờ; rồi sang Xem kho
+  await choDen(() => d.querySelector('#noi-dung .dnx-ds'), 'màn Phiếu đề nghị xuất kho của thủ kho');
+  await di('#/kho-xem');
   await choDen(() => d.querySelector('#noi-dung .kx-bang tbody tr'), 'bảng mặt hàng của màn Xem kho');
   const hash0 = w.location.hash; await cho(600);
   assert.strictEqual(w.location.hash, hash0, 'không chuyển vòng: ' + hash0 + ' → ' + w.location.hash);

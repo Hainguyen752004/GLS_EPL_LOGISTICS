@@ -2,7 +2,7 @@
  *
  * Hai loại tờ bên mình lập theo bước của chuyến:
  *   · Phiếu đề nghị tạm ứng (PTU) — tài xế cầm đến quỹ; quỹ quét QR, chi theo tờ (PC_TU là phiếu chi thật theo đề nghị).
- *   · Phiếu đề nghị xuất nguyên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
+ *   · Phiếu đề nghị xuất kho nhiên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
  * Việc cấp thật ở bên kho / bên quỹ (màn Cấp phát trang kế toán). Màn này tìm, xem, in — không cấp, không chi.
  *
  * API: GET /api/vouchers?trang_thai=&loai=&q= · GET /api/trips/{id}/phieu-chi · GET /api/trips/{id}/vouchers · GET /api/trips/{id}.
@@ -10,7 +10,8 @@
  */
 (function () {
   const { API, NN, esc, so, tag } = EPL;
-  let root, DS = [], loai = '', tt = 'cho', tim = '', chonId = null, ACC = {}, LINH = [], hen = null;
+  let root, DS = [], tt = 'cho', tim = '', chonId = null, ACC = {}, LINH = [], hen = null;
+  const loai = 'advance';            // chỉ tạm ứng (30/09 chiều) — xuất kho nhiên liệu ở màn Phiếu đề nghị xuất kho
   const q = (s) => root.querySelector(s);
 
   function tenTK(ma) {
@@ -51,33 +52,6 @@
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
 
-  /* ---------------------------------------------------------------- tờ đề nghị xuất nguyên liệu
-   * Lập LÚC XE CHƯA ĐI nên cố ý KHÔNG in ngày về, km chạy, cân cuối, thành tiền — lúc này chưa ai biết. */
-  function veNhienLieu(v, p) {
-    q('#dnc-so').innerHTML = `${NN.h('voucher_no')}<b>${esc(v.doc_no)}</b>${EPL.ngay(v.doc_date)}`;
-    const o = (k, val, lo) => `<div><span>${NN.h(k)}</span><span ${lo ? 'lang="lo"' : ''}>${esc(val == null || val === '' ? '—' : val)}</span></div>`;
-    q('#dnc-to').innerHTML = `
-      <div class="ct-tieu-de">${NN.h('v_fuel')}</div>
-      <div class="ct-phu">ໃບສະເໜີເບີກນໍ້າມັນ · Fuel issue request</div>
-      <div class="ct-ht">${EPL.banChat('xuat', v.hinh_thuc, v.owner_name)}</div>
-      <div class="ct-meta">
-        ${o('doc_no', p.doc_no)}${o('fp_place', v.place_name, true)}
-        ${o('truck_no', p.truck_no)}${o('driver', v.driver_name, true)}
-        ${o('plate_head', p.plate_head, true)}${o('plate_trailer', p.plate_trailer, true)}
-        ${o('customer', p.customer_name, true)}${o('goods_type', p.goods_type ? NN.t(p.goods_type) : '')}
-        ${o('origin', p.origin, true)}${o('dest', p.destination, true)}
-        ${o('c_w_origin', p.weight_origin != null ? so(p.weight_origin, 2) + ' ' + NN.t('ton') : '')}${o('d_out', EPL.ngay(p.out_date))}
-      </div>
-      <div class="ct-tong"><div><span>${NN.h('v_qty_ok')}</span><span>${so(v.qty_l, 1)} L</span></div></div>
-      ${khoiQR(v)}
-      ${v.status === 'da_cap' ? `<div class="ct-tt"><span class="muted">${NN.h('v_granted_by')}:</span> <b lang="lo">${esc(v.granted_by || '')}</b>
-        ${v.granted_qty != null ? ' · ' + NN.h('v_qty_real') + ' <b>' + so(v.granted_qty, 1) + ' L</b>' : ''}</div>` : ''}
-      <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(v.driver_name || '')}</div></div>
-        <div><div class="line"></div>${NN.h('fp_keeper')}</div>
-        <div><div class="line"></div>${NN.h('sg_chief_acct')}</div>
-        <div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
-  }
-
   /* ---------------------------------------------------------------- danh sách */
   function veDs() {
     const ds = q('#dnc-ds');
@@ -102,8 +76,7 @@
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
     if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     try {
-      if (v.kind === 'advance') veTamUng(await API.get(`/api/trips/${v.trip_id}/phieu-chi`), v);
-      else veNhienLieu(v, await API.get(`/api/trips/${v.trip_id}`));
+      veTamUng(await API.get(`/api/trips/${v.trip_id}/phieu-chi`), v);
     } catch (e) { q('#dnc-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
   }
 
@@ -116,7 +89,6 @@
   }
 
   function datSeg() {
-    root.querySelectorAll('#dnc-loai button').forEach(b => b.classList.toggle('on', b.dataset.loai === loai));
     root.querySelectorAll('#dnc-tt button').forEach(b => b.classList.toggle('on', b.dataset.tt === tt));
   }
 
@@ -124,8 +96,8 @@
    *  danh sách. Phiếu chưa có tờ tạm ứng (không có khoản tiền mặt) → vẫn hiện nội dung tạm ứng của phiếu. */
   async function moTheoPhieu(t) {
     LINH = await API.get(`/api/trips/${t.id}/vouchers`).catch(() => []);
-    const x = LINH.find(v => v.id === t.v) || LINH.find(v => v.kind === (t.loai || 'advance') && v.status !== 'huy');
-    if (x) { chonId = x.id; loai = ''; tt = x.status; tim = ''; datSeg(); await tai(); return true; }
+    const x = LINH.find(v => v.id === t.v && v.kind === 'advance') || LINH.find(v => v.kind === 'advance' && v.status !== 'huy');
+    if (x) { chonId = x.id; tt = x.status; tim = ''; datSeg(); await tai(); return true; }
     if ((t.loai || 'advance') === 'advance') {
       await tai();
       chonId = null; veDs();
@@ -139,16 +111,17 @@
 
   EPL.modules['de-nghi-chi'] = {
     async init(r, ctx) {
-      root = r; DS = []; chonId = null; tim = ''; loai = ''; tt = 'cho';
+      root = r; DS = []; chonId = null; tim = ''; tt = 'cho';
       const acc = await API.get('/api/acc-codes').catch(() => ({ data: [], source: 'error' }));
       ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
       q('#dnc-nguon').innerHTML = NN.h(acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback');
-      root.querySelectorAll('#dnc-loai button').forEach(b => b.addEventListener('click', () => { loai = b.dataset.loai; datSeg(); tai(); }));
       root.querySelectorAll('#dnc-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnc-in').addEventListener('click', () => window.print());
       q('#dnc-mo-phieu').addEventListener('click', () => { const v = DS.find(x => x.id === chonId); if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); });
       const t = (ctx && ctx.tham) || {};
+      // đường cũ ?loai=fuel → màn Phiếu đề nghị xuất kho
+      if (t.loai === 'fuel') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });
       if (t.id && await moTheoPhieu(t)) return;
       await tai();
     },

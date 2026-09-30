@@ -159,7 +159,7 @@ def main():
         s, g = goi("/api/trips/%s/sections/%s/verify" % (pid, muc), {}, vai=v)
         phai(s, 200, "Kiểm mục %s" % muc, g)
     # từ 30/09 dầu kho chỉ rời kho theo phiếu đề nghị đã cấp — in đề nghị, thủ kho cấp, rồi mới ghi sổ mục III
-    s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nguyên liệu", vs)
+    s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", vs)
     for x in vs:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
     for muc, v in (("fuel", "khonl"), ("travel", "ketoancp")):

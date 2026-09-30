@@ -108,7 +108,7 @@ def main():
     dung(next(e for e in pk["expenses"] if e["section"] == "fuel")["sale_price"] == GIA_BAN, "Giá bán vẫn còn sau lần Bãi lưu")
     s, g = goi(DX, "/api/trips/%s/sections/fuel/verify" % pid, {}, "khonl"); phai(s, 200, "KT kho kiểm mục III (đã có giá bán)", g)
     s, v = goi(DX, "/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, "thabok")
-    phai(s, 200, "Bãi in phiếu đề nghị xuất nguyên liệu", v)
+    phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", v)
     dung(v[0]["hinh_thuc"] == "xuat_ban" and v[0]["owner_name"] == pk["owner_name"], "Tờ đề nghị ghi: xuất bán cho chủ xe", "%s · %s" % (v[0]["hinh_thuc"], v[0]["owner_name"]))
     s, ct = goi(DX, "/api/chung-tu?trip_id=%s" % pid, vai="admin")
     pl = next(c for c in ct["ds"] if c["loai"] == "PLNL")

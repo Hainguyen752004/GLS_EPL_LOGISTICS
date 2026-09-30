@@ -1,0 +1,27 @@
+/* Phiếu đề nghị xuất kho — dàn ngang như Phiếu đề nghị chi: danh sách tờ trái (cuộn riêng), tờ in phải. Tờ giấy ở css/chung.css. */
+.dnx{display:flex;flex-direction:column;gap:12px;min-width:0}
+.dnx-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dnx-kho{height:40px;padding:0 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--paper);font:inherit;font-size:13px;max-width:280px}
+.dnx-than{display:grid;grid-template-columns:minmax(330px,400px) minmax(0,1fr);gap:14px;align-items:start}
+.dnx-ds{position:sticky;top:0;display:flex;flex-direction:column;gap:6px;max-height:calc(100vh / var(--ty-le, 1) - 150px);overflow:auto;padding:2px 4px 2px 0}
+.dnx-o{display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:0 12px;width:100%;padding:10px 12px 10px 0;text-align:left;
+  border:1px solid var(--line);border-radius:10px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer}
+.dnx-o:hover{border-color:var(--line-2);background:#FAFBF9}
+.dnx-o.chon{border-color:var(--green-2);background:var(--green-soft)}
+.dnx-o:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+.dnx-o .soc{grid-row:1 / span 3;border-radius:10px 0 0 10px;margin:-10px 0;background:var(--ore)}
+.dnx-o.xuat_ban .soc{background:var(--amber)}
+.dnx-o .so{font-family:ui-monospace,Consolas,monospace;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnx-o .phu{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnx-o .nho{font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dnx-o .phai{grid-row:1 / span 3;grid-column:3;display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;gap:4px}
+.dnx-o .luong{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dnx-o .luong small{font-size:11px;color:var(--ink-3);font-weight:500;margin-left:3px}
+.dnx-ht{display:inline-block;margin-right:6px;padding:0 6px;border-radius:4px;font-size:10.5px;font-weight:700;vertical-align:1px;background:var(--ore-soft);color:var(--ore)}
+.dnx-ht.xuat_ban{background:var(--amber-soft);color:var(--amber)}
+.dnx-trong{padding:26px 16px;text-align:center;color:var(--ink-3);font-size:13px;border:1px dashed var(--line-2);border-radius:10px}
+.dnx-xem{display:flex;flex-direction:column;gap:10px;min-width:0}
+.dnx-nut{display:flex;align-items:center;gap:8px}
+.dnx-xem .ct-giay{max-width:none;width:100%}
+@media print{.dnx-than{display:block}.dnx-xem .ct-giay{max-width:820px}}
+@media (max-width:1100px){.dnx-than{grid-template-columns:1fr}.dnx-ds{position:static;max-height:320px}}

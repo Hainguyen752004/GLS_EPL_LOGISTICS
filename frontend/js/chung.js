@@ -444,6 +444,9 @@
     // Phiếu của bên mình là phiếu ĐỀ NGHỊ (sếp 30/09): đề nghị chi (tạm ứng, nhiên liệu) · đề nghị thu (DO xong) · theo dõi theo DO
     { id: 'de-nghi-chi',    nhom: 'mod_transport', nav: 'nav_de_nghi_chi', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
       ic: 'M4 3h16v18l-3-2-3 2-2-2-2 2-3-2-3 2zM8 8h8M8 12h8M8 16h5' },
+    // đề nghị xuất kho (30/09 chiều): xuất kho nhiên liệu là việc của KHO — thủ kho vào được, chỉ thấy tờ của kho mình
+    { id: 'de-nghi-xuat-kho', nhom: 'mod_transport', nav: 'nav_de_nghi_xuat_kho', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'depot'],
+      ic: 'M3 21V9l9-6 9 6v12M9 21v-6h6v6M12 3v6M9 6l3 3 3-3' },
     { id: 'de-nghi-thu',    nhom: 'mod_transport', nav: 'nav_de_nghi_thu', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
       ic: 'M4 3h16v18l-3-2-3 2-2-2-2 2-3-2-3 2zM12 7v9M9 13l3 3 3-3' },
     { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },

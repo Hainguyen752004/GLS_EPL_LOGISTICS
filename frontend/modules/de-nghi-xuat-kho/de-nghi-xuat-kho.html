@@ -1,0 +1,43 @@
+<!-- Phiếu đề nghị xuất kho — ໃບສະເໜີເບີກອອກສາງ (chủ dự án 30/09: tách khỏi Phiếu đề nghị chi — tạm ứng là TIỀN, còn xuất
+     nhiên liệu là việc của KHO). Tờ đề nghị xuất kho nhiên liệu: mỗi kho một tờ; xe nhà là xuất nội bộ, xe thuê là xuất bán
+     cho chủ xe — cả hai đều là xuất kho. Bên kho (anh Toàn) cấp theo tờ; màn này tìm, xem, in. Trái: danh sách; phải: tờ in. -->
+<div class="dnx">
+  <div class="dnx-top no-print">
+    <div class="seg" id="dnx-ht" role="tablist">
+      <button class="on" data-ht=""><span data-i18n="all"></span></button>
+      <button data-ht="noi_bo"><span data-i18n="dnx_noi_bo"></span></button>
+      <button data-ht="xuat_ban"><span data-i18n="dnx_xuat_ban"></span></button>
+    </div>
+    <div class="seg" id="dnx-tt">
+      <button class="on" data-tt="cho"><span data-i18n="v_cho"></span></button>
+      <button data-tt="da_cap"><span data-i18n="v_da_cap"></span></button>
+      <button data-tt="huy"><span data-i18n="v_huy"></span></button>
+      <button data-tt=""><span data-i18n="all"></span></button>
+    </div>
+    <select id="dnx-kho" class="dnx-kho"></select>
+    <label class="o-tim">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="dnx-tim" type="search" autocomplete="off" data-i18n-ph="dn_tim">
+    </label>
+    <div class="grow"></div>
+    <span class="small muted" id="dnx-dem"></span>
+  </div>
+
+  <div class="dnx-than">
+    <aside class="dnx-ds no-print" id="dnx-ds"></aside>
+    <section class="dnx-xem">
+      <div class="dnx-nut no-print">
+        <div class="grow"></div>
+        <button class="btn" id="dnx-mo-phieu"><span data-i18n="open_slip"></span></button>
+        <button class="btn primary" id="dnx-in"><span data-i18n="print"></span></button>
+      </div>
+      <div class="card ct-giay" id="dnx-giay">
+        <div class="ct-dau">
+          <div><img src="img/logo-epl.jpg" alt="EPL" class="ct-logo"><div><b>EPL TRANSPORT</b><div class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO<br>ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
+          <div class="ct-so" id="dnx-so"></div>
+        </div>
+        <div id="dnx-to"></div>
+      </div>
+    </section>
+  </div>
+</div>

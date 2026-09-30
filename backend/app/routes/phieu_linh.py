@@ -211,7 +211,7 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
         raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu %s đã khoá, không lập thêm phiếu đề nghị." % p.doc_no})
     loai = d.get("kind") or "fuel"
     if loai not in TIEN_TO:
-        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Chỉ có phiếu đề nghị xuất nguyên liệu hoặc phiếu đề nghị tạm ứng."})
+        raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "Chỉ có phiếu đề nghị xuất kho nhiên liệu hoặc phiếu đề nghị tạm ứng."})
     goc = str(request.base_url).rstrip("/")
     ngay = p.out_date or p.doc_date or dt.date.today()
     chung = dict(trip_id=p.id, kind=loai, doc_date=ngay, driver_id=p.driver_id,
