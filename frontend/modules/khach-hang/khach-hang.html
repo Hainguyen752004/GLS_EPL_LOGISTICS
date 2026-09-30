@@ -1,53 +1,36 @@
-<!-- Khách hàng — ລູກຄ້າ. Dàn ngang (30/09): danh sách khách bên trái; bên phải thẻ khách và ba tab Hợp đồng · Bảng giá ·
-     Công nợ mở ngay tại chỗ. Bảng giá, công nợ là tiền — Bãi không có hai tab này. -->
-<div class="kh2">
-<aside class="kh2-trai">
-  <div class="kh2-dau">
-    <label class="o-tim"><svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
-      <input id="kh-q" type="search" autocomplete="off" data-i18n-ph="search"></label>
-    <button class="btn primary" id="kh-them"><span data-i18n="add"></span></button>
+<!-- Khách hàng — ລູກຄ້າ. Giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (Khach_Hang_new.zip): trái là danh sách khách,
+     phải là hồ sơ khách, dải hợp đồng đang áp dụng và bốn tab Hợp đồng · Bảng giá · Chuyến & phiếu · Công nợ.
+     Tiêu đề và hai nút Excel / PDF nằm ở thanh đầu trang chung. Bảng giá, công nợ, số tiền: Bãi không thấy. -->
+<div class="kh3">
+  <div class="k3-dau">
+    <p class="k3-phu" id="k3-phu"></p>
+    <button class="k3-btn k3-btn--primary" id="k3-them" type="button" data-act="add-customer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="k3_them_khach"></span>
+    </button>
   </div>
-  <div class="kh2-ds" id="kh-than"></div>
-</aside>
-<section class="kh2-phai">
-  <div class="card kh2-the" id="kh-the"></div>
-  <div class="seg kh2-tab" id="kh-tab"></div>
 
-<!-- Hợp đồng vận chuyển của khách (chốt 24/09) — js/hop_dong.js vẽ vào đây -->
-<div class="card hd-khung" id="kh-hd" hidden></div>
+  <div class="layout">
+    <aside class="rail">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="k3-tim" type="search" data-i18n-ph="k3_tim" autocomplete="off">
+        <kbd>/</kbd>
+      </div>
+      <div class="filters" role="group" id="k3-loc">
+        <button type="button" class="chip is-on" data-filter="all" data-i18n="all"></button>
+        <button type="button" class="chip" data-filter="expiring" data-i18n="hd_sap_het"></button>
+        <button type="button" class="chip" data-filter="nocontract" data-i18n="k3_chua_hd"></button>
+        <button type="button" class="chip" data-filter="debt" data-i18n="k3_con_no"></button>
+      </div>
+      <p class="rail-count" id="k3-dem"></p>
+      <ul class="cust-list" id="k3-ds"></ul>
+    </aside>
 
-<!-- Bảng giá khách × tuyến (K3): bấm "Bảng giá" ở một khách thì khối này hiện ra. Bãi không thấy (tiền). -->
-<div class="card kh-gia" id="kh-gia" hidden>
-  <div class="kh-gia-dau">
-    <div><h3 id="kh-gia-ten"></h3><div class="small muted" data-i18n="kh_gia_mota"></div></div>
-    <div class="grow"></div>
-    <button class="btn primary sm" id="kh-gia-them"><span data-i18n="add"></span></button>
-    <button class="btn sm" id="kh-gia-dong"><span data-i18n="close"></span></button>
+    <main class="work" id="k3-work" tabindex="-1"></main>
   </div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th data-i18n="route"></th><th data-i18n="goods_type"></th><th data-i18n="c_ccy"></th><th class="num" data-i18n="price_usd"></th><th class="num" data-i18n="hire_pt"></th><th data-i18n="valid_from"></th><th data-i18n="note"></th><th data-i18n="status"></th><th class="no-print" data-i18n="actions"></th></tr></thead>
-      <tbody id="kh-gia-than"></tbody>
-    </table>
-  </div>
-</div>
 
-<!-- Công nợ khách: khách này còn nợ EPL bao nhiêu — gộp hoá đơn lẻ + hoá đơn gộp − đã thu. Bãi không thấy (tiền). -->
-<div class="card kh-gia tien" id="kh-no" hidden>
-  <div class="kh-gia-dau">
-    <h3 id="kh-no-ten"></h3>
-    <div class="grow"></div>
-    <button class="btn sm" id="kh-no-dong"><span data-i18n="close"></span></button>
-  </div>
-  <div class="bd" id="kh-no-tong"></div>
-  <div class="tbl-wrap">
-    <table class="tbl">
-      <thead><tr><th data-i18n="type"></th><th data-i18n="doc_no"></th><th data-i18n="c_date"></th><th data-i18n="ccy"></th>
-        <th class="num" data-i18n="c_value"></th><th class="num" data-i18n="in_lak"></th><th class="num" data-i18n="collected"></th>
-        <th class="num" data-i18n="remaining"></th><th data-i18n="c_st_f"></th></tr></thead>
-      <tbody id="kh-no-than"></tbody>
-    </table>
-  </div>
-</div>
-</section>
+  <!-- hộp thoại dùng chung của màn: thêm / sửa / gia hạn hợp đồng, thêm / sửa khách hàng -->
+  <dialog class="modal" id="k3-modal">
+    <form method="dialog" id="k3-form" novalidate></form>
+  </dialog>
 </div>

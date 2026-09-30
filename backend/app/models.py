@@ -67,6 +67,10 @@ class Customer(Base):
     # Cách xuất hoá đơn (anh Khampla C8.2, 22/09): `phieu` = mỗi phiếu một tờ (khách vãng lai) ·
     # `thang` = cuối tháng kế toán doanh thu GỘP mọi phiếu đã khoá của khách thành MỘT tờ.
     invoice_mode = Column(String, nullable=False, default="phieu")
+    # Giao diện Khách hàng mới (chủ dự án chốt 30/09): MÃ KHÁCH là mã khách BÊN KẾ TOÁN (anh Tune, OBJ_OBJECTNO) —
+    # một ô dùng chung, gửi đi trong phiếu đề nghị thu / bàn giao DO. Loại khách: person (cá nhân) · company (công ty).
+    code = Column(String, index=True)
+    cust_type = Column(String)
 
 
 CACH_XUAT_HOA_DON = ("phieu", "thang")           # mỗi phiếu một hoá đơn · gộp một tờ cuối tháng

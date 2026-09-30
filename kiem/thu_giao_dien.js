@@ -365,8 +365,10 @@ async function main() {
   }
   // K3: Bãi mở Khách hàng không thấy nút Bảng giá (tiền); kế toán thì thấy, bấm ra bảng có dòng giá gieo sẵn
   await di('#/khach-hang');
-  // 30/09: Khách hàng dàn ngang — Bảng giá, Công nợ là TAB trong khung chi tiết bên phải
-  assert.strictEqual(goc().querySelectorAll('[data-kh-tab="gia"], [data-kh-tab="no"]').length, 0, 'vai Bãi không được thấy tab Bảng giá / Công nợ');
+  // 30/09 chiều: Khách hàng theo bản mẫu mới (Khach_Hang_new) — Bảng giá, Công nợ là TAB của hồ sơ khách bên phải
+  await choDen(() => goc().querySelector('.kh3 .cust') && goc().querySelector('.kh3 .profile'), 'danh sách và hồ sơ khách (Bãi)');
+  assert.strictEqual(goc().querySelectorAll('.kh3 [role="tab"][data-tab="prices"], .kh3 [role="tab"][data-tab="debt"]').length, 0, 'vai Bãi không được thấy tab Bảng giá / Công nợ');
+  assert.strictEqual(goc().querySelectorAll('.kh3 .cust-debt, .kh3 #k3-loc [data-filter="debt"]').length, 0, 'vai Bãi không thấy số nợ, không có nút lọc Còn nợ');
   w.EPL.AUTH.dangXuat(false); await w.EPL.AUTH.dangNhap('ketoan', '1234');
   await choDen(() => !d.getElementById('app').hidden, 'vào với vai KT Thu/Chi'); await w.EPL.sanSang;
   // Vai không lập phiếu vào màn phiếu không tham số: KHÔNG nạp sẵn tờ nào, chỉ ô chọn trống + câu nhắc.
@@ -385,14 +387,14 @@ async function main() {
     console.log('✓ kế toán vào Phiếu xuất xe → không mở sẵn tờ nào; chọn một tờ thì mở đúng tờ đó');
   }
   await di('#/khach-hang');
-  assert.ok(goc().querySelectorAll('.kh2-o').length >= 2, 'danh sách khách bên trái phải có đủ khách');
-  const tabGia = goc().querySelector('[data-kh-tab="gia"]');
-  assert.ok(tabGia, 'kế toán phải thấy tab Bảng giá của khách đang chọn');
-  tabGia.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
-  await choDen(() => !goc().querySelector('#kh-gia').hidden && goc().querySelectorAll('#kh-gia-than tr').length > 0, 'bảng giá hiện ra');
-  const dongGia = [...goc().querySelectorAll('#kh-gia-than tr')].filter(tr => !tr.querySelector('.empty'));
+  await choDen(() => goc().querySelectorAll('.kh3 .cust').length >= 2, 'danh sách khách bên trái phải có đủ khách');
+  goc().querySelector('.kh3 .cust').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));     // khách đầu danh sách (có giá gieo sẵn)
+  await choDen(() => goc().querySelector('.kh3 [role="tab"][data-tab="prices"]'), 'kế toán phải thấy tab Bảng giá của khách đang chọn');
+  goc().querySelector('.kh3 [role="tab"][data-tab="prices"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+  await choDen(() => goc().querySelectorAll('.kh3 .tab-panel .k3-tbl tbody tr').length > 0, 'bảng giá hiện ra');
+  const dongGia = [...goc().querySelectorAll('.kh3 .tab-panel .k3-tbl tbody tr')];
   assert.ok(dongGia.length >= 2, 'khách gieo sẵn phải có ít nhất 2 dòng giá: ' + dongGia.length);
-  assert.ok(!goc().querySelector('#kh-gia-them').hidden, 'kế toán phải có nút thêm giá');
+  assert.ok(goc().querySelector('.kh3 [data-act="add-price"]'), 'kế toán phải có nút thêm giá');
   console.log('✓ bảng giá khách × tuyến: Bãi không thấy · kế toán thấy %d dòng', dongGia.length);
 
   // 4a2. màn TÀI XẾ: cột Kết luận là điểm chính — phần mềm tự nói ai được điều xe và vì sao.

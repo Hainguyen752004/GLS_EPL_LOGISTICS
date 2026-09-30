@@ -18,7 +18,7 @@ Tiền thuê xe liên kết để ở `header.hire`, KHÔNG thành dòng định
 import json
 import os
 
-from models import Part, Route, Trip, TripAttachment, TripExpense
+from models import Customer, Part, Route, Trip, TripAttachment, TripExpense
 from services import tai_khoan as TK
 from services.tinh_toan import gia_dong, la_xuat_ban, lam_tron, tien_dong, tinh_phieu, ty_gia
 
@@ -81,6 +81,12 @@ def _ten(db, d):
     return t.get("vi") or d.item_key or "", t.get("lo") or t.get("vi") or d.item_key or ""
 
 
+def _ma_khach(db, p):
+    """Mã khách BÊN KẾ TOÁN (OBJ_OBJECTNO) — ô Mã khách ở danh mục khách; trống thì None."""
+    k = db.get(Customer, p.customer_id) if p.customer_id else None
+    return k.code if k else None
+
+
 def _dong_chi(db, p):
     return (db.query(TripExpense).filter(TripExpense.trip_id == p.id)
             .order_by(TripExpense.section, TripExpense.line_no).all())
@@ -90,13 +96,13 @@ def _chu_ky_pod(db, p):
     return db.query(TripAttachment).filter(TripAttachment.trip_id == p.id, TripAttachment.kind == "pod_sign").count()
 
 
-def dong_danh_sach(p):
+def dong_danh_sach(p, ma_khach=None):
     """Một dòng của danh sách — header RÚT GỌN, đúng các khoá EPL_System trả (bên anh Tune đọc `Summary` từ đây),
     thêm vài khoá đọc được bằng mắt (số phiếu, tên khách, biển số, tài xế) để thủ quỹ chọn đúng DO."""
     t = tinh_phieu(p, [])          # cước chỉ phụ thuộc tấn và đơn giá, không cần dòng chi
     return {
         "do_id": ma_do(p), "status": "delivered", "doc_no": p.doc_no, "kind": p.kind,
-        "customer_id": p.customer_id, "customer_name": p.customer_name,
+        "customer_id": p.customer_id, "customer_code": ma_khach, "customer_name": p.customer_name,
         "quotation_id": None, "contract_no": p.contract_no,
         "route_id": p.route_id, "origin": p.origin, "destination": p.destination,
         "vehicle_id": p.vehicle_id, "truck_no": p.truck_no, "plate_head": p.plate_head,
@@ -121,7 +127,7 @@ def dong_goi(db, p):
         "trip_id": p.id, "doc_no": p.doc_no, "kind": p.kind,               # gom (đi lấy hàng) · giao (đi giao hàng)
         "doc_date": _ngay(p.doc_date), "out_date": _ngay(p.out_date), "back_date": _ngay(p.back_date),
         "company": p.company, "owner_id": p.owner_id if lk else None, "owner_name": p.owner_name if lk else None,
-        "customer_id": p.customer_id, "customer_name": p.customer_name,
+        "customer_id": p.customer_id, "customer_code": _ma_khach(db, p), "customer_name": p.customer_name,
         "contract_no": p.contract_no, "hire_contract_no": p.hire_contract_no if lk else None,
         "quotation_id": None,
         "route": {"id": tuyen.id, "name": tuyen.name, "origin": tuyen.origin, "destination": tuyen.destination,

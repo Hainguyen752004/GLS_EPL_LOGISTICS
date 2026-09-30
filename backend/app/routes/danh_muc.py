@@ -97,8 +97,32 @@ def them_khach(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Khách hàng phải có tên."})
     c = Customer(); _ap(c, data, ("name", "phone", "address", "note"))
     _ap_cach_hoa_don(c, data)
+    _ap_ma_loai(db, c, data)
     db.add(c); db.commit(); db.refresh(c)
     return _dict(c)
+
+
+LOAI_KHACH = ("person", "company")
+
+
+def _ap_ma_loai(db, c, data):
+    """MÃ KHÁCH = mã khách bên kế toán (anh Tune, OBJ_OBJECTNO ≤ 50 ký tự) — chủ dự án chốt 30/09 dùng một ô chung; gửi đi
+    trong phiếu đề nghị thu / bàn giao DO nên phải là chữ Latinh, số và - _ . /, không trùng khách khác. Loại khách: cá
+    nhân · công ty."""
+    if "code" in data:
+        ma = str(data.get("code") or "").strip()
+        if ma:
+            if len(ma) > 50 or not all(ch.isascii() and (ch.isalnum() or ch in "-_./") for ch in ma):
+                raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": "Mã khách tối đa 50 ký tự, chỉ chữ Latinh, số và - _ . /"})
+            trung = (db.query(Customer.id).filter(func.lower(Customer.code) == ma.lower(), Customer.id != (c.id or "")).first())
+            if trung:
+                raise HTTPException(409, {"ma": "MA_KHACH_TRUNG", "loi": "Mã khách %s đã dùng cho khách khác." % ma})
+        c.code = ma or None
+    if "cust_type" in data:
+        v = (data.get("cust_type") or "").strip().lower() or None
+        if v and v not in LOAI_KHACH:
+            raise HTTPException(422, {"ma": "LOAI_KHACH_SAI", "loi": "Loại khách phải là cá nhân hoặc công ty."})
+        c.cust_type = v
 
 
 def _ap_cach_hoa_don(c, data):
@@ -118,6 +142,7 @@ def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), _
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
     _ap(c, data, ("name", "phone", "address", "note", "active"))
     _ap_cach_hoa_don(c, data)
+    _ap_ma_loai(db, c, data)
     db.commit(); db.refresh(c)
     return _dict(c)
 
@@ -203,6 +228,28 @@ def cong_no_khach(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
     # Hoá đơn (lẻ và gộp) cùng sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a): hỏi sang từng tờ. Trang đó tắt thì 503
     # báo rõ — không hiện nửa số.
     dong = list(KT.goi(db, "GET", "/api/lien-thong/doanh-thu/khach/%s" % kh.id, nguoi=user) or [])
+    return {"customer": {"id": kh.id, "name": kh.name, "invoice_mode": kh.invoice_mode}, "dong": dong, **_tom_no(dong)}
+
+
+@router.get("/api/customers-cong-no")
+def cong_no_moi_khach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Công nợ GỌN của mọi khách một lần — cột trái màn Khách hàng (giao diện mới 30/09): số còn nợ từng khách, nút lọc
+    "Còn nợ". Cùng công thức với hồ sơ một khách (`_tom_no`). Vai không thấy tiền bán thì 403."""
+    from services import goi_ke_toan as KT
+    from services.phan_quyen import thay_tien_ban
+    if not thay_tien_ban(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem công nợ khách." % user.role})
+    moi = KT.goi(db, "GET", "/api/lien-thong/doanh-thu/khach-tong", nguoi=user) or {}
+    ra = {}
+    for cid, dong in moi.items():
+        t = _tom_no(list(dong or []))
+        t.pop("dong", None)
+        ra[cid] = t
+    return ra
+
+
+def _tom_no(dong):
+    """Cộng các tờ của một khách: theo TIỀN CỦA TỪNG TỜ và quy Kíp."""
     dong.sort(key=lambda x: x["ngay"] or "")
     tong, con = {}, {}
     for x in dong:
@@ -211,8 +258,7 @@ def cong_no_khach(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
             # còn nợ theo tiền của tờ = phần còn lại (LAK) ÷ tỷ giá của tờ — để người đọc thấy đúng tiền hợp đồng
             tg = (x["tien_lak"] / x["tien"]) if x["tien"] else 1
             con[x["ccy"]] = round(con.get(x["ccy"], 0) + x["con_lai_lak"] / (tg or 1), 2)
-    return {"customer": {"id": kh.id, "name": kh.name, "invoice_mode": kh.invoice_mode},
-            "dong": dong, "so_to": len(dong), "so_to_no": len([x for x in dong if x["con_lai_lak"] > 0]),
+    return {"so_to": len(dong), "so_to_no": len([x for x in dong if x["con_lai_lak"] > 0]),
             "tong_tien": tong, "con_no_tien": con,
             "tong_lak": round(sum(x["tien_lak"] or 0 for x in dong)),
             "da_thu_lak": round(sum(x["da_thu_lak"] for x in dong)),

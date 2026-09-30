@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1787 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1890 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -8936,5 +8936,520 @@ window.EPL_TU_DIEN = {
   "vi": "{kho}, tháng {thang}. Màn này chỉ để xem.",
   "lo": "{kho}, ເດືອນ {thang}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
   "en": "{kho}, {thang}. View only."
+ },
+ "k3_sub": {
+  "vi": "Khách nhận quặng, hợp đồng vận chuyển, bảng giá và công nợ.",
+  "lo": "ລູກຄ້າຮັບແຮ່, ສັນຍາຂົນສົ່ງ, ຕາຕະລາງລາຄາ ແລະ ໜີ້.",
+  "en": "Ore customers, haulage contracts, price lists and receivables."
+ },
+ "k3_sub_khach": {
+  "vi": "Khách nhận quặng. Đang xem <b lang=\"lo\">{ten}</b>.",
+  "lo": "ລູກຄ້າຮັບແຮ່. ກຳລັງເບິ່ງ <b lang=\"lo\">{ten}</b>.",
+  "en": "Ore customers. Viewing <b lang=\"lo\">{ten}</b>."
+ },
+ "k3_them_khach": {
+  "vi": "Thêm khách hàng",
+  "lo": "ເພີ່ມລູກຄ້າ",
+  "en": "Add customer"
+ },
+ "k3_sua_khach": {
+  "vi": "Sửa thông tin khách hàng",
+  "lo": "ແກ້ໄຂຂໍ້ມູນລູກຄ້າ",
+  "en": "Edit customer"
+ },
+ "k3_tim": {
+  "vi": "Tìm tên, mã, điện thoại, số hợp đồng",
+  "lo": "ຄົ້ນຫາ ຊື່, ລະຫັດ, ເບີໂທ, ເລກສັນຍາ",
+  "en": "Search name, code, phone, contract no."
+ },
+ "k3_chua_hd": {
+  "vi": "Chưa có hợp đồng",
+  "lo": "ຍັງບໍ່ມີສັນຍາ",
+  "en": "No contract"
+ },
+ "k3_con_no": {
+  "vi": "Còn nợ",
+  "lo": "ຍັງຄ້າງໜີ້",
+  "en": "Owing"
+ },
+ "k3_n_khach": {
+  "vi": "{n} khách hàng",
+  "lo": "ລູກຄ້າ {n} ຄົນ",
+  "en": "{n} customers"
+ },
+ "k3_n_tren": {
+  "vi": "{n} trên {m} khách hàng",
+  "lo": "{n} ຈາກ {m} ລູກຄ້າ",
+  "en": "{n} of {m} customers"
+ },
+ "k3_khong_khop": {
+  "vi": "Không có khách hàng nào khớp. Chọn \"Tất cả\" hoặc xoá từ khoá tìm kiếm.",
+  "lo": "ບໍ່ມີລູກຄ້າທີ່ກົງກັນ. ເລືອກ \"ທັງໝົດ\" ຫຼື ລຶບຄຳຄົ້ນຫາ.",
+  "en": "No customer matches. Choose \"All\" or clear the search."
+ },
+ "k3_da_gia_han_so": {
+  "vi": "Đã gia hạn, {so}",
+  "lo": "ຕໍ່ສັນຍາແລ້ວ, {so}",
+  "en": "Renewed, {so}"
+ },
+ "k3_het_sau": {
+  "vi": "Hết hạn sau {n} ngày",
+  "lo": "ໝົດອາຍຸໃນ {n} ວັນ",
+  "en": "Expires in {n} days"
+ },
+ "k3_hieu_luc_tu": {
+  "vi": "Hiệu lực từ {d}",
+  "lo": "ມີຜົນແຕ່ {d}",
+  "en": "Valid from {d}"
+ },
+ "k3_con_han_den": {
+  "vi": "Còn hạn đến {d}",
+  "lo": "ມີອາຍຸຮອດ {d}",
+  "en": "Valid until {d}"
+ },
+ "k3_strip_trong": {
+  "vi": "<b>Chưa có hợp đồng vận chuyển.</b> Phiếu của khách này tính theo bảng giá của khách.",
+  "lo": "<b>ຍັງບໍ່ມີສັນຍາຂົນສົ່ງ.</b> ໃບຂອງລູກຄ້ານີ້ຄິດຕາມຕາຕະລາງລາຄາຂອງລູກຄ້າ.",
+  "en": "<b>No haulage contract yet.</b> This customer's slips are priced from their price list."
+ },
+ "k3_hd_dang_ap": {
+  "vi": "Hợp đồng đang áp dụng",
+  "lo": "ສັນຍາທີ່ນຳໃຊ້",
+  "en": "Contract in use"
+ },
+ "k3_life_aria": {
+  "vi": "Từ {tu} đến {den}, hôm nay {nay}",
+  "lo": "ແຕ່ {tu} ຫາ {den}, ມື້ນີ້ {nay}",
+  "en": "From {tu} to {den}, today {nay}"
+ },
+ "k3_zone": {
+  "vi": "{n} ngày cuối, hệ thống nhắc ký lại",
+  "lo": "{n} ວັນສຸດທ້າຍ, ລະບົບເຕືອນໃຫ້ເຊັນໃໝ່",
+  "en": "Last {n} days — reminder to renew"
+ },
+ "k3_hom_nay": {
+  "vi": "Hôm nay {d}",
+  "lo": "ມື້ນີ້ {d}",
+  "en": "Today {d}"
+ },
+ "k3_life_da_gia_han": {
+  "vi": "<b class=\"k3-ok\">Đã gia hạn</b> bằng <span class=\"code\">{so}</span> từ {d}.",
+  "lo": "<b class=\"k3-ok\">ຕໍ່ສັນຍາແລ້ວ</b> ດ້ວຍ <span class=\"code\">{so}</span> ແຕ່ {d}.",
+  "en": "<b class=\"k3-ok\">Renewed</b> by <span class=\"code\">{so}</span> from {d}."
+ },
+ "k3_life_tu": {
+  "vi": "Áp dụng từ <b>{d}</b>, còn {n} ngày.",
+  "lo": "ນຳໃຊ້ແຕ່ <b>{d}</b>, ອີກ {n} ວັນ.",
+  "en": "Applies from <b>{d}</b>, in {n} days."
+ },
+ "k3_life_vo_han": {
+  "vi": "Hợp đồng <b>không thời hạn</b>.",
+  "lo": "ສັນຍາ <b>ບໍ່ມີກຳນົດ</b>.",
+  "en": "Contract with <b>no end date</b>."
+ },
+ "k3_life_sap_het": {
+  "vi": "<b class=\"k3-warn\">Còn {n} ngày</b> hết hạn, cần ký lại.",
+  "lo": "<b class=\"k3-warn\">ອີກ {n} ວັນ</b> ໝົດອາຍຸ, ຕ້ອງເຊັນໃໝ່.",
+  "en": "<b class=\"k3-warn\">{n} days</b> to expiry — needs renewing."
+ },
+ "k3_life_con": {
+  "vi": "Còn <b>{n} ngày</b>.",
+  "lo": "ອີກ <b>{n} ວັນ</b>.",
+  "en": "<b>{n} days</b> left."
+ },
+ "k3_life_chuyen": {
+  "vi": "Đã chạy <b>{n} chuyến</b>.",
+  "lo": "ແລ່ນແລ້ວ <b>{n} ຖ້ຽວ</b>.",
+  "en": "<b>{n} trips</b> run."
+ },
+ "k3_gia_han": {
+  "vi": "Gia hạn",
+  "lo": "ຕໍ່ສັນຍາ",
+  "en": "Renew"
+ },
+ "k3_gia_han_hd": {
+  "vi": "Gia hạn hợp đồng",
+  "lo": "ຕໍ່ສັນຍາ",
+  "en": "Renew contract"
+ },
+ "k3_da_gia_han": {
+  "vi": "Đã gia hạn",
+  "lo": "ຕໍ່ສັນຍາແລ້ວ",
+  "en": "Renewed"
+ },
+ "k3_n_ngay": {
+  "vi": "{n} ngày",
+  "lo": "{n} ວັນ",
+  "en": "{n} days"
+ },
+ "k3_n_thang": {
+  "vi": "{n} tháng",
+  "lo": "{n} ເດືອນ",
+  "en": "{n} months"
+ },
+ "k3_hd_trong_sua": {
+  "vi": "Chưa có hợp đồng nào. Bấm \"Thêm hợp đồng\" để tạo hợp đồng đầu tiên.",
+  "lo": "ຍັງບໍ່ມີສັນຍາ. ກົດ \"ເພີ່ມສັນຍາ\" ເພື່ອສ້າງສັນຍາທຳອິດ.",
+  "en": "No contracts yet. Click \"Add contract\" to create the first one."
+ },
+ "k3_tu_dien": {
+  "vi": "Tự điền khi lập phiếu",
+  "lo": "ໃສ່ອັດຕະໂນມັດເວລາສ້າງໃບ",
+  "en": "Filled in on new slips"
+ },
+ "k3_ky": {
+  "vi": "Ký {d}",
+  "lo": "ເຊັນ {d}",
+  "en": "Signed {d}"
+ },
+ "k3_dinh_kem": {
+  "vi": "Đính kèm ảnh hoặc PDF",
+  "lo": "ແນບຮູບ ຫຼື PDF",
+  "en": "Attach image or PDF"
+ },
+ "k3_hieu_luc": {
+  "vi": "Hiệu lực",
+  "lo": "ມີຜົນ",
+  "en": "Validity"
+ },
+ "k3_thoi_han": {
+  "vi": "Thời hạn",
+  "lo": "ໄລຍະເວລາ",
+  "en": "Duration"
+ },
+ "k3_chuyen": {
+  "vi": "Chuyến",
+  "lo": "ຖ້ຽວ",
+  "en": "Trips"
+ },
+ "k3_dang_ap_dung": {
+  "vi": "Đang áp dụng",
+  "lo": "ກຳລັງນຳໃຊ້",
+  "en": "In use"
+ },
+ "k3_den": {
+  "vi": "đến",
+  "lo": "ຫາ",
+  "en": "to"
+ },
+ "k3_khi_gia_moi": {
+  "vi": "khi có giá mới",
+  "lo": "ເມື່ອມີລາຄາໃໝ່",
+  "en": "until a new price"
+ },
+ "k3_gia_note": {
+  "vi": "Dòng tô xanh là giá đang dùng để tính tiền cho phiếu mới. Giá theo đúng tiền của dòng giá.",
+  "lo": "ແຖວສີຂຽວແມ່ນລາຄາທີ່ໃຊ້ຄິດເງິນໃບໃໝ່. ລາຄາຕາມສະກຸນເງິນຂອງແຖວລາຄາ.",
+  "en": "Green rows are the prices used for new slips. Each price is in its own currency."
+ },
+ "k3_them_gia": {
+  "vi": "Thêm giá",
+  "lo": "ເພີ່ມລາຄາ",
+  "en": "Add price"
+ },
+ "k3_chuyen_trong": {
+  "vi": "Tháng {thang} khách này chưa có chuyến hay phiếu nào.",
+  "lo": "ເດືອນ {thang} ລູກຄ້ານີ້ຍັງບໍ່ມີຖ້ຽວ ຫຼື ໃບໃດ.",
+  "en": "No trips or slips for this customer in {thang}."
+ },
+ "k3_chuyen_note": {
+  "vi": "Tháng {thang}: phiếu gom (mỏ về bãi) và phiếu giao hàng, tiền theo tiền cước của từng phiếu.",
+  "lo": "ເດືອນ {thang}: ໃບເກັບ (ບໍ່ແຮ່ ມາສະໜາມ) ແລະ ໃບສົ່ງສິນຄ້າ, ເງິນຕາມສະກຸນຄ່າຂົນສົ່ງຂອງແຕ່ລະໃບ.",
+  "en": "{thang}: collection slips (mine to yard) and delivery slips, amounts in each slip's freight currency."
+ },
+ "k3_gop_cuoi_thang": {
+  "vi": "Gộp cuối tháng",
+  "lo": "ລວມທ້າຍເດືອນ",
+  "en": "Monthly invoice"
+ },
+ "k3_chua_xuat": {
+  "vi": "Chưa xuất",
+  "lo": "ຍັງບໍ່ອອກ",
+  "en": "Not invoiced"
+ },
+ "k3_chua_khoa": {
+  "vi": "Chưa khoá",
+  "lo": "ຍັງບໍ່ລັອກ",
+  "en": "Not locked"
+ },
+ "k3_khoi_luong": {
+  "vi": "Khối lượng (tấn)",
+  "lo": "ນໍ້າໜັກ (ໂຕນ)",
+  "en": "Weight (t)"
+ },
+ "k3_hoa_don": {
+  "vi": "Hoá đơn",
+  "lo": "ໃບເກັບເງິນ",
+  "en": "Invoice"
+ },
+ "k3_cong_thang": {
+  "vi": "Cộng tháng",
+  "lo": "ລວມເດືອນ",
+  "en": "Month total"
+ },
+ "k3_no_loi": {
+  "vi": "Chưa lấy được công nợ từ bên kế toán. Thử lại sau.",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບຂໍ້ມູນໜີ້ຈາກຝ່າຍບັນຊີ. ລອງໃໝ່ພາຍຫຼັງ.",
+  "en": "Could not get receivables from the accounting side. Try again later."
+ },
+ "k3_n_phieu": {
+  "vi": "{n} phiếu",
+  "lo": "{n} ໃບ",
+  "en": "{n} slips"
+ },
+ "k3_so_to": {
+  "vi": "{n} tờ hoá đơn · {m} tờ còn nợ",
+  "lo": "ໃບເກັບເງິນ {n} ໃບ · ຄ້າງ {m} ໃບ",
+  "en": "{n} invoices · {m} unpaid"
+ },
+ "k3_no_chi_xem": {
+  "vi": "Chỉ xem. Thu tiền, cấn trừ do bên kế toán làm.",
+  "lo": "ເບິ່ງຢ່າງດຽວ. ການຮັບເງິນ, ຫັກລົບ ແມ່ນຝ່າຍບັນຊີເຮັດ.",
+  "en": "View only. Collections and offsets are done by accounting."
+ },
+ "k3_cho_gop": {
+  "vi": "Tháng {thang} chưa xuất hoá đơn: <b>{tien}</b> sẽ gộp vào hoá đơn cuối tháng.",
+  "lo": "ເດືອນ {thang} ຍັງບໍ່ອອກໃບເກັບເງິນ: <b>{tien}</b> ຈະລວມເຂົ້າໃບເກັບເງິນທ້າຍເດືອນ.",
+  "en": "Not yet invoiced in {thang}: <b>{tien}</b> will go on the month-end invoice."
+ },
+ "k3_chon_khach": {
+  "vi": "Chọn một khách hàng ở danh sách bên trái.",
+  "lo": "ເລືອກລູກຄ້າໜຶ່ງຄົນຢູ່ລາຍຊື່ເບື້ອງຊ້າຍ.",
+  "en": "Pick a customer from the list on the left."
+ },
+ "k3_tab_chuyen": {
+  "vi": "Chuyến & phiếu",
+  "lo": "ຖ້ຽວ ແລະ ໃບ",
+  "en": "Trips & slips"
+ },
+ "k3_chuyen_thang": {
+  "vi": "Chuyến {thang}",
+  "lo": "ຖ້ຽວ {thang}",
+  "en": "Trips {thang}"
+ },
+ "k3_gom_giao": {
+  "vi": "{g} gom, {d} giao",
+  "lo": "ເກັບ {g}, ສົ່ງ {d}",
+  "en": "{g} collection, {d} delivery"
+ },
+ "k3_san_luong": {
+  "vi": "Sản lượng",
+  "lo": "ປະລິມານ",
+  "en": "Tonnage"
+ },
+ "k3_doanh_thu_thang": {
+  "vi": "Doanh thu tháng",
+  "lo": "ລາຍຮັບເດືອນ",
+  "en": "Month revenue"
+ },
+ "k3_to_con_no": {
+  "vi": "{n} tờ còn nợ",
+  "lo": "ຄ້າງ {n} ໃບ",
+  "en": "{n} unpaid"
+ },
+ "k3_khong_no": {
+  "vi": "không nợ",
+  "lo": "ບໍ່ມີໜີ້",
+  "en": "nothing owed"
+ },
+ "k3_ngung_gd": {
+  "vi": "Ngừng giao dịch",
+  "lo": "ຢຸດການເຮັດທຸລະກຳ",
+  "en": "Inactive"
+ },
+ "k3_cong_ty": {
+  "vi": "Công ty",
+  "lo": "ບໍລິສັດ",
+  "en": "Company"
+ },
+ "k3_ca_nhan": {
+  "vi": "Cá nhân",
+  "lo": "ບຸກຄົນ",
+  "en": "Individual"
+ },
+ "k3_ma_goi_y": {
+  "vi": "Mã khách là mã của khách bên kế toán — gửi kèm phiếu đề nghị thu.",
+  "lo": "ລະຫັດລູກຄ້າແມ່ນລະຫັດຢູ່ຝ່າຍບັນຊີ — ສົ່ງພ້ອມໃບສະເໜີຮັບເງິນ.",
+  "en": "The customer code is the accounting side's code — sent with the payment request."
+ },
+ "k3_chua_ma": {
+  "vi": "Chưa có mã khách",
+  "lo": "ຍັງບໍ່ມີລະຫັດລູກຄ້າ",
+  "en": "No customer code"
+ },
+ "k3_chua_dt": {
+  "vi": "Chưa có số điện thoại",
+  "lo": "ຍັງບໍ່ມີເບີໂທ",
+  "en": "No phone number"
+ },
+ "k3_chua_dc": {
+  "vi": "Chưa có địa chỉ",
+  "lo": "ຍັງບໍ່ມີທີ່ຢູ່",
+  "en": "No address"
+ },
+ "k3_goi": {
+  "vi": "Gọi",
+  "lo": "ໂທ",
+  "en": "Call"
+ },
+ "k3_noi_tiep": {
+  "vi": "nối tiếp {so}",
+  "lo": "ຕໍ່ຈາກ {so}",
+  "en": "following {so}"
+ },
+ "k3_so_khong_doi": {
+  "vi": "không đổi sau khi tạo",
+  "lo": "ບໍ່ປ່ຽນຫຼັງສ້າງ",
+  "en": "cannot change after creation"
+ },
+ "k3_so_goi_y": {
+  "vi": "gợi ý số tiếp theo",
+  "lo": "ແນະນຳເລກຕໍ່ໄປ",
+  "en": "next number suggested"
+ },
+ "k3_de_trong_vo_han": {
+  "vi": "Để trống = không thời hạn",
+  "lo": "ປະວ່າງ = ບໍ່ມີກຳນົດ",
+  "en": "Leave empty = no end date"
+ },
+ "k3_thoi_han_nhanh": {
+  "vi": "Thời hạn nhanh",
+  "lo": "ໄລຍະດ່ວນ",
+  "en": "Quick duration"
+ },
+ "k3_note_ph": {
+  "vi": "Ví dụ: gộp hoá đơn cuối tháng, giá cố định cả năm",
+  "lo": "ຕົວຢ່າງ: ລວມໃບເກັບເງິນທ້າຍເດືອນ, ລາຄາຄົງທີ່ທັງປີ",
+  "en": "E.g. monthly invoice, fixed price for the year"
+ },
+ "k3_gia_han_tu": {
+  "vi": "Gia hạn từ {so}",
+  "lo": "ຕໍ່ຈາກ {so}",
+  "en": "Renewal of {so}"
+ },
+ "k3_anh_pdf": {
+  "vi": "Ảnh / PDF hợp đồng",
+  "lo": "ຮູບ / PDF ສັນຍາ",
+  "en": "Contract image / PDF"
+ },
+ "k3_keo_tha": {
+  "vi": "<b>Chọn file</b> hoặc kéo thả ảnh, PDF vào đây",
+  "lo": "<b>ເລືອກໄຟລ໌</b> ຫຼື ລາກຮູບ, PDF ມາວາງບ່ອນນີ້",
+  "en": "<b>Choose files</b> or drop images, PDFs here"
+ },
+ "k3_luu_hd": {
+  "vi": "Lưu hợp đồng",
+  "lo": "ບັນທຶກສັນຍາ",
+  "en": "Save contract"
+ },
+ "k3_e_so": {
+  "vi": "Nhập số hợp đồng",
+  "lo": "ໃສ່ເລກສັນຍາ",
+  "en": "Enter the contract number"
+ },
+ "k3_e_so_trung": {
+  "vi": "Số hợp đồng này đã có",
+  "lo": "ເລກສັນຍານີ້ມີແລ້ວ",
+  "en": "This contract number already exists"
+ },
+ "k3_e_ngay": {
+  "vi": "Ngày không hợp lệ, nhập theo dạng dd/mm/yyyy",
+  "lo": "ວັນທີບໍ່ຖືກ, ໃສ່ແບບ dd/mm/yyyy",
+  "en": "Invalid date, use dd/mm/yyyy"
+ },
+ "k3_e_het_truoc": {
+  "vi": "Ngày hết hạn phải sau ngày áp dụng",
+  "lo": "ວັນໝົດອາຍຸຕ້ອງຫຼັງວັນນຳໃຊ້",
+  "en": "The end date must be after the start date"
+ },
+ "k3_e_nhap_tu": {
+  "vi": "Nhập ngày áp dụng trước",
+  "lo": "ໃສ່ວັນນຳໃຊ້ກ່ອນ",
+  "en": "Enter the start date first"
+ },
+ "k3_da_luu_hd": {
+  "vi": "Đã lưu hợp đồng {so}",
+  "lo": "ບັນທຶກສັນຍາ {so} ແລ້ວ",
+  "en": "Contract {so} saved"
+ },
+ "k3_sum": {
+  "vi": "Hiệu lực <b>{tu}</b> đến <b>{den}</b>, {n} ngày",
+  "lo": "ມີຜົນ <b>{tu}</b> ຫາ <b>{den}</b>, {n} ວັນ",
+  "en": "Valid <b>{tu}</b> to <b>{den}</b>, {n} days"
+ },
+ "k3_sum_vo_han": {
+  "vi": "Hiệu lực từ <b>{tu}</b>, không thời hạn",
+  "lo": "ມີຜົນແຕ່ <b>{tu}</b>, ບໍ່ມີກຳນົດ",
+  "en": "Valid from <b>{tu}</b>, no end date"
+ },
+ "k3_sum_nhap": {
+  "vi": "Nhập ngày áp dụng và ngày hết hạn",
+  "lo": "ໃສ່ວັນນຳໃຊ້ ແລະ ວັນໝົດອາຍຸ",
+  "en": "Enter the start and end dates"
+ },
+ "k3_ten_khach": {
+  "vi": "Tên khách hàng",
+  "lo": "ຊື່ລູກຄ້າ",
+  "en": "Customer name"
+ },
+ "k3_ten_ph": {
+  "vi": "Tên theo giấy tờ, tiếng Lào hoặc tiếng Việt",
+  "lo": "ຊື່ຕາມເອກະສານ, ພາສາລາວ ຫຼື ພາສາຫວຽດ",
+  "en": "Name as on documents, Lao or Vietnamese"
+ },
+ "k3_ma_khach": {
+  "vi": "Mã khách (bên kế toán)",
+  "lo": "ລະຫັດລູກຄ້າ (ຝ່າຍບັນຊີ)",
+  "en": "Customer code (accounting)"
+ },
+ "k3_loai_khach": {
+  "vi": "Loại khách",
+  "lo": "ປະເພດລູກຄ້າ",
+  "en": "Customer type"
+ },
+ "k3_dc_ph": {
+  "vi": "Bản, mường, tỉnh",
+  "lo": "ບ້ານ, ເມືອງ, ແຂວງ",
+  "en": "Village, district, province"
+ },
+ "k3_bo_sung_sau": {
+  "vi": "Các ô trừ tên đều có thể bổ sung sau.",
+  "lo": "ທຸກຊ່ອງນອກຈາກຊື່ ສາມາດເພີ່ມພາຍຫຼັງໄດ້.",
+  "en": "Everything except the name can be filled in later."
+ },
+ "k3_luu_thay_doi": {
+  "vi": "Lưu thay đổi",
+  "lo": "ບັນທຶກການປ່ຽນແປງ",
+  "en": "Save changes"
+ },
+ "k3_e_ten": {
+  "vi": "Nhập tên khách hàng",
+  "lo": "ໃສ່ຊື່ລູກຄ້າ",
+  "en": "Enter the customer name"
+ },
+ "k3_da_luu_khach": {
+  "vi": "Đã lưu thông tin khách hàng",
+  "lo": "ບັນທຶກຂໍ້ມູນລູກຄ້າແລ້ວ",
+  "en": "Customer saved"
+ },
+ "k3_da_them_khach": {
+  "vi": "Đã thêm khách hàng",
+  "lo": "ເພີ່ມລູກຄ້າແລ້ວ",
+  "en": "Customer added"
+ },
+ "k3_da_dinh_kem": {
+  "vi": "Đã đính kèm {n} file vào {so}",
+  "lo": "ແນບ {n} ໄຟລ໌ ໃສ່ {so} ແລ້ວ",
+  "en": "Attached {n} files to {so}"
+ },
+ "k3_gom": {
+  "vi": "Gom",
+  "lo": "ເກັບ",
+  "en": "Collect"
+ },
+ "k3_giao": {
+  "vi": "Giao",
+  "lo": "ສົ່ງ",
+  "en": "Deliver"
  }
 };

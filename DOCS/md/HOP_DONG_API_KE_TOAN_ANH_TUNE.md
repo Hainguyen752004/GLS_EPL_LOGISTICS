@@ -900,7 +900,7 @@ Tham số (đều tuỳ chọn):
 
 | Tham số | Kiểu | Ý nghĩa |
 |---|---|---|
-| `customer_id` | chuỗi | mã khách **bên em** (12 ký tự hex) |
+| `customer_id` | chuỗi | mã khách **bên em** (12 ký tự hex) **hoặc mã khách bên anh** (`OBJ_OBJECTNO`, ô "Mã khách" trên danh mục khách bên em) |
 | `completed_from`, `completed_to` | `YYYY-MM-DD` | ngày khoá phiếu (gồm cả hai đầu, theo giờ UTC). Sai dạng → 422 `NGAY_SAI` |
 | `page` | số ≥ 1 | mặc định 1 |
 | `page_size` | 1–200 | mặc định 50 |
@@ -916,7 +916,7 @@ Trả về:
  "data": {"items": [
    {"do_id": "EPLLAO-779739f4b582", "status": "delivered",
     "doc_no": "T4-0449-09/EPL", "kind": "giao",
-    "customer_id": "<mã khách bên em>", "customer_name": "<tên khách>",
+    "customer_id": "<mã khách bên em>", "customer_code": "<OBJ_OBJECTNO bên anh hoặc null>", "customer_name": "<tên khách>",
     "quotation_id": null, "contract_no": "<số hợp đồng>",
     "route_id": "<mã tuyến>", "origin": "…", "destination": "…",
     "vehicle_id": "<mã xe>", "truck_no": "346", "plate_head": "<biển đầu kéo>",
@@ -931,6 +931,7 @@ Trả về:
 
 - 14 khoá của EPL_System **có đủ**: `do_id`, `status`, `customer_id`, `quotation_id`, `route_id`, `vehicle_id`, `driver_id`, `selling_price`, `customer_surcharge_total`, `final_selling_price`, `currency`, `completed_at`, `completed_by`, `detail_url`.
 - Khoá thêm để thủ quỹ **đọc được bằng mắt** khi chọn DO: `doc_no`, `customer_name`, `truck_no`, `plate_head`, `driver_name`, `company`, `owner_name`, `final_selling_price_lak`.
+- `customer_code` = **mã khách bên anh** (`OBJ_OBJECTNO`) mà bên em ghi ở ô "Mã khách" của danh mục khách (thêm 30/09). Khách chưa ghi mã thì `null`.
 - `quotation_id` luôn `null`: bên Lào không có báo giá.
 - `currency` là **tiền cước của phiếu**: `USD`, `THB`, `LAK`, `VND` hoặc `CNY`.
 
@@ -948,7 +949,7 @@ Trả về:
 | `doc_date`, `out_date`, `back_date` | ngày lập, ngày xe đi, ngày xe về (`YYYY-MM-DD`) |
 | `company` | `EPL` (xe nhà) hoặc `joint` (xe thuê / liên kết) |
 | `owner_id`, `owner_name`, `hire_contract_no` | chỉ có với xe thuê |
-| `customer_id`, `customer_name`, `contract_no` | khách, hợp đồng vận chuyển |
+| `customer_id`, `customer_code`, `customer_name`, `contract_no` | khách (mã bên em, **mã bên anh**), hợp đồng vận chuyển |
 | `route` | `{id, name, origin, destination, distance_km}` hoặc `null` |
 | `origin`, `destination`, `goods_type`, `ore_bill_no`, `ore_bill_date` | hàng, phiếu quặng của khách |
 | `weight_origin_t`, `weight_dest_t`, `loss_pct`, `weight_kg` | cân đầu, cân cuối (tấn), hao hụt %, tấn tính cước × 1000 |
@@ -1001,4 +1002,4 @@ Luật con số:
 
 1. (Chủ dự án) Trang điều xe Lào ra Internet ở địa chỉ nào?
 2. (Anh Tune) Hệ anh **lưu khoá Logistics theo từng đơn vị** được không, để EPL Lào đọc trang điều xe Lào, còn đơn vị khác vẫn đọc EPL_System?
-3. (Anh Tune) Anh có cần lọc theo **mã khách bên anh** (`OBJ_OBJECTNO`) không? Khi bên em thêm ô "Mã khách bên kế toán" (bước tiếp theo), bên em trả thêm `customer_code` trên mỗi dòng.
+3. ~~Lọc theo mã khách bên anh~~ — **đã làm 30/09:** danh mục khách bên em có ô "Mã khách" (= `OBJ_OBJECTNO` bên anh, ≤ 50 ký tự Latinh / số / `- _ . /`, không trùng). Mỗi dòng và header trả `customer_code`; tham số `customer_id` nhận cả mã đó. Xin anh gửi danh sách mã khách của EPL Lào để bên em ghi vào.

@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Trip
+from models import Customer, Trip
 from services import ban_giao as BG
 from services import day_ke_toan as DK
 from services.bao_mat import can_vai, may_qlsx_goi, token_nhan_qlsx
@@ -49,15 +49,19 @@ def danh_sach(customer_id: Optional[str] = Query(None, description="Chỉ lấy 
     tu, den = _ngay(completed_from, "completed_from"), _ngay(completed_to, "completed_to")
     q = _da_khoa(db)
     if customer_id:
-        q = q.filter(Trip.customer_id == customer_id)
+        # nhận cả mã khách bên kế toán (OBJ_OBJECTNO) lẫn mã khách bên em
+        theo_ma = [r[0] for r in db.query(Customer.id).filter(Customer.code == customer_id).all()]
+        q = q.filter(Trip.customer_id.in_(theo_ma + [customer_id]))
     if tu:
         q = q.filter(Trip.locked_at >= dt.datetime.combine(tu, dt.time.min))
     if den:
         q = q.filter(Trip.locked_at < dt.datetime.combine(den + dt.timedelta(days=1), dt.time.min))
     tong = q.count()
     dong = (q.order_by(Trip.locked_at.desc(), Trip.id.desc()).offset((page - 1) * page_size).limit(page_size).all())
+    ma = dict(db.query(Customer.id, Customer.code).filter(Customer.id.in_({p.customer_id for p in dong if p.customer_id})).all())
     return {"message": "Danh sách %d lệnh giao hàng đã hoàn tất (trang %d)." % (tong, page),
-            "data": {"items": [BG.dong_danh_sach(p) for p in dong], "total": tong, "page": page, "page_size": page_size}}
+            "data": {"items": [BG.dong_danh_sach(p, ma.get(p.customer_id)) for p in dong], "total": tong, "page": page,
+                     "page_size": page_size}}
 
 
 def _goi(db, p, do_id):
