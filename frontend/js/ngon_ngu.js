@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2051 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2056 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -8553,9 +8553,9 @@ window.EPL_TU_DIEN = {
   "en": "No capacity set"
  },
  "k2_chua_suc_chua_goi_y": {
-  "vi": "Kho chưa khai sức chứa bồn — bồn vẽ theo mức cao nhất trong tháng. Bên kho khai ở danh mục điểm đổ.",
-  "lo": "ສາງຍັງບໍ່ແຈ້ງຄວາມຈຸຖັງ — ຖັງແຕ້ມຕາມລະດັບສູງສຸດໃນເດືອນ. ຝ່າຍສາງແຈ້ງໃນລາຍການຈຸດເຕີມນໍ້າມັນ.",
-  "en": "No tank capacity set — the tank is drawn against the highest level this month. The warehouse side sets it in the fuel place list."
+  "vi": "Kho chưa khai sức chứa bồn — bồn vẽ theo số tồn hiện có. Bên kho khai ở danh mục điểm đổ.",
+  "lo": "ສາງຍັງບໍ່ແຈ້ງຄວາມຈຸຖັງ — ຖັງແຕ້ມຕາມຍອດຄົງເຫຼືອທີ່ມີ. ຝ່າຍສາງແຈ້ງໃນລາຍການຈຸດເຕີມນໍ້າມັນ.",
+  "en": "No tank capacity set — the tank is drawn against the current stock. The warehouse side sets it in the fuel place list."
  },
  "k2_tong": {
   "vi": "Tổng",
@@ -8638,9 +8638,9 @@ window.EPL_TU_DIEN = {
   "en": "Nothing needs attention."
  },
  "k2_n_viec": {
-  "vi": "{n} việc bên kho cần để ý trong tháng {thang}",
-  "lo": "ວຽກຝ່າຍສາງ {n} ຢ່າງ ຕ້ອງເອົາໃຈໃສ່ ໃນເດືອນ {thang}",
-  "en": "{n} warehouse items to watch in {thang}"
+  "vi": "{n} việc bên kho cần để ý",
+  "lo": "ວຽກຝ່າຍສາງ {n} ຢ່າງ ຕ້ອງເອົາໃຈໃສ່",
+  "en": "{n} warehouse items to watch"
  },
  "k2_n_kho": {
   "vi": "{n} kho",
@@ -8928,14 +8928,14 @@ window.EPL_TU_DIEN = {
   "en": "{kho}: {ton} L in stock"
  },
  "k2_sub_all": {
-  "vi": "Theo dõi tồn từng kho, tháng {thang}. Màn này chỉ để xem.",
-  "lo": "ຕິດຕາມຄົງເຫຼືອແຕ່ລະສາງ, ເດືອນ {thang}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
-  "en": "Stock of each depot, {thang}. View only."
+  "vi": "Tồn hiện tại của từng kho, theo mặt hàng. Màn này chỉ để xem.",
+  "lo": "ຄົງເຫຼືອປັດຈຸບັນຂອງແຕ່ລະສາງ ຕາມລາຍການ. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
+  "en": "Current stock of each depot, by item. View only."
  },
  "k2_sub_kho": {
-  "vi": "{kho}, tháng {thang}. Màn này chỉ để xem.",
-  "lo": "{kho}, ເດືອນ {thang}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
-  "en": "{kho}, {thang}. View only."
+  "vi": "{kho}. Màn này chỉ để xem.",
+  "lo": "{kho}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
+  "en": "{kho}. View only."
  },
  "k3_sub": {
   "vi": "Khách nhận quặng, hợp đồng vận chuyển, bảng giá và công nợ.",
@@ -10256,5 +10256,30 @@ window.EPL_TU_DIEN = {
   "vi": "Ký nhận",
   "lo": "ເຊັນຮັບ",
   "en": "Get signature"
+ },
+ "k3_ma_kt_gan": {
+  "vi": "KT Thu/Chi Viêng Chăn gán mã theo bên kế toán",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ ເປັນຜູ້ໃສ່ລະຫັດ ຕາມຝ່າຍບັນຊີ",
+  "en": "Set by the Vientiane income/expense accountant"
+ },
+ "k2_ton_hien": {
+  "vi": "Tồn hiện tại",
+  "lo": "ຄົງເຫຼືອປັດຈຸບັນ",
+  "en": "Current stock"
+ },
+ "k2_ton_hien_p": {
+  "vi": "{p}% sức chứa bồn",
+  "lo": "{p}% ຂອງຄວາມຈຸຖັງ",
+  "en": "{p}% of tank capacity"
+ },
+ "k2_ton_ben_kho": {
+  "vi": "Số tồn lấy từ bên kho",
+  "lo": "ຍອດຄົງເຫຼືອຈາກຝ່າຍສາງ",
+  "en": "Stock figure from the warehouse side"
+ },
+ "k2_so_o_ben_kho": {
+  "vi": "Sổ nhập / xuất kho theo tháng xem ở hệ kho — trang này chỉ theo dõi tồn và phiếu đề nghị.",
+  "lo": "ປຶ້ມຮັບ / ເບີກສາງປະຈຳເດືອນ ເບິ່ງຢູ່ລະບົບສາງ — ໜ້ານີ້ຕິດຕາມແຕ່ຄົງເຫຼືອ ແລະ ໃບສະເໜີ.",
+  "en": "The monthly stock-in / stock-out ledger lives in the warehouse system — this page only follows stock and requests."
  }
 };

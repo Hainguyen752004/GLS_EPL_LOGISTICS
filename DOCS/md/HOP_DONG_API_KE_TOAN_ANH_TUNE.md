@@ -932,6 +932,7 @@ Trả về:
 - 14 khoá của EPL_System **có đủ**: `do_id`, `status`, `customer_id`, `quotation_id`, `route_id`, `vehicle_id`, `driver_id`, `selling_price`, `customer_surcharge_total`, `final_selling_price`, `currency`, `completed_at`, `completed_by`, `detail_url`.
 - Khoá thêm để thủ quỹ **đọc được bằng mắt** khi chọn DO: `doc_no`, `customer_name`, `truck_no`, `plate_head`, `driver_name`, `company`, `owner_name`, `final_selling_price_lak`.
 - `customer_code` = **mã khách bên anh** (`OBJ_OBJECTNO`) mà bên em ghi ở ô "Mã khách" của danh mục khách (thêm 30/09). Khách chưa ghi mã thì `null`.
+- **Ai ghi mã bên em** (chốt tối 30/09, theo Excel của khách, sheet ໜ້າວຽກ: *ລົງຂໍ້ມູນ ລູກຄ້າ* — Bãi Thà Bốc nhập, *ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ* xác nhận): Bãi nhập tên, điện thoại, địa chỉ của khách; **chỉ KT Thu/Chi Viêng Chăn (vai `acct`) hoặc Sếp (`admin`) gán / đổi mã khách**. Vai khác gửi mã khác mã đang có thì máy chủ trả 403 `MA_KHACH_KE_TOAN` và không ghi gì. Nên khách Bãi vừa thêm sẽ có `customer_code = null` cho tới khi kế toán gán mã theo danh sách của anh.
 - `quotation_id` luôn `null`: bên Lào không có báo giá.
 - `currency` là **tiền cước của phiếu**: `USD`, `THB`, `LAK`, `VND` hoặc `CNY`.
 

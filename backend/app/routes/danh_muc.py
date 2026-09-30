@@ -28,6 +28,9 @@ router = APIRouter()
 SUA_DANH_MUC = can_vai("yard", "acct")       # Bãi và Kế toán được sửa danh mục
 SUA_BANG_GIA = can_vai("acct", "admin")      # giá là tiền: chỉ KT Thu/Chi VC (người kiểm mục II) và Sếp
 XEM_BANG_GIA = can_vai("acct", "expacct", "rev", "treasury", "cash", "admin")   # Bãi không thấy tiền
+# Mã khách = mã khách bên kế toán (nối sang sổ công nợ anh Tune). Excel "ໜ້າວຽກ": ລົງຂໍ້ມູນ ລູກຄ້າ — Bãi Thà Bốc nhập,
+# ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ (KT Thu/Chi VC) xác nhận → Bãi nhập thông tin khách, còn MÃ do KT Thu/Chi VC hoặc Sếp gán (30/09).
+GAN_MA_KHACH = ("acct", "admin")
 NGAY_CANH_BAO = 30                            # giấy tờ hết hạn trong 30 ngày → cờ vàng
 
 
@@ -92,12 +95,12 @@ def ds_khach(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.post("/api/customers")
-def them_khach(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
+def them_khach(data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DANH_MUC)):
     if not str(data.get("name") or "").strip():
         raise HTTPException(422, {"ma": "THIEU_TEN", "loi": "Khách hàng phải có tên."})
     c = Customer(); _ap(c, data, ("name", "phone", "address", "note"))
     _ap_cach_hoa_don(c, data)
-    _ap_ma_loai(db, c, data)
+    _ap_ma_loai(db, c, data, user)
     db.add(c); db.commit(); db.refresh(c)
     return _dict(c)
 
@@ -105,12 +108,15 @@ def them_khach(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(
 LOAI_KHACH = ("person", "company")
 
 
-def _ap_ma_loai(db, c, data):
+def _ap_ma_loai(db, c, data, user):
     """MÃ KHÁCH = mã khách bên kế toán (anh Tune, OBJ_OBJECTNO ≤ 50 ký tự) — chủ dự án chốt 30/09 dùng một ô chung; gửi đi
-    trong phiếu đề nghị thu / bàn giao DO nên phải là chữ Latinh, số và - _ . /, không trùng khách khác. Loại khách: cá
-    nhân · công ty."""
+    trong phiếu đề nghị thu / bàn giao DO nên phải là chữ Latinh, số và - _ . /, không trùng khách khác. Chỉ vai trong
+    GAN_MA_KHACH gán / đổi mã; vai khác gửi lại đúng mã đang có thì bỏ qua (form sửa gửi cả ô). Loại khách: cá nhân · công ty."""
     if "code" in data:
         ma = str(data.get("code") or "").strip()
+        if ma != (c.code or "") and user.role not in GAN_MA_KHACH:
+            raise HTTPException(403, {"ma": "MA_KHACH_KE_TOAN",
+                                      "loi": "Mã khách là mã bên kế toán — chỉ KT Thu/Chi Viêng Chăn hoặc Sếp gán / đổi."})
         if ma:
             if len(ma) > 50 or not all(ch.isascii() and (ch.isalnum() or ch in "-_./") for ch in ma):
                 raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": "Mã khách tối đa 50 ký tự, chỉ chữ Latinh, số và - _ . /"})
@@ -136,13 +142,13 @@ def _ap_cach_hoa_don(c, data):
 
 
 @router.put("/api/customers/{cid}")
-def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_DANH_MUC)):
+def sua_khach(cid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(SUA_DANH_MUC)):
     c = db.get(Customer, cid)
     if not c:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    _ap_ma_loai(db, c, data, user)             # kiểm quyền mã TRƯỚC khi ghi ô khác — bị chặn thì không đổi gì
     _ap(c, data, ("name", "phone", "address", "note", "active"))
     _ap_cach_hoa_don(c, data)
-    _ap_ma_loai(db, c, data)
     db.commit(); db.refresh(c)
     return _dict(c)
 

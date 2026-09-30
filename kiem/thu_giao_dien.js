@@ -528,6 +528,21 @@ async function main() {
   const chuKho = d.querySelector('#noi-dung').textContent;
   assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')) && !/\bundefined\b|\bNaN\b/.test(chuKho), 'màn thủ kho: ' + chuKho.slice(0, 200));
   assert.ok(!d.querySelector('#noi-dung .k2 button.primary, #noi-dung .k2 .btn.primary'), 'màn Xem kho không có nút thao tác kho');
+  // tối 30/09: bỏ sổ kho tháng — Excel sheet ລາຍງານ xếp báo cáo kho vào ໂມດູນສາງ (hệ anh Toàn); màn chỉ xem TỒN hiện tại
+  {
+    assert.ok(!d.querySelector('#k2-thang'), 'Xem kho không còn ô chọn tháng');
+    const kx = await (await fetch(GOC + '/api/kho-xem', { headers: { Authorization: 'Bearer ' + w.EPL.API.token() } })).json();
+    const k0 = (kx.nhien_lieu || [])[0];
+    if (k0) {
+      d.querySelector('#noi-dung .k2 #k2-wh .wh-item[data-open="' + k0.place_id + '"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => d.querySelector('#noi-dung .k2 .fuel-stats'), 'chi tiết một kho của màn Xem kho');
+      const soTon = +d.querySelector('#noi-dung .k2 .fuel-stats > div b').textContent.replace(/[^0-9]/g, '');
+      assert.strictEqual(soTon, Math.round(k0.ton_lit || 0), 'tồn hiện tại trên màn phải đúng số ton_lit bên kho (' + k0.ton_lit + ')');
+      const chuKx = d.querySelector('#noi-dung .k2').textContent;
+      assert.ok(!chuKx.includes(w.EPL.NN.t('k2_so_kho', { thang: '' }).trim()) && !d.querySelector('#noi-dung .k2 .flow'), 'không còn sổ kho tháng / biểu đồ nhập xuất theo ngày');
+      console.log('✓ Xem kho: không sổ tháng, không ô chọn tháng · tồn %s L khớp bên kho', soTon);
+    }
+  }
   console.log('✓ vai thủ kho: chỉ màn Xem kho (chỉ xem), không chuyển vòng, không lỗi');
 
   // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN

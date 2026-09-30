@@ -55,8 +55,17 @@ def main():
     cu = {k["id"]: (k.get("code"), k.get("cust_type")) for k in ds}
     try:
         print("1. Mã khách và loại khách")
+        # mã khách = mã bên kế toán: Excel "ໜ້າວຽກ" — Bãi nhập thông tin khách, KT Thu/Chi VC xác nhận → chỉ acct · admin gán mã
         s, g = goi("/api/customers/" + a["id"], {"code": "KIEM-KH-01", "cust_type": "company"}, u="thabok", method="PUT")
-        dung(s == 200 and g["code"] == "KIEM-KH-01" and g["cust_type"] == "company", "Bãi (được sửa khách) ghi mã KIEM-KH-01, loại công ty")
+        dung(s == 403 and ma_loi(g) == "MA_KHACH_KE_TOAN", "Bãi đổi mã khách → 403 MA_KHACH_KE_TOAN (mã do KT Thu/Chi VC gán)")
+        s, g = goi("/api/customers", {"name": "thử: khách Bãi tự đặt mã", "code": "KIEM-BAI-01"}, u="thabok")
+        dung(s == 403 and ma_loi(g) == "MA_KHACH_KE_TOAN", "Bãi thêm khách kèm mã → 403, không tạo khách")
+        s, ds2 = goi("/api/customers", u="admin")
+        dung(not any(k["name"] == "thử: khách Bãi tự đặt mã" for k in ds2), "khách bị chặn không nằm trong danh sách")
+        s, g = goi("/api/customers/" + a["id"], {"code": "KIEM-KH-01", "cust_type": "company"}, u="ketoan", method="PUT")
+        dung(s == 200 and g["code"] == "KIEM-KH-01" and g["cust_type"] == "company", "KT Thu/Chi VC ghi mã KIEM-KH-01, loại công ty")
+        s, g = goi("/api/customers/" + a["id"], {"code": "KIEM-KH-01", "cust_type": "company"}, u="thabok", method="PUT")
+        dung(s == 200 and g["code"] == "KIEM-KH-01", "Bãi sửa khách, gửi lại đúng mã đang có (form sửa) → 200, không bị chặn")
         s, g = goi("/api/customers/" + b["id"], {"code": "kiem-kh-01"}, u="admin", method="PUT")
         dung(s == 409 and ma_loi(g) == "MA_KHACH_TRUNG", "mã trùng (khác hoa thường) → 409 MA_KHACH_TRUNG")
         s, g = goi("/api/customers/" + b["id"], {"code": "ຄຳ 01"}, u="admin", method="PUT")

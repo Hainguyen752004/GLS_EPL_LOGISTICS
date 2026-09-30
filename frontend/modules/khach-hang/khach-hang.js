@@ -21,6 +21,8 @@
   const suaDuoc = () => AUTH.la('yard', 'acct');              // thêm / sửa khách
   const xemTien = () => AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'admin');   // Bãi không thấy tiền
   const suaGia = () => AUTH.la('acct', 'admin');
+  // mã khách = mã bên kế toán: Excel "ໜ້າວຽກ" — Bãi nhập thông tin khách, KT Thu/Chi VC xác nhận → mã do KT Thu/Chi VC · Sếp gán
+  const ganMa = () => AUTH.la('acct', 'admin');
   const moPhieuDuoc = () => EPL.manCuaVai(AUTH.role).some(m => m.id === 'phieu-xuat-xe');
 
   /* ================= Tiện ích ================= */
@@ -508,7 +510,9 @@
       '<div class="modal-head"><div><h2>' + h(isEdit ? 'k3_sua_khach' : 'k3_them_khach') + '</h2><p>' + h('k3_ma_goi_y') + '</p></div>' + nutDong() + '</div>' +
       '<div class="modal-body">' +
         '<div class="k3-field f-4"><label for="k3f-name">' + h('k3_ten_khach') + '</label><input class="input lo" lang="lo" id="k3f-name" name="name" value="' + esc(k.name) + '" placeholder="' + esc(t('k3_ten_ph')) + '"><span class="err" data-err="name" hidden></span></div>' +
-        '<div class="k3-field f-2"><label for="k3f-code">' + h('k3_ma_khach') + '</label><input class="input code" id="k3f-code" name="code" value="' + esc(k.code || '') + '" placeholder="KH-0015" spellcheck="false" autocomplete="off"><span class="err" data-err="code" hidden></span></div>' +
+        '<div class="k3-field f-2"><label for="k3f-code">' + h('k3_ma_khach') + '</label><input class="input code" id="k3f-code" name="code" value="' + esc(k.code || '') + '"' +
+          (ganMa() ? ' placeholder="KH-0015"' : ' readonly aria-readonly="true" placeholder="' + esc(t('k3_chua_ma')) + '"') + ' spellcheck="false" autocomplete="off">' +
+          (ganMa() ? '' : '<span class="hint">' + h('k3_ma_kt_gan') + '</span>') + '<span class="err" data-err="code" hidden></span></div>' +
         '<div class="k3-field f-3"><span class="label">' + h('k3_loai_khach') + '</span><div class="k3-seg" role="radiogroup">' +
           '<label><input type="radio" name="cust_type" value="person"' + (k.cust_type !== 'company' ? ' checked' : '') + '><span>' + h('k3_ca_nhan') + '</span></label>' +
           '<label><input type="radio" name="cust_type" value="company"' + (k.cust_type === 'company' ? ' checked' : '') + '><span>' + h('k3_cong_ty') + '</span></label></div></div>' +
@@ -527,8 +531,9 @@
     openModal(html, async () => {
       const f = form().elements; setErr('name', ''); setErr('code', '');
       if (!f.name.value.trim()) { setErr('name', t('k3_e_ten')); f.name.focus(); return false; }
-      const body = { name: f.name.value.trim(), code: f.code.value.trim(), cust_type: form().querySelector('[name=cust_type]:checked').value,
+      const body = { name: f.name.value.trim(), cust_type: form().querySelector('[name=cust_type]:checked').value,
         phone: f.phone.value.trim(), address: f.address.value.trim(), invoice_mode: form().querySelector('[name=invoice_mode]:checked').value, note: f.note.value.trim() };
+      if (ganMa()) body.code = f.code.value.trim();          // vai khác không gửi ô mã — máy chủ cũng chặn đổi mã (403 MA_KHACH_KE_TOAN)
       if (isEdit) body.active = form().querySelector('[name=active]:checked').value === '1';
       let luu;
       try { luu = await (isEdit ? API.put('/api/customers/' + k.id, body) : API.post('/api/customers', body)); }

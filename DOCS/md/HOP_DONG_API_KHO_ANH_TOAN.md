@@ -446,8 +446,8 @@ Bên em cần anh bảo đảm bốn điều:
 
 | Khối | Quy tắc |
 |---|---|
-| `nhien_lieu` | mỗi kho EPL một dòng (cả ngưng dùng), xếp `country`, `name`; `nhap_thang` / `xuat_thang` là lít vào / ra trong tháng (tính cả chuyển kho); `gan_day` ≤ 10 dòng mới nhất; `gia` = giá vốn dòng |
-| `phu_tung` | mọi phụ tùng; `ton` = tồn; `gia_bq` = bình quân LAK; `gan_day` ≤ 10 |
+| `nhien_lieu` | mỗi kho EPL một dòng (cả ngưng dùng), xếp `country`, `name`; `ton_lit` = tồn **hiện tại** (màn hiện đúng số này); `gan_day` ≤ 10 dòng **mới nhất trước** — bên em chỉ lấy lần `kind = "in"` đầu tiên làm "nhập gần nhất"; `gia` = giá vốn dòng. `nhap_thang` / `xuat_thang` **không còn dùng** từ tối 30/09 (gửi cũng không sao) |
+| `phu_tung` | mọi phụ tùng; `ton` = tồn hiện tại; `gia_bq` = bình quân LAK; `gan_day` ≤ 10. `nhap_thang` / `xuat_thang` **không còn dùng** |
 | `hang` | mỗi tên hàng một dòng, xếp tồn giảm dần; `lo` = các lô còn hàng; `gan_day` ≤ 10 (nhập, xuất, điều chỉnh) |
 
 - **LAO tự thêm** (anh không phải làm):
@@ -455,7 +455,7 @@ Bên em cần anh bảo đảm bốn điều:
   - với phụ tùng: dòng mục V lấy kho chưa rời kho (`tren_phieu`);
   - lọc giá theo vai.
 
-**Bổ sung 30/09 chiều — giao diện Xem kho mới** (chủ dự án duyệt bản mẫu; màn vẽ bồn theo sức chứa, vạch mức an toàn, nhóm kho theo khu vực, sổ kho cả tháng, biểu đồ tồn theo ngày). Xin anh trả thêm các khoá sau. Bản tạm bên trang kế toán đã trả đúng các khoá này để anh đối chiếu.
+**Bổ sung 30/09 chiều — giao diện Xem kho mới** (chủ dự án duyệt bản mẫu; màn vẽ bồn theo sức chứa, vạch mức an toàn, nhóm kho theo khu vực). Xin anh trả thêm các khoá sau. Bản tạm bên trang kế toán đã trả đúng các khoá này để anh đối chiếu.
 
 | Khối | Khoá thêm | Kiểu | Ý nghĩa |
 |---|---|---|---|
@@ -464,13 +464,11 @@ Bên em cần anh bảo đảm bốn điều:
 | `nhien_lieu[]` | `region` | chuỗi hoặc `null` | khu vực để nhóm kho: `Thà Bốc`, `Thakhek`, `Viêng Chăn`… `null` = màn xếp vào "Việt Nam" (nếu `country = VN`) hoặc "Khu vực khác" |
 | `nhien_lieu[]` | `address` | chuỗi hoặc `null` | địa chỉ kho |
 | `nhien_lieu[]` | `kho_goc` | bool | `true` cho **đúng một** kho: kho Thà Bốc, nơi có kho phụ tùng và bãi hàng khách gửi. Màn gắn phụ tùng và hàng gửi bãi vào kho này |
-| `nhien_lieu[]` | `ton_dau` | số | tồn **đầu tháng** (lít) = Σ nhập − Σ xuất của mọi lần **trước** ngày 1 của tháng |
-| `nhien_lieu[]` | `so_thang[]` | mảng | **mọi** lần nhập / xuất **trong tháng**, **cũ trước**: `{ngay, kind: "in"|"out", qty, doc_no, truck_no, chuyen_kho: bool, kho_doi_ung, gia}`. Chuyển kho: `doc_no` = số chuyển kho (`CK-…`), `kho_doi_ung` = **mã** kho bên kia (`KHO-TB`…). `gia` = giá vốn dòng (LAK) |
-| `phu_tung[]` | `ton_dau`, `so_thang[]` | như trên | `so_thang[]`: `{ngay, kind, qty, doc_no, truck_no, gia}` trong tháng, cũ trước |
 
-- Kiểm: với mọi kho, `ton_dau + nhap_thang − xuat_thang` phải bằng tồn cuối tháng (tháng hiện tại thì bằng `ton_lit`). Bản tạm đã đạt trên dữ liệu thử 30/09.
+- **KHÔNG cần sổ kho tháng** (chốt tối 30/09). Bản trước của mục này em có xin thêm `ton_dau`, `so_thang[]` (mọi lần nhập / xuất trong tháng) và `kho_doi_ung` để vẽ sổ kho tháng và biểu đồ tồn theo ngày. Nay **rút lại cả ba**, anh **không phải làm**: Excel của khách (sheet ລາຍງານ) xếp *ລາຍງານສາງນໍ້າມັນ* (báo cáo kho nhiên liệu) và *ລາຍງານສາງອາໄຫຼ່* (báo cáo kho phụ tùng) vào **ໂມດູນສາງ** — tức hệ kho của anh; bên logistics chỉ xem **tồn hiện tại theo mặt hàng**. Sổ nhập / xuất theo tháng người dùng xem ở hệ của anh.
+- Tham số `thang` giữ tuỳ chọn: bên em gọi **không kèm** `thang` (tháng hiện tại). Số theo tháng chỉ còn dùng cho khối `hang` (hàng gửi bãi: `nhap_thang` / `xuat_thang` tính bằng tấn).
 - Ai khai `capacity_l`, `safety_l`, `region`: **bên kho** (danh mục kho của anh). Bản tạm đang cho Sếp / KT kho xăng dầu khai ở màn Điểm đổ nhiên liệu.
-- `gan_day` giữ nguyên: bên em vẫn dùng cho hàng gửi bãi, và để chạy được với máy chưa có `so_thang`.
+- `gan_day` giữ nguyên: bên em dùng cho hàng gửi bãi, và để biết lần nhập gần nhất của mỗi kho dầu.
 
 ### A14. `GET /api/lien-thong/kiem` — thử kết nối
 

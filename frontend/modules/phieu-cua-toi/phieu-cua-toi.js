@@ -458,6 +458,16 @@
   }
 
   /* ================================================================ nạp dữ liệu */
+  /** Chạy fn cho từng phần tử, tối đa `n` lượt gọi cùng lúc. Bắn hết một lúc (admin thấy mọi phiếu đang chạy: ~130 lượt)
+   *  làm máy chủ DB ở xa hết giờ kết nối (lỗi thật khi chạy bộ kiểm 30/09); điện thoại ngoài đường cũng chịu hơn. */
+  async function theoLo(ds, n, fn) {
+    const ra = new Array(ds.length);
+    let i = 0;
+    await Promise.all(Array.from({ length: Math.min(n, ds.length) }, async () => {
+      while (i < ds.length) { const j = i++; ra[j] = await fn(ds[j], j); }
+    }));
+    return ra;
+  }
   async function tai() {
     try {
       // Một năm mỗi tài xế ~700 phiếu: chỉ nạp MỌI phiếu còn chạy + 15 phiếu gần nhất (không phải cả năm, rồi mỗi
@@ -469,9 +479,9 @@
         API.get('/api/trips?locked=true&thang=' + m + '&co=1'), API.get('/api/trips?co=1')]);
       const ds = [...chay, ...gan.filter(p => !chay.some(x => x.id === p.id))];
       const them = DS.filter(p => p._ngoai && !ds.some(x => x.id === p.id));      // phiếu cũ đang mở từ tab Lịch sử
-      DS = await Promise.all([...ds, ...them].map(p => API.get('/api/trips/' + p.id).then(x => { if (p._ngoai) x._ngoai = true; return x; })));
+      DS = await theoLo([...ds, ...them], 6, p => API.get('/api/trips/' + p.id).then(x => { if (p._ngoai) x._ngoai = true; return x; }));
       // phiếu đề nghị (mã QR) của chuyến còn mở — lưu cùng bản trong máy để mất mạng vẫn đưa QR cho người cấp quét
-      await Promise.all(DS.filter(conMo).map(async p => { p._v = await API.get('/api/trips/' + p.id + '/vouchers').catch(() => []); }));
+      await theoLo(DS.filter(conMo), 6, async p => { p._v = await API.get('/api/trips/' + p.id + '/vouchers').catch(() => []); });
       SO = { thang: demLS(sThang), mo: demLS(sMo), khoa: demLS(sKhoa), tat: demLS(sTat) };
       ghi(K_DS(), DS); ghi(K_SO(), SO); matMang = false;
       LSDS = null;
