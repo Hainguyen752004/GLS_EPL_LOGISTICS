@@ -31,7 +31,8 @@ from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
-from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia, hinh_thuc
+from services.tinh_toan import (CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, la_xuat_ban, tien_dong,
+                                tinh_phieu, ty_gia, hinh_thuc)
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services import tai_khoan as TK
@@ -231,7 +232,7 @@ def _bo_tien_ban(ra):
     for x in (ra.get("thu_tien") or []):
         x.pop("amount", None); x.pop("amount_lak", None); x.pop("rate_to_lak", None)
     for d in (ra.get("expenses") or []):
-        d.pop("sale_price", None)                 # giá bán dầu cho chủ xe là tiền BÁN (29/09)
+        d.pop("sale_price", None)                 # giá bán dầu, phụ tùng cho chủ xe là tiền BÁN (29/09 · 30/09)
     return ra
 
 
@@ -746,12 +747,14 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             if e:
                 e.line_no = i; e.note = d.get("note")
                 e.pay_channel = _cach_tra_gui(m, d, p.company)
+                if dat_gia and "sale_price" in d and la_xuat_ban(p, e):
+                    e.sale_price = _gia_ban(p, e, d)     # phụ tùng xuất kho ngay lúc khai — giá bán gõ sau, lúc kiểm
                 _gan_tk(p, e, d.get("acct_code") or e.acct_code)
                 continue
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
             if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
                 moi.unit_price, moi.currency = gia_cu[d["id"]]
-            if p.company == "joint" and m == "fuel" and moi.source == "kho":      # giá bán chỉ ở dầu kho xe thuê
+            if la_xuat_ban(p, moi):      # giá bán chỉ ở dầu, phụ tùng kho của xe thuê
                 moi.sale_price = _gia_ban(p, moi, d) if (dat_gia and "sale_price" in d) else ban_cu.get(d.get("id"))
             db.add(moi)
 
@@ -782,8 +785,8 @@ def _ap_gia(db, p, m, cac_dong, user):
 
 
 def _gia_ban(p, e, d):
-    """Giá bán dầu cho chủ xe (29/09): chỉ có nghĩa ở phiếu XE THUÊ, dòng dầu lấy từ KHO. Chỗ khác thì luôn trống."""
-    if p.company != "joint" or e.section != "fuel" or e.source != "kho":
+    """Giá bán cho chủ xe: chỉ có nghĩa ở phiếu XE THUÊ, dòng dầu (29/09) hoặc phụ tùng (30/09) lấy từ KHO. Chỗ khác trống."""
+    if not la_xuat_ban(p, e):
         return None
     v = _so(d.get("sale_price"), "sale_price") if d.get("sale_price") not in (None, "") else None
     if v is not None and v < 0:
@@ -994,13 +997,14 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         # người KIỂM (anh Khampla A2, C5.1: Bãi không thấy tiền), nên chặn lúc KIỂM, không chặn Bãi lúc gửi.
         dong_muc = [d for d in _dong_chi(db, p) if d.section == muc]
         thieu = [(i, d) for i, d in enumerate(dong_muc, 1) if d.paid_by_epl and (d.qty or 0) > 0 and (d.unit_price or 0) <= 0]
-        if muc == "fuel" and p.company == "joint":
-            thieu_ban = [(i, d) for i, d in enumerate(dong_muc, 1) if d.source == "kho" and d.paid_by_epl
+        if muc in ("fuel", "repair") and p.company == "joint":
+            thieu_ban = [(i, d) for i, d in enumerate(dong_muc, 1) if la_xuat_ban(p, d) and d.paid_by_epl
                          and (d.qty or 0) > 0 and not (d.sale_price or 0) > 0]
             if thieu_ban:
-                raise HTTPException(409, {"ma": "THIEU_GIA_BAN", "loi": "Xe thuê: dầu lấy từ kho là xuất bán cho chủ xe %s — %s chưa có "
+                hang, dv = ("dầu", "lít") if muc == "fuel" else ("phụ tùng", "cái")
+                raise HTTPException(409, {"ma": "THIEU_GIA_BAN", "loi": "Xe thuê: %s lấy từ kho là xuất bán cho chủ xe %s — %s chưa có "
                                           "giá bán. Nhập giá bán cho chủ xe rồi kiểm lại." % (
-                                              p.owner_name or "", ", ".join("dòng %d (%s lít)" % (i, _gon(d.qty)) for i, d in thieu_ban))})
+                                              hang, p.owner_name or "", ", ".join("dòng %d (%s %s)" % (i, _gon(d.qty), dv) for i, d in thieu_ban))})
         if thieu:
             kho = [i for i, d in thieu if d.source == "kho"]
             raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi kiểm lại.%s" % (

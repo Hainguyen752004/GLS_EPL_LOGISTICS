@@ -25,8 +25,9 @@ Luật rút ra:
     Trước 30/09 mọi dòng không lấy kho đều ghi Có 4021 — tức tạm ứng tài xế bị ghi thành nợ nhà cung cấp: sai đối tượng
     (tài xế là nhân viên, không phải nhà cung cấp) và sai tài khoản (tạm ứng là tiền EPL còn đòi lại, luật kế toán Lào
     đặt ở 160 — ພະນັກງານ ຕິດໜີ້). Chủ dự án 30/09: "xe nhà ứng tiền trước thì tính vào tài xế để sau này tất toán".
-  · Xe thuê (liên kết) EPL ứng: Nợ 4022 — trừ vào tiền trả chủ xe. Dầu kho cho xe thuê là XUẤT BÁN theo giá bán riêng
-    (chốt 29/09) → Có 707 doanh thu bán hàng; giá vốn 607 / kho 1371 là tờ xuất kho bên kho ghi.
+  · Xe thuê (liên kết) EPL ứng: Nợ 4022 — trừ vào tiền trả chủ xe. Dầu (chốt 29/09) và phụ tùng (chốt 30/09) lấy kho cho
+    xe thuê là XUẤT BÁN theo giá bán riêng → Có 707 doanh thu bán hàng hoá; phía kho ghi giá vốn 607 / kho 1371.
+  · Chủ dự án 30/09: phải thu cước giữ 1211 như Excel; dầu xe chạy giữ 625 như anh Khampla — làm theo Excel, anh Khampla.
   · Chủ xe tự chi (paid_by_epl = False): không phải tiền của EPL → KHÔNG định khoản.
 """
 import json
@@ -124,7 +125,7 @@ def dinh_khoan_dong(company, section, source=None, *, place=None, paid_by_epl=Tr
         source = "kho" if (place or "fp_yard") == "fp_yard" else "mua"
     no = chi_phi(company, section)
     if source == "kho":
-        co = DT_BAN_HANG if (thue and section == "fuel") else KHO
+        co = DT_BAN_HANG if (thue and section in ("fuel", "repair")) else KHO   # xe thuê: dầu, phụ tùng kho là xuất bán
     elif ghi_no or the or section == "repair":
         co = NCC
     else:

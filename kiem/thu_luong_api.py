@@ -185,10 +185,12 @@ def main():
                                               "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, vai="totsua")
     phai(s, 200, "Tổ sửa chữa khai lấy phụ tùng từ KHO → dòng mục V, trừ tồn", g)
     d_kho = [e for e in g["expenses"] if e["section"] == "repair" and e["source"] == "kho"][-1]
-    assert d_kho["acct_code"] == "4022/1371" and d_kho["stock_move_id"], d_kho          # xe liên kết → 4022, kho → /1371
+    # xe liên kết: phụ tùng lấy kho là XUẤT BÁN cho chủ xe (chủ dự án 30/09) → 4022/707
+    assert d_kho["acct_code"] == "4022/707" and d_kho["stock_move_id"], d_kho
     assert g["sections"]["repair"] == "entered", "mục V phải về 'đã nhập' để kiểm lại"
     s, parts2 = goi("/api/parts", vai="thabok"); assert next(x for x in parts2 if x["id"] == pt["id"])["qty"] == ton - 1, "tồn phụ tùng phải giảm 1"
     to = [v for v in K.to_kho(g["doc_no"]) if v["trip_no"] == g["doc_no"]]
+    # trang kế toán TẠM ghi lần xuất kho theo giá vốn Nợ 4022 / Có 1371 — chưa tách giá vốn 607 / bán 707 (báo cáo rà định khoản)
     assert len(to) == 1 and to[0]["debit"] == "4022" and to[0]["credit"] == "1371", "PXK_PT bên kế toán: %s" % to
     print("  ✓ %-58s %s" % ("Trang kế toán sinh PXK_PT Nợ 4022 / Có 1371 (xe liên kết)", to[0]["ref"]))
     s, g = goi("/api/trips/%s/events" % P, {"kind": "repair", "repair": {"source": "mua", "item_name": "thử: vá lốp garage", "qty": 1, "unit_price": 300000}}, vai="totsua")
@@ -200,6 +202,13 @@ def main():
     phai(s, 409, "Tổ sửa chữa xoá dòng đã xuất kho khỏi phiếu → bị từ chối", g)
     # Sửa xe khai từ màn theo dõi đã đặt mục V ở "đã nhập" — kế toán kiểm thẳng, không cần Bãi gửi nữa
     s, g = goi("/api/trips/%s/sections/repair/send" % P, {}, vai="totsua"); phai(s, 409, "Mục V đã 'đã nhập' sẵn → gửi lại là sai bước", g)
+    s, g = goi("/api/trips/%s/sections/repair/verify" % P, {}, vai="ketoancp")
+    phai(s, 409, "Kiểm mục V khi phụ tùng kho xe thuê chưa có giá bán cho chủ xe → chặn", g)
+    assert g["detail"]["ma"] == "THIEU_GIA_BAN" and "phụ tùng" in g["detail"]["loi"], g
+    BAN_PT = 250000
+    s, g = goi("/api/trips/%s" % P, {"expenses": [{"id": d_kho["id"], "section": "repair", "sale_price": BAN_PT}]}, vai="ketoancp", method="PUT")
+    phai(s, 200, "KT Chi phí gõ giá bán phụ tùng cho chủ xe 250.000", g)
+    assert next(e for e in g["expenses"] if e["id"] == d_kho["id"])["sale_price"] == BAN_PT
     for hd, v in (("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
     s, kho = K.kt("/api/nhien-lieu", vai="khonl")             # sổ dầu ở trang kế toán (28/09)
@@ -246,7 +255,8 @@ def main():
     # xe thuê: dầu kho là xuất BÁN cho chủ xe — tiền dầu theo giá bán KT kho gõ (29/09), giá vốn vẫn ở unit_price
     assert chi["fuel"] == round(100 * dau["sale_price"]) and chi["travel"] == 1833500 and chi["other"] == 150000, chi
     print("  ✓ %-58s %s LAK/L" % ("dầu kho mang giá bình quân của kho lúc xuất", format(round(dau["unit_price"]), ",")))
-    assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])
+    # phụ tùng kho xe thuê trừ chủ xe theo GIÁ BÁN (30/09), không theo giá vốn
+    assert chi["repair"] == round(BAN_PT * 1 + 300000), (chi["repair"], pt["unit_price"])
     ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)
     assert g["tinh"]["tan_tinh"] == 40.5, g["tinh"]
     assert g["tinh"]["tra_chu_xe"] == round(thue - phi - vuot - ung, 2), (g["tinh"]["tra_chu_xe"], thue, phi, vuot, ung)

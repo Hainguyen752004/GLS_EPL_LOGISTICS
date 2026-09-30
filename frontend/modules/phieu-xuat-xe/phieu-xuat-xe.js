@@ -77,7 +77,9 @@
   const tronTien = (v, ma) => { const d = EPL.leTien(ma); return +(+v).toFixed(d); };
   const t2 = (v, ma) => EPL.tien(v, ma);
   // Xe thuê: dầu lấy từ kho là XUẤT BÁN cho chủ xe — thành tiền theo giá bán KT kho xăng dầu gõ (chép luật máy chủ, 29/09)
-  const giaDong = (d) => (P.company === 'joint' && d.section === 'fuel' && nguonCuaDiem(d) === 'kho' && d.sale_price != null && d.sale_price !== '') ? d.sale_price : d.unit_price;
+  // xe thuê: dầu (29/09) và phụ tùng (30/09) lấy KHO là xuất bán — tính theo giá bán cho chủ xe (soi gương tinh_toan.la_xuat_ban)
+  const xuatBan = (d) => P.company === 'joint' && ((d.section === 'fuel' && nguonCuaDiem(d) === 'kho') || (d.section === 'repair' && d.source === 'kho'));
+  const giaDong = (d) => (xuatBan(d) && d.sale_price != null && d.sale_price !== '') ? d.sale_price : d.unit_price;
   const tienDong = (d) => (EPL.doc(d.qty)) * (EPL.doc(giaDong(d))) * rate(d.currency);
   // giá vốn kho (30/09): thủ kho, tổ sửa chữa không thấy — máy chủ không gửi đơn giá dòng lấy kho và tổng chi
   const thayGiaKho = () => !['yard', 'driver', 'depot', 'parts', 'repair'].includes(vai());
@@ -259,14 +261,17 @@
           <td><select data-i="${i}" data-f="place_id" ${khoaDuoc ? '' : 'disabled'}>${diemChon(d)}</select>
             <div class="small muted px-nguon">${NN.h(nguonCuaDiem(d) === 'kho' ? 'src_kho' : 'src_mua')}</div>${noSel}</td>${pay}${acct}${xoa}</tr>`;
         }
-        let nguon = '';
+        let nguon = '', banMucV = '';
         if (m === 'repair') {
           const kho = d.source === 'kho', daXuat = !!d.stock_move_id;
+          // Xe thuê, phụ tùng KHO, EPL ứng = xuất bán cho chủ xe (30/09): ô GIÁ BÁN — KT Chi phí gõ khi kiểm mục V.
+          const banPt = lk && kho && d.paid_by_epl, giaBanMoPt = banPt && thayChi() && suaTienDuoc('repair');
+          banMucV = !(banPt && ('sale_price' in d || giaBanMoPt)) ? '' : `<div class="px-ban"><span class="small muted">${NN.h('sale_price')}</span><input class="num${giaBanMoPt && EPL.doc(d.qty) > 0 && !EPL.doc(d.sale_price) ? ' px-can-gia' : ''}" data-i="${i}" data-f="sale_price" value="${esc(d.sale_price == null ? '' : d.sale_price)}" ${giaBanMoPt ? '' : 'disabled'} inputmode="decimal"></div>`;
           nguon = `<td><select data-i="${i}" data-f="source" ${khoaDuoc && !daXuat ? '' : 'disabled'}><option value="mua" ${!kho ? 'selected' : ''}>${esc(NN.t('src_mua'))}</option><option value="kho" ${kho ? 'selected' : ''}>${esc(NN.t('src_kho'))}</option></select>${
             kho ? `<select data-i="${i}" data-f="part_id" ${khoaDuoc && !daXuat ? '' : 'disabled'} style="margin-top:4px"><option value="">—</option>${DM.parts.map(p => `<option value="${p.id}" ${p.id === d.part_id ? 'selected' : ''}>${esc(p.name)} · ${so(p.qty)}</option>`).join('')}</select>` : ''}${
             daXuat ? `<div class="small muted">${esc(NN.t('fs_out'))} ✓</div>` : ''}</td>`;
         }
-        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}${caSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
+        return `<tr data-i="${i}" class="${lk && !d.paid_by_epl ? 'own' : ''}"><td>${n + 1}</td><td>${sel}${theSel}${caSel}</td>${nguon}<td>${inp('qty')}</td><td class="px-gia">${inp('unit_price')}${banMucV}</td><td class="num amt px-gia"></td>${pay}${acct}${xoa}</tr>`;
       }).join('') : `<tr><td colspan="10" class="empty small">${NN.h('no_data')}</td></tr>`;
     });
     // dòng bản chất ở đầu mục III, IV: nội bộ (xe nhà) · xuất bán / ghi công nợ chủ xe (xe thuê) — 29/09

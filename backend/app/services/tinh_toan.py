@@ -71,12 +71,20 @@ def lam_tron(so_tien, ma):
 
 
 def gia_dong(phieu, dong):
-    """Đơn giá tính tiền của một dòng. Xe THUÊ: dầu lấy từ KHO là xuất BÁN cho chủ xe — tính theo giá bán KT kho xăng dầu
-    gõ trên phiếu (chủ dự án 29/09); chưa gõ thì tạm theo giá vốn. Mọi dòng khác: đơn giá của dòng."""
+    """Đơn giá tính tiền của một dòng. Xe THUÊ: dầu và phụ tùng lấy từ KHO là xuất BÁN cho chủ xe — tính theo giá bán
+    người kiểm mục gõ trên phiếu (dầu: KT kho xăng dầu, 29/09 · phụ tùng: KT Chi phí, 30/09); chưa gõ thì tạm theo giá
+    vốn. Mọi dòng khác: đơn giá của dòng."""
     ban = getattr(dong, "sale_price", None)
-    if ban is not None and phieu is not None and phieu.company == "joint" and dong.section == "fuel" and dong.source == "kho":
+    if ban is not None and la_xuat_ban(phieu, dong):
         return ban
     return dong.unit_price or 0
+
+
+def la_xuat_ban(phieu, dong):
+    """Dòng này có phải XUẤT BÁN cho chủ xe không: phiếu xe thuê, dầu (mục III) hoặc phụ tùng (mục V) lấy từ kho EPL.
+    Phụ tùng thêm ngày 30/09 (chủ dự án: "phụ tùng kho lắp cho xe thuê có xuất bán như dầu không? — có nhé")."""
+    return (phieu is not None and phieu.company == "joint" and dong.section in ("fuel", "repair")
+            and getattr(dong, "source", None) == "kho")
 
 
 def tien_dong(phieu, dong):
@@ -87,7 +95,7 @@ def tien_dong(phieu, dong):
 def hinh_thuc(phieu, loai):
     """Bản chất đề nghị theo LOẠI XE của DO (chủ dự án 29/09). `loai`: "tam_ung" | "xuat".
     Xe nhà → "noi_bo" (tạm ứng nội bộ · xuất nội bộ). Xe thuê, EPL ứng → tạm ứng "cong_no_chu_xe" (trừ vào tiền trả
-    chủ xe) · dầu "xuat_ban" (bán cho chủ xe theo giá bán riêng)."""
+    chủ xe) · dầu và phụ tùng kho "xuat_ban" (bán cho chủ xe theo giá bán riêng — phụ tùng từ 30/09)."""
     if (phieu.company or "EPL") != "joint":
         return "noi_bo"
     return "cong_no_chu_xe" if loai == "tam_ung" else "xuat_ban"

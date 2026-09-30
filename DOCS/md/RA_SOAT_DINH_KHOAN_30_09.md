@@ -18,6 +18,8 @@ Tune gửi á, tra cứu kỹ nhé, đúng luật pháp nhé"*. Anh gửi kèm �
 - Khi rà, em tìm thêm **5 lỗi về tiền** và đã sửa cả 5 (mục 5).
 - **Số đã ghi trên sổ kế toán thật chưa đổi.** Em đã soạn công cụ lập hai bút toán điều chỉnh chờ duyệt. Công cụ mới
   chạy thử, chưa ghi; chờ anh cho phép (mục 7).
+- **Anh đã quyết (30/09 chiều):** phải thu cước giữ **1211** như Excel; dầu xe chạy giữ **625** như anh Khampla;
+  **phụ tùng kho lắp cho xe thuê là xuất bán như dầu** (đã làm, mục 3).
 
 ## 2. Nguồn đối chiếu
 
@@ -39,13 +41,13 @@ Vế Nợ theo loại xe và mục. Vế Có theo **cách trả**, vì mỗi cá
 
 | Dòng chi | Xe nhà — trước | Xe nhà — nay | Xe liên kết — trước | Xe liên kết — nay | Vì sao |
 |---|---|---|---|---|---|
-| III dầu lấy kho EPL | 625/1371 | 625/1371 | 4022/1371 | **4022/707** | xe thuê: dầu là xuất BÁN theo giá bán riêng (chốt 29/09). Giá vốn 607/1371 do tờ xuất kho ghi |
+| III dầu lấy kho EPL | 625/1371 | 625/1371 | 4022/1371 | **4022/707** | xe thuê: dầu là xuất BÁN theo giá bán riêng (chốt 29/09) |
 | III dầu trạm ngoài, trạm ghi nợ | 625/4021 | 625/4021 | 4022/4021 | 4022/4021 | nợ trạm dầu |
 | III dầu trạm ngoài, tài xế trả tiền mặt | 625/4021 | **625/1601** | 4022/4021 | **4022/1011** | tiền đó nằm trong tạm ứng, không phải nợ trạm |
 | IV · VI tài xế cầm tiền mặt đi | 625/4021 | **625/1601** | 4022/4021 | **4022/1011** | xe nhà: tạm ứng nhân viên, quyết toán lúc tất toán · xe thuê: EPL chi hộ bằng tiền mặt, trừ tiền trả chủ xe |
 | IV trả cùng lương (tiền nước, tiền chuyến) | 625/4021 | **625/4201** | — | (xe thuê không có) | phải trả nhân viên, không phải nhà cung cấp |
 | IV · VI ghi nợ nhà cung cấp, trừ thẻ cao tốc | 625/4021 | 625/4021 | 4022/4021 | 4022/4021 | đúng Excel: ຕິດໜີ້ຜູ້ສະໜອງ |
-| V phụ tùng lấy kho | 614/1371 | 614/1371 | 4022/1371 | 4022/1371 | đúng quy trình |
+| V phụ tùng lấy kho | 614/1371 | 614/1371 | 4022/1371 | **4022/707** | xe thuê: phụ tùng cũng là xuất BÁN (anh chốt 30/09). KT Chi phí gõ giá bán khi kiểm mục V; chưa gõ thì không kiểm được. Tiền trả chủ xe trừ theo giá bán |
 | V sửa ngoài, garage | 614/4021 | 614/4021 | 4022/4021 | 4022/4021 | đúng quy trình |
 | Chủ xe tự chi | có mã | **không định khoản** | có mã | **không định khoản** | không phải tiền của EPL |
 
@@ -78,6 +80,17 @@ Sau khi tất toán một tài xế trong một kỳ, 1601 của tài xế đó 
 | 4 | Bản in phiếu thu ghi "1211/70" | sai định khoản, lại dùng mã nhóm | Nợ tiền theo cách thu / Có 1211 |
 | 5 | Bảng cân đối bên kế toán hiện **hai dòng cùng mã 70** khi 70 vừa có bút toán riêng vừa có tài khoản con | dòng cha thiếu 299 triệu | gộp làm một dòng |
 
+**Chưa sửa: hai lỗ hổng ở sổ công nợ chủ xe (trang kế toán tạm).** Đây là phần tiền của anh Tune, nên cần anh chọn: sửa
+tạm ở trang kế toán, hay đưa vào hợp đồng API.
+
+1. **Tiền thuê xe liên kết chưa bao giờ ghi thành nợ.** Không có bút toán "Nợ chi phí thuê xe / Có 4022". Sổ 4022 chỉ
+   có vế Nợ: tiền trả chủ xe, dầu ứng. Trên DB thật, 4022 đang dư Nợ 41.610.300, tức là sổ nói *chủ xe nợ EPL*, ngược
+   với thực tế. Excel của khách có dòng *"ມູນຄ່າ THB 1211/402 ຄ່າຂົນສົ່ງນອກ"* cho khoản này — cần hỏi anh Khampla ghi thế
+   nào.
+2. **Tờ xuất kho dầu / phụ tùng cho xe thuê** bên trang kế toán tạm đang ghi Nợ 4022 / Có 1371 **theo giá vốn**. Đúng
+   ra xuất bán phải tách hai bút toán: Nợ 607 / Có 1371 theo giá vốn, và Nợ 4022 / Có 707 theo giá bán. Trang kế toán
+   tạm không biết giá bán; giá bán nằm trên phiếu bên mình và đã gửi theo dòng.
+
 **Chưa sửa, đưa vào hợp đồng API với anh Tune.** Theo dõi NCC cộng phát sinh theo khoản mục, không xét cách trả. Vì vậy:
 
 - mọi dòng dầu mang khoản mục "diesel" (kể cả dầu lấy kho) đang bị tính vào phát sinh của trạm dầu Việt Nam;
@@ -85,7 +98,14 @@ Sau khi tất toán một tài xế trong một kỳ, 1601 của tài xế đó 
 
 Đề nghị: nợ nhà cung cấp = các dòng có vế **Có 4021**, đúng bảng ở mục 3.
 
-## 6. Việc cần anh quyết
+## 6. Việc cần anh quyết — cập nhật 30/09 chiều
+
+Đã quyết:
+
+- mục 2 và 3 bên dưới: **làm theo Excel và anh Khampla** (1211, 625), không đổi gì;
+- mục 4: **có**, phụ tùng kho xe thuê là xuất bán — đã làm.
+
+Còn mục 1, xem giải thích ngắn ở cuối mục này.
 
 1. **1371 · 4021 · 4022 chưa có trong danh mục bên kế toán.** Chưa có thì sổ của anh Tune không ghi được các dòng này.
    - **Cách A (em đề nghị):** nhờ anh Tune mở ba mã con trong danh mục của EPL: 1371 dưới 137, 4021 và 4022 dưới 402.
@@ -100,7 +120,17 @@ Sau khi tất toán một tài xế trong một kỳ, 1601 của tài xế đó 
 3. **Dầu xe chạy ghi vào 625?** 625 là đi lại, công tác phí. Nếu xếp theo bản chất thì có thể là 602 (vật liệu phục vụ
    sản xuất). Đây là chính sách của anh Khampla, em giữ nguyên, chỉ nêu ra để anh hỏi.
 4. **Phụ tùng kho lắp cho xe thuê:** theo quy trình thì ghi 4022/1371 theo giá vốn. Có phải xuất bán giống dầu
-   (4022/707, giá bán riêng) không?
+   (4022/707, giá bán riêng) không? → **Có** (anh chốt 30/09).
+
+**Mục 1 nói gọn:** danh mục của anh Tune giống một cái tủ có sẵn 494 ngăn.
+
+- Anh Khampla chia nhỏ ba ngăn:
+  - ngăn 137 (kho) có thêm ngăn con 1371;
+  - ngăn 402 (nợ phải trả) có thêm hai ngăn con: 4021 cho nhà cung cấp, 4022 cho chủ xe liên kết.
+- Tủ bên anh Tune **chưa có ba ngăn con đó**. Phiếu gửi sang mà ghi 4021 thì sổ bên đó không có chỗ để ghi.
+- **Cách A (em đề nghị, đúng ý "làm theo anh Khampla"):** nhắn anh Tune mở thêm ba ngăn con 1371, 4021, 4022. Bên mình
+  không đổi gì.
+- **Cách B:** bỏ ngăn con, ghi thẳng vào ngăn lớn (137, 401 / 402). Muốn biết nợ ai thì xem tên đối tượng trên từng dòng.
 
 ## 7. Việc chờ anh cho phép (DB thật)
 

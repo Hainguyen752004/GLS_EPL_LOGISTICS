@@ -1577,6 +1577,11 @@ window.EPL_TU_DIEN = {
   "lo": "ເຈົ້າຂອງລົດຈ່າຽເອງ",
   "en": "Owner pays"
  },
+ "pt_joint_note": {
+  "vi": "Xe thuê ngoài: phụ tùng lấy từ kho EPL là xuất bán cho chủ xe — KT Chi phí nhập giá bán khi kiểm mục V, số trừ vào tiền trả chủ xe theo giá bán.",
+  "lo": "ລົດເຊົ່ານອກ: ອາໄຫຼ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຍເຈົ້າຂອງລົດ ຕາມລາຄາຂາຍໃຫ້ເຈົ້າຂອງລົດ.",
+  "en": "Joint truck: parts from the EPL store are sold to the owner — deducted from the owner payout at the sale price."
+ },
  "fuel_joint_note": {
   "vi": "Xe thuê ngoài: dầu đổ tại kho EPL sẽ trừ vào tiền trả chủ xe. Đổ ở trạm ngoài do chủ xe tự trả thì không trừ.",
   "lo": "ລົດເຊົ່ານອກ: ນໍ້ານັນທີ່ໃສ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດ. ໃສ່ປໍ້ານອກ ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ.",

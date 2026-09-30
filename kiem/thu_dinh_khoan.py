@@ -87,7 +87,7 @@ def phan_1():
         ("EPL", "travel", None, (("cach", "luong"),)): "625/4201", ("joint", "travel", None, (("cach", "luong"),)): "4022/1011",
         ("EPL", "travel", None, (("cach", "ncc"),)): "625/4021", ("joint", "travel", None, (("cach", "ncc"),)): "4022/4021",
         ("EPL", "travel", None, (("the", True),)): "625/4021", ("EPL", "other", None, ()): "625/1601",
-        ("EPL", "repair", "kho", ()): "614/1371", ("joint", "repair", "kho", ()): "4022/1371",
+        ("EPL", "repair", "kho", ()): "614/1371", ("joint", "repair", "kho", ()): "4022/707",
         ("EPL", "repair", "mua", ()): "614/4021", ("joint", "repair", "mua", ()): "4022/4021",
     }
     sai = {k: (TK.dinh_khoan_dong(k[0], k[1], k[2], **dict(k[3])), v) for k, v in MONG.items()
