@@ -1,233 +1,705 @@
-/* Xem kho — ເບິ່ງສາງ. Theo MẶT HÀNG, CHỈ XEM (sếp 30/09: kho dời về trang logistics; thao tác kho do bên kho — anh Toàn).
+/* Xem kho — ເບິ່ງສາງ. CHỈ XEM (sếp 30/09: kho dời về trang logistics; thao tác kho do bên kho — anh Toàn).
  *
- * Ba nhóm: Nhiên liệu (mỗi kho dầu EPL một dòng), Phụ tùng (mỗi phụ tùng một dòng), Kho hàng (mỗi loại hàng khách gửi ở
- * bãi một dòng). Mỗi dòng: tồn, phần đang chờ xuất theo phiếu đề nghị, phần đã khai trên phiếu mà chưa có đề nghị, còn
- * lại, nhập / xuất trong tháng. Bấm một dòng → khung phải: phiếu đề nghị đang chờ (bấm số phiếu mở phiếu xuất xe), dòng
- * trên phiếu chưa có đề nghị, lô còn hàng, 10 lần nhập / xuất gần nhất.
+ * Giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (Kho_new.zip): cột trái là danh sách kho nhóm theo khu vực (mỗi kho
+ * một bồn nhỏ), phải là "Toàn bộ kho" (việc cần xử lý · bức tường bồn · ma trận phụ tùng · lô hàng gửi bãi) hoặc chi tiết
+ * một kho (bồn lớn theo sức chứa, vạch mức an toàn, biểu đồ tồn theo ngày, sổ kho tháng, phụ tùng, hàng gửi bãi).
  *
- * API: GET /api/kho-xem?thang=YYYY-MM (số tồn hỏi bên kho; phần chờ xuất là của trang điều xe). Bãi không nhận giá.
+ * Số tồn, sổ kho, giá bình quân, sức chứa, mức an toàn, khu vực: hỏi bên kho (nay là trang kế toán tạm, sau là API anh
+ * Toàn). Phần "chờ cấp" và "đã khai chưa đề nghị" là của trang điều xe. API: GET /api/kho-xem?thang=YYYY-MM.
+ * Vai không thấy giá vốn (thủ kho, thủ kho phụ tùng, tổ sửa chữa, Bãi) thì máy chủ không gửi giá — màn ẩn cột giá.
+ * Kho chưa khai sức chứa: bồn vẽ theo mức cao nhất trong tháng, không có phần trăm; chưa khai mức an toàn: không báo
+ * "dưới mức".
  */
 (function () {
-  const { API, NN, esc, so } = EPL;
-  let root, D = null, tab = 'dau', chon = { dau: null, pt: null, hang: null }, tim = '', loi = '';
+  const { API, NN, esc } = EPL;
+  let root = null, R = null, D = null, loi = '';
+  const st = { view: 'all', tab: 'fuel', ovTab: 'fuel', filter: 'all', query: '', flashDoc: null };
+  let uid = 0;
 
-  const q = (s) => root.querySelector(s);
-  const L = (n, d = 0) => (n === null || n === undefined) ? '—' : so(n, d);
-  const lit = (n) => L(n, 0);
-  const tan = (n) => L(n, 3);
-  const donVi = (u) => u ? NN.t(u) : '';
+  /* ================= Tiện ích ================= */
+  const $ = (s) => root.querySelector(s);
+  const $$ = (s) => Array.from(root.querySelectorAll(s));
+  const n0 = (v) => EPL.so(v || 0, 0);
+  const n2 = (v) => EPL.so(v || 0, 2);
+  const dash = (v, f) => v ? (f || n0)(v) : '<span class="dash">–</span>';
+  const ngay = (s) => s ? EPL.ngay(s) : '';
+  const day = (s) => parseInt(String(s || '').slice(8, 10), 10) || 1;
+  const sum = (ds, f) => ds.reduce((s, x) => s + (typeof f === 'function' ? f(x) : (x[f] || 0)), 0);
+  const pct = (a, b) => b ? Math.max(0, Math.min(1, a / b)) : 0;
+  const h = (k, p) => NN.h(k, p);
+  const t = (k, p) => NN.t(k, p);
   const thangNay = () => new Date().toISOString().slice(0, 7);
-  const khop = (...s) => !tim || s.some(x => String(x || '').toLowerCase().includes(tim));
+  const thangHien = () => { const m = String(R && R.thang || thangNay()); return m.slice(5, 7) + '/' + m.slice(0, 4); };
+  const donVi = (u) => u ? t(u) : '';
+  /** Tên kho bên kho ghi "ສາງນໍ້າມັນ ທ່າບົກ (Kho dầu Thà Bốc)" — tách để hiện chữ theo ngôn ngữ đang chọn. */
+  function tachTen(s) {
+    const m = /^(.*?)\s*\(([^()]*)\)\s*$/.exec(s || '');
+    return m ? { lo: m[1].trim(), vi: m[2].trim() } : { lo: s || '', vi: s || '' };
+  }
+  const tenChinh = (x) => NN.lang === 'lo' ? (x.lo || x.vi) : (x.vi || x.lo);
+  const tenPhu = (x) => NN.lang === 'lo' ? (x.vi !== x.lo ? x.vi : '') : (x.lo !== x.vi ? x.lo : '');
+  const tenNgan = (x) => tenChinh(x).replace(/^(Kho dầu|ສາງນໍ້າມັນ)\s+/i, '');
+  // số phiếu mở phiếu xuất xe — chỉ vai vào được màn đó (thủ kho, thủ kho phụ tùng thì chỉ là chữ)
+  const moDuoc = () => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === 'phieu-xuat-xe');
+  const moPhieu = (id, chu) => id && moDuoc() ? `<button type="button" class="link" data-mo-phieu="${esc(id)}">${esc(chu)}</button>` : `<span class="code">${esc(chu)}</span>`;
 
-  /* ---------------------------------------------------------------- dữ liệu */
+  /* ================= Dữ liệu từ máy chủ → khuôn của màn ================= */
+  function chuanHoa(r) {
+    const g = !!r.thay_gia;
+    const trongThang = (s) => String(s || '').slice(0, 7) === r.thang;
+    const whs = (r.nhien_lieu || []).map(k => {
+      const tn = tachTen(k.name);
+      // bên kho chưa gửi sổ tháng (máy cũ): dựng lại từ số tháng và các lần gần nhất trong tháng
+      const so = k.so_thang || (k.gan_day || []).filter(m => trongThang(m.ngay)).slice().reverse();
+      const moves = so.map(m => ({
+        date: m.ngay, qty: m.qty || 0, doc: m.doc_no || '', vehicle: m.truck_no || '', price: g ? m.gia : null, doi: m.kho_doi_ung || null,
+        type: m.chuyen_kho ? (m.kind === 'in' ? 'transfer-in' : 'transfer-out') : (m.kind === 'in' ? 'in' : 'out'),
+      }));
+      const ton = k.ton_lit === null || k.ton_lit === undefined ? null : k.ton_lit;
+      const opening = k.ton_dau !== undefined && k.ton_dau !== null ? k.ton_dau : (ton || 0) - (k.nhap_thang || 0) + (k.xuat_thang || 0);
+      return {
+        id: k.place_id, code: k.code || '', vi: tn.vi, lo: tn.lo, country: k.country || '',
+        region: k.region || (k.country === 'VN' ? t('k2_kv_vn') : t('k2_kv_khac')),
+        capacity: k.capacity_l || 0, safety: k.safety_l || 0, avgCost: g ? k.gia_bq : null, opening, moves,
+        pending: (k.de_nghi || []).map(v => ({ date: v.ngay, doc: v.voucher_no || '', trip: v.trip_id, tripNo: v.doc_no || '', vehicle: v.truck_no || '',
+          driver: v.driver_name || '', route: v.route || '', qty: v.qty_l || 0, ban: v.company === 'joint' })),
+        declared: (k.chua_de_nghi || []).map(v => ({ date: v.ngay, doc: v.doc_no || '', trip: v.trip_id, vehicle: v.truck_no || '',
+          driver: v.driver_name || '', route: v.route || '', qty: v.qty_l || 0 })),
+        active: k.active !== false, goc: !!k.kho_goc, parts: {}, cargoTypes: [],
+      };
+    });
+    // Phụ tùng và hàng khách gửi ở bãi: bên này có MỘT kho phụ tùng và MỘT bãi — ở kho gốc (Thà Bốc)
+    const goc = whs.find(w => w.goc) || whs[0] || null;
+    const parts = (r.phu_tung || []).map(p => ({
+      code: p.id, ten: p.name, unit: p.unit, min: p.min_qty || 0, cost: g ? p.gia_bq : null, stock: p.ton, active: p.active !== false,
+      moves: (p.so_thang || (p.gan_day || []).filter(m => trongThang(m.ngay))).map(m => ({ date: m.ngay, type: m.kind === 'in' ? 'in' : 'out',
+        qty: m.qty || 0, doc: m.doc_no || '', vehicle: m.truck_no || '' })),
+      pending: (p.tren_phieu || []).map(x => ({ date: x.ngay, doc: x.doc_no || '', trip: x.trip_id, vehicle: x.truck_no || '', qty: x.qty || 0 })),
+    }));
+    if (goc) parts.forEach(p => { if ((p.stock || 0) > 0) goc.parts[p.code] = p.stock; });
+    const cargo = (r.hang || []).map(c => ({
+      code: c.name, ten: c.name, yard: goc ? goc.id : null, left: c.ton_t || 0, inQ: c.nhap_thang || 0, outQ: c.xuat_thang || 0,
+      lots: (c.lo || []).map(l => ({ doc: l.doc_no || '', vehicle: l.truck_no || '', customer: l.customer_name || '', origin: l.origin || '',
+        inQty: l.nhap_t || 0, left: l.con_t || 0, date: l.ngay })),
+      moves: (c.gan_day || []).map(m => ({ date: m.ngay, type: m.kind === 'in' ? 'in' : 'out', qty: m.qty || 0, doc: m.doc_no || '', vehicle: m.truck_no || '' })),
+    }));
+    if (goc) goc.cargoTypes = cargo;
+    const byId = {}, byCode = {};
+    whs.forEach(w => { tinhKho(w); byId[w.id] = w; if (w.code) byCode[w.code] = w; });
+    const partById = {}; parts.forEach(p => { partById[p.code] = p; });
+    // khu vực: theo thứ tự kho gốc trước, rồi tên; "khu vực khác" và Việt Nam xuống cuối
+    const kv = [];
+    whs.slice().sort((a, b) => (b.goc - a.goc) || a.region.localeCompare(b.region)).forEach(w => { if (!kv.includes(w.region)) kv.push(w.region); });
+    const cuoi = [t('k2_kv_vn'), t('k2_kv_khac')];
+    kv.sort((a, b) => (cuoi.indexOf(a) - cuoi.indexOf(b)) || 0);
+    const [y, m] = String(r.thang || thangNay()).split('-').map(Number);
+    const d = { g, whs, byId, byCode, parts, partById, cargo, regions: kv, daysInMonth: new Date(y, m, 0).getDate(), goc };
+    d.T = {
+      stock: sum(whs, 'stock'), declared: sum(whs, 'declaredQty'), pending: sum(whs, 'pendingQty'),
+      pendingDocs: sum(whs, w => w.pending.length), whCount: whs.length,
+      empty: whs.filter(w => w.status === 'empty'),
+      partsLow: parts.filter(p => p.active && p.min > 0 && (p.stock || 0) <= p.min),
+      cargoTons: sum(cargo, c => sum(c.lots, 'left')), cargoLots: sum(cargo, c => c.lots.length),
+    };
+    return d;
+  }
+
+  function tinhKho(w) {
+    const vao = (m) => m.type === 'in' || m.type === 'transfer-in';
+    w.inQ = sum(w.moves.filter(vao), 'qty');
+    w.outQ = sum(w.moves.filter(m => !vao(m)), 'qty');
+    w.stock = Math.round((w.opening + w.inQ - w.outQ) * 100) / 100;
+    w.pendingQty = sum(w.pending, 'qty');
+    w.declaredQty = sum(w.declared, 'qty');
+    w.remain = w.stock - w.pendingQty - w.declaredQty;
+    w.status = w.stock <= 0 ? 'empty' : (w.safety && w.remain < w.safety ? 'low' : 'ok');
+    w.alerts = [];
+    if (w.status === 'low') w.alerts.push('low');
+    if (w.declaredQty > 0) w.alerts.push('declared');
+    if (w.pendingQty > 0) w.alerts.push('pending');
+    w.partKinds = 0;
+    // mức cao nhất trong tháng — thang vẽ bồn khi kho chưa khai sức chứa
+    let bal = w.opening, dinh = Math.max(w.opening, 0);
+    w.moves.forEach(m => { bal += (m.type === 'in' || m.type === 'transfer-in') ? m.qty : -m.qty; dinh = Math.max(dinh, bal); });
+    w.peak = Math.max(dinh, w.stock, 1);
+    return w;
+  }
+  const thangVe = (w) => w.capacity || w.peak * 1.15;
+  const partTotal = (code) => sum(D.whs, w => (w.parts && w.parts[code]) || 0);
+  const isBelowMin = (p, qty) => p.min > 0 && qty <= p.min;
+
+  /* ================= Bồn chứa (SVG) ================= */
+  function tankSvg(w, o) {
+    o = o || {};
+    const id = 'k2t' + (++uid);
+    const W = o.width || 84, H = o.height || 150, pad = o.scale && w.capacity ? 46 : 4;
+    const bx = pad, bw = W - pad - 4, top = 10, bh = H - top - 6, r = Math.min(14, bw / 4);
+    const cap = thangVe(w);
+    const fillH = bh * pct(w.stock, cap);
+    const declH = bh * pct(w.declaredQty + w.pendingQty, cap);
+    const yFill = top + bh - fillH;
+    const ySafe = w.safety ? top + bh - bh * pct(w.safety, cap) : null;
+    let wave = '';
+    if (fillH > 6) {
+      const y = yFill, x0 = bx, x1 = bx + bw, amp = Math.min(3, fillH / 6), seg = bw / 4;
+      wave = 'M' + x0 + ',' + (y + amp) + ' Q' + (x0 + seg * 0.5) + ',' + (y - amp) + ' ' + (x0 + seg) + ',' + (y + amp) +
+        ' T' + (x0 + seg * 2) + ',' + (y + amp) + ' T' + (x0 + seg * 3) + ',' + (y + amp) + ' T' + x1 + ',' + (y + amp) +
+        ' L' + x1 + ',' + (top + bh) + ' L' + x0 + ',' + (top + bh) + ' Z';
+    }
+    let ticks = '';
+    if (o.scale && w.capacity) {
+      [0, 0.25, 0.5, 0.75, 1].forEach(f => {
+        const ty = top + bh - bh * f;
+        ticks += '<line x1="' + (bx - 6) + '" x2="' + (bx - 2) + '" y1="' + ty + '" y2="' + ty + '" class="sv-line2"/>' +
+          '<text x="' + (bx - 8) + '" y="' + (ty + 3.5) + '" text-anchor="end" font-size="10" class="sv-muted">' + n0(cap * f) + '</text>';
+      });
+    }
+    const label = o.label !== false && w.stock > 0 && w.capacity
+      ? '<text x="' + (bx + bw / 2) + '" y="' + Math.max(top + 16, yFill - 6) + '" text-anchor="middle" font-size="' + (o.scale ? 15 : 12) +
+        '" font-weight="700" class="' + (fillH > bh - 22 ? 'sv-onfill' : 'sv-ink') + '">' + Math.round(pct(w.stock, cap) * 100) + '%</text>'
+      : '';
+    const aria = w.capacity ? t('k2_aria_bon', { kho: tenChinh(w), ton: n0(w.stock), cap: n0(w.capacity) }) : t('k2_aria_bon_ko', { kho: tenChinh(w), ton: n0(w.stock) });
+    return '<svg class="' + (o.cls || '') + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(aria) + '">' +
+      '<defs><clipPath id="' + id + 'c"><rect x="' + bx + '" y="' + top + '" width="' + bw + '" height="' + bh + '" rx="' + r + '"/></clipPath>' +
+      '<pattern id="' + id + 'h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+      '<rect width="6" height="6" class="sv-warn-tint"/><rect width="3" height="6" class="sv-warn"/></pattern>' +
+      '<linearGradient id="' + id + 'g" x1="0" x2="1"><stop offset="0" class="sv-stop1"/><stop offset=".55" class="sv-stop2"/><stop offset="1" class="sv-stop1"/></linearGradient></defs>' +
+      ticks +
+      '<rect x="' + bx + '" y="' + top + '" width="' + bw + '" height="' + bh + '" rx="' + r + '" class="sv-body' + (w.capacity ? '' : ' sv-no-cap') + '" stroke-width="1.5"/>' +
+      '<g clip-path="url(#' + id + 'c)">' +
+        (wave ? '<path d="' + wave + '" fill="url(#' + id + 'g)"/>' : '') +
+        (declH > 0 && fillH > 0 ? '<rect x="' + bx + '" y="' + yFill + '" width="' + bw + '" height="' + Math.min(declH, fillH) + '" fill="url(#' + id + 'h)" opacity=".92"/>' : '') +
+      '</g>' +
+      (ySafe !== null ? '<line x1="' + (bx + 2) + '" x2="' + (bx + bw - 2) + '" y1="' + ySafe + '" y2="' + ySafe + '" class="sv-safe" stroke-width="1.5" stroke-dasharray="4 3"/>' : '') +
+      '<rect x="' + (bx + bw / 2 - 9) + '" y="' + (top - 7) + '" width="18" height="7" rx="2" class="sv-cap"/>' +
+      label + '</svg>';
+  }
+
+  function miniTank(w) {
+    const H = 30, top = 4, cap = thangVe(w), fill = H * pct(w.stock, cap), decl = H * pct(w.declaredQty + w.pendingQty, cap);
+    const col = w.status === 'low' ? 'sv-danger' : 'sv-fill';
+    return '<svg class="mini-tank" viewBox="0 0 30 38" aria-hidden="true">' +
+      '<rect x="6" y="' + top + '" width="18" height="' + H + '" rx="5" class="sv-body' + (w.capacity ? '' : ' sv-no-cap') + '"/>' +
+      (fill > 0 ? '<rect x="7" y="' + (top + H - fill) + '" width="16" height="' + fill + '" rx="4" class="' + col + '"/>' : '') +
+      (decl > 0 && fill > 0 ? '<rect x="7" y="' + (top + H - fill) + '" width="16" height="' + Math.min(decl, fill) + '" class="sv-warn" opacity=".75"/>' : '') +
+      '</svg>';
+  }
+
+  /* ================= Biểu đồ tồn và nhập / xuất theo ngày ================= */
+  function flowSvg(w) {
+    const days = D.daysInMonth, X0 = 46, X1 = 890, Y0 = 12, Y1 = 132, dx = (X1 - X0) / (days - 1);
+    const perDay = [];
+    for (let d = 1; d <= days; d++) perDay.push({ inQ: 0, outQ: 0, bal: 0 });
+    w.moves.forEach(m => {
+      const p = perDay[Math.min(days, day(m.date)) - 1];
+      if (m.type === 'in' || m.type === 'transfer-in') p.inQ += m.qty; else p.outQ += m.qty;
+    });
+    let bal = w.opening;
+    perDay.forEach(p => { bal += p.inQ - p.outQ; p.bal = bal; });
+    const maxBal = Math.max(w.opening, Math.max.apply(null, perDay.map(p => p.bal)), w.safety || 0, 1);
+    const maxMv = Math.max(1, Math.max.apply(null, perDay.map(p => Math.max(p.inQ, p.outQ))));
+    const sy = (v) => Y1 - (Math.max(v, 0) / maxBal) * (Y1 - Y0);
+    let bars = '';
+    const pts = [];
+    perDay.forEach((p, i) => {
+      const x = X0 + i * dx;
+      if (p.inQ) bars += '<rect x="' + (x - 5) + '" y="' + (Y1 - 44 * p.inQ / maxMv) + '" width="5" height="' + (44 * p.inQ / maxMv) + '" rx="1.5" class="sv-fill"><title>' + esc(t('k2_ngay_nhap', { d: i + 1, l: n0(p.inQ) })) + '</title></rect>';
+      if (p.outQ) bars += '<rect x="' + x + '" y="' + (Y1 - 44 * p.outQ / maxMv) + '" width="5" height="' + (44 * p.outQ / maxMv) + '" rx="1.5" class="sv-warn"><title>' + esc(t('k2_ngay_xuat', { d: i + 1, l: n0(p.outQ) })) + '</title></rect>';
+      pts.push(x.toFixed(1) + ',' + sy(p.bal).toFixed(1));
+    });
+    let axis = '';
+    [1, 5, 10, 15, 20, 25, days].forEach(dd => {
+      const x = X0 + (dd - 1) * dx;
+      axis += '<text x="' + x + '" y="' + (Y1 + 18) + '" text-anchor="middle" font-size="11" class="sv-muted">' + dd + '</text>';
+    });
+    const safeY = w.safety && w.safety <= maxBal ? sy(w.safety) : null;
+    return '<svg viewBox="0 0 900 156" preserveAspectRatio="none" role="img" aria-label="' + esc(t('k2_flow', { thang: thangHien() })) + '">' +
+      '<line x1="' + X0 + '" x2="' + X1 + '" y1="' + Y1 + '" y2="' + Y1 + '" class="sv-line2"/>' +
+      '<line x1="' + X0 + '" x2="' + X1 + '" y1="' + Y0 + '" y2="' + Y0 + '" class="sv-grid"/>' +
+      '<text x="' + (X0 - 8) + '" y="' + (Y0 + 4) + '" text-anchor="end" font-size="11" class="sv-muted">' + n0(maxBal) + '</text>' +
+      '<text x="' + (X0 - 8) + '" y="' + (Y1 + 4) + '" text-anchor="end" font-size="11" class="sv-muted">0</text>' +
+      (safeY !== null ? '<line x1="' + X0 + '" x2="' + X1 + '" y1="' + safeY + '" y2="' + safeY + '" class="sv-safe" stroke-dasharray="4 4" opacity=".7"/>' : '') +
+      bars +
+      '<polyline points="' + pts.join(' ') + '" fill="none" class="sv-bal" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>' +
+      axis + '</svg>';
+  }
+
+  /* ================= Danh sách kho (cột trái) ================= */
+  function matchesFilter(w) {
+    if (st.filter === 'alert') return w.alerts.length > 0 || Object.keys(w.parts).some(k => D.partById[k] && isBelowMin(D.partById[k], partTotal(k)));
+    if (st.filter === 'stock') return w.stock > 0;
+    if (st.filter === 'empty') return w.status === 'empty';
+    return true;
+  }
+  function matchesQuery(w) {
+    const q = st.query.trim().toLowerCase();
+    return !q || (w.vi + ' ' + w.lo + ' ' + w.code + ' ' + w.region).toLowerCase().includes(q);
+  }
+  function whTags(w) {
+    let s = '';
+    if (w.status === 'empty') s += '<span class="k2-tag k2-tag--empty">' + h('k2_trong') + '</span>';
+    if (w.status === 'low') s += '<span class="k2-tag k2-tag--danger">' + h('k2_duoi_an_toan') + '</span>';
+    if (w.declaredQty) s += '<span class="k2-tag k2-tag--warn">' + h('k2_da_khai_n', { n: n0(w.declaredQty) }) + '</span>';
+    if (w.pendingQty) s += '<span class="k2-tag k2-tag--warn">' + h('k2_cho_cap_n', { n: n0(w.pendingQty) }) + '</span>';
+    const pk = Object.keys(w.parts).length;
+    if (pk) s += '<span class="k2-tag k2-tag--ok">' + h('k2_n_phu_tung', { n: pk }) + '</span>';
+    if (w.cargoTypes.length) s += '<span class="k2-tag k2-tag--ok">' + h('k2_bai_hang') + '</span>';
+    if (!w.active) s += '<span class="k2-tag k2-tag--empty">' + h('inactive') + '</span>';
+    return s;
+  }
+
+  function renderList() {
+    const T = D.T;
+    let html = '<li><button type="button" class="wh-item wh-all' + (st.view === 'all' ? ' is-active' : '') + '" data-open="all" role="option" aria-selected="' + (st.view === 'all') + '">' +
+      '<span class="all-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 4l9 6v10H3zM9 20v-6h6v6"/></svg></span>' +
+      '<span><span class="wh-name">' + h('k2_toan_bo') + '</span><span class="wh-meta">' + h('k2_toan_bo_phu', { n: T.whCount }) + '</span></span>' +
+      '<span class="wh-qty">' + n0(T.stock) + '<small>' + h('u_l') + '</small></span></button></li>';
+    let shown = 0;
+    D.regions.forEach(rg => {
+      const ds = D.whs.filter(w => w.region === rg && matchesFilter(w) && matchesQuery(w));
+      if (!ds.length) return;
+      shown += ds.length;
+      html += '<li class="wh-group"><div class="wh-group-head"><span>' + esc(rg) + '</span><span>' + n0(sum(ds, 'stock')) + ' ' + h('u_l') + '</span></div><ul class="wh-list">';
+      ds.forEach(w => {
+        const active = st.view === w.id;
+        html += '<li><button type="button" class="wh-item' + (active ? ' is-active' : '') + '" data-open="' + esc(w.id) + '" role="option" aria-selected="' + active + '">' +
+          miniTank(w) +
+          '<span><span class="wh-name"' + (NN.lang === 'lo' ? ' lang="lo"' : '') + '>' + esc(tenChinh(w)) + '</span>' +
+          '<span class="wh-meta">' + (w.code ? '<span class="code">' + esc(w.code) + '</span>' : '') + whTags(w) + '</span></span>' +
+          '<span class="wh-qty">' + n0(w.stock) + '<small>' + (w.capacity ? '/ ' + n0(w.capacity) : h('u_l')) + '</small></span></button></li>';
+      });
+      html += '</ul></li>';
+    });
+    if (!shown) html += '<li class="k2-empty" style="margin-top:12px">' + h('k2_khong_khop') + '</li>';
+    $('#k2-wh').innerHTML = html;
+  }
+
+  /* ================= Tìm theo số phiếu / số xe ================= */
+  const moveLabel = (ty) => h({ in: 'k2_mv_in', out: 'k2_mv_out', 'transfer-in': 'k2_mv_tin', 'transfer-out': 'k2_mv_tout' }[ty] || 'k2_mv_out');
+  function allDocs() {
+    const out = [];
+    D.whs.forEach(w => {
+      w.moves.forEach(m => out.push({ wh: w.id, tab: 'fuel', doc: m.doc, vehicle: m.vehicle, text: t({ in: 'k2_mv_in', out: 'k2_mv_out', 'transfer-in': 'k2_mv_tin', 'transfer-out': 'k2_mv_tout' }[m.type]) + ' ' + n0(m.qty) + ' ' + t('u_l'), date: m.date }));
+      w.declared.forEach(m => out.push({ wh: w.id, tab: 'fuel', doc: m.doc, vehicle: m.vehicle, text: t('k2_da_khai_n', { n: n0(m.qty) }) + ' ' + t('u_l'), date: m.date }));
+      w.pending.forEach(m => out.push({ wh: w.id, tab: 'fuel', doc: m.doc + ' ' + m.tripNo, vehicle: m.vehicle, text: t('k2_cho_cap_n', { n: n0(m.qty) }) + ' ' + t('u_l'), date: m.date }));
+    });
+    const kp = D.goc ? D.goc.id : 'all';
+    D.parts.forEach(p => {
+      p.moves.forEach(m => out.push({ wh: kp, tab: 'parts', doc: m.doc, vehicle: m.vehicle, text: p.ten + ' ' + t(m.type === 'in' ? 'k2_nhap' : 'k2_xuat') + ' ' + n2(m.qty), date: m.date }));
+      p.pending.forEach(m => out.push({ wh: kp, tab: 'parts', doc: m.doc, vehicle: m.vehicle, text: p.ten + ' · ' + t('k2_pt_cho_ngan') + ' ' + n2(m.qty), date: m.date }));
+    });
+    D.cargo.forEach(c => {
+      c.moves.forEach(m => out.push({ wh: c.yard, tab: 'cargo', doc: m.doc, vehicle: m.vehicle, text: c.ten + ' ' + t(m.type === 'in' ? 'k2_nhap' : 'k2_xuat') + ' ' + n2(m.qty) + ' ' + t('ton'), date: m.date }));
+      c.lots.forEach(l => out.push({ wh: c.yard, tab: 'cargo', doc: l.doc, vehicle: l.vehicle, text: c.ten + ' · ' + t('k2_lo_con', { t: n2(l.left) }), date: l.date }));
+    });
+    return out.filter(d => d.doc || d.vehicle);
+  }
+  let DOCS = [];
+
+  function renderSearchResults() {
+    const q = st.query.trim().toLowerCase(), box = $('#k2-sr');
+    if (q.length < 2) { box.hidden = true; return; }
+    const hits = DOCS.filter(d => ((d.doc || '') + ' ' + (d.vehicle ? t('k2_xe_x', { xe: d.vehicle }) : '')).toLowerCase().includes(q)).slice(0, 8);
+    const partHits = D.parts.filter(p => (p.ten || '').toLowerCase().includes(q));
+    const cargoHits = D.cargo.filter(c => (c.ten || '').toLowerCase().includes(q));
+    if (!hits.length && !partHits.length && !cargoHits.length) { box.hidden = true; return; }
+    let html = '';
+    const ten = (id) => D.byId[id] ? tenChinh(D.byId[id]) : '';
+    if (hits.length) {
+      html += '<h3>' + h('k2_sr_phieu') + '</h3>' + hits.map(d => '<button type="button" class="sr-item" data-open="' + esc(d.wh) + '" data-tab="' + d.tab + '" data-doc="' + esc(d.doc) + '">' +
+        '<span class="code">' + esc(d.doc || '—') + '</span><span>' + esc(d.text) + (d.vehicle ? ', ' + esc(t('k2_xe_x', { xe: d.vehicle })) : '') + '</span>' +
+        '<small>' + esc(ten(d.wh)) + (d.date ? ', ' + esc(ngay(d.date)) : '') + '</small></button>').join('');
+    }
+    if (partHits.length) {
+      html += '<h3>' + h('part') + '</h3>' + partHits.map(p => '<button type="button" class="sr-item" data-open="' + esc(D.goc ? D.goc.id : 'all') + '" data-tab="parts">' +
+        '<span class="code">' + esc(donVi(p.unit)) + '</span><span' + ' lang="lo">' + esc(p.ten) + '</span><small>' + esc(t('k2_sr_pt', { sl: n2(p.stock), dv: donVi(p.unit) })) + '</small></button>').join('');
+    }
+    if (cargoHits.length) {
+      html += '<h3>' + h('k2_hang_gui_bai') + '</h3>' + cargoHits.map(c => '<button type="button" class="sr-item" data-open="' + esc(c.yard) + '" data-tab="cargo">' +
+        '<span class="code">' + esc(t('ton')) + '</span><span lang="lo">' + esc(c.ten) + '</span><small>' + esc(t('k2_sr_bai', { kho: ten(c.yard) })) + '</small></button>').join('');
+    }
+    box.innerHTML = html; box.hidden = false;
+  }
+
+  /* ================= Toàn bộ kho ================= */
+  function renderAll() {
+    const T = D.T;
+    const sentence = h('k2_cau_ton', { l: n0(T.stock), co: T.whCount - T.empty.length, n: T.whCount }) + ' ' +
+      (T.declared ? h('k2_cau_khai', { l: n0(T.declared) }) + ' ' : '') +
+      (T.pending ? h('k2_cau_cho', { l: n0(T.pending), n: T.pendingDocs }) + ' ' : h('k2_cau_khong_cho') + ' ') +
+      (T.empty.length ? h('k2_cau_trong', { n: T.empty.length }) : '');
+
+    const tanks = D.regions.map(rg => D.whs.filter(w => w.region === rg).map(w =>
+      '<button type="button" class="tank-card' + (w.status === 'empty' ? ' is-empty' : '') + '" data-open="' + esc(w.id) + '">' +
+        tankSvg(w) +
+        '<span class="t-name"' + (NN.lang === 'lo' ? ' lang="lo"' : '') + '>' + esc(tenNgan(w)) + '</span>' +
+        '<span class="t-qty"><b>' + n0(w.stock) + '</b>' + (w.capacity ? ' / ' + n0(w.capacity) : '') + ' L</span>' +
+        (w.status === 'low' ? '<span class="k2-tag k2-tag--danger">' + h('k2_duoi_muc') + '</span>'
+          : w.declaredQty ? '<span class="k2-tag k2-tag--warn">' + h('k2_da_khai_n', { n: n0(w.declaredQty) }) + '</span>'
+          : !w.capacity ? '<span class="k2-tag k2-tag--empty">' + h('k2_chua_suc_chua') + '</span>' : '') +
+      '</button>').join('')).join('');
+
+    // Ma trận phụ tùng × kho
+    const partWh = D.whs.filter(w => Object.keys(w.parts).length > 0);
+    const mHead = '<tr><th>' + h('part') + '</th><th>' + h('unit') + '</th>' + partWh.map(w => '<th class="num">' + esc(tenNgan(w)) + '</th>').join('') +
+      '<th class="num">' + h('k2_tong') + '</th><th class="num">' + h('min_stock') + '</th>' + (D.g ? '<th class="num">' + h('fuel_avg') + '</th>' : '') + '</tr>';
+    const mBody = D.parts.map(p => {
+      const tot = partTotal(p.code), low = isBelowMin(p, tot);
+      return '<tr class="is-clickable" data-open="' + esc(partWh[0] ? partWh[0].id : 'all') + '" data-tab="parts"><td><b lang="lo">' + esc(p.ten) + '</b>' + (p.active ? '' : '<span class="k2-sub">' + h('inactive') + '</span>') + '</td><td>' + esc(donVi(p.unit)) + '</td>' +
+        partWh.map(w => { const q = w.parts[p.code] || 0; return '<td class="cell ' + (q ? (low ? 'cell-low' : 'cell-ok') : 'cell-none') + '"><span>' + (q ? n2(q) : '–') + '</span></td>'; }).join('') +
+        '<td class="num"><b class="' + (low ? 'below' : '') + '">' + n2(tot) + '</b>' + (low ? '<span class="k2-sub below">' + h('k2_duoi_muc') + '</span>' : '') + '</td>' +
+        '<td class="num">' + (p.min ? n2(p.min) : '<span class="dash">–</span>') + '</td>' + (D.g ? '<td class="num">' + dash(p.cost) + '</td>' : '') + '</tr>';
+    }).join('') || '<tr><td colspan="9"><div class="k2-empty">' + h('no_data') + '</div></td></tr>';
+
+    // Hàng khách gửi ở bãi
+    const cargoRows = D.cargo.map(c => c.lots.map(l => {
+      const leftP = pct(l.left, l.inQty) * 100;
+      return '<tr class="is-clickable" data-open="' + esc(c.yard) + '" data-tab="cargo" data-doc="' + esc(l.doc) + '"><td><span class="code">' + esc(l.doc) + '</span><span class="k2-sub">' + esc(t('k2_xe_x', { xe: l.vehicle || '—' })) + '</span></td>' +
+        '<td lang="lo">' + esc(c.ten) + '</td><td lang="lo">' + esc(l.customer) + '</td>' +
+        '<td>' + esc(D.byId[c.yard] ? tenNgan(D.byId[c.yard]) : '') + '</td>' +
+        '<td style="min-width:150px"><div class="lot-bar" title="' + esc(t('k2_lo_thanh', { con: n2(l.left), nhap: n2(l.inQty) })) + '"><span class="left" style="width:' + leftP + '%"></span><span class="gone" style="width:' + (100 - leftP) + '%"></span></div></td>' +
+        '<td class="num"><b>' + n2(l.left) + '</b><span class="k2-sub">/ ' + n2(l.inQty) + '</span></td><td>' + esc(ngay(l.date)) + '</td></tr>';
+    }).join('')).join('') || '<tr><td colspan="7"><div class="k2-empty">' + h('no_data') + '</div></td></tr>';
+
+    // Cần xử lý
+    const todos = [];
+    D.whs.forEach(w => {
+      if (w.status === 'low') todos.push({ lvl: 'danger', wh: w.id, tab: 'fuel', title: t('k2_td_con_lai', { kho: tenChinh(w), l: n0(w.remain) }), sub: t('k2_td_thap', { l: n0(w.safety) }) });
+      if (w.declaredQty) todos.push({ lvl: 'warn', wh: w.id, tab: 'fuel', title: t('k2_td_khai', { l: n0(w.declaredQty) }), sub: t('k2_td_khai_s', { kho: tenChinh(w), n: w.declared.length }) });
+      if (w.pendingQty) todos.push({ lvl: 'warn', wh: w.id, tab: 'fuel', title: t('k2_td_cho', { l: n0(w.pendingQty) }), sub: t('k2_td_khai_s2', { kho: tenChinh(w), n: w.pending.length }) });
+    });
+    T.partsLow.forEach(p => {
+      todos.push({ lvl: 'danger', wh: D.goc ? D.goc.id : 'all', tab: 'parts', title: t('k2_td_pt', { ten: p.ten, sl: n2(partTotal(p.code)), dv: donVi(p.unit) }), sub: t('k2_td_pt_s', { min: n2(p.min) }) });
+    });
+    if (T.empty.length) todos.push({ lvl: 'muted', wh: T.empty[0].id, tab: 'fuel', title: t('k2_td_trong', { n: T.empty.length }), sub: T.empty.map(tenNgan).join(', ') });
+
+    const ovTabs = [
+      { id: 'fuel', label: h('e_fuel'), count: t('k2_n_kho', { n: T.whCount }) },
+      { id: 'parts', label: h('part'), count: t('k2_n_mon', { n: D.parts.length }) },
+      { id: 'cargo', label: h('k2_hang_gui_bai'), count: t('k2_n_lo', { n: T.cargoLots }) },
+    ];
+    let ovBody;
+    if (st.ovTab === 'parts') {
+      ovBody = '<div class="k2-panel-body"><p class="tab-intro">' + h('k2_intro_pt') + '</p>' +
+        '<div class="k2-tbl-wrap"><table class="k2-tbl matrix"><thead>' + mHead + '</thead><tbody>' + mBody + '</tbody></table></div></div>';
+    } else if (st.ovTab === 'cargo') {
+      ovBody = '<div class="k2-panel-body"><p class="tab-intro">' + h('k2_intro_hang', { t: n2(T.cargoTons), n: T.cargoLots }) + '</p>' +
+        '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('doc_no') + '</th><th>' + h('goods_type') + '</th><th>' + h('c_customer') + '</th><th>' + h('k2_bai') + '</th>' +
+        '<th>' + h('k2_con_nhap') + '</th><th class="num">' + h('kx_con_t') + '</th><th>' + h('k2_ngay_nhap_c') + '</th></tr></thead><tbody>' + cargoRows + '</tbody></table></div></div>';
+    } else {
+      ovBody = '<div class="k2-panel-body"><div class="tab-intro-row"><p class="summary-line">' + sentence + '</p>' +
+        '<div class="legend"><span><i class="lg-fill"></i>' + h('k2_lg_ton') + '</span><span><i class="lg-decl"></i>' + h('k2_lg_khai') + '</span><span><i class="lg-safe"></i>' + h('k2_lg_an_toan') + '</span></div></div>' +
+        '<div class="tank-wall">' + (tanks || '<div class="k2-empty">' + h('no_data') + '</div>') + '</div></div>';
+    }
+    $('#k2-work').innerHTML =
+      '<section class="k2-panel ov-todo"><div class="ov-todo-head"><h2>' + h('attention') + '</h2><p>' + h('k2_n_viec', { n: todos.length, thang: thangHien() }) + '</p></div>' +
+        (todos.length ? '<ul class="todo">' + todos.map(x => '<li><button type="button" data-open="' + esc(x.wh) + '" data-tab="' + x.tab + '"><span class="dot dot--' + x.lvl + '"></span>' +
+          '<span><strong>' + esc(x.title) + '</strong><small>' + esc(x.sub) + '</small></span>' +
+          '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" class="sv-chev" stroke-width="1.8" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>').join('') + '</ul>'
+          : '<div class="k2-empty" style="margin:10px 0 12px">' + h('k2_td_khong') + '</div>') + '</section>' +
+      '<section class="k2-panel ov-main"><div class="tabs" role="tablist">' + ovTabs.map(x =>
+        '<button type="button" class="tab" role="tab" data-ovtab="' + x.id + '" aria-selected="' + (st.ovTab === x.id) + '">' + x.label + ' <span class="count">' + esc(x.count) + '</span></button>').join('') +
+      '</div><div role="tabpanel">' + ovBody + '</div></section>';
+  }
+
+  /* ================= Chi tiết một kho ================= */
+  const moveTag = (ty) => '<span class="mv ' + (ty === 'in' ? 'mv--in' : ty === 'out' ? 'mv--out' : 'mv--tr') + '">' + moveLabel(ty) + '</span>';
+  const flashCls = (doc) => st.flashDoc && doc && String(st.flashDoc).includes(doc) ? ' is-flash' : '';
+
+  function fuelTab(w) {
+    const pend = w.pending.length
+      ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('kx_v_no') + '</th><th>' + h('nav_dispatch') + '</th><th>' + h('c_truck') + '</th><th>' + h('c_driver') + '</th><th class="num">' + h('k2_so_lit') + '</th></tr></thead><tbody>' +
+        w.pending.map(p => '<tr class="' + flashCls(p.doc + ' ' + p.tripNo) + '"><td>' + esc(ngay(p.date)) + '</td><td class="code">' + esc(p.doc) + '</td><td>' + moPhieu(p.trip, p.tripNo) +
+          (p.ban ? '<span class="k2-sub">' + h('ht_xuat_xuat_ban') + '</span>' : '') + '</td><td>' + esc(p.vehicle || '—') + '</td><td lang="lo">' + esc(p.driver || '—') + '</td><td class="num">' + n0(p.qty) + '</td></tr>').join('') +
+        '</tbody><tfoot><tr><td colspan="5">' + h('k2_cong') + '</td><td class="num">' + n0(w.pendingQty) + '</td></tr></tfoot></table></div>'
+      : '<div class="k2-empty">' + h('k2_pend_trong') + '</div>';
+    const decl = w.declared.length
+      ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('nav_dispatch') + '</th><th>' + h('c_truck') + '</th><th>' + h('c_route') + '</th><th class="num">' + h('k2_so_lit') + '</th></tr></thead><tbody>' +
+        w.declared.map(p => '<tr class="' + flashCls(p.doc) + '"><td>' + esc(ngay(p.date)) + '</td><td>' + moPhieu(p.trip, p.doc) + '</td><td>' + esc(p.vehicle || '—') + '</td><td lang="lo">' + esc(p.route || '—') + '</td><td class="num warn-txt">' + n0(p.qty) + '</td></tr>').join('') +
+        '</tbody><tfoot><tr><td colspan="4">' + h('k2_cong') + '</td><td class="num">' + n0(w.declaredQty) + '</td></tr></tfoot></table></div>'
+      : '<div class="k2-empty">' + h('k2_decl_trong') + '</div>';
+    let bal = w.opening;
+    const doiUng = (m) => {
+      const k = m.doi ? D.byCode[m.doi] : null;
+      if (m.type === 'transfer-out') return esc(t('k2_den', { kho: k ? tenNgan(k) : (m.doi || '—') }));
+      if (m.type === 'transfer-in') return esc(t('k2_tu', { kho: k ? tenNgan(k) : (m.doi || '—') }));
+      return m.vehicle ? esc(t('k2_xe_x', { xe: m.vehicle })) : '<span class="dash">–</span>';
+    };
+    const ledger = '<tr><td>01/' + thangHien() + '</td><td><span class="muted">' + h('k2_ton_dau') + '</span></td><td></td><td></td><td class="num"></td><td class="num"></td><td class="num"><b>' + n0(w.opening) + '</b></td>' + (D.g ? '<td class="num"></td>' : '') + '</tr>' +
+      w.moves.map(m => {
+        const vao = m.type === 'in' || m.type === 'transfer-in';
+        bal += vao ? m.qty : -m.qty;
+        return '<tr class="' + flashCls(m.doc) + '"><td>' + esc(ngay(m.date)) + '</td><td>' + moveTag(m.type) + '</td><td class="code">' + esc(m.doc || '—') + '</td><td>' + doiUng(m) + '</td>' +
+          '<td class="num">' + (vao ? n0(m.qty) : '<span class="dash">–</span>') + '</td><td class="num">' + (!vao ? n0(m.qty) : '<span class="dash">–</span>') + '</td>' +
+          '<td class="num"><b>' + n0(bal) + '</b></td>' + (D.g ? '<td class="num">' + (m.price ? n0(m.price) : '') + '</td>' : '') + '</tr>';
+      }).join('');
+    return '<div class="block"><h3>' + h('td_await_iss') + ' <span class="count">' + w.pending.length + '</span></h3>' + pend + '</div>' +
+      '<div class="block"><h3>' + h('k2_decl_h') + ' <span class="count">' + w.declared.length + '</span></h3>' + decl + '</div>' +
+      '<div class="block"><h3>' + h('k2_so_kho', { thang: thangHien() }) + ' <span class="count">' + w.moves.length + '</span></h3>' +
+      '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('type') + '</th><th>' + h('doc_no') + '</th><th>' + h('k2_doi_ung') + '</th>' +
+      '<th class="num">' + h('k2_nhap_l') + '</th><th class="num">' + h('k2_xuat_l') + '</th><th class="num">' + h('k2_ton_sau') + '</th>' + (D.g ? '<th class="num">' + h('k2_don_gia') + '</th>' : '') + '</tr></thead><tbody>' +
+      ledger + '</tbody><tfoot><tr><td colspan="4">' + h('k2_cong_thang') + '</td><td class="num">' + n0(w.inQ) + '</td><td class="num">' + n0(w.outQ) + '</td><td class="num">' + n0(w.stock) + '</td>' + (D.g ? '<td></td>' : '') + '</tr></tfoot></table></div></div>';
+  }
+
+  function partsTab(w) {
+    const codes = Object.keys(w.parts);
+    const pend = D.parts.flatMap(p => p.pending.map(x => Object.assign({ p }, x)));
+    if (!codes.length && !(w.goc && pend.length)) {
+      const co = D.whs.filter(x => Object.keys(x.parts).length);
+      return '<div class="k2-empty">' + (co.length ? h('k2_pt_khong', { ds: '' }) + co.map(x => '<button type="button" class="link" data-open="' + esc(x.id) + '" data-tab="parts">' + esc(tenChinh(x)) + '</button>').join(', ') + '.'
+        : h('k2_pt_khong_dau')) + '</div>';
+    }
+    const rows = codes.map(k => {
+      const p = D.partById[k], q = w.parts[k], tot = partTotal(k), low = isBelowMin(p, tot);
+      const inQ = sum(p.moves.filter(m => m.type === 'in'), 'qty'), outQ = sum(p.moves.filter(m => m.type === 'out'), 'qty');
+      const scale = Math.max(tot, p.min * 2, 1);
+      return '<tr><td><b lang="lo">' + esc(p.ten) + '</b></td><td>' + esc(donVi(p.unit)) + '</td>' +
+        '<td class="num"><b>' + n2(q) + '</b></td>' +
+        '<td style="min-width:170px"><div class="k2-bar" title="' + esc(t('k2_bar', { tot: n2(tot), min: n2(p.min) })) + '"><i class="' + (low ? 'is-low' : '') + '" style="width:' + (pct(tot, scale) * 100) + '%"></i>' +
+        (p.min ? '<span class="min-mark" style="left:' + (pct(p.min, scale) * 100) + '%"></span>' : '') + '</div>' +
+        '<span class="k2-sub ' + (low ? 'below' : '') + '">' + h(low ? 'k2_bar_duoi' : 'k2_bar', { tot: n2(tot), min: p.min ? n2(p.min) : '–' }) + '</span></td>' +
+        '<td class="num">' + dash(inQ, n2) + '</td><td class="num">' + dash(outQ, n2) + '</td>' +
+        (D.g ? '<td class="num">' + dash(p.cost) + '</td><td class="num">' + dash((p.cost || 0) * q) + '</td>' : '') + '</tr>';
+    }).join('');
+    const value = sum(codes, k => (w.parts[k] || 0) * (D.partById[k].cost || 0));
+    const pendRows = pend.map(x => '<tr class="' + flashCls(x.doc) + '"><td>' + esc(ngay(x.date)) + '</td><td lang="lo">' + esc(x.p.ten) + '</td><td>' + moPhieu(x.trip, x.doc) + '</td><td>' + esc(x.vehicle || '—') + '</td><td class="num">' + n2(x.qty) + '</td></tr>').join('');
+    const mv = D.parts.flatMap(p => p.moves.map(m => Object.assign({ p }, m))).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const mvRows = mv.map(m => '<tr class="' + flashCls(m.doc) + '"><td>' + esc(ngay(m.date)) + '</td><td>' + moveTag(m.type) + '</td><td lang="lo">' + esc(m.p.ten) + '</td><td class="code">' + esc(m.doc || '—') + '</td><td>' + (m.vehicle ? esc(m.vehicle) : '<span class="dash">–</span>') + '</td><td class="num">' + n2(m.qty) + '</td></tr>').join('');
+    return '<div class="block"><h3>' + h('k2_pt_h') + ' <span class="count">' + codes.length + '</span></h3>' +
+      (codes.length ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('part') + '</th><th>' + h('unit') + '</th><th class="num">' + h('k2_ton_tai_kho') + '</th><th>' + h('k2_so_toi_thieu') + '</th>' +
+        '<th class="num">' + h('kx_in_month') + '</th><th class="num">' + h('kx_out_month') + '</th>' + (D.g ? '<th class="num">' + h('fuel_avg') + '</th><th class="num">' + h('k2_gia_tri') + '</th>' : '') + '</tr></thead><tbody>' +
+        rows + '</tbody>' + (D.g ? '<tfoot><tr><td colspan="7">' + h('k2_gia_tri_kho') + '</td><td class="num">' + n0(value) + '</td></tr></tfoot>' : '') + '</table></div>' : '<div class="k2-empty">' + h('no_data') + '</div>') + '</div>' +
+      '<div class="block"><h3>' + h('k2_pt_cho_h') + ' <span class="count">' + pend.length + '</span></h3>' +
+      (pendRows ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('part') + '</th><th>' + h('nav_dispatch') + '</th><th>' + h('c_truck') + '</th><th class="num">' + h('kx_sl') + '</th></tr></thead><tbody>' + pendRows + '</tbody></table></div>'
+        : '<div class="k2-empty">' + h('k2_pt_cho_trong') + '</div>') + '</div>' +
+      '<div class="block"><h3>' + h('k2_pt_mv_h') + ' <span class="count">' + mv.length + '</span></h3>' +
+      (mvRows ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('type') + '</th><th>' + h('part') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_truck') + '</th><th class="num">' + h('kx_sl') + '</th></tr></thead><tbody>' + mvRows + '</tbody></table></div>'
+        : '<div class="k2-empty">' + h('k2_pt_mv_trong') + '</div>') + '</div>';
+  }
+
+  function cargoTab(w) {
+    if (!w.cargoTypes.length) return '<div class="k2-empty">' + h('k2_hang_khong') + '</div>';
+    return w.cargoTypes.map(c => {
+      const lots = c.lots.map(l => {
+        const p = pct(l.left, l.inQty) * 100;
+        return '<tr class="' + flashCls(l.doc) + '"><td><span class="code">' + esc(l.doc) + '</span><span class="k2-sub">' + esc(t('k2_xe_x', { xe: l.vehicle || '—' })) + '</span></td><td lang="lo">' + esc(l.customer) + '</td><td lang="lo">' + esc(l.origin) + '</td>' +
+          '<td style="min-width:150px"><div class="lot-bar"><span class="left" style="width:' + p + '%"></span><span class="gone" style="width:' + (100 - p) + '%"></span></div></td>' +
+          '<td class="num">' + n2(l.inQty) + '</td><td class="num"><b>' + n2(l.left) + '</b></td><td>' + esc(ngay(l.date)) + '</td></tr>';
+      }).join('');
+      const mv = c.moves.map(m => '<tr class="' + flashCls(m.doc) + '"><td>' + esc(ngay(m.date)) + '</td><td>' + moveTag(m.type) + '</td><td class="code">' + esc(m.doc || '—') + '</td><td>' + (m.vehicle ? esc(m.vehicle) : '<span class="dash">–</span>') + '</td><td class="num">' + n2(m.qty) + '</td></tr>').join('');
+      return '<div class="block"><h3 lang="lo">' + esc(c.ten) + '</h3>' +
+        '<div class="fuel-stats k2-3cot">' +
+        '<div class="is-main"><span>' + h('k2_con_o_bai') + '</span><b>' + n2(c.left) + ' <small>' + h('ton') + '</small></b></div>' +
+        '<div><span>' + h('kx_in_month') + '</span><b>' + n2(c.inQ) + ' <small>' + h('ton') + '</small></b></div>' +
+        '<div><span>' + h('kx_out_month') + '</span><b>' + n2(c.outQ) + ' <small>' + h('ton') + '</small></b></div></div>' +
+        '<h3>' + h('kx_lo_con') + ' <span class="count">' + c.lots.length + '</span></h3>' +
+        (lots ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('doc_no') + '</th><th>' + h('c_customer') + '</th><th>' + h('kx_origin') + '</th><th>' + h('k2_con_nhap') + '</th><th class="num">' + h('kx_nhap_t') + '</th><th class="num">' + h('kx_con_t') + '</th><th>' + h('c_date') + '</th></tr></thead><tbody>' + lots + '</tbody></table></div>'
+          : '<div class="k2-empty">' + h('no_data') + '</div>') + '</div>' +
+        '<div class="block"><h3>' + h('kx_gan_day') + ' <span class="count">' + c.moves.length + '</span></h3>' +
+        (mv ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('type') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_truck') + '</th><th class="num">' + h('k2_sl_tan') + '</th></tr></thead><tbody>' + mv + '</tbody></table></div>'
+          : '<div class="k2-empty">' + h('no_data') + '</div>') + '</div>';
+    }).join('');
+  }
+
+  function renderWarehouse(w) {
+    const pk = Object.keys(w.parts).length, cl = sum(w.cargoTypes, c => c.lots.length);
+    const tabs = [
+      { id: 'fuel', label: h('e_fuel'), count: w.moves.length + w.declared.length + w.pending.length },
+      { id: 'parts', label: h('part'), count: pk },
+      { id: 'cargo', label: h('k2_hang_gui_bai'), count: cl },
+    ];
+    if (!tabs.some(x => x.id === st.tab)) st.tab = 'fuel';
+    const body = st.tab === 'parts' ? partsTab(w) : st.tab === 'cargo' ? cargoTab(w) : fuelTab(w);
+    const lastIn = w.moves.filter(m => m.type === 'in' || m.type === 'transfer-in').slice(-1)[0];
+    const remainCls = w.safety && w.remain < w.safety && w.stock > 0 ? 'is-danger' : '';
+    const phu = tenPhu(w);
+    const conCap = w.stock <= 0 ? h('k2_kho_trong') : !w.safety ? h('k2_chua_an_toan')
+      : w.remain < w.safety ? h('k2_thap_hon', { l: n0(w.safety) }) : h('k2_tren_muc', { l: n0(w.remain - w.safety) });
+    $('#k2-work').innerHTML =
+      '<section class="k2-panel">' +
+        '<div class="wh-head"><div>' +
+          '<h2' + (NN.lang === 'lo' ? ' lang="lo"' : '') + '>' + esc(tenChinh(w)) + '</h2>' +
+          (phu || w.country ? '<p class="lo-name"' + (NN.lang === 'lo' ? '' : ' lang="lo"') + '>' + esc(phu) + (w.country ? ' <span class="k2-tag k2-tag--la">' + esc(w.country) + '</span>' : '') + '</p>' : '') +
+          '<div class="facts">' +
+            '<span>' + h('k2_ma_kho') + '<b class="code" style="font-size:14px">' + esc(w.code || '—') + '</b></span>' +
+            '<span>' + h('k2_khu_vuc') + '<b>' + esc(w.region) + '</b></span>' +
+            '<span>' + h('k2_suc_chua') + '<b>' + (w.capacity ? n0(w.capacity) + ' ' + h('u_l') : h('k2_chua_khai')) + '</b></span>' +
+            '<span>' + h('k2_muc_an_toan') + '<b>' + (w.safety ? n0(w.safety) + ' ' + h('u_l') : h('k2_chua_khai')) + '</b></span>' +
+            (D.g ? '<span>' + h('fuel_avg') + '<b>' + (w.avgCost ? n0(w.avgCost) + ' LAK/' + h('u_l') : '–') + '</b></span>' : '') +
+            '<span>' + h('k2_nhap_gan_nhat') + '<b>' + (lastIn ? esc(ngay(lastIn.date)) : '–') + '</b></span>' +
+          '</div></div>' +
+          '<div class="wh-head-tools"><button type="button" class="k2-btn k2-btn--ghost" data-open="all">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>' + h('k2_toan_bo') + '</button></div>' +
+        '</div>' +
+        '<div class="fuel-hero"><div class="k2-bon-lon">' + tankSvg(w, { width: 190, height: 250, scale: true, cls: 'big-tank' }) +
+          (w.capacity ? '' : '<span class="k2-sub">' + h('k2_chua_suc_chua_goi_y') + '</span>') + '</div>' +
+          '<div class="fuel-stats">' +
+            '<div><span>' + h('k2_ton_cuoi') + '</span><b>' + n0(w.stock) + ' <small>' + h('u_l') + '</small></b><p>' + h('k2_ton_cuoi_p', { dau: n0(w.opening), nhap: n0(w.inQ), xuat: n0(w.outQ) }) + '</p></div>' +
+            '<div class="' + (w.pendingQty ? 'is-warn' : '') + '"><span>' + h('kx_c_cho') + '</span><b>' + n0(w.pendingQty) + ' <small>' + h('u_l') + '</small></b><p>' + h('k2_n_phieu_dn', { n: w.pending.length }) + '</p></div>' +
+            '<div class="' + (w.declaredQty ? 'is-warn' : '') + '"><span>' + h('k2_khai_chua') + '</span><b>' + n0(w.declaredQty) + ' <small>' + h('u_l') + '</small></b><p>' + h('k2_n_pxx', { n: w.declared.length }) + '</p></div>' +
+            '<div class="is-main ' + remainCls + '"><span>' + h('k2_con_cap') + '</span><b>' + n0(w.remain) + ' <small>' + h('u_l') + '</small></b><p>' + conCap + '</p></div>' +
+          '</div></div>' +
+        '<div class="flow"><div class="flow-head"><h3>' + h('k2_flow', { thang: thangHien() }) + '</h3>' +
+          '<div class="legend"><span><i class="lg-bal"></i>' + h('k2_lg_ton') + '</span><span><i class="lg-in"></i>' + h('k2_lg_nhap') + '</span><span><i class="lg-out"></i>' + h('k2_lg_xuat') + '</span>' +
+          (w.safety ? '<span><i class="lg-safe"></i>' + h('k2_lg_an_toan') + '</span>' : '') + '</div></div>' +
+          flowSvg(w) + '</div>' +
+      '</section>' +
+      '<section class="k2-panel">' +
+        '<div class="tabs" role="tablist">' + tabs.map(x =>
+          '<button type="button" class="tab" role="tab" data-tab-go="' + x.id + '" aria-selected="' + (st.tab === x.id) + '">' + x.label + ' <span class="count">' + x.count + '</span></button>').join('') + '</div>' +
+        '<div class="tab-panel" role="tabpanel">' + body + '</div>' +
+      '</section>';
+  }
+
+  /* ================= Vẽ ================= */
+  function render() {
+    if (!root) return;
+    if (!D) {
+      $('#k2-wh').innerHTML = '';
+      $('#k2-sr').hidden = true;
+      $('#k2-work').innerHTML = '<section class="k2-panel"><div class="k2-panel-body"><div class="k2-empty">' + (loi ? h('kx_loi', { loi }) : h('loading')) + '</div></div></section>';
+      $('#k2-phu').innerHTML = '';
+      return;
+    }
+    renderList();
+    renderSearchResults();
+    const w = D.byId[st.view];
+    if (w) {
+      renderWarehouse(w);
+      $('#k2-phu').innerHTML = h('k2_sub_kho', { kho: tenChinh(w), thang: thangHien() });
+    } else {
+      st.view = 'all';
+      renderAll();
+      $('#k2-phu').innerHTML = h('k2_sub_all', { thang: thangHien() });
+    }
+    const flash = root.querySelector('.is-flash');
+    if (flash) flash.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    st.flashDoc = null;
+  }
+
+  function open(view, tab, doc) {
+    st.view = view || 'all';
+    if (tab) st.tab = tab;
+    st.flashDoc = doc || null;
+    render();
+    if (window.innerWidth <= 1180) $('#k2-work').scrollIntoView({ block: 'start' });
+  }
+
   async function tai() {
     loi = '';
     try {
-      D = await API.get('/api/kho-xem?thang=' + encodeURIComponent(q('#kx-thang').value || thangNay()));
-    } catch (e) { D = null; loi = e.message || String(e); }
-    veHet();
+      R = await API.get('/api/kho-xem?thang=' + encodeURIComponent($('#k2-thang').value || thangNay()));
+      D = chuanHoa(R);
+      DOCS = allDocs();
+    } catch (e) { R = null; D = null; loi = e.message || String(e); }
+    render();
   }
 
-  function dsDau() {
-    return (D ? D.nhien_lieu : []).filter(k => khop(k.name, k.code, ...(k.de_nghi || []).map(x => x.doc_no + ' ' + x.voucher_no + ' ' + x.truck_no),
-      ...(k.chua_de_nghi || []).map(x => x.doc_no + ' ' + x.truck_no)));
-  }
-  function dsPt() { return (D ? D.phu_tung : []).filter(p => khop(p.name, ...(p.tren_phieu || []).map(x => x.doc_no + ' ' + x.truck_no))); }
-  function dsHang() { return (D ? D.hang : []).filter(h => khop(h.name, ...(h.lo || []).map(x => x.doc_no + ' ' + x.customer_name + ' ' + x.truck_no))); }
-
-  /* ---------------------------------------------------------------- dải số */
-  function veKpi() {
-    const k = q('#kx-kpis');
-    if (!D) { k.innerHTML = ''; return; }
-    const dau = D.nhien_lieu.filter(x => x.active !== false || x.ton_lit);
-    const tong = dau.reduce((s, x) => s + (x.ton_lit || 0), 0);
-    const nCho = D.nhien_lieu.reduce((s, x) => s + (x.de_nghi || []).length, 0);
-    const lCho = D.nhien_lieu.reduce((s, x) => s + (x.cho_xuat || 0), 0);
-    const lChua = D.nhien_lieu.reduce((s, x) => s + (x.chua_de_nghi_l || 0), 0);
-    const duoi = D.phu_tung.filter(p => p.duoi_muc && p.active !== false);
-    const tHang = D.hang.reduce((s, h) => s + (h.ton_t || 0), 0);
-    const nLo = D.hang.reduce((s, h) => s + (h.lo || []).length, 0);
-    const o = (cls, l, v, dv, s) => `<div class="kx-kpi ${cls}"><div class="l">${l}</div><div class="v">${v}<small>${dv}</small></div><div class="s">${s}</div></div>`;
-    k.innerHTML = [
-      o('', NN.h('kx_ton_dau'), lit(tong), NN.h('u_l'), NN.h('kx_so_kho', { n: dau.length })),
-      o(nCho ? 'canh' : '', NN.h('td_await_iss'), lit(lCho), NN.h('u_l'),
-        NN.h('kx_so_phieu', { n: nCho }) + (lChua ? ' · ' + NN.h('kx_c_chua') + ' ' + lit(lChua) + ' ' + NN.h('u_l') : '')),
-      o(duoi.length ? 'do' : '', NN.h('kx_pt_duoi'), String(duoi.length), '', duoi.slice(0, 3).map(p => esc(p.name)).join(' · ') || '—'),
-      o('', NN.h('kx_hang_bai'), tan(tHang), NN.h('ton'), NN.h('kx_so_lo', { n: nLo })),
-    ].join('');
-  }
-
-  /* ---------------------------------------------------------------- bảng trái */
-  function thanh(x) {
-    const ton = Math.max(x.ton_lit || 0, 0), cho = x.cho_xuat || 0, chua = x.chua_de_nghi_l || 0;
-    const tong = Math.max(ton, cho + chua, 1);
-    const con = Math.max(ton - cho - chua, 0);
-    const pc = (v) => (100 * v / tong).toFixed(1) + '%';
-    return `<div class="kx-thanh" title="${esc(NN.t('kx_c_con'))} ${lit(con)} · ${esc(NN.t('kx_c_cho'))} ${lit(cho)} · ${esc(NN.t('kx_c_chua'))} ${lit(chua)}">
-      <i class="con" style="width:${pc(con)}"></i><i class="cho" style="width:${pc(cho)}"></i><i class="chua" style="width:${pc(chua)}"></i></div>`;
-  }
-  const soCon = (v, dv) => v === null || v === undefined ? '<span class="nhat">—</span>'
-    : `<span class="${v < 0 ? 'am' : ''}">${dv(v)}</span>`;
-
-  function veBang() {
-    const b = q('#kx-bang'), g = D && D.thay_gia;
-    q('#kx-n-dau').textContent = D ? D.nhien_lieu.length : '·';
-    q('#kx-n-pt').textContent = D ? D.phu_tung.length : '·';
-    q('#kx-n-hang').textContent = D ? D.hang.length : '·';
-    root.querySelectorAll('.kx-tab').forEach(t => { t.classList.toggle('on', t.dataset.tab === tab); t.setAttribute('aria-selected', t.dataset.tab === tab); });
-    if (!D) { b.innerHTML = `<tbody><tr><td class="empty">${loi ? '' : NN.h('loading')}</td></tr></tbody>`; return; }
-    let dau = '', than = '', ds = [];
-    if (tab === 'dau') {
-      ds = dsDau();
-      dau = `<tr><th>${NN.h('fuel_kho')}</th><th class="num">${NN.h('stock')}</th><th class="num">${NN.h('kx_c_cho')}</th>
-        <th class="num">${NN.h('kx_c_chua')}</th><th title="${esc(NN.t('kx_c_con_h'))}">${NN.h('kx_c_con')}</th>
-        <th class="num">${NN.h('kx_in_month')}</th><th class="num">${NN.h('fuel_out_month')}</th>${g ? `<th class="num">${NN.h('fuel_avg')}</th>` : ''}</tr>`;
-      than = ds.map(x => `<tr data-id="${esc(x.place_id)}" class="${chon.dau === x.place_id ? 'sel' : ''}">
-        <td><span class="ten">${esc(x.name)}</span>${x.country ? `<span class="kx-nuoc">${esc(x.country)}</span>` : ''}
-          <span class="phu">${esc(x.code || '')}${x.active === false ? ' · ' + NN.h('inactive') : ''}</span></td>
-        <td class="num">${lit(x.ton_lit)}</td>
-        <td class="num ${x.cho_xuat ? 'canh' : 'nhat'}">${x.cho_xuat ? lit(x.cho_xuat) : '—'}${(x.de_nghi || []).length ? `<span class="phu">${NN.h('kx_so_phieu', { n: x.de_nghi.length })}</span>` : ''}</td>
-        <td class="num ${x.chua_de_nghi_l ? 'canh' : 'nhat'}">${x.chua_de_nghi_l ? lit(x.chua_de_nghi_l) : '—'}</td>
-        <td><div class="num">${soCon(x.con_dung, lit)}</div>${x.ton_lit === null ? '' : thanh(x)}</td>
-        <td class="num">${x.nhap_thang ? lit(x.nhap_thang) : '<span class="nhat">—</span>'}</td>
-        <td class="num">${x.xuat_thang ? lit(x.xuat_thang) : '<span class="nhat">—</span>'}</td>
-        ${g ? `<td class="num">${x.gia_bq ? so(x.gia_bq, 0) + ' LAK' : '—'}</td>` : ''}</tr>`).join('');
-      than += `<tr class="kx-khong-chon"><td colspan="${g ? 8 : 7}"><div class="kx-chu-thich">
-        <span><i class="con"></i>${NN.h('kx_c_con')}</span><span><i class="cho"></i>${NN.h('kx_c_cho')}</span><span><i class="chua"></i>${NN.h('kx_c_chua')}</span></div></td></tr>`;
-    } else if (tab === 'pt') {
-      ds = dsPt();
-      dau = `<tr><th>${NN.h('part')}</th><th>${NN.h('unit')}</th><th class="num">${NN.h('stock')}</th><th class="num">${NN.h('min_stock')}</th>
-        <th class="num">${NN.h('kx_c_tren_phieu')}</th><th class="num">${NN.h('kx_c_con')}</th>
-        <th class="num">${NN.h('kx_in_month')}</th><th class="num">${NN.h('kx_out_month')}</th>${g ? `<th class="num">${NN.h('fuel_avg')}</th>` : ''}</tr>`;
-      than = ds.map(x => `<tr data-id="${esc(x.id)}" class="${chon.pt === x.id ? 'sel' : ''}">
-        <td><span class="ten">${esc(x.name)}</span>${x.active === false ? `<span class="phu">${NN.h('inactive')}</span>` : ''}</td>
-        <td>${esc(donVi(x.unit))}</td>
-        <td class="num ${x.duoi_muc ? 'am' : ''}">${L(x.ton, 2)}</td>
-        <td class="num">${x.min_qty ? L(x.min_qty, 2) : '<span class="nhat">—</span>'}${x.duoi_muc ? `<span class="phu am">${NN.h('kx_duoi_muc')}</span>` : ''}</td>
-        <td class="num ${x.cho_xuat ? 'canh' : 'nhat'}">${x.cho_xuat ? L(x.cho_xuat, 2) : '—'}</td>
-        <td class="num">${soCon(x.con_dung, (v) => L(v, 2))}</td>
-        <td class="num">${x.nhap_thang ? L(x.nhap_thang, 2) : '<span class="nhat">—</span>'}</td>
-        <td class="num">${x.xuat_thang ? L(x.xuat_thang, 2) : '<span class="nhat">—</span>'}</td>
-        ${g ? `<td class="num">${x.gia_bq ? so(x.gia_bq, 0) + ' LAK' : '—'}</td>` : ''}</tr>`).join('');
-    } else {
-      ds = dsHang();
-      dau = `<tr><th>${NN.h('goods_type')}</th><th class="num">${NN.h('kx_ton_t')}</th><th class="num">${NN.h('kx_k_lo')}</th>
-        <th class="num">${NN.h('kx_in_month')}</th><th class="num">${NN.h('kx_out_month')}</th></tr>`;
-      than = ds.map(x => `<tr data-id="${esc(x.name)}" class="${chon.hang === x.name ? 'sel' : ''}">
-        <td><span class="ten">${esc(x.name)}</span></td><td class="num">${tan(x.ton_t)}</td><td class="num">${(x.lo || []).length}</td>
-        <td class="num">${x.nhap_thang ? tan(x.nhap_thang) : '<span class="nhat">—</span>'}</td>
-        <td class="num">${x.xuat_thang ? tan(x.xuat_thang) : '<span class="nhat">—</span>'}</td></tr>`).join('');
+  function veThang() {
+    const s = $('#k2-thang'), cu = s.value || thangNay(), d = new Date();
+    let o = '';
+    for (let i = 0; i < 13; i++) {
+      const x = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      const v = x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0');
+      o += '<option value="' + v + '"' + (v === cu ? ' selected' : '') + '>' + v.slice(5, 7) + '/' + v.slice(0, 4) + '</option>';
     }
-    if (!ds.length) than = `<tr><td class="empty" colspan="9">${NN.h('no_data')}</td></tr>`;
-    b.innerHTML = `<thead>${dau}</thead><tbody>${than}</tbody>`;
-    b.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => { chon[tab] = tr.dataset.id; veBang(); veCt(); }));
+    s.innerHTML = o;
   }
 
-  /* ---------------------------------------------------------------- khung phải */
-  // số DO bấm mở phiếu xuất xe — chỉ vai vào được màn đó (thủ kho, thủ kho phụ tùng thì chỉ là chữ)
-  const moDuoc = () => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === 'phieu-xuat-xe');
-  const moPhieu = (id, chu) => moDuoc() ? `<a data-mo="${esc(id)}">${esc(chu)}</a>` : `<span class="mono">${esc(chu)}</span>`;
-  const loai = (k, tf) => tf ? `<span class="kx-k tf">${NN.h('fuel_transfer')}</span>`
-    : `<span class="kx-k ${k === 'in' ? 'in' : k === 'out' ? 'out' : 'adj'}">${NN.h(k === 'in' ? 'kh_nhap' : k === 'out' ? 'kh_xuat' : 'kh_dc')}</span>`;
-  const muc = (tieuDe, n, bang) => `<div class="kx-muc"><h4>${tieuDe}<span class="dem">${n}</span></h4>${n ? bang : `<div class="kx-trong">${NN.h('no_data')}</div>`}</div>`;
-  const oSo = (l, v, cls = '') => `<div><div class="l">${l}</div><div class="v ${cls}">${v}</div></div>`;
-
-  function ganDay(ds, dv, g) {
-    return muc(NN.h('kx_gan_day'), ds.length, `<table><thead><tr><th>${NN.h('c_date')}</th><th></th><th class="num">${NN.h('kx_sl')}</th>
-      <th>${NN.h('doc_no')}</th><th>${NN.h('c_truck')}</th>${g ? `<th class="num">${NN.h('kx_gia')}</th>` : ''}</tr></thead><tbody>${ds.map(m => `<tr>
-      <td>${EPL.ngay(m.ngay)}</td><td>${loai(m.kind, m.chuyen_kho)}</td><td class="num">${dv(m.qty)}</td>
-      <td class="mono">${esc(m.doc_no || '—')}</td><td>${esc(m.truck_no || m.customer_name || '—')}</td>
-      ${g ? `<td class="num">${m.gia ? so(m.gia, 0) + ' LAK' : '—'}</td>` : ''}</tr>`).join('')}</tbody></table>`);
-  }
-
-  function veCt() {
-    const ct = q('#kx-ct'), g = D && D.thay_gia;
-    if (!D) { ct.innerHTML = loi ? `<div class="kx-chon">${NN.h('kx_loi', { loi: esc(loi) })}</div>` : ''; return; }
-    let x = null;
-    if (tab === 'dau') x = D.nhien_lieu.find(k => k.place_id === chon.dau);
-    else if (tab === 'pt') x = D.phu_tung.find(p => p.id === chon.pt);
-    else x = D.hang.find(h => h.name === chon.hang);
-    if (!x) { ct.innerHTML = `<div class="kx-chon">${NN.h('kx_chon')}</div>`; return; }
-    let dau = '', than = '';
-    if (tab === 'dau') {
-      dau = `<h3>${esc(x.name)} ${x.country ? `<span class="kx-nuoc">${esc(x.country)}</span>` : ''}</h3>
-        <div class="phu">${esc(x.code || '')}${g && x.gia_bq ? ' · ' + NN.h('fuel_avg') + ' ' + so(x.gia_bq, 0) + ' LAK/' + NN.h('u_l') : ''}</div>
-        <div class="kx-ct-so">${oSo(NN.h('stock') + ' (L)', lit(x.ton_lit))}${oSo(NN.h('kx_c_cho') + ' (L)', lit(x.cho_xuat), x.cho_xuat ? 'canh' : '')}
-          ${oSo(NN.h('kx_c_con') + ' (L)', lit(x.con_dung), x.con_dung < 0 ? 'am' : '')}</div>`;
-      than = muc(NN.h('td_await_iss'), x.de_nghi.length, `<table><thead><tr><th>${NN.h('kx_v_no')}</th><th>${NN.h('doc_no')}</th>
-          <th>${NN.h('c_truck')}</th><th>${NN.h('c_driver')}</th><th class="num">${NN.h('qty_l')}</th><th>${NN.h('c_date')}</th></tr></thead>
-          <tbody>${x.de_nghi.map(v => `<tr><td class="mono">${esc(v.voucher_no)}</td><td>${moPhieu(v.trip_id, v.doc_no)}${v.company === 'joint' ? `<span class="phu">${NN.h('ht_xuat_xuat_ban')}</span>` : ''}</td>
-            <td>${esc(v.truck_no || '—')}</td><td>${esc(v.driver_name || '—')}</td><td class="num">${lit(v.qty_l)}</td><td>${EPL.ngay(v.ngay)}</td></tr>`).join('')}</tbody></table>`)
-        + muc(NN.h('kx_chua_de_nghi_h'), x.chua_de_nghi.length, `<table><thead><tr><th>${NN.h('doc_no')}</th><th>${NN.h('c_truck')}</th>
-          <th>${NN.h('c_driver')}</th><th class="num">${NN.h('qty_l')}</th><th>${NN.h('c_date')}</th></tr></thead>
-          <tbody>${x.chua_de_nghi.map(v => `<tr><td>${moPhieu(v.trip_id, v.doc_no)}</td><td>${esc(v.truck_no || '—')}</td>
-            <td>${esc(v.driver_name || '—')}</td><td class="num">${lit(v.qty_l)}</td><td>${EPL.ngay(v.ngay)}</td></tr>`).join('')}</tbody></table>`)
-        + ganDay(x.gan_day || [], lit, g);
-    } else if (tab === 'pt') {
-      const dv = (v) => L(v, 2) + ' ' + esc(donVi(x.unit));
-      dau = `<h3>${esc(x.name)}</h3><div class="phu">${NN.h('min_stock')} ${x.min_qty ? dv(x.min_qty) : '—'}${g && x.gia_bq ? ' · ' + NN.h('fuel_avg') + ' ' + so(x.gia_bq, 0) + ' LAK' : ''}</div>
-        <div class="kx-ct-so">${oSo(NN.h('stock'), L(x.ton, 2), x.duoi_muc ? 'am' : '')}${oSo(NN.h('kx_c_tren_phieu'), L(x.cho_xuat, 2), x.cho_xuat ? 'canh' : '')}
-          ${oSo(NN.h('kx_c_con'), L(x.con_dung, 2), x.con_dung < 0 ? 'am' : '')}</div>`;
-      than = muc(NN.h('kx_tren_phieu_h'), x.tren_phieu.length, `<table><thead><tr><th>${NN.h('doc_no')}</th><th>${NN.h('c_truck')}</th>
-          <th class="num">${NN.h('kx_sl')}</th><th>${NN.h('c_date')}</th></tr></thead>
-          <tbody>${x.tren_phieu.map(v => `<tr><td>${moPhieu(v.trip_id, v.doc_no)}</td><td>${esc(v.truck_no || '—')}</td>
-            <td class="num">${L(v.qty, 2)}</td><td>${EPL.ngay(v.ngay)}</td></tr>`).join('')}</tbody></table>`)
-        + ganDay(x.gan_day || [], (v) => L(v, 2), g);
-    } else {
-      dau = `<h3>${esc(x.name)}</h3>
-        <div class="kx-ct-so">${oSo(NN.h('kx_ton_t'), tan(x.ton_t))}${oSo(NN.h('kx_k_lo'), String((x.lo || []).length))}
-          ${oSo(NN.h('kx_out_month') + ' (' + NN.h('ton') + ')', tan(x.xuat_thang))}</div>`;
-      than = muc(NN.h('kx_lo_con'), x.lo.length, `<table><thead><tr><th>${NN.h('doc_no')}</th><th>${NN.h('c_customer')}</th>
-          <th>${NN.h('kx_origin')}</th><th class="num">${NN.h('kx_nhap_t')}</th><th class="num">${NN.h('kx_con_t')}</th><th>${NN.h('c_date')}</th></tr></thead>
-          <tbody>${x.lo.map(o => `<tr><td class="mono">${esc(o.doc_no || '—')}<span class="phu">${esc(o.truck_no || '')}</span></td><td>${esc(o.customer_name || '—')}</td>
-            <td>${esc(o.origin || '—')}</td><td class="num">${tan(o.nhap_t)}</td><td class="num"><b>${tan(o.con_t)}</b></td><td>${EPL.ngay(o.ngay)}</td></tr>`).join('')}</tbody></table>`)
-        + ganDay(x.gan_day || [], tan, false);
+  /* ================= Sự kiện ================= */
+  function onClick(e) {
+    const mp = e.target.closest('[data-mo-phieu]');
+    if (mp) { EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }
+    const o = e.target.closest('[data-open]');
+    if (o) { open(o.getAttribute('data-open'), o.getAttribute('data-tab'), o.getAttribute('data-doc')); return; }
+    const ov = e.target.closest('[data-ovtab]');
+    if (ov) { st.ovTab = ov.getAttribute('data-ovtab'); renderAll(); const b = root.querySelector('[data-ovtab="' + st.ovTab + '"]'); if (b) b.focus(); return; }
+    const tb = e.target.closest('[data-tab-go]');
+    if (tb) { st.tab = tb.getAttribute('data-tab-go'); open(st.view, st.tab); const b = root.querySelector('[data-tab-go="' + st.tab + '"]'); if (b) b.focus(); return; }
+    const c = e.target.closest('#k2-loc [data-filter]');
+    if (c) {
+      st.filter = c.getAttribute('data-filter');
+      $$('#k2-loc .chip').forEach(x => x.classList.toggle('is-on', x === c));
+      renderList();
     }
-    ct.innerHTML = `<div class="kx-ct-dau">${dau}</div><div class="kx-ct-cuon">${than}</div>`;
-    ct.querySelectorAll('a[data-mo]').forEach(a => a.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: a.dataset.mo })));
   }
-
-  function veLoi() {
-    const k = q('#kx-kpis');
-    if (loi) k.innerHTML = `<div class="kx-loi" style="grid-column:1/-1">${NN.h('kx_loi', { loi: esc(loi) })}</div>`;
-  }
-
-  function veHet() {
-    if (!root) return;
-    // chưa chọn gì thì chọn sẵn dòng đầu (dòng có phiếu chờ trước) — khung phải không trống lúc mở màn
-    if (D) {
-      const dau = dsDau(), pt = dsPt(), hang = dsHang();
-      if (!dau.some(x => x.place_id === chon.dau)) chon.dau = ((dau.find(x => (x.de_nghi || []).length) || dau[0]) || {}).place_id || null;
-      if (!pt.some(x => x.id === chon.pt)) chon.pt = ((pt.find(x => x.duoi_muc) || pt[0]) || {}).id || null;
-      if (!hang.some(x => x.name === chon.hang)) chon.hang = (hang[0] || {}).name || null;
+  function onKey(e) {
+    if (e.key === 'Escape' && e.target === $('#k2-tim')) { e.target.value = ''; st.query = ''; renderList(); renderSearchResults(); }
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && e.target.closest && e.target.closest('#k2-wh')) {
+      const it = $$('#k2-wh .wh-item'), i = it.indexOf(e.target.closest('.wh-item'));
+      const nx = it[i + (e.key === 'ArrowDown' ? 1 : -1)];
+      if (nx) { e.preventDefault(); nx.focus(); }
     }
-    veKpi(); veLoi(); veBang(); veCt();
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && e.target.getAttribute && e.target.getAttribute('role') === 'tab') {
+      const ts = $$('[role="tab"]'), j = ts.indexOf(e.target), nt = ts[(j + (e.key === 'ArrowRight' ? 1 : ts.length - 1)) % ts.length];
+      if (nt) nt.click();
+    }
+  }
+  // phím "/" nhảy vào ô tìm — gắn một lần cho cả trang, chỉ chạy khi màn này đang mở
+  let daGanPhim = false;
+  function ganPhim() {
+    if (daGanPhim) return;
+    daGanPhim = true;
+    document.addEventListener('keydown', (e) => {
+      if (!root || !root.isConnected || e.key !== '/') return;
+      const a = document.activeElement;
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return;
+      const o = root.querySelector('#k2-tim'); if (o) { e.preventDefault(); o.focus(); }
+    });
   }
 
   EPL.modules['kho-xem'] = {
-    async init(r, { tham }) {
-      root = r; D = null; tim = '';
-      if (tham && ['dau', 'pt', 'hang'].includes(tham.tab)) tab = tham.tab;
-      q('#kx-thang').value = thangNay();
-      q('#kx-thang').addEventListener('change', tai);
-      q('#kx-tim').addEventListener('input', (e) => { tim = e.target.value.trim().toLowerCase(); veHet(); });
-      root.querySelectorAll('.kx-tab').forEach(t => t.addEventListener('click', () => { tab = t.dataset.tab; veBang(); veCt(); }));
+    async init(r, { tham } = {}) {
+      root = r; R = null; D = null; loi = ''; st.query = ''; st.filter = 'all'; st.view = 'all'; st.tab = 'fuel'; st.ovTab = 'fuel';
+      if (tham) {
+        const tabCu = { dau: 'fuel', pt: 'parts', hang: 'cargo' };
+        if (tham.tab) { st.tab = tabCu[tham.tab] || tham.tab; st.ovTab = st.tab; }
+        if (tham.kho) st.view = tham.kho;
+      }
+      veThang();
+      $('#k2-thang').addEventListener('change', tai);
+      $('#k2-tim').addEventListener('input', (e) => { st.query = e.target.value; if (D) { renderList(); renderSearchResults(); } });
+      root.addEventListener('click', onClick);
+      root.addEventListener('keydown', onKey);
+      ganPhim();
+      render();
       await tai();
+      if (D && st.view !== 'all' && !D.byId[st.view]) {           // tham số kho theo mã (KHO-TB) thay vì id
+        const w = D.byCode[st.view]; st.view = w ? w.id : 'all'; render();
+      }
     },
-    onLang() { if (root) veHet(); },
+    onLang() {
+      if (!root) return;
+      if (R) { D = chuanHoa(R); DOCS = allDocs(); }
+      render();
+    },
     xuatExcel() {
-      const T = NN.t, S = [];
       if (!D) return [];
-      S.push(EPL.xuatSheet(T('e_fuel'), [T('fuel_kho'), 'Mã', T('stock'), T('kx_c_cho'), T('kx_c_chua'), T('kx_c_con'), T('kx_in_month'), T('fuel_out_month')]
-        .concat(D.thay_gia ? [T('fuel_avg')] : []),
-        D.nhien_lieu.map(x => [x.name, x.code || '', EPL.oSo(x.ton_lit, 0, 'L'), EPL.oSo(x.cho_xuat, 0, 'L'), EPL.oSo(x.chua_de_nghi_l, 0, 'L'),
-          EPL.oSo(x.con_dung, 0, 'L'), EPL.oSo(x.nhap_thang, 0, 'L'), EPL.oSo(x.xuat_thang, 0, 'L')].concat(D.thay_gia ? [EPL.oSo(x.gia_bq, 0, 'LAK')] : []))));
-      S.push(EPL.xuatSheet(T('part'), [T('part'), T('unit'), T('stock'), T('min_stock'), T('kx_c_tren_phieu'), T('kx_c_con'), T('kx_in_month'), T('kx_out_month')]
-        .concat(D.thay_gia ? [T('fuel_avg')] : []),
-        D.phu_tung.map(x => [x.name, donVi(x.unit), EPL.oSo(x.ton, 2), EPL.oSo(x.min_qty, 2), EPL.oSo(x.cho_xuat, 2), EPL.oSo(x.con_dung, 2),
-          EPL.oSo(x.nhap_thang, 2), EPL.oSo(x.xuat_thang, 2)].concat(D.thay_gia ? [EPL.oSo(x.gia_bq, 0, 'LAK')] : []))));
-      S.push(EPL.xuatSheet(T('nav_goods'), [T('goods_type'), T('doc_no'), T('c_customer'), T('kx_origin'), T('kx_nhap_t'), T('kx_con_t'), T('c_date')],
-        D.hang.flatMap(h => h.lo.map(o => [h.name, o.doc_no || '', o.customer_name || '', o.origin || '', EPL.oSo(o.nhap_t, 3), EPL.oSo(o.con_t, 3), EPL.oNgay(o.ngay)]))));
+      const w = D.byId[st.view], S = [], g = D.g;
+      if (!w) {
+        S.push(EPL.xuatSheet(t('e_fuel'), [t('k2_ma_kho'), t('fuel_kho'), t('k2_khu_vuc'), t('k2_suc_chua') + ' (L)', t('k2_ton_dau') + ' (L)', t('k2_nhap_l'), t('k2_xuat_l'),
+          t('k2_ton_cuoi') + ' (L)', t('kx_c_cho') + ' (L)', t('k2_khai_chua') + ' (L)', t('k2_con_cap') + ' (L)', t('k2_muc_an_toan') + ' (L)'].concat(g ? [t('fuel_avg')] : []),
+          D.whs.map(x => [x.code, tenChinh(x), x.region, x.capacity ? EPL.oSo(x.capacity, 0, 'L') : '', EPL.oSo(x.opening, 0, 'L'), EPL.oSo(x.inQ, 0, 'L'), EPL.oSo(x.outQ, 0, 'L'),
+            EPL.oSo(x.stock, 0, 'L'), EPL.oSo(x.pendingQty, 0, 'L'), EPL.oSo(x.declaredQty, 0, 'L'), EPL.oSo(x.remain, 0, 'L'), x.safety ? EPL.oSo(x.safety, 0, 'L') : '']
+            .concat(g ? [x.avgCost ? EPL.oSo(x.avgCost, 0, 'LAK') : ''] : []))));
+        S.push(EPL.xuatSheet(t('part'), [t('part'), t('unit'), t('stock'), t('min_stock'), t('kx_in_month'), t('kx_out_month')].concat(g ? [t('fuel_avg')] : []),
+          D.parts.map(p => [p.ten, donVi(p.unit), EPL.oSo(p.stock, 2), EPL.oSo(p.min, 2), EPL.oSo(sum(p.moves.filter(m => m.type === 'in'), 'qty'), 2),
+            EPL.oSo(sum(p.moves.filter(m => m.type === 'out'), 'qty'), 2)].concat(g ? [p.cost ? EPL.oSo(p.cost, 0, 'LAK') : ''] : []))));
+        S.push(EPL.xuatSheet(t('k2_hang_gui_bai'), [t('goods_type'), t('doc_no'), t('c_customer'), t('kx_origin'), t('kx_nhap_t'), t('kx_con_t'), t('c_date')],
+          D.cargo.flatMap(c => c.lots.map(l => [c.ten, l.doc, l.customer, l.origin, EPL.oSo(l.inQty, 3), EPL.oSo(l.left, 3), EPL.oNgay(l.date)]))));
+        return S;
+      }
+      let bal = w.opening;
+      S.push(EPL.xuatSheet(t('k2_so_kho', { thang: thangHien() }) + ' ' + (w.code || ''), [t('c_date'), t('type'), t('doc_no'), t('k2_doi_ung'), t('k2_nhap_l'), t('k2_xuat_l'), t('k2_ton_sau')].concat(g ? [t('k2_don_gia')] : []),
+        [[EPL.oNgay(R.thang + '-01'), t('k2_ton_dau'), '', '', '', '', EPL.oSo(w.opening, 0, 'L')].concat(g ? [''] : [])].concat(w.moves.map(m => {
+          const vao = m.type === 'in' || m.type === 'transfer-in'; bal += vao ? m.qty : -m.qty;
+          return [EPL.oNgay(m.date), NN.t({ in: 'k2_mv_in', out: 'k2_mv_out', 'transfer-in': 'k2_mv_tin', 'transfer-out': 'k2_mv_tout' }[m.type]), m.doc, m.doi || m.vehicle || '',
+            vao ? EPL.oSo(m.qty, 0, 'L') : '', vao ? '' : EPL.oSo(m.qty, 0, 'L'), EPL.oSo(bal, 0, 'L')].concat(g ? [m.price ? EPL.oSo(m.price, 0, 'LAK') : ''] : []);
+        }))));
+      S.push(EPL.xuatSheet(t('td_await_iss'), [t('c_date'), t('kx_v_no'), t('nav_dispatch'), t('c_truck'), t('c_driver'), t('k2_so_lit')],
+        w.pending.map(p => [EPL.oNgay(p.date), p.doc, p.tripNo, p.vehicle, p.driver, EPL.oSo(p.qty, 0, 'L')])));
+      S.push(EPL.xuatSheet(t('k2_decl_h'), [t('c_date'), t('nav_dispatch'), t('c_truck'), t('c_route'), t('k2_so_lit')],
+        w.declared.map(p => [EPL.oNgay(p.date), p.doc, p.vehicle, p.route, EPL.oSo(p.qty, 0, 'L')])));
       return S;
     },
   };

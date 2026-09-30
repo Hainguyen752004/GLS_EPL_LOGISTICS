@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1539 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 1787 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2658,9 +2658,9 @@ window.EPL_TU_DIEN = {
   "en": "No stock-out request yet"
  },
  "d_kho_xem": {
-  "vi": "Tồn từng mặt hàng, phần chờ xuất theo đề nghị — chỉ xem",
-  "lo": "ຍອດຄົງເຫຼືອ ຕາມລາຍການ · ເບິ່ງຢ່າງດຽວ",
-  "en": "Stock per item and what is awaiting issue — view only"
+  "vi": "Tồn từng kho và mặt hàng, phần chờ cấp theo đề nghị — chỉ xem",
+  "lo": "ຍອດຄົງເຫຼືອ ຕາມສາງ ແລະ ລາຍການ · ເບິ່ງຢ່າງດຽວ",
+  "en": "Stock per depot and item, and what awaits issue — view only"
  },
  "d_de_nghi_chi": {
   "vi": "Đề nghị tạm ứng (tiền) — tìm, xem, in",
@@ -2953,9 +2953,9 @@ window.EPL_TU_DIEN = {
   "en": "Stock view"
  },
  "title_kho_xem": {
-  "vi": "Xem kho<span class=\"sub\">Theo mặt hàng · chỉ xem</span>",
-  "lo": "ເບິ່ງສາງ<span class=\"sub\">ຕາມລາຍການ · ເບິ່ງຢ່າງດຽວ</span>",
-  "en": "Stock view<span class=\"sub\">By item · view only</span>"
+  "vi": "Xem kho<span class=\"sub\">Theo từng kho và mặt hàng · chỉ xem</span>",
+  "lo": "ເບິ່ງສາງ<span class=\"sub\">ຕາມສາງ ແລະ ລາຍການ · ເບິ່ງຢ່າງດຽວ</span>",
+  "en": "Stock view<span class=\"sub\">By depot and item · view only</span>"
  },
  "kx_search": {
   "vi": "Tìm mặt hàng, số phiếu, số xe…",
@@ -2963,9 +2963,9 @@ window.EPL_TU_DIEN = {
   "en": "Search item, slip no., truck…"
  },
  "kx_note": {
-  "vi": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất kho nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
-  "lo": "Màn này chỉ xem. Nhập kho, xuất kho, chuyển kho, điều chỉnh do bên kho làm; phiếu đề nghị xuất kho nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
-  "en": "View only. Stock in, out, transfers and adjustments are done by the warehouse side; fuel requests are made on the dispatch slip and the warehouse issues against them."
+  "vi": "Màn này chỉ để xem. Nhập kho, xuất kho, chuyển kho và điều chỉnh do bên kho làm. Phiếu đề nghị xuất kho nhiên liệu lập trên phiếu xuất xe, bên kho cấp theo phiếu đó.",
+  "lo": "ໜ້ານີ້ເບິ່ງຢ່າງດຽວ. ການຮັບເຂົ້າສາງ, ເບີກອອກສາງ, ໂອນສາງ ແລະ ປັບປຸງ ແມ່ນຝ່າຍສາງເຮັດ. ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ສ້າງຢູ່ໃນໃບເບີກລົດ, ຝ່າຍສາງຈ່າຍຕາມໃບນັ້ນ.",
+  "en": "View only. Stock in, out, transfers and adjustments are done by the warehouse side. Fuel stock-out requests are made on the dispatch slip and the warehouse issues against them."
  },
  "kx_ton_dau": {
   "vi": "Tổng tồn nhiên liệu",
@@ -3104,7 +3104,7 @@ window.EPL_TU_DIEN = {
  },
  "kx_loi": {
   "vi": "Chưa lấy được số tồn từ bên kho: {loi}",
-  "lo": "Chưa lấy được số tồn từ bên kho: {loi}",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບຍອດຄົງເຫຼືອຈາກຝ່າຍສາງ: {loi}",
   "en": "Could not get stock from the warehouse side: {loi}"
  },
  "cp_goi_y": {
@@ -8366,5 +8366,575 @@ window.EPL_TU_DIEN = {
   "vi": "Cách trả theo cột ghi chú Excel. Dòng «Chi ngay khi xe đi» vào tiền tạm ứng.",
   "lo": "ວິທີຈ່າຍ ຕາມໝາຍເຫດ Excel. ແຖວ «ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ» ເຂົ້າເງິນລ່ວງໜ້າ.",
   "en": "Payment method as in the Excel note column. Lines marked «Paid at dispatch» go into the cash advance."
+ },
+ "k2_tim": {
+  "vi": "Tìm kho, số phiếu, số xe",
+  "lo": "ຄົ້ນຫາ ສາງ, ເລກທີ, ລົດ",
+  "en": "Search depot, slip no., truck"
+ },
+ "k2_loc_con": {
+  "vi": "Còn hàng",
+  "lo": "ມີສິນຄ້າ",
+  "en": "In stock"
+ },
+ "k2_trong": {
+  "vi": "Trống",
+  "lo": "ຫວ່າງ",
+  "en": "Empty"
+ },
+ "k2_toan_bo": {
+  "vi": "Toàn bộ kho",
+  "lo": "ສາງທັງໝົດ",
+  "en": "All depots"
+ },
+ "k2_toan_bo_phu": {
+  "vi": "{n} kho nhiên liệu, phụ tùng và bãi hàng",
+  "lo": "ສາງນໍ້າມັນ {n} ແຫ່ງ, ອາໄຫຼ່ ແລະ ສະໜາມສິນຄ້າ",
+  "en": "{n} fuel depots, parts and goods yard"
+ },
+ "k2_khong_khop": {
+  "vi": "Không có kho nào khớp bộ lọc. Chọn \"Tất cả\" để xem lại toàn bộ.",
+  "lo": "ບໍ່ມີສາງທີ່ກົງກັບຕົວກັ່ນຕອງ. ເລືອກ \"ທັງໝົດ\" ເພື່ອເບິ່ງທັງໝົດ.",
+  "en": "No depot matches the filter. Choose \"All\" to see everything."
+ },
+ "k2_duoi_an_toan": {
+  "vi": "Dưới mức an toàn",
+  "lo": "ຕໍ່າກວ່າລະດັບປອດໄພ",
+  "en": "Below safety level"
+ },
+ "k2_duoi_muc": {
+  "vi": "Dưới mức",
+  "lo": "ຕໍ່າກວ່າຂັ້ນຕໍ່າ",
+  "en": "Below minimum"
+ },
+ "k2_da_khai_n": {
+  "vi": "Đã khai {n}",
+  "lo": "ແຈ້ງແລ້ວ {n}",
+  "en": "Declared {n}"
+ },
+ "k2_cho_cap_n": {
+  "vi": "Chờ cấp {n}",
+  "lo": "ລໍຖ້າຈ່າຍ {n}",
+  "en": "Awaiting {n}"
+ },
+ "k2_n_phu_tung": {
+  "vi": "{n} phụ tùng",
+  "lo": "ອາໄຫຼ່ {n} ລາຍການ",
+  "en": "{n} parts"
+ },
+ "k2_bai_hang": {
+  "vi": "Bãi hàng",
+  "lo": "ສະໜາມສິນຄ້າ",
+  "en": "Goods yard"
+ },
+ "k2_kv_khac": {
+  "vi": "Khu vực khác",
+  "lo": "ເຂດອື່ນ",
+  "en": "Other areas"
+ },
+ "k2_kv_vn": {
+  "vi": "Việt Nam",
+  "lo": "ຫວຽດນາມ",
+  "en": "Vietnam"
+ },
+ "k2_sr_phieu": {
+  "vi": "Phiếu và số xe",
+  "lo": "ໃບ ແລະ ເບີລົດ",
+  "en": "Slips and trucks"
+ },
+ "k2_sr_pt": {
+  "vi": "Tồn {sl} {dv}",
+  "lo": "ຄົງເຫຼືອ {sl} {dv}",
+  "en": "Stock {sl} {dv}"
+ },
+ "k2_sr_bai": {
+  "vi": "Bãi {kho}",
+  "lo": "ສະໜາມ {kho}",
+  "en": "Yard {kho}"
+ },
+ "k2_xe_x": {
+  "vi": "Xe {xe}",
+  "lo": "ລົດ {xe}",
+  "en": "Truck {xe}"
+ },
+ "k2_mv_in": {
+  "vi": "Nhập kho",
+  "lo": "ຮັບເຂົ້າສາງ",
+  "en": "Stock in"
+ },
+ "k2_mv_out": {
+  "vi": "Xuất kho",
+  "lo": "ເບີກອອກສາງ",
+  "en": "Stock out"
+ },
+ "k2_mv_tin": {
+  "vi": "Chuyển đến",
+  "lo": "ໂອນເຂົ້າ",
+  "en": "Transfer in"
+ },
+ "k2_mv_tout": {
+  "vi": "Chuyển đi",
+  "lo": "ໂອນອອກ",
+  "en": "Transfer out"
+ },
+ "k2_nhap": {
+  "vi": "nhập",
+  "lo": "ຮັບເຂົ້າ",
+  "en": "in"
+ },
+ "k2_xuat": {
+  "vi": "xuất",
+  "lo": "ເບີກອອກ",
+  "en": "out"
+ },
+ "k2_pt_cho_ngan": {
+  "vi": "chờ xuất",
+  "lo": "ລໍຖ້າເບີກ",
+  "en": "awaiting issue"
+ },
+ "k2_lo_con": {
+  "vi": "còn {t} tấn",
+  "lo": "ຍັງເຫຼືອ {t} ໂຕນ",
+  "en": "{t} t left"
+ },
+ "k2_cau_ton": {
+  "vi": "<b>{l} lít</b> nhiên liệu đang nằm ở {co} trên {n} kho.",
+  "lo": "ນໍ້າມັນ <b>{l} ລິດ</b> ຢູ່ໃນ {co} ຈາກ {n} ສາງ.",
+  "en": "<b>{l} L</b> of fuel sits in {co} of {n} depots."
+ },
+ "k2_cau_khai": {
+  "vi": "<span class=\"warn\">{l} lít</span> đã khai trên phiếu xuất xe nhưng chưa có đề nghị.",
+  "lo": "<span class=\"warn\">{l} ລິດ</span> ແຈ້ງໃນໃບເບີກລົດແລ້ວ ແຕ່ຍັງບໍ່ມີໃບສະເໜີ.",
+  "en": "<span class=\"warn\">{l} L</span> declared on dispatch slips but not yet requested."
+ },
+ "k2_cau_cho": {
+  "vi": "{l} lít chờ cấp theo {n} phiếu đề nghị.",
+  "lo": "{l} ລິດ ລໍຖ້າຈ່າຍຕາມໃບສະເໜີ {n} ໃບ.",
+  "en": "{l} L awaiting issue on {n} requests."
+ },
+ "k2_cau_khong_cho": {
+  "vi": "Không có phiếu đề nghị nào chờ cấp.",
+  "lo": "ບໍ່ມີໃບສະເໜີລໍຖ້າຈ່າຍ.",
+  "en": "No requests awaiting issue."
+ },
+ "k2_cau_trong": {
+  "vi": "{n} kho đang trống.",
+  "lo": "ສາງຫວ່າງ {n} ແຫ່ງ.",
+  "en": "{n} depots are empty."
+ },
+ "k2_lg_ton": {
+  "vi": "Tồn",
+  "lo": "ຄົງເຫຼືອ",
+  "en": "Stock"
+ },
+ "k2_lg_khai": {
+  "vi": "Đã khai hoặc chờ cấp",
+  "lo": "ແຈ້ງແລ້ວ ຫຼື ລໍຖ້າຈ່າຍ",
+  "en": "Declared or awaiting"
+ },
+ "k2_lg_an_toan": {
+  "vi": "Mức an toàn",
+  "lo": "ລະດັບປອດໄພ",
+  "en": "Safety level"
+ },
+ "k2_lg_nhap": {
+  "vi": "Nhập",
+  "lo": "ຮັບເຂົ້າ",
+  "en": "In"
+ },
+ "k2_lg_xuat": {
+  "vi": "Xuất",
+  "lo": "ເບີກອອກ",
+  "en": "Out"
+ },
+ "k2_chua_suc_chua": {
+  "vi": "Chưa khai sức chứa",
+  "lo": "ຍັງບໍ່ແຈ້ງຄວາມຈຸ",
+  "en": "No capacity set"
+ },
+ "k2_chua_suc_chua_goi_y": {
+  "vi": "Kho chưa khai sức chứa bồn — bồn vẽ theo mức cao nhất trong tháng. Bên kho khai ở danh mục điểm đổ.",
+  "lo": "ສາງຍັງບໍ່ແຈ້ງຄວາມຈຸຖັງ — ຖັງແຕ້ມຕາມລະດັບສູງສຸດໃນເດືອນ. ຝ່າຍສາງແຈ້ງໃນລາຍການຈຸດເຕີມນໍ້າມັນ.",
+  "en": "No tank capacity set — the tank is drawn against the highest level this month. The warehouse side sets it in the fuel place list."
+ },
+ "k2_tong": {
+  "vi": "Tổng",
+  "lo": "ລວມ",
+  "en": "Total"
+ },
+ "k2_hang_gui_bai": {
+  "vi": "Hàng gửi bãi",
+  "lo": "ສິນຄ້າຝາກສະໜາມ",
+  "en": "Goods at yard"
+ },
+ "k2_bai": {
+  "vi": "Bãi",
+  "lo": "ສະໜາມ",
+  "en": "Yard"
+ },
+ "k2_con_nhap": {
+  "vi": "Còn / nhập",
+  "lo": "ຍັງເຫຼືອ / ຮັບ",
+  "en": "Left / in"
+ },
+ "k2_ngay_nhap_c": {
+  "vi": "Ngày nhập",
+  "lo": "ວັນທີຮັບ",
+  "en": "Date in"
+ },
+ "k2_lo_thanh": {
+  "vi": "Còn {con} / nhập {nhap} tấn",
+  "lo": "ຍັງເຫຼືອ {con} / ຮັບ {nhap} ໂຕນ",
+  "en": "{con} left of {nhap} t"
+ },
+ "k2_td_con_lai": {
+  "vi": "{kho}: còn lại {l} lít",
+  "lo": "{kho}: ຍັງເຫຼືອ {l} ລິດ",
+  "en": "{kho}: {l} L left"
+ },
+ "k2_td_thap": {
+  "vi": "Thấp hơn mức an toàn {l} lít sau khi trừ dầu đã khai và chờ cấp",
+  "lo": "ຕໍ່າກວ່າລະດັບປອດໄພ {l} ລິດ ຫຼັງຫັກນໍ້າມັນທີ່ແຈ້ງ ແລະ ລໍຖ້າຈ່າຍ",
+  "en": "Below the {l} L safety level after declared and awaiting fuel"
+ },
+ "k2_td_khai": {
+  "vi": "{l} lít đã khai, chưa có đề nghị",
+  "lo": "{l} ລິດ ແຈ້ງແລ້ວ ຍັງບໍ່ມີໃບສະເໜີ",
+  "en": "{l} L declared, no request yet"
+ },
+ "k2_td_khai_s": {
+  "vi": "{kho}, {n} phiếu xuất xe",
+  "lo": "{kho}, ໃບເບີກລົດ {n} ໃບ",
+  "en": "{kho}, {n} dispatch slips"
+ },
+ "k2_td_cho": {
+  "vi": "{l} lít chờ cấp theo đề nghị",
+  "lo": "{l} ລິດ ລໍຖ້າຈ່າຍຕາມໃບສະເໜີ",
+  "en": "{l} L awaiting issue"
+ },
+ "k2_td_khai_s2": {
+  "vi": "{kho}, {n} phiếu đề nghị",
+  "lo": "{kho}, ໃບສະເໜີ {n} ໃບ",
+  "en": "{kho}, {n} requests"
+ },
+ "k2_td_pt": {
+  "vi": "{ten}: còn {sl} {dv}",
+  "lo": "{ten}: ຍັງເຫຼືອ {sl} {dv}",
+  "en": "{ten}: {sl} {dv} left"
+ },
+ "k2_td_pt_s": {
+  "vi": "Bằng hoặc dưới mức tối thiểu {min}",
+  "lo": "ເທົ່າ ຫຼື ຕໍ່າກວ່າຂັ້ນຕໍ່າ {min}",
+  "en": "At or below the minimum of {min}"
+ },
+ "k2_td_trong": {
+  "vi": "{n} kho đang trống",
+  "lo": "ສາງຫວ່າງ {n} ແຫ່ງ",
+  "en": "{n} depots empty"
+ },
+ "k2_td_khong": {
+  "vi": "Không có việc nào cần để ý.",
+  "lo": "ບໍ່ມີວຽກທີ່ຕ້ອງເອົາໃຈໃສ່.",
+  "en": "Nothing needs attention."
+ },
+ "k2_n_viec": {
+  "vi": "{n} việc bên kho cần để ý trong tháng {thang}",
+  "lo": "ວຽກຝ່າຍສາງ {n} ຢ່າງ ຕ້ອງເອົາໃຈໃສ່ ໃນເດືອນ {thang}",
+  "en": "{n} warehouse items to watch in {thang}"
+ },
+ "k2_n_kho": {
+  "vi": "{n} kho",
+  "lo": "{n} ສາງ",
+  "en": "{n} depots"
+ },
+ "k2_n_mon": {
+  "vi": "{n} món",
+  "lo": "{n} ລາຍການ",
+  "en": "{n} items"
+ },
+ "k2_n_lo": {
+  "vi": "{n} lô",
+  "lo": "{n} ລ໊ອດ",
+  "en": "{n} lots"
+ },
+ "k2_intro_pt": {
+  "vi": "Số lượng từng món đang nằm ở kho nào. Ô đỏ là món đã chạm mức tối thiểu. Bấm một dòng để xem kho.",
+  "lo": "ຈຳນວນແຕ່ລະລາຍການຢູ່ສາງໃດ. ຊ່ອງສີແດງແມ່ນລາຍການທີ່ຮອດຂັ້ນຕໍ່າແລ້ວ. ກົດແຖວໜຶ່ງເພື່ອເບິ່ງສາງ.",
+  "en": "How much of each item sits in which depot. Red cells have reached the minimum. Click a row to open the depot."
+ },
+ "k2_intro_hang": {
+  "vi": "{t} tấn còn ở bãi, {n} lô. Thanh xanh là phần còn lại của từng lô.",
+  "lo": "ຍັງເຫຼືອ {t} ໂຕນ ຢູ່ສະໜາມ, {n} ລ໊ອດ. ແຖບສີຂຽວແມ່ນສ່ວນທີ່ຍັງເຫຼືອຂອງແຕ່ລະລ໊ອດ.",
+  "en": "{t} t left at the yard in {n} lots. The green bar is what is left of each lot."
+ },
+ "k2_ma_kho": {
+  "vi": "Mã kho",
+  "lo": "ລະຫັດສາງ",
+  "en": "Depot code"
+ },
+ "k2_khu_vuc": {
+  "vi": "Khu vực",
+  "lo": "ເຂດ",
+  "en": "Area"
+ },
+ "k2_suc_chua": {
+  "vi": "Sức chứa",
+  "lo": "ຄວາມຈຸ",
+  "en": "Capacity"
+ },
+ "k2_muc_an_toan": {
+  "vi": "Mức an toàn",
+  "lo": "ລະດັບປອດໄພ",
+  "en": "Safety level"
+ },
+ "k2_chua_khai": {
+  "vi": "Chưa khai",
+  "lo": "ຍັງບໍ່ແຈ້ງ",
+  "en": "Not set"
+ },
+ "k2_nhap_gan_nhat": {
+  "vi": "Nhập gần nhất",
+  "lo": "ຮັບເຂົ້າລ່າສຸດ",
+  "en": "Last stock in"
+ },
+ "k2_ton_cuoi": {
+  "vi": "Tồn cuối tháng",
+  "lo": "ຄົງເຫຼືອທ້າຍເດືອນ",
+  "en": "Month-end stock"
+ },
+ "k2_ton_cuoi_p": {
+  "vi": "Đầu tháng {dau}, nhập {nhap}, xuất {xuat}",
+  "lo": "ຕົ້ນເດືອນ {dau}, ຮັບ {nhap}, ເບີກ {xuat}",
+  "en": "Opening {dau}, in {nhap}, out {xuat}"
+ },
+ "k2_n_phieu_dn": {
+  "vi": "{n} phiếu đề nghị",
+  "lo": "ໃບສະເໜີ {n} ໃບ",
+  "en": "{n} requests"
+ },
+ "k2_khai_chua": {
+  "vi": "Đã khai, chưa có đề nghị",
+  "lo": "ແຈ້ງແລ້ວ ຍັງບໍ່ມີໃບສະເໜີ",
+  "en": "Declared, no request"
+ },
+ "k2_n_pxx": {
+  "vi": "{n} phiếu xuất xe",
+  "lo": "ໃບເບີກລົດ {n} ໃບ",
+  "en": "{n} dispatch slips"
+ },
+ "k2_con_cap": {
+  "vi": "Còn lại có thể cấp",
+  "lo": "ຍັງເຫຼືອທີ່ຈ່າຍໄດ້",
+  "en": "Left to issue"
+ },
+ "k2_kho_trong": {
+  "vi": "Kho đang trống",
+  "lo": "ສາງຫວ່າງ",
+  "en": "Depot is empty"
+ },
+ "k2_chua_an_toan": {
+  "vi": "Chưa khai mức an toàn",
+  "lo": "ຍັງບໍ່ແຈ້ງລະດັບປອດໄພ",
+  "en": "No safety level set"
+ },
+ "k2_thap_hon": {
+  "vi": "Thấp hơn mức an toàn {l} lít",
+  "lo": "ຕໍ່າກວ່າລະດັບປອດໄພ {l} ລິດ",
+  "en": "Below the {l} L safety level"
+ },
+ "k2_tren_muc": {
+  "vi": "Trên mức an toàn {l} lít",
+  "lo": "ສູງກວ່າລະດັບປອດໄພ {l} ລິດ",
+  "en": "{l} L above the safety level"
+ },
+ "k2_flow": {
+  "vi": "Tồn và nhập xuất theo ngày, tháng {thang}",
+  "lo": "ຄົງເຫຼືອ ແລະ ຮັບ-ເບີກ ລາຍວັນ, ເດືອນ {thang}",
+  "en": "Daily stock, in and out, {thang}"
+ },
+ "k2_ngay_nhap": {
+  "vi": "Ngày {d}: nhập {l} lít",
+  "lo": "ວັນທີ {d}: ຮັບເຂົ້າ {l} ລິດ",
+  "en": "Day {d}: {l} L in"
+ },
+ "k2_ngay_xuat": {
+  "vi": "Ngày {d}: xuất {l} lít",
+  "lo": "ວັນທີ {d}: ເບີກອອກ {l} ລິດ",
+  "en": "Day {d}: {l} L out"
+ },
+ "k2_so_lit": {
+  "vi": "Số lít",
+  "lo": "ຈຳນວນລິດ",
+  "en": "Litres"
+ },
+ "k2_cong": {
+  "vi": "Cộng",
+  "lo": "ລວມ",
+  "en": "Total"
+ },
+ "k2_pend_trong": {
+  "vi": "Không có phiếu đề nghị nào chờ cấp ở kho này.",
+  "lo": "ບໍ່ມີໃບສະເໜີລໍຖ້າຈ່າຍຢູ່ສາງນີ້.",
+  "en": "No requests awaiting issue at this depot."
+ },
+ "k2_decl_h": {
+  "vi": "Dầu đã khai trên phiếu xuất xe, chưa lập phiếu đề nghị",
+  "lo": "ນໍ້າມັນແຈ້ງໃນໃບເບີກລົດ ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີ",
+  "en": "Fuel declared on dispatch slips, no request yet"
+ },
+ "k2_decl_trong": {
+  "vi": "Không có dầu đã khai mà chưa lập phiếu đề nghị.",
+  "lo": "ບໍ່ມີນໍ້າມັນທີ່ແຈ້ງແລ້ວແຕ່ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີ.",
+  "en": "No declared fuel without a request."
+ },
+ "k2_den": {
+  "vi": "Đến {kho}",
+  "lo": "ໄປ {kho}",
+  "en": "To {kho}"
+ },
+ "k2_tu": {
+  "vi": "Từ {kho}",
+  "lo": "ຈາກ {kho}",
+  "en": "From {kho}"
+ },
+ "k2_ton_dau": {
+  "vi": "Tồn đầu tháng",
+  "lo": "ຄົງເຫຼືອຕົ້ນເດືອນ",
+  "en": "Opening stock"
+ },
+ "k2_so_kho": {
+  "vi": "Sổ kho tháng {thang}",
+  "lo": "ປຶ້ມສາງ ເດືອນ {thang}",
+  "en": "Stock ledger {thang}"
+ },
+ "k2_doi_ung": {
+  "vi": "Xe / kho đối ứng",
+  "lo": "ລົດ / ສາງຄູ່",
+  "en": "Truck / other depot"
+ },
+ "k2_nhap_l": {
+  "vi": "Nhập (L)",
+  "lo": "ຮັບ (ລິດ)",
+  "en": "In (L)"
+ },
+ "k2_xuat_l": {
+  "vi": "Xuất (L)",
+  "lo": "ເບີກ (ລິດ)",
+  "en": "Out (L)"
+ },
+ "k2_ton_sau": {
+  "vi": "Tồn sau (L)",
+  "lo": "ຄົງເຫຼືອຫຼັງ (ລິດ)",
+  "en": "Balance (L)"
+ },
+ "k2_don_gia": {
+  "vi": "Đơn giá (LAK)",
+  "lo": "ລາຄາ (ກີບ)",
+  "en": "Unit cost (LAK)"
+ },
+ "k2_cong_thang": {
+  "vi": "Cộng tháng",
+  "lo": "ລວມເດືອນ",
+  "en": "Month total"
+ },
+ "k2_pt_khong": {
+  "vi": "Kho này không giữ phụ tùng. Phụ tùng đang nằm ở: ",
+  "lo": "ສາງນີ້ບໍ່ມີອາໄຫຼ່. ອາໄຫຼ່ຢູ່ທີ່: ",
+  "en": "This depot holds no parts. Parts are at: "
+ },
+ "k2_pt_khong_dau": {
+  "vi": "Chưa có phụ tùng nào trong kho.",
+  "lo": "ຍັງບໍ່ມີອາໄຫຼ່ໃນສາງ.",
+  "en": "No parts in stock yet."
+ },
+ "k2_pt_h": {
+  "vi": "Phụ tùng tại kho",
+  "lo": "ອາໄຫຼ່ໃນສາງ",
+  "en": "Parts at this depot"
+ },
+ "k2_ton_tai_kho": {
+  "vi": "Tồn tại kho",
+  "lo": "ຄົງເຫຼືອໃນສາງ",
+  "en": "Stock here"
+ },
+ "k2_so_toi_thieu": {
+  "vi": "So với tồn tối thiểu",
+  "lo": "ທຽບກັບຂັ້ນຕໍ່າ",
+  "en": "Against minimum"
+ },
+ "k2_bar": {
+  "vi": "Tồn {tot} / tối thiểu {min}",
+  "lo": "ຄົງເຫຼືອ {tot} / ຂັ້ນຕໍ່າ {min}",
+  "en": "Stock {tot} / min {min}"
+ },
+ "k2_bar_duoi": {
+  "vi": "Tồn {tot} / tối thiểu {min}, dưới mức",
+  "lo": "ຄົງເຫຼືອ {tot} / ຂັ້ນຕໍ່າ {min}, ຕໍ່າກວ່າຂັ້ນຕໍ່າ",
+  "en": "Stock {tot} / min {min}, below minimum"
+ },
+ "k2_gia_tri": {
+  "vi": "Giá trị tồn (LAK)",
+  "lo": "ມູນຄ່າຄົງເຫຼືອ (ກີບ)",
+  "en": "Stock value (LAK)"
+ },
+ "k2_gia_tri_kho": {
+  "vi": "Giá trị phụ tùng tại kho",
+  "lo": "ມູນຄ່າອາໄຫຼ່ໃນສາງ",
+  "en": "Value of parts at this depot"
+ },
+ "k2_pt_cho_h": {
+  "vi": "Phụ tùng trên phiếu, chờ xuất kho",
+  "lo": "ອາໄຫຼ່ໃນໃບ ລໍຖ້າເບີກອອກສາງ",
+  "en": "Parts on slips awaiting issue"
+ },
+ "k2_pt_cho_trong": {
+  "vi": "Không có phụ tùng nào đang chờ xuất.",
+  "lo": "ບໍ່ມີອາໄຫຼ່ລໍຖ້າເບີກ.",
+  "en": "No parts awaiting issue."
+ },
+ "k2_pt_mv_h": {
+  "vi": "Nhập / xuất phụ tùng trong tháng",
+  "lo": "ຮັບ / ເບີກ ອາໄຫຼ່ໃນເດືອນ",
+  "en": "Parts in / out this month"
+ },
+ "k2_pt_mv_trong": {
+  "vi": "Chưa có nhập xuất phụ tùng trong tháng.",
+  "lo": "ຍັງບໍ່ມີການຮັບ-ເບີກອາໄຫຼ່ໃນເດືອນ.",
+  "en": "No parts movements this month."
+ },
+ "k2_hang_khong": {
+  "vi": "Kho này không có bãi nhận hàng khách gửi.",
+  "lo": "ສາງນີ້ບໍ່ມີສະໜາມຮັບສິນຄ້າລູກຄ້າ.",
+  "en": "This depot has no yard for customer goods."
+ },
+ "k2_con_o_bai": {
+  "vi": "Còn ở bãi",
+  "lo": "ຍັງເຫຼືອຢູ່ສະໜາມ",
+  "en": "Left at yard"
+ },
+ "k2_sl_tan": {
+  "vi": "Số lượng (tấn)",
+  "lo": "ຈຳນວນ (ໂຕນ)",
+  "en": "Quantity (t)"
+ },
+ "k2_aria_bon": {
+  "vi": "{kho}: tồn {ton} trên {cap} lít",
+  "lo": "{kho}: ຄົງເຫຼືອ {ton} ຈາກ {cap} ລິດ",
+  "en": "{kho}: {ton} of {cap} L"
+ },
+ "k2_aria_bon_ko": {
+  "vi": "{kho}: tồn {ton} lít",
+  "lo": "{kho}: ຄົງເຫຼືອ {ton} ລິດ",
+  "en": "{kho}: {ton} L in stock"
+ },
+ "k2_sub_all": {
+  "vi": "Theo dõi tồn từng kho, tháng {thang}. Màn này chỉ để xem.",
+  "lo": "ຕິດຕາມຄົງເຫຼືອແຕ່ລະສາງ, ເດືອນ {thang}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
+  "en": "Stock of each depot, {thang}. View only."
+ },
+ "k2_sub_kho": {
+  "vi": "{kho}, tháng {thang}. Màn này chỉ để xem.",
+  "lo": "{kho}, ເດືອນ {thang}. ໜ້ານີ້ເບິ່ງຢ່າງດຽວ.",
+  "en": "{kho}, {thang}. View only."
  }
 };

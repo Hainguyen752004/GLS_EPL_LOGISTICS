@@ -455,6 +455,23 @@ Bên em cần anh bảo đảm bốn điều:
   - với phụ tùng: dòng mục V lấy kho chưa rời kho (`tren_phieu`);
   - lọc giá theo vai.
 
+**Bổ sung 30/09 chiều — giao diện Xem kho mới** (chủ dự án duyệt bản mẫu; màn vẽ bồn theo sức chứa, vạch mức an toàn, nhóm kho theo khu vực, sổ kho cả tháng, biểu đồ tồn theo ngày). Xin anh trả thêm các khoá sau. Bản tạm bên trang kế toán đã trả đúng các khoá này để anh đối chiếu.
+
+| Khối | Khoá thêm | Kiểu | Ý nghĩa |
+|---|---|---|---|
+| `nhien_lieu[]` | `capacity_l` | số hoặc `null` | sức chứa bồn (lít). `null` = kho chưa khai → màn vẽ bồn theo mức cao nhất trong tháng, không có phần trăm |
+| `nhien_lieu[]` | `safety_l` | số hoặc `null` | mức an toàn tối thiểu (lít). Còn lại có thể cấp (`tồn − chờ cấp − đã khai`) thấp hơn số này thì màn báo đỏ. `null` = không báo. Luật: `0 ≤ safety_l ≤ capacity_l` |
+| `nhien_lieu[]` | `region` | chuỗi hoặc `null` | khu vực để nhóm kho: `Thà Bốc`, `Thakhek`, `Viêng Chăn`… `null` = màn xếp vào "Việt Nam" (nếu `country = VN`) hoặc "Khu vực khác" |
+| `nhien_lieu[]` | `address` | chuỗi hoặc `null` | địa chỉ kho |
+| `nhien_lieu[]` | `kho_goc` | bool | `true` cho **đúng một** kho: kho Thà Bốc, nơi có kho phụ tùng và bãi hàng khách gửi. Màn gắn phụ tùng và hàng gửi bãi vào kho này |
+| `nhien_lieu[]` | `ton_dau` | số | tồn **đầu tháng** (lít) = Σ nhập − Σ xuất của mọi lần **trước** ngày 1 của tháng |
+| `nhien_lieu[]` | `so_thang[]` | mảng | **mọi** lần nhập / xuất **trong tháng**, **cũ trước**: `{ngay, kind: "in"|"out", qty, doc_no, truck_no, chuyen_kho: bool, kho_doi_ung, gia}`. Chuyển kho: `doc_no` = số chuyển kho (`CK-…`), `kho_doi_ung` = **mã** kho bên kia (`KHO-TB`…). `gia` = giá vốn dòng (LAK) |
+| `phu_tung[]` | `ton_dau`, `so_thang[]` | như trên | `so_thang[]`: `{ngay, kind, qty, doc_no, truck_no, gia}` trong tháng, cũ trước |
+
+- Kiểm: với mọi kho, `ton_dau + nhap_thang − xuat_thang` phải bằng tồn cuối tháng (tháng hiện tại thì bằng `ton_lit`). Bản tạm đã đạt trên dữ liệu thử 30/09.
+- Ai khai `capacity_l`, `safety_l`, `region`: **bên kho** (danh mục kho của anh). Bản tạm đang cho Sếp / KT kho xăng dầu khai ở màn Điểm đổ nhiên liệu.
+- `gan_day` giữ nguyên: bên em vẫn dùng cho hàng gửi bãi, và để chạy được với máy chưa có `so_thang`.
+
 ### A14. `GET /api/lien-thong/kiem` — thử kết nối
 
 - Sếp bấm **Kiểm kết nối** bên LAO. Cần `X-Nguoi-Dung`.

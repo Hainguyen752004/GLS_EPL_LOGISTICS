@@ -145,7 +145,7 @@ async function main() {
     const chu = goc().textContent;
     assert.ok(!chu.includes(w.EPL.NN.t('err_generic')), 'module ' + m + ' báo lỗi: ' + chu.slice(0, 200));
     assert.ok(!/\bundefined\b|\bNaN\b/.test(chu), 'module ' + m + ' có chữ undefined/NaN');
-    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnx-ds, .dnt-ds'), 'module ' + m + ' không có bảng/thẻ nào');
+    assert.ok(goc().querySelector('table, .kpis, .tq-kpis, .px-phieu, .pct-ds, .dnc-ds, .dnx-ds, .dnt-ds, .k2 .k2-panel'), 'module ' + m + ' không có bảng/thẻ nào');
     console.log(`  ✓ ${m.padEnd(16)} ${chu.length} ký tự`);
   }
 
@@ -481,12 +481,13 @@ async function main() {
   // màn đầu của thủ kho là Phiếu đề nghị xuất kho (30/09 chiều) — có danh sách tờ; rồi sang Xem kho
   await choDen(() => d.querySelector('#noi-dung .dnx-ds'), 'màn Phiếu đề nghị xuất kho của thủ kho');
   await di('#/kho-xem');
-  await choDen(() => d.querySelector('#noi-dung .kx-bang tbody tr'), 'bảng mặt hàng của màn Xem kho');
+  // 30/09 chiều: giao diện Xem kho mới (bản mẫu Kho_new) — danh sách kho bên trái, bồn chứa bên phải
+  await choDen(() => d.querySelector('#noi-dung .k2 #k2-wh .wh-item[data-open]:not([data-open="all"])'), 'danh sách kho của màn Xem kho');
   const hash0 = w.location.hash; await cho(600);
   assert.strictEqual(w.location.hash, hash0, 'không chuyển vòng: ' + hash0 + ' → ' + w.location.hash);
   const chuKho = d.querySelector('#noi-dung').textContent;
   assert.ok(!chuKho.includes(w.EPL.NN.t('err_generic')) && !/\bundefined\b|\bNaN\b/.test(chuKho), 'màn thủ kho: ' + chuKho.slice(0, 200));
-  assert.ok(!d.querySelector('#noi-dung .kx button.primary, #noi-dung .kx .btn.primary'), 'màn Xem kho không có nút thao tác kho');
+  assert.ok(!d.querySelector('#noi-dung .k2 button.primary, #noi-dung .k2 .btn.primary'), 'màn Xem kho không có nút thao tác kho');
   console.log('✓ vai thủ kho: chỉ màn Xem kho (chỉ xem), không chuyển vòng, không lỗi');
 
   // Hai kiểu xem: thanh bên và thanh trên. Đổi kiểu thì khối ngôn ngữ và khối người dùng phải CHUYỂN

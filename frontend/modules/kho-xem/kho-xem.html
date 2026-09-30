@@ -1,29 +1,34 @@
-<!-- Xem kho — theo MẶT HÀNG, CHỈ XEM (sếp 30/09: kho dời về trang logistics, bên mình chỉ xem).
-     Nhập, xuất, chuyển kho, điều chỉnh do bên kho làm (anh Toàn). Trái: mỗi mặt hàng một dòng; phải: chi tiết dòng đang chọn. -->
-<div class="kx">
-  <div class="kx-top">
-    <div class="kx-tabs" role="tablist">
-      <button class="kx-tab on" data-tab="dau" role="tab"><span data-i18n="e_fuel"></span><b id="kx-n-dau">·</b></button>
-      <button class="kx-tab" data-tab="pt" role="tab"><span data-i18n="part"></span><b id="kx-n-pt">·</b></button>
-      <button class="kx-tab" data-tab="hang" role="tab"><span data-i18n="nav_goods"></span><b id="kx-n-hang">·</b></button>
+<!-- Xem kho — CHỈ XEM (sếp 30/09: kho dời về trang logistics; thao tác kho do bên kho — anh Toàn).
+     Giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (Kho_new.zip): trái là danh sách kho nhóm theo khu vực, phải là
+     Toàn bộ kho hoặc chi tiết một kho. Tiêu đề và hai nút Excel / PDF nằm ở thanh đầu trang chung. -->
+<div class="k2">
+  <div class="k2-dau">
+    <p class="k2-phu" id="k2-phu"></p>
+    <div class="k2-cong-cu">
+      <label class="k2-thang"><span data-i18n="month"></span><select id="k2-thang"></select></label>
+      <span class="k2-chi-xem" data-i18n="readonly"></span>
     </div>
-    <label class="kx-tim">
-      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
-      <input id="kx-tim" data-i18n-ph="kx_search" autocomplete="off">
-    </label>
-    <div class="grow"></div>
-    <div class="field kx-thang"><label data-i18n="month"></label><input type="month" id="kx-thang"></div>
-    <span class="kx-chi-xem" data-i18n="readonly"></span>
   </div>
 
-  <div class="kx-kpis" id="kx-kpis"></div>
+  <div class="layout">
+    <aside class="rail">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="k2-tim" type="search" data-i18n-ph="k2_tim" autocomplete="off">
+        <kbd>/</kbd>
+      </div>
+      <div class="filters" role="group" id="k2-loc">
+        <button type="button" class="chip is-on" data-filter="all" data-i18n="all"></button>
+        <button type="button" class="chip" data-filter="alert" data-i18n="attention"></button>
+        <button type="button" class="chip" data-filter="stock" data-i18n="k2_loc_con"></button>
+        <button type="button" class="chip" data-filter="empty" data-i18n="k2_trong"></button>
+      </div>
+      <div id="k2-sr" class="search-results" hidden></div>
+      <ul class="wh-list" id="k2-wh" role="listbox"></ul>
+    </aside>
 
-  <div class="kx-than">
-    <section class="kx-trai">
-      <div class="tbl-wrap"><table class="tbl kx-bang" id="kx-bang"></table></div>
-    </section>
-    <aside class="kx-phai" id="kx-ct"></aside>
+    <main class="work" id="k2-work" tabindex="-1"></main>
   </div>
 
-  <p class="small muted kx-note" data-i18n="kx_note"></p>
+  <p class="foot-note" data-i18n="kx_note"></p>
 </div>

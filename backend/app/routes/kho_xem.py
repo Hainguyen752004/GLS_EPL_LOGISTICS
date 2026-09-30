@@ -25,6 +25,10 @@ from services.phan_quyen import thay_gia_kho
 router = APIRouter()
 
 
+def _tuyen(p):
+    return " → ".join(x for x in (p.origin, p.destination) if x) or None
+
+
 def _cho_xuat_dau(db):
     """{place_id: {"de_nghi": [...phiếu đề nghị chờ cấp], "chua_de_nghi": [...dòng kho chưa có phiếu đề nghị]}}."""
     goc = kho_goc(db)
@@ -37,7 +41,7 @@ def _cho_xuat_dau(db):
             ra[v.place_id or goc]["de_nghi"].append({
                 "voucher_no": v.doc_no, "trip_id": p.id, "doc_no": p.doc_no, "kind": p.kind, "company": p.company,
                 "truck_no": v.truck_no or p.truck_no, "driver_name": v.driver_name or p.driver_name, "qty_l": v.qty_l or 0,
-                "ngay": v.doc_date.isoformat() if v.doc_date else None})
+                "route": _tuyen(p), "ngay": v.doc_date.isoformat() if v.doc_date else None})
     dong = (db.query(TripExpense, Trip).join(Trip, Trip.id == TripExpense.trip_id)
             .filter(TripExpense.section == "fuel", TripExpense.source == "kho", TripExpense.paid_by_epl.is_(True),
                     TripExpense.stock_move_id.is_(None)).all())
@@ -47,7 +51,7 @@ def _cho_xuat_dau(db):
         if (p.id, ma) in co_phieu:
             continue
         x = gop.setdefault((p.id, ma), {"trip_id": p.id, "doc_no": p.doc_no, "kind": p.kind, "company": p.company,
-                                        "truck_no": p.truck_no, "driver_name": p.driver_name, "qty_l": 0.0,
+                                        "truck_no": p.truck_no, "driver_name": p.driver_name, "qty_l": 0.0, "route": _tuyen(p),
                                         "ngay": p.doc_date.isoformat() if p.doc_date else None})
         x["qty_l"] += d.qty or 0
     for (_, ma), x in gop.items():
