@@ -1,0 +1,43 @@
+<!-- Phiếu đề nghị chi — ໃບສະເໜີຈ່າຍ (sếp 30/09: tách khỏi "Phiếu chi · Phiếu thu"). Hai loại tờ bên mình lập theo từng bước
+     của chuyến: đề nghị TẠM ỨNG (tài xế cầm đi lấy tiền ở quỹ) và đề nghị XUẤT NHIÊN LIỆU (mỗi kho một tờ). Tiền / dầu thật do
+     bên kho, bên quỹ cấp theo tờ — màn này để tìm, xem, in. Trái: danh sách tờ; phải: tờ đang chọn, đúng khổ in. -->
+<div class="dnc">
+  <div class="dnc-top no-print">
+    <div class="seg" id="dnc-loai" role="tablist">
+      <button class="on" data-loai=""><span data-i18n="all"></span></button>
+      <button data-loai="advance"><span data-i18n="dn_tam_ung"></span></button>
+      <button data-loai="fuel"><span data-i18n="dn_nhien_lieu"></span></button>
+    </div>
+    <div class="seg" id="dnc-tt">
+      <button class="on" data-tt="cho"><span data-i18n="v_cho"></span></button>
+      <button data-tt="da_cap"><span data-i18n="v_da_cap"></span></button>
+      <button data-tt="huy"><span data-i18n="v_huy"></span></button>
+      <button data-tt=""><span data-i18n="all"></span></button>
+    </div>
+    <label class="o-tim">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="dnc-tim" type="search" autocomplete="off" data-i18n-ph="dn_tim">
+    </label>
+    <div class="grow"></div>
+    <span class="small muted" id="dnc-dem"></span>
+  </div>
+
+  <div class="dnc-than">
+    <aside class="dnc-ds no-print" id="dnc-ds"></aside>
+    <section class="dnc-xem">
+      <div class="dnc-nut no-print">
+        <span class="small muted" id="dnc-nguon"></span>
+        <div class="grow"></div>
+        <button class="btn" id="dnc-mo-phieu"><span data-i18n="open_slip"></span></button>
+        <button class="btn primary" id="dnc-in"><span data-i18n="print"></span></button>
+      </div>
+      <div class="card ct-giay" id="dnc-giay">
+        <div class="ct-dau">
+          <div><img src="img/logo-epl.jpg" alt="EPL" class="ct-logo"><div><b>EPL TRANSPORT</b><div class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO<br>ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
+          <div class="ct-so" id="dnc-so"></div>
+        </div>
+        <div id="dnc-to"></div>
+      </div>
+    </section>
+  </div>
+</div>

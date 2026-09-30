@@ -678,7 +678,7 @@
     try {
       const v = await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'fuel' });
       EPL.toast(NN.t('saved'), 'ok');
-      EPL.di('chung-tu', { id: P.id, tab: 'linh', v: v[0] ? v[0].id : '' });
+      EPL.di('de-nghi-chi', { id: P.id, loai: 'fuel', v: v[0] ? v[0].id : '' });
     } catch (e) { EPL.baoLoi(e); }
   }
 
@@ -733,7 +733,7 @@
         if (!P || !P.id) return;
         try { await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'advance' }); }
         catch (e) { if (!(e instanceof EPL.LoiAPI) || e.status !== 422) return EPL.baoLoi(e); }
-        EPL.di('chung-tu', { id: P.id });
+        EPL.di('de-nghi-chi', { id: P.id, loai: 'advance' });
       });
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
       g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });

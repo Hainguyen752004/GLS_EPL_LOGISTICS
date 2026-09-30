@@ -26,6 +26,9 @@ LOAI = {
     "DO":     ("Phiếu xuất xe · đề nghị xuất xe", "ໃບເບີກລົດ · ໃບສະເໜີເບີກລົດ", False),   # DO mang cả hai tên (30/09)
     "PLNL":   ("Phiếu đề nghị xuất nhiên liệu", "ໃບສະເໜີເບີກນໍ້າມັນ", False),
     "PTU":    ("Phiếu đề nghị tạm ứng", "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ", False),
+    # Đề nghị THU (sếp 30/09): DO xong (xe về, có POD, khoá phiếu) → gửi bên công nợ (anh Tune) lập SO, hoá đơn, thu tiền.
+    # Không định khoản: bên mình không ghi công nợ.
+    "PDT":    ("Phiếu đề nghị thu", "ໃບສະເໜີຮັບເງິນ", False),
     "PXK_NL": ("Phiếu xuất kho nhiên liệu", "ໃບເບີກນໍ້າມັນອອກສາງ", True),
     "PXK_PT": ("Phiếu xuất kho phụ tùng", "ໃບເບີກອະໄຫຼ່ອອກສາງ", True),
     "PNK_NL": ("Phiếu nhập kho nhiên liệu", "ໃບຮັບນໍ້າມັນເຂົ້າສາງ", True),

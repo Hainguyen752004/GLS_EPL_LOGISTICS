@@ -2612,6 +2612,216 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
  },
+ "nav_de_nghi_chi": {
+  "vi": "Phiếu đề nghị chi",
+  "lo": "ໃບສະເໜີຈ່າຍ",
+  "en": "Payment requests"
+ },
+ "title_de_nghi_chi": {
+  "vi": "Phiếu đề nghị chi<span class=\"sub\">Tạm ứng · xuất nhiên liệu — quỹ, kho cấp theo tờ</span>",
+  "lo": "ໃບສະເໜີຈ່າຍ<span class=\"sub\">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ · ໃບສະເໜີເບີກນໍ້າມັນ</span>",
+  "en": "Payment requests<span class=\"sub\">Advance · fuel issue — cash desk and store issue against them</span>"
+ },
+ "nav_de_nghi_thu": {
+  "vi": "Phiếu đề nghị thu",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "Collection requests"
+ },
+ "title_de_nghi_thu": {
+  "vi": "Phiếu đề nghị thu<span class=\"sub\">DO xong → bên công nợ lập hoá đơn, thu tiền</span>",
+  "lo": "ໃບສະເໜີຮັບເງິນ<span class=\"sub\">ຕາມ DO · ສະຖານະ</span>",
+  "en": "Collection requests<span class=\"sub\">DO done → receivables invoice and collect</span>"
+ },
+ "dn_tam_ung": {
+  "vi": "Tạm ứng",
+  "lo": "ເງິນລ່ວງໜ້າ",
+  "en": "Advance"
+ },
+ "dn_nhien_lieu": {
+  "vi": "Nhiên liệu",
+  "lo": "ນໍ້າມັນ",
+  "en": "Fuel"
+ },
+ "dn_tim": {
+  "vi": "Tìm số đề nghị, số DO, số xe, tài xế…",
+  "lo": "ຄົ້ນຫາ ເລກທີ, ລົດ, ໂຊເຟີ…",
+  "en": "Search request no., DO, truck, driver…"
+ },
+ "dn_so_to": {
+  "vi": "{n} tờ",
+  "lo": "{n} ໃບ",
+  "en": "{n} slips"
+ },
+ "dn_chon_to": {
+  "vi": "Chọn một tờ bên trái để xem và in",
+  "lo": "ເລືອກໃບເພື່ອເບິ່ງ",
+  "en": "Pick a slip on the left to view and print"
+ },
+ "dn_gom": {
+  "vi": "Gom",
+  "lo": "ເກັບ",
+  "en": "Collect"
+ },
+ "dn_giao": {
+  "vi": "Giao",
+  "lo": "ສົ່ງ",
+  "en": "Deliver"
+ },
+ "dn_xe_thue": {
+  "vi": "Xe thuê",
+  "lo": "ລົດເຊົ່າ",
+  "en": "Hired"
+ },
+ "dt_tim": {
+  "vi": "Tìm số DO, khách hàng, số xe…",
+  "lo": "ຄົ້ນຫາ ເລກທີ, ລູກຄ້າ, ລົດ…",
+  "en": "Search DO, customer, truck…"
+ },
+ "dt_note": {
+  "vi": "Tờ này gửi bên công nợ để lập SO, xuất hoá đơn và thu tiền khách. Bên mình không thu tiền — chỉ xem trạng thái bên đó chép sang.",
+  "lo": "Tờ này gửi bên công nợ để lập SO, xuất hoá đơn và thu tiền khách. Bên mình không thu tiền — chỉ xem trạng thái bên đó chép sang.",
+  "en": "This slip goes to receivables to raise the SO, invoice and collect from the customer. We do not collect — we only see the status they report back."
+ },
+ "dt_st_cho_khoa": {
+  "vi": "Chờ khoá phiếu",
+  "lo": "ລໍຖ້າລັອກໃບ",
+  "en": "Awaiting lock"
+ },
+ "dt_st_chua_lap": {
+  "vi": "Chưa lập đề nghị",
+  "lo": "ຍັງບໍ່ໄດ້ສ້າງໃບສະເໜີ",
+  "en": "Not raised"
+ },
+ "dt_st_cho_gui": {
+  "vi": "Chờ gửi",
+  "lo": "ລໍຖ້າສົ່ງ",
+  "en": "Waiting to send"
+ },
+ "dt_st_da_gui": {
+  "vi": "Đã gửi",
+  "lo": "ສົ່ງແລ້ວ",
+  "en": "Sent"
+ },
+ "dt_st_da_hoa_don": {
+  "vi": "Đã xuất hoá đơn",
+  "lo": "ອອກໃບເກັບເງິນແລ້ວ",
+  "en": "Invoiced"
+ },
+ "dt_st_da_thu": {
+  "vi": "Đã thu đủ",
+  "lo": "ຮັບຄົບແລ້ວ",
+  "en": "Collected"
+ },
+ "dt_tong_thang": {
+  "vi": "Đề nghị thu trong tháng",
+  "lo": "ໃບສະເໜີຮັບເງິນ ໃນເດືອນ",
+  "en": "Collection requests this month"
+ },
+ "dt_con_lai_s": {
+  "vi": "Quy Kíp · theo số bên công nợ chép sang",
+  "lo": "Quy Kíp · theo số bên công nợ chép sang",
+  "en": "In LAK · as reported by receivables"
+ },
+ "dt_trong": {
+  "vi": "Chưa có DO nào đã về trong tháng này",
+  "lo": "ຍັງບໍ່ມີຂໍ້ມູນ",
+  "en": "No DO has come back this month"
+ },
+ "dt_lap": {
+  "vi": "Lập phiếu đề nghị thu",
+  "lo": "ສ້າງໃບສະເໜີຮັບເງິນ",
+  "en": "Raise collection request"
+ },
+ "dt_gui": {
+  "vi": "Gửi bên công nợ",
+  "lo": "ສົ່ງ",
+  "en": "Send to receivables"
+ },
+ "dt_ban_nhap": {
+  "vi": "Chưa có số (bản xem trước)",
+  "lo": "ຍັງບໍ່ມີເລກທີ",
+  "en": "No number yet (preview)"
+ },
+ "dt_tieu_de": {
+  "vi": "PHIẾU ĐỀ NGHỊ THU",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "COLLECTION REQUEST"
+ },
+ "dt_ky_may": {
+  "vi": "đã ký trên máy tài xế",
+  "lo": "đã ký trên máy tài xế",
+  "en": "signed on the driver's phone"
+ },
+ "dt_noi_dung": {
+  "vi": "Cước vận chuyển",
+  "lo": "ຄ່າຂົນສົ່ງ",
+  "en": "Freight"
+ },
+ "dt_ben_cong_no": {
+  "vi": "Bên công nợ nhận",
+  "lo": "Bên công nợ nhận",
+  "en": "Received by receivables"
+ },
+ "dt_goi_y_khoa": {
+  "vi": "Khoá phiếu (xe về, có biên bản giao nhận) thì máy tự lập đề nghị thu",
+  "lo": "Khoá phiếu (xe về, có biên bản giao nhận) thì máy tự lập đề nghị thu",
+  "en": "Locking the slip (truck back, delivery note in) raises the request automatically"
+ },
+ "ct_theo_do": {
+  "vi": "Theo DO",
+  "lo": "ຕາມ DO",
+  "en": "By DO"
+ },
+ "ct_loc_chi": {
+  "vi": "Chi còn chờ",
+  "lo": "ລໍຖ້າຈ່າຍ",
+  "en": "Payment pending"
+ },
+ "ct_loc_thu": {
+  "vi": "Thu còn chờ",
+  "lo": "ລໍຖ້າຮັບເງິນ",
+  "en": "Collection pending"
+ },
+ "ct_c_chi": {
+  "vi": "Đề nghị chi",
+  "lo": "ໃບສະເໜີຈ່າຍ",
+  "en": "Payment requests"
+ },
+ "ct_c_thu": {
+  "vi": "Đề nghị thu",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "Collection request"
+ },
+ "ct_c_ho_so": {
+  "vi": "Đã gửi kế toán",
+  "lo": "ສົ່ງໃຫ້ບັນຊີແລ້ວ",
+  "en": "Sent to accounting"
+ },
+ "ct_bon_muc": {
+  "vi": "các mục chi",
+  "lo": "ລາຍການຈ່າຍ",
+  "en": "expense sections"
+ },
+ "ct_so_dong": {
+  "vi": "{n} dòng",
+  "lo": "{n} ແຖວ",
+  "en": "{n} lines"
+ },
+ "ct_mo_man": {
+  "vi": "Mở màn",
+  "lo": "ເປີດ",
+  "en": "Open"
+ },
+ "ct_chua_de_nghi_chi": {
+  "vi": "Chưa có phiếu đề nghị chi nào",
+  "lo": "ຍັງບໍ່ມີໃບສະເໜີຈ່າຍ",
+  "en": "No payment request yet"
+ },
+ "ct_chi_theo_muc": {
+  "vi": "Chi theo mục III–VI",
+  "lo": "ລາຍການຈ່າຍ III–VI",
+  "en": "Expenses by section III–VI"
+ },
  "nav_kho_xem": {
   "vi": "Xem kho",
   "lo": "ເບິ່ງສາງ",
@@ -4408,14 +4618,14 @@ window.EPL_TU_DIEN = {
   "en": "You have no dispatch slips"
  },
  "nav_vouchers": {
-  "vi": "Phiếu chi · Phiếu thu",
-  "lo": "ໃບຈ່າຍ · ໃບຮັບເງິນ",
-  "en": "Payment · Receipt vouchers"
+  "vi": "Đề nghị theo DO",
+  "lo": "ໃບສະເໜີ ຕາມ DO",
+  "en": "Requests by DO"
  },
  "title_chung_tu": {
-  "vi": "Phiếu đề nghị tạm ứng & Phiếu thu<span class=\"sub\">Mỗi giai đoạn một chứng từ · in cho tài xế / kế toán</span>",
-  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ແລະ ໃບຮັບເງິນ<span class=\"sub\">ແຕ່ລະຂັ້ນຕອນມີເອກະສານ · ພິມໃຫ້ໂຊເຟີ / ບັນຊີ</span>",
-  "en": "Advance requests & receipt vouchers<span class=\"sub\">One voucher per stage · print for driver / accounting</span>"
+  "vi": "Đề nghị theo DO<span class=\"sub\">DO nào đề nghị chi gì, đề nghị thu gì · trạng thái</span>",
+  "lo": "ໃບສະເໜີ ຕາມ DO<span class=\"sub\">ໃບສະເໜີຈ່າຍ · ໃບສະເໜີຮັບເງິນ · ສະຖານະ</span>",
+  "en": "Requests by DO<span class=\"sub\">What each DO asked to pay and to collect · status</span>"
  },
  "voucher_payment": {
   "vi": "Phiếu đề nghị tạm ứng",
@@ -4538,9 +4748,9 @@ window.EPL_TU_DIEN = {
   "en": "Est. return odometer"
  },
  "ct_so": {
-  "vi": "Sổ chứng từ",
-  "lo": "ປື້ມເອກະສານ",
-  "en": "Document register"
+  "vi": "Hồ sơ gửi kế toán",
+  "lo": "ເອກະສານສົ່ງບັນຊີ",
+  "en": "Records sent to accounting"
  },
  "ct_loai": {
   "vi": "Loại chứng từ",

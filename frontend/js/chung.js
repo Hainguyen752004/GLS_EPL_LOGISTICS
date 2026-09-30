@@ -441,6 +441,11 @@
     // biên lợi nhuận. Còn tiền tài xế và công nợ nhà cung cấp là chi phí, Bãi xem được.
     // 'hoa-don' (Hoá đơn vận chuyển) và 'hoa-don-gop' (Hoá đơn gộp tháng) dời sang trang kế toán 28/09 (đợt 7a) — xuất hoá
     // đơn, sổ thu tiền, in phiếu thu, gộp tháng ở đó; phiếu bên này giữ bản chép trạng thái (đã xuất hoá đơn, đã thu)
+    // Phiếu của bên mình là phiếu ĐỀ NGHỊ (sếp 30/09): đề nghị chi (tạm ứng, nhiên liệu) · đề nghị thu (DO xong) · theo dõi theo DO
+    { id: 'de-nghi-chi',    nhom: 'mod_transport', nav: 'nav_de_nghi_chi', vai: ['yard', 'acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M4 3h16v18l-3-2-3 2-2-2-2 2-3-2-3 2zM8 8h8M8 12h8M8 16h5' },
+    { id: 'de-nghi-thu',    nhom: 'mod_transport', nav: 'nav_de_nghi_thu', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],
+      ic: 'M4 3h16v18l-3-2-3 2-2-2-2 2-3-2-3 2zM12 7v9M9 13l3 3 3-3' },
     { id: 'chung-tu',       nhom: 'mod_transport', nav: 'nav_vouchers', ic: 'M4 4h16v16H4zM4 9h16M9 9v11M14 13h3M14 17h3' },
     { id: 'phieu-cua-toi',  nhom: 'mod_transport', nav: 'nav_my_slips', ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M1 3h15v13H1z', vai: ['driver'], chi_vai: true, khong_xuat: true },
     { id: 'xe-lien-ket',    nhom: 'mod_transport', nav: 'nav_joint', vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel'],    ic: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8' },

@@ -36,6 +36,7 @@ NHOM = {
     "PXK_NL": "stock_out", "PXK_PT": "stock_out", "PXK_HH": "stock_out", "PXK_BAN": "stock_out",
     "DC_HH": "stock_adjust", "CK_NL": "stock_transfer",
     "HD": "invoice", "HD_BAN": "invoice",
+    "PDT": "receipt_request",      # đề nghị thu (30/09): bên công nợ lập SO / hoá đơn từ tờ này
 }
 
 

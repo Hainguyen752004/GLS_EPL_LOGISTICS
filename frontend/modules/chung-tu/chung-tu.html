@@ -1,43 +1,47 @@
-<!-- Chứng từ — Phiếu chi tạm ứng (in cho tài xế cầm đi lấy tiền), Phiếu lĩnh nhiên liệu, Sổ chứng từ. Phiếu thu (thu tiền
-     khách theo hoá đơn) in ở trang kế toán từ 28/09 (đợt 7a).
-     Mỗi giai đoạn một chứng từ, số liệu lấy từ phiếu xuất xe, định khoản theo danh mục Acc code của bên kế toán. -->
-<div class="toolbar no-print">
-  <div class="ct-tab" role="tablist">
-    <button class="active" data-tab="chi" data-i18n="v_advance"></button>
-    <button data-tab="linh" data-i18n="v_fuel"></button>
-    <button data-tab="so" data-i18n="ct_so"></button>
+<!-- Đề nghị theo DO (sếp 30/09: "trang quản lý DO nào phiếu chi gì trạng thái gì, DO nào phiếu thu gì trạng thái gì").
+     Tab "Theo DO": mỗi DO một dòng — đề nghị chi (tạm ứng, nhiên liệu, chi các mục III–VI), đề nghị thu, hồ sơ đã gửi kế toán;
+     bấm một DO → khung phải kể từng tờ. Tờ để in ở hai màn Phiếu đề nghị chi / Phiếu đề nghị thu.
+     Tab "Hồ sơ gửi kế toán": sổ chứng từ cũ (hộp thư đi sang bên kế toán) — còn dùng trong lúc trang kế toán tạm còn chạy. -->
+<div class="ct2">
+  <div class="ct2-top no-print">
+    <div class="seg" id="ct2-tab">
+      <button class="on" data-tab="do"><span data-i18n="ct_theo_do"></span></button>
+      <button data-tab="so"><span data-i18n="ct_so"></span></button>
+    </div>
+    <div class="seg ct2-khi-do" id="ct2-loc">
+      <button class="on" data-loc=""><span data-i18n="all"></span><b id="ct2-n-all">·</b></button>
+      <button data-loc="chi"><span data-i18n="ct_loc_chi"></span><b id="ct2-n-chi">·</b></button>
+      <button data-loc="thu"><span data-i18n="ct_loc_thu"></span><b id="ct2-n-thu">·</b></button>
+    </div>
+    <label class="o-tim ct2-khi-do">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="ct2-tim" type="search" autocomplete="off" data-i18n-ph="td_search">
+    </label>
+    <div class="grow"></div>
+    <div class="field ct2-khi-do"><label data-i18n="month"></label><input type="month" id="ct2-thang"></div>
   </div>
-  <div class="field ct-khi-in"><label data-i18n="doc_no"></label><div class="o-chon-phieu"><input id="ct-tim" type="search" autocomplete="off" data-i18n-ph="td_search"><select id="ct-chon"></select></div></div>
-  <div class="field" id="ct-o-linh" hidden><label data-i18n="v_fuel"></label><select id="ct-linh"></select></div>
-  <div class="grow"></div>
-  <span class="small muted" id="ct-acc-nguon"></span>
-  <button class="btn ct-khi-in" id="ct-mo-phieu"><span data-i18n="open_slip"></span></button>
-  <button class="btn primary ct-khi-in" onclick="window.print()"><span data-i18n="print"></span></button>
-</div>
-<div class="card ct-giay" id="ct-giay">
-  <div class="ct-dau">
-    <div><img src="img/logo-epl.jpg" alt="EPL" class="ct-logo"><div><b>EPL TRANSPORT</b><div class="small muted">SAMKET VILLAGE, SIKHOTTABONG DISTRICT, VIENTIANE LAO<br>ໂທລະສັບ/Tel: 020 5889 9983</div></div></div>
-    <div class="ct-so" id="ct-so"></div>
-  </div>
-  <div id="ct-than"></div>
-</div>
 
-<!-- Sổ chứng từ: hộp thư đi cho bên kế toán. Mỗi bước nghiệp vụ bỏ vào đây một tờ (DO, PLNL, PTU, PXK_NL, PC_TU, HD, PT…),
-     bên anh Khang kéo về (GET /api/chung-tu?chua_day=1) rồi đánh dấu đã đối chiếu. Không phải sổ kế toán. -->
-<div class="card" id="ct-so-ct" hidden>
-  <div class="hd">
-    <h3 data-i18n="ct_so"></h3><div class="grow"></div>
-    <div class="field"><label data-i18n="ct_loai"></label><select id="ct-so-loai"><option value="" data-i18n="all"></option></select></div>
-    <div class="field"><label data-i18n="ct_tu"></label><input type="date" id="ct-so-tu"></div>
-    <div class="field"><label data-i18n="ct_den"></label><input type="date" id="ct-so-den"></div>
-    <label class="ct-check"><input type="checkbox" id="ct-so-chua"> <span data-i18n="ct_chua_day"></span></label>
+  <div class="ct2-than" id="ct2-do">
+    <section class="ct2-trai"><div class="tbl-wrap"><table class="tbl ct2-bang" id="ct2-bang"></table></div></section>
+    <aside class="ct2-phai" id="ct2-ct"></aside>
   </div>
-  <div class="bd small muted" data-i18n="ct_hint"></div>
-  <!-- Kết nối kế toán anh Khang: đã nối chưa, bao nhiêu tờ chưa đẩy, nút đẩy; Sếp đặt địa chỉ ở đây -->
-  <div class="ct-ket-noi no-print" id="ct-ket-noi"></div>
-  <div class="ct-tong-loai" id="ct-so-tong"></div>
-  <div class="tbl-wrap"><table class="tbl tbl-compact" id="ct-so-bang">
-    <thead><tr><th data-i18n="voucher_no"></th><th data-i18n="c_date"></th><th data-i18n="ct_loai"></th><th data-i18n="doc_no"></th><th data-i18n="ct_doi_tuong"></th>
-      <th class="num" data-i18n="amount"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="ct_no_co"></th><th data-i18n="note"></th><th data-i18n="ct_day_tt"></th><th></th></tr></thead>
-    <tbody id="ct-so-than"></tbody></table></div>
+
+  <!-- Hồ sơ gửi kế toán (sổ chứng từ cũ): mỗi bước nghiệp vụ bỏ vào đây một tờ (DO, PLNL, PTU, PDT, PC_TU…), bên kế toán
+       nhận (đẩy sang hoặc kéo GET /api/chung-tu?chua_day=1). Không phải sổ kế toán. -->
+  <div class="card" id="ct-so-ct" hidden>
+    <div class="hd">
+      <h3 data-i18n="ct_so"></h3><div class="grow"></div>
+      <div class="field"><label data-i18n="ct_loai"></label><select id="ct-so-loai"><option value="" data-i18n="all"></option></select></div>
+      <div class="field"><label data-i18n="ct_tu"></label><input type="date" id="ct-so-tu"></div>
+      <div class="field"><label data-i18n="ct_den"></label><input type="date" id="ct-so-den"></div>
+      <label class="ct-check"><input type="checkbox" id="ct-so-chua"> <span data-i18n="ct_chua_day"></span></label>
+    </div>
+    <div class="bd small muted" data-i18n="ct_hint"></div>
+    <div class="ct-ket-noi no-print" id="ct-ket-noi"></div>
+    <div class="ct-tong-loai" id="ct-so-tong"></div>
+    <div class="tbl-wrap"><table class="tbl tbl-compact" id="ct-so-bang">
+      <thead><tr><th data-i18n="voucher_no"></th><th data-i18n="c_date"></th><th data-i18n="ct_loai"></th><th data-i18n="doc_no"></th><th data-i18n="ct_doi_tuong"></th>
+        <th class="num" data-i18n="amount"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="ct_no_co"></th><th data-i18n="note"></th><th data-i18n="ct_day_tt"></th><th></th></tr></thead>
+      <tbody id="ct-so-than"></tbody></table></div>
+  </div>
 </div>

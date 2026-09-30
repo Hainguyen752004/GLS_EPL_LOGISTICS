@@ -34,6 +34,7 @@ from routes.danh_muc import tim_gia
 from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia, hinh_thuc
 from services import kho_hang as KH
 from services import chung_tu as CT
+from services import de_nghi_thu as DNT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
 from routes.tuyen import gia_goi_y, km_ca_chuyen
@@ -1409,6 +1410,8 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
         raise HTTPException(409, {"ma": "CO_CANH_BAO", "loi": "Phiếu còn %d điểm cần xem; xem rồi xác nhận khoá." % len(cb), "canh_bao": cb})
     p.locked, p.locked_by, p.locked_at = True, user.full_name, dt.datetime.utcnow()
     _ghi_log(db, p, user, "a_lock" if not cb else "a_lock_warn")
+    # DO xong → phiếu đề nghị thu cho bên công nợ (sếp 30/09)
+    DNT.ghi(db, p, user)
     db.commit()
     ra = xuat_phieu(db, p, vai=user.role); ra["canh_bao"] = cb
     return ra
@@ -1423,6 +1426,11 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán Viêng Chăn mở khoá."})
     if p.invoiced and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_HOA_DON", "loi": "Đã xuất hoá đơn thì không mở khoá được."})
+    c = DNT.cua(db, p)
+    if c is not None and c.da_day and user.role != "admin":
+        raise HTTPException(409, {"ma": "DA_GUI_DE_NGHI_THU",
+                                  "loi": "Phiếu đề nghị thu %s đã gửi bên công nợ — báo bên đó trước, rồi nhờ Sếp mở khoá." % c.so})
+    DNT.rut(db, p)
     p.locked, p.locked_by, p.locked_at = False, None, None
     _ghi_log(db, p, user, "a_unlock_slip")
     db.commit()

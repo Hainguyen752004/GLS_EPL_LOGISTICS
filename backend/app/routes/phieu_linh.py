@@ -24,6 +24,7 @@ import secrets
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import Response
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -256,14 +257,20 @@ def lap_phieu_linh(tid: str, request: Request, d: dict = Body(...), db: Session 
 
 
 @router.get("/api/vouchers")
-def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", loai: str = "", co: int = 500,
+def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", loai: str = "", co: int = 500, q: str = "",
                db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Danh sách phiếu lĩnh đang chờ. Thủ kho CHỈ thấy phiếu của kho mình phụ trách.
     Dữ liệu cả năm (24/09): tối đa `co` tờ mới nhất (mặc định 500) — header X-Tong là tổng số khớp; phiếu xe và
     mục IV nạp MỘT lần cho cả danh sách (trước đây hai câu cho mỗi tờ)."""
+    tim = (q or "").strip()
     q = db.query(Voucher)
     if trang_thai:
         q = q.filter(Voucher.status == trang_thai)
+    if tim:
+        # màn Phiếu đề nghị chi (30/09): tìm theo số đề nghị, số DO, số xe, tài xế
+        k = "%" + tim + "%"
+        q = q.filter(or_(Voucher.doc_no.ilike(k), Voucher.truck_no.ilike(k), Voucher.driver_name.ilike(k),
+                         Voucher.trip_id.in_(db.query(Trip.id).filter(Trip.doc_no.ilike(k)))))
     if loai:
         q = q.filter(Voucher.kind == loai)
     if user.role == "depot":
@@ -277,7 +284,8 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
     ds = q.order_by(Voucher.doc_date.desc(), Voucher.doc_no).limit(max(1, min(int(co or 500), 2000))).all()
     ma = list({v.trip_id for v in ds if v.trip_id})
     phieu = {t.id: t for t in (db.query(Trip.id, Trip.origin, Trip.destination, Trip.plate_head, Trip.plate_trailer,
-                                        Trip.customer_name).filter(Trip.id.in_(ma)))} if ma else {}
+                                        Trip.customer_name, Trip.doc_no, Trip.kind, Trip.company)
+                               .filter(Trip.id.in_(ma)))} if ma else {}
     iv = {}
     if ma:
         for tid, st in (db.query(TripSection.trip_id, TripSection.status)
@@ -290,7 +298,7 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
         if p:
             x.update({"origin": p.origin, "destination": p.destination, "plate_head": p.plate_head,
                       "plate_trailer": p.plate_trailer, "customer_name": p.customer_name,
-                      "muc_travel": iv.get(p.id, "wait")})
+                      "muc_travel": iv.get(p.id, "wait"), "trip_doc_no": p.doc_no, "trip_kind": p.kind, "company": p.company})
         ra.append(x)
     return ra
 

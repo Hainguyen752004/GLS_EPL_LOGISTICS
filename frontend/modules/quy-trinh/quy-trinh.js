@@ -92,12 +92,15 @@
         may: ['Một tờ chi cho cả mục; dòng lấy kho không tính (đã có phiếu xuất kho phụ tùng)'], ct: ['PC_SC'], ct_khi: { PC_SC: 'lúc quỹ chi mục V / VI' }, sau: 'Mục V, VI: Đã chi' },
       { so: 15, vai: ['acct'], man: 'phieu-xuat-xe', ten: 'KT Thu/Chi VC: Kiểm lại toàn phiếu → Khoá',
         lam: ['Bấm "Kiểm lại", đọc bảng cảnh báo, xác nhận khoá', 'Mở khoá nếu cần sửa (khi chưa xuất hoá đơn)'],
-        may: ['Rà: km về lệch ước tính > 10 %, hao hụt > 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm'],
-        chan: ['Còn cảnh báo mà chưa xác nhận → không khoá', 'Khoá rồi Bãi, tài xế không ghi thêm; đã có hoá đơn thì không mở khoá'], sau: 'Phiếu: Đã khoá 🔒' },
+        may: ['Rà: km về lệch ước tính > 10 %, hao hụt > 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm',
+          'Khoá xong máy tự lập PHIẾU ĐỀ NGHỊ THU cước (đúng tiền tệ của phiếu) — gửi bên công nợ (anh Tune) lập SO, hoá đơn, thu tiền'],
+        chan: ['Còn cảnh báo mà chưa xác nhận → không khoá', 'Khoá rồi Bãi, tài xế không ghi thêm; đã có hoá đơn thì không mở khoá',
+          'Phiếu đề nghị thu đã gửi bên công nợ → kế toán không mở khoá (Sếp mở được); tờ chưa gửi thì mở khoá là rút tờ'],
+        ct: ['PDT'], ct_khi: { PDT: 'lúc khoá phiếu (DO xong)' }, sau: 'Phiếu: Đã khoá 🔒 · Đề nghị thu: chờ gửi' },
     ] },
     { gd: 'Doanh thu', buoc: [
       { so: 16, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'KT Doanh thu lập hoá đơn vận chuyển',
-        lam: ['Khách theo phiếu (không hợp đồng): mỗi phiếu một hoá đơn', 'Khách hợp đồng: gộp các phiếu trong tháng thành một hoá đơn (màn HĐ gộp)'],
+        lam: ['Theo phiếu đề nghị thu của DO (màn Phiếu đề nghị thu bên trang điều xe xem được trạng thái)', 'Khách theo phiếu (không hợp đồng): mỗi phiếu một hoá đơn', 'Khách hợp đồng: gộp các phiếu trong tháng thành một hoá đơn (màn HĐ gộp)'],
         may: ['Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng'], chan: ['Phiếu chưa khoá → chưa lập hoá đơn'],
         giay: ['Hoá đơn vận chuyển (in)'], ct: ['HD'], ct_khi: { HD: 'lúc lập hoá đơn (lẻ hoặc gộp tháng)' }, sau: 'Đã xuất hoá đơn · Chưa thanh toán' },
       { so: 17, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'Ghi thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng',
@@ -116,7 +119,7 @@
         lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
         chan: ['Chốt hai lần một kỳ → chặn'], ct: ['TT_CHI', 'TT_THU'], ct_khi: { TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
       { so: 20, vai: ['acct', 'admin'], man: 'chung-tu', ten: 'Đẩy chứng từ sang sổ kế toán',
-        lam: ['Bấm "Đẩy tất cả" ở màn Chứng từ'], may: ['Mỗi tờ đẩy đúng một lần; hỏng thì giữ tờ, ghi lỗi lên tờ để đẩy lại'],
+        lam: ['Màn Đề nghị theo DO → tab Hồ sơ gửi kế toán → bấm "Đẩy tất cả"', 'Phiếu đề nghị thu: gửi từng tờ ở màn Phiếu đề nghị thu'], may: ['Mỗi tờ đẩy đúng một lần; hỏng thì giữ tờ, ghi lỗi lên tờ để đẩy lại'],
         chan: ['Chưa cấu hình địa chỉ sổ kế toán → báo rõ'], sau: 'Tờ: Đã đẩy' },
     ] },
   ];
@@ -211,7 +214,7 @@
 
   // Chứng từ của một bước là ĐỀ NGHỊ của trang điều xe, hay tờ bên kho / bên kế toán lập THEO đề nghị (chủ dự án 30/09:
   // trang mình chỉ làm phiếu đề nghị — kho là của anh Toàn, tiền là của anh Tune).
-  const DE_NGHI = ['DO', 'PLNL', 'PTU'];
+  const DE_NGHI = ['DO', 'PLNL', 'PTU', 'PDT'];
   const BEN_KHO = ['PXK_NL', 'PXK_PT', 'PNK_NL', 'PNK_PT', 'CK_NL', 'PNK_HH', 'PXK_HH', 'DC_HH', 'PXK_BAN'];
   const benLap = (ma) => DE_NGHI.includes(ma) ? ['de-nghi', 'phiếu đề nghị · trang điều xe lập']
     : BEN_KHO.includes(ma) ? ['kho', 'bên kho lập theo đề nghị'] : ['ke-toan', 'bên kế toán lập theo đề nghị'];
