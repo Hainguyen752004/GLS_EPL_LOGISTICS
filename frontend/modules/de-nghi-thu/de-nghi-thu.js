@@ -5,6 +5,8 @@
  * (chờ gửi · đã gửi · đã xuất hoá đơn · đã thu đủ), in tờ, gửi tờ còn chờ. Số tiền theo ĐÚNG tiền tệ cước của phiếu.
  *
  * API: GET /api/de-nghi-thu?thang=&q= · GET/POST /api/trips/{id}/de-nghi-thu · POST /api/chung-tu/{id}/day (gửi một tờ).
+ * Tạo SO bên kế toán (anh Tune, hợp đồng mục 3.2): GET /api/trips/{id}/tao-so (xem trước, không gọi mạng) → hỏi xác nhận →
+ * POST /api/trips/{id}/tao-so. Chỉ KT Thu/Chi Viêng Chăn và Sếp; máy chủ cũng chặn vai khác.
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
@@ -49,7 +51,8 @@
       <div class="so">${esc(x.doc_no)}<span class="dnt-kind ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span></div>
       <div class="tien">${tien(x.doanh_thu, x.ccy)}</div>
       <div class="kh" lang="lo">${esc(x.customer_name || '—')}</div>
-      <div class="tt">${tagTT(x.trang_thai)}</div>
+      <div class="tt">${tagTT(x.trang_thai)}${x.so_ke_toan && x.so_ke_toan.da_tao_so ? ` <span class="tag dt_so">SO</span>`
+        : x.so_ke_toan && x.so_ke_toan.error_message ? ` <span class="tag dt_so_loi" title="${esc(x.so_ke_toan.error_message)}">SO ⚠</span>` : ''}</div>
       <div class="phu"><span lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span> · ${esc(x.truck_no || '')} · ${so(x.tan_tinh, 2)} ${NN.h('ton')}</div>
       <div class="phu" style="text-align:right">${x.pdt ? esc(x.pdt.so) : EPL.ngay(x.doc_date)}</div>
     </button>`).join('');
@@ -64,12 +67,16 @@
     try { d = await API.get(`/api/trips/${x.trip_id}/de-nghi-thu`); } catch (e) { q('#dnt-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; return; }
     if (chonId !== x.trip_id) return;
     const laKt = AUTH.la('acct');
+    const sk = x.so_ke_toan;
     nut.innerHTML = `${tagTT(d.trang_thai)}
+      ${sk && sk.da_tao_so ? `<span class="tag dt_so">${NN.h('dt_so_da', { so: sk.order_code || '' })}</span>` : ''}
+      ${sk && !sk.da_tao_so && sk.error_message ? `<span class="small neg" title="${esc(sk.error_message)}">⚠ ${NN.h('dt_so_loi', { loi: sk.error_message.slice(0, 90) })}</span>` : ''}
       ${d.pdt && d.pdt.da_day && d.pdt.ma_ben_ke_toan ? `<span class="small muted">${NN.h('ct_ma_kt')}: <b class="mono">${esc(d.pdt.ma_ben_ke_toan)}</b></span>` : ''}
       ${d.pdt && d.pdt.loi_day ? `<span class="small neg" title="${esc(d.pdt.loi_day)}">⚠ ${esc(d.pdt.loi_day.slice(0, 80))}</span>` : ''}
       <span class="grow"></span>
       ${laKt && d.trang_thai === 'chua_lap' ? `<button class="btn primary" id="dnt-lap">${NN.h('dt_lap')}</button>` : ''}
       ${laKt && d.pdt && !d.pdt.da_day && KET_NOI.cau_hinh ? `<button class="btn primary" id="dnt-gui">${NN.h('dt_gui')}</button>` : ''}
+      ${laKt && d.locked && !(sk && sk.da_tao_so) ? `<button class="btn primary" id="dnt-so-gui">${NN.h('dt_so_nut')}</button>` : ''}
       <button class="btn" id="dnt-mo">${NN.h('open_slip')}</button>
       <button class="btn ${d.pdt ? '' : 'quiet'}" id="dnt-in">${NN.h('print')}</button>`;
     q('#dnt-mo').addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: x.trip_id }));
@@ -82,6 +89,19 @@
     const gui = q('#dnt-gui'); if (gui) gui.addEventListener('click', async () => {
       gui.disabled = true;
       try { await API.post(`/api/chung-tu/${d.pdt.id}/day`, {}); EPL.toast(NN.t('ct_day_xong'), 'ok'); } catch (e) { EPL.baoLoi(e); }
+      await tai();
+    });
+    const soGui = q('#dnt-so-gui'); if (soGui) soGui.addEventListener('click', async () => {
+      // xem trước ở máy chủ (không gọi mạng): thiếu mã khách, thiếu tuyến, cước THB… thì nói rõ, không gửi
+      let v;
+      try { v = await API.get(`/api/trips/${x.trip_id}/tao-so`); } catch (e) { return EPL.baoLoi(e); }
+      if (v.loi) return EPL.toast(v.loi.loi || v.loi.ma, 'loi');
+      const tt = v.tom_tat || {};
+      const tienSo = so(tt.final_selling_price, EPL.leTien(tt.currency)) + ' ' + (tt.currency || '');
+      if (!await EPL.hoi(NN.t('dt_so_hoi'), NN.h('dt_so_hoi_nd', { kh: d.customer_name || '', ma: tt.customer_code || '', tien: tienSo }), NN.t('dt_so_nut'))) return;
+      soGui.disabled = true;
+      try { const r = await API.post(`/api/trips/${x.trip_id}/tao-so`, {}); EPL.toast(NN.t('dt_so_xong', { so: (r.trang_thai || {}).order_code || '' }), 'ok'); }
+      catch (e) { EPL.baoLoi(e); }
       await tai();
     });
 

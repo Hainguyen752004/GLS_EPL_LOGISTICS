@@ -290,6 +290,59 @@ Idempotency-Key: logistics:EPLLAO-a1b2c3d4e5f6
 | 400 · 401 · 403 · 422 | ghi câu lỗi lên tờ, người dùng sửa |
 | 422 `LOGISTICS_52903` · 503 · hết giờ | **thử lại đúng gói và đúng khoá đã lưu**, không dựng gói mới |
 
+#### 3.2.1. Đã dựng và gửi thử (01/10/2026)
+
+**Bên em đã dựng:**
+
+- Màn **Phiếu đề nghị thu** có nút **"Tạo SO bên kế toán"**. Chỉ KT Thu/Chi Viêng Chăn (vai `acct`, người khoá phiếu) và Sếp (`admin`) bấm được; máy chủ chặn vai khác (403 `KHONG_CO_QUYEN`).
+- Hai đường bên trang điều xe:
+  - `GET /api/trips/{trip_id}/tao-so`: dựng và kiểm gói **không gọi sang hệ anh**; lỗi dữ liệu trả trong `loi`.
+  - `POST /api/trips/{trip_id}/tao-so`: gửi thật.
+- Máy chủ bên em gọi `POST https://demo-lao-api.goldensme.com/api/v1/integrations/logistics/sales-orders`, bằng token đang có trong cấu hình (`EPL_ACC_CODE_TOKEN`, tài khoản `tune`), giống bộ gửi của EPL_System. Token không xuống trình duyệt.
+- Gói gửi đúng khuôn ở trên:
+  - ba khoá gốc `schemaVersion`, `header`, `details`;
+  - `header.customer_id` = ô **Mã khách** trên danh mục khách bên em;
+  - **một dòng thu** (cước);
+  - không gửi các khối `hire`, `fx_rates_on_trip`, `cost_by_section_lak`.
+- Bên em kiểm trước khi gửi:
+  - DO đã về và đã khoá;
+  - khách đã có mã;
+  - có tuyến;
+  - mã ghép `khách_tuyến` ≤ 50 ký tự;
+  - tiền là VND / LAK / USD;
+  - tổng khớp chính xác bằng Decimal.
+- Mỗi DO lưu **một** bản ghi lượt gửi (bảng `gui_so_tune`), gồm:
+  - nguyên gói đã gửi, khoá `logistics:EPLLAO-<Trip.id>`;
+  - mã HTTP và thân trả về;
+  - `orderCode`, `retkCode`, `totalAmount`… khi thành công.
+- Kết quả **chưa rõ** (mất mạng, hết giờ, 5xx, `52903`) thì lần sau bên em gửi lại **đúng gói, đúng khoá**. Bị từ chối rõ ràng (4xx dữ liệu) thì dựng gói mới theo số hiện tại.
+- DO đã có SO thì kế toán bên em **không mở khoá được** (409 `DA_TAO_SO`); chỉ Sếp mở, sau khi báo anh.
+
+**Gửi thử một DO (máy thử, bản sao dữ liệu):**
+
+| | |
+|---|---|
+| DO | `EPLLAO-779739f4b582` (phiếu T4-0449-09/EPL, 29,7 t × 30,5 USD = **905.85 USD**) |
+| Mã khách gửi | `EPLLAO-THU-01`: **mã thử, cố ý không có** trong danh mục bên anh |
+| Hệ anh trả | **HTTP 422 `LOGISTICS_52905`**: "Mã khách không tồn tại hoặc bị trùng trong PUBOBJECT.OBJ_OBJECTNO." |
+| Nghĩa là | token qua cửa xác thực; gói qua bước kiểm khuôn (không bị 400 `INVALID_DO`); tiền USD được nhận; hệ anh dừng ở bước **tìm khách**. **Không có SO, công nợ, mặt hàng nào được tạo.** |
+
+**Vì sao chưa tạo được SO thật:** danh mục khách chi nhánh **1368** bên anh (`POST /api/v1/master-data/customers/list`, đọc ngày 01/10) có **189 khách**, đều là khách của EPL_System bên Việt Nam (`DEMO-CUS-…`, `KH-0015`…). **Chưa có khách nào của EPL Lào.** Trên máy thử bên em có **13 DO đã khoá chờ gửi**, và cả 13 đang bị chặn ngay bên em vì khách chưa có mã bên kế toán.
+
+**Xin anh:**
+
+1. Tạo các khách EPL Lào trong danh mục đối tượng (PUBOBJECT), rồi gửi bên em `OBJ_OBJECTNO` của từng khách. Hoặc anh cho bên em tự tạo qua `POST /api/v1/master-data/customers/upsert`: đó là đường ghi, bên em chưa gọi.
+2. Có mã rồi thì KT Thu/Chi Viêng Chăn ghi vào ô **Mã khách** (mục 12.8.2: chỉ vai `acct` và Sếp gán được), bấm **Tạo SO bên kế toán**, là hệ anh tạo SO + công nợ.
+3. Lưu ý: SO hiện vào chi nhánh cố định **1368 "Demo EPL"** (quốc gia Việt Nam, tiền VND). Dùng thật cho Lào thì cần đơn vị EPL Lào (mục 12.7.5, việc 2).
+
+Khách trên dữ liệu thử của bên em (danh mục thật lấy ở màn Khách hàng của máy thật):
+
+| Khách | Số DO đã khoá chờ gửi |
+|---|---|
+| ຄຳຕຸ້ຍ | 9 |
+| ນາງ ວັນນາ | 2 |
+| ບໍລິສັດ ລາວ-ຈີນ ມີເນີໂຣ | 2 |
+
 **Những thứ API SO chưa có mà bên em cần** (câu hỏi 10.5):
 - sửa hoặc huỷ SO khi Sếp mở khoá phiếu;
 - đọc **công nợ hiện tại** theo DO hoặc theo khách (đã thu, còn lại, ngày thu cuối);

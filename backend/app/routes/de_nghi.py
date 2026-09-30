@@ -11,6 +11,8 @@ Bên kho / bên tiền làm việc thật; bên này chỉ XEM trạng thái bê
     GET  /api/de-nghi-thu?thang=&q=&trang_thai=          DO đã về: tờ đề nghị thu và trạng thái bên công nợ
     GET  /api/trips/{tid}/de-nghi-thu                    nội dung tờ để in
     POST /api/trips/{tid}/de-nghi-thu                    lập tờ cho phiếu đã khoá mà chưa có (phiếu khoá trước 30/09)
+    GET  /api/trips/{tid}/tao-so                         xem trước gói gửi bên công nợ (không gọi mạng) + lần gửi trước
+    POST /api/trips/{tid}/tao-so                         gửi DO sang bên công nợ (anh Tune) → SO + công nợ khách bên đó
 
 Tiền: vai không thấy tiền CHI (Bãi) không nhận số tiền chi; vai không thấy tiền BÁN không nhận cước / đề nghị thu.
 """
@@ -25,6 +27,7 @@ from database import get_db
 from models import MUC_CHI, ChungTu, FuelPlace, Trip, TripExpense, TripSection, Voucher
 from services import chung_tu as CT
 from services import de_nghi_thu as DNT
+from services import gui_tune as GT
 from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import thay_tien_ban, thay_tien_chi
 from services.tinh_toan import tien_dong, tinh_phieu
@@ -139,11 +142,13 @@ def ds_de_nghi_thu(thang: str = "", q: str = "", db: Session = Depends(get_db), 
             dong[d.trip_id].append(d)
         for c in db.query(ChungTu).filter(ChungTu.loai == DNT.LOAI, ChungTu.nguon_bang == "trips", ChungTu.nguon_id.in_(ma)).all():
             pdt[c.nguon_id] = c
+    so_kt = GT.cua_nhieu(db, ma)
     ra = []
     for p in ds:
         t = tinh_phieu(p, dong[p.id], p.collected_lak or 0)
         c = pdt.get(p.id)
-        ra.append({**_co_ban(p), "trang_thai": DNT.trang_thai(p, c), "pdt": _xuat_pdt(c), "contract_no": p.contract_no,
+        ra.append({**_co_ban(p), "trang_thai": DNT.trang_thai(p, c), "pdt": _xuat_pdt(c), "so_ke_toan": so_kt.get(p.id),
+                   "contract_no": p.contract_no,
                    "pod_no": p.pod_no, "pod_date": p.pod_date.isoformat() if p.pod_date else None,
                    "locked_by": p.locked_by, "locked_at": p.locked_at.isoformat(timespec="minutes") if p.locked_at else None,
                    "tan_tinh": t["tan_tinh"], "don_gia": t["don_gia"], "cach_tinh": t["cach_tinh"], "ccy": t["ccy"],
@@ -188,3 +193,25 @@ def lap_de_nghi_thu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_
     c = DNT.ghi(db, p, user)
     db.commit()
     return _xuat_pdt(c)
+
+
+# ---------------------------------------------------------------- gửi bên công nợ (anh Tune) — hợp đồng kế toán, mục 3.2
+GUI_SO = ("acct", "admin")          # người khoá phiếu (KT Thu/Chi Viêng Chăn) và Sếp
+
+
+@router.get("/api/trips/{tid}/tao-so")
+def xem_tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Gói SẼ gửi và trạng thái lần gửi trước. Không gọi mạng. Lỗi dữ liệu (thiếu mã khách, thiếu tuyến, cước THB…) nằm
+    trong `loi` để màn nói rõ phải sửa gì trước khi bấm gửi."""
+    _chan_tai_xe(user); _chan_tien_ban(user)
+    return GT.xem_truoc(db, _phieu(db, tid))
+
+
+@router.post("/api/trips/{tid}/tao-so")
+def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Gửi DO đã về + đã khoá sang bên công nợ; bên đó tạo SO và ghi công nợ khách. Đã có SO thì trả lại, không gọi nữa."""
+    if user.role not in GUI_SO:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
+                                  "loi": "Chỉ KT Thu/Chi Viêng Chăn (người khoá phiếu) hoặc Sếp gửi đề nghị thu sang bên công nợ."})
+    kq, da_co = GT.gui(db, _phieu(db, tid), user)
+    return {"trang_thai": kq, "da_co_truoc": da_co}

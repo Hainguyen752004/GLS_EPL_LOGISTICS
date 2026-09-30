@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2056 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2062 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2884,7 +2884,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_ben_cong_no": {
   "vi": "Bên công nợ nhận",
-  "lo": "Bên công nợ nhận",
+  "lo": "ຝ່າຍບັນຊີຮັບ",
   "en": "Received by receivables"
  },
  "dt_goi_y_khoa": {
@@ -10281,5 +10281,35 @@ window.EPL_TU_DIEN = {
   "vi": "Sổ nhập / xuất kho theo tháng xem ở hệ kho — trang này chỉ theo dõi tồn và phiếu đề nghị.",
   "lo": "ປຶ້ມຮັບ / ເບີກສາງປະຈຳເດືອນ ເບິ່ງຢູ່ລະບົບສາງ — ໜ້ານີ້ຕິດຕາມແຕ່ຄົງເຫຼືອ ແລະ ໃບສະເໜີ.",
   "en": "The monthly stock-in / stock-out ledger lives in the warehouse system — this page only follows stock and requests."
+ },
+ "dt_so_nut": {
+  "vi": "Tạo SO bên kế toán",
+  "lo": "ສ້າງ SO ຢູ່ຝ່າຍບັນຊີ",
+  "en": "Create SO in accounting"
+ },
+ "dt_so_hoi": {
+  "vi": "Gửi DO này sang bên kế toán?",
+  "lo": "ສົ່ງ DO ນີ້ໄປຝ່າຍບັນຊີບໍ?",
+  "en": "Send this DO to accounting?"
+ },
+ "dt_so_hoi_nd": {
+  "vi": "Bên kế toán sẽ tạo SO và ghi công nợ khách <b>{kh}</b> (mã {ma}) số <b>{tien}</b>. Gửi rồi thì không sửa từ phía này được — muốn sửa phải báo bên kế toán.",
+  "lo": "ຝ່າຍບັນຊີຈະສ້າງ SO ແລະ ບັນທຶກໜີ້ລູກຄ້າ <b>{kh}</b> (ລະຫັດ {ma}) ຈຳນວນ <b>{tien}</b>. ສົ່ງແລ້ວແກ້ຈາກຝັ່ງນີ້ບໍ່ໄດ້ — ຖ້າຈະແກ້ຕ້ອງແຈ້ງຝ່າຍບັນຊີ.",
+  "en": "Accounting will create an SO and record a receivable for <b>{kh}</b> (code {ma}) of <b>{tien}</b>. Once sent it cannot be changed from here — ask accounting to correct it."
+ },
+ "dt_so_da": {
+  "vi": "Đã có SO {so}",
+  "lo": "ມີ SO {so} ແລ້ວ",
+  "en": "SO {so} created"
+ },
+ "dt_so_xong": {
+  "vi": "Bên kế toán đã tạo SO {so}",
+  "lo": "ຝ່າຍບັນຊີສ້າງ SO {so} ແລ້ວ",
+  "en": "Accounting created SO {so}"
+ },
+ "dt_so_loi": {
+  "vi": "Lần gửi trước chưa được: {loi}",
+  "lo": "ສົ່ງຄັ້ງກ່ອນບໍ່ສຳເລັດ: {loi}",
+  "en": "Last send failed: {loi}"
  }
 };

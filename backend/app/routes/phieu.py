@@ -26,7 +26,7 @@ from database import BIEU_THUC_TIM_PHIEU, get_db
 from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
                     CACH_TINH_CUOC, SU_KIEN, TIEN_TE, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
-                    TripEvent, TripExpense, TripLog, TripSection, Vehicle)
+                    GuiSoTune, TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services import kho_ke_toan as KK
@@ -1471,6 +1471,10 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
     if c is not None and c.da_day and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_GUI_DE_NGHI_THU",
                                   "loi": "Phiếu đề nghị thu %s đã gửi bên công nợ — báo bên đó trước, rồi nhờ Sếp mở khoá." % c.so})
+    so_kt = db.get(GuiSoTune, "EPLLAO-" + p.id)
+    if so_kt is not None and so_kt.status == "synced" and user.role != "admin":
+        raise HTTPException(409, {"ma": "DA_TAO_SO", "loi": "Bên công nợ đã tạo SO %s cho DO này — báo bên đó trước, rồi nhờ Sếp mở khoá."
+                                                            % (so_kt.order_code or "")})
     DNT.rut(db, p)
     p.locked, p.locked_by, p.locked_at = False, None, None
     _ghi_log(db, p, user, "a_unlock_slip")

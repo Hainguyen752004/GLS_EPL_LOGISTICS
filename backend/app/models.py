@@ -1164,3 +1164,38 @@ class SaleLine(Base):
     amount = Column(Float, nullable=False, default=0)
     cost_lak = Column(Float, default=0)
     stock_move_id = Column(String)                              # part_moves.id hoặc fuel_moves.id
+
+
+class GuiSoTune(Base):
+    """Lượt gửi PHIẾU ĐỀ NGHỊ THU của một DO sang hệ kế toán anh Tune — `POST /api/v1/integrations/logistics/sales-orders`
+    (hợp đồng kế toán, mục 3.2; khuôn theo EPL_System `sales_order_pushes`). Bên đó tạo SO + công nợ khách.
+
+    Một dòng cho một DO: `do_id` bên đó là duy nhất, cùng DO gửi lại khác key hay khác nội dung là 409. Nên lưu NGUYÊN gói
+    đã gửi để lần gửi lại (hết giờ, 503, 52903) dùng đúng key và đúng gói — hết giờ không có nghĩa là bên đó chưa ghi.
+    `status`: synced (201 / 200 replayed, có kết quả) · failed (lỗi dữ liệu hoặc bên kia từ chối) · conflict (409, đối soát).
+    """
+    __tablename__ = "gui_so_tune"
+    do_id = Column(String(100), primary_key=True)                 # EPLLAO-<Trip.id>
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)
+    idempotency_key = Column(String(100), nullable=False)
+    status = Column(String(16), nullable=False, default="failed")
+    http_status = Column(Integer)
+    request_body = Column(Text, nullable=False)
+    response_body = Column(Text)
+    replayed = Column(Boolean, default=False)
+    order_id = Column(Integer)
+    order_code = Column(String(64))
+    order_status = Column(String(16))
+    retk_auto_id = Column(Integer)
+    retk_code = Column(String(64))
+    item_code = Column(String(128))
+    currency = Column(String(3))
+    total_amount = Column(Float)
+    initial_debt_amount = Column(Float)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    pushed_by = Column(String)
+    first_attempt_at = Column(DateTime)
+    last_attempt_at = Column(DateTime)
+    synced_at = Column(DateTime)

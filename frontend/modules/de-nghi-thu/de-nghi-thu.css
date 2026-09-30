@@ -37,6 +37,8 @@
 .dnt-xem{display:flex;flex-direction:column;gap:10px;min-width:0}
 .dnt-nut{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .dnt-nut .grow{flex:1}
+.dnt .tag.dt_so{background:var(--mint-soft,#E3F2EA);color:var(--green,#13573F)}
+.dnt .tag.dt_so_loi{background:var(--amber-soft,#FFF4E0);color:var(--amber,#8A4305)}
 .dnt-xem .ct-giay{max-width:none;width:100%}
 .dnt-ben{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;padding:10px 12px;border:1px dashed var(--line-2);border-radius:8px;font-size:12.5px}
 .dnt-ben b{font-variant-numeric:tabular-nums}
