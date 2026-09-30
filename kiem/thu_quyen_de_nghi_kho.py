@@ -106,6 +106,15 @@ def main():
         s, g = goi("/api/kho-xem", u=u); dung(not co_tien(g, "gia_bq", "gia"), "%s: Xem kho không có giá vốn" % u)
         s, g = goi("/api/parts", u=u); dung(s != 200 or all("unit_price" not in x for x in g), "%s: danh mục phụ tùng không có giá" % u)
     s, g = goi("/api/kho-xem", u="quytb"); dung(co_tien(g, "gia_bq"), "Quỹ: Xem kho có giá vốn")
+    # quét QR tờ đề nghị xuất kho nhiên liệu: thủ kho không nhận giá vốn dòng dầu kho (kiểm kê API kho 30/09)
+    s, ds = goi("/api/vouchers?trang_thai=&loai=fuel&co=20", u="ketoan")
+    to = next((v for v in (ds if s == 200 else []) if v.get("token")), None)
+    if to:
+        s, g = goi("/api/vouchers/tra-cuu/%s" % to["token"], u="khotb")
+        s2, g2 = goi("/api/vouchers/tra-cuu/%s" % to["token"], u="ketoan")
+        dung(s != 200 or all("unit_price" not in d and "tien_lak" not in d for d in g.get("dong", [])),
+             "Thủ kho quét QR: dòng dầu kho không có giá vốn")
+        dung(s2 == 200 and (not g2.get("dong") or any("unit_price" in d for d in g2["dong"])), "Kế toán quét QR: thấy giá dòng")
     s, pt = goi("/api/parts", u="ketoan")
     x = next((x for x in pt if (x.get("qty") or 0) > 1 and (x.get("unit_price") or 0) > 0), None)
     if x is None:

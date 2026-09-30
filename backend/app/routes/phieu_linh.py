@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import ChungTu, FuelPlace, Supplier, Trip, TripExpense, TripSection, Voucher
 from services.bao_mat import can_vai, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, thay_tien_ban, thay_tien_chi
+from services.phan_quyen import chuyen_muc, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services.tinh_toan import hinh_thuc, la_tien_mat_tai_xe, ty_gia
 from services import chung_tu as CT
 from services import tai_khoan as TK
@@ -339,6 +339,10 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
         if not thay_tien_chi(user.role):
             for d in x["dong"]:
                 for c in ("unit_price", "currency", "tien_lak", "acct_code"): d.pop(c, None)
+        elif v.kind == "fuel" and not thay_gia_kho(user.role):
+            # dầu kho mang GIÁ VỐN bình quân — thủ kho quét QR không thấy (30/09; trước đây lọc theo tiền chi nên thủ kho vẫn thấy)
+            for d in x["dong"]:
+                for c in ("unit_price", "tien_lak"): d.pop(c, None)
     return x
 
 

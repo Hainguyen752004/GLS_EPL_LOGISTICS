@@ -1,5 +1,9 @@
 # Nối EPL Lào với module kế toán — đề nghị hợp đồng API gửi anh Khang
 
+> **Đã thay (30/09/2026).** Anh Khang không làm phần này nữa; phần kế toán nay là của anh Tune, phần kho của anh Toàn.
+> Xem `HOP_DONG_API_KE_TOAN_ANH_TUNE.md` và `HOP_DONG_API_KHO_ANH_TOAN.md`. Định khoản trong tệp này (PC_TU 625, HD 1211/70, TT 625…)
+> là bản CŨ — bảng đúng sau đợt rà 30/09 nằm ở hợp đồng với anh Tune, mục 7.
+
 Viết cho anh Khang (Golden SME) và người bảo trì phần kế toán. Cập nhật 21/09/2026.
 
 Phần mềm vận tải EPL Lào **không có sổ kế toán**. Mỗi bước nghiệp vụ (chi tạm ứng, xuất kho dầu, nhập

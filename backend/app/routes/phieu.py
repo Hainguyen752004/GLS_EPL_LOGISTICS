@@ -1142,7 +1142,10 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1,
                                item_key=(sua.get("item_key") or None) if not part else None,
                                item_name=(sua.get("item_name") or (part.name if part else None)),
-                               qty=qty, unit_price=gia, currency=str(sua.get("currency") or "LAK").upper(),
+                               qty=qty, unit_price=gia,
+                               # lấy kho: giá là bình quân kho bằng Kíp → tiền của dòng luôn LAK (trước đây theo ô người dùng
+                               # chọn, VND thì tờ xuất kho phụ tùng nhân tỷ giá VND với giá Kíp — kiểm kê API kho 30/09)
+                               currency="LAK" if part else str(sua.get("currency") or "LAK").upper(),
                                paid_by_epl=bool(sua.get("paid_by_epl", True)), source=source, part_id=part.id if part else None,
                                acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
             db.add(dong); db.flush()
@@ -1765,7 +1768,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
         dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1, item_key=None,
                            item_name=(data.get("item_name") or (part.name if part else e.note))[:120],
-                           qty=qty, unit_price=gia, currency=tien_te, paid_by_epl=True, source=source,
+                           qty=qty, unit_price=gia, currency="LAK" if part else tien_te, paid_by_epl=True, source=source,
                            part_id=part.id if part else None, acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
         db.add(dong); db.flush()
         if part:
