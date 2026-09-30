@@ -94,6 +94,15 @@ def thay_tien_chi(vai):
     return vai != "yard"
 
 
+def thay_gia_kho(vai):
+    """Vai này có được thấy GIÁ VỐN của kho (giá bình quân dầu kho, phụ tùng kho, giá từng lần nhập / xuất) không.
+
+    Chủ dự án chốt 30/09: thủ kho nhiên liệu, thủ kho phụ tùng, tổ sửa chữa KHÔNG thấy — thủ kho giữ số lượng, kế toán
+    giữ giá trị (như thẻ kho ngoài đời); người ở Thà Bốc làm số lượng, kế toán làm tiền (anh Khampla A2, C5.1); giá vốn
+    lộ ra là lộ lãi bán dầu cho chủ xe, bán phụ tùng ở quầy. Bãi và tài xế vốn đã không thấy tiền chi."""
+    return thay_tien_chi(vai) and vai not in ("depot", "parts", "repair")
+
+
 def nhap_gia_chi(vai):
     """Vai này có được đặt ĐƠN GIÁ dòng chi không. C5.1 (anh Khampla 23/09): tài xế đổ dầu bên Việt Nam chỉ
     báo số lít, kế toán nhập giá. A2: Bãi không nhập tiền. Giá mọi vai khác gửi lên thì giữ như cũ."""

@@ -15,7 +15,7 @@ from services import chung_tu as CT
 from services import gia_von as GV
 from services import kho_ke_toan as KK
 from services.bao_mat import can_vai, nguoi_hien_tai
-from services.phan_quyen import thay_tien_chi
+from services.phan_quyen import thay_gia_kho
 
 router = APIRouter()
 # Nhập, xuất tay, chuyển kho dầu: KT kho xăng dầu (Thà Bốc / Viêng Chăn) và kế toán — anh Khampla A1/A3: "ບັນຊີສາງ"
@@ -90,7 +90,7 @@ def ds_phu_tung(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
         ds = [{"id": p.id, "name": p.name, "unit": p.unit, "qty": None, "min_qty": p.min_qty, "unit_price": None,
                "active": p.active, "status": None, "khong_noi": True}
               for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
-    if not thay_tien_chi(user.role):            # Bãi không thấy giá (anh Khampla A2)
+    if not thay_gia_kho(user.role):             # Bãi (A2), thủ kho, tổ sửa chữa (30/09): không thấy giá vốn kho
         for r in ds: r.pop("unit_price", None)
     return ds
 

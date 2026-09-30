@@ -353,6 +353,8 @@
 
   function veTabChiPhi() {
     const sua = (P.expenses || []).filter(d => d.section === 'repair');
+    // dòng lấy kho không có đơn giá khi vai không thấy giá vốn kho (30/09) — không cộng tổng thiếu
+    const coAn = sua.some(d => d.source === 'kho' && d.unit_price == null);
     let tong = 0;
     const than = sua.length ? `<table><thead><tr>
         <th>${NN.h('item')}</th><th style="width:96px">${NN.h('source')}</th><th class="num" style="width:60px">${NN.h('qty')}</th>
@@ -361,11 +363,11 @@
       <tbody>${sua.map(d => { const t = (d.qty || 0) * (d.unit_price || 0) * rate(d.currency); tong += t;
         return `<tr><td lang="lo">${esc(EPL.khoanMuc(d))}</td><td>${d.source ? NN.h('src_' + d.source) : '—'}</td>
           <td class="num">${so(d.qty)}</td><td class="num tien-chi">${so(d.unit_price)}${d.currency && d.currency !== 'LAK' ? ' ' + esc(d.currency) : ''}</td>
-          <td class="num tien-chi"><b>${so(t)}</b></td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
+          <td class="num tien-chi"><b>${d.unit_price == null ? '—' : so(t)}</b></td><td class="tien"><span class="acct">${esc(d.acct_code || '')}</span></td></tr>`; }).join('')}</tbody></table>`
       : `<div class="trong">${NN.h('no_expense')}</div>`;
     const tt = (P.sections || {}).repair || 'wait';
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
-      <span class="tien-chi">${NN.h('total')}: <b style="color:var(--ink)">${so(tong)} LAK</b></span>
+      <span class="tien-chi">${NN.h('total')}: <b style="color:var(--ink)">${coAn ? '—' : so(tong) + ' LAK'}</b></span>
       <span>${NN.h('td_cost_note')} · ${NN.h(tt === 'wait' ? 'stt_wait2' : 'stt_' + tt)}</span></div>`;
   }
 
@@ -537,7 +539,7 @@
     q('#tdt-f-ghi').value = ''; q('#tdt-f-co-sua').checked = false; q('#tdt-f-sua').hidden = true; q('#tdt-f-sl').value = '1'; q('#tdt-f-gia').value = '';
     // Ô "có khoản sửa chữa" chỉ hiện với tổ sửa chữa: Bãi báo sự cố thì báo, tiền mục V do tổ sửa khai.
     q('#tdt-f-co-sua').closest('label').hidden = !AUTH.la('repair');
-    q('#tdt-f-part').innerHTML = PARTS.filter(p => p.qty > 0).map(p => `<option value="${p.id}" data-gia="${p.unit_price || 0}">${esc(p.name)} · ${NN.t('stock_left')} ${so(p.qty)} ${NN.t(p.unit)}</option>`).join('') || `<option value="">${esc(NN.t('no_data'))}</option>`;
+    q('#tdt-f-part').innerHTML = PARTS.filter(p => p.qty > 0).map(p => `<option value="${p.id}" data-gia="${p.unit_price != null ? p.unit_price : ''}">${esc(p.name)} · ${NN.t('stock_left')} ${so(p.qty)} ${NN.t(p.unit)}</option>`).join('') || `<option value="">${esc(NN.t('no_data'))}</option>`;
     datNguon('kho'); NN.apDung(dlg); dlg.returnValue = '';
     dlg.addEventListener('close', async function xong() {
       dlg.removeEventListener('close', xong);
@@ -577,6 +579,8 @@
   function datNguon(n) {
     nguon = n; root.querySelectorAll('.tdt-nguon button').forEach(b => b.classList.toggle('on', b.dataset.src === n));
     q('#tdt-f-o-part').hidden = n !== 'kho'; q('#tdt-f-o-ten').hidden = n !== 'mua';
+    // lấy kho: giá là giá bình quân của kho, máy chủ tự lấy (30/09) — không cho gõ; vai không thấy giá kho thì ẩn ô
+    const oGia = q('#tdt-f-gia').closest('.field'); if (oGia) oGia.hidden = n === 'kho';
     if (n === 'kho') { const o = q('#tdt-f-part').selectedOptions[0]; if (o) q('#tdt-f-gia').value = o.dataset.gia || ''; }
   }
 

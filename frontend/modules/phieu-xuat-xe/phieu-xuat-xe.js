@@ -56,6 +56,9 @@
   // Xe thuê: dầu lấy từ kho là XUẤT BÁN cho chủ xe — thành tiền theo giá bán KT kho xăng dầu gõ (chép luật máy chủ, 29/09)
   const giaDong = (d) => (P.company === 'joint' && d.section === 'fuel' && nguonCuaDiem(d) === 'kho' && d.sale_price != null && d.sale_price !== '') ? d.sale_price : d.unit_price;
   const tienDong = (d) => (EPL.doc(d.qty)) * (EPL.doc(giaDong(d))) * rate(d.currency);
+  // giá vốn kho (30/09): thủ kho, tổ sửa chữa không thấy — máy chủ không gửi đơn giá dòng lấy kho và tổng chi
+  const thayGiaKho = () => !['yard', 'driver', 'depot', 'parts', 'repair'].includes(vai());
+  const anGia = (d) => !thayGiaKho() && d.source === 'kho';
   function tongMuc(m, chiUng = true) { return (P.expenses || []).filter(d => d.section === m && !(P.company === 'joint' && chiUng && !d.paid_by_epl)).reduce((a, d) => a + tienDong(d), 0); }
   function tinh() {
     const w = P.weight_dest != null && P.weight_dest !== '' ? EPL.doc(P.weight_dest) : EPL.doc(P.weight_origin);
@@ -117,13 +120,15 @@
     g('v-val-usd').textContent = t2(k.dt, k.ma); g('v-val-lak').textContent = k.ma === 'LAK' ? '—' : t2(k.dtLak, 'LAK');
     if (k.lk) { g('v-hire').textContent = t2(k.thue, k.mh); g('v-fee').textContent = '− ' + t2(k.phi, k.mh); g('v-over-t').textContent = so(k.vuot, 2) + ' t'; g('v-over').textContent = '− ' + t2(k.truVuot, k.mh); }
     // chỉ dòng có data-i — dòng "chưa có dữ liệu" không phải dòng chi
-    MUC_CHI.forEach(m => { const tb = q(`table[data-bang="${m}"]`); tb.querySelectorAll('tbody tr[data-i]').forEach(tr => { const d = P.expenses[+tr.dataset.i]; if (d) tr.querySelector('.amt').textContent = so(tienDong(d)); });
+    MUC_CHI.forEach(m => { const tb = q(`table[data-bang="${m}"]`); tb.querySelectorAll('tbody tr[data-i]').forEach(tr => { const d = P.expenses[+tr.dataset.i]; if (d) tr.querySelector('.amt').textContent = anGia(d) ? '—' : so(tienDong(d)); });
       const lk = k.lk; const cols = m === 'fuel' ? 9 : (m === 'repair' ? 8 : 7);
-      tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : (m === 'repair' ? '<td></td><td></td><td></td>' : '<td></td><td></td>')}<td class="num px-gia"><b>${so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
+      tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : (m === 'repair' ? '<td></td><td></td><td></td>' : '<td></td><td></td>')}<td class="num px-gia"><b>${P.expenses.some(d => d.section === m && anGia(d)) ? '—' : so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
     veBenTien(k);
     const box = g('px-tong-ket');
-    if (!thayTienBan()) {
-      // tổ sửa chữa: máy chủ không gửi cước, giá thuê — chỉ tổng chi, không hiện doanh thu 0 / lãi sai
+    if (!thayGiaKho()) {
+      box.innerHTML = '';
+    } else if (!thayTienBan()) {
+      // vai không thấy tiền bán: máy chủ không gửi cước, giá thuê — chỉ tổng chi, không hiện doanh thu 0 / lãi sai
       box.innerHTML = `<div class="px-tong"><div class="o"><div class="l">${NN.h('sum_exp')}</div><div class="v">${so(k.tongChi)}<small>LAK</small></div></div></div>`;
     } else if (!k.lk) {
       const net = k.laiLak, phu = (v) => k.ma === 'LAK' ? 'LAK' : `LAK · ${t2(tronTien(v / k.rC, k.ma), k.ma)}`;
@@ -254,7 +259,7 @@
         d.acct_code = tkMacDinh('fuel', d); veChi();
       }
       if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = tkMacDinh('repair', d); veChi(); }
-      if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; if (thayChi()) d.unit_price = p.unit_price || 0; } veChi(); }
+      if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; if (thayGiaKho()) d.unit_price = p.unit_price || 0; else delete d.unit_price; } veChi(); }
       veSo();
     }));
     root.querySelectorAll('.px-chi [data-pay]').forEach(b => b.addEventListener('click', () => { P.expenses[+b.dataset.i].paid_by_epl = b.dataset.pay === '1'; veChi(); veSo(); }));
@@ -432,6 +437,7 @@
   function veBenTien(k) {
     const o = g('px-ben-tien'); if (!o) return;
     const dong = (l, v, cls = '') => `<div class="r ${cls}"><span>${l}</span><b>${v}</b></div>`;
+    if (!thayGiaKho()) { o.innerHTML = ''; return; }       // tổ sửa chữa: tổng chi có giá kho bên trong — không hiện
     if (!thayTienBan()) { o.innerHTML = dong(NN.h('sum_exp'), so(k.tongChi) + ' LAK'); return; }
     o.innerHTML = k.lk
       ? dong(NN.h('do_money'), t2(k.dt, k.ma)) + dong(NN.h('st_hire'), '− ' + t2(k.thue, k.mh)) + dong(NN.h('st_net_owner'), t2(k.traChu, k.mh), 'tot')

@@ -28,7 +28,7 @@ from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, L
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
-from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_tien_ban, thay_tien_chi
+from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_gia_kho, thay_tien_ban, thay_tien_chi
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
 from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia, hinh_thuc
@@ -320,6 +320,8 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
         ra["stop_reached"] = toi
     if vai is not None and not thay_tien_chi(vai):
         _bo_tien_chi(ra)
+    elif vai is not None and not thay_gia_kho(vai):
+        _bo_gia_kho(ra)
     if vai is not None and not thay_tien_ban(vai):
         return _bo_tien_ban(ra)
     return ra
@@ -352,6 +354,19 @@ def _bo_tien_chi(ra):
             t.pop(c, None)
     for e in (ra.get("events") or []):
         e.pop("reported_cost", None); e.pop("currency", None)
+    return ra
+
+
+def _bo_gia_kho(ra):
+    """Tổ sửa chữa (30/09): thấy tiền chi mua ngoài / garage (chính họ hỏi thợ) nhưng KHÔNG thấy giá vốn kho — bỏ đơn giá
+    dòng lấy kho (dầu, phụ tùng) và mọi tổng chi (tổng có giá kho bên trong, trừ ngược ra được)."""
+    for d in (ra.get("expenses") or []):
+        if d.get("source") == "kho":
+            d.pop("unit_price", None)
+    t = ra.get("tinh")
+    if isinstance(t, dict):
+        for c in TINH_TIEN_CHI:
+            t.pop(c, None)
     return ra
 
 
@@ -649,8 +664,9 @@ def _dong_tu_du_lieu(p, m, i, d, db=None, dat_gia=True):
             source = "kho" if d.get("part_id") else "mua"
     else:
         source = None
-    if source == "kho" and m == "fuel":
-        # dầu lấy từ kho: giá là giá bình quân của kho, không ai gõ tay (C5.3)
+    if source == "kho":
+        # lấy từ kho (dầu C5.3; phụ tùng từ 30/09): giá là giá bình quân của kho, không ai gõ tay — tổ sửa chữa không thấy
+        # giá kho nên gửi lên trống, không được thành 0
         gia, tien_te = _gia_mac_dinh(db, p, m, source, d)
     elif not dat_gia:
         gia, tien_te = _gia_mac_dinh(db, p, m, source, d)
@@ -1100,7 +1116,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
                 part = db.get(Part, sua.get("part_id") or "")     # bản chép danh mục — tồn và giá ở trang kế toán
                 if not part:
                     raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
-                if gia is None: gia = KK.gia_phu_tung(db, part.id)
+                gia = KK.gia_phu_tung(db, part.id)                   # lấy kho: giá bình quân của kho (30/09)
             if gia is None:
                 raise HTTPException(422, {"ma": "THIEU_GIA", "loi": "Mua ngoài thì phải ghi đơn giá."})
             so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
@@ -1721,7 +1737,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         part = db.get(Part, data.get("part_id") or "")         # bản chép danh mục — tồn và giá ở trang kế toán
         if not part:
             raise HTTPException(422, {"ma": "THIEU_PHU_TUNG", "loi": "Lấy từ kho thì phải chọn phụ tùng."})
-        if gia is None: gia = KK.gia_phu_tung(db, part.id)
+        gia = KK.gia_phu_tung(db, part.id)                           # lấy kho: giá bình quân của kho (30/09)
     if gia is None:
         gia = e.reported_cost if e.reported_cost is not None else None
     if gia is None:

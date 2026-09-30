@@ -8,6 +8,7 @@ Chỉ đọc (và gọi hai đường ghi bằng mã giả / phiếu chưa khoá
 """
 import json
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -100,10 +101,48 @@ def main():
     ma("/api/chung-tu?trip_id=%s" % khoa["id"], {**ALL, "thabok": 403, "tx01": 403, "totsua": 403, "khopt": 403})
     ma("/api/chung-tu/khong-co-to-nay/day", {**{u: 403 for u in VAI}, "ketoan": 404, "admin": 404}, body={})
 
+    print("Giá vốn kho (30/09: thủ kho, thủ kho phụ tùng, tổ sửa chữa không thấy)")
+    for u in ("khotb", "khopt", "totsua", "thabok"):
+        s, g = goi("/api/kho-xem", u=u); dung(not co_tien(g, "gia_bq", "gia"), "%s: Xem kho không có giá vốn" % u)
+        s, g = goi("/api/parts", u=u); dung(s != 200 or all("unit_price" not in x for x in g), "%s: danh mục phụ tùng không có giá" % u)
+    s, g = goi("/api/kho-xem", u="quytb"); dung(co_tien(g, "gia_bq"), "Quỹ: Xem kho có giá vốn")
+    s, pt = goi("/api/parts", u="ketoan")
+    x = next((x for x in pt if (x.get("qty") or 0) > 1 and (x.get("unit_price") or 0) > 0), None)
+    if x is None:
+        dung(False, "máy thử cần một phụ tùng còn hàng và có giá bình quân")
+    else:
+        s, xe = goi("/api/vehicles", u="admin"); s, tx = goi("/api/drivers", u="admin"); s, kh = goi("/api/customers", u="admin")
+        s, p = goi("/api/trips", {"doc_no": "THU-GK-%s/EPL" % time.strftime("%H%M%S"), "kind": "gom",
+                                  "vehicle_id": next(v for v in xe if v["owner_type"] == "EPL")["id"], "driver_id": tx[0]["id"],
+                                  "customer_id": kh[0]["id"], "doc_date": time.strftime("%Y-%m-%d"),
+                                  "expenses": [{"section": "repair", "source": "kho", "part_id": x["id"], "item_name": x["name"], "qty": 1,
+                                                "unit_price": 1, "paid_by_epl": True},
+                                               {"section": "repair", "source": "mua", "item_name": "Garage thử", "qty": 1,
+                                                "unit_price": 250000, "currency": "LAK", "paid_by_epl": True}]}, "admin")
+        dung(s == 200, "Lập phiếu thử: một dòng phụ tùng lấy kho (gửi giá 1) và một dòng garage")
+        try:
+            s, pk = goi("/api/trips/%s" % p["id"], u="ketoan")
+            kho = next(e for e in pk["expenses"] if e["section"] == "repair" and e["source"] == "kho")
+            dung(abs(kho["unit_price"] - x["unit_price"]) < 0.01, "Dòng lấy kho lấy giá bình quân %s, không theo số gửi lên" % x["unit_price"])
+            s, ps = goi("/api/trips/%s" % p["id"], u="totsua")
+            kho = next(e for e in ps["expenses"] if e["section"] == "repair" and e["source"] == "kho")
+            gara = next(e for e in ps["expenses"] if e["section"] == "repair" and e["source"] == "mua")
+            dung("unit_price" not in kho and gara.get("unit_price") == 250000, "Tổ sửa chữa: dòng kho không có giá, dòng garage có")
+            dung("chi" not in ps["tinh"] and "tong_chi_lak" not in ps["tinh"], "Tổ sửa chữa: không có tổng chi (có giá kho bên trong)")
+            s, g = goi("/api/vehicles/%s" % pk["vehicle_id"], u="totsua")
+            dung(all(y.get("tien_lak") is None for y in g["sua_chua"] if y.get("source") == "kho"), "Màn Xe · tổ sửa chữa: dòng kho không có tiền")
+            s, g = goi("/api/vehicles/%s" % pk["vehicle_id"], u="thabok")
+            dung(all(y.get("tien_lak") is None for y in g["sua_chua"]), "Màn Xe · Bãi: không có tiền sửa chữa")
+            s, g = goi("/api/vehicles/%s" % pk["vehicle_id"], u="ketoan")
+            dung(any(y.get("tien_lak") for y in g["sua_chua"]), "Màn Xe · kế toán: có tiền sửa chữa")
+        finally:
+            s, _ = goi("/api/trips/%s" % p["id"], u="admin", method="DELETE")
+            print("  · phiếu thử %s" % ("đã xoá" if s == 200 else "ở lại (%s)" % s))
+
     if LOI:
         print("\nSAI:"); [print("  -", x) for x in LOI]
         raise SystemExit(1)
-    print("\nTHỬ QUYỀN 30/09: ĐẠT — Xem kho · Đề nghị theo DO · Phiếu đề nghị thu · Phiếu đề nghị chi · tài xế chỉ tờ của mình")
+    print("\nTHỬ QUYỀN 30/09: ĐẠT — Xem kho · Đề nghị theo DO · Phiếu đề nghị thu · Phiếu đề nghị chi · tài xế chỉ tờ của mình · giá vốn kho ẩn với thủ kho, tổ sửa chữa")
 
 
 if __name__ == "__main__":

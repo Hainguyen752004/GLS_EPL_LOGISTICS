@@ -19,6 +19,7 @@ from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_X
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, nguoi_hien_tai
+from services.phan_quyen import thay_gia_kho, thay_tien_chi
 from routes import anh as ANH
 from services.tinh_toan import tien_dong
 
@@ -273,7 +274,7 @@ NGAY_XE = ("insurance_exp", "inspection_exp", "road_permit_exp", "service_date")
 SO_XE = ("year", "odometer_km", "next_service_km", "fuel_norm", "capacity_t")
 
 
-def xuat_xe(db, v, chi_tiet=False):
+def xuat_xe(db, v, chi_tiet=False, vai=None):
     r = _dict(v)
     r["giay_to"] = {"insurance": _han(v.insurance_exp), "inspection": _han(v.inspection_exp), "road_permit": _han(v.road_permit_exp)}
     r["can_bao_duong"] = bool(v.odometer_km and v.next_service_km and v.odometer_km >= v.next_service_km)
@@ -299,6 +300,11 @@ def xuat_xe(db, v, chi_tiet=False):
         except HTTPException as loi:
             r["sua_chua_lenh_loi"] = (loi.detail or {}).get("loi") if isinstance(loi.detail, dict) else str(loi.detail)
         sua.sort(key=lambda x: x["doc_date"] or "", reverse=True)
+        if vai is not None:
+            # Bãi không thấy tiền sửa (A2 · 23/09); thủ kho, tổ sửa chữa không thấy giá vốn dòng lấy kho (30/09)
+            for x in sua:
+                if not thay_tien_chi(vai) or (x.get("source") == "kho" and not thay_gia_kho(vai)):
+                    x["unit_price"] = None; x["tien_lak"] = None
         r["sua_chua"] = sua
         r["anh_chinh"] = ANH.anh_chinh(ANH.XE, db, v.id)
         r["anh"] = ANH.ds_anh(ANH.XE, db, v.id)
@@ -333,11 +339,11 @@ def ds_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.get("/api/vehicles/{vid}")
-def xem_xe(vid: str, db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def xem_xe(vid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     v = db.get(Vehicle, vid)
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có xe này."})
-    return xuat_xe(db, v, chi_tiet=True)
+    return xuat_xe(db, v, chi_tiet=True, vai=user.role)
 
 
 def _kiem_xe(data, v):
@@ -504,7 +510,7 @@ def lap_ro_mooc(vid: str, data: dict = Body(...), db: Session = Depends(get_db),
 
     tid = (data.get("trailer_id") or "").strip()
     if not tid:
-        thao(v); db.commit(); return xuat_xe(db, v, chi_tiet=True)
+        thao(v); db.commit(); return xuat_xe(db, v, chi_tiet=True, vai=user.role)
     t = db.get(Trailer, tid)
     if not t or not t.active:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có rơ-moóc này."})
@@ -516,7 +522,7 @@ def lap_ro_mooc(vid: str, data: dict = Body(...), db: Session = Depends(get_db),
     v.trailer_id = t.id; v.plate_trailer = t.plate; t.status = "attached"
     db.add(TrailerAssignment(trailer_id=t.id, vehicle_id=v.id, attached_at=bay_gio, reason=ly_do, by_user=user.full_name))
     db.commit()
-    return xuat_xe(db, v, chi_tiet=True)
+    return xuat_xe(db, v, chi_tiet=True, vai=user.role)
 
 
 # ================================================================ tài xế & bằng lái

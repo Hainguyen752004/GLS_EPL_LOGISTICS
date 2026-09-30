@@ -20,7 +20,7 @@ from models import FuelPlace, Part, Trip, TripExpense, Voucher
 from services import goi_ke_toan as KT
 from services.bao_mat import nguoi_hien_tai
 from services.gia_von import kho_goc
-from services.phan_quyen import thay_tien_chi
+from services.phan_quyen import thay_gia_kho
 
 router = APIRouter()
 
@@ -75,7 +75,7 @@ def kho_xem(thang: str = "", db: Session = Depends(get_db), user=Depends(nguoi_h
     if user.role == "driver":
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế không xem kho."})
     kho = KT.goi(db, "GET", "/api/lien-thong/kho/mat-hang" + ("?thang=" + thang if thang else ""), nguoi=user) or {}
-    gia = thay_tien_chi(user.role)
+    gia = thay_gia_kho(user.role)          # thủ kho, thủ kho phụ tùng, tổ sửa chữa, Bãi: không giá vốn (30/09)
 
     cho = _cho_xuat_dau(db)
     ten_diem = {k.id: k for k in db.query(FuelPlace).all()}
