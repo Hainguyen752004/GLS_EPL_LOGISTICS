@@ -135,6 +135,10 @@ def main():
         phai(s, 200, "KT kho gõ giá bán dầu cho chủ xe", g)
         for muc, v in (("info", "ketoan"), ("trans", "ketoan"), ("fuel", "khonl")):
             s, g = goi("/api/trips/%s/sections/%s/verify" % (P["id"], muc), {}, vai=v); phai(s, 200, "kiểm %s" % muc, g)
+        # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
+        s, v = goi("/api/trips/%s/vouchers" % P["id"], {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nhiên liệu", v)
+        for x in v:
+            s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
         s, g = goi("/api/trips/%s/sections/fuel/book" % P["id"], {}, vai="khonl"); phai(s, 200, "ghi sổ III", g)
         s, g = goi("/api/trips/%s/sections/fuel/pay" % P["id"], {}, vai="quyvc"); phai(s, 200, "chi III", g)
         chi_tam_ung(P["id"], phai)

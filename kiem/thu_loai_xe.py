@@ -5,6 +5,8 @@
 
 Xe nhà → tạm ứng nội bộ · xuất nội bộ. Xe thuê, EPL ứng → tạm ứng ghi công nợ chủ xe · dầu kho là XUẤT BÁN theo giá bán
 riêng KT kho xăng dầu gõ trên phiếu; tiền trừ chủ xe tính theo giá bán; Tất toán tài xế chỉ có phiếu xe nhà.
+Thêm 30/09: dầu kho chỉ rời kho theo phiếu đề nghị đã cấp (ghi sổ mục III chưa cấp → chặn); xe thuê không có "trả cùng
+lương" — tiền chuyến EPL ứng là tạm ứng ghi công nợ chủ xe; màn Tiền chuyến & tiền nước chỉ xe nhà.
 Bài tự lập hai phiếu trên bản sao DB thử (phiếu đã kiểm thì ở lại).
 """
 import json
@@ -52,20 +54,28 @@ def main():
     s, g = goi(KT, "/api/dang-nhap", {"username": "ketoancp", "password": "1234"}); TK[(KT, "ketoancp")] = g["token"]
     s, xe = goi(DX, "/api/vehicles", vai="admin"); s, tx = goi(DX, "/api/drivers", vai="admin"); s, kh = goi(DX, "/api/customers", vai="admin")
     s, diem = goi(DX, "/api/fuel-places", vai="admin")
-    xe_thue = next(x for x in xe if x["owner_type"] == "joint" and x["status"] == "available" and x["truck_no"].startswith("ຮ່ວມ"))
+    thue = [x for x in xe if x["owner_type"] == "joint" and x["truck_no"].startswith("ຮ່ວມ")]
+    xe_thue = next((x for x in thue if x["status"] == "available"), thue[0])      # bản Lào không chặn xe đang bận
     xe_nha = next(x for x in xe if x["owner_type"] == "EPL" and x["truck_no"] in ("347", "348", "349"))
     kho = next(d for d in diem if d.get("owner_type") == "epl")
     tai_xe = next(t for t in tx if t["name"] == "ທ້າວ ບົວພັນ") if any(t["name"] == "ທ້າວ ບົວພັນ" for t in tx) else tx[-1]
     hom_nay = time.strftime("%Y-%m-%d")
     print("✓ đăng nhập · xe thuê %s (chủ xe %s) · xe nhà %s · tài xế %s" % (xe_thue["truck_no"], xe_thue.get("owner_name"), xe_nha["truck_no"], tai_xe["name"]))
 
+    def tien_chuyen():
+        s, tt = goi(DX, "/api/bao-cao/tien-tai-xe?thang=%s" % hom_nay[:7], vai="ketoancp")
+        r = next((x for x in tt["rows"] if x["driver"] == tai_xe["name"]), None)
+        return round((r or {}).get("khoan", {}).get("x_trip", 0))
+    tc0 = tien_chuyen()
+
     def lap(xe_):
         s, p = goi(DX, "/api/trips", {"kind": "giao", "vehicle_id": xe_["id"], "driver_id": tai_xe["id"], "customer_id": kh[0]["id"],
                                       "doc_date": hom_nay, "out_date": hom_nay, "note": "THỬ loại xe",
                                       "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 100, "place_id": kho["id"], "paid_by_epl": True},
-                                                   {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 0, "currency": "LAK", "paid_by_epl": True}]},
+                                                   {"section": "travel", "item_key": "x_vn", "qty": 1, "unit_price": 0, "currency": "LAK", "paid_by_epl": True},
+                                                   {"section": "travel", "item_key": "x_trip", "qty": 1, "unit_price": 0, "currency": "LAK", "paid_by_epl": True}]},
                      "thabok")
-        phai(s, 200, "Bãi lập phiếu xe %s: 100 L dầu kho + sang Việt Nam" % xe_["truck_no"], p)
+        phai(s, 200, "Bãi lập phiếu xe %s: 100 L dầu kho + sang Việt Nam + tiền chuyến" % xe_["truck_no"], p)
         return p
 
     # ---------------------------------------------------------------- xe thuê
@@ -103,19 +113,31 @@ def main():
     s, ct = goi(DX, "/api/chung-tu?trip_id=%s" % pid, vai="admin")
     pl = next(c for c in ct["ds"] if c["loai"] == "PLNL")
     dung(pl["payload"].get("hinh_thuc") == "xuat_ban", "Dữ liệu gửi sang kho mang bản chất xuất bán", pl["payload"].get("hinh_thuc"))
-    s, g = goi(DX, "/api/trips/%s" % pid, {"expenses": [{"id": e["id"], "section": "travel", "unit_price": 430000, "currency": "LAK"}
+    # 30/09: ghi sổ mục III không tự xuất kho — dầu kho phải được cấp theo phiếu đề nghị trước
+    s, g = goi(DX, "/api/trips/%s/sections/fuel/book" % pid, {}, "khonl")
+    phai(s, 409, "Ghi sổ mục III khi dầu kho chưa cấp theo phiếu đề nghị → bị chặn", g)
+    dung(g["detail"]["ma"] == "CHUA_CAP_THEO_DE_NGHI", "Mã chặn CHUA_CAP_THEO_DE_NGHI", g["detail"]["loi"][:80])
+    s, g = goi(DX, "/api/vouchers/%s/cap" % v[0]["id"], {"qty": v[0]["qty_l"]}, "khonl"); phai(s, 200, "Cấp dầu theo phiếu đề nghị", g)
+    s, g = goi(DX, "/api/trips/%s/sections/fuel/book" % pid, {}, "khonl"); phai(s, 200, "Ghi sổ mục III (dầu đã cấp theo đề nghị)", g)
+    GIA_IV = {"x_vn": 430000, "x_trip": 1800000}
+    s, g = goi(DX, "/api/trips/%s" % pid, {"expenses": [{"id": e["id"], "section": "travel", "unit_price": GIA_IV[e["item_key"]], "currency": "LAK"}
                                                         for e in pk["expenses"] if e["section"] == "travel"]}, "ketoancp", "PUT")
-    phai(s, 200, "KT chi phí nhập giá mục IV", g)
+    phai(s, 200, "KT chi phí nhập giá mục IV (sang VN 430.000 · tiền chuyến 1.800.000)", g)
+    tc = next(e for e in g["expenses"] if e["item_key"] == "x_trip")
+    dung(tc["cach_tra"] == "tien_mat" and tc["tien_mat_tx"], "Xe thuê: tiền chuyến EPL ứng là tiền mặt khi xe đi (không có trả cùng lương)", tc["cach_tra"])
     for hd in ("verify", "book"):
         s, g = goi(DX, "/api/trips/%s/sections/travel/%s" % (pid, hd), {}, "ketoancp"); phai(s, 200, "Mục IV %s" % hd, g)
     s, v = goi(DX, "/api/trips/%s/vouchers" % pid, {"kind": "advance"}, "thabok")
     phai(s, 200, "Bãi in phiếu đề nghị tạm ứng", v)
     dung(v[0]["hinh_thuc"] == "cong_no_chu_xe", "Tờ đề nghị tạm ứng ghi: ghi công nợ chủ xe", v[0]["hinh_thuc"])
+    s, vk = goi(DX, "/api/trips/%s/vouchers" % pid, vai="ketoancp")
+    tu = next(x for x in vk if x["kind"] == "advance")
+    dung(round(tu["amount_lak"]) == 430000 + 1800000, "Đề nghị tạm ứng xe thuê gồm cả tiền chuyến EPL ứng", tu["amount_lak"])
     s, pc = goi(DX, "/api/trips/%s/phieu-chi" % pid, vai="ketoancp")
     dung(pc["hinh_thuc"] == "cong_no_chu_xe", "Bản in đề nghị tạm ứng mang bản chất", pc["hinh_thuc"])
     s, g = goi(DX, "/api/trips/%s" % pid, vai="ketoan")
     t = g["tinh"]
-    mong = round((100 * GIA_BAN + 430000) / (g["rate_usd"] if (t.get("hire_ccy") or "USD") == "USD" else 1), 2)
+    mong = round((100 * GIA_BAN + 430000 + 1800000) / (g["rate_usd"] if (t.get("hire_ccy") or "USD") == "USD" else 1), 2)
     dung(abs((t.get("ung_truoc") or 0) - mong) < 0.02, "Tiền EPL ứng trừ chủ xe = dầu theo giá bán + tạm ứng", "%s (mong %s)" % (t.get("ung_truoc"), mong))
 
     # ---------------------------------------------------------------- xe nhà
@@ -128,6 +150,12 @@ def main():
                                                          "place_id": kho["id"], "paid_by_epl": True, "sale_price": 99999}]}, "admin", "PUT")
     phai(s, 200, "Admin gửi giá bán cho phiếu xe nhà", g)
     dung(next(e for e in g["expenses"] if e["section"] == "fuel")["sale_price"] is None, "Xe nhà: giá bán bị bỏ — xuất nội bộ theo giá vốn")
+    s, g = goi(DX, "/api/trips/%s" % qid, {"expenses": [{"id": e["id"], "section": "travel", "unit_price": {"x_vn": 430000, "x_trip": 1800000}[e["item_key"]],
+                                                         "currency": "LAK"} for e in qk["expenses"] if e["section"] == "travel"]}, "ketoancp", "PUT")
+    phai(s, 200, "KT chi phí nhập giá mục IV phiếu xe nhà", g)
+    dung(next(e for e in g["expenses"] if e["item_key"] == "x_trip")["cach_tra"] == "luong", "Xe nhà: tiền chuyến vẫn trả cùng lương")
+    tc1 = tien_chuyen()
+    dung(tc1 - tc0 == 1800000, "Màn Tiền chuyến & tiền nước chỉ cộng tiền chuyến xe NHÀ (xe thuê không vào)", "%s → %s" % (tc0, tc1))
 
     # ---------------------------------------------------------------- tất toán
     print("\n— Tất toán tài xế (trang kế toán) —")
@@ -138,7 +166,7 @@ def main():
     dung(p["doc_no"] not in so, "Không có phiếu xe thuê %s (tạm ứng xe thuê là công nợ chủ xe)" % p["doc_no"])
     s, _ = goi(DX, "/api/trips/%s" % qid, vai="admin", method="DELETE")
     print("  · phiếu xe nhà thử %s; phiếu xe thuê thử ở lại bản sao DB thử (mục đã kiểm)" % ("đã xoá" if s == 200 else "ở lại"))
-    print("\nTHỬ LOẠI XE: ĐẠT — xe nhà nội bộ · xe thuê ghi công nợ + xuất bán theo giá bán · tất toán chỉ xe nhà")
+    print("\nTHỬ LOẠI XE: ĐẠT — xe nhà nội bộ · xe thuê ghi công nợ + xuất bán theo giá bán · tất toán, tiền chuyến chỉ xe nhà · dầu kho chỉ rời kho theo phiếu đề nghị đã cấp")
 
 
 if __name__ == "__main__":

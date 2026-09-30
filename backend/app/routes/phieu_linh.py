@@ -14,8 +14,8 @@ lúc in, nhồi vào rồi là tờ giấy nói một đằng hệ thống nói 
 quét rẻ đọc không ra. Người quét đằng nào cũng có tài khoản và phải đăng nhập mới cấp được.
 
 Ranh giới với luồng duyệt cũ: cấp dầu là việc VẬT LÝ, xảy ra TRƯỚC khi kế toán ghi sổ — thủ kho cấp
-thì sinh luôn dòng xuất kho và đánh dấu dòng chi, nên lúc kế toán ghi sổ mục III sẽ không xuất lần
-hai (hàm _xuat_kho_nhien_lieu bỏ qua dòng đã có stock_move_id). Còn chi tạm ứng là việc TIỀN, nên nó
+thì sinh luôn dòng xuất kho và đánh dấu dòng chi. Từ 30/09 đó là đường DUY NHẤT dầu kho rời kho: ghi sổ mục III không
+tự xuất nữa, dòng dầu kho chưa cấp theo phiếu đề nghị thì chặn ghi sổ (phieu.py · _chan_chua_cap_theo_de_nghi). Còn chi tạm ứng là việc TIỀN, nên nó
 đi đúng chuỗi duyệt: mục IV phải "đã ghi sổ" rồi mới chi được, và chỉ vai giữ quỹ mới chi.
 """
 import datetime as dt
@@ -88,7 +88,7 @@ def dam_bao_tam_ung(db, p, user):
     """Tờ TẠM ỨNG (PTU, có mã QR) của chuyến: chưa có thì lập, còn "chờ" thì cập nhật số theo các dòng tiền mặt tài xế cầm
     đi lúc này (la_tien_mat_tai_xe — cách trả "Chi ngay khi xe đi"). Bãi in tờ trước khi kế toán nhập giá nên số có thể còn
     0; số đúng là số lúc quỹ chi. Không có dòng tiền mặt nào thì trả None."""
-    dong = [d for d in _dong(db, p) if la_tien_mat_tai_xe(d)]
+    dong = [d for d in _dong(db, p) if la_tien_mat_tai_xe(d, p.company)]
     if not dong:
         return None
     tien = sum(_lak(p, d) for d in dong)
@@ -168,7 +168,10 @@ def _dong_kho_theo_diem(db, p):
     for d in _dong(db, p):
         if d.section != "fuel" or not d.paid_by_epl or d.source != "kho" or d.stock_move_id:
             continue
-        diem = db.get(FuelPlace, d.place_id) if d.place_id else None
+        # dòng cũ chỉ có khoá "fp_yard", không có điểm đổ → kho gốc, như lúc ghi sổ còn tự xuất (từ 30/09 dầu kho CHỈ rời kho
+        # theo phiếu đề nghị đã cấp, nên dòng nào cũng phải lập được phiếu đề nghị)
+        ma = d.place_id or GV.kho_goc(db)
+        diem = db.get(FuelPlace, ma) if ma else None
         if not diem or diem.owner_type != "epl":
             continue
         ra.setdefault(diem.id, []).append(d)
@@ -179,7 +182,7 @@ def _tien_tam_ung(db, p):
     """Tiền mặt tài xế cầm đi: khoản EPL ứng, KHÔNG lấy từ kho, thuộc mục III (dầu mua dọc đường),
     IV (đi đường) và VI (khác). Phải trùng đúng bộ khoản mà màn Tất toán coi là "tài xế đã chi",
     nếu không thì hai màn nói hai con số khác nhau về cùng một chuyến."""
-    return sum(_lak(p, d) for d in _dong(db, p) if la_tien_mat_tai_xe(d))
+    return sum(_lak(p, d) for d in _dong(db, p) if la_tien_mat_tai_xe(d, p.company))
 
 
 @router.get("/api/trips/{tid}/vouchers")
@@ -309,9 +312,10 @@ def tra_cuu(token: str, request: Request, db: Session = Depends(get_db), user=De
                       "out_date": p.out_date.isoformat() if p.out_date else None,
                       "transport_status": p.transport_status}
         if v.kind == "fuel":
-            dong = [e for e in _dong(db, p) if e.section == "fuel" and e.place_id == v.place_id]
+            goc = GV.kho_goc(db)              # dòng cũ không có điểm đổ thuộc kho gốc (như _dong_kho_theo_diem)
+            dong = [e for e in _dong(db, p) if e.section == "fuel" and (e.place_id or goc) == v.place_id]
         else:
-            dong = [e for e in _dong(db, p) if la_tien_mat_tai_xe(e) and e.section in ("travel", "other")]
+            dong = [e for e in _dong(db, p) if la_tien_mat_tai_xe(e, p.company) and e.section in ("travel", "other")]
         x["dong"] = [{"item_key": e.item_key, "item_name": e.item_name, "qty": e.qty, "unit_price": e.unit_price,
                       "currency": e.currency, "tien_lak": _lak(p, e), "acct_code": e.acct_code} for e in dong]
         # người quét QR không thấy tiền bán thì không nhận giá cước; không thấy tiền chi thì không nhận đơn giá

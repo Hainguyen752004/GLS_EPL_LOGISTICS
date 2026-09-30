@@ -29,7 +29,6 @@ from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, L
                     TripEvent, TripExpense, TripLog, TripSection, Vehicle)
 from services.bao_mat import doc_phien, nguoi_hien_tai
 from services.phan_quyen import chuyen_muc, duoc_sua_muc, duoc_sua_tien, nhap_gia_chi, thay_tien_ban, thay_tien_chi
-from services import gia_von as GV
 from services import kho_ke_toan as KK
 from routes.danh_muc import tim_gia
 from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tien, la_tien_mat_tai_xe, tien_dong, tinh_phieu, ty_gia, hinh_thuc
@@ -142,7 +141,7 @@ def _dong_chi(db, phieu):
             .order_by(TripExpense.section, TripExpense.line_no).all())
 
 
-def _xuat_dong(d):
+def _xuat_dong(d, company=None):
     return {"id": d.id, "section": d.section, "line_no": d.line_no, "item_key": d.item_key,
             "item_name": d.item_name, "qty": d.qty, "unit_price": d.unit_price, "sale_price": d.sale_price, "currency": d.currency,
             "place": d.place, "place_id": d.place_id, "supplier_id": d.supplier_id, "paid_by_epl": d.paid_by_epl, "acct_code": d.acct_code, "source": d.source,
@@ -150,8 +149,8 @@ def _xuat_dong(d):
             "toll_card_id": d.toll_card_id, "card_move_id": d.card_move_id,
             "ghi_no": bool(d.ghi_no), "note": d.note,
             # cách trả (Excel anh Khampla, 29/09) và dòng này có vào tiền mặt tài xế cầm đi không — màn tài xế dùng thẳng
-            "pay_channel": d.pay_channel, "cach_tra": cach_tra(d) if d.section in ("travel", "other") else None,
-            "tien_mat_tx": la_tien_mat_tai_xe(d)}
+            "pay_channel": d.pay_channel, "cach_tra": cach_tra(d, company) if d.section in ("travel", "other") else None,
+            "tien_mat_tx": la_tien_mat_tai_xe(d, company)}
 
 
 def _xuat_su_kien(e):
@@ -180,7 +179,7 @@ def _gon(x):
 
 def _dong_tam_ung(p, cac_dong):
     """Các dòng TIỀN MẶT tài xế cầm đi: mọi khoản EPL ứng trừ những gì xuất từ kho (dầu kho, phụ tùng kho)."""
-    return [d for d in cac_dong if la_tien_mat_tai_xe(d)]
+    return [d for d in cac_dong if la_tien_mat_tai_xe(d, p.company)]
 
 
 def da_thu_theo_phieu(db, trip_ids):
@@ -302,7 +301,7 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
     if day_du:
         ra["goods"] = KH.dong_hang(db, phieu.id)
         ra["ton_lo"] = KH.ton_lo(db, phieu.id) if phieu.kind == "gom" else None
-        ra["expenses"] = [_xuat_dong(d) for d in dong]
+        ra["expenses"] = [_xuat_dong(d, phieu.company) for d in dong]
         ra["logs"] = [{"ts": l.ts.isoformat() if l.ts else None, "user": l.user_name, "role": l.role,
                        "action": l.action}
                       for l in db.query(TripLog).filter(TripLog.trip_id == phieu.id)
@@ -667,16 +666,18 @@ def _dong_tu_du_lieu(p, m, i, d, db=None, dat_gia=True):
         toll_card_id=(d.get("toll_card_id") or None) if m == "travel" else None,
         # Ghi nợ tại trạm (C5.1): chỉ có nghĩa với khoản MUA NGOÀI — hàng lấy từ kho mình thì nợ ai.
         ghi_no=bool(d.get("ghi_no")) and source != "kho", note=d.get("note"),
-        pay_channel=_cach_tra_gui(m, d))
+        pay_channel=_cach_tra_gui(m, d, p.company))
 
 
-def _cach_tra_gui(m, d):
+def _cach_tra_gui(m, d, company=None):
     """Cách trả gửi lên (mục IV, VI): một trong CACH_TRA; bỏ trống / trùng mặc định của khoản mục thì để trống."""
     c = str(d.get("pay_channel") or "").strip()
     if m not in ("travel", "other") or not c:
         return None
     if c not in CACH_TRA:
         raise HTTPException(422, {"ma": "CACH_TRA_SAI", "loi": "Cách trả phải là tiền mặt khi xe đi, trả cùng lương hoặc ghi nợ nhà cung cấp."})
+    if company == "joint" and c == "luong":
+        c = "tien_mat"            # xe thuê: không có trả cùng lương — EPL ứng là tạm ứng ghi công nợ chủ xe (30/09)
     return None if c == CACH_TRA_MAC_DINH.get(d.get("item_key") or "", "tien_mat") else c
 
 
@@ -721,7 +722,7 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             e = giu.get(d.get("id"))
             if e:
                 e.line_no = i; e.note = d.get("note"); e.acct_code = d.get("acct_code") or e.acct_code
-                e.pay_channel = _cach_tra_gui(m, d)
+                e.pay_channel = _cach_tra_gui(m, d, p.company)
                 continue
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
             if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
@@ -937,19 +938,16 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
 
 
 # ---------------------------------------------------------------- duyệt từng mục
-def _xuat_kho_nhien_lieu(db, p, user, gd):
-    """Kế toán kho GHI SỔ mục III → mỗi dòng dầu đổ ở kho EPL chưa xuất thì xuất ở kho bên trang kế toán (28/09): trừ
-    tồn, sinh PXK_NL, mang giá bình quân của đúng kho lúc xuất (C5.3). Đúng câu trong quy trình của họ: "Fuel storage
-    will be responsible for check and issues". Không chặn theo tồn — như trước: dầu đã đổ thật vào xe."""
-    for e in _dong_chi(db, p):
-        if e.section != "fuel" or e.source != "kho" or e.stock_move_id or not e.paid_by_epl or (e.qty or 0) <= 0:
-            continue
-        r = gd.xuat_dau(khoa="trip_expense:" + e.id, place_id=e.place_id or GV.kho_goc(db), qty_l=e.qty,
-                        ngay=p.out_date or p.doc_date or dt.date.today(), doc_no=p.doc_no, truck_no=p.truck_no, expense_id=e.id,
-                        trip_no=p.doc_no, company=p.company, gia_du_phong=(e.unit_price or 0) * ty_gia(p, e.currency or "LAK"),
-                        mo_ta="Xuất %s lít dầu theo phiếu %s (ghi sổ)" % (e.qty, p.doc_no), note="Xuất theo phiếu %s" % p.doc_no)
-        e.unit_price, e.currency = r["unit_price"], "LAK"      # xuất lúc nào thì mang giá bình quân lúc đó (C5.3)
-        e.stock_move_id = r["move_id"]
+def _chan_chua_cap_theo_de_nghi(db, p):
+    """Mọi lần xuất dầu kho phải có PHIẾU ĐỀ NGHỊ đã cấp (chủ dự án 30/09): trước đây ghi sổ mục III tự xuất kho dòng dầu
+    chưa cấp — dầu rời kho không có tờ đề nghị nào. Nay dòng dầu kho EPL ứng chưa được thủ kho cấp theo phiếu đề nghị
+    xuất nhiên liệu thì chặn ghi sổ, nói rõ dòng nào."""
+    thieu = [(i, e) for i, e in enumerate([e for e in _dong_chi(db, p) if e.section == "fuel"], 1)
+             if e.source == "kho" and e.paid_by_epl and (e.qty or 0) > 0 and not e.stock_move_id]
+    if thieu:
+        raise HTTPException(409, {"ma": "CHUA_CAP_THEO_DE_NGHI", "loi": (
+            "Mục III: %s lấy từ kho chưa được cấp theo phiếu đề nghị xuất nhiên liệu. Bãi in phiếu đề nghị, thủ kho cấp dầu ở "
+            "Cấp phát, rồi mới ghi sổ mục III." % ", ".join("dòng %d (%s lít)" % (i, _gon(e.qty)) for i, e in thieu))})
 
 
 @router.post("/api/trips/{tid}/sections/{muc}/{hanh_dong}")
@@ -985,12 +983,12 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi kiểm lại.%s" % (
                 _TEN_MUC.get(muc, muc), ", ".join("dòng %d (số lượng %s)" % (i, _gon(d.qty)) for i, d in thieu),
                 " Dòng lấy từ kho chưa có giá vì kho đó chưa có phiếu nhập nào có giá." if kho else "")})
-    # ghi sổ mục III xuất dầu ở kho bên trang kế toán — cả lần lưu đi trong GiaoDichKho: bên này hỏng thì lần xuất
-    # bên kia được huỷ; trang kế toán tắt → 503, không ghi sổ được (chặn và báo rõ, 28/09)
-    with KK.GiaoDichKho(db, user) as gd:
+    # từ 30/09 ghi sổ mục III không xuất kho nữa (dầu kho chỉ rời kho theo phiếu đề nghị đã cấp); vẫn lưu trong GiaoDichKho
+    # như mọi lần lưu có thể đụng trang kế toán
+    with KK.GiaoDichKho(db, user):
         s.status = moi_trang_thai
         if muc == "fuel" and hanh_dong == "book":
-            _xuat_kho_nhien_lieu(db, p, user, gd)
+            _chan_chua_cap_theo_de_nghi(db, p)
         if muc == "travel" and hanh_dong == "book":
             # Phí cầu đường trả bằng thẻ: ghi sổ là lúc trừ thẻ, đúng như dòng xuất kho nhiên liệu ở trên.
             THE.tru_the_theo_phieu(db, p, user)
@@ -1001,7 +999,7 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             # sai bước (chuyen_muc), nên không thể ra hai tờ. Dòng trả bằng THẺ cao tốc không phải tiền mặt → không tính.
             # chỉ phần TIỀN MẶT tài xế cầm đi (cách trả tiền mặt — Excel anh Khampla 29/09): khoản trả cùng lương, ghi nợ
             # nhà cung cấp, trừ thẻ không qua tay quỹ lúc xe đi. Cùng luật với phiếu tạm ứng (la_tien_mat_tai_xe).
-            dong = [d for d in _dong_chi(db, p) if d.section == "travel" and la_tien_mat_tai_xe(d)]
+            dong = [d for d in _dong_chi(db, p) if d.section == "travel" and la_tien_mat_tai_xe(d, p.company)]
             tong = sum(tien_dong(p, d) for d in dong)
             # Tờ tạm ứng (PTU) của chuyến thành "đã cấp" luôn: Tất toán đếm "đã ứng" theo tờ này, và quét QR ở Cấp phát
             # sau đó thì báo đã cấp — không ra hai lần chi (29/09: chi thẳng ở đây trước kia để tờ PTU "chờ" mãi).

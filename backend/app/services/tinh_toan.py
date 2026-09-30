@@ -176,13 +176,16 @@ CACH_TRA = ("tien_mat", "luong", "ncc")
 CACH_TRA_MAC_DINH = {"x_water": "luong", "x_trip": "luong", "x_chip_lao": "ncc", "x_chip_vn": "ncc"}
 
 
-def cach_tra(d):
-    """Cách trả của một dòng chi mục IV / VI: người lập chọn; không chọn thì theo khoản mục như Excel."""
+def cach_tra(d, company=None):
+    """Cách trả của một dòng chi mục IV / VI: người lập chọn; không chọn thì theo khoản mục như Excel.
+    Xe THUÊ không có "trả cùng lương" — EPL không trả lương cho tài xế của chủ xe (chủ dự án 30/09): khoản EPL ứng là tạm
+    ứng ghi công nợ chủ xe, đưa tiền mặt lúc xe đi."""
     c = getattr(d, "pay_channel", None)
-    return c if c in CACH_TRA else CACH_TRA_MAC_DINH.get(getattr(d, "item_key", None) or "", "tien_mat")
+    c = c if c in CACH_TRA else CACH_TRA_MAC_DINH.get(getattr(d, "item_key", None) or "", "tien_mat")
+    return "tien_mat" if (company == "joint" and c == "luong") else c
 
 
-def la_tien_mat_tai_xe(d):
+def la_tien_mat_tai_xe(d, company=None):
     """Dòng chi này có phải TIỀN MẶT tài xế cầm đi (tạm ứng) không — MỘT luật cho phiếu tạm ứng, cửa xuất phát,
     màn Tất toán và màn Phiếu của tôi.
 
@@ -192,5 +195,5 @@ def la_tien_mat_tai_xe(d):
     ghi nợ nhà cung cấp — Excel anh Khampla, 29/09). Rà giao diện 23/09: 500 lít dầu ghi nợ bị tính vào tạm ứng."""
     return bool(d.paid_by_epl and d.source != "kho" and d.section in ("fuel", "travel", "other")
                 and not getattr(d, "ghi_no", False) and not getattr(d, "toll_card_id", None)
-                and (d.section == "fuel" or cach_tra(d) == "tien_mat"))
+                and (d.section == "fuel" or cach_tra(d, company) == "tien_mat"))
 

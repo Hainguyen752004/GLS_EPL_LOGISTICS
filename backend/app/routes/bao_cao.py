@@ -13,7 +13,7 @@ import datetime as dt
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy import func, literal
+from sqlalchemy import func, literal, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -760,7 +760,7 @@ def tien_tai_xe(thang: str = None, db: Session = Depends(get_db), user=Depends(n
     dau, cuoi = _thang(thang)
     # ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại)
     tong = {}
-    for o in _theo_ngay(db, "tx3", _cac_ngay(dau, cuoi), _tx_lo).values():    # theo thứ tự ngày · tx3: cách trả 29/09
+    for o in _theo_ngay(db, "tx4", _cac_ngay(dau, cuoi), _tx_lo).values():    # theo thứ tự ngày · tx4: chỉ xe nhà 30/09
         for ten, x in o.items():
             r = tong.setdefault(ten, {"driver": ten, "so_phieu": 0, "khoan": {}, "tong_lak": 0.0, "da_chi": 0, "cho_chi": 0})
             for f in ("so_phieu", "tong_lak", "da_chi", "cho_chi"):
@@ -779,8 +779,9 @@ KHOAN_TAI_XE = {"x_trip", "x_water", "x_vn", "x_phone", "x_food"}
 
 
 def _tx_lo(db, cac_ngay):
-    """Phần TIỀN CHUYẾN TÀI XẾ của từng ngày: {tên tài xế: số phiếu · từng khoản · tổng · đã chi / chờ chi mục IV}."""
-    loc = (Trip.doc_date.in_(cac_ngay),)
+    """Phần TIỀN CHUYẾN TÀI XẾ của từng ngày: {tên tài xế: số phiếu · từng khoản · tổng · đã chi / chờ chi mục IV}.
+    Chỉ XE NHÀ (chủ dự án 30/09): EPL không trả lương tài xế của chủ xe — khoản EPL ứng cho xe thuê là công nợ chủ xe."""
+    loc = (Trip.doc_date.in_(cac_ngay), or_(Trip.company.is_(None), Trip.company != "joint"))
     ds = (db.query(*COT_TINH).filter(*loc, Trip.driver_name.isnot(None), Trip.driver_name != "")
           .order_by(Trip.doc_date, Trip.doc_no).all())
     muc_iv = {t: st for t, st in (db.query(TripSection.trip_id, TripSection.status).join(Trip, Trip.id == TripSection.trip_id)

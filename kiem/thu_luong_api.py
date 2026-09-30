@@ -135,6 +135,11 @@ def main():
     for m in ("info", "trans"):
         s, g = goi("/api/trips/%s/sections/%s/verify" % (P, m), {}, vai="ketoan"); phai(s, 200, "KT Thu/Chi Viêng Chăn kiểm mục %s" % m, g)
     s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí VC kiểm mục IV", g)
+    # xe thuê: dầu kho EPL ứng là XUẤT BÁN cho chủ xe — KT kho gõ giá bán trước khi kiểm (chủ dự án 29/09)
+    s, pk = goi("/api/trips/%s" % P, vai="khonl")
+    s, g = goi("/api/trips/%s" % P, {"expenses": [{"id": e["id"], "section": "fuel", "sale_price": 31000}
+                                                  for e in pk["expenses"] if e["section"] == "fuel" and e["source"] == "kho"]}, vai="khonl", method="PUT")
+    phai(s, 200, "KT kho gõ giá bán dầu cho chủ xe", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="khonl"); phai(s, 200, "Kế toán kho kiểm mục III", g)
     s, g = goi("/api/trips/%s" % P, {"weight_origin": 43}, vai="thabok", method="PUT"); phai(s, 409, "Bãi sửa mục II đã kiểm → bị khoá", g)
     s, g = goi("/api/trips/%s" % P, {"expenses": [{"section": "travel", "item_key": "x_food", "qty": 1, "unit_price": 1}]}, vai="thabok", method="PUT")
@@ -146,6 +151,10 @@ def main():
     s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 409, "Chi khi chưa ghi sổ → sai bước", g)
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoan"); phai(s, 403, "KT Thu/Chi ghi sổ mục IV → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí VC ghi sổ mục IV", g)
+    # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
+    s, v = goi("/api/trips/%s/vouchers" % P, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nhiên liệu", v)
+    for x in v:
+        s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
     s, g = goi("/api/trips/%s/sections/fuel/book" % P, {}, vai="khonl"); phai(s, 200, "Kế toán kho ghi sổ mục III", g)
     s, g = goi("/api/trips/%s/sections/fuel/pay" % P, {}, vai="quytb"); phai(s, 403, "Tiền mặt lẻ chi nhiên liệu → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/fuel/pay" % P, {}, vai="quyvc"); phai(s, 200, "Quỹ Viêng Chăn chi mục III", g)
@@ -194,8 +203,9 @@ def main():
     for hd, v in (("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/repair/%s" % (P, hd), {}, vai=v); phai(s, 200, "Mục V: %s (%s)" % (hd, v), g)
     s, kho = K.kt("/api/nhien-lieu", vai="khonl")             # sổ dầu ở trang kế toán (28/09)
-    assert any(r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out" for r in kho["rows"]), "ghi sổ mục III phải sinh dòng xuất kho nhiên liệu theo phiếu"
-    print("  ✓ ghi sổ mục III đã sinh dòng xuất kho nhiên liệu THU-LUONG-01/EPL")
+    # 30/09: dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp — dòng xuất kho mang số phiếu đề nghị (PLNL-…), không còn do ghi sổ mục III
+    assert any(str(r["doc_no"]).startswith("PLNL-THU-LUONG-01/EPL") and r["kind"] == "out" for r in kho["rows"]), "cấp dầu theo phiếu đề nghị phải sinh dòng xuất kho nhiên liệu"
+    print("  ✓ cấp dầu theo phiếu đề nghị đã sinh dòng xuất kho nhiên liệu PLNL-THU-LUONG-01/EPL")
 
     # ---- 4. Xe về, cân cuối, hoá đơn, thu tiền
     # C2.1 (anh Khampla): tài xế báo ngày về và km về qua điện thoại; Bãi cân rồi mới xác nhận tới.
@@ -231,9 +241,10 @@ def main():
     # Dầu lấy từ KHO mang giá BÌNH QUÂN của kho lúc xuất (anh Khampla C5.3), không phải giá Bãi gõ.
     dau = [e for e in g["expenses"] if e["section"] == "fuel"][0]
     s, mv = K.kt("/api/nhien-lieu", vai="khonl")
-    xuat = next(r for r in mv["rows"] if r["doc_no"] == "THU-LUONG-01/EPL" and r["kind"] == "out")
+    xuat = next(r for r in mv["rows"] if str(r["doc_no"]).startswith("PLNL-THU-LUONG-01/EPL") and r["kind"] == "out")
     assert dau["currency"] == "LAK" and abs(dau["unit_price"] - xuat["unit_cost_lak"]) < 0.01, (dau, xuat)
-    assert chi["fuel"] == round(100 * dau["unit_price"]) and chi["travel"] == 1833500 and chi["other"] == 150000, chi
+    # xe thuê: dầu kho là xuất BÁN cho chủ xe — tiền dầu theo giá bán KT kho gõ (29/09), giá vốn vẫn ở unit_price
+    assert chi["fuel"] == round(100 * dau["sale_price"]) and chi["travel"] == 1833500 and chi["other"] == 150000, chi
     print("  ✓ %-58s %s LAK/L" % ("dầu kho mang giá bình quân của kho lúc xuất", format(round(dau["unit_price"]), ",")))
     assert chi["repair"] == round(pt["unit_price"] * 1 + 300000), (chi["repair"], pt["unit_price"])
     ung = round(g["tinh"]["tong_chi_lak"] / 22000, 2)

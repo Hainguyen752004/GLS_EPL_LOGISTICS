@@ -100,9 +100,13 @@ def main():
     print("  ✓ %-64s" % "kế toán gõ giá dòng lấy từ kho → bị bỏ qua (giá kho là bình quân)")
     s, g = goi("/api/trips/%s/sections/fuel/send" % P, {}, vai="thabok"); phai(s, 200, "Bãi gửi kiểm mục III", g)
     s, g = goi("/api/trips/%s/sections/fuel/verify" % P, {}, vai="khonl"); phai(s, 200, "KT kho xăng dầu kiểm mục III", g)
-    s, g = goi("/api/trips/%s/sections/fuel/book" % P, {}, vai="khonl"); phai(s, 200, "KT kho xăng dầu ghi sổ mục III → xuất kho", g)
+    # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
+    s, v = goi("/api/trips/%s/vouchers" % P, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất nhiên liệu", v)
+    for x in v:
+        s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)
+    s, g = goi("/api/trips/%s/sections/fuel/book" % P, {}, vai="khonl"); phai(s, 200, "KT kho xăng dầu ghi sổ mục III (dầu đã xuất lúc cấp)", g)
     k2, so2 = kho()
-    ra = next(r for r in so2["rows"] if r["doc_no"] == SO and r["kind"] == "out")
+    ra = next(r for r in so2["rows"] if str(r["doc_no"]).startswith("PLNL-" + SO) and r["kind"] == "out")   # xuất theo phiếu đề nghị
     assert ra["place_id"] == XE["id"] and ra["qty_out"] == 600 and abs(ra["unit_cost_lak"] - gia_xe) < 0.02, ra
     assert abs(k2["KHO-XE-VN"]["ton_lit"] - (XE["ton_lit"] + 400)) < 0.01, k2["KHO-XE-VN"]
     pxk = next(c for c in K.to_kho(SO, "PXK_NL") if c["trip_no"] == SO)

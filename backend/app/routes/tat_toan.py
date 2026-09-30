@@ -100,7 +100,7 @@ def tinh_ky(db, tai_xe, ky):
     for p in ds:
         tien_p = 0.0
         for e in db.query(TripExpense).filter(TripExpense.trip_id == p.id).all():
-            if not la_tien_mat_tai_xe(e):           # cùng luật với phiếu tạm ứng (services/tinh_toan), kể cả cách trả
+            if not la_tien_mat_tai_xe(e, p.company):           # cùng luật với phiếu tạm ứng (services/tinh_toan), kể cả cách trả
                 continue
             tien_p += (e.qty or 0) * (e.unit_price or 0) * ty_gia(p, e.currency)
         chi += tien_p

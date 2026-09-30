@@ -121,7 +121,7 @@ Mở sang trang kia thì **đăng nhập bên đó** nếu chưa đăng nhập (
 | Việc người dùng làm | Ở trang | Máy gọi sang trang kia để | Nếu trang kia tắt |
 |---|---|---|---|
 | Lập / sửa phiếu có dầu **kho** | Điều xe | Lấy giá bình quân của kho dầu | Chưa lưu được dòng dầu kho |
-| Ghi sổ mục III (dầu kho chưa cấp) | Điều xe | Xuất dầu khỏi kho, sinh PXK_NL | Chặn, báo rõ |
+| Ghi sổ mục III | Điều xe | Không gọi sang nữa (từ 30/09): dầu kho chỉ rời kho lúc thủ kho cấp theo phiếu đề nghị; còn dòng dầu kho chưa cấp thì chặn ghi sổ | — |
 | Sự cố mục V lấy phụ tùng kho, duyệt báo hỏng | Điều xe | Xuất phụ tùng, sinh PXK_PT | Chặn, báo rõ |
 | Phiếu giao chọn lô, lưu phiếu giao | Điều xe | Hỏi lô còn hàng, xuất khỏi kho bãi, sinh PXK_HH | Chặn, báo rõ; lưu việc khác vẫn được |
 | Xe gom tới bãi | Điều xe | Nhập hàng vào kho bãi, sinh PNK_HH | Chưa báo tới được |
@@ -190,6 +190,10 @@ Người kiểm mục thấy thêm nút **Trả lại sửa** (trả về cho ng
 | **Xe nhà** (EPL) | **Tạm ứng nội bộ** — Nợ 625 / Có 1011; cuối tháng tất toán với tài xế (bước 20) | **Xuất nội bộ** — Nợ 625 / Có 1371 theo giá vốn bình quân kho |
 | **Xe thuê**, dòng *EPL ứng* | **Tạm ứng ghi công nợ chủ xe** — Nợ 4022 / Có 1011; **trừ vào tiền trả chủ xe** (bước 19), **không** tất toán với tài xế | **Xuất bán cho chủ xe** theo **giá bán riêng** — KT kho xăng dầu gõ ở ô **Giá bán cho chủ xe** khi kiểm mục III (bước 6); tiền trừ chủ xe tính theo giá bán |
 | **Xe thuê**, dòng *Chủ xe tự trả* | không có đề nghị | không có đề nghị |
+
+Anh nói rõ thêm ngày 30/09: xe thuê **không có "trả cùng lương"** — EPL không trả lương cho tài xế của chủ xe. Mỗi dòng của xe thuê hoặc là *EPL ứng* (tiền mặt khi xe đi — kể cả tiền chuyến, tiền nước — hoặc nợ nhà cung cấp thay chủ xe; đều ghi công nợ chủ xe), hoặc là *Chủ xe tự trả* (không ghi gì). Ví dụ: thuê xe **200**, chủ xe lấy dầu của EPL **50** (xuất bán), EPL ứng tiền **100** → chủ xe nợ EPL **150**, EPL còn trả chủ xe **50** (trước khi trừ phí quản lý và quá tải, bước 19). Màn **Tiền chuyến & tiền nước tài xế** và màn **Tất toán tài xế** chỉ có xe nhà.
+
+**Mọi lần xuất dầu kho phải có phiếu đề nghị đã cấp** (chủ dự án chốt 30/09): dầu kho chỉ rời kho khi thủ kho cấp theo phiếu đề nghị xuất nhiên liệu (bước 8). Ghi sổ mục III không tự xuất kho nữa — còn dòng dầu kho chưa cấp thì máy chặn ghi sổ.
 
 Trên phiếu, đầu mục III và mục IV có một dòng chữ đậm nói bản chất (*Xuất nội bộ — xe công ty (EPL)*, *Xuất bán cho chủ xe · <tên chủ xe>*, *Tạm ứng nội bộ — xe công ty (EPL)*, *Tạm ứng ghi công nợ chủ xe · <tên chủ xe>*); hai tờ đề nghị in ra có đúng dòng đó dưới tiêu đề, và dữ liệu gửi sang hệ kho / tiền mang theo bản chất và chủ xe. Hạch toán **xuất bán** (Nợ 4022 / Có 70 theo giá bán, Nợ 607 / Có 1371 theo giá vốn) là việc bên kho / tiền của anh Toàn, anh Tune; trang kế toán mẫu hiện vẫn ghi PXK_NL xe thuê là Nợ 4022 / Có 1371 theo giá vốn.
 
@@ -270,7 +274,7 @@ Chỉ ghi SL 2 khi khoản đó **xảy ra hai lần thật** trong cùng một 
 | Cách trả (ô trên phiếu) | Excel ghi | Máy chọn sẵn cho | Tiền đi đâu |
 |---|---|---|---|
 | **Chi ngay khi xe đi** | ຈ່າຍເລີຍຕາມໂຊເຟີອອກລົດ | chi phí sang Việt Nam, điện thoại, tiền ăn, phí cầu / đỗ xe / cửa khẩu, khoản tự gõ | **Phiếu đề nghị tạm ứng**: quỹ đưa tiền mặt lúc xe đi (bước 9); tất toán so với đúng những dòng này (bước 20) |
-| **Trả theo chuyến cùng lương** | ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ | tiền nước, tiền chuyến | **Không** vào tạm ứng; cộng lên màn **Tiền chuyến & tiền nước tài xế** để trả cùng lương (bước 20) |
+| **Trả theo chuyến cùng lương** | ຈ່າຍຕາມຖ້ຽວພ້ອມເງິນເດືອນ | tiền nước, tiền chuyến — **chỉ xe nhà** | **Không** vào tạm ứng; cộng lên màn **Tiền chuyến & tiền nước tài xế** để trả cùng lương (bước 20). Phiếu **xe thuê** không có lựa chọn này: tiền nước, tiền chuyến EPL ứng tự thành *Chi ngay khi xe đi* (tạm ứng ghi công nợ chủ xe) |
 | **Nợ NCC / trả theo đợt** | ຕິດໜີ້ຜູ້ສະໜອງ/ຊໍາລະເປັນງວດ | chipping Lào, chipping Việt | **Không** vào tạm ứng; thành công nợ nhà cung cấp, kế toán trả theo đợt (6.6) |
 | (phí cao tốc, cầu đường) | ຈ່າຍຕາມຖ້ຽວ ຜ່ານບັດ | — ô thẻ thay cho ô cách trả | Chọn thẻ thì **trừ thẻ**, không vào tạm ứng; chọn *Trả tiền mặt* thì vào tạm ứng |
 
@@ -317,12 +321,12 @@ Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK**
 1. Dòng dầu **mua ngoài**: nhập **Đơn giá** (thường VND, quy Kíp theo tỷ giá khoá trên phiếu). Dòng dầu **kho**: giá là bình quân của kho, máy tự điền, gõ tay bị bỏ qua.
    Phiếu **xe thuê**, dòng dầu kho *EPL ứng*: dưới ô đơn giá (giá vốn bình quân, xám) có ô **Giá bán cho chủ xe** — gõ giá bán một lít (LAK). Cột **Thành tiền (LAK)** và tiền trừ chủ xe tính theo giá bán; giá vốn vẫn là bình quân kho. Đầu mục III ghi *Xuất bán cho chủ xe · <tên chủ xe>*.
 2. Bấm **Xác nhận kiểm tra** ở mục III (máy lưu giá trước rồi mới kiểm).
-3. Bấm **Ghi sổ kế toán** ở mục III.
+3. Bấm **Ghi sổ kế toán** ở mục III — **sau khi thủ kho đã cấp dầu** theo phiếu đề nghị (bước 8). Kiểm thì làm trước được; ghi sổ thì phải chờ cấp.
 4. Nếu có khoản dầu mua ngoài EPL chi tiền mặt: **Thủ quỹ VC** (`quyvc`) mở phiếu, bấm **Xác nhận đã chi** ở mục III.
 
-**Máy tự làm khi ghi sổ mục III:** dòng dầu **kho** nào chưa được thủ kho cấp theo phiếu đề nghị xuất nhiên liệu thì **xuất kho luôn** ở trang kế toán, theo giá bình quân lúc xuất, sinh tờ **PXK_NL**. Mỗi dòng dầu kho chỉ xuất **một lần**: hoặc lúc thủ kho cấp (bước 8), hoặc lúc ghi sổ mục III.
+**Ghi sổ mục III không xuất kho** (từ 30/09): dầu kho chỉ rời kho **một lần**, lúc thủ kho cấp theo phiếu đề nghị (bước 8) — lúc đó mới trừ tồn, mang giá bình quân lúc cấp, sinh tờ **PXK_NL**. Trước đây ghi sổ tự xuất dòng chưa cấp, nên có dầu rời kho mà không có tờ đề nghị nào; nay bỏ.
 
-**Máy chặn:** dòng EPL trả mà đơn giá 0 thì không kiểm được; phiếu xe thuê có dòng dầu kho EPL ứng mà chưa có **giá bán** thì không kiểm được (*Xe thuê: dầu lấy từ kho là xuất bán cho chủ xe … chưa có giá bán*); kế toán chỉ nhập giá, không thêm / xoá dòng; trang kế toán tắt thì chưa ghi sổ được mục III có dầu kho. Bãi, tài xế, thủ kho không thấy giá bán.
+**Máy chặn:** dòng EPL trả mà đơn giá 0 thì không kiểm được; phiếu xe thuê có dòng dầu kho EPL ứng mà chưa có **giá bán** thì không kiểm được (*Xe thuê: dầu lấy từ kho là xuất bán cho chủ xe … chưa có giá bán*); còn dòng dầu kho EPL ứng **chưa được cấp theo phiếu đề nghị** thì không ghi sổ được (*Mục III: dòng 1 (200 lít) lấy từ kho chưa được cấp theo phiếu đề nghị xuất nhiên liệu. Bãi in phiếu đề nghị, thủ kho cấp dầu ở Cấp phát, rồi mới ghi sổ mục III.*); kế toán chỉ nhập giá, không thêm / xoá dòng. Bãi, tài xế, thủ kho không thấy giá bán.
 
 ### Bước 7. KT Chi phí kiểm và ghi sổ mục IV, VI
 
@@ -550,7 +554,7 @@ Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK**
 4. Bấm **Tất toán** ở dòng tài xế → hộp *Tất toán kỳ … cho …?* nói số chênh → bấm **Tất toán**. Dòng chuyển *Đã tất toán*.
 5. Chốt nhầm: bấm **Bỏ chốt** ở dòng đó → xác nhận → chốt lại sau khi sửa phiếu.
 
-**Xem tiền chuyến trả cùng lương:** **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** → ô **Tháng** → bảng theo tài xế (chỉ cộng dòng cách trả **Trả theo chuyến cùng lương** — thường là tiền chuyến, tiền nước; khoản đã đưa tiền mặt lúc xe đi không cộng lần nữa): **Chuyến**, **Tiền chuyến**, **Tiền nước**, **Điện thoại**, **Chi phí VN**, **Tiền ăn tài xế**, **Tổng (LAK)**, **Kênh chi** (*Trả theo chuyến cùng lương*), **Trạng thái** chi mục IV. Bấm **In** → bản in trong hộp → bấm **In** trong hộp. KT Thu/Chi, KT Doanh thu, KT kho xăng dầu, hai quỹ và KT Chi phí xem được; Bãi không có màn này.
+**Xem tiền chuyến trả cùng lương:** **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** → ô **Tháng** → bảng theo tài xế — **chỉ phiếu xe nhà** (xe thuê không có trả cùng lương, 30/09) (chỉ cộng dòng cách trả **Trả theo chuyến cùng lương** — thường là tiền chuyến, tiền nước; khoản đã đưa tiền mặt lúc xe đi không cộng lần nữa): **Chuyến**, **Tiền chuyến**, **Tiền nước**, **Điện thoại**, **Chi phí VN**, **Tiền ăn tài xế**, **Tổng (LAK)**, **Kênh chi** (*Trả theo chuyến cùng lương*), **Trạng thái** chi mục IV. Bấm **In** → bản in trong hộp → bấm **In** trong hộp. KT Thu/Chi, KT Doanh thu, KT kho xăng dầu, hai quỹ và KT Chi phí xem được; Bãi không có màn này.
 
 **Chỉ tài xế xe nhà:** phiếu **xe thuê** không vào Tất toán — tạm ứng xe thuê là công nợ chủ xe, đã trừ vào tiền trả chủ xe (bước 19); tất toán thêm là một khoản hai lần (chủ dự án 29/09).
 
@@ -681,7 +685,7 @@ Chặn: chỉ tổ sửa chữa lập, sửa lệnh; lệnh đã kiểm thì ph�
 | PC_TU | Phiếu chi theo đề nghị tạm ứng | Quỹ chi mục IV | Điều xe | Đẩy | Xe nhà: tạm ứng nội bộ, Nợ chi phí 625 · xe thuê: ghi công nợ chủ xe, Nợ 4022 / Có tiền |
 | PC_SC | Phiếu chi sửa chữa · chi khác | Quỹ chi mục V, VI | Điều xe | Đẩy | Nợ 614 · 625 / Có tiền |
 | PC_SC | (của lệnh sửa chữa) | Quỹ chi lệnh sửa chữa | Kế toán | Ngay | Nợ 614 / Có tiền |
-| PXK_NL | Xuất kho nhiên liệu | Thủ kho cấp, hoặc ghi sổ mục III | Kế toán | Ngay | Xe nhà: xuất nội bộ, Nợ 625 / Có 1371 · xe thuê: **xuất bán** cho chủ xe (giá bán trên phiếu) — trang kế toán mẫu còn ghi Nợ 4022 / Có 1371 theo giá vốn, hạch toán bán là việc bên kho / tiền |
+| PXK_NL | Xuất kho nhiên liệu | Thủ kho cấp theo phiếu đề nghị (đường duy nhất, từ 30/09) | Kế toán | Ngay | Xe nhà: xuất nội bộ, Nợ 625 / Có 1371 · xe thuê: **xuất bán** cho chủ xe (giá bán trên phiếu) — trang kế toán mẫu còn ghi Nợ 4022 / Có 1371 theo giá vốn, hạch toán bán là việc bên kho / tiền |
 | PNK_NL | Nhập kho nhiên liệu | Nhập kho dầu | Kế toán | Ngay | Nợ 1371 / Có 4021 |
 | CK_NL | Chuyển kho nhiên liệu | Chuyển kho | Kế toán | Ngay | Không (đổi chỗ trong 1371) |
 | PXK_PT | Xuất kho phụ tùng | Mục V lấy kho, lệnh sửa chữa, xuất tay | Kế toán | Ngay | Nợ 614 (4022 · 625) / Có 1371 |
@@ -709,7 +713,7 @@ Mã tiền: tiền mặt Kíp 1011, tiền mặt ngoại tệ 1012, ngân hàng 
 | Tài xế báo cân ở mỏ trên điện thoại (mất sóng ở mỏ) | Vẫn làm: lần báo vào hàng đợi, có mạng tự gửi; không cần trang kế toán |
 | Lập / sửa phiếu không đụng kho (ghi chú, xe, tài xế…) | Vẫn làm bình thường |
 | Lưu phiếu giao có lấy lô; báo xe gom tới bãi | Chặn, báo rõ; không có phiếu hay dòng kho nửa vời |
-| Ghi sổ mục III có dầu kho; mục V lấy phụ tùng kho | Chặn, báo rõ |
+| Mục V lấy phụ tùng kho | Chặn, báo rõ |
 | Xoá phiếu có dầu, phụ tùng, hàng đã xuất | Chưa xoá được |
 | Mở phiếu gom | Vẫn mở, chỉ thiếu số tồn lô |
 | Màn Xe → tab Sửa chữa | Vẫn mở, ghi rõ phần lệnh sửa chữa chưa lấy được |
@@ -1040,7 +1044,7 @@ Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 =
 | T04 | `thabok` · điều xe | **Gửi kiểm tra** ở mục I, III, IV (mục II chưa — chờ cân mỏ, ca T10b) | Ba mục *Đã nhập · chờ kiểm*; nút **Xoá** phiếu còn (chưa ai kiểm) | 4 | |
 | T05 | `ketoan` · điều xe | Mở phiếu (từ **Tổng quan → Việc của tôi** hoặc ô **Số phiếu**) → **Xác nhận kiểm tra** mục I | Mục I *Đã kiểm* (mục II kiểm ở ca T10b) | 5 | |
 | T06 | `khotb` · kế toán | **Kho → Cấp phát** → quét / gõ mã QR phiếu đề nghị xuất nhiên liệu T02 (hoặc bấm dòng ở bảng **Chờ cấp**) → đối chiếu → **Cấp dầu** → **Cấp dầu** | Tồn kho Thà Bốc giảm 200 L; bên điều xe phiếu đề nghị xuất nhiên liệu *Đã cấp*, dòng dầu mang **giá bình quân kho lúc cấp**; sổ có **PXK_NL**. Cấp lần hai bị chặn | 8 | |
-| T07 | `khonl` · điều xe | Mục III → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Dòng dầu kho đã cấp **không xuất kho lần hai** (sổ vẫn một tờ PXK_NL cho dòng đó); giá dầu kho không gõ tay được | 6 | |
+| T07 | `khonl` · điều xe | Mục III → **Xác nhận kiểm tra** → **Ghi sổ kế toán** (sau T06). Thử thêm: một phiếu có dầu kho **chưa** cấp → **Ghi sổ kế toán** | Sau khi cấp: ghi sổ được, sổ chỉ **một** tờ PXK_NL (lúc cấp); giá dầu kho không gõ tay được. Chưa cấp: máy chặn *… chưa được cấp theo phiếu đề nghị xuất nhiên liệu …* | 6 | |
 | T08 | `ketoancp` · điều xe | Mục IV → nhập **Đơn giá** từng dòng → **Xác nhận kiểm tra** → **Ghi sổ kế toán** | Mục IV *Đã ghi sổ · chờ chi* | 7 | |
 | T09 | `quytb` · kế toán | **Kho → Cấp phát** → tab **Phiếu đề nghị tạm ứng** → quét QR tờ đề nghị tạm ứng T03 → **Chi tiền** | Mục IV bên điều xe *Đã chi*; bên điều xe không bấm chi lần hai được | 9 | |
 | T10 | `tx01` · điều xe (điện thoại) | **Phiếu của tôi** → phiếu T01 → **Xuất phát** (cho phép vị trí) | Phiếu *Đang vận chuyển*; xe hiện trên **Theo dõi tuyến** | 10 | |
@@ -1078,7 +1082,7 @@ Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 =
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T27 | `thabok` · điều xe | Lập một phiếu với xe **ຮ່ວມ-07**, tài xế `tx03`; mục III dòng dầu kho **Ai chi** = **EPL ứng** | Phiếu tự thành phiếu xe liên kết, phí và ngưỡng tấn điền theo chủ xe ທ້າວ ຄຳຫລ້າ; đầu mục III ghi *Xuất bán cho chủ xe · ທ້າວ ຄຳຫລ້າ*, đầu mục IV *Tạm ứng ghi công nợ chủ xe · ທ້າວ ຄຳຫລ້າ*; Bãi **không** thấy ô giá bán | 1–2 | |
+| T27 | `thabok` · điều xe | Lập một phiếu với xe **ຮ່ວມ-07**, tài xế `tx03`; mục III dòng dầu kho **Ai chi** = **EPL ứng** | Phiếu tự thành phiếu xe liên kết, phí và ngưỡng tấn điền theo chủ xe ທ້າວ ຄຳຫລ້າ; đầu mục III ghi *Xuất bán cho chủ xe · ທ້າວ ຄຳຫລ້າ*, đầu mục IV *Tạm ứng ghi công nợ chủ xe · ທ້າວ ຄຳຫລ້າ*; Bãi **không** thấy ô giá bán; ô cách trả của tiền nước, tiền chuyến chỉ có *Chi ngay khi xe đi* và *Nợ NCC / trả theo đợt* (không có *Trả theo chuyến cùng lương*) | 1–2 | |
 | T27b | `khonl` · điều xe | Phiếu T27 (Bãi đã gửi kiểm mục III) → **Xác nhận kiểm tra** mục III khi chưa gõ giá bán → rồi gõ ô **Giá bán cho chủ xe** (ví dụ 33.000) → **Lưu** → **Xác nhận kiểm tra** | Lần đầu bị chặn *… chưa có giá bán*; gõ xong thì kiểm được, **Thành tiền** dòng dầu = lít × giá bán, ô đơn giá vẫn là giá vốn bình quân. **Phiếu đề nghị xuất nhiên liệu** in ra có dòng *Xuất bán cho chủ xe · ທ້າວ ຄຳຫລ້າ*; **Phiếu đề nghị tạm ứng** có *Tạm ứng ghi công nợ chủ xe* | 6 | |
 | T28 | các vai như T04–T19 | Đi hết các bước của phiếu (có thể ít dòng): `ketoan` kiểm mục II nhập **Giá thuê họ mỗi tấn**; … xe tới; `ketoan` **Khoá phiếu** | Phiếu *Đã khoá 🔒* | 4–17 | |
 | T29 | `quytb` · điều xe → kế toán | Phiếu T27 → **Trả chủ xe · <số tiền> ↗** | Mở **Tiền vận chuyển → Xe liên kết** đúng tháng, dòng phiếu tô sáng; chủ xe trả gộp nên dòng ghi *Trả gộp ở bảng Chủ xe* | 19 | |
@@ -1090,7 +1094,7 @@ Cộng lại đúng tổng mục IV: phiếu gom 580.000 + 1.860.000 + 620.000 =
 
 | Mã | Ai · trang | Làm | Đúng khi | Bước | Đạt |
 |---|---|---|---|---|---|
-| T33 | `ketoan` · kế toán | **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** | Mở sẵn tháng có phiếu mới nhất; bảng theo tài xế, chỉ cộng dòng *Trả theo chuyến cùng lương* (phiếu T03: tiền chuyến 1.800.000, tiền nước 60.000; cột **Điện thoại**, **Chi phí VN** không cộng vì đã đưa tiền mặt); **In** → bản in trong hộp | 20 | |
+| T33 | `ketoan` · kế toán | **Tiền vận chuyển → Tiền chuyến & tiền nước tài xế** | Mở sẵn tháng có phiếu mới nhất; bảng theo tài xế, **chỉ phiếu xe nhà** (phiếu xe thuê T27 không có), chỉ cộng dòng *Trả theo chuyến cùng lương* (phiếu T03: tiền chuyến 1.800.000, tiền nước 60.000; cột **Điện thoại**, **Chi phí VN** không cộng vì đã đưa tiền mặt); **In** → bản in trong hộp | 20 | |
 | T34 | `ketoancp` · kế toán | **Tiền vận chuyển → Tất toán tài xế** → bấm một dòng | Bốn ô tổng; khung dưới liệt kê phiếu của tài xế đó trong kỳ. Phiếu lập từ 29/09 (như T03): tạm ứng đúng bằng đã chi, **chênh 0**. Lưu ý khi demo: 8 phiếu mẫu cũ tháng 8–9 (T4-0428 … T4-0441) đã **chi tạm ứng theo luật cũ** — số tiền mặt gồm cả tiền chuyến, chipping… — nên dòng của ທ້າວ ທັດສະດາພອນ, ທ້າວ ບຸນມີ, ທ້າວ ສົມພອນ hiện *Tài xế nộp lại* đúng phần đã đưa thừa; sổ cũ không sửa ngược. Muốn thấy dòng sạch thì chạy T01–T09 với một tài xế chưa có phiếu (ví dụ DRV-05). **Chỉ phiếu xe nhà**: phiếu xe thuê (ví dụ T27, và hai phiếu mẫu cũ T4-0430-08, T4-0443-09) không có trong khung phiếu của tài xế | 20 | |
 | T35 | `ketoancp` · kế toán | **Tất toán** ở một dòng → **Tất toán** | Dòng *Đã tất toán*; sổ có **TT_CHI** (chi bù, Nợ 625 / Có 1011) hoặc **TT_THU** (nộp lại, Nợ 1011 / Có 625); bấm lại lần hai bị chặn | 20 | |
 | T36 | `quytb` → `ketoancp` · kế toán | Quỹ bấm **Bỏ chốt** (bị từ chối) → KT Chi phí **Bỏ chốt** | Chỉ KT Chi phí bỏ được; tờ TT rút khỏi sổ | 20 | |
