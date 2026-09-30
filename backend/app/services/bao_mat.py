@@ -93,6 +93,28 @@ def token_nhan_ke_toan(db):
     return (r.gia_tri.strip() if r and r.gia_tri else "") or (os.getenv("EPL_LAO_TOKEN_NHAN_KE_TOAN") or "").strip()
 
 
+def token_nhan_qlsx(db):
+    """Khoá hệ kế toán của anh Tune (QLSX DemoLao) phải mang khi đọc API bàn giao DO ở đây. Tách riêng khỏi khoá của
+    trang kế toán tạm (EPL_KETOAN): hai hệ, hai khoá, thu hồi cái này không làm tắt cái kia. Sếp tạo bằng
+    `POST /api/handover/tao-khoa`; hoặc đặt EPL_LAO_TOKEN_NHAN_QLSX trong .env."""
+    from models import CauHinh
+    r = db.get(CauHinh, "token_nhan_qlsx")
+    return (r.gia_tri.strip() if r and r.gia_tri else "") or (os.getenv("EPL_LAO_TOKEN_NHAN_QLSX") or "").strip()
+
+
+def may_qlsx_goi(request: Request, db: Session = Depends(get_db)):
+    """Hệ anh Tune đọc DO đã khoá (chỉ ĐỌC, không ghi gì vào đây) bằng `Authorization: Bearer <khoá>`. Không có người
+    bấm bên này nên không cần `X-Nguoi-Dung`; trả tên máy để ghi nhật ký."""
+    mong = token_nhan_qlsx(db)
+    dau = request.headers.get("Authorization", "")
+    tk = dau[7:].strip() if dau.lower().startswith("bearer ") else ""
+    if not mong:
+        raise HTTPException(503, {"ma": "CHUA_DAT_TOKEN", "loi": "Trang điều xe chưa tạo khoá cho hệ kế toán gọi sang."})
+    if not tk or not hmac.compare_digest(tk, mong):
+        raise HTTPException(401, {"ma": "SAI_TOKEN", "loi": "Khoá đọc bàn giao DO không đúng."})
+    return "qlsx"
+
+
 def may_ke_toan_goi(request: Request, db: Session = Depends(get_db)):
     """Kho và tiền vận chuyển đã dời sang trang kế toán (28/09); màn bên đó cần đọc / ghi vào phiếu thì gọi sang
     đây bằng khoá máy, kèm `X-Nguoi-Dung: <tên đăng nhập>` của người đang bấm. Hai trang dùng CÙNG tên đăng nhập,

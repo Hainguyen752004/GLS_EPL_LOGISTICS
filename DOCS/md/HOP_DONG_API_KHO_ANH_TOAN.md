@@ -838,16 +838,14 @@ Nhưng máy **`demo-lao-api.goldensme.com`** (máy kế toán anh Tune, bên em 
 | Chỉ bản anh có | luồng bảng tạm `InsertUpdateItemIntoTmp`, `InsertUpdateTmpItems`, `GetItemDetailTmp`, `CreateTmpOrCreateUpdateMainByTmp`, `MainToTempStock`; `GetInOutStockDetail`; `GetPlot`; `stocktaking/update-item`, `delete-item`; phần bếp căn tin | — |
 | Chỉ `demo-lao-api` có | — | quản lý kho `master/list`, `master/upsert`, `master/lookups`, `master/set-active`; vị trí trong kho `location-tree-view`, `upsert-line-location`; lệnh sản xuất `GetProductionOrders`, `process-step-tree`; `search-for-stock-out` |
 
-**Câu hỏi 13.6 (A):** bên em nối vào **máy nào**?
+**Bên em nối kho vào API RIÊNG của anh** (bản anh gửi), không nối vào phần kho trên máy `demo-lao-api`. Chủ dự án đã chốt ngày 30/09.
 
-- **(a) `demo-lao-api`**: phần kho đã chạy trên cùng máy, cùng token với kế toán anh Tune. Anh chỉ bổ sung dữ liệu và thủ tục lưu vào DB của máy đó.
-- **(b) bản anh gửi**: chạy riêng một máy, trỏ DB bên Lào.
-
-Bên em đề nghị **(a)**: một máy, một danh mục đối tượng, một token. Chủ dự án chốt với anh; bên em không tự dựng hay trỏ DB bản nào.
+- Phần kho trên `demo-lao-api` bên em **chỉ dùng để tham khảo**: khuôn trả về và tên loại chứng từ của lõi Golden SME. Các số ID ở 13.6.2 là **ID của máy `demo-lao-api`**. Trên máy của anh, ID có thể khác — xin anh cấp lại theo bảng 13.4.
+- Máy chạy API của anh, và DB bên Lào: chủ dự án chốt với anh (13.5 (1)). Bên em không tự dựng hay trỏ DB bản nào.
 
 #### 13.6.2. Số thật đọc được
 
-| Cần mã (13.4) | Số thật trên `demo-lao-api` | Còn thiếu |
+| Cần mã (13.4) | Số thật trên `demo-lao-api` (chỉ để tham khảo) | Việc trên API của anh |
 |---|---|---|
 | Đơn vị | 1368 "Demo EPL" · 5 "EPL 2" · 1369 "EPL 3" (và 2 "EPL 1") — **đều quốc gia Việt Nam, tiền VND** | đơn vị EPL Lào (anh Tune tạo, hợp đồng kế toán 12.7) |
 | Kho (`GetWarehouseActive?ORG_Id=`) | đơn vị 1368: 8 Kho giấy cuộn (`WGC`) · 9 Kho giấy tấm (`WGT`) · 10 Kho vật tư (`WVT`) · 11 Kho thành phẩm (`WTP`) · 12 Kho hàng hoá (`WHH`) · 13 Kho tem in (`WTI`). Đơn vị 5: 18, 19 `[Test] Kho A/B`. Đơn vị 1369: 14–17 `[Test] Kho 1–4`. Cột: `WH_AUTOID`, `WH_DEFINEID`, `WH_NAME`, `ORG_AUTOID`, `WH_ISACTIVE`… | **chưa có kho nào của EPL Lào**. Xin anh tạo: kho dầu Thà Bốc, kho dầu Viêng Chăn (và các kho dầu khác theo danh sách điểm đổ bên em), kho phụ tùng Thà Bốc |
@@ -875,9 +873,9 @@ Có giá đó thì dòng dầu kho, phụ tùng kho trên phiếu xuất xe và 
 
 #### 13.6.4. Việc xin anh làm — xếp theo thứ tự cần trước
 
-1. **Chốt máy** bên em nối vào (13.6 (A)), cùng chủ dự án.
-2. **Bổ sung thủ tục lưu** còn thiếu vào DB của máy đó: `report/inventory/now/{orgId}` đang lỗi 500, `inventory/now` đang trả rỗng.
-3. **Tạo kho EPL Lào** (kho dầu, kho phụ tùng) trong đơn vị EPL Lào mà anh Tune tạo.
+1. **Chốt máy chạy API của anh và DB bên Lào** (13.5 (1)), cùng chủ dự án.
+2. **Bổ sung thủ tục lưu** còn thiếu vào DB bên Lào (đúng ghi chú của anh). Trên máy `demo-lao-api`, `report/inventory/now/{orgId}` lỗi 500 và `inventory/now` trả rỗng — xin anh kiểm hai đường này trên bản của anh.
+3. **Tạo đơn vị và kho EPL Lào** (kho dầu, kho phụ tùng) trên hệ của anh.
 4. **Tạo mặt hàng** dầu diesel (lít) và danh mục phụ tùng.
 5. **Xác nhận loại chứng từ 65 / 44** và `OfSubsystem` đi kèm.
 6. **Trả giá vốn bình quân** (13.6.3).

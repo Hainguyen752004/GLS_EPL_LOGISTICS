@@ -26,7 +26,7 @@ Ngày 30/09/2026, chiều.
   - bản anh Toàn có thêm luồng bảng tạm và bước điều chỉnh sau kiểm kho, đặt tên đường hơi khác;
   - bản `demo-lao-api` có thêm quản lý kho, vị trí trong kho, lệnh sản xuất.
 
-Vậy nếu anh Toàn đồng ý, **cả kế toán lẫn kho có thể nằm chung một máy Lào**, dùng chung một token và một danh mục đối tượng. Việc còn lại chủ yếu là **dựng dữ liệu cho EPL Lào** trên máy đó.
+**Anh chốt 30/09: kho dùng API RIÊNG của anh Toàn**, không nối vào phần kho trên máy anh Tune. Phần kho trên `demo-lao-api` bên mình chỉ dùng để tham khảo khuôn trả về. Máy `demo-lao-api` chỉ dùng cho **kế toán / công nợ / thu chi của anh Tune** — làm phần này trước.
 
 ## 1. Token hiện có trong `.env`
 
@@ -67,11 +67,11 @@ Vậy nếu anh Toàn đồng ý, **cả kế toán lẫn kho có thể nằm ch
 | 7 | Tạo **đối tượng** (khách, tài xế, chủ xe liên kết, nhà cung cấp) cho EPL Lào, hoặc cho bên mình đồng bộ qua `master-data/customers/upsert`, `suppliers/upsert` | danh mục hiện có 189 khách, 517 nhà cung cấp, đều là dữ liệu bên khác |
 | 8 | Ghi nhận **nợ tiền thuê xe liên kết** và **tách bút toán xuất bán cho chủ xe** (hai lỗ hổng đã ghi trong hợp đồng) | |
 
-## 4. Anh Toàn cần làm (phần kho trên cùng máy Lào)
+## 4. Anh Toàn cần làm (trên API kho riêng của anh ấy)
 
 | # | Việc | Vì sao |
 |---|---|---|
-| 1 | **Tạo kho của EPL Lào**: kho dầu Thà Bốc, kho dầu Viêng Chăn (và các kho dầu khác), kho phụ tùng Thà Bốc | máy Lào chỉ có kho của nhà máy giấy (Kho giấy cuộn, giấy tấm, vật tư, thành phẩm, hàng hoá, tem in) và các kho `[Test]` |
+| 1 | **Tạo kho của EPL Lào**: kho dầu Thà Bốc, kho dầu Viêng Chăn (và các kho dầu khác), kho phụ tùng Thà Bốc | (tham khảo) máy `demo-lao-api` chỉ có kho của nhà máy giấy (Kho giấy cuộn, giấy tấm, vật tư, thành phẩm, hàng hoá, tem in) và các kho `[Test]` |
 | 2 | **Tạo mặt hàng**: dầu diesel (đơn vị **lít**), danh mục phụ tùng | 2.861 mặt hàng hiện có đều là thùng carton, giấy |
 | 3 | **Bổ sung thủ tục lưu còn thiếu** vào DB Lào (đúng ghi chú của anh ấy) | `POST /api/v1/supply-chain/inventory/now` trả rỗng; `GET /api/v1/report/inventory/now/1368` báo **lỗi 500**; `…/now/5` lại trả hàng của đơn vị 1368 |
 | 4 | **Trả giá vốn bình quân** theo kho × mặt hàng (ở tồn tức thời hoặc lúc xuất) | báo cáo tồn chỉ có số lượng (`BeginStock`, `InQty`, `OutQty`, `Balance`), không có cột giá; bên mình cần giá bình quân cho dòng dầu kho và màn Xem kho |
@@ -81,10 +81,8 @@ Vậy nếu anh Toàn đồng ý, **cả kế toán lẫn kho có thể nằm ch
 
 **Về bản `Backend.API` anh Toàn gửi kèm `appsettings`:**
 - Bản này **cùng lõi** với phần kho đã chạy trên `demo-lao-api`, chỉ khác nhánh (hợp đồng kho, mục 13.6.1).
-- Nếu nối vào `demo-lao-api` thì **không phải dựng thêm một máy nữa**. Anh Toàn chỉ cần:
-  - bổ sung thủ tục lưu và dữ liệu vào DB của máy đó;
-  - mang sang những đường còn thiếu nếu bên anh ấy cần (luồng bảng tạm, bước điều chỉnh sau kiểm kho).
-- Chọn máy nào là việc **anh chốt với anh Toàn**. Em không tự dựng, không trỏ DB bản nào.
+- **Anh chốt: bên mình nối kho vào bản riêng này.** Máy chạy và DB bên Lào anh chốt với anh Toàn. Em không tự dựng, không trỏ DB.
+- Các ID kho ở mục này là của máy `demo-lao-api`, chỉ để tham khảo. Trên hệ anh Toàn, ID có thể khác.
 - Các tệp `appsettings` có chuỗi kết nối DB, `JWT.Secret`, `ApiKey`. Em **không đọc giá trị**, đã chặn git, không đưa lên GitHub. Anh nên giữ hai thư mục này ngoài dự án, hoặc xoá bản sao khi xong.
 
 ## 5. Bên mình (trang điều xe) cần làm
@@ -102,8 +100,4 @@ Vậy nếu anh Toàn đồng ý, **cả kế toán lẫn kho có thể nằm ch
 
 1. Gửi cho anh Tune và anh Toàn **danh sách việc ở mục 3 và 4**, kèm hai hợp đồng (đã cập nhật số thật).
 2. Cho em **làm trước mục 5.1, 5.5, 5.6** (không đụng hệ của hai anh, không ghi gì sang máy Lào)?
-3. **Kho nối vào máy nào:**
-   - `demo-lao-api`, chung máy với kế toán anh Tune — em đề nghị cách này; hay
-   - một máy riêng chạy bản `Backend.API` anh Toàn gửi?
-
-   Anh chốt với anh Toàn.
+3. ~~Kho nối vào máy nào~~ — **anh đã chốt 30/09: API riêng của anh Toàn.** Làm module anh Tune trước.

@@ -782,7 +782,7 @@ Hệ anh đọc DO qua **API bàn giao của Logistics**. Hiện nay đó là đ
 - `GET /api/handover/delivery-orders?customer_id=&completed_from=&completed_to=&page=&page_size=`, trả về `{message, data: {items: [{do_id, status, customer_id, quotation_id, route_id, vehicle_id, driver_id, selling_price, customer_surcharge_total, final_selling_price, currency, completed_at, completed_by, detail_url}], total, page, page_size}}`;
 - `GET /api/handover/delivery-orders/{do_id}`, trả về `{message, data: {header, details}}`.
 
-**Bên em sẽ dựng đúng hai đường này ở trang điều xe EPL Lào**, chỉ đọc:
+**Bên em đã dựng đúng hai đường này ở trang điều xe EPL Lào (30/09, chi tiết ở mục 12.8)**, chỉ đọc:
 
 - `do_id` = `EPLLAO-<Trip.id>` (trùng `do_id` gửi SO ở 3.2);
 - `status = "delivered"` khi phiếu **đã về và đã khoá**;
@@ -873,5 +873,132 @@ Mỗi dòng có khuôn:
 4. **Tài khoản dịch vụ** cho trang điều xe, quyền trên đơn vị EPL Lào.
 5. **Chốt `DotyAutoId` cho phiếu chi tạm ứng** (59 hay 60).
 6. **Đối tượng** cho khách, tài xế, chủ xe, nhà cung cấp EPL Lào (hoặc cho bên em đồng bộ).
-7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào, khi bên em báo đã dựng xong hai đường bàn giao.
+7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào. Hai đường bàn giao **đã dựng xong** (mục 12.8); còn chờ địa chỉ ra Internet.
 8. Phương thức **"cấn trừ"**, nếu anh muốn ghi cấn trừ cuối tháng bằng phiếu thu chi.
+
+### 12.8. Hai đường bàn giao DO đã dựng ở trang điều xe Lào (30/09)
+
+Bên em đã dựng xong hai đường ở mục 12.5, **đúng khuôn EPL_System**. Hệ anh chỉ cần đổi **địa chỉ Logistics** và **khoá** cho đơn vị EPL Lào; cách đọc giữ nguyên.
+
+#### 12.8.1. Xác thực
+
+- Mọi lời gọi mang header `Authorization: Bearer <khoá bàn giao>`.
+- Khoá do **Sếp bên em tạo** (`POST /api/handover/tao-khoa`, vai admin), trả **đúng một lần** để chép sang cấu hình bên anh. Tạo lại thì khoá cũ hết hiệu lực ngay.
+- Khoá này **riêng** cho hệ anh, không dùng chung với khoá của trang kế toán tạm. Phiên đăng nhập của người dùng bên em **không** thay được khoá này.
+- Không cần `X-Nguoi-Dung`: hệ anh chỉ **đọc**, không ghi gì vào trang điều xe.
+
+| Lỗi | Khi nào |
+|---|---|
+| 401 `SAI_TOKEN` | thiếu khoá hoặc khoá sai |
+| 503 `CHUA_DAT_TOKEN` | bên em chưa tạo khoá |
+
+Mọi lỗi trả dạng `{"detail": {"ma": "<MÃ>", "loi": "<câu tiếng Việt>"}}`, **HTTP status đúng lỗi**. Bên em không trả 200 kèm lỗi.
+
+#### 12.8.2. `GET /api/handover/delivery-orders` — danh sách
+
+Tham số (đều tuỳ chọn):
+
+| Tham số | Kiểu | Ý nghĩa |
+|---|---|---|
+| `customer_id` | chuỗi | mã khách **bên em** (12 ký tự hex) |
+| `completed_from`, `completed_to` | `YYYY-MM-DD` | ngày khoá phiếu (gồm cả hai đầu, theo giờ UTC). Sai dạng → 422 `NGAY_SAI` |
+| `page` | số ≥ 1 | mặc định 1 |
+| `page_size` | 1–200 | mặc định 50 |
+
+- Chỉ trả phiếu **đã về** (`transport_status = "arrived"`) **và đã khoá** (kế toán Viêng Chăn khoá sau khi có biên bản giao nhận).
+- Xếp **mới khoá trước**.
+- `total` là tổng thật sau khi lọc (không phải tổng chưa lọc).
+
+Trả về:
+
+```json
+{"message": "Danh sách 13 lệnh giao hàng đã hoàn tất (trang 1).",
+ "data": {"items": [
+   {"do_id": "EPLLAO-779739f4b582", "status": "delivered",
+    "doc_no": "T4-0449-09/EPL", "kind": "giao",
+    "customer_id": "<mã khách bên em>", "customer_name": "<tên khách>",
+    "quotation_id": null, "contract_no": "<số hợp đồng>",
+    "route_id": "<mã tuyến>", "origin": "…", "destination": "…",
+    "vehicle_id": "<mã xe>", "truck_no": "346", "plate_head": "<biển đầu kéo>",
+    "driver_id": "<mã tài xế>", "driver_name": "…",
+    "company": "EPL", "owner_name": null,
+    "selling_price": 905.85, "customer_surcharge_total": 0, "final_selling_price": 905.85,
+    "currency": "USD", "final_selling_price_lak": 19928700,
+    "completed_at": "2026-09-29T06:42:51+00:00", "completed_by": "<người khoá>",
+    "detail_url": "/api/handover/delivery-orders/EPLLAO-779739f4b582"}],
+  "total": 13, "page": 1, "page_size": 50}}
+```
+
+- 14 khoá của EPL_System **có đủ**: `do_id`, `status`, `customer_id`, `quotation_id`, `route_id`, `vehicle_id`, `driver_id`, `selling_price`, `customer_surcharge_total`, `final_selling_price`, `currency`, `completed_at`, `completed_by`, `detail_url`.
+- Khoá thêm để thủ quỹ **đọc được bằng mắt** khi chọn DO: `doc_no`, `customer_name`, `truck_no`, `plate_head`, `driver_name`, `company`, `owner_name`, `final_selling_price_lak`.
+- `quotation_id` luôn `null`: bên Lào không có báo giá.
+- `currency` là **tiền cước của phiếu**: `USD`, `THB`, `LAK`, `VND` hoặc `CNY`.
+
+#### 12.8.3. `GET /api/handover/delivery-orders/{do_id}` — header + details
+
+- `do_id` = `EPLLAO-<Trip.id>`. Số phiếu (`T4-0449-09/EPL`) **không** dùng làm mã được → 404.
+- 404 `DO_KHONG_THAY`: không có mã này.
+- 409 `DO_CHUA_KHOA`: phiếu chưa về hoặc chưa khoá.
+
+**`header`:**
+
+| Khoá | Ý nghĩa |
+|---|---|
+| `do_id`, `status` (`delivered`), `source_system` (`EPL_LAO`), `trip_id`, `doc_no`, `kind` | mã DO, số phiếu; `kind` = `gom` (đi lấy hàng về bãi) hoặc `giao` (đi giao hàng) |
+| `doc_date`, `out_date`, `back_date` | ngày lập, ngày xe đi, ngày xe về (`YYYY-MM-DD`) |
+| `company` | `EPL` (xe nhà) hoặc `joint` (xe thuê / liên kết) |
+| `owner_id`, `owner_name`, `hire_contract_no` | chỉ có với xe thuê |
+| `customer_id`, `customer_name`, `contract_no` | khách, hợp đồng vận chuyển |
+| `route` | `{id, name, origin, destination, distance_km}` hoặc `null` |
+| `origin`, `destination`, `goods_type`, `ore_bill_no`, `ore_bill_date` | hàng, phiếu quặng của khách |
+| `weight_origin_t`, `weight_dest_t`, `loss_pct`, `weight_kg` | cân đầu, cân cuối (tấn), hao hụt %, tấn tính cước × 1000 |
+| `vehicle_id`, `truck_no`, `plate_head`, `plate_trailer`, `driver_id`, `driver_name` | xe có **hai biển**: đầu kéo và rơ-moóc |
+| `pod_no`, `pod_date`, `pod_receiver`, `pod_condition`, `pod_signed_at`, `pod_signature_count` | biên bản giao nhận. `pod_condition`: `du` (đủ), `thieu` (thiếu), `hong` (hư hỏng) |
+| `currency` = `currency_thu` | tiền cước |
+| `currency_chi` | `LAK` — tổng chi cộng bằng Kíp |
+| `fx_rate_to_lak`, `fx_rates_on_trip` | tỷ giá **khoá trên phiếu**: 1 đơn vị tiền = bao nhiêu Kíp |
+| `price_basis`, `billed_qty`, `unit_price` | `ton` (theo tấn) hoặc `trip` (trọn chuyến); số tấn tính cước; đơn giá |
+| `selling_price` = `final_selling_price`, `customer_surcharge_total` (luôn 0), `final_selling_price_lak` | cước |
+| `actual_cost_total_lak`, `cost_by_section_lak` | tổng chi **EPL chịu**, và theo mục `III` nhiên liệu · `IV` đi đường · `V` sửa chữa · `VI` chi khác |
+| `margin_lak`, `margin`, `margin_currency` | lãi: xe nhà = cước − chi; xe thuê = cước − tiền thuê |
+| `invoiced`, `inv_no` | đã xuất hoá đơn chưa (bản chép bên em) |
+| `completed_at`, `completed_by` | lúc khoá (UTC, `+00:00`), người khoá |
+| `hire` (**chỉ xe thuê**) | `{currency, unit_price, amount, amount_lak, fee_pct, fee, over_limit_t, over_t, over_deduction, advanced_by_epl, pay_owner, pay_owner_lak, owner_self_paid_lak, acc_code: null, acc_code_note}` |
+
+- `hire.amount` = tiền thuê xe, `fee` = phí 2 %, `over_deduction` = trừ quá tải, `advanced_by_epl` = EPL đã ứng (quy về tiền thuê), `pay_owner` = còn phải trả chủ xe.
+- `hire.acc_code` **cố ý để `null`**: tài khoản chi phí thuê xe còn chờ anh Khampla chốt (mục 8, lỗ hổng 1). Bên em không tự đặt mã.
+
+**`details[]`** — dòng 1 là **thu**, các dòng sau là **chi**:
+
+| Khoá | Dòng thu | Dòng chi |
+|---|---|---|
+| `line_no`, `kind` | 1, `thu` | 2, 3…, `chi` |
+| `charge_type` | `freight` | khoá khoản mục (`diesel`, `x_toll`, `x_tire`…) hoặc tên mục |
+| `section`, `section_name` | `null` | `III` · `IV` · `V` · `VI` và tên mục |
+| `item_key`, `name`, `name_lo` | — | khoá khoản mục; tên tiếng Việt, tiếng Lào (tên phụ tùng nếu lấy kho) |
+| `qty`, `unit_price`, `actual_amount`, `currency` | tấn (hoặc 1), đơn giá, cước, tiền cước | lượng, đơn giá, thành tiền **theo tiền của dòng** |
+| `amount_lak` | cước quy Kíp | thành tiền quy Kíp theo tỷ giá khoá trên phiếu |
+| `acc_code` | `1211/708` | **Nợ/Có** theo bảng 7.3 (ví dụ `625/1371`, `625/4021`, `614/1601`, `4022/707`) |
+| `missing_acc_code` | `false` | `true` nếu dòng EPL chịu mà chưa có mã (thử 30/09: **không có dòng nào**) |
+| `paid_by` | `null` | `epl` — EPL chi; `chu_xe` — chủ xe tự trả, **không có `acc_code`** và không cộng vào tổng chi |
+| `source` | `cuoc` | `kho` (lấy kho), `mua` (mua ngoài), `null` (khoản đi đường) |
+| `sale_to_owner` | — | `true`: dầu / phụ tùng kho **bán cho chủ xe** (xe thuê). `unit_price` là **giá bán**, `acc_code` là `4022/707` |
+| `ghi_no`, `place_id`, `supplier_id`, `part_id`, `note`, `ref_id` | `ref_id` = mã phiếu | ghi nợ trạm / nhà cung cấp; điểm đổ; nhà cung cấp; phụ tùng; ghi chú; mã dòng bên em |
+
+Luật con số:
+
+- Σ `amount_lak` các dòng `paid_by = "epl"` = `actual_cost_total_lak`. Có thể lệch **tối đa 1 Kíp mỗi dòng**, vì tổng được làm tròn theo mục.
+- Dòng thu: `actual_amount` = `header.final_selling_price` và `currency` = `header.currency`.
+- Mọi `acc_code` là **mã thật** trong danh mục Lào 494 mã. Riêng **1371, 4021, 4022** là ba mã con chờ anh mở (mục 1.1).
+
+#### 12.8.4. Thử với nhau
+
+- Bên em đã thử trên bản sao dữ liệu (`kiem/thu_ban_giao.py`): **13 DO đã khoá**, trong đó 2 phiếu xe thuê; **đạt cả 31 chỗ kiểm**.
+- Để hệ anh gọi được sang, trang điều xe Lào phải có **địa chỉ ra Internet**. Việc này chủ dự án chốt (câu hỏi 12.8 (1)).
+- Khi có địa chỉ, bên em gửi anh: **địa chỉ gốc** và **khoá bàn giao**. Anh đổi cấu hình Logistics của đơn vị EPL Lào, rồi gọi thử `cash-voucher-references?type=DO`.
+
+**Câu hỏi 12.8:**
+
+1. (Chủ dự án) Trang điều xe Lào ra Internet ở địa chỉ nào?
+2. (Anh Tune) Hệ anh **lưu khoá Logistics theo từng đơn vị** được không, để EPL Lào đọc trang điều xe Lào, còn đơn vị khác vẫn đọc EPL_System?
+3. (Anh Tune) Anh có cần lọc theo **mã khách bên anh** (`OBJ_OBJECTNO`) không? Khi bên em thêm ô "Mã khách bên kế toán" (bước tiếp theo), bên em trả thêm `customer_code` trên mỗi dòng.
