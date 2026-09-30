@@ -705,7 +705,7 @@ Bên em đã đọc hết `CM-CASH-VOUCHER-DEMOLAO-API-GUIDE.md`. Mục này ghi
 - **gửi gì**;
 - **còn thiếu gì**.
 
-Bên em **chưa gọi thử** đường nào, vì chưa có địa chỉ và token.
+Ngày 30/09 bên em đã **gọi thử các đường chỉ đọc** trên máy `demo-lao-api` bằng token trong cấu hình. Kết quả và số thật ở **mục 12.7**.
 
 ### 12.1. Hệ quả chung cho cách bên em nối
 
@@ -803,3 +803,75 @@ Hệ anh đọc DO qua **API bàn giao của Logistics**. Hiện nay đó là đ
 4. **`handover/delivery-orders` theo tenant** (12.5): hệ anh cấu hình được nhiều địa chỉ Logistics không?
 5. **Hai đường danh mục tài khoản** (`common/country-accounts` và `cmpayment-receipt/country-accounts`) có trả cùng danh mục cho quốc gia 11 không? Bên em sẽ dùng đường thứ hai (chỉ tài khoản cho hạch toán).
 6. **Tiền THB, CNY** cho phiếu CMP / CMR có được không (`CurrencyId` của hai tiền này)?
+
+### 12.7. Kết quả gọi thử máy `demo-lao-api` ngày 30/09 (chỉ đọc)
+
+Bên em đã gọi thử bằng token cấu hình trong trang điều xe (`EPL_ACC_CODE_API`, `EPL_ACC_CODE_TOKEN`):
+
+- **chỉ gọi các đường xem, danh sách, tìm**;
+- **không gọi** đường tạo, lưu, commit, ghi sổ, xoá nào;
+- không in token ra đâu.
+
+#### 12.7.1. Token hiện có
+
+| | |
+|---|---|
+| Người dùng | `tune` (UserID 846, ObjectId 1503, nhóm "Nhân viên", OrgId 2) — **tài khoản cá nhân của anh** |
+| Hạn | **10/10/2026 09:05 giờ Lào** (02:05 UTC) |
+| Chi nhánh được vào (`auth/branches`) | 1368 "Demo EPL" · 5 "EPL 2" · 1369 "EPL 3" |
+
+Xin anh cấp **tài khoản dịch vụ** cho trang điều xe (câu hỏi 12.6 (1)). Nếu dùng tài khoản cá nhân thì:
+
+- mọi phiếu bên em tạo sẽ ghi tên anh;
+- tới 10/10 là tắt.
+
+#### 12.7.2. Bảng mã 12.4 — số đọc được
+
+| Cần mã | Số thật trên máy Lào | Còn thiếu |
+|---|---|---|
+| `CountryId` | 11 | — |
+| `OrgId` | 2 "EPL 1" · 1368 "Demo EPL" · 5 "EPL 2" · 1369 "EPL 3" (`common/GetCompanyAndBranch`) | **cả bốn đều quốc gia Việt Nam, tiền VND (`CUR_AUTOID` 3)**. Xin anh tạo đơn vị EPL Lào (quốc gia Lào, tiền LAK) |
+| `FiciAutoId` | 22 kỳ, đều "Kỳ mở". **ID không theo thứ tự tháng**: 9/2026 = **20**, 10/2026 = **19**, 11/2026 = 18, 12/2026 = 17, 10/2025 = 24, 1/2026 = 7 | bên em **tra theo `FICI_DATEFROM` / `FICI_DATETO`**, không đoán ID |
+| `DotyAutoId` (thu chi) | 14 Thu hoá đơn · 15 Thu công nợ · 16 Thu trước · 17 Thu khác · 57 Chi hoá đơn · 58 Chi công nợ · 59 Chi trước · 60 Chi khác · 68 Chuyển tiền nội bộ | **không có loại "chi tạm ứng"**. Xin anh chốt: 59 "Chi trước" hay 60 "Chi khác" kèm Nợ 1601 |
+| `CurrencyId` | **3 = VND, 26 = LAK** (`common/GetAllCurrency`) | **chưa có USD, THB, CNY**. Cước bên Lào thường là USD — xin anh thêm |
+| `PaymentMethodId` | 1 Tiền mặt · 3 Chuyển khoản · 6 Tiền mặt/Chuyển khoản | **chưa có "cấn trừ"** (mục 6.6) |
+| Vế tiền mặc định (`default-money-account`, quốc gia 11) | tiền mặt Kíp **1011** · tiền mặt ngoại tệ **1012** · ngân hàng Kíp **1021** · ngân hàng ngoại tệ **1022** | khớp đúng bảng định khoản bên em (mục 7) |
+| `ObjectId` | danh mục hiện có **189 khách, 517 nhà cung cấp** (trang 100 dòng), đều là dữ liệu bên khác | xin anh tạo đối tượng cho khách, tài xế, chủ xe liên kết, nhà cung cấp của EPL Lào — hoặc cho bên em đồng bộ qua `master-data/customers/upsert`, `master-data/suppliers/upsert` |
+
+#### 12.7.3. Danh mục tài khoản
+
+| Đường | Kết quả |
+|---|---|
+| `GET /api/v1/accounting/lao-accounts` | **494 mã**, khớp bản bên em chụp ngày 30/09. Cột: `ACC_CODE`, `ACC_NAME`, `ACC_PARENTID`, `ACC_STRUCTURE`, `ACC_ISACTIVE`, `ACC_ISMONEYCURENTCY`, `TRY_AUTOID`, `Version`… Tài khoản `tune` có `CanCreate`, `CanWrite`, `CanDelete` = true |
+| `GET …/cmpayment-receipt/country-accounts?countryId=11` | **405 mã** cho hạch toán (cột viết PascalCase: `AccCode`, `AccName`, `AccParentId`…). **Có đủ** 1011, 1012, 1021, 1022, 1211, 137, 1601, 401, 402, 4201, 607, 614, 625, 707, 708 |
+| Ba mã con bên em cần | **1371, 4021, 4022 chưa có ở cả hai đường**. Xin anh mở theo mục 1.1: tạo trong `lao-accounts`, sau đó chúng phải hiện ở `country-accounts` |
+
+#### 12.7.4. Nguồn DO của phiếu thu chi
+
+`GET /api/v1/accounting/cash-voucher-references?type=DO` chạy được, trả **23 DO**. Nhưng đó là **DO mẫu của EPL_System bên Việt Nam**:
+
+- khách `DEMO-CUS-…`, tuyến `DEMO-RT-…`;
+- ví dụ `DO-2026-0047-DO01`: `DEMO-CUS-DUCGIANG`, 3.829.000 LAK, `delivered`.
+
+Mỗi dòng có khuôn:
+
+```json
+{"SourceSystem": "LOGISTICS", "SourceType": "DO", "SourceId": "<do_id>", "SourceCode": "<do_id>",
+ "SourceName": "<customer_id>", "Status": "delivered",
+ "Summary": {"do_id", "status", "customer_id", "quotation_id", "route_id", "vehicle_id", "driver_id",
+             "selling_price", "customer_surcharge_total", "final_selling_price", "currency",
+             "completed_at", "completed_by", "detail_url"}}
+```
+
+`Summary` chính là một dòng của `GET /api/handover/delivery-orders`. Như vậy chỉ cần bên em dựng **đúng khuôn đó** ở trang điều xe Lào (mục 12.5), và anh **trỏ nguồn Logistics của đơn vị EPL Lào** sang trang điều xe Lào.
+
+#### 12.7.5. Việc xin anh làm — xếp theo thứ tự cần trước
+
+1. **Mở 1371, 4021, 4022** (mục 1.1).
+2. **Tạo đơn vị EPL Lào** (quốc gia 11, tiền LAK). Trả lời luôn: Thà Bốc và Viêng Chăn là một đơn vị hay hai?
+3. **Thêm tiền USD, THB** (và CNY nếu bên Lào dùng), cho anh biết `CurrencyId`.
+4. **Tài khoản dịch vụ** cho trang điều xe, quyền trên đơn vị EPL Lào.
+5. **Chốt `DotyAutoId` cho phiếu chi tạm ứng** (59 hay 60).
+6. **Đối tượng** cho khách, tài xế, chủ xe, nhà cung cấp EPL Lào (hoặc cho bên em đồng bộ).
+7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào, khi bên em báo đã dựng xong hai đường bàn giao.
+8. Phương thức **"cấn trừ"**, nếu anh muốn ghi cấn trừ cuối tháng bằng phiếu thu chi.

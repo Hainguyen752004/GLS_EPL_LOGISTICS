@@ -737,7 +737,7 @@ Liên hệ kỹ thuật bên em: [tên · điện thoại].
 | Ghi chú `anhtoan.txt` | *"trỏ DB chạy cho đúng với bên Lào, còn thiếu stored nào thì vào DB coi cầm sang cho Lào … để ý thử cái appsettings"* |
 | `appsettings.dev.json`, `appsettings.prod.json` | có các khoá `ConnectionStrings.Master`, `ConnectionStrings.BI`, `CenterConnectionStrings`, `JWT.Secret`, `ApiKey`… Bên em **không đọc giá trị**, **không đưa lên git**, và không gửi đi đâu |
 
-- Bên em **chưa gọi thử** đường nào, vì chưa có tài khoản đăng nhập.
+- Bên em **chưa gọi thử bản dev của anh**, vì chưa có tài khoản đăng nhập. Phần kho cùng lõi trên máy `demo-lao-api` thì bên em đã gọi thử các đường chỉ đọc ngày 30/09 — kết quả ở **mục 13.6**.
 - Swagger **không mô tả khuôn trả về** (mọi `200` đều không có schema). Vì vậy dưới đây chỉ chắc phần **thân gửi đi**. Phần trả về, bên em xin anh một mẫu thật cho mỗi đường (câu hỏi 13.5).
 
 ### 13.2. Cách nối — bên em viết lớp chuyển
@@ -817,3 +817,70 @@ Mọi đường của anh dùng **ID số trong DB của anh**. Bên em sẽ gi�
 5. **Chống trùng theo `RefDocumentNo`** được không?
 6. **Huỷ phiếu xuất đã vào sổ chính:** `DeleteDocument` hay phiếu nhập trả?
 7. Tài khoản dịch vụ và **quyền theo chi nhánh**: một tài khoản cho cả Thà Bốc và Viêng Chăn, hay mỗi nơi một tài khoản?
+
+### 13.6. Kết quả gọi thử ngày 30/09 — phần kho trên máy `demo-lao-api` (chỉ đọc)
+
+Bên em **chưa có tài khoản** trên bản dev của anh (`cantinbv-backend-api-dev`), nên chưa gọi được bản đó.
+
+Nhưng máy **`demo-lao-api.goldensme.com`** (máy kế toán anh Tune, bên em đã có token) cũng **chạy phần kho Golden SME**, dưới tiền tố `/api/v1/supply-chain/`. Bên em đã gọi thử phần kho ở đó:
+
+- **chỉ gọi đường xem, danh sách, tìm**;
+- không gọi `CreateStockIn`, `CreateStockOut`, `DeleteDocument` hay đường ghi nào.
+
+#### 13.6.1. Hai bản — cùng lõi, khác nhánh
+
+| | Bản anh gửi (`/api/…`, 28/09) | Máy `demo-lao-api` (`/api/v1/supply-chain/…`) |
+|---|---|---|
+| Xuất nhập | `CreateStockIn`, `CreateStockOut`, `DeleteDocument`, `GetDocType`, `GetDocStatus`, `GetStockList`, `GetStockDocumentDetail`, `GetWarehouseActive`, `GetXnbWithDetails`, `TransferXnbToNnb`, `PrintStockOut` | có đủ |
+| Tồn | `inventory/now` | có, thêm `inventory/balance-by-dimension`, `inventory/report/stock-join-general` |
+| Mặt hàng | `items/search`, `items/find`, `items/quick-search`, `uom/units` | có đủ |
+| Kiểm kho, kể cả mất mạng | `stocktaking/*` + `offline/bootstrap`, `catalog-page`, `push-counts`, `uom-changes` | có, **tên đường khác**: `adjustment/create`, `adjustment/accept`, `items/save`, `items/search` (bản anh: `create-adjustment`, `accept-adjustment`, `save-items`, `search-items`) |
+| Chỉ bản anh có | luồng bảng tạm `InsertUpdateItemIntoTmp`, `InsertUpdateTmpItems`, `GetItemDetailTmp`, `CreateTmpOrCreateUpdateMainByTmp`, `MainToTempStock`; `GetInOutStockDetail`; `GetPlot`; `stocktaking/update-item`, `delete-item`; phần bếp căn tin | — |
+| Chỉ `demo-lao-api` có | — | quản lý kho `master/list`, `master/upsert`, `master/lookups`, `master/set-active`; vị trí trong kho `location-tree-view`, `upsert-line-location`; lệnh sản xuất `GetProductionOrders`, `process-step-tree`; `search-for-stock-out` |
+
+**Câu hỏi 13.6 (A):** bên em nối vào **máy nào**?
+
+- **(a) `demo-lao-api`**: phần kho đã chạy trên cùng máy, cùng token với kế toán anh Tune. Anh chỉ bổ sung dữ liệu và thủ tục lưu vào DB của máy đó.
+- **(b) bản anh gửi**: chạy riêng một máy, trỏ DB bên Lào.
+
+Bên em đề nghị **(a)**: một máy, một danh mục đối tượng, một token. Chủ dự án chốt với anh; bên em không tự dựng hay trỏ DB bản nào.
+
+#### 13.6.2. Số thật đọc được
+
+| Cần mã (13.4) | Số thật trên `demo-lao-api` | Còn thiếu |
+|---|---|---|
+| Đơn vị | 1368 "Demo EPL" · 5 "EPL 2" · 1369 "EPL 3" (và 2 "EPL 1") — **đều quốc gia Việt Nam, tiền VND** | đơn vị EPL Lào (anh Tune tạo, hợp đồng kế toán 12.7) |
+| Kho (`GetWarehouseActive?ORG_Id=`) | đơn vị 1368: 8 Kho giấy cuộn (`WGC`) · 9 Kho giấy tấm (`WGT`) · 10 Kho vật tư (`WVT`) · 11 Kho thành phẩm (`WTP`) · 12 Kho hàng hoá (`WHH`) · 13 Kho tem in (`WTI`). Đơn vị 5: 18, 19 `[Test] Kho A/B`. Đơn vị 1369: 14–17 `[Test] Kho 1–4`. Cột: `WH_AUTOID`, `WH_DEFINEID`, `WH_NAME`, `ORG_AUTOID`, `WH_ISACTIVE`… | **chưa có kho nào của EPL Lào**. Xin anh tạo: kho dầu Thà Bốc, kho dầu Viêng Chăn (và các kho dầu khác theo danh sách điểm đổ bên em), kho phụ tùng Thà Bốc |
+| Mặt hàng (`items/search`) | **2.861 mặt hàng**, đều là thùng carton, giấy của nhà máy mẫu. Cột: `PIT_AUTOID`, `PIT_ITEMNO`, `PIT_NAME`, `UOM_AUTOID`, `UOM_NAME`, `CurrentStock`, `LatesPurPrice`, `UNITPRICE`, `WH_AUTOID`… | **chưa có dầu diesel** (đơn vị **lít**) và **danh mục phụ tùng xe** |
+| Loại chứng từ kho (`GetDocType {OrgId, LangId}`) | 26 loại. Bên em cần: **65 "Xuất nội bộ"** (xe nhà) · **44 "Xuất kho hàng bán"** (xe thuê — xuất bán, mục 5) · 42 "Nhập kho hàng hoá" · 33 "Xuất chuyển kho" · 66 "Nhập kho nội bộ" · 39 / 40 Xuất / Nhập điều chỉnh · 64 "Xuất hủy". Cột trả về chỉ có `DOTY_AUTOID`, `DOTY_NAME`, `DOTY_ISICINPUT`, `DOTY_ISICOUTPUT` — **không có `OfSubsystem`** | xin anh xác nhận **65 và 44 đúng cho hai việc này**, và `OfSubsystem` đi kèm là số nào. Gửi `IsInput: 1` thì trả **rỗng**; gửi `IsInput: true` thì **lỗi 400** |
+| Tên loại chứng từ | mã 151–154 hiện **chữ lỗi mã hoá** (kiểu "Nháº…p kho nguyÃªn…"). Đúng ra là "Nhập kho nguyên vật liệu", "Nhập kho sản xuất", "Xuất kho sản xuất", "Xuất kho nguyên vật liệu" | xin anh sửa dữ liệu tên |
+| Trạng thái chứng từ (`GetDocStatus`) | 1 Tạo mới · 4 Sổ kho · 12 Ghi sổ chính · 13 Ghi sổ tạm · 14 Lỗi · 16 Đã sửa lỗi | bên em coi "đã cấp" khi phiếu ở **12 Ghi sổ chính** — anh xác nhận |
+| Tiền tệ | 3 = VND, 26 = LAK | **giá vốn bên Lào tính bằng LAK** → `CurAutoId` = 26, không để mặc định |
+
+#### 13.6.3. Tồn và giá vốn
+
+| Đường | Kết quả |
+|---|---|
+| `POST /api/v1/supply-chain/inventory/now` `{OrgId, ChoiceOrgId, WhId, ItemNos: "", LangId}` | kho thử 18 (đơn vị 5) và kho 12 (đơn vị 1368): **trả rỗng**, không lỗi |
+| `GET /api/v1/report/inventory/now/1368` | **lỗi 500** ("Hệ thống chưa xử lý được yêu cầu…"). Nhiều khả năng đây là thủ tục lưu còn thiếu, đúng như ghi chú của anh |
+| `GET /api/v1/report/inventory/now/5` | chạy, **12 dòng**, nhưng là hàng của **đơn vị 1368** (kho 8, 9…). Tham số đường có vẻ không lọc theo đơn vị — xin anh xem lại |
+| Cột của báo cáo tồn | `WH_AUTOID`, `WH_NAME`, `PIT_AUTOID`, `PIT_ITEMNO`, `PIT_NAME`, `UOM_NAME`, `BeginStock`, `InQty`, `OutQty`, `StockTake`, `Balance` — **chỉ có số lượng, không có giá** |
+
+Bên em cần **giá vốn bình quân theo kho × mặt hàng** (mục 6), ở một trong hai chỗ:
+
+- trong tồn tức thời; hoặc
+- trả về lúc `CreateStockOut` (giá vốn của chính lần xuất đó).
+
+Có giá đó thì dòng dầu kho, phụ tùng kho trên phiếu xuất xe và màn Xem kho mới đúng.
+
+#### 13.6.4. Việc xin anh làm — xếp theo thứ tự cần trước
+
+1. **Chốt máy** bên em nối vào (13.6 (A)), cùng chủ dự án.
+2. **Bổ sung thủ tục lưu** còn thiếu vào DB của máy đó: `report/inventory/now/{orgId}` đang lỗi 500, `inventory/now` đang trả rỗng.
+3. **Tạo kho EPL Lào** (kho dầu, kho phụ tùng) trong đơn vị EPL Lào mà anh Tune tạo.
+4. **Tạo mặt hàng** dầu diesel (lít) và danh mục phụ tùng.
+5. **Xác nhận loại chứng từ 65 / 44** và `OfSubsystem` đi kèm.
+6. **Trả giá vốn bình quân** (13.6.3).
+7. **Chặn trùng theo `RefDocumentNo`** (13.5 (5)).
+8. Sửa **tên loại chứng từ 151–154**.
+9. Trả lời 13.5 (4): **cấp dầu theo mã QR** ở màn nào.
