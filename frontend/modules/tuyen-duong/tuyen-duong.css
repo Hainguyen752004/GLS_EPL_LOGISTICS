@@ -16,3 +16,10 @@
 .tuy-hop table input{border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;width:100%}
 .tuy-hop .x{border:0;background:none;color:var(--red);font-size:16px}
 @media (max-width:1000px){.tuy-hai{grid-template-columns:1fr}}
+
+/* chi phí gợi ý theo tuyến (30/09) */
+.tuy-cp{margin-top:14px}
+.tuy-cp-dau{margin-bottom:6px}
+.tuy-cp-bang{overflow-x:auto;margin-top:4px}
+.tuy-cp-bang select,.tuy-cp-bang input{min-width:0;width:100%}
+.tuy-cp-nut{display:flex;gap:8px;margin-top:4px}

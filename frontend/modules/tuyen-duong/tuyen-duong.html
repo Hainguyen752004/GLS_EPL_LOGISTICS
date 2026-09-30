@@ -19,6 +19,8 @@
     <div class="bd">
       <div class="tuy-chang" id="tuy-chang"></div>
       <div class="small muted" id="tuy-tom"></div>
+      <!-- Chi phí gợi ý khi lập phiếu (30/09) -->
+      <div class="tuy-cp" id="tuy-cp"></div>
     </div>
   </div>
 </div>
@@ -38,6 +40,10 @@
     <div class="field tuy-ve" style="margin-top:10px"><label data-i18n="km_ve"></label>
       <div class="tuy-ve-o"><input id="tuy-f-ve" class="num" inputmode="decimal"><button type="button" class="btn sm quiet" id="tuy-f-ve-bang"></button></div>
       <small class="muted" data-i18n="km_ve_hint"></small></div>
+    <!-- Chi phí gợi ý (30/09): chọn tuyến trên phiếu thì mục III, IV, VI tự có các dòng này -->
+    <div class="field" style="margin-top:12px"><label data-i18n="cp_goi_y"></label><small class="muted" data-i18n="cp_goi_y_hint"></small></div>
+    <div class="tuy-cp-bang"><table class="tbl tbl-compact" id="tuy-f-cp"><thead><tr><th>#</th><th data-i18n="cp_muc"></th><th data-i18n="item"></th><th class="num" data-i18n="cp_sl"></th><th data-i18n="fill_place"></th><th class="num tuy-gia" data-i18n="gia_goi_y"></th><th class="tuy-gia" data-i18n="cur"></th><th data-i18n="owner_pay_mode"></th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="tuy-cp-nut"><button type="button" class="btn quiet sm" id="tuy-f-them-cp">+ <span data-i18n="add_row"></span></button><button type="button" class="btn quiet sm" id="tuy-f-chep-chung" data-i18n="cp_chep_chung"></button></div>
     <div class="field" style="margin-top:8px"><label data-i18n="note"></label><input id="tuy-f-note"></div>
     <div class="field" id="tuy-f-active-o" hidden><label data-i18n="status"></label><select id="tuy-f-active"><option value="1" data-i18n="active"></option><option value="0" data-i18n="inactive"></option></select></div>
     <div class="ht-nut"><button class="btn" value="huy" data-i18n="cancel"></button><button class="btn primary" value="ok" data-i18n="save"></button></div>

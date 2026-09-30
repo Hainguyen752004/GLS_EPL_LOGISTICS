@@ -512,6 +512,9 @@ class Route(Base):
     # Km CHIỀU VỀ (chủ dự án 29/09): xe quay lại điểm đi — phiếu gom chạy rỗng lên mỏ, phiếu giao chạy rỗng về bãi.
     # Các điểm trên tuyến vẫn là đường HÀNG đi (mỏ → bãi, bãi → cảng); 0 = không tính chiều về.
     return_km = Column(Float, default=0)
+    # Bộ CHI PHÍ GỢI Ý của tuyến (30/09) — JSON: [{section, item_key | item_name, qty, place_id, unit_price, currency,
+    # pay_channel}]. Chọn tuyến trên phiếu mới thì mục III, IV, VI tự có các dòng này; người lập thêm, bớt, sửa được.
+    cost_template = Column(Text)
     note = Column(Text)
     active = Column(Boolean, nullable=False, default=True)
 

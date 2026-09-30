@@ -239,7 +239,7 @@
     // dòng bản chất ở đầu mục III, IV: nội bộ (xe nhà) · xuất bán / ghi công nợ chủ xe (xe thuê) — 29/09
     root.querySelectorAll('.px-ht').forEach(el => { el.innerHTML = EPL.banChat(el.dataset.ht, EPL.maBanChat(el.dataset.ht, P.company), P.owner_name); });
     q('#px-phieu').querySelectorAll('.px-chi [data-f]').forEach(el => el.addEventListener('input', e => {
-      const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value;
+      const d = P.expenses[+el.dataset.i], f = el.dataset.f; d[f] = el.value; delete d._goiY;   // người lập đã sửa → không còn là dòng gợi ý
       if (f === 'item_key') { if (el.value === '') d.item_name = d.item_name || ''; else d.item_name = null; if (!['x_toll', 'x_bridge'].includes(el.value)) d.toll_card_id = null; d.pay_channel = null; veChi(); }
       if (f === 'toll_card_id') { d.toll_card_id = el.value || null; }
       if (f === 'ghi_no') { d.ghi_no = el.checked; }
@@ -682,6 +682,30 @@
     } catch (e) { EPL.baoLoi(e); }
   }
 
+  // GỢI Ý CHI PHÍ theo tuyến (sếp 30/09: "dựa vào Excel kê sẵn chi phí kiểu gợi ý, họ thêm bớt chỉnh sửa bình thường"):
+  // chọn tuyến thì mục III, IV, VI tự có các dòng của bộ gợi ý — bộ riêng của tuyến, không có thì bộ chung Excel. Dòng gợi ý
+  // chưa ai đụng (_goiY) thì đổi tuyến là thay; mục đã có dòng người lập tự khai thì không đè. Bãi không nhận đơn giá —
+  // máy chủ điền giá gợi ý lúc lưu (như phí cao tốc theo tuyến), kế toán sửa khi kiểm.
+  function dienGoiY(r) {
+    if (!r || !Array.isArray(r.goi_y)) return;
+    let dien = 0;
+    ['fuel', 'travel', 'other'].forEach(m => {
+      if (!suaDuoc(m)) return;
+      P.expenses = P.expenses.filter(d => !(d.section === m && d._goiY));
+      if (P.expenses.some(d => d.section === m)) return;
+      r.goi_y.filter(x => x.section === m).forEach(x => {
+        const d = { section: m, item_key: x.item_key || null, item_name: x.item_name || null, qty: x.qty, unit_price: x.unit_price || 0,
+          currency: x.currency || 'LAK', place_id: x.place_id || null, paid_by_epl: true, pay_channel: x.pay_channel || null, _goiY: true };
+        if (m === 'fuel') { d.source = nguonCuaDiem(d); if (P.company === 'joint') d.paid_by_epl = d.source === 'kho'; }
+        d.acct_code = tkMacDinh(m, d);
+        P.expenses.push(d); dien++;
+      });
+    });
+    const o = g('px-goi-y-cp');
+    if (o) { o.hidden = !dien; o.innerHTML = dien ? NN.h(r.goi_y_nguon === 'tuyen' ? 'cp_goi_y_tuyen' : 'cp_goi_y_chung', { ten: r.name }) : ''; }
+    if (dien) { veChi(); veVaiVaTrangThai(); }
+  }
+
   function themDong(m) {
     if (!suaDuoc(m)) return;
     const khoDau = (DM.places || []).find(x => x.owner_type === 'epl');
@@ -724,7 +748,7 @@
       [...COT_INFO, ...COT_TRANS].forEach(c => { const el = g('f-' + c); if (!el) return; el.addEventListener('input', () => {
         P[c] = el.value === '' ? null : (SO.has(c) ? el.value : el.value);
         if (c === 'company') { P.expenses.forEach(e => { e.acct_code = tkMacDinh(e.section, e); }); if (P.company === 'joint' && (P.hire_price == null || P.hire_price === '')) { P.hire_price = P.price; g('f-hire_price').value = P.price ?? ''; P.hire_ccy = maCuoc(); g('f-hire_ccy').value = P.hire_ccy; } q('#px-phieu').classList.toggle('is-joint', P.company === 'joint'); veChi(); }
-        if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; } }
+        if (c === 'route_id') { const r = DM.routes.find(x => x.id === el.value); if (r) { g('f-origin').value = P.origin = r.origin; g('f-destination').value = P.destination = r.destination; dienGoiY(r); } }
         if (c === 'route_id' || c === 'customer_id') dienGiaHopDong();
         if (c === 'kind') {
           // phiếu mới: số gợi ý theo loại — gom ra G4-…, giao ra T4-… (chỉ khi người lập chưa tự gõ số khác)

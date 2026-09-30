@@ -2612,6 +2612,51 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບສະເໜີເບີກນໍ້າມັນ",
   "en": "Fuel issue request"
  },
+ "cp_goi_y": {
+  "vi": "Chi phí gợi ý theo tuyến",
+  "lo": "ລາຍຈ່າຍຕາມເສັ້ນທາງ",
+  "en": "Suggested costs for this route"
+ },
+ "cp_goi_y_hint": {
+  "vi": "Chọn tuyến này trên phiếu thì mục III, IV, VI tự có các dòng dưới — người lập thêm, bớt, sửa được. Để trống thì dùng bộ chung theo Excel.",
+  "lo": "Chọn tuyến này trên phiếu thì mục III, IV, VI tự có các dòng dưới — người lập thêm, bớt, sửa được. Để trống thì dùng bộ chung theo Excel.",
+  "en": "Picking this route on a slip pre-fills sections III, IV and VI with these lines — the preparer can add, remove or change them. Empty = the general set from the Excel."
+ },
+ "cp_nguon_chung": {
+  "vi": "Tuyến chưa có bộ riêng — phiếu đang dùng bộ chung theo Excel",
+  "lo": "Tuyến chưa có bộ riêng — phiếu đang dùng bộ chung theo Excel",
+  "en": "No set for this route yet — slips use the general set from the Excel"
+ },
+ "cp_chep_chung": {
+  "vi": "Chép bộ chung (Excel)",
+  "lo": "Chép bộ chung (Excel)",
+  "en": "Copy the general set (Excel)"
+ },
+ "cp_muc": {
+  "vi": "Mục",
+  "lo": "ໜ້າ",
+  "en": "Section"
+ },
+ "cp_sl": {
+  "vi": "SL · Lít",
+  "lo": "ຈຳນວນ · ລິດ",
+  "en": "Qty · Litres"
+ },
+ "gia_goi_y": {
+  "vi": "Đơn giá gợi ý",
+  "lo": "ລາຄາ",
+  "en": "Suggested unit price"
+ },
+ "cp_goi_y_tuyen": {
+  "vi": "Đã điền chi phí gợi ý theo tuyến {ten} — thêm, bớt, sửa được",
+  "lo": "Đã điền chi phí gợi ý theo tuyến {ten} — thêm, bớt, sửa được",
+  "en": "Pre-filled suggested costs for route {ten} — add, remove or change freely"
+ },
+ "cp_goi_y_chung": {
+  "vi": "Đã điền chi phí gợi ý theo bộ chung (Excel) — thêm, bớt, sửa được",
+  "lo": "Đã điền chi phí gợi ý theo bộ chung (Excel) — thêm, bớt, sửa được",
+  "en": "Pre-filled suggested costs from the general set (Excel) — add, remove or change freely"
+ },
  "ht_tam_ung_noi_bo": {
   "vi": "Tạm ứng nội bộ — xe công ty (EPL)",
   "lo": "ເງິນລ່ວງໜ້າ — ລົດບໍລິສັດ (EPL)",

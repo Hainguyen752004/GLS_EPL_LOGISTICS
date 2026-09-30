@@ -36,7 +36,7 @@ from services import kho_hang as KH
 from services import chung_tu as CT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
 from routes import hop_dong as HD
-from routes.tuyen import km_ca_chuyen
+from routes.tuyen import gia_goi_y, km_ca_chuyen
 from routes import the_cao_toc as THE
 
 router = APIRouter()
@@ -629,6 +629,11 @@ def _gia_mac_dinh(db, p, m, source, d):
         r = db.get(Route, p.route_id)
         if r and (r.toll_lak or 0) > 0:
             return r.toll_lak, "LAK"
+    if m in ("fuel", "travel", "other") and p.route_id and source != "kho":
+        # giá GỢI Ý của tuyến (30/09): kế toán thấy sẵn, sửa khi kiểm — Bãi vẫn không thấy, không nhập tiền
+        g = gia_goi_y(db, p.route_id, m, d)
+        if g is not None:
+            return g
     return 0, str(d.get("currency") or "LAK").upper()
 
 
