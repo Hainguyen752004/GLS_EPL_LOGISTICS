@@ -63,6 +63,10 @@ def _chan_tai_xe(user):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Tài xế xem phiếu của mình ở màn Phiếu của tôi."})
 
 
+# vai có màn Đề nghị theo DO — đúng như menu (js/chung.js): mọi vai trừ tài xế và ba vai một việc ở kho / xưởng
+KHONG_XEM_THEO_DO = ("driver", "depot", "parts", "repair")
+
+
 def _chan_tien_ban(user):
     if not thay_tien_ban(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Đề nghị thu là tiền cước — vai %s không xem." % user.role})
@@ -78,6 +82,8 @@ def _xuat_pdt(c):
 @router.get("/api/de-nghi-theo-do")
 def theo_do(thang: str = "", q: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     _chan_tai_xe(user)
+    if user.role in KHONG_XEM_THEO_DO:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không có màn Đề nghị theo DO." % user.role})
     chi, ban = thay_tien_chi(user.role), thay_tien_ban(user.role)
     ds = _loc_phieu(db, thang, q)
     ma = [p.id for p in ds]

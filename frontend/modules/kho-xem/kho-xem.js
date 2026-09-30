@@ -124,7 +124,9 @@
   }
 
   /* ---------------------------------------------------------------- khung phải */
-  const moPhieu = (id, chu) => `<a data-mo="${esc(id)}">${esc(chu)}</a>`;
+  // số DO bấm mở phiếu xuất xe — chỉ vai vào được màn đó (thủ kho, thủ kho phụ tùng thì chỉ là chữ)
+  const moDuoc = () => EPL.manCuaVai(EPL.AUTH.role).some(m => m.id === 'phieu-xuat-xe');
+  const moPhieu = (id, chu) => moDuoc() ? `<a data-mo="${esc(id)}">${esc(chu)}</a>` : `<span class="mono">${esc(chu)}</span>`;
   const loai = (k, tf) => tf ? `<span class="kx-k tf">${NN.h('fuel_transfer')}</span>`
     : `<span class="kx-k ${k === 'in' ? 'in' : k === 'out' ? 'out' : 'adj'}">${NN.h(k === 'in' ? 'kh_nhap' : k === 'out' ? 'kh_xuat' : 'kh_dc')}</span>`;
   const muc = (tieuDe, n, bang) => `<div class="kx-muc"><h4>${tieuDe}<span class="dem">${n}</span></h4>${n ? bang : `<div class="kx-trong">${NN.h('no_data')}</div>`}</div>`;

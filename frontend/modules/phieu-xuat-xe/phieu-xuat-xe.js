@@ -122,7 +122,10 @@
       tb.querySelector('tfoot').innerHTML = `<tr><td></td><td>${NN.h('total')}</td>${m === 'fuel' ? `<td class="num">${so(P.expenses.filter(d => d.section === 'fuel').reduce((a, d) => a + EPL.doc(d.qty), 0))}</td><td></td><td></td>` : (m === 'repair' ? '<td></td><td></td><td></td>' : '<td></td><td></td>')}<td class="num px-gia"><b>${so(k.chi[m])}</b></td><td colspan="${cols - (m === 'fuel' ? 6 : 5)}"></td></tr>`; });
     veBenTien(k);
     const box = g('px-tong-ket');
-    if (!k.lk) {
+    if (!thayTienBan()) {
+      // tổ sửa chữa: máy chủ không gửi cước, giá thuê — chỉ tổng chi, không hiện doanh thu 0 / lãi sai
+      box.innerHTML = `<div class="px-tong"><div class="o"><div class="l">${NN.h('sum_exp')}</div><div class="v">${so(k.tongChi)}<small>LAK</small></div></div></div>`;
+    } else if (!k.lk) {
       const net = k.laiLak, phu = (v) => k.ma === 'LAK' ? 'LAK' : `LAK · ${t2(tronTien(v / k.rC, k.ma), k.ma)}`;
       box.innerHTML = `<div class="px-tong"><div class="o"><div class="l">${NN.h('sum_rev')}</div><div class="v">${so(k.dtLak)}<small>${phu(k.dtLak)}</small></div></div>
         <div class="o"><div class="l">${NN.h('sum_exp')}</div><div class="v">${so(k.tongChi)}<small>${phu(k.tongChi)}</small></div></div>
@@ -424,9 +427,12 @@
       : `<span class="mono">${esc(P.doc_no)}</span><small>${esc(P.truck_no || '')} · <span lang="lo">${esc(P.driver_name || '')}</span></small>`;
     g('px-ben-tt').innerHTML = g('px-trang-thai').innerHTML;
   }
+  // vai thấy TIỀN BÁN (cước, doanh thu, giá thuê, lãi) — cùng danh sách với máy chủ (phan_quyen.thay_tien_ban)
+  const thayTienBan = () => !['yard', 'driver', 'depot', 'parts', 'repair'].includes(vai());
   function veBenTien(k) {
     const o = g('px-ben-tien'); if (!o) return;
     const dong = (l, v, cls = '') => `<div class="r ${cls}"><span>${l}</span><b>${v}</b></div>`;
+    if (!thayTienBan()) { o.innerHTML = dong(NN.h('sum_exp'), so(k.tongChi) + ' LAK'); return; }
     o.innerHTML = k.lk
       ? dong(NN.h('do_money'), t2(k.dt, k.ma)) + dong(NN.h('st_hire'), '− ' + t2(k.thue, k.mh)) + dong(NN.h('st_net_owner'), t2(k.traChu, k.mh), 'tot')
       : dong(NN.h('sum_rev'), t2(k.dt, k.ma)) + dong(NN.h('sum_exp'), so(k.tongChi) + ' LAK') + dong(NN.h('sum_net'), (k.laiLak < 0 ? '−' : '') + so(Math.abs(k.laiLak)) + ' LAK', 'tot');
@@ -753,6 +759,9 @@
       g('px-luu').addEventListener('click', luu);
       // Phiếu đề nghị thu (30/09): khoá phiếu là máy lập — nút mở màn Phiếu đề nghị thu đúng phiếu này. Chỉ vai thấy tiền bán.
       g('px-hoa-don').hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel');
+      // lập tờ đề nghị tạm ứng / xuất nhiên liệu: đúng các vai máy chủ cho lập (POST /api/trips/{id}/vouchers)
+      const lapDeNghi = AUTH.la('yard', 'acct', 'expacct', 'fuel', 'cash', 'treasury');
+      g('px-chung-tu').hidden = !lapDeNghi; g('px-phieu-linh').hidden = !lapDeNghi;
       g('px-hoa-don').addEventListener('click', () => P && P.id && EPL.di('de-nghi-thu', { id: P.id, thang: String(P.doc_date || '').slice(0, 7) }));
       root.querySelectorAll('#px-chon-loai button').forEach(b => b.addEventListener('click', () => {
         const el = g('f-kind'); if (!el || el.disabled) return;

@@ -189,6 +189,9 @@ def _tien_tam_ung(db, p):
 @router.get("/api/trips/{tid}/vouchers")
 def ds_phieu_linh_cua_phieu(tid: str, request: Request, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     p = _phieu(db, tid)
+    # tài xế chỉ xem tờ đề nghị của phiếu mình — tờ có mã QR, đưa mã của người khác là cấp nhầm người (30/09)
+    if user.role == "driver" and (not user.driver_id or p.driver_id != user.driver_id):
+        raise HTTPException(403, {"ma": "KHONG_PHAI_PHIEU_CUA_BAN", "loi": "Đây không phải phiếu của bạn."})
     goc = str(request.base_url).rstrip("/")
     ds = db.query(Voucher).filter(Voucher.trip_id == p.id).order_by(Voucher.kind, Voucher.doc_no).all()
     return [xuat_phieu_linh(db, v, goc, user.role) for v in ds]
@@ -262,6 +265,9 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
     """Danh sách phiếu lĩnh đang chờ. Thủ kho CHỈ thấy phiếu của kho mình phụ trách.
     Dữ liệu cả năm (24/09): tối đa `co` tờ mới nhất (mặc định 500) — header X-Tong là tổng số khớp; phiếu xe và
     mục IV nạp MỘT lần cho cả danh sách (trước đây hai câu cho mỗi tờ)."""
+    if user.role in ("repair", "parts"):
+        # hai vai này không có màn Phiếu đề nghị chi, không cấp dầu, không chi tiền (30/09)
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem phiếu đề nghị." % user.role})
     tim = (q or "").strip()
     q = db.query(Voucher)
     if trang_thai:

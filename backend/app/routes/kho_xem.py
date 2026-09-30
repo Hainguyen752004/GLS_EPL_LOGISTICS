@@ -110,6 +110,9 @@ def kho_xem(thang: str = "", db: Session = Depends(get_db), user=Depends(nguoi_h
                    "min_qty": x.min_qty if x else 0, "gia_bq": None, "nhap_thang": 0, "xuat_thang": 0, "gan_day": [],
                    "tren_phieu": ds, "cho_xuat": round(sum(d["qty"] for d in ds), 3), "con_dung": None, "duoi_muc": False})
 
+    if user.role == "depot":
+        # thủ kho một kho (như Cấp phát): tab Nhiên liệu chỉ kho mình phụ trách; chưa gắn kho thì không thấy kho nào
+        dau = [k for k in dau if user.place_id and k["place_id"] == user.place_id]
     if not gia:
         for x in dau + pt:
             x.pop("gia_bq", None)
