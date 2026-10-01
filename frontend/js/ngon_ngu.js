@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2138 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2153 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10691,5 +10691,80 @@ window.EPL_TU_DIEN = {
   "vi": "Mỗi bước nghiệp vụ sinh một tờ ở đây để in, xem và định khoản. Thu, chi tiền làm ở hệ kế toán; đối chiếu xong với hệ kế toán thì đánh dấu đã đối chiếu. Đây không phải sổ kế toán.",
   "lo": "ແຕ່ລະຂັ້ນຕອນສ້າງເອກະສານໜຶ່ງໃບຢູ່ນີ້ ເພື່ອພິມ, ເບິ່ງ ແລະ ລົງບັນຊີ (ໜີ້ / ມີ). ການຮັບ ແລະ ຈ່າຍເງິນ ເຮັດຢູ່ລະບົບບັນຊີ; ກວດສອບກັບລະບົບບັນຊີແລ້ວ ໃຫ້ໝາຍວ່າກວດສອບແລ້ວ. ນີ້ບໍ່ແມ່ນປື້ມບັນຊີ.",
   "en": "Each step creates one document here to print, view and post (Dr / Cr). Money is received and paid in the accounting system; once checked against it, mark the document reconciled. This is not the ledger."
+ },
+ "tt_chot": {
+  "vi": "Chốt tất toán",
+  "lo": "ປິດການສະສາງ",
+  "en": "Close settlement"
+ },
+ "tt_bo_chot": {
+  "vi": "Bỏ chốt",
+  "lo": "ຍົກເລີກການປິດສະສາງ",
+  "en": "Reopen"
+ },
+ "tt_xong": {
+  "vi": "Đã tất toán xong",
+  "lo": "ສະສາງແລ້ວ",
+  "en": "Settled"
+ },
+ "tt_chi_bu": {
+  "vi": "Phiếu chi bù (Chi khác)",
+  "lo": "ໃບຈ່າຍເພີ່ມ (ຈ່າຍອື່ນໆ)",
+  "en": "Top-up payment (other payment)"
+ },
+ "tt_thu_hoan": {
+  "vi": "Phiếu thu hoàn (Thu khác)",
+  "lo": "ໃບຮັບຄືນ (ຮັບອື່ນໆ)",
+  "en": "Refund receipt (other receipt)"
+ },
+ "tt_lech": {
+  "vi": "Số đã đổi sau khi chốt",
+  "lo": "ຕົວເລກປ່ຽນຫຼັງປິດສະສາງ",
+  "en": "Changed after closing"
+ },
+ "tt_tam_ung_cho": {
+  "vi": "Còn tạm ứng chưa chi xong ở hệ kế toán — chưa chốt được",
+  "lo": "ຍັງມີເງິນລ່ວງໜ້າທີ່ບັນຊີຍັງຈ່າຍບໍ່ແລ້ວ — ຍັງປິດສະສາງບໍ່ໄດ້",
+  "en": "Advances still unpaid in accounting — cannot close yet"
+ },
+ "ck_phieu_mat": {
+  "vi": "Phiếu bị xoá bên kế toán",
+  "lo": "ໃບຖືກລຶບຢູ່ລະບົບບັນຊີ",
+  "en": "Voucher deleted in accounting"
+ },
+ "tt_chua_chot": {
+  "vi": "Chưa chốt",
+  "lo": "ຍັງບໍ່ປິດ",
+  "en": "Not closed"
+ },
+ "tt_cho_chi": {
+  "vi": "Chờ thủ quỹ",
+  "lo": "ລໍຖ້າຄັງເງິນ",
+  "en": "Awaiting cashier"
+ },
+ "tt_gui_lai": {
+  "vi": "Gửi lại sang kế toán",
+  "lo": "ສົ່ງໄປບັນຊີຄືນໃໝ່",
+  "en": "Resend to accounting"
+ },
+ "tt_cach": {
+  "vi": "Chi / thu bằng",
+  "lo": "ຈ່າຍ / ຮັບ ດ້ວຍ",
+  "en": "Paid / received by"
+ },
+ "tt_bo_hoi": {
+  "vi": "Bỏ chốt kỳ {ky} của {ten}? Phiếu chi / thu chưa ghi sổ bên kế toán sẽ bị rút.",
+  "lo": "ຍົກເລີກການປິດສະສາງງວດ {ky} ຂອງ {ten}? ໃບຈ່າຍ / ຮັບ ທີ່ບັນຊີຍັງບໍ່ບັນທຶກ ຈະຖືກຖອນອອກ.",
+  "en": "Reopen {ky} for {ten}? The unposted payment / receipt in accounting will be withdrawn."
+ },
+ "tt_qt_tu": {
+  "vi": "Quyết toán tạm ứng (Nợ 625 / Có 1601)",
+  "lo": "ສະສາງເງິນລ່ວງໜ້າ (ໜີ້ 625 / ມີ 1601)",
+  "en": "Advance clearing (Dr 625 / Cr 1601)"
+ },
+ "tt_tim": {
+  "vi": "Tìm tên, mã tài xế",
+  "lo": "ຊອກຊື່, ລະຫັດໂຊເຟີ",
+  "en": "Search driver name, code"
  }
 };
