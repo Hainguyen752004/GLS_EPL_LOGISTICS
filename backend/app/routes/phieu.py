@@ -23,7 +23,7 @@ from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 
 from database import BIEU_THUC_TIM_PHIEU, get_db
-from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, MUC, MUC_CHI,
+from models import (Contract, Owner, TripAttachment, TripGoods, ma_moi, CHUOI, LOAI_DO, LOAI_SU_CO, SU_CO_SUA_CHUA, MUC, MUC_CHI,
                     CACH_TINH_CUOC, SU_KIEN, TIEN_TE, TRANG_THAI_VAN_CHUYEN,
                     Customer, Driver, ExchangeRate, FuelMove, FuelPlace, Part, Route, RouteStop, Trip,
                     GuiSoTune, TripEvent, TripExpense, TripLog, TripSection, Vehicle)
@@ -160,8 +160,21 @@ def _xuat_dong(d, company=None):
             "tien_mat_tx": la_tien_mat_tai_xe(d, company)}
 
 
+def muc_su_kien(e):
+    """Khai báo của tài xế rơi vào mục nào của phiếu: khai dầu → III; sự cố sửa chữa → V; sự cố khác → VI."""
+    if e.kind == "refuel":
+        return "fuel"
+    if e.kind == "repair" or (e.incident_type or "breakdown") in SU_CO_SUA_CHUA:
+        return "repair"
+    return "other"
+
+
+# ai duyệt khai báo của tài xế, theo mục nó rơi vào (xem SU_CO_SUA_CHUA)
+DUYET_SU_KIEN = {"fuel": ("yard", "fuel", "admin"), "repair": ("repair", "admin"), "other": ("yard", "admin")}
+
+
 def _xuat_su_kien(e):
-    return {"id": e.id, "ts": e.ts.isoformat() if e.ts else None, "kind": e.kind, "stop_seq": e.stop_seq,
+    return {"id": e.id, "ts": e.ts.isoformat() if e.ts else None, "kind": e.kind, "stop_seq": e.stop_seq, "muc": muc_su_kien(e),
             "incident_type": e.incident_type, "note": e.note, "expense_id": e.expense_id, "by_user": e.by_user,
             "status": e.status or "approved", "reported_cost": e.reported_cost, "currency": e.currency,
             "qty_l": e.qty_l, "place_id": e.place_id, "supplier_id": e.supplier_id,
@@ -1632,11 +1645,12 @@ def xoa_thu_tien(pid: str, user=Depends(nguoi_hien_tai)):
     raise HTTPException(409, DA_DOI_HD)
 
 
-# ---------------------------------------------------------------- tài xế báo hỏng → admin duyệt → vào mục V
+# ---------------------------------------------------------------- tài xế báo sự cố → duyệt theo loại → mục V hoặc VI
 @router.post("/api/trips/{tid}/bao-hong")
 def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """TÀI XẾ báo sự cố / hỏng xe trên đường, kèm số tiền dự kiến. Chỉ là BÁO — chưa thành chi phí.
-    Admin hoặc Bãi duyệt (đường /duyet bên dưới) mới sinh dòng chi vào mục V với số tiền đã duyệt."""
+    Duyệt ở đường /duyet bên dưới: hỏng xe, lốp, tai nạn → tổ sửa chữa, dòng chi mục V; kẹt đường, bị giữ xe, khác → Bãi,
+    dòng chi mục VI (`SU_CO_SUA_CHUA`)."""
     p = db.get(Trip, tid)
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
@@ -1665,6 +1679,38 @@ def bao_hong(tid: str, data: dict = Body(...), db: Session = Depends(get_db), us
         e.stop_seq = int(data["stop_seq"])
     db.add(e)
     _ghi_log(db, p, user, "ev_reported")
+    db.commit()
+    return xuat_phieu(db, p, vai=user.role)
+
+
+def _duyet_chi_khac(db, p, e, data, user):
+    """Duyệt sự cố KHÔNG phải sửa chữa (kẹt đường, bị giữ xe, khác) → một dòng mục VI chi khác.
+
+    Bãi duyệt nhưng không thấy, không nhập tiền (A2): số tiền của dòng là số tài xế báo; KT Chi phí VC sửa khi kiểm mục
+    VI. Tài xế không báo tiền thì chỉ ghi nhận là đã xem, không sinh dòng chi."""
+    gia = _so(data.get("unit_price"), "unit_price") if nhap_gia_chi(user.role) else None
+    if gia is None:
+        gia = e.reported_cost
+    if gia is not None and gia < 0:
+        raise HTTPException(422, {"ma": "SO_AM", "loi": "Số tiền không được âm."})
+    if not gia:
+        e.status = "approved"
+        _ghi_log(db, p, user, "ev_approved")
+        db.commit()
+        return xuat_phieu(db, p, vai=user.role)
+    tien_te = str((data.get("currency") if nhap_gia_chi(user.role) else None) or e.currency or "LAK").upper()
+    so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "other").count()
+    dong = _gan_tk(p, TripExpense(trip_id=p.id, section="other", line_no=so_dong + 1, item_key="x_misc",
+                                  item_name=(data.get("item_name") or e.note or "")[:120] or None,
+                                  qty=1, unit_price=gia, currency=tien_te, paid_by_epl=True,
+                                  note=(e.note or "") + (" — tài xế đã tự trả" if e.paid_by_driver else "")))
+    db.add(dong); db.flush()
+    e.status, e.expense_id = "approved", dong.id
+    s = _muc_cua(db, p)["other"]
+    if s.status not in ("wait", "entered"):
+        _ghi_log(db, p, user, "sec_other:reopen")
+    s.status = "entered"
+    _ghi_log(db, p, user, "ev_approved")
     db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
@@ -1747,12 +1793,14 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
     là người riêng, và chính họ mới biết hỏng gì, lấy phụ tùng kho hay mang ra gara.
 
     Khai đổ dầu dọc đường (kind='refuel') cũng duyệt ở đây, nhưng rơi vào MỤC III nguồn mua nên vẫn do
-    Bãi hoặc KT kho xăng dầu duyệt."""
+    Bãi hoặc KT kho xăng dầu duyệt. Sự cố không phải sửa chữa (kẹt đường, bị giữ xe, khác) rơi vào MỤC VI chi khác, do Bãi
+    duyệt — xem `SU_CO_SUA_CHUA`."""
     p = db.get(Trip, tid)
     e = db.get(TripEvent, eid)
     if not p or not e or e.trip_id != p.id:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có báo hỏng này."})
-    duoc = ("yard", "fuel", "admin") if e.kind == "refuel" else ("repair", "admin")
+    muc = muc_su_kien(e)
+    duoc = DUYET_SU_KIEN[muc]
     if user.role not in duoc:
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN",
                                   "loi": "Vai %s không được duyệt khai báo này." % user.role})
@@ -1765,6 +1813,8 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         return xuat_phieu(db, p, vai=user.role)
     if e.kind == "refuel":
         return _duyet_do_dau(db, p, e, data, user)
+    if muc == "other":
+        return _duyet_chi_khac(db, p, e, data, user)
     source = data.get("source") or "mua"
     if source not in ("kho", "mua"):
         raise HTTPException(422, {"ma": "NGUON_SAI", "loi": "Nguồn phải là kho hay mua."})

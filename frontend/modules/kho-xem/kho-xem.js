@@ -69,10 +69,10 @@
     }));
     if (goc) parts.forEach(p => { if ((p.stock || 0) > 0) goc.parts[p.code] = p.stock; });
     const cargo = (r.hang || []).map(c => ({
-      code: c.name, ten: c.name, yard: goc ? goc.id : null, left: c.ton_t || 0, inQ: c.nhap_thang || 0, outQ: c.xuat_thang || 0,
+      // chỉ tồn theo lô — không bày nhập / xuất trong tháng hay sổ gần đây (sếp 30/09: màn kho theo mặt hàng, không sổ)
+      code: c.name, ten: c.name, yard: goc ? goc.id : null, left: c.ton_t || 0,
       lots: (c.lo || []).map(l => ({ doc: l.doc_no || '', vehicle: l.truck_no || '', customer: l.customer_name || '', origin: l.origin || '',
         inQty: l.nhap_t || 0, left: l.con_t || 0, date: l.ngay })),
-      moves: (c.gan_day || []).map(m => ({ date: m.ngay, type: m.kind === 'in' ? 'in' : 'out', qty: m.qty || 0, doc: m.doc_no || '', vehicle: m.truck_no || '' })),
     }));
     if (goc) goc.cargoTypes = cargo;
     const byId = {}, byCode = {};
@@ -220,7 +220,6 @@
   }
 
   /* ================= Tìm theo số phiếu / số xe ================= */
-  const moveLabel = (ty) => h({ in: 'k2_mv_in', out: 'k2_mv_out', 'transfer-in': 'k2_mv_tin', 'transfer-out': 'k2_mv_tout' }[ty] || 'k2_mv_out');
   function allDocs() {
     const out = [];
     D.whs.forEach(w => {
@@ -232,7 +231,6 @@
       p.pending.forEach(m => out.push({ wh: kp, tab: 'parts', doc: m.doc, vehicle: m.vehicle, text: p.ten + ' · ' + t('k2_pt_cho_ngan') + ' ' + n2(m.qty), date: m.date }));
     });
     D.cargo.forEach(c => {
-      c.moves.forEach(m => out.push({ wh: c.yard, tab: 'cargo', doc: m.doc, vehicle: m.vehicle, text: c.ten + ' ' + t(m.type === 'in' ? 'k2_nhap' : 'k2_xuat') + ' ' + n2(m.qty) + ' ' + t('ton'), date: m.date }));
       c.lots.forEach(l => out.push({ wh: c.yard, tab: 'cargo', doc: l.doc, vehicle: l.vehicle, text: c.ten + ' · ' + t('k2_lo_con', { t: n2(l.left) }), date: l.date }));
     });
     return out.filter(d => d.doc || d.vehicle);
@@ -346,7 +344,6 @@
   }
 
   /* ================= Chi tiết một kho ================= */
-  const moveTag = (ty) => '<span class="mv ' + (ty === 'in' ? 'mv--in' : ty === 'out' ? 'mv--out' : 'mv--tr') + '">' + moveLabel(ty) + '</span>';
   const flashCls = (doc) => st.flashDoc && doc && String(st.flashDoc).includes(doc) ? ' is-flash' : '';
 
   function fuelTab(w) {
@@ -405,18 +402,14 @@
           '<td style="min-width:150px"><div class="lot-bar"><span class="left" style="width:' + p + '%"></span><span class="gone" style="width:' + (100 - p) + '%"></span></div></td>' +
           '<td class="num">' + n2(l.inQty) + '</td><td class="num"><b>' + n2(l.left) + '</b></td><td>' + esc(ngay(l.date)) + '</td></tr>';
       }).join('');
-      const mv = c.moves.map(m => '<tr class="' + flashCls(m.doc) + '"><td>' + esc(ngay(m.date)) + '</td><td>' + moveTag(m.type) + '</td><td class="code">' + esc(m.doc || '—') + '</td><td>' + (m.vehicle ? esc(m.vehicle) : '<span class="dash">–</span>') + '</td><td class="num">' + n2(m.qty) + '</td></tr>').join('');
       return '<div class="block"><h3 lang="lo">' + esc(c.ten) + '</h3>' +
-        '<div class="fuel-stats k2-3cot">' +
+        '<div class="fuel-stats k2-tom">' +
         '<div class="is-main"><span>' + h('k2_con_o_bai') + '</span><b>' + n2(c.left) + ' <small>' + h('ton') + '</small></b></div>' +
-        '<div><span>' + h('kx_in_month') + '</span><b>' + n2(c.inQ) + ' <small>' + h('ton') + '</small></b></div>' +
-        '<div><span>' + h('kx_out_month') + '</span><b>' + n2(c.outQ) + ' <small>' + h('ton') + '</small></b></div></div>' +
+        '<div><span>' + h('kx_lo_con') + '</span><b>' + esc(t('k2_n_lo', { n: c.lots.length })) + '</b></div></div>' +
         '<h3>' + h('kx_lo_con') + ' <span class="count">' + c.lots.length + '</span></h3>' +
         (lots ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('doc_no') + '</th><th>' + h('c_customer') + '</th><th>' + h('kx_origin') + '</th><th>' + h('k2_con_nhap') + '</th><th class="num">' + h('kx_nhap_t') + '</th><th class="num">' + h('kx_con_t') + '</th><th>' + h('c_date') + '</th></tr></thead><tbody>' + lots + '</tbody></table></div>'
           : '<div class="k2-empty">' + h('no_data') + '</div>') + '</div>' +
-        '<div class="block"><h3>' + h('kx_gan_day') + ' <span class="count">' + c.moves.length + '</span></h3>' +
-        (mv ? '<div class="k2-tbl-wrap"><table class="k2-tbl"><thead><tr><th>' + h('c_date') + '</th><th>' + h('type') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_truck') + '</th><th class="num">' + h('k2_sl_tan') + '</th></tr></thead><tbody>' + mv + '</tbody></table></div>'
-          : '<div class="k2-empty">' + h('no_data') + '</div>') + '</div>';
+        '<p class="tab-intro">' + h('k2_so_o_ben_kho') + '</p>';
     }).join('');
   }
 

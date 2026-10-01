@@ -556,6 +556,20 @@ async function main() {
       assert.ok(!chuKx.includes(w.EPL.NN.t('k2_so_kho', { thang: '' }).trim()) && !d.querySelector('#noi-dung .k2 .flow'), 'không còn sổ kho tháng / biểu đồ nhập xuất theo ngày');
       console.log('✓ Xem kho: không sổ tháng, không ô chọn tháng · tồn %s L khớp bên kho', soTon);
     }
+    // 01/10: tab Hàng gửi bãi cũng chỉ còn tồn theo lô — bỏ "nhập / xuất trong tháng" và bảng "nhập / xuất gần đây"
+    const goc = (kx.nhien_lieu || []).find(k => k.kho_goc) || (kx.nhien_lieu || [])[0];
+    if (goc && (kx.hang || []).length) {
+      d.querySelector('#noi-dung .k2 #k2-wh .wh-item[data-open="' + goc.place_id + '"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => d.querySelector('#noi-dung .k2 [data-tab-go="cargo"]'), 'tab Hàng gửi bãi của kho gốc');
+      d.querySelector('#noi-dung .k2 [data-tab-go="cargo"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      await choDen(() => d.querySelector('#noi-dung .k2 .fuel-stats.k2-tom'), 'tab Hàng gửi bãi đã vẽ');
+      const chuHang = d.querySelector('#noi-dung .k2 .tab-panel').textContent;
+      for (const k of ['kx_in_month', 'kx_out_month', 'kx_gan_day'])
+        assert.ok(!chuHang.includes(w.EPL.NN.t(k)), 'tab Hàng gửi bãi không còn "' + w.EPL.NN.t(k) + '"');
+      const conLo = (kx.hang || []).reduce((a, c) => a + (c.lo || []).length, 0);
+      assert.strictEqual(d.querySelectorAll('#noi-dung .k2 .tab-panel .lot-bar').length, conLo, 'mỗi lô còn hàng một dòng');
+      console.log('✓ Xem kho · Hàng gửi bãi: chỉ tồn theo lô (%d lô), không nhập/xuất tháng, không sổ gần đây', conLo);
+    }
   }
   console.log('✓ vai thủ kho: chỉ màn Xem kho (chỉ xem), không chuyển vòng, không lỗi');
 

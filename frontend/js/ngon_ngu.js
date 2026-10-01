@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2082 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2086 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -3408,9 +3408,9 @@ window.EPL_TU_DIEN = {
   "en": "Where"
  },
  "df_hint": {
-  "vi": "Dầu mua dọc đường (thường bên Việt Nam để chạy về). Kế toán duyệt thì vào mục III.",
-  "lo": "ນໍ້າມັນຊື້ຂ້າງທາງ (ປົກກະຕິຢູ່ຫວຽດນາມເພື່ອຂັບກັບ). ບັນຊີອະນຸມັດແລ້ວຈຶ່ງເຂົ້າພາກ III.",
-  "en": "Fuel bought on the road (usually in Vietnam for the return leg). Booked into section III once accounting approves."
+  "vi": "Dầu mua dọc đường (thường bên Việt Nam để chạy về). Admin Thà Bốc hoặc KT kho xăng dầu VC duyệt thì vào mục III.",
+  "lo": "ນໍ້າມັນຊື້ຂ້າງທາງ (ປົກກະຕິຢູ່ຫວຽດນາມເພື່ອຂັບກັບ). ແອັດມິນ ທ່າບົກ ຫຼື ບັນຊີສາງນໍ້າມັນ ວຽງຈັນ ອະນຸມັດແລ້ວຈຶ່ງເຂົ້າພາກ III.",
+  "en": "Fuel bought on the road (usually in Vietnam for the return leg). Booked into section III once the Thabok admin or the Vientiane fuel store accountant approves."
  },
  "ev_refuel": {
   "vi": "Đổ dầu dọc đường",
@@ -4718,9 +4718,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver reported breakdown"
  },
  "ev_approved": {
-  "vi": "Duyệt báo hỏng → vào mục V",
-  "lo": "ອະນຸມັດແຈ້ງລົດເສຍ → ຂໍ້ V",
-  "en": "Breakdown approved → section V"
+  "vi": "Duyệt khai báo của tài xế",
+  "lo": "ອະນຸມັດການແຈ້ງຂອງໂຊເຟີ",
+  "en": "Driver report approved"
  },
  "ev_rejected": {
   "vi": "Từ chối báo hỏng",
@@ -9023,9 +9023,9 @@ window.EPL_TU_DIEN = {
   "en": "From {tu} to {den}, today {nay}"
  },
  "k3_zone": {
-  "vi": "{n} ngày cuối, hệ thống nhắc ký lại",
-  "lo": "{n} ວັນສຸດທ້າຍ, ລະບົບເຕືອນໃຫ້ເຊັນໃໝ່",
-  "en": "Last {n} days — reminder to renew"
+  "vi": "{n} ngày cuối: hợp đồng mang nhãn “Sắp hết hạn” để ký lại",
+  "lo": "{n} ວັນສຸດທ້າຍ: ສັນຍາຂຶ້ນປ້າຍ “ໃກ້ໝົດອາຍຸ” ເພື່ອເຊັນໃໝ່",
+  "en": "Last {n} days: the contract is tagged “Expiring soon” for renewal"
  },
  "k3_hom_nay": {
   "vi": "Hôm nay {d}",
@@ -10058,9 +10058,9 @@ window.EPL_TU_DIEN = {
   "en": "No requests or refuels yet"
  },
  "tx_su_co_mo_ta": {
-  "vi": "Báo xong, tổ sửa chữa duyệt. Có khoản chi thì vào mục V của phiếu và đi tiếp thành phiếu chi.",
-  "lo": "ແຈ້ງແລ້ວ ທີມສ້ອມແປງອະນຸມັດ. ມີຄ່າໃຊ້ຈ່າຍ ຈະເຂົ້າພາກ V ຂອງໃບ ແລ້ວເປັນໃບຈ່າຍ.",
-  "en": "Once reported, the repair team approves it. Any cost goes into section V of the slip and on to a payment voucher."
+  "vi": "Báo xong, người duyệt xem: Tổ sửa chữa Thà Bốc (hỏng xe, lốp, tai nạn) hoặc Admin Thà Bốc (việc khác). Có khoản chi thì vào mục V hoặc VI của phiếu, KT Chi phí VC kiểm, Quỹ tiền mặt Thà Bốc chi.",
+  "lo": "ແຈ້ງແລ້ວ ຜູ້ອະນຸມັດຈະເບິ່ງ: ໜ່ວຍສ້ອມແປງ ທ່າບົກ (ລົດເສຍ, ຢາງ, ອຸບັດເຫດ) ຫຼື ແອັດມິນ ທ່າບົກ (ເລື່ອງອື່ນ). ມີຄ່າໃຊ້ຈ່າຍ ຈະເຂົ້າພາກ V ຫຼື VI ຂອງໃບ, ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ກວດ, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍ.",
+  "en": "Once reported, the approver reviews it: the Thabok repair team (breakdown, tyre, accident) or the Thabok admin (anything else). Any cost goes into section V or VI of the slip; the Vientiane cost accountant checks it and Thà Bốc petty cash pays."
  },
  "tx_su_co_trong": {
   "vi": "Chưa có sự cố nào — chúc chuyến đi an toàn",
@@ -10143,9 +10143,9 @@ window.EPL_TU_DIEN = {
   "en": "No outside stations in the list yet — ask the office to add one."
  },
  "tx_bao_goi_y": {
-  "vi": "Báo ngay khi có chuyện. Tổ sửa chữa xem và duyệt.",
-  "lo": "ແຈ້ງທັນທີເມື່ອມີເຫດ. ທີມສ້ອມແປງຈະກວດ ແລະ ອະນຸມັດ.",
-  "en": "Report as soon as something happens. The repair team reviews and approves."
+  "vi": "Báo ngay khi có chuyện. Hỏng xe, lốp, tai nạn: Tổ sửa chữa Thà Bốc duyệt. Chậm, bị giữ xe, việc khác: Admin Thà Bốc duyệt.",
+  "lo": "ແຈ້ງທັນທີເມື່ອມີເຫດ. ລົດເສຍ, ຢາງ, ອຸບັດເຫດ: ໜ່ວຍສ້ອມແປງ ທ່າບົກ ອະນຸມັດ. ຊ້າ, ຖືກກັກລົດ, ເລື່ອງອື່ນ: ແອັດມິນ ທ່າບົກ ອະນຸມັດ.",
+  "en": "Report as soon as something happens. Breakdown, tyre, accident: the Thabok repair team approves. Delay, held truck, anything else: the Thabok admin approves."
  },
  "tx_chuyen_gi": {
   "vi": "Chuyện gì xảy ra?",
@@ -10183,9 +10183,9 @@ window.EPL_TU_DIEN = {
   "en": "There is a cost"
  },
  "tx_co_chi_goi_y": {
-  "vi": "Tích nếu phải trả tiền (vá lốp, cứu hộ, phụ tùng…). Tổ sửa chữa duyệt xong, khoản này vào mục V và thành phiếu chi.",
-  "lo": "ໝາຍຖ້າຕ້ອງຈ່າຍເງິນ (ປະຢາງ, ກູ້ໄພ, ອາໄຫຼ່…). ທີມສ້ອມແປງອະນຸມັດແລ້ວ ຈະເຂົ້າພາກ V ແລະ ເປັນໃບຈ່າຍ.",
-  "en": "Tick if money was or must be paid (tyre patch, towing, parts…). Once the repair team approves, it goes into section V and becomes a payment voucher."
+  "vi": "Tích nếu phải trả tiền (vá lốp, cứu hộ, phụ tùng, phí khi bị giữ xe…). Duyệt xong, khoản này vào phiếu: sửa chữa ở mục V, việc khác ở mục VI. KT Chi phí VC kiểm, Quỹ tiền mặt Thà Bốc chi.",
+  "lo": "ໝາຍຖ້າຕ້ອງຈ່າຍເງິນ (ປະຢາງ, ກູ້ໄພ, ອາໄຫຼ່, ຄ່າທຳນຽມເມື່ອຖືກກັກລົດ…). ອະນຸມັດແລ້ວ ລາຍການນີ້ເຂົ້າໃບ: ສ້ອມແປງ ພາກ V, ເລື່ອງອື່ນ ພາກ VI. ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ກວດ, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍ.",
+  "en": "Tick if money was or must be paid (tyre patch, towing, parts, fees when the truck is held…). Once approved it goes on the slip: repairs in section V, anything else in section VI. The Vientiane cost accountant checks it and Thà Bốc petty cash pays."
  },
  "tx_tien_loi": {
   "vi": "Nhập số tiền lớn hơn 0",
@@ -10348,9 +10348,9 @@ window.EPL_TU_DIEN = {
   "en": "The driver taps depart, reports the mine weight, roadside refuelling and incidents"
  },
  "lg2_t_road_2": {
-  "vi": "Tổ sửa chữa duyệt báo hỏng, lấy phụ tùng kho hay mua ngoài",
-  "lo": "ໜ່ວຍສ້ອມແປງ ອະນຸມັດການແຈ້ງລົດເສຍ, ເອົາອະໄຫຼ່ຈາກສາງ ຫຼື ຊື້ນອກ",
-  "en": "The repair team approves breakdown reports, using stock parts or buying outside"
+  "vi": "Hỏng xe, lốp, tai nạn: tổ sửa chữa duyệt (phụ tùng kho hay mua ngoài, mục V); việc khác: Admin Thà Bốc duyệt (mục VI)",
+  "lo": "ລົດເສຍ, ຢາງ, ອຸບັດເຫດ: ໜ່ວຍສ້ອມແປງອະນຸມັດ (ອະໄຫຼ່ສາງ ຫຼື ຊື້ນອກ, ພາກ V); ເລື່ອງອື່ນ: ແອັດມິນ ທ່າບົກ ອະນຸມັດ (ພາກ VI)",
+  "en": "Breakdown, tyre, accident: the repair team approves (stock parts or outside, section V); anything else: the Thabok admin approves (section VI)"
  },
  "lg2_p_deliver": {
   "vi": "Cảng · nơi giao hàng",
@@ -10411,5 +10411,25 @@ window.EPL_TU_DIEN = {
   "vi": "Tạo SO bên kế toán; hoá đơn, thu tiền, công nợ do bên kế toán làm — trang này chỉ xem",
   "lo": "ສ້າງ SO ຢູ່ຝ່າຍບັນຊີ; ໃບເກັບເງິນ, ຮັບເງິນ, ໜີ້ ຝ່າຍບັນຊີເຮັດ — ໜ້ານີ້ເບິ່ງຢ່າງດຽວ",
   "en": "Create the SO in accounting; invoices, payments and receivables are done there — view only here"
+ },
+ "k3_e_ma_sai": {
+  "vi": "Mã khách phải mở đầu bằng chữ Latinh hoặc số, chỉ gồm chữ Latinh, số và - _ . (không dấu cách, không /), tối đa 37 ký tự.",
+  "lo": "ລະຫັດລູກຄ້າ ຕ້ອງເລີ່ມດ້ວຍຕົວອັກສອນລາແຕັງ ຫຼື ຕົວເລກ, ມີແຕ່ຕົວອັກສອນລາແຕັງ, ຕົວເລກ ແລະ - _ . (ບໍ່ມີຍະຫວ່າງ, ບໍ່ມີ /), ບໍ່ເກີນ 37 ຕົວ.",
+  "en": "The customer code must start with a Latin letter or digit and use only Latin letters, digits and - _ . (no spaces, no /), up to 37 characters."
+ },
+ "td_vao_muc_fuel": {
+  "vi": "vào mục III nhiên liệu",
+  "lo": "ເຂົ້າພາກ III ນໍ້າມັນ",
+  "en": "into section III fuel"
+ },
+ "td_vao_muc_repair": {
+  "vi": "vào mục V sửa chữa",
+  "lo": "ເຂົ້າພາກ V ສ້ອມແປງ",
+  "en": "into section V repairs"
+ },
+ "td_vao_muc_other": {
+  "vi": "vào mục VI chi khác",
+  "lo": "ເຂົ້າພາກ VI ລາຍຈ່າຍອື່ນ",
+  "en": "into section VI other costs"
  }
 };

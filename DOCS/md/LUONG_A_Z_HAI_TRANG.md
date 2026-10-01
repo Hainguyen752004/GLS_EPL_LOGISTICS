@@ -65,13 +65,13 @@ Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đ
 | Tên đăng nhập | Vai | Ở trang điều xe làm gì | Ở trang kế toán làm gì |
 |---|---|---|---|
 | `admin` | Sếp | Mọi việc, cấu hình, tài khoản, mở khoá mục | Mọi việc, cấu hình liên thông, duyệt |
-| `thabok` | Admin Thà Bốc | Lập phiếu, dầu, đi đường, gửi kiểm, báo mốc, báo tới, đổi xe | Kho hàng (xem), Cấp phát (xem), Kho nhiên liệu (xem lít, không thấy giá), Điểm đổ (sửa), Kho phụ tùng (xem, không giá). Không mở sổ |
+| `thabok` | Admin Thà Bốc | Lập phiếu, dầu, đi đường, gửi kiểm, báo mốc, báo tới, đổi xe; duyệt báo chậm, bị giữ xe, việc khác của tài xế (mục VI, từ 01/10) | Kho hàng (xem), Cấp phát (xem), Kho nhiên liệu (xem lít, không thấy giá), Điểm đổ (sửa), Kho phụ tùng (xem, không giá). Không mở sổ |
 | `ketoan` | KT Thu/Chi Viêng Chăn | Kiểm mục I–II, nhập số phiếu quặng và giá cước, khoá phiếu, đẩy chứng từ, điều khoản chủ xe | Vai sổ **kế toán** (xem sổ, lập bút toán ghi tay); Kho hàng (điều chỉnh tồn), Kho nhiên liệu (nhập, chuyển), Bán hàng (lập), Điểm đổ |
 | `ketoancp` | KT Chi phí VC | Nhập giá, kiểm, ghi sổ mục IV, V, VI; danh mục nhà cung cấp (thêm, sửa, gắn trạm với khách) | Xem sổ; Lệnh sửa chữa (kiểm, ghi sổ, trả lại); **Tất toán tài xế** (chốt, bỏ chốt); **Theo dõi nhà cung cấp** (trả); Tiền chuyến & tiền nước (xem) |
 | `khonl` | KT kho xăng dầu VC | Nhập giá dầu mua ngoài, kiểm, ghi sổ mục III; duyệt khai đổ dầu dọc đường | Xem sổ; Kho nhiên liệu (nhập, chuyển, xuất tay), Cấp phát (cấp dầu mọi kho), Điểm đổ, Bán hàng (lập) |
 | `khotb` · `khovc` | Thủ kho nhiên liệu (một kho: Thà Bốc · Viêng Chăn) | Màn **Xem kho** (chỉ xem: tồn từng kho, đề nghị chờ cấp) — cấp dầu ở trang kế toán | Cấp phát (chỉ phiếu đề nghị xuất nhiên liệu của kho mình), Kho nhiên liệu (xem) |
 | `khopt` | Thủ kho phụ tùng Thà Bốc | Màn Xe | Kho phụ tùng (thêm, nhập, xuất, sửa) |
-| `totsua` | Tổ sửa chữa Thà Bốc | Theo dõi tuyến (duyệt báo hỏng), Phiếu xuất xe (mục V), Xe | Lệnh sửa chữa (lập, thêm dòng), Kho phụ tùng (xem) |
+| `totsua` | Tổ sửa chữa Thà Bốc | Theo dõi tuyến (duyệt báo hỏng xe, lốp, tai nạn → mục V), Phiếu xuất xe (mục V), Xe | Lệnh sửa chữa (lập, thêm dòng), Kho phụ tùng (xem) |
 | `quytb` | Quỹ tiền mặt cảng cạn | Chi mục IV, V, VI | Xem sổ; Cấp phát (chi tạm ứng), Lệnh sửa chữa (chi), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe); **Tất toán tài xế** (chốt); **Theo dõi nhà cung cấp** (trả) |
 | `quyvc` | Thủ quỹ VC | Chi mục III (dầu mua ngoài) | Xem sổ; Cấp phát (chi tạm ứng), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe); **Tất toán tài xế** (chốt); **Theo dõi nhà cung cấp** (trả) |
 | `doanhthu` | KT Doanh thu VC | Xem phiếu, công nợ khách | Xem sổ; **Hóa đơn vận chuyển**, **Hoá đơn gộp tháng** (lập hoá đơn, ghi thu, xoá lần thu); **Theo dõi nhà cung cấp** (ghi cấn trừ tháng); Bán hàng (lập, ghi thu) |

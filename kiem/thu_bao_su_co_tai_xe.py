@@ -6,11 +6,13 @@
 Chủ dự án nhận xét màn tài xế: báo sự cố *"không giống cái báo sự cố trong module tracking á không có tích có chi tiền
 rồi hay không để yêu cầu tạo phiếu chi"*. Nay tài xế báo được: loại sự cố (thêm lốp · bị giữ xe), xe còn chạy được
 không, và nếu có chi tiền thì số tiền + tiền tệ + tài xế đã tự trả hay chưa. Khoản chi KHÔNG có tờ đề nghị chi riêng
-(anh chốt 30/09): tổ sửa chữa duyệt thì thành dòng mục V rồi đi tiếp thành phiếu chi như bình thường.
+(anh chốt 30/09: "theo role excel quy định ai duyệt"): hỏng xe, lốp, tai nạn → tổ sửa chữa duyệt, dòng mục V; chậm, bị giữ
+xe, khác → Admin Thà Bốc duyệt, dòng mục VI (sửa 01/10); rồi đi tiếp như bình thường.
 
 Kịch bản: lập phiếu thử cho tx01 → báo lốp có chi tiền, đã tự trả, phải dừng → báo bị giữ xe không có tiền (cờ "đã tự
-trả" bị bỏ vì không có số tiền) → chặn tiền âm, loại sai, thiếu mô tả → tổ sửa chữa duyệt: dòng mục V ghi "tài xế đã tự
-trả" → từ chối lần báo thứ hai → danh sách phiếu của tài xế sắp cũ-trước (`sap=cu`) → dọn phiếu thử.
+trả" bị bỏ vì không có số tiền) → chặn tiền âm, loại sai, thiếu mô tả → lốp: Bãi không duyệt được, tổ sửa chữa duyệt,
+dòng mục V ghi "tài xế đã tự trả" → bị giữ xe: tổ sửa chữa không đụng được, Bãi duyệt (không tiền → không dòng) → chậm có
+tiền: Bãi không thấy số tiền, duyệt → dòng mục VI bằng số tài xế báo → danh sách phiếu sắp cũ-trước (`sap=cu`) → dọn.
 """
 import json
 import os
@@ -132,7 +134,12 @@ def main():
         dung(s == 200 and ev[e1["id"]]["can_run"] is False and ev[e1["id"]]["paid_by_driver"] is True,
              "GET phiếu trả đủ can_run / paid_by_driver")
 
-        print("5. Tổ sửa chữa duyệt → dòng mục V (đi tiếp thành phiếu chi như bình thường)")
+        dung(e1.get("muc") == "repair" and e2.get("muc") == "other", "lốp → mục V; bị giữ xe → mục VI",
+             "%s / %s" % (e1.get("muc"), e2.get("muc")))
+
+        print("5. Lốp: tổ sửa chữa duyệt → dòng mục V (Bãi không duyệt được)")
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e1["id"]), {"source": "mua", "qty": 1}, vai="thabok")
+        dung(s == 403, "Bãi duyệt lần báo lốp → 403 (việc của tổ sửa chữa)", s)
         s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e1["id"]), {"source": "mua", "item_name": "thử: vá lốp", "qty": 1}, vai="totsua")
         phai(s, 200, "Tổ sửa chữa duyệt lần báo lốp", g)
         v = [d for d in g["expenses"] if d["section"] == "repair"]
@@ -140,10 +147,31 @@ def main():
              str([(d["unit_price"], d["currency"]) for d in v]))
         dung(bool(v) and "tài xế đã tự trả" in (v[0]["note"] or ""), "dòng mục V ghi rõ 'tài xế đã tự trả'", (v[0]["note"] if v else ""))
         dung(((g.get("sections") or {}).get("repair")) == "entered", "mục V chuyển sang 'đã nhập' để Bãi / kế toán kiểm tiếp")
-        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e2["id"]), {"reject": True, "reason": "thử: không phát sinh chi"}, vai="totsua")
-        phai(s, 200, "Tổ sửa chữa từ chối lần báo bị giữ xe", g)
 
-        print("6. Danh sách phiếu của tài xế: sắp mới-trước (mặc định) và cũ-trước (sap=cu)")
+        print("6. Bị giữ xe, chậm: Admin Thà Bốc duyệt → mục VI (tổ sửa chữa không duyệt được)")
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e2["id"]), {"reject": True, "reason": "thử"}, vai="totsua")
+        dung(s == 403, "tổ sửa chữa đụng lần báo bị giữ xe → 403 (việc của Bãi, mục VI)", s)
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e2["id"]), {}, vai="thabok")
+        phai(s, 200, "Bãi duyệt lần báo bị giữ xe không có tiền", g)
+        dung(not [d for d in g["expenses"] if d["section"] == "other"], "không có tiền thì chỉ ghi nhận, không sinh dòng mục VI")
+        s, g = goi("/api/trips/%s/bao-hong" % pid, {"incident_type": "delay", "note": "thử: chờ cân ở cửa khẩu, trả phí bến bãi",
+                                                     "reported_cost": 80000, "currency": "LAK", "paid_by_driver": False}, vai="tx01")
+        phai(s, 200, "Tài xế báo chậm · 80.000 LAK · cần EPL chi", g)
+        e3 = [e for e in g["events"] if e["status"] == "reported"][-1]
+        s, g = goi("/api/trips/%s" % pid, vai="thabok")
+        ev3 = {e["id"]: e for e in g["events"]}[e3["id"]]
+        dung("reported_cost" not in ev3, "Bãi không thấy số tiền tài xế báo (A2)")
+        s, g = goi("/api/trips/%s/events/%s/duyet" % (pid, e3["id"]), {"item_name": "thử: phí bến bãi", "unit_price": 999}, vai="thabok")
+        phai(s, 200, "Bãi duyệt lần báo chậm có tiền", g)
+        s, g = goi("/api/trips/%s" % pid, vai="admin")
+        vi = [d for d in g["expenses"] if d["section"] == "other"]
+        dung(len(vi) == 1 and vi[0]["unit_price"] == 80000 and vi[0]["currency"] == "LAK",
+             "mục VI có một dòng 80.000 LAK = số tài xế báo (giá Bãi gửi bị bỏ)", str([(d["unit_price"], d["currency"]) for d in vi]))
+        dung(bool(vi) and vi[0]["item_key"] == "x_misc" and bool(vi[0].get("acct_code")), "dòng mục VI là khoản 'chi khác', có định khoản",
+             str([(d["item_key"], d.get("acct_code")) for d in vi]))
+        dung(((g.get("sections") or {}).get("other")) == "entered", "mục VI sang 'đã nhập' để KT Chi phí VC kiểm")
+
+        print("7. Danh sách phiếu của tài xế: sắp mới-trước (mặc định) và cũ-trước (sap=cu)")
         s, moi = goi("/api/trips?co=5", vai="tx01")
         s2, cu = goi("/api/trips?co=5&sap=cu", vai="tx01")
         ngay_moi = [p["doc_date"] for p in moi]

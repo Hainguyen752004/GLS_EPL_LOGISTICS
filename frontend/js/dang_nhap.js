@@ -20,7 +20,7 @@
     { id: 'dispatch', x: 5, y: 30, lab: 'up', vai: ['yard'] },                         // Bãi Thà Bốc lập phiếu, in hai tờ đề nghị
     { id: 'fuel', x: 17, y: 58, lab: 'down', vai: ['depot'] },                         // thủ kho quét QR, cấp dầu
     { id: 'advance', x: 30, y: 30, lab: 'up', vai: ['expacct', 'cash'] },              // KT Chi phí ghi sổ mục IV → quỹ chi
-    { id: 'road', x: 43, y: 58, lab: 'down', vai: ['driver', 'repair', 'parts'] },     // xe chạy: báo cân, dầu, sự cố
+    { id: 'road', x: 43, y: 58, lab: 'down', vai: ['driver', 'repair', 'parts', 'yard'] },     // xe chạy: báo cân, dầu, sự cố
     { id: 'deliver', x: 56, y: 30, lab: 'up', vai: ['driver', 'yard'] },               // ký giao nhận, Bãi xác nhận xe tới
     { id: 'check', x: 69, y: 58, lab: 'down', vai: ['acct', 'fuel', 'expacct', 'treasury', 'cash'] },   // kiểm, ghi sổ, chi I–VI
     { id: 'lock', x: 81, y: 30, lab: 'up', vai: ['acct', 'rev'] },                     // khoá phiếu → đề nghị thu → SO

@@ -22,6 +22,11 @@
   let MAP = null, lopNen = null, lopVe = null, cheDoBD = 'mot', VET = null, mocSang = 0;
   const q = (s) => root.querySelector(s);
   const laBai = () => AUTH.la('yard');
+  // ai duyệt khai báo của tài xế — theo mục nó rơi vào (máy chủ `DUYET_SU_KIEN`): dầu dọc đường → III, Bãi hoặc KT kho xăng
+  // dầu; hỏng xe, lốp, tai nạn → V, tổ sửa chữa; kẹt đường, bị giữ xe, khác → VI, Bãi (Excel ໜ້າວຽກ)
+  const DUYET = { fuel: ['yard', 'fuel'], repair: ['repair'], other: ['yard'] };
+  const duyetDuoc = (e) => AUTH.la(...(DUYET[e.muc] || ['repair']));
+  const nhapGia = () => !['yard', 'driver'].includes(AUTH.role);   // Bãi không thấy, không nhập tiền (A2) — máy chủ cũng bỏ giá họ gửi
   // `laBai` ở trên tính cả Sếp (AUTH.la luôn đúng với admin) — đúng cho quyền thao tác, nhưng
   // KHÔNG dùng để giấu tiền: Sếp phải thấy hết. Chỗ giấu tiền dùng đúng vai yard.
   const chiBai = () => AUTH.role === 'yard';
@@ -328,8 +333,6 @@
   function veTabDienBien() {
     const diem = P.route_stops || [];
     const ev = (P.events || []).slice().reverse();
-    // Báo hỏng do TỔ SỬA CHỮA duyệt (C1.2); khai đổ dầu dọc đường là mục III → Bãi hoặc KT kho xăng dầu.
-    const duyetDuoc = AUTH.la('repair') || laBai() || AUTH.la('fuel');
     const than = ev.length ? `<table><thead><tr>
         <th style="width:112px">${NN.h('c_date')}</th><th style="width:132px">${NN.h('type')}</th>
         <th>${NN.h('note')}</th><th style="width:120px">${NN.h('resp')}</th><th class="no-print" style="width:118px"></th></tr></thead>
@@ -342,7 +345,7 @@
             ${e.can_run === false ? ` <span class="tag unpaid">${NN.h('pct_phai_dung')}</span>` : ''}${e.paid_by_driver ? ` <span class="tag plain">${NN.h('pct_da_tu_tra')}</span>` : ''}
             ${cho ? ` <span class="tag partial">${NN.h('st_reported')}</span>` : ''}</td>
           <td lang="lo">${esc(e.by_user) || ''}</td>
-          <td class="no-print">${cho && duyetDuoc ? `<button type="button" class="tdt2-btn sm" data-duyet="${e.id}">${NN.h('approve')}</button> <button type="button" class="tdt2-btn sm do" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`;
+          <td class="no-print">${cho && duyetDuoc(e) ? `<button type="button" class="tdt2-btn sm" data-duyet="${e.id}">${NN.h('approve')}</button> <button type="button" class="tdt2-btn sm do" data-tu-choi="${e.id}">${NN.h('reject')}</button>` : ''}</td></tr>`;
       }).join('')}</tbody></table>` : `<div class="trong">${NN.h('log_empty')}</div>`;
     const cho = (P.events || []).filter(e => e.status === 'reported').length;
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
@@ -558,17 +561,24 @@
   }
   async function duyet(e) {
     if (!e) return;
-    const v = await EPL.hopNhap(NN.t('approve') + ' — ' + (e.note || ''), [
-      { id: 'source', label: 'source', type: 'select', value: 'mua', options: [['mua', NN.t('src_mua')], ['kho', NN.t('src_kho')]] },
-      { id: 'part_id', label: 'pick_part', type: 'select', value: '', options: [['', '—']].concat(PARTS.filter(p => p.qty > 0).map(p => [p.id, p.name + ' · ' + NN.t('stock_left') + ' ' + so(p.qty)])) },
-      { id: 'item_name', label: 'item', value: e.note || '', lo: true },
-      { id: 'qty', label: 'qty', type: 'number', value: '1' },
+    const gia = nhapGia() ? [
       { id: 'unit_price', label: 'unit_price', type: 'number', value: e.reported_cost != null ? e.reported_cost : '' },
-      { id: 'currency', label: 'cur', type: 'select', value: e.currency || 'LAK', options: EPL.TIEN_TE.map(m => [m, m]) },
-    ], NN.t('approve'));
+      { id: 'currency', label: 'cur', type: 'select', value: e.currency || (e.muc === 'fuel' ? 'VND' : 'LAK'), options: EPL.TIEN_TE.map(m => [m, m]) },
+    ] : [];
+    // mỗi mục một bộ ô: dầu dọc đường hỏi số lít; sửa chữa hỏi kho / mua ngoài; chi khác chỉ hỏi tên khoản. Bãi không có ô tiền.
+    const o = e.muc === 'fuel' ? [{ id: 'qty_l', label: 'df_litres', type: 'number', value: e.qty_l != null ? e.qty_l : '' }].concat(gia)
+      : e.muc === 'other' ? [{ id: 'item_name', label: 'item', value: e.note || '', lo: true }].concat(gia)
+      : [
+        { id: 'source', label: 'source', type: 'select', value: 'mua', options: [['mua', NN.t('src_mua')], ['kho', NN.t('src_kho')]] },
+        { id: 'part_id', label: 'pick_part', type: 'select', value: '', options: [['', '—']].concat(PARTS.filter(p => p.qty > 0).map(p => [p.id, p.name + ' · ' + NN.t('stock_left') + ' ' + so(p.qty)])) },
+        { id: 'item_name', label: 'item', value: e.note || '', lo: true },
+        { id: 'qty', label: 'qty', type: 'number', value: '1' },
+      ].concat(gia);
+    const v = await EPL.hopNhap(NN.t('approve') + ' · ' + NN.t('td_vao_muc_' + (e.muc || 'repair')) + ' — ' + (e.note || ''), o, NN.t('approve'));
     if (!v) return;
     if (v.source !== 'kho') delete v.part_id;
     if (v.unit_price === '') delete v.unit_price;
+    if (v.qty_l === '') delete v.qty_l;
     try { P = await API.post(`/api/trips/${P.id}/events/${e.id}/duyet`, v); PARTS = await API.get('/api/parts'); EPL.toast(NN.t('saved'), 'ok'); await tai(true); ve(); } catch (x) { EPL.baoLoi(x); }
   }
   async function tuChoi(e) {

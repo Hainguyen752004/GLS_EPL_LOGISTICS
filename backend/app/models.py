@@ -544,6 +544,10 @@ SU_KIEN = ("arrive_stop", "incident", "repair", "refuel", "note", "change_truck"
 #   refuel  Tài xế đổ dầu DỌC ĐƯỜNG (thường là mua ở Việt Nam để chạy về). Khai xong ở trạng thái
 #           "reported"; kế toán duyệt mới thành dòng chi mục III nguồn "mua".
 LOAI_SU_CO = ("breakdown", "tire", "accident", "delay", "held", "other")   # hỏng xe · lốp · tai nạn · kẹt đường · bị giữ xe · khác
+# Khoản chi tài xế báo kèm sự cố vào mục nào, ai duyệt — theo Excel "ໜ້າວຽກ" (chủ dự án 30/09: "theo role excel quy định ai
+# duyệt"): hỏng xe, lốp, tai nạn là SỬA CHỮA → mục V, tổ sửa chữa Thà Bốc duyệt (anh Khampla C1.2); kẹt đường, bị giữ xe, việc
+# khác là CHI KHÁC → mục VI, Bãi nhập (Admin Thà Bốc). Sau đó cả hai mục: KT Chi phí VC kiểm + ghi sổ, Quỹ tiền mặt Thà Bốc chi.
+SU_CO_SUA_CHUA = ("breakdown", "tire", "accident")
 
 
 class TripEvent(Base):
