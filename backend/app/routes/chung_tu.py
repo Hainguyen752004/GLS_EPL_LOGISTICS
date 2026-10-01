@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Sổ chứng từ — điểm nối cho module kế toán (anh Khang) kéo phiếu thu / chi / nhập kho / xuất kho.
+"""Sổ chứng từ — mỗi bước nghiệp vụ bỏ vào một tờ (phiếu thu / chi / nhập kho / xuất kho…) kèm định khoản gợi ý.
 
-Bên mình không có sổ kế toán. Bảng này chỉ là "hộp thư đi": mỗi bước nghiệp vụ bỏ vào một tờ,
-bên kế toán kéo về (`chua_day=1`), tạo phiếu bên họ, rồi báo lại `da-day`. Xem services/chung_tu.py.
+Bên mình không có sổ kế toán. Tờ để in / xem và định khoản cho màn Quy trình; `da-day` đánh tay khi bên kế toán đã
+nhận / đối chiếu. Từ 01/10 KHÔNG còn đẩy tờ sang trang kế toán tạm (services/day_ke_toan.py) — hai đường đẩy cũ chỉ còn
+giữ chỗ, không gửi gì ra ngoài. Cấu hình nối KHO TẠM (máy EPL_KETOAN) cũng ở đây: `/api/kho-tam/cau-hinh`.
+Xem services/chung_tu.py.
 """
 import datetime as dt
 
@@ -13,6 +15,7 @@ from database import get_db
 from models import ChungTu
 from services import chung_tu as CT
 from services import day_ke_toan as DK
+from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
@@ -87,84 +90,85 @@ def danh_dau_da_day(cid: str, d: dict = Body(default={}), db: Session = Depends(
     return CT.xuat(c)
 
 
-# ================================================================ đẩy sang kế toán anh Khang
-DAY = ("acct", "admin")     # KT Thu/Chi VC và Sếp bấm đẩy; các vai khác xem
+# ================================================================ đẩy sang trang kế toán tạm — ĐÃ BỎ 01/10
+# Hai đường cũ giữ chỗ (cùng quyền như trước) để giao diện chưa đổi và công cụ gieo mẫu không gãy; xoá ở đợt dọn dẹp.
+DAY = ("acct", "admin")
 
 
 @router.get("/api/ke-toan/trang-thai")
 def ke_toan_trang_thai(db: Session = Depends(get_db), user=Depends(can_vai(*XEM))):
-    """Đã nối API kế toán chưa, bao nhiêu tờ đã đẩy / chưa / lỗi, lần đẩy gần nhất."""
+    """Không còn đẩy: luôn `cau_hinh: False` → màn Sổ chứng từ, Đề nghị thu không hiện nút Đẩy. Kèm số tờ chưa đánh
+    dấu đã nhận."""
     return DK.trang_thai(db)
 
 
 @router.post("/api/chung-tu/day")
 def day_tat_ca(d: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
-    """Đẩy mọi tờ chưa đẩy sang kế toán. Chưa cấu hình thì báo 409 chứ không đứng im."""
-    if not DK.cau_hinh(db, "ke_toan_api"):
-        raise HTTPException(409, {"ma": "CHUA_CAU_HINH", "loi": "Chưa có địa chỉ API kế toán. Sếp vào Sổ chứng từ → Kết nối kế toán để đặt."})
-    ket = DK.day_hang_loat(db, user, loai=(d.get("loai") or None))
-    db.commit()
-    return ket
+    """Không đẩy nữa — trả tóm tắt rỗng đúng kiểu cũ ({thu, xong, loi} = 0), không gửi gì ra ngoài."""
+    return DK.day_hang_loat(db, user, loai=(d.get("loai") or None))
 
 
 @router.post("/api/chung-tu/{cid}/day")
 def day_mot_to(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
+    """Không đẩy nữa — 410 KHONG_DAY_NUA, tờ giữ nguyên (không tăng lần thử, không ghi lỗi)."""
     c = db.get(ChungTu, cid)
     if not c:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chứng từ này."})
-    if not DK.cau_hinh(db, "ke_toan_api"):
-        raise HTTPException(409, {"ma": "CHUA_CAU_HINH", "loi": "Chưa có địa chỉ API kế toán."})
-    ok, tb = DK.day_mot(db, c, user)
-    db.commit()
-    if not ok:
-        raise HTTPException(502, {"ma": "DAY_HONG", "loi": tb})
-    return CT.xuat(c)
+    raise HTTPException(410, {"ma": "KHONG_DAY_NUA", "loi": DK.KHONG_DAY_NUA})
 
 
+# ================================================================ cấu hình nối KHO TẠM + hai mã bên kế toán cấp sau
+# Tên mới (01/10): kho_api · kho_web · kho_token (services/goi_ke_toan.py). Tên cũ ke_toan_api · ke_toan_web ·
+# ke_toan_token · co_token và đường /api/ke-toan/cau-hinh vẫn nhận / trả song song cho tới khi giao diện đổi xong
+# (màn Tài khoản → Liên thông, Sổ chứng từ → Cấu hình) — bỏ ở đợt dọn dẹp.
+def _xem_cau_hinh(db):
+    """Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
+    from services.bao_mat import token_nhan_ke_toan
+    api, web, co = KT.doc_kho(db, "api"), KT.doc_kho(db, "web"), bool(KT.doc_kho(db, "token"))
+    return {"kho_api": api, "kho_web": web, "co_token_kho": co,
+            "co_token_nhan_ke_toan": bool(token_nhan_ke_toan(db)),
+            # Hai mã bên kế toán cấp sau: hàng khách gửi (ngoài bảng) và giá vốn hàng bán
+            "ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui"), "ma_gia_von": DK.cau_hinh(db, "ma_gia_von"),
+            "ke_toan_api": api, "ke_toan_web": web, "co_token": co}          # tên cũ — bỏ ở đợt dọn dẹp
+
+
+@router.get("/api/kho-tam/cau-hinh")
 @router.get("/api/ke-toan/cau-hinh")
 def xem_cau_hinh(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
-    """Sếp xem cấu hình. Token chỉ báo có hay không, không bao giờ trả ra trình duyệt."""
-    from services.bao_mat import token_nhan_ke_toan
-    return {"ke_toan_api": DK.cau_hinh(db, "ke_toan_api"), "co_token": bool(DK.cau_hinh(db, "ke_toan_token")),
-            "co_token_nhan_ke_toan": bool(token_nhan_ke_toan(db)), "ke_toan_web": DK.cau_hinh(db, "ke_toan_web"),
-            # Hai mã bên kế toán cấp sau: hàng khách gửi (ngoài bảng) và giá vốn hàng bán
-            "ma_hang_khach_gui": DK.cau_hinh(db, "ma_hang_khach_gui"), "ma_gia_von": DK.cau_hinh(db, "ma_gia_von")}
+    """Sếp xem cấu hình nối kho tạm và hai mã bên kế toán cấp sau."""
+    return _xem_cau_hinh(db)
 
 
+@router.put("/api/kho-tam/cau-hinh")
 @router.put("/api/ke-toan/cau-hinh")
 def dat_cau_hinh(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
-    """Sếp đặt địa chỉ API và token (gửi token rỗng = giữ token cũ; gửi "-" = xoá)."""
-    if "ke_toan_api" in d:
-        DK.dat_cau_hinh(db, "ke_toan_api", d.get("ke_toan_api") or "", user)
-    if "ke_toan_web" in d:
-        DK.dat_cau_hinh(db, "ke_toan_web", d.get("ke_toan_web") or "", user)
-    tk = d.get("ke_toan_token")
+    """Sếp đặt địa chỉ API kho, địa chỉ mở bằng trình duyệt và khoá kho (gửi khoá rỗng = giữ khoá cũ; gửi "-" = xoá).
+    Nhận tên mới (kho_*) lẫn tên cũ (ke_toan_*); gửi cả hai thì tên mới thắng."""
+    for vai in ("api", "web"):
+        moi, cu = KT.KHOA_KHO[vai]
+        if moi in d or cu in d:
+            KT.dat_kho(db, vai, (d.get(moi) if moi in d else d.get(cu)) or "", user)
+    moi, cu = KT.KHOA_KHO["token"]
+    tk = d.get(moi) or d.get(cu)
     if tk == "-":
-        DK.dat_cau_hinh(db, "ke_toan_token", "", user)
+        KT.dat_kho(db, "token", "", user)
     elif tk:
-        DK.dat_cau_hinh(db, "ke_toan_token", tk, user)
+        KT.dat_kho(db, "token", tk, user)
     for k in ("ma_hang_khach_gui", "ma_gia_von"):
         if k in d:
             DK.dat_cau_hinh(db, k, str(d.get(k) or "").strip(), user)
     db.commit()
-    return xem_cau_hinh(db, user)
+    return _xem_cau_hinh(db)
 
 
 @router.post("/api/ke-toan/bo-sung-gia-von")
 def bo_sung_gia_von(db: Session = Depends(get_db), user=Depends(can_vai("admin"))):
-    """Tờ xuất kho bán (PXK_BAN) ghi TRƯỚC khi chốt mã giá vốn 607 (23/09) thiếu vế Nợ → sổ kế toán giữ nó
-    thành bút toán một vế. Điền mã giá vốn hiện hành vào các tờ đó rồi đẩy lại: sổ nhận ra cùng số tờ, cùng
-    số tiền, chỉ điền nốt vế còn thiếu vào bút toán cũ (không sinh bút toán thứ hai)."""
+    """Tờ xuất kho bán (PXK_BAN) ghi TRƯỚC khi chốt mã giá vốn 607 (23/09) thiếu vế Nợ: điền mã giá vốn hiện hành vào
+    các tờ đó để định khoản đủ hai vế (màn Quy trình, bản in). Từ 01/10 không đẩy lại sang trang kế toán tạm nữa —
+    cờ đã nhận của tờ giữ nguyên. Kiểu trả về giữ như cũ (`da_day` luôn 0)."""
     ma = DK.cau_hinh(db, "ma_gia_von") or CT.GIA_VON[0]
     ds = db.query(ChungTu).filter(ChungTu.loai == "PXK_BAN", ChungTu.no.is_(None)).order_by(ChungTu.ngay).all()
-    ket = {"ma_gia_von": ma, "so_to": len(ds), "da_day": 0, "loi": []}
     for c in ds:
         c.no, c.no_ten = ma, CT.GIA_VON[1]
-        c.da_day = False
-        ok, tb = DK.day_mot(db, c, user)
-        if ok:
-            ket["da_day"] += 1
-        else:
-            ket["loi"].append({"so": c.so, "loi": tb})
     db.commit()
-    return ket
+    return {"ma_gia_von": ma, "so_to": len(ds), "da_day": 0, "loi": [], "khong_day_nua": True}

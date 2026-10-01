@@ -84,10 +84,14 @@ def can_vai(*vai):
     return kiem
 
 
-# ---------------------------------------------------------------- trang kế toán gọi sang (28/09)
+# ---------------------------------------------------------------- kho tạm (máy EPL_KETOAN) gọi sang (28/09)
+# Từ 01/10 máy EPL_KETOAN bỏ phần tiền, chỉ còn làm KHO TẠM (cấp dầu QR, phụ tùng, sổ quặng gửi bãi, giá vốn, sửa chữa
+# xe) — nhưng màn Cấp phát, Điểm đổ, Lệnh sửa chữa… bên đó vẫn gọi về đây, nên khoá nhận và cửa máy gọi GIỮ NGUYÊN.
+# Tên `ke_toan` giữ như cũ (khoá `token_nhan_ke_toan` trong bảng cau_hinh của máy thật 8020, routes/lien_thong.py gọi
+# theo tên này); đọc là "kho tạm". Đổi tên ở đợt dọn dẹp nếu cần, đổi cùng lúc cả khoá bảng.
 def token_nhan_ke_toan(db):
-    """Khoá trang kế toán (EPL_KETOAN) phải mang khi gọi sang đây. Sếp tạo ở màn cấu hình rồi chép sang Cài đặt
-    bên kế toán; hoặc đặt EPL_LAO_TOKEN_NHAN_KE_TOAN trong .env."""
+    """Khoá kho tạm (máy EPL_KETOAN, xưa gọi "trang kế toán") phải mang khi gọi sang đây. Sếp tạo ở màn cấu hình rồi
+    chép sang Cài đặt bên đó; hoặc đặt EPL_LAO_TOKEN_NHAN_KE_TOAN trong .env."""
     from models import CauHinh
     r = db.get(CauHinh, "token_nhan_ke_toan")
     return (r.gia_tri.strip() if r and r.gia_tri else "") or (os.getenv("EPL_LAO_TOKEN_NHAN_KE_TOAN") or "").strip()
@@ -116,9 +120,9 @@ def may_qlsx_goi(request: Request, db: Session = Depends(get_db)):
 
 
 def may_ke_toan_goi(request: Request, db: Session = Depends(get_db)):
-    """Kho và tiền vận chuyển đã dời sang trang kế toán (28/09); màn bên đó cần đọc / ghi vào phiếu thì gọi sang
-    đây bằng khoá máy, kèm `X-Nguoi-Dung: <tên đăng nhập>` của người đang bấm. Hai trang dùng CÙNG tên đăng nhập,
-    nên người đó phải có tài khoản còn hiệu lực ở đây — trả về chính tài khoản đó, và quyền là quyền của vai
+    """Kho đã dời sang máy EPL_KETOAN (28/09; từ 01/10 máy đó chỉ còn là kho tạm, bỏ phần tiền); màn bên đó cần đọc /
+    ghi vào phiếu thì gọi sang đây bằng khoá máy, kèm `X-Nguoi-Dung: <tên đăng nhập>` của người đang bấm. Hai bên
+    dùng CÙNG tên đăng nhập, nên người đó phải có tài khoản còn hiệu lực ở đây — trả về chính tài khoản đó, và quyền là quyền của vai
     người đó bên này (không có vai nào "máy" làm được hơn người)."""
     from models import User
     mong = token_nhan_ke_toan(db)

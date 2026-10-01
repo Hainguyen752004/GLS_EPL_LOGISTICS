@@ -1,42 +1,160 @@
 # -*- coding: utf-8 -*-
-"""Thử ĐẨY CHỨNG TỪ sang kế toán — bằng một máy nhận giả đóng vai API anh Khang, chạy ngay trong bộ kiểm.
+"""Thử KHÔNG CÒN ĐẨY CHỨNG TỪ sang trang kế toán tạm (01/10) + cấu hình KHO riêng vẫn nối được kho tạm.
 
-    python kiem/thu_day_ke_toan.py [http://127.0.0.1:8010]
+    python kiem/thu_day_ke_toan.py [http://127.0.0.1:8011]
 
-Máy nhận giả nghe ở cổng 8099, ghi lại từng gói tin nhận được. Bộ kiểm: Sếp đặt địa chỉ API → bấm đẩy
-→ gói tin sang đúng dạng hợp đồng → tờ được đánh đã đẩy kèm mã bên kia → máy nhận trả 500 thì tờ giữ
-nguyên và ghi lỗi → trả 409 (đã có) thì coi là đã đẩy → chưa cấu hình thì 409 rõ ràng → Bãi không được
-bấm đẩy. Cuối cùng trả cấu hình về rỗng để không ảnh hưởng máy thật.
+Chủ dự án chốt 01/10: trang kế toán tạm (EPL_KETOAN) bỏ phần tiền, chỉ còn làm KHO TẠM; việc tiền đi qua hệ anh Tune.
+Trước đây bài này dựng máy nhận giả đóng vai API kế toán và thử đẩy — nay đổi thành thử "không còn đẩy":
+
+  A. Trong tiến trình (không mạng, không DB — DB giả trong bộ nhớ): `day_mot` / `day_hang_loat` không gọi ra ngoài lần
+     nào, không đụng tờ, trả đúng kiểu cũ; mã nguồn backend không còn lời gọi `/api/v1/epl-lao/vouchers`. Cấu hình kho:
+     khoá mới `kho_api` / `kho_token` / `kho_web`, chưa từng lưu thì đọc khoá cũ `ke_toan_*`; đã lưu (kể cả để trống) thì
+     không đọc khoá cũ nữa; `dat_kho` không đụng khoá cũ.
+  B. Qua máy chủ đang chạy: `/api/ke-toan/trang-thai` nói không nối đẩy; hai đường đẩy cũ trả "không đẩy nữa" (tóm tắt
+     rỗng · 410), đúng quyền như cũ; tờ giữ nguyên; trang kế toán tạm không nhận thêm tờ nào. Cấu hình kho đọc được ở
+     cả đường mới `/api/kho-tam/cau-hinh` lẫn đường cũ, không lộ khoá. Kho tạm vẫn nối: Kiểm kết nối, địa chỉ mở, Xem
+     kho có giá dầu.
+
+Bài KHÔNG đổi cấu hình trên DB (DB bản sao dùng chung với máy thử khác) — PUT chỉ gửi thân rỗng.
+Địa chỉ kho tạm để đối chiếu: biến EPL_KT (mặc định 8031) — xem kiem/_ke_toan.py.
 """
+import ast
+import glob
+import io
 import json
+import os
 import sys
-import threading
 import urllib.error
+import urllib.parse
 import urllib.request
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
-GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
-CONG_GIA = 8099
+GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011").rstrip("/")
+DU_AN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+APP = os.path.join(DU_AN, "backend", "app")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K       # noqa: E402 — kho tạm (EPL_KETOAN)
+
 TOKEN = {}
-NHAN = []                 # gói tin máy giả đã nhận
-CHE_DO = {"tra": 201}     # 201 nhận · 500 hỏng · 409 đã có
+DEM = {"dat": 0}
 
 
-class MayNhanGia(BaseHTTPRequestHandler):
-    def log_message(self, *a): pass
-
-    def do_POST(self):
-        n = int(self.headers.get("Content-Length") or 0)
-        than = json.loads(self.rfile.read(n).decode("utf-8")) if n else {}
-        NHAN.append({"path": self.path, "auth": self.headers.get("Authorization"), "than": than})
-        ma = CHE_DO["tra"]
-        self.send_response(ma); self.send_header("Content-Type", "application/json"); self.end_headers()
-        if ma == 500:
-            self.wfile.write(json.dumps({"message": "máy giả cố ý hỏng"}).encode())
-        else:
-            self.wfile.write(json.dumps({"id": "KT-%04d" % len(NHAN), "status": "accepted"}).encode())
+def phai(dung, buoc):
+    DEM["dat"] += 1
+    print("%s %s" % ("  ✓" if dung else "  SAI", buoc))
+    if not dung:
+        raise SystemExit("DỪNG: " + buoc)
 
 
+# ================================================================ A. trong tiến trình
+def phan_a():
+    print("A. Trong tiến trình — không mạng, DB giả")
+    # Không bao giờ chạm DB thật: địa chỉ DB giả (engine chỉ dựng, không nối), khoá cấu hình qua biến môi trường để trống
+    # (load_dotenv không ghi đè biến đã có).
+    os.environ["DATABASE_URL"] = "postgresql+psycopg2://kiem@127.0.0.1:1/khong_co"
+    for k in ("KHO_API", "KHO_TOKEN", "KHO_WEB", "KE_TOAN_API", "KE_TOAN_TOKEN", "KE_TOAN_WEB"):
+        os.environ["EPL_" + k] = ""
+    sys.path.insert(0, APP)
+    from models import CauHinh
+    from services import day_ke_toan as DK
+    from services import goi_ke_toan as KT
+    from services import kho_ke_toan as KK
+    from services import mang as MANG
+
+    ra_ngoai = []
+
+    def chan(*a, **k):
+        ra_ngoai.append(a[0] if a else k)
+        raise AssertionError("có lời gọi mạng đi ra")
+    goc_mo = urllib.request.urlopen, MANG.mo
+    urllib.request.urlopen, MANG.mo = chan, chan
+    try:
+        _phan_a(DK, KT, KK, CauHinh, ra_ngoai)
+    finally:
+        urllib.request.urlopen, MANG.mo = goc_mo          # phần B cần mạng thật
+
+
+def _phan_a(DK, KT, KK, CauHinh, ra_ngoai):
+    class To:            # một tờ chứng từ giả — chỉ các cờ đẩy
+        da_day, lan_thu, loi_day, day_luc, ma_ben_ke_toan, so = False, 2, None, None, None, "PXK_NL/2610/0001"
+
+    t = To()
+    ok, tb = DK.day_mot(None, t)
+    phai(ok is False and "không đẩy" in tb.lower(), "day_mot trả (False, \"không đẩy nữa…\") đúng kiểu cũ")
+    phai((t.da_day, t.lan_thu, t.loi_day, t.day_luc) == (False, 2, None, None), "day_mot không đụng tờ (không tăng lần thử, không ghi lỗi)")
+    k = DK.day_hang_loat(None)
+    phai(all(k[x] == 0 for x in ("thu", "xong", "loi")) and k["chi_tiet_loi"] == [], "day_hang_loat trả tóm tắt rỗng đúng kiểu cũ")
+    phai(not ra_ngoai, "không có lời gọi mạng nào đi ra")
+
+    # mã nguồn: đường nhận phong bì của trang tạm chỉ còn nhắc trong chú thích đầu tệp day_ke_toan.py
+    dung = []
+    for f in glob.glob(os.path.join(APP, "**", "*.py"), recursive=True):
+        s = io.open(f, encoding="utf-8").read()
+        if "epl-lao/vouchers" not in s:
+            continue
+        cay = ast.parse(s)
+        chu_thich = ast.get_docstring(cay) or ""
+        if s.count("epl-lao/vouchers") > chu_thich.count("epl-lao/vouchers"):
+            dung.append(os.path.relpath(f, DU_AN))
+    phai(not dung, "backend không còn mã nào gọi /api/v1/epl-lao/vouchers %s" % (dung or ""))
+    s = io.open(os.path.join(APP, "services", "day_ke_toan.py"), encoding="utf-8").read()
+    phai("urllib" not in s and "MANG" not in s, "services/day_ke_toan.py không còn mở kết nối nào")
+
+    # cấu hình kho: khoá mới · khoá cũ
+    class DbGia:
+        def __init__(self, **dong):
+            self.dong = {k: CauHinh(khoa=k, gia_tri=v) for k, v in dong.items()}
+            self.info = {}
+
+        def get(self, _lop, k):
+            return self.dong.get(k)
+
+        def add(self, r):
+            self.dong[r.khoa] = r
+
+    cu = dict(ke_toan_api="http://kho-cu:8030/", ke_toan_token="khoa-cu", ke_toan_web="http://web-cu:8030")
+    db = DbGia(**cu)
+    phai(KT.cau_hinh(db) == ("http://kho-cu:8030", "khoa-cu") and KK.web_ke_toan(db) == "http://web-cu:8030",
+         "chỉ có khoá cũ (máy 8020 hiện nay) → kho vẫn đọc khoá cũ")
+    db = DbGia(kho_api="http://kho-moi:8031", **cu)
+    phai(KT.cau_hinh(db) == ("http://kho-moi:8031", "khoa-cu"), "đặt kho_api → địa chỉ mới; kho_token chưa lưu → vẫn khoá cũ")
+    db = DbGia(kho_api="http://kho-moi:8031", kho_token="", **cu)
+    phai(KT.cau_hinh(db)[1] == "", "kho_token đã lưu RỖNG (Sếp xoá) → khoá cũ không sống lại")
+    try:
+        KT.goi(db, "GET", "/api/lien-thong/kiem")
+        phai(False, "thiếu khoá kho phải chặn")
+    except Exception as e:  # noqa: BLE001
+        phai(getattr(e, "status_code", None) == 503 and e.detail["ma"] == "CHUA_NOI_KE_TOAN" and not ra_ngoai,
+             "thiếu khoá kho → 503 CHUA_NOI_KE_TOAN, không gọi ra ngoài")
+    db = DbGia(kho_api="http://kho-moi:8031", kho_web="", ke_toan_api="http://kho-cu:8030")
+    phai(KK.web_ke_toan(db) == "http://kho-moi:8031", "kho_web để trống → địa chỉ mở là kho_api (như ke_toan_web trước đây)")
+    os.environ["EPL_KHO_API"] = "http://kho-env:8031"
+    db = DbGia(**cu)
+    phai(KT.cau_hinh(db)[0] == "http://kho-env:8031", "biến EPL_KHO_API thắng khoá cũ")
+    os.environ["EPL_KHO_API"] = ""
+    db = DbGia(**cu)
+    KT.dat_kho(db, "api", "http://kho-moi:8031")
+    KT.dat_kho(db, "token", "")
+    phai({k: db.dong[k].gia_tri for k in cu} == cu and db.dong["kho_api"].gia_tri == "http://kho-moi:8031",
+         "dat_kho ghi khoá mới, KHÔNG đụng khoá cũ (quay về mã cũ vẫn chạy)")
+    phai(KT.cau_hinh(db) == ("http://kho-moi:8031", ""), "đọc lại sau khi lưu trong cùng phiên → số mới (bộ nhớ phiên được xoá)")
+
+    # đường PUT cấu hình: giao diện cũ gửi tên cũ ke_toan_* → ghi vào khoá kho mới; tên mới thắng nếu gửi cả hai
+    from routes import chung_tu as RCT
+    DbGia.commit = lambda self: None
+    db = DbGia(**cu)
+    g = RCT.dat_cau_hinh({"ke_toan_api": "http://kho-moi:8031", "ke_toan_web": "", "ke_toan_token": ""}, db=db, user=None)
+    phai(db.dong["kho_api"].gia_tri == "http://kho-moi:8031" and db.dong["kho_web"].gia_tri == "" and "kho_token" not in db.dong
+         and {k: db.dong[k].gia_tri for k in cu} == cu,
+         "PUT tên cũ (màn Tài khoản hiện nay) → ghi kho_api / kho_web, khoá rỗng = giữ, khoá cũ không đụng")
+    phai(g["kho_api"] == g["ke_toan_api"] == "http://kho-moi:8031" and g["co_token_kho"] is True and g["co_token"] is True
+         and not any(k in g for k in ("kho_token", "ke_toan_token")), "trả cả tên mới lẫn tên cũ, không lộ khoá")
+    g = RCT.dat_cau_hinh({"kho_token": "-"}, db=db, user=None)
+    phai(db.dong["kho_token"].gia_tri == "" and g["co_token_kho"] is False, "PUT kho_token \"-\" → xoá khoá kho (khoá cũ không sống lại)")
+    RCT.dat_cau_hinh({"kho_api": "http://moi:1", "ke_toan_api": "http://cu:1"}, db=db, user=None)
+    phai(db.dong["kho_api"].gia_tri == "http://moi:1", "gửi cả tên mới lẫn tên cũ → tên mới thắng")
+
+
+# ================================================================ B. qua máy chủ
 def goi(duong, du_lieu=None, vai=None, method=None):
     dau = {"Content-Type": "application/json"}
     if vai:
@@ -44,162 +162,82 @@ def goi(duong, du_lieu=None, vai=None, method=None):
     than = json.dumps(du_lieu).encode() if du_lieu is not None else None
     r = urllib.request.Request(GOC + duong, data=than, headers=dau, method=method or ("POST" if than is not None else "GET"))
     try:
-        with urllib.request.urlopen(r, timeout=40) as t:
-            return t.status, json.loads(t.read())
+        with urllib.request.urlopen(r, timeout=120) as t:
+            return t.status, json.loads(t.read() or b"null")
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read())
+        try:
+            return e.code, json.loads(e.read() or b"null")
+        except ValueError:
+            return e.code, {}
 
 
-def phai(s, mong, buoc, g=None):
-    dt_ = (g or {}).get("detail") if isinstance(g, dict) else None
-    ma = dt_.get("ma", "") if isinstance(dt_, dict) else ""
-    print("%s %-60s %s %s" % ("  ✓" if s == mong else "  SAI", buoc, s, ma))
-    if s != mong:
-        raise SystemExit("DỪNG: %s trả %s, mong %s — %s" % (buoc, s, mong, g))
+def ma_loi(g):
+    d = (g or {}).get("detail") if isinstance(g, dict) else None
+    return d.get("ma") if isinstance(d, dict) else None
+
+
+def phan_b():
+    print("B. Qua máy chủ %s (kho tạm đối chiếu: %s)" % (GOC, K.KT))
+    for u in ("thabok", "ketoan", "admin"):
+        s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TOKEN[u] = g["token"]
+
+    s, tt = goi("/api/ke-toan/trang-thai", vai="ketoan")
+    phai(s == 200 and tt["cau_hinh"] is False and tt.get("khong_day_nua") is True,
+         "trạng thái đẩy: cau_hinh false → màn Sổ chứng từ / Đề nghị thu không hiện nút Đẩy")
+
+    s, ds = goi("/api/chung-tu?chua_day=1&limit=1", vai="ketoan")
+    to = (ds.get("ds") or [None])[0] if s == 200 else None
+    truoc_kt = None
+    if to:
+        s, kt = K.kt("/api/chung-tu?limit=1000&q=" + urllib.parse.quote(to["so"]), vai="ketoan")
+        truoc_kt = sorted(json.dumps(v, sort_keys=True) for v in (kt or []) if v.get("source") == "EPL_LAO" and v.get("ref") == to["so"])
+
+    s, g = goi("/api/chung-tu/day", {}, vai="thabok")
+    phai(s == 403, "Bãi bấm Đẩy hết → 403 như cũ")
+    s, g = goi("/api/chung-tu/day", {}, vai="ketoan")
+    phai(s == 200 and g["thu"] == g["xong"] == g["loi"] == 0 and g.get("khong_day_nua") is True,
+         "Đẩy hết → 200 tóm tắt rỗng (không đẩy tờ nào)")
+    s, g = goi("/api/chung-tu/khong-co-to-nay/day", {}, vai="ketoan")
+    phai(s == 404, "Đẩy một tờ không có → 404 như cũ")
+    if to:
+        s, g = goi("/api/chung-tu/%s/day" % to["id"], {}, vai="ketoan")
+        phai(s == 410 and ma_loi(g) == "KHONG_DAY_NUA", "Đẩy tờ %s → 410 KHONG_DAY_NUA" % to["so"])
+        s, sau = goi("/api/chung-tu/%s" % to["id"], vai="ketoan")
+        phai(all(sau[k] == to[k] for k in ("da_day", "lan_thu", "loi_day", "day_luc", "ma_ben_ke_toan")), "tờ giữ nguyên sau khi bấm đẩy")
+        s, kt = K.kt("/api/chung-tu?limit=1000&q=" + urllib.parse.quote(to["so"]), vai="ketoan")
+        sau_kt = sorted(json.dumps(v, sort_keys=True) for v in (kt or []) if v.get("source") == "EPL_LAO" and v.get("ref") == to["so"])
+        phai(s == 200 and sau_kt == truoc_kt, "kho tạm không nhận thêm / không đổi tờ %s nào từ trang điều xe" % to["so"])
+    else:
+        print("  · không còn tờ chưa đánh dấu — bỏ qua phần đẩy một tờ")
+
+    s, moi = goi("/api/kho-tam/cau-hinh", vai="admin")
+    s2, cu = goi("/api/ke-toan/cau-hinh", vai="admin")
+    phai(s == s2 == 200 and moi == cu, "cấu hình đọc được ở đường mới /api/kho-tam/cau-hinh lẫn đường cũ")
+    phai(moi["kho_api"] == moi["ke_toan_api"] and moi["kho_web"] == moi["ke_toan_web"] and moi["co_token_kho"] == moi["co_token"],
+         "tên mới kho_* và tên cũ ke_toan_* trả cùng số (giao diện cũ còn đọc)")
+    phai(moi["kho_api"] and moi["co_token_kho"], "máy thử có địa chỉ + khoá kho (đọc từ khoá cũ nếu chưa lưu khoá mới): %s" % moi["kho_api"])
+    phai(not any(k in moi for k in ("kho_token", "ke_toan_token")), "khoá kho không ra trình duyệt")
+    s, g = goi("/api/kho-tam/cau-hinh", vai="ketoan")
+    phai(s == 403, "Kế toán xem cấu hình kho → 403 (chỉ Sếp)")
+    s, g = goi("/api/kho-tam/cau-hinh", {}, vai="ketoan", method="PUT")
+    phai(s == 403, "Kế toán đặt cấu hình kho → 403")
+    s, g = goi("/api/kho-tam/cau-hinh", {}, vai="admin", method="PUT")
+    phai(s == 200 and g == moi, "Sếp lưu thân rỗng → 200, cấu hình không đổi")
+
+    s, g = goi("/api/lien-thong/thu", vai="admin")
+    phai(s == 200 and g.get("ok") is True, "Kiểm kết nối kho tạm (đây → %s) → nối được, bên kia nhận ra %s" % (g.get("api"), (g.get("ben_kia") or {}).get("nguoi")))
+    s, g = goi("/api/lien-thong/dia-chi", vai="thabok")
+    phai(s == 200 and g.get("ke_toan_web") == (moi["kho_web"] or moi["kho_api"]).rstrip("/"), "địa chỉ mở kho tạm (nút Cấp phát, QR) = kho_web, trống thì kho_api")
+    s, g = goi("/api/kho-xem", vai="ketoan")
+    dau = (g or {}).get("nhien_lieu") or []
+    phai(s == 200 and dau and any(k.get("gia_bq") for k in dau), "Xem kho hỏi kho tạm: %d kho dầu, có giá bình quân" % len(dau))
 
 
 def main():
-    for u in ("thabok", "ketoan", "admin"):
-        s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TOKEN[u] = g["token"]
-    print("✓ đăng nhập 3 vai")
-
-    goc_cau_hinh = _cat_cau_hinh()
-    tao = []                  # phiếu thử bài này tự lập (xoá ở cuối)
-    may = HTTPServer(("127.0.0.1", CONG_GIA), MayNhanGia)
-    threading.Thread(target=may.serve_forever, daemon=True).start()
-    print("✓ máy nhận giả (đóng vai API anh Khang) nghe ở :%d" % CONG_GIA)
-
-    try:
-        # 0. chưa cấu hình → đẩy phải báo rõ, không im
-        s, g = goi("/api/ke-toan/cau-hinh", {"ke_toan_api": "", "ke_toan_token": "-"}, vai="admin", method="PUT")
-        phai(s, 200, "Sếp xoá cấu hình để bắt đầu sạch", g)
-        s, g = goi("/api/chung-tu/day", {}, vai="ketoan")
-        phai(s, 409, "Đẩy khi CHƯA cấu hình → báo CHUA_CAU_HINH", g)
-        s, g = goi("/api/ke-toan/trang-thai", vai="ketoan")
-        assert s == 200 and g["cau_hinh"] is False, "trạng thái phải nói chưa nối"
-
-        # 1. Sếp đặt địa chỉ + token; token không được lộ ra
-        s, g = goi("/api/ke-toan/cau-hinh", {"ke_toan_api": "http://127.0.0.1:%d" % CONG_GIA, "ke_toan_token": "bi-mat-123"}, vai="admin", method="PUT")
-        phai(s, 200, "Sếp đặt địa chỉ API và token", g)
-        assert g["co_token"] is True and "bi-mat" not in json.dumps(g), "token không được trả về trình duyệt"
-        s, g = goi("/api/ke-toan/cau-hinh", vai="ketoan")
-        phai(s, 403, "Kế toán xem cấu hình → bị từ chối (chỉ Sếp)", g)
-
-        # 2. Bãi không được bấm đẩy
-        s, g = goi("/api/chung-tu/day", {}, vai="thabok")
-        phai(s, 403, "Bãi bấm đẩy → bị từ chối", g)
-
-        # 3. đẩy một tờ chưa đẩy. Từ 28/09 (đợt 7a) tờ HD / PT sinh thẳng ở trang kế toán, hộp thư đi có thể không còn đủ
-        #    hai tờ chưa đẩy → tự lập phiếu thử (mỗi phiếu một tờ DO), xoá ở cuối bài
-        s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan")
-        if len(ds["ds"]) < 2:
-            import datetime as _dt
-            s, xe = goi("/api/vehicles", vai="thabok"); s, tx = goi("/api/drivers", vai="thabok")
-            # xe, tài xế RẢNH trước: xoá phiếu thử trả xe / tài xế về "rảnh" — đừng lấy xe đang chạy chuyến khác
-            xe = sorted([x for x in xe if x.get("owner_type") != "joint" and x.get("active") is not False] or xe, key=lambda x: x.get("status") != "available")
-            tx = sorted(tx, key=lambda x: x.get("status") != "available")
-            hom = _dt.date.today().isoformat()
-            for i in range(2 - len(ds["ds"])):
-                s, p = goi("/api/trips", {"kind": "gom", "company": "EPL", "vehicle_id": xe[i % len(xe)]["id"], "driver_id": tx[i % len(tx)]["id"],
-                                          "doc_date": hom, "out_date": hom, "goods_type": "iron_ore", "expenses": []}, vai="thabok")
-                phai(s, 200, "Hộp thư đi thiếu tờ chưa đẩy → lập phiếu thử %d (sinh tờ DO)" % (i + 1), p)
-                tao.append(p["id"])
-            s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan")
-        assert ds["ds"], "phải còn tờ chưa đẩy để thử (gieo lại DB nếu hết)"
-        to = ds["ds"][0]
-        s, g = goi("/api/chung-tu/%s/day" % to["id"], {}, vai="ketoan")
-        phai(s, 200, "Đẩy một tờ %s" % to["so"], g)
-        assert g["da_day"] is True and g["ma_ben_ke_toan"] == "KT-0001", "tờ phải đánh đã đẩy kèm mã bên kia: %s" % g.get("ma_ben_ke_toan")
-        gt = NHAN[-1]
-        assert gt["path"] == "/api/v1/epl-lao/vouchers", "phải gọi đúng đường hợp đồng: %s" % gt["path"]
-        assert gt["auth"] == "Bearer bi-mat-123", "phải gửi token dạng Bearer"
-        t = gt["than"]
-        for k in ("source", "ref", "type", "group", "date", "party", "amount", "entry", "memo", "lines"):
-            assert k in t, "gói tin thiếu trường %s" % k
-        assert t["source"] == "EPL_LAO" and t["ref"] == to["so"] and t["type"] == to["loai"], "gói tin phải mang đúng số và loại tờ"
-        print("  ✓ gói tin đúng hợp đồng: ref=%s type=%s group=%s amount=%s %s" % (t["ref"], t["type"], t["group"], t["amount"]["value"], t["amount"]["currency"]))
-
-        # 4. máy bên kia hỏng → tờ giữ nguyên, ghi lỗi, đếm lần thử
-        CHE_DO["tra"] = 500
-        s, ds = goi("/api/chung-tu?chua_day=1&limit=5", vai="ketoan"); to2 = ds["ds"][0]
-        lan_truoc = to2.get("lan_thu") or 0          # tờ có thể đã được các lượt chạy trước thử — so mức TĂNG, không so số tuyệt đối
-        s, g = goi("/api/chung-tu/%s/day" % to2["id"], {}, vai="ketoan")
-        phai(s, 502, "Bên kia trả 500 → báo DAY_HONG, tờ không bị đánh đã đẩy", g)
-        s, g = goi("/api/chung-tu/%s" % to2["id"], vai="ketoan")
-        assert g["da_day"] is False and g["loi_day"] and "500" in g["loi_day"] and g["lan_thu"] == lan_truoc + 1, "tờ phải giữ chưa đẩy và ghi lỗi: %s" % g
-        print("  ✓ tờ %s giữ chưa đẩy, lỗi ghi lại: %s" % (to2["so"], g["loi_day"][:50]))
-
-        # 5. bên kia nói 'đã có rồi' (409) → coi là đã đẩy
-        CHE_DO["tra"] = 409
-        s, g = goi("/api/chung-tu/%s/day" % to2["id"], {}, vai="ketoan")
-        phai(s, 200, "Bên kia trả 409 (đã có) → coi là đã đẩy", g)
-        assert g["da_day"] is True and g["loi_day"] is None and g["lan_thu"] == lan_truoc + 2, "phải xoá lỗi cũ và tính thêm một lần thử nữa"
-
-        # 6. đẩy hết
-        CHE_DO["tra"] = 201
-        truoc = len(NHAN)
-        s, g = goi("/api/chung-tu/day", {}, vai="ketoan")
-        phai(s, 200, "Đẩy hết tờ chưa đẩy", g)
-        assert g["xong"] == g["thu"] and g["loi"] == 0, "đẩy hết phải xong hết: %s" % g
-        assert len(NHAN) - truoc == g["xong"], "số gói máy giả nhận phải bằng số tờ đẩy xong"
-        s, tt = goi("/api/ke-toan/trang-thai", vai="ketoan")
-        assert tt["chua_day"] == 0, "sau đẩy hết phải còn 0 tờ chưa đẩy: %s" % tt
-        print("  ✓ đẩy hết %d tờ · máy giả nhận đủ %d gói · còn 0 tờ chưa đẩy" % (g["xong"], len(NHAN) - truoc))
-
-        # 7. đẩy lại một tờ đã đẩy → không gửi lại
-        truoc = len(NHAN)
-        s, g = goi("/api/chung-tu/%s/day" % to["id"], {}, vai="ketoan")
-        phai(s, 200, "Đẩy lại tờ đã đẩy → không gửi trùng", g)
-        assert len(NHAN) == truoc, "tờ đã đẩy không được gửi lại"
-    finally:
-        # trả cấu hình về ĐÚNG NHƯ TRƯỚC (23/09: trước đây trả về rỗng → mất nối 8011 → sổ 8030 mà không ai biết)
-        # và mở lại cờ đã đẩy để lần chạy sau còn tờ để thử
-        goi("/api/ke-toan/cau-hinh", {"ke_toan_api": "", "ke_toan_token": "-"}, vai="admin", method="PUT")
-        _tra_cau_hinh(goc_cau_hinh)
-        s, ds = goi("/api/chung-tu?limit=2000", vai="ketoan")
-        for c in ds["ds"]:
-            if c["da_day"] and (c.get("ma_ben_ke_toan") or "").startswith("KT-"):
-                goi("/api/chung-tu/%s/da-day" % c["id"], {"da_day": False}, vai="ketoan")
-        for pid in tao:                          # phiếu thử tự lập: xoá hẳn, tờ DO chưa đẩy của nó rút theo
-            s, g = goi("/api/trips/%s" % pid, vai="thabok", method="DELETE")
-            print("  · xoá phiếu thử tự lập: %s" % s)
-        may.shutdown()
-        print("  · đã xoá cấu hình thử và mở lại các tờ đã đẩy vào máy giả")
-
-    print("\nTHỬ ĐẨY KẾ TOÁN: ĐẠT — cấu hình · gói tin đúng hợp đồng · hỏng thì giữ tờ · 409 coi là xong · đẩy hết · không gửi trùng")
-
-
-def _cat_cau_hinh():
-    """Cất địa chỉ + token đang dùng. Token không bao giờ ra API (đúng thiết kế) nên đọc thẳng DB — bộ kiểm
-    chạy trên cùng máy với máy chủ thử. Không in token ra màn hình."""
-    try:
-        import os
-        sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", "app"))
-        from database import SessionLocal
-        from services import day_ke_toan as DK
-        db = SessionLocal()
-        try:
-            return {k: DK.cau_hinh(db, k) for k in ("ke_toan_api", "ke_toan_token")}
-        finally:
-            db.close()
-    except Exception as e:  # noqa: BLE001
-        print("  · không cất được cấu hình gốc (%s) — sẽ để trống sau bài" % e)
-        return None
-
-
-def _tra_cau_hinh(goc):
-    if not goc or not goc.get("ke_toan_api"):
-        return
-    from database import SessionLocal
-    from services import day_ke_toan as DK
-    db = SessionLocal()
-    try:
-        for k, v in goc.items():
-            DK.dat_cau_hinh(db, k, v or "", None)
-        db.commit()
-        print("  · đã trả cấu hình kế toán về như trước: %s (token giữ nguyên)" % goc["ke_toan_api"])
-    finally:
-        db.close()
+    phan_a()
+    phan_b()
+    print("\nTHỬ KHÔNG CÒN ĐẨY: ĐẠT %d bước — không lời gọi đẩy nào đi ra · đường cũ trả \"không đẩy nữa\" · cấu hình kho riêng"
+          " (khoá cũ vẫn đọc khi chưa lưu khoá mới) · kho tạm vẫn nối" % DEM["dat"])
 
 
 if __name__ == "__main__":

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Bộ kiểm của trang điều xe gọi sang TRANG KẾ TOÁN (EPL_KETOAN) — kho phụ tùng dời sang đó 28/09.
+"""Bộ kiểm của trang điều xe gọi sang KHO TẠM (máy EPL_KETOAN) — kho dời sang đó 28/09; từ 01/10 máy đó bỏ phần tiền,
+chỉ còn làm kho tạm.
 
-Địa chỉ trang kế toán: biến môi trường EPL_KT (mặc định http://127.0.0.1:8031 — máy thử). Máy chủ trang điều xe đang
-kiểm phải trỏ cùng trang kế toán đó (cấu hình ke_toan_api), nếu không thì tồn đọc ở hai nơi là hai kho khác nhau.
-Hai trang dùng CÙNG tên đăng nhập và cùng mật khẩu demo 1234.
+Địa chỉ kho tạm: biến môi trường EPL_KT (mặc định http://127.0.0.1:8031 — máy thử). Máy chủ trang điều xe đang kiểm
+phải trỏ cùng kho tạm đó (cấu hình kho `kho_api`; chưa lưu khoá mới thì khoá cũ `ke_toan_api` — services/goi_ke_toan.py),
+nếu không thì tồn đọc ở hai nơi là hai kho khác nhau. Hai bên dùng CÙNG tên đăng nhập và cùng mật khẩu demo 1234.
 """
 import json
 import os

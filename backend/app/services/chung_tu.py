@@ -8,9 +8,11 @@ tượng nào, bao nhiêu tiền, và HAI VẾ ĐỊNH KHOẢN GỢI Ý theo đ�
 1211/70…). Vế nào quy trình của họ không ghi mã (tiền mặt, ngân hàng) thì để trống mã và ghi tên,
 KHÔNG bịa mã.
 
-Mỗi chứng từ có `da_day` = đã được bên kế toán nhận chưa. Bên kia kéo `GET /api/chung-tu?chua_day=1`,
-xử lý xong gọi `POST /api/chung-tu/{id}/da-day`. Một chứng từ chỉ sinh MỘT lần cho một nguồn
-(nguon_bang + nguon_id), gọi lại không sinh trùng.
+Mỗi chứng từ có `da_day` = đã được bên kế toán nhận / đối chiếu chưa — đánh tay qua `POST /api/chung-tu/{id}/da-day`.
+Một chứng từ chỉ sinh MỘT lần cho một nguồn (nguon_bang + nguon_id), gọi lại không sinh trùng.
+
+Từ 01/10 (chủ dự án chốt) bên này KHÔNG đẩy tờ sang trang kế toán tạm nữa (services/day_ke_toan.py chỉ còn giữ chỗ):
+tờ vẫn sinh đủ để in / xem và định khoản cho màn Quy trình; việc tiền đi qua hệ anh Tune (services/gui_tune.py).
 """
 import datetime as dt
 import json

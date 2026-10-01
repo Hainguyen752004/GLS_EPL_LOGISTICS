@@ -18,6 +18,9 @@ Xuất kho cho một dòng bên này (sự cố mục V, duyệt báo hỏng, l�
 `khoa` chống trùng: gọi lại cùng khoá thì trang kế toán trả lần xuất cũ, không trừ hai lần. Trang kế toán tắt → 503
 "chưa nối được trang kế toán" và việc đó không làm được (chủ dự án chốt 28/09: chặn và báo rõ).
 
+Từ 01/10 máy EPL_KETOAN chỉ còn là KHO TẠM (bỏ phần tiền). Mọi lời gọi ở đây đi qua `KT.goi`, đọc cấu hình KHO riêng
+(`kho_api`, `kho_token`, `kho_web` — chưa đặt thì khoá cũ `ke_toan_*`), không còn dùng chung với đường đẩy chứng từ.
+
 Kho HÀNG (đợt 5): sổ `goods_moves` cũng ở trang kế toán; dòng hàng trên phiếu (`trip_goods`) vẫn ở đây. Phiếu gom về
 tới bãi → `gd.nhap_hang` (gọi lại không nhập trùng); lưu phiếu giao → `gd.xuat_hang` (thay phần xuất của phiếu, bên kia
 kiểm tồn lô). Bên này lưu hỏng → gỡ phần vừa nhập / trả lại phần xuất cũ.
@@ -96,10 +99,10 @@ def _ma_hang_gui(db):
 
 
 def web_ke_toan(db):
-    """Địa chỉ trang kế toán để MỞ bằng trình duyệt / in vào mã QR phiếu lĩnh (màn Cấp phát ở đó).
-    Cấu hình `ke_toan_web`; không đặt thì dùng địa chỉ API kế toán (cùng máy chủ phục vụ cả giao diện)."""
-    from services import day_ke_toan as DK
-    return (DK.cau_hinh(db, "ke_toan_web") or DK.cau_hinh(db, "ke_toan_api") or "").rstrip("/")
+    """Địa chỉ kho tạm (máy EPL_KETOAN) để MỞ bằng trình duyệt / in vào mã QR phiếu lĩnh (màn Cấp phát ở đó).
+    Cấu hình kho riêng từ 01/10: `kho_web`; không đặt thì dùng địa chỉ API kho `kho_api` (cùng máy chủ phục vụ cả giao
+    diện). Khoá mới chưa đặt thì đọc khoá cũ `ke_toan_web` / `ke_toan_api` — services/goi_ke_toan.py:doc_kho."""
+    return (KT.doc_kho(db, "web") or KT.doc_kho(db, "api") or "").rstrip("/")
 
 
 class GiaoDichKho:
