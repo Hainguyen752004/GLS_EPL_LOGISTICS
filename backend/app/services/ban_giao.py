@@ -183,7 +183,10 @@ def dong_goi(db, p):
             "over_deduction": t["tru_vuot"], "advanced_by_epl": t["ung_truoc"],
             "pay_owner": t["tra_chu_xe"], "pay_owner_lak": t["tra_chu_xe_lak"],
             "owner_self_paid_lak": t["chu_xe_tu_tra_lak"],
-            "acc_code": None, "acc_code_note": "Tài khoản chi phí thuê xe liên kết chờ anh Khampla chốt (621 / 611 / theo Excel).",
+            # chủ dự án chốt 01/10: Nợ 621 / Có 4022 bằng `amount` lúc khoá phiếu (services/tai_khoan.py)
+            "acc_code": "%s/%s" % (TK.CP_THUE_XE, TK.CHU_XE),
+            "acc_code_note": "Nợ %s %s / Có %s %s bằng tiền thuê (amount), lúc khoá phiếu. Phí và trừ quá tải chưa có bút toán riêng."
+                             % (TK.CP_THUE_XE, TK.ten(TK.CP_THUE_XE), TK.CHU_XE, TK.ten(TK.CHU_XE)),
         }
     details = [{
         "line_no": 1, "kind": "thu", "charge_type": "freight", "section": None,

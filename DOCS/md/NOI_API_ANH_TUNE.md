@@ -509,4 +509,4 @@ Chi tiết ở hợp đồng mục 12.11:
 - xe thuê: tạm ứng đứng tên chủ xe, trả chủ xe qua phiếu chi bên anh;
 - tài khoản tích hợp tự đăng nhập.
 
-**Còn chặn:** mã 1371/4021/4022, bật USD, tạo tài khoản tích hợp (12.11.5).
+**Còn chặn:** mã 1371/4021/4022, bật USD, tạo tài khoản tích hợp, API bút toán tổng hợp để ghi chi phí thuê xe *Nợ 621 / Có 4022* (đã chốt 01/10) (12.11.5).

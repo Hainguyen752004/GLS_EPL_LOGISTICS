@@ -128,7 +128,7 @@ def main():
             LOI.append("khoá màn Vụ việc bên kế toán thiếu / lệch ở %s" % x["do_id"])
         if h["company"] == "joint":
             lk += 1
-            if not (h.get("hire") and h["hire"]["acc_code"] is None and "amount" in h["hire"]):
+            if not (h.get("hire") and h["hire"]["acc_code"] == "621/4022" and "amount" in h["hire"]):
                 LOI.append("xe thuê %s thiếu khối hire" % x["do_id"])
         elif h.get("hire"):
             LOI.append("xe nhà %s lại có khối hire" % x["do_id"])

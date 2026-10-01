@@ -29,6 +29,9 @@ Luật rút ra:
     xe thuê là XUẤT BÁN theo giá bán riêng → Có 707 doanh thu bán hàng hoá; phía kho ghi giá vốn 607 / kho 1371.
   · Chủ dự án 30/09: phải thu cước giữ 1211 như Excel; dầu xe chạy giữ 625 như anh Khampla — làm theo Excel, anh Khampla.
   · Chủ xe tự chi (paid_by_epl = False): không phải tiền của EPL → KHÔNG định khoản.
+  · Tiền thuê xe liên kết (chủ dự án chốt 01/10): lúc khoá phiếu Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe,
+    bằng tiền thuê. 621 khớp dòng "ຄ່າຂົນສົ່ງນອກ" trong Excel (Excel ghi vế có 402 — 4022 là mã con của nó). Bên kế
+    toán chưa có API bút toán tổng hợp nên bên em chỉ đưa cặp này ra bàn giao (hire.acc_code), chưa gửi được.
 """
 import json
 import os
@@ -42,6 +45,7 @@ CHUP_NGAY = _BAN["chup_ngay"]
 # ------------------------------------------------------------------ mã theo vai trò
 CP_DI_LAI = "625"     # ຄ່າເດີນທາງ … — khách dùng cho dầu và khoản đi đường (Excel, quy trình)
 CP_SUA = "614"        # ຄ່າບົວລະບັດ, ບຳລຸງຮັກສາ ແລະ ສ້ອມແປງ
+CP_THUE_XE = "621"    # ຄ່າຂົນສົ່ງ — tiền thuê xe liên kết; Excel ghi "ຄ່າຂົນສົ່ງນອກ" (chủ dự án chốt 01/10)
 GIA_VON = "607"       # ສິນຄ້າ (nhóm 60 — giá vốn hàng bán) — chủ dự án chốt 23/09
 KHO = "1371"          # mã con của 137 (anh Khampla) — CHƯA có trong danh mục thật
 NCC = "4021"          # mã con của 402 (anh Khampla) — CHƯA có trong danh mục thật
@@ -62,7 +66,7 @@ MA_CON_KHACH = {
 
 # Tên Việt gọn cho các mã trang điều xe dùng (tên Việt trong danh mục thật là bản dịch máy, dấu cách lộn xộn).
 TEN_VI = {
-    "625": "Chi phí đi lại, công tác phí", "614": "Chi phí bảo trì, sửa chữa", "607": "Giá vốn hàng hoá đã bán",
+    "625": "Chi phí đi lại, công tác phí", "614": "Chi phí bảo trì, sửa chữa", "621": "Chi phí vận chuyển (thuê xe ngoài)", "607": "Giá vốn hàng hoá đã bán",
     "1601": "Tạm ứng nhân viên", "4201": "Phải trả nhân viên — tiền lương, tiền công",
     "1211": "Phải thu khách hàng — hàng hoá", "1213": "Phải thu khách hàng — dịch vụ",
     "708": "Doanh thu bán dịch vụ khác (vận chuyển)", "707": "Doanh thu bán hàng hoá",

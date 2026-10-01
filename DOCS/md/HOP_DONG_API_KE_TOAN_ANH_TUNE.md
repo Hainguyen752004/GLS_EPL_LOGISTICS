@@ -705,7 +705,9 @@ Cách `offset` và `other` hiện xếp vào ngân hàng — xem lỗ hổng 5.
    - Không có bút toán *Nợ chi phí thuê xe / Có 4022* cho `tien_thue`. Tài khoản 4022 chỉ có vế Nợ: tạm ứng xe thuê, chi mục V xe thuê, xuất kho cho xe thuê, chủ xe mua ở quầy, trả chủ xe.
    - Trên sổ thật, 4022 đang **dư Nợ 41.610.300 LAK**, tức là sổ nói *chủ xe nợ EPL*, ngược thực tế. Phí 2 % và trừ quá tải cũng chưa có bút toán riêng.
    - **Đề nghị:** lúc **khoá phiếu** xe thuê, ghi *Nợ [chi phí thuê xe] / Có 4022* bằng `tien_thue`. Phí và quá tải ghi theo cách anh Khampla chọn.
-   - Danh mục thật có **621** (chi phí vận chuyển) và **611** (thuê ngoài). Excel của khách có dòng *"ມູນຄ່າ THB 1211/402 ຄ່າຂົນສົ່ງນອກ"* cho khoản này → **cần anh Khampla chốt tài khoản**.
+   - Danh mục thật có **621** (chi phí vận chuyển) và **611** (thuê ngoài). Excel của khách có dòng *"ມູນຄ່າ THB 1211/402 ຄ່າຂົນສົ່ງນອກ"* cho khoản này.
+   - **Đã chốt 01/10 (chủ dự án):** *Nợ **621** ຄ່າຂົນສົ່ງ – chi phí vận chuyển / Có **4022** phải trả chủ xe*, bằng `tien_thue`, lúc khoá phiếu. 621 khớp chữ "ຄ່າຂົນສົ່ງນອກ" của Excel; vế Có 402 trong Excel là mã cha của 4022. Bàn giao DO đưa cặp này ở `hire.acc_code` (mục 10).
+   - **Chưa ghi sổ được:** hệ anh chưa có API **bút toán tổng hợp** (không qua tiền). Các đường kế toán hiện có chỉ là `cmpayment-receipt/*` (phiếu thu chi), `gl-report/*`, `lao-accounts`, `contracts`, `loan-agreements`, `cash-voucher-references`. Cần anh mở một đường ghi bút toán, hoặc ghi bút toán này từ màn "Vụ việc" khi đọc DO xe thuê.
    - Phiếu có `tra_chu_xe ≤ 0` (chủ xe nợ ngược EPL) cũng cần chỗ ghi.
 
 2. **Dầu và phụ tùng kho bán cho chủ xe đang ghi theo giá vốn (Nợ 4022 / Có 1371).** Đúng ra xuất bán phải tách hai bút toán:
@@ -1076,10 +1078,10 @@ Trả về:
 | `fx_rate`, `fx_rate_source` | (thêm 01/10) 1 LAK = bao nhiêu tiền cước, theo tỷ giá khoá trên phiếu; `null` khi cước là Kíp |
 | `invoiced`, `inv_no` | đã xuất hoá đơn chưa (bản chép bên em) |
 | `completed_at`, `completed_by` | lúc khoá (UTC, `+00:00`), người khoá |
-| `hire` (**chỉ xe thuê**) | `{currency, unit_price, amount, amount_lak, fee_pct, fee, over_limit_t, over_t, over_deduction, advanced_by_epl, pay_owner, pay_owner_lak, owner_self_paid_lak, acc_code: null, acc_code_note}` |
+| `hire` (**chỉ xe thuê**) | `{currency, unit_price, amount, amount_lak, fee_pct, fee, over_limit_t, over_t, over_deduction, advanced_by_epl, pay_owner, pay_owner_lak, owner_self_paid_lak, acc_code: "621/4022", acc_code_note}` |
 
 - `hire.amount` = tiền thuê xe, `fee` = phí 2 %, `over_deduction` = trừ quá tải, `advanced_by_epl` = EPL đã ứng (quy về tiền thuê), `pay_owner` = còn phải trả chủ xe.
-- `hire.acc_code` **cố ý để `null`**: tài khoản chi phí thuê xe còn chờ anh Khampla chốt (mục 8, lỗ hổng 1). Bên em không tự đặt mã.
+- `hire.acc_code` = **`621/4022`** (chốt 01/10): Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe, bằng `amount`, lúc khoá phiếu (mục 8, lỗ hổng 1). Phí và trừ quá tải chưa có bút toán riêng.
 
 **`details[]`** — dòng 1 là **thu**, các dòng sau là **chi**:
 
@@ -1325,7 +1327,7 @@ Luật bên em giữ:
 
 **Còn chặn ở danh mục bên anh:** chưa có mã **4022** nên hai loại phiếu chi trên đều bị từ chối ("Tài khoản không hợp lệ theo quốc gia của phiếu"). Màn bên em hiện rõ câu đó, kèm mã tài khoản đang dùng. Mở mã xong thì bấm gửi lại là chạy.
 
-**Còn mở về kế toán:** ghi nhận **chi phí thuê xe** (Nợ chi phí / Có 4022 lúc khoá phiếu) chờ anh Khampla chốt tài khoản (mục 8, lỗ hổng 1). Hiện bên em chỉ ghi phần **trả**.
+**Ghi nhận chi phí thuê xe:** đã chốt *Nợ 621 / Có 4022* bằng tiền thuê, lúc khoá phiếu (mục 8, lỗ hổng 1). Bàn giao DO có `hire.acc_code = "621/4022"`. Hệ anh chưa có API bút toán tổng hợp nên bên em **chưa gửi được** — hiện bên em chỉ gửi phần **ứng** và **trả**.
 
 #### 12.11.4. Tài khoản tích hợp thay token cá nhân
 
@@ -1340,4 +1342,4 @@ Bên em đã làm sẵn đường **tự đăng nhập**: đặt `QLSX_USERNAME`
 | Mở **1371, 4021, 4022** trong danh mục tài khoản Lào bên anh | phải chuyển 137 và 402 từ tài khoản hạch toán sang tổng hợp rồi thêm mã con; công cụ an toàn chặn bên em tự đổi cây tài khoản kế toán | anh Tune hoặc chủ dự án |
 | **Bật tiền USD** trong danh mục tiền tệ | USD có (mã 2) nhưng đang tắt nên `GetAllCurrency` không trả; SO vẫn tạo được, nhưng phiếu chi bằng USD cần mã tiền. Tạm thời đặt `QLSX_TIEN_USD=2` là chạy | anh Tune |
 | **Tài khoản tích hợp** (12.11.4) | tạo tài khoản đăng nhập | anh Tune hoặc chủ dự án |
-| Tài khoản **chi phí thuê xe** liên kết | anh Khampla chốt | anh Khampla |
+| Ghi **chi phí thuê xe** liên kết (*Nợ 621 / Có 4022*, đã chốt) | hệ anh chưa có API bút toán tổng hợp — chỉ có phiếu thu chi | anh Tune (mở đường ghi bút toán) |
