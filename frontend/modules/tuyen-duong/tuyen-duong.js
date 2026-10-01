@@ -61,7 +61,7 @@
       <td class="num">${r.so_diem}</td><td class="num">${so(r.total_km, 1)}</td><td class="num">${r.return_km ? so(r.return_km, 1) : '—'}</td><td class="num">${so(r.toll_lak)} LAK</td>
       <td>${EPL.tag(r.active ? 'ok' : 'plain', r.active ? 'active' : 'inactive')}</td></tr>`).join('')
       : `<tr><td colspan="7" class="empty">${NN.h('no_data')}</td></tr>`;
-    root.querySelectorAll('#tuy-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => moChiTiet(tr.dataset.id)));
+    root.querySelectorAll('#tuy-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => moChiTiet(tr.dataset.id).catch(EPL.baoLoi)));   // lỗi tải chặng thì báo, đừng để bấm như chết
   }
   async function moChiTiet(id) {
     chon = await API.get('/api/routes/' + id);
@@ -142,6 +142,6 @@
       });
       veDanhSach(); if (ds.length) await moChiTiet(ds[0].id);
     },
-    onLang() { if (root) { veDanhSach(); if (chon) moChiTiet(chon.id); } },
+    onLang() { if (root) { veDanhSach(); if (chon) moChiTiet(chon.id).catch(EPL.baoLoi); } },
   };
 })();

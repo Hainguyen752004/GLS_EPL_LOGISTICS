@@ -32,6 +32,8 @@
   const SO_LA_MA = ['I', 'II', 'III', 'IV', 'V', 'VI'];
   let LO = [];        // các lô hàng còn trong kho bãi, để phiếu giao chọn lấy từ đâu
   let root, P = null, DS = [], KM = null, DM = { customers: [], vehicles: [], drivers: [], routes: [], parts: [], places: [], the: [] }, moi = false, ty_gia = {};
+  // Phiếu mới mà người lập TỰ GÕ số phiếu: đổi Gom / Giao không lấy số gợi ý đè lên nữa (rà 01/10 — trước đây bấm thẻ là mất số đã gõ)
+  let soGoTay = false;
   /** Định khoản mặc định của một dòng chi — SOI GƯƠNG services/tai_khoan.dinh_khoan_dong (rà 30/09). Mã lấy từ máy chủ
    *  (KM.acct_rule), ở đây chỉ chọn vế: Nợ theo loại xe và mục; Có theo CÁCH TRẢ — lấy kho → kho · ghi nợ trạm / NCC / thẻ /
    *  sửa ngoài → phải trả NCC · tiền mặt tài xế cầm đi → xe nhà 1601 tạm ứng nhân viên, xe thuê tiền mặt (ghi công nợ chủ
@@ -588,7 +590,7 @@
       rate_usd: ty_gia.USD || 22000, rate_thb: ty_gia.THB || 700, rate_vnd: ty_gia.VND || 1.2, rate_cny: ty_gia.CNY || 3000, transport_status: 'dispatched', finance_status: 'unpaid', invoiced: false,
       sections: {}, expenses: [], logs: [] };
   }
-  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
+  async function moPhieu(id) { moi = false; tabTay = false; HD_DOI = {}; soGoTay = false; P = await API.get('/api/trips/' + id); await napLo(P.id); anPhieu(false); veHet(); }
   /** Chưa chọn tờ nào: giấu thân phiếu và dải bước, hiện câu nhắc; ô chọn có dòng trống đứng đầu. */
   function chuaChon() {
     P = null; moi = false;
@@ -611,7 +613,7 @@
     try { LO = await API.get('/api/kho-hang/lo' + (truPhieu ? '?tru_phieu=' + encodeURIComponent(truPhieu) : '')); }
     catch (e) { LO = []; }
   }
-  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; P = phieuTrong(); anNhacOdo(); await napLo();
+  async function phieuMoi() { moi = true; tabTay = false; HD_DOI = {}; soGoTay = false; P = phieuTrong(); anNhacOdo(); await napLo();
     // công-tơ-mét của xe đổi mỗi lần một chuyến về tới (Xe đã tới) — nạp lại để ô Lúc đi điền đúng số mới nhất
     DM.vehicles = await API.get('/api/vehicles').catch(() => DM.vehicles); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
   function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; }
@@ -649,7 +651,8 @@
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
       // ô chọn phiếu nạp lại NGẦM sau khi đã báo "Đã lưu" — chờ nó thì nút Lưu chậm thêm 0,1–0,5 s (đo 01/10)
       napDs().then(() => { if (P) veChon(); }).catch(() => {});
-    } catch (e) { EPL.baoLoi(e); }
+      return true;
+    } catch (e) { EPL.baoLoi(e); return false; }
   }
   /** Ô trạng thái phiếu chi tạm ứng bên hệ kế toán, cạnh nút của mục IV (từ lúc ghi sổ). */
   function oChiKeToan(st) {
@@ -673,6 +676,11 @@
     if (hd === 'send' && suaDuoc(m)) { await luu(); if (moi) return; }
     // kế toán gõ đơn giá rồi bấm Kiểm: lưu giá trước, không thì máy chủ thấy dòng giá 0 và chặn
     if (hd === 'verify' && MUC_CHI.includes(m) && P.expenses.some(e => e.section === m && giaDuoc(m, e))) { await luu(); }
+    // Mục I, II cũng vậy (rà 01/10): KT Thu/Chi gõ số phiếu quặng, giá cước rồi bấm Kiểm luôn — máy chủ trả phiếu chưa có
+    // các ô đó, vẽ lại là mất chữ vừa gõ. Còn ô nào của mục này đang mở với vai này thì lưu trước rồi mới kiểm.
+    else if (hd === 'verify' && (m === 'info' ? COT_INFO : m === 'trans' ? COT_TRANS : []).some(c => { const el = g('f-' + c); return el && !el.disabled; })) {
+      if (!await luu()) return;            // lưu hỏng thì thôi kiểm — kiểm tiếp là vẽ lại từ máy chủ, mất chữ đang gõ
+    }
     if (hd === 'return' || hd === 'unlock') { if (!await EPL.hoi(NN.t('a_' + hd), NN.t('confirm_action'))) return; }
     try { P = await API.post(`/api/trips/${P.id}/sections/${m}/${hd}`); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
@@ -940,8 +948,8 @@
           // mới vẽ — lô không phụ thuộc loại DO và đã nạp lúc mở phiếu, nên bỏ hẳn lần nạp đó. Số gợi ý theo loại lấy
           // ngầm, về tới thì chỉ điền ô số phiếu và cột bên — kèm loại lúc hỏi, bấm qua lại nhanh thì bỏ kết quả cũ.
           const loaiHoi = P.kind || 'giao';
-          if (moi) API.get('/api/trips-so-moi?kind=' + encodeURIComponent(loaiHoi)).then(s => {
-            if (!s || !s.doc_no || !moi || (P.kind || 'giao') !== loaiHoi) return;
+          if (moi && !soGoTay) API.get('/api/trips-so-moi?kind=' + encodeURIComponent(loaiHoi)).then(s => {
+            if (!s || !s.doc_no || !moi || soGoTay || (P.kind || 'giao') !== loaiHoi) return;
             P.doc_no = s.doc_no; const o = g('px-doc-no'); if (o) o.value = s.doc_no; veBen();
           }).catch(() => {});
           veHet();
@@ -960,6 +968,10 @@
         if (c === 'vehicle_id') { const x = DM.vehicles.find(v => v.id === el.value); if (x) { g('f-brand_model').value = P.brand_model = x.brand_model || ''; g('f-plate_head').value = P.plate_head = x.plate_head || ''; g('f-plate_trailer').value = P.plate_trailer = x.plate_trailer || ''; if (x.owner_type === 'joint') { P.company = 'joint'; g('f-company').value = 'joint'; g('f-owner_name').value = P.owner_name = x.owner_name || ''; q('#px-phieu').classList.add('is-joint'); veChi(); } } }
         veSo();
       }); });
+      // Số phiếu và ba ô POD cũng ghi NGAY vào P như các ô mục I–II (rà 01/10): veHet() — đổi tiếng, bấm thẻ Gom / Giao, đổi
+      // loại phiếu — điền lại mọi ô từ P, nên trước đây số phiếu tự gõ và số / ngày / người nhận POD chưa lưu bị xoá trắng.
+      g('px-doc-no').addEventListener('input', (e) => { if (!P) return; P.doc_no = e.target.value; if (moi) soGoTay = !!e.target.value.trim(); });
+      COT_POD.forEach(c => { const el = g('f-' + c); if (el) el.addEventListener('input', () => { if (P) P[c] = el.value === '' ? null : el.value; }); });
       const t = ctx.tham || {};
       // KHÔNG tự mở phiếu cũ khi vào màn không kèm tham số (lỗi anh chủ dự án bắt 22/09: Bãi vào là
       // thấy phiếu mới nhất đang mở sẵn, gõ là gõ đè lên phiếu đó). Bãi và Sếp — người lập phiếu — vào
@@ -968,6 +980,11 @@
       // Mở từ màn Xe (nút "Tạo phiếu xuất xe" ở hồ sơ một chiếc): chọn sẵn chiếc đó.
       if (t.moi && t.xe && DM.vehicles.some(v => v.id === t.xe)) {
         const el = g('f-vehicle_id'); if (el) { el.value = t.xe; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+      // Mở từ màn Tài xế (nút "Tạo phiếu xuất xe" ở hồ sơ một người, ?tai_xe=): chọn sẵn người đó — trước đây tham số này
+      // bị bỏ qua, phiếu mới ra ô tài xế trống (rà 01/10)
+      if (t.moi && t.tai_xe && DM.drivers.some(d => d.id === t.tai_xe)) {
+        const el = g('f-driver_id'); if (el) { el.value = t.tai_xe; el.dispatchEvent(new Event('input', { bubbles: true })); }
       }
       if (t.tab && (MUC.includes(t.tab) || t.tab === 'all')) datTab(t.tab, true);
       theoDoiDinh();

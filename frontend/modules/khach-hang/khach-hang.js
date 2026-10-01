@@ -35,7 +35,8 @@
   const n0 = (v) => EPL.so(v || 0, 0);
   const n2 = (v) => EPL.so(v || 0, 2);
   const sum = (l, f) => l.reduce((s, x) => s + (typeof f === 'function' ? f(x) : (x[f] || 0)), 0);
-  const thangNay = () => new Date().toISOString().slice(0, 7);
+  // tháng này THEO GIỜ MÁY — toISOString là giờ UTC: 0–7 giờ sáng ngày 1 ở Lào ra tháng trước (rà 01/10)
+  const thangNay = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
   const thangHien = () => thangNay().slice(5, 7) + '/' + thangNay().slice(0, 4);
   const ngay = (s) => s ? EPL.ngay(s) : '';
   const pad = (n) => (n < 10 ? '0' : '') + n;
@@ -401,6 +402,16 @@
     renderDetail();
     const k = byId(st.id);
     $('#k3-phu').innerHTML = k ? h('k3_sub_khach', { ten: k.name }) : h('k3_sub');
+    ghiDiaChi();
+  }
+  /** Khách và tab đang xem ghi vào địa chỉ (rà 01/10): bấm số phiếu sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng khách · tab đó — trước đây về khách mặc định, tab Hợp đồng, như thể chuyến vừa xem biến mất. init đã đọc sẵn ?id=&tab=.
+   *  replaceState: không thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn). */
+  function ghiDiaChi() {
+    if (!root.isConnected || !st.id) return;
+    const ts = new URLSearchParams({ id: st.id }); if (st.tab !== 'contracts') ts.set('tab', st.tab);
+    const moi = '#/khach-hang?' + ts;
+    if (location.hash !== moi) history.replaceState(null, '', moi);
   }
 
   /* Chiều cao "một màn" (CSS: rộng > 1180, cao ≥ 640): màn cao đúng phần còn lại của khung nhìn — trang không cuộn,
@@ -430,9 +441,9 @@
   async function taiKhach(cid) {
     if (!cid) return;
     const c = cache[cid] = cache[cid] || {};
-    const viec = [API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + thangNay() + '&co=500').then(r => { c.trips = r; }).catch(() => { c.trips = []; })];
+    const viec = [API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + thangNay() + '&co=500').then(r => { c.trips = r; }).catch(e => { c.trips = []; EPL.baoLoi(e); })];   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
     if (xemTien()) {
-      viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(() => { c.gia = []; }));
+      viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(e => { c.gia = []; EPL.baoLoi(e); }));
       viec.push(API.get('/api/customers/' + cid + '/cong-no').then(r => { c.no = r; }).catch(() => { c.no = null; }));
       // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem. Hỏi sang máy
       // khác (máy chủ chờ tới 40 s khi bên đó treo) nên KHÔNG đứng chờ nó: chuyến, bảng giá, công nợ trang kế toán tạm vẽ
@@ -445,7 +456,7 @@
     await Promise.all(viec);
     if (st.id === cid) render();
   }
-  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=khach'); } catch (e) { HD = []; } }
+  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=khach'); } catch (e) { HD = []; EPL.baoLoi(e); } }   // lỗi thì báo — im lặng là tưởng khách chưa có hợp đồng nào
   async function tai() {
     const [kh] = await Promise.all([API.get('/api/customers'), taiHd(),
       xemTien() ? API.get('/api/customers-cong-no').then(r => { NO_TONG = r || {}; }).catch(() => { NO_TONG = {}; }) : Promise.resolve()]);

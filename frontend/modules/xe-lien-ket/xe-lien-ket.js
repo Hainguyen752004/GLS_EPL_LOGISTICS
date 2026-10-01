@@ -98,7 +98,7 @@
     if (c) body.active = v.active === '1';
     try { await (c ? API.put('/api/owners/' + c.id, body) : API.post('/api/owners', body)); EPL.toast(NN.t('saved'), 'ok'); await tai(); } catch (e) { EPL.baoLoi(e); }
   }
-  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=thue_xe'); } catch (e) { HD = []; } }
+  async function taiHd() { try { HD = await API.get('/api/hop-dong?kind=thue_xe'); } catch (e) { HD = []; EPL.baoLoi(e); } }   // lỗi thì báo — cột hợp đồng trống mà im lặng là tưởng chủ xe chưa có hợp đồng
   async function moHd(c) {
     chuHd = c; veChu();
     await EPL.hopDong.mo(root.querySelector('#xlk-hd'), { kind: 'thue_xe', doiTacId: c.id, ten: c.name, suaDuoc: AUTH.la('acct'),
@@ -106,12 +106,14 @@
   }
   async function tai() {
     await taiHd();
-    chu = await API.get('/api/owners').catch(() => []);
+    // lỗi máy chủ KHÔNG nuốt thành danh sách rỗng (rà 01/10): bảng "chưa có dữ liệu" trong khi chủ xe vẫn còn đó — lúc mở
+    // màn thì khung hiện lỗi, sau khi lưu thì nơi gọi báo lỗi; mọi vai đều đọc được /api/owners
+    chu = await API.get('/api/owners');
     veChu();
   }
   EPL.modules['xe-lien-ket'] = {
     async init(r) {
-      root = r;
+      root = r; chuHd = null;          // HTML mới: khối hợp đồng đóng — đừng để nút "Hợp đồng" của lần trước còn sáng
       r.querySelector('#xlk-them-chu').addEventListener('click', () => suaChu(null));
       r.querySelector('#xlk-ke-toan').addEventListener('click', () => EPL.moKeToan('xe-lien-ket'));   // trả chủ xe ở trang kế toán
       await tai();

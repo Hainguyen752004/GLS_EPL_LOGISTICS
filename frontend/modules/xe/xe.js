@@ -15,7 +15,8 @@
   // Thẻ <img> không gửi header Authorization nên ảnh nhận phiên qua ?tk=… — y như tệp đính kèm phiếu.
   const urlAnh = (u) => u ? `${u}?tk=${encodeURIComponent(EPL.API.token())}` : null;
   const thayMaKT = () => AUTH.role !== 'yard';       // mã tài khoản là việc kế toán; Bãi thấy tiền chi nhưng không thấy mã
-  let root, thoat = null, xe = [], rm = [], chuXe = [], ui = { mode: 'dau-keo', sel: null, tab: 'lich', chip: null, q: '', soHuu: '', bai: '', tt: '', tuan: null };
+  const UI_GOC = { mode: 'dau-keo', sel: null, tab: 'lich', chip: null, q: '', soHuu: '', bai: '', tt: '', tuan: null };
+  let root, thoat = null, xe = [], rm = [], chuXe = [], ui = { ...UI_GOC };
 
   /* ---------- đổi tên trường giữa máy chủ và bản thiết kế ----------
    * Máy chủ nói: truck_no/plate_head/owner_type/status/insurance_exp…
@@ -203,6 +204,8 @@
     const since = (x.lich_su_rm || []).find(h => h.bien === t.bien && !h.thao)?.lap;
     return `<div class="xe-trailer"><span class="p lo">${esc(t.bien)}</span><span class="m"><span class="lo">${esc(t.loai)}</span> · ${t.tai_trong} t${since ? ` · ${NN.t('xe_since')} ${fmt(since)}` : ''}</span><span class="m" style="flex:0 0 auto;text-align:right"><span class="xe-dots"><i class="${legalLevel(t.han.dang_kiem)}"></i></span> ${NN.t('xe_h_dang_kiem')} ${fmt(t.han.dang_kiem)}</span></div>`;
   }
+  /* Số chuyến đã chạy và chuyến hiện tại chỉ có ở chi tiết một xe (/api/vehicles/{id}) — danh sách không gửi hai trường
+   * này. Chi tiết chưa về thì hiện "·" như các ô đang tải khác, đừng hiện "0 chuyến · —" như xe chưa chạy bao giờ (rà 01/10). */
   function veDetail() {
     const box = root.querySelector('#xe-detail');
     if (ui.mode === 'ro-mooc') return veDetailRM(box);
@@ -213,9 +216,9 @@
           <div class="acts"><button class="xe-btn-sm dark" data-act="open"><svg class="xe-i" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>${NN.h('xe_open_profile')}</button><button class="xe-btn-sm" data-act="dispatch" ${x.trang_thai !== 'idle' ? 'disabled' : ''}>${NN.h('new_dispatch')}</button></div></div></div>
       <div class="xe-kv">
         <div><span>${NN.h('xe_engine')}</span><b class="mono">${esc(x.so_may || '—')}</b></div><div><span>${NN.h('xe_chassis')}</span><b class="mono">${esc(x.so_khung || '—')}</b></div>
-        <div><span>${NN.h('xe_depot')}</span><b class="lo">${esc(x.bai || '—')}</b></div><div><span>${NN.h('xe_trips_done')}</span><b>${x.so_phieu ?? 0}</b></div>
+        <div><span>${NN.h('xe_depot')}</span><b class="lo">${esc(x.bai || '—')}</b></div><div><span>${NN.h('xe_trips_done')}</span><b>${x._chi_tiet ? (x.so_phieu ?? 0) : '·'}</b></div>
         <div><span>${NN.h('xe_odo')}</span><b>${x.km != null ? so(x.km) + ' km' : '—'}</b></div><div><span>${NN.h('xe_next_maint')}</span><b style="${denKy(x) ? 'color:var(--xe-warn)' : ''}">${x.km_bao_duong ? so(x.km_bao_duong) + ' km' : '—'}</b></div>
-        <div><span>${NN.h('xe_fuel_norm')}</span><b>${x.dinh_muc ? x.dinh_muc + ' L/100km' : '—'}</b></div><div><span>${NN.h('xe_current_trip')}</span><b class="mono">${esc(x.phieu_hien_tai || '—')}</b></div>
+        <div><span>${NN.h('xe_fuel_norm')}</span><b>${x.dinh_muc ? x.dinh_muc + ' L/100km' : '—'}</b></div><div><span>${NN.h('xe_current_trip')}</span><b class="mono">${x._chi_tiet ? esc(x.phieu_hien_tai || '—') : '·'}</b></div>
       </div>
       <div class="xe-sec">${NN.h('xe_legal')}<span class="grow"></span>${legalPill(x.han)}</div>
       ${legalRows(x.han, ['bao_hiem', 'dang_kiem', 'luu_hanh'])}
@@ -260,7 +263,7 @@
       <div class="mtop"><div class="photo"><div class="xe-photo">${!isRM && o.anh ? `<img src="${esc(o.anh)}" alt="">` : truck}</div>
         <div><b>${NN.h('xe_photo')}</b>${isRM ? `<small>${NN.h('xe_photo_rm')}</small>`
           : `<small id="m-anh-dem">${NN.h('xe_photo_n', { n: (o.anh_ds || []).length })}</small>
-             ${suaDuoc() && o.id ? `<label class="xe-btn-sm" style="margin-top:4px">${NN.h('xe_photo_add')}<input type="file" id="m-anh-them" accept="image/*" hidden></label>` : ''}`}</div></div>
+             ${suaDuoc() && o._id ? `<label class="xe-btn-sm" style="margin-top:4px">${NN.h('xe_photo_add')}<input type="file" id="m-anh-them" accept="image/*" hidden></label>` : ''}`}</div></div>
         <div class="st"><small>${NN.h('xe_status')}</small><b>${isRM ? NN.t(o.trang_thai === 'repair' ? 'xe_st_repair' : o.lap_vao ? 'xe_rm_attached' : 'xe_rm_free') : NN.t((ST[o.trang_thai] || ST.idle)[1])}</b><p>${NN.h('xe_status_auto')}</p></div></div>
       <div class="mtabs" id="m-tabs"></div>
       <div class="mb" id="m-body"></div>
@@ -268,14 +271,15 @@
     </div></div>`;
     rt.querySelectorAll('[data-close]').forEach(b => b.onclick = close);
     rt.querySelector('.xe-backdrop').addEventListener('click', e => { if (e.target.classList.contains('xe-backdrop')) close(); });
-    // Ảnh xe: đưa lên đúng chỗ chứa tệp của phiếu; ảnh đầu tiên tự thành ảnh đại diện.
+    // Ảnh xe: đưa lên đúng chỗ chứa tệp của phiếu; ảnh đầu tiên tự thành ảnh đại diện. Mã xe ở bản thiết kế là `_id`
+    // (xemXe) — trước 01/10 đọc nhầm `o.id` (không có) nên nút "Thêm ảnh" không bao giờ hiện.
     const oAnh = rt.querySelector('#m-anh-them');
     if (oAnh) oAnh.addEventListener('change', async () => {
       const f = oAnh.files && oAnh.files[0]; if (!f) return;
       let nen; try { nen = await EPL.nenTep(f); } catch (e) { return EPL.baoLoi(e); }
       const fd = new FormData(); fd.append('tep', nen, nen.name);
       try {
-        const ds = await EPL.API.tep(`/api/vehicles/${o.id}/anh`, fd);
+        const ds = await EPL.API.tep(`/api/vehicles/${o._id}/anh`, fd);
         o.anh_ds = ds.map(a => ({ ...a, src: urlAnh(a.url) }));
         const c = ds.find(a => a.chinh); o.anh = c ? urlAnh(c.url) : null;
         const khung = rt.querySelector('.mtop .xe-photo');
@@ -321,7 +325,13 @@
 
     async function lichTab() {
       const tuan = ui.tuan || iso(startOfWeek(today()));
-      let lich = null; try { lich = await API.get(`/api/vehicles/${encodeURIComponent(o._id)}/lich?tuan=${tuan}`); } catch (e) { lich = null; }
+      let lich = null;
+      try { lich = await API.get(`/api/vehicles/${encodeURIComponent(o._id)}/lich?tuan=${tuan}`); }
+      catch (e) {          // lỗi máy chủ thì nói ra — vẽ tiếp là cả tuần "rảnh cả ngày", sai sự thật (rà 01/10)
+        if (cur === 'lich') body.innerHTML = `<div class="xe-empty neg">${esc(e.message)}</div>`;
+        return;
+      }
+      if (cur !== 'lich') return;          // đã bấm sang tab khác trong lúc chờ
       const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(tuan + 'T00:00:00'); d.setDate(d.getDate() + i); return d; });
       const ev = (dIso) => (lich && lich.ngay || []).find(n => n.ngay === dIso);
       const cnt = { trip: 0, rep: 0, free: 0 }; days.forEach(d => { const e = ev(iso(d)); cnt[e && e.su_kien.length ? (e.su_kien.some(s => s.loai === 'rep') ? 'rep' : 'trip') : 'free']++; });
@@ -415,6 +425,9 @@
   EPL.modules['xe'] = {
     async init(r) {
       root = r;
+      // Vào lại màn thì về trạng thái gốc như HTML mới (ô tìm trống, nút Đầu kéo sáng). Rà 01/10: gõ tìm hoặc chọn Rơ-moóc,
+      // sang màn khác rồi quay lại thì biến cũ vẫn lọc — ô tìm trống mà bảng chỉ còn vài dòng, nút sáng Đầu kéo mà bảng là rơ-moóc.
+      ui = { ...UI_GOC };
       r.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = NN.t(el.dataset.i18nPh));
       r.querySelector('#xe-loai').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ui.mode = b.dataset.v; ui.chip = null; ui.sel = null; r.querySelectorAll('#xe-loai button').forEach(x => x.classList.toggle('active', x === b)); ui.sel = ui.mode === 'dau-keo' ? xe[0]?.so_xe : rm[0]?.bien; ve(); });
       r.querySelector('#xe-q').addEventListener('input', e => { ui.q = e.target.value; veList(); veDetail(); });

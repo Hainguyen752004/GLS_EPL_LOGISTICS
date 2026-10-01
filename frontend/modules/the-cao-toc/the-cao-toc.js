@@ -136,6 +136,7 @@
     card.hidden = !xemCanTru();
     if (!xemCanTru() || !canTru) return;
     const ds = canTru.ds || [];
+    if (canTru.loi) { root.querySelector('#tct-can-tru').innerHTML = `<tr><td colspan="7" class="empty neg">${esc(canTru.loi)}</td></tr>`; return; }
     root.querySelector('#tct-can-tru').innerHTML = ds.length ? ds.map(o => `<tr>
       <td lang="lo"><b>${esc(o.customer_name)}</b></td>
       <td>${o.the.map(t => esc(t.card_no)).join(' · ')}</td>
@@ -153,7 +154,8 @@
     if (T) { try { T = await API.get('/api/the-cao-toc/' + T.id); } catch (e) { T = null; } }
     if (xemCanTru()) {
       const thang = root.querySelector('#tct-thang').value;
-      try { canTru = await API.get('/api/the-cao-toc/cong-no' + (thang ? '?thang=' + thang : '')); } catch (e) { canTru = null; }
+      // lỗi máy chủ thì hiện ngay trong bảng (rà 01/10): trước đây canTru = null → bảng giữ số của tháng trước / trống trơn
+      try { canTru = await API.get('/api/the-cao-toc/cong-no' + (thang ? '?thang=' + thang : '')); } catch (e) { canTru = { ds: [], loi: e.message }; }
     }
     ve(); veChiTiet(); veCanTru();
   }
@@ -161,7 +163,8 @@
   EPL.modules['the-cao-toc'] = {
     async init(r) {
       root = r;
-      r.querySelector('#tct-thang').value = new Date().toISOString().slice(0, 7);
+      // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang đã đặt) — không gán lại bằng toISOString: đó là giờ UTC,
+      // 0–7 giờ sáng ngày 1 ở Lào ra tháng trước, bảng cấn trừ mở ra tháng cũ (rà 01/10)
       [KH, TX, XE] = await Promise.all([API.get('/api/customers'), API.get('/api/drivers'), API.get('/api/vehicles')]);
       const them = r.querySelector('#tct-them'); them.hidden = !suaDuoc();
       them.addEventListener('click', () => sua(null));

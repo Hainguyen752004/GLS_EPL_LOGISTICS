@@ -55,7 +55,7 @@
     }).join('');
     q('#tdt-o-so').querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => {
       locO = locO === b.dataset.o ? '' : b.dataset.o;      // bấm lại chính ô đó là bỏ lọc
-      veOSo(); tai(true).catch(EPL.baoLoi);
+      veOSo(); ghiDiaChi(); tai(true).catch(EPL.baoLoi);
     }));
   }
 
@@ -514,7 +514,16 @@
     const co = !!P;
     q('#tdt-su-co').disabled = q('#tdt-mo-phieu').disabled = !co;
     veMoc(); veTabs(); veHoSo(); veBanDo();
-    caoCot();
+    caoCot(); ghiDiaChi();
+  }
+  /** Chuyến đang mở và ô số đang lọc ghi vào địa chỉ (rà 01/10): "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang,
+   *  là về đúng chuyến đó — trước đây về chuyến đầu danh sách. init đã đọc sẵn ?id=&o=. replaceState: không thêm bước lịch
+   *  sử, không bắn hashchange. */
+  function ghiDiaChi() {
+    if (!root || !root.isConnected) return;
+    const ts = new URLSearchParams(); if (P) ts.set('id', P.id); if (locO) ts.set('o', locO);
+    const moi = '#/theo-doi-tuyen' + (String(ts) ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
   }
 
   /* ---------------------------------------------------------------- tải & thao tác */
@@ -651,7 +660,7 @@
     if (bat) dongHo = setInterval(() => tai(true).catch(() => {}), 30000);
   }
 
-  let choCao = 0;
+  let choCao = 0, theoDau = null;
   function khiDoiCo() { clearTimeout(choCao); choCao = setTimeout(caoCot, 80); }
   /** Chữ của các <option data-nhan>: chữ thuần (VI + ລາວ → "Vệ tinh / ດາວທຽມ"). data-i18n đổ HTML vào <option> nên
    *  dòng Lào dính liền vào chữ Việt. */
@@ -702,6 +711,9 @@
       root.querySelectorAll('.tdt-nguon button').forEach(b => b.addEventListener('click', () => datNguon(b.dataset.src)));
       q('#tdt-f-part').addEventListener('change', () => datNguon('kho'));
       window.addEventListener('resize', khiDoiCo);
+      // đổi kiểu menu top ⇄ side (EPL.datKieuXem) không bắn resize: thanh đầu đổi cỡ thì đo lại — rà 01/10: sang thanh bên
+      // xong ba cột hụt ~116 px dưới đáy, sang lại thanh trên thì cột lọt khỏi mép dưới
+      if (window.ResizeObserver) { theoDau = new ResizeObserver(khiDoiCo); ['tbar', 'topbar'].forEach(id => { const e = document.getElementById(id); if (e) theoDau.observe(e); }); }
       const t = ctx.tham || {};
       // Mở từ thanh xem nhanh bên Tổng quan: ?o=<mã ô số> thì lọc sẵn đúng ô đó (đặt TRƯỚC khi tải — máy chủ lọc).
       if (t.o && O_SO.some(x => x.id === t.o)) locO = t.o;
@@ -718,6 +730,7 @@
     destroy() {
       clearInterval(dongHo); dongHo = null;
       window.removeEventListener('resize', khiDoiCo);
+      if (theoDau) { theoDau.disconnect(); theoDau = null; }
       if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
     },
     onLang() { if (root) { datNhanChon(); veOSo(); veDanhSach(); ve(); } },

@@ -485,6 +485,18 @@
     const flash = root.querySelector('.is-flash');
     if (flash) flash.scrollIntoView({ block: 'center', behavior: 'smooth' });
     st.flashDoc = null;
+    ghiDiaChi();
+  }
+  /** Kho và tab đang xem ghi vào địa chỉ (rà 01/10): bấm số phiếu sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về đúng
+   *  kho · tab đó — trước đây về "Toàn bộ kho". init đã đọc sẵn ?kho=&tab=. replaceState: không thêm bước lịch sử, không bắn
+   *  hashchange. */
+  function ghiDiaChi() {
+    if (!root || !root.isConnected || !D) return;
+    const tab = st.view === 'all' ? st.ovTab : st.tab, ts = new URLSearchParams();
+    if (st.view !== 'all') ts.set('kho', st.view);
+    if (tab && tab !== 'fuel') ts.set('tab', tab);
+    const moi = '#/kho-xem' + (String(ts) ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
   }
 
   function open(view, tab, doc) {
@@ -526,6 +538,9 @@
       R = await API.get('/api/kho-xem');
       D = chuanHoa(R);
       DOCS = allDocs();
+      // tham số kho theo mã (KHO-TB) thay vì id: đổi TRƯỚC khi vẽ — render() gặp mã lạ là về "Toàn bộ kho" ngay, nên đổi sau
+      // (như trước 01/10, ở cuối init) thì không bao giờ tới được kho đó
+      if (st.view !== 'all' && !D.byId[st.view] && D.byCode[st.view]) st.view = D.byCode[st.view].id;
     } catch (e) { R = null; D = null; loi = e.message || String(e); }
     render();
   }
@@ -537,7 +552,7 @@
     const o = e.target.closest('[data-open]');
     if (o) { open(o.getAttribute('data-open'), o.getAttribute('data-tab'), o.getAttribute('data-doc')); return; }
     const ov = e.target.closest('[data-ovtab]');
-    if (ov) { st.ovTab = ov.getAttribute('data-ovtab'); renderAll(); const b = root.querySelector('[data-ovtab="' + st.ovTab + '"]'); if (b) b.focus(); return; }
+    if (ov) { st.ovTab = ov.getAttribute('data-ovtab'); renderAll(); ghiDiaChi(); const b = root.querySelector('[data-ovtab="' + st.ovTab + '"]'); if (b) b.focus(); return; }
     const tb = e.target.closest('[data-tab-go]');
     if (tb) { st.tab = tb.getAttribute('data-tab-go'); open(st.view, st.tab); const b = root.querySelector('[data-tab-go="' + st.tab + '"]'); if (b) b.focus(); return; }
     const c = e.target.closest('#k2-loc [data-filter]');
@@ -587,9 +602,6 @@
       render(); doCao();
       await tai();
       setTimeout(doCao, 0);                    // sau khi khung bỏ dải "Đang tải…" (chạy ngay khi init trả về)
-      if (D && st.view !== 'all' && !D.byId[st.view]) {           // tham số kho theo mã (KHO-TB) thay vì id
-        const w = D.byCode[st.view]; st.view = w ? w.id : 'all'; render();
-      }
     },
     onLang() {
       if (!root) return;

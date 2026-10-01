@@ -17,7 +17,8 @@
   const { API, NN, esc, AUTH } = EPL;
   const NGUONG_SAP_HET = 60;   // ngày — bằng lái "sắp hết hạn"; chuyến xếp xa sẽ bị cảnh báo
   const suaDuoc = () => AUTH.la('yard', 'acct');
-  let root, thoat = null, tx = [], xeList = [], ui = { sel: null, chip: null, q: '', vai: '', hang: '', tt: '', tuan: null };
+  const UI_GOC = { sel: null, chip: null, q: '', vai: '', hang: '', tt: '', tuan: null };
+  let root, thoat = null, tx = [], xeList = [], ui = { ...UI_GOC };
 
   /* ---------- tiện ích ---------- */
   const today = () => new Date(EPL.homNay());
@@ -303,7 +304,12 @@
     async function lichTab() {
       const tuan = ui.tuan || iso(startOfWeek(today()));
       let lich = null;
-      try { lich = await API.get(`/api/drivers/${encodeURIComponent(o._id)}/lich?tuan=${tuan}`); } catch (e) { lich = null; }
+      try { lich = await API.get(`/api/drivers/${encodeURIComponent(o._id)}/lich?tuan=${tuan}`); }
+      catch (e) {          // lỗi máy chủ thì nói ra — vẽ tiếp là cả tuần "rảnh", sai sự thật (rà 01/10)
+        if (cur === 'lich') body.innerHTML = `<div class="tx-empty neg">${esc(e.message)}</div>`;
+        return;
+      }
+      if (cur !== 'lich') return;          // đã bấm sang tab khác trong lúc chờ — đừng đè lịch lên tab đó
       const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(tuan + 'T00:00:00'); d.setDate(d.getDate() + i); return d; });
       const ev = (dIso) => ((lich && lich.ngay) || []).find(n => n.ngay === dIso);
       const cnt = { trip: 0, off: 0, free: 0 };
@@ -384,6 +390,9 @@
   EPL.modules['tai-xe'] = {
     async init(r) {
       root = r;
+      // Vào lại màn thì về trạng thái gốc như HTML mới. Rà 01/10: gõ tìm / chọn bộ lọc, sang màn khác rồi quay lại thì ô
+      // tìm trống mà biến cũ vẫn lọc — bảng "0 / 17", tưởng màn không tải được tài xế nào.
+      ui = { ...UI_GOC };
       r.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = NN.t(el.dataset.i18nPh));
       r.querySelector('#tx-q').addEventListener('input', e => { ui.q = e.target.value; veList(); veDetail(); });
       r.querySelector('#tx-f-vai').addEventListener('change', e => { ui.vai = e.target.value; veList(); veDetail(); });
