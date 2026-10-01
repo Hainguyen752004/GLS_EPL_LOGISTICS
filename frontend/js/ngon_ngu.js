@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2195 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2219 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10976,5 +10976,125 @@ window.EPL_TU_DIEN = {
   "vi": "Gửi sang hệ kế toán đang bật: ghi xong tự gửi; hỏng thì bấm Gửi / Gửi hết.",
   "lo": "ເປີດການສົ່ງໄປລະບົບບັນຊີແລ້ວ: ບັນທຶກແລ້ວສົ່ງເອງ; ບໍ່ສຳເລັດໃຫ້ກົດ ສົ່ງ / ສົ່ງທັງໝົດ.",
   "en": "Sending to accounting is on: entries are sent on save; if one fails, press Send / Send all."
+ },
+ "lich_hom_nay": {
+  "vi": "Hôm nay",
+  "lo": "ມື້ນີ້",
+  "en": "Today"
+ },
+ "lich_hom_qua": {
+  "vi": "Hôm qua",
+  "lo": "ມື້ວານນີ້",
+  "en": "Yesterday"
+ },
+ "lich_ngay_mai": {
+  "vi": "Ngày mai",
+  "lo": "ມື້ອື່ນ",
+  "en": "Tomorrow"
+ },
+ "lich_truoc": {
+  "vi": "{n} ngày trước hôm nay",
+  "lo": "{n} ວັນກ່ອນມື້ນີ້",
+  "en": "{n} days before today"
+ },
+ "lich_sau": {
+  "vi": "{n} ngày sau hôm nay",
+  "lo": "{n} ວັນຫຼັງມື້ນີ້",
+  "en": "{n} days after today"
+ },
+ "lich_xoa": {
+  "vi": "Xoá",
+  "lo": "ລຶບ",
+  "en": "Clear"
+ },
+ "lich_ok": {
+  "vi": "OK",
+  "lo": "ຕົກລົງ",
+  "en": "OK"
+ },
+ "lich_chua_chon": {
+  "vi": "Chưa chọn ngày",
+  "lo": "ຍັງບໍ່ໄດ້ເລືອກວັນທີ",
+  "en": "No date selected"
+ },
+ "lich_mo": {
+  "vi": "Mở lịch",
+  "lo": "ເປີດປະຕິທິນ",
+  "en": "Open calendar"
+ },
+ "lich_thang_truoc": {
+  "vi": "Tháng trước",
+  "lo": "ເດືອນກ່ອນ",
+  "en": "Previous month"
+ },
+ "lich_thang_sau": {
+  "vi": "Tháng sau",
+  "lo": "ເດືອນຖັດໄປ",
+  "en": "Next month"
+ },
+ "lich_nam_truoc": {
+  "vi": "Năm trước",
+  "lo": "ປີກ່ອນ",
+  "en": "Previous year"
+ },
+ "lich_nam_sau": {
+  "vi": "Năm sau",
+  "lo": "ປີຖັດໄປ",
+  "en": "Next year"
+ },
+ "lich_muoi_nam_truoc": {
+  "vi": "10 năm trước",
+  "lo": "10 ປີກ່ອນ",
+  "en": "Previous 10 years"
+ },
+ "lich_muoi_nam_sau": {
+  "vi": "10 năm sau",
+  "lo": "10 ປີຖັດໄປ",
+  "en": "Next 10 years"
+ },
+ "lich_chon_thang": {
+  "vi": "Chọn tháng",
+  "lo": "ເລືອກເດືອນ",
+  "en": "Choose month"
+ },
+ "lich_chon_nam": {
+  "vi": "Chọn năm",
+  "lo": "ເລືອກປີ",
+  "en": "Choose year"
+ },
+ "lich_thang_nay": {
+  "vi": "Tháng này",
+  "lo": "ເດືອນນີ້",
+  "en": "This month"
+ },
+ "lich_n_thang_truoc": {
+  "vi": "{n} tháng trước tháng này",
+  "lo": "{n} ເດືອນກ່ອນເດືອນນີ້",
+  "en": "{n} months before this month"
+ },
+ "lich_n_thang_sau": {
+  "vi": "{n} tháng sau tháng này",
+  "lo": "{n} ເດືອນຫຼັງເດືອນນີ້",
+  "en": "{n} months after this month"
+ },
+ "lich_ngoai_khoang": {
+  "vi": "Ngoài khoảng chọn được",
+  "lo": "ຢູ່ນອກຂອບເຂດທີ່ເລືອກໄດ້",
+  "en": "Outside the selectable range"
+ },
+ "lich_sai": {
+  "vi": "Ngày không hợp lệ — gõ theo dạng dd/mm/yyyy",
+  "lo": "ວັນທີບໍ່ຖືກຕ້ອງ — ພິມແບບ ວວ/ດດ/ປປປປ",
+  "en": "Invalid date — type it as dd/mm/yyyy"
+ },
+ "lich_ph": {
+  "vi": "dd/mm/yyyy",
+  "lo": "ວວ/ດດ/ປປປປ",
+  "en": "dd/mm/yyyy"
+ },
+ "lich_nam_ngoai": {
+  "vi": "Chỉ chọn được năm {tu}–{den}",
+  "lo": "ເລືອກໄດ້ສະເພາະປີ {tu}–{den}",
+  "en": "Only years {tu}–{den} can be chosen"
  }
 };

@@ -1,0 +1,134 @@
+/* EPL Lào — bộ chọn ngày / tháng dùng chung (js/lich.js). Màu lấy theo token của chung.css.
+   Kiểu của lịch bật lên đều đứng sau .lich-pop: lịch nằm trong hộp thoại của module (.tx2, .kh3…), mà các module đó có
+   quy tắc chung kiểu ".tx2 button{font:inherit}" — viết ".lich-ngay" trần là bị đè. */
+
+/* ---------- ô gốc ---------- */
+/* ô ngày gốc: ẩn hẳn, vẫn là nguồn giá trị (id, .value, sự kiện) */
+.lich-goc{display:none!important}
+/* select tháng gốc: không thấy, không bấm được nhưng VẪN CÓ KHUNG — xuất Excel / PDF đọc bộ lọc đang chọn từ nó */
+.lich-an{position:absolute!important;width:1px!important;height:1px!important;min-width:0!important;padding:0!important;margin:-1px!important;
+  border:0!important;overflow:hidden!important;clip-path:inset(50%)!important;opacity:0!important;pointer-events:none!important;white-space:nowrap}
+
+/* ---------- ô ngày: dd/mm/yyyy + nút lịch ---------- */
+.lich-o{position:relative;display:inline-block;vertical-align:middle;min-width:0;max-width:100%}
+.lich-o[hidden]{display:none!important}
+.lich-o>input.lich-hien{padding-right:34px;font-variant-numeric:tabular-nums;text-overflow:ellipsis}
+.lich-o>input.lich-hien::placeholder{color:var(--ink-3);opacity:.75}
+/* nút lịch chỉ để nhìn: chuột đi xuyên xuống ô hiện (ô bị module khoá chuột thì nút cũng không bấm được) */
+.lich-o>.lich-nut{position:absolute;top:50%;right:4px;width:28px;height:28px;margin-top:-14px;padding:0;border:0;border-radius:6px;
+  background:none;color:var(--ink-3);display:grid;place-items:center;pointer-events:none}
+.lich-o>input.lich-hien:not(:disabled):not([readonly]){cursor:pointer}
+.lich-o>input.lich-hien:focus{cursor:text}
+.lich-o:hover>input.lich-hien:not(:disabled):not([readonly])~.lich-nut{color:var(--green)}
+.lich-o>.lich-nut:disabled{opacity:.45;color:var(--ink-3)}
+.lich-o>.lich-nut svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lich-o.mo>input.lich-hien{border-color:var(--green-2);box-shadow:0 0 0 3px rgba(30,122,99,.15);outline:none}
+.lich-o.mo>.lich-nut{color:var(--green)}
+.lich-o.sai>input.lich-hien{border-color:var(--red);box-shadow:0 0 0 3px rgba(168,50,50,.15)}
+
+/* ---------- nút "Tháng 09/2026" (thay select tháng) ---------- */
+.lich-thang{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%;border:1px solid var(--line-2);border-radius:var(--r);
+  padding:8px 10px;background:var(--paper);color:var(--ink);font:inherit;line-height:1.45;text-align:left;white-space:nowrap;cursor:pointer}
+.field>.lich-thang{width:100%}
+.lich-thang[hidden]{display:none!important}
+.lich-thang:hover{border-color:var(--green-2)}
+.lich-thang[aria-expanded="true"]{border-color:var(--green-2);box-shadow:0 0 0 3px rgba(30,122,99,.15)}
+.lich-thang:disabled{background:var(--bg);color:var(--ink-2);cursor:default;border-color:var(--line-2);box-shadow:none}
+/* cao bằng ô chọn bên cạnh (chữ 14px, line-height ~1.45) — cả khi trang tiếng Lào (:lang(lo) đặt line-height 1.7 cho mọi thứ);
+   đệm 2px trên dưới để dấu thanh chữ Lào không bị overflow:hidden cắt mất */
+.lich-thang .lich-thang-chu{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;line-height:inherit;padding:2px 0;margin:-2px 0}
+.lich-thang .lich-ic,.lich-thang .lich-mui{display:inline-flex;flex:none}
+.lich-thang svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.lich-thang .lich-ic{color:var(--green-2)}
+.lich-thang .lich-mui{color:var(--ink-3)}
+
+/* ---------- lịch bật lên ---------- */
+/* inset/margin: bỏ kiểu mặc định của [popover] (giữa màn hình). Nền trắng cứng: trong .tx2 biến --paper là màu nền trang. */
+.lich-pop{--o:36px;position:fixed;inset:auto;left:0;top:0;margin:0;z-index:1000;padding:0;box-sizing:border-box;
+  border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);
+  box-shadow:0 18px 44px rgba(16,35,30,.22),0 2px 6px rgba(16,35,30,.08);
+  font-family:var(--font);font-size:13px;line-height:1.4;font-weight:400;text-align:left;
+  overflow:auto;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.lich-pop.k2{width:calc(var(--o) * 14 + 52px)}
+.lich-pop.k1{width:calc(var(--o) * 7 + 32px)}
+.lich-pop.kt{width:320px;max-width:calc(100vw - 16px)}
+.lich-pop *{box-sizing:border-box}
+.lich-pop button{font:inherit;color:inherit;margin:0;-webkit-tap-highlight-color:transparent}
+.lich-pop svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.lich-pop .lo-sub{display:block;font-size:.84em;color:var(--ink-3);font-weight:400;line-height:1.35}
+
+/* đầu lịch: ngày đang chọn bằng chữ + "… ngày trước / sau hôm nay" */
+.lich-pop .lich-dau{padding:13px 16px 11px;border-bottom:1px solid var(--line);background:var(--bg)}
+.lich-pop .lich-dau b{display:block;font-size:16px;font-weight:600;line-height:1.35;color:var(--ink)}
+.lich-pop .lich-dau small{display:block;margin-top:2px;font-size:12.5px;color:var(--ink-3)}
+.lich-pop .lich-dau b .lo-sub{font-size:.8em;margin-top:1px}
+
+.lich-pop .lich-than{display:flex;gap:20px;padding:8px 15px 8px}
+.lich-pop .lich-khoi{flex:none;min-width:0}
+.lich-pop .lich-khoi.rong{flex:1 1 auto}
+.lich-pop .lich-hang-tieu{display:flex;align-items:center;gap:2px;min-height:36px;margin-bottom:2px}
+.lich-pop .lich-gian{flex:1 1 auto}
+.lich-pop .lich-tieu{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:4px 8px;margin-left:-8px;border-radius:6px;
+  font-weight:600;font-size:13.5px;color:var(--ink);cursor:pointer;text-align:left;line-height:1.3}
+.lich-pop .lich-tieu svg{width:13px;height:13px;color:var(--ink-3)}
+.lich-pop .lich-tieu:hover{background:var(--bg)}
+.lich-pop .lich-tieu:disabled,.lich-pop .lich-tieu.tinh{cursor:default;background:none}
+.lich-pop .lich-tieu .lo-sub{font-size:.82em}
+.lich-pop .lich-dk{width:32px;height:32px;padding:0;border:0;border-radius:6px;background:none;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}
+.lich-pop .lich-dk:hover{background:var(--bg);color:var(--green)}
+.lich-pop .lich-dk:disabled{opacity:.3;cursor:default;background:none}
+
+/* lưới ngày: hàng thứ T2…CN rồi 6 hàng ngày (luôn 6 hàng: hai tháng cạnh nhau cao bằng nhau, đổi tháng không nhảy) */
+.lich-pop .lich-luoi{display:grid;grid-template-columns:repeat(7,var(--o));grid-template-rows:auto;grid-auto-rows:var(--o)}
+.lich-pop .lich-thu{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:26px;padding:2px 0;
+  font-size:11.5px;font-weight:600;color:var(--ink-3);text-align:center;line-height:1.2}
+.lich-pop .lich-thu .lo-sub{font-size:10px;font-weight:500}
+.lich-pop .lich-thu.cn{color:var(--red)}
+.lich-pop .lich-ngay{position:relative;width:calc(var(--o) - 2px);height:calc(var(--o) - 2px);margin:1px;padding:0;border:0;border-radius:50%;
+  background:none;font-size:13px;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.lich-pop.hep .lich-ngay{font-size:14px}
+.lich-pop .lich-ngay:hover{background:var(--bg-2)}
+.lich-pop .lich-ngay.cn{color:var(--red)}
+/* như Windows: HÔM NAY tô nền, ngày ĐANG CHỌN có khung */
+.lich-pop .lich-ngay.hn{background:var(--green-2);color:#fff;font-weight:600}
+.lich-pop .lich-ngay.hn:hover{background:var(--green)}
+.lich-pop .lich-ngay.chon{box-shadow:inset 0 0 0 2px var(--green);font-weight:600}
+.lich-pop .lich-ngay.hn.chon{box-shadow:inset 0 0 0 2px var(--green),inset 0 0 0 4px #fff}
+.lich-pop .lich-ngay:disabled{opacity:.28;cursor:default;background:none;color:var(--ink-3)}
+.lich-pop .lich-ngay:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+
+/* lưới 12 tháng / 12 năm (4 × 3) */
+.lich-pop .lich-luoi12{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:4px 0 6px}
+.lich-pop .lich-o12{min-height:54px;padding:4px 2px;border:0;border-radius:8px;background:none;font-size:13px;color:var(--ink);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.3;white-space:nowrap;font-variant-numeric:tabular-nums}
+.lich-pop.kt .lich-o12{min-height:50px}
+.lich-pop .lich-o12:hover{background:var(--bg-2)}
+.lich-pop .lich-o12.ngoai{color:var(--ink-3);opacity:.7}   /* năm ngoài thập kỷ đang xem: mờ nhẹ, VẪN bấm được */
+.lich-pop .lich-o12.ngoai:hover{opacity:1}
+.lich-pop .lich-o12.hn{background:var(--green-2);color:#fff;font-weight:600}
+.lich-pop .lich-o12.hn .lo-sub{color:rgba(255,255,255,.85)}
+.lich-pop .lich-o12.hn:hover{background:var(--green)}
+.lich-pop .lich-o12.chon{box-shadow:inset 0 0 0 2px var(--green);font-weight:600}
+.lich-pop .lich-o12.hn.chon{box-shadow:inset 0 0 0 2px var(--green),inset 0 0 0 4px #fff}
+.lich-pop .lich-o12.td:not(.chon){box-shadow:inset 0 0 0 1.5px var(--ink-3)}
+.lich-pop .lich-o12:disabled{opacity:.3;cursor:default;background:none;color:var(--ink-3);box-shadow:none}
+.lich-pop .lich-o12.hn:disabled{background:var(--bg-2);color:var(--ink-3)}
+
+/* đang gõ năm (bốn số) ở lưới tháng / lưới năm */
+.lich-pop .lich-go-nam{display:flex;align-items:center;gap:2px;margin:0 0 6px;padding:4px 10px;border-radius:6px;background:var(--green-soft);
+  color:var(--green);font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.lich-pop .lich-go-nam i{width:1.5px;height:15px;background:currentColor;animation:lich-nhay 1s steps(1) infinite}
+@keyframes lich-nhay{50%{opacity:0}}
+
+/* chân: Hôm nay · Xoá ………… OK */
+.lich-pop .lich-chan{display:flex;align-items:center;gap:6px;padding:10px 15px 12px;border-top:1px solid var(--line)}
+.lich-pop .lich-btn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-height:32px;padding:5px 12px;
+  border:1px solid var(--line-2);border-radius:var(--r);background:#fff;color:var(--ink);font-size:12.5px;font-weight:500;line-height:1.3;cursor:pointer}
+.lich-pop .lich-btn:hover{background:var(--bg)}
+.lich-pop .lich-btn.chinh{min-width:72px;background:var(--green-2);border-color:var(--green-2);color:#fff;font-weight:600}
+.lich-pop .lich-btn.chinh:hover{background:var(--green)}
+.lich-pop .lich-btn.chinh .lo-sub{color:rgba(255,255,255,.85)}
+.lich-pop .lich-btn:disabled{opacity:.45;cursor:default;background:#fff}
+.lich-pop.hep .lich-btn{min-height:38px;font-size:13.5px}
+
+@media print{.lich-pop{display:none!important}}
