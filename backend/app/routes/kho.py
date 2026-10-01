@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Part
+from routes.kho_xem import go_gia
 from services import chung_tu as CT
 from services import gia_von as GV
 from services import kho_ke_toan as KK
@@ -91,7 +92,7 @@ def ds_phu_tung(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
                "active": p.active, "status": None, "khong_noi": True}
               for p in db.query(Part).filter(Part.active.is_(True)).order_by(Part.name).all()]
     if not thay_gia_kho(user.role):             # Bãi (A2), thủ kho, tổ sửa chữa (30/09): không thấy giá vốn kho
-        for r in ds: r.pop("unit_price", None)
+        go_gia(ds)                              # mọi khoá tiền, mọi tầng — kho tạm thêm trường giá mới cũng không lộ
     return ds
 
 

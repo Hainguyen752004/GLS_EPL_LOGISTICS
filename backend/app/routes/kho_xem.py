@@ -8,8 +8,10 @@ dòng kho trên phiếu xuất xe chưa rời kho.
 
     GET /api/kho-xem?thang=YYYY-MM
 
-Bãi không thấy giá (giá bình quân, giá từng lần) — như mọi chỗ tiền chi. Tài xế không vào màn này.
+Bãi, thủ kho, thủ kho phụ tùng, tổ sửa chữa không thấy giá (giá bình quân, giá từng lần — `thay_gia_kho`, chốt 30/09).
+Tài xế không vào màn này.
 """
+import re
 from collections import defaultdict
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -23,6 +25,31 @@ from services.gia_von import kho_goc
 from services.phan_quyen import thay_gia_kho
 
 router = APIRouter()
+
+# Chữ trong tên khoá cho biết khoá mang TIỀN (giá bình quân, giá từng lần, giá trị tồn, đơn giá, quy Kíp…).
+CHU_TIEN = {"gia", "tien", "price", "cost", "amount", "value", "von", "lak", "usd", "thb", "vnd", "cny"}
+
+
+def _chu(khoa):
+    """Tách tên khoá thành chữ: `gia_bq` → {gia, bq}; `unitPrice` → {unit, price}."""
+    return set(re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", str(khoa)).lower().replace("-", "_").split("_"))
+
+
+def go_gia(o):
+    """Gỡ MỌI khoá tiền ở MỌI tầng (dict / list lồng nhau) cho vai không thấy giá vốn kho — trả chính đối tượng đó.
+
+    Gỡ theo chữ trong tên khoá chứ không theo danh sách trường cố định: 30/09 kho tạm thêm khối `so_thang` (sổ tháng,
+    mỗi dòng có `gia`) mà màn này chỉ gỡ giá ở `gan_day` → Bãi, thủ kho, tổ sửa chữa thấy giá vốn. Bên kho thêm khối mới
+    nào nữa thì giá trong đó cũng bị gỡ ở đây."""
+    if isinstance(o, dict):
+        for k in [k for k in o if _chu(k) & CHU_TIEN]:
+            del o[k]
+        for v in o.values():
+            go_gia(v)
+    elif isinstance(o, list):
+        for v in o:
+            go_gia(v)
+    return o
 
 
 def _tuyen(p):
@@ -117,10 +144,8 @@ def kho_xem(thang: str = "", db: Session = Depends(get_db), user=Depends(nguoi_h
     if user.role == "depot":
         # thủ kho một kho (như Cấp phát): tab Nhiên liệu chỉ kho mình phụ trách; chưa gắn kho thì không thấy kho nào
         dau = [k for k in dau if user.place_id and k["place_id"] == user.place_id]
+    ra = {"thang": kho.get("thang"), "nguon": "ke_toan_tam", "nhien_lieu": dau, "phu_tung": pt, "hang": kho.get("hang", [])}
     if not gia:
-        for x in dau + pt:
-            x.pop("gia_bq", None)
-            for m in x.get("gan_day", []):
-                m.pop("gia", None)
-    return {"thang": kho.get("thang"), "thay_gia": gia, "nguon": "ke_toan_tam", "nhien_lieu": dau, "phu_tung": pt,
-            "hang": kho.get("hang", [])}
+        go_gia(ra)
+    ra["thay_gia"] = gia
+    return ra

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2134 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2136 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -8123,14 +8123,14 @@ window.EPL_TU_DIEN = {
   "en": "Page {n}/{tong}"
  },
  "tk_lt_tab": {
-  "vi": "Liên thông trang kế toán",
-  "lo": "ເຊື່ອມຕໍ່ ປຶ້ມບັນຊີ EPL",
-  "en": "Link to the ledger site"
+  "vi": "Liên thông kho tạm",
+  "lo": "ເຊື່ອມຕໍ່ສາງຊົ່ວຄາວ",
+  "en": "Temporary warehouse link"
  },
  "tk_lt_api": {
-  "vi": "Địa chỉ trang kế toán",
-  "lo": "ທີ່ຢູ່ ປຶ້ມບັນຊີ EPL",
-  "en": "Ledger site address"
+  "vi": "Địa chỉ API kho tạm",
+  "lo": "ທີ່ຢູ່ API ສາງຊົ່ວຄາວ",
+  "en": "Temporary warehouse API address"
  },
  "tk_lt_day": {
   "vi": "Khoá đẩy chứng từ (trang kế toán cấp)",
@@ -8143,19 +8143,19 @@ window.EPL_TU_DIEN = {
   "en": "Copy the \"Voucher push token\" from Settings on the ledger site. Leave empty to keep the current key."
  },
  "tk_lt_nhan": {
-  "vi": "Khoá cho trang kế toán gọi sang",
-  "lo": "Khoá cho trang kế toán gọi sang",
-  "en": "Key for the ledger site to call us"
+  "vi": "Khoá cho kho tạm gọi sang",
+  "lo": "ກະແຈໃຫ້ສາງຊົ່ວຄາວເອີ້ນມາ",
+  "en": "Key for the warehouse site to call us"
  },
  "tk_lt_tao": {
-  "vi": "Tạo khoá cho trang kế toán",
-  "lo": "Tạo khoá cho trang kế toán",
-  "en": "Create key for the ledger site"
+  "vi": "Tạo khoá cho kho tạm",
+  "lo": "ສ້າງກະແຈໃຫ້ສາງຊົ່ວຄາວ",
+  "en": "Create key for the warehouse site"
  },
  "tk_lt_tao_hint": {
-  "vi": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.",
-  "lo": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên trang kế toán — khoá chỉ hiện một lần.",
-  "en": "A new key replaces the old one at once. Copy it into Settings → Link to the transport site on the ledger site — it is shown only once."
+  "vi": "Khoá mới thay khoá cũ ngay. Chép khoá hiện ra rồi dán vào Cài đặt → Liên thông trang điều xe bên kho tạm — khoá chỉ hiện một lần.",
+  "lo": "ກະແຈໃໝ່ແທນກະແຈເກົ່າທັນທີ. ສຳເນົາກະແຈທີ່ສະແດງ ແລ້ວວາງໃສ່ ຕັ້ງຄ່າ → ເຊື່ອມຕໍ່ໜ້າຈັດລົດ ຢູ່ສາງຊົ່ວຄາວ — ກະແຈສະແດງພຽງເທື່ອດຽວ.",
+  "en": "A new key replaces the old one at once. Copy it into Settings → Link to the transport site on the temporary warehouse site — it is shown only once."
  },
  "tk_lt_co": {
   "vi": "Đã có khoá",
@@ -8173,9 +8173,9 @@ window.EPL_TU_DIEN = {
   "en": "Test connection"
  },
  "tk_lt_ok": {
-  "vi": "Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó",
-  "lo": "Nối được trang kế toán · {ms} ms · tài khoản {u} bên đó",
-  "en": "Ledger site reached · {ms} ms · account {u} there"
+  "vi": "Nối được kho tạm · {ms} ms · tài khoản {u} bên đó",
+  "lo": "ເຊື່ອມຕໍ່ສາງຊົ່ວຄາວໄດ້ · {ms} ms · ບັນຊີຜູ້ໃຊ້ {u} ຢູ່ທາງນັ້ນ",
+  "en": "Warehouse site reached · {ms} ms · account {u} there"
  },
  "tk_lt_hong": {
   "vi": "Chưa nối được: {loi}",
@@ -8183,14 +8183,14 @@ window.EPL_TU_DIEN = {
   "en": "Not connected: {loi}"
  },
  "tk_lt_web": {
-  "vi": "Địa chỉ mở trang kế toán (trình duyệt · mã QR)",
-  "lo": "Địa chỉ mở trang kế toán (trình duyệt · mã QR)",
-  "en": "Ledger site address for browsers · QR codes"
+  "vi": "Địa chỉ mở kho tạm (trình duyệt · mã QR)",
+  "lo": "ທີ່ຢູ່ເປີດສາງຊົ່ວຄາວ (ບຣາວເຊີ · ລະຫັດ QR)",
+  "en": "Warehouse site address for browsers · QR codes"
  },
  "tk_lt_web_hint": {
-  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất kho nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "lo": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu đề nghị xuất kho nhiên liệu mở địa chỉ này. Để trống = dùng địa chỉ trang kế toán ở trên.",
-  "en": "The Issuing / Fuel store buttons and the QR code on fuel stock-out requests open this address. Empty = use the ledger address above."
+  "vi": "Nút Cấp phát, Kho nhiên liệu và mã QR trên phiếu lĩnh mở địa chỉ này. Để trống = dùng địa chỉ API kho tạm ở trên.",
+  "lo": "ປຸ່ມ ການຈ່າຍອອກ, ສາງນໍ້າມັນ ແລະ ລະຫັດ QR ເທິງໃບເບີກ ຈະເປີດທີ່ຢູ່ນີ້. ປະວ່າງ = ໃຊ້ທີ່ຢູ່ API ສາງຊົ່ວຄາວຂ້າງເທິງ.",
+  "en": "The Issuing and Fuel store buttons and the QR code on draw slips open this address. Empty = use the warehouse API address above."
  },
  "khong_co_man": {
   "vi": "Việc của tài khoản này ở trang kế toán",
@@ -10671,5 +10671,15 @@ window.EPL_TU_DIEN = {
   "vi": "Không có phiếu nào khớp bộ lọc — bỏ bớt điều kiện lọc để xem thêm",
   "lo": "ບໍ່ມີໃບທີ່ກົງກັບຕົວກັ່ນຕອງ — ລຶບເງື່ອນໄຂອອກແດ່ ເພື່ອເບິ່ງຕື່ມ",
   "en": "No slips match the filters — remove some filters to see more"
+ },
+ "tk_lt_kho_khoa": {
+  "vi": "Khoá gọi kho tạm (kho tạm cấp)",
+  "lo": "ກະແຈເອີ້ນສາງຊົ່ວຄາວ (ສາງຊົ່ວຄາວອອກໃຫ້)",
+  "en": "Temporary warehouse key (issued by the warehouse site)"
+ },
+ "tk_lt_kho_khoa_hint": {
+  "vi": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên kho tạm. Để trống = giữ khoá cũ.",
+  "lo": "ສຳເນົາຊ່ອງ \"Token ຮັບເອກະສານ\" ໃນ ຕັ້ງຄ່າ ຂອງສາງຊົ່ວຄາວ. ປະວ່າງ = ໃຊ້ກະແຈເກົ່າ.",
+  "en": "Copy the \"Voucher push token\" field from Settings on the warehouse site. Leave empty to keep the current key."
  }
 };
