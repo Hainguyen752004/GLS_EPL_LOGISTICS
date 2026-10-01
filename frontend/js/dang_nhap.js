@@ -127,6 +127,7 @@
   }
   function ve() {
     if (!$('lgBuoc')) return;
+    $('login').classList.toggle('is-hai', NN.lang === 'both');     // VI + ລາວ: chữ hai dòng, css thu gọn cột trái
     veBuoc(); veThe(); veTaiKhoan(); veVai();
   }
   function chonBuoc(id, focus) {

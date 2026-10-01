@@ -12,6 +12,9 @@
   const { API, NN, esc, so } = EPL;
   let root, DS = [], DIEM = [], CUR = null, TAB = 'trip', SO = {};
   let theoDoiId = null, phieuChiaSe = null, lanGuiCuoi = 0, boNghe = null, matMang = false, henTim = null;
+  // napXong: lần tải đầu đã xong (trước đó các tab hiện "Đang tải…", không phải "chưa có phiếu") · napDu: chi tiết MỌI phiếu
+  // đã về (tải nền xong) · luotTai: lượt tải mới nhất — lượt cũ về muộn thì bỏ, không đè dữ liệu mới
+  let napXong = false, napDu = false, luotTai = 0;
   const CO_TRANG = 6;
   const LS_GOC = { q: '', thang: '', xe: '', sap: 'moi', tt: 'all', loai: 'all', trang: 1 };
   let LS = Object.assign({}, LS_GOC), LSDS = null, LSDEM = {};
@@ -185,7 +188,8 @@
       (p && (p.plate_head || p.plate_trailer) ? chip('<span lang="lo">' + esc(p.plate_head || '—') + '</span><span class="sep">/</span><span lang="lo">' + esc(p.plate_trailer || '—') + '</span>') : '') +
       chip('<span class="x2-dot"></span>' + esc(matMang ? t('gh_mat_mang') : hd ? t('tx_cho_gui_n', { n: hd }) : t('tx_da_dong_bo')), 'net-chip' + (matMang || hd ? ' offline' : '')) +
       (phieuChiaSe ? chip(ic('pin', 'icon-sm') + esc(t('tx_dang_chia_vt')) + (lanGuiCuoi ? ' · ' + esc(new Date(lanGuiCuoi).toTimeString().slice(0, 5)) : ''), 'net-chip') : '');
-    const choChi = DS.filter(dangChay).filter(x => { const tu = tamUng(x); return tu.co && tu.tt !== 'paid'; }).length;
+    // đếm trên chi tiết phiếu (dòng chi): chi tiết các phiếu còn đang tải nền thì để "·", đừng hiện số thiếu
+    const choChi = matMang || napDu ? DS.filter(dangChay).filter(x => { const tu = tamUng(x); return tu.co && tu.tt !== 'paid'; }).length : null;
     const o = (k, v, cls) => '<div class="stat' + (cls ? ' ' + cls : '') + '"><span>' + h(k, { thang: nhanThang(thangNay()) }) + '</span><strong>' + (v == null ? '·' : esc(so(v))) + '</strong></div>';
     q('#tx-so').innerHTML = o('tx_so_thang', SO.thang) + o('tx_so_mo', SO.mo) + o('tx_so_khoa', SO.khoa) + o('tx_so_cho_chi', choChi, choChi ? 'x2-warn' : '');
   }
@@ -206,13 +210,23 @@
     q('#tx-tabs').innerHTML = ds.map(([id, nhan, n, cls]) => '<button role="tab" type="button" id="tx-t-' + id + '" aria-controls="tx-p-' + id + '" data-tab="' + id + '" aria-selected="' + (TAB === id) + '"' + (TAB === id ? '' : ' tabindex="-1"') + '>' +
       nhan + (n != null ? ' <span class="tab-n' + (cls && n ? ' ' + cls : '') + '"' + (n ? '' : ' data-zero') + '>' + esc(so(n)) + '</span>' : '') + '</button>').join('');
     ['trip', 'history', 'costs', 'fuel', 'issues', 'truck'].forEach(id => { q('#tx-p-' + id).hidden = TAB !== id; });
+    // điện thoại: dải tab cuộn ngang, tab đang chọn có thể nằm khuất bên phải — kéo nó vào tầm nhìn
+    const dai = q('#tx-tabs'), chon = q('#tx-t-' + TAB);
+    if (chon && dai.scrollWidth > dai.clientWidth) {
+      const trai = chon.offsetLeft, phai = trai + chon.offsetWidth;
+      if (trai < dai.scrollLeft) dai.scrollLeft = trai - 8;
+      else if (phai > dai.scrollLeft + dai.clientWidth) dai.scrollLeft = phai - dai.clientWidth + 8;
+    }
   }
   const trong = (ico, chu, phu) => '<div class="x2-empty"><span class="x2-empty-ico">' + ic(ico, 'icon-lg') + '</span><strong>' + h(chu) + '</strong>' + (phu ? '<p>' + h(phu) + '</p>' : '') + '</div>';
+  /** Chưa có phiếu nào để hiện: lần tải đầu chưa xong thì nói "Đang tải…" — trước đây khung trắng hoặc báo "không có phiếu". */
+  const chuaCo = (ico, phu) => '<div class="x2-card">' + (napXong ? trong(ico, 'no_my_slips', phu) : '<div class="x2-empty"><strong>' + h('loading') + '</strong></div>') + '</div>';
 
   /* ================================================================ tab: Chuyến đang chạy */
   function veChuyen() {
     const o = q('#tx-p-trip'), p = DS.find(x => x.id === CUR);
-    if (!p) { o.innerHTML = '<div class="x2-card">' + trong('truck', 'no_my_slips', matMang ? 'gh_mat_mang' : '') + '</div>'; return; }
+    o.classList.remove('tx-dang-tai');
+    if (!p) { o.innerHTML = chuaCo('truck', matMang ? 'gh_mat_mang' : ''); return; }
     const tu = tamUng(p), tiep = viecTiep(p, tu), xong = daXong(p), b = cacBuoc(p, tu);
     const tienDo = b.ds.length > 1 ? Math.min(b.dang, b.ds.length - 1) / (b.ds.length - 1) : 0;
     const vs = phieuDN(p), tuV = vs.find(v => v.kind === 'advance');
@@ -228,9 +242,11 @@
     const oBam = [];
     const nutO = (act, icon, k, phu, daLam, cls) => '<button class="action' + (cls ? ' ' + cls : '') + (daLam ? ' is-done' : '') + '" type="button"' + (act ? ' data-act="' + act + '"' : ' disabled') + '>' +
       '<span class="action-ico">' + ic(icon, 'icon-lg') + '</span><span><strong>' + h(k) + '</strong><small>' + h(phu) + '</small><span class="done-mark">' + h('tx_da_bao') + '</span></span></button>';
-    if (p.kind === 'gom' && (coTheBaoCan(p) || coCan(p) || choGui(p.id, 'can_mo')))
+    // việc đã là nút lớn "Bước tiếp theo" thì không lặp lại thành ô bấm (rà 01/10: hai nút "Giao hàng hoàn tất" liền nhau,
+    // thêm một hàng ô làm thẻ chuyến dài ra) — giống ô "Báo đã về" ở dưới
+    if (p.kind === 'gom' && tiep.act !== 'cm' && (coTheBaoCan(p) || coCan(p) || choGui(p.id, 'can_mo')))
       oBam.push(nutO(coTheBaoCan(p) ? 'cm' : '', 'scale', 'cm_nut', 'tx_o_can', coCan(p) || choGui(p.id, 'can_mo')));
-    if (p.kind === 'giao' && (coTheGiao(p) || daKy(p) || choGui(p.id)))
+    if (p.kind === 'giao' && tiep.act !== 'gh' && (coTheGiao(p) || daKy(p) || choGui(p.id)))
       oBam.push(nutO(coTheGiao(p) ? 'gh' : daKy(p) ? 'bb' : '', 'sign', daKy(p) ? 'gh_xem' : 'gh_nut', 'tx_o_giao', daKy(p) || choGui(p.id)));
     if (!xong) oBam.push(nutO('dau', 'fuel', 'df_declare', 'tx_o_dau', suKien(p, ['refuel']).length > 0));
     if (p.transport_status === 'transit' && tiep.act !== 've') oBam.push(nutO('ve', 'flag', 'report_back', 'tx_o_ve', !!p.back_date));
@@ -296,7 +312,7 @@
           esc(hangDoi().length ? t('tx_hang_doi_n', { n: hangDoi().length }) : t('tx_hang_doi_trong')) + '</p></div></section>' +
       '</aside></div>';
     const oChon = q('#tx-chon');
-    if (oChon) oChon.addEventListener('change', (e) => { if (e.target.value) { CUR = e.target.value; ve(); } });
+    if (oChon) oChon.addEventListener('change', (e) => { if (e.target.value) chonPhieu(e.target.value); });
   }
 
   /* ================================================================ tab: Lịch sử phiếu (lọc, phân trang ở máy chủ) */
@@ -390,7 +406,7 @@
   const dauPanel = (tieuDe, moTa, nut) => '<div class="panel-head"><div><h2>' + h(tieuDe) + '</h2><p>' + moTa + '</p></div>' + (nut || '') + '</div>';
   function veChiPhi() {
     const o = q('#tx-p-costs'), p = DS.find(x => x.id === CUR);
-    if (!p) { o.innerHTML = '<div class="x2-card">' + trong('wallet', 'no_my_slips') + '</div>'; return; }
+    if (!p) { o.innerHTML = chuaCo('wallet'); return; }
     const tu = tamUng(p), tong = {}, rows = [];
     const cong = (m, v) => { tong[m] = (tong[m] || 0) + (v || 0); };
     if (tu.co) { rows.push(dongDs('wallet', h('tx_tam_ung_chuyen'), h(tu.tt === 'paid' ? 'advance_received' : 'advance_pending'), tienHien(tu.tong, 'LAK'))); cong('LAK', tu.tong); }
@@ -406,7 +422,7 @@
   }
   function veNhienLieu() {
     const o = q('#tx-p-fuel'), p = DS.find(x => x.id === CUR);
-    if (!p) { o.innerHTML = '<div class="x2-card">' + trong('fuel', 'no_my_slips') + '</div>'; return; }
+    if (!p) { o.innerHTML = chuaCo('fuel'); return; }
     const xong = daXong(p), tenDiem = (id) => (DIEM.find(x => x.id === id) || {}).name || '';
     const rows = phieuDN(p).filter(v => v.kind === 'fuel').map(v => dongDs('qr', h('v_fuel') + ' · <span lang="lo">' + esc(v.place_name || '') + '</span>',
         h('v_' + v.status) + (v.status !== 'da_cap' ? ' · <button class="link-btn" type="button" data-qr="' + esc(v.id) + '">' + h('pct_mo_qr') + '</button>' : ''),
@@ -418,7 +434,7 @@
   }
   function veSuCo() {
     const o = q('#tx-p-issues'), p = DS.find(x => x.id === CUR);
-    if (!p) { o.innerHTML = '<div class="x2-card">' + trong('alert', 'no_my_slips') + '</div>'; return; }
+    if (!p) { o.innerHTML = chuaCo('alert'); return; }
     const xong = daXong(p), diem = (s) => ((p.route_stops || []).find(x => x.seq === s) || {}).name;
     const rows = suKien(p, ['incident', 'repair']).map(e => dongDs('alert', esc(tenSuCo(e)) + ' · ' + ttSuKien(e),
       '<span lang="lo">' + esc(e.note || '') + '</span>' + (e.stop_seq && diem(e.stop_seq) ? ' · <span lang="lo">' + esc(diem(e.stop_seq)) + '</span>' : '') +
@@ -429,7 +445,7 @@
   }
   function veXe() {
     const o = q('#tx-p-truck'), p = DS.find(x => x.id === CUR), u = EPL.AUTH.user || {};
-    if (!p) { o.innerHTML = '<div class="x2-card">' + trong('truck', 'no_my_slips') + '</div>'; return; }
+    if (!p) { o.innerHTML = chuaCo('truck'); return; }
     const cungXe = DS.filter(x => x.vehicle_id && x.vehicle_id === p.vehicle_id);
     const km = Math.max(0, ...cungXe.map(x => Math.max(x.odo_back || 0, x.odo_out || 0)));
     const fact = (k, v, cls) => '<div><dt>' + h(k) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd></div>';
@@ -469,7 +485,18 @@
     }));
     return ra;
   }
+  /** Chi tiết một phiếu, kèm phiếu đề nghị (mã QR) khi chuyến còn mở — lưu cùng bản trong máy để mất mạng vẫn đưa QR cho
+   *  người cấp quét. `_du`: đủ trường (diễn biến, dòng chi…), không phải bản tóm tắt của danh sách. */
+  async function chiTiet(p) {
+    const x = await API.get('/api/trips/' + p.id);
+    if (p._ngoai) x._ngoai = true;
+    if (conMo(x)) x._v = await API.get('/api/trips/' + p.id + '/vouchers').catch(() => []);
+    x._du = true;
+    return x;
+  }
+  const thayPhieu = (x) => { DS = DS.map(p => (p.id === x.id ? x : p)); };
   async function tai() {
+    const luot = ++luotTai;
     try {
       // Một năm mỗi tài xế ~700 phiếu: chỉ nạp MỌI phiếu còn chạy + 15 phiếu gần nhất (không phải cả năm, rồi mỗi
       // phiếu một lượt gọi nữa — trên điện thoại ngoài đường là đứng hình). Phiếu cũ hơn mở từ tab Lịch sử.
@@ -478,27 +505,66 @@
         API.get('/api/trips?transport_status=dispatched,transit&co=50'), API.get('/api/trips?co=15'),
         API.get('/api/trips?thang=' + m + '&co=1'), API.get('/api/trips?locked=false&co=1'),
         API.get('/api/trips?locked=true&thang=' + m + '&co=1'), API.get('/api/trips?co=1')]);
+      if (luot !== luotTai) return;
       const ds = [...chay, ...gan.filter(p => !chay.some(x => x.id === p.id))];
       const them = DS.filter(p => p._ngoai && !ds.some(x => x.id === p.id));      // phiếu cũ đang mở từ tab Lịch sử
-      DS = await theoLo([...ds, ...them], 3, p => API.get('/api/trips/' + p.id).then(x => { if (p._ngoai) x._ngoai = true; return x; }));
-      // phiếu đề nghị (mã QR) của chuyến còn mở — lưu cùng bản trong máy để mất mạng vẫn đưa QR cho người cấp quét
-      await theoLo(DS.filter(conMo), 3, async p => { p._v = await API.get('/api/trips/' + p.id + '/vouchers').catch(() => []); });
+      // Vẽ NGAY khi có chi tiết của phiếu đang xem; chi tiết các phiếu khác tải nền (taiNen). Rà 01/10: tx01 có 42 phiếu,
+      // chờ đủ chi tiết mọi phiếu (mỗi lượt ~1 s, 3 lượt cùng lúc) thì màn trắng 6–11 s, mỗi lần báo xong lại chờ chừng ấy.
+      // Trong lúc chờ, phiếu nào đã có chi tiết từ lần trước thì giữ bản đó, còn lại là bản tóm tắt của danh sách.
+      const cu = new Map(DS.map(p => [p.id, p]));
+      DS = [...ds.map(p => (cu.has(p.id) && cu.get(p.id)._du ? cu.get(p.id) : p)), ...them];
       SO = { thang: demLS(sThang), mo: demLS(sMo), khoa: demLS(sKhoa), tat: demLS(sTat) };
-      ghi(K_DS(), DS); ghi(K_SO(), SO); matMang = false;
+      chonMacDinh();
+      const dang = DS.find(p => p.id === CUR);
+      if (dang) { const x = await chiTiet(dang); if (luot !== luotTai) return; thayPhieu(x); }
+      matMang = false;                     // napDu giữ nguyên: các phiếu khác vẫn là bản chi tiết của lần trước
       LSDS = null;
     } catch (e) {
+      if (luot !== luotTai) return;
       if (!laMatMang(e)) throw e;
       DS = doc(K_DS(), []); SO = doc(K_SO(), {}); matMang = true;
+    }
+    napXong = true;
+    ve();
+    if (!matMang) taiNen(luot);
+  }
+  /** Chi tiết các phiếu còn lại, chạy nền (3 lượt cùng lúc — xem theoLo); xong thì lưu bản trong máy cho lúc mất mạng.
+   *  Chỉ vẽ lại lời chào + ô số (ô "Tạm ứng chờ chi" cần dòng chi của mọi phiếu): vẽ lại cả màn thì ô tìm ở tab Lịch sử
+   *  đang gõ dở sẽ mất chữ. Mất mạng giữa chừng thì thôi — giữ bản đang có, lần tải sau làm tiếp. */
+  async function taiNen(luot) {
+    const dangXem = CUR;
+    try {
+      const ra = await theoLo(DS.filter(p => p.id !== dangXem), 3, p => chiTiet(p).catch(e => { if (laMatMang(e)) throw e; return null; }));
+      if (luot !== luotTai || !root) return;
+      ra.forEach(x => { if (x && x.id !== CUR) thayPhieu(x); });
+      napDu = true;
+      ghi(K_DS(), DS); ghi(K_SO(), SO);
+      veChao();
+    } catch (e) { /* mất mạng giữa chừng */ }
+  }
+  /** Chuyển sang phiếu khác (nút trên đầu thẻ, ô chọn). Phiếu mới chỉ có bản tóm tắt thì lấy chi tiết trước khi vẽ — bản tóm
+   *  tắt không có diễn biến, dòng chi, phiếu đề nghị, thẻ sẽ báo sai "chưa khai". Mất mạng thì lấy bản lưu trong máy. */
+  async function chonPhieu(id) {
+    CUR = id;
+    const p = DS.find(x => x.id === id);
+    if (p && !p._du) {
+      q('#tx-p-trip').classList.add('tx-dang-tai');
+      qa('#tx-p-trip [data-chon]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.chon === id)));
+      try { thayPhieu(await chiTiet(p)); } catch (e) {
+        const luu = doc(K_DS(), []).find(x => x.id === id);
+        if (luu) thayPhieu(luu); else if (!laMatMang(e)) EPL.baoLoi(e);
+      }
+      if (!root || CUR !== id) return;                 // đã bấm sang phiếu khác trong lúc chờ
     }
     ve();
   }
   async function moPhieu(id) {
-    if (!DS.some(p => p.id === id)) {
+    const co = DS.find(p => p.id === id);
+    if (!co || !co._du) {
       try {
-        const p = await API.get('/api/trips/' + id); p._ngoai = true;
-        if (conMo(p)) p._v = await API.get('/api/trips/' + id + '/vouchers').catch(() => []);
-        DS.push(p);
-      } catch (e) { return EPL.baoLoi(e); }
+        const x = await chiTiet(co || { id, _ngoai: true });
+        if (co) thayPhieu(x); else DS.push(x);
+      } catch (e) { if (!co) return EPL.baoLoi(e); }
     }
     CUR = id; TAB = 'trip'; ve();
     const tab = q('#tx-tabs'); if (tab) tab.scrollIntoView({ block: 'nearest' });
@@ -734,7 +800,7 @@
     if (d.act !== undefined) { if (LAM[d.act]) LAM[d.act](); return; }
     if (d.qr) return moQR(d.qr);
     if (d.tab) { TAB = d.tab; ve(); const b = q('#tx-t-' + TAB); if (b) b.focus(); return; }
-    if (d.chon) { CUR = d.chon; ve(); return; }
+    if (d.chon) return chonPhieu(d.chon);
     if (d.mo) return moPhieu(d.mo);
     if (d.lsTt) { LS.tt = d.lsTt; LS.trang = 1; return taiLichSu(); }
     if (d.lsLoai) { LS.loai = d.lsLoai; LS.trang = 1; return taiLichSu(); }
@@ -771,10 +837,13 @@
   EPL.modules['phieu-cua-toi'] = {
     async init(r) {
       root = r; CUR = null; TAB = 'trip'; DS = []; SO = {}; LS = Object.assign({}, LS_GOC); LSDS = null; LSDEM = {};
+      napXong = false; napDu = false; DIEM = [];
       ganHop();
       root.addEventListener('click', onClick);
       root.addEventListener('keydown', onKey);
-      DIEM = await API.get('/api/fuel-places').catch(() => []);
+      ve();                                    // lời chào, tab và chữ "Đang tải…" hiện ngay, không để khung trắng
+      // danh sách trạm dầu chỉ cần khi mở hộp khai dầu — tải song song, không bắt cả màn chờ
+      API.get('/api/fuel-places').then(x => { DIEM = x || []; }).catch(() => {});
       boNghe = () => guiHangDoi().catch(() => {});
       window.addEventListener('online', boNghe);
       window.addEventListener('resize', datDinh);
@@ -790,7 +859,7 @@
           EPL.oNgay(p.out_date || p.doc_date), t('s_' + p.transport_status), p.locked ? '✓' : '']))];
     },
     destroy() {
-      ngungGPS(false); clearTimeout(henTim);
+      ngungGPS(false); clearTimeout(henTim); luotTai++;       // lượt tải nền đang chạy về sau thì bỏ
       if (boNghe) window.removeEventListener('online', boNghe);
       window.removeEventListener('resize', datDinh);
       boNghe = null; root = null;

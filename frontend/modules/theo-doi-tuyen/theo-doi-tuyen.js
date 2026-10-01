@@ -75,7 +75,7 @@
       + (c.transport_status === 'transit' ? 5 : 0);
     if (sap === 'uu-tien') ds.sort((a, b) => diem(b) - diem(a) || String(b.out_date).localeCompare(String(a.out_date)));
     else if (sap === 'ngay') ds.sort((a, b) => String(b.out_date).localeCompare(String(a.out_date)));
-    else ds.sort((a, b) => String(a.customer_name || '').localeCompare(String(b.customer_name || '')));
+    else ds.sort((a, b) => (!a.customer_name - !b.customer_name) || String(a.customer_name || '').localeCompare(String(b.customer_name || '')));   // chưa có khách xuống cuối
     return ds;
   }
 
@@ -96,9 +96,9 @@
       return `<button type="button" class="tdt2-the ${P && P.id === c.id ? 'chon' : ''}" data-c="${c.id}">
         <span class="so"><span class="mono">${esc(c.doc_no)}</span>${tag(c.transport_status)}</span>
         <span class="kh" lang="lo">${esc(c.customer_name || '—')}</span>
-        <span class="xe" lang="lo">${esc(c.origin || '')} → ${esc(c.destination || '')}</span>
+        <span class="xe" lang="lo">${c.origin || c.destination ? `${esc(c.origin || '—')} → ${esc(c.destination || '—')}` : '—'}</span>
         <span class="xe">${esc(c.truck_no || '')}${c.plate_head ? ' · <span lang="lo">' + esc(c.plate_head) + '</span>' : ''}${c.driver_name ? ' · <span lang="lo">' + esc(c.driver_name) + '</span>' : ''}</span>
-        ${canh.length ? `<span class="chan">${canh.join(' · ')}</span>` : ''}
+        ${canh.length ? `<span class="canh-ds">${canh.join('')}</span>` : ''}
         <span class="chan"><span>${c.so_diem ? NN.h('td_legs', { toi: c.stop_reached, tong: c.so_diem }) : NN.h('no_route')}</span><span>${EPL.ngay(c.out_date)}</span></span>
       </button>`;
     }).join('') : `<div class="tdt2-trong">${NN.h('td_none_watch')}</div>`;
@@ -260,12 +260,25 @@
     let tren = 0, n = el;
     while (n) { tren += n.offsetTop; n = n.offsetParent; }
     const ty = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
-    el.style.height = Math.max(420, (window.innerHeight || 900) / ty - tren - 24) + 'px';
+    let cao = Math.max(420, (window.innerHeight || 900) / ty - tren - 24);
+    el.style.height = cao + 'px';
+    // Phần đệm dưới đáy khung (nội dung, thân trang) không phải lúc nào cũng 24: rà 01/10 trang vẫn cuộn 14–20 px sau khi
+    // chọn chuyến (1680 × 934, 1366 × 768). Đo phần còn thừa rồi trừ nốt — đổi sang đơn vị của trang (chia tỷ lệ).
+    const de = document.documentElement, du = de.scrollHeight - de.clientHeight;
+    if (du > 0 && cao > 420) { cao = Math.max(420, cao - du / ty); el.style.height = cao + 'px'; }
     setTimeout(() => MAP && MAP.invalidateSize(), 60);
   }
 
   /* ---------------------------------------------------------------- cột giữa: mốc chặng */
   function rate(ma) { return { USD: P.rate_usd, THB: P.rate_thb, VND: P.rate_vnd, CNY: P.rate_cny || 3000, LAK: 1 }[ma] || 1; }
+
+  /** Như NN.ghep nhưng mảnh chuỗi là HTML đã thoát (giữ <b> quanh con số): chế độ VI + ລາວ ra MỘT khối hai dòng, thay
+   *  vì mỗi khoá tự xuống một dòng Lào — dòng tổng dưới mốc chặng bị bẻ năm sáu dòng (rà 01/10, 1366 thanh bên). */
+  function ghepH(manh) {
+    const td = window.EPL_TU_DIEN || {};
+    const lay = (ng) => manh.map(m => (typeof m === 'string' ? m : ((td[m.k] || {})[ng] || (td[m.k] || {}).vi || esc(m.k)))).join('');
+    return NN.lang === 'both' ? lay('vi') + '<span class="lo-sub" lang="lo">' + lay('lo') + '</span>' : lay(NN.lang);
+  }
 
   function veMoc() {
     if (!P) { q('#tdt-moc').innerHTML = ''; q('#tdt-moc-chan').innerHTML = ''; return; }
@@ -283,8 +296,8 @@
     }).join('');
     const tongKm = diem.reduce((a, s) => a + (s.km_from_prev || 0), 0);
     const diKm = diem.filter(s => s.seq <= toi).reduce((a, s) => a + (s.km_from_prev || 0), 0);
-    q('#tdt-moc-chan').innerHTML = `<span>${NN.h('td_route_total')} <b>${so(tongKm, 1)} km</b> · ${NN.h('td_gone_km')} ${so(diKm, 1)} km</span>
-      <span>${NN.h('ev_arrive_stop')} <b>${toi}/${diem.length}</b>${tiep ? ` · ${NN.h('td_next_stop')} <span lang="lo">${esc(tiep.name)}</span>` : ` · ${NN.h('td_done_route')}`}</span>`;
+    q('#tdt-moc-chan').innerHTML = `<span>${ghepH([{ k: 'td_route_total' }, ` <b>${so(tongKm, 1)} km</b> · `, { k: 'td_gone_km' }, ` ${so(diKm, 1)} km`])}</span>
+      <span>${ghepH([{ k: 'ev_arrive_stop' }, ` <b>${toi}/${diem.length}</b> · `, ...(tiep ? [{ k: 'td_next_stop' }, ` <span lang="lo">${esc(tiep.name)}</span>`] : [{ k: 'td_done_route' }])])}</span>`;
     q('#tdt-moc').querySelectorAll('[data-moc]').forEach(b => b.addEventListener('click', () => {
       mocSang = mocSang === +b.dataset.moc ? 0 : +b.dataset.moc;
       if (cheDoBD !== 'mot') { cheDoBD = 'mot'; root.querySelectorAll('#tdt-bd-tab button').forEach(x => x.classList.toggle('active', x.dataset.bd === 'mot')); }
@@ -386,12 +399,21 @@
         <th>${NN.h('doc_no')}</th><th>${NN.h('ct_loai')}</th><th style="width:104px">${NN.h('c_date')}</th>
         <th class="num" style="width:120px">${NN.h('amount')}</th><th style="width:110px">${NN.h('status')}</th></tr></thead>
       <tbody>${CHUNG_TU.map(c => `<tr>
-        <td class="mono">${esc(c.so)}</td><td>${esc(c.ten)}</td><td>${EPL.ngay(c.ngay)}</td>
+        <td class="mono">${esc(c.so)}</td><td>${c.ten()}</td><td>${EPL.ngay(c.ngay)}</td>
         <td class="num">${c.tien == null ? '—' : EPL.tien(c.tien, c.tien_te)}</td>
         <td>${tag(c.mau, c.tt_khoa)}</td></tr>`).join('')}</tbody></table>`
       : `<div class="trong">${NN.h('td_no_docs')}</div>`;
     q('#tdt-tab-than').innerHTML = than + `<div class="tdt2-chan">
       <span>${NN.h('td_doc_count', { n: CHUNG_TU.length })}</span><span>${NN.h('td_doc_note')}</span></div>`;
+  }
+
+  /** Tên loại chứng từ của sổ chứng từ: máy chủ trả cả bản Việt (loai_ten) lẫn bản Lào (loai_ten_lo) — rà 01/10: chế độ
+   *  ລາວ vẫn hiện "Phiếu chi theo đề nghị tạm ứng". Cùng cách màn Chứng từ. HTML (đã thoát). */
+  function tenLoaiCt(c) {
+    const vi = esc(c.loai_ten || c.loai || ''), lo = esc(c.loai_ten_lo || '');
+    if (NN.lang === 'lo') return lo || vi;
+    if (NN.lang === 'both' && lo) return vi + '<span class="lo-sub" lang="lo">' + lo + '</span>';
+    return vi;
   }
 
   async function napChungTu() {
@@ -403,22 +425,23 @@
       API.get(`/api/chung-tu?trip_id=${id}`).catch(() => null),
     ]);
     if (!P || P.id !== id) return;                       // đã bấm sang chuyến khác trong lúc chờ
+    // ten: hàm — dịch lúc vẽ, đổi ngôn ngữ thì tên loại đổi theo mà không phải tải lại
     const ds = [];
     (vc || []).forEach(v => ds.push({
-      so: v.doc_no, ten: NN.t(v.kind === 'fuel' ? 'v_fuel' : 'v_advance'), ngay: v.doc_date,
+      so: v.doc_no, ten: () => NN.h(v.kind === 'fuel' ? 'v_fuel' : 'v_advance'), ngay: v.doc_date,
       tien: v.kind === 'fuel' ? v.qty_l : v.amount_lak, tien_te: v.kind === 'fuel' ? 'L' : 'LAK',
       mau: v.status === 'da_cap' ? 'paid' : v.status === 'huy' ? 'unpaid' : 'partial', tt_khoa: 'v_' + v.status,
     }));
     (tep || []).forEach(t => ds.push({
-      so: t.filename, ten: NN.t('attach_ore'), ngay: t.ts, tien: null, tien_te: '',
+      so: t.filename, ten: () => NN.h('attach_ore'), ngay: t.ts, tien: null, tien_te: '',
       mau: 'paid', tt_khoa: 'ct_da_day',
     }));
     (so_ct && so_ct.ds ? so_ct.ds : []).forEach(c => ds.push({
-      so: c.so, ten: c.loai_ten, ngay: c.ngay, tien: c.tien, tien_te: c.tien_te,
+      so: c.so, ten: () => tenLoaiCt(c), ngay: c.ngay, tien: c.tien, tien_te: c.tien_te,
       mau: c.da_day ? 'paid' : 'partial', tt_khoa: c.da_day ? 'ct_da_day' : 'ct_chua_day',
     }));
     CHUNG_TU = ds;
-    if (tab === 'chung-tu') veTabChungTu(); else veTabs();
+    veTabs();                                            // vẽ lại cả dải tab: số trên tab Chứng từ còn là 0 từ lúc chưa tải
   }
 
   /* ---------------------------------------------------------------- cột phải: hồ sơ chuyến */
@@ -507,13 +530,22 @@
     veOSo(); veDanhSach();
     if (giuChon && P) { const con = BANG.chuyen.find(c => c.id === P.id); if (!con) { P = null; ve(); } }
   }
+  /** Mở một chuyến. Phiếu và vệt GPS gọi SONG SONG (trước đây nối tiếp); thẻ vừa bấm sáng ngay và hai cột bên phải mờ đi
+   *  trong lúc chờ — rà 01/10: lần đầu mở một phiếu mất ~1,8 s mà màn đứng im như chưa bấm. Bấm liền hai thẻ thì chỉ lượt
+   *  bấm sau cùng được vẽ (lượt trước về muộn không đè lên). */
+  let luotMo = 0;
   async function mo(id) {
+    const luot = ++luotMo, cols = q('#tdt-cols');
+    q('#tdt-the-ds').querySelectorAll('[data-c]').forEach(b => b.classList.toggle('chon', b.dataset.c === id));
+    if (cols) cols.classList.add('dang-mo');
     try {
-      P = await API.get('/api/trips/' + id);
-      VET = await API.get('/api/trips/' + id + '/vet').catch(() => null);
+      const [p, vet] = await Promise.all([API.get('/api/trips/' + id), API.get('/api/trips/' + id + '/vet').catch(() => null)]);
+      if (luot !== luotMo || !root) return;
+      P = p; VET = vet;
       CHUNG_TU = null; mocSang = 0;
       veDanhSach(); ve(); moHoSo(true);
-    } catch (e) { EPL.baoLoi(e); }
+    } catch (e) { if (luot === luotMo) EPL.baoLoi(e); }
+    finally { if (luot === luotMo && cols) cols.classList.remove('dang-mo'); }
   }
   async function toiDiem(seq, tong) {
     try {
@@ -621,6 +653,9 @@
 
   let choCao = 0;
   function khiDoiCo() { clearTimeout(choCao); choCao = setTimeout(caoCot, 80); }
+  /** Chữ của các <option data-nhan>: chữ thuần (VI + ລາວ → "Vệ tinh / ດາວທຽມ"). data-i18n đổ HTML vào <option> nên
+   *  dòng Lào dính liền vào chữ Việt. */
+  function datNhanChon() { root.querySelectorAll('option[data-nhan]').forEach(o => { o.textContent = NN.t(o.dataset.nhan); }); }
 
   EPL.modules['theo-doi-tuyen'] = {
     /* Excel: danh sách chuyến đang lọc ở cột trái (màn vẽ bằng thẻ, không có bảng) */
@@ -635,12 +670,21 @@
     },
     async init(r, ctx) {
       root = r;
-      PARTS = await API.get('/api/parts').catch(() => []);
+      // Vào lại màn thì về trạng thái gốc: HTML mới luôn sáng nút "Ưu tiên" / "Tuyến đang chọn", nhưng biến của lần trước
+      // vẫn còn — rà 01/10: chọn "Khách hàng", sang màn khác rồi quay lại thì nút sáng một đằng, danh sách xếp một nẻo.
+      sap = 'uu-tien'; cheDoBD = 'mot'; tab = 'dien-bien'; locO = ''; P = null; BANG = null; VET = null; CHUNG_TU = null; mocSang = 0;
+      // kho phụ tùng chỉ cần khi mở hộp báo sửa xe — tải song song, không bắt cả màn chờ
+      API.get('/api/parts').then(x => { PARTS = x || []; }).catch(() => { PARTS = []; });
+      datNhanChon();
       let hen = null;
       q('#tdt-q').addEventListener('input', () => { veDanhSach(); clearTimeout(hen); hen = setTimeout(() => tai(true).catch(EPL.baoLoi), 350); });
       q('#tdt-chi-chay').addEventListener('change', () => tai(true).catch(EPL.baoLoi));
       q('#tdt-tu-dong').addEventListener('change', e => datTuDong(e.target.checked));
-      q('#tdt-lam-moi').addEventListener('click', () => tai(true).catch(EPL.baoLoi));
+      // nút Cập nhật tắt trong lúc tải: trước đây bấm xong không có dấu hiệu gì, bấm thêm lần nữa là gọi máy chủ hai lần
+      q('#tdt-lam-moi').addEventListener('click', async (e) => {
+        const nut = e.currentTarget; nut.disabled = true;
+        try { await tai(true); } catch (x) { EPL.baoLoi(x); } finally { nut.disabled = false; }
+      });
       q('#tdt-so-su-co').addEventListener('click', moSo);
       q('#tdt-mo-phieu').addEventListener('click', () => P && EPL.di('phieu-xuat-xe', { id: P.id }));
       q('#tdt-dong-hs').addEventListener('click', () => moHoSo(false));
@@ -667,12 +711,15 @@
       // Mở màn bằng đường dẫn có ?hs=0 thì thu sẵn thanh xem nhanh, nhường cả chỗ cho bản đồ.
       if (t.hs === '0') moHoSo(false);
       caoCot();
+      // đo lại sau khi khung tắt dải "Đang tải…" trên đầu màn (khung tắt nó ngay SAU khi init xong): đo lúc còn dải thì ba
+      // cột thấp hụt đúng chiều cao của dải, chừa khoảng trống ở đáy
+      setTimeout(caoCot, 0);
     },
     destroy() {
       clearInterval(dongHo); dongHo = null;
       window.removeEventListener('resize', khiDoiCo);
       if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
     },
-    onLang() { if (root) { veOSo(); veDanhSach(); ve(); } },
+    onLang() { if (root) { datNhanChon(); veOSo(); veDanhSach(); ve(); } },
   };
 })();

@@ -23,7 +23,9 @@
   position: relative; display: flex; flex-direction: column; gap: 16px; padding: 28px 44px 22px; color: var(--lg-on); overflow: hidden;
   background: radial-gradient(120% 90% at 100% 0%, rgba(127, 211, 176, .12), transparent 55%), linear-gradient(160deg, var(--lg-g1), var(--lg-g2) 55%, var(--lg-g3));
 }
-#login .brand { display: flex; align-items: center; gap: 14px }
+/* .brand của thanh bên (chung.css) đặt cứng cao 56 px và đệm trái 12 px: logo lệch so với tiêu đề, chế độ VI + ລາວ thì dòng
+   Lào bị đường kẻ dưới cắt ngang — gỡ hai thứ đó ở đây */
+#login .brand { display: flex; align-items: center; gap: 14px; height: auto; min-height: 56px; padding: 0 0 10px; border-bottom-color: var(--lg-line-d) }
 #login .hero__logo { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background: #fff; flex: none }
 #login .brand b { display: block; font-size: 18px }
 #login .brand span { font-size: 13.5px; color: var(--lg-mint2) }
@@ -35,7 +37,7 @@
    giữa thẻ bước và chân trang trên màn cao) */
 #login .process { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto }   /* không cho co dưới chiều cao tối thiểu của bản đồ — thẻ bước sẽ đè lên nhãn */
 #login .process-title { margin: 0; font-size: 13px; color: var(--lg-mint2); font-weight: 500 }
-#login .map { position: relative; flex: 1 1 auto; min-height: 250px; max-height: 520px; border-top: 1px solid var(--lg-line-d); border-bottom: 1px solid var(--lg-line-d) }
+#login .map { position: relative; flex: 1 1 auto; min-height: 250px; max-height: 520px; border-top: 1px solid var(--lg-line-d); border-bottom: 1px solid var(--lg-line-d); container-type: inline-size }
 #login .map-svg { position: absolute; inset: 0; width: 100%; height: 100% }
 #login .map .route { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round }
 #login .route--done { stroke: var(--lg-mint) }
@@ -44,7 +46,9 @@
 #login .node { position: absolute; width: 20px; height: 20px; margin: -10px 0 0 -10px; padding: 0; border: 0; background: transparent; color: var(--lg-on); cursor: pointer; overflow: visible; font: inherit }
 #login .node .dot { position: absolute; inset: 0; border-radius: 50%; display: grid; place-items: center; background: var(--lg-g1); border: 2.5px solid var(--lg-mint); font-size: 11px; font-weight: 700; color: var(--lg-mint); transition: transform .15s ease, box-shadow .15s ease }
 #login .node:hover .dot { transform: scale(1.15) }
-#login .node .txt { position: absolute; display: flex; flex-direction: column; line-height: 1.25; white-space: nowrap; padding: 4px 8px; border-radius: 8px }
+/* nhãn rộng tối đa 25% bản đồ (khoảng cách giữa hai bước cùng hàng là 25–26%): bản đồ hẹp (1280 × 800, máy tính bảng)
+   thì nhãn xuống dòng thay vì đè lên nhãn bên cạnh — rà 01/10: "Kho dầu Thà Bốc" đè "Mỏ Kasi · Cửa khẩu Nậm Phao" */
+#login .node .txt { position: absolute; display: flex; flex-direction: column; line-height: 1.25; padding: 4px 8px; border-radius: 8px; width: max-content; max-width: 25cqw }
 #login .node.is-up .txt { bottom: 25px; left: 2px; align-items: flex-start; text-align: left }
 #login .node.is-down .txt { top: 25px; right: 2px; align-items: flex-end; text-align: right }
 #login .node.is-left .txt { left: auto; right: -6px; align-items: flex-end; text-align: right }
@@ -143,15 +147,43 @@
   #login .step-card .hint { display: none }
   #login .hero__logo { width: 44px; height: 44px }
 }
+/* Chế độ VI + ລາວ: mỗi chữ hai dòng nên cột trái cao hơn khung (rà 01/10, 1680 × 934: thẻ bước bị cắt đáy) — thu gọn như
+   màn thấp. Lớp is-hai do js/dang_nhap.js đặt theo ngôn ngữ đang chọn. */
+@media (min-width: 1181px) {
+  #login.is-hai .hero { gap: 10px; padding-top: 18px; padding-bottom: 14px }
+  #login.is-hai .hero h1 { font-size: 32px }
+  #login.is-hai .intro { font-size: 14px; max-width: 78ch }
+  #login.is-hai .map { min-height: 220px }
+  #login.is-hai .step-card { padding: 9px 16px }
+  #login.is-hai .step-card h3 { font-size: 17px }
+  #login.is-hai .step-card ul { font-size: 13px }
+  #login.is-hai .step-card .hint { display: none }
+}
+/* Một cột (máy tính bảng, điện thoại): biểu mẫu đăng nhập lên TRƯỚC — rà 01/10: trên điện thoại phải cuộn qua cả sơ đồ
+   và thẻ bước (~1.100 px) mới tới ô tên đăng nhập. Danh sách tài khoản tự cuộn trong khung cho trang khỏi dài; câu
+   "chọn tài khoản ở bên phải" không còn đúng chỗ nên ẩn. */
 @media (max-width: 1180px) {
   #login .lg-shell { grid-template-columns: 1fr }
+  #login .lg-panel { order: -1; min-height: 0 }
+  #login .accounts { max-height: calc(52vh / var(--ty-le, 1)) }
   #login .hero { padding: 28px 24px }
   #login .hero h1 { font-size: 34px }
   #login .map { min-height: 300px }
+  #login .step-card .hint { display: none }
   #login .lg-panel { padding: 24px }
 }
+/* Điện thoại: đường lượn tám bước không đủ chỗ — nhãn đè nhau và tràn khỏi khung (rà 01/10, 390 px). Xếp thành lưới hai
+   cột vẫn bấm được như trên sơ đồ; bước chưa tới vẫn là chấm mờ. */
 @media (max-width: 720px) {
-  #login .map { min-height: 380px }
+  #login .map { flex: none; min-height: 0; max-height: none; padding: 10px 0; border: 0 }
+  #login .map-svg, #login .truck { display: none }
+  #login .nodes { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px }
+  #login .node { position: static; display: flex; align-items: flex-start; gap: 8px; width: auto; height: auto; margin: 0; padding: 7px 8px; border-radius: 10px; background: rgba(255, 255, 255, .05); text-align: left }
+  #login .node .dot { position: static; flex: none; width: 22px; height: 22px }
+  #login .node .txt, #login .node.is-up .txt, #login .node.is-down .txt, #login .node.is-left .txt { position: static; min-width: 0; max-width: none; width: auto; padding: 0; align-items: flex-start; text-align: left; background: none }
+  #login .node:hover .dot, #login .node[aria-selected="true"] .dot { transform: none; box-shadow: none }
+  #login .node:hover .txt, #login .node[aria-selected="true"] .txt { background: none }
+  #login .node[aria-selected="true"] { background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px var(--lg-mint) }
   #login .step-card { grid-template-columns: 1fr }
   #login .acc-group ul { grid-template-columns: 1fr }
 }

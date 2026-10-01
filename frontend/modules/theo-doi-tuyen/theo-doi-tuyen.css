@@ -51,9 +51,13 @@
 .tdt2-cols{display:grid;grid-template-columns:280px minmax(0,1fr) 0px;gap:12px;min-height:0;
   transition:grid-template-columns .28s cubic-bezier(.4,0,.2,1)}
 .tdt2-cols.mo-ho-so{grid-template-columns:280px minmax(0,1fr) 330px}
-.tdt2-card.ho-so{min-width:0;opacity:0;transform:translateX(14px);pointer-events:none;
-  transition:opacity .2s ease,transform .24s cubic-bezier(.4,0,.2,1)}
-.tdt2-cols.mo-ho-so .tdt2-card.ho-so{opacity:1;transform:none;pointer-events:auto}
+/* Đóng thì ẩn hẳn (visibility) SAU khi mờ xong: chỉ opacity 0 thì đầu cột (Mở phiếu, ×) vẫn nằm tràn ra ngoài khung bên
+   phải và còn được Tab tới — rà 01/10 */
+.tdt2-card.ho-so{min-width:0;opacity:0;visibility:hidden;transform:translateX(14px);pointer-events:none;
+  transition:opacity .2s ease,transform .24s cubic-bezier(.4,0,.2,1),visibility 0s linear .24s}
+.tdt2-cols.mo-ho-so .tdt2-card.ho-so{opacity:1;visibility:visible;transform:none;pointer-events:auto;transition-delay:0s}
+/* đang lấy phiếu vừa bấm: cột giữa và cột phải mờ đi, thẻ bên trái đã sáng */
+.tdt2-cols.dang-mo>.tdt2-card:not(:first-child){opacity:.6;transition:opacity .15s}
 .tdt2-dong{width:28px;height:28px;flex:none;display:grid;place-items:center;border:0;border-radius:6px;
   background:none;color:var(--ink-3)}
 .tdt2-dong:hover{background:var(--bg);color:var(--ink)}
@@ -63,8 +67,13 @@
   background:var(--paper);border:1px solid var(--line);border-radius:12px}
 .tdt2-hd{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:10px 14px;border-bottom:1px solid var(--bg-2)}
-.tdt2-hd b{font-size:14px}
-.tdt2-hd-phai{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.tdt2-hd b{font-size:14px;white-space:nowrap}
+.tdt2-hd-phai{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+/* đầu cột hồ sơ: nhãn "Mở phiếu" dài (tiếng Lào, VI + ລາວ) thì cắt bằng dấu …, không đẩy nút × ra ngoài thẻ */
+.ho-so .tdt2-hd b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ho-so .tdt2-hd-phai{flex-wrap:nowrap}
+.ho-so #tdt-mo-phieu{min-width:0;flex:0 1 auto}
+.ho-so #tdt-mo-phieu>span{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tdt2-mo{font-size:12px;color:var(--ink-3)}
 .tdt2-sub{flex:none;padding:8px 14px;border-bottom:1px solid var(--bg-2)}
 .tdt2-cuon{flex:1 1 0;min-height:0;overflow:auto}
@@ -90,11 +99,16 @@
 .tdt2-the .xe,.tdt2-the .chan{font-size:11.5px;color:var(--ink-3)}
 .tdt2-the .chan{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px}
 .tdt2-the .canh{font-size:11.5px;font-weight:600}
+/* các cảnh báo của một thẻ: xếp liền, tự xuống dòng — trước đây nằm trong .chan (dàn hai đầu) với dấu "·" rời nên dấu
+   chấm trơ trọi ở cuối dòng, cảnh báo cuối bị đẩy sang lề phải (rà 01/10) */
+.tdt2-the .canh-ds{display:flex;flex-wrap:wrap;gap:2px 10px}
 .tdt2-the .canh.do{color:var(--red)} .tdt2-the .canh.vang{color:var(--amber)} .tdt2-the .canh.xanh{color:var(--green)}
 .tdt2-trong{padding:26px 14px;text-align:center;color:var(--ink-3);font-size:12.5px}
 
 /* ---- bản đồ: Leaflet thật. Trả riêng về tỷ lệ 1 vì Leaflet tính sai toạ độ chuột khi bị zoom ---- */
-.tdt-map{flex:none;height:calc(250px * var(--ty-le,1));zoom:calc(1 / var(--ty-le,1));
+/* cao 250, co được tới 150 khi cột thấp (1366 có thanh bên, VI + ລາວ): trước đây cao cứng nên ba tab bên dưới không còn
+   dòng nào (rà 01/10) — Leaflet đo lại trong caoCot */
+.tdt-map{flex:0 1 calc(250px * var(--ty-le,1));min-height:calc(150px * var(--ty-le,1));zoom:calc(1 / var(--ty-le,1));
   background:#DDE5E0;position:relative}
 .tdt-map.trong{display:grid;place-items:center}
 .tdt-map-trong{padding:16px 22px;text-align:center;color:var(--ink-3);font-size:13px;max-width:460px}
@@ -120,9 +134,10 @@
 /* ---- ba tab ---- */
 .tdt2-tabs{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;
   border-top:1px solid var(--line);border-bottom:1px solid var(--bg-2);background:var(--bg)}
-.tdt2-tabs__ds{display:flex;gap:18px}
-.tdt2-tabs__nut{display:flex;gap:8px}
-.tdt2-tab{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 4px;margin-bottom:-1px;
+.tdt2-tabs__ds{display:flex;gap:18px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.tdt2-tabs__nut{display:flex;gap:8px;flex:none}
+.tdt2-tab-than{min-height:120px}
+.tdt2-tab{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 4px;white-space:nowrap;flex:none;
   border:0;border-bottom:2px solid transparent;background:none;color:var(--ink-3);
   font-family:inherit;font-size:13px;font-weight:500}
 .tdt2-tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
@@ -169,7 +184,17 @@
 .tdt2-thao-tac{display:flex;flex-direction:column;gap:8px}
 .tdt2-thao-tac .tdt2-btn{width:100%}
 
-@media (max-width:1280px){.tdt2-cols{grid-template-columns:240px minmax(0,1fr) 300px}.tdt2-chu-thich{display:none}}
+/* ≤ 1280: cột phải vẫn về 0 khi đóng hồ sơ — trước đây quy tắc này đặt cứng 300px nên đóng hồ sơ chừa một ô trống
+   300px, mở thì lại nhảy về 330px của khổ rộng */
+@media (max-width:1280px){.tdt2-cols{grid-template-columns:240px minmax(0,1fr) 0px}.tdt2-cols.mo-ho-so{grid-template-columns:240px minmax(0,1fr) 300px}.tdt2-chu-thich{display:none}}
+/* chú thích màu của bản đồ: thẻ bản đồ hẹp (1366 có thanh bên, hồ sơ đang mở) thì bỏ — tiêu đề "Bản đồ tuyến" bị bẻ hai
+   dòng, ô chọn nền rớt xuống hàng dưới (rà 01/10) */
+.tdt2-cols>.tdt2-card:nth-child(2){container-type:inline-size}
+@container (max-width:860px){.tdt2-chu-thich{display:none}}
+
+/* Sổ sự cố: bảng bảy cột trong khung 440px của hộp chung bị bóp còn mỗi chữ một dòng, nút OK trôi khỏi màn — rà 01/10 */
+.hop-thoai.tdt-so{width:min(1080px,calc(94vw / var(--ty-le,1)))}
+.tdt-so .tbl-wrap{max-height:calc(72vh / var(--ty-le,1));overflow:auto}
 @media (max-width:1000px){
   .tdt2-cols,.tdt2-cols.mo-ho-so{grid-template-columns:1fr;height:auto!important}
   .tdt2-card.ho-so{opacity:1;transform:none;pointer-events:auto}
