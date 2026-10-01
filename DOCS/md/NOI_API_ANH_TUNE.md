@@ -302,6 +302,14 @@ Có **hai đường** đưa chứng từ ra khỏi trang điều xe:
    - `ke_toan_api` hiện trỏ vào **KT tạm**. **Hệ anh chưa có đường `/api/v1/epl-lao/vouchers`**, nên **chưa tờ nào đi sang hệ anh bằng đường này**.
 2. **PDT → SO của anh (A2), từ 01/10.** Đây là đường **duy nhất** đang nối thẳng sang hệ anh.
 
+**Kiểm lại tối 01/10 trên máy `demo-lao-api`** (tải swagger `/swagger/v1/swagger.json`, chỉ đọc):
+
+- Hệ anh có **705 đường, không đổi** so với bản chụp 30/09.
+- **Không có** đường nhận phong bì chứng từ (`/api/v1/epl-lao/vouchers`) hay đường "phiếu đề nghị" nào.
+- Đường dành cho logistics chỉ có `POST /api/v1/integrations/logistics/sales-orders` (đã nối, A2).
+- Đường **có thể dùng** cho đề nghị tạm ứng: nhóm phiếu thu chi `…/cmpayment-receipt/*`, tức `save-and-commit`, hoặc chuỗi `create-session` → `save-session` → `commit-session`; mục 1.4. Muốn dùng thì cần mã số ở mục 1.4, và **đối tượng tài xế** phải có trong danh mục của anh (`ObjectId` bắt buộc > 0).
+- Nhóm `/api/v1/hr/salary-advances/*` là **tạm ứng lương** của nhân sự, **không phải** tạm ứng chuyến (Nợ 1601 theo từng DO), nên bên em không dùng.
+
 Số tờ trên máy thử (bản sao dữ liệu) ngày 01/10, cột "đã đẩy" là đã đẩy sang **KT tạm**:
 
 | Tờ | Tổng | Đã đẩy |
