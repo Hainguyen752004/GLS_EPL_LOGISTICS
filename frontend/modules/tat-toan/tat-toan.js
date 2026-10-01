@@ -92,9 +92,20 @@
     return nut.map(([v, c, k]) => `<button type="button" class="btn ${c}" data-viec="${v}">${NN.h(k)}</button>`).join('');
   }
 
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/tat-toan' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   function veXem() {
     const o = q('#tt2-xem');
     const d = BANG.dong.find(x => x.driver_id === CHON);
+    ghiDiaChi(new URLSearchParams({ ky: BANG.ky || q('#tt2-ky').value || '', tx: d ? d.driver_id : '' }));
     if (!d) { o.innerHTML = `<div class="tt2-trong">${NN.h('no_data')}</div>`; return; }
     const c = CT[d.driver_id];                 // bản đầy đủ (phiếu trong kỳ, tạm ứng chờ, QT_TU) — tải riêng
     const x = c || d, t = x.tat_toan, ch = x.chenh_lech_lak, s = trangThai(x);

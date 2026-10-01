@@ -19,7 +19,7 @@ from services import goi_ke_toan as KT
 from services.bao_mat import can_vai, nguoi_hien_tai
 
 router = APIRouter()
-XEM = ("acct", "expacct", "rev", "treasury", "cash", "fuel", "depot", "admin")
+XEM = ("acct", "expacct", "rev", "treasury", "cash", "fuel", "admin")    # thủ kho (depot) không có màn sổ chứng từ — API cũng không cho đọc
 
 
 def _ngay(s, ten):

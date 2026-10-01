@@ -98,7 +98,7 @@ def main():
     ma("/api/trips/%s/vouchers" % cua_minh["id"], {"tx01": 200})
 
     print("Hồ sơ gửi kế toán")
-    ma("/api/chung-tu?trip_id=%s" % khoa["id"], {**ALL, "thabok": 403, "tx01": 403, "totsua": 403, "khopt": 403})
+    ma("/api/chung-tu?trip_id=%s" % khoa["id"], {**ALL, "thabok": 403, "tx01": 403, "totsua": 403, "khopt": 403, "khotb": 403})
     ma("/api/chung-tu/khong-co-to-nay/day", {**{u: 403 for u in VAI}, "ketoan": 404, "admin": 404}, body={})
 
     print("Giá vốn kho (30/09: thủ kho, thủ kho phụ tùng, tổ sửa chữa không thấy)")

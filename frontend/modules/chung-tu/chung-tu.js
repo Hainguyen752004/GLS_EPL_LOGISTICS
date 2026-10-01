@@ -92,7 +92,7 @@
         <td><span class="so">${esc(x.doc_no)}</span><span class="ct2-k ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>${x.company === 'joint' ? `<span class="ct2-k joint">${NN.h('dn_xe_thue')}</span>` : ''}
           <span class="phu">${EPL.ngay(x.doc_date)}${x.locked ? ' · ' + NN.h('s_locked') : ''}</span></td>
         <td>${esc(x.truck_no || '—')}<span class="phu" lang="lo">${esc(x.driver_name || '')}</span></td>
-        <td><span lang="lo">${esc(x.customer_name || '—')}</span><span class="phu" lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span></td>
+        <td><span lang="lo">${esc(x.customer_name || '—')}</span>${x.origin || x.destination ? `<span class="phu" lang="lo">${esc(x.origin || '—')} → ${esc(x.destination || '—')}</span>` : ''}</td>
         <td>${chipDeNghi(x).chi}</td><td>${chipDeNghi(x).xk}</td>
         <td>${tagTT(x.thu.trang_thai)}${ban && x.thu.doanh_thu ? `<span class="phu">${EPL.tien(x.thu.doanh_thu, x.thu.ccy)}</span>` : ''}</td>
         <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}</td></tr>`).join('')
@@ -103,16 +103,29 @@
     // bảng trống: bỏ khung "Chọn một dòng" bên phải, bảng (và khung trống của nó) chiếm cả bề ngang
     q('#ct2-do').classList.toggle('trong', !ds.length); q('#ct2-ct').hidden = !ds.length;
     veBao();
+    datCao();
     // chú thích màu bốn mục chi — nằm ngay dưới bảng, không chiếm hàng riêng trên đầu
     let chu = root.querySelector('.ct2-chu');
     if (!chu) { chu = document.createElement('div'); chu.className = 'ct2-chu'; q('.ct2-trai').appendChild(chu); }
     chu.innerHTML = `<span>III · IV · V · VI = ${NN.h('ct_bon_muc')}</span>` + ['wait', 'entered', 'verified', 'booked', 'paid'].map(s =>
       `<span><span class="ct2-muc"><i class="${s}">·</i></span>${NN.h('stt_' + s)}</span>`).join('');
+    datCao();
   }
 
   /* ---------------------------------------------------------------- khung phải */
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/chung-tu' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   async function veCt() {
     const ct = q('#ct2-ct'), x = D.ds.find(y => y.trip_id === chonId);
+    if (tab === 'do') ghiDiaChi(new URLSearchParams({ thang: q('#ct2-thang').value || '', id: x ? x.trip_id : '' }));
     if (!x) { ct.innerHTML = `<div class="ct2-chon">${NN.h('kx_chon')}</div>`; return; }
     const chi = D.thay_tien_chi, ban = D.thay_tien_ban;
     const dong = (t, n, r) => `<div class="ct2-dong"><div><div class="t">${t}</div>${n ? `<div class="n">${n}</div>` : ''}</div><div class="r">${r}</div></div>`;
@@ -135,7 +148,7 @@
       `${ban && t.doanh_thu != null ? EPL.tien(t.doanh_thu, t.ccy) + ' · ' : ''}${tagTT(t.trang_thai)}`)
       + (ban && t.doanh_thu_lak ? dong(NN.h('collected'), '', `${so(t.da_thu_lak)} LAK · ${NN.h('ncc_con_thu')} ${so(t.con_lai_lak)} LAK`) : '');
     ct.innerHTML = `<div class="ct2-dau"><h3>${esc(x.doc_no)}</h3>
-        <div class="phu"><span lang="lo">${esc(x.customer_name || '')}</span> · <span lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span></div>
+        <div class="phu"><span lang="lo">${esc(x.customer_name || '')}</span>${x.origin || x.destination ? ` · <span lang="lo">${esc(x.origin || '—')} → ${esc(x.destination || '—')}</span>` : ''}</div>
         <div class="phu">${esc(x.truck_no || '')} · <span lang="lo">${esc(x.driver_name || '')}</span>${x.company === 'joint' ? ' · ' + NN.h('co_joint') + ' <span lang="lo">' + esc(x.owner_name || '') + '</span>' : ''}</div></div>
       <div class="ct2-cuon">
         <div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_chi')}<a data-mo-chi="1">${NN.h('ct_mo_man')}</a></h4>
@@ -165,6 +178,23 @@
       : `<div class="ct2-trong">${NN.h('ct_khong_co')}</div>`);
     ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
   }
+
+  /* Bảng cao VỪA cửa sổ (rà 01/10: 22 DO là trang dài 1.700 px, Sổ chứng từ 17.000 px — khung chi tiết bên phải trôi mất):
+   * đo từ đầu khung bảng của tab đang mở tới đáy cửa sổ, trừ lề đáy trang và dòng chú thích dưới bảng, đặt vào --ct-cao.
+   * Bảng tự cuộn trong khung, dòng tiêu đề dính trên. Toạ độ là px màn hình, px CSS bên trong .app (zoom --ty-le) nên chia. */
+  let henCao = null;
+  function datCao() {
+    const w = root && root.querySelector(tab === 'so' ? '#ct-so-ct .tbl-wrap' : '.ct2-trai .tbl-wrap');
+    if (!w || !w.isConnected) return;
+    if (root.classList.contains('mod-dang-tai')) { clearTimeout(henCao); henCao = setTimeout(datCao, 120); return; }
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const le = (parseFloat(getComputedStyle(document.getElementById('noi-dung')).paddingBottom) || 0) * tl;
+    const chu = tab === 'so' ? null : root.querySelector('.ct2-chu');
+    const duoi = chu ? chu.getBoundingClientRect().height + 8 * tl : 0;
+    const cao = (window.innerHeight - (w.getBoundingClientRect().top + window.scrollY) - le - duoi) / tl;
+    root.style.setProperty('--ct-cao', Math.max(260, Math.floor(cao)) + 'px');
+  }
+  const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };
 
   let LUOT = 0;                // lượt tải mới nhất — lượt cũ (đang tự sang tháng) về sau thì không vẽ đè
   async function taiDo() {
@@ -224,6 +254,7 @@
     let r;
     try { r = await API.get('/api/chung-tu?' + th.toString()); } catch (e) { q('#ct-so-than').innerHTML = `<tr><td colspan="10" class="empty neg">${esc(e.message)}</td></tr>`; return; }
     veSoTong(r.tong);
+    datCao();
     const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
     const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');   // đánh dấu đối chiếu tay
     q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day && c.loai !== 'PDT' ? 'da-day' : ''}" data-id="${c.id}">
@@ -250,6 +281,7 @@
     root.querySelectorAll('.ct2-khi-do').forEach(el => { el.hidden = tab !== 'do'; });
     q('#ct2-do').hidden = tab !== 'do'; q('#ct-so-ct').hidden = tab !== 'so';
     if (tab === 'so') {
+      ghiDiaChi(new URLSearchParams({ tab: 'so', loai: soLoaiChon || '' }));
       if (!SO_LOAI.length) {
         SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
         q('#ct-so-loai').innerHTML = `<option value="">${NN.h('all')}</option>` + SO_LOAI.map(l => `<option value="${l.ma}">${esc(l.ma)} · ${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}</option>`).join('');
@@ -279,10 +311,12 @@
       q('#ct2-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); taiDo(); }, 300); });
       q('#ct-so-loai').addEventListener('change', e => { soLoaiChon = e.target.value; veSo(); });
       ['ct-so-tu', 'ct-so-den', 'ct-so-chua'].forEach(id => q('#' + id).addEventListener('change', veSo));
+      window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       if (t.loai) soLoaiChon = String(t.loai).toUpperCase();
       await doiTab(t.tab === 'so' ? 'so' : 'do');
     },
     onLang() { if (root) { if (tab === 'so') veSo(); else { veBang(); veCt(); } } },
+    destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); clearTimeout(hen); },
     xuatExcel() {
       if (tab === 'so') return EPL._xlsx.sheetMacDinh(root);
       const T = NN.t;

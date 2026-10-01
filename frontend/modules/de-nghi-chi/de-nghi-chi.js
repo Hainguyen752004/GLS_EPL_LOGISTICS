@@ -107,8 +107,19 @@
     ds.querySelectorAll('.dnc-o').forEach(b => b.addEventListener('click', () => { chonId = b.dataset.id; phieuLe = null; veDs(); veTo(); }));
   }
 
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/de-nghi-chi' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   async function veTo() {
     const v = DS.find(x => x.id === chonId);
+    ghiDiaChi(new URLSearchParams(v ? { id: v.trip_id, v: v.id } : {}));
     q('#dnc-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnc-giay').hidden = !DS.length;       // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
@@ -224,6 +235,7 @@
   }
 
   async function veLe() {
+    ghiDiaChi(new URLSearchParams({ id: phieuLe || '' }));
     q('#dnc-giay').hidden = false;           // phiếu chưa có tờ tạm ứng: vẫn in nội dung tạm ứng của phiếu, dù danh sách trống
     q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
     try { const [d] = await Promise.all([API.get(`/api/trips/${phieuLe}/phieu-chi`), accSan]); veTamUng(d, null); } catch (e) { EPL.baoLoi(e); }
@@ -237,9 +249,11 @@
       accSan = EPL.accCodes().then(acc => {
         ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
         // data-i18n: đổi tiếng thì NN.apDung dịch lại dòng này (trước đây đứng chữ Việt ở tiếng Lào / Anh)
+        // chỉ nói khi danh mục KHÔNG lấy được từ bên kế toán (dùng bản dự phòng) — lấy được thì là bình thường, khỏi bày dòng
+        // "Danh mục Acc code từ API kế toán" (đồ kỹ thuật, và Bãi không thấy cột định khoản nào; rà 01/10)
         const o = r.querySelector('#dnc-nguon');
-        o.dataset.i18n = acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback';
-        o.innerHTML = NN.h(o.dataset.i18n);
+        if (acc.source === 'remote' || acc.source === 'cached') { delete o.dataset.i18n; o.innerHTML = ''; }
+        else { o.dataset.i18n = 'acct_source_fallback'; o.innerHTML = NN.h(o.dataset.i18n); }
       }, () => { ACC = {}; });
       root.querySelectorAll('#dnc-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });

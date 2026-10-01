@@ -42,7 +42,8 @@ from services import gui_tune as GT
 CHO_GIAY = 40
 DA_GHI_SO = (12, 13)                      # CMPaymentReceiptConstants.PostedFinalStatus / PostedTempStatus
 _BO_NHO = {}                              # mã tiền, kỳ — 10 phút
-CAU_CHI_O_KE_TOAN = ("Tạm ứng chi ở hệ kế toán (chủ dự án 01/10): thủ quỹ chi tiền và ghi sổ phiếu chi tạm ứng bên đó, "
+# câu báo NGƯỜI DÙNG — không ghi chú nội bộ (ngày chốt, ai chốt) vào đây (rà 01/10: lộ "(chủ dự án 01/10)" lên màn)
+CAU_CHI_O_KE_TOAN = ("Tạm ứng chi ở hệ kế toán: thủ quỹ chi tiền và ghi sổ phiếu chi tạm ứng bên đó, "
                      "trang này tự ghi \"đã chi\".")
 
 
@@ -630,6 +631,17 @@ def _xuat_tru(rec, thay_tien=True):
 
 
 # ================================================================ công nợ khách — chỉ XEM (01/10)
+def _da_tra(d):
+    """Đã thu của MỘT chứng từ nợ. RETK_MONEYPAID chỉ là tiền trả lúc chốt phiếu bán — SO thu sau bằng phiếu thu công nợ vẫn để
+    0 dù RCTD_DEBTMONEY đã về 0 (rà 01/10: dòng "Đã thu 0 · Còn lại 0 · Đã thu đủ", lệch với Summary.TotalCollected). Có đủ
+    tiền và còn nợ thì đã thu = tiền − còn nợ (khớp Summary); thiếu thì giữ số bên đó gửi."""
+    tien, con = d.get("RETK_PAYMENTAMOUNT"), d.get("RCTD_DEBTMONEY")
+    try:
+        return max(float(d.get("RETK_MONEYPAID") or 0), round(float(tien) - float(con), 6))
+    except (TypeError, ValueError):
+        return d.get("RETK_MONEYPAID")
+
+
 def cong_no_khach(db, k):
     """Công nợ của khách bên hệ kế toán: POST /api/v1/sales/debt/customer-detail. Khách chưa có mã bên kế toán thì None (chưa
     có SO nào bên đó). Trả gọn: tổng, tuổi nợ, từng chứng từ nợ (SO), các lần thu, đơn hàng."""
@@ -646,7 +658,7 @@ def cong_no_khach(db, k):
         "tuoi_no": [{"ma": a.get("BucketCode"), "ten": a.get("BucketName"), "tien": a.get("Amount"), "pct": a.get("PercentValue")}
                     for a in (kq.get("Aging") or [])],
         "no": [{"so": d.get("OrderCode"), "phieu_ban": d.get("RETK_CODE"), "ngay": d.get("RETK_TIMECLOSETICKET"), "han": d.get("RCTD_EXPIRE"),
-                "tien": d.get("RETK_PAYMENTAMOUNT"), "da_tra": d.get("RETK_MONEYPAID"), "con_no": d.get("RCTD_DEBTMONEY"),
+                "tien": d.get("RETK_PAYMENTAMOUNT"), "da_tra": _da_tra(d), "con_no": d.get("RCTD_DEBTMONEY"),
                 "ccy": d.get("CurrencyCode"), "trang_thai": d.get("DebtStatus"), "tuoi": d.get("AgingDays")} for d in (kq.get("Debts") or [])],
         "thu": kq.get("Collections") or [],
         "don": [{"so": o.get("OrderCode"), "ngay": o.get("OrderDate"), "tien": o.get("FinalTotalAmount"), "ccy": o.get("CurrencyCode"),

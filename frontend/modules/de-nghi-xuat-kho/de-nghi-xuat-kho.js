@@ -89,8 +89,19 @@
     o.querySelectorAll('.dnx-o').forEach(b => b.addEventListener('click', () => { chonId = b.dataset.id; veDs(); veChon(); }));
   }
 
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/de-nghi-xuat-kho' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   async function veChon() {
     const v = DS.find(x => x.id === chonId);
+    ghiDiaChi(new URLSearchParams(v ? { id: v.trip_id, v: v.id } : {}));
     q('#dnx-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnx-giay').hidden = !loc().length;    // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
     q('#dnx-mo-phieu').disabled = !v; q('#dnx-in').disabled = !v;
@@ -116,6 +127,9 @@
     async init(r, ctx) {
       root = r; DS = []; chonId = null; tim = ''; ht = ''; tt = 'cho'; kho = '';
       KHO = (await API.get('/api/fuel-places').catch(() => [])).filter(x => x.owner_type === 'epl');
+      // thủ kho chỉ nhận tờ của kho mình (máy chủ lọc) — ô "Tất cả kho" liệt kê bảy kho là thừa và gây hiểu nhầm: bỏ (rà 01/10)
+      const u = EPL.AUTH.user || {};
+      q('#dnx-kho').hidden = EPL.AUTH.role === 'depot' && !!u.place_id;
       // data-i18n trên dòng "Tất cả kho": đổi tiếng thì NN.apDung dịch lại (trước đây còn chữ Việt ở tiếng Lào / Anh)
       q('#dnx-kho').innerHTML = `<option value="" data-i18n="fuel_all_kho">${NN.h('fuel_all_kho')}</option>` + KHO.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
       q('#dnx-kho').addEventListener('change', (e) => { kho = e.target.value; veDs(); veChon(); });

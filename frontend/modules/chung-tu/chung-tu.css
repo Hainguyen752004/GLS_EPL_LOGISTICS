@@ -12,7 +12,8 @@
 .ct2-bang tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--green-2)}
 .ct2-bang .so{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;font-weight:600;white-space:nowrap}
 .ct2-bang td:nth-child(2){min-width:110px}
-.ct2-bang td:nth-child(4){min-width:190px}
+.ct2-bang td:nth-child(3){min-width:130px}
+.ct2-bang td:nth-child(4){min-width:150px}
 .ct2-bang .phu{display:block;margin-top:2px;font-size:11.5px;color:var(--ink-3)}
 .ct2-k{display:inline-block;margin-left:5px;padding:0 6px;border-radius:4px;font-size:10.5px;font-weight:700;vertical-align:1px;background:var(--bg-2);color:var(--ink-2)}
 .ct2-k.gom{background:var(--ore-soft);color:var(--ore)} .ct2-k.giao{background:var(--blue-soft);color:var(--blue)}
@@ -39,7 +40,11 @@
 
 /* khung phải */
 .ct2-phai{position:sticky;top:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--paper);
-  max-height:calc(100vh / var(--ty-le, 1) - 150px);min-height:240px;overflow:hidden}
+  max-height:var(--ct-cao, calc(100vh / var(--ty-le, 1) - 150px));min-height:240px;overflow:hidden}
+/* bảng cao vừa cửa sổ, tự cuộn trong khung (chiều cao đo ở chung-tu.js → --ct-cao); tiêu đề cột dính trên */
+.ct2-trai .tbl-wrap,#ct-so-ct .tbl-wrap{max-height:var(--ct-cao, none);overflow:auto}
+.ct2-trai .tbl-wrap thead th,#ct-so-ct .tbl-wrap thead th{z-index:1}
+@media print{.ct2-trai .tbl-wrap,#ct-so-ct .tbl-wrap{max-height:none;overflow:visible}}
 .ct2-dau{padding:14px 16px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
 .ct2-dau h3{margin:0;font-size:16px;font-family:ui-monospace,Consolas,monospace}
 .ct2-dau .phu{margin-top:3px;font-size:12px;color:var(--ink-2)}
@@ -58,13 +63,16 @@
 @media (max-width:1100px){.ct2-than{grid-template-columns:1fr}.ct2-phai{position:static;max-height:none}}
 /* ---- sổ chứng từ ---- */
 .ct-check{display:inline-flex;align-items:center;gap:6px;align-self:flex-end;padding-bottom:8px;font-size:13px;white-space:nowrap}
-.ct-tong-loai{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px 12px}
+/* dải tổng theo loại: MỘT hàng tự cuộn ngang (rà 01/10: 19 loại xếp bốn hàng đẩy bảng xuống nửa màn) */
+.ct-tong-loai{display:flex;flex-wrap:nowrap;gap:8px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:thin}
+.ct-tong-loai .o{flex:none;white-space:nowrap}
 .ct-tong-loai .o{border:1px solid var(--line);border-radius:var(--r);padding:6px 10px;font-size:12.5px;cursor:pointer;background:var(--paper)}
 .ct-tong-loai .o:hover,.ct-tong-loai .o.chon{border-color:var(--green-2);background:var(--green-soft)}
 .ct-tong-loai .o b{display:block;font-size:11px;letter-spacing:.04em;color:var(--ink-3)}
 .ct-tong-loai .o .n{font-weight:700;font-variant-numeric:tabular-nums}
 .ct-tong-loai .o .c{color:var(--amber);font-weight:600}
 #ct-so-bang td .acct{font-size:11.5px}
+#ct-so-bang td .btn,#ct-so-bang td:nth-child(4) a{white-space:nowrap}
 #ct-so-bang tr.da-day td{color:var(--ink-3)}
 #ct-so-bang .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 @media print{#ct-so-ct .hd .field,#ct-so-ct .ct-check,#ct-so-bang th:last-child,#ct-so-bang td:last-child{display:none}}

@@ -39,7 +39,12 @@
   const sum = (l, f) => l.reduce((s, x) => s + (typeof f === 'function' ? f(x) : (x[f] || 0)), 0);
   // tháng này THEO GIỜ MÁY — toISOString là giờ UTC: 0–7 giờ sáng ngày 1 ở Lào ra tháng trước (rà 01/10)
   const thangNay = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
-  const thangHien = () => thangNay().slice(5, 7) + '/' + thangNay().slice(0, 4);
+  const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+  /* Tab Chuyến & phiếu, bốn ô số đầu hồ sơ (rà 01/10): THÁNG ĐANG XEM theo từng khách (cache[cid].thang). Mở khách mà tháng
+   * này chưa có chuyến thì tự sang tháng gần nhất có chuyến của khách đó, kèm dòng báo — trước đây đầu tháng mọi khách đều
+   * "0 chuyến", tab trống, trông như mất dữ liệu. Người dùng chọn tháng ở ô trong tab thì giữ đúng tháng đó. */
+  const thangCua = (cid) => ((cache[cid] || {}).thang || thangNay());
+  const thangHien = () => nhanThang(thangCua(st.id));
   const ngay = (s) => s ? EPL.ngay(s) : '';
   const pad = (n) => (n < 10 ? '0' : '') + n;
   // ngày dd/mm/yyyy ⇄ Date UTC (ô nhập theo mẫu) · ISO ⇄ Date (máy chủ)
@@ -260,17 +265,26 @@
 
   /* ================= Tab: Chuyến & phiếu ================= */
   function tripsTab(k) {
-    const tr = (cache[k.id] || {}).trips;
-    if (!tr) return '<div class="k3-empty">' + h('loading') + '</div>';
-    if (!tr.length) return '<div class="k3-empty">' + h('k3_chuyen_trong', { thang: thangHien() }) + '</div>';
+    const c = cache[k.id] || {}, tr = c.trips;
+    // thanh tháng: ô chọn tháng (EPL.doiOThang đổi thành ô chọn chung sau khi vẽ) + dòng báo khi màn tự sang tháng khác
+    // MỘT hàng: ô tháng (đã ghi chữ "Tháng 09/2026" — khỏi nhãn riêng), dòng báo, câu giải thích
+    const thanh = (chu) => '<div class="k3-thang-bar"><input type="month" id="k3-thang" value="' + esc(thangCua(k.id)) + '" title="' + esc(t('month')) + '">' +
+      (c.bao ? '<span class="k3-thang-bao" role="status">' + h('thang_trong_dang_xem', { trong: nhanThang(c.bao.trong), xem: nhanThang(c.bao.xem) }) + '</span>' : '') +
+      (chu ? '<p class="tab-note">' + chu + '</p>' : '') + '</div>';
+    if (!tr) return thanh('') + '<div class="k3-empty">' + h('loading') + '</div>';
+    if (!tr.length) return thanh('') + '<div class="k3-empty">' + h('k3_chuyen_trong', { thang: thangHien() }) + '</div>';
     const g = xemTien(), mo = moPhieuDuoc();
     const tong = {};
     const rows = tr.map(x => {
       const ti = x.tinh || {}, ccy = ti.ccy || x.price_ccy;
       if (g) cong(tong, ccy, ti.doanh_thu || 0);
-      const inv = x.invoiced ? (x.inv_no ? '<span class="code">' + esc(x.inv_no) + '</span>' : '<span class="k3-tag k3-tag--ok">' + h('p_invoiced') + '</span>')
-        : x.inv_mode === 'thang' ? '<span class="k3-tag k3-tag--info">' + h('k3_gop_cuoi_thang') + '</span>'
-        : x.locked ? '<span class="k3-tag k3-tag--warn">' + h('k3_chua_xuat') + '</span>' : '<span class="k3-tag k3-tag--muted">' + h('k3_chua_khoa') + '</span>';
+      // SO bên hệ kế toán anh Tune (01/10 bỏ cờ hoá đơn trang tạm — máy chủ không gửi invoiced / inv_no nữa): số SO + trạng
+      // thái thu bên đó đọc lại; khoá mà chưa có SO · chưa khoá. Cùng chữ với màn Phiếu đề nghị thu.
+      const sk = x.so_ke_toan, thu = (sk && sk.thu) || {};
+      const inv = x.da_tao_so && sk
+        ? '<span class="code">' + esc(sk.order_code || '') + '</span> <span class="k3-tag ' + (thu.trang_thai === 'da_thu' ? 'k3-tag--ok">' + h('dt_st_da_thu')
+          : thu.trang_thai === 'thu_mot_phan' ? 'k3-tag--warn">' + h('dt_st_thu_mot_phan') : 'k3-tag--info">' + h('dt_st_da_tao_so')) + '</span>'
+        : x.locked ? '<span class="k3-tag k3-tag--warn">' + h('k3_chua_tao_so') + '</span>' : '<span class="k3-tag k3-tag--muted">' + h('k3_chua_khoa') + '</span>';
       const tuyenX = [x.origin, x.destination].filter(Boolean).join(' → ');
       return '<tr><td>' + esc(ngay(x.doc_date)) + '</td><td><span class="mv ' + (x.kind === 'gom' ? 'mv--in" title="' + esc(t('do_gom')) + '">' + h('k3_gom') : 'mv--out" title="' + esc(t('do_giao')) + '">' + h('k3_giao')) + '</span></td>' +
         '<td>' + (mo ? '<button type="button" class="link code" data-mo-phieu="' + esc(x.id) + '">' + esc(x.doc_no) + '</button>' : '<span class="code">' + esc(x.doc_no) + '</span>') + '</td>' +
@@ -278,9 +292,9 @@
         '<td class="num">' + n2(ti.tan_tinh) + '</td>' +
         (g ? '<td class="num">' + EPL.tien(ti.don_gia, ccy) + '</td><td class="num"><b>' + EPL.tien(ti.doanh_thu, ccy) + '</b></td>' : '') + '<td>' + inv + '</td></tr>';
     }).join('');
-    return '<p class="tab-note">' + h('k3_chuyen_note', { thang: thangHien() }) + '</p>' +
+    return thanh(h('k3_chuyen_note', { thang: thangHien() })) +
       '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('c_date') + '</th><th>' + h('do_kind') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_truck') + '</th><th>' + h('route') + '</th>' +
-      '<th class="num">' + h('k3_khoi_luong') + '</th>' + (g ? '<th class="num">' + h('unit_price') + '</th><th class="num">' + h('c_value') + '</th>' : '') + '<th>' + h('k3_hoa_don') + '</th></tr></thead><tbody>' + rows +
+      '<th class="num">' + h('k3_khoi_luong') + '</th>' + (g ? '<th class="num">' + h('unit_price') + '</th><th class="num">' + h('c_value') + '</th>' : '') + '<th>' + h('k3_so_thu') + '</th></tr></thead><tbody>' + rows +
       '</tbody><tfoot><tr><td colspan="5">' + h('k3_cong_thang') + '</td><td class="num">' + n2(sum(tr, x => (x.tinh || {}).tan_tinh || 0)) + '</td>' +
       (g ? '<td></td><td class="num">' + tienGop(tong) + '</td>' : '') + '<td></td></tr></tfoot></table></div>';
   }
@@ -376,6 +390,8 @@
       '<section class="k3-panel tabs-panel"><div class="tabs-bar"><div class="tabs" role="tablist">' + tabs.map(x =>
         '<button type="button" class="tab" role="tab" data-tab="' + x.id + '" aria-selected="' + (st.tab === x.id) + '">' + x.label + ' <span class="count">' + x.count + '</span></button>').join('') +
       '</div>' + addBtn + '</div><div class="tab-panel" role="tabpanel">' + body + '</div></section>';
+    const oThang = $('#k3-thang');
+    if (oThang) { const v = oThang.value; EPL.doiOThang($('#k3-work')); $('#k3-thang').value = v; }
   }
 
   function render() {
@@ -392,6 +408,7 @@
   function ghiDiaChi() {
     if (!root.isConnected || !st.id) return;
     const ts = new URLSearchParams({ id: st.id }); if (st.tab !== 'contracts') ts.set('tab', st.tab);
+    const c = cache[st.id]; if (c && c.chon && c.thang) ts.set('thang', c.thang);     // tháng tự chọn ở tab Chuyến cũng giữ
     const moi = '#/khach-hang?' + ts;
     if (location.hash !== moi) history.replaceState(null, '', moi);
   }
@@ -420,10 +437,32 @@
   }
 
   /* ================= Tải dữ liệu ================= */
+  /** Tháng gần nhất (so với `th`) khách `cid` có chuyến: hỏi hai dòng — chuyến mới nhất tới cuối tháng `th`, chuyến cũ nhất từ
+   *  đầu tháng `th` (cùng cách màn Phiếu đề nghị thu). Không có chuyến nào thì null. */
+  async function thangGan(cid, th) {
+    const [y, m] = th.split('-').map(Number);
+    const hoi = (them) => API.get('/api/trips?' + new URLSearchParams(Object.assign({ customer_id: cid, co: '1' }, them)))
+      .then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null);
+    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
+    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
+    return !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc);
+  }
+  async function taiChuyen(cid) {
+    const c = cache[cid];
+    const lay = (th) => API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + th + '&co=500');
+    try {
+      let r = await lay(thangCua(cid));
+      if (!r.length && !c.chon) {
+        const gan = await thangGan(cid, thangCua(cid));
+        if (gan && gan !== thangCua(cid)) { c.bao = { trong: thangCua(cid), xem: gan }; c.thang = gan; r = await lay(gan); }
+      }
+      c.trips = r;
+    } catch (e) { c.trips = []; EPL.baoLoi(e); }   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
+  }
   async function taiKhach(cid) {
     if (!cid) return;
     const c = cache[cid] = cache[cid] || {};
-    const viec = [API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + thangNay() + '&co=500').then(r => { c.trips = r; }).catch(e => { c.trips = []; EPL.baoLoi(e); })];   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
+    const viec = [taiChuyen(cid)];   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
     if (xemTien()) {
       viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(e => { c.gia = []; EPL.baoLoi(e); }));
       // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem. Hỏi sang máy
@@ -679,6 +718,12 @@
     }
   }
   async function onChange(e) {
+    if (e.target && e.target.id === 'k3-thang' && st.id) {
+      const cid = st.id, c = cache[cid] = cache[cid] || {};
+      c.thang = e.target.value || thangNay(); c.chon = true; c.bao = null; c.trips = undefined;
+      render(); await taiChuyen(cid); if (st.id === cid) render();
+      return;
+    }
     const inp = e.target.closest && e.target.closest('[data-attach]');
     if (!inp || !inp.files || !inp.files.length) return;
     const hd = HD.find(x => x.id === inp.dataset.attach); let n = 0;
@@ -740,6 +785,7 @@
     async init(r, { tham } = {}) {
       root = r; ds = []; HD = []; NO_TONG = {}; Object.keys(cache).forEach(x => delete cache[x]);
       st.id = tham && tham.id ? tham.id : null; st.tab = tham && tham.tab ? tham.tab : 'contracts'; st.filter = 'all'; st.query = '';
+      if (st.id && tham && /^\d{4}-\d{2}$/.test(tham.thang || '')) cache[st.id] = { thang: tham.thang, chon: true };
       const them = $('#k3-them'); them.hidden = !suaDuoc();
       if (!xemTien()) { const cn = root.querySelector('#k3-loc [data-filter="debt"]'); if (cn) cn.remove(); }
       $('#k3-tim').addEventListener('input', (e) => { st.query = e.target.value; renderList(); });

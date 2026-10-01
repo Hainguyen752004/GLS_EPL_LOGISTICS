@@ -3,7 +3,11 @@
 .btc-top{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
 .btc-top .field input,.btc-top .field select{height:40px}
 .btc-top .btn{height:40px}
-.btc-top .field select{min-width:190px}
+.btc-top .field select{min-width:160px}
+/* 1366: năm thẻ lọc + Nguồn + Kỳ + ô tìm + Cập nhật phải nằm MỘT hàng (rà 01/10: Cập nhật rơi xuống hàng thứ hai) — ô tìm co
+   lại theo chỗ còn trống thay vì cố định 300px */
+.btc-top .o-tim{width:auto;flex:1 1 170px;min-width:150px;max-width:300px}
+.btc-top .grow{flex:0 0 0}
 
 /* dải tổng */
 .btc-tong{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
@@ -49,9 +53,17 @@
 .btc-the span{font-size:11.5px;color:var(--ink-2)}
 .btc-the b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .btc-the b a{color:var(--green)}
+/* ô Trạng thái mang câu (chưa bật gửi, số chứng từ bên kế toán): xuống dòng thay vì cắt "Chưa gửi — chưa bật gử…" */
+.btc-the > div:last-child b{white-space:normal;font-size:13px;line-height:1.3}
 .btc-dong{flex:1 1 auto;min-height:0;overflow:auto}
 .btc-dong td .ma{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 .btc-dong td .ten{display:block;font-size:11.5px;color:var(--ink-3);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btc-dong td .ten .lo-sub{display:block;overflow:hidden;text-overflow:ellipsis}
+/* kẻ đủ ô: đường dọc giữa các cột, ngang giữa các hàng (như bảng Đề nghị theo DO) */
+.btc-dong .tbl th,.btc-dong .tbl td{border-right:1px solid var(--line)}
+.btc-dong .tbl thead th{border-bottom-color:var(--line-2);border-right-color:var(--line-2)}
+.btc-dong .tbl tr > :last-child{border-right:0}
+.btc-dong .tbl tbody tr:last-child td{border-bottom:0}
 .btc-dong td.num small{display:block;font-size:11px;color:var(--ink-3);font-weight:400}
 .btc-dong .canh{color:var(--amber);font-size:11.5px}
 .btc-chan{display:flex;gap:16px;flex-wrap:wrap;padding-top:8px;border-top:1px dashed var(--line-2);font-size:12px;color:var(--ink-2)}

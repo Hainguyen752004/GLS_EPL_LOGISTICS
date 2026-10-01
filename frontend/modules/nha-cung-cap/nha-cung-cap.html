@@ -1,11 +1,9 @@
 <!-- Nhà cung cấp — ຕິດຕາມຜູ້ສະໜອງ. DANH MỤC ở đây (tên, dịch vụ, mã kế toán, kỳ trả, khách được cấn trừ, số dòng chi trên
      phiếu). Phần tiền — phát sinh, đã trả, còn nợ, trả nhà cung cấp — ở hệ kế toán anh Tune (01/10: bỏ phần tiền trang kế toán tạm). -->
-<div class="toolbar">
-  <div class="grow"></div>
-  <button class="btn primary" id="ncc-them"><span data-i18n="add"></span></button>
-</div>
+<!-- nút Thêm nằm trên đầu thẻ (01/10) — trước đây một hàng riêng chỉ chứa nút, bảng bị đẩy xuống -->
 <div class="card">
-  <div class="hd"><h3 data-i18n="nav_supplier"></h3><div class="grow"></div><span class="small muted" data-i18n="sup_hint"></span></div>
+  <div class="hd"><h3 data-i18n="nav_supplier"></h3><div class="grow"></div><span class="small muted" data-i18n="sup_hint"></span>
+    <button class="btn primary sm" id="ncc-them" type="button"><span data-i18n="add"></span></button></div>
   <div class="tbl-wrap">
     <!-- cột tiền (LAK, 01/10): phát sinh từ phiếu · đã trả và chờ chi theo phiếu chi bên hệ kế toán anh Tune · còn nợ — chỉ vai xem được tiền trả NCC -->
     <table class="tbl" id="ncc-bang">

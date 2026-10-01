@@ -92,9 +92,20 @@
     o.querySelectorAll('.dnt-o').forEach(b => b.addEventListener('click', () => { chonId = b.dataset.id; veDs(); veTo(); }));
   }
 
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/de-nghi-thu' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   /* ---------------------------------------------------------------- tờ đề nghị thu */
   async function veTo() {
     const x = D.ds.find(y => y.trip_id === chonId), nut = q('#dnt-nut');
+    ghiDiaChi(new URLSearchParams({ thang: q('#dnt-thang').value || '', id: x ? x.trip_id : '', tt }));
     q('#dnt-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn DO khác thì về đầu tờ
     // danh sách trống: khung trống bên trái đã nói lý do + nút; tờ giấy "Chọn một tờ bên trái" lúc đó chỉ gây rối
     q('#dnt-giay').hidden = !loc().length;

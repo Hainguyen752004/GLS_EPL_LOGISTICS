@@ -131,7 +131,15 @@
 .kh3 .k3-tbl .k3-ok-txt { color: var(--primary); font-weight: 600; font-size: 11.5px; }
 .kh3 .k3-tbl tr.is-dim td { color: var(--muted); }
 .kh3 .k3-tbl td.dur { white-space: nowrap; }
-.kh3 .k3-tbl .note-cell { width: 100%; max-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+.kh3 .k3-tbl .note-cell { width: 100%; max-width: 0; min-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+/* kẻ đủ ô: đường dọc giữa các cột (rà 01/10 — bảng chỉ có đường ngang, cột số sát nhau khó dò) */
+.kh3 .k3-tbl th, .kh3 .k3-tbl td { border-right: 1px solid var(--line); }
+.kh3 .k3-tbl tr > :last-child { border-right: 0; }
+/* tab Chuyến & phiếu: ô chọn tháng + dòng báo tự sang tháng gần nhất có chuyến (01/10) */
+.kh3 .k3-thang-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.kh3 .k3-thang-bar select { height: 34px; width: auto; }
+.kh3 .k3-thang-bar .tab-note { flex: 1 1 260px; }
+.kh3 .k3-thang-bao { padding: 6px 12px; border: 1px solid #E3CB98; border-radius: 8px; background: var(--amber-soft, #FBF1DC); color: var(--amber, #8A5A00); font-size: 12.5px; font-weight: 500; }
 .kh3 .k3-tbl td.period, .kh3 .k3-tbl td:first-child { white-space: nowrap; }
 .kh3 .k3-tbl td.period .arrow { color: var(--muted); }
 .kh3 .k3-tbl td.files-cell { white-space: nowrap; }

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2219 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2606 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2849,7 +2849,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_trong": {
   "vi": "Chưa có DO nào đã về trong tháng này",
-  "lo": "ຍັງບໍ່ມີຂໍ້ມູນ",
+  "lo": "ເດືອນນີ້ຍັງບໍ່ມີ DO ໃດກັບມາເທື່ອ",
   "en": "No DO has come back this month"
  },
  "dt_lap": {
@@ -2889,7 +2889,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_goi_y_khoa": {
   "vi": "Khoá phiếu (xe về, có biên bản giao nhận) thì máy tự lập đề nghị thu",
-  "lo": "Khoá phiếu (xe về, có biên bản giao nhận) thì máy tự lập đề nghị thu",
+  "lo": "ລັອກໃບ (ລົດກັບມາແລ້ວ, ມີໃບເຊັນຮັບສິນຄ້າ) ແລ້ວລະບົບຈະສ້າງໃບສະເໜີຮັບເງິນເອງ",
   "en": "Locking the slip (truck back, delivery note in) raises the request automatically"
  },
  "ct_theo_do": {
@@ -3513,9 +3513,9 @@ window.EPL_TU_DIEN = {
   "en": "Out too long"
  },
  "td_await_inv": {
-  "vi": "Đã tới, chờ hoá đơn",
-  "lo": "ຮອດແລ້ວ, ລໍໃບເກັບເງິນ",
-  "en": "Arrived, awaiting invoice"
+  "vi": "Đã tới, chờ tạo SO",
+  "lo": "ຮອດແລ້ວ, ລໍຖ້າສ້າງ SO",
+  "en": "Arrived, awaiting SO"
  },
  "td_open_inc": {
   "vi": "Sự cố chưa duyệt",
@@ -7158,9 +7158,9 @@ window.EPL_TU_DIEN = {
   "en": "Open"
  },
  "tq_need_endpoint": {
-  "vi": "Chưa có dữ liệu xu hướng — cần endpoint /api/bao-cao/xu-huong.",
-  "lo": "ຍັງບໍ່ມີຂໍ້ມູນແນວໂນ້ມ — ຕ້ອງການ endpoint /api/bao-cao/xu-huong.",
-  "en": "No trend data yet — requires endpoint /api/bao-cao/xu-huong."
+  "vi": "Chưa tải được số liệu biểu đồ — chọn tháng khác rồi quay lại, hoặc tải lại trang.",
+  "lo": "ຍັງໂຫຼດຂໍ້ມູນກຣາຟບໍ່ໄດ້ — ເລືອກເດືອນອື່ນແລ້ວກັບມາ ຫຼື ໂຫຼດໜ້າໃໝ່.",
+  "en": "Could not load the chart data — pick another month and come back, or reload the page."
  },
  "tq_quick": {
   "vi": "Xem nhanh",
@@ -10828,9 +10828,9 @@ window.EPL_TU_DIEN = {
   "en": "Cancel request {so}? The unpaid voucher in accounting will be withdrawn."
  },
  "btc_note": {
-  "vi": "Chỉ xem — khoản không qua tiền. Hệ kế toán chưa có đường nhận bút toán tổng hợp nên bút toán nằm ở đây, đủ hai vế; có API thì gửi.",
-  "lo": "ເບິ່ງຢ່າງດຽວ — ລາຍການທີ່ບໍ່ຜ່ານເງິນສົດ. ລະບົບບັນຊີຍັງບໍ່ມີຊ່ອງຮັບບັນທຶກບັນຊີລວມ ຈຶ່ງເກັບໄວ້ທີ່ນີ້ ຄົບທັງສອງຂ້າງ; ມີ API ແລ້ວຈຶ່ງສົ່ງ.",
-  "en": "View only — entries that move no cash. The accounting system has no general-journal endpoint yet, so entries wait here with both sides; they are sent once the API exists."
+  "vi": "Chưa bật gửi sang hệ kế toán — khoản không qua tiền chỉ nằm ở đây để xem, đủ hai vế Nợ / Có. Bật gửi thì ghi xong máy tự gửi; bản hỏng có nút Gửi lại.",
+  "lo": "ຍັງບໍ່ໄດ້ເປີດການສົ່ງໄປລະບົບບັນຊີ — ລາຍການທີ່ບໍ່ຜ່ານເງິນສົດ ເບິ່ງໄດ້ຢູ່ນີ້ຢ່າງດຽວ, ຄົບທັງສອງຂ້າງ ໜີ້ / ມີ. ເມື່ອເປີດການສົ່ງແລ້ວ ບັນທຶກແລ້ວລະບົບຈະສົ່ງເອງ; ລາຍການທີ່ບໍ່ສຳເລັດມີປຸ່ມສົ່ງຄືນ.",
+  "en": "Sending to accounting is not switched on — entries that move no cash are view-only here, with both debit and credit sides. Once sending is on, entries go out automatically on save; any that fail get a Send again button."
  },
  "btc_nguon_thue_xe": {
   "vi": "Chi phí thuê xe liên kết",
@@ -10863,9 +10863,9 @@ window.EPL_TU_DIEN = {
   "en": "Awaiting reversal"
  },
  "btc_cho_api": {
-  "vi": "Chưa gửi — chờ API bút toán bên kế toán",
-  "lo": "ຍັງບໍ່ສົ່ງ — ລໍຖ້າ API ບັນທຶກບັນຊີ",
-  "en": "Not sent — awaiting the journal API"
+  "vi": "Chưa gửi — chưa bật gửi sang kế toán",
+  "lo": "ຍັງບໍ່ສົ່ງ — ຍັງບໍ່ເປີດການສົ່ງໄປບັນຊີ",
+  "en": "Not sent — sending to accounting is off"
  },
  "btc_no": {
   "vi": "Nợ",
@@ -11096,5 +11096,1940 @@ window.EPL_TU_DIEN = {
   "vi": "Chỉ chọn được năm {tu}–{den}",
   "lo": "ເລືອກໄດ້ສະເພາະປີ {tu}–{den}",
   "en": "Only years {tu}–{den} can be chosen"
+ },
+ "rate_big_live": {
+  "vi": "Lệch {p} so với số đang dùng — kiểm lại số trước khi lưu",
+  "lo": "ຕ່າງ {p} ຈາກຕົວເລກທີ່ກຳລັງໃຊ້ — ກວດຄືນຕົວເລກກ່ອນບັນທຶກ",
+  "en": "{p} off the rate in use — check the figure before saving"
+ },
+ "rate_big_title": {
+  "vi": "Tỷ giá đổi quá lớn — kiểm lại trước khi lưu",
+  "lo": "ອັດຕາແລກປ່ຽນປ່ຽນຫຼາຍເກີນໄປ — ກວດຄືນກ່ອນບັນທຶກ",
+  "en": "Unusually large rate change — check before saving"
+ },
+ "rate_big_body": {
+  "vi": "Các tỷ giá dưới đây đổi hơn {n}% so với số đang dùng. Mọi phiếu lập mới từ nay sẽ quy đổi theo số này.",
+  "lo": "ອັດຕາຂ້າງລຸ່ມນີ້ປ່ຽນຫຼາຍກວ່າ {n}% ຈາກຕົວເລກທີ່ກຳລັງໃຊ້. ທຸກບິນທີ່ອອກໃໝ່ນັບແຕ່ນີ້ຈະແປງເງິນຕາມຕົວເລກນີ້.",
+  "en": "The rates below change by more than {n}% from the rate in use. Every slip created from now on will convert at these figures."
+ },
+ "rate_big_ok": {
+  "vi": "Đúng số này, lưu",
+  "lo": "ຕົວເລກນີ້ຖືກຕ້ອງ, ບັນທຶກ",
+  "en": "This is correct, save"
+ },
+ "btc_phieu_da_xoa": {
+  "vi": "Phiếu gốc đã xoá",
+  "lo": "ໃບຕົ້ນສະບັບຖືກລຶບແລ້ວ",
+  "en": "Source slip deleted"
+ },
+ "k3_so_thu": {
+  "vi": "SO · thu tiền",
+  "lo": "SO · ການຮັບເງິນ",
+  "en": "SO · collection"
+ },
+ "k3_chua_tao_so": {
+  "vi": "Chưa tạo SO",
+  "lo": "ຍັງບໍ່ສ້າງ SO",
+  "en": "No SO yet"
+ },
+ "px_thieu_xe": {
+  "vi": "Chọn xe trước khi lưu phiếu xuất xe.",
+  "lo": "ເລືອກລົດກ່ອນບັນທຶກໃບເບີກລົດ.",
+  "en": "Choose a truck before saving the dispatch slip."
+ },
+ "px_thieu_tai_xe": {
+  "vi": "Chọn tài xế trước khi lưu phiếu xuất xe.",
+  "lo": "ເລືອກໂຊເຟີກ່ອນບັນທຶກໃບເບີກລົດ.",
+  "en": "Choose a driver before saving the dispatch slip."
+ },
+ "odo_est_hint": {
+  "vi": "Km lúc đi + km của tuyến (cả chiều về nếu tuyến có)",
+  "lo": "ກມ ຕອນອອກ + ກມ ຂອງເສັ້ນທາງ (ລວມຂາກັບ ຖ້າເສັ້ນທາງມີ)",
+  "en": "Odometer at departure + route km (including the return leg if the route has one)"
+ },
+ "stt_verified_12": {
+  "vi": "Đã kiểm",
+  "lo": "ກວດແລ້ວ",
+  "en": "Verified"
+ },
+ "px_nhap_mo_lai": {
+  "vi": "Đã mở lại phiếu đang lập dở (chưa lưu). Muốn tờ trắng thì bấm + Phiếu mới.",
+  "lo": "ເປີດໃບທີ່ກຳລັງລົງຄ້າງໄວ້ຄືນແລ້ວ (ຍັງບໍ່ໄດ້ບັນທຶກ). ຖ້າຕ້ອງການໃບເປົ່າ ໃຫ້ກົດ + ບິນໃໝ່.",
+  "en": "Reopened the unsaved slip you were filling in. Press + New slip for a blank one."
+ },
+ "tq_hao_chua_can": {
+  "vi": "Chưa có chuyến nào có cân cuối trong tháng này",
+  "lo": "ເດືອນນີ້ຍັງບໍ່ມີຖ້ຽວໃດມີນໍ້າໜັກປາຍທາງ",
+  "en": "No trip has a destination weight this month yet"
+ },
+ "tq_co_cau_ghi_chu": {
+  "vi": "Cộng theo dòng chi trên phiếu, kể cả khoản ứng cho xe thuê (trừ vào tiền trả chủ xe) — nên có thể khác ô Tổng chi phí (chi của EPL, xe thuê tính tiền thuê).",
+  "lo": "ລວມຕາມແຖວລາຍຈ່າຍໃນໃບ, ລວມທັງເງິນລ່ວງໜ້າໃຫ້ລົດເຊົ່າ (ຫັກອອກຈາກເງິນຈ່າຍເຈົ້າຂອງລົດ) — ຈຶ່ງອາດບໍ່ເທົ່າກັບຊ່ອງລວມລາຍຈ່າຍ (ລາຍຈ່າຍຂອງ EPL, ລົດເຊົ່າຄິດຕາມຄ່າເຊົ່າ).",
+  "en": "Summed from the expense lines on each slip, including advances for hired trucks (deducted from the owner's pay) — so it can differ from Total cost (EPL's own cost, hired trucks counted at the hire fee)."
+ },
+ "qt_gd_c1": {
+  "vi": "Lập phiếu tại bãi Thà Bốc",
+  "lo": "ລົງໃບທີ່ສະໜາມ ທ່າບົກ",
+  "en": "Slip entry at the Thabok yard"
+ },
+ "qt_b1_ten": {
+  "vi": "Mở phiếu xuất xe — mục I (xe) và mục II (chuyến)",
+  "lo": "ເປີດໃບເບີກລົດ — ໜ້າ I (ລົດ) ແລະ ໜ້າ II (ຖ້ຽວ)",
+  "en": "Open the dispatch slip — section I (truck) and section II (trip)"
+ },
+ "qt_b1_lam1": {
+  "vi": "Chọn loại phiếu: GIAO (chở tới cảng / khách) hay GOM (mỏ → bãi)",
+  "lo": "ເລືອກປະເພດໃບ: ສົ່ງ (ຂົນໄປທ່າເຮືອ / ລູກຄ້າ) ຫຼື ເກັບ (ບໍ່ແຮ່ → ສະໜາມ)",
+  "en": "Choose the slip type: DELIVERY (to the port / customer) or COLLECTION (mine → yard)"
+ },
+ "qt_b1_lam2": {
+  "vi": "Chọn xe — xe của chủ xe liên kết thì phiếu tự thành phiếu xe liên kết",
+  "lo": "ເລືອກລົດ — ລົດຂອງເຈົ້າຂອງລົດຮ່ວມ ໃບຈະເປັນໃບລົດຮ່ວມເອງ",
+  "en": "Choose the truck — a joint owner's truck turns the slip into a joint-truck slip automatically"
+ },
+ "qt_b1_lam3": {
+  "vi": "Chọn tài xế, khách hàng, tuyến; ngày lập, ngày đi; km lúc đi",
+  "lo": "ເລືອກໂຊເຟີ, ລູກຄ້າ, ເສັ້ນທາງ; ວັນທີລົງໃບ, ວັນອອກລົດ; ກມ ຕອນອອກ",
+  "en": "Choose the driver, customer and route; slip date and departure date; odometer at departure"
+ },
+ "qt_b1_lam4": {
+  "vi": "Cân đầu (tấn) theo phiếu quặng của khách",
+  "lo": "ນໍ້າໜັກຕົ້ນທາງ (ໂຕນ) ຕາມໃບແຮ່ຂອງລູກຄ້າ",
+  "en": "Origin weight (t) from the customer's ore bill"
+ },
+ "qt_b1_lam5": {
+  "vi": "Phiếu giao lấy hàng ở bãi: chọn lô (phiếu gom) và số tấn lấy",
+  "lo": "ໃບສົ່ງທີ່ເອົາສິນຄ້າຈາກສະໜາມ: ເລືອກລັອດ (ໃບເກັບ) ແລະ ຈຳນວນໂຕນທີ່ເອົາ",
+  "en": "A delivery slip taking goods from the yard: choose the lot (collection slip) and the tonnes taken"
+ },
+ "qt_b1_may1": {
+  "vi": "Số phiếu gợi ý: T4-xxxx-MM/EPL (giao) · G4-xxxx-MM/EPL (gom)",
+  "lo": "ເລກໃບແນະນຳ: T4-xxxx-MM/EPL (ສົ່ງ) · G4-xxxx-MM/EPL (ເກັບ)",
+  "en": "Suggested slip number: T4-xxxx-MM/EPL (delivery) · G4-xxxx-MM/EPL (collection)"
+ },
+ "qt_b1_may2": {
+  "vi": "Điểm đi / đến theo tuyến; km về ước tính = km đi + km tuyến",
+  "lo": "ຕົ້ນທາງ / ປາຍທາງຕາມເສັ້ນທາງ; ກມ ກັບຄາດຄະເນ = ກມ ຕອນອອກ + ກມ ເສັ້ນທາງ",
+  "en": "Origin / destination from the route; estimated return odometer = departure km + route km"
+ },
+ "qt_b1_may3": {
+  "vi": "Giá cước điền theo bảng giá khách × tuyến; phí 2 %, ngưỡng tấn theo hồ sơ chủ xe — Bãi KHÔNG thấy",
+  "lo": "ລາຄາຄ່າຂົນສົ່ງຕາມຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ; ຄ່າທຳນຽມ 2 %, ເກນໂຕນຕາມແຟ້ມເຈົ້າຂອງລົດ — ສະໜາມບໍ່ເຫັນ",
+  "en": "Freight price filled from the customer × route price list; 2 % fee and tonnage limit from the owner's profile — the yard does NOT see them"
+ },
+ "qt_b1_may4": {
+  "vi": "Tỷ giá USD · THB · VND · CNY khoá vào phiếu lúc lập",
+  "lo": "ອັດຕາແລກປ່ຽນ USD · THB · VND · CNY ລັອກໄວ້ໃນໃບຕອນລົງໃບ",
+  "en": "USD · THB · VND · CNY exchange rates are locked into the slip when it is created"
+ },
+ "qt_b1_chan1": {
+  "vi": "Bãi không nhập được giá cước, giá thuê, phí, ngưỡng tấn (A2 · C4.1)",
+  "lo": "ສະໜາມບໍ່ລົງລາຄາຄ່າຂົນສົ່ງ, ຄ່າເຊົ່າ, ຄ່າທຳນຽມ, ເກນໂຕນ (A2 · C4.1)",
+  "en": "The yard cannot enter the freight price, hire price, fee or tonnage limit (A2 · C4.1)"
+ },
+ "qt_b1_chan2": {
+  "vi": "Số phiếu quặng: chỉ kế toán nhập (C3.7)",
+  "lo": "ເລກໃບແຮ່: ສະເພາະບັນຊີລົງ (C3.7)",
+  "en": "Ore bill number: entered by accounting only (C3.7)"
+ },
+ "qt_b1_chan3": {
+  "vi": "Phiếu giao có dòng hàng mà không chỉ rõ lô → chặn",
+  "lo": "ໃບສົ່ງມີແຖວສິນຄ້າ ແຕ່ບໍ່ບອກລັອດ → ກັ້ນ",
+  "en": "A delivery slip with goods lines but no lot specified → blocked"
+ },
+ "qt_b1_chan4": {
+  "vi": "Lấy quá số tấn còn trong lô → chặn",
+  "lo": "ເອົາເກີນໂຕນທີ່ຍັງເຫຼືອໃນລັອດ → ກັ້ນ",
+  "en": "Taking more tonnes than remain in the lot → blocked"
+ },
+ "qt_b1_giay1": {
+  "vi": "Phiếu xuất xe (in từ nút In)",
+  "lo": "ໃບເບີກລົດ (ພິມຈາກປຸ່ມພິມ)",
+  "en": "Dispatch slip (printed from the Print button)"
+ },
+ "qt_b1_khi_do": {
+  "vi": "sinh ngay lúc lập phiếu",
+  "lo": "ເກີດທັນທີຕອນລົງໃບ",
+  "en": "created as soon as the slip is created"
+ },
+ "qt_b1_sau": {
+  "vi": "Phiếu: Đã xuất xe · mục I, II: Chờ",
+  "lo": "ໃບ: ອອກລົດແລ້ວ · ໜ້າ I, II: ລໍ",
+  "en": "Slip: Dispatched · sections I, II: Waiting"
+ },
+ "qt_b2_ten": {
+  "vi": "Mục III — nhiên liệu: số lít và nơi đổ",
+  "lo": "ໜ້າ III — ນໍ້າມັນ: ຈຳນວນລິດ ແລະ ບ່ອນເຕີມ",
+  "en": "Section III — fuel: litres and filling place"
+ },
+ "qt_b2_lam1": {
+  "vi": "Mỗi dòng: số lít + nơi đổ",
+  "lo": "ແຕ່ລະແຖວ: ຈຳນວນລິດ + ບ່ອນເຕີມ",
+  "en": "Each line: litres + filling place"
+ },
+ "qt_b2_lam2": {
+  "vi": "Xe liên kết: chọn EPL ứng hay chủ xe tự trả",
+  "lo": "ລົດຮ່ວມ: ເລືອກ EPL ອອກກ່ອນ ຫຼື ເຈົ້າຂອງລົດຈ່າຍເອງ",
+  "en": "Joint truck: choose EPL advance or owner pays"
+ },
+ "qt_b2_lam3": {
+  "vi": "Đổ ở trạm Việt Nam mà trạm ghi nợ: đánh dấu \"ghi nợ tại trạm\"",
+  "lo": "ເຕີມທີ່ປໍ້າຫວຽດນາມ ແລະ ປໍ້າຂຽນໜີ້: ໝາຍ \"ຂຽນໜີ້ໄວ້ປໍ້າ\"",
+  "en": "Filled at a Vietnamese station that keeps an account: tick \"on account at the station\""
+ },
+ "qt_b2_may1": {
+  "vi": "Nơi đổ là KHO của EPL → nguồn kho, giá = giá BÌNH QUÂN của đúng kho đó (C5.3), không ai gõ",
+  "lo": "ບ່ອນເຕີມແມ່ນສາງຂອງ EPL → ແຫຼ່ງສາງ, ລາຄາ = ລາຄາສະເລ່ຍຂອງສາງນັ້ນ (C5.3), ບໍ່ມີໃຜພິມເອງ",
+  "en": "Filling place is an EPL DEPOT → stock source, price = the AVERAGE cost of that very depot (C5.3), nobody types it"
+ },
+ "qt_b2_may2": {
+  "vi": "Nơi đổ là trạm ngoài → nguồn mua, gắn nhà cung cấp của trạm",
+  "lo": "ບ່ອນເຕີມແມ່ນປໍ້ານອກ → ແຫຼ່ງຊື້, ຜູກກັບຜູ້ສະໜອງຂອງປໍ້າ",
+  "en": "Filling place is an outside station → purchase source, linked to the station's supplier"
+ },
+ "qt_b2_may3": {
+  "vi": "Định khoản theo cách trả: 625/1371 lấy kho · 625/4021 trạm ghi nợ · 625/1601 tài xế trả tiền mặt (tạm ứng) · xe liên kết 4022/… — bảng đủ ở tab Danh mục chứng từ",
+  "lo": "ລົງບັນຊີຕາມວິທີຈ່າຍ: 625/1371 ເບີກສາງ · 625/4021 ປໍ້າຂຽນໜີ້ · 625/1601 ໂຊເຟີຈ່າຍເງິນສົດ (ເງິນລ່ວງໜ້າ) · ລົດຮ່ວມ 4022/… — ຕາຕະລາງເຕັມຢູ່ແຖບ ລາຍການເອກະສານ",
+  "en": "Accounting entry by payment method: 625/1371 from stock · 625/4021 station on account · 625/1601 driver pays cash (advance) · joint truck 4022/… — full table on the Voucher catalogue tab"
+ },
+ "qt_b2_chan1": {
+  "vi": "Bãi không thấy và không nhập đơn giá dầu, thành tiền, mã tài khoản",
+  "lo": "ສະໜາມບໍ່ເຫັນ ແລະ ບໍ່ລົງລາຄານໍ້າມັນ, ມູນຄ່າ, ລະຫັດບັນຊີ",
+  "en": "The yard neither sees nor enters the fuel price, amount or account code"
+ },
+ "qt_b2_giay1": {
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu có mã QR — mỗi kho một tờ, tài xế cầm tới kho",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ມີລະຫັດ QR — ແຕ່ລະສາງໜຶ່ງໃບ, ໂຊເຟີຖືໄປສາງ",
+  "en": "Fuel stock-out request with a QR code — one sheet per depot, the driver takes it to the depot"
+ },
+ "qt_b2_khi_plnl": {
+  "vi": "khi bấm \"Phiếu đề nghị xuất kho nhiên liệu\"",
+  "lo": "ຕອນກົດ \"ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ\"",
+  "en": "when \"Fuel stock-out request\" is pressed"
+ },
+ "qt_b2_sau": {
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu: Chờ cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ: ລໍຖ້າເບີກ",
+  "en": "Fuel stock-out request: Awaiting issue"
+ },
+ "qt_b3_ten": {
+  "vi": "Mục IV — đi đường, mục VI — chi khác",
+  "lo": "ໜ້າ IV — ເດີນທາງ, ໜ້າ VI — ລາຍຈ່າຍອື່ນ",
+  "en": "Section IV — travel, section VI — other expenses"
+ },
+ "qt_b3_lam1": {
+  "vi": "Khoản mục + số lượng: tiền ăn, tiền nước, chi phí sang Việt Nam, điện thoại, chipping…",
+  "lo": "ລາຍການ + ຈຳນວນ: ຄ່າອາຫານ, ຄ່ານໍ້າ, ຄ່າໃຊ້ຈ່າຍໄປຫວຽດນາມ, ຄ່າໂທລະສັບ, chipping…",
+  "en": "Item + quantity: meals, water, costs for going to Vietnam, phone, chipping…"
+ },
+ "qt_b3_lam2": {
+  "vi": "Phí cao tốc: chọn trả tiền mặt hay trừ THẺ cao tốc",
+  "lo": "ຄ່າທາງດ່ວນ: ເລືອກຈ່າຍເງິນສົດ ຫຼື ຫັກບັດທາງດ່ວນ",
+  "en": "Toll fee: choose cash or deduct from a toll CARD"
+ },
+ "qt_b3_may1": {
+  "vi": "Tuyến có BOT thì tự thêm dòng phí cao tốc, giá theo tuyến",
+  "lo": "ເສັ້ນທາງມີ BOT ຈະເພີ່ມແຖວຄ່າທາງດ່ວນເອງ, ລາຄາຕາມເສັ້ນທາງ",
+  "en": "A route with BOT tolls adds the toll line automatically, priced by the route"
+ },
+ "qt_b3_may2": {
+  "vi": "Gom mọi khoản tiền mặt EPL ứng (IV, VI, dầu mua ngoài) thành số tạm ứng",
+  "lo": "ລວມທຸກລາຍການເງິນສົດທີ່ EPL ອອກກ່ອນ (IV, VI, ນໍ້າມັນຊື້ນອກ) ເປັນຍອດເງິນລ່ວງໜ້າ",
+  "en": "All cash items EPL advances (IV, VI, fuel bought outside) are summed into the advance amount"
+ },
+ "qt_b3_chan1": {
+  "vi": "Bãi không nhập đơn giá — người kiểm mục nhập ở công đoạn 6",
+  "lo": "ສະໜາມບໍ່ລົງລາຄາ — ຜູ້ກວດໜ້າລົງໃນຂັ້ນຕອນທີ 6",
+  "en": "The yard does not enter prices — the section's verifier enters them at step 6"
+ },
+ "qt_b3_giay1": {
+  "vi": "Phiếu đề nghị tạm ứng có mã QR — tài xế cầm tới quỹ",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ມີລະຫັດ QR — ໂຊເຟີຖືໄປຄັງເງິນ",
+  "en": "Advance request with a QR code — the driver takes it to the cashier"
+ },
+ "qt_b3_khi_ptu": {
+  "vi": "khi bấm \"Phiếu đề nghị tạm ứng\"",
+  "lo": "ຕອນກົດ \"ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ\"",
+  "en": "when \"Advance request\" is pressed"
+ },
+ "qt_b3_sau": {
+  "vi": "Mục IV: Chờ",
+  "lo": "ໜ້າ IV: ລໍ",
+  "en": "Section IV: Waiting"
+ },
+ "qt_b4_ten": {
+  "vi": "Gửi kiểm từng mục",
+  "lo": "ສົ່ງກວດແຕ່ລະໜ້າ",
+  "en": "Send each section for verification"
+ },
+ "qt_b4_lam1": {
+  "vi": "Bấm \"Gửi kiểm\" ở mục I, II, III, IV, VI (mục V là của tổ sửa chữa)",
+  "lo": "ກົດ \"ສົ່ງກວດ\" ທີ່ໜ້າ I, II, III, IV, VI (ໜ້າ V ເປັນຂອງໜ່ວຍສ້ອມແປງ)",
+  "en": "Press \"Send for verification\" in sections I, II, III, IV, VI (section V belongs to the repair team)"
+ },
+ "qt_b4_may1": {
+  "vi": "Mục chuyển \"Đã nhập\" — Bãi vẫn sửa được tới khi kế toán kiểm",
+  "lo": "ໜ້າປ່ຽນເປັນ \"ລົງແລ້ວ\" — ສະໜາມຍັງແກ້ໄດ້ຈົນກວ່າບັນຊີກວດ",
+  "en": "The section becomes \"Entered\" — the yard can still edit it until accounting verifies"
+ },
+ "qt_b4_chan1": {
+  "vi": "Mục trống không gửi được",
+  "lo": "ໜ້າເປົ່າສົ່ງບໍ່ໄດ້",
+  "en": "An empty section cannot be sent"
+ },
+ "qt_b4_sau": {
+  "vi": "Các mục: Đã nhập · chờ kiểm",
+  "lo": "ທຸກໜ້າ: ລົງແລ້ວ · ລໍກວດ",
+  "en": "Sections: Entered · awaiting check"
+ },
+ "qt_gd_c2": {
+  "vi": "Viêng Chăn kiểm và nhập giá",
+  "lo": "ວຽງຈັນກວດ ແລະ ລົງລາຄາ",
+  "en": "Vientiane verifies and enters prices"
+ },
+ "qt_b5_ten": {
+  "vi": "KT Thu/Chi VC — kiểm mục I, II",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ — ກວດໜ້າ I, II",
+  "en": "Vientiane receipts & payments accountant — verify sections I, II"
+ },
+ "qt_b5_lam1": {
+  "vi": "Đối chiếu xe, tài xế, cân đầu với phiếu quặng",
+  "lo": "ທຽບລົດ, ໂຊເຟີ, ນໍ້າໜັກຕົ້ນທາງ ກັບໃບແຮ່",
+  "en": "Check the truck, driver and origin weight against the ore bill"
+ },
+ "qt_b5_lam2": {
+  "vi": "Nhập SỐ PHIẾU QUẶNG + ngày (gõ tay được, không bắt ảnh)",
+  "lo": "ລົງເລກໃບແຮ່ + ວັນທີ (ພິມເອງໄດ້, ບໍ່ບັງຄັບຮູບ)",
+  "en": "Enter the ORE BILL NUMBER + date (can be typed, no photo required)"
+ },
+ "qt_b5_lam3": {
+  "vi": "Sửa giá cước nếu khác hợp đồng; nhập giá thuê xe liên kết, phí, ngưỡng tấn",
+  "lo": "ແກ້ລາຄາຄ່າຂົນສົ່ງຖ້າຕ່າງຈາກສັນຍາ; ລົງຄ່າເຊົ່າລົດຮ່ວມ, ຄ່າທຳນຽມ, ເກນໂຕນ",
+  "en": "Correct the freight price if it differs from the contract; enter the joint-truck hire price, fee and tonnage limit"
+ },
+ "qt_b5_lam4": {
+  "vi": "Bấm Kiểm (hoặc Trả lại cho Bãi)",
+  "lo": "ກົດ ກວດ (ຫຼື ສົ່ງຄືນໃຫ້ສະໜາມ)",
+  "en": "Press Verify (or Return to the yard)"
+ },
+ "qt_b5_chan1": {
+  "vi": "Mục đã kiểm là khoá — muốn sửa phải Trả lại",
+  "lo": "ໜ້າທີ່ກວດແລ້ວຖືກລັອກ — ຢາກແກ້ຕ້ອງສົ່ງຄືນ",
+  "en": "A verified section is locked — to edit it, return it first"
+ },
+ "qt_b5_chan2": {
+  "vi": "KT Thu/Chi không kiểm mục III–VI",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ບໍ່ກວດໜ້າ III–VI",
+  "en": "The receipts & payments accountant does not verify sections III–VI"
+ },
+ "qt_b5_sau": {
+  "vi": "Mục I, II: Đã kiểm",
+  "lo": "ໜ້າ I, II: ກວດແລ້ວ",
+  "en": "Sections I, II: Verified"
+ },
+ "qt_b6_ten": {
+  "vi": "Người kiểm mục nhập đơn giá rồi kiểm · ghi sổ",
+  "lo": "ຜູ້ກວດໜ້າລົງລາຄາແລ້ວກວດ · ບັນທຶກບັນຊີ",
+  "en": "The section's verifier enters prices, then verifies · books"
+ },
+ "qt_b6_lam1": {
+  "vi": "KT kho xăng dầu: nhập đơn giá dầu MUA NGOÀI (VND, tỷ giá trên phiếu) → Kiểm → Ghi sổ mục III",
+  "lo": "ບັນຊີສາງນໍ້າມັນ: ລົງລາຄານໍ້າມັນຊື້ນອກ (VND, ອັດຕາໃນໃບ) → ກວດ → ບັນທຶກບັນຊີໜ້າ III",
+  "en": "Fuel store accountant: enter the price of fuel BOUGHT OUTSIDE (VND, rate on the slip) → Verify → Book section III"
+ },
+ "qt_b6_lam2": {
+  "vi": "KT Chi phí: nhập đơn giá mục IV, VI → Kiểm → Ghi sổ",
+  "lo": "ບັນຊີລາຍຈ່າຍ: ລົງລາຄາໜ້າ IV, VI → ກວດ → ບັນທຶກບັນຊີ",
+  "en": "Cost accountant: enter prices for sections IV, VI → Verify → Book"
+ },
+ "qt_b6_lam3": {
+  "vi": "Bấm Kiểm là máy lưu giá trước rồi mới kiểm",
+  "lo": "ກົດ ກວດ ເຄື່ອງຈະບັນທຶກລາຄາກ່ອນແລ້ວຈຶ່ງກວດ",
+  "en": "Pressing Verify saves the prices first, then verifies"
+ },
+ "qt_b6_may1": {
+  "vi": "Ghi sổ mục IV: dòng trả bằng thẻ cao tốc trừ số dư thẻ đúng một lần",
+  "lo": "ບັນທຶກບັນຊີໜ້າ IV: ແຖວທີ່ຈ່າຍດ້ວຍບັດທາງດ່ວນ ຫັກຍອດບັດພຽງເທື່ອດຽວ",
+  "en": "Booking section IV: lines paid by toll card deduct the card balance exactly once"
+ },
+ "qt_b6_chan1": {
+  "vi": "Ghi sổ mục III khi còn dòng dầu KHO chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu → chặn (CHUA_CAP_THEO_DE_NGHI): mọi lần xuất dầu kho phải có đề nghị đã cấp",
+  "lo": "ບັນທຶກບັນຊີໜ້າ III ຕອນຍັງມີແຖວນໍ້າມັນສາງທີ່ຍັງບໍ່ເບີກຕາມໃບສະເໜີ → ກັ້ນ (CHUA_CAP_THEO_DE_NGHI): ທຸກການເບີກນໍ້າມັນສາງຕ້ອງມີໃບສະເໜີທີ່ເບີກແລ້ວ",
+  "en": "Booking section III while depot fuel lines are not yet issued against a fuel stock-out request → blocked (CHUA_CAP_THEO_DE_NGHI): every depot fuel issue needs an issued request"
+ },
+ "qt_b6_chan2": {
+  "vi": "Xe thuê: dòng dầu kho EPL ứng chưa có giá bán cho chủ xe → không kiểm được mục III (THIEU_GIA_BAN)",
+  "lo": "ລົດເຊົ່າ: ແຖວນໍ້າມັນສາງທີ່ EPL ອອກກ່ອນ ຍັງບໍ່ມີລາຄາຂາຍໃຫ້ເຈົ້າຂອງລົດ → ກວດໜ້າ III ບໍ່ໄດ້ (THIEU_GIA_BAN)",
+  "en": "Hired truck: a depot fuel line advanced by EPL without a sale price to the owner → section III cannot be verified (THIEU_GIA_BAN)"
+ },
+ "qt_b6_chan3": {
+  "vi": "Dòng EPL trả mà đơn giá 0 → không kiểm được (THIEU_DON_GIA)",
+  "lo": "ແຖວທີ່ EPL ຈ່າຍ ແຕ່ລາຄາ 0 → ກວດບໍ່ໄດ້ (THIEU_DON_GIA)",
+  "en": "A line paid by EPL with price 0 → cannot be verified (THIEU_DON_GIA)"
+ },
+ "qt_b6_chan4": {
+  "vi": "Kế toán chỉ nhập giá, không thêm / xoá dòng (CHI_SUA_GIA)",
+  "lo": "ບັນຊີລົງໄດ້ສະເພາະລາຄາ, ບໍ່ເພີ່ມ / ລຶບແຖວ (CHI_SUA_GIA)",
+  "en": "Accounting only enters prices, cannot add / delete lines (CHI_SUA_GIA)"
+ },
+ "qt_b6_chan5": {
+  "vi": "Dòng lấy từ kho: giá là bình quân, gõ tay bị bỏ qua",
+  "lo": "ແຖວເບີກຈາກສາງ: ລາຄາແມ່ນລາຄາສະເລ່ຍ, ພິມເອງຖືກຂ້າມ",
+  "en": "Lines taken from stock: the price is the average cost, typed prices are ignored"
+ },
+ "qt_b6_sau": {
+  "vi": "Mục III, IV, VI: Đã ghi sổ · chờ chi",
+  "lo": "ໜ້າ III, IV, VI: ບັນທຶກແລ້ວ · ລໍຈ່າຍ",
+  "en": "Sections III, IV, VI: Booked · awaiting payment"
+ },
+ "qt_gd_c3": {
+  "vi": "Cấp dầu và tạm ứng",
+  "lo": "ເບີກນໍ້າມັນ ແລະ ເງິນລ່ວງໜ້າ",
+  "en": "Fuel issue and advances"
+ },
+ "qt_b7_ten": {
+  "vi": "Thủ kho quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu",
+  "lo": "ຜູ້ຮັກສາສາງສະແກນ QR ໃບສະເໜີເບີກນໍ້າມັນ, ເບີກນໍ້າມັນ",
+  "en": "The depot keeper scans the QR of the fuel stock-out request and issues fuel"
+ },
+ "qt_b7_lam1": {
+  "vi": "Quét mã, đối chiếu đúng xe, đúng tài xế",
+  "lo": "ສະແກນລະຫັດ, ທຽບໃຫ້ຖືກລົດ, ຖືກໂຊເຟີ",
+  "en": "Scan the code, check it is the right truck and the right driver"
+ },
+ "qt_b7_lam2": {
+  "vi": "Nhập số lít cấp thật → Cấp",
+  "lo": "ລົງຈຳນວນລິດທີ່ເບີກຈິງ → ເບີກ",
+  "en": "Enter the litres actually issued → Issue"
+ },
+ "qt_b7_may1": {
+  "vi": "Trừ tồn đúng kho ngay; dòng dầu trên phiếu mang giá bình quân của kho lúc cấp",
+  "lo": "ຫັກສາງທີ່ຖືກຕ້ອງທັນທີ; ແຖວນໍ້າມັນໃນໃບໄດ້ລາຄາສະເລ່ຍຂອງສາງຕອນເບີກ",
+  "en": "Deducts the right depot's stock immediately; the fuel line on the slip takes the depot's average cost at issue time"
+ },
+ "qt_b7_may2": {
+  "vi": "Mất mạng vẫn cấp được, máy gửi lại khi có mạng",
+  "lo": "ເນັດຂາດກໍ່ເບີກໄດ້, ເຄື່ອງຈະສົ່ງຄືນເມື່ອມີເນັດ",
+  "en": "Works offline too; the device resends when the connection is back"
+ },
+ "qt_b7_chan1": {
+  "vi": "Thủ kho kho khác không cấp được",
+  "lo": "ຜູ້ຮັກສາສາງອື່ນເບີກບໍ່ໄດ້",
+  "en": "Keepers of other depots cannot issue"
+ },
+ "qt_b7_chan2": {
+  "vi": "Cấp lệch số duyệt mà không ghi lý do → chặn",
+  "lo": "ເບີກບໍ່ກົງຈຳນວນທີ່ອະນຸມັດ ແລະ ບໍ່ຂຽນເຫດຜົນ → ກັ້ນ",
+  "en": "Issuing a different amount from the approved one without a reason → blocked"
+ },
+ "qt_b7_chan3": {
+  "vi": "Cấp hai lần → chặn",
+  "lo": "ເບີກສອງເທື່ອ → ກັ້ນ",
+  "en": "Issuing twice → blocked"
+ },
+ "qt_b7_khi_pxk_nl": {
+  "vi": "lúc cấp — đường duy nhất dầu kho rời kho: mọi lần xuất đều theo phiếu đề nghị đã cấp",
+  "lo": "ຕອນເບີກ — ທາງດຽວທີ່ນໍ້າມັນອອກຈາກສາງ: ທຸກການເບີກຕ້ອງຕາມໃບສະເໜີທີ່ເບີກແລ້ວ",
+  "en": "at issue — the only way depot fuel leaves the depot: every issue follows an issued request"
+ },
+ "qt_b7_sau": {
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu: Đã cấp",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ: ເບີກແລ້ວ",
+  "en": "Fuel stock-out request: Issued"
+ },
+ "qt_b8_ten": {
+  "vi": "Chi tạm ứng ở hệ kế toán (từ 01/10)",
+  "lo": "ຈ່າຍເງິນລ່ວງໜ້າຢູ່ລະບົບບັນຊີ (ແຕ່ 01/10)",
+  "en": "Advances are paid in the accounting system (from 01/10)"
+ },
+ "qt_b8_lam1": {
+  "vi": "KT Chi phí ghi sổ mục IV → máy lập phiếu chi \"Chi trước\" bên hệ kế toán anh Tune (chưa ghi sổ)",
+  "lo": "ບັນຊີລາຍຈ່າຍບັນທຶກບັນຊີໜ້າ IV → ເຄື່ອງສ້າງໃບຈ່າຍ \"ຈ່າຍກ່ອນ\" ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune (ຍັງບໍ່ບັນທຶກ)",
+  "en": "The cost accountant books section IV → the system creates a \"Pay in advance\" payment voucher in Mr Tune's accounting system (not yet posted)"
+ },
+ "qt_b8_lam2": {
+  "vi": "Thủ quỹ chi tiền mặt cho tài xế và GHI SỔ phiếu đó ngay trong hệ kế toán",
+  "lo": "ຄັງເງິນຈ່າຍເງິນສົດໃຫ້ໂຊເຟີ ແລະ ບັນທຶກໃບນັ້ນທັນທີໃນລະບົບບັນຊີ",
+  "en": "The cashier pays the driver in cash and POSTS that voucher right away in the accounting system"
+ },
+ "qt_b8_lam3": {
+  "vi": "Màn Phiếu đề nghị chi: xem trạng thái, Cập nhật; hỏng thì KT Chi phí Gửi lại",
+  "lo": "ໜ້າ ໃບສະເໜີຈ່າຍ: ເບິ່ງສະຖານະ, ອັບເດດ; ຜິດພາດ ບັນຊີລາຍຈ່າຍກົດ ສົ່ງຄືນໃໝ່",
+  "en": "Payment requests screen: see the status, Refresh; if it failed the cost accountant presses Resend"
+ },
+ "qt_b8_may1": {
+  "vi": "Phiếu chi mang số tờ đề nghị tạm ứng (PTU) làm số tham chiếu, đối tượng là tài xế (tạo bên kế toán nếu chưa có)",
+  "lo": "ໃບຈ່າຍໃຊ້ເລກໃບສະເໜີເບີກເງິນລ່ວງໜ້າ (PTU) ເປັນເລກອ້າງອີງ, ຜູ້ຮັບແມ່ນໂຊເຟີ (ສ້າງຢູ່ລະບົບບັນຊີຖ້າຍັງບໍ່ມີ)",
+  "en": "The payment voucher carries the advance request number (PTU) as its reference, with the driver as the party (created in accounting if missing)"
+ },
+ "qt_b8_may2": {
+  "vi": "Số tiền đúng tờ tạm ứng (tiền mặt mục III, IV, VI) — dòng trả bằng thẻ, trả cùng lương, ghi nợ nhà cung cấp không tính",
+  "lo": "ຍອດເງິນເທົ່າໃບເງິນລ່ວງໜ້າ (ເງິນສົດ ໜ້າ III, IV, VI) — ແຖວຈ່າຍດ້ວຍບັດ, ຈ່າຍພ້ອມເງິນເດືອນ, ຂຽນໜີ້ຜູ້ສະໜອງ ບໍ່ນັບ",
+  "en": "The amount equals the advance sheet (cash in sections III, IV, VI) — lines paid by card, with salary, or on supplier credit are not counted"
+ },
+ "qt_b8_may3": {
+  "vi": "Xe nhà: Nợ 1601 tạm ứng nhân viên / Có 1011 tiền mặt — sang chi phí lúc tất toán",
+  "lo": "ລົດບໍລິສັດ: ໜີ້ 1601 ເງິນລ່ວງໜ້າພະນັກງານ / ມີ 1011 ເງິນສົດ — ໂອນເປັນລາຍຈ່າຍຕອນສະສາງ",
+  "en": "Company truck: Dr 1601 employee advance / Cr 1011 cash — moved to expense at settlement"
+ },
+ "qt_b8_may4": {
+  "vi": "Trang điều xe hỏi lại hệ kế toán (lúc mở tờ, lúc tài xế bấm Xuất phát, nút Cập nhật): đã ghi sổ → mục IV \"Đã chi\", tờ tạm ứng \"Đã cấp\"",
+  "lo": "ໜ້າຈັດລົດຖາມລະບົບບັນຊີຄືນ (ຕອນເປີດໃບ, ຕອນໂຊເຟີກົດ ອອກລົດ, ປຸ່ມ ອັບເດດ): ບັນທຶກແລ້ວ → ໜ້າ IV \"ຈ່າຍແລ້ວ\", ໃບເງິນລ່ວງໜ້າ \"ເບີກແລ້ວ\"",
+  "en": "The dispatch site asks the accounting system again (when the sheet opens, when the driver presses Depart, the Refresh button): posted → section IV \"Paid\", advance sheet \"Issued\""
+ },
+ "qt_b8_may5": {
+  "vi": "Gửi lại không tạo phiếu thứ hai: tìm phiếu đã có theo tài xế + số PTU trước",
+  "lo": "ສົ່ງຄືນໃໝ່ບໍ່ສ້າງໃບທີສອງ: ຊອກໃບທີ່ມີແລ້ວຕາມໂຊເຟີ + ເລກ PTU ກ່ອນ",
+  "en": "Resending never creates a second voucher: it first looks up the existing one by driver + PTU number"
+ },
+ "qt_b8_chan1": {
+  "vi": "Quỹ bấm Chi mục IV hoặc quét QR trên trang điều xe → chặn, chi ở hệ kế toán (Sếp vẫn chi tay được)",
+  "lo": "ຄັງເງິນກົດ ຈ່າຍ ໜ້າ IV ຫຼື ສະແກນ QR ຢູ່ໜ້າຈັດລົດ → ກັ້ນ, ຈ່າຍຢູ່ລະບົບບັນຊີ (ຫົວໜ້າຍັງຈ່າຍເອງໄດ້)",
+  "en": "The cashier pressing Pay on section IV or scanning the QR on the dispatch site → blocked, pay in the accounting system (the boss can still pay manually)"
+ },
+ "qt_b8_chan2": {
+  "vi": "Thủ quỹ chưa ghi sổ bên kế toán → tài xế chưa xuất phát được",
+  "lo": "ຄັງເງິນຍັງບໍ່ບັນທຶກຢູ່ລະບົບບັນຊີ → ໂຊເຟີຍັງອອກລົດບໍ່ໄດ້",
+  "en": "The cashier has not posted it in accounting → the driver cannot depart yet"
+ },
+ "qt_b8_giay1": {
+  "vi": "Tài xế ký nhận tiền trên phiếu chi bên hệ kế toán",
+  "lo": "ໂຊເຟີເຊັນຮັບເງິນໃນໃບຈ່າຍຢູ່ລະບົບບັນຊີ",
+  "en": "The driver signs for the money on the payment voucher in the accounting system"
+ },
+ "qt_b8_sau": {
+  "vi": "Mục IV: Đã chi",
+  "lo": "ໜ້າ IV: ຈ່າຍແລ້ວ",
+  "en": "Section IV: Paid"
+ },
+ "qt_gd_c4": {
+  "vi": "Trên đường",
+  "lo": "ລະຫວ່າງທາງ",
+  "en": "On the road"
+ },
+ "qt_b9_ten": {
+  "vi": "Xuất phát · báo mốc · chia sẻ vị trí",
+  "lo": "ອອກລົດ · ແຈ້ງຈຸດ · ແບ່ງປັນຕຳແໜ່ງ",
+  "en": "Depart · report checkpoints · share location"
+ },
+ "qt_b9_lam1": {
+  "vi": "Tài xế bấm Xuất phát, bật chia sẻ vị trí (GPS)",
+  "lo": "ໂຊເຟີກົດ ອອກລົດ, ເປີດແບ່ງປັນຕຳແໜ່ງ (GPS)",
+  "en": "The driver presses Depart and turns on location sharing (GPS)"
+ },
+ "qt_b9_lam2": {
+  "vi": "Bãi hoặc tài xế báo tới từng mốc trên tuyến",
+  "lo": "ສະໜາມ ຫຼື ໂຊເຟີ ແຈ້ງຮອດແຕ່ລະຈຸດໃນເສັ້ນທາງ",
+  "en": "The yard or the driver reports arrival at each checkpoint on the route"
+ },
+ "qt_b9_chan1": {
+  "vi": "Mục IV chưa \"Đã chi\" (tài xế chưa cầm tiền) → không xuất phát được (CHUA_NHAN_TAM_UNG)",
+  "lo": "ໜ້າ IV ຍັງບໍ່ \"ຈ່າຍແລ້ວ\" (ໂຊເຟີຍັງບໍ່ໄດ້ເງິນ) → ອອກລົດບໍ່ໄດ້ (CHUA_NHAN_TAM_UNG)",
+  "en": "Section IV not yet \"Paid\" (the driver has no cash yet) → cannot depart (CHUA_NHAN_TAM_UNG)"
+ },
+ "qt_b9_sau": {
+  "vi": "Đang vận chuyển",
+  "lo": "ກຳລັງຈັດສົ່ງ",
+  "en": "In transit"
+ },
+ "qt_b10_ten": {
+  "vi": "Đổ dầu dọc đường (Việt Nam)",
+  "lo": "ເຕີມນໍ້າມັນລະຫວ່າງທາງ (ຫວຽດນາມ)",
+  "en": "Refuelling on the road (Vietnam)"
+ },
+ "qt_b10_lam1": {
+  "vi": "Tài xế khai SỐ LÍT và trạm (C5.1 — không nhập giá)",
+  "lo": "ໂຊເຟີແຈ້ງຈຳນວນລິດ ແລະ ປໍ້າ (C5.1 — ບໍ່ລົງລາຄາ)",
+  "en": "The driver reports the LITRES and the station (C5.1 — no price)"
+ },
+ "qt_b10_lam2": {
+  "vi": "KT kho xăng dầu (hoặc Bãi) duyệt → thành dòng mục III nguồn mua; KT kho nhập giá khi kiểm",
+  "lo": "ບັນຊີສາງນໍ້າມັນ (ຫຼື ສະໜາມ) ອະນຸມັດ → ເປັນແຖວໜ້າ III ແຫຼ່ງຊື້; ບັນຊີສາງລົງລາຄາຕອນກວດ",
+  "en": "The fuel store accountant (or the yard) approves → it becomes a section III purchase line; the store accountant enters the price when verifying"
+ },
+ "qt_b10_may1": {
+  "vi": "Trạm ghi nợ: cuối tháng EPL trả trạm hoặc cấn trừ vào cước của khách đứng ra với trạm",
+  "lo": "ປໍ້າຂຽນໜີ້: ທ້າຍເດືອນ EPL ຈ່າຍປໍ້າ ຫຼື ຫັກລົບກັບຄ່າຂົນສົ່ງຂອງລູກຄ້າທີ່ຄໍ້າປະກັນກັບປໍ້າ",
+  "en": "Station on account: at month end EPL pays the station or offsets it against the freight of the customer who stands behind the station"
+ },
+ "qt_b10_chan1": {
+  "vi": "Khai đổ ở KHO của EPL → bảo dùng phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ແຈ້ງເຕີມຢູ່ສາງຂອງ EPL → ໃຫ້ໃຊ້ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Reporting a fill at an EPL depot → told to use a fuel stock-out request"
+ },
+ "qt_b10_sau": {
+  "vi": "Mục III mở lại · Đã nhập",
+  "lo": "ໜ້າ III ເປີດຄືນ · ລົງແລ້ວ",
+  "en": "Section III reopened · Entered"
+ },
+ "qt_b11_ten": {
+  "vi": "Sự cố trên đường: báo → duyệt theo loại (mục V hoặc VI)",
+  "lo": "ເຫດການລະຫວ່າງທາງ: ແຈ້ງ → ອະນຸມັດຕາມປະເພດ (ໜ້າ V ຫຼື VI)",
+  "en": "Incident on the road: report → approval by type (section V or VI)"
+ },
+ "qt_b11_lam1": {
+  "vi": "Tài xế báo sự cố: loại, chuyện gì, xe còn chạy được không, có chi tiền không (số tiền, đã tự trả hay chưa)",
+  "lo": "ໂຊເຟີແຈ້ງເຫດການ: ປະເພດ, ເກີດຫຍັງ, ລົດຍັງແລ່ນໄດ້ບໍ່, ມີຈ່າຍເງິນບໍ່ (ຈຳນວນເງິນ, ຈ່າຍເອງແລ້ວຫຼືຍັງ)",
+  "en": "The driver reports the incident: type, what happened, whether the truck can still run, whether money was spent (amount, already paid or not)"
+ },
+ "qt_b11_lam2": {
+  "vi": "Hỏng xe, lốp, tai nạn → Tổ sửa chữa Thà Bốc duyệt: lấy phụ tùng KHO hay MUA ngoài (gara) → dòng mục V",
+  "lo": "ລົດເພ, ຢາງ, ອຸບັດຕິເຫດ → ໜ່ວຍສ້ອມແປງ ທ່າບົກ ອະນຸມັດ: ເອົາອະໄຫຼ່ສາງ ຫຼື ຊື້ນອກ (ອູ່) → ແຖວໜ້າ V",
+  "en": "Breakdown, tyre, accident → the Thabok repair team approves: parts from STOCK or BOUGHT outside (garage) → a section V line"
+ },
+ "qt_b11_lam3": {
+  "vi": "Chậm, bị giữ xe, việc khác → Admin Thà Bốc duyệt → dòng mục VI bằng số tiền tài xế báo; không có tiền thì chỉ ghi nhận",
+  "lo": "ຊັກຊ້າ, ຖືກກັກລົດ, ເລື່ອງອື່ນ → ແອັດມິນ ທ່າບົກ ອະນຸມັດ → ແຖວໜ້າ VI ຕາມຈຳນວນເງິນທີ່ໂຊເຟີແຈ້ງ; ບໍ່ມີເງິນກໍ່ພຽງບັນທຶກໄວ້",
+  "en": "Delay, truck held, other matters → the Thabok admin approves → a section VI line for the amount the driver reported; with no money it is only recorded"
+ },
+ "qt_b11_may1": {
+  "vi": "Lấy kho: trừ tồn phụ tùng ngay, giá bình quân của phụ tùng",
+  "lo": "ເບີກສາງ: ຫັກສາງອະໄຫຼ່ທັນທີ, ລາຄາສະເລ່ຍຂອງອະໄຫຼ່",
+  "en": "From stock: parts stock is deducted immediately, at the part's average cost"
+ },
+ "qt_b11_may2": {
+  "vi": "Mục V / VI tự mở lại \"Đã nhập\"; hỏng nặng thì xe chuyển \"đang sửa\"",
+  "lo": "ໜ້າ V / VI ເປີດຄືນ \"ລົງແລ້ວ\" ເອງ; ເພໜັກລົດຈະເປັນ \"ກຳລັງສ້ອມ\"",
+  "en": "Sections V / VI reopen as \"Entered\" automatically; a serious breakdown sets the truck to \"under repair\""
+ },
+ "qt_b11_may3": {
+  "vi": "Bãi duyệt mục VI không thấy, không nhập số tiền (A2) — KT Chi phí VC sửa khi kiểm",
+  "lo": "ສະໜາມອະນຸມັດໜ້າ VI ບໍ່ເຫັນ, ບໍ່ລົງຈຳນວນເງິນ (A2) — ບັນຊີລາຍຈ່າຍ ວຽງຈັນ ແກ້ຕອນກວດ",
+  "en": "The yard approving section VI neither sees nor enters the amount (A2) — the Vientiane cost accountant corrects it when verifying"
+ },
+ "qt_b11_chan1": {
+  "vi": "Sửa chữa chỉ tổ sửa chữa duyệt (C1.2); việc khác chỉ Admin Thà Bốc duyệt (Excel ໜ້າວຽກ: mục VI Bãi nhập)",
+  "lo": "ສ້ອມແປງ ສະເພາະໜ່ວຍສ້ອມແປງອະນຸມັດ (C1.2); ເລື່ອງອື່ນ ສະເພາະແອັດມິນ ທ່າບົກ ອະນຸມັດ (Excel ໜ້າວຽກ: ໜ້າ VI ສະໜາມລົງ)",
+  "en": "Repairs are approved only by the repair team (C1.2); other matters only by the Thabok admin (Excel ໜ້າວຽກ: section VI entered by the yard)"
+ },
+ "qt_b11_chan2": {
+  "vi": "Kho không đủ phụ tùng → chặn",
+  "lo": "ສາງອະໄຫຼ່ບໍ່ພໍ → ກັ້ນ",
+  "en": "Not enough parts in stock → blocked"
+ },
+ "qt_b11_khi_pxk_pt": {
+  "vi": "khi lấy phụ tùng từ kho",
+  "lo": "ຕອນເອົາອະໄຫຼ່ຈາກສາງ",
+  "en": "when parts are taken from stock"
+ },
+ "qt_b11_sau": {
+  "vi": "Mục V hoặc VI: Đã nhập · chờ KT Chi phí kiểm",
+  "lo": "ໜ້າ V ຫຼື VI: ລົງແລ້ວ · ລໍບັນຊີລາຍຈ່າຍກວດ",
+  "en": "Section V or VI: Entered · awaiting the cost accountant's check"
+ },
+ "qt_b12_ten": {
+  "vi": "Đổi xe giữa đường (xe hỏng nặng — C2.2)",
+  "lo": "ປ່ຽນລົດລະຫວ່າງທາງ (ລົດເພໜັກ — C2.2)",
+  "en": "Change truck mid-route (serious breakdown — C2.2)"
+ },
+ "qt_b12_lam1": {
+  "vi": "Bấm \"Đổi xe\", chọn xe thay",
+  "lo": "ກົດ \"ປ່ຽນລົດ\", ເລືອກລົດແທນ",
+  "en": "Press \"Change truck\" and choose the replacement truck"
+ },
+ "qt_b12_may1": {
+  "vi": "Giữ nguyên chuyến, dòng chi, hàng; mục I phải kiểm lại",
+  "lo": "ຖ້ຽວ, ແຖວລາຍຈ່າຍ, ສິນຄ້າ ຄືເກົ່າ; ໜ້າ I ຕ້ອງກວດຄືນ",
+  "en": "Trip, expense lines and goods stay the same; section I must be verified again"
+ },
+ "qt_b12_chan1": {
+  "vi": "Phiếu đã tới nơi → không đổi xe",
+  "lo": "ໃບຮອດປາຍທາງແລ້ວ → ປ່ຽນລົດບໍ່ໄດ້",
+  "en": "The slip has already arrived → the truck cannot be changed"
+ },
+ "qt_b12_sau": {
+  "vi": "Mục I: Đã nhập · chờ kiểm lại",
+  "lo": "ໜ້າ I: ລົງແລ້ວ · ລໍກວດຄືນ",
+  "en": "Section I: Entered · awaiting re-check"
+ },
+ "qt_b13_ten": {
+  "vi": "Xe tới nơi",
+  "lo": "ລົດຮອດປາຍທາງ",
+  "en": "Truck arrives"
+ },
+ "qt_b13_lam1": {
+  "vi": "Nhập cân cuối (tấn), km về thật, ngày về",
+  "lo": "ລົງນໍ້າໜັກປາຍທາງ (ໂຕນ), ກມ ກັບຈິງ, ວັນທີກັບ",
+  "en": "Enter the destination weight (t), actual return odometer and return date"
+ },
+ "qt_b13_may1": {
+  "vi": "Phiếu GIAO: tính hao hụt, ghi dòng hao hụt; hàng lấy từ lô được xuất khỏi kho bãi",
+  "lo": "ໃບສົ່ງ: ຄິດການສູນເສຍ, ລົງແຖວສູນເສຍ; ສິນຄ້າທີ່ເອົາຈາກລັອດຖືກເບີກອອກຈາກສາງສະໜາມ",
+  "en": "Delivery slip: computes the loss and records a loss line; goods taken from a lot leave the yard stock"
+ },
+ "qt_b13_may2": {
+  "vi": "Phiếu GOM: hàng vào kho bãi thành một LÔ chờ phiếu giao lấy",
+  "lo": "ໃບເກັບ: ສິນຄ້າເຂົ້າສາງສະໜາມເປັນໜຶ່ງລັອດ ລໍໃບສົ່ງມາເອົາ",
+  "en": "Collection slip: goods enter the yard stock as one LOT waiting for a delivery slip"
+ },
+ "qt_b13_chan1": {
+  "vi": "Chưa nhận tạm ứng → không báo tới được (như cửa Xuất phát)",
+  "lo": "ຍັງບໍ່ໄດ້ຮັບເງິນລ່ວງໜ້າ → ແຈ້ງຮອດບໍ່ໄດ້ (ຄືກັບປະຕູ ອອກລົດ)",
+  "en": "Advance not received yet → arrival cannot be reported (same gate as Depart)"
+ },
+ "qt_b13_khi_pxk_hh": {
+  "vi": "phiếu giao lấy hàng từ kho bãi",
+  "lo": "ໃບສົ່ງທີ່ເອົາສິນຄ້າຈາກສາງສະໜາມ",
+  "en": "delivery slip taking goods from the yard stock"
+ },
+ "qt_b13_khi_pnk_hh": {
+  "vi": "phiếu gom — hàng vào kho bãi",
+  "lo": "ໃບເກັບ — ສິນຄ້າເຂົ້າສາງສະໜາມ",
+  "en": "collection slip — goods enter the yard stock"
+ },
+ "qt_b13_sau": {
+  "vi": "Đã giao hàng",
+  "lo": "ສົ່ງຮອດແລ້ວ",
+  "en": "Delivered"
+ },
+ "qt_gd_c5": {
+  "vi": "Về tới và khoá phiếu",
+  "lo": "ກັບຮອດ ແລະ ລັອກໃບ",
+  "en": "Return and slip locking"
+ },
+ "qt_b14_ten": {
+  "vi": "Mục V, VI: KT Chi phí kiểm · ghi sổ → quỹ chi",
+  "lo": "ໜ້າ V, VI: ບັນຊີລາຍຈ່າຍກວດ · ບັນທຶກບັນຊີ → ຄັງເງິນຈ່າຍ",
+  "en": "Sections V, VI: the cost accountant verifies · books → the cashier pays"
+ },
+ "qt_b14_lam1": {
+  "vi": "KT Chi phí kiểm, ghi sổ sửa chữa và chi khác",
+  "lo": "ບັນຊີລາຍຈ່າຍກວດ, ບັນທຶກບັນຊີສ້ອມແປງ ແລະ ລາຍຈ່າຍອື່ນ",
+  "en": "The cost accountant verifies and books repairs and other expenses"
+ },
+ "qt_b14_lam2": {
+  "vi": "Quỹ tiền mặt Thà Bốc chi phần MUA ngoài",
+  "lo": "ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍສ່ວນທີ່ຊື້ນອກ",
+  "en": "Thabok petty cash pays the part BOUGHT outside"
+ },
+ "qt_b14_may1": {
+  "vi": "Một tờ chi cho cả mục, chỉ phần quỹ trả ngay: dòng lấy kho (đã có phiếu xuất kho phụ tùng), dòng nợ nhà cung cấp theo đợt (lốp…) và dòng tiền mặt đã theo phiếu tạm ứng không tính",
+  "lo": "ໜຶ່ງໃບຈ່າຍຕໍ່ໜຶ່ງໜ້າ, ສະເພາະສ່ວນທີ່ຄັງເງິນຈ່າຍທັນທີ: ແຖວເບີກສາງ (ມີໃບເບີກອະໄຫຼ່ອອກສາງແລ້ວ), ແຖວໜີ້ຜູ້ສະໜອງຈ່າຍເປັນງວດ (ຢາງ…) ແລະ ແຖວເງິນສົດທີ່ຕາມໃບເງິນລ່ວງໜ້າແລ້ວ ບໍ່ນັບ",
+  "en": "One payment voucher per section, only for what the cashier pays at once: lines from stock (already have a parts stock-out), supplier credit lines paid in instalments (tyres…) and cash lines already on the advance sheet are not counted"
+ },
+ "qt_b14_may2": {
+  "vi": "Mục VI không sinh tờ chi: mọi dòng hoặc đã theo phiếu tạm ứng, hoặc trả cùng lương, hoặc ghi nợ nhà cung cấp",
+  "lo": "ໜ້າ VI ບໍ່ອອກໃບຈ່າຍ: ທຸກແຖວ ຫຼື ຕາມໃບເງິນລ່ວງໜ້າແລ້ວ, ຫຼື ຈ່າຍພ້ອມເງິນເດືອນ, ຫຼື ຂຽນໜີ້ຜູ້ສະໜອງ",
+  "en": "Section VI creates no payment voucher: every line is either on the advance sheet, paid with salary, or on supplier credit"
+ },
+ "qt_b14_khi_pc_sc": {
+  "vi": "lúc quỹ chi mục V / VI",
+  "lo": "ຕອນຄັງເງິນຈ່າຍໜ້າ V / VI",
+  "en": "when the cashier pays section V / VI"
+ },
+ "qt_b14_sau": {
+  "vi": "Mục V, VI: Đã chi",
+  "lo": "ໜ້າ V, VI: ຈ່າຍແລ້ວ",
+  "en": "Sections V, VI: Paid"
+ },
+ "qt_b15_ten": {
+  "vi": "KT Thu/Chi VC: Kiểm lại toàn phiếu → Khoá",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ: ກວດຄືນທັງໃບ → ລັອກ",
+  "en": "Vientiane receipts & payments accountant: re-check the whole slip → Lock"
+ },
+ "qt_b15_lam1": {
+  "vi": "Bấm \"Kiểm lại\", đọc bảng cảnh báo, xác nhận khoá",
+  "lo": "ກົດ \"ກວດຄືນ\", ອ່ານຕາຕະລາງເຕືອນ, ຢືນຢັນລັອກ",
+  "en": "Press \"Re-check\", read the warning table, confirm the lock"
+ },
+ "qt_b15_lam2": {
+  "vi": "Mở khoá nếu cần sửa (khi chưa xuất hoá đơn)",
+  "lo": "ປົດລັອກຖ້າຕ້ອງແກ້ (ຕອນຍັງບໍ່ອອກໃບເກັບເງິນ)",
+  "en": "Unlock if something must be corrected (while no invoice has been issued)"
+ },
+ "qt_b15_may1": {
+  "vi": "Rà: km về lệch ước tính > 10 %, hao hụt > 1,5 %, thiếu cân cuối, thiếu km về, thiếu phiếu quặng (không có cả ảnh lẫn số phiếu), mục có chi mà chưa kiểm",
+  "lo": "ກວດ: ກມ ກັບຕ່າງຈາກຄາດຄະເນ > 10 %, ສູນເສຍ > 1,5 %, ຂາດນໍ້າໜັກປາຍທາງ, ຂາດ ກມ ກັບ, ຂາດໃບແຮ່ (ບໍ່ມີທັງຮູບ ແລະ ເລກໃບ), ໜ້າມີລາຍຈ່າຍແຕ່ຍັງບໍ່ກວດ",
+  "en": "Checks: return odometer off the estimate by > 10 %, loss > 1.5 %, missing destination weight, missing return km, missing ore bill (neither photo nor number), sections with expenses not yet verified"
+ },
+ "qt_b15_may2": {
+  "vi": "Khoá xong máy tự lập PHIẾU ĐỀ NGHỊ THU cước (đúng tiền tệ của phiếu) — gửi bên công nợ (anh Tune) lập SO, hoá đơn, thu tiền",
+  "lo": "ລັອກແລ້ວເຄື່ອງສ້າງໃບສະເໜີຮັບເງິນຄ່າຂົນສົ່ງເອງ (ຕາມສະກຸນເງິນຂອງໃບ) — ສົ່ງໄປຝ່າຍໜີ້ (ອ້າຍ Tune) ສ້າງ SO, ໃບເກັບເງິນ, ເກັບເງິນ",
+  "en": "Once locked the system creates the freight COLLECTION REQUEST itself (in the slip's currency) — sent to receivables (Mr Tune) to create the SO, invoice and collect"
+ },
+ "qt_b15_chan1": {
+  "vi": "Còn cảnh báo mà chưa xác nhận → không khoá",
+  "lo": "ຍັງມີຄຳເຕືອນ ແຕ່ຍັງບໍ່ຢືນຢັນ → ລັອກບໍ່ໄດ້",
+  "en": "Warnings left unconfirmed → cannot lock"
+ },
+ "qt_b15_chan2": {
+  "vi": "Khoá rồi Bãi, tài xế không ghi thêm; đã có hoá đơn thì không mở khoá",
+  "lo": "ລັອກແລ້ວ ສະໜາມ, ໂຊເຟີ ລົງເພີ່ມບໍ່ໄດ້; ມີໃບເກັບເງິນແລ້ວ ປົດລັອກບໍ່ໄດ້",
+  "en": "Once locked the yard and driver cannot add anything; with an invoice issued it cannot be unlocked"
+ },
+ "qt_b15_chan3": {
+  "vi": "Phiếu đề nghị thu đã gửi bên công nợ → kế toán không mở khoá (Sếp mở được); tờ chưa gửi thì mở khoá là rút tờ",
+  "lo": "ໃບສະເໜີຮັບເງິນສົ່ງໄປຝ່າຍໜີ້ແລ້ວ → ບັນຊີປົດລັອກບໍ່ໄດ້ (ຫົວໜ້າປົດໄດ້); ໃບທີ່ຍັງບໍ່ສົ່ງ ປົດລັອກແມ່ນຖອນໃບ",
+  "en": "Collection request already sent to receivables → accounting cannot unlock (the boss can); an unsent request is withdrawn on unlock"
+ },
+ "qt_b15_khi_pdt": {
+  "vi": "lúc khoá phiếu (DO xong)",
+  "lo": "ຕອນລັອກໃບ (DO ສຳເລັດ)",
+  "en": "when the slip is locked (DO finished)"
+ },
+ "qt_b15_sau": {
+  "vi": "Phiếu: Đã khoá 🔒 · Đề nghị thu: chờ gửi",
+  "lo": "ໃບ: ລັອກແລ້ວ 🔒 · ໃບສະເໜີຮັບເງິນ: ລໍສົ່ງ",
+  "en": "Slip: Locked 🔒 · Collection request: waiting to be sent"
+ },
+ "qt_gd_c6": {
+  "vi": "Doanh thu",
+  "lo": "ລາຍຮັບ",
+  "en": "Revenue"
+ },
+ "qt_b16_ten": {
+  "vi": "Hoá đơn vận chuyển — ở hệ kế toán anh Tune",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Freight invoice — in Mr Tune's accounting system"
+ },
+ "qt_b16_lam1": {
+  "vi": "Phiếu đề nghị thu của DO gửi sang hệ kế toán anh Tune thành SO; hoá đơn lập bên đó theo SO",
+  "lo": "ໃບສະເໜີຮັບເງິນຂອງ DO ສົ່ງໄປລະບົບບັນຊີຂອງອ້າຍ Tune ເປັນ SO; ໃບເກັບເງິນອອກຢູ່ຝ່າຍນັ້ນຕາມ SO",
+  "en": "The DO's collection request goes to Mr Tune's accounting system as an SO; the invoice is issued there from the SO"
+ },
+ "qt_b16_lam2": {
+  "vi": "Màn Phiếu đề nghị thu bên trang điều xe xem trạng thái gửi · SO",
+  "lo": "ໜ້າ ໃບສະເໜີຮັບເງິນ ຢູ່ໜ້າຈັດລົດ ເບິ່ງສະຖານະການສົ່ງ · SO",
+  "en": "The Collection requests screen on the dispatch site shows the sending status · SO"
+ },
+ "qt_b16_may1": {
+  "vi": "Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng — tính trên phiếu đề nghị thu",
+  "lo": "ເງິນ = ນໍ້າໜັກ (ໂຕນປາຍທາງ ຫຼື ເໝົາຖ້ຽວ) × ລາຄາ, ຕາມສະກຸນເງິນຂອງສັນຍາ — ຄິດໃນໃບສະເໜີຮັບເງິນ",
+  "en": "Amount = weight (delivered tonnes or whole trip) × price, in the contract's currency — computed on the collection request"
+ },
+ "qt_b16_chan1": {
+  "vi": "Phiếu chưa khoá → chưa có phiếu đề nghị thu",
+  "lo": "ໃບຍັງບໍ່ລັອກ → ຍັງບໍ່ມີໃບສະເໜີຮັບເງິນ",
+  "en": "Slip not locked → no collection request yet"
+ },
+ "qt_b16_giay1": {
+  "vi": "Hoá đơn vận chuyển (in)",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງ (ພິມ)",
+  "en": "Freight invoice (printed)"
+ },
+ "qt_b16_khi_hd": {
+  "vi": "lúc lập hoá đơn (lẻ hoặc gộp tháng)",
+  "lo": "ຕອນອອກໃບເກັບເງິນ (ແຍກ ຫຼື ລວມເດືອນ)",
+  "en": "when the invoice is issued (single or monthly combined)"
+ },
+ "qt_b16_sau": {
+  "vi": "Đã xuất hoá đơn · Chưa thanh toán",
+  "lo": "ອອກໃບເກັບເງິນແລ້ວ · ຍັງບໍ່ຊຳລະ",
+  "en": "Invoiced · Unpaid"
+ },
+ "qt_b17_ten": {
+  "vi": "Thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng — ở hệ kế toán anh Tune",
+  "lo": "ເກັບເງິນລູກຄ້າ (ຫຼາຍເທື່ອ, ຫຼາຍສະກຸນ) · ຫັກລົບທ້າຍເດືອນ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Customer collection (several times, several currencies) · month-end offsetting — in Mr Tune's accounting system"
+ },
+ "qt_b17_lam1": {
+  "vi": "Ghi từng lần thu ở hệ kế toán anh Tune: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản",
+  "lo": "ບັນທຶກແຕ່ລະເທື່ອທີ່ຮັບຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune: ຈຳນວນເງິນ, ສະກຸນເງິນ, ອັດຕາແລກປ່ຽນ, ເງິນສົດ / ໂອນ",
+  "en": "Record each receipt in Mr Tune's accounting system: amount, currency, exchange rate, cash / transfer"
+ },
+ "qt_b17_lam2": {
+  "vi": "Cuối tháng: cấn trừ phần khách đã trả hộ (thẻ cao tốc của khách, trạm dầu Việt Nam ghi nợ) — bên hệ kế toán",
+  "lo": "ທ້າຍເດືອນ: ຫັກລົບສ່ວນທີ່ລູກຄ້າຈ່າຍແທນ (ບັດທາງດ່ວນຂອງລູກຄ້າ, ປໍ້ານໍ້າມັນຫວຽດນາມຂຽນໜີ້) — ຢູ່ລະບົບບັນຊີ",
+  "en": "Month end: offset what the customer paid on our behalf (the customer's toll card, Vietnamese stations on account) — in the accounting system"
+ },
+ "qt_b17_may1": {
+  "vi": "Màn Khách hàng → tab Công nợ đọc lại số bên hệ kế toán (chỉ xem)",
+  "lo": "ໜ້າ ລູກຄ້າ → ແຖບ ໜີ້ ອ່ານຕົວເລກຈາກລະບົບບັນຊີ (ເບິ່ງຢ່າງດຽວ)",
+  "en": "Customers screen → Receivables tab reads the figures back from the accounting system (view only)"
+ },
+ "qt_b17_giay1": {
+  "vi": "Biên nhận thu tiền (in bên hệ kế toán)",
+  "lo": "ໃບຮັບເງິນ (ພິມຢູ່ລະບົບບັນຊີ)",
+  "en": "Payment receipt (printed in the accounting system)"
+ },
+ "qt_b17_khi_pt": {
+  "vi": "mỗi lần thu; cấn trừ ghi PT cách thu \"cấn trừ\"",
+  "lo": "ແຕ່ລະເທື່ອທີ່ຮັບ; ຫັກລົບລົງ PT ວິທີຮັບ \"ຫັກລົບ\"",
+  "en": "each receipt; an offset is recorded as PT with method \"offset\""
+ },
+ "qt_b17_sau": {
+  "vi": "Đã thanh toán",
+  "lo": "ຊຳລະແລ້ວ",
+  "en": "Paid"
+ },
+ "qt_gd_c7": {
+  "vi": "Xe liên kết và cuối kỳ",
+  "lo": "ລົດຮ່ວມ ແລະ ທ້າຍງວດ",
+  "en": "Joint trucks and period end"
+ },
+ "qt_b18_ten": {
+  "vi": "Trả chủ xe liên kết — đề nghị ở trang điều xe, chi ở hệ kế toán anh Tune",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ — ສະເໜີຢູ່ໜ້າຈັດລົດ, ຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Paying joint-truck owners — requested on the dispatch site, paid in Mr Tune's accounting system"
+ },
+ "qt_b18_lam1": {
+  "vi": "KT Thu/Chi VC: màn Xe liên kết → \"Trả qua kế toán\" của chủ xe → chọn các phiếu đã khoá chưa trả → lập đề nghị trả",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ວຽງຈັນ: ໜ້າ ລົດຮ່ວມ → \"ຈ່າຍຜ່ານບັນຊີ\" ຂອງເຈົ້າຂອງລົດ → ເລືອກໃບທີ່ລັອກແລ້ວຍັງບໍ່ຈ່າຍ → ສ້າງໃບສະເໜີຈ່າຍ",
+  "en": "Vientiane receipts & payments accountant: Joint trucks screen → the owner's \"Pay via accounting\" → choose locked unpaid slips → create the payment request"
+ },
+ "qt_b18_lam2": {
+  "vi": "Thủ quỹ chi và ghi sổ phiếu chi \"Chi khác\" đứng tên chủ xe ở hệ kế toán anh Tune",
+  "lo": "ຄັງເງິນຈ່າຍ ແລະ ບັນທຶກໃບຈ່າຍ \"ລາຍຈ່າຍອື່ນ\" ໃນນາມເຈົ້າຂອງລົດ ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "The cashier pays and posts an \"Other expense\" payment voucher in the owner's name in Mr Tune's accounting system"
+ },
+ "qt_b18_may1": {
+  "vi": "Phải trả = tiền thuê − phí % − trừ vượt tấn − mọi khoản EPL đã ứng (dầu kho, đi đường…) — chủ xe tự trả thì không trừ",
+  "lo": "ຕ້ອງຈ່າຍ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ % − ຫັກເກີນໂຕນ − ທຸກລາຍການທີ່ EPL ອອກກ່ອນ (ນໍ້າມັນສາງ, ເດີນທາງ…) — ເຈົ້າຂອງລົດຈ່າຍເອງບໍ່ຫັກ",
+  "en": "Payable = hire − fee % − overweight deduction − everything EPL advanced (depot fuel, travel…) — nothing deducted where the owner paid"
+ },
+ "qt_b18_may2": {
+  "vi": "Hệ kế toán có phiếu chi Nợ 4022 / Có tiền",
+  "lo": "ລະບົບບັນຊີມີໃບຈ່າຍ ໜີ້ 4022 / ມີ ເງິນ",
+  "en": "The accounting system has a payment voucher Dr 4022 / Cr cash"
+ },
+ "qt_b18_may3": {
+  "vi": "Màn Xe liên kết hỏi lại: bên đó ghi sổ xong thì các phiếu thành \"đã trả chủ xe\"",
+  "lo": "ໜ້າ ລົດຮ່ວມ ຖາມຄືນ: ຝ່າຍນັ້ນບັນທຶກແລ້ວ ໃບຕ່າງໆຈະເປັນ \"ຈ່າຍເຈົ້າຂອງລົດແລ້ວ\"",
+  "en": "The Joint trucks screen asks back: once posted there, the slips become \"owner paid\""
+ },
+ "qt_b18_chan1": {
+  "vi": "Phiếu chưa khoá → chưa trả",
+  "lo": "ໃບຍັງບໍ່ລັອກ → ຍັງບໍ່ຈ່າຍ",
+  "en": "Slip not locked → not paid yet"
+ },
+ "qt_b18_chan2": {
+  "vi": "Các phiếu khác tiền thuê → tách đề nghị",
+  "lo": "ໃບທີ່ຄ່າເຊົ່າຕ່າງສະກຸນ → ແຍກໃບສະເໜີ",
+  "en": "Slips with hire in different currencies → separate requests"
+ },
+ "qt_b18_giay1": {
+  "vi": "Chủ xe ký nhận trên phiếu chi bên hệ kế toán",
+  "lo": "ເຈົ້າຂອງລົດເຊັນຮັບໃນໃບຈ່າຍຢູ່ລະບົບບັນຊີ",
+  "en": "The owner signs on the payment voucher in the accounting system"
+ },
+ "qt_b18_khi_pc_cx": {
+  "vi": "phiếu chi bên hệ kế toán (một tờ cho cả đề nghị)",
+  "lo": "ໃບຈ່າຍຢູ່ລະບົບບັນຊີ (ໜຶ່ງໃບສຳລັບທັງໃບສະເໜີ)",
+  "en": "payment voucher in the accounting system (one sheet for the whole request)"
+ },
+ "qt_b18_sau": {
+  "vi": "Chủ xe: Đã trả",
+  "lo": "ເຈົ້າຂອງລົດ: ຈ່າຍແລ້ວ",
+  "en": "Owner: Paid"
+ },
+ "qt_b19_ten": {
+  "vi": "Tất toán tài xế theo tháng — tiền chi bù / thu lại ở hệ kế toán anh Tune",
+  "lo": "ສະສາງໂຊເຟີລາຍເດືອນ — ເງິນຈ່າຍເພີ່ມ / ຮັບຄືນ ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Monthly driver settlement — top-up / refund money in Mr Tune's accounting system"
+ },
+ "qt_b19_lam1": {
+  "vi": "Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt",
+  "lo": "ທຽບ: ເບີກລ່ວງໜ້າເທົ່າໃດ, ຈ່າຍຈິງເທົ່າໃດ → ປິດ",
+  "en": "Compare: how much was advanced, how much was actually spent → Close"
+ },
+ "qt_b19_may1": {
+  "vi": "Số chi thật chuyển từ tạm ứng 1601 sang chi phí 625 (quyết toán tạm ứng)",
+  "lo": "ຍອດຈ່າຍຈິງໂອນຈາກເງິນລ່ວງໜ້າ 1601 ເປັນລາຍຈ່າຍ 625 (ສະສາງເງິນລ່ວງໜ້າ)",
+  "en": "The actual spend moves from advance 1601 to expense 625 (advance settlement)"
+ },
+ "qt_b19_may2": {
+  "vi": "Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại",
+  "lo": "ຈ່າຍຈິງ > ເບີກ: ບໍລິສັດຈ່າຍເພີ່ມ · ກົງກັນຂ້າມ: ໂຊເຟີສົ່ງຄືນ",
+  "en": "Actual > advanced: the company tops up · otherwise: the driver pays back"
+ },
+ "qt_b19_chan1": {
+  "vi": "Chốt hai lần một kỳ → chặn",
+  "lo": "ປິດສອງເທື່ອໃນງວດດຽວ → ກັ້ນ",
+  "en": "Closing twice in one period → blocked"
+ },
+ "qt_b19_khi_qt_tu": {
+  "vi": "lúc chốt, số tài xế đã chi thật",
+  "lo": "ຕອນປິດ, ຍອດທີ່ໂຊເຟີຈ່າຍຈິງ",
+  "en": "at closing, the amount the driver actually spent"
+ },
+ "qt_b19_khi_tt_chi": {
+  "vi": "khi công ty chi bù",
+  "lo": "ຕອນບໍລິສັດຈ່າຍເພີ່ມ",
+  "en": "when the company tops up"
+ },
+ "qt_b19_khi_tt_thu": {
+  "vi": "khi tài xế nộp lại",
+  "lo": "ຕອນໂຊເຟີສົ່ງຄືນ",
+  "en": "when the driver pays back"
+ },
+ "qt_b19_sau": {
+  "vi": "Kỳ: Đã tất toán",
+  "lo": "ງວດ: ສະສາງແລ້ວ",
+  "en": "Period: Settled"
+ },
+ "qt_b20_ten": {
+  "vi": "Sổ chứng từ: in / xem / định khoản, đối chiếu với hệ kế toán",
+  "lo": "ປຶ້ມເອກະສານ: ພິມ / ເບິ່ງ / ລົງບັນຊີ, ທຽບກັບລະບົບບັນຊີ",
+  "en": "Voucher register: print / view / entries, reconcile with the accounting system"
+ },
+ "qt_b20_lam1": {
+  "vi": "Màn Đề nghị theo DO → tab Sổ chứng từ: in, xem từng tờ và định khoản Nợ / Có",
+  "lo": "ໜ້າ ໃບສະເໜີຕາມ DO → ແຖບ ປຶ້ມເອກະສານ: ພິມ, ເບິ່ງແຕ່ລະໃບ ແລະ ການລົງບັນຊີ ໜີ້ / ມີ",
+  "en": "Requests by DO screen → Voucher register tab: print, view each sheet and its Dr / Cr entry"
+ },
+ "qt_b20_lam2": {
+  "vi": "Đối chiếu tờ với hệ kế toán anh Tune rồi đánh dấu \"đã đối chiếu\" (bỏ dấu được)",
+  "lo": "ທຽບໃບກັບລະບົບບັນຊີຂອງອ້າຍ Tune ແລ້ວໝາຍ \"ທຽບແລ້ວ\" (ເອົາໝາຍອອກໄດ້)",
+  "en": "Reconcile each sheet with Mr Tune's accounting system, then mark it \"reconciled\" (the mark can be removed)"
+ },
+ "qt_b20_may1": {
+  "vi": "Mỗi công đoạn ở trên tự bỏ tờ của nó vào sổ, kèm định khoản gợi ý",
+  "lo": "ແຕ່ລະຂັ້ນຕອນຂ້າງເທິງເອົາໃບຂອງຕົນເຂົ້າປຶ້ມເອງ, ພ້ອມການລົງບັນຊີແນະນຳ",
+  "en": "Each step above files its own sheet into the register, with a suggested entry"
+ },
+ "qt_b20_may2": {
+  "vi": "Sổ không gửi đi đâu — tiền thật chỉ ở hệ kế toán anh Tune (phiếu đề nghị thu, phiếu chi tạm ứng, trả chủ xe, trả nhà cung cấp, tất toán)",
+  "lo": "ປຶ້ມບໍ່ສົ່ງໄປໃສ — ເງິນແທ້ມີຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune ເທົ່ານັ້ນ (ໃບສະເໜີຮັບເງິນ, ໃບຈ່າຍເງິນລ່ວງໜ້າ, ຈ່າຍເຈົ້າຂອງລົດ, ຈ່າຍຜູ້ສະໜອງ, ສະສາງ)",
+  "en": "The register is not sent anywhere — real money lives only in Mr Tune's accounting system (collection requests, advance payments, owner payments, supplier payments, settlements)"
+ },
+ "qt_b20_chan1": {
+  "vi": "Chỉ các vai kế toán, hai quỹ và Sếp đánh dấu đối chiếu — KT kho xăng dầu, thủ kho chỉ xem; vai khác không vào sổ",
+  "lo": "ສະເພາະບັນຊີ, ສອງຄັງເງິນ ແລະ ຫົວໜ້າ ໝາຍທຽບ — ບັນຊີສາງນໍ້າມັນ, ຜູ້ຮັກສາສາງ ເບິ່ງຢ່າງດຽວ; ບົດບາດອື່ນບໍ່ເຂົ້າປຶ້ມ",
+  "en": "Only the accountants, the two cash desks and the boss mark reconciliation — the fuel store accountant and depot keepers only view; other roles have no access"
+ },
+ "qt_b20_sau": {
+  "vi": "Tờ: Đã đối chiếu",
+  "lo": "ໃບ: ທຽບແລ້ວ",
+  "en": "Sheet: Reconciled"
+ },
+ "qt_gd_n1": {
+  "vi": "Kho nhiên liệu (7 kho + kho xe) — giá vốn bình quân",
+  "lo": "ສາງນໍ້າມັນ (7 ສາງ + ສາງລົດ) — ລາຄາຕົ້ນທຶນສະເລ່ຍ",
+  "en": "Fuel depots (7 depots + truck depot) — average cost"
+ },
+ "qt_bk1_ten": {
+  "vi": "Nhập dầu vào một kho",
+  "lo": "ຮັບນໍ້າມັນເຂົ້າສາງໜຶ່ງ",
+  "en": "Receive fuel into a depot"
+ },
+ "qt_bk1_lam1": {
+  "vi": "Chọn kho, nhà cung cấp, số đơn mua, số lít, đơn giá, tiền tệ, tỷ giá lúc nhập",
+  "lo": "ເລືອກສາງ, ຜູ້ສະໜອງ, ເລກໃບສັ່ງຊື້, ຈຳນວນລິດ, ລາຄາ, ສະກຸນເງິນ, ອັດຕາແລກປ່ຽນຕອນຮັບ",
+  "en": "Choose the depot, supplier, purchase order number, litres, unit price, currency and the rate at receipt"
+ },
+ "qt_bk1_may1": {
+  "vi": "Giá nhập quy LAK theo tỷ giá LÚC NHẬP; giá bình quân của kho tính lại",
+  "lo": "ລາຄາຮັບປ່ຽນເປັນ LAK ຕາມອັດຕາຕອນຮັບ; ລາຄາສະເລ່ຍຂອງສາງຄິດໃໝ່",
+  "en": "The receipt price converts to LAK at the rate AT RECEIPT; the depot's average cost is recomputed"
+ },
+ "qt_bk1_chan1": {
+  "vi": "Bãi chỉ xem số lít, không ghi sổ kho, không thấy giá (A2)",
+  "lo": "ສະໜາມເບິ່ງໄດ້ສະເພາະລິດ, ບໍ່ບັນທຶກສາງ, ບໍ່ເຫັນລາຄາ (A2)",
+  "en": "The yard only sees litres, does not post stock and does not see prices (A2)"
+ },
+ "qt_bk1_giay1": {
+  "vi": "Phiếu nhập kho",
+  "lo": "ໃບຮັບເຂົ້າສາງ",
+  "en": "Goods received note"
+ },
+ "qt_bk2_ten": {
+  "vi": "Mua dầu ở Việt Nam qua KHO XE (A3)",
+  "lo": "ຊື້ນໍ້າມັນຢູ່ຫວຽດນາມຜ່ານສາງລົດ (A3)",
+  "en": "Buying fuel in Vietnam through the TRUCK DEPOT (A3)"
+ },
+ "qt_bk2_lam1": {
+  "vi": "Nhập 1.000 L vào \"Kho xe · dầu mua Việt Nam\" (VND)",
+  "lo": "ຮັບ 1.000 L ເຂົ້າ \"ສາງລົດ · ນໍ້າມັນຊື້ຫວຽດນາມ\" (VND)",
+  "en": "Receive 1,000 L into \"Truck depot · fuel bought in Vietnam\" (VND)"
+ },
+ "qt_bk2_lam2": {
+  "vi": "Phiếu xuất xe lấy 600 L với nơi đổ = kho xe",
+  "lo": "ໃບເບີກລົດເອົາ 600 L ໂດຍບ່ອນເຕີມ = ສາງລົດ",
+  "en": "The dispatch slip takes 600 L with filling place = truck depot"
+ },
+ "qt_bk2_lam3": {
+  "vi": "Chuyển 400 L còn lại về Thà Bốc hay một kho hiện trường",
+  "lo": "ໂອນ 400 L ທີ່ເຫຼືອກັບທ່າບົກ ຫຼື ສາງໜ້າງານ",
+  "en": "Transfer the remaining 400 L back to Thabok or to a field depot"
+ },
+ "qt_bk2_may1": {
+  "vi": "Dầu ra khỏi kho xe mang giá bình quân của kho xe",
+  "lo": "ນໍ້າມັນອອກຈາກສາງລົດ ໄດ້ລາຄາສະເລ່ຍຂອງສາງລົດ",
+  "en": "Fuel leaving the truck depot carries the truck depot's average cost"
+ },
+ "qt_bk3_ten": {
+  "vi": "Chuyển kho",
+  "lo": "ໂອນສາງ",
+  "en": "Depot transfer"
+ },
+ "qt_bk3_lam1": {
+  "vi": "Chọn kho đi, kho nhận, số lít",
+  "lo": "ເລືອກສາງອອກ, ສາງຮັບ, ຈຳນວນລິດ",
+  "en": "Choose the source depot, the receiving depot and the litres"
+ },
+ "qt_bk3_may1": {
+  "vi": "Hai dòng sổ kho cùng một số CK-YYMM-###; mang giá bình quân của kho đi",
+  "lo": "ສອງແຖວປຶ້ມສາງເລກດຽວກັນ CK-YYMM-###; ໄດ້ລາຄາສະເລ່ຍຂອງສາງອອກ",
+  "en": "Two stock-ledger lines with the same number CK-YYMM-###; they carry the source depot's average cost"
+ },
+ "qt_bk3_chan1": {
+  "vi": "Chuyển quá tồn → chặn",
+  "lo": "ໂອນເກີນສາງ → ກັ້ນ",
+  "en": "Transferring more than the stock → blocked"
+ },
+ "qt_bk3_chan2": {
+  "vi": "Kho đi = kho nhận → chặn",
+  "lo": "ສາງອອກ = ສາງຮັບ → ກັ້ນ",
+  "en": "Source depot = receiving depot → blocked"
+ },
+ "qt_bk3_giay1": {
+  "vi": "Phiếu chuyển kho",
+  "lo": "ໃບໂອນສາງ",
+  "en": "Depot transfer note"
+ },
+ "qt_bk4_ten": {
+  "vi": "Xuất tay cho xe (ngoài phiếu)",
+  "lo": "ເບີກໃຫ້ລົດດ້ວຍມື (ນອກໃບ)",
+  "en": "Manual issue to a truck (outside a slip)"
+ },
+ "qt_bk4_lam1": {
+  "vi": "Chọn kho, số xe, số lít",
+  "lo": "ເລືອກສາງ, ເບີລົດ, ຈຳນວນລິດ",
+  "en": "Choose the depot, truck number and litres"
+ },
+ "qt_bk4_may1": {
+  "vi": "Giá = bình quân kho",
+  "lo": "ລາຄາ = ລາຄາສະເລ່ຍຂອງສາງ",
+  "en": "Price = depot average cost"
+ },
+ "qt_bk4_chan1": {
+  "vi": "Xuất quá tồn của đúng kho → chặn",
+  "lo": "ເບີກເກີນສາງຂອງສາງນັ້ນ → ກັ້ນ",
+  "en": "Issuing more than that depot holds → blocked"
+ },
+ "qt_gd_n2": {
+  "vi": "Kho phụ tùng và sửa xe khi không chạy",
+  "lo": "ສາງອະໄຫຼ່ ແລະ ສ້ອມລົດຕອນບໍ່ແລ່ນ",
+  "en": "Parts store and repairs while the truck is not running"
+ },
+ "qt_bp1_ten": {
+  "vi": "Thủ kho phụ tùng nhập · xuất",
+  "lo": "ຜູ້ຮັກສາສາງອະໄຫຼ່ ຮັບ · ເບີກ",
+  "en": "Parts store keeper receives · issues"
+ },
+ "qt_bp1_lam1": {
+  "vi": "Nhập: số lượng + đơn giá (giá bình quân tính lại)",
+  "lo": "ຮັບ: ຈຳນວນ + ລາຄາ (ລາຄາສະເລ່ຍຄິດໃໝ່)",
+  "en": "Receive: quantity + unit price (average cost recomputed)"
+ },
+ "qt_bp1_lam2": {
+  "vi": "Xuất tay cho xe",
+  "lo": "ເບີກໃຫ້ລົດດ້ວຍມື",
+  "en": "Manual issue to a truck"
+ },
+ "qt_bp1_chan1": {
+  "vi": "Bãi, kế toán không nhập xuất phụ tùng (C1.2)",
+  "lo": "ສະໜາມ, ບັນຊີ ບໍ່ຮັບ ບໍ່ເບີກອະໄຫຼ່ (C1.2)",
+  "en": "The yard and accounting do not receive or issue parts (C1.2)"
+ },
+ "qt_bp1_chan2": {
+  "vi": "Xuất quá tồn → chặn",
+  "lo": "ເບີກເກີນສາງ → ກັ້ນ",
+  "en": "Issuing more than the stock → blocked"
+ },
+ "qt_bp2_ten": {
+  "vi": "Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)",
+  "lo": "ຄຳສັ່ງສ້ອມແປງແຍກ — ບຳລຸງຮັກສາ, ລົດຈອດອູ່ (C7.3)",
+  "en": "Separate repair order — maintenance, truck in the workshop (C7.3)"
+ },
+ "qt_bp2_lam1": {
+  "vi": "Tổ sửa chữa lập lệnh: xe, km, gara; dòng lấy KHO hoặc MUA",
+  "lo": "ໜ່ວຍສ້ອມແປງສ້າງຄຳສັ່ງ: ລົດ, ກມ, ອູ່; ແຖວເບີກສາງ ຫຼື ຊື້",
+  "en": "The repair team creates the order: truck, km, garage; lines from STOCK or BOUGHT"
+ },
+ "qt_bp2_lam2": {
+  "vi": "KT Chi phí kiểm → ghi sổ",
+  "lo": "ບັນຊີລາຍຈ່າຍກວດ → ບັນທຶກບັນຊີ",
+  "en": "The cost accountant verifies → books"
+ },
+ "qt_bp2_lam3": {
+  "vi": "Quỹ tiền mặt Thà Bốc chi phần mua ngoài",
+  "lo": "ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍສ່ວນທີ່ຊື້ນອກ",
+  "en": "Thabok petty cash pays the part bought outside"
+ },
+ "qt_bp2_may1": {
+  "vi": "Dòng lấy kho trừ tồn NGAY LÚC KHAI",
+  "lo": "ແຖວເບີກສາງຫັກສາງທັນທີຕອນແຈ້ງ",
+  "en": "Lines from stock deduct stock IMMEDIATELY when declared"
+ },
+ "qt_bp2_chan1": {
+  "vi": "Không gắn phiếu xuất xe nào",
+  "lo": "ບໍ່ຜູກກັບໃບເບີກລົດໃດ",
+  "en": "Not linked to any dispatch slip"
+ },
+ "qt_gd_n3": {
+  "vi": "Bán hàng (phụ tùng · xăng dầu)",
+  "lo": "ຂາຍສິນຄ້າ (ອະໄຫຼ່ · ນໍ້າມັນ)",
+  "en": "Sales (parts · fuel)"
+ },
+ "qt_bb1_ten": {
+  "vi": "Bán cho khách",
+  "lo": "ຂາຍໃຫ້ລູກຄ້າ",
+  "en": "Selling to a customer"
+ },
+ "qt_bb1_lam1": {
+  "vi": "Chọn khách (hoặc gõ tên), thêm dòng phụ tùng / dầu kho, đơn giá bán",
+  "lo": "ເລືອກລູກຄ້າ (ຫຼື ພິມຊື່), ເພີ່ມແຖວອະໄຫຼ່ / ນໍ້າມັນສາງ, ລາຄາຂາຍ",
+  "en": "Choose the customer (or type a name), add parts / depot fuel lines and the sale price"
+ },
+ "qt_bb1_may1": {
+  "vi": "Xuất kho theo giá vốn bình quân (Nợ 607)",
+  "lo": "ເບີກສາງຕາມລາຄາຕົ້ນທຶນສະເລ່ຍ (ໜີ້ 607)",
+  "en": "Stock is issued at average cost (Dr 607)"
+ },
+ "qt_bb1_may2": {
+  "vi": "Hoá đơn bán sinh cùng lúc",
+  "lo": "ໃບເກັບເງິນຂາຍອອກພ້ອມກັນ",
+  "en": "The sales invoice is created at the same time"
+ },
+ "qt_bb1_chan1": {
+  "vi": "Bán quá tồn của đúng kho → chặn",
+  "lo": "ຂາຍເກີນສາງຂອງສາງນັ້ນ → ກັ້ນ",
+  "en": "Selling more than that depot holds → blocked"
+ },
+ "qt_bb1_giay1": {
+  "vi": "Hoá đơn bán hàng",
+  "lo": "ໃບເກັບເງິນຂາຍສິນຄ້າ",
+  "en": "Sales invoice"
+ },
+ "qt_bb2_ten": {
+  "vi": "Thu tiền bán hàng",
+  "lo": "ເກັບເງິນຂາຍສິນຄ້າ",
+  "en": "Collecting sales money"
+ },
+ "qt_bb2_lam1": {
+  "vi": "Bấm Đã thu",
+  "lo": "ກົດ ຮັບແລ້ວ",
+  "en": "Press Received"
+ },
+ "qt_bb2_chan1": {
+  "vi": "Thu hai lần → chặn",
+  "lo": "ຮັບສອງເທື່ອ → ກັ້ນ",
+  "en": "Collecting twice → blocked"
+ },
+ "qt_bb3_ten": {
+  "vi": "Chủ xe liên kết mua ở quầy — trừ vào tiền trả",
+  "lo": "ເຈົ້າຂອງລົດຮ່ວມຊື້ຢູ່ໜ້າຮ້ານ — ຫັກຈາກເງິນທີ່ຈະຈ່າຍ",
+  "en": "A joint-truck owner buys at the counter — deducted from what we pay them"
+ },
+ "qt_bb3_lam1": {
+  "vi": "Người mua = \"Chủ xe liên kết — trừ vào tiền trả\", chọn chủ xe",
+  "lo": "ຜູ້ຊື້ = \"ເຈົ້າຂອງລົດຮ່ວມ — ຫັກຈາກເງິນທີ່ຈະຈ່າຍ\", ເລືອກເຈົ້າຂອງລົດ",
+  "en": "Buyer = \"Joint-truck owner — deducted from payment\", choose the owner"
+ },
+ "qt_bb3_may1": {
+  "vi": "Không thu tiền mặt; đợt trả chủ xe kế tiếp tự trừ (công đoạn 18)",
+  "lo": "ບໍ່ຮັບເງິນສົດ; ງວດຈ່າຍເຈົ້າຂອງລົດຕໍ່ໄປຈະຫັກເອງ (ຂັ້ນຕອນທີ 18)",
+  "en": "No cash is taken; the next owner payment deducts it automatically (step 18)"
+ },
+ "qt_bb3_chan1": {
+  "vi": "Thu tiền mặt phiếu này → chặn (TRU_CHU_XE)",
+  "lo": "ຮັບເງິນສົດໃບນີ້ → ກັ້ນ (TRU_CHU_XE)",
+  "en": "Taking cash for this sheet → blocked (TRU_CHU_XE)"
+ },
+ "qt_bb3_chan2": {
+  "vi": "Đã trừ vào một đợt → không bỏ phiếu được",
+  "lo": "ຫັກໃນງວດໜຶ່ງແລ້ວ → ຍົກເລີກໃບບໍ່ໄດ້",
+  "en": "Already deducted in a payment round → the sheet cannot be cancelled"
+ },
+ "qt_gd_n4": {
+  "vi": "Tách chặng: mỏ → bãi → cảng (B1–B4)",
+  "lo": "ແຍກຂາ: ບໍ່ແຮ່ → ສະໜາມ → ທ່າເຮືອ (B1–B4)",
+  "en": "Split legs: mine → yard → port (B1–B4)"
+ },
+ "qt_bt1_ten": {
+  "vi": "Phiếu GOM (xe A) mỏ → bãi",
+  "lo": "ໃບເກັບ (ລົດ A) ບໍ່ແຮ່ → ສະໜາມ",
+  "en": "COLLECTION slip (truck A) mine → yard"
+ },
+ "qt_bt1_lam1": {
+  "vi": "Lập phiếu loại GOM, số G4-…",
+  "lo": "ລົງໃບປະເພດ ເກັບ, ເລກ G4-…",
+  "en": "Create a COLLECTION slip, number G4-…"
+ },
+ "qt_bt1_may1": {
+  "vi": "Xe về: hàng vào kho bãi thành một lô",
+  "lo": "ລົດກັບ: ສິນຄ້າເຂົ້າສາງສະໜາມເປັນໜຶ່ງລັອດ",
+  "en": "Truck returns: goods enter the yard stock as one lot"
+ },
+ "qt_bt2_ten": {
+  "vi": "Hàng nằm bãi nhiều ngày",
+  "lo": "ສິນຄ້າຢູ່ສະໜາມຫຼາຍມື້",
+  "en": "Goods staying at the yard for several days"
+ },
+ "qt_bt2_lam1": {
+  "vi": "Xem tồn từng lô ở màn Kho hàng",
+  "lo": "ເບິ່ງສາງແຕ່ລະລັອດຢູ່ໜ້າ ສາງສິນຄ້າ",
+  "en": "See each lot's stock on the Goods stock screen"
+ },
+ "qt_bt2_lam2": {
+  "vi": "Kế toán điều chỉnh có lý do (cân lại, hao)",
+  "lo": "ບັນຊີປັບປຸງມີເຫດຜົນ (ຊັ່ງຄືນ, ສູນເສຍ)",
+  "en": "Accounting adjusts with a reason (re-weighing, loss)"
+ },
+ "qt_bt3_ten": {
+  "vi": "Phiếu GIAO (xe B) bãi → cảng lấy từ lô",
+  "lo": "ໃບສົ່ງ (ລົດ B) ສະໜາມ → ທ່າເຮືອ ເອົາຈາກລັອດ",
+  "en": "DELIVERY slip (truck B) yard → port taken from a lot"
+ },
+ "qt_bt3_lam1": {
+  "vi": "Chọn lô và số tấn",
+  "lo": "ເລືອກລັອດ ແລະ ຈຳນວນໂຕນ",
+  "en": "Choose the lot and the tonnes"
+ },
+ "qt_bt3_may1": {
+  "vi": "Xe tới: hàng xuất khỏi kho bãi, hao hụt tính theo phiếu",
+  "lo": "ລົດຮອດ: ສິນຄ້າອອກຈາກສາງສະໜາມ, ສູນເສຍຄິດຕາມໃບ",
+  "en": "Truck arrives: goods leave the yard stock, loss computed per slip"
+ },
+ "qt_bt3_chan1": {
+  "vi": "Lấy quá tồn lô → chặn",
+  "lo": "ເອົາເກີນລັອດ → ກັ້ນ",
+  "en": "Taking more than the lot holds → blocked"
+ },
+ "qt_bt3_chan2": {
+  "vi": "Xoá phiếu gom đã có người lấy hàng → chặn",
+  "lo": "ລຶບໃບເກັບທີ່ມີຄົນເອົາສິນຄ້າແລ້ວ → ກັ້ນ",
+  "en": "Deleting a collection slip whose goods have been taken → blocked"
+ },
+ "qt_bt4_ten": {
+  "vi": "Cước riêng từng chặng · hoá đơn gộp tháng — ở hệ kế toán anh Tune",
+  "lo": "ຄ່າຂົນສົ່ງແຍກແຕ່ລະຂາ · ໃບເກັບເງິນລວມເດືອນ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Separate freight per leg · monthly combined invoice — in Mr Tune's accounting system"
+ },
+ "qt_bt4_lam1": {
+  "vi": "Phiếu gom có cước riêng thì có phiếu đề nghị thu như phiếu giao",
+  "lo": "ໃບເກັບທີ່ມີຄ່າຂົນສົ່ງແຍກ ກໍ່ມີໃບສະເໜີຮັບເງິນຄືໃບສົ່ງ",
+  "en": "A collection slip with its own freight gets a collection request like a delivery slip"
+ },
+ "qt_bt4_lam2": {
+  "vi": "Khách hợp đồng gộp tháng: hoá đơn lập bên hệ kế toán theo các SO",
+  "lo": "ລູກຄ້າສັນຍາລວມເດືອນ: ໃບເກັບເງິນອອກຢູ່ລະບົບບັນຊີຕາມ SO ຕ່າງໆ",
+  "en": "Customers on monthly contracts: the invoice is issued in the accounting system from the SOs"
+ },
+ "qt_gd_n5": {
+  "vi": "Thẻ cao tốc · trạm dầu Việt Nam · nhà cung cấp",
+  "lo": "ບັດທາງດ່ວນ · ປໍ້ານໍ້າມັນຫວຽດນາມ · ຜູ້ສະໜອງ",
+  "en": "Toll cards · Vietnamese fuel stations · suppliers"
+ },
+ "qt_bc1_ten": {
+  "vi": "Thẻ cao tốc (C6.1)",
+  "lo": "ບັດທາງດ່ວນ (C6.1)",
+  "en": "Toll cards (C6.1)"
+ },
+ "qt_bc1_lam1": {
+  "vi": "KT Thu/Chi lập thẻ (của khách hay của EPL)",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ສ້າງບັດ (ຂອງລູກຄ້າ ຫຼື ຂອງ EPL)",
+  "en": "The receipts & payments accountant creates the card (the customer's or EPL's)"
+ },
+ "qt_bc1_lam2": {
+  "vi": "Quỹ / kế toán nạp tiền",
+  "lo": "ຄັງເງິນ / ບັນຊີ ເຕີມເງິນ",
+  "en": "The cash desk / accounting tops it up"
+ },
+ "qt_bc1_may1": {
+  "vi": "Trừ thẻ đúng một lần lúc ghi sổ mục IV",
+  "lo": "ຫັກບັດພຽງເທື່ອດຽວຕອນບັນທຶກບັນຊີໜ້າ IV",
+  "en": "The card is deducted exactly once when section IV is booked"
+ },
+ "qt_bc1_may2": {
+  "vi": "Thẻ của khách: cuối tháng cấn trừ vào cước của khách đó",
+  "lo": "ບັດຂອງລູກຄ້າ: ທ້າຍເດືອນຫັກລົບກັບຄ່າຂົນສົ່ງຂອງລູກຄ້ານັ້ນ",
+  "en": "A customer's card: offset against that customer's freight at month end"
+ },
+ "qt_bc1_chan1": {
+  "vi": "Điều chỉnh số dư phải có lý do",
+  "lo": "ປັບຍອດເງິນຕ້ອງມີເຫດຜົນ",
+  "en": "Adjusting the balance needs a reason"
+ },
+ "qt_bc2_ten": {
+  "vi": "Trạm dầu Việt Nam ghi nợ (C5.1)",
+  "lo": "ປໍ້ານໍ້າມັນຫວຽດນາມຂຽນໜີ້ (C5.1)",
+  "en": "Vietnamese fuel station on account (C5.1)"
+ },
+ "qt_bc2_lam1": {
+  "vi": "Gắn trạm với khách được cấn trừ",
+  "lo": "ຜູກປໍ້າກັບລູກຄ້າທີ່ຈະຫັກລົບ",
+  "en": "Link the station to the customer it is offset against"
+ },
+ "qt_bc2_lam2": {
+  "vi": "Cuối tháng: trả trạm, hoặc cấn trừ vào cước khách (công đoạn 17)",
+  "lo": "ທ້າຍເດືອນ: ຈ່າຍປໍ້າ, ຫຼື ຫັກລົບກັບຄ່າຂົນສົ່ງລູກຄ້າ (ຂັ້ນຕອນທີ 17)",
+  "en": "Month end: pay the station, or offset against the customer's freight (step 17)"
+ },
+ "qt_bc3_ten": {
+  "vi": "Trả nhà cung cấp theo đợt — phiếu chi ở hệ kế toán anh Tune",
+  "lo": "ຈ່າຍຜູ້ສະໜອງເປັນງວດ — ໃບຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Paying suppliers in instalments — payment voucher in Mr Tune's accounting system"
+ },
+ "qt_bc3_lam1": {
+  "vi": "Chọn nhà cung cấp, số tiền, cách chi",
+  "lo": "ເລືອກຜູ້ສະໜອງ, ຈຳນວນເງິນ, ວິທີຈ່າຍ",
+  "en": "Choose the supplier, amount and payment method"
+ },
+ "qt_viec1": {
+  "vi": "Lập phiếu xuất xe, đổi xe, báo mốc",
+  "lo": "ລົງໃບເບີກລົດ, ປ່ຽນລົດ, ແຈ້ງຈຸດ",
+  "en": "Create dispatch slips, change trucks, report checkpoints"
+ },
+ "qt_viec2": {
+  "vi": "Nhập số phiếu quặng, giá cước, giá thuê xe, phí, ngưỡng tấn",
+  "lo": "ລົງເລກໃບແຮ່, ລາຄາຄ່າຂົນສົ່ງ, ຄ່າເຊົ່າລົດ, ຄ່າທຳນຽມ, ເກນໂຕນ",
+  "en": "Enter ore bill numbers, freight price, truck hire, fee, tonnage limit"
+ },
+ "qt_viec3": {
+  "vi": "Duyệt báo hỏng xe, lốp, tai nạn (mục V)",
+  "lo": "ອະນຸມັດແຈ້ງລົດເພ, ຢາງ, ອຸບັດຕິເຫດ (ໜ້າ V)",
+  "en": "Approve breakdown, tyre, accident reports (section V)"
+ },
+ "qt_viec4": {
+  "vi": "Duyệt báo chậm, bị giữ xe, việc khác (mục VI)",
+  "lo": "ອະນຸມັດແຈ້ງຊັກຊ້າ, ຖືກກັກລົດ, ເລື່ອງອື່ນ (ໜ້າ VI)",
+  "en": "Approve delay, held-truck and other reports (section VI)"
+ },
+ "qt_viec5": {
+  "vi": "Duyệt khai đổ dầu dọc đường",
+  "lo": "ອະນຸມັດແຈ້ງເຕີມນໍ້າມັນລະຫວ່າງທາງ",
+  "en": "Approve on-road refuelling reports"
+ },
+ "qt_viec6": {
+  "vi": "Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ເບີກນໍ້າມັນຕາມໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Issue fuel against fuel stock-out requests"
+ },
+ "qt_viec7": {
+  "vi": "Khoá / mở khoá phiếu",
+  "lo": "ລັອກ / ປົດລັອກໃບ",
+  "en": "Lock / unlock slips"
+ },
+ "qt_viec8": {
+  "vi": "Hoá đơn, ghi thu, cấn trừ — ở hệ kế toán anh Tune",
+  "lo": "ໃບເກັບເງິນ, ບັນທຶກຮັບ, ຫັກລົບ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Invoices, receipts, offsetting — in Mr Tune's accounting system"
+ },
+ "qt_viec9": {
+  "vi": "Trả chủ xe liên kết: lập đề nghị trả (chi ở hệ kế toán anh Tune)",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດຮ່ວມ: ສ້າງໃບສະເໜີຈ່າຍ (ຈ່າຍຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune)",
+  "en": "Paying joint-truck owners: create the payment request (paid in Mr Tune's accounting system)"
+ },
+ "qt_viec10": {
+  "vi": "Điều khoản chủ xe (phí, ngưỡng, cách trả)",
+  "lo": "ເງື່ອນໄຂເຈົ້າຂອງລົດ (ຄ່າທຳນຽມ, ເກນ, ວິທີຈ່າຍ)",
+  "en": "Owner terms (fee, limit, payment method)"
+ },
+ "qt_viec11": {
+  "vi": "Nhập · xuất · chuyển kho dầu",
+  "lo": "ຮັບ · ເບີກ · ໂອນສາງນໍ້າມັນ",
+  "en": "Receive · issue · transfer fuel stock"
+ },
+ "qt_viec12": {
+  "vi": "Nhập · xuất kho phụ tùng",
+  "lo": "ຮັບ · ເບີກສາງອະໄຫຼ່",
+  "en": "Receive · issue parts stock"
+ },
+ "qt_viec13": {
+  "vi": "Lập phiếu bán hàng",
+  "lo": "ລົງໃບຂາຍສິນຄ້າ",
+  "en": "Create sales sheets"
+ },
+ "qt_viec14": {
+  "vi": "Thu tiền bán hàng — ở hệ kế toán anh Tune",
+  "lo": "ເກັບເງິນຂາຍສິນຄ້າ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Collect sales money — in Mr Tune's accounting system"
+ },
+ "qt_viec15": {
+  "vi": "Lệnh sửa chữa: lập · kiểm/ghi sổ · chi",
+  "lo": "ຄຳສັ່ງສ້ອມແປງ: ສ້າງ · ກວດ/ບັນທຶກ · ຈ່າຍ",
+  "en": "Repair orders: create · verify/book · pay"
+ },
+ "qt_viec16": {
+  "vi": "Tất toán tài xế — tiền ở hệ kế toán anh Tune",
+  "lo": "ສະສາງໂຊເຟີ — ເງິນຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Driver settlement — money in Mr Tune's accounting system"
+ },
+ "qt_viec17": {
+  "vi": "Trả nhà cung cấp — ở hệ kế toán anh Tune",
+  "lo": "ຈ່າຍຜູ້ສະໜອງ — ຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "Paying suppliers — in Mr Tune's accounting system"
+ },
+ "qt_viec18": {
+  "vi": "Thẻ cao tốc: lập thẻ · nạp tiền",
+  "lo": "ບັດທາງດ່ວນ: ສ້າງບັດ · ເຕີມເງິນ",
+  "en": "Toll cards: create cards · top up"
+ },
+ "qt_viec19": {
+  "vi": "Bảng giá khách × tuyến, tỷ giá",
+  "lo": "ຕາຕະລາງລາຄາ ລູກຄ້າ × ເສັ້ນທາງ, ອັດຕາແລກປ່ຽນ",
+  "en": "Customer × route price list, exchange rates"
+ },
+ "qt_viec20": {
+  "vi": "Điều chỉnh kho hàng bãi",
+  "lo": "ປັບປຸງສາງສິນຄ້າສະໜາມ",
+  "en": "Adjust the yard goods stock"
+ },
+ "qt_viec21": {
+  "vi": "Sổ chứng từ: đánh dấu đã đối chiếu với hệ kế toán",
+  "lo": "ປຶ້ມເອກະສານ: ໝາຍທຽບແລ້ວກັບລະບົບບັນຊີ",
+  "en": "Voucher register: mark as reconciled with the accounting system"
+ },
+ "qt_tab_chuyen": {
+  "vi": "Luồng một chuyến",
+  "lo": "ຂັ້ນຕອນໜຶ່ງຖ້ຽວ",
+  "en": "One trip, end to end"
+ },
+ "qt_tab_ngoai": {
+  "vi": "Ngoài chuyến",
+  "lo": "ນອກຖ້ຽວ",
+  "en": "Outside a trip"
+ },
+ "qt_tab_ma_tran": {
+  "vi": "Vai × mục",
+  "lo": "ບົດບາດ × ໜ້າ",
+  "en": "Role × section"
+ },
+ "qt_tab_chung_tu": {
+  "vi": "Danh mục chứng từ",
+  "lo": "ລາຍການເອກະສານ",
+  "en": "Voucher catalogue"
+ },
+ "qt_cg_giay": {
+  "vi": "Phiếu in ra",
+  "lo": "ໃບທີ່ພິມອອກ",
+  "en": "Printed sheet"
+ },
+ "qt_cg_ct": {
+  "vi": "Chứng từ",
+  "lo": "ເອກະສານ",
+  "en": "Voucher"
+ },
+ "qt_cg_chan": {
+  "vi": "Máy chặn",
+  "lo": "ເຄື່ອງກັ້ນ",
+  "en": "System blocks"
+ },
+ "qt_dan_chuyen": {
+  "vi": "Một chuyến đi từ lúc Bãi mở phiếu tới lúc tiền về và chủ xe được trả. Mỗi ô là một công đoạn: <b>ai làm</b>, <b>trên màn nào</b>, <b>làm gì</b>, <b>máy tự làm gì</b>, <b>máy chặn gì</b>, và <b>sinh ra phiếu / chứng từ gì</b> (định khoản Nợ / Có lấy từ máy chủ). Bấm vào mã chứng từ để xem đủ các trường hợp định khoản.",
+  "lo": "ໜຶ່ງຖ້ຽວເລີ່ມແຕ່ສະໜາມເປີດໃບ ຈົນເງິນເຂົ້າ ແລະ ຈ່າຍເຈົ້າຂອງລົດແລ້ວ. ແຕ່ລະກ່ອງແມ່ນໜຶ່ງຂັ້ນຕອນ: <b>ໃຜເຮັດ</b>, <b>ຢູ່ໜ້າໃດ</b>, <b>ເຮັດຫຍັງ</b>, <b>ເຄື່ອງເຮັດເອງແນວໃດ</b>, <b>ເຄື່ອງກັ້ນຫຍັງ</b>, ແລະ <b>ອອກໃບ / ເອກະສານໃດ</b> (ການລົງບັນຊີ ໜີ້ / ມີ ເອົາຈາກເຄື່ອງແມ່). ກົດລະຫັດເອກະສານເພື່ອເບິ່ງທຸກກໍລະນີການລົງບັນຊີ.",
+  "en": "A trip runs from the moment the yard opens the slip until the money comes in and the owner is paid. Each box is one step: <b>who does it</b>, <b>on which screen</b>, <b>what they do</b>, <b>what the system does itself</b>, <b>what the system blocks</b>, and <b>which sheet / voucher it produces</b> (Dr / Cr entries come from the server). Click a voucher code to see every accounting case."
+ },
+ "qt_dan_ngoai": {
+  "vi": "Những việc không gắn với một phiếu xuất xe: kho, bán hàng, sửa xe khi xe không chạy, tách chặng, thẻ cao tốc, công nợ, cuối tháng.",
+  "lo": "ວຽກທີ່ບໍ່ຜູກກັບໃບເບີກລົດໃດ: ສາງ, ຂາຍສິນຄ້າ, ສ້ອມລົດຕອນບໍ່ແລ່ນ, ແຍກຂາ, ບັດທາງດ່ວນ, ໜີ້, ທ້າຍເດືອນ.",
+  "en": "Work not tied to a dispatch slip: stock, sales, repairs while the truck is idle, split legs, toll cards, receivables and payables, month end."
+ },
+ "qt_mt_tieu_de": {
+  "vi": "Ai nhập · kiểm · ghi sổ · chi từng mục của phiếu xuất xe",
+  "lo": "ໃຜລົງ · ກວດ · ບັນທຶກ · ຈ່າຍ ແຕ່ລະໜ້າຂອງໃບເບີກລົດ",
+  "en": "Who enters · verifies · books · pays each section of the dispatch slip"
+ },
+ "qt_mt_nguon": {
+  "vi": "In ra từ bảng phân quyền máy đang chạy",
+  "lo": "ພິມຈາກຕາຕະລາງສິດທີ່ເຄື່ອງກຳລັງໃຊ້",
+  "en": "Printed from the permission table the system is running"
+ },
+ "qt_mt_chu_giai": {
+  "vi": "<b>N</b> nhập · <b>K</b> kiểm · <b>G</b> ghi sổ · <b>C</b> chi tiền · <b>—</b> chỉ xem hoặc không thấy · <b>✓</b> có · <b>✗</b> không. Sếp làm được mọi việc.",
+  "lo": "<b>ລ</b> ລົງ · <b>ກ</b> ກວດ · <b>ບ</b> ບັນທຶກບັນຊີ · <b>ຈ</b> ຈ່າຍເງິນ · <b>—</b> ເບິ່ງຢ່າງດຽວ ຫຼື ບໍ່ເຫັນ · <b>✓</b> ມີ · <b>✗</b> ບໍ່ມີ. ຫົວໜ້າເຮັດໄດ້ທຸກຢ່າງ.",
+  "en": "<b>E</b> enter · <b>V</b> verify · <b>B</b> book · <b>P</b> pay · <b>—</b> view only or hidden · <b>✓</b> yes · <b>✗</b> no. The boss can do everything."
+ },
+ "qt_vt_n": {
+  "vi": "N",
+  "lo": "ລ",
+  "en": "E"
+ },
+ "qt_vt_k": {
+  "vi": "K",
+  "lo": "ກ",
+  "en": "V"
+ },
+ "qt_vt_g": {
+  "vi": "G",
+  "lo": "ບ",
+  "en": "B"
+ },
+ "qt_vt_c": {
+  "vi": "C",
+  "lo": "ຈ",
+  "en": "P"
+ },
+ "qt_mt2_tieu_de": {
+  "vi": "Ngoài phiếu: ai được làm việc gì",
+  "lo": "ນອກໃບ: ໃຜເຮັດຫຍັງໄດ້",
+  "en": "Outside the slip: who may do what"
+ },
+ "qt_ct_tieu_de": {
+  "vi": "Mọi loại chứng từ, sinh ở công đoạn nào, định khoản ra sao",
+  "lo": "ທຸກປະເພດເອກະສານ, ເກີດຢູ່ຂັ້ນຕອນໃດ, ລົງບັນຊີແນວໃດ",
+  "en": "Every voucher type, the step that creates it, and its accounting entry"
+ },
+ "qt_ct_phu": {
+  "vi": "Định khoản lấy đúng theo cách máy ghi sổ · mọi trường hợp",
+  "lo": "ການລົງບັນຊີຕາມທີ່ເຄື່ອງບັນທຶກແທ້ · ທຸກກໍລະນີ",
+  "en": "Entries exactly as the system posts them · every case"
+ },
+ "qt_mo_so": {
+  "vi": "Mở Sổ chứng từ",
+  "lo": "ເປີດປຶ້ມເອກະສານ",
+  "en": "Open the voucher register"
+ },
+ "qt_th_ma": {
+  "vi": "Mã",
+  "lo": "ລະຫັດ",
+  "en": "Code"
+ },
+ "qt_th_ct": {
+  "vi": "Chứng từ",
+  "lo": "ເອກະສານ",
+  "en": "Voucher"
+ },
+ "qt_th_sinh": {
+  "vi": "Sinh ở công đoạn",
+  "lo": "ເກີດຢູ່ຂັ້ນຕອນ",
+  "en": "Created at step"
+ },
+ "qt_th_th": {
+  "vi": "Trường hợp",
+  "lo": "ກໍລະນີ",
+  "en": "Case"
+ },
+ "qt_th_no": {
+  "vi": "Nợ",
+  "lo": "ໜີ້",
+  "en": "Debit"
+ },
+ "qt_th_co": {
+  "vi": "Có",
+  "lo": "ມີ",
+  "en": "Credit"
+ },
+ "qt_ct_ghi_chu": {
+  "vi": "Tờ không định khoản (phiếu xuất xe, phiếu đề nghị xuất kho nhiên liệu, phiếu đề nghị tạm ứng, chuyển kho) chỉ lưu để bên kế toán có ngữ cảnh, không sinh bút toán. Hàng khách gửi là khoản <b>ngoài bảng</b>: mã do bên kế toán cấp ở Chứng từ → Cấu hình; để trống thì chỉ theo dõi số tấn.",
+  "lo": "ໃບທີ່ບໍ່ລົງບັນຊີ (ໃບເບີກລົດ, ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ, ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ, ໂອນສາງ) ເກັບໄວ້ໃຫ້ຝ່າຍບັນຊີຮູ້ບໍລິບົດເທົ່ານັ້ນ, ບໍ່ອອກລາຍການບັນຊີ. ສິນຄ້າລູກຄ້າຝາກແມ່ນລາຍການ <b>ນອກງົບ</b>: ລະຫັດໃຫ້ໂດຍຝ່າຍບັນຊີຢູ່ ເອກະສານ → ຕັ້ງຄ່າ; ປະໄວ້ເປົ່າກໍ່ຕິດຕາມແຕ່ຈຳນວນໂຕນ.",
+  "en": "Sheets without an entry (dispatch slip, fuel stock-out request, advance request, depot transfer) are kept only to give accounting context; they create no journal entry. Customers' goods held for them are an <b>off-balance</b> item: the code is assigned by accounting under Vouchers → Settings; left empty, only the tonnage is tracked."
+ },
+ "qt_dc_tieu_de": {
+  "vi": "Định khoản từng dòng chi trên phiếu xuất xe",
+  "lo": "ການລົງບັນຊີແຕ່ລະແຖວລາຍຈ່າຍໃນໃບເບີກລົດ",
+  "en": "Entry for each expense line on the dispatch slip"
+ },
+ "qt_dc_phu": {
+  "vi": "Vế Có đi theo cách trả · chủ xe tự chi thì không định khoản",
+  "lo": "ຂ້າງ ມີ ຕາມວິທີຈ່າຍ · ເຈົ້າຂອງລົດຈ່າຍເອງບໍ່ລົງບັນຊີ",
+  "en": "The credit side follows the payment method · nothing is posted when the owner pays"
+ },
+ "qt_th_dong": {
+  "vi": "Dòng chi",
+  "lo": "ແຖວລາຍຈ່າຍ",
+  "en": "Expense line"
+ },
+ "qt_th_nha_no": {
+  "vi": "Xe nhà · Nợ",
+  "lo": "ລົດບໍລິສັດ · ໜີ້",
+  "en": "Company truck · Debit"
+ },
+ "qt_th_nha_co": {
+  "vi": "Xe nhà · Có",
+  "lo": "ລົດບໍລິສັດ · ມີ",
+  "en": "Company truck · Credit"
+ },
+ "qt_th_lk_no": {
+  "vi": "Xe liên kết · Nợ",
+  "lo": "ລົດຮ່ວມ · ໜີ້",
+  "en": "Joint truck · Debit"
+ },
+ "qt_th_lk_co": {
+  "vi": "Xe liên kết · Có",
+  "lo": "ລົດຮ່ວມ · ມີ",
+  "en": "Joint truck · Credit"
+ },
+ "qt_l_lam": {
+  "vi": "Làm gì",
+  "lo": "ເຮັດຫຍັງ",
+  "en": "What to do"
+ },
+ "qt_l_may": {
+  "vi": "Máy tự làm",
+  "lo": "ເຄື່ອງເຮັດເອງ",
+  "en": "The system does"
+ },
+ "qt_l_chan": {
+  "vi": "Máy chặn",
+  "lo": "ເຄື່ອງກັ້ນ",
+  "en": "The system blocks"
+ },
+ "qt_l_ct": {
+  "vi": "Chứng từ sinh ra",
+  "lo": "ເອກະສານທີ່ອອກ",
+  "en": "Vouchers created"
+ },
+ "qt_khong_ct": {
+  "vi": "— không sinh chứng từ",
+  "lo": "— ບໍ່ອອກເອກະສານ",
+  "en": "— no voucher created"
+ },
+ "qt_man": {
+  "vi": "màn {ten} ↗",
+  "lo": "ໜ້າ {ten} ↗",
+  "en": "{ten} screen ↗"
+ },
+ "qt_man_khoa": {
+  "vi": "màn {ten} · không thuộc vai của bạn",
+  "lo": "ໜ້າ {ten} · ບໍ່ແມ່ນຂອງບົດບາດທ່ານ",
+  "en": "{ten} screen · not part of your role"
+ },
+ "qt_man_khoa_t": {
+  "vi": "Vai của bạn không vào màn này",
+  "lo": "ບົດບາດຂອງທ່ານເຂົ້າໜ້ານີ້ບໍ່ໄດ້",
+  "en": "Your role cannot open this screen"
+ },
+ "qt_o_kho": {
+  "vi": "ở kho tạm",
+  "lo": "ຢູ່ສາງຊົ່ວຄາວ",
+  "en": "in the interim stock system"
+ },
+ "qt_o_tune": {
+  "vi": "tiền ở hệ kế toán anh Tune",
+  "lo": "ເງິນຢູ່ລະບົບບັນຊີຂອງອ້າຍ Tune",
+  "en": "money in Mr Tune's accounting system"
+ },
+ "qt_ben_de_nghi": {
+  "vi": "phiếu đề nghị · trang điều xe lập",
+  "lo": "ໃບສະເໜີ · ໜ້າຈັດລົດສ້າງ",
+  "en": "request · made by the dispatch site"
+ },
+ "qt_ben_kho": {
+  "vi": "bên kho lập theo đề nghị",
+  "lo": "ຝ່າຍສາງສ້າງຕາມໃບສະເໜີ",
+  "en": "made by the stock side from the request"
+ },
+ "qt_ben_ke_toan": {
+  "vi": "bên kế toán lập theo đề nghị",
+  "lo": "ຝ່າຍບັນຊີສ້າງຕາມໃບສະເໜີ",
+  "en": "made by accounting from the request"
+ },
+ "qt_ct_xem": {
+  "vi": "Xem đủ các trường hợp định khoản",
+  "lo": "ເບິ່ງທຸກກໍລະນີການລົງບັນຊີ",
+  "en": "See every accounting case"
+ },
+ "qt_khong_dk": {
+  "vi": "không định khoản",
+  "lo": "ບໍ່ລົງບັນຊີ",
+  "en": "no entry"
+ },
+ "qt_ngoai_bang": {
+  "vi": "ngoài bảng · mã do kế toán cấp",
+  "lo": "ນອກງົບ · ລະຫັດໃຫ້ໂດຍບັນຊີ",
+  "en": "off-balance · code assigned by accounting"
+ },
+ "qt_dk_gon": {
+  "vi": "Nợ {no} / Có {co}",
+  "lo": "ໜີ້ {no} / ມີ {co}",
+  "en": "Dr {no} / Cr {co}"
+ },
+ "qt_chua_mo": {
+  "vi": "chưa mở",
+  "lo": "ຍັງບໍ່ເປີດ",
+  "en": "not opened"
+ },
+ "qt_chua_mo_t": {
+  "vi": "Mã con theo anh Khampla — bên kế toán chưa mở trong danh mục",
+  "lo": "ລະຫັດຍ່ອຍຕາມອ້າຍ Khampla — ຝ່າຍບັນຊີຍັງບໍ່ເປີດໃນລາຍການ",
+  "en": "Sub-account per Mr Khampla — accounting has not opened it in the chart yet"
+ },
+ "qt_khong_ghi": {
+  "vi": "không ghi sổ được",
+  "lo": "ບັນທຶກບໍ່ໄດ້",
+  "en": "cannot be posted"
+ },
+ "qt_moi_th": {
+  "vi": "mọi trường hợp",
+  "lo": "ທຸກກໍລະນີ",
+  "en": "all cases"
+ },
+ "qt_chi_luu": {
+  "vi": "chỉ lưu, không bút toán",
+  "lo": "ເກັບໄວ້ເທົ່ານັ້ນ, ບໍ່ມີລາຍການບັນຊີ",
+  "en": "stored only, no journal entry"
+ },
+ "qt_ngoai_bang2": {
+  "vi": "ngoài bảng / kế toán cấp mã",
+  "lo": "ນອກງົບ / ບັນຊີໃຫ້ລະຫັດ",
+  "en": "off-balance / code assigned by accounting"
+ },
+ "qt_dc_nguon": {
+  "vi": "Đối chiếu với danh mục tài khoản của bên kế toán: {so} mã, chụp ngày {ngay}.",
+  "lo": "ທຽບກັບລາຍການບັນຊີຂອງຝ່າຍບັນຊີ: {so} ລະຫັດ, ຖ່າຍວັນທີ {ngay}.",
+  "en": "Checked against accounting's chart of accounts: {so} codes, snapshot of {ngay}."
+ },
+ "qt_dc_ma_con": {
+  "vi": "Mã con của khách chưa mở bên đó: {ds}.",
+  "lo": "ລະຫັດຍ່ອຍຂອງລູກຄ້າທີ່ຝ່າຍນັ້ນຍັງບໍ່ເປີດ: {ds}.",
+  "en": "Customer sub-accounts not yet opened there: {ds}."
+ },
+ "qt_dc_da_mo": {
+  "vi": "Mã con của khách 1371 · 4021 · 4022 đã mở bên đó (01/10).",
+  "lo": "ລະຫັດຍ່ອຍຂອງລູກຄ້າ 1371 · 4021 · 4022 ຝ່າຍນັ້ນເປີດແລ້ວ (01/10).",
+  "en": "Customer sub-accounts 1371 · 4021 · 4022 are open there (01/10)."
+ },
+ "qt_con_cua": {
+  "vi": "con của {cha}",
+  "lo": "ຍ່ອຍຂອງ {cha}",
+  "en": "under {cha}"
+ },
+ "qt_mt_muc": {
+  "vi": "Mục của phiếu",
+  "lo": "ໜ້າຂອງໃບ",
+  "en": "Slip section"
+ },
+ "qt_mt_viec": {
+  "vi": "Việc",
+  "lo": "ວຽກ",
+  "en": "Task"
+ },
+ "qt_mt_m_info": {
+  "vi": "I. Xe",
+  "lo": "I. ລົດ",
+  "en": "I. Truck"
+ },
+ "qt_mt_m_trans": {
+  "vi": "II. Chuyến · khách · cân",
+  "lo": "II. ຖ້ຽວ · ລູກຄ້າ · ນໍ້າໜັກ",
+  "en": "II. Trip · customer · weight"
+ },
+ "qt_mt_m_fuel": {
+  "vi": "III. Nhiên liệu",
+  "lo": "III. ນໍ້າມັນ",
+  "en": "III. Fuel"
+ },
+ "qt_mt_m_travel": {
+  "vi": "IV. Đi đường",
+  "lo": "IV. ເດີນທາງ",
+  "en": "IV. Travel"
+ },
+ "qt_mt_m_repair": {
+  "vi": "V. Sửa chữa",
+  "lo": "V. ສ້ອມແປງ",
+  "en": "V. Repairs"
+ },
+ "qt_mt_m_other": {
+  "vi": "VI. Chi khác",
+  "lo": "VI. ລາຍຈ່າຍອື່ນ",
+  "en": "VI. Other expenses"
+ },
+ "qt_mt_tien": {
+  "vi": "Tiền trên phiếu",
+  "lo": "ເງິນໃນໃບ",
+  "en": "Money on the slip"
+ },
+ "qt_mt_thay_ban": {
+  "vi": "Thấy tiền BÁN (giá cước, doanh thu, giá thuê xe, lãi)",
+  "lo": "ເຫັນເງິນຂາຍ (ລາຄາຄ່າຂົນສົ່ງ, ລາຍຮັບ, ຄ່າເຊົ່າລົດ, ກຳໄລ)",
+  "en": "Sees SALES money (freight price, revenue, truck hire, margin)"
+ },
+ "qt_mt_thay_chi": {
+  "vi": "Thấy tiền CHI (đơn giá, thành tiền, tỷ giá)",
+  "lo": "ເຫັນເງິນຈ່າຍ (ລາຄາ, ມູນຄ່າ, ອັດຕາແລກປ່ຽນ)",
+  "en": "Sees EXPENSE money (unit price, amount, exchange rate)"
+ },
+ "qt_mt_gia_kho": {
+  "vi": "Thấy GIÁ VỐN KHO (giá bình quân dầu, phụ tùng — 30/09)",
+  "lo": "ເຫັນລາຄາຕົ້ນທຶນສາງ (ລາຄາສະເລ່ຍນໍ້າມັນ, ອະໄຫຼ່ — 30/09)",
+  "en": "Sees STOCK COST (average cost of fuel and parts — 30/09)"
+ },
+ "qt_mt_nhap_gia": {
+  "vi": "Được nhập đơn giá dòng chi",
+  "lo": "ລົງລາຄາແຖວລາຍຈ່າຍໄດ້",
+  "en": "May enter expense-line prices"
+ },
+ "dk_dau_kho": {
+  "vi": "III · dầu lấy KHO của EPL",
+  "lo": "III · ນໍ້າມັນເບີກຈາກສາງຂອງ EPL",
+  "en": "III · fuel from an EPL DEPOT"
+ },
+ "dk_dau_ghi_no": {
+  "vi": "III · dầu trạm ngoài, trạm GHI NỢ",
+  "lo": "III · ນໍ້າມັນປໍ້ານອກ, ປໍ້າຂຽນໜີ້",
+  "en": "III · outside station fuel, station ON ACCOUNT"
+ },
+ "dk_dau_tien_mat": {
+  "vi": "III · dầu trạm ngoài, tài xế trả TIỀN MẶT",
+  "lo": "III · ນໍ້າມັນປໍ້ານອກ, ໂຊເຟີຈ່າຍເງິນສົດ",
+  "en": "III · outside station fuel, driver pays CASH"
+ },
+ "dk_tien_mat": {
+  "vi": "IV · VI · tài xế cầm TIỀN MẶT đi (tạm ứng)",
+  "lo": "IV · VI · ໂຊເຟີຖືເງິນສົດໄປ (ເງິນລ່ວງໜ້າ)",
+  "en": "IV · VI · driver carries CASH (advance)"
+ },
+ "dk_luong": {
+  "vi": "IV · VI · trả CÙNG LƯƠNG",
+  "lo": "IV · VI · ຈ່າຍພ້ອມເງິນເດືອນ",
+  "en": "IV · VI · paid WITH SALARY"
+ },
+ "dk_ncc": {
+  "vi": "IV · VI · ghi nợ NHÀ CUNG CẤP / trừ THẺ cao tốc",
+  "lo": "IV · VI · ຂຽນໜີ້ຜູ້ສະໜອງ / ຫັກບັດທາງດ່ວນ",
+  "en": "IV · VI · on SUPPLIER credit / toll CARD deduction"
+ },
+ "dk_pt_kho": {
+  "vi": "V · phụ tùng lấy KHO",
+  "lo": "V · ອະໄຫຼ່ເບີກຈາກສາງ",
+  "en": "V · parts from STOCK"
+ },
+ "dk_sua_ngoai": {
+  "vi": "V · sửa ngoài, garage",
+  "lo": "V · ສ້ອມນອກ, ອູ່",
+  "en": "V · outside repair, garage"
+ },
+ "qt_khi_xe_nha": {
+  "vi": "xe nhà",
+  "lo": "ລົດບໍລິສັດ",
+  "en": "company truck"
+ },
+ "qt_khi_xe_lk": {
+  "vi": "xe liên kết",
+  "lo": "ລົດຮ່ວມ",
+  "en": "joint truck"
+ },
+ "qt_khi_tm_kip": {
+  "vi": "tiền mặt Kíp",
+  "lo": "ເງິນສົດກີບ",
+  "en": "cash in kip"
+ },
+ "qt_khi_tm_ngoai": {
+  "vi": "tiền mặt ngoại tệ",
+  "lo": "ເງິນສົດຕ່າງປະເທດ",
+  "en": "foreign-currency cash"
+ },
+ "qt_khi_nh_kip": {
+  "vi": "ngân hàng Kíp",
+  "lo": "ທະນາຄານກີບ",
+  "en": "bank in kip"
+ },
+ "qt_khi_nh_ngoai": {
+  "vi": "ngân hàng ngoại tệ",
+  "lo": "ທະນາຄານເງິນຕ່າງປະເທດ",
+  "en": "foreign-currency bank"
+ },
+ "qt_khi_sua": {
+  "vi": "sửa chữa",
+  "lo": "ສ້ອມແປງ",
+  "en": "repairs"
+ },
+ "qt_khi_chi_khac": {
+  "vi": "chi khác",
+  "lo": "ລາຍຈ່າຍອື່ນ",
+  "en": "other expenses"
+ },
+ "qt_khi_ban_khach": {
+  "vi": "bán cho khách",
+  "lo": "ຂາຍໃຫ້ລູກຄ້າ",
+  "en": "sold to a customer"
+ },
+ "qt_khi_ban_cx": {
+  "vi": "bán cho chủ xe liên kết — trừ vào tiền trả",
+  "lo": "ຂາຍໃຫ້ເຈົ້າຂອງລົດຮ່ວມ — ຫັກຈາກເງິນທີ່ຈະຈ່າຍ",
+  "en": "sold to a joint-truck owner — deducted from payment"
  }
 };

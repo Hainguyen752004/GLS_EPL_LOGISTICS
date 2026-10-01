@@ -37,7 +37,8 @@ from services.tinh_toan import la_tien_mat_tai_xe, tien_dong
 MUC = ("repair", "other")
 TEN_MUC = {"repair": "V", "other": "VI"}
 TEN_MUC_VI = {"repair": "V sửa chữa", "other": "VI chi khác"}
-CAU_CHI_O_KE_TOAN = ("Chi mục %s ở hệ kế toán (chủ dự án 01/10): thủ quỹ chi tiền và ghi sổ phiếu chi \"Chi khác\" bên đó, "
+# câu báo NGƯỜI DÙNG — không ghi chú nội bộ (ngày chốt, ai chốt) vào đây (rà 01/10: lộ "(chủ dự án 01/10)" lên màn)
+CAU_CHI_O_KE_TOAN = ("Mục %s chi ở hệ kế toán: thủ quỹ chi tiền và ghi sổ phiếu chi \"Chi khác\" bên đó, "
                      "trang này tự ghi \"đã chi\".")
 
 
@@ -113,7 +114,8 @@ def dung_goi(db, p, muc, rec, dong, obj):
         "Relations": [],
         "Entries": [{"SourceLineKey": "EPLLAO:%s:%s" % (p.id, d.id), "ObjectId": obj, "CurrencyId": lak, "DebitAccount": no,
                      "CreditAccount": co, "Amount": _lak(p, d), "BaseAmount": _lak(p, d), "ExchangeRate": 1, "EntryTypeId": 11,
-                     "Description": ("Mục %s · %s · %s × %s %s" % (TEN_MUC[muc], d.item_name or d.item_key or "—", _so(d.qty),
+                     # tên khoản mục bằng chữ (dòng khoản mục chuẩn chỉ có item_key "x_tire" — trước đây sang bên đó nguyên mã)
+                     "Description": ("Mục %s · %s · %s × %s %s" % (TEN_MUC[muc], _ten_dong(db, d), _so(d.qty),
                                                                     _so(d.unit_price), d.currency or "LAK"))[:250],
                      "ValidateMoney": True} for d in dong],
     }
@@ -122,6 +124,12 @@ def dung_goi(db, p, muc, rec, dong, obj):
 def _so(v):
     v = float(v or 0)
     return ("%d" % v) if v == int(v) else ("%g" % v)
+
+
+def _ten_dong(db, d):
+    """Tên khoản mục tiếng Việt của một dòng chi (phụ tùng · tên gõ tay · từ điển giao diện theo item_key)."""
+    from services.ban_giao import _ten
+    return _ten(db, d)[0] or "—"
 
 
 def _ghi_nhat_ky(db, p, ten, vai, viec):

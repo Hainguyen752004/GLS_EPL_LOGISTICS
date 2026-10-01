@@ -289,6 +289,8 @@ def xuat(r, doc_no=None):
         dong = []
     for x in dong:
         x["no_ten"], x["co_ten"] = TK.ten(x.get("no")), TK.ten(x.get("co"))
+        # tên Lào nguyên danh mục anh Khampla — màn tiếng Lào hiện tên này thay tên Việt
+        x["no_ten_lo"], x["co_ten_lo"] = TK.ten(x.get("no"), "lo"), TK.ten(x.get("co"), "lo")
     return {"id": r.id, "nguon": r.nguon, "ma_nguon": r.ma_nguon, "ngay": r.ngay.isoformat() if r.ngay else None,
             "dien_giai": r.dien_giai, "dong": dong, "so_dong": r.so_dong, "tien_te": r.tien_te, "tong": r.tong,
             "trip_id": r.trip_id, "trip_doc_no": doc_no, "status": r.status, "can_dao": bool(r.can_dao),
@@ -310,6 +312,7 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         (Nợ 614 / Có tiền), ghi thêm Có 4021 là chi phí hai lần."""
     from models import TripExpense
     from services import chi_muc_tune as CMT
+    from services.ban_giao import _ten as ten_dong
     from services.tinh_toan import tien_dong, tinh_phieu, ty_gia
     if cac_dong is None:
         cac_dong = (db.query(TripExpense).filter(TripExpense.trip_id == p.id)
@@ -337,10 +340,12 @@ def dong_khoa_phieu(db, p, cac_dong=None):
         lak = round(tien_dong(p, d))
         if lak <= 0:
             continue
+        # tên khoản mục bằng chữ người đọc (dòng khoản mục chuẩn chỉ có item_key "x_tire" — trước đây diễn giải ghi nguyên
+        # mã đó, cả lên màn lẫn sang hệ kế toán; rà 01/10)
         x = {"no": no, "co": co, "tien": lak, "ccy": "LAK", "ref": d.id, "section": d.section,
              "doi_tuong": {"loai": "ncc", "ref_id": d.supplier_id} if d.supplier_id else None,
              "dien_giai": "%s %s · %s" % ({"fuel": "III", "travel": "IV", "repair": "V", "other": "VI"}.get(d.section, ""),
-                                         d.item_name or d.item_key or "", p.doc_no)}
+                                         ten_dong(db, d)[0], p.doc_no)}
         if (d.currency or "LAK").upper() != "LAK":
             x.update({"tien_goc": lam_tron((d.qty or 0) * (d.unit_price or 0), d.currency), "ccy_goc": d.currency.upper(),
                       "ty_gia": ty_gia(p, d.currency)})

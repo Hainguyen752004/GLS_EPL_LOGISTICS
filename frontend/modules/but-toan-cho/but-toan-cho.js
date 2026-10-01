@@ -16,6 +16,9 @@
   const LOC = ['', 'cho_gui', 'da_gui', 'huy', 'can_dao'];
   const NHAN_LOC = { '': 'all', cho_gui: 'dt_st_cho_gui', da_gui: 'dt_st_da_gui', huy: 'v_huy', can_dao: 'btc_can_dao' };
   const nhanNguon = (n) => (NGUON.includes(n) ? 'btc_nguon_' + n : n);
+  // nguồn sinh từ MỘT phiếu xuất xe (lúc khoá): phiếu bị xoá thì trip_id về null (khoá ngoại SET NULL) — còn ma_nguon
+  const nhanKy = (v) => (/^\d{4}-\d{2}$/.test(v || '') ? v.slice(5, 7) + '/' + v.slice(0, 4) : (v || ''));   // 2026-10 → 10/2026
+  const tuPhieu = (b) => b.trip_id || b.nguon === 'thue_xe' || b.nguon === 'no_ncc';
   const tien = (v, ma) => `${so(v, ['LAK', 'VND'].includes(ma) ? 0 : 2)} <small>${esc(ma || '')}</small>`;
 
   /** Trạng thái hiện của một bút toán: chờ đảo đứng trước (đã gửi mà nguồn bị huỷ). */
@@ -32,6 +35,13 @@
     return t;
   }
   const chuoiTien = (t) => Object.keys(t).length ? Object.entries(t).map(([m, v]) => tien(v, m)).join(' · ') : '—';
+  /** Tên tài khoản dưới mã: tiếng Lào lấy nguyên tên danh mục anh Khampla (máy chủ gửi `no_ten_lo`), VI + ລາວ hai dòng. */
+  function tenTK(d, ve) {
+    const vi = d[ve + '_ten'] || '', lo = d[ve + '_ten_lo'] || '';
+    if (NN.lang === 'lo') return esc(lo || vi);
+    if (NN.lang === 'both' && lo && lo !== vi) return esc(vi) + '<span class="lo-sub" lang="lo">' + esc(lo) + '</span>';
+    return esc(vi || lo);
+  }
 
   function locDs() {
     const t = tim.toLowerCase();
@@ -48,13 +58,24 @@
   }
   /** Chứng từ gốc: phiếu xuất xe (mở được), bản chốt tất toán (mở màn Tất toán đúng kỳ), phiếu bán ở kho. */
   function goc(b) {
-    if (b.trip_id) return `<a href="#/phieu-xuat-xe?id=${esc(b.trip_id)}" class="mono">${esc(b.trip_doc_no || b.trip_id)}</a>`;
+    // phiếu gốc đã bị xoá (máy chủ không còn số phiếu): nói thẳng, đừng bày mã máy của phiếu ra (rà 01/10)
+    if (tuPhieu(b)) return b.trip_id && b.trip_doc_no ? `<a href="#/phieu-xuat-xe?id=${esc(b.trip_id)}" class="mono">${esc(b.trip_doc_no)}</a>`
+      : `<span class="muted">${NN.h('btc_phieu_da_xoa')}</span>`;
     if (b.nguon === 'tat_toan') {
       const [tx, ky] = String(b.ma_nguon || '').split(':');
-      return `<a href="#/tat-toan?ky=${esc(ky || '')}&tx=${esc(tx || '')}">${NN.h('nav_settle')} ${esc(ky || '')}</a>`;
+      return `<a href="#/tat-toan?ky=${esc(ky || '')}&tx=${esc(tx || '')}">${NN.h('nav_settle')} ${esc(nhanKy(ky))}</a>`;
     }
     const r = (b.dong || []).map(d => d.ref).find(Boolean);
     return `<span class="mono">${esc(r || b.ma_nguon)}</span>`;
+  }
+
+  /** Chứng từ gốc dạng chữ cho dòng phụ của danh sách: số phiếu · "Tất toán tài xế 2026-10" · phiếu đã xoá. Mã tham chiếu gửi
+   *  bên kế toán (EPLLAO-tat_toan-…) chỉ hiện ở khung chi tiết — ở danh sách nó là chuỗi máy bị cắt cụt (rà 01/10). */
+  function nhanGoc(b) {
+    if (b.trip_doc_no) return esc(b.trip_doc_no);
+    if (b.nguon === 'tat_toan') return NN.h('nav_settle') + ' ' + esc(nhanKy(String(b.ma_nguon || '').split(':')[1]));
+    if (tuPhieu(b)) return NN.h('btc_phieu_da_xoa');
+    return esc(b.source_ref || '');
   }
 
   /* ---------------------------------------------------------------- lọc + dải tổng */
@@ -85,7 +106,7 @@
       return `<button type="button" class="btc-o st-${b.status} ${b.can_dao ? 'dao' : ''} ${CHON === b.id ? 'chon' : ''}" data-id="${esc(b.id)}">
         <span class="ten">${NN.h(nhanNguon(b.nguon))}</span>
         <span class="tien">${chuoiTien(tongTien([b]))}</span>
-        <span class="phu">${EPL.ngay(b.ngay)} · ${b.trip_doc_no ? esc(b.trip_doc_no) : esc(b.source_ref || '')}${b.so_ben_ke_toan ? ' · <span class="mono">' + esc(b.so_ben_ke_toan) + '</span>' : ''}</span>
+        <span class="phu">${EPL.ngay(b.ngay)} · ${nhanGoc(b)}${b.so_ben_ke_toan ? ' · <span class="mono">' + esc(b.so_ben_ke_toan) + '</span>' : ''}</span>
         <span class="tt">${EPL.tag(s.mau, s.nhan)}${b.error_code && b.status !== 'huy' ? ' <span class="tag unpaid" title="' + esc(b.loi_gui || '') + '">⚠</span>' : ''}</span>
         <span class="phu dg" lang="lo">${esc(b.dien_giai || '')}</span></button>`;
     }).join('') : `<div class="btc-trong">${NN.h('btc_trong')}</div>`;
@@ -93,8 +114,19 @@
   }
 
   /* ---------------------------------------------------------------- một bút toán */
+  /** Tờ / tháng đang xem ghi vào địa chỉ (rà 01/10): bấm "Mở phiếu" sang Phiếu xuất xe rồi Quay lại, hay tải lại trang, là về
+   *  đúng tờ đó — trước đây màn mở lại từ đầu, tờ vừa xem như biến mất. init đã đọc sẵn các tham số này. replaceState: không
+   *  thêm bước lịch sử, không bắn hashchange (khung không nạp lại màn); màn đã bị rời (gốc tháo khỏi trang) thì thôi. */
+  function ghiDiaChi(ts) {
+    if (!root || !root.isConnected) return;
+    [...ts.keys()].forEach(k => { if (!ts.get(k)) ts.delete(k); });
+    const moi = '#/but-toan-cho' + (ts.toString() ? '?' + ts : '');
+    if (location.hash !== moi) history.replaceState(null, '', moi);
+  }
+
   function veXem() {
     const o = q('#btc-xem'), b = DS.find(x => x.id === CHON);
+    ghiDiaChi(new URLSearchParams({ ky: q('#btc-ky').value || '', nguon: q('#btc-nguon').value || '', trip_id: PHIEU ? PHIEU.id : '', id: b ? b.id : '' }));
     const bang = (rows) => `<div class="tbl-wrap btc-dong"><table class="tbl tbl-compact">
       <thead><tr><th>#</th><th>${NN.h('btc_no')}</th><th>${NN.h('btc_co')}</th><th class="num">${NN.h('amount')}</th>
         <th>${NN.h('btc_doi_tuong')}</th><th>${NN.h('btc_dien_giai')}</th></tr></thead>
@@ -103,8 +135,8 @@
     const s = trangThai(b);
     const rows = (b.dong || []).map((d, i) => `<tr>
       <td>${i + 1}</td>
-      <td><span class="ma">${esc(d.no)}</span><span class="ten" lang="lo">${esc(d.no_ten || '')}</span></td>
-      <td><span class="ma">${esc(d.co)}</span><span class="ten" lang="lo">${esc(d.co_ten || '')}</span></td>
+      <td><span class="ma">${esc(d.no)}</span><span class="ten" lang="lo">${tenTK(d, 'no')}</span></td>
+      <td><span class="ma">${esc(d.co)}</span><span class="ten" lang="lo">${tenTK(d, 'co')}</span></td>
       <td class="num">${tien(d.tien, d.ccy)}${d.ccy_goc ? `<small>${NN.h('btc_tien_goc')}: ${so(d.tien_goc, ['LAK', 'VND'].includes(d.ccy_goc) ? 0 : 2)} ${esc(d.ccy_goc)}</small>` : ''}
         ${d.ccy !== 'LAK' && d.tien_lak ? `<small>≈ ${so(d.tien_lak)} LAK</small>` : ''}</td>
       <td>${d.doi_tuong || !d.doi_tuong_no ? tenDoiTuong(d.doi_tuong) : ''}${d.doi_tuong_no ? `${d.doi_tuong ? '<br>' : ''}${tenDoiTuong(d.doi_tuong_no)}` : ''}</td>
@@ -126,7 +158,7 @@
       <div class="btc-chan">
         <span>${NN.h('btc_lap')}: <b>${EPL.ngayGio(b.created_at)}</b>${b.created_by ? ` · <span lang="lo">${esc(b.created_by)}</span>` : ''}</span>
         ${b.huy_luc ? `<span>${NN.h('btc_huy_boi')}: <b lang="lo">${esc(b.huy_by || '')}</b> · ${EPL.ngayGio(b.huy_luc)}</span>` : ''}
-        ${b.loi_gui ? `<span class="neg">${b.attempts ? '#' + b.attempts + ' · ' : ''}${esc(b.loi_gui)}</span>` : ''}
+        ${b.loi_gui && b.status !== 'huy' ? `<span class="neg">${b.attempts ? '#' + b.attempts + ' · ' : ''}${esc(b.loi_gui)}</span>` : ''}
       </div>`;
     o.querySelectorAll('[data-btc]').forEach(n => n.addEventListener('click', () => viec(b, n.dataset.btc, n)));
   }
@@ -205,6 +237,7 @@
       veTieuDe();
       const t = (ctx && ctx.tham) || {};
       PHIEU = t.trip_id ? { id: t.trip_id, doc: t.doc || null } : null;
+      if (t.id) CHON = t.id;
       veNguon();
       if (t.ky) q('#btc-ky').value = t.ky;
       if (t.nguon) q('#btc-nguon').value = t.nguon;
