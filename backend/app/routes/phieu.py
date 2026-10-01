@@ -20,6 +20,7 @@ from collections import defaultdict
 from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import func, or_, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from database import BIEU_THUC_TIM_PHIEU, get_db
@@ -916,7 +917,14 @@ def lap_phieu(data: dict = Body(...), db: Session = Depends(get_db), user=Depend
             if p.over_limit_t is None: p.over_limit_t = o.over_limit_t
             if p.over_price is None: p.over_price = o.over_price
             if not p.hire_ccy: p.hire_ccy = o.hire_ccy
-    db.add(p); db.flush()
+    db.add(p)
+    try:
+        db.flush()
+    except IntegrityError:
+        # hai người lưu cùng lúc cùng số gợi ý: lần kiểm ở trên cùng lọt, DB chặn ở cột unique — báo 409 rõ (rà 01/10:
+        # trước đây văng 500)
+        db.rollback()
+        raise HTTPException(409, {"ma": "TRUNG_SO", "loi": "Số phiếu %s vừa có người khác lưu trước — bấm Lưu lại để lấy số mới." % p.doc_no})
     muc_tt = {m: "wait" for m in MUC}
     for m in MUC:
         db.add(TripSection(trip_id=p.id, section=m, status="wait"))

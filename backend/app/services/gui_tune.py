@@ -275,6 +275,16 @@ def xuat(b):
             "synced_at": b.synced_at.isoformat(timespec="minutes") if b.synced_at else None}
 
 
+def chan_trang_tam(p):
+    """DO đã xuất hoá đơn / đã thu ở TRANG KẾ TOÁN TẠM (EPL_KETOAN) thì công nợ khách đã nằm bên đó — gửi thêm SO sang hệ
+    kế toán anh Tune là ghi nợ khách hai lần (01/10: khách ນາງ ວັນນາ hết nợ ở trang tạm nhưng hệ anh Tune còn SO 1.676,90 USD
+    tạo lúc thử). Phải huỷ hoá đơn bên trang tạm (hoặc đối soát) trước."""
+    if p.finance_status == "paid" or p.invoiced:
+        _loi("DA_HOA_DON_TRANG_TAM", "Phiếu %s đã %s ở trang kế toán tạm%s — gửi SO sang hệ kế toán là ghi nợ khách hai lần. "
+             "Huỷ hoá đơn bên trang tạm (hoặc đối soát với kế toán) trước."
+             % (p.doc_no, "thu tiền" if p.finance_status == "paid" else "xuất hoá đơn", " (hoá đơn %s)" % p.inv_no if p.inv_no else ""), 409)
+
+
 def xem_truoc(db, p):
     """Gói SẼ gửi (không gọi mạng) + trạng thái lần gửi trước. Lỗi dữ liệu trả trong `loi`, không ném."""
     b = db.get(GuiSoTune, BG.ma_do(p))
@@ -285,8 +295,13 @@ def xem_truoc(db, p):
         ra.update({"body": body, "gui_lai_goi_cu": True, "tom_tat": {"do_id": b.do_id, "customer_code": body["header"]["customer_id"],
                    "currency": body["header"]["currency"], "final_selling_price": body["header"]["final_selling_price"],
                    "route_id": body["header"]["route"]["id"]}})
+        try:
+            chan_trang_tam(p)                                    # gửi lại gói cũ cũng bị gui() chặn — xem trước nói trước
+        except HTTPException as e:
+            ra["loi"] = e.detail
         return ra
     try:
+        chan_trang_tam(p)
         tao = None if _ma_khach_cua(db, p) else ma_khach_moi(p)
         body, tom = dung_goi(db, p, ma_tam=tao)
         tom["tao_khach"] = tao                                   # gửi thì máy tạo khách này bên kế toán trước
@@ -326,6 +341,7 @@ def gui(db, p, user):
         return xuat(b), True                                   # đã có SO: không gọi lại
     if b is not None and b.status == "conflict":
         _loi("DA_XUNG_DOT", "Lần gửi trước bên kế toán báo trùng DO (409) — hai bên đối soát trước, không gửi lại.", 409)
+    chan_trang_tam(p)
     if _chua_ro(b):
         body_json, key = b.request_body, b.idempotency_key
     else:

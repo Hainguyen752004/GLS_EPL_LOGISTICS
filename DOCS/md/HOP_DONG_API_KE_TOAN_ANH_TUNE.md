@@ -1306,6 +1306,9 @@ Tất cả đã thử qua API chạy ở máy (localhost), trên DB demo Lào an
 - Khách **chưa có mã bên anh**: lúc KT Thu/Chi bấm "Tạo SO", bên em tạo khách bên anh qua `master-data/customers/upsert`, mã `EPLKH-<mã khách bên em>`. Mã đó ghi luôn vào ô "Mã khách (bên kế toán)" bên em. Hộp xác nhận báo trước mã sẽ tạo.
 - Khách **đã có mã**: bên em kiểm mã đó có thật bên anh trước khi gửi, báo sớm thay vì chờ lỗi 52905.
 - **Kết quả:** `TK-20261001-000162` (T4-0449-09/EPL, ຄຳຕຸ້ຍ, 905,85 USD) và `TK-20261001-000163` (T4-0442-09/EPL, ນາງ ວັນນາ, 1.676,9 USD); công nợ khách có ngay bên anh.
+- **Chặn ghi nợ hai lần (thêm chiều 01/10):** DO đã **xuất hoá đơn hoặc đã thu ở trang kế toán tạm** thì bên em không gửi SO nữa, vì công nợ của DO đó đã nằm bên trang tạm. Xem trước và gửi đều báo `DA_HOA_DON_TRANG_TAM` (409), không gọi sang bên anh. Muốn gửi thì huỷ hoá đơn bên trang tạm, hoặc đối soát với kế toán, trước.
+  - Lý do: lúc rà, khách ນາງ ວັນນາ đã hết nợ ở trang tạm mà hệ anh vẫn còn SO `TK-20261001-000163` 1.676,90 USD.
+  - Hai SO `…162` và `…163` là **SO thử** trên DB demo anh đã sao lưu. Anh bỏ qua, hoặc huỷ, khi đối soát.
 - **Lỗi bên anh, bên em đã sửa** (nhánh `feat/HonTunedaHai`): tạo khách qua API mà không gửi `IsOrganization` thì cột `OBJ_ISORG` bị NULL, máy chủ văng 500. `ObjectService.ApplyDomainDefaults` nay mặc định **cá nhân**. Bên em cũng luôn gửi ô này.
 
 #### 12.11.2. Công nợ khách: xem từ hệ anh
