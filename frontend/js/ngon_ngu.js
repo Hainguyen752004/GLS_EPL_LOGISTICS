@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2130 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2134 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10651,5 +10651,25 @@ window.EPL_TU_DIEN = {
   "vi": "Nhập tên đăng nhập và mật khẩu",
   "lo": "ກະລຸນາໃສ່ຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ",
   "en": "Enter your username and password"
+ },
+ "thang_trong_dang_xem": {
+  "vi": "Tháng {trong} chưa có phiếu — đang xem tháng {xem}",
+  "lo": "ເດືອນ {trong} ຍັງບໍ່ມີໃບ — ກຳລັງເບິ່ງເດືອນ {xem}",
+  "en": "No slips in {trong} — showing {xem}"
+ },
+ "thang_trong_n": {
+  "vi": "Tháng {thang} chưa có phiếu nào",
+  "lo": "ເດືອນ {thang} ຍັງບໍ່ມີໃບເທື່ອ",
+  "en": "No slips in {thang}"
+ },
+ "thang_xem_gan": {
+  "vi": "Xem tháng {thang} (gần nhất có dữ liệu)",
+  "lo": "ເບິ່ງເດືອນ {thang} (ລ່າສຸດທີ່ມີຂໍ້ມູນ)",
+  "en": "View {thang} (latest with data)"
+ },
+ "loc_trong": {
+  "vi": "Không có phiếu nào khớp bộ lọc — bỏ bớt điều kiện lọc để xem thêm",
+  "lo": "ບໍ່ມີໃບທີ່ກົງກັບຕົວກັ່ນຕອງ — ລຶບເງື່ອນໄຂອອກແດ່ ເພື່ອເບິ່ງຕື່ມ",
+  "en": "No slips match the filters — remove some filters to see more"
  }
 };
