@@ -2,13 +2,15 @@
  *
  * Nguồn: thue_xe (khoá phiếu xe thuê: Nợ 621 / Có 4022 = tiền thuê) · no_ncc (khoá phiếu: dòng chi ghi nợ nhà cung cấp …/4021) ·
  * tat_toan (quyết toán tạm ứng QT_TU Nợ 625 / Có 1601) · ban_chu_xe (hàng bán cho chủ xe trừ vào tiền trả: Nợ 4022 / Có 707).
- * Hệ kế toán anh Tune chưa có đường nhận bút toán tổng hợp → màn này CHỈ XEM; có API thì máy gửi, trạng thái đổi theo.
+ * Gửi sang hệ anh Tune (services/gui_but_toan_tune.py) khi máy chủ bật cờ QLSX_GUI_BUT_TOAN (`co_duong_gui`): ghi xong tự gửi;
+ * màn có nút Gửi (một bản: chờ gửi → gửi, chờ đảo → đảo), Gửi hết, Cập nhật (hỏi lại số chứng từ). Cờ tắt: CHỈ XEM như cũ.
  * Đọc GET /api/but-toan-cho (routes/de_nghi.py) — vai KT Thu/Chi VC, KT Chi phí VC, Sếp, máy chủ chặn vai khác.
  */
 (function () {
   const { API, NN, esc, so } = EPL;
 
-  let root, DS = [], CHON = null, loc = '', tim = '', hen = null, LUOT = 0, PHIEU = null, TEN = {};
+  let root, DS = [], CHON = null, loc = '', tim = '', hen = null, LUOT = 0, PHIEU = null, TEN = {}, GUI = false;
+  const guiDuoc = () => GUI && EPL.AUTH.la('acct', 'expacct');      // Sếp luôn qua (AUTH.la) — cùng danh sách máy chủ
   const q = (s) => root.querySelector(s);
   const NGUON = ['thue_xe', 'no_ncc', 'tat_toan', 'ban_chu_xe'];
   const LOC = ['', 'cho_gui', 'da_gui', 'huy', 'can_dao'];
@@ -70,7 +72,7 @@
          ['btc_can_dao', `${dao.length}`, dao.length ? 'canh' : '']]
         .map(([k, v, c]) => `<div class="o ${c}"><div class="l">${NN.h(k)}</div><div class="v">${v}</div></div>`).join('')
       + `<div class="btc-bao"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
-        <span>${NN.h('btc_note')}</span></div>`;
+        <span>${NN.h(GUI ? 'btc_note_bat' : 'btc_note')}</span></div>`;
     const bo = q('#btc-bo-phieu');
     if (bo) bo.addEventListener('click', () => { PHIEU = null; history.replaceState(null, '', '#/but-toan-cho'); tai(); });
   }
@@ -83,8 +85,8 @@
       return `<button type="button" class="btc-o st-${b.status} ${b.can_dao ? 'dao' : ''} ${CHON === b.id ? 'chon' : ''}" data-id="${esc(b.id)}">
         <span class="ten">${NN.h(nhanNguon(b.nguon))}</span>
         <span class="tien">${chuoiTien(tongTien([b]))}</span>
-        <span class="phu">${EPL.ngay(b.ngay)} · ${b.trip_doc_no ? esc(b.trip_doc_no) : esc(b.source_ref || '')}</span>
-        <span class="tt">${EPL.tag(s.mau, s.nhan)}</span>
+        <span class="phu">${EPL.ngay(b.ngay)} · ${b.trip_doc_no ? esc(b.trip_doc_no) : esc(b.source_ref || '')}${b.so_ben_ke_toan ? ' · <span class="mono">' + esc(b.so_ben_ke_toan) + '</span>' : ''}</span>
+        <span class="tt">${EPL.tag(s.mau, s.nhan)}${b.error_code && b.status !== 'huy' ? ' <span class="tag unpaid" title="' + esc(b.loi_gui || '') + '">⚠</span>' : ''}</span>
         <span class="phu dg" lang="lo">${esc(b.dien_giai || '')}</span></button>`;
     }).join('') : `<div class="btc-trong">${NN.h('btc_trong')}</div>`;
     q('#btc-ds').querySelectorAll('[data-id]').forEach(b => b.addEventListener('click', () => { CHON = b.dataset.id; veDs(); veXem(); }));
@@ -109,20 +111,40 @@
       <td lang="lo">${esc(d.dien_giai || '')}${d.canh_bao_tk ? `<div class="canh">⚠ ${NN.h('btc_canh_tk')}: ${esc(d.canh_bao_tk.join(', '))}</div>` : ''}</td></tr>`).join('');
     o.innerHTML = `<div class="btc-dau">
         <div><h3>${NN.h(nhanNguon(b.nguon))}</h3><div class="small muted mono">${esc(b.source_ref || '')}</div></div>
-        <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}</div>
+        <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}
+        ${guiDuoc() && (b.status === 'cho_gui' || b.can_dao) ? `<button type="button" class="btn sm primary" data-btc="gui">${NN.h('btc_gui')}</button>` : ''}
+        ${guiDuoc() && b.status === 'da_gui' && !b.can_dao ? `<button type="button" class="btn sm" data-btc="cap-nhat">${NN.h('ck_cap_nhat')}</button>` : ''}</div>
       <div class="btc-the">
         <div><span>${NN.h('btc_ngay')}</span><b>${EPL.ngay(b.ngay)}</b></div>
         <div><span>${NN.h('btc_goc')}</span><b>${goc(b)}</b></div>
         <div><span>${NN.h('amount')}</span><b>${chuoiTien(tongTien([b]))}</b></div>
-        <div><span>${NN.h('status')}</span><b>${b.status === 'da_gui' ? esc(b.so_ben_ke_toan || b.ma_ben_ke_toan || '') : NN.h(b.status === 'huy' ? 'v_huy' : 'btc_cho_api')}</b></div>
+        <div><span>${NN.h(b.so_ben_ke_toan || b.ma_ben_ke_toan ? 'btc_so_kt' : 'status')}</span><b>${b.so_ben_ke_toan || b.ma_ben_ke_toan
+          ? `<span class="mono">${esc(b.so_ben_ke_toan || b.ma_ben_ke_toan)}</span>` : NN.h(b.status === 'huy' ? 'v_huy' : GUI ? 'dt_st_cho_gui' : 'btc_cho_api')}</b></div>
       </div>
       ${b.dien_giai ? `<div class="small" lang="lo">${esc(b.dien_giai)}</div>` : ''}
       ${bang(rows || `<tr><td colspan="6" class="empty">${NN.h('no_data')}</td></tr>`)}
       <div class="btc-chan">
         <span>${NN.h('btc_lap')}: <b>${EPL.ngayGio(b.created_at)}</b>${b.created_by ? ` · <span lang="lo">${esc(b.created_by)}</span>` : ''}</span>
         ${b.huy_luc ? `<span>${NN.h('btc_huy_boi')}: <b lang="lo">${esc(b.huy_by || '')}</b> · ${EPL.ngayGio(b.huy_luc)}</span>` : ''}
-        ${b.loi_gui ? `<span class="neg">${esc(b.loi_gui)}</span>` : ''}
+        ${b.loi_gui ? `<span class="neg">${b.attempts ? '#' + b.attempts + ' · ' : ''}${esc(b.loi_gui)}</span>` : ''}
       </div>`;
+    o.querySelectorAll('[data-btc]').forEach(n => n.addEventListener('click', () => viec(b, n.dataset.btc, n)));
+  }
+
+  /** Gửi / đảo / hỏi lại MỘT bút toán, hoặc Gửi hết — rồi tải lại (lỗi bên kế toán hiện ngay, bản ghi giữ lỗi). */
+  async function viec(b, v, nut) {
+    if (nut) nut.disabled = true;
+    try {
+      if (v === 'gui-het') {
+        const r = await API.post('/api/but-toan-cho/gui-het', {});
+        EPL.toast(`${NN.t('btc_gui_het')}: ${r.da_gui} · ${NN.t('btc_can_dao')} ${r.da_dao}` + (r.loi ? ` · ⚠ ${r.loi}${r.chi_tiet_loi && r.chi_tiet_loi[0] ? ' — ' + r.chi_tiet_loi[0].loi : ''}` : ''),
+          r.loi ? 'loi' : 'ok');
+      } else {
+        await API.post(`/api/but-toan-cho/${encodeURIComponent(b.id)}/${v}`, {});
+        EPL.toast(NN.t(v === 'gui' ? 'dt_st_da_gui' : 'ck_cap_nhat'), 'ok');
+      }
+    } catch (e) { EPL.baoLoi(e); }
+    await tai();
   }
 
   /* ---------------------------------------------------------------- cao vừa cửa sổ */
@@ -158,6 +180,8 @@
     try { g = await API.get('/api/but-toan-cho?' + p.toString()); } catch (e) { if (luot === LUOT) EPL.baoLoi(e); g = { ds: [] }; }
     if (luot !== LUOT) return;
     DS = g.ds || [];
+    GUI = !!g.co_duong_gui;
+    const het = q('#btc-gui-het'); if (het) het.hidden = !guiDuoc();
     if (PHIEU && !PHIEU.doc) PHIEU.doc = (DS.find(b => b.trip_doc_no) || {}).trip_doc_no;
     veHet();
   }
@@ -187,6 +211,7 @@
       q('#btc-ky').addEventListener('change', () => { CHON = null; tai(); });
       q('#btc-nguon').addEventListener('change', () => { CHON = null; tai(); });
       q('#btc-lam-moi').addEventListener('click', () => tai());
+      q('#btc-gui-het').addEventListener('click', (e) => viec(null, 'gui-het', e.currentTarget));
       q('#btc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); veHet(); }, 200); });
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       await Promise.all([napTen(), tai()]);

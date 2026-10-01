@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2191 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2195 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10956,5 +10956,25 @@ window.EPL_TU_DIEN = {
   "vi": "{doc_no} – đã giao nhưng chưa tạo SO bên kế toán",
   "lo": "{doc_no} – ຮອດແລ້ວ ແຕ່ຍັງບໍ່ສ້າງ SO ຢູ່ລະບົບບັນຊີ",
   "en": "{doc_no} – delivered but no SO in accounting yet"
+ },
+ "btc_gui": {
+  "vi": "Gửi sang kế toán",
+  "lo": "ສົ່ງໄປບັນຊີ",
+  "en": "Send to accounting"
+ },
+ "btc_gui_het": {
+  "vi": "Gửi hết",
+  "lo": "ສົ່ງທັງໝົດ",
+  "en": "Send all"
+ },
+ "btc_so_kt": {
+  "vi": "Số chứng từ bên kế toán",
+  "lo": "ເລກເອກະສານລະບົບບັນຊີ",
+  "en": "Accounting document no."
+ },
+ "btc_note_bat": {
+  "vi": "Gửi sang hệ kế toán đang bật: ghi xong tự gửi; hỏng thì bấm Gửi / Gửi hết.",
+  "lo": "ເປີດການສົ່ງໄປລະບົບບັນຊີແລ້ວ: ບັນທຶກແລ້ວສົ່ງເອງ; ບໍ່ສຳເລັດໃຫ້ກົດ ສົ່ງ / ສົ່ງທັງໝົດ.",
+  "en": "Sending to accounting is on: entries are sent on save; if one fails, press Send / Send all."
  }
 };

@@ -34,6 +34,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models import MUC_CHI, ChiMucTune, ChiTune, ChungTu, FuelPlace, GuiSoTune, Trip, TripExpense, TripSection, Voucher
 from services import but_toan_cho as BTC
+from services import gui_but_toan_tune as GBT
 from services import chi_muc_tune as CMT
 from services import chi_tune as CHI
 from services import chung_tu as CT
@@ -148,8 +149,9 @@ def theo_do(thang: str = "", q: str = "", db: Session = Depends(get_db), user=De
             t = tinh_phieu(p, dong[p.id], DNT.da_thu_lak(p, b))
             x["thu"].update({"doanh_thu": t["doanh_thu"], "ccy": t["ccy"], "doanh_thu_lak": t["doanh_thu_lak"],
                              "da_thu_lak": t["da_thu_lak"], "con_lai_lak": t["con_lai_lak"], "so_ke_toan": GT.xuat(b)})
-        x["ho_so"] = {"tong": len(cts[p.id]), "da_day": sum(1 for c in cts[p.id] if c.da_day),
-                      "loi": sum(1 for c in cts[p.id] if c.loi_day and not c.da_day)}
+        # tờ đề nghị thu (PDT) không còn "đẩy" — sang bên công nợ là gửi SO (01/10) — nên không vào phép đếm đã đối chiếu
+        ho = [c for c in cts[p.id] if c.loai != DNT.LOAI]
+        x["ho_so"] = {"tong": len(ho), "da_day": sum(1 for c in ho if c.da_day), "loi": sum(1 for c in ho if c.loi_day and not c.da_day)}
         ra.append(x)
     return {"thang": _thang(thang)[0].strftime("%Y-%m"), "thay_tien_chi": chi, "thay_tien_ban": ban, "ds": ra,
             "gioi_han": GIOI_HAN if len(ra) >= GIOI_HAN else None}
@@ -381,9 +383,49 @@ def ds_but_toan_cho(nguon: str = "", status: str = "", trip_id: str = "", thang:
     from sqlalchemy import func
     from models import ButToanCho
     dem = dict(db.query(ButToanCho.status, func.count(ButToanCho.id)).group_by(ButToanCho.status).all())
-    return {"ds": [BTC.xuat(r, so.get(r.trip_id)) for r in ds], "dem": dem, "co_duong_gui": False,
-            "ghi_chu": "Hệ kế toán chưa có đường nhận bút toán tổng hợp (hợp đồng kế toán 12.12.4) — bút toán nằm đây, đủ hai vế, "
-                       "chờ có API thì gửi."}
+    dao = db.query(func.count(ButToanCho.id)).filter(ButToanCho.can_dao.is_(True)).scalar()
+    return {"ds": [BTC.xuat(r, so.get(r.trip_id)) for r in ds], "dem": dict(dem, can_dao=dao), "co_duong_gui": GBT.bat(),
+            "ghi_chu": ("Gửi sang hệ kế toán đang BẬT (QLSX_GUI_BUT_TOAN): ghi xong tự gửi; hỏng thì bấm Gửi / Gửi hết." if GBT.bat() else
+                        "Hệ kế toán chưa có đường nhận bút toán tổng hợp (hợp đồng kế toán 12.12.4) — bút toán nằm đây, đủ hai vế, "
+                        "chờ có API thì gửi.")}
+
+
+def _btc_gui_duoc(user):
+    if user.role not in BTC.VAI_XEM:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không gửi bút toán sang kế toán." % user.role})
+    if not GBT.bat():
+        raise HTTPException(409, {"ma": "GUI_DANG_TAT", "loi": "Chưa bật gửi bút toán sang hệ kế toán (QLSX_GUI_BUT_TOAN) — bên đó "
+                                                               "chưa có đường nhận; bút toán nằm ở đây để xem."})
+
+
+@router.post("/api/but-toan-cho/gui-het")
+def gui_het_but_toan(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Gửi mọi bút toán chờ gửi (cũ trước) và đảo mọi bản chờ đảo — dừng khi bên kế toán không vào được."""
+    _btc_gui_duoc(user)
+    return GBT.gui_het(db)
+
+
+@router.post("/api/but-toan-cho/{bid}/{viec}")
+def viec_but_toan(bid: str, viec: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """gui (bản chờ gửi → gửi; bản chờ đảo → đảo) · cap-nhat (hỏi lại số chứng từ bên kế toán)."""
+    from models import ButToanCho
+    _btc_gui_duoc(user)
+    r = db.get(ButToanCho, bid)
+    if r is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có bút toán này."})
+    if viec == "gui":
+        if r.status == "da_gui" and r.can_dao:
+            GBT.dao(db, r)
+        elif r.status == "cho_gui":
+            GBT.gui(db, r)
+        else:
+            raise HTTPException(409, {"ma": "KHONG_GUI", "loi": "Bút toán này đang %s — không có gì để gửi." % r.status})
+    elif viec == "cap-nhat":
+        GBT.cap_nhat(db, r)
+    else:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có việc %s." % viec})
+    doc = db.query(Trip.doc_no).filter(Trip.id == r.trip_id).scalar() if r.trip_id else None
+    return BTC.xuat(r, doc)
 
 
 def _muc_iv(db, p):

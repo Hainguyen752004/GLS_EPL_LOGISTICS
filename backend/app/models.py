@@ -1320,6 +1320,14 @@ class ButToanCho(Base):
     so_ben_ke_toan = Column(String(64))                           # DocumentNo bên kia
     gui_luc = Column(DateTime)
     loi_gui = Column(Text)
+    # gửi sang hệ anh Tune (services/gui_but_toan_tune.py, cờ QLSX_GUI_BUT_TOAN): số lần thử, mã lỗi lần gần nhất, trạng thái bên
+    # đó (StatusId); `phien` tăng khi bản đã gửi được đảo rồi nguồn ghi lại — SourceRef mới "…-<phien>", không đụng chứng từ cũ
+    attempts = Column(Integer, nullable=False, default=0)
+    error_code = Column(String(64))
+    tune_status = Column(Integer)
+    phien = Column(Integer, nullable=False, default=1)
+    request_body = Column(Text)
+    response_body = Column(Text)
     huy_luc = Column(DateTime)
     huy_by = Column(String)
     created_by = Column(String)

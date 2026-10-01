@@ -32,7 +32,11 @@ GIAO ƯỚC (module khác gọi — giữ cố định):
 
 Hàm ở đây KHÔNG commit — người gọi commit cùng giao dịch của nghiệp vụ (khoá phiếu ghi bút toán trong cùng lần khoá).
 
-Trạng thái: cho_gui (chờ API bên kế toán) · da_gui (bên đó đã nhận — chưa có đường nên hiện chưa bản nào tới đây) · huy.
+Trạng thái: cho_gui (chờ gửi) · da_gui (bên kế toán đã nhận, có số chứng từ) · huy.
+
+GỬI sang hệ anh Tune (services/gui_but_toan_tune.py) khi cờ QLSX_GUI_BUT_TOAN bật (mặc định tắt — bên đó cần áp script DB):
+ghi xong là tự gửi (hỏng thì giữ cho_gui, ghi lỗi); huỷ / rút bản đã gửi là gửi bút toán đảo — đảo xong thì huy, chưa đảo
+được thì can_dao (Gửi hết thử lại). Bản đã đảo mà nguồn ghi lại thì SourceRef mới "…-<phien>". Cờ tắt: như trước, chỉ xem.
 """
 import datetime as dt
 import json
@@ -132,8 +136,14 @@ def _dat(r, ngay, ds, dien_giai, trip_id, by_user):
     r.tong = lam_tron(sum(x["tien"] for x in ds), r.tien_te) if r.tien_te else None
     if trip_id is not None:
         r.trip_id = trip_id
-    r.source_ref = ("EPLLAO-%s-%s" % (r.nguon, r.ma_nguon))[:100]
-    r.status, r.huy_luc, r.huy_by = "cho_gui", None, None
+    if r.status == "huy" and r.ma_ben_ke_toan:
+        # bản này từng sang bên kế toán rồi được ĐẢO: ghi lại là chứng từ mới — SourceRef mới, không đụng chứng từ đã đảo
+        r.phien = (r.phien or 1) + 1
+        r.ma_ben_ke_toan = r.so_ben_ke_toan = r.tune_status = r.gui_luc = None
+    r.error_code = r.loi_gui = None
+    base = "EPLLAO-%s-%s" % (r.nguon, r.ma_nguon)
+    r.source_ref = (base if (r.phien or 1) <= 1 else "%s-%d" % (base, r.phien))[:100]
+    r.status, r.huy_luc, r.huy_by, r.can_dao = "cho_gui", None, None, False
     if by_user and not r.created_by:
         r.created_by = by_user
 
@@ -144,6 +154,8 @@ def ghi(db, nguon, ma_nguon, ngay, dong, dien_giai, *, trip_id=None, by_user=Non
     ngay = _ngay(ngay)
     ds = _chuan_dong(dong)
     r = _tim(db, nguon, ma_nguon)
+    if r is not None and r.status == "da_gui" and r.can_dao:
+        _dao(db, r)                                 # nguồn bị huỷ rồi ghi lại: đảo bản cũ được thì ghi bản mới (SourceRef mới)
     if r is not None and r.status == "da_gui":
         return r                                    # bên kế toán đã nhận: không sửa lặng lẽ — đổi số thì phải bút toán đảo
     if not ds:
@@ -158,14 +170,34 @@ def ghi(db, nguon, ma_nguon, ngay, dong, dien_giai, *, trip_id=None, by_user=Non
                 _dat(r, ngay, ds, dien_giai, trip_id, by_user)
                 db.add(r)
                 db.flush()
-            return r
+            return _tu_gui(db, r)
         except IntegrityError:
             r = _tim(db, nguon, ma_nguon)
             if r is None or r.status == "da_gui":
                 return r
     _dat(r, ngay, ds, dien_giai, trip_id, by_user)
     db.flush()
-    return r
+    return _tu_gui(db, r)
+
+
+def _tu_gui(db, r):
+    from services import gui_but_toan_tune as GBT
+    return GBT.tu_gui(db, r)
+
+
+def _dao(db, r):
+    """Cờ gửi bật: gửi bút toán đảo cho bản đã gửi; được → huy, không được → can_dao (Gửi hết thử lại). Cờ tắt: can_dao.
+    Trả True khi đã đảo xong."""
+    from fastapi import HTTPException
+    from services import gui_but_toan_tune as GBT
+    if not GBT.bat():
+        r.can_dao = True
+        return False
+    try:
+        GBT.dao(db, r, commit=False)
+        return True
+    except HTTPException:
+        return False                                # dao() đã đánh can_dao, ghi lỗi
 
 
 def huy(db, nguon, ma_nguon, by_user=None):
@@ -177,7 +209,8 @@ def huy(db, nguon, ma_nguon, by_user=None):
     if r.status == "cho_gui":
         r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
     elif r.status == "da_gui":
-        r.can_dao = True
+        if _dao(db, r):
+            r.huy_by = by_user
     db.flush()
     return r
 
@@ -191,9 +224,15 @@ def rut(db, nguon, ma_nguon, by_user=None):
     if r is None:
         return False
     if r.status == "da_gui":
-        raise HTTPException(409, {"ma": "BUT_TOAN_DA_GUI", "loi": "Bút toán %s đã gửi sang hệ kế toán (%s) — không rút được ở đây, "
-                                                                 "đối soát và ghi bút toán đảo bên đó trước." % (
-                                                                     r.source_ref or ma_nguon, r.so_ben_ke_toan or r.ma_ben_ke_toan or "—")})
+        from services import gui_but_toan_tune as GBT
+        if not GBT.bat():
+            raise HTTPException(409, {"ma": "BUT_TOAN_DA_GUI", "loi": "Bút toán %s đã gửi sang hệ kế toán (%s) — không rút được ở đây, "
+                                                                     "đối soát và ghi bút toán đảo bên đó trước." % (
+                                                                         r.source_ref or ma_nguon, r.so_ben_ke_toan or r.ma_ben_ke_toan or "—")})
+        if _dao(db, r):                             # đảo xong bên kế toán
+            r.huy_by = by_user
+        db.flush()                                  # chưa đảo được: can_dao — nguồn vẫn bỏ được, Gửi hết đảo sau
+        return True
     if r.status != "huy":
         r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
         db.flush()
@@ -238,7 +277,8 @@ def xuat(r, doc_no=None):
             "dien_giai": r.dien_giai, "dong": dong, "so_dong": r.so_dong, "tien_te": r.tien_te, "tong": r.tong,
             "trip_id": r.trip_id, "trip_doc_no": doc_no, "status": r.status, "can_dao": bool(r.can_dao),
             "source_ref": r.source_ref, "ma_ben_ke_toan": r.ma_ben_ke_toan, "so_ben_ke_toan": r.so_ben_ke_toan,
-            "gui_luc": _gio(r.gui_luc), "loi_gui": r.loi_gui, "huy_luc": _gio(r.huy_luc), "huy_by": r.huy_by,
+            "gui_luc": _gio(r.gui_luc), "loi_gui": r.loi_gui, "error_code": r.error_code, "attempts": r.attempts or 0,
+            "tune_status": r.tune_status, "phien": r.phien or 1, "huy_luc": _gio(r.huy_luc), "huy_by": r.huy_by,
             "created_by": r.created_by, "created_at": _gio(r.created_at), "updated_at": _gio(r.updated_at)}
 
 
