@@ -42,7 +42,8 @@ def main(ghi):
             "lần thu (invoice_payments)": db.query(InvoicePayment).count(),
             "đợt trả chủ xe trang tạm (owner_payments)": db.query(OwnerPayment).count(),
             "bản chốt tất toán (driver_settlements)": db.query(DriverSettlement).count(),
-            "hàng bán trỏ đợt trả trang tạm (sales)": db.query(Sale).filter(Sale.owner_payment_id.isnot(None)).count(),
+            "hàng bán trỏ đợt trả trang tạm (sales)": db.query(Sale).filter(Sale.owner_payment_id.isnot(None),
+                                                                      ~Sale.owner_payment_id.like("TUNE%")).count(),
         }
         for k, v in dem.items():
             print("%-45s %s" % (k, v))
@@ -54,7 +55,8 @@ def main(ghi):
             p.collected_lak, p.finance_status = 0, "unpaid"
             if p.owner_payment_id and not p.owner_payment_id.startswith("TUNE:"):
                 p.owner_payment_id = None
-        db.query(Sale).filter(Sale.owner_payment_id.isnot(None)).update({Sale.owner_payment_id: None}, synchronize_session=False)
+        # mã "TUNE…" (trừ qua hệ anh Tune) giữ nguyên — chỉ bỏ đợt trả của trang tạm
+        db.query(Sale).filter(Sale.owner_payment_id.isnot(None), ~Sale.owner_payment_id.like("TUNE%"))             .update({Sale.owner_payment_id: None}, synchronize_session=False)
         db.query(InvoicePayment).delete(synchronize_session=False)
         db.query(Invoice).delete(synchronize_session=False)
         db.query(OwnerPayment).delete(synchronize_session=False)
