@@ -4,7 +4,9 @@
  *   · Phiếu đề nghị tạm ứng (PTU). Từ 01/10 (chủ dự án: "chi thật là anh Tune xong update trạng thái về bên mình"): KT Chi phí
  *     ghi sổ mục IV → máy lập phiếu chi "Chi trước" bên hệ kế toán; thủ quỹ chi tiền và GHI SỔ ở đó; trang này hỏi lại, đã ghi
  *     sổ thì tờ thành "Đã cấp" và tài xế xuất phát được. Khối #dnc-kt: trạng thái + Cập nhật / Gửi lại.
- *   · Phiếu đề nghị xuất kho nhiên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ.
+ *   · Phiếu đề nghị xuất kho nhiên liệu (PLNL) — mỗi kho EPL một tờ; thủ kho quét QR, cấp dầu theo tờ (màn Đề nghị xuất kho).
+ * Tờ tạm ứng KHÔNG có mã QR (chủ dự án 01/10): tài xế lĩnh tiền ở quỹ hệ kế toán (phiếu chi "Chi trước" CMP 59), thủ quỹ tìm
+ * chứng từ theo SỐ DO — tờ in ghi rõ "đưa số DO … cho thủ quỹ" và loại tạm ứng (nội bộ · ghi công nợ chủ xe).
  * Việc cấp thật ở bên kho / bên quỹ (màn Cấp phát trang kế toán). Màn này tìm, xem, in — không cấp, không chi.
  * Chi mục V–VI của chuyến (01/10): khoản quỹ trả ngay thành phiếu chi "Chi khác" bên hệ kế toán lúc KT Chi phí ghi sổ mục —
  * khối #dnc-kt-muc cạnh khối tạm ứng: chờ chi · đã chi · lỗi / bị xoá bên đó, Cập nhật / Gửi lại (GET|POST
@@ -26,14 +28,15 @@
     return String(ma || '').split('/').map(m => { const x = ACC[m]; return `<span class="ct-acc" title="${esc(x ? (x.description || x.name) : NN.t('acct_not_in_catalogue'))}">${esc(m)}</span>`; }).join(' / ');
   }
 
-  /** Khối mã QR in trên tờ. QR chỉ chứa ĐƯỜNG DẪN TRA CỨU, không nhồi số liệu: số liệu còn đổi sau lúc in. */
-  function khoiQR(v) {
-    if (!v) return '';
-    return `<div class="ct-qr">
-      <img src="${esc(v.qr)}" alt="QR" width="132" height="132">
-      <div><div class="small muted">${NN.h('v_qr_hint')}</div>
-        <div class="ct-ma">${NN.h('v_code')}: <b class="mono">${esc(v.token)}</b></div>
-        <div class="small muted">${tag(v.status === 'da_cap' ? 'paid' : 'plain', 'v_' + v.status)}</div></div></div>`;
+  /** Khối "lĩnh ở đâu" in trên tờ tạm ứng, THAY mã QR (chủ dự án 01/10): tạm ứng chi thật ở quỹ hệ kế toán anh Tune bằng
+   *  phiếu chi "Chi trước", thủ quỹ tìm chứng từ theo SỐ DO (ô Vụ việc) — không quét QR; QR cũ dẫn sang cấp phát của kho tạm,
+   *  gây nhầm. Ghi rõ loại tạm ứng: nội bộ (xe nhà) · ghi công nợ chủ xe (xe thuê). `v` = tờ (có thể chưa có — phiếu lẻ). */
+  function khoiLinh(d, v) {
+    const ht = d.hinh_thuc || EPL.maBanChat('tam_ung', d.company);
+    return `<div class="ct-qr dnc-linh">
+      <div><div class="ct-ma">${NN.h('dnc_linh_quy', { do: d.doc_no })}</div>
+        <div class="small">${NN.h('dnc_loai_tu')}: <b>${EPL.banChat('tam_ung', ht, d.owner_name)}</b></div>
+        ${v ? `<div class="small muted">${tag(v.status === 'da_cap' ? 'paid' : 'plain', 'v_' + v.status)}</div>` : ''}</div></div>`;
   }
 
   /* ---------------------------------------------------------------- tờ đề nghị tạm ứng */
@@ -55,7 +58,7 @@
         <tbody>${d.dong.map((x, i) => `<tr><td>${i + 1}</td><td lang="lo">${esc(x.item_key ? NN.t(x.item_key) : x.item_name)}</td><td class="num">${so(x.qty)}</td>${coTien ? `<td class="num">${so(x.unit_price)}${x.currency !== 'LAK' ? ' ' + esc(x.currency) : ''}</td><td class="num">${so(x.tien_lak)}</td><td class="tien">${tenTK(x.acct_code)}</td>` : ''}</tr>`).join('')}</tbody></table>
       ${coTien ? `<div class="ct-tong"><div><span>${NN.h('total')}</span><span>${so(d.tong_lak)} LAK</span></div></div>` : ''}
       <div class="ct-tt"><span class="muted">${NN.h('voucher_stage')}:</span> ${tag(d.trang_thai === 'paid' ? 'paid' : d.trang_thai === 'wait' ? 'plain' : 'partial', trangThai)} ${d.tra_tien_xong ? '· ' + NN.h('advance_received') : ''}</div>
-      ${khoiQR(v)}
+      ${khoiLinh(d, v)}
       <div class="ct-ky"><div><div class="line"></div>${NN.h('sg_receiver')}<div class="small muted" lang="lo">${esc(d.driver_name || '')}</div></div><div><div class="line"></div>${NN.h('sg_cashier')}</div><div><div class="line"></div>${NN.h('sg_chief_acct')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
 

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2606 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2632 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1184,7 +1184,7 @@ window.EPL_TU_DIEN = {
  },
  "paid_lak": {
   "vi": "Đã trả",
-  "lo": "ຈ່າຽແລ້ວ",
+  "lo": "ຈ່າຍແລ້ວ",
   "en": "Paid"
  },
  "balance_lak": {
@@ -1459,7 +1459,7 @@ window.EPL_TU_DIEN = {
  },
  "stt_paid": {
   "vi": "Đã chi",
-  "lo": "ຈ່າຽແລ້ວ",
+  "lo": "ຈ່າຍແລ້ວ",
   "en": "Paid"
  },
  "stt_na": {
@@ -1559,12 +1559,12 @@ window.EPL_TU_DIEN = {
  },
  "ded_note": {
   "vi": "Quá tải tính trên cân cuối. Các khoản cắt và chi phí EPL đã ứng sẽ trừ vào tiền trả chủ xe ở phần tổng kết bên dưới.",
-  "lo": "ແກ່ເກີນຄິດຈາກນໍ້າໜັກປາຍທາງ. ຄ່າຫັກ ແລະ ຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດຢູ່ສ່ວນສະຫຼຸບລຸ່ມ.",
+  "lo": "ແກ່ເກີນຄິດຈາກນໍ້າໜັກປາຍທາງ. ຄ່າຫັກ ແລະ ຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ ຈະຫັກຈາກເງິນຈ່າຍເຈົ້າຂອງລົດຢູ່ສ່ວນສະຫຼຸບລຸ່ມ.",
   "en": "Overload is computed on destination weight. Deductions and EPL advances are subtracted from the owner payout in the summary below."
  },
  "who_pays": {
   "vi": "Ai chi",
-  "lo": "ໃຜຈ່າຽ",
+  "lo": "ໃຜຈ່າຍ",
   "en": "Who pays"
  },
  "pay_epl": {
@@ -1574,7 +1574,7 @@ window.EPL_TU_DIEN = {
  },
  "pay_own": {
   "vi": "Chủ xe tự trả",
-  "lo": "ເຈົ້າຂອງລົດຈ່າຽເອງ",
+  "lo": "ເຈົ້າຂອງລົດຈ່າຍເອງ",
   "en": "Owner pays"
  },
  "pt_joint_note": {
@@ -1584,7 +1584,7 @@ window.EPL_TU_DIEN = {
  },
  "fuel_joint_note": {
   "vi": "Xe thuê ngoài: dầu đổ tại kho EPL sẽ trừ vào tiền trả chủ xe. Đổ ở trạm ngoài do chủ xe tự trả thì không trừ.",
-  "lo": "ລົດເຊົ່ານອກ: ນໍ້ານັນທີ່ໃສ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຽເຈົ້າຂອງລົດ. ໃສ່ປໍ້ານອກ ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ.",
+  "lo": "ລົດເຊົ່ານອກ: ນໍ້າມັນທີ່ໃສ່ຈາກສາງ EPL ຈະຫັກຈາກເງິນຈ່າຍເຈົ້າຂອງລົດ. ໃສ່ປໍ້ານອກ ເຈົ້າຂອງລົດຈ່າຍເອງ ບໍ່ຫັກ.",
   "en": "Joint truck: fuel from the EPL store is deducted from the owner payout. Fuel the owner buys outside is not."
  },
  "fp_other": {
@@ -1614,12 +1614,12 @@ window.EPL_TU_DIEN = {
  },
  "st_adv": {
   "vi": "Trừ chi phí EPL đã ứng",
-  "lo": "ຫັກຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ",
+  "lo": "ຫັກຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ",
   "en": "Less EPL advances"
  },
  "st_adv_fuel": {
   "vi": "· dầu kho EPL",
-  "lo": "· ນໍ້ານັນສາງ EPL",
+  "lo": "· ນໍ້າມັນສາງ EPL",
   "en": "· EPL store fuel"
  },
  "st_adv_travel": {
@@ -1639,7 +1639,7 @@ window.EPL_TU_DIEN = {
  },
  "st_net_owner": {
   "vi": "Còn phải trả chủ xe",
-  "lo": "ຍັງຕ້ອງຈ່າຽເຈົ້າຂອງລົດ",
+  "lo": "ຍັງຕ້ອງຈ່າຍເຈົ້າຂອງລົດ",
   "en": "Payable to owner"
  },
  "st_profit": {
@@ -1649,17 +1649,17 @@ window.EPL_TU_DIEN = {
  },
  "st_own_paid": {
   "vi": "Chủ xe tự trả (không tính)",
-  "lo": "ເຈົ້າຂອງລົດຈ່າຽເອງ (ບໍ່ນັບ)",
+  "lo": "ເຈົ້າຂອງລົດຈ່າຍເອງ (ບໍ່ນັບ)",
   "en": "Paid by owner (not counted)"
  },
  "settle_title": {
   "vi": "Tổng kết thanh toán xe thuê ngoài",
-  "lo": "ສະຫຼຸບການຈ່າຽລົດເຊົ່ານອກ",
+  "lo": "ສະຫຼຸບການຈ່າຍລົດເຊົ່ານອກ",
   "en": "Joint truck settlement"
  },
  "settle_ex": {
   "vi": "Lãi = tiền DO − tiền thuê xe. Trả chủ xe = tiền thuê − phí − quá tải − chi phí EPL đã ứng (thuê 50, ứng 20 → trả 30).",
-  "lo": "ກຳໄລ = ເງິນ DO − ຄ່າເຊົ່າ. ຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − EPL ອອກກ່ອນ (ເຊົ່າ 50, ອອກກ່ອນ 20 → ຈ່າຽ 30).",
+  "lo": "ກຳໄລ = ເງິນ DO − ຄ່າເຊົ່າ. ຈ່າຍເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − EPL ອອກກ່ອນ (ເຊົ່າ 50, ອອກກ່ອນ 20 → ຈ່າຍ 30).",
   "en": "Profit = customer amount − truck hire. Owner payout = hire − fee − overload − EPL advances."
  },
  "pick_bill": {
@@ -1674,12 +1674,12 @@ window.EPL_TU_DIEN = {
  },
  "bill_other": {
   "vi": "Chi khác",
-  "lo": "ລາຍຈ່າຽອື່ນໆ",
+  "lo": "ລາຍຈ່າຍອື່ນໆ",
   "en": "Other"
  },
  "bill_settle": {
   "vi": "Thanh toán chủ xe",
-  "lo": "ຈ່າຽເຈົ້າຂອງລົດ",
+  "lo": "ຈ່າຍເຈົ້າຂອງລົດ",
   "en": "Owner settlement"
  },
  "login_title": {
@@ -1744,7 +1744,7 @@ window.EPL_TU_DIEN = {
  },
  "stt_booked": {
   "vi": "Đã ghi sổ · chờ chi",
-  "lo": "ບັນທຶກແລ້ວ · ລໍຈ່າຽ",
+  "lo": "ບັນທຶກແລ້ວ · ລໍຈ່າຍ",
   "en": "Booked · awaiting payment"
  },
  "stt_wait2": {
@@ -1769,7 +1769,7 @@ window.EPL_TU_DIEN = {
  },
  "a_pay": {
   "vi": "Xác nhận đã chi",
-  "lo": "ຢືນຢັນຈ່າຽແລ້ວ",
+  "lo": "ຢືນຢັນຈ່າຍແລ້ວ",
   "en": "Confirm paid"
  },
  "a_return": {
@@ -1824,7 +1824,7 @@ window.EPL_TU_DIEN = {
  },
  "acct_614_402": {
   "vi": "Sửa chữa trả NCC",
-  "lo": "ສ້ອມແປງ ຈ່າຽຜູ້ສະໜອງ",
+  "lo": "ສ້ອມແປງ ຈ່າຍຜູ້ສະໜອງ",
   "en": "Repairs paid to supplier"
  },
  "acct_614_371": {
@@ -5140,7 +5140,7 @@ window.EPL_TU_DIEN = {
  "r_cash": {
   "vi": "Quỹ tiền mặt Thà Bốc",
   "lo": "ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ",
-  "en": "Thà Bốc petty cash"
+  "en": "Thabok petty cash"
  },
  "r_rev": {
   "vi": "KT Doanh thu VC",
@@ -5288,9 +5288,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver's slips, fuel reports, location"
  },
  "d_cap_phat": {
-  "vi": "Quét QR, cấp dầu và chi tạm ứng",
-  "lo": "ສະແກນ QR, ຈ່າຍນ້ຳມັນ ແລະ ເງິນລ່ວງໜ້າ",
-  "en": "Scan QR, issue fuel and advances"
+  "vi": "Quét QR, cấp dầu theo phiếu đề nghị xuất kho",
+  "lo": "ສະແກນ QR, ຈ່າຍນໍ້າມັນຕາມໃບສະເໜີເບີກອອກສາງ",
+  "en": "Scan QR, issue fuel by stock-out request"
  },
  "d_xe_lien_ket": {
   "vi": "Điều khoản, hợp đồng thuê xe · trả chủ xe qua hệ kế toán",
@@ -5884,7 +5884,7 @@ window.EPL_TU_DIEN = {
  },
  "owner_pay_in_batch": {
   "vi": "Trả gộp ở bảng Chủ xe",
-  "lo": "ຈ່າຽລວມທີ່ຕາຕະລາງເຈົ້າຂອງ",
+  "lo": "ຈ່າຍລວມທີ່ຕາຕະລາງເຈົ້າຂອງ",
   "en": "Paid in a batch from the Owners table"
  },
  "owner_pick_trips": {
@@ -9513,9 +9513,9 @@ window.EPL_TU_DIEN = {
   "en": "Pick the truck, driver and route for the DO; enter cost quantities (the yard enters no amounts)"
  },
  "lg2_t_dispatch_2": {
-  "vi": "In phiếu đề nghị tạm ứng và phiếu đề nghị xuất kho nhiên liệu có mã QR",
-  "lo": "ພິມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ແລະ ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ມີ QR",
-  "en": "Print the advance request and the fuel stock-out request with QR codes"
+  "vi": "In phiếu đề nghị tạm ứng và phiếu đề nghị xuất kho nhiên liệu (phiếu xuất kho có mã QR)",
+  "lo": "ພິມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ແລະ ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ (ໃບເບີກນໍ້າມັນມີ QR)",
+  "en": "Print the advance request and the fuel stock-out request (the fuel request carries a QR code)"
  },
  "lg2_p_fuel": {
   "vi": "Kho dầu Thà Bốc",
@@ -9863,9 +9863,9 @@ window.EPL_TU_DIEN = {
   "en": "Breakdown, tyre, accident, held"
  },
  "tx_o_qr": {
-  "vi": "Đưa quỹ / thủ kho quét",
-  "lo": "ໃຫ້ຝ່າຍເງິນ / ສາງ ສະແກນ",
-  "en": "Show to cashier / storekeeper"
+  "vi": "Thủ kho quét phiếu dầu · tạm ứng đưa số DO cho quỹ",
+  "lo": "ສາງສະແກນໃບນໍ້າມັນ · ເງິນລ່ວງໜ້າຍື່ນເລກ DO ໃຫ້ຄັງເງິນ",
+  "en": "Depot scans the fuel slip · for the advance give the DO number to the cashier"
  },
  "tx_o_gps": {
   "vi": "Văn phòng thấy xe trên bản đồ",
@@ -9893,9 +9893,9 @@ window.EPL_TU_DIEN = {
   "en": "Cash received"
  },
  "tx_xem_de_nghi": {
-  "vi": "Xem mã QR đề nghị",
-  "lo": "ເບິ່ງ QR ໃບສະເໜີ",
-  "en": "Show request QR"
+  "vi": "Xem phiếu đề nghị",
+  "lo": "ເບິ່ງໃບສະເໜີ",
+  "en": "Show request"
  },
  "tx_khong_tam_ung": {
   "vi": "Chuyến này không có tạm ứng tiền mặt.",
@@ -11343,9 +11343,9 @@ window.EPL_TU_DIEN = {
   "en": "The yard does not enter prices — the section's verifier enters them at step 6"
  },
  "qt_b3_giay1": {
-  "vi": "Phiếu đề nghị tạm ứng có mã QR — tài xế cầm tới quỹ",
-  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ມີລະຫັດ QR — ໂຊເຟີຖືໄປຄັງເງິນ",
-  "en": "Advance request with a QR code — the driver takes it to the cashier"
+  "vi": "Phiếu đề nghị tạm ứng — tài xế lĩnh tiền ở quỹ kế toán, đưa số DO cho thủ quỹ (không có mã QR)",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ — ໂຊເຟີຮັບເງິນຢູ່ຄັງເງິນຝ່າຍບັນຊີ, ຍື່ນເລກ DO ໃຫ້ພະນັກງານຄັງເງິນ (ບໍ່ມີ QR)",
+  "en": "Advance request — the driver collects the cash at the accounting cashier by giving the DO number (no QR code)"
  },
  "qt_b3_khi_ptu": {
   "vi": "khi bấm \"Phiếu đề nghị tạm ứng\"",
@@ -11583,9 +11583,9 @@ window.EPL_TU_DIEN = {
   "en": "Resending never creates a second voucher: it first looks up the existing one by driver + PTU number"
  },
  "qt_b8_chan1": {
-  "vi": "Quỹ bấm Chi mục IV hoặc quét QR trên trang điều xe → chặn, chi ở hệ kế toán (Sếp vẫn chi tay được)",
-  "lo": "ຄັງເງິນກົດ ຈ່າຍ ໜ້າ IV ຫຼື ສະແກນ QR ຢູ່ໜ້າຈັດລົດ → ກັ້ນ, ຈ່າຍຢູ່ລະບົບບັນຊີ (ຫົວໜ້າຍັງຈ່າຍເອງໄດ້)",
-  "en": "The cashier pressing Pay on section IV or scanning the QR on the dispatch site → blocked, pay in the accounting system (the boss can still pay manually)"
+  "vi": "Quỹ bấm Chi mục IV trên trang điều xe → chặn, chi ở hệ kế toán (Sếp vẫn chi tay được)",
+  "lo": "ຄັງເງິນກົດ ຈ່າຍ ໜ້າ IV ຢູ່ໜ້າຈັດລົດ → ກັ້ນ, ຈ່າຍຢູ່ລະບົບບັນຊີ (ຫົວໜ້າຍັງຈ່າຍເອງໄດ້)",
+  "en": "The cashier pressing Pay on section IV on the dispatch site → blocked, pay in the accounting system (the boss can still pay manually)"
  },
  "qt_b8_chan2": {
   "vi": "Thủ quỹ chưa ghi sổ bên kế toán → tài xế chưa xuất phát được",
@@ -13031,5 +13031,135 @@ window.EPL_TU_DIEN = {
   "vi": "bán cho chủ xe liên kết — trừ vào tiền trả",
   "lo": "ຂາຍໃຫ້ເຈົ້າຂອງລົດຮ່ວມ — ຫັກຈາກເງິນທີ່ຈະຈ່າຍ",
   "en": "sold to a joint-truck owner — deducted from payment"
+ },
+ "qt_loai_do": {
+  "vi": "Phiếu xuất xe · đề nghị xuất xe",
+  "lo": "ໃບເບີກລົດ · ໃບສະເໜີເບີກລົດ",
+  "en": "Dispatch slip · truck dispatch request"
+ },
+ "qt_loai_plnl": {
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out request"
+ },
+ "qt_loai_ptu": {
+  "vi": "Phiếu đề nghị tạm ứng",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Advance request"
+ },
+ "qt_loai_pdt": {
+  "vi": "Phiếu đề nghị thu",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "Collection request"
+ },
+ "qt_loai_pxk_nl": {
+  "vi": "Phiếu xuất kho nhiên liệu",
+  "lo": "ໃບເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out note"
+ },
+ "qt_loai_pxk_pt": {
+  "vi": "Phiếu xuất kho phụ tùng",
+  "lo": "ໃບເບີກອະໄຫຼ່ອອກສາງ",
+  "en": "Parts stock-out note"
+ },
+ "qt_loai_pnk_nl": {
+  "vi": "Phiếu nhập kho nhiên liệu",
+  "lo": "ໃບຮັບນໍ້າມັນເຂົ້າສາງ",
+  "en": "Fuel goods received note"
+ },
+ "qt_loai_pnk_pt": {
+  "vi": "Phiếu nhập kho phụ tùng",
+  "lo": "ໃບຮັບອະໄຫຼ່ເຂົ້າສາງ",
+  "en": "Parts goods received note"
+ },
+ "qt_loai_ck_nl": {
+  "vi": "Phiếu chuyển kho nhiên liệu",
+  "lo": "ໃບໂອນນໍ້າມັນລະຫວ່າງສາງ",
+  "en": "Fuel depot transfer note"
+ },
+ "qt_loai_pnk_hh": {
+  "vi": "Phiếu nhập kho hàng",
+  "lo": "ໃບຮັບສິນຄ້າເຂົ້າສາງ",
+  "en": "Goods received note (yard)"
+ },
+ "qt_loai_pxk_hh": {
+  "vi": "Phiếu xuất kho hàng",
+  "lo": "ໃບເບີກສິນຄ້າອອກສາງ",
+  "en": "Goods issue note (yard)"
+ },
+ "qt_loai_dc_hh": {
+  "vi": "Phiếu điều chỉnh kho hàng",
+  "lo": "ໃບປັບປຸງສາງສິນຄ້າ",
+  "en": "Goods stock adjustment note"
+ },
+ "qt_loai_pc_tu": {
+  "vi": "Phiếu chi theo đề nghị tạm ứng",
+  "lo": "ໃບຈ່າຍເງິນຕາມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Payment voucher for an advance request"
+ },
+ "qt_loai_pc_sc": {
+  "vi": "Phiếu chi sửa chữa · chi khác",
+  "lo": "ໃບຈ່າຍສ້ອມແປງ · ອື່ນໆ",
+  "en": "Payment voucher · repairs · other expenses"
+ },
+ "qt_loai_pc_ncc": {
+  "vi": "Phiếu chi trả nhà cung cấp",
+  "lo": "ໃບຈ່າຍຜູ້ສະໜອງ",
+  "en": "Supplier payment voucher"
+ },
+ "qt_loai_pc_cx": {
+  "vi": "Phiếu chi trả chủ xe liên kết",
+  "lo": "ໃບຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "Joint-truck owner payment voucher"
+ },
+ "qt_loai_hd": {
+  "vi": "Hoá đơn vận chuyển",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງ",
+  "en": "Freight invoice"
+ },
+ "qt_loai_pt": {
+  "vi": "Phiếu thu tiền khách",
+  "lo": "ໃບຮັບເງິນລູກຄ້າ",
+  "en": "Customer receipt"
+ },
+ "qt_loai_qt_tu": {
+  "vi": "Quyết toán tạm ứng tài xế",
+  "lo": "ສະສາງໂຊເຟີ · ເງິນລ່ວງໜ້າ",
+  "en": "Driver advance settlement"
+ },
+ "qt_loai_tt_chi": {
+  "vi": "Tất toán tài xế · chi bù",
+  "lo": "ສະສາງໂຊເຟີ · ຈ່າຍເພີ່ມ",
+  "en": "Driver settlement · top-up payment"
+ },
+ "qt_loai_tt_thu": {
+  "vi": "Tất toán tài xế · thu hoàn",
+  "lo": "ສະສາງໂຊເຟີ · ຮັບຄືນ",
+  "en": "Driver settlement · refund received"
+ },
+ "qt_loai_pxk_ban": {
+  "vi": "Phiếu xuất kho bán hàng",
+  "lo": "ໃບເບີກສິນຄ້າຂາຍ",
+  "en": "Sales stock-out note"
+ },
+ "qt_loai_hd_ban": {
+  "vi": "Hoá đơn bán hàng",
+  "lo": "ໃບເກັບເງິນຂາຍສິນຄ້າ",
+  "en": "Sales invoice"
+ },
+ "qt_loai_pt_ban": {
+  "vi": "Phiếu thu bán hàng",
+  "lo": "ໃບຮັບເງິນຂາຍສິນຄ້າ",
+  "en": "Sales receipt"
+ },
+ "dnc_linh_quy": {
+  "vi": "Lĩnh tiền tại quỹ kế toán — đưa số DO <b>{do}</b> cho thủ quỹ",
+  "lo": "ຮັບເງິນຢູ່ຄັງເງິນຝ່າຍບັນຊີ — ຍື່ນເລກ DO <b>{do}</b> ໃຫ້ພະນັກງານຄັງເງິນ",
+  "en": "Collect the cash at the accounting cashier — give DO number <b>{do}</b> to the cashier"
+ },
+ "dnc_loai_tu": {
+  "vi": "Loại tạm ứng",
+  "lo": "ປະເພດເງິນລ່ວງໜ້າ",
+  "en": "Advance type"
  }
 };

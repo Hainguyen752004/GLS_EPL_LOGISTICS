@@ -9,6 +9,10 @@ tiền đẻ ra một tờ riêng:
 
 Một chuyến có thể có NHIỀU phiếu lĩnh nhiên liệu (mỗi điểm đổ một tờ) nhưng chỉ MỘT phiếu tạm ứng.
 
+Từ 01/10 (chủ dự án đồng ý): CHỈ tờ nhiên liệu có mã QR — kho dầu vẫn quét. Tờ tạm ứng KHÔNG có QR: tạm ứng chi thật ở quỹ hệ
+kế toán anh Tune (phiếu chi "Chi trước" CMP 59), thủ quỹ tìm chứng từ theo số DO; QR cũ dẫn sang cấp phát kho tạm, gây nhầm.
+Tờ tạm ứng vẫn giữ `token` (mã nội bộ, các đường tra cứu cũ còn dùng) nhưng `qr` · `tra_cuu` là None, ảnh QR trả 404.
+
 Mã QR chứa một đường dẫn tra cứu kèm `token`, KHÔNG nhồi số liệu vào QR. Lý do: số liệu còn đổi sau
 lúc in, nhồi vào rồi là tờ giấy nói một đằng hệ thống nói một nẻo; và QR nhồi nhiều thì dày đặc, máy
 quét rẻ đọc không ra. Người quét đằng nào cũng có tài khoản và phải đăng nhập mới cấp được.
@@ -143,7 +147,8 @@ def xuat_phieu_linh(db, v, goc="", vai=None, nap=None):
             "driver_id": v.driver_id, "driver_name": v.driver_name, "truck_no": v.truck_no,
             "qty_l": v.qty_l, "amount_lak": v.amount_lak, "status": v.status, "token": v.token,
             # màn Cấp phát ở trang kế toán (28/09): đường tra cứu / mã QR mở thẳng bên đó
-            "qr": "/api/vouchers/%s/qr.png" % v.id, "tra_cuu": (KK.web_ke_toan(db) or goc or "") + "/#/cap-phat?ma=" + v.token,
+            "qr": None if v.kind == "advance" else "/api/vouchers/%s/qr.png" % v.id,
+            "tra_cuu": None if v.kind == "advance" else (KK.web_ke_toan(db) or goc or "") + "/#/cap-phat?ma=" + v.token,
             "issued_by": v.issued_by, "issued_at": v.issued_at.isoformat() if v.issued_at else None,
             "granted_by": v.granted_by, "granted_at": v.granted_at.isoformat() if v.granted_at else None,
             "granted_qty": v.granted_qty, "granted_note": v.granted_note, "note": v.note,
@@ -458,6 +463,9 @@ def anh_qr(vid: str, request: Request, db: Session = Depends(get_db)):
     v = db.get(Voucher, vid)
     if not v:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu đề nghị này."})
+    if v.kind == "advance":
+        raise HTTPException(404, {"ma": "TAM_UNG_KHONG_QR", "loi": "Tờ tạm ứng không có mã QR — tài xế lĩnh tiền ở quỹ kế toán, "
+                                                                 "đưa số DO cho thủ quỹ."})
     noi_dung = (KK.web_ke_toan(db) or str(request.base_url).rstrip("/")) + "/#/cap-phat?ma=" + v.token
     try:
         import qrcode

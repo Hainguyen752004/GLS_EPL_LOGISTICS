@@ -99,7 +99,8 @@ def main():
 
     print("Hồ sơ gửi kế toán")
     ma("/api/chung-tu?trip_id=%s" % khoa["id"], {**ALL, "thabok": 403, "tx01": 403, "totsua": 403, "khopt": 403, "khotb": 403})
-    ma("/api/chung-tu/khong-co-to-nay/day", {**{u: 403 for u in VAI}, "ketoan": 404, "admin": 404}, body={})
+    # đường đẩy TỪNG tờ sang kế toán đã bỏ ở 938b007 — còn sót thì lộ đường ghi cũ, nên kiểm là không còn với mọi vai
+    ma("/api/chung-tu/khong-co-to-nay/day", {u: 404 for u in VAI}, body={})
 
     print("Giá vốn kho (30/09: thủ kho, thủ kho phụ tùng, tổ sửa chữa không thấy)")
     for u in ("khotb", "khopt", "totsua", "thabok"):
