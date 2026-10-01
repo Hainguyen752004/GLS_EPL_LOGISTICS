@@ -195,6 +195,13 @@ def main():
     if not g.get("co_duong_gui"):
         sys.exit("DỪNG: máy chủ %s chưa bật QLSX_GUI_BUT_TOAN (trỏ máy giả cổng %d)" % (GOC, CONG))
     don()
+    # "Gửi hết" gửi MỌI bản chờ gửi / chờ đảo của cả DB — có bản của phiếu khác thì máy giả sẽ cấp số giả cho chúng (02/10: ba bút
+    # toán của THU-KBAZ thành "đã gửi" GIA-BT-… trên bản sao). Dừng, không làm bẩn dữ liệu của người khác.
+    s, g = goi("/api/but-toan-cho?gioi_han=1000&status=cho_gui,da_gui", u="ketoan")
+    la = [b for b in (g or {}).get("ds") or [] if (b["status"] == "cho_gui" or b.get("can_dao")) and b.get("trip_doc_no") != SO]
+    if la:
+        sys.exit("DỪNG: DB còn %d bút toán chờ gửi / chờ đảo của phiếu khác (%s…) — bài máy giả bấm Gửi hết sẽ gửi nhầm chúng sang máy giả. "
+                 "Chạy trên DB không có bản chờ của người khác." % (len(la), ", ".join(b["source_ref"] for b in la[:3])))
     s, xe = goi("/api/vehicles", u="admin"); s, tx = goi("/api/drivers", u="admin"); s, kh = goi("/api/customers", u="admin")
     thue = next(v for v in xe if v["owner_type"] == "joint" and v["active"])
     s, p = goi("/api/trips", {"doc_no": SO, "kind": "giao", "company": "joint", "vehicle_id": thue["id"], "driver_id": tx[0]["id"],
