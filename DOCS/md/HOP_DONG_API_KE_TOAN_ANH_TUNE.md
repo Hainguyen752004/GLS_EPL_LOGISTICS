@@ -4,7 +4,7 @@ Phiên bản đề nghị **v2.4 · 01/10/2026** (v2.3 trưa 01/10, v2.2 tối 0
 
 > **Đổi từ v2.3 sang v2.4 (chiều 01/10/2026) — mục 12.12:**
 > - **Đã mở 1371, 4021, 4022** qua `lao-accounts` (137, 402 thành tài khoản tổng hợp). Tạm ứng xe thuê và trả chủ xe đã chạy thật.
-> - **Bản host không dùng chung DB** với bản chạy ở máy: lúc đưa lên host phải mở lại ba mã trên DB đó.
+> - **Bản host chưa merge code mới:** bên em làm ở máy, anh triển khai xong thì đổi link (bảng ở 12.12.2) và kiểm một lệnh.
 > - **Tài khoản tích hợp:** các bước làm cụ thể theo source bên anh.
 > - **Bút toán chi phí thuê xe** *Nợ 621 / Có 4022*: chưa làm được, vì source chưa có chứng từ bút toán tổng hợp. Có đề nghị đường API.
 >
@@ -1376,29 +1376,31 @@ Kiểm lại:
 - trả chủ xe, phiếu chi "Chi khác" 28.359.600 LAK, Nợ 4022 / Có 1021: `1368-CKH-261001-00001` và `…00002`;
 - tạm ứng xe nhà, Nợ 1601: `1368-CTR-261001-00016`.
 
-#### 12.12.2. Bản API đang host KHÔNG dùng chung DB với bản chạy ở máy
+#### 12.12.2. Bản host chưa có code mới — làm ở máy, triển khai xong đổi link
 
-So cùng một token, cùng ngày 01/10:
+Chủ dự án chốt 01/10: `demo-lao-api.goldensme.com` **chưa merge** code hai nhánh. Bên em làm và thử mọi thứ trên API chạy ở máy; anh triển khai xong thì **chỉ đổi link**.
 
-| | API ở máy (`Env=laos`, `appsettings.laos.json`) | API đang host `demo-lao-api.goldensme.com` |
+Hôm nay gọi cùng một token, hai bản trả khác nhau:
+
+| | API ở máy (`Env=laos`) | API đang host |
 |---|---|---|
-| Danh mục quốc gia 11 | 497 mã, có 1371/4021/4022, 137 là tổng hợp | 494 mã, chưa có ba mã, 137 vẫn là tài khoản lá |
-| Khách `EPLKH-0834a9e9606b` (tạo khi gửi SO hôm nay) | có (ObjId 1608) | không có |
+| Danh mục quốc gia 11 | 497 mã, có 1371/4021/4022, 137 là tổng hợp | 494 mã, chưa có ba mã |
+| Khách `EPLKH-0834a9e9606b` (ObjId 1608) và SO `TK-20261001-000162` | có | không thấy |
 
-Nghĩa là mọi thứ bên em thử hôm nay chỉ nằm trong DB mà `appsettings.laos.json` trỏ tới:
-- SO `TK-20261001-000162` và `…163`;
-- khách `EPLKH-…`, chủ xe `EPLCX-…`, tài xế `EPLTX-…`;
-- các phiếu chi thử;
-- ba mã tài khoản.
+Khác vì host chạy code cũ, hoặc host trỏ DB khác. Bên em không xem được cấu hình của host; lệnh kiểm ở dưới trả lời câu này.
 
-**Khi anh đưa bản mới lên host**, cần:
-1. Triển khai code hai nhánh `feat/HonTunedaHai` (API) và `feat/hontunedhai_Laos` (Web).
-2. Mở lại ba mã trên DB của bản host: 4 lệnh như 12.12.1. Bên em có sẵn tệp chạy, đổi địa chỉ là dùng được.
-3. Đặt `LogisticsSource` và `LogisticsSalesPush` trong cấu hình của bản host (mục 12.12.3).
+| Bên | Khoá | Lúc thử (bây giờ) | Sau khi anh triển khai |
+|---|---|---|---|
+| Trang điều xe, máy thử 8011 | `QLSX_BASE_URL` | `http://127.0.0.1:5090` (API ở máy) | bỏ đi → về host |
+| Trang điều xe, máy thật 8020 | `QLSX_BASE_URL` | không đặt → dùng máy của `EPL_ACC_CODE_API` = `https://demo-lao-api.goldensme.com` | giữ nguyên — tự gọi bản mới |
+| API anh, cấu hình host | `LogisticsSource:BaseUrl` | máy thử `http://127.0.0.1:8011/api/` | địa chỉ `/api/` của trang điều xe thật |
+| API anh, cấu hình host | `LogisticsSource:ApiKey` | khoá của máy thử | khoá Sếp tạo ở trang điều xe thật (`POST /api/handover/tao-khoa`) |
+| API anh, cấu hình host | `LogisticsSalesPush:AllowedUserIds` | `[846]` (+ tài khoản tích hợp ở máy) | thêm `UserId` tài khoản tích hợp trên host |
+| WEB anh | `BACKOFFICE_API_URL` | bản ở máy dùng `Env=laoslocal` trỏ 5090 | `Env=laos` trỏ API host (đã đúng sẵn) |
 
-Khách `EPLKH-…` không cần chép: lần gửi SO đầu tiên bên em tự tạo.
-
-**Anh cho em biết:** DB nào là DB chính thức cho Lào? Bản host đang trỏ DB nào?
+**Kiểm một lệnh lúc triển khai:** `GET <host>/api/v1/common/country-accounts?tryAutoId=11&onlyActive=true`:
+- trả **497 mã** (có 1371 / 4021 / 4022): host cùng DB với bản ở máy, dữ liệu đã có, không làm gì thêm;
+- trả **494 mã**: host trỏ DB khác. Chạy `python tools/mo_ma_con_tune.py https://<API host>` (bên em chạy được). Khách, chủ xe, tài xế không cần chép: lần gửi đầu bên em tự tạo.
 
 #### 12.12.3. Tài khoản tích hợp — làm từng bước
 
@@ -1433,7 +1435,16 @@ Các bước:
    Xoá `QLSX_ACCESS_TOKEN` nếu có, vì biến đó được ưu tiên trước. Khởi động lại.
 6. Từ đó bên em tự đăng nhập, nhớ token, đăng nhập lại khi token còn dưới 5 phút. Bị 401 cũng đăng nhập lại ngay.
 
-Bên em chưa tự tạo tài khoản: đây là tài khoản đăng nhập vào sổ kế toán của anh, mật khẩu phải do anh hoặc chủ dự án giữ.
+**Trạng thái 01/10.** Chủ dự án giao bên em làm. Bên em đã viết sẵn một tệp làm đủ bước 1–5 trên API ở máy:
+- tạo nhân viên `EPL-TICHHOP` "EPL Logistics (tích hợp)" thuộc chi nhánh 1368;
+- tạo tài khoản `epl_logistics`, **cùng nhóm quyền** với người đang gửi hiện nay; mật khẩu ngẫu nhiên, chỉ ghi vào `.env`, không in ra;
+- đăng nhập thử;
+- thêm `UserId` vào `AllowedUserIds` của bản ở máy, khởi động lại;
+- gửi thử một gói rỗng vào cổng SO: không tạo gì, chỉ xem còn bị 403 không.
+
+Công cụ an toàn của bên em không cho tự tạo tài khoản đăng nhập, nên chủ dự án chạy tệp này.
+
+Trên host: nếu host cùng DB (lệnh kiểm 12.12.2 trả 497 mã) thì tài khoản đã có, anh chỉ thêm `UserId` vào `AllowedUserIds` của cấu hình host. Khác DB thì tạo lại theo 6 bước trên.
 
 #### 12.12.4. Bút toán chi phí thuê xe (*Nợ 621 / Có 4022*) — chưa làm được
 
@@ -1459,3 +1470,5 @@ POST /api/v1/integrations/logistics/journal-entries/reverse  { "SourceRef" }   /
 ```
 
 Bên em đã có sẵn số liệu: `hire.amount` và `hire.acc_code = "621/4022"` trong gói bàn giao DO (mục 10). Có đường này thì lúc khoá phiếu xe thuê bên em gửi luôn, mở khoá thì gửi đảo.
+
+**Trạng thái 01/10:** chủ dự án cho bên em làm luôn. Bên em đang chờ được đọc cấu trúc sổ cái: hoặc chủ dự án cấp quyền đọc DB cho công cụ của bên em, hoặc anh gửi định nghĩa các thủ tục kể trên. Có một trong hai thì bên em viết đường API này trong nhánh `feat/HonTunedaHai` và ghi vào đây để anh review.

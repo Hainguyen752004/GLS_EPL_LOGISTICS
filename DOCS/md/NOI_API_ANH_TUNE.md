@@ -515,6 +515,6 @@ Chi tiết ở hợp đồng mục 12.11:
 
 Chi tiết ở hợp đồng mục 12.12:
 - **đã mở 1371 / 4021 / 4022** (137, 402 thành tài khoản tổng hợp); tạm ứng xe thuê, trả chủ xe chạy thật;
-- **bản host nối DB khác** bản chạy ở máy: lúc triển khai phải mở lại ba mã trên DB host;
+- **bản host chưa merge code mới:** bên em làm ở máy; anh triển khai xong thì đổi link và kiểm một lệnh (hợp đồng 12.12.2);
 - **tài khoản tích hợp:** 6 bước làm cụ thể (12.12.3);
 - **bút toán chi phí thuê xe:** đề nghị đường `integrations/logistics/journal-entries` (12.12.4).
