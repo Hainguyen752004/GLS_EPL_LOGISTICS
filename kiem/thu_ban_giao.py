@@ -5,11 +5,15 @@
 
 CHỈ chạy trên máy thử (bản sao DB): bài này TẠO LẠI khoá `token_nhan_qlsx` của máy đang gọi. Ngoài khoá đó không đổi dữ
 liệu. Không in khoá ra màn hình.
+
+Đặt `KHOA_BAN_GIAO_TEP=<tệp chứa khoá đang dùng>` thì bài dùng khoá đó, KHÔNG tạo lại — để chạy được trên một máy
+thử dùng chung DB với máy khác mà không làm hỏng khoá bên kia đang cầm.
 """
 import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 GOC = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011"
@@ -62,9 +66,14 @@ def main():
     dung(goi("/api/handover/trang-thai", u="ketoan")[0] == 403, "kế toán xem trạng thái → 403")
     dung(goi("/api/handover/trang-thai")[0] == 401, "không đăng nhập → 401")
     dung(goi("/api/handover/tao-khoa", method="POST", u="ketoan")[0] == 403, "kế toán tạo khoá → 403")
-    s, g = goi("/api/handover/tao-khoa", method="POST", u="admin")
-    khoa = (g or {}).get("token_nhan_qlsx") or ""
-    dung(s == 200 and len(khoa) >= 40, "Sếp tạo khoá → 200, khoá dài %d ký tự (không in)" % len(khoa))
+    tep_khoa = os.getenv("KHOA_BAN_GIAO_TEP")
+    if tep_khoa:
+        khoa = open(tep_khoa, encoding="utf-8").read().strip()
+        print("     dùng khoá có sẵn trong %s (dài %d ký tự, không in) — không tạo lại" % (os.path.basename(tep_khoa), len(khoa)))
+    else:
+        s, g = goi("/api/handover/tao-khoa", method="POST", u="admin")
+        khoa = (g or {}).get("token_nhan_qlsx") or ""
+        dung(s == 200 and len(khoa) >= 40, "Sếp tạo khoá → 200, khoá dài %d ký tự (không in)" % len(khoa))
     s, g = goi("/api/handover/trang-thai", u="admin")
     dung(g.get("co_khoa") is True and "token_nhan_qlsx" not in json.dumps(g), "trạng thái chỉ báo 'đã có khoá', không lộ khoá")
     tong_khoa = g.get("so_do_ban_giao_duoc")
@@ -98,6 +107,45 @@ def main():
     s4, g4 = goi("/api/handover/delivery-orders?completed_from=2099-01-01", khoa=khoa)
     dung(s4 == 200 and g4["data"]["total"] == 0, "lọc từ ngày tương lai → 0")
     dung(goi("/api/handover/delivery-orders?completed_to=30-09-2026", khoa=khoa)[0] == 422, "ngày sai dạng → 422")
+
+    print("3b. Tìm theo chữ q (màn Vụ việc bên anh Tune tìm trên toàn bộ DO)")
+    o_tim = ("do_id", "doc_no", "customer_id", "customer_name", "truck_no", "plate_head")
+
+    def tim(chu, co=200, trang=1):
+        s, g = goi("/api/handover/delivery-orders?page=%d&page_size=%d&q=%s" % (trang, co, urllib.parse.quote(chu)), khoa=khoa)
+        return s, (g or {}).get("data") or {}
+
+    def khop(x, chu):
+        return any(chu.lower() in str(x.get(o) or "").lower() for o in o_tim)
+
+    if items:
+        x0 = items[-1]
+        for o, chu in (("số phiếu", x0["doc_no"]), ("mã DO", x0["do_id"][-6:].upper()), ("số xe", x0["truck_no"]),
+                       ("biển đầu kéo", x0["plate_head"]), ("tên khách", (x0["customer_name"] or "")[:5]),
+                       ("mã khách bên kế toán", next((x["customer_id"] for x in items if x["customer_id"]), None))):
+            if not chu:
+                print("     bỏ qua %s: không có dữ liệu mẫu" % o)
+                continue
+            s, d = tim(chu)
+            mong = [x["do_id"] for x in items if khop(x, chu)]
+            dung(s == 200 and d.get("q") == chu.strip() and [x["do_id"] for x in d.get("items") or []] == mong
+                 and d.get("total") == len(mong),
+                 "q theo %s %r → %d DO, đúng các dòng chứa chữ đó, total = số sau lọc" % (o, chu, len(mong)))
+        chu = x0["doc_no"][:2]
+        s, d = tim(chu)
+        tong_loc = d.get("total") or 0
+        s1, d1 = tim(chu, co=1, trang=1)
+        s2, d2 = tim(chu, co=1, trang=max(1, tong_loc))
+        dung(d1.get("total") == d2.get("total") == tong_loc and len(d1.get("items") or []) == min(1, tong_loc)
+             and (tong_loc < 2 or d1["items"][0]["do_id"] != d2["items"][0]["do_id"]),
+             "phân trang khi tìm: trang 1 cỡ 1 và trang cuối khác nhau, total giữ = %d" % tong_loc)
+    s, d = tim("khong-co-phieu-nay-%_")
+    dung(s == 200 and d.get("total") == 0 and d.get("items") == [], "chữ không có → 0 dòng, total 0")
+    s, d = tim("%")
+    dung(s == 200 and d.get("total") == 0, "'%' là chữ thường, không phải ký tự đại diện → 0")
+    s, d = tim("   ")
+    dung(s == 200 and d.get("q") is None and d.get("total") == tong_khoa, "q toàn dấu cách = không lọc")
+    dung(goi("/api/handover/delivery-orders?q=" + "a" * 201, khoa=khoa)[0] == 422, "q dài hơn 200 ký tự → 422")
 
     print("4. Chi tiết")
     thieu_ma, sai_ma, lech = [], [], []

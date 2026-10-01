@@ -46,7 +46,7 @@ Chưa push nhánh nào lên GitHub.
 
 | Bên | Khoá | Lúc thử | Sau triển khai |
 |---|---|---|---|
-| Trang điều xe máy thử 8011 | `QLSX_BASE_URL` | `http://127.0.0.1:5090` | bỏ đi → về host |
+| Trang điều xe máy thử 8011 | `QLSX_BASE_URL`, `EPL_ACC_CODE_API` | `http://127.0.0.1:5090` | bỏ đi → về host |
 | Trang điều xe máy thật 8020 | `QLSX_BASE_URL` | không đặt → gọi `https://demo-lao-api.goldensme.com` | giữ nguyên |
 | API anh | `LogisticsSource:BaseUrl` | `http://127.0.0.1:8011/api/` | địa chỉ `/api/` trang điều xe thật |
 | API anh | `LogisticsSource:ApiKey` | khoá máy thử | khoá Sếp tạo ở trang điều xe thật |

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """BÀN GIAO DO cho hệ kế toán của anh Tune — đúng khuôn API bàn giao của EPL_System, chỉ ĐỌC.
 
-    GET  /api/handover/delivery-orders            (khoá máy) danh sách DO đã về, đã khoá — mới khoá trước
+    GET  /api/handover/delivery-orders            (khoá máy) danh sách DO đã về, đã khoá — mới khoá trước; `q` tìm theo chữ
     GET  /api/handover/delivery-orders/{do_id}    (khoá máy) {header, details} của một DO
     GET  /api/handover/trang-thai                 (Sếp) đã có khoá chưa, bao nhiêu DO đang bàn giao được
     POST /api/handover/tao-khoa                   (Sếp) tạo (lại) khoá — chép sang cấu hình Logistics bên anh Tune
@@ -15,6 +15,7 @@ import secrets
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -39,29 +40,47 @@ def _da_khoa(db):
     return db.query(Trip).filter(Trip.locked.is_(True), Trip.transport_status == "arrived")
 
 
+def _tim_chu(db, qs, chu):
+    """Lọc theo chữ trên ĐÚNG các ô một dòng danh sách trả ra: mã DO, số phiếu, mã khách bên kế toán, tên khách, số xe,
+    biển đầu kéo — không phân biệt hoa thường. `%` và `_` người dùng gõ là chữ thường, không phải ký tự đại diện."""
+    k = "%" + chu.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
+    ma_kt = db.query(Customer.id).filter(Customer.code.ilike(k, escape="!"))
+    return qs.filter(or_(func.concat(BG.TIEN_TO, Trip.id).ilike(k, escape="!"), Trip.doc_no.ilike(k, escape="!"),
+                         Trip.customer_id.in_(ma_kt), Trip.customer_name.ilike(k, escape="!"),
+                         Trip.truck_no.ilike(k, escape="!"), Trip.plate_head.ilike(k, escape="!")))
+
+
 @router.get("/api/handover/delivery-orders")
 def danh_sach(customer_id: Optional[str] = Query(None, description="Chỉ lấy DO của một khách"),
               completed_from: Optional[str] = Query(None, description="Khoá từ ngày (ISO, gồm cả ngày đó)"),
               completed_to: Optional[str] = Query(None, description="Khoá đến ngày (ISO, gồm cả ngày đó)"),
+              q: Optional[str] = Query(None, description="Tìm theo số phiếu, mã DO, tên / mã khách, số xe, biển đầu kéo"),
               page: int = Query(1, ge=1), page_size: int = Query(50, ge=1, le=200),
               db: Session = Depends(get_db), may=Depends(may_qlsx_goi)):
-    """DANH SÁCH DO đã về và đã khoá — bước quét của hệ kế toán, trước khi gọi chi tiết theo `do_id`."""
+    """DANH SÁCH DO đã về và đã khoá — bước quét của hệ kế toán, trước khi gọi chi tiết theo `do_id`.
+    `q`: màn "Vụ việc" bên anh Tune tìm trên TOÀN BỘ DO ở đây, `total` là tổng sau khi lọc; trả lại `q` đã dùng để bên
+    kia biết đã lọc ở đây (bản cũ không trả thì bên kia tự lọc trong trang đã tải)."""
     tu, den = _ngay(completed_from, "completed_from"), _ngay(completed_to, "completed_to")
-    q = _da_khoa(db)
+    chu = (q or "").strip()
+    if len(chu) > 200:
+        raise HTTPException(422, {"ma": "TU_KHOA_DAI", "loi": "Từ khoá tìm tối đa 200 ký tự."})
+    qs = _da_khoa(db)
     if customer_id:
         # nhận cả mã khách bên kế toán (OBJ_OBJECTNO) lẫn mã khách bên em
         theo_ma = [r[0] for r in db.query(Customer.id).filter(Customer.code == customer_id).all()]
-        q = q.filter(Trip.customer_id.in_(theo_ma + [customer_id]))
+        qs = qs.filter(Trip.customer_id.in_(theo_ma + [customer_id]))
     if tu:
-        q = q.filter(Trip.locked_at >= dt.datetime.combine(tu, dt.time.min))
+        qs = qs.filter(Trip.locked_at >= dt.datetime.combine(tu, dt.time.min))
     if den:
-        q = q.filter(Trip.locked_at < dt.datetime.combine(den + dt.timedelta(days=1), dt.time.min))
-    tong = q.count()
-    dong = (q.order_by(Trip.locked_at.desc(), Trip.id.desc()).offset((page - 1) * page_size).limit(page_size).all())
+        qs = qs.filter(Trip.locked_at < dt.datetime.combine(den + dt.timedelta(days=1), dt.time.min))
+    if chu:
+        qs = _tim_chu(db, qs, chu)
+    tong = qs.count()
+    dong = (qs.order_by(Trip.locked_at.desc(), Trip.id.desc()).offset((page - 1) * page_size).limit(page_size).all())
     ma = dict(db.query(Customer.id, Customer.code).filter(Customer.id.in_({p.customer_id for p in dong if p.customer_id})).all())
-    return {"message": "Danh sách %d lệnh giao hàng đã hoàn tất (trang %d)." % (tong, page),
+    return {"message": "Danh sách %d lệnh giao hàng đã hoàn tất%s (trang %d)." % (tong, ' khớp "%s"' % chu if chu else "", page),
             "data": {"items": [BG.dong_danh_sach(p, ma.get(p.customer_id)) for p in dong], "total": tong, "page": page,
-                     "page_size": page_size}}
+                     "page_size": page_size, "q": chu or None}}
 
 
 def _goi(db, p, do_id):

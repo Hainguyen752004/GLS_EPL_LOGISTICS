@@ -796,7 +796,7 @@ Bên em có các bộ kiểm tự động chạy trên máy thử (bản sao DB)
 - `kiem/thu_day_ke_toan.py` — dựng máy nhận giả đóng vai hệ anh, đẩy tờ mẫu, thử cả trả 500 và 409.
 - `kiem/thu_tao_so.py` (01/10) — 23 chỗ kiểm cho tạo SO: quyền (Bãi, tài xế, KT doanh thu không gửi được), luật chặn (DO chưa khoá, thiếu mã khách, mã khách quá 37 ký tự bị chặn ngay ở danh mục), khuôn gói (ba khoá gốc, `customer_id` = mã bên anh, một dòng thu, tổng khớp chính xác). **Không gọi sang hệ anh.**
 - `kiem/thu_luat_so_ben_tune.py` (01/10) — chép đúng luật `LogisticsPushValidator` và phần kiểm đầu của `sp_Logistics_CreateSalesOrder`, chạy trên gói SO của mọi DO đã khoá: **13/13 qua**. Không gọi sang hệ anh, không ghi DB.
-- `kiem/thu_ban_giao.py` — 32 chỗ kiểm cho hai đường bàn giao DO (12.8), gồm các khoá màn "Vụ việc" đọc.
+- `kiem/thu_ban_giao.py` — 32 chỗ kiểm cho hai đường bàn giao DO (12.8), gồm các khoá màn "Vụ việc" đọc; **thêm 01/10 11 chỗ cho `q`** (sáu ô tìm, `total` sau lọc, phân trang khi tìm, `%` không là ký tự đại diện, quá 200 ký tự → 422). Đặt `KHOA_BAN_GIAO_TEP=<tệp khoá>` thì bài dùng khoá có sẵn, không tạo lại — chạy được trên máy thử dùng chung DB mà không làm hỏng khoá máy kia đang cầm.
 - `kiem/thu_khach_hang_moi.py` — mã khách: chỉ `acct` và Sếp gán, không trùng, đúng luật mã của anh (không `/`, ≤ 37 ký tự); `customer_id` = `customer_code` trong gói bàn giao.
 - Bên bản tạm `EPL_KETOAN/kiem`: `thu_tat_toan.py` (có tờ quyết toán `QT_TU`), `thu_nhan_chung_tu.py`, `thu_dot2.py` (sổ đối chiếu quỹ, công nợ, kho, chuyến).
 
@@ -1015,12 +1015,14 @@ Tham số (đều tuỳ chọn):
 |---|---|---|
 | `customer_id` | chuỗi | **mã khách bên anh** (`OBJ_OBJECTNO`, ô "Mã khách" trên danh mục khách bên em) **hoặc** mã khách nội bộ bên em (`customer_ref`, 12 ký tự hex) |
 | `completed_from`, `completed_to` | `YYYY-MM-DD` | ngày khoá phiếu (gồm cả hai đầu, theo giờ UTC). Sai dạng → 422 `NGAY_SAI` |
+| `q` | chuỗi ≤ 200 ký tự | (thêm 01/10) **tìm theo chữ trên toàn bộ DO**, không phân biệt hoa thường, khớp một phần của: `do_id`, `doc_no` (số phiếu), `customer_id` (mã khách bên anh), `customer_name`, `truck_no` (số xe), `plate_head` (biển đầu kéo) — đúng sáu ô màn "Vụ việc" tìm. `%` và `_` là chữ thường, không phải ký tự đại diện. Cắt dấu cách hai đầu; rỗng = không lọc. Dài hơn 200 → 422 `TU_KHOA_DAI` |
 | `page` | số ≥ 1 | mặc định 1 |
 | `page_size` | 1–200 | mặc định 50 |
 
 - Chỉ trả phiếu **đã về** (`transport_status = "arrived"`) **và đã khoá** (kế toán Viêng Chăn khoá sau khi có biên bản giao nhận).
 - Xếp **mới khoá trước**.
-- `total` là tổng thật sau khi lọc (không phải tổng chưa lọc).
+- `total` là tổng thật sau khi lọc (không phải tổng chưa lọc), **kể cả lọc theo `q`**; `page` / `page_size` phân trang trên kết quả đã lọc.
+- `data.q` trả lại đúng chữ đã dùng để lọc (`null` khi không lọc). Hệ anh dựa vào khoá này để biết trang điều xe đã tìm hộ; bản cũ không có khoá này thì hệ anh tự lọc trong trang đã tải (12.9.2).
 
 Trả về:
 
@@ -1040,7 +1042,7 @@ Trả về:
     "currency": "USD", "final_selling_price_lak": 19928700,
     "completed_at": "2026-09-29T06:42:51+00:00", "completed_by": "<người khoá>",
     "detail_url": "/api/handover/delivery-orders/EPLLAO-779739f4b582"}],
-  "total": 13, "page": 1, "page_size": 50}}
+  "total": 13, "page": 1, "page_size": 50, "q": null}}
 ```
 
 - 14 khoá của EPL_System **có đủ**: `do_id`, `status`, `customer_id`, `quotation_id`, `route_id`, `vehicle_id`, `driver_id`, `selling_price`, `customer_surcharge_total`, `final_selling_price`, `currency`, `completed_at`, `completed_by`, `detail_url`.
@@ -1199,7 +1201,7 @@ Thêm vài điều cần biết lúc nối:
 
 - **Không chuyển hướng** (`AllowAutoRedirect = false`). Địa chỉ bên em gửi anh phải là địa chỉ **cuối cùng**, đúng `https://`; nếu máy chủ chuyển hướng thì lời gọi hỏng.
 - **Hết giờ 15 giây, gói tối đa 2 MB.** Đo trên bản sao ngày 01/10: một DO 4–7,4 KB (4–10 dòng); một trang 13 DO 11 KB; mỗi lời gọi dưới 0,4 giây.
-- **Tìm kiếm chỉ trong trang đang xem.** Danh sách của anh lọc `status = "delivered"` rồi tìm theo `do_id`, `customer_id` trong trang hiện tại (`SearchScope = CURRENT_PAGE`), không tìm trên toàn bộ DO.
+- ~~**Tìm kiếm chỉ trong trang đang xem.**~~ — **đã sửa 01/10** (nhánh `feat/HonTunedaHai`, chưa commit): có `keyword` thì `CashVoucherReferenceController` gửi `q` cùng `page` / `page_size` sang trang điều xe (12.8.2), nên tìm trên **toàn bộ** DO, `Total` / `HasMore` đúng sau lọc, `SearchScope = ALL`. Nguồn chưa biết `q` (không trả lại `data.q`, ví dụ EPL_System 1506) thì vẫn lọc trong trang đã tải như cũ (`SearchScope = CURRENT_PAGE`).
 
 **Bên em đã sửa gói bàn giao theo màn của anh (01/10).** Khoá cũ giữ nguyên tên; chỉ đổi nghĩa `customer_id` và thêm khoá mới.
 
@@ -1391,7 +1393,7 @@ Khác vì host chạy code cũ, hoặc host trỏ DB khác. Bên em không xem �
 
 | Bên | Khoá | Lúc thử (bây giờ) | Sau khi anh triển khai |
 |---|---|---|---|
-| Trang điều xe, máy thử 8011 | `QLSX_BASE_URL` | `http://127.0.0.1:5090` (API ở máy) | bỏ đi → về host |
+| Trang điều xe, máy thử 8011 | `QLSX_BASE_URL`, `EPL_ACC_CODE_API` | cả hai `http://127.0.0.1:5090` (API ở máy): gửi SO, phiếu chi, đối tượng, công nợ và danh mục tài khoản đều đi vòng trong máy | bỏ đi → về host |
 | Trang điều xe, máy thật 8020 | `QLSX_BASE_URL` | không đặt → dùng máy của `EPL_ACC_CODE_API` = `https://demo-lao-api.goldensme.com` | giữ nguyên — tự gọi bản mới |
 | API anh, cấu hình host | `LogisticsSource:BaseUrl` | máy thử `http://127.0.0.1:8011/api/` | địa chỉ `/api/` của trang điều xe thật |
 | API anh, cấu hình host | `LogisticsSource:ApiKey` | khoá của máy thử | khoá Sếp tạo ở trang điều xe thật (`POST /api/handover/tao-khoa`) |
