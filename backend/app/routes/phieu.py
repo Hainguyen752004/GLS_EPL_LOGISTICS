@@ -35,6 +35,7 @@ from services.tinh_toan import (CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tie
                                 tinh_phieu, ty_gia, hinh_thuc)
 from services import kho_hang as KH
 from services import chung_tu as CT
+from services import chi_tune as CHI
 from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -180,6 +181,22 @@ def _xuat_su_kien(e):
             "qty_l": e.qty_l, "place_id": e.place_id, "supplier_id": e.supplier_id,
             "can_run": e.can_run, "paid_by_driver": e.paid_by_driver,
             "approved_by": e.approved_by, "approved_at": e.approved_at.isoformat() if e.approved_at else None}
+
+
+def _cau_chua_tam_ung(db, p, hau_qua):
+    """Câu báo khi tài xế chưa nhận tạm ứng; None = vừa hỏi lại hệ kế toán thì thủ quỹ đã ghi sổ, mục IV đã "đã chi"."""
+    if not CHI.chi_o_ke_toan():
+        return "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — tài xế chưa nhận tiền thì %s." % hau_qua
+    r = CHI.cua_phieu(db, p, cap_nhat=True)
+    if _muc_cua(db, p)["travel"].status == "paid":
+        return None
+    if r is not None and r.status == "da_gui":
+        return "Phiếu chi tạm ứng %s bên hệ kế toán chưa ghi sổ — tài xế chưa nhận tiền thì %s. Thủ quỹ chi và ghi sổ ở bên đó." % (
+            r.document_no or r.real_id, hau_qua)
+    if r is not None and r.status == "loi":
+        return "Chưa tạo được phiếu chi tạm ứng bên hệ kế toán (%s) — KT Chi phí gửi lại ở màn Phiếu đề nghị chi; %s." % (
+            r.error_message or r.error_code, hau_qua)
+    return "Mục IV chưa ghi sổ — KT Chi phí ghi sổ thì phiếu chi tạm ứng mới sang hệ kế toán để thủ quỹ chi; %s." % hau_qua
 
 
 def _cua_tai_xe(db, p, user):
@@ -329,6 +346,9 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
                       .order_by(TripLog.ts.desc()).limit(60).all()]
         su_kien = db.query(TripEvent).filter(TripEvent.trip_id == phieu.id).order_by(TripEvent.ts).all()
         ra["events"] = [_xuat_su_kien(e) for e in su_kien]
+        # tạm ứng chi ở hệ kế toán (01/10): trạng thái phiếu chi bên đó — số tiền bỏ với vai không thấy tiền chi
+        ra["chi_tam_ung"] = dict(CHI.xuat(CHI.cua_phieu(db, phieu), thay_tien=vai is None or thay_tien_chi(vai)) or {},
+                                 o_ke_toan=CHI.chi_o_ke_toan())
         ra["route_stops"] = _diem_tuyen(db, phieu)
         # điểm xa nhất đã tới trên tuyến — để vẽ tiến độ
         da_toi = [e.stop_seq for e in su_kien if e.kind == "arrive_stop" and e.stop_seq]
@@ -1008,6 +1028,15 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     # Hỏi QUYỀN trước, hỏi nội dung sau: vai không được đụng mục này thì phải nghe "không có quyền",
     # chứ nghe "mục còn trống" là câu trả lời của người khác — họ sẽ đi nhập cho đầy rồi vẫn bị chặn.
     moi_trang_thai = chuyen_muc(user.role, muc, s.status, hanh_dong)
+    if muc == "travel" and hanh_dong == "pay" and user.role != "admin" and CHI.chi_o_ke_toan():
+        raise HTTPException(409, {"ma": "CHI_O_KE_TOAN", "loi": CHI.cau_chan_chi(db, p)})
+    if muc == "travel" and hanh_dong == "pay" and CHI.chi_o_ke_toan():
+        # Sếp chi tay: thủ quỹ bên kế toán đã chi rồi thì chỉ nhận "đã chi" (không ra thêm tờ); còn chờ thì RÚT phiếu chi bên đó
+        # trước, không để thủ quỹ chi lần nữa cho khoản Sếp vừa chi
+        r = CHI.cua_phieu(db, p, cap_nhat=True)
+        if r is not None and r.status == "da_chi":
+            return xuat_phieu(db, p, vai=user.role)
+        CHI.rut(db, trip_id=p.id)
     if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
         raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
     if muc in MUC_CHI and hanh_dong == "verify":
@@ -1086,6 +1115,10 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
                        payload={"lines": [{"item": d.item_key or d.item_name, "qty": d.qty, "unit_price": d.unit_price,
                                            "currency": d.currency, "acct_code": TK.tk_dong(p.company, d)} for d in dong]})
         _ghi_log(db, p, user, "sec_%s:%s" % (muc, hanh_dong))
+    if muc == "travel" and hanh_dong == "book":
+        # ghi sổ mục IV xong → phiếu chi "Chi trước" bên hệ kế toán (chưa ghi sổ). Hỏng thì lỗi nằm trên tờ tạm ứng, gửi lại
+        # ở màn Phiếu đề nghị chi; ghi sổ mục IV vẫn giữ — tài xế chỉ chưa xuất phát được cho tới khi thủ quỹ chi.
+        CHI.gui_sau_ghi_so(db, p, user)
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1333,14 +1366,16 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         # XUẤT PHÁT chỉ khi tài xế đã cầm tiền tạm ứng: mục IV (đi đường) phải ở "đã chi". Đây là đúng thứ tự
         # anh chủ dự án mô tả — lập phiếu → in phiếu chi → duyệt → tài xế lấy tiền → mới bấm đi.
         if _dong_tam_ung(p, _dong_chi(db, p)) and _muc_cua(db, p)["travel"].status != "paid":
-            raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG",
-                                      "loi": "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — tài xế chưa nhận tiền thì chưa xuất phát."})
+            cau = _cau_chua_tam_ung(db, p, "chưa xuất phát")
+            if cau:
+                raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG", "loi": cau})
     if moi == "arrived" and user.role != "admin":
         # Trước đây bấm thẳng "Xe đã tới" (bỏ qua "Xuất phát") là lách được quy tắc tạm ứng ở trên: cả chuyến đi
         # xong mà tài xế chưa cầm đồng nào, tiền đi đường không có tờ. Cửa này giờ giống cửa Xuất phát.
         if [d for d in _dong_tam_ung(p, _dong_chi(db, p)) if d.section == "travel"] and _muc_cua(db, p)["travel"].status != "paid":
-            raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG",
-                                      "loi": "Chưa chi tiền tạm ứng (mục IV chưa 'đã chi') — chưa báo xe tới được. Quỹ chi tạm ứng trước."})
+            cau = _cau_chua_tam_ung(db, p, "chưa báo xe tới được")
+            if cau:
+                raise HTTPException(409, {"ma": "CHUA_NHAN_TAM_UNG", "loi": cau})
     if moi == "arrived" and p.kind == "gom":
         # Phiếu gom: hàng vào kho theo DÒNG HÀNG, mà dòng hàng chỉ có khi đã có cân tại mỏ. Hộp "Xe đã tới" hỏi luôn ô đó
         # (29/09): đã có (tài xế báo từ mỏ, hoặc Bãi đã ghi) thì điền sẵn; chưa có thì phải nhập mới báo tới được —
@@ -1922,6 +1957,8 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if da_cap and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_CAP_PHAT", "loi": "Phiếu đã có %s được cấp (%s), không xoá được."
                                   % ("phiếu đề nghị xuất kho nhiên liệu / đề nghị tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
+    # phiếu chi tạm ứng bên hệ kế toán (01/10): chưa ghi sổ thì rút bên đó; đã chi thì chặn kể cả Sếp — tiền đã ra khỏi quỹ
+    CHI.rut(db, trip_id=p.id)
     id_v = [v.id for v in db.query(Voucher.id).filter(Voucher.trip_id == p.id).all()]
     if id_v:
         for m in db.query(FuelMove).filter(FuelMove.voucher_id.in_(id_v)).all():

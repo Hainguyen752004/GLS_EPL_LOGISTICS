@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2086 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2097 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2743,9 +2743,9 @@ window.EPL_TU_DIEN = {
   "en": "Payment requests"
  },
  "title_de_nghi_chi": {
-  "vi": "Phiếu đề nghị chi<span class=\"sub\">Đề nghị tạm ứng — tiền, quỹ chi theo tờ</span>",
-  "lo": "ໃບສະເໜີຈ່າຍ<span class=\"sub\">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ</span>",
-  "en": "Payment requests<span class=\"sub\">Advance requests — cash, paid by the cash desk against the slip</span>"
+  "vi": "Phiếu đề nghị chi<span class=\"sub\">Đề nghị tạm ứng — thủ quỹ chi ở hệ kế toán</span>",
+  "lo": "ໃບສະເໜີຈ່າຍ<span class=\"sub\">ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ — ຄັງເງິນຈ່າຍຢູ່ລະບົບບັນຊີ</span>",
+  "en": "Payment requests<span class=\"sub\">Advance requests — paid by the cashier in accounting</span>"
  },
  "nav_de_nghi_thu": {
   "vi": "Phiếu đề nghị thu",
@@ -10328,9 +10328,9 @@ window.EPL_TU_DIEN = {
   "en": "Expense accounting checks and books the trip cash (section IV)"
  },
  "lg2_t_advance_2": {
-  "vi": "Quỹ quét mã QR phiếu đề nghị tạm ứng, chi tiền mặt cho tài xế — chưa nhận tạm ứng thì xe chưa xuất phát",
-  "lo": "ຄັງເງິນ ສະແກນ QR ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ, ຈ່າຍເງິນສົດໃຫ້ໂຊເຟີ — ຍັງບໍ່ໄດ້ຮັບເງິນລ່ວງໜ້າ ລົດຍັງບໍ່ອອກ",
-  "en": "The cashier scans the advance-request QR and pays the driver in cash — no departure before the advance"
+  "vi": "Ghi sổ xong, phiếu chi sang hệ kế toán; thủ quỹ chi tiền mặt cho tài xế và ghi sổ ở đó — chưa ghi sổ thì xe chưa xuất phát",
+  "lo": "ບັນທຶກແລ້ວ ໃບຈ່າຍໄປລະບົບບັນຊີ; ຄັງເງິນຈ່າຍເງິນສົດໃຫ້ໂຊເຟີ ແລະ ບັນທຶກຢູ່ທີ່ນັ້ນ — ຍັງບໍ່ບັນທຶກ ລົດຍັງບໍ່ອອກ",
+  "en": "Once booked, the payment voucher goes to accounting; the cashier pays the driver and posts it there — no departure until it is posted"
  },
  "lg2_p_road": {
   "vi": "Mỏ Kasi · Cửa khẩu Nậm Phao",
@@ -10431,5 +10431,60 @@ window.EPL_TU_DIEN = {
   "vi": "vào mục VI chi khác",
   "lo": "ເຂົ້າພາກ VI ລາຍຈ່າຍອື່ນ",
   "en": "into section VI other costs"
+ },
+ "ck_cho_chi": {
+  "vi": "Chờ thủ quỹ chi ở hệ kế toán",
+  "lo": "ລໍຖ້າຄັງເງິນຈ່າຍ ຢູ່ລະບົບບັນຊີ",
+  "en": "Awaiting payment in accounting"
+ },
+ "ck_da_chi": {
+  "vi": "Đã chi ở hệ kế toán ·",
+  "lo": "ຈ່າຍແລ້ວ ຢູ່ລະບົບບັນຊີ ·",
+  "en": "Paid in accounting ·"
+ },
+ "ck_da_chi_ngan": {
+  "vi": "Đã chi (kế toán)",
+  "lo": "ຈ່າຍແລ້ວ (ບັນຊີ)",
+  "en": "Paid (accounting)"
+ },
+ "ck_da_chi_toast": {
+  "vi": "Thủ quỹ đã chi ở hệ kế toán — tài xế xuất phát được",
+  "lo": "ຄັງເງິນຈ່າຍແລ້ວ ຢູ່ລະບົບບັນຊີ — ໂຊເຟີອອກລົດໄດ້",
+  "en": "Paid in accounting — the driver can depart"
+ },
+ "ck_cap_nhat": {
+  "vi": "Cập nhật",
+  "lo": "ອັບເດດ",
+  "en": "Refresh"
+ },
+ "ck_cap_nhat_ds": {
+  "vi": "Cập nhật chi ở kế toán",
+  "lo": "ອັບເດດການຈ່າຍ ຈາກບັນຊີ",
+  "en": "Refresh accounting payments"
+ },
+ "ck_loi_ngan": {
+  "vi": "Chưa sang được kế toán",
+  "lo": "ຍັງສົ່ງໄປບັນຊີບໍ່ໄດ້",
+  "en": "Not sent to accounting"
+ },
+ "ck_gui_lai": {
+  "vi": "Gửi phiếu chi sang kế toán",
+  "lo": "ສົ່ງໃບຈ່າຍໄປບັນຊີ",
+  "en": "Send to accounting"
+ },
+ "ck_chua_gui": {
+  "vi": "Chưa có phiếu chi bên kế toán",
+  "lo": "ຍັງບໍ່ມີໃບຈ່າຍ ຢູ່ບັນຊີ",
+  "en": "No payment voucher in accounting yet"
+ },
+ "ck_cho_ghi_so": {
+  "vi": "KT Chi phí ghi sổ mục IV thì phiếu chi mới sang kế toán",
+  "lo": "ບັນຊີລາຍຈ່າຍ ບັນທຶກພາກ IV ແລ້ວ ໃບຈ່າຍຈຶ່ງໄປບັນຊີ",
+  "en": "The payment voucher goes to accounting once section IV is booked"
+ },
+ "ck_da_hoi": {
+  "vi": "Đã hỏi lại {n} phiếu chi, {m} phiếu mới đã chi",
+  "lo": "ກວດຄືນ {n} ໃບຈ່າຍ, {m} ໃບຫາກໍຈ່າຍແລ້ວ",
+  "en": "Checked {n} payment vouchers, {m} newly paid"
  }
 };

@@ -72,7 +72,7 @@ Hai trang dùng **cùng tên đăng nhập và cùng mật khẩu**, nhưng **đ
 | `khotb` · `khovc` | Thủ kho nhiên liệu (một kho: Thà Bốc · Viêng Chăn) | Màn **Xem kho** (chỉ xem: tồn từng kho, đề nghị chờ cấp) — cấp dầu ở trang kế toán | Cấp phát (chỉ phiếu đề nghị xuất nhiên liệu của kho mình), Kho nhiên liệu (xem) |
 | `khopt` | Thủ kho phụ tùng Thà Bốc | Màn Xe | Kho phụ tùng (thêm, nhập, xuất, sửa) |
 | `totsua` | Tổ sửa chữa Thà Bốc | Theo dõi tuyến (duyệt báo hỏng xe, lốp, tai nạn → mục V), Phiếu xuất xe (mục V), Xe | Lệnh sửa chữa (lập, thêm dòng), Kho phụ tùng (xem) |
-| `quytb` | Quỹ tiền mặt cảng cạn | Chi mục IV, V, VI | Xem sổ; Cấp phát (chi tạm ứng), Lệnh sửa chữa (chi), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe); **Tất toán tài xế** (chốt); **Theo dõi nhà cung cấp** (trả) |
+| `quytb` | Quỹ tiền mặt cảng cạn | Chi mục V, VI (mục IV — tạm ứng — chi ở hệ kế toán anh Tune từ 01/10, bước 9) | Xem sổ; Cấp phát (chi tạm ứng), Lệnh sửa chữa (chi), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe); **Tất toán tài xế** (chốt); **Theo dõi nhà cung cấp** (trả) |
 | `quyvc` | Thủ quỹ VC | Chi mục III (dầu mua ngoài) | Xem sổ; Cấp phát (chi tạm ứng), Bán hàng (ghi thu); **Xe liên kết** (trả chủ xe); **Tất toán tài xế** (chốt); **Theo dõi nhà cung cấp** (trả) |
 | `doanhthu` | KT Doanh thu VC | Xem phiếu, công nợ khách | Xem sổ; **Hóa đơn vận chuyển**, **Hoá đơn gộp tháng** (lập hoá đơn, ghi thu, xoá lần thu); **Theo dõi nhà cung cấp** (ghi cấn trừ tháng); Bán hàng (lập, ghi thu) |
 | `tx01` · `tx02` · `tx03` | Tài xế | Chỉ màn **Phiếu của tôi** trên điện thoại | Không có tài khoản |
@@ -362,16 +362,36 @@ Theo đúng tờ Excel mẫu (bảng trên): tài xế cầm đi **580.000 LAK**
 
 **Máy chặn:** thủ kho kho khác không cấp được; cấp lệch không ghi lý do; cấp hai lần.
 
-### Bước 9. Quỹ chi tạm ứng cho tài xế
+### Bước 9. Thủ quỹ chi tạm ứng cho tài xế — ở hệ kế toán anh Tune (từ 01/10)
 
-**Ai:** Quỹ tiền mặt cảng cạn (`quytb`) hoặc Thủ quỹ VC (`quyvc`). Làm ở **một trong hai chỗ**, máy tự loại chỗ kia:
+**Chủ dự án chốt 01/10:** tiền tạm ứng chi thật ở hệ kế toán anh Tune, chi xong thì trạng thái về trang điều xe.
 
-- **Cách 1 — trang kế toán:** Kho → **Cấp phát** → tab **Phiếu đề nghị tạm ứng** → quét QR phiếu đề nghị tạm ứng (hoặc bấm dòng) → đối chiếu → **Chi tiền**.
-- **Cách 2 — trang điều xe:** mở Phiếu xuất xe → mục IV → **Xác nhận đã chi**.
+**Ai:** thủ quỹ (Quỹ tiền mặt Thà Bốc), làm **trong hệ kế toán anh Tune**.
 
-**Máy tự làm:** mục IV thành *Đã chi*; tờ đề nghị tạm ứng có mã QR thành *Đã cấp* (chi ở cách nào cũng vậy — Tất toán đếm "đã ứng" theo tờ này; chi rồi quét QR lần nữa thì bị chặn); sinh tờ **PC_TU** (phiếu chi theo đề nghị tạm ứng, ở trang điều xe, chờ đẩy sổ) — chỉ gồm dòng cách trả **Chi ngay khi xe đi**, đúng số trên phiếu đề nghị tạm ứng; khoản cùng lương, nợ nhà cung cấp, trừ thẻ không qua tay quỹ lúc này. Tài xế ký nhận tiền trên tờ phiếu đề nghị tạm ứng.
+1. Lúc KT Chi phí VC (`ketoancp`) bấm **Ghi sổ** mục IV ở bước trước, trang điều xe tự tạo **phiếu chi "Chi trước"** bên hệ kế toán:
+   - chưa ghi sổ;
+   - đứng tên tài xế;
+   - số tham chiếu là số tờ đề nghị tạm ứng (`PTU-…`), đúng số tiền mặt trên tờ.
+2. Thủ quỹ mở hệ kế toán → **Phiếu chi** → tìm phiếu theo số tham chiếu trên tờ tài xế cầm tới → chi tiền → **Ghi sổ**.
+3. Trên trang điều xe, menu **Phiếu đề nghị chi** → bấm tờ PTU:
+   - chưa chi: hiện *Chờ thủ quỹ chi ở hệ kế toán · 1368-CTR-…* và nút **Cập nhật**;
+   - đã chi: hiện *Đã chi (kế toán)* kèm tên người ghi sổ.
+   - Nút **Cập nhật chi ở kế toán** trên đầu màn hỏi lại cả danh sách.
 
-**Máy chặn:** mục IV chưa *Đã ghi sổ* thì không chi được; tài xế không tự chi cho mình; chi rồi thì chỗ kia báo sai bước, không ra hai tờ.
+**Máy tự làm:** hỏi lại hệ kế toán lúc mở tờ, lúc tài xế bấm **Xuất phát**, và khi bấm Cập nhật. Thấy bên đó đã ghi sổ thì:
+- mục IV thành *Đã chi*;
+- tờ đề nghị tạm ứng thành *Đã cấp* (Tất toán đếm "đã ứng" theo tờ này);
+- nhật ký phiếu ghi tên người ghi sổ bên kế toán.
+
+Gửi lại không tạo phiếu thứ hai. Số tạm ứng đổi khi bên kia chưa ghi sổ thì phiếu cũ bị thay bằng phiếu đúng số. Xoá phiếu xuất xe (hoặc huỷ tờ tạm ứng) khi bên kia chưa ghi sổ thì phiếu chi bên kia được rút.
+
+**Máy chặn:**
+- Quỹ bấm **Chi** mục IV hoặc quét QR tờ tạm ứng trên trang điều xe → báo *"Tạm ứng chi ở hệ kế toán…"*.
+- Tài xế bấm **Xuất phát** khi thủ quỹ chưa ghi sổ → câu báo nói số phiếu chi đang chờ.
+- Xoá phiếu đã chi ở hệ kế toán → chặn, đối soát bên kia trước.
+- Sếp vẫn chi tay được, cho lúc hệ kế toán không vào được; khi đó máy rút phiếu chi còn chờ bên kia để không chi hai lần.
+
+**Hỏng thì sao:** chưa tạo được phiếu chi (mất mạng, token hết hạn, xe thuê chưa có mã 4022…) thì tờ hiện *Chưa sang được kế toán* kèm câu lỗi; KT Chi phí bấm **Gửi phiếu chi sang kế toán**.
 
 **Ai làm tiếp:** tài xế xuất phát.
 

@@ -1203,3 +1203,41 @@ class GuiSoTune(Base):
     first_attempt_at = Column(DateTime)
     last_attempt_at = Column(DateTime)
     synced_at = Column(DateTime)
+
+
+class DoiTuongTune(Base):
+    """Đối tượng (PUBOBJECT) bên hệ kế toán anh Tune ứng với một người bên em. Phiếu chi bên đó bắt buộc ObjectId > 0, mà danh
+    mục bên đó chưa có tài xế Lào — bên em tạo qua `master-data/staff/upsert` (mã `EPLTX-<Driver.id>`) rồi nhớ ở đây."""
+    __tablename__ = "doi_tuong_tune"
+    loai = Column(String(16), primary_key=True)                   # tai_xe
+    ref_id = Column(String, primary_key=True)                     # drivers.id
+    obj_id = Column(Integer, nullable=False)                      # OBJ_AUTOID bên kế toán
+    object_no = Column(String(50), nullable=False)                # OBJ_OBJECTNO bên kế toán
+    created_at = Column(DateTime, default=bay_gio)
+
+
+class ChiTune(Base):
+    """Phiếu chi TẠM ỨNG bên hệ kế toán anh Tune của một tờ đề nghị tạm ứng (PTU) — chủ dự án chốt 01/10/2026: tiền chi thật ở
+    hệ anh Tune, xong thì trạng thái về bên em. KT Chi phí ghi sổ mục IV → bên em tạo phiếu chi "Chi trước" bên đó (chưa ghi
+    sổ); thủ quỹ chi và GHI SỔ ở đó; bên em đọc lại, `STATUS` 12/13 là đã chi → mục IV "đã chi", tài xế mới xuất phát.
+    `status`: da_gui (có phiếu bên đó, chờ chi) · da_chi (bên đó đã ghi sổ) · loi (chưa tạo được — xem error_*)."""
+    __tablename__ = "chi_tune"
+    voucher_id = Column(String, ForeignKey("vouchers.id", ondelete="CASCADE"), primary_key=True)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), index=True)
+    status = Column(String(16), nullable=False, default="loi")
+    real_id = Column(Integer)                                     # DOCUMENTID phiếu chi bên kế toán
+    document_no = Column(String(64))                              # số phiếu bên đó, ví dụ 1368-CTR-261001-00001
+    obj_id = Column(Integer)
+    amount_lak = Column(Float)
+    tune_status = Column(Integer)                                 # ST_AUTOID: 1 đã lưu · 12 ghi sổ chính · 13 ghi sổ tạm
+    post_by = Column(String)
+    post_at = Column(DateTime)
+    request_body = Column(Text)
+    response_body = Column(Text)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    sent_by = Column(String)
+    first_attempt_at = Column(DateTime)
+    last_attempt_at = Column(DateTime)
+    checked_at = Column(DateTime)

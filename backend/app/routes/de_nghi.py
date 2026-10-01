@@ -24,7 +24,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import MUC_CHI, ChungTu, FuelPlace, Trip, TripExpense, TripSection, Voucher
+from models import MUC_CHI, ChiTune, ChungTu, FuelPlace, Trip, TripExpense, TripSection, Voucher
+from services import chi_tune as CHI
 from services import chung_tu as CT
 from services import de_nghi_thu as DNT
 from services import gui_tune as GT
@@ -215,3 +216,62 @@ def tao_so(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)
                                   "loi": "Chỉ KT Thu/Chi Viêng Chăn (người khoá phiếu) hoặc Sếp gửi đề nghị thu sang bên công nợ."})
     kq, da_co = GT.gui(db, _phieu(db, tid), user)
     return {"trang_thai": kq, "da_co_truoc": da_co}
+
+
+# ---------------------------------------------------------------- tạm ứng: phiếu chi bên hệ kế toán (01/10)
+GUI_CHI = ("expacct", "admin")      # KT Chi phí VC (người ghi sổ mục IV) và Sếp
+KHONG_XEM_CHI = ("driver", "depot", "parts", "repair")
+
+
+@router.get("/api/trips/{tid}/chi-ke-toan")
+def xem_chi_ke_toan(tid: str, cap_nhat: int = 0, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Phiếu chi tạm ứng bên hệ kế toán của phiếu này. `cap_nhat=1` → hỏi lại bên đó (thủ quỹ ghi sổ chưa)."""
+    p = _phieu(db, tid)
+    if user.role in KHONG_XEM_CHI and not (user.role == "driver" and user.driver_id and user.driver_id == p.driver_id):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem phiếu chi tạm ứng." % user.role})
+    r = CHI.cua_phieu(db, p, cap_nhat=bool(cap_nhat))
+    return dict(CHI.xuat(r, thay_tien=thay_tien_chi(user.role)) or {}, o_ke_toan=CHI.chi_o_ke_toan(),
+                muc_travel=_muc_iv(db, p))
+
+
+@router.post("/api/trips/{tid}/chi-ke-toan")
+def gui_chi_ke_toan(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Gửi (lại) phiếu chi tạm ứng sang hệ kế toán — thường tự gửi lúc KT Chi phí ghi sổ mục IV; nút này cho lần hỏng."""
+    if user.role not in GUI_CHI:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Chi phí VC hoặc Sếp gửi phiếu chi tạm ứng sang kế toán."})
+    if not CHI.chi_o_ke_toan():
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Tạm ứng đang chi trên trang điều xe (EPL_CHI_TAM_UNG=tai_cho)."})
+    p = _phieu(db, tid)
+    if _muc_iv(db, p) not in ("booked", "paid"):
+        raise HTTPException(409, {"ma": "MUC_IV_CHUA_GHI_SO", "loi": "Mục IV phiếu %s chưa ghi sổ — KT Chi phí ghi sổ trước." % p.doc_no})
+    from routes.phieu_linh import dam_bao_tam_ung
+    v = dam_bao_tam_ung(db, p, user)
+    if v is None:
+        raise HTTPException(409, {"ma": "KHONG_CO_TAM_UNG", "loi": "Phiếu %s không có khoản tiền mặt tạm ứng." % p.doc_no})
+    db.commit()
+    r = CHI.gui(db, p, v, user)
+    return dict(CHI.xuat(r) or {}, o_ke_toan=True, muc_travel=_muc_iv(db, p))
+
+
+@router.post("/api/chi-ke-toan/cap-nhat")
+def cap_nhat_chi_ke_toan(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Hỏi lại hệ kế toán mọi phiếu chi tạm ứng đang chờ chi (mới gửi trước, tối đa 40) — nút Cập nhật ở màn Phiếu đề nghị chi."""
+    if user.role in KHONG_XEM_CHI:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem phiếu chi tạm ứng." % user.role})
+    cho = (db.query(ChiTune).filter(ChiTune.status == "da_gui").order_by(ChiTune.last_attempt_at.desc().nullslast())
+           .limit(40).all())
+    da_chi, loi = 0, None
+    for r in cho:
+        try:
+            if CHI.dong_bo(db, r).status == "da_chi":
+                da_chi += 1
+        except HTTPException as e:
+            loi = (e.detail or {}).get("loi") if isinstance(e.detail, dict) else str(e.detail)
+            if (e.detail or {}).get("ma") in ("KHONG_GOI_DUOC", "QLSX_TOKEN_HET_HAN", "CHUA_CO_TOKEN"):
+                break                                # bên kia không vào được thì dừng, không gọi 40 lần hỏng
+    return {"da_hoi": len(cho), "moi_da_chi": da_chi, "loi": loi}
+
+
+def _muc_iv(db, p):
+    s = db.query(TripSection).filter(TripSection.trip_id == p.id, TripSection.section == "travel").first()
+    return s.status if s else "wait"

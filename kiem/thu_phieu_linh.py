@@ -142,10 +142,8 @@ else:
     bao("Tài xế tự chi tạm ứng → từ chối", ma, 403, (r or {}).get("detail", {}).get("ma", ""))
     tt = ct["sections"].get("travel")
     ma, r = goi("/api/vouchers/%s/cap" % ptu["id"], {}, tk["quytb"])
-    if tt == "booked":
-        bao("Quỹ chi tạm ứng (mục IV đã ghi sổ)", ma, 200, "trạng thái %s" % (r or {}).get("status"))
-    else:
-        bao("Chi khi mục IV đang '%s' → sai bước" % tt, ma, 409, (r or {}).get("detail", {}).get("ma", ""))
+    # từ 01/10 tạm ứng chi ở hệ kế toán: quỹ quét QR trên trang điều xe bị chặn ở mọi bước
+    bao("Quỹ quét QR tạm ứng trên trang điều xe → chặn (CHI_O_KE_TOAN khi mục IV đã ghi sổ, SAI_BUOC khi chưa)", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
 
 
 # 13. tài xế khai đổ dầu dọc đường ở Việt Nam

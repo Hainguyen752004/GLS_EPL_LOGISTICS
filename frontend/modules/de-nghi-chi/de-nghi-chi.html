@@ -1,4 +1,5 @@
-<!-- Phiếu đề nghị chi — ໃບສະເໜີຈ່າຍ. Chỉ đề nghị TẠM ỨNG (tiền — tài xế cầm tới quỹ, quỹ chi theo tờ). Đề nghị xuất kho nhiên
+<!-- Phiếu đề nghị chi — ໃບສະເໜີຈ່າຍ. Chỉ đề nghị TẠM ỨNG (tiền). Từ 01/10 chi thật ở hệ kế toán: ghi sổ mục IV → phiếu chi
+     bên đó, thủ quỹ chi và ghi sổ ở đó; khối #dnc-kt hiện trạng thái phiếu chi đó. Đề nghị xuất kho nhiên
      liệu là việc của kho, ở màn Phiếu đề nghị xuất kho (chủ dự án 30/09 chiều). Trái: danh sách tờ; phải: tờ đúng khổ in. -->
 <div class="dnc">
   <div class="dnc-top no-print">
@@ -14,6 +15,7 @@
     </label>
     <div class="grow"></div>
     <span class="small muted" id="dnc-dem"></span>
+    <button class="btn" id="dnc-cap-nhat" type="button"><span data-i18n="ck_cap_nhat_ds"></span></button>
   </div>
 
   <div class="dnc-than">
@@ -22,6 +24,7 @@
       <div class="dnc-nut no-print">
         <span class="small muted" id="dnc-nguon"></span>
         <div class="grow"></div>
+        <div class="dnc-kt" id="dnc-kt"></div>
         <button class="btn" id="dnc-mo-phieu"><span data-i18n="open_slip"></span></button>
         <button class="btn primary" id="dnc-in"><span data-i18n="print"></span></button>
       </div>

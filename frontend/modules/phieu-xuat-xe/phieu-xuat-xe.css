@@ -70,7 +70,11 @@
 .px-stt.booked{background:var(--ore-soft);color:var(--ore)}
 .px-stt.paid{background:var(--green-soft);color:var(--green)}
 .px-stt.na{background:var(--bg-2);color:var(--ink-3)}
-.px-act{display:flex;gap:6px}
+.px-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.px-chi-kt{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.px-chi-kt.ok{background:var(--green-soft);color:var(--green)}
+.px-chi-kt.cho{background:var(--amber-soft);color:var(--amber)}
+.px-chi-kt.loi{background:var(--red-soft);color:var(--red)}
 .px-lk{display:none} .px-phieu.is-joint .px-lk{display:revert} .px-phieu.is-joint th.px-lk,.px-phieu.is-joint td.px-lk{display:table-cell}
 .px-khau-tru{margin-top:12px;border:1px dashed var(--line-2);border-radius:var(--r);padding:12px} .px-khau-tru h5{margin:0 0 10px;font-size:13px}
 .px-chi input,.px-chi select{border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;width:100%;min-width:60px}

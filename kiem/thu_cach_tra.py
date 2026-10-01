@@ -97,14 +97,15 @@ def main():
         s, v = goi("/api/trips/%s/vouchers" % pid, {"kind": "advance"}, "thabok")
         phai(s, 200, "Bãi bấm Phiếu chi tạm ứng → có tờ tạm ứng mã QR (Bãi không thấy số tiền)", v)
         assert v[0]["token"] and v[0]["amount_lak"] is None, v[0]
-        # quỹ chi THẲNG ở mục IV (trang điều xe) → tờ tạm ứng thành đã cấp: Tất toán đếm được, quét QR không chi lần hai
-        for hd, vai in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        # chi THẲNG ở mục IV (trang điều xe) → tờ tạm ứng thành đã cấp: Tất toán đếm được, quét QR không chi lần hai.
+        # Từ 01/10 tạm ứng chi ở hệ kế toán — Quỹ không chi ở đây nữa; đường chi tay còn lại là của Sếp
+        for hd, vai in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "admin")):
             s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai)
             phai(s, 200, "Mục IV: %s (%s)" % (hd, vai), g)
         s, ds = goi("/api/trips/%s/vouchers" % pid, vai="ketoancp")
         tu = next(x for x in ds if x["kind"] == "advance")
         assert tu["status"] == "da_cap" and round(tu["amount_lak"]) == 580000, tu
-        print("  ✓ %-72s" % "Quỹ chi thẳng ở mục IV → tờ tạm ứng thành Đã cấp 580.000 (Tất toán đếm được là đã ứng)")
+        print("  ✓ %-72s" % "Sếp chi tay mục IV → tờ tạm ứng thành Đã cấp 580.000 (Tất toán đếm được là đã ứng)")
         # Bãi in tờ tạm ứng lúc chưa có giá (0 LAK) — tờ chứng từ PTU gửi sang sổ phải theo số quỹ chi, không kẹt ở 0
         s, ct = goi("/api/chung-tu?trip_id=%s" % pid, vai="admin")
         tien = {c["loai"]: round(c["tien"] or 0) for c in ct["ds"] if c["loai"] in ("PTU", "PC_TU")}

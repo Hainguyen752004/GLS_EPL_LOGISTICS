@@ -53,8 +53,9 @@ def phai(s, mong, buoc, g=None):
 
 def chi_tam_ung(pid, phai):
     """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
-    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới"."""
-    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+    cả hai cửa. Từ 01/10 tạm ứng chi ở hệ kế toán (kiem/thu_chi_tam_ung_ke_toan.py thử đường đó); bài này không phải về
+    tạm ứng nên bước chi do SẾP chi tay — máy rút phiếu chi còn chờ bên kế toán, không để thủ quỹ chi lần nữa."""
+    for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "admin")):
         s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
         if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
             return          # mục IV trống, hoặc đã đi qua bước này rồi

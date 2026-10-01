@@ -349,12 +349,16 @@
         if (st === 'entered' && (p.verify.includes(m) || vai() === 'admin')) { nut.push(['ok', 'verify', 'a_verify']); nut.push(['warn', 'return', 'a_return']); }
         if (st === 'verified' && MUC_CHI.includes(m) && (p.book.includes(m) || vai() === 'admin')) nut.push(['ok', 'book', 'a_book']);
         if (st === 'verified' && (p.verify.includes(m) || vai() === 'admin')) nut.push(['warn', 'return', 'a_return']);
-        if (st === 'booked' && (p.pay.includes(m) || vai() === 'admin')) nut.push(['ok', 'pay', 'a_pay']);
+        // tạm ứng chi ở hệ kế toán (01/10): Quỹ không bấm chi mục IV ở đây — thủ quỹ ghi sổ phiếu chi bên đó (Sếp vẫn chi tay được)
+        const chiKT = m === 'travel' && (P.chi_tam_ung || {}).o_ke_toan && vai() !== 'admin';
+        if (st === 'booked' && !chiKT && (p.pay.includes(m) || vai() === 'admin')) nut.push(['ok', 'pay', 'a_pay']);
         if (vai() === 'admin' && !['wait', 'entered'].includes(st)) nut.push(['', 'unlock', 'a_unlock']);
       }
-      sec.querySelector('.px-act').innerHTML = nut.map(b => `<button type="button" class="btn sm ${b[0]}" data-muc-act="${m}" data-hd="${b[1]}">${NN.h(b[2])}</button>`).join('');
+      sec.querySelector('.px-act').innerHTML = (m === 'travel' ? oChiKeToan(st) : '') +
+        nut.map(b => `<button type="button" class="btn sm ${b[0]}" data-muc-act="${m}" data-hd="${b[1]}">${NN.h(b[2])}</button>`).join('');
     });
     root.querySelectorAll('[data-muc-act]').forEach(b => b.addEventListener('click', () => duyet(b.dataset.mucAct, b.dataset.hd)));
+    root.querySelectorAll('[data-chi-kt]').forEach(b => b.addEventListener('click', () => chiKeToan(b.dataset.chiKt)));
     // bước tổng thể
     const s = P.sections || {}; const idx = (m) => ['wait', 'entered', 'verified', 'booked', 'paid'].indexOf(s[m] || 'wait');
     const coChi = (m) => P.expenses.some(d => d.section === m);
@@ -559,6 +563,23 @@
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
       moi = false; HD_DOI = {}; DS = await napDs(); EPL.toast(NN.t('saved'), 'ok'); veHet();
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
+    } catch (e) { EPL.baoLoi(e); }
+  }
+  /** Ô trạng thái phiếu chi tạm ứng bên hệ kế toán, cạnh nút của mục IV (từ lúc ghi sổ). */
+  function oChiKeToan(st) {
+    const c = P.chi_tam_ung || {};
+    if (!c.o_ke_toan || moi || !['booked', 'paid'].includes(st) || !c.status) return '';
+    const so = c.document_no ? `<b class="mono">${esc(c.document_no)}</b>` : '';
+    if (c.status === 'da_chi') return `<span class="px-chi-kt ok" title="${esc(EPL.ngayGio(c.post_at))}">${NN.h('ck_da_chi')} ${so}${c.post_by ? ' · <span lang="lo">' + esc(c.post_by) + '</span>' : ''}</span>`;
+    if (c.status === 'da_gui') return `<span class="px-chi-kt cho">${NN.h('ck_cho_chi')} ${so}</span><button type="button" class="btn sm" data-chi-kt="cap-nhat">${NN.h('ck_cap_nhat')}</button>`;
+    return `<span class="px-chi-kt loi" title="${esc(c.error_message || '')}">${NN.h('ck_loi_ngan')}</span>` +
+      (AUTH.la('expacct') ? `<button type="button" class="btn sm warn" data-chi-kt="gui">${NN.h('ck_gui_lai')}</button>` : '');
+  }
+  async function chiKeToan(viec) {
+    try {
+      const r = viec === 'gui' ? await API.post(`/api/trips/${P.id}/chi-ke-toan`) : await API.get(`/api/trips/${P.id}/chi-ke-toan?cap_nhat=1`);
+      P = await API.get(`/api/trips/${P.id}`); veHet();
+      EPL.toast(NN.t(r.status === 'da_chi' ? 'ck_da_chi_toast' : r.status === 'da_gui' ? 'ck_cho_chi' : 'ck_loi_ngan'), r.status === 'loi' ? 'loi' : 'ok');
     } catch (e) { EPL.baoLoi(e); }
   }
   async function duyet(m, hd) {

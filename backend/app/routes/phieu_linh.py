@@ -298,6 +298,11 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
         for tid, st in (db.query(TripSection.trip_id, TripSection.status)
                         .filter(TripSection.trip_id.in_(ma), TripSection.section == "travel")):
             iv.setdefault(tid, st)
+    # phiếu chi tạm ứng bên hệ kế toán (01/10) — nạp một lần cho cả danh sách
+    from models import ChiTune
+    from services import chi_tune as CHI
+    ung = [v.id for v in ds if v.kind == "advance"]
+    chi = {c.voucher_id: c for c in db.query(ChiTune).filter(ChiTune.voucher_id.in_(ung))} if ung else {}
     ra = []
     for v in ds:
         x = xuat_phieu_linh(db, v, goc, user.role)
@@ -306,6 +311,8 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
             x.update({"origin": p.origin, "destination": p.destination, "plate_head": p.plate_head,
                       "plate_trailer": p.plate_trailer, "customer_name": p.customer_name,
                       "muc_travel": iv.get(p.id, "wait"), "trip_doc_no": p.doc_no, "trip_kind": p.kind, "company": p.company})
+        if v.kind == "advance":
+            x["chi_ke_toan"] = CHI.xuat(chi.get(v.id), thay_tien=thay_tien_chi(user.role))
         ra.append(x)
     return ra
 
@@ -387,11 +394,16 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
                 dong[0].qty = lit                        # cấp lệch thì phiếu xuất xe ghi theo số thật
             v.granted_qty, v.granted_note = lit, ly_do or None
         else:
+            from services import chi_tune as CHI
             tt = (db.query(TripSection).filter(TripSection.trip_id == p.id, TripSection.section == "travel").first())
             if tt is None:
                 tt = TripSection(trip_id=p.id, section="travel", status="wait"); db.add(tt)
-            # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước.
-            tt.status = chuyen_muc(user.role, "travel", tt.status, "pay")
+            # Đi đúng chuỗi duyệt: chỉ vai giữ quỹ mới chi, và mục IV phải "đã ghi sổ" trước. Hỏi QUYỀN trước, rồi mới nói
+            # tạm ứng chi ở hệ kế toán (01/10) — tài xế tự quét phải nghe "không có quyền".
+            moi = chuyen_muc(user.role, "travel", tt.status, "pay")
+            if CHI.chi_o_ke_toan() and user.role != "admin":
+                raise HTTPException(409, {"ma": "CHI_O_KE_TOAN", "loi": CHI.cau_chan_chi(db, p)})
+            tt.status = moi
             v.amount_lak = _tien_tam_ung(db, p)    # chi đúng số tiền mặt lúc chi — kế toán nhập giá sau khi Bãi in tờ
             _khop_ct_tam_ung(db, v)
             CT.ghi(db, "PC_TU", nguon_bang="vouchers", nguon_id=v.id, trip=p, ngay=dt.date.today(), phuong_thuc="cash", doi_tuong_loai="tai_xe",
@@ -410,6 +422,9 @@ def huy_phieu(vid: str, db: Session = Depends(get_db), user=Depends(can_vai("yar
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu đề nghị này."})
     if v.status == "da_cap":
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu đã cấp thì không huỷ được."})
+    if v.kind == "advance":
+        from services import chi_tune as CHI
+        CHI.rut(db, voucher_id=v.id)                 # phiếu chi bên kế toán chưa ghi sổ thì rút; đã chi thì chặn
     v.status = "huy"; db.commit()
     return xuat_phieu_linh(db, v, "", user.role)
 

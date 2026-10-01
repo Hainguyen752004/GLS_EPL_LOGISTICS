@@ -38,3 +38,5 @@
   .dnc-than{grid-template-columns:1fr}
   .dnc-ds{position:static;max-height:320px}
 }
+.dnc .dnc-kt{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.dnc .dnc-kt .btn{white-space:nowrap}

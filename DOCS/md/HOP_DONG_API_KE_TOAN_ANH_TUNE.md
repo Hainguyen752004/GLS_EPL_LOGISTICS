@@ -1,7 +1,11 @@
 # Hợp đồng API KẾ TOÁN — trang điều xe EPL Lào ↔ hệ kế toán của anh Tune
 
-Phiên bản đề nghị **v2.1 · 01/10/2026** (v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
+Phiên bản đề nghị **v2.2 · 01/10/2026** (v2.1 chiều 01/10, v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
 
+> **Đổi từ v2.1 sang v2.2 (tối 01/10/2026):**
+> - **12.10 (mới):** tạm ứng **chi thật ở hệ anh** (chủ dự án chốt). Ghi sổ mục IV → phiếu chi "Chi trước" bên anh; thủ quỹ chi và ghi sổ ở đó; trang điều xe đọc lại, đã ghi sổ thì xe mới xuất phát. Đã thử đủ vòng qua API chạy ở máy. Câu hỏi 10.6 và việc số 5 của 12.7.5 đã xong.
+> - **12.9.4:** chủ dự án cho bên em sửa thẳng mã của anh. Việc 1 (nguồn DO theo cấu hình + khoá) và việc 4 (màn "Vụ việc") **bên em đã làm** trên hai nhánh `feat/HonTunedaHai` (API) và `feat/hontunedhai_Laos` (Web).
+>
 > **Đổi từ v2 sang v2.1 (chiều 01/10/2026) — sau khi đọc mã nguồn của anh (mục 12.9):**
 > - **12.9 (mới):** đối chiếu với `LogisticsPushValidator`, `sp_Logistics_CreateSalesOrder`, `CashVoucherReferenceController` và màn "Vụ việc". 13/13 gói SO bên em qua đúng luật kiểm của anh.
 > - **Nguồn DO cho phiếu thu chi:** địa chỉ Logistics bên anh **ghi cứng** (`senvangsolutions.com:1506`, EPL_System) và gọi **không kèm khoá** → anh cần sửa mã, không chỉ đổi cấu hình (12.9.2). Sửa theo ở 12.5, 12.7.5, 12.8, 12.8.4.
@@ -757,7 +761,7 @@ Cách `offset` và `other` hiện xếp vào ngân hàng — xem lỗ hổng 5.
    - đường đọc công nợ hiện tại (theo DO, theo khách);
    - hoá đơn gộp tháng làm thế nào;
    - "hoàn thành SO" có phải là "đã xuất hoá đơn" bên em không.
-6. **Chi tạm ứng thật** ở hệ anh hay vẫn ở LAO (4.1, B25)?
+6. ~~**Chi tạm ứng thật** ở hệ anh hay vẫn ở LAO (4.1, B25)?~~ — **chủ dự án chốt 01/10: chi thật ở hệ anh**, trạng thái về trang điều xe. Đã nối (12.10).
 7. **Bút toán đảo** khi huỷ: khuôn tờ huỷ (tham chiếu `ref` gốc)?
 8. **Chênh lệch tỷ giá** (hoá đơn USD, khách trả Kíp): anh hạch toán ở đâu, theo tỷ giá nào?
 9. **Tờ bán cho chủ xe** (lỗ hổng 2): khuôn nào, gửi lúc ghi sổ mục III / V được không?
@@ -966,7 +970,7 @@ Mỗi dòng có khuôn:
 2. **Tạo đơn vị EPL Lào** (quốc gia 11, tiền LAK). Trả lời luôn: Thà Bốc và Viêng Chăn là một đơn vị hay hai?
 3. **Thêm tiền USD, THB** (và CNY nếu bên Lào dùng), cho anh biết `CurrencyId`.
 4. **Tài khoản dịch vụ** cho trang điều xe, quyền trên đơn vị EPL Lào.
-5. **Chốt `DotyAutoId` cho phiếu chi tạm ứng** (59 hay 60).
+5. ~~**Chốt `DotyAutoId` cho phiếu chi tạm ứng** (59 hay 60).~~ — bên em dùng **59 "Chi trước"** (đổi được bằng cấu hình), đã nối (12.10).
 6. **Đối tượng** cho khách, tài xế, chủ xe, nhà cung cấp EPL Lào (hoặc cho bên em đồng bộ). **Từ 01/10 phần khách đang chặn tạo SO** (3.2.1, câu hỏi 10.12).
 7. **Trỏ nguồn DO** của đơn vị EPL Lào sang trang điều xe Lào. Hai đường bàn giao **đã dựng xong** (mục 12.8); còn chờ địa chỉ ra Internet (chủ dự án host khi làm xong hết, 12.8.4). Phía anh cần **sửa mã**: địa chỉ đang ghi cứng, lời gọi chưa kèm khoá (12.9.2).
 8. Phương thức **"cấn trừ"**, nếu anh muốn ghi cấn trừ cuối tháng bằng phiếu thu chi.
@@ -1209,7 +1213,70 @@ Anh vừa thêm một dịch vụ riêng, `Backend.LaoInvoice`: mẫu hoá đơn
 
 #### 12.9.4. Việc xin anh làm thêm (bổ sung danh sách 12.7.5)
 
-1. Sửa `CashVoucherReferenceController`: địa chỉ và khoá Logistics **theo đơn vị**, gửi `Authorization` (12.9.2).
+1. ~~Sửa `CashVoucherReferenceController`: địa chỉ và khoá Logistics theo đơn vị, gửi `Authorization`~~ — **bên em đã sửa** trên nhánh `feat/HonTunedaHai` (commit `465748b`, 01/10): cấu hình `LogisticsSource` (`BaseUrl`, `ApiKey`, ghi đè theo `Branches:<BranchId>`), mẫu ở `Database/Scripts/logistics-source-config.example.json`. Lên máy chủ demo thì thêm mục này vào `appsettings.laos.json`.
 2. Thêm `UserId` của tài khoản dịch vụ bên em vào `LogisticsSalesPush.AllowedUserIds` (câu hỏi 10.1).
 3. Nếu tạo đơn vị riêng cho EPL Lào: đổi chi nhánh 1368 đang ghi cứng trong `sp_Logistics_CreateSalesOrder` (12.9.1, điều 4).
-4. Màn "Vụ việc": hiện số phiếu, biển số, tên tài xế trước mã; thoát ký tự khi chèn vào HTML (12.9.2).
+4. ~~Màn "Vụ việc": hiện số phiếu, biển số, tên tài xế; thoát ký tự~~ — **bên em đã sửa** trên nhánh Web `feat/hontunedhai_Laos` (commit `f382a9e8`, 01/10); tỷ giá nhỏ hơn 1 hiện ngược ("1 USD = 22.000 LAK").
+
+### 12.10. Tạm ứng: chi thật ở hệ anh, trạng thái về trang điều xe (đã nối 01/10/2026)
+
+**Chủ dự án chốt chiều 01/10:** tiền tạm ứng chi thật ở hệ anh; chi xong thì trạng thái về bên em. Câu hỏi 10.6 đã có lời đáp. Cũng từ chiều 01/10, chủ dự án cho bên em sửa thẳng mã nguồn của anh (anh bận); nối thử bằng API chạy ở máy (localhost) trên DB demo Lào anh đã sao lưu.
+
+#### 12.10.1. Luồng
+
+1. Bãi lập phiếu, in tờ **đề nghị tạm ứng** (PTU). KT Chi phí VC kiểm, rồi **ghi sổ mục IV** trên trang điều xe.
+2. Ghi sổ xong, trang điều xe **tự tạo phiếu chi bên anh**, chưa ghi sổ:
+
+   | Ô | Giá trị |
+   |---|---|
+   | `VoucherType` | `CMP` |
+   | `DotyAutoId` | **59 "Chi trước"** (cấu hình `QLSX_DOTY_CHI_TAM_UNG`) |
+   | `ObjectId` | **tài xế** — bên em tạo nhân viên qua `master-data/staff/upsert`, mã `EPLTX-<mã tài xế bên em>` |
+   | `CurrencyId` | LAK, tra ở `GetAllCurrency` (máy demo: 26) |
+   | `FiciAutoId` | kỳ chứa ngày lập, tra ở `GetFinancyCicle` (10/2026: 19) |
+   | `RefDocumentNo` | **số tờ PTU** bên em, ví dụ `PTU-T4-0449-09/EPL` |
+   | `Entries` | một dòng, định khoản theo bảng bên em: xe nhà **Nợ 1601 / Có 1011**; xe thuê Nợ 4022 / Có 1011 |
+   | `PostMode` | `None` (chưa ghi sổ) |
+
+3. **Thủ quỹ chi tiền mặt cho tài xế và GHI SỔ phiếu đó ngay trong hệ anh** (màn Phiếu chi, nút Ghi sổ).
+4. Trang điều xe **hỏi lại** phiếu (`GET …/cmpayment-receipt/{id}?voucherType=CMP`). Thấy `Master.STATUS` là 12 (ghi sổ chính) hoặc 13 (ghi sổ tạm) thì:
+   - mục IV thành **"đã chi"**, ghi nhật ký là người ghi sổ bên anh;
+   - tờ PTU thành **"đã cấp"** (Tất toán đếm "đã ứng" theo tờ này);
+   - tài xế **xuất phát được**.
+
+Bên em hỏi lại lúc mở tờ ở màn Phiếu đề nghị chi, lúc tài xế bấm Xuất phát, và khi bấm nút Cập nhật. Trang điều xe chưa ra Internet nên **hệ anh không cần gọi sang bên em**.
+
+#### 12.10.2. Điều bên em đã giữ
+
+- **Chống trùng** (API phiếu chi không có Idempotency-Key): trước mỗi lần tạo, bên em tìm qua `POST …/list` theo **đối tượng + `DOC_REFDOCUMENTNO` = số PTU**. Có rồi thì dùng lại phiếu đó, không tạo phiếu thứ hai.
+- **Số tạm ứng đổi khi phiếu bên anh chưa ghi sổ:** bên em xoá phiếu cũ (`POST …/delete`) rồi lập phiếu đúng số.
+- **Phiếu đã ghi sổ bên anh** thì bên em không xoá, không sửa. Số tạm ứng đổi sau đó thì phần chênh tính lúc tất toán tài xế.
+- **Xoá phiếu xuất xe, hoặc huỷ tờ tạm ứng, bên em:**
+  - phiếu chi bên anh **chưa ghi sổ** thì bên em **rút** (xoá bên anh);
+  - **đã ghi sổ** thì bên em chặn xoá (409 `DA_CHI_O_KE_TOAN`), đối soát bên anh trước.
+- **Quỹ trên trang điều xe không chi mục IV nữa** (nút Chi, quét QR đều trả 409 `CHI_O_KE_TOAN`).
+  - Sếp vẫn chi tay được, cho lúc hệ anh không vào được.
+  - Sếp chi tay thì bên em rút phiếu chi còn chờ bên anh trước, để thủ quỹ không chi lần nữa.
+- Lỗi về dạng HTTP 200 kèm `Success: false` cũng được đọc ra; câu lỗi của anh hiện lên màn để KT Chi phí **Gửi lại**.
+- Dự phòng: đặt `EPL_CHI_TAM_UNG=tai_cho` thì quay về Quỹ chi trên trang điều xe như trước.
+
+#### 12.10.3. Đã thử (máy thử, API chạy ở máy, DB demo Lào)
+
+`kiem/thu_chi_tam_ung_ke_toan.py` — **29 chỗ kiểm, đạt hết**, gồm:
+
+- ghi sổ mục IV → phiếu `1368-CTR-261001-…` "Chi trước" 580.000 LAK, `STATUS` 1, Nợ 1601 / Có 1011, tham chiếu đúng PTU;
+- Bãi thấy trạng thái nhưng không thấy số tiền;
+- Quỹ bấm chi / quét QR → 409;
+- tài xế bấm Xuất phát → 409, câu báo nói số phiếu chi;
+- (đóng vai thủ quỹ) ghi sổ bên anh → tài xế xuất phát được ngay; mục IV đã chi, PTU đã cấp, nhật ký ghi tên người ghi sổ bên anh;
+- gửi lại không tạo phiếu thứ hai;
+- xoá phiếu có phiếu chi chờ → phiếu chi bên anh được rút.
+
+Các phiếu thử bên anh có số tham chiếu `PTU-THU-CK-…` và `PTU-T4-CHO-…`. Đối tượng thử là `EPLTX-THU01`.
+
+#### 12.10.4. Còn mở
+
+- **Xe thuê:** Nợ **4022** chưa có trong danh mục của anh (mục 1.1), nên phiếu chi tạm ứng xe thuê sẽ bị từ chối cho tới khi mở mã. Màn của bên em hiện rõ lỗi đó, KT Chi phí gửi lại được sau khi mở mã.
+- **Đối tượng xe thuê:** hiện phiếu chi đứng tên **tài xế** (người cầm tiền). Phần nợ thuộc chủ xe thì ghi trong diễn giải. Anh muốn đứng tên **chủ xe** thì nói, bên em đổi.
+- **Token:** đang dùng token cá nhân `tune`, hết hạn 10/10/2026. Hết hạn thì không tạo được phiếu chi, tài xế không xuất phát được (Sếp chi tay được). Cần **tài khoản dịch vụ** (câu hỏi 10.1).
+- **Đơn vị:** đang ghi vào chi nhánh 1368 "Demo EPL" (cấu hình `QLSX_ORG_ID`). Có đơn vị EPL Lào riêng thì đổi cấu hình.
