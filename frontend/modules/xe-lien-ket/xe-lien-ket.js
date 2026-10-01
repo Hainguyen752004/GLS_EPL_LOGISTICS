@@ -115,7 +115,6 @@
     async init(r) {
       root = r; chuHd = null;          // HTML mới: khối hợp đồng đóng — đừng để nút "Hợp đồng" của lần trước còn sáng
       r.querySelector('#xlk-them-chu').addEventListener('click', () => suaChu(null));
-      r.querySelector('#xlk-ke-toan').addEventListener('click', () => EPL.moKeToan('xe-lien-ket'));   // trả chủ xe ở trang kế toán
       await tai();
     },
     // khối hợp đồng đang mở (js/hop_dong.js) dựng chữ lúc mở — đổi tiếng thì dựng lại, không để tiêu đề / nút còn tiếng cũ

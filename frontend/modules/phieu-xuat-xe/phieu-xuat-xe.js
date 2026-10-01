@@ -389,32 +389,23 @@
     if (!moi) {
       if (AUTH.la('acct') && P.transport_status === 'arrived' && !P.locked) ta.push(`<button class="btn sm ok" data-hd-phieu="khoa">🔒 ${NN.h('a_lock')}</button>`);
       if (AUTH.la('acct') && P.locked && !P.invoiced) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
-      // Trả chủ xe ở TRANG KẾ TOÁN từ 28/09 (đợt 7b): nút mở màn Xe liên kết bên đó ở đúng tháng của phiếu
-      if (AUTH.la('cash', 'treasury') && P.company === 'joint' && P.locked && !P.owner_paid && (P.tinh || {}).tra_chu_xe > 0) ta.push(`<button class="btn sm ok" data-kt-tra="">${NN.h('pay_owner')} · ${t2(P.tinh.tra_chu_xe, P.tinh.hire_ccy || maCuoc())} ↗</button>`);
+      // Trả chủ xe (01/10): KHÔNG còn nút sang trang kế toán tạm — tiền đi qua hệ kế toán anh Tune: KT Thu/Chi lập đề nghị trả ở
+      // màn Xe liên kết ("Trả qua kế toán"), thủ quỹ chi và ghi sổ bên đó; phiếu bên này chỉ còn thẻ "Đã trả chủ xe"
       if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
       // Xe hỏng nặng giữa đường thì đổi xe NGAY TRÊN PHIẾU NÀY (C2.2) — không lập phiếu mới, vì hàng,
       // khách, tuyến và tiền đã chi vẫn là của chuyến này.
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm" data-hd-phieu="doi-xe">${NN.h('change_truck')}</button>`);
       if (AUTH.la('yard') && !P.locked && P.transport_status !== 'arrived') ta.push(`<button class="btn sm ok" data-tt="arrived">${NN.h('mark_arrived')}</button>`);
-      // Hoá đơn và thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a): các nút dưới mở màn bên đó, đúng phiếu này / đúng tờ gộp.
-      // Khách gộp hoá đơn tháng (C8.2) thì KHÔNG xuất hoá đơn lẻ từng phiếu — sang màn Hoá đơn gộp.
-      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode !== 'thang') ta.push(`<button class="btn sm ok" data-kt-hd="">${NN.h('a_invoice')} ↗</button>`);
-      if (AUTH.la('rev') && s.trans === 'verified' && !P.invoiced && P.inv_mode === 'thang') ta.push(`<button class="btn sm" data-di-gop="">${NN.h('hg_gop')} ↗</button>`);
-      if (P.invoice_id) ta.push(`<button class="btn sm" data-di-gop="${esc(P.invoice_id)}">${NN.h('hg_thuoc')} ${esc(P.inv_no || '')} ↗</button>`);
-      // Không còn nút "đánh dấu đã thu": tiền về bao nhiêu thì ghi bấy nhiêu (ở trang kế toán), trạng thái tự suy ra.
-      if (AUTH.la('rev') && P.invoiced && !P.invoice_id && P.finance_status !== 'paid') ta.push(`<button class="btn sm ok" data-kt-hd="">${NN.h('collect_new')} ↗</button>`);
+      // Hoá đơn, thu tiền khách (01/10): KHÔNG còn nút sang trang kế toán tạm (hoá đơn lẻ, hoá đơn gộp, ghi thu) — số bên đó là
+      // số thử, đã cắt sổ. Khoá phiếu là máy lập phiếu đề nghị thu → gửi hệ kế toán anh Tune lập SO, hoá đơn, thu tiền (nút
+      // "Phiếu đề nghị thu" trên đầu màn); công nợ khách xem ở màn Khách hàng → Công nợ.
       if (AUTH.la('yard') && !P.locked && MUC.every(m => ['wait', 'entered'].includes(s[m] || 'wait'))) ta.push(`<button class="btn sm danger" data-hd-phieu="xoa">${NN.h('delete')}</button>`);
     }
     // không có việc mức phiếu thì giấu cả khối: trạng thái đã có ở đầu cột bên, lặp lại chỉ đẩy cột dài ra (01/10)
     const hd = g('px-hanh-dong'); hd.hidden = !ta.length;
     hd.innerHTML = ta.length ? `<span class="small muted">${NN.h('trip_status')}:</span> ${ta.join(' ')}` : '';
     root.querySelectorAll('[data-tt]').forEach(b => b.addEventListener('click', () => doiTrangThai(b.dataset.tt)));
-    root.querySelectorAll('[data-di-gop]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don-gop',
-      Object.assign({ thang: String(P.doc_date || '').slice(0, 7) }, b.dataset.diGop ? { id: b.dataset.diGop } : {}))));
-    root.querySelectorAll('[data-kt-hd]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('hoa-don', { id: P.id })));
-    root.querySelectorAll('[data-kt-tra]').forEach(b => b.addEventListener('click', () => EPL.moKeToan('xe-lien-ket', { thang: String(P.doc_date || '').slice(0, 7), id: P.id })));
     root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
-    veThuTien();
     veTep();
     veBen();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
@@ -705,29 +696,15 @@
     }
     try { P = await API.post(`/api/trips/${P.id}/transport-status`, body); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
+  // việc mức phiếu còn lại đi qua đây: mở khoá phiếu (hoá đơn, thu tiền ở hệ kế toán từ 01/10 — trước đây tiêu đề hộp hỏi
+  // là "Xác nhận đã thu tiền khách" cả khi bấm Mở khoá)
   async function hanhDongPhieu(hd, body) {
-    if (!await EPL.hoi(NN.t(hd === 'invoice' ? 'a_invoice' : 'a_collect'), NN.t('confirm_action'))) return;
+    if (!await EPL.hoi(NN.t(hd === 'mo-khoa' ? 'a_unlock_slip' : 'a_' + hd), NN.t('confirm_action'))) return;
     try { P = await API.post(`/api/trips/${P.id}/${hd}`, body || {}); DS = await napDs(); veHet(); } catch (e) { EPL.baoLoi(e); }
   }
 
-  /* ---------------------------------------------------------------- sổ thu tiền
-   * Hoá đơn một tờ, tiền có thể về làm nhiều lần và bằng tiền khác với tiền ghi trên hoá đơn —
-   * hoá đơn USD mà khách chuyển Kíp là chuyện bình thường ở đây. Mỗi lần thu là một dòng ở trang kế toán;
-   * trạng thái "đã thu đủ" do tổng quyết định.
-   */
-  /** Sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a). Phiếu bên này chỉ còn bản chép: tiền hoá đơn, đã thu, còn lại —
-   *  bấm nút để mở đúng phiếu này bên đó (ghi thu, xoá lần thu, in phiếu thu). */
-  function veThuTien() {
-    const o = g('px-thu-tien'); if (!o) return;
-    if (moi || !P.id || !P.invoiced) { o.innerHTML = ''; return; }
-    const k = P.tinh || {};
-    o.innerHTML = `<div class="card px-thu"><div class="hd"><h4>${NN.h('collect_log')}</h4><div class="grow"></div>
-        <span class="small">${NN.h('c_value')}: <b>${EPL.tien(k.doanh_thu, k.ccy)}</b> · ${NN.h('collected')}: <b>${EPL.tien(k.da_thu, k.ccy)}</b> · ${NN.h('remaining')}: <b class="${k.con_lai ? 'neg' : 'pos'}">${EPL.tien(k.con_lai, k.ccy)}</b></span>
-        <button class="btn sm no-print" data-kt-thu="">${NN.h('mo_ke_toan')} ↗</button></div>
-      <div class="bd"><p class="small muted">${P.invoice_id ? NN.h('hg_thu_o_to') + ' ' + esc(P.inv_no || '') + ' · ' : ''}${NN.h('thu_o_ke_toan')}</p></div></div>`;
-    o.querySelectorAll('[data-kt-thu]').forEach(b => b.addEventListener('click', () => (P.invoice_id
-      ? EPL.moKeToan('hoa-don-gop', { thang: String(P.doc_date || '').slice(0, 7), id: P.invoice_id }) : EPL.moKeToan('hoa-don', { id: P.id }))));
-  }
+  /* Sổ thu tiền (hoá đơn · đã thu · còn lại · nút "Mở trang kế toán") bỏ 01/10: đó là bản chép số của trang kế toán tạm — số thử,
+   * đã cắt sổ. Thu tiền khách ở hệ kế toán anh Tune; màn Khách hàng → Công nợ đọc lại số bên đó. */
 
   /** Đổi xe giữa đường (C2.2): chọn xe mới, ghi lý do. Máy chủ để lại dòng diễn biến và kéo mục I
    *  về "đã nhập" để kế toán kiểm lại — thông tin xe trên phiếu đã khác. */

@@ -1493,9 +1493,9 @@ window.EPL_TU_DIEN = {
   "en": "Dry-port petty cash: pay booked sections IV, V, VI; mark \"Paid\"."
  },
  "hint_rev": {
-  "vi": "Vai trò <b>Kế toán doanh thu</b>: lập hóa đơn thu tiền từ mục II; các mục chi chỉ xem.",
-  "lo": "<b>ບັນຊີລາຍຮັບ</b>: ອອກໃບເກັບເງິນຈາກໜ້າ II; ໜ້າລາຍຈ່າຍເບິ່ງຢ່າງດຽວ.",
-  "en": "Revenue accountant: issue the invoice from section II; expense sections view only."
+  "vi": "Vai trò <b>Kế toán doanh thu</b>: theo dõi phiếu đề nghị thu từ mục II; hoá đơn, thu tiền ở hệ kế toán; các mục chi chỉ xem.",
+  "lo": "<b>ບັນຊີລາຍຮັບ</b>: ຕິດຕາມໃບສະເໜີຮັບເງິນຈາກໜ້າ II; ໃບເກັບເງິນ, ຮັບເງິນ ຢູ່ລະບົບບັນຊີ; ໜ້າລາຍຈ່າຍເບິ່ງຢ່າງດຽວ.",
+  "en": "Revenue accountant: follow collection requests from section II; invoices and payments in accounting; expense sections view only."
  },
  "hint_admin": {
   "vi": "Vai trò <b>Sếp</b>: xem và sửa tất cả.",
@@ -5308,9 +5308,9 @@ window.EPL_TU_DIEN = {
   "en": "Advances against real spending, monthly"
  },
  "d_nha_cung_cap": {
-  "vi": "Danh mục nhà cung cấp · công nợ, trả tiền ở trang kế toán",
-  "lo": "ລາຍຊື່ຜູ້ສະໜອງ · ໜີ້, ການຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL",
-  "en": "Supplier list · payables and payments on the ledger site"
+  "vi": "Danh mục nhà cung cấp · công nợ, trả tiền ở hệ kế toán",
+  "lo": "ລາຍຊື່ຜູ້ສະໜອງ · ໜີ້, ການຈ່າຍເງິນຢູ່ລະບົບບັນຊີ",
+  "en": "Supplier list · payables and payments in accounting"
  },
  "d_kho_hang": {
   "vi": "Tồn quặng ở bãi giữa hai chặng, theo từng lô",
@@ -8203,14 +8203,14 @@ window.EPL_TU_DIEN = {
   "en": "Issuing fuel per request, the fuel and parts stores… are now on the ledger site — sign in there with the same username and password."
  },
  "mo_ke_toan": {
-  "vi": "Mở trang kế toán",
-  "lo": "ເປີດ ປຶ້ມບັນຊີ EPL",
-  "en": "Open the ledger site"
+  "vi": "Mở kho tạm",
+  "lo": "ເປີດສາງຊົ່ວຄາວ",
+  "en": "Open interim warehouse"
  },
  "mo_ke_toan_loi": {
-  "vi": "Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.",
-  "lo": "Chưa có địa chỉ trang kế toán — Sếp đặt ở Tài khoản → Liên thông trang kế toán.",
-  "en": "No ledger site address yet — the owner sets it in Accounts → Link to the ledger site."
+  "vi": "Chưa có địa chỉ kho tạm — Sếp đặt ở Tài khoản → Liên thông kho tạm.",
+  "lo": "ຍັງບໍ່ມີທີ່ຢູ່ສາງຊົ່ວຄາວ — ຫົວໜ້າຕັ້ງຢູ່ ບັນຊີຜູ້ໃຊ້ → ເຊື່ອມຕໍ່ສາງຊົ່ວຄາວ.",
+  "en": "No interim warehouse address — the owner sets it in Accounts → Temporary warehouse link."
  },
  "title_tong_quan": {
   "vi": "Tổng quan<span class=\"sub\">Theo tháng · Công ty EPL</span>",
@@ -8243,9 +8243,9 @@ window.EPL_TU_DIEN = {
   "en": "Driver trip & water money<span class=\"sub\">Monthly summary paid with salary</span>"
  },
  "title_nha_cung_cap": {
-  "vi": "Nhà cung cấp<span class=\"sub\">Danh mục · công nợ, trả tiền ở trang kế toán</span>",
-  "lo": "ຜູ້ສະໜອງ<span class=\"sub\">ລາຍຊື່ · ໜີ້, ການຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL</span>",
-  "en": "Suppliers<span class=\"sub\">List · payables and payments on the ledger site</span>"
+  "vi": "Nhà cung cấp<span class=\"sub\">Danh mục · công nợ, trả tiền ở hệ kế toán</span>",
+  "lo": "ຜູ້ສະໜອງ<span class=\"sub\">ລາຍຊື່ · ໜີ້, ການຈ່າຍເງິນຢູ່ລະບົບບັນຊີ</span>",
+  "en": "Suppliers<span class=\"sub\">List · payables and payments in accounting</span>"
  },
  "title_kho_nhien_lieu": {
   "vi": "Kho nhiên liệu<span class=\"sub\">Theo từng kho · Nhập – xuất – chuyển kho – tồn</span>",

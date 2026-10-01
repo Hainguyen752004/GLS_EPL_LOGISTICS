@@ -43,7 +43,7 @@
         phieu: c.doc_no, ngay: ngay(c.doc_date), nguon: c.source === 'kho' ? 'src_kho' : 'src_mua',
         khoan: c.item_key || null, ten: c.item_name || '', tien: c.tien_lak, ma_kt: thayMaKT() ? c.acct_code : null,
       })),
-      lenh_loi: v.sua_chua_lenh_loi || null,     // lệnh sửa chữa ở trang kế toán (28/09): bên đó tắt thì báo rõ phần thiếu
+      lenh_loi: v.sua_chua_lenh_loi || null,     // lệnh sửa chữa ở KHO TẠM (EPL_KETOAN, 01/10 chỉ còn phần kho): bên đó tắt thì báo rõ phần thiếu
       phieu_gan_day: (v.phieu_gan_day || []).map(t => ({
         doc_no: t.doc_no, ngay: ngay(t.doc_date), khach: t.customer_name, tan: t.weight,
         tt: t.finance_status === 'paid' ? 'paid' : t.transport_status === 'dispatched' ? 'planned' : t.transport_status,

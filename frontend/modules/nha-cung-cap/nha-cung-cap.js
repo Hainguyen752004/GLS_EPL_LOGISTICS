@@ -1,7 +1,8 @@
 /* Nhà cung cấp — DANH MỤC: tên, dịch vụ (khoản mục), mã kế toán, kỳ trả, khách được cấn trừ, số dòng chi trên phiếu.
- * Phần tiền (phát sinh, đã trả, còn nợ, trả nhà cung cấp, cấn trừ cuối tháng) ở trang kế toán từ 28/09 (đợt 7d) — nút
- * "Công nợ · trả nhà cung cấp ↗" mở đúng màn bên đó. Danh mục ở lại đây vì phiếu (dầu ghi nợ tại trạm) và tất toán tài
- * xế cần nó, và Bãi xem danh sách · số dòng · kỳ trả (không có tiền, chốt 23/09). */
+ * Phần tiền (phát sinh, đã trả, còn nợ, trả nhà cung cấp) KHÔNG còn ở trang kế toán tạm (01/10: bỏ phần tiền bên đó — số thử,
+ * cắt sổ): trả nhà cung cấp là phiếu chi bên hệ kế toán anh Tune. Nút "Công nợ · trả nhà cung cấp ↗" sang trang tạm đã gỡ.
+ * Danh mục ở lại đây vì phiếu (dầu ghi nợ tại trạm) và tất toán tài xế cần nó, và Bãi xem danh sách · số dòng · kỳ trả
+ * (không có tiền, chốt 23/09). */
 (function () {
   const { API, NN, esc, AUTH } = EPL;
   let root, ds = [], KH = [];
@@ -40,10 +41,6 @@
   EPL.modules['nha-cung-cap'] = {
     async init(r) {
       root = r; const t = r.querySelector('#ncc-them'); t.hidden = !AUTH.la('expacct'); t.addEventListener('click', () => sua(null));
-      // công nợ, trả nhà cung cấp, cấn trừ cuối tháng: trang kế toán — các vai thấy tiền chi (Bãi không)
-      const kt = r.querySelector('#ncc-ke-toan');
-      kt.hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel');
-      kt.addEventListener('click', () => EPL.moKeToan('nha-cung-cap'));
       try { KH = await API.get('/api/customers'); } catch (e) { KH = []; }
       await tai();
     },

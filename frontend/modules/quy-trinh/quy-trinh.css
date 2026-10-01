@@ -65,3 +65,8 @@
 .qt-ct-chip .qt-ben{font-style:normal;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--bg-2,#eef1ef);color:var(--ink-2)}
 .qt-ct-chip.qt-ben-de-nghi .qt-ben{background:var(--green-bg,#dcefe6);color:var(--green,#145c4a);font-weight:600}
 .qt-man-khoa{color:var(--ink-3);cursor:not-allowed}
+/* 01/10 — nơi làm công đoạn ngoài trang điều xe: kho tạm (phần kho) · hệ kế toán anh Tune (phần tiền); là nhãn, không bấm được */
+.qt-man-kt{cursor:default;border-radius:999px;padding:1px 8px;font-weight:600}
+.qt-man-kt:hover{text-decoration:none}
+.qt-o-kho{background:var(--ore-soft);color:var(--ore)}
+.qt-o-tune{background:var(--blue-soft);color:var(--blue)}

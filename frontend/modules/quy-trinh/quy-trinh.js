@@ -55,7 +55,7 @@
         sau: 'Mục III, IV, VI: Đã ghi sổ · chờ chi' },
     ] },
     { gd: 'Cấp dầu và tạm ứng', buoc: [
-      { so: 7, vai: ['depot'], man: 'cap-phat', o_ke_toan: true, ten: 'Thủ kho quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu',
+      { so: 7, vai: ['depot'], man: 'cap-phat', o: 'kho', ten: 'Thủ kho quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu',
         lam: ['Quét mã, đối chiếu đúng xe, đúng tài xế', 'Nhập số lít cấp thật → Cấp'],
         may: ['Trừ tồn đúng kho ngay; dòng dầu trên phiếu mang giá bình quân của kho lúc cấp', 'Mất mạng vẫn cấp được, máy gửi lại khi có mạng'],
         chan: ['Thủ kho kho khác không cấp được', 'Cấp lệch số duyệt mà không ghi lý do → chặn', 'Cấp hai lần → chặn'],
@@ -109,23 +109,24 @@
         ct: ['PDT'], ct_khi: { PDT: 'lúc khoá phiếu (DO xong)' }, sau: 'Phiếu: Đã khoá 🔒 · Đề nghị thu: chờ gửi' },
     ] },
     { gd: 'Doanh thu', buoc: [
-      { so: 16, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'KT Doanh thu lập hoá đơn vận chuyển',
-        lam: ['Theo phiếu đề nghị thu của DO (màn Phiếu đề nghị thu bên trang điều xe xem được trạng thái)', 'Khách theo phiếu (không hợp đồng): mỗi phiếu một hoá đơn', 'Khách hợp đồng: gộp các phiếu trong tháng thành một hoá đơn (màn HĐ gộp)'],
-        may: ['Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng'], chan: ['Phiếu chưa khoá → chưa lập hoá đơn'],
+      { so: 16, vai: ['rev'], man: 'de-nghi-thu', o: 'tune', ten: 'Hoá đơn vận chuyển — ở hệ kế toán anh Tune',
+        lam: ['Phiếu đề nghị thu của DO gửi sang hệ kế toán anh Tune thành SO; hoá đơn lập bên đó theo SO', 'Màn Phiếu đề nghị thu bên trang điều xe xem trạng thái gửi · SO'],
+        may: ['Tiền = cân (tấn tới hoặc trọn chuyến) × đơn giá, theo tiền tệ của hợp đồng — tính trên phiếu đề nghị thu'], chan: ['Phiếu chưa khoá → chưa có phiếu đề nghị thu'],
         giay: ['Hoá đơn vận chuyển (in)'], ct: ['HD'], ct_khi: { HD: 'lúc lập hoá đơn (lẻ hoặc gộp tháng)' }, sau: 'Đã xuất hoá đơn · Chưa thanh toán' },
-      { so: 17, vai: ['rev'], man: 'hoa-don', o_ke_toan: true, ten: 'Ghi thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng',
-        lam: ['Ghi từng lần thu: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản', 'Cuối tháng: ghi cấn trừ phần khách đã trả hộ (thẻ cao tốc của khách, trạm dầu Việt Nam ghi nợ)'],
-        may: ['Trạng thái tự suy: chưa thu · thu một phần · đã thu'], chan: ['Thu dư → chặn', 'Trang điều xe tắt → chặn (không ghi được bản chép vào phiếu)', 'Lần thu đẩy sang sổ trước ngày dời (28/09) → không xoá được'],
-        giay: ['Biên nhận thu tiền'], ct: ['PT'], ct_khi: { PT: 'mỗi lần thu; cấn trừ ghi PT cách thu "cấn trừ"' }, sau: 'Đã thanh toán' },
+      { so: 17, vai: ['rev'], man: 'khach-hang', o: 'tune', ten: 'Thu tiền khách (nhiều lần, nhiều tiền) · cấn trừ cuối tháng — ở hệ kế toán anh Tune',
+        lam: ['Ghi từng lần thu ở hệ kế toán anh Tune: số tiền, tiền tệ, tỷ giá, tiền mặt / chuyển khoản', 'Cuối tháng: cấn trừ phần khách đã trả hộ (thẻ cao tốc của khách, trạm dầu Việt Nam ghi nợ) — bên hệ kế toán'],
+        may: ['Màn Khách hàng → tab Công nợ đọc lại số bên hệ kế toán (chỉ xem)'], chan: [],
+        giay: ['Biên nhận thu tiền (in bên hệ kế toán)'], ct: ['PT'], ct_khi: { PT: 'mỗi lần thu; cấn trừ ghi PT cách thu "cấn trừ"' }, sau: 'Đã thanh toán' },
     ] },
     { gd: 'Xe liên kết và cuối kỳ', buoc: [
-      { so: 18, vai: ['cash', 'treasury'], man: 'xe-lien-ket', o_ke_toan: true, ten: 'Trả chủ xe liên kết (lẻ · gộp tháng · theo đợt)',
-        lam: ['Chọn các phiếu đã khoá của một chủ xe → Trả'],
+      { so: 18, vai: ['acct', 'cash', 'treasury'], man: 'xe-lien-ket', o: 'tune', ten: 'Trả chủ xe liên kết — đề nghị ở trang điều xe, chi ở hệ kế toán anh Tune',
+        lam: ['KT Thu/Chi VC: màn Xe liên kết → "Trả qua kế toán" của chủ xe → chọn các phiếu đã khoá chưa trả → lập đề nghị trả',
+          'Thủ quỹ chi và ghi sổ phiếu chi "Chi khác" đứng tên chủ xe ở hệ kế toán anh Tune'],
         may: ['Phải trả = tiền thuê − phí % − trừ vượt tấn − mọi khoản EPL đã ứng (dầu kho, đi đường…) — chủ xe tự trả thì không trừ',
-          'TỰ TRỪ tiếp hàng chủ xe mua ở quầy (xăng, phụ tùng) chưa trừ — ví dụ deal 1tr6, mua 3 trăm → trả 1tr3', 'Phiếu chi ghi số THỰC CHI sau khi trừ'],
-        chan: ['Phiếu chưa khoá → chưa trả', 'Trả hai lần → chặn', 'Các phiếu khác tiền thuê → tách đợt'],
-        giay: ['Chủ xe ký nhận trên phiếu chi'], ct: ['PC_CX'], ct_khi: { PC_CX: 'lúc quỹ trả (một tờ cho cả đợt)' }, sau: 'Chủ xe: Đã trả' },
-      { so: 19, vai: ['expacct', 'cash', 'treasury'], man: 'tat-toan', o_ke_toan: true, ten: 'Tất toán tài xế theo tháng',
+          'Hệ kế toán có phiếu chi Nợ 4022 / Có tiền', 'Màn Xe liên kết hỏi lại: bên đó ghi sổ xong thì các phiếu thành "đã trả chủ xe"'],
+        chan: ['Phiếu chưa khoá → chưa trả', 'Các phiếu khác tiền thuê → tách đề nghị'],
+        giay: ['Chủ xe ký nhận trên phiếu chi bên hệ kế toán'], ct: ['PC_CX'], ct_khi: { PC_CX: 'phiếu chi bên hệ kế toán (một tờ cho cả đề nghị)' }, sau: 'Chủ xe: Đã trả' },
+      { so: 19, vai: ['expacct', 'cash', 'treasury'], o: 'tune', ten: 'Tất toán tài xế theo tháng — tiền chi bù / thu lại ở hệ kế toán anh Tune',
         lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Số chi thật chuyển từ tạm ứng 1601 sang chi phí 625 (quyết toán tạm ứng)', 'Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
         chan: ['Chốt hai lần một kỳ → chặn'], ct: ['QT_TU', 'TT_CHI', 'TT_THU'], ct_khi: { QT_TU: 'lúc chốt, số tài xế đã chi thật', TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
       { so: 20, vai: ['acct', 'admin'], man: 'chung-tu', ten: 'Đẩy chứng từ sang sổ kế toán',
@@ -137,43 +138,43 @@
   /* ================================================================ ngoài chuyến */
   const NGOAI = [
     { gd: 'Kho nhiên liệu (7 kho + kho xe) — giá vốn bình quân', buoc: [
-      { so: 'K1', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Nhập dầu vào một kho',
+      { so: 'K1', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o: 'kho', ten: 'Nhập dầu vào một kho',
         lam: ['Chọn kho, nhà cung cấp, số đơn mua, số lít, đơn giá, tiền tệ, tỷ giá lúc nhập'],
         may: ['Giá nhập quy LAK theo tỷ giá LÚC NHẬP; giá bình quân của kho tính lại'], chan: ['Bãi chỉ xem số lít, không ghi sổ kho, không thấy giá (A2)'],
         giay: ['Phiếu nhập kho'], ct: ['PNK_NL'] },
-      { so: 'K2', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Mua dầu ở Việt Nam qua KHO XE (A3)',
+      { so: 'K2', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o: 'kho', ten: 'Mua dầu ở Việt Nam qua KHO XE (A3)',
         lam: ['Nhập 1.000 L vào "Kho xe · dầu mua Việt Nam" (VND)', 'Phiếu xuất xe lấy 600 L với nơi đổ = kho xe', 'Chuyển 400 L còn lại về Thà Bốc hay một kho hiện trường'],
         may: ['Dầu ra khỏi kho xe mang giá bình quân của kho xe'], ct: ['PNK_NL', 'PXK_NL', 'CK_NL'] },
-      { so: 'K3', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Chuyển kho',
+      { so: 'K3', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o: 'kho', ten: 'Chuyển kho',
         lam: ['Chọn kho đi, kho nhận, số lít'], may: ['Hai dòng sổ kho cùng một số CK-YYMM-###; mang giá bình quân của kho đi'],
         chan: ['Chuyển quá tồn → chặn', 'Kho đi = kho nhận → chặn'], giay: ['Phiếu chuyển kho'], ct: ['CK_NL'] },
-      { so: 'K4', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o_ke_toan: true, ten: 'Xuất tay cho xe (ngoài phiếu)',
+      { so: 'K4', vai: ['fuel', 'acct'], man: 'kho-nhien-lieu', o: 'kho', ten: 'Xuất tay cho xe (ngoài phiếu)',
         lam: ['Chọn kho, số xe, số lít'], may: ['Giá = bình quân kho'], chan: ['Xuất quá tồn của đúng kho → chặn'] },
     ] },
     { gd: 'Kho phụ tùng và sửa xe khi không chạy', buoc: [
-      { so: 'P1', vai: ['parts'], man: 'kho-phu-tung', o_ke_toan: true, ten: 'Thủ kho phụ tùng nhập · xuất',
+      { so: 'P1', vai: ['parts'], man: 'kho-phu-tung', o: 'kho', ten: 'Thủ kho phụ tùng nhập · xuất',
         lam: ['Nhập: số lượng + đơn giá (giá bình quân tính lại)', 'Xuất tay cho xe'], chan: ['Bãi, kế toán không nhập xuất phụ tùng (C1.2)', 'Xuất quá tồn → chặn'],
         ct: ['PNK_PT', 'PXK_PT'] },
-      { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', o_ke_toan: true, ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
+      { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', o: 'kho', ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
         lam: ['Tổ sửa chữa lập lệnh: xe, km, gara; dòng lấy KHO hoặc MUA', 'KT Chi phí kiểm → ghi sổ', 'Quỹ tiền mặt Thà Bốc chi phần mua ngoài'],
         may: ['Dòng lấy kho trừ tồn NGAY LÚC KHAI'], chan: ['Không gắn phiếu xuất xe nào'], ct: ['PXK_PT', 'PC_SC'] },
     ] },
     { gd: 'Bán hàng (phụ tùng · xăng dầu)', buoc: [
-      { so: 'B1', vai: ['acct', 'rev', 'fuel'], man: 'ban-hang', o_ke_toan: true, ten: 'Bán cho khách',
+      { so: 'B1', vai: ['acct', 'rev', 'fuel'], o: 'tune', ten: 'Bán cho khách',
         lam: ['Chọn khách (hoặc gõ tên), thêm dòng phụ tùng / dầu kho, đơn giá bán'], may: ['Xuất kho theo giá vốn bình quân (Nợ 607)', 'Hoá đơn bán sinh cùng lúc'],
         chan: ['Bán quá tồn của đúng kho → chặn'], giay: ['Hoá đơn bán hàng'], ct: ['PXK_BAN', 'HD_BAN'] },
-      { so: 'B2', vai: ['rev', 'cash', 'treasury'], man: 'ban-hang', o_ke_toan: true, ten: 'Thu tiền bán hàng', lam: ['Bấm Đã thu'], chan: ['Thu hai lần → chặn'], ct: ['PT_BAN'] },
-      { so: 'B3', vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'], man: 'ban-hang', o_ke_toan: true, ten: 'Chủ xe liên kết mua ở quầy — trừ vào tiền trả',
+      { so: 'B2', vai: ['rev', 'cash', 'treasury'], o: 'tune', ten: 'Thu tiền bán hàng', lam: ['Bấm Đã thu'], chan: ['Thu hai lần → chặn'], ct: ['PT_BAN'] },
+      { so: 'B3', vai: ['acct', 'rev', 'fuel', 'cash', 'treasury'], o: 'tune', ten: 'Chủ xe liên kết mua ở quầy — trừ vào tiền trả',
         lam: ['Người mua = "Chủ xe liên kết — trừ vào tiền trả", chọn chủ xe'], may: ['Không thu tiền mặt; đợt trả chủ xe kế tiếp tự trừ (công đoạn 18)'],
         chan: ['Thu tiền mặt phiếu này → chặn (TRU_CHU_XE)', 'Đã trừ vào một đợt → không bỏ phiếu được'], ct: ['PXK_BAN', 'HD_BAN'] },
     ] },
     { gd: 'Tách chặng: mỏ → bãi → cảng (B1–B4)', buoc: [
       { so: 'T1', vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Phiếu GOM (xe A) mỏ → bãi', lam: ['Lập phiếu loại GOM, số G4-…'],
         may: ['Xe về: hàng vào kho bãi thành một lô'], ct: ['DO', 'PNK_HH'] },
-      { so: 'T2', vai: ['yard'], man: 'kho-hang', o_ke_toan: true, ten: 'Hàng nằm bãi nhiều ngày', lam: ['Xem tồn từng lô ở màn Kho hàng', 'Kế toán điều chỉnh có lý do (cân lại, hao)'], ct: ['DC_HH'] },
+      { so: 'T2', vai: ['yard'], man: 'kho-hang', o: 'kho', ten: 'Hàng nằm bãi nhiều ngày', lam: ['Xem tồn từng lô ở màn Kho hàng', 'Kế toán điều chỉnh có lý do (cân lại, hao)'], ct: ['DC_HH'] },
       { so: 'T3', vai: ['yard'], man: 'phieu-xuat-xe', ten: 'Phiếu GIAO (xe B) bãi → cảng lấy từ lô', lam: ['Chọn lô và số tấn'],
         may: ['Xe tới: hàng xuất khỏi kho bãi, hao hụt tính theo phiếu'], chan: ['Lấy quá tồn lô → chặn', 'Xoá phiếu gom đã có người lấy hàng → chặn'], ct: ['DO', 'PXK_HH'] },
-      { so: 'T4', vai: ['rev'], man: 'hoa-don-gop', o_ke_toan: true, ten: 'Cước riêng từng chặng · hoá đơn gộp tháng', lam: ['Phiếu gom có cước riêng thì lập hoá đơn như phiếu giao', 'Khách hợp đồng: gộp tháng'], ct: ['HD', 'PT'] },
+      { so: 'T4', vai: ['rev'], man: 'de-nghi-thu', o: 'tune', ten: 'Cước riêng từng chặng · hoá đơn gộp tháng — ở hệ kế toán anh Tune', lam: ['Phiếu gom có cước riêng thì có phiếu đề nghị thu như phiếu giao', 'Khách hợp đồng gộp tháng: hoá đơn lập bên hệ kế toán theo các SO'], ct: ['HD', 'PT'] },
     ] },
     { gd: 'Thẻ cao tốc · trạm dầu Việt Nam · nhà cung cấp', buoc: [
       { so: 'C1', vai: ['acct', 'cash', 'treasury'], man: 'the-cao-toc', ten: 'Thẻ cao tốc (C6.1)',
@@ -181,7 +182,7 @@
         chan: ['Điều chỉnh số dư phải có lý do'] },
       { so: 'C2', vai: ['expacct'], man: 'nha-cung-cap', ten: 'Trạm dầu Việt Nam ghi nợ (C5.1)',
         lam: ['Gắn trạm với khách được cấn trừ', 'Cuối tháng: trả trạm, hoặc cấn trừ vào cước khách (công đoạn 17)'] },
-      { so: 'C3', vai: ['expacct', 'cash', 'treasury'], man: 'nha-cung-cap', o_ke_toan: true, ten: 'Trả nhà cung cấp theo đợt', lam: ['Chọn nhà cung cấp, số tiền, cách chi'], ct: ['PC_NCC'] },
+      { so: 'C3', vai: ['expacct', 'cash', 'treasury'], o: 'tune', ten: 'Trả nhà cung cấp theo đợt — phiếu chi ở hệ kế toán anh Tune', lam: ['Chọn nhà cung cấp, số tiền, cách chi'], ct: ['PC_NCC'] },
     ] },
   ];
 
@@ -194,16 +195,16 @@
     ['Duyệt khai đổ dầu dọc đường', ['yard', 'fuel']],
     ['Cấp dầu theo phiếu đề nghị xuất kho nhiên liệu', ['depot', 'fuel']],
     ['Khoá / mở khoá phiếu', ['acct']],
-    ['Lập hoá đơn, ghi thu, cấn trừ', ['rev']],
-    ['Trả chủ xe liên kết', ['cash', 'treasury']],
+    ['Hoá đơn, ghi thu, cấn trừ — ở hệ kế toán anh Tune', ['rev']],
+    ['Trả chủ xe liên kết: lập đề nghị trả (chi ở hệ kế toán anh Tune)', ['acct']],
     ['Điều khoản chủ xe (phí, ngưỡng, cách trả)', ['acct']],
     ['Nhập · xuất · chuyển kho dầu', ['fuel', 'acct']],
     ['Nhập · xuất kho phụ tùng', ['parts']],
     ['Lập phiếu bán hàng', ['acct', 'rev', 'fuel']],
-    ['Thu tiền bán hàng', ['rev', 'cash', 'treasury']],
+    ['Thu tiền bán hàng — ở hệ kế toán anh Tune', ['rev', 'cash', 'treasury']],
     ['Lệnh sửa chữa: lập · kiểm/ghi sổ · chi', ['repair', 'expacct', 'cash']],
-    ['Tất toán tài xế', ['expacct', 'cash', 'treasury']],
-    ['Trả nhà cung cấp', ['expacct', 'cash', 'treasury']],
+    ['Tất toán tài xế — tiền ở hệ kế toán anh Tune', ['expacct', 'cash', 'treasury']],
+    ['Trả nhà cung cấp — ở hệ kế toán anh Tune', ['expacct', 'cash', 'treasury']],
     ['Thẻ cao tốc: lập thẻ · nạp tiền', ['acct', 'cash', 'treasury']],
     ['Bảng giá khách × tuyến, tỷ giá', ['acct', 'rev']],
     ['Điều chỉnh kho hàng bãi', ['acct']],
@@ -237,6 +238,10 @@
   // tiền — của vai khác. Máy chủ vẫn lọc tiền theo vai; đây là để không bày lối vào sai ngay trên màn.
   const vaoDuoc = (man) => AUTH.role === 'admin' || (EPL.manCuaVai(AUTH.role) || []).some(m => m.id === man);
 
+  // Nơi làm của công đoạn không ở trang điều xe (01/10, bỏ phần tiền trang kế toán tạm): kho (cấp dầu QR, kho nhiên liệu, phụ
+  // tùng, hàng gửi bãi, lệnh sửa chữa) ở KHO TẠM; tiền (hoá đơn, thu, trả chủ xe, tất toán, trả nhà cung cấp, bán hàng) ở hệ
+  // kế toán anh Tune. Bước kho thì `man` là màn bên kho tạm — không bày nút sang; bước tiền có `man` là màn trang điều xe xem lại.
+  const NOI = { kho: 'ở kho tạm', tune: 'tiền ở hệ kế toán anh Tune' };
   function theBuoc(b) {
     const ct = (b.ct || []).map(ma => {
       const c = ctCua(ma), [lop, ben] = benLap(ma);
@@ -247,7 +252,8 @@
       <div class="qt-b-dau"><span class="so">${esc(String(b.so))}</span>
         <div class="grow"><h4>${esc(b.ten)}</h4>
           <div class="qt-b-vai">${b.vai.map(v => `<span class="qt-vai">${tenVai(v)}</span>`).join('')}
-            ${b.o_ke_toan ? '<span class="qt-man qt-man-kt">ở trang kế toán</span>'   // màn đã dời sang EPL_KETOAN (28/09)
+            ${b.o ? `<span class="qt-man qt-man-kt qt-o-${b.o}">${NOI[b.o]}</span>` : ''}
+            ${b.o === 'kho' || !b.man ? ''
               : vaoDuoc(b.man) ? `<button class="qt-man" data-man="${b.man}">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} ↗</button>`
               : `<span class="qt-man qt-man-khoa" title="Vai của bạn không vào màn này">màn ${NN.h(((EPL.MODULES || []).find(m => m.id === b.man) || {}).nav || b.man)} · không thuộc vai của bạn</span>`}</div></div>
         ${b.sau ? `<span class="qt-sau">${esc(b.sau)}</span>` : ''}</div>

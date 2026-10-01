@@ -204,13 +204,6 @@
 .px-phieu.is-gom .px-tu-lo,.px-phieu.is-gom td.px-tu-lo{display:none}
 .px-phieu:not(.is-giao) .px-tu-lo{display:none}
 
-/* Sổ thu tiền — hoá đơn một tờ, tiền về nhiều lần và có thể bằng tiền khác. */
-.px-thu{margin-top:14px}
-.px-thu .hd{gap:10px;flex-wrap:wrap}
-.px-thu .hd .small{color:var(--muted)}
-.px-thu .hd .small b{color:var(--text)}
-.px-thu table{width:100%}
-.px-thu td.num{font-variant-numeric:tabular-nums}
 
 /* Ghi nợ tại trạm (C5.1): ô tích nhỏ dưới ô Nơi đổ, chỉ hiện với trạm ngoài */
 .px-ghino{display:inline-flex;align-items:center;gap:5px;margin-top:4px;color:var(--ore);cursor:pointer}

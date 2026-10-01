@@ -6,7 +6,7 @@
  * KHÔNG có sổ kho tháng / biểu đồ nhập xuất theo ngày (bỏ tối 30/09): Excel của khách, sheet ລາຍງານ, xếp báo cáo kho
  * nhiên liệu và kho phụ tùng vào ໂມດູນສາງ — hệ kho của anh Toàn; bên logistics chỉ xem TỒN theo mặt hàng.
  *
- * Số tồn, giá bình quân, sức chứa, mức an toàn, khu vực: hỏi bên kho (nay là trang kế toán tạm, sau là API anh Toàn).
+ * Số tồn, giá bình quân, sức chứa, mức an toàn, khu vực: hỏi bên kho (nay là KHO TẠM — EPL_KETOAN chỉ còn phần kho từ 01/10; sau là API anh Toàn).
  * Phần "chờ cấp" và "đã khai chưa đề nghị" là của trang điều xe. API: GET /api/kho-xem.
  * Vai không thấy giá vốn (thủ kho, thủ kho phụ tùng, tổ sửa chữa, Bãi) thì máy chủ không gửi giá — màn ẩn cột giá.
  * Kho chưa khai sức chứa: bồn vẽ theo mức cao nhất trong tháng, không có phần trăm; chưa khai mức an toàn: không báo

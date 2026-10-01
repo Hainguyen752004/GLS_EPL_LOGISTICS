@@ -1,4 +1,4 @@
-/* Xe liên kết — bảng chủ xe liên kết (danh mục). Hộp trả gộp và bảng chuyến xe liên kết ở trang kế toán từ 28/09 (đợt 7b). */
+/* Xe liên kết — bảng chủ xe liên kết (danh mục), trả chủ xe qua hệ kế toán anh Tune (01/10). */
 .xlk-chu-card{margin-bottom:14px}
 .xlk-tat{opacity:.55}
 .cx-tra{max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
