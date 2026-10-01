@@ -35,7 +35,9 @@ CHAY = ("dispatched", "transit")
 def _dieu_kien_o(o, hom_nay, gps_moi):
     """Điều kiện SQL của từng ô số — bấm ô là máy chủ lọc đúng tập đó (trước đây lọc trên trình duyệt, cần tải hết)."""
     su_co = exists().where(and_(TripEvent.trip_id == Trip.id, TripEvent.status == "reported"))
-    cho_linh = exists().where(and_(Voucher.trip_id == Trip.id, Voucher.status == "cho"))
+    # chỉ tờ đề nghị xuất kho NHIÊN LIỆU (kind fuel) — tờ tạm ứng (advance) không phải việc cấp phát ở kho (rà 01/10: đếm
+    # gộp ra 32 trong khi thật 2)
+    cho_linh = exists().where(and_(Voucher.trip_id == Trip.id, Voucher.status == "cho", Voucher.kind == "fuel"))
     co_gps = exists().where(and_(VehiclePosition.trip_id == Trip.id, VehiclePosition.ts >= gps_moi))
     ngay_di = func.coalesce(Trip.out_date, Trip.doc_date)
     return {
@@ -69,7 +71,7 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
            .with_entities(*[func.count().filter(_dieu_kien_o(k, hom_nay, gps_moi)).label(k) for k in O]).one())
     kpi = {k: int(getattr(dem, k) or 0) for k in O}
     kpi["cho_cap_phat"] = int(db.query(func.count(Voucher.id)).join(Trip, Trip.id == Voucher.trip_id)
-                              .filter(Voucher.status == "cho", con_viec, *( [Trip.driver_id == (user.driver_id or "__khong_co__")] if user.role == "driver" else []))
+                              .filter(Voucher.status == "cho", Voucher.kind == "fuel", con_viec, *( [Trip.driver_id == (user.driver_id or "__khong_co__")] if user.role == "driver" else []))
                               .scalar() or 0)
 
     loc = goc if tat_ca else goc.filter(con_viec)
@@ -87,7 +89,7 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
     # ---- gom dữ liệu phụ trong vài truy vấn, không lặp từng phiếu
     su_kien = db.query(TripEvent).filter(TripEvent.trip_id.in_(ma)).all() if ma else []
     muc = db.query(TripSection).filter(TripSection.trip_id.in_(ma)).all() if ma else []
-    phieu_linh = db.query(Voucher).filter(Voucher.trip_id.in_(ma), Voucher.status == "cho").all() if ma else []
+    phieu_linh = db.query(Voucher).filter(Voucher.trip_id.in_(ma), Voucher.status == "cho", Voucher.kind == "fuel").all() if ma else []
     ma_tuyen = {p.route_id for p in ds if p.route_id}
     chang = {}
     if ma_tuyen:
