@@ -809,6 +809,12 @@ def them_bang_lai(did: str, data: dict = Body(...), db: Session = Depends(get_db
 # là tỷ giá MẶC ĐỊNH cho phiếu lập mới — phiếu đã lập khoá tỷ giá riêng của nó (`trips.rate_usd`…),
 # nên sửa ở đây không bao giờ làm đổi con số trên tờ phiếu đã in. Mỗi lần đổi ghi một dòng lịch sử.
 SUA_TY_GIA = can_vai("acct", "rev")          # kế toán thu/chi và kế toán doanh thu Viêng Chăn
+# Màn Tỷ giá (lịch sử, người đặt, mức đổi): đúng các vai có màn này trong menu (js/chung.js MODULES 'ty-gia'.vai). Bãi không
+# thấy tỷ giá (anh Khampla A2) — bảng phẳng /api/rates vẫn mở cho mọi vai vì các màn khác quy đổi bằng nó.
+XEM_TY_GIA = can_vai("acct", "expacct", "rev", "treasury", "cash")
+# Đổi quá mức này so với số đang dùng thì máy chủ đòi xác nhận rõ (`xac_nhan_doi_lon`) — 01/10 có lần USD bị đặt 1 Kíp
+# (−99,995 %) mà không ai chặn, mọi phiếu USD lập sau đó quy đổi sai. Màn Tỷ giá đọc ngưỡng này từ /api/rates/chi-tiet.
+NGUONG_DOI_LON_PCT = 20
 
 
 @router.get("/api/rates")
@@ -820,7 +826,7 @@ def ds_ty_gia(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.get("/api/rates/chi-tiet")
-def chi_tiet_ty_gia(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
+def chi_tiet_ty_gia(db: Session = Depends(get_db), _=Depends(XEM_TY_GIA)):
     """Cho màn Tỷ giá: số đang áp dụng, số lần trước, mức thay đổi, ai đặt, đặt lúc nào."""
     cu = {r.code: r for r in db.query(ExchangeRate).all()}
     log = (db.query(ExchangeRateLog).order_by(ExchangeRateLog.ts.desc()).limit(200).all())
@@ -836,8 +842,8 @@ def chi_tiet_ty_gia(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
                    "doi_pct": round(doi / truoc * 100, 3) if (doi is not None and truoc) else None,
                    "by_user": r.by_user if r else None,
                    "cap_nhat": r.updated_at.isoformat() if (r and r.updated_at) else None})
-    return {"ds": ds, "goc": "LAK",
-            "lich_su": [{"id": x.id, "code": x.code, "rate_to_lak": x.rate_to_lak, "rate_cu": x.rate_cu,
+    return {"ds": ds, "goc": "LAK", "nguong_doi_lon_pct": NGUONG_DOI_LON_PCT,
+            "lich_su":[{"id": x.id, "code": x.code, "rate_to_lak": x.rate_to_lak, "rate_cu": x.rate_cu,
                          "ap_dung_tu": x.ap_dung_tu.isoformat() if x.ap_dung_tu else None,
                          "nguon": x.nguon, "by_user": x.by_user, "ghi_chu": x.ghi_chu,
                          "ts": x.ts.isoformat() if x.ts else None} for x in log]}
@@ -848,13 +854,27 @@ def sua_ty_gia(data: dict = Body(...), db: Session = Depends(get_db), user=Depen
     """Đặt tỷ giá mặc định cho phiếu lập mới. Chỉ ghi lịch sử khi con số THẬT SỰ đổi."""
     ngay = _ngay(data.get("ap_dung_tu"), "ap_dung_tu") or dt.date.today()
     ghi_chu = (data.get("ghi_chu") or "").strip() or None
-    doi = []
+    moi = {}
     for ma in [m for m in TIEN_TE if m != "LAK"]:
         if ma not in data or data[ma] in (None, ""):
             continue
         gt = _so(data[ma], ma)
         if not gt or gt <= 0:
             raise HTTPException(422, {"ma": "SO_SAI", "loi": "Tỷ giá %s phải lớn hơn 0." % ma})
+        moi[ma] = gt
+    # Xét HẾT trước khi ghi: một mã đổi quá ngưỡng mà chưa xác nhận thì không ghi mã nào
+    lon = []
+    for ma, gt in moi.items():
+        r = db.get(ExchangeRate, ma)
+        if r is not None and r.rate_to_lak and abs(gt - r.rate_to_lak) / r.rate_to_lak * 100 > NGUONG_DOI_LON_PCT:
+            lon.append("%s %s → %s LAK (%+.3f%%)" % (ma, "{:,.6g}".format(r.rate_to_lak), "{:,.6g}".format(gt),
+                                                      (gt - r.rate_to_lak) / r.rate_to_lak * 100))
+    if lon and not data.get("xac_nhan_doi_lon"):
+        raise HTTPException(409, {"ma": "DOI_QUA_LON", "nguong_pct": NGUONG_DOI_LON_PCT,
+                                  "loi": "Tỷ giá đổi quá %d%% so với số đang dùng: %s. Kiểm lại số; đúng là vậy thì xác nhận "
+                                         "rồi lưu lại." % (NGUONG_DOI_LON_PCT, " · ".join(lon))})
+    doi = []
+    for ma, gt in moi.items():
         r = db.get(ExchangeRate, ma)
         truoc = r.rate_to_lak if r else None
         if r is not None and abs((truoc or 0) - gt) < 1e-9:

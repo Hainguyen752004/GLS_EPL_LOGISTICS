@@ -253,9 +253,14 @@ select{text-overflow:ellipsis}
 
 /* ---------- Bảng ---------- */
 .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper)}
-table.tbl{width:100%;border-collapse:collapse;font-size:13px}
-.tbl th,.tbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
-.tbl thead th{background:var(--bg);color:var(--ink-2);font-weight:600;position:sticky;top:0;white-space:nowrap}
+/* Kẻ ĐỦ khung: đường ngang giữa mọi hàng + đường dọc giữa mọi cột (chủ dự án 01/10 — trước đây chỉ kẻ ngang, từng màn tự
+   kẻ cột riêng). Khung ngoài do .tbl-wrap vẽ: border-style:hidden trên bảng (kiểu collapse) giấu mọi nét ở MÉP ngoài — cột
+   cuối, hàng cuối, cả khi cột cuối bị ẩn theo vai (.tien) hay có ô gộp hàng — nên không thành nét đôi với khung.
+   Bảng tự đặt border-collapse:separate (Theo dõi phiếu) thì tự lo mép phải / hàng cuối trong CSS của màn đó. */
+table.tbl{width:100%;border-collapse:collapse;border-style:hidden;font-size:13px}
+.tbl th,.tbl td{padding:8px 10px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);vertical-align:top;text-align:left}
+.tbl thead th{background:var(--bg);color:var(--ink-2);font-weight:600;position:sticky;top:0;white-space:nowrap;
+  border-bottom-color:var(--line-2);border-right-color:var(--line-2)}
 .tbl thead th.grp{text-align:center;background:var(--bg-2);color:var(--ink);border-left:1px solid var(--line-2)}
 .tbl tbody tr:hover{background:#F6F8F5} .tbl tbody tr.sel{background:var(--green-soft)}
 .tbl tfoot td{background:var(--bg);font-weight:600}

@@ -11,8 +11,9 @@
 .tx-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--tx-muted); font: 500 12.5px inherit; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .tx-seg button.active { background: var(--tx-navy); color: #fff; font-weight: 600; }
 .tx-seg button .n { font-size: 11px; padding: 0 6px; height: 17px; border-radius: 999px; background: rgba(0,0,0,.08); display: inline-flex; align-items: center; } .tx-seg button.active .n { background: rgba(255,255,255,.2); }
-.tx-search { display: flex; align-items: center; gap: 8px; height: 36px; width: 280px; max-width: 100%; padding: 0 12px; border: 1px solid var(--tx-line); border-radius: 8px; background: #fff; color: var(--tx-faint); }
-.tx-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--tx-ink); font: 12.5px inherit; font-family: inherit; }
+/* ô tìm giãn vào chỗ trống của thanh (rà 01/10: 1366 tiếng Anh chữ gợi ý bị cắt "…brand, c"), tối đa 440px */
+.tx-search { display: flex; align-items: center; gap: 8px; height: 36px; flex: 1 1 280px; width: auto; min-width: 220px; max-width: 440px; padding: 0 12px; border: 1px solid var(--tx-line); border-radius: 8px; background: #fff; color: var(--tx-faint); }
+.tx-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--tx-ink); font-size: 12.5px; font-family: inherit; }
 .tx-search svg, .tx-i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
 .tx-field select { height: 36px; padding: 0 10px; border: 1px solid var(--tx-line); border-radius: 8px; background: #fff; font: 12.5px inherit; font-family: inherit; color: var(--tx-ink); }
 
@@ -31,7 +32,10 @@
 .tx-card { background: var(--tx-card); border: 1px solid var(--tx-line); border-radius: var(--tx-r); overflow: hidden; }
 .tx-card .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--tx-line2); } .tx-card .hd b { font-size: 14px; } .tx-card .hd .grow { flex: 1; }
 .tx-card .bd { padding: 12px 14px; }
-.tx-tbl { width: 100%; border-collapse: collapse; }
+/* kẻ đủ khung cột + hàng như .tbl chung (chủ dự án 01/10); border-style:hidden giấu nét ở mép ngoài — khung là thẻ bao */
+.tx-tbl { width: 100%; border-collapse: collapse; border-style: hidden; }
+.tx-tbl th, .tx-tbl td, .tx-tabbody th, .tx-tabbody td { border-right: 1px solid var(--tx-line2); }
+.tx-tbl th { border-right-color: var(--tx-line); }
 .tx-tbl th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--tx-muted); padding: 8px 12px; background: #f6f7f6; border-bottom: 1px solid var(--tx-line); white-space: nowrap; position: sticky; top: 0; }
 .tx-tbl td { padding: 9px 12px; border-bottom: 1px solid var(--tx-line2); vertical-align: middle; font-size: 12.5px; }
 .tx-tbl tr { cursor: pointer; } .tx-tbl tbody tr:hover { background: #f8f9f8; } .tx-tbl tr.on { background: var(--tx-info-50); box-shadow: inset 3px 0 0 var(--tx-info); }
@@ -71,7 +75,7 @@
 .tx-tab.active { color: var(--tx-ink); border-bottom-color: var(--tx-navy); font-weight: 600; }
 .tx-tab .n { height: 16px; padding: 0 5px; border-radius: 999px; background: #eceeec; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; } .tx-tab.active .n { background: var(--tx-navy); color: #fff; }
 .tx-tabbody { max-height: 320px; overflow: auto; }
-.tx-tabbody table { width: 100%; border-collapse: collapse; } .tx-tabbody th { font-size: 11px; color: var(--tx-muted); text-align: left; padding: 6px 12px; background: #f6f7f6; border-bottom: 1px solid var(--tx-line2); } .tx-tabbody td { padding: 7px 12px; border-bottom: 1px solid var(--tx-line2); font-size: 12px; }
+.tx-tabbody table { width: 100%; border-collapse: collapse; border-style: hidden; } .tx-tabbody th { font-size: 11px; color: var(--tx-muted); text-align: left; padding: 6px 12px; background: #f6f7f6; border-bottom: 1px solid var(--tx-line2); } .tx-tabbody td { padding: 7px 12px; border-bottom: 1px solid var(--tx-line2); font-size: 12px; }
 .tx-week { display: grid; gap: 2px; padding: 6px 14px 12px; }
 .tx-day { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; border-left: 3px solid transparent; }
 .tx-day .d { color: var(--tx-muted); font-size: 11px; line-height: 1.2; } .tx-day .d b { display: block; color: var(--tx-ink); font-size: 12px; } .tx-day.today { background: var(--tx-info-50); border-left-color: var(--tx-info); }

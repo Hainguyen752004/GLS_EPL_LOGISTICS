@@ -161,6 +161,9 @@ def _ap(db, t, data):
 @router.post("/api/the-cao-toc")
 def them_the(data: dict = Body(...), db: Session = Depends(get_db), _=Depends(SUA_THE)):
     t = TollCard(); _ap(db, t, data)
+    if not t.card_no:                    # thiếu hẳn khoá card_no thì _ap không xét — trước đây rơi xuống DB thành lỗi 500
+        raise HTTPException(422, {"ma": "THIEU_SO_THE", "loi": "Thẻ phải có số."})
+    t.kind = t.kind or "epl"
     if db.query(TollCard).filter(TollCard.card_no == t.card_no).first():
         raise HTTPException(409, {"ma": "TRUNG_SO_THE", "loi": "Thẻ số %s đã có trong danh mục." % t.card_no})
     t.balance = _so(data.get("balance"), "số dư") or 0

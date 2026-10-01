@@ -13,6 +13,23 @@
 
   const suaDuoc = () => AUTH.la('acct', 'rev');
   const le = (ma) => ma === 'VND' ? 2 : 0;          // 1 VND ≈ 1,2 Kíp nên cần số lẻ
+  /* Mức đổi (%) của số đang gõ so với số đang dùng — null khi chưa gõ / chưa có số cũ. Quá ngưỡng của máy chủ
+     (nguong_doi_lon_pct) thì thẻ cảnh báo ngay khi gõ và lúc lưu phải xác nhận rõ (01/10: USD từng bị đặt 1 Kíp, −99,995 %). */
+  const nguong = () => (D && D.nguong_doi_lon_pct) || 20;
+  function mucDoi(r) {
+    const v = nhap[r.code];
+    if (v === undefined || v === '' || !r.rate_to_lak) return null;
+    const n = EPL.doc(v);
+    return n > 0 ? (n - r.rate_to_lak) / r.rate_to_lak * 100 : null;
+  }
+  const quaNguong = (r) => { const p = mucDoi(r); return p != null && Math.abs(p) > nguong(); };
+  // −99,995 % làm tròn hai số lẻ thành −100,00 % (như thể tỷ giá về 0) — gần 0 và gần 100 thì ba số lẻ
+  const chuPhanTram = (p) => { const d = Math.abs(p); return (p > 0 ? '+' : '−') + so(d, d < 1 || (d > 99 && d < 100) ? 3 : 2) + '%'; };
+  function veCanh(r) {
+    const o = root.querySelector(`.tg-canh[data-ma="${r.code}"]`); if (!o) return;
+    o.hidden = !quaNguong(r);
+    o.innerHTML = o.hidden ? '' : NN.h('rate_big_live', { p: chuPhanTram(mucDoi(r)) });
+  }
 
   /* ---------------------------------------------------------------- thẻ từng loại tiền */
   function veThe() {
@@ -27,6 +44,7 @@
             <input class="num" data-ma="${esc(r.code)}" inputmode="decimal" value="${esc(gt)}" ${suaDuoc() ? '' : 'disabled'}>
             <span class="tg-goc">LAK</span>
           </div>
+          <div class="tg-canh" data-ma="${esc(r.code)}" role="alert" hidden></div>
           <div class="tg-dong"><span>${NN.h('rate_now')}</span><b>${r.rate_to_lak == null ? '—' : so(r.rate_to_lak, le(r.code)) + ' LAK'}</b></div>
           <div class="tg-dong"><span>${NN.h('rate_prev')}</span><b>${r.truoc == null ? NN.h('rate_none') : so(r.truoc, le(r.code)) + ' LAK'}</b></div>
           <div class="tg-dong"><span>${NN.h('rate_by')}</span><b>${esc(r.by_user || '—')}${r.cap_nhat ? ' · ' + EPL.ngay(r.cap_nhat.slice(0, 10)) : ''}</b></div>
@@ -37,7 +55,9 @@
     }).join('');
     root.querySelectorAll('#tg-the input[data-ma]').forEach(el => el.addEventListener('input', () => {
       nhap[el.dataset.ma] = el.value; veMay();
+      const r = D.ds.find(x => x.code === el.dataset.ma); if (r) veCanh(r);
     }));
+    D.ds.forEach(veCanh);
   }
 
   /* ---------------------------------------------------------------- máy tính quy đổi */
@@ -94,12 +114,20 @@
     });
     const ma = Object.keys(than);
     if (!ma.length) return EPL.toast(NN.t('rate_nothing'), 'loi');
-    const v = await EPL.hopNhap(NN.t('rate_save'), [
-      { id: 'ap_dung_tu', label: 'rate_from', type: 'date', value: EPL.homNay() },
-      { id: 'ghi_chu', label: 'note', value: '' },
-    ], NN.t('save'));
-    if (!v) return;
-    than.ap_dung_tu = v.ap_dung_tu; than.ghi_chu = v.ghi_chu;
+    // Một hộp thoại của trang: đổi quá ngưỡng thì khối cảnh báo đỏ đứng đầu (số cũ → số mới · mức đổi) và nút đổi chữ
+    // thành "Đúng số này, lưu"; dưới là ngày áp dụng + ghi chú như trước.
+    const lon = D.ds.filter(r => than[r.code] !== undefined && quaNguong(r));
+    const canh = lon.length ? `<div class="tg-xac-nhan"><p>${NN.h('rate_big_body', { n: nguong() })}</p>
+        <ul>${lon.map(r => `<li><b>${esc(r.code)}</b> ${so(r.rate_to_lak, le(r.code))} → <b>${so(than[r.code], le(r.code))}</b> LAK
+          <span class="neg">(${chuPhanTram(mucDoi(r))})</span></li>`).join('')}</ul></div>` : '';
+    const ok = await EPL.hoi(NN.t(lon.length ? 'rate_big_title' : 'rate_save'), canh
+      + `<div class="field"><label>${NN.h('rate_from')}</label><input id="tg-hn-ngay" type="date" value="${esc(EPL.homNay())}"></div>
+         <div class="field"><label>${NN.h('note')}</label><input id="tg-hn-ghi-chu" type="text" value=""></div>`,
+      NN.t(lon.length ? 'rate_big_ok' : 'save'));
+    if (!ok) return;
+    than.ap_dung_tu = (document.getElementById('tg-hn-ngay') || {}).value || EPL.homNay();
+    than.ghi_chu = (document.getElementById('tg-hn-ghi-chu') || {}).value || '';
+    if (lon.length) than.xac_nhan_doi_lon = true;
     try {
       await API.put('/api/rates', than);
       EPL.toast(NN.t('saved'), 'ok');

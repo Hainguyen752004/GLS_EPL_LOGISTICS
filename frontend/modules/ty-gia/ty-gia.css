@@ -1,25 +1,38 @@
 /* Tỷ giá — mỗi loại tiền một thẻ, màu viền khác nhau để mắt bắt được ngay đang sửa tiền nào. */
-.tg-nhac{border-left:3px solid var(--brand)}
-.tg-nhac .bd{color:var(--muted)}
+/* --brand / --muted / --text không có trong chung.css (rà 01/10: viền, màu chữ rơi về mặc định) — dùng token chung */
+.tg-nhac{border-left:3px solid var(--green-2);margin-bottom:12px}
+.tg-nhac .bd{color:var(--ink-2)}
 
 .tg-the{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:14px}
 .tg-o{margin:0}
 .tg-o .hd h4{margin:0;font-size:15px;display:flex;align-items:center;gap:8px}
-.tg-ma{font-size:11px;letter-spacing:.5px;padding:2px 7px;border-radius:99px;background:var(--line);color:var(--muted);font-weight:600}
+.tg-ma{font-size:11px;letter-spacing:.5px;padding:2px 7px;border-radius:99px;background:var(--bg-2);color:var(--ink-2);font-weight:600}
 .tg-o .bd{display:flex;flex-direction:column;gap:7px}
 
-.tg-nhap{display:flex;align-items:stretch;gap:0}
-.tg-nhap input{flex:1;text-align:right;font-size:17px;font-weight:600;border-top-right-radius:0;border-bottom-right-radius:0}
-.tg-nhap select{border-top-left-radius:0;border-bottom-left-radius:0;border-left:0;min-width:74px}
-.tg-goc{display:flex;align-items:center;padding:0 11px;border:1px solid var(--line);border-left:0;
-  border-radius:0 6px 6px 0;background:var(--bg);color:var(--muted);font-size:12.5px;font-weight:600}
+/* ô số + đơn vị dính nhau. Ô trong thẻ không nằm trong .field nên tự mang khung như ô nhập chung. Máy tính quy đổi: ô chọn
+   tiền KHÔNG được giãn 100% như .field select (rà 01/10: nó ép ô số còn ~20px, không thấy số đang gõ). */
+.tg-nhap{display:flex;align-items:stretch;gap:0;min-width:0}
+.tg-nhap input{flex:1 1 auto;min-width:0;width:auto;text-align:right;font-size:17px;font-weight:600;padding:6px 10px;
+  border:1px solid var(--line-2);border-radius:var(--r) 0 0 var(--r);background:var(--paper);color:var(--ink)}
+.tg-nhap input:disabled{background:var(--bg);color:var(--ink-2)}
+.tg-nhap input:focus{outline:none;border-color:var(--green-2);box-shadow:0 0 0 3px rgba(30,122,99,.15)}
+.field .tg-nhap select{flex:none;width:auto;min-width:82px;border-radius:0 var(--r) var(--r) 0;border-left:0}
+.tg-goc{display:flex;align-items:center;padding:0 11px;border:1px solid var(--line-2);border-left:0;
+  border-radius:0 var(--r) var(--r) 0;background:var(--bg);color:var(--ink-2);font-size:12.5px;font-weight:600}
+/* đang gõ một số lệch quá ngưỡng so với số đang dùng */
+.tg-canh{padding:6px 9px;border-radius:var(--r);background:var(--red-soft);color:var(--red);font-size:12px;font-weight:600;line-height:1.4}
+.tg-o:has(.tg-canh:not([hidden])) .tg-nhap input{border-color:var(--red)}
+/* khối cảnh báo trong hộp lưu */
+.tg-xac-nhan{margin:0 0 6px;padding:10px 12px;border:1px solid #E3B4B4;border-radius:var(--r);background:var(--red-soft);color:var(--ink)}
+.tg-xac-nhan p{margin:0 0 6px;font-size:13px}
+.tg-xac-nhan ul{margin:0;padding-left:18px;font-size:13px;font-variant-numeric:tabular-nums}
 
-.tg-dong{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted)}
-.tg-dong b{color:var(--text);font-variant-numeric:tabular-nums}
+.tg-dong{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12.5px;color:var(--ink-3)}
+.tg-dong b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right}
 .tg-doi{margin-top:2px;padding-top:7px;border-top:1px dashed var(--line);font-size:12px;font-weight:600}
 .tg-doi.len{color:var(--green,#15803d)}
 .tg-doi.xuong{color:var(--red)}
-.tg-doi.im{color:var(--muted);font-weight:400}
+.tg-doi.im{color:var(--ink-3);font-weight:400}
 
 /* Viền màu theo loại tiền — cùng bộ màu với thẻ ở màn Tổng quan */
 .tg-usd{border-top:3px solid #2563eb}

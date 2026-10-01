@@ -24,9 +24,21 @@
       const dau = { 'Accept': 'application/json' };
       if (tuy_chon.body !== undefined) dau['Content-Type'] = 'application/json';
       const tk = API.token(); if (tk) dau['Authorization'] = 'Bearer ' + tk;
-      const r = await fetch(duong, { method: tuy_chon.method || (tuy_chon.body !== undefined ? 'POST' : 'GET'),
-        headers: dau, body: tuy_chon.body !== undefined ? JSON.stringify(tuy_chon.body) : undefined });
+      const method = tuy_chon.method || (tuy_chon.body !== undefined ? 'POST' : 'GET');
+      // Chỉ GET mới gắn tín hiệu huỷ của màn đang mở (napModule): rời màn thì các GET còn chờ của nó bị huỷ, nhường chỗ cho
+      // màn mới (trình duyệt chỉ mở 6 kết nối mỗi máy chủ — rà 01/10, mạng chậm: màn cuối chờ thêm ~1 giây sau lượt bấm
+      // liên tiếp). POST / PUT / DELETE KHÔNG BAO GIỜ bị huỷ: đang lưu mà bỏ giữa chừng là mất dữ liệu.
+      // `giu: true` cho lời gọi của khung (đếm việc, danh mục Acc code…) — không thuộc màn nào.
+      const tin = method === 'GET' && !tuy_chon.giu && MOD_AC ? MOD_AC.signal : undefined;
+      let r;
+      try {
+        r = await fetch(duong, { method, headers: dau, body: tuy_chon.body !== undefined ? JSON.stringify(tuy_chon.body) : undefined, signal: tin });
+      } catch (e) {
+        if (tin && tin.aborted) throw new LoiAPI(0, 'HUY', NN.t('loading'));
+        throw e;
+      }
       let d = null; try { d = await r.json(); } catch (e) { d = null; }
+      if (tin && tin.aborted) throw new LoiAPI(0, 'HUY', NN.t('loading'));   // huỷ giữa lúc đọc thân: đừng trả null như "không có dữ liệu"
       // 401 chỉ đăng xuất khi request mang ĐÚNG phiên đang dùng. Request gửi lúc chưa có phiên / bằng phiên người trước (tải
       // nền của màn cũ trong lúc đổi tài khoản) mà về sau thì bỏ — trước đây nó đá văng người vừa đăng nhập (bài thử 01/10)
       if (r.status === 401 && !duong.startsWith('/api/dang-nhap')) {
@@ -59,13 +71,15 @@
       if (!r.ok) { const ct = (d && d.detail) || {}; throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || NN.t('err_generic')); }
       return d;
     },
-    get: (d) => API.goi(d),
+    get: (d, tc) => API.goi(d, tc),
     post: (d, b) => API.goi(d, { method: 'POST', body: b === undefined ? {} : b }),
     put: (d, b) => API.goi(d, { method: 'PUT', body: b }),
     del: (d) => API.goi(d, { method: 'DELETE' }),
   };
   class LoiAPI extends Error { constructor(status, ma, loi) { super(loi); this.status = status; this.ma = ma; } }
   EPL.LoiAPI = LoiAPI;
+  // Bộ huỷ GET của lượt nạp màn hiện tại (xem API.goi, napModule). Khai ở đây vì API.goi dùng trước khi tới phần điều hướng.
+  let MOD_AC = null;
 
   /* ================================================================ Ngôn ngữ */
   const NGON_NGU = ['vi', 'lo', 'en', 'both'];
@@ -120,6 +134,8 @@
       if (!NGON_NGU.includes(ma)) return;
       lang = ma; try { localStorage.setItem('epl_lao_lang', ma); } catch (e) { /* bỏ qua */ }
       veNutNgonNgu(); NN.apDung(document); veNav(); datTieuDe();
+      // tên vai dưới tên người dùng chỉ được vẽ lúc đăng nhập — đổi tiếng thì vẽ lại (rà 01/10: tiếng Anh còn "Sếp (xem tất cả)")
+      const vaiO = document.getElementById('uRole'); if (vaiO && USER) vaiO.innerHTML = NN.h('r_' + USER.role);
       (EPL.khiDoiNN || []).forEach(f => { try { f(); } catch (e) { /* bỏ qua */ } });
       const m = EPL.modules[moduleHienTai]; if (m && m.onLang) m.onLang();
     },
@@ -221,7 +237,8 @@
     const t = document.getElementById('toast'); t.textContent = chu; t.className = 'toast ' + (loai || ''); t.hidden = false;
     clearTimeout(t._h); t._h = setTimeout(() => { t.hidden = true; }, 3200);
   };
-  EPL.baoLoi = (e) => EPL.toast(e && e.message ? e.message : String(e), 'loi');
+  // GET bị huỷ vì người dùng đã rời màn (ma 'HUY') không phải lỗi — không bày lên màn mới
+  EPL.baoLoi = (e) => { if (e && e.ma === 'HUY') return; EPL.toast(e && e.message ? e.message : String(e), 'loi'); };
   /** Hộp xác nhận trong ứng dụng. Trả true/false. `noiDungHtml` tuỳ chọn. */
   EPL.hoi = (tieuDe, noiDungHtml, nhanOk) => new Promise(res => {
     const dlg = document.getElementById('hop-thoai');
@@ -277,7 +294,7 @@
 
   EPL.accCodes = async (refresh) => {
     if (ACC_CACHE && !refresh) return ACC_CACHE;
-    try { ACC_CACHE = await API.get('/api/acc-codes' + (refresh ? '?refresh=true' : '')); }
+    try { ACC_CACHE = await API.get('/api/acc-codes' + (refresh ? '?refresh=true' : ''), { giu: true }); }   // nhớ cả phiên: không để lượt huỷ ghi "lỗi" vào đây
     catch (e) { ACC_CACHE = { data: [], source: 'error', message: e.message }; }
     return ACC_CACHE;
   };
@@ -344,6 +361,7 @@
       // nạp đó tự dọn khi xong (gốc đã bị tháo bên dưới).
       const mc = EPL.modules[moduleHienTai];
       if (mc && mc.destroy && !dangNap.has(moduleHienTai)) { try { mc.destroy(); } catch (e) { /* bỏ qua */ } }
+      huyGetCu();                        // GET còn chờ của người vừa ra không được về vẽ lên màn của người sau
       // Xoá nội dung màn đang mở: máy ở bãi dùng chung, người sau đăng nhập không được thấy
       // loáng qua số liệu của người trước trong lúc màn mới còn đang tải.
       const nd = document.getElementById('noi-dung'); if (nd) nd.replaceChildren();
@@ -360,7 +378,7 @@
   /* Chọn nhanh tài khoản: tải danh sách tài khoản mẫu rồi giao cho js/dang_nhap.js vẽ (gom theo nhóm vai, lọc theo bước
      đang chọn trên sơ đồ). Bấm một thẻ là vào thẳng — lối tắt demo (chủ dự án chốt 16/09). */
   async function veTaiKhoanMau() {
-    try { EPL.lg.datDs(await API.get('/api/tai-khoan-mau')); }
+    try { EPL.lg.datDs(await API.get('/api/tai-khoan-mau', { giu: true })); }
     catch (e) { EPL.lg.loi(e.message); }
   }
   // Cờ chống bấm hai lần: đang gọi máy chủ mà bấm nữa thì bỏ qua, không gửi thêm lần đăng nhập.
@@ -478,7 +496,7 @@
   let _diaChiKT = null;
   EPL.moKeToan = async (man, thamSo) => {
     try {
-      if (_diaChiKT === null) _diaChiKT = ((await API.get('/api/lien-thong/dia-chi')) || {}).ke_toan_web || '';
+      if (_diaChiKT === null) _diaChiKT = ((await API.get('/api/lien-thong/dia-chi', { giu: true })) || {}).ke_toan_web || '';
       if (!_diaChiKT) return EPL.toast(NN.t('mo_ke_toan_loi'), 'loi');
       const q = thamSo ? '?' + new URLSearchParams(thamSo) : '';
       window.open(_diaChiKT + '/#/' + (man || '') + q, '_blank', 'noopener');
@@ -560,7 +578,7 @@
   EPL.datKieuXem = (k) => { kieuXem = k === 'top' ? 'top' : 'side'; ghiLS(K_VIEW, kieuXem); apKieuXem(); veNav(); };
 
   async function taiDem() {
-    try { DEM = await API.get('/api/dem-viec'); } catch (e) { DEM = {}; }
+    try { DEM = await API.get('/api/dem-viec', { giu: true }); } catch (e) { DEM = {}; }
     // Người dùng có thể đăng xuất hoặc đóng trang trong lúc chờ; vẽ vào trang đã mất thì bỏ qua.
     try { veNav(); } catch (e) { /* trang không còn */ }
   }
@@ -821,10 +839,14 @@
    *   · mỗi lần đổi địa chỉ là một LƯỢT; chỉ lượt mới nhất được vẽ, lượt cũ bỏ kết quả;
    *   · module KHÁC nhau không chờ nhau. CÙNG một module thì vẫn chờ lượt trước của nó xong (hoặc tự bỏ) rồi mới init:
    *     biến `root`, danh sách… trong module chỉ có một bản, hai init chồng nhau thì lượt cũ vẽ vào màn mới;
-   *   · bấm đi rồi quay lại đúng màn đó khi lượt cũ còn đang nạp: gắn lại gốc của lượt cũ cho nó chạy tiếp;
-   *   · .html · .js · .css nạp song song, lần sau dùng lại. */
+   *   · rời màn là huỷ các GET còn chờ của màn cũ (huyGetCu) — lượt cũ kết thúc ngay, không giữ kết nối của màn mới;
+   *   · .html · .js · .css nạp song song, lần sau dùng lại (không bao giờ bị huỷ). */
   let luotNap = 0;                 // lượt chuyển màn mới nhất
-  const dangNap = new Map();       // id module → lượt nạp chưa xong gần nhất của module đó {luot, root, hash, user, lang, cua}
+  const dangNap = new Map();       // id module → lượt nạp chưa xong gần nhất của module đó {luot, root, hash, user, lang, cua, ac}
+  function huyGetCu() {
+    if (MOD_AC) { try { MOD_AC.abort(); } catch (e) { /* bỏ qua */ } }
+    MOD_AC = null;
+  }
   async function napModule(id, luot) {
     const m = MODULES.find(x => x.id === id) || MODULES[0];
     if (!thayDuoc(m)) {
@@ -837,14 +859,12 @@
     // dở vấp phải thứ vừa bị gỡ (bản đồ, biểu đồ) rồi báo lỗi lên màn mới.
     const truoc = EPL.modules[moduleHienTai];
     if (truoc && truoc.destroy && !dangNap.has(moduleHienTai)) { try { truoc.destroy(); } catch (e) { /* bỏ qua */ } }
+    // Rời màn trước: huỷ mọi GET nó còn đang chờ (đang nạp hay đã nạp xong mà còn tải thêm). Lượt nạp dở của nó nhận lỗi
+    // 'HUY', tự kết thúc sớm và không vẽ gì lên màn này. Trước đây (rà 01/10) lượt dở còn chạy tiếp để quay lại đúng màn đó
+    // thì gắn lại — nhưng chính các GET ấy chiếm kết nối, màn người dùng vừa chọn phải xếp hàng chờ.
+    huyGetCu();
     moduleHienTai = m.id; veNav(); datTieuDe(); if (EPL.veNutXuat) EPL.veNutXuat(m.id);
-    // Quay lại ĐÚNG màn này (cùng địa chỉ, cùng người, cùng tiếng) khi lượt cũ của nó còn đang nạp: gắn lại gốc cũ, lượt
-    // cũ thành lượt hiện tại và chạy tiếp — khỏi chờ nó xong rồi init lại từ đầu, gọi lại cả loạt API.
     const cu = dangNap.get(m.id);
-    if (cu && !cu.root.isConnected && cu.hash === location.hash && cu.user === USER && cu.lang === lang) {
-      cu.luot = luot; noiDung.replaceChildren(cu.root);
-      return cu.cua;
-    }
     // MỖI LƯỢT NẠP MỘT GỐC RIÊNG. Trước đây mọi module vẽ thẳng vào #noi-dung, nên khi người
     // dùng bấm sang module khác trong lúc module cũ còn đang chờ API, module cũ vẽ xong sẽ đè
     // lên (hoặc vẽ vào ô đã mất rồi bật lỗi, và khối lỗi đó xoá luôn màn mới). Gốc riêng thì
@@ -852,9 +872,10 @@
     const root = document.createElement('div'); root.className = 'mod-root'; root.dataset.mod = m.id;
     root.innerHTML = `<div class="muted small">${NN.h('loading')}</div>`;
     noiDung.replaceChildren(root);
-    const lt = { luot, root, hash: location.hash, user: USER, lang, cua: null };
+    const lt = { luot, root, hash: location.hash, user: USER, lang, cua: null, ac: new AbortController() };
     let xong; lt.cua = new Promise(r => { xong = r; });
     dangNap.set(m.id, lt);
+    MOD_AC = lt.ac;                       // GET của màn này (kể cả sau khi nạp xong) đi theo bộ huỷ này
     const conHienTai = () => lt.luot === luotNap && root.isConnected;
     const goc = `modules/${m.id}/${m.id}`;
     let daInit = false;
@@ -912,7 +933,7 @@
       o.focus();
     });
     if (API.token()) {
-      try { USER = await API.get('/api/toi'); hienApp(); return; } catch (e) { /* phiên hết hạn → về đăng nhập */ }
+      try { USER = await API.get('/api/toi', { giu: true }); hienApp(); return; } catch (e) { /* phiên hết hạn → về đăng nhập */ }
     }
     AUTH.dangXuat(false);
   }

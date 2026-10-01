@@ -11,8 +11,9 @@
 .xe-seg button { height: 28px; padding: 0 12px; border: 0; border-radius: 6px; background: transparent; color: var(--xe-muted); font: 500 12.5px inherit; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .xe-seg button.active { background: var(--xe-navy); color: #fff; font-weight: 600; }
 .xe-seg button .n { font-size: 11px; padding: 0 6px; height: 17px; border-radius: 999px; background: rgba(0,0,0,.08); display: inline-flex; align-items: center; } .xe-seg button.active .n { background: rgba(255,255,255,.2); }
-.xe-search { display: flex; align-items: center; gap: 8px; height: 36px; width: 280px; max-width: 100%; padding: 0 12px; border: 1px solid var(--xe-line); border-radius: 8px; background: #fff; color: var(--xe-faint); }
-.xe-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--xe-ink); font: 12.5px inherit; font-family: inherit; }
+/* ô tìm giãn vào chỗ trống của thanh (rà 01/10: 1366 tiếng Anh chữ gợi ý bị cắt "…brand, c"), tối đa 440px */
+.xe-search { display: flex; align-items: center; gap: 8px; height: 36px; flex: 1 1 280px; width: auto; min-width: 220px; max-width: 440px; padding: 0 12px; border: 1px solid var(--xe-line); border-radius: 8px; background: #fff; color: var(--xe-faint); }
+.xe-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--xe-ink); font-size: 12.5px; font-family: inherit; }
 .xe-search svg, .xe-i { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
 .xe-field select { height: 36px; padding: 0 10px; border: 1px solid var(--xe-line); border-radius: 8px; background: #fff; font: 12.5px inherit; font-family: inherit; color: var(--xe-ink); }
 
@@ -31,7 +32,10 @@
 .xe-card { background: var(--xe-card); border: 1px solid var(--xe-line); border-radius: var(--xe-r); overflow: hidden; }
 .xe-card .hd { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--xe-line2); } .xe-card .hd b { font-size: 14px; } .xe-card .hd .grow { flex: 1; }
 .xe-card .bd { padding: 12px 14px; }
-.xe-tbl { width: 100%; border-collapse: collapse; }
+/* kẻ đủ khung cột + hàng như .tbl chung (chủ dự án 01/10); border-style:hidden giấu nét ở mép ngoài — khung là thẻ bao */
+.xe-tbl { width: 100%; border-collapse: collapse; border-style: hidden; }
+.xe-tbl th, .xe-tbl td, .xe-tabbody th, .xe-tabbody td { border-right: 1px solid var(--xe-line2); }
+.xe-tbl th { border-right-color: var(--xe-line); }
 .xe-tbl th { text-align: left; font-size: 11.5px; font-weight: 600; color: var(--xe-muted); padding: 8px 12px; background: #f6f7f6; border-bottom: 1px solid var(--xe-line); white-space: nowrap; position: sticky; top: 0; }
 .xe-tbl td { padding: 9px 12px; border-bottom: 1px solid var(--xe-line2); vertical-align: middle; font-size: 12.5px; }
 .xe-tbl tr { cursor: pointer; } .xe-tbl tbody tr:hover { background: #f8f9f8; } .xe-tbl tr.on { background: var(--xe-info-50); box-shadow: inset 3px 0 0 var(--xe-info); }
@@ -59,6 +63,8 @@
 .xe-head .acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .xe-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; padding: 8px 14px; }
 .xe-kv b { max-width: 62%; white-space: normal !important; overflow: visible !important; }
+/* số khung / số máy 17 ký tự liền không có chỗ ngắt: chữ nhỏ một chút, vẫn dài thì ngắt giữa chuỗi chứ không lẹm ra ngoài (rà 01/10) */
+.xe-kv b.mono { font-size: 11.5px; overflow-wrap: anywhere; }
 .xe-kv div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--xe-line2); font-size: 12.5px; min-width: 0; } .xe-kv span { color: var(--xe-muted); } .xe-kv b { font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .xe-sec { padding: 10px 14px 4px; font-size: 11.5px; font-weight: 600; color: var(--xe-muted); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; } .xe-sec .grow { flex: 1; }
 .xe-legal { display: grid; gap: 6px; padding: 4px 14px 10px; }
@@ -73,7 +79,7 @@
 .xe-tab.active { color: var(--xe-ink); border-bottom-color: var(--xe-navy); font-weight: 600; }
 .xe-tab .n { height: 16px; padding: 0 5px; border-radius: 999px; background: #eceeec; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; } .xe-tab.active .n { background: var(--xe-navy); color: #fff; }
 .xe-tabbody { max-height: 320px; overflow: auto; }
-.xe-tabbody table { width: 100%; border-collapse: collapse; } .xe-tabbody th { font-size: 11px; color: var(--xe-muted); text-align: left; padding: 6px 12px; background: #f6f7f6; border-bottom: 1px solid var(--xe-line2); } .xe-tabbody td { padding: 7px 12px; border-bottom: 1px solid var(--xe-line2); font-size: 12px; }
+.xe-tabbody table { width: 100%; border-collapse: collapse; border-style: hidden; } .xe-tabbody th { font-size: 11px; color: var(--xe-muted); text-align: left; padding: 6px 12px; background: #f6f7f6; border-bottom: 1px solid var(--xe-line2); } .xe-tabbody td { padding: 7px 12px; border-bottom: 1px solid var(--xe-line2); font-size: 12px; }
 .xe-week { display: grid; gap: 2px; padding: 6px 14px 12px; }
 .xe-day { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 10px; align-items: center; padding: 5px 6px; border-radius: 6px; font-size: 11.5px; border-left: 3px solid transparent; }
 .xe-day .d { color: var(--xe-muted); font-size: 11px; line-height: 1.2; } .xe-day .d b { display: block; color: var(--xe-ink); font-size: 12px; } .xe-day.today { background: var(--xe-info-50); border-left-color: var(--xe-info); }
@@ -134,9 +140,11 @@
 
 /* 30/09 — dàn ngang: màn rộng thì hồ sơ xe ĐỨNG CỐ ĐỊNH ở cột phải (luôn thấy chiếc đang chọn), danh sách cuộn trong khung
    của nó thay vì kéo dài cả trang; màn hẹp (≤ 1100px) vẫn là ngăn trượt như cũ. Dòng thấp lại (hãng · đời một dòng). */
-.xe-tbl td { padding: 7px 12px; }
+/* đệm ngang 10px (trước 12) và cột hồ sơ 404px (trước 420): 1366 tiếng Việt bảng đầu kéo rộng hơn khung 43px, cột Trạng thái
+   bị cắt còn "Đang c…" (rà 01/10) */
+.xe-tbl td { padding: 7px 10px; } .xe-tbl th { padding-left: 10px; padding-right: 10px; }
 @media (min-width: 1101px) {
-  .xe-cols { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 12px; align-items: start; }
+  .xe-cols { display: grid; grid-template-columns: minmax(0, 1fr) 404px; gap: 12px; align-items: start; }
   .xe-cols > .xe-card:first-child { display: flex; flex-direction: column; max-height: calc(100vh / var(--ty-le, 1) - 215px); }
   .xe-cols > .xe-card:first-child > div[style] { flex: 1; min-height: 0; overflow-y: auto; }
   .xe-detail { position: sticky; top: 0; bottom: auto; width: auto; max-width: none; z-index: auto; transform: none; transition: none;

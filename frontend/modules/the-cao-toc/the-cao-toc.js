@@ -149,14 +149,17 @@
   }
 
   /* ---------------------------------------------------------------- nạp dữ liệu */
+  // Ba câu hỏi chạy SONG SONG (rà 01/10: trước đây nối đuôi nhau — mạng chậm thì màn chờ gấp ba)
   async function tai() {
-    DS = await API.get('/api/the-cao-toc');
-    if (T) { try { T = await API.get('/api/the-cao-toc/' + T.id); } catch (e) { T = null; } }
-    if (xemCanTru()) {
-      const thang = root.querySelector('#tct-thang').value;
+    const thang = xemCanTru() ? root.querySelector('#tct-thang').value : '';
+    const [ds, t, ct] = await Promise.all([
+      API.get('/api/the-cao-toc'),
+      T ? API.get('/api/the-cao-toc/' + T.id).catch(() => null) : null,
       // lỗi máy chủ thì hiện ngay trong bảng (rà 01/10): trước đây canTru = null → bảng giữ số của tháng trước / trống trơn
-      try { canTru = await API.get('/api/the-cao-toc/cong-no' + (thang ? '?thang=' + thang : '')); } catch (e) { canTru = { ds: [], loi: e.message }; }
-    }
+      xemCanTru() ? API.get('/api/the-cao-toc/cong-no' + (thang ? '?thang=' + thang : '')).catch(e => ({ ds: [], loi: e.message })) : null,
+    ]);
+    DS = ds; T = t;
+    if (xemCanTru()) canTru = ct;
     ve(); veChiTiet(); veCanTru();
   }
 
@@ -165,7 +168,9 @@
       root = r;
       // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang đã đặt) — không gán lại bằng toISOString: đó là giờ UTC,
       // 0–7 giờ sáng ngày 1 ở Lào ra tháng trước, bảng cấn trừ mở ra tháng cũ (rà 01/10)
-      [KH, TX, XE] = await Promise.all([API.get('/api/customers'), API.get('/api/drivers'), API.get('/api/vehicles')]);
+      // khách · tài xế · xe chỉ cần cho hộp Thêm / Sửa thẻ (vai kế toán) — nạp cùng lúc với danh sách, không chờ trước
+      const danhMuc = suaDuoc() ? Promise.all([API.get('/api/customers'), API.get('/api/drivers'), API.get('/api/vehicles')])
+        .then(([a, b, c]) => { KH = a; TX = b; XE = c; }) : Promise.resolve();
       const them = r.querySelector('#tct-them'); them.hidden = !suaDuoc();
       them.addEventListener('click', () => sua(null));
       r.querySelector('#tct-q').addEventListener('input', ve);
@@ -173,7 +178,7 @@
       r.querySelector('#tct-dc').addEventListener('click', dieuChinh);
       r.querySelector('#tct-ct-dong').addEventListener('click', () => { T = null; ve(); veChiTiet(); });
       r.querySelector('#tct-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
-      await tai();
+      await Promise.all([danhMuc, tai()]);
     },
     onLang() { if (root) { ve(); veChiTiet(); veCanTru(); } },
   };

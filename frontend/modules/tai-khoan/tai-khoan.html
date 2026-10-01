@@ -5,8 +5,8 @@
        công đoạn lấy từ màn Quy trình — một nguồn, không chép hai nơi. -->
 <div class="toolbar">
   <div class="qt-tab tk-tab" role="tablist">
-    <button class="active" data-tk="nguoi">Người dùng</button>
-    <button data-tk="vai">Vai trò &amp; trách nhiệm</button>
+    <button class="active" data-tk="nguoi" data-i18n="tk_tab_nguoi"></button>
+    <button data-tk="vai" data-i18n="tk_tab_vai"></button>
     <button data-tk="lt" data-i18n="tk_lt_tab"></button>
   </div>
   <div class="grow"></div>
@@ -15,14 +15,13 @@
 <div class="card" id="tk-nguoi">
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>#</th><th data-i18n="username"></th><th data-i18n="full_name"></th><th data-i18n="role"></th><th>Làm gì</th><th data-i18n="status"></th><th data-i18n="actions"></th></tr></thead>
+      <thead><tr><th>#</th><th data-i18n="username"></th><th data-i18n="full_name"></th><th data-i18n="role"></th><th data-i18n="tk_c_lam"></th><th data-i18n="status"></th><th data-i18n="actions"></th></tr></thead>
       <tbody id="tk-than"></tbody>
     </table>
   </div>
 </div>
 <div id="tk-vai" hidden>
-  <p class="small muted tk-dan">Mỗi vai theo đúng bảng "Nhiệm Vụ" trong Excel của khách. Quyền trên phiếu, quyền thấy tiền và định khoản
-    in ra từ luật đang chạy của máy chủ. Bấm tên chứng từ để mở màn Quy trình ở đúng dòng đó.</p>
+  <p class="small muted tk-dan" data-i18n="tk_vai_dan"></p>
   <div class="tk-luoi" id="tk-vai-ds"></div>
 </div>
 <!-- Liên thông KHO TẠM (máy EPL_KETOAN — 01/10 bỏ phần tiền, chỉ còn kho): hai bên gọi nhau bằng khoá máy.

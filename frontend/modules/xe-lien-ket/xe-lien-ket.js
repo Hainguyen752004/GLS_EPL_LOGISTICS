@@ -105,10 +105,9 @@
       onDoi: async () => { await taiHd(); if (root.querySelector('#xlk-hd').hidden) chuHd = null; veChu(); } });
   }
   async function tai() {
-    await taiHd();
     // lỗi máy chủ KHÔNG nuốt thành danh sách rỗng (rà 01/10): bảng "chưa có dữ liệu" trong khi chủ xe vẫn còn đó — lúc mở
-    // màn thì khung hiện lỗi, sau khi lưu thì nơi gọi báo lỗi; mọi vai đều đọc được /api/owners
-    chu = await API.get('/api/owners');
+    // màn thì khung hiện lỗi, sau khi lưu thì nơi gọi báo lỗi; mọi vai đều đọc được /api/owners. Hai câu hỏi song song.
+    [, chu] = await Promise.all([taiHd(), API.get('/api/owners')]);
     veChu();
   }
   EPL.modules['xe-lien-ket'] = {

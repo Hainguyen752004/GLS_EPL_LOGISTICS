@@ -3,21 +3,8 @@
 (function () {
   const { API, NN, esc } = EPL;
   const VAI = ['yard', 'acct', 'expacct', 'fuel', 'parts', 'repair', 'treasury', 'cash', 'rev', 'admin'];
-  // Tóm tắt bằng lời theo bảng Nhiệm Vụ của khách — một câu cho mỗi vai
-  const LAM = {
-    yard: 'Lập phiếu xuất xe tại bãi: xe, tài xế, khách, tuyến, cân, số lít, khoản đi đường. Không thấy và không nhập tiền.',
-    acct: 'Kiểm mục I, II; nhập số phiếu quặng, giá cước, giá thuê xe liên kết; khoá phiếu; điều khoản chủ xe; đẩy chứng từ.',
-    expacct: 'Nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; lệnh sửa chữa; nhà cung cấp; tất toán tài xế.',
-    fuel: 'Nhập đơn giá dầu mua ngoài; kiểm và ghi sổ mục III; duyệt khai đổ dầu. Nhập, xuất, chuyển kho dầu — ở trang kế toán (Kho → Kho nhiên liệu).',
-    depot: 'Quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu tại một kho — làm ở trang kế toán (Kho → Cấp phát).',
-    parts: 'Nhập, xuất kho phụ tùng Thà Bốc — làm ở trang kế toán (Kho → Kho phụ tùng).',
-    repair: 'Duyệt báo hỏng của tài xế, lập lệnh sửa chữa; quyết lấy phụ tùng kho hay mua ngoài.',
-    treasury: 'Thủ quỹ Viêng Chăn: chi mục III, trả chủ xe, trả nhà cung cấp, thu bán hàng.',
-    cash: 'Quỹ tiền mặt cảng cạn Thà Bốc: chi tạm ứng, chi mục V, VI, trả chủ xe.',
-    rev: 'Lập hoá đơn (lẻ, gộp tháng), ghi thu tiền khách, cấn trừ cuối tháng; lập phiếu bán hàng.',
-    driver: 'Xem phiếu của mình, nhận tạm ứng, xuất phát, báo hỏng, khai số lít dầu đổ dọc đường.',
-    admin: 'Sếp: xem và làm được mọi việc, mở khoá mục đã duyệt, cấu hình kế toán.',
-  };
+  // Tóm tắt bằng lời theo bảng Nhiệm Vụ của khách — một câu cho mỗi vai, khoá tk_lam_<vai> trong từ điển (vi · lo · en)
+  const lam = (v) => ((window.EPL_TU_DIEN || {})['tk_lam_' + v] ? NN.h('tk_lam_' + v) : '');
   let root, ds = [], D = null;
   const q = (s) => root.querySelector(s);
 
@@ -25,7 +12,7 @@
     q('#tk-than').innerHTML = ds.map((u, i) => `<tr class="${u.active ? '' : 'tk-tat'}">
       <td>${i + 1}</td><td class="mono">${esc(u.username)}</td><td><span class="tk-av">${esc(u.avatar)}</span><b lang="lo">${esc(u.full_name)}</b></td>
       <td><button class="tk-vai-nut" data-den-vai="${u.role}">${NN.h('r_' + u.role)}</button></td>
-      <td class="small muted tk-lam">${esc(LAM[u.role] || '')}</td>
+      <td class="small muted tk-lam">${lam(u.role)}</td>
       <td>${EPL.tag(u.active ? 'ok' : 'plain', u.active ? 'active' : 'inactive')}</td>
       <td><button class="btn sm" data-sua="${u.id}">${NN.h('edit')}</button></td></tr>`).join('');
     root.querySelectorAll('[data-sua]').forEach(b => b.addEventListener('click', () => sua(ds.find(x => x.id === b.dataset.sua))));
@@ -56,23 +43,23 @@
       const o = (k) => MUC.filter(([m]) => (p[k] || []).includes(m)).map(x => x[1]).join(' · ') || '—';
       const viec = (QT.VIEC || []).filter(([, ai]) => ai.includes(v)).map(([ten]) => ten);
       return `<article class="card tk-the" id="tk-v-${v}">
-        <div class="hd"><h3>${NN.h('r_' + v)}</h3><div class="grow"></div><span class="small muted">${nguoi.length} người</span></div>
+        <div class="hd"><h3>${NN.h('r_' + v)}</h3><div class="grow"></div><span class="small muted">${NN.h('tk_n_nguoi', { n: nguoi.length })}</span></div>
         <div class="bd">
-          <p class="tk-mo">${esc(LAM[v] || '')}</p>
-          <div class="tk-nguoi">${nguoi.length ? nguoi.map(u => `<span class="tk-chip ${u.active ? '' : 'tat'}"><b class="mono">${esc(u.username)}</b> <span lang="lo">${esc(u.full_name)}</span></span>`).join('') : '<span class="muted small">chưa có tài khoản</span>'}</div>
+          <p class="tk-mo">${lam(v)}</p>
+          <div class="tk-nguoi">${nguoi.length ? nguoi.map(u => `<span class="tk-chip ${u.active ? '' : 'tat'}"><b class="mono">${esc(u.username)}</b> <span lang="lo">${esc(u.full_name)}</span></span>`).join('') : `<span class="muted small">${NN.h('tk_chua_tk')}</span>`}</div>
           <div class="tk-hai">
-            <div><div class="l">Trên phiếu xuất xe</div>
-              <table class="tk-q"><tr><td>Nhập</td><td>${o('edit')}</td></tr><tr><td>Kiểm</td><td>${o('verify')}</td></tr><tr><td>Ghi sổ</td><td>${o('book')}</td></tr><tr><td>Chi tiền</td><td>${o('pay')}</td></tr></table>
-              <div class="l">Tiền</div>
-              <div class="tk-tien">${[['thay_tien_ban', 'thấy tiền bán'], ['thay_tien_chi', 'thấy tiền chi'], ['nhap_gia', 'nhập đơn giá']].map(([k, ten]) => `<span class="${t[k] ? 'co' : 'khong'}">${t[k] ? '✓' : '✗'} ${ten}</span>`).join('')}</div>
+            <div><div class="l">${NN.h('tk_tren_phieu')}</div>
+              <table class="tk-q"><tr><td>${NN.h('tk_q_nhap')}</td><td>${o('edit')}</td></tr><tr><td>${NN.h('tk_q_kiem')}</td><td>${o('verify')}</td></tr><tr><td>${NN.h('tk_q_ghi_so')}</td><td>${o('book')}</td></tr><tr><td>${NN.h('tk_q_chi')}</td><td>${o('pay')}</td></tr></table>
+              <div class="l">${NN.h('tk_tien')}</div>
+              <div class="tk-tien">${[['thay_tien_ban', 'tk_thay_ban'], ['thay_tien_chi', 'tk_thay_chi'], ['nhap_gia', 'tk_nhap_gia']].map(([k, ten]) => `<span class="${t[k] ? 'co' : 'khong'}">${t[k] ? '✓' : '✗'} ${NN.h(ten)}</span>`).join('')}</div>
             </div>
-            <div><div class="l">Màn vào được (${man.length})</div><div class="tk-man">${man.join(' · ') || '—'}</div>
-              ${viec.length ? `<div class="l">Việc ngoài phiếu</div><ul>${viec.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>
+            <div><div class="l">${NN.h('tk_man_vao', { n: man.length })}</div><div class="tk-man">${man.join(' · ') || '—'}</div>
+              ${viec.length ? `<div class="l">${NN.h('tk_viec_ngoai')}</div><ul>${viec.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>
           </div>
-          <div class="l">Công đoạn làm (${cua.length})</div>
+          <div class="l">${NN.h('tk_cong_doan', { n: cua.length })}</div>
           <ol class="tk-buoc">${cua.map(b => `<li><b>${esc(String(b.so))}.</b> ${esc(b.ten)}</li>`).join('') || '<li class="muted">—</li>'}</ol>
-          <div class="l">Chứng từ sinh ra ở các công đoạn đó</div>
-          <div class="tk-ct">${ct.map(ma => `<button class="tk-ctb" data-mo-ct="${ma}"><b>${ma}</b> ${esc(ctTen(ma))}</button>`).join(' ') || '<span class="muted small">không sinh chứng từ</span>'}</div>
+          <div class="l">${NN.h('tk_ct_sinh')}</div>
+          <div class="tk-ct">${ct.map(ma => `<button class="tk-ctb" data-mo-ct="${ma}"><b>${ma}</b> ${esc(ctTen(ma))}</button>`).join(' ') || `<span class="muted small">${NN.h('tk_khong_ct')}</span>`}</div>
         </div></article>`;
     }).join('');
     root.querySelectorAll('[data-mo-ct]').forEach(b => b.addEventListener('click', () => EPL.di('quy-trinh')));
@@ -140,8 +127,7 @@
       q('#tk-them').addEventListener('click', () => sua(null));
       ganLienThong();
       root.querySelectorAll('.tk-tab button').forEach(b => b.addEventListener('click', () => doiTab(b.dataset.tk)));
-      await napQuyTrinh().catch(() => {});
-      await tai(); doiTab('nguoi');
+      await Promise.all([napQuyTrinh().catch(() => {}), tai()]); veVai(); doiTab('nguoi');   // bảng vai cần cả hai nguồn
     },
     onLang() { if (root) { ve(); veVai(); } },
   };

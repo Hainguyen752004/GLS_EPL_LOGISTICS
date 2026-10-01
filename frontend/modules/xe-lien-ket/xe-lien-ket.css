@@ -16,7 +16,8 @@
 /* bảng chủ xe một dòng mỗi chủ: điện thoại, cách trả, quá tải, ba nút thao tác không gãy (trước đây ba nút xếp hai tầng,
    mỗi chủ cao gấp đôi); bảng cuộn trong khung của nó thay vì kéo dài cả trang — kiểu thanh trên trừ thêm ~96px */
 .xlk-chu-card .tbl td{white-space:nowrap}
-.xlk-chu-card .tbl td:first-child{white-space:normal;min-width:220px}
+/* 190px (trước 220): 1366 tiếng Việt cột Thao tác lẹm 16px ra ngoài khung — nút "Trả qua kế toán" bị cắt (rà 01/10) */
+.xlk-chu-card .tbl td:first-child{white-space:normal;min-width:190px}
 .xlk-chu-card .tbl td:nth-child(3){white-space:normal}
 .xlk-chu-card .tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 250px);overflow:auto}
 .app[data-view="top"] .xlk-chu-card .tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 346px)}

@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2671 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2631 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2856,11 +2856,6 @@ window.EPL_TU_DIEN = {
   "vi": "Lập phiếu đề nghị thu",
   "lo": "ສ້າງໃບສະເໜີຮັບເງິນ",
   "en": "Raise collection request"
- },
- "dt_gui": {
-  "vi": "Gửi bên công nợ",
-  "lo": "ສົ່ງ",
-  "en": "Send to receivables"
  },
  "dt_ban_nhap": {
   "vi": "Chưa có số (bản xem trước)",
@@ -6047,45 +6042,10 @@ window.EPL_TU_DIEN = {
   "lo": "ໜີ້ຄ້າງ",
   "en": "Receivable"
  },
- "kh_no_cua": {
-  "vi": "Công nợ · {n}",
-  "lo": "ໜີ້ຄ້າງ · {n}",
-  "en": "Receivable · {n}"
- },
- "kh_no_so_to": {
-  "vi": "Số tờ hoá đơn",
-  "lo": "ຈຳນວນໃບເກັບເງິນ",
-  "en": "Invoices"
- },
- "kh_no_con": {
-  "vi": "còn nợ",
-  "lo": "ຍັງຄ້າງ",
-  "en": "unpaid"
- },
- "kh_no_tong": {
-  "vi": "Tổng đã xuất hoá đơn",
-  "lo": "ລວມທີ່ອອກໃບເກັບເງິນ",
-  "en": "Total invoiced"
- },
  "kh_no_con_no": {
   "vi": "Còn nợ EPL",
   "lo": "ຍັງຕິດໜີ້ EPL",
   "en": "Owed to EPL"
- },
- "kh_no_gop": {
-  "vi": "Hoá đơn gộp",
-  "lo": "ໃບເກັບເງິນລວມ",
-  "en": "Monthly invoice"
- },
- "kh_no_phieu": {
-  "vi": "Hoá đơn phiếu",
-  "lo": "ໃບເກັບເງິນຕາມບິນ",
-  "en": "Per-slip invoice"
- },
- "kh_no_trong": {
-  "vi": "Khách này chưa có hoá đơn nào",
-  "lo": "ລູກຄ້ານີ້ຍັງບໍ່ມີໃບເກັບເງິນ",
-  "en": "No invoices for this customer yet"
  },
  "kh_gia_trong": {
   "vi": "Chưa có giá cho khách này. Thêm giá theo tuyến để phiếu tự điền đơn giá.",
@@ -6262,31 +6222,6 @@ window.EPL_TU_DIEN = {
   "lo": "ສິນຄ້າເຂົ້າສາງແລ້ວ — ແຖວສິນຄ້າ ແລະ ນ້ຳໜັກຊັ່ງຂອງໃບນີ້ບໍ່ແກ້ອີກ. ຜິດພາດໃຫ້ແກ້ຢູ່ໃບສົ່ງ ຫຼື ອອກໃບປັບປຸງ.",
   "en": "Goods are already in the yard store — the goods lines and weights of this order are closed. Fix mistakes on the delivery order or with an adjustment order."
  },
- "ct_day_tt": {
-  "vi": "Đẩy kế toán",
-  "lo": "ສົ່ງບັນຊີ",
-  "en": "Sent to accounting"
- },
- "ct_day": {
-  "vi": "Đẩy",
-  "lo": "ສົ່ງ",
-  "en": "Send"
- },
- "ct_day_het": {
-  "vi": "Đẩy hết tờ chưa đẩy",
-  "lo": "ສົ່ງທຸກໃບທີ່ຍັງບໍ່ສົ່ງ",
-  "en": "Send all unsent"
- },
- "ct_day_xong": {
-  "vi": "Đã đẩy sang kế toán",
-  "lo": "ສົ່ງໃຫ້ບັນຊີແລ້ວ",
-  "en": "Sent to accounting"
- },
- "ct_day_ket_qua": {
-  "vi": "Đẩy xong {xong} tờ · lỗi {loi} tờ",
-  "lo": "ສົ່ງສຳເລັດ {xong} ໃບ · ຜິດພາດ {loi} ໃບ",
-  "en": "Sent {xong} · failed {loi}"
- },
  "ct_ket_noi": {
   "vi": "Kết nối kế toán",
   "lo": "ເຊື່ອມຕໍ່ບັນຊີ",
@@ -6301,11 +6236,6 @@ window.EPL_TU_DIEN = {
   "vi": "{n} tờ đẩy lỗi",
   "lo": "{n} ໃບສົ່ງຜິດພາດ",
   "en": "{n} failed"
- },
- "ct_day_gan_nhat": {
-  "vi": "lần đẩy gần nhất",
-  "lo": "ສົ່ງຄັ້ງຫຼ້າສຸດ",
-  "en": "last push"
  },
  "ct_cau_hinh": {
   "vi": "Cấu hình",
@@ -7337,16 +7267,6 @@ window.EPL_TU_DIEN = {
   "lo": "ຮັບເງິນ",
   "en": "Collect payment"
  },
- "collect_new": {
-  "vi": "Ghi một lần thu",
-  "lo": "ບັນທຶກການຮັບເງິນ",
-  "en": "Record a payment"
- },
- "collect_log": {
-  "vi": "Sổ thu tiền",
-  "lo": "ບັນຊີຮັບເງິນ",
-  "en": "Payment log"
- },
  "collected": {
   "vi": "Đã thu",
   "lo": "ຮັບແລ້ວ",
@@ -7442,100 +7362,10 @@ window.EPL_TU_DIEN = {
   "lo": "ໃບເກັບເງິນລວມເດືອນ<span class=\"sub\">ລູກຄ້າສັນຍາ · ໜຶ່ງໃບສຳລັບຫຼາຍບິນໃນເດືອນ</span>",
   "en": "Monthly invoices<span class=\"sub\">Contract customers · one invoice for many slips</span>"
  },
- "hg_note": {
-  "vi": "Chỉ khách để \"gộp tháng\" mới hiện ở đây",
-  "lo": "ສະເພາະລູກຄ້າທີ່ຕັ້ງ \"ລວມເດືອນ\" ຈຶ່ງມີຢູ່ນີ້",
-  "en": "Only customers set to monthly billing appear here"
- },
- "hg_cho_gop": {
-  "vi": "Chờ gộp",
-  "lo": "ລໍຖ້າລວມ",
-  "en": "Waiting to be grouped"
- },
- "hg_cho_gop_hint": {
-  "vi": "Phiếu đã khoá, chưa lên hoá đơn — tách theo tiền cước",
-  "lo": "ບິນທີ່ລັອກແລ້ວ ຍັງບໍ່ອອກໃບເກັບເງິນ — ແຍກຕາມສະກຸນເງິນ",
-  "en": "Locked slips not yet invoiced — split by currency"
- },
- "hg_cho_trong": {
-  "vi": "Tháng này không có phiếu nào chờ gộp",
-  "lo": "ເດືອນນີ້ບໍ່ມີບິນລໍຖ້າລວມ",
-  "en": "No slips waiting this month"
- },
- "hg_ds": {
-  "vi": "Các tờ hoá đơn gộp",
-  "lo": "ໃບເກັບເງິນລວມ",
-  "en": "Monthly invoices"
- },
- "hg_inv_no": {
-  "vi": "Số hoá đơn",
-  "lo": "ເລກໃບເກັບເງິນ",
-  "en": "Invoice no."
- },
- "hg_period": {
-  "vi": "Kỳ",
-  "lo": "ງວດ",
-  "en": "Period"
- },
- "hg_inv_date": {
-  "vi": "Ngày hoá đơn",
-  "lo": "ວັນທີໃບເກັບເງິນ",
-  "en": "Invoice date"
- },
- "hg_so_phieu": {
-  "vi": "Số phiếu",
-  "lo": "ຈຳນວນບິນ",
-  "en": "Slips"
- },
- "hg_tong": {
-  "vi": "Tổng tiền",
-  "lo": "ລວມເງິນ",
-  "en": "Total"
- },
- "hg_phieu_list": {
-  "vi": "Các phiếu",
-  "lo": "ບັນດາບິນ",
-  "en": "Slips"
- },
- "hg_gop": {
-  "vi": "Gộp hoá đơn tháng",
-  "lo": "ລວມໃບເກັບເງິນເດືອນ",
-  "en": "Group monthly invoice"
- },
- "hg_dong_phieu": {
-  "vi": "Dòng phiếu trong hoá đơn",
-  "lo": "ລາຍການບິນໃນໃບເກັບເງິນ",
-  "en": "Slips on this invoice"
- },
- "hg_phan_bo": {
-  "vi": "Tiền thu ở tờ này được phân bổ về từng phiếu theo thứ tự ngày, nên trạng thái từng phiếu vẫn đúng.",
-  "lo": "ເງິນທີ່ຮັບໃນໃບນີ້ຈະແບ່ງໃສ່ແຕ່ລະບິນຕາມລຳດັບວັນທີ ສະນັ້ນສະຖານະຂອງແຕ່ລະບິນຍັງຖືກຕ້ອງ.",
-  "en": "Payments here are allocated to each slip oldest first, so per-slip status stays correct."
- },
- "hg_huy": {
-  "vi": "Huỷ tờ hoá đơn",
-  "lo": "ຍົກເລີກໃບເກັບເງິນ",
-  "en": "Cancel invoice"
- },
- "hg_huy_hoi": {
-  "vi": "Huỷ tờ này thì các phiếu quay lại \"chưa xuất hoá đơn\". Chỉ huỷ được khi chưa thu đồng nào.",
-  "lo": "ຍົກເລີກໃບນີ້ແລ້ວ ບິນຕ່າງໆຈະກັບເປັນ \"ຍັງບໍ່ອອກໃບເກັບເງິນ\". ຍົກເລີກໄດ້ເມື່ອຍັງບໍ່ໄດ້ຮັບເງິນ.",
-  "en": "Cancelling returns its slips to \"not invoiced\". Only possible before any payment."
- },
  "hg_xem": {
   "vi": "Xem",
   "lo": "ເບິ່ງ",
   "en": "View"
- },
- "hg_thuoc": {
-  "vi": "Thuộc hoá đơn",
-  "lo": "ຢູ່ໃນໃບເກັບເງິນ",
-  "en": "On invoice"
- },
- "hg_thu_o_to": {
-  "vi": "Tiền thu ghi ở tờ hoá đơn gộp",
-  "lo": "ບັນທຶກການຮັບເງິນຢູ່ໃບເກັບເງິນລວມ",
-  "en": "Payments are recorded on the monthly invoice"
  },
  "inv_mode": {
   "vi": "Cách xuất hoá đơn",
@@ -8132,16 +7962,6 @@ window.EPL_TU_DIEN = {
   "lo": "ທີ່ຢູ່ API ສາງຊົ່ວຄາວ",
   "en": "Temporary warehouse API address"
  },
- "tk_lt_day": {
-  "vi": "Khoá đẩy chứng từ (trang kế toán cấp)",
-  "lo": "Khoá đẩy chứng từ (trang kế toán cấp)",
-  "en": "Voucher push key (issued by the ledger site)"
- },
- "tk_lt_day_hint": {
-  "vi": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.",
-  "lo": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên trang kế toán. Để trống = giữ khoá cũ.",
-  "en": "Copy the \"Voucher push token\" from Settings on the ledger site. Leave empty to keep the current key."
- },
  "tk_lt_nhan": {
   "vi": "Khoá cho kho tạm gọi sang",
   "lo": "ກະແຈໃຫ້ສາງຊົ່ວຄາວເອີ້ນມາ",
@@ -8261,21 +8081,6 @@ window.EPL_TU_DIEN = {
   "vi": "Quy trình & trách nhiệm<span class=\"sub\">Ai nhập – ai kiểm – ai ghi sổ – ai chi tiền</span>",
   "lo": "ໜ້າວຽກ ແລະ ຄວາມຮັບຜິດຊອບ<span class=\"sub\">ໃຜລົງຂໍ້ມູນ – ໃຜກວດ – ໃຜບັນທຶກ – ໃຜຈ່າຍ</span>",
   "en": "Workflow & responsibility<span class=\"sub\">Who enters – who verifies – who books – who pays</span>"
- },
- "thu_o_ke_toan": {
-  "vi": "Sổ thu tiền và hoá đơn ở trang kế toán — bấm nút để mở đúng phiếu này bên đó.",
-  "lo": "ບັນຊີຮັບເງິນ ແລະ ໃບເກັບເງິນ ຢູ່ ປຶ້ມບັນຊີ EPL — ກົດປຸ່ມເພື່ອເປີດໃບນີ້ຢູ່ທີ່ນັ້ນ.",
-  "en": "The payment log and invoices are on the ledger site — press the button to open this slip there."
- },
- "xlk_o_ke_toan": {
-  "vi": "Bảng xe liên kết theo tháng (trang kế toán tạm)",
-  "lo": "ຕາຕະລາງລົດຮ່ວມ ລາຍເດືອນ (ໜ້າບັນຊີຊົ່ວຄາວ)",
-  "en": "Monthly joint truck table (interim accounting page)"
- },
- "ncc_o_ke_toan": {
-  "vi": "Công nợ · trả nhà cung cấp · cấn trừ cuối tháng",
-  "lo": "ໜີ້ · ຈ່າຍຜູ້ສະໜອງ · ຫັກລົບທ້າຍເດືອນ",
-  "en": "Payables · pay supplier · month-end offset"
  },
  "khi_xe_ve": {
   "vi": "Điền khi xe về: Báo đã về · Xe đã tới",
@@ -10591,11 +10396,6 @@ window.EPL_TU_DIEN = {
   "vi": "Công nợ bên hệ kế toán",
   "lo": "ໜີ້ ຢູ່ລະບົບບັນຊີ",
   "en": "Receivables in accounting"
- },
- "k3_tam_tieu_de": {
-  "vi": "Hoá đơn ở trang kế toán tạm",
-  "lo": "ໃບເກັບເງິນ ຢູ່ໜ້າບັນຊີຊົ່ວຄາວ",
-  "en": "Invoices in the interim accounting page"
  },
  "k3_kt_loi": {
   "vi": "Chưa đọc được công nợ bên hệ kế toán.",

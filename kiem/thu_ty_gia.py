@@ -72,6 +72,8 @@ def main():
 
     s, ct = goi("/api/rates/chi-tiet", vai="ketoan")
     phai(s, 200, "Màn Tỷ giá đọc được bảng chi tiết", ct)
+    s, g = goi("/api/rates/chi-tiet", vai="thabok")
+    phai(s, 403, "Bãi không có màn Tỷ giá → bảng chi tiết bị chặn", g)
     assert ct["goc"] == "LAK" and len(ct["ds"]) == 4, "bảng chi tiết phải có 4 loại tiền, gốc là Kíp: %s" % ct
 
     # ---------------------------------------------------------------- 2. phiếu đã lập KHÔNG đổi theo
@@ -108,6 +110,12 @@ def main():
     for xau, ten in ((0, "0"), (-5, "số âm"), ("abc", "chữ")):
         s, g = goi("/api/rates", {"THB": xau}, vai="ketoan", method="PUT")
         phai(s, 422, "Tỷ giá %s → bị từ chối" % ten, g)
+    # 01/10: USD từng bị đặt 1 Kíp (−99,995 %) không ai chặn — đổi quá ngưỡng mà chưa xác nhận thì máy chủ không ghi
+    s, g = goi("/api/rates", {"USD": 1}, vai="ketoan", method="PUT")
+    phai(s, 409, "USD đổi −99,99 % chưa xác nhận → bị chặn, không ghi", g)
+    s, ct3 = goi("/api/rates/chi-tiet", vai="ketoan")
+    assert next(x for x in ct3["ds"] if x["code"] == "USD")["rate_to_lak"] == moi, "bị chặn mà vẫn ghi tỷ giá"
+    assert len(ct3["lich_su"]) == truoc_n, "bị chặn mà vẫn đẻ dòng lịch sử"
 
     # ---------------------------------------------------------------- 6. phiếu cũ không đổi theo
     s, p1 = goi("/api/trips/%s" % p0["id"], vai="ketoan")
@@ -130,7 +138,7 @@ def main():
     phai(s, 200, "Xoá phiếu thử (dọn)", g)
 
     # ---------------------------------------------------------------- 8. trả tỷ giá về như cũ
-    s, g = goi("/api/rates", {"USD": goc["USD"], "ghi_chu": "trả lại sau bộ kiểm"}, vai="ketoan", method="PUT")
+    s, g = goi("/api/rates", {"USD": goc["USD"], "ghi_chu": "trả lại sau bộ kiểm", "xac_nhan_doi_lon": True}, vai="ketoan", method="PUT")
     phai(s, 200, "Trả tỷ giá USD về %s (dọn)" % goc["USD"], g)
     assert g["USD"] == goc["USD"]
 
@@ -148,7 +156,7 @@ def tra_ty_gia():
         return
     s, hien = goi("/api/rates", vai="ketoan")
     if s == 200 and hien.get("USD") != GOC_TY_GIA["USD"]:
-        s, g = goi("/api/rates", {"USD": GOC_TY_GIA["USD"], "ghi_chu": "trả lại sau bộ kiểm (hỏng giữa chừng)"}, vai="ketoan", method="PUT")
+        s, g = goi("/api/rates", {"USD": GOC_TY_GIA["USD"], "ghi_chu": "trả lại sau bộ kiểm (hỏng giữa chừng)", "xac_nhan_doi_lon": True}, vai="ketoan", method="PUT")
         print("  · đã trả tỷ giá USD về %s (%s)" % (GOC_TY_GIA["USD"], s))
 
 
