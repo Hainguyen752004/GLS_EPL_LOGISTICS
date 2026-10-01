@@ -3,12 +3,19 @@
 .toolbar.px-thanh{margin-bottom:12px}
 .px-khung{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
 .px-trai{min-width:0}
-.px-ben{position:sticky;top:0;display:flex;flex-direction:column;gap:10px;max-height:calc(100vh / var(--ty-le, 1) - 120px);overflow:auto;
-  padding:12px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper)}
+/* Dính NGAY DƯỚI thanh đầu trang (01/10): --px-dinh = chiều cao thanh menu trên / thanh tiêu đề đang dính, JS đo và đặt.
+   Trước đây top:0 — cuộn xuống là thẻ Gom / Giao và số phiếu nằm khuất dưới thanh menu. Đầu cột + sáu mục luôn hiện đủ;
+   chỉ phần dưới (tiền, đề nghị, việc, nhắc) tự cuộn khi màn quá thấp, không cả cột có thanh cuộn riêng. */
+.px-ben{position:sticky;top:calc(var(--px-dinh, 0px) + 10px);display:flex;flex-direction:column;gap:6px;
+  max-height:calc(100vh / var(--ty-le, 1) - var(--px-dinh, 0px) - 20px);overflow:hidden;
+  margin-bottom:min(0px, calc(10px - var(--px-chan, 10px)));
+  padding:10px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--paper)}
 .px-ben[hidden]{display:none}
-.px-ben-dau{display:flex;flex-direction:column;gap:6px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.px-ben>.px-ben-dau,.px-ben>.px-tabs{flex:none}
+.px-ben-duoi{display:flex;flex-direction:column;gap:6px;min-height:0;overflow:auto;scrollbar-width:thin}
+.px-ben-dau{display:flex;flex-direction:column;gap:5px;padding-bottom:8px;border-bottom:1px solid var(--line)}
 .px-ben-loai{display:flex;gap:6px;flex-wrap:wrap}
-.px-loai-the{display:inline-flex;flex-direction:column;gap:1px;padding:6px 12px;border-radius:10px;background:var(--bg-2);color:var(--ink-2);line-height:1.25}
+.px-loai-the{display:inline-flex;flex-direction:column;gap:1px;padding:4px 12px;border-radius:10px;background:var(--bg-2);color:var(--ink-2);line-height:1.25}
 .px-loai-the b{font-size:16px;letter-spacing:.02em} .px-loai-the small{font-size:11.5px;font-weight:500}
 .px-loai-the.gom{background:var(--ore-soft);color:var(--ore)}
 .px-loai-the.giao{background:var(--blue-soft);color:var(--blue)}
@@ -18,21 +25,22 @@
 .px-ben-so small{display:block;font-size:12px;color:var(--ink-2);margin-top:2px}
 .px-ben-tt{display:flex;flex-wrap:wrap;gap:4px}
 .px-ben-tt:empty{display:none}
-.px-ben-khoi h5,.px-ben-luong summary{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--ink-2)}
-.px-ben-nut{display:flex;flex-direction:column;gap:6px}
-.px-ben-nut .btn{justify-content:flex-start;padding:7px 12px;font-size:13px}
-.px-ben-tien{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:8px;background:var(--bg);font-size:12.5px}
+.px-ben-khoi h5,.px-ben-luong summary{margin:0 0 4px;font-size:12px;font-weight:600;color:var(--ink-2)}
+.px-ben-nut{display:flex;flex-direction:column;gap:5px}
+.px-ben-nut .btn{justify-content:flex-start;padding:4px 12px;font-size:12.5px}
+.px-ben-tien{display:flex;flex-direction:column;gap:1px;padding:6px 10px;border-radius:8px;background:var(--bg);font-size:12.5px}
 .px-ben-tien:empty{display:none}
-.px-ben-tien .r{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.px-ben-tien .r{display:flex;justify-content:space-between;gap:8px;padding:1px 0}
 .px-ben-tien .r b{font-variant-numeric:tabular-nums;white-space:nowrap}
-.px-ben-tien .r.tot{border-top:1px solid var(--line-2);margin-top:3px;padding-top:5px;color:var(--green)}
+.px-ben-tien .r.tot{border-top:1px solid var(--line-2);margin-top:2px;padding-top:4px;color:var(--green)}
 .px-ben-luong summary{cursor:pointer}
 .px-flow{display:flex;flex-direction:column;gap:4px}
 .px-flow .step{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:5px 9px;background:var(--paper)}
 .px-flow .step .t{font-weight:600;font-size:12.5px} .px-flow .step .d{font-size:11px;color:var(--ink-3);text-align:right}
 .px-flow .step.done{background:var(--green-soft);border-color:#B7D8CB} .px-flow .step.done .t{color:var(--green)}
 .px-flow .step.now{border-color:var(--green-2);box-shadow:inset 0 0 0 1px var(--green-2)}
-.px-goi-y{background:var(--blue-soft);color:var(--blue);border-radius:var(--r);padding:8px 10px;font-size:12px;line-height:1.45}
+.px-goi-y{background:var(--blue-soft);color:var(--blue);border-radius:var(--r);padding:7px 10px;font-size:12px;line-height:1.4}
+.px-goi-y:empty{display:none}
 .px-phieu{padding:20px 24px}
 /* phiếu mới: hai thẻ chọn loại DO */
 .px-chon-loai{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 4px}
@@ -48,7 +56,8 @@
 .px-cl-nhan.gom{background:var(--ore);color:#fff} .px-cl-nhan.giao{background:var(--blue);color:#fff}
 @media (max-width:1100px){
   .px-khung{grid-template-columns:1fr}
-  .px-ben{position:static;max-height:none;order:-1}
+  .px-ben{position:static;max-height:none;overflow:visible;order:-1;margin-bottom:0}
+  .px-ben-duoi{overflow:visible}
 }
 @media print{.px-khung{display:block}}
 .px-dau{display:flex;gap:16px;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:8px}
@@ -83,7 +92,17 @@
 .px-chi .x{border:0;background:none;color:var(--red);font-size:16px;line-height:1;padding:0 4px}
 .px-acct{cursor:pointer;border:1px solid var(--line-2)} .px-acct:disabled{cursor:default;opacity:.8}
 .px-pay{display:inline-flex;border:1px solid var(--line-2);border-radius:999px;overflow:hidden}
-.px-pay button{border:0;background:none;padding:2px 8px;font-size:11.5px;color:var(--ink-3)} .px-pay button.on{background:var(--green-soft);color:var(--green);font-weight:600}
+.px-pay button{border:0;background:none;padding:2px 7px;font-size:11px;color:var(--ink-3);white-space:nowrap} .px-pay button.on{background:var(--green-soft);color:var(--green);font-weight:600}
+/* ô Khoản mục không bị bóp còn vài chữ ("Dầu die…") khi bảng nhiều cột ở màn 1366 (01/10) */
+.px-chi td:nth-child(2)>select,.px-chi td:nth-child(2)>input{min-width:150px}
+.px-chi[data-bang="fuel"] td:nth-child(2)>select{min-width:100px}
+.px-chi select[data-f="place_id"]{min-width:120px}
+/* chữ chỉ để Excel đọc (ai chi · mã kế toán nằm trong nút, mà bộ xuất bỏ qua nút): ẩn khỏi mắt nhưng vẫn có khung 1px để
+   xuat.js coi là "đang hiện"; bản in cũng không thấy */
+.px-xuat{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+/* ô tích "Ghi nợ tại trạm": lớp .px-chi input ở trên kéo ô tích rộng 100 % — chữ bị đẩy sang phải, gãy hai dòng */
+.px-chi input[type=checkbox]{width:auto;min-width:0;padding:0}
+.px-ghino{white-space:nowrap}
 .px-tong{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
 .px-tong .o{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px} .px-tong .o .l{font-size:12px;color:var(--ink-2)} .px-tong .o .v{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums} .px-tong .o .v small{display:block;font-size:12px;color:var(--ink-3);font-weight:500}
 .px-tong .o.net{background:var(--green-soft);border-color:#B7D8CB}
@@ -92,8 +111,9 @@
 .px-tt .o .r{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line)}
 .px-tt .o .r.tot{border-bottom:0;border-top:2px solid var(--ink);margin-top:4px;padding-top:6px;font-weight:700}
 .px-tt .o small{display:block;color:var(--ink-3);font-size:11.5px}
-.px-hanh-dong{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
-.px-hanh-dong .btn{flex:1 1 auto;justify-content:center}
+.px-hanh-dong{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.px-hanh-dong[hidden]{display:none}
+.px-hanh-dong .btn{flex:1 1 auto;justify-content:center;padding:4px 8px}
 .px-log{margin-top:14px;font-size:12.5px} .px-log h5{margin:0 0 6px;font-size:12.5px;color:var(--ink-2)} .px-log ul{margin:0;padding:0;list-style:none;max-height:180px;overflow:auto}
 .px-log li{display:flex;gap:10px;padding:4px 0;border-bottom:1px dotted var(--line)} .px-log .ts{color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
 .px-ky{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:32px;text-align:center;font-size:12.5px}
@@ -127,18 +147,24 @@
 
 /* ---- tab theo mục — trong cột bên thành danh sách dọc, có chữ trạng thái (30/09) ---- */
 .px-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 0;padding:4px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
-.px-ben .px-tabs{flex-direction:column;flex-wrap:nowrap;margin:0;padding:0;border:0}
-.px-ben .px-tab{display:grid;grid-template-columns:24px minmax(0,1fr) auto;height:auto;min-height:38px;padding:5px 8px;white-space:normal;text-align:left;line-height:1.25}
-.px-ben .px-tab span{font-size:12.5px}
+.px-ben .px-tabs{flex-direction:column;flex-wrap:nowrap;gap:2px;margin:0;padding:0;border:0}
+/* Một dòng: số mục · tên · chữ trạng thái. Tên dài + chữ trạng thái dài thì chữ trạng thái xuống dòng dưới (canh phải),
+   thay vì bóp tên mục thành ba dòng (01/10). */
+.px-ben .px-tab{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;height:auto;min-height:30px;padding:3px 8px;white-space:normal;text-align:left;line-height:1.25}
+.px-ben .px-tab b{flex:none}
+.px-ben .px-tab span{flex:1 1 auto;min-width:0;font-size:12.5px}
 .px-ben .px-tab .stt{display:none}
 .px-tab .st-chu{display:none}
-.px-ben .px-tab .st-chu{display:inline-block;font-style:normal;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--bg-2);color:var(--ink-3);white-space:nowrap}
+.px-ben .px-tab .st-chu{display:inline-block;margin-left:auto;font-style:normal;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--bg-2);color:var(--ink-3);white-space:nowrap}
 .px-ben .px-tab .st-chu.entered,.px-ben .px-tab .st-chu.wait{background:var(--amber-soft);color:var(--amber)}
 .px-ben .px-tab .st-chu.verified{background:var(--blue-soft);color:var(--blue)}
 .px-ben .px-tab .st-chu.booked{background:var(--ore-soft);color:var(--ore)}
 .px-ben .px-tab .st-chu.paid{background:var(--green-soft);color:var(--green)}
 .px-ben .px-tab.active .st-chu{background:rgba(255,255,255,.18);color:#fff}
-.px-ben .px-tab.tat-ca{margin:4px 0 0;display:flex;justify-content:center;border:1px solid var(--line)}
+.px-ben .px-tab.tat-ca{margin:3px 0 0;display:flex;justify-content:center;border:1px solid var(--line)}
+.px-ben .px-tab.tat-ca span{flex:none}
+/* chấm đỏ "có việc" nằm ở góc số mục — đặt góc phải thì đè lên chữ trạng thái (rà 01/10) */
+.px-ben .px-tab.viec::after{top:3px;left:25px;right:auto}
 .px-tab{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px;border:0;border-radius:7px;background:none;
   color:var(--ink-2);font-family:inherit;font-size:13px;font-weight:500;white-space:nowrap;position:relative}
 .px-tab:hover{background:var(--bg)}
@@ -159,7 +185,9 @@
 .px-phieu[data-tab="all"] .px-act,.px-phieu[data-tab="all"] .px-them,.px-phieu[data-tab="all"] .px-chi .x{display:none}
 .px-phieu[data-tab="all"] input,.px-phieu[data-tab="all"] select{pointer-events:none;background:var(--bg)!important;color:var(--ink-2);border-color:transparent}
 .px-phieu[data-tab="all"] .px-acct{pointer-events:none}
-@media print{.px-phieu .px-muc{display:block!important}.px-phieu #px-tong-ket,.px-phieu .px-ky{display:block!important}}
+/* bản in: đủ sáu mục; bốn ô ký giữ hàng ngang (display:block từng làm bốn ô xếp dọc cả trang, rà 01/10); bỏ nút thêm tệp */
+@media print{.px-phieu .px-muc{display:block!important}.px-phieu #px-tong-ket{display:block!important}.px-phieu .px-ky{display:grid!important}
+  .px-tep .them{display:none!important}}
 @media (max-width:1100px){.px-ben .px-tabs{flex-direction:row;flex-wrap:wrap}.px-ben .px-tab .st-chu{display:none}}
 
 /* ---- dòng hàng trên phiếu (hai DO) ---- */
@@ -205,10 +233,11 @@
 
 /* ô tìm + ô chọn phiếu đứng cạnh nhau (một năm ~365.000 phiếu: chọn trong 50 mới nhất, hoặc gõ để tìm) */
 .px-chon-hang{display:flex;gap:6px;min-width:0}
-.px-chon-hang input{flex:0 1 15em;min-width:6em}
+.px-chon-hang input{flex:0 1 19em;min-width:6em}
 .px-chon-hang select{flex:1 1 auto;min-width:0}
 /* Ngày xe về, km về: chỉ điền khi xe về — dòng nhỏ dưới ô nói điền ở đâu (29/09) */
-.px-khi-ve{display:block;margin-top:3px;font-size:11px;color:var(--ink-3);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* xuống dòng được — một dòng cắt "…" thì mất đúng chữ nói phải bấm nút nào (tiếng Anh mất nửa câu, rà 01/10) */
+.px-khi-ve{display:block;margin-top:3px;font-size:11px;color:var(--ink-3);line-height:1.3}
 .px-khi-ve[hidden]{display:none}
 
 /* bản chất đề nghị theo loại xe (29/09): nội bộ · ghi công nợ chủ xe · xuất bán cho chủ xe */

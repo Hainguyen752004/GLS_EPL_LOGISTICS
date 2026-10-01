@@ -2684,12 +2684,12 @@ window.EPL_TU_DIEN = {
  },
  "px_loai_gom_d": {
   "vi": "Đi lấy quặng ở mỏ về bãi Thà Bốc — hàng vào kho bãi, chờ phiếu giao lấy đi.",
-  "lo": "Đi lấy quặng ở mỏ về bãi Thà Bốc — hàng vào kho bãi, chờ phiếu giao lấy đi.",
+  "lo": "ໄປເອົາແຮ່ຢູ່ບໍ່ມາສະໜາມທ່າບົກ — ສິນຄ້າເຂົ້າສາງສະໜາມ, ລໍຖ້າໃບສົ່ງເອົາໄປ.",
   "en": "Collect ore at the mine and bring it to Thabok yard — goods go into the yard store until a delivery takes them."
  },
  "px_loai_giao_d": {
   "vi": "Lấy hàng từ kho bãi (hoặc chở thẳng) đi giao cho khách — xong có biên bản giao nhận (POD).",
-  "lo": "Lấy hàng từ kho bãi (hoặc chở thẳng) đi giao cho khách — xong có biên bản giao nhận (POD).",
+  "lo": "ເອົາສິນຄ້າຈາກສາງສະໜາມ (ຫຼື ຂົນກົງ) ໄປສົ່ງໃຫ້ລູກຄ້າ — ສົ່ງແລ້ວມີໃບເຊັນຮັບສິນຄ້າ (POD).",
   "en": "Take goods from the yard store (or haul direct) to the customer — ends with a delivery note (POD)."
  },
  "pct_b_tam_ung": {
