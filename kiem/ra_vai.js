@@ -97,7 +97,7 @@ async function main() {
 
   for (const t of tk) {
     const u = t.username, vai = t.role;
-    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'về màn đăng nhập'); }
+    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'về màn đăng nhập'); }
     loiJS = [];
     await w.EPL.AUTH.dangNhap(u, '1234');
     await choDen(() => !d.getElementById('app').hidden, 'vào với ' + u, 15000); await w.EPL.sanSang;

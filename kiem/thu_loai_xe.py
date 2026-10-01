@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """Thử luật TẠM ỨNG / XUẤT DẦU THEO LOẠI XE (chủ dự án chốt 29/09).
 
-    python kiem/thu_loai_xe.py [http://127.0.0.1:8011] [http://127.0.0.1:8031]
+    python kiem/thu_loai_xe.py [http://127.0.0.1:8011]
 
 Xe nhà → tạm ứng nội bộ · xuất nội bộ. Xe thuê, EPL ứng → tạm ứng ghi công nợ chủ xe · dầu kho là XUẤT BÁN theo giá bán
 riêng KT kho xăng dầu gõ trên phiếu; tiền trừ chủ xe tính theo giá bán; Tất toán tài xế chỉ có phiếu xe nhà.
 Thêm 30/09: dầu kho chỉ rời kho theo phiếu đề nghị đã cấp (ghi sổ mục III chưa cấp → chặn); xe thuê không có "trả cùng
 lương" — tiền chuyến EPL ứng là tạm ứng ghi công nợ chủ xe; màn Tiền chuyến & tiền nước chỉ xe nhà.
 Bài tự lập hai phiếu trên bản sao DB thử (phiếu đã kiểm thì ở lại).
+Từ 01/10 (bỏ phần tiền trang kế toán tạm) tất toán tài xế CHỐT ở trang điều xe (GET /api/tat-toan/{tài xế}), tiền ở hệ
+kế toán anh Tune — bài đọc tất toán ở trang điều xe, không còn sang trang kế toán tạm.
 """
 import json
 import sys
@@ -16,7 +18,6 @@ import urllib.error
 import urllib.request
 
 DX = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011"
-KT = sys.argv[2] if len(sys.argv) > 2 else "http://127.0.0.1:8031"
 TK = {}
 GIA_BAN = 33000
 
@@ -51,7 +52,6 @@ def dung(dk, buoc, chi_tiet=""):
 def main():
     for u in ("thabok", "ketoan", "ketoancp", "khonl", "admin"):
         s, g = goi(DX, "/api/dang-nhap", {"username": u, "password": "1234"}); TK[(DX, u)] = g["token"]
-    s, g = goi(KT, "/api/dang-nhap", {"username": "ketoancp", "password": "1234"}); TK[(KT, "ketoancp")] = g["token"]
     s, xe = goi(DX, "/api/vehicles", vai="admin"); s, tx = goi(DX, "/api/drivers", vai="admin"); s, kh = goi(DX, "/api/customers", vai="admin")
     s, diem = goi(DX, "/api/fuel-places", vai="admin")
     thue = [x for x in xe if x["owner_type"] == "joint" and x["truck_no"].startswith("ຮ່ວມ")]
@@ -158,14 +158,19 @@ def main():
     dung(tc1 - tc0 == 1800000, "Màn Tiền chuyến & tiền nước chỉ cộng tiền chuyến xe NHÀ (xe thuê không vào)", "%s → %s" % (tc0, tc1))
 
     # ---------------------------------------------------------------- tất toán
-    print("\n— Tất toán tài xế (trang kế toán) —")
-    s, tt = goi(KT, "/api/tat-toan/%s?ky=%s" % (tai_xe["id"], hom_nay[:7]), vai="ketoancp")
+    print("\n— Tất toán tài xế (chốt ở trang điều xe, tiền ở hệ kế toán anh Tune) —")
+    s, tt = goi(DX, "/api/tat-toan/%s?ky=%s" % (tai_xe["id"], hom_nay[:7]), vai="ketoancp")
     phai(s, 200, "Mở tất toán của tài xế %s" % tai_xe["name"], tt)
     so = json.dumps(tt, ensure_ascii=False)
     dung(q["doc_no"] in so, "Có phiếu xe nhà %s" % q["doc_no"])
     dung(p["doc_no"] not in so, "Không có phiếu xe thuê %s (tạm ứng xe thuê là công nợ chủ xe)" % p["doc_no"])
-    s, _ = goi(DX, "/api/trips/%s" % qid, vai="admin", method="DELETE")
-    print("  · phiếu xe nhà thử %s; phiếu xe thuê thử ở lại bản sao DB thử (mục đã kiểm)" % ("đã xoá" if s == 200 else "ở lại"))
+    s_xoa, _ = goi(DX, "/api/trips/%s" % qid, vai="admin", method="DELETE")
+    # 01/10: ghi sổ mục IV phiếu xe thuê đã sinh phiếu chi tạm ứng "chờ chi" bên hệ anh Tune — phiếu xe thuê ở lại DB thử thì
+    # Sếp chi tay mục IV để máy RÚT phiếu chi đó (không để phiếu thử chờ thủ quỹ bên kế toán)
+    s, g = goi(DX, "/api/trips/%s/sections/travel/pay" % pid, {}, "admin"); phai(s, 200, "Sếp chi tay mục IV phiếu xe thuê (rút phiếu chi chờ bên kế toán)", g)
+    s, ck = goi(DX, "/api/trips/%s/chi-ke-toan" % pid, vai="ketoancp")
+    dung(s == 200 and (ck or {}).get("status") != "da_gui", "Không còn phiếu chi tạm ứng chờ bên kế toán cho phiếu xe thuê thử", (ck or {}).get("status"))
+    print("  · phiếu xe nhà thử %s; phiếu xe thuê thử ở lại bản sao DB thử (mục đã kiểm)" % ("đã xoá" if s_xoa == 200 else "ở lại"))
     print("\nTHỬ LOẠI XE: ĐẠT — xe nhà nội bộ · xe thuê ghi công nợ + xuất bán theo giá bán · tất toán, tiền chuyến chỉ xe nhà · dầu kho chỉ rời kho theo phiếu đề nghị đã cấp")
 
 

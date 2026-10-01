@@ -6,7 +6,9 @@
   1. Mục có dòng EPL trả mà ĐƠN GIÁ 0: Bãi GỬI được (Bãi không nhập giá — anh Khampla A2, 23/09), nhưng
      KT Chi phí KIỂM thì bị chặn (THIEU_DON_GIA) tới khi chính KT Chi phí nhập đơn giá.
   2. Bãi bấm "Xe đã tới" khi mục IV chưa chi tạm ứng → bị chặn (CHUA_NHAN_TAM_UNG), giống cửa Xuất phát.
-  3. Quỹ chi THẲNG mục IV → sinh đúng MỘT tờ PC_TU bằng tiền mặt đi đường (không tính dòng trả bằng thẻ).
+  3. Chi mục IV → sinh đúng MỘT tờ PC_TU bằng tiền mặt đi đường (không tính dòng trả bằng thẻ). Từ 01/10 tạm ứng chi ở
+     hệ kế toán anh Tune: quỹ bấm chi ở trang này bị chặn (CHI_O_KE_TOAN — đường thủ quỹ bên đó thử ở
+     kiem/thu_chi_tam_ung_ke_toan.py); ở đây Sếp chi tay, máy rút phiếu chi còn chờ bên kế toán.
   4. Danh mục Acc code đọc được từ API bên công nợ (không còn "bản tạm từ Excel").
 Phiếu thử được xoá khi xong nếu còn xoá được; tờ chứng từ đã sinh thì giữ (sổ không xoá tờ đã ghi).
 """
@@ -89,7 +91,10 @@ def main():
     s, g = goi("/api/trips/%s/sections/travel/verify" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí kiểm mục IV (đã có giá)", g)
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí ghi sổ mục IV", g)
     s, truoc = goi("/api/chung-tu?trip_id=%s&loai=PC_TU" % P, vai="ketoan"); n0 = len(truoc["ds"])
-    s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 200, "Tiền mặt lẻ chi thẳng mục IV", g)
+    s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb")
+    phai(s, 409, "Tiền mặt lẻ chi mục IV ở trang này → bị chặn (tạm ứng chi ở hệ kế toán)", g)
+    assert g["detail"]["ma"] == "CHI_O_KE_TOAN", g
+    s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="admin"); phai(s, 200, "Sếp chi tay mục IV (rút phiếu chi chờ bên kế toán)", g)
     s, sau = goi("/api/chung-tu?trip_id=%s&loai=PC_TU" % P, vai="ketoan")
     moi = [c for c in sau["ds"] if c["id"] not in {x["id"] for x in truoc["ds"]}]
     assert n0 == 0 and len(moi) == 1, "phải sinh đúng một PC_TU, có %d cũ, %d mới" % (n0, len(moi))
@@ -99,7 +104,7 @@ def main():
     # xe nhà: tạm ứng là Nợ 1601 tạm ứng nhân viên, chưa phải chi phí (rà định khoản 30/09)
     assert moi[0]["no"] == "1601" and moi[0]["co"] == "1011", moi[0]
     print("  ✓ %-62s %s · %s LAK · Nợ %s / Có %s" % ("Sinh đúng một tờ chi đi đường", moi[0]["so"], format(round(moi[0]["tien_lak"]), ","), moi[0]["no"], moi[0]["co"]))
-    s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="quytb"); phai(s, 409, "Chi lại mục IV lần hai → sai bước, không ra tờ thứ hai", g)
+    s, g = goi("/api/trips/%s/sections/travel/pay" % P, {}, vai="admin"); phai(s, 409, "Chi lại mục IV lần hai → sai bước, không ra tờ thứ hai", g)
     s, g = goi("/api/trips/%s/transport-status" % P, {"status": "arrived", "weight_dest": 39.8}, vai="thabok"); phai(s, 200, "Chi rồi → Bãi báo Xe đã tới được", g)
 
     # ---- 3b. phiếu khách NHẬP TAY được: có số phiếu quặng là đủ, không bắt đính kèm ảnh

@@ -39,7 +39,7 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
   const tk = await (await fetch(GOC + '/api/tai-khoan-mau')).json();
   console.log('== AI THẤY MÀN TỔNG QUAN, VÀ THẤY GÌ');
   for (const t of tk) {
-    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'ra'); }
+    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'ra'); }
     loi = [];
     await w.EPL.AUTH.dangNhap(t.username, '1234');
     await choDen(() => !d.getElementById('app').hidden, 'vào ' + t.username); await w.EPL.sanSang;
@@ -55,7 +55,7 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
 
   // --- bấm thử từng chip: dẫn tới màn nào
   console.log('\n== BẤM THỬ CHIP (vai admin)');
-  w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'ra');
+  w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'ra');
   await w.EPL.AUTH.dangNhap('admin', '1234'); await choDen(() => !d.getElementById('app').hidden, 'vào'); await w.EPL.sanSang;
   await di('#/tong-quan');
   const n = g().querySelectorAll('.tq-chip').length;

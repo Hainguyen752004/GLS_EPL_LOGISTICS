@@ -104,10 +104,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(
 from database import SessionLocal                               # noqa: E402
 from models import VehiclePosition                              # noqa: E402
 
+#      Bài ghi THẲNG DB qua backend/database.py (DATABASE_URL hoặc .env): phải là DB của chính máy đang thử — máy thử chạy
+#      bản sao DB bằng biến môi trường thì đặt cùng DATABASE_URL đó khi chạy bài, không thì không thấy điểm nào.
+#      Đẩy lùi MỌI điểm của phiếu (không chỉ điểm mới nhất): lần chạy trước để lại điểm còn mới thì điểm đó thành "mới nhất".
 db = SessionLocal()
-diem = (db.query(VehiclePosition).filter(VehiclePosition.trip_id == p["id"])
-        .order_by(VehiclePosition.ts.desc()).first())
-diem.ts = dt.datetime.utcnow() - dt.timedelta(hours=2)
+so_diem = (db.query(VehiclePosition).filter(VehiclePosition.trip_id == p["id"])
+           .update({VehiclePosition.ts: dt.datetime.utcnow() - dt.timedelta(hours=2)}, synchronize_session=False))
+assert so_diem >= 1, "DB bài đang ghi không có điểm nào của phiếu %s — DATABASE_URL không trỏ DB của máy đang thử" % p["doc_no"]
 db.commit()
 db.close()
 

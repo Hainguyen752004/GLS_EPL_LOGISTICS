@@ -23,7 +23,7 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
 
   console.log('== TỪNG VAI');
   for (const u of ['admin', 'thabok', 'ketoan', 'khonl', 'doanhthu', 'quyvc', 'tx01']) {
-    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'ra'); }
+    if (!d.getElementById('app').hidden) { w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'ra'); }
     loi = [];
     await w.EPL.AUTH.dangNhap(u, '1234'); await choDen(() => !d.getElementById('app').hidden, 'vào'); await xong();
     const co = [...d.querySelectorAll('#nav [data-mod]')].some(b => b.dataset.mod === 'tai-xe');
@@ -35,7 +35,7 @@ const gon = s => String(s).replace(/\s+/g, ' ').trim();
   }
 
   console.log('\n== CỘT KẾT LUẬN (vai admin) — phần mềm tự nói ai được điều xe');
-  w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .person').length > 0, 'ra');
+  w.EPL.AUTH.dangXuat(false); await choDen(() => d.querySelectorAll('#acctList .acc').length > 0, 'ra');
   await w.EPL.AUTH.dangNhap('admin', '1234'); await choDen(() => !d.getElementById('app').hidden, 'vào'); await xong();
   await di('#/tai-xe');
   loi = [];

@@ -7,7 +7,8 @@ Phải thấy:
   · màn Đề nghị theo DO: DO mới có mục III, IV đang chờ; lập phiếu đề nghị xuất kho nhiên liệu → hiện ngay ở DO đó;
   · màn Phiếu đề nghị chi tìm được tờ theo số DO;
   · khoá phiếu (xe về, có POD) → máy lập PHIẾU ĐỀ NGHỊ THU (PDT) đúng cước, đúng tiền tệ của phiếu (USD), vào hồ sơ gửi kế toán;
-  · mở khoá → rút tờ chưa gửi; khoá lại → tờ mới; tờ đã gửi bên công nợ thì kế toán không mở khoá được (Sếp mở được);
+  · mở khoá → rút tờ chưa gửi; khoá lại → tờ mới; từ 01/10 (bỏ trang kế toán tạm) cờ da_day đánh tay không chặn mở khoá,
+    không đổi trạng thái — chỉ SO đã tạo bên hệ anh Tune chặn (DA_TAO_SO, thử ở kiem/thu_tao_so_that.py vì phải gửi SO thật);
   · Bãi xem DO nhưng không nhận tiền cước / không vào đề nghị thu; tài xế bị chặn.
 Bài tự lập một phiếu thử và tự xoá.
 """
@@ -122,18 +123,18 @@ def main():
         x = dong_thu(so)
         # tờ cũ chưa gửi đã rút nên số có thể dùng lại (số = lớn nhất còn lại + 1) — tờ mới là bản ghi mới
         dung(x["pdt"] and x["pdt"]["id"] != id1, "Khoá lại → tờ đề nghị thu mới (bản ghi mới)", x["pdt"]["so"])
-        s, g = goi("/api/chung-tu/%s/da-day" % x["pdt"]["id"], {"da_day": True}, "ketoan"); phai(s, 200, "Đánh dấu tờ đã gửi bên công nợ", g)
-        x = dong_thu(so); dung(x["trang_thai"] == "da_gui", "Trạng thái: đã gửi")
-        s, g = goi("/api/trips/%s/mo-khoa" % pid, {}, "ketoan"); phai(s, 409, "Tờ đã gửi bên công nợ → kế toán không mở khoá được", g)
-        dung(ma(g) == "DA_GUI_DE_NGHI_THU", "Mã lỗi DA_GUI_DE_NGHI_THU", ma(g))
-        s, g = goi("/api/chung-tu/%s/da-day" % x["pdt"]["id"], {"da_day": False}, "ketoan"); phai(s, 200, "Trả tờ về chưa gửi (dọn bài thử)", g)
+        # 01/10: "đã gửi" là đã tạo SO bên hệ anh Tune (da_tao_so) — cờ da_day của đường đẩy sang trang tạm không còn ý nghĩa
+        s, g = goi("/api/chung-tu/%s/da-day" % x["pdt"]["id"], {"da_day": True}, "ketoan"); phai(s, 200, "Đánh dấu tay tờ đã đối chiếu (da_day)", g)
+        x = dong_thu(so); dung(x["trang_thai"] == "cho_gui", "Trạng thái vẫn 'chờ gửi' — chỉ lần gửi SO sang hệ anh Tune mới đổi", x["trang_thai"])
+        s, g = goi("/api/trips/%s/mo-khoa" % pid, {}, "ketoan"); phai(s, 200, "Chưa có SO bên hệ kế toán → kế toán mở khoá được (da_day không chặn)", g)
+        x = dong_thu(so); dung(x["pdt"] is None and x["trang_thai"] == "cho_khoa", "Mở khoá → tờ đề nghị thu được rút (kể cả đã đánh da_day)")
     finally:
         goi("/api/trips/%s/mo-khoa" % pid, {}, "admin")
         s, _ = goi("/api/trips/%s" % pid, vai="admin", method="DELETE")
         print("  · phiếu thử %s" % ("đã xoá" if s == 200 else "ở lại (%s)" % s))
     s, r = goi("/api/chung-tu?trip_id=" + pid, vai="ketoan")
     dung(not r["ds"], "Xoá phiếu thử → không còn tờ nào của nó")
-    print("\nTHỬ ĐỀ NGHỊ: ĐẠT — theo DO · đề nghị chi theo bước · khoá sinh đề nghị thu đúng tiền tệ · mở khoá rút tờ · tờ đã gửi chặn mở khoá")
+    print("\nTHỬ ĐỀ NGHỊ: ĐẠT — theo DO · đề nghị chi theo bước · khoá sinh đề nghị thu đúng tiền tệ · mở khoá rút tờ · da_day không chặn mở khoá")
 
 
 if __name__ == "__main__":
