@@ -5,11 +5,14 @@
 
 Đi đúng đường người dùng đi: Bãi lập DO gom kèm dòng hàng → xe về bãi thì hàng vào kho và sinh phiếu
 nhập kho → Bãi lập DO giao lấy hàng từ lô đó → sinh phiếu xuất kho, tồn giảm → giao xong có dòng hao
-hụt → và kiểm những chỗ PHẢI bị từ chối (lấy quá tồn, xuất hoá đơn cho phiếu gom, xoá lô đã xuất).
+hụt → và kiểm những chỗ PHẢI bị từ chối (lấy quá tồn, đề nghị thu (SO) cho phiếu gom chưa khoá, xoá lô đã xuất).
 
 Từ 28/09 (đợt 5) SỔ KHO HÀNG ở trang kế toán (EPL_KT, mặc định 8031 — máy điều xe đang kiểm phải trỏ vào đó): tồn,
 tờ PNK_HH / PXK_HH / DC_HH và điều chỉnh kho kiểm ở bên đó; dòng hàng vẫn trên phiếu bên này. Thêm bước mất nối: trang
 kế toán tắt thì lưu phiếu giao lấy lô và báo xe gom tới bãi bị chặn 503, không ghi gì nửa vời.
+
+Từ 01/10 tạm ứng mục IV chi ở hệ kế toán anh Tune: ghi sổ mục IV tạo phiếu chi bên đó, Quỹ bấm Chi trên trang này bị chặn —
+bài này để Sếp "chi tay" (phiếu chi chờ bên đó được rút). Máy chủ đang thử phải nối API anh Tune chạy ở máy (5090).
 """
 import json
 import sys
@@ -57,11 +60,16 @@ def phai(s, mong, buoc, g=None):
 
 def chi_tam_ung(pid, phai):
     """Quy trình: tài xế cầm tiền đi đường (mục IV "đã chi") rồi mới xuất phát / báo xe tới — từ 23/09 máy chặn
-    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới"."""
+    cả hai cửa. Bộ kiểm đi đủ 4 bước như người thật thay vì bấm thẳng "Xe đã tới". Từ 01/10 tạm ứng chi ở hệ kế toán:
+    Quỹ bấm Chi bị chặn CHI_O_KE_TOAN → Sếp chi tay (rút phiếu chi chờ bên đó) để bài đi tiếp."""
     for hd, v in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
         s, g = goi("/api/trips/%s/sections/travel/%s" % (pid, hd), {}, vai=v)
         if s == 409 and isinstance(g, dict) and (g.get("detail") or {}).get("ma") in ("MUC_TRONG", "SAI_BUOC"):
             return          # mục IV trống, hoặc đã đi qua bước này rồi
+        if hd == "pay" and s == 409 and (g.get("detail") or {}).get("ma") == "CHI_O_KE_TOAN":
+            phai(s, 409, "mục IV: Quỹ chi ở đây → chặn, chi ở hệ kế toán", g)
+            s, g = goi("/api/trips/%s/sections/travel/pay" % pid, {}, vai="admin")
+            v = "admin — Sếp chi tay, rút phiếu chi chờ"
         phai(s, 200, "mục IV: %s (%s)" % (hd, v), g)
 
 
@@ -208,13 +216,13 @@ def main():
     phai(s, 409, "Đổi loại phiếu khi đã có sổ kho → bị từ chối", g)
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin")
     assert any(x["loai"] == "hao_hut" for x in g["goods"]), "dòng hao hụt của phiếu gom phải còn nguyên sau các lần bị từ chối"
-    # B4 (anh Khampla 22/09): phiếu gom CÓ cước riêng, nên không còn bị chặn vì LOẠI phiếu —
-    # chỉ còn chặn theo bước như mọi phiếu (mục II chưa kiểm, phiếu chưa khoá).
-    s, g = K.kt("/api/hoa-don/phieu/%s/xuat" % gom["id"], {}, vai="doanhthu")      # hoá đơn ở trang kế toán (đợt 7a)
-    ma = (g.get("detail") or {}).get("ma") if isinstance(g, dict) else None
-    assert s == 409 and ma in ("CHUA_KIEM", "CHUA_KHOA"), "phiếu gom chưa kiểm/khoá phải bị chặn theo BƯỚC, không phải theo loại: %s %s" % (s, ma)
-    assert ma != "PHIEU_GOM", "không được chặn hoá đơn chỉ vì là phiếu gom nữa"
-    print("  ✓ %-58s %s %s" % ("Hoá đơn phiếu GOM: chặn theo bước, không chặn theo loại", s, ma))
+    # B4 (anh Khampla 22/09): phiếu gom CÓ cước riêng, nên không còn bị chặn vì LOẠI phiếu — chỉ còn chặn theo bước như mọi
+    # phiếu. Từ 01/10 hoá đơn là đề nghị thu (SO) sang hệ kế toán anh Tune: phiếu chưa khoá thì xem trước SO báo DO_CHUA_KHOA.
+    s, g = goi("/api/trips/%s/tao-so" % gom["id"], vai="ketoan")
+    ma = (g.get("loi") or {}).get("ma") if isinstance(g, dict) else None
+    assert s == 200 and ma == "DO_CHUA_KHOA", "phiếu gom chưa khoá phải bị chặn theo BƯỚC, không phải theo loại: %s %s" % (s, ma)
+    assert ma != "PHIEU_GOM", "không được chặn đề nghị thu chỉ vì là phiếu gom"
+    print("  ✓ %-58s %s %s" % ("Đề nghị thu (SO) phiếu GOM: chặn theo bước, không chặn theo loại", s, ma))
     s, g = goi("/api/trips/%s" % gom["id"], vai="admin", method="DELETE")
     phai(s, 409, "Xoá phiếu gom đã có người lấy hàng → bị từ chối", g)
 

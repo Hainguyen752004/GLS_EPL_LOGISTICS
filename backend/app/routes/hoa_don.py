@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Hoá đơn gộp tháng — ໃບເກັບເງິນລວມເດືອນ. Ở TRANG KẾ TOÁN từ 28/09 (đợt 7a).
+"""Hoá đơn gộp tháng — ໃບເກັບເງິນລວມເດືອນ. KHÔNG làm trên trang điều xe.
 
-Gộp hoá đơn tháng, thu tiền theo tờ gộp (rải xuống từng phiếu theo ngày), huỷ tờ, xoá lần thu dời sang trang kế toán
-(Tiền vận chuyển → Hoá đơn gộp tháng), cùng xuất hoá đơn từng phiếu và sổ thu tiền. Bảng invoices / invoice_payments /
-trip_payments bên này đứng yên từ ngày dời. Trang kế toán ghi bản chép vào phiếu (trips.invoiced · invoice_id · inv_no ·
-collected_lak · finance_status) qua routes/lien_thong.py → /api/lien-thong/doanh-thu/….
+28/09 (đợt 7a) dời sang trang kế toán tạm; 01/10 chủ dự án bỏ trang tạm — hoá đơn, thu tiền ở đó là số thử, bỏ hết (cờ
+trips.invoiced · invoice_id · inv_no · collected_lak trên phiếu không còn ý nghĩa). Hoá đơn và công nợ khách nay ở HỆ KẾ TOÁN
+anh Tune: mỗi DO đã khoá gửi một SO (phiếu đề nghị thu, services/gui_tune.py); gộp tháng, thu tiền làm ở bên đó. Bảng
+invoices / invoice_payments / trip_payments bên này đứng yên.
 """
 from fastapi import APIRouter, Depends, HTTPException
 
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Hoá đơn gộp tháng nay làm ở trang kế toán (Tiền vận chuyển → Hoá đơn gộp tháng)."}
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Hoá đơn và thu tiền khách làm ở hệ kế toán: mỗi DO đã khoá gửi một đề nghị thu (SO) ở "
+                                             "màn Phiếu đề nghị thu; gộp tháng, thu tiền ở công nợ khách bên đó."}
 
 
 @router.get("/api/hoa-don-gop/cho-gop")

@@ -6,7 +6,9 @@
  *
  * Mã khách = mã khách BÊN KẾ TOÁN (chủ dự án chốt 30/09), gửi đi trong phiếu đề nghị thu / bàn giao DO.
  * Tiền theo đúng tiền của từng chứng từ (cước USD thì hiện USD), kèm số quy Kíp. Bãi không thấy tiền: không có số nợ,
- * doanh thu, bảng giá, công nợ; máy chủ cũng không gửi. Công nợ chỉ để XEM — thu tiền là việc bên kế toán.
+ * doanh thu, bảng giá, công nợ; máy chủ cũng không gửi. Công nợ chỉ để XEM — thu tiền là việc của hệ kế toán anh Tune.
+ * Công nợ (01/10, bỏ phần tiền trang kế toán tạm — số bên đó là số thử, cắt sổ): CHỈ số bên hệ kế toán anh Tune —
+ * /api/customers/{id}/cong-no-ke-toan (tab Công nợ) và /api/customers-cong-no (cột trái, ô Công nợ: cộng các SO bên đó).
  * Hợp đồng: /api/hop-dong (số chuyến máy tự đếm theo phiếu); bảng giá: /api/customers/{id}/bang-gia.
  */
 (function () {
@@ -107,16 +109,17 @@
   }
   const modeLabel = (m) => h(m === 'thang' ? 'inv_thang_s' : 'inv_phieu_s');
   const modeHelp = (m) => t(m === 'thang' ? 'inv_thang' : 'inv_phieu');
-  const noCua = (cid) => NO_TONG[cid] || null;
+  // Công nợ gọn (cột trái, ô Công nợ, nút lọc "Còn nợ") CHỈ lấy dòng máy chủ ghi rõ nguồn hệ kế toán anh Tune (nguon:
+  // 'he_ke_toan', 01/10). Máy chủ bản cũ còn trả số của trang kế toán tạm (không có `nguon`) — số thử đã cắt sổ, không hiện.
+  const noCua = (cid) => (NO_TONG[cid] && NO_TONG[cid].nguon === 'he_ke_toan' ? NO_TONG[cid] : null);
   function metrics(cid) {
     const c = cache[cid] || {}, tr = c.trips || [];
     const m = { trips: tr.length, gom: tr.filter(x => x.kind === 'gom').length, giao: tr.filter(x => x.kind !== 'gom').length,
-      tons: sum(tr, x => (x.tinh || {}).tan_tinh || 0), rev: {}, revLak: 0, choGop: {} };
+      tons: sum(tr, x => (x.tinh || {}).tan_tinh || 0), rev: {}, revLak: 0 };
     tr.forEach(x => {
       const ti = x.tinh || {};
       cong(m.rev, ti.ccy || x.price_ccy, ti.doanh_thu || 0);
       m.revLak += ti.doanh_thu_lak || 0;
-      if (x.inv_mode === 'thang' && !x.invoiced && x.locked) cong(m.choGop, ti.ccy || x.price_ccy, ti.doanh_thu || 0);
     });
     return m;
   }
@@ -320,41 +323,20 @@
         : '<p class="tab-note">' + h('k3_kt_khong_no') + '</p>') + '</div>';
   }
 
-  function debtTab(k) {
-    const no = (cache[k.id] || {}).no;
-    if (no === undefined) return '<div class="k3-empty">' + h('loading') + '</div>';
-    if (no === null) return khoiNoKT(k) + '<div class="k3-empty">' + h('k3_no_loi') + '</div>';
-    const m = metrics(k.id);
-    const rows = (no.dong || []).slice().sort((a, b) => String(b.ngay || '').localeCompare(String(a.ngay || ''))).map(x => {
-      const so = x.loai === 'gop' ? '<a href="" class="code" data-kt-gop="' + esc(x.id) + '" data-thang="' + esc(String(x.ngay || '').slice(0, 7)) + '">' + esc(x.so) + ' ↗</a>'
-        : (moPhieuDuoc() ? '<button type="button" class="link code" data-mo-phieu="' + esc(x.id) + '">' + esc(x.so) + '</button>' : '<span class="code">' + esc(x.so) + '</span>');
-      return '<tr class="' + (x.con_lai_lak > 0 ? '' : 'is-dim') + '"><td>' + h(x.loai === 'gop' ? 'kh_no_gop' : 'kh_no_phieu') + (x.loai === 'gop' ? '<span class="k3-sub">' + esc(t('k3_n_phieu', { n: x.so_phieu })) + '</span>' : '') + '</td>' +
-        '<td>' + so + '</td><td>' + esc(ngay(x.ngay)) + '</td><td class="num"><b>' + EPL.tien(x.tien, x.ccy) + '</b></td><td class="num">' + n0(x.tien_lak) + '</td>' +
-        '<td class="num">' + n0(x.da_thu_lak) + '</td><td class="num"><b>' + (x.con_lai_lak > 0 ? n0(x.con_lai_lak) : '<span class="dash">–</span>') + '</b></td><td>' + EPL.tag(x.finance_status) + '</td></tr>';
-    }).join('');
-    const coNo = no.con_no_lak > 0;
-    return khoiNoKT(k) + '<h4 class="k3-kt-h">' + h('k3_tam_tieu_de') + '</h4><div class="debt-top">' +
-        '<div><span>' + h('kh_no_tong') + '</span><b>' + tienGop(no.tong_tien) + '</b><small>≈ ' + n0(no.tong_lak) + ' LAK</small></div>' +
-        '<div><span>' + h('collected') + '</span><b>' + n0(no.da_thu_lak) + ' LAK</b></div>' +
-        '<div class="' + (coNo ? 'is-danger' : '') + '"><span>' + h('kh_no_con_no') + '</span><b>' + (coNo ? tienGop(no.con_no_tien) + '</b><small>≈ ' + n0(no.con_no_lak) + ' LAK</small>' : EPL.tien(0, 'LAK') + '</b>') + '</div>' +
-        '<div class="aging-box"><span class="aging-title">' + h('k3_so_to', { n: no.so_to, m: no.so_to_no }) + '</span><span class="aging-note">' + h('k3_no_chi_xem') + '</span></div></div>' +
-      (Object.keys(m.choGop).length ? '<p class="tab-note tab-note--info">' + h('k3_cho_gop', { thang: thangHien(), tien: tienGop(m.choGop) }) + '</p>' : '') +
-      (rows ? '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('type') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_date') + '</th><th class="num">' + h('c_value') + '</th>' +
-        // hai cột Đã thu / Còn lại là số Kíp — ghi đơn vị ở đầu cột cho bảng gọn (ô từng dòng không lặp chữ LAK)
-        '<th class="num">' + h('in_lak') + '</th><th class="num">' + h('collected') + ' (LAK)</th><th class="num">' + h('remaining') + ' (LAK)</th><th>' + h('c_st_f') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-        : '<div class="k3-empty">' + h('kh_no_trong') + '</div>');
-  }
+  /** Tab Công nợ = khối bên hệ kế toán anh Tune. Bảng "Hoá đơn ở trang kế toán tạm" (hoá đơn lẻ / gộp, đã thu, còn lại, link
+   *  ↗ sang tờ gộp bên đó) bỏ 01/10 — số thử, đã cắt sổ; đường /api/customers/{id}/cong-no cũng đã gỡ ở máy chủ. */
+  function debtTab(k) { return khoiNoKT(k); }
 
   /* ================= Hồ sơ khách ================= */
   function renderDetail() {
     const k = byId(st.id);
     if (!k) { $('#k3-work').innerHTML = '<div class="k3-empty">' + h('k3_chon_khach') + '</div>'; return; }
-    const g = xemTien(), m = metrics(k.id), no = g ? ((cache[k.id] || {}).no || noCua(k.id)) : null;
+    const g = xemTien(), m = metrics(k.id), no = g ? noCua(k.id) : null;      // công nợ gọn theo SO bên hệ kế toán
     const c = cache[k.id] || {};
     const tabs = [{ id: 'contracts', label: h('hd_nut'), count: hdCua(k.id).length }];
     if (g) tabs.push({ id: 'prices', label: h('kh_bang_gia'), count: c.gia ? c.gia.filter(r => r.active).length : '·' });
     tabs.push({ id: 'trips', label: h('k3_tab_chuyen'), count: c.trips ? c.trips.length : '·' });
-    if (g) tabs.push({ id: 'debt', label: h('kh_cong_no'), count: no ? no.so_to_no : '·' });
+    if (g) tabs.push({ id: 'debt', label: h('kh_cong_no'), count: no ? no.so_to_no : 0 });
     if (!tabs.some(x => x.id === st.tab)) st.tab = 'contracts';
     const body = st.tab === 'prices' ? pricesTab(k) : st.tab === 'trips' ? tripsTab(k) : st.tab === 'debt' ? debtTab(k) : contractsTab(k);
     const miss = (key) => '<span class="missing">' + h(key) + '</span>';
@@ -444,10 +426,9 @@
     const viec = [API.get('/api/trips?customer_id=' + encodeURIComponent(cid) + '&thang=' + thangNay() + '&co=500').then(r => { c.trips = r; }).catch(e => { c.trips = []; EPL.baoLoi(e); })];   // lỗi thì báo — đừng để tab "Chuyến" nói "chưa có chuyến"
     if (xemTien()) {
       viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(e => { c.gia = []; EPL.baoLoi(e); }));
-      viec.push(API.get('/api/customers/' + cid + '/cong-no').then(r => { c.no = r; }).catch(() => { c.no = null; }));
       // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem. Hỏi sang máy
-      // khác (máy chủ chờ tới 40 s khi bên đó treo) nên KHÔNG đứng chờ nó: chuyến, bảng giá, công nợ trang kế toán tạm vẽ
-      // ngay; khối này về tới (hoặc lỗi) thì vẽ lại. Lỗi mạng của trình duyệt ("Failed to fetch") không bày ra — chỉ câu
+      // khác (máy chủ chờ tới 40 s khi bên đó treo) nên KHÔNG đứng chờ nó: chuyến, bảng giá vẽ ngay; khối này về tới (hoặc
+      // lỗi) thì vẽ lại. Lỗi mạng của trình duyệt ("Failed to fetch") không bày ra — chỉ câu
       // báo; lỗi máy chủ nói rõ lý do (token hết hạn, bên kia không trả lời…) thì kèm lý do.
       API.get('/api/customers/' + cid + '/cong-no-ke-toan').then(r => { c.noKT = r || { co: false }; })
         .catch(e => { c.noKT = { hong: true, loi: e instanceof EPL.LoiAPI ? (e.message || '') : '' }; })
@@ -667,8 +648,6 @@
 
   /* ================= Sự kiện ================= */
   async function onClick(e) {
-    const kt = e.target.closest('[data-kt-gop]');
-    if (kt) { e.preventDefault(); EPL.moKeToan('hoa-don-gop', { thang: kt.dataset.thang, id: kt.dataset.ktGop }); return; }
     const mp = e.target.closest('[data-mo-phieu]');
     if (mp) { EPL.di('phieu-xuat-xe', { id: mp.dataset.moPhieu }); return; }
     const c = e.target.closest('[data-cust]');

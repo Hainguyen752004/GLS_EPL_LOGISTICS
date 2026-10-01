@@ -314,8 +314,9 @@ class Trip(Base):
     company = Column(String, nullable=False, default="EPL")    # EPL | joint (ລົດຮ່ວມ)
     owner_id = Column(String, ForeignKey("owners.id"))         # chủ xe liên kết (danh mục) — chép từ xe lúc lập
     owner_name = Column(String)                                # tên chủ xe chép lại
-    # nằm trong đợt trả nào = đã trả chủ xe. Đợt trả ở TRANG KẾ TOÁN từ 28/09 (đợt 7b): mã đợt bên đó; cùng owner_paid,
-    # owner_paid_usd / _lak / _by / _at dưới đây là BẢN CHÉP bên đó ghi sang (/api/lien-thong/chu-xe/tra)
+    # nằm trong đợt trả nào = đã trả chủ xe. Từ 01/10 (bỏ trang kế toán tạm, đợt trả cũ bên đó là số thử): "TUNE:<số phiếu chi
+    # bên hệ anh Tune>" khi thủ quỹ bên đó ghi sổ phiếu chi trả chủ xe (services/tra_chu_xe.danh_dau_tra); cùng owner_paid,
+    # owner_paid_usd / _lak / _by / _at dưới đây
     owner_payment_id = Column(String)
     # Xe & tài xế: chép giá trị vào phiếu lúc lập, KHÔNG chỉ giữ khoá ngoại — đổi biển số
     # trong danh mục sau này không được làm phiếu cũ đổi theo.
@@ -376,10 +377,13 @@ class Trip(Base):
     over_price = Column(Float, default=1)                      # ຫັກແກ່ເກີນ 1$/ໂຕນ — theo hire_ccy
     # Trạng thái
     transport_status = Column(String, nullable=False, default="dispatched")
+    # Từ 01/10 (bỏ trang kế toán tạm): BẢN CHÉP trạng thái thu của SO bên hệ kế toán anh Tune (unpaid · partial · paid), đọc
+    # lại từ customer-detail (services/de_nghi_thu.doc_thu_tune) — màn Theo dõi đếm phiếu còn việc theo cột này.
     finance_status = Column(String, nullable=False, default="unpaid")
-    # Hoá đơn và thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a). Bốn cột dưới là BẢN CHÉP trạng thái bên đó ghi sang mỗi
-    # lần xuất hoá đơn / thu tiền (đường /api/lien-thong/doanh-thu/…) — để khoá phiếu, chặn mở khoá và báo cáo bên
-    # này chạy như cũ mà không phải hỏi sang. Bên đó không nối được thì bên đó chặn, nên bản chép không bao giờ lệch.
+    # Hoá đơn và thu tiền của TRANG KẾ TOÁN TẠM (28/09, đợt 7a). Chủ dự án 01/10: bỏ trang tạm, số ở đó là số thử — các cột
+    # invoiced · invoice_id · inv_no · invoiced_date · collected_lak · last_paid_date dưới đây KHÔNG còn ý nghĩa, trang điều xe
+    # không đọc nữa (giữ cột, không xoá dữ liệu — create_all không xoá cột). Hoá đơn và thu tiền nay ở hệ anh Tune: SO
+    # (gui_so_tune) + công nợ khách bên đó.
     invoiced = Column(Boolean, nullable=False, default=False)
     invoice_id = Column(String)                                # mã tờ hoá đơn gộp tháng bên trang kế toán (trống = hoá đơn riêng)
     inv_no = Column(String)                                    # số tờ gộp (HDT-202609-01)
@@ -1203,6 +1207,15 @@ class GuiSoTune(Base):
     first_attempt_at = Column(DateTime)
     last_attempt_at = Column(DateTime)
     synced_at = Column(DateTime)
+    # THU TIỀN của SO này bên anh Tune — bản ĐỌC LẠI (chỉ xem) từ `sales/debt/customer-detail` theo `order_code` (01/10, bỏ trang
+    # kế toán tạm): bên em không thu tiền, không ghi công nợ. Theo tiền của SO (`currency`). Đọc lại lúc mở màn Đề nghị thu
+    # (cap_nhat) hay bấm Cập nhật; trips.finance_status chép theo đây để màn Theo dõi biết phiếu còn việc.
+    thu_tong = Column(Float)                                      # RETK_PAYMENTAMOUNT
+    thu_da_thu = Column(Float)                                    # RETK_MONEYPAID
+    thu_con_no = Column(Float)                                    # RCTD_DEBTMONEY
+    thu_trang_thai = Column(String(16))                           # chua_thu · thu_mot_phan · da_thu · khong_thay
+    thu_doc_luc = Column(DateTime)
+    thu_loi = Column(Text)                                        # lần đọc gần nhất hỏng vì sao (None = đọc được)
 
 
 class DoiTuongTune(Base):
@@ -1243,6 +1256,117 @@ class ChiTune(Base):
     checked_at = Column(DateTime)
 
 
+class ChiMucTune(Base):
+    """Phiếu chi "Chi khác" bên hệ kế toán anh Tune cho khoản QUỸ TRẢ NGAY của mục V (sửa chữa mua ngoài) hoặc VI (chi khác) trên
+    một phiếu xuất xe — chủ dự án chốt 01/10, thay tờ PC_SC của trang kế toán tạm. KT Chi phí ghi sổ mục → bên em tạo phiếu chi
+    CHƯA ghi sổ bên đó (services/chi_muc_tune.py); thủ quỹ chi và GHI SỔ ở hệ đó; bên em đọc lại, `STATUS` 12/13 → mục "đã chi".
+    Một lần ghi sổ một phiếu: dòng đã nằm trong phiếu đã chi không vào phiếu sau — mục mở lại vì có dòng mới thì lần sau (`lan`
+    kế tiếp) chỉ mang dòng mới. `status`: da_gui (chờ thủ quỹ) · da_chi (bên đó đã ghi sổ) · loi (chưa tạo được) · huy."""
+    __tablename__ = "chi_muc_tune"
+    __table_args__ = (UniqueConstraint("trip_id", "section", "lan", name="uq_chi_muc_tune_lan"),)
+    id = Column(String, primary_key=True, default=ma_moi)
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    section = Column(String(8), nullable=False)                   # repair (mục V) · other (mục VI)
+    lan = Column(Integer, nullable=False, default=1)              # lần ghi sổ thứ mấy của mục này
+    expense_ids = Column(Text, nullable=False)                    # JSON danh sách TripExpense.id quỹ trả trong phiếu này
+    ref_no = Column(String(64), nullable=False)                   # số đề nghị bên em, gửi làm RefDocumentNo (chống trùng)
+    amount_lak = Column(Float)
+    status = Column(String(16), nullable=False, default="loi")
+    real_id = Column(Integer)                                     # DOCUMENTID phiếu chi bên kế toán
+    document_no = Column(String(64))                              # số phiếu bên đó, ví dụ 1368-CKH-261001-00003
+    obj_id = Column(Integer)                                      # đối tượng: tài xế (xe nhà) · chủ xe (xe thuê)
+    tune_status = Column(Integer)
+    post_by = Column(String)
+    post_at = Column(DateTime)
+    request_body = Column(Text)
+    response_body = Column(Text)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    sent_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+    last_attempt_at = Column(DateTime)
+    checked_at = Column(DateTime)
+
+
+TRANG_THAI_BUT_TOAN = ("cho_gui", "da_gui", "huy")
+
+
+class ButToanCho(Base):
+    """BÚT TOÁN CHỜ GỬI — khoản KHÔNG đi qua tiền mà sổ kế toán phải ghi (chủ dự án chốt 01/10): lúc khoá phiếu xe thuê Nợ 621 /
+    Có 4022 bằng tiền thuê; dòng chi ghi nợ nhà cung cấp Nợ 625 · 614 / Có 4021… Khoản qua tiền thành phiếu chi / thu bên anh
+    Tune; khoản này hệ anh Tune CHƯA có đường nhận (chưa có chứng từ bút toán tổng hợp — hợp đồng kế toán 12.12.4), nên bên em
+    giữ ở đây, đủ hai vế từng dòng, chờ có API thì gửi (services/but_toan_cho.py).
+
+    Một nguồn một bút toán: (nguon, ma_nguon). Gọi ghi lại → cập nhật bản CHƯA gửi; bản đã gửi đứng yên. Nguồn bị huỷ (mở khoá
+    phiếu) → bản chưa gửi thành `huy`; bản đã gửi thì đánh `can_dao` — chờ bút toán đảo khi bên kia có đường nhận.
+    `dong` là JSON: [{no, co, tien, ccy, doi_tuong: {loai, ref_id} | null, dien_giai, …}]."""
+    __tablename__ = "but_toan_cho"
+    __table_args__ = (UniqueConstraint("nguon", "ma_nguon", name="uq_but_toan_cho_nguon"),)
+    id = Column(String, primary_key=True, default=ma_moi)
+    nguon = Column(String(16), nullable=False, index=True)        # thue_xe · no_ncc (khoá phiếu) · nguồn khác do module gọi đặt
+    ma_nguon = Column(String(80), nullable=False)                 # thue_xe / no_ncc: Trip.id
+    ngay = Column(Date, nullable=False)                           # ngày hạch toán
+    dien_giai = Column(String)
+    dong = Column(Text, nullable=False)
+    so_dong = Column(Integer, nullable=False, default=0)
+    tien_te = Column(String(3))                                   # tiền chung của các dòng; nhiều tiền thì trống
+    tong = Column(Float)                                          # Σ tiền các dòng khi cùng một tiền
+    trip_id = Column(String, ForeignKey("trips.id", ondelete="SET NULL"), index=True)
+    status = Column(String(16), nullable=False, default="cho_gui")   # TRANG_THAI_BUT_TOAN
+    can_dao = Column(Boolean, nullable=False, default=False)     # đã gửi mà nguồn bị huỷ → chờ bút toán đảo
+    source_ref = Column(String(100))                              # khoá chống trùng sẽ gửi bên kia: EPLLAO-<nguon>-<ma_nguon>
+    ma_ben_ke_toan = Column(String(64))                           # DocumentId bên kia trả về khi nhận
+    so_ben_ke_toan = Column(String(64))                           # DocumentNo bên kia
+    gui_luc = Column(DateTime)
+    loi_gui = Column(Text)
+    huy_luc = Column(DateTime)
+    huy_by = Column(String)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+    updated_at = Column(DateTime, default=bay_gio, onupdate=bay_gio)
+
+
+class PhieuTienTune(Base):
+    """Phiếu chi/thu bên hệ kế toán anh Tune do trang điều xe lập (01/10): tất toán tài xế (TT_CHI chi bù · TT_THU thu
+    hoàn), trả nhà cung cấp (PC_NCC). Một nguồn một phiếu: (nguon, ma_nguon). status: da_gui · da_chi · loi · huy."""
+    __tablename__ = "phieu_tien_tune"
+    id = Column(String, primary_key=True, default=ma_moi)
+    nguon = Column(String(16), nullable=False)          # tat_toan · ncc
+    ma_nguon = Column(String(80), nullable=False)       # tat_toan: <driver_id>:<YYYY-MM> · ncc: số đề nghị
+    loai = Column(String(8), nullable=False)            # TT_CHI · TT_THU · PC_NCC
+    voucher_type = Column(String(3), nullable=False)    # CMP · CMR
+    doi_tuong_loai = Column(String(16))                 # tai_xe · ncc
+    doi_tuong_id = Column(String, index=True)
+    doi_tuong_ten = Column(String)
+    period = Column(String(7))
+    currency = Column(String(3), nullable=False, default="LAK")
+    amount = Column(Float, nullable=False)
+    amount_lak = Column(Float)
+    phuong_thuc = Column(String(8), nullable=False, default="cash")
+    ref_no = Column(String(64), nullable=False)
+    no = Column(String(16))
+    co = Column(String(16))
+    chi_tiet = Column(Text)
+    status = Column(String(16), nullable=False, default="loi")
+    real_id = Column(Integer)
+    document_no = Column(String(64))
+    obj_id = Column(Integer)
+    tune_status = Column(Integer)
+    post_by = Column(String)
+    post_at = Column(DateTime)
+    request_body = Column(Text)
+    response_body = Column(Text)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+    last_attempt_at = Column(DateTime)
+    checked_at = Column(DateTime)
+    __table_args__ = (UniqueConstraint("nguon", "ma_nguon", name="uq_phieu_tien_tune_nguon"),)
+
+
 class ChiChuXeTune(Base):
     """ĐỀ NGHỊ TRẢ CHỦ XE LIÊN KẾT sang hệ kế toán anh Tune (01/10): một lần đề nghị = một phiếu chi "Chi khác" bên đó cho
     một chủ xe, gồm các phiếu xe thuê đã khoá chưa trả, cùng một tiền thuê. Thủ quỹ chi và GHI SỔ ở hệ đó; bên em đọc lại,
@@ -1273,3 +1397,7 @@ class ChiChuXeTune(Base):
     created_at = Column(DateTime, default=bay_gio)
     last_attempt_at = Column(DateTime)
     checked_at = Column(DateTime)
+    # TRỪ HÀNG CHỦ XE MUA Ở QUẦY (01/10, giao ước với services/tra_chu_xe.py): JSON kết quả tra_chu_xe.tinh_tru — tổng, phần trừ,
+    # từng dòng phiếu (tra_thuc), các phiếu bán bị trừ — kèm "chot": thủ quỹ đã chi và phiếu bán đã chốt "TUNE:<số phiếu chi>"
+    # chưa. amount / amount_lak ở trên là SỐ TRẢ THỰC sau khi trừ.
+    tru_hang = Column(Text)

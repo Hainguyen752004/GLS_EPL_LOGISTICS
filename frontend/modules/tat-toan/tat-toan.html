@@ -1,0 +1,23 @@
+<!-- Tất toán tài xế — ສະສາງໂຊເຟີ. Chốt THEO THÁNG, xe nhà: đã ứng (phiếu chi tạm ứng bên kế toán đã ghi sổ) với đã chi thật
+     (dòng chi tài xế móc túi trả). 01/10 dựng lại trên trang điều xe — TIỀN ở hệ kế toán anh Tune: chênh dương thành phiếu chi
+     "Chi khác" (TT_CHI), chênh âm thành phiếu thu "Thu khác" (TT_THU), quyết toán QT_TU (Nợ 625 / Có 1601) là bút toán chờ gửi.
+     Trái: tài xế trong kỳ; phải: một tài xế — số, bản chốt, phiếu bên kế toán, các phiếu xuất xe trong kỳ. -->
+<div class="tt2">
+  <div class="tt2-top no-print">
+    <div class="seg" id="tt2-loc"></div>
+    <label class="o-tim">
+      <svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M21 21l-5-5"/></svg>
+      <input id="tt2-tim" type="search" autocomplete="off" data-i18n-ph="tt_tim">
+    </label>
+    <div class="grow"></div>
+    <button class="btn" id="tt2-lam-moi" data-i18n="ck_cap_nhat"></button>
+    <div class="field"><label data-i18n="tt_period"></label><input type="month" id="tt2-ky"></div>
+  </div>
+
+  <div class="tt2-tong no-print" id="tt2-tong"></div>
+
+  <div class="tt2-than">
+    <aside class="tt2-ds no-print" id="tt2-ds"></aside>
+    <section class="card tt2-xem" id="tt2-xem"></section>
+  </div>
+</div>

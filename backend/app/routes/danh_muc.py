@@ -216,28 +216,6 @@ def _ap_gia(db, r, data):
     if "active" in data: r.active = bool(data["active"])
 
 
-@router.get("/api/customers/{cid}/cong-no")
-def cong_no_khach(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """KHÁCH NÀY CÒN NỢ EPL BAO NHIÊU — gom mọi tháng, mọi hoá đơn.
-
-    Trước 22/09 câu này không có chỗ nào trả lời trọn: bảng Theo dõi nói từng phiếu, màn Hoá đơn gộp nói
-    từng tờ, bảng Cấn trừ nói từng tháng. Đây là chỗ gom lại: hoá đơn lẻ (phiếu đã xuất hoá đơn, không
-    nằm tờ gộp) + hoá đơn gộp, mỗi dòng một tờ, cộng theo TIỀN CỦA TỪNG TỜ rồi quy Kíp. Không phải sổ kế
-    toán — chỉ là câu trả lời từ đúng dữ liệu bên mình đã ghi; bút toán công nợ vẫn là bên anh Khang.
-    """
-    from services import goi_ke_toan as KT
-    from services.phan_quyen import thay_tien_ban
-    if not thay_tien_ban(user.role):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem công nợ khách." % user.role})
-    kh = db.get(Customer, cid)
-    if not kh:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
-    # Hoá đơn (lẻ và gộp) cùng sổ thu tiền ở TRANG KẾ TOÁN từ 28/09 (đợt 7a): hỏi sang từng tờ. Trang đó tắt thì 503
-    # báo rõ — không hiện nửa số.
-    dong = list(KT.goi(db, "GET", "/api/lien-thong/doanh-thu/khach/%s" % kh.id, nguoi=user) or [])
-    return {"customer": {"id": kh.id, "name": kh.name, "invoice_mode": kh.invoice_mode}, "dong": dong, **_tom_no(dong)}
-
-
 @router.get("/api/customers/{cid}/cong-no-ke-toan")
 def cong_no_khach_ke_toan(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Công nợ của khách BÊN HỆ KẾ TOÁN anh Tune (01/10, chỉ xem): SO bên đó sinh từ phiếu đề nghị thu, các lần thu tiền bên
@@ -250,41 +228,64 @@ def cong_no_khach_ke_toan(cid: str, db: Session = Depends(get_db), user=Depends(
     if not kh:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
     kq = CHI.cong_no_khach(db, kh)
+    if kq is not None:
+        # đọc rồi thì chép luôn thu tiền vào từng SO của khách (bản đọc lại — màn Đề nghị thu, cột trái màn Khách hàng dùng)
+        from models import GuiSoTune
+        from services import de_nghi_thu as DNT
+        so = {}
+        for b, p in (db.query(GuiSoTune, Trip).join(Trip, Trip.id == GuiSoTune.trip_id)
+                     .filter(Trip.customer_id == kh.id, GuiSoTune.status == "synced").all()):
+            cu = (b.thu_trang_thai, b.thu_da_thu, b.thu_con_no)
+            DNT.ap_thu(b, kq.get("no") or [], kq.get("don") or [])
+            if b.thu_trang_thai in DNT.TAI_CHINH:
+                p.finance_status = DNT.TAI_CHINH[b.thu_trang_thai]
+            if (b.thu_trang_thai, b.thu_da_thu, b.thu_con_no) != cu:
+                p.updated_at = dt.datetime.utcnow()         # bộ đệm báo cáo tháng tính lại
+            if b.order_code:
+                so[b.order_code] = {"trip_id": p.id, "doc_no": p.doc_no}
+        db.commit()
+        kq["do_cua_so"] = so                                     # SO bên đó ↔ DO bên em
     return {"co": kq is not None, **(kq or {})}
 
 
 @router.get("/api/customers-cong-no")
 def cong_no_moi_khach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Công nợ GỌN của mọi khách một lần — cột trái màn Khách hàng (giao diện mới 30/09): số còn nợ từng khách, nút lọc
-    "Còn nợ". Cùng công thức với hồ sơ một khách (`_tom_no`). Vai không thấy tiền bán thì 403."""
-    from services import goi_ke_toan as KT
+    """Công nợ GỌN của mọi khách một lần — cột trái màn Khách hàng (nút lọc "Còn nợ"). Từ 01/10 (bỏ trang kế toán tạm, số bên
+    đó là số thử) công nợ khách CHỈ ở hệ anh Tune: đây cộng các SO bên đó đã tạo cho DO của từng khách (gui_so_tune) theo BẢN ĐỌC
+    LẠI thu tiền gần nhất (de_nghi_thu.doc_thu_tune) — không gọi mạng, nên một trang nhiều khách vẫn nhanh. SO chưa đọc lại lần
+    nào thì tính còn nợ cả SO (`chua_doc` đếm số SO đó); số chính xác của một khách: /api/customers/{cid}/cong-no-ke-toan.
+    Vai không thấy tiền bán thì 403."""
+    from models import GuiSoTune
     from services.phan_quyen import thay_tien_ban
+    from services.tinh_toan import ty_gia
     if not thay_tien_ban(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem công nợ khách." % user.role})
-    moi = KT.goi(db, "GET", "/api/lien-thong/doanh-thu/khach-tong", nguoi=user) or {}
     ra = {}
-    for cid, dong in moi.items():
-        t = _tom_no(list(dong or []))
-        t.pop("dong", None)
-        ra[cid] = t
+    for b, p in (db.query(GuiSoTune, Trip).join(Trip, Trip.id == GuiSoTune.trip_id)
+                 .filter(GuiSoTune.status == "synced", Trip.customer_id.isnot(None)).all()):
+        o = ra.setdefault(p.customer_id, {"so_to": 0, "so_to_no": 0, "tong_tien": {}, "con_no_tien": {}, "tong_lak": 0,
+                                          "da_thu_lak": 0, "con_no_lak": 0, "chua_doc": 0, "doc_luc": None,
+                                          "nguon": "he_ke_toan"})
+        ccy = (b.currency or p.price_ccy or "USD").upper()
+        tong = float(b.thu_tong if b.thu_tong is not None else (b.total_amount or 0))
+        da = float(b.thu_da_thu or 0)
+        con = float(b.thu_con_no) if b.thu_con_no is not None else max(0.0, tong - da)
+        r = ty_gia(p, ccy)
+        o["so_to"] += 1
+        o["tong_tien"][ccy] = round(o["tong_tien"].get(ccy, 0) + tong, 2)
+        o["tong_lak"] += round(tong * r)
+        o["da_thu_lak"] += round(da * r)
+        if con > 0.005:
+            o["so_to_no"] += 1
+            o["con_no_tien"][ccy] = round(o["con_no_tien"].get(ccy, 0) + con, 2)
+            o["con_no_lak"] += round(con * r)
+        if b.thu_doc_luc is None:
+            o["chua_doc"] += 1
+        elif o["doc_luc"] is None or b.thu_doc_luc < o["doc_luc"]:
+            o["doc_luc"] = b.thu_doc_luc                                    # lần đọc CŨ nhất trong các SO của khách
+    for o in ra.values():
+        o["doc_luc"] = o["doc_luc"].isoformat(timespec="minutes") + "+00:00" if o["doc_luc"] else None
     return ra
-
-
-def _tom_no(dong):
-    """Cộng các tờ của một khách: theo TIỀN CỦA TỪNG TỜ và quy Kíp."""
-    dong.sort(key=lambda x: x["ngay"] or "")
-    tong, con = {}, {}
-    for x in dong:
-        tong[x["ccy"]] = round(tong.get(x["ccy"], 0) + (x["tien"] or 0), 2)
-        if x["con_lai_lak"] > 0:
-            # còn nợ theo tiền của tờ = phần còn lại (LAK) ÷ tỷ giá của tờ — để người đọc thấy đúng tiền hợp đồng
-            tg = (x["tien_lak"] / x["tien"]) if x["tien"] else 1
-            con[x["ccy"]] = round(con.get(x["ccy"], 0) + x["con_lai_lak"] / (tg or 1), 2)
-    return {"so_to": len(dong), "so_to_no": len([x for x in dong if x["con_lai_lak"] > 0]),
-            "tong_tien": tong, "con_no_tien": con,
-            "tong_lak": round(sum(x["tien_lak"] or 0 for x in dong)),
-            "da_thu_lak": round(sum(x["da_thu_lak"] for x in dong)),
-            "con_no_lak": round(sum(x["con_lai_lak"] for x in dong if x["con_lai_lak"] > 0))}
 
 
 @router.get("/api/customers/{cid}/bang-gia")
@@ -395,14 +396,33 @@ def xuat_xe(db, v, chi_tiet=False, vai=None):
     return r
 
 
+def _phu_xe(db, ds):
+    """Số phiếu đã chạy và phiếu ĐANG chạy của nhiều xe — như _phu_tai_xe: hai truy vấn cho cả danh sách, không hỏi từng xe.
+    Màn Xe cần hai số này ở bảng (cột trạng thái có số phiếu đang chạy, ô tìm theo số phiếu) — trước 01/10 chỉ hồ sơ có."""
+    ids = [v.id for v in ds if v.id]
+    if not ids:
+        return {}, {}
+    from services import dem_bao_cao as DEM
+    tat = DEM.dem_phieu_theo(db, "sp-xe", Trip.vehicle_id)
+    dem = {i: tat[i] for i in ids if i in tat}
+    dang = {}
+    for vid, so in (db.query(Trip.vehicle_id, Trip.doc_no).filter(Trip.vehicle_id.in_(ids), Trip.transport_status != "arrived")
+                    .order_by(Trip.doc_date.desc(), Trip.doc_no.desc())):
+        dang.setdefault(vid, so)
+    return dem, dang
+
+
 @router.get("/api/vehicles")
 def ds_xe(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
     ds = db.query(Vehicle).order_by(Vehicle.active.desc(), Vehicle.owner_type, Vehicle.truck_no).all()
     anh = ANH.anh_chinh_map(ANH.XE, db)      # ảnh đại diện lấy MỘT lượt cho cả danh sách
+    dem, dang = _phu_xe(db, ds)
     ra = []
     for v in ds:
         r = xuat_xe(db, v)
         r["anh_chinh"] = anh.get(v.id)
+        r["so_phieu"] = dem.get(v.id, 0)                 # cùng tên trường với hồ sơ một xe
+        r["phieu_hien_tai"] = dang.get(v.id)
         ra.append(r)
     return ra
 

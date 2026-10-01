@@ -158,8 +158,11 @@ def main():
     assert all("fee_pct" not in o for o in ds_chu), "tổ sửa chữa không được thấy phí chủ xe: %s" % ds_chu[:1]
     s, g = goi("/api/bao-cao/xe-lien-ket", vai="khopt")
     phai(s, 403, "Thủ kho phụ tùng xem báo cáo xe liên kết (lãi) → bị chặn", g)
-    s, g = K.kt("/api/hoa-don-gop", vai="totsua")      # hoá đơn gộp ở trang kế toán (đợt 7a)
-    phai(s, 403, "Tổ sửa chữa xem hoá đơn → bị chặn (tiền bán)", g)
+    # hoá đơn, công nợ khách ở hệ kế toán anh Tune từ 01/10 (bỏ trang kế toán tạm) — bên này chỉ còn đề nghị thu, công nợ đọc lại
+    s, g = goi("/api/de-nghi-thu", vai="totsua")
+    phai(s, 403, "Tổ sửa chữa xem đề nghị thu (cước) → bị chặn (tiền bán)", g)
+    s, g = goi("/api/customers-cong-no", vai="totsua")
+    phai(s, 403, "Tổ sửa chữa xem công nợ khách → bị chặn (tiền bán)", g)
 
     # ---------------------------------------------------------------- 3. C2.2 — đổi xe giữa đường
     s, g = goi("/api/trips/%s/doi-xe" % pid, {"vehicle_id": xe_nha[1]["id"], "ly_do": "thử"}, vai="ketoan")

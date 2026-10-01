@@ -1,0 +1,68 @@
+/* Tất toán tài xế (dựng lại 01/10) — dàn ngang như Phiếu đề nghị thu: tài xế bên trái, một tài xế bên phải; cao vừa cửa sổ. */
+.tt2{display:flex;flex-direction:column;gap:12px;min-width:0}
+.tt2-top{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.tt2-top .field input,.tt2-top .field select{height:40px}
+.tt2-top .btn{height:40px}
+
+/* dải tổng */
+.tt2-tong{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.tt2-tong .o{display:flex;flex-direction:column;gap:2px;min-width:160px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+.tt2-tong .o .l{font-size:11.5px;color:var(--ink-2)}
+.tt2-tong .o .v{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.tt2-tong .o .v small{margin-left:3px;font-size:11.5px;color:var(--ink-3);font-weight:500}
+.tt2-tong .o.pos .v{color:var(--green)}
+.tt2-tong .o.neg .v{color:var(--red)}
+.tt2-tong .o.canh{border-color:#E3CB98;background:linear-gradient(0deg,var(--amber-soft),var(--paper) 70%)}
+.tt2-note{margin:0 0 0 auto;align-self:flex-end;max-width:360px;text-align:right}
+.tt2-bao{align-self:flex-start;display:flex;align-items:center;gap:7px;max-width:380px;padding:7px 12px;border:1px solid #E3CB98;
+  border-radius:8px;background:var(--amber-soft);color:var(--amber);font-size:12.5px;font-weight:500;line-height:1.35}
+.tt2-bao svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+
+/* hai cột */
+.tt2-than{display:grid;grid-template-columns:minmax(320px,400px) minmax(0,1fr);gap:14px;align-items:start}
+.tt2-ds{display:flex;flex-direction:column;gap:6px;overflow:auto;padding:2px 4px 2px 0;max-height:var(--tt-cao, calc(100vh / var(--ty-le, 1) - 330px))}
+.tt2-o{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;width:100%;padding:10px 12px;text-align:left;
+  border:1px solid var(--line);border-left:4px solid var(--line-2);border-radius:10px;background:var(--paper);font:inherit;color:var(--ink);cursor:pointer}
+.tt2-o:hover{background:#FAFBF9}
+.tt2-o.chon{border-color:var(--green-2);background:var(--green-soft)}
+.tt2-o:focus-visible{outline:2px solid var(--green-2);outline-offset:1px}
+.tt2-o.st-cho{border-left-color:var(--amber)}
+.tt2-o.st-loi{border-left-color:var(--red)}
+.tt2-o.st-xong{border-left-color:var(--green-2)}
+.tt2-o .ten{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt2-o .tien{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.tt2-o .phu{font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tt2-o .tt{text-align:right;white-space:nowrap}
+.tt2-o .phu:last-child{grid-column:2;text-align:right}
+.tt2 .pos{color:var(--green)} .tt2 .neg{color:var(--red)}
+.tt2-trong{padding:26px 16px;text-align:center;color:var(--ink-3);font-size:13px;border:1px dashed var(--line-2);border-radius:10px}
+
+/* một tài xế */
+.tt2-xem{display:flex;flex-direction:column;gap:12px;min-width:0;padding:14px 16px;overflow:hidden;
+  max-height:var(--tt-cao, calc(100vh / var(--ty-le, 1) - 330px))}
+.tt2-dau{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tt2-dau h3{margin:0;font-size:17px}
+.tt2-dau .grow{flex:1}
+.tt2-nut{display:flex;gap:8px;flex-wrap:wrap}
+.tt2-nut:empty{display:none}
+.tt2-canh{padding:8px 12px;border:1px solid #E3CB98;border-radius:8px;background:var(--amber-soft);color:var(--amber);font-size:12.5px}
+.tt2-canh a{color:inherit;font-weight:600}
+.tt2-so{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tt2-so > div{display:flex;flex-direction:column;gap:2px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.tt2-so span{font-size:11.5px;color:var(--ink-2)}
+.tt2-so b{font-size:17px;font-variant-numeric:tabular-nums}
+.tt2-so b small{font-size:11px;color:var(--ink-3);font-weight:500}
+.tt2-so .pos b{color:var(--green)} .tt2-so .neg b{color:var(--red)}
+.tt2-chot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:10px 12px;border:1px dashed var(--line-2);border-radius:10px;font-size:13px}
+.tt2-chot > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tt2-chot > div > span:first-child{font-size:11.5px;color:var(--ink-2)}
+.tt2-chot small{font-size:11px;color:var(--ink-3)}
+.tt2-phieu{flex:1 1 auto;min-height:0;overflow:auto}
+
+@media (max-width:1100px){
+  .tt2-than{grid-template-columns:1fr}
+  .tt2-ds,.tt2-xem{max-height:none}
+  .tt2-chot{grid-template-columns:1fr}
+}
+@media print{.tt2-than{display:block}.tt2-xem{max-height:none;overflow:visible}}
+.tt2-dong{white-space:nowrap}

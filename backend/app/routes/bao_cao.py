@@ -17,7 +17,7 @@ from sqlalchemy import func, literal, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (ChungTu, Part, Route, RouteStop, Supplier, TollCard,
+from models import (ChungTu, GuiSoTune, Part, Route, RouteStop, Supplier, TollCard,
                     TollCardMove, Trip, TripEvent, TripExpense, TripSection, Voucher)
 from routes.phieu import CO_TOI_DA, da_thu_theo_phieu, loc_phieu, nap_lo, xuat_phieu
 from routes.theo_doi import NGAY_COI_LA_LAU
@@ -25,7 +25,6 @@ from services.bao_mat import nguoi_hien_tai
 from services.phan_quyen import QUYEN, thay_tien_ban, thay_tien_chi, viec_dang_cho
 from services.tinh_toan import cach_tra, tien_dong, tinh_phieu, ty_gia
 from services import dem_bao_cao as DEM
-from services import goi_ke_toan as KT
 
 router = APIRouter()
 
@@ -63,10 +62,12 @@ def _phieu_thang(db, thang):
 # đó, nên ra đúng từng con số như cộng từng dòng); lọc theo KHOẢNG NGÀY, không gửi danh sách 30.000 mã.
 COT_TINH = (Trip.id, Trip.doc_no, Trip.doc_date, Trip.out_date, Trip.back_date, Trip.company, Trip.customer_id,
             Trip.customer_name, Trip.driver_name, Trip.truck_no, Trip.route_id, Trip.transport_status,
-            Trip.finance_status, Trip.invoiced, Trip.locked, Trip.weight_origin, Trip.weight_dest, Trip.price,
+            Trip.finance_status, Trip.locked, Trip.weight_origin, Trip.weight_dest, Trip.price,
             Trip.price_ccy, Trip.price_mode, Trip.hire_price, Trip.hire_ccy, Trip.fee_pct, Trip.over_limit_t,
-            Trip.over_price, Trip.rate_usd, Trip.rate_thb, Trip.rate_vnd, Trip.rate_cny, Trip.odo_out, Trip.odo_back,
-            Trip.invoiced_date, Trip.last_paid_date)
+            Trip.over_price, Trip.rate_usd, Trip.rate_thb, Trip.rate_vnd, Trip.rate_cny, Trip.odo_out, Trip.odo_back)
+# 01/10 (bỏ trang kế toán tạm): hoá đơn · thu tiền không còn là cờ trên phiếu (invoiced · collected_lak · invoiced_date ·
+# last_paid_date là số thử của trang tạm). "Đã ghi công nợ khách" = bên hệ kế toán anh Tune đã tạo SO cho DO (gui_so_tune);
+# "đã thu" = bản đọc lại thu tiền của SO đó (de_nghi_thu.doc_thu_tune); finance_status trên phiếu là bản chép trạng thái đó.
 
 
 def _trong(dau, cuoi):
@@ -91,15 +92,13 @@ def _dong_gon(db, dau, cuoi, *loc):
 
 
 def _da_thu_gon(db, dau, cuoi, *loc):
-    # sổ thu tiền ở trang kế toán từ 28/09 (đợt 7a): tổng đã thu là bản chép trips.collected_lak bên đó ghi sang
-    q = db.query(Trip.id, Trip.collected_lak).filter(*_trong(dau, cuoi), *loc, Trip.collected_lak > 0)
-    return {t: float(v or 0) for t, v in q}
+    return _da_thu_loc(db, *_trong(dau, cuoi), *loc)
 
 
 @router.get("/api/bao-cao/tong-quan")
 def tong_quan(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     dau, cuoi = _thang(thang)
-    t = _gop_tq(_theo_ngay(db, "tq", _cac_ngay(dau, cuoi), _tq_lo).values())
+    t = _gop_tq(_theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo).values())
     chu_y = list(t["chu_y"])
     if t["cho_kiem"]:
         chu_y.append({"loai": "cho_kiem", "so": t["cho_kiem"]})
@@ -145,8 +144,19 @@ def _dong_loc(db, *loc):
 
 
 def _da_thu_loc(db, *loc):
-    q = db.query(Trip.id, Trip.collected_lak).filter(*loc, Trip.collected_lak > 0)
-    return {t: float(v or 0) for t, v in q}
+    """{trip_id: đã thu LAK} — bản đọc lại thu tiền SO bên hệ anh Tune (gui_so_tune.thu_da_thu, theo tiền SO) quy Kíp theo
+    tỷ giá khoá trên phiếu. Phiếu chưa có SO hoặc chưa đọc lại thì 0."""
+    q = (db.query(GuiSoTune.trip_id, GuiSoTune.thu_da_thu, GuiSoTune.currency, Trip.price_ccy, Trip.rate_usd, Trip.rate_thb,
+                  Trip.rate_vnd, Trip.rate_cny)
+         .join(Trip, Trip.id == GuiSoTune.trip_id).filter(*loc, GuiSoTune.status == "synced", GuiSoTune.thu_da_thu > 0))
+    return {r.trip_id: float(r.thu_da_thu) * ty_gia(r, r.currency or r.price_ccy) for r in q}
+
+
+def _so_loc(db, *loc):
+    """{trip_id: (ngày tạo SO, trạng thái thu, lúc đọc thu)} của các DO bên hệ anh Tune ĐÃ TẠO SO (ghi công nợ khách)."""
+    q = (db.query(GuiSoTune.trip_id, GuiSoTune.synced_at, GuiSoTune.thu_trang_thai, GuiSoTune.thu_doc_luc)
+         .join(Trip, Trip.id == GuiSoTune.trip_id).filter(*loc, GuiSoTune.status == "synced"))
+    return {r.trip_id: r for r in q}
 
 
 def _chi_epl(p, c):
@@ -170,7 +180,7 @@ def _tq_lo(db, cac_ngay):
     """Phần TỔNG QUAN của từng ngày — cùng phép tính với tổng quan tháng trước 24/09, chỉ chia theo ngày lập phiếu."""
     loc = (Trip.doc_date.in_(cac_ngay),)
     ds = db.query(*COT_TINH).filter(*loc).order_by(Trip.doc_date, Trip.doc_no).all()
-    dong, thu = _dong_loc(db, *loc), _da_thu_loc(db, *loc)
+    dong, thu, so = _dong_loc(db, *loc), _da_thu_loc(db, *loc), _so_loc(db, *loc)
     cho_kiem = dict(db.query(Trip.doc_date, func.count(TripSection.id)).join(Trip, Trip.id == TripSection.trip_id)
                     .filter(*loc, TripSection.status == "entered").group_by(Trip.doc_date).all())
     ra = {d.isoformat(): _tq_trong(cho_kiem.get(d, 0)) for d in cac_ngay}
@@ -188,12 +198,13 @@ def _tq_lo(db, cac_ngay):
             o["chua_thu_lak"] += c["con_lai_lak"]; o["chua_thu_so"] += 1
             o["chua_thu_tien"][c["ccy"]] = o["chua_thu_tien"].get(c["ccy"], 0.0) + c["con_lai"]
         o["dem"][p.transport_status] = o["dem"].get(p.transport_status, 0) + 1
-        if p.invoiced: o["dem"]["invoiced"] += 1
+        # khoá "invoiced" giữ tên cho màn Tổng quan: từ 01/10 đếm DO bên hệ kế toán ĐÃ TẠO SO (ghi công nợ khách)
+        if p.id in so: o["dem"]["invoiced"] += 1
         if p.finance_status == "paid": o["dem"]["paid"] += 1
         # Việc cần chú ý — mỗi ngày giữ 12 dòng đầu là đủ: cả tháng cũng chỉ hiện 12 dòng đầu theo thứ tự phiếu
         for x in ([{"loai": "hao_hut", "doc_no": p.doc_no, "gia_tri": c["hao_hut_pct"]}]
                   if c["hao_hut_pct"] is not None and c["hao_hut_pct"] > 1.5 else []) \
-                + ([{"loai": "chua_hoa_don", "doc_no": p.doc_no}] if p.transport_status == "arrived" and not p.invoiced else []) \
+                + ([{"loai": "chua_hoa_don", "doc_no": p.doc_no}] if p.transport_status == "arrived" and p.id not in so else []) \
                 + ([{"loai": "chua_can", "doc_no": p.doc_no}] if p.transport_status == "arrived" and p.weight_dest is None else []):
             if len(o["chu_y"]) < 12:
                 o["chu_y"].append(x)
@@ -213,7 +224,7 @@ def _gop_tq(cac):
 
 def _gom_thang(db, dau, cuoi, tq=None):
     """Bốn con số của một tháng — cùng công thức với /api/bao-cao/tong-quan để hai màn không lệch nhau."""
-    t = _gop_tq((tq or _theo_ngay(db, "tq", _cac_ngay(dau, cuoi), _tq_lo)).get(d.isoformat()) for d in _cac_ngay(dau, cuoi))
+    t = _gop_tq((tq or _theo_ngay(db, "tq6", _cac_ngay(dau, cuoi), _tq_lo)).get(d.isoformat()) for d in _cac_ngay(dau, cuoi))
     return {"doanh_thu_lak": round(t["doanh_thu"]), "chi_lak": round(t["chi_lak"]),
             "tan_giao": round(t["tan"], 2), "chua_thu_lak": round(t["chua_thu_lak"])}
 
@@ -234,7 +245,7 @@ def _xh_lo(db, cac_ngay):
     """Phần XU HƯỚNG của từng ngày (theo ngày · hao hụt · theo xe · vận hành · xem nhanh · dòng thời gian)."""
     loc = (Trip.doc_date.in_(cac_ngay),)
     ds = db.query(*COT_TINH).filter(*loc).order_by(Trip.doc_date, Trip.doc_no).all()
-    dong, thu = _dong_loc(db, *loc), _da_thu_loc(db, *loc)
+    dong, thu, so = _dong_loc(db, *loc), _da_thu_loc(db, *loc), _so_loc(db, *loc)
     ra = {d.isoformat(): _xh_trong() for d in cac_ngay}
     vi_tri = {}                              # trip_id → (ngày, thứ tự trong ngày) — để biết phiếu nào "đầu tiên"
     su_co = {t for (t,) in db.query(TripEvent.trip_id).join(Trip, Trip.id == TripEvent.trip_id)
@@ -276,16 +287,19 @@ def _xh_lo(db, cac_ngay):
             n_ngay = (p.back_date - ngay_di).days
             o["ve"][0] += 1; o["ve"][1] += n_ngay; o["ve"][2] += n_ngay <= NGAY_COI_LA_LAU
         if p.id in su_co: o["su_co"] += 1
-        if p.locked and not p.invoiced:
+        # "hoá đơn" từ 01/10 = SO bên hệ kế toán (ghi công nợ khách); "đã thu" = bản đọc lại thu tiền SO đó
+        co_so = p.id in so
+        if p.locked and not co_so:
             o["cho_hd"][0] += 1; o["cho_hd"][1] = o["cho_hd"][1] or p.id
-        if p.invoiced and p.finance_status != "paid":
+        if co_so and p.finance_status != "paid":
             o["cho_thu"][0] += 1; o["cho_thu"][1] = o["cho_thu"][1] or p.id
         if p.transport_status in ("dispatched", "transit"): o["dang_chay"] += 1
-        if p.transport_status == "arrived" and not p.invoiced: o["cho_hoa_don"] += 1
+        if p.transport_status == "arrived" and not co_so: o["cho_hoa_don"] += 1
         if p.transport_status == "arrived": o["chua_thu_ve"] += c["con_lai_lak"]
         if p.transport_status != "arrived" and ngay_di is not None:           # "đi lâu" tính lúc ghép (theo hôm nay)
             o["khong_ve"][ngay_di.isoformat()] = o["khong_ve"].get(ngay_di.isoformat(), 0) + 1
-        # dòng thời gian: mốc từ sự kiện "tới điểm"; hoá đơn · thanh toán từ bản chép trang kế toán ghi sang
+        # dòng thời gian: mốc từ sự kiện "tới điểm"; "hoá đơn" = ngày bên hệ kế toán tạo SO; "thanh toán" = SO đã thu đủ theo
+        # bản đọc lại (ngày đọc thấy — bên đó không trả ngày thu theo từng SO)
         diem = ma_diem.get(p.id, {})
         n_diem = so_diem.get(p.route_id, 0)
         cang = diem.get(n_diem) if n_diem else None
@@ -296,8 +310,9 @@ def _xh_lo(db, cac_ngay):
             "toi_bai": diem[2].isoformat() if 2 in diem else None,
             "cua_khau": diem[3].isoformat() if (n_diem >= 4 and 3 in diem) else None,
             "cang": cang.isoformat() if cang else None,
-            "hoa_don": p.invoiced_date.isoformat() if p.invoiced_date else None,
-            "thanh_toan": p.last_paid_date.isoformat() if p.last_paid_date else None,
+            "hoa_don": so[p.id].synced_at.date().isoformat() if co_so and so[p.id].synced_at else None,
+            "thanh_toan": (so[p.id].thu_doc_luc.date().isoformat()
+                           if co_so and so[p.id].thu_trang_thai == "da_thu" and so[p.id].thu_doc_luc else None),
         }
         dong_tg = {"doc_no": p.doc_no, "so_xe": p.truck_no, "khach": p.customer_name,
                    "trang_thai": "planned" if p.transport_status == "dispatched" else p.transport_status,
@@ -332,7 +347,7 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
 
     Mốc dòng thời gian lấy từ dữ liệu THẬT, không suy diễn: ngày lập phiếu · ngày xuất xe · các mốc
     "tới điểm" Bãi đã bấm trên tuyến (điểm 2 = về bãi, điểm 3 = cửa khẩu, điểm cuối = nơi giao) ·
-    ngày hoá đơn và ngày thu lấy từ Sổ chứng từ (HD, PT). Mốc nào chưa có thì để trống, màn hình vẽ
+    ngày bên hệ kế toán tạo SO (ghi công nợ khách) và ngày đọc thấy SO đã thu đủ (01/10). Mốc nào chưa có thì để trống, màn hình vẽ
     đoạn đó là "đang diễn ra".
     Dữ liệu cả năm (24/09): ghép từ phần tính sẵn của từng NGÀY (xem _xh_lo, _tq_lo) — chỉ ngày có dữ liệu vừa đổi
     mới phải tính lại."""
@@ -347,7 +362,7 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
         yy, mm = _lui_thang(y, m, i)
         d1 = dt.date(yy, mm, 1)
         khoang.append((i, yy, mm, d1, dt.date(yy + (mm == 12), (mm % 12) + 1, 1) - dt.timedelta(days=1)))
-    tq = _theo_ngay(db, "tq", [d for _, _, _, d1, d2 in khoang for d in _cac_ngay(d1, d2)], _tq_lo)
+    tq = _theo_ngay(db, "tq6", [d for _, _, _, d1, d2 in khoang for d in _cac_ngay(d1, d2)], _tq_lo)
     sau_thang = {"nhan": [], "doanh_thu_lak": [], "chi_lak": [], "tan_giao": [], "chua_thu_lak": []}
     thang_truoc = None
     for i, yy, mm, d1, d2 in khoang:
@@ -359,7 +374,7 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
             thang_truoc = g
 
     # ---- ghép phần của từng ngày trong tháng đang xem
-    ngay = _theo_ngay(db, "xh", _cac_ngay(dau, cuoi), _xh_lo)
+    ngay = _theo_ngay(db, "xh6", _cac_ngay(dau, cuoi), _xh_lo)
     theo_ngay, hao_hut, xe = {}, [], {}
     hao_tong = hao_vuot = hao_n = 0; hao_sum = 0.0
     ve = [0, 0, 0]
@@ -506,7 +521,7 @@ def theo_doi_tong(thang: str = None, q: str = None, transport_status: str = None
     # ghép từ phần tính sẵn của từng NGÀY cho đúng bộ lọc này (tính một lần cho mọi vai, bỏ khoá theo vai trên bản chép)
     loc = (q or "", transport_status or "", finance_status or "", company or "", (quy or "").strip().upper())
     cac = _cac_ngay(dau, cuoi)
-    viec = [(("tdt", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
+    viec = [(("tdt6", d.isoformat()) + loc, [d.isoformat()], None) for d in cac]
     tong = {"so_phieu": 0, "tong_chi_lak": 0.0, "doanh_thu": {}, "da_thu": {}, "con_lai": {}, "lai": {}}
     for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: _tdt_lo(db, [cac[i] for i in thieu], *loc)):
         tong["so_phieu"] += phan["so_phieu"]; tong["tong_chi_lak"] += phan["tong_chi_lak"]
@@ -560,8 +575,7 @@ def _theo_doi_tong_tinh(db, dau, cuoi, q, transport_status, finance_status, comp
               .filter(TripExpense.trip_id.in_(db.query(con.c.id)))
               .group_by(TripExpense.trip_id, TripExpense.section, TripExpense.currency, TripExpense.paid_by_epl)):
         dong[r.trip_id].append(r)
-    thu = {t: float(v or 0) for t, v in (db.query(Trip.id, Trip.collected_lak)
-                                         .filter(Trip.id.in_(db.query(con.c.id)), Trip.collected_lak > 0))}
+    thu = _da_thu_loc(db, Trip.id.in_(db.query(con.c.id)))
     dich = (quy or "").strip().upper() or None
     tong = {"doanh_thu": defaultdict(float), "da_thu": defaultdict(float), "con_lai": defaultdict(float), "lai": defaultdict(float)}
     chi = 0.0
@@ -615,7 +629,7 @@ def can_tru(thang: str = None, db: Session = Depends(get_db), user=Depends(nguoi
 
     Cả hai đều là "khách trả hộ", nên bảng này đặt chúng cạnh **cước phải thu trong tháng** để ra
     một con số: còn phải thu bao nhiêu sau khi cấn trừ. Bên mình CHỈ GHI VÀ HIỆN — bút toán cấn trừ
-    là việc của bên kế toán anh Khang, đúng như mọi chỗ khác.
+    là việc của hệ kế toán anh Tune, đúng như mọi chỗ khác.
     """
     if not thay_tien_ban(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % user.role})
@@ -648,16 +662,17 @@ def _ct_lo(db, cac_ngay):
 
 def _can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=True):
     """Cước phải thu theo khách ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại); thẻ
-    cao tốc, trạm dầu Việt Nam và phần đã ghi cấn trừ là bảng nhỏ — luôn đọc MỚI, không đệm.
-    `hoi_ke_toan=False` (đường máy cho màn Theo dõi nhà cung cấp bên trang kế toán, đợt 7d): không hỏi ngược sang bên đó
-    phần đã ghi — bên đó tự ghép từ sổ thu tiền của nó; "đã ghi / chưa ghi" để None."""
+    cao tốc và trạm dầu Việt Nam là bảng nhỏ — luôn đọc MỚI, không đệm.
+    01/10 (bỏ trang kế toán tạm): bỏ phần "đã ghi cấn trừ / chưa ghi" — đó là các lần thu "cấn trừ" trên sổ thu tiền của
+    trang tạm (số thử). Bảng chỉ còn là BẢNG TÍNH: cước, thẻ khách, trạm dầu VN, còn phải thu; ghi cấn trừ là việc của hệ
+    kế toán anh Tune. `hoi_ke_toan` giữ cho chữ ký cũ, không còn tác dụng."""
     sau = cuoi + dt.timedelta(days=1)
     theo_khach = {}
 
     def o_cua(kid, ten):
         return theo_khach.setdefault(kid or "", {"customer_id": kid, "customer_name": ten or "—",
                                                  "cuoc_lak": 0.0, "the_lak": 0.0, "dau_vn_lak": 0.0,
-                                                 "da_ghi_lak": 0.0, "the": [], "tram": []})
+                                                 "the": [], "tram": []})
 
     # 1. cước phải thu trong tháng — ghép từ các ngày, theo thứ tự ngày (giữ đúng thứ tự khách xuất hiện như trước)
     phan_ngay = list(_theo_ngay(db, "ct2", _cac_ngay(dau, cuoi), _ct_lo).values())
@@ -690,19 +705,10 @@ def _can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=True):
         o["dau_vn_lak"] += no
         o["tram"].append({"name": s_.name, "so_dong": so_dong, "no_lak": round(no)})
 
-    # 4. phần đã GHI thành phiếu thu "cấn trừ" của tháng này (ref CT-YYYYMM) — đọc từ chính sổ thu tiền
-    ref = "CT-%s" % dau.strftime("%Y%m")
-    da_ghi = _da_ghi_can_tru(db, ref) if hoi_ke_toan else None
     ra = []
-    biet = da_ghi is not None
-    da_ghi = da_ghi or {}
     for o in theo_khach.values():
         o["cuoc_lak"] = round(o["cuoc_lak"]); o["the_lak"] = round(o["the_lak"]); o["dau_vn_lak"] = round(o["dau_vn_lak"])
         o["can_tru_lak"] = o["the_lak"] + o["dau_vn_lak"]
-        o["da_ghi_lak"] = round(da_ghi.get(o["customer_id"], 0.0))
-        o["chua_ghi_lak"] = o["can_tru_lak"] - o["da_ghi_lak"]   # phần chưa ghi thành phiếu thu
-        if not biet:                                             # trang kế toán tắt: không biết đã ghi bao nhiêu
-            o["da_ghi_lak"] = o["chua_ghi_lak"] = None
         o["con_thu_lak"] = o["cuoc_lak"] - o["can_tru_lak"]
         if o["can_tru_lak"] or o["cuoc_lak"]:
             ra.append(o)
@@ -713,23 +719,11 @@ def _can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=True):
             "tong_con_thu_lak": sum(o["con_thu_lak"] for o in ra)}
 
 
-def _da_ghi_can_tru(db, ref):
-    """{customer_id: LAK đã ghi} của các lần thu cách thu `offset` mang ref này — sổ thu tiền ở TRANG KẾ TOÁN từ 28/09
-    (đợt 7a), nên hỏi sang. Trang đó tắt thì trả None: bảng cấn trừ vẫn mở, phần "đã ghi / chưa ghi" để trống (không
-    phải 0 — 0 là nói "chưa ghi gì", sai khi thật ra không biết)."""
-    try:
-        return {k: float(v or 0) for k, v in (KT.goi(db, "GET", "/api/lien-thong/doanh-thu/can-tru?ref=%s" % ref) or {}).items()}
-    except HTTPException as e:
-        if e.status_code == 503:
-            return None
-        raise
-
-
 @router.post("/api/bao-cao/can-tru/ghi")
 def ghi_can_tru(user=Depends(nguoi_hien_tai)):
-    """Ghi cấn trừ tháng dời sang trang kế toán 28/09 (đợt 7d) — màn Theo dõi nhà cung cấp bên đó, cùng sổ thu tiền."""
-    raise HTTPException(409, {"ma": "DA_DOI_SANG_KE_TOAN",
-                              "loi": "Ghi cấn trừ tháng nay làm ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp)."})
+    """Ghi cấn trừ tháng là việc của HỆ KẾ TOÁN anh Tune (01/10: bỏ trang kế toán tạm) — bên em chỉ đưa bảng tính."""
+    raise HTTPException(409, {"ma": "LAM_O_HE_KE_TOAN",
+                              "loi": "Ghi cấn trừ tháng làm ở hệ kế toán (công nợ khách, công nợ nhà cung cấp) — trang này chỉ đưa bảng tính."})
 
 
 @router.get("/api/bao-cao/xe-lien-ket")

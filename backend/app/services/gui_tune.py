@@ -18,6 +18,8 @@ EPL_System (`services/ghi_so_kinh_doanh.py`) là khuôn. NHỮNG ĐIỀU PHẢI 
   lại ĐÚNG gói và khoá đã lưu. Bị từ chối rõ ràng (4xx dữ liệu) thì dựng gói mới theo số hiện tại — bên đó không ghi gì.
 * Lỗi có thể về dưới dạng HTTP 200 kèm `Success: false` — đọc cả thân, không tin mỗi mã HTTP.
 * Chỉ `synced` khi 201, hoặc 200 `replayed: true`, kèm `data` hợp lệ.
+* Không còn chặn theo cờ trang kế toán tạm (chủ dự án 01/10: bỏ trang tạm, số bên đó là số thử) — mọi DO đã khoá gửi SO từ
+  đầu; công nợ khách chỉ còn ở hệ anh Tune.
 """
 import datetime as dt
 import json
@@ -272,17 +274,11 @@ def xuat(b):
             "initial_debt_amount": b.initial_debt_amount, "error_code": b.error_code, "error_message": b.error_message,
             "attempts": b.attempts, "pushed_by": b.pushed_by,
             "last_attempt_at": b.last_attempt_at.isoformat(timespec="minutes") if b.last_attempt_at else None,
-            "synced_at": b.synced_at.isoformat(timespec="minutes") if b.synced_at else None}
-
-
-def chan_trang_tam(p):
-    """DO đã xuất hoá đơn / đã thu ở TRANG KẾ TOÁN TẠM (EPL_KETOAN) thì công nợ khách đã nằm bên đó — gửi thêm SO sang hệ
-    kế toán anh Tune là ghi nợ khách hai lần (01/10: khách ນາງ ວັນນາ hết nợ ở trang tạm nhưng hệ anh Tune còn SO 1.676,90 USD
-    tạo lúc thử). Phải huỷ hoá đơn bên trang tạm (hoặc đối soát) trước."""
-    if p.finance_status == "paid" or p.invoiced:
-        _loi("DA_HOA_DON_TRANG_TAM", "Phiếu %s đã %s ở trang kế toán tạm%s — gửi SO sang hệ kế toán là ghi nợ khách hai lần. "
-             "Huỷ hoá đơn bên trang tạm (hoặc đối soát với kế toán) trước."
-             % (p.doc_no, "thu tiền" if p.finance_status == "paid" else "xuất hoá đơn", " (hoá đơn %s)" % p.inv_no if p.inv_no else ""), 409)
+            "synced_at": b.synced_at.isoformat(timespec="minutes") if b.synced_at else None,
+            # thu tiền SO bên kế toán — bản đọc lại, chỉ xem (de_nghi_thu.doc_thu_tune)
+            "thu": {"trang_thai": b.thu_trang_thai, "tong": b.thu_tong, "da_thu": b.thu_da_thu, "con_no": b.thu_con_no,
+                    "doc_luc": b.thu_doc_luc.isoformat(timespec="minutes") + "+00:00" if b.thu_doc_luc else None,
+                    "loi": b.thu_loi} if b.status == "synced" else None}
 
 
 def xem_truoc(db, p):
@@ -295,13 +291,8 @@ def xem_truoc(db, p):
         ra.update({"body": body, "gui_lai_goi_cu": True, "tom_tat": {"do_id": b.do_id, "customer_code": body["header"]["customer_id"],
                    "currency": body["header"]["currency"], "final_selling_price": body["header"]["final_selling_price"],
                    "route_id": body["header"]["route"]["id"]}})
-        try:
-            chan_trang_tam(p)                                    # gửi lại gói cũ cũng bị gui() chặn — xem trước nói trước
-        except HTTPException as e:
-            ra["loi"] = e.detail
         return ra
     try:
-        chan_trang_tam(p)
         tao = None if _ma_khach_cua(db, p) else ma_khach_moi(p)
         body, tom = dung_goi(db, p, ma_tam=tao)
         tom["tao_khach"] = tao                                   # gửi thì máy tạo khách này bên kế toán trước
@@ -341,7 +332,6 @@ def gui(db, p, user):
         return xuat(b), True                                   # đã có SO: không gọi lại
     if b is not None and b.status == "conflict":
         _loi("DA_XUNG_DOT", "Lần gửi trước bên kế toán báo trùng DO (409) — hai bên đối soát trước, không gửi lại.", 409)
-    chan_trang_tam(p)
     if _chua_ro(b):
         body_json, key = b.request_body, b.idempotency_key
     else:
@@ -386,6 +376,7 @@ def gui(db, p, user):
         b.currency = _chu(d.get("currency"), 3) or json.loads(body_json)["header"]["currency"]
         b.total_amount, b.initial_debt_amount = _so(d.get("totalAmount")), _so(d.get("initialDebtAmount"))
         b.synced_at = now
+        p.updated_at = now          # báo cáo tháng đếm "đã tạo SO" theo bảng này — chạm phiếu để bộ đệm báo cáo tính lại
     db.commit()
     if st != "synced":
         _loi(ma_loi or "BEN_KE_TOAN_TU_CHOI", "Bên kế toán chưa tạo SO cho %s: %s" % (p.doc_no, loi or ma_loi),

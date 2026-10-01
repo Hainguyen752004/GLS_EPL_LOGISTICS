@@ -6,7 +6,7 @@
 Đi đúng đường một tờ phiếu lĩnh đi qua: Bãi lập → in mã QR → thủ kho quét, đối chiếu, cấp dầu →
 dòng chi mang số phiếu xuất kho. Kèm các chỗ PHẢI bị từ chối: thủ kho kho khác, cấp lệch số lít mà
 không ghi lý do, cấp hai lần, tài xế tự chi tiền cho mình, chi khi mục IV chưa ghi sổ. Cuối cùng là
-tài xế khai đổ dầu dọc đường và bảng tất toán theo tháng (ở trang kế toán từ 28/09, đợt 7c).
+tài xế khai đổ dầu dọc đường và bảng tất toán theo tháng (chốt ở đây, tiền ở hệ kế toán anh Tune từ 01/10).
 
 Cần dữ liệu mẫu còn nguyên: python backend/app/seed.py --dung-lai
 """
@@ -167,27 +167,31 @@ if px:
                 {"qty_l": 100, "place_id": [x for x in dd if x["owner_type"] == "epl"][0]["id"]}, tk["tx01"])
     bao("Khai đổ ở KHO của công ty → bảo dùng phiếu lĩnh", ma, 422, (r or {}).get("detail", {}).get("ma", ""))
 
-# 14. tất toán theo tháng — ở TRANG KẾ TOÁN từ 28/09 (đợt 7c); số vẫn tính từ phiếu bên này
+# 14. tất toán theo tháng — trên trang này, tiền ở hệ kế toán anh Tune (01/10: bỏ trang kế toán tạm). Đường nối kế toán
+#     thử đủ ở kiem/thu_tat_toan_tune.py; ở đây chỉ bảng tháng, phân quyền, chặn chốt khi còn tạm ứng chờ chi, chốt / bỏ chốt.
 ky = (p.get("out_date") or p.get("doc_date"))[:7]
-ma, r = goi("/api/tat-toan?ky=" + ky, tk=tk["ketoancp"])
-bao("Bên trang điều xe: tất toán → đã dời sang trang kế toán", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
-ma, tt = K.kt("/api/tat-toan?ky=" + ky, vai="ketoancp")
-bao("Bảng tất toán tháng %s (trang kế toán)" % ky, ma, 200, "%d tài xế" % len(tt["dong"]))
+ma, r = goi("/api/tat-toan?ky=" + ky, tk=tk["thabok"])
+bao("Bãi xem tất toán → từ chối", ma, 403)
+ma, tt = goi("/api/tat-toan?ky=" + ky, tk=tk["ketoancp"])
+bao("Bảng tất toán tháng %s" % ky, ma, 200, "%d tài xế" % len(tt["dong"]))
 for d in tt["dong"]:
-    print("      %-22s %d phiếu · ứng %10s · chi %10s · chênh %10s"
+    print("      %-22s %d phiếu · ứng %10s · chi %10s · chênh %10s · %s"
           % (d["driver_name"][:22], d["so_phieu"], round(d["tong_ung_lak"]), round(d["tong_chi_lak"]),
-             round(d["chenh_lech_lak"])))
+             round(d["chenh_lech_lak"]), (d["tat_toan"] or {}).get("status") or "chưa chốt"))
 cho_chot = [d for d in tt["dong"] if d["so_phieu"] and not d["da_tat_toan"]]
 if cho_chot:
     mot = cho_chot[0]
-    ma, r = K.kt("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, vai="ketoan")
+    ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoan"])
     bao("KT Thu/Chi chốt tất toán → từ chối (việc của KT Chi phí)", ma, 403)
-    ma, r = K.kt("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, vai="ketoancp")
-    bao("KT Chi phí VC chốt tất toán", ma, 200, "đã tất toán = %s" % r["da_tat_toan"])
-    ma, r = K.kt("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, vai="ketoancp")
-    bao("Chốt lần hai → từ chối", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
-    ma, r = K.kt("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), vai="ketoancp", method="DELETE")
-    bao("Kế toán bỏ chốt để sửa lại", ma, 200)
+    ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoancp"])
+    if ma == 409 and (r or {}).get("detail", {}).get("ma") == "TAM_UNG_CHUA_CHI_XONG":
+        bao("Còn tạm ứng chờ chi ở hệ kế toán → chặn chốt", ma, 409, (r["detail"].get("loi") or "")[:70])
+    else:
+        bao("KT Chi phí VC chốt tất toán", ma, 200, "trạng thái %s" % ((r or {}).get("tat_toan") or {}).get("status"))
+        ma, r = goi("/api/tat-toan", {"driver_id": mot["driver_id"], "period": ky}, tk["ketoancp"])
+        bao("Chốt lần hai → từ chối", ma, 409, (r or {}).get("detail", {}).get("ma", ""))
+        ma, r = goi("/api/tat-toan/%s?ky=%s" % (mot["driver_id"], ky), tk=tk["ketoancp"], cach="DELETE")
+        bao("Kế toán bỏ chốt để sửa lại (rút phiếu chênh bên kế toán)", ma, 200)
 
 # 15. sổ chứng từ — mỗi bước ở trên phải để lại đúng tờ của nó
 ma, so = goi("/api/chung-tu?trip_id=" + p["id"], tk=tk["ketoan"])

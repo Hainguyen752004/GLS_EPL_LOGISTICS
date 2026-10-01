@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Bán hàng — EPL bán phụ tùng và xăng dầu cho bên ngoài. Ở TRANG KẾ TOÁN từ 28/09 (đợt 6).
+"""Bán hàng — EPL bán phụ tùng và xăng dầu cho bên ngoài. KHÔNG làm trên trang điều xe.
 
-Phiếu bán, xuất kho bán, hoá đơn bán, thu tiền bán (PXK_BAN · HD_BAN · PT_BAN) dời sang trang kế toán (Kho → Bán hàng).
-Bảng sales / sale_lines bên này đứng yên từ ngày dời. Đợt trả chủ xe bên này (routes/chu_xe.py) hỏi bên đó các phiếu
-chủ xe mua ở quầy chờ trừ, và báo sang khi đã trừ.
+28/09 (đợt 6) dời sang trang kế toán (Kho → Bán hàng). 01/10 chủ dự án bỏ phần TIỀN của trang đó (số thử) và giữ nó làm KHO
+TẠM: phiếu bán, xuất kho bán (PXK_BAN) là việc của kho; hoá đơn bán, thu tiền bán (HD_BAN · PT_BAN) là việc của hệ kế toán
+anh Tune. Bảng sales / sale_lines bên này đứng yên từ ngày dời.
 """
 from fastapi import APIRouter, Depends, HTTPException
 
 from services.bao_mat import nguoi_hien_tai
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Bán hàng nay làm ở trang kế toán (Kho → Bán hàng)."}
+DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Bán hàng không làm trên trang điều xe: phiếu bán, xuất kho bán ở kho (Kho → Bán hàng); "
+                                             "hoá đơn, thu tiền bán ở hệ kế toán."}
 
 
 @router.get("/api/ban-hang")

@@ -39,7 +39,8 @@ def _viec():
                ("cấn trừ " + th, lambda db, th=th: B.can_tru(thang=th, db=db, user=v)),
                ("dòng tổng theo dõi " + th, lambda db, th=th: B.theo_doi_tong(thang=th, q=None, transport_status=None,
                                                                           finance_status=None, company=None, quy=None, db=db, user=v)),
-               ("tất toán " + th, lambda db, th=th: TT.bang_thang(db, th))]      # trang kế toán hỏi bảng này
+               ("tất toán " + th, lambda db, th=th: TT.bang_thang(db, th))]      # màn Tất toán tài xế (/api/tat-toan)
+    # phát sinh nhà cung cấp cộng dồn mọi ngày — màn danh mục (số dòng) và Theo dõi NCC (/api/suppliers/cong-no) dùng chung
     ra.append(("nợ nhà cung cấp (mọi ngày)", lambda db: N.ds(db=db, user=v)))
     # số phiếu từ trước tới nay của từng tài xế / từng hợp đồng — đếm theo tháng, đệm (lần đầu đếm cả mấy năm)
     import routes.danh_muc as DM

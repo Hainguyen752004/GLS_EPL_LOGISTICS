@@ -166,7 +166,8 @@ def phan_2():
              "PC_TU Nợ 1601 / Có 1011 · 600.000 = đúng tờ tạm ứng (IV 580.000 + VI 20.000) — %s" % [(c["no"], c["co"], c["tien"]) for c in tu])
 
         # quỹ chi mục V → PC_SC chỉ garage, không gồm lốp (nợ nhà cung cấp trả theo đợt)
-        for hd, vai in (("send", "admin"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        # Từ 01/10 chi mục V ở hệ kế toán anh Tune (phiếu chi "Chi khác") — Quỹ không chi ở đây; đường chi tay còn lại là của Sếp
+        for hd, vai in (("send", "admin"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "admin")):
             s, g = goi("/api/trips/%s/sections/repair/%s" % (pids[0], hd), {}, vai); phai(s, 200, "Mục V: %s (%s)" % (hd, vai), g)
         s, ct = goi("/api/chung-tu?trip_id=%s" % pids[0], vai="admin")
         sc = [c for c in ct["ds"] if c["loai"] == "PC_SC"]

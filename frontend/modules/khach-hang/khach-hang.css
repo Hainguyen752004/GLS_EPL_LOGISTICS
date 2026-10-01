@@ -289,7 +289,7 @@
 .kh3 .work > .tabs-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .kh3 .tabs-panel .tab-panel { flex: 1; min-height: 0; overflow-y: auto; }
 /* con của tab là cột flex: khối có overflow (debt-top, k3-tbl-wrap) có cỡ tối thiểu 0 nên bị bóp dẹt khi tab dài — tab Công
-   nợ mất hẳn ô "Hoá đơn ở trang kế toán tạm" (tiếng Lào còn 0 px). Không cho co, tab tự cuộn. */
+   nợ mất hẳn một khối số (tiếng Lào còn 0 px). Không cho co, tab tự cuộn. */
 .kh3 .tab-panel > * { flex-shrink: 0; }
 }
 @media (min-width: 1181px) and (max-width: 1400px) {

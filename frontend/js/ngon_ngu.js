@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2153 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2165 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10766,5 +10766,65 @@ window.EPL_TU_DIEN = {
   "vi": "Tìm tên, mã tài xế",
   "lo": "ຊອກຊື່, ລະຫັດໂຊເຟີ",
   "en": "Search driver name, code"
+ },
+ "btc_title": {
+  "vi": "Bút toán chờ gửi",
+  "lo": "ບັນຊີລໍຖ້າສົ່ງ",
+  "en": "Pending journal entries"
+ },
+ "dt_st_da_tao_so": {
+  "vi": "Đã tạo SO",
+  "lo": "ສ້າງ SO ແລ້ວ",
+  "en": "SO created"
+ },
+ "dt_st_thu_mot_phan": {
+  "vi": "Thu một phần",
+  "lo": "ເກັບບາງສ່ວນ",
+  "en": "Partly collected"
+ },
+ "cmt_cho_chi": {
+  "vi": "Chờ thủ quỹ chi (hệ kế toán)",
+  "lo": "ລໍຖ້າຈ່າຍ (ລະບົບບັນຊີ)",
+  "en": "Awaiting cashier (accounting)"
+ },
+ "ncc_cho_chi": {
+  "vi": "Chờ chi",
+  "lo": "ລໍຖ້າຈ່າຍ",
+  "en": "Awaiting payment"
+ },
+ "ncc_so_tien_tra": {
+  "vi": "Số tiền trả",
+  "lo": "ຈຳນວນເງິນຈ່າຍ",
+  "en": "Amount to pay"
+ },
+ "ncc_phieu_mat": {
+  "vi": "Phiếu chi mất bên kế toán",
+  "lo": "ໃບຈ່າຍຫາຍ ຢູ່ລະບົບບັນຊີ",
+  "en": "Voucher missing in accounting"
+ },
+ "ncc_chua_de_nghi": {
+  "vi": "Chưa có lần đề nghị trả nào",
+  "lo": "ຍັງບໍ່ມີໃບສະເໜີຈ່າຍ",
+  "en": "No payment requests yet"
+ },
+ "ncc_tra_giai_thich": {
+  "vi": "Lập đề nghị trả → hệ kế toán có phiếu chi \"Chi khác\" đứng tên nhà cung cấp (Nợ 4021 / Có tiền). Thủ quỹ chi và ghi sổ ở đó; màn này hỏi lại trạng thái.",
+  "lo": "ສ້າງໃບສະເໜີຈ່າຍ → ລະບົບບັນຊີມີໃບຈ່າຍ \"ລາຍຈ່າຍອື່ນ\" ໃນນາມຜູ້ສະໜອງ (ໜີ້ 4021 / ມີ ເງິນ). ຄັງເງິນຈ່າຍ ແລະ ບັນທຶກຢູ່ທີ່ນັ້ນ; ໜ້ານີ້ກວດສະຖານະຄືນ.",
+  "en": "Create a payment request → accounting gets an \"Other payment\" voucher in the supplier's name (Dr 4021 / Cr cash). The cashier pays and posts it there; this screen checks the status back."
+ },
+ "ncc_qua_no": {
+  "vi": "Trả vượt số còn nợ?",
+  "lo": "ຈ່າຍເກີນຍອດຄ້າງ?",
+  "en": "Pay more than the balance?"
+ },
+ "ncc_qua_no_hoi": {
+  "vi": "Số trả {tra} vượt số còn nợ {no} LAK (đã trừ phần đang chờ chi). Vẫn lập đề nghị?",
+  "lo": "ຈຳນວນຈ່າຍ {tra} ເກີນຍອດຄ້າງ {no} ກີບ (ຫັກສ່ວນລໍຖ້າຈ່າຍແລ້ວ). ຍັງສ້າງໃບສະເໜີບໍ?",
+  "en": "{tra} exceeds the balance {no} LAK (net of pending payments). Create anyway?"
+ },
+ "ncc_bo_hoi": {
+  "vi": "Bỏ đề nghị {so}? Phiếu chi chưa chi bên hệ kế toán sẽ bị rút.",
+  "lo": "ຍົກເລີກໃບສະເໜີ {so}? ໃບຈ່າຍທີ່ຍັງບໍ່ຈ່າຍ ຢູ່ລະບົບບັນຊີ ຈະຖືກຖອນ.",
+  "en": "Cancel request {so}? The unpaid voucher in accounting will be withdrawn."
  }
 };

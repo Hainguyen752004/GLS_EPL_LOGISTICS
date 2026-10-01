@@ -59,8 +59,8 @@ def main():
         t = (t - dt.timedelta(days=1)).replace(day=1)
     do = None
     for x in hang:
-        if (x.get("so_ke_toan") or {}).get("da_tao_so") or not x.get("locked") or x.get("invoiced") \
-                or x.get("trang_thai") in ("da_hoa_don", "da_thu"):          # đã có hoá đơn ở trang tạm: không gửi SO (01/10)
+        # 01/10 bỏ trang kế toán tạm: mọi DO đã khoá gửi SO từ đầu — chỉ bỏ qua DO đã có SO hoặc chưa khoá
+        if (x.get("so_ke_toan") or {}).get("da_tao_so") or x.get("da_tao_so") or not x.get("locked"):
             continue
         cid = (goi("/api/trips/%s" % x["trip_id"], vai="admin")[1] or {}).get("customer_id")
         if cid in chua:

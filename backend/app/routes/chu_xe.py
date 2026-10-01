@@ -15,9 +15,10 @@ Mô hình ở đây cố ý đơn giản:
     gồm những phiếu hai bên chốt trả lần này.
   · Phiếu nằm trong đợt nào thì `trips.owner_payment_id` trỏ tới đó — đó chính là "đã trả chủ xe".
 
-Từ 28/09 (đợt 7b) ĐỢT TRẢ ở TRANG KẾ TOÁN (Tiền vận chuyển → Xe liên kết): chờ trả, trả gộp, trả từng phiếu, tờ PC_CX,
-trừ hàng chủ xe mua ở quầy. Bảng owner_payments bên này đứng yên từ ngày dời. Ở đây còn DANH MỤC chủ xe (lập phiếu
-tự điền phí, ngưỡng tấn theo chủ xe) và phần tính "chờ trả" từ phiếu cho bên đó hỏi (services/tra_chu_xe.py).
+Từ 01/10 TRẢ TIỀN ở hệ kế toán anh Tune (chủ dự án: bỏ phần tiền trang kế toán tạm, cắt sổ 01/10 — đợt trả bên đó là số
+thử, bỏ; bảng owner_payments không dùng nữa). Ở đây: DANH MỤC chủ xe (lập phiếu tự điền phí, ngưỡng tấn theo chủ xe) và
+ĐỀ NGHỊ TRẢ — phiếu chi "Chi khác" bên đó (Nợ 4022 / Có tiền) đứng tên chủ xe; thủ quỹ chi + ghi sổ → các phiếu "đã trả"
+(services/chi_tune.py, services/tra_chu_xe.py).
 """
 import datetime as dt
 from collections import defaultdict
@@ -62,23 +63,22 @@ def _dong_chi(db, p):
     return db.query(TripExpense).filter(TripExpense.trip_id == p.id).order_by(TripExpense.section, TripExpense.line_no).all()
 
 
-def xuat_chu_xe(db, o, user=None, kem_cong_no=False, xe=None, cho=None):
-    """`xe` / `cho` (từ ds_chu_xe) là phần đã nạp sẵn cho cả danh sách — có thì không hỏi DB từng chủ xe. `kem_cong_no`: phần
-    chờ trả tính từ phiếu (chỉ đường máy của trang kế toán dùng, services/tra_chu_xe.py)."""
+def xuat_chu_xe(db, o, user=None, xe=None):
+    """`xe` (từ ds_chu_xe) là phần đã nạp sẵn cho cả danh sách — có thì không hỏi DB từng chủ xe."""
     r = {"id": o.id, "name": o.name, "phone": o.phone, "address": o.address, "pay_mode": o.pay_mode or "phieu",
          "note": o.note, "active": bool(o.active),
          "so_xe": xe.get(o.id, []) if xe is not None else
                   [v.truck_no for v in db.query(Vehicle).filter(Vehicle.owner_id == o.id, Vehicle.active.is_(True)).all()]}
     if user is None or thay_tien_ban(user.role):
         r.update({"fee_pct": o.fee_pct, "over_limit_t": o.over_limit_t, "over_price": o.over_price, "hire_ccy": o.hire_ccy or "USD"})
-        if kem_cong_no:
-            r["cho_tra"] = cho[o.id] if cho is not None else _cho_tra_lo(db, [o])[o.id]
     return r
 
 
 def _cho_tra_lo(db, cac_chu):
-    """Phần chờ trả của CẢ danh sách chủ xe — bốn câu thay cho (2 + số phiếu) câu MỖI chủ xe. Cùng công thức (tinh_phieu),
-    cùng thứ tự cộng (ngày, số phiếu). Hàng chủ xe mua ở quầy chờ trừ thì trang kế toán tự cộng (phiếu bán ở bên đó)."""
+    """Phần chờ trả (phiếu đã khoá chưa trả) của CẢ danh sách chủ xe — bốn câu thay cho (2 + số phiếu) câu MỖI chủ xe. Cùng
+    công thức (tinh_phieu), cùng thứ tự cộng (ngày, số phiếu). Đường máy của trang kế toán tạm dùng hàm này đã bỏ (01/10);
+    kiem/thu_danh_muc_cu_moi.py còn so nó với cách tính từng phiếu. Không trừ phiếu đang nằm đề nghị trả bên kế toán —
+    phần đó xem chi_tune.cho_tra_chu_xe."""
     from routes.bao_cao import COT_TINH           # nạp lúc gọi: bao_cao cũng nạp các route khác, tránh vòng import
     ids = [o.id for o in cac_chu]
     ra = {i: {"so_phieu": 0, "tong": {}, "tong_lak": 0} for i in ids}
@@ -177,25 +177,18 @@ def sua_chu_xe(oid: str, data: dict = Body(...), db: Session = Depends(get_db), 
     return xuat_chu_xe(db, o, user)
 
 
-# ================================================================ công nợ và trả tiền: ở TRANG KẾ TOÁN từ 28/09 (đợt 7b)
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả chủ xe, công nợ chủ xe nay làm ở trang kế toán (Tiền vận chuyển → Xe liên kết)."}
-
-
-@router.get("/api/owners/{oid}/cong-no")
-def cong_no_chu_xe(oid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
-
-
-@router.post("/api/owners/{oid}/tra")
-def tra_chu_xe_gop(oid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
-
-
 # ---------------------------------------------------------------- trả chủ xe qua hệ kế toán anh Tune (01/10)
 # Chủ dự án chốt 01/10: tiền chi thật ở hệ anh Tune, trạng thái về bên này. Bên này lập ĐỀ NGHỊ trả cho các phiếu xe thuê đã
 # khoá; bên đó có phiếu chi "Chi khác" (Nợ 4022 / Có tiền) đứng tên chủ xe; thủ quỹ chi + ghi sổ → phiếu thành "đã trả".
 DE_NGHI_TRA = ("acct", "admin")                                     # KT Thu/Chi VC (người nhập giá thuê, khoá phiếu) và Sếp
 KHONG_XEM_TRA = ("yard", "driver", "depot", "parts", "repair")       # tiền thuê xe liên kết là tiền bán — Bãi không thấy
+
+
+def _co_nguoi(ham, *a, user):
+    """TẠM (01/10, chờ chi_tune nhận `user` theo giao ước trừ hàng quầy): truyền người đang bấm nếu hàm đã nhận — đường máy kho
+    tạm cần tên đăng nhập. B thêm tham số xong thì gọi thẳng, bỏ hàm này."""
+    import inspect
+    return ham(*a, user=user) if "user" in inspect.signature(ham).parameters else ham(*a)
 
 
 def _ban_ghi_chu_xe(db, rid):
@@ -215,10 +208,30 @@ def tra_ke_toan(oid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
     for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.owner_id == oid, ChiChuXeTune.status == "da_gui").all():
         try:
-            CHI.dong_bo_chu_xe(db, r)
+            _co_nguoi(CHI.dong_bo_chu_xe, db, r, user=user)
         except HTTPException:
             break
     return CHI.cho_tra_chu_xe(db, oid)
+
+
+@router.get("/api/owners/{oid}/hang-quay")
+def hang_quay(oid: str, trip_ids: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Hàng chủ xe mua ở quầy CHỜ TRỪ (phiếu bán ở kho tạm) + ước tính SỐ TRẢ THỰC = Σ phiếu − Σ hàng mua của các phiếu chọn
+    (`trip_ids` cách dấu phẩy; trống = mọi phiếu chờ trả) — màn Xe liên kết hiện trước khi lập đề nghị. Kho tạm không nối
+    được → 503 (không đoán số)."""
+    from services import chi_tune as CHI
+    from services import tra_chu_xe as TC
+    if user.role in KHONG_XEM_TRA:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
+    cho = {x["id"]: x for x in CHI.cho_tra_chu_xe(db, oid)["cho"]}
+    ids = list(dict.fromkeys(i for i in trip_ids.split(",") if i))
+    if any(i not in cho for i in ids):
+        raise HTTPException(409, {"ma": "PHIEU_KHONG_HOP_LE", "loi": "Có phiếu không còn chờ trả — tải lại danh sách."})
+    chon = [cho[i] for i in ids] if ids else list(cho.values())
+    if len({x["hire_ccy"] or "LAK" for x in chon}) > 1:
+        raise HTTPException(422, {"ma": "KHAC_TIEN", "loi": "Các phiếu chọn khác tiền thuê — mỗi đề nghị một loại tiền."})
+    hang = TC.hang_cho_tru(db, oid, user)
+    return {"hang": hang, "uoc_tinh": TC.tinh_tru(chon, hang) if chon else None}
 
 
 @router.post("/api/owners/{oid}/de-nghi-tra")
@@ -241,11 +254,11 @@ def viec_de_nghi_tra(rid: str, viec: str, db: Session = Depends(get_db), user=De
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
     r = _ban_ghi_chu_xe(db, rid)
     if viec == "cap-nhat":
-        r = CHI.dong_bo_chu_xe(db, r)
+        r = _co_nguoi(CHI.dong_bo_chu_xe, db, r, user=user)
     elif viec in ("gui-lai", "huy"):
         if user.role not in DE_NGHI_TRA:
             raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Thu/Chi Viêng Chăn hoặc Sếp."})
-        r = CHI.gui_lai_chu_xe(db, r, user) if viec == "gui-lai" else CHI.huy_chu_xe(db, r)
+        r = CHI.gui_lai_chu_xe(db, r, user) if viec == "gui-lai" else _co_nguoi(CHI.huy_chu_xe, db, r, user=user)
     else:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có việc %s." % viec})
     return CHI.xuat_chu_xe(r)

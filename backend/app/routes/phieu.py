@@ -37,6 +37,9 @@ from services.tinh_toan import (CACH_TRA, CACH_TRA_MAC_DINH, cach_tra, chuan_tie
 from services import kho_hang as KH
 from services import chung_tu as CT
 from services import chi_tune as CHI
+from services import chi_muc_tune as CMT
+from services import but_toan_cho as BTC
+from services import gui_tune as GT
 from services import tai_khoan as TK
 from services import de_nghi_thu as DNT
 from services.tep import loi_co_tep, TEP_DIR, TEP_KIEU, TEP_TOI_DA
@@ -223,15 +226,20 @@ def _dong_tam_ung(p, cac_dong):
 
 def da_thu_theo_phieu(db, trip_ids):
     """Tổng đã thu (LAK) của nhiều phiếu trong MỘT truy vấn — danh sách 200 phiếu thì đừng hỏi 200 lần.
-    Sổ thu tiền ở trang kế toán từ 28/09 (đợt 7a): đây là BẢN CHÉP `trips.collected_lak` bên đó ghi sang mỗi lần thu."""
+    Từ 01/10 (bỏ trang kế toán tạm — `collected_lak` bên đó là số thử): BẢN ĐỌC LẠI thu tiền SO bên hệ anh Tune
+    (gui_so_tune.thu_da_thu, theo tiền SO) quy Kíp theo tỷ giá khoá trên phiếu. Chưa có SO / chưa đọc lại thì 0."""
     ids = [i for i in (trip_ids or []) if i]
     if not ids:
         return {}
-    return {t: float(v or 0) for t, v in db.query(Trip.id, Trip.collected_lak).filter(Trip.id.in_(ids)).all()}
+    q = (db.query(GuiSoTune.trip_id, GuiSoTune.thu_da_thu, GuiSoTune.currency, Trip.price_ccy, Trip.rate_usd, Trip.rate_thb,
+                  Trip.rate_vnd, Trip.rate_cny)
+         .join(Trip, Trip.id == GuiSoTune.trip_id)
+         .filter(GuiSoTune.trip_id.in_(ids), GuiSoTune.status == "synced", GuiSoTune.thu_da_thu > 0))
+    return {r.trip_id: float(r.thu_da_thu) * ty_gia(r, r.currency or r.price_ccy) for r in q}
 
 
 def _da_thu(db, phieu):
-    return float(phieu.collected_lak or 0)
+    return DNT.da_thu_lak(phieu, DNT.so_cua(db, phieu))
 
 
 def _diem_tuyen(db, phieu):
@@ -265,6 +273,8 @@ def _bo_tien_ban(ra):
         x.pop("amount", None); x.pop("amount_lak", None); x.pop("rate_to_lak", None)
     for d in (ra.get("expenses") or []):
         d.pop("sale_price", None)                 # giá bán dầu, phụ tùng cho chủ xe là tiền BÁN (29/09 · 30/09)
+    ra.pop("so_ke_toan", None)                    # SO bên kế toán mang cước, số đã thu của khách
+    ra.pop("but_toan_cho", None)                  # bút toán chờ mang tiền thuê xe liên kết
     return ra
 
 
@@ -273,7 +283,7 @@ def nap_lo(db, ds):
     và tuyến · hoá đơn gộp · khách · hợp đồng (nạp vào phiên để db.get() sau đó lấy ngay, không hỏi lại).
     Trước 24/09 mỗi phiếu hỏi DB ~9 lần: trang 50 phiếu là 450 câu SQL; nay là 8 câu cho cả trang."""
     ids = [p.id for p in ds]
-    nap = {"dong": defaultdict(list), "muc": defaultdict(dict), "tep": defaultdict(lambda: [0, 0, 0]), "giu": []}
+    nap = {"dong": defaultdict(list), "muc": defaultdict(dict), "tep": defaultdict(lambda: [0, 0, 0]), "giu": [], "so": {}}
     if not ids:
         return nap
     for d in (db.query(TripExpense).filter(TripExpense.trip_id.in_(ids))
@@ -281,6 +291,8 @@ def nap_lo(db, ds):
         nap["dong"][d.trip_id].append(d)
     for m in db.query(TripSection).filter(TripSection.trip_id.in_(ids)):
         nap["muc"][m.trip_id][m.section] = m
+    for b in db.query(GuiSoTune).filter(GuiSoTune.trip_id.in_(ids)):
+        nap["so"][b.trip_id] = b
     for tid, kind, n in (db.query(TripAttachment.trip_id, TripAttachment.kind, func.count())
                          .filter(TripAttachment.trip_id.in_(ids)).group_by(TripAttachment.trip_id, TripAttachment.kind)):
         t = nap["tep"][tid]
@@ -308,13 +320,14 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
         ra[c] = ra[c].isoformat() if ra[c] else None
     tuyen = db.get(Route, phieu.route_id) if phieu.route_id else None
     kh = db.get(Customer, phieu.customer_id) if phieu.customer_id else None
+    so = nap["so"].get(phieu.id) if nap else db.get(GuiSoTune, "EPLLAO-" + phieu.id)
     ra.update({"id": phieu.id, "transport_status": phieu.transport_status,
-               "finance_status": phieu.finance_status, "invoiced": phieu.invoiced,
-               # Hoá đơn gộp tháng (C8.2): phiếu nằm trong tờ nào, và khách này có gộp không. Hoá đơn, thu tiền ở
-               # trang kế toán từ 28/09 — các ô dưới là bản chép bên đó ghi sang (đợt 7a).
-               "invoice_id": phieu.invoice_id, "inv_no": phieu.inv_no,
-               "invoiced_date": phieu.invoiced_date.isoformat() if phieu.invoiced_date else None,
-               "last_paid_date": phieu.last_paid_date.isoformat() if phieu.last_paid_date else None,
+               # 01/10 (bỏ trang kế toán tạm — invoiced · inv_no · invoice_id · invoiced_date · last_paid_date bên đó là số thử,
+               # không gửi nữa): hoá đơn, thu tiền khách ở hệ anh Tune. `da_tao_so` = bên đó đã tạo SO cho DO (ghi công nợ
+               # khách); `so_ke_toan` = lần gửi SO + bản đọc lại thu tiền; finance_status = bản chép trạng thái thu bên đó.
+               "finance_status": phieu.finance_status,
+               "da_tao_so": bool(so is not None and so.status == "synced"),
+               "so_ke_toan": GT.xuat(so),
                "inv_mode": (kh.invoice_mode if kh else None) or "phieu",
                "locked": bool(phieu.locked), "locked_by": phieu.locked_by,
                "locked_at": phieu.locked_at.isoformat() if phieu.locked_at else None,
@@ -350,6 +363,13 @@ def xuat_phieu(db, phieu, day_du=True, da_thu=None, vai=None, nap=None):
         # tạm ứng chi ở hệ kế toán (01/10): trạng thái phiếu chi bên đó — số tiền bỏ với vai không thấy tiền chi
         ra["chi_tam_ung"] = dict(CHI.xuat(CHI.cua_phieu(db, phieu), thay_tien=vai is None or thay_tien_chi(vai)) or {},
                                  o_ke_toan=CHI.chi_o_ke_toan())
+        # chi mục V, VI ở hệ kế toán (01/10): phiếu chi "Chi khác" bên đó cho khoản quỹ trả ngay — trạng thái từng lần
+        lan = CMT.cac_lan(db, phieu.id)
+        ra["chi_muc_ke_toan"] = {m: CMT.tom_tat(db, phieu, m, [r for r in lan if r.section == m], dong,
+                                                thay_tien=vai is None or thay_tien_chi(vai)) for m in CMT.MUC}
+        # bút toán chờ gửi của phiếu (khoá phiếu: thuê xe, ghi nợ nhà cung cấp) — chỉ vai xem được màn bút toán
+        if vai is None or vai in BTC.VAI_XEM:
+            ra["but_toan_cho"] = [BTC.xuat(r, phieu.doc_no) for r in BTC.danh_sach(db, trip_id=phieu.id)]
         ra["route_stops"] = _diem_tuyen(db, phieu)
         # điểm xa nhất đã tới trên tuyến — để vẽ tiến độ
         da_toi = [e.stop_seq for e in su_kien if e.kind == "arrive_stop" and e.stop_seq]
@@ -462,12 +482,13 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
              transport_status: str = None, finance_status: str = None, company: str = None, q: str = None,
              thang: str = None, tu: str = None, den: str = None, kind: str = None, customer_id: str = None,
              vehicle_id: str = None, owner_id: str = None, invoiced: bool = None, locked: bool = None,
-             trang: int = 1, co: int = 50, sap: str = None):
+             da_tao_so: bool = None, trang: int = 1, co: int = 50, sap: str = None):
     """Danh sách phiếu — LỌC · TÌM · PHÂN TRANG ngay trong SQL (chủ dự án chốt 24/09: nghìn chuyến / ngày).
 
     Trước đây trả MỌI phiếu rồi tìm bằng Python: một năm 365.000 phiếu là quá 60 giây. Nay mặc định 50 phiếu mới
     nhất (`co` tối đa 500, `trang` từ 1); header X-Tong là tổng số phiếu khớp bộ lọc để giao diện vẽ phân trang.
-    `transport_status` / `finance_status` nhận nhiều giá trị cách nhau dấu phẩy."""
+    `transport_status` / `finance_status` nhận nhiều giá trị cách nhau dấu phẩy. `da_tao_so` (01/10): DO bên hệ kế toán đã có
+    SO hay chưa; `invoiced` (cờ hoá đơn trang tạm cũ) nay hiểu là `da_tao_so`."""
     qs = db.query(Trip)
     if user.role == "driver":                    # tài xế chỉ thấy phiếu của mình
         qs = qs.filter(Trip.driver_id == (user.driver_id or "__khong_co__"))
@@ -478,7 +499,11 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
     if customer_id: qs = qs.filter(Trip.customer_id == customer_id)
     if vehicle_id: qs = qs.filter(Trip.vehicle_id == vehicle_id)
     if owner_id: qs = qs.filter(Trip.owner_id == owner_id)
-    if invoiced is not None: qs = qs.filter(Trip.invoiced.is_(True) if invoiced else or_(Trip.invoiced.is_(False), Trip.invoiced.is_(None)))
+    if da_tao_so is None:
+        da_tao_so = invoiced
+    if da_tao_so is not None:
+        co_so = db.query(GuiSoTune.trip_id).filter(GuiSoTune.status == "synced", GuiSoTune.trip_id.isnot(None))
+        qs = qs.filter(Trip.id.in_(co_so) if da_tao_so else ~Trip.id.in_(co_so))
     if locked is not None: qs = qs.filter(Trip.locked.is_(True) if locked else or_(Trip.locked.is_(False), Trip.locked.is_(None)))
     qs = loc_phieu(qs, q, thang, tu, den)
     co = max(1, min(int(co or 50), CO_TOI_DA))
@@ -1057,6 +1082,16 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         if r is not None and r.status == "da_chi":
             return xuat_phieu(db, p, vai=user.role)
         CHI.rut(db, trip_id=p.id)
+    if muc in CMT.MUC and hanh_dong == "pay" and CHI.chi_o_ke_toan():
+        # Chi mục V / VI ở hệ kế toán (01/10): khoản quỹ trả ngay thành phiếu chi "Chi khác" bên đó lúc KT Chi phí ghi sổ;
+        # thủ quỹ chi và ghi sổ ở đó, trang này tự ghi "đã chi". Hỏi lại trước: bên đó đã ghi sổ hết thì mục đã "đã chi".
+        lan = CMT.cua_phieu(db, p, muc, cap_nhat=True)
+        if s.status == "paid":
+            return xuat_phieu(db, p, vai=user.role)
+        if CMT.con_phai_chi(db, p, muc, recs=lan):
+            if user.role != "admin":
+                raise HTTPException(409, {"ma": "CHI_O_KE_TOAN", "loi": CMT.cau_chan_chi(db, p, muc, lan)})
+            CMT.rut_cho(db, p, muc)        # Sếp chi tay: rút phiếu chi chờ bên đó, không để thủ quỹ chi lần nữa
     if muc in MUC_CHI and hanh_dong == "send" and not any(d.section == muc for d in _dong_chi(db, p)):
         raise HTTPException(409, {"ma": "MUC_TRONG", "loi": "Mục %s chưa có dòng chi nào để gửi kiểm." % muc})
     if muc in MUC_CHI and hanh_dong == "verify":
@@ -1121,12 +1156,9 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
             # tờ tạm ứng (đã có PC_TU — trước đây mục VI bị chi hai lần), dòng trả cùng lương, dòng ghi nợ nhà cung cấp /
             # trừ thẻ, và dòng Theo dõi NCC đã tính là nợ nhà cung cấp (ví dụ lốp — Excel: ຕິດໜີ້ຜູ້ສະໜອງ ຈ່າຍເປັນງວດ).
             # Mục VI không còn dòng nào như thế: mỗi dòng hoặc tiền mặt theo tờ tạm ứng, hoặc trả cùng lương, hoặc ghi nợ NCC.
-            from routes.nha_cung_cap import khoan_muc_ncc
-            ncc = khoan_muc_ncc(db)
-            dong = [] if muc == "other" else [
-                d for d in _dong_chi(db, p) if d.section == muc and d.paid_by_epl and d.source != "kho"
-                and not la_tien_mat_tai_xe(d, p.company) and not d.ghi_no and not d.toll_card_id
-                and not (d.supplier_id is None and d.item_key in ncc)]
+            # Từ 01/10 các dòng này chi ở hệ kế toán (services/chi_muc_tune.py) — tới đây chỉ khi chi trên trang điều xe
+            # (EPL_CHI_TAM_UNG=tai_cho) hoặc Sếp chi tay; dòng đã nằm trong phiếu chi bên kế toán đã ghi sổ thì không chi lại.
+            dong = CMT.con_phai_chi(db, p, muc) if CHI.chi_o_ke_toan() else CMT.dong_quy_chi(db, p, muc)
             tong = sum(tien_dong(p, d) for d in dong)
             if tong > 0:
                 CT.ghi(db, "PC_SC", nguon_bang="trip_sections", nguon_id="%s:%s" % (p.id, muc), trip=p, ngay=dt.date.today(), phuong_thuc="cash",
@@ -1139,6 +1171,13 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         # ghi sổ mục IV xong → phiếu chi "Chi trước" bên hệ kế toán (chưa ghi sổ). Hỏng thì lỗi nằm trên tờ tạm ứng, gửi lại
         # ở màn Phiếu đề nghị chi; ghi sổ mục IV vẫn giữ — tài xế chỉ chưa xuất phát được cho tới khi thủ quỹ chi.
         CHI.gui_sau_ghi_so(db, p, user)
+    if muc in CMT.MUC and hanh_dong == "book":
+        # ghi sổ mục V / VI xong → phiếu chi "Chi khác" bên hệ kế toán cho khoản quỹ trả ngay (nếu có). Hỏng thì lỗi nằm trên
+        # bản ghi, KT Chi phí gửi lại ở màn Phiếu đề nghị chi; ghi sổ mục vẫn giữ.
+        CMT.gui_sau_ghi_so(db, p, muc, user)
+    if muc in CMT.MUC and hanh_dong == "unlock":
+        CMT.rut_cho(db, p, muc)            # Sếp mở khoá mục: phiếu chi chờ bên kế toán theo số cũ rút đi
+        db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1191,6 +1230,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "incident_type phải là %s." % ", ".join(LOAI_SU_CO)})
         e.incident_type = lt
     db.add(e); db.flush()
+    rut_chi = False
 
     # Lấy phụ tùng từ kho = trừ tồn bên trang kế toán; cả lần lưu này đi trong GiaoDichKho: bên này hỏng ở đâu thì lần
     # xuất bên kia được huỷ, hai bên không lệch. Trang kế toán tắt → 503, không lưu được (chặn và báo rõ, 28/09).
@@ -1235,11 +1275,14 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             s = _muc_cua(db, p)["repair"]
             if s.status not in ("wait", "entered"):
                 _ghi_log(db, p, user, "sec_repair:reopen")
+            rut_chi = s.status == "booked"
             s.status = "entered"
             if p.vehicle_id and e.incident_type == "breakdown":
                 x = db.get(Vehicle, p.vehicle_id)
                 if x: x.status = "maintenance"
         _ghi_log(db, p, user, "ev_%s" % kind)
+    if sua and rut_chi:
+        CMT.rut_cho(db, p, "repair"); db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1524,6 +1567,9 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
     _ghi_log(db, p, user, "a_lock" if not cb else "a_lock_warn")
     # DO xong → phiếu đề nghị thu cho bên công nợ (sếp 30/09)
     DNT.ghi(db, p, user)
+    # khoản KHÔNG qua tiền phải vào sổ lúc khoá (chủ dự án 01/10): xe thuê Nợ 621 / Có 4022 bằng tiền thuê; dòng ghi nợ nhà
+    # cung cấp Nợ 625 · 614 / Có 4021 — thành bút toán chờ gửi (hệ anh Tune chưa có đường nhận bút toán tổng hợp)
+    BTC.ghi_khoa_phieu(db, p, user.full_name)
     db.commit()
     ra = xuat_phieu(db, p, vai=user.role); ra["canh_bao"] = cb
     return ra
@@ -1536,16 +1582,18 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     if user.role not in ("acct", "admin"):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ kế toán Viêng Chăn mở khoá."})
-    if p.invoiced and user.role != "admin":
-        raise HTTPException(409, {"ma": "DA_HOA_DON", "loi": "Đã xuất hoá đơn thì không mở khoá được."})
-    c = DNT.cua(db, p)
-    if c is not None and c.da_day and user.role != "admin":
-        raise HTTPException(409, {"ma": "DA_GUI_DE_NGHI_THU",
-                                  "loi": "Phiếu đề nghị thu %s đã gửi bên công nợ — báo bên đó trước, rồi nhờ Sếp mở khoá." % c.so})
+    # 01/10 (bỏ trang kế toán tạm): không xét hoá đơn / tờ đề nghị thu "đã đẩy" của trang tạm nữa — chỉ xét những gì đã gửi
+    # sang hệ anh Tune: SO (công nợ khách), lần gửi SO chưa rõ kết quả, đề nghị trả chủ xe.
     so_kt = db.get(GuiSoTune, "EPLLAO-" + p.id)
     if so_kt is not None and so_kt.status == "synced" and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_TAO_SO", "loi": "Bên công nợ đã tạo SO %s cho DO này — báo bên đó trước, rồi nhờ Sếp mở khoá."
                                                             % (so_kt.order_code or "")})
+    if so_kt is not None and so_kt.status != "synced" and (GT._chua_ro(so_kt) or so_kt.status == "conflict"):
+        # lần gửi trước mất mạng / hết giờ / bên kia báo trùng: bên đó có thể ĐÃ tạo SO theo số cũ — mở khoá sửa số rồi gửi lại
+        # là hai bên hai số. Gửi lại (cùng gói, cùng khoá) để biết chắc, hoặc đối soát, rồi mới mở.
+        raise HTTPException(409, {"ma": "SO_CHUA_RO", "loi": "Lần gửi SO trước của DO này chưa rõ kết quả (%s) — bấm gửi lại ở màn Phiếu đề "
+                                                             "nghị thu để biết bên công nợ đã tạo SO chưa, rồi mới mở khoá." % (
+                                                                 so_kt.error_code or so_kt.status)})
     # đề nghị trả chủ xe bên hệ kế toán (01/10): số trả chủ xe tính từ phiếu đã khoá — mở khoá thì số có thể đổi
     from models import ChiChuXeTune
     for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.status.in_(("da_gui", "da_chi"))).all():
@@ -1554,6 +1602,7 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
                 "Phiếu %s nằm trong đề nghị trả chủ xe %s (%s) — %s" % (p.doc_no, r.ref_no, r.document_no or "",
                 "bỏ đề nghị đó ở màn Xe liên kết trước." if r.status == "da_gui" else "thủ quỹ đã chi, đối soát ở hệ kế toán."))})
     DNT.rut(db, p)
+    BTC.huy_khoa_phieu(db, p, user.full_name)      # bút toán chờ của lần khoá này: chưa gửi thì huỷ, khoá lại ghi theo số mới
     p.locked, p.locked_by, p.locked_at = False, None, None
     _ghi_log(db, p, user, "a_unlock_slip")
     db.commit()
@@ -1563,8 +1612,10 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
 # ---------------------------------------------------------------- xe liên kết: chi trả chủ xe → PC_CX
 @router.post("/api/trips/{tid}/tra-chu-xe")
 def tra_chu_xe(tid: str, user=Depends(nguoi_hien_tai)):
-    """Trả chủ xe ở trang kế toán từ 28/09 (đợt 7b) — Tiền vận chuyển → Xe liên kết; phiếu nhận bản chép 'đã trả'."""
-    raise HTTPException(409, {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả chủ xe nay làm ở trang kế toán (Tiền vận chuyển → Xe liên kết)."})
+    """Trả chủ xe ở HỆ KẾ TOÁN anh Tune từ 01/10: màn Xe liên kết lập đề nghị trả → phiếu chi "Chi khác" bên đó, thủ quỹ chi và
+    ghi sổ ở đó, phiếu nhận "đã trả chủ xe" (services/chi_tune.de_nghi_tra_chu_xe)."""
+    raise HTTPException(409, {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả chủ xe: lập đề nghị trả ở màn Xe liên kết — phiếu chi bên hệ kế toán, "
+                                                                 "thủ quỹ chi ở đó."})
 
 
 # ---------------------------------------------------------------- tệp đính kèm (phiếu quặng của khách)
@@ -1658,11 +1709,12 @@ def xoa_tep(aid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai
     return {"ok": True}
 
 
-# ---------------------------------------------------------------- hoá đơn · thu tiền: ở TRANG KẾ TOÁN từ 28/09
-# Đợt 7a: xuất hoá đơn từng phiếu, sổ thu tiền, in phiếu thu, hoá đơn gộp tháng dời sang trang kế toán (Tiền vận chuyển
-# → Hoá đơn vận chuyển · Hoá đơn gộp tháng). Bên đó ghi bản chép trạng thái vào phiếu qua /api/lien-thong/doanh-thu/….
+# ---------------------------------------------------------------- hoá đơn · thu tiền: ở HỆ KẾ TOÁN anh Tune
+# 28/09 dời sang trang kế toán tạm; 01/10 chủ dự án bỏ trang tạm (số bên đó là số thử). Nay: khoá phiếu → phiếu đề nghị thu →
+# gửi SO sang hệ anh Tune (công nợ khách, hoá đơn, thu tiền ở đó); trang này chỉ đọc lại trạng thái (de_nghi_thu).
 DA_DOI_HD = {"ma": "DA_DOI_SANG_KE_TOAN",
-             "loi": "Hoá đơn và thu tiền nay làm ở trang kế toán (Tiền vận chuyển → Hoá đơn vận chuyển)."}
+             "loi": "Hoá đơn và thu tiền khách làm ở hệ kế toán: khoá phiếu → gửi đề nghị thu (SO) ở màn Phiếu đề nghị thu; "
+                    "thu tiền ghi ở công nợ khách bên đó."}
 
 
 @router.post("/api/trips/{tid}/invoice")
@@ -1672,16 +1724,15 @@ def xuat_hoa_don(tid: str, user=Depends(nguoi_hien_tai)):
 
 # ---------------------------------------------------------------- khách trả tiền: sổ thu từng lần
 #
-# Trước đây chỗ này là một cái nút "đã thu" bật `finance_status` sang `paid`. Nó không ghi khách trả
-# bao nhiêu, bằng tiền gì, ngày nào — trong khi thực tế bên Lào hoá đơn ghi USD mà khách chuyển LAK
-# hoặc Nhân dân tệ, và trả làm nhiều lần. Giờ mỗi lần tiền về là MỘT DÒNG, trạng thái phiếu do tổng
-# các dòng đó quyết định, không ai bấm tay nữa. Các dòng ở trang kế toán từ 28/09 (đợt 7a); bên này giữ tổng đã thu.
+# Thu tiền khách ở hệ kế toán anh Tune từ 01/10: trạng thái thu của phiếu (finance_status) là bản chép đọc lại từ bên đó
+# (services/de_nghi_thu.doc_thu_tune). Hàm dưới chỉ còn cho đường liên thông cũ của trang tạm (services/doanh_thu.ghi_da_thu)
+# tới khi đường đó gỡ — nó đọc collected_lak bên đó ghi sang, trang điều xe không dùng.
 LECH_COI_LA_DU = 1.0          # lệch dưới 1 LAK thì coi là trả đủ — làm tròn tỷ giá thôi, không phải nợ
 
 
 def _tinh_lai_trang_thai_thu(db, p):
-    """Trạng thái tài chính = so TỔNG ĐÃ THU (bản chép từ trang kế toán) với tiền hoá đơn, cả hai quy về LAK."""
-    da = _da_thu(db, p)
+    """Trạng thái tài chính = so tổng đã thu (collected_lak — bản chép của đường liên thông cũ) với tiền hoá đơn, quy LAK."""
+    da = float(p.collected_lak or 0)
     tong = tinh_phieu(p, _dong_chi(db, p))["doanh_thu_lak"]
     if da <= LECH_COI_LA_DU:
         p.finance_status = "unpaid"
@@ -1771,9 +1822,12 @@ def _duyet_chi_khac(db, p, e, data, user):
     s = _muc_cua(db, p)["other"]
     if s.status not in ("wait", "entered"):
         _ghi_log(db, p, user, "sec_other:reopen")
+    rut_chi = s.status == "booked"
     s.status = "entered"
     _ghi_log(db, p, user, "ev_approved")
     db.commit()
+    if rut_chi:
+        CMT.rut_cho(db, p, "other"); db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1912,11 +1966,14 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         s = _muc_cua(db, p)["repair"]
         if s.status not in ("wait", "entered"):
             _ghi_log(db, p, user, "sec_repair:reopen")
+        rut_chi = s.status == "booked"
         s.status = "entered"
         if p.vehicle_id and e.incident_type == "breakdown":
             x = db.get(Vehicle, p.vehicle_id)
             if x: x.status = "maintenance"
         _ghi_log(db, p, user, "ev_approved")
+    if rut_chi:
+        CMT.rut_cho(db, p, "repair"); db.commit()   # có khoản sửa mới: phiếu chi chờ bên kế toán theo số cũ rút đi
     return xuat_phieu(db, p, vai=user.role)
 
 
@@ -1956,7 +2013,7 @@ def phieu_chi(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
 
 @router.get("/api/trips/{tid}/phieu-thu")
 def phieu_thu(tid: str, user=Depends(nguoi_hien_tai)):
-    """Phiếu thu tiền khách in ở trang kế toán từ 28/09 (Hoá đơn vận chuyển → In phiếu thu) — sổ thu tiền ở bên đó."""
+    """Phiếu thu tiền khách in ở hệ kế toán anh Tune (công nợ khách) từ 01/10 — trang này không thu tiền."""
     raise HTTPException(409, DA_DOI_HD)
 
 
@@ -1973,10 +2030,19 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if any(e.stock_move_id for e in _dong_chi(db, p)) and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_XUAT_KHO", "loi": "Phiếu đã có dòng xuất kho, không xoá được."})
     _chan_khoa(p, user)
-    if p.invoiced or (p.collected_lak or 0) > 0:
-        raise HTTPException(409, {"ma": "DA_HOA_DON", "loi": "Phiếu %s đã xuất hoá đơn ở trang kế toán — huỷ hoá đơn và các lần thu bên đó trước." % p.doc_no})
+    # 01/10 (bỏ trang kế toán tạm): chặn theo những gì đã sang hệ anh Tune, không theo cờ hoá đơn trang tạm. Có SO (công nợ
+    # khách) hay lần gửi SO chưa rõ kết quả → chặn cả Sếp: xoá phiếu là để lại SO mồ côi bên đó.
+    so_kt = db.get(GuiSoTune, "EPLLAO-" + p.id)
+    if so_kt is not None and (so_kt.status in ("synced", "conflict") or GT._chua_ro(so_kt)):
+        raise HTTPException(409, {"ma": "DA_TAO_SO", "loi": "Phiếu %s đã gửi đề nghị thu sang bên công nợ (SO %s) — huỷ SO bên đó (đối soát) "
+                                                            "trước." % (p.doc_no, so_kt.order_code or so_kt.status)})
     if p.owner_payment_id or p.owner_paid:
-        raise HTTPException(409, {"ma": "DA_TRA_CHU_XE", "loi": "Phiếu %s đã trả chủ xe ở trang kế toán — Sếp huỷ đợt trả bên đó trước." % p.doc_no})
+        raise HTTPException(409, {"ma": "DA_TRA_CHU_XE", "loi": "Phiếu %s đã trả chủ xe ở hệ kế toán — đối soát phiếu chi bên đó trước." % p.doc_no})
+    from models import ChiChuXeTune
+    for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.status.in_(("da_gui", "da_chi"))).all():
+        if p.id in (r.trip_ids or ""):
+            raise HTTPException(409, {"ma": "TRONG_DE_NGHI_TRA_CHU_XE", "loi": "Phiếu %s nằm trong đề nghị trả chủ xe %s — bỏ đề nghị đó "
+                                                                              "ở màn Xe liên kết trước." % (p.doc_no, r.ref_no)})
     # Phiếu lĩnh / phiếu tạm ứng ĐÃ CẤP: dầu đã ra khỏi kho, tiền đã tới tay tài xế. Trước đây xoá phiếu thì máy chủ
     # vấp khoá ngoại fuel_moves → vouchers và trả 500 (rà 23/09). Bãi: chặn rõ ràng. Sếp: trả dầu về kho rồi xoá.
     from models import Voucher
@@ -1984,8 +2050,11 @@ def xoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_t
     if da_cap and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_CAP_PHAT", "loi": "Phiếu đã có %s được cấp (%s), không xoá được."
                                   % ("phiếu đề nghị xuất kho nhiên liệu / đề nghị tạm ứng", ", ".join(v.doc_no or v.id for v in da_cap))})
-    # phiếu chi tạm ứng bên hệ kế toán (01/10): chưa ghi sổ thì rút bên đó; đã chi thì chặn kể cả Sếp — tiền đã ra khỏi quỹ
+    # phiếu chi tạm ứng / chi mục V–VI bên hệ kế toán (01/10): chưa ghi sổ thì rút bên đó; đã chi thì chặn kể cả Sếp — tiền
+    # đã ra khỏi quỹ
     CHI.rut(db, trip_id=p.id)
+    CMT.rut(db, p.id)
+    BTC.huy_khoa_phieu(db, p, user.full_name)
     id_v = [v.id for v in db.query(Voucher.id).filter(Voucher.trip_id == p.id).all()]
     if id_v:
         for m in db.query(FuelMove).filter(FuelMove.voucher_id.in_(id_v)).all():

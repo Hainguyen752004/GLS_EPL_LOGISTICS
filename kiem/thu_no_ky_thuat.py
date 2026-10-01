@@ -8,7 +8,8 @@
     cụ trình duyệt là đọc được hết. Nay các khoá đó bị **bỏ hẳn** khỏi gói trả về.
   · **3.2 — ảnh xe lưu được**, dùng lại đúng chỗ chứa tệp của phiếu.
   · **3.4 — ô "Việc của tôi" của KT Doanh thu** đếm phiếu đã khoá chưa xuất hoá đơn + hoá đơn chưa
-    thu đủ, thay vì luôn là 0 (họ không phụ trách mục nào trên phiếu).
+    thu đủ, thay vì luôn là 0 (họ không phụ trách mục nào trên phiếu). Từ 01/10 (bỏ trang kế toán tạm): "hoá đơn" là SO
+    bên hệ kế toán anh Tune (`da_tao_so`), "chưa thu đủ" theo bản đọc lại thu tiền bên đó — không còn cờ invoiced.
 """
 import io
 import json
@@ -18,7 +19,6 @@ import urllib.parse
 import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import _ke_toan as K       # noqa: E402 — phiếu thu tiền khách in ở trang kế toán (28/09, đợt 7a)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -104,6 +104,9 @@ def main():
             lo_chi = sorted({k for k in ("tong_chi_lak", "chi") if k in (ds[0].get("tinh") or {})})
             lo_dg = [d for p in ds for d in (p.get("expenses") or []) if "unit_price" in d]
             assert not lo_chi and not lo_dg and not any("rate_usd" in p for p in ds), "%s vẫn nhận tiền chi: %s" % (ten, lo_chi)
+        elif vai == "khotb":
+            # thủ kho không thấy giá vốn kho (chủ dự án 30/09) — tổng chi có giá kho bên trong nên cũng bỏ
+            assert not ({"tong_chi_lak", "chi"} & set(ds[0].get("tinh") or {})), "%s vẫn nhận tổng chi (lộ giá kho): %s" % (ten, con)
         else:
             assert len(con) == len(TINH_CHI), "phần CHI PHÍ phải giữ nguyên cho %s: %s" % (ten, con)
     print("  ✓ %-60s" % "Ba vai không thấy tiền bán; Bãi không thấy cả tiền chi")
@@ -118,7 +121,9 @@ def main():
     pb = ds_b[0]["id"]
     s, pc = goi("/api/trips/%s/phieu-chi" % pb, vai="thabok"); phai(s, 200, "Bãi mở phiếu chi tạm ứng để in", pc)
     assert pc["tong_lak"] is None and all("unit_price" not in d and "tien_lak" not in d for d in pc["dong"]),         "phiếu tạm ứng gửi cho Bãi không được có đơn giá / thành tiền / tổng: %s" % pc
-    s, g = K.kt("/api/hoa-don/phieu/%s/phieu-thu" % pb, vai="thabok"); phai(s, 403, "Bãi mở phiếu thu tiền khách (trang kế toán) → bị chặn", g)
+    # phiếu thu tiền khách: không còn ở trang điều xe, cũng không ở trang kế toán tạm (01/10) — thu ở hệ kế toán anh Tune
+    s, g = goi("/api/trips/%s/phieu-thu" % pb, vai="thabok"); phai(s, 409, "Bãi mở phiếu thu tiền khách → 409 (thu ở hệ kế toán)", g)
+    assert "hệ kế toán" in (g.get("detail") or {}).get("loi", ""), "câu báo phải chỉ sang hệ kế toán: %s" % g
     s, vs = goi("/api/trips/%s/vouchers" % pb, vai="thabok")
     assert all(v.get("amount_lak") is None for v in (vs or [])), "phiếu lĩnh / tạm ứng gửi cho Bãi không được có số tiền"
     s, pc2 = goi("/api/trips/%s/phieu-chi" % pb, vai="ketoan")
@@ -133,7 +138,14 @@ def main():
 
     s, g = goi("/api/trips/%s" % p0["id"], vai="thabok")
     assert "price" not in g and "doanh_thu" not in g["tinh"], "xem một phiếu cũng phải lọc: %s" % list(g)[:30]
-    print("  ✓ %-60s" % "Xem chi tiết một phiếu cũng lọc đúng như danh sách")
+    # SO bên kế toán (cước, đã thu) và bút toán chờ (tiền thuê xe) là tiền bán — Bãi không nhận; cờ hoá đơn trang tạm không còn
+    assert "so_ke_toan" not in g and "but_toan_cho" not in g, "Bãi không được nhận SO / bút toán chờ: %s" % [k for k in g if "so_" in k]
+    print("  ✓ %-60s" % "Xem chi tiết một phiếu cũng lọc đúng như danh sách (cả SO, bút toán chờ)")
+    for vai in ("thabok", "ketoan", "admin"):
+        s, g = goi("/api/trips/%s" % p0["id"], vai=vai)
+        lo = [k for k in ("invoiced", "inv_no", "invoice_id", "invoiced_date", "last_paid_date") if k in g]
+        assert not lo and "da_tao_so" in g, "%s: gói phiếu không còn cờ hoá đơn trang tạm, có da_tao_so: %s" % (vai, lo)
+    print("  ✓ %-60s" % "Gói phiếu không còn cờ hoá đơn của trang tạm, có 'đã tạo SO'")
 
     # ================================================================ 3.2 ảnh xe
     s, xe = goi("/api/vehicles", vai="thabok")
@@ -169,14 +181,16 @@ def main():
     assert not ds_anh, "xoá xong không còn ảnh nào"
 
     # ================================================================ 3.4 việc của tôi của KT Doanh thu
-    s, tq = goi("/api/bao-cao/xu-huong", vai="doanhthu")
+    s, ds = goi("/api/trips?locked=true&co=1", vai="doanhthu")
+    thang = (ds[0]["doc_date"] or "")[:7] if ds else ""          # tháng có phiếu đã khoá mới nhất (tháng này có thể chưa có)
+    s, tq = goi("/api/bao-cao/xu-huong?thang=" + thang, vai="doanhthu")
     xn = tq["xem_nhanh"]
-    s, ds = goi("/api/trips", vai="doanhthu")
-    mong = len([p for p in ds if p.get("locked") and not p.get("invoiced")]) \
-        + len([p for p in ds if p.get("invoiced") and p.get("finance_status") != "paid"])
-    # `/api/trips` không lọc tháng còn Tổng quan thì có, nên chỉ kiểm CÓ VIỆC chứ không so bằng nhau.
+    s, ds = goi("/api/trips?co=500&thang=" + thang, vai="doanhthu")
+    mong = len([p for p in ds if p.get("locked") and not p.get("da_tao_so")]) \
+        + len([p for p in ds if p.get("da_tao_so") and p.get("finance_status") != "paid"])
+    # cùng tháng nhưng Tổng quan đếm theo ngày lập phiếu, danh sách theo trang — chỉ kiểm CÓ VIỆC chứ không so bằng nhau.
     assert xn["viec_toi"] > 0 or mong == 0, \
-        "KT Doanh thu phải có số việc thật (phiếu chờ hoá đơn + hoá đơn chưa thu), không phải luôn 0"
+        "KT Doanh thu phải có số việc thật (phiếu chờ tạo SO + SO chưa thu đủ), không phải luôn 0"
     print("  ✓ %-60s %s" % ("KT Doanh thu: ô Việc của tôi đã có số thật", xn["viec_toi"]))
     if xn["viec_toi"]:
         assert xn.get("viec_phieu"), "bấm vào ô phải mở thẳng một phiếu cụ thể"

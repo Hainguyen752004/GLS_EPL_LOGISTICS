@@ -1,1 +1,20 @@
-/* Nhà cung cấp — danh mục (phần tiền ở hệ kế toán anh Tune từ 01/10) */
+/* Nhà cung cấp — danh mục; cột tiền và hộp "Trả qua kế toán" (phiếu chi ở hệ kế toán anh Tune, 01/10) */
+.tbl:not(.ncc-co-tien) .ncc-tien{display:none}
+.ncc-cho{color:var(--ore);font-weight:600}
+.ncc-mo{opacity:.55}
+.ncc-tra{max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.ncc-tra:focus{outline:none}
+.ncc-tra h4{margin:6px 0 0}
+.ncc-tra .tbl{width:100%}
+.ncc-tra .tbl td{vertical-align:top}
+.ncc-tra .mono,.ncc-tra td.num{white-space:nowrap}
+.ncc-tom{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.ncc-tom>div{background:var(--bg-2);border-radius:var(--r);padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.ncc-tom span{font-size:12px;color:var(--ink-2)}
+.ncc-tom b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.ncc-tom .neg b{color:var(--red)}
+.ncc-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.ncc-form .field{margin:0}
+.ncc-form-rong{grid-column:1/-1}
+/* hộp chung rộng 440px: bảng đề nghị bốn cột và dải bốn số gãy dòng — hộp này rộng hơn (như hộp trả chủ xe) */
+#hop-thoai:has(.ncc-tra){width:min(780px,calc(92vw / var(--ty-le, 1)))}

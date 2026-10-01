@@ -129,9 +129,12 @@
       { so: 19, vai: ['expacct', 'cash', 'treasury'], o: 'tune', ten: 'Tất toán tài xế theo tháng — tiền chi bù / thu lại ở hệ kế toán anh Tune',
         lam: ['Đối: đã ứng bao nhiêu, chi thật bao nhiêu → Chốt'], may: ['Số chi thật chuyển từ tạm ứng 1601 sang chi phí 625 (quyết toán tạm ứng)', 'Chi thật > ứng: công ty chi bù · ngược lại: tài xế nộp lại'],
         chan: ['Chốt hai lần một kỳ → chặn'], ct: ['QT_TU', 'TT_CHI', 'TT_THU'], ct_khi: { QT_TU: 'lúc chốt, số tài xế đã chi thật', TT_CHI: 'khi công ty chi bù', TT_THU: 'khi tài xế nộp lại' }, sau: 'Kỳ: Đã tất toán' },
-      { so: 20, vai: ['acct', 'admin'], man: 'chung-tu', ten: 'Đẩy chứng từ sang sổ kế toán',
-        lam: ['Màn Đề nghị theo DO → tab Hồ sơ gửi kế toán → bấm "Đẩy tất cả"', 'Phiếu đề nghị thu: gửi từng tờ ở màn Phiếu đề nghị thu'], may: ['Mỗi tờ đẩy đúng một lần; hỏng thì giữ tờ, ghi lỗi lên tờ để đẩy lại'],
-        chan: ['Chưa cấu hình địa chỉ sổ kế toán → báo rõ'], sau: 'Tờ: Đã đẩy' },
+      // 01/10: không còn đẩy tờ sang sổ kế toán nào (bỏ trang kế toán tạm phần tiền — commit 52f673c, 52fbd73). Sổ chứng từ
+      // để in / xem / định khoản; người đối chiếu với hệ kế toán anh Tune đánh dấu tay (POST /api/chung-tu/{id}/da-day).
+      { so: 20, vai: ['acct', 'expacct', 'rev', 'treasury', 'cash', 'admin'], man: 'chung-tu', ten: 'Sổ chứng từ: in / xem / định khoản, đối chiếu với hệ kế toán',
+        lam: ['Màn Đề nghị theo DO → tab Sổ chứng từ: in, xem từng tờ và định khoản Nợ / Có', 'Đối chiếu tờ với hệ kế toán anh Tune rồi đánh dấu "đã đối chiếu" (bỏ dấu được)'],
+        may: ['Mỗi công đoạn ở trên tự bỏ tờ của nó vào sổ, kèm định khoản gợi ý', 'Sổ không gửi đi đâu — tiền thật chỉ ở hệ kế toán anh Tune (phiếu đề nghị thu, phiếu chi tạm ứng, trả chủ xe, trả nhà cung cấp, tất toán)'],
+        chan: ['Chỉ các vai kế toán, hai quỹ và Sếp đánh dấu đối chiếu — KT kho xăng dầu, thủ kho chỉ xem; vai khác không vào sổ'], sau: 'Tờ: Đã đối chiếu' },
     ] },
   ];
 
@@ -208,7 +211,7 @@
     ['Thẻ cao tốc: lập thẻ · nạp tiền', ['acct', 'cash', 'treasury']],
     ['Bảng giá khách × tuyến, tỷ giá', ['acct', 'rev']],
     ['Điều chỉnh kho hàng bãi', ['acct']],
-    ['Đẩy chứng từ sang sổ kế toán', ['acct']],
+    ['Sổ chứng từ: đánh dấu đã đối chiếu với hệ kế toán', ['acct', 'expacct', 'rev', 'treasury', 'cash']],
   ];
 
   /* ================================================================ vẽ */

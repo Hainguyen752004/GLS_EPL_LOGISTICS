@@ -132,7 +132,7 @@ def ma_ky(ngay):
 
 # loại đối tượng bên em → (đường danh mục bên kế toán, tiền tố mã OBJ_OBJECTNO, tên gọi)
 LOAI_DOI_TUONG = {"tai_xe": ("staff", "EPLTX-", "tài xế"), "chu_xe": ("suppliers", "EPLCX-", "chủ xe liên kết"),
-                  "khach": ("customers", "EPLKH-", "khách")}
+                  "khach": ("customers", "EPLKH-", "khách"), "ncc": ("suppliers", "EPLNCC-", "nhà cung cấp")}
 
 
 def doi_tuong(db, loai, ref_id, ten, sdt=None, dia_chi=None, to_chuc=None, ma=None):
@@ -230,6 +230,36 @@ def _ap_da_chi(db, p, v, rec):
 
 
 GIO_KE_TOAN = dt.timedelta(hours=7)        # giờ máy chủ hệ kế toán (Việt Nam / Lào, UTC+7) — DB bên em lưu UTC
+MAT = "PHIEU_CHI_MAT"                       # phiếu bên kế toán không còn (đã xoá tay) — gửi lại thì lập phiếu mới
+
+
+def danh_mat(db, rec):
+    """Phiếu chi bên kế toán đã bị xoá: `GET cmpayment-receipt/{id}` VẪN trả Success true, `Master` null, `Entries` rỗng (thử thật
+    01/10) — không báo lỗi. Đánh bản ghi "loi · PHIEU_CHI_MAT" để không kẹt "chờ chi" mãi; gửi lại thì lập phiếu mới, rút / huỷ
+    thì coi như đã rút xong (không gọi delete lên phiếu không còn)."""
+    rec.status, rec.error_code = "loi", MAT
+    rec.error_message = "Phiếu chi %s không còn bên hệ kế toán (đã xoá) — bấm gửi lại để lập phiếu mới." % (rec.document_no or rec.real_id)
+    rec.checked_at = dt.datetime.utcnow()
+    db.commit()
+    return rec
+
+
+def doc_phieu(db, rec):
+    """Master của phiếu chi `rec.real_id` bên kế toán; phiếu không còn → đánh PHIEU_CHI_MAT, trả None. Bên đó từ chối đọc →
+    cũng PHIEU_CHI_MAT rồi ném lại; lỗi mạng → ném, bản ghi giữ nguyên."""
+    try:
+        kq = _goi("GET", "/api/v1/accounting/cmpayment-receipt/%d?voucherType=CMP" % rec.real_id) or {}
+    except HTTPException as e:
+        if (e.detail or {}).get("ma") == "BEN_KE_TOAN_TU_CHOI":
+            rec.status, rec.error_code = "loi", MAT
+            rec.error_message = "Không đọc được phiếu chi %s bên kế toán (đã xoá?): %s" % (rec.document_no or rec.real_id, e.detail.get("loi"))
+            db.commit()
+        raise
+    m = kq.get("Master") if isinstance(kq, dict) else None
+    if not m:
+        danh_mat(db, rec)
+        return None
+    return m
 
 
 def _ngay_gio(s):
@@ -246,15 +276,9 @@ def dong_bo(db, rec, p=None, v=None):
         return rec
     p = p or db.get(Trip, rec.trip_id)
     v = v or db.get(Voucher, rec.voucher_id)
-    try:
-        kq = _goi("GET", "/api/v1/accounting/cmpayment-receipt/%d?voucherType=CMP" % rec.real_id) or {}
-    except HTTPException as e:
-        if (e.detail or {}).get("ma") == "BEN_KE_TOAN_TU_CHOI":
-            rec.status, rec.error_code = "loi", "PHIEU_CHI_MAT"
-            rec.error_message = "Không đọc được phiếu chi %s bên kế toán (đã xoá?): %s" % (rec.document_no or rec.real_id, e.detail.get("loi"))
-            db.commit()
-        raise
-    m = kq.get("Master") or {}
+    m = doc_phieu(db, rec)
+    if m is None:
+        return rec                                      # phiếu bên đó đã bị xoá: PHIEU_CHI_MAT, gửi lại thì lập phiếu mới
     rec.checked_at = dt.datetime.utcnow()
     rec.document_no = m.get("DOCUMENTNO") or rec.document_no
     rec.tune_status = int(m.get("STATUS") or 0)
@@ -354,11 +378,15 @@ def rut(db, trip_id=None, voucher_id=None):
     q = q.filter(ChiTune.voucher_id == voucher_id) if voucher_id else q.filter(ChiTune.trip_id == trip_id)
     for rec in q.all():
         if rec.status == "da_gui" and rec.real_id:
-            dong_bo(db, rec)
+            try:
+                dong_bo(db, rec)
+            except HTTPException:
+                if rec.error_code != MAT:
+                    raise
         if rec.status == "da_chi":
             _loi("DA_CHI_O_KE_TOAN", "Phiếu chi tạm ứng %s bên hệ kế toán đã ghi sổ (tiền đã chi) — không xoá / huỷ được ở đây, "
                                      "đối soát ở hệ kế toán trước." % (rec.document_no or rec.real_id), 409)
-        if rec.real_id:
+        if rec.real_id and rec.error_code != MAT:      # phiếu bên đó đã mất thì coi như đã rút xong
             _goi("POST", "/api/v1/accounting/cmpayment-receipt/delete", {"DocumentId": int(rec.real_id), "VoucherType": "CMP"})
         db.delete(rec)
     db.flush()
@@ -400,8 +428,11 @@ def cho_tra_chu_xe(db, owner_id, thay_tien=True):
 
 def de_nghi_tra_chu_xe(db, owner_id, trip_ids, phuong_thuc, user):
     """Lập phiếu chi "Chi khác" bên kế toán cho chủ xe: Nợ 4022 phải trả chủ xe / Có tiền (mặt hoặc ngân hàng, theo tiền thuê).
-    Các phiếu phải cùng chủ xe, đã khoá, chưa trả, chưa nằm đề nghị khác, cùng tiền thuê; tổng phải dương."""
+    Các phiếu phải cùng chủ xe, đã khoá, chưa trả, chưa nằm đề nghị khác, cùng tiền thuê. Số chi là SỐ TRẢ THỰC = Σ phiếu − hàng
+    chủ xe mua ở quầy (tra_chu_xe.tru_hang_quay — kho tạm tắt thì 503, không lập); phải dương. Phiếu bán bị trừ được GIỮ CHỖ ở
+    kho tạm TRƯỚC khi gọi hệ kế toán."""
     from services import tai_khoan as TK
+    from services import tra_chu_xe as TC
     o = db.get(Owner, owner_id)
     if o is None:
         _loi("KHONG_THAY", "Không có chủ xe này.", 404)
@@ -415,28 +446,43 @@ def de_nghi_tra_chu_xe(db, owner_id, trip_ids, phuong_thuc, user):
     if len(tien) != 1:
         _loi("KHAC_TIEN", "Các phiếu chọn khác tiền thuê (%s) — mỗi đề nghị một loại tiền." % ", ".join(sorted(tien)))
     ccy = tien.pop()
-    tong = round(sum(x["tra_chu_xe"] or 0 for x in chon), 2)
-    tong_lak = round(sum(x["tra_chu_xe_lak"] or 0 for x in chon))
-    if tong <= 0:
-        _loi("KHONG_CON_PHAI_TRA", "Tổng còn phải trả %s %s ≤ 0 (EPL đã ứng / trừ nhiều hơn tiền thuê) — không lập phiếu chi." % (tong, ccy), 409)
+    kq = TC.tru_hang_quay(db, owner_id, chon, user)               # hàng chủ xe mua ở quầy chờ trừ — kho tạm tắt thì 503
+    if (kq["tra_thuc"] or 0) <= 0:
+        _loi("KHONG_CON_PHAI_TRA", "Còn phải trả %s %s ≤ 0 (tổng phiếu %s, đã trừ hàng mua ở quầy %s, EPL đã ứng trừ sẵn trên phiếu) — "
+                                   "không lập phiếu chi." % (kq["tra_thuc"], ccy, kq["tong"], kq["tru"]), 409)
     now = dt.datetime.utcnow()
     so = "TCX-%s-%s" % (now.strftime("%y%m%d%H%M%S"), owner_id[:4])
-    rec = ChiChuXeTune(owner_id=owner_id, trip_ids=json.dumps([x["id"] for x in chon]), currency=ccy, amount=tong, amount_lak=tong_lak,
-                       phuong_thuc=phuong_thuc, ref_no=so, status="loi", attempts=0, created_by=getattr(user, "full_name", None))
+    rec = ChiChuXeTune(owner_id=owner_id, trip_ids=json.dumps([x["id"] for x in chon]), currency=ccy, amount=kq["tra_thuc"],
+                       amount_lak=kq["tra_thuc_lak"], phuong_thuc=phuong_thuc, ref_no=so, status="loi", attempts=0,
+                       created_by=getattr(user, "full_name", None), tru_hang=json.dumps(dict(kq, chot=False), ensure_ascii=False))
     db.add(rec)
     db.flush()
-    _gui_chu_xe(db, rec, o, chon, TK)
+    TC.giu_hang_quay(db, rec.ref_no, owner_id, [h["id"] for h in kq["hang"]], user)   # giữ chỗ TRƯỚC khi gọi hệ kế toán; lỗi → ném
+    _gui_chu_xe(db, rec, o, chon, TK, user)
     return rec
 
 
-def _gui_chu_xe(db, rec, o, chon, TK):
+def _tru(rec):
+    try:
+        return json.loads(rec.tru_hang) if rec.tru_hang else None
+    except ValueError:
+        return None
+
+
+def _gui_chu_xe(db, rec, o, chon, TK, user=None):
+    from services import tra_chu_xe as TC
     rec.attempts, rec.last_attempt_at = (rec.attempts or 0) + 1, dt.datetime.utcnow()
     try:
         obj = rec.obj_id = doi_tuong(db, "chu_xe", o.id, o.name, sdt=getattr(o, "phone", None), to_chuc=False)
         co = TK.ma_tien(rec.phuong_thuc, rec.currency)
         ma_cur, hom_nay = ma_tien(rec.currency), dt.date.today()
         ty = round((rec.amount_lak or 0) / rec.amount, 6) if rec.amount else 1
+        # dòng phiếu chi = SỐ TRẢ THỰC từng phiếu sau khi trừ hàng quầy (đề nghị cũ chưa có tru_hang: trừ 0); phiếu trừ hết thì bỏ
+        kq = _tru(rec) or TC.tinh_tru(chon, [])
+        dong = [d for d in kq["dong"] if d.get("tra_thuc")]
         dien_giai = "Trả chủ xe liên kết %s: %s" % (o.name, ", ".join(x["doc_no"] for x in chon))
+        if kq.get("hang"):
+            dien_giai += " · trừ hàng mua ở quầy %s" % ", ".join(str(h.get("doc_no")) for h in kq["hang"])
         body = {"TmpId": 0, "RealId": 0, "VoucherType": "CMP", "SessionId": "epllao-cx-%s" % rec.id, "PostMode": "None",
                 "Header": {"CountryId": _cfg("QLSX_COUNTRY_ID", 11), "OrgId": _cfg("QLSX_ORG_ID", 1368), "FiciAutoId": ma_ky(hom_nay),
                            "DotyAutoId": _cfg("QLSX_DOTY_TRA_CHU_XE", 60), "ObjectId": obj, "CurrencyId": ma_cur,
@@ -445,11 +491,15 @@ def _gui_chu_xe(db, rec, o, chon, TK):
                            "ExchangeRate": 1 if rec.currency == "LAK" else ty, "Amount": rec.amount,
                            "BaseAmount": rec.amount_lak if rec.currency != "LAK" else rec.amount, "ContactName": (o.name or "")[:100] or None},
                 "Relations": [],
-                "Entries": [{"SourceLineKey": "EPLLAO:%s:TCX:%s" % (rec.id, x["id"]), "ObjectId": obj, "CurrencyId": ma_cur,
-                             "DebitAccount": TK.CHU_XE, "CreditAccount": co, "Amount": x["tra_chu_xe"],
-                             "BaseAmount": x["tra_chu_xe_lak"] if rec.currency != "LAK" else x["tra_chu_xe"],
-                             "ExchangeRate": 1 if rec.currency == "LAK" else ty, "EntryTypeId": 11,
-                             "Description": "Trả chủ xe phiếu %s" % x["doc_no"], "ValidateMoney": True} for x in chon]}
+                "Entries": [{"SourceLineKey": "EPLLAO:%s:TCX:%s" % (rec.id, d["trip_id"]), "ObjectId": obj, "CurrencyId": ma_cur,
+                             "DebitAccount": TK.CHU_XE, "CreditAccount": co, "Amount": d["tra_thuc"],
+                             "BaseAmount": d["tra_thuc_lak"] if rec.currency != "LAK" else d["tra_thuc"],
+                             # tỷ giá RIÊNG từng dòng = Kíp khoá trên phiếu / nguyên tệ: máy chủ anh Tune nay tự tính base
+                             # dòng = Amount × ExchangeRate (ce95b3c+) — gửi tỷ giá chung thì Kíp từng phiếu bị dịch (rà 01/10)
+                             "ExchangeRate": 1 if rec.currency == "LAK" else (round(d["tra_thuc_lak"] / d["tra_thuc"], 10) if d["tra_thuc"] else ty),
+                             "EntryTypeId": 11,
+                             "Description": ("Trả chủ xe phiếu %s" % d["doc_no"]) + (" · trừ hàng mua ở quầy" if (d.get("tru") or 0) > 0 else ""),
+                             "ValidateMoney": True} for d in dong]}
         rec.request_body = json.dumps(body, ensure_ascii=False)
         cu = [x for x in _tim_phieu_da_co(obj, rec.ref_no)]
         if cu:
@@ -468,7 +518,7 @@ def _gui_chu_xe(db, rec, o, chon, TK):
         db.commit()
         raise
     try:
-        dong_bo_chu_xe(db, rec)
+        dong_bo_chu_xe(db, rec, user)
     except HTTPException:
         pass
 
@@ -482,21 +532,49 @@ def gui_lai_chu_xe(db, rec, user):
     ids = json.loads(rec.trip_ids or "[]")
     con = {x["id"]: x for x in _dong_chu_xe(db, rec.owner_id)}
     if any(i not in con for i in ids):
+        if (_tru(rec) or {}).get("hang"):
+            from services import tra_chu_xe as TC
+            TC.tha_hang_quay(db, rec.ref_no, user)        # phiếu bán đang giữ chỗ về chờ trừ; kho tạm tắt → ném, đề nghị giữ "lỗi"
         rec.status = "huy"
         db.commit()
         _loi("PHIEU_KHONG_HOP_LE", "Có phiếu trong đề nghị không còn chờ trả — lập đề nghị mới.", 409)
-    _gui_chu_xe(db, rec, o, [con[i] for i in ids], TK)
+    _gui_chu_xe(db, rec, o, [con[i] for i in ids], TK, user)      # dùng lại rec.tru_hang (số trả thực lúc lập)
     return rec
 
 
-def dong_bo_chu_xe(db, rec):
-    """Đọc lại phiếu chi trả chủ xe; đã ghi sổ thì các phiếu thành "đã trả chủ xe" (tra_chu_xe.danh_dau_tra)."""
+def _chot_hang(db, rec, user=None):
+    """Đề nghị đã chi (phiếu chi bên kế toán đã ghi sổ): chốt các phiếu bán bị trừ "TUNE:<số phiếu chi>" ở kho tạm + bút toán chờ
+    Nợ 4022 / Có 707 (tra_chu_xe.chot_hang_quay). Lỗi thì KHÔNG ném — tiền đã đi, phiếu bán vẫn giữ chỗ; lần gọi sau thử lại."""
+    from services import tra_chu_xe as TC
+    t = _tru(rec)
+    if rec.status != "da_chi" or not t or not t.get("hang") or t.get("chot"):
+        return
+    try:
+        TC.chot_hang_quay(db, rec.ref_no, rec.document_no or rec.real_id, rec.owner_id, [h["id"] for h in t["hang"]], user,
+                          by_user="%s (hệ kế toán)" % (rec.post_by or "thủ quỹ"))
+        t["chot"] = True
+        rec.tru_hang = json.dumps(t, ensure_ascii=False)
+        db.commit()
+    except Exception as e:                              # noqa: BLE001 — kho tạm tắt / lỗi: giữ "chưa chốt", lần sau thử lại
+        db.rollback()
+        rec.error_message = "Đã chi; chưa chốt hàng quầy bị trừ ở kho tạm (thử lại lần cập nhật sau): %s" % (
+            (e.detail or {}).get("loi") if isinstance(e, HTTPException) and isinstance(e.detail, dict) else e)
+        db.commit()
+
+
+def dong_bo_chu_xe(db, rec, user=None):
+    """Đọc lại phiếu chi trả chủ xe; đã ghi sổ thì các phiếu thành "đã trả chủ xe" (tra_chu_xe.danh_dau_tra), rồi chốt hàng quầy
+    bị trừ (lỗi chốt không ném — đề nghị đã chi mà chưa chốt thì lần gọi sau thử lại)."""
     from types import SimpleNamespace
     from services import tra_chu_xe as TC
+    if rec is not None and rec.status == "da_chi":
+        _chot_hang(db, rec, user)
+        return rec
     if rec is None or rec.status != "da_gui" or not rec.real_id:
         return rec
-    kq = _goi("GET", "/api/v1/accounting/cmpayment-receipt/%d?voucherType=CMP" % rec.real_id) or {}
-    m = kq.get("Master") or {}
+    m = doc_phieu(db, rec)
+    if m is None:
+        return rec                                      # phiếu bên đó đã bị xoá: PHIEU_CHI_MAT, gửi lại thì lập phiếu mới
     rec.checked_at, rec.document_no = dt.datetime.utcnow(), m.get("DOCUMENTNO") or rec.document_no
     rec.tune_status = int(m.get("STATUS") or 0)
     if rec.tune_status in DA_GHI_SO:
@@ -506,17 +584,26 @@ def dong_bo_chu_xe(db, rec):
                         "TUNE:%s" % (rec.document_no or rec.real_id),
                         [{"trip_id": i, "tra_chu_xe": x["tra_chu_xe"], "tra_chu_xe_lak": x["tra_chu_xe_lak"]} for i, x in so.items()])
     db.commit()
+    _chot_hang(db, rec, user)
     return rec
 
 
-def huy_chu_xe(db, rec):
-    """Bỏ đề nghị chưa chi: xoá phiếu chi bên kế toán (nếu có) — các phiếu về lại "chờ trả"."""
+def huy_chu_xe(db, rec, user=None):
+    """Bỏ đề nghị chưa chi: xoá phiếu chi bên kế toán (nếu có), trả các phiếu bán đang giữ chỗ về chờ trừ — các phiếu về lại
+    "chờ trả"."""
     if rec.status == "da_gui":
-        dong_bo_chu_xe(db, rec)
+        try:
+            dong_bo_chu_xe(db, rec, user)
+        except HTTPException:
+            if rec.error_code != MAT:
+                raise
     if rec.status == "da_chi":
         _loi("DA_CHI_O_KE_TOAN", "Phiếu chi %s đã ghi sổ bên kế toán — không huỷ được ở đây." % (rec.document_no or rec.real_id), 409)
-    if rec.real_id:
+    if rec.real_id and rec.error_code != MAT:          # phiếu bên đó đã mất thì coi như đã rút xong
         _goi("POST", "/api/v1/accounting/cmpayment-receipt/delete", {"DocumentId": int(rec.real_id), "VoucherType": "CMP"})
+    if (_tru(rec) or {}).get("hang"):
+        from services import tra_chu_xe as TC
+        TC.tha_hang_quay(db, rec.ref_no, user)            # phiếu bán giữ chỗ về chờ trừ; lỗi → ném
     rec.status = "huy"
     db.commit()
     return rec
@@ -529,7 +616,17 @@ def xuat_chu_xe(rec, thay_tien=True):
             "tune_status": rec.tune_status, "post_by": rec.post_by,
             "post_at": rec.post_at.isoformat(timespec="minutes") + "+00:00" if rec.post_at else None,
             "error_code": rec.error_code, "error_message": rec.error_message, "attempts": rec.attempts, "created_by": rec.created_by,
-            "created_at": rec.created_at.isoformat(timespec="minutes") + "+00:00" if rec.created_at else None}
+            "created_at": rec.created_at.isoformat(timespec="minutes") + "+00:00" if rec.created_at else None,
+            "tru_hang": _xuat_tru(rec, thay_tien)}
+
+
+def _xuat_tru(rec, thay_tien=True):
+    t = _tru(rec)
+    if not t:
+        return None
+    return {"tong": t.get("tong") if thay_tien else None, "tru": t.get("tru") if thay_tien else None,
+            "tru_lak": t.get("tru_lak") if thay_tien else None, "hang": [h.get("doc_no") for h in t.get("hang") or []],
+            "chot": bool(t.get("chot"))}
 
 
 # ================================================================ công nợ khách — chỉ XEM (01/10)

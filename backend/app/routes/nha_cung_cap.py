@@ -4,10 +4,11 @@
 DANH MỤC nhà cung cấp (tên, khoản mục, mã tài khoản, kỳ trả, khách được cấn trừ) ở đây — phiếu (dòng dầu ghi nợ tại
 trạm), tất toán tài xế (khoản trả nhà cung cấp theo đợt không phải tiền tài xế) và Bãi cần nó.
 
-Từ 28/09 (đợt 7d) PHẦN TIỀN ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp): các lần trả (supplier_payments),
-tờ PC_NCC, còn nợ. Bên này vẫn TÍNH phần phát sinh từ phiếu (tổng các dòng chi EPL ứng có khoản mục / trạm của nhà cung
-cấp đó) cho trang kế toán hỏi qua đường máy (/api/lien-thong/ncc); nợ phải trả = phát sinh − đã trả tính ở bên đó.
-Các đường /api/suppliers/{id}/payments trả 409 "đã dời".
+TIỀN (chủ dự án 01/10: bỏ phần tiền trang kế toán tạm, cắt sổ 01/10 — các lần trả bên đó là số thử, bỏ): PHÁT SINH tính
+ở đây từ phiếu (tổng các dòng chi EPL ứng có khoản mục / trạm của nhà cung cấp đó); TRẢ là phiếu chi "Chi khác" bên hệ kế
+toán anh Tune (Nợ 4021 / Có tiền, đứng tên nhà cung cấp EPLNCC-…) — KT Chi phí lập đề nghị ở đây, thủ quỹ bên đó chi và
+ghi sổ, bên này hỏi lại (services/chi_tat_toan_tune.py). Còn nợ = phát sinh − đã chi − đang chờ chi. Phần ghi nợ lúc khoá
+phiếu (Nợ 625 · 614 / Có 4021) là bút toán chờ gửi (services/but_toan_cho, nguồn no_ncc).
 """
 import datetime as dt
 from collections import defaultdict
@@ -23,7 +24,6 @@ from services.phan_quyen import thay_tien_chi
 from services.tinh_toan import MAC_DINH, tien_dong
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Trả nhà cung cấp, công nợ nhà cung cấp nay làm ở trang kế toán (Tiền vận chuyển → Theo dõi nhà cung cấp)."}
 
 
 def _dong_cua(db, s, dau=None, sau=None):
@@ -174,7 +174,7 @@ def _tong_lo(db, cac_ncc):
 
 def _xuat(db, s, tong=None, kem_tien=False):
     """`tong` (từ _tong_lo) là số đã cộng sẵn cho cả danh sách — có thì không hỏi DB từng nhà cung cấp. `kem_tien`: phát
-    sinh và ghi nợ (LAK) — chỉ đường máy của trang kế toán dùng; màn danh mục bên này không có cột tiền."""
+    sinh và ghi nợ (LAK) — màn Theo dõi nhà cung cấp (/api/suppliers/cong-no); màn danh mục không có cột tiền."""
     if tong is not None:
         n, phat_sinh, ghi_no = tong["so_dong"], tong["phat_sinh"], tong["ghi_no"]
     else:
@@ -191,7 +191,7 @@ def _xuat(db, s, tong=None, kem_tien=False):
 
 
 def ds_tien(db):
-    """Danh mục + phát sinh / ghi nợ từ phiếu, cho màn Theo dõi nhà cung cấp bên trang kế toán (đường máy)."""
+    """Danh mục + phát sinh / ghi nợ từ phiếu — services/chi_tat_toan_tune.ds_cong_no ghép phần đã trả bên kế toán."""
     cac = db.query(Supplier).order_by(Supplier.active.desc(), Supplier.name).all()
     tong = _tong_lo(db, cac)
     return [_xuat(db, s, tong[s.id], kem_tien=True) for s in cac]
@@ -214,7 +214,7 @@ def ds(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     ra = [_xuat(db, s, tong[s.id]) for s in cac]
     if not thay_tien_chi(user.role):
         # Bãi không thấy mã tài khoản (anh Khampla A2); chủ dự án chốt 23/09: màn Theo dõi NCC của Bãi giữ danh sách ·
-        # số dòng · kỳ trả. Tiền (phát sinh, đã trả, còn nợ) ở trang kế toán từ đợt 7d — màn này không còn cột tiền.
+        # số dòng · kỳ trả. Tiền (phát sinh, đã trả, còn nợ) ở /api/suppliers/cong-no — chỉ vai thấy tiền chi.
         for r in ra:
             r.pop("acct_code", None)
     return ra
@@ -244,12 +244,35 @@ def sua(sid: str, data: dict = Body(...), db: Session = Depends(get_db), _=Depen
     return _xuat(db, s)
 
 
-# ---------------------------------------------------------------- các lần trả: đã dời (đợt 7d)
-@router.get("/api/suppliers/{sid}/payments")
-def cac_lan_tra(sid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+# ---------------------------------------------------------------- công nợ và trả tiền qua hệ kế toán anh Tune (01/10)
+@router.get("/api/suppliers/cong-no")
+def cong_no(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Mọi nhà cung cấp: phát sinh · ghi nợ (từ phiếu) · đã chi · đang chờ chi (phiếu chi bên kế toán) · còn nợ — LAK."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.XEM_NCC, "xem công nợ nhà cung cấp")
+    return TTT.ds_cong_no(db)
 
 
-@router.post("/api/suppliers/{sid}/payments")
-def tra(sid: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+@router.get("/api/suppliers/{sid}/tra-ke-toan")
+def tra_ke_toan(sid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Một nhà cung cấp: công nợ + các lần đề nghị trả (mới trước); đề nghị đang chờ thì hỏi lại hệ kế toán."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.XEM_NCC, "xem công nợ nhà cung cấp")
+    return TTT.cua_ncc(db, sid)
+
+
+@router.post("/api/suppliers/{sid}/de-nghi-tra")
+def de_nghi_tra(sid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{so_tien, tien_te?: LAK, ty_gia?, phuong_thuc?: cash|bank, ghi_chu?, xac_nhan?} → phiếu chi "Chi khác" bên kế toán
+    (chưa ghi sổ). Lỗi bên đó nằm trên đề nghị (status loi) — bấm gửi lại."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.DE_NGHI_NCC, "lập đề nghị trả nhà cung cấp (việc của KT Chi phí VC)")
+    return TTT.xuat(TTT.de_nghi_tra_ncc(db, user, sid, d))
+
+
+@router.post("/api/chi-ncc/{rid}/{viec}")
+def viec_de_nghi_tra(rid: str, viec: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """cap-nhat (hỏi lại hệ kế toán) · gui-lai (lần trước hỏng) · huy (bỏ đề nghị chưa chi, rút phiếu chi bên đó)."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.XEM_NCC if viec == "cap-nhat" else TTT.DE_NGHI_NCC, "%s đề nghị trả nhà cung cấp" % viec)
+    return TTT.xuat(TTT.viec_ncc(db, user, rid, viec))

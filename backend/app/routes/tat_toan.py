@@ -9,7 +9,8 @@ thật bao nhiêu, rồi bù qua bù lại một lần.
         âm     → tài xế NỘP LẠI
 
 "Đã ứng" là các phiếu tạm ứng ĐÃ CẤP trong kỳ, chứ không phải số in trên giấy: giấy in rồi mà chưa
-ra quỹ lấy tiền thì tài xế chưa cầm đồng nào.
+ra quỹ lấy tiền thì tài xế chưa cầm đồng nào. Từ 01/10 tạm ứng chi ở hệ kế toán anh Tune: số ứng là số trên PHIẾU CHI
+bên đó đã ghi sổ (chi_tune.amount_lak) — tờ tạm ứng còn chờ có thể đã được tính lại theo dòng chi sau lúc gửi.
 
 "Đã chi thật" là các dòng chi EPL ứng, không lấy từ kho, thuộc mục IV (đi đường), VI (khác) và các
 dòng dầu MUA NGOÀI dọc đường — đúng những khoản tài xế móc tiền túi ứng ra trả.
@@ -19,25 +20,26 @@ thẻ đường cao tốc, lốp…). Tiền đó chưa bao giờ đi qua tay t�
 gấp mấy chục lần và người đọc không hiểu vì sao. Nhận biết bằng danh mục nhà cung cấp: khoản mục nào
 có nhà cung cấp với kỳ thanh toán "theo đợt" hoặc "nạp thẻ" thì không phải tiền tài xế.
 
-Từ 28/09 (đợt 7c) bản CHỐT tất toán và tờ TT_CHI / TT_THU ở trang kế toán (Tiền vận chuyển → Tất toán tài xế). Bên này
-chỉ còn phần TÍNH — số liệu (phiếu, mục IV, phiếu tạm ứng) ở đây — cho trang kế toán hỏi qua đường máy
-(routes/lien_thong.py: /api/lien-thong/tat-toan…). Các đường người dùng /api/tat-toan… trả 409 "đã dời". Bảng
-driver_settlements bên này đứng yên (đã dời sang, tools/doi_tat_toan.py bên EPL_KETOAN).
+CHỐT ở đây, TIỀN ở hệ kế toán anh Tune (chủ dự án 01/10: bỏ phần tiền trang kế toán tạm, cắt sổ 01/10 — số tất toán cũ
+bên đó là số thử, bỏ). KT Chi phí VC chốt từng tài xế một kỳ → bản chốt (driver_settlements) + quyết toán QT_TU Nợ 625 /
+Có 1601 thành bút toán chờ gửi + phần chênh thành phiếu chi "Chi khác" (TT_CHI) hoặc phiếu thu "Thu khác" (TT_THU) bên đó,
+đứng tên tài xế; thủ quỹ bên đó chi / thu và ghi sổ, bên này hỏi lại — services/chi_tat_toan_tune.py.
 """
 import datetime as dt
 
 from collections import defaultdict
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy import and_, func, not_, or_
+from sqlalchemy.orm import Session
 
-from models import Driver, Trip, TripExpense, Voucher
+from database import get_db
+from models import ChiTune, Driver, Trip, TripExpense, Voucher
 from services.bao_mat import nguoi_hien_tai
 from services.tinh_toan import CACH_TRA, CACH_TRA_MAC_DINH, la_tien_mat_tai_xe, ty_gia
 from services import dem_bao_cao as DEM
 
 router = APIRouter()
-DA_DOI = {"ma": "DA_DOI_SANG_KE_TOAN", "loi": "Tất toán tài xế nay làm ở trang kế toán (Tiền vận chuyển → Tất toán tài xế)."}
 
 
 def _ky_hop_le(ky):
@@ -69,6 +71,9 @@ def _trong_ky(dau, cuoi):
 
 
 XE_NHA = or_(Trip.company.is_(None), Trip.company != "joint")
+# Tờ tạm ứng đã cấp: số ứng là số phiếu chi bên kế toán ĐÃ GHI SỔ (tiền tới tay tài xế), không có thì số của tờ (chi tại chỗ).
+DA_CHI_KE_TOAN = and_(ChiTune.voucher_id == Voucher.id, ChiTune.status == "da_chi")
+UNG_LAK = func.coalesce(ChiTune.amount_lak, Voucher.amount_lak)
 
 
 def _la_tien_mat_sql():
@@ -92,9 +97,9 @@ def tinh_ky(db, tai_xe, ky):
     ma_phieu = [p.id for p in ds]
     ung = 0.0
     if ma_phieu:
-        for v in db.query(Voucher).filter(Voucher.trip_id.in_(ma_phieu), Voucher.kind == "advance",
-                                          Voucher.status == "da_cap").all():
-            ung += v.amount_lak or 0
+        for (lak,) in (db.query(UNG_LAK).select_from(Voucher).outerjoin(ChiTune, DA_CHI_KE_TOAN)
+                       .filter(Voucher.trip_id.in_(ma_phieu), Voucher.kind == "advance", Voucher.status == "da_cap")):
+            ung += lak or 0
     chi = 0.0
     chi_tiet = []
     for p in ds:
@@ -128,8 +133,8 @@ def tinh_ky_lo(db, cac_tai_xe, ky):
     chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
                                              .join(Trip, Trip.id == TripExpense.trip_id)
                                              .filter(*trong, _la_tien_mat_sql()).group_by(TripExpense.trip_id))}
-    ung = {did: float(v or 0) for did, v in (db.query(Trip.driver_id, func.sum(Voucher.amount_lak))
-                                             .join(Trip, Trip.id == Voucher.trip_id)
+    ung = {did: float(v or 0) for did, v in (db.query(Trip.driver_id, func.sum(UNG_LAK)).select_from(Voucher)
+                                             .join(Trip, Trip.id == Voucher.trip_id).outerjoin(ChiTune, DA_CHI_KE_TOAN)
                                              .filter(*trong, Voucher.kind == "advance", Voucher.status == "da_cap")
                                              .group_by(Trip.driver_id))}
     ra = []
@@ -154,8 +159,8 @@ def _tt_lo(db, cac_ngay):
     chi = {tid: float(v or 0) for tid, v in (db.query(TripExpense.trip_id, func.sum(_tien_lak_sql()))
                                              .join(Trip, Trip.id == TripExpense.trip_id)
                                              .filter(*loc, _la_tien_mat_sql()).group_by(TripExpense.trip_id))}
-    ung = {tid: float(v or 0) for tid, v in (db.query(Voucher.trip_id, func.sum(Voucher.amount_lak))
-                                             .join(Trip, Trip.id == Voucher.trip_id)
+    ung = {tid: float(v or 0) for tid, v in (db.query(Voucher.trip_id, func.sum(UNG_LAK)).select_from(Voucher)
+                                             .join(Trip, Trip.id == Voucher.trip_id).outerjoin(ChiTune, DA_CHI_KE_TOAN)
                                              .filter(*loc, Voucher.kind == "advance", Voucher.status == "da_cap")
                                              .group_by(Voucher.trip_id))}
     ra = {d.isoformat(): {} for d in cac_ngay}
@@ -172,7 +177,8 @@ def _bang_ky_ngay(db, cac_tai_xe, ky):
     dau, cuoi = _khoang(ky)
     truoc = dt.date(dau.year - (dau.month == 1), (dau.month - 2) % 12 + 1, 1)
     ngay = [truoc + dt.timedelta(days=i) for i in range((cuoi - truoc).days + 1)]
-    viec = [(("tt4", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]    # tt4: chỉ xe nhà (29/09)
+    # tt5: số ứng theo phiếu chi đã ghi sổ bên kế toán (01/10) · tt4: chỉ xe nhà (29/09)
+    viec = [(("tt5", d.isoformat()), [d.isoformat(), "ncc"], None) for d in ngay]
     tong = {}
     for phan in DEM.lay_nhieu(db, viec, tinh_lo=lambda thieu: (lambda kq: [kq[ngay[i].isoformat()] for i in thieu])(
             _tt_lo(db, [ngay[i] for i in thieu]))):
@@ -190,35 +196,60 @@ def _bang_ky_ngay(db, cac_tai_xe, ky):
 
 
 def bang_thang(db, ky):
-    """Bảng tất toán cả tháng cho trang kế toán (đường máy): MỌI tài xế đang làm, không kèm danh sách phiếu — bên đó ghép
-    bản chốt của nó rồi mới lọc dòng trống (tài xế không phiếu, không ứng, chưa chốt). Ghép từ phần tính sẵn theo ngày."""
+    """Bảng tất toán cả tháng: MỌI tài xế đang làm, không kèm danh sách phiếu — màn Tất toán (services/chi_tat_toan_tune.bang)
+    ghép bản chốt rồi mới lọc dòng trống (tài xế không phiếu, không ứng, chưa chốt). Ghép từ phần tính sẵn theo ngày."""
     return _bang_ky_ngay(db, db.query(Driver).filter(Driver.active.is_(True)).order_by(Driver.driver_code, Driver.name).all(), ky)
 
 
 def mot(db, driver_id, ky):
-    """Một tài xế một kỳ, kèm danh sách phiếu — khung chi tiết và lúc chốt (trang kế toán)."""
+    """Một tài xế một kỳ, kèm danh sách phiếu — khung chi tiết và lúc chốt."""
     t = db.get(Driver, driver_id)
     if not t:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có tài xế này."})
     return tinh_ky_lo(db, [t], ky)[0]          # nạp theo lô, không mỗi phiếu một câu
 
 
-# ---------------------------------------------------------------- đường người dùng cũ: đã dời (đợt 7c)
+# ---------------------------------------------------------------- màn Tất toán tài xế (01/10: tiền ở hệ kế toán anh Tune)
+def _ky_hoac_thang_nay(ky):
+    return _ky_hop_le(ky or dt.date.today().strftime("%Y-%m"))
+
+
 @router.get("/api/tat-toan")
-def bang_ky(user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def bang_ky(ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Bảng tháng: số tính từ phiếu + bản chốt + phiếu chi / thu bên kế toán (đang chờ thì hỏi lại) + bút toán QT_TU."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.XEM_TT, "xem tất toán tài xế")
+    return TTT.bang(db, _ky_hoac_thang_nay(ky))
 
 
 @router.get("/api/tat-toan/{driver_id}")
-def mot_tai_xe(driver_id: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def mot_tai_xe(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.XEM_TT, "xem tất toán tài xế")
+    return TTT.mot(db, driver_id, _ky_hoac_thang_nay(ky))
 
 
 @router.post("/api/tat-toan")
-def chot_ky(user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def chot_ky(d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{driver_id, period: YYYY-MM, note?, phuong_thuc?: cash|bank} → bản chốt + QT_TU (bút toán chờ) + phiếu chênh bên kế toán."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.CHOT_TT, "chốt tất toán (việc của KT Chi phí VC)")
+    if not d.get("driver_id"):
+        raise HTTPException(422, {"ma": "THIEU_TAI_XE", "loi": "Chưa chọn tài xế."})
+    return TTT.chot(db, user, str(d["driver_id"]), str(d.get("period") or ""), d.get("note"), d.get("phuong_thuc") or "cash")
+
+
+@router.post("/api/tat-toan/{driver_id}/{viec}")
+def viec_tat_toan(driver_id: str, viec: str, ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """cap-nhat (hỏi lại hệ kế toán — mọi vai xem được) · gui-lai (lần gửi phiếu chênh trước hỏng — KT Chi phí, Sếp)."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.CHOT_TT if viec == "gui-lai" else TTT.XEM_TT, "%s tất toán" % viec)
+    return TTT.viec_tt(db, user, driver_id, _ky_hop_le(ky), viec)
 
 
 @router.delete("/api/tat-toan/{driver_id}")
-def bo_chot(driver_id: str, user=Depends(nguoi_hien_tai)):
-    raise HTTPException(409, DA_DOI)
+def bo_chot(driver_id: str, ky: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Bỏ chốt để sửa lại — chỉ khi phiếu chênh bên kế toán chưa ghi sổ và QT_TU chưa gửi."""
+    from services import chi_tat_toan_tune as TTT
+    TTT.chan_vai(user, TTT.CHOT_TT, "bỏ chốt tất toán (việc của KT Chi phí VC)")
+    return TTT.bo_chot(db, user, driver_id, _ky_hop_le(ky))

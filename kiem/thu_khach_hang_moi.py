@@ -8,6 +8,10 @@ CHỈ chạy trên máy thử (bản sao DB): bài ghi mã khách thử rồi TR
 
 Đặt `KHOA_BAN_GIAO_TEP=<tệp chứa khoá đang dùng>` thì bài dùng khoá đó, KHÔNG tạo lại (như thu_ban_giao.py) — máy thử dùng
 chung DB với máy khác thì tạo lại khoá là làm hỏng khoá bên kia (API kế toán) đang cầm.
+
+Công nợ khách từ 01/10 (bỏ trang kế toán tạm — số bên đó là số thử): chỉ còn ở hệ kế toán anh Tune. Cột trái màn Khách hàng
+(`/api/customers-cong-no`) cộng các SO bên đó theo bản đọc lại; hồ sơ một khách (`/cong-no-ke-toan`) đọc thẳng bên đó (chỉ xem)
+và chép lại thu tiền từng SO. Đường công nợ cũ của trang tạm (`/api/customers/{id}/cong-no`) đã bỏ.
 """
 import json
 import os
@@ -88,14 +92,25 @@ def main():
         dung(s == 200 and g["code"] is None and g["cust_type"] is None, "xoá trống mã, loại → null")
         goi("/api/customers/" + a["id"], {"code": "KIEM-KH-01"}, u="admin", method="PUT")
 
-        print("2. Công nợ mọi khách")
+        print("2. Công nợ mọi khách (SO bên hệ kế toán anh Tune)")
         s, g = goi("/api/customers-cong-no", u="ketoan")
-        dung(s == 200 and isinstance(g, dict), "kế toán → 200, %d khách có tờ" % len(g or {}))
+        dung(s == 200 and isinstance(g, dict) and all(x.get("nguon") == "he_ke_toan" for x in (g or {}).values()),
+             "kế toán → 200, %d khách có SO bên kế toán, nguồn = hệ kế toán" % len(g or {}))
+        dung(goi("/api/customers/%s/cong-no" % a["id"], u="ketoan")[0] in (404, 405), "đường công nợ của trang tạm đã bỏ → 404")
         if g:
             cid, x = next(iter(g.items()))
-            s1, mot = goi("/api/customers/%s/cong-no" % cid, u="ketoan")
-            khop = s1 == 200 and all(mot[k] == x[k] for k in ("so_to", "so_to_no", "tong_lak", "da_thu_lak", "con_no_lak", "tong_tien", "con_no_tien"))
-            dung(khop, "số của một khách ở danh sách = số ở hồ sơ khách đó (%s: còn nợ %s LAK)" % (cid, x.get("con_no_lak")))
+            s1, mot = goi("/api/customers/%s/cong-no-ke-toan" % cid, u="ketoan")
+            dung(s1 == 200 and mot.get("co") and isinstance(mot.get("do_cua_so"), dict),
+                 "hồ sơ khách đọc công nợ bên kế toán (chỉ xem), kèm SO ↔ DO bên em (%s SO)" % len(mot.get("do_cua_so") or {}))
+            s2, g2 = goi("/api/customers-cong-no", u="ketoan")
+            x2 = g2.get(cid) or {}
+            con = {}
+            for d in mot.get("no") or []:
+                if d.get("so") in (mot.get("do_cua_so") or {}):
+                    con[d.get("ccy")] = round(con.get(d.get("ccy"), 0) + float(d.get("con_no") or 0), 2)
+            dung(x2.get("so_to") == len(mot["do_cua_so"]) and x2.get("chua_doc") == 0 and
+                 {k: v for k, v in x2.get("con_no_tien", {}).items() if v} == {k: v for k, v in con.items() if v},
+                 "đọc xong: cột trái = các SO của khách, còn nợ theo đúng số bên kế toán (%s)" % x2.get("con_no_tien"))
         dung(goi("/api/customers-cong-no", u="thabok")[0] == 403, "Bãi → 403 (không thấy tiền bán)")
         dung(goi("/api/customers-cong-no", u="tx01")[0] == 403, "tài xế → 403")
         dung(goi("/api/customers-cong-no")[0] == 401, "không đăng nhập → 401")

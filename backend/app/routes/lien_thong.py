@@ -193,6 +193,8 @@ def lt_xe_sua_chua(vid: str, d: dict = Body(...), db: Session = Depends(get_db),
 
 
 # ---------------------------------------------------------------- bán hàng ở trang kế toán (đợt 6)
+# Đường kho (kho tạm), không có tiền — giữ tới khi nối hệ anh Toàn. Màn Bán hàng bên đó cần ô chọn người mua để lập phiếu xuất
+# kho bán (PXK_BAN); phần tiền của bán hàng (HD_BAN, PT_BAN) sang hệ anh Tune là việc còn mở (chủ dự án 01/10).
 @router.get("/api/lien-thong/nguoi-mua")
 def lt_nguoi_mua(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
     """Danh mục khách hàng và chủ xe liên kết (ở đây) — ô chọn người mua của phiếu bán hàng bên trang kế toán."""
@@ -206,164 +208,9 @@ def lt_nguoi_mua(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
                        for o in db.query(Owner).order_by(Owner.name).all()]}
 
 
-# ---------------------------------------------------------------- hoá đơn · thu tiền ở trang kế toán (đợt 7a)
-# Bên đó giữ hoá đơn, sổ thu tiền; bên này giữ số cước của phiếu và bản chép trạng thái — services/doanh_thu.py.
-@router.get("/api/lien-thong/doanh-thu/phieu")
-def lt_dt_ds_phieu(q: str = "", locked: int = None, invoiced: int = None, limit: int = 50,
-                   db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import doanh_thu as DT
-    return DT.ds_phieu(db, q, locked, invoiced, limit)
-
-
-@router.get("/api/lien-thong/doanh-thu/phieu/{tid}")
-def lt_dt_phieu(tid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Một phiếu cho bản in Hoá đơn vận chuyển (đầu phiếu, các mục chi, phần trả chủ xe) kèm số cước — theo vai người
-    đang bấm bên đó, như màn phiếu bên này (vai không thấy tiền bán thì không có khoá tiền bán)."""
-    from models import Trip
-    from routes.phieu import xuat_phieu
-    from services import doanh_thu as DT
-    p = db.get(Trip, tid)
-    if not p:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này bên trang điều xe."})
-    ra = xuat_phieu(db, p, vai=u.role)
-    ra["doanh_thu"] = DT.so_lieu(db, p)
-    return ra
-
-
-@router.get("/api/lien-thong/doanh-thu/so-lieu")
-def lt_dt_so_lieu(ids: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Số cước + bản chép của nhiều phiếu (mã cách nhau dấu phẩy)."""
-    from models import Trip
-    from services import doanh_thu as DT
-    ma = [x for x in ids.split(",") if x]
-    return {p.id: DT.so_lieu(db, p) for p in db.query(Trip).filter(Trip.id.in_(ma or [""])).all()}
-
-
-@router.get("/api/lien-thong/doanh-thu/cho-gop")
-def lt_dt_cho_gop(period: str = "", customer_id: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import doanh_thu as DT
-    return DT.cho_gop(db, period, customer_id)
-
-
-@router.post("/api/lien-thong/doanh-thu/xuat")
-def lt_dt_xuat(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Ghi bản chép "đã xuất hoá đơn": {trip_ids, kieu: phieu|thang, invoice_id?, inv_no?, ngay}. Kiểm lại điều kiện."""
-    from services import doanh_thu as DT
-    kieu = d.get("kieu") if d.get("kieu") in ("phieu", "thang") else "phieu"
-    return DT.danh_dau_hoa_don(db, u, d.get("trip_ids"), kieu, d.get("invoice_id"), d.get("inv_no"), d.get("ngay"))
-
-
-@router.post("/api/lien-thong/doanh-thu/bo-xuat")
-def lt_dt_bo_xuat(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Huỷ hoá đơn bên đó (hoặc bên đó lưu hỏng sau khi đã ghi sang) → phiếu về "chưa xuất hoá đơn"."""
-    from services import doanh_thu as DT
-    return DT.bo_hoa_don(db, u, d.get("trip_ids"))
-
-
-@router.post("/api/lien-thong/doanh-thu/da-thu")
-def lt_dt_da_thu(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Bản chép tổng đã thu từng phiếu: {dong: [{trip_id, collected_lak, last_paid_date}], nhat_ky: thu|xoa|null}."""
-    from services import doanh_thu as DT
-    return DT.ghi_da_thu(db, u, d.get("dong"), d.get("nhat_ky"))
-
-
-# ---------------------------------------------------------------- trả chủ xe liên kết ở trang kế toán (đợt 7b)
-# Bên đó giữ đợt trả, tờ PC_CX; bên này giữ danh mục chủ xe, số "trả chủ xe" của phiếu, bản chép "đã trả" —
-# services/tra_chu_xe.py.
-@router.get("/api/lien-thong/chu-xe")
-def lt_cx_ds(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import tra_chu_xe as TC
-    return TC.ds_chu_xe(db)
-
-
-@router.get("/api/lien-thong/chu-xe/{oid}/cho-tra")
-def lt_cx_cho_tra(oid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import tra_chu_xe as TC
-    return TC.cho_tra(db, oid)
-
-
-@router.get("/api/lien-thong/chu-xe/phieu")
-def lt_cx_phieu(ids: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import tra_chu_xe as TC
-    return TC.so_lieu(db, ids.split(","))
-
-
-@router.post("/api/lien-thong/chu-xe/tra")
-def lt_cx_tra(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Ghi bản chép "đã trả": {owner_payment_id, dong: [{trip_id, tra_chu_xe, tra_chu_xe_lak}]}. Kiểm lại điều kiện."""
-    from services import tra_chu_xe as TC
-    return TC.danh_dau_tra(db, u, d.get("owner_payment_id"), d.get("dong"))
-
-
-@router.post("/api/lien-thong/chu-xe/bo-tra")
-def lt_cx_bo_tra(d: dict = Body(...), db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from services import tra_chu_xe as TC
-    return TC.bo_tra(db, u, d.get("owner_payment_id"), d.get("trip_ids"))
-
-
-@router.get("/api/lien-thong/xe-lien-ket")
-def lt_xe_lien_ket(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Bảng xe liên kết theo tháng (lãi chuyến, trả chủ xe) cho màn Xe liên kết bên trang kế toán — theo vai người bấm."""
-    from routes.bao_cao import xe_lien_ket
-    return xe_lien_ket(thang, db, u)
-
-
-# ---------------------------------------------------------------- tiền tài xế · tất toán (đợt 7c, 28/09)
-# Hai màn dời sang trang kế toán; số tính từ phiếu nên vẫn tính ở đây. Bản chốt tất toán ở bên đó — bên này không ghi gì.
-@router.get("/api/lien-thong/tien-tai-xe")
-def lt_tien_tai_xe(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Tiền chuyến & tiền nước tài xế theo tháng — cùng hàm, cùng chặn vai (Bãi không xem) như màn cũ bên này."""
-    from routes.bao_cao import tien_tai_xe
-    return tien_tai_xe(thang, db, u)
-
-
-@router.get("/api/lien-thong/tat-toan")
-def lt_tat_toan(ky: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from routes import tat_toan as TT
-    return TT.bang_thang(db, TT._ky_hop_le(ky))
-
-
-@router.get("/api/lien-thong/tat-toan/{driver_id}")
-def lt_tat_toan_mot(driver_id: str, ky: str = "", db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from routes import tat_toan as TT
-    return TT.mot(db, driver_id, TT._ky_hop_le(ky))
-
-
-# ---------------------------------------------------------------- nhà cung cấp · cấn trừ (đợt 7d, 28/09)
-# Màn Theo dõi nhà cung cấp dời sang trang kế toán; danh mục và phần PHÁT SINH (từ phiếu) ở đây. Các lần trả, tờ PC_NCC,
-# phần đã ghi cấn trừ ở bên đó — bên này không ghi gì.
-@router.get("/api/lien-thong/ncc")
-def lt_ncc(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from routes import nha_cung_cap as NCC
-    return NCC.ds_tien(db)
-
-
-@router.get("/api/lien-thong/ncc/{sid}")
-def lt_ncc_mot(sid: str, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    from routes import nha_cung_cap as NCC
-    s = db.get(Supplier, sid)
-    if not s:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có nhà cung cấp này."})
-    return NCC._xuat(db, s, kem_tien=True)
-
-
-@router.get("/api/lien-thong/can-tru")
-def lt_can_tru(thang: str = None, db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Bảng cấn trừ cuối tháng (cước · thẻ cao tốc · trạm dầu VN theo khách) — không kèm phần đã ghi (ở bên đó)."""
-    from routes import bao_cao as B
-    from services.phan_quyen import thay_tien_ban
-    if not thay_tien_ban(u.role):
-        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % u.role})
-    dau, cuoi = B._thang(thang)
-    return B._can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=False)
-
-
-@router.get("/api/lien-thong/thang-moi-nhat")
-def lt_thang_moi_nhat(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
-    """Tháng của phiếu mới nhất — hai màn mở ra ở tháng có dữ liệu chứ không phải tháng này (như bên đây trước khi dời:
-    `lap` theo ngày lập, `xe_di` theo ngày xe đi, không có thì ngày lập)."""
-    from models import Trip
-    p = (db.query(Trip.doc_date, Trip.out_date).filter(Trip.doc_date.isnot(None))         # DESC xếp NULL lên đầu
-         .order_by(Trip.doc_date.desc().nullslast(), Trip.doc_no.desc()).first())
-    thang = lambda d: d.strftime("%Y-%m") if d else None
-    return {"lap": thang(p.doc_date) if p else None, "xe_di": thang(p.out_date or p.doc_date) if p else None}
+# ---------------------------------------------------------------- phần TIỀN của trang kế toán tạm: đã gỡ (01/10)
+# Chủ dự án chốt 01/10: bỏ phần tiền trang kế toán tạm (số ở đó là số thử), cắt sổ hôm nay — mọi việc tiền chỉ ở hệ anh Tune.
+# Gỡ các đường máy bên đó gọi sang: doanh-thu/* (hoá đơn, thu tiền) · chu-xe/* và xe-lien-ket (đợt trả chủ xe) ·
+# tien-tai-xe, tat-toan/*, thang-moi-nhat (tiền tài xế, tất toán) · ncc/*, can-tru (nhà cung cấp, cấn trừ).
+# Trang điều xe tự làm lại phần đó và nối hệ anh Tune: routes/tat_toan.py, routes/nha_cung_cap.py, routes/chu_xe.py
+# (services/chi_tat_toan_tune.py, services/chi_tune.py). Các đường KHO ở trên giữ nguyên — trang kế toán tạm còn làm kho.
