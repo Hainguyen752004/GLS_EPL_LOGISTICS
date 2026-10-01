@@ -408,9 +408,10 @@ body.vai-yard .tien-chi{display:none!important}
   .pipeline{grid-template-columns:repeat(2,1fr)}
 }
 
-/* Màn đang chờ dữ liệu (chung.js napModule): dải báo trên đầu + làm mờ khung, để khung trống không trông như hỏng */
+/* Màn đang chờ dữ liệu (chung.js napModule): dải báo trên đầu + làm mờ khung, để khung trống không trông như hỏng.
+   Lớp DƯỚI thanh đầu trang (.topbar 5 · .tbar 6): rà 01/10 dải đè lên bảng menu thả xuống và chặn luôn cú bấm vào mục */
 .mod-root.mod-dang-tai{position:relative}
-.mod-root.mod-dang-tai::before{content:attr(data-tai);position:sticky;top:0;z-index:30;display:block;margin:0 0 10px;padding:7px 14px;
+.mod-root.mod-dang-tai::before{content:attr(data-tai);position:sticky;top:0;z-index:4;display:block;margin:0 0 10px;padding:7px 14px;
   border-radius:8px;background:var(--blue-soft,#e8f0fb);color:var(--blue,#1d4ed8);font-size:13px;font-weight:600;
   background-image:linear-gradient(90deg,transparent 0,rgba(255,255,255,.55) 50%,transparent 100%);background-size:200% 100%;
   animation:mod-tai 1.2s linear infinite}

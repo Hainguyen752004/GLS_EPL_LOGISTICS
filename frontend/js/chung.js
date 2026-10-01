@@ -27,7 +27,12 @@
       const r = await fetch(duong, { method: tuy_chon.method || (tuy_chon.body !== undefined ? 'POST' : 'GET'),
         headers: dau, body: tuy_chon.body !== undefined ? JSON.stringify(tuy_chon.body) : undefined });
       let d = null; try { d = await r.json(); } catch (e) { d = null; }
-      if (r.status === 401 && !duong.startsWith('/api/dang-nhap')) { AUTH.dangXuat(false); throw new LoiAPI(401, 'CHUA_DANG_NHAP', NN.t('login_err')); }
+      // 401 chỉ đăng xuất khi request mang ĐÚNG phiên đang dùng. Request gửi lúc chưa có phiên / bằng phiên người trước (tải
+      // nền của màn cũ trong lúc đổi tài khoản) mà về sau thì bỏ — trước đây nó đá văng người vừa đăng nhập (bài thử 01/10)
+      if (r.status === 401 && !duong.startsWith('/api/dang-nhap')) {
+        if (tk && tk === API.token()) AUTH.dangXuat(false);
+        throw new LoiAPI(401, 'CHUA_DANG_NHAP', NN.t('login_err'));
+      }
       if (!r.ok) {
         const ct = (d && d.detail) || {};
         // Lỗi NGHIỆP VỤ của mình luôn có dạng {ma, loi} bằng tiếng người. Còn 404 kèm chuỗi thô
@@ -194,8 +199,11 @@
   };
   EPL.ngay = (s) => { if (!s) return '—'; const d = new Date(String(s).slice(0, 10) + 'T00:00:00'); return isNaN(d) ? s : d.toLocaleDateString('en-GB'); };
   EPL.ngayGio = (s) => { if (!s) return '—'; const d = new Date(s); return isNaN(d) ? s : d.toLocaleDateString('en-GB') + ' ' + d.toTimeString().slice(0, 5); };
-  EPL.homNay = () => new Date().toISOString().slice(0, 10);
-  EPL.thangNay = () => new Date().toISOString().slice(0, 7);
+  // Ngày / tháng theo GIỜ MÁY. toISOString là giờ UTC: Lào UTC+7 nên từ 0 tới 7 giờ sáng phiếu ra ngày hôm qua, mùng 1 thì
+  // bộ lọc ra tháng trước (rà 01/10)
+  const ngayMay = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  EPL.homNay = () => ngayMay(new Date());
+  EPL.thangNay = () => ngayMay(new Date()).slice(0, 7);
   EPL.doc = (v) => parseFloat(String(v == null ? '' : v).replace(/,/g, '')) || 0;
   // BẢN CHẤT đề nghị theo LOẠI XE (chủ dự án 29/09): xe nhà → tạm ứng nội bộ · xuất nội bộ; xe thuê, EPL ứng → tạm ứng ghi
   // công nợ chủ xe · dầu kho là xuất bán cho chủ xe. `loai`: 'tam_ung' | 'xuat'; `ht`: mã máy chủ (noi_bo · cong_no_chu_xe · xuat_ban).
@@ -332,6 +340,10 @@
     dangXuat(xoaHash = true) {
       try { localStorage.removeItem(KHOA_PHIEN); sessionStorage.removeItem(KHOA_PHIEN); } catch (e) { /* bỏ qua */ }
       USER = null; apLopVai();
+      // Dọn màn đang mở (đồng hồ, tải nền, GPS): không thì nó còn gọi API sau khi đã đăng xuất. Màn còn đang nạp thì lượt
+      // nạp đó tự dọn khi xong (gốc đã bị tháo bên dưới).
+      const mc = EPL.modules[moduleHienTai];
+      if (mc && mc.destroy && !dangNap.has(moduleHienTai)) { try { mc.destroy(); } catch (e) { /* bỏ qua */ } }
       // Xoá nội dung màn đang mở: máy ở bãi dùng chung, người sau đăng nhập không được thấy
       // loáng qua số liệu của người trước trong lúc màn mới còn đang tải.
       const nd = document.getElementById('noi-dung'); if (nd) nd.replaceChildren();
@@ -428,7 +440,6 @@
     { id: 'tai-khoan',      nhom: 'mod_system',    nav: 'nav_users',    ic: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10M4 22a8 8 0 0 1 16 0M19 8l2 2-4 4-2-2', vai: ['admin'] },
   ];
   let moduleHienTai = '';
-  const daNapJS = new Set(), daNapCSS = new Set();
 
   // Bốn nhóm module — dùng cho tiêu đề nhóm ở thanh bên và bốn tab ở thanh trên.
   const NHOM_MOD = [
@@ -600,6 +611,9 @@
       <span class="tt"><b>${NN.h(m.nav)}</b><small>${NN.h('d_' + m.id.replace(/-/g, '_'))}</small></span>
       ${DEM[m.id] ? `<span class="dem">${DEM[m.id]}</span>` : ''}</button>`;
 
+    // Vẽ lại thanh (đổi màn, số việc về) đúng lúc người dùng đang mở một menu thì giữ menu đó mở — trước đây nó tự cụp
+    // ngay dưới tay, bấm hụt mục định chọn (rà 01/10)
+    const moCu = o2.querySelector('.mn.mo[data-nhom]'), nhomMo = moCu ? moCu.dataset.nhom : '';
     let html = '';
     if (rieng) {
       html += `<div class="mn"><button type="button" class="mn-nut ${rieng.id === moduleHienTai ? 'dang' : ''}" data-mod="${rieng.id}">
@@ -629,6 +643,8 @@
     o2.querySelectorAll('.mn[data-nhom]').forEach(mn => mn.addEventListener('mouseenter', () => {
       if (o2.querySelector('.mn.mo') && !mn.classList.contains('mo')) { dongMenuTren(); moMenuTren(mn); }
     }));
+    const moLai = nhomMo && o2.querySelector(`.mn[data-nhom="${nhomMo}"]`);
+    if (moLai) moMenuTren(moLai);
   }
   function moMenuTren(mn) {
     mn.classList.add('mo');
@@ -754,8 +770,14 @@
   const themVer = (u) => VER ? u + (u.includes('?') ? '&' : '?') + 'v=' + VER : u;
   const khoaHTML = (id) => 'epl_lao_html_' + id + (VER ? '_' + VER : '');
   async function napHTML(id, goc) {
+    // Có VER thì một đường dẫn ?v= là MỘT nội dung, khớp đúng tệp .js đã nạp trong phiên: dùng lại bản đã có, khỏi hỏi
+    // máy chủ mỗi lần chuyển màn (rà 01/10: trước đây lần nào cũng tải lại .html kiểu no-cache). Không có VER thì hỏi lại.
+    if (VER && HTML_DEM.has(id)) return HTML_DEM.get(id);
     try {
-      const html = await (await fetch(themVer(goc + '.html'), { cache: 'no-cache' })).text();
+      const r = await fetch(themVer(goc + '.html'), { cache: VER ? 'default' : 'no-cache' });
+      // 404 / 500 không phải HTML của module — đừng cất vào nhớ đệm rồi vẽ chữ "Not Found" thành màn
+      if (!r.ok) throw new Error('Không nạp được ' + goc + '.html');
+      const html = await r.text();
       HTML_DEM.set(id, html);
       try { localStorage.setItem(khoaHTML(id), html); } catch (e) { /* hết chỗ thì thôi */ }
       return html;
@@ -767,8 +789,39 @@
       throw e;
     }
   }
+  // Tệp .js / .css của module: mỗi tệp nạp MỘT lần, hai lượt cùng cần thì dùng chung một lời hứa.
+  const JS_NAP = new Map(), CSS_NAP = new Map();
+  function napJS(id, goc) {
+    if (!JS_NAP.has(id)) JS_NAP.set(id, new Promise((res, rej) => {
+      const s = document.createElement('script'); s.src = themVer(goc + '.js'); s.onload = res;
+      // hỏng (mất mạng) thì gỡ thẻ và quên lời hứa, lần vào màn sau còn thử lại được
+      s.onerror = () => { JS_NAP.delete(id); s.remove(); rej(new Error('Không nạp được ' + goc + '.js')); };
+      document.head.appendChild(s);
+    }));
+    return JS_NAP.get(id);
+  }
+  // .css chờ nạp xong rồi mới dựng màn, lần đầu vào không chớp một khung chưa có kiểu. Không bao giờ chặn màn:
+  // hỏng hay quá 3 giây vẫn dựng.
+  function napCSS(id, goc) {
+    if (!CSS_NAP.has(id)) CSS_NAP.set(id, new Promise(res => {
+      const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = themVer(goc + '.css');
+      l.onload = l.onerror = () => res(); setTimeout(res, 3000);
+      document.head.appendChild(l);
+    }));
+    return CSS_NAP.get(id);
+  }
 
-  async function napModule(id) {
+  /* Chuyển màn (rà 01/10, menu thanh trên bấm qua lại liên tục): trước đây mọi lượt nạp xếp MỘT hàng — lượt sau chờ
+   * lượt trước init xong, kể cả API chậm của màn người dùng đã bỏ đi (Đề nghị chi chờ 7 giây) — nên bấm bốn màn liền
+   * nhau là đứng "Đang tải…" mười mấy giây. Nay:
+   *   · mỗi lần đổi địa chỉ là một LƯỢT; chỉ lượt mới nhất được vẽ, lượt cũ bỏ kết quả;
+   *   · module KHÁC nhau không chờ nhau. CÙNG một module thì vẫn chờ lượt trước của nó xong (hoặc tự bỏ) rồi mới init:
+   *     biến `root`, danh sách… trong module chỉ có một bản, hai init chồng nhau thì lượt cũ vẽ vào màn mới;
+   *   · bấm đi rồi quay lại đúng màn đó khi lượt cũ còn đang nạp: gắn lại gốc của lượt cũ cho nó chạy tiếp;
+   *   · .html · .js · .css nạp song song, lần sau dùng lại. */
+  let luotNap = 0;                 // lượt chuyển màn mới nhất
+  const dangNap = new Map();       // id module → lượt nạp chưa xong gần nhất của module đó {luot, root, hash, user, lang, cua}
+  async function napModule(id, luot) {
     const m = MODULES.find(x => x.id === id) || MODULES[0];
     if (!thayDuoc(m)) {
       const dau = moduleDau();
@@ -776,8 +829,18 @@
       EPL.toast(NN.t('no_permission'), 'loi'); return EPL.di(dau);
     }
     const noiDung = document.getElementById('noi-dung');
-    const truoc = EPL.modules[moduleHienTai]; if (truoc && truoc.destroy) { try { truoc.destroy(); } catch (e) { /* bỏ qua */ } }
+    // Màn trước init xong rồi thì dọn ngay. Còn đang nạp thì chính lượt đó dọn khi xong: dọn giữa chừng thì init đang chạy
+    // dở vấp phải thứ vừa bị gỡ (bản đồ, biểu đồ) rồi báo lỗi lên màn mới.
+    const truoc = EPL.modules[moduleHienTai];
+    if (truoc && truoc.destroy && !dangNap.has(moduleHienTai)) { try { truoc.destroy(); } catch (e) { /* bỏ qua */ } }
     moduleHienTai = m.id; veNav(); datTieuDe(); if (EPL.veNutXuat) EPL.veNutXuat(m.id);
+    // Quay lại ĐÚNG màn này (cùng địa chỉ, cùng người, cùng tiếng) khi lượt cũ của nó còn đang nạp: gắn lại gốc cũ, lượt
+    // cũ thành lượt hiện tại và chạy tiếp — khỏi chờ nó xong rồi init lại từ đầu, gọi lại cả loạt API.
+    const cu = dangNap.get(m.id);
+    if (cu && !cu.root.isConnected && cu.hash === location.hash && cu.user === USER && cu.lang === lang) {
+      cu.luot = luot; noiDung.replaceChildren(cu.root);
+      return cu.cua;
+    }
     // MỖI LƯỢT NẠP MỘT GỐC RIÊNG. Trước đây mọi module vẽ thẳng vào #noi-dung, nên khi người
     // dùng bấm sang module khác trong lúc module cũ còn đang chờ API, module cũ vẽ xong sẽ đè
     // lên (hoặc vẽ vào ô đã mất rồi bật lỗi, và khối lỗi đó xoá luôn màn mới). Gốc riêng thì
@@ -785,16 +848,17 @@
     const root = document.createElement('div'); root.className = 'mod-root'; root.dataset.mod = m.id;
     root.innerHTML = `<div class="muted small">${NN.h('loading')}</div>`;
     noiDung.replaceChildren(root);
-    const conHienTai = () => moduleHienTai === m.id && root.isConnected;
+    const lt = { luot, root, hash: location.hash, user: USER, lang, cua: null };
+    let xong; lt.cua = new Promise(r => { xong = r; });
+    dangNap.set(m.id, lt);
+    const conHienTai = () => lt.luot === luotNap && root.isConnected;
     const goc = `modules/${m.id}/${m.id}`;
+    let daInit = false;
     try {
-      if (!daNapCSS.has(m.id)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = themVer(goc + '.css'); document.head.appendChild(l); daNapCSS.add(m.id); }
-      const html = await napHTML(m.id, goc);
-      if (!daNapJS.has(m.id)) {
-        await new Promise((res, rej) => { const s = document.createElement('script'); s.src = themVer(goc + '.js'); s.onload = res; s.onerror = () => rej(new Error('Không nạp được ' + goc + '.js')); document.head.appendChild(s); });
-        daNapJS.add(m.id);
-      }
-      if (!conHienTai()) return;          // người dùng đã bấm sang module khác trong lúc chờ
+      if (cu) await cu.cua;               // lượt trước của CHÍNH module này còn chạy
+      if (!conHienTai()) return;          // người dùng đã bấm sang màn khác trong lúc chờ
+      const [html] = await Promise.all([napHTML(m.id, goc), napJS(m.id, goc), napCSS(m.id, goc)]);
+      if (!conHienTai()) return;
       root.innerHTML = html;
       EPL.doiOThang(root);
       NN.apDung(root);
@@ -803,23 +867,29 @@
       // Đang chờ dữ liệu: dải "Đang tải…" trên đầu màn. Rà giao diện 23/09: khung trống 1–3 giây (tải tệp + 2–3 API
       // tới DB ở xa) trông như màn hỏng — Theo dõi phiếu, Phiếu chi của Bãi. Tắt khi init xong, kể cả khi lỗi.
       root.classList.add('mod-dang-tai'); root.dataset.tai = NN.t('loading');
-      try { await mod.init(root, { tham: EPL.thamSo(), user: USER }); } finally { root.classList.remove('mod-dang-tai'); }
+      daInit = true;
+      await mod.init(root, { tham: EPL.thamSo(), user: USER });
       if (conHienTai()) NN.apDung(root);
     } catch (e) {
       if (!conHienTai()) return;          // lỗi của module đã bị rời — không được đè lên màn hiện tại
       root.innerHTML = `<div class="card"><div class="bd"><b class="neg">${esc(NN.t('err_generic'))}</b><div class="small muted">${esc(e.message)}</div></div></div>`;
+    } finally {
+      root.classList.remove('mod-dang-tai');
+      // Lượt đã bị bỏ mà init đã chạy: dọn thứ init vừa dựng (đồng hồ, bản đồ, bộ nghe). Lượt sau của cùng module còn chờ
+      // `cua` nên chưa init — dọn lúc này không đụng tới nó.
+      if (daInit && !conHienTai()) { const mod = EPL.modules[m.id]; if (mod && mod.destroy) { try { mod.destroy(); } catch (e) { /* bỏ qua */ } } }
+      if (dangNap.get(m.id) === lt) dangNap.delete(m.id);
+      xong();
     }
   }
-  // Các lượt nạp chạy NỐI TIẾP nhau, không chồng lên nhau. Hai lượt nạp CÙNG một module mà chạy song
-  // song thì cùng gán biến `root` bên trong module, lượt xong sau vẽ vào gốc của lượt kia (đã tháo
-  // khỏi trang) và màn đang hiện trắng trơn. Gặp thật: đăng nhập khi địa chỉ còn hash của module vai
-  // này không có quyền → khung tự chuyển sang màn đầu, lượt chuyển đó chồng lên lượt người dùng bấm.
-  let hangCho = Promise.resolve();
   function dieuHuong() {
     if (!USER) return;
     const id = (location.hash.replace(/^#\/?/, '').split('?')[0]) || moduleDau();
-    // Lời hứa của lượt nạp hiện tại — bộ kiểm chờ nó thay vì đoán bằng setTimeout.
-    EPL.sanSang = hangCho = hangCho.then(() => napModule(id), () => napModule(id));
+    const luot = ++luotNap;
+    const p = napModule(id, luot);
+    // Lời hứa của lượt MỚI NHẤT — bộ kiểm chờ nó thay vì đoán bằng setTimeout. Lượt cũ bị bỏ tự xong sớm. Chuyển vòng ngay
+    // trong lượt (không có quyền → EPL.di) đã đặt lời hứa của lượt mới, đừng ghi đè bằng lượt cũ.
+    if (luot === luotNap) EPL.sanSang = p;
   }
   window.addEventListener('hashchange', dieuHuong);
 
