@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2126 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2129 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10588,7 +10588,7 @@ window.EPL_TU_DIEN = {
   "en": "Payment request created · voucher {so} in accounting"
  },
  "k3_kt_tieu_de": {
-  "vi": "Công nợ bên hệ kế toán (anh Tune)",
+  "vi": "Công nợ bên hệ kế toán",
   "lo": "ໜີ້ ຢູ່ລະບົບບັນຊີ",
   "en": "Receivables in accounting"
  },
@@ -10631,5 +10631,20 @@ window.EPL_TU_DIEN = {
   "vi": "Không còn chứng từ nợ nào bên kế toán.",
   "lo": "ບໍ່ມີໃບໜີ້ຄ້າງ ຢູ່ບັນຊີ.",
   "en": "No open receivables in accounting."
+ },
+ "k3_kt_chua_den_han": {
+  "vi": "Chưa đến hạn",
+  "lo": "ຍັງບໍ່ຮອດກຳນົດ",
+  "en": "Not yet due"
+ },
+ "k3_kt_qua_han_n": {
+  "vi": "Quá hạn {n} ngày",
+  "lo": "ກາຍກຳນົດ {n} ວັນ",
+  "en": "Overdue {n} days"
+ },
+ "k3_kt_da_thu_du": {
+  "vi": "Đã thu đủ",
+  "lo": "ຮັບຄົບແລ້ວ",
+  "en": "Fully collected"
  }
 };

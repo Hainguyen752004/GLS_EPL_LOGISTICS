@@ -219,3 +219,29 @@
 @media print {
   .k2 .k2-cong-cu, .k2 .foot-note { display: none !important; }
 }
+
+/* ---------- rà 01/10 ---------- */
+/* bồn ở "Toàn bộ kho": "500 / 5,000 L" từng gãy chữ "L" xuống dòng riêng — số giữ một dòng, cột rộng hơn chút */
+.k2 .tank-wall { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+.k2 .tank-card .t-qty { white-space: nowrap; }
+/* kết quả tìm: số phiếu dài (PLNL-…-1 T4-…) chiếm hết bề ngang, chữ bên cạnh gãy 4–5 dòng — xếp số phiếu lên dòng đầu */
+.k2 .sr-item { grid-template-columns: minmax(0, 1fr); gap: 1px; }
+.k2 .sr-item .code { grid-row: auto; align-self: start; }
+/* "Một màn" như màn Khách hàng: màn cao đúng phần còn lại của khung nhìn (--k2-tru do kho-xem.js đo theo menu top / side
+   và chữ; 150px chỉ là số dự phòng), trang không cuộn; cột trái giữ ô tìm + nút lọc, danh sách kho tự cuộn; cột phải tự cuộn. */
+@media (min-width: 1181px) and (min-height: 640px) {
+.k2 { height: calc(100vh / var(--ty-le) - var(--k2-tru, 150px)); min-height: 560px; display: flex; flex-direction: column; overflow: hidden; }
+.k2 .k2-dau { flex: none; margin: 0 0 12px; }
+.k2 .layout { flex: 1; min-height: 0; align-items: stretch; gap: 16px; }
+.k2 .rail { position: static; top: auto; max-height: none; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.k2 .rail .search, .k2 .rail .filters { flex: none; }
+.k2 .rail .search-results { flex: none; max-height: 45%; overflow-y: auto; }
+.k2 .rail #k2-wh { flex: 1; min-height: 0; overflow-y: auto; margin-right: -6px; padding-right: 6px; }
+.k2 .work { height: 100%; min-height: 0; overflow-y: auto; gap: 14px; }
+.k2 .work > * { flex-shrink: 0; }
+.k2 .foot-note { flex: none; margin: 8px 0 0; max-width: none; font-size: 12px; }
+}
+@media print {
+  .k2 { height: auto; overflow: visible; display: block; }
+  .k2 .work { height: auto; overflow: visible; }
+}

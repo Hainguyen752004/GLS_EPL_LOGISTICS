@@ -24,6 +24,8 @@
   const n0 = (v) => EPL.so(v || 0, 0);
   const n2 = (v) => EPL.so(v || 0, 2);
   const dash = (v, f) => v ? (f || n0)(v) : '<span class="dash">–</span>';
+  // giá vốn bên kho tính bằng Kíp — số tiền luôn kèm đơn vị (cột "Giá vốn bình quân" từng hiện "85,000" trần)
+  const lak = (v) => dash(v, (x) => EPL.tien(x, 'LAK'));
   const ngay = (s) => s ? EPL.ngay(s) : '';
   const sum = (ds, f) => ds.reduce((s, x) => s + (typeof f === 'function' ? f(x) : (x[f] || 0)), 0);
   const pct = (a, b) => b ? Math.max(0, Math.min(1, a / b)) : 0;
@@ -289,7 +291,7 @@
       return '<tr class="is-clickable" data-open="' + esc(partWh[0] ? partWh[0].id : 'all') + '" data-tab="parts"><td><b lang="lo">' + esc(p.ten) + '</b>' + (p.active ? '' : '<span class="k2-sub">' + h('inactive') + '</span>') + '</td><td>' + esc(donVi(p.unit)) + '</td>' +
         partWh.map(w => { const q = w.parts[p.code] || 0; return '<td class="cell ' + (q ? (low ? 'cell-low' : 'cell-ok') : 'cell-none') + '"><span>' + (q ? n2(q) : '–') + '</span></td>'; }).join('') +
         '<td class="num"><b class="' + (low ? 'below' : '') + '">' + n2(tot) + '</b>' + (low ? '<span class="k2-sub below">' + h('k2_duoi_muc') + '</span>' : '') + '</td>' +
-        '<td class="num">' + (p.min ? n2(p.min) : '<span class="dash">–</span>') + '</td>' + (D.g ? '<td class="num">' + dash(p.cost) + '</td>' : '') + '</tr>';
+        '<td class="num">' + (p.min ? n2(p.min) : '<span class="dash">–</span>') + '</td>' + (D.g ? '<td class="num">' + lak(p.cost) + '</td>' : '') + '</tr>';
     }).join('') || '<tr><td colspan="9"><div class="k2-empty">' + h('no_data') + '</div></td></tr>';
 
     // Hàng khách gửi ở bãi
@@ -379,7 +381,7 @@
         '<td style="min-width:170px"><div class="k2-bar" title="' + esc(t('k2_bar', { tot: n2(tot), min: n2(p.min) })) + '"><i class="' + (low ? 'is-low' : '') + '" style="width:' + (pct(tot, scale) * 100) + '%"></i>' +
         (p.min ? '<span class="min-mark" style="left:' + (pct(p.min, scale) * 100) + '%"></span>' : '') + '</div>' +
         '<span class="k2-sub ' + (low ? 'below' : '') + '">' + h(low ? 'k2_bar_duoi' : 'k2_bar', { tot: n2(tot), min: p.min ? n2(p.min) : '–' }) + '</span></td>' +
-        (D.g ? '<td class="num">' + dash(p.cost) + '</td><td class="num">' + dash((p.cost || 0) * q) + '</td>' : '') + '</tr>';
+        (D.g ? '<td class="num">' + lak(p.cost) + '</td><td class="num">' + dash((p.cost || 0) * q) + '</td>' : '') + '</tr>';
     }).join('');
     const value = sum(codes, k => (w.parts[k] || 0) * (D.partById[k].cost || 0));
     const pendRows = pend.map(x => '<tr class="' + flashCls(x.doc) + '"><td>' + esc(ngay(x.date)) + '</td><td lang="lo">' + esc(x.p.ten) + '</td><td>' + moPhieu(x.trip, x.doc) + '</td><td>' + esc(x.vehicle || '—') + '</td><td class="num">' + n2(x.qty) + '</td></tr>').join('');
@@ -486,11 +488,36 @@
   }
 
   function open(view, tab, doc) {
+    // "một màn": cột phải tự cuộn — sang kho khác thì về đầu cột (đổi tab trong cùng kho thì giữ chỗ đang xem)
+    if ((view || 'all') !== st.view) { const wk = $('#k2-work'); if (wk) wk.scrollTop = 0; }
     st.view = view || 'all';
     if (tab) st.tab = tab;
     st.flashDoc = doc || null;
     render();
     if (window.innerWidth <= 1180) $('#k2-work').scrollIntoView({ block: 'start' });
+  }
+
+  /* Chiều cao "một màn" (CSS: rộng > 1180, cao ≥ 640): màn cao đúng phần còn lại của khung nhìn — trang không cuộn,
+   * danh sách kho và cột phải tự cuộn. Trước đây trang cuộn với cột trái "dính" top: 84px: menu top (hai thanh, ~94px)
+   * che mất ô tìm và nút lọc, cuộn tới đáy thì cột trái bị đẩy lên dưới thanh đầu. Phần đầu trang chung cao khác nhau theo
+   * kiểu menu và theo chữ nên ĐO chỗ màn bắt đầu (lúc nạp có dải "Đang tải…" ở trên — init xong thì đo lại).
+   * getBoundingClientRect là px thật, đổi ra px của khung đã zoom (chia --ty-le); lề dưới của trang thì đã là px khung. */
+  let daGanDo = false;
+  function doCao() {
+    const k2 = root && root.isConnected ? root.querySelector('.k2') : null;
+    if (!k2) return;
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const trang = document.getElementById('noi-dung');
+    const duoi = trang ? parseFloat(getComputedStyle(trang).paddingBottom) || 0 : 0;
+    k2.style.setProperty('--k2-tru', Math.ceil((k2.getBoundingClientRect().top + window.scrollY) / tl + duoi) + 'px');
+  }
+  function ganDoCao() {
+    if (daGanDo) return; daGanDo = true;
+    let cho = 0;
+    const lai = () => { clearTimeout(cho); cho = setTimeout(doCao, 90); };
+    window.addEventListener('resize', lai);
+    // đổi kiểu menu top ⇄ side (EPL.datKieuXem) hay tiêu đề xuống dòng không báo cho module — thanh đầu đổi cỡ thì đo lại
+    if (window.ResizeObserver) { const qs = new ResizeObserver(lai); ['tbar', 'topbar'].forEach(id => { const e = document.getElementById(id); if (e) qs.observe(e); }); }
   }
 
   async function tai() {
@@ -556,9 +583,10 @@
       $('#k2-tim').addEventListener('input', (e) => { st.query = e.target.value; if (D) { renderList(); renderSearchResults(); } });
       root.addEventListener('click', onClick);
       root.addEventListener('keydown', onKey);
-      ganPhim();
-      render();
+      ganPhim(); ganDoCao();
+      render(); doCao();
       await tai();
+      setTimeout(doCao, 0);                    // sau khi khung bỏ dải "Đang tải…" (chạy ngay khi init trả về)
       if (D && st.view !== 'all' && !D.byId[st.view]) {           // tham số kho theo mã (KHO-TB) thay vì id
         const w = D.byCode[st.view]; st.view = w ? w.id : 'all'; render();
       }
@@ -566,7 +594,7 @@
     onLang() {
       if (!root) return;
       if (R) { D = chuanHoa(R); DOCS = allDocs(); }
-      render();
+      render(); doCao();
     },
     xuatExcel() {
       if (!D) return [];

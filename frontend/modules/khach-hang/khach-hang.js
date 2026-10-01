@@ -149,8 +149,8 @@
       const no = g ? noCua(k.id) : null, active = k.id === st.id, ls = listStatus(k);
       return '<li><button type="button" class="cust' + (active ? ' is-active' : '') + (k.active ? '' : ' is-off') + '" data-cust="' + esc(k.id) + '" aria-current="' + active + '">' +
         '<span class="avatar' + (k.cust_type === 'company' ? ' avatar--company' : '') + '" lang="lo">' + esc(initial(k.name)) + '</span>' +
-        '<span class="cust-main"><span class="cust-row"><b class="cust-name" lang="lo">' + esc(k.name) + '</b>' +
-          (no && no.con_no_lak > 0 ? '<span class="cust-debt" title="' + esc(tienGop(no.con_no_tien)) + '">' + n0(no.con_no_lak) + '</span>' : '') + '</span>' +
+        '<span class="cust-main"><span class="cust-row"><b class="cust-name" lang="lo" title="' + esc(k.name) + '">' + esc(k.name) + '</b>' +
+          (no && no.con_no_lak > 0 ? '<span class="cust-debt" title="' + esc(tienGop(no.con_no_tien)) + '">' + n0(no.con_no_lak) + '<small>LAK</small></span>' : '') + '</span>' +
         '<span class="cust-row cust-row--sub"><span class="st st--' + ls.cls + '"><i></i>' + esc(ls.text) + '</span>' +
           '<span class="cust-mode">' + modeLabel(k.invoice_mode) + (k.active ? '' : ', ' + h('inactive')) + '</span></span></span>' +
         '</button></li>';
@@ -218,7 +218,7 @@
           (c.so_phieu ? '' : nutIc('del-contract', 'del', t('delete'), 'data-hd="' + esc(c.id) + '"')) : '') + '</td></tr>';
     }).join('');
     return '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('hd_so') + '</th><th>' + h('status') + '</th><th>' + h('k3_hieu_luc') + '</th><th>' + h('k3_thoi_han') + '</th>' +
-      '<th class="num">' + h('k3_chuyen') + '</th><th class="note-cell">' + h('note') + '</th><th>' + h('hd_scan') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      '<th class="num">' + h('k3_chuyen') + '</th><th class="note-cell">' + h('note') + '</th><th class="nowrap">' + h('hd_scan') + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
   }
 
   /* ================= Tab: Bảng giá ================= */
@@ -241,10 +241,10 @@
       const cur = !!dangDung[r.id];
       return '<tr class="' + (cur ? 'is-current' : '') + (r.active ? '' : ' is-dim') + '"><td><b>' + h(r.goods_type === 'iron_ore' ? 'iron_ore' : 'other_goods') + '</b>' +
         (cur ? '<span class="k3-sub" style="color:var(--primary);font-weight:600">' + h('k3_dang_ap_dung') + '</span>' : '') + '</td>' +
-        '<td lang="lo">' + esc(r.route_name || '') + '</td><td>' + h(r.price_mode === 'chuyen' ? 'pm_chuyen_s' : 'pm_ton_s') + '</td>' +
+        '<td class="route-cell" lang="lo" title="' + esc(r.route_name || '') + '">' + esc(r.route_name || '') + '</td><td>' + h(r.price_mode === 'chuyen' ? 'pm_chuyen_s' : 'pm_ton_s') + '</td>' +
         '<td class="num"><b>' + EPL.tien(r.price, r.price_ccy || 'USD') + '</b></td>' +
         '<td class="num">' + (r.hire_price == null ? '<span class="dash">–</span>' : EPL.tien(r.hire_price, r.hire_ccy || r.price_ccy)) + '</td>' +
-        '<td>' + (r.valid_from ? esc(ngay(r.valid_from)) : '–') + ' ' + h('k3_den') + ' ' + (denKhi[r.id] ? esc(ngay(denKhi[r.id])) : h('k3_khi_gia_moi')) + '</td>' +
+        '<td class="period">' + (r.valid_from ? esc(ngay(r.valid_from)) : '–') + ' ' + h('k3_den') + ' ' + (denKhi[r.id] ? esc(ngay(denKhi[r.id])) : h('k3_khi_gia_moi')) + '</td>' +
         '<td class="note-cell" title="' + esc(r.note || '') + '">' + (r.note ? esc(r.note) : '<span class="dash">–</span>') + (r.active ? '' : ' <span class="k3-tag k3-tag--muted">' + h('inactive') + '</span>') + '</td>' +
         '<td class="row-tools">' + (suaGia() ? nutIc('edit-price', 'edit', t('edit'), 'data-gia="' + esc(r.id) + '"') +
           nutIc('del-price', 'del', t('delete'), 'data-gia="' + esc(r.id) + '"') : '') + '</td></tr>';
@@ -285,14 +285,27 @@
   /** Khối công nợ bên hệ kế toán anh Tune — đọc thẳng bên đó (sales/debt/customer-detail), không cộng với số bên dưới. */
   function khoiNoKT(k) {
     const d = (cache[k.id] || {}).noKT;
-    if (d === undefined) return '';
     const dau = '<h4 class="k3-kt-h">' + h('k3_kt_tieu_de') + '</h4>';
-    if (d.loi) return '<div class="k3-kt">' + dau + '<p class="tab-note">' + h('k3_kt_loi') + ' <span class="small">' + esc(d.loi) + '</span></p></div>';
+    if (d === undefined) return '<div class="k3-kt">' + dau + '<p class="tab-note">' + h('loading') + '</p></div>';
+    // lý do máy chủ gửi là câu tiếng Việt: hiện dưới câu báo khi đang xem tiếng Việt; tiếng Lào / Anh thì để ở tooltip
+    const lyDo = d.loi && /^(vi|both)$/.test(NN.lang);
+    if (d.hong) return '<div class="k3-kt">' + dau + '<p class="tab-note tab-note--loi"' + (d.loi && !lyDo ? ' title="' + esc(d.loi) + '"' : '') + '>' + h('k3_kt_loi') +
+      (lyDo ? ' <span class="small">' + esc(d.loi) + '</span>' : '') + '</p></div>';
     if (!d.co) return '<div class="k3-kt">' + dau + '<p class="tab-note">' + h('k3_kt_chua_co') + '</p></div>';
     const tg = d.tong || {}, ccy = ((d.no || [])[0] || (d.don || [])[0] || {}).ccy || '';
+    // Trạng thái nợ: hệ kế toán trả câu tiếng Việt ("Chưa đến hạn"…) — tự tính theo số còn nợ và hạn trả để dịch được;
+    // câu gốc để ở tooltip. Không có hạn thì giữ câu gốc.
+    const homNay = EPL.homNay();
+    const ttNo = (x) => {
+      if ((x.con_no || 0) <= 0) return h('k3_kt_da_thu_du');
+      const han = String(x.han || '').slice(0, 10);
+      if (!han) return esc(x.trang_thai || '');
+      if (han >= homNay) return h('k3_kt_chua_den_han');
+      return esc(t('k3_kt_qua_han_n', { n: Math.round((new Date(homNay) - new Date(han)) / 86400000) }));
+    };
     const rows = (d.no || []).map(x => '<tr class="' + ((x.con_no || 0) > 0 ? '' : 'is-dim') + '"><td class="code">' + esc(x.so || '') + '</td><td>' + esc(ngay(String(x.ngay || '').slice(0, 10))) + '</td>' +
       '<td class="num"><b>' + EPL.tien(x.tien, x.ccy) + '</b></td><td class="num">' + EPL.tien(x.da_tra, x.ccy) + '</td><td class="num"><b>' + EPL.tien(x.con_no, x.ccy) + '</b></td>' +
-      '<td>' + esc(x.trang_thai || '') + '</td></tr>').join('');
+      '<td title="' + esc(x.trang_thai || '') + '">' + ttNo(x) + '</td></tr>').join('');
     return '<div class="k3-kt">' + dau +
       '<div class="debt-top">' +
         '<div><span>' + h('k3_kt_tong_no') + '</span><b>' + EPL.tien(tg.no, ccy) + '</b><small>' + esc(d.customer_code || '') + '</small></div>' +
@@ -322,11 +335,12 @@
     return khoiNoKT(k) + '<h4 class="k3-kt-h">' + h('k3_tam_tieu_de') + '</h4><div class="debt-top">' +
         '<div><span>' + h('kh_no_tong') + '</span><b>' + tienGop(no.tong_tien) + '</b><small>≈ ' + n0(no.tong_lak) + ' LAK</small></div>' +
         '<div><span>' + h('collected') + '</span><b>' + n0(no.da_thu_lak) + ' LAK</b></div>' +
-        '<div class="' + (coNo ? 'is-danger' : '') + '"><span>' + h('kh_no_con_no') + '</span><b>' + (coNo ? tienGop(no.con_no_tien) : '0') + '</b><small>≈ ' + n0(no.con_no_lak) + ' LAK</small></div>' +
+        '<div class="' + (coNo ? 'is-danger' : '') + '"><span>' + h('kh_no_con_no') + '</span><b>' + (coNo ? tienGop(no.con_no_tien) + '</b><small>≈ ' + n0(no.con_no_lak) + ' LAK</small>' : EPL.tien(0, 'LAK') + '</b>') + '</div>' +
         '<div class="aging-box"><span class="aging-title">' + h('k3_so_to', { n: no.so_to, m: no.so_to_no }) + '</span><span class="aging-note">' + h('k3_no_chi_xem') + '</span></div></div>' +
       (Object.keys(m.choGop).length ? '<p class="tab-note tab-note--info">' + h('k3_cho_gop', { thang: thangHien(), tien: tienGop(m.choGop) }) + '</p>' : '') +
       (rows ? '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('type') + '</th><th>' + h('doc_no') + '</th><th>' + h('c_date') + '</th><th class="num">' + h('c_value') + '</th>' +
-        '<th class="num">' + h('in_lak') + '</th><th class="num">' + h('collected') + '</th><th class="num">' + h('remaining') + '</th><th>' + h('c_st_f') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        // hai cột Đã thu / Còn lại là số Kíp — ghi đơn vị ở đầu cột cho bảng gọn (ô từng dòng không lặp chữ LAK)
+        '<th class="num">' + h('in_lak') + '</th><th class="num">' + h('collected') + ' (LAK)</th><th class="num">' + h('remaining') + ' (LAK)</th><th>' + h('c_st_f') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
         : '<div class="k3-empty">' + h('kh_no_trong') + '</div>');
   }
 
@@ -349,8 +363,10 @@
         ? '<button type="button" class="k3-btn k3-btn--primary k3-btn--sm tabs-action" data-act="add-price"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>' + h('k3_them_gia') + '</button>' : '';
     const stats = '<div class="stat"><span>' + h('k3_chuyen_thang', { thang: thangHien() }) + '</span><b>' + (c.trips ? m.trips : '·') + '</b><em>' + h('k3_gom_giao', { g: m.gom, d: m.giao }) + '</em></div>' +
       '<div class="stat"><span>' + h('k3_san_luong') + '</span><b>' + n2(m.tons) + '<small>' + h('ton') + '</small></b></div>' +
-      (g ? '<div class="stat"><span>' + h('k3_doanh_thu_thang') + '</span><b class="stat-tien">' + (Object.keys(m.rev).length ? tienGop(m.rev) : '0') + '</b><em>≈ ' + n0(m.revLak) + ' LAK</em></div>' +
-        '<div class="stat ' + (no && no.con_no_lak > 0 ? 'is-danger' : '') + '"><span>' + h('kh_cong_no') + '</span><b class="stat-tien">' + (no && no.con_no_lak > 0 ? tienGop(no.con_no_tien) : '0') + '</b>' +
+      // số 0 cũng ghi đơn vị (Kíp) — con số trần không nói được là tiền gì; chưa có doanh thu thì bỏ dòng "≈ 0 LAK" lặp lại
+      (g ? '<div class="stat"><span>' + h('k3_doanh_thu_thang') + '</span><b class="stat-tien">' + (Object.keys(m.rev).length ? tienGop(m.rev) : EPL.tien(0, 'LAK')) + '</b>' +
+          (Object.keys(m.rev).length ? '<em>≈ ' + n0(m.revLak) + ' LAK</em>' : '') + '</div>' +
+        '<div class="stat ' + (no && no.con_no_lak > 0 ? 'is-danger' : '') + '"><span>' + h('kh_cong_no') + '</span><b class="stat-tien">' + (no && no.con_no_lak > 0 ? tienGop(no.con_no_tien) : EPL.tien(0, 'LAK')) + '</b>' +
           '<em>' + (no ? (no.con_no_lak > 0 ? '≈ ' + n0(no.con_no_lak) + ' LAK · ' + t('k3_to_con_no', { n: no.so_to_no }) : t('k3_khong_no')) : '') + '</em></div>'
         : '<div class="stat"><span>' + h('k3_hd_dang_ap') + '</span><b class="stat-tien">' + esc((currentContract(k.id) || {}).contract_no || '–') + '</b></div>');
     $('#k3-work').innerHTML =
@@ -371,7 +387,7 @@
             (k.phone ? '<a class="k3-btn k3-btn--sm" href="tel:' + esc(String(k.phone).replace(/\s/g, '')) + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>' + h('k3_goi') + '</a>' : '') +
             (suaDuoc() ? '<button type="button" class="k3-btn k3-btn--sm" data-act="edit-customer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"/></svg>' + h('edit') + '</button>' : '') + '</div>' +
         '</div>' +
-        '<div class="stats">' + stats + '</div>' +
+        '<div class="stats' + (g ? '' : ' stats--3') + '">' + stats + '</div>' +
       '</section>' +
       lifeHtml(k) +
       '<section class="k3-panel tabs-panel"><div class="tabs-bar"><div class="tabs" role="tablist">' + tabs.map(x =>
@@ -387,6 +403,29 @@
     $('#k3-phu').innerHTML = k ? h('k3_sub_khach', { ten: k.name }) : h('k3_sub');
   }
 
+  /* Chiều cao "một màn" (CSS: rộng > 1180, cao ≥ 640): màn cao đúng phần còn lại của khung nhìn — trang không cuộn,
+   * danh sách và tab tự cuộn trong cột. Phần đầu trang chung cao khác nhau theo kiểu menu (top: hai thanh + tiêu đề;
+   * side: một thanh) và theo chữ (Lào, VI + ລາວ cao hơn), nên ĐO chỗ màn bắt đầu thay vì trừ một số cố định (01/10: trừ
+   * 142 px thì menu top lọt đáy 73 px dưới mép cửa sổ). Đo theo chính màn (lúc nạp có dải "Đang tải…" ở trên — init
+   * xong thì đo lại); getBoundingClientRect là px thật, đổi ra px của khung đã zoom (chia --ty-le); lề dưới của trang thì đã là px khung. */
+  let daGanDo = false;
+  function doCao() {
+    const kh = root && root.isConnected ? root.querySelector('.kh3') : null;
+    if (!kh) return;
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const trang = document.getElementById('noi-dung');
+    const duoi = trang ? parseFloat(getComputedStyle(trang).paddingBottom) || 0 : 0;
+    kh.style.setProperty('--k3-tru', Math.ceil((kh.getBoundingClientRect().top + window.scrollY) / tl + duoi) + 'px');
+  }
+  function ganDoCao() {
+    if (daGanDo) return; daGanDo = true;
+    let cho = 0;
+    const lai = () => { clearTimeout(cho); cho = setTimeout(doCao, 90); };
+    window.addEventListener('resize', lai);
+    // đổi kiểu menu top ⇄ side (EPL.datKieuXem) hay tiêu đề xuống dòng không báo cho module — thanh đầu đổi cỡ thì đo lại
+    if (window.ResizeObserver) { const qs = new ResizeObserver(lai); ['tbar', 'topbar'].forEach(id => { const e = document.getElementById(id); if (e) qs.observe(e); }); }
+  }
+
   /* ================= Tải dữ liệu ================= */
   async function taiKhach(cid) {
     if (!cid) return;
@@ -395,8 +434,13 @@
     if (xemTien()) {
       viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(() => { c.gia = []; }));
       viec.push(API.get('/api/customers/' + cid + '/cong-no').then(r => { c.no = r; }).catch(() => { c.no = null; }));
-      // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem
-      viec.push(API.get('/api/customers/' + cid + '/cong-no-ke-toan').then(r => { c.noKT = r; }).catch(e => { c.noKT = { loi: e.message || String(e) }; }));
+      // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem. Hỏi sang máy
+      // khác (máy chủ chờ tới 40 s khi bên đó treo) nên KHÔNG đứng chờ nó: chuyến, bảng giá, công nợ trang kế toán tạm vẽ
+      // ngay; khối này về tới (hoặc lỗi) thì vẽ lại. Lỗi mạng của trình duyệt ("Failed to fetch") không bày ra — chỉ câu
+      // báo; lỗi máy chủ nói rõ lý do (token hết hạn, bên kia không trả lời…) thì kèm lý do.
+      API.get('/api/customers/' + cid + '/cong-no-ke-toan').then(r => { c.noKT = r || { co: false }; })
+        .catch(e => { c.noKT = { hong: true, loi: e instanceof EPL.LoiAPI ? (e.message || '') : '' }; })
+        .then(() => { if (st.id === cid) render(); });
     }
     await Promise.all(viec);
     if (st.id === cid) render();
@@ -711,11 +755,12 @@
       $('#k3-tim').addEventListener('input', (e) => { st.query = e.target.value; renderList(); });
       root.addEventListener('click', onClick);
       root.addEventListener('change', onChange);
-      ganModal(); ganPhim();
-      render();
+      ganModal(); ganPhim(); ganDoCao();
+      render(); doCao();
       await tai();
+      setTimeout(doCao, 0);                    // sau khi khung bỏ dải "Đang tải…" (chạy ngay khi init trả về)
     },
-    onLang() { if (root) render(); },
+    onLang() { if (root) { render(); doCao(); } },
     xuatExcel() {
       const g = xemTien();
       return [EPL.xuatSheet(t('nav_customers'),

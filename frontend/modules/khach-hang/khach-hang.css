@@ -265,8 +265,10 @@
 .kh3 .cust-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .kh3 .cust-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--lao); font-size: 14px; font-weight: 600; line-height: 1.4; }
 .kh3 .cust-debt { flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: var(--danger); }
-.kh3 .cust-row--sub { margin-top: 1px; font-size: 12px; color: var(--muted); }
-.kh3 .cust-mode { flex-shrink: 0; }
+.kh3 .cust-debt small { margin-left: 3px; font-size: 10.5px; font-weight: 600; }
+/* dòng phụ xuống dòng khi chật (1366: cột trái 290px — "Còn hạn đến 31/12/2026" từng bị cắt còn "31/12/…") */
+.kh3 .cust-row--sub { margin-top: 1px; font-size: 12px; color: var(--muted); flex-wrap: wrap; row-gap: 0; }
+.kh3 .cust-mode { flex-shrink: 0; margin-left: auto; }
 .kh3 .st { display: inline-flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kh3 .st i { flex-shrink: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--line-2); }
 .kh3 .st--ok i { background: var(--primary-2); }
@@ -276,7 +278,9 @@
 .kh3 .work { gap: 12px; }
 .kh3 .avatar--lg { width: 44px; height: 44px; font-size: 18px; }
 @media (min-width: 1181px) and (min-height: 640px) {
-.kh3 { height: calc(100vh / var(--ty-le) - 142px); min-height: 560px; display: flex; flex-direction: column; overflow: hidden; }
+/* --k3-tru do khach-hang.js đo (đầu trang chung + lề dưới, đổi theo menu top / side và theo chữ); 142px chỉ là số dự phòng */
+.kh3 { height: calc(100vh / var(--ty-le) - var(--k3-tru, 142px)); min-height: 560px; display: flex; flex-direction: column; overflow: hidden; }
+.kh3 .stats--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }   /* vai không thấy tiền: ba ô, không chừa cột trống */
 .kh3 .layout { flex: 1; min-height: 0; align-items: stretch; }
 .kh3 .rail { position: static; top: auto; max-height: none; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .kh3 .rail .cust-list { flex: 1; min-height: 0; overflow-y: auto; margin-right: -6px; padding-right: 6px; }
@@ -284,6 +288,9 @@
 .kh3 .work > .k3-panel { flex: none; }
 .kh3 .work > .tabs-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .kh3 .tabs-panel .tab-panel { flex: 1; min-height: 0; overflow-y: auto; }
+/* con của tab là cột flex: khối có overflow (debt-top, k3-tbl-wrap) có cỡ tối thiểu 0 nên bị bóp dẹt khi tab dài — tab Công
+   nợ mất hẳn ô "Hoá đơn ở trang kế toán tạm" (tiếng Lào còn 0 px). Không cho co, tab tự cuộn. */
+.kh3 .tab-panel > * { flex-shrink: 0; }
 }
 @media (min-width: 1181px) and (max-width: 1400px) {
 .kh3 .layout { grid-template-columns: 290px minmax(0, 1fr); gap: 14px; }
@@ -293,6 +300,8 @@
 
 /* ---------- phần thêm cho màn trong khung ứng dụng ---------- */
 .kh3 .k3-dau { flex: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: -8px 0 12px; }
+/* "một màn" có overflow hidden: lề âm -8px làm nút "Thêm khách hàng" bị cắt mép trên — bỏ lề âm (chiều cao màn đo theo JS) */
+@media (min-width: 1181px) and (min-height: 640px) { .kh3 .k3-dau { margin-top: 0; } }
 .kh3 .k3-phu { margin: 0; color: var(--muted); font-size: 13px; }
 .kh3 .k3-phu .lo, .kh3 .k3-phu b { color: var(--ink-2); }
 .kh3 .cust.is-off .cust-name { color: var(--muted); }
@@ -318,6 +327,7 @@
 .kh3 .k3-tbl--compact { font-size: 13px; }
 .kh3 .k3-tbl--compact th { white-space: normal; }
 .kh3 .k3-tbl td.route-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kh3 .k3-tbl th.nowrap { white-space: nowrap; }
 .kh3 .k3-tbl td.row-tools .row-ic + .row-ic { margin-left: 2px; }
 .kh3 .row-ic { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); color: var(--ink-2); cursor: pointer; }
 .kh3 .row-ic:hover { border-color: var(--primary-2); color: var(--primary); }
@@ -325,4 +335,7 @@
 .kh3 .k3-tbl .tag { white-space: normal; }
 .kh3 .mini-life { width: 72px; }
 .kh3 .k3-kt{margin-bottom:14px}
+/* không đọc được công nợ bên hệ kế toán: câu báo nổi rõ (trước đây chữ xám nhỏ như ghi chú, dễ tưởng là "không có nợ") */
+.kh3 .tab-note--loi { padding: 8px 12px; border-radius: var(--r-md); background: var(--warn-tint); color: var(--warn); font-weight: 600; }
+.kh3 .tab-note--loi .small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--ink-2); overflow-wrap: anywhere; }
 .kh3 .k3-kt-h{margin:4px 0 8px;font-size:14px;font-weight:600}
