@@ -1356,6 +1356,7 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
     ly_do = (data.get("ly_do") or data.get("reason") or "").strip()
     if not ly_do:
         raise HTTPException(422, {"ma": "THIEU_LY_DO", "loi": "Đổi xe phải ghi lý do — kế toán kiểm lại mục I sẽ đọc câu này."})
+    truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: đổi chủ xe là lệch bút toán thuê xe (02/10)
     xe_cu = db.get(Vehicle, p.vehicle_id) if p.vehicle_id else None
     cu_ten = p.truck_no or (xe_cu.truck_no if xe_cu else "")
     cu_bien = p.plate_head or ""
@@ -1399,6 +1400,7 @@ def doi_xe(tid: str, data: dict = Body(...), db: Session = Depends(get_db), user
         _ghi_log(db, p, user, "sec_info:reopen")
     s.status = "entered"
     _ghi_log(db, p, user, "a_change_truck")
+    BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     db.commit()
     return xuat_phieu(db, p, vai=user.role)
 
@@ -1451,6 +1453,7 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ Admin Thà Bốc hoặc tài xế của phiếu cập nhật trạng thái xe."})
     _cua_tai_xe(db, p, user)
     _chan_khoa(p, user)
+    truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: cân cuối của xe thuê đổi tiền thuê / phí / quá tải (02/10)
     moi = data.get("status")
     if moi not in TRANG_THAI_VAN_CHUYEN:
         raise HTTPException(422, {"ma": "TRANG_THAI_SAI", "loi": "Trạng thái phải là %s." % ", ".join(TRANG_THAI_VAN_CHUYEN)})
@@ -1500,6 +1503,7 @@ def doi_trang_thai_van_chuyen(tid: str, data: dict = Body(...), db: Session = De
         _doi_trang_thai_xe_tai_xe(db, p, "on_trip", "on_trip")
     p.transport_status = moi
     _ghi_log(db, p, user, "st_%s" % moi)
+    BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     with KK.GiaoDichKho(db, user) as gd:
         # Xe về tới nơi: DO gom thì hàng VÀO KHO bãi (sổ và phiếu nhập kho ở trang kế toán — tắt thì chưa báo tới được),
         # DO giao thì chốt dòng hao hụt.
@@ -1591,7 +1595,11 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
         raise HTTPException(409, {"ma": "XE_CHUA_VE", "loi": "Xe chưa về (trạng thái %s) thì chưa khoá phiếu." % p.transport_status})
     # xe thuê: dầu / phụ tùng lấy kho là xuất bán — phải EPL ứng và có giá bán thì bút toán 4022/707 mới đúng số trừ chủ xe
     # (chủ dự án 02/10: chặn, không chỉ cảnh báo) → 409 KHO_XE_THUE_XUAT_BAN · THIEU_GIA_BAN, nói mục nào, ai gõ giá
-    BTC.chan_xuat_ban(p, _dong_chi(db, p), luc="khoa")
+    dong_khoa = _dong_chi(db, p)
+    # dầu kho chưa cấp theo phiếu đề nghị / phụ tùng ghi lấy kho mà chưa xuất (02/10): hàng chưa rời kho thì không khoá — tiền
+    # chi, tiền trừ chủ xe đã tính dòng đó mà chưa có chứng từ xuất kho → 409 DAU_KHO_CHUA_CAP · PT_KHO_CHUA_XUAT
+    BTC.chan_khoa_chua_xuat(p, dong_khoa)
+    BTC.chan_xuat_ban(p, dong_khoa, luc="khoa")
     cb = _canh_bao_khoa(db, p)
     if cb and not data.get("xac_nhan"):
         raise HTTPException(409, {"ma": "CO_CANH_BAO", "loi": "Phiếu còn %d điểm cần xem; xem rồi xác nhận khoá." % len(cb), "canh_bao": cb})

@@ -638,6 +638,15 @@ def dau_khoa(db, p):
             ra.append((("kho", d.section, d.stock_move_id or "", d.part_id or "", d.place_id or "", float(d.qty or 0),
                         float(d.unit_price or 0), None if d.sale_price is None else float(d.sale_price),
                         (d.currency or "LAK").upper(), d.paid_by_epl is not False), _vi_tri(d, dong)))
+    if p.company == "joint":
+        # tiền thuê xe (02/10): giá thuê, tiền tệ thuê, phí, quá tải — kể cả cân / tỷ giá làm đổi các số đó. So SỐ HIỆU LỰC
+        # của tinh_phieu (ô trống = mặc định 2 % · 40 t · 1/t), không so ô thô: lưu lại mà máy điền mặc định cùng số không bị chặn
+        from services.tinh_toan import tinh_phieu
+        t = tinh_phieu(p, dong)
+        ra.append((("thue", p.owner_id or "", t.get("hire_ccy"), t.get("gia_thue"), t.get("tien_thue"), t.get("tien_thue_lak"),
+                    t.get("phi"), t.get("tru_vuot")),
+                   ("tiền thuê xe (giá thuê, phí, quá tải, cân)", "ຄ່າເຊົ່າລົດ (ລາຄາເຊົ່າ, ຄ່າທຳນຽມ, ນໍ້າໜັກເກີນ, ນໍ້າໜັກຊັ່ງ)",
+                    "the truck hire (hire price, fee, overload, weight)")))
     theo_id = {d.id: d for d in dong}
     for x in dong_khoa_phieu(db, p, dong).get(NO_NCC, ([], None))[0]:
         d = theo_id.get(x.get("ref"))
@@ -667,12 +676,57 @@ def chan_sua_sau_khoa(db, p, truoc):
             ten.append(t)
     ds = ten or [("các dòng xuất kho", "ແຖວເບີກສາງ", "the store-issue lines")]
     raise loi3(409, "DA_KHOA",
-               "Phiếu %s đã khoá — %s đã vào bút toán khoá phiếu (xuất kho / ghi nợ nhà cung cấp): không sửa giá bán, đơn giá, số "
-               "lượng, ai trả, không thêm / bỏ dòng, không cấp / xuất thêm được. KT Thu/Chi mở khoá phiếu rồi mới sửa." % (
-                   p.doc_no, _noi(ds, 0)),
-               "ໃບ %s ລັອກແລ້ວ — %s ລົງບັນຊີຕອນລັອກໃບແລ້ວ (ເບີກສາງ / ໜີ້ຜູ້ສະໜອງ): ແກ້ລາຄາຂາຍ, ລາຄາ, ຈຳນວນ, ຜູ້ຈ່າຍ, ເພີ່ມ / ລຶບແຖວ, "
-               "ເບີກເພີ່ມ ບໍ່ໄດ້. ບັນຊີລາຍຈ່າຍ/ຮັບ ປົດລັອກໃບກ່ອນ ຈຶ່ງແກ້ໄດ້." % (p.doc_no, _noi(ds, 1)),
-               "Slip %s is locked — %s went into the lock-time journal entries (store issue / supplier payable): the sale price, "
-               "unit price, quantity and payer cannot change, lines cannot be added or removed, nothing more can be issued. The "
-               "receipts & payments accountant must unlock the slip first." % (p.doc_no, _noi(ds, 2)),
+               "Phiếu %s đã khoá — %s đã vào bút toán khoá phiếu (thuê xe / xuất kho / ghi nợ nhà cung cấp): không sửa giá thuê, "
+               "phí, quá tải, cân của xe thuê; không sửa giá bán, đơn giá, số lượng, ai trả của dòng kho / dòng ghi nợ; không thêm / "
+               "bỏ dòng, không cấp / xuất thêm được. KT Thu/Chi mở khoá phiếu rồi mới sửa." % (p.doc_no, _noi(ds, 0)),
+               "ໃບ %s ລັອກແລ້ວ — %s ລົງບັນຊີຕອນລັອກໃບແລ້ວ (ເຊົ່າລົດ / ເບີກສາງ / ໜີ້ຜູ້ສະໜອງ): ແກ້ລາຄາເຊົ່າ, ຄ່າທຳນຽມ, ນໍ້າໜັກເກີນ, "
+               "ນໍ້າໜັກຊັ່ງ ຂອງລົດເຊົ່າ; ແກ້ລາຄາຂາຍ, ລາຄາ, ຈຳນວນ, ຜູ້ຈ່າຍ ຂອງແຖວສາງ / ແຖວໜີ້; ເພີ່ມ / ລຶບແຖວ, ເບີກເພີ່ມ ບໍ່ໄດ້. "
+               "ບັນຊີລາຍຈ່າຍ/ຮັບ ປົດລັອກໃບກ່ອນ ຈຶ່ງແກ້ໄດ້." % (p.doc_no, _noi(ds, 1)),
+               "Slip %s is locked — %s went into the lock-time journal entries (truck hire / store issue / supplier payable): the "
+               "hire price, fee, overload and weight of a hired truck, and the sale price, unit price, quantity and payer of store / "
+               "payable lines cannot change; lines cannot be added or removed; nothing more can be issued. The receipts & payments "
+               "accountant must unlock the slip first." % (p.doc_no, _noi(ds, 2)),
                trip_id=p.id)
+
+
+def chan_khoa_chua_xuat(p, cac_dong):
+    """Khoá phiếu (chủ dự án 30/09: mọi lần xuất dầu kho phải có phiếu đề nghị đã cấp; 02/10: chặn cả lúc khoá) — còn dòng LẤY
+    KHO mà hàng chưa rời kho thì không khoá: tiền chi / tiền trừ chủ xe đã tính dòng đó mà sổ kho và bút toán xuất kho thì chưa.
+      · dầu mục III (xe nhà lẫn xe thuê) chưa cấp theo phiếu đề nghị → 409 DAU_KHO_CHUA_CAP;
+      · phụ tùng mục V ghi "lấy từ kho" trên bảng mục V mà chưa xuất (phụ tùng chỉ rời kho khi tổ sửa khai «Sửa xe» lấy kho, hoặc
+        duyệt báo hỏng) → 409 PT_KHO_CHUA_XUAT.
+    Chỉ dòng EPL ứng (dòng xe thuê ghi "chủ xe tự trả" đã bị chan_xuat_ban chặn riêng), số lượng > 0."""
+    def chua(m):
+        return [_vi_tri(d, cac_dong) + (d,) for d in cac_dong if d.section == m and d.source == "kho" and d.paid_by_epl is not False
+                and (d.qty or 0) > 0 and not d.stock_move_id]
+    dau = chua("fuel")
+    if dau:
+        ds = [(x[0] + " (%s lít)" % _so_doc(x[3].qty), x[1] + " (%s ລິດ)" % _so_doc(x[3].qty), x[2] + " (%s L)" % _so_doc(x[3].qty))
+              for x in dau]
+        raise loi3(409, "DAU_KHO_CHUA_CAP",
+                   "Phiếu %s chưa khoá được: %s lấy dầu kho mà chưa được cấp theo phiếu đề nghị xuất kho nhiên liệu — dầu chưa rời "
+                   "kho thì chưa có chứng từ xuất kho, cũng không được tính vào chi phí / trừ tiền trả chủ xe. Admin Thà Bốc (Bãi) in phiếu đề nghị, KT "
+                   "kho xăng dầu (hoặc thủ kho của kho đó) cấp ở màn Cấp phát, rồi khoá lại. Không lấy dầu kho nữa thì bỏ dòng." % (
+                       p.doc_no, _noi(ds, 0)),
+                   "ໃບ %s ຍັງລັອກບໍ່ໄດ້: %s ເບີກນໍ້າມັນສາງ ແຕ່ຍັງບໍ່ໄດ້ຈ່າຍຕາມໃບສະເໜີເບີກນໍ້າມັນອອກສາງ — ນໍ້າມັນຍັງບໍ່ອອກຈາກສາງ ກໍ່ຍັງບໍ່"
+                   "ມີໃບເບີກອອກສາງ, ແລະ ຍັງບໍ່ນັບເປັນລາຍຈ່າຍ / ບໍ່ຫັກເງິນຈ່າຍເຈົ້າຂອງລົດ. ແອັດມິນ ທ່າບົກ ພິມໃບສະເໜີ, ບັນຊີສາງນໍ້າມັນ (ຫຼື ຜູ້ຮັກສາ"
+                   "ສາງ) ຈ່າຍຢູ່ໜ້າ ການຈ່າຍອອກ, ແລ້ວລັອກຄືນ. ບໍ່ເອົານໍ້າມັນສາງແລ້ວ ໃຫ້ລຶບແຖວ." % (p.doc_no, _noi(ds, 1)),
+                   "Slip %s cannot be locked yet: %s takes store fuel that has not been issued against a fuel stock-out request — "
+                   "fuel still in the store has no stock-out document and must not count as cost or be deducted from the owner "
+                   "payout. The Thabok admin (yard) prints the request, the fuel store accountant (or that depot's storekeeper) issues it on the "
+                   "Issuing screen, then lock again. If store fuel is no longer taken, delete the line." % (p.doc_no, _noi(ds, 2)),
+                   trip_id=p.id)
+    pt = chua("repair")
+    if pt:
+        raise loi3(409, "PT_KHO_CHUA_XUAT",
+                   "Phiếu %s chưa khoá được: %s ghi phụ tùng lấy từ kho mà chưa xuất kho (kho chưa trừ tồn, chưa có chứng từ xuất). "
+                   "Tổ sửa chữa khai «Sửa xe» lấy phụ tùng kho ở màn Theo dõi phiếu (kho trừ tồn ngay) và bỏ dòng này, hoặc đổi dòng "
+                   "sang mua ngoài, rồi khoá lại." % (p.doc_no, _noi(pt, 0)),
+                   "ໃບ %s ຍັງລັອກບໍ່ໄດ້: %s ບັນທຶກອາໄຫຼ່ເບີກຈາກສາງ ແຕ່ຍັງບໍ່ໄດ້ເບີກອອກສາງ (ສາງຍັງບໍ່ຫັກ, ຍັງບໍ່ມີໃບເບີກ). ໜ່ວຍສ້ອມແປງແຈ້ງ "
+                   "«ສ້ອມແປງ» ເບີກອາໄຫຼ່ສາງ ຢູ່ໜ້າ ຕິດຕາມໃບ (ສາງຫັກທັນທີ) ແລ້ວລຶບແຖວນີ້, ຫຼື ປ່ຽນແຖວເປັນຊື້ນອກ, ແລ້ວລັອກຄືນ." % (
+                       p.doc_no, _noi(pt, 1)),
+                   "Slip %s cannot be locked yet: %s records a part from the store that was never issued (no stock deducted, no "
+                   "stock-out document). The repair team declares a «Repair» taking the store part on the Slip tracking screen (stock "
+                   "is deducted at once) and deletes this line, or changes the line to bought outside, then lock again." % (
+                       p.doc_no, _noi(pt, 2)),
+                   trip_id=p.id)
