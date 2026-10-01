@@ -86,30 +86,45 @@ def _chi_tiet_loi(than):
     return ed.get("ErrorCode"), ed.get("InvalidAccounts")
 
 
+BEN_DO_CHUA_BAT = ("LOGISTICS_JOURNAL_DISABLED", "LOGISTICS_JOURNAL_CONFIG_REQUIRED", "LOGISTICS_JOURNAL_SCRIPT_REQUIRED")
+
+
 def _ket_qua(ma, than):
-    """(Result | None, mã lỗi, câu lỗi). Thành công chỉ khi Success true (hoặc 2xx không phong bì) kèm Result."""
+    """(Result | None, mã lỗi, câu lỗi). Thành công chỉ khi Success true (hoặc 2xx không phong bì) kèm Result.
+    Lỗi bên đó có thể về HTTP 200 kèm `Success: false` và mã thật ở `Code` (lỗi chưa bắt: Code 500) — xếp theo mã thật đó."""
     if isinstance(than, dict) and than.get("Success") is True and isinstance(than.get("Result"), dict):
         return than["Result"], None, None
     if 200 <= ma < 300 and isinstance(than, dict) and than.get("DocumentId"):
         return than, None, None
     cau = ((than or {}).get("Message") or (than or {}).get("message")) if isinstance(than, dict) else None
     ma_ben_do, sai_ed = _chi_tiet_loi(than)
-    if ma >= 500:
-        return None, "HTTP_5XX", "Hệ kế toán trả HTTP %s: %s" % (ma, cau or "lỗi máy chủ")
-    if ma == 404:
+    that = than.get("Code") if isinstance(than, dict) and than.get("Success") is False and isinstance(than.get("Code"), int) else ma
+    if ma_ben_do in BEN_DO_CHUA_BAT:
+        return None, "BEN_DO_CHUA_BAT", "Hệ kế toán chưa bật đường nhận bút toán — bút toán giữ chờ gửi, bật xong bấm Gửi hết."
+    if that >= 500 or ma >= 500:
+        return None, "HTTP_5XX", "Hệ kế toán trả lỗi máy chủ (%s): %s" % (that, cau or "không rõ")
+    if that == 404:
         return None, "KHONG_CO_DUONG", "Hệ kế toán chưa có đường nhận bút toán (404) — bên đó chưa áp bản mới."
-    if ma in (400, 409, 422) or (isinstance(than, dict) and than.get("Success") is False):
+    if that in (401, 403) or ma_ben_do == "LOGISTICS_JOURNAL_FORBIDDEN":
+        return None, "KHONG_DUOC_PHEP", "Hệ kế toán chưa cho tài khoản kết nối gửi bút toán — nhờ bên kế toán cấp quyền."
+    if that in (400, 409, 422) or (isinstance(than, dict) and than.get("Success") is False):
         r = (than or {}).get("Result") if isinstance(than, dict) else None
         sai = sai_ed or ((r or {}).get("InvalidAccounts") or (r or {}).get("Accounts") if isinstance(r, dict)
                          else (r if isinstance(r, list) else None))
-        if sai or ma_ben_do == "INVALID_ACCOUNTS" or "tài khoản" in (cau or "").lower() or "account" in (cau or "").lower():
+        doan_chu = not ma_ben_do and that == 400 and any(t in (cau or "").lower() for t in ("tài khoản", "account"))
+        if sai or ma_ben_do == "INVALID_ACCOUNTS" or doan_chu:
             return None, "TAI_KHOAN_SAI", "Hệ kế toán từ chối: %s%s" % (cau or "tài khoản không có trong danh mục",
                                                                        " (%s)" % ", ".join(str(x) for x in sai) if sai else "")
         if ma_ben_do == "LOGISTICS_JOURNAL_52512":
             return None, "KHAC_NOI_DUNG", ("Hệ kế toán đã có chứng từ cùng mã nguồn nhưng khác số liệu (từ một lần gửi trước) "
                                           "và chưa gỡ được — nhờ kế toán kiểm chứng từ đó trong hệ kế toán.")
         return None, "BEN_KE_TOAN_TU_CHOI", "Hệ kế toán từ chối: %s" % (cau or "không rõ lý do")
-    return None, "HTTP_%s" % ma, "Hệ kế toán trả HTTP %s: %s" % (ma, cau or "")
+    return None, "HTTP_%s" % that, "Hệ kế toán trả HTTP %s: %s" % (that, cau or "")
+
+
+def _http(ma_loi):
+    """Mã HTTP trang điều xe trả cho người bấm: 502 khi lỗi phía bên kia / chưa rõ, 422 khi bên kia từ chối dữ liệu."""
+    return 502 if ma_loi in ("HTTP_5XX", "KHONG_GOI_DUOC", "BEN_DO_CHUA_BAT", "KHONG_CO_DUONG", "KHONG_DUOC_PHEP") else 422
 
 
 # ---------------------------------------------------------------- gói
@@ -184,11 +199,11 @@ def _ghi_ket_qua(rec, r):
 def hoi(db, rec, cho=CHO_GIAY):
     """GET journal-entries/{SourceRef}: bên đó có chứng từ chưa. Có → ghi số chứng từ (bản cho_gui thành da_gui). Trả Result | None."""
     ma, than = _goi("GET", DUONG + "/" + quote(rec.source_ref, safe=""), cho=cho)
-    if ma == 404:
-        return None
+    if ma == 404 and _chi_tiet_loi(than)[0] == "JOURNAL_ENTRY_NOT_FOUND":
+        return None                                     # bên đó trả lời rõ: không có chứng từ (404 khác = chưa có đường)
     r, ma_loi, cau = _ket_qua(ma, than)
     if r is None:
-        _loi(ma_loi, cau, 502 if ma >= 500 else 422)
+        _loi(ma_loi, cau, _http(ma_loi))
     _ghi_ket_qua(rec, r)
     return r
 
@@ -209,7 +224,7 @@ def gui(db, rec, commit=True, cho=CHO_GIAY):
             _go(rec)
             r, ma_loi, cau, ma = _post(db, rec, cho)
         if r is None:
-            _loi(ma_loi, cau, 502 if ma >= 500 else 422)
+            _loi(ma_loi, cau, _http(ma_loi))
         _ghi_ket_qua(rec, r)
     except HTTPException as e:
         d = e.detail if isinstance(e.detail, dict) else {}
@@ -232,10 +247,8 @@ def _go(rec):
     """POST reverse cho SourceRef của bản này. Gỡ xong (hoặc bên đó không còn chứng từ đang hoạt động) → trả; không → ném."""
     ma, than = _goi("POST", DUONG + "/reverse", {"SourceRef": rec.source_ref}, key=rec.source_ref + ":dao")
     r, ma_loi, cau = _ket_qua(ma, than)
-    if r is None and ma == 404:
-        return                                          # bên đó không có chứng từ này nữa — coi như đã gỡ
-    if r is None:
-        _loi(ma_loi, cau, 502 if ma >= 500 else 422)
+    if r is None:                                       # 404 ở đây = chưa có đường (bên đó không bao giờ trả 404 khi gỡ)
+        _loi(ma_loi, cau, _http(ma_loi))
     # Reversed=false + DocumentId null = bên đó không còn chứng từ đang hoạt động của SourceRef này (lần gỡ trước đã xong
     # mà mất phản hồi) — coi như đã gỡ. Bị chặn gỡ (đã khoá / ghi sổ chính thức) bên đó trả 409, không về đây.
     if r.get("Reversed") is False and r.get("DocumentId") is not None:
@@ -309,6 +322,7 @@ def gui_het(db, gioi_han=100):
             ra["loi"] += 1
             if len(ra["chi_tiet_loi"]) < 10:
                 ra["chi_tiet_loi"].append({"source_ref": r.source_ref, "ma": d.get("ma"), "loi": d.get("loi")})
-            if d.get("ma") in ("KHONG_GOI_DUOC", "QLSX_TOKEN_HET_HAN", "CHUA_CO_TOKEN", "KHONG_CO_DUONG"):
+            if d.get("ma") in ("KHONG_GOI_DUOC", "QLSX_TOKEN_HET_HAN", "CHUA_CO_TOKEN", "KHONG_CO_DUONG", "KHONG_DUOC_PHEP",
+                               "BEN_DO_CHUA_BAT"):
                 break
     return ra

@@ -17,7 +17,8 @@ Nhánh: khoá phiếu xe thuê → tự gửi hai bút toán (đúng tài khoả
 mở khoá → đảo → huỷ · khoá lại → SourceRef mới "-2" · 400 tài khoản sai → giữ "chờ gửi", lỗi rõ · mất mạng → giữ, đếm lần thử ·
 bên kia đã lưu mà trả 503 → lần sau hỏi lại (GET) nhận đúng chứng từ · GET 404 mà POST trả IsExisting → nhận · đảo hỏng → chờ đảo →
 Gửi hết đảo được · phân quyền · mất phản hồi khi gửi rồi mở khoá → hỏi lại, gỡ (không sót chứng từ bên kia) ·
-gỡ xong mà mất phản hồi → Gửi hết nhận Reversed=false → huỷ · 409 khác số → tự gỡ chứng từ cũ, gửi bản đúng.
+gỡ xong mà mất phản hồi → Gửi hết nhận Reversed=false → huỷ · 409 khác số → tự gỡ chứng từ cũ, gửi bản đúng · phân loại lỗi
+(403 · HTTP 200 kèm Code 500 · 503 chưa bật → Gửi hết dừng ngay).
 """
 import json
 import sys
@@ -40,7 +41,7 @@ DUONG = "/api/v1/integrations/logistics/journal-entries"
 class GIA:
     ct = {}            # SourceRef → {DocumentId, DocumentNo, StatusId, Reversed, body}
     nhan = []          # (method, path, headers, body)
-    che_do = set()     # sai_tk · luu_roi_503 · get_404 · dao_hong · dao_roi_503 · khac_noi_dung
+    che_do = set()     # sai_tk · luu_roi_503 · get_404 · dao_hong · dao_roi_503 · khac_noi_dung · cam_403 · loi_500_trong_200 · chua_bat
     da_go = []         # DocumentNo đã gỡ
     so = 7000
     may = None
@@ -75,7 +76,8 @@ class Xu(BaseHTTPRequestHandler):
             ref = urllib.request.unquote(self.path[len(DUONG) + 1:])
             c = GIA.ct.get(ref)
             if c is None or c["Reversed"] or "get_404" in GIA.che_do:
-                return self._tra(404, {"Success": False, "Code": 404, "Message": "Không có chứng từ"})
+                return self._tra(404, {"Success": False, "Code": 404, "Message": "Không có chứng từ", "Result": None,
+                                       "ErrorDetail": {"ErrorCode": "JOURNAL_ENTRY_NOT_FOUND"}})
             return self._tra(200, {"Success": True, "Result": {k: c[k] for k in ("DocumentId", "DocumentNo", "StatusId")}})
         self._tra(404, {"Success": False, "Code": 404, "Message": "không có đường"})
 
@@ -103,6 +105,14 @@ class Xu(BaseHTTPRequestHandler):
             ref = (b or {}).get("SourceRef")
             if self.headers.get("Idempotency-Key") != ref:
                 return self._tra(400, {"Success": False, "Code": 400, "Message": "Idempotency-Key phải bằng SourceRef"})
+            if "cam_403" in GIA.che_do:
+                return self._tra(403, {"Success": False, "Code": 403, "Message": "Tài khoản tích hợp không được phép gửi bút toán",
+                                       "Result": None, "ErrorDetail": {"ErrorCode": "LOGISTICS_JOURNAL_FORBIDDEN"}})
+            if "loi_500_trong_200" in GIA.che_do:
+                return self._tra(200, {"Success": False, "Code": 500, "Message": "Lỗi không xác định", "Result": None})
+            if "chua_bat" in GIA.che_do:
+                return self._tra(503, {"Success": False, "Code": 503, "Message": "Thiếu thủ tục trên DB kế toán", "Result": None,
+                                       "ErrorDetail": {"ErrorCode": "LOGISTICS_JOURNAL_SCRIPT_REQUIRED"}})
             if "sai_tk" in GIA.che_do:
                 return self._tra(400, {"Success": False, "Code": 400, "Message": "Tài khoản không có trong danh mục", "Result": None,
                                        "ErrorDetail": {"ErrorCode": "INVALID_ACCOUNTS", "InvalidAccounts": ["9999"]}})
@@ -303,6 +313,19 @@ def main():
         cu = [x for x in GIA.da_go if x.startswith("GIA-BT-CU-")]
         dung(s == 200 and cu and all(v["status"] == "da_gui" and not str(v["so_ben_ke_toan"]).startswith("GIA-BT-CU") for v in b.values()),
              "409 cùng SourceRef khác số → tự gỡ chứng từ cũ rồi gửi bản đúng", "%s · %s" % (cu, {k: v["so_ben_ke_toan"] for k, v in b.items()}))
+
+        print("7. Phân loại lỗi bên kế toán")
+        for che, ky_vong, ten in (("cam_403", "KHONG_DUOC_PHEP", "403 không được phép (câu lỗi có chữ 'tài khoản') → không xếp nhầm là sai tài khoản"),
+                                  ("loi_500_trong_200", "HTTP_5XX", "HTTP 200 kèm Code 500 → lỗi máy chủ (chưa rõ), không phải bị từ chối"),
+                                  ("chua_bat", "BEN_DO_CHUA_BAT", "503 chưa áp script → 'chưa bật', giữ chờ gửi")):
+            goi("/api/trips/%s/mo-khoa" % tid, {}, u="ketoan")
+            GIA.che_do = {che}
+            goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan")
+            x = bt(tid)["thue_xe"]
+            dung(x["status"] == "cho_gui" and x["error_code"] == ky_vong, ten, "%s · %s" % (x["error_code"], x["loi_gui"]))
+        s, g = goi("/api/but-toan-cho/gui-het", {}, u="ketoan")
+        dung(s == 200 and g.get("thu") == 1 and g.get("loi") == 1, "Gửi hết gặp 'chưa bật' → dừng ngay, không thử từng bản", json.dumps(g)[:90])
+        GIA.che_do = set()
     finally:
         GIA.che_do = set()
         if GIA.may is None:
