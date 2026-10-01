@@ -102,8 +102,9 @@
     /** Áp mọi data-i18n trong một gốc DOM. */
     apDung(root) {
       (root || document).querySelectorAll('[data-i18n]').forEach(el => {
-        // Trong SVG không dựng được HTML: <span> nhét vào <text> là mất chữ. Dùng bản chữ thuần.
-        if (el.ownerSVGElement) el.textContent = NN.t(el.dataset.i18n);
+        // Trong SVG không dựng được HTML: <span> nhét vào <text> là mất chữ. Dùng bản chữ thuần. <option> cũng vậy:
+        // trình duyệt bỏ thẻ <span class="lo-sub"> nên VI+ລາວ hiện dính "Tất cảທັງໝົດ" (rà 01/10) — dùng "vi / lo".
+        if (el.ownerSVGElement || el.tagName === 'OPTION') el.textContent = NN.t(el.dataset.i18n);
         else el.innerHTML = NN.h(el.dataset.i18n);
       });
       (root || document).querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = NN.t(el.dataset.i18nPh); });
@@ -356,7 +357,10 @@
     if (dangBan) return;
     const u = document.getElementById('lgU').value.trim(), p = document.getElementById('lgP').value;
     const err = document.getElementById('lgErr'), nut = document.getElementById('lgBtn');
-    err.textContent = ''; err.hidden = true; dangBan = true; nut.classList.add('dang-vao');
+    err.textContent = ''; err.hidden = true;
+    // để trống mà bấm: báo đúng là chưa nhập, đừng gửi máy chủ rồi báo "sai mật khẩu" (rà 01/10)
+    if (!u || !p) { err.textContent = NN.t('login_thieu'); err.hidden = false; (u ? document.getElementById('lgP') : document.getElementById('lgU')).focus(); return; }
+    dangBan = true; nut.classList.add('dang-vao');
     try {
       await AUTH.dangNhap(u, p);
     } catch (e) {

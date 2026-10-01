@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2129 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2130 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1114,8 +1114,8 @@ window.EPL_TU_DIEN = {
  },
  "joint_rule": {
   "vi": "Xe thuê ngoài: tiền trả chủ xe = tiền thuê − phí quản lý − quá tải − chi phí EPL đã ứng (dầu kho EPL, đi đường, sửa chữa). Chủ xe tự trả (đổ dầu ngoài…) thì không trừ.",
-  "lo": "ລົດເຊົ່ານອກ: ເງິນຈ່າຽເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ຄ່າໃຊ້ຈ່າຽ EPL ອອກກ່ອນ (ນໍ້ານັນສາງ EPL, ເດີນທາງ, ສ້ອມແປງ). ເຈົ້າຂອງລົດຈ່າຽເອງ ບໍ່ຫັກ.",
-  "en": "Joint truck: owner payout = hire − management fee − overload − EPL advances (EPL fuel, travel)."
+  "lo": "ລົດເຊົ່ານອກ: ເງິນຈ່າຍເຈົ້າຂອງລົດ = ຄ່າເຊົ່າ − ຄ່າທຳນຽມ − ແກ່ເກີນ − ຄ່າໃຊ້ຈ່າຍ EPL ອອກກ່ອນ (ນໍ້າມັນສາງ EPL, ເດີນທາງ, ສ້ອມແປງ). ເຈົ້າຂອງລົດຈ່າຍເອງ (ເຕີມນໍ້າມັນນອກ…) ບໍ່ຫັກ.",
+  "en": "Joint truck: owner payout = hire − management fee − overload − EPL advances (EPL fuel, travel, repairs). Costs the owner pays directly (outside fuel…) are not deducted."
  },
  "owner": {
   "vi": "Chủ xe",
@@ -2804,7 +2804,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_note": {
   "vi": "Tờ này gửi bên công nợ để lập SO, xuất hoá đơn và thu tiền khách. Bên mình không thu tiền — chỉ xem trạng thái bên đó chép sang.",
-  "lo": "Tờ này gửi bên công nợ để lập SO, xuất hoá đơn và thu tiền khách. Bên mình không thu tiền — chỉ xem trạng thái bên đó chép sang.",
+  "lo": "ໃບນີ້ສົ່ງໃຫ້ຝ່າຍໜີ້ ເພື່ອອອກ SO, ອອກໃບເກັບເງິນ ແລະ ເກັບເງິນລູກຄ້າ. ຝ່າຍເຮົາບໍ່ເກັບເງິນ — ເບິ່ງແຕ່ສະຖານະທີ່ຝ່າຍນັ້ນສົ່ງມາ.",
   "en": "This slip goes to receivables to raise the SO, invoice and collect from the customer. We do not collect — we only see the status they report back."
  },
  "dt_st_cho_khoa": {
@@ -2844,7 +2844,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_con_lai_s": {
   "vi": "Quy Kíp · theo số bên công nợ chép sang",
-  "lo": "Quy Kíp · theo số bên công nợ chép sang",
+  "lo": "ເປັນກີບ · ຕາມຕົວເລກທີ່ຝ່າຍໜີ້ສົ່ງມາ",
   "en": "In LAK · as reported by receivables"
  },
  "dt_trong": {
@@ -2874,7 +2874,7 @@ window.EPL_TU_DIEN = {
  },
  "dt_ky_may": {
   "vi": "đã ký trên máy tài xế",
-  "lo": "đã ký trên máy tài xế",
+  "lo": "ເຊັນຢູ່ເຄື່ອງຂອງໂຊເຟີແລ້ວ",
   "en": "signed on the driver's phone"
  },
  "dt_noi_dung": {
@@ -3114,17 +3114,17 @@ window.EPL_TU_DIEN = {
  },
  "cp_goi_y_hint": {
   "vi": "Chọn tuyến này trên phiếu thì mục III, IV, VI tự có các dòng dưới — người lập thêm, bớt, sửa được. Để trống thì dùng bộ chung theo Excel.",
-  "lo": "Chọn tuyến này trên phiếu thì mục III, IV, VI tự có các dòng dưới — người lập thêm, bớt, sửa được. Để trống thì dùng bộ chung theo Excel.",
+  "lo": "ເລືອກເສັ້ນທາງນີ້ໃນໃບ ແລ້ວໝວດ III, IV, VI ຈະມີແຖວລຸ່ມນີ້ເອງ — ຜູ້ສ້າງເພີ່ມ, ລຶບ, ແກ້ໄດ້. ປະຫວ່າງໄວ້ ກໍໃຊ້ຊຸດທົ່ວໄປຕາມ Excel.",
   "en": "Picking this route on a slip pre-fills sections III, IV and VI with these lines — the preparer can add, remove or change them. Empty = the general set from the Excel."
  },
  "cp_nguon_chung": {
   "vi": "Tuyến chưa có bộ riêng — phiếu đang dùng bộ chung theo Excel",
-  "lo": "Tuyến chưa có bộ riêng — phiếu đang dùng bộ chung theo Excel",
+  "lo": "ເສັ້ນທາງຍັງບໍ່ມີຊຸດສະເພາະ — ໃບກຳລັງໃຊ້ຊຸດທົ່ວໄປຕາມ Excel",
   "en": "No set for this route yet — slips use the general set from the Excel"
  },
  "cp_chep_chung": {
   "vi": "Chép bộ chung (Excel)",
-  "lo": "Chép bộ chung (Excel)",
+  "lo": "ສຳເນົາຊຸດທົ່ວໄປ (Excel)",
   "en": "Copy the general set (Excel)"
  },
  "cp_muc": {
@@ -5828,8 +5828,8 @@ window.EPL_TU_DIEN = {
   "en": "Truck owners"
  },
  "owners_hint": {
-  "vi": "Phí, ngưỡng tấn và cách trả riêng từng chủ xe; lập phiếu tự điền theo",
-  "lo": "ຄ່າທຳນຽມ, ເກນໂຕນ ແລະ ວິທີຈ່າຍ ຕ່າງກັນຕາມແຕ່ລະເຈົ້າຂອງ; ບິນຕື່ມເອງ",
+  "vi": "Phí, ngưỡng tấn và cách trả riêng từng chủ xe; lập phiếu tự điền theo đây",
+  "lo": "ຄ່າທຳນຽມ, ເກນໂຕນ ແລະ ວິທີຈ່າຍ ຕ່າງກັນຕາມແຕ່ລະເຈົ້າຂອງ; ບິນຕື່ມເອງຕາມນີ້",
   "en": "Fee, tonnage limit and pay mode per owner; slips prefill from here"
  },
  "owner_add": {
@@ -10646,5 +10646,10 @@ window.EPL_TU_DIEN = {
   "vi": "Đã thu đủ",
   "lo": "ຮັບຄົບແລ້ວ",
   "en": "Fully collected"
+ },
+ "login_thieu": {
+  "vi": "Nhập tên đăng nhập và mật khẩu",
+  "lo": "ກະລຸນາໃສ່ຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ",
+  "en": "Enter your username and password"
  }
 };
