@@ -71,8 +71,10 @@ Bút toán chờ gửi (không qua tiền):
 | Ghi nợ nhà cung cấp | Nợ 625 · 614 / Có 4021 | khoá phiếu |
 | Quyết toán tạm ứng tài xế | Nợ 625 / Có 1601 | chốt tất toán |
 | Hàng chủ xe mua ở quầy (nguồn `ban_chu_xe`) | Nợ 4022 / Có 707, theo giá bán | phiếu chi trả chủ xe có trừ hàng quầy đã chi |
+| Xuất kho cho chuyến — xe nhà (`xuat_noi_bo`) | dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, theo giá vốn bình quân kho | khoá phiếu; một lần xuất một bút toán, ngày = ngày xuất |
+| Xuất kho cho chuyến — xe thuê (`xuat_ban`; lấy kho EPL cho xe thuê luôn là xuất bán) | Nợ 4022 / Có 707 theo giá bán + Nợ 607 / Có 1371 theo giá vốn | như trên; thiếu giá bán thì không khoá được |
 
-Nên DB host cần thêm, ngoài ba mã con: loại chứng từ **17**, và các mã **614, 625, 1022** hạch toán được. Bài kiểm dòng 4 và 5 soát đủ. Mã **707** cần khi gửi bút toán `ban_chu_xe`; bài kiểm chưa soát mã này — API bút toán từ chối mã thiếu bằng 400 `INVALID_ACCOUNTS` kèm danh sách.
+Nên DB host cần thêm, ngoài ba mã con: loại chứng từ **17**, và các mã **614, 625, 1022** hạch toán được. Bài kiểm dòng 4 và 5 soát đủ. Mã **707**, **607** cần khi gửi bút toán `ban_chu_xe`, `xuat_ban`; bài kiểm chưa soát mã này — API bút toán từ chối mã thiếu bằng 400 `INVALID_ACCOUNTS` kèm danh sách.
 
 ### 1.2. Cần có trong tay
 
@@ -127,9 +129,10 @@ Hai tệp `.zip` này là đường quay lại nhanh nhất (mục 10.1).
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ce95b3c` | `AccountingModule.cs`, `CashVoucherReferenceController.cs`, `CMPaymentReceiptService.cs`, `CashVoucherReferenceTicket.cs`, `CashVoucherModels.cs`, `CashVoucherSourceReferenceModels.cs`; mới: `CashVoucherReferenceService.cs`, `ICashVoucherReferenceService.cs`, `CashVoucherHeaderTotals.cs`, `ILogisticsDeliveryOrderClient.cs`, `LogisticsDeliveryOrderClient.cs` | nguồn DO ra service + client typed (`AddHttpClient`, giữ 15 giây, 2 MB, không chuyển hướng). **Thiếu `LogisticsSource:BaseUrl` → DO trả 503**, bỏ mặc định ngầm 1506. `create` / `save` / `save-and-commit` tính lại `Header.Amount` / `BaseAmount` từ dòng (5 số lẻ, nửa xa số 0); dòng IV / IC hoặc dòng công nợ thiếu số tiền thì giữ số WEB gửi. Route và khuôn trả về không đổi |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ed5aa0e` | `ApiAuditLogger.cs`, `ApiAuditAutoLogFilter.cs`; mới: `ApiAuditPayloadSanitizer.cs` | nhật ký kiểm toán bỏ `CancellationToken` khỏi payload (hết "Đặt log sai" ở `ApiAuditAutoLogFilter.cs:27`); che mật khẩu / token / khoá trong payload và query string. Dòng audit **cũ** không tự che (mục 12) |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ae0e7f6` | `CashVoucherHeaderTotals.cs`, `CMPaymentReceiptService.cs` | máy chủ tự tính quy đổi từng dòng: `BaseAmount` = `Amount` × (tỷ giá dòng, thiếu thì tỷ giá header), 5 số lẻ, nửa xa số 0; công nợ DEP/DEPT tính lại theo tỷ giá header; giữ số client khi thiếu nguyên tệ, tỷ giá ≤ 0, dòng IV / IC — rồi mới cộng tổng header |
-| GLS-QLSX-APIs | `feat/HonTunedaHai` | `e2ef52f` | mới: `Database/Scripts/20261001_audit_redact_secrets.sql` | script **UPDATE dữ liệu** audit cũ: che mật khẩu / token / khoá thành `***`, một transaction, chạy lại an toàn. Trong tệp `@Apply` mặc định **1** (che luôn); đặt 0 để chỉ chẩn đoán (mục 12) |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `e2ef52f` | mới: `Database/Scripts/20261001_audit_redact_secrets.sql` | script **UPDATE dữ liệu** audit cũ: che mật khẩu / token / khoá thành `***`, một transaction, chạy lại an toàn. Từ `2b4e274` trong tệp `@Apply` mặc định **0** (chỉ chẩn đoán, không đổi dữ liệu); lưu chẩn đoán rồi sửa thành 1 để che (mục 12) |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `0d4eed9` | `ApiAuditPayloadSanitizer.cs` | che thêm tên trường chứa `jwt`, `cookie` |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `b9227aa` | `AccountingModule.cs`; mới: `LogisticsJournalEntryController.cs`, `LogisticsJournalEntryService.cs` (+ interface), `LogisticsJournalEntryRepository.cs` (+ interface), `LogisticsJournalEntryModels.cs`, `Database/Scripts/20261001_logistics_journal_entry.sql`, `Database/Scripts/logistics-journal-entry-config.example.json` | **API bút toán tổng hợp** `integrations/logistics/journal-entries`: tạo + ghi sổ tạm ST 13, `/reverse`, `GET /{SourceRef}`; chống trùng theo `Idempotency-Key`. Script **thêm** ba thủ tục `proc_Logistics_JournalEntry_*` (không đổi bảng). Thiếu script / cấu hình thì API trả 503, không ảnh hưởng đường khác (mục 4.6) |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `2b4e274` | `LaoAccountsController.cs` → mới `LaoAccountsService.cs` / `LaoAccountsRepository.cs` (+ interface, models); `LogisticsPushController.cs` → mới `LogisticsPushService.cs` / `LogisticsPushRepository.cs`; `AccountingModule.cs`, `SalesModule.cs`; `Database/Scripts/20261001_audit_redact_secrets.sql`; mới: `Database/Scripts/lao-accounts-write-config.example.json` | theo chuẩn QLSX (controller chỉ HTTP / claim, logic ở service, SQL ở repository). **Ghi** danh mục tài khoản Lào chỉ cho `UserId` trong `LaoAccountsWrite:AllowedUserIds` — thiếu mục 503 `LAO_ACCOUNTS_WRITE_NOT_CONFIGURED`, ngoài danh sách 403 `LAO_ACCOUNTS_WRITE_FORBIDDEN`; đọc mở cho mọi người đã đăng nhập (mục 5.2). Đẩy SO: route, mã lỗi, thân trả không đổi. Script audit thêm luật jwt / cookie, **mặc định `@Apply = 0`** (chỉ chẩn đoán) |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `f382a9e8` | `cm-source-reference-modal.js` | thoát ký tự chuỗi nguồn; DO hiện số phiếu, xe · biển số — tài xế; tỷ giá đọc xuôi |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `06a14189` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `CMPaymentReceiptController.cs` (BFF) | `isCash` theo hình thức thanh toán; tài khoản tiền mặc định tự điền (gửi kèm `currencyId`); `Amount` / `BaseAmount` tách đúng; phân loại theo `DOTY_AUTOID` |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `7e14421c` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `Backend/Base/Localization/lo.json` | đổi hình thức thanh toán, nội tệ hay loại tiền thì vế tiền của các dòng đổi theo (dòng người dùng tự chọn giữ nguyên); đổi quốc gia khi có dòng thì chặn **trước** khi nạp danh mục; mã DOTY gom một chỗ; sửa chính tả một câu tiếng Lào |
@@ -137,7 +140,7 @@ Hai tệp `.zip` này là đường quay lại nhanh nhất (mục 10.1).
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `fce78c52` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `OrganizationHrController.cs`, `Employees.cshtml`, `organizationHrApi.js`; mới: `employee-account.js`; `vi.json` · `lo.json` · `en.json` | tiền tệ ngoài danh mục (ví dụ USD đang tắt) giữ đúng mã, phiếu chỉ xem; phiếu mới thiếu tiền tệ chặn lưu; công nợ xem trước theo tỷ giá header; phiếu chi mở lại đọc đúng tỷ giá. Hồ sơ nhân viên → tab **Tài khoản** (xem, tạo / sửa, đặt lại mật khẩu) |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `7d168744` | `Backend.Common/BackofficeApiService.cs`, `Backend/Base/Helpers/AppLoggingHelper.cs`, `Backend/Base/Middlewares/ExceptionLoggingMiddleware.cs`, `_helpers/commonScripts.js`; mới: `Backend.Common/Logging/LogPayloadSanitizer.cs` | log WEB che mật khẩu / token / khoá / jwt / cookie theo tên trường; không còn in `Authorization: Bearer …` vào log và câu báo |
 
-**Hai script DB** đi theo commit (cả hai **chưa chạy** ở DB nào):
+**Hai script DB** đi theo commit (script bút toán **đã áp DB demo** 02/10; host chưa áp; script audit **chưa chạy** ở DB nào):
 - `20261001_logistics_journal_entry.sql` (`b9227aa`) — áp lên **DB kế toán** mà API dùng cho phiếu thu chi (`CenterConnectionStrings[0]`), trước khi bật `LogisticsJournalEntry` (mục 4.6). Chỉ thêm thủ tục, chạy lại được.
 - `20261001_audit_redact_secrets.sql` (`e2ef52f`) — chạy trên DB `ConnectionStrings:Master` lúc triển khai (mục 12). Sửa dữ liệu audit.
 
@@ -372,22 +375,23 @@ Phiếu chi cần kỳ (`FiciAutoId`) chứa ngày lập, **đang mở**. Host h
 
 ### 4.6. Bút toán tổng hợp — script, `LogisticsJournalEntry`, cờ gửi, gọi thử
 
-Trang điều xe gửi các khoản **không qua tiền** (thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707) vào `POST /api/v1/integrations/logistics/journal-entries` (`b9227aa`). Hệ anh ghi mỗi lần gọi thành **một chứng từ tổng hợp, ghi sổ tạm** (ST 13). Giao ước: hợp đồng 12.12.4. Mô tả API: tài liệu của anh mục 16.9.
+Trang điều xe gửi các khoản **không qua tiền** (thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, xuất kho cho chuyến: xe nhà 625 · 614 / 1371, xe thuê 4022/707 + 607/1371) vào `POST /api/v1/integrations/logistics/journal-entries` (`b9227aa`). Hệ anh ghi mỗi lần gọi thành **một chứng từ tổng hợp, ghi sổ tạm** (ST 13). Giao ước: hợp đồng 12.12.4. Mô tả API: tài liệu của anh mục 16.9.
 
-**Hiện trạng 01/10** (máy bên em: API 5090, DB của `appsettings.laos.json`):
+**Hiện trạng 02/10** (máy bên em: API 5090, DB của `appsettings.laos.json`):
 - mục `LogisticsJournalEntry` **đã có**;
-- script **chưa áp**: lệnh áp từ máy bên em bị bộ an toàn chặn, **chờ chủ dự án tự chạy**;
-- vì vậy GET bút toán đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`;
-- cờ `QLSX_GUI_BUT_TOAN` ở trang điều xe: **tắt**.
+- script **đã áp** (chủ dự án chạy 02/10);
+- **đã chạy thật** bước 4b qua máy thử trang điều xe, phiếu thử: thuê xe `GL021020263` / `GL021020264`; xuất kho xe nhà `GL021020265` (*Nợ 625 / Có 1371* 1.590.000 LAK), xe thuê `GL021020267` (*Nợ 4022 / Có 707* 1.400.000 LAK, ObjectId chủ xe 1606 + *Nợ 607 / Có 1371* 1.272.000 LAK); ST 13; mở khoá gỡ sạch, GET 404 — không còn chứng từ thử;
+- cờ `QLSX_GUI_BUT_TOAN`: bật trên máy thử lúc chạy lượt thật; máy dùng thật bật khi chủ dự án quyết;
+- host: chưa có gì (bước 1, 2 **cần quyền host**).
 
 **Thứ tự** — làm trọn ở máy bên em trước, rồi lặp lại trên host sau khi publish:
 
 | Bước | Việc | Ở máy bên em (bây giờ) | Trên host |
 |---|---|---|---|
-| 1 | Áp script, đọc diagnostics | DB kế toán của `appsettings.laos.json` — **chủ dự án tự chạy** | DB kế toán host — **cần quyền host** |
+| 1 | Áp script, đọc diagnostics | DB kế toán của `appsettings.laos.json` — **xong 02/10** (chủ dự án chạy) | DB kế toán host — **cần quyền host** |
 | 2 | Cấu hình `LogisticsJournalEntry` | đã có | thêm vào `appsettings.<Env>.json` host — **cần quyền host** |
-| 3 | Bật `QLSX_GUI_BUT_TOAN=1` ở trang điều xe | máy thử 8011 (đang trỏ 5090) | máy trang điều xe trỏ host — chỉ **sau** khi đổi link (mục 7) |
-| 4 | Gọi thử: bằng tay (4a), rồi qua trang điều xe (4b) | vào 5090 | vào host |
+| 3 | Bật `QLSX_GUI_BUT_TOAN=1` ở trang điều xe | máy thử trỏ 5090 — đã bật lúc chạy lượt thật 02/10 | máy trang điều xe trỏ host — chỉ **sau** khi đổi link (mục 7) |
+| 4 | Gọi thử: bằng tay (4a), rồi qua trang điều xe (4b) | vào 5090 — 4b **đã chạy thật 02/10** (thuê xe, xuất kho), gỡ sạch | vào host |
 
 **Bước 1 — áp script.** Tệp: `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql`.
 - Chạy trên **DB kế toán mà API dùng cho phiếu thu chi** (`CenterConnectionStrings[0]` trong `appsettings.<Env>.json`), không phải DB của `ConnectionStrings:Master` nếu hai cái khác nhau.
@@ -440,7 +444,7 @@ sqlcmd -S <máy chủ SQL> -d <DB kế toán của CenterConnectionStrings[0]> -
 
 - Thiếu `OrgId` / `CountryId` → 503 `LOGISTICS_JOURNAL_CONFIG_REQUIRED`; token khác `AllowedUserIds` → 403 `LOGISTICS_JOURNAL_FORBIDDEN`.
 - Đọc lại **mỗi lần gọi**: lưu tệp là có hiệu lực, không cần Recycle.
-- Bật cấu hình trước khi áp script cũng không hỏng gì: chỉ đường bút toán trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED` (máy bên em đang như vậy).
+- Bật cấu hình trước khi áp script cũng không hỏng gì: chỉ đường bút toán trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED` (máy bên em như vậy trước 02/10).
 
 **Bước 3 — bật cờ ở trang điều xe** (bên EPL): đặt `QLSX_GUI_BUT_TOAN=1` trong `.env` máy trang điều xe, khởi động lại.
 - Màn "Bút toán chờ gửi" báo "Gửi sang hệ kế toán đang BẬT"; có nút **Gửi**, **Gửi hết**, **Cập nhật** (vai KT Thu/Chi VC, KT Chi phí VC, Sếp).
@@ -518,7 +522,24 @@ $r.Result | Where-Object { $_.AccCode -in '137','1371','402','4021','4022' } | S
 
 ### 5.2. Mở ba mã
 
-Đi qua API `accounting/lao-accounts` của anh, không sửa thẳng DB. Làm một trong hai cách:
+Đi qua API `accounting/lao-accounts` của anh, không sửa thẳng DB.
+
+**Cấu hình quyền ghi trước** (từ `2b4e274`): API chỉ cho **ghi** danh mục (tạo / sửa / xoá) với `UserId` có trong mục `LaoAccountsWrite:AllowedUserIds` của `appsettings.<Env>.json`; đọc vẫn mở cho mọi người đã đăng nhập. Mẫu: `Backend.API/Database/Scripts/lao-accounts-write-config.example.json`.
+
+```json
+"LaoAccountsWrite": {
+  "AllowedUserIds": [846]
+}
+```
+
+| Khoá | Ý nghĩa | Bí mật |
+|---|---|---|
+| `AllowedUserIds` | `UserId` (`dbo.Users.UserID`) được ghi danh mục tài khoản Lào: `tune` = **846** (token trang điều xe đang dùng — `tools/mo_ma_con_tune.py` gọi bằng token này). Danh sách riêng, không dùng chung với `LogisticsJournalEntry` / `LogisticsSalesPush` | không |
+
+- Thiếu mục → ghi bị chặn 503 `LAO_ACCOUNTS_WRITE_NOT_CONFIGURED`; `UserId` ngoài danh sách → 403 `LAO_ACCOUNTS_WRITE_FORBIDDEN`.
+- API ở máy bên em đã có mục này (`appsettings.laos.json`, 846). Host: thêm vào `appsettings.<Env>.json` — **cần quyền host**.
+
+Rồi làm một trong hai cách:
 - **bên em chạy** `python -X utf8 tools/mo_ma_con_tune.py https://demo-lao-api.goldensme.com`. Đây là lệnh **ghi**, bên em chỉ chạy khi chủ dự án cho phép. Chạy lại không sao: mã đã có thì bỏ qua;
 - hoặc **làm tay** trên màn Tài khoản Lào của WEB host (`LaoAccounts`), đúng thứ tự:
 
@@ -947,9 +968,9 @@ Hệ anh tạm không dùng được thì bên em đặt `EPL_CHI_TAM_UNG=tai_ch
 
 | Việc | Trạng thái 01/10 17:45 | Người làm |
 |---|---|---|
-| **Bút toán tổng hợp** `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, `GET`): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614/4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 | API **đã có** (`b9227aa`), đầu gửi đã có (`875a0cf`, cờ tắt). **Chưa chạy trên DB**: script chưa áp DB demo (chờ chủ dự án), cấu hình đã có ở API máy; host chưa có gì. Trong lúc chờ, bút toán nằm ở màn "Bút toán chờ gửi" | áp script DB demo: **chủ dự án**; bật cờ + gọi thử: bên EPL; host: **cần quyền host** (mục 4.6) |
+| **Bút toán tổng hợp** `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, `GET`): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614/4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, xuất kho cho chuyến (625 · 614 / 1371; 4022/707 + 607/1371) | API **đã có** (`b9227aa`), đầu gửi đã có (`875a0cf`, cờ tắt). DB demo: script đã áp, **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); host chưa có gì. Máy chưa bật cờ thì bút toán nằm ở màn "Bút toán chờ gửi" | bật cờ ở máy dùng thật: chủ dự án quyết; host: **cần quyền host** (mục 4.6) |
 | Cờ phân loại ở `document-types` (công nợ / khác / trước) | WEB, API còn ghi cứng DOTY 58/60, 15/17 | bên EPL làm (đang làm) |
-| Nhật ký kiểm toán **cũ** (trước `ed5aa0e`) có thể còn mật khẩu dạng chữ thường | script che `20261001_audit_redact_secrets.sql` **đã có** (`e2ef52f`), chưa chạy. Chạy trên DB `ConnectionStrings:Master` của host; trong tệp `@Apply` mặc định 1 (che luôn), đặt 0 để xem trước | chạy trên DB host, cân nhắc đổi mật khẩu — **cần quyền host** |
+| Nhật ký kiểm toán **cũ** (trước `ed5aa0e`) có thể còn mật khẩu dạng chữ thường | script che `20261001_audit_redact_secrets.sql` **đã có** (`e2ef52f`), chưa chạy. Chạy trên DB `ConnectionStrings:Master` của host; từ `2b4e274` trong tệp `@Apply` mặc định **0** (chỉ chẩn đoán) — lưu chẩn đoán rồi sửa thành 1 để che | chạy trên DB host, cân nhắc đổi mật khẩu — **cần quyền host** |
 | Đợt 2 `LogisticsSource` | chờ trang điều xe ra Internet | chủ dự án cấp địa chỉ; đặt cấu hình — **cần quyền host** |
 | Chi mục V–VI, trả nhà cung cấp, tất toán tài xế, trả chủ xe có trừ hàng quầy qua hệ anh | chạy ở máy (`f85078b`, kho tạm `1d8d91c`); chạy trên host sau triển khai | bên EPL làm |
 | Token trang điều xe hết hạn khoảng 10/10 | đang dùng token của anh; tài khoản tích hợp tạm gác (tuỳ chọn, mục 6.1) | **cần quyền host** (token / mật khẩu của anh), mục 6 |

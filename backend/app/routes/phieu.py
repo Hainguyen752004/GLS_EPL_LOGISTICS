@@ -779,6 +779,19 @@ def _cach_tra_gui(m, d, company=None):
     return None if c == CACH_TRA_MAC_DINH.get(d.get("item_key") or "", "tien_mat") else c
 
 
+def _ai_tra_dong_kho(p, e, d, cac_dong=()):
+    """"Ai trả" của một dòng KHO đã có (giữ lại khi lưu, hoặc kế toán gõ giá): xe thuê thì dầu / phụ tùng lấy kho luôn là xuất
+    bán — chỉ đổi được VỀ "EPL ứng" (sửa dòng cũ ghi "chủ xe tự trả"); đổi một dòng đang EPL ứng sang "chủ xe tự trả" → 422
+    KHO_XE_THUE_XUAT_BAN. Dòng cũ đang "chủ xe tự trả" gửi nguyên thì để yên (khoá phiếu chặn, chỉ cách sửa)."""
+    if "paid_by_epl" not in d or not la_xuat_ban(p, e):
+        return
+    if d.get("paid_by_epl"):
+        e.paid_by_epl = True
+    elif e.paid_by_epl is not False:
+        e.paid_by_epl = False
+        BTC.chan_kho_xe_thue_tu_tra(p, e, list(cac_dong))
+
+
 def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
     """Thay TOÀN BỘ dòng chi của những mục được gửi lên. Mục đã khoá thì từ chối.
     Dòng đã sinh phiếu xuất kho (stock_move_id) được giữ nguyên số lượng — xuất rồi không sửa trên phiếu."""
@@ -821,6 +834,8 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             if e:
                 e.line_no = i; e.note = d.get("note")
                 e.pay_channel = _cach_tra_gui(m, d, p.company)
+                _ai_tra_dong_kho(p, e, d, cu.values())
+                # dòng giữ lại trước đây không đổi "ai trả" — dòng kho xe thuê cũ ghi "chủ xe tự trả" thì bấm "EPL ứng" ở đây
                 if dat_gia and "sale_price" in d and la_xuat_ban(p, e):
                     e.sale_price = _gia_ban(p, e, d)     # phụ tùng xuất kho ngay lúc khai — giá bán gõ sau, lúc kiểm
                 _gan_tk(p, e, d.get("acct_code") or e.acct_code)
@@ -828,6 +843,12 @@ def _ap_dong_chi(db, p, cac_dong, user, muc_tt):
             moi = _dong_tu_du_lieu(p, m, i, d, db, dat_gia=dat_gia)
             if not dat_gia and d.get("id") in gia_cu and moi.source != "kho":
                 moi.unit_price, moi.currency = gia_cu[d["id"]]
+            if moi.paid_by_epl is False and la_xuat_ban(p, moi):
+                # dầu / phụ tùng LẤY KHO của xe thuê luôn là xuất bán (chủ dự án 30/09, nhắc lại 02/10): lập mới hay đổi sang
+                # "chủ xe tự trả" → 422. Dòng cũ vốn đã ghi vậy mà gửi nguyên thì để yên — khoá phiếu chặn và chỉ cách sửa.
+                cu_e = cu.get(d.get("id"))
+                if cu_e is None or cu_e.paid_by_epl is not False or not la_xuat_ban(p, cu_e):
+                    BTC.chan_kho_xe_thue_tu_tra(p, moi)
             if la_xuat_ban(p, moi):      # giá bán chỉ ở dầu, phụ tùng kho của xe thuê
                 moi.sale_price = _gia_ban(p, moi, d) if (dat_gia and "sale_price" in d) else ban_cu.get(d.get("id"))
             db.add(moi)
@@ -844,7 +865,9 @@ def _ap_gia(db, p, m, cac_dong, user):
             raise HTTPException(409, {"ma": "CHI_SUA_GIA",
                                       "loi": "Kế toán chỉ nhập đơn giá cho dòng Bãi đã khai; thêm dòng thì trả lại cho Bãi."})
         if e.source == "kho":
-            # giá vốn là bình quân kho; xe THUÊ thì KT kho xăng dầu gõ GIÁ BÁN cho chủ xe (29/09)
+            # giá vốn là bình quân kho; xe THUÊ thì KT kho xăng dầu gõ GIÁ BÁN cho chủ xe (29/09). Người gõ giá bán cũng là người
+            # bấm "EPL ứng" cho dòng kho xe thuê cũ còn ghi "chủ xe tự trả" (02/10) — không cho đổi ngược lại
+            _ai_tra_dong_kho(p, e, d, cu.values())
             if "sale_price" in d:
                 e.sale_price = _gia_ban(p, e, d)
             continue
@@ -997,6 +1020,7 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     _chan_khoa(p, user)
+    truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đang khoá: dấu các dòng đã vào bút toán khoá phiếu (02/10)
     muc_tt = {m: s.status for m, s in _muc_cua(db, p).items()}
     # ---- Luật hàng và kho (hai DO):
     #  · Loại phiếu không đổi được nữa khi đã có dòng hàng hay dòng sổ kho — đổi là phiếu gom mang dòng xuất kho.
@@ -1028,6 +1052,9 @@ def sua_phieu(tid: str, data: dict = Body(...), db: Session = Depends(get_db), u
         db.flush()
         db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.sale_price.isnot(None)).update(
             {TripExpense.sale_price: None}, synchronize_session="fetch")      # xe nhà: xuất nội bộ, không có giá bán
+    # Sau khoá (chủ dự án 02/10): dòng kho, dòng ghi nợ nhà cung cấp đã vào bút toán khoá phiếu — không ai sửa được (kể cả KT
+    # kho xăng dầu, KT Chi phí đang được thao tác phiếu đã khoá, kể cả Sếp) → 409 DA_KHOA; mở khoá rồi mới sửa
+    BTC.chan_sua_sau_khoa(db, p, truoc_khoa)
     # Phiếu gom không gửi dòng hàng (màn phiếu bỏ bảng từ 29/09; bản màn cũ gửi bảng rỗng) → máy ghi dòng từ Loại hàng +
     # Cân tại mỏ. Chỉ khi mục II còn sửa được và xe chưa về tới bãi (về rồi là hàng đã vào kho theo dòng cũ).
     gom_tu_ghi = p.kind == "gom" and not data.get("goods")
@@ -1105,13 +1132,8 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
         dong_muc = [d for d in _dong_chi(db, p) if d.section == muc]
         thieu = [(i, d) for i, d in enumerate(dong_muc, 1) if d.paid_by_epl and (d.qty or 0) > 0 and (d.unit_price or 0) <= 0]
         if muc in ("fuel", "repair") and p.company == "joint":
-            thieu_ban = [(i, d) for i, d in enumerate(dong_muc, 1) if la_xuat_ban(p, d) and d.paid_by_epl
-                         and (d.qty or 0) > 0 and not (d.sale_price or 0) > 0]
-            if thieu_ban:
-                hang, dv = ("dầu", "lít") if muc == "fuel" else ("phụ tùng", "cái")
-                raise HTTPException(409, {"ma": "THIEU_GIA_BAN", "loi": "Xe thuê: %s lấy từ kho là xuất bán cho chủ xe %s — %s chưa có "
-                                          "giá bán. Nhập giá bán cho chủ xe rồi kiểm lại." % (
-                                              hang, p.owner_name or "", ", ".join("dòng %d (%s %s)" % (i, _gon(d.qty), dv) for i, d in thieu_ban))})
+            # xe thuê: dầu / phụ tùng lấy kho là xuất bán — EPL ứng và có giá bán (luật chung với khoá phiếu, đủ ba tiếng)
+            BTC.chan_xuat_ban(p, _dong_chi(db, p), muc=muc, luc="kiem")
         if thieu:
             kho = [i for i, d in thieu if d.source == "kho"]
             raise HTTPException(409, {"ma": "THIEU_DON_GIA", "loi": "Mục %s: %s chưa có đơn giá — nhập đơn giá rồi kiểm lại.%s" % (
@@ -1216,6 +1238,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
     kind = data.get("kind")
     if kind not in SU_KIEN:
         raise HTTPException(422, {"ma": "LOAI_SAI", "loi": "kind phải là %s." % ", ".join(SU_KIEN)})
+    truoc_khoa = BTC.dau_khoa(db, p)        # phiếu đã khoá: thêm phụ tùng kho / khoản ghi nợ là lệch bút toán khoá (02/10)
     e = TripEvent(trip_id=p.id, kind=kind, note=(data.get("note") or "").strip() or None, by_user=user.full_name)
     diem = _diem_tuyen(db, p)
     if data.get("stop_seq") not in (None, ""):
@@ -1265,6 +1288,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
                                paid_by_epl=bool(sua.get("paid_by_epl", True)), source=source, part_id=part.id if part else None,
                                acct_code=ma_tk_mac_dinh(p.company, "repair", source), note=e.note)
             db.add(dong); db.flush()
+            BTC.chan_kho_xe_thue_tu_tra(p, dong)   # xe thuê: phụ tùng lấy kho luôn là xuất bán, không "chủ xe tự trả" (02/10)
             if part:
                 # trang kế toán kiểm tồn (không đủ → 409), trừ tồn, ghi sổ kho và sinh PXK_PT ngay bên đó
                 r = gd.xuat_phu_tung(khoa="trip_expense:" + dong.id, part_id=part.id, qty=qty, ngay=dt.date.today(),
@@ -1284,6 +1308,7 @@ def ghi_su_kien(tid: str, data: dict = Body(...), db: Session = Depends(get_db),
             if p.vehicle_id and e.incident_type == "breakdown":
                 x = db.get(Vehicle, p.vehicle_id)
                 if x: x.status = "maintenance"
+        BTC.chan_sua_sau_khoa(db, p, truoc_khoa)   # lệch bút toán khoá → 409, phụ tùng vừa xuất được trả lại kho
         _ghi_log(db, p, user, "ev_%s" % kind)
     if sua and rut_chi:
         CMT.rut_cho(db, p, "repair"); db.commit()
@@ -1564,6 +1589,9 @@ def khoa_phieu(tid: str, data: dict = Body(default={}), db: Session = Depends(ge
         raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu đã khoá rồi."})
     if p.transport_status != "arrived":
         raise HTTPException(409, {"ma": "XE_CHUA_VE", "loi": "Xe chưa về (trạng thái %s) thì chưa khoá phiếu." % p.transport_status})
+    # xe thuê: dầu / phụ tùng lấy kho là xuất bán — phải EPL ứng và có giá bán thì bút toán 4022/707 mới đúng số trừ chủ xe
+    # (chủ dự án 02/10: chặn, không chỉ cảnh báo) → 409 KHO_XE_THUE_XUAT_BAN · THIEU_GIA_BAN, nói mục nào, ai gõ giá
+    BTC.chan_xuat_ban(p, _dong_chi(db, p), luc="khoa")
     cb = _canh_bao_khoa(db, p)
     if cb and not data.get("xac_nhan"):
         raise HTTPException(409, {"ma": "CO_CANH_BAO", "loi": "Phiếu còn %d điểm cần xem; xem rồi xác nhận khoá." % len(cb), "canh_bao": cb})
@@ -1951,6 +1979,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
         gia = e.reported_cost if e.reported_cost is not None else None
     if gia is None:
         raise HTTPException(422, {"ma": "THIEU_GIA", "loi": "Chưa có số tiền: tài xế không báo và người duyệt chưa nhập."})
+    truoc_khoa = BTC.dau_khoa(db, p)
     with KK.GiaoDichKho(db, user) as gd:
         so_dong = db.query(TripExpense).filter(TripExpense.trip_id == p.id, TripExpense.section == "repair").count()
         dong = TripExpense(trip_id=p.id, section="repair", line_no=so_dong + 1, item_key=None,
@@ -1967,6 +1996,7 @@ def duyet_bao_hong(tid: str, eid: str, data: dict = Body(...), db: Session = Dep
                                  note="Sửa xe trên đường (tài xế báo) — %s" % (e.note or ""))
             dong.stock_move_id = r["move_id"]
         e.status = "approved"; e.kind = "repair"; e.expense_id = dong.id
+        BTC.chan_sua_sau_khoa(db, p, truoc_khoa)   # phiếu đã khoá: lệch bút toán khoá → 409, phụ tùng vừa xuất được trả lại kho
         s = _muc_cua(db, p)["repair"]
         if s.status not in ("wait", "entered"):
             _ghi_log(db, p, user, "sec_repair:reopen")

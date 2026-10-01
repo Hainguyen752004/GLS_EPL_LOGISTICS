@@ -388,6 +388,8 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
     if v.status != "cho":
         raise HTTPException(409, {"ma": "DA_CAP", "loi": "Phiếu này đã cấp hoặc đã huỷ."})
     p = _phieu(db, v.trip_id)
+    from services import but_toan_cho as BTC
+    truoc_khoa = BTC.dau_khoa(db, p)      # phiếu đã khoá: cấp thêm dầu là lệch bút toán khoá phiếu (02/10)
 
     # Cấp dầu = xuất ở kho nhiên liệu bên trang kế toán (28/09). Cả lần cấp đi trong GiaoDichKho: bên này hỏng thì lần
     # xuất bên kia được huỷ; trang kế toán tắt → 503, chưa cấp được (màn Cấp phát giữ việc trong hàng đợi, nối lại tự gửi).
@@ -438,6 +440,7 @@ def cap_phat(vid: str, d: dict = Body(default={}), db: Session = Depends(get_db)
                    payload={"voucher_doc_no": v.doc_no, "driver_id": p.driver_id, "truck_no": p.truck_no,
                             "hinh_thuc": hinh_thuc(p, "tam_ung"), "owner_id": p.owner_id, "owner_name": p.owner_name})
         v.status, v.granted_by, v.granted_at = "da_cap", user.full_name, dt.datetime.utcnow()
+        BTC.chan_sua_sau_khoa(db, p, truoc_khoa)   # lệch → 409 DA_KHOA, lần xuất bên kho tạm được trả lại (GiaoDichKho)
     return xuat_phieu_linh(db, v, "", user.role)
 
 

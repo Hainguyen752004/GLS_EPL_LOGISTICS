@@ -8,15 +8,22 @@ CHỈ chạy trên máy thử (bản sao DB). Máy điều xe phải nối kho t
 thử là trả lại kho. Máy chủ BẬT cờ QLSX_GUI_BUT_TOAN trỏ máy giả (scratchpad xk_8015.ps1 -Gui) thì bài dựng máy giả hệ kế toán
 ở cổng tham số 2 và kiểm cả gói gửi đi; cờ tắt thì bỏ phần gói (in rõ).
 
+  0 Luật 02/10 — xe thuê lấy kho EPL LUÔN là xuất bán: lập phiếu / đổi dòng / lấy phụ tùng kho với «chủ xe tự trả» → 422
+    KHO_XE_THUE_XUAT_BAN (câu đủ ba tiếng, kho không bị trừ).
   A xe nhà · dầu kho 50 L (cấp theo phiếu đề nghị) + 1 phụ tùng kho → hai bút toán `xuat_noi_bo`:
       dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, tiền = số lượng × giá vốn bình quân kho lúc xuất.
-  B xe thuê, EPL ứng · dầu kho 40 L + 1 phụ tùng kho, KT kho xăng dầu / KT Chi phí gõ giá bán → hai bút toán `xuat_ban`:
-      Nợ 4022 / Có 707 theo GIÁ BÁN (đối tượng chủ xe — đúng số trừ vào tiền trả chủ xe) + Nợ 607 / Có 1371 theo giá vốn.
-  C xe thuê, chủ xe tự trả (dầu kho + phụ tùng kho đã rời kho) → không có bút toán xuất kho.
-  Trước khi khoá: chưa có (dầu đã cấp vẫn chưa). Mở khoá → huỷ (cờ bật: gỡ bên kế toán). Khoá lại → cùng bản, không trùng.
-  Không trùng `ban_chu_xe` (bán ở quầy). Vai không thấy giá vốn (Bãi, thủ kho, tổ sửa, KT kho xăng dầu…) không đọc được.
+  B xe thuê, EPL ứng · dầu kho 40 L + 1 phụ tùng kho + chipping ghi nợ NCC. Khoá khi chưa có giá bán → 409 THIEU_GIA_BAN (nói
+      mục, ai gõ); KT kho xăng dầu / KT Chi phí gõ giá bán → khoá → hai bút toán `xuat_ban`: Nợ 4022 / Có 707 theo GIÁ BÁN
+      (đối tượng chủ xe — đúng số trừ vào tiền trả chủ xe) + Nợ 607 / Có 1371 theo giá vốn.
+  C xe thuê · dầu kho 30 L. Biến DATABASE_URL trỏ bản sao _d7 thì giả lập dữ liệu cũ (ghi thẳng DB dòng «chủ xe tự trả»): khoá
+      bị chặn 409 KHO_XE_THUE_XUAT_BAN kèm cách sửa; KT kho xăng dầu bấm «EPL ứng» + giá bán → khoá → `xuat_ban`.
+  Sau khoá: KT kho xăng dầu, KT Chi phí, Sếp đổi giá bán / đơn giá dòng kho hay dòng ghi nợ NCC → 409 DA_KHOA; lưu lại đúng số
+      cũ thì được; thêm phụ tùng kho → 409. Mở khoá → huỷ (cờ bật: gỡ bên kế toán), sửa được; khoá lại → cùng bản, số mới.
+  Trước khi khoá: chưa có (dầu đã cấp vẫn chưa). Không trùng `ban_chu_xe` (bán ở quầy). Vai không thấy giá vốn (Bãi, thủ kho,
+  tổ sửa, KT kho xăng dầu…) không đọc được. Dọn xong kho phụ tùng trả lại đủ.
 """
 import json
+import os
 import sys
 import threading
 import time
@@ -178,6 +185,36 @@ def dong_cua(p, section):
     return [e for e in p["expenses"] if e["section"] == section]
 
 
+def ma(g):
+    d = (g or {}).get("detail") if isinstance(g, dict) else None
+    return d.get("ma") if isinstance(d, dict) else None
+
+
+def ba_tieng(g, *chu):
+    """Câu lỗi có đủ ba tiếng (loi · loi_lo · loi_en) và câu Việt chứa các chữ `chu`."""
+    d = (g or {}).get("detail") if isinstance(g, dict) else None
+    return isinstance(d, dict) and all(d.get(k) for k in ("loi", "loi_lo", "loi_en")) and all(c in d["loi"] for c in chu)
+
+
+def gia_lap_du_lieu_cu(eid):
+    """Dòng kho xe thuê ghi "chủ xe tự trả" như dữ liệu trước 02/10 — API nay chặn nên phải ghi thẳng DB. Chỉ khi biến
+    DATABASE_URL trỏ bản sao (_d7); không có thì bỏ bước (in rõ)."""
+    url = os.environ.get("DATABASE_URL", "")
+    if "_d7" not in url:
+        return False
+    from sqlalchemy import create_engine, text
+    eng = create_engine(url)
+    with eng.begin() as c:
+        c.execute(text("UPDATE trip_expenses SET paid_by_epl = false WHERE id = :i"), {"i": eid})
+    eng.dispose()
+    return True
+
+
+def ton_pt(pid):
+    s, ds = goi("/api/parts", u="admin")
+    return next((x.get("qty") for x in ds or [] if x["id"] == pid), None)
+
+
 def main():
     for u in VAI:
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"})
@@ -192,42 +229,79 @@ def main():
     don()
     s, xe = goi("/api/vehicles", u="admin"); s, tx = goi("/api/drivers", u="admin"); s, kh = goi("/api/customers", u="admin")
     s, kx = goi("/api/kho-xem", u="admin"); phai(s, 200, "Sếp xem kho (tồn, giá bình quân)", kx)
-    kho_dau = next((k for k in kx["nhien_lieu"] if k.get("active") is not False and (k.get("gia_bq") or 0) > 0), None)
+    kho_dau = next((k for k in kx["nhien_lieu"] if k.get("active") is not False and (k.get("gia_bq") or 0) > 0
+                    and (k.get("ton_lit") or 0) >= 150), None)    # kho tạm chặn cấp vượt tồn (VUOT_TON) — bài cấp 120 lít
     s, pts = goi("/api/parts", u="admin")
     pt = next((x for x in pts if (x.get("qty") or 0) >= 3 and (x.get("unit_price") or 0) > 0), None)
     if not kho_dau or not pt:
-        sys.exit("DỪNG: kho tạm thử không có kho dầu có giá hoặc phụ tùng tồn ≥ 3 có giá — %s · %s" % (bool(kho_dau), bool(pt)))
+        sys.exit("DỪNG: kho tạm thử không có kho dầu có giá, tồn ≥ 150 lít, hoặc phụ tùng tồn ≥ 3 có giá — %s · %s" % (bool(kho_dau), bool(pt)))
     print("  · kho dầu %s giá bình quân %s · phụ tùng %s tồn %s giá %s" % (kho_dau["name"], kho_dau["gia_bq"], pt["name"], pt["qty"], pt["unit_price"]))
     nha = next(v for v in xe if v["owner_type"] == "EPL" and v["active"])
     thue = next(v for v in xe if v["owner_type"] == "joint" and v["active"] and v.get("owner_id"))
     taixe = [t for t in tx if t["active"]]
-    A = lap(TIEN_TO + "A/EPL", "EPL", nha, taixe[0], kh[0], [{"section": "fuel", "item_key": "diesel", "qty": 50, "place_id": kho_dau["place_id"]}])
-    B = lap(TIEN_TO + "B/EPL", "joint", thue, taixe[1], kh[0], [{"section": "fuel", "item_key": "diesel", "qty": 40, "place_id": kho_dau["place_id"]}])
-    C = lap(TIEN_TO + "C/EPL", "joint", thue, taixe[2], kh[0], [{"section": "fuel", "item_key": "diesel", "qty": 30, "place_id": kho_dau["place_id"],
-                                                              "paid_by_epl": False}])
+    dau = lambda lit, **k: dict({"section": "fuel", "item_key": "diesel", "qty": lit, "place_id": kho_dau["place_id"]}, **k)
+    chip = {"section": "travel", "item_key": "x_chip_lao", "qty": 1, "unit_price": 150000, "currency": "LAK"}   # ghi nợ NCC (no_ncc)
+    A = lap(TIEN_TO + "A/EPL", "EPL", nha, taixe[0], kh[0], [dau(50)])
+    B = lap(TIEN_TO + "B/EPL", "joint", thue, taixe[1], kh[0], [dau(40), chip])
+    C = None
     try:
+        print("0. Luật 02/10: xe thuê lấy kho EPL luôn là xuất bán — không có «chủ xe tự trả»")
+        s, g = goi("/api/trips", {"doc_no": TIEN_TO + "C/EPL", "kind": "giao", "company": "joint", "vehicle_id": thue["id"],
+                                  "driver_id": taixe[2]["id"], "customer_id": kh[0]["id"], "doc_date": HOM_NAY, "weight_origin": 40,
+                                  "price": 40, "price_ccy": "USD", "hire_price": 30, "hire_ccy": "USD",
+                                  "expenses": [dau(30, paid_by_epl=False)]}, u="admin")
+        dung(s == 422 and ma(g) == "KHO_XE_THUE_XUAT_BAN" and ba_tieng(g, "mục III dòng 1", "phiếu bán ở quầy"),
+             "lập phiếu xe thuê có dầu kho «chủ xe tự trả» → 422, câu đủ ba tiếng", "%s %s" % (s, ma(g)))
+        C = lap(TIEN_TO + "C/EPL", "joint", thue, taixe[2], kh[0], [dau(30)])
+        s, pc = goi("/api/trips/" + C, u="admin")
+        f_c = dong_cua(pc, "fuel")[0]
+        s, g = goi("/api/trips/" + C, {"expenses": [dict(f_c, paid_by_epl=False)]}, u="thabok", method="PUT")
+        dung(s == 422 and ma(g) == "KHO_XE_THUE_XUAT_BAN", "Bãi đổi dòng dầu kho xe thuê sang «chủ xe tự trả» → 422", "%s %s" % (s, ma(g)))
+        ton0 = ton_pt(pt["id"])
+        s, g = goi("/api/trips/%s/events" % C, {"kind": "repair", "incident_type": "tire", "note": "thử luật 02/10",
+                                                "repair": {"source": "kho", "part_id": pt["id"], "qty": 1, "paid_by_epl": False}}, u="totsua")
+        dung(s == 422 and ma(g) == "KHO_XE_THUE_XUAT_BAN" and ton_pt(pt["id"]) == ton0,
+             "tổ sửa lấy phụ tùng kho «chủ xe tự trả» cho xe thuê → 422, kho không bị trừ", "%s %s · tồn %s → %s" % (s, ma(g), ton0, ton_pt(pt["id"])))
+
         print("1. Xuất kho thật ở kho tạm (cấp dầu theo phiếu đề nghị, lấy phụ tùng)")
         gia_dau, gia_pt = kho_dau["gia_bq"], pt["unit_price"]
-        for tid, lit in ((A, 50), (B, 40)):
+        for tid, lit in ((A, 50), (B, 40), (C, 30)):
             cap_dau(tid, lit)
+        for tid in (A, B):
             lay_phu_tung(tid, pt["id"])
-        lay_phu_tung(C, pt["id"], tra=False)
-        s, pb = goi("/api/trips/" + B, u="admin")
-        fb, rb = dong_cua(pb, "fuel")[0], dong_cua(pb, "repair")[0]
-        s, g = goi("/api/trips/" + B, {"expenses": [{"id": fb["id"], "section": "fuel", "sale_price": 35000}]}, u="khonl", method="PUT")
-        phai(s, 200, "KT kho xăng dầu gõ giá bán dầu cho chủ xe 35.000 LAK/L", g)
-        s, g = goi("/api/trips/" + B, {"expenses": [{"id": rb["id"], "section": "repair", "sale_price": round(gia_pt * 1.2)}]}, u="ketoancp", method="PUT")
-        phai(s, 200, "KT Chi phí gõ giá bán phụ tùng cho chủ xe %s LAK" % round(gia_pt * 1.2), g)
         s, pa = goi("/api/trips/" + A, u="admin"); s, pb = goi("/api/trips/" + B, u="admin"); s, pc = goi("/api/trips/" + C, u="admin")
         dau_a, pt_a = dong_cua(pa, "fuel")[0], dong_cua(pa, "repair")[0]
-        dau_b, pt_b = dong_cua(pb, "fuel")[0], dong_cua(pb, "repair")[0]
-        dung(all(e["stock_move_id"] for e in (dau_a, pt_a, dau_b, pt_b)) and dong_cua(pc, "repair")[0]["stock_move_id"],
-             "dòng kho đã rời kho (có mã lần xuất)")
+        dau_b, pt_b, chip_b = dong_cua(pb, "fuel")[0], dong_cua(pb, "repair")[0], dong_cua(pb, "travel")[0]
+        dau_c = dong_cua(pc, "fuel")[0]
+        dung(all(e["stock_move_id"] for e in (dau_a, pt_a, dau_b, pt_b, dau_c)), "dòng kho đã rời kho (có mã lần xuất)")
         dung(abs(dau_a["unit_price"] - gia_dau) < 0.01 and abs(dau_b["unit_price"] - gia_dau) < 0.01 and abs(pt_a["unit_price"] - gia_pt) < 0.01,
              "giá vốn trên dòng = giá bình quân kho lúc xuất (kho tạm trả về)", "%s · %s" % (dau_a["unit_price"], pt_a["unit_price"]))
         dung(not kho(bt(A)) and not kho(bt(B)), "trước khi khoá: dầu đã cấp vẫn CHƯA có bút toán xuất kho (ghi lúc khoá)")
 
-        print("2. Khoá phiếu → bút toán xuất kho")
+        print("2. Khoá phiếu: chặn khi xuất bán chưa có giá bán / dòng cũ «chủ xe tự trả»")
+        s, g = goi("/api/trips/%s/khoa" % B, {"xac_nhan": True}, u="ketoan")
+        dung(s == 409 and ma(g) == "THIEU_GIA_BAN" and ba_tieng(g, "mục III dòng 1", "KT kho xăng dầu", "mục V dòng 1", "KT Chi phí"),
+             "khoá B khi dầu, phụ tùng xuất bán chưa có giá bán → 409 THIEU_GIA_BAN, nói mục nào, ai gõ (đủ ba tiếng)",
+             ((g or {}).get("detail") or {}).get("loi", "")[:150])
+        s, g = goi("/api/trips/" + B, {"expenses": [{"id": dau_b["id"], "section": "fuel", "sale_price": 35000}]}, u="khonl", method="PUT")
+        phai(s, 200, "KT kho xăng dầu gõ giá bán dầu cho chủ xe 35.000 LAK/L", g)
+        s, g = goi("/api/trips/" + B, {"expenses": [{"id": pt_b["id"], "section": "repair", "sale_price": round(gia_pt * 1.2)}]}, u="ketoancp", method="PUT")
+        phai(s, 200, "KT Chi phí gõ giá bán phụ tùng cho chủ xe %s LAK" % round(gia_pt * 1.2), g)
+        cu_c = gia_lap_du_lieu_cu(dau_c["id"])
+        if cu_c:
+            s, g = goi("/api/trips/%s/khoa" % C, {"xac_nhan": True}, u="ketoan")
+            dung(s == 409 and ma(g) == "KHO_XE_THUE_XUAT_BAN" and ba_tieng(g, "mục III dòng 1", "EPL ứng"),
+                 "dữ liệu cũ: dầu kho xe thuê ghi «chủ xe tự trả» → khoá bị chặn, chỉ cách sửa (đủ ba tiếng)", "%s %s" % (s, ma(g)))
+            s, g = goi("/api/trips/" + C, {"expenses": [{"id": dau_c["id"], "section": "fuel", "paid_by_epl": False, "sale_price": 36000}]},
+                       u="khonl", method="PUT")
+            dung(s == 200, "gửi nguyên «chủ xe tự trả» của dòng cũ không làm hỏng lần lưu (để khoá chặn)", s)
+        else:
+            print("  · bỏ bước dữ liệu cũ: không có DATABASE_URL bản sao _d7 để giả lập dòng ghi «chủ xe tự trả» từ trước 02/10")
+        s, g = goi("/api/trips/" + C, {"expenses": [{"id": dau_c["id"], "section": "fuel", "paid_by_epl": True, "sale_price": 36000}]},
+                   u="khonl", method="PUT")
+        phai(s, 200, "KT kho xăng dầu bấm «EPL ứng» + gõ giá bán 36.000 cho dầu của C", g)
+        s, pc = goi("/api/trips/" + C, u="admin")
+        dung(dong_cua(pc, "fuel")[0]["paid_by_epl"] is True and dong_cua(pc, "fuel")[0]["sale_price"] == 36000, "dòng dầu C: EPL ứng, có giá bán")
         for tid in (A, B, C):
             s, g = goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan"); phai(s, 200, "KT Thu/Chi khoá phiếu", g)
 
@@ -254,6 +328,7 @@ def main():
         kb = {b["ma_nguon"]: b for b in kho(bt(B))}
         y_dau, y_pt = kb.get("dau:" + dau_b["stock_move_id"]), kb.get("pt:" + pt_b["stock_move_id"])
         dung(len(kb) == 2 and y_dau and y_pt and all(b["nguon"] == "xuat_ban" for b in kb.values()), "hai bút toán xuat_ban", sorted(kb))
+        s, pb = goi("/api/trips/" + B, u="admin")
         chu = {"loai": "chu_xe", "ref_id": pb["owner_id"]}
         for ten, b, sl, ban, von in (("dầu", y_dau, 40, 35000, gia_dau), ("phụ tùng", y_pt, 1, round(gia_pt * 1.2), gia_pt)):
             d = {x["ve"]: x for x in (b or {}).get("dong") or []}
@@ -274,10 +349,32 @@ def main():
                                   for b in ban["ds"]), "không trùng ban_chu_xe (bán ở quầy): không bản nào của các phiếu thử",
              "%d bản ban_chu_xe trong DB" % len(ban["ds"]))
 
-        print("  C — xe thuê, chủ xe tự trả")
-        dung(not kho(bt(C)), "không có bút toán xuất kho (phụ tùng đã rời kho nhưng chủ xe tự trả)")
+        print("  C — xe thuê, dòng dầu kho đã sửa về EPL ứng (luật 02/10)")
+        kc = kho(bt(C))
+        dc = {x["ve"]: x for b in kc for x in b["dong"]}
+        dung(len(kc) == 1 and kc[0]["nguon"] == "xuat_ban" and (dc.get("doanh_thu") or {}).get("tien") == 30 * 36000
+             and (dc.get("gia_von") or {}).get("tien") == round(30 * gia_dau),
+             "C có xuat_ban: 4022/707 = 30 × 36.000 · 607/1371 = 30 × giá vốn", str([(x["no"], x["co"], x["tien"]) for x in dc.values()]))
 
-        print("3. Ai đọc được (giá vốn không lộ)")
+        print("3. Sau khoá: không ai sửa được giá các dòng đã vào bút toán khoá phiếu")
+        for u, body, ten in (
+                ("khonl", {"expenses": [{"id": dau_b["id"], "section": "fuel", "sale_price": 40000}]}, "KT kho xăng dầu đổi giá bán dầu"),
+                ("ketoancp", {"expenses": [{"id": pt_b["id"], "section": "repair", "sale_price": round(gia_pt * 1.5)}]}, "KT Chi phí đổi giá bán phụ tùng"),
+                ("ketoancp", {"expenses": [dict(chip_b, unit_price=175000)]}, "KT Chi phí đổi đơn giá dòng ghi nợ NCC (chipping)"),
+                ("admin", {"expenses": [dict(dau_b, sale_price=41000)]}, "Sếp đổi giá bán dầu")):
+            s, g = goi("/api/trips/" + B, body, u=u, method="PUT")
+            dung(s == 409 and ma(g) == "DA_KHOA" and ba_tieng(g, "mở khoá"), "%s sau khoá → 409 DA_KHOA (đủ ba tiếng)" % ten, "%s %s" % (s, ma(g)))
+        s, pb2 = goi("/api/trips/" + B, u="admin")
+        dung(dong_cua(pb2, "fuel")[0]["sale_price"] == 35000 and dong_cua(pb2, "travel")[0]["unit_price"] == 150000, "số trên phiếu không đổi")
+        s, g = goi("/api/trips/" + B, {"expenses": [{"id": dau_b["id"], "section": "fuel", "sale_price": 35000}]}, u="khonl", method="PUT")
+        dung(s == 200, "lưu lại đúng số cũ sau khoá → không bị chặn", s)
+        s, g = goi("/api/trips/" + B, {"expenses": [dict(chip_b)]}, u="admin", method="PUT")
+        dung(s == 200, "Sếp lưu lại mục IV không đổi số (dòng được tạo lại mã mới) → không bị chặn", "%s %s" % (s, ma(g)))
+        s, g = goi("/api/trips/%s/events" % B, {"kind": "repair", "incident_type": "tire", "note": "thêm sau khoá",
+                                                "repair": {"source": "kho", "part_id": pt["id"], "qty": 1}}, u="totsua")
+        dung(s == 409 and ma(g) == "DA_KHOA", "tổ sửa lấy thêm phụ tùng kho cho phiếu đã khoá → 409, kho không bị trừ", "%s %s" % (s, ma(g)))
+
+        print("3b. Ai đọc được (giá vốn không lộ)")
         for u in VAI:
             s, g = goi("/api/but-toan-cho?nguon=xuat_ban", u=u)
             dung(s == (200 if u in ("admin", "ketoan", "ketoancp") else 403), "GET bút toán xuất kho — %-8s (%s) → %s" % (u, VAI[u], s))
@@ -312,7 +409,7 @@ def main():
         else:
             print("4. (cờ gửi tắt — bỏ phần gói; chạy lại với máy chủ bật cờ để kiểm gói)")
 
-        print("5. Mở khoá → huỷ; khoá lại → cùng bản, không trùng")
+        print("5. Mở khoá → huỷ; sửa giá; khoá lại → cùng bản theo số mới")
         cu = {b["id"] for b in kho(bt(B))}
         s, g = goi("/api/trips/%s/mo-khoa" % B, {}, u="ketoan"); phai(s, 200, "KT Thu/Chi mở khoá B", g)
         r = kho(bt(B))
@@ -320,10 +417,14 @@ def main():
              str({b["ma_nguon"]: b["status"] for b in r}))
         if co_gui:
             dung(all(GIA.ct[b["source_ref"]]["Reversed"] for b in kb.values()), "cờ bật: đã gỡ chứng từ bên kế toán")
+        s, g = goi("/api/trips/" + B, {"expenses": [{"id": dau_b["id"], "section": "fuel", "sale_price": 40000}]}, u="khonl", method="PUT")
+        dung(s == 200, "mở khoá rồi KT kho xăng dầu đổi giá bán dầu 40.000 → được", s)
         s, g = goi("/api/trips/%s/khoa" % B, {"xac_nhan": True}, u="ketoan"); phai(s, 200, "Khoá lại B", g)
         r = kho(bt(B))
         song = [b for b in r if b["status"] != "huy"]
-        dung({b["id"] for b in r} == cu and len(song) == 2, "khoá lại: cùng hai bản ghi, sống lại (không sinh trùng)",
+        moi_dau = next((x for b in song if b["ma_nguon"] == "dau:" + dau_b["stock_move_id"] for x in b["dong"] if x["ve"] == "doanh_thu"), {})
+        dung({b["id"] for b in r} == cu and len(song) == 2 and moi_dau.get("tien") == 40 * 40000,
+             "khoá lại: cùng hai bản ghi, sống lại, 4022/707 dầu theo giá mới 40 × 40.000",
              str([(b["ma_nguon"], b["status"], b["phien"]) for b in r]))
         if co_gui:
             dung(all(b["status"] == "da_gui" and b["source_ref"].endswith("-2") for b in song), "cờ bật: gửi lại với SourceRef phiên mới '-2'")
@@ -337,6 +438,8 @@ def main():
         don()
         if GIA.may:
             GIA.may.shutdown(); GIA.may.server_close()
+    print("  · tồn phụ tùng sau khi dọn: %s (trước bài %s)" % (ton_pt(pt["id"]), pt["qty"]))
+    dung(ton_pt(pt["id"]) == pt["qty"], "dọn xong: kho phụ tùng trả lại đủ")
     print("\n%s" % ("BÚT TOÁN XUẤT KHO: ĐẠT" if not LOI else "BÚT TOÁN XUẤT KHO: SAI %d chỗ:\n  - " % len(LOI) + "\n  - ".join(LOI)))
     sys.exit(1 if LOI else 0)
 

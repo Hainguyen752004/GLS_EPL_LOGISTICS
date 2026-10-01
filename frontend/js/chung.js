@@ -53,7 +53,7 @@
         if (r.status === 404 && typeof ct === 'string' && duong.startsWith('/api/')) {
           throw new LoiAPI(404, 'THIEU_DUONG_API', NN.t('err_old_server'));
         }
-        throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || (typeof ct === 'string' ? ct : NN.t('err_generic')));
+        throw new LoiAPI(r.status, ct.ma || 'LOI', chuLoi(ct) || (typeof ct === 'string' ? ct : NN.t('err_generic')));
       }
       // Danh sách phân trang (24/09, dữ liệu cả năm): máy chủ gửi tổng số dòng khớp ở header X-Tong — gắn vào mảng
       // thành `ds.tong` (không liệt kê được, nên không lẫn vào dữ liệu hay vào tệp Excel xuất ra).
@@ -68,7 +68,7 @@
       const dau = { 'Accept': 'application/json' }; const tk = API.token(); if (tk) dau['Authorization'] = 'Bearer ' + tk;
       const r = await fetch(duong, { method: 'POST', headers: dau, body: formData });
       let d = null; try { d = await r.json(); } catch (e) { d = null; }
-      if (!r.ok) { const ct = (d && d.detail) || {}; throw new LoiAPI(r.status, ct.ma || 'LOI', ct.loi || NN.t('err_generic')); }
+      if (!r.ok) { const ct = (d && d.detail) || {}; throw new LoiAPI(r.status, ct.ma || 'LOI', chuLoi(ct) || NN.t('err_generic')); }
       return d;
     },
     get: (d, tc) => API.goi(d, tc),
@@ -76,6 +76,15 @@
     put: (d, b) => API.goi(d, { method: 'PUT', body: b }),
     del: (d) => API.goi(d, { method: 'DELETE' }),
   };
+  /** Câu lỗi nghiệp vụ theo tiếng đang xem: máy chủ gửi `loi` (Việt) và, ở lỗi đã dịch, `loi_lo` / `loi_en` (02/10 — dòng kho
+   *  xe thuê, khoá phiếu). Không có bản dịch thì hiện `loi` như trước. VI + ລາວ: hai câu nối nhau. */
+  function chuLoi(ct) {
+    if (!ct || typeof ct !== 'object') return null;
+    if (lang === 'lo' && ct.loi_lo) return ct.loi_lo;
+    if (lang === 'en' && ct.loi_en) return ct.loi_en;
+    if (lang === 'both' && ct.loi_lo) return (ct.loi || '') + ' / ' + ct.loi_lo;
+    return ct.loi || null;
+  }
   class LoiAPI extends Error { constructor(status, ma, loi) { super(loi); this.status = status; this.ma = ma; } }
   EPL.LoiAPI = LoiAPI;
   // Bộ huỷ GET của lượt nạp màn hiện tại (xem API.goi, napModule). Khai ở đây vì API.goi dùng trước khi tới phần điều hướng.

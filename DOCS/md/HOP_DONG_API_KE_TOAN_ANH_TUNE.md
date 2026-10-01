@@ -4,7 +4,7 @@ Phiên bản đề nghị **v2.6 · 01/10/2026** (lịch sử các bản trướ
 
 > **Hiện trạng 01/10/2026 (đọc trước):**
 > - **Ranh giới tiền (chủ dự án chốt 01/10):** bỏ phần tiền của trang kế toán tạm `EPL_KETOAN` (8030). Trang đó chỉ còn là **kho tạm** tới khi nối hệ kho anh Toàn. Số tiền ở đó là **số thử, bỏ hết**. **Cắt sổ 01/10**: mọi DO đã khoá gửi SO sang hệ anh từ đầu; luật `DA_HOA_DON_TRANG_TAM` đã bỏ (12.11.1).
-> - **Khoản đi qua tiền** thành **phiếu chi / phiếu thu bên anh**: tạm ứng (12.10), trả chủ xe có trừ hàng mua ở quầy (12.11.3), chi mục V – VI, tất toán tài xế (chi bù / thu hoàn), trả nhà cung cấp — chạy ở máy (mục 5). **Khoản không qua tiền** thành **bút toán chờ gửi** ở trang điều xe (màn "Bút toán chờ gửi"), gửi sang **API bút toán tổng hợp** bên anh (`b9227aa`) khi bật cờ `QLSX_GUI_BUT_TOAN` — API và đầu gửi đã có, **chưa chạy trên DB**: chờ áp script (mục 8, 12.12.4).
+> - **Khoản đi qua tiền** thành **phiếu chi / phiếu thu bên anh**: tạm ứng (12.10), trả chủ xe có trừ hàng mua ở quầy (12.11.3), chi mục V – VI, tất toán tài xế (chi bù / thu hoàn), trả nhà cung cấp — chạy ở máy (mục 5). **Khoản không qua tiền** thành **bút toán chờ gửi** ở trang điều xe (màn "Bút toán chờ gửi"), gửi sang **API bút toán tổng hợp** bên anh (`b9227aa`) khi bật cờ `QLSX_GUI_BUT_TOAN` — API và đầu gửi đã có, **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); host chưa áp (mục 8, 12.12.4).
 > - **Người làm (chủ dự án chốt 01/10: "bên mình với anh Tune giờ là một"):** việc trước ghi "anh làm" nay **bên EPL làm (đang làm)**, kể cả trên source của anh. Việc cần máy chủ host (triển khai, dữ liệu trên DB host, token / mật khẩu tài khoản của anh) ghi **cần quyền host**.
 > - **Token (chủ dự án chốt 01/10):** tạm gác tài khoản tích hợp; trang điều xe tiếp tục dùng **token của anh** (`EPL_ACC_CODE_TOKEN`). Hết hạn khoảng 10/10 thì thay token mới trong `.env`, hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh để trang điều xe tự đăng nhập lại (12.11.4). Tài khoản tích hợp là **tuỳ chọn** (12.12.3).
 > - Trang điều xe **thôi đẩy phong bì** `POST /api/v1/epl-lao/vouchers` (3.1). Các đường `/api/lien-thong/*` phần tiền đã gỡ (mục 4).
@@ -29,7 +29,7 @@ Phiên bản đề nghị **v2.6 · 01/10/2026** (lịch sử các bản trướ
 |---|---|
 | **Đề nghị thu** (cước) | SO + công nợ khách bên anh (3.2); mọi DO đã khoá gửi từ đầu |
 | **Khoản đi qua tiền**: tạm ứng, trả chủ xe, chi mục V – VI, tất toán tài xế (chi bù / thu hoàn), trả nhà cung cấp | **phiếu chi / phiếu thu bên anh** (`cmpayment-receipt/save-and-commit`, `PostMode = None`); thủ quỹ bên anh chi / thu và ghi sổ; trang điều xe đọc lại `STATUS` (12.10, 12.11.3; chạy ở máy) |
-| **Khoản không qua tiền**: chi phí thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, **xuất kho cho chuyến** (xe nhà 625 · 614 / 1371 giá vốn; xe thuê 4022/707 giá bán + 607/1371 giá vốn) | **bút toán chờ gửi** giữ ở trang điều xe, đủ hai vế; gửi qua `integrations/logistics/journal-entries` bên anh (12.12.4) — API đã có (`b9227aa`), chờ áp script DB rồi bật cờ |
+| **Khoản không qua tiền**: chi phí thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, **xuất kho cho chuyến** (xe nhà 625 · 614 / 1371 giá vốn; xe thuê 4022/707 giá bán + 607/1371 giá vốn) | **bút toán chờ gửi** giữ ở trang điều xe, đủ hai vế; gửi qua `integrations/logistics/journal-entries` bên anh (12.12.4) — API đã có (`b9227aa`), script đã áp DB demo và chạy thật 02/10; host: áp script rồi bật cờ |
 | Hoá đơn, thu tiền khách, cấn trừ | việc của hệ anh, từ SO. Thu tiền: màn **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** (TKN) → phiếu thu CMR 17 "Thu khác", Nợ 1021 / Có 1211 — **không** phải phiếu "Thu công nợ" (15). Trang điều xe chỉ đọc "đã thu" (12.11.2) |
 
 Mọi đường và trường trong tài liệu này **chép từ mã đang chạy** (đọc ngày 30/09 và 01/10/2026).
@@ -565,7 +565,7 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
   - Mỗi bút toán đủ hai vế từng dòng, bằng mã thật trong danh mục (`services/tai_khoan.py`), kèm tiền tệ của dòng, đối tượng (chủ xe, nhà cung cấp, tài xế) và diễn giải.
   - Chống trùng theo (nguồn, mã nguồn). Mã gửi đi `source_ref` = `EPLLAO-<nguồn>-<mã nguồn>`; bản đã gỡ mà nguồn ghi lại thì phiên mới `…-2`.
   - Trạng thái `cho_gui` → `da_gui`; `huy`. Mở khoá phiếu: bản chưa gửi bị huỷ, khoá lại ghi theo số mới; bản đã gửi thì gửi **gỡ** sang bên anh (chưa gỡ được thì "chờ đảo").
-  - Đường nhận bên anh: `integrations/logistics/journal-entries` (`b9227aa`, 12.12.4) — **chưa chạy trên DB** (chờ áp script). Cờ gửi `QLSX_GUI_BUT_TOAN` đang tắt: các bản nằm "chờ gửi", không mất khoản nào.
+  - Đường nhận bên anh: `integrations/logistics/journal-entries` (`b9227aa`, 12.12.4) — **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); host chưa áp. Cờ gửi `QLSX_GUI_BUT_TOAN` chỉ bật trên máy thử lúc chạy lượt thật; máy chưa bật thì các bản nằm "chờ gửi", không mất khoản nào.
 
 **Bảy lỗ hổng:**
 
@@ -581,7 +581,7 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
 
    Giá bán nằm trên phiếu bên em (dòng `sale_price`): dầu do KT kho xăng dầu gõ khi kiểm mục III; phụ tùng do KT Chi phí gõ khi kiểm mục V. Dòng chi bán cho chủ xe mang `acc_code = "4022/707"` trong bàn giao DO.
 
-   **Hiện trạng:** hàng chủ xe mua ở quầy (phiếu bán ở kho tạm) được trừ vào tiền trả chủ xe; khi phiếu chi trả chủ xe đã chi, bên em ghi bút toán chờ nguồn `ban_chu_xe` *Nợ 4022 / Có 707* theo giá bán, một phiếu bán một bút toán. Dầu / phụ tùng kho xuất cho chuyến trên phiếu (mục III, V): **chủ dự án chốt 01/10** ("xuất dầu là xuất nội bộ và còn là xuất bán") — lúc khoá phiếu, mỗi lần xuất kho thành một bút toán chờ: xe nhà `xuat_noi_bo` (625 · 614 / 1371 theo giá vốn), xe thuê EPL ứng `xuat_ban` (4022/707 theo giá bán + 607/1371 theo giá vốn), xe thuê chủ xe tự trả không có (12.12.4).
+   **Hiện trạng:** hàng chủ xe mua ở quầy (phiếu bán ở kho tạm) được trừ vào tiền trả chủ xe; khi phiếu chi trả chủ xe đã chi, bên em ghi bút toán chờ nguồn `ban_chu_xe` *Nợ 4022 / Có 707* theo giá bán, một phiếu bán một bút toán. Dầu / phụ tùng kho xuất cho chuyến trên phiếu (mục III, V): **chủ dự án chốt 01/10** ("xuất dầu là xuất nội bộ và còn là xuất bán") — lúc khoá phiếu, mỗi lần xuất kho thành một bút toán chờ: xe nhà `xuat_noi_bo` (625 · 614 / 1371 theo giá vốn), xe thuê `xuat_ban` (4022/707 theo giá bán + 607/1371 theo giá vốn) — lấy kho EPL cho xe thuê luôn là xuất bán, không có "chủ xe tự trả"; thiếu giá bán thì không khoá được (12.12.4).
 
 3. **Nợ nhà cung cấp trên sổ tạm cộng theo khoản mục, không xét cách trả.** Hệ quả: dòng chipping đổi sang tiền mặt vẫn bị tính là nợ nhà cung cấp, và nhà cung cấp khoản mục `diesel` nuốt cả dầu lấy kho.
 
@@ -620,7 +620,7 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
 | Tất toán tài xế: chênh → phiếu chi "Chi khác" / phiếu thu "Thu khác" bên anh; quyết toán `QT_TU` → bút toán chờ; màn Tất toán tài xế | **đã làm** (`f85078b`) |
 | Trả nhà cung cấp qua phiếu chi "Chi khác" bên anh (Nợ 4021); màn Nhà cung cấp → "Trả qua kế toán" | **đã làm** (`f85078b`) |
 | Bút toán chờ gửi (thuê xe 621/4022, ghi nợ nhà cung cấp, quyết toán tạm ứng, hàng bán cho chủ xe 4022/707); màn "Bút toán chờ gửi" | **đã làm** (`f85078b`, `ca7b630`) |
-| API bút toán tổng hợp nhận bút toán chờ (12.12.4) | **đã làm** (`b9227aa`) — **chưa chạy trên DB**: script chưa áp DB demo (chủ dự án tự chạy); DB host **cần quyền host** |
+| API bút toán tổng hợp nhận bút toán chờ (12.12.4) | **đã làm** (`b9227aa`) — **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); DB host **cần quyền host** |
 | Gửi bút toán chờ sang API đó; gỡ khi nguồn bị huỷ; giữ hai sổ không lệch khi mất phản hồi | **đã làm** (`a938301`, `875a0cf`), cờ `QLSX_GUI_BUT_TOAN` tắt tới khi áp script |
 | Phiếu bị xoá tay bên anh (`Master` null) → `PHIEU_CHI_MAT`, gửi lại thì lập phiếu mới | **đã làm** |
 | Token: tiếp tục dùng token của anh (`EPL_ACC_CODE_TOKEN`); hết hạn khoảng 10/10 thì thay token mới trong `.env` hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh (12.11.4) | đường tự đăng nhập **đã làm**; token / mật khẩu của anh — **cần quyền host** |
@@ -647,7 +647,7 @@ Câu đã có lời đáp giữ số để các mục khác tra, ghi gọn lời
 7. **Bút toán đảo** khi huỷ — đã có lời đáp trong mã: `…/journal-entries/reverse { "SourceRef" }` gỡ ghi sổ và xoá chứng từ tổng hợp bằng thủ tục legacy, không tạo tờ đảo riêng; chứng từ đã khoá / đã ghi sổ chính thức thì 409, kế toán gỡ trong QLSX (12.12.4).
 8. **Chênh lệch tỷ giá** (hoá đơn USD, khách trả Kíp): hạch toán ở đâu, theo tỷ giá nào — **đang chốt**.
 9. **Hàng bán cho chủ xe** (lỗ hổng 2): hàng mua ở quầy đã ghi bút toán chờ `ban_chu_xe` 4022/707 khi trả chủ xe; dầu / phụ tùng kho xuất cho chuyến trên phiếu (mục III, V) — **đã chốt 01/10**, bút toán chờ `xuat_noi_bo` / `xuat_ban` (12.12.4). Còn hỏi anh Khampla: nếu sau này tờ kho của hệ anh Toàn (`PXK_NL`, `PXK_PT` có định khoản) cũng vào sổ anh (câu hỏi 10.11) thì vế Có 1371 phải chọn **một** nơi ghi — không ghi cả hai.
-10. **Ghi nhận chi phí không qua tiền** (lỗ hổng 1, 4): tài khoản đã chốt — thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601; bên em giữ thành bút toán chờ. **API bút toán** đã có (`b9227aa`, 12.12.4), chờ áp script. Còn lại cách ghi **625/4201** (tiền chuyến, tiền nước trả cùng lương — **đang chốt**).
+10. **Ghi nhận chi phí không qua tiền** (lỗ hổng 1, 4): tài khoản đã chốt — thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601; bên em giữ thành bút toán chờ. **API bút toán** đã có (`b9227aa`, 12.12.4), đã chạy thật trên DB demo 02/10 (cả xuất kho cho chuyến). Còn lại cách ghi **625/4201** (tiền chuyến, tiền nước trả cùng lương — **đang chốt**).
 11. **Tờ kho có định khoản** do hệ anh Toàn sinh: đi vào sổ anh qua đường nào? (Phong bì 3.1 đã thôi dùng.)
 12. **Khách EPL Lào** — đã có lời đáp: bên em tự tạo qua `POST /api/v1/master-data/customers/upsert`, mã `EPLKH-<mã khách bên em>` (12.11.1).
 13. **Cách nhận các tờ còn lại** — đã chốt cách (2): mỗi loại đi đường riêng của anh (SO, phiếu chi / thu `cmpayment-receipt`, bút toán khi có API). Bên em không đẩy phong bì nữa (3.1).
@@ -719,7 +719,7 @@ Ngày 30/09 bên em đã **gọi thử các đường chỉ đọc** trên máy 
 | **Chi mục V – VI** (dòng quỹ trả ngay) | `save-and-commit` CMP "Chi khác", `Entries` 614 · 625 / 1011 (xe thuê 4022/1011) | KT Chi phí VC ghi sổ mục → bên em tạo phiếu chờ | **chạy** ở máy |
 | **Tất toán tài xế** | `save-and-commit` CMP "Chi khác" (chi bù, Nợ 1601 / Có tiền) · CMR "Thu khác" (thu hoàn, Nợ tiền / Có 1601) | KT Chi phí VC chốt kỳ → bên em tạo phiếu chờ; quyết toán 625/1601 là bút toán chờ | **chạy** ở máy |
 | **Trả nhà cung cấp** | `save-and-commit` CMP "Chi khác", `Entries` Nợ 4021 / Có tiền | KT Chi phí lập đề nghị → bên em tạo phiếu chờ | **chạy** ở máy |
-| **Bút toán không qua tiền** (thuê xe, ghi nợ nhà cung cấp, quyết toán tạm ứng, hàng bán cho chủ xe) | `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, `GET /{SourceRef}`), `Idempotency-Key` = SourceRef (`b9227aa`) | bên em gửi bút toán chờ (mục 8) khi bật cờ `QLSX_GUI_BUT_TOAN`; gỡ khi nguồn bị huỷ | API và đầu gửi đã có; **chưa chạy trên DB** — chờ áp script (12.12.4) |
+| **Bút toán không qua tiền** (thuê xe, ghi nợ nhà cung cấp, quyết toán tạm ứng, hàng bán cho chủ xe) | `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, `GET /{SourceRef}`), `Idempotency-Key` = SourceRef (`b9227aa`) | bên em gửi bút toán chờ (mục 8) khi bật cờ `QLSX_GUI_BUT_TOAN`; gỡ khi nguồn bị huỷ | API và đầu gửi đã có; **chạy thật trên DB demo 02/10**, host chưa áp (12.12.4) |
 | **Gắn DO làm nguồn** cho phiếu thu chi | `GET /api/v1/accounting/cash-voucher-references?type=DO` và `GET …/DO/{id}` → `SelectionToken`; rồi `SourceReferences[]` trong save-and-commit | kế toán bên anh gắn DO ở màn Vụ việc | nguồn DO đọc qua `LogisticsSource` (`ce95b3c`, 12.9.2). Phiếu bên em tạo **chưa gửi** `SourceReferences` (cần `SelectionToken` cấp theo người xem) — số phiếu xe nằm trong diễn giải và số tham chiếu |
 | **Đề nghị thu (PDT) → SO + công nợ** | `POST /api/v1/integrations/logistics/sales-orders` (mục 3.2) | mọi DO đã khoá | **chạy** |
 | **Thu tiền khách** của SO | WEB **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** → `POST /api/v1/sales/debt/collection-upsert` (`DocumentType = "TKN"`, theo `RetkAutoId` của SO) → phiếu thu nợ RES `4-TKN-1368-2-…` + phiếu thu **CMR 17 "Thu khác"** `4-1368-TK-…`, Nợ 1021 (hoặc 1011) / Có 1211. **Không** qua `save-and-commit` CMR 15 "Thu công nợ": tìm công nợ SO ở đó ra 0 dòng | **việc của kế toán bên anh**, bên em không gọi | KB-AZ đi thật 01/10. Hai lỗi: hộp Tạo phiếu thu chỉ có tài khoản nội tệ, tỷ giá cứng 1 → SO USD ghi thành Kíp (UI-4 đang sửa); mọi SO cùng mã phiếu bán "Demo EPL-2-261001000" (UI-4 đang tìm nguồn) |
@@ -1016,11 +1016,11 @@ Từ chiều 01/10 chủ dự án cho bên em **sửa thẳng** source của anh
 | `ae0e7f6` | máy chủ tự tính quy đổi từng dòng (`Amount × tỷ giá dòng`, thiếu thì tỷ giá header) trước khi cộng tổng header |
 | WEB `7e14421c` | đổi hình thức / nội tệ / loại tiền thì vế tiền dòng đổi theo; đổi quốc gia chặn trước khi nạp; DOTY gom một chỗ |
 | WEB `77bcb0a1` | loại phiếu không đổi ngầm (58/60, 15/17 sửa được, loại khác chỉ xem); đổi tài khoản tiền theo cờ `moneyAccountIsDefault`; hình thức không rõ thì chặn lưu; modal Vụ việc thoát ký tự cả DEAL / QUOTE |
-| `e2ef52f` | script `20261001_audit_redact_secrets.sql`: che mật khẩu / token / khoá trong dòng audit cũ (UPDATE dữ liệu; trong tệp `@Apply` mặc định 1, đặt 0 để chỉ xem) — chạy lúc triển khai |
+| `e2ef52f` | script `20261001_audit_redact_secrets.sql`: che mật khẩu / token / khoá trong dòng audit cũ (UPDATE dữ liệu; từ `2b4e274` trong tệp `@Apply` mặc định **0** — chỉ chẩn đoán; lưu kết quả chẩn đoán rồi sửa thành 1 để che) — chạy lúc triển khai |
 | `0d4eed9` | nhật ký kiểm toán che thêm trường `jwt`, `cookie` |
 | WEB `fce78c52` | tiền tệ ngoài danh mục giữ đúng mã, phiếu chỉ xem; phiếu mới thiếu tiền tệ chặn lưu; công nợ xem trước theo tỷ giá header; tab **Tài khoản** ở hồ sơ nhân viên |
 | WEB `7d168744` | log WEB che mật khẩu / token / khoá / jwt / cookie; không in `Authorization` vào log |
-| `b9227aa` | **API bút toán tổng hợp** `integrations/logistics/journal-entries` (tạo + ghi sổ tạm, gỡ, đọc lại) + script `20261001_logistics_journal_entry.sql` (chưa áp) — 12.12.4 |
+| `b9227aa` | **API bút toán tổng hợp** `integrations/logistics/journal-entries` (tạo + ghi sổ tạm, gỡ, đọc lại) + script `20261001_logistics_journal_entry.sql` (đã áp DB demo 02/10; host chưa) — 12.12.4 |
 
 #### 12.9.1. Tạo SO — `LogisticsPushController`, `LogisticsPushValidator`, `sp_Logistics_CreateSalesOrder`
 
@@ -1244,7 +1244,7 @@ Token / mật khẩu là của anh — **cần quyền host**; chỉ đặt vào
 
 | Việc | Vì sao | Người làm |
 |---|---|---|
-| **Bút toán** cho thuê xe *Nợ 621 / Có 4022*, ghi nợ nhà cung cấp, quyết toán tạm ứng, hàng bán cho chủ xe | API **đã có** (`b9227aa`), đầu gửi đã có (`875a0cf`); **chưa chạy trên DB**: chờ áp script `20261001_logistics_journal_entry.sql` (12.12.4) | áp script DB demo: **chủ dự án**; host: **cần quyền host**; bật cờ + gọi thử: bên EPL |
+| **Bút toán** cho thuê xe *Nợ 621 / Có 4022*, ghi nợ nhà cung cấp, quyết toán tạm ứng, hàng bán cho chủ xe | API **đã có** (`b9227aa`), đầu gửi đã có (`875a0cf`); **đã chạy thật trên DB demo 02/10** (script `20261001_logistics_journal_entry.sql` đã áp; chứng từ thử `GL0210202xx`, gỡ sạch — 12.12.4) | host: **cần quyền host**; bật cờ ở máy dùng thật: chủ dự án quyết |
 | **Bật tiền USD** trong danh mục tiền tệ | USD có (mã 2) nhưng đang tắt nên `GetAllCurrency` không trả; SO vẫn tạo được, nhưng phiếu chi bằng USD cần mã tiền. Tạm thời đặt `QLSX_TIEN_USD=2` là chạy | **cần quyền host** |
 | **Token hết hạn khoảng 10/10** (12.11.4) | thay token mới trong `.env`, hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh; tài khoản tích hợp tạm gác, tuỳ chọn (12.12.3) | **cần quyền host** (token / mật khẩu của anh) |
 | Mở **1371, 4021, 4022** trên DB host | đã mở trên DB của API ở máy (12.12.1); host khác DB thì còn thiếu (12.12.2) | **cần quyền host** |
@@ -1340,11 +1340,11 @@ Các bước:
 
 #### 12.12.4. Bút toán không qua tiền — API bút toán tổng hợp bên anh (`b9227aa`) và đầu gửi bên em (`875a0cf`)
 
-**Trạng thái 01/10:**
+**Trạng thái 02/10:**
 - **API bên anh đã có** trong source: `GLS-QLSX-APIs` `feat/HonTunedaHai@b9227aa` (`LogisticsJournalEntryController`). Mô tả đầy đủ (khuôn ghi sổ, mã lỗi, bất biến): tài liệu của anh `PHIEU-THU-CHI-DEMOLAO-TONG-HOP.md` mục 16.9.
-- Script `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql` **chưa áp** vào DB demo: lệnh áp từ máy bên em bị bộ an toàn chặn, **chờ chủ dự án tự chạy**. Chưa có chứng từ nào ghi thật.
-- Cấu hình `LogisticsJournalEntry` **đã có** ở API chạy ở máy (`Enabled`, `AllowedUserIds` 846, `OrgId` 1368, `CountryId` 11). GET bút toán đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED` — đúng, vì chưa áp script.
-- **Đầu gửi bên em đã có**: `services/gui_but_toan_tune.py`, `services/but_toan_cho.py` (`a938301`, `875a0cf`). Cờ `QLSX_GUI_BUT_TOAN` **tắt**. `kiem/thu_gui_but_toan.py` chạy với máy giả theo đúng giao ước dưới đây (không gọi API thật).
+- Script `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql` **đã áp** vào DB demo (chủ dự án chạy, 02/10). **Đã chạy thật** qua máy thử trang điều xe với phiếu thử: thuê xe `GL021020263` / `GL021020264`; xuất kho — xe nhà `GL021020265` *Nợ 625 / Có 1371* 1.590.000 LAK, xe thuê `GL021020267` *Nợ 4022 / Có 707* 1.400.000 LAK (ObjectId chủ xe 1606) + *Nợ 607 / Có 1371* 1.272.000 LAK; ST 13. Mở khoá → gỡ sạch, GET trả 404 `JOURNAL_ENTRY_NOT_FOUND`; không còn chứng từ thử nào trên DB demo.
+- Cấu hình `LogisticsJournalEntry` **đã có** ở API chạy ở máy (`Enabled`, `AllowedUserIds` 846, `OrgId` 1368, `CountryId` 11).
+- **Đầu gửi bên em đã có**: `services/gui_but_toan_tune.py`, `services/but_toan_cho.py` (`a938301`, `875a0cf`). Cờ `QLSX_GUI_BUT_TOAN` bật trên máy thử lúc chạy lượt thật; máy dùng thật bật khi chủ dự án quyết. `kiem/thu_gui_but_toan.py`, `kiem/thu_but_toan_xuat_kho.py` chạy với máy giả theo đúng giao ước dưới đây (không gọi API thật).
 - Host `demo-lao-api`: chưa có code, script, cấu hình — **cần quyền host**.
 - Thứ tự bật: **áp script → cấu hình → bật cờ `QLSX_GUI_BUT_TOAN=1` → gọi thử** (lệnh và cách đọc kết quả: `HUONG_DAN_TRIEN_KHAI_ANH_TUNE` mục 4.6).
 
@@ -1357,13 +1357,15 @@ Các bước:
 | `tat_toan` | KT Chi phí VC chốt tất toán tài xế (`QT_TU`) | Nợ 625 / Có 1601, bằng số tài xế đã chi thật | `<tài xế>:<YYYY-MM>:<mã bản chốt>` | tài xế `EPLTX-…` | Kíp |
 | `ban_chu_xe` | phiếu chi trả chủ xe có trừ hàng quầy đã chi | Nợ 4022 / Có 707, theo giá bán; một phiếu bán một bút toán | mã phiếu bán (kho tạm) | chủ xe `EPLCX-…` | tiền phiếu bán; tỷ giá = Kíp quy đổi ÷ nguyên tệ |
 | `xuat_noi_bo` | khoá phiếu **xe nhà** có dầu kho (mục III, đã cấp theo phiếu đề nghị) / phụ tùng kho (mục V) đã rời kho | **Xuất nội bộ**: dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, mỗi dòng chi một dòng | `dau:<mã lần xuất>` · `pt:<mã lần xuất>` (dòng sổ kho bên kho tạm) — **một lần xuất một bút toán** | **trống** (hàng của mình, không ai nợ) | giá vốn = số lượng × giá bình quân của kho lúc xuất, Kíp |
-| `xuat_ban` | khoá phiếu **xe thuê, EPL ứng** có dầu / phụ tùng kho đã rời kho | **Xuất bán cho chủ xe**, hai dòng cho mỗi dòng chi: Nợ 4022 / Có 707 theo **giá bán** + Nợ 607 / Có 1371 theo **giá vốn** | như trên | dòng 4022/707: chủ xe `EPLCX-…`; dòng 607/1371: trống | giá bán = số trừ vào tiền trả chủ xe; giá vốn như trên; Kíp |
+| `xuat_ban` | khoá phiếu **xe thuê** có dầu / phụ tùng kho đã rời kho (lấy kho EPL cho xe thuê **luôn** là xuất bán) | **Xuất bán cho chủ xe**, hai dòng cho mỗi dòng chi: Nợ 4022 / Có 707 theo **giá bán** + Nợ 607 / Có 1371 theo **giá vốn** | như trên | dòng 4022/707: chủ xe `EPLCX-…`; dòng 607/1371: trống | giá bán = số trừ vào tiền trả chủ xe; giá vốn như trên; Kíp |
 
 **Xuất kho cho chuyến** (`xuat_noi_bo`, `xuat_ban` — chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán"):
 - Chỉ dòng **đã rời kho**: dầu kho thủ kho đã cấp theo phiếu đề nghị (lần cấp ở kho tạm), phụ tùng kho đã xuất lúc khai sự cố. Dòng kho còn trên phiếu mà chưa xuất thì chưa có bút toán.
-- **Xe thuê, chủ xe tự trả** (`paid_by_epl = false`): không có bút toán, kể cả khi phụ tùng đã rời kho.
-- **Giá vốn**: giá bình quân của đúng kho **lúc xuất**, do kho tạm tính (anh Khampla C5.3) và trả về lúc cấp dầu / xuất phụ tùng; trang điều xe ghi lên dòng chi (`unit_price`), sau đó không sửa được. **Giá bán**: KT kho xăng dầu gõ ở mục III, KT Chi phí gõ ở mục V; chưa gõ thì tiền trừ chủ xe tạm theo giá vốn và dòng 4022/707 ghi đúng số đó, kèm chữ "chưa có giá bán".
+- **Xe thuê: dầu / phụ tùng lấy kho EPL luôn là xuất bán** (chủ dự án 30/09, nhắc lại 02/10) — không có "chủ xe tự trả" (`paid_by_epl = false`) cho dòng kho: lập / sửa dòng, lấy phụ tùng kho như vậy → 422 `KHO_XE_THUE_XUAT_BAN`. Chủ xe trả tiền ngay thì đi **quầy bán hàng** (phiếu bán kho tạm → `ban_chu_xe`). Dòng cũ còn ghi "chủ xe tự trả": **khoá phiếu bị chặn** (409 `KHO_XE_THUE_XUAT_BAN`, câu chỉ cách sửa: bấm "EPL ứng", gõ giá bán) — không tự đổi, vì đổi là đổi số trừ tiền trả chủ xe mà không ai bấm.
+- **Giá vốn**: giá bình quân của đúng kho **lúc xuất**, do kho tạm tính (anh Khampla C5.3) và trả về lúc cấp dầu / xuất phụ tùng; trang điều xe ghi lên dòng chi (`unit_price`), sau đó không sửa được. **Giá bán**: KT kho xăng dầu gõ ở mục III, KT Chi phí gõ ở mục V; **chưa gõ thì không khoá được** (409 `THIEU_GIA_BAN`, câu nói mục nào, dòng nào, ai gõ — chủ dự án 02/10), kiểm mục cũng chặn như vậy.
 - **Ghi lúc khoá phiếu**, không lúc xuất: giá bán chỉ có sau khi kiểm mục (sau lúc xuất), còn tiền trả chủ xe tính từ phiếu đã khoá — ghi lúc khoá thì Có 707 đúng bằng số trừ vào tiền trả. Mở khoá / xoá phiếu thì huỷ hoặc gỡ cùng `thue_xe`, `no_ncc`.
+- **Sau khoá** (02/10): dòng kho và dòng ghi nợ nhà cung cấp đã vào bút toán khoá phiếu **đứng yên** — sửa giá bán, đơn giá, số lượng, ai trả, thêm / bỏ dòng, cấp thêm dầu hay lấy thêm phụ tùng kho → 409 `DA_KHOA`, kể cả KT kho xăng dầu, KT Chi phí và Sếp. Lưu lại đúng số cũ thì được. Muốn sửa: KT Thu/Chi mở khoá (bút toán huỷ / gỡ), sửa, khoá lại (ghi theo số mới).
+- Câu lỗi ba mã trên đủ ba tiếng (`loi`, `loi_lo`, `loi_en`); màn trang điều xe hiện theo tiếng đang xem.
 - **Không trùng `ban_chu_xe`**: `ban_chu_xe` là phiếu **bán ở quầy** của kho tạm, trừ riêng vào đề nghị trả (12.11.3); `xuat_ban` là dòng kho **trên phiếu xuất xe**, trừ qua "EPL đã ứng". Hai nguồn không bao giờ chung một khoản.
 - Dòng kho mang mã người dùng tự chọn có vế Có 4021 thì đã nằm trong `no_ncc` — không lặp ở đây.
 - Ghi chú dòng (`Note`) và diễn giải ghi rõ bằng chữ "Xuất nội bộ" / "Xuất bán cho chủ xe — doanh thu / giá vốn", số lượng, đơn giá, số DO, số phiếu đề nghị xuất kho.
@@ -1434,4 +1436,5 @@ Từ khi bật cờ: khoá phiếu, chốt tất toán, trả chủ xe có hàng
 - Phí 2 % và trừ quá tải xe thuê chưa có bút toán (anh Khampla chốt); `625/4201` chưa có nguồn (câu hỏi 10.10).
 - **Xuất kho cho chuyến** (`xuat_noi_bo`, `xuat_ban`): tờ kho `PXK_NL` / `PXK_PT` ở kho tạm (sau là hệ anh Toàn) cũng mang định khoản (xe thuê ghi 4022/1371 theo giá vốn — luật cũ). Hiện tờ đó **không** sang sổ anh; nếu sau này có đường đưa tờ kho vào sổ anh (câu hỏi 10.11) thì vế Có 1371 phải ghi ở **một** nơi — chờ anh Khampla / chủ dự án chọn.
 - Cấp dầu **lệch số duyệt** khi một tờ đề nghị gồm **nhiều dòng** cùng kho: dòng trên phiếu giữ số lít cũ (chỉ phiếu một dòng mới ghi theo số cấp thật), nên bút toán theo số lít trên phiếu — đúng số trừ chủ xe, có thể lệch số lít kho tạm đã xuất.
-- Phụ tùng kho khai với "chủ xe tự trả" vẫn rời kho nhưng không có bút toán (theo bảng chốt 01/10) — giá vốn phần đó chưa ghi ở đâu; cần chủ dự án xác nhận.
+- Tiền thuê xe (`thue_xe`: giá thuê, phí, ngưỡng tấn) sửa **sau khoá** chưa chặn như dòng kho / ghi nợ — cùng một lỗ hổng, chờ chủ dự án quyết có chặn không.
+- Dầu kho xe thuê **chưa cấp** lúc khoá vẫn bị trừ vào tiền trả chủ xe (theo giá bán) nhưng chưa có bút toán xuất kho (dầu chưa rời kho) — khoá phiếu chưa chặn trường hợp này.

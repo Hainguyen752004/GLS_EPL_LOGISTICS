@@ -259,7 +259,11 @@
         const caSel = !caDuoc ? '' : `<div><select class="px-ca" data-i="${i}" data-f="pay_channel" ${khoaDuoc ? '' : 'disabled'} style="margin-top:4px">${
           [['tien_mat', 'pm_on_dispatch'], ['luong', 'pm_trip_salary'], ['ncc', 'pm_supplier']].filter(([v]) => !(lk && v === 'luong')).map(([v, k]) => `<option value="${v}" ${v === caEff ? 'selected' : ''}>${esc(NN.t(k))}</option>`).join('')}</select></div>`;
         // .px-xuat: chữ ẩn cho Excel — xuat.js bỏ qua nút bấm, không có dòng này thì cột "Ai chi", "Mã kế toán" ra trống (01/10)
-        const pay = `<td class="px-lk"><span class="px-xuat" aria-hidden="true">${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</span><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
+        // Xe thuê: dầu / phụ tùng LẤY KHO EPL luôn là xuất bán cho chủ xe (chủ dự án 30/09, nhắc lại 02/10) — không chọn được
+        // "chủ xe tự trả" (máy chủ cũng chặn); dòng cũ còn ghi vậy thì người gõ giá bán (KT kho xăng dầu / KT Chi phí) bấm "EPL ứng"
+        const khoXeThue = lk && (m === 'fuel' ? nguonCuaDiem(d) === 'kho' : m === 'repair' && d.source === 'kho');
+        const eplDuoc = khoaDuoc || (khoXeThue && !d.paid_by_epl && suaTienDuoc(m));
+        const pay = `<td class="px-lk"><span class="px-xuat" aria-hidden="true">${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</span><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${eplDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc && !khoXeThue ? '' : 'disabled'}${khoXeThue ? ` title="${esc(NN.t('pay_kho_xe_thue'))}"` : ''}>${esc(NN.t('pay_own'))}</button></span></td>`;
         const tkd = tkDong(d);
         const acct = `<td class="px-gia">${tkd ? `<span class="px-xuat" aria-hidden="true">${esc(tkd)}</span>` : ''}<button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd && guiMuc(m) ? '' : 'disabled'} title="${esc(tkd ? tkTen(tkd) : NN.t('pay_own'))}">${esc(tkd || '—')}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
@@ -306,7 +310,7 @@
         if (P.company === 'joint') d.paid_by_epl = d.source === 'kho';
         d.acct_code = null; veChi();
       }
-      if (f === 'source') { if (el.value !== 'kho') d.part_id = null; d.acct_code = null; veChi(); }
+      if (f === 'source') { if (el.value !== 'kho') d.part_id = null; else if (P.company === 'joint') d.paid_by_epl = true; d.acct_code = null; veChi(); }
       if (f === 'part_id') { const p = DM.parts.find(x => x.id === el.value); if (p) { d.item_key = null; d.item_name = p.name; if (thayGiaKho()) d.unit_price = p.unit_price || 0; else delete d.unit_price; } veChi(); }
       veSo();
     }));

@@ -432,7 +432,9 @@ def dong_xuat_kho(db, p, cac_dong=None):
     for d in cac_dong:
         if d.section not in ("fuel", "repair") or d.source != "kho" or not d.stock_move_id:
             continue
-        if d.paid_by_epl is False or (d.qty or 0) <= 0:     # xe thuê chủ xe tự trả: không phải tiền của EPL
+        # "chủ xe tự trả": không phải tiền của EPL. Từ 02/10 dòng kho xe thuê không được ghi vậy (chan_xuat_ban chặn khoá) —
+        # điều kiện này chỉ còn giữ phòng dữ liệu cũ
+        if d.paid_by_epl is False or (d.qty or 0) <= 0:
             continue
         nhom.setdefault(("dau" if d.section == "fuel" else "pt", d.stock_move_id), []).append(d)
     ra = {}
@@ -524,3 +526,153 @@ def huy_khoa_phieu(db, p, by_user=None):
         if r.status != "huy":                       # cho_gui → huy · da_gui → gỡ bên kế toán (chưa được thì chờ đảo)
             ra.append(huy(db, r.nguon, r.ma_nguon, by_user))
     return ra
+
+
+# ================================================================ LUẬT DÒNG KHO XE THUÊ · KHOÁ PHIẾU (chủ dự án 02/10)
+# 1. Dầu / phụ tùng LẤY TỪ KHO EPL cho xe thuê LUÔN là xuất bán cho chủ xe (chốt 30/09, nhắc lại 02/10): không có "chủ xe tự
+#    trả". Chủ xe trả tiền ngay thì đi quầy bán hàng (phiếu bán ở kho tạm → ban_chu_xe).
+# 2. Khoá phiếu bị chặn khi còn dòng xuất bán chưa có giá bán (THIEU_GIA_BAN), hoặc dòng cũ ghi "chủ xe tự trả"
+#    (KHO_XE_THUE_XUAT_BAN — chặn chứ không tự đổi: đổi lặng lẽ là đổi số trừ tiền trả chủ xe mà không ai bấm).
+# 3. Sau khoá, các dòng đã vào bút toán khoá phiếu (dòng kho, dòng ghi nợ nhà cung cấp) đứng yên: sửa → 409 DA_KHOA.
+# Câu lỗi đủ ba tiếng: `loi` (Việt), `loi_lo`, `loi_en` — giao diện (js/chung.js API.goi) hiện theo tiếng đang xem.
+_MUC = {"fuel": ("III", "dầu", "ນໍ້າມັນ", "fuel"), "repair": ("V", "phụ tùng", "ອາໄຫຼ່", "part")}
+_NGUOI_GIA_BAN = {"fuel": ("KT kho xăng dầu", "ບັນຊີສາງນໍ້າມັນ", "the fuel store accountant"),
+                  "repair": ("KT Chi phí", "ບັນຊີລາຍຈ່າຍ", "the cost accountant")}
+
+
+def loi3(http, ma, vi, lo, en, **them):
+    """HTTPException với câu lỗi đủ ba tiếng (Việt · Lào · Anh)."""
+    from fastapi import HTTPException
+    return HTTPException(http, dict({"ma": ma, "loi": vi, "loi_lo": lo, "loi_en": en}, **them))
+
+
+def _vi_tri(d, cac_dong):
+    """("mục III dòng 2", "ໜ້າ III ແຖວ 2", "section III line 2") — dòng thứ mấy TRONG MỤC, như màn phiếu đánh số."""
+    cung = [x for x in cac_dong if x.section == d.section]
+    i = next((k for k, x in enumerate(cung, 1) if x is d or (x.id and x.id == d.id)), None) or d.line_no or len(cung) + 1
+    m = {"fuel": "III", "travel": "IV", "repair": "V", "other": "VI"}.get(d.section, d.section)
+    return "mục %s dòng %d" % (m, i), "ໜ້າ %s ແຖວ %d" % (m, i), "section %s line %d" % (m, i)
+
+
+def _noi(ds, k):
+    return ", ".join(x[k] for x in ds)
+
+
+def chan_kho_xe_thue_tu_tra(p, d, cac_dong=()):
+    """Lập / sửa dòng: dòng kho (dầu mục III, phụ tùng mục V) của xe thuê mà ghi "chủ xe tự trả" → 422 KHO_XE_THUE_XUAT_BAN."""
+    from services.tinh_toan import la_xuat_ban
+    if not la_xuat_ban(p, d) or d.paid_by_epl is not False:
+        return
+    m, vi, lo, en = _MUC.get(d.section, ("", "hàng", "ສິນຄ້າ", "goods"))
+    vt = _vi_tri(d, list(cac_dong) or [d])
+    raise loi3(422, "KHO_XE_THUE_XUAT_BAN",
+               "Xe thuê: %s lấy từ kho EPL (%s) luôn là xuất bán cho chủ xe — không chọn «Chủ xe tự trả» được. Chủ xe trả tiền ngay "
+               "thì lập phiếu bán ở quầy (kho tạm)." % (vi, vt[0]),
+               "ລົດເຊົ່າ: %s ທີ່ເບີກຈາກສາງ EPL (%s) ແມ່ນຂາຍໃຫ້ເຈົ້າຂອງລົດສະເໝີ — ເລືອກ «ເຈົ້າຂອງລົດຈ່າຍເອງ» ບໍ່ໄດ້. ຖ້າເຈົ້າຂອງລົດ"
+               "ຈ່າຍເງິນທັນທີ ໃຫ້ອອກໃບຂາຍຢູ່ໜ້າຮ້ານ (ສາງຊົ່ວຄາວ)." % (lo, vt[1]),
+               "Hired truck: %s taken from the EPL store (%s) is always sold to the truck owner — «Owner pays» is not allowed. If "
+               "the owner pays on the spot, make a counter sale (temporary store)." % (en, vt[2]),
+               trip_id=p.id, expense_id=d.id)
+
+
+def chan_xuat_ban(p, cac_dong, muc=None, luc="khoa"):
+    """Dòng xuất bán (xe thuê, dầu / phụ tùng lấy kho, số lượng > 0) của phiếu — hoặc của một mục `muc` — phải là EPL ứng và có
+    giá bán. `luc`: "khoa" (khoá phiếu, 409) · "kiem" (kiểm mục, 409). Dòng cũ ghi "chủ xe tự trả" → KHO_XE_THUE_XUAT_BAN
+    (chặn, kèm cách sửa); thiếu giá bán → THIEU_GIA_BAN (nói mục nào, ai gõ)."""
+    from services.tinh_toan import la_xuat_ban
+    ds = [d for d in cac_dong if la_xuat_ban(p, d) and (muc is None or d.section == muc) and (d.qty or 0) > 0]
+    tu_tra = [_vi_tri(d, cac_dong) for d in ds if d.paid_by_epl is False]
+    if tu_tra:
+        raise loi3(409, "KHO_XE_THUE_XUAT_BAN",
+                   "Phiếu %s: %s lấy từ kho EPL cho xe thuê đang ghi «Chủ xe tự trả» — hàng lấy kho EPL cho xe thuê luôn là xuất bán "
+                   "cho chủ xe. Bấm «EPL ứng» cho dòng đó (người nhập mục, hoặc KT kho xăng dầu mục III / KT Chi phí mục V khi gõ giá "
+                   "bán), gõ giá bán, rồi %s lại. Chủ xe đã trả tiền ngay thì bỏ dòng, lập phiếu bán ở quầy." % (
+                       p.doc_no, _noi(tu_tra, 0), "khoá" if luc == "khoa" else "kiểm"),
+                   "ໃບ %s: %s ທີ່ເບີກຈາກສາງ EPL ໃຫ້ລົດເຊົ່າ ຍັງເປັນ «ເຈົ້າຂອງລົດຈ່າຍເອງ» — ສິນຄ້າເບີກສາງ EPL ໃຫ້ລົດເຊົ່າ ແມ່ນຂາຍໃຫ້"
+                   "ເຈົ້າຂອງລົດສະເໝີ. ກົດ «EPL ອອກກ່ອນ» ໃຫ້ແຖວນັ້ນ (ຜູ້ປ້ອນໜ້າ, ຫຼື ບັນຊີສາງນໍ້າມັນ ໜ້າ III / ບັນຊີລາຍຈ່າຍ ໜ້າ V ຕອນປ້ອນ"
+                   "ລາຄາຂາຍ), ປ້ອນລາຄາຂາຍ, ແລ້ວ%sຄືນ. ຖ້າເຈົ້າຂອງລົດຈ່າຍເງິນທັນທີແລ້ວ ໃຫ້ລຶບແຖວ ແລະ ອອກໃບຂາຍຢູ່ໜ້າຮ້ານ." % (
+                       p.doc_no, _noi(tu_tra, 1), "ລັອກ" if luc == "khoa" else "ກວດ"),
+                   "Slip %s: %s taken from the EPL store for a hired truck is still marked «Owner pays» — goods from the EPL store "
+                   "for a hired truck are always sold to the owner. Click «EPL advance» on that line (the person entering the "
+                   "section, or the fuel store accountant for III / the cost accountant for V when entering the sale price), enter "
+                   "the sale price, then %s again. If the owner already paid on the spot, delete the line and make a counter "
+                   "sale." % (p.doc_no, _noi(tu_tra, 2), "lock" if luc == "khoa" else "verify"),
+                   trip_id=p.id)
+    thieu = {}
+    for d in ds:
+        if not (d.sale_price or 0) > 0:
+            thieu.setdefault(d.section, []).append(_vi_tri(d, cac_dong))
+    if not thieu:
+        return
+    phan = [(_noi(v, 0) + " (%s): %s gõ giá bán" % (_MUC[m][1], _NGUOI_GIA_BAN[m][0]),
+             _noi(v, 1) + " (%s): %s ປ້ອນລາຄາຂາຍ" % (_MUC[m][2], _NGUOI_GIA_BAN[m][1]),
+             _noi(v, 2) + " (%s): %s enters the sale price" % (_MUC[m][3], _NGUOI_GIA_BAN[m][2]))
+            for m, v in sorted(thieu.items(), key=lambda kv: kv[0] != "fuel")]
+    raise loi3(409, "THIEU_GIA_BAN",
+               "Phiếu %s chưa %s được: xe thuê lấy hàng kho EPL là xuất bán cho chủ xe %s mà chưa có giá bán — %s. Gõ giá bán rồi %s "
+               "lại." % (p.doc_no, "khoá" if luc == "khoa" else "kiểm", p.owner_name or "", "; ".join(x[0] for x in phan),
+                         "khoá" if luc == "khoa" else "kiểm"),
+               "ໃບ %s ຍັງ%sບໍ່ໄດ້: ລົດເຊົ່າເບີກສິນຄ້າຈາກສາງ EPL ແມ່ນຂາຍໃຫ້ເຈົ້າຂອງລົດ %s ແຕ່ຍັງບໍ່ມີລາຄາຂາຍ — %s. ປ້ອນລາຄາຂາຍແລ້ວ%s"
+               "ຄືນ." % (p.doc_no, "ລັອກ" if luc == "khoa" else "ກວດ", p.owner_name or "", "; ".join(x[1] for x in phan),
+                         "ລັອກ" if luc == "khoa" else "ກວດ"),
+               "Slip %s cannot be %s yet: goods from the EPL store for a hired truck are sold to the owner %s but have no sale "
+               "price — %s. Enter the sale price, then %s again." % (
+                   p.doc_no, "locked" if luc == "khoa" else "verified", p.owner_name or "", "; ".join(x[2] for x in phan),
+                   "lock" if luc == "khoa" else "verify"),
+               trip_id=p.id, muc=sorted(thieu))
+
+
+def dau_khoa(db, p):
+    """Dấu của những gì bút toán KHOÁ PHIẾU đã ghi theo (chỉ khi phiếu đang khoá; không khoá → None): mỗi dòng kho (nguồn,
+    lần xuất, số lượng, giá vốn, giá bán, tiền tệ, ai trả), mỗi dòng ghi nợ nhà cung cấp (định khoản, tiền, nhà cung cấp) và
+    từng dòng bút toán xuất kho. Không theo mã dòng: Sếp lưu lại một mục thì dòng chưa xuất kho được tạo lại mã mới mà số
+    không đổi — không phải là sửa. → [(khoá so sánh, (tên vi, lo, en) | None)]"""
+    if p is None or not p.locked:
+        return None
+    from models import TripExpense
+    dong = (db.query(TripExpense).filter(TripExpense.trip_id == p.id)
+            .order_by(TripExpense.section, TripExpense.line_no).all())
+    ra = []
+    for d in dong:
+        if d.section in ("fuel", "repair") and d.source == "kho":
+            ra.append((("kho", d.section, d.stock_move_id or "", d.part_id or "", d.place_id or "", float(d.qty or 0),
+                        float(d.unit_price or 0), None if d.sale_price is None else float(d.sale_price),
+                        (d.currency or "LAK").upper(), d.paid_by_epl is not False), _vi_tri(d, dong)))
+    theo_id = {d.id: d for d in dong}
+    for x in dong_khoa_phieu(db, p, dong).get(NO_NCC, ([], None))[0]:
+        d = theo_id.get(x.get("ref"))
+        ra.append((("ncc", x.get("section"), x["no"], x["co"], x["tien"], (x.get("doi_tuong") or {}).get("ref_id")),
+                   _vi_tri(d, dong) if d is not None else None))
+    for (n, m), (_, ds, _) in dong_xuat_kho(db, p, dong).items():
+        for x in ds:
+            ra.append(((n, m, x["no"], x["co"], x["tien"]), None))
+    return ra
+
+
+def chan_sua_sau_khoa(db, p, truoc):
+    """Phiếu đang khoá: so dấu trước (dau_khoa lúc vào việc) với sau (đã áp thay đổi, chưa commit). Lệch → 409 DA_KHOA, nói dòng
+    nào — người gọi không commit (route ném lỗi → phiên huỷ; trong GiaoDichKho thì lần xuất bên kho tạm được trả lại)."""
+    if truoc is None:
+        return
+    from collections import Counter
+    db.flush()
+    sau = dau_khoa(db, p) or []
+    a, b = Counter(k for k, _ in truoc), Counter(k for k, _ in sau)
+    if a == b:
+        return
+    lech = set((a - b) | (b - a))
+    ten = []
+    for k, t in list(truoc) + list(sau):
+        if k in lech and t and t not in ten:
+            ten.append(t)
+    ds = ten or [("các dòng xuất kho", "ແຖວເບີກສາງ", "the store-issue lines")]
+    raise loi3(409, "DA_KHOA",
+               "Phiếu %s đã khoá — %s đã vào bút toán khoá phiếu (xuất kho / ghi nợ nhà cung cấp): không sửa giá bán, đơn giá, số "
+               "lượng, ai trả, không thêm / bỏ dòng, không cấp / xuất thêm được. KT Thu/Chi mở khoá phiếu rồi mới sửa." % (
+                   p.doc_no, _noi(ds, 0)),
+               "ໃບ %s ລັອກແລ້ວ — %s ລົງບັນຊີຕອນລັອກໃບແລ້ວ (ເບີກສາງ / ໜີ້ຜູ້ສະໜອງ): ແກ້ລາຄາຂາຍ, ລາຄາ, ຈຳນວນ, ຜູ້ຈ່າຍ, ເພີ່ມ / ລຶບແຖວ, "
+               "ເບີກເພີ່ມ ບໍ່ໄດ້. ບັນຊີລາຍຈ່າຍ/ຮັບ ປົດລັອກໃບກ່ອນ ຈຶ່ງແກ້ໄດ້." % (p.doc_no, _noi(ds, 1)),
+               "Slip %s is locked — %s went into the lock-time journal entries (store issue / supplier payable): the sale price, "
+               "unit price, quantity and payer cannot change, lines cannot be added or removed, nothing more can be issued. The "
+               "receipts & payments accountant must unlock the slip first." % (p.doc_no, _noi(ds, 2)),
+               trip_id=p.id)

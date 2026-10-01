@@ -28,7 +28,7 @@ Mọi thay đổi bên em làm trên source của anh: **mục 8** (từng commi
 - Mọi việc tiền chỉ ở hệ anh. Số tiền trên KT tạm là **số thử, bỏ hết**.
 - **Cắt sổ 01/10:** mọi DO đã khoá gửi SO sang hệ anh **từ đầu**. Không còn luật chặn DO đã có hoá đơn / đã thu ở KT tạm (`DA_HOA_DON_TRANG_TAM` đã bỏ).
 - **Khoản đi qua tiền** thành **phiếu chi / phiếu thu bên anh** (A4, A7 – A10). Thủ quỹ bên anh chi / thu và ghi sổ; LAO đọc lại.
-- **Khoản không qua tiền** thành **bút toán chờ gửi** ở LAO (mục 1.6). Gửi sang hệ anh thành **chứng từ tổng hợp** qua API bút toán (A11, mục 1.7) — API đã viết, **chưa áp script DB**, cờ gửi bên em đang **tắt**.
+- **Khoản không qua tiền** thành **bút toán chờ gửi** ở LAO (mục 1.6). Gửi sang hệ anh thành **chứng từ tổng hợp** qua API bút toán (A11, mục 1.7) — API đã viết, **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); host chưa áp; cờ gửi bên em chỉ bật trên máy thử.
 
 ---
 
@@ -48,7 +48,7 @@ Mọi thay đổi bên em làm trên source của anh: **mục 8** (từng commi
 | A8 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **chi mục V – VI**: dòng quỹ trả ngay, định khoản theo tờ `PC_SC` | **chạy** ở máy |
 | A9 | `save-and-commit` (CMP "Chi khác" 60 / CMR "Thu khác" 17) | **tất toán tài xế**: chi bù TT_CHI / thu hoàn TT_THU, đứng tên tài xế `EPLTX-` | **chạy** ở máy |
 | A10 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **trả nhà cung cấp**: Nợ 4021 / Có tiền, đứng tên nhà cung cấp `EPLNCC-` | **chạy** ở máy |
-| A11 | `POST /api/v1/integrations/logistics/journal-entries` · `POST …/reverse` · `GET …/{SourceRef}` | **bút toán chờ gửi** (không qua tiền): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, xuất kho cho chuyến (xe nhà 625 · 614 / 1371; xe thuê 4022/707 + 607/1371) → chứng từ tổng hợp DOTY 12, ghi sổ tạm (ST 13) bên anh | API **đã viết** (`b9227aa`), cấu hình đã có trên API ở máy, **chưa áp script DB** (gọi đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`); bên em gửi được (`875a0cf`) nhưng cờ `QLSX_GUI_BUT_TOAN` **tắt** → bút toán vẫn nằm ở LAO (mục 1.7) |
+| A11 | `POST /api/v1/integrations/logistics/journal-entries` · `POST …/reverse` · `GET …/{SourceRef}` | **bút toán chờ gửi** (không qua tiền): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, xuất kho cho chuyến (xe nhà 625 · 614 / 1371; xe thuê 4022/707 + 607/1371) → chứng từ tổng hợp DOTY 12, ghi sổ tạm (ST 13) bên anh | API **đã viết** (`b9227aa`), cấu hình đã có trên API ở máy, **đã chạy thật trên DB demo 02/10** (chủ dự án áp script; phiếu thử qua máy thử trang điều xe: thuê xe `GL021020263` / `GL021020264`, xuất kho `GL021020265` · `GL021020267`, ST 13; mở khoá gỡ sạch, GET 404); host chưa áp; cờ `QLSX_GUI_BUT_TOAN` chỉ bật trên máy thử — máy chưa bật thì bút toán nằm ở LAO (mục 1.7) |
 | — | `POST …/cmpayment-receipt/list` · `GET …/{id}` · `POST …/delete` | chống trùng, đọc trạng thái, rút phiếu chưa ghi sổ — dùng chung cho A4, A7 – A10 | **chạy** |
 
 ### 0.2. Hệ anh gọi sang LAO
@@ -105,7 +105,7 @@ Chi tiết từng commit: mục 8. "DB" = có đổi thủ tục / bảng / dữ
 | API | `ae0e7f6` | **máy chủ tính quy đổi từng dòng** trước khi cộng tổng header | giá trị `ET_BASEAMOUNT` do máy chủ tính | A4, A7 – A10 (trả chủ xe ngoại tệ) |
 | API | `e2ef52f` | script che bí mật trong dòng audit **cũ** | script `UPDATE` dữ liệu audit — **chưa chạy** | triển khai |
 | API | `0d4eed9` | che thêm trường `jwt` / `cookie` trong audit | như `ed5aa0e` | mọi lời gọi |
-| API | `b9227aa` | **API bút toán tổng hợp** `integrations/logistics/journal-entries` | script tạo 3 thủ tục mới — **chưa áp** | A11 — bước 7, mở khoá, 11, 12 |
+| API | `b9227aa` | **API bút toán tổng hợp** `integrations/logistics/journal-entries` | script tạo 3 thủ tục mới — **đã áp DB demo 02/10**, host chưa | A11 — bước 7, mở khoá, 11, 12 |
 | WEB | `f382a9e8` | modal Vụ việc: thoát ký tự, hiện số phiếu / xe / tài xế, tỷ giá đọc xuôi | không | B1/B2 trên màn phiếu thu / chi |
 | WEB | `06a14189` | phiếu thu / chi: `isCash` theo hình thức thanh toán, tài khoản tiền mặc định, tổng xem trước, phân loại theo DOTY | không | thủ quỹ mở / sửa phiếu (A4, A7 – A10) |
 | WEB | `7e14421c` | đổi hình thức / nội tệ / loại tiền thì vế tiền các dòng đổi theo; đổi quốc gia chặn trước khi nạp | không | như trên |
@@ -326,9 +326,9 @@ Khoản sổ phải ghi mà không đi qua tiền, LAO giữ ở bảng `but_toa
 | `tat_toan` | **chốt tất toán** tài xế — KT Chi phí VC (`expacct`) hoặc Sếp, `POST /api/tat-toan` | quyết toán `QT_TU` Nợ 625 / Có 1601, bằng số tài xế đã chi thật | tài xế `EPLTX-` | ngày cuối kỳ |
 | `ban_chu_xe` | thủ quỹ bên anh **đã chi** phiếu trả chủ xe có trừ hàng quầy — LAO đọc `STATUS` 12/13 | Nợ 4022 / Có 707, theo giá bán; một phiếu bán một bút toán | chủ xe `EPLCX-` | ngày bán |
 | `xuat_noi_bo` | **khoá phiếu xe nhà** có dầu kho / phụ tùng kho đã rời kho — như `thue_xe` | **Xuất nội bộ**: dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, theo **giá vốn bình quân kho lúc xuất**; một lần xuất một bút toán | trống | ngày xuất thật (cấp dầu / lấy phụ tùng) |
-| `xuat_ban` | **khoá phiếu xe thuê** (EPL ứng) có dầu kho / phụ tùng kho đã rời kho — như trên | **Xuất bán cho chủ xe**: Nợ 4022 / Có 707 theo **giá bán** (đúng số trừ tiền trả chủ xe) + Nợ 607 / Có 1371 theo **giá vốn**; một lần xuất một bút toán | dòng 4022/707: chủ xe `EPLCX-`; dòng 607/1371: trống | ngày xuất thật |
+| `xuat_ban` | **khoá phiếu xe thuê** có dầu kho / phụ tùng kho đã rời kho (lấy kho EPL cho xe thuê luôn là xuất bán) — như trên | **Xuất bán cho chủ xe**: Nợ 4022 / Có 707 theo **giá bán** (đúng số trừ tiền trả chủ xe) + Nợ 607 / Có 1371 theo **giá vốn**; một lần xuất một bút toán | dòng 4022/707: chủ xe `EPLCX-`; dòng 607/1371: trống | ngày xuất thật |
 
-- Khoá chống trùng (nguồn, mã nguồn); mã nguồn: `thue_xe` / `no_ncc` = `Trip.id`; `tat_toan` = `<tài xế>:<kỳ>:<mã bản chốt>`; `ban_chu_xe` = mã phiếu bán kho tạm; `xuat_noi_bo` / `xuat_ban` = `dau:<mã lần xuất>` · `pt:<mã lần xuất>` (dòng sổ kho bên kho tạm, `TripExpense.stock_move_id`). Xe thuê chủ xe tự trả: không có bút toán xuất kho. `xuat_ban` (dòng kho trên phiếu xuất xe, trừ qua "EPL đã ứng") khác `ban_chu_xe` (phiếu bán ở quầy, trừ riêng) — không chung khoản nào.
+- Khoá chống trùng (nguồn, mã nguồn); mã nguồn: `thue_xe` / `no_ncc` = `Trip.id`; `tat_toan` = `<tài xế>:<kỳ>:<mã bản chốt>`; `ban_chu_xe` = mã phiếu bán kho tạm; `xuat_noi_bo` / `xuat_ban` = `dau:<mã lần xuất>` · `pt:<mã lần xuất>` (dòng sổ kho bên kho tạm, `TripExpense.stock_move_id`). Xe thuê: dầu / phụ tùng **lấy kho EPL luôn là xuất bán** (chủ dự án 30/09, nhắc lại 02/10) — dòng kho không được "chủ xe tự trả" (lập / sửa → 422 `KHO_XE_THUE_XUAT_BAN`; chủ xe trả ngay thì đi quầy bán hàng); **khoá phiếu bị chặn** khi còn dòng xuất bán chưa có giá bán (409 `THIEU_GIA_BAN`, nói mục, ai gõ) hoặc dòng cũ ghi "chủ xe tự trả" (409 `KHO_XE_THUE_XUAT_BAN`, chỉ cách sửa). **Sau khoá** dòng kho và dòng ghi nợ nhà cung cấp đứng yên: sửa → 409 `DA_KHOA` (kể cả Sếp), mở khoá rồi mới sửa. Ba câu lỗi đủ ba tiếng (`loi`, `loi_lo`, `loi_en`). `xuat_ban` (dòng kho trên phiếu xuất xe, trừ qua "EPL đã ứng") khác `ban_chu_xe` (phiếu bán ở quầy, trừ riêng) — không chung khoản nào.
 - **Mã gửi đi** `source_ref` = `EPLLAO-<nguồn>-<mã nguồn>`; bản đã đảo mà nguồn ghi lại (mở khoá rồi khoá lại) thì thêm `-2`, `-3`… (cột `phien`), không đụng chứng từ đã đảo.
 - Trạng thái: `cho_gui` · `da_gui` (có số chứng từ bên anh) · `huy`; cờ `can_dao` = đã gửi mà nguồn bị huỷ, chờ gỡ bên anh.
 - Nguồn bị huỷ:
@@ -342,13 +342,13 @@ Khoản sổ phải ghi mà không đi qua tiền, LAO giữ ở bảng `but_toa
 
 #### 1.7.1. Trạng thái và việc cần để bật
 
-| | Trạng thái 01/10 |
+| | Trạng thái 02/10 |
 |---|---|
 | API bên anh | **đã viết**, nhánh `feat/HonTunedaHai@b9227aa`; build 0 lỗi; 82 kiểm unit-level với repository giả; script parse cú pháp 0 lỗi |
-| Script DB `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql` | **chưa áp vào DB nào**. Lần áp từ máy em bị bộ an toàn chặn; **chờ chủ dự án tự chạy** trên DB demo (DB của API ở máy) |
+| Script DB `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql` | **đã áp vào DB demo** (DB của API ở máy) — chủ dự án chạy 02/10. Host: chưa (**cần quyền host**) |
 | Cấu hình API `LogisticsJournalEntry` | **API ở máy: đã có** trong `appsettings.laos.json` (`Enabled: true`, `AllowedUserIds: [846]`, `OrgId: 1368`, `CountryId: 11`). Host: chưa (**cần quyền host**) |
-| Gọi thử lúc này | API ở máy: `GET …/journal-entries/{SourceRef}` trả **503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`** — đúng, vì script chưa áp |
-| Bên em gửi | `services/gui_but_toan_tune.py` (`a938301`, khớp giao ước ở `875a0cf`); cờ `QLSX_GUI_BUT_TOAN` trong `.env` máy chủ trang điều xe **đang tắt** (mặc định tắt) |
+| Gọi thật 02/10 | qua máy thử trang điều xe, phiếu thử: thuê xe `GL021020263` / `GL021020264`; xuất kho xe nhà `GL021020265` *Nợ 625 / Có 1371* 1.590.000 LAK; xe thuê `GL021020267` *Nợ 4022 / Có 707* 1.400.000 LAK (ObjectId chủ xe 1606) + *Nợ 607 / Có 1371* 1.272.000 LAK; ST 13. Mở khoá → gỡ sạch, GET 404 `JOURNAL_ENTRY_NOT_FOUND` |
+| Bên em gửi | `services/gui_but_toan_tune.py` (`a938301`, khớp giao ước ở `875a0cf`); cờ `QLSX_GUI_BUT_TOAN` mặc định tắt; bật trên máy thử lúc chạy lượt thật, máy dùng thật bật khi chủ dự án quyết |
 
 Bật theo thứ tự (bước 1 – 4 trên DB demo / API ở máy trước, host sau — **cần quyền host**). Trên API ở máy, bước 3 đã xong; còn bước 1, 2, 4, 5:
 
@@ -443,7 +443,7 @@ Lỗi bên anh trả trong phong bì `{Success:false, Code, Message, Result:null
 | 409 `LOGISTICS_JOURNAL_52511` | giữ lỗi, đối soát |
 | 401 | bỏ token đang nhớ, lần sau đăng nhập lại (`QLSX_TOKEN_HET_HAN`) |
 | 403 · `LOGISTICS_JOURNAL_FORBIDDEN` | `KHONG_DUOC_PHEP`: thêm `UserId` vào `AllowedUserIds`; Gửi hết dừng |
-| 503 `LOGISTICS_JOURNAL_DISABLED` · `_CONFIG_REQUIRED` · `_SCRIPT_REQUIRED` (bên anh chưa bật / chưa áp script — **đang gặp lúc này**) | `BEN_DO_CHUA_BAT`: bản giữ `cho_gui`, Gửi hết dừng ngay; bật xong bấm Gửi hết |
+| 503 `LOGISTICS_JOURNAL_DISABLED` · `_CONFIG_REQUIRED` · `_SCRIPT_REQUIRED` (bên anh chưa bật / chưa áp script — host hiện như vậy) | `BEN_DO_CHUA_BAT`: bản giữ `cho_gui`, Gửi hết dừng ngay; bật xong bấm Gửi hết |
 | mất mạng · hết giờ · 5xx khác (`52510` đang xử lý, `_DATABASE_ERROR`), hoặc HTTP 200 kèm `Success:false`, `Code` 500 | kết quả **chưa rõ** (`KHONG_GOI_DUOC` / `HTTP_5XX`): lần sau **hỏi lại** `GET …/{SourceRef}` trước; bên anh có rồi thì nhận số đó, chưa có thì gửi lại cùng SourceRef |
 | 404 ở POST | `KHONG_CO_DUONG`: API chưa có bản mới; Gửi hết dừng |
 | GET 404 kèm `ErrorCode = JOURNAL_ENTRY_NOT_FOUND` | bên anh **chưa có** chứng từ → gửi. GET 404 không kèm mã đó = chưa có đường, không coi là "không có" |
@@ -463,7 +463,7 @@ Gỡ (`POST …/reverse {SourceRef}`):
 
 #### 1.7.6. Chỗ còn phải để ý
 
-- **Chưa chạy trên DB thật lần nào.** Mọi kiểm bên anh là unit-level với repository giả; bên em kiểm `kiem/thu_gui_but_toan.py` với máy giả trả đúng giao ước (201, ST 13, `ErrorDetail`, 409 `52512`, gỡ lần hai, mất phản hồi, xếp lỗi theo mã thật — 36/36). Lần chạy thật đầu tiên sau khi áp script: đối chiếu sổ cái, kỳ, số chứng từ.
+- **Đã chạy thật trên DB demo 02/10** (số chứng từ ở bảng trạng thái 1.7.1), gỡ sạch sau khi thử. Trước đó bên em kiểm `kiem/thu_gui_but_toan.py`, `kiem/thu_but_toan_xuat_kho.py` với máy giả trả đúng giao ước (201, ST 13, `ErrorDetail`, 409 `52512`, gỡ lần hai, mất phản hồi, xếp lỗi theo mã thật). Host: lần chạy thật đầu tiên sau khi áp script — đối chiếu sổ cái, kỳ, số chứng từ.
 - **D4**: nếu `PUBENTRY.OBJ_AUTOID` không cho NULL thì dòng `no_ncc` không có nhà cung cấp (và không phải xe thuê) bị 422 `52507` — phải gán nhà cung cấp trên dòng chi.
 - Phí 2 % và trừ quá tải của xe thuê **chưa có bút toán riêng** (chờ anh Khampla chọn cách ghi); `thue_xe` chỉ mang tiền thuê.
 - Bút toán bằng THB, CNY: danh mục tiền bên anh chưa có, LAO báo `THIEU_TIEN_TE`.
@@ -587,7 +587,7 @@ Bên em **chỉ gửi đề nghị** và đọc trạng thái về (chốt 29/09
 | 4 | **Triển khai** hai nhánh lên host, cấu hình `LogisticsSource:BaseUrl` (bắt buộc), `ApiKey`, `LogisticsSalesPush:*`, `LogisticsJournalEntry:*` (TONG_HOP mục 4); áp script bút toán trên DB host; kho tạm có `1d8d91c` | **cần quyền host** |
 | 5 | **Token hết hạn khoảng 10/10**: thay token mới trong `.env`, hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh để tự đăng nhập lại (hợp đồng 12.11.4). Tài khoản tích hợp **tạm gác** — tuỳ chọn (hợp đồng 12.12.3; nhân viên ảo `EPL-TICHHOP` ObjId 1622 trên DB demo, chưa có tài khoản; tab Tài khoản ở hồ sơ nhân viên WEB đã có từ `fce78c52`, chưa bấm tạo thật) | **cần quyền host** (token / mật khẩu của anh) |
 | 6 | **Dữ liệu DB host**: mở 1371 / 4021 / 4022 nếu thiếu (`tools/mo_ma_con_tune.py`); bật LAK / USD (mã 2); lỗi `default-money-account` trên host; đơn vị EPL Lào (quốc gia 11, tiền LAK — Thà Bốc và Viêng Chăn một hay hai đơn vị?) | **cần quyền host** |
-| 7 | **Nhật ký kiểm toán cũ** có thể còn mật khẩu dạng chữ thường (trước `ed5aa0e`): chạy script `20261001_audit_redact_secrets.sql` (`e2ef52f`; `@Apply = 0` chẩn đoán trước), cân nhắc đổi mật khẩu các tài khoản đã đăng nhập qua API | **cần quyền host** (DB demo: chủ dự án) |
+| 7 | **Nhật ký kiểm toán cũ** có thể còn mật khẩu dạng chữ thường (trước `ed5aa0e`): chạy script `20261001_audit_redact_secrets.sql` (`e2ef52f`; từ `2b4e274` mặc định `@Apply = 0` — chỉ chẩn đoán; đọc rồi mới đặt 1), cân nhắc đổi mật khẩu các tài khoản đã đăng nhập qua API | **cần quyền host** (DB demo: chủ dự án) |
 | 8 | Chạy lại vòng nối kế toán với bản cuối hai bên (API `b9227aa`, trang điều xe `191ab29`); KB-AZ đã đi thật một chuyến THU-KBAZ (mục 9) | bên EPL làm (đang làm) |
 | 9 | **Hộp Tạo phiếu thu (WEB của anh) gửi tỷ giá cứng 1**, ô tài khoản tiền chỉ có nội tệ → SO USD ghi thành Kíp (mục 1.5) | bên EPL làm (**đang sửa**) |
 | 10 | **Mọi SO cùng mã phiếu bán** `Demo EPL-2-261001000` → diễn giải phiếu thu nợ giống nhau (mục 1.5) | bên EPL làm (**đang sửa**) |
@@ -730,7 +730,7 @@ Chủ dự án cho bên em sửa thẳng source của anh từ 01/10 (anh review
 | DB | **ghi dữ liệu**: `UPDATE` cột payload của các dòng audit cũ (không đổi cấu trúc). **Chưa chạy trên DB demo hay host** |
 | Bước | triển khai (mục 5 việc 7) |
 | Đã kiểm | LocalDB riêng dữ liệu bịa: lần 1 che 10 dòng, lần 2 không đổi |
-| Thử lại | chạy `@Apply = 0` trước, đọc chẩn đoán; rồi `@Apply = 1` |
+| Thử lại | từ `2b4e274` tệp mặc định `@Apply = 0`: chạy nguyên tệp là chỉ chẩn đoán; lưu kết quả, rồi sửa thành `@Apply = 1` để che |
 
 #### 8.1.8. `0d4eed9` — che thêm `jwt` / `cookie`
 
@@ -750,7 +750,7 @@ Chủ dự án cho bên em sửa thẳng source của anh từ 01/10 (anh review
 | Đổi gì | `POST` tạo + ghi sổ tạm (idempotent theo SourceRef, `sp_getapplock`, 409 khi cùng SourceRef khác nội dung); `POST reverse` gỡ; `GET {sourceRef}` đọc lại; cổng cấu hình `LogisticsJournalEntry` (`Enabled`, `AllowedUserIds`, `OrgId`, `CountryId`) đọc mỗi request |
 | DB | script tạo **3 thủ tục mới** `proc_Logistics_JournalEntry_Save` / `_Reverse` / `_Get` (`CREATE OR ALTER`), **không đổi bảng**, dải lỗi riêng 52500 – 52516. Khi chạy, thủ tục ghi `PUBDOCUMENT`, `GLBUSINESS`, `PUBENTRY` và gọi `spGetconfigID`, `sp_PostTing_GeneralLedger`, `sp_GL_Delete_GENERALLEDGER`, `sp_GL_Delete_GLBusiness` (thủ tục có sẵn, không sửa). **Script chưa áp vào DB nào** |
 | Bước | A11 — bước 7 (khoá phiếu), 7b (mở khoá → gỡ), 11 (`ban_chu_xe`), 12 (`tat_toan`) |
-| Đã kiểm | build 0 lỗi; 82 kiểm unit-level (đầu vào, danh mục, quy đổi, khoá JSON, idempotent / 409, gỡ hai lần, cổng 401 / 403 / 503, bảng mã SQL); parse script 0 lỗi. **Chưa chạy trên DB** |
+| Đã kiểm | build 0 lỗi; 82 kiểm unit-level (đầu vào, danh mục, quy đổi, khoá JSON, idempotent / 409, gỡ hai lần, cổng 401 / 403 / 503, bảng mã SQL); parse script 0 lỗi. **Đã chạy thật trên DB demo 02/10** (mục 1.7.1); host chưa |
 | Thử lại | mục 1.7.1 bước 1 – 4, mục 7 |
 
 ### 8.2. WEB `GLS-QLSX-Web` — 6 commit
@@ -929,7 +929,7 @@ Cả hai mang lỗi tỷ giá cứng 1 (quy đổi = nguyên tệ USD, vế ti�
 
 ### 9.6. Những gì chưa ghi
 
-- **Bút toán tổng hợp:** chưa có chứng từ nào (script chưa áp, cờ gửi tắt).
+- **Bút toán tổng hợp:** script đã áp DB demo, đã chạy thật 02/10 với phiếu thử (`GL021020263` … `GL021020267`) rồi gỡ sạch — hiện không còn chứng từ thử nào; host chưa áp.
 - **Bản chụp DO trên phiếu** (`proc_PP_CashVoucherSourceReference_Save`): bên em chỉ gọi đường đọc của modal Vụ việc (KB-AZ: `type=DO&keyword=THU-KBAZ` trả 2 DO), chưa lưu phiếu nào có Vụ việc DO.
 - **Bút toán chờ KB-AZ** (ví dụ `EPLLAO-tat_toan-a6313dd63966:2026-10:99c2aab478f2` 625/1601 · 1.210.000 LAK) chỉ nằm ở LAO, chưa sang DB của anh.
 - **Trừ hàng quầy 4022/707** chưa đi thật lượt KB-AZ (chủ xe không có phiếu bán chờ trừ).
