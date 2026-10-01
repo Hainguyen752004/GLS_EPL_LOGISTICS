@@ -146,8 +146,9 @@ def main():
              "đề nghị hỏng được ghi lại (gửi lại được), phiếu vẫn ở danh sách chờ trả", loi[0]["ref_no"] if loi else "")
         rid = loi[0]["id"] if loi else None
     if rid and s == 200:
-        s, g = goi("/api/trips/%s/mo-khoa" % x["id"], {}, "ketoan")
-        dung(s == 409 and ma(g) == "TRONG_DE_NGHI_TRA_CHU_XE", "phiếu đang nằm đề nghị trả → không mở khoá được", ma(g))
+        # Sếp: bỏ qua chặn hoá đơn / đề nghị thu / SO — nhưng đề nghị trả chủ xe vẫn chặn (số trả tính từ phiếu đã khoá)
+        s, g = goi("/api/trips/%s/mo-khoa" % x["id"], {}, "admin")
+        dung(s == 409 and ma(g) == "TRONG_DE_NGHI_TRA_CHU_XE", "phiếu đang nằm đề nghị trả → không mở khoá được (kể cả Sếp)", ma(g))
         s, g = goi("/api/owners/%s/de-nghi-tra" % chu["id"], {"trip_ids": [x["id"]]}, "ketoan")
         dung(s == 409 and ma(g) == "PHIEU_KHONG_HOP_LE", "phiếu đã nằm đề nghị → không vào đề nghị thứ hai", ma(g))
     if rid:

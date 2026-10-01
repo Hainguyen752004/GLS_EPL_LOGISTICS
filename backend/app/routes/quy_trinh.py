@@ -87,5 +87,7 @@ def quy_trinh(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
                      for ma, (ten, lo, co_dk) in CT.LOAI.items()],
         "dong_chi": _dong_chi(),
         "danh_muc": {"chup_ngay": TK.CHUP_NGAY, "so_ma": len(TK.DANH_MUC),
-                     "ma_con_khach": [{"ma": m, "cha": c, "ten": v} for m, (c, v, _l) in TK.MA_CON_KHACH.items()]},
+                     # chỉ những mã con bên kế toán CHƯA mở (01/10 đã mở đủ ba → rỗng)
+                     "ma_con_khach": [{"ma": m, "cha": c, "ten": v} for m, (c, v, _l) in TK.MA_CON_KHACH.items()
+                                      if TK.trang_thai(m) == "ma_con_khach"]},
     }

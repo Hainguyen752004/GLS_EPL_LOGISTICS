@@ -1,7 +1,7 @@
 {
 "nguon": "API danh mục tài khoản bên kế toán (GET /api/v1/common/country-accounts?tryAutoId=11&onlyActive=true)",
-"chup_ngay": "2026-09-30",
-"so_ma": 494,
+"chup_ngay": "2026-10-01",
+"so_ma": 497,
 "tai_khoan": [
 {
 "code": "10",
@@ -589,6 +589,13 @@
 "name_lo": "ສິນຄ້າ ໃນສາງ",
 "name_vi": "Hàng hóa tồn kho",
 "parent": "13",
+"postable": false
+},
+{
+"code": "1371",
+"name_lo": "ສາງສິນຄ້າ, ວັດຖຸ",
+"name_vi": "Kho hàng, vật tư (EPL) — mã con anh Khampla",
+"parent": "137",
 "postable": true
 },
 {
@@ -1646,6 +1653,20 @@
 "name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້​ສະໜອງ - ການ​ບໍລິການ",
 "name_vi": "Phải trả nhà cung cấp dịch vụ",
 "parent": "40",
+"postable": false
+},
+{
+"code": "4021",
+"name_lo": "ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ",
+"name_vi": "Phải trả nhà cung cấp (EPL)",
+"parent": "402",
+"postable": true
+},
+{
+"code": "4022",
+"name_lo": "ເຈົ້າໜີ້ເຈົ້າຂອງລົດຮ່ວມ",
+"name_vi": "Phải trả chủ xe liên kết (EPL)",
+"parent": "402",
 "postable": true
 },
 {

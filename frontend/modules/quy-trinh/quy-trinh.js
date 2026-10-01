@@ -288,7 +288,8 @@
     q('#qt-dc-than').innerHTML = (D.dong_chi || []).map(r => `<tr><td><b>${esc(NHAN[r.nhan] || r.nhan)}</b></td>${cap(r.EPL)}${cap(r.joint)}</tr>`).join('');
     const dm = D.danh_muc || {};
     q('#qt-dc-nguon').textContent = `Đối chiếu với danh mục tài khoản của bên kế toán: ${dm.so_ma || '?'} mã, chụp ngày ${dm.chup_ngay || '?'}. `
-      + `Mã con của khách chưa mở bên đó: ${(dm.ma_con_khach || []).map(x => x.ma + ' (con của ' + x.cha + ')').join(' · ')}.`;
+      + ((dm.ma_con_khach || []).length ? `Mã con của khách chưa mở bên đó: ${dm.ma_con_khach.map(x => x.ma + ' (con của ' + x.cha + ')').join(' · ')}.`
+        : 'Mã con của khách 1371 · 4021 · 4022 đã mở bên đó (01/10).');
   }
 
   // "Được nhập đơn giá" THẬT: luật cho phép (nhap_gia) VÀ vai đó nhập hoặc kiểm ít nhất một mục chi III–VI

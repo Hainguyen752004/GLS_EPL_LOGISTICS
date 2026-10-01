@@ -14,8 +14,10 @@ Luật rút ra:
     dịch vụ) — không hạch toán được — nên cước vận chuyển ghi 708 (bán dịch vụ khác), bán dầu / phụ tùng ghi 707
     (bán hàng hoá). "37" / "371" trong giấy tờ cũ của khách là 137 của danh mục hiện hành (hàng hoá tồn kho).
   · Ba MÃ CON anh Khampla đặt (22/09), chủ dự án chốt giữ (23/09): 1371 (con của 137), 4021 và 4022 (con của 402).
-    Danh mục thật CHƯA có ba mã này — bên kế toán phải mở trước khi ghi sổ. Không mở thì đổi ở MA_CON_KHACH / các hằng
-    số dưới đây, KHÔNG sửa rải rác.
+    Ngày 01/10 đã mở cả ba trong danh mục Lào bên anh Tune (chủ dự án cho phép): 137 và 402 chuyển thành tài khoản
+    TỔNG HỢP, ba mã con là tài khoản lá. Bản chụp danh_muc_tai_khoan_lao.json chụp lại ngày đó. MA_CON_KHACH giữ lại
+    để có tên Việt gọn, và để máy khác (danh mục chưa mở) vẫn hiện nhãn "chưa mở" đúng.
+    Đổi mã thì đổi ở MA_CON_KHACH / các hằng số dưới đây, KHÔNG sửa rải rác.
   · Vế CÓ của một dòng chi đi theo CÁCH TRẢ, vì mỗi cách trả là một đối tượng nợ khác nhau:
         lấy kho ..................................... kho 1371
         ghi nợ trạm dầu · nhà cung cấp · thẻ cao tốc · sửa ngoài ... phải trả nhà cung cấp 4021
@@ -47,9 +49,9 @@ CP_DI_LAI = "625"     # ຄ່າເດີນທາງ … — khách dùng cho 
 CP_SUA = "614"        # ຄ່າບົວລະບັດ, ບຳລຸງຮັກສາ ແລະ ສ້ອມແປງ
 CP_THUE_XE = "621"    # ຄ່າຂົນສົ່ງ — tiền thuê xe liên kết; Excel ghi "ຄ່າຂົນສົ່ງນອກ" (chủ dự án chốt 01/10)
 GIA_VON = "607"       # ສິນຄ້າ (nhóm 60 — giá vốn hàng bán) — chủ dự án chốt 23/09
-KHO = "1371"          # mã con của 137 (anh Khampla) — CHƯA có trong danh mục thật
-NCC = "4021"          # mã con của 402 (anh Khampla) — CHƯA có trong danh mục thật
-CHU_XE = "4022"       # mã con của 402 (quy trình khách) — CHƯA có trong danh mục thật
+KHO = "1371"          # mã con của 137 (anh Khampla) — mở 01/10
+NCC = "4021"          # mã con của 402 (anh Khampla) — mở 01/10
+CHU_XE = "4022"       # mã con của 402 (quy trình khách) — mở 01/10
 TAM_UNG = "1601"      # ພະນັກງານ - ເງິນລ່ວງໜ້າ … (tạm ứng nhân viên)
 LUONG = "4201"        # ພະນັກງານ - ຄ່າທົດແທນແຮງງານຕ້ອງສະສາງ (phải trả nhân viên)
 PHAI_THU = "1211"     # ລູກຄ້າ-ຄ່າສິນຄ້າ — khách ghi 1211 cho cả cước (Excel, quy trình); 1213 là "khách hàng - dịch vụ"
@@ -173,12 +175,16 @@ def luat_cho_giao_dien():
             "ten": {m: {"vi": ten(m), "lo": ten(m, "lo"), "trang_thai": trang_thai(m)} for m in dung}}
 
 
+def ma_con_chua_mo(co):
+    """Ba mã con của khách mà danh mục `co` (tập mã) CHƯA có — vẫn cho chọn (phiếu đang dùng) nhưng ghi rõ "chưa mở".
+    01/10: mở trong DB bên anh Tune mà API ở máy em nối; bản đang host nối DB khác, chưa có — nên phải xét theo từng danh mục."""
+    return [{"code": ma, "name": lo, "description": "%s — mã con của %s theo anh Khampla, bên kế toán chưa mở" % (vi, cha),
+             "parent": cha, "postable": True, "ma_con_khach": True}
+            for ma, (cha, vi, lo) in MA_CON_KHACH.items() if ma not in co]
+
+
 def danh_muc_du_phong():
-    """Danh mục khi chưa nối được API bên kế toán: CHÍNH bản chụp danh mục thật, cộng ba mã con của khách (đánh dấu)."""
+    """Danh mục khi chưa nối được API bên kế toán: CHÍNH bản chụp danh mục thật, cộng mã con của khách chưa mở (đánh dấu)."""
     ds = [{"code": x["code"], "name": x["name_lo"].replace("​", "").strip(), "description": ten(x["code"]) or x["name_vi"],
            "parent": x["parent"], "postable": x["postable"]} for x in _BAN["tai_khoan"]]
-    for ma, (cha, vi, lo) in MA_CON_KHACH.items():
-        if ma not in DANH_MUC:
-            ds.append({"code": ma, "name": lo, "description": "%s — mã con của %s theo anh Khampla, bên kế toán chưa mở" % (vi, cha),
-                       "parent": cha, "postable": True, "ma_con_khach": True})
-    return sorted(ds, key=lambda x: x["code"])
+    return sorted(ds + ma_con_chua_mo(DANH_MUC), key=lambda x: x["code"])

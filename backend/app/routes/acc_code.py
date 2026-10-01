@@ -89,8 +89,9 @@ def lay_danh_muc(refresh=False):
         return DU_PHONG, "error", "API bên công nợ từ chối: %s" % str(goi.get("Message") or goi.get("Code"))[:120]
     ket = _chuan_hoa(goi)
     co = {x["code"] for x in ket}
-    # Ba mã con của khách (1371, 4021, 4022) chưa có bên kế toán: vẫn cho chọn — phiếu đang dùng — nhưng ghi rõ là chưa mở.
-    ket += [x for x in TK.danh_muc_du_phong() if x.get("ma_con_khach") and x["code"] not in co]
+    # Ba mã con của khách (1371, 4021, 4022): mở bên kế toán 01/10. Danh mục nào còn thiếu thì vẫn cho chọn — phiếu đang
+    # dùng — nhưng ghi rõ là chưa mở.
+    ket += TK.ma_con_chua_mo(co)
     bo["khoa"], bo["luc"], bo["goi"] = url, time.time(), ket
     return ket, "remote", "Đã tải %d mã từ API bên công nợ." % len(co)
 

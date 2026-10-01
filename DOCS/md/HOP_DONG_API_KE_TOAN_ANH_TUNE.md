@@ -1,7 +1,13 @@
 # Hợp đồng API KẾ TOÁN — trang điều xe EPL Lào ↔ hệ kế toán của anh Tune
 
-Phiên bản đề nghị **v2.3 · 01/10/2026** (v2.2 tối 01/10, v2.1 chiều 01/10, v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
+Phiên bản đề nghị **v2.4 · 01/10/2026** (v2.3 trưa 01/10, v2.2 tối 01/10, v2.1 chiều 01/10, v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
 
+> **Đổi từ v2.3 sang v2.4 (chiều 01/10/2026) — mục 12.12:**
+> - **Đã mở 1371, 4021, 4022** qua `lao-accounts` (137, 402 thành tài khoản tổng hợp). Tạm ứng xe thuê và trả chủ xe đã chạy thật.
+> - **Bản host không dùng chung DB** với bản chạy ở máy: lúc đưa lên host phải mở lại ba mã trên DB đó.
+> - **Tài khoản tích hợp:** các bước làm cụ thể theo source bên anh.
+> - **Bút toán chi phí thuê xe** *Nợ 621 / Có 4022*: chưa làm được, vì source chưa có chứng từ bút toán tổng hợp. Có đề nghị đường API.
+>
 > **Đổi từ v2.2 sang v2.3 (trưa 01/10/2026) — mục 12.11:**
 > - **SO đã tạo thật** (2 DO); khách chưa có mã bên anh thì bên em tự tạo `EPLKH-…`. Sửa lỗi 500 tạo khách bên anh (`OBJ_ISORG`).
 > - **Xe thuê ngoài:** tạm ứng đứng tên chủ xe (Nợ 4022); **trả chủ xe** thành phiếu chi "Chi khác" bên anh, ghi sổ xong thì phiếu "đã trả chủ xe".
@@ -1325,21 +1331,131 @@ Luật bên em giữ:
 - bỏ đề nghị chưa chi thì rút phiếu chi bên anh;
 - đã chi thì không huỷ.
 
-**Còn chặn ở danh mục bên anh:** chưa có mã **4022** nên hai loại phiếu chi trên đều bị từ chối ("Tài khoản không hợp lệ theo quốc gia của phiếu"). Màn bên em hiện rõ câu đó, kèm mã tài khoản đang dùng. Mở mã xong thì bấm gửi lại là chạy.
+**Mã 4022:** trưa 01/10 chưa có nên hai loại phiếu chi trên bị từ chối ("Tài khoản không hợp lệ theo quốc gia của phiếu"). **Chiều 01/10 đã mở** (12.12.1), cả hai đã chạy thật. DB nào còn thiếu mã thì màn bên em vẫn hiện rõ câu từ chối, kèm mã đang dùng.
 
 **Ghi nhận chi phí thuê xe:** đã chốt *Nợ 621 / Có 4022* bằng tiền thuê, lúc khoá phiếu (mục 8, lỗ hổng 1). Bàn giao DO có `hire.acc_code = "621/4022"`. Hệ anh chưa có API bút toán tổng hợp nên bên em **chưa gửi được** — hiện bên em chỉ gửi phần **ứng** và **trả**.
 
 #### 12.11.4. Tài khoản tích hợp thay token cá nhân
 
-Bên em đã làm sẵn đường **tự đăng nhập**: đặt `QLSX_USERNAME` / `QLSX_PASSWORD` (cùng `QLSX_ORG_ID`) thì bên em gọi `POST /api/v1/auth/login`, nhớ token và tự lấy token mới trước khi hết hạn 5 phút; bị 401 thì đăng nhập lại. Thứ tự ưu tiên: `QLSX_ACCESS_TOKEN` → tài khoản tích hợp → `EPL_ACC_CODE_TOKEN`.
+Bên em đã làm sẵn đường **tự đăng nhập**: đặt `QLSX_USERNAME` / `QLSX_PASSWORD` (cùng `QLSX_ORG_ID`, mặc định 1368) thì bên em gọi `POST /api/v1/auth/login`, nhớ token và đăng nhập lại khi token còn dưới 5 phút (token bên anh sống 30 ngày); bị 401 thì đăng nhập lại. Thứ tự ưu tiên: `QLSX_ACCESS_TOKEN` → tài khoản tích hợp → `EPL_ACC_CODE_TOKEN`.
 
-**Cần anh (hoặc chủ dự án):** tạo tài khoản đó (gắn nhân viên, thêm `UserId` vào `LogisticsSalesPush.AllowedUserIds`). Việc tạo tài khoản đăng nhập bên em không tự làm.
+**Cần anh (hoặc chủ dự án):** tạo tài khoản đó. Các bước cụ thể ở **12.12.3**.
 
 #### 12.11.5. Việc bên em CHƯA làm được — chờ quyết định
 
 | Việc | Vì sao | Ai |
 |---|---|---|
-| Mở **1371, 4021, 4022** trong danh mục tài khoản Lào bên anh | phải chuyển 137 và 402 từ tài khoản hạch toán sang tổng hợp rồi thêm mã con; công cụ an toàn chặn bên em tự đổi cây tài khoản kế toán | anh Tune hoặc chủ dự án |
+| ~~Mở **1371, 4021, 4022**~~ | **xong chiều 01/10** trên DB của API chạy ở máy (12.12.1); DB của bản host còn thiếu (12.12.2) | bên em — mở lại trên DB host khi anh triển khai |
 | **Bật tiền USD** trong danh mục tiền tệ | USD có (mã 2) nhưng đang tắt nên `GetAllCurrency` không trả; SO vẫn tạo được, nhưng phiếu chi bằng USD cần mã tiền. Tạm thời đặt `QLSX_TIEN_USD=2` là chạy | anh Tune |
-| **Tài khoản tích hợp** (12.11.4) | tạo tài khoản đăng nhập | anh Tune hoặc chủ dự án |
-| Ghi **chi phí thuê xe** liên kết (*Nợ 621 / Có 4022*, đã chốt) | hệ anh chưa có API bút toán tổng hợp — chỉ có phiếu thu chi | anh Tune (mở đường ghi bút toán) |
+| **Tài khoản tích hợp** (12.11.4, các bước ở 12.12.3) | tạo tài khoản đăng nhập, mật khẩu do bên anh giữ | anh Tune hoặc chủ dự án |
+| Ghi **chi phí thuê xe** liên kết (*Nợ 621 / Có 4022*, đã chốt) | source chưa có chứng từ bút toán tổng hợp; đề nghị đường API ở 12.12.4 | anh Tune duyệt, hoặc cho bên em thủ tục ghi chứng từ khác để bên em làm |
+
+### 12.12. Chiều 01/10/2026 — mở mã tài khoản, hai DB khác nhau, tài khoản tích hợp, bút toán thuê xe
+
+#### 12.12.1. Đã mở 1371, 4021, 4022 (chủ dự án cho phép)
+
+Làm qua chính API của anh, `accounting/lao-accounts` (API chạy ở máy em, `Env=laos`). Không sửa thẳng DB.
+
+| Bước | Gọi | Kết quả |
+|---|---|---|
+| 1 | `POST lao-accounts/update` mã **137**, `Posting=false` (giữ tên, cha 13, số dư, nhóm, loại, `Version`) | 137 thành tài khoản **tổng hợp** |
+| 2 | `POST lao-accounts` mã **1371**, cha 137, `Posting=true`, dư Nợ, tên ລາວ "ສາງສິນຄ້າ, ວັດຖຸ" | tài khoản lá |
+| 3 | `POST lao-accounts/update` mã **402**, `Posting=false` | 402 thành tài khoản **tổng hợp** |
+| 4 | `POST lao-accounts` mã **4021** (ໜີ້ຕ້ອງສົ່ງ ຜູ້ສະໜອງ) và **4022** (ເຈົ້າໜີ້ເຈົ້າຂອງລົດຮ່ວມ), cha 402, `Posting=true`, dư Có | tài khoản lá |
+
+Kiểm lại:
+- `GET cmpayment-receipt/country-accounts?countryId=11` có đủ 1371, 4021, 4022; không còn 137, 402 (vì đã là tổng hợp).
+- `common/country-accounts?tryAutoId=11` trả **497 mã** (trước là 494). Bên em đã chụp lại bản dự phòng (`services/danh_muc_tai_khoan_lao.json`).
+
+**Ảnh hưởng — anh xem giúp:**
+- 137 và 402 **không ghi sổ trực tiếp được nữa**. Bên em đã tìm trong cả `GLS-QLSX-APIs` lẫn `GLS-QLSX-Web`: không có chỗ nào ghi cứng 137 / 402, ngoài tệp nạp danh mục `20260909_country_account_import_lao.sql`. Nếu có thủ tục SQL hay màn cũ nào ghi thẳng 137 / 402 thì sẽ bị từ chối, phải đổi sang 1371 / 4021.
+- Muốn trả lại như cũ: xoá 1371, 4021, 4022 (khi chưa có bút toán), rồi `update` 137 / 402 với `Posting=true`.
+
+**Đã chạy thật** qua API ở máy (bài thử tự rút phiếu sau khi kiểm):
+- tạm ứng xe thuê, phiếu chi "Chi trước" đứng tên chủ xe, Nợ 4022: `1368-CTR-261001-00013`;
+- trả chủ xe, phiếu chi "Chi khác" 28.359.600 LAK, Nợ 4022 / Có 1021: `1368-CKH-261001-00001` và `…00002`;
+- tạm ứng xe nhà, Nợ 1601: `1368-CTR-261001-00016`.
+
+#### 12.12.2. Bản API đang host KHÔNG dùng chung DB với bản chạy ở máy
+
+So cùng một token, cùng ngày 01/10:
+
+| | API ở máy (`Env=laos`, `appsettings.laos.json`) | API đang host `demo-lao-api.goldensme.com` |
+|---|---|---|
+| Danh mục quốc gia 11 | 497 mã, có 1371/4021/4022, 137 là tổng hợp | 494 mã, chưa có ba mã, 137 vẫn là tài khoản lá |
+| Khách `EPLKH-0834a9e9606b` (tạo khi gửi SO hôm nay) | có (ObjId 1608) | không có |
+
+Nghĩa là mọi thứ bên em thử hôm nay chỉ nằm trong DB mà `appsettings.laos.json` trỏ tới:
+- SO `TK-20261001-000162` và `…163`;
+- khách `EPLKH-…`, chủ xe `EPLCX-…`, tài xế `EPLTX-…`;
+- các phiếu chi thử;
+- ba mã tài khoản.
+
+**Khi anh đưa bản mới lên host**, cần:
+1. Triển khai code hai nhánh `feat/HonTunedaHai` (API) và `feat/hontunedhai_Laos` (Web).
+2. Mở lại ba mã trên DB của bản host: 4 lệnh như 12.12.1. Bên em có sẵn tệp chạy, đổi địa chỉ là dùng được.
+3. Đặt `LogisticsSource` và `LogisticsSalesPush` trong cấu hình của bản host (mục 12.12.3).
+
+Khách `EPLKH-…` không cần chép: lần gửi SO đầu tiên bên em tự tạo.
+
+**Anh cho em biết:** DB nào là DB chính thức cho Lào? Bản host đang trỏ DB nào?
+
+#### 12.12.3. Tài khoản tích hợp — làm từng bước
+
+Để làm gì: trang điều xe gọi API của anh bằng **một tài khoản riêng của hệ thống**. Hiện bên em đang mượn token cá nhân (`EPL_ACC_CODE_TOKEN`). Người đó đổi mật khẩu hay nghỉ việc thì mọi lần gửi đều hỏng, và sổ của anh ghi người tạo phiếu là người đó.
+
+Code bên anh làm thế này (bên em đọc từ source):
+
+- **Đăng nhập:** `POST /api/v1/auth/login {Username, Password, OrgID}` → thủ tục `proc_LoginWithUsAndPw`.
+  - Tên đăng nhập dài 3–20 ký tự.
+  - Token sống **30 ngày** (`Base/Jwt/JwtService.cs`), không có refresh token.
+  - Mã người dùng nằm ở claim `UserId` (= `dbo.Users.UserID`).
+- **Tạo tài khoản:** `POST /api/v1/master-data/object-auth/account/upsert` (`ObjectAuthController`, thủ tục `sp_META_InsertUpdate_USERS`). Màn "Tài khoản" ở hồ sơ nhân viên bên Web chưa nối, nên phải gọi API này.
+  - `UserId = null` để tạo mới;
+  - `ObjectAutoId`: mã nhân viên (`PUBOBJECT`), bắt buộc;
+  - `UserName`, `Password`, `IsActive=true`;
+  - `OrgAutoId`;
+  - `GroupId`: nhóm trong `dbo.UserGroup`.
+- **Gửi SO:** `LogisticsSalesPushController` chỉ nhận người có `UserId` nằm trong `LogisticsSalesPush:AllowedUserIds`. Danh sách rỗng thì ai cũng bị 403. Bản `laos` hiện có `[846]`.
+- **Phiếu thu chi, tạo khách / nhà cung cấp / nhân viên, công nợ khách:** chỉ cần token hợp lệ, không xét quyền theo chức năng. Phiếu ghi người lập là `ObjectId` của token.
+
+Các bước:
+
+1. Tạo (hoặc chọn) một **nhân viên** tên ví dụ "EPL Logistics (tích hợp)", thuộc chi nhánh **1368** (Logistics).
+2. Gọi `account/upsert` tạo tài khoản cho nhân viên đó, ví dụ `UserName = epl_logistics`, mật khẩu dài.
+3. Lấy `UserId`: `POST /api/v1/hr/employees/account-lookups {UserName}`, hoặc đọc claim `UserId` trong token sau khi đăng nhập thử.
+4. Trong cấu hình bản host (`appsettings.<Env>.json`, tệp không đưa lên git), thêm `UserId` đó vào `LogisticsSalesPush:AllowedUserIds` (giữ `846` nếu còn cần), `Enabled=true`. Khởi động lại API.
+5. Bên trang điều xe, trong tệp `.env` của máy chủ (không đưa lên git):
+   - `QLSX_USERNAME=epl_logistics`
+   - `QLSX_PASSWORD=<mật khẩu>`
+   - `QLSX_ORG_ID=1368`
+
+   Xoá `QLSX_ACCESS_TOKEN` nếu có, vì biến đó được ưu tiên trước. Khởi động lại.
+6. Từ đó bên em tự đăng nhập, nhớ token, đăng nhập lại khi token còn dưới 5 phút. Bị 401 cũng đăng nhập lại ngay.
+
+Bên em chưa tự tạo tài khoản: đây là tài khoản đăng nhập vào sổ kế toán của anh, mật khẩu phải do anh hoặc chủ dự án giữ.
+
+#### 12.12.4. Bút toán chi phí thuê xe (*Nợ 621 / Có 4022*) — chưa làm được
+
+Chủ dự án đã cho bên em làm. Bên em chưa làm được, vì:
+- Trong source **chưa có chứng từ "bút toán tổng hợp"** (không qua tiền), cả API lẫn Web.
+- Sổ cái bên anh đi qua `PUBDOCUMENT` + `PUBENTRY` rồi thủ tục `sp_PostTing_GeneralLedger`. Định nghĩa các thủ tục này chỉ nằm trong DB, không có trong repo.
+- Thủ tục chuyển phiếu tạm sang thật (`SP_CM_MOVETEMPTOREAL_*`) là riêng của phiếu thu chi.
+- Đoán cấu trúc để ghi thẳng vào sổ cái thì rủi ro sai sổ, nên bên em không làm.
+
+**Đề nghị** (anh duyệt, hoặc cho bên em định nghĩa thủ tục ghi chứng từ kế toán khác — `DOC_OFSYSTEM` / loại chứng từ, thủ tục chuyển tạm sang thật — là bên em làm tiếp):
+
+```
+POST /api/v1/integrations/logistics/journal-entries        (Idempotency-Key = SourceRef)
+{
+  "SourceRef": "EPLLAO-HIRE-<trip_id>",        // một DO xe thuê một bút toán; gửi lại không ghi hai lần
+  "DocumentDate": "2026-10-01", "CountryId": 11, "OrgId": 1368,
+  "Description": "Chi phí thuê xe liên kết T4-0442-09/EPL",
+  "Lines": [{ "DebitAccount": "621", "CreditAccount": "4022", "Amount": 28940400,
+              "CurrencyId": 26, "ObjectId": <nhà cung cấp EPLCX-…>, "CostObject": "<mã DO>" }]
+}
+→ { "DocumentId", "DocumentNo", "Status": 12 }
+POST /api/v1/integrations/logistics/journal-entries/reverse  { "SourceRef" }   // khi bên em mở khoá phiếu
+```
+
+Bên em đã có sẵn số liệu: `hire.amount` và `hire.acc_code = "621/4022"` trong gói bàn giao DO (mục 10). Có đường này thì lúc khoá phiếu xe thuê bên em gửi luôn, mở khoá thì gửi đảo.

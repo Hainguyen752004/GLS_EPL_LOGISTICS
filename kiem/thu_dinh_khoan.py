@@ -156,8 +156,9 @@ def phan_2():
         cap = {d["acct_code"] for d in tc.get("dong", [])}
         dung(cap == {"625/1601"}, "Dòng trên tờ tạm ứng đều 625/1601 (không còn 625/4021) — %s" % cap)
 
-        # quỹ chi thẳng mục IV → PC_TU Nợ 1601 / Có 1011, đúng số tờ tạm ứng (gồm cả VI tiền mặt)
-        for hd, vai in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "quytb")):
+        # chi thẳng mục IV → PC_TU Nợ 1601 / Có 1011, đúng số tờ tạm ứng (gồm cả VI tiền mặt).
+        # Từ 01/10 tạm ứng chi ở hệ kế toán anh Tune — Quỹ không chi ở đây nữa; đường chi tay còn lại là của Sếp
+        for hd, vai in (("send", "thabok"), ("verify", "ketoancp"), ("book", "ketoancp"), ("pay", "admin")):
             s, g = goi("/api/trips/%s/sections/travel/%s" % (pids[0], hd), {}, vai); phai(s, 200, "Mục IV: %s (%s)" % (hd, vai), g)
         s, ct = goi("/api/chung-tu?trip_id=%s" % pids[0], vai="admin")
         tu = [c for c in ct["ds"] if c["loai"] == "PC_TU"]
@@ -188,8 +189,11 @@ def phan_2():
 
         s, acc = goi("/api/acc-codes", vai="ketoancp")
         con = {x["code"]: x for x in acc["data"] if x["code"] in TK.MA_CON_KHACH}
-        dung(set(con) == set(TK.MA_CON_KHACH) and all("chưa mở" in x["description"] for x in con.values()),
-             "Danh mục Acc code (%s) có 1371 · 4021 · 4022, ghi rõ bên kế toán chưa mở" % acc["source"])
+        # 01/10 đã mở bên kế toán: mã nào có thật thì là tài khoản lá; mã nào còn thiếu thì phải ghi rõ "chưa mở"
+        dung(set(con) == set(TK.MA_CON_KHACH) and all(x.get("postable") and ("chưa mở" in x["description"]) == bool(x.get("ma_con_khach"))
+                                                      for x in con.values()),
+             "Danh mục Acc code (%s) có 1371 · 4021 · 4022 — %s" % (acc["source"], ", ".join(
+                 "%s %s" % (m, "chưa mở" if x.get("ma_con_khach") else "đã mở") for m, x in sorted(con.items()))))
         s, qt = goi("/api/quy-trinh", vai="ketoancp")
         dung(s == 200 and len(qt["dong_chi"]) == 8 and qt["danh_muc"]["so_ma"] == len(TK.DANH_MUC)
              and any(r["EPL"]["cap"] == "625/1601" for r in qt["dong_chi"]),

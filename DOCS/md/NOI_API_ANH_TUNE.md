@@ -24,7 +24,7 @@ Bản ngày **01/10/2026**, sửa chiều và tối cùng ngày. Soạn từ mã
 | A4 | `POST /api/v1/accounting/cmpayment-receipt/save-and-commit` (CMP) · `GET …/{id}` | phiếu **đề nghị tạm ứng** → phiếu chi "Chi trước" chờ ở hệ anh; thủ quỹ chi + ghi sổ bên anh; LAO đọc lại `STATUS` 12 → mục IV đã chi | **đã nối 01/10** (thử qua API chạy ở máy, mục 1.4) |
 | A5 | `POST /api/v1/sales/debt/customer-detail` | màn Khách hàng → tab Công nợ, chỉ xem | **đã nối 01/10** (hợp đồng 12.11.2) |
 | A6 | `POST /api/v1/master-data/customers · suppliers · staff /list · /upsert` | đối tượng bên anh: khách `EPLKH-`, chủ xe `EPLCX-`, tài xế `EPLTX-` — tìm, chưa có thì tạo | **đã nối 01/10** |
-| A7 | `POST …/cmpayment-receipt/save-and-commit` (CMP "Chi khác") · `GET …/{id}` | **trả chủ xe liên kết**: phiếu chi đứng tên chủ xe, Nợ 4022; ghi sổ xong → "đã trả chủ xe" | **đã dựng 01/10**, chờ anh mở mã 4022 (12.11.3) |
+| A7 | `POST …/cmpayment-receipt/save-and-commit` (CMP "Chi khác") · `GET …/{id}` | **trả chủ xe liên kết**: phiếu chi đứng tên chủ xe, Nợ 4022; ghi sổ xong → "đã trả chủ xe" | **đã chạy thật 01/10** sau khi mở mã 4022 (hợp đồng 12.12.1) |
 
 ### 0.2. Hệ anh gọi sang LAO
 
@@ -509,4 +509,12 @@ Chi tiết ở hợp đồng mục 12.11:
 - xe thuê: tạm ứng đứng tên chủ xe, trả chủ xe qua phiếu chi bên anh;
 - tài khoản tích hợp tự đăng nhập.
 
-**Còn chặn:** mã 1371/4021/4022, bật USD, tạo tài khoản tích hợp, API bút toán tổng hợp để ghi chi phí thuê xe *Nợ 621 / Có 4022* (đã chốt 01/10) (12.11.5).
+**Còn chặn:** bật USD, tạo tài khoản tích hợp, API bút toán tổng hợp để ghi chi phí thuê xe *Nợ 621 / Có 4022* (đã chốt 01/10) (12.11.5).
+
+### 8.5. Chiều 01/10
+
+Chi tiết ở hợp đồng mục 12.12:
+- **đã mở 1371 / 4021 / 4022** (137, 402 thành tài khoản tổng hợp); tạm ứng xe thuê, trả chủ xe chạy thật;
+- **bản host nối DB khác** bản chạy ở máy: lúc triển khai phải mở lại ba mã trên DB host;
+- **tài khoản tích hợp:** 6 bước làm cụ thể (12.12.3);
+- **bút toán chi phí thuê xe:** đề nghị đường `integrations/logistics/journal-entries` (12.12.4).
