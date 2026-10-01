@@ -29,7 +29,7 @@ Phiên bản đề nghị **v2.6 · 01/10/2026** (lịch sử các bản trướ
 |---|---|
 | **Đề nghị thu** (cước) | SO + công nợ khách bên anh (3.2); mọi DO đã khoá gửi từ đầu |
 | **Khoản đi qua tiền**: tạm ứng, trả chủ xe, chi mục V – VI, tất toán tài xế (chi bù / thu hoàn), trả nhà cung cấp | **phiếu chi / phiếu thu bên anh** (`cmpayment-receipt/save-and-commit`, `PostMode = None`); thủ quỹ bên anh chi / thu và ghi sổ; trang điều xe đọc lại `STATUS` (12.10, 12.11.3; chạy ở máy) |
-| **Khoản không qua tiền**: chi phí thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 | **bút toán chờ gửi** giữ ở trang điều xe, đủ hai vế; gửi qua `integrations/logistics/journal-entries` bên anh (12.12.4) — API đã có (`b9227aa`), chờ áp script DB rồi bật cờ |
+| **Khoản không qua tiền**: chi phí thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, **xuất kho cho chuyến** (xe nhà 625 · 614 / 1371 giá vốn; xe thuê 4022/707 giá bán + 607/1371 giá vốn) | **bút toán chờ gửi** giữ ở trang điều xe, đủ hai vế; gửi qua `integrations/logistics/journal-entries` bên anh (12.12.4) — API đã có (`b9227aa`), chờ áp script DB rồi bật cờ |
 | Hoá đơn, thu tiền khách, cấn trừ | việc của hệ anh, từ SO. Thu tiền: màn **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** (TKN) → phiếu thu CMR 17 "Thu khác", Nợ 1021 / Có 1211 — **không** phải phiếu "Thu công nợ" (15). Trang điều xe chỉ đọc "đã thu" (12.11.2) |
 
 Mọi đường và trường trong tài liệu này **chép từ mã đang chạy** (đọc ngày 30/09 và 01/10/2026).
@@ -355,9 +355,9 @@ Xác thực bằng **khoá bàn giao** riêng cho hệ anh (12.8.1). Phía anh �
 | 2 | In phiếu **đề nghị tạm ứng** | Bãi / kế toán | `PTU` | không | — |
 | 3 | In phiếu **đề nghị xuất kho nhiên liệu** (mỗi kho một tờ) | Bãi / kế toán | `PLNL` | không | không sang anh Tune: kho (kho tạm, sau là hệ anh Toàn) |
 | 4 | Chi tạm ứng: KT Chi phí VC ghi sổ mục IV → **thủ quỹ bên anh** chi và ghi sổ | KT Chi phí · thủ quỹ bên anh | phiếu chi "Chi trước" bên anh | xe nhà **1601/1011** · xe thuê **4022/1011** | phiếu chi bên anh — **chạy** (12.10) |
-| 5 | Thủ kho cấp dầu theo đề nghị | Thủ kho (kho tạm / anh Toàn) | `PXK_NL` | xe nhà 625/1371 · xe thuê: xem lỗ hổng 2 | kho |
+| 5 | Thủ kho cấp dầu theo đề nghị | Thủ kho (kho tạm / anh Toàn) | `PXK_NL` | xe nhà 625/1371 · xe thuê 4022/707 (giá bán) + 607/1371 (giá vốn) — ghi lúc khoá phiếu (bước 7) | kho; bút toán sang anh qua bút toán chờ `xuat_noi_bo` / `xuat_ban` |
 | 6 | Chi mục V – VI trả ngay: KT Chi phí VC ghi sổ mục → **thủ quỹ bên anh** | KT Chi phí · thủ quỹ bên anh | `PC_SC` → phiếu chi "Chi khác" bên anh | xe nhà 614 (V) · 625 (VI) / 1011 · xe thuê 4022/1011 | phiếu chi bên anh — **chạy** |
-| 7 | Xe về, kế toán Viêng Chăn **khoá phiếu** | kế toán | **`PDT`** | không | SO + công nợ (3.2) — **chạy**. Cùng lúc: xe thuê ghi **bút toán chờ** 621/4022; dòng ghi nợ nhà cung cấp ghi **bút toán chờ** 625 · 614 / 4021 (mục 8) |
+| 7 | Xe về, kế toán Viêng Chăn **khoá phiếu** | kế toán | **`PDT`** | không | SO + công nợ (3.2) — **chạy**. Cùng lúc: xe thuê ghi **bút toán chờ** 621/4022; dòng ghi nợ nhà cung cấp ghi **bút toán chờ** 625 · 614 / 4021; mỗi lần xuất kho dầu / phụ tùng cho chuyến ghi **bút toán chờ** `xuat_noi_bo` (xe nhà) / `xuat_ban` (xe thuê) (mục 8, 12.12.4) |
 | 8 | Xuất hoá đơn (từng phiếu hoặc gộp tháng) | kế toán bên anh | `HD` | **1211/708** | việc của hệ anh, từ SO |
 | 9 | Ghi một lần khách trả | kế toán bên anh | `PT` | tiền/1211 | việc của hệ anh; LAO đọc "đã thu" (12.11.2) |
 | 10 | Cấn trừ cuối tháng | kế toán bên anh | `PT` (`offset`) | xem lỗ hổng 5 | việc của hệ anh |
@@ -559,6 +559,8 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
   | `no_ncc` | khoá phiếu có dòng ghi nợ nhà cung cấp | Nợ 625 · 614 (xe thuê 4022) / Có 4021, theo bảng 7.3 | `Trip.id` |
   | `tat_toan` | KT Chi phí VC chốt tất toán một tài xế một kỳ | `QT_TU` Nợ 625 / Có 1601, bằng số tài xế đã chi thật | mã bản chốt |
   | `ban_chu_xe` | phiếu chi trả chủ xe có trừ hàng quầy đã chi | Nợ 4022 / Có 707, theo giá bán | mã phiếu bán (kho tạm) |
+  | `xuat_noi_bo` | khoá phiếu xe nhà có dầu / phụ tùng kho đã rời kho | xuất nội bộ: dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, theo giá vốn bình quân kho | `dau:` · `pt:<mã lần xuất>` |
+  | `xuat_ban` | khoá phiếu xe thuê (EPL ứng) có dầu / phụ tùng kho đã rời kho | xuất bán cho chủ xe: Nợ 4022 / Có 707 theo giá bán + Nợ 607 / Có 1371 theo giá vốn | như trên |
 
   - Mỗi bút toán đủ hai vế từng dòng, bằng mã thật trong danh mục (`services/tai_khoan.py`), kèm tiền tệ của dòng, đối tượng (chủ xe, nhà cung cấp, tài xế) và diễn giải.
   - Chống trùng theo (nguồn, mã nguồn). Mã gửi đi `source_ref` = `EPLLAO-<nguồn>-<mã nguồn>`; bản đã gỡ mà nguồn ghi lại thì phiên mới `…-2`.
@@ -579,7 +581,7 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
 
    Giá bán nằm trên phiếu bên em (dòng `sale_price`): dầu do KT kho xăng dầu gõ khi kiểm mục III; phụ tùng do KT Chi phí gõ khi kiểm mục V. Dòng chi bán cho chủ xe mang `acc_code = "4022/707"` trong bàn giao DO.
 
-   **Hiện trạng:** hàng chủ xe mua ở quầy (phiếu bán ở kho tạm) được trừ vào tiền trả chủ xe; khi phiếu chi trả chủ xe đã chi, bên em ghi bút toán chờ nguồn `ban_chu_xe` *Nợ 4022 / Có 707* theo giá bán, một phiếu bán một bút toán. Dầu / phụ tùng xuất cho xe thuê trên phiếu (mục III, V) theo giá bán: cách ghi **đang chốt** (câu hỏi 10.9).
+   **Hiện trạng:** hàng chủ xe mua ở quầy (phiếu bán ở kho tạm) được trừ vào tiền trả chủ xe; khi phiếu chi trả chủ xe đã chi, bên em ghi bút toán chờ nguồn `ban_chu_xe` *Nợ 4022 / Có 707* theo giá bán, một phiếu bán một bút toán. Dầu / phụ tùng kho xuất cho chuyến trên phiếu (mục III, V): **chủ dự án chốt 01/10** ("xuất dầu là xuất nội bộ và còn là xuất bán") — lúc khoá phiếu, mỗi lần xuất kho thành một bút toán chờ: xe nhà `xuat_noi_bo` (625 · 614 / 1371 theo giá vốn), xe thuê EPL ứng `xuat_ban` (4022/707 theo giá bán + 607/1371 theo giá vốn), xe thuê chủ xe tự trả không có (12.12.4).
 
 3. **Nợ nhà cung cấp trên sổ tạm cộng theo khoản mục, không xét cách trả.** Hệ quả: dòng chipping đổi sang tiền mặt vẫn bị tính là nợ nhà cung cấp, và nhà cung cấp khoản mục `diesel` nuốt cả dầu lấy kho.
 
@@ -624,7 +626,7 @@ Bảy lỗ hổng dưới đây bên em thấy ở sổ của trang kế toán t
 | Token: tiếp tục dùng token của anh (`EPL_ACC_CODE_TOKEN`); hết hạn khoảng 10/10 thì thay token mới trong `.env` hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh (12.11.4) | đường tự đăng nhập **đã làm**; token / mật khẩu của anh — **cần quyền host** |
 | Tài khoản tích hợp riêng (`epl_logistics`) | **tạm gác** (chủ dự án 01/10), tuỳ chọn (12.12.3) |
 | Nút tạo **khoá bàn giao** cho hệ anh ở màn Tài khoản (hiện chỉ có đường `POST /api/handover/tao-khoa`) | khi có địa chỉ ra Internet |
-| Dầu / phụ tùng xuất cho xe thuê theo giá bán trên phiếu (lỗ hổng 2) | **đang chốt** (câu hỏi 10.9) |
+| Dầu / phụ tùng kho xuất cho chuyến (lỗ hổng 2): xuất nội bộ / xuất bán cho chủ xe | **đã làm** — bút toán chờ `xuat_noi_bo`, `xuat_ban` lúc khoá phiếu (12.12.4); gửi sang anh khi bật cờ |
 | Dọn lớp tạm ở mã trang điều xe: gói bàn giao `invoiced` / `inv_no` theo SO bên anh, xoá đường đẩy không ai gọi | **đã làm** (`938b007`); còn đổi tên cấu hình kho (`kho_*` thay `ke_toan_*`) — bên EPL làm (**đang làm**) |
 | **Đã làm ngày 30/09:** tạm ứng qua 1601 và quyết toán lúc tất toán · doanh thu 708/707 · bản in phiếu thu ghi Nợ tiền / Có 1211 · `PC_SC` không chi lại dòng đã tạm ứng, không trả tiền mặt khoản nợ nhà cung cấp · tên tài khoản theo danh mục thật | — |
 
@@ -644,7 +646,7 @@ Câu đã có lời đáp giữ số để các mục khác tra, ghi gọn lời
 6. **Chi tiền thật ở đâu** — chủ dự án chốt 01/10: **ở hệ anh**, trạng thái về trang điều xe. Áp cho tạm ứng (12.10), trả chủ xe (12.11.3), chi mục V – VI, tất toán tài xế, trả nhà cung cấp.
 7. **Bút toán đảo** khi huỷ — đã có lời đáp trong mã: `…/journal-entries/reverse { "SourceRef" }` gỡ ghi sổ và xoá chứng từ tổng hợp bằng thủ tục legacy, không tạo tờ đảo riêng; chứng từ đã khoá / đã ghi sổ chính thức thì 409, kế toán gỡ trong QLSX (12.12.4).
 8. **Chênh lệch tỷ giá** (hoá đơn USD, khách trả Kíp): hạch toán ở đâu, theo tỷ giá nào — **đang chốt**.
-9. **Hàng bán cho chủ xe** (lỗ hổng 2): hàng mua ở quầy đã ghi bút toán chờ `ban_chu_xe` 4022/707 khi trả chủ xe; dầu / phụ tùng xuất cho xe thuê trên phiếu (mục III, V) — **đang chốt**.
+9. **Hàng bán cho chủ xe** (lỗ hổng 2): hàng mua ở quầy đã ghi bút toán chờ `ban_chu_xe` 4022/707 khi trả chủ xe; dầu / phụ tùng kho xuất cho chuyến trên phiếu (mục III, V) — **đã chốt 01/10**, bút toán chờ `xuat_noi_bo` / `xuat_ban` (12.12.4). Còn hỏi anh Khampla: nếu sau này tờ kho của hệ anh Toàn (`PXK_NL`, `PXK_PT` có định khoản) cũng vào sổ anh (câu hỏi 10.11) thì vế Có 1371 phải chọn **một** nơi ghi — không ghi cả hai.
 10. **Ghi nhận chi phí không qua tiền** (lỗ hổng 1, 4): tài khoản đã chốt — thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601; bên em giữ thành bút toán chờ. **API bút toán** đã có (`b9227aa`, 12.12.4), chờ áp script. Còn lại cách ghi **625/4201** (tiền chuyến, tiền nước trả cùng lương — **đang chốt**).
 11. **Tờ kho có định khoản** do hệ anh Toàn sinh: đi vào sổ anh qua đường nào? (Phong bì 3.1 đã thôi dùng.)
 12. **Khách EPL Lào** — đã có lời đáp: bên em tự tạo qua `POST /api/v1/master-data/customers/upsert`, mã `EPLKH-<mã khách bên em>` (12.11.1).
@@ -1354,8 +1356,19 @@ Các bước:
 | `no_ncc` | khoá phiếu có dòng ghi nợ nhà cung cấp | Nợ 625 · 614 (xe thuê 4022) / Có 4021, mỗi dòng chi một dòng | `Trip.id` | nhà cung cấp `EPLNCC-…` của dòng; dòng chưa gán nhà cung cấp: xe thuê lấy chủ xe, còn lại **trống** | quy Kíp theo tỷ giá khoá (`ExchangeRate` 1) |
 | `tat_toan` | KT Chi phí VC chốt tất toán tài xế (`QT_TU`) | Nợ 625 / Có 1601, bằng số tài xế đã chi thật | `<tài xế>:<YYYY-MM>:<mã bản chốt>` | tài xế `EPLTX-…` | Kíp |
 | `ban_chu_xe` | phiếu chi trả chủ xe có trừ hàng quầy đã chi | Nợ 4022 / Có 707, theo giá bán; một phiếu bán một bút toán | mã phiếu bán (kho tạm) | chủ xe `EPLCX-…` | tiền phiếu bán; tỷ giá = Kíp quy đổi ÷ nguyên tệ |
+| `xuat_noi_bo` | khoá phiếu **xe nhà** có dầu kho (mục III, đã cấp theo phiếu đề nghị) / phụ tùng kho (mục V) đã rời kho | **Xuất nội bộ**: dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, mỗi dòng chi một dòng | `dau:<mã lần xuất>` · `pt:<mã lần xuất>` (dòng sổ kho bên kho tạm) — **một lần xuất một bút toán** | **trống** (hàng của mình, không ai nợ) | giá vốn = số lượng × giá bình quân của kho lúc xuất, Kíp |
+| `xuat_ban` | khoá phiếu **xe thuê, EPL ứng** có dầu / phụ tùng kho đã rời kho | **Xuất bán cho chủ xe**, hai dòng cho mỗi dòng chi: Nợ 4022 / Có 707 theo **giá bán** + Nợ 607 / Có 1371 theo **giá vốn** | như trên | dòng 4022/707: chủ xe `EPLCX-…`; dòng 607/1371: trống | giá bán = số trừ vào tiền trả chủ xe; giá vốn như trên; Kíp |
 
-**SourceRef** = `EPLLAO-<nguồn>-<mã nguồn>`, cắt 100 ký tự. Bản đã gỡ mà nguồn ghi lại (mở khoá rồi khoá lại) → **phiên mới** `…-2`, `…-3`. Ví dụ `EPLLAO-thue_xe-662386527e56`, rồi `EPLLAO-thue_xe-662386527e56-2`. Đúng luật khoá bên anh (`[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}`, phân biệt hoa thường).
+**Xuất kho cho chuyến** (`xuat_noi_bo`, `xuat_ban` — chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán"):
+- Chỉ dòng **đã rời kho**: dầu kho thủ kho đã cấp theo phiếu đề nghị (lần cấp ở kho tạm), phụ tùng kho đã xuất lúc khai sự cố. Dòng kho còn trên phiếu mà chưa xuất thì chưa có bút toán.
+- **Xe thuê, chủ xe tự trả** (`paid_by_epl = false`): không có bút toán, kể cả khi phụ tùng đã rời kho.
+- **Giá vốn**: giá bình quân của đúng kho **lúc xuất**, do kho tạm tính (anh Khampla C5.3) và trả về lúc cấp dầu / xuất phụ tùng; trang điều xe ghi lên dòng chi (`unit_price`), sau đó không sửa được. **Giá bán**: KT kho xăng dầu gõ ở mục III, KT Chi phí gõ ở mục V; chưa gõ thì tiền trừ chủ xe tạm theo giá vốn và dòng 4022/707 ghi đúng số đó, kèm chữ "chưa có giá bán".
+- **Ghi lúc khoá phiếu**, không lúc xuất: giá bán chỉ có sau khi kiểm mục (sau lúc xuất), còn tiền trả chủ xe tính từ phiếu đã khoá — ghi lúc khoá thì Có 707 đúng bằng số trừ vào tiền trả. Mở khoá / xoá phiếu thì huỷ hoặc gỡ cùng `thue_xe`, `no_ncc`.
+- **Không trùng `ban_chu_xe`**: `ban_chu_xe` là phiếu **bán ở quầy** của kho tạm, trừ riêng vào đề nghị trả (12.11.3); `xuat_ban` là dòng kho **trên phiếu xuất xe**, trừ qua "EPL đã ứng". Hai nguồn không bao giờ chung một khoản.
+- Dòng kho mang mã người dùng tự chọn có vế Có 4021 thì đã nằm trong `no_ncc` — không lặp ở đây.
+- Ghi chú dòng (`Note`) và diễn giải ghi rõ bằng chữ "Xuất nội bộ" / "Xuất bán cho chủ xe — doanh thu / giá vốn", số lượng, đơn giá, số DO, số phiếu đề nghị xuất kho.
+
+**SourceRef** = `EPLLAO-<nguồn>-<mã nguồn>`, cắt 100 ký tự. Bản đã gỡ mà nguồn ghi lại (mở khoá rồi khoá lại) → **phiên mới** `…-2`, `…-3`. Ví dụ `EPLLAO-thue_xe-662386527e56`, rồi `EPLLAO-thue_xe-662386527e56-2`; xuất kho `EPLLAO-xuat_ban-dau:f90d299c071e`. Đúng luật khoá bên anh (`[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}`, phân biệt hoa thường).
 
 **Gửi** — `POST /api/v1/integrations/logistics/journal-entries`, header `Idempotency-Key` = SourceRef (ID dưới đây minh hoạ):
 
@@ -1376,7 +1389,7 @@ Các bước:
 - `SourceRef`, `CountryId`, `OrgId` trong thân: bên anh **bỏ qua** — SourceRef lấy ở header, đơn vị / quốc gia lấy ở cấu hình `LogisticsJournalEntry`. Bên em giữ trong gói để đọc lại cho dễ. **Không có** `CostObject` hay mã DO trong gói; diễn giải đã ghi số phiếu.
 - **Không gửi `BaseAmount`**: bên anh tự tính `Round(Amount × ExchangeRate, 5, AwayFromZero)`. Dòng Kíp gửi `ExchangeRate` 1. `CurrencyId` tra ở `GetAllCurrency` (chỉ tiền đang bật; USD tạm `QLSX_TIEN_USD=2`).
 - `FiciAutoId`: bên em tra kỳ theo ngày (`GetFinancyCicle`). Kỳ đã đóng thì bên em chặn trước (`KY_DA_DONG`); không tra được thì bỏ trống để bên anh tự lấy theo ngày. Gửi thì phải khớp kỳ của ngày, lệch là 422.
-- `DocumentDate`: khoá phiếu → ngày khoá; tất toán → ngày cuối kỳ (kỳ chưa hết thì hôm nay); bán chủ xe → ngày bán.
+- `DocumentDate`: khoá phiếu → ngày khoá; **xuất kho cho chuyến → ngày xuất thật** (ngày cấp dầu / ngày lấy phụ tùng; dòng cũ không tìm được thì ngày xe đi); tất toán → ngày cuối kỳ (kỳ chưa hết thì hôm nay); bán chủ xe → ngày bán.
 - `Description`, `Note` bên em cắt 250 ký tự (bên anh nhận tới 400).
 - Mọi mã Nợ / Có phải có trong danh mục quốc gia 11 và hạch toán được (cùng danh sách ô chọn của phiếu thu chi).
 
@@ -1419,3 +1432,6 @@ Từ khi bật cờ: khoá phiếu, chốt tất toán, trả chủ xe có hàng
 - HTTP 200 `Success: false`, `Code: 500` (lỗi chưa bắt bên anh) được xếp `BEN_KE_TOAN_TU_CHOI`, không phải "chưa rõ": bỏ bản lúc đó thì không GET trước. Gửi lại vẫn an toàn nhờ cùng SourceRef.
 - 403 `LOGISTICS_JOURNAL_FORBIDDEN` ("Tài khoản này không được gọi tích hợp bút toán.") bị xếp `TAI_KHOAN_SAI` vì câu có chữ "tài khoản" — câu hiện ra vẫn đúng.
 - Phí 2 % và trừ quá tải xe thuê chưa có bút toán (anh Khampla chốt); `625/4201` chưa có nguồn (câu hỏi 10.10).
+- **Xuất kho cho chuyến** (`xuat_noi_bo`, `xuat_ban`): tờ kho `PXK_NL` / `PXK_PT` ở kho tạm (sau là hệ anh Toàn) cũng mang định khoản (xe thuê ghi 4022/1371 theo giá vốn — luật cũ). Hiện tờ đó **không** sang sổ anh; nếu sau này có đường đưa tờ kho vào sổ anh (câu hỏi 10.11) thì vế Có 1371 phải ghi ở **một** nơi — chờ anh Khampla / chủ dự án chọn.
+- Cấp dầu **lệch số duyệt** khi một tờ đề nghị gồm **nhiều dòng** cùng kho: dòng trên phiếu giữ số lít cũ (chỉ phiếu một dòng mới ghi theo số cấp thật), nên bút toán theo số lít trên phiếu — đúng số trừ chủ xe, có thể lệch số lít kho tạm đã xuất.
+- Phụ tùng kho khai với "chủ xe tự trả" vẫn rời kho nhưng không có bút toán (theo bảng chốt 01/10) — giá vốn phần đó chưa ghi ở đâu; cần chủ dự án xác nhận.

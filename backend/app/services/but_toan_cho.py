@@ -10,8 +10,10 @@ tiền — ghi nhận chi phí thuê xe, ghi nợ nhà cung cấp, quyết toán
 GIAO ƯỚC (module khác gọi — giữ cố định):
 
     ghi(db, nguon, ma_nguon, ngay, dong, dien_giai) -> ButToanCho | None
-        nguon      ≤ 16 ký tự: loại nguồn — thue_xe · no_ncc (khoá phiếu, ở đây) · nguồn khác do module gọi tự đặt
-        ma_nguon   ≤ 80 ký tự: mã bản ghi nguồn (thue_xe / no_ncc: Trip.id)
+        nguon      ≤ 16 ký tự: loại nguồn — thue_xe · no_ncc · xuat_noi_bo · xuat_ban (khoá phiếu, ở đây) · nguồn khác do
+                   module gọi tự đặt (tat_toan, ban_chu_xe)
+        ma_nguon   ≤ 80 ký tự: mã bản ghi nguồn (thue_xe / no_ncc: Trip.id · xuat_noi_bo / xuat_ban: "dau:<mã lần xuất kho>"
+                   hoặc "pt:<mã lần xuất kho>" — TripExpense.stock_move_id, mã dòng sổ kho bên kho tạm)
         ngay       date (hoặc chuỗi YYYY-MM-DD) — ngày hạch toán
         dong       [{"no": "621", "co": "4022", "tien": 1250.5, "ccy": "USD",
                      "doi_tuong": {"loai": "chu_xe", "ref_id": "<Owner.id>"} | None, "dien_giai": "…"}, …]
@@ -29,6 +31,13 @@ GIAO ƯỚC (module khác gọi — giữ cố định):
 
     danh_sach(db, nguon=None, status=None, trip_id=None, tu=None, den=None, gioi_han=200) -> [ButToanCho]
     xuat(r, doc_no=None) -> dict
+
+XUẤT KHO CHO CHUYẾN (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu
+(ghi_khoa_phieu), một LẦN XUẤT một bút toán, ngày = ngày xuất thật (dong_xuat_kho):
+    xuat_noi_bo   xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371 — giá vốn bình quân kho
+    xuat_ban      xe thuê, EPL ứng: Nợ 4022 / Có 707 theo GIÁ BÁN (đối tượng chủ xe) + Nợ 607 / Có 1371 theo giá vốn
+    xe thuê chủ xe tự trả: không có. Khác `ban_chu_xe` (services/tra_chu_xe.py): đó là phiếu BÁN Ở QUẦY của kho tạm, trừ
+    riêng vào tiền trả (tinh_tru); còn đây là dòng kho trên phiếu xuất xe, trừ qua `ung_truoc` của tinh_phieu.
 
 Hàm ở đây KHÔNG commit — người gọi commit cùng giao dịch của nghiệp vụ (khoá phiếu ghi bút toán trong cùng lần khoá).
 
@@ -56,6 +65,11 @@ VAI_XEM = ("acct", "expacct", "admin")
 THUE_XE = "thue_xe"        # xe thuê: Nợ 621 chi phí vận chuyển / Có 4022 phải trả chủ xe, bằng tiền thuê
 NO_NCC = "no_ncc"          # dòng chi ghi nợ nhà cung cấp: Nợ 625 · 614 (xe thuê 4022) / Có 4021
 NGUON_KHOA_PHIEU = (THUE_XE, NO_NCC)
+# XUẤT KHO cho chuyến (chủ dự án 01/10: "xuất dầu là xuất nội bộ và còn là xuất bán") — cũng ghi lúc khoá phiếu, nhưng MỘT
+# LẦN XUẤT KHO một bút toán (ma_nguon "dau:<mã lần xuất>" · "pt:<mã lần xuất>" của kho tạm), để ngày chứng từ là ngày xuất thật
+XUAT_NOI_BO = "xuat_noi_bo"  # xe nhà: dầu kho Nợ 625 / Có 1371 · phụ tùng kho Nợ 614 / Có 1371, theo giá vốn bình quân kho
+XUAT_BAN = "xuat_ban"        # xe thuê, EPL ứng: Nợ 4022 / Có 707 theo GIÁ BÁN + Nợ 607 / Có 1371 theo giá vốn bình quân kho
+NGUON_XUAT_KHO = (XUAT_NOI_BO, XUAT_BAN)
 
 
 def _khoa(nguon, ma_nguon):
@@ -357,8 +371,130 @@ def dong_khoa_phieu(db, p, cac_dong=None):
     return ra
 
 
+# ================================================================ XUẤT KHO cho chuyến (chủ dự án 01/10)
+def _ngay_dia_phuong(t):
+    """Giờ UTC lưu trong DB (bay_gio) → ngày theo giờ máy chủ — cùng cách lần xuất kho lấy ngày (dt.date.today() lúc cấp)."""
+    return t.replace(tzinfo=dt.timezone.utc).astimezone().date() if t else None
+
+
+def _so_doc(x):
+    """Số gọn cho diễn giải: 100.0 → "100", 30000 → "30.000", 1.5 → "1,5" (cách viết của khách)."""
+    x = float(x or 0)
+    if abs(x - round(x)) < 1e-9:
+        return "{:,}".format(int(round(x))).replace(",", ".")
+    return ("%.2f" % x).rstrip("0").replace(".", ",")
+
+
+def _lan_xuat(db, p, loai, ds):
+    """(ngày xuất kho THẬT, số tờ) của một lần xuất. Dầu: phiếu đề nghị xuất kho nhiên liệu đã cấp của đúng kho (granted_at —
+    lần cấp là lần xuất, phieu_linh.cap_phat). Phụ tùng: sự cố sinh dòng (duyệt báo hỏng → approved_at; tổ sửa tự khai → ts)
+    — phụ tùng rời kho ngay lúc đó. Không tìm được (dòng cũ xuất lúc ghi sổ mục III trước 30/09) thì ngày xe đi."""
+    from models import TripEvent, Voucher
+    from services.gia_von import kho_goc
+    ngay, nhan = None, None
+    if loai == "dau":
+        noi = ds[0].place_id or kho_goc(db)
+        v = (db.query(Voucher).filter(Voucher.trip_id == p.id, Voucher.kind == "fuel", Voucher.status == "da_cap",
+                                      Voucher.place_id == noi).order_by(Voucher.granted_at.desc()).first())
+        if v is not None:
+            ngay, nhan = _ngay_dia_phuong(v.granted_at), v.doc_no
+    else:
+        e = db.query(TripEvent).filter(TripEvent.trip_id == p.id, TripEvent.expense_id == ds[0].id).first()
+        if e is not None:
+            ngay = _ngay_dia_phuong(e.approved_at or e.ts)
+    return ngay or p.out_date or p.doc_date or dt.date.today(), nhan
+
+
+def dong_xuat_kho(db, p, cac_dong=None):
+    """{(nguon, ma_nguon): (ngày xuất, dòng, diễn giải)} — bút toán XUẤT KHO cho chuyến của phiếu `p`, chưa ghi gì.
+
+    Chỉ dòng ĐÃ RỜI KHO: dầu mục III / phụ tùng mục V `source = kho` có `stock_move_id` (dầu: thủ kho đã cấp theo phiếu đề
+    nghị; phụ tùng: xuất ngay lúc khai sự cố). EPL ứng (`paid_by_epl` khác False), số lượng > 0. Gom theo LẦN XUẤT (một tờ cấp
+    dầu có thể gồm nhiều dòng cùng kho) — một lần xuất một bút toán, ngày chứng từ = ngày xuất thật (`_lan_xuat`).
+
+      · xe nhà → `xuat_noi_bo`: định khoản của dòng (tai_khoan.tk_dong — luật: dầu 625/1371, phụ tùng 614/1371) bằng GIÁ VỐN.
+      · xe thuê → `xuat_ban`: hai dòng — doanh thu theo định khoản của dòng (luật: 4022/707) bằng GIÁ BÁN (`sale_price`, đúng
+        số tinh_toan.tien_dong trừ vào tiền trả chủ xe; chưa gõ giá bán thì tiền trừ tạm theo giá vốn — bút toán theo đúng số
+        đó, ghi rõ `gia_ban_tam`), đối tượng chủ xe; và giá vốn Nợ 607 / Có 1371 bằng GIÁ VỐN, không đối tượng.
+    GIÁ VỐN = số lượng × `unit_price` của dòng: giá bình quân của đúng kho LÚC XUẤT do kho tạm trả về (dầu: cap_phat chép
+    `unit_cost_lak` của dòng sổ lên dòng; phụ tùng: giá bình quân đọc ngay trước khi xuất, cùng giá kho tạm ghi trên dòng sổ).
+    Dòng đã xuất không sửa được giá (phieu._ap_gia, _ap_dong_chi) nên số này đứng yên.
+    Dòng mang mã người dùng tự chọn có vế Có 4021 thì đã nằm trong `no_ncc` — bỏ ở đây để không ghi hai lần."""
+    from models import TripExpense
+    from services.ban_giao import _ten as ten_dong
+    from services.tinh_toan import la_xuat_ban, tien_dong, ty_gia
+    if cac_dong is None:
+        cac_dong = (db.query(TripExpense).filter(TripExpense.trip_id == p.id)
+                    .order_by(TripExpense.section, TripExpense.line_no).all())
+    thue = p.company == "joint"
+    nguon = XUAT_BAN if thue else XUAT_NOI_BO
+    nhom = {}
+    for d in cac_dong:
+        if d.section not in ("fuel", "repair") or d.source != "kho" or not d.stock_move_id:
+            continue
+        if d.paid_by_epl is False or (d.qty or 0) <= 0:     # xe thuê chủ xe tự trả: không phải tiền của EPL
+            continue
+        nhom.setdefault(("dau" if d.section == "fuel" else "pt", d.stock_move_id), []).append(d)
+    ra = {}
+    for (loai, mv), ds in nhom.items():
+        ngay, so_to = _lan_xuat(db, p, loai, ds)
+        hang = "dầu" if loai == "dau" else "phụ tùng"
+        dong = []
+        for d in ds:
+            ma = TK.tk_dong(p.company, d)
+            if not ma or "/" not in ma:
+                continue
+            no, co = ma.split("/", 1)
+            if co == TK.NCC:
+                continue
+            ty = ty_gia(p, d.currency)
+            gia_von = d.unit_price or 0
+            von = round((d.qty or 0) * gia_von * ty)
+            ten = "%s %s %s" % ({"fuel": "III", "repair": "V"}[d.section], ten_dong(db, d)[0], _so_doc(d.qty))
+            chung = {"ccy": "LAK", "ref": d.id, "section": d.section, "sl": d.qty, "stock_move_id": mv,
+                     "hinh_thuc": "xuat_ban" if thue else "noi_bo"}
+            if (d.currency or "LAK").upper() != "LAK":
+                chung["ty_gia"] = ty
+            if thue and la_xuat_ban(p, d) and co != TK.KHO:
+                ban_tam = d.sale_price is None
+                gia_ban = d.unit_price if ban_tam else d.sale_price
+                x = dict(chung, no=no, co=co, tien=round(tien_dong(p, d)), ve="doanh_thu", don_gia=gia_ban,
+                         doi_tuong={"loai": "chu_xe", "ref_id": p.owner_id} if p.owner_id else None,
+                         dien_giai="Xuất bán cho chủ xe — doanh thu %s × %s (%s) · %s" % (
+                             ten, _so_doc(gia_ban), "chưa có giá bán, tạm theo giá vốn" if ban_tam else "giá bán", p.doc_no))
+                if ban_tam:
+                    x["gia_ban_tam"] = True
+                dong.append(x)
+                dong.append(dict(chung, no=TK.GIA_VON, co=TK.KHO, tien=von, ve="gia_von", don_gia=gia_von, doi_tuong=None,
+                                 dien_giai="Xuất bán cho chủ xe — giá vốn %s × %s (bình quân kho) · %s" % (
+                                     ten, _so_doc(gia_von), p.doc_no)))
+            else:
+                dong.append(dict(chung, no=no, co=co, tien=von, ve="gia_von", don_gia=gia_von, doi_tuong=None,
+                                 dien_giai="%s — %s × %s (giá vốn bình quân kho) · %s" % (
+                                     "Xuất kho" if thue else "Xuất nội bộ", ten, _so_doc(gia_von), p.doc_no)))
+        if not dong:
+            continue
+        kem = (" · " + so_to) if so_to else (" · " + ten_dong(db, ds[0])[0] if loai == "pt" else "")
+        dg = ("Xuất bán cho chủ xe %s — %s phiếu %s%s" % (p.owner_name or "—", hang, p.doc_no, kem) if thue
+              else "Xuất kho nội bộ %s phiếu %s%s" % (hang, p.doc_no, kem))
+        ra[(nguon, "%s:%s" % (loai, mv))] = (ngay, dong, dg)
+    return ra
+
+
+def _ban_xuat_kho(db, trip_id):
+    return (db.query(ButToanCho).filter(ButToanCho.trip_id == trip_id, ButToanCho.nguon.in_(NGUON_XUAT_KHO))
+            .order_by(ButToanCho.created_at).all())
+
+
 def ghi_khoa_phieu(db, p, by_user=None, cac_dong=None):
-    """Khoá phiếu → ghi (hoặc cập nhật) hai bút toán chờ; nguồn nào không còn dòng thì huỷ bản chưa gửi. Trả {nguon: bản}."""
+    """Khoá phiếu → ghi (hoặc cập nhật) các bút toán chờ: `thue_xe`, `no_ncc` (một bản mỗi nguồn) và bút toán XUẤT KHO
+    (`xuat_noi_bo` / `xuat_ban`, một bản mỗi lần xuất). Nguồn nào không còn dòng thì huỷ bản chưa gửi.
+    Trả {nguon: bản} cho thue_xe / no_ncc, {nguon: [bản, …]} cho hai nguồn xuất kho.
+
+    Vì sao bút toán xuất kho ghi LÚC KHOÁ chứ không lúc cấp dầu / xuất phụ tùng (dù hàng rời kho trước đó): GIÁ BÁN cho chủ
+    xe chỉ có khi KT kho xăng dầu (mục III) / KT Chi phí (mục V) kiểm mục, sau lúc xuất; tiền trả chủ xe tính từ phiếu ĐÃ
+    KHOÁ — ghi lúc khoá thì Nợ 4022 / Có 707 đúng bằng số trừ vào tiền trả; mở khoá huỷ / gỡ cùng thue_xe, no_ncc. Ngày
+    chứng từ vẫn là ngày xuất thật (bút toán chưa gửi nên ghi muộn không lệch kỳ)."""
     ngay = dt.date.today()
     bo = dong_khoa_phieu(db, p, cac_dong)
     ra = {}
@@ -367,9 +503,24 @@ def ghi_khoa_phieu(db, p, by_user=None, cac_dong=None):
         r = ghi(db, n, p.id, ngay, dong, dg, trip_id=p.id, by_user=by_user)
         if r is not None:
             ra[n] = r
+    kho = dong_xuat_kho(db, p, cac_dong)
+    for (n, m), (ngay_x, dong, dg) in kho.items():
+        r = ghi(db, n, m, ngay_x, dong, dg, trip_id=p.id, by_user=by_user)
+        if r is not None:
+            ra.setdefault(n, []).append(r)
+    # bản xuất kho cũ không còn ứng với lần xuất nào của phiếu theo loại xe hiện tại (đổi xe nhà ↔ xe thuê giữa hai lần
+    # khoá…) → huỷ như mở khoá
+    for r in _ban_xuat_kho(db, p.id):
+        if (r.nguon, r.ma_nguon) not in kho and r.status != "huy":
+            huy(db, r.nguon, r.ma_nguon, by_user)
     return ra
 
 
 def huy_khoa_phieu(db, p, by_user=None):
-    """Mở khoá phiếu → huỷ các bút toán CHƯA gửi của phiếu đó (bản đã gửi: đánh chờ đảo)."""
-    return [r for r in (huy(db, n, p.id, by_user) for n in NGUON_KHOA_PHIEU) if r is not None]
+    """Mở khoá / xoá phiếu → huỷ các bút toán CHƯA gửi của phiếu đó (bản đã gửi: gỡ bên kế toán, chưa gỡ được thì chờ đảo) —
+    thue_xe, no_ncc và mọi bút toán xuất kho của phiếu."""
+    ra = [r for r in (huy(db, n, p.id, by_user) for n in NGUON_KHOA_PHIEU) if r is not None]
+    for r in _ban_xuat_kho(db, p.id):
+        if r.status != "huy":                       # cho_gui → huy · da_gui → gỡ bên kế toán (chưa được thì chờ đảo)
+            ra.append(huy(db, r.nguon, r.ma_nguon, by_user))
+    return ra

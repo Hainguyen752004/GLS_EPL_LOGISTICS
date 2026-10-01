@@ -1,7 +1,9 @@
 /* Bút toán chờ gửi — khoản sổ kế toán phải ghi mà KHÔNG đi qua tiền (chủ dự án 01/10/2026).
  *
  * Nguồn: thue_xe (khoá phiếu xe thuê: Nợ 621 / Có 4022 = tiền thuê) · no_ncc (khoá phiếu: dòng chi ghi nợ nhà cung cấp …/4021) ·
- * tat_toan (quyết toán tạm ứng QT_TU Nợ 625 / Có 1601) · ban_chu_xe (hàng bán cho chủ xe trừ vào tiền trả: Nợ 4022 / Có 707).
+ * xuat_noi_bo (khoá phiếu xe nhà: mỗi lần xuất kho dầu 625/1371 · phụ tùng 614/1371 theo giá vốn) · xuat_ban (khoá phiếu xe thuê:
+ * mỗi lần xuất kho 4022/707 theo giá bán + 607/1371 theo giá vốn) ·
+ * tat_toan (quyết toán tạm ứng QT_TU Nợ 625 / Có 1601) · ban_chu_xe (hàng bán ở quầy cho chủ xe trừ vào tiền trả: Nợ 4022 / Có 707).
  * Gửi sang hệ anh Tune (services/gui_but_toan_tune.py) khi máy chủ bật cờ QLSX_GUI_BUT_TOAN (`co_duong_gui`): ghi xong tự gửi;
  * màn có nút Gửi (một bản: chờ gửi → gửi, chờ đảo → đảo), Gửi hết, Cập nhật (hỏi lại số chứng từ). Cờ tắt: CHỈ XEM như cũ.
  * Đọc GET /api/but-toan-cho (routes/de_nghi.py) — vai KT Thu/Chi VC, KT Chi phí VC, Sếp, máy chủ chặn vai khác.
@@ -12,13 +14,15 @@
   let root, DS = [], CHON = null, loc = '', tim = '', hen = null, LUOT = 0, PHIEU = null, TEN = {}, GUI = false;
   const guiDuoc = () => GUI && EPL.AUTH.la('acct', 'expacct');      // Sếp luôn qua (AUTH.la) — cùng danh sách máy chủ
   const q = (s) => root.querySelector(s);
-  const NGUON = ['thue_xe', 'no_ncc', 'tat_toan', 'ban_chu_xe'];
+  // xuat_noi_bo / xuat_ban (01/10): xuất kho cho chuyến — một lần xuất một bút toán, nguồn gốc là phiếu xuất xe
+  const NGUON = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban', 'tat_toan', 'ban_chu_xe'];
+  const TU_PHIEU = ['thue_xe', 'no_ncc', 'xuat_noi_bo', 'xuat_ban'];
   const LOC = ['', 'cho_gui', 'da_gui', 'huy', 'can_dao'];
   const NHAN_LOC = { '': 'all', cho_gui: 'dt_st_cho_gui', da_gui: 'dt_st_da_gui', huy: 'v_huy', can_dao: 'btc_can_dao' };
   const nhanNguon = (n) => (NGUON.includes(n) ? 'btc_nguon_' + n : n);
   // nguồn sinh từ MỘT phiếu xuất xe (lúc khoá): phiếu bị xoá thì trip_id về null (khoá ngoại SET NULL) — còn ma_nguon
   const nhanKy = (v) => (/^\d{4}-\d{2}$/.test(v || '') ? v.slice(5, 7) + '/' + v.slice(0, 4) : (v || ''));   // 2026-10 → 10/2026
-  const tuPhieu = (b) => b.trip_id || b.nguon === 'thue_xe' || b.nguon === 'no_ncc';
+  const tuPhieu = (b) => b.trip_id || TU_PHIEU.includes(b.nguon);
   const tien = (v, ma) => `${so(v, ['LAK', 'VND'].includes(ma) ? 0 : 2)} <small>${esc(ma || '')}</small>`;
 
   /** Trạng thái hiện của một bút toán: chờ đảo đứng trước (đã gửi mà nguồn bị huỷ). */
@@ -35,6 +39,14 @@
     return t;
   }
   const chuoiTien = (t) => Object.keys(t).length ? Object.entries(t).map(([m, v]) => tien(v, m)).join(' · ') : '—';
+  /** Loại khoản của một dòng xuất kho, bằng chữ theo ngôn ngữ đang xem (01/10): "xuất nội bộ" / "xuất bán cho chủ xe" ·
+   *  doanh thu (giá bán) / giá vốn (bình quân kho) — không để người đọc tự suy từ mã tài khoản. Dòng nguồn khác: trống. */
+  function loaiDong(d) {
+    if (!d.hinh_thuc) return '';
+    const k = [d.hinh_thuc === 'xuat_ban' ? 'btc_ht_xuat_ban' : 'btc_ht_noi_bo', d.ve ? 'btc_ve_' + d.ve : null].filter(Boolean);
+    return `<div class="btc-loai">${k.map(x => `<span class="tag plain">${NN.h(x)}</span>`).join(' ')}`
+      + `${d.gia_ban_tam ? ` <span class="tag unpaid">${NN.h('btc_gia_ban_tam')}</span>` : ''}</div>`;
+  }
   /** Tên tài khoản dưới mã: tiếng Lào lấy nguyên tên danh mục anh Khampla (máy chủ gửi `no_ten_lo`), VI + ລາວ hai dòng. */
   function tenTK(d, ve) {
     const vi = d[ve + '_ten'] || '', lo = d[ve + '_ten_lo'] || '';
@@ -140,7 +152,7 @@
       <td class="num">${tien(d.tien, d.ccy)}${d.ccy_goc ? `<small>${NN.h('btc_tien_goc')}: ${so(d.tien_goc, ['LAK', 'VND'].includes(d.ccy_goc) ? 0 : 2)} ${esc(d.ccy_goc)}</small>` : ''}
         ${d.ccy !== 'LAK' && d.tien_lak ? `<small>≈ ${so(d.tien_lak)} LAK</small>` : ''}</td>
       <td>${d.doi_tuong || !d.doi_tuong_no ? tenDoiTuong(d.doi_tuong) : ''}${d.doi_tuong_no ? `${d.doi_tuong ? '<br>' : ''}${tenDoiTuong(d.doi_tuong_no)}` : ''}</td>
-      <td lang="lo">${esc(d.dien_giai || '')}${d.canh_bao_tk ? `<div class="canh">⚠ ${NN.h('btc_canh_tk')}: ${esc(d.canh_bao_tk.join(', '))}</div>` : ''}</td></tr>`).join('');
+      <td lang="lo">${loaiDong(d)}${esc(d.dien_giai || '')}${d.canh_bao_tk ? `<div class="canh">⚠ ${NN.h('btc_canh_tk')}: ${esc(d.canh_bao_tk.join(', '))}</div>` : ''}</td></tr>`).join('');
     o.innerHTML = `<div class="btc-dau">
         <div><h3>${NN.h(nhanNguon(b.nguon))}</h3><div class="small muted mono">${esc(b.source_ref || '')}</div></div>
         <div class="grow"></div>${EPL.tag(s.mau, s.nhan)}

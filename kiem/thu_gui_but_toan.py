@@ -214,7 +214,7 @@ def main():
         e = (gt.get("Entries") or [{}])[0]
         dung(gt.get("SourceRef") == "EPLLAO-thue_xe-" + tid and e.get("DebitAccount") == "621" and e.get("CreditAccount") == "4022"
              and e.get("Amount") == 1200 and e.get("CurrencyId") == 2 and e.get("ExchangeRate") == 22000 and e.get("ObjectId")
-             and gt.get("FiciAutoId") == 77 and gt.get("DocumentDate") == "2026-10-01",
+             and gt.get("FiciAutoId") == 77 and gt.get("DocumentDate") == time.strftime("%Y-%m-%d"),
              "gói thuê xe: 621/4022 · 1.200 USD (mã tiền 2, tỷ giá 22.000) · đối tượng chủ xe · kỳ · ngày", json.dumps(e)[:120])
         en = (GIA.ct.get(n.get("source_ref"), {}).get("body") or {}).get("Entries") or [{}]
         dung(en[0].get("DebitAccount") == "4022" and en[0].get("CreditAccount") == "4021" and en[0].get("CurrencyId") == 26

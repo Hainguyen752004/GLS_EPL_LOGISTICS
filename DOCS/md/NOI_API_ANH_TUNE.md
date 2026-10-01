@@ -48,7 +48,7 @@ Mọi thay đổi bên em làm trên source của anh: **mục 8** (từng commi
 | A8 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **chi mục V – VI**: dòng quỹ trả ngay, định khoản theo tờ `PC_SC` | **chạy** ở máy |
 | A9 | `save-and-commit` (CMP "Chi khác" 60 / CMR "Thu khác" 17) | **tất toán tài xế**: chi bù TT_CHI / thu hoàn TT_THU, đứng tên tài xế `EPLTX-` | **chạy** ở máy |
 | A10 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **trả nhà cung cấp**: Nợ 4021 / Có tiền, đứng tên nhà cung cấp `EPLNCC-` | **chạy** ở máy |
-| A11 | `POST /api/v1/integrations/logistics/journal-entries` · `POST …/reverse` · `GET …/{SourceRef}` | **bút toán chờ gửi** (không qua tiền): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 → chứng từ tổng hợp DOTY 12, ghi sổ tạm (ST 13) bên anh | API **đã viết** (`b9227aa`), cấu hình đã có trên API ở máy, **chưa áp script DB** (gọi đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`); bên em gửi được (`875a0cf`) nhưng cờ `QLSX_GUI_BUT_TOAN` **tắt** → bút toán vẫn nằm ở LAO (mục 1.7) |
+| A11 | `POST /api/v1/integrations/logistics/journal-entries` · `POST …/reverse` · `GET …/{SourceRef}` | **bút toán chờ gửi** (không qua tiền): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707, xuất kho cho chuyến (xe nhà 625 · 614 / 1371; xe thuê 4022/707 + 607/1371) → chứng từ tổng hợp DOTY 12, ghi sổ tạm (ST 13) bên anh | API **đã viết** (`b9227aa`), cấu hình đã có trên API ở máy, **chưa áp script DB** (gọi đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`); bên em gửi được (`875a0cf`) nhưng cờ `QLSX_GUI_BUT_TOAN` **tắt** → bút toán vẫn nằm ở LAO (mục 1.7) |
 | — | `POST …/cmpayment-receipt/list` · `GET …/{id}` · `POST …/delete` | chống trùng, đọc trạng thái, rút phiếu chưa ghi sổ — dùng chung cho A4, A7 – A10 | **chạy** |
 
 ### 0.2. Hệ anh gọi sang LAO
@@ -78,6 +78,7 @@ Tờ chứng từ vẫn sinh ở LAO để in, xem và hiện định khoản. T
 | `PC_NCC` trả nhà cung cấp | KT Chi phí lập đề nghị trả | A10 | chạy |
 | ghi nợ nhà cung cấp (625 · 614 / 4021) · thuê xe (621/4022) | khoá phiếu | A11: nguồn `no_ncc` · `thue_xe` | giữ ở LAO (cờ tắt) |
 | hàng bán cho chủ xe (4022/707) | thủ quỹ bên anh đã chi phiếu trả chủ xe | A11: nguồn `ban_chu_xe` | giữ ở LAO (cờ tắt) |
+| xuất kho cho chuyến: xe nhà xuất nội bộ (625 · 614 / 1371) · xe thuê xuất bán cho chủ xe (4022/707 + 607/1371) | khoá phiếu | A11: nguồn `xuat_noi_bo` · `xuat_ban`, một lần xuất một bút toán | giữ ở LAO (cờ tắt) |
 | `PT` thu tiền khách | kế toán bên anh thu nợ SO | **việc của hệ anh**: **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** → phiếu thu nợ **TKN** → hệ anh tự sinh phiếu thu **CMR 17 "Thu khác"** Nợ 1021 / Có 1211 (mục 1.5). **Không** thu bằng phiếu "Thu công nợ" CMR 15. LAO đọc "đã thu" qua A5 | chạy (KB-AZ) |
 | `HD` hoá đơn | — | **việc của hệ anh**, từ SO (A2) | — |
 
@@ -324,12 +325,14 @@ Khoản sổ phải ghi mà không đi qua tiền, LAO giữ ở bảng `but_toa
 | `no_ncc` | **khoá phiếu** có dòng chi EPL chịu mà vế Có 4021 (dầu trạm ghi nợ, thẻ cao tốc, sửa ngoài cho nợ…) — như trên | Nợ 625 · 614 (xe thuê 4022) / Có 4021, quy Kíp theo tỷ giá khoá trên phiếu; bỏ dòng mục V quỹ trả ngay (đã đi A8) | nhà cung cấp `EPLNCC-` (dòng không có nhà cung cấp: xe thuê thì chủ xe, không thì trống) | ngày khoá |
 | `tat_toan` | **chốt tất toán** tài xế — KT Chi phí VC (`expacct`) hoặc Sếp, `POST /api/tat-toan` | quyết toán `QT_TU` Nợ 625 / Có 1601, bằng số tài xế đã chi thật | tài xế `EPLTX-` | ngày cuối kỳ |
 | `ban_chu_xe` | thủ quỹ bên anh **đã chi** phiếu trả chủ xe có trừ hàng quầy — LAO đọc `STATUS` 12/13 | Nợ 4022 / Có 707, theo giá bán; một phiếu bán một bút toán | chủ xe `EPLCX-` | ngày bán |
+| `xuat_noi_bo` | **khoá phiếu xe nhà** có dầu kho / phụ tùng kho đã rời kho — như `thue_xe` | **Xuất nội bộ**: dầu Nợ 625 / Có 1371 · phụ tùng Nợ 614 / Có 1371, theo **giá vốn bình quân kho lúc xuất**; một lần xuất một bút toán | trống | ngày xuất thật (cấp dầu / lấy phụ tùng) |
+| `xuat_ban` | **khoá phiếu xe thuê** (EPL ứng) có dầu kho / phụ tùng kho đã rời kho — như trên | **Xuất bán cho chủ xe**: Nợ 4022 / Có 707 theo **giá bán** (đúng số trừ tiền trả chủ xe) + Nợ 607 / Có 1371 theo **giá vốn**; một lần xuất một bút toán | dòng 4022/707: chủ xe `EPLCX-`; dòng 607/1371: trống | ngày xuất thật |
 
-- Khoá chống trùng (nguồn, mã nguồn); mã nguồn: `thue_xe` / `no_ncc` = `Trip.id`; `tat_toan` = `<tài xế>:<kỳ>:<mã bản chốt>`; `ban_chu_xe` = mã phiếu bán kho tạm.
+- Khoá chống trùng (nguồn, mã nguồn); mã nguồn: `thue_xe` / `no_ncc` = `Trip.id`; `tat_toan` = `<tài xế>:<kỳ>:<mã bản chốt>`; `ban_chu_xe` = mã phiếu bán kho tạm; `xuat_noi_bo` / `xuat_ban` = `dau:<mã lần xuất>` · `pt:<mã lần xuất>` (dòng sổ kho bên kho tạm, `TripExpense.stock_move_id`). Xe thuê chủ xe tự trả: không có bút toán xuất kho. `xuat_ban` (dòng kho trên phiếu xuất xe, trừ qua "EPL đã ứng") khác `ban_chu_xe` (phiếu bán ở quầy, trừ riêng) — không chung khoản nào.
 - **Mã gửi đi** `source_ref` = `EPLLAO-<nguồn>-<mã nguồn>`; bản đã đảo mà nguồn ghi lại (mở khoá rồi khoá lại) thì thêm `-2`, `-3`… (cột `phien`), không đụng chứng từ đã đảo.
 - Trạng thái: `cho_gui` · `da_gui` (có số chứng từ bên anh) · `huy`; cờ `can_dao` = đã gửi mà nguồn bị huỷ, chờ gỡ bên anh.
 - Nguồn bị huỷ:
-  - mở khoá phiếu (`POST /api/trips/{tid}/mo-khoa`), xoá phiếu (`DELETE /api/trips/{tid}`) → huỷ `thue_xe`, `no_ncc` của phiếu;
+  - mở khoá phiếu (`POST /api/trips/{tid}/mo-khoa`), xoá phiếu (`DELETE /api/trips/{tid}`) → huỷ `thue_xe`, `no_ncc` và mọi bút toán `xuat_noi_bo` / `xuat_ban` của phiếu;
   - bỏ chốt tất toán (`DELETE /api/tat-toan/{driver_id}`) → rút `tat_toan`;
   - bản chưa gửi → `huy` (lần gửi trước chưa rõ kết quả thì hỏi lại bên anh trước, mục 1.7.5); bản đã gửi → gửi gỡ (A11 reverse), chưa gỡ được thì `can_dao`.
 - Khoá lại phiếu → ghi lại theo số mới: bản chưa gửi được cập nhật; bản đã gửi **đứng yên** (đổi số phải gỡ trước).
@@ -376,7 +379,7 @@ Bật theo thứ tự (bước 1 – 4 trên DB demo / API ở máy trước, ho
 7. Khoá lại phiếu → bút toán mới với SourceRef `…-2`.
 8. Bên anh **chặn gỡ** chứng từ đã khoá (`GLB_ISLOCK = 1`) hoặc đã ghi sổ chính thức (ST 12): 409 `LOGISTICS_JOURNAL_52515`. LAO giữ `can_dao` kèm câu lỗi; kế toán bên anh gỡ ghi sổ trong QLSX trước, rồi bấm **Gửi** lại ở LAO.
 
-Ba nguồn còn lại đi cùng khuôn: `no_ncc` (cùng lần khoá), `tat_toan` (chốt / bỏ chốt tất toán), `ban_chu_xe` (lúc LAO thấy phiếu chi trả chủ xe đã ghi sổ).
+Các nguồn còn lại đi cùng khuôn: `no_ncc`, `xuat_noi_bo`, `xuat_ban` (cùng lần khoá; hai nguồn xuất kho một lần xuất một chứng từ, `DocumentDate` = ngày xuất thật), `tat_toan` (chốt / bỏ chốt tất toán), `ban_chu_xe` (lúc LAO thấy phiếu chi trả chủ xe đã ghi sổ).
 
 #### 1.7.3. Gói LAO gửi
 
