@@ -1241,3 +1241,35 @@ class ChiTune(Base):
     first_attempt_at = Column(DateTime)
     last_attempt_at = Column(DateTime)
     checked_at = Column(DateTime)
+
+
+class ChiChuXeTune(Base):
+    """ĐỀ NGHỊ TRẢ CHỦ XE LIÊN KẾT sang hệ kế toán anh Tune (01/10): một lần đề nghị = một phiếu chi "Chi khác" bên đó cho
+    một chủ xe, gồm các phiếu xe thuê đã khoá chưa trả, cùng một tiền thuê. Thủ quỹ chi và GHI SỔ ở hệ đó; bên em đọc lại,
+    đã ghi sổ thì các phiếu thành "đã trả chủ xe" (services/tra_chu_xe.danh_dau_tra). Phiếu đang nằm trong một đề nghị chưa
+    chi thì không vào đề nghị khác. `status`: da_gui · da_chi · loi · huy."""
+    __tablename__ = "chi_chu_xe_tune"
+    id = Column(String, primary_key=True, default=ma_moi)
+    owner_id = Column(String, ForeignKey("owners.id"), index=True, nullable=False)
+    trip_ids = Column(Text, nullable=False)                       # JSON danh sách Trip.id
+    currency = Column(String(3), nullable=False)
+    amount = Column(Float, nullable=False)                        # theo tiền thuê
+    amount_lak = Column(Float)
+    phuong_thuc = Column(String(8), nullable=False, default="cash")
+    ref_no = Column(String(64), nullable=False)                   # số đề nghị bên em, gửi làm RefDocumentNo
+    status = Column(String(16), nullable=False, default="loi")
+    real_id = Column(Integer)
+    document_no = Column(String(64))
+    obj_id = Column(Integer)
+    tune_status = Column(Integer)
+    post_by = Column(String)
+    post_at = Column(DateTime)
+    request_body = Column(Text)
+    response_body = Column(Text)
+    error_code = Column(String(64))
+    error_message = Column(Text)
+    attempts = Column(Integer, nullable=False, default=0)
+    created_by = Column(String)
+    created_at = Column(DateTime, default=bay_gio)
+    last_attempt_at = Column(DateTime)
+    checked_at = Column(DateTime)

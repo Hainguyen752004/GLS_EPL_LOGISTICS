@@ -1,3 +1,7 @@
 /* Xe liên kết — bảng chủ xe liên kết (danh mục). Hộp trả gộp và bảng chuyến xe liên kết ở trang kế toán từ 28/09 (đợt 7b). */
 .xlk-chu-card{margin-bottom:14px}
 .xlk-tat{opacity:.55}
+.cx-tra{max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.cx-tra .tbl{width:100%}
+.cx-tra .tbl td{vertical-align:top}
+.cx-tra h4{margin:6px 0 0}

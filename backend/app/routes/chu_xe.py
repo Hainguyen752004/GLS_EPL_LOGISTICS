@@ -189,3 +189,63 @@ def cong_no_chu_xe(oid: str, user=Depends(nguoi_hien_tai)):
 @router.post("/api/owners/{oid}/tra")
 def tra_chu_xe_gop(oid: str, user=Depends(nguoi_hien_tai)):
     raise HTTPException(409, DA_DOI)
+
+
+# ---------------------------------------------------------------- trả chủ xe qua hệ kế toán anh Tune (01/10)
+# Chủ dự án chốt 01/10: tiền chi thật ở hệ anh Tune, trạng thái về bên này. Bên này lập ĐỀ NGHỊ trả cho các phiếu xe thuê đã
+# khoá; bên đó có phiếu chi "Chi khác" (Nợ 4022 / Có tiền) đứng tên chủ xe; thủ quỹ chi + ghi sổ → phiếu thành "đã trả".
+DE_NGHI_TRA = ("acct", "admin")                                     # KT Thu/Chi VC (người nhập giá thuê, khoá phiếu) và Sếp
+KHONG_XEM_TRA = ("yard", "driver", "depot", "parts", "repair")       # tiền thuê xe liên kết là tiền bán — Bãi không thấy
+
+
+def _ban_ghi_chu_xe(db, rid):
+    from models import ChiChuXeTune
+    r = db.get(ChiChuXeTune, rid)
+    if r is None:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có đề nghị trả này."})
+    return r
+
+
+@router.get("/api/owners/{oid}/tra-ke-toan")
+def tra_ke_toan(oid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Phiếu chờ đề nghị trả của một chủ xe + các lần đề nghị; đề nghị đang chờ thì hỏi lại hệ kế toán."""
+    from models import ChiChuXeTune
+    from services import chi_tune as CHI
+    if user.role in KHONG_XEM_TRA:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
+    for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.owner_id == oid, ChiChuXeTune.status == "da_gui").all():
+        try:
+            CHI.dong_bo_chu_xe(db, r)
+        except HTTPException:
+            break
+    return CHI.cho_tra_chu_xe(db, oid)
+
+
+@router.post("/api/owners/{oid}/de-nghi-tra")
+def de_nghi_tra(oid: str, d: dict = Body(...), db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """{trip_ids: [...], phuong_thuc: cash|bank} → phiếu chi trả chủ xe bên hệ kế toán (chưa ghi sổ)."""
+    from services import chi_tune as CHI
+    if user.role not in DE_NGHI_TRA:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Thu/Chi Viêng Chăn hoặc Sếp lập đề nghị trả chủ xe."})
+    if not CHI.chi_o_ke_toan():
+        raise HTTPException(409, {"ma": "CHI_TAI_CHO", "loi": "Đang để chi trên trang kế toán tạm (EPL_CHI_TAM_UNG=tai_cho)."})
+    r = CHI.de_nghi_tra_chu_xe(db, oid, d.get("trip_ids") or [], (d.get("phuong_thuc") or "cash").strip(), user)
+    return CHI.xuat_chu_xe(r)
+
+
+@router.post("/api/chi-chu-xe/{rid}/{viec}")
+def viec_de_nghi_tra(rid: str, viec: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """cap-nhat (hỏi lại hệ kế toán) · gui-lai (lần trước hỏng) · huy (bỏ đề nghị chưa chi, rút phiếu chi bên đó)."""
+    from services import chi_tune as CHI
+    if user.role in KHONG_XEM_TRA:
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
+    r = _ban_ghi_chu_xe(db, rid)
+    if viec == "cap-nhat":
+        r = CHI.dong_bo_chu_xe(db, r)
+    elif viec in ("gui-lai", "huy"):
+        if user.role not in DE_NGHI_TRA:
+            raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Thu/Chi Viêng Chăn hoặc Sếp."})
+        r = CHI.gui_lai_chu_xe(db, r, user) if viec == "gui-lai" else CHI.huy_chu_xe(db, r)
+    else:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có việc %s." % viec})
+    return CHI.xuat_chu_xe(r)

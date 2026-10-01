@@ -72,6 +72,19 @@ def danh_dau_tra(db, user, owner_payment_id, cac_dong):
     ds = db.query(Trip).filter(Trip.id.in_(list(theo))).with_for_update().all()
     if len(ds) != len(theo):
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Có phiếu không còn bên trang điều xe."})
+    # 01/10: trả chủ xe đi qua hệ kế toán anh Tune (services/chi_tune) — phiếu đang nằm đề nghị trả bên đó thì trang kế toán tạm
+    # không trả nữa, kẻo thủ quỹ bên kia chi thêm lần thứ hai. Lần ghi từ chính đề nghị đó mang mã "TUNE:…".
+    if not str(owner_payment_id).startswith("TUNE:"):
+        import json
+        from models import ChiChuXeTune
+        dang = {}
+        for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.status.in_(("da_gui", "da_chi"))).all():
+            for i in json.loads(r.trip_ids or "[]"):
+                dang[i] = r
+        for p in ds:
+            if p.id in dang:
+                _chan(p, "DANG_DE_NGHI_KE_TOAN", "Phiếu %s đang nằm đề nghị trả chủ xe %s qua hệ kế toán anh Tune (%s) — không trả ở đây."
+                      % (p.doc_no, dang[p.id].ref_no, dang[p.id].document_no or dang[p.id].status))
     for p in ds:
         if p.company != "joint":
             _chan(p, "KHONG_PHAI_LIEN_KET", "Phiếu %s là xe nhà, không có chủ xe để trả." % p.doc_no)

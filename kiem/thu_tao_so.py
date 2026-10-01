@@ -85,10 +85,10 @@ def main():
     try:
         goi("/api/customers/" + cid, {"code": ""}, u="ketoan", method="PUT")
         s, v = goi("/api/trips/%s/tao-so" % tid, u="ketoan")
-        l = v.get("loi") or {}
-        dung(s == 200 and l.get("ma") == "THIEU_MA_KHACH_KE_TOAN" and "mã khách" in (l.get("loi") or ""),
-             "khách chưa có mã bên kế toán → THIEU_MA_KHACH_KE_TOAN, câu lỗi nói rõ")
-        dung("body" not in v, "bị chặn thì không có gói")
+        tt = v.get("tom_tat") or {}
+        # 01/10 (chủ dự án: nối hết qua hệ anh Tune): khách chưa có mã → lúc gửi máy tạo khách bên kế toán, mã EPLKH-<id>
+        dung(s == 200 and not v.get("loi") and tt.get("tao_khach") == "EPLKH-" + cid and v["body"]["header"]["customer_id"] == "EPLKH-" + cid,
+             "khách chưa có mã → xem trước báo sẽ tạo khách bên kế toán EPLKH-<id>, gói mang đúng mã đó", tt.get("tao_khach"))
         # mã khách + '_' + mã tuyến (12 ký tự) phải ≤ 50 → danh mục khách chặn ngay lúc gán mã dài hơn 37
         s, g = goi("/api/customers/" + cid, {"code": "KIEM-" + "X" * 33}, u="ketoan", method="PUT")
         dung(s == 422 and ((g.get("detail") or {}).get("ma") == "MA_KHACH_SAI"),

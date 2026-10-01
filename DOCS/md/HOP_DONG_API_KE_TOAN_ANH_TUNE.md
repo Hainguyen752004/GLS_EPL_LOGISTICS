@@ -1,7 +1,13 @@
 # Hợp đồng API KẾ TOÁN — trang điều xe EPL Lào ↔ hệ kế toán của anh Tune
 
-Phiên bản đề nghị **v2.2 · 01/10/2026** (v2.1 chiều 01/10, v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
+Phiên bản đề nghị **v2.3 · 01/10/2026** (v2.2 tối 01/10, v2.1 chiều 01/10, v2 sáng 01/10, v1 ngày 30/09). Bên soạn: trang điều xe **EPL_LAO_REAL** (logistics). Người nhận: **anh Tune** (công nợ, thu chi, sổ kế toán).
 
+> **Đổi từ v2.2 sang v2.3 (trưa 01/10/2026) — mục 12.11:**
+> - **SO đã tạo thật** (2 DO); khách chưa có mã bên anh thì bên em tự tạo `EPLKH-…`. Sửa lỗi 500 tạo khách bên anh (`OBJ_ISORG`).
+> - **Xe thuê ngoài:** tạm ứng đứng tên chủ xe (Nợ 4022); **trả chủ xe** thành phiếu chi "Chi khác" bên anh, ghi sổ xong thì phiếu "đã trả chủ xe".
+> - **Công nợ khách** đọc từ `sales/debt/customer-detail`; **tài khoản tích hợp** tự đăng nhập (chờ tạo tài khoản).
+> - Còn chặn: mã 1371/4021/4022, bật USD (12.11.5).
+>
 > **Đổi từ v2.1 sang v2.2 (tối 01/10/2026):**
 > - **12.10 (mới):** tạm ứng **chi thật ở hệ anh** (chủ dự án chốt). Ghi sổ mục IV → phiếu chi "Chi trước" bên anh; thủ quỹ chi và ghi sổ ở đó; trang điều xe đọc lại, đã ghi sổ thì xe mới xuất phát. Đã thử đủ vòng qua API chạy ở máy. Câu hỏi 10.6 và việc số 5 của 12.7.5 đã xong.
 > - **12.9.4:** chủ dự án cho bên em sửa thẳng mã của anh. Việc 1 (nguồn DO theo cấu hình + khoá) và việc 4 (màn "Vụ việc") **bên em đã làm** trên hai nhánh `feat/HonTunedaHai` (API) và `feat/hontunedhai_Laos` (Web).
@@ -1280,3 +1286,58 @@ Các phiếu thử bên anh có số tham chiếu `PTU-THU-CK-…` và `PTU-T4-C
 - **Đối tượng xe thuê:** hiện phiếu chi đứng tên **tài xế** (người cầm tiền). Phần nợ thuộc chủ xe thì ghi trong diễn giải. Anh muốn đứng tên **chủ xe** thì nói, bên em đổi.
 - **Token:** đang dùng token cá nhân `tune`, hết hạn 10/10/2026. Hết hạn thì không tạo được phiếu chi, tài xế không xuất phát được (Sếp chi tay được). Cần **tài khoản dịch vụ** (câu hỏi 10.1).
 - **Đơn vị:** đang ghi vào chi nhánh 1368 "Demo EPL" (cấu hình `QLSX_ORG_ID`). Có đơn vị EPL Lào riêng thì đổi cấu hình.
+
+### 12.11. Nối thêm buổi trưa 01/10/2026 — xe thuê ngoài, SO thật, khách, công nợ, tài khoản tích hợp
+
+Tất cả đã thử qua API chạy ở máy (localhost), trên DB demo Lào anh đã sao lưu.
+
+#### 12.11.1. Đề nghị thu → SO: đã tạo được thật
+
+- Khách **chưa có mã bên anh**: lúc KT Thu/Chi bấm "Tạo SO", bên em tạo khách bên anh qua `master-data/customers/upsert`, mã `EPLKH-<mã khách bên em>`. Mã đó ghi luôn vào ô "Mã khách (bên kế toán)" bên em. Hộp xác nhận báo trước mã sẽ tạo.
+- Khách **đã có mã**: bên em kiểm mã đó có thật bên anh trước khi gửi, báo sớm thay vì chờ lỗi 52905.
+- **Kết quả:** `TK-20261001-000162` (T4-0449-09/EPL, ຄຳຕຸ້ຍ, 905,85 USD) và `TK-20261001-000163` (T4-0442-09/EPL, ນາງ ວັນນາ, 1.676,9 USD); công nợ khách có ngay bên anh.
+- **Lỗi bên anh, bên em đã sửa** (nhánh `feat/HonTunedaHai`): tạo khách qua API mà không gửi `IsOrganization` thì cột `OBJ_ISORG` bị NULL, máy chủ văng 500. `ObjectService.ApplyDomainDefaults` nay mặc định **cá nhân**. Bên em cũng luôn gửi ô này.
+
+#### 12.11.2. Công nợ khách: xem từ hệ anh
+
+Màn Khách hàng → tab Công nợ có khối **"Công nợ bên hệ kế toán (anh Tune)"**. Khối đọc `POST /api/v1/sales/debt/customer-detail` và hiện: tổng nợ, đã thu, quá hạn, tuổi nợ, từng SO còn nợ. **Chỉ xem**: thu tiền, hoá đơn làm ở hệ anh. Khối hoá đơn ở trang kế toán tạm vẫn giữ bên dưới, cho tới khi bỏ trang tạm.
+
+#### 12.11.3. Xe thuê ngoài (xe liên kết)
+
+**Tạm ứng xe thuê:** phiếu chi "Chi trước" đứng tên **chủ xe**. Bên em tạo nhà cung cấp `EPLCX-<mã chủ xe>` qua `master-data/suppliers/upsert`. Định khoản Nợ **4022** phải trả chủ xe / Có 1011. EPL ứng thì trừ vào tiền trả chủ xe.
+
+**Trả chủ xe** (màn Xe liên kết → nút **Trả qua kế toán** của từng chủ xe):
+
+1. Bên em liệt kê phiếu xe thuê **đã khoá, chưa trả**, kèm số còn phải trả = tiền thuê − phí − trừ quá tải − EPL đã ứng (cùng số bên em vẫn tính).
+2. KT Thu/Chi VC (hoặc Sếp) chọn phiếu, chọn tiền mặt hay chuyển khoản → **Lập đề nghị trả**.
+3. Bên anh nhận phiếu chi **"Chi khác"** (DOTY 60):
+   - đứng tên chủ xe;
+   - mỗi phiếu xe một dòng **Nợ 4022 / Có 1011 · 1012 · 1021 · 1022** (theo cách trả và tiền thuê);
+   - số tham chiếu `TCX-…`.
+4. Thủ quỹ chi và **ghi sổ** bên anh. Bên em đọc lại; `STATUS` 12/13 thì các phiếu thành **"đã trả chủ xe"**.
+
+Luật bên em giữ:
+- mỗi đề nghị một loại tiền;
+- tổng ≤ 0 (EPL ứng nhiều hơn tiền thuê) thì không lập;
+- phiếu đang nằm đề nghị thì không vào đề nghị khác, không mở khoá được, trang kế toán tạm cũng không trả được;
+- bỏ đề nghị chưa chi thì rút phiếu chi bên anh;
+- đã chi thì không huỷ.
+
+**Còn chặn ở danh mục bên anh:** chưa có mã **4022** nên hai loại phiếu chi trên đều bị từ chối ("Tài khoản không hợp lệ theo quốc gia của phiếu"). Màn bên em hiện rõ câu đó, kèm mã tài khoản đang dùng. Mở mã xong thì bấm gửi lại là chạy.
+
+**Còn mở về kế toán:** ghi nhận **chi phí thuê xe** (Nợ chi phí / Có 4022 lúc khoá phiếu) chờ anh Khampla chốt tài khoản (mục 8, lỗ hổng 1). Hiện bên em chỉ ghi phần **trả**.
+
+#### 12.11.4. Tài khoản tích hợp thay token cá nhân
+
+Bên em đã làm sẵn đường **tự đăng nhập**: đặt `QLSX_USERNAME` / `QLSX_PASSWORD` (cùng `QLSX_ORG_ID`) thì bên em gọi `POST /api/v1/auth/login`, nhớ token và tự lấy token mới trước khi hết hạn 5 phút; bị 401 thì đăng nhập lại. Thứ tự ưu tiên: `QLSX_ACCESS_TOKEN` → tài khoản tích hợp → `EPL_ACC_CODE_TOKEN`.
+
+**Cần anh (hoặc chủ dự án):** tạo tài khoản đó (gắn nhân viên, thêm `UserId` vào `LogisticsSalesPush.AllowedUserIds`). Việc tạo tài khoản đăng nhập bên em không tự làm.
+
+#### 12.11.5. Việc bên em CHƯA làm được — chờ quyết định
+
+| Việc | Vì sao | Ai |
+|---|---|---|
+| Mở **1371, 4021, 4022** trong danh mục tài khoản Lào bên anh | phải chuyển 137 và 402 từ tài khoản hạch toán sang tổng hợp rồi thêm mã con; công cụ an toàn chặn bên em tự đổi cây tài khoản kế toán | anh Tune hoặc chủ dự án |
+| **Bật tiền USD** trong danh mục tiền tệ | USD có (mã 2) nhưng đang tắt nên `GetAllCurrency` không trả; SO vẫn tạo được, nhưng phiếu chi bằng USD cần mã tiền. Tạm thời đặt `QLSX_TIEN_USD=2` là chạy | anh Tune |
+| **Tài khoản tích hợp** (12.11.4) | tạo tài khoản đăng nhập | anh Tune hoặc chủ dự án |
+| Tài khoản **chi phí thuê xe** liên kết | anh Khampla chốt | anh Khampla |

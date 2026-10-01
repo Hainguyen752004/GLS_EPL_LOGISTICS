@@ -65,8 +65,54 @@ def loi_ma_khach(ma):
     return None
 
 
-def cau_hinh():
-    """(gốc, token). `EPL_ACC_CODE_API` có thể là cả đường country-accounts — chỉ lấy giao thức + tên máy."""
+_TOKEN = {}                               # token lấy bằng tài khoản tích hợp: {"token", "het": epoch}
+
+
+def _het_han(token):
+    """`exp` trong phần giữa của JWT (giây epoch); đọc không được thì coi như còn 30 phút."""
+    import base64
+    import time
+    try:
+        giua = token.split(".")[1]
+        return int(json.loads(base64.urlsafe_b64decode(giua + "=" * (-len(giua) % 4))).get("exp") or 0) or time.time() + 1800
+    except Exception:                                               # noqa: BLE001
+        return time.time() + 1800
+
+
+def quen_token():
+    """Bên kia trả 401: bỏ token đang nhớ, lần gọi sau đăng nhập lại."""
+    _TOKEN.clear()
+
+
+def _dang_nhap(goc):
+    """POST {goc}/api/v1/auth/login {Username, Password, OrgID} → Result = token. Không in mật khẩu, không in token."""
+    import time
+    if _TOKEN.get("token") and _TOKEN.get("het", 0) - time.time() > 300:
+        return _TOKEN["token"]
+    ten, mk = (os.getenv("QLSX_USERNAME") or "").strip(), os.getenv("QLSX_PASSWORD") or ""
+    org = int((os.getenv("QLSX_ORG_ID") or "1368").strip() or 1368)
+    yc = urllib.request.Request(goc + "/api/v1/auth/login", method="POST",
+                                data=json.dumps({"Username": ten, "Password": mk, "OrgID": org}).encode("utf-8"),
+                                headers={"Content-Type": "application/json", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(yc, timeout=CHO_GIAY) as t:
+            than = json.loads(t.read().decode("utf-8", "replace") or "null")
+    except Exception as e:                                          # noqa: BLE001
+        raise HTTPException(502, {"ma": "QLSX_KHONG_DANG_NHAP_DUOC", "loi": "Không đăng nhập được hệ kế toán bằng tài khoản tích hợp "
+                                                                           "%s: %s" % (ten, e)})
+    tk = than.get("Result") if isinstance(than, dict) and than.get("Success") is True else None
+    if not isinstance(tk, str) or not tk:
+        raise HTTPException(502, {"ma": "QLSX_SAI_TAI_KHOAN", "loi": "Hệ kế toán từ chối tài khoản tích hợp %s: %s" % (
+            ten, (than or {}).get("Message") if isinstance(than, dict) else "không rõ")})
+    _TOKEN.update({"token": tk, "het": _het_han(tk)})
+    return tk
+
+
+def cau_hinh(dang_nhap=True):
+    """(gốc, token). `EPL_ACC_CODE_API` có thể là cả đường country-accounts — chỉ lấy giao thức + tên máy.
+    Token theo thứ tự: QLSX_ACCESS_TOKEN đặt tay → TÀI KHOẢN TÍCH HỢP (QLSX_USERNAME / QLSX_PASSWORD, tự đăng nhập, tự lấy
+    token mới trước khi hết hạn — thay token cá nhân hết hạn 10/10) → EPL_ACC_CODE_TOKEN. `dang_nhap=False` (xem trước,
+    không gọi mạng): chỉ báo có cách lấy token hay không."""
     goc = (os.getenv("QLSX_BASE_URL") or "").strip()
     if not goc:
         acc = (os.getenv("EPL_ACC_CODE_API") or "").strip()
@@ -74,7 +120,10 @@ def cau_hinh():
             u = urlsplit(acc)
             goc = "%s://%s" % (u.scheme, u.netloc) if u.scheme and u.netloc else ""
     goc = (goc or GOC_MAC_DINH).rstrip("/")
-    token = (os.getenv("QLSX_ACCESS_TOKEN") or os.getenv("EPL_ACC_CODE_TOKEN") or "").strip()
+    token = (os.getenv("QLSX_ACCESS_TOKEN") or "").strip()
+    if not token and (os.getenv("QLSX_USERNAME") or "").strip() and os.getenv("QLSX_PASSWORD"):
+        token = _dang_nhap(goc) if dang_nhap else "tai-khoan-tich-hop"
+    token = token or (os.getenv("EPL_ACC_CODE_TOKEN") or "").strip()
     return goc, token
 
 
@@ -112,9 +161,16 @@ def _so_json(d):
     return f
 
 
-def dung_goi(db, p):
+def ma_khach_moi(p):
+    """Mã khách bên kế toán máy TỰ TẠO cho khách chưa có mã (01/10: chủ dự án cho nối hết qua hệ anh Tune) — 18 ký tự,
+    đúng luật mã bên đó (loi_ma_khach)."""
+    return "EPLKH-" + (p.customer_id or "")
+
+
+def dung_goi(db, p, ma_tam=None):
     """Gói gửi từ chính gói bàn giao DO (một nguồn số với `GET /api/handover/delivery-orders/{do_id}`).
-    Trả (body, tom_tat); vi phạm luật thì HTTPException 422 với câu nói rõ phải sửa gì."""
+    Trả (body, tom_tat); vi phạm luật thì HTTPException 422 với câu nói rõ phải sửa gì. `ma_tam` = mã khách sẽ tạo bên kế
+    toán (xem trước, hoặc gói dựng ngay sau khi tạo khách)."""
     if not BG.ban_giao_duoc(p):
         _loi("DO_CHUA_KHOA", "Phiếu %s chưa về hoặc chưa khoá — DO xong mới đề nghị thu." % p.doc_no, 409)
     g = BG.dong_goi(db, p)
@@ -122,7 +178,7 @@ def dung_goi(db, p):
     do_id = h0["do_id"]
     if len(do_id) > 100 or not MA_HOP_LE.match(do_id):
         _loi("MA_DO_SAI", "Mã DO %r không hợp lệ với bên kế toán." % do_id)
-    ma_khach = (h0.get("customer_code") or "").strip()
+    ma_khach = (h0.get("customer_code") or "").strip() or (ma_tam or "")
     if not ma_khach:
         _loi("THIEU_MA_KHACH_KE_TOAN", "Khách %s chưa có mã khách bên kế toán. KT Thu/Chi Viêng Chăn ghi ở danh mục Khách hàng "
                                        "— mã phải có sẵn trong danh mục khách bên kế toán." % (p.customer_name or "—"))
@@ -222,7 +278,7 @@ def xuat(b):
 def xem_truoc(db, p):
     """Gói SẼ gửi (không gọi mạng) + trạng thái lần gửi trước. Lỗi dữ liệu trả trong `loi`, không ném."""
     b = db.get(GuiSoTune, BG.ma_do(p))
-    goc, token = cau_hinh()
+    goc, token = cau_hinh(dang_nhap=False)
     ra = {"do_id": BG.ma_do(p), "trang_thai": xuat(b), "co_token": bool(token), "may": urlsplit(goc).netloc}
     if b is not None and _chua_ro(b):
         body = json.loads(b.request_body)
@@ -231,11 +287,35 @@ def xem_truoc(db, p):
                    "route_id": body["header"]["route"]["id"]}})
         return ra
     try:
-        body, tom = dung_goi(db, p)
+        tao = None if _ma_khach_cua(db, p) else ma_khach_moi(p)
+        body, tom = dung_goi(db, p, ma_tam=tao)
+        tom["tao_khach"] = tao                                   # gửi thì máy tạo khách này bên kế toán trước
         ra.update({"body": body, "tom_tat": tom, "gui_lai_goi_cu": False})
     except HTTPException as e:
         ra["loi"] = e.detail
     return ra
+
+
+def _ma_khach_cua(db, p):
+    from models import Customer
+    k = db.get(Customer, p.customer_id) if p.customer_id else None
+    return (k.code or "").strip() if k else ""
+
+
+def dam_bao_khach(db, p):
+    """Khách của DO có trong danh mục bên kế toán: có mã thì kiểm mã đó có thật bên đó; chưa có thì tạo khách bên đó với mã
+    EPLKH-<id> và ghi mã vào danh mục khách bên em (người bấm là KT Thu/Chi VC hoặc Sếp — đúng người gán mã khách)."""
+    from models import Customer
+    from services import chi_tune as CHI
+    k = db.get(Customer, p.customer_id) if p.customer_id else None
+    if k is None:
+        _loi("THIEU_KHACH", "Phiếu %s chưa có khách." % p.doc_no, 409)
+    ma = (k.code or "").strip() or None
+    CHI.doi_tuong(db, "khach", k.id, k.name, sdt=k.phone, dia_chi=k.address,
+                  to_chuc=(k.cust_type == "company"), ma=ma)                     # luôn gửi: OBJ_ISORG bên đó không nhận NULL
+    if not ma:
+        k.code = ma_khach_moi(p)
+    db.commit()
 
 
 def gui(db, p, user):
@@ -249,6 +329,7 @@ def gui(db, p, user):
     if _chua_ro(b):
         body_json, key = b.request_body, b.idempotency_key
     else:
+        dam_bao_khach(db, p)                                    # khách chưa có bên kế toán → tạo trước (lỗi 52905 cũ)
         body, _ = dung_goi(db, p)
         key = khoa(do_id)
         body_json = json.dumps(body, ensure_ascii=False, separators=(",", ":"))
@@ -273,6 +354,8 @@ def gui(db, p, user):
         db.commit()
         _loi("QLSX_KHONG_GOI_DUOC", "Không gọi được bên kế toán (%s): %s. Bấm lại sẽ gửi đúng gói, đúng khoá cũ."
              % (urlsplit(goc).netloc, e), 502)
+    if ma == 401:
+        quen_token()
     st, kq, ma_loi, loi = doc_ket_qua(ma, than, tho)
     b.status, b.http_status, b.response_body = st, ma, (tho or "")[:20000]
     b.error_code, b.error_message = ma_loi, loi

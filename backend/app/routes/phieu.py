@@ -1526,6 +1526,13 @@ def mo_khoa_phieu(tid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
     if so_kt is not None and so_kt.status == "synced" and user.role != "admin":
         raise HTTPException(409, {"ma": "DA_TAO_SO", "loi": "Bên công nợ đã tạo SO %s cho DO này — báo bên đó trước, rồi nhờ Sếp mở khoá."
                                                             % (so_kt.order_code or "")})
+    # đề nghị trả chủ xe bên hệ kế toán (01/10): số trả chủ xe tính từ phiếu đã khoá — mở khoá thì số có thể đổi
+    from models import ChiChuXeTune
+    for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.status.in_(("da_gui", "da_chi"))).all():
+        if p.id in (r.trip_ids or ""):
+            raise HTTPException(409, {"ma": "TRONG_DE_NGHI_TRA_CHU_XE", "loi": (
+                "Phiếu %s nằm trong đề nghị trả chủ xe %s (%s) — %s" % (p.doc_no, r.ref_no, r.document_no or "",
+                "bỏ đề nghị đó ở màn Xe liên kết trước." if r.status == "da_gui" else "thủ quỹ đã chi, đối soát ở hệ kế toán."))})
     DNT.rut(db, p)
     p.locked, p.locked_by, p.locked_at = False, None, None
     _ghi_log(db, p, user, "a_unlock_slip")

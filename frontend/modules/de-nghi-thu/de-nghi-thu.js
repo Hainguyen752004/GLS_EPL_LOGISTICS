@@ -98,7 +98,7 @@
       if (v.loi) return EPL.toast(v.loi.loi || v.loi.ma, 'loi');
       const tt = v.tom_tat || {};
       const tienSo = so(tt.final_selling_price, EPL.leTien(tt.currency)) + ' ' + (tt.currency || '');
-      if (!await EPL.hoi(NN.t('dt_so_hoi'), NN.h('dt_so_hoi_nd', { kh: d.customer_name || '', ma: tt.customer_code || '', tien: tienSo }), NN.t('dt_so_nut'))) return;
+      if (!await EPL.hoi(NN.t('dt_so_hoi'), NN.h('dt_so_hoi_nd', { kh: d.customer_name || '', ma: tt.customer_code || '', tien: tienSo }) + (tt.tao_khach ? '<p class="small">' + NN.h('dt_so_tao_khach', { ma: tt.tao_khach }) + '</p>' : ''), NN.t('dt_so_nut'))) return;
       soGui.disabled = true;
       try { const r = await API.post(`/api/trips/${x.trip_id}/tao-so`, {}); EPL.toast(NN.t('dt_so_xong', { so: (r.trang_thai || {}).order_code || '' }), 'ok'); }
       catch (e) { EPL.baoLoi(e); }

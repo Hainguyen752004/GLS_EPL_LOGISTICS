@@ -19,10 +19,12 @@ Bản ngày **01/10/2026**, sửa chiều và tối cùng ngày. Soạn từ mã
 | # | Đường của anh | Để làm gì | Trạng thái 01/10 |
 |---|---|---|---|
 | A1 | `GET /api/v1/common/country-accounts?tryAutoId=11&onlyActive=true` | danh mục tài khoản Lào (494 mã), cho ô chọn mã kế toán trên phiếu | **đang chạy** |
-| A2 | `POST /api/v1/integrations/logistics/sales-orders` | phiếu **đề nghị thu** → SO + công nợ khách bên anh | **đã dựng, đã gửi thử 1 DO**: bị trả 422 `LOGISTICS_52905` vì hệ anh chưa có khách EPL Lào. Không tạo gì |
+| A2 | `POST /api/v1/integrations/logistics/sales-orders` | phiếu **đề nghị thu** → SO + công nợ khách bên anh | **đã tạo SO thật 01/10** qua API chạy ở máy: `TK-20261001-000162`, `…163`; khách chưa có thì bên em tạo trước (A6) |
 | A3 | 20 đường **chỉ đọc** (mục 1.3) | lấy mã số: đơn vị, kỳ, loại chứng từ, tiền tệ, khách… | đã đọc 30/09 và 01/10, **không nằm trong mã chạy** |
 | A4 | `POST /api/v1/accounting/cmpayment-receipt/save-and-commit` (CMP) · `GET …/{id}` | phiếu **đề nghị tạm ứng** → phiếu chi "Chi trước" chờ ở hệ anh; thủ quỹ chi + ghi sổ bên anh; LAO đọc lại `STATUS` 12 → mục IV đã chi | **đã nối 01/10** (thử qua API chạy ở máy, mục 1.4) |
-| A5 | `POST /api/v1/sales/debt/customer-detail` | màn Khách hàng → tab Công nợ, chỉ xem | **chưa làm**: chờ mẫu dữ liệu thật |
+| A5 | `POST /api/v1/sales/debt/customer-detail` | màn Khách hàng → tab Công nợ, chỉ xem | **đã nối 01/10** (hợp đồng 12.11.2) |
+| A6 | `POST /api/v1/master-data/customers · suppliers · staff /list · /upsert` | đối tượng bên anh: khách `EPLKH-`, chủ xe `EPLCX-`, tài xế `EPLTX-` — tìm, chưa có thì tạo | **đã nối 01/10** |
+| A7 | `POST …/cmpayment-receipt/save-and-commit` (CMP "Chi khác") · `GET …/{id}` | **trả chủ xe liên kết**: phiếu chi đứng tên chủ xe, Nợ 4022; ghi sổ xong → "đã trả chủ xe" | **đã dựng 01/10**, chờ anh mở mã 4022 (12.11.3) |
 
 ### 0.2. Hệ anh gọi sang LAO
 
@@ -498,3 +500,13 @@ Chủ dự án lấy về `GLS-QLSX-APIs` (commit `31c98db`) và `GLS-QLSX-Web` 
 ### 8.3. Hoá đơn điện tử
 
 Dịch vụ mới `Backend.LaoInvoice` (01/10) **chưa nối SO hay DO**. Bên em không gọi.
+
+### 8.4. Nối thêm buổi trưa 01/10
+
+Chi tiết ở hợp đồng mục 12.11:
+- SO đã tạo thật, khách tự tạo;
+- công nợ khách xem từ hệ anh;
+- xe thuê: tạm ứng đứng tên chủ xe, trả chủ xe qua phiếu chi bên anh;
+- tài khoản tích hợp tự đăng nhập.
+
+**Còn chặn:** mã 1371/4021/4022, bật USD, tạo tài khoản tích hợp (12.11.5).

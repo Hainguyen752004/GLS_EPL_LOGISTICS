@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2097 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2126 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -5293,9 +5293,9 @@ window.EPL_TU_DIEN = {
   "en": "Scan QR, issue fuel and advances"
  },
  "d_xe_lien_ket": {
-  "vi": "Điều khoản, hợp đồng thuê xe · trả tiền ở trang kế toán",
-  "lo": "ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL",
-  "en": "Terms, hire contracts · payouts on the ledger site"
+  "vi": "Điều khoản, hợp đồng thuê xe · trả chủ xe qua hệ kế toán",
+  "lo": "ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເຈົ້າຂອງລົດຜ່ານລະບົບບັນຊີ",
+  "en": "Terms, hire contracts · owner payouts via accounting"
  },
  "d_tien_tai_xe": {
   "vi": "Tiền chuyến và tiền nước theo tháng",
@@ -8233,9 +8233,9 @@ window.EPL_TU_DIEN = {
   "en": "Transport bill<span class=\"sub\">Print version · pick a slip in the toolbar</span>"
  },
  "title_xe_lien_ket": {
-  "vi": "Chủ xe liên kết<span class=\"sub\">Điều khoản, hợp đồng thuê xe · trả tiền ở trang kế toán</span>",
-  "lo": "ເຈົ້າຂອງລົດຮ່ວມ<span class=\"sub\">ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເງິນຢູ່ ປຶ້ມບັນຊີ EPL</span>",
-  "en": "Joint truck owners<span class=\"sub\">Terms, hire contracts · payouts on the ledger site</span>"
+  "vi": "Chủ xe liên kết<span class=\"sub\">Điều khoản, hợp đồng thuê xe · trả chủ xe qua hệ kế toán</span>",
+  "lo": "ເຈົ້າຂອງລົດຮ່ວມ<span class=\"sub\">ເງື່ອນໄຂ, ສັນຍາເຊົ່າລົດ · ຈ່າຍເຈົ້າຂອງລົດຜ່ານລະບົບບັນຊີ</span>",
+  "en": "Joint truck owners<span class=\"sub\">Terms, hire contracts · owner payouts via accounting</span>"
  },
  "title_tien_tai_xe": {
   "vi": "Tiền chuyến & tiền nước tài xế<span class=\"sub\">Tổng hợp theo tháng để trả cùng lương</span>",
@@ -8268,9 +8268,9 @@ window.EPL_TU_DIEN = {
   "en": "The payment log and invoices are on the ledger site — press the button to open this slip there."
  },
  "xlk_o_ke_toan": {
-  "vi": "Trả chủ xe · bảng xe liên kết",
-  "lo": "ຈ່າຍເຈົ້າຂອງລົດ · ຕາຕະລາງລົດຮ່ວມ",
-  "en": "Owner payouts · joint truck table"
+  "vi": "Bảng xe liên kết theo tháng (trang kế toán tạm)",
+  "lo": "ຕາຕະລາງລົດຮ່ວມ ລາຍເດືອນ (ໜ້າບັນຊີຊົ່ວຄາວ)",
+  "en": "Monthly joint truck table (interim accounting page)"
  },
  "ncc_o_ke_toan": {
   "vi": "Công nợ · trả nhà cung cấp · cấn trừ cuối tháng",
@@ -10486,5 +10486,150 @@ window.EPL_TU_DIEN = {
   "vi": "Đã hỏi lại {n} phiếu chi, {m} phiếu mới đã chi",
   "lo": "ກວດຄືນ {n} ໃບຈ່າຍ, {m} ໃບຫາກໍຈ່າຍແລ້ວ",
   "en": "Checked {n} payment vouchers, {m} newly paid"
+ },
+ "dt_so_tao_khach": {
+  "vi": "Khách chưa có mã bên kế toán — máy sẽ tạo khách bên đó với mã <b class=\"mono\">{ma}</b> và ghi mã này vào danh mục khách.",
+  "lo": "ລູກຄ້າຍັງບໍ່ມີລະຫັດຢູ່ບັນຊີ — ລະບົບຈະສ້າງລູກຄ້າຢູ່ທີ່ນັ້ນ ດ້ວຍລະຫັດ <b class=\"mono\">{ma}</b> ແລະ ບັນທຶກລະຫັດນີ້ໃສ່ລາຍຊື່ລູກຄ້າ.",
+  "en": "The customer has no accounting code yet — the system will create it there as <b class=\"mono\">{ma}</b> and save that code in the customer list."
+ },
+ "cx_tra_kt": {
+  "vi": "Trả qua kế toán",
+  "lo": "ຈ່າຍຜ່ານບັນຊີ",
+  "en": "Pay via accounting"
+ },
+ "cx_giai_thich": {
+  "vi": "Chọn phiếu xe thuê đã khoá chưa trả → lập đề nghị: hệ kế toán có phiếu chi \"Chi khác\" đứng tên chủ xe (Nợ 4022 / Có tiền). Thủ quỹ chi và ghi sổ ở đó; ghi sổ xong các phiếu thành \"đã trả chủ xe\".",
+  "lo": "ເລືອກໃບລົດເຊົ່າທີ່ລັອກແລ້ວ ຍັງບໍ່ຈ່າຍ → ສ້າງໃບສະເໜີ: ລະບົບບັນຊີມີໃບຈ່າຍ \"ລາຍຈ່າຍອື່ນ\" ໃນນາມເຈົ້າຂອງລົດ (ໜີ້ 4022 / ມີ ເງິນ). ຄັງເງິນຈ່າຍ ແລະ ບັນທຶກຢູ່ທີ່ນັ້ນ; ບັນທຶກແລ້ວ ໃບເຫຼົ່ານັ້ນເປັນ \"ຈ່າຍເຈົ້າຂອງລົດແລ້ວ\".",
+  "en": "Pick locked, unpaid hired-truck slips → create a request: accounting gets an \"Other payment\" voucher in the owner's name (Dr 4022 / Cr cash). The cashier pays and posts it there; once posted the slips become \"owner paid\"."
+ },
+ "cx_de_nghi": {
+  "vi": "Các lần đề nghị trả",
+  "lo": "ໃບສະເໜີຈ່າຍທີ່ຜ່ານມາ",
+  "en": "Payment requests"
+ },
+ "cx_cho_tra": {
+  "vi": "Phiếu chờ trả",
+  "lo": "ໃບລໍຖ້າຈ່າຍ",
+  "en": "Slips awaiting payment"
+ },
+ "cx_phieu": {
+  "vi": "phiếu",
+  "lo": "ໃບ",
+  "en": "slips"
+ },
+ "cx_tien_thue": {
+  "vi": "Tiền thuê",
+  "lo": "ຄ່າເຊົ່າ",
+  "en": "Hire"
+ },
+ "cx_tru": {
+  "vi": "Phí · trừ · đã ứng",
+  "lo": "ຄ່າທຳນຽມ · ຫັກ · ຈ່າຍລ່ວງໜ້າ",
+  "en": "Fee · deductions · advanced"
+ },
+ "cx_tra": {
+  "vi": "Còn phải trả",
+  "lo": "ຍັງຕ້ອງຈ່າຍ",
+  "en": "To pay"
+ },
+ "cx_cach_tra": {
+  "vi": "Cách trả",
+  "lo": "ວິທີຈ່າຍ",
+  "en": "Payment method"
+ },
+ "cx_tien_mat": {
+  "vi": "Tiền mặt",
+  "lo": "ເງິນສົດ",
+  "en": "Cash"
+ },
+ "cx_chuyen_khoan": {
+  "vi": "Chuyển khoản",
+  "lo": "ໂອນ",
+  "en": "Bank transfer"
+ },
+ "cx_tong": {
+  "vi": "Đã chọn {n} phiếu · tổng {tien}",
+  "lo": "ເລືອກ {n} ໃບ · ລວມ {tien}",
+  "en": "{n} slips selected · total {tien}"
+ },
+ "cx_khac_tien": {
+  "vi": "Các phiếu chọn khác tiền thuê — mỗi đề nghị một loại tiền",
+  "lo": "ໃບທີ່ເລືອກ ຄ່າເຊົ່າຕ່າງສະກຸນ — ໃບສະເໜີລະ 1 ສະກຸນ",
+  "en": "The selected slips use different hire currencies — one currency per request"
+ },
+ "cx_khong_cho": {
+  "vi": "Không có phiếu nào chờ trả (phiếu phải đã khoá, chưa trả, chưa nằm đề nghị khác).",
+  "lo": "ບໍ່ມີໃບລໍຖ້າຈ່າຍ (ໃບຕ້ອງລັອກແລ້ວ, ຍັງບໍ່ຈ່າຍ, ບໍ່ຢູ່ໃນໃບສະເໜີອື່ນ).",
+  "en": "No slips awaiting payment (they must be locked, unpaid and not in another request)."
+ },
+ "cx_lap": {
+  "vi": "Lập đề nghị trả",
+  "lo": "ສ້າງໃບສະເໜີຈ່າຍ",
+  "en": "Create payment request"
+ },
+ "cx_bo": {
+  "vi": "Bỏ đề nghị",
+  "lo": "ຍົກເລີກໃບສະເໜີ",
+  "en": "Cancel request"
+ },
+ "cx_da_bo": {
+  "vi": "Đã bỏ",
+  "lo": "ຍົກເລີກແລ້ວ",
+  "en": "Cancelled"
+ },
+ "cx_chua_chon": {
+  "vi": "Chưa chọn phiếu nào",
+  "lo": "ຍັງບໍ່ໄດ້ເລືອກໃບ",
+  "en": "No slip selected"
+ },
+ "cx_da_lap": {
+  "vi": "Đã lập đề nghị trả · phiếu chi {so} bên kế toán",
+  "lo": "ສ້າງໃບສະເໜີຈ່າຍແລ້ວ · ໃບຈ່າຍ {so} ຢູ່ບັນຊີ",
+  "en": "Payment request created · voucher {so} in accounting"
+ },
+ "k3_kt_tieu_de": {
+  "vi": "Công nợ bên hệ kế toán (anh Tune)",
+  "lo": "ໜີ້ ຢູ່ລະບົບບັນຊີ",
+  "en": "Receivables in accounting"
+ },
+ "k3_tam_tieu_de": {
+  "vi": "Hoá đơn ở trang kế toán tạm",
+  "lo": "ໃບເກັບເງິນ ຢູ່ໜ້າບັນຊີຊົ່ວຄາວ",
+  "en": "Invoices in the interim accounting page"
+ },
+ "k3_kt_loi": {
+  "vi": "Chưa đọc được công nợ bên hệ kế toán.",
+  "lo": "ຍັງອ່ານໜີ້ຈາກລະບົບບັນຊີບໍ່ໄດ້.",
+  "en": "Could not read receivables from accounting."
+ },
+ "k3_kt_chua_co": {
+  "vi": "Khách chưa có mã bên kế toán — gửi SO đầu tiên (màn Phiếu đề nghị thu) thì máy tạo khách bên đó.",
+  "lo": "ລູກຄ້າຍັງບໍ່ມີລະຫັດຢູ່ບັນຊີ — ສົ່ງ SO ທຳອິດ (ໜ້າໃບສະເໜີຮັບເງິນ) ແລ້ວລະບົບຈະສ້າງລູກຄ້າຢູ່ທີ່ນັ້ນ.",
+  "en": "The customer has no accounting code yet — the first SO (Collection requests screen) creates it there."
+ },
+ "k3_kt_tong_no": {
+  "vi": "Tổng nợ (SO)",
+  "lo": "ໜີ້ລວມ (SO)",
+  "en": "Total owed (SO)"
+ },
+ "k3_kt_qua_han": {
+  "vi": "Quá hạn",
+  "lo": "ກາຍກຳນົດ",
+  "en": "Overdue"
+ },
+ "k3_kt_chi_xem": {
+  "vi": "Chỉ xem — thu tiền, hoá đơn ở hệ kế toán.",
+  "lo": "ເບິ່ງຢ່າງດຽວ — ຮັບເງິນ, ໃບເກັບເງິນ ຢູ່ລະບົບບັນຊີ.",
+  "en": "View only — payments and invoices are done in accounting."
+ },
+ "k3_kt_so": {
+  "vi": "Số SO",
+  "lo": "ເລກ SO",
+  "en": "SO no."
+ },
+ "k3_kt_khong_no": {
+  "vi": "Không còn chứng từ nợ nào bên kế toán.",
+  "lo": "ບໍ່ມີໃບໜີ້ຄ້າງ ຢູ່ບັນຊີ.",
+  "en": "No open receivables in accounting."
  }
 };

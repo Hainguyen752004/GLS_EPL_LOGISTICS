@@ -282,10 +282,34 @@
   }
 
   /* ================= Tab: Công nợ (chỉ xem) ================= */
+  /** Khối công nợ bên hệ kế toán anh Tune — đọc thẳng bên đó (sales/debt/customer-detail), không cộng với số bên dưới. */
+  function khoiNoKT(k) {
+    const d = (cache[k.id] || {}).noKT;
+    if (d === undefined) return '';
+    const dau = '<h4 class="k3-kt-h">' + h('k3_kt_tieu_de') + '</h4>';
+    if (d.loi) return '<div class="k3-kt">' + dau + '<p class="tab-note">' + h('k3_kt_loi') + ' <span class="small">' + esc(d.loi) + '</span></p></div>';
+    if (!d.co) return '<div class="k3-kt">' + dau + '<p class="tab-note">' + h('k3_kt_chua_co') + '</p></div>';
+    const tg = d.tong || {}, ccy = ((d.no || [])[0] || (d.don || [])[0] || {}).ccy || '';
+    const rows = (d.no || []).map(x => '<tr class="' + ((x.con_no || 0) > 0 ? '' : 'is-dim') + '"><td class="code">' + esc(x.so || '') + '</td><td>' + esc(ngay(String(x.ngay || '').slice(0, 10))) + '</td>' +
+      '<td class="num"><b>' + EPL.tien(x.tien, x.ccy) + '</b></td><td class="num">' + EPL.tien(x.da_tra, x.ccy) + '</td><td class="num"><b>' + EPL.tien(x.con_no, x.ccy) + '</b></td>' +
+      '<td>' + esc(x.trang_thai || '') + '</td></tr>').join('');
+    return '<div class="k3-kt">' + dau +
+      '<div class="debt-top">' +
+        '<div><span>' + h('k3_kt_tong_no') + '</span><b>' + EPL.tien(tg.no, ccy) + '</b><small>' + esc(d.customer_code || '') + '</small></div>' +
+        '<div><span>' + h('collected') + '</span><b>' + EPL.tien(tg.da_thu, ccy) + '</b></div>' +
+        '<div class="' + ((tg.qua_han || 0) > 0 ? 'is-danger' : '') + '"><span>' + h('k3_kt_qua_han') + '</span><b>' + EPL.tien(tg.qua_han, ccy) + '</b>' +
+          (tg.qua_han_ngay ? '<small>' + esc(t('k3_n_ngay', { n: tg.qua_han_ngay })) + '</small>' : '') + '</div>' +
+        '<div class="aging-box"><span class="aging-title">' + esc((d.tuoi_no || []).map(a => a.ten + ' ' + EPL.so(a.pct, 0) + '%').join(' · ') || '—') + '</span>' +
+          '<span class="aging-note">' + h('k3_kt_chi_xem') + '</span></div></div>' +
+      (rows ? '<div class="k3-tbl-wrap"><table class="k3-tbl k3-tbl--compact"><thead><tr><th>' + h('k3_kt_so') + '</th><th>' + h('c_date') + '</th><th class="num">' + h('c_value') + '</th>' +
+        '<th class="num">' + h('collected') + '</th><th class="num">' + h('remaining') + '</th><th>' + h('status') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+        : '<p class="tab-note">' + h('k3_kt_khong_no') + '</p>') + '</div>';
+  }
+
   function debtTab(k) {
     const no = (cache[k.id] || {}).no;
     if (no === undefined) return '<div class="k3-empty">' + h('loading') + '</div>';
-    if (no === null) return '<div class="k3-empty">' + h('k3_no_loi') + '</div>';
+    if (no === null) return khoiNoKT(k) + '<div class="k3-empty">' + h('k3_no_loi') + '</div>';
     const m = metrics(k.id);
     const rows = (no.dong || []).slice().sort((a, b) => String(b.ngay || '').localeCompare(String(a.ngay || ''))).map(x => {
       const so = x.loai === 'gop' ? '<a href="" class="code" data-kt-gop="' + esc(x.id) + '" data-thang="' + esc(String(x.ngay || '').slice(0, 7)) + '">' + esc(x.so) + ' ↗</a>'
@@ -295,7 +319,7 @@
         '<td class="num">' + n0(x.da_thu_lak) + '</td><td class="num"><b>' + (x.con_lai_lak > 0 ? n0(x.con_lai_lak) : '<span class="dash">–</span>') + '</b></td><td>' + EPL.tag(x.finance_status) + '</td></tr>';
     }).join('');
     const coNo = no.con_no_lak > 0;
-    return '<div class="debt-top">' +
+    return khoiNoKT(k) + '<h4 class="k3-kt-h">' + h('k3_tam_tieu_de') + '</h4><div class="debt-top">' +
         '<div><span>' + h('kh_no_tong') + '</span><b>' + tienGop(no.tong_tien) + '</b><small>≈ ' + n0(no.tong_lak) + ' LAK</small></div>' +
         '<div><span>' + h('collected') + '</span><b>' + n0(no.da_thu_lak) + ' LAK</b></div>' +
         '<div class="' + (coNo ? 'is-danger' : '') + '"><span>' + h('kh_no_con_no') + '</span><b>' + (coNo ? tienGop(no.con_no_tien) : '0') + '</b><small>≈ ' + n0(no.con_no_lak) + ' LAK</small></div>' +
@@ -371,6 +395,8 @@
     if (xemTien()) {
       viec.push(API.get('/api/customers/' + cid + '/bang-gia').then(r => { c.gia = r; }).catch(() => { c.gia = []; }));
       viec.push(API.get('/api/customers/' + cid + '/cong-no').then(r => { c.no = r; }).catch(() => { c.no = null; }));
+      // công nợ bên hệ kế toán anh Tune (01/10): SO sinh từ phiếu đề nghị thu, các lần thu bên đó — chỉ xem
+      viec.push(API.get('/api/customers/' + cid + '/cong-no-ke-toan').then(r => { c.noKT = r; }).catch(e => { c.noKT = { loi: e.message || String(e) }; }));
     }
     await Promise.all(viec);
     if (st.id === cid) render();

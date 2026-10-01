@@ -238,6 +238,21 @@ def cong_no_khach(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hi
     return {"customer": {"id": kh.id, "name": kh.name, "invoice_mode": kh.invoice_mode}, "dong": dong, **_tom_no(dong)}
 
 
+@router.get("/api/customers/{cid}/cong-no-ke-toan")
+def cong_no_khach_ke_toan(cid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+    """Công nợ của khách BÊN HỆ KẾ TOÁN anh Tune (01/10, chỉ xem): SO bên đó sinh từ phiếu đề nghị thu, các lần thu tiền bên
+    đó. Khách chưa có mã bên kế toán → {"co": false}. Không vào được bên đó → 502 báo rõ, màn vẫn hiện phần còn lại."""
+    from services import chi_tune as CHI
+    from services.phan_quyen import thay_tien_ban
+    if not thay_tien_ban(user.role):
+        raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem công nợ khách." % user.role})
+    kh = db.get(Customer, cid)
+    if not kh:
+        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có khách hàng này."})
+    kq = CHI.cong_no_khach(db, kh)
+    return {"co": kq is not None, **(kq or {})}
+
+
 @router.get("/api/customers-cong-no")
 def cong_no_moi_khach(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
     """Công nợ GỌN của mọi khách một lần — cột trái màn Khách hàng (giao diện mới 30/09): số còn nợ từng khách, nút lọc
