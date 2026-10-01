@@ -1,10 +1,10 @@
 # Hướng dẫn triển khai cho anh Tune — đưa code nối trang điều xe EPL Lào lên máy host
 
-Ngày **01/10/2026**, cập nhật 16:50. Bên soạn: trang điều xe **EPL_LAO_REAL**. Người đọc: **anh Tune**.
+Ngày **01/10/2026**, cập nhật 17:45. Bên soạn: trang điều xe **EPL_LAO_REAL**. Người đọc: **anh Tune**.
 
-Bản 16:50 thêm:
-- API `ed5aa0e` (nhật ký kiểm toán che mật khẩu), `ae0e7f6` (máy chủ tự tính quy đổi từng dòng); WEB `77bcb0a1` (loại phiếu không đổi ngầm, chặn XSS modal Vụ việc) — mục 1.4;
-- trang điều xe `f85078b`, `ca7b630`, `938b007`: mọi khoản qua tiền đi phiếu bên anh, khoản không qua tiền là bút toán chờ gửi (mục 1.1);
+Phạm vi bản này:
+- API đến `b9227aa`, WEB đến `7d168744` (mục 1.4). Trong đó có **API bút toán tổng hợp** (`b9227aa`) kèm script DB `20261001_logistics_journal_entry.sql` — các bước áp script, cấu hình, bật cờ, gọi thử ở **mục 4.6**; và script che mật khẩu trong audit cũ (`e2ef52f`, mục 12);
+- trang điều xe `f85078b`, `ca7b630`, `938b007`: mọi khoản qua tiền đi phiếu bên anh, khoản không qua tiền là bút toán chờ gửi (mục 1.1); `a938301`, `875a0cf`: gửi bút toán sang API trên khi bật cờ `QLSX_GUI_BUT_TOAN` (mặc định tắt);
 - kho tạm `EPL_KETOAN@1d8d91c`: ba đường trừ hàng chủ xe mua ở quầy (mục 1.5);
 - **người làm** (chủ dự án chốt 01/10: "bên mình với anh Tune giờ là một"): việc trên source ghi **bên EPL làm (đang làm)**; việc cần máy chủ host (triển khai, dữ liệu DB host, token / mật khẩu tài khoản của anh) ghi **cần quyền host**;
 - **tạm gác tài khoản tích hợp** (chủ dự án chốt 01/10): trang điều xe tiếp tục dùng token của anh; mục 6 nay là **tuỳ chọn**, không phải làm trước triển khai.
@@ -25,10 +25,11 @@ Quy ước:
 | 1 | Sao lưu DB host, thư mục hai site IIS | **cần quyền host** | có tệp `.bak` và hai tệp `.zip` |
 | 2 | Lấy hai nhánh, merge vào nhánh triển khai | chủ dự án push nhánh; merge lúc triển khai — **cần quyền host** | `git log` thấy đủ commit ở mục 1.4 |
 | 3 | Build, publish API rồi WEB | **cần quyền host** | `dotnet build` 0 lỗi; hai site chạy lại |
-| 4 | Cấu hình `LogisticsSalesPush`, `LogisticsSource`, tiền tệ | **cần quyền host** | mục 4 xong |
+| 4 | Cấu hình `LogisticsSalesPush`, `LogisticsSource`, tiền tệ | **cần quyền host** | mục 4.1 – 4.5 xong |
+| 4b | **Bút toán tổng hợp:** áp script `20261001_logistics_journal_entry.sql` lên DB kế toán host, đọc diagnostics → cấu hình `LogisticsJournalEntry` | **cần quyền host** | D1 – D7 đúng (mục 4.6 bước 1 – 2) |
 | 5 | Mở ba mã tài khoản nếu DB host còn thiếu | **cần quyền host** (bên em chạy công cụ khi chủ dự án cho phép) | danh mục quốc gia 11 có 1371 / 4021 / 4022 |
 | 6 | Token trang điều xe: tiếp tục dùng token của anh; trước khi hết hạn (khoảng 10/10) thay token mới hoặc đặt tài khoản anh để tự đăng nhập. Tài khoản tích hợp: **tuỳ chọn** | **cần quyền host** (token / mật khẩu của anh) | trang điều xe gọi được API host (bài kiểm dòng 16) |
-| 7 | Đổi link phía trang điều xe | bên EPL | trang điều xe gửi sang host |
+| 7 | Đổi link phía trang điều xe; **sau đó** bật `QLSX_GUI_BUT_TOAN=1` rồi gọi thử bút toán (mục 4.6 bước 3 – 4) | bên EPL | trang điều xe gửi sang host; gọi thử đạt; màn "Bút toán chờ gửi" có số chứng từ bên anh |
 | 8 | Chạy bài kiểm sau triển khai | bên EPL | không còn dòng SAI |
 | 9 | Cắt sổ 01/10: bỏ số tiền thử của trang kế toán tạm; gửi SO cho **mọi DO đã khoá** | bên EPL, chủ dự án cho phép | mục 1.1 |
 | 10 | Kho tạm có `1d8d91c` (trừ hàng chủ xe mua ở quầy) | bên EPL, máy kho tạm — không đụng host | mục 1.5 |
@@ -47,7 +48,7 @@ Quy ước:
 | Số tiền bên trang tạm (hoá đơn gộp, lần thu, đợt trả chủ xe, bản chốt tất toán) là **số thử, bỏ hết** | không có số dư nào chuyển từ trang tạm sang hệ anh |
 | **Cắt sổ 01/10**: mọi DO đã khoá gửi SO sang hệ anh **từ đầu** | anh sẽ nhận một lượt SO cho cả các DO đã khoá trước 01/10, không chỉ DO mới. Bên em báo số DO trước khi gửi. Mỗi DO một `Idempotency-Key`, gửi lại không ghi hai lần |
 | Bỏ số tiền thử bằng công cụ `tools/bo_tien_trang_tam.py` trên DB thật của trang điều xe, lúc cắt sổ | không đụng DB của anh. Chạy không tham số thì **chỉ đếm**; `--ghi` mới xoá (một giao dịch, lỗi là trả lại hết). Cần chủ dự án cho phép. Không đụng kho, SO và phiếu chi đã gửi anh, chứng từ |
-| Khoản **không qua tiền** thành **bút toán chờ gửi**, giữ ở trang điều xe, đủ hai vế bằng mã thật; xem ở màn "Bút toán chờ gửi" (`GET /api/but-toan-cho`) | chờ API bút toán (`POST /api/v1/integrations/logistics/journal-entries`, hợp đồng 12.12.4 — bên EPL làm, đang làm). Có API thì bên em gửi hết, không mất khoản nào |
+| Khoản **không qua tiền** thành **bút toán chờ gửi**, giữ ở trang điều xe, đủ hai vế bằng mã thật; xem ở màn "Bút toán chờ gửi" (`GET /api/but-toan-cho`) | hệ anh nhận qua **API bút toán tổng hợp** `POST /api/v1/integrations/logistics/journal-entries` (`b9227aa`; giao ước ở hợp đồng 12.12.4). Ghi thành chứng từ tổng hợp, **ghi sổ tạm** (ST 13). Cần áp script DB và cấu hình trước (mục 4.6); trong lúc chờ, bút toán nằm ở trang điều xe, không mất khoản nào |
 
 Khoản **đi qua tiền** bên anh sẽ nhận (đều chưa ghi sổ; thủ quỹ chi / thu rồi ghi sổ bên anh; bên em đọc lại `STATUS` 12 / 13):
 
@@ -71,7 +72,7 @@ Bút toán chờ gửi (không qua tiền):
 | Quyết toán tạm ứng tài xế | Nợ 625 / Có 1601 | chốt tất toán |
 | Hàng chủ xe mua ở quầy (nguồn `ban_chu_xe`) | Nợ 4022 / Có 707, theo giá bán | phiếu chi trả chủ xe có trừ hàng quầy đã chi |
 
-Nên DB host cần thêm, ngoài ba mã con: loại chứng từ **17**, và các mã **614, 625, 1022** hạch toán được. Bài kiểm dòng 4 và 5 soát đủ. Mã **707** chỉ cần khi gửi bút toán chờ (chưa có API); bài kiểm chưa soát mã này.
+Nên DB host cần thêm, ngoài ba mã con: loại chứng từ **17**, và các mã **614, 625, 1022** hạch toán được. Bài kiểm dòng 4 và 5 soát đủ. Mã **707** cần khi gửi bút toán `ban_chu_xe`; bài kiểm chưa soát mã này — API bút toán từ chối mã thiếu bằng 400 `INVALID_ACCOUNTS` kèm danh sách.
 
 ### 1.2. Cần có trong tay
 
@@ -126,21 +127,26 @@ Hai tệp `.zip` này là đường quay lại nhanh nhất (mục 10.1).
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ce95b3c` | `AccountingModule.cs`, `CashVoucherReferenceController.cs`, `CMPaymentReceiptService.cs`, `CashVoucherReferenceTicket.cs`, `CashVoucherModels.cs`, `CashVoucherSourceReferenceModels.cs`; mới: `CashVoucherReferenceService.cs`, `ICashVoucherReferenceService.cs`, `CashVoucherHeaderTotals.cs`, `ILogisticsDeliveryOrderClient.cs`, `LogisticsDeliveryOrderClient.cs` | nguồn DO ra service + client typed (`AddHttpClient`, giữ 15 giây, 2 MB, không chuyển hướng). **Thiếu `LogisticsSource:BaseUrl` → DO trả 503**, bỏ mặc định ngầm 1506. `create` / `save` / `save-and-commit` tính lại `Header.Amount` / `BaseAmount` từ dòng (5 số lẻ, nửa xa số 0); dòng IV / IC hoặc dòng công nợ thiếu số tiền thì giữ số WEB gửi. Route và khuôn trả về không đổi |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ed5aa0e` | `ApiAuditLogger.cs`, `ApiAuditAutoLogFilter.cs`; mới: `ApiAuditPayloadSanitizer.cs` | nhật ký kiểm toán bỏ `CancellationToken` khỏi payload (hết "Đặt log sai" ở `ApiAuditAutoLogFilter.cs:27`); che mật khẩu / token / khoá trong payload và query string. Dòng audit **cũ** không tự che (mục 12) |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `ae0e7f6` | `CashVoucherHeaderTotals.cs`, `CMPaymentReceiptService.cs` | máy chủ tự tính quy đổi từng dòng: `BaseAmount` = `Amount` × (tỷ giá dòng, thiếu thì tỷ giá header), 5 số lẻ, nửa xa số 0; công nợ DEP/DEPT tính lại theo tỷ giá header; giữ số client khi thiếu nguyên tệ, tỷ giá ≤ 0, dòng IV / IC — rồi mới cộng tổng header |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `e2ef52f` | mới: `Database/Scripts/20261001_audit_redact_secrets.sql` | script **UPDATE dữ liệu** audit cũ: che mật khẩu / token / khoá thành `***`, một transaction, chạy lại an toàn. Trong tệp `@Apply` mặc định **1** (che luôn); đặt 0 để chỉ chẩn đoán (mục 12) |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `0d4eed9` | `ApiAuditPayloadSanitizer.cs` | che thêm tên trường chứa `jwt`, `cookie` |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `b9227aa` | `AccountingModule.cs`; mới: `LogisticsJournalEntryController.cs`, `LogisticsJournalEntryService.cs` (+ interface), `LogisticsJournalEntryRepository.cs` (+ interface), `LogisticsJournalEntryModels.cs`, `Database/Scripts/20261001_logistics_journal_entry.sql`, `Database/Scripts/logistics-journal-entry-config.example.json` | **API bút toán tổng hợp** `integrations/logistics/journal-entries`: tạo + ghi sổ tạm ST 13, `/reverse`, `GET /{SourceRef}`; chống trùng theo `Idempotency-Key`. Script **thêm** ba thủ tục `proc_Logistics_JournalEntry_*` (không đổi bảng). Thiếu script / cấu hình thì API trả 503, không ảnh hưởng đường khác (mục 4.6) |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `f382a9e8` | `cm-source-reference-modal.js` | thoát ký tự chuỗi nguồn; DO hiện số phiếu, xe · biển số — tài xế; tỷ giá đọc xuôi |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `06a14189` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `CMPaymentReceiptController.cs` (BFF) | `isCash` theo hình thức thanh toán; tài khoản tiền mặc định tự điền (gửi kèm `currencyId`); `Amount` / `BaseAmount` tách đúng; phân loại theo `DOTY_AUTOID` |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `7e14421c` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `Backend/Base/Localization/lo.json` | đổi hình thức thanh toán, nội tệ hay loại tiền thì vế tiền của các dòng đổi theo (dòng người dùng tự chọn giữ nguyên); đổi quốc gia khi có dòng thì chặn **trước** khi nạp danh mục; mã DOTY gom một chỗ; sửa chính tả một câu tiếng Lào |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `77bcb0a1` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `cm-source-reference-modal.js`, `Backend/Base/Localization/vi.json` · `en.json` · `lo.json` | loại phiếu không đổi ngầm: chỉ 58/60, 15/17 sửa được; 57, **59 "Chi trước"**, 68, 14, 16 mở chỉ xem, không mất dòng; hình thức thanh toán không rõ thì chặn lưu; đổi tài khoản tiền theo cờ `moneyAccountIsDefault`; dòng đã lưu giữ nguyên quy đổi API trả; modal Vụ việc thoát ký tự cả DEAL / QUOTE và câu lỗi (XSS) |
+| GLS-QLSX-Web | `feat/hontunedhai_Laos` | `fce78c52` | `cm-payment-upsert.js`, `cm-receipt-upsert.js`, `OrganizationHrController.cs`, `Employees.cshtml`, `organizationHrApi.js`; mới: `employee-account.js`; `vi.json` · `lo.json` · `en.json` | tiền tệ ngoài danh mục (ví dụ USD đang tắt) giữ đúng mã, phiếu chỉ xem; phiếu mới thiếu tiền tệ chặn lưu; công nợ xem trước theo tỷ giá header; phiếu chi mở lại đọc đúng tỷ giá. Hồ sơ nhân viên → tab **Tài khoản** (xem, tạo / sửa, đặt lại mật khẩu) |
+| GLS-QLSX-Web | `feat/hontunedhai_Laos` | `7d168744` | `Backend.Common/BackofficeApiService.cs`, `Backend/Base/Helpers/AppLoggingHelper.cs`, `Backend/Base/Middlewares/ExceptionLoggingMiddleware.cs`, `_helpers/commonScripts.js`; mới: `Backend.Common/Logging/LogPayloadSanitizer.cs` | log WEB che mật khẩu / token / khoá / jwt / cookie theo tên trường; không còn in `Authorization: Bearer …` vào log và câu báo |
 
-**Không có script DB nào** trong các commit trên. Không phải chạy migration cho phần code này.
+**Hai script DB** đi theo commit (cả hai **chưa chạy** ở DB nào):
+- `20261001_logistics_journal_entry.sql` (`b9227aa`) — áp lên **DB kế toán** mà API dùng cho phiếu thu chi (`CenterConnectionStrings[0]`), trước khi bật `LogisticsJournalEntry` (mục 4.6). Chỉ thêm thủ tục, chạy lại được.
+- `20261001_audit_redact_secrets.sql` (`e2ef52f`) — chạy trên DB `ConnectionStrings:Master` lúc triển khai (mục 12). Sửa dữ liệu audit.
 
-API và WEB publish được ngay; API publish trước cũng được: API mới chạy được với WEB cũ.
+Các commit khác không cần migration. API và WEB publish được ngay; API publish trước cũng được: API mới chạy được với WEB cũ. Chưa áp script bút toán thì chỉ đường bút toán trả 503, các đường khác chạy bình thường.
 
 Những thứ **không** đi theo commit, đừng lấy:
 - WEB `Backend/Properties/launchSettings.json`, `Backend/package-lock.json`: sửa ở máy bên em, chưa commit;
-- WEB `cm-payment-upsert.js`, `cm-receipt-upsert.js` bản đang sửa ở máy bên em (sau `77bcb0a1`, chưa commit) — **đang chốt**; publish đúng commit, không lấy bản ở máy;
 - API `Backend.API/Backend.API.csproj`: thay đổi có từ trước, bên em không đụng;
-- API `Database/Scripts/20261001_audit_redact_secrets.sql` (che bí mật trong dòng audit cũ): đang viết, chưa commit — **đang chốt** (mục 12);
-- API thư mục `docs/` (tài liệu tổng hợp của anh): đang chưa commit.
+- API thư mục `docs/` (tài liệu tổng hợp của anh): ngoài git, đúng thiết kế.
 
 **Cách nhận nhánh — chủ dự án chọn một:**
 
@@ -157,12 +163,15 @@ git status
 git checkout feat/DemoLao
 git pull --ff-only origin feat/DemoLao
 git merge --ff-only origin/feat/HonTunedaHai
-git log --oneline -7
+git log --oneline -10
 ```
 
 `git status` phải sạch trước khi checkout. Kết quả `git log` đúng:
 
 ```text
+b9227aa Bút toán tổng hợp nhận từ trang điều xe: api/v1/integrations/logistics/journal-entries
+0d4eed9 Nhật ký kiểm toán: che thêm trường jwt / cookie (JWTKey là token đăng nhập) — cùng luật với log WEB
+e2ef52f Script che mật khẩu / token trong audit cũ (trước ed5aa0e lưu dạng chữ thường) — chạy lúc triển khai
 ae0e7f6 Phiếu thu/chi: máy chủ tự tính quy đổi từng dòng trước khi cộng tổng header
 ed5aa0e Nhật ký kiểm toán API: hết "Đặt log sai" (CancellationToken), che mật khẩu / token / khoá trong payload
 ce95b3c Theo chuẩn QLSX: nguồn DO ra Application service + client typed; máy chủ tự tính tổng header phiếu thu/chi
@@ -180,10 +189,10 @@ git status
 git checkout feat/DemoLao
 git pull --ff-only origin feat/DemoLao
 git merge --ff-only origin/feat/hontunedhai_Laos
-git log --oneline -5
+git log --oneline -7
 ```
 
-Kết quả đúng: `77bcb0a1`, `7e14421c`, `06a14189`, `f382a9e8`, rồi `de04913f`.
+Kết quả đúng: `7d168744`, `fce78c52`, `77bcb0a1`, `7e14421c`, `06a14189`, `f382a9e8`, rồi `de04913f`.
 
 **`--ff-only` báo lỗi** nghĩa là `feat/DemoLao` đã có commit mới sau 01/10. Khi đó:
 - chạy `git merge --no-ff origin/feat/HonTunedaHai` (WEB: `origin/feat/hontunedhai_Laos`);
@@ -361,6 +370,133 @@ Bản ở máy trả **1011** cho tiền mặt và **1021** cho chuyển khoản
 
 Phiếu chi cần kỳ (`FiciAutoId`) chứa ngày lập, **đang mở**. Host hôm nay có kỳ 10/2026 (mã 19) đang mở. Sang tháng 11 thì nhớ mở kỳ mới. Thiếu kỳ, trang điều xe báo `THIEU_KY` hoặc `KY_DA_DONG`.
 
+### 4.6. Bút toán tổng hợp — script, `LogisticsJournalEntry`, cờ gửi, gọi thử
+
+Trang điều xe gửi các khoản **không qua tiền** (thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707) vào `POST /api/v1/integrations/logistics/journal-entries` (`b9227aa`). Hệ anh ghi mỗi lần gọi thành **một chứng từ tổng hợp, ghi sổ tạm** (ST 13). Giao ước: hợp đồng 12.12.4. Mô tả API: tài liệu của anh mục 16.9.
+
+**Hiện trạng 01/10** (máy bên em: API 5090, DB của `appsettings.laos.json`):
+- mục `LogisticsJournalEntry` **đã có**;
+- script **chưa áp**: lệnh áp từ máy bên em bị bộ an toàn chặn, **chờ chủ dự án tự chạy**;
+- vì vậy GET bút toán đang trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED`;
+- cờ `QLSX_GUI_BUT_TOAN` ở trang điều xe: **tắt**.
+
+**Thứ tự** — làm trọn ở máy bên em trước, rồi lặp lại trên host sau khi publish:
+
+| Bước | Việc | Ở máy bên em (bây giờ) | Trên host |
+|---|---|---|---|
+| 1 | Áp script, đọc diagnostics | DB kế toán của `appsettings.laos.json` — **chủ dự án tự chạy** | DB kế toán host — **cần quyền host** |
+| 2 | Cấu hình `LogisticsJournalEntry` | đã có | thêm vào `appsettings.<Env>.json` host — **cần quyền host** |
+| 3 | Bật `QLSX_GUI_BUT_TOAN=1` ở trang điều xe | máy thử 8011 (đang trỏ 5090) | máy trang điều xe trỏ host — chỉ **sau** khi đổi link (mục 7) |
+| 4 | Gọi thử: bằng tay (4a), rồi qua trang điều xe (4b) | vào 5090 | vào host |
+
+**Bước 1 — áp script.** Tệp: `Backend.API/Database/Scripts/20261001_logistics_journal_entry.sql`.
+- Chạy trên **DB kế toán mà API dùng cho phiếu thu chi** (`CenterConnectionStrings[0]` trong `appsettings.<Env>.json`), không phải DB của `ConnectionStrings:Master` nếu hai cái khác nhau.
+- Script chỉ `CREATE OR ALTER` ba thủ tục `proc_Logistics_JournalEntry_Save` / `_Reverse` / `_Get`; không đổi bảng, không ghi dữ liệu; **chạy lại được**. Cần SQL Server 2017+, compatibility level ≥ 130.
+
+Lệnh mẫu (không ghi mật khẩu vào lệnh):
+
+```powershell
+cd <thư mục GLS-QLSX-APIs>
+sqlcmd -S <máy chủ SQL> -d <DB kế toán của CenterConnectionStrings[0]> -E -I -f 65001 -i Backend.API\Database\Scripts\20261001_logistics_journal_entry.sql -o ket_qua_journal_entry.txt
+```
+
+- `-E`: đăng nhập Windows. Dùng tài khoản SQL thì thay bằng `-U <tên đăng nhập>` và gõ mật khẩu khi `sqlcmd` hỏi — **không** dùng `-P`.
+- `-f 65001`: tệp là UTF-8 **không có BOM**. Thiếu cờ này thì câu lỗi tiếng Việt trong thủ tục bị vỡ chữ (câu đó trả thẳng về trang điều xe).
+- `-I`: bật `QUOTED_IDENTIFIER`.
+- **Không** thêm `-b`: dừng ở lỗi đầu tiên thì phần diagnostics cuối không chạy.
+- Dùng SSMS cũng được: File → Open tệp, kiểm chữ Việt hiện đúng (ví dụ "Tổng hợp"), chọn đúng DB, Execute. Kết quả D1 – D7 nằm ở tab Results.
+
+Đầu kết quả có câu `20261001_logistics_journal_entry: thiếu nền — …` nghĩa là DB thiếu bảng / thủ tục nêu trong câu: **không** thủ tục nào được tạo; báo bên EPL.
+
+Đọc diagnostics:
+
+| # | Đọc gì | Đúng khi | Sai thì |
+|---|---|---|---|
+| D1 | ba thủ tục của script | `IsCreated` = 1 cả ba | xem câu lỗi đầu kết quả |
+| D2 | bảng / thủ tục / hàm nền | `IsPresent` = 1 hết | DB sai, hoặc thiếu thủ tục legacy |
+| D3 | tham số `sp_PostTing_GeneralLedger`, `sp_GL_Delete_GENERALLEDGER`, `sp_GL_Delete_GLBusiness`, `spGetconfigID` | có `@LstDocID`, `@ST_AUTOID`, `@Obj_POSTTING`; `@doc_ParrentID`; `@GLB_DOCUMENTID`; `spGetconfigID` tham số 2 là OUTPUT | **báo bên EPL sửa script trước khi gọi thử**: gọi sai tên tham số thì thủ tục lỗi, không ghi gì, API trả 503 `LOGISTICS_JOURNAL_DATABASE_ERROR` |
+| D4 | cột đích; quan trọng nhất `PUBENTRY.OBJ_AUTOID` | `is_nullable` = 1 | `0`: dòng không đối tượng bị 422 `LOGISTICS_JOURNAL_52507` (cả bút toán không ghi). Bên em gửi `ObjectId` rỗng cho dòng ghi nợ nhà cung cấp chưa gán nhà cung cấp — **cần quyết** (mục 11 câu 16) |
+| D5 | kỳ kế toán hôm nay | có `TodayFici` | mở kỳ (mục 4.5) |
+| D6 | SourceRef trùng giữa chứng từ tổng hợp | 0 dòng | đối soát trước khi bật |
+| D7 | đếm chứng từ tổng hợp có SourceRef, theo trạng thái | ghi lại để so sau bước 4 | — |
+
+**Bước 2 — cấu hình** (`appsettings.<Env>.json` của **API**; mẫu `Backend.API/Database/Scripts/logistics-journal-entry-config.example.json`, trong mẫu `Enabled` là `false`):
+
+```json
+"LogisticsJournalEntry": {
+  "Enabled": true,
+  "AllowedUserIds": [846],
+  "OrgId": 1368,
+  "CountryId": 11
+}
+```
+
+| Khoá | Ý nghĩa | Bí mật |
+|---|---|---|
+| `Enabled` | `true` mới nhận; thiếu mục hoặc `false` → 503 `LOGISTICS_JOURNAL_DISABLED` | không |
+| `AllowedUserIds` | `UserId` (`dbo.Users.UserID`, không phải `OBJ_AUTOID`) của **token trang điều xe đang gửi**: hiện là `tune` = 846. Danh sách riêng với `LogisticsSalesPush`; có tài khoản tích hợp thì thêm vào cả hai | không |
+| `OrgId` | chi nhánh ghi chứng từ (1368 Logistics). Không lấy từ thân request | không |
+| `CountryId` | quốc gia kế toán, danh mục tài khoản (11 Lào). Không lấy từ thân request | không |
+
+- Thiếu `OrgId` / `CountryId` → 503 `LOGISTICS_JOURNAL_CONFIG_REQUIRED`; token khác `AllowedUserIds` → 403 `LOGISTICS_JOURNAL_FORBIDDEN`.
+- Đọc lại **mỗi lần gọi**: lưu tệp là có hiệu lực, không cần Recycle.
+- Bật cấu hình trước khi áp script cũng không hỏng gì: chỉ đường bút toán trả 503 `LOGISTICS_JOURNAL_SCRIPT_REQUIRED` (máy bên em đang như vậy).
+
+**Bước 3 — bật cờ ở trang điều xe** (bên EPL): đặt `QLSX_GUI_BUT_TOAN=1` trong `.env` máy trang điều xe, khởi động lại.
+- Màn "Bút toán chờ gửi" báo "Gửi sang hệ kế toán đang BẬT"; có nút **Gửi**, **Gửi hết**, **Cập nhật** (vai KT Thu/Chi VC, KT Chi phí VC, Sếp).
+- Từ lúc bật: khoá phiếu, chốt tất toán, trả chủ xe có hàng quầy là **tự gửi** (chờ tối đa 8 giây; hỏng thì giữ "chờ gửi", không chặn việc khoá). Mở khoá / bỏ chốt bản đã gửi thì **tự gỡ** bên anh.
+- Mã tiền: trang điều xe tra loại tiền ở `GetAllCurrency` (chỉ tiền đang bật) — host phải bật LAK / USD hoặc bên em đặt `QLSX_TIEN_*` (mục 4.3), không thì báo `THIEU_TIEN_TE`.
+- **Đừng bật** trên máy còn trỏ một API chưa có `b9227aa`: khi đó đường gỡ trả 404 mà đầu gửi bên em hiện coi 404 lúc gỡ là "bên anh không còn chứng từ", đánh huỷ.
+- Nếu máy thử 8011 dùng chung DB trang điều xe với máy thật: đừng bấm **Gửi hết** ở 8011 — nút đó gửi **mọi** bản chờ gửi (cả bản thật) sang API mà 8011 đang trỏ.
+
+**Bước 4a — gọi thử bằng tay** (PowerShell; token của tài khoản trong `AllowedUserIds`, đặt trong phiên, không ghi ra tệp). SourceRef thử **không** bắt đầu bằng `EPLLAO-`, để không đụng mã thật:
+
+```powershell
+$api = "http://127.0.0.1:5090"            # trên host: https://demo-lao-api.goldensme.com
+$u   = "$api/api/v1/integrations/logistics/journal-entries"
+$ref = "EPL-JE-TEST-20261001-1"
+$h   = @{ Authorization = "Bearer $env:QLSX_ACCESS_TOKEN" }
+$j   = "application/json; charset=utf-8"
+$tao = [Text.Encoding]::UTF8.GetBytes((@{
+  DocumentDate = "2026-10-01"; Description = "Bút toán thử API journal-entries"
+  Entries = @(@{ DebitAccount = "621"; CreditAccount = "4022"; Amount = 1000; ExchangeRate = 1
+                 CurrencyId = <mã LAK của DB>; ObjectId = <OBJ_AUTOID một chủ xe EPLCX->; Note = "thử" })
+} | ConvertTo-Json -Depth 5))
+$go  = [Text.Encoding]::UTF8.GetBytes((@{ SourceRef = $ref } | ConvertTo-Json))
+
+$r1 = Invoke-RestMethod $u -Method Post -Headers ($h + @{ "Idempotency-Key" = $ref }) -ContentType $j -Body $tao; $r1.Code; $r1.Result
+(Invoke-RestMethod "$u/$ref" -Headers $h).Result
+$r3 = Invoke-RestMethod $u -Method Post -Headers ($h + @{ "Idempotency-Key" = $ref }) -ContentType $j -Body $tao; $r3.Code; $r3.Result
+(Invoke-RestMethod "$u/reverse" -Method Post -Headers $h -ContentType $j -Body $go).Result
+(Invoke-RestMethod "$u/reverse" -Method Post -Headers $h -ContentType $j -Body $go).Result
+Invoke-RestMethod "$u/$ref" -Headers $h
+```
+
+| Lệnh | Đúng khi |
+|---|---|
+| Tạo (`$r1`) | `Code` 201; `StatusId` 13; có `DocumentId`, `DocumentNo` |
+| GET | `StatusId` 13; `Entries` một dòng, `BaseAmount` 1000 |
+| Tạo lại đúng gói (`$r3`) | `Code` 200; `IsExisting` True; `DocumentId` như `$r1` |
+| Gỡ | `Reversed` True |
+| Gỡ lần hai | `Reversed` False; `DocumentId` trống — gọi lại an toàn |
+| GET sau cùng | PowerShell báo lỗi 404, thân có `JOURNAL_ENTRY_NOT_FOUND` |
+
+- DB demo: LAK mã 26. DB host: tra lại (mục 4.3). `ObjectId`: một đối tượng đang hoạt động, ví dụ chủ xe `EPLCX-…` bên em đã tạo.
+- Kiểm `ST_AUTOID` trên DB (chỉ đọc, giữa lệnh tạo và lệnh gỡ): `SELECT GLB_DOCUMENTID, ST_AUTOID, GLB_ISLOCK FROM dbo.GLBUSINESS WHERE GLB_DOCUMENTID = <DocumentId của $r1>;` → `ST_AUTOID` = 13, `GLB_ISLOCK` = 0. Đối chiếu dòng sổ cái tạm của chứng từ đó trên màn sổ cái / báo cáo QLSX trước khi gỡ.
+- Thêm nếu muốn: trước lệnh gỡ, gửi cùng `$ref` với `Amount = 2000` → 409 `LOGISTICS_JOURNAL_52512` (cùng SourceRef, khác số).
+- Sau lệnh gỡ: chạy lại D7, số chứng từ đang hoạt động trở về như trước bước 4.
+- Lỗi khác: bảng mã ở tài liệu của anh mục 16.9; dấu hiệu phía trang điều xe ở mục 9.
+
+**Bước 4b — gọi thử qua trang điều xe** (bên EPL, phiếu thử, khi chủ dự án cho phép ghi DB): khoá một phiếu xe thuê thử → màn "Bút toán chờ gửi", bản `thue_xe` thành "đã gửi", có số chứng từ bên anh, trạng thái 13 → mở khoá → bản đó "huỷ" (đã gỡ bên anh; GET bên anh trả 404) → khoá lại → bản mới `…-2`, gửi lại được.
+
+**Khi đổi link từ máy bên em sang `demo-lao-api`** — đúng thứ tự:
+1. Publish (mục 3) → bước 1, bước 2 **trên host** (cần quyền host).
+2. Bước 4a vào host (`$api` host; mã LAK, đối tượng theo DB host).
+3. Bên em đổi link trang điều xe (mục 7), khởi động lại; bật cờ ở bước này nếu chưa bật. Không bật cờ trên máy trỏ host trước khi xong 1 – 2.
+4. Bước 4b trên host với phiếu thử, rồi **Gửi hết** để gửi các bản còn "chờ gửi".
+
+Bản đã gửi khi còn trỏ API ở máy nằm ở **DB demo**. Host trỏ DB khác (mục 11 câu 4) thì các bản đó **không** có trên host. Vì vậy: ở máy chỉ gửi bút toán của phiếu thử; chốt DB nào là DB kế toán thật rồi mới gửi bút toán thật.
+
 ## 5. Ba mã tài khoản 1371 / 4021 / 4022
 
 ### 5.1. Kiểm
@@ -408,18 +544,18 @@ $r.Result | Where-Object { $_.AccCode -in '137','1371','402','4021','4022' } | S
 Lưu ý kỹ thuật:
 - `proc_LoginWithUsAndPw` nhận mật khẩu tối đa **20 ký tự** (`VARCHAR(20)`);
 - tài khoản phải được gán chi nhánh (`USERS_ORG`), ở đây 1368;
-- `AllowedUserIds` của host giữ `846` (mục 4.1).
+- `AllowedUserIds` của host giữ `846`, ở cả `LogisticsSalesPush` (mục 4.1) lẫn `LogisticsJournalEntry` (mục 4.6).
 
 ### 6.1. Tuỳ chọn: tài khoản tích hợp riêng
 
 Để sau, khi cần một tài khoản riêng của hệ thống thay tài khoản cá nhân. **Không** phải làm trước triển khai.
 
-**Trạng thái 01/10:** nhân viên ảo `EPL-TICHHOP` (ObjId **1622**) đã tạo trên DB demo, **chưa có tài khoản dùng được**. Màn tạo tài khoản ở hồ sơ nhân viên bên WEB đang được làm (dùng sau nếu cần). Host khác DB thì phải tạo lại cả nhân viên.
+**Trạng thái 01/10:** nhân viên ảo `EPL-TICHHOP` (ObjId **1622**) đã tạo trên DB demo, **chưa có tài khoản dùng được**. Hồ sơ nhân viên bên WEB đã có tab **Tài khoản** (`fce78c52`), chưa bấm tạo tài khoản thật. Host khác DB thì phải tạo lại cả nhân viên.
 
 Các bước (trên host thì **cần quyền host**):
 
 1. Tạo một **nhân viên** thuộc chi nhánh **1368**, ví dụ mã `EPL-TICHHOP`, tên "EPL Logistics (tích hợp)". Màn nhân viên của WEB, hoặc `POST /api/v1/master-data/staff/upsert`.
-2. Tạo **tài khoản** cho nhân viên đó: `POST /api/v1/master-data/object-auth/account/upsert` (tới khi màn tạo tài khoản bên WEB xong thì gọi thẳng).
+2. Tạo **tài khoản** cho nhân viên đó: tab **Tài khoản** ở hồ sơ nhân viên WEB (`fce78c52`), hoặc gọi thẳng `POST /api/v1/master-data/object-auth/account/upsert`.
    - `UserId = null`;
    - `ObjectAutoId` = mã nhân viên bước 1;
    - `UserName = epl_logistics` (3–20 ký tự);
@@ -427,7 +563,7 @@ Các bước (trên host thì **cần quyền host**):
    - `IsActive = true`, `OrgAutoId = 1368` (gán chi nhánh, `USERS_ORG`);
    - `GroupId` = cùng nhóm quyền với tài khoản đang gửi SO hiện nay.
 3. Lấy **`UserId`**: `POST /api/v1/hr/employees/account-lookups {"UserName": "epl_logistics"}`, hoặc xem `dbo.Users.UserID` trên DB host.
-4. Thêm `UserId` đó vào `LogisticsSalesPush:AllowedUserIds` (mục 4.1).
+4. Thêm `UserId` đó vào `LogisticsSalesPush:AllowedUserIds` (mục 4.1) **và** `LogisticsJournalEntry:AllowedUserIds` (mục 4.6).
 5. **Mật khẩu:** người tạo đặt thẳng vào `.env` máy chủ trang điều xe, không gửi qua chat. Nếu phải chuyển, dùng kênh riêng rồi đổi mật khẩu sau khi đặt xong. Ba khoá:
    - `QLSX_USERNAME=epl_logistics`
    - `QLSX_PASSWORD=<mật khẩu>`
@@ -452,13 +588,15 @@ Bên EPL làm, sau khi publish và cấu hình host xong.
 | Trang điều xe máy thật (cổng 8020) | `QLSX_BASE_URL` | không đặt → tự gọi máy của `EPL_ACC_CODE_API` = `https://demo-lao-api.goldensme.com` | giữ nguyên, tự gọi bản mới |
 | Trang điều xe (mọi máy) | `EPL_ACC_CODE_TOKEN`, hoặc `QLSX_USERNAME`, `QLSX_PASSWORD`, `QLSX_ORG_ID` | dùng `EPL_ACC_CODE_TOKEN` của anh; `QLSX_USERNAME` chưa đặt | trước khi token hết hạn: thay token mới, hoặc đặt tài khoản anh (mục 6) |
 | Trang điều xe (mọi máy) | `QLSX_TIEN_LAK`, `QLSX_TIEN_USD` | `QLSX_TIEN_USD=2` (DB demo) | bỏ nếu đã bật tiền trên DB host; giữ, đúng mã của DB host, nếu chưa bật |
+| Trang điều xe (mọi máy) | `QLSX_GUI_BUT_TOAN` | tắt | `1` — chỉ sau khi host đã áp script bút toán và có `LogisticsJournalEntry` (mục 4.6) |
 | API anh (host) | `LogisticsSource:BaseUrl`, `ApiKey` | máy thử `http://127.0.0.1:8011/api/` | đợt 2 (mục 4.2) |
+| API anh (host) | `LogisticsJournalEntry` | API ở máy: đã có (`Enabled`, `[846]`, 1368, 11) | thêm sau khi áp script lên DB kế toán host (mục 4.6) |
 | WEB anh (host) | `BACKOFFICE_API_URL` | bản ở máy dùng `Env=laoslocal` trỏ 5090 | `Env=laos` trỏ API host (đã đúng sẵn) |
 
 Thứ tự:
-1. Publish, cấu hình mục 4 – 6 (**cần quyền host**), báo bên EPL.
-2. Bên em sửa `.env` trang điều xe theo bảng, rồi khởi động lại trang điều xe.
-3. Chạy bài kiểm (mục 8). Không còn dòng SAI thì xong.
+1. Publish, cấu hình mục 4 – 6 (**cần quyền host**); với bút toán: áp script → cấu hình (mục 4.6 bước 1 – 2). Báo bên EPL.
+2. Bên em sửa `.env` trang điều xe theo bảng (kể cả `QLSX_GUI_BUT_TOAN=1`), rồi khởi động lại trang điều xe.
+3. Gọi thử bút toán (mục 4.6 bước 4) và chạy bài kiểm (mục 8). Không còn dòng SAI, gọi thử đạt thì xong.
 
 Dự phòng: hệ anh chưa dùng được thì bên em đặt `EPL_CHI_TAM_UNG=tai_cho`. Tạm ứng khi đó quay về Quỹ chi trên trang điều xe như trước 01/10.
 
@@ -523,7 +661,8 @@ Các dòng kiểm:
 
 Thoát mã **0** khi không có dòng SAI, **1** khi có. Dòng `--` là bỏ qua vì chưa đủ biến; mỗi dòng có một câu nói thiếu gì.
 
-**Bốn điều bài này không kiểm được bằng lệnh đọc:**
+**Năm điều bài này không kiểm được bằng lệnh đọc:**
+- **`b9227aa`** (bút toán tổng hợp). Bài chưa gọi đường `journal-entries`. Kiểm bằng mục 4.6 (diagnostics D1 – D7, gọi thử 4a / 4b).
 - **`be123e9`** (`IsOrganization` mặc định). Trang điều xe luôn gửi ô này nên luồng bên em không phụ thuộc. Muốn chắc, tạo thử một khách qua API mà không gửi `IsOrganization`: phải ra khách cá nhân, không văng 500.
 - **`ce95b3c` phần tổng header, `ae0e7f6` quy đổi từng dòng.** Chỉ thấy khi lưu phiếu: `BaseAmount` từng dòng = nguyên tệ × tỷ giá dòng (thiếu thì tỷ giá header), `Header.Amount` / `BaseAmount` bằng tổng các dòng, dù WEB gửi số khác.
 - **`ed5aa0e` nhật ký kiểm toán.** Sau một lần đăng nhập, dòng audit mới có `Password` là `***`; log API không còn "Đặt log sai".
@@ -687,6 +826,24 @@ Invoke-WebRequest "https://<địa chỉ trang điều xe>/api/handover/delivery
 | Màn bên em báo `PHIEU_CHI_MAT` | phiếu bên em tạo đã bị xoá tay bên anh (`Master` null) | người lập bấm **Gửi lại** → lập phiếu mới. Cần huỷ thì báo bên EPL rút, đừng xoá tay |
 | Lập đề nghị trả chủ xe báo 503 `CHUA_NOI_KE_TOAN` | kho tạm tắt hoặc chưa có `1d8d91c` (mục 1.5) | bên EPL bật lại / triển khai kho tạm. Chặn là đúng: không trả dư cho chủ xe |
 
+**Bút toán tổng hợp** (mã lỗi và câu hiện trên màn "Bút toán chờ gửi" bên em; bản lỗi vẫn "chờ gửi", bấm **Gửi** / **Gửi hết** sau khi sửa — cùng SourceRef nên không ghi trùng):
+
+| Dấu hiệu | Nguyên nhân | Cách sửa |
+|---|---|---|
+| `HTTP_5XX` "… HTTP 503: Thiếu thủ tục trên DB kế toán …" | chưa áp script (`LOGISTICS_JOURNAL_SCRIPT_REQUIRED`) | mục 4.6 bước 1 |
+| `HTTP_5XX` "… HTTP 503: Chưa bật cấu hình LogisticsJournalEntry." hoặc "Chưa cấu hình OrgId / CountryId …" | thiếu mục cấu hình, `Enabled` không phải `true`, thiếu `OrgId` / `CountryId` | mục 4.6 bước 2 |
+| `HTTP_5XX` "… HTTP 503: Chưa hoàn tất xử lý. Kiểm tra DB / thủ tục …" | lỗi DB khác (`LOGISTICS_JOURNAL_DATABASE_ERROR`): tên tham số thủ tục legacy khác bản đang gọi (D3), mất kết nối DB | tra log API theo `TraceId`; đối chiếu D3; báo bên EPL |
+| `TAI_KHOAN_SAI` kèm danh sách mã | mã không có / không hạch toán được trong danh mục quốc gia 11 (`INVALID_ACCOUNTS`) | mở mã (mục 5) |
+| `TAI_KHOAN_SAI` "… Tài khoản này không được gọi tích hợp bút toán." | `UserId` của token không có trong `LogisticsJournalEntry:AllowedUserIds` (403) — đầu gửi xếp vào nhóm tài khoản vì câu có chữ "tài khoản" | thêm `UserId` (mục 4.6 bước 2) |
+| `BEN_KE_TOAN_TU_CHOI` "… thiếu ObjectId (PUBENTRY.OBJ_AUTOID bắt buộc)." | D4: cột không cho NULL, dòng ghi nợ nhà cung cấp chưa gán nhà cung cấp (422 `52507`) | mục 11 câu 16 |
+| `BEN_KE_TOAN_TU_CHOI` "Không có kỳ kế toán …" / "Kỳ kế toán … không khớp ngày chứng từ …" | 422 `52509` | mở kỳ (mục 4.5) |
+| `BEN_KE_TOAN_TU_CHOI` "… Chứng từ đã ghi sổ chính thức; kế toán gỡ trong QLSX." hoặc "… đã khoá …" | gỡ (khi mở khoá phiếu, hoặc tự gỡ trước khi gửi lại bản khác số) bị chặn 409 `52515` | kế toán gỡ trong QLSX; bên em bấm Gửi hết lại |
+| `KHAC_NOI_DUNG` | bên anh còn chứng từ cùng SourceRef khác số (409 `52512`) mà tự gỡ rồi gửi lại vẫn không xong | kế toán kiểm chứng từ có `DOC_REFDOCUMENTNO` = SourceRef đó |
+| `KHONG_CO_DUONG` (404) | API chưa có `b9227aa` | publish; tắt cờ trên máy đó tới khi xong (mục 4.6 bước 3) |
+| `KHONG_GOI_DUOC`, `QLSX_TOKEN_HET_HAN` | mất mạng / hết giờ; token hết hạn (như SO, ở trên) | lần gửi sau bên em **hỏi lại (GET)** trước, bên anh đã có thì nhận số chứng từ đó |
+| `THIEU_TIEN_TE` | LAK / USD đang tắt bên anh, bên em chưa đặt tạm | mục 4.3 |
+| `GUI_DANG_TAT` (bấm Gửi bị 409) | cờ `QLSX_GUI_BUT_TOAN` đang tắt | mục 4.6 bước 3 |
+
 **WEB:**
 
 | Dấu hiệu | Nguyên nhân | Cách sửa |
@@ -722,9 +879,11 @@ dotnet build Backend.API.sln -c Release
 
 Rồi publish hồ sơ `DEMO_LAO` như mục 3.2. WEB: `git checkout -b quay-lai-de04913f de04913f`, publish.
 
-Đã push merge lên `feat/DemoLao` mà muốn gỡ hẳn: `git revert --no-edit ae0e7f6 ed5aa0e ce95b3c 64ce7a4 be123e9 465748b` (API), `git revert --no-edit 77bcb0a1 7e14421c 06a14189 f382a9e8` (WEB). Lệnh này tạo commit đảo, chủ dự án quyết có làm không.
+Đã push merge lên `feat/DemoLao` mà muốn gỡ hẳn: `git revert --no-edit b9227aa 0d4eed9 e2ef52f ae0e7f6 ed5aa0e ce95b3c 64ce7a4 be123e9 465748b` (API), `git revert --no-edit 7d168744 fce78c52 77bcb0a1 7e14421c 06a14189 f382a9e8` (WEB). Lệnh này tạo commit đảo, chủ dự án quyết có làm không.
 
-Chỉ muốn bỏ phần máy chủ tính số: revert `ae0e7f6` (quy đổi từng dòng) trước, rồi mới tới `ce95b3c` (503, tổng header) — `ae0e7f6` sửa tiếp tệp của `ce95b3c`. Ba commit API trước `ce95b3c` vẫn giữ. `ed5aa0e` (che mật khẩu trong audit) nên giữ.
+Chỉ muốn bỏ phần máy chủ tính số: revert `ae0e7f6` (quy đổi từng dòng) trước, rồi mới tới `ce95b3c` (503, tổng header) — `ae0e7f6` sửa tiếp tệp của `ce95b3c`. Ba commit API trước `ce95b3c` vẫn giữ. `ed5aa0e`, `0d4eed9` (che mật khẩu trong audit) nên giữ.
+
+**Chỉ muốn tắt bút toán tổng hợp** (không cần revert): bên em đặt `QLSX_GUI_BUT_TOAN=0` (bút toán lại nằm chờ ở trang điều xe), anh đặt `LogisticsJournalEntry:Enabled=false` (API trả 503). Ba thủ tục `proc_Logistics_JournalEntry_*` để nguyên vô hại: code cũ không gọi. Chứng từ tổng hợp đã ghi là sổ thật bên anh: gỡ bằng `…/journal-entries/reverse` (trước khi tắt) hoặc trong QLSX — đừng xoá tay `PUBDOCUMENT`.
 
 **Kho tạm:** bên EPL đưa máy kho tạm về commit trước `1d8d91c` (`128233a`) rồi khởi động lại. Khi đó trả chủ xe có hàng quầy bị chặn 503 / lỗi kho (mục 9), các luồng khác không đổi.
 
@@ -740,6 +899,7 @@ Chỉ muốn bỏ phần máy chủ tính số: revert `ae0e7f6` (quy đổi t�
 | Quy đổi từng dòng, tổng header phiếu | lại lấy theo số bên gửi (như trước `ce95b3c` / `ae0e7f6`); bên em vẫn gửi đúng quy đổi theo tỷ giá khoá trên phiếu |
 | Nhật ký kiểm toán | lại ghi mật khẩu dạng chữ thường nếu bỏ `ed5aa0e` |
 | Tìm DO | lọc trong trang như cũ |
+| Bút toán tổng hợp | API trước `b9227aa` không có đường (404). **Tắt `QLSX_GUI_BUT_TOAN` trước khi quay lại**: bật mà gặp 404 thì gửi giữ "chờ gửi", còn gỡ bản đã gửi bị đầu gửi coi như đã gỡ (mục 4.6 bước 3) |
 
 ### 10.2. Dữ liệu
 
@@ -777,18 +937,21 @@ Hệ anh tạm không dùng được thì bên em đặt `EPL_CHI_TAM_UNG=tai_ch
 | 12 | Đợt 1: để màn Vụ việc báo 503, hay đặt tường minh `BaseUrl` = EPL_System 1506 | **cần quyền host** | để 503 (mục 4.2) |
 | 13 | Lúc cắt sổ: chạy `bo_tien_trang_tam.py --ghi` trên DB thật trang điều xe, rồi gửi SO mọi DO đã khoá | chủ dự án cho phép | sau khi bài kiểm hết SAI (bước 9) |
 | 14 | Một lượt SO cho các DO đã khoá trước 01/10 | bên EPL làm | bên em báo số DO trước khi gửi |
+| 15 | Áp script bút toán `20261001_logistics_journal_entry.sql` lên DB demo (lệnh áp từ máy bên em bị bộ an toàn chặn) | **chủ dự án tự chạy** (SSMS hoặc `sqlcmd`, mục 4.6 bước 1) | chạy sớm để bên em gọi thử ở máy trước khi lên host |
+| 16 | D4 cho thấy `PUBENTRY.OBJ_AUTOID` **không** cho NULL: dòng ghi nợ nhà cung cấp chưa gán nhà cung cấp bị 422, cả bút toán `no_ncc` của phiếu đó không ghi | chủ dự án + anh Khampla, sau khi áp script | bắt gán nhà cung cấp trước khi khoá phiếu (bên em chặn ở màn), hoặc chốt một đối tượng mặc định cho dòng đó |
+| 17 | DB nào là DB kế toán thật cho bút toán (DB demo hay DB host) — liên quan câu 4 | chủ dự án | chốt trước khi gửi bút toán thật; ở máy chỉ gửi bút toán của phiếu thử (mục 4.6) |
 
 ## 12. Việc còn lại sau triển khai
 
-| Việc | Trạng thái 01/10 16:50 | Người làm |
+| Việc | Trạng thái 01/10 17:45 | Người làm |
 |---|---|---|
-| **API bút toán** `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`) cho bút toán chờ gửi: thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614/4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 | chưa có; trang điều xe giữ ở màn "Bút toán chờ gửi", chưa gửi | bên EPL làm (đang làm), khuôn ở hợp đồng 12.12.4 |
+| **Bút toán tổng hợp** `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, `GET`): thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614/4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 | API **đã có** (`b9227aa`), đầu gửi đã có (`875a0cf`, cờ tắt). **Chưa chạy trên DB**: script chưa áp DB demo (chờ chủ dự án), cấu hình đã có ở API máy; host chưa có gì. Trong lúc chờ, bút toán nằm ở màn "Bút toán chờ gửi" | áp script DB demo: **chủ dự án**; bật cờ + gọi thử: bên EPL; host: **cần quyền host** (mục 4.6) |
 | Cờ phân loại ở `document-types` (công nợ / khác / trước) | WEB, API còn ghi cứng DOTY 58/60, 15/17 | bên EPL làm (đang làm) |
-| Nhật ký kiểm toán **cũ** (trước `ed5aa0e`) có thể còn mật khẩu dạng chữ thường | script che `20261001_audit_redact_secrets.sql` đang viết — **đang chốt** | chạy trên DB host, cân nhắc đổi mật khẩu — **cần quyền host** |
+| Nhật ký kiểm toán **cũ** (trước `ed5aa0e`) có thể còn mật khẩu dạng chữ thường | script che `20261001_audit_redact_secrets.sql` **đã có** (`e2ef52f`), chưa chạy. Chạy trên DB `ConnectionStrings:Master` của host; trong tệp `@Apply` mặc định 1 (che luôn), đặt 0 để xem trước | chạy trên DB host, cân nhắc đổi mật khẩu — **cần quyền host** |
 | Đợt 2 `LogisticsSource` | chờ trang điều xe ra Internet | chủ dự án cấp địa chỉ; đặt cấu hình — **cần quyền host** |
 | Chi mục V–VI, trả nhà cung cấp, tất toán tài xế, trả chủ xe có trừ hàng quầy qua hệ anh | chạy ở máy (`f85078b`, kho tạm `1d8d91c`); chạy trên host sau triển khai | bên EPL làm |
 | Token trang điều xe hết hạn khoảng 10/10 | đang dùng token của anh; tài khoản tích hợp tạm gác (tuỳ chọn, mục 6.1) | **cần quyền host** (token / mật khẩu của anh), mục 6 |
 | Bút toán riêng cho **phí 2 %** và **trừ quá tải** xe thuê | chưa có tài khoản | anh Khampla chốt |
-| Màn tạo tài khoản ở hồ sơ nhân viên bên WEB | chưa nối API `account/upsert`; dùng sau nếu cần | bên EPL làm (đang làm) |
+| Tab Tài khoản ở hồ sơ nhân viên bên WEB | **đã có** (`fce78c52`: xem, tạo / sửa, đặt lại mật khẩu); chưa bấm tạo tài khoản thật; dùng sau nếu cần | bên EPL làm khi cần |
 | Dọn lớp tạm ở trang điều xe (đổi tên cấu hình kho `kho_*` thay `ke_toan_*`) | `938b007` đã dọn phần lớn | bên EPL làm (đang làm) |
 | Trang kế toán tạm (8030) | chỉ còn kho tạm, có ba đường trừ hàng quầy (mục 1.5) | tới khi nối hệ kho anh Toàn |
