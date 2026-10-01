@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2631 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2655 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -12633,9 +12633,9 @@ window.EPL_TU_DIEN = {
   "en": "not opened"
  },
  "qt_chua_mo_t": {
-  "vi": "Mã con theo anh Khampla — bên kế toán chưa mở trong danh mục",
-  "lo": "ລະຫັດຍ່ອຍຕາມອ້າຍ Khampla — ຝ່າຍບັນຊີຍັງບໍ່ເປີດໃນລາຍການ",
-  "en": "Sub-account per Mr Khampla — accounting has not opened it in the chart yet"
+  "vi": "Mã con — bên kế toán chưa mở trong danh mục",
+  "lo": "ລະຫັດຍ່ອຍ — ຝ່າຍບັນຊີຍັງບໍ່ເປີດໃນລາຍການ",
+  "en": "Sub-account — accounting has not opened it in the chart yet"
  },
  "qt_khong_ghi": {
   "vi": "không ghi sổ được",
@@ -13156,5 +13156,125 @@ window.EPL_TU_DIEN = {
   "vi": "Chưa có giá bán — tạm theo giá vốn",
   "lo": "ຍັງບໍ່ມີລາຄາຂາຍ — ໃຊ້ຕົ້ນທຶນໄປກ່ອນ",
   "en": "No sale price yet — cost used"
+ },
+ "ctl_do": {
+  "vi": "Phiếu xuất xe · đề nghị xuất xe",
+  "lo": "ໃບເບີກລົດ · ໃບສະເໜີເບີກລົດ",
+  "en": "Truck dispatch slip · dispatch request"
+ },
+ "ctl_plnl": {
+  "vi": "Phiếu đề nghị xuất kho nhiên liệu",
+  "lo": "ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out request"
+ },
+ "ctl_ptu": {
+  "vi": "Phiếu đề nghị tạm ứng",
+  "lo": "ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Advance request"
+ },
+ "ctl_pdt": {
+  "vi": "Phiếu đề nghị thu",
+  "lo": "ໃບສະເໜີຮັບເງິນ",
+  "en": "Collection request"
+ },
+ "ctl_pxk_nl": {
+  "vi": "Phiếu xuất kho nhiên liệu",
+  "lo": "ໃບເບີກນໍ້າມັນອອກສາງ",
+  "en": "Fuel stock-out note"
+ },
+ "ctl_pxk_pt": {
+  "vi": "Phiếu xuất kho phụ tùng",
+  "lo": "ໃບເບີກອະໄຫຼ່ອອກສາງ",
+  "en": "Spare parts stock-out note"
+ },
+ "ctl_pnk_nl": {
+  "vi": "Phiếu nhập kho nhiên liệu",
+  "lo": "ໃບຮັບນໍ້າມັນເຂົ້າສາງ",
+  "en": "Fuel stock-in note"
+ },
+ "ctl_pnk_pt": {
+  "vi": "Phiếu nhập kho phụ tùng",
+  "lo": "ໃບຮັບອະໄຫຼ່ເຂົ້າສາງ",
+  "en": "Spare parts stock-in note"
+ },
+ "ctl_ck_nl": {
+  "vi": "Phiếu chuyển kho nhiên liệu",
+  "lo": "ໃບໂອນນໍ້າມັນລະຫວ່າງສາງ",
+  "en": "Fuel transfer between depots"
+ },
+ "ctl_pnk_hh": {
+  "vi": "Phiếu nhập kho hàng",
+  "lo": "ໃບຮັບສິນຄ້າເຂົ້າສາງ",
+  "en": "Goods stock-in note"
+ },
+ "ctl_pxk_hh": {
+  "vi": "Phiếu xuất kho hàng",
+  "lo": "ໃບເບີກສິນຄ້າອອກສາງ",
+  "en": "Goods stock-out note"
+ },
+ "ctl_dc_hh": {
+  "vi": "Phiếu điều chỉnh kho hàng",
+  "lo": "ໃບປັບປຸງສາງສິນຄ້າ",
+  "en": "Goods stock adjustment"
+ },
+ "ctl_pc_tu": {
+  "vi": "Phiếu chi theo đề nghị tạm ứng",
+  "lo": "ໃບຈ່າຍເງິນຕາມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ",
+  "en": "Payment against advance request"
+ },
+ "ctl_pc_sc": {
+  "vi": "Phiếu chi sửa chữa · chi khác",
+  "lo": "ໃບຈ່າຍສ້ອມແປງ · ອື່ນໆ",
+  "en": "Payment for repairs · other"
+ },
+ "ctl_pc_ncc": {
+  "vi": "Phiếu chi trả nhà cung cấp",
+  "lo": "ໃບຈ່າຍຜູ້ສະໜອງ",
+  "en": "Supplier payment"
+ },
+ "ctl_pc_cx": {
+  "vi": "Phiếu chi trả chủ xe liên kết",
+  "lo": "ໃບຈ່າຍເຈົ້າຂອງລົດຮ່ວມ",
+  "en": "Payment to partner truck owner"
+ },
+ "ctl_hd": {
+  "vi": "Hoá đơn vận chuyển",
+  "lo": "ໃບເກັບເງິນຂົນສົ່ງ",
+  "en": "Freight invoice"
+ },
+ "ctl_pt": {
+  "vi": "Phiếu thu tiền khách",
+  "lo": "ໃບຮັບເງິນລູກຄ້າ",
+  "en": "Customer receipt"
+ },
+ "ctl_qt_tu": {
+  "vi": "Quyết toán tạm ứng tài xế",
+  "lo": "ສະສາງໂຊເຟີ · ເງິນລ່ວງໜ້າ",
+  "en": "Driver advance settlement"
+ },
+ "ctl_tt_chi": {
+  "vi": "Tất toán tài xế · chi bù",
+  "lo": "ສະສາງໂຊເຟີ · ຈ່າຍເພີ່ມ",
+  "en": "Driver settlement · top-up payment"
+ },
+ "ctl_tt_thu": {
+  "vi": "Tất toán tài xế · thu hoàn",
+  "lo": "ສະສາງໂຊເຟີ · ຮັບຄືນ",
+  "en": "Driver settlement · refund received"
+ },
+ "ctl_pxk_ban": {
+  "vi": "Phiếu xuất kho bán hàng",
+  "lo": "ໃບເບີກສິນຄ້າຂາຍ",
+  "en": "Sales stock-out note"
+ },
+ "ctl_hd_ban": {
+  "vi": "Hoá đơn bán hàng",
+  "lo": "ໃບເກັບເງິນຂາຍສິນຄ້າ",
+  "en": "Sales invoice"
+ },
+ "ctl_pt_ban": {
+  "vi": "Phiếu thu bán hàng",
+  "lo": "ໃບຮັບເງິນຂາຍສິນຄ້າ",
+  "en": "Sales receipt"
  }
 };

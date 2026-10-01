@@ -178,7 +178,7 @@ def luat_cho_giao_dien():
 def ma_con_chua_mo(co):
     """Ba mã con của khách mà danh mục `co` (tập mã) CHƯA có — vẫn cho chọn (phiếu đang dùng) nhưng ghi rõ "chưa mở".
     01/10: mở trong DB bên anh Tune mà API ở máy em nối; bản đang host nối DB khác, chưa có — nên phải xét theo từng danh mục."""
-    return [{"code": ma, "name": lo, "description": "%s — mã con của %s theo anh Khampla, bên kế toán chưa mở" % (vi, cha),
+    return [{"code": ma, "name": lo, "description": "%s — mã con của %s, bên kế toán chưa mở trong danh mục" % (vi, cha),   # câu cho người đọc: không tên người, không ngày chốt
              "parent": cha, "postable": True, "ma_con_khach": True}
             for ma, (cha, vi, lo) in MA_CON_KHACH.items() if ma not in co]
 

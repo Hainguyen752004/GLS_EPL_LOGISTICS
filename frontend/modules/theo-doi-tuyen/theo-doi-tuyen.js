@@ -529,13 +529,15 @@
   /* ---------------------------------------------------------------- tải & thao tác */
   /* Dữ liệu cả năm (24/09): máy chủ lọc theo ô số đang bấm, chữ tìm và "chỉ phiếu còn việc" — trình duyệt không
    * tải 365.000 phiếu về để tự lọc nữa. Ô số vẫn đếm trên TOÀN BỘ phiếu còn việc. */
+  /** "Dữ liệu máy chủ lúc …" — vẽ lại cả khi đổi tiếng (rà 01/10: đổi sang tiếng Anh dòng này vẫn tiếng Việt tới lần tải sau) */
+  function veLuc() { const o = q('#tdt-luc'); if (o) o.innerHTML = BANG ? NN.h('td_asof', { luc: EPL.ngayGio(BANG.luc) }) : ''; }
   async function tai(giuChon) {
     const tham = new URLSearchParams();
     if (!q('#tdt-chi-chay').checked) tham.set('tat_ca', '1');
     if (locO) tham.set('o', locO);
     const tim = q('#tdt-q').value.trim(); if (tim) tham.set('q', tim);
     BANG = await API.get('/api/theo-doi' + (String(tham) ? '?' + tham : ''));
-    q('#tdt-luc').innerHTML = NN.h('td_asof', { luc: EPL.ngayGio(BANG.luc) });
+    veLuc();
     veOSo(); veDanhSach();
     if (giuChon && P) { const con = BANG.chuyen.find(c => c.id === P.id); if (!con) { P = null; ve(); } }
   }
@@ -733,6 +735,6 @@
       if (theoDau) { theoDau.disconnect(); theoDau = null; }
       if (MAP) { MAP.remove(); MAP = null; lopNen = lopVe = null; }
     },
-    onLang() { if (root) { datNhanChon(); veOSo(); veDanhSach(); ve(); } },
+    onLang() { if (root) { datNhanChon(); veLuc(); veOSo(); veDanhSach(); ve(); } },
   };
 })();

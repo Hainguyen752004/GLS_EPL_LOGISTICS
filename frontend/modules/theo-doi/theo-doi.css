@@ -62,3 +62,5 @@ table.tbl.td-bang{border-collapse:separate;border-spacing:0}   /* table.tbl (chu
    sổ, đặt vào --td-cao (biến chứ không style trực tiếp: quy tắc in vẫn thắng) — hai dòng dưới chỉ là số ban đầu (đo bằng Chrome 1680×934 · 1366×768, tiếng Việt, không thanh chia trang). */
 .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 332px))}
 .app[data-view="top"] .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 396px))}
+/* ô tìm giãn vào chỗ trống của thanh lọc (rà 01/10: 1366 tiếng Anh chữ gợi ý bị cắt "…driver, tr"), tối đa 420px — như màn Xe */
+.toolbar .td-tim{flex:1 1 260px;min-width:220px;max-width:420px}
