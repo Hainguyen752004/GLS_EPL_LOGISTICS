@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2632 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2671 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -2980,7 +2980,7 @@ window.EPL_TU_DIEN = {
  "kx_so_phieu": {
   "vi": "{n} phiếu",
   "lo": "{n} ໃບ",
-  "en": "{n} slips"
+  "en": "{n} slip(s)"
  },
  "kx_so_lo": {
   "vi": "{n} lô",
@@ -8159,12 +8159,12 @@ window.EPL_TU_DIEN = {
  },
  "tk_lt_co": {
   "vi": "Đã có khoá",
-  "lo": "Đã có khoá",
+  "lo": "ມີກະແຈແລ້ວ",
   "en": "Key set"
  },
  "tk_lt_chua": {
   "vi": "Chưa có khoá",
-  "lo": "Chưa có khoá",
+  "lo": "ຍັງບໍ່ມີກະແຈ",
   "en": "No key"
  },
  "tk_lt_thu": {
@@ -8179,7 +8179,7 @@ window.EPL_TU_DIEN = {
  },
  "tk_lt_hong": {
   "vi": "Chưa nối được: {loi}",
-  "lo": "Chưa nối được: {loi}",
+  "lo": "ຍັງເຊື່ອມຕໍ່ບໍ່ໄດ້: {loi}",
   "en": "Not connected: {loi}"
  },
  "tk_lt_web": {
@@ -8510,7 +8510,7 @@ window.EPL_TU_DIEN = {
  "k2_cau_cho": {
   "vi": "{l} lít chờ cấp theo {n} phiếu đề nghị.",
   "lo": "{l} ລິດ ລໍຖ້າຈ່າຍຕາມໃບສະເໜີ {n} ໃບ.",
-  "en": "{l} L awaiting issue on {n} requests."
+  "en": "{l} L awaiting issue on {n} request(s)."
  },
  "k2_cau_khong_cho": {
   "vi": "Không có phiếu đề nghị nào chờ cấp.",
@@ -8605,7 +8605,7 @@ window.EPL_TU_DIEN = {
  "k2_td_khai_s": {
   "vi": "{kho}, {n} phiếu xuất xe",
   "lo": "{kho}, ໃບເບີກລົດ {n} ໃບ",
-  "en": "{kho}, {n} dispatch slips"
+  "en": "{kho}, {n} dispatch slip(s)"
  },
  "k2_td_cho": {
   "vi": "{l} lít chờ cấp theo đề nghị",
@@ -8615,7 +8615,7 @@ window.EPL_TU_DIEN = {
  "k2_td_khai_s2": {
   "vi": "{kho}, {n} phiếu đề nghị",
   "lo": "{kho}, ໃບສະເໜີ {n} ໃບ",
-  "en": "{kho}, {n} requests"
+  "en": "{kho}, {n} request(s)"
  },
  "k2_td_pt": {
   "vi": "{ten}: còn {sl} {dv}",
@@ -8710,7 +8710,7 @@ window.EPL_TU_DIEN = {
  "k2_n_phieu_dn": {
   "vi": "{n} phiếu đề nghị",
   "lo": "ໃບສະເໜີ {n} ໃບ",
-  "en": "{n} requests"
+  "en": "{n} request(s)"
  },
  "k2_khai_chua": {
   "vi": "Đã khai, chưa có đề nghị",
@@ -8720,7 +8720,7 @@ window.EPL_TU_DIEN = {
  "k2_n_pxx": {
   "vi": "{n} phiếu xuất xe",
   "lo": "ໃບເບີກລົດ {n} ໃບ",
-  "en": "{n} dispatch slips"
+  "en": "{n} dispatch slip(s)"
  },
  "k2_con_cap": {
   "vi": "Còn lại có thể cấp",
@@ -13161,5 +13161,200 @@ window.EPL_TU_DIEN = {
   "vi": "Loại tạm ứng",
   "lo": "ປະເພດເງິນລ່ວງໜ້າ",
   "en": "Advance type"
+ },
+ "tk_tab_nguoi": {
+  "vi": "Người dùng",
+  "lo": "ຜູ້ໃຊ້",
+  "en": "Users"
+ },
+ "tk_tab_vai": {
+  "vi": "Vai trò & trách nhiệm",
+  "lo": "ໜ້າທີ່ ແລະ ຄວາມຮັບຜິດຊອບ",
+  "en": "Roles & responsibilities"
+ },
+ "tk_vai_dan": {
+  "vi": "Mỗi vai theo đúng bảng \"Nhiệm Vụ\" trong Excel của khách. Quyền trên phiếu, quyền thấy tiền và định khoản in ra từ luật đang chạy của máy chủ. Bấm tên chứng từ để mở màn Quy trình ở đúng dòng đó.",
+  "lo": "ແຕ່ລະໜ້າທີ່ເປັນໄປຕາມຕາຕະລາງ \"ໜ້າທີ່\" ໃນ Excel ຂອງລູກຄ້າ. ສິດໃນໃບເບີກ, ສິດເຫັນເງິນ ແລະ ການລົງບັນຊີ ພິມອອກຈາກກົດທີ່ເຊີບເວີກຳລັງໃຊ້ຢູ່. ກົດຊື່ເອກະສານເພື່ອເປີດໜ້າຂັ້ນຕອນວຽກຢູ່ແຖວນັ້ນ.",
+  "en": "Each role follows the customer's \"Duties\" sheet in Excel. Slip permissions, money visibility and account postings are printed from the rules the server is running. Click a document name to open the Workflow screen at that row."
+ },
+ "tk_n_nguoi": {
+  "vi": "{n} người",
+  "lo": "{n} ຄົນ",
+  "en": "{n} people"
+ },
+ "tk_chua_tk": {
+  "vi": "chưa có tài khoản",
+  "lo": "ຍັງບໍ່ມີບັນຊີຜູ້ໃຊ້",
+  "en": "no account yet"
+ },
+ "tk_tren_phieu": {
+  "vi": "Trên phiếu xuất xe",
+  "lo": "ໃນໃບເບີກລົດອອກ",
+  "en": "On the dispatch slip"
+ },
+ "tk_q_nhap": {
+  "vi": "Nhập",
+  "lo": "ປ້ອນ",
+  "en": "Enter"
+ },
+ "tk_q_kiem": {
+  "vi": "Kiểm",
+  "lo": "ກວດ",
+  "en": "Verify"
+ },
+ "tk_q_ghi_so": {
+  "vi": "Ghi sổ",
+  "lo": "ບັນທຶກບັນຊີ",
+  "en": "Book"
+ },
+ "tk_q_chi": {
+  "vi": "Chi tiền",
+  "lo": "ຈ່າຍເງິນ",
+  "en": "Pay out"
+ },
+ "tk_tien": {
+  "vi": "Tiền",
+  "lo": "ເງິນ",
+  "en": "Money"
+ },
+ "tk_thay_ban": {
+  "vi": "thấy tiền bán",
+  "lo": "ເຫັນເງິນຂາຍ",
+  "en": "sees sales amounts"
+ },
+ "tk_thay_chi": {
+  "vi": "thấy tiền chi",
+  "lo": "ເຫັນເງິນຈ່າຍ",
+  "en": "sees expense amounts"
+ },
+ "tk_nhap_gia": {
+  "vi": "nhập đơn giá",
+  "lo": "ປ້ອນລາຄາຕໍ່ໜ່ວຍ",
+  "en": "enters unit prices"
+ },
+ "tk_man_vao": {
+  "vi": "Màn vào được ({n})",
+  "lo": "ໜ້າຈໍທີ່ເຂົ້າໄດ້ ({n})",
+  "en": "Screens available ({n})"
+ },
+ "tk_viec_ngoai": {
+  "vi": "Việc ngoài phiếu",
+  "lo": "ວຽກນອກໃບເບີກ",
+  "en": "Work outside the slip"
+ },
+ "tk_cong_doan": {
+  "vi": "Công đoạn làm ({n})",
+  "lo": "ຂັ້ນຕອນທີ່ຮັບຜິດຊອບ ({n})",
+  "en": "Steps handled ({n})"
+ },
+ "tk_ct_sinh": {
+  "vi": "Chứng từ sinh ra ở các công đoạn đó",
+  "lo": "ເອກະສານທີ່ເກີດຈາກຂັ້ນຕອນເຫຼົ່ານັ້ນ",
+  "en": "Documents produced at those steps"
+ },
+ "tk_khong_ct": {
+  "vi": "không sinh chứng từ",
+  "lo": "ບໍ່ມີເອກະສານ",
+  "en": "no documents"
+ },
+ "tk_c_lam": {
+  "vi": "Làm gì",
+  "lo": "ເຮັດຫຍັງ",
+  "en": "What they do"
+ },
+ "tk_lam_yard": {
+  "vi": "Lập phiếu xuất xe tại bãi: xe, tài xế, khách, tuyến, cân, số lít, khoản đi đường. Không thấy và không nhập tiền.",
+  "lo": "ອອກໃບເບີກລົດທີ່ສະໜາມ: ລົດ, ໂຊເຟີ, ລູກຄ້າ, ເສັ້ນທາງ, ນໍ້າໜັກ, ຈຳນວນລິດ, ລາຍຈ່າຍລະຫວ່າງທາງ. ບໍ່ເຫັນ ແລະ ບໍ່ປ້ອນເງິນ.",
+  "en": "Creates dispatch slips at the yard: truck, driver, customer, route, weights, litres, road expenses. Neither sees nor enters money."
+ },
+ "tk_lam_acct": {
+  "vi": "Kiểm mục I, II; nhập số phiếu quặng, giá cước, giá thuê xe liên kết; khoá phiếu; điều khoản chủ xe; đẩy chứng từ.",
+  "lo": "ກວດພາກ I, II; ປ້ອນເລກໃບແຮ່, ລາຄາຄ່າຂົນສົ່ງ, ລາຄາເຊົ່າລົດຮ່ວມ; ລັອກໃບເບີກ; ເງື່ອນໄຂເຈົ້າຂອງລົດ; ສົ່ງເອກະສານ.",
+  "en": "Verifies sections I, II; enters ore slip numbers, freight prices, joint truck hire prices; locks slips; owner terms; sends documents."
+ },
+ "tk_lam_expacct": {
+  "vi": "Nhập đơn giá rồi kiểm và ghi sổ mục IV, V, VI; lệnh sửa chữa; nhà cung cấp; tất toán tài xế.",
+  "lo": "ປ້ອນລາຄາຕໍ່ໜ່ວຍ ແລ້ວກວດ ແລະ ບັນທຶກບັນຊີພາກ IV, V, VI; ໃບສັ່ງສ້ອມແປງ; ຜູ້ສະໜອງ; ສະສາງໂຊເຟີ.",
+  "en": "Enters unit prices, then verifies and books sections IV, V, VI; repair orders; suppliers; driver settlement."
+ },
+ "tk_lam_fuel": {
+  "vi": "Nhập đơn giá dầu mua ngoài; kiểm và ghi sổ mục III; duyệt khai đổ dầu. Nhập, xuất, chuyển kho dầu — ở trang kế toán (Kho → Kho nhiên liệu).",
+  "lo": "ປ້ອນລາຄານໍ້າມັນຊື້ຂ້າງນອກ; ກວດ ແລະ ບັນທຶກບັນຊີພາກ III; ອະນຸມັດການແຈ້ງເຕີມນໍ້າມັນ. ການຮັບ, ຈ່າຍ, ໂອນສາງນໍ້າມັນ — ຢູ່ໜ້າບັນຊີ (ສາງ → ສາງນໍ້າມັນ).",
+  "en": "Enters prices of fuel bought outside; verifies and books section III; approves refuel reports. Fuel stock in, out and transfers — on the accounting site (Warehouse → Fuel store)."
+ },
+ "tk_lam_depot": {
+  "vi": "Quét QR phiếu đề nghị xuất kho nhiên liệu, cấp dầu tại một kho — làm ở trang kế toán (Kho → Cấp phát).",
+  "lo": "ສະແກນ QR ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ, ຈ່າຍນໍ້າມັນຢູ່ສາງໜຶ່ງ — ເຮັດຢູ່ໜ້າບັນຊີ (ສາງ → ການຈ່າຍອອກ).",
+  "en": "Scans the QR of fuel stock-out requests and issues fuel at one depot — done on the accounting site (Warehouse → Issuing)."
+ },
+ "tk_lam_parts": {
+  "vi": "Nhập, xuất kho phụ tùng Thà Bốc — làm ở trang kế toán (Kho → Kho phụ tùng).",
+  "lo": "ຮັບ, ຈ່າຍສາງອະໄຫຼ່ ທ່າບົກ — ເຮັດຢູ່ໜ້າບັນຊີ (ສາງ → ສາງອະໄຫຼ່).",
+  "en": "Thabok parts stock in and out — done on the accounting site (Warehouse → Parts store)."
+ },
+ "tk_lam_repair": {
+  "vi": "Duyệt báo hỏng của tài xế, lập lệnh sửa chữa; quyết lấy phụ tùng kho hay mua ngoài.",
+  "lo": "ອະນຸມັດການແຈ້ງລົດເສຍຂອງໂຊເຟີ, ອອກໃບສັ່ງສ້ອມແປງ; ຕັດສິນເອົາອະໄຫຼ່ຈາກສາງ ຫຼື ຊື້ຂ້າງນອກ.",
+  "en": "Approves drivers' breakdown reports, issues repair orders; decides between store parts and buying outside."
+ },
+ "tk_lam_treasury": {
+  "vi": "Thủ quỹ Viêng Chăn: chi mục III, trả chủ xe, trả nhà cung cấp, thu bán hàng.",
+  "lo": "ຄັງເງິນ ວຽງຈັນ: ຈ່າຍພາກ III, ຈ່າຍເຈົ້າຂອງລົດ, ຈ່າຍຜູ້ສະໜອງ, ຮັບເງິນຂາຍ.",
+  "en": "Vientiane treasurer: pays section III, truck owners and suppliers; receives sales money."
+ },
+ "tk_lam_cash": {
+  "vi": "Quỹ tiền mặt cảng cạn Thà Bốc: chi tạm ứng, chi mục V, VI, trả chủ xe.",
+  "lo": "ຄັງເງິນສົດ ທ່າບົກ: ຈ່າຍເງິນລ່ວງໜ້າ, ຈ່າຍພາກ V, VI, ຈ່າຍເຈົ້າຂອງລົດ.",
+  "en": "Thabok dry port petty cash: pays advances, sections V and VI, truck owners."
+ },
+ "tk_lam_rev": {
+  "vi": "Lập hoá đơn (lẻ, gộp tháng), ghi thu tiền khách, cấn trừ cuối tháng; lập phiếu bán hàng.",
+  "lo": "ອອກໃບເກັບເງິນ (ແຍກ, ລວມເດືອນ), ບັນທຶກຮັບເງິນລູກຄ້າ, ຫັກລົບທ້າຍເດືອນ; ອອກໃບຂາຍ.",
+  "en": "Issues invoices (single, monthly), records customer receipts, month-end offsets; creates sales slips."
+ },
+ "tk_lam_driver": {
+  "vi": "Xem phiếu của mình, nhận tạm ứng, xuất phát, báo hỏng, khai số lít dầu đổ dọc đường.",
+  "lo": "ເບິ່ງໃບເບີກຂອງຕົນ, ຮັບເງິນລ່ວງໜ້າ, ອອກເດີນທາງ, ແຈ້ງລົດເສຍ, ແຈ້ງຈຳນວນລິດນໍ້າມັນທີ່ເຕີມລະຫວ່າງທາງ.",
+  "en": "Sees own slips, receives advances, departs, reports breakdowns, declares litres refuelled on the road."
+ },
+ "tk_lam_admin": {
+  "vi": "Sếp: xem và làm được mọi việc, mở khoá mục đã duyệt, cấu hình kế toán.",
+  "lo": "ຫົວໜ້າ: ເບິ່ງ ແລະ ເຮັດໄດ້ທຸກຢ່າງ, ປົດລັອກພາກທີ່ອະນຸມັດແລ້ວ, ຕັ້ງຄ່າບັນຊີ.",
+  "en": "Boss: sees and can do everything, unlocks approved sections, configures accounting."
+ },
+ "btc_nguon_xuat_noi_bo": {
+  "vi": "Xuất kho nội bộ — xe nhà",
+  "lo": "ເບີກສາງໃຊ້ພາຍໃນ — ລົດບໍລິສັດ (EPL)",
+  "en": "Internal stock issue — company truck"
+ },
+ "btc_nguon_xuat_ban": {
+  "vi": "Xuất bán cho chủ xe — xe thuê",
+  "lo": "ຂາຍສິນຄ້າໃຫ້ເຈົ້າຂອງລົດ — ລົດເຊົ່າ",
+  "en": "Stock sold to truck owner — hired truck"
+ },
+ "btc_ht_noi_bo": {
+  "vi": "Xuất nội bộ",
+  "lo": "ເບີກໃຊ້ພາຍໃນ",
+  "en": "Internal issue"
+ },
+ "btc_ht_xuat_ban": {
+  "vi": "Xuất bán cho chủ xe",
+  "lo": "ຂາຍໃຫ້ເຈົ້າຂອງລົດ",
+  "en": "Sold to truck owner"
+ },
+ "btc_ve_doanh_thu": {
+  "vi": "Doanh thu — giá bán",
+  "lo": "ລາຍຮັບ — ລາຄາຂາຍ",
+  "en": "Revenue — sale price"
+ },
+ "btc_ve_gia_von": {
+  "vi": "Giá vốn — bình quân kho",
+  "lo": "ຕົ້ນທຶນ — ລາຄາສະເລ່ຍສາງ",
+  "en": "Cost — store average"
+ },
+ "btc_gia_ban_tam": {
+  "vi": "Chưa có giá bán — tạm theo giá vốn",
+  "lo": "ຍັງບໍ່ມີລາຄາຂາຍ — ໃຊ້ຕົ້ນທຶນໄປກ່ອນ",
+  "en": "No sale price yet — cost used"
  }
 };

@@ -1,66 +1,61 @@
 <!-- Quy trình & trách nhiệm — mỗi công đoạn: ai làm, trên màn nào, nhập gì, máy tự làm gì, máy chặn gì,
      IN RA PHIẾU GIẤY gì và SINH CHỨNG TỪ gì (Nợ / Có). Định khoản và ma trận quyền lấy thẳng từ máy chủ
-     (/api/quy-trinh) — đúng hàm đang ghi sổ, không phải bảng viết tay. Nội dung mô tả tiếng Việt (trang làm việc
-     nội bộ); tên vai, tên chứng từ lấy từ từ điển / máy chủ. -->
+     (/api/quy-trinh) — đúng hàm đang ghi sổ, không phải bảng viết tay. Mọi chữ qua từ điển (ba tiếng) — rà 01/10: trước đây
+     nội dung viết cứng tiếng Việt, đổi sang Lào / Anh vẫn ra tiếng Việt. -->
 <div class="toolbar qt-thanh">
   <div class="qt-tab" role="tablist">
-    <button class="active" data-xem="chuyen">Luồng một chuyến</button>
-    <button data-xem="ngoai">Ngoài chuyến</button>
-    <button data-xem="ma-tran">Vai × mục</button>
-    <button data-xem="chung-tu">Danh mục chứng từ</button>
+    <button class="active" data-xem="chuyen" data-i18n="qt_tab_chuyen"></button>
+    <button data-xem="ngoai" data-i18n="qt_tab_ngoai"></button>
+    <button data-xem="ma-tran" data-i18n="qt_tab_ma_tran"></button>
+    <button data-xem="chung-tu" data-i18n="qt_tab_chung_tu"></button>
   </div>
   <div class="grow"></div>
   <span class="qt-chu-thich small">
-    <span class="qt-giay">Phiếu in ra</span>
-    <span class="qt-ct-chip mau">Chứng từ</span>
-    <span class="qt-chan mau">Máy chặn</span>
+    <span class="qt-giay" data-i18n="qt_cg_giay"></span>
+    <span class="qt-ct-chip mau" data-i18n="qt_cg_ct"></span>
+    <span class="qt-chan mau" data-i18n="qt_cg_chan"></span>
   </span>
 </div>
 
 <div id="qt-chuyen">
-  <p class="qt-dan small muted">Một chuyến đi từ lúc Bãi mở phiếu tới lúc tiền về và chủ xe được trả. Mỗi ô là một công đoạn: <b>ai làm</b>,
-    <b>trên màn nào</b>, <b>làm gì</b>, <b>máy tự làm gì</b>, <b>máy chặn gì</b>, và <b>sinh ra phiếu / chứng từ gì</b> (định khoản Nợ / Có
-    lấy từ máy chủ). Bấm vào mã chứng từ để xem đủ các trường hợp định khoản.</p>
+  <p class="qt-dan small muted" data-i18n="qt_dan_chuyen"></p>
   <div id="qt-chuyen-ds"></div>
 </div>
 
 <div id="qt-ngoai" hidden>
-  <p class="qt-dan small muted">Những việc không gắn với một phiếu xuất xe: kho, bán hàng, sửa xe khi xe không chạy, tách chặng,
-    thẻ cao tốc, công nợ, cuối tháng.</p>
+  <p class="qt-dan small muted" data-i18n="qt_dan_ngoai"></p>
   <div id="qt-ngoai-ds"></div>
 </div>
 
 <div id="qt-ma-tran" hidden>
   <div class="card">
-    <div class="hd"><h3>Ai nhập · kiểm · ghi sổ · chi từng mục của phiếu xuất xe</h3><div class="grow"></div>
-      <span class="small muted">In ra từ bảng phân quyền đang chạy (services/phan_quyen.py)</span></div>
+    <div class="hd"><h3 data-i18n="qt_mt_tieu_de"></h3><div class="grow"></div>
+      <span class="small muted" data-i18n="qt_mt_nguon"></span></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact qt-mt"><thead id="qt-mt-dau"></thead><tbody id="qt-mt-than"></tbody></table></div>
-    <div class="bd small muted"><b>N</b> nhập · <b>K</b> kiểm · <b>G</b> ghi sổ · <b>C</b> chi tiền · <b>—</b> chỉ xem hoặc không thấy ·
-      <b>✓</b> có · <b>✗</b> không. Sếp làm được mọi việc.</div>
+    <div class="bd small muted" data-i18n="qt_mt_chu_giai"></div>
   </div>
   <div class="card">
-    <div class="hd"><h3>Ngoài phiếu: ai được làm việc gì</h3></div>
+    <div class="hd"><h3 data-i18n="qt_mt2_tieu_de"></h3></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact qt-mt"><thead id="qt-mt2-dau"></thead><tbody id="qt-mt2-than"></tbody></table></div>
   </div>
 </div>
 
 <div id="qt-chung-tu" hidden>
   <div class="card">
-    <div class="hd"><h3>Mọi loại chứng từ, sinh ở công đoạn nào, định khoản ra sao</h3><div class="grow"></div>
-      <span class="small muted">Định khoản tính bằng đúng hàm ghi sổ của máy chủ · mọi biến thể</span>
-      <button class="btn sm" id="qt-mo-so">Mở Sổ chứng từ</button></div>
+    <div class="hd"><h3 data-i18n="qt_ct_tieu_de"></h3><div class="grow"></div>
+      <span class="small muted" data-i18n="qt_ct_phu"></span>
+      <button class="btn sm" id="qt-mo-so"><span data-i18n="qt_mo_so"></span></button></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact qt-ctb">
-      <thead><tr><th>Mã</th><th>Chứng từ</th><th>Sinh ở công đoạn</th><th>Trường hợp</th><th>Nợ</th><th>Có</th></tr></thead>
+      <thead><tr><th data-i18n="qt_th_ma"></th><th data-i18n="qt_th_ct"></th><th data-i18n="qt_th_sinh"></th><th data-i18n="qt_th_th"></th><th data-i18n="qt_th_no"></th><th data-i18n="qt_th_co"></th></tr></thead>
       <tbody id="qt-ct-than"></tbody></table></div>
-    <div class="bd small muted">Tờ không định khoản (phiếu xuất xe, phiếu đề nghị xuất kho nhiên liệu, phiếu đề nghị tạm ứng, chuyển kho) chỉ lưu để bên kế toán có ngữ cảnh,
-      không sinh bút toán. Hàng khách gửi là khoản <b>ngoài bảng</b>: mã do bên kế toán cấp ở Chứng từ → Cấu hình; để trống thì chỉ theo dõi số tấn.</div>
+    <div class="bd small muted" data-i18n="qt_ct_ghi_chu"></div>
   </div>
   <!-- Rà định khoản 30/09: vế Có của một dòng chi đi theo CÁCH TRẢ (services/tai_khoan.dinh_khoan_dong) -->
   <div class="card">
-    <div class="hd"><h3>Định khoản từng dòng chi trên phiếu xuất xe</h3><div class="grow"></div>
-      <span class="small muted">Vế Có đi theo cách trả · chủ xe tự chi thì không định khoản</span></div>
+    <div class="hd"><h3 data-i18n="qt_dc_tieu_de"></h3><div class="grow"></div>
+      <span class="small muted" data-i18n="qt_dc_phu"></span></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact qt-ctb">
-      <thead><tr><th>Dòng chi</th><th>Xe nhà · Nợ</th><th>Xe nhà · Có</th><th>Xe liên kết · Nợ</th><th>Xe liên kết · Có</th></tr></thead>
+      <thead><tr><th data-i18n="qt_th_dong"></th><th data-i18n="qt_th_nha_no"></th><th data-i18n="qt_th_nha_co"></th><th data-i18n="qt_th_lk_no"></th><th data-i18n="qt_th_lk_co"></th></tr></thead>
       <tbody id="qt-dc-than"></tbody></table></div>
     <div class="bd small muted" id="qt-dc-nguon"></div>
   </div>

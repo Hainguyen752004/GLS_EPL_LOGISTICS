@@ -1066,6 +1066,10 @@ def duyet_muc(tid: str, muc: str, hanh_dong: str, db: Session = Depends(get_db),
     if not p:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có phiếu này."})
     _chan_khoa(p, user)
+    if p.locked and hanh_dong == "return" and user.role != "admin":
+        # Trả lại mục là trả cho người NHẬP sửa (Bãi, tổ sửa chữa) — họ không ghi được vào phiếu đã khoá, nên trả lại chỉ làm mục
+        # kẹt "chưa gửi" không ai sửa (rà giao diện 01/10). Muốn sửa thì KT Thu/Chi mở khoá phiếu trước; Sếp vẫn làm được.
+        raise HTTPException(409, {"ma": "DA_KHOA", "loi": "Phiếu %s đã khoá — mở khoá phiếu rồi mới trả lại mục để sửa." % p.doc_no})
     ds = _muc_cua(db, p)
     s = ds[muc] if muc in ds else None
     if s is None:

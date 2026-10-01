@@ -245,3 +245,11 @@
 .px-btc-o .d{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .px-btc-o .l{display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
 .px-chi-kt.loi{background:var(--red-soft, #FBEAEA);color:var(--red)}
+
+/* rà giao diện 01/10 (UI-1) */
+/* ô Tiền tệ của dòng dầu bị bóp còn "L…" ở màn 1366 (xe thuê thêm cột Ai chi) — đủ chỗ cho mã ba chữ */
+.px-chi select[data-f="currency"]{min-width:74px}
+/* nhãn "Giá bán cho chủ xe" dưới ô đơn giá gãy bốn dòng trong cột hẹp */
+.px-chi .px-ban .small{white-space:nowrap}
+/* ô bắt buộc còn trống khi bấm Lưu (thiếu xe / tài xế) */
+.px-phieu .px-thieu{border-color:var(--red,#A83232)!important;box-shadow:0 0 0 3px rgba(168,50,50,.15)}

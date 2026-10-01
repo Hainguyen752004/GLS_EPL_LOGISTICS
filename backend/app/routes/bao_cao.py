@@ -268,7 +268,10 @@ def _xh_lo(db, cac_ngay):
         c = tinh_phieu(p, dong[p.id], thu.get(p.id, 0))
         if o["tn"] is None:
             o["tn"] = {"doanh_thu_lak": 0.0, "chi_lak": 0.0}
-        o["tn"]["doanh_thu_lak"] += c["doanh_thu_lak"]; o["tn"]["chi_lak"] += c["tong_chi_lak"]
+        # chi theo ngày = CHI CỦA EPL (xe liên kết: tiền thuê trừ phần giữ lại) — cùng phép với ô "Tổng chi phí" và dãy sáu tháng
+        # (_tq_lo). Trước đây cộng tổng dòng chi kể cả khoản ứng cho xe thuê: cột ngày cộng lại ra 75,4 M trong khi ô Tổng chi
+        # phí ghi 58,8 M cùng tháng (rà giao diện 01/10). Đổi phép thì đổi khoá đệm xh6 → xh7.
+        o["tn"]["doanh_thu_lak"] += c["doanh_thu_lak"]; o["tn"]["chi_lak"] += _chi_epl(p, c)
         if p.weight_origin and p.weight_dest is not None:
             pct = round((p.weight_origin - p.weight_dest) / p.weight_origin * 100, 2)
             o["hao"].append({"doc_no": p.doc_no, "so_xe": p.truck_no, "can_dau": p.weight_origin, "can_cuoi": p.weight_dest, "pct": pct})
@@ -374,7 +377,7 @@ def xu_huong(thang: str = None, db: Session = Depends(get_db), user=Depends(nguo
             thang_truoc = g
 
     # ---- ghép phần của từng ngày trong tháng đang xem
-    ngay = _theo_ngay(db, "xh6", _cac_ngay(dau, cuoi), _xh_lo)
+    ngay = _theo_ngay(db, "xh7", _cac_ngay(dau, cuoi), _xh_lo)
     theo_ngay, hao_hut, xe = {}, [], {}
     hao_tong = hao_vuot = hao_n = 0; hao_sum = 0.0
     ve = [0, 0, 0]

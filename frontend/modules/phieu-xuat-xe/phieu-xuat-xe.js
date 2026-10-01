@@ -261,7 +261,7 @@
         // .px-xuat: chữ ẩn cho Excel — xuat.js bỏ qua nút bấm, không có dòng này thì cột "Ai chi", "Mã kế toán" ra trống (01/10)
         const pay = `<td class="px-lk"><span class="px-xuat" aria-hidden="true">${esc(NN.t(d.paid_by_epl ? 'pay_epl' : 'pay_own'))}</span><span class="px-pay"><button type="button" class="${d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="1" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_epl'))}</button><button type="button" class="${!d.paid_by_epl ? 'on' : ''}" data-i="${i}" data-pay="0" ${khoaDuoc ? '' : 'disabled'}>${esc(NN.t('pay_own'))}</button></span></td>`;
         const tkd = tkDong(d);
-        const acct = `<td class="px-gia">${tkd ? `<span class="px-xuat" aria-hidden="true">${esc(tkd)}</span>` : ''}<button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd ? '' : 'disabled'} title="${esc(tkd ? tkTen(tkd) : NN.t('pay_own'))}">${esc(tkd || '—')}</button></td>`;
+        const acct = `<td class="px-gia">${tkd ? `<span class="px-xuat" aria-hidden="true">${esc(tkd)}</span>` : ''}<button type="button" class="acct px-acct" data-acct="${i}" ${AUTH.la('acct', 'fuel', 'rev') && tkd && guiMuc(m) ? '' : 'disabled'} title="${esc(tkd ? tkTen(tkd) : NN.t('pay_own'))}">${esc(tkd || '—')}</button></td>`;
         const xoa = `<td class="no-print">${khoaDuoc ? `<button type="button" class="x" data-xoa="${i}" title="${esc(NN.t('delete'))}">×</button>` : ''}</td>`;
         if (m === 'fuel') {
           // Đổ dầu ở trạm ngoài (nhất là bên Việt Nam): tài xế trả tiền mặt, hay TRẠM GHI NỢ để cuối
@@ -338,6 +338,9 @@
     if (moi) return true;
     return suaDuoc(m) || (MUC_CHI.includes(m) && !biKhoa() && perm().verify.includes(m) && ['wait', 'entered'].includes((P.sections || {})[m] || 'wait'));
   }
+  // dòng chi của mục này có được GỬI lên khi Lưu không: mục còn sửa được, hoặc người kiểm còn nhập giá một dòng (mục khoá gửi
+  // lên là máy chủ từ chối cả phiếu). Ô đổi mã kế toán theo đúng luật này — đổi mà không gửi được là sửa xong mất (rà 01/10).
+  const guiMuc = (m) => suaDuoc(m) || (!moi && P.expenses.some(e => e.section === m && giaDuoc(m, e)));
   const suaPodDuoc = () => !moi && AUTH.la('yard', 'acct', 'rev') && !biKhoa();
   function veVaiVaTrangThai() {
     COT_POD.forEach(c => { const el = g('f-' + c); if (el) el.disabled = !suaPodDuoc(); });
@@ -362,13 +365,16 @@
         });
       }
       const e = sec.querySelector('.px-stt'); const k = tuyChon ? 'na' : st;
-      e.className = 'px-stt ' + k; e.innerHTML = NN.h(k === 'wait' ? 'stt_wait2' : 'stt_' + k);
+      e.className = 'px-stt ' + k; e.innerHTML = NN.h(khoaTT(m, k));
       const nut = []; const p = perm();
       if (!moi && !tuyChon) {
         if (st === 'wait' && (p.edit.includes(m) || vai() === 'admin')) nut.push(['ok', 'send', 'a_send']);
-        if (st === 'entered' && (p.verify.includes(m) || vai() === 'admin')) { nut.push(['ok', 'verify', 'a_verify']); nut.push(['warn', 'return', 'a_return']); }
+        // Phiếu đã khoá: không "Trả lại sửa" (trừ Sếp) — người nhập (Bãi, tổ sửa chữa) không ghi được vào phiếu đã khoá, trả lại
+        // là mục kẹt "chưa gửi" không ai sửa; muốn sửa thì KT Thu/Chi mở khoá phiếu trước (máy chủ cũng chặn — rà 01/10)
+        const traDuoc = !P.locked || vai() === 'admin';
+        if (st === 'entered' && (p.verify.includes(m) || vai() === 'admin')) { nut.push(['ok', 'verify', 'a_verify']); if (traDuoc) nut.push(['warn', 'return', 'a_return']); }
         if (st === 'verified' && MUC_CHI.includes(m) && (p.book.includes(m) || vai() === 'admin')) nut.push(['ok', 'book', 'a_book']);
-        if (st === 'verified' && (p.verify.includes(m) || vai() === 'admin')) nut.push(['warn', 'return', 'a_return']);
+        if (st === 'verified' && traDuoc && (p.verify.includes(m) || vai() === 'admin')) nut.push(['warn', 'return', 'a_return']);
         // tạm ứng chi ở hệ kế toán (01/10): Quỹ không bấm chi mục IV ở đây — thủ quỹ ghi sổ phiếu chi bên đó (Sếp vẫn chi tay được)
         const cm = (P.chi_muc_ke_toan || {})[m];
         const chiKT = vai() !== 'admin' && ((m === 'travel' && (P.chi_tam_ung || {}).o_ke_toan) || (cm && cm.o_ke_toan && cm.so_dong_con > 0));
@@ -447,16 +453,29 @@
     const ph = q('#px-phieu'); ph.dataset.tab = tab;
     MUC.forEach(m => { const sec = q(`.px-muc[data-muc="${m}"]`); if (sec) sec.classList.toggle('px-muc-hien', tab === 'all' || tab === m); });
     root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    const luu = g('px-luu'); if (luu) luu.hidden = tab === 'all';
+    capNhatNutLuu();
   }
+  /** Nút Lưu chỉ hiện khi mục đang mở CÒN Ô vai này sửa được (rà 01/10: KT kho xăng dầu mở mục III đã ghi sổ, KT Thu/Chi mở
+   *  phiếu đã khoá — mọi ô đều khoá mà nút Lưu vẫn sáng, bấm là ghi một lượt "lưu" rỗng vào nhật ký). Đọc thẳng các ô đang
+   *  hiện trên màn, nên luôn khớp với chỗ đã khoá / mở theo vai; ô đính kèm tệp gửi ngay khi chọn nên không tính. */
+  function capNhatNutLuu() {
+    const luu = g('px-luu'); if (!luu) return;
+    const hien = (el) => el.getClientRects().length > 0;
+    const coO = !!P && tab !== 'all' && ((g('px-doc-no') && !g('px-doc-no').disabled)
+      || [...root.querySelectorAll(['input', 'select', 'textarea', '.px-acct', '[data-pay]', '.px-them', '#px-hang-them'].map(s => '.px-muc.px-muc-hien ' + s).join(', '))]
+        .some(el => !el.disabled && !el.hidden && el.type !== 'file' && hien(el)));
+    luu.hidden = !coO;
+  }
+  /** Chữ trạng thái một mục. Mục I, II không có bước ghi sổ / chi — "đã kiểm" là xong, đừng ghi "chờ ghi sổ" (rà 01/10). */
+  const khoaTT = (m, st) => st === 'wait' ? 'stt_wait2' : (st === 'verified' && !MUC_CHI.includes(m)) ? 'stt_verified_12' : 'stt_' + st;
   function veTabs() {
     const s = (P && P.sections) || {};
     q('#px-tabs').innerHTML = MUC.map((m, i) => {
       const st = moi ? 'wait' : (s[m] || 'wait');
       const tuyChon = (m === 'repair' || m === 'other') && !moi && !P.expenses.some(d => d.section === m);
-      return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(NN.t(tuyChon ? 'na' : (st === 'wait' ? 'stt_wait2' : 'stt_' + st)))}">
+      return `<button type="button" class="px-tab ${tab === m ? 'active' : ''} ${coViec(m, st) ? 'viec' : ''}" data-tab="${m}" title="${esc(NN.t(khoaTT(m, tuyChon ? 'na' : st)))}">
         <b>${SO_LA_MA[i]}</b><span>${NN.h('sec' + (i + 1))}</span><i class="stt ${tuyChon ? 'na' : st}"></i>
-        <em class="st-chu ${tuyChon ? 'na' : st}">${NN.h(tuyChon ? 'stt_na' : (st === 'wait' ? 'stt_wait2' : 'stt_' + st))}</em></button>`;
+        <em class="st-chu ${tuyChon ? 'na' : st}">${NN.h(khoaTT(m, tuyChon ? 'na' : st))}</em></button>`;
     }).join('') + `<button type="button" class="px-tab tat-ca ${tab === 'all' ? 'active' : ''}" data-tab="all"><span>${NN.h('px_tab_all')}</span></button>`;
     root.querySelectorAll('#px-tabs .px-tab').forEach(b => b.addEventListener('click', () => datTab(b.dataset.tab, true)));
   }
@@ -612,12 +631,48 @@
     // công-tơ-mét của xe đổi mỗi lần một chuyến về tới (Xe đã tới) — nạp lại để ô Lúc đi điền đúng số mới nhất
     DM.vehicles = await API.get('/api/vehicles').catch(() => DM.vehicles); const s = await API.get('/api/trips-so-moi').catch(() => ({ doc_no: '' })); P.doc_no = s.doc_no; anPhieu(false); veHet(); }
   function anNhacOdo() { const o = g('f-odo_out'); if (o) delete o.dataset.tuDien; const n = g('px-odo-nhac'); if (n) n.hidden = true; }
+  /* PHIẾU ĐANG LẬP DỞ (rà 01/10: "không mất dữ liệu khi chuyển qua lại"). Bãi đang gõ phiếu mới mà bấm sang màn khác xem
+   * tuyến, xem kho rồi quay lại — trước đây ra tờ trắng, mất hết chữ đã gõ. Rời màn lúc phiếu mới có nội dung thì giữ bản
+   * nháp trong bộ nhớ (chỉ trong phiên này, đúng tài khoản này); vào lại bằng menu là mở lại đúng tờ đó, kèm câu báo. Nút
+   * "+ Phiếu mới" và Lưu xong là bỏ nháp. Không phải tự mở phiếu cũ đã lưu (anh bắt 22/09) — đây là tờ chưa lưu của chính mình. */
+  let NHAP = null;
+  const uidNay = () => (AUTH.user ? AUTH.user.id : '');
+  function coNoiDung() {
+    if (!moi || !P) return false;
+    return ['vehicle_id', 'driver_id', 'customer_id', 'route_id', 'odo_out', 'weight_origin', 'brand_model', 'plate_head', 'plate_trailer',
+      'ore_bill_no', 'origin', 'destination'].some(c => P[c] != null && P[c] !== '')
+      || (P.expenses || []).some(d => !d._goiY) || (P.goods || []).length > 0 || soGoTay;
+  }
+  function giuNhap() { if (coNoiDung()) NHAP = { uid: uidNay(), P: JSON.parse(JSON.stringify(P)), tab, soGoTay }; }
+  async function moNhap() {
+    const n = NHAP; NHAP = null;
+    moi = true; tabTay = true; HD_DOI = {}; soGoTay = n.soGoTay; P = n.P; tab = n.tab || 'info'; anNhacOdo(); await napLo();
+    // số gợi ý có thể đã có người dùng trong lúc rời màn — xin lại số mới (trừ khi người lập tự gõ số)
+    if (!soGoTay) { const s = await API.get('/api/trips-so-moi?kind=' + encodeURIComponent(P.kind || 'giao')).catch(() => null); if (s && s.doc_no) P.doc_no = s.doc_no; }
+    anPhieu(false); veHet(); EPL.toast(NN.t('px_nhap_mo_lai'), 'ok');
+  }
   function docForm() {
     P.doc_no = g('px-doc-no').value.trim();
     [...COT_INFO, ...COT_TRANS, ...COT_POD].forEach(c => { const el = g('f-' + c); if (!el || el.disabled) return; P[c] = el.value === '' ? null : (SO.has(c) ? EPL.doc(el.value) : el.value); });
   }
+  /** Phiếu thiếu xe / tài xế (máy chủ chặn THIEU_XE · THIEU_TAI_XE — chủ dự án 01/10): báo bằng tiếng đang dùng, mở mục I,
+   *  tô và đặt con trỏ vào đúng ô. Hỏi trước khi gửi (chỉ khi mục I còn sửa được — đúng lúc máy chủ xét), để khỏi một lượt
+   *  422 và câu tiếng Việt của máy chủ hiện ra ở chế độ Lào / Anh. Máy chủ vẫn là nơi quyết định. */
+  const LOI_O = { THIEU_XE: ['f-vehicle_id', 'px_thieu_xe'], THIEU_TAI_XE: ['f-driver_id', 'px_thieu_tai_xe'] };
+  function baoThieu(ma) {
+    const [id, khoa] = LOI_O[ma];
+    if (tab !== 'info' && tab !== 'all') datTab('info', true);
+    const el = g(id);
+    if (el) { el.classList.add('px-thieu'); el.focus(); el.addEventListener('input', () => el.classList.remove('px-thieu'), { once: true }); }
+    EPL.toast(NN.t(khoa), 'loi');
+  }
+  const baoLoiLuu = (e) => (e && LOI_O[e.ma] ? baoThieu(e.ma) : EPL.baoLoi(e));
   async function luu() {
     docForm();
+    if (suaDuoc('info')) {
+      if (!P.vehicle_id) { baoThieu('THIEU_XE'); return false; }
+      if (!(P.driver_id || String(P.driver_name || '').trim())) { baoThieu('THIEU_TAI_XE'); return false; }
+    }
     const x = DM.vehicles.find(v => v.id === P.vehicle_id); if (x) { P.truck_no = x.truck_no; if (!P.brand_model) P.brand_model = x.brand_model; if (!P.plate_head) P.plate_head = x.plate_head; if (!P.plate_trailer) P.plate_trailer = x.plate_trailer; }
     const d = DM.drivers.find(v => v.id === P.driver_id); if (d) P.driver_name = d.name;
     const k = DM.customers.find(v => v.id === P.customer_id); if (k) P.customer_name = k.name;
@@ -634,7 +689,6 @@
     // chỉ gửi dòng chi của mục còn sửa được — mục khoá gửi lên là máy chủ từ chối cả phiếu
     if (suaDuoc('trans') && !gomMotDong()) body.goods = (P.goods || []).filter(g => g.loai !== 'hao_hut')
       .map(g => ({ loai: 'hang', goods_name: g.goods_name, qty_t: EPL.doc(g.qty_t), tu_phieu_id: g.tu_phieu_id || null, note: g.note || null }));
-    const guiMuc = (m) => suaDuoc(m) || (!moi && P.expenses.some(e => e.section === m && giaDuoc(m, e)));
     body.expenses = P.expenses.filter(e => guiMuc(e.section)).map(e => {
       const x = { ...e, qty: EPL.doc(e.qty), acct_code: tkDong(e) || null };
       if (thayChi()) x.unit_price = EPL.doc(e.unit_price); else { delete x.unit_price; delete x.currency; }
@@ -642,12 +696,12 @@
     });
     try {
       P = moi ? await API.post('/api/trips', body) : await API.put('/api/trips/' + P.id, body);
-      moi = false; HD_DOI = {}; EPL.toast(NN.t('saved'), 'ok'); veHet();
+      moi = false; HD_DOI = {}; NHAP = null; EPL.toast(NN.t('saved'), 'ok'); veHet();
       history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id);
       // ô chọn phiếu nạp lại NGẦM sau khi đã báo "Đã lưu" — chờ nó thì nút Lưu chậm thêm 0,1–0,5 s (đo 01/10)
       napDs().then(() => { if (P) veChon(); }).catch(() => {});
       return true;
-    } catch (e) { EPL.baoLoi(e); return false; }
+    } catch (e) { baoLoiLuu(e); return false; }
   }
   /** Ô trạng thái phiếu chi tạm ứng bên hệ kế toán, cạnh nút của mục IV (từ lúc ghi sổ). */
   function oChiKeToan(st) {
@@ -802,6 +856,7 @@
     };
     await ve(g('px-hd'), 'khach', 'contract_id', P.customer_id, AUTH.la('acct', 'rev'));
     await ve(g('px-hd-thue'), 'thue_xe', 'hire_contract_id', P.company === 'joint' ? P.owner_id : null, AUTH.la('acct'));
+    capNhatNutLuu();                     // ô chọn hợp đồng về sau cùng — có thể là ô duy nhất vai này còn đổi được
   }
   /* ---- tệp đính kèm: phiếu quặng của khách (Bãi chụp lúc bốc; kế toán xem khi kiểm mục II) và POD — biên bản
      giao nhận hàng (chụp khi xe tới). Cùng một chỗ chứa, khác `kind`. ---- */
@@ -921,7 +976,7 @@
         API.get('/api/vehicles'), API.get('/api/drivers'), API.get('/api/routes'), API.get('/api/parts'),
         API.get('/api/fuel-places'), API.get('/api/the-cao-toc')]);
       g('px-ve').addEventListener('click', () => EPL.di('theo-doi'));
-      g('px-moi').addEventListener('click', () => phieuMoi().catch(EPL.baoLoi));
+      g('px-moi').addEventListener('click', () => { NHAP = null; phieuMoi().catch(EPL.baoLoi); });
       g('px-luu').addEventListener('click', luu);
       // Phiếu đề nghị thu (30/09): khoá phiếu là máy lập — nút mở màn Phiếu đề nghị thu đúng phiếu này. Chỉ vai thấy tiền bán.
       g('px-hoa-don').hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel');
@@ -933,8 +988,9 @@
         const el = g('f-kind'); if (!el || el.disabled) return;
         el.value = b.dataset.loai; el.dispatchEvent(new Event('input', { bubbles: true }));
       }));
-      // Phiếu chi tạm ứng: lập (hoặc cập nhật) tờ tạm ứng có mã QR rồi mở màn in — không có khoản tiền mặt nào thì
-      // vẫn mở màn (màn tự ghi "không có khoản tạm ứng"). 29/09: trước đây không nút nào lập tờ QR cho phiếu mới.
+      // Phiếu đề nghị tạm ứng: lập (hoặc cập nhật) tờ tạm ứng rồi mở màn in — không có khoản tiền mặt nào thì vẫn mở màn (màn
+      // tự ghi "không có khoản tạm ứng"). Tờ tạm ứng KHÔNG có mã QR (chủ dự án đồng ý 01/10): tài xế lĩnh tiền ở quỹ kế toán
+      // bằng số DO; chỉ tờ đề nghị xuất kho nhiên liệu còn QR cho thủ kho quét.
       g('px-chung-tu').addEventListener('click', async () => {
         if (!P || !P.id) return;
         try { await API.post(`/api/trips/${P.id}/vouchers`, { kind: 'advance' }); }
@@ -942,7 +998,8 @@
         EPL.di('de-nghi-chi', { id: P.id, loai: 'advance' });
       });
       g('px-phieu-linh').addEventListener('click', lapPhieuLinh);
-      g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).catch(EPL.baoLoi); });
+      // địa chỉ ghi theo tờ đang mở: tải lại trang hay bấm Quay lại từ màn khác là về đúng tờ này, không ra tờ trắng (rà 01/10)
+      g('px-chon').addEventListener('change', e => { if (e.target.value) moPhieu(e.target.value).then(() => { if (P && P.id) history.replaceState(null, '', '#/phieu-xuat-xe?id=' + P.id); }).catch(EPL.baoLoi); });
       let hen = null;
       g('px-tim').addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => napDs().then(() => {
         // chỉ nạp lại ô chọn — KHÔNG tự mở phiếu tìm được: người dùng có thể đang sửa dở phiếu khác
@@ -991,7 +1048,11 @@
       // KHÔNG tự mở phiếu cũ khi vào màn không kèm tham số (lỗi anh chủ dự án bắt 22/09: Bãi vào là
       // thấy phiếu mới nhất đang mở sẵn, gõ là gõ đè lên phiếu đó). Bãi và Sếp — người lập phiếu — vào
       // là PHIẾU MỚI trắng; vai khác không lập phiếu thì để ô chọn trống kèm câu nhắc, tự chọn tờ cần xem.
-      if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (AUTH.la('yard')) await phieuMoi(); else chuaChon();
+      // Tờ đang lập dở của chính người này (rời màn chưa lưu) thì mở lại — vào bằng menu, hoặc nút "Tạo phiếu" không kèm xe /
+      // tài xế; mở từ hồ sơ một xe / một tài xế là muốn tờ mới cho đúng xe / người đó.
+      if (NHAP && NHAP.uid !== uidNay()) NHAP = null;
+      const moLaiNhap = NHAP && AUTH.la('yard') && !t.id && !t.xe && !t.tai_xe;
+      if (moLaiNhap) await moNhap(); else if (t.moi) await phieuMoi(); else if (t.id) await moPhieu(t.id); else if (AUTH.la('yard')) await phieuMoi(); else chuaChon();
       // Mở từ màn Xe (nút "Tạo phiếu xuất xe" ở hồ sơ một chiếc): chọn sẵn chiếc đó.
       if (t.moi && t.xe && DM.vehicles.some(v => v.id === t.xe)) {
         const el = g('f-vehicle_id'); if (el) { el.value = t.xe; el.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -1006,6 +1067,6 @@
     },
     onLang() { if (P) veHet(); else if (root) chuaChon(); },
     xuatExcel: (r) => xuatExcelPhieu(r),
-    destroy() { if (theoDinh) { theoDinh.disconnect(); theoDinh = null; } },
+    destroy() { giuNhap(); if (theoDinh) { theoDinh.disconnect(); theoDinh = null; } },
   };
 })();

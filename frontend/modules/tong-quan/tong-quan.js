@@ -75,13 +75,15 @@
   /** Khung biểu đồ rỗng: ĐẶT một dòng chữ trống cạnh canvas rồi giấu canvas, KHÔNG xoá canvas.
    *  Trước đây xoá cả khung bằng innerHTML, nên đổi sang tháng có số liệu (hay đổi ngôn ngữ) thì
    *  lượt vẽ sau không tìm lại được canvas và màn đổ lỗi giữa chừng — bản rà đã bắt được. */
-  function khungTrong(id, trong) {
+  /** `khoa`: câu trống riêng của khối khi tháng CÓ chuyến mà khối vẫn chưa có gì (hao hụt: chưa chuyến nào có cân cuối) —
+   *  trước đây khối hao hụt ghi "Tháng này chưa có chuyến nào" ngay cạnh dòng thời gian 22 chuyến (rà 01/10). */
+  function khungTrong(id, trong, khoa) {
     const el = root.querySelector('#' + id); if (!el) return;
     const khung = el.parentElement;
     let chu = khung.querySelector('.tq-empty');
     if (trong) {
       if (!chu) { chu = document.createElement('div'); chu.className = 'tq-empty'; khung.appendChild(chu); }
-      chu.innerHTML = chuaCo(); el.hidden = true;
+      chu.innerHTML = khoa && xh ? NN.h(khoa) : chuaCo(); el.hidden = true;
     } else { if (chu) chu.remove(); el.hidden = false; }
   }
 
@@ -205,7 +207,11 @@
     chart('tq-c-cocau', { type: 'doughnut', data: { labels: M.map(m => NN.t(m[0])), datasets: [{ data: M.map(m => cm[m[1]] || 0), backgroundColor: M.map(m => m[2]), borderColor: c.card, borderWidth: 2, hoverOffset: 4 }] },
       options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { label: (t) => ` ${so(t.parsed)} LAK · ${so(t.parsed / tong * 100)}%` } }) } } });
     root.querySelector('#tq-donut-center').innerHTML = `<b>${so(tong / 1e6, 1)}</b><small>M LAK</small>`;
-    root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<div class="row" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></div>`).join('');
+    // Tổng của vòng tròn cộng theo DÒNG CHI trên phiếu (kể cả khoản ứng cho xe thuê, trừ vào tiền trả chủ xe); ô "Tổng chi phí"
+    // là chi của EPL (xe thuê tính tiền thuê). Hai số khác nhau thì nói rõ vì sao, đừng để hai con số "chi phí" lệch không lời.
+    const tongMuc = Object.values(cm).reduce((a, b) => a + b, 0);
+    root.querySelector('#tq-co-cau').innerHTML = M.map(m => `<div class="row" data-muc="${m[1]}"><i style="background:${m[2]}"></i><span>${NN.h(m[0])}</span><span class="v">${so(cm[m[1]] || 0)}</span><span class="p">${so((cm[m[1]] || 0) / tong * 100)}%</span></div>`).join('')
+      + (d.chi_lak != null && Math.abs(tongMuc - d.chi_lak) >= 1 ? `<p class="tq-co-cau-ghi small muted">${NN.h('tq_co_cau_ghi_chu')}</p>` : '');
     root.querySelectorAll('#tq-co-cau .row').forEach(el => el.addEventListener('click', () => EPL.di('theo-doi', { thang })));
 
     /* 4a. Hao hụt cân theo chuyến — cột %, vạch ngưỡng 1,5 %, cột vượt ngưỡng đổi màu xấu */
@@ -219,7 +225,7 @@
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: Object.assign(tooltipBase(c), { callbacks: { title: (t) => hh[t[0].dataIndex].doc_no, label: (t) => { const x = hh[t.dataIndex]; return [` ${so(x.can_dau, 2)} → ${so(x.can_cuoi, 2)} t`, ` ${NN.t('tq_loss')}: ${so(x.pct, 2)}%`]; } } }) },
         scales: { x: { grid: { display: false }, ticks: Object.assign(tickBase(c), { font: { family: 'ui-monospace, JetBrains Mono, monospace', size: 10.5 } }), border: { color: c.line } }, y: { beginAtZero: true, suggestedMax: Math.max(2, ...hh.map(x => x.pct)) * 1.15, grid: gridBase(c), border: { display: false }, ticks: Object.assign(tickBase(c), { callback: (v) => v + '%' }) } },
         onClick: (_, els) => { if (els.length) EPL.di('theo-doi', { q: hh[els[0].index].doc_no }); } } });
-    khungTrong('tq-c-haohut', !hh.length);
+    khungTrong('tq-c-haohut', !hh.length, d.so_phieu ? 'tq_hao_chua_can' : null);
 
     /* 4b. Hiệu suất xe — thanh đo doanh thu cùng một màu, sắp theo doanh thu */
     const xe = ((xh && xh.xe) || []).slice().sort((a, b) => b.doanh_thu_lak - a.doanh_thu_lak), maxDT = Math.max(1, ...xe.map(x => x.doanh_thu_lak));
@@ -243,10 +249,11 @@
        Từ 01/10 khoá "chua_hoa_don" / dem.invoiced của máy chủ nghĩa là DO chưa / đã tạo SO bên hệ kế toán (bỏ trang kế toán tạm). */
     // Mã loại do máy chủ đặt (routes/bao_cao.py): hao_hut · chua_hoa_don · chua_can · cho_kiem.
     const MUC = { hao_hut: 'bad', chua_hoa_don: 'warn', chua_can: 'warn', cho_kiem: 'info' };
+    // câu trong từ điển đã có {doc_no} ở đầu — trước đây còn in thêm mã phiếu đậm ngay trước, đọc thành hai lần (rà 01/10)
     const cy = d.chu_y || [];
     root.querySelector('#tq-chu-y-n').textContent = cy.length || '';
     root.querySelector('#tq-chu-y').innerHTML = cy.length
-      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${x.doc_no ? `<b>${esc(x.doc_no)}</b>` : ''}${NN.h('attention_' + (x.loai === 'chua_hoa_don' ? 'chua_tao_so' : x.loai), x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
+      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${NN.h('attention_' + (x.loai === 'chua_hoa_don' ? 'chua_tao_so' : x.loai), x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
       : `<div class="tq-empty ok">✓ ${NN.h('none_attention')}</div>`;
     root.querySelectorAll('.tq-chu-y .it').forEach(el => el.addEventListener('click', () => { if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe'); }));
   }

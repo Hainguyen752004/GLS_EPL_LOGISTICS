@@ -47,9 +47,12 @@ def _dinh_khoan(db, loai):
     for dieu_kien, cty, muc, tt, pt, dt_loai in _bien_the(loai):
         no, no_ten, co, co_ten = CT.dinh_khoan(loai, cty, muc, tt, pt)
         no, co = CT._dien_ma_cau_hinh(db, loai, no, co)
+        # tên tiếng Lào của hai vế lấy nguyên danh mục bên kế toán — màn Quy trình đổi tiếng Lào thì đổi theo (rà 01/10)
+        no_lo, co_lo = (TK.ten(no, "lo") if no else None), (TK.ten(co, "lo") if co else None)
         if loai == "HD_BAN" and dt_loai == "chu_xe":
             no, no_ten = TK.CHU_XE, "%s (trừ vào tiền trả)" % TK.ten(TK.CHU_XE)
-        ra.append({"khi": dieu_kien, "no": no, "no_ten": no_ten, "co": co, "co_ten": co_ten,
+            no_lo = "%s (ຫັກຈາກເງິນທີ່ຈະຈ່າຍ)" % TK.ten(TK.CHU_XE, "lo")
+        ra.append({"khi": dieu_kien, "no": no, "no_ten": no_ten, "co": co, "co_ten": co_ten, "no_ten_lo": no_lo, "co_ten_lo": co_lo,
                    "no_tt": TK.trang_thai(no) if no else None, "co_tt": TK.trang_thai(co) if co else None})
     return ra
 
@@ -68,8 +71,8 @@ def _dong_chi():
         for cty in ("EPL", "joint"):
             cap = TK.dinh_khoan_dong(cty, muc, nguon, ghi_no=ghi_no, cach=cach)
             no, co = cap.split("/")
-            o[cty] = {"cap": cap, "no": no, "no_ten": TK.ten(no), "no_tt": TK.trang_thai(no),
-                      "co": co, "co_ten": TK.ten(co), "co_tt": TK.trang_thai(co)}
+            o[cty] = {"cap": cap, "no": no, "no_ten": TK.ten(no), "no_ten_lo": TK.ten(no, "lo"), "no_tt": TK.trang_thai(no),
+                      "co": co, "co_ten": TK.ten(co), "co_ten_lo": TK.ten(co, "lo"), "co_tt": TK.trang_thai(co)}
         ra.append(o)
     return ra
 

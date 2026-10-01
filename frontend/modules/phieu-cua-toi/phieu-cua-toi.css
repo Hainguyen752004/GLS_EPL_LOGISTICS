@@ -410,3 +410,15 @@
 .tx2 dialog.sheet[open] { animation: none; }
 .tx2 .road .x2-truck, .tx2 .action { transition: none; }
 }
+
+/* rà giao diện 01/10 (UI-1): ô số còn đang tải nền — ba chấm nhấp nháy thay cho dấu "·" */
+.x2-cho{display:inline-flex;gap:4px;align-items:center;height:1em;vertical-align:middle}
+.x2-cho i{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.25;animation:x2-cho 1.2s infinite ease-in-out}
+.x2-cho i:nth-child(2){animation-delay:.2s} .x2-cho i:nth-child(3){animation-delay:.4s}
+@keyframes x2-cho{0%,80%,100%{opacity:.2}40%{opacity:.85}}
+@media (prefers-reduced-motion:reduce){.x2-cho i{animation:none;opacity:.5}}
+/* tờ tạm ứng không có QR (01/10): giấu ảnh, hiện câu lĩnh tiền ở quỹ bằng số DO */
+.tx2 .tx-qr img[hidden], .tx2 .sheet-title p[hidden] { display: none; }
+.tx2 .tx-qr-quy { margin-top: 10px; font-size: 15px; color: var(--ink); }
+.tx2 .tx-qr-bc { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+.tx2 .tx-qr-quy b { font-size: 17px; letter-spacing: .02em; white-space: nowrap; }

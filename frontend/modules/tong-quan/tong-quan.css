@@ -154,3 +154,13 @@
 .tq-bao:not(.trong) { padding-right: 12px; }
 .tq-bao svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .tq-bao .btn { white-space: nowrap; }
+
+/* rà giao diện 01/10 (UI-1): dòng thời gian KHÔNG kéo cả màn dài theo số chuyến (22 chuyến = màn cao 2.100px ở 1366) —
+   khối cao tối đa ~10 dòng, cuộn bên trong, hàng ngày tháng dính trên đầu khi cuộn */
+.tq-gantt-bd { max-height: 470px; overflow: auto; }
+.tq-gantt .hdr > * { position: sticky; top: 0; z-index: 3; background: var(--tq-card, #fff); }
+.tq-co-cau-ghi { margin: 8px 0 0; line-height: 1.4; }
+/* hiệu suất xe (tới 20 xe) và việc cần xử lý (tới 12 dòng) cuộn trong thẻ — không kéo dài cả màn (rà 01/10, tháng 9: màn 2.300px) */
+.tq-fleet { max-height: 360px; overflow: auto; }
+.tq-fleet-head { position: sticky; top: 0; z-index: 1; background: var(--tq-card, #fff); }
+#tq-chu-y { max-height: 300px; overflow: auto; }

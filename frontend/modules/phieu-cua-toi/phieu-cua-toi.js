@@ -190,7 +190,9 @@
       (phieuChiaSe ? chip(ic('pin', 'icon-sm') + esc(t('tx_dang_chia_vt')) + (lanGuiCuoi ? ' · ' + esc(new Date(lanGuiCuoi).toTimeString().slice(0, 5)) : ''), 'net-chip') : '');
     // đếm trên chi tiết phiếu (dòng chi): chi tiết các phiếu còn đang tải nền thì để "·", đừng hiện số thiếu
     const choChi = matMang || napDu ? DS.filter(dangChay).filter(x => { const tu = tamUng(x); return tu.co && tu.tt !== 'paid'; }).length : null;
-    const o = (k, v, cls) => '<div class="stat' + (cls ? ' ' + cls : '') + '"><span>' + h(k, { thang: nhanThang(thangNay()) }) + '</span><strong>' + (v == null ? '·' : esc(so(v))) + '</strong></div>';
+    // còn đang tải nền: ba chấm nhấp nháy kèm chữ "Đang tải" khi rê chuột — trước đây một dấu "·" trơ trọi trông như lỗi (rà 01/10)
+    const choSo = '<span class="x2-cho" role="img" title="' + esc(t('loading')) + '" aria-label="' + esc(t('loading')) + '"><i></i><i></i><i></i></span>';
+    const o = (k, v, cls) => '<div class="stat' + (cls ? ' ' + cls : '') + '"><span>' + h(k, { thang: nhanThang(thangNay()) }) + '</span><strong>' + (v == null ? choSo : esc(so(v))) + '</strong></div>';
     q('#tx-so').innerHTML = o('tx_so_thang', SO.thang) + o('tx_so_mo', SO.mo) + o('tx_so_khoa', SO.khoa) + o('tx_so_cho_chi', choChi, choChi ? 'x2-warn' : '');
   }
   function veTab() {
@@ -251,7 +253,8 @@
     if (!xong) oBam.push(nutO('dau', 'fuel', 'df_declare', 'tx_o_dau', suKien(p, ['refuel']).length > 0));
     if (p.transport_status === 'transit' && tiep.act !== 've') oBam.push(nutO('ve', 'flag', 'report_back', 'tx_o_ve', !!p.back_date));
     if (!xong) oBam.push(nutO('bao', 'alert', 'report_breakdown', 'tx_o_bao', false, 'x2-danger'));
-    if (vs.some(v => v.status === 'cho')) oBam.push(nutO('qr', 'qr', 'pct_qr', 'tx_o_qr', false));
+    // nhãn "Mã QR" chỉ khi còn tờ DẦU chờ cấp — tờ tạm ứng không còn QR (01/10), chỉ còn tạm ứng chờ thì là "Xem phiếu đề nghị"
+    if (vs.some(v => v.status === 'cho')) oBam.push(nutO('qr', 'qr', vs.some(v => v.kind === 'fuel' && v.status === 'cho') ? 'pct_qr' : 'tx_xem_de_nghi', 'tx_o_qr', false));
     if (p.transport_status === 'transit') oBam.push(nutO('gps', 'pin', phieuChiaSe === p.id ? 'gps_stop' : 'gps_share', 'tx_o_gps', phieuChiaSe === p.id));
     const fact = (k, v, cls) => '<div><dt>' + h(k) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</dd></div>';
     const oCan = p.kind === 'gom'
@@ -729,7 +732,7 @@
     catch (e) { EPL.baoLoi(e); } finally { nut.disabled = false; }
   }
 
-  // ---- mã QR phiếu đề nghị (tạm ứng · xuất kho nhiên liệu): tài xế đưa màn này cho quỹ / thủ kho quét
+  // ---- phiếu đề nghị trên máy tài xế: tờ xuất kho nhiên liệu có mã QR cho thủ kho quét; tờ tạm ứng không QR (01/10) — đưa số DO cho quỹ
   function moQR(vid) {
     const p = PHIEU(); if (!p) return;
     const vs = phieuDN(p);
@@ -737,9 +740,17 @@
     const nhan = (v) => h(v.kind === 'fuel' ? 'dn_nhien_lieu' : 'dn_tam_ung');
     const hien = (v) => {
       q('#tx-qr-tieu').innerHTML = h(v.kind === 'fuel' ? 'v_fuel' : 'voucher_payment');
-      q('#tx-qr-anh').src = v.qr;
-      q('#tx-qr-ma').innerHTML = esc(v.doc_no) + '<br>' + h('v_code') + ': <b>' + esc(v.token) + '</b>' +
-        (v.kind === 'fuel' ? '<br>' + esc(so(v.qty_l, 0)) + ' L · <span lang="lo">' + esc(v.place_name || '') + '</span>' : '');
+      // Tờ tạm ứng KHÔNG còn mã QR (chủ dự án đồng ý 01/10): máy chủ gửi qr = null, ảnh QR trả 404 — tài xế lĩnh tiền ở quỹ kế
+      // toán bằng số DO. Trước đây gán thẳng src = v.qr → ảnh vỡ và lỗi 404 "/null" ở bảng điều khiển. Tờ dầu giữ nguyên QR.
+      const coQR = v.kind !== 'advance' && !!v.qr, anh = q('#tx-qr-anh'), goiY = q('#tx-d-qr .sheet-title p');
+      anh.hidden = !coQR;
+      if (coQR) anh.src = v.qr; else anh.removeAttribute('src');
+      if (goiY) goiY.hidden = !coQR;
+      q('#tx-qr-ma').innerHTML = coQR
+        ? esc(v.doc_no) + '<br>' + h('v_code') + ': <b>' + esc(v.token) + '</b>' +
+          (v.kind === 'fuel' ? '<br>' + esc(so(v.qty_l, 0)) + ' L · <span lang="lo">' + esc(v.place_name || '') + '</span>' : '')
+        : esc(v.doc_no) + '<div class="tx-qr-quy">' + h('dnc_linh_quy', { do: p.doc_no }) + '</div>' +
+          (v.hinh_thuc ? '<div class="tx-qr-bc">' + EPL.banChat('tam_ung', v.hinh_thuc, v.owner_name) + '</div>' : '');
       qa('#tx-qr-chon button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v.id)));
     };
     q('#tx-qr-chon').innerHTML = vs.length > 1 ? vs.map(v => '<button type="button" data-v="' + esc(v.id) + '" aria-pressed="false">' + nhan(v) + (v.kind === 'fuel' ? ' · ' + esc(so(v.qty_l, 0)) + ' L' : '') + '</button>').join('') : '';
