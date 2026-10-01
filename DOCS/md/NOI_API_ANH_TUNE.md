@@ -1,6 +1,10 @@
 # Nối trang điều xe EPL Lào với hệ kế toán anh Tune — mình gọi gì, anh gọi gì, chứng từ đi đâu
 
-Bản ngày **01/10/2026**, viết theo hiện trạng. Soạn từ mã đang chạy của trang điều xe (`EPL_LAO_REAL`), các lần gọi thử trên API của anh chạy ở máy và trên máy `demo-lao-api.goldensme.com`, và **source của anh**: API `GLS-QLSX-APIs` nhánh `feat/HonTunedaHai@ce95b3c`, WEB `GLS-QLSX-Web` nhánh `feat/hontunedhai_Laos@7e14421c` (mục 8).
+Bản ngày **01/10/2026**, viết theo hiện trạng. Soạn từ mã đang chạy của trang điều xe (`EPL_LAO_REAL`), các lần gọi thử trên API của anh chạy ở máy và trên máy `demo-lao-api.goldensme.com`, và **source của anh**: API `GLS-QLSX-APIs` nhánh `feat/HonTunedaHai@ae0e7f6`, WEB `GLS-QLSX-Web` nhánh `feat/hontunedhai_Laos@77bcb0a1` (mục 8). Mã trang điều xe theo `f85078b`, `ca7b630`, `938b007` (dọn lớp tạm: gói bàn giao `invoiced` / `inv_no` theo SO bên anh); kho tạm `EPL_KETOAN@1d8d91c`. Mã còn đổi nhỏ: chỗ chưa chắc ghi **đang chốt**.
+
+**Người làm (chủ dự án chốt 01/10: "bên mình với anh Tune giờ là một"):** việc ghi "bên EPL làm" là bên EPL làm luôn, kể cả trên source của anh. Việc cần máy chủ host của anh (triển khai, dữ liệu trên DB host, token / mật khẩu tài khoản của anh) ghi **cần quyền host**.
+
+**Token (chủ dự án chốt 01/10):** tạm gác tài khoản tích hợp; trang điều xe tiếp tục dùng token của anh (`EPL_ACC_CODE_TOKEN`). Hết hạn khoảng 10/10 thì thay token mới trong `.env`, hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh để tự đăng nhập lại (đường này đã có sẵn). Mật khẩu tối đa 20 ký tự (`proc_LoginWithUsAndPw`, `VARCHAR(20)`); tài khoản phải được gán chi nhánh (`USERS_ORG`).
 
 - Tài liệu này là **bản đồ**: mỗi đường nói để làm gì, gửi gì, nhận gì, đang ở trạng thái nào.
 - Từng trường chi tiết nằm ở **hợp đồng API kế toán** `HOP_DONG_API_KE_TOAN_ANH_TUNE`. Mỗi chỗ dưới đây ghi số mục để tra.
@@ -32,10 +36,10 @@ Bản ngày **01/10/2026**, viết theo hiện trạng. Soạn từ mã đang ch
 | A5 | `POST /api/v1/sales/debt/customer-detail` | công nợ khách (chỉ xem); "thu một phần / đã thu" của từng SO theo `OrderCode` | **chạy** (mục 1.5) |
 | A6 | `POST /api/v1/master-data/customers · suppliers · staff /list · /upsert` | đối tượng: khách `EPLKH-`, chủ xe `EPLCX-`, nhà cung cấp `EPLNCC-`, tài xế `EPLTX-` — tìm, chưa có thì tạo | **chạy** |
 | A7 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **trả chủ xe liên kết**: đứng tên chủ xe, Nợ 4022 | **chạy** |
-| A8 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **chi mục V – VI**: dòng quỹ trả ngay | **đang làm** |
-| A9 | `save-and-commit` (CMP "Chi khác" 60 / CMR "Thu khác" 17) | **tất toán tài xế**: chi bù / thu hoàn, đứng tên tài xế | **đang làm** |
-| A10 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **trả nhà cung cấp**: Nợ 4021, đứng tên nhà cung cấp | **đang làm** |
-| A11 | **chưa có đường** (đề nghị `POST /api/v1/integrations/logistics/journal-entries`) | **bút toán chờ gửi**: thuê xe 621/4022, ghi nợ nhà cung cấp, quyết toán tạm ứng | LAO giữ bút toán — **đang làm**; chờ API bên anh |
+| A8 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **chi mục V – VI**: dòng quỹ trả ngay, định khoản theo tờ `PC_SC` | **chạy** ở máy |
+| A9 | `save-and-commit` (CMP "Chi khác" 60 / CMR "Thu khác" 17) | **tất toán tài xế**: chi bù TT_CHI / thu hoàn TT_THU, đứng tên tài xế `EPLTX-` | **chạy** ở máy |
+| A10 | `save-and-commit` (CMP "Chi khác", DOTY 60) | **trả nhà cung cấp**: Nợ 4021 / Có tiền, đứng tên nhà cung cấp `EPLNCC-` | **chạy** ở máy |
+| A11 | **chưa có đường** (đề nghị `POST /api/v1/integrations/logistics/journal-entries`) | **bút toán chờ gửi**: thuê xe 621/4022, ghi nợ nhà cung cấp 625 · 614 / 4021, quyết toán tạm ứng 625/1601, hàng bán cho chủ xe 4022/707 | LAO giữ bút toán, màn "Bút toán chờ gửi"; API bút toán **bên EPL làm (đang làm)** |
 | — | `POST …/cmpayment-receipt/list` · `GET …/{id}` · `POST …/delete` | chống trùng, đọc trạng thái, rút phiếu chưa ghi sổ — dùng chung cho A4, A7 – A10 | **chạy** |
 
 ### 0.2. Hệ anh gọi sang LAO
@@ -44,7 +48,8 @@ Bản ngày **01/10/2026**, viết theo hiện trạng. Soạn từ mã đang ch
 |---|---|---|---|
 | B1 | `GET /api/handover/delivery-orders` | danh sách DO đã xong (đã về + đã khoá), đúng khuôn EPL_System; `q` tìm trên toàn bộ DO | **chạy**; màn Vụ việc của anh đọc qua `LogisticsSource` (`ce95b3c`), thử ở máy (cổng 8011) |
 | B2 | `GET /api/handover/delivery-orders/{do_id}` | header + details một DO (dòng thu, các dòng chi mục III–VI kèm mã kế toán) | như trên |
-| — | nhóm `/api/lien-thong/*` | **phần tiền đã gỡ 01/10** (hoá đơn, đã thu, trả chủ xe, tất toán, nhà cung cấp, cấn trừ, bán hàng). Còn phần kho cho KT tạm (kho tạm) | hệ anh **không cần gọi**: LAO tự hỏi lại trạng thái phiếu bên anh |
+| — | nhóm `/api/lien-thong/*` | **phần tiền đã gỡ 01/10** (hoá đơn, đã thu, trả chủ xe, tất toán, nhà cung cấp, cấn trừ). Còn phần kho cho KT tạm (kho tạm), gồm `nguoi-mua` | hệ anh **không cần gọi**: LAO tự hỏi lại trạng thái phiếu bên anh |
+| — | kho tạm `EPL_KETOAN`: `/api/lien-thong/ban-hang/cho-tru` · `tru` · `bo-tru` (LAO gọi kho tạm) | trừ hàng chủ xe mua ở quầy vào tiền trả chủ xe: giữ chỗ / chốt / thả phiếu bán | **chạy** (`1d8d91c`) |
 
 ### 0.3. Chứng từ LAO sinh ra
 
@@ -56,19 +61,20 @@ Tờ chứng từ vẫn sinh ở LAO để in, xem và hiện định khoản. T
 | `PTU` đề nghị tạm ứng | lập / in tờ tạm ứng | A4: phiếu chi "Chi trước" | chạy |
 | `PC_TU` chi tạm ứng | **không sinh ở LAO nữa**: thủ quỹ chi ở hệ anh. Sếp chi tay trên LAO chỉ khi hệ anh không vào được | — | — |
 | `PLNL` đề nghị xuất kho nhiên liệu | lập / in tờ xuất kho | **không sang anh Tune**: việc kho (kho tạm, sau là hệ anh Toàn) | — |
-| `PC_SC` chi mục V – VI | KT Chi phí ghi sổ mục | A8: phiếu chi "Chi khác" | đang làm |
+| `PC_SC` chi mục V – VI | KT Chi phí ghi sổ mục | A8: phiếu chi "Chi khác" | chạy |
 | `PDT` đề nghị thu | kế toán khoá phiếu | A2: SO + công nợ | chạy |
 | `PC_CX` trả chủ xe | KT Thu/Chi lập đề nghị trả | A7: phiếu chi "Chi khác" | chạy |
-| `QT_TU` quyết toán tạm ứng | KT Chi phí chốt tất toán | bút toán chờ (A11) | đang làm |
-| `TT_CHI` · `TT_THU` chênh tất toán | như trên | A9 | đang làm |
-| `PC_NCC` trả nhà cung cấp | KT Chi phí lập đề nghị trả | A10 | đang làm |
-| ghi nợ nhà cung cấp (625 · 614 / 4021) · thuê xe (621/4022) | khoá phiếu | bút toán chờ (A11) | đang làm |
+| `QT_TU` quyết toán tạm ứng | KT Chi phí chốt tất toán | bút toán chờ (A11) | giữ ở LAO |
+| `TT_CHI` · `TT_THU` chênh tất toán | như trên | A9 | chạy |
+| `PC_NCC` trả nhà cung cấp | KT Chi phí lập đề nghị trả | A10 | chạy |
+| ghi nợ nhà cung cấp (625 · 614 / 4021) · thuê xe (621/4022) | khoá phiếu | bút toán chờ (A11) | giữ ở LAO |
+| hàng bán cho chủ xe (4022/707) | thủ quỹ bên anh đã chi phiếu trả chủ xe | bút toán chờ (A11) | giữ ở LAO |
 | `HD` hoá đơn · `PT` thu tiền khách | — | **việc của hệ anh**, từ SO (A2) | — |
 
 ### 0.4. Hệ anh cho LAO những gì
 
 - **Đã có:**
-  - token dùng chung (tài khoản cá nhân `tune`, **hết hạn 10/10/2026 09:05 giờ Lào**) cho tới khi có tài khoản tích hợp (mục 5);
+  - token dùng chung (tài khoản cá nhân `tune`, **hết hạn 10/10/2026 09:05 giờ Lào**) — chủ dự án chốt tiếp tục dùng; hết hạn thì thay token hoặc tự đăng nhập bằng tài khoản anh (mục 5);
   - hướng dẫn `sales-orders` (11/09), hướng dẫn thu chi `CM-CASH-VOUCHER-DEMOLAO-API-GUIDE.md`, tài liệu hiện trạng `GLS-QLSX-APIs/docs/PHIEU-THU-CHI-DEMOLAO-TONG-HOP.md`;
   - danh mục tài khoản quốc gia 11 (497 mã trên DB của API ở máy);
   - các mã số đọc được ở mục 1.3.
@@ -129,7 +135,7 @@ Idempotency-Key: logistics:EPLLAO-779739f4b582
 Đây là gói thật của DO T4-0449-09/EPL, chỉ thay mã khách.
 
 - **Gốc** lấy theo thứ tự: `QLSX_BASE_URL` nếu đặt; không thì giao thức + tên máy của `EPL_ACC_CODE_API`.
-- **Token** lấy theo thứ tự: `QLSX_ACCESS_TOKEN` nếu đặt; không thì **tài khoản tích hợp** (`QLSX_USERNAME` / `QLSX_PASSWORD` / `QLSX_ORG_ID`, tự đăng nhập — hợp đồng 12.11.4); không thì `EPL_ACC_CODE_TOKEN`.
+- **Token** lấy theo thứ tự: `QLSX_ACCESS_TOKEN` nếu đặt; không thì **tự đăng nhập** (`QLSX_USERNAME` / `QLSX_PASSWORD` / `QLSX_ORG_ID` — đặt được tài khoản của anh; hợp đồng 12.11.4); không thì `EPL_ACC_CODE_TOKEN` (đang dùng).
 
 **Luật LAO kiểm trước khi gửi** (lỗi nào cũng báo rõ và không gửi):
 
@@ -167,7 +173,7 @@ Không còn luật chặn theo KT tạm: cắt sổ 01/10, mọi DO đã khoá g
 
 **Mã DO.** `do_id` = `EPLLAO-<Trip.id>`. Hướng dẫn của anh nói `doId` là duy nhất **toàn bảng**, không chia theo nguồn. Tiền tố `EPLLAO-` giữ cho DO bên Lào không bao giờ trùng DO của EPL_System (`DO-2026-…`).
 
-**Dữ liệu thử trên DB của API ở máy:** `TK-20261001-000162` (T4-0449-09/EPL, ຄຳຕຸ້ຍ, 905,85 USD) và `TK-20261001-000163` (T4-0442-09/EPL, ນາງ ວັນນາ, 1.676,90 USD). Đây là **SO thử, nhờ anh huỷ**. Huỷ xong, anh cho bên em biết cách gửi lại hai DO đó: khoá `logistics:EPLLAO-<Trip.id>` của chúng vẫn còn bên anh.
+**SO đã tạo trên DB của API ở máy:** `TK-20261001-000162` (T4-0449-09/EPL, ຄຳຕຸ້ຍ, 905,85 USD) và `TK-20261001-000163` (T4-0442-09/EPL, ນາງ ວັນນາ, 1.676,90 USD). Hai SO tạo ngày 01/10 trước giờ cắt sổ, **giữ nguyên**, là công nợ thật của hai DO đó.
 
 Chi tiết: hợp đồng mục 3.2, 3.2.1, 12.11.1.
 
@@ -201,17 +207,20 @@ Số chi tiết: hợp đồng mục 12.7.
 - **Đọc lại** `GET …/{id}?voucherType=CMP|CMR`: `Master.STATUS` 12 (ghi sổ chính) hoặc 13 (ghi sổ tạm) = đã chi / đã thu. Bên em hỏi lại lúc mở tờ, lúc cần quyết định (xe xuất phát…), và khi bấm Cập nhật.
 - **Rút** phiếu chưa ghi sổ bằng `POST …/delete` khi số đổi hoặc bên em huỷ đề nghị. Phiếu đã ghi sổ thì bên em **không xoá, không sửa**; báo đối soát.
 - Lỗi về dạng HTTP 200 kèm `Success: false` cũng được đọc ra; câu lỗi của anh hiện lên màn để người lập **Gửi lại**.
-- Bên em gửi `Header.Amount` / `Header.BaseAmount` = tổng các dòng; từ `ce95b3c` hệ anh **tự tính lại tổng header từ `Entries`** (5 số lẻ, làm tròn nửa xa số 0).
+- Bên em gửi `Header.Amount` / `Header.BaseAmount` = tổng các dòng; hệ anh **tự tính lại quy đổi từng dòng** (`ae0e7f6`: `Amount × tỷ giá dòng`, thiếu thì tỷ giá header) và **tổng header** (`ce95b3c`), 5 số lẻ, làm tròn nửa xa số 0. Phiếu trả chủ xe ngoại tệ bên em gửi tỷ giá riêng từng dòng để Kíp khoá từng phiếu xe không bị dịch.
+- Phiếu bên em tạo mà bị **xoá tay** bên anh (`Master` null) → bên em đánh `PHIEU_CHI_MAT`; người lập gửi lại thì lập phiếu mới, không gọi xoá nữa.
 
 | # | Đề nghị bên em | Phiếu bên anh | Đối tượng | Định khoản | Sau khi ghi sổ bên anh |
 |---|---|---|---|---|---|
 | A4 | tờ **PTU** (KT Chi phí VC ghi sổ mục IV) | CMP "Chi trước" (59, cấu hình `QLSX_DOTY_CHI_TAM_UNG`) | xe nhà: tài xế `EPLTX-`; xe thuê: chủ xe `EPLCX-` | xe nhà Nợ 1601 / Có 1011; xe thuê Nợ 4022 / Có 1011 | mục IV "đã chi", tờ PTU "đã cấp", tài xế **xuất phát được** |
-| A7 | **đề nghị trả chủ xe** (màn Xe liên kết → *Trả qua kế toán*) | CMP "Chi khác" (60) | chủ xe `EPLCX-` | mỗi phiếu xe một dòng Nợ 4022 / Có 1011 · 1012 · 1021 · 1022 | các phiếu xe "đã trả chủ xe" |
-| A8 | **chi mục V – VI** (KT Chi phí VC ghi sổ mục), chỉ dòng quỹ trả ngay | CMP "Chi khác" (60) | xe nhà: tài xế; xe thuê: chủ xe | xe nhà Nợ 614 (V) · 625 (VI) / Có 1011; xe thuê Nợ 4022 / Có 1011 | mục "đã chi" — **đang làm** |
-| A9 | **chênh tất toán tài xế** (KT Chi phí VC chốt kỳ) | chi bù: CMP "Chi khác" (60); thu hoàn: CMR "Thu khác" (17) | tài xế `EPLTX-` | chi bù Nợ 1601 / Có tiền; thu hoàn Nợ tiền / Có 1601 | bản chốt "xong", 1601 của tài xế về 0 cho kỳ — **đang làm** |
-| A10 | **đề nghị trả nhà cung cấp** (KT Chi phí) | CMP "Chi khác" (60) | nhà cung cấp `EPLNCC-` | Nợ 4021 / Có tiền | giảm nợ nhà cung cấp — **đang làm** |
+| A7 | **đề nghị trả chủ xe** (màn Xe liên kết → *Trả qua kế toán*) | CMP "Chi khác" (60) | chủ xe `EPLCX-` | mỗi phiếu xe một dòng Nợ 4022 / Có 1011 · 1012 · 1021 · 1022, số trả **đã trừ hàng chủ xe mua ở quầy** | các phiếu xe "đã trả chủ xe"; phiếu bán ở kho tạm chốt `TUNE:<số phiếu chi>`, ghi bút toán chờ 4022/707 |
+| A8 | **chi mục V – VI** (KT Chi phí VC ghi sổ mục), chỉ dòng quỹ trả ngay | CMP "Chi khác" (60) | xe nhà: tài xế; xe thuê: chủ xe | theo tờ `PC_SC`: xe nhà Nợ 614 (V) · 625 (VI) / Có 1011; xe thuê Nợ 4022 / Có 1011 | mục "đã chi"; Quỹ trên trang điều xe không chi nữa |
+| A9 | **chênh tất toán tài xế** (KT Chi phí VC chốt kỳ) | chi bù: CMP "Chi khác" (60); thu hoàn: CMR "Thu khác" (17) | tài xế `EPLTX-` | chi bù Nợ 1601 / Có tiền; thu hoàn Nợ tiền / Có 1601 | bản chốt "xong", 1601 của tài xế về 0 cho kỳ; quyết toán 625/1601 là bút toán chờ |
+| A10 | **đề nghị trả nhà cung cấp** (KT Chi phí) | CMP "Chi khác" (60) | nhà cung cấp `EPLNCC-` | Nợ 4021 / Có tiền | giảm nợ nhà cung cấp (màn Nhà cung cấp → "Trả qua kế toán") |
 
 Quỹ trên LAO **không chi mục IV nữa** (nút Chi, quét QR trả 409 `CHI_O_KE_TOAN`). Sếp chi tay được làm đường dự phòng khi hệ anh không vào được; khi đó bên em rút phiếu chi còn chờ bên anh trước. Đặt `EPL_CHI_TAM_UNG=tai_cho` thì quay về Quỹ chi trên LAO.
+
+**Trừ hàng quầy (A7):** phiếu bán cho chủ xe nằm ở kho tạm. Lập đề nghị trả → bên em gọi kho tạm `POST /api/lien-thong/ban-hang/tru` giữ chỗ (`TUNE-CHO:<số đề nghị>`); thủ quỹ bên anh đã chi → chốt (`TUNE:<số phiếu chi>`) và ghi bút toán chờ Nợ 4022 / Có 707; bỏ đề nghị → `POST …/bo-tru` thả phiếu bán. Danh sách chờ trừ: `GET /api/lien-thong/ban-hang/cho-tru?owner_id=`. Kho tạm tắt thì không lập được đề nghị trả (503).
 
 Chi tiết: hợp đồng mục 12.10 (A4), 12.11.3 (A7).
 
@@ -221,9 +230,9 @@ Chi tiết: hợp đồng mục 12.10 (A4), 12.11.3 (A7).
 - Màn Khách hàng → tab Công nợ có khối **"Công nợ bên hệ kế toán"**: tổng nợ, đã thu, quá hạn, tuổi nợ, từng SO còn nợ. **Chỉ xem**: thu tiền, hoá đơn làm ở hệ anh.
 - Phiếu đề nghị thu đọc lại số đã thu theo `OrderCode` của SO: còn nợ ≤ nửa xu → "đã thu"; đã trả > 0 → "thu một phần". Một khách đọc tối đa một lần mỗi 60 giây.
 - Công nợ khách **chỉ còn ở hệ anh**. Số hoá đơn / đã thu trên KT tạm là số thử.
-- **Cần anh** một mẫu thân trả về thật (khối `Debts`, `Collections` là dynamic).
+- Khối `Debts`, `Collections` của `customer-detail` là dynamic: bên EPL đối chiếu với thân trả về thật (đang làm).
 
-### 1.6. Bút toán chờ gửi — khoản không qua tiền (đang làm)
+### 1.6. Bút toán chờ gửi — khoản không qua tiền
 
 Khoản sổ phải ghi mà không đi qua tiền thì hệ anh **chưa có đường nhận** (source chưa có chứng từ bút toán tổng hợp, hợp đồng 12.12.4). Bên em không đoán cấu trúc sổ cái để ghi thẳng, nên **giữ bút toán ở LAO** (bảng `but_toan_cho`), đủ hai vế từng dòng bằng mã thật, chờ có API thì gửi.
 
@@ -232,10 +241,12 @@ Khoản sổ phải ghi mà không đi qua tiền thì hệ anh **chưa có đư
 | `thue_xe` | khoá phiếu xe thuê | Nợ 621 / Có 4022, bằng tiền thuê (`hire.amount`) |
 | `no_ncc` | khoá phiếu có dòng ghi nợ nhà cung cấp | Nợ 625 · 614 (xe thuê 4022) / Có 4021 |
 | `tat_toan` | chốt tất toán tài xế | quyết toán `QT_TU` Nợ 625 / Có 1601, bằng số tài xế đã chi thật |
+| `ban_chu_xe` | thủ quỹ bên anh đã chi phiếu trả chủ xe có trừ hàng quầy | Nợ 4022 / Có 707, theo giá bán; một phiếu bán một bút toán |
 
 - Khoá chống trùng (nguồn, mã nguồn). Mã gửi đi (`source_ref`): `EPLLAO-<nguồn>-<mã nguồn>`.
-- Trạng thái: `cho_gui` (chờ API) · `da_gui` · `huy`. Mở khoá phiếu → bản chưa gửi bị huỷ; bản đã gửi đánh "cần đảo", chờ bút toán đảo.
-- Có đường bên anh thì bên em gửi theo đề nghị `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`), hợp đồng 12.12.4.
+- Trạng thái: `cho_gui` (chờ API) · `da_gui` · `huy`. Mở khoá / xoá phiếu, bỏ chốt tất toán, thả phiếu bán → bản chưa gửi bị huỷ hoặc rút; bản đã gửi đánh "cần đảo", chờ bút toán đảo.
+- Xem: màn **"Bút toán chờ gửi"** (`GET /api/but-toan-cho`, vai KT Thu/Chi VC, KT Chi phí VC, Sếp; lọc trạng thái / nguồn / kỳ, chi tiết Nợ / Có, chứng từ gốc, xuất Excel). Chỉ xem.
+- Đường nhận bên anh `POST /api/v1/integrations/logistics/journal-entries` (+ `/reverse`, hợp đồng 12.12.4): **bên EPL làm (đang làm)**; có đường thì gửi các bản `cho_gui`.
 
 ---
 
@@ -301,7 +312,8 @@ Bảng từng khoá: hợp đồng mục 12.8.3.
 
 - **Phần tiền đã gỡ 01/10**: các đường KT tạm từng gọi để báo "đã hoá đơn", "đã thu", "đã trả chủ xe", và đọc số cước, tiền thuê, tất toán, nợ nhà cung cấp, cấn trừ, bán hàng ở quầy (B2–B22 cũ của hợp đồng mục 4) **không còn**.
 - Hệ anh **không cần gọi sang LAO** để báo trạng thái tiền: LAO tự hỏi lại phiếu bên anh (mục 1.4, 1.5).
-- Phần **kho** của nhóm này còn giữ cho KT tạm (kho tạm), tới khi nối hệ anh Toàn. Hệ anh không dùng.
+- Phần **kho** của nhóm này còn giữ cho KT tạm (kho tạm), tới khi nối hệ anh Toàn, gồm `nguoi-mua`. Hệ anh không dùng.
+- Chiều ngược lại, LAO gọi kho tạm ba đường trừ hàng quầy `/api/lien-thong/ban-hang/cho-tru`, `/tru`, `/bo-tru` (mục 1.4).
 
 ### 2.5. Địa chỉ ra Internet
 
@@ -322,12 +334,12 @@ B1, B2 chỉ gọi được từ host của anh khi trang điều xe Lào có đ
 | 3 | Lập / in đề nghị xuất kho nhiên liệu (mỗi kho một tờ) | Bãi hoặc kế toán · in tờ có QR | `PLNL` | kho (kho tạm, sau là hệ anh Toàn) — không sang anh Tune |
 | 4 | Thủ quỹ chi tạm ứng | **Thủ quỹ bên anh** · ghi sổ phiếu "Chi trước" | — | LAO đọc `STATUS` 12/13 → tài xế xuất phát |
 | 5 | Thủ kho cấp dầu theo đề nghị | Thủ kho · quét QR tờ xuất kho | `PXK_NL` (tờ kho) | kho |
-| 6 | Chi mục V – VI trả ngay | KT Chi phí VC ghi sổ mục → thủ quỹ bên anh | `PC_SC` | **A8** — đang làm |
+| 6 | Chi mục V – VI trả ngay | KT Chi phí VC ghi sổ mục → thủ quỹ bên anh | `PC_SC` | **A8** |
 | 7 | Xe về, **khoá phiếu** | KT Thu/Chi Viêng Chăn · **Phiếu xuất xe** → **Khoá phiếu** | `PDT` | **A2 → SO + công nợ** (nút *Tạo SO bên kế toán*); xe thuê và dòng ghi nợ nhà cung cấp → **bút toán chờ** (mục 1.6) |
 | 8–10 | Hoá đơn, thu tiền khách, cấn trừ | kế toán bên anh | `HD`, `PT` | **việc của hệ anh**, từ SO; LAO đọc "đã thu" qua A5 |
 | 11 | Trả chủ xe liên kết | KT Thu/Chi lập đề nghị → thủ quỹ bên anh | `PC_CX` | **A7** |
-| 12 | Tất toán tài xế theo tháng | KT Chi phí VC chốt → thủ quỹ bên anh | `QT_TU` + `TT_CHI` / `TT_THU` | quyết toán → bút toán chờ; chênh → **A9** — đang làm |
-| 13 | Trả nhà cung cấp | KT Chi phí lập đề nghị → thủ quỹ bên anh | `PC_NCC` | **A10** — đang làm |
+| 12 | Tất toán tài xế theo tháng | KT Chi phí VC chốt → thủ quỹ bên anh | `QT_TU` + `TT_CHI` / `TT_THU` | quyết toán → bút toán chờ; chênh → **A9** |
+| 13 | Trả nhà cung cấp | KT Chi phí lập đề nghị → thủ quỹ bên anh | `PC_NCC` | **A10** |
 
 Bên em **chỉ gửi đề nghị** và đọc trạng thái về (chốt 29/09). Không có bước tiền nào chạy trên LAO hay KT tạm, trừ đường dự phòng Sếp chi tay tạm ứng.
 
@@ -341,18 +353,18 @@ Bên em **chỉ gửi đề nghị** và đọc trạng thái về (chốt 29/09
 
 ---
 
-## 5. Hệ anh cho LAO: còn chờ
+## 5. Việc còn lại
 
-Xếp theo thứ tự cần trước:
-
-1. **API bút toán** (không qua tiền) cho mọi bút toán chờ (mục 1.6). Đề nghị ở hợp đồng 12.12.4; hoặc anh gửi định nghĩa `sp_PostTing_GeneralLedger` và loại chứng từ cho bút toán khác để bên em viết.
-2. **Huỷ hai SO thử** `TK-20261001-000162`, `…163`, và cho biết cách gửi lại hai DO đó.
-3. **Tài khoản tích hợp** thay token cá nhân sắp hết hạn: tệp tạo đã sẵn (hợp đồng 12.12.3); anh thêm `UserId` vào `LogisticsSalesPush:AllowedUserIds` của host.
-4. **Cờ phân loại** ở `document-types` (công nợ / khác / "Chi trước"), để WEB và API bỏ mã DOTY ghi cứng. Phiếu "Chi trước" (59) bên em tạo hiện không có trong ô chọn của WEB.
-5. **Đơn vị EPL Lào** (quốc gia 11, tiền LAK). Hiện SO và phiếu vào chi nhánh cố định 1368 "Demo EPL". Thà Bốc và Viêng Chăn là một hay hai đơn vị?
-6. **Tiền USD** (bật mã 2), **THB, CNY** trong danh mục tiền của CM, và SO nhận THB / CNY (hợp đồng câu hỏi 10.3).
-7. **Mẫu `customer-detail` thật** cho màn công nợ (A5).
-8. **Cấu hình host** khi triển khai: `LogisticsSource:BaseUrl` (bắt buộc), `ApiKey`, `LogisticsSalesPush:*` (TONG_HOP mục 4).
+| # | Việc | Người làm |
+|---|---|---|
+| 1 | **API bút toán tổng hợp** nhận bút toán chờ (mục 1.6, hợp đồng 12.12.4); cần đọc định nghĩa `sp_PostTing_GeneralLedger` và loại chứng từ cho bút toán khác | bên EPL làm (đang làm) |
+| 2 | **Cờ phân loại** ở `document-types` (công nợ / khác / "Chi trước"), để WEB và API bỏ mã DOTY ghi cứng; phiếu 59 "Chi trước" trên WEB hiện chỉ xem | bên EPL làm (đang làm) |
+| 3 | SO nhận cước **THB, CNY** (hợp đồng câu hỏi 10.3) | bên EPL làm (đang làm) |
+| 4 | **Triển khai** hai nhánh lên host, cấu hình `LogisticsSource:BaseUrl` (bắt buộc), `ApiKey`, `LogisticsSalesPush:*` (TONG_HOP mục 4); kho tạm có `1d8d91c` | **cần quyền host** |
+| 5 | **Token hết hạn khoảng 10/10**: thay token mới trong `.env`, hoặc đặt `QLSX_USERNAME` / `QLSX_PASSWORD` của anh để tự đăng nhập lại (hợp đồng 12.11.4). Tài khoản tích hợp **tạm gác** — tuỳ chọn (hợp đồng 12.12.3; nhân viên ảo `EPL-TICHHOP` ObjId 1622 trên DB demo, chưa có tài khoản dùng được) | **cần quyền host** (token / mật khẩu của anh) |
+| 6 | **Dữ liệu DB host**: mở 1371 / 4021 / 4022 nếu thiếu; bật LAK / USD (mã 2); lỗi `default-money-account` trên host; đơn vị EPL Lào (quốc gia 11, tiền LAK — Thà Bốc và Viêng Chăn một hay hai đơn vị?) | **cần quyền host** |
+| 7 | **Nhật ký kiểm toán cũ** có thể còn mật khẩu dạng chữ thường (trước `ed5aa0e`): xoá / che, cân nhắc đổi mật khẩu | **cần quyền host** |
+| 8 | Chạy lại vòng nối kế toán với bản cuối hai bên (`938b007` đã dọn lớp tạm; mã còn đổi nhỏ — **đang chốt**) | bên EPL làm (đang làm) |
 
 ---
 
@@ -360,9 +372,9 @@ Xếp theo thứ tự cần trước:
 
 | Ai | Việc |
 |---|---|
-| **Anh Tune** | mục 5, từ việc 1; triển khai hai nhánh rồi đổi link theo hợp đồng 12.12.2 |
-| **Bên em** | làm xong A8, A9, A10 và bút toán chờ; chạy lại vòng nối kế toán với `ce95b3c`; thêm nút tạo khoá bàn giao ở màn Tài khoản |
-| **Chủ dự án** | chạy tệp tạo tài khoản tích hợp; host trang điều xe Lào ra Internet khi làm xong hết, rồi gửi anh Tune địa chỉ + khoá bàn giao |
+| **Bên EPL** (đang làm) | mục 5 việc 1, 2, 3, 8; thêm nút tạo khoá bàn giao ở màn Tài khoản; màn tạo tài khoản ở hồ sơ nhân viên bên WEB (dùng sau nếu cần) |
+| **Cần quyền host** | mục 5 việc 4 – 7; triển khai xong thì đổi link theo hợp đồng 12.12.2 |
+| **Chủ dự án** | host trang điều xe Lào ra Internet khi làm xong hết, rồi chuyển địa chỉ + khoá bàn giao vào cấu hình host |
 
 ---
 
@@ -385,12 +397,16 @@ Xếp theo thứ tự cần trước:
 - `kiem/thu_luat_so_ben_tune.py`: luật kiểm của anh Tune chạy trên gói SO của mọi DO đã khoá (13/13 qua);
 - `kiem/thu_ban_giao.py`: B1/B2, gồm các khoá màn Vụ việc đọc và `q`;
 - `kiem/thu_khach_hang_moi.py`: mã khách, chỉ `acct` và admin gán, đúng luật mã bên anh;
-- `kiem/thu_chi_tam_ung_ke_toan.py`, `kiem/thu_xe_thue_ke_toan.py`: A4, A7 qua API chạy ở máy;
-- `kiem/thu_tat_toan_tune.py`: A9, A10 — đang làm.
+- `kiem/thu_chi_tam_ung_ke_toan.py`, `kiem/thu_xe_thue_ke_toan.py`, `kiem/thu_chu_xe.py`, `kiem/thu_tru_hang_quay.py`: A4, A7 (gồm trừ hàng quầy) qua API chạy ở máy;
+- `kiem/thu_chi_muc_tune.py`: A8; `kiem/thu_tat_toan_tune.py`: A9, A10; `kiem/thu_but_toan_cho.py`: bút toán chờ (A11);
+- `kiem/thu_giao_dien.js`: 22 màn, gồm màn Tất toán tài xế, Nhà cung cấp, Bút toán chờ gửi;
+- kho tạm `EPL_KETOAN/kiem/thu_tru_hang_chu_xe.py` (máy thử 8031): ba đường trừ hàng quầy.
+
+Các bài trên đạt trên máy thử 8011 với `f85078b`, `ca7b630`.
 
 ---
 
-## 8. Đối chiếu source của anh (`feat/HonTunedaHai@ce95b3c`, `feat/hontunedhai_Laos@7e14421c`)
+## 8. Đối chiếu source của anh (`feat/HonTunedaHai@ae0e7f6`, `feat/hontunedhai_Laos@77bcb0a1`)
 
 Chủ dự án cho bên em sửa thẳng source của anh từ 01/10 (anh review). Các commit và việc còn lại ghi ở mục 16 tài liệu hiện trạng của anh và ở TONG_HOP mục 2.
 
@@ -411,9 +427,11 @@ Chủ dự án cho bên em sửa thẳng source của anh từ 01/10 (anh review
 
 ### 8.3. Phiếu thu chi (A4, A7 – A10)
 
+- **Quy đổi từng dòng** (`ae0e7f6`, `ApplyLineBaseAmounts`): `BaseAmount = Round(Amount × (tỷ giá dòng ?? tỷ giá header), 5, AwayFromZero)`; giữ số client khi thiếu nguyên tệ, tỷ giá ≤ 0, dòng IV/IC.
 - **Tổng header** do `CashVoucherHeaderTotals` tính ở create-session, save-session, save-and-commit: Σ `Entries` (5 số lẻ, nửa xa số 0); số client gửi bị thay. Phiếu có dòng IV/IC hay công nợ thiếu số tiền thì giữ số header client gửi (đường tương thích). Mọi phiếu bên em chỉ có `Entries`, nên luôn được tính lại.
+- **Nhật ký kiểm toán** (`ed5aa0e`): payload che mật khẩu / token / khoá; dòng audit cũ có thể còn mật khẩu (mục 5 việc 7).
 - `ObjectService`: tạo đối tượng không gửi `IsOrganization` thì là cá nhân. Bên em vẫn luôn gửi ô này.
-- WEB (`06a14189`, `7e14421c`): `isCash` theo hình thức thanh toán; tài khoản tiền mặc định đọc `AccountCode`; đổi hình thức / nội tệ / loại tiền khi đã có dòng thì vế tiền dòng đổi theo; phân loại công nợ / khác theo DOTY 58/60, 15/17 ghi cứng — loại 59 "Chi trước" không có trong ô chọn.
+- WEB (`06a14189`, `7e14421c`, `77bcb0a1`): `isCash` theo hình thức thanh toán, không rõ thì chặn lưu; tài khoản tiền mặc định đọc `AccountCode`; đổi hình thức / nội tệ / loại tiền thì chỉ dòng mang cờ `moneyAccountIsDefault` đổi vế tiền; loại phiếu không đổi ngầm — 58/60, 15/17 sửa được, loại khác (57, 59 "Chi trước", 68, 14, 16) chỉ xem; modal Vụ việc thoát ký tự cả DEAL / QUOTE.
 
 ### 8.4. Hoá đơn điện tử
 
