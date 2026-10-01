@@ -1,5 +1,5 @@
 /* Đăng nhập — giao diện theo bản mẫu chủ dự án gửi chiều 30/09 (login_ne_theosep.zip): trái là thương hiệu và SƠ ĐỒ
-   BẢY BƯỚC của một chuyến hàng (bấm một bước để xem ai làm gì và lọc tài khoản của vai đó), phải là biểu mẫu và khung
+   TÁM BƯỚC của một chuyến hàng (bấm một bước để xem ai làm gì và lọc tài khoản của vai đó), phải là biểu mẫu và khung
    chọn nhanh tài khoản. Mọi bộ chọn nằm trong #login: bản mẫu dùng tên chung (.field, .input, .lang, .hero…) trùng tên đã
    dùng khắp ứng dụng. Khác bản mẫu có chủ ý: logo là ẢNH EPL thật; không có dải số "đang chạy" (chủ dự án chốt 30/09 — trang
    này ai cũng mở được); bấm thẻ tài khoản là vào thẳng (lối tắt demo, chốt 16/09). vh chia cho --ty-le vì khung có zoom. */
@@ -31,10 +31,11 @@
 #login .intro { margin: -6px 0 0; max-width: 70ch; font-size: 15px; color: var(--lg-on2) }
 #login .hero .lo-sub { color: var(--lg-mint2) }
 
-/* sơ đồ bảy bước */
-#login .process { display: flex; flex-direction: column; gap: 8px }
+/* sơ đồ tám bước — bản đồ GIÃN theo chiều cao còn lại của cột trái (01/10: chiều cao cố định để lại khoảng trống lớn
+   giữa thẻ bước và chân trang trên màn cao) */
+#login .process { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto }   /* không cho co dưới chiều cao tối thiểu của bản đồ — thẻ bước sẽ đè lên nhãn */
 #login .process-title { margin: 0; font-size: 13px; color: var(--lg-mint2); font-weight: 500 }
-#login .map { position: relative; height: clamp(230px, calc(31vh / var(--ty-le)), 300px); border-top: 1px solid var(--lg-line-d); border-bottom: 1px solid var(--lg-line-d) }
+#login .map { position: relative; flex: 1 1 auto; min-height: 250px; max-height: 520px; border-top: 1px solid var(--lg-line-d); border-bottom: 1px solid var(--lg-line-d) }
 #login .map-svg { position: absolute; inset: 0; width: 100%; height: 100% }
 #login .map .route { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round }
 #login .route--done { stroke: var(--lg-mint) }
@@ -68,7 +69,7 @@
 #login .step-card ul { margin: 2px 0 0; padding-left: 18px; color: var(--lg-on2); font-size: 14px }
 #login .step-card ul li + li { margin-top: 2px }
 #login .step-card .roles { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px }
-#login .role-tag { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 999px; background: rgba(127, 211, 176, .18); color: var(--lg-mint2); font-weight: 700; font-size: 12.5px }
+#login .role-tag { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 26px; padding: 2px 10px; border-radius: 999px; background: rgba(127, 211, 176, .18); color: var(--lg-mint2); font-weight: 700; font-size: 12.5px }
 #login .step-card .hint { grid-column: 1 / -1; margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--lg-line-d); font-size: 13px; color: var(--lg-on3); display: flex; align-items: center; gap: 8px }
 #login .step-card .hint svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--lg-mint); stroke-width: 2 }
 #login .hero-foot { margin-top: auto; font-size: 13px; letter-spacing: .12em; color: var(--lg-on3) }
@@ -108,7 +109,7 @@
 #login .quick-title { text-align: center }
 #login .quick-title b { color: var(--lg-ink) }
 #login .quick-title button { border: 0; padding: 0; margin-left: 8px; background: none; color: var(--lg-primary); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px }
-#login .accounts { flex: 1; min-height: 160px; overflow: auto; padding: 14px 16px; border: 1px solid var(--lg-line); border-radius: 14px; background: var(--lg-surface) }
+#login .accounts { flex: 0 1 auto; min-height: 0; overflow: auto; padding: 14px 16px; border: 1px solid var(--lg-line); border-radius: 14px; background: var(--lg-surface) }
 #login .acc-group { margin-bottom: 12px }
 #login .acc-group h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lg-muted) }
 #login .acc-group ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 8px }
@@ -135,7 +136,7 @@
   #login .hero { gap: 11px; padding: 18px 40px 14px }
   #login .hero h1 { font-size: 32px }
   #login .intro { font-size: 14px; max-width: 78ch }
-  #login .map { height: 232px }
+  #login .map { min-height: 220px }
   #login .step-card { padding: 9px 16px }
   #login .step-card h3 { font-size: 17px }
   #login .step-card ul { font-size: 13px }
@@ -146,11 +147,11 @@
   #login .lg-shell { grid-template-columns: 1fr }
   #login .hero { padding: 28px 24px }
   #login .hero h1 { font-size: 34px }
-  #login .map { height: 300px }
+  #login .map { min-height: 300px }
   #login .lg-panel { padding: 24px }
 }
 @media (max-width: 720px) {
-  #login .map { height: 360px }
+  #login .map { min-height: 380px }
   #login .step-card { grid-template-columns: 1fr }
   #login .acc-group ul { grid-template-columns: 1fr }
 }

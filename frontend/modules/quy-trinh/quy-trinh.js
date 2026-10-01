@@ -60,7 +60,7 @@
         may: ['Trừ tồn đúng kho ngay; dòng dầu trên phiếu mang giá bình quân của kho lúc cấp', 'Mất mạng vẫn cấp được, máy gửi lại khi có mạng'],
         chan: ['Thủ kho kho khác không cấp được', 'Cấp lệch số duyệt mà không ghi lý do → chặn', 'Cấp hai lần → chặn'],
         ct: ['PXK_NL'], ct_khi: { PXK_NL: 'lúc cấp — đường duy nhất dầu kho rời kho: mọi lần xuất đều theo phiếu đề nghị đã cấp' }, sau: 'Phiếu đề nghị xuất kho nhiên liệu: Đã cấp' },
-      { so: 8, vai: ['cash'], man: 'cap-phat', o_ke_toan: true, ten: 'Quỹ tiền mặt cảng cạn chi tạm ứng',
+      { so: 8, vai: ['cash'], man: 'cap-phat', o_ke_toan: true, ten: 'Quỹ tiền mặt Thà Bốc chi tạm ứng',
         lam: ['Quét QR phiếu đề nghị tạm ứng rồi Chi tiền — hoặc bấm Chi mục IV trên phiếu'],
         may: ['Hai đường chi tự loại nhau: đã chi đường này thì đường kia là sai bước, không ra hai tờ', 'Hai đường ghi CÙNG một số: đúng số trên phiếu đề nghị tạm ứng (tiền mặt mục III, IV, VI)',
           'Dòng trả bằng thẻ cao tốc, trả cùng lương, ghi nợ nhà cung cấp không tính vào tiền mặt', 'Xe nhà: Nợ 1601 tạm ứng nhân viên — chưa phải chi phí, sang chi phí lúc tất toán'],
@@ -89,7 +89,7 @@
     ] },
     { gd: 'Về tới và khoá phiếu', buoc: [
       { so: 14, vai: ['expacct', 'cash'], man: 'phieu-xuat-xe', ten: 'Mục V, VI: KT Chi phí kiểm · ghi sổ → quỹ chi',
-        lam: ['KT Chi phí kiểm, ghi sổ sửa chữa và chi khác', 'Quỹ tiền mặt cảng cạn chi phần MUA ngoài'],
+        lam: ['KT Chi phí kiểm, ghi sổ sửa chữa và chi khác', 'Quỹ tiền mặt Thà Bốc chi phần MUA ngoài'],
         may: ['Một tờ chi cho cả mục, chỉ phần quỹ trả ngay: dòng lấy kho (đã có phiếu xuất kho phụ tùng), dòng nợ nhà cung cấp theo đợt (lốp…) và dòng tiền mặt đã theo phiếu tạm ứng không tính',
           'Mục VI không sinh tờ chi: mọi dòng hoặc đã theo phiếu tạm ứng, hoặc trả cùng lương, hoặc ghi nợ nhà cung cấp'], ct: ['PC_SC'], ct_khi: { PC_SC: 'lúc quỹ chi mục V / VI' }, sau: 'Mục V, VI: Đã chi' },
       { so: 15, vai: ['acct'], man: 'phieu-xuat-xe', ten: 'KT Thu/Chi VC: Kiểm lại toàn phiếu → Khoá',
@@ -147,7 +147,7 @@
         lam: ['Nhập: số lượng + đơn giá (giá bình quân tính lại)', 'Xuất tay cho xe'], chan: ['Bãi, kế toán không nhập xuất phụ tùng (C1.2)', 'Xuất quá tồn → chặn'],
         ct: ['PNK_PT', 'PXK_PT'] },
       { so: 'P2', vai: ['repair', 'expacct', 'cash'], man: 'sua-chua', o_ke_toan: true, ten: 'Lệnh sửa chữa riêng — bảo dưỡng, xe nằm xưởng (C7.3)',
-        lam: ['Tổ sửa chữa lập lệnh: xe, km, gara; dòng lấy KHO hoặc MUA', 'KT Chi phí kiểm → ghi sổ', 'Quỹ tiền mặt cảng cạn chi phần mua ngoài'],
+        lam: ['Tổ sửa chữa lập lệnh: xe, km, gara; dòng lấy KHO hoặc MUA', 'KT Chi phí kiểm → ghi sổ', 'Quỹ tiền mặt Thà Bốc chi phần mua ngoài'],
         may: ['Dòng lấy kho trừ tồn NGAY LÚC KHAI'], chan: ['Không gắn phiếu xuất xe nào'], ct: ['PXK_PT', 'PC_SC'] },
     ] },
     { gd: 'Bán hàng (phụ tùng · xăng dầu)', buoc: [

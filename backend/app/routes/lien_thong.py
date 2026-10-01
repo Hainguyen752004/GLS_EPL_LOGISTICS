@@ -364,6 +364,6 @@ def lt_thang_moi_nhat(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi))
     `lap` theo ngày lập, `xe_di` theo ngày xe đi, không có thì ngày lập)."""
     from models import Trip
     p = (db.query(Trip.doc_date, Trip.out_date).filter(Trip.doc_date.isnot(None))         # DESC xếp NULL lên đầu
-         .order_by(Trip.doc_date.desc(), Trip.doc_no.desc()).first())
+         .order_by(Trip.doc_date.desc().nullslast(), Trip.doc_no.desc()).first())
     thang = lambda d: d.strftime("%Y-%m") if d else None
     return {"lap": thang(p.doc_date) if p else None, "xe_di": thang(p.out_date or p.doc_date) if p else None}

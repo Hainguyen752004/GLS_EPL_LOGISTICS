@@ -1,26 +1,32 @@
-/* Màn ĐĂNG NHẬP — sơ đồ bảy bước của một chuyến hàng và khung chọn nhanh tài khoản (bản mẫu chủ dự án gửi 30/09).
+/* Màn ĐĂNG NHẬP — sơ đồ tám bước của một chuyến hàng và khung chọn nhanh tài khoản (bản mẫu chủ dự án gửi 30/09).
  *
  * Bấm một bước trên sơ đồ → thẻ bên dưới nói việc của bước đó, vai nào làm; khung tài khoản bên phải chỉ còn tài khoản của
  * các vai đó ("Hiện tất cả" để bỏ lọc). Mở màn thì KHÔNG lọc: lối tắt demo phải hiện đủ mọi tài khoản.
- * Bước và vai theo đúng bảng Nhiệm Vụ của khách: không có vai "Điều độ" — phiếu xuất xe do Bãi Thà Bốc lập. Việc của từng
- * bước theo phạm vi 30/09: trang này chỉ lập phiếu ĐỀ NGHỊ; cấp dầu là bên kho, thu tiền / công nợ là bên kế toán.
+ * Bước, nơi làm và vai theo ĐÚNG hệ thống (rà 01/10 — bản mẫu đặt sai: lập phiếu ở mỏ Kasi, quỹ chi tạm ứng ở gần cuối,
+ * kế toán ở cửa khẩu / cảng, thiếu tài xế · tổ sửa chữa · thủ kho phụ tùng):
+ *   · chuỗi từng mục theo bảng "Nhiệm Vụ" (services/phan_quyen.py): Bãi nhập → KT kiểm → KT ghi sổ → Quỹ chi;
+ *   · tạm ứng chi TRƯỚC khi xe đi (máy chặn xuất phát khi chưa nhận tạm ứng);
+ *   · mỗi vai có tài khoản phải nằm ở ít nhất một bước (bộ kiểm giao diện thử điều này).
+ * Phạm vi 30/09: trang này chỉ lập phiếu ĐỀ NGHỊ; cấp dầu là bên kho, hoá đơn / thu tiền / công nợ là bên kế toán.
  * Không có số liệu "đang chờ" (chủ dự án chốt 30/09): trang này ai cũng mở được, chưa đăng nhập.
  * Danh sách tài khoản do js/chung.js tải (/api/tai-khoan-mau) rồi gọi EPL.lg.datDs(ds); bấm thẻ → EPL.lgVao().
  */
 (function () {
   const { NN, esc } = EPL;
   const TD = () => window.EPL_TU_DIEN || {};
-  // x, y: vị trí (%) trên sơ đồ; lab: nhãn phía trên (up) hay dưới (down)
+  // x, y: vị trí (%) trên sơ đồ; lab: nhãn phía trên (up) hay dưới (down). Tám bước đi LƯỢN HAI HÀNG (01/10): bước lẻ ở hàng
+  // trên nhãn hướng lên, bước chẵn ở hàng dưới nhãn hướng xuống — xếp một đường dốc thì nhãn bên phải đè lên nhau.
   const BUOC = [
-    { id: 'dispatch', x: 5, y: 30, lab: 'up', vai: ['yard'] },
-    { id: 'fuel', x: 18, y: 34, lab: 'down', vai: ['depot', 'fuel'] },
-    { id: 'yard', x: 37, y: 52, lab: 'up', vai: ['yard'] },
-    { id: 'cost', x: 50, y: 60, lab: 'down', vai: ['expacct'] },
-    { id: 'revenue', x: 61, y: 68, lab: 'up', vai: ['rev', 'acct'] },
-    { id: 'cash', x: 75, y: 75, lab: 'down', vai: ['treasury', 'cash'] },
-    { id: 'boss', x: 94, y: 92, lab: 'up', vai: ['admin'] },
+    { id: 'dispatch', x: 5, y: 30, lab: 'up', vai: ['yard'] },                         // Bãi Thà Bốc lập phiếu, in hai tờ đề nghị
+    { id: 'fuel', x: 17, y: 58, lab: 'down', vai: ['depot'] },                         // thủ kho quét QR, cấp dầu
+    { id: 'advance', x: 30, y: 30, lab: 'up', vai: ['expacct', 'cash'] },              // KT Chi phí ghi sổ mục IV → quỹ chi
+    { id: 'road', x: 43, y: 58, lab: 'down', vai: ['driver', 'repair', 'parts'] },     // xe chạy: báo cân, dầu, sự cố
+    { id: 'deliver', x: 56, y: 30, lab: 'up', vai: ['driver', 'yard'] },               // ký giao nhận, Bãi xác nhận xe tới
+    { id: 'check', x: 69, y: 58, lab: 'down', vai: ['acct', 'fuel', 'expacct', 'treasury', 'cash'] },   // kiểm, ghi sổ, chi I–VI
+    { id: 'lock', x: 81, y: 30, lab: 'up', vai: ['acct', 'rev'] },                     // khoá phiếu → đề nghị thu → SO
+    { id: 'boss', x: 95, y: 58, lab: 'down', vai: ['admin'] },
   ];
-  const XE = { sau: 1, t: 0.5 };            // hình minh hoạ: một xe đang giữa bước 2 và bước 3
+  const XE = { sau: 3, t: 0.5 };            // hình minh hoạ: một xe đang chạy, giữa bước 4 và bước 5
   // nhóm vai của khung tài khoản — người dùng nghĩ theo năm nhóm việc, không theo mười hai vai
   const NHOM_VAI = [
     { id: 'admin', khoa: 'lg_g_admin', vai: ['admin'] },
@@ -74,7 +80,7 @@
   function veBuoc() {
     $('lgBuoc').innerHTML = BUOC.map((b, i) => {
       const chon = st.buoc === b.id, hai = NN.lang === 'both';
-      return '<button type="button" class="node is-' + b.lab + (b.x > 80 ? ' is-left' : '') + (i > XE.sau ? ' is-todo' : '') + '" role="tab" data-buoc="' + b.id + '" aria-selected="' + chon + '"' +
+      return '<button type="button" class="node is-' + b.lab + (b.x > 88 ? ' is-left' : '') + (i > XE.sau ? ' is-todo' : '') + '" role="tab" data-buoc="' + b.id + '" aria-selected="' + chon + '"' +
         ' style="left:' + b.x + '%;top:' + b.y + '%" title="' + esc(NN.t('lg2_s_' + b.id) + ': ' + tenVai(b).map(k => NN.t(k)).join(', ')) + '">' +
         '<span class="dot">' + (i + 1) + '</span><span class="txt"><b lang="lo">' + esc(hai ? chuLo('lg2_p_' + b.id) : NN.t('lg2_p_' + b.id)) + '</b>' +
         '<small>' + esc(hai ? chuVi('lg2_s_' + b.id) : NN.t('lg2_s_' + b.id)) + '</small></span></button>';

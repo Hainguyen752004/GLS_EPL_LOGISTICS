@@ -450,8 +450,11 @@ def ds_phieu(response: Response, db: Session = Depends(get_db), user=Depends(ngu
     co = max(1, min(int(co or 50), CO_TOI_DA))
     trang = max(1, int(trang or 1))
     dem_tran(qs, response)
-    # `sap=cu`: cũ nhất trước (màn Lịch sử phiếu của tài xế, 30/09); mặc định mới nhất trước
-    thu_tu = (Trip.doc_date.asc(), Trip.doc_no.asc()) if sap == "cu" else (Trip.doc_date.desc(), Trip.doc_no.desc())
+    # `sap=cu`: cũ nhất trước (màn Lịch sử phiếu của tài xế, 30/09); mặc định mới nhất trước. Phiếu KHÔNG có ngày lập luôn
+    # nằm cuối (01/10): PostgreSQL mặc định xếp NULL lên đầu khi giảm dần, nên một phiếu thiếu ngày đứng đầu danh sách và
+    # màn Tổng quan lấy "tháng của phiếu mới nhất" ra ô trống → rơi về tháng hiện tại không có số liệu.
+    thu_tu = ((Trip.doc_date.asc().nullslast(), Trip.doc_no.asc()) if sap == "cu"
+              else (Trip.doc_date.desc().nullslast(), Trip.doc_no.desc()))
     ds = qs.order_by(*thu_tu).offset((trang - 1) * co).limit(co).all()
     thu = da_thu_theo_phieu(db, [p.id for p in ds])
     nap = nap_lo(db, ds)

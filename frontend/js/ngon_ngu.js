@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2062 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2082 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -1488,7 +1488,7 @@ window.EPL_TU_DIEN = {
   "en": "Fuel store accountant: enter prices of fuel bought outside, then verify and book section III; fuel from a store takes the store average cost."
  },
  "hint_cash": {
-  "vi": "Vai trò <b>Quỹ tiền mặt cảng cạn</b>: thanh toán mục IV, V, VI đã ghi sổ; đánh dấu \"Đã chi\".",
+  "vi": "Vai trò <b>Quỹ tiền mặt Thà Bốc</b>: thanh toán mục IV, V, VI đã ghi sổ; đánh dấu \"Đã chi\".",
   "lo": "<b>ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ</b>: ຈ່າຍໜ້າ IV, V, VI ທີ່ບັນທຶກແລ້ວ; ໝາຍ \"ຈ່າຍແລ້ວ\".",
   "en": "Dry-port petty cash: pay booked sections IV, V, VI; mark \"Paid\"."
  },
@@ -1688,9 +1688,9 @@ window.EPL_TU_DIEN = {
   "en": "EPL Transport Management"
  },
  "login_sub": {
-  "vi": "Mỗi người dùng đăng nhập bằng tài khoản riêng. Quyền nhập, kiểm tra, ghi sổ, chi tiền và lập hóa đơn phụ thuộc vào vai trò của tài khoản.",
-  "lo": "ຜູ້ໃຊ້ແຕ່ລະຄົນເຂົ້າລະບົບດ້ວຽບັນຊີຂອງຕົນ. ສິດລົງຂໍ້ມູນ, ກວດ, ບັນທຶກ, ຈ່າຽ ແລະ ອອກໃບເກັບເງິນ ຂຶ້ນກັບໜ້າທີ່ຂອງບັນຊີ.",
-  "en": "Each user signs in with their own account. Entry, verification, booking, payment and invoicing rights depend on the role."
+  "vi": "Mỗi người dùng đăng nhập bằng tài khoản riêng. Quyền nhập, kiểm tra, ghi sổ và chi theo đề nghị phụ thuộc vào vai trò của tài khoản; hoá đơn và công nợ do bên kế toán làm.",
+  "lo": "ຜູ້ໃຊ້ແຕ່ລະຄົນເຂົ້າລະບົບດ້ວຍບັນຊີຂອງຕົນ. ສິດລົງຂໍ້ມູນ, ກວດ, ບັນທຶກ ແລະ ຈ່າຍຕາມໃບສະເໜີ ຂຶ້ນກັບໜ້າທີ່ຂອງບັນຊີ; ໃບເກັບເງິນ ແລະ ໜີ້ ຝ່າຍບັນຊີເປັນຜູ້ເຮັດ.",
+  "en": "Each user signs in with their own account. Entry, checking, booking and payment-on-request rights depend on the role; invoices and receivables are handled by accounting."
  },
  "login_h": {
   "vi": "Đăng nhập",
@@ -5138,9 +5138,9 @@ window.EPL_TU_DIEN = {
   "en": "Vientiane fuel store accountant"
  },
  "r_cash": {
-  "vi": "Quỹ tiền mặt cảng cạn",
+  "vi": "Quỹ tiền mặt Thà Bốc",
   "lo": "ຄັງເງິນສົດຍ່ອຍ ການເງິນທ່າບົກ",
-  "en": "Dry-port petty cash"
+  "en": "Thà Bốc petty cash"
  },
  "r_rev": {
   "vi": "KT Doanh thu VC",
@@ -9498,9 +9498,9 @@ window.EPL_TU_DIEN = {
   "en": "Signing in as"
  },
  "lg2_p_dispatch": {
-  "vi": "Mỏ quặng Kasi",
-  "lo": "ກາສີ",
-  "en": "Kasi mine"
+  "vi": "Bãi EPL Thà Bốc",
+  "lo": "ສະໜາມ EPL ທ່າບົກ",
+  "en": "EPL yard, Thà Bốc"
  },
  "lg2_s_dispatch": {
   "vi": "Lập phiếu xuất xe",
@@ -9508,19 +9508,19 @@ window.EPL_TU_DIEN = {
   "en": "Dispatch slip"
  },
  "lg2_t_dispatch_1": {
-  "vi": "Chọn xe, tài xế, tuyến cho DO",
-  "lo": "ເລືອກລົດ, ໂຊເຟີ, ເສັ້ນທາງໃຫ້ DO",
-  "en": "Pick the truck, driver and route for the DO"
+  "vi": "Chọn xe, tài xế, tuyến cho DO; nhập số lượng các khoản chi (Bãi không nhập tiền)",
+  "lo": "ເລືອກລົດ, ໂຊເຟີ, ເສັ້ນທາງໃຫ້ DO; ປ້ອນຈຳນວນລາຍຈ່າຍ (ສະໜາມບໍ່ປ້ອນເງິນ)",
+  "en": "Pick the truck, driver and route for the DO; enter cost quantities (the yard enters no amounts)"
  },
  "lg2_t_dispatch_2": {
-  "vi": "In phiếu đề nghị xuất kho nhiên liệu có mã QR",
-  "lo": "ພິມໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ມີ QR",
-  "en": "Print the fuel stock-out request with its QR code"
+  "vi": "In phiếu đề nghị tạm ứng và phiếu đề nghị xuất kho nhiên liệu có mã QR",
+  "lo": "ພິມໃບສະເໜີເບີກເງິນລ່ວງໜ້າ ແລະ ໃບສະເໜີເບີກນໍ້າມັນອອກສາງ ມີ QR",
+  "en": "Print the advance request and the fuel stock-out request with QR codes"
  },
  "lg2_p_fuel": {
   "vi": "Kho dầu Thà Bốc",
   "lo": "ສາງນໍ້າມັນ ທ່າບົກ",
-  "en": "Thabok fuel depot"
+  "en": "Thà Bốc fuel depot"
  },
  "lg2_s_fuel": {
   "vi": "Cấp dầu theo đề nghị",
@@ -9528,9 +9528,9 @@ window.EPL_TU_DIEN = {
   "en": "Fuel issued on request"
  },
  "lg2_t_fuel_1": {
-  "vi": "Quét mã QR phiếu đề nghị, đối chiếu đúng xe",
-  "lo": "ສະແກນ QR ໃບສະເໜີ, ກວດລົດໃຫ້ຖືກ",
-  "en": "Scan the request QR, check it is the right truck"
+  "vi": "Thủ kho quét mã QR phiếu đề nghị, đối chiếu đúng xe",
+  "lo": "ຜູ້ຮັກສາສາງ ສະແກນ QR ໃບສະເໜີ, ກວດລົດໃຫ້ຖືກ",
+  "en": "The storekeeper scans the request QR and checks it is the right truck"
  },
  "lg2_t_fuel_2": {
   "vi": "Bên kho cấp dầu và trừ tồn",
@@ -10311,5 +10311,105 @@ window.EPL_TU_DIEN = {
   "vi": "Lần gửi trước chưa được: {loi}",
   "lo": "ສົ່ງຄັ້ງກ່ອນບໍ່ສຳເລັດ: {loi}",
   "en": "Last send failed: {loi}"
+ },
+ "lg2_p_advance": {
+  "vi": "Quỹ tiền mặt Thà Bốc",
+  "lo": "ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ",
+  "en": "Thà Bốc petty cash"
+ },
+ "lg2_s_advance": {
+  "vi": "Chi tạm ứng trước khi đi",
+  "lo": "ຈ່າຍເງິນລ່ວງໜ້າ ກ່ອນອອກລົດ",
+  "en": "Advance paid before departure"
+ },
+ "lg2_t_advance_1": {
+  "vi": "KT Chi phí kiểm và ghi sổ tiền đi đường (mục IV)",
+  "lo": "ບັນຊີລາຍຈ່າຍ ກວດ ແລະ ບັນທຶກເງິນເດີນທາງ (ພາກ IV)",
+  "en": "Expense accounting checks and books the trip cash (section IV)"
+ },
+ "lg2_t_advance_2": {
+  "vi": "Quỹ quét mã QR phiếu đề nghị tạm ứng, chi tiền mặt cho tài xế — chưa nhận tạm ứng thì xe chưa xuất phát",
+  "lo": "ຄັງເງິນ ສະແກນ QR ໃບສະເໜີເບີກເງິນລ່ວງໜ້າ, ຈ່າຍເງິນສົດໃຫ້ໂຊເຟີ — ຍັງບໍ່ໄດ້ຮັບເງິນລ່ວງໜ້າ ລົດຍັງບໍ່ອອກ",
+  "en": "The cashier scans the advance-request QR and pays the driver in cash — no departure before the advance"
+ },
+ "lg2_p_road": {
+  "vi": "Mỏ Kasi · Cửa khẩu Nậm Phao",
+  "lo": "ກາສີ · ດ່ານ ນໍ້າພາວ",
+  "en": "Kasi mine · Nam Phao border"
+ },
+ "lg2_s_road": {
+  "vi": "Xe chạy, báo về trên điện thoại",
+  "lo": "ລົດແລ່ນ, ແຈ້ງຜ່ານໂທລະສັບ",
+  "en": "On the road, reporting by phone"
+ },
+ "lg2_t_road_1": {
+  "vi": "Tài xế bấm xuất phát, báo cân ở mỏ, khai đổ dầu dọc đường, báo sự cố",
+  "lo": "ໂຊເຟີກົດອອກລົດ, ແຈ້ງນ້ຳໜັກທີ່ບໍ່ແຮ່, ແຈ້ງການໃສ່ນໍ້າມັນຂ້າງທາງ, ແຈ້ງເຫດການ",
+  "en": "The driver taps depart, reports the mine weight, roadside refuelling and incidents"
+ },
+ "lg2_t_road_2": {
+  "vi": "Tổ sửa chữa duyệt báo hỏng, lấy phụ tùng kho hay mua ngoài",
+  "lo": "ໜ່ວຍສ້ອມແປງ ອະນຸມັດການແຈ້ງລົດເສຍ, ເອົາອະໄຫຼ່ຈາກສາງ ຫຼື ຊື້ນອກ",
+  "en": "The repair team approves breakdown reports, using stock parts or buying outside"
+ },
+ "lg2_p_deliver": {
+  "vi": "Cảng · nơi giao hàng",
+  "lo": "ທ່າເຮືອ · ບ່ອນສົ່ງສິນຄ້າ",
+  "en": "Port · delivery point"
+ },
+ "lg2_s_deliver": {
+  "vi": "Giao hàng, xe về",
+  "lo": "ສົ່ງສິນຄ້າ, ລົດກັບ",
+  "en": "Delivery and return"
+ },
+ "lg2_t_deliver_1": {
+  "vi": "Người nhận ký giao nhận ngay trên điện thoại tài xế (POD)",
+  "lo": "ຜູ້ຮັບເຊັນມອບຮັບໃນໂທລະສັບໂຊເຟີ (POD)",
+  "en": "The receiver signs the delivery note on the driver's phone (POD)"
+ },
+ "lg2_t_deliver_2": {
+  "vi": "Bãi cân, xác nhận xe đã tới; tài xế báo ngày về, km về",
+  "lo": "ສະໜາມຊັ່ງ, ຢືນຢັນລົດຮອດແລ້ວ; ໂຊເຟີແຈ້ງວັນກັບ, ກມ ກັບ",
+  "en": "The yard weighs and confirms arrival; the driver reports the return date and km"
+ },
+ "lg2_p_check": {
+  "vi": "Văn phòng Viêng Chăn",
+  "lo": "ຫ້ອງການ ວຽງຈັນ",
+  "en": "Vientiane office"
+ },
+ "lg2_s_check": {
+  "vi": "Kiểm, ghi sổ, chi từng mục",
+  "lo": "ກວດ, ບັນທຶກ, ຈ່າຍແຕ່ລະພາກ",
+  "en": "Check, book and pay each section"
+ },
+ "lg2_t_check_1": {
+  "vi": "KT Thu/Chi kiểm mục I–II · KT kho xăng dầu mục III · KT Chi phí mục IV–VI",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ກວດພາກ I–II · ບັນຊີສາງນໍ້າມັນ ພາກ III · ບັນຊີລາຍຈ່າຍ ພາກ IV–VI",
+  "en": "Income/expense accounting checks I–II · fuel accounting III · expense accounting IV–VI"
+ },
+ "lg2_t_check_2": {
+  "vi": "Thủ quỹ Viêng Chăn chi mục III, quỹ Thà Bốc chi mục V–VI theo phiếu đã ghi sổ",
+  "lo": "ຄັງເງິນ ວຽງຈັນ ຈ່າຍພາກ III, ຄັງເງິນສົດຍ່ອຍ ທ່າບົກ ຈ່າຍພາກ V–VI ຕາມໃບທີ່ບັນທຶກແລ້ວ",
+  "en": "The Vientiane treasury pays III, Thà Bốc petty cash pays V–VI once booked"
+ },
+ "lg2_p_lock": {
+  "vi": "Kế toán · công nợ",
+  "lo": "ບັນຊີ · ໜີ້",
+  "en": "Accounting · receivables"
+ },
+ "lg2_s_lock": {
+  "vi": "Khoá phiếu, đề nghị thu",
+  "lo": "ລັອກໃບ, ສະເໜີຮັບເງິນ",
+  "en": "Lock slip, collection request"
+ },
+ "lg2_t_lock_1": {
+  "vi": "KT Thu/Chi khoá phiếu, máy lập phiếu đề nghị thu cước",
+  "lo": "ບັນຊີລາຍຈ່າຍ/ຮັບ ລັອກໃບ, ລະບົບສ້າງໃບສະເໜີຮັບເງິນຄ່າຂົນສົ່ງ",
+  "en": "Income/expense accounting locks the slip; the system raises the freight collection request"
+ },
+ "lg2_t_lock_2": {
+  "vi": "Tạo SO bên kế toán; hoá đơn, thu tiền, công nợ do bên kế toán làm — trang này chỉ xem",
+  "lo": "ສ້າງ SO ຢູ່ຝ່າຍບັນຊີ; ໃບເກັບເງິນ, ຮັບເງິນ, ໜີ້ ຝ່າຍບັນຊີເຮັດ — ໜ້ານີ້ເບິ່ງຢ່າງດຽວ",
+  "en": "Create the SO in accounting; invoices, payments and receivables are done there — view only here"
  }
 };

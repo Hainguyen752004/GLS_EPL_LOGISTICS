@@ -641,7 +641,7 @@ def xuat_tai_xe(db, d, chi_tiet=False, dem=None, dang=None, xe=None, bang=None):
         r["phieu_hien_tai"] = dang.get(d.id)
     else:
         p = (db.query(Trip).filter(Trip.driver_id == d.id, Trip.transport_status != "arrived")
-             .order_by(Trip.doc_date.desc()).first())
+             .order_by(Trip.doc_date.desc().nullslast()).first())
         r["phieu_hien_tai"] = p.doc_no if p else None
     if chi_tiet:
         r["licenses"] = [_dict(l) for l in db.query(DriverLicense).filter(DriverLicense.driver_id == d.id)

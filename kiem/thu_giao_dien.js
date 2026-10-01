@@ -91,7 +91,7 @@ async function main() {
   assert.ok(d.querySelector('#login .hero') && d.querySelector('#login .lg-panel'),
     'màn đăng nhập phải có hai nửa: thương hiệu và biểu mẫu');
   assert.ok(d.querySelector('#login .hero__logo'), 'nửa trái phải có ảnh logo EPL');
-  assert.ok(d.querySelector('#login .map-svg') && d.querySelectorAll('#lgBuoc .node').length === 7, 'nửa trái phải có sơ đồ bảy bước');
+  assert.ok(d.querySelector('#login .map-svg') && d.querySelectorAll('#lgBuoc .node').length === 8, 'nửa trái phải có sơ đồ tám bước');
   assert.ok(d.getElementById('lgThe').textContent.trim(), 'thẻ bước đang chọn phải có nội dung');
   assert.ok(!/\d+\s*(xe đang chạy|phiếu chờ)/.test(d.querySelector('#login .hero').textContent), 'trang đăng nhập không được lộ số liệu đang chạy');
   assert.ok(d.getElementById('lgMat'), 'màn đăng nhập phải có nút hiện/ẩn mật khẩu');
@@ -108,7 +108,7 @@ async function main() {
   assert.ok(nhom.length >= 4, 'tài khoản phải gom theo nhóm vai, đang có ' + nhom.length);
   assert.ok(nhom.every(x => x.textContent.trim() && !/^lg_g_/.test(x.textContent.trim())),
     'tên nhóm vai không được lộ khoá thô');
-  console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ 7 bước · %d thẻ gợi ý trong %d nhóm vai',
+  console.log('✓ màn đăng nhập: hai nửa · logo · sơ đồ 8 bước · %d thẻ gợi ý trong %d nhóm vai',
     goiY.length, nhom.length);
   // bấm bước "Cấp dầu" trên sơ đồ → khung tài khoản chỉ còn thủ kho / KT kho xăng dầu; "Hiện tất cả" → đủ lại
   d.querySelector('#lgBuoc [data-buoc="fuel"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
@@ -118,6 +118,20 @@ async function main() {
     d.getElementById('lgHienHet').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     assert.strictEqual(d.querySelectorAll('#acctList .acc').length, goiY.length, 'Hiện tất cả phải trả đủ tài khoản');
     console.log('✓ sơ đồ đăng nhập: bấm bước cấp dầu còn %d tài khoản kho · Hiện tất cả đủ lại %d', con.length, goiY.length);
+  }
+  // 01/10: sơ đồ phải phủ MỌI vai có tài khoản — bản mẫu cũ bỏ sót tài xế, tổ sửa chữa, thủ kho phụ tùng (bấm bước nào cũng
+  // không ra tài khoản của họ). Bấm lần lượt từng bước, gộp tài khoản lại phải đủ cả danh sách.
+  {
+    const gop = new Set();
+    // mỗi lần bấm sơ đồ vẽ lại — lấy lại nút theo mã bước, không giữ nút cũ đã bị gỡ khỏi trang
+    for (const id of [...d.querySelectorAll('#lgBuoc .node')].map(n => n.dataset.buoc)) {
+      d.querySelector('#lgBuoc [data-buoc="' + id + '"]').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+      d.querySelectorAll('#acctList .acc').forEach(b => gop.add(b.dataset.u));
+    }
+    const thieu = goiY.map(b => b.dataset.u).filter(u => !gop.has(u));
+    assert.deepStrictEqual(thieu, [], 'tài khoản không thuộc bước nào trên sơ đồ: ' + thieu.join(','));
+    d.getElementById('lgHienHet').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+    console.log('✓ sơ đồ đăng nhập: 8 bước phủ đủ %d tài khoản (tài xế, tổ sửa chữa, thủ kho phụ tùng đều có bước)', gop.size);
   }
 
   // 0b. Bấm thẻ tài khoản rồi bấm NÚT đăng nhập — đúng đường người dùng đi. Trước đây bộ kiểm gọi
