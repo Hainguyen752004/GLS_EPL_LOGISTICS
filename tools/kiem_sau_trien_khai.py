@@ -15,10 +15,13 @@ Biến môi trường, hoặc dòng KEY=giá_trị trong `.env` của EPL_LAO_RE
   QLSX_USERNAME / QLSX_PASSWORD / QLSX_ORG_ID  tài khoản tích hợp (ưu tiên 2; có thì kiểm đăng nhập)
   EPL_ACC_CODE_TOKEN                         token đang mượn (ưu tiên 3)
   QLSX_TIEN_USD                              mã tiền USD đặt tay khi USD đang tắt bên kế toán
-  QLSX_DOTY_CHI_TAM_UNG, QLSX_DOTY_TRA_CHU_XE   mã loại chứng từ nếu DB host khác 59 / 60
+  QLSX_DOTY_CHI_TAM_UNG, QLSX_DOTY_CHI_KHAC, QLSX_DOTY_THU_KHAC   mã loại chứng từ nếu DB host khác 59 / 60 / 17
   KIEM_SEP_TEN / KIEM_SEP_MAT_KHAU           (tuỳ chọn) tài khoản Sếp trang điều xe → trạng thái bàn giao, máy đang gửi sang
   KIEM_PHIEN_SEP                             (tuỳ chọn) phiên Sếp có sẵn, thay cho tên + mật khẩu
   KIEM_KHOA_BAN_GIAO                         (tuỳ chọn) khoá bàn giao (= LogisticsSource:ApiKey) → đọc thẳng danh sách DO
+
+Tham số --dot-1: đợt 1, CHƯA đặt LogisticsSource — API (từ commit ce95b3c) trả 503 "chưa cấu hình nguồn Logistics" cho DO là
+ĐÚNG; các dòng cần DO thì bỏ qua.
 
 Không theo chuyển hướng, giống API anh Tune (`AllowAutoRedirect = false`): địa chỉ chuyển hướng là báo SAI.
 Thoát mã 0 khi không có dòng SAI, 1 khi có. Hướng dẫn: DOCS/md/HUONG_DAN_TRIEN_KHAI_ANH_TUNE.md, mục 8.
@@ -38,7 +41,9 @@ GOC_DU_AN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TIEN_TO_DO = "EPLLAO-"                     # services/ban_giao.py — DO của trang điều xe Lào
 MA_CON = ("1371", "4021", "4022")          # ba mã con anh Khampla, mở 01/10 (hợp đồng 12.12.1)
 MA_TONG_HOP = ("137", "402")               # cha của ba mã con: phải là tài khoản tổng hợp
-MA_PHIEU_CHI = ("1011", "1012", "1021", "1601", "4022", "621")   # mã các phiếu chi bên em gửi + bút toán thuê xe
+# mã bên em dùng: phiếu chi / thu (tiền 1011 · 1012 · 1021 · 1022, tạm ứng 1601, chủ xe 4022, NCC 4021, mục V 614, mục VI 625)
+# + bút toán chờ gửi (thuê xe 621/4022, ghi nợ NCC 625 · 614/4021, quyết toán tạm ứng 625/1601)
+MA_PHIEU_CHI = ("1011", "1012", "1021", "1022", "1601", "4021", "4022", "614", "621", "625")
 CHO_GIAY = 20
 TU_KHOA_KHONG_CO = "kiem-khong-co-zq9"     # tìm chữ này phải ra 0 dòng: Total đúng sau lọc
 
@@ -160,7 +165,14 @@ def do_dieu_xe(dx):
 
 
 # ---------------------------------------------------------------- A. API anh Tune
-def kiem_api(api, cfg, dx_info, tu_khoa):
+def _bo_dong_do(ctx, ly_do):
+    """Hai dòng cần danh sách DO của trang điều xe Lào: bỏ qua, giữ số thứ tự dòng như lần chạy đủ."""
+    for v in ("Vụ việc: đọc DO từ trang điều xe", "Tìm DO theo từ khoá → SearchScope ALL"):
+        ghi("--", v, ly_do, "")
+    return ctx
+
+
+def kiem_api(api, cfg, dx_info, tu_khoa, dot_1=False):
     ctx = {}
     # A1 — API sống: GetAllCurrency không đòi token
     ma, than, giay, loi, toi = goi("GET", api + "/api/v1/common/GetAllCurrency")
@@ -245,11 +257,15 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
             ("Phiếu chi dùng các mã này sẽ bị từ chối \"tài khoản không hợp lệ theo quốc gia\". Mở mã thiếu (mục 5)."
              if thieu else ""))
 
-    # A5 — loại chứng từ 58 / 59 / 60
+    # A5 — loại chứng từ: 58 chi công nợ (WEB), 59 Chi trước (tạm ứng), 60 Chi khác (trả chủ xe, mục V–VI, NCC, tất toán chi bù),
+    # 17 Thu khác (tất toán: tài xế nộp lại). 58 / 59 / 60 phải là loại CHI (CMP), 17 là loại THU (CMR).
     r, loi, ma = doc_tune(api, "/api/v1/accounting/cmpayment-receipt/document-types?voucherType=ALL", token)
-    can = {58: "chi công nợ", cfg.so("QLSX_DOTY_CHI_TAM_UNG", 59): "tạm ứng", cfg.so("QLSX_DOTY_TRA_CHU_XE", 60): "trả chủ xe"}
+    chi_khac = cfg.so("QLSX_DOTY_CHI_KHAC", cfg.so("QLSX_DOTY_TRA_CHU_XE", 60))
+    can = [(58, "DOTY_ISCMP"), (cfg.so("QLSX_DOTY_CHI_TAM_UNG", 59), "DOTY_ISCMP"), (chi_khac, "DOTY_ISCMP"),
+           (cfg.so("QLSX_DOTY_THU_KHAC", 17), "DOTY_ISCMR")]
+    viec = "Loại chứng từ %s" % " / ".join(str(k) for k, _ in can)
     if r is None:
-        ghi("SAI", "Loại chứng từ chi %s" % " / ".join(str(k) for k in can), loi, "Xem log API (document-types).")
+        ghi("SAI", viec, loi, "Xem log API (document-types).")
     else:
         by = {}
         for x in r if isinstance(r, list) else []:
@@ -257,11 +273,11 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
                 by[int(x.get("DOTY_AUTOID"))] = x
             except (TypeError, ValueError):
                 pass
-        sai = [k for k in can if k not in by or not by[k].get("DOTY_ISCMP")]
-        ghi("SAI" if sai else "✓", "Loại chứng từ chi %s" % " / ".join(str(k) for k in can),
-            " · ".join("%d %s" % (k, by[k].get("DOTY_NAME") if k in by else "KHÔNG CÓ") for k in can),
-            ("DB host đánh số loại chứng từ khác. Báo bên em mã đúng để đặt QLSX_DOTY_CHI_TAM_UNG / QLSX_DOTY_TRA_CHU_XE; "
-             "WEB phân loại theo 58 / 60 (mục 8.4)." if sai else ""))
+        sai = [k for k, co in can if k not in by or not by[k].get(co)]
+        ghi("SAI" if sai else "✓", viec,
+            " · ".join("%d %s" % (k, by[k].get("DOTY_NAME") if k in by else "KHÔNG CÓ") for k, _ in can),
+            ("DB host đánh số loại chứng từ khác (hoặc sai loại thu / chi). Báo bên em mã đúng để đặt QLSX_DOTY_CHI_TAM_UNG / "
+             "QLSX_DOTY_CHI_KHAC / QLSX_DOTY_THU_KHAC; WEB phân loại theo 58 / 60 và 15 / 17 (mục 8.4)." if sai else ""))
 
     # A6 — tiền: LAK bật, USD bật hoặc đặt tay
     ten_tien = {str(c.get("CUR_NAME") or "").upper(): c for c in tien if isinstance(c, dict)}
@@ -314,11 +330,38 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
         else:
             ghi("✓", "Kỳ tài chính hôm nay", "kỳ %s (mã %s) đang mở" % (ky[0].get("FICI_NAME"), ky[0].get("FICI_AUTOID")))
 
-    # A9 — màn Vụ việc đọc DO từ trang điều xe (API anh → LogisticsSource → /api/handover/…)
+    # A9 — nguồn DO đã cấu hình chưa. Từ commit ce95b3c: thiếu LogisticsSource:BaseUrl → 503 "Chưa cấu hình nguồn Logistics"
+    # (bỏ mặc định ngầm EPL_System 1506). Bản cũ hơn không có 503: thiếu BaseUrl thì đọc 1506 (DO mã DO-…).
     r, loi, ma = doc_tune(api, "/api/v1/accounting/cash-voucher-references?type=DO&page=1&pageSize=5", token)
+    cau = loi or ""
+    viec = "Nguồn DO: LogisticsSource:BaseUrl"
+    rows = ((r or {}).get("Rows") or []) if isinstance(r, dict) else []
+    khac = [x.get("SourceId") for x in rows if not str(x.get("SourceId") or "").startswith(TIEN_TO_DO)]
+    if ma == 503 and "Chưa cấu hình nguồn Logistics" in cau:
+        if dot_1:
+            ghi("✓", viec, "HTTP 503 \"chưa cấu hình\" — đúng cho đợt 1 (chưa đặt LogisticsSource)")
+        else:
+            ghi("SAI", viec, "HTTP 503 — chưa cấu hình nguồn Logistics (LogisticsSource:BaseUrl)",
+                "Chưa đặt LogisticsSource:BaseUrl + ApiKey trong appsettings.<Env>.json của host (mục 4.2). Đang ở đợt 1 thì "
+                "chạy lại với --dot-1.")
+        return _bo_dong_do(ctx, "chưa đặt nguồn DO")
+    if ma == 503 and "không hợp lệ" in cau:
+        ghi("SAI", viec, "HTTP 503 — BaseUrl sai dạng", "LogisticsSource:BaseUrl phải là địa chỉ tuyệt đối http(s)://…/api/ (mục 4.2).")
+        return _bo_dong_do(ctx, "BaseUrl sai dạng")
+    if r is not None and khac:
+        ghi("SAI", viec, "HTTP 200 nhưng DO không phải của trang điều xe Lào (mã %s)" % khac[0],
+            "API đang đọc EPL_System 1506: bản API chưa có ce95b3c (thiếu BaseUrl thì tự trỏ 1506) và chưa đặt BaseUrl, hoặc "
+            "BaseUrl trỏ 1506. Publish đủ nhánh (mục 1.4, 3), đặt LogisticsSource (mục 4.2).")
+        return _bo_dong_do(ctx, "API chưa đọc trang điều xe Lào")
+    if dot_1:
+        ghi("SAI" if r is not None else "--", viec, "đã đặt (HTTP %s), dù chạy với --dot-1" % ma,
+            "Bỏ --dot-1 nếu đã sang đợt 2." if r is not None else "")
+    else:
+        ghi("✓", viec, "đã đặt — API không báo 503 (HTTP %s)" % ma)
+
+    # A10 — màn Vụ việc đọc DO từ trang điều xe (API anh → LogisticsSource → /api/handover/…)
     viec = "Vụ việc: đọc DO từ trang điều xe"
     if r is None:
-        cau = loi or ""
         if "từ chối khoá" in cau:
             sua = "LogisticsSource:ApiKey sai hoặc Sếp đã tạo lại khoá. Dán khoá đang dùng vào cấu hình host (mục 4.2)."
         elif ma == 504 or "quá thời gian" in cau:
@@ -329,18 +372,13 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
             sua = ("Máy host không gọi được LogisticsSource:BaseUrl: sai địa chỉ, chuyển hướng http→https, trang điều xe tắt, "
                    "hoặc trang điều xe chưa tạo khoá (503). Thử lệnh ở mục 9 từ chính máy host.")
         ghi("SAI", viec, cau, sua)
+        ghi("--", "Tìm DO theo từ khoá → SearchScope ALL", "không đọc được danh sách DO", "")
         return ctx
-    rows = (r or {}).get("Rows") or []
     total = (r or {}).get("Total") or 0
     ctx["do_total"] = total
     if not rows:
         ghi("✓", viec, "đọc được, nhưng trang điều xe chưa có DO đã khoá (Total %s)" % total, "")
-        return ctx
-    khac = [x.get("SourceId") for x in rows if not str(x.get("SourceId") or "").startswith(TIEN_TO_DO)]
-    if khac:
-        ghi("SAI", viec, "DO không phải của trang điều xe Lào (mã %s)" % khac[0],
-            "LogisticsSource:BaseUrl chưa đặt nên API dùng nguồn mặc định EPL_System 1506, hoặc host chưa có commit 465748b. "
-            "Đặt LogisticsSource (mục 4.2).")
+        ghi("--", "Tìm DO theo từ khoá → SearchScope ALL", "chưa có DO để tìm", "")
         return ctx
     dau = rows[0]
     ctx["do_mau"] = dau
@@ -349,7 +387,7 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
         "%s DO; dòng đầu %s, số phiếu %s" % (total, dau.get("SourceId"), dau.get("SourceCode")),
         "" if so_phieu_ok else "Màn Vụ việc hiện mã DO thay số phiếu: host chưa có commit 465748b (SourceCode = doc_no).")
 
-    # A10 — tìm theo keyword: SearchScope = ALL, Total đúng sau lọc
+    # A11 — tìm theo keyword: SearchScope = ALL, Total đúng sau lọc
     kw = tu_khoa or dau.get("SourceCode") or ""
     viec = "Tìm DO theo từ khoá → SearchScope ALL"
     r, loi, ma = doc_tune(api, "/api/v1/accounting/cash-voucher-references?type=DO&page=1&pageSize=5&keyword=" + urllib.parse.quote(kw), token)
@@ -369,7 +407,7 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
                    "nạp code mới.")
         elif pham_vi != "ALL":
             sua = ("API chưa chạy bản có commit 64ce7a4 (gửi q sang trang điều xe), hoặc LogisticsSource:BaseUrl trỏ vào một trang "
-                   "điều xe khác bản cũ. Merge + publish lại đúng nhánh (mục 1.3, 3).")
+                   "điều xe khác bản cũ. Merge + publish lại đúng nhánh (mục 1.4, 3).")
         else:
             sua = "Total sau lọc chưa đúng — gửi kết quả này cho bên em."
         ghi("SAI", viec, chi, sua)
@@ -377,7 +415,7 @@ def kiem_api(api, cfg, dx_info, tu_khoa):
 
 
 # ---------------------------------------------------------------- B. trang điều xe
-def kiem_dieu_xe(dx, api, cfg, dx_info, ctx):
+def kiem_dieu_xe(dx, api, cfg, dx_info, ctx, dot_1=False):
     kq, chi, sua = dx_info["loi_song"]
     ghi(kq, "Trang điều xe trả lời", chi, sua)
     if not dx_info["song"]:
@@ -398,6 +436,9 @@ def kiem_dieu_xe(dx, api, cfg, dx_info, ctx):
         ma, than, giay, loi, toi = goi("GET", dx + "/api/handover/delivery-orders?page=1&page_size=1", khoa)
         if ma == 200 and isinstance(than, dict):
             t = ((than.get("data") or {}).get("total"))
+            dong = (than.get("data") or {}).get("items") or []
+            if dong and isinstance(dong[0], dict):
+                ctx["do_id_dx"] = dong[0].get("do_id")             # DO mẫu cho dòng "gửi sang đúng API" khi API chưa đọc DO
             khop = ctx.get("do_total") is None or t == ctx.get("do_total")
             ghi("✓" if khop else "SAI", "Khoá bàn giao đọc được danh sách DO",
                 "HTTP 200, %s DO%s" % (t, "" if ctx.get("do_total") is None else ("; API anh thấy %s" % ctx["do_total"])),
@@ -426,9 +467,9 @@ def kiem_dieu_xe(dx, api, cfg, dx_info, ctx):
     if ma == 200 and isinstance(than, dict):
         n, co = than.get("so_do_ban_giao_duoc"), than.get("co_khoa")
         khop = ctx.get("do_total") is None or n == ctx.get("do_total")
-        ok = bool(co) and khop
+        ok = (bool(co) or dot_1) and khop
         ghi("✓" if ok else "SAI", "Trạng thái bàn giao (Sếp)",
-            "khoá %s; %s DO bàn giao được%s" % ("đã tạo" if co else "CHƯA TẠO", n,
+            "khoá %s; %s DO bàn giao được%s" % ("đã tạo" if co else ("chưa tạo (đợt 1: chưa cần)" if dot_1 else "CHƯA TẠO"), n,
                                                "" if ctx.get("do_total") is None else "; API anh thấy %s" % ctx["do_total"]),
             "" if ok else ("Sếp chưa tạo khoá bàn giao: POST /api/handover/tao-khoa (mục 4.2)." if not co else
                            "Số DO hai bên lệch: API anh đang đọc một trang điều xe khác (LogisticsSource:BaseUrl)."))
@@ -436,9 +477,9 @@ def kiem_dieu_xe(dx, api, cfg, dx_info, ctx):
         ghi("SAI", "Trạng thái bàn giao (Sếp)", "HTTP %s %s" % (ma, loi or ""), "Phiên Sếp sai / hết hạn, hoặc tài khoản không phải vai admin.")
 
     # máy trang điều xe đang gửi SO / phiếu chi sang (xem trước gói SO — không gọi mạng, không ghi)
-    mau = ctx.get("do_mau")
-    if mau and str(mau.get("SourceId") or "").startswith(TIEN_TO_DO):
-        tid = mau["SourceId"][len(TIEN_TO_DO):]
+    mau = str((ctx.get("do_mau") or {}).get("SourceId") or ctx.get("do_id_dx") or "")
+    if mau.startswith(TIEN_TO_DO):
+        tid = mau[len(TIEN_TO_DO):]
         ma, than, _, loi, _ = goi("GET", dx + "/api/trips/%s/tao-so" % urllib.parse.quote(tid), phien)
         if ma == 200 and isinstance(than, dict):
             may, co_tk = than.get("may"), than.get("co_token")
@@ -451,7 +492,7 @@ def kiem_dieu_xe(dx, api, cfg, dx_info, ctx):
         else:
             ghi("SAI", "Trang điều xe gửi sang đúng API", "HTTP %s %s" % (ma, loi or ""), "Gửi kết quả này cho bên em.")
     else:
-        ghi("--", "Trang điều xe gửi sang đúng API", "không có DO mẫu từ API anh để xem trước", "")
+        ghi("--", "Trang điều xe gửi sang đúng API", "không có DO mẫu (API anh chưa đọc DO, chưa đặt KIEM_KHOA_BAN_GIAO)", "")
 
     ma, than, _, loi, _ = goi("GET", dx + "/api/acc-codes", phien)
     if ma == 200 and isinstance(than, dict):
@@ -499,14 +540,16 @@ def main():
     ap.add_argument("dieu_xe", help="địa chỉ gốc trang điều xe, ví dụ http://127.0.0.1:8011")
     ap.add_argument("--env", default=os.path.join(GOC_DU_AN, ".env"), help="tệp KEY=giá_trị đọc thêm (mặc định .env của EPL_LAO_REAL)")
     ap.add_argument("--tu-khoa", default="", help="từ khoá thử tìm DO (mặc định: số phiếu của DO đầu tiên)")
+    ap.add_argument("--dot-1", action="store_true",
+                    help="đợt 1: chưa đặt LogisticsSource — DO trả 503 \"chưa cấu hình\" là đúng")
     a = ap.parse_args()
     api, dx = a.api.rstrip("/"), a.dieu_xe.rstrip("/")
     if dx.endswith("/api"):
         dx = dx[:-4]
     cfg = CauHinh(a.env)
     dx_info = do_dieu_xe(dx)
-    ctx = kiem_api(api, cfg, dx_info, a.tu_khoa.strip())
-    kiem_dieu_xe(dx, api, cfg, dx_info, ctx)
+    ctx = kiem_api(api, cfg, dx_info, a.tu_khoa.strip(), a.dot_1)
+    kiem_dieu_xe(dx, api, cfg, dx_info, ctx, a.dot_1)
     sys.exit(in_bang(api, dx, ctx))
 
 
