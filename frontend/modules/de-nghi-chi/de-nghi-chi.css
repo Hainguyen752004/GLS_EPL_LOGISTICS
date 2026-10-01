@@ -44,9 +44,14 @@
 /* 01/10 — tờ in bên phải cuộn trong khung của nó, thanh nút (Mở phiếu · In) đứng yên trên đầu. Trước đây tờ dài làm cả trang
    cuộn, danh sách bên trái (dính top:0) chui xuống dưới thanh tiêu đề — mất tờ đang chọn ở đầu danh sách. Kiểu thanh trên:
    đầu trang cao hơn ~96px nên trừ thêm. */
+/* de-nghi-chi.js (datCao) đo chiều cao thật và đặt --dn-cao; số trong calc chỉ là số ban đầu */
 @media (min-width:1101px){
-  .dnc-ds,.dnc-xem{max-height:calc(100vh / var(--ty-le, 1) - 160px)}
+  /* 201 / 265 (01/10, đo bằng Chrome 1680×934 · 1366×768): 160 / 246 chưa tính lề đáy trang — trang còn cuộn dọc 16–42px */
+  .dnc-ds,.dnc-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 201px))}
   .dnc-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
-  .app[data-view="top"] .dnc-ds,.app[data-view="top"] .dnc-xem{max-height:calc(100vh / var(--ty-le, 1) - 246px)}
+  .app[data-view="top"] .dnc-ds,.app[data-view="top"] .dnc-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 265px))}
 }
 @media print{.app[data-view] .dnc-xem{max-height:none}.dnc-xem .ct-giay{flex:none;overflow:visible}}
+
+/* 01/10 — danh sách trống: lý do đúng theo thẻ đang chọn + nút "Xem tất cả" */
+.dnc-trong{display:flex;flex-direction:column;align-items:center;gap:12px}

@@ -16,6 +16,32 @@
   // Tiền CHI thì thấy hết, vì chính họ chi. Sếp thấy tất cả nên so vai thẳng, không dùng AUTH.la.
   const laBai = () => AUTH.role === 'yard';
   let root, thang, d, xh, ty_gia, charts = {};
+  /* Tháng trống (01/10). BAO: vào màn mà tháng này chưa có phiếu → đã tự sang tháng gần nhất có phiếu. GAN: tháng gần nhất
+   * có phiếu khi người dùng TỰ chọn một tháng trống — nút trên thanh công cụ đưa về đó. */
+  let BAO = null, GAN = null;
+  const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+
+  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
+   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
+  async function thangGan(th, loc) {
+    const [y, m] = th.split('-').map(Number);
+    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
+      return API.get('/api/trips?' + p).then(x => (x && x[0] && x[0].doc_date ? x[0].doc_date.slice(0, 7) : null), () => null); };
+    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
+    if (truoc === th || sau === th) return { co: true, gan: th };
+    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
+    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
+  }
+  function veBao() {
+    const o = root.querySelector('#tq-bao'), trong = d && !d.so_phieu;
+    const icon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>';
+    o.hidden = !(trong || BAO);
+    o.classList.toggle('trong', !!trong);
+    o.innerHTML = trong ? `${icon}<span>${NN.h('thang_trong_n', { thang: nhanThang(thang) })}</span>${GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}`
+      : BAO ? `${icon}<span>${NN.h('thang_trong_dang_xem', { trong: nhanThang(BAO.trong), xem: nhanThang(BAO.xem) })}</span>` : '';
+    const b = o.querySelector('[data-thang]');
+    if (b) b.addEventListener('click', () => { BAO = null; root.querySelector('#tq-thang').value = b.dataset.thang; tai().catch(EPL.baoLoi); });
+  }
   /** Không có dữ liệu thì phải nói ĐÚNG lý do: máy chủ chưa trả được (hỏng/mất mạng) khác hẳn với
    *  tháng này chưa có chuyến nào. Câu sau mà viết như câu trước thì người dùng tưởng phần mềm hỏng. */
   const chuaCo = () => NN.h(xh ? 'tq_thang_trong' : 'tq_need_endpoint');
@@ -83,6 +109,9 @@
       API.get('/api/bao-cao/xu-huong?thang=' + thang).catch(() => null),   // endpoint mới; thiếu thì vẫn vẽ phần cũ
       API.get('/api/rates'),
     ]);
+    // tháng trống mà người dùng tự chọn: tìm tháng gần nhất có phiếu cho nút trên thanh công cụ (chỉ hỏi khi trống)
+    const g = a && !a.so_phieu ? await thangGan(thang, {}) : null;
+    GAN = g && !g.co ? g.gan : null;
     d = a; xh = b; ty_gia = c; ve();
   }
 
@@ -107,6 +136,7 @@
     const trieu = (v) => so((v || 0) / 1e6, 1);        // Kíp đọc theo triệu cho dễ nhìn
     const chia = (o) => EPL.tienGop(o || {});           // "8,101.36 USD · 12,000 CNY"
     root.querySelector('#tq-stamp').textContent = `${NN.t('tq_updated')} ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+    veBao();
 
     /* 1. KPI — Bãi thay hai ô tiền bán bằng hai ô việc của họ */
     const K = laBai() ? [
@@ -276,11 +306,13 @@
   EPL.modules['tong-quan'] = {
     async init(r) {
       root = r;
-      // Mặc định là THÁNG CÓ PHIẾU GẦN NHẤT, không phải tháng hiện tại (giữ nguyên lý do của bản cũ).
-      let thangMacDinh = EPL.thangNay();
-      try { const ds = await API.get('/api/trips?co=1'); if (ds.length && ds[0].doc_date) thangMacDinh = ds[0].doc_date.slice(0, 7); } catch (e) { /* giữ tháng nay */ }   // chỉ cần phiếu mới nhất — đừng tải cả năm
-      r.querySelector('#tq-thang').value = thangMacDinh;
-      r.querySelector('#tq-thang').addEventListener('change', () => tai().catch(EPL.baoLoi));
+      // Mặc định: tháng này (giờ máy — EPL.doiOThang) nếu có phiếu; không có thì THÁNG GẦN NHẤT CÓ PHIẾU, kèm dòng báo.
+      // Trước đây lấy tháng của phiếu mới nhất: một phiếu ghi nhầm ngày tương lai là màn mở ra tháng đó.
+      BAO = null; GAN = null;
+      const nay = r.querySelector('#tq-thang').value || EPL.thangNay();
+      const g = await thangGan(nay, {});
+      if (!g.co && g.gan) { BAO = { trong: nay, xem: g.gan }; r.querySelector('#tq-thang').value = g.gan; }
+      r.querySelector('#tq-thang').addEventListener('change', () => { BAO = null; tai().catch(EPL.baoLoi); });
       r.querySelector('#tq-so-sanh').addEventListener('change', () => d && ve());
       r.querySelector('#tq-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       r.querySelector('#tq-xuat').addEventListener('click', () => EPL.di('theo-doi', { thang, xuat: 1 }));

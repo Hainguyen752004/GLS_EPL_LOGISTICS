@@ -11,6 +11,8 @@
   <div class="field tien"><label data-i18n="in_lak"></label>
     <select id="td-quy"><option value="" data-i18n="c_ccy"></option><option value="LAK">LAK</option><option value="USD">USD</option><option value="CNY">CNY</option><option value="THB">THB</option></select></div>
   <div class="field"><label data-i18n="month"></label><input type="month" id="td-thang"></div>
+  <!-- 01/10: vào màn mà tháng này chưa có phiếu thì tự sang tháng gần nhất có phiếu — dòng này nói rõ đang xem tháng nào -->
+  <div class="td-bao" id="td-bao" role="status" hidden></div>
 </div>
 
 <div class="card">
@@ -53,6 +55,8 @@
       <tfoot id="td-chan"></tfoot>
     </table>
   </div>
+  <!-- tháng / bộ lọc trống: khung báo thay cho bảng 2.960px (chữ trong bảng nằm giữa bề rộng bảng, trôi tít bên phải) -->
+  <div class="td-trong" id="td-trong" hidden></div>
   <!-- một tháng có thể ~30.000 phiếu: 100 dòng một trang; dòng tổng vẫn tính trên CẢ bộ lọc (máy chủ cộng) -->
   <div class="td-trang no-print" id="td-trang"></div>
   <div class="bd small muted" data-i18n="track_note"></div>

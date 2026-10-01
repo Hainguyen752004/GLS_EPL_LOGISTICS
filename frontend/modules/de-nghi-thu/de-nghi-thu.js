@@ -16,6 +16,24 @@
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
   const tien = (n, ma) => EPL.tien(n, ma);
   const thangNay = () => new Date().toISOString().slice(0, 7);
+  /* Tháng trống (01/10): đầu tháng chưa DO nào về nên màn mở ra trống, trông như hỏng. TU_DONG = lượt tải đầu khi vào màn
+   * không kèm tháng → tháng trống thì sang tháng gần nhất có DO đã về, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */
+  let TU_DONG = false, BAO = null, GAN = null;
+  const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+
+  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
+   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
+  async function thangGan(th, loc) {
+    const [y, m] = th.split('-').map(Number);
+    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
+      return API.get('/api/trips?' + p).then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null); };
+    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
+    if (truoc === th || sau === th) return { co: true, gan: th };
+    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
+    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
+  }
+  /** Người dùng TỰ chọn tháng (ô tháng, nút ở khung trống): giữ đúng tháng đó, bỏ dòng báo, thôi tự sang tháng khác. */
+  function chonThang(v) { TU_DONG = false; BAO = null; q('#dnt-thang').value = v; tai(); }
 
   function loc() {
     return D.ds.filter(x => !tt || x.trang_thai === tt || (tt === 'cho_gui' && x.trang_thai === 'chua_lap'));
@@ -40,13 +58,24 @@
     q('#dnt-tong').innerHTML = `
       <div class="o"><span class="l">${NN.h('dt_tong_thang')}</span><span class="v">${oTien(de)}</span><span class="s">${NN.h('dn_so_to', { n: D.ds.filter(x => x.locked).length })}</span></div>
       <div class="o ${nCho ? 'canh' : ''}"><span class="l">${NN.h('dt_st_cho_gui')}</span><span class="v">${oTien(cho)}</span><span class="s">${NN.h('dn_so_to', { n: nCho })}</span></div>
-      <div class="o"><span class="l">${NN.h('ncc_con_thu')}</span><span class="v">${so(conLak)}<small>LAK</small></span><span class="s">${NN.h('dt_con_lai_s')}</span></div>`;
+      <div class="o"><span class="l">${NN.h('ncc_con_thu')}</span><span class="v">${so(conLak)}<small>LAK</small></span><span class="s">${NN.h('dt_con_lai_s')}</span></div>
+      ${BAO ? `<div class="dnt-bao" id="dnt-bao" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg>
+        <span>${NN.h('thang_trong_dang_xem', { trong: nhanThang(BAO.trong), xem: nhanThang(BAO.xem) })}</span></div>` : ''}`;
   }
 
   /* ---------------------------------------------------------------- danh sách DO */
   function veDs() {
     const ds = loc(), o = q('#dnt-ds');
-    if (!ds.length) { o.innerHTML = `<div class="dnt-trong">${NN.h('dt_trong')}</div>`; return; }
+    if (!ds.length) {
+      // tháng có DO mà thẻ trạng thái / chữ tìm lọc hết → nói "không khớp bộ lọc", đừng nói tháng này chưa có DO nào về
+      const boLoc = D.ds.length || tim;
+      o.innerHTML = `<div class="dnt-trong"><div>${NN.h(boLoc ? 'loc_trong' : 'dt_trong')}</div>
+        ${D.ds.length && tt ? `<button type="button" class="btn sm" data-tat-ca="1">${NN.h('tq_view_all')}</button>` : ''}
+        ${!D.ds.length && GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}</div>`;
+      const b = o.querySelector('[data-thang]'); if (b) b.addEventListener('click', () => chonThang(b.dataset.thang));
+      const h = o.querySelector('[data-tat-ca]'); if (h) h.addEventListener('click', () => { tt = ''; veHet(); });
+      return;
+    }
     o.innerHTML = ds.map(x => `<button type="button" class="dnt-o st-${esc(x.trang_thai)} ${x.trip_id === chonId ? 'chon' : ''}" data-id="${esc(x.trip_id)}">
       <div class="so">${esc(x.doc_no)}<span class="dnt-kind ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span></div>
       <div class="tien">${tien(x.doanh_thu, x.ccy)}</div>
@@ -63,6 +92,8 @@
   async function veTo() {
     const x = D.ds.find(y => y.trip_id === chonId), nut = q('#dnt-nut');
     q('#dnt-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn DO khác thì về đầu tờ
+    // danh sách trống: khung trống bên trái đã nói lý do + nút; tờ giấy "Chọn một tờ bên trái" lúc đó chỉ gây rối
+    q('#dnt-giay').hidden = !loc().length;
     if (!x) { nut.innerHTML = ''; q('#dnt-so').innerHTML = ''; q('#dnt-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     let d;
     try { d = await API.get(`/api/trips/${x.trip_id}/de-nghi-thu`); } catch (e) { q('#dnt-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; return; }
@@ -137,32 +168,68 @@
         <div><div class="line"></div>${NN.h('dt_ben_cong_no')}</div><div><div class="line"></div>${NN.h('sg_director')}</div></div>`;
   }
 
+
+  /* Danh sách + tờ in cao VỪA cửa sổ (01/10): đo từ đầu danh sách tới đáy cửa sổ, trừ lề đáy trang, đặt vào --dn-cao (biến
+   * CSS chứ không style trực tiếp: quy tắc in vẫn thắng). Số cố định trong CSS chỉ đúng tiếng Việt — chế độ VI + ລາວ (nhãn
+   * hai dòng) trang còn cuộn dọc 40–100px. Toạ độ là điểm ảnh màn hình, px CSS bên trong .app (zoom --ty-le) nên chia. */
+  let henCao = null;
+  function datCao() {
+    const ds = root && root.querySelector('.dnt-ds');
+    if (!ds || !ds.isConnected) return;
+    // lúc mở màn còn dải "Đang tải…" (chung.js: .mod-dang-tai::before) đẩy danh sách xuống — đo sau khi dải đó tắt
+    if (root.classList.contains('mod-dang-tai')) { clearTimeout(henCao); henCao = setTimeout(datCao, 120); return; }
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const le = (parseFloat(getComputedStyle(document.getElementById('noi-dung')).paddingBottom) || 0) * tl;
+    const cao = (window.innerHeight - (ds.getBoundingClientRect().top + window.scrollY) - le) / tl;
+    root.style.setProperty('--dn-cao', Math.max(300, Math.floor(cao)) + 'px');
+  }
+  const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };   // sau khi chung.js đặt lại --ty-le
+
   function veHet() {
     const ds = loc();
     if (!ds.some(x => x.trip_id === chonId)) chonId = ds[0] ? ds[0].trip_id : null;
     veSeg(); veTong(); veDs(); veTo();
+    datCao();                 // dải tổng / dòng báo vừa vẽ lại — đầu danh sách có thể đổi chỗ
   }
 
+  let LUOT = 0;                // lượt tải mới nhất — lượt cũ (đang tự sang tháng) về sau thì không vẽ đè
   async function tai() {
-    const th = new URLSearchParams({ thang: q('#dnt-thang').value || thangNay() });
+    const luot = ++LUOT;
+    const thang = q('#dnt-thang').value || thangNay();
+    const th = new URLSearchParams({ thang });
     if (tim) th.set('q', tim);
-    try { D = await API.get('/api/de-nghi-thu?' + th.toString()); } catch (e) { D = { ds: [] }; EPL.baoLoi(e); }
+    let duoc = true, ve;
+    try { ve = await API.get('/api/de-nghi-thu?' + th.toString()); } catch (e) { ve = { ds: [] }; duoc = false; if (luot === LUOT) EPL.baoLoi(e); }
+    if (luot !== LUOT) return;
+    D = ve; GAN = null;
+    if (duoc && !D.ds.length) {
+      // tờ đề nghị thu chỉ có ở DO đã về (khoá phiếu đòi xe về): tháng gần nhất có DO đã về, cùng chữ tìm
+      const r = await thangGan(thang, tim ? { transport_status: 'arrived', q: tim } : { transport_status: 'arrived' });
+      if (luot !== LUOT) return;
+      GAN = r.co ? null : r.gan;
+      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: thang, xem: GAN }; q('#dnt-thang').value = GAN; return tai(); }
+    }
+    TU_DONG = false;
     veHet();
   }
 
   EPL.modules['de-nghi-thu'] = {
     async init(r, ctx) {
-      root = r; D = { ds: [] }; tim = ''; tt = ''; chonId = null;
+      root = r; D = { ds: [] }; tim = ''; tt = ''; chonId = null; BAO = null; GAN = null;
       const t = (ctx && ctx.tham) || {};
-      q('#dnt-thang').value = t.thang || thangNay();
+      // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang) — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
+      if (t.thang) q('#dnt-thang').value = t.thang;
+      TU_DONG = !t.thang;                     // mở từ Đề nghị theo DO thì đã kèm tháng của DO — giữ nguyên
       if (t.id) chonId = t.id;
       if (TT.includes(t.tt)) tt = t.tt;
-      q('#dnt-thang').addEventListener('change', tai);
+      q('#dnt-thang').addEventListener('change', (e) => chonThang(e.target.value));
+      window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       q('#dnt-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       if (AUTH.la('acct')) { try { KET_NOI = await API.get('/api/ke-toan/trang-thai'); } catch (e) { KET_NOI = { cau_hinh: false }; } }
       await tai();
     },
     onLang() { if (root) veHet(); },
+    destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },
     xuatExcel() {
       const T = NN.t;
       return [EPL.xuatSheet(T('nav_de_nghi_thu'), [T('doc_no'), T('do_kind'), T('customer'), T('route'), T('truck_no'), T('col_tons'), T('amount'), T('ccy'),

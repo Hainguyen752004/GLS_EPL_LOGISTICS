@@ -56,10 +56,36 @@
   }
 
   /* ---------------------------------------------------------------- danh sách */
+
+  /* Danh sách + tờ in cao VỪA cửa sổ (01/10): đo từ đầu danh sách tới đáy cửa sổ, trừ lề đáy trang, đặt vào --dn-cao (biến
+   * CSS chứ không style trực tiếp: quy tắc in vẫn thắng). Số cố định trong CSS chỉ đúng tiếng Việt — chế độ VI + ລາວ (nhãn
+   * hai dòng) trang còn cuộn dọc 40–100px. Toạ độ là điểm ảnh màn hình, px CSS bên trong .app (zoom --ty-le) nên chia. */
+  let henCao = null;
+  function datCao() {
+    const ds = root && root.querySelector('.dnc-ds');
+    if (!ds || !ds.isConnected) return;
+    // lúc mở màn còn dải "Đang tải…" (chung.js: .mod-dang-tai::before) đẩy danh sách xuống — đo sau khi dải đó tắt
+    if (root.classList.contains('mod-dang-tai')) { clearTimeout(henCao); henCao = setTimeout(datCao, 120); return; }
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const le = (parseFloat(getComputedStyle(document.getElementById('noi-dung')).paddingBottom) || 0) * tl;
+    const cao = (window.innerHeight - (ds.getBoundingClientRect().top + window.scrollY) - le) / tl;
+    root.style.setProperty('--dn-cao', Math.max(300, Math.floor(cao)) + 'px');
+  }
+  const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };   // sau khi chung.js đặt lại --ty-le
+
   function veDs() {
+    datCao();
     const ds = q('#dnc-ds');
     q('#dnc-dem').innerHTML = NN.h('dn_so_to', { n: DS.length });
-    if (!DS.length) { ds.innerHTML = `<div class="dnc-trong">${NN.h('v_empty')}</div>`; return; }
+    if (!DS.length) {
+      // "Không có phiếu nào đang chờ" chỉ đúng ở thẻ Chờ cấp không tìm; thẻ khác / có chữ tìm thì nói không khớp bộ lọc (01/10)
+      const tatCa = !tt && !tim;
+      ds.innerHTML = `<div class="dnc-trong"><div>${NN.h(tt === 'cho' && !tim ? 'v_empty' : tatCa ? 'no_data' : 'loc_trong')}</div>
+        ${tatCa ? '' : `<button type="button" class="btn sm" data-tat-ca="1">${NN.h('tq_view_all')}</button>`}</div>`;
+      const b = ds.querySelector('[data-tat-ca]');
+      if (b) b.addEventListener('click', () => { tt = ''; tim = ''; q('#dnc-tim').value = ''; datSeg(); tai(); });
+      return;
+    }
     ds.innerHTML = DS.map(v => {
       const luong = v.kind === 'fuel' ? `${so(v.qty_l, 0)}<small>L</small>`
         : (v.amount_lak == null ? '' : `${so(v.amount_lak)}<small>LAK</small>`);
@@ -80,6 +106,7 @@
   async function veTo() {
     const v = DS.find(x => x.id === chonId);
     q('#dnc-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
+    q('#dnc-giay').hidden = !DS.length;       // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
     if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     veKT(v, v.chi_ke_toan);
@@ -150,6 +177,7 @@
   }
 
   async function veLe() {
+    q('#dnc-giay').hidden = false;           // phiếu chưa có tờ tạm ứng: vẫn in nội dung tạm ứng của phiếu, dù danh sách trống
     q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
     try { veTamUng(await API.get(`/api/trips/${phieuLe}/phieu-chi`), null); } catch (e) { EPL.baoLoi(e); }
   }
@@ -165,6 +193,7 @@
       root.querySelectorAll('#dnc-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnc-in').addEventListener('click', () => window.print());
+      window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       q('#dnc-cap-nhat').hidden = !AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'yard');
       q('#dnc-cap-nhat').addEventListener('click', async () => {
         try {
@@ -181,6 +210,7 @@
       await tai();
     },
     onLang() { if (root) { veDs(); if (phieuLe && !chonId) veLe(); else veTo(); } },
+    destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },
     xuatExcel() {
       const T = NN.t;
       return [EPL.xuatSheet(T('nav_de_nghi_chi'), [T('voucher_no'), T('do_kind'), T('doc_no'), T('truck_no'), T('driver'), T('fp_place'), T('qty_l'), T('amount_lak'), T('status'), T('c_date')],

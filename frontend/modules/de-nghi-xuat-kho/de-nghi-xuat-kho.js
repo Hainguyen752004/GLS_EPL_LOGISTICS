@@ -49,10 +49,36 @@
 
   const loc = () => DS.filter(v => (!ht || v.hinh_thuc === ht) && (!kho || v.place_id === kho));
 
+
+  /* Danh sách + tờ in cao VỪA cửa sổ (01/10): đo từ đầu danh sách tới đáy cửa sổ, trừ lề đáy trang, đặt vào --dn-cao (biến
+   * CSS chứ không style trực tiếp: quy tắc in vẫn thắng). Số cố định trong CSS chỉ đúng tiếng Việt — chế độ VI + ລາວ (nhãn
+   * hai dòng) trang còn cuộn dọc 40–100px. Toạ độ là điểm ảnh màn hình, px CSS bên trong .app (zoom --ty-le) nên chia. */
+  let henCao = null;
+  function datCao() {
+    const ds = root && root.querySelector('.dnx-ds');
+    if (!ds || !ds.isConnected) return;
+    // lúc mở màn còn dải "Đang tải…" (chung.js: .mod-dang-tai::before) đẩy danh sách xuống — đo sau khi dải đó tắt
+    if (root.classList.contains('mod-dang-tai')) { clearTimeout(henCao); henCao = setTimeout(datCao, 120); return; }
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const le = (parseFloat(getComputedStyle(document.getElementById('noi-dung')).paddingBottom) || 0) * tl;
+    const cao = (window.innerHeight - (ds.getBoundingClientRect().top + window.scrollY) - le) / tl;
+    root.style.setProperty('--dn-cao', Math.max(300, Math.floor(cao)) + 'px');
+  }
+  const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };   // sau khi chung.js đặt lại --ty-le
+
   function veDs() {
+    datCao();
     const ds = loc(), o = q('#dnx-ds');
     q('#dnx-dem').innerHTML = NN.h('dn_so_to', { n: ds.length });
-    if (!ds.length) { o.innerHTML = `<div class="dnx-trong">${NN.h('v_empty')}</div>`; return; }
+    if (!ds.length) {
+      // "Không có phiếu nào đang chờ" chỉ đúng ở thẻ Chờ cấp, mọi hình thức, mọi kho, không tìm; còn lại là không khớp bộ lọc (01/10)
+      const tatCa = !tt && !tim && !ht && !kho;
+      o.innerHTML = `<div class="dnx-trong"><div>${NN.h(tt === 'cho' && !tim && !ht && !kho ? 'v_empty' : tatCa ? 'no_data' : 'loc_trong')}</div>
+        ${tatCa ? '' : `<button type="button" class="btn sm" data-tat-ca="1">${NN.h('tq_view_all')}</button>`}</div>`;
+      const b = o.querySelector('[data-tat-ca]');
+      if (b) b.addEventListener('click', () => { ht = ''; tt = ''; kho = ''; tim = ''; q('#dnx-kho').value = ''; q('#dnx-tim').value = ''; datSeg(); tai(); });
+      return;
+    }
     o.innerHTML = ds.map(v => `<button type="button" class="dnx-o ${esc(v.hinh_thuc || '')} ${v.id === chonId ? 'chon' : ''}" data-id="${esc(v.id)}">
       <i class="soc"></i>
       <div class="so"><span class="dnx-ht ${esc(v.hinh_thuc || '')}">${NN.h(v.hinh_thuc === 'xuat_ban' ? 'dnx_xuat_ban' : 'dnx_noi_bo')}</span>${esc(v.doc_no)}</div>
@@ -66,6 +92,7 @@
   async function veChon() {
     const v = DS.find(x => x.id === chonId);
     q('#dnx-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
+    q('#dnx-giay').hidden = !loc().length;    // danh sách trống: khung trống bên trái nói lý do, bỏ tờ "Chọn một tờ bên trái"
     q('#dnx-mo-phieu').disabled = !v; q('#dnx-in').disabled = !v;
     if (!v) { q('#dnx-so').innerHTML = ''; q('#dnx-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     try { veTo(v, await API.get(`/api/trips/${v.trip_id}`)); } catch (e) { q('#dnx-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
@@ -96,6 +123,7 @@
       root.querySelectorAll('#dnx-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnx-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnx-in').addEventListener('click', () => window.print());
+      window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       q('#dnx-mo-phieu').addEventListener('click', () => { const v = DS.find(x => x.id === chonId); if (v) EPL.di('phieu-xuat-xe', { id: v.trip_id }); });
       // mở từ phiếu xuất xe / Đề nghị theo DO (?id=<phiếu>&v=<tờ>): đúng tờ của phiếu đó, bộ lọc theo trạng thái của tờ
       const t = (ctx && ctx.tham) || {};
@@ -107,6 +135,7 @@
       await tai();
     },
     onLang() { if (root) { veDs(); veChon(); } },
+    destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },
     xuatExcel() {
       const T = NN.t;
       return [EPL.xuatSheet(T('nav_de_nghi_xuat_kho'), [T('voucher_no'), T('status'), T('doc_no'), T('truck_no'), T('driver'), T('fp_place'), T('qty_l'), T('v_qty_real'), T('c_date')],

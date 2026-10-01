@@ -35,3 +35,30 @@ body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai
 .td-bang tfoot td.td-chan-nhan{position:sticky;left:0;z-index:2;white-space:nowrap;box-shadow:inset -1px 0 0 var(--line-2)}
 /* kiểu thanh trên: đầu trang cao hơn ~96px — trừ 235px thì đáy bảng lọt dưới cửa sổ */
 .app[data-view="top"] .td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 318px)}
+
+/* 01/10 — tháng trống. Dòng báo cạnh ô tháng khi màn tự sang tháng gần nhất có phiếu: co giãn trong hàng lọc (xuống dòng bên
+   trong chứ không đẩy cả hàng xuống, đáy bảng vẫn vừa cửa sổ). Khung trống thay bảng: chữ giữa vùng đang nhìn + nút. */
+.td-bao{flex:1 1 0;min-width:180px;max-width:max-content;display:flex;align-items:center;gap:7px;min-height:38px;padding:5px 12px;
+  border:1px solid #E3CB98;border-radius:8px;background:var(--amber-soft);color:var(--amber);font-size:12.5px;font-weight:500;line-height:1.35}
+.td-bao svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.td-trong{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 16px 52px;text-align:center;color:var(--ink-2);font-size:14.5px}
+.td-trong b{font-weight:600}
+
+/* 01/10 — kẻ khung đủ ô (chủ dự án): đường dọc giữa mọi cột, cả hai hàng tiêu đề nhóm; đường ngang giữa mọi hàng; dòng tổng
+   viền trên đậm hơn. border-collapse:separate để viền đi THEO từng ô — kiểu collapse thì viền thuộc về bảng, ba cột dính trái
+   và hai hàng tiêu đề dính trên trượt qua là mất viền. Màu theo token --line (ô) / --line-2 (tiêu đề, mép cột dính). */
+table.tbl.td-bang{border-collapse:separate;border-spacing:0}   /* table.tbl (chung.css) đặt collapse — phải nặng hơn nó */
+.td-bang th,.td-bang td{border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+.td-bang thead th{border-bottom-color:var(--line-2);border-right-color:var(--line-2)}
+.td-bang thead th.grp{border-left:0}
+.td-bang tr > :last-child{border-right:0}
+.td-bang tbody tr:last-child td{border-bottom:0}
+.td-bang tfoot td{border-top:2px solid var(--ink-3);border-bottom:0}   /* màu đậm: 1366 (thu 0,853) 2px làm tròn còn 1 điểm ảnh */
+/* mép phải ba cột dính (#, Ngày, Số phiếu): viền đậm, là viền của chính ô nên cuộn ngang vẫn còn (thay bóng inset cũ) */
+.td-bang thead tr:nth-child(2) th:nth-child(2),.td-bang tbody td:nth-child(3),.td-bang tfoot td.td-chan-nhan{box-shadow:none;border-right-color:var(--line-2)}
+
+/* 01/10 — hai số 235 / 318 chưa tính dòng ghi chú dưới bảng và lề đáy trang: trang vẫn cuộn dọc ~77px (thanh trên) / ~96px
+   (thanh bên) dù bảng đã cuộn trong khung. theo-doi.js (datCao) đo lại chiều cao thật sau mỗi lần vẽ, đổi tiếng, đổi cỡ cửa
+   sổ, đặt vào --td-cao (biến chứ không style trực tiếp: quy tắc in vẫn thắng) — hai dòng dưới chỉ là số ban đầu (đo bằng Chrome 1680×934 · 1366×768, tiếng Việt, không thanh chia trang). */
+.td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 332px))}
+.app[data-view="top"] .td-cuon{max-height:var(--td-cao, calc(100vh / var(--ty-le, 1) - 396px))}

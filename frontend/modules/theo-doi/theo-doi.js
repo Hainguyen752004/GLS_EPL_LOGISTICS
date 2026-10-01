@@ -10,6 +10,23 @@
   const { API, NN, esc, so, tien, tag } = EPL;
   let root, ds = [], tyGia = {}, TRANG = 1, TONG = {};
   const CO = 100;              // một trang 100 phiếu — một tháng có thể ~30.000 phiếu (nghìn chuyến / ngày)
+  /* Tháng trống (chủ dự án 01/10: mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng màn không tải được).
+   * TU_DONG: lượt tải đầu khi vào màn KHÔNG kèm tháng — tháng này trống thì tự sang tháng gần nhất có phiếu, BAO giữ dòng báo.
+   * Người dùng tự chọn tháng trống thì giữ tháng đó; GAN là tháng gần nhất có phiếu cho nút trong khung trống. */
+  let TU_DONG = false, BAO = null, GAN = null;
+  const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+
+  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
+   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
+  async function thangGan(th, loc) {
+    const [y, m] = th.split('-').map(Number);
+    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
+      return API.get('/api/trips?' + p).then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null); };
+    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
+    if (truoc === th || sau === th) return { co: true, gan: th };
+    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
+    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
+  }
 
   /** Tỷ giá quy đổi của MỘT phiếu — lấy ngay trên phiếu, không lấy tỷ giá hôm nay. */
   function rate(p, ma) {
@@ -40,12 +57,45 @@
       const v = root.querySelector('#' + id).value; if (v) p.set(k, v); });
     return p;
   }
+  let LUOT = 0;                // lượt tải mới nhất — gõ tìm trong lúc lượt trước (tự sang tháng) còn chờ thì lượt cũ không vẽ đè
   async function tai(trang = 1) {
+    const luot = ++LUOT;
     TRANG = trang;
     const pt = thamLoc(); pt.set('trang', TRANG); pt.set('co', CO);
     const pq = thamLoc(); if (quy()) pq.set('quy', quy());
-    [ds, TONG] = await Promise.all([API.get('/api/bao-cao/theo-doi?' + pt), API.get('/api/bao-cao/theo-doi/tong?' + pq)]);
+    const [a, b] = await Promise.all([API.get('/api/bao-cao/theo-doi?' + pt), API.get('/api/bao-cao/theo-doi/tong?' + pq)]);
+    if (luot !== LUOT) return;
+    ds = a; TONG = b; GAN = null;
+    const th = root.querySelector('#td-thang').value;
+    if (!ds.length && th) {
+      // /api/trips lọc bằng cùng loc_phieu với bảng này: tìm · trạng thái · loại xe giữ nguyên, chỉ bỏ tháng
+      const loc = thamLoc(); loc.delete('thang');
+      const r = await thangGan(th, loc);
+      if (luot !== LUOT) return;
+      GAN = r.co ? null : r.gan;
+      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: th, xem: GAN }; root.querySelector('#td-thang').value = GAN; return tai(1); }
+    }
+    TU_DONG = false;
     locVaVe();
+  }
+  /** Bộ lọc ngoài tháng đang bật — khung trống nói "không khớp bộ lọc" thay vì "tháng chưa có phiếu". */
+  const coLoc = () => !!root.querySelector('#td-q').value.trim() || ['td-vc', 'td-tc', 'td-cty'].some(id => root.querySelector('#' + id).value);
+  /** Người dùng TỰ chọn tháng (ô tháng, nút ở khung trống): giữ đúng tháng đó, bỏ dòng báo, thôi tự sang tháng khác. */
+  function chonThang(v) { TU_DONG = false; BAO = null; root.querySelector('#td-thang').value = v; tai(1).catch(EPL.baoLoi); }
+
+  /** Dòng báo cạnh ô tháng (tự sang tháng khác) và khung trống giữa vùng đang nhìn, có nút về tháng gần nhất có phiếu. */
+  function veTrong(trong) {
+    const bao = root.querySelector('#td-bao');
+    bao.hidden = !BAO;
+    bao.innerHTML = BAO ? `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg><span>${NN.h('thang_trong_dang_xem', { trong: nhanThang(BAO.trong), xem: nhanThang(BAO.xem) })}</span>` : '';
+    root.querySelector('.td-cuon').hidden = trong;
+    const o = root.querySelector('#td-trong');
+    o.hidden = !trong;
+    if (!trong) { o.innerHTML = ''; return; }
+    o.innerHTML = `<b>${coLoc() ? NN.h('loc_trong') : NN.h('thang_trong_n', { thang: nhanThang(root.querySelector('#td-thang').value) })}</b>
+      ${GAN ? `<button type="button" class="btn primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}`;
+    const b = o.querySelector('[data-thang]');
+    if (b) b.addEventListener('click', () => chonThang(b.dataset.thang));
   }
 
   function locVaVe() {
@@ -86,8 +136,29 @@
       <button class="btn sm" data-trang="${TRANG + 1}" ${TRANG >= soTrang ? 'disabled' : ''}>${NN.h('trang_sau')}</button>` : '';
     tr.querySelectorAll('[data-trang]').forEach(b => b.addEventListener('click', () => tai(+b.dataset.trang).catch(EPL.baoLoi)));
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
+    veTrong(!rows.length);
     datDinhTieuDe();
+    datCao();
   }
+
+  /** Bảng cuộn trong khung cao VỪA cửa sổ: đo chỗ còn lại từ đầu bảng tới đáy cửa sổ, trừ phần nằm dưới bảng (thanh chia
+   *  trang, dòng ghi chú, viền thẻ, lề đáy trang). Số cố định trong CSS chỉ đúng một kiểu: chế độ VI + ລາວ (nhãn hai dòng),
+   *  hàng lọc xuống dòng, có thanh chia trang là trang lại cuộn dọc thêm 50–100px (rà 01/10). Toạ độ là điểm ảnh màn hình,
+   *  max-height là px CSS bên trong .app (zoom = --ty-le) nên chia cho --ty-le. */
+  function datCao() {
+    const c = root && root.querySelector('.td-cuon');
+    if (!c || c.hidden || !c.isConnected) return;
+    // lúc mở màn còn dải "Đang tải…" (chung.js: .mod-dang-tai::before) đẩy bảng xuống ~45px — đo sau khi dải đó tắt
+    if (root.classList.contains('mod-dang-tai')) { clearTimeout(henCao); henCao = setTimeout(datCao, 120); return; }
+    const tl = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ty-le')) || 1;
+    const page = document.getElementById('noi-dung'), the = c.closest('.card');
+    const r = c.getBoundingClientRect(), duoi = the.getBoundingClientRect().bottom - r.bottom;
+    const le = (parseFloat(getComputedStyle(page).paddingBottom) || 0) * tl;
+    const cao = (window.innerHeight - (r.top + window.scrollY) - duoi - le) / tl;
+    root.style.setProperty('--td-cao', Math.max(240, Math.floor(cao)) + 'px');   // biến CSS, không style trực tiếp: quy tắc in vẫn thắng
+  }
+  let henCao = null;
+  const khiDoiCo = () => { clearTimeout(henCao); henCao = setTimeout(datCao, 150); };   // sau khi chung.js đặt lại --ty-le
 
   /** Hàng tiêu đề thứ hai dính NGAY DƯỚI hàng một. Đặt cứng top:37px thì ở chế độ VI + ລາວ (hàng một hai dòng) hàng hai
    *  đè lên nửa dưới hàng một khi cuộn dọc — đo chiều cao thật sau mỗi lần vẽ / đổi tiếng. */
@@ -129,10 +200,14 @@
       if (t.cty) r.querySelector('#td-cty').value = t.cty;
       if (t.thang) r.querySelector('#td-thang').value = t.thang;
       if (t.q) r.querySelector('#td-q').value = t.q;
+      BAO = null; GAN = null;
+      TU_DONG = !t.thang;                     // mở thẳng (menu, tìm một số phiếu từ Tổng quan): tháng này trống thì sang tháng gần nhất có
       let hen = null;
       r.querySelector('#td-q').addEventListener('input', () => { clearTimeout(hen); hen = setTimeout(() => tai(1).catch(EPL.baoLoi), 350); });
-      ['td-vc', 'td-tc', 'td-cty', 'td-thang'].forEach(id => r.querySelector('#' + id).addEventListener('change', () => tai(1).catch(EPL.baoLoi)));
+      ['td-vc', 'td-tc', 'td-cty'].forEach(id => r.querySelector('#' + id).addEventListener('change', () => tai(1).catch(EPL.baoLoi)));
+      r.querySelector('#td-thang').addEventListener('change', (e) => chonThang(e.target.value));   // tự chọn tháng: bỏ dòng báo
       r.querySelector('#td-quy').addEventListener('change', () => tai(TRANG).catch(EPL.baoLoi));   // dòng tổng quy đổi ở máy chủ
+      window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);
       r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
       try { tyGia = await API.get('/api/rates'); } catch (e) { tyGia = {}; }
@@ -141,6 +216,7 @@
       if (t.xuat) xuatBaoCao();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
     xuatExcel: (r) => xuatHet(r),
-    onLang() { veChuThich(); if (ds.length) locVaVe(); else datDinhTieuDe(); },
+    onLang() { veChuThich(); if (ds.length) locVaVe(); else { veTrong(true); datDinhTieuDe(); } },
+    destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },
   };
 })();

@@ -28,9 +28,14 @@
 
 /* 01/10 — như Phiếu đề nghị chi: tờ in cuộn trong khung của nó (trang không cuộn, danh sách dính không chui dưới thanh
    tiêu đề); kiểu thanh trên trừ thêm ~96px */
+/* de-nghi-xuat-kho.js (datCao) đo chiều cao thật và đặt --dn-cao; số trong calc chỉ là số ban đầu */
 @media (min-width:1101px){
-  .dnx-ds,.dnx-xem{max-height:calc(100vh / var(--ty-le, 1) - 160px)}
+  /* 201 / 265 (01/10, đo bằng Chrome 1680×934 · 1366×768): 160 / 246 chưa tính lề đáy trang — trang còn cuộn dọc 16–42px */
+  .dnx-ds,.dnx-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 201px))}
   .dnx-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
-  .app[data-view="top"] .dnx-ds,.app[data-view="top"] .dnx-xem{max-height:calc(100vh / var(--ty-le, 1) - 246px)}
+  .app[data-view="top"] .dnx-ds,.app[data-view="top"] .dnx-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 265px))}
 }
 @media print{.app[data-view] .dnx-xem{max-height:none}.dnx-xem .ct-giay{flex:none;overflow:visible}}
+
+/* 01/10 — danh sách trống: lý do đúng theo thẻ / kho đang chọn + nút "Xem tất cả" */
+.dnx-trong{display:flex;flex-direction:column;align-items:center;gap:12px}

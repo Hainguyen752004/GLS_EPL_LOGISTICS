@@ -57,9 +57,18 @@
 /* 01/10 — như Phiếu đề nghị chi: tờ in cuộn trong khung của nó, thanh nút và dòng ghi chú đứng yên. Màn này còn dải tổng
    trên đầu nên trừ nhiều hơn (đáy danh sách trước đây lọt dưới cửa sổ ~120px); kiểu thanh trên trừ thêm ~96px. */
 .dnt-nut:empty{display:none}          /* chưa chọn DO: thanh nút rỗng vẫn ăn một khoảng gap — tờ lệch xuống 10px so với danh sách */
+/* de-nghi-thu.js (datCao) đo chiều cao thật và đặt --dn-cao; số trong calc chỉ là số ban đầu */
 @media (min-width:1101px){
-  .dnt-ds,.dnt-xem{max-height:calc(100vh / var(--ty-le, 1) - 286px)}
+  /* 324 / 389 (01/10, đo bằng Chrome 1680×934 · 1366×768): 286 / 358 chưa tính lề đáy trang — trang còn cuộn dọc 24–39px */
+  .dnt-ds,.dnt-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 324px))}
   .dnt-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
-  .app[data-view="top"] .dnt-ds,.app[data-view="top"] .dnt-xem{max-height:calc(100vh / var(--ty-le, 1) - 358px)}
+  .app[data-view="top"] .dnt-ds,.app[data-view="top"] .dnt-xem{max-height:var(--dn-cao, calc(100vh / var(--ty-le, 1) - 389px))}
 }
 @media print{.app[data-view] .dnt-xem{max-height:none}.dnt-xem .ct-giay{flex:none;overflow:visible}}
+
+/* 01/10 — tháng trống. Dòng báo (màn tự sang tháng gần nhất có DO đã về) nằm cuối dải tổng, ngay dưới ô tháng: dải đó còn
+   trống bên phải nên không thêm hàng. Khung trống có nút về tháng gần nhất / xem tất cả trạng thái. */
+.dnt-bao{margin-left:auto;align-self:flex-start;display:flex;align-items:center;gap:7px;max-width:420px;padding:7px 12px;
+  border:1px solid #E3CB98;border-radius:8px;background:var(--amber-soft);color:var(--amber);font-size:12.5px;font-weight:500;line-height:1.35}
+.dnt-bao svg{flex:none;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.dnt-trong{display:flex;flex-direction:column;align-items:center;gap:12px}

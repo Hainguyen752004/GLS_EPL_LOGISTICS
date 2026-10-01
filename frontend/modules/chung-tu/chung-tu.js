@@ -19,6 +19,36 @@
   const q = (s) => root.querySelector(s);
   const thangNay = () => new Date().toISOString().slice(0, 7);
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
+  /* Tháng trống (01/10): mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng hỏng. TU_DONG = lượt tải đầu khi vào màn không kèm
+   * tháng → tháng trống thì sang tháng gần nhất có DO, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */
+  let TU_DONG = false, BAO = null, GAN = null;
+  const nhanThang = (v) => (v ? v.slice(5, 7) + '/' + v.slice(0, 4) : '');
+
+  /** Tháng `th` có phiếu không; không có thì tháng nào GẦN NHẤT có (cùng bộ lọc `loc` của /api/trips). Hỏi hai lần, mỗi lần
+   *  một dòng: phiếu mới nhất tới cuối tháng `th`, phiếu cũ nhất từ đầu tháng `th` — không tải cả năm. Cách đều: tháng trước. */
+  async function thangGan(th, loc) {
+    const [y, m] = th.split('-').map(Number);
+    const hoi = (them) => { const p = new URLSearchParams(loc); p.set('co', '1'); Object.entries(them).forEach(([k, v]) => p.set(k, v));
+      return API.get('/api/trips?' + p).then(d => (d && d[0] && d[0].doc_date ? d[0].doc_date.slice(0, 7) : null), () => null); };
+    const [truoc, sau] = await Promise.all([hoi({ den: th + '-' + String(new Date(y, m, 0).getDate()).padStart(2, '0') }), hoi({ tu: th + '-01', sap: 'cu' })]);
+    if (truoc === th || sau === th) return { co: true, gan: th };
+    const n = (v) => v.slice(0, 4) * 12 + +v.slice(5, 7);
+    return { co: false, gan: !truoc || !sau ? truoc || sau : (n(sau) - n(th) < n(th) - n(truoc) ? sau : truoc) };
+  }
+  /** Người dùng TỰ chọn tháng (ô tháng, nút ở khung trống): giữ đúng tháng đó, bỏ dòng báo, thôi tự sang tháng khác. */
+  function chonThang(v) { TU_DONG = false; BAO = null; q('#ct2-thang').value = v; taiDo(); }
+  function veBao() {
+    const o = q('#ct2-bao');
+    o.hidden = !BAO;
+    o.innerHTML = BAO ? `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></svg><span>${NN.h('thang_trong_dang_xem', { trong: nhanThang(BAO.trong), xem: nhanThang(BAO.xem) })}</span>` : '';
+  }
+  /** Bảng trống: lý do đúng (tháng chưa có DO · chữ tìm / thẻ lọc không khớp) + nút về tháng gần nhất hoặc xem tất cả. */
+  function oTrong() {
+    const boLoc = D.ds.length || tim;
+    return `<div class="ct2-trong-bang"><div>${boLoc ? NN.h('loc_trong') : NN.h('thang_trong_n', { thang: nhanThang(q('#ct2-thang').value) })}</div>
+      ${D.ds.length && loc ? `<button type="button" class="btn sm" data-tat-ca="1">${NN.h('tq_view_all')}</button>` : ''}
+      ${!D.ds.length && GAN ? `<button type="button" class="btn sm primary" data-thang="${esc(GAN)}">${NN.h('thang_xem_gan', { thang: nhanThang(GAN) })}</button>` : ''}</div>`;
+  }
 
   /* ---------------------------------------------------------------- lọc */
   const conXk = (x) => x.nhien_lieu.some(v => v.status === 'cho');
@@ -60,8 +90,13 @@
         <td>${chipDeNghi(x).chi}</td><td>${chipDeNghi(x).xk}</td>
         <td>${tagTT(x.thu.trang_thai)}${ban && x.thu.doanh_thu ? `<span class="phu">${EPL.tien(x.thu.doanh_thu, x.thu.ccy)}</span>` : ''}</td>
         <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}${x.ho_so.loi ? ` · <span class="loi">⚠ ${x.ho_so.loi}</span>` : ''}</td></tr>`).join('')
-        : `<tr><td class="empty" colspan="7">${NN.h('no_data')}</td></tr>`}</tbody>`;
+        : `<tr><td class="empty" colspan="7">${oTrong()}</td></tr>`}</tbody>`;
     b.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => { chonId = tr.dataset.id; veBang(); veCt(); }));
+    const nutThang = b.querySelector('[data-thang]'); if (nutThang) nutThang.addEventListener('click', () => chonThang(nutThang.dataset.thang));
+    const nutHet = b.querySelector('[data-tat-ca]'); if (nutHet) nutHet.addEventListener('click', () => { loc = ''; chonId = D.ds[0] ? D.ds[0].trip_id : null; veBang(); veCt(); });
+    // bảng trống: bỏ khung "Chọn một dòng" bên phải, bảng (và khung trống của nó) chiếm cả bề ngang
+    q('#ct2-do').classList.toggle('trong', !ds.length); q('#ct2-ct').hidden = !ds.length;
+    veBao();
     // chú thích màu bốn mục chi — nằm ngay dưới bảng, không chiếm hàng riêng trên đầu
     let chu = root.querySelector('.ct2-chu');
     if (!chu) { chu = document.createElement('div'); chu.className = 'ct2-chu'; q('.ct2-trai').appendChild(chu); }
@@ -121,10 +156,23 @@
     ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
   }
 
+  let LUOT = 0;                // lượt tải mới nhất — lượt cũ (đang tự sang tháng) về sau thì không vẽ đè
   async function taiDo() {
-    const th = new URLSearchParams({ thang: q('#ct2-thang').value || thangNay() });
+    const luot = ++LUOT;
+    const thang = q('#ct2-thang').value || thangNay();
+    const th = new URLSearchParams({ thang });
     if (tim) th.set('q', tim);
-    try { D = await API.get('/api/de-nghi-theo-do?' + th.toString()); } catch (e) { D = { ds: [] }; EPL.baoLoi(e); }
+    let duoc = true, ve;
+    try { ve = await API.get('/api/de-nghi-theo-do?' + th.toString()); } catch (e) { ve = { ds: [] }; duoc = false; if (luot === LUOT) EPL.baoLoi(e); }
+    if (luot !== LUOT) return;
+    D = ve; GAN = null;
+    if (duoc && !D.ds.length) {
+      const r = await thangGan(thang, tim ? { q: tim } : {});
+      if (luot !== LUOT) return;
+      GAN = r.co ? null : r.gan;
+      if (TU_DONG && GAN) { TU_DONG = false; BAO = { trong: thang, xem: GAN }; q('#ct2-thang').value = GAN; return taiDo(); }
+    }
+    TU_DONG = false;
     const ds = dsLoc();
     if (!ds.some(x => x.trip_id === chonId)) chonId = ds[0] ? ds[0].trip_id : null;
     veBang(); veCt();
@@ -231,12 +279,14 @@
       // đường cũ ?tab=chi / ?tab=linh (tờ in) → màn Phiếu đề nghị chi
       if (t.tab === 'chi') return EPL.di('de-nghi-chi', { id: t.id || '', v: t.v || '' });
       if (t.tab === 'linh') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });
-      q('#ct2-thang').value = thangNay();
+      // ô tháng mặc định là tháng này THEO GIỜ MÁY (EPL.doiOThang) — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
+      if (t.thang) q('#ct2-thang').value = t.thang;
+      BAO = null; GAN = null; TU_DONG = !t.thang;
       if (t.id) chonId = t.id;
       if (!XEM_SO.includes(AUTH.role)) q('#ct2-tab button[data-tab="so"]').hidden = true;
       root.querySelectorAll('#ct2-tab button').forEach(b => b.addEventListener('click', () => doiTab(b.dataset.tab)));
       root.querySelectorAll('#ct2-loc button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veBang(); }));
-      q('#ct2-thang').addEventListener('change', taiDo);
+      q('#ct2-thang').addEventListener('change', (e) => chonThang(e.target.value));
       q('#ct2-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); taiDo(); }, 300); });
       q('#ct-so-loai').addEventListener('change', e => { soLoaiChon = e.target.value; veSo(); });
       ['ct-so-tu', 'ct-so-den', 'ct-so-chua'].forEach(id => q('#' + id).addEventListener('change', veSo));
