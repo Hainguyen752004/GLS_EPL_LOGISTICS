@@ -2,16 +2,18 @@
  *
  * DO xong (xe về, có biên bản giao nhận, kế toán Viêng Chăn KHOÁ phiếu) → máy lập tờ đề nghị thu cước (loại PDT) — gửi bên
  * công nợ (anh Tune) lập SO, xuất hoá đơn, thu tiền khách. Bên mình không thu tiền: màn này xem trạng thái bên đó chép sang
- * (chờ gửi · đã gửi · đã xuất hoá đơn · đã thu đủ), in tờ, gửi tờ còn chờ. Số tiền theo ĐÚNG tiền tệ cước của phiếu.
+ * (chờ gửi · đã gửi · đã xuất hoá đơn · đã thu đủ), in tờ. Số tiền theo ĐÚNG tiền tệ cước của phiếu.
+ * 01/10 (bỏ trang kế toán tạm phần tiền): tờ không còn đẩy sang trang tạm — bỏ nút "Gửi bên công nợ" (dt_gui), lời gọi
+ * /api/ke-toan/trang-thai, mã phiếu và lỗi đẩy bên trang tạm. Đường sang hệ kế toán (anh Tune) là nút Tạo SO bên dưới.
  *
- * API: GET /api/de-nghi-thu?thang=&q= · GET/POST /api/trips/{id}/de-nghi-thu · POST /api/chung-tu/{id}/day (gửi một tờ).
- * Tạo SO bên kế toán (anh Tune, hợp đồng mục 3.2): GET /api/trips/{id}/tao-so (xem trước, không gọi mạng) → hỏi xác nhận →
+ * API: GET /api/de-nghi-thu?thang=&q= · GET/POST /api/trips/{id}/de-nghi-thu.
+ * Tạo SO ở hệ kế toán (anh Tune, hợp đồng mục 3.2): GET /api/trips/{id}/tao-so (xem trước, không gọi mạng) → hỏi xác nhận →
  * POST /api/trips/{id}/tao-so. Chỉ KT Thu/Chi Viêng Chăn và Sếp; máy chủ cũng chặn vai khác.
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
   const TT = ['cho_gui', 'da_gui', 'da_hoa_don', 'da_thu', 'cho_khoa', ''];
-  let root, D = { ds: [] }, tt = '', tim = '', chonId = null, KET_NOI = { cau_hinh: false }, hen = null;
+  let root, D = { ds: [] }, tt = '', tim = '', chonId = null, hen = null;
   const q = (s) => root.querySelector(s);
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
   const tien = (n, ma) => EPL.tien(n, ma);
@@ -103,11 +105,8 @@
     nut.innerHTML = `${tagTT(d.trang_thai)}
       ${sk && sk.da_tao_so ? `<span class="tag dt_so">${NN.h('dt_so_da', { so: sk.order_code || '' })}</span>` : ''}
       ${sk && !sk.da_tao_so && sk.error_message ? `<span class="small neg" title="${esc(sk.error_message)}">⚠ ${NN.h('dt_so_loi', { loi: sk.error_message.slice(0, 90) })}</span>` : ''}
-      ${d.pdt && d.pdt.da_day && d.pdt.ma_ben_ke_toan ? `<span class="small muted">${NN.h('ct_ma_kt')}: <b class="mono">${esc(d.pdt.ma_ben_ke_toan)}</b></span>` : ''}
-      ${d.pdt && d.pdt.loi_day ? `<span class="small neg" title="${esc(d.pdt.loi_day)}">⚠ ${esc(d.pdt.loi_day.slice(0, 80))}</span>` : ''}
       <span class="grow"></span>
       ${laKt && d.trang_thai === 'chua_lap' ? `<button class="btn primary" id="dnt-lap">${NN.h('dt_lap')}</button>` : ''}
-      ${laKt && d.pdt && !d.pdt.da_day && KET_NOI.cau_hinh ? `<button class="btn primary" id="dnt-gui">${NN.h('dt_gui')}</button>` : ''}
       ${laKt && d.locked && !(sk && sk.da_tao_so) ? `<button class="btn primary" id="dnt-so-gui">${NN.h('dt_so_nut')}</button>` : ''}
       <button class="btn" id="dnt-mo">${NN.h('open_slip')}</button>
       <button class="btn ${d.pdt ? '' : 'quiet'}" id="dnt-in">${NN.h('print')}</button>`;
@@ -116,11 +115,6 @@
     const lap = q('#dnt-lap'); if (lap) lap.addEventListener('click', async () => {
       lap.disabled = true;
       try { await API.post(`/api/trips/${x.trip_id}/de-nghi-thu`, {}); EPL.toast(NN.t('saved'), 'ok'); } catch (e) { EPL.baoLoi(e); }
-      await tai();
-    });
-    const gui = q('#dnt-gui'); if (gui) gui.addEventListener('click', async () => {
-      gui.disabled = true;
-      try { await API.post(`/api/chung-tu/${d.pdt.id}/day`, {}); EPL.toast(NN.t('ct_day_xong'), 'ok'); } catch (e) { EPL.baoLoi(e); }
       await tai();
     });
     const soGui = q('#dnt-so-gui'); if (soGui) soGui.addEventListener('click', async () => {
@@ -225,7 +219,6 @@
       q('#dnt-thang').addEventListener('change', (e) => chonThang(e.target.value));
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       q('#dnt-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
-      if (AUTH.la('acct')) { try { KET_NOI = await API.get('/api/ke-toan/trang-thai'); } catch (e) { KET_NOI = { cau_hinh: false }; } }
       await tai();
     },
     onLang() { if (root) veHet(); },

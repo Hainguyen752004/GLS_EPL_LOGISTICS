@@ -33,7 +33,6 @@
 .ct2-muc i.paid{background:var(--green-soft);color:var(--green);border-color:transparent}
 .ct2-muc i.khong{opacity:.35}
 .ct2-ho{font-size:12px;white-space:nowrap}
-.ct2-ho .loi{color:var(--red);font-weight:600}
 .ct2-chu{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--ink-2)}
 .ct2-chu span{display:inline-flex;align-items:center;gap:4px}
 .ct2-chu i{display:inline-block;width:14px;height:11px;border-radius:3px}
@@ -69,12 +68,8 @@
 #ct-so-bang tr.da-day td{color:var(--ink-3)}
 #ct-so-bang .mono{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 @media print{#ct-so-ct .hd .field,#ct-so-ct .ct-check,#ct-so-bang th:last-child,#ct-so-bang td:last-child{display:none}}
-/* kết nối kế toán */
-.ct-ket-noi{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;margin:0 14px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:12.5px}
-.ct-ket-noi .cham{width:9px;height:9px;border-radius:50%;background:var(--line-2)} .ct-ket-noi .cham.on{background:var(--green)} .ct-ket-noi .cham.loi{background:var(--red)}
-.ct-ket-noi .grow{flex:1}
-.ct-ma-kt{font-family:ui-monospace,monospace;font-size:11.5px;color:var(--green)}
-.ct-loi-day{color:var(--red);font-size:11.5px;max-width:220px;white-space:normal}
+/* 01/10 — thanh "Kết nối kế toán", mã phiếu bên trang tạm, lỗi đẩy: đã bỏ cùng việc đẩy chứng từ (trang kế toán tạm) */
+#ct-cau-hinh{align-self:flex-end;margin-bottom:4px}
 
 /* 01/10 — tháng trống. Dòng báo trên đầu bảng khi màn tự sang tháng gần nhất có DO; bảng trống chiếm cả bề ngang (khung
    "Chọn một dòng" bên phải ẩn), lý do + nút về tháng gần nhất / xem tất cả nằm giữa. */

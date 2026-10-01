@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2136 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2138 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10681,5 +10681,15 @@ window.EPL_TU_DIEN = {
   "vi": "Chép ô \"Token nhận chứng từ\" ở Cài đặt bên kho tạm. Để trống = giữ khoá cũ.",
   "lo": "ສຳເນົາຊ່ອງ \"Token ຮັບເອກະສານ\" ໃນ ຕັ້ງຄ່າ ຂອງສາງຊົ່ວຄາວ. ປະວ່າງ = ໃຊ້ກະແຈເກົ່າ.",
   "en": "Copy the \"Voucher push token\" field from Settings on the warehouse site. Leave empty to keep the current key."
+ },
+ "ct_so_chung_tu": {
+  "vi": "Sổ chứng từ",
+  "lo": "ປື້ມເອກະສານ",
+  "en": "Document register"
+ },
+ "ct_hint_so": {
+  "vi": "Mỗi bước nghiệp vụ sinh một tờ ở đây để in, xem và định khoản. Thu, chi tiền làm ở hệ kế toán; đối chiếu xong với hệ kế toán thì đánh dấu đã đối chiếu. Đây không phải sổ kế toán.",
+  "lo": "ແຕ່ລະຂັ້ນຕອນສ້າງເອກະສານໜຶ່ງໃບຢູ່ນີ້ ເພື່ອພິມ, ເບິ່ງ ແລະ ລົງບັນຊີ (ໜີ້ / ມີ). ການຮັບ ແລະ ຈ່າຍເງິນ ເຮັດຢູ່ລະບົບບັນຊີ; ກວດສອບກັບລະບົບບັນຊີແລ້ວ ໃຫ້ໝາຍວ່າກວດສອບແລ້ວ. ນີ້ບໍ່ແມ່ນປື້ມບັນຊີ.",
+  "en": "Each step creates one document here to print, view and post (Dr / Cr). Money is received and paid in the accounting system; once checked against it, mark the document reconciled. This is not the ledger."
  }
 };

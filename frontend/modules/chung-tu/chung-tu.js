@@ -4,17 +4,22 @@
  *   · Đề nghị chi — đi theo từng bước của chuyến: tạm ứng (TU), xuất nhiên liệu (NL, mỗi kho một tờ), chi các mục III–VI
  *     (chờ nhập → đã nhập → đã kiểm → đã ghi sổ → đã chi);
  *   · Đề nghị thu — một tờ khi DO xong (khoá phiếu), gửi bên công nợ (anh Tune);
- *   · Hồ sơ gửi kế toán — bao nhiêu tờ của DO đã sang bên kế toán.
+ *   · Chứng từ — bao nhiêu tờ của DO đã đối chiếu (đánh dấu tay ở tab Sổ chứng từ).
  * Bấm một DO → khung phải kể từng tờ, bấm tờ mở màn Phiếu đề nghị chi / thu để in.
  *
- * Tab "Hồ sơ gửi kế toán" là sổ chứng từ cũ (hộp thư đi), giữ trong lúc trang kế toán tạm còn chạy.
- * API: GET /api/de-nghi-theo-do?thang=&q= · GET /api/chung-tu?trip_id= · sổ: /api/chung-tu, /api/ke-toan/…
+ * Tab "Sổ chứng từ": tờ bên mình sinh ở mỗi bước, để in / xem / định khoản và đánh dấu đối chiếu tay. Chủ dự án chốt 01/10
+ * bỏ trang kế toán tạm phần tiền (8030 chỉ còn là kho tạm, việc tiền đi qua hệ kế toán anh Tune): bỏ thanh "Kết nối kế
+ * toán", nút Đẩy hết / Đẩy từng tờ, lỗi đẩy, mã phiếu bên trang tạm; hộp Cấu hình chỉ còn hai mã bên kế toán cấp.
+ * API: GET /api/de-nghi-theo-do?thang=&q= · GET /api/chung-tu?trip_id= · sổ: /api/chung-tu, POST /api/chung-tu/{id}/da-day ·
+ * hai mã: GET/PUT /api/kho-tam/cau-hinh (máy chủ trước 52f673c: /api/ke-toan/cau-hinh).
  */
 (function () {
   const { API, NN, esc, so, AUTH } = EPL;
   let root, tab = 'do', D = { ds: [] }, loc = '', tim = '', chonId = null, hen = null;
   let SO_LOAI = [], soLoaiChon = '';
   const XEM_SO = ['acct', 'expacct', 'rev', 'treasury', 'cash', 'fuel', 'depot', 'admin'];
+  // loại đối tượng của tờ (services/chung_tu.py) → nhãn đã dịch; trước đây hiện mã thô "tai_xe", "khach"… dưới tên
+  const DOI_TUONG = { khach: 'customer', tai_xe: 'driver', chu_xe: 'owner', kho: 'fuel_kho', ncc: 'supplier' };
   const MUC = [['fuel', 'III', 'e_fuel'], ['travel', 'IV', 'e_travel'], ['repair', 'V', 'e_repair'], ['other', 'VI', 'e_other']];
   const q = (s) => root.querySelector(s);
   const thangNay = () => new Date().toISOString().slice(0, 7);
@@ -81,7 +86,7 @@
     root.querySelectorAll('#ct2-loc button').forEach(x => x.classList.toggle('on', x.dataset.loc === loc));
     const ban = D.thay_tien_ban;
     b.innerHTML = `<thead><tr><th>DO</th><th>${NN.h('truck_no')} · ${NN.h('driver')}</th><th>${NN.h('customer')} · ${NN.h('route')}</th>
-      <th>${NN.h('ct_c_chi')}</th><th>${NN.h('ct_c_xk')}</th><th>${NN.h('ct_c_thu')}</th><th>${NN.h('ct_c_ho_so')}</th></tr></thead>
+      <th>${NN.h('ct_c_chi')}</th><th>${NN.h('ct_c_xk')}</th><th>${NN.h('ct_c_thu')}</th><th>${NN.h('ct_da_day')}</th></tr></thead>
       <tbody>${ds.length ? ds.map(x => `<tr data-id="${esc(x.trip_id)}" class="${x.trip_id === chonId ? 'sel' : ''}">
         <td><span class="so">${esc(x.doc_no)}</span><span class="ct2-k ${esc(x.kind)}">${NN.h(x.kind === 'gom' ? 'dn_gom' : 'dn_giao')}</span>${x.company === 'joint' ? `<span class="ct2-k joint">${NN.h('dn_xe_thue')}</span>` : ''}
           <span class="phu">${EPL.ngay(x.doc_date)}${x.locked ? ' · ' + NN.h('s_locked') : ''}</span></td>
@@ -89,7 +94,7 @@
         <td><span lang="lo">${esc(x.customer_name || '—')}</span><span class="phu" lang="lo">${esc(x.origin || '')} → ${esc(x.destination || '')}</span></td>
         <td>${chipDeNghi(x).chi}</td><td>${chipDeNghi(x).xk}</td>
         <td>${tagTT(x.thu.trang_thai)}${ban && x.thu.doanh_thu ? `<span class="phu">${EPL.tien(x.thu.doanh_thu, x.thu.ccy)}</span>` : ''}</td>
-        <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}${x.ho_so.loi ? ` · <span class="loi">⚠ ${x.ho_so.loi}</span>` : ''}</td></tr>`).join('')
+        <td class="ct2-ho">${x.ho_so.da_day}/${x.ho_so.tong}</td></tr>`).join('')
         : `<tr><td class="empty" colspan="7">${oTrong()}</td></tr>`}</tbody>`;
     b.querySelectorAll('tbody tr[data-id]').forEach(tr => tr.addEventListener('click', () => { chonId = tr.dataset.id; veBang(); veCt(); }));
     const nutThang = b.querySelector('[data-thang]'); if (nutThang) nutThang.addEventListener('click', () => chonThang(nutThang.dataset.thang));
@@ -134,7 +139,7 @@
           ${nl || `<div class="ct2-trong">${NN.h('ct_chua_de_nghi_xk')}</div>`}</div>
         <div class="ct2-nhom"><h4>${NN.h('ct_chi_theo_muc')}</h4>${muc || `<div class="ct2-trong">${NN.h('no_data')}</div>`}</div>
         ${ban || t.pdt ? `<div class="ct2-nhom"><h4>${NN.h('nav_de_nghi_thu')}${ban ? `<a data-thu="1">${NN.h('ct_mo_man')}</a>` : ''}</h4>${thu}</div>` : ''}
-        <div class="ct2-nhom" id="ct2-ho-so"><h4>${NN.h('ct_so')}</h4><div class="ct2-trong">${NN.h('loading')}</div></div>
+        <div class="ct2-nhom" id="ct2-ho-so"><h4>${NN.h('ct_so_chung_tu')}</h4><div class="ct2-trong">${NN.h('loading')}</div></div>
         <div class="ct2-nhom"><h4><a data-mo-phieu="1" style="margin-left:0">${NN.h('open_slip')} →</a></h4></div>
       </div>`;
     ct.querySelectorAll('a[data-v]').forEach(a => a.addEventListener('click', () => a.dataset.loai === 'fuel'
@@ -143,15 +148,15 @@
     ct.querySelectorAll('a[data-mo-xk]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-xuat-kho', { id: x.trip_id })));
     ct.querySelectorAll('a[data-thu]').forEach(a => a.addEventListener('click', () => EPL.di('de-nghi-thu', { id: x.trip_id, thang: (x.doc_date || '').slice(0, 7) })));
     ct.querySelectorAll('a[data-mo-phieu]').forEach(a => a.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: x.trip_id })));
-    // hồ sơ gửi kế toán của DO này — vai không xem sổ (Bãi) thì bỏ khối
+    // chứng từ của DO này — vai không xem sổ (Bãi) thì bỏ khối
     const ho = q('#ct2-ho-so');
     if (!XEM_SO.includes(AUTH.role)) { ho.remove(); return; }
     let r;
     try { r = await API.get('/api/chung-tu?trip_id=' + encodeURIComponent(x.trip_id)); } catch (e) { ho.querySelector('.ct2-trong').textContent = e.message; return; }
     if (chonId !== x.trip_id || !ho.isConnected) return;
-    ho.innerHTML = `<h4>${NN.h('ct_so')}<a data-so="1">${NN.h('ct_mo_man')}</a></h4>` + (r.ds.length ? r.ds.map(c => dong(
+    ho.innerHTML = `<h4>${NN.h('ct_so_chung_tu')}<a data-so="1">${NN.h('ct_mo_man')}</a></h4>` + (r.ds.length ? r.ds.map(c => dong(
       `<span class="mono">${esc(c.so)}</span>`, esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten),
-      `${c.tien != null ? EPL.tien(c.tien, c.tien_te) + ' · ' : ''}${c.da_day ? '✓ ' + NN.h('ct_da_day') : c.loi_day ? '<span class="neg">⚠</span>' : '<span class="muted">' + NN.h('ct_chua_day') + '</span>'}`)).join('')
+      `${c.tien != null ? EPL.tien(c.tien, c.tien_te) + ' · ' : ''}${c.da_day ? '✓ ' + NN.h('ct_da_day') : '<span class="muted">' + NN.h('ct_chua_day') + '</span>'}`)).join('')
       : `<div class="ct2-trong">${NN.h('ct_khong_co')}</div>`);
     ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
   }
@@ -178,7 +183,7 @@
     veBang(); veCt();
   }
 
-  /* ---------------------------------------------------------------- Hồ sơ gửi kế toán (sổ chứng từ cũ) */
+  /* ---------------------------------------------------------------- Sổ chứng từ (in / xem / định khoản, đối chiếu tay) */
   function veSoTong(tong) {
     q('#ct-so-tong').innerHTML = Object.keys(tong).length ? SO_LOAI.filter(l => tong[l.ma]).map(l => {
       const t = tong[l.ma];
@@ -187,38 +192,22 @@
     }).join('') : '';
     q('#ct-so-tong').querySelectorAll('[data-loai]').forEach(b => b.addEventListener('click', () => { soLoaiChon = soLoaiChon === b.dataset.loai ? '' : b.dataset.loai; q('#ct-so-loai').value = soLoaiChon; veSo(); }));
   }
-  let KET_NOI = { cau_hinh: false };
-  async function taiKetNoi() { try { KET_NOI = await API.get('/api/ke-toan/trang-thai'); } catch (e) { KET_NOI = { cau_hinh: false }; } }
-  function veKetNoi() {
-    const o = q('#ct-ket-noi'); if (!o) return;
-    const k = KET_NOI, dayDuoc = AUTH.la('acct'), sep = AUTH.role === 'admin';
-    o.innerHTML = `<span class="cham ${k.cau_hinh ? (k.loi ? 'loi' : 'on') : ''}"></span>
-      <b>${NN.h('ct_ket_noi')}</b>
-      <span class="muted">${k.cau_hinh ? esc(k.api) : NN.h('ct_chua_ket_noi')}</span>
-      <span class="grow"></span>
-      <span>${NN.h('ct_chua_day')}: <b>${k.chua_day ?? '—'}</b>${k.loi ? ` · <span class="neg">${NN.h('ct_loi_day_n', { n: k.loi })}</span>` : ''}${k.day_gan_nhat ? ` · ${NN.h('ct_day_gan_nhat')} ${EPL.ngayGio ? EPL.ngayGio(k.day_gan_nhat) : esc(k.day_gan_nhat)}` : ''}</span>
-      ${dayDuoc && k.cau_hinh && k.chua_day ? `<button type="button" class="btn sm primary" id="ct-day-het">${NN.h('ct_day_het')} (${k.chua_day})</button>` : ''}
-      ${sep ? `<button type="button" class="btn sm" id="ct-cau-hinh">${NN.h('ct_cau_hinh')}</button>` : ''}`;
-    const het = q('#ct-day-het'); if (het) het.addEventListener('click', async () => {
-      het.disabled = true;
-      try { const r = await API.post('/api/chung-tu/day', {}); EPL.toast(NN.t('ct_day_ket_qua', { xong: r.xong, loi: r.loi }), r.loi ? 'loi' : 'ok'); }
-      catch (e) { EPL.baoLoi(e); }
-      await taiKetNoi(); await veSo();
-    });
-    const ch = q('#ct-cau-hinh'); if (ch) ch.addEventListener('click', async () => {
-      let hien = {}; try { hien = await API.get('/api/ke-toan/cau-hinh'); } catch (e) { hien = {}; }
-      const v = await EPL.hopNhap(NN.t('ct_cau_hinh'), [
-        { id: 'api', label: 'ct_api_dia_chi', value: hien.ke_toan_api || '' },
-        { id: 'token', label: 'ct_api_token', type: 'password', value: '' },
-        // Hai mã bên kế toán cấp sau — gõ ở đây là mọi tờ sinh từ đó mang mã, không phải sửa mã nguồn.
-        { id: 'ma_hang_khach_gui', label: 'ct_ma_hang_gui', value: hien.ma_hang_khach_gui || '' },
-        { id: 'ma_gia_von', label: 'ct_ma_gia_von', value: hien.ma_gia_von || '' },
-      ], NN.t('save'));
-      if (!v) return;
-      try { await API.put('/api/ke-toan/cau-hinh', { ke_toan_api: v.api, ke_toan_token: v.token, ma_hang_khach_gui: v.ma_hang_khach_gui, ma_gia_von: v.ma_gia_von }); EPL.toast(NN.t('saved'), 'ok'); }
-      catch (e) { EPL.baoLoi(e); }
-      await taiKetNoi(); await veSo();
-    });
+  /** Hai mã bên kế toán cấp (hàng khách gửi · giá vốn hàng bán) — gõ ở đây là mọi tờ sinh từ đó mang mã, không sửa mã nguồn.
+   *  Địa chỉ / khoá trang kế toán tạm đã bỏ (01/10). Đường mới /api/kho-tam/cau-hinh; máy chủ cũ chỉ có /api/ke-toan/cau-hinh. */
+  async function goiCauHinh(phuong, than) {
+    const goi = (d) => (phuong === 'put' ? API.put(d, than) : API.get(d));
+    try { return await goi('/api/kho-tam/cau-hinh'); } catch (e) { if (e.status !== 404 && e.status !== 405) throw e; }
+    return goi('/api/ke-toan/cau-hinh');
+  }
+  async function moCauHinh() {
+    let hien = {}; try { hien = await goiCauHinh('get'); } catch (e) { hien = {}; }
+    const v = await EPL.hopNhap(NN.t('ct_cau_hinh'), [
+      { id: 'ma_hang_khach_gui', label: 'ct_ma_hang_gui', value: hien.ma_hang_khach_gui || '' },
+      { id: 'ma_gia_von', label: 'ct_ma_gia_von', value: hien.ma_gia_von || '' },
+    ], NN.t('save'));
+    if (!v) return;
+    try { await goiCauHinh('put', { ma_hang_khach_gui: v.ma_hang_khach_gui, ma_gia_von: v.ma_gia_von }); EPL.toast(NN.t('saved'), 'ok'); }
+    catch (e) { EPL.baoLoi(e); }
   }
 
   async function veSo() {
@@ -230,27 +219,20 @@
     let r;
     try { r = await API.get('/api/chung-tu?' + th.toString()); } catch (e) { q('#ct-so-than').innerHTML = `<tr><td colspan="10" class="empty neg">${esc(e.message)}</td></tr>`; return; }
     veSoTong(r.tong);
-    veKetNoi();
     const tk = (ma, ten) => ma ? `<span class="acct" title="${esc(ten || '')}">${esc(ma)}</span>` : `<span class="muted small" title="${esc(ten || '')}">?</span>`;
-    const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');
-    const dayDuoc = AUTH.la('acct');   // KT Thu/Chi VC và Sếp
+    const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');   // đánh dấu đối chiếu tay
     q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day ? 'da-day' : ''}" data-id="${c.id}">
       <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
       <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
       <td>${c.trip_id ? `<a href="#/phieu-xuat-xe?id=${esc(c.trip_id)}" class="mono">${esc(c.trip_doc_no || '')}</a>` : '<span class="muted">—</span>'}</td>
-      <td lang="lo">${esc(c.doi_tuong_ten || '')}<div class="small muted">${esc(c.doi_tuong_loai || '')}</div></td>
+      <td lang="lo">${esc(c.doi_tuong_ten || '')}<div class="small muted">${DOI_TUONG[c.doi_tuong_loai] ? NN.h(DOI_TUONG[c.doi_tuong_loai]) : esc(c.doi_tuong_loai || '')}</div></td>
       <td class="num">${c.tien == null ? '—' : EPL.tien(c.tien, c.tien_te)}</td>
       <td class="num">${c.tien_lak == null ? '—' : so(c.tien_lak)}</td>
       <td>${c.no || c.co || c.no_ten ? `${tk(c.no, c.no_ten)} / ${tk(c.co, c.co_ten)}` : '<span class="muted">—</span>'}</td>
       <td class="small">${esc(c.mo_ta || '')}<div class="muted">${esc(c.by_user || '')}</div></td>
-      <td class="small">${c.da_day ? `✓ ${c.ma_ben_ke_toan ? `<span class="ct-ma-kt" title="${esc(NN.t('ct_ma_kt'))}">${esc(c.ma_ben_ke_toan)}</span>` : NN.h('ct_da_day')}` : c.loi_day ? `<div class="ct-loi-day" title="${esc(c.loi_day)}">⚠ ${esc(c.loi_day.slice(0, 60))}</div>` : `<span class="muted">${NN.h('ct_chua_day')}</span>`}</td>
-      <td class="no-print">${dayDuoc && !c.da_day && KET_NOI.cau_hinh ? `<button type="button" class="btn sm primary" data-day-api="${c.id}">${NN.h('ct_day')}</button> ` : ''}${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
+      <td class="small">${c.da_day ? `✓ ${NN.h('ct_da_day')}` : `<span class="muted">${NN.h('ct_chua_day')}</span>`}</td>
+      <td class="no-print">${suaDuoc ? `<button type="button" class="btn sm ${c.da_day ? 'quiet' : ''}" data-day="${c.id}" data-gia-tri="${c.da_day ? 0 : 1}">${NN.h(c.da_day ? 'ct_mo_lai' : 'ct_danh_dau')}</button>` : (c.da_day ? '✓' : '')}</td>
     </tr>`).join('') : `<tr><td colspan="11" class="empty small">${NN.h('ct_khong_co')}</td></tr>`;
-    q('#ct-so-than').querySelectorAll('[data-day-api]').forEach(b => b.addEventListener('click', async () => {
-      b.disabled = true;
-      try { await API.post(`/api/chung-tu/${b.dataset.dayApi}/day`, {}); EPL.toast(NN.t('ct_day_xong'), 'ok'); } catch (e) { EPL.baoLoi(e); }
-      await veSo();
-    }));
     q('#ct-so-than').querySelectorAll('[data-day]').forEach(b => b.addEventListener('click', async () => {
       try { await API.post(`/api/chung-tu/${b.dataset.day}/da-day`, { da_day: b.dataset.giaTri === '1' }); await veSo(); } catch (e) { EPL.baoLoi(e); }
     }));
@@ -268,7 +250,7 @@
         q('#ct-so-loai').innerHTML = `<option value="">${NN.h('all')}</option>` + SO_LOAI.map(l => `<option value="${l.ma}">${esc(l.ma)} · ${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}</option>`).join('');
         q('#ct-so-loai').value = soLoaiChon;
       }
-      await taiKetNoi(); await veSo();
+      await veSo();
     } else await taiDo();
   }
 
@@ -284,6 +266,8 @@
       BAO = null; GAN = null; TU_DONG = !t.thang;
       if (t.id) chonId = t.id;
       if (!XEM_SO.includes(AUTH.role)) q('#ct2-tab button[data-tab="so"]').hidden = true;
+      q('#ct-cau-hinh').hidden = AUTH.role !== 'admin';
+      q('#ct-cau-hinh').addEventListener('click', moCauHinh);
       root.querySelectorAll('#ct2-tab button').forEach(b => b.addEventListener('click', () => doiTab(b.dataset.tab)));
       root.querySelectorAll('#ct2-loc button').forEach(b => b.addEventListener('click', () => { loc = b.dataset.loc; veBang(); }));
       q('#ct2-thang').addEventListener('change', (e) => chonThang(e.target.value));
@@ -298,7 +282,7 @@
       if (tab === 'so') return EPL._xlsx.sheetMacDinh(root);
       const T = NN.t;
       return [EPL.xuatSheet(T('nav_vouchers'), ['DO', T('do_kind'), T('c_date'), T('truck_no'), T('driver'), T('customer'), T('route'),
-        T('v_advance'), T('v_fuel'), 'III', 'IV', 'V', 'VI', T('nav_de_nghi_thu'), T('ct_c_ho_so')],
+        T('v_advance'), T('v_fuel'), 'III', 'IV', 'V', 'VI', T('nav_de_nghi_thu'), T('ct_da_day')],
         dsLoc().map(x => [x.doc_no, T(x.kind === 'gom' ? 'dn_gom' : 'dn_giao'), EPL.oNgay(x.doc_date), x.truck_no || '', x.driver_name || '', x.customer_name || '',
           (x.origin || '') + ' → ' + (x.destination || ''), x.tam_ung.map(v => v.so + ' · ' + T('v_' + v.status)).join('; '),
           x.nhien_lieu.map(v => v.so + ' · ' + T('v_' + v.status)).join('; '),

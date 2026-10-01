@@ -1,12 +1,13 @@
 <!-- Đề nghị theo DO (sếp 30/09: "trang quản lý DO nào phiếu chi gì trạng thái gì, DO nào phiếu thu gì trạng thái gì").
-     Tab "Theo DO": mỗi DO một dòng — đề nghị chi (tạm ứng, nhiên liệu, chi các mục III–VI), đề nghị thu, hồ sơ đã gửi kế toán;
-     bấm một DO → khung phải kể từng tờ. Tờ để in ở hai màn Phiếu đề nghị chi / Phiếu đề nghị thu.
-     Tab "Hồ sơ gửi kế toán": sổ chứng từ cũ (hộp thư đi sang bên kế toán) — còn dùng trong lúc trang kế toán tạm còn chạy. -->
+     Tab "Theo DO": mỗi DO một dòng — đề nghị chi (tạm ứng, nhiên liệu, chi các mục III–VI), đề nghị thu, số tờ chứng từ đã
+     đối chiếu; bấm một DO → khung phải kể từng tờ. Tờ để in ở hai màn Phiếu đề nghị chi / Phiếu đề nghị thu.
+     Tab "Sổ chứng từ" (01/10, bỏ trang kế toán tạm phần tiền): tờ chứng từ bên mình sinh để in / xem / định khoản và đánh
+     dấu đối chiếu tay — không còn đẩy sang đâu; việc tiền đi qua hệ kế toán (anh Tune). -->
 <div class="ct2">
   <div class="ct2-top no-print">
     <div class="seg" id="ct2-tab">
       <button class="on" data-tab="do"><span data-i18n="ct_theo_do"></span></button>
-      <button data-tab="so"><span data-i18n="ct_so"></span></button>
+      <button data-tab="so"><span data-i18n="ct_so_chung_tu"></span></button>
     </div>
     <div class="seg ct2-khi-do" id="ct2-loc">
       <button class="on" data-loc=""><span data-i18n="all"></span><b id="ct2-n-all">·</b></button>
@@ -28,22 +29,23 @@
     <aside class="ct2-phai" id="ct2-ct"></aside>
   </div>
 
-  <!-- Hồ sơ gửi kế toán (sổ chứng từ cũ): mỗi bước nghiệp vụ bỏ vào đây một tờ (DO, PLNL, PTU, PDT, PC_TU…), bên kế toán
-       nhận (đẩy sang hoặc kéo GET /api/chung-tu?chua_day=1). Không phải sổ kế toán. -->
+  <!-- Sổ chứng từ: mỗi bước nghiệp vụ sinh một tờ (DO, PLNL, PTU, PDT, PC_TU…) kèm định khoản gợi ý — in / xem, đối chiếu
+       xong với hệ kế toán thì đánh dấu tay. Không phải sổ kế toán. Thanh "Kết nối kế toán" + nút Đẩy đã bỏ 01/10. -->
   <div class="card" id="ct-so-ct" hidden>
     <div class="hd">
-      <h3 data-i18n="ct_so"></h3><div class="grow"></div>
+      <h3 data-i18n="ct_so_chung_tu"></h3><div class="grow"></div>
       <div class="field"><label data-i18n="ct_loai"></label><select id="ct-so-loai"><option value="" data-i18n="all"></option></select></div>
       <div class="field"><label data-i18n="ct_tu"></label><input type="date" id="ct-so-tu"></div>
       <div class="field"><label data-i18n="ct_den"></label><input type="date" id="ct-so-den"></div>
       <label class="ct-check"><input type="checkbox" id="ct-so-chua"> <span data-i18n="ct_chua_day"></span></label>
+      <!-- Sếp: hai mã bên kế toán cấp (hàng khách gửi · giá vốn) — hết địa chỉ / khoá trang kế toán tạm -->
+      <button type="button" class="btn sm no-print" id="ct-cau-hinh" hidden><span data-i18n="ct_cau_hinh"></span></button>
     </div>
-    <div class="bd small muted" data-i18n="ct_hint"></div>
-    <div class="ct-ket-noi no-print" id="ct-ket-noi"></div>
+    <div class="bd small muted" data-i18n="ct_hint_so"></div>
     <div class="ct-tong-loai" id="ct-so-tong"></div>
     <div class="tbl-wrap"><table class="tbl tbl-compact" id="ct-so-bang">
       <thead><tr><th data-i18n="voucher_no"></th><th data-i18n="c_date"></th><th data-i18n="ct_loai"></th><th data-i18n="doc_no"></th><th data-i18n="ct_doi_tuong"></th>
-        <th class="num" data-i18n="amount"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="ct_no_co"></th><th data-i18n="note"></th><th data-i18n="ct_day_tt"></th><th></th></tr></thead>
+        <th class="num" data-i18n="amount"></th><th class="num" data-i18n="amount_lak"></th><th data-i18n="ct_no_co"></th><th data-i18n="note"></th><th data-i18n="status"></th><th class="no-print"></th></tr></thead>
       <tbody id="ct-so-than"></tbody></table></div>
   </div>
 </div>
