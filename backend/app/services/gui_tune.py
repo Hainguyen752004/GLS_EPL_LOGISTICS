@@ -12,7 +12,8 @@ EPL_System (`services/ghi_so_kinh_doanh.py`) là khuôn. NHỮNG ĐIỀU PHẢI 
   Tune (PUBOBJECT.OBJ_OBJECTNO) — bên đó không tự tạo khách (lỗi 52905). Bên mình lấy ở ô "Mã khách" của danh mục khách.
 * Tiền là số JSON, tổng khớp CHÍNH XÁC: selling_price + customer_surcharge_total = final_selling_price = Σ dòng thu. Kiểm
   bằng Decimal trước khi gửi. Chỉ VND / LAK / USD — cước THB, CNY chặn ở đây (câu hỏi 10.3 của hợp đồng).
-* Một dòng THU (cước) như hợp đồng 3.2 — dòng chi còn chờ anh Tune trả lời câu hỏi 10.4.
+* Một dòng THU (cước) như hợp đồng 3.2. Đọc mã nguồn bên anh (01/10): dòng `chi` được nhận nhưng chỉ ghép thành chữ vào
+  mô tả mặt hàng và ghi chú dòng SO của KHÁCH (không thành bút toán chi), quá sức chứa cột thì 52909 — nên không gửi.
 * Idempotency-Key ổn định `logistics:EPLLAO-<Trip.id>`. Lần gửi mà kết quả CHƯA RÕ (mất mạng, hết giờ, 5xx, 52903) thì gửi
   lại ĐÚNG gói và khoá đã lưu. Bị từ chối rõ ràng (4xx dữ liệu) thì dựng gói mới theo số hiện tại — bên đó không ghi gì.
 * Lỗi có thể về dưới dạng HTTP 200 kèm `Success: false` — đọc cả thân, không tin mỗi mã HTTP.
@@ -29,14 +30,19 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException
 
-from models import GuiSoTune
+from models import GuiSoTune, ma_moi
 from services import ban_giao as BG
 
 TIEN_NHAN = ("VND", "LAK", "USD")
 GOC_MAC_DINH = "https://demo-lao-api.goldensme.com"
 DUONG = "/api/v1/integrations/logistics/sales-orders"
 CHO_GIAY = 60
+# Luật mã của bên anh Tune (GLS-QLSX-APIs `LogisticsPushValidator.Code` + `sp_Logistics_CreateSalesOrder`): mở đầu bằng
+# chữ Latinh / số, sau đó chỉ chữ, số và _ . - ; mã khách và mã tuyến ghép "<khách>_<tuyến>" thành mã mặt hàng ≤ 50.
+# Mã tuyến bên em dài 12 (`models.ma_moi`) → mã khách tối đa 37. Danh mục khách dùng chung luật này để chặn từ lúc gán mã.
 MA_HOP_LE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.\-]*$")
+DAI_MA_TUYEN = len(ma_moi())
+MA_KHACH_TOI_DA = 50 - 1 - DAI_MA_TUYEN
 KEY_HOP_LE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:\-]{0,99}$")
 GIOI_HAN = Decimal("9999999999999")
 # khoá header gửi đi: khoá bắt buộc + khoá "nên gửi nếu có" của hướng dẫn. Bỏ các khối lồng không thuộc hợp đồng
@@ -49,6 +55,14 @@ KET_QUA_CHUA_RO = ("QLSX_KHONG_GOI_DUOC", "LOGISTICS_52903")
 
 def _loi(ma, loi, http=422):
     raise HTTPException(http, {"ma": ma, "loi": loi})
+
+
+def loi_ma_khach(ma):
+    """Câu lỗi nếu `ma` không gửi được sang bên kế toán; hợp lệ thì None."""
+    if len(ma) > MA_KHACH_TOI_DA or not MA_HOP_LE.match(ma):
+        return ("Mã khách phải mở đầu bằng chữ Latinh hoặc số, chỉ gồm chữ Latinh, số và - _ . (không dấu cách, không /), "
+                "tối đa %d ký tự — bên kế toán ghép mã khách với mã tuyến thành mã mặt hàng ≤ 50 ký tự." % MA_KHACH_TOI_DA)
+    return None
 
 
 def cau_hinh():
@@ -87,8 +101,15 @@ def _tien(v, ten):
 
 
 def _so_json(d):
+    """Số JSON đúng từng chữ số: bên kia đọc bằng decimal(18,5) và so tổng bằng dấu "=" — số lẻ mà float làm tròn
+    (quá ~15 chữ số có nghĩa) thì chặn, không gửi một con số khác."""
     d = d.normalize()
-    return int(d) if d == d.to_integral_value() else float(d)
+    if d == d.to_integral_value():
+        return int(d)
+    f = float(d)
+    if Decimal(repr(f)) != d:
+        _loi("TIEN_QUA_NHIEU_SO", "Số %s có quá nhiều chữ số lẻ để gửi chính xác — làm tròn trên phiếu rồi gửi lại." % d)
+    return f
 
 
 def dung_goi(db, p):
@@ -105,8 +126,8 @@ def dung_goi(db, p):
     if not ma_khach:
         _loi("THIEU_MA_KHACH_KE_TOAN", "Khách %s chưa có mã khách bên kế toán. KT Thu/Chi Viêng Chăn ghi ở danh mục Khách hàng "
                                        "— mã phải có sẵn trong danh mục khách bên kế toán." % (p.customer_name or "—"))
-    if len(ma_khach) > 50 or not MA_HOP_LE.match(ma_khach):
-        _loi("MA_KHACH_SAI", "Mã khách %r không hợp lệ với bên kế toán (chữ Latinh, số, _ - ., ≤ 50 ký tự, không có /)." % ma_khach)
+    if loi_ma_khach(ma_khach):
+        _loi("MA_KHACH_SAI", "Mã khách %r: %s" % (ma_khach, loi_ma_khach(ma_khach)))
     tuyen = h0.get("route") or None
     if not tuyen or not tuyen.get("id"):
         _loi("THIEU_TUYEN", "Phiếu %s chưa gắn tuyến — bên kế toán tạo mặt hàng theo khách + tuyến nên bắt buộc có tuyến." % p.doc_no)
@@ -170,6 +191,13 @@ def doc_ket_qua(ma, than, tho):
                 "Bên kế toán báo trùng DO / khoá (409) — hai bên đối soát, không tự gửi lại.")
     if isinstance(than, dict) and (than.get("code") or than.get("message")):
         return "failed", None, str(than.get("code") or "QLSX_%s" % ma), str(than.get("message") or "")
+    # [Authorize] / Forbid() bên kia trả thân rỗng
+    if ma == 401:
+        return "failed", None, "QLSX_TOKEN_HET_HAN", ("Token hệ kế toán sai hoặc đã hết hạn (401) — xin token mới, đặt vào "
+                                                      "QLSX_ACCESS_TOKEN trong .env rồi khởi động lại.")
+    if ma == 403:
+        return "failed", None, "QLSX_CHUA_CHO_PHEP", ("Bên kế toán chưa cho tài khoản của token gọi tạo SO (403): anh Tune thêm "
+                                                      "UserId vào LogisticsSalesPush.AllowedUserIds, và tài khoản phải gắn nhân viên.")
     return "failed", None, "QLSX_HTTP_%s" % ma, "Bên kế toán trả HTTP %s: %s" % (ma, (tho or "")[:300])
 
 

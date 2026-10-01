@@ -89,10 +89,15 @@ def main():
         dung(s == 200 and l.get("ma") == "THIEU_MA_KHACH_KE_TOAN" and "mã khách" in (l.get("loi") or ""),
              "khách chưa có mã bên kế toán → THIEU_MA_KHACH_KE_TOAN, câu lỗi nói rõ")
         dung("body" not in v, "bị chặn thì không có gói")
-        goi("/api/customers/" + cid, {"code": "KIEM-" + "X" * 40}, u="ketoan", method="PUT")
+        # mã khách + '_' + mã tuyến (12 ký tự) phải ≤ 50 → danh mục khách chặn ngay lúc gán mã dài hơn 37
+        s, g = goi("/api/customers/" + cid, {"code": "KIEM-" + "X" * 33}, u="ketoan", method="PUT")
+        dung(s == 422 and ((g.get("detail") or {}).get("ma") == "MA_KHACH_SAI"),
+             "mã khách 38 ký tự (ghép với mã tuyến quá 50) bị danh mục chặn ngay lúc gán → 422 MA_KHACH_SAI", s)
+        goi("/api/customers/" + cid, {"code": "KIEM-" + "X" * 32}, u="ketoan", method="PUT")
         s, v = goi("/api/trips/%s/tao-so" % tid, u="ketoan")
-        dung((v.get("loi") or {}).get("ma") == "MA_GHEP_QUA_DAI", "mã khách + '_' + mã tuyến > 50 ký tự → MA_GHEP_QUA_DAI",
-             str((v.get("loi") or {}).get("ma")))
+        dung(s == 200 and "loi" not in v and len(v["tom_tat"]["item_code"]) == 50,
+             "mã khách đúng 37 ký tự → gói dựng được, mã mặt hàng khách_tuyến đúng 50 ký tự",
+             len((v.get("tom_tat") or {}).get("item_code") or ""))
 
         print("3. Khuôn gói")
         goi("/api/customers/" + cid, {"code": "KIEM-SO-01"}, u="ketoan", method="PUT")

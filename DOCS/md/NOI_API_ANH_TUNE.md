@@ -1,9 +1,9 @@
 # Nối trang điều xe EPL Lào với hệ kế toán anh Tune — mình gọi gì, anh gọi gì, chứng từ đi đâu
 
-Bản ngày **01/10/2026**. Soạn từ mã đang chạy của trang điều xe (`EPL_LAO_REAL`) và các lần gọi thử thật trên máy `demo-lao-api.goldensme.com`.
+Bản ngày **01/10/2026**, sửa chiều cùng ngày. Soạn từ mã đang chạy của trang điều xe (`EPL_LAO_REAL`), các lần gọi thử thật trên máy `demo-lao-api.goldensme.com`, và **mã nguồn của anh** (`GLS-QLSX-APIs`, `GLS-QLSX-Web`, nhánh `feat/DemoLao`, đọc 01/10 — mục 8).
 
 - Tài liệu này là **bản đồ**: mỗi đường nói để làm gì, gửi gì, nhận gì, đang ở trạng thái nào.
-- Từng trường chi tiết nằm ở **hợp đồng API kế toán** `HOP_DONG_API_KE_TOAN_ANH_TUNE` (bản v2 cùng ngày). Mỗi chỗ dưới đây ghi số mục để tra.
+- Từng trường chi tiết nằm ở **hợp đồng API kế toán** `HOP_DONG_API_KE_TOAN_ANH_TUNE` (bản v2.1 cùng ngày). Mỗi chỗ dưới đây ghi số mục để tra.
 - Quy ước:
   - **LAO** = trang điều xe (bên em);
   - **hệ anh** = hệ kế toán của anh Tune (QLSX, máy `demo-lao-api`);
@@ -28,7 +28,7 @@ Bản ngày **01/10/2026**. Soạn từ mã đang chạy của trang điều xe 
 
 | # | Đường của LAO | Để làm gì | Trạng thái 01/10 |
 |---|---|---|---|
-| B1 | `GET /api/handover/delivery-orders` | danh sách DO đã xong (đã về + đã khoá), đúng khuôn EPL_System | **đã dựng 30/09**, chờ địa chỉ ra Internet |
+| B1 | `GET /api/handover/delivery-orders` | danh sách DO đã xong (đã về + đã khoá), đúng khuôn EPL_System | **đã dựng 30/09**, chờ địa chỉ ra Internet. **Phía anh phải sửa mã** để gọi được: địa chỉ đang ghi cứng sang EPL_System, chưa gửi khoá (mục 8.2) |
 | B2 | `GET /api/handover/delivery-orders/{do_id}` | header + details một DO (dòng thu, các dòng chi mục III–VI kèm mã kế toán) | như trên |
 | B3 | nhóm `/api/lien-thong/*` (hợp đồng mục 4) | anh báo lại **đã xuất hoá đơn**, **đã thu**, **đã trả chủ xe**, và đọc số của phiếu | **có sẵn**, KT tạm đang dùng; anh dùng khi thay KT tạm |
 
@@ -115,9 +115,10 @@ Idempotency-Key: logistics:EPLLAO-779739f4b582
 |---|---|
 | DO đã về **và** đã khoá | `DO_CHUA_KHOA` |
 | Khách có **mã khách bên kế toán** (ô *Mã khách (bên kế toán)* ở danh mục khách) | `THIEU_MA_KHACH_KE_TOAN` |
-| Mã khách: chữ Latinh, số, `_ - .`, ≤ 50 ký tự, không có `/` | `MA_KHACH_SAI` |
+| Mã khách: mở đầu bằng chữ Latinh hoặc số, chỉ chữ, số, `_ - .`, không có `/`, **≤ 37 ký tự** (đúng luật mã của anh; danh mục khách chặn ngay lúc gán) | `MA_KHACH_SAI` |
 | Phiếu có tuyến; mã tuyến hợp lệ | `THIEU_TUYEN` · `MA_TUYEN_SAI` |
-| `mã khách + "_" + mã tuyến` ≤ 50 ký tự (hệ anh dùng làm mã mặt hàng) | `MA_GHEP_QUA_DAI` |
+| `mã khách + "_" + mã tuyến` ≤ 50 ký tự (hệ anh dùng làm mã mặt hàng; mã tuyến 12 ký tự nên mã khách ≤ 37) | `MA_GHEP_QUA_DAI` |
+| Số tiền gửi được chính xác (không bị làm tròn khi thành số JSON) | `TIEN_QUA_NHIEU_SO` |
 | Tiền cước là VND, LAK hoặc USD | `TIEN_TE_CHUA_NHAN` (cước THB, CNY) |
 | Cước > 0,01; `selling_price + phụ thu = final_selling_price = dòng thu` (Decimal, khớp chính xác) | `CUOC_BANG_KHONG` · `TIEN_SAI` |
 | Người bấm là `acct` hoặc `admin` | 403 `KHONG_CO_QUYEN` |
@@ -129,7 +130,9 @@ Idempotency-Key: logistics:EPLLAO-779739f4b582
 | 201, hoặc 200 `replayed: true`, kèm `data` | đánh **đã tạo SO**; lưu `orderId`, `orderCode`, `orderStatus`, `retkAutoId`, `retkCode`, `itemCode`, `currency`, `totalAmount`, `initialDebtAmount`. Bấm lại thì trả kết quả cũ, **không gọi nữa** |
 | 409 (trùng DO / khoá khác nội dung) | đánh **xung đột**, **khoá nút gửi**: hai bên đối soát |
 | 4xx dữ liệu (400 `INVALID_DO`, 422 `52905`…) | ghi câu lỗi lên DO. Lần sau **dựng gói mới** theo số hiện tại: hệ anh chưa ghi gì |
-| mất mạng · hết giờ · 5xx · 422 `52903` | kết quả **chưa rõ**: lần sau gửi lại **đúng gói, đúng khoá** đã lưu |
+| 401 thân rỗng | báo **token sai hoặc hết hạn** |
+| 403 thân rỗng | báo **tài khoản của token chưa nằm trong `LogisticsSalesPush.AllowedUserIds`** hoặc chưa gắn nhân viên |
+| mất mạng · hết giờ · 5xx (gồm 503 `LOGISTICS_DISABLED`, `LOGISTICS_CONFIG_REQUIRED`, `LOGISTICS_DATABASE_ERROR`) · 422 `52903` | kết quả **chưa rõ**: lần sau gửi lại **đúng gói, đúng khoá** đã lưu |
 | 200 kèm `Success: false` | coi là lỗi, dù HTTP 200 |
 
 **Sau khi có SO:** kế toán LAO **không mở khoá** DO đó được (409 `DA_TAO_SO`). Chỉ Sếp mở, sau khi đã báo anh.
@@ -211,14 +214,16 @@ Số chi tiết: hợp đồng mục 12.7.
 `GET /api/handover/delivery-orders?customer_id=&completed_from=YYYY-MM-DD&completed_to=YYYY-MM-DD&page=1&page_size=50`
 
 - Chỉ trả phiếu **đã về và đã khoá**, mới khoá trước. `total` là tổng thật sau lọc.
-- `customer_id` nhận **mã khách bên em** (12 ký tự hex) **hoặc mã khách bên anh** (`OBJ_OBJECTNO`).
+- Tham số `customer_id` nhận **mã khách bên anh** (`OBJ_OBJECTNO`) **hoặc** mã khách nội bộ bên em (12 ký tự hex).
+- **Đổi 01/10:** trong mỗi dòng, `customer_id` = **mã khách bên anh** (null khi kế toán chưa gán), trùng `customer_id` gửi SO. Màn "Vụ việc" bên anh hiện ô này làm tên khách. Mã nội bộ bên em ở `customer_ref`.
 - Mỗi dòng có **14 khoá của EPL_System**: `do_id`, `status`, `customer_id`, `quotation_id`, `route_id`, `vehicle_id`, `driver_id`, `selling_price`, `customer_surcharge_total`, `final_selling_price`, `currency`, `completed_at`, `completed_by`, `detail_url`.
-- Thêm các khoá đọc bằng mắt: `doc_no`, `customer_code`, `customer_name`, `truck_no`, `plate_head`, `driver_name`, `company`, `owner_name`, `final_selling_price_lak`.
+- Thêm các khoá đọc bằng mắt: `doc_no`, `customer_code`, `customer_ref`, `customer_name`, `truck_no`, `plate_head`, `driver_name`, `company`, `owner_name`, `final_selling_price_lak`.
 
 ```json
 {"message": "Danh sách 13 lệnh giao hàng đã hoàn tất (trang 1).",
  "data": {"items": [{"do_id": "EPLLAO-779739f4b582", "status": "delivered", "doc_no": "T4-0449-09/EPL", "kind": "giao",
-                     "customer_id": "<mã khách bên em>", "customer_code": "<OBJ_OBJECTNO hoặc null>", "customer_name": "ຄຳຕຸ້ຍ",
+                     "customer_id": "<OBJ_OBJECTNO hoặc null>", "customer_code": "<như customer_id>",
+                     "customer_ref": "<mã khách bên em>", "customer_name": "ຄຳຕຸ້ຍ",
                      "quotation_id": null, "route_id": "0b840ad2a162", "vehicle_id": "b8b4e98da702", "truck_no": "346",
                      "driver_id": "e7c9c73fdb21", "selling_price": 905.85, "customer_surcharge_total": 0,
                      "final_selling_price": 905.85, "currency": "USD", "final_selling_price_lak": 19928700,
@@ -232,14 +237,16 @@ Số chi tiết: hợp đồng mục 12.7.
 `GET /api/handover/delivery-orders/{do_id}` → `{"message", "data": {"header": {...}, "details": [...]}}`
 
 - `header`:
-  - DO, ngày, xe hai biển, tài xế, khách (mã bên em **và** mã bên anh), tuyến;
+  - DO, ngày, xe hai biển, tài xế, khách (`customer_id` = mã bên anh, `customer_ref` = mã bên em), tuyến;
   - cân đầu / cân cuối, biên bản giao nhận (POD);
   - tiền cước theo tiền của phiếu, tỷ giá khoá trên phiếu;
   - tổng chi EPL chịu theo mục III–VI, lãi;
+  - **thêm 01/10** các khoá màn "Vụ việc" bên anh đọc: `trip_status`, `actual_cost_total`, `actual_cost_total_quy_doi`, `margin_amount`, `margin_percent`, `fx_rate`, `fx_rate_source`;
   - xe thuê có thêm khối `hire` (tiền thuê, phí 2 %, trừ quá tải, EPL đã ứng, còn phải trả chủ xe).
 - `details`:
   - dòng 1 là **thu** (cước, `acc_code` 1211/708);
-  - các dòng sau là **chi**, mỗi dòng có `section` (III–VI), số lượng, đơn giá, tiền của dòng, `amount_lak`, **`acc_code` Nợ/Có thật** trong danh mục Lào, `paid_by` (`epl` hay `chu_xe`).
+  - các dòng sau là **chi**, mỗi dòng có `section` (III–VI), số lượng, đơn giá, tiền của dòng, `amount_lak`, **`acc_code` Nợ/Có thật** trong danh mục Lào, `paid_by` (`epl` hay `chu_xe`);
+  - mọi dòng có `calculation` (thêm 01/10), ví dụ `29.7 t × 30.5 USD`.
 - Lỗi: 404 `DO_KHONG_THAY` · 409 `DO_CHUA_KHOA`.
 
 Bảng từng khoá: hợp đồng mục 12.8.3.
@@ -268,7 +275,8 @@ Chi tiết: hợp đồng mục 4.
 B1, B2, B3 chỉ gọi được khi trang điều xe Lào có địa chỉ ra Internet.
 
 - **Chủ dự án chốt 01/10:** làm xong hết rồi mới host, lúc đó bên em gửi anh **địa chỉ gốc** và **khoá bàn giao**.
-- Anh đổi cấu hình nguồn Logistics của đơn vị EPL Lào sang địa chỉ đó (câu hỏi 12.8 (2)), rồi gọi thử `cash-voucher-references?type=DO`.
+- Địa chỉ gửi anh phải là địa chỉ **cuối**, đúng `https://`: hệ anh tắt tự chuyển hướng.
+- Anh **sửa mã** nguồn DO cho đơn vị EPL Lào (mục 8.2), rồi gọi thử `cash-voucher-references?type=DO`.
 
 ---
 
@@ -422,7 +430,9 @@ Bên em làm được cả hai. Cách (2) khớp các đường anh đã có. C�
 7. **Đối tượng** tài xế, chủ xe liên kết, nhà cung cấp EPL Lào.
 8. **Cách nhận các tờ còn lại** (mục 4.4).
 9. **Mẫu `customer-detail` thật** cho màn công nợ (A5).
-10. **Nguồn DO theo đơn vị:** hệ anh lưu được địa chỉ + khoá Logistics riêng cho EPL Lào không (câu hỏi 12.8 (2)).
+10. **Nguồn DO theo đơn vị:** sửa `CashVoucherReferenceController` để lưu địa chỉ + khoá Logistics riêng cho EPL Lào và gửi `Authorization` (mục 8.2).
+11. **`AllowedUserIds`:** thêm `UserId` của tài khoản dịch vụ bên em vào `LogisticsSalesPush.AllowedUserIds` (mục 8.1).
+12. **Màn "Vụ việc":** hiện số phiếu, biển số, tên tài xế trước mã nội bộ; thoát ký tự khi chèn chuỗi từ Logistics vào HTML (mục 8.2).
 
 ---
 
@@ -430,7 +440,7 @@ Bên em làm được cả hai. Cách (2) khớp các đường anh đã có. C�
 
 | Ai | Việc |
 |---|---|
-| **Anh Tune** | mục 5, từ việc 1; đọc lại hợp đồng v2 và soạn lại phía anh |
+| **Anh Tune** | mục 5, từ việc 1; đọc lại hợp đồng v2.1 (nhất là mục 12.9) và soạn lại phía anh |
 | **Bên em** | khi có mã khách: ghi mã (KT Thu/Chi VC), gửi SO thật một DO, đối chiếu `orderCode`, `totalAmount` với tờ đề nghị thu · khi có mã số mục 1.4: dựng A4 · khi có mẫu: dựng A5 · thêm nút tạo khoá bàn giao ở màn Tài khoản |
 | **Chủ dự án** | host trang điều xe Lào ra Internet khi làm xong hết, rồi gửi anh Tune địa chỉ + khoá bàn giao (mục 2.5) |
 
@@ -451,6 +461,33 @@ Bên em làm được cả hai. Cách (2) khớp các đường anh đã có. C�
 
 **Bộ kiểm tự động** (máy thử, không gọi sang hệ anh):
 
-- `kiem/thu_tao_so.py`: 22 chỗ kiểm, gồm quyền, luật chặn, khuôn gói SO;
-- `kiem/thu_ban_giao.py`: 31 chỗ kiểm cho B1/B2;
-- `kiem/thu_khach_hang_moi.py`: mã khách, chỉ `acct` và admin gán.
+- `kiem/thu_tao_so.py`: 23 chỗ kiểm, gồm quyền, luật chặn, khuôn gói SO;
+- `kiem/thu_luat_so_ben_tune.py`: luật kiểm của anh Tune chạy trên gói SO của mọi DO đã khoá (13/13 qua);
+- `kiem/thu_ban_giao.py`: 32 chỗ kiểm cho B1/B2, gồm các khoá màn "Vụ việc" đọc;
+- `kiem/thu_khach_hang_moi.py`: mã khách, chỉ `acct` và admin gán, đúng luật mã bên anh.
+
+---
+
+## 8. Đọc mã nguồn của anh (01/10/2026)
+
+Chủ dự án lấy về `GLS-QLSX-APIs` (commit `31c98db`) và `GLS-QLSX-Web` (commit `de04913f`), nhánh `feat/DemoLao`. Bên em **chỉ đọc**: không sửa, không chạy, không mở cấu hình bí mật. Chi tiết đầy đủ: hợp đồng mục 12.9.
+
+### 8.1. Tạo SO (A2) — khớp
+
+- Bên em chép đúng luật của `LogisticsPushValidator` và phần kiểm đầu của `sp_Logistics_CreateSalesOrder` thành bộ kiểm `kiem/thu_luat_so_ben_tune.py`. Chạy trên 13 DO đã khoá: **cả 13 qua**.
+- **Dòng `chi`:** hệ anh chỉ ghép chúng thành chữ trên SO của khách, không thành bút toán → bên em **giữ một dòng thu** (câu hỏi 10.4 đã có lời đáp).
+- **403 thân rỗng** = tài khoản token chưa nằm trong `LogisticsSalesPush.AllowedUserIds`, hoặc chưa gắn nhân viên. Bên em nay báo đúng lý do.
+- **Chi nhánh 1368, người tạo 4, quốc gia 11 ghi cứng** trong thủ tục. Tạo đơn vị riêng cho EPL Lào thì thủ tục phải đổi theo.
+- **Mã khách:** mở đầu bằng chữ / số, chỉ chữ, số, `_ . -`; ghép với mã tuyến ≤ 50 ký tự. Bên em sửa danh mục khách cho khớp (không `/`, tối đa 37 ký tự).
+
+### 8.2. Nguồn DO cho phiếu thu chi (B1, B2) — phía anh cần sửa
+
+- `CashVoucherReferenceController` gọi Logistics bằng một địa chỉ **ghi cứng**: `http://senvangsolutions.com:1506/api/` (EPL_System bên Việt Nam), **không kèm `Authorization`**.
+- Trang điều xe Lào là dữ liệu khách thật nên **đòi khoá bàn giao**. Anh cần đưa địa chỉ + khoá ra cấu hình **theo đơn vị** và gửi `Authorization: Bearer <khoá bàn giao>`. Gợi ý mã ở hợp đồng 12.9.2.
+- Giới hạn bên anh: hết giờ 15 giây, gói ≤ 2 MB, không chuyển hướng. Gói bên em: một DO 4–7,4 KB, một trang 13 DO 11 KB, mỗi lời gọi dưới 0,4 giây.
+- **Bên em đã sửa gói theo màn "Vụ việc" của anh:** `customer_id` = mã khách bên anh (null khi chưa gán), mã bên em ở `customer_ref`; thêm `trip_status`, `actual_cost_total`, `actual_cost_total_quy_doi`, `margin_amount`, `margin_percent`, `fx_rate`, `fx_rate_source`, `details[].calculation`. Trước đó màn của anh sẽ hiện chi phí và lãi bằng 0.
+- **Xin anh xem ở màn "Vụ việc":** hiện `doc_no`, `truck_no` / `plate_head`, `driver_name` thay vì mã nội bộ 12 ký tự; thoát ký tự trước khi chèn chuỗi từ Logistics vào HTML.
+
+### 8.3. Hoá đơn điện tử
+
+Dịch vụ mới `Backend.LaoInvoice` (01/10) **chưa nối SO hay DO**. Bên em không gọi.

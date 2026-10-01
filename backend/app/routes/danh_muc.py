@@ -18,6 +18,7 @@ from models import (CACH_XUAT_HOA_DON, CACH_TINH_CUOC, TIEN_TE, TRANG_THAI_TAI_X
                     ExchangeRateLog,
                     Route, Trailer, TrailerAssignment, Trip, TripExpense, Vehicle)
 from services import goi_ke_toan as KT
+from services import gui_tune as GT
 from services import tai_khoan as TK
 from services.bao_mat import can_vai, nguoi_hien_tai
 from services.phan_quyen import thay_gia_kho, thay_tien_chi
@@ -110,7 +111,7 @@ LOAI_KHACH = ("person", "company")
 
 def _ap_ma_loai(db, c, data, user):
     """MÃ KHÁCH = mã khách bên kế toán (anh Tune, OBJ_OBJECTNO ≤ 50 ký tự) — chủ dự án chốt 30/09 dùng một ô chung; gửi đi
-    trong phiếu đề nghị thu / bàn giao DO nên phải là chữ Latinh, số và - _ . /, không trùng khách khác. Chỉ vai trong
+    trong phiếu đề nghị thu / bàn giao DO nên theo đúng luật mã bên đó (`gui_tune.loi_ma_khach`), không trùng khách khác. Chỉ vai trong
     GAN_MA_KHACH gán / đổi mã; vai khác gửi lại đúng mã đang có thì bỏ qua (form sửa gửi cả ô). Loại khách: cá nhân · công ty."""
     if "code" in data:
         ma = str(data.get("code") or "").strip()
@@ -118,8 +119,8 @@ def _ap_ma_loai(db, c, data, user):
             raise HTTPException(403, {"ma": "MA_KHACH_KE_TOAN",
                                       "loi": "Mã khách là mã bên kế toán — chỉ KT Thu/Chi Viêng Chăn hoặc Sếp gán / đổi."})
         if ma:
-            if len(ma) > 50 or not all(ch.isascii() and (ch.isalnum() or ch in "-_./") for ch in ma):
-                raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": "Mã khách tối đa 50 ký tự, chỉ chữ Latinh, số và - _ . /"})
+            if GT.loi_ma_khach(ma):
+                raise HTTPException(422, {"ma": "MA_KHACH_SAI", "loi": GT.loi_ma_khach(ma)})
             trung = (db.query(Customer.id).filter(func.lower(Customer.code) == ma.lower(), Customer.id != (c.id or "")).first())
             if trung:
                 raise HTTPException(409, {"ma": "MA_KHACH_TRUNG", "loi": "Mã khách %s đã dùng cho khách khác." % ma})

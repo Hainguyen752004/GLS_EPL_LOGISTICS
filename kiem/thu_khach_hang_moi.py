@@ -70,8 +70,12 @@ def main():
         dung(s == 409 and ma_loi(g) == "MA_KHACH_TRUNG", "mã trùng (khác hoa thường) → 409 MA_KHACH_TRUNG")
         s, g = goi("/api/customers/" + b["id"], {"code": "ຄຳ 01"}, u="admin", method="PUT")
         dung(s == 422 and ma_loi(g) == "MA_KHACH_SAI", "mã có chữ Lào / dấu cách → 422 MA_KHACH_SAI")
-        s, g = goi("/api/customers/" + b["id"], {"code": "X" * 51}, u="admin", method="PUT")
-        dung(s == 422 and ma_loi(g) == "MA_KHACH_SAI", "mã dài hơn 50 ký tự → 422")
+        s, g = goi("/api/customers/" + b["id"], {"code": "X" * 38}, u="admin", method="PUT")
+        dung(s == 422 and ma_loi(g) == "MA_KHACH_SAI", "mã dài hơn 37 ký tự (ghép với mã tuyến 12 ký tự quá 50) → 422")
+        s, g = goi("/api/customers/" + b["id"], {"code": "KH/01"}, u="admin", method="PUT")
+        dung(s == 422 and ma_loi(g) == "MA_KHACH_SAI", "mã có / (bên kế toán không nhận) → 422")
+        s, g = goi("/api/customers/" + b["id"], {"code": "-KH01"}, u="admin", method="PUT")
+        dung(s == 422 and ma_loi(g) == "MA_KHACH_SAI", "mã mở đầu bằng dấu - → 422")
         s, g = goi("/api/customers/" + b["id"], {"cust_type": "shop"}, u="admin", method="PUT")
         dung(s == 422 and ma_loi(g) == "LOAI_KHACH_SAI", "loại khách lạ → 422 LOAI_KHACH_SAI")
         s, g = goi("/api/customers/" + a["id"], {"code": "KIEM-KH-01"}, u="admin", method="PUT")
@@ -96,13 +100,18 @@ def main():
         khoa = goi("/api/handover/tao-khoa", method="POST", u="admin")[1]["token_nhan_qlsx"]
         s, g = goi("/api/handover/delivery-orders?page_size=200", khoa=khoa)
         items = g["data"]["items"]
-        cua_a = [x for x in items if x["customer_id"] == a["id"]]
-        dung(all(x.get("customer_code") == "KIEM-KH-01" for x in cua_a), "dòng danh sách của khách có customer_code (%d DO)" % len(cua_a))
+        cua_a = [x for x in items if x["customer_ref"] == a["id"]]
+        dung(all(x.get("customer_code") == "KIEM-KH-01" and x.get("customer_id") == "KIEM-KH-01" for x in cua_a),
+             "dòng danh sách của khách: customer_id = customer_code = mã bên kế toán (%d DO)" % len(cua_a))
+        dung(all(x.get("customer_id") is None for x in items if x.get("customer_code") is None),
+             "khách chưa có mã bên kế toán → customer_id null (không lộ mã nội bộ)")
         if cua_a:
             s, g2 = goi("/api/handover/delivery-orders?page_size=200&customer_id=KIEM-KH-01", khoa=khoa)
             dung(s == 200 and g2["data"]["total"] == len(cua_a), "lọc theo mã khách bên kế toán → đúng %d DO" % len(cua_a))
             s, g3 = goi(cua_a[0]["detail_url"], khoa=khoa)
-            dung(s == 200 and g3["data"]["header"]["customer_code"] == "KIEM-KH-01", "header chi tiết có customer_code")
+            h3 = g3["data"]["header"]
+            dung(s == 200 and h3["customer_code"] == h3["customer_id"] == "KIEM-KH-01" and h3["customer_ref"] == a["id"],
+                 "header chi tiết: customer_id = mã bên kế toán, customer_ref = mã bên em")
     finally:
         for cid, (m, l) in cu.items():
             goi("/api/customers/" + cid, {"code": m or "", "cust_type": l or ""}, u="admin", method="PUT")

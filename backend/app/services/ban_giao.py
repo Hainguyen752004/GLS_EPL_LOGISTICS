@@ -56,6 +56,12 @@ def _ngay(d):
     return d.isoformat() if d else None
 
 
+def _so(v):
+    """Số gọn cho chuỗi cách tính: 12.0 → 12, 12.5 → 12.5, nghìn có dấu phẩy (1,250,000)."""
+    v = float(v or 0)
+    return "{:,.0f}".format(v) if v == int(v) else "{:,.10g}".format(v)
+
+
 def _tu_dien():
     """Tên khoản mục (x_toll, diesel…) lấy từ từ điển giao diện — cùng chữ người dùng thấy trên phiếu."""
     if not _TU_DIEN:
@@ -98,11 +104,15 @@ def _chu_ky_pod(db, p):
 
 def dong_danh_sach(p, ma_khach=None):
     """Một dòng của danh sách — header RÚT GỌN, đúng các khoá EPL_System trả (bên anh Tune đọc `Summary` từ đây),
-    thêm vài khoá đọc được bằng mắt (số phiếu, tên khách, biển số, tài xế) để thủ quỹ chọn đúng DO."""
+    thêm vài khoá đọc được bằng mắt (số phiếu, tên khách, biển số, tài xế) để thủ quỹ chọn đúng DO.
+
+    `customer_id` = MÃ KHÁCH BÊN KẾ TOÁN (OBJ_OBJECTNO), trùng `header.customer_id` của gói tạo SO: màn "Vụ việc" bên anh
+    hiện ô này làm "Khách hàng / Tên" và tìm theo nó (GLS-QLSX-APIs `CashVoucherReferenceController`). Khách chưa được
+    kế toán gán mã thì null. Mã khách nội bộ bên em ở `customer_ref`."""
     t = tinh_phieu(p, [])          # cước chỉ phụ thuộc tấn và đơn giá, không cần dòng chi
     return {
         "do_id": ma_do(p), "status": "delivered", "doc_no": p.doc_no, "kind": p.kind,
-        "customer_id": p.customer_id, "customer_code": ma_khach, "customer_name": p.customer_name,
+        "customer_id": ma_khach, "customer_code": ma_khach, "customer_ref": p.customer_id, "customer_name": p.customer_name,
         "quotation_id": None, "contract_no": p.contract_no,
         "route_id": p.route_id, "origin": p.origin, "destination": p.destination,
         "vehicle_id": p.vehicle_id, "truck_no": p.truck_no, "plate_head": p.plate_head,
@@ -122,12 +132,15 @@ def dong_goi(db, p):
     ccy = t["ccy"]
     tuyen = db.get(Route, p.route_id) if p.route_id else None
     lk = p.company == "joint"
+    ma_kt = _ma_khach(db, p)
+    r = ty_gia(p, ccy)
     header = {
-        "do_id": ma_do(p), "status": "delivered", "source_system": "EPL_LAO",
+        "do_id": ma_do(p), "status": "delivered", "source_system": "EPL_LAO", "trip_status": "completed",
         "trip_id": p.id, "doc_no": p.doc_no, "kind": p.kind,               # gom (đi lấy hàng) · giao (đi giao hàng)
         "doc_date": _ngay(p.doc_date), "out_date": _ngay(p.out_date), "back_date": _ngay(p.back_date),
         "company": p.company, "owner_id": p.owner_id if lk else None, "owner_name": p.owner_name if lk else None,
-        "customer_id": p.customer_id, "customer_code": _ma_khach(db, p), "customer_name": p.customer_name,
+        # customer_id = mã bên kế toán (null khi chưa gán) — xem `dong_danh_sach`; mã nội bộ bên em ở customer_ref
+        "customer_id": ma_kt, "customer_code": ma_kt, "customer_ref": p.customer_id, "customer_name": p.customer_name,
         "contract_no": p.contract_no, "hire_contract_no": p.hire_contract_no if lk else None,
         "quotation_id": None,
         "route": {"id": tuyen.id, "name": tuyen.name, "origin": tuyen.origin, "destination": tuyen.destination,
@@ -150,6 +163,14 @@ def dong_goi(db, p):
         "actual_cost_total_lak": t["tong_chi_lak"],
         "cost_by_section_lak": {MUC[m]: t["chi"][m] for m in MUC},
         "margin_lak": t["lai_lak"], "margin": t["lai"], "margin_currency": ccy,
+        # Tên khoá màn "Vụ việc" bên anh Tune đọc (cm-source-reference-modal.js): chi phí theo currency_chi (LAK), quy đổi
+        # sang tiền cước; lãi gộp theo tiền cước; fx_rate = 1 currency_chi đổi được bao nhiêu currency_thu.
+        "actual_cost_total": t["tong_chi_lak"],
+        "actual_cost_total_quy_doi": t["tong_chi_ccy"] if ccy != "LAK" else None,
+        "margin_amount": t["lai"],
+        "margin_percent": round(t["lai_lak"] * 100.0 / t["doanh_thu_lak"], 1) if t["doanh_thu_lak"] else None,
+        "fx_rate": float("%.10g" % (1.0 / r)) if ccy != "LAK" and r else None,
+        "fx_rate_source": "tỷ giá khoá trên phiếu" if ccy != "LAK" else None,
         "invoiced": bool(p.invoiced), "inv_no": p.inv_no,
         "completed_at": _gio(p.locked_at), "completed_by": p.locked_by,
     }
@@ -169,6 +190,7 @@ def dong_goi(db, p):
         "name": "Cước vận chuyển %s · %s" % (p.doc_no, ("trọn chuyến" if t["cach_tinh"] == "chuyen"
                                                         else "%s t × %s %s" % (t["tan_tinh"], t["don_gia"], ccy))),
         "qty": 1 if t["cach_tinh"] == "chuyen" else t["tan_tinh"], "unit_price": t["don_gia"],
+        "calculation": "trọn chuyến" if t["cach_tinh"] == "chuyen" else "%s t × %s %s" % (_so(t["tan_tinh"]), _so(t["don_gia"]), ccy),
         "actual_amount": t["doanh_thu"], "currency": ccy, "amount_lak": t["doanh_thu_lak"],
         "acc_code": "%s/%s" % (TK.PHAI_THU, TK.DT_VAN_CHUYEN), "missing_acc_code": False,
         "paid_by": None, "source": "cuoc", "ref_id": p.id,
@@ -181,7 +203,8 @@ def dong_goi(db, p):
         details.append({
             "line_no": i, "kind": "chi", "charge_type": d.item_key or d.section, "section": MUC.get(d.section),
             "section_name": TEN_MUC.get(d.section), "item_key": d.item_key, "name": vi, "name_lo": lo,
-            "qty": d.qty, "unit_price": gia, "actual_amount": lam_tron((d.qty or 0) * gia, d.currency),
+            "qty": d.qty, "unit_price": gia, "calculation": "%s × %s %s" % (_so(d.qty or 0), _so(gia), d.currency),
+            "actual_amount": lam_tron((d.qty or 0) * gia, d.currency),
             "currency": d.currency, "amount_lak": round(tien_dong(p, d)),
             "acc_code": ma, "missing_acc_code": bool(epl and not ma),
             "paid_by": "epl" if epl else "chu_xe", "source": d.source,

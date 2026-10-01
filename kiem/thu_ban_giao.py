@@ -91,9 +91,10 @@ def main():
     s2, g2 = goi("/api/handover/delivery-orders?page=1&page_size=2", khoa=khoa)
     dung(len(g2["data"]["items"]) == min(2, len(items)) and g2["data"]["total"] == d.get("total"), "phân trang: trang 2 dòng, total giữ nguyên")
     if items:
-        kh = items[0]["customer_id"]
+        kh = items[0]["customer_ref"]
         s3, g3 = goi("/api/handover/delivery-orders?page_size=200&customer_id=%s" % kh, khoa=khoa)
-        dung(all(x["customer_id"] == kh for x in g3["data"]["items"]) and g3["data"]["total"] >= 1, "lọc theo khách")
+        dung(all(x["customer_ref"] == kh for x in g3["data"]["items"]) and g3["data"]["total"] >= 1, "lọc theo mã khách bên em")
+    dung(all(x["customer_id"] == x["customer_code"] for x in items), "customer_id = mã khách bên kế toán (null khi chưa gán)")
     s4, g4 = goi("/api/handover/delivery-orders?completed_from=2099-01-01", khoa=khoa)
     dung(s4 == 200 and g4["data"]["total"] == 0, "lọc từ ngày tương lai → 0")
     dung(goi("/api/handover/delivery-orders?completed_to=30-09-2026", khoa=khoa)[0] == 422, "ngày sai dạng → 422")
@@ -120,6 +121,11 @@ def main():
         # Σ từng dòng (làm tròn từng dòng) ≈ tổng theo mục (làm tròn từng mục) — lệch tối đa 1 Kíp mỗi dòng
         if abs(sum(dg["amount_lak"] for dg in epl) - h["actual_cost_total_lak"]) > len(epl):
             lech.append((h["doc_no"], sum(dg["amount_lak"] for dg in epl), h["actual_cost_total_lak"]))
+        # khoá màn "Vụ việc" bên anh Tune đọc (GLS-QLSX-Web cm-source-reference-modal.js)
+        if not (h["trip_status"] == "completed" and h["actual_cost_total"] == h["actual_cost_total_lak"]
+                and h["margin_amount"] == h["margin"] and (h["fx_rate"] is None) == (h["currency"] == "LAK")
+                and all(dg.get("calculation") for dg in ds) and h["customer_id"] == h["customer_code"]):
+            LOI.append("khoá màn Vụ việc bên kế toán thiếu / lệch ở %s" % x["do_id"])
         if h["company"] == "joint":
             lk += 1
             if not (h.get("hire") and h["hire"]["acc_code"] is None and "amount" in h["hire"]):
@@ -127,6 +133,8 @@ def main():
         elif h.get("hire"):
             LOI.append("xe nhà %s lại có khối hire" % x["do_id"])
     dung(not [e for e in LOI if e.startswith(("chi tiết", "dòng thu"))], "mọi DO: 200, một dòng thu 1211/708 bằng đúng cước và tiền của header")
+    dung(not [e for e in LOI if e.startswith("khoá màn Vụ việc")],
+         "mọi DO có khoá màn Vụ việc bên kế toán đọc: trip_status, actual_cost_total, margin_amount, fx_rate, calculation")
     dung(not thieu_ma, "mọi dòng EPL chi đều có định khoản%s" % ("" if not thieu_ma else " — thiếu: %s" % thieu_ma[:5]))
     dung(not sai_ma, "mọi định khoản là mã thật trong danh mục Lào (hoặc 1371/4021/4022 chờ mở)%s" % ("" if not sai_ma else ": %s" % sai_ma[:5]))
     dung(not lech, "Σ dòng chi EPL khớp tổng chi phiếu%s" % ("" if not lech else ": %s" % lech[:5]))
