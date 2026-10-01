@@ -15,7 +15,7 @@ const GOC = process.argv[2] || 'http://127.0.0.1:8010';
 // 'hoa-don', 'hoa-don-gop' dời sang trang kế toán 28/09 (đợt 7a); 'tien-tai-xe', 'tat-toan' (đợt 7c)
 // 01/10: 'tat-toan' dựng lại (tiền ở hệ kế toán anh Tune). 30/09: 'de-nghi-chi', 'de-nghi-thu' tách từ màn chung-tu (nay là Đề nghị theo DO); 'kho-xem' — kho chỉ xem theo mặt hàng
 const MODULES = ['tong-quan', 'theo-doi', 'theo-doi-tuyen', 'phieu-xuat-xe', 'de-nghi-chi', 'de-nghi-xuat-kho', 'de-nghi-thu', 'chung-tu',
-  'phieu-cua-toi', 'xe-lien-ket', 'tat-toan', 'nha-cung-cap', 'kho-xem',
+  'phieu-cua-toi', 'xe-lien-ket', 'tat-toan', 'but-toan-cho', 'nha-cung-cap', 'kho-xem',
   'khach-hang', 'xe', 'tai-xe', 'the-cao-toc', 'ty-gia', 'tuyen-duong', 'quy-trinh', 'tai-khoan'];
 
 /** Chỉ tải tài nguyên từ máy chủ mình; Google Fonts và mọi thứ ngoài trả rỗng. */

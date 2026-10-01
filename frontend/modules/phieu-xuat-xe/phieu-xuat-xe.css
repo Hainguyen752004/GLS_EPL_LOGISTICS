@@ -237,3 +237,11 @@
 .px-ht{margin:0 0 8px;font-size:13px;font-weight:600;color:var(--ink-2)}
 .px-ht:empty{display:none}
 .px-ban{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+
+/* bút toán chờ gửi của phiếu (01/10) — chỉ KT Thu/Chi VC, KT Chi phí VC, Sếp */
+.px-ben-btc[hidden]{display:none}
+.px-btc{display:flex;flex-direction:column;gap:6px}
+.px-btc-o{display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:12px}
+.px-btc-o .d{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.px-btc-o .l{display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums}
+.px-chi-kt.loi{background:var(--red-soft, #FBEAEA);color:var(--red)}

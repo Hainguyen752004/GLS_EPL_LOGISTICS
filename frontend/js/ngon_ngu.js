@@ -1,6 +1,6 @@
 /* Từ điển ba ngôn ngữ của EPL Lào — SINH TỰ ĐỘNG bởi sinh_ngon_ngu.py, đừng sửa tay.
  * vi/lo chép nguyên từ bản giao diện mẫu bên Lào đã duyệt; en thêm sau.
- * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2165 khoá. */
+ * Chế độ "VI + ລາວ" do js/chung.js ghép từ vi và lo. Tổng 2191 khoá. */
 window.EPL_TU_DIEN = {
  "brand": {
   "vi": "Quản lý vận tải EPL<small>Vận chuyển quặng · Viêng Chăn</small>",
@@ -10826,5 +10826,135 @@ window.EPL_TU_DIEN = {
   "vi": "Bỏ đề nghị {so}? Phiếu chi chưa chi bên hệ kế toán sẽ bị rút.",
   "lo": "ຍົກເລີກໃບສະເໜີ {so}? ໃບຈ່າຍທີ່ຍັງບໍ່ຈ່າຍ ຢູ່ລະບົບບັນຊີ ຈະຖືກຖອນ.",
   "en": "Cancel request {so}? The unpaid voucher in accounting will be withdrawn."
+ },
+ "btc_note": {
+  "vi": "Chỉ xem — khoản không qua tiền. Hệ kế toán chưa có đường nhận bút toán tổng hợp nên bút toán nằm ở đây, đủ hai vế; có API thì gửi.",
+  "lo": "ເບິ່ງຢ່າງດຽວ — ລາຍການທີ່ບໍ່ຜ່ານເງິນສົດ. ລະບົບບັນຊີຍັງບໍ່ມີຊ່ອງຮັບບັນທຶກບັນຊີລວມ ຈຶ່ງເກັບໄວ້ທີ່ນີ້ ຄົບທັງສອງຂ້າງ; ມີ API ແລ້ວຈຶ່ງສົ່ງ.",
+  "en": "View only — entries that move no cash. The accounting system has no general-journal endpoint yet, so entries wait here with both sides; they are sent once the API exists."
+ },
+ "btc_nguon_thue_xe": {
+  "vi": "Chi phí thuê xe liên kết",
+  "lo": "ຄ່າເຊົ່າລົດຮ່ວມ",
+  "en": "Hired-truck cost"
+ },
+ "btc_nguon_no_ncc": {
+  "vi": "Ghi nợ nhà cung cấp",
+  "lo": "ບັນທຶກໜີ້ຜູ້ສະໜອງ",
+  "en": "Supplier payable"
+ },
+ "btc_nguon_tat_toan": {
+  "vi": "Quyết toán tạm ứng tài xế",
+  "lo": "ສະສາງເງິນລ່ວງໜ້າໂຊເຟີ",
+  "en": "Driver advance settlement"
+ },
+ "btc_nguon_ban_chu_xe": {
+  "vi": "Hàng bán cho chủ xe",
+  "lo": "ສິນຄ້າຂາຍໃຫ້ເຈົ້າຂອງລົດ",
+  "en": "Sales to truck owner"
+ },
+ "btc_tat_ca_nguon": {
+  "vi": "Mọi nguồn",
+  "lo": "ທຸກແຫຼ່ງ",
+  "en": "All sources"
+ },
+ "btc_can_dao": {
+  "vi": "Chờ bút toán đảo",
+  "lo": "ລໍຖ້າບັນທຶກປີ້ນຄືນ",
+  "en": "Awaiting reversal"
+ },
+ "btc_cho_api": {
+  "vi": "Chưa gửi — chờ API bút toán bên kế toán",
+  "lo": "ຍັງບໍ່ສົ່ງ — ລໍຖ້າ API ບັນທຶກບັນຊີ",
+  "en": "Not sent — awaiting the journal API"
+ },
+ "btc_no": {
+  "vi": "Nợ",
+  "lo": "ໜີ້",
+  "en": "Debit"
+ },
+ "btc_co": {
+  "vi": "Có",
+  "lo": "ມີ",
+  "en": "Credit"
+ },
+ "btc_doi_tuong": {
+  "vi": "Đối tượng",
+  "lo": "ຄູ່ກໍລະນີ",
+  "en": "Party"
+ },
+ "btc_ngay": {
+  "vi": "Ngày hạch toán",
+  "lo": "ວັນທີບັນທຶກບັນຊີ",
+  "en": "Posting date"
+ },
+ "btc_dien_giai": {
+  "vi": "Diễn giải",
+  "lo": "ຄຳອະທິບາຍ",
+  "en": "Description"
+ },
+ "btc_goc": {
+  "vi": "Chứng từ gốc",
+  "lo": "ເອກະສານຕົ້ນ",
+  "en": "Source document"
+ },
+ "btc_tong_cho": {
+  "vi": "Đang chờ gửi",
+  "lo": "ກຳລັງລໍຖ້າສົ່ງ",
+  "en": "Waiting to send"
+ },
+ "btc_trong": {
+  "vi": "Không có bút toán nào khớp bộ lọc",
+  "lo": "ບໍ່ມີລາຍການທີ່ກົງກັບຕົວກອງ",
+  "en": "No entries match the filter"
+ },
+ "btc_canh_tk": {
+  "vi": "Tài khoản chưa ghi sổ được bên kế toán",
+  "lo": "ບັນຊີນີ້ຍັງບັນທຶກບໍ່ໄດ້ຢູ່ລະບົບບັນຊີ",
+  "en": "Account not postable in accounting"
+ },
+ "btc_lap": {
+  "vi": "Ghi lúc",
+  "lo": "ບັນທຶກເມື່ອ",
+  "en": "Recorded"
+ },
+ "btc_huy_boi": {
+  "vi": "Huỷ bởi",
+  "lo": "ຍົກເລີກໂດຍ",
+  "en": "Cancelled by"
+ },
+ "btc_tien_goc": {
+  "vi": "Tiền gốc",
+  "lo": "ເງິນຕົ້ນ",
+  "en": "Original amount"
+ },
+ "btc_loc_phieu": {
+  "vi": "Phiếu {doc}",
+  "lo": "ໃບ {doc}",
+  "en": "Slip {doc}"
+ },
+ "title_but_toan_cho": {
+  "vi": "Bút toán chờ gửi",
+  "lo": "ບັນຊີລໍຖ້າສົ່ງ",
+  "en": "Pending journal entries"
+ },
+ "d_but_toan_cho": {
+  "vi": "Khoản không qua tiền chờ API bút toán bên kế toán",
+  "lo": "ລາຍການບໍ່ຜ່ານເງິນສົດ ລໍຖ້າ API ບັນທຶກບັນຊີ",
+  "en": "Non-cash entries awaiting the accounting journal API"
+ },
+ "btc_xem_man": {
+  "vi": "Mở màn Bút toán chờ",
+  "lo": "ເປີດໜ້າບັນຊີລໍຖ້າສົ່ງ",
+  "en": "Open pending entries"
+ },
+ "tq_q_cho_so": {
+  "vi": "Chờ tạo SO",
+  "lo": "ລໍຖ້າສ້າງ SO",
+  "en": "Awaiting SO"
+ },
+ "attention_chua_tao_so": {
+  "vi": "{doc_no} – đã giao nhưng chưa tạo SO bên kế toán",
+  "lo": "{doc_no} – ຮອດແລ້ວ ແຕ່ຍັງບໍ່ສ້າງ SO ຢູ່ລະບົບບັນຊີ",
+  "en": "{doc_no} – delivered but no SO in accounting yet"
  }
 };

@@ -8,6 +8,7 @@
  * ngay khi gõ; sau khi Lưu, số của máy chủ (P.tinh) là số thật.
  */
 (function () {
+
   const { API, NN, esc, so, AUTH, tag } = EPL;
   const MUC = ['info', 'trans', 'fuel', 'travel', 'repair', 'other'], MUC_CHI = ['fuel', 'travel', 'repair', 'other'];
   const COT_INFO = ['kind', 'company', 'owner_name', 'vehicle_id', 'brand_model', 'plate_head', 'plate_trailer', 'driver_id', 'doc_date', 'out_date', 'back_date', 'odo_out', 'odo_back'];
@@ -343,7 +344,7 @@
     veHopDong();
     g('px-goi-y').innerHTML = NN.h('hint_' + (vai() === 'treasury' ? 'treasury' : vai()));
     g('px-doc-no').disabled = !suaDuoc('info');
-    g('px-trang-thai').innerHTML = moi ? '' : `${tag(P.transport_status)} ${tag(P.finance_status)}${P.invoiced ? ' ' + tag('paid', 'inv_done') : ''}${P.locked ? ` <span class="px-khoa" title="${esc(P.locked_by || '')}">🔒 ${NN.h('s_locked')}</span>` : ''}${P.owner_paid ? ' ' + tag('paid', 'owner_paid') : ''}`;
+    g('px-trang-thai').innerHTML = moi ? '' : `${tag(P.transport_status)} ${tag(P.finance_status)}${P.da_tao_so ? ` <span title="${esc(((P.so_ke_toan || {}).order_code) || '')}">${tag('paid', 'dt_st_da_tao_so')}</span>` : ''}${P.locked ? ` <span class="px-khoa" title="${esc(P.locked_by || '')}">🔒 ${NN.h('s_locked')}</span>` : ''}${P.owner_paid ? ' ' + tag('paid', 'owner_paid') : ''}`;
     MUC.forEach(m => {
       const sec = q(`.px-muc[data-muc="${m}"]`), st = moi ? 'wait' : (P.sections[m] || 'wait'), tuyChon = (m === 'repair' || m === 'other') && !P.expenses.some(d => d.section === m);
       const khoa = !suaDuoc(m); sec.classList.toggle('locked', khoa);
@@ -369,15 +370,17 @@
         if (st === 'verified' && MUC_CHI.includes(m) && (p.book.includes(m) || vai() === 'admin')) nut.push(['ok', 'book', 'a_book']);
         if (st === 'verified' && (p.verify.includes(m) || vai() === 'admin')) nut.push(['warn', 'return', 'a_return']);
         // tạm ứng chi ở hệ kế toán (01/10): Quỹ không bấm chi mục IV ở đây — thủ quỹ ghi sổ phiếu chi bên đó (Sếp vẫn chi tay được)
-        const chiKT = m === 'travel' && (P.chi_tam_ung || {}).o_ke_toan && vai() !== 'admin';
+        const cm = (P.chi_muc_ke_toan || {})[m];
+        const chiKT = vai() !== 'admin' && ((m === 'travel' && (P.chi_tam_ung || {}).o_ke_toan) || (cm && cm.o_ke_toan && cm.so_dong_con > 0));
         if (st === 'booked' && !chiKT && (p.pay.includes(m) || vai() === 'admin')) nut.push(['ok', 'pay', 'a_pay']);
         if (vai() === 'admin' && !['wait', 'entered'].includes(st)) nut.push(['', 'unlock', 'a_unlock']);
       }
-      sec.querySelector('.px-act').innerHTML = (m === 'travel' ? oChiKeToan(st) : '') +
+      sec.querySelector('.px-act').innerHTML = (m === 'travel' ? oChiKeToan(st) : (m === 'repair' || m === 'other') ? oChiMuc(m, st) : '') +
         nut.map(b => `<button type="button" class="btn sm ${b[0]}" data-muc-act="${m}" data-hd="${b[1]}">${NN.h(b[2])}</button>`).join('');
     });
     root.querySelectorAll('[data-muc-act]').forEach(b => b.addEventListener('click', () => duyet(b.dataset.mucAct, b.dataset.hd)));
     root.querySelectorAll('[data-chi-kt]').forEach(b => b.addEventListener('click', () => chiKeToan(b.dataset.chiKt)));
+    root.querySelectorAll('[data-chi-muc]').forEach(b => b.addEventListener('click', () => chiMuc(b.dataset.muc, b.dataset.chiMuc)));
     // bước tổng thể
     const s = P.sections || {}; const idx = (m) => ['wait', 'entered', 'verified', 'booked', 'paid'].indexOf(s[m] || 'wait');
     const coChi = (m) => P.expenses.some(d => d.section === m);
@@ -388,7 +391,7 @@
     const ta = [];
     if (!moi) {
       if (AUTH.la('acct') && P.transport_status === 'arrived' && !P.locked) ta.push(`<button class="btn sm ok" data-hd-phieu="khoa">🔒 ${NN.h('a_lock')}</button>`);
-      if (AUTH.la('acct') && P.locked && !P.invoiced) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
+      if (AUTH.la('acct') && P.locked && (!P.da_tao_so || vai() === 'admin')) ta.push(`<button class="btn sm" data-hd-phieu="mo-khoa">${NN.h('a_unlock_slip')}</button>`);
       // Trả chủ xe (01/10): KHÔNG còn nút sang trang kế toán tạm — tiền đi qua hệ kế toán anh Tune: KT Thu/Chi lập đề nghị trả ở
       // màn Xe liên kết ("Trả qua kế toán"), thủ quỹ chi và ghi sổ bên đó; phiếu bên này chỉ còn thẻ "Đã trả chủ xe"
       if (AUTH.la('yard') && !P.locked && P.transport_status === 'dispatched') ta.push(`<button class="btn sm" data-tt="transit">${NN.h('mark_transit')}</button>`);
@@ -408,6 +411,7 @@
     root.querySelectorAll('[data-hd-phieu]').forEach(b => b.addEventListener('click', () => b.dataset.hdPhieu === 'xoa' ? xoaPhieu() : b.dataset.hdPhieu === 'khoa' ? khoaPhieu() : b.dataset.hdPhieu === 'doi-xe' ? doiXe() : hanhDongPhieu(b.dataset.hdPhieu)));
     veTep();
     veBen();
+    veButToan();
     g('px-log').innerHTML = `<h5>${NN.h('log_title')}</h5><ul>${(P.logs || []).length ? P.logs.map(l => `<li><span class="ts">${EPL.ngayGio(l.ts)}</span><span><b lang="lo">${esc(l.user)}</b> <span class="muted">(${NN.h('r_' + l.role)})</span> · ${esc(nhanLog(l.action))}</span></li>`).join('') : `<li class="muted">${NN.h('log_empty')}</li>`}</ul>`;
   }
   // mã nhật ký máy chủ ghi mà từ điển không có khoá cùng tên — lấy khoá sẵn có cùng nghĩa (01/10: nhật ký hiện chữ thô
@@ -654,6 +658,40 @@
     if (c.status === 'da_gui') return `<span class="px-chi-kt cho">${NN.h('ck_cho_chi')} ${so}</span><button type="button" class="btn sm" data-chi-kt="cap-nhat">${NN.h('ck_cap_nhat')}</button>`;
     return `<span class="px-chi-kt loi" title="${esc(c.error_message || '')}">${NN.h('ck_loi_ngan')}</span>` +
       (AUTH.la('expacct') ? `<button type="button" class="btn sm warn" data-chi-kt="gui">${NN.h('ck_gui_lai')}</button>` : '');
+  }
+  /** Ô trạng thái phiếu chi "Chi khác" mục V / VI bên hệ kế toán (01/10), cạnh nút của mục — từ lúc ghi sổ, khi mục có khoản
+   *  quỹ trả ngay. Lần gần nhất chưa huỷ: đã chi · chờ thủ quỹ (Cập nhật) · lỗi / phiếu bị xoá bên đó (Gửi lại — KT Chi phí). */
+  function oChiMuc(m, st) {
+    const c = (P.chi_muc_ke_toan || {})[m];
+    if (!c || !c.o_ke_toan || moi || !['booked', 'paid'].includes(st)) return '';
+    const lan = (c.lan || []).filter(r => r.status !== 'huy'), r = lan[lan.length - 1];
+    if (!r) return '';
+    const so = r.document_no ? `<b class="mono">${esc(r.document_no)}</b>` : '';
+    if (r.status === 'da_chi') return `<span class="px-chi-kt ok" title="${esc(EPL.ngayGio(r.post_at))}">${NN.h('ck_da_chi')} ${so}${r.post_by ? ' · <span lang="lo">' + esc(r.post_by) + '</span>' : ''}</span>`;
+    if (r.status === 'da_gui') return `<span class="px-chi-kt cho">${NN.h('cmt_cho_chi')} ${so}</span><button type="button" class="btn sm" data-chi-muc="cap-nhat" data-muc="${m}">${NN.h('ck_cap_nhat')}</button>`;
+    return `<span class="px-chi-kt loi" title="${esc(r.error_message || '')}">${NN.h(r.error_code === 'PHIEU_CHI_MAT' ? 'ck_phieu_mat' : 'ck_loi_ngan')}</span>` +
+      (AUTH.la('expacct') ? `<button type="button" class="btn sm warn" data-chi-muc="gui" data-muc="${m}">${NN.h('ck_gui_lai')}</button>` : '');
+  }
+  async function chiMuc(m, viec) {
+    try {
+      const r = viec === 'gui' ? await API.post(`/api/trips/${P.id}/chi-muc-ke-toan/${m}`) : (await API.get(`/api/trips/${P.id}/chi-muc-ke-toan?cap_nhat=1`))[m];
+      P = await API.get(`/api/trips/${P.id}`); veHet();
+      const lan = ((r || {}).lan || []).filter(x => x.status !== 'huy'), x = lan[lan.length - 1] || {};
+      EPL.toast(NN.t(x.status === 'da_chi' ? 'ck_da_chi_ngan' : x.status === 'da_gui' ? 'cmt_cho_chi' : 'ck_loi_ngan'), x.status === 'loi' ? 'loi' : 'ok');
+    } catch (e) { EPL.baoLoi(e); }
+  }
+  /** Khối "Bút toán chờ gửi" ở cột bên — chỉ ba vai máy chủ gửi khối này (KT Thu/Chi VC, KT Chi phí VC, Sếp). */
+  function veButToan() {
+    const o = g('px-btc'), ds = (!moi && Array.isArray(P.but_toan_cho)) ? P.but_toan_cho.filter(b => b.status !== 'huy' || b.can_dao) : [];
+    if (!o) return;
+    o.hidden = !ds.length;
+    if (!ds.length) return;
+    const tien = (v, ma) => `${so(v, ['LAK', 'VND'].includes(ma) ? 0 : 2)} ${esc(ma)}`;
+    g('px-btc-ds').innerHTML = ds.map(b => `<div class="px-btc-o">
+        <div class="d"><b>${NN.h('btc_nguon_' + b.nguon)}</b>${b.can_dao ? tag('unpaid', 'btc_can_dao') : tag(b.status === 'da_gui' ? 'paid' : 'transit', b.status === 'da_gui' ? 'dt_st_da_gui' : 'dt_st_cho_gui')}</div>
+        ${(b.dong || []).slice(0, 4).map(d => `<div class="l"><span class="mono">${esc(d.no)} / ${esc(d.co)}</span><span>${tien(d.tien, d.ccy)}</span></div>`).join('')}
+        ${(b.dong || []).length > 4 ? `<div class="l muted">+ ${(b.dong || []).length - 4}</div>` : ''}</div>`).join('')
+      + `<a class="small" href="#/but-toan-cho?trip_id=${esc(P.id)}&doc=${encodeURIComponent(P.doc_no || '')}">${NN.h('btc_xem_man')} →</a>`;
   }
   async function chiKeToan(viec) {
     try {

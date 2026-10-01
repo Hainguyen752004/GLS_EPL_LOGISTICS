@@ -10,6 +10,7 @@
    Biểu đồ: Chart.js 4.5.1 trong frontend/vendor/chartjs, module tự nạp — không gọi CDN.
    Mỗi lần vẽ lại destroy chart cũ để không rò bộ nhớ. */
 (function () {
+
   const { API, NN, esc, so, AUTH } = EPL;
   const HAO_HUT_MUC = 1.5;              // % hao hụt cân cho phép — cùng ngưỡng với màn Theo dõi phiếu
   // Bãi không thấy TIỀN BÁN (doanh thu, khách chưa trả, doanh thu theo xe) — đó là biên lợi nhuận.
@@ -162,7 +163,7 @@
     veGantt(c);
 
     /* 2. Tiến trình 5 bước */
-    const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'], ['s_arrived', d.dem.arrived, 'arrived'], ['p_invoiced', d.dem.invoiced, 'invoiced'], ['s_paid', d.dem.paid, 'paid']];
+    const P = [['s_dispatched', d.dem.dispatched, 'dispatched'], ['s_transit', d.dem.transit, 'transit'], ['s_arrived', d.dem.arrived, 'arrived'], ['dt_st_da_tao_so', d.dem.invoiced, 'invoiced'], ['s_paid', d.dem.paid, 'paid']];
     const tongP = P.reduce((a, p) => a + (p[1] || 0), 0) || 1;
     root.querySelector('#tq-tien-do').innerHTML = P.map((p, i) => `<div class="tq-step" role="button" tabindex="0" data-i="${i}" data-st="${p[2]}">
         <div class="n">${p[1]}<small>${so(p[1] / tongP * 100)}%</small></div>
@@ -238,13 +239,14 @@
     root.querySelector('#tq-ty-gia').innerHTML = `<div class="tq-ty-gia">${['USD', 'CNY', 'THB', 'VND'].map(m => `<div><span class="small muted">1 ${m} =</span><b>${so(ty_gia[m], m === 'VND' ? 2 : 0)} LAK</b></div>`).join('')}</div>`;
     root.querySelector('#tq-rate-date').textContent = ty_gia.ngay ? EPL.ngay ? EPL.ngay(ty_gia.ngay) : ty_gia.ngay : '';
 
-    /* Cần xử lý — mức độ theo loại: hao hụt / quá hạn = xấu, chưa hóa đơn = cảnh báo, chờ kiểm = thông tin */
+    /* Cần xử lý — mức độ theo loại: hao hụt / quá hạn = xấu, chưa tạo SO = cảnh báo, chờ kiểm = thông tin.
+       Từ 01/10 khoá "chua_hoa_don" / dem.invoiced của máy chủ nghĩa là DO chưa / đã tạo SO bên hệ kế toán (bỏ trang kế toán tạm). */
     // Mã loại do máy chủ đặt (routes/bao_cao.py): hao_hut · chua_hoa_don · chua_can · cho_kiem.
     const MUC = { hao_hut: 'bad', chua_hoa_don: 'warn', chua_can: 'warn', cho_kiem: 'info' };
     const cy = d.chu_y || [];
     root.querySelector('#tq-chu-y-n').textContent = cy.length || '';
     root.querySelector('#tq-chu-y').innerHTML = cy.length
-      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${x.doc_no ? `<b>${esc(x.doc_no)}</b>` : ''}${NN.h('attention_' + x.loai, x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
+      ? `<div class="tq-chu-y">${cy.map(x => `<div class="it ${MUC[x.loai] || 'warn'}" data-doc="${esc(x.doc_no || '')}"><i></i><div class="t">${x.doc_no ? `<b>${esc(x.doc_no)}</b>` : ''}${NN.h('attention_' + (x.loai === 'chua_hoa_don' ? 'chua_tao_so' : x.loai), x)}${x.ngay ? `<small>${esc(x.ngay)}</small>` : ''}</div><button class="btn sm" type="button">${NN.h('tq_open')}</button></div>`).join('')}</div>`
       : `<div class="tq-empty ok">✓ ${NN.h('none_attention')}</div>`;
     root.querySelectorAll('.tq-chu-y .it').forEach(el => el.addEventListener('click', () => { if (el.dataset.doc) EPL.di('theo-doi', { q: el.dataset.doc }); else EPL.di('phieu-xuat-xe'); }));
   }
@@ -257,11 +259,11 @@
       ['tq_q_running', q.dang_chay, 'info', 'theo-doi-tuyen', { o: 'dang_chay' }],
       ['tq_q_late', q.di_lau, 'bad', 'theo-doi-tuyen', { o: 'di_lau' }],
       ['tq_q_incident', q.su_co, 'bad', 'theo-doi-tuyen', { o: 'su_co_mo' }],
-      ['tq_q_uninvoiced', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
+      ['tq_q_cho_so', q.cho_hoa_don, 'warn', 'theo-doi-tuyen', { o: 'cho_hoa_don' }],
       ['tq_q_my_work', q.viec_toi, 'info', 'phieu-xuat-xe', q.viec_phieu ? { id: q.viec_phieu } : {}],
       ['tq_q_fuel', q.phieu_linh_cho, 'tan', 'kt:cap-phat', {}],        // màn Cấp phát ở trang kế toán (28/09)
       ['tq_q_unpaid', q.chua_thu_lak != null ? so(q.chua_thu_lak / 1e6, 1) + 'M LAK' : null, 'warn', 'theo-doi', { finance_status: 'unpaid', thang }],
-    ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_uninvoiced'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
+    ].filter(ch => !(laBai() && ['tq_q_unpaid', 'tq_q_cho_so'].includes(ch[0])));   // hoá đơn và thu tiền không phải việc của Bãi
     root.querySelector('#tq-xem-nhanh').innerHTML = `<span class="lbl">${NN.h('tq_quick')}</span>` +
       chips.map((ch, i) => { const v = ch[1]; const zero = v == null || v === 0; return `<button type="button" class="tq-chip ${ch[2]} ${zero ? 'zero' : ''}" data-i="${i}"><b>${v == null ? '—' : esc(v)}</b>${NN.h(ch[0])}</button>`; }).join('') +
       `<span class="sep"></span><span class="right"><span id="tq-quick-stamp"></span><label><input type="checkbox" id="tq-auto">${NN.h('tq_auto')}</label></span>`;
@@ -274,7 +276,7 @@
   let autoTimer = null;
 
   /* ---------- B2. Dòng thời gian chuyến: Gantt theo ngày, 5 giai đoạn nối tiếp ---------- */
-  const GD = [['s_dispatched', 'xuat_xe'], ['s_transit', 'toi_bai'], ['tq_g_border', 'cua_khau'], ['s_arrived', 'cang'], ['p_invoiced', 'hoa_don']];   // mốc kết thúc mỗi đoạn; 'thanh_toan' là chấm cuối
+  const GD = [['s_dispatched', 'xuat_xe'], ['s_transit', 'toi_bai'], ['tq_g_border', 'cua_khau'], ['s_arrived', 'cang'], ['dt_st_da_tao_so', 'hoa_don']];   // mốc kết thúc mỗi đoạn; 'thanh_toan' là chấm cuối
   function veGantt(c) {
     const rows = (xh && xh.dong_thoi_gian) || [];
     const box = root.querySelector('#tq-gantt');
@@ -333,7 +335,7 @@
         ...(bai ? [] : [[T('k_rev'), L(d.doanh_thu_lak)], [T('k_exp'), L(d.chi_lak)], [T('k_unpaid'), L(d.chua_thu_lak)]]),
         [T('k_tons'), EPL.oSo(d.tan_giao, 2, 't')],
         [T('s_dispatched'), d.dem.dispatched], [T('s_transit'), d.dem.transit], [T('s_arrived'), d.dem.arrived],
-        ...(bai ? [] : [[T('p_invoiced'), d.dem.invoiced], [T('s_paid'), d.dem.paid]]),
+        ...(bai ? [] : [[T('dt_st_da_tao_so'), d.dem.invoiced], [T('s_paid'), d.dem.paid]]),
         ...(bai ? [] : Object.entries(d.chi_theo_muc || {}).map(([m, v]) => [`${T('k_exp')} · ${T('e_' + m)}`, L(v)])),
       ];
       const ds = [EPL.xuatSheet(T('xuat_chi_tieu'), [T('xuat_chi_tieu'), T('xuat_gia_tri')], chiTieu)];
