@@ -37,9 +37,10 @@
       ghi_chu: v.note, so_phieu: v.so_phieu, phieu_hien_tai: v.phieu_hien_tai,
       anh: v.anh_chinh ? urlAnh(v.anh_chinh) : null, anh_ds: (v.anh || []).map(a => ({ ...a, src: urlAnh(a.url) })),
       lich_su_rm: (v.lich_su_ro_mooc || []).map(h => ({ bien: h.plate, lap: ngay(h.attached_at), thao: ngay(h.detached_at), ly_do: h.reason })),
+      // giữ KHOÁ dịch, dịch lúc vẽ (suaTab): dịch sẵn ở đây thì đổi tiếng Lào / Anh xong tab Sửa chữa vẫn chữ Việt (01/10)
       chi_phi: (v.sua_chua || []).map(c => ({
-        phieu: c.doc_no, ngay: ngay(c.doc_date), nguon: NN.t(c.source === 'kho' ? 'src_kho' : 'src_mua'),
-        khoan: c.item_key ? NN.t(c.item_key) : (c.item_name || ''), tien: c.tien_lak, ma_kt: thayMaKT() ? c.acct_code : null,
+        phieu: c.doc_no, ngay: ngay(c.doc_date), nguon: c.source === 'kho' ? 'src_kho' : 'src_mua',
+        khoan: c.item_key || null, ten: c.item_name || '', tien: c.tien_lak, ma_kt: thayMaKT() ? c.acct_code : null,
       })),
       lenh_loi: v.sua_chua_lenh_loi || null,     // lệnh sửa chữa ở trang kế toán (28/09): bên đó tắt thì báo rõ phần thiếu
       phieu_gan_day: (v.phieu_gan_day || []).map(t => ({
@@ -117,7 +118,10 @@
     chuXe = dsChu;
     xe = dsXe.map(xemXe); rm = dsRM.map(xemRM);
     const bai = [...new Set(xe.map(x => x.bai).filter(Boolean))];
-    const sel = root.querySelector('#xe-f-bai'); sel.innerHTML = `<option value="">${NN.h('xe_all_depot')}</option>` + bai.map(b => `<option value="${esc(b)}" class="lo">${esc(b)}</option>`).join('');
+    // data-i18n trên dòng "Tất cả bãi": đổi tiếng thì NN.apDung dịch lại được (trước đây còn chữ Việt ở tiếng Lào)
+    const sel = root.querySelector('#xe-f-bai'), giu = sel.value;
+    sel.innerHTML = `<option value="" data-i18n="xe_all_depot">${NN.h('xe_all_depot')}</option>` + bai.map(b => `<option value="${esc(b)}" class="lo">${esc(b)}</option>`).join('');
+    if (bai.includes(giu)) sel.value = giu; else ui.bai = '';     // "Làm mới" không tự bỏ bộ lọc bãi đang chọn
     if (!ui.sel) ui.sel = ui.mode === 'dau-keo' ? (xe[0] && xe[0].so_xe) : (rm[0] && rm[0].bien);
     ve(); chonXong();
   }
@@ -328,7 +332,7 @@
     }
     // vai không thấy tiền sửa / giá vốn kho: dòng đó không có số (máy chủ bỏ) — tổng không cộng thiếu (30/09)
     const suaTab = () => { const c = o.chi_phi || [], tong = c.some(v => v.tien == null) ? null : c.reduce((a, v) => a + (v.tien || 0), 0);
-      return `<div class="xe-sec" style="padding:0 0 6px">${NN.h('xe_tab_repair_full')}<span class="grow"></span><button class="xe-btn-sm tan" type="button" data-go="incident">+ ${NN.h('xe_incident')}</button></div>` + (o.lenh_loi ? `<div class="xe-empty" style="text-align:left">${esc(o.lenh_loi)}</div>` : '') + (c.length ? `<div class="xe-rows xe-rows--box">${c.map(v => `<div class="xe-row"><div class="k"><span style="font-weight:600">${esc(v.khoan)}</span><small>${fmt(v.ngay)} · ${esc(v.nguon)}${v.phieu && v.phieu !== '—' ? ` · <span class="mono">${esc(v.phieu)}</span>` : ''}${v.ma_kt ? ` · <span class="tien">${esc(v.ma_kt)}</span>` : ''}</small></div><div class="v"><b class="mono">${so(v.tien)}</b><small>LAK</small></div></div>`).join('')}<div class="xe-foot"><span>${NN.h('xe_total_repair')}: <b style="color:var(--xe-ink)">${so(tong)} LAK</b></span><span>${NN.h('xe_cost_source')}</span></div></div>` : `<div class="xe-empty">${NN.h('xe_no_cost')}</div>`); };
+      return `<div class="xe-sec" style="padding:0 0 6px">${NN.h('xe_tab_repair_full')}<span class="grow"></span><button class="xe-btn-sm tan" type="button" data-go="incident">+ ${NN.h('xe_incident')}</button></div>` + (o.lenh_loi ? `<div class="xe-empty" style="text-align:left">${esc(o.lenh_loi)}</div>` : '') + (c.length ? `<div class="xe-rows xe-rows--box">${c.map(v => `<div class="xe-row"><div class="k"><span style="font-weight:600">${esc(v.khoan ? NN.t(v.khoan) : v.ten)}</span><small>${fmt(v.ngay)} · ${esc(NN.t(v.nguon))}${v.phieu && v.phieu !== '—' ? ` · <span class="mono">${esc(v.phieu)}</span>` : ''}${v.ma_kt ? ` · <span class="tien">${esc(v.ma_kt)}</span>` : ''}</small></div><div class="v"><b class="mono">${so(v.tien)}</b><small>LAK</small></div></div>`).join('')}<div class="xe-foot"><span>${NN.h('xe_total_repair')}: <b style="color:var(--xe-ink)">${so(tong)} LAK</b></span><span>${NN.h('xe_cost_source')}</span></div></div>` : `<div class="xe-empty">${NN.h('xe_no_cost')}</div>`); };
     const phieuTab = () => { const p = o.phieu_gan_day || [];
       return p.length ? `<div class="xe-rows xe-rows--box">${p.map(v => `<div class="xe-row click" data-doc="${esc(v.doc_no)}"><div class="k"><b>${esc(v.doc_no)}</b><small>${fmt(v.ngay)} · <span class="lo">${esc(v.khach)}</span>${v.tan != null ? ` · ${so(v.tan, 2)} ${NN.t('ton')}` : ''}</small></div><div class="v">${pill(v.tt === 'paid' || v.tt === 'arrived' ? 'green' : v.tt === 'transit' ? 'blue' : 'muted', NN.t('xe_tt_' + v.tt))}</div></div>`).join('')}</div>` : `<div class="xe-empty">${NN.h('xe_no_trips')}</div>`; };
 

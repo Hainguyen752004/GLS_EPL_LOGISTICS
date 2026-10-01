@@ -2,7 +2,7 @@
 .td-tim{min-width:260px}
 .td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 235px);overflow:auto}
 .td-bang{min-width:2960px;font-size:12.5px}
-.td-bang thead tr:nth-child(2) th{top:37px}
+.td-bang thead tr:nth-child(2) th{top:var(--td-h1, 37px)}   /* theo-doi.js đo chiều cao hàng một (VI + ລາວ cao gấp đôi) */
 .td-bang td.num{font-variant-numeric:tabular-nums}
 .td-bang tr{cursor:pointer}
 .td-hao{color:var(--red);font-size:11px;margin-left:4px}
@@ -30,3 +30,8 @@ body.vai-yard .td-bang,body.vai-driver .td-bang,body.vai-depot .td-bang,body.vai
 .td-bang tbody tr:hover td:nth-child(-n+3){background:#F6F8F5}
 .td-bang tbody tr.sel td:nth-child(-n+3){background:var(--green-soft)}
 .td-tim{min-width:220px}
+
+/* 01/10 — dòng tổng: ô nhãn ba cột đầu đứng yên khi cuộn ngang (như ba cột đầu của thân bảng) */
+.td-bang tfoot td.td-chan-nhan{position:sticky;left:0;z-index:2;white-space:nowrap;box-shadow:inset -1px 0 0 var(--line-2)}
+/* kiểu thanh trên: đầu trang cao hơn ~96px — trừ 235px thì đáy bảng lọt dưới cửa sổ */
+.app[data-view="top"] .td-cuon{max-height:calc(100vh / var(--ty-le, 1) - 318px)}

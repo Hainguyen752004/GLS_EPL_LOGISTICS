@@ -5,3 +5,19 @@
 .cx-tra .tbl{width:100%}
 .cx-tra .tbl td{vertical-align:top}
 .cx-tra h4{margin:6px 0 0}
+
+/* 01/10 — hộp "Trả qua kế toán" dùng hộp chung rộng 440px: bảng 5 cột gãy mã đề nghị thành ba dòng, số chứng từ gãy chữ
+   ngay sau nhãn trạng thái, phần "Phiếu chờ trả" (ô chọn, cách trả, tổng) bị đẩy khuất dưới đáy. Hộp này rộng hơn, mã và
+   số tiền không gãy. Viền xanh quanh nội dung là vòng focus của khung cuộn (hộp mở thì focus vào đó) — bỏ cho đỡ rối. */
+#hop-thoai:has(.cx-tra){width:min(780px,calc(92vw / var(--ty-le, 1)))}
+.cx-tra .mono,.cx-tra td.num{white-space:nowrap}
+.cx-tra:focus{outline:none}
+
+/* bảng chủ xe một dòng mỗi chủ: điện thoại, cách trả, quá tải, ba nút thao tác không gãy (trước đây ba nút xếp hai tầng,
+   mỗi chủ cao gấp đôi); bảng cuộn trong khung của nó thay vì kéo dài cả trang — kiểu thanh trên trừ thêm ~96px */
+.xlk-chu-card .tbl td{white-space:nowrap}
+.xlk-chu-card .tbl td:first-child{white-space:normal;min-width:220px}
+.xlk-chu-card .tbl td:nth-child(3){white-space:normal}
+.xlk-chu-card .tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 250px);overflow:auto}
+.app[data-view="top"] .xlk-chu-card .tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 346px)}
+@media print{.app[data-view] .xlk-chu-card .tbl-wrap{max-height:none;overflow:visible}}

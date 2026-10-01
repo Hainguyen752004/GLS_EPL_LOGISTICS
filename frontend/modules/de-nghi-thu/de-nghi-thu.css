@@ -53,3 +53,13 @@
   .dnt-than{grid-template-columns:1fr}
   .dnt-ds{position:static;max-height:320px}
 }
+
+/* 01/10 — như Phiếu đề nghị chi: tờ in cuộn trong khung của nó, thanh nút và dòng ghi chú đứng yên. Màn này còn dải tổng
+   trên đầu nên trừ nhiều hơn (đáy danh sách trước đây lọt dưới cửa sổ ~120px); kiểu thanh trên trừ thêm ~96px. */
+.dnt-nut:empty{display:none}          /* chưa chọn DO: thanh nút rỗng vẫn ăn một khoảng gap — tờ lệch xuống 10px so với danh sách */
+@media (min-width:1101px){
+  .dnt-ds,.dnt-xem{max-height:calc(100vh / var(--ty-le, 1) - 286px)}
+  .dnt-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
+  .app[data-view="top"] .dnt-ds,.app[data-view="top"] .dnt-xem{max-height:calc(100vh / var(--ty-le, 1) - 358px)}
+}
+@media print{.app[data-view] .dnt-xem{max-height:none}.dnt-xem .ct-giay{flex:none;overflow:visible}}

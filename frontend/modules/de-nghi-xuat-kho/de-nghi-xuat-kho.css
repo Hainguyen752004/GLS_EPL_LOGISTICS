@@ -25,3 +25,12 @@
 .dnx-xem .ct-giay{max-width:none;width:100%}
 @media print{.dnx-than{display:block}.dnx-xem .ct-giay{max-width:820px}}
 @media (max-width:1100px){.dnx-than{grid-template-columns:1fr}.dnx-ds{position:static;max-height:320px}}
+
+/* 01/10 — như Phiếu đề nghị chi: tờ in cuộn trong khung của nó (trang không cuộn, danh sách dính không chui dưới thanh
+   tiêu đề); kiểu thanh trên trừ thêm ~96px */
+@media (min-width:1101px){
+  .dnx-ds,.dnx-xem{max-height:calc(100vh / var(--ty-le, 1) - 160px)}
+  .dnx-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
+  .app[data-view="top"] .dnx-ds,.app[data-view="top"] .dnx-xem{max-height:calc(100vh / var(--ty-le, 1) - 246px)}
+}
+@media print{.app[data-view] .dnx-xem{max-height:none}.dnx-xem .ct-giay{flex:none;overflow:visible}}

@@ -145,5 +145,8 @@
   .xe-scrim { display: none; }
   .xe-detail .xe-close { display: none; }
   .xe-detail .xe-head { padding-right: 14px; }
+  /* 01/10 — kiểu thanh trên: phần đầu trang cao hơn kiểu thanh bên ~96px, trừ 215px thì đáy danh sách và đáy hồ sơ
+     lọt dưới cửa sổ ~70px (phải cuộn cả trang rồi mới cuộn khung) */
+  .app[data-view="top"] .xe-cols > .xe-card:first-child, .app[data-view="top"] .xe-detail { max-height: calc(100vh / var(--ty-le, 1) - 300px); }
 }
 .xe-tbl td:nth-child(3) { white-space: nowrap; }

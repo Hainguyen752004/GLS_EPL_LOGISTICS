@@ -116,6 +116,7 @@
       r.querySelector('#xlk-ke-toan').addEventListener('click', () => EPL.moKeToan('xe-lien-ket'));   // trả chủ xe ở trang kế toán
       await tai();
     },
-    onLang() { if (root) veChu(); },
+    // khối hợp đồng đang mở (js/hop_dong.js) dựng chữ lúc mở — đổi tiếng thì dựng lại, không để tiêu đề / nút còn tiếng cũ
+    onLang() { if (root) { veChu(); if (chuHd && !root.querySelector('#xlk-hd').hidden) moHd(chuHd); } },
   };
 })();

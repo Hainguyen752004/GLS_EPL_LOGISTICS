@@ -16,7 +16,9 @@
 .tuy-diem.ve .ten{font-weight:500;color:var(--ink-2)}
 .tuy-ve-o{display:flex;gap:8px;align-items:center}
 .tuy-ve-o input{max-width:160px}
-.tuy-hop{width:min(640px,94vw)}
+/* Hộp sửa nằm TRONG .app (đã zoom theo --ty-le) mà .hop-thoai lại zoom thêm một lần — ở 1366 px chữ còn 73 %, bảng chi phí
+   9 cột ép ô chọn còn một chữ ("C", "LA"). Trả zoom của riêng hộp về 1 (vẫn co theo .app như hộp chung) và cho rộng hơn. */
+.tuy-hop{zoom:1;width:min(900px,calc(94vw / var(--ty-le, 1)))}
 .tuy-hop table input{border:1px solid var(--line-2);border-radius:4px;padding:4px 6px;width:100%}
 .tuy-hop .x{border:0;background:none;color:var(--red);font-size:16px}
 @media (max-width:1000px){.tuy-hai{grid-template-columns:1fr}}
@@ -26,6 +28,10 @@
 .tuy-cp-dau{margin-bottom:6px}
 .tuy-cp-bang{overflow-x:auto;margin-top:4px}
 .tuy-cp-bang select,.tuy-cp-bang input{min-width:0;width:100%}
+/* ô chọn đủ rộng để đọc được ("Chi phí đi đường", "LAK") — trước đây co còn "Chi pl", "LA" (01/10) */
+.tuy-cp-bang [data-f="section"]{min-width:118px} .tuy-cp-bang [data-f="item_key"]{min-width:128px} .tuy-cp-bang [data-f="place_id"]{min-width:128px}
+.tuy-cp-bang [data-f="currency"]{min-width:62px} .tuy-cp-bang [data-f="pay_channel"]{min-width:96px}
+.tuy-cp-bang [data-f="qty"]{min-width:52px} .tuy-cp-bang [data-f="unit_price"]{min-width:80px}
 .tuy-cp-nut{display:flex;gap:8px;margin-top:4px}
 
 /* chi phí gợi ý: nhóm theo mục, một dòng mỗi khoản */
@@ -33,3 +39,8 @@
 .tuy-cp-xem tr.tuy-cp-nhom td{background:var(--bg);font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.02em;padding-top:6px;padding-bottom:6px}
 .tuy-cp-xem td.num{white-space:nowrap}
 .tuy-hai .tbl thead th{white-space:normal;vertical-align:bottom}
+
+/* 01/10 — khung chi tiết (và danh sách tuyến khi nhiều tuyến) vừa đáy cửa sổ: trừ 150px thì đáy khung lọt dưới cửa sổ
+   ~25px ở kiểu thanh bên, ~95px ở kiểu thanh trên (thanh trên cao hơn ~96px) — phải cuộn cả trang mới thấy đáy */
+.tuy-chi-tiet,.tuy-hai>.card:first-child>.tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 190px);overflow:auto}
+.app[data-view="top"] .tuy-chi-tiet,.app[data-view="top"] .tuy-hai>.card:first-child>.tbl-wrap{max-height:calc(100vh / var(--ty-le, 1) - 262px)}

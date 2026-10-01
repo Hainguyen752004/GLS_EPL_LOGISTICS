@@ -13,6 +13,7 @@
 (function () {
   const { API, NN, esc, so, tag, AUTH } = EPL;
   let root, DS = [], tt = 'cho', tim = '', chonId = null, ACC = {}, LINH = [], hen = null;
+  let phieuLe = null;               // phiếu mở từ phiếu xuất xe mà chưa có tờ tạm ứng — đổi tiếng thì vẽ lại đúng phiếu đó
   const loai = 'advance';            // chỉ tạm ứng (30/09 chiều) — xuất kho nhiên liệu ở màn Phiếu đề nghị xuất kho
   const q = (s) => root.querySelector(s);
 
@@ -44,7 +45,7 @@
       <div class="ct-meta">
         <div><span>${NN.h('payee')}</span><span lang="lo"><b>${esc(d.driver_name || '—')}</b></span></div><div><span>${NN.h('doc_no')}</span><span class="mono"><b>${esc(d.doc_no)}</b></span></div>
         <div><span>${NN.h('truck_no')}</span><span>${esc(d.truck_no)} · <span lang="lo">${esc(d.plate_head)} / ${esc(d.plate_trailer)}</span></span></div><div><span>${NN.h('truck_type')}</span><span>${d.company === 'joint' ? NN.h('co_joint') + ' · ' + esc(d.owner_name || '') : NN.h('co_epl')}</span></div>
-        <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_advance', { doc_no: d.doc_no, tuyen: (d.origin || '') + ' → ' + (d.destination || '') })}</span></div>
+        <div style="grid-column:1/-1"><span>${NN.h('purpose')}</span><span lang="lo">${NN.h('purpose_advance', { doc_no: d.doc_no, tuyen: d.origin || d.destination ? (d.origin || '—') + ' → ' + (d.destination || '—') : '—' })}</span></div>
       </div>
       <table class="tbl tbl-compact"><thead><tr><th>#</th><th>${NN.h('item')}</th><th class="num">${NN.h('qty')}</th>${coTien ? `<th class="num">${NN.h('unit_price')}</th><th class="num">${NN.h('amount_lak')}</th><th class="tien">${NN.h('acct_pair')}</th>` : ''}</tr></thead>
         <tbody>${d.dong.map((x, i) => `<tr><td>${i + 1}</td><td lang="lo">${esc(x.item_key ? NN.t(x.item_key) : x.item_name)}</td><td class="num">${so(x.qty)}</td>${coTien ? `<td class="num">${so(x.unit_price)}${x.currency !== 'LAK' ? ' ' + esc(x.currency) : ''}</td><td class="num">${so(x.tien_lak)}</td><td class="tien">${tenTK(x.acct_code)}</td>` : ''}</tr>`).join('')}</tbody></table>
@@ -73,11 +74,12 @@
         <div class="nho">${EPL.ngay(v.doc_date)}${v.kind === 'fuel' && v.place_name ? ' · <span lang="lo">' + esc(v.place_name) + '</span>' : ''} ${nhanKT}</div>
       </button>`;
     }).join('');
-    ds.querySelectorAll('.dnc-o').forEach(b => b.addEventListener('click', () => { chonId = b.dataset.id; veDs(); veTo(); }));
+    ds.querySelectorAll('.dnc-o').forEach(b => b.addEventListener('click', () => { chonId = b.dataset.id; phieuLe = null; veDs(); veTo(); }));
   }
 
   async function veTo() {
     const v = DS.find(x => x.id === chonId);
+    q('#dnc-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
     if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     veKT(v, v.chi_ke_toan);
@@ -121,6 +123,7 @@
   async function tai() {
     const th = new URLSearchParams({ trang_thai: tt, loai, co: '300' });
     if (tim) th.set('q', tim);
+    phieuLe = null;
     try { DS = await API.get('/api/vouchers?' + th.toString()); } catch (e) { DS = []; EPL.baoLoi(e); }
     if (!DS.some(v => v.id === chonId)) chonId = DS[0] ? DS[0].id : null;
     veDs(); await veTo();
@@ -138,21 +141,27 @@
     if (x) { chonId = x.id; tt = x.status; tim = ''; datSeg(); await tai(); return true; }
     if ((t.loai || 'advance') === 'advance') {
       await tai();
-      chonId = null; veDs();
-      q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
-      try { veTamUng(await API.get(`/api/trips/${t.id}/phieu-chi`), null); } catch (e) { EPL.baoLoi(e); }
+      chonId = null; phieuLe = t.id; veDs();
+      await veLe();
       q('#dnc-mo-phieu').onclick = () => EPL.di('phieu-xuat-xe', { id: t.id });
       return true;
     }
     return false;
   }
 
+  async function veLe() {
+    q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
+    try { veTamUng(await API.get(`/api/trips/${phieuLe}/phieu-chi`), null); } catch (e) { EPL.baoLoi(e); }
+  }
+
   EPL.modules['de-nghi-chi'] = {
     async init(r, ctx) {
-      root = r; DS = []; chonId = null; tim = ''; tt = 'cho';
+      root = r; DS = []; chonId = null; tim = ''; tt = 'cho'; phieuLe = null;
       const acc = await API.get('/api/acc-codes').catch(() => ({ data: [], source: 'error' }));
       ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
-      q('#dnc-nguon').innerHTML = NN.h(acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback');
+      // data-i18n: đổi tiếng thì NN.apDung dịch lại dòng này (trước đây đứng chữ Việt ở tiếng Lào / Anh)
+      q('#dnc-nguon').dataset.i18n = acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback';
+      q('#dnc-nguon').innerHTML = NN.h(q('#dnc-nguon').dataset.i18n);
       root.querySelectorAll('#dnc-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnc-in').addEventListener('click', () => window.print());
@@ -171,7 +180,7 @@
       if (t.id && await moTheoPhieu(t)) return;
       await tai();
     },
-    onLang() { if (root) { veDs(); veTo(); } },
+    onLang() { if (root) { veDs(); if (phieuLe && !chonId) veLe(); else veTo(); } },
     xuatExcel() {
       const T = NN.t;
       return [EPL.xuatSheet(T('nav_de_nghi_chi'), [T('voucher_no'), T('do_kind'), T('doc_no'), T('truck_no'), T('driver'), T('fp_place'), T('qty_l'), T('amount_lak'), T('status'), T('c_date')],

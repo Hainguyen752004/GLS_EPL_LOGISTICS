@@ -40,3 +40,13 @@
 }
 .dnc .dnc-kt{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .dnc .dnc-kt .btn{white-space:nowrap}
+
+/* 01/10 — tờ in bên phải cuộn trong khung của nó, thanh nút (Mở phiếu · In) đứng yên trên đầu. Trước đây tờ dài làm cả trang
+   cuộn, danh sách bên trái (dính top:0) chui xuống dưới thanh tiêu đề — mất tờ đang chọn ở đầu danh sách. Kiểu thanh trên:
+   đầu trang cao hơn ~96px nên trừ thêm. */
+@media (min-width:1101px){
+  .dnc-ds,.dnc-xem{max-height:calc(100vh / var(--ty-le, 1) - 160px)}
+  .dnc-xem .ct-giay{flex:1 1 auto;min-height:0;overflow:auto}
+  .app[data-view="top"] .dnc-ds,.app[data-view="top"] .dnc-xem{max-height:calc(100vh / var(--ty-le, 1) - 246px)}
+}
+@media print{.app[data-view] .dnc-xem{max-height:none}.dnc-xem .ct-giay{flex:none;overflow:visible}}

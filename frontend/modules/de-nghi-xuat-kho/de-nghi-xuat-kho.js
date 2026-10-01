@@ -65,6 +65,7 @@
 
   async function veChon() {
     const v = DS.find(x => x.id === chonId);
+    q('#dnx-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn tờ khác thì về đầu tờ
     q('#dnx-mo-phieu').disabled = !v; q('#dnx-in').disabled = !v;
     if (!v) { q('#dnx-so').innerHTML = ''; q('#dnx-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     try { veTo(v, await API.get(`/api/trips/${v.trip_id}`)); } catch (e) { q('#dnx-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
@@ -88,7 +89,8 @@
     async init(r, ctx) {
       root = r; DS = []; chonId = null; tim = ''; ht = ''; tt = 'cho'; kho = '';
       KHO = (await API.get('/api/fuel-places').catch(() => [])).filter(x => x.owner_type === 'epl');
-      q('#dnx-kho').innerHTML = `<option value="">${NN.h('fuel_all_kho')}</option>` + KHO.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+      // data-i18n trên dòng "Tất cả kho": đổi tiếng thì NN.apDung dịch lại (trước đây còn chữ Việt ở tiếng Lào / Anh)
+      q('#dnx-kho').innerHTML = `<option value="" data-i18n="fuel_all_kho">${NN.h('fuel_all_kho')}</option>` + KHO.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
       q('#dnx-kho').addEventListener('change', (e) => { kho = e.target.value; veDs(); veChon(); });
       root.querySelectorAll('#dnx-ht button').forEach(b => b.addEventListener('click', () => { ht = b.dataset.ht; datSeg(); veDs(); veChon(); }));
       root.querySelectorAll('#dnx-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));

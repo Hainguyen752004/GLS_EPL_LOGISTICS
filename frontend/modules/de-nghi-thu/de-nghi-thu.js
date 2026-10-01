@@ -62,6 +62,7 @@
   /* ---------------------------------------------------------------- tờ đề nghị thu */
   async function veTo() {
     const x = D.ds.find(y => y.trip_id === chonId), nut = q('#dnt-nut');
+    q('#dnt-giay').scrollTop = 0;            // tờ cuộn trong khung riêng (01/10): chọn DO khác thì về đầu tờ
     if (!x) { nut.innerHTML = ''; q('#dnt-so').innerHTML = ''; q('#dnt-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     let d;
     try { d = await API.get(`/api/trips/${x.trip_id}/de-nghi-thu`); } catch (e) { q('#dnt-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; return; }

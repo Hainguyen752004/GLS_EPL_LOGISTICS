@@ -58,7 +58,7 @@
       const hao = c.hao_hut_pct !== null && c.hao_hut_pct > 1.5 ? `<span class="td-hao" title="${esc(NN.t('w_loss'))}">${so(c.hao_hut_pct, 1)}%</span>` : '';
       return `<tr data-id="${p.id}">
         <td>${dau + i + 1}</td><td class="nowrap">${EPL.ngay(p.doc_date)}</td><td class="nowrap mono"><b>${esc(p.doc_no)}</b></td>
-        <td class="mono">${esc(p.ore_bill_no) || d}</td><td class="nowrap" lang="lo">${esc(p.origin)} → ${esc(p.destination)}</td>
+        <td class="mono">${esc(p.ore_bill_no) || d}</td><td class="nowrap" lang="lo">${p.origin || p.destination ? `${esc(p.origin) || d} → ${esc(p.destination) || d}` : d}</td>
         <td>${p.company === 'joint' ? tag('plain', 'co_joint') : 'EPL'}</td><td lang="lo" class="nowrap">${esc(p.driver_name) || d}</td>
         <td lang="lo" class="nowrap">${esc(p.plate_head) || d}</td><td lang="lo" class="nowrap">${esc(p.plate_trailer) || d}</td><td>${esc(p.truck_no) || d}</td>
         <td lang="lo">${esc(p.customer_name) || d}</td><td>${tag('ore', p.goods_type || 'iron_ore')}</td>
@@ -72,7 +72,9 @@
         <td>${tag(p.transport_status)}</td><td>${tag(p.finance_status)}</td></tr>`;
     }).join('') : `<tr><td colspan="31" class="empty">${NN.h('no_data')}</td></tr>`;
     const gop = (t) => `<span class="td-gop">${EPL.tienGop(t, '<br>')}</span>`;
-    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="15">${NN.ghep([{ k: 'total' }, ' · ' + so(soPhieu) + ' ', { k: 'trips' }])}</td>
+    // nhãn "Tổng · n chuyến" chiếm đúng ba cột đứng yên (#, Ngày, Số phiếu) và đứng yên theo — trước đây một ô 15 cột
+    // trôi theo khi cuộn ngang: nhãn mất, các ô tổng tiền lộ ra ngay dưới cột Ngày / Số phiếu (01/10)
+    root.querySelector('#td-chan').innerHTML = `<tr><td colspan="3" class="td-chan-nhan">${NN.ghep([{ k: 'total' }, ' · ' + so(soPhieu) + ' ', { k: 'trips' }])}</td><td colspan="12"></td>
       <td class="tien"></td><td class="num tien">${gop(sVal)}</td><td class="num tien">${gop(sThu)}</td><td class="num tien">${gop(sCon)}</td>
       <td class="tien"></td><td class="tien"></td><td class="tien"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td><td class="tien-chi"></td>
       <td class="num tien-chi">${so(sExp)} LAK</td><td class="num tien">${gop(sNet)}</td><td colspan="2"></td></tr>`;
@@ -84,6 +86,14 @@
       <button class="btn sm" data-trang="${TRANG + 1}" ${TRANG >= soTrang ? 'disabled' : ''}>${NN.h('trang_sau')}</button>` : '';
     tr.querySelectorAll('[data-trang]').forEach(b => b.addEventListener('click', () => tai(+b.dataset.trang).catch(EPL.baoLoi)));
     root.querySelectorAll('#td-than tr[data-id]').forEach(tr => tr.addEventListener('click', () => EPL.di('phieu-xuat-xe', { id: tr.dataset.id })));
+    datDinhTieuDe();
+  }
+
+  /** Hàng tiêu đề thứ hai dính NGAY DƯỚI hàng một. Đặt cứng top:37px thì ở chế độ VI + ລາວ (hàng một hai dòng) hàng hai
+   *  đè lên nửa dưới hàng một khi cuộn dọc — đo chiều cao thật sau mỗi lần vẽ / đổi tiếng. */
+  function datDinhTieuDe() {
+    const bang = root.querySelector('.td-bang'), o = bang && bang.querySelector('thead tr:first-child th.grp');
+    if (o && o.offsetHeight) bang.style.setProperty('--td-h1', o.offsetHeight + 'px');
   }
 
   function veChuThich() {
@@ -131,6 +141,6 @@
       if (t.xuat) xuatBaoCao();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
     xuatExcel: (r) => xuatHet(r),
-    onLang() { veChuThich(); if (ds.length) locVaVe(); },
+    onLang() { veChuThich(); if (ds.length) locVaVe(); else datDinhTieuDe(); },
   };
 })();
