@@ -39,6 +39,7 @@ Source đang đối chiếu: API `feat/HonTunedaHai@b9227aa`, WEB `feat/hontuned
 | **Bút toán chờ gửi** (không qua tiền) | `integrations/logistics/journal-entries` (+ `/reverse`, `GET /{SourceRef}`); `Idempotency-Key` = `EPLLAO-<nguồn>-<mã nguồn>` | thuê xe 621/4022 · ghi nợ NCC 625 · 614 / 4021 · quyết toán tạm ứng 625/1601 · bán chủ xe 4022/707 | API có (`b9227aa`), đầu gửi có (`875a0cf`, cờ tắt). **Chưa chạy trên DB**: chờ áp script; cấu hình đã có ở API máy. Trong lúc chờ: màn "Bút toán chờ gửi" |
 | Đọc lại trạng thái phiếu chi / thu | `cmpayment-receipt/list`, `/{id}` | — | tự đọc lúc mở phiếu, trước khi cho xe chạy, khi bấm Cập nhật. Phiếu bị xoá tay bên anh → `PHIEU_CHI_MAT`, gửi lại thì lập phiếu mới |
 | **Công nợ khách**, "đã thu" của từng SO (chỉ xem) | `sales/debt/customer-detail` | — | màn Khách hàng → tab Công nợ; đề nghị thu đọc "thu một phần / đã thu" theo `OrderCode` |
+| **Thu tiền khách** của SO (kế toán bên anh làm, bên em không gọi) | WEB anh: **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** → `sales/debt/collection-upsert` (TKN) | phiếu thu **CMR 17 "Thu khác"**, Nợ 1021 (tiền mặt 1011) / Có 1211; số dạng `4-TKN-1368-2-261001-0001` (thu nợ) và `4-1368-TK-261001-00009` (phiếu thu) | KB-AZ đi thật 01/10. **Không** thu bằng phiếu "Thu công nợ" (CMR 15): tìm ở đó ra 0 dòng |
 | Rút phiếu chưa ghi sổ (xoá phiếu / huỷ đề nghị) | `cmpayment-receipt/delete` | — | đã ghi sổ thì không rút, báo đối soát |
 
 Phiếu bên em gửi vẫn mang `Header.Amount` / `Header.BaseAmount` = tổng các dòng. Hệ anh tự tính lại **quy đổi từng dòng** (`ae0e7f6`) và **tổng header** (`ce95b3c`), 5 số lẻ, làm tròn nửa xa số 0. Phiếu trả chủ xe ngoại tệ bên em gửi tỷ giá riêng từng dòng để Kíp khoá từng phiếu xe không bị dịch.
@@ -124,6 +125,8 @@ Chưa push nhánh nào lên GitHub.
 | **Áp script bút toán** `20261001_logistics_journal_entry.sql` lên DB demo (DB kế toán của `appsettings.laos.json`), đọc diagnostics D3 / D4 | **chưa áp**: lệnh áp từ máy bên em bị bộ an toàn chặn | **chủ dự án tự chạy** (SSMS hoặc `sqlcmd`, HUONG_DAN 4.6) |
 | Sau khi áp: bật `QLSX_GUI_BUT_TOAN=1` ở trang điều xe máy thử, gọi thử tạo → GET → tạo lại → gỡ → gỡ lần hai; `ST_AUTOID` = 13 | chờ bước trên | bên EPL làm |
 | **Cờ phân loại loại chứng từ** ở `document-types` (công nợ / khác / "Chi trước") | WEB và API đang ghi cứng 58/60, 15/17; phiếu 59 "Chi trước" mở trên WEB chỉ xem | bên EPL làm (đang làm) |
+| **Thu tiền SO USD bị ghi thành Kíp**: hộp Tạo phiếu thu (Chi tiết công nợ khách) chỉ có tài khoản nội tệ và tỷ giá cứng 1 | đang sửa | bên EPL làm (UI-4) |
+| **Mọi SO cùng một mã phiếu bán** "Demo EPL-2-261001000" | đang tìm nguồn | bên EPL làm (UI-4) |
 | **Quy đổi công nợ** | WEB xem trước và máy chủ cùng theo tỷ giá header; còn đối chiếu với thủ tục nhập công nợ — **đang chốt** | bên EPL làm (đang làm) |
 | Chạy lại vòng nối kế toán với bản cuối hai bên, gồm bút toán | mã còn đổi nhỏ — **đang chốt** | bên EPL làm (đang làm) |
 | **Merge + triển khai** hai nhánh lên `demo-lao-api` (đến `b9227aa` / `7d168744`); cấu hình `LogisticsSource`, `LogisticsSalesPush`, `LogisticsJournalEntry` | các bước ở HUONG_DAN_TRIEN_KHAI | **cần quyền host** |

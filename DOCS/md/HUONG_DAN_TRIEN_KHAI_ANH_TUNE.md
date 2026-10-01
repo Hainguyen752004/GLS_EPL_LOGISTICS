@@ -770,6 +770,8 @@ Chỉ mở form và đọc. **Không bấm Lưu phiếu, Ghi sổ.**
 
 **Lần gửi thật đầu tiên** (ghi dữ liệu): bên em làm sau khi chủ dự án cho phép, mỗi luồng một lần.
 - **Một SO:** bên anh có `TK-…`, công nợ khách hiện ở `sales/debt/customer-detail`.
+- **Thu tiền SO đó** (kế toán bên anh): WEB **Chi tiết công nợ khách hàng → Tạo phiếu thu → Xác nhận thu nợ** (TKN). Đúng thì có phiếu thu nợ `4-TKN-1368-2-…` và phiếu thu **CMR 17 "Thu khác"** `4-1368-TK-…`, Nợ 1021 (tiền mặt 1011) / Có 1211; bên em đọc lại thấy SO "đã thu" / "thu một phần". **Đừng** tìm công nợ SO ở phiếu thu "Thu công nợ" (CMR 15): ở đó ra 0 dòng là đúng.
+  - Chưa thu SO **USD** ở hộp này: hộp chỉ có tài khoản nội tệ và tỷ giá cứng 1, số USD bị ghi thành Kíp (UI-4 đang sửa). Mọi SO đang cùng mã phiếu bán "Demo EPL-2-261001000" (UI-4 đang tìm nguồn).
 - **Một phiếu chi tạm ứng** "Chi trước": thủ quỹ ghi sổ bên anh; bên em đọc thấy `STATUS` 12 hoặc 13 thì tài xế xuất phát được.
 
 Bị 403 khi gửi SO thì xem mục 9.
@@ -952,6 +954,8 @@ Hệ anh tạm không dùng được thì bên em đặt `EPL_CHI_TAM_UNG=tai_ch
 | Chi mục V–VI, trả nhà cung cấp, tất toán tài xế, trả chủ xe có trừ hàng quầy qua hệ anh | chạy ở máy (`f85078b`, kho tạm `1d8d91c`); chạy trên host sau triển khai | bên EPL làm |
 | Token trang điều xe hết hạn khoảng 10/10 | đang dùng token của anh; tài khoản tích hợp tạm gác (tuỳ chọn, mục 6.1) | **cần quyền host** (token / mật khẩu của anh), mục 6 |
 | Bút toán riêng cho **phí 2 %** và **trừ quá tải** xe thuê | chưa có tài khoản | anh Khampla chốt |
+| Thu tiền SO USD (Chi tiết công nợ khách → Tạo phiếu thu): hộp chỉ có tài khoản nội tệ, tỷ giá cứng 1 → ghi thành Kíp | đang sửa | bên EPL làm (UI-4) |
+| Mọi SO cùng một mã phiếu bán "Demo EPL-2-261001000" | đang tìm nguồn | bên EPL làm (UI-4) |
 | Tab Tài khoản ở hồ sơ nhân viên bên WEB | **đã có** (`fce78c52`: xem, tạo / sửa, đặt lại mật khẩu); chưa bấm tạo tài khoản thật; dùng sau nếu cần | bên EPL làm khi cần |
 | Dọn lớp tạm ở trang điều xe (đổi tên cấu hình kho `kho_*` thay `ke_toan_*`) | `938b007` đã dọn phần lớn | bên EPL làm (đang làm) |
 | Trang kế toán tạm (8030) | chỉ còn kho tạm, có ba đường trừ hàng quầy (mục 1.5) | tới khi nối hệ kho anh Toàn |
