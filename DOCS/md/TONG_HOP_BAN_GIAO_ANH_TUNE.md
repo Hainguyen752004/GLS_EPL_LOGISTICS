@@ -28,6 +28,8 @@ Mọi thứ dưới đây bên em thử trên **API và WEB chạy ở máy**. B
 |---|---|---|---|
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `465748b` | Nguồn DO: địa chỉ và khoá Logistics đọc từ cấu hình `LogisticsSource` (bỏ ghi cứng). DO hiện số phiếu, tên khách; tìm theo số xe, biển số. |
 | GLS-QLSX-APIs | `feat/HonTunedaHai` | `be123e9` | `ObjectService`: tạo đối tượng không gửi `IsOrganization` thì mặc định cá nhân (trước đó văng 500, `OBJ_ISORG` NULL). |
+| GLS-QLSX-APIs | `feat/HonTunedaHai` | `64ce7a4` | Vụ việc: có từ khoá thì gửi `q` sang trang điều xe, tìm trên toàn bộ DO, Total đúng sau lọc; nguồn cũ thì lọc trong trang như trước. |
+| GLS-QLSX-Web | `feat/hontunedhai_Laos` | `06a14189` | Phiếu thu / chi: `isCash` theo hình thức thanh toán, tài khoản tiền mặc định tự điền đúng (gửi kèm loại tiền); `Amount` / `BaseAmount` header tách đúng nguyên tệ / quy đổi; phân loại theo mã loại chứng từ, không theo tên. Sửa mục 9 câu 1 · 2 · 6 tài liệu của anh. |
 | GLS-QLSX-Web | `feat/hontunedhai_Laos` | `f382a9e8` | Modal Vụ việc: thoát ký tự chuỗi nguồn; DO hiện số phiếu, xe, tài xế; tỷ giá đọc xuôi. |
 
 Chưa push nhánh nào lên GitHub.
