@@ -22,7 +22,7 @@
   const DOI_TUONG = { khach: 'customer', tai_xe: 'driver', chu_xe: 'owner', kho: 'fuel_kho', ncc: 'supplier' };
   const MUC = [['fuel', 'III', 'e_fuel'], ['travel', 'IV', 'e_travel'], ['repair', 'V', 'e_repair'], ['other', 'VI', 'e_other']];
   const q = (s) => root.querySelector(s);
-  const thangNay = () => new Date().toISOString().slice(0, 7);
+  const thangNay = () => EPL.thangNay();    // giờ máy — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
   /* Tháng trống (01/10): mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng hỏng. TU_DONG = lượt tải đầu khi vào màn không kèm
    * tháng → tháng trống thì sang tháng gần nhất có DO, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */

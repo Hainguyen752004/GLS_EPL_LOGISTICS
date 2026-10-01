@@ -277,7 +277,7 @@ ${xmlSheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml"
   const tenTep = (duoi) => {
     const bo = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
     const t = bo(tieuDeMan()).replace(/[^\w຀-໿]+/g, '-').replace(/^-|-$/g, '') || 'bao-cao';
-    return `EPL_${t}_${new Date().toISOString().slice(0, 10)}.${duoi}`;
+    return `EPL_${t}_${EPL.homNay()}.${duoi}`;     // ngày theo giờ máy (toISOString là UTC: 0–7 giờ sáng ra hôm qua)
   };
 
   /** Các sheet mặc định: mỗi bảng đang hiện một sheet; màn không có bảng thì lấy các ô số (.kpi). */

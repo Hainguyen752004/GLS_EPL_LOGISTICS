@@ -14,6 +14,7 @@
   const { API, NN, esc, so, tag, AUTH } = EPL;
   let root, DS = [], tt = 'cho', tim = '', chonId = null, ACC = {}, LINH = [], hen = null;
   let phieuLe = null;               // phiếu mở từ phiếu xuất xe mà chưa có tờ tạm ứng — đổi tiếng thì vẽ lại đúng phiếu đó
+  let accSan = Promise.resolve();   // danh mục Acc code đang nạp (song song với danh sách) — tờ in chờ nó rồi mới vẽ tên tài khoản
   const loai = 'advance';            // chỉ tạm ứng (30/09 chiều) — xuất kho nhiên liệu ở màn Phiếu đề nghị xuất kho
   const q = (s) => root.querySelector(s);
 
@@ -110,11 +111,16 @@
     q('#dnc-mo-phieu').disabled = !v; q('#dnc-in').disabled = !v;
     if (!v) { q('#dnc-so').innerHTML = ''; q('#dnc-kt').innerHTML = ''; q('#dnc-to').innerHTML = `<div class="ct-trong">${NN.h('dn_chon_to')}</div>`; return; }
     veKT(v, v.chi_ke_toan);
+    // tờ đang chờ thủ quỹ bên kế toán: hỏi lại một lần lúc mở (thủ quỹ có khi vừa ghi sổ) — SONG SONG với tờ in, hai khối
+    // riêng trên màn (rà 01/10: trước đây hỏi xong tờ mới hỏi kế toán)
+    const hoiKT = v.chi_ke_toan && v.chi_ke_toan.status === 'da_gui' ? chiKT(v, 'cap-nhat', true) : null;
+    // trong lúc chờ mà đã chọn tờ khác / danh sách tải lại (kế toán vừa chi) thì tờ cũ không vẽ đè
+    const conDung = () => DS.find(x => x.id === chonId) === v;
     try {
-      veTamUng(await API.get(`/api/trips/${v.trip_id}/phieu-chi`), v);
-    } catch (e) { q('#dnc-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
-    // tờ đang chờ thủ quỹ bên kế toán: hỏi lại một lần lúc mở (thủ quỹ có khi vừa ghi sổ)
-    if (v.chi_ke_toan && v.chi_ke_toan.status === 'da_gui') await chiKT(v, 'cap-nhat', true);
+      const [d] = await Promise.all([API.get(`/api/trips/${v.trip_id}/phieu-chi`), accSan]);
+      if (conDung()) veTamUng(d, v);
+    } catch (e) { if (conDung()) q('#dnc-to').innerHTML = `<div class="ct-trong neg">${esc(e.message)}</div>`; }
+    if (hoiKT) await hoiKT;
   }
 
   /** Trạng thái phiếu chi tạm ứng bên hệ kế toán của tờ đang xem — ở thanh nút, không in ra giấy. */
@@ -179,17 +185,21 @@
   async function veLe() {
     q('#dnc-giay').hidden = false;           // phiếu chưa có tờ tạm ứng: vẫn in nội dung tạm ứng của phiếu, dù danh sách trống
     q('#dnc-mo-phieu').disabled = false; q('#dnc-in').disabled = false;
-    try { veTamUng(await API.get(`/api/trips/${phieuLe}/phieu-chi`), null); } catch (e) { EPL.baoLoi(e); }
+    try { const [d] = await Promise.all([API.get(`/api/trips/${phieuLe}/phieu-chi`), accSan]); veTamUng(d, null); } catch (e) { EPL.baoLoi(e); }
   }
 
   EPL.modules['de-nghi-chi'] = {
     async init(r, ctx) {
       root = r; DS = []; chonId = null; tim = ''; tt = 'cho'; phieuLe = null;
-      const acc = await API.get('/api/acc-codes').catch(() => ({ data: [], source: 'error' }));
-      ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
-      // data-i18n: đổi tiếng thì NN.apDung dịch lại dòng này (trước đây đứng chữ Việt ở tiếng Lào / Anh)
-      q('#dnc-nguon').dataset.i18n = acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback';
-      q('#dnc-nguon').innerHTML = NN.h(q('#dnc-nguon').dataset.i18n);
+      // Danh mục Acc code: EPL.accCodes (nạp một lần, dùng chung mọi màn), chạy SONG SONG với danh sách — rà 01/10 trước đây
+      // chờ nó xong mới hỏi danh sách. Chỉ tờ in cần nó (tên tài khoản), nên veTo / veLe chờ accSan trước khi vẽ.
+      accSan = EPL.accCodes().then(acc => {
+        ACC = {}; (acc.data || []).forEach(x => { ACC[x.code] = x; });
+        // data-i18n: đổi tiếng thì NN.apDung dịch lại dòng này (trước đây đứng chữ Việt ở tiếng Lào / Anh)
+        const o = r.querySelector('#dnc-nguon');
+        o.dataset.i18n = acc.source === 'remote' || acc.source === 'cached' ? 'acct_source_remote' : 'acct_source_fallback';
+        o.innerHTML = NN.h(o.dataset.i18n);
+      }, () => { ACC = {}; });
       root.querySelectorAll('#dnc-tt button').forEach(b => b.addEventListener('click', () => { tt = b.dataset.tt; datSeg(); tai(); }));
       q('#dnc-tim').addEventListener('input', (e) => { clearTimeout(hen); hen = setTimeout(() => { tim = e.target.value.trim(); tai(); }, 300); });
       q('#dnc-in').addEventListener('click', () => window.print());
@@ -206,8 +216,8 @@
       const t = (ctx && ctx.tham) || {};
       // đường cũ ?loai=fuel → màn Phiếu đề nghị xuất kho
       if (t.loai === 'fuel') return EPL.di('de-nghi-xuat-kho', { id: t.id || '', v: t.v || '' });
-      if (t.id && await moTheoPhieu(t)) return;
-      await tai();
+      if (t.id && await moTheoPhieu(t)) return accSan;
+      await Promise.all([tai(), accSan]);
     },
     onLang() { if (root) { veDs(); if (phieuLe && !chonId) veLe(); else veTo(); } },
     destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); },

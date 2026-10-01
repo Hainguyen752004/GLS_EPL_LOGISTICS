@@ -112,23 +112,30 @@ def dam_bao_tam_ung(db, p, user):
     return v
 
 
-def _khop_ct_tam_ung(db, v):
+_HOI = object()      # "chưa nạp sẵn — tự hỏi DB"
+
+
+def _khop_ct_tam_ung(db, v, c=_HOI):
     """Tờ chứng từ PTU ghi số LÚC BÃI IN tờ tạm ứng — kế toán chưa nhập giá nên có khi còn 0 (phiếu mẫu 29/09: PTU 0 LAK
-    mà PC_TU 580.000). Chưa đẩy sang kế toán thì theo số tạm ứng hiện tại: tờ PTU phải bằng số quỹ chi (PC_TU)."""
-    c = db.query(ChungTu).filter(ChungTu.loai == "PTU", ChungTu.nguon_bang == "vouchers", ChungTu.nguon_id == v.id).first()
+    mà PC_TU 580.000). Chưa đẩy sang kế toán thì theo số tạm ứng hiện tại: tờ PTU phải bằng số quỹ chi (PC_TU).
+    `c`: tờ PTU đã nạp sẵn cho cả danh sách (ds_cho_cap) — None là không có tờ."""
+    if c is _HOI:
+        c = db.query(ChungTu).filter(ChungTu.loai == "PTU", ChungTu.nguon_bang == "vouchers", ChungTu.nguon_id == v.id).first()
     if c is not None and not c.da_day and abs((c.tien or 0) - (v.amount_lak or 0)) > 0.5:
         c.tien = c.tien_lak = v.amount_lak
 
 
-def xuat_phieu_linh(db, v, goc="", vai=None):
-    """`vai` là vai người gọi — vai không thấy tiền chi (Bãi, anh Khampla A2) thì không nhận số tiền tạm ứng."""
+def xuat_phieu_linh(db, v, goc="", vai=None, nap=None):
+    """`vai` là vai người gọi — vai không thấy tiền chi (Bãi, anh Khampla A2) thì không nhận số tiền tạm ứng.
+    `nap`: dòng chi và tờ PTU nạp sẵn cho CẢ danh sách ({"dong": {trip_id: [dòng]}, "ct": {voucher_id: ChungTu}}) —
+    không có thì hỏi DB từng tờ (một tờ lẻ)."""
     diem = db.get(FuelPlace, v.place_id) if v.place_id else None
     if v.kind == "advance" and v.status == "cho":
         # tờ còn chờ: số hiện theo dòng tiền mặt LÚC NÀY (kế toán nhập giá sau khi Bãi in) — đúng số quỹ sẽ chi
         p_ = db.get(Trip, v.trip_id)
         if p_ is not None:
-            v.amount_lak = _tien_tam_ung(db, p_)
-            _khop_ct_tam_ung(db, v)
+            v.amount_lak = _tien_tam_ung(db, p_, nap["dong"].get(p_.id, []) if nap else None)
+            _khop_ct_tam_ung(db, v, nap["ct"].get(v.id) if nap else _HOI)
     return {"id": v.id, "trip_id": v.trip_id, "kind": v.kind, "doc_no": v.doc_no,
             "doc_date": v.doc_date.isoformat() if v.doc_date else None,
             "place_id": v.place_id, "place_name": diem.name if diem else None,
@@ -180,11 +187,11 @@ def _dong_kho_theo_diem(db, p):
     return ra
 
 
-def _tien_tam_ung(db, p):
+def _tien_tam_ung(db, p, dong=None):
     """Tiền mặt tài xế cầm đi: khoản EPL ứng, KHÔNG lấy từ kho, thuộc mục III (dầu mua dọc đường),
     IV (đi đường) và VI (khác). Phải trùng đúng bộ khoản mà màn Tất toán coi là "tài xế đã chi",
-    nếu không thì hai màn nói hai con số khác nhau về cùng một chuyến."""
-    return sum(_lak(p, d) for d in _dong(db, p) if la_tien_mat_tai_xe(d, p.company))
+    nếu không thì hai màn nói hai con số khác nhau về cùng một chuyến. `dong`: dòng chi đã nạp sẵn."""
+    return sum(_lak(p, d) for d in (_dong(db, p) if dong is None else dong) if la_tien_mat_tai_xe(d, p.company))
 
 
 @router.get("/api/trips/{tid}/vouchers")
@@ -290,9 +297,22 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
     response.headers["X-Tong"] = str(q.order_by(None).count())
     ds = q.order_by(Voucher.doc_date.desc(), Voucher.doc_no).limit(max(1, min(int(co or 500), 2000))).all()
     ma = list({v.trip_id for v in ds if v.trip_id})
-    phieu = {t.id: t for t in (db.query(Trip.id, Trip.origin, Trip.destination, Trip.plate_head, Trip.plate_trailer,
-                                        Trip.customer_name, Trip.doc_no, Trip.kind, Trip.company)
-                               .filter(Trip.id.in_(ma)))} if ma else {}
+    # Rà 01/10 (31 tờ tạm ứng chờ mất 1,2–7 s): mỗi tờ "chờ" hỏi DB 3 lần (phiếu xe, dòng chi, tờ PTU) với DB ở xa, và đổi
+    # số tạm ứng xong câu hỏi kế tiếp lại tự ghi (autoflush) giữa chừng. Nạp MỘT lần cho cả danh sách: phiếu xe đủ cột
+    # (db.get trong xuat_phieu_linh / _ban_chat lấy từ bộ nhớ phiên), điểm đổ, dòng chi, tờ PTU — vòng lặp không còn hỏi DB.
+    phieu = {t.id: t for t in db.query(Trip).filter(Trip.id.in_(ma))} if ma else {}
+    noi = list({v.place_id for v in ds if v.place_id})
+    # giữ tham chiếu: bộ nhớ phiên chỉ giữ yếu, bỏ danh sách là db.get lại phải hỏi DB
+    diem = db.query(FuelPlace).filter(FuelPlace.id.in_(noi)).all() if noi else []  # noqa: F841
+    cho = [v for v in ds if v.kind == "advance" and v.status == "cho" and v.trip_id in phieu]
+    nap = {"dong": {}, "ct": {}}
+    if cho:
+        for d in (db.query(TripExpense).filter(TripExpense.trip_id.in_(list({v.trip_id for v in cho})))
+                  .order_by(TripExpense.trip_id, TripExpense.line_no)):
+            nap["dong"].setdefault(d.trip_id, []).append(d)
+        for c in db.query(ChungTu).filter(ChungTu.loai == "PTU", ChungTu.nguon_bang == "vouchers",
+                                          ChungTu.nguon_id.in_([v.id for v in cho])):
+            nap["ct"].setdefault(c.nguon_id, c)
     iv = {}
     if ma:
         for tid, st in (db.query(TripSection.trip_id, TripSection.status)
@@ -303,9 +323,10 @@ def ds_cho_cap(request: Request, response: Response, trang_thai: str = "cho", lo
     from services import chi_tune as CHI
     ung = [v.id for v in ds if v.kind == "advance"]
     chi = {c.voucher_id: c for c in db.query(ChiTune).filter(ChiTune.voucher_id.in_(ung))} if ung else {}
+    KK.web_ke_toan(db)                   # đọc cấu hình kho TRƯỚC vòng lặp: sau khi đổi số tạm ứng thì không còn câu hỏi nào
     ra = []
     for v in ds:
-        x = xuat_phieu_linh(db, v, goc, user.role)
+        x = xuat_phieu_linh(db, v, goc, user.role, nap)
         p = phieu.get(v.trip_id)
         if p:
             x.update({"origin": p.origin, "destination": p.destination, "plate_head": p.plate_head,

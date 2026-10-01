@@ -210,9 +210,11 @@
       window.removeEventListener('resize', khiDoiCo); window.addEventListener('resize', khiDoiCo);
       r.querySelector('#td-xuat').addEventListener('click', xuatBaoCao);
       r.querySelector('#td-moi').addEventListener('click', () => EPL.di('phieu-xuat-xe', { moi: 1 }));
-      try { tyGia = await API.get('/api/rates'); } catch (e) { tyGia = {}; }
-      veChuThich();
-      await tai();
+      // tỷ giá chỉ cho dòng chú thích — hỏi SONG SONG với bảng, bảng không phải chờ nó (rà 01/10: 40–465 ms đứng trước bảng)
+      tyGia = {};
+      const nhanTyGia = API.get('/api/rates').then(d => { tyGia = d || {}; }, () => { tyGia = {}; })
+        .then(() => { if (root === r) veChuThich(); });
+      await Promise.all([tai(), nhanTyGia]);
       if (t.xuat) xuatBaoCao();               // nút "Xuất báo cáo" bên Tổng quan bấm thẳng sang đây
     },
     xuatExcel: (r) => xuatHet(r),

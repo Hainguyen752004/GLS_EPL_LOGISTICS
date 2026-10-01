@@ -17,7 +17,7 @@
   const q = (s) => root.querySelector(s);
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
   const tien = (n, ma) => EPL.tien(n, ma);
-  const thangNay = () => new Date().toISOString().slice(0, 7);
+  const thangNay = () => EPL.thangNay();    // giờ máy — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
   /* Tháng trống (01/10): đầu tháng chưa DO nào về nên màn mở ra trống, trông như hỏng. TU_DONG = lượt tải đầu khi vào màn
    * không kèm tháng → tháng trống thì sang tháng gần nhất có DO đã về, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */
   let TU_DONG = false, BAO = null, GAN = null;
@@ -193,6 +193,8 @@
     const th = new URLSearchParams({ thang });
     if (tim) th.set('q', tim);
     let duoc = true, ve;
+    // Hỏi "tháng gần nhất" SAU khi danh sách về trống, không hỏi song song: đo 01/10, /api/trips chạy cùng lúc với
+    // /api/de-nghi-thu thì máy chủ chậm hẳn (105 ms → 1 s) — nối tiếp nhanh hơn.
     try { ve = await API.get('/api/de-nghi-thu?' + th.toString()); } catch (e) { ve = { ds: [] }; duoc = false; if (luot === LUOT) EPL.baoLoi(e); }
     if (luot !== LUOT) return;
     D = ve; GAN = null;
