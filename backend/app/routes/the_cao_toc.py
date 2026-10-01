@@ -33,6 +33,10 @@ router = APIRouter()
 
 SUA_THE = can_vai("acct")                         # danh mục thẻ là thoả thuận với khách → kế toán VC giữ
 NAP_THE = can_vai("acct", "cash", "treasury")     # quỹ nạp tiền; kế toán nạp hộ khi khách chuyển khoản
+# Cấn trừ cước cuối tháng = trừ vào CƯỚC PHẢI THU của khách (phía bán): KT Thu/Chi VC, KT Doanh thu, KT Chi phí VC, hai quỹ —
+# đúng như màn (the-cao-toc.js xemCanTru). KT kho xăng dầu (fuel) giữ kho dầu và mục III, không đối soát cước với khách: trước
+# 02/10 máy chủ vẫn trả bảng này cho vai đó (chỉ chặn vai không thấy tiền bán) trong khi màn giấu — chặn cho khớp.
+XEM_CAN_TRU = can_vai("acct", "expacct", "rev", "treasury", "cash")
 
 
 def _so(v, ten, bat_buoc=False):
@@ -79,7 +83,7 @@ def ds_the(db: Session = Depends(get_db), _=Depends(nguoi_hien_tai)):
 
 
 @router.get("/api/the-cao-toc/cong-no")
-def cong_no(thang: str = "", db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
+def cong_no(thang: str = "", db: Session = Depends(get_db), user=Depends(XEM_CAN_TRU)):
     """Cuối tháng cấn trừ với khách: khách cấp thẻ, EPL tiêu trên thẻ bao nhiêu thì trừ vào cước bấy nhiêu."""
     if not thay_tien_ban(user.role):
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem cấn trừ cước." % user.role})

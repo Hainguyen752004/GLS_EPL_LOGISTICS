@@ -24,6 +24,17 @@
   const q = (s) => root.querySelector(s);
   const thangNay = () => EPL.thangNay();    // giờ máy — toISOString là giờ UTC, 0–7 giờ sáng ngày 1 ra tháng trước
   const tagTT = (s) => `<span class="tag dt_${esc(s)}">${NN.h('dt_st_' + s)}</span>`;
+  /** Tên loại chứng từ theo tiếng đang xem — từ điển `ctl_<mã>` (rà 02/10: máy chủ chỉ gửi tên Việt / Lào, tiếng Anh hiện chữ
+   *  Việt). Loại mới chưa có khoá thì lấy tên máy chủ gửi. `tho` = chữ thuần (cho <option>). */
+  function tenLoai(ma, vi, lo, tho) {
+    const k = 'ctl_' + String(ma || '').toLowerCase();
+    if ((window.EPL_TU_DIEN || {})[k]) return tho ? esc(NN.t(k)) : NN.h(k);
+    return esc(NN.lang === 'lo' ? lo || vi : vi || lo);
+  }
+  const veOLoai = () => {
+    q('#ct-so-loai').innerHTML = `<option value="">${esc(NN.t('all'))}</option>` + SO_LOAI.map(l => `<option value="${l.ma}">${esc(l.ma)} · ${tenLoai(l.ma, l.ten, l.ten_lo, true)}</option>`).join('');
+    q('#ct-so-loai').value = soLoaiChon;
+  };
   /* Tháng trống (01/10): mở màn đầu tháng thấy "Chưa có dữ liệu", tưởng hỏng. TU_DONG = lượt tải đầu khi vào màn không kèm
    * tháng → tháng trống thì sang tháng gần nhất có DO, BAO giữ dòng báo; GAN = tháng cho nút ở khung trống. */
   let TU_DONG = false, BAO = null, GAN = null;
@@ -173,7 +184,7 @@
     try { r = await API.get('/api/chung-tu?trip_id=' + encodeURIComponent(x.trip_id)); } catch (e) { ho.querySelector('.ct2-trong').textContent = e.message; return; }
     if (chonId !== x.trip_id || !ho.isConnected) return;
     ho.innerHTML = `<h4>${NN.h('ct_so_chung_tu')}<a data-so="1">${NN.h('ct_mo_man')}</a></h4>` + (r.ds.length ? r.ds.map(c => dong(
-      `<span class="mono">${esc(c.so)}</span>`, esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten),
+      `<span class="mono">${esc(c.so)}</span>`, tenLoai(c.loai, c.loai_ten, c.loai_ten_lo),
       `${c.tien != null ? EPL.tien(c.tien, c.tien_te) : ''}${c.loai === 'PDT' ? '' : (c.tien != null ? ' · ' : '') + (c.da_day ? '✓ ' + NN.h('ct_da_day') : '<span class="muted">' + NN.h('ct_chua_day') + '</span>')}`)).join('')
       : `<div class="ct2-trong">${NN.h('ct_khong_co')}</div>`);
     ho.querySelector('a[data-so]').addEventListener('click', () => doiTab('so'));
@@ -222,7 +233,7 @@
   function veSoTong(tong) {
     q('#ct-so-tong').innerHTML = Object.keys(tong).length ? SO_LOAI.filter(l => tong[l.ma]).map(l => {
       const t = tong[l.ma];
-      return `<button type="button" class="o ${soLoaiChon === l.ma ? 'chon' : ''}" data-loai="${l.ma}"><b>${esc(l.ma)}</b>${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}
+      return `<button type="button" class="o ${soLoaiChon === l.ma ? 'chon' : ''}" data-loai="${l.ma}"><b>${esc(l.ma)}</b>${tenLoai(l.ma, l.ten, l.ten_lo)}
         <div><span class="n">${t.so_to}</span> ${NN.h('ct_so_to').toLowerCase()} · <span class="n">${so(t.tien_lak)}</span> LAK${t.chua_day ? ` · <span class="c">${t.chua_day} ${NN.h('ct_chua_day').toLowerCase()}</span>` : ''}</div></button>`;
     }).join('') : '';
     q('#ct-so-tong').querySelectorAll('[data-loai]').forEach(b => b.addEventListener('click', () => { soLoaiChon = soLoaiChon === b.dataset.loai ? '' : b.dataset.loai; q('#ct-so-loai').value = soLoaiChon; veSo(); }));
@@ -259,7 +270,7 @@
     const suaDuoc = AUTH.la('acct', 'expacct', 'rev', 'treasury', 'cash');   // đánh dấu đối chiếu tay
     q('#ct-so-than').innerHTML = r.ds.length ? r.ds.map(c => `<tr class="${c.da_day && c.loai !== 'PDT' ? 'da-day' : ''}" data-id="${c.id}">
       <td class="mono">${esc(c.so)}</td><td>${EPL.ngay(c.ngay)}</td>
-      <td><b>${esc(c.loai)}</b><div class="small muted">${esc(NN.lang === 'lo' ? c.loai_ten_lo : c.loai_ten)}</div></td>
+      <td><b>${esc(c.loai)}</b><div class="small muted">${tenLoai(c.loai, c.loai_ten, c.loai_ten_lo)}</div></td>
       <td>${c.trip_id ? `<a href="#/phieu-xuat-xe?id=${esc(c.trip_id)}" class="mono">${esc(c.trip_doc_no || '')}</a>` : '<span class="muted">—</span>'}</td>
       <td lang="lo">${esc(c.doi_tuong_ten || '')}<div class="small muted">${DOI_TUONG[c.doi_tuong_loai] ? NN.h(DOI_TUONG[c.doi_tuong_loai]) : esc(c.doi_tuong_loai || '')}</div></td>
       <td class="num">${c.tien == null ? '—' : EPL.tien(c.tien, c.tien_te)}</td>
@@ -282,11 +293,10 @@
     q('#ct2-do').hidden = tab !== 'do'; q('#ct-so-ct').hidden = tab !== 'so';
     if (tab === 'so') {
       ghiDiaChi(new URLSearchParams({ tab: 'so', loai: soLoaiChon || '' }));
-      if (!SO_LOAI.length) {
-        SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
-        q('#ct-so-loai').innerHTML = `<option value="">${NN.h('all')}</option>` + SO_LOAI.map(l => `<option value="${l.ma}">${esc(l.ma)} · ${esc(NN.lang === 'lo' ? l.ten_lo : l.ten)}</option>`).join('');
-        q('#ct-so-loai').value = soLoaiChon;
-      }
+      // danh mục loại nạp một lần trong phiên, nhưng ô chọn thì của GỐC MÀN MỚI mỗi lần vào màn — luôn vẽ lại (trước đây lần
+      // vào màn thứ hai ô Loại chứng từ chỉ còn "Tất cả")
+      if (!SO_LOAI.length) SO_LOAI = await API.get('/api/chung-tu/loai').catch(() => []);
+      veOLoai();
       await veSo();
     } else await taiDo();
   }
@@ -315,7 +325,7 @@
       if (t.loai) soLoaiChon = String(t.loai).toUpperCase();
       await doiTab(t.tab === 'so' ? 'so' : 'do');
     },
-    onLang() { if (root) { if (tab === 'so') veSo(); else { veBang(); veCt(); } } },
+    onLang() { if (root) { if (SO_LOAI.length) veOLoai(); if (tab === 'so') veSo(); else { veBang(); veCt(); } } },
     destroy() { window.removeEventListener('resize', khiDoiCo); clearTimeout(henCao); clearTimeout(hen); },
     xuatExcel() {
       if (tab === 'so') return EPL._xlsx.sheetMacDinh(root);
