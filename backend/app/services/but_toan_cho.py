@@ -160,7 +160,7 @@ def ghi(db, nguon, ma_nguon, ngay, dong, dien_giai, *, trip_id=None, by_user=Non
         return r                                    # bên kế toán đã nhận: không sửa lặng lẽ — đổi số thì phải bút toán đảo
     if not ds:
         if r is not None and r.status == "cho_gui":
-            r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
+            _bo_ban_chua_gui(db, r, by_user)
         return r
     if r is None:
         # hai lần khoá cùng lúc (bấm đúp, hai máy) có thể cùng tạo: ghi trong SAVEPOINT, đụng khoá duy nhất thì lấy bản đã có
@@ -200,6 +200,22 @@ def _dao(db, r):
         return False                                # dao() đã đánh can_dao, ghi lỗi
 
 
+def _bo_ban_chua_gui(db, r, by_user):
+    """Bỏ một bản `cho_gui`. Lần gửi trước CHƯA RÕ (mất mạng / 5xx — bên kế toán có thể đã lưu) mà cờ gửi bật: hỏi lại bên đó
+    trước; bên đó có chứng từ thì bản này thành đã gửi và đi đường đảo như bản đã gửi — không để sót chứng từ bên kia."""
+    from fastapi import HTTPException
+    from services import gui_but_toan_tune as GBT
+    if GBT.bat() and r.error_code in GBT.CHUA_RO:
+        try:
+            if GBT.hoi(db, r, cho=GBT.CHO_GIAY_TU_GUI) is not None:
+                if _dao(db, r):
+                    r.huy_by = by_user
+                return
+        except HTTPException:
+            pass                                    # không hỏi được: vẫn bỏ ở đây; mã lỗi cũ giữ trên bản ghi để đối soát
+    r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
+
+
 def huy(db, nguon, ma_nguon, by_user=None):
     """Nguồn bị huỷ: bản chưa gửi thành `huy`; bản đã gửi giữ nguyên số, đánh `can_dao` (chờ bút toán đảo)."""
     nguon, ma_nguon = _khoa(nguon, ma_nguon)
@@ -207,7 +223,7 @@ def huy(db, nguon, ma_nguon, by_user=None):
     if r is None:
         return None
     if r.status == "cho_gui":
-        r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
+        _bo_ban_chua_gui(db, r, by_user)
     elif r.status == "da_gui":
         if _dao(db, r):
             r.huy_by = by_user
@@ -234,7 +250,7 @@ def rut(db, nguon, ma_nguon, by_user=None):
         db.flush()                                  # chưa đảo được: can_dao — nguồn vẫn bỏ được, Gửi hết đảo sau
         return True
     if r.status != "huy":
-        r.status, r.huy_luc, r.huy_by = "huy", dt.datetime.utcnow(), by_user
+        _bo_ban_chua_gui(db, r, by_user)
         db.flush()
     return True
 

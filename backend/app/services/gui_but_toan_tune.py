@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 """GỬI BÚT TOÁN CHỜ sang hệ kế toán anh Tune — khoản không qua tiền (services/but_toan_cho.py) thành chứng từ bút toán bên đó.
 
-Đường bên anh Tune (giao ước 01/10, đang dựng — chưa có trên máy chủ thật):
+Đường bên anh Tune (GLS-QLSX-APIs `feat/HonTunedaHai@b9227aa`, LogisticsJournalEntryController; cần script
+20261001_logistics_journal_entry.sql + mục cấu hình LogisticsJournalEntry — thiếu thì 503):
     POST {goc}/api/v1/integrations/logistics/journal-entries            Idempotency-Key = SourceRef
-         {SourceRef, DocumentDate, CountryId, OrgId, FiciAutoId?, Description,
+         {SourceRef, DocumentDate, Description, FiciAutoId?,
           Entries: [{DebitAccount, CreditAccount, Amount, ExchangeRate, CurrencyId, ObjectId, Note}]}
-         → Result {DocumentId, DocumentNo, StatusId, IsExisting}      400: tài khoản sai danh mục (kèm danh sách)
+         (CountryId / OrgId gửi kèm nhưng bên đó lấy từ cấu hình; BaseAmount bên đó tự tính)
+         → 201 Result {SourceRef, DocumentId, DocumentNo, StatusId (13 ghi sổ tạm), IsExisting} · gửi lại cùng nội dung → 200 IsExisting
+         400 ErrorDetail {ErrorCode INVALID_ACCOUNTS, InvalidAccounts[]} · 409 LOGISTICS_JOURNAL_52512 cùng SourceRef khác nội dung
     POST {goc}/api/v1/integrations/logistics/journal-entries/reverse    {SourceRef} → Result {DocumentId, Reversed}
-    GET  {goc}/api/v1/integrations/logistics/journal-entries/{SourceRef} → Result {DocumentId, DocumentNo, StatusId} | 404
+         Reversed=false + DocumentId null = không còn chứng từ đang hoạt động (đã gỡ trước đó) · 409 52515/52516 = chặn gỡ
+    GET  {goc}/api/v1/integrations/logistics/journal-entries/{SourceRef} → Result {DocumentId, DocumentNo, StatusId, …} | 404
 
 CỜ `QLSX_GUI_BUT_TOAN` (mặc định TẮT): bên đó phải áp script DB mới chạy được đường này. Tắt thì bút toán chỉ nằm ở trang
 này để xem, như trước. Bật thì: ghi bút toán (khoá phiếu, tất toán…) tự gửi luôn — hỏng thì giữ "chờ gửi", ghi lỗi, gửi lại
@@ -74,6 +78,14 @@ def _goi(method, duong, body=None, key=None, cho=CHO_GIAY):
     return ma, than
 
 
+def _chi_tiet_loi(than):
+    """ErrorDetail của phong bì lỗi bên đó → (ErrorCode | None, InvalidAccounts | None)."""
+    ed = than.get("ErrorDetail") if isinstance(than, dict) else None
+    if not isinstance(ed, dict):
+        return None, None
+    return ed.get("ErrorCode"), ed.get("InvalidAccounts")
+
+
 def _ket_qua(ma, than):
     """(Result | None, mã lỗi, câu lỗi). Thành công chỉ khi Success true (hoặc 2xx không phong bì) kèm Result."""
     if isinstance(than, dict) and than.get("Success") is True and isinstance(than.get("Result"), dict):
@@ -81,16 +93,21 @@ def _ket_qua(ma, than):
     if 200 <= ma < 300 and isinstance(than, dict) and than.get("DocumentId"):
         return than, None, None
     cau = ((than or {}).get("Message") or (than or {}).get("message")) if isinstance(than, dict) else None
+    ma_ben_do, sai_ed = _chi_tiet_loi(than)
     if ma >= 500:
         return None, "HTTP_5XX", "Hệ kế toán trả HTTP %s: %s" % (ma, cau or "lỗi máy chủ")
     if ma == 404:
         return None, "KHONG_CO_DUONG", "Hệ kế toán chưa có đường nhận bút toán (404) — bên đó chưa áp bản mới."
-    if ma == 400 or (isinstance(than, dict) and than.get("Success") is False):
+    if ma in (400, 409, 422) or (isinstance(than, dict) and than.get("Success") is False):
         r = (than or {}).get("Result") if isinstance(than, dict) else None
-        sai = (r or {}).get("InvalidAccounts") or (r or {}).get("Accounts") if isinstance(r, dict) else (r if isinstance(r, list) else None)
-        if sai or "tài khoản" in (cau or "").lower() or "account" in (cau or "").lower():
+        sai = sai_ed or ((r or {}).get("InvalidAccounts") or (r or {}).get("Accounts") if isinstance(r, dict)
+                         else (r if isinstance(r, list) else None))
+        if sai or ma_ben_do == "INVALID_ACCOUNTS" or "tài khoản" in (cau or "").lower() or "account" in (cau or "").lower():
             return None, "TAI_KHOAN_SAI", "Hệ kế toán từ chối: %s%s" % (cau or "tài khoản không có trong danh mục",
                                                                        " (%s)" % ", ".join(str(x) for x in sai) if sai else "")
+        if ma_ben_do == "LOGISTICS_JOURNAL_52512":
+            return None, "KHAC_NOI_DUNG", ("Hệ kế toán đã có chứng từ cùng mã nguồn nhưng khác số liệu (từ một lần gửi trước) "
+                                          "và chưa gỡ được — nhờ kế toán kiểm chứng từ đó trong hệ kế toán.")
         return None, "BEN_KE_TOAN_TU_CHOI", "Hệ kế toán từ chối: %s" % (cau or "không rõ lý do")
     return None, "HTTP_%s" % ma, "Hệ kế toán trả HTTP %s: %s" % (ma, cau or "")
 
@@ -164,9 +181,9 @@ def _ghi_ket_qua(rec, r):
     rec.gui_luc, rec.loi_gui, rec.error_code = dt.datetime.utcnow(), None, None
 
 
-def hoi(db, rec):
+def hoi(db, rec, cho=CHO_GIAY):
     """GET journal-entries/{SourceRef}: bên đó có chứng từ chưa. Có → ghi số chứng từ (bản cho_gui thành da_gui). Trả Result | None."""
-    ma, than = _goi("GET", DUONG + "/" + quote(rec.source_ref, safe=""))
+    ma, than = _goi("GET", DUONG + "/" + quote(rec.source_ref, safe=""), cho=cho)
     if ma == 404:
         return None
     r, ma_loi, cau = _ket_qua(ma, than)
@@ -185,11 +202,12 @@ def gui(db, rec, commit=True, cho=CHO_GIAY):
     try:
         if rec.error_code in CHUA_RO and hoi(db, rec) is not None:       # lần trước chưa rõ: bên đó có rồi thì nhận luôn
             return _xong(db, rec, commit)
-        body = dung_goi(db, rec)
-        rec.request_body = json.dumps(body, ensure_ascii=False)
-        ma, than = _goi("POST", DUONG, body, key=rec.source_ref, cho=cho)
-        rec.response_body = (json.dumps(than, ensure_ascii=False, default=str) if than is not None else "")[:20000]
-        r, ma_loi, cau = _ket_qua(ma, than)
+        r, ma_loi, cau, ma = _post(db, rec, cho)
+        if r is None and ma_loi == "KHAC_NOI_DUNG":
+            # bên đó đã lưu chứng từ cùng SourceRef từ một lần gửi mất phản hồi, rồi nguồn đổi số: gỡ chứng từ cũ (bên đó cho
+            # POST lại cùng SourceRef sau khi gỡ) rồi gửi bản đúng — không để hai sổ lệch nhau
+            _go(rec)
+            r, ma_loi, cau, ma = _post(db, rec, cho)
         if r is None:
             _loi(ma_loi, cau, 502 if ma >= 500 else 422)
         _ghi_ket_qua(rec, r)
@@ -200,6 +218,28 @@ def gui(db, rec, commit=True, cho=CHO_GIAY):
             db.commit()
         raise
     return _xong(db, rec, commit)
+
+
+def _post(db, rec, cho):
+    body = dung_goi(db, rec)
+    rec.request_body = json.dumps(body, ensure_ascii=False)
+    ma, than = _goi("POST", DUONG, body, key=rec.source_ref, cho=cho)
+    rec.response_body = (json.dumps(than, ensure_ascii=False, default=str) if than is not None else "")[:20000]
+    return _ket_qua(ma, than) + (ma,)
+
+
+def _go(rec):
+    """POST reverse cho SourceRef của bản này. Gỡ xong (hoặc bên đó không còn chứng từ đang hoạt động) → trả; không → ném."""
+    ma, than = _goi("POST", DUONG + "/reverse", {"SourceRef": rec.source_ref}, key=rec.source_ref + ":dao")
+    r, ma_loi, cau = _ket_qua(ma, than)
+    if r is None and ma == 404:
+        return                                          # bên đó không có chứng từ này nữa — coi như đã gỡ
+    if r is None:
+        _loi(ma_loi, cau, 502 if ma >= 500 else 422)
+    # Reversed=false + DocumentId null = bên đó không còn chứng từ đang hoạt động của SourceRef này (lần gỡ trước đã xong
+    # mà mất phản hồi) — coi như đã gỡ. Bị chặn gỡ (đã khoá / ghi sổ chính thức) bên đó trả 409, không về đây.
+    if r.get("Reversed") is False and r.get("DocumentId") is not None:
+        _loi("CHUA_DAO", "Hệ kế toán chưa gỡ được chứng từ %s." % (rec.so_ben_ke_toan or rec.source_ref), 409)
 
 
 def _xong(db, rec, commit):
@@ -228,14 +268,7 @@ def dao(db, rec, commit=True):
         return rec
     rec.attempts = (rec.attempts or 0) + 1
     try:
-        ma, than = _goi("POST", DUONG + "/reverse", {"SourceRef": rec.source_ref}, key=rec.source_ref + ":dao")
-        r, ma_loi, cau = _ket_qua(ma, than)
-        if r is None and ma == 404:
-            r = {"Reversed": True}                      # bên đó không có chứng từ này nữa — coi như đã đảo
-        if r is None:
-            _loi(ma_loi, cau, 502 if ma >= 500 else 422)
-        if r.get("Reversed") is False:
-            _loi("CHUA_DAO", "Hệ kế toán chưa đảo được chứng từ %s." % (rec.so_ben_ke_toan or rec.source_ref), 409)
+        _go(rec)
         rec.status, rec.can_dao, rec.huy_luc = "huy", False, dt.datetime.utcnow()
         rec.loi_gui = rec.error_code = None
     except HTTPException as e:

@@ -5,15 +5,19 @@
 
 Máy chủ trang điều xe đang thử phải chạy với:
     QLSX_GUI_BUT_TOAN=1 · QLSX_BASE_URL=http://127.0.0.1:<cổng máy giả> · QLSX_ACCESS_TOKEN=<chuỗi bất kỳ>
-(scratchpad gb_khoi_dong_8014_gia.ps1). Máy giả trả đúng giao ước:
-    POST /api/v1/integrations/logistics/journal-entries (Idempotency-Key = SourceRef) → {DocumentId, DocumentNo, StatusId, IsExisting}
-    POST …/journal-entries/reverse {SourceRef} → {DocumentId, Reversed} · GET …/journal-entries/{SourceRef} → … | 404
+(scratchpad gb_khoi_dong_8014_gia.ps1). Máy giả trả đúng giao ước GLS-QLSX-APIs `b9227aa` (LogisticsJournalEntryController):
+    POST /api/v1/integrations/logistics/journal-entries (Idempotency-Key = SourceRef) → 201 {DocumentId, DocumentNo, StatusId 13,
+         IsExisting false} · cùng nội dung → 200 IsExisting · khác nội dung → 409 ErrorDetail.ErrorCode LOGISTICS_JOURNAL_52512 ·
+         tài khoản sai → 400 ErrorDetail {ErrorCode INVALID_ACCOUNTS, InvalidAccounts}
+    POST …/journal-entries/reverse {SourceRef} → {DocumentId, Reversed true} · không còn chứng từ đang hoạt động → {DocumentId null,
+         Reversed false} · GET …/journal-entries/{SourceRef} → … | 404 (đã gỡ cũng 404); gỡ xong POST lại cùng SourceRef = chứng từ mới
 cùng mấy đường danh mục bên đó cần (đối tượng, tiền, kỳ).
 
 Nhánh: khoá phiếu xe thuê → tự gửi hai bút toán (đúng tài khoản, tiền, đối tượng, khoá chống trùng) · gửi lại bản đã gửi → 409 ·
 mở khoá → đảo → huỷ · khoá lại → SourceRef mới "-2" · 400 tài khoản sai → giữ "chờ gửi", lỗi rõ · mất mạng → giữ, đếm lần thử ·
 bên kia đã lưu mà trả 503 → lần sau hỏi lại (GET) nhận đúng chứng từ · GET 404 mà POST trả IsExisting → nhận · đảo hỏng → chờ đảo →
-Gửi hết đảo được · phân quyền.
+Gửi hết đảo được · phân quyền · mất phản hồi khi gửi rồi mở khoá → hỏi lại, gỡ (không sót chứng từ bên kia) ·
+gỡ xong mà mất phản hồi → Gửi hết nhận Reversed=false → huỷ · 409 khác số → tự gỡ chứng từ cũ, gửi bản đúng.
 """
 import json
 import sys
@@ -36,7 +40,8 @@ DUONG = "/api/v1/integrations/logistics/journal-entries"
 class GIA:
     ct = {}            # SourceRef → {DocumentId, DocumentNo, StatusId, Reversed, body}
     nhan = []          # (method, path, headers, body)
-    che_do = set()     # sai_tk · luu_roi_503 · get_404 · dao_hong
+    che_do = set()     # sai_tk · luu_roi_503 · get_404 · dao_hong · dao_roi_503 · khac_noi_dung
+    da_go = []         # DocumentNo đã gỡ
     so = 7000
     may = None
 
@@ -69,7 +74,7 @@ class Xu(BaseHTTPRequestHandler):
         if self.path.startswith(DUONG + "/"):
             ref = urllib.request.unquote(self.path[len(DUONG) + 1:])
             c = GIA.ct.get(ref)
-            if c is None or "get_404" in GIA.che_do:
+            if c is None or c["Reversed"] or "get_404" in GIA.che_do:
                 return self._tra(404, {"Success": False, "Code": 404, "Message": "Không có chứng từ"})
             return self._tra(200, {"Success": True, "Result": {k: c[k] for k in ("DocumentId", "DocumentNo", "StatusId")}})
         self._tra(404, {"Success": False, "Code": 404, "Message": "không có đường"})
@@ -86,27 +91,42 @@ class Xu(BaseHTTPRequestHandler):
             c = GIA.ct.get((b or {}).get("SourceRef"))
             if "dao_hong" in GIA.che_do:
                 return self._tra(503, {"Success": False, "Code": 503, "Message": "bận"})
-            if c is None:
-                return self._tra(404, {"Success": False, "Code": 404, "Message": "Không có chứng từ"})
+            if c is None or c["Reversed"]:
+                return self._tra(200, {"Success": True, "Code": 200, "Result": {"SourceRef": (b or {}).get("SourceRef"),
+                                                                              "DocumentId": None, "Reversed": False}})
             c["Reversed"] = True
-            return self._tra(200, {"Success": True, "Result": {"DocumentId": c["DocumentId"], "Reversed": True}})
+            GIA.da_go.append(c["DocumentNo"])
+            if "dao_roi_503" in GIA.che_do:
+                return self._tra(503, {"Success": False, "Code": 503, "Message": "hết giờ (đã gỡ)"})
+            return self._tra(200, {"Success": True, "Code": 200, "Result": {"DocumentId": c["DocumentId"], "Reversed": True}})
         if self.path == DUONG:
             ref = (b or {}).get("SourceRef")
             if self.headers.get("Idempotency-Key") != ref:
                 return self._tra(400, {"Success": False, "Code": 400, "Message": "Idempotency-Key phải bằng SourceRef"})
             if "sai_tk" in GIA.che_do:
-                return self._tra(400, {"Success": False, "Code": 400, "Message": "Tài khoản không có trong danh mục",
-                                       "Result": {"InvalidAccounts": ["9999"]}})
-            if ref in GIA.ct:
+                return self._tra(400, {"Success": False, "Code": 400, "Message": "Tài khoản không có trong danh mục", "Result": None,
+                                       "ErrorDetail": {"ErrorCode": "INVALID_ACCOUNTS", "InvalidAccounts": ["9999"]}})
+            khac = {"Success": False, "Code": 409, "Message": "Cùng SourceRef, khác nội dung", "Result": None,
+                    "ErrorDetail": {"ErrorCode": "LOGISTICS_JOURNAL_52512"}}
+            if "khac_noi_dung" in GIA.che_do and (ref not in GIA.ct or GIA.ct[ref]["Reversed"]):
+                # chứng từ cũ cùng SourceRef nằm sẵn bên kia (lần gửi trước mất phản hồi) với số khác
+                GIA.che_do.discard("khac_noi_dung"); GIA.so += 1
+                GIA.ct[ref] = {"DocumentId": GIA.so, "DocumentNo": "GIA-BT-CU-%d" % GIA.so, "StatusId": 13, "Reversed": False,
+                               "body": {"Entries": []}}
+                return self._tra(409, khac)
+            if ref in GIA.ct and not GIA.ct[ref]["Reversed"]:
                 c = GIA.ct[ref]
-                return self._tra(200, {"Success": True, "Result": {"DocumentId": c["DocumentId"], "DocumentNo": c["DocumentNo"],
-                                                                 "StatusId": c["StatusId"], "IsExisting": True}})
+                if c["body"] is not None and c["body"].get("Entries") != (b or {}).get("Entries"):
+                    return self._tra(409, khac)
+                return self._tra(200, {"Success": True, "Code": 200, "Result": {"SourceRef": ref, "DocumentId": c["DocumentId"],
+                                                                              "DocumentNo": c["DocumentNo"], "StatusId": c["StatusId"],
+                                                                              "IsExisting": True}})
             GIA.so += 1
-            c = GIA.ct[ref] = {"DocumentId": GIA.so, "DocumentNo": "GIA-BT-%d" % GIA.so, "StatusId": 12, "Reversed": False, "body": b}
+            c = GIA.ct[ref] = {"DocumentId": GIA.so, "DocumentNo": "GIA-BT-%d" % GIA.so, "StatusId": 13, "Reversed": False, "body": b}
             if "luu_roi_503" in GIA.che_do:
                 return self._tra(503, {"Success": False, "Code": 503, "Message": "hết giờ (đã lưu)"})
-            return self._tra(200, {"Success": True, "Result": {"DocumentId": c["DocumentId"], "DocumentNo": c["DocumentNo"],
-                                                             "StatusId": 12, "IsExisting": False}})
+            return self._tra(201, {"Success": True, "Code": 201, "Result": {"SourceRef": ref, "DocumentId": c["DocumentId"],
+                                                                          "DocumentNo": c["DocumentNo"], "StatusId": 13, "IsExisting": False}})
         self._tra(404, {"Success": False, "Code": 404, "Message": "không có đường"})
 
 
@@ -194,7 +214,7 @@ def main():
         s, g = goi("/api/but-toan-cho/%s/gui" % t["id"], {}, u="ketoan")
         dung(s == 409 and ma(g) == "KHONG_GUI", "gửi lại bản đã gửi → 409 KHONG_GUI", s)
         s, g = goi("/api/but-toan-cho/%s/cap-nhat" % t["id"], {}, u="ketoancp")
-        dung(s == 200 and g.get("tune_status") == 12, "Cập nhật → hỏi lại bên kế toán, StatusId 12", g.get("tune_status"))
+        dung(s == 200 and g.get("tune_status") == 13, "Cập nhật → hỏi lại bên kế toán, StatusId 13 (ghi sổ tạm)", g.get("tune_status"))
 
         print("2. Mở khoá → đảo; khoá lại → SourceRef mới")
         s, g = goi("/api/trips/%s/mo-khoa" % tid, {}, u="ketoan"); dung(s == 200, "mở khoá", s)
@@ -231,7 +251,7 @@ def main():
              and len([z for z in GIA.nhan if z[0] == "POST" and z[1] == DUONG]) == so_post,
              "gửi lại sau 503 → HỎI LẠI (GET) trước, nhận đúng chứng từ đã lưu, không POST lần nữa", x4["so_ben_ke_toan"])
         n = bt(tid)["no_ncc"]
-        GIA.ct[n["source_ref"]] = {"DocumentId": 99, "DocumentNo": "GIA-BT-CU", "StatusId": 12, "Reversed": False, "body": {}}
+        GIA.ct[n["source_ref"]] = {"DocumentId": 99, "DocumentNo": "GIA-BT-CU", "StatusId": 13, "Reversed": False, "body": None}
         GIA.che_do = {"get_404"}
         s, g = goi("/api/but-toan-cho/gui-het", {}, u="ketoan")
         n2 = bt(tid)["no_ncc"]
@@ -255,6 +275,34 @@ def main():
             s, g = goi("/api/but-toan-cho/gui-het", {}, u=u); dung(s == 403, "%s Gửi hết → 403" % u, s)
             s, g = goi("/api/but-toan-cho/%s/gui" % t["id"], {}, u=u); dung(s == 403, "%s Gửi một bản → 403" % u, s)
         dung(goi("/api/but-toan-cho/gui-het", {})[0] == 401, "không đăng nhập → 401")
+
+        print("6. Mất phản hồi — không sót, không kẹt chứng từ bên kế toán")
+        GIA.che_do = {"luu_roi_503"}
+        goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan")
+        b = bt(tid)
+        dung(all(v["status"] == "cho_gui" and v["error_code"] == "HTTP_5XX" for v in b.values()),
+             "khoá: bên kia lưu rồi mà trả 503 → chờ gửi (chưa rõ)", str({k: (v["status"], v["error_code"]) for k, v in b.items()}))
+        GIA.che_do = set()
+        s, g = goi("/api/trips/%s/mo-khoa" % tid, {}, u="ketoan")
+        b = bt(tid)
+        dung(s == 200 and all(v["status"] == "huy" and (GIA.ct.get(v["source_ref"]) or {}).get("Reversed") for v in b.values()),
+             "mở khoá → hỏi lại, thấy chứng từ bên kia → gỡ luôn (không sót)", str({k: v["status"] for k, v in b.items()}))
+        goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan")
+        GIA.che_do = {"dao_roi_503"}
+        goi("/api/trips/%s/mo-khoa" % tid, {}, u="ketoan")
+        b = bt(tid)
+        dung(all(v["status"] == "da_gui" and v["can_dao"] for v in b.values()), "gỡ xong mà bên kia trả 503 → chờ đảo")
+        GIA.che_do = set()
+        s, g = goi("/api/but-toan-cho/gui-het", {}, u="ketoan")
+        b = bt(tid)
+        dung(s == 200 and g.get("da_dao") == 2 and all(v["status"] == "huy" and not v["can_dao"] for v in b.values()),
+             "Gửi hết: bên kia trả Reversed=false (đã gỡ trước đó) → huỷ, không kẹt", json.dumps(g)[:90])
+        GIA.che_do = {"khac_noi_dung"}
+        s, g = goi("/api/trips/%s/khoa" % tid, {"xac_nhan": True}, u="ketoan")
+        b = bt(tid)
+        cu = [x for x in GIA.da_go if x.startswith("GIA-BT-CU-")]
+        dung(s == 200 and cu and all(v["status"] == "da_gui" and not str(v["so_ben_ke_toan"]).startswith("GIA-BT-CU") for v in b.values()),
+             "409 cùng SourceRef khác số → tự gỡ chứng từ cũ rồi gửi bản đúng", "%s · %s" % (cu, {k: v["so_ben_ke_toan"] for k, v in b.items()}))
     finally:
         GIA.che_do = set()
         if GIA.may is None:
