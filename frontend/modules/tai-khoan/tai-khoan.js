@@ -84,19 +84,20 @@
     if (t === 'lt') napLienThong().catch(EPL.baoLoi);
   }
 
-  /* ---------------------------------------------------------------- liên thông trang kế toán (28/09) */
+  /* ---------------------------------------------------------------- liên thông KHO TẠM (28/09 · cấu hình kho riêng 01/10) */
+  // Không còn đẩy chứng từ (01/10): ô khoá ở đây là khoá gọi KHO tạm — kho_api · kho_web · kho_token.
   async function napLienThong() {
-    const c = await API.get('/api/ke-toan/cau-hinh');
-    q('#tk-lt-api').value = c.ke_toan_api || '';
-    q('#tk-lt-web').value = c.ke_toan_web || '';
-    q('#tk-lt-day').placeholder = NN.t(c.co_token ? 'tk_lt_co' : 'tk_lt_chua');
+    const c = await API.get('/api/kho-tam/cau-hinh');
+    q('#tk-lt-api').value = c.kho_api || '';
+    q('#tk-lt-web').value = c.kho_web || '';
+    q('#tk-lt-kho-khoa').placeholder = NN.t(c.co_token_kho ? 'tk_lt_co' : 'tk_lt_chua');
     q('#tk-lt-nhan').innerHTML = EPL.tag(c.co_token_nhan_ke_toan ? 'ok' : 'plain', c.co_token_nhan_ke_toan ? 'tk_lt_co' : 'tk_lt_chua');
   }
   function ganLienThong() {
     q('#tk-lt-luu').addEventListener('click', async () => {
-      const body = { ke_toan_api: q('#tk-lt-api').value.trim(), ke_toan_web: q('#tk-lt-web').value.trim() };
-      const k = q('#tk-lt-day').value.trim(); if (k) body.ke_toan_token = k;
-      try { await API.put('/api/ke-toan/cau-hinh', body); q('#tk-lt-day').value = ''; EPL.toast(NN.t('saved'), 'ok'); await napLienThong(); }
+      const body = { kho_api: q('#tk-lt-api').value.trim(), kho_web: q('#tk-lt-web').value.trim() };
+      const k = q('#tk-lt-kho-khoa').value.trim(); if (k) body.kho_token = k;   // để trống = giữ khoá cũ
+      try { await API.put('/api/kho-tam/cau-hinh', body); q('#tk-lt-kho-khoa').value = ''; EPL.toast(NN.t('saved'), 'ok'); await napLienThong(); }
       catch (e) { EPL.baoLoi(e); }
     });
     q('#tk-lt-tao').addEventListener('click', async () => {
