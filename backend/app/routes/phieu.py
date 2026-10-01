@@ -1725,13 +1725,13 @@ def xuat_hoa_don(tid: str, user=Depends(nguoi_hien_tai)):
 # ---------------------------------------------------------------- khách trả tiền: sổ thu từng lần
 #
 # Thu tiền khách ở hệ kế toán anh Tune từ 01/10: trạng thái thu của phiếu (finance_status) là bản chép đọc lại từ bên đó
-# (services/de_nghi_thu.doc_thu_tune). Hàm dưới chỉ còn cho đường liên thông cũ của trang tạm (services/doanh_thu.ghi_da_thu)
-# tới khi đường đó gỡ — nó đọc collected_lak bên đó ghi sang, trang điều xe không dùng.
+# (services/de_nghi_thu.doc_thu_tune). Đường liên thông cũ của trang tạm ghi collected_lak sang đã gỡ (01/10); hàm dưới chỉ
+# còn tools/don_rac_bo_kiem.py gọi (dọn dữ liệu bộ kiểm cũ) — bỏ cùng công cụ đó.
 LECH_COI_LA_DU = 1.0          # lệch dưới 1 LAK thì coi là trả đủ — làm tròn tỷ giá thôi, không phải nợ
 
 
 def _tinh_lai_trang_thai_thu(db, p):
-    """Trạng thái tài chính = so tổng đã thu (collected_lak — bản chép của đường liên thông cũ) với tiền hoá đơn, quy LAK."""
+    """Trạng thái tài chính = so tổng đã thu (collected_lak — bản chép cũ của trang tạm) với tiền hoá đơn, quy LAK."""
     da = float(p.collected_lak or 0)
     tong = tinh_phieu(p, _dong_chi(db, p))["doanh_thu_lak"]
     if da <= LECH_COI_LA_DU:

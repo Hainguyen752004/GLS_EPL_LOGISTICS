@@ -660,12 +660,12 @@ def _ct_lo(db, cac_ngay):
     return ra
 
 
-def _can_tru_tinh(db, thang, dau, cuoi, hoi_ke_toan=True):
+def _can_tru_tinh(db, thang, dau, cuoi):
     """Cước phải thu theo khách ghép từ phần tính sẵn của từng NGÀY (chỉ ngày có dữ liệu vừa đổi mới tính lại); thẻ
     cao tốc và trạm dầu Việt Nam là bảng nhỏ — luôn đọc MỚI, không đệm.
     01/10 (bỏ trang kế toán tạm): bỏ phần "đã ghi cấn trừ / chưa ghi" — đó là các lần thu "cấn trừ" trên sổ thu tiền của
     trang tạm (số thử). Bảng chỉ còn là BẢNG TÍNH: cước, thẻ khách, trạm dầu VN, còn phải thu; ghi cấn trừ là việc của hệ
-    kế toán anh Tune. `hoi_ke_toan` giữ cho chữ ký cũ, không còn tác dụng."""
+    kế toán anh Tune."""
     sau = cuoi + dt.timedelta(days=1)
     theo_khach = {}
 

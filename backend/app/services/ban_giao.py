@@ -127,8 +127,11 @@ def dong_danh_sach(p, ma_khach=None):
 
 def dong_goi(db, p):
     """Gói bàn giao `{header, details}` của một phiếu đã về và đã khoá."""
+    from services import de_nghi_thu as DNT
     dong = _dong_chi(db, p)
-    t = tinh_phieu(p, dong, p.collected_lak or 0)
+    so = DNT.so_cua(db, p)
+    co_so = so is not None and so.status == "synced"
+    t = tinh_phieu(p, dong, DNT.da_thu_lak(p, so))      # đã thu: bản đọc lại thu tiền SO bên hệ anh Tune (cờ trang tạm bỏ 01/10)
     ccy = t["ccy"]
     tuyen = db.get(Route, p.route_id) if p.route_id else None
     lk = p.company == "joint"
@@ -171,7 +174,9 @@ def dong_goi(db, p):
         "margin_percent": round(t["lai_lak"] * 100.0 / t["doanh_thu_lak"], 1) if t["doanh_thu_lak"] else None,
         "fx_rate": float("%.10g" % (1.0 / r)) if ccy != "LAK" and r else None,
         "fx_rate_source": "tỷ giá khoá trên phiếu" if ccy != "LAK" else None,
-        "invoiced": bool(p.invoiced), "inv_no": p.inv_no,
+        # Khuôn đã công bố (hợp đồng 12.8.3) giữ TÊN khoá. Từ 01/10 hoá đơn là SO bên hệ anh Tune: `invoiced` = DO đã có SO
+        # bên đó (gui_so_tune synced), `inv_no` = số SO (order_code). Cờ trips.invoiced · inv_no của trang tạm không ai ghi nữa.
+        "invoiced": co_so, "inv_no": so.order_code if co_so else None,
         "completed_at": _gio(p.locked_at), "completed_by": p.locked_by,
     }
     if lk:

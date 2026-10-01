@@ -184,13 +184,6 @@ DE_NGHI_TRA = ("acct", "admin")                                     # KT Thu/Chi
 KHONG_XEM_TRA = ("yard", "driver", "depot", "parts", "repair")       # tiền thuê xe liên kết là tiền bán — Bãi không thấy
 
 
-def _co_nguoi(ham, *a, user):
-    """TẠM (01/10, chờ chi_tune nhận `user` theo giao ước trừ hàng quầy): truyền người đang bấm nếu hàm đã nhận — đường máy kho
-    tạm cần tên đăng nhập. B thêm tham số xong thì gọi thẳng, bỏ hàm này."""
-    import inspect
-    return ham(*a, user=user) if "user" in inspect.signature(ham).parameters else ham(*a)
-
-
 def _ban_ghi_chu_xe(db, rid):
     from models import ChiChuXeTune
     r = db.get(ChiChuXeTune, rid)
@@ -208,7 +201,7 @@ def tra_ke_toan(oid: str, db: Session = Depends(get_db), user=Depends(nguoi_hien
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
     for r in db.query(ChiChuXeTune).filter(ChiChuXeTune.owner_id == oid, ChiChuXeTune.status == "da_gui").all():
         try:
-            _co_nguoi(CHI.dong_bo_chu_xe, db, r, user=user)
+            CHI.dong_bo_chu_xe(db, r, user=user)        # người bấm: đường máy kho tạm (chốt hàng quầy) cần tên đăng nhập
         except HTTPException:
             break
     return CHI.cho_tra_chu_xe(db, oid)
@@ -254,11 +247,11 @@ def viec_de_nghi_tra(rid: str, viec: str, db: Session = Depends(get_db), user=De
         raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Vai %s không xem tiền trả chủ xe." % user.role})
     r = _ban_ghi_chu_xe(db, rid)
     if viec == "cap-nhat":
-        r = _co_nguoi(CHI.dong_bo_chu_xe, db, r, user=user)
+        r = CHI.dong_bo_chu_xe(db, r, user=user)
     elif viec in ("gui-lai", "huy"):
         if user.role not in DE_NGHI_TRA:
             raise HTTPException(403, {"ma": "KHONG_CO_QUYEN", "loi": "Chỉ KT Thu/Chi Viêng Chăn hoặc Sếp."})
-        r = CHI.gui_lai_chu_xe(db, r, user) if viec == "gui-lai" else _co_nguoi(CHI.huy_chu_xe, db, r, user=user)
+        r = CHI.gui_lai_chu_xe(db, r, user) if viec == "gui-lai" else CHI.huy_chu_xe(db, r, user=user)
     else:
         raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có việc %s." % viec})
     return CHI.xuat_chu_xe(r)

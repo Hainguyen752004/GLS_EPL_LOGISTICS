@@ -26,6 +26,7 @@ from fastapi import HTTPException
 from sqlalchemy import func
 
 from models import ButToanCho, ChiTune, Driver, DriverSettlement, ExchangeRate, PhieuTienTune, Supplier, Trip
+from services import but_toan_cho as BTC
 from services import chi_tune as CHI
 from services import chung_tu as CT
 
@@ -49,16 +50,6 @@ def _loi(ma, loi, http=422, **them):
 def chan_vai(user, vai, viec):
     if user.role not in vai:
         _loi("KHONG_CO_QUYEN", "Vai %s không được %s." % (user.role, viec), 403)
-
-
-def _btc():
-    """services/but_toan_cho (agent B). Chưa có thì báo rõ, không tự dựng bảng."""
-    try:
-        from services import but_toan_cho as BTC
-    except ImportError:
-        _loi("CHUA_CO_BUT_TOAN_CHO", "Trang điều xe chưa có sổ bút toán chờ gửi (services/but_toan_cho) — chưa ghi được quyết toán "
-                                     "tạm ứng QT_TU, nên chưa chốt tất toán được.", 503)
-    return BTC
 
 
 def _ten(user):
@@ -270,17 +261,11 @@ def _xuat_chot(x, rec, bt, d=None, day_du=False):
     khi chốt) thì báo `lech`, để KT Chi phí bỏ chốt chốt lại."""
     if x is None:
         return None
-    BTC = None
-    if day_du and bt is not None:
-        try:
-            BTC = _btc()
-        except HTTPException:
-            BTC = None
     return {"id": x.id, "status": x.status, "so_phieu": x.so_phieu, "tong_ung_lak": x.tong_ung_lak, "tong_chi_lak": x.tong_chi_lak,
             "chenh_lech_lak": x.chenh_lech_lak, "settled_by": x.settled_by, "settled_at": _gio(x.settled_at), "note": x.note,
             "lech": bool(d is not None and (abs((d["tong_chi_lak"] or 0) - (x.tong_chi_lak or 0)) >= 1
                                             or abs((d["tong_ung_lak"] or 0) - (x.tong_ung_lak or 0)) >= 1)),
-            "phieu_ke_toan": xuat(rec), "quyet_toan": BTC.xuat(bt) if BTC is not None else _gon_bt(bt)}
+            "phieu_ke_toan": xuat(rec), "quyet_toan": BTC.xuat(bt) if day_du else _gon_bt(bt)}
 
 
 def bang(db, ky, hoi_lai=30):
@@ -374,7 +359,6 @@ def chot(db, user, driver_id, ky, note=None, phuong_thuc="cash"):
         _loi("KY_TRONG", "Kỳ %s tài xế %s không có phiếu xe nhà nào." % (ky, t.name))
     chi, ung = round(k["tong_chi_lak"] or 0), round(k["tong_ung_lak"] or 0)
     ch = chi - ung
-    BTC = _btc() if chi >= 1 else None
     x = DriverSettlement(driver_id=driver_id, driver_name=t.name, period=ky, so_phieu=k["so_phieu"], tong_ung_lak=ung,
                          tong_chi_lak=chi, chenh_lech_lak=ch, status="cho_chi" if abs(ch) >= 1 else "xong",
                          settled_by=_ten(user), settled_at=dt.datetime.utcnow(), note=(note or "").strip() or None)
@@ -382,7 +366,7 @@ def chot(db, user, driver_id, ky, note=None, phuong_thuc="cash"):
     db.flush()
     ma, ten_tx = ma_nguon_tt(x), "%s%s" % (t.name, (" (%s)" % t.driver_code) if t.driver_code else "")
     thang = "%s/%s" % (ky[5:7], ky[:4])
-    if BTC is not None:
+    if chi >= 1:
         no, _, co, _ = CT.dinh_khoan("QT_TU", company="EPL", section="travel", tien_te="LAK")
         BTC.ghi(db, NGUON_TT, ma, _ngay_hach_toan(ky),
                 [{"no": no, "co": co, "tien": chi, "ccy": "LAK", "doi_tuong": {"loai": "tai_xe", "ref_id": driver_id},
@@ -422,12 +406,12 @@ def bo_chot(db, user, driver_id, ky):
         _loi("DA_CHI_O_KE_TOAN", "Phiếu %s bên hệ kế toán đã ghi sổ (tiền đã đi) — không bỏ chốt được ở đây, đối soát ở hệ kế toán "
                                  "trước." % (rec.document_no or rec.real_id), 409)
     if bt is not None and bt.status == "da_gui":             # chặn TRƯỚC khi đụng phiếu bên kế toán
-        _btc().rut(db, NGUON_TT, ma_nguon_tt(x), by_user=_ten(user))           # → 409 BUT_TOAN_DA_GUI
+        BTC.rut(db, NGUON_TT, ma_nguon_tt(x), by_user=_ten(user))           # → 409 BUT_TOAN_DA_GUI
     try:
         if rec is not None and rec.status != "huy":
             _rut_ben_ke_toan(db, rec)
         if bt is not None:
-            _btc().rut(db, NGUON_TT, ma_nguon_tt(x), by_user=_ten(user))
+            BTC.rut(db, NGUON_TT, ma_nguon_tt(x), by_user=_ten(user))
         db.delete(x)
         db.commit()
     except HTTPException:

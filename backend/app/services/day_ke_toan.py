@@ -12,13 +12,14 @@ Tờ chứng từ (`ChungTu`, services/chung_tu.py) VẪN sinh như cũ — đ�
 Còn lại trong tệp:
   · `cau_hinh` / `dat_cau_hinh` — đọc / ghi bảng `cau_hinh` chung (nhiều nơi gọi `DK.cau_hinh`: khoá kho, khoá nhận,
     hai mã bên kế toán cấp sau…). Cấu hình KHO đọc qua services/goi_ke_toan.py (`kho_api`, `kho_token`, `kho_web`).
-  · `day_mot` / `day_hang_loat` / `trang_thai` — giữ tên và kiểu trả về cũ nhưng KHÔNG làm gì, để chỗ nào còn gọi
-    không gãy. Xoá hẳn ở đợt dọn dẹp, cùng các đường `/api/chung-tu/day`, `/api/chung-tu/{id}/day`.
+  · `day_hang_loat` — giữ tên và kiểu trả về cũ nhưng KHÔNG làm gì: đường `POST /api/chung-tu/day` còn được
+    tools/gieo_demo_2609.py gọi (đọc `xong` / `loi`). Bỏ cùng đường đó khi công cụ gieo mẫu thôi gọi.
+    (`day_mot`, `trang_thai` và hai đường `/api/ke-toan/trang-thai`, `/api/chung-tu/{id}/day` đã xoá ở đợt dọn dẹp 01/10.)
 """
 import datetime as dt
 import os
 
-from models import CauHinh, ChungTu
+from models import CauHinh
 
 KHONG_DAY_NUA = "Từ 01/10 không đẩy chứng từ sang trang kế toán tạm nữa — việc tiền đi qua hệ kế toán anh Tune."
 
@@ -41,21 +42,7 @@ def dat_cau_hinh(db, khoa, gia_tri, user=None):
     return r
 
 
-def trang_thai(db):
-    """Màn Sổ chứng từ / Đề nghị thu hỏi "đã nối đẩy chưa" để hiện nút Đẩy: luôn `cau_hinh: False` → không hiện nút.
-    Vẫn đếm tờ chưa đánh dấu đã nhận (chỉ mục một phần ix_chung_tu_chua_day — số có giới hạn, không đếm mọi tờ)."""
-    from sqlalchemy import func
-    chua = db.query(func.count(ChungTu.id)).filter(ChungTu.da_day.is_(False)).scalar()
-    return {"cau_hinh": False, "khong_day_nua": True, "ghi_chu": KHONG_DAY_NUA, "api": "", "co_token": False,
-            "chua_day": chua, "loi": 0, "day_gan_nhat": None}
-
-
-# ---------------------------------------------------------------- đẩy (đã bỏ — giữ chỗ cho người còn gọi)
-def day_mot(db, c, user=None):
-    """KHÔNG đẩy nữa. Trả (False, lý do) như kiểu cũ; không đụng tờ (không tăng lần thử, không ghi lỗi)."""
-    return False, KHONG_DAY_NUA
-
-
+# ---------------------------------------------------------------- đẩy (đã bỏ — giữ chỗ cho công cụ gieo mẫu còn gọi)
 def day_hang_loat(db, user=None, loai=None, gioi_han=200):
     """KHÔNG đẩy nữa. Trả tóm tắt rỗng đúng kiểu cũ."""
     return {"thu": 0, "xong": 0, "loi": 0, "chi_tiet_loi": [], "khong_day_nua": True, "ghi_chu": KHONG_DAY_NUA}

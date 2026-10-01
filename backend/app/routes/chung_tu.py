@@ -2,8 +2,8 @@
 """Sổ chứng từ — mỗi bước nghiệp vụ bỏ vào một tờ (phiếu thu / chi / nhập kho / xuất kho…) kèm định khoản gợi ý.
 
 Bên mình không có sổ kế toán. Tờ để in / xem và định khoản cho màn Quy trình; `da-day` đánh tay khi bên kế toán đã
-nhận / đối chiếu. Từ 01/10 KHÔNG còn đẩy tờ sang trang kế toán tạm (services/day_ke_toan.py) — hai đường đẩy cũ chỉ còn
-giữ chỗ, không gửi gì ra ngoài. Cấu hình nối KHO TẠM (máy EPL_KETOAN) cũng ở đây: `/api/kho-tam/cau-hinh`.
+nhận / đối chiếu. Từ 01/10 KHÔNG còn đẩy tờ sang trang kế toán tạm (services/day_ke_toan.py) — đường đẩy hết còn giữ
+chỗ cho công cụ gieo mẫu, không gửi gì ra ngoài. Cấu hình nối KHO TẠM (máy EPL_KETOAN) cũng ở đây: `/api/kho-tam/cau-hinh`.
 Xem services/chung_tu.py.
 """
 import datetime as dt
@@ -91,30 +91,15 @@ def danh_dau_da_day(cid: str, d: dict = Body(default={}), db: Session = Depends(
 
 
 # ================================================================ đẩy sang trang kế toán tạm — ĐÃ BỎ 01/10
-# Hai đường cũ giữ chỗ (cùng quyền như trước) để giao diện chưa đổi và công cụ gieo mẫu không gãy; xoá ở đợt dọn dẹp.
+# Còn MỘT đường giữ chỗ: tools/gieo_demo_2609.py vẫn gọi POST /api/chung-tu/day (đọc xong / loi). `/api/ke-toan/trang-thai`
+# và `/api/chung-tu/{id}/day` không còn ai gọi (giao diện đã bỏ nút Đẩy) — xoá ở đợt dọn dẹp 01/10.
 DAY = ("acct", "admin")
-
-
-@router.get("/api/ke-toan/trang-thai")
-def ke_toan_trang_thai(db: Session = Depends(get_db), user=Depends(can_vai(*XEM))):
-    """Không còn đẩy: luôn `cau_hinh: False` → màn Sổ chứng từ, Đề nghị thu không hiện nút Đẩy. Kèm số tờ chưa đánh
-    dấu đã nhận."""
-    return DK.trang_thai(db)
 
 
 @router.post("/api/chung-tu/day")
 def day_tat_ca(d: dict = Body(default={}), db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
     """Không đẩy nữa — trả tóm tắt rỗng đúng kiểu cũ ({thu, xong, loi} = 0), không gửi gì ra ngoài."""
     return DK.day_hang_loat(db, user, loai=(d.get("loai") or None))
-
-
-@router.post("/api/chung-tu/{cid}/day")
-def day_mot_to(cid: str, db: Session = Depends(get_db), user=Depends(can_vai(*DAY))):
-    """Không đẩy nữa — 410 KHONG_DAY_NUA, tờ giữ nguyên (không tăng lần thử, không ghi lỗi)."""
-    c = db.get(ChungTu, cid)
-    if not c:
-        raise HTTPException(404, {"ma": "KHONG_THAY", "loi": "Không có chứng từ này."})
-    raise HTTPException(410, {"ma": "KHONG_DAY_NUA", "loi": DK.KHONG_DAY_NUA})
 
 
 # ================================================================ cấu hình nối KHO TẠM + hai mã bên kế toán cấp sau

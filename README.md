@@ -54,15 +54,16 @@ kiem/
   thu_luong_api.py   đi trọn luồng: lập phiếu → kiểm → ghi sổ → chi → hoá đơn → thu tiền
   thu_tien_te.py     nhiều tiền tệ: cước Nhân dân tệ, khách trả Kíp, thu nhiều lần
   thu_ty_gia.py      màn Tỷ giá: ai sửa, lịch sử, phiếu cũ không đổi theo
-  thu_chu_xe.py      chủ xe liên kết: phí riêng, trả gộp nhiều phiếu một tờ PC_CX
-  thu_hoa_don_gop.py hoá đơn gộp tháng: gộp một tờ nhiều phiếu, thu ở tờ phân bổ về từng phiếu
+  thu_chu_xe.py      chủ xe liên kết: phí riêng, đề nghị trả gộp nhiều phiếu → một phiếu chi bên hệ kế toán anh Tune
+  thu_tru_hang_quay.py trừ hàng chủ xe mua ở quầy (kho tạm) vào đề nghị trả chủ xe — số trả thực
+  thu_tat_toan_tune.py tất toán tài xế · trả nhà cung cấp → phiếu chi / thu bên hệ anh Tune, QT_TU thành bút toán chờ
   thu_vai_va_doi_xe.py hai vai Thà Bốc (kho phụ tùng · tổ sửa chữa) và đổi xe giữa đường
   thu_sua_chua.py    lệnh sửa chữa riêng: chuỗi duyệt mục V, lấy kho trừ tồn ngay, chi phần mua ngoài
   thu_the_cao_toc.py thẻ cao tốc: số dư, trừ khi ghi sổ mục IV, cấn trừ cước cuối tháng
   thu_no_tram_dau.py nợ trạm dầu Việt Nam: ghi nợ tách khỏi tiền mặt, cấn trừ cước tháng
   thu_no_ky_thuat.py máy chủ không trả giá bán cho vai không được xem · ảnh xe · việc của KT Doanh thu
-  thu_chot_22_09.py  ghi cấn trừ tháng · chặn đổi chéo loại xe · ảnh tài xế · hai mã kế toán là ô cấu hình
-  thu_day_ke_toan.py đẩy chứng từ sang kế toán anh Khang, máy nhận giả ở :8099
+  thu_chot_22_09.py  bảng cấn trừ tháng · chặn đổi chéo loại xe · ảnh tài xế · hai mã kế toán là ô cấu hình
+  thu_day_ke_toan.py không còn đẩy chứng từ (01/10) · cấu hình kho tạm riêng
   test_tinh_toan.py  bộ kiểm đơn vị phép tính và phân quyền
 ```
 
@@ -90,15 +91,16 @@ python kiem\thu_hai_do.py                        # luồng hai DO: gom → nhậ
 python kiem\thu_luong_api.py                     # cần máy chủ :8010 đang chạy
 python kiem\thu_tien_te.py                       # tiền tệ và sổ thu tiền: USD · LAK · CNY · THB
 python kiem\thu_ty_gia.py                        # màn Tỷ giá: phân quyền, lịch sử, phiếu cũ giữ tỷ giá
-python kiem\thu_chu_xe.py                        # chủ xe liên kết: phí riêng từng chủ, trả gộp
-python kiem\thu_hoa_don_gop.py                   # hoá đơn gộp tháng: gộp, thu ở tờ, phân bổ về phiếu
+python kiem\thu_chu_xe.py                        # chủ xe liên kết: phí riêng từng chủ, đề nghị trả gộp qua hệ anh Tune
+python kiem\thu_tru_hang_quay.py                 # trừ hàng chủ xe mua ở quầy vào đề nghị trả (cần kho tạm thử)
+python kiem\thu_tat_toan_tune.py                 # tất toán tài xế · trả nhà cung cấp nối hệ anh Tune (máy thử + API :5090)
 python kiem\thu_vai_va_doi_xe.py                 # hai vai mới ở Thà Bốc · đổi xe giữa đường
 python kiem\thu_sua_chua.py                      # lệnh sửa chữa riêng, không gắn phiếu
 python kiem\thu_the_cao_toc.py                   # thẻ cao tốc: số dư, trừ khi ghi sổ, cấn trừ
 python kiem\thu_no_tram_dau.py                   # nợ trạm dầu VN và cấn trừ cước tháng
 python kiem\thu_no_ky_thuat.py                   # giá bán không ra khỏi máy chủ · ảnh xe · việc của tôi
-python kiem\thu_chot_22_09.py                    # ghi cấn trừ · chặn đổi chéo xe · ảnh tài xế · mã cấu hình
-python kiem\thu_day_ke_toan.py                   # đẩy chứng từ sang kế toán, có máy nhận giả đóng vai anh Khang
+python kiem\thu_chot_22_09.py                    # bảng cấn trừ · chặn đổi chéo xe · ảnh tài xế · mã cấu hình
+python kiem\thu_day_ke_toan.py                   # không còn đẩy chứng từ · cấu hình kho tạm riêng
 node kiem\thu_giao_dien.js                       # cần máy chủ :8010 + jsdom của EPL_System
 node kiem\ra_vai.js                              # BÁO CÁO rà từng vai (không phải đạt/hỏng), cùng điều kiện
 node kiem\ra_tong_quan.js                        # BÁO CÁO rà riêng màn Tổng quan

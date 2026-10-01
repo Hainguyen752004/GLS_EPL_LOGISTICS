@@ -20,7 +20,7 @@ from sqlalchemy import and_, exists, func, not_, or_
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import Route, RouteStop, Trip, TripEvent, TripSection, VehiclePosition, Voucher
+from models import GuiSoTune, Route, RouteStop, Trip, TripEvent, TripSection, VehiclePosition, Voucher
 from routes.phieu import loc_phieu
 from routes.vi_tri import NGUONG_CU_PHUT, vi_tri_moi_nhat, xuat_vi_tri
 from services.bao_mat import nguoi_hien_tai
@@ -40,11 +40,14 @@ def _dieu_kien_o(o, hom_nay, gps_moi):
     cho_linh = exists().where(and_(Voucher.trip_id == Trip.id, Voucher.status == "cho", Voucher.kind == "fuel"))
     co_gps = exists().where(and_(VehiclePosition.trip_id == Trip.id, VehiclePosition.ts >= gps_moi))
     ngay_di = func.coalesce(Trip.out_date, Trip.doc_date)
+    # 01/10 (bỏ trang kế toán tạm): hoá đơn là SO bên hệ anh Tune — "chờ hoá đơn" = xe đã về mà chưa có SO bên đó. Cờ
+    # trips.invoiced là bản chép của trang tạm, không ai ghi nữa. Giữ tên ô cho giao diện.
+    co_so = exists().where(and_(GuiSoTune.trip_id == Trip.id, GuiSoTune.status == "synced"))
     return {
         "dang_chay": Trip.transport_status.in_(CHAY),
         "chua_xuat_ben": Trip.transport_status == "dispatched",
         "di_lau": and_(Trip.transport_status != "arrived", ngay_di < hom_nay - dt.timedelta(days=NGAY_COI_LA_LAU)),
-        "cho_hoa_don": and_(Trip.transport_status == "arrived", or_(Trip.invoiced.is_(False), Trip.invoiced.is_(None))),
+        "cho_hoa_don": and_(Trip.transport_status == "arrived", not_(co_so)),
         "su_co_mo": su_co,
         "chua_thu_tien": Trip.finance_status != "paid",
         "cho_cap_phat": cho_linh,
@@ -97,6 +100,7 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
             chang.setdefault(s.route_id, []).append(s)
     tuyen = {r.id: r for r in db.query(Route).filter(Route.id.in_(ma_tuyen)).all()} if ma_tuyen else {}
     gps = vi_tri_moi_nhat(db, ma)          # GPS thật mới nhất của từng phiếu
+    co_so = {t for (t,) in db.query(GuiSoTune.trip_id).filter(GuiSoTune.trip_id.in_(ma), GuiSoTune.status == "synced")} if ma else set()
 
     theo_phieu = {}
     for e in su_kien:
@@ -157,7 +161,8 @@ def bang_theo_doi(tat_ca: int = 0, o: str = None, q: str = None, co: int = CO_MA
             "out_date": ngay_di.isoformat() if ngay_di else None,
             "back_date": p.back_date.isoformat() if p.back_date else None,
             "transport_status": p.transport_status, "finance_status": p.finance_status,
-            "invoiced": p.invoiced, "weight_origin": p.weight_origin, "weight_dest": p.weight_dest,
+            "invoiced": p.id in co_so,            # đã có SO bên hệ anh Tune (tên cũ giữ cho giao diện)
+            "weight_origin": p.weight_origin, "weight_dest": p.weight_dest,
             "so_diem": len(diem), "stop_reached": toi,
             "tong_km": round(sum(s.km_from_prev or 0 for s in diem), 1),
             "su_co_mo": mo, "cho_cap_phat": cho_linh, "di_lau": lau,

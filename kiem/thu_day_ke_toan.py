@@ -6,12 +6,13 @@
 Chủ dự án chốt 01/10: trang kế toán tạm (EPL_KETOAN) bỏ phần tiền, chỉ còn làm KHO TẠM; việc tiền đi qua hệ anh Tune.
 Trước đây bài này dựng máy nhận giả đóng vai API kế toán và thử đẩy — nay đổi thành thử "không còn đẩy":
 
-  A. Trong tiến trình (không mạng, không DB — DB giả trong bộ nhớ): `day_mot` / `day_hang_loat` không gọi ra ngoài lần
-     nào, không đụng tờ, trả đúng kiểu cũ; mã nguồn backend không còn lời gọi `/api/v1/epl-lao/vouchers`. Cấu hình kho:
+  A. Trong tiến trình (không mạng, không DB — DB giả trong bộ nhớ): `day_hang_loat` (còn giữ cho công cụ gieo mẫu) không
+     gọi ra ngoài, trả đúng kiểu cũ; `day_mot` / `trang_thai` đã xoá (dọn dẹp 01/10); mã nguồn backend không còn lời gọi
+     `/api/v1/epl-lao/vouchers`. Cấu hình kho:
      khoá mới `kho_api` / `kho_token` / `kho_web`, chưa từng lưu thì đọc khoá cũ `ke_toan_*`; đã lưu (kể cả để trống) thì
      không đọc khoá cũ nữa; `dat_kho` không đụng khoá cũ.
-  B. Qua máy chủ đang chạy: `/api/ke-toan/trang-thai` nói không nối đẩy; hai đường đẩy cũ trả "không đẩy nữa" (tóm tắt
-     rỗng · 410), đúng quyền như cũ; tờ giữ nguyên; trang kế toán tạm không nhận thêm tờ nào. Cấu hình kho đọc được ở
+  B. Qua máy chủ đang chạy: `/api/ke-toan/trang-thai` và đường đẩy một tờ đã xoá (404); đường "Đẩy hết" còn trả tóm tắt
+     rỗng, đúng quyền như cũ; tờ giữ nguyên; trang kế toán tạm không nhận thêm tờ nào. Cấu hình kho đọc được ở
      cả đường mới `/api/kho-tam/cau-hinh` lẫn đường cũ, không lộ khoá. Kho tạm vẫn nối: Kiểm kết nối, địa chỉ mở, Xem
      kho có giá dầu.
 
@@ -74,13 +75,7 @@ def phan_a():
 
 
 def _phan_a(DK, KT, KK, CauHinh, ra_ngoai):
-    class To:            # một tờ chứng từ giả — chỉ các cờ đẩy
-        da_day, lan_thu, loi_day, day_luc, ma_ben_ke_toan, so = False, 2, None, None, None, "PXK_NL/2610/0001"
-
-    t = To()
-    ok, tb = DK.day_mot(None, t)
-    phai(ok is False and "không đẩy" in tb.lower(), "day_mot trả (False, \"không đẩy nữa…\") đúng kiểu cũ")
-    phai((t.da_day, t.lan_thu, t.loi_day, t.day_luc) == (False, 2, None, None), "day_mot không đụng tờ (không tăng lần thử, không ghi lỗi)")
+    phai(not hasattr(DK, "day_mot") and not hasattr(DK, "trang_thai"), "day_mot / trang_thai đã xoá (không còn ai gọi)")
     k = DK.day_hang_loat(None)
     phai(all(k[x] == 0 for x in ("thu", "xong", "loi")) and k["chi_tiet_loi"] == [], "day_hang_loat trả tóm tắt rỗng đúng kiểu cũ")
     phai(not ra_ngoai, "không có lời gọi mạng nào đi ra")
@@ -171,19 +166,13 @@ def goi(duong, du_lieu=None, vai=None, method=None):
             return e.code, {}
 
 
-def ma_loi(g):
-    d = (g or {}).get("detail") if isinstance(g, dict) else None
-    return d.get("ma") if isinstance(d, dict) else None
-
-
 def phan_b():
     print("B. Qua máy chủ %s (kho tạm đối chiếu: %s)" % (GOC, K.KT))
     for u in ("thabok", "ketoan", "admin"):
         s, g = goi("/api/dang-nhap", {"username": u, "password": "1234"}); TOKEN[u] = g["token"]
 
     s, tt = goi("/api/ke-toan/trang-thai", vai="ketoan")
-    phai(s == 200 and tt["cau_hinh"] is False and tt.get("khong_day_nua") is True,
-         "trạng thái đẩy: cau_hinh false → màn Sổ chứng từ / Đề nghị thu không hiện nút Đẩy")
+    phai(s == 404, "đường trạng thái đẩy đã xoá → 404 (giao diện không còn nút Đẩy)")
 
     s, ds = goi("/api/chung-tu?chua_day=1&limit=1", vai="ketoan")
     to = (ds.get("ds") or [None])[0] if s == 200 else None
@@ -197,11 +186,9 @@ def phan_b():
     s, g = goi("/api/chung-tu/day", {}, vai="ketoan")
     phai(s == 200 and g["thu"] == g["xong"] == g["loi"] == 0 and g.get("khong_day_nua") is True,
          "Đẩy hết → 200 tóm tắt rỗng (không đẩy tờ nào)")
-    s, g = goi("/api/chung-tu/khong-co-to-nay/day", {}, vai="ketoan")
-    phai(s == 404, "Đẩy một tờ không có → 404 như cũ")
     if to:
         s, g = goi("/api/chung-tu/%s/day" % to["id"], {}, vai="ketoan")
-        phai(s == 410 and ma_loi(g) == "KHONG_DAY_NUA", "Đẩy tờ %s → 410 KHONG_DAY_NUA" % to["so"])
+        phai(s == 404, "Đẩy một tờ (%s) → 404, đường đã xoá" % to["so"])
         s, sau = goi("/api/chung-tu/%s" % to["id"], vai="ketoan")
         phai(all(sau[k] == to[k] for k in ("da_day", "lan_thu", "loi_day", "day_luc", "ma_ben_ke_toan")), "tờ giữ nguyên sau khi bấm đẩy")
         s, kt = K.kt("/api/chung-tu?limit=1000&q=" + urllib.parse.quote(to["so"]), vai="ketoan")
@@ -227,7 +214,8 @@ def phan_b():
     s, g = goi("/api/lien-thong/thu", vai="admin")
     phai(s == 200 and g.get("ok") is True, "Kiểm kết nối kho tạm (đây → %s) → nối được, bên kia nhận ra %s" % (g.get("api"), (g.get("ben_kia") or {}).get("nguoi")))
     s, g = goi("/api/lien-thong/dia-chi", vai="thabok")
-    phai(s == 200 and g.get("ke_toan_web") == (moi["kho_web"] or moi["kho_api"]).rstrip("/"), "địa chỉ mở kho tạm (nút Cấp phát, QR) = kho_web, trống thì kho_api")
+    phai(s == 200 and g.get("kho_web") == g.get("ke_toan_web") == (moi["kho_web"] or moi["kho_api"]).rstrip("/"),
+         "địa chỉ mở kho tạm (nút Cấp phát, QR) = kho_web, trống thì kho_api — trả cả tên mới kho_web lẫn tên cũ ke_toan_web")
     s, g = goi("/api/kho-xem", vai="ketoan")
     dau = (g or {}).get("nhien_lieu") or []
     phai(s == 200 and dau and any(k.get("gia_bq") for k in dau), "Xem kho hỏi kho tạm: %d kho dầu, có giá bình quân" % len(dau))
@@ -236,7 +224,7 @@ def phan_b():
 def main():
     phan_a()
     phan_b()
-    print("\nTHỬ KHÔNG CÒN ĐẨY: ĐẠT %d bước — không lời gọi đẩy nào đi ra · đường cũ trả \"không đẩy nữa\" · cấu hình kho riêng"
+    print("\nTHỬ KHÔNG CÒN ĐẨY: ĐẠT %d bước — không lời gọi đẩy nào đi ra · đường đẩy cũ đã xoá / trả rỗng · cấu hình kho riêng"
           " (khoá cũ vẫn đọc khi chưa lưu khoá mới) · kho tạm vẫn nối" % DEM["dat"])
 
 

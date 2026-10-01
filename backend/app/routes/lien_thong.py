@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""LIÊN THÔNG hai trang — trang điều xe (đây) ↔ trang kế toán (EPL_KETOAN).
+"""LIÊN THÔNG hai trang — trang điều xe (đây) ↔ KHO TẠM (máy EPL_KETOAN; từ 01/10 bên đó bỏ phần tiền, chỉ còn làm kho).
 
-    GET  /api/lien-thong/kiem          trang kế toán gọi sang thử khoá: đúng khoá + đúng người thì trả người đó
-    GET  /api/lien-thong/thu           Sếp bấm "Kiểm kết nối": gọi sang trang kế toán và báo thật kết quả
-    POST /api/lien-thong/tao-khoa      Sếp tạo (lại) khoá cho trang kế toán gọi sang — chép khoá này vào Cài đặt bên đó
+    GET  /api/lien-thong/kiem          kho tạm gọi sang thử khoá: đúng khoá + đúng người thì trả người đó
+    GET  /api/lien-thong/thu           Sếp bấm "Kiểm kết nối": gọi sang kho tạm và báo thật kết quả
+    POST /api/lien-thong/tao-khoa      Sếp tạo (lại) khoá cho kho tạm gọi sang — chép khoá này vào Cài đặt bên đó
+Còn lại là các đường KHO (danh mục điểm đổ, phụ tùng, cấp phát, tỷ giá, mã kế toán, xe, người mua). Phần tiền đã gỡ — cuối tệp.
 """
 import secrets
 import time
@@ -152,9 +153,11 @@ def lt_ty_gia(db: Session = Depends(get_db), u=Depends(may_ke_toan_goi)):
 
 @router.get("/api/lien-thong/dia-chi")
 def dia_chi(db: Session = Depends(get_db), user=Depends(nguoi_hien_tai)):
-    """Địa chỉ trang kế toán để giao diện bên này mở sang (nút Cấp phát, Kho nhiên liệu…)."""
+    """Địa chỉ KHO TẠM (máy EPL_KETOAN) để giao diện bên này mở sang (nút Cấp phát, Kho nhiên liệu…). `kho_web` là tên mới
+    (01/10, cấu hình kho riêng); `ke_toan_web` cùng giá trị, giữ cho giao diện bản cũ — bỏ ở đợt dọn tên cấu hình."""
     from services import kho_ke_toan as KK
-    return {"ke_toan_web": KK.web_ke_toan(db)}
+    web = KK.web_ke_toan(db)
+    return {"kho_web": web, "ke_toan_web": web}
 
 
 @router.get("/api/lien-thong/ma-ke-toan")
