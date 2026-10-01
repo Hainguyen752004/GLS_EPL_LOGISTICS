@@ -12,10 +12,14 @@ Từ 01/10 (bỏ phần tiền trang kế toán tạm) tất toán tài xế CH�
 kế toán anh Tune — bài đọc tất toán ở trang điều xe, không còn sang trang kế toán tạm.
 """
 import json
+import os
 import sys
 import time
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K  # noqa: E402 — kho tạm (EPL_KT): nhập trước rồi cấp (01/10)
 
 DX = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011"
 TK = {}
@@ -57,7 +61,8 @@ def main():
     thue = [x for x in xe if x["owner_type"] == "joint" and x["truck_no"].startswith("ຮ່ວມ")]
     xe_thue = next((x for x in thue if x["status"] == "available"), thue[0])      # bản Lào không chặn xe đang bận
     xe_nha = next(x for x in xe if x["owner_type"] == "EPL" and x["truck_no"] in ("347", "348", "349"))
-    kho = next(d for d in diem if d.get("owner_type") == "epl")
+    # kho Thà Bốc (trước đây: kho EPL đầu danh sách — có lúc rơi vào kho đang âm trên bản sao)
+    kho = next((d for d in diem if d.get("code") == "KHO-TB"), None) or next(d for d in diem if d.get("owner_type") == "epl")
     tai_xe = next(t for t in tx if t["name"] == "ທ້າວ ບົວພັນ") if any(t["name"] == "ທ້າວ ບົວພັນ" for t in tx) else tx[-1]
     hom_nay = time.strftime("%Y-%m-%d")
     print("✓ đăng nhập · xe thuê %s (chủ xe %s) · xe nhà %s · tài xế %s" % (xe_thue["truck_no"], xe_thue.get("owner_name"), xe_nha["truck_no"], tai_xe["name"]))
@@ -117,6 +122,8 @@ def main():
     s, g = goi(DX, "/api/trips/%s/sections/fuel/book" % pid, {}, "khonl")
     phai(s, 409, "Ghi sổ mục III khi dầu kho chưa cấp theo phiếu đề nghị → bị chặn", g)
     dung(g["detail"]["ma"] == "CHUA_CAP_THEO_DE_NGHI", "Mã chặn CHUA_CAP_THEO_DE_NGHI", g["detail"]["loi"][:80])
+    # 01/10 kho tạm chặn cấp quá tồn: nhập trước đúng số lít sẽ cấp ở kho Thà Bốc (kho gốc, "fp_yard"); dòng nhập tự gỡ lúc bài xong (_ke_toan)
+    K.nhap_truoc(kho["id"], v[0]["qty_l"], "thử loại xe: nhập trước rồi cấp")
     s, g = goi(DX, "/api/vouchers/%s/cap" % v[0]["id"], {"qty": v[0]["qty_l"]}, "khonl"); phai(s, 200, "Cấp dầu theo phiếu đề nghị", g)
     s, g = goi(DX, "/api/trips/%s/sections/fuel/book" % pid, {}, "khonl"); phai(s, 200, "Ghi sổ mục III (dầu đã cấp theo đề nghị)", g)
     GIA_IV = {"x_vn": 430000, "x_trip": 1800000}
@@ -170,7 +177,10 @@ def main():
     s, g = goi(DX, "/api/trips/%s/sections/travel/pay" % pid, {}, "admin"); phai(s, 200, "Sếp chi tay mục IV phiếu xe thuê (rút phiếu chi chờ bên kế toán)", g)
     s, ck = goi(DX, "/api/trips/%s/chi-ke-toan" % pid, vai="ketoancp")
     dung(s == 200 and (ck or {}).get("status") != "da_gui", "Không còn phiếu chi tạm ứng chờ bên kế toán cho phiếu xe thuê thử", (ck or {}).get("status"))
-    print("  · phiếu xe nhà thử %s; phiếu xe thuê thử ở lại bản sao DB thử (mục đã kiểm)" % ("đã xoá" if s_xoa == 200 else "ở lại"))
+    # 01/10: xoá cả phiếu xe thuê thử — dầu đã cấp về kho, rồi dòng nhập thử tự gỡ (_ke_toan); không để phiếu thử rút kho mỗi lần chạy
+    goi(DX, "/api/trips/%s/mo-khoa" % pid, {}, "admin")
+    s_xoa2, _ = goi(DX, "/api/trips/%s" % pid, vai="admin", method="DELETE")
+    print("  · phiếu xe nhà thử %s; phiếu xe thuê thử %s" % ("đã xoá" if s_xoa == 200 else "ở lại", "đã xoá (dầu về kho)" if s_xoa2 == 200 else "ở lại (%s)" % s_xoa2))
     print("\nTHỬ LOẠI XE: ĐẠT — xe nhà nội bộ · xe thuê ghi công nợ + xuất bán theo giá bán · tất toán, tiền chuyến chỉ xe nhà · dầu kho chỉ rời kho theo phiếu đề nghị đã cấp")
 
 

@@ -51,6 +51,12 @@ def main():
         TK[u] = g["token"]
     k0, _ = kho()
     XE, TB = k0["KHO-XE-VN"], k0["KHO-TB"]
+    # 01/10 kho tạm chặn cấp / xoá quá tồn: bài NHẬP TRƯỚC 1.000 L vào kho xe rồi mới cấp 600; cuối bài xoá phiếu chuyển 400 L về
+    # Thà Bốc — làm được chỉ khi hai kho không âm từ trước (xoá phần nhận chuyển mà kho đã âm thì kho tạm chặn, đúng luật)
+    for k in (XE, TB):
+        if k["ton_lit"] < -0.001:
+            raise SystemExit("DỪNG: kho %s đang âm %s L trên máy thử — xử lý số âm trước (xoá phiếu thử cũ / phiếu nhập thật)."
+                             % (k["code"], k["ton_lit"]))
     print("  · kho xe: %s L · %s LAK/L   |   Thà Bốc: %s L · %s LAK/L" % (XE["ton_lit"], XE["gia_bq"], TB["ton_lit"], TB["gia_bq"]))
     s, ncc = goi("/api/suppliers", vai="khonl")
     tram_vn = next((x for x in ncc if "VN" in (x.get("name") or "") or "ຫວຽດນາມ" in (x.get("name") or "")), ncc[0] if ncc else None)

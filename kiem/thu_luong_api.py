@@ -156,6 +156,8 @@ def main():
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoan"); phai(s, 403, "KT Thu/Chi ghi sổ mục IV → bị từ chối", g)
     s, g = goi("/api/trips/%s/sections/travel/book" % P, {}, vai="ketoancp"); phai(s, 200, "KT Chi phí VC ghi sổ mục IV", g)
     # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
+    # 01/10 kho tạm chặn cấp quá tồn: nhập trước đúng số lít sẽ cấp ở kho Thà Bốc (kho gốc, "fp_yard"); dòng nhập tự gỡ lúc bài xong (_ke_toan)
+    K.nhap_truoc("KHO-TB", 100, "thử luồng: nhập trước 100 L rồi cấp")
     s, v = goi("/api/trips/%s/vouchers" % P, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", v)
     for x in v:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)

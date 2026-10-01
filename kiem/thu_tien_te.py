@@ -22,6 +22,7 @@ import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
+import _ke_toan as K  # noqa: E402 — kho tạm (EPL_KT): nhập trước rồi cấp (01/10)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8011").rstrip("/")
 if GOC.endswith((":8010", ":8020")):
@@ -145,6 +146,8 @@ def chay(pid, TAN, tg):
     for muc, v in (("info", "ketoan"), ("trans", "ketoan"), ("fuel", "khonl"), ("travel", "ketoancp")):
         s, g = goi("/api/trips/%s/sections/%s/verify" % (pid, muc), {}, vai=v); phai(s, 200, "Kiểm mục %s" % muc, g)
     # từ 30/09 dầu kho chỉ rời kho theo phiếu đề nghị đã cấp — in đề nghị, thủ kho cấp, rồi mới ghi sổ mục III
+    # 01/10 kho tạm chặn cấp quá tồn: nhập trước đúng số lít sẽ cấp ở kho Thà Bốc (kho gốc, "fp_yard"); dòng nhập tự gỡ lúc bài xong (_ke_toan)
+    K.nhap_truoc("KHO-TB", 100, "thử tiền tệ: nhập trước 100 L rồi cấp")
     s, vs = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", vs)
     for x in vs:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)

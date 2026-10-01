@@ -43,3 +43,61 @@ def to_kho(q, loai="PXK_PT"):
     s, ds = kt("/api/chung-tu?loai=%s&limit=1000&q=%s" % (loai, urllib.request.quote(q)), vai="ketoan")
     assert s == 200, (s, ds)
     return [v for v in ds if v["source"] == "EPL_KETOAN"]
+
+
+# ---------------------------------------------------------------- 01/10: kho tạm CHẶN cấp quá tồn (409 VUOT_TON)
+# Tồn đi theo chứng từ: bộ kiểm nào cấp dầu ở một kho thì NHẬP TRƯỚC đúng số lít sẽ cấp (phiếu nhập PNK_NL, giá = bình quân
+# hiện tại của kho để giá vốn kho không đổi), rồi dọn: xoá phiếu thử (dầu đã cấp về kho) → gỡ dòng nhập thử. Kho đang ÂM thì
+# dừng và nói rõ — không nhập bù để che số âm (dòng nhập bù đó cũng không gỡ được: kho tạm chặn xoá dòng nhập làm tồn âm).
+# Dòng nhập thử nào chưa gỡ lúc bài kết thúc (kể cả khi bài hỏng giữa chừng) thì tự gỡ — sau phần dọn phiếu thử của bài.
+_NHAP = []
+
+
+def _go_het():
+    for mid in list(_NHAP):
+        go_nhap(mid)
+
+
+import atexit as _atexit  # noqa: E402
+_atexit.register(_go_het)
+
+
+def kho_dau(ma_hay_id, vai="khonl"):
+    """Một kho dầu ở kho tạm theo mã (KHO-TB…) hoặc id; không truyền gì / 'fp_yard' = kho gốc Thà Bốc."""
+    s, g = kt("/api/nhien-lieu", vai=vai)
+    assert s == 200, (s, g)
+    ma = ma_hay_id or "KHO-TB"
+    if ma == "fp_yard":
+        ma = "KHO-TB"
+    k = next((x for x in g["kho"] if x["id"] == ma or x.get("code") == ma), None)
+    assert k, "không có kho dầu %s ở kho tạm %s" % (ma, KT)
+    return k
+
+
+def nhap_truoc(ma_hay_id, lit, ghi_chu="bộ kiểm: nhập trước rồi cấp", vai="khonl"):
+    """Nhập `lit` lít vào kho trước khi cấp. Trả id dòng nhập (để `go_nhap` lúc dọn)."""
+    import time as _t
+    k = kho_dau(ma_hay_id, vai)
+    if k["ton_lit"] < -0.001:
+        raise SystemExit("DỪNG: kho %s đang âm %s L trên máy thử — kho tạm chặn cấp quá tồn; xử lý số âm (xoá phiếu thử cũ / "
+                         "phiếu nhập thật) rồi chạy lại. Bộ kiểm không nhập bù để che số âm." % (k.get("code"), k["ton_lit"]))
+    so = "NHAP-THU-%s" % _t.strftime("%d%H%M%S")
+    s, g = kt("/api/nhien-lieu", {"kind": "in", "place_id": k["id"], "qty_l": lit, "unit_price": k.get("gia_bq") or 25000,
+                                  "currency": "LAK", "doc_no": so, "note": ghi_chu}, vai=vai)
+    assert s == 200, ("nhập trước", s, g)
+    dong = next(r for r in g["rows"] if r["doc_no"] == so and r["kind"] == "in")
+    _NHAP.append(dong["id"])
+    print("  ✓ %-64s %s L → tồn %s L" % ("nhập trước vào %s (phiếu nhập, luật 01/10)" % k.get("code"), lit, kho_dau(k["id"], vai)["ton_lit"]))
+    return dong["id"]
+
+
+def go_nhap(move_id, vai="khonl"):
+    """Dọn: gỡ dòng nhập thử (sau khi đã xoá phiếu thử — dầu đã cấp về kho). Trả mã HTTP."""
+    if not move_id:
+        return None
+    s, g = kt("/api/nhien-lieu/%s" % move_id, vai=vai, method="DELETE")
+    if s in (200, 404) and move_id in _NHAP:
+        _NHAP.remove(move_id)
+    if s != 200:
+        print("  ! chưa gỡ được dòng nhập thử %s: %s %s" % (move_id, s, (g or {}).get("detail") or g))
+    return s

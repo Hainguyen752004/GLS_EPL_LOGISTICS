@@ -18,6 +18,7 @@ import urllib.request
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _quy_trinh as Q  # Bãi lập không tiền → KT nhập giá (quy trình 23/09)
+import _ke_toan as K  # noqa: E402 — kho tạm (EPL_KT): nhập trước rồi cấp (01/10)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -142,6 +143,8 @@ def main():
     print("  ✓ %-60s %s" % ("Dòng trừ thẻ nhắc đúng số phiếu", m["trip_doc_no"]))
 
     # dầu kho chỉ rời kho theo phiếu ĐỀ NGHỊ đã cấp (chủ dự án 30/09): Bãi in đề nghị → cấp dầu → mới ghi sổ mục III
+    # 01/10 kho tạm chặn cấp quá tồn: nhập trước đúng số lít sẽ cấp ở kho Thà Bốc (kho gốc, "fp_yard"); dòng nhập tự gỡ lúc bài xong (_ke_toan)
+    K.nhap_truoc("KHO-TB", 70, "thử thẻ cao tốc: nhập trước 70 L rồi cấp")
     s, v = goi("/api/trips/%s/vouchers" % pid, {"kind": "fuel"}, vai="thabok"); phai(s, 200, "Bãi in phiếu đề nghị xuất kho nhiên liệu", v)
     for x in v:
         s, g = goi("/api/vouchers/%s/cap" % x["id"], {"qty": x["qty_l"]}, vai="khonl"); phai(s, 200, "Cấp dầu theo " + x["doc_no"], g)

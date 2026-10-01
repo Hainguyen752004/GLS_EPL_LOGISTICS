@@ -9,7 +9,12 @@ không ghi lý do, cấp hai lần, tài xế tự chi tiền cho mình, chi khi
 tài xế khai đổ dầu dọc đường và bảng tất toán theo tháng (chốt ở đây, tiền ở hệ kế toán anh Tune từ 01/10).
 
 Cần dữ liệu mẫu còn nguyên: python backend/app/seed.py --dung-lai
+
+01/10 — kho tạm CHẶN cấp quá tồn (409 VUOT_TON): bài NHẬP TRƯỚC 60 L vào kho Thà Bốc (phiếu nhập ở kho tạm) rồi mới cấp, và
+DỌN khi xong (kể cả khi hỏng giữa chừng): Sếp xoá phiếu thử → dầu đã cấp về kho → gỡ dòng nhập thử. Trước đây bài để lại phiếu
+THU-PL-… sau mỗi lần chạy, mỗi lần rút 60 L của kho Thà Bốc — kho thử âm vì thế. Địa chỉ kho tạm: biến EPL_KT (kiem/_ke_toan.py).
 """
+import atexit
 import json
 import os
 import sys
@@ -72,6 +77,14 @@ if p is None:
                                "expenses": [{"section": "fuel", "item_key": "diesel", "qty": 60, "place_id": tb["id"], "paid_by_epl": True},
                                             {"section": "travel", "item_key": "x_food", "qty": 2, "paid_by_epl": True}]}, tk["thabok"])
     bao("Bãi lập phiếu thử (không có phiếu mẫu chưa xuất dầu)", ma, 200, p.get("doc_no", ""))
+    NHAP = K.nhap_truoc(tb["id"], 60, "thử phiếu lĩnh %s: nhập trước rồi cấp" % p.get("doc_no"))
+
+    def _don(pid=p["id"], so=p["doc_no"], nhap=NHAP):
+        """Sếp xoá phiếu thử (dầu đã cấp về kho Thà Bốc) rồi gỡ dòng nhập thử — kho về đúng số trước bài."""
+        ma_x, _ = goi("/api/trips/" + pid, tk=tk["admin"], cach="DELETE")
+        ma_g = K.go_nhap(nhap)
+        print("  ↺ dọn: xoá phiếu thử %s (%s) · gỡ dòng nhập thử (%s) · kho Thà Bốc %s L" % (so, ma_x, ma_g, K.kho_dau("KHO-TB")["ton_lit"]))
+    atexit.register(_don)
     _, ctk = goi("/api/trips/" + p["id"], tk=tk["admin"])
     d_an = [{"id": d["id"], "section": "travel", "unit_price": 100000, "currency": "LAK"} for d in ctk["expenses"] if d["section"] == "travel"]
     ma, r = goi("/api/trips/" + p["id"], {"expenses": d_an}, tk["ketoancp"], "PUT")

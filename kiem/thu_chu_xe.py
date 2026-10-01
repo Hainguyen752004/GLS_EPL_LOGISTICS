@@ -13,9 +13,13 @@ thì phiếu mới "đã trả" — bài không ghi sổ hộ thủ quỹ, nên 
 Trừ hàng chủ xe mua ở quầy (bán hàng trang kế toán tạm) không còn.
 """
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _ke_toan as K  # noqa: E402 — kho tạm (EPL_KT): nhập trước rồi cấp (01/10)
 
 GOC = (sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8010").rstrip("/")
 TOKEN = {}
@@ -105,6 +109,8 @@ def main():
 
     # ---------------------------------------------------------------- 3. hai phiếu gom bằng xe đó → phí tự điền theo chủ
     s, tx = goi("/api/drivers", vai="thabok"); s, kh = goi("/api/customers", vai="thabok"); s, tuyen = goi("/api/routes", vai="thabok")
+    # 01/10 kho tạm chặn cấp quá tồn: nhập trước đúng số lít sẽ cấp ở kho Thà Bốc (kho gốc, "fp_yard"); dòng nhập tự gỡ lúc bài xong (_ke_toan)
+    K.nhap_truoc("KHO-TB", 100, "thử chủ xe: nhập trước 2 × 50 L rồi cấp")
     phieu = []
     for i, (so, tan) in enumerate((("THU-CX-A/EPL", 41.0), ("THU-CX-B/EPL", 39.0))):
         s, P = goi("/api/trips", {"doc_no": so, "kind": "gom", "doc_date": "2026-09-1%d" % (i + 5), "out_date": "2026-09-1%d" % (i + 5),
